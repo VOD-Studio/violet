@@ -206,6 +206,16 @@ func TestSendCode_EmptyEmail_ReturnsErr(t *testing.T) {
 	codeStore.AssertNotCalled(t, "Store")
 }
 
+func TestSendCode_SiteDisabled_RejectsWithoutMail(t *testing.T) {
+	svc, _, codeStore, emailSender := newServiceWithMocks(&fakeSitePolicy{enabled: false})
+	err := svc.SendCode(context.Background(), SendCodeInput{
+		PostID: shared.NewID().String(), Email: "alice@x.com",
+	})
+	assert.Error(t, err)
+	codeStore.AssertNotCalled(t, "Store")
+	emailSender.AssertNotCalled(t, "SendVerificationCode")
+}
+
 func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	// 匿名 viewer 不应查 DB

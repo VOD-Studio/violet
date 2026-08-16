@@ -629,6 +629,16 @@ type SendCodeInput struct {
 //
 // 编排参照 auth.RegisterUserHandler：发邮件失败仅 warn 不阻塞（devMode 下验证码打日志）。
 func (s *Service) SendCode(ctx context.Context, in SendCodeInput) error {
+	// 总开关同样拦截两步流第一步：评论已关闭时不发验证码邮件
+	if s.sitePolicy != nil {
+		enabled, _, err := s.sitePolicy.CommentPolicy(ctx)
+		if err != nil {
+			return shared.Internal("读取评论设置失败", err)
+		}
+		if !enabled {
+			return shared.Forbidden("评论已关闭")
+		}
+	}
 	email := normalizeEmail(in.Email)
 	if email == "" {
 		return shared.BadRequest("邮箱不能为空")
