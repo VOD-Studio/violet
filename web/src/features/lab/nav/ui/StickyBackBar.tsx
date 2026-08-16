@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { DemoBody, DemoHeader, DemoStage } from "./DemoArticle";
 
@@ -7,9 +7,10 @@ import { DemoBody, DemoHeader, DemoStage } from "./DemoArticle";
  * StickyBackBar - 方向①：吸顶返回条
  *
  * 哨兵夹在文章头与正文之间，滚出容器视口顶（IntersectionObserver，
- * root 为演示容器）即挂载 sticky 细条：返回 + 来源页 + 截断标题。
- * 细条在流内紧跟哨兵，标题滚出后自然到达 top-0 并钉住到正文结束；
- * 已滚过时挂载也会被直接钳制到容器顶部，滑入动画衔接。
+ * root 为演示容器）即浮出细条：返回 + 来源页 + 截断标题。
+ * 细条挂在 wrapper overlay 位而非内容流里——in-flow mount/unmount 会
+ * 让内容高度瞬变 ±45px，阈值附近来回滚就抖；overlay 与其他三方向
+ * 同构，视觉上等同于 sticky 钉顶（内容从条下滚过）。
  */
 export function StickyBackBar() {
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,24 +31,31 @@ export function StickyBackBar() {
 	}, []);
 
 	return (
-		<DemoStage scrollRef={scrollRef}>
+		<DemoStage
+			scrollRef={scrollRef}
+			overlay={
+				<AnimatePresence>
+					{stuck && (
+						<motion.div
+							initial={reduce ? false : { y: -48, opacity: 0 }}
+							animate={{ y: 0, opacity: 1 }}
+							exit={{ y: -48, opacity: 0 }}
+							transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+							className="absolute inset-x-0 top-0 z-10 flex cursor-pointer items-center gap-3 border-b border-edge-hairline bg-background/90 px-4 py-2.5 backdrop-blur md:px-6"
+						>
+							<ArrowLeft className="size-4 shrink-0" />
+							<span className="shrink-0 text-sm font-medium">返回博客</span>
+							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+								长文阅读的返回问题
+							</span>
+						</motion.div>
+					)}
+				</AnimatePresence>
+			}
+		>
 			<div className="pb-16">
 				<DemoHeader />
 				<div ref={sentinelRef} aria-hidden className="h-px" />
-				{stuck && (
-					<motion.div
-						initial={reduce ? false : { y: -48, opacity: 0 }}
-						animate={{ y: 0, opacity: 1 }}
-						transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-						className="sticky top-0 z-10 flex cursor-pointer items-center gap-3 border-b border-edge-hairline bg-background/90 px-4 py-2.5 backdrop-blur md:px-6"
-					>
-						<ArrowLeft className="size-4 shrink-0" />
-						<span className="shrink-0 text-sm font-medium">返回博客</span>
-						<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-							长文阅读的返回问题
-						</span>
-					</motion.div>
-				)}
 				<DemoBody />
 			</div>
 		</DemoStage>
