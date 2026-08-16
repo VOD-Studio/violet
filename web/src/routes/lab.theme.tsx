@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CubeToggle,
 	CyclicThemeButton,
@@ -8,9 +8,10 @@ import {
 	SceneButton,
 	SegmentedToggle,
 } from "@widgets/ThemeToggle/variants";
+import { ArrowLeft } from "lucide-react";
 
 /**
- * ThemeLab - 主题切换器实验页
+ * /lab/theme - 主题切换器实验室
  *
  * 并排展示七种创意主题切换器原型，方便对比挑选。
  */
@@ -28,6 +29,13 @@ function ThemeLab() {
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
+				<Link
+					to="/lab"
+					className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.25em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+				>
+					<ArrowLeft className="size-3.5" />
+					Labs
+				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">主题切换器实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					点击任意控件切换主题，观察交互手感与动画效果。
@@ -55,6 +63,6 @@ function ThemeLab() {
 	);
 }
 
-export const Route = createFileRoute("/theme-lab")({
+export const Route = createFileRoute("/lab/theme")({
 	component: ThemeLab,
 });

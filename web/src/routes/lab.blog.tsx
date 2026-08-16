@@ -11,7 +11,8 @@ import { usePosts } from "@features/posts/api/queries";
 import type { Post } from "@features/posts/model/types";
 import Empty from "@shared/ui/empty";
 import { Segmented } from "@shared/ui/segmented";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";
@@ -81,10 +82,10 @@ function renderDirection(direction: LabDirection, posts: Post[]) {
 }
 
 /**
- * /blog-lab - 博客排版原型实验室
+ * /lab/blog - 博客排版实验室
  *
  * 真实文章数据渲染八个候选排版方向，可切换数据 / 骨架屏 / 空态三态
- * 对比（结构对齐 /friends-lab）。选定方向后 /blog 生产实现按此落地。
+ * 对比（结构对齐 /lab/friends）。选定方向后 /blog 生产实现按此落地。
  */
 function BlogLab() {
 	const [direction, setDirection] = useState<LabDirection>("cascade");
@@ -96,6 +97,13 @@ function BlogLab() {
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
+				<Link
+					to="/lab"
+					className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.25em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+				>
+					<ArrowLeft className="size-3.5" />
+					Labs
+				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">博客排版实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					/blog 列表页的候选排版方向对比（真实数据渲染，含动效）。
@@ -178,6 +186,6 @@ function BlogLab() {
 	);
 }
 
-export const Route = createFileRoute("/blog-lab")({
+export const Route = createFileRoute("/lab/blog")({
 	component: BlogLab,
 });

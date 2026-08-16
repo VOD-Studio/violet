@@ -7,8 +7,8 @@ import { TerminalList } from "@features/friends-lab/ui/TerminalList";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { Segmented } from "@shared/ui/segmented";
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Plus } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";
@@ -32,7 +32,7 @@ const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
 ];
 
 /**
- * /friends-lab - 友链视觉原型实验室（F2 / issue #161）
+ * /lab/friends - 友链视觉原型实验室（F2 / issue #161）
  *
  * 静态 mock、不接 API：三个候选展示方向可切换对比，附数据/骨架/空三态预览，
  * 以及「交换名片」申请弹窗的交互仪式原型。目验收选定方向后，
@@ -48,6 +48,13 @@ function FriendsLab() {
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
+				<Link
+					to="/lab"
+					className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.25em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+				>
+					<ArrowLeft className="size-3.5" />
+					Labs
+				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">友链原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					/friends 页的候选视觉方向对比（静态 mock，不接 API）。
@@ -160,6 +167,6 @@ function FriendsLab() {
 	);
 }
 
-export const Route = createFileRoute("/friends-lab")({
+export const Route = createFileRoute("/lab/friends")({
 	component: FriendsLab,
 });
