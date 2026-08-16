@@ -161,32 +161,42 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				)}
 
 				{textBriefs.length > 0 && (
-					<div>
-						<p className="border-b border-edge-hairline py-2 font-mono text-[10px] tracking-[0.35em] text-muted-foreground uppercase">
-							要闻索引 · Index
-						</p>
-						{/* 单行索引条目代替摘要墙:同质文本块没有锚点,索引栏轻且可扫 */}
-						<ol className="grid md:grid-cols-3 md:gap-x-8">
-							{textBriefs.map((p, i) => (
-								<li key={p.id} className="border-b border-edge-hairline">
-									<Link
-										to="/blog/$slug"
-										params={{ slug: p.slug }}
-										className="group flex items-baseline gap-2.5 py-3"
-									>
-										<span className="font-mono text-[10px] text-muted-foreground/60 tabular-nums">
-											{String(i + 1).padStart(2, "0")}
-										</span>
-										<span className="min-w-0 flex-1 truncate text-sm font-medium transition-colors group-hover:text-neon-blue">
-											{p.title}
-										</span>
-										<span className="shrink-0 font-mono text-[10px] text-muted-foreground tabular-nums">
-											{format(new Date(p.published_at), "MM-dd")}
-										</span>
-									</Link>
-								</li>
+					<div className="mt-2">
+						{/* 分类短讯栏:按标签分栏,加粗标题+破折号+一句导语,索引行留给特写列表 */}
+						<div className="grid gap-x-8 border-t border-edge-hairline pt-4 md:grid-cols-3">
+							{Object.entries(
+								textBriefs.reduce<Record<string, Post[]>>((acc, p) => {
+									const k = p.tags[0] ?? "随笔";
+									(acc[k] ??= []).push(p);
+									return acc;
+								}, {}),
+							).map(([section, list]) => (
+								<div key={section}>
+									<p className="mb-2 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">
+										{section}
+									</p>
+									{list.map((p) => (
+										<Link
+											key={p.id}
+											to="/blog/$slug"
+											params={{ slug: p.slug }}
+											className="group block border-b border-edge-hairline/60 py-2.5"
+										>
+											<p className="text-sm leading-relaxed">
+												<span className="font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+													{p.title}
+												</span>
+												<span className="text-muted-foreground">
+													{" "}
+													—— {p.excerpt.slice(0, 40)}
+													{p.excerpt.length > 40 ? "…" : ""}
+												</span>
+											</p>
+										</Link>
+									))}
+								</div>
 							))}
-						</ol>
+						</div>
 					</div>
 				)}
 			</motion.div>
