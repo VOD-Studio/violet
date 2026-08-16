@@ -73,7 +73,7 @@ function HeroCover({ post }: { post: Post }) {
 	const [brokenFor, setBrokenFor] = useState<string | null>(null);
 	if (!post.cover_image || brokenFor === post.cover_image) {
 		return (
-			<div className="aspect-21/9 w-full bg-linear-to-br from-primary/25 via-muted to-muted" />
+			<div className="aspect-16/10 w-full bg-linear-to-br from-primary/25 via-muted to-muted md:aspect-21/9" />
 		);
 	}
 	return (
@@ -84,7 +84,7 @@ function HeroCover({ post }: { post: Post }) {
 			initial={{ filter: "blur(10px)" }}
 			animate={{ filter: "blur(0px)" }}
 			transition={{ duration: 0.5, ease: "easeOut" }}
-			className="aspect-21/9 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+			className="aspect-16/10 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] md:aspect-21/9"
 		/>
 	);
 }
