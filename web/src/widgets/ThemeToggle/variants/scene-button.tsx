@@ -35,7 +35,7 @@ export function SceneButton({ size = "default" }: VariantProps) {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.4 }}
-						className="absolute inset-0 bg-gradient-to-b from-sky-100 to-sky-50 dark:from-sky-950 dark:to-sky-900"
+						className="absolute inset-0 bg-linear-to-b from-sky-100 to-sky-50 dark:from-sky-950 dark:to-sky-900"
 					>
 						<motion.div
 							initial={{ y: 40, opacity: 0 }}
@@ -61,7 +61,7 @@ export function SceneButton({ size = "default" }: VariantProps) {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.4 }}
-						className="absolute inset-0 bg-gradient-to-b from-slate-900 to-slate-800"
+						className="absolute inset-0 bg-linear-to-b from-slate-900 to-slate-800"
 					>
 						<motion.div
 							initial={{ y: -40, opacity: 0 }}
@@ -96,7 +96,7 @@ export function SceneButton({ size = "default" }: VariantProps) {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.4 }}
-						className="absolute inset-0 bg-gradient-to-br from-muted to-accent/30"
+						className="absolute inset-0 bg-linear-to-br from-muted to-accent/30"
 					>
 						<motion.div
 							initial={{ scale: 0.8, opacity: 0 }}
