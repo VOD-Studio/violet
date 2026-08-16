@@ -163,33 +163,30 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				{textBriefs.length > 0 && (
 					<div>
 						<p className="border-b border-edge-hairline py-2 font-mono text-[10px] tracking-[0.35em] text-muted-foreground uppercase">
-							简讯版 · Briefs
+							要闻索引 · Index
 						</p>
-						{/* 双栏+中缝竖线:4 列会把中文标题挤断成碎片,报纸摘要栏从不这样排 */}
-						<div className="grid md:grid-cols-2">
-							{textBriefs.map((p) => (
-								<article
-									key={p.id}
-									className="border-b border-edge-hairline py-5 md:px-8 md:first:pl-0 md:[&:nth-child(2)]:pr-0 md:[&:nth-child(even)]:border-l md:[&:nth-child(even)]:border-edge-hairline"
-								>
+						{/* 单行索引条目代替摘要墙:同质文本块没有锚点,索引栏轻且可扫 */}
+						<ol className="grid md:grid-cols-3 md:gap-x-8">
+							{textBriefs.map((p, i) => (
+								<li key={p.id} className="border-b border-edge-hairline">
 									<Link
 										to="/blog/$slug"
 										params={{ slug: p.slug }}
-										className="group block"
+										className="group flex items-baseline gap-2.5 py-3"
 									>
-										<h4 className="line-clamp-2 text-[17px] leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+										<span className="font-mono text-[10px] text-muted-foreground/60 tabular-nums">
+											{String(i + 1).padStart(2, "0")}
+										</span>
+										<span className="min-w-0 flex-1 truncate text-sm font-medium transition-colors group-hover:text-neon-blue">
 											{p.title}
-										</h4>
-										<p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-											{p.excerpt}
-										</p>
-										<p className="mt-2.5 font-mono text-[10px] text-muted-foreground">
+										</span>
+										<span className="shrink-0 font-mono text-[10px] text-muted-foreground tabular-nums">
 											{format(new Date(p.published_at), "MM-dd")}
-										</p>
+										</span>
 									</Link>
-								</article>
+								</li>
 							))}
-						</div>
+						</ol>
 					</div>
 				)}
 			</motion.div>
