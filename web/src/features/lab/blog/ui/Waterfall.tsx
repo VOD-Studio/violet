@@ -1,6 +1,6 @@
 import type { Post } from "@features/posts/model/types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { CascadeCard } from "./CascadeFlow";
+import { CascadeCard } from "./CascadeCard";
 
 // SSR 下 useLayoutEffect 会告警,水合后的分派才需要同步时机
 const useAssignEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
