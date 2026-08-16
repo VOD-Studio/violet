@@ -30,8 +30,8 @@ export default function LandingHero() {
 			<section className="relative overflow-hidden">
 				{/* 渐变光斑 */}
 				<div className="absolute inset-0 opacity-40 dark:opacity-30">
-					<div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-blue-400/30 mix-blend-multiply blur-3xl animate-blob dark:mix-blend-screen" />
-					<div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-purple-400/30 mix-blend-multiply blur-3xl animate-blob [animation-delay:2s] dark:mix-blend-screen" />
+					<div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-[radial-gradient(circle,rgba(96,165,250,0.32),rgba(96,165,250,0.12)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(96,165,250,0.38),rgba(96,165,250,0.14)_45%,transparent_70%)] motion-safe:animate-blob" />
+					<div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-[radial-gradient(circle,rgba(192,132,252,0.30),rgba(192,132,252,0.10)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(192,132,252,0.38),rgba(192,132,252,0.14)_45%,transparent_70%)] motion-safe:animate-blob [animation-delay:2s]" />
 				</div>
 
 				<div className="container relative z-10 mx-auto px-4 py-20 md:px-6 md:py-28">
