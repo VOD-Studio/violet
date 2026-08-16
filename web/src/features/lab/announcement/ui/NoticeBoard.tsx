@@ -5,22 +5,6 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { byNewest, fmtDate, fmtStamp, statusOf } from "../model/event";
 
-/** 显要度：severity 与生命周期共同决定纸张大小 */
-type Salience = "major" | "standard" | "minor";
-
-/** active error/warning（正在发生的故障与维护）与 scheduled warning
- * （未生效的维护预告）都钉整栏大告示——布告栏里预告与通报同样显眼；
- * ended 与 info 是便条，success 是半栏中告示 */
-function salienceOf(a: Announcement, status: string): Salience {
-	if (
-		(a.severity === "error" && status === "active") ||
-		(a.severity === "warning" && (status === "active" || status === "scheduled"))
-	)
-		return "major";
-	if (status === "ended" || a.severity === "info") return "minor";
-	return "standard";
-}
-
 /** severity → 布告语汇（区别于系统语汇「警告/成功」：布告栏贴的是
  * 通知 / 维护 / 发布 / 故障） */
 const BULLETIN_LABEL: Record<string, string> = {
@@ -30,54 +14,37 @@ const BULLETIN_LABEL: Record<string, string> = {
 	error: "故障",
 };
 
+/** 显要度：severity 与生命周期共同决定纸张大小 */
+type Salience = "major" | "standard" | "minor";
+
+function salienceOf(a: Announcement, status: string): Salience {
+	if (status === "active" && (a.severity === "error" || a.severity === "warning")) return "major";
+	if (status === "ended" || a.severity === "info") return "minor";
+	return "standard";
+}
+
 const SPAN = {
 	major: "md:col-span-6",
 	standard: "md:col-span-3",
-	// 半宽而非 1/3：单行便条在 1/3 宽里太空，且 6|6|3+3|3+3 排满
-	// 网格不留尾部碎片
-	minor: "md:col-span-3",
+	minor: "md:col-span-2",
 } as const;
 
 const PAD = {
 	major: "p-6",
 	standard: "p-5",
-	minor: "px-5 py-3.5",
+	minor: "p-4",
 } as const;
 
 /** 非大告示的微旋转错落；大告示保持端正压场 */
 const TILTS = ["-rotate-1", "rotate-1", "-rotate-2", "rotate-2"];
 
-/** 图钉：大告示两枚钉住左右 1/4（大纸单钉不稳的物理直觉），其余一枚居中 */
-function Pins({ sev, double }: { sev: string; double?: boolean }) {
-	const cfg = getAnnouncementSev(sev);
-	const pin = (extra: string) => (
-		<span
-			aria-hidden
-			className={cn(
-				"absolute -top-1.5 size-3 rounded-full ring-2 ring-background",
-				cfg.dot,
-				extra,
-			)}
-		/>
-	);
-	if (double)
-		return (
-			<>
-				{pin("left-1/4")}
-				{pin("left-3/4")}
-			</>
-		);
-	return pin("left-1/2 -translate-x-1/2");
-}
-
 /**
  * 方向 C · 告示板
  *
- * 设计意图：布告栏的显要度语法——severity 与生命周期决定纸张大小：
- * 进行中的故障与未生效的维护预告是整栏大告示（两枚图钉），发布动态
- * 是半栏中告示，日常信息与已收档是半栏便条。图钉颜色跟着 severity
- * 走，已收档的褪色盖戳让位。article 形态整纸可点入简报，hover
- * 抚平旋转并拿起。
+ * 设计意图：布告栏的显要度语法——severity 决定纸张大小：进行中的
+ * 故障与维护是整栏大告示，发布动态是半栏中告示，日常信息与已收档
+ * 是指甲盖小票据。图钉颜色跟着 severity 走，已收档的褪色盖戳让位。
+ * article 形态整纸可点入简报，hover 抚平旋转。
  */
 export function NoticeBoard({ items }: { items: Announcement[] }) {
 	const feed = byNewest(items);
@@ -116,7 +83,6 @@ function Paper({ a, salience, tilt }: { a: Announcement; salience: Salience; til
 		<div
 			className={cn(
 				"relative flex h-full flex-col rounded-lg border border-edge-hairline bg-card shadow-sm transition-all duration-300",
-				// hover：抚平旋转并拿起（负 y 微抬）
 				"hover:z-10 hover:-translate-y-0.5 hover:rotate-0 hover:shadow-md",
 				PAD[salience],
 				tilt,
@@ -124,7 +90,14 @@ function Paper({ a, salience, tilt }: { a: Announcement; salience: Salience; til
 				isArticle && "group",
 			)}
 		>
-			<Pins sev={a.severity} double={salience === "major"} />
+			{/* 图钉：severity 色钉头 */}
+			<span
+				aria-hidden
+				className={cn(
+					"absolute -top-1.5 left-1/2 size-3 -translate-x-1/2 rounded-full ring-2 ring-background",
+					cfg.dot,
+				)}
+			/>
 			{filed ? (
 				<span className="absolute top-3 right-3 rotate-6 rounded border border-current px-1.5 py-0.5 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70">
 					已收档

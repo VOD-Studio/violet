@@ -125,21 +125,17 @@ export function AnnouncementSkeleton({ direction }: { direction: AnnouncementDir
 			<div className="md:col-span-6">
 				<ShimmerSkeleton className="h-36 rounded-lg" />
 			</div>
-			<div className="md:col-span-6">
-				<ShimmerSkeleton className="h-36 rounded-lg" />
-			</div>
 			<div className="md:col-span-3">
 				<ShimmerSkeleton className="-rotate-1 h-28 rounded-lg" />
 			</div>
 			<div className="md:col-span-3">
-				<ShimmerSkeleton className="rotate-1 h-12 rounded-lg" />
+				<ShimmerSkeleton className="rotate-1 h-28 rounded-lg" />
 			</div>
-			<div className="md:col-span-3">
-				<ShimmerSkeleton className="-rotate-2 h-12 rounded-lg" />
-			</div>
-			<div className="md:col-span-3">
-				<ShimmerSkeleton className="rotate-2 h-12 rounded-lg" />
-			</div>
+			{["-rotate-2", "rotate-2", "-rotate-1"].map((t) => (
+				<div key={t} className="md:col-span-2">
+					<ShimmerSkeleton className={`${t} h-14 rounded-lg`} />
+				</div>
+			))}
 		</div>
 	);
 }
