@@ -139,7 +139,7 @@ _Avoid_: 公告类型（历史上叫 `type`，既管颜色又被期待管布局�
 同一 `severity` 可搭配不同 `display`；三者字段并存在同一张表，按 `display` 决定哪些可空。
 
 **展示位置（Placement）**:
-`display` 的衍生语义，非独立字段。每条公告出现的页面区域由其 `display` **唯一决定**：`banner` 出现在全局顶部横幅（所有非 admin 页面），`card` 和 `article` 出现在首页展示网格。**不存在**"banner 想放首页""card 想放顶部"这种跨区配置——如将来确有需求，再引入独立 `placement` 字段（当前属 YAGNI）。
+`display` 的衍生语义，非独立字段。每条公告出现的页面区域由其 `display` **唯一决定**：`banner` 出现在全局顶部横幅（所有非 admin 页面），`card` 和 `article` 出现在首页公告区（事件日志流，见「事件日志流」词条）。**不存在**"banner 想放首页""card 想放顶部"这种跨区配置——如将来确有需求，再引入独立 `placement` 字段（当前属 YAGNI）。
 _Avoid_: 公告类型（同上，混淆了视觉与布局两个正交关注点）
 
 **翻牌横幅（banner 的渲染约定）—— 生产现役：N 面棱柱**:
@@ -147,14 +147,18 @@ _Avoid_: 公告类型（同上，混淆了视觉与布局两个正交关注点�
 _Avoid_: 通知条、横幅（未体现创意候选与 severity→标签映射）
 
 **announcement-lab（公告原型实验室）**:
-`/lab/announcement`（`/lab` 聚合路由子页，registry 注册）。2026-08-16 重做，仿 friends-lab 三态实验室：聚焦**首页公告区**（card / article 两形态）的三方向对比——事件日志（倒序 mono 日志流）/ 状态面板（status page 式健康总览 + 进行中/未生效/已收档分组）/ 告示板（severity 定纸张大小的层级张贴），配数据/骨架/空三态。静态 mock（7 条，覆盖四种 severity 与三种生命周期）不接 API；选定方向后生产实现落首页 `AnnouncementGrid`。banner 形态不在本 lab 范围（见「翻牌横幅」）。旧内容（卡片 BorderGlow vs 极简对比、AnimatedList 详情时间轴预览、FlipX / CubeFlipY banner 原型）已全部废弃。
+`/lab/announcement`（`/lab` 聚合路由子页，registry 注册）。2026-08-16 重做，仿 friends-lab 三态实验室：聚焦**首页公告区**（card / article 两形态）的三方向对比——事件日志（倒序 mono 日志流）/ 状态面板（status page 式健康总览 + 进行中 / 未生效 / 已收档分组）/ 告示板（severity 定纸张大小的层级张贴），配数据/骨架/空三态。静态 mock（7 条，覆盖四种 severity 与三种生命周期）不接 API。**事件日志方向已于同日选型落地生产**（首页 `AnnouncementFeed` 直接复用 lab 的 `EventLog`，先例同 theme toggle）。banner 形态不在本 lab 范围（见「翻牌横幅」）。旧内容（卡片 BorderGlow vs 极简对比、AnimatedList 详情时间轴预览、FlipX / CubeFlipY banner 原型）已全部废弃。
 
-**通知卡片（card 形态的渲染约定）**:
-`card` 形态渲染为**自包含的通知卡片**，不是文章卡片。核心约束：**无封面图、无作者、无阅读时长、不可点击、无详情页**——卡片本身就是全部内容，`content`/`excerpt` 读完即止。视觉用 `BorderGlow` 柔色发光描边外壳（severity 决定色相）+ severity 药丸徽章 + 标题 `BlurText` 按词渐显 + ID `Counter` 数字滚动。底部显示「通知」标记，明确暗示「这就是全部，没有更多」。severity 配色走 `shared/announcement-severity`（shadcn 色阶）。
+**事件日志流（首页公告区的渲染约定）—— 生产现役**:
+首页公告区渲染为一条站点运营事件日志（`AnnouncementFeed`，数据/骨架/空三态）：每行 = mono 时间戳 + severity 色点 + 三字母电码（INFO/WARN/OK/ERROR）+ 标题，一行一条、hairline 分隔。`card` 形态自包含不可点，`article` 形态整行链接入 `/announcements/:id` 简报（行尾箭头 hover 滑入）。进行中的 error / warning 行压左侧色边线；生命周期（未生效/进行中/已收档）由 `statusOf` 从停用位与生效窗口派生。排序权威是后端返回顺序，前端不重排（`EventLog` 纯渲染，倒序流由 lab 调用方自行 `byNewest`）。banner 形态不进事件流（顶部 AnnouncementBar 已承担，避免双曝光）。原 BorderGlow 卡片瀑布约定已废弃。
+_Avoid_: 卡片瀑布、通知卡片（公告是运营事件不是内容卡片）
+
+**通知卡片（card 形态的渲染约定）—— 已废弃，并入事件日志流**:
+`card` 形态的核心约束不变：**自包含、无封面图、不可点击、无详情页**——`content`/`excerpt` 读完即止。渲染不再是独立卡片：card 与 article 一起进首页**事件日志流**（见「事件日志流」词条），card 渲染为不可点的日志行。原 BorderGlow 发光卡片 + BlurText 标题渐显 + Counter 数字滚动约定已废弃（2026-08-16）。
 _Avoid_: 文章卡片、PostCard（混淆了通知与作品）
 
 **简报（article 形态的渲染约定）**:
-`article` 形态渲染为**简报入口 + 详情页**两层。首页卡片是入口：顶部 `cover_image` 封面图（card 形态没有）+ excerpt 摘要 + 底部「阅读 →」引导，**整卡可点击**，跳转 `/announcements/:id` 详情页。详情页是简报，不是文章详情页：无 TOC、无作者头像组、无浏览量。详情页结构：severity 徽章 + `BlurText` 标题 + affects chip 标签 + `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer（确认已读用 `Magnet` 磁吸 / 复制 ID / 返回）。severity 配色同样走 `shared/announcement-severity`。
+`article` 形态渲染为**简报入口 + 详情页**两层。首页事件日志流中是入口：整行可点（行尾箭头），跳转 `/announcements/:id` 详情页。详情页是简报，不是文章详情页：无 TOC、无作者头像组、无浏览量。详情页结构：severity 徽章 + **静态渲染的标题**（与文章详情页一致，文字不做模糊/逐词入场动画）+ affects chip 标签 + `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer（确认已读用 `Magnet` 磁吸 / 复制 ID / 返回）。severity 配色同样走 `shared/announcement-severity`。
 _Avoid_: 文章详情页、blog/$slug（混淆了简报与文章阅读）
 
 **影响范围（Affects）**:
@@ -183,7 +187,7 @@ _Avoid_: 公开 server（未区分通道语义）、reader API（HTTP REST 语�
 公开通道 Resources 用 `blog://` scheme（品牌解耦，非 `violet://`，因 scheme 是长期标识符）。路径段编码文章状态：`blog://posts/{slug}` = 已发布（reader 注册）；`blog://drafts/{slug}` = 草稿（仅 `polish_draft` prompt 内部 embed 用，reader 不注册，保持公开通道仅 published 边界）。区分原因是 `EmbeddedResource.URI` 是可寻址标识，agent 可能 `resources/read` 它，草稿必须用独立 URI 避免读到内容不符的已发布旧版。
 
 **react-bits 组件依赖**:
-公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**仍在使用**：`BorderGlow`（card 外壳，柔色发光描边）、`BlurText`（标题按词渐显）、`Magnet`（详情页按钮磁吸）、`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp`、`AnimatedList`（公告实验室 2026-08-16 重做后无消费方）等历史原型组件也已移除，不要再装。`Counter` 文件尚在但已无消费方，属待清理存量。
+公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**仍在使用**：`Magnet`（公告详情页按钮磁吸）、`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard / 批注卡）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp`、`Counter`、`AnimatedList`、`BlurText`、`BorderGlow`（公告展示 2026-08-16 换事件日志流与静态标题后无消费方）等历史原型组件也已移除，不要再装。
 
 
 ## MCP 通道（MCP Channels）
