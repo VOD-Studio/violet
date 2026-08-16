@@ -161,40 +161,31 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				)}
 
 				{textBriefs.length > 0 && (
-					<div className="mt-2">
-						{/* 分类短讯栏:按标签分栏,加粗标题+破折号+一句导语,索引行留给特写列表 */}
-						<div className="grid gap-x-8 border-t border-edge-hairline pt-4 md:grid-cols-3">
-							{Object.entries(
-								textBriefs.reduce<Record<string, Post[]>>((acc, p) => {
-									const k = p.tags[0] ?? "随笔";
-									(acc[k] ??= []).push(p);
-									return acc;
-								}, {}),
-							).map(([section, list]) => (
-								<div key={section}>
-									<p className="mb-2 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">
-										{section}
+					<div className="mt-2 border-t border-edge-hairline pt-4">
+						{/* 三栏流式短讯:CSS columns 自动均分,不依赖标签数据;
+							条目单元 = 加粗标题+破折号+一句导语,与特写列表的索引行区分 */}
+						<div className="columns-1 gap-8 md:columns-3">
+							{textBriefs.map((p) => (
+								<Link
+									key={p.id}
+									to="/blog/$slug"
+									params={{ slug: p.slug }}
+									className="group mb-3 block break-inside-avoid border-b border-edge-hairline/60 pb-3"
+								>
+									<p className="text-sm leading-relaxed">
+										<span className="font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+											{p.title}
+										</span>
+										<span className="text-muted-foreground">
+											{" "}
+											—— {p.excerpt.slice(0, 40)}
+											{p.excerpt.length > 40 ? "…" : ""}
+										</span>
 									</p>
-									{list.map((p) => (
-										<Link
-											key={p.id}
-											to="/blog/$slug"
-											params={{ slug: p.slug }}
-											className="group block border-b border-edge-hairline/60 py-2.5"
-										>
-											<p className="text-sm leading-relaxed">
-												<span className="font-bold tracking-tight transition-colors group-hover:text-neon-blue">
-													{p.title}
-												</span>
-												<span className="text-muted-foreground">
-													{" "}
-													—— {p.excerpt.slice(0, 40)}
-													{p.excerpt.length > 40 ? "…" : ""}
-												</span>
-											</p>
-										</Link>
-									))}
-								</div>
+									<p className="mt-1 font-mono text-[10px] text-muted-foreground">
+										{format(new Date(p.published_at), "MM-dd")}
+									</p>
+								</Link>
 							))}
 						</div>
 					</div>
