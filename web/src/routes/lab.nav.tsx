@@ -1,8 +1,8 @@
-import { LabHeader } from "@features/lab/ui/LabHeader";
 import { FloatingBackButton } from "@features/lab/nav/ui/FloatingBackButton";
 import { ProgressBackRail } from "@features/lab/nav/ui/ProgressBackRail";
 import { ScrollRevealChip } from "@features/lab/nav/ui/ScrollRevealChip";
 import { StickyBackBar } from "@features/lab/nav/ui/StickyBackBar";
+import { LabHeader } from "@features/lab/ui/LabHeader";
 import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";

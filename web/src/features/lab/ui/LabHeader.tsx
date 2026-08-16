@@ -30,9 +30,7 @@ export function LabHeader({
 					<p className="mb-4 font-mono text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
 						Exp {no} / {total} · {lab.en}
 					</p>
-					<h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-						{lab.title}
-					</h1>
+					<h1 className="text-4xl font-bold tracking-tight md:text-5xl">{lab.title}</h1>
 				</div>
 				<p className="shrink-0 pb-1 font-mono text-[11px] text-muted-foreground">
 					{lab.meta}

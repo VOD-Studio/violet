@@ -18,9 +18,7 @@ export function LabIndex() {
 					<span>Violet · Design Lab</span>
 					<span>{String(LABS.length).padStart(2, "0")} experiments</span>
 				</div>
-				<h1 className="text-5xl font-bold tracking-tighter md:text-7xl">
-					原型实验室
-				</h1>
+				<h1 className="text-5xl font-bold tracking-tighter md:text-7xl">原型实验室</h1>
 				<p className="mt-6 max-w-md text-lg text-muted-foreground">
 					每个页面在这里先做几版，选最对的那一版上线。
 				</p>

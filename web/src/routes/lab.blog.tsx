@@ -1,4 +1,3 @@
-import { LabHeader } from "@features/lab/ui/LabHeader";
 import { AlternatingSpread } from "@features/lab/blog/ui/AlternatingSpread";
 import { BlogSkeleton, type LabDirection } from "@features/lab/blog/ui/BlogSkeleton";
 import { Broadsheet } from "@features/lab/blog/ui/Broadsheet";
@@ -8,6 +7,7 @@ import { FeaturedList } from "@features/lab/blog/ui/FeaturedList";
 import { JournalToc } from "@features/lab/blog/ui/JournalToc";
 import { TerminalFeed } from "@features/lab/blog/ui/TerminalFeed";
 import { WovenBento } from "@features/lab/blog/ui/WovenBento";
+import { LabHeader } from "@features/lab/ui/LabHeader";
 import { usePosts } from "@features/posts/api/queries";
 import type { Post } from "@features/posts/model/types";
 import Empty from "@shared/ui/empty";
