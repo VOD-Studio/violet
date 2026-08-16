@@ -59,6 +59,23 @@ const DISPLAY_LABELS: Record<AnnouncementDisplay, string> = {
 	article: "文章（简报）",
 };
 
+/** 创建态的基础默认值：reset 会整体替换表单值，创建时必须给全量默认，
+ * 否则缺省字段被置为 undefined（display 无选中、Switch 假值） */
+const BASE_DEFAULTS: AnnouncementForm = {
+	title: "",
+	content: "",
+	type: "info",
+	display: "banner",
+	isActive: true,
+	sortOrder: 0,
+	affects: [],
+	excerpt: "",
+	coverImage: "",
+	contentMD: "",
+	contentHTML: "",
+	timeRange: { start: "", end: "" },
+};
+
 export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementSheetProps) {
 	const isEdit = !!editing;
 	const createAnn = useCreateAnnouncement();
@@ -121,33 +138,34 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 		formState: { errors },
 	} = useForm<AnnouncementForm>({
 		resolver: zodResolver(announcementSchema),
-		defaultValues: {
-			title: "",
-			content: "",
-			type: "info",
-			display: "banner",
-			isActive: true,
-			sortOrder: 0,
-			affects: [],
-			excerpt: "",
-			coverImage: "",
-			contentMD: "",
-			contentHTML: "",
-			timeRange: { start: "", end: "" },
-		},
+		defaultValues: BASE_DEFAULTS,
 	});
 
-	// 对话框开关 / 编辑对象变化时重置表单
+	// 对话框开关 / 编辑对象变化时重置表单。
+	// API 对象是 snake_case，表单字段是 camelCase——isActive / coverImage
+	// 必须显式映射，展开原对象会漏掉（开关恒显示启用、封面不回填）
 	useEffect(() => {
 		if (!open) return;
+		if (!editing) {
+			reset(BASE_DEFAULTS);
+			return;
+		}
 		reset({
-			...editing,
-			sortOrder: editing?.sort_order ?? 0,
-			contentMD: editing?.content_md ?? "",
-			contentHTML: editing?.content_html ?? "",
+			...BASE_DEFAULTS,
+			title: editing.title,
+			content: editing.content ?? "",
+			type: editing.type,
+			display: editing.display,
+			isActive: editing.is_active,
+			sortOrder: editing.sort_order ?? 0,
+			affects: editing.affects ?? [],
+			excerpt: editing.excerpt ?? "",
+			coverImage: editing.cover_image ?? "",
+			contentMD: editing.content_md ?? "",
+			contentHTML: editing.content_html ?? "",
 			timeRange: {
-				start: editing?.start_time ? editing.start_time.slice(0, 16) : "",
-				end: editing?.end_time ? editing.end_time.slice(0, 16) : "",
+				start: editing.start_time ? editing.start_time.slice(0, 16) : "",
+				end: editing.end_time ? editing.end_time.slice(0, 16) : "",
 			},
 		});
 	}, [open, editing, reset]);
