@@ -64,7 +64,7 @@ function SpreadCover({ post, index }: { post: Post; index: number }) {
 
 	if (!hasCover) {
 		return (
-			<div className="relative flex aspect-[3/2] flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 via-zinc-800 to-zinc-900 p-7">
+			<div className="relative flex aspect-3/2 flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-primary/30 via-zinc-800 to-zinc-900 p-7">
 				<span className="font-mono text-xs tracking-[0.3em] text-white/50">SPREAD</span>
 				<span className="font-serif text-7xl leading-none font-black text-white/85">
 					{String(index + 1).padStart(2, "0")}
@@ -79,7 +79,7 @@ function SpreadCover({ post, index }: { post: Post; index: number }) {
 				alt={post.title}
 				loading="lazy"
 				onError={() => setBrokenFor(post.cover_image)}
-				className="aspect-[3/2] w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+				className="aspect-3/2 w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
 			/>
 			<span className="absolute bottom-4 left-5 font-serif text-5xl leading-none font-black text-white/85 drop-shadow-lg">
 				{String(index + 1).padStart(2, "0")}

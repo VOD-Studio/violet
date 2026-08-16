@@ -26,7 +26,7 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 		case "cascade":
 			return (
 				<div>
-					<Bar className="mb-8 aspect-[21/9] w-full rounded-2xl" />
+					<Bar className="mb-8 aspect-21/9 w-full rounded-2xl" />
 					<div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
 						{/* 高度错落的占位块，模拟瀑布流的自然节奏 */}
 						{[220, 160, 190, 140, 200, 170, 180, 150].map((h, i) => (
@@ -188,7 +188,7 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 			return (
 				<div>
 					<div className="grid gap-8 md:grid-cols-2 md:items-center">
-						<Bar className="aspect-[16/10] w-full rounded-2xl" />
+						<Bar className="aspect-16/10 w-full rounded-2xl" />
 						<div>
 							<Bar className="h-3 w-24" />
 							<Bar className="mt-3 h-10 w-4/5" />
@@ -224,7 +224,7 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 								i % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""
 							}`}
 						>
-							<Bar className="aspect-[3/2] w-full rounded-2xl" />
+							<Bar className="aspect-3/2 w-full rounded-2xl" />
 							<div>
 								<Bar className="h-8 w-4/5" />
 								<Bar className="mt-3 h-8 w-3/5" />

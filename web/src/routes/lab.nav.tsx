@@ -1,5 +1,5 @@
-import { EndingBackBlock } from "@features/lab/nav/ui/EndingBackBlock";
 import { FloatingBackButton } from "@features/lab/nav/ui/FloatingBackButton";
+import { ProgressBackRail } from "@features/lab/nav/ui/ProgressBackRail";
 import { ScrollRevealChip } from "@features/lab/nav/ui/ScrollRevealChip";
 import { StickyBackBar } from "@features/lab/nav/ui/StickyBackBar";
 import { Segmented } from "@shared/ui/segmented";
@@ -7,7 +7,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
-type NavDirection = "sticky" | "fab" | "reveal" | "ending";
+type NavDirection = "sticky" | "fab" | "reveal" | "progress";
 
 const DIRECTIONS: { value: NavDirection; label: string; intent: string }[] = [
 	{
@@ -26,9 +26,9 @@ const DIRECTIONS: { value: NavDirection; label: string; intent: string }[] = [
 		intent: "向下读时隐身，向上滑时底部浮出返回胶囊，手势即意图。最不打扰，但可发现性靠运气，宜作补充入口。",
 	},
 	{
-		value: "ending",
-		label: "文末返回块",
-		intent: "不做常驻 chrome：文章读完处放大返回入口，配回到顶部次操作。离场点明确、零干扰，但中途离开仍无解。",
+		value: "progress",
+		label: "进度线返回",
+		intent: "复用文章页已有的顶部阅读进度线，滚过一屏后线上浮出返回箭头。进度与退路同框，不新增 chrome 语言。",
 	},
 ];
 
@@ -37,7 +37,7 @@ const DIRECTIONS: { value: NavDirection; label: string; intent: string }[] = [
  *
  * 问题：返回入口只存在于页头（「← Labs」「← 博客」），滚动到中段后
  * 完全离场。四个候选方向在同一个可滚动演示长文里对比，覆盖四种
- * 位置哲学：顶（吸顶）/ 侧（浮钮）/ 底（上滑显现）/ 文末（离场点）。
+ * 位置哲学：顶（吸顶）/ 侧（浮钮）/ 底（上滑显现）/ 线（进度）。
  * 选定方向后落到 lab 页头与文章详情页。
  */
 function NavLab() {
@@ -84,7 +84,7 @@ function NavLab() {
 						{direction === "sticky" ? <StickyBackBar /> : null}
 						{direction === "fab" ? <FloatingBackButton /> : null}
 						{direction === "reveal" ? <ScrollRevealChip /> : null}
-						{direction === "ending" ? <EndingBackBlock /> : null}
+						{direction === "progress" ? <ProgressBackRail /> : null}
 					</div>
 				</div>
 			</section>

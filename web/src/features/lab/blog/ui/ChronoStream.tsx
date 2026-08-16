@@ -21,7 +21,7 @@ export function ChronoStream({ posts }: { posts: Post[] }) {
 			{/* 轨道：主色渐隐 */}
 			<div
 				aria-hidden
-				className="absolute top-0 bottom-0 left-0 w-px bg-gradient-to-b from-primary/70 via-edge-hairline to-transparent"
+				className="absolute top-0 bottom-0 left-0 w-px bg-linear-to-b from-primary/70 via-edge-hairline to-transparent"
 			/>
 			{posts.map((p) => (
 				<TimelineItem key={p.id} post={p} reduce={reduce} />

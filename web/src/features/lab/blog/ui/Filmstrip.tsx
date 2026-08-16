@@ -105,7 +105,7 @@ function Frame({ post: p, index }: { post: Post; index: number }) {
 					</div>
 				</div>
 			)}
-			<div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pt-6 pb-2">
+			<div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 to-transparent px-3 pt-6 pb-2">
 				{hasCover && (
 					<p className="truncate text-[11px] font-medium text-white">{p.title}</p>
 				)}

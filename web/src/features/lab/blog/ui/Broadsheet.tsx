@@ -108,7 +108,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 							onError={(e) => {
 								e.currentTarget.style.display = "none";
 							}}
-							className="aspect-[3/2] w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
+							className="aspect-3/2 w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
 						/>
 						<div>
 							<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">

@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { DemoBody, DemoHeader } from "./DemoArticle";
+import { DemoBody, DemoHeader, DemoStage } from "./DemoArticle";
 
 /**
  * StickyBackBar - 方向①：吸顶返回条
@@ -30,11 +30,8 @@ export function StickyBackBar() {
 	}, []);
 
 	return (
-		<div
-			ref={scrollRef}
-			className="relative h-[560px] overflow-y-auto rounded-xl border border-edge-hairline bg-background/60"
-		>
-			<div className="pb-10">
+		<DemoStage scrollRef={scrollRef}>
+			<div className="pb-16">
 				<DemoHeader />
 				<div ref={sentinelRef} aria-hidden className="h-px" />
 				{stuck && (
@@ -47,12 +44,12 @@ export function StickyBackBar() {
 						<ArrowLeft className="size-4 shrink-0" />
 						<span className="shrink-0 text-sm font-medium">返回博客</span>
 						<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-							长文阅读的返回问题：滚动之后，退路在哪里
+							长文阅读的返回问题
 						</span>
 					</motion.div>
 				)}
 				<DemoBody />
 			</div>
-		</div>
+		</DemoStage>
 	);
 }

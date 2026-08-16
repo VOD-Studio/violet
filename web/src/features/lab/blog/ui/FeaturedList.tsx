@@ -100,7 +100,7 @@ function FeatureCover({ post }: { post: Post }) {
 
 	if (!hasCover) {
 		return (
-			<div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/40 via-zinc-800 to-zinc-900 p-8">
+			<div className="flex aspect-16/10 items-center justify-center overflow-hidden rounded-2xl bg-linear-to-br from-primary/40 via-zinc-800 to-zinc-900 p-8">
 				<p className="line-clamp-4 text-center text-2xl leading-snug font-bold tracking-tight text-white/90">
 					{post.title}
 				</p>
@@ -114,7 +114,7 @@ function FeatureCover({ post }: { post: Post }) {
 				alt={post.title}
 				loading="lazy"
 				onError={() => setBrokenFor(post.cover_image)}
-				className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+				className="aspect-16/10 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
 			/>
 		</div>
 	);
