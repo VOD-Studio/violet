@@ -1,6 +1,6 @@
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
-import PostList from "@features/posts/ui/PostList";
+import BlogCascade from "@features/posts/ui/BlogCascade";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchSettings, useSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
@@ -13,7 +13,8 @@ const DEFAULT_PAGE_SIZE = 12;
 /**
  * /blog - 博客列表页
  *
- * 虚拟列表渲染（PostList，大小不一卡片 + 渐隐遮罩）。
+ * 主轴瀑布渲染（BlogCascade，blog-lab 选型方向）：
+ * 最新一篇全宽主轴 + 其余自然高度瀑布流。
  * loader SSR 预取第一页，dehydrate 到 HTML。
  */
 function BlogPage() {
@@ -28,7 +29,7 @@ function BlogPage() {
 				</p>
 				<h1 className="font-mono text-4xl font-bold">博客</h1>
 			</header>
-			<PostList query={{ page: 1, limit }} />
+			<BlogCascade query={{ page: 1, limit }} />
 		</PageShell>
 	);
 }
