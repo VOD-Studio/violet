@@ -1,10 +1,10 @@
+import { CubeFlipY, FlipX } from "@features/lab/announcement";
 import type { Announcement } from "@features/settings/model/types";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import AnimatedList from "@vendor/react-bits/AnimatedList";
 import BlurText from "@vendor/react-bits/BlurText";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import Magnet from "@vendor/react-bits/Magnet";
-import { CubeFlipY, FlipX } from "@widgets/AnnouncementLab";
 import { ArrowLeft, ArrowRight, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import type { ComponentType } from "react";
 import { useState } from "react";

@@ -1,9 +1,9 @@
-import { MOCK_FRIEND_LINKS } from "@features/friends-lab/model/mock";
-import { ApplyDialog } from "@features/friends-lab/ui/ApplyDialog";
-import { CardWall } from "@features/friends-lab/ui/CardWall";
-import { FriendsSkeleton, type LabDirection } from "@features/friends-lab/ui/FriendsSkeleton";
-import { PostcardWall } from "@features/friends-lab/ui/PostcardWall";
-import { TerminalList } from "@features/friends-lab/ui/TerminalList";
+import { MOCK_FRIEND_LINKS } from "@features/lab/friends/model/mock";
+import { ApplyDialog } from "@features/lab/friends/ui/ApplyDialog";
+import { CardWall } from "@features/lab/friends/ui/CardWall";
+import { FriendsSkeleton, type LabDirection } from "@features/lab/friends/ui/FriendsSkeleton";
+import { PostcardWall } from "@features/lab/friends/ui/PostcardWall";
+import { TerminalList } from "@features/lab/friends/ui/TerminalList";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { Segmented } from "@shared/ui/segmented";

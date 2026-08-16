@@ -34,7 +34,7 @@ export function WovenBento({ posts }: { posts: Post[] }) {
 	const reduce = useReducedMotion();
 
 	return (
-		<div className="grid auto-rows-[170px] grid-cols-2 gap-3 md:grid-cols-4">
+		<div className="grid auto-rows-42.5 grid-cols-2 gap-3 md:grid-cols-4">
 			{posts.map((p, i) => {
 				const slot = i % 6;
 				return (
@@ -79,7 +79,7 @@ function BentoCell({ post, shape }: { post: Post; shape: BentoShape }) {
 						onError={() => setBrokenFor(post.cover_image)}
 						className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 					/>
-					<div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+					<div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
 					<div className="absolute inset-x-0 bottom-0 p-4 text-white">
 						<h3
 							className={cn(
