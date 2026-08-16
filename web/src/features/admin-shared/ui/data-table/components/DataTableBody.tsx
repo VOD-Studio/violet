@@ -143,7 +143,7 @@ export function DataTableBody<T>({
 											ALIGN_FLEX_CLASS[col.align ?? "left"],
 										)}
 									>
-										<Skeleton className="h-4 w-full max-w-[10rem]" />
+										<Skeleton className="h-4 w-full max-w-40" />
 									</div>
 								</TableCell>
 							);
