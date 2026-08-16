@@ -38,7 +38,7 @@ function ThemeLab() {
 				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">主题切换器实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					点击任意控件切换主题，观察交互手感与动画效果。
+					点击控件切换主题，对比交互手感与动画。
 				</p>
 			</div>
 

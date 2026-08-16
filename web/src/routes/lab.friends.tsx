@@ -57,8 +57,7 @@ function FriendsLab() {
 				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">友链原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					友链页（/friends）的候选视觉方向对比，静态 mock 数据，不接
-					API。选定方向后，正式页面按此实现。
+					友链页候选视觉方案的并排对比，示例数据。
 				</p>
 			</div>
 

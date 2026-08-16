@@ -17,7 +17,7 @@ export function LabIndex() {
 				</p>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					页面级候选方案的对比工作台：每个实验室并排渲染同一功能的多套设计，选定方向后按此实现正式页面。
+					并排对比站内页面的候选设计方案。
 				</p>
 			</div>
 
