@@ -13,9 +13,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import LandingHero from "@widgets/LandingHero";
 
 function HomePage() {
-	// 最新文章条数与「每页文章数」设置保持一致
+	// 最新文章条数跟随「每页文章数」设置，但首页速览最多 6 篇
 	const { data: siteSettings } = useSettings();
-	const limit = siteSettings?.posts_per_page;
+	const limit = Math.min(siteSettings?.posts_per_page ?? 6, 6);
 	return (
 		<div className="flex flex-col">
 			<LandingHero />
@@ -47,13 +47,14 @@ function HomePage() {
 export const Route = createFileRoute("/")({
 	loader: async ({ context }) => {
 		const qc = context.queryClient;
-		// 先取站点设置，最新文章条数与 posts_per_page 对齐（与组件 queryKey 一致）
+		// 先取站点设置，最新文章条数与 posts_per_page 对齐（与组件 queryKey 一致），
+		// 首页速览上限 6 篇
 		await qc
 			.ensureQueryData({ queryKey: settingsKeys.public(), queryFn: fetchSettings })
 			.catch(() => {});
 		const postsQuery = (() => {
 			const limit = qc.getQueryData<SiteSettings>(settingsKeys.public())?.posts_per_page;
-			return limit ? { limit } : {};
+			return { limit: Math.min(limit ?? 6, 6) };
 		})();
 		await qc
 			.ensureQueryData({
