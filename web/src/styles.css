@@ -313,8 +313,10 @@ body {
 	}
 }
 
-/* Header 保持静止，不跟随内容滑动 */
-::view-transition-group(site-header) {
+/* Header 与顶部公告条保持静止，不跟随内容滑动（公告条全站同数据，
+ * 导航转场时 old/new 快照一致，静止即无缝） */
+::view-transition-group(site-header),
+::view-transition-group(announcement-bar) {
 	animation: none;
 }
 
