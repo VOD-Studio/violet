@@ -1,12 +1,17 @@
 import { byNewest } from "@features/lab/announcement/model/event";
-import { MOCK_ANNOUNCEMENTS } from "@features/lab/announcement/model/mock";
+import { MOCK_ANNOUNCEMENTS, MOCK_BANNERS } from "@features/lab/announcement/model/mock";
 import {
 	type AnnouncementDirection,
 	AnnouncementSkeleton,
 } from "@features/lab/announcement/ui/AnnouncementSkeleton";
+import { BannerCrossfade } from "@features/lab/announcement/ui/BannerCrossfade";
+import { BannerPrism } from "@features/lab/announcement/ui/BannerPrism";
+import { BannerSlide } from "@features/lab/announcement/ui/BannerSlide";
 import { EventLog } from "@features/lab/announcement/ui/EventLog";
 import { NoticeBoard } from "@features/lab/announcement/ui/NoticeBoard";
+import { Receipts } from "@features/lab/announcement/ui/Receipts";
 import { StatusBoard } from "@features/lab/announcement/ui/StatusBoard";
+import { Ticker } from "@features/lab/announcement/ui/Ticker";
 import { LabHeader } from "@features/lab/ui/LabHeader";
 import Empty from "@shared/ui/empty";
 import { Segmented } from "@shared/ui/segmented";
@@ -14,12 +19,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";
+type BannerDirection = "prism" | "crossfade" | "slide";
 
 const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string }[] = [
 	{
 		value: "log",
 		label: "事件日志",
-		intent: "公告是站点的运营日志：倒序事件流一行一条，mono 时间戳 + 三字母电码 + 色点，进行中的故障与维护压色边线。占地最小、密度最高，最安静的一版。",
+		intent: "公告是站点的运营日志：倒序事件流一行一条，mono 时间戳 + 三字母电码 + 色点，进行中的故障与维护压色边线。占地最小、密度最高，已落生产首页。",
 	},
 	{
 		value: "status",
@@ -31,30 +37,61 @@ const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string 
 		label: "告示板",
 		intent: "布告栏的显要度语法：severity 决定纸张大小——进行中的故障与维护是整栏大告示，发布动态是半栏中告示，日常信息与已收档是小票据，已收档的褪色盖戳让位。",
 	},
+	{
+		value: "ticker",
+		label: "速览带",
+		intent: "公告不值得一块版面：全部公告压成一条横向无缝滚动的速览带，色点 + 标题循环流过，hover 停下细看。占地最极端的一版——一条带子滚完所有运营事件。",
+	},
+	{
+		value: "receipts",
+		label: "票据卷",
+		intent: "公告是系统开出的票据：等宽打印小票无大小层级，锯齿毛边 + 虚线撕裂线 + 存根联（条码 / 编号 / 状态章），article 的存根联就是简报入口。与告示板的层级张贴错开。",
+	},
+];
+
+const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string }[] = [
+	{
+		value: "prism",
+		label: "棱柱旋转",
+		intent: "N 条公告 = N 面棱柱绕 X 轴排列，容器整体旋转到当前面。生产 AnnouncementBar 现役方案，作为对比基准陈列。",
+	},
+	{
+		value: "crossfade",
+		label: "渐隐轮换",
+		intent: "同一位置整条淡入淡出（300ms），无位移、无 3D。最安静的横幅——装置感为零，只有文字在换。",
+	},
+	{
+		value: "slide",
+		label: "滑轨推入",
+		intent: "新公告从右侧推入、旧公告推出，底部 2px 驻留进度线把「还有几秒换下一条」可视化。信息最透明的一版。",
+	},
 ];
 
 /**
  * /lab/announcement - 公告原型实验室
  *
- * 聚焦首页公告区（card / article 两形态）的三方向对比，附数据 /
- * 骨架屏 / 空三态预览，静态 mock 不接 API。选定方向后生产实现
- * （首页 AnnouncementGrid）按选定方向落地。banner 形态由生产
- * AnnouncementBar 现役承担，不在本 lab 范围。
+ * 两个对比面：首页公告区（card / article 两形态，五方向 × 三态）
+ * 与顶部横幅（banner 形态，现役棱柱基准 + 两个新候选）。静态 mock
+ * 不接 API；横幅三条不变约束（后端排序 / 关闭即已读 / 动画可暂停）
+ * 在每个方向上保持。选定方向后生产实现按选定方向落地。
  */
 function AnnouncementLab() {
 	const [direction, setDirection] = useState<AnnouncementDirection>("log");
 	const [preview, setPreview] = useState<PreviewState>("data");
+	const [banner, setBanner] = useState<BannerDirection>("prism");
 	const active = DIRECTIONS.find((d) => d.value === direction) ?? DIRECTIONS[0];
+	const activeBanner = BANNER_DIRECTIONS.find((d) => d.value === banner) ?? BANNER_DIRECTIONS[0];
 
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<LabHeader to="/lab/announcement" />
 
-			<section>
-				<h2 className="mb-2 text-2xl font-semibold">展示态方向</h2>
+			{/* ============ 首页公告区：五方向 × 三态 ============ */}
+			<section className="mb-24">
+				<h2 className="mb-2 text-2xl font-semibold">首页公告区方向</h2>
 				<p className="mb-8 text-sm text-muted-foreground">
 					同一组 mock 公告（7 条，覆盖四种 severity 与 card / article
-					两形态，含未生效与已收档样本）在三个方向下的渲染。 右侧可切换数据 / 骨架屏 /
+					两形态，含未生效与已收档样本）在五个方向下的渲染。 右侧可切换数据 / 骨架屏 /
 					空态。
 				</p>
 
@@ -107,6 +144,12 @@ function AnnouncementLab() {
 							{direction === "board" ? (
 								<NoticeBoard items={MOCK_ANNOUNCEMENTS} />
 							) : null}
+							{direction === "ticker" ? (
+								<Ticker items={byNewest(MOCK_ANNOUNCEMENTS)} />
+							) : null}
+							{direction === "receipts" ? (
+								<Receipts items={MOCK_ANNOUNCEMENTS} />
+							) : null}
 						</div>
 					) : null}
 
@@ -123,6 +166,52 @@ function AnnouncementLab() {
 							className="py-16"
 						/>
 					) : null}
+				</div>
+			</section>
+
+			{/* ============ 顶部横幅：banner 形态三方向 ============ */}
+			<section>
+				<h2 className="mb-2 text-2xl font-semibold">顶部横幅方向</h2>
+				<p className="mb-8 max-w-3xl text-sm text-muted-foreground">
+					banner 形态（display=banner）渲染在全站顶部横幅条。现役是棱柱旋转，
+					两个新候选并排对比。三条不变约束在所有方向上保持：后端排序不重排、
+					关闭即标记已读、动画可暂停（hover / 滚轮手动翻，reduced-motion 降级）。
+				</p>
+
+				<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+					<Segmented
+						value={banner}
+						onValueChange={setBanner}
+						segments={BANNER_DIRECTIONS.map((d) => ({
+							value: d.value,
+							label: d.label,
+						}))}
+						size="default"
+					/>
+				</div>
+
+				<p className="mb-6 font-mono text-xs text-muted-foreground">
+					<span className="mr-2 tracking-[0.3em] text-muted-foreground/60 uppercase">
+						Intent
+					</span>
+					{activeBanner.intent}
+				</p>
+
+				{/* 横幅预览：条体贴预览框顶部，下方是页面语境占位 */}
+				<div className="overflow-hidden rounded-2xl border border-edge-hairline bg-background/40">
+					<p className="border-b border-edge-hairline px-6 py-3 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/50 uppercase md:px-10">
+						Preview · violet.blog 页顶 · {activeBanner.label}
+					</p>
+
+					{banner === "prism" ? <BannerPrism items={MOCK_BANNERS} /> : null}
+					{banner === "crossfade" ? <BannerCrossfade items={MOCK_BANNERS} /> : null}
+					{banner === "slide" ? <BannerSlide items={MOCK_BANNERS} /> : null}
+
+					<div className="flex h-56 items-center justify-center">
+						<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/40 uppercase">
+							页面内容 · 示意
+						</p>
+					</div>
 				</div>
 			</section>
 		</div>

@@ -15,6 +15,8 @@
 	--font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	--animate-diagram-enter: diagram-enter 0.25s ease-out;
 	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
+	--animate-marquee: marquee 40s linear infinite;
+	--animate-banner-progress: banner-progress 5s linear infinite;
 
 	/* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
 	/* bg-background / text-foreground / bg-primary / border-border 等 */
@@ -247,6 +249,26 @@
 	}
 	50% {
 		opacity: 0;
+	}
+}
+
+/* 速览带无缝横滚：内容渲染两遍，整体位移 -50% 循环 */
+@keyframes marquee {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+
+/* 横幅驻留进度线：scaleX 拉满一轮 = 一条公告的驻留时长 */
+@keyframes banner-progress {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
 	}
 }
 

@@ -26,8 +26,8 @@ export const LABS = [
 		to: "/lab/announcement",
 		en: "Announcement",
 		title: "公告原型实验室",
-		description: "公告不是文章，是站点运营事件。首页公告区长什么样，三个方向并排比着选。",
-		meta: "3 方向",
+		description: "公告不是文章，是站点运营事件——首页区块与顶部横幅的候选方向都开着，比着选。",
+		meta: "方向 ×5 · 横幅 ×3",
 	},
 	{
 		to: "/lab/theme",

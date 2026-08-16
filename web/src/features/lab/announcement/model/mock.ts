@@ -87,3 +87,40 @@ export const MOCK_ANNOUNCEMENTS: Announcement[] = [
 		created_at: "2026-07-20T16:20:00+08:00",
 	},
 ];
+
+/**
+ * banner 形态 mock：content 是单行纯文本（横幅条约定），
+ * 三条 severity 错开，驱动横幅方向的轮换演示。
+ */
+export const MOCK_BANNERS: Announcement[] = [
+	{
+		id: 21,
+		title: "RSS 地址迁移",
+		content: "RSS 订阅地址已迁移至 /feed.xml，旧地址自动跳转，无需重新订阅",
+		severity: "info",
+		display: "banner",
+		is_active: true,
+		affects: ["site"],
+		created_at: "2026-08-14T13:00:00+08:00",
+	},
+	{
+		id: 22,
+		title: "数据库例行维护预告",
+		content: "周六 02:00-04:00 数据库例行维护，期间服务短暂暂停，请提前保存草稿",
+		severity: "warning",
+		display: "banner",
+		is_active: true,
+		affects: ["site"],
+		created_at: "2026-08-15T18:00:00+08:00",
+	},
+	{
+		id: 23,
+		title: "v2.0 发布",
+		content: "v2.0 发布：评论系统重构与 Markdown 实时预览已上线",
+		severity: "success",
+		display: "banner",
+		is_active: true,
+		affects: ["comments", "posts"],
+		created_at: "2026-08-12T20:00:00+08:00",
+	},
+];

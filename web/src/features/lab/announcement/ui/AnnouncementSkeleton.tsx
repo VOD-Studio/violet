@@ -1,12 +1,13 @@
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 
-export type AnnouncementDirection = "log" | "status" | "board";
+export type AnnouncementDirection = "log" | "status" | "board" | "ticker" | "receipts";
 
 /**
- * AnnouncementSkeleton - 三个方向的骨架屏预览
+ * AnnouncementSkeleton - 各方向的骨架屏预览
  *
  * 占位形状与对应方向的几何一致：日志的行栅格（时间列 + 电码列 +
- * 标题条）、状态面板的总览条 + 分组行、告示板的 6/3/2 跨度纸张。
+ * 标题条）、状态面板的总览条 + 分组行、告示板的 6/3/2 跨度纸张、
+ * 速览带的横滚条目串、票据卷的锯齿小票格。
  */
 export function AnnouncementSkeleton({ direction }: { direction: AnnouncementDirection }) {
 	if (direction === "log") {
@@ -63,6 +64,56 @@ export function AnnouncementSkeleton({ direction }: { direction: AnnouncementDir
 								<ShimmerSkeleton className="h-2.5 w-10" />
 							</div>
 						))}
+					</div>
+				))}
+			</div>
+		);
+	}
+
+	if (direction === "ticker") {
+		return (
+			<div className="flex items-stretch border-y border-edge-hairline">
+				<div className="flex w-16 shrink-0 items-center justify-center border-r border-edge-hairline">
+					<ShimmerSkeleton className="h-2.5 w-10" />
+				</div>
+				<div className="flex flex-1 items-center gap-12 overflow-hidden py-3 pl-6">
+					{[80, 128, 104, 88, 116, 96].map((w, i) => (
+						<span key={i} className="flex shrink-0 items-center gap-2.5">
+							<ShimmerSkeleton className="size-1.5 rounded-full" />
+							<ShimmerSkeleton className="h-3.5" style={{ width: w }} />
+						</span>
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	if (direction === "receipts") {
+		return (
+			<div className="grid grid-cols-1 gap-5 pt-3 sm:grid-cols-2 xl:grid-cols-3">
+				{[0, 1, 2, 3, 4, 5].map((i) => (
+					<div
+						key={i}
+						className="border-x border-b border-edge-hairline bg-card px-5 pt-6 pb-4 shadow-sm"
+					>
+						<ShimmerSkeleton className="h-2.5 w-24" />
+						<ShimmerSkeleton
+							className="mt-3 h-4.5"
+							style={{ width: `${70 - (i % 3) * 15}%` }}
+						/>
+						<ShimmerSkeleton className="mt-2 h-2.5 w-3/5" />
+						<div className="mt-4 flex items-center justify-between border-t border-dashed border-edge-hairline pt-3">
+							<span className="flex items-end gap-[2px]">
+								{[10, 6, 9, 4, 8, 10, 5, 7].map((h, j) => (
+									<ShimmerSkeleton
+										key={j}
+										className="w-[2px]"
+										style={{ height: h * 1.6 }}
+									/>
+								))}
+							</span>
+							<ShimmerSkeleton className="h-2.5 w-12" />
+						</div>
 					</div>
 				))}
 			</div>
