@@ -148,7 +148,7 @@ function AnnouncementLab() {
 								<StatusBoard items={MOCK_ANNOUNCEMENTS} />
 							) : null}
 							{direction === "board" ? (
-								<NoticeBoard items={MOCK_ANNOUNCEMENTS} />
+								<NoticeBoard items={byNewest(MOCK_ANNOUNCEMENTS)} />
 							) : null}
 							{direction === "ticker" ? (
 								<Ticker items={byNewest(MOCK_ANNOUNCEMENTS)} />

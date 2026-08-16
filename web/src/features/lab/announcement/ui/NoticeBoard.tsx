@@ -3,7 +3,7 @@ import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { byNewest, fmtDate, fmtStamp, statusOf } from "../model/event";
+import { fmtDate, fmtStamp, statusOf } from "../model/event";
 
 /** severity → 布告语汇（区别于系统语汇「警告/成功」：布告栏贴的是
  * 通知 / 维护 / 发布 / 故障） */
@@ -39,15 +39,18 @@ const PAD = {
 const TILTS = ["-rotate-1", "rotate-1", "-rotate-2", "rotate-2"];
 
 /**
- * 方向 C · 告示板
+ * 方向 C · 告示板（生产现役：首页 AnnouncementFeed）
  *
  * 设计意图：布告栏的显要度语法——severity 决定纸张大小：进行中的
  * 故障与维护是整栏大告示，发布动态是半栏中告示，日常信息与已收档
  * 是指甲盖小票据。图钉颜色跟着 severity 走，已收档的褪色盖戳让位。
  * article 形态整纸可点入简报，hover 抚平旋转。
+ *
+ * 纯渲染组件，按传入顺序渲染（排序权威是后端返回顺序）；
+ * lab 里要倒序时由调用方先 byNewest。
  */
 export function NoticeBoard({ items }: { items: Announcement[] }) {
-	const feed = byNewest(items);
+	const feed = items;
 
 	return (
 		<div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-6">
