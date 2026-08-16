@@ -5,6 +5,7 @@ import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-prev
 import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Button } from "@shared/ui/base/button";
+import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Check, Copy } from "lucide-react";
@@ -92,6 +93,7 @@ function AnnouncementDetailPage() {
 	return (
 		<article className="container mx-auto px-6 py-16">
 			<BackLink to="/" label="首页" className="mb-8" />
+			<FloatingBack to="/" label="返回首页" />
 
 			<header className="mx-auto mb-12 max-w-3xl">
 				<h1 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
