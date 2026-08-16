@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { BannerFace, BannerStage } from "./BannerStage";
 import { useBannerTicker, usePrefersReducedMotion } from "./use-banner-ticker";
 
-const FLIP_EASE = [0.4, 0, 0.2, 1] as const;
-const FLIP_DURATION = 0.6;
+// 远透视（1600px）压住「转到侧面近大远小」的呼吸感，避免读作放大缩小
+// 的顿挫；快起缓收让落定前速度已慢下来，切静态层不显跳变
+const FLIP_EASE = [0.2, 0, 0, 1] as const;
+const FLIP_DURATION = 0.45;
+const PERSPECTIVE = 1600;
 const FACE_HEIGHT = 28; // 每面高度 px（h-7），与生产 AnnouncementBar 一致
 
 /** N 面棱柱的每面 transform：绕 X 轴 360/N 度 + 内切半径 translateZ。
@@ -70,7 +73,7 @@ export function BannerPrism({ items }: { items: Announcement[] }) {
 			stageRef={wheelRef}
 			{...hoverHandlers}
 			className="h-7 overflow-hidden"
-			style={{ perspective: "800px" }}
+			style={{ perspective: `${PERSPECTIVE}px` }}
 		>
 			<motion.div
 				className="relative"

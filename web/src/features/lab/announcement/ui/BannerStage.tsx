@@ -86,13 +86,14 @@ export function BannerStage({
 }
 
 /** 横幅单面内容（所有方向共用）：severity neon 图标 + 单行文本。
- * 面自带横幅底色——棱柱旋转时是实体面板在转，不是透明文字浮在条上 */
+ * 面板底色比横幅槽底亮一档并带细轮廓——静止时是嵌在槽里的翻牌
+ * 面板，棱柱旋转时转的是有边界的实体板，不是透明文字 */
 export function BannerFace({ a }: { a: Announcement }) {
 	const cfg = getAnnouncementSev(a.severity);
 	return (
 		<span
 			className={cn(
-				"flex h-7 items-center justify-center gap-2 bg-primary/95 px-12 dark:bg-zinc-900",
+				"flex h-7 items-center justify-center gap-2 bg-primary px-12 ring-1 ring-inset ring-primary-foreground/15 dark:bg-zinc-800 dark:ring-white/10",
 				BANNER_NEON[a.severity] ?? BANNER_NEON.info,
 			)}
 		>

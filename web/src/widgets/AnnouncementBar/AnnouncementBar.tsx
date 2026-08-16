@@ -12,7 +12,7 @@
  * - WCAG 2.2.2：hover 暂停、滚轮可手动翻、prefers-reduced-motion 降级为静态
  */
 import { useAnnouncements } from "@features/settings/api/queries";
-import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
+import { Check, Megaphone, ServerCrash, Wrench } from "lucide-react";
 import { motion } from "motion/react";
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -23,16 +23,16 @@ const FLIP_DURATION = 0.6;
 const AUTO_INTERVAL = 5000;
 const FACE_HEIGHT = 28; // 每面高度 px（h-7）
 
-/** severity → neon 色板 + lucide 图标映射 */
+/** severity → neon 色板 + lucide 图标映射（图标与 shared/announcement-severity 同语义：广播/维护/完成/故障） */
 interface SevCfg {
 	text: string;
 	Icon: ComponentType<{ className?: string }>;
 }
 const SEVERITY_STYLE: Record<string, SevCfg> = {
-	info: { text: "text-neon-cyan", Icon: Info },
-	warning: { text: "text-neon-purple", Icon: TriangleAlert },
-	success: { text: "text-neon-green", Icon: CircleCheck },
-	error: { text: "text-neon-pink", Icon: CircleX },
+	info: { text: "text-neon-cyan", Icon: Megaphone },
+	warning: { text: "text-neon-purple", Icon: Wrench },
+	success: { text: "text-neon-green", Icon: Check },
+	error: { text: "text-neon-pink", Icon: ServerCrash },
 };
 
 /** 读取已读 id 集合 */
