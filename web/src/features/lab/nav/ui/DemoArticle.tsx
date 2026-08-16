@@ -54,33 +54,37 @@ export function DemoStage({
  */
 export function DemoHeader() {
 	return (
-		<header className="mx-auto mb-12 max-w-3xl px-6 pt-16 md:px-10">
-			<BackLink label="博客" className="mb-8" />
-			<div className="mb-4 flex flex-wrap gap-2">
-				{["演示", "返回导航"].map((tag) => (
-					<span
-						key={tag}
-						className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground"
-					>
-						#{tag}
+		<div className="pt-16">
+			<div className="px-6 md:px-10">
+				<BackLink label="博客" className="mb-8" />
+			</div>
+			<header className="mx-auto mb-12 max-w-3xl px-6 md:px-10">
+				<div className="mb-4 flex flex-wrap gap-2">
+					{["演示", "返回导航"].map((tag) => (
+						<span
+							key={tag}
+							className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground"
+						>
+							#{tag}
+						</span>
+					))}
+				</div>
+				<h2 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+					长文阅读的返回问题
+				</h2>
+				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
+					<span>super</span>
+					<span className="inline-flex items-center gap-1.5">
+						<Calendar className="size-3.5" />
+						2026 年 8 月 16 日
 					</span>
-				))}
-			</div>
-			<h2 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-				长文阅读的返回问题
-			</h2>
-			<div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
-				<span>super</span>
-				<span className="inline-flex items-center gap-1.5">
-					<Calendar className="size-3.5" />
-					2026 年 8 月 16 日
-				</span>
-				<span className="inline-flex items-center gap-1.5">
-					<Eye className="size-3.5" />
-					128 次阅读
-				</span>
-			</div>
-		</header>
+					<span className="inline-flex items-center gap-1.5">
+						<Eye className="size-3.5" />
+						128 次阅读
+					</span>
+				</div>
+			</header>
+		</div>
 	);
 }
 

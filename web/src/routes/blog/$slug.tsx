@@ -136,10 +136,10 @@ function BlogDetailPage() {
 			</div>
 
 			<article className="container mx-auto px-6 py-16">
+				<BackLink to="/blog" label="博客" className="mb-8" />
+
 				{/* 文章头 */}
 				<header className="mx-auto mb-12 max-w-3xl">
-					<BackLink to="/blog" label="博客" className="mb-8" />
-
 					{/* 标签 */}
 					{post.tags.length > 0 ? (
 						<div className="mb-4 flex flex-wrap gap-2">

@@ -47,8 +47,8 @@ function NavLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
+			<BackLink to="/lab" label="Labs" className="mb-12" />
 			<div className="mb-16 text-center">
-				<BackLink to="/lab" label="Labs" className="mb-6" />
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">返回导航实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					常态入口统一为页头返回胶囊，滚动离场后由四种方向接管。

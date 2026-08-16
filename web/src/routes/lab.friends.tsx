@@ -48,8 +48,8 @@ function FriendsLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
+			<BackLink to="/lab" label="Labs" className="mb-12" />
 			<div className="mb-16 text-center">
-				<BackLink to="/lab" label="Labs" className="mb-6" />
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">友链原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					友链页的三套视觉方案，附申请弹窗交互原型。

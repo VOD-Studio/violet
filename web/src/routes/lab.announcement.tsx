@@ -332,8 +332,8 @@ function AnnouncementLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
+			<BackLink to="/lab" label="Labs" className="mb-12" />
 			<div className="mb-16 text-center">
-				<BackLink to="/lab" label="Labs" className="mb-6" />
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">公告原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					公告卡片与详情页的原型方案，附历史 banner 原型。
