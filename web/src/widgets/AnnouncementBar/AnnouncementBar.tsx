@@ -1,39 +1,34 @@
 /**
- * AnnouncementBar - 生产公告条（N 面多面体形态）
+ * AnnouncementBar - 生产公告横幅（电传打字形态）
  *
- * 消费 GET /api/v1/announcements，只渲染 display=banner 的公告。
- * N 条公告 = N 面棱柱，所有面同时存在于 3D 空间绕 X 轴排列，
- * 容器整体 rotateX 旋转到当前面（4 条=4 面体每面 90°，5 条=5 面体每面 72°）。
- * 这是真正的多面体，不是平面翻牌。
+ * 公告实验室选型落地：电传打字方向（/lab/announcement）升为现役。
+ * 公告像电传机逐字打上横幅：打出 → 驻留（光标闪烁）→ 快速退格
+ * 清屏 → 打下一条，节拍由文本长度自然决定。
  *
  * 不变约束（见 CONTEXT.md）：
  * - 排序权威是后端返回顺序（sort_order ASC, created_at DESC），前端不重排
  * - 关闭即标记当前可见全部 id 为已读（localStorage），新 id 出现才重现
- * - WCAG 2.2.2：hover 暂停、滚轮可手动翻、prefers-reduced-motion 降级为静态
+ * - WCAG 2.2.2：hover/focus 暂停打字、滚轮手动翻（原生非被动监听 +
+ *   全量 delta 拦截 + 400ms 冷却，触控板惯性不穿透），prefers-reduced-motion
+ *   下降级为静态整条展示
  */
+
+import { BANNER_NEON } from "@features/lab/announcement/ui/BannerStage";
+import {
+	usePrefersReducedMotion,
+	useWheelStep,
+} from "@features/lab/announcement/ui/use-banner-ticker";
 import { useAnnouncements } from "@features/settings/api/queries";
-import { Check, Megaphone, ServerCrash, Wrench } from "lucide-react";
-import { motion } from "motion/react";
-import type { ComponentType } from "react";
+import { cn } from "@shared/lib/utils";
+import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_KEY = "announcement:read-ids";
-const FLIP_EASE = [0.4, 0, 0.2, 1] as const;
-const FLIP_DURATION = 0.6;
-const AUTO_INTERVAL = 5000;
-const FACE_HEIGHT = 28; // 每面高度 px（h-7）
+const CHAR_MS = 45; // 打字每字耗时
+const CLEAR_MS = 16; // 退格每字耗时（清屏快于打出）
+const HOLD_MS = 2600; // 全显驻留
 
-/** severity → neon 色板 + lucide 图标映射（图标与 shared/announcement-severity 同语义：广播/维护/完成/故障） */
-interface SevCfg {
-	text: string;
-	Icon: ComponentType<{ className?: string }>;
-}
-const SEVERITY_STYLE: Record<string, SevCfg> = {
-	info: { text: "text-neon-cyan", Icon: Megaphone },
-	warning: { text: "text-neon-purple", Icon: Wrench },
-	success: { text: "text-neon-green", Icon: Check },
-	error: { text: "text-neon-pink", Icon: ServerCrash },
-};
+type Phase = "typing" | "holding" | "clearing";
 
 /** 读取已读 id 集合 */
 function readReadIds(): Set<number> {
@@ -46,80 +41,103 @@ function readReadIds(): Set<number> {
 	}
 }
 
-/** 检测 prefers-reduced-motion */
-function usePrefersReducedMotion(): boolean {
-	const [reduced, setReduced] = useState(false);
-	useEffect(() => {
-		if (typeof window === "undefined" || !window.matchMedia) return;
-		const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-		setReduced(mq.matches);
-		const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
-		mq.addEventListener("change", handler);
-		return () => mq.removeEventListener("change", handler);
-	}, []);
-	return reduced;
-}
-
-/**
- * 计算 N 面棱柱的每面 transform。
- * - 每面绕 X 轴的角度：360/N * i
- * - translateZ 深度（棱柱内切半径）：(FACE_HEIGHT/2) / tan(180°/N)
- *   保证相邻面正好相接，形成闭合棱柱。
- */
-function faceTransform(i: number, n: number): string {
-	const angle = (360 / n) * i;
-	const depth = FACE_HEIGHT / 2 / Math.tan(Math.PI / n);
-	return `rotateX(${angle}deg) translateZ(${depth}px)`;
-}
-
 export default function AnnouncementBar() {
 	const { data } = useAnnouncements();
-	const prefersReducedMotion = usePrefersReducedMotion();
-	const [index, setIndex] = useState(0);
-	const [isPaused, setIsPaused] = useState(false);
+	const reduced = usePrefersReducedMotion();
 	const [readIds, setReadIds] = useState<Set<number>>(() => readReadIds());
 
+	// useMemo 稳定引用：rAF 节拍 effect 依赖 banners，不稳定的 filter
+	// 产物会每帧重启循环
 	const banners = useMemo(
 		() => (data ?? []).filter((a) => a.display === "banner").filter((a) => !readIds.has(a.id)),
 		[data, readIds],
 	);
 
-	const current = banners[index];
-	const n = banners.length;
+	const [index, setIndex] = useState(0);
+	const [chars, setChars] = useState(0);
+	const [phase, setPhase] = useState<Phase>("typing");
+	const [paused, setPaused] = useState(false);
 
-	// 自动推进
+	// 打字状态机最新值进 ref：rAF 循环里读写，避免每帧重建循环
+	const stateRef = useRef({ index, chars, phase });
+	stateRef.current = { index, chars, phase };
+	const accRef = useRef(0); // 当前阶段已积累 ms
+
+	const current = banners[index];
+
+	// 打字节拍：rAF 累积 dt 推进状态机，暂停即冻结（reduced 下不跑）
 	useEffect(() => {
-		if (isPaused || prefersReducedMotion || n <= 1) return;
-		const timer = window.setInterval(() => setIndex((i) => (i + 1) % n), AUTO_INTERVAL);
-		return () => window.clearInterval(timer);
-	}, [isPaused, prefersReducedMotion, n]);
+		if (paused || reduced || banners.length <= 1) return;
+		let raf = 0;
+		let last = performance.now();
+		const nextItem = () => {
+			accRef.current = 0;
+			setChars(0);
+			setPhase("typing");
+			setIndex((i) => (i + 1) % banners.length);
+		};
+		const advance = (dt: number) => {
+			const s = stateRef.current;
+			const total = banners[s.index].content.length;
+			accRef.current += dt;
+			if (s.phase === "typing" && accRef.current >= CHAR_MS) {
+				accRef.current -= CHAR_MS;
+				const next = s.chars + 1;
+				if (next >= total) {
+					setChars(total);
+					setPhase("holding");
+					accRef.current = 0;
+				} else {
+					setChars(next);
+				}
+			} else if (s.phase === "holding" && accRef.current >= HOLD_MS) {
+				accRef.current = 0;
+				if (total > 0) {
+					setPhase("clearing");
+				} else {
+					nextItem();
+				}
+			} else if (s.phase === "clearing" && accRef.current >= CLEAR_MS) {
+				accRef.current -= CLEAR_MS;
+				const next = s.chars - 1;
+				if (next <= 0) {
+					nextItem();
+				} else {
+					setChars(next);
+				}
+			}
+		};
+		const tick = (t: number) => {
+			advance(t - last);
+			last = t;
+			raf = requestAnimationFrame(tick);
+		};
+		raf = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(raf);
+	}, [paused, reduced, banners]);
+
+	// reduced-motion：跳过打字/退格，直接整条驻留轮换
+	useEffect(() => {
+		if (!reduced || !current) return;
+		setChars(current.content.length);
+		setPhase("holding");
+	}, [reduced, current]);
 
 	// 重置 index 防越界
 	useEffect(() => {
-		if (index >= n) setIndex(0);
-	}, [n, index]);
+		if (index >= banners.length) setIndex(0);
+	}, [banners.length, index]);
 
-	// 滚轮翻页需接管滚动：React 合成 wheel 事件是 passive 的拦不下页面滚动，
-	// 换原生非被动监听。触控板惯性是大量小 delta 事件，全部 preventDefault
-	// 锁死页面，翻页带 400ms 冷却防止一次轻扫连翻多页。
-	const barRef = useRef<HTMLDivElement>(null);
-	const lastStepRef = useRef(0);
-	useEffect(() => {
-		const el = barRef.current;
-		if (!el) return;
-		const handler = (e: WheelEvent) => {
-			if (e.deltaY === 0) return;
-			e.preventDefault();
-			if (Math.abs(e.deltaY) < 4) return;
-			const now = performance.now();
-			if (now - lastStepRef.current < 400) return;
-			lastStepRef.current = now;
-			if (e.deltaY > 0) setIndex((i) => (i + 1) % n);
-			else setIndex((i) => (i - 1 + n) % n);
-		};
-		el.addEventListener("wheel", handler, { passive: false });
-		return () => el.removeEventListener("wheel", handler);
-	}, [n]);
+	/** 手动翻页：清屏态切到下一条重新打（reduced 下直接整条） */
+	const step = (dir: number) => {
+		if (banners.length <= 1) return;
+		accRef.current = 0;
+		const next = (index + dir + banners.length) % banners.length;
+		setIndex(next);
+		setChars(reduced ? banners[next].content.length : 0);
+		setPhase(reduced ? "holding" : "typing");
+	};
+	const barRef = useWheelStep(step);
 
 	const handleClose = () => {
 		const ids = banners.map((a) => a.id);
@@ -133,64 +151,38 @@ export default function AnnouncementBar() {
 	};
 
 	if (!current) return null;
-	const cfg = SEVERITY_STYLE[current.severity] ?? SEVERITY_STYLE.info;
-
-	// 单条：直接静态展示，不做多面体（1 面无需旋转）
-	if (n === 1 || prefersReducedMotion) {
-		return (
-			<div className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900">
-				<div className={`flex h-7 items-center justify-center gap-2 px-12 ${cfg.text}`}>
-					<cfg.Icon className="size-3.5 shrink-0" />
-					<span className="truncate text-primary-foreground dark:text-foreground">
-						{current.content}
-					</span>
-				</div>
-				<button
-					type="button"
-					onClick={handleClose}
-					aria-label="关闭公告"
-					className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-primary-foreground/70 transition-colors hover:text-primary-foreground dark:text-foreground/70 dark:hover:text-foreground"
-				>
-					✕
-				</button>
-			</div>
-		);
-	}
-
-	// 多条：N 面棱柱，容器整体 rotateX 到当前面
-	const targetRotation = -(360 / n) * index;
+	const cfg = getAnnouncementSev(current.severity);
+	const text = current.content.slice(0, chars);
 
 	return (
 		<div
 			ref={barRef}
-			className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900"
-			style={{ perspective: "800px" }}
-			onMouseEnter={() => setIsPaused(true)}
-			onMouseLeave={() => setIsPaused(false)}
+			className="relative flex h-7 items-center justify-center gap-2 border-b border-edge-hairline bg-primary/95 px-12 font-mono text-xs dark:bg-zinc-900"
+			onMouseEnter={() => setPaused(true)}
+			onMouseLeave={() => setPaused(false)}
+			onFocus={() => setPaused(true)}
+			onBlur={() => setPaused(false)}
 		>
-			<motion.div
-				className="relative"
-				style={{ transformStyle: "preserve-3d", height: FACE_HEIGHT }}
-				animate={{ rotateX: targetRotation }}
-				transition={{ duration: FLIP_DURATION, ease: FLIP_EASE }}
-			>
-				{banners.map((a, i) => {
-					const fcfg = SEVERITY_STYLE[a.severity] ?? SEVERITY_STYLE.info;
-					return (
-						<div
-							key={a.id}
-							className={`absolute inset-0 flex items-center justify-center gap-2 px-12 backface-hidden ${fcfg.text}`}
-							style={{ transform: faceTransform(i, n) }}
-						>
-							<fcfg.Icon className="size-3.5 shrink-0" />
-							<span className="truncate text-primary-foreground dark:text-foreground">
-								{a.content}
-							</span>
-						</div>
-					);
-				})}
-			</motion.div>
-
+			<cfg.Icon
+				className={cn(
+					"size-3.5 shrink-0",
+					BANNER_NEON[current.severity] ?? BANNER_NEON.info,
+				)}
+			/>
+			<span className="truncate text-primary-foreground dark:text-foreground">
+				{text}
+				{/* 光标：打字/清屏时常亮，驻留时闪烁 */}
+				<span
+					aria-hidden
+					className={cn(
+						"ml-0.5 inline-block h-[0.95em] w-[0.5em] translate-y-[0.1em] bg-current motion-safe:animate-caret-blink",
+						phase !== "holding" && "motion-safe:animate-none",
+					)}
+				/>
+			</span>
+			<span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] text-primary-foreground/50 dark:text-foreground/50">
+				{index + 1}/{banners.length}
+			</span>
 			<button
 				type="button"
 				onClick={handleClose}
@@ -199,10 +191,6 @@ export default function AnnouncementBar() {
 			>
 				✕
 			</button>
-
-			<span className="absolute top-1/2 left-3 z-10 -translate-y-1/2 font-mono text-[10px] text-primary-foreground/50 dark:text-foreground/50">
-				{index + 1}/{n}
-			</span>
 		</div>
 	);
 }
