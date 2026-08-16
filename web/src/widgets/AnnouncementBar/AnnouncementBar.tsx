@@ -42,7 +42,7 @@ function readReadIds(): Set<number> {
 }
 
 export default function AnnouncementBar() {
-	const { data, isLoading } = useAnnouncements();
+	const { data } = useAnnouncements();
 	const reduced = usePrefersReducedMotion();
 	const [readIds, setReadIds] = useState<Set<number>>(() => readReadIds());
 
@@ -149,18 +149,6 @@ export default function AnnouncementBar() {
 			/* localStorage 不可用时静默降级 */
 		}
 	};
-
-	// 加载占位：与真实条同高（h-7）同底色——刷新时高度从首帧就位，
-	// 数据到达只换内容不动布局，消除整页下移的重绘跳变
-	if (isLoading && !current) {
-		return (
-			<div
-				aria-hidden
-				style={{ viewTransitionName: "announcement-bar" }}
-				className="h-7 border-b border-edge-hairline bg-primary/95 dark:bg-zinc-900"
-			/>
-		);
-	}
 
 	if (!current) return null;
 	const cfg = getAnnouncementSev(current.severity);
