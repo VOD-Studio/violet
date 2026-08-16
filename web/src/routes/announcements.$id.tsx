@@ -1,20 +1,39 @@
-/**
- * /announcements/$id - 公告详情页（article 形态）
- *
- * 视觉语言：
- * - 标题静态渲染，与文章详情页一致（文字不做模糊/逐词入场动画）
- * - 按钮用 Magnet 磁吸微交互
- * - severity 配色走 shared/announcement-severity（shadcn 色阶）
- */
-
+import { statusOf } from "@features/lab/announcement/model/event";
+import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { useAnnouncement } from "@features/settings/api/queries";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { Button } from "@shared/ui/base/button";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import Magnet from "@vendor/react-bits/Magnet";
+import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
+
+/** severity → 中文标签（通知 / 维护 / 发布 / 故障，中性语汇非电码） */
+const SEV_LABEL: Record<string, string> = {
+	info: "通知",
+	warning: "维护",
+	success: "发布",
+	error: "故障",
+};
+
+/** 生命周期 → 状态行文案 */
+const STATUS_LABEL: Record<string, string> = {
+	active: "生效中",
+	scheduled: "未生效",
+	ended: "已收档",
+};
+
+/**
+ * /announcements/$id - 公告详情页（article 形态）
+ *
+ * 2026-08-16 重做：对齐文章详情页的排版语言（容器 / BackLink /
+ * 居中头部 / mono 大标题 / meta 行 / prose 正文），去掉圆角卡片壳
+ * 与 react-bits 微交互——简报是阅读页，不是浮在页面上的组件。
+ * 头部：电码 eyebrow（№ + severity 电码 + 状态脉冲点）+ 标题 +
+ * meta（发布时间 / 生效窗口 / 影响范围）；footer 保留确认已读 /
+ * 复制 ID 两个轻量动作。
+ */
 
 function AnnouncementDetailPage() {
 	const { id } = Route.useParams();
@@ -52,21 +71,19 @@ function AnnouncementDetailPage() {
 			<div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
 				<h1 className="mb-3 font-mono text-2xl font-bold">公告不存在</h1>
 				<p className="mb-6 text-muted-foreground">该公告可能不存在或已失效。</p>
-				<Link
-					to="/"
-					className="inline-flex items-center gap-2 rounded-lg border border-edge-hairline px-4 py-2 text-sm transition-colors hover:bg-accent"
-				>
-					<ArrowLeft className="size-4" />
-					返回首页
-				</Link>
+				<Button variant="outline" asChild>
+					<a href="/">
+						<ArrowLeft className="size-4" />
+						返回首页
+					</a>
+				</Button>
 			</div>
 		);
 	}
 
 	const cfg = getAnnouncementSev(a.severity);
-	const stamp = a.created_at
-		? new Date(a.created_at).toISOString().replace("T", " ").slice(0, 16)
-		: "—";
+	const status = statusOf(a);
+	const stamp = a.created_at.slice(0, 16).replace("T", " ");
 	const body = a.content_html?.trim() ? a.content_html : a.content_md || a.content;
 
 	const handleCopyId = async () => {
@@ -80,95 +97,76 @@ function AnnouncementDetailPage() {
 	};
 
 	return (
-		<div className="container mx-auto px-6 py-16">
-			<Link
-				to="/"
-				className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-			>
-				<ArrowLeft className="size-4" />
-				返回
-			</Link>
+		<article className="container mx-auto px-6 py-16">
+			<BackLink to="/" label="首页" className="mb-8" />
 
-			<article className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8">
-				{/* 头部 */}
-				<header className="mb-6 border-b border-edge-hairline pb-4">
-					<div className="mb-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-muted-foreground">
-						<span>发布于 {stamp}</span>
-						{a.start_time && a.end_time && (
-							<span>
-								生效 {new Date(a.start_time).toISOString().slice(0, 10)} →{" "}
-								{new Date(a.end_time).toISOString().slice(0, 10)}
-							</span>
-						)}
-						<span className="flex items-center gap-1.5">
-							<span className={`size-1.5 animate-pulse rounded-full ${cfg.dot}`} />
-							{a.is_active === false ? "已失效" : "生效中"}
+			<header className="mx-auto mb-12 max-w-3xl">
+				{/* 电码 eyebrow：severity 图标电码 + № + 生命周期状态 */}
+				<p className="mb-4 flex flex-wrap items-center gap-2.5 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+					<span className={cfg.text}>
+						<cfg.Icon className="mr-1 inline size-3.5" />
+						{SEV_LABEL[a.severity] ?? "通知"}
+					</span>
+					№{String(a.id).padStart(3, "0")}
+					<span
+						className={
+							status === "scheduled"
+								? "text-amber-600 dark:text-amber-400"
+								: "text-muted-foreground/70"
+						}
+					>
+						{STATUS_LABEL[status]}
+						{status === "active" ? (
+							<span className="ml-1 inline-block size-1.5 animate-pulse rounded-full bg-current align-[1px]" />
+						) : null}
+					</span>
+				</p>
+
+				<h1 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+					{a.title}
+				</h1>
+
+				{/* 元信息：发布时间 + 生效窗口 + 影响范围 */}
+				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
+					<span>{stamp}</span>
+					{a.start_time && a.end_time ? (
+						<span>
+							生效 {a.start_time.slice(0, 10)} → {a.end_time.slice(0, 10)}
 						</span>
-					</div>
-					<h1 className="text-2xl font-bold leading-tight text-foreground">{a.title}</h1>
-				</header>
+					) : null}
+					{a.affects?.length ? <span>影响 {a.affects.join(" / ")}</span> : null}
+				</div>
+			</header>
 
-				{/* affects */}
-				{a.affects && a.affects.length > 0 && (
-					<div className="mb-6 flex flex-wrap items-center gap-1.5">
-						<span className="text-xs text-muted-foreground">影响范围：</span>
-						{a.affects.map((m) => (
-							<span
-								key={m}
-								className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-							>
-								{m}
-							</span>
-						))}
-					</div>
-				)}
+			{body ? (
+				<div
+					className="prose prose-sm prose-neutral mx-auto max-w-3xl dark:prose-invert"
+					data-article-content
+					onClick={articleImages.bind.onClick}
+					onKeyDown={articleImages.bind.onKeyDown}
+				>
+					<ArticleContent content={body} />
+				</div>
+			) : null}
 
-				{/* 正文 */}
-				{body && (
-					<div className="mb-6">
-						<div className="mb-3 text-xs text-muted-foreground">正文</div>
-						<div
-							className="prose prose-sm prose-neutral max-w-none dark:prose-invert"
-							data-article-content
-							onClick={articleImages.bind.onClick}
-							onKeyDown={articleImages.bind.onKeyDown}
-						>
-							<ArticleContent content={body} />
-						</div>
-					</div>
-				)}
-
-				{/* footer */}
-				<footer className="flex flex-wrap items-center gap-3 border-t border-edge-hairline pt-4 text-xs">
-					<Magnet magnetStrength={4} padding={30}>
-						<button
-							type="button"
-							onClick={handleAck}
-							disabled={acked}
-							className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted disabled:opacity-50 disabled:hover:bg-transparent"
-						>
-							<Check className="size-3" />
-							{acked ? "已读" : "确认已读"}
-						</button>
-					</Magnet>
-					<button
-						type="button"
-						onClick={handleCopyId}
-						className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
-					>
-						{copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-						{copied ? "已复制" : "复制 ID"}
-					</button>
-					<Link
-						to="/"
-						className="ml-auto rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
-					>
-						← 返回
-					</Link>
-				</footer>
-			</article>
+			<footer className="mx-auto mt-12 flex max-w-3xl flex-wrap items-center gap-3 border-t border-edge-hairline pt-6">
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={handleAck}
+					disabled={acked}
+					className="font-mono"
+				>
+					<Check className="size-3.5" />
+					{acked ? "已读" : "确认已读"}
+				</Button>
+				<Button variant="outline" size="sm" onClick={handleCopyId} className="font-mono">
+					{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+					{copied ? "已复制" : `复制 ID · ${String(a.id).padStart(3, "0")}`}
+				</Button>
+			</footer>
 			{articleImages.preview}
-		</div>
+		</article>
 	);
 }
 
