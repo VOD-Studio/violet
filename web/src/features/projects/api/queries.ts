@@ -34,6 +34,15 @@ export const useProjects = (query: ProjectListQuery = {}) =>
 	});
 
 /**
+ * useProjectsPaged - 分页项目列表 hook（后台管理页用）
+ */
+export const useProjectsPaged = (query: PageQuery = {}) =>
+	useQuery({
+		queryKey: [...projectKeys.lists(), query],
+		queryFn: () => fetchProjectsPaged(query),
+	});
+
+/**
  * fetchProject - 调后端 GET /projects/{id} 按 ID 获取项目详情
  *
  * @param id 项目 ID

@@ -1,16 +1,30 @@
-import type { PageQuery } from "@shared/api/types";
+import type { PagedResponse, PageQuery } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { CreateSubscriptionRequest, UpdateSubscriptionRequest } from "../model/types";
+import type {
+	CreateSubscriptionRequest,
+	SubscriptionDTO,
+	UpdateSubscriptionRequest,
+} from "../model/types";
 import * as api from "./client";
 import { subscriptionKeys } from "./keys";
 
 /** useSubscriptions - 订阅列表 hook（分页 + status 过滤） */
-export const useSubscriptions = (status: string, query: PageQuery) =>
-	useQuery({
-		queryKey: subscriptionKeys.list(status, query),
-		queryFn: () => api.listSubscriptions(status, query),
+export const useSubscriptions = (query: { status?: string } & PageQuery = {}) => {
+	const { status = "", ...paging } = query;
+	return useQuery({
+		queryKey: subscriptionKeys.list(status, paging),
+		queryFn: () => api.listSubscriptions(status, paging),
+		select: (res): PagedResponse<SubscriptionDTO> => ({
+			data: res.items,
+			pagination: {
+				page: res.page,
+				limit: res.limit,
+				total: res.total,
+			},
+		}),
 	});
+};
 
 /** useSubscription - 单个订阅详情 hook */
 export const useSubscription = (id: string) =>
