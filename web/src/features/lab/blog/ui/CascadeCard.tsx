@@ -1,7 +1,7 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
-import { contentImageUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -36,12 +36,13 @@ export function CascadeCard({ post, index }: { post: Post; index: number }) {
 				>
 					{hasCover ? (
 						<div className="overflow-hidden">
-							<img
-								src={contentImageUrl(post.cover_image, { width: 640 })}
+							<CroppedImage
+								src={post.cover_image}
+								width={640}
 								alt={post.title}
 								loading="lazy"
 								onError={() => setBrokenFor(post.cover_image)}
-								className="w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+								imgClassName="transition-transform duration-500 group-hover:scale-[1.04]"
 							/>
 						</div>
 					) : null}

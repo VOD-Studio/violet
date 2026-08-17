@@ -21,6 +21,8 @@ export interface CroppedImageProps {
 	alt?: string;
 	/** img loading,默认不设 */
 	loading?: "lazy" | "eager";
+	/** 加载失败回调(组件自身仍渲染占位);调用方可用它做退化排版 */
+	onError?: () => void;
 }
 
 /**
@@ -32,6 +34,9 @@ export interface CroppedImageProps {
  * 一致时四边精确贴合;不一致时选区铺满容器、溢出维度居中裁切。
  * 无 ?crop= 退化普通居中 cover。静态图/GIF 统一,原图无损。
  *
+ * 不传 aspect 时容器按选区宽高比撑高——自然比例场景下,选区就是作者
+ * 定下的画面比例;无选区则维持原图自然比例。
+ *
  * 测量就绪前 img 隐藏,避免闪现未裁剪的全图。
  */
 export function CroppedImage({
@@ -42,8 +47,10 @@ export function CroppedImage({
 	imgClassName,
 	alt = "",
 	loading,
+	onError,
 }: CroppedImageProps) {
 	const rect = useMemo(() => parseCrop(src), [src]);
+	const ratio = aspect ?? (rect ? rect.w / rect.h : undefined);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [natural, setNatural] = useState<Size | null>(null);
@@ -96,7 +103,7 @@ export function CroppedImage({
 					"flex items-center justify-center overflow-hidden bg-muted",
 					className,
 				)}
-				style={aspect ? { aspectRatio: aspect } : undefined}
+				style={ratio ? { aspectRatio: ratio } : undefined}
 			>
 				<ImageOff className="size-8 max-h-[60%] max-w-[60%] text-muted-foreground/50" />
 			</div>
@@ -108,13 +115,16 @@ export function CroppedImage({
 		return (
 			<div
 				className={cn("overflow-hidden", className)}
-				style={aspect ? { aspectRatio: aspect } : undefined}
+				style={ratio ? { aspectRatio: ratio } : undefined}
 			>
 				<img
 					src={displaySrc}
 					alt={alt}
 					loading={loading}
-					onError={() => setFailedFor(displaySrc)}
+					onError={() => {
+						setFailedFor(displaySrc);
+						onError?.();
+					}}
 					className={cn("h-full w-full object-cover", imgClassName)}
 				/>
 			</div>
@@ -125,7 +135,7 @@ export function CroppedImage({
 		<div
 			ref={containerRef}
 			className={cn("relative overflow-hidden", className)}
-			style={aspect ? { aspectRatio: aspect } : undefined}
+			style={ratio ? { aspectRatio: ratio } : undefined}
 		>
 			<img
 				ref={imgRef}
@@ -138,7 +148,10 @@ export function CroppedImage({
 						h: e.currentTarget.naturalHeight,
 					})
 				}
-				onError={() => setFailedFor(displaySrc)}
+				onError={() => {
+					setFailedFor(displaySrc);
+					onError?.();
+				}}
 				className={cn("absolute max-w-none", imgClassName)}
 				style={
 					transform

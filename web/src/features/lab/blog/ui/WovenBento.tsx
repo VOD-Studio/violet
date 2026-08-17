@@ -1,7 +1,7 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
-import { contentImageUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -71,14 +71,14 @@ function BentoCell({ post, shape }: { post: Post; shape: BentoShape }) {
 		>
 			{hasCover ? (
 				<>
-					<img
-						src={contentImageUrl(post.cover_image, {
-							width: shape === "hero" ? 960 : 480,
-						})}
+					<CroppedImage
+						src={post.cover_image}
+						width={shape === "hero" ? 960 : 480}
 						alt={post.title}
 						loading="lazy"
 						onError={() => setBrokenFor(post.cover_image)}
-						className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+						className="absolute inset-0"
+						imgClassName="transition-transform duration-500 group-hover:scale-105"
 					/>
 					<div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
 					<div className="absolute inset-x-0 bottom-0 p-4 text-white">
