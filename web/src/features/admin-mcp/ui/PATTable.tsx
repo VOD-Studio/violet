@@ -1,6 +1,10 @@
 import { useDeletePAT } from "@features/admin-mcp/api/queries";
 import type { PATDTO, PATScope } from "@features/admin-mcp/model/types";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	useClientPagination,
+} from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { format } from "date-fns";
@@ -86,10 +90,13 @@ export function PATTable({ tokens, loading, onConnect }: PATTableProps) {
 		},
 	];
 
+	const { pagedData: pagedTokens, pagination } = useClientPagination(tokens);
+
 	return (
 		<DataTable<PATDTO>
 			columns={columns}
-			data={tokens}
+			data={pagedTokens}
+			pagination={pagination}
 			keyExtractor={(row) => row.id}
 			loading={loading}
 			storageKey="admin-mcp-pat-columns"

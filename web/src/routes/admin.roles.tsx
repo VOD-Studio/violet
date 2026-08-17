@@ -5,7 +5,7 @@ import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
 import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
 import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -55,6 +55,8 @@ function AdminRolesPage() {
 		});
 		return copy;
 	}, [roles, sort]);
+
+	const { pagedData: pagedRoles, pagination } = useClientPagination(sortedRoles);
 
 	const handleEdit = (role: RoleDTO) => {
 		setEditingRole(role);
@@ -191,8 +193,9 @@ function AdminRolesPage() {
 			}
 		>
 			<DataTable<RoleDTO>
-				data={sortedRoles}
+				data={pagedRoles}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

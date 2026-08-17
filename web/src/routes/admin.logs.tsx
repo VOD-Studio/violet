@@ -1,7 +1,11 @@
 import { useAdminAuditLogs } from "@features/admin-audit-logs/api/queries";
 import type { AuditEventDTO, FieldChangeDTO } from "@features/admin-audit-logs/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	DEFAULT_PAGE_SIZE,
+} from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -18,8 +22,7 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { useState } from "react";
 
-/** 操作日志分页大小 */
-const PAGE_SIZE = 20;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 /** 操作类型选项（与后端受控枚举对齐） */
 const ACTION_OPTIONS = [

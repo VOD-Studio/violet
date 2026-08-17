@@ -1,6 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, DEFAULT_PAGE_SIZE } from "@features/admin-shared/ui/data-table";
 import {
 	useCreateSubscription,
 	useDeleteSubscription,
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/admin/subscriptions")({
 function AdminSubscriptionsPage() {
 	const [statusFilter, setStatusFilter] = React.useState<string>("");
 	const [page, setPage] = React.useState(1);
-	const [pageSize, setPageSize] = React.useState(20);
+	const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
 
 	const { data, isLoading, error, refetch } = useSubscriptions(statusFilter, page, pageSize);
 	const createMut = useCreateSubscription();

@@ -2,7 +2,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminRoles } from "@features/admin-roles/api/queries";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, exportToCsv } from "@features/admin-shared/ui/data-table";
+import { DataTable, DEFAULT_PAGE_SIZE, exportToCsv } from "@features/admin-shared/ui/data-table";
 import {
 	useAdminUsers,
 	useBatchUpdateRole,
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/admin/users")({
 
 function AdminUsers() {
 	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 	const [keyword, setKeyword] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");

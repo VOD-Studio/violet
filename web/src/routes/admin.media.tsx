@@ -8,7 +8,11 @@ import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	DEFAULT_PAGE_SIZE,
+} from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useReplaceMediaFile } from "@features/upload/api/mutations";
@@ -55,7 +59,7 @@ function AdminMediaPage() {
 	const [keyword, setKeyword] = useState<string>("");
 	const [view, setView] = useState<ViewMode>("grid");
 	const [page, setPage] = useState(1);
-	const pageSize = 60;
+	const pageSize = DEFAULT_PAGE_SIZE;
 
 	// 弹窗状态
 	const [uploadOpen, setUploadOpen] = useState(false);

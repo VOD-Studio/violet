@@ -16,7 +16,11 @@ import type {
 import { FriendLinkCell } from "@features/admin-friend-links/ui/FriendLinkCell";
 import { FriendLinkFormDialog } from "@features/admin-friend-links/ui/FriendLinkFormDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	DEFAULT_PAGE_SIZE,
+} from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -28,8 +32,7 @@ import { zhCN } from "date-fns/locale";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
-/** 友链分页大小 */
-const PAGE_SIZE = 20;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 /** 筛选值："all" 表示全部，其余为具体状态 */
 type FriendLinkFilter = "all" | FriendLinkStatus;

@@ -1,7 +1,7 @@
 import type { Tag } from "@entities/tag/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
 import { TagDialog } from "@features/admin-tags/ui/TagDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { useDeleteTag } from "@features/tags/api/mutations";
@@ -36,6 +36,8 @@ function AdminTagsPage() {
 		});
 		return copy;
 	}, [tags, sort]);
+
+	const { pagedData: pagedTags, pagination } = useClientPagination(sortedTags);
 
 	// TODO: 标签管理当前无批量操作后端接口；如需复选框批量删除/合并，需后端支持。
 
@@ -128,8 +130,9 @@ function AdminTagsPage() {
 			}
 		>
 			<DataTable<Tag>
-				data={sortedTags}
+				data={pagedTags}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

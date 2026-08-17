@@ -9,7 +9,7 @@ import type {
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -62,6 +62,8 @@ function AdminAnnouncementsPage() {
 		});
 		return copy;
 	}, [announcements, sort]);
+
+	const { pagedData: pagedAnnouncements, pagination } = useClientPagination(sortedAnnouncements);
 
 	// TODO: 公告管理当前无批量操作后端接口；如需复选框批量启用/停用/删除，需后端支持。
 
@@ -179,8 +181,9 @@ function AdminAnnouncementsPage() {
 			}
 		>
 			<DataTable<AnnouncementDTO>
-				data={sortedAnnouncements}
+				data={pagedAnnouncements}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

@@ -10,6 +10,7 @@ import {
 	DataTable,
 	type DataTableColumn,
 	type DataTableSort,
+	useClientPagination,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useProjects } from "@features/projects/api/queries";
@@ -58,6 +59,8 @@ function AdminProjectsPage() {
 		});
 		return copy;
 	}, [projects, sort]);
+
+	const { pagedData: pagedProjects, pagination } = useClientPagination(sortedProjects);
 
 	// TODO: 项目管理当前无批量操作后端接口；如需复选框批量删除，需后端支持。
 	// TODO: 项目有 sort_order 字段，但缺少拖拽排序批量更新接口（如 POST /admin/projects/reorder）。
@@ -170,8 +173,9 @@ function AdminProjectsPage() {
 			}
 		>
 			<DataTable<Project>
-				data={sortedProjects}
+				data={pagedProjects}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => row.id}
 				selectable={false}
 				loading={isLoading}

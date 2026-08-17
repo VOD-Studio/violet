@@ -9,7 +9,11 @@ import {
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/model/types";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	DEFAULT_PAGE_SIZE,
+} from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
@@ -78,7 +82,7 @@ const STATUS_OPTIONS = [
 	{ value: "trashed", label: "回收站" },
 ];
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 // TODO: 文章列表当前无排序能力；后端 /admin/posts 需支持 sort_by + order 查询参数。
 
