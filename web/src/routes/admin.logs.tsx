@@ -22,7 +22,6 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { useState } from "react";
 
-const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 /** 操作类型选项（与后端受控枚举对齐） */
 const ACTION_OPTIONS = [
@@ -69,12 +68,13 @@ const RESOURCE_OPTIONS = [
 
 function AdminLogsPage() {
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [action, setAction] = useState("");
 	const [resourceType, setResourceType] = useState("");
 	const [actor, setActor] = useState("");
 	const { data, isLoading, error, refetch } = useAdminAuditLogs({
 		page,
-		limit: PAGE_SIZE,
+		limit: pageSize,
 		action: action || undefined,
 		resource_type: resourceType || undefined,
 		actor: actor || undefined,
@@ -206,10 +206,12 @@ function AdminLogsPage() {
 				keyExtractor={(row) => row.event_id}
 				pagination={{
 					page,
-					pageSize: PAGE_SIZE,
+					pageSize,
 					total: data?.pagination?.total ?? 0,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
+					onChange: (page, pageSize) => {
+						setPage(page);
+						setPageSize(pageSize);
+					},
 				}}
 				selectable={false}
 				loading={isLoading}

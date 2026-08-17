@@ -30,7 +30,6 @@ import { zhCN } from "date-fns/locale";
 import { Ban, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 // TODO: 评论列表当前无排序能力；后端 /admin/comments 需支持 sort_by + order 查询参数。
 // TODO: 评论管理缺少批量删除后端接口（当前仅有批量更新状态）。
@@ -81,6 +80,7 @@ function AdminCommentsPage() {
 	// 类型筛选与状态筛选正交：切换任一维度都重置分页与勾选。
 	const [typeFilter, setTypeFilter] = useState<CommentTypeFilter>("all");
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -92,7 +92,7 @@ function AdminCommentsPage() {
 		status,
 		type,
 		page,
-		limit: PAGE_SIZE,
+		limit: pageSize,
 	});
 	const approveMut = useApproveComment();
 	const spamMut = useMarkCommentSpam();
@@ -253,10 +253,12 @@ function AdminCommentsPage() {
 				keyExtractor={(row) => row.id}
 				pagination={{
 					page,
-					pageSize: PAGE_SIZE,
+					pageSize,
 					total: data?.pagination?.total ?? 0,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
+					onChange: (page, pageSize) => {
+						setPage(page);
+						setPageSize(pageSize);
+					},
 				}}
 				selectable
 				selectedIds={selected}
