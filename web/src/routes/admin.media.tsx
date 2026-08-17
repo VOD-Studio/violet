@@ -17,9 +17,10 @@ import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import {
 	DataTable,
 	type DataTableColumn,
+	type DataTablePagination,
 	DEFAULT_PAGE_SIZE,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
-import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
@@ -65,7 +66,6 @@ function AdminMediaPage() {
 	const isImageOnly = isImageOnlyPurpose(purpose);
 	const [keyword, setKeyword] = useState<string>("");
 	const [view, setView] = useState<ViewMode>("grid");
-	const [page, setPage] = useState(1);
 	const pageSize = DEFAULT_PAGE_SIZE;
 
 	// 弹窗状态
@@ -100,17 +100,14 @@ function AdminMediaPage() {
 		[purpose, fileType, keyword],
 	);
 
-	// 1. 表格视图：精确分页查询
-	const { data: tableData, isLoading: isTableLoading } = useAdminMedia({
-		...filterParams,
-		page,
-		limit: pageSize,
-	});
+	const {
+		data: tableData,
+		isLoading: isTableLoading,
+		pagination,
+		setPage,
+	} = usePagedQuery(useAdminMedia, filterParams);
 	const tableFiles = tableData?.data ?? [];
-	const tableTotal = tableData?.pagination?.total ?? 0;
-	const totalPages = Math.max(1, Math.ceil(tableTotal / pageSize));
 
-	// 2. 网格视图：触底无限滚动加载
 	const {
 		data: infiniteData,
 		isLoading: isGridLoading,
@@ -127,7 +124,6 @@ function AdminMediaPage() {
 	);
 	const gridTotal = infiniteData?.pages[0]?.pagination.total ?? 0;
 
-	// 触底哨兵：当滚动至距底部 200px 时自动预加载下一页
 	const sentinelRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
 		if (view !== "grid") return;
@@ -147,10 +143,8 @@ function AdminMediaPage() {
 		return () => observer.disconnect();
 	}, [view, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-	// 当前活跃视图的数据与加载状态
 	const currentFiles = view === "grid" ? gridFiles : tableFiles;
 	const currentLoading = view === "grid" ? isGridLoading : isTableLoading;
-
 	const deleteMutation = useAdminDeleteFile();
 	const batchDeleteMutation = useBatchDeleteMedia();
 	const queryClient = useQueryClient();
@@ -375,13 +369,9 @@ function AdminMediaPage() {
 					onPreview={handlePreview}
 					onBatchDelete={canDeleteMedia ? () => setBatchDeleteOpen(true) : undefined}
 					batchDeleting={batchDeleteMutation.isPending}
+					pagination={pagination}
 				/>
 			)}
-
-			{/* 表格视图保留底部分页器 */}
-			{view === "table" && !isTableLoading && tableFiles.length > 0 ? (
-				<Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-			) : null}
 
 			{/* 上传弹窗 */}
 			<Modal
@@ -531,6 +521,7 @@ function MediaTable({
 	onBatchDelete,
 	batchDeleting,
 	loading,
+	pagination,
 }: {
 	files: MediaFile[];
 	selectedIds: Set<string>;
@@ -541,6 +532,7 @@ function MediaTable({
 	onBatchDelete?: () => void;
 	batchDeleting?: boolean;
 	loading?: boolean;
+	pagination?: DataTablePagination;
 }) {
 	const columns: DataTableColumn<MediaFile>[] = [
 		{
@@ -686,6 +678,7 @@ function MediaTable({
 					</Button>
 				) : null
 			}
+			pagination={pagination}
 			loading={loading}
 			storageKey="admin-media-table-columns"
 			caption="素材列表"
