@@ -1,8 +1,8 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { useAdminRoles } from "@features/admin-roles/api/queries";
+import { useAllRoles } from "@features/admin-roles/api/queries";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, DEFAULT_PAGE_SIZE, exportToCsv } from "@features/admin-shared/ui/data-table";
+import { DataTable, exportToCsv, useTablePagination } from "@features/admin-shared/ui/data-table";
 import {
 	useAdminUsers,
 	useBatchUpdateRole,
@@ -37,8 +37,7 @@ export const Route = createFileRoute("/admin/users")({
 });
 
 function AdminUsers() {
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 	const [keyword, setKeyword] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -66,7 +65,7 @@ function AdminUsers() {
 	const isOperatorRoot = me?.is_root === true;
 
 	// 查询角色列表
-	const { data: roles = [] } = useAdminRoles();
+	const { data: roles = [] } = useAllRoles();
 
 	// 防抖搜索关键词（由 SearchInput 内部防抖，onSearch 回写）
 	// 查询用户列表
@@ -377,15 +376,7 @@ function AdminUsers() {
 					columns={columns}
 					data={sortedData}
 					keyExtractor={(row) => row.id}
-					pagination={{
-						page,
-						pageSize,
-						total: response?.pagination?.total || 0,
-						onChange: (page, pageSize) => {
-							setPage(page);
-							setPageSize(pageSize);
-						},
-					}}
+					pagination={withTotal(response?.pagination?.total || 0)}
 					sort={sort}
 					onSortChange={setSort}
 					selectable

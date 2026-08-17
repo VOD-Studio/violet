@@ -1,7 +1,8 @@
 /**
  * admin-announcements API 客户端
  */
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/api/request";
+import { apiDelete, apiGet, apiGetPaged, apiPatch, apiPost } from "@/shared/api/request";
+import type { PagedResponse, PageQuery } from "@/shared/api/types";
 import type {
 	AnnouncementDTO,
 	CreateAnnouncementRequest,
@@ -11,12 +12,13 @@ import type {
 const BASE = "/admin/announcements";
 
 /**
- * 获取所有公告列表
+ * 获取公告列表（分页）
  *
- * GET /admin/announcements
+ * GET /admin/announcements?page=&limit=
  */
-export const listAnnouncements = async (): Promise<AnnouncementDTO[]> =>
-	apiGet<AnnouncementDTO[]>(BASE);
+export const listAnnouncements = async (
+	query: PageQuery,
+): Promise<PagedResponse<AnnouncementDTO>> => apiGetPaged<AnnouncementDTO>(BASE, { params: query });
 
 /**
  * 获取单个公告详情

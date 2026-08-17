@@ -19,7 +19,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	DataTable,
 	type DataTableColumn,
-	DEFAULT_PAGE_SIZE,
+	useTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
@@ -31,8 +31,6 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
-
-const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 /** 筛选值："all" 表示全部，其余为具体状态 */
 type FriendLinkFilter = "all" | FriendLinkStatus;
@@ -62,7 +60,7 @@ const STATUS_BADGE: Record<
 
 function AdminFriendLinksPage() {
 	const [filter, setFilter] = useState<FriendLinkFilter>("pending");
-	const [page, setPage] = useState(1);
+	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editing, setEditing] = useState<FriendLinkAdminDTO | null>(null);
 	const [deleting, setDeleting] = useState<FriendLinkAdminDTO | null>(null);
@@ -73,7 +71,7 @@ function AdminFriendLinksPage() {
 	const { data, isLoading, error, refetch } = useFriendLinks({
 		status,
 		page,
-		limit: PAGE_SIZE,
+		limit: pageSize,
 	});
 	const approveMut = useApproveFriendLink();
 	const rejectMut = useRejectFriendLink();
@@ -264,13 +262,7 @@ function AdminFriendLinksPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={{
-					page,
-					pageSize: PAGE_SIZE,
-					total: data?.pagination?.total ?? 0,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
-				}}
+				pagination={withTotal(data?.pagination?.total ?? 0)}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}

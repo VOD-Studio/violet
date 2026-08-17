@@ -1,6 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, DEFAULT_PAGE_SIZE } from "@features/admin-shared/ui/data-table";
+import { DataTable, useTablePagination } from "@features/admin-shared/ui/data-table";
 import {
 	useCreateSubscription,
 	useDeleteSubscription,
@@ -40,8 +40,7 @@ export const Route = createFileRoute("/admin/subscriptions")({
 
 function AdminSubscriptionsPage() {
 	const [statusFilter, setStatusFilter] = React.useState<string>("");
-	const [page, setPage] = React.useState(1);
-	const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
+	const { page, pageSize, setPage, withTotal } = useTablePagination();
 
 	const { data, isLoading, error, refetch } = useSubscriptions(statusFilter, page, pageSize);
 	const createMut = useCreateSubscription();
@@ -218,15 +217,7 @@ function AdminSubscriptionsPage() {
 					columns={columns}
 					data={data?.items ?? []}
 					keyExtractor={(row) => row.id}
-					pagination={{
-						page,
-						pageSize,
-						total: data?.total ?? 0,
-						onChange: (page, pageSize) => {
-							setPage(page);
-							setPageSize(pageSize);
-						},
-					}}
+					pagination={withTotal(data?.total ?? 0)}
 					loading={isLoading}
 					error={error}
 					onRetry={refetch}

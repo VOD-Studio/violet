@@ -4,7 +4,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	DataTable,
 	type DataTableColumn,
-	DEFAULT_PAGE_SIZE,
+	useTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -21,7 +21,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { useState } from "react";
-
 
 /** 操作类型选项（与后端受控枚举对齐） */
 const ACTION_OPTIONS = [
@@ -67,8 +66,7 @@ const RESOURCE_OPTIONS = [
 ];
 
 function AdminLogsPage() {
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [action, setAction] = useState("");
 	const [resourceType, setResourceType] = useState("");
 	const [actor, setActor] = useState("");
@@ -204,15 +202,7 @@ function AdminLogsPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.event_id}
-				pagination={{
-					page,
-					pageSize,
-					total: data?.pagination?.total ?? 0,
-					onChange: (page, pageSize) => {
-						setPage(page);
-						setPageSize(pageSize);
-					},
-				}}
+				pagination={withTotal(data?.pagination?.total ?? 0)}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

@@ -1,6 +1,8 @@
 /**
  * admin-announcements TanStack Query Hooks
  */
+
+import type { PageQuery } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { CreateAnnouncementRequest, UpdateAnnouncementRequest } from "../model/types";
@@ -8,12 +10,12 @@ import * as api from "./client";
 import { announcementKeys } from "./keys";
 
 /**
- * useAdminAnnouncements - 查询公告列表
+ * useAdminAnnouncements - 查询公告列表（分页）
  */
-export const useAdminAnnouncements = () =>
+export const useAdminAnnouncements = (query: PageQuery) =>
 	useQuery({
-		queryKey: announcementKeys.list(),
-		queryFn: () => api.listAnnouncements(),
+		queryKey: announcementKeys.list(query),
+		queryFn: () => api.listAnnouncements(query),
 	});
 
 /**

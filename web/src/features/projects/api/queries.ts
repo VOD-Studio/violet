@@ -1,4 +1,5 @@
-import { apiGet } from "@shared/api/request";
+import { apiGet, apiGetPaged } from "@shared/api/request";
+import type { PagedResponse, PageQuery } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
 import type { Project, ProjectListQuery } from "../model/types";
 import { projectKeys } from "./keys";
@@ -6,15 +7,18 @@ import { projectKeys } from "./keys";
 /**
  * fetchProjects - 调后端 GET /projects 拉取项目列表
  *
- * 后端 ListProjects handler 直接返回全量 ProjectDTO 数组，未做分页，
- * 故此处用 apiGet 解包出数组而非 apiGetPaged。ProjectListQuery 的 page/limit
- * 参数当前会被后端忽略，待后端补齐分页后再切换为 apiGetPaged。
+ * 无分页参数时后端返回全量 ProjectDTO 数组（前台项目页用）；
+ * 带 page/limit 时返回 paged 信封（后台项目管理页用 fetchProjectsPaged）。
  *
- * @param query 预留分页参数，当前不生效
+ * @param query 预留筛选参数
  * @returns 项目数组
  */
 export const fetchProjects = async (query: ProjectListQuery = {}): Promise<Project[]> =>
 	apiGet<Project[]>("/projects", { params: query });
+
+/** fetchProjectsPaged - 分页拉取项目列表（后台管理页用） */
+export const fetchProjectsPaged = async (query: PageQuery): Promise<PagedResponse<Project>> =>
+	apiGetPaged<Project>("/projects", { params: query });
 
 /**
  * useProjects - 项目列表 hook

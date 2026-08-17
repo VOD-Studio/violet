@@ -9,7 +9,7 @@ import type {
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
+import { DataTable, useTablePagination } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -43,7 +43,15 @@ function formatTime(s?: string): string {
 }
 
 function AdminAnnouncementsPage() {
-	const { data: announcements = [], isLoading, error, refetch } = useAdminAnnouncements();
+	const { page, pageSize, withTotal } = useTablePagination();
+	const {
+		data: paged,
+		isLoading,
+		error,
+		refetch,
+	} = useAdminAnnouncements({ page, limit: pageSize });
+	const announcements = paged?.data ?? [];
+	const total = paged?.pagination?.total ?? 0;
 	const deleteAnn = useDeleteAnnouncement();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<AnnouncementDTO | null>(null);
@@ -51,6 +59,7 @@ function AdminAnnouncementsPage() {
 	const [deleting, setDeleting] = useState<AnnouncementDTO | null>(null);
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 
+	// 排序在当前页内进行（后端列表固定 sort_order 序）
 	const sortedAnnouncements = useMemo(() => {
 		if (!sort) return announcements;
 		const copy = [...announcements];
@@ -62,8 +71,6 @@ function AdminAnnouncementsPage() {
 		});
 		return copy;
 	}, [announcements, sort]);
-
-	const { pagedData: pagedAnnouncements, pagination } = useClientPagination(sortedAnnouncements);
 
 	// TODO: 公告管理当前无批量操作后端接口；如需复选框批量启用/停用/删除，需后端支持。
 
@@ -181,9 +188,9 @@ function AdminAnnouncementsPage() {
 			}
 		>
 			<DataTable<AnnouncementDTO>
-				data={pagedAnnouncements}
+				data={sortedAnnouncements}
 				columns={columns}
-				pagination={pagination}
+				pagination={withTotal(total)}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

@@ -1,6 +1,8 @@
 /**
  * admin-roles TanStack Query Hooks
  */
+
+import type { PagedResponse, PageQuery } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
@@ -8,17 +10,30 @@ import type {
 	UpdateRolePermissionsRequest,
 	UpdateRoleRequest,
 } from "../model/role-detail-types";
+import type { RoleDTO } from "../model/types";
 import * as api from "./client";
 import { adminRolesKeys } from "./keys";
 
 /**
- * useAdminRoles - 查询角色列表
+ * useAdminRoles - 查询角色列表（分页）
  */
-export const useAdminRoles = () => {
+export const useAdminRoles = (query: PageQuery) => {
 	return useQuery({
-		queryKey: adminRolesKeys.list(),
-		queryFn: () => api.listRoles(),
+		queryKey: adminRolesKeys.list(query),
+		queryFn: () => api.listRoles(query),
 		staleTime: 30 * 60 * 1000, // 30 分钟（角色变化不频繁）
+	});
+};
+
+/**
+ * useAllRoles - 拉全量角色（下拉筛选用，角色数少一次拉满 max limit）
+ */
+export const useAllRoles = () => {
+	return useQuery({
+		queryKey: adminRolesKeys.list({ page: 1, limit: 100 }),
+		queryFn: () => api.listRoles({ page: 1, limit: 100 }),
+		staleTime: 30 * 60 * 1000,
+		select: (paged: PagedResponse<RoleDTO>) => paged.data,
 	});
 };
 

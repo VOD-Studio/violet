@@ -40,6 +40,27 @@ export interface DataTableSort {
 	order: "asc" | "desc";
 }
 
+/** 分页配置（服务端/客户端分页共用 shape） */
+export interface DataTablePagination {
+	/** 当前页码（从 1 开始） */
+	page: number;
+	/** 每页条数 */
+	pageSize: number;
+	/** 总条数，组件据此计算 totalPages */
+	total: number;
+	/**
+	 * 分页变更回调
+	 *
+	 * @param page 新页码
+	 * @param pageSize 新每页条数（翻页时不变，切换条数时为新值且 page 重置为 1）
+	 */
+	onChange: (page: number, pageSize: number) => void;
+	/** 可选每页条数选项，默认 `[10, 20, 50]` */
+	pageSizeOptions?: number[];
+	/** 是否隐藏每页条数选择器，默认 false（显示）。用固定 pageSize 的页面传 true */
+	hidePageSizeSelect?: boolean;
+}
+
 export interface DataTableProps<T> {
 	columns: DataTableColumn<T>[];
 	/** 当前页数据，由调用方按分页参数从服务端取回 */
@@ -48,27 +69,9 @@ export interface DataTableProps<T> {
 	keyExtractor: (row: T) => string;
 
 	/**
-	 * 分页配置；不传则不显示分页栏，适合前端全量列表（tags/roles 等）
+	 * 分页配置；不传则不显示分页栏，适合前端全量列表（permissions 树等）
 	 */
-	pagination?: {
-		/** 当前页码（从 1 开始） */
-		page: number;
-		/** 每页条数 */
-		pageSize: number;
-		/** 总条数，组件据此计算 totalPages */
-		total: number;
-		/**
-		 * 分页变更回调
-		 *
-		 * @param page 新页码
-		 * @param pageSize 新每页条数（翻页时不变，切换条数时为新值且 page 重置为 1）
-		 */
-		onChange: (page: number, pageSize: number) => void;
-		/** 可选每页条数选项，默认 `[10, 20, 50]` */
-		pageSizeOptions?: number[];
-		/** 是否隐藏每页条数选择器，默认 false（显示）。用固定 pageSize 的页面传 true */
-		hidePageSizeSelect?: boolean;
-	};
+	pagination?: DataTablePagination;
 
 	/** 排序态（受控，可选） */
 	sort?: DataTableSort | null;

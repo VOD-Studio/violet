@@ -12,7 +12,7 @@ import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/m
 import {
 	DataTable,
 	type DataTableColumn,
-	DEFAULT_PAGE_SIZE,
+	useTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
@@ -82,7 +82,7 @@ const STATUS_OPTIONS = [
 	{ value: "trashed", label: "回收站" },
 ];
 
-const PAGE_SIZE = DEFAULT_PAGE_SIZE;
+const PAGE_SIZE = 10; // 文章列表沿用 10 条/页（卡片密度高）
 
 // TODO: 文章列表当前无排序能力；后端 /admin/posts 需支持 sort_by + order 查询参数。
 
@@ -100,8 +100,7 @@ const BATCH_ACTION_LABEL: Record<PostBatchAction, string> = {
 function AdminPostsPage() {
 	const navigate = useNavigate();
 	const [status, setStatus] = useState("all");
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(PAGE_SIZE);
+	const { page, pageSize, setPage, withTotal } = useTablePagination(PAGE_SIZE);
 	const [keyword, setKeyword] = useState("");
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -346,15 +345,7 @@ function AdminPostsPage() {
 				data={posts}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={{
-					page,
-					pageSize,
-					total,
-					onChange: (p, ps) => {
-						setPage(p);
-						setPageSize(ps);
-					},
-				}}
+				pagination={withTotal(total)}
 				selectable
 				selectedIds={selectedIds}
 				onSelectionChange={setSelectedIds}

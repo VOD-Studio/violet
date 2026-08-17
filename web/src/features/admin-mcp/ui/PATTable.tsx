@@ -3,7 +3,7 @@ import type { PATDTO, PATScope } from "@features/admin-mcp/model/types";
 import {
 	DataTable,
 	type DataTableColumn,
-	useClientPagination,
+	type DataTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -12,12 +12,13 @@ import { Cable, Trash2 } from "lucide-react";
 
 interface PATTableProps {
 	tokens: PATDTO[];
+	pagination: DataTablePagination;
 	loading: boolean;
 	/** 跳转接入区，按该令牌 scope 推导可见 server */
 	onConnect: (scopes: PATScope[]) => void;
 }
 
-export function PATTable({ tokens, loading, onConnect }: PATTableProps) {
+export function PATTable({ tokens, pagination, loading, onConnect }: PATTableProps) {
 	const del = useDeletePAT();
 
 	const columns: DataTableColumn<PATDTO>[] = [
@@ -90,12 +91,10 @@ export function PATTable({ tokens, loading, onConnect }: PATTableProps) {
 		},
 	];
 
-	const { pagedData: pagedTokens, pagination } = useClientPagination(tokens);
-
 	return (
 		<DataTable<PATDTO>
 			columns={columns}
-			data={pagedTokens}
+			data={tokens}
 			pagination={pagination}
 			keyExtractor={(row) => row.id}
 			loading={loading}
