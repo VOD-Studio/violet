@@ -7,6 +7,23 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.9](https://github.com/VOD-Studio/violet/compare/v2.8.8...v2.8.9) (2026-08-17)
+
+
+### 新增
+
+* **shared-ui:** CroppedImage 支持选区比例撑高与失败回调透传 ([e7d19be](https://github.com/VOD-Studio/violet/commit/e7d19be4249399a999f0bbbb58a41d5a035d97b9))
+* **web:** 封面裁剪接入与长滚动浮动返回 ([#209](https://github.com/VOD-Studio/violet/issues/209)) ([a394443](https://github.com/VOD-Studio/violet/commit/a394443dbcf4037ce7e7a18210bf61eafce00351))
+* **web:** 长滚动页面接入浮动返回钮 ([e01244d](https://github.com/VOD-Studio/violet/commit/e01244d893eee48ce704c4bb5b9eaf248c94b5d4))
+
+
+### 修复
+
+* **shared-ui:** 浮动返回出场动画尊重减少动态 ([27ab2f5](https://github.com/VOD-Studio/violet/commit/27ab2f5032af58fa339f6cdb135a6948af97e2d7))
+* **tweets:** 页头随时间线同列对齐 ([03701f9](https://github.com/VOD-Studio/violet/commit/03701f99d6d6ef664992bdff3fbc9846e462553c))
+* **web:** hero 封面设计比例不被选区比例顶掉 ([b6728e7](https://github.com/VOD-Studio/violet/commit/b6728e71a2ccf6db1084fc550275c6d478ba6204))
+* **web:** 列表与首页封面接入选区裁剪复现 ([a86f564](https://github.com/VOD-Studio/violet/commit/a86f564697c8031f3ad7973bb1fb6cc894a87144))
+
 ## [2.8.8](https://github.com/VOD-Studio/violet/compare/v2.8.7...v2.8.8) (2026-08-16)
 
 
