@@ -550,7 +550,12 @@ function MediaTable({
 			cell: (file) => (
 				<div className="flex justify-center gap-1">
 					{onEdit ? (
-						<Button size="icon-sm" variant="ghost" onClick={() => onEdit(file)}>
+						<Button
+							size="icon-sm"
+							variant="ghost"
+							title="编辑"
+							onClick={() => onEdit(file)}
+						>
 							<Pencil className="size-3.5" />
 						</Button>
 					) : null}
@@ -558,6 +563,7 @@ function MediaTable({
 						<Button
 							size="icon-sm"
 							variant="ghost"
+							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => onDelete(file)}
 						>

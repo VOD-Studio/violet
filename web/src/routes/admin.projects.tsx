@@ -145,13 +145,24 @@ function AdminProjectsPage() {
 			cell: (row) => (
 				<div className="flex items-center gap-1">
 					{canUpdate ? (
-						<Button size="sm" variant="ghost" onClick={() => openEdit(row)}>
-							<Pencil className="size-4" />
+						<Button
+							size="icon-sm"
+							variant="ghost"
+							title="编辑"
+							onClick={() => openEdit(row)}
+						>
+							<Pencil className="size-3.5" />
 						</Button>
 					) : null}
 					{canDelete ? (
-						<Button size="sm" variant="ghost" onClick={() => setDeleteId(row.id)}>
-							<Trash2 className="size-4" />
+						<Button
+							size="icon-sm"
+							variant="ghost"
+							title="删除"
+							className="hover:bg-destructive/10 hover:text-destructive"
+							onClick={() => setDeleteId(row.id)}
+						>
+							<Trash2 className="size-3.5" />
 						</Button>
 					) : null}
 				</div>

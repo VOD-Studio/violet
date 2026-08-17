@@ -183,37 +183,42 @@ function AdminCommentsPage() {
 			key: "_actions",
 			header: "操作",
 			sticky: "right",
-			width: "200px",
+			width: "120px",
 			cell: (row) => (
 				<div className="flex items-center gap-1">
 					{canApprove ? (
 						<Button
-							size="sm"
+							size="icon-sm"
 							variant="ghost"
+							title="通过"
 							onClick={() => approveMut.mutate(row.id)}
 							disabled={approveMut.isPending}
 						>
-							通过
+							<Check className="size-3.5" />
 						</Button>
 					) : null}
 					{canApprove ? (
 						<Button
-							size="sm"
+							size="icon-sm"
 							variant="ghost"
+							title="标为垃圾"
+							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => spamMut.mutate(row.id)}
 							disabled={spamMut.isPending}
 						>
-							垃圾
+							<Ban className="size-3.5" />
 						</Button>
 					) : null}
 					{canDelete ? (
 						<Button
-							size="sm"
+							size="icon-sm"
 							variant="ghost"
+							title="删除"
+							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeletingId(row.id)}
 							disabled={deleteMut.isPending}
 						>
-							<Trash2 className="size-4" />
+							<Trash2 className="size-3.5" />
 						</Button>
 					) : null}
 				</div>

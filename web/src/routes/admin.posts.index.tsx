@@ -35,6 +35,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Archive,
 	ChevronDown,
+	FileEdit,
 	MoreHorizontal,
 	Pencil,
 	Plus,
@@ -587,11 +588,13 @@ function RowActions({
 							<DropdownMenuSeparator />
 							{row.status !== "published" ? (
 								<DropdownMenuItem onClick={() => changeStatus("published")}>
+									<Send className="size-3.5" />
 									发布
 								</DropdownMenuItem>
 							) : null}
 							{row.status !== "draft" ? (
 								<DropdownMenuItem onClick={() => changeStatus("draft")}>
+									<FileEdit className="size-3.5" />
 									移至草稿
 								</DropdownMenuItem>
 							) : null}

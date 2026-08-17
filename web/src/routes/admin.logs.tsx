@@ -20,6 +20,7 @@ import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { Eye } from "lucide-react";
 import { useState } from "react";
 
 /** 操作类型选项（与后端受控枚举对齐） */
@@ -135,10 +136,15 @@ function AdminLogsPage() {
 			key: "_detail",
 			header: "操作",
 			sticky: "right",
-			width: "80px",
+			width: "64px",
 			cell: (row) => (
-				<Button variant="ghost" size="sm" onClick={() => setDetailLog(row)}>
-					详情
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					title="查看详情"
+					onClick={() => setDetailLog(row)}
+				>
+					<Eye className="size-3.5" />
 				</Button>
 			),
 		},
