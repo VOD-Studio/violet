@@ -1,6 +1,6 @@
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
-import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
+import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGoogleLogin } from "@react-oauth/google";
