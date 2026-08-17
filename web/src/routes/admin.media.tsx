@@ -1,4 +1,10 @@
-import type { MediaFile } from "@entities/media/model/types";
+import {
+	MEDIA_PURPOSE_LABELS,
+	MEDIA_PURPOSE_OPTIONS,
+	MEDIA_TYPE_OPTIONS,
+	isImageOnlyPurpose,
+} from "@entities/media/model/constants";
+import type { MediaFile, MediaPurpose } from "@entities/media/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { adminMediaKeys } from "@features/admin-media/api/keys";
 import { useAdminDeleteFile, useBatchDeleteMedia } from "@features/admin-media/api/mutations";
@@ -57,6 +63,7 @@ function AdminMediaPage() {
 	// 筛选状态
 	const [purpose, setPurpose] = useState<string>("");
 	const [fileType, setFileType] = useState<string>("");
+	const isImageOnly = isImageOnlyPurpose(purpose);
 	const [keyword, setKeyword] = useState<string>("");
 	const [view, setView] = useState<ViewMode>("grid");
 	const [page, setPage] = useState(1);
@@ -208,37 +215,46 @@ function AdminMediaPage() {
 					<Select
 						value={purpose || "all"}
 						onValueChange={(v) => {
-							setPurpose(v === "all" ? "" : v);
+							const next = v === "all" ? "" : v;
+							setPurpose(next);
+							if (isImageOnlyPurpose(next)) {
+								setFileType("");
+							}
 							setPage(1);
 						}}
 					>
-						<SelectTrigger className="h-9 w-30 text-xs">
+						<SelectTrigger className="h-9 w-32 text-xs">
 							<SelectValue placeholder="用途" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">全部用途</SelectItem>
-							<SelectItem value="material">素材</SelectItem>
-							<SelectItem value="avatar">头像</SelectItem>
-							<SelectItem value="post">文章配图</SelectItem>
-							<SelectItem value="emoji">表情</SelectItem>
+							{MEDIA_PURPOSE_OPTIONS.map((opt) => (
+								<SelectItem key={opt.value} value={opt.value}>
+									{opt.label}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 
 					<Select
-						value={fileType || "all"}
+						disabled={isImageOnly}
+						value={isImageOnly ? "image" : fileType || "all"}
 						onValueChange={(v) => {
 							setFileType(v === "all" ? "" : v);
 							setPage(1);
 						}}
 					>
-						<SelectTrigger className="h-9 w-30 text-xs">
+						<SelectTrigger
+							className="h-9 w-32 text-xs"
+							title={isImageOnly ? "当前用途仅支持图片格式" : undefined}
+						>
 							<SelectValue placeholder="类型" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">全部类型</SelectItem>
-							<SelectItem value="image">图片</SelectItem>
-							<SelectItem value="video">视频</SelectItem>
-							<SelectItem value="audio">音频</SelectItem>
+							{MEDIA_TYPE_OPTIONS.map((opt) => (
+								<SelectItem key={opt.value} value={opt.value}>
+									{opt.label}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 
@@ -532,8 +548,12 @@ function MediaTable({
 		{
 			key: "purpose",
 			header: "用途",
-			width: "80px",
-			accessorKey: "purpose",
+			width: "96px",
+			cell: (file) => (
+				<span className="text-xs text-muted-foreground">
+					{MEDIA_PURPOSE_LABELS[file.purpose as MediaPurpose] ?? file.purpose}
+				</span>
+			),
 		},
 		{
 			key: "category",
