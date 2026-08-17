@@ -73,14 +73,18 @@ function HeroCover({ post }: { post: Post }) {
 			animate={{ filter: "blur(0px)" }}
 			transition={{ duration: 0.5, ease: "easeOut" }}
 		>
-			<CroppedImage
-				src={post.cover_image}
-				width={1280}
-				alt={post.title}
-				onError={() => setBrokenFor(post.cover_image)}
-				className="aspect-16/10 w-full md:aspect-21/9"
-				imgClassName="transition-transform duration-700 group-hover:scale-[1.03]"
-			/>
+			{/* 设计比例放外层定尺寸容器:带选区时 CroppedImage 会 inline 写选区
+			    aspect-ratio,宽高均已确定时该 inline 比例不生效,选区按 cover 适配进来 */}
+			<div className="aspect-16/10 w-full md:aspect-21/9">
+				<CroppedImage
+					src={post.cover_image}
+					width={1280}
+					alt={post.title}
+					onError={() => setBrokenFor(post.cover_image)}
+					className="h-full w-full"
+					imgClassName="transition-transform duration-700 group-hover:scale-[1.03]"
+				/>
+			</div>
 		</motion.div>
 	);
 }
