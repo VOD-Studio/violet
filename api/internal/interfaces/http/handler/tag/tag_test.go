@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apptag "blog-api/internal/application/tag"
+	domainshared "blog-api/internal/domain/shared"
 	domaintag "blog-api/internal/domain/tag"
 )
 
@@ -33,6 +34,10 @@ type stubTagRepo struct {
 
 func (s *stubTagRepo) FindAll(context.Context) ([]domaintag.Tag, error) {
 	return s.findAllTags, nil
+}
+
+func (s *stubTagRepo) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[domaintag.Tag], error) {
+	return domainshared.PageResult[domaintag.Tag]{}, nil
 }
 
 func (s *stubTagRepo) ExistsBySlug(context.Context, string) (bool, error) {

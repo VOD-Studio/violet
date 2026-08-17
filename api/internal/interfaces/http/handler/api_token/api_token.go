@@ -87,15 +87,15 @@ func parseExpiry(s string, now time.Time) (time.Time, error) {
 	return expiresAt, nil
 }
 
-// List 列出当前用户的全部 PAT。
+// List 分页列出当前用户的 PAT。
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
-	dtos, err := h.svc.List(r.Context(), userID)
+	result, err := h.svc.ListPage(r.Context(), userID, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, dtos)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // Delete 吊销 PAT。

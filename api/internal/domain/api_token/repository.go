@@ -25,6 +25,8 @@ type TokenRepository interface {
 	FindByHash(ctx context.Context, hash string) (*PAT, error)
 	// FindByUser 列出某用户全部 PAT。
 	FindByUser(ctx context.Context, userID string) ([]*PAT, error)
+	// FindPageByUser 分页列出某用户 PAT（按创建时间倒序）。
+	FindPageByUser(ctx context.Context, userID string, q domainshared.PageQuery) (domainshared.PageResult[*PAT], error)
 	// Delete 删除（吊销）PAT。按 id + userID 双重定位，防越权删除他人 token。
 	Delete(ctx context.Context, id, userID string) error
 }

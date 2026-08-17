@@ -103,6 +103,38 @@ func (r *RoleRepository) FindAll(ctx context.Context) ([]*role.Role, error) {
 	return roles, nil
 }
 
+// FindPage 分页查找角色（含权限）
+func (r *RoleRepository) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*role.Role], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Role{}).Order("id ASC")
+	var pos []model.Role
+	total, err := countAndFind(query, q, &pos, "角色")
+	if err != nil {
+		return domainshared.PageResult[*role.Role]{}, err
+	}
+	// 单独 Preload 权限，避免 Count 阶段带上 join 导致计数翻倍
+	if err := r.db.WithContext(ctx).Preload("Permissions").Find(&pos, "id IN ?", idsOf(pos)).Error; err != nil {
+		return domainshared.PageResult[*role.Role]{}, domainshared.Internal("查询角色权限失败", err)
+	}
+	roles := make([]*role.Role, 0, len(pos))
+	for _, po := range pos {
+		rl, err := roleToDomain(po)
+		if err != nil {
+			return domainshared.PageResult[*role.Role]{}, err
+		}
+		roles = append(roles, rl)
+	}
+	return domainshared.NewPageResult(q, roles, total), nil
+}
+
+func idsOf(pos []model.Role) []int32 {
+	ids := make([]int32, 0, len(pos))
+	for _, po := range pos {
+		ids = append(ids, po.ID)
+	}
+	return ids
+}
+
 // ExistsByName 名称是否已存在
 func (r *RoleRepository) ExistsByName(ctx context.Context, name role.RoleName) (bool, error) {
 	var count int64

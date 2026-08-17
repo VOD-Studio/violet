@@ -17,6 +17,8 @@ type RoleRepository interface {
 	FindByName(ctx context.Context, name RoleName) (*Role, error)
 	// FindAll 查找所有角色
 	FindAll(ctx context.Context) ([]*Role, error)
+	// FindPage 分页查找角色（含权限，按 id ASC）
+	FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Role], error)
 	// ExistsByName 名称是否已存在
 	ExistsByName(ctx context.Context, name RoleName) (bool, error)
 

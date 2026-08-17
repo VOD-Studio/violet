@@ -31,12 +31,12 @@ func NewHandler(annSvc *appann.Service, projSvc *appproj.Service) *Handler {
 // ============================================================
 
 func (h *Handler) ListAnnouncements(w http.ResponseWriter, r *http.Request) {
-	items, err := h.annSvc.List(r.Context())
+	result, err := h.annSvc.ListPage(r.Context(), response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, items)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 func (h *Handler) ListActiveAnnouncements(w http.ResponseWriter, r *http.Request) {
@@ -183,12 +183,22 @@ func (h *Handler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 // ============================================================
 
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	items, err := h.projSvc.List(r.Context())
+	// 公开路由无分页参数时保持全量数组（前台项目页零改动）；带参则分页
+	if r.URL.Query().Get("page") == "" && r.URL.Query().Get("limit") == "" {
+		items, err := h.projSvc.List(r.Context())
+		if err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+		response.RespondOK(w, items)
+		return
+	}
+	result, err := h.projSvc.ListPage(r.Context(), response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, items)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // GetProject 获取项目详情（公开）

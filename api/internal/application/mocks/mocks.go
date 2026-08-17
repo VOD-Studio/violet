@@ -51,6 +51,14 @@ func (m *MockRoleRepository) FindAll(ctx context.Context) ([]*role.Role, error) 
 	return args.Get(0).([]*role.Role), args.Error(1)
 }
 
+func (m *MockRoleRepository) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*role.Role], error) {
+	args := m.Called(ctx, q)
+	if args.Get(0) == nil {
+		return shared.PageResult[*role.Role]{}, args.Error(1)
+	}
+	return args.Get(0).(shared.PageResult[*role.Role]), args.Error(1)
+}
+
 func (m *MockRoleRepository) ExistsByName(ctx context.Context, name role.RoleName) (bool, error) {
 	args := m.Called(ctx, name)
 	return args.Bool(0), args.Error(1)
@@ -253,6 +261,14 @@ func (m *MockAnnouncementRepository) FindAll(ctx context.Context) ([]*announceme
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*announcement.Announcement), args.Error(1)
+}
+
+func (m *MockAnnouncementRepository) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*announcement.Announcement], error) {
+	args := m.Called(ctx, q)
+	if args.Get(0) == nil {
+		return shared.PageResult[*announcement.Announcement]{}, args.Error(1)
+	}
+	return args.Get(0).(shared.PageResult[*announcement.Announcement]), args.Error(1)
 }
 
 func (m *MockAnnouncementRepository) FindActive(ctx context.Context) ([]*announcement.Announcement, error) {

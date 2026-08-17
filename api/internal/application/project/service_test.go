@@ -31,6 +31,10 @@ func (m *mockProjectRepo) FindAll(ctx context.Context) ([]*domain.Project, error
 	return nil, args.Error(1)
 }
 
+func (m *mockProjectRepo) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*domain.Project], error) {
+	return shared.PageResult[*domain.Project]{}, nil
+}
+
 func (m *mockProjectRepo) Save(ctx context.Context, p *domain.Project) error {
 	return m.Called(ctx, p).Error(0)
 }

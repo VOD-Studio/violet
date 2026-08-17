@@ -61,14 +61,14 @@ func NewHandler(
 // Role 相关 handler
 // ============================================================
 
-// ListRoles 获取角色列表
+// ListRoles 获取角色列表（分页）
 func (h *Handler) ListRoles(w http.ResponseWriter, r *http.Request) {
-	roles, err := h.roleQuery.Handle(r.Context())
+	result, err := h.roleQuery.HandlePage(r.Context(), response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, roles)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // GetRole 获取角色详情（含权限）

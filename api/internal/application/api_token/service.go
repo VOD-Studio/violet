@@ -68,6 +68,19 @@ func (s *Service) List(ctx context.Context, userID string) ([]PATDTO, error) {
 	return out, nil
 }
 
+// ListPage 分页列出某用户 PAT（不含明文）。
+func (s *Service) ListPage(ctx context.Context, userID string, q shared.PageQuery) (shared.PageResult[PATDTO], error) {
+	result, err := s.repo.FindPageByUser(ctx, userID, q)
+	if err != nil {
+		return shared.PageResult[PATDTO]{}, err
+	}
+	out := make([]PATDTO, 0, len(result.Items))
+	for _, p := range result.Items {
+		out = append(out, toDTO(p, ""))
+	}
+	return shared.NewPageResult(shared.PageQuery{Page: result.Page, Limit: result.Limit}, out, result.Total), nil
+}
+
 // Delete 吊销 PAT。按 id + userID 双重定位，防越权。
 func (s *Service) Delete(ctx context.Context, id, userID string) error {
 	// 删除前先查 name（删除后无法追溯）

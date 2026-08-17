@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"strconv"
 
+	domainshared "blog-api/internal/domain/shared"
 	"github.com/rs/zerolog/log"
 )
 
@@ -134,9 +135,9 @@ func RespondCursor(w http.ResponseWriter, data any, limit int, hasMore bool, nex
 // ============================================================
 
 const (
-	defaultPage  = 1
-	defaultLimit = 20
-	maxLimit     = 100
+	defaultPage  = domainshared.DefaultPage
+	defaultLimit = domainshared.DefaultPageLimit
+	maxLimit     = domainshared.MaxPageLimit
 )
 
 // ParsePaging 从 query 解析 offset 分页参数（page + limit）
@@ -157,6 +158,14 @@ func ParsePaging(r *http.Request) (page, limit int) {
 		limit = maxLimit
 	}
 	return page, limit
+}
+
+// ParsePageQuery 解析 query 参数为 domain/shared.PageQuery 值对象
+//
+// 供仓储 FindPage 签名直接使用；钳制规则同 ParsePaging（Normalize 再兜底）。
+func ParsePageQuery(r *http.Request) domainshared.PageQuery {
+	page, limit := ParsePaging(r)
+	return domainshared.PageQuery{Page: page, Limit: limit}
 }
 
 // ParsePagingWithMax 同 ParsePaging，但允许自定义 limit 上限

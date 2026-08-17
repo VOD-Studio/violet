@@ -26,6 +26,7 @@ import (
 
 	"blog-api/internal/application/role/query"
 	domainrole "blog-api/internal/domain/role"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // stubRoleRepo 手写 role.RoleRepository stub：FindAll/CountUsers 返回 canned 数据，
@@ -43,6 +44,19 @@ func (s *stubRoleRepo) FindByName(context.Context, domainrole.RoleName) (*domain
 func (s *stubRoleRepo) FindAll(context.Context) ([]*domainrole.Role, error) {
 	return s.roles, nil
 }
+func (s *stubRoleRepo) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*domainrole.Role], error) {
+	q = q.Normalize()
+	start := q.Offset()
+	if start > len(s.roles) {
+		start = len(s.roles)
+	}
+	end := start + q.Limit
+	if end > len(s.roles) {
+		end = len(s.roles)
+	}
+	return domainshared.NewPageResult(q, s.roles[start:end], int64(len(s.roles))), nil
+}
+
 func (s *stubRoleRepo) ExistsByName(context.Context, domainrole.RoleName) (bool, error) {
 	return false, nil
 }

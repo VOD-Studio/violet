@@ -89,6 +89,23 @@ func (r *AnnouncementRepository) FindAll(ctx context.Context) ([]*announcement.A
 	return result, nil
 }
 
+func (r *AnnouncementRepository) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*announcement.Announcement], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Announcement{}).
+		Order("sort_order ASC, created_at DESC, id ASC")
+	var pos []model.Announcement
+	total, err := countAndFind(query, q, &pos, "公告")
+	if err != nil {
+		return domainshared.PageResult[*announcement.Announcement]{}, err
+	}
+	result := make([]*announcement.Announcement, 0, len(pos))
+	for _, po := range pos {
+		a, _ := announcementToDomain(po)
+		result = append(result, a)
+	}
+	return domainshared.NewPageResult(q, result, total), nil
+}
+
 func (r *AnnouncementRepository) FindActive(ctx context.Context) ([]*announcement.Announcement, error) {
 	var pos []model.Announcement
 	now := time.Now()
@@ -193,6 +210,23 @@ func (r *ProjectRepository) FindAll(ctx context.Context) ([]*project.Project, er
 		result = append(result, p)
 	}
 	return result, nil
+}
+
+func (r *ProjectRepository) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*project.Project], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Project{}).
+		Order("sort_order ASC, created_at DESC, id ASC")
+	var pos []model.Project
+	total, err := countAndFind(query, q, &pos, "项目")
+	if err != nil {
+		return domainshared.PageResult[*project.Project]{}, err
+	}
+	result := make([]*project.Project, 0, len(pos))
+	for _, po := range pos {
+		p, _ := projectToDomain(po)
+		result = append(result, p)
+	}
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 func (r *ProjectRepository) Save(ctx context.Context, p *project.Project) error {

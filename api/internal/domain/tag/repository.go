@@ -9,6 +9,8 @@ import (
 // TagRepository 标签仓储接口
 type TagRepository interface {
 	FindAll(ctx context.Context) ([]Tag, error)
+	// FindPage 分页查找标签（按 id ASC）
+	FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[Tag], error)
 	FindByID(ctx context.Context, id int32) (Tag, error)
 	FindBySlug(ctx context.Context, slug string) (Tag, error)
 	Save(ctx context.Context, t Tag) (int32, error)

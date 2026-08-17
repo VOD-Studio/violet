@@ -10,6 +10,7 @@ import (
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 
 	domainapitoken "blog-api/internal/domain/api_token"
+	"blog-api/internal/domain/shared"
 )
 
 // fakeRepo TokenRepository 的内存 stub，记录调用参数与返回值。
@@ -25,6 +26,10 @@ type fakeRepo struct {
 func (f *fakeRepo) Save(_ context.Context, p *domainapitoken.PAT) error {
 	f.saveCalls = append(f.saveCalls, p)
 	return f.saveErr
+}
+
+func (f *fakeRepo) FindPageByUser(_ context.Context, _ string, q shared.PageQuery) (shared.PageResult[*domainapitoken.PAT], error) {
+	return shared.PageResult[*domainapitoken.PAT]{}, nil
 }
 
 func (f *fakeRepo) FindByHash(_ context.Context, _ string) (*domainapitoken.PAT, error) {

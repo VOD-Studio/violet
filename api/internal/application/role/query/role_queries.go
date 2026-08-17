@@ -10,6 +10,7 @@ import (
 	approle "blog-api/internal/application/role"
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // ============================================================
@@ -38,6 +39,19 @@ func (h *ListRolesHandler) Handle(ctx context.Context) ([]approle.RoleDTO, error
 		dtos = append(dtos, toRoleDTO(rl))
 	}
 	return dtos, nil
+}
+
+// HandlePage 分页查询角色列表
+func (h *ListRolesHandler) HandlePage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[approle.RoleDTO], error) {
+	result, err := h.roleRepo.FindPage(ctx, q)
+	if err != nil {
+		return domainshared.PageResult[approle.RoleDTO]{}, err
+	}
+	dtos := make([]approle.RoleDTO, 0, len(result.Items))
+	for _, rl := range result.Items {
+		dtos = append(dtos, toRoleDTO(rl))
+	}
+	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // ============================================================
@@ -76,6 +90,28 @@ func (h *ListRolesWithUserCountHandler) Handle(ctx context.Context) ([]approle.R
 		dtos = append(dtos, dto)
 	}
 	return dtos, nil
+}
+
+// HandlePage 分页查询（含每角色用户数）
+func (h *ListRolesWithUserCountHandler) HandlePage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[approle.RoleDTO], error) {
+	result, err := h.roleRepo.FindPage(ctx, q)
+	if err != nil {
+		return domainshared.PageResult[approle.RoleDTO]{}, err
+	}
+	dtos := make([]approle.RoleDTO, 0, len(result.Items))
+	for _, rl := range result.Items {
+		dto := toRoleDTO(rl)
+		if rl.Name().String() == role.SuperadminRole {
+			dto.PermissionCodes = []string{role.WildcardPermission}
+		}
+		count, err := h.roleRepo.CountUsers(ctx, rl.RoleID())
+		if err != nil {
+			return domainshared.PageResult[approle.RoleDTO]{}, err
+		}
+		dto.UserCount = count
+		dtos = append(dtos, dto)
+	}
+	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // ============================================================
