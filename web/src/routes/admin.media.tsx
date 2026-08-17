@@ -7,6 +7,7 @@ import type { AdminMediaListQuery } from "@features/admin-media/model/types";
 import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
+import { MediaGridSkeleton } from "@features/admin-media/ui/MediaGridSkeleton";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import {
 	DataTable,
@@ -264,9 +265,16 @@ function AdminMediaPage() {
 		>
 			{/* 内容区 */}
 			{isLoading ? (
-				<div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-					加载中…
-				</div>
+				view === "grid" ? (
+					<MediaGridSkeleton count={10} />
+				) : (
+					<MediaTable
+						files={[]}
+						loading={true}
+						selectedIds={selectedIds}
+						onSelectionChange={setSelectedIds}
+					/>
+				)
 			) : files.length === 0 ? (
 				<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
 					<Images className="size-8 opacity-40" />
@@ -295,7 +303,7 @@ function AdminMediaPage() {
 			)}
 
 			{/* 分页 */}
-			{files.length > 0 ? (
+			{!isLoading && files.length > 0 ? (
 				<Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 			) : null}
 
@@ -446,6 +454,7 @@ function MediaTable({
 	onPreview,
 	onBatchDelete,
 	batchDeleting,
+	loading,
 }: {
 	files: MediaFile[];
 	selectedIds: Set<string>;
@@ -454,7 +463,8 @@ function MediaTable({
 	onDelete?: (file: MediaFile) => void;
 	onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
 	onBatchDelete?: () => void;
-	batchDeleting: boolean;
+	batchDeleting?: boolean;
+	loading?: boolean;
 }) {
 	const columns: DataTableColumn<MediaFile>[] = [
 		{
@@ -596,7 +606,7 @@ function MediaTable({
 					</Button>
 				) : null
 			}
-			loading={false}
+			loading={loading}
 			storageKey="admin-media-table-columns"
 			caption="素材列表"
 			emptyTitle="暂无素材"
