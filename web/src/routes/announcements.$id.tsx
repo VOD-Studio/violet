@@ -1,7 +1,7 @@
 import { statusOf } from "@features/lab/announcement/model/event";
 import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { useAnnouncement } from "@features/settings/api/queries";
-import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
+import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Button } from "@shared/ui/base/button";
