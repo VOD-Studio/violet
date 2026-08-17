@@ -2,7 +2,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAllRoles } from "@features/admin-roles/api/queries";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, exportToCsv, useTablePagination } from "@features/admin-shared/ui/data-table";
+import { DataTable, exportToCsv, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import {
 	useAdminUsers,
 	useBatchUpdateRole,
@@ -37,7 +37,6 @@ export const Route = createFileRoute("/admin/users")({
 });
 
 function AdminUsers() {
-	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 	const [keyword, setKeyword] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -68,15 +67,14 @@ function AdminUsers() {
 	const { data: roles = [] } = useAllRoles();
 
 	// 防抖搜索关键词（由 SearchInput 内部防抖，onSearch 回写）
-	// 查询用户列表
 	const {
 		data: response,
 		isLoading,
 		error,
 		refetch,
-	} = useAdminUsers({
-		page,
-		limit: pageSize,
+		pagination,
+		setPage,
+	} = usePagedQuery(useAdminUsers, {
 		keyword: keyword || undefined,
 		role: roleFilter === "all" ? undefined : roleFilter,
 		is_active: statusFilter === "all" ? undefined : statusFilter === "active",
@@ -376,7 +374,7 @@ function AdminUsers() {
 					columns={columns}
 					data={sortedData}
 					keyExtractor={(row) => row.id}
-					pagination={withTotal(response?.pagination?.total || 0)}
+					pagination={pagination}
 					sort={sort}
 					onSortChange={setSort}
 					selectable

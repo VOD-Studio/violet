@@ -12,7 +12,7 @@ import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/m
 import {
 	DataTable,
 	type DataTableColumn,
-	useTablePagination,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
@@ -82,7 +82,7 @@ const STATUS_OPTIONS = [
 	{ value: "trashed", label: "回收站" },
 ];
 
-const PAGE_SIZE = 10; // 文章列表沿用 10 条/页（卡片密度高）
+const PAGE_SIZE = 10;
 
 // TODO: 文章列表当前无排序能力；后端 /admin/posts 需支持 sort_by + order 查询参数。
 
@@ -100,7 +100,7 @@ const BATCH_ACTION_LABEL: Record<PostBatchAction, string> = {
 function AdminPostsPage() {
 	const navigate = useNavigate();
 	const [status, setStatus] = useState("all");
-	const { page, pageSize, setPage, withTotal } = useTablePagination(PAGE_SIZE);
+
 	const [keyword, setKeyword] = useState("");
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -113,20 +113,20 @@ function AdminPostsPage() {
 	const canCreate = useHasPermission("post:create");
 	const { data: me } = useMe({ enabled: true });
 	const { data: tags = [] } = useTags();
-
-	const { data, isLoading, error, refetch } = useAdminPosts({
-		page,
-		limit: pageSize,
-		status: status === "all" ? undefined : status,
-		keyword: keyword || undefined,
-		tags: selectedTags.length > 0 ? selectedTags : undefined,
-	});
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
+		useAdminPosts,
+		{
+			status: status === "all" ? undefined : status,
+			keyword: keyword || undefined,
+			tags: selectedTags.length > 0 ? selectedTags : undefined,
+		},
+		{ initialPageSize: PAGE_SIZE },
+	);
 	const deletePost = useDeletePost(deleting?.id ?? "");
 	const hardDeletePost = useHardDeletePost(deleting?.id ?? "");
 	const batchMut = useBatchAction();
 
 	const posts = data?.data ?? [];
-	const total = data?.pagination?.total ?? 0;
 
 	const handleStatusChange = (v: string) => {
 		setStatus(v);
@@ -345,7 +345,7 @@ function AdminPostsPage() {
 				data={posts}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={withTotal(total)}
+				pagination={pagination}
 				selectable
 				selectedIds={selectedIds}
 				onSelectionChange={setSelectedIds}

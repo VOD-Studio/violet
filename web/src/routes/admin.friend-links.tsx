@@ -19,7 +19,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	DataTable,
 	type DataTableColumn,
-	useTablePagination,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
@@ -60,7 +60,6 @@ const STATUS_BADGE: Record<
 
 function AdminFriendLinksPage() {
 	const [filter, setFilter] = useState<FriendLinkFilter>("pending");
-	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editing, setEditing] = useState<FriendLinkAdminDTO | null>(null);
 	const [deleting, setDeleting] = useState<FriendLinkAdminDTO | null>(null);
@@ -68,10 +67,8 @@ function AdminFriendLinksPage() {
 	// "all" -> 不传 status（查全部）；其余直接作为筛选值透传后端。
 	const status: FriendLinkStatus | undefined = filter === "all" ? undefined : filter;
 
-	const { data, isLoading, error, refetch } = useFriendLinks({
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(useFriendLinks, {
 		status,
-		page,
-		limit: pageSize,
 	});
 	const approveMut = useApproveFriendLink();
 	const rejectMut = useRejectFriendLink();
@@ -262,7 +259,7 @@ function AdminFriendLinksPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={withTotal(data?.pagination?.total ?? 0)}
+				pagination={pagination}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}

@@ -10,10 +10,11 @@ import {
 	DataTable,
 	type DataTableColumn,
 	type DataTableSort,
-	useClientPagination,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { useProjects } from "@features/projects/api/queries";
+import { useProjects, useProjectsPaged } from "@features/projects/api/queries";
+
 import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -36,9 +37,9 @@ const EMPTY: CreateProject = {
 	tech_stack: [],
 	sort_order: 0,
 };
-
 function AdminProjectsPage() {
-	const { data: projects = [], isLoading, error, refetch } = useProjects();
+	const { data: paged, isLoading, error, refetch, pagination } = usePagedQuery(useProjectsPaged);
+	const projects = paged?.data ?? [];
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -59,8 +60,6 @@ function AdminProjectsPage() {
 		});
 		return copy;
 	}, [projects, sort]);
-
-	const { pagedData: pagedProjects, pagination } = useClientPagination(sortedProjects);
 
 	// TODO: 项目管理当前无批量操作后端接口；如需复选框批量删除，需后端支持。
 	// TODO: 项目有 sort_order 字段，但缺少拖拽排序批量更新接口（如 POST /admin/projects/reorder）。
@@ -173,7 +172,7 @@ function AdminProjectsPage() {
 			}
 		>
 			<DataTable<Project>
-				data={pagedProjects}
+				data={sortedProjects}
 				columns={columns}
 				pagination={pagination}
 				keyExtractor={(row) => row.id}

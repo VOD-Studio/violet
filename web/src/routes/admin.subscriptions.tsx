@@ -1,6 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, useTablePagination } from "@features/admin-shared/ui/data-table";
+import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import {
 	useCreateSubscription,
 	useDeleteSubscription,
@@ -40,12 +40,10 @@ export const Route = createFileRoute("/admin/subscriptions")({
 
 function AdminSubscriptionsPage() {
 	const [statusFilter, setStatusFilter] = React.useState<string>("");
-	const { page, pageSize, setPage, withTotal } = useTablePagination();
-
-	const { data, isLoading, error, refetch } = useSubscriptions(statusFilter, {
-		page,
-		limit: pageSize,
-	});
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
+		useSubscriptions,
+		{ status: statusFilter || undefined },
+	);
 	const createMut = useCreateSubscription();
 	const updateMut = useUpdateSubscription();
 	const pauseMut = usePauseSubscription();
@@ -60,7 +58,7 @@ function AdminSubscriptionsPage() {
 	const [deleting, setDeleting] = React.useState<SubscriptionDTO | null>(null);
 
 	const handleFetch = (id: string) => {
-		const sub = data?.items?.find((s) => s.id === id);
+		const sub = data?.data?.find((s) => s.id === id);
 		triggerSubscriptionFetch(id, sub?.last_fetched_at ?? null);
 	};
 
@@ -218,9 +216,9 @@ function AdminSubscriptionsPage() {
 			<PermissionGuard permission="subscription:manage">
 				<DataTable
 					columns={columns}
-					data={data?.items ?? []}
+					data={data?.data ?? []}
 					keyExtractor={(row) => row.id}
-					pagination={withTotal(data?.total ?? 0)}
+					pagination={pagination}
 					loading={isLoading}
 					error={error}
 					onRetry={refetch}

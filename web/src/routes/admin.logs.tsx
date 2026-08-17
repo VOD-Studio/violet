@@ -4,7 +4,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	DataTable,
 	type DataTableColumn,
-	useTablePagination,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -66,17 +66,17 @@ const RESOURCE_OPTIONS = [
 ];
 
 function AdminLogsPage() {
-	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [action, setAction] = useState("");
 	const [resourceType, setResourceType] = useState("");
 	const [actor, setActor] = useState("");
-	const { data, isLoading, error, refetch } = useAdminAuditLogs({
-		page,
-		limit: pageSize,
-		action: action || undefined,
-		resource_type: resourceType || undefined,
-		actor: actor || undefined,
-	});
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
+		useAdminAuditLogs,
+		{
+			action: action || undefined,
+			resource_type: resourceType || undefined,
+			actor: actor || undefined,
+		},
+	);
 	const [detailLog, setDetailLog] = useState<AuditEventDTO | null>(null);
 
 	const columns: DataTableColumn<AuditEventDTO>[] = [
@@ -202,7 +202,7 @@ function AdminLogsPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.event_id}
-				pagination={withTotal(data?.pagination?.total ?? 0)}
+				pagination={pagination}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

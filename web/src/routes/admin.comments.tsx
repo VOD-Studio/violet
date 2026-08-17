@@ -16,7 +16,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	DataTable,
 	type DataTableColumn,
-	useTablePagination,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { avatarUrl } from "@shared/lib/image-url";
@@ -78,7 +78,6 @@ function AdminCommentsPage() {
 	const [filter, setFilter] = useState<CommentFilter>("pending");
 	// 类型筛选与状态筛选正交：切换任一维度都重置分页与勾选。
 	const [typeFilter, setTypeFilter] = useState<CommentTypeFilter>("all");
-	const { page, pageSize, setPage, withTotal } = useTablePagination();
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -86,11 +85,9 @@ function AdminCommentsPage() {
 	const status: CommentStatus | undefined = filter === "all" ? undefined : filter;
 	const type: CommentType | undefined = typeFilter === "all" ? undefined : typeFilter;
 
-	const { data, isLoading, error, refetch } = useAllComments({
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(useAllComments, {
 		status,
 		type,
-		page,
-		limit: pageSize,
 	});
 	const approveMut = useApproveComment();
 	const spamMut = useMarkCommentSpam();
@@ -249,7 +246,7 @@ function AdminCommentsPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={withTotal(data?.pagination?.total ?? 0)}
+				pagination={pagination}
 				selectable
 				selectedIds={selected}
 				onSelectionChange={setSelected}

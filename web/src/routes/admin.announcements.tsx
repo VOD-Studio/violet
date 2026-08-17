@@ -9,7 +9,7 @@ import type {
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, useTablePagination } from "@features/admin-shared/ui/data-table";
+import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -43,15 +43,14 @@ function formatTime(s?: string): string {
 }
 
 function AdminAnnouncementsPage() {
-	const { page, pageSize, withTotal } = useTablePagination();
 	const {
 		data: paged,
 		isLoading,
 		error,
 		refetch,
-	} = useAdminAnnouncements({ page, limit: pageSize });
+		pagination,
+	} = usePagedQuery(useAdminAnnouncements);
 	const announcements = paged?.data ?? [];
-	const total = paged?.pagination?.total ?? 0;
 	const deleteAnn = useDeleteAnnouncement();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<AnnouncementDTO | null>(null);
@@ -190,7 +189,7 @@ function AdminAnnouncementsPage() {
 			<DataTable<AnnouncementDTO>
 				data={sortedAnnouncements}
 				columns={columns}
-				pagination={withTotal(total)}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}
