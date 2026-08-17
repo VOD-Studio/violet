@@ -1,15 +1,14 @@
 /**
- * useClientPagination hook 测试
+ * data-table hooks 测试
  *
- * 验证客户端分页契约：
- *   - 切片：返回当前页数据，total 报全量条数
- *   - 翻页：onChange(page) 后切片前移
- *   - 切换每页条数：页码重置为 1
- *   - 数据变少：页码自动收敛到最后一页，不出现空页
+ * 验证 useClientPagination 与 usePagedQuery 契约：
+ *   - 客户端切片 / 翻页 / 切换条数 / 页码收敛
+ *   - 服务端分页 query 拼装 / 组装 DataTablePagination
  */
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { DEFAULT_PAGE_SIZE, useClientPagination } from "../utils/use-client-pagination";
+import { describe, expect, it, vi } from "vitest";
+import { useClientPagination } from "../hooks/use-client-pagination";
+import { DEFAULT_PAGE_SIZE, usePagedQuery } from "../hooks/use-paged-query";
 
 function makeData(n: number) {
 	return Array.from({ length: n }, (_, i) => i);
@@ -64,9 +63,54 @@ describe("useClientPagination", () => {
 		act(() => result.current.pagination.onChange(3, 50));
 		expect(result.current.pagination.page).toBe(3);
 
-		// 第三页 20 条删除后只剩 60 条：最大页码 2，原 page=3 收敛到 2
 		rerender({ d: makeData(60) });
 		expect(result.current.pagination.page).toBe(2);
 		expect(result.current.pagedData).toEqual(makeData(60).slice(50, 60));
+	});
+});
+
+describe("usePagedQuery", () => {
+	it("拼装 PageQuery 传给 query hook，并从返回结果提取 total 组装 pagination", () => {
+		const mockUseQuery = vi.fn().mockImplementation((query) => ({
+			data: {
+				data: [`item-${query.page}`],
+				pagination: { page: query.page, limit: query.limit, total: 95 },
+			},
+			isLoading: false,
+		}));
+
+		const { result } = renderHook(() =>
+			usePagedQuery(mockUseQuery, { role: "admin" }, { initialPageSize: 20 }),
+		);
+
+		expect(mockUseQuery).toHaveBeenCalledWith({ role: "admin", page: 1, limit: 20 });
+		expect(result.current.page).toBe(1);
+		expect(result.current.pageSize).toBe(20);
+		expect(result.current.pagination).toMatchObject({
+			page: 1,
+			pageSize: 20,
+			total: 95,
+		});
+
+		// 翻页
+		act(() => result.current.pagination.onChange(2, 20));
+		expect(result.current.page).toBe(2);
+		expect(mockUseQuery).toHaveBeenLastCalledWith({ role: "admin", page: 2, limit: 20 });
+
+		// 切换每页条数重置页码为 1
+		act(() => result.current.pagination.onChange(1, 50));
+		expect(result.current.page).toBe(1);
+		expect(result.current.pageSize).toBe(50);
+		expect(mockUseQuery).toHaveBeenLastCalledWith({ role: "admin", page: 1, limit: 50 });
+	});
+
+	it("baseQuery 为空时可省略第二个参数", () => {
+		const mockUseQuery = vi.fn().mockReturnValue({
+			data: { data: [], pagination: { total: 0, limit: 50 } },
+		});
+
+		renderHook(() => usePagedQuery(mockUseQuery));
+
+		expect(mockUseQuery).toHaveBeenCalledWith({ page: 1, limit: 50 });
 	});
 });
