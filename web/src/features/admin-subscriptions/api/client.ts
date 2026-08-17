@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
+import type { PageQuery } from "@shared/api/types";
 import type {
 	CreateSubscriptionRequest,
 	SubscriptionDTO,
@@ -11,10 +12,9 @@ const BASE = "/admin/subscriptions";
 /** listSubscriptions - 列出全站订阅（分页 + 可选 status 过滤） */
 export const listSubscriptions = async (
 	status: string,
-	page: number,
-	limit: number,
+	query: PageQuery,
 ): Promise<SubscriptionListResponse> =>
-	apiGet<SubscriptionListResponse>(`${BASE}?status=${status}&page=${page}&limit=${limit}`);
+	apiGet<SubscriptionListResponse>(BASE, { params: { status, ...query } });
 
 /** getSubscription - 查单个订阅详情 */
 export const getSubscription = async (id: string): Promise<SubscriptionDTO> =>

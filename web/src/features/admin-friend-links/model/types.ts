@@ -6,6 +6,8 @@
  * linkback_url / contact_email / user_id 均为 string，空串表示未填）。
  */
 
+import type { PageQuery } from "@shared/api/types";
+
 /** FriendLinkStatus - 友链四态状态机（approved 是唯一前台展示态） */
 export type FriendLinkStatus = "pending" | "approved" | "rejected" | "disabled";
 
@@ -37,11 +39,7 @@ export interface FriendLinkAdminDTO {
 }
 
 /** FriendLinkListQuery - 后台友链列表查询参数 */
-export interface FriendLinkListQuery {
-	/** 页码，从 1 开始 */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
+export interface FriendLinkListQuery extends PageQuery {
 	/** 状态筛选；省略 = 全部 */
 	status?: FriendLinkStatus;
 }

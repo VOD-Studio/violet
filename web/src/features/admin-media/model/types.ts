@@ -4,17 +4,14 @@
  * 后台媒体管理的查询参数与写操作请求体。领域读模型 MediaFile、MediaType 见 entities/media。
  */
 import type { MediaType } from "@entities/media/model/types";
+import type { PageQuery } from "@shared/api/types";
 
 /**
  * AdminMediaListQuery - 管理端素材列表查询参数
  *
  * 对接 GET /admin/media，支持多维筛选。
  */
-export interface AdminMediaListQuery {
-	/** 页码，默认 1 */
-	page?: number;
-	/** 每页条数，默认 20 */
-	limit?: number;
+export interface AdminMediaListQuery extends PageQuery {
 	/** 用途筛选 */
 	purpose?: string;
 	/** MIME 类型筛选，image/video/audio/file */

@@ -6,14 +6,12 @@
  */
 export type { Post, PostDetail } from "@entities/post/model/types";
 
+import type { PageQuery } from "@shared/api/types";
+
 /**
  * PostListQuery - 文章列表查询参数
  */
-export interface PostListQuery {
-	/** 页码，从 1 开始 */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
+export interface PostListQuery extends PageQuery {
 	/** 标签筛选 */
 	tag?: string;
 }

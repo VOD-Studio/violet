@@ -5,6 +5,7 @@
  * 后台管理类型见 admin-media，上传类型见 upload。
  */
 import type { MediaFile, MediaType } from "@entities/media/model/types";
+import type { PageQuery } from "@shared/api/types";
 
 /**
  * MediaListQuery - 媒体列表查询参数
@@ -12,11 +13,7 @@ import type { MediaFile, MediaType } from "@entities/media/model/types";
  * 后端 ListFiles handler 解析 page/limit/purpose 三个 query 参数，
  * purpose 为用途筛选，不传则返回全部用途。
  */
-export interface MediaListQuery {
-	/** 页码，从 1 开始，默认 1 */
-	page?: number;
-	/** 每页条数，默认 20，后端限制上限 100 */
-	limit?: number;
+export interface MediaListQuery extends PageQuery {
 	/** 用途筛选，如 material / avatar / cover */
 	purpose?: string;
 }

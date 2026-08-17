@@ -9,6 +9,7 @@
  * - Reaction / ReactionList 见 domain/commentreaction/entity.go。
  */
 import type { AdminComment, Comment, CommentPicture } from "@entities/comment/model/types";
+import type { PageQuery } from "@shared/api/types";
 
 /**
  * Reaction - 评论反应读模型（聚合后）
@@ -56,11 +57,7 @@ export type CommentType = "free" | "annotation" | "all";
 /**
  * CommentListQuery - 文章评论列表查询参数
  */
-export interface CommentListQuery {
-	/** 页码，从 1 开始 */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
+export interface CommentListQuery extends PageQuery {
 	/** 按 anchor 维度过滤（?type=）；缺省由后端降级为 free，显式传更清晰 */
 	type?: CommentType;
 	/** 仅返回顶层评论（?top_level=true）；配合 GET /comments/{id}/replies 按需拉回复 */
@@ -87,13 +84,9 @@ export type ReplySort = "asc" | "desc";
 /**
  * ReplyListQuery - 回复列表查询参数（GET /comments/{id}/replies）
  */
-export interface ReplyListQuery {
+export interface ReplyListQuery extends PageQuery {
 	/** 排序方式，默认 asc */
 	sort?: ReplySort;
-	/** 页码，从 1 开始 */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
 }
 
 /**

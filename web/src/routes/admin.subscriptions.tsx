@@ -42,7 +42,10 @@ function AdminSubscriptionsPage() {
 	const [statusFilter, setStatusFilter] = React.useState<string>("");
 	const { page, pageSize, setPage, withTotal } = useTablePagination();
 
-	const { data, isLoading, error, refetch } = useSubscriptions(statusFilter, page, pageSize);
+	const { data, isLoading, error, refetch } = useSubscriptions(statusFilter, {
+		page,
+		limit: pageSize,
+	});
 	const createMut = useCreateSubscription();
 	const updateMut = useUpdateSubscription();
 	const pauseMut = usePauseSubscription();

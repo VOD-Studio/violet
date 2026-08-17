@@ -3,6 +3,8 @@
  *
  * 集中管理 query keys，避免缓存失效不彻底
  */
+import type { ListUsersRequest } from "../model/types";
+
 export const adminUsersKeys = {
 	/** admin-users 模块根 key */
 	all: ["admin", "users"] as const,
@@ -11,13 +13,7 @@ export const adminUsersKeys = {
 	lists: () => [...adminUsersKeys.all, "list"] as const,
 
 	/** 特定筛选条件的用户列表 */
-	list: (filters: {
-		page: number;
-		limit: number;
-		role?: string;
-		is_active?: boolean;
-		keyword?: string;
-	}) => [...adminUsersKeys.lists(), filters] as const,
+	list: (filters: ListUsersRequest) => [...adminUsersKeys.lists(), filters] as const,
 
 	/** 用户详情维度 */
 	details: () => [...adminUsersKeys.all, "detail"] as const,
