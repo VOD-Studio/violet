@@ -112,7 +112,7 @@ describe("HtmlContent 标题锚点 id", () => {
 
 	it("渲染出的 heading id 与 extractToc 提取的 id 完全一致（含重复文本去重）", async () => {
 		// 端到端契约：目录点击 scrollIntoView 依赖 extractToc 的 id == DOM 的 id
-		const { extractToc } = await import("@/shared/lib/hooks/use-toc");
+		const { extractToc } = await import("@/shared/hooks/use-toc");
 		const html = [
 			"<h2>项目背景</h2>",
 			"<h3>技术选型</h3>",

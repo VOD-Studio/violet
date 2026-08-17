@@ -1,4 +1,4 @@
-import { computeSpotlight } from "@shared/lib/hooks/use-spotlight";
+import { computeSpotlight } from "@shared/hooks/use-spotlight";
 import { describe, expect, it } from "vitest";
 
 describe("computeSpotlight", () => {

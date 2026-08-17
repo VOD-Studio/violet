@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
+/** 滚动进度计算入参 */
 export interface ProgressInput {
-	/** 容器滚动距离 */
+	/** 容器已滚动距离 */
 	scrollTop: number;
 	/** 内容总可滚动高度 */
 	scrollHeight: number;
@@ -10,7 +11,10 @@ export interface ProgressInput {
 }
 
 /**
- * computeScrollProgress - 计算阅读进度百分比 0..100（纯函数）
+ * 根据容器尺寸与滚动距离计算滚动百分比（0..100 纯函数）。
+ *
+ * @param input - 滚动高度与位置入参
+ * @returns 0 到 100 的百分比数值
  */
 export function computeScrollProgress(input: ProgressInput): number {
 	const { scrollTop, scrollHeight, clientHeight } = input;
@@ -19,6 +23,19 @@ export function computeScrollProgress(input: ProgressInput): number {
 	return Math.max(0, Math.min(100, (scrollTop / max) * 100));
 }
 
+/**
+ * 监听目标容器（或窗口）的滚动位置，实时返回当前阅读进度百分比（0..100）。
+ *
+ * @param ref - 可选自定义滚动容器 DOM Ref，省略时监听整个 window
+ *
+ * @returns 0 到 100 的进度数字
+ *
+ * @example
+ * ```tsx
+ * const progress = useScrollProgress();
+ * return <div style={{ width: `${progress}%` }} className="progress-bar" />;
+ * ```
+ */
 export function useScrollProgress(ref?: React.RefObject<HTMLElement | null>): number {
 	const [progress, setProgress] = useState(0);
 

@@ -1,4 +1,4 @@
-import { computeMagnetic } from "@shared/lib/hooks/use-magnetic";
+import { computeMagnetic } from "@shared/hooks/use-magnetic";
 import { describe, expect, it } from "vitest";
 
 describe("computeMagnetic", () => {

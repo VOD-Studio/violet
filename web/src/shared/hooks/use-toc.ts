@@ -1,22 +1,21 @@
 import { Slugger } from "@shared/lib/slug";
 import { useEffect, useState } from "react";
 
+/** 目录项条目 */
 export interface TocItem {
-	/** 标题层级 2|3|4 */
+	/** 标题层级（H2 / H3 / H4） */
 	level: 2 | 3 | 4;
-	/** 标题文本 */
+	/** 标题纯文本 */
 	text: string;
-	/** 锚点 id */
+	/** 锚点 ID */
 	id: string;
 }
 
 /**
- * extractToc - 从 HTML 字符串提取 H2/H3/H4 与 id，纯函数
+ * 从 HTML 正文字符串中正则提取 H2/H3/H4 标题并生成带唯一 ID 的目录树结构（纯函数）。
  *
- * id 缺失时用项目统一 Slugger 生成（与 markdown 路径 extractMarkdownToc /
- * markdownToHtml / rehypeSlugHeadings 同规则），保证 HTML 渲染补的
- * id（HtmlContent.ensureHeadingIds 用同一 Slugger）与 TOC 提取的 id 一致，
- * 点击目录才能滚动到位。
+ * @param html - 正文 HTML 内容
+ * @returns 解析出的目录项数组
  */
 export function extractToc(html: string): TocItem[] {
 	const re = /<h([234])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
@@ -25,29 +24,23 @@ export function extractToc(html: string): TocItem[] {
 	let m = re.exec(html);
 	while (m !== null) {
 		const level = Number(m[1]) as 2 | 3 | 4;
-		const text = stripTags(m[3]).trim();
-		if (text) {
-			const id = m[2] || slugger.slug(text);
-			out.push({ level, id, text });
-		}
+		const explicitId = m[2];
+		const rawText = m[3].replace(/<[^>]+>/g, "").trim();
+		const id = explicitId || slugger.slug(rawText);
+		out.push({ level, text: rawText, id });
 		m = re.exec(html);
 	}
 	return out;
-}
-
-function stripTags(s: string): string {
-	return s.replace(/<[^>]+>/g, "");
 }
 
 /** 默认触发线偏移，与 styles.css 的 scroll-margin-top: 80px 一致，作为读取失败时的兜底 */
 const DEFAULT_TRIGGER_OFFSET = 80;
 
 /**
- * pickActiveByPosition - 在文档顺序的标题中取最后一个顶部已越过触发线的，纯函数
+ * 根据标题相对视口触发线的偏移数组，定位当前阅读位置应高亮的标题索引（纯函数）。
  *
- * offsets[i] 为第 i 个标题顶部相对触发线的有符号距离，<= 0 表示已越过触发线进入阅读区。
- * 取文档顺序里最后一个已越过的标题；若全部尚未越过，回落到第一个标题，保证首章可见即高亮。
- * 空列表返回 null。
+ * @param offsets - 各标题相对触发线的像素距离（<= 0 表示已越过）
+ * @returns 命中标题在列表中的下标；全未越过时回落到 0，空列表返回 null
  */
 export function pickActiveByPosition(offsets: number[]): number | null {
 	if (offsets.length === 0) return null;
@@ -59,11 +52,16 @@ export function pickActiveByPosition(offsets: number[]): number | null {
 }
 
 /**
- * useActiveHeading - 返回当前阅读位置的 heading id，供 TOC 高亮
+ * 监听正文容器内的标题滚动位置，返回当前阅读进度对应的高亮 Heading ID。
  *
- * 以「最后一个顶部越过触发线的标题」为当前章节：滚到哪高亮哪，既不会提前选中下一章，
- * 也不会在大段正文里丢失高亮。触发线偏移直接读 CSS scroll-margin-top，与点击锚点跳转的
- * 停留位置共享同一来源；读不到时回落到默认 80px。
+ * @param containerRef - 正文 DOM 容器 Ref
+ * @returns 当前高亮的标题 ID，无标题时返回 null
+ *
+ * @example
+ * ```tsx
+ * const activeId = useActiveHeading(contentRef);
+ * return <ArticleToc items={toc} activeId={activeId} />;
+ * ```
  */
 export function useActiveHeading(containerRef: React.RefObject<HTMLElement | null>): string | null {
 	const [active, setActive] = useState<string | null>(null);
@@ -101,9 +99,6 @@ export function useActiveHeading(containerRef: React.RefObject<HTMLElement | nul
 		window.addEventListener("scroll", schedule, { passive: true });
 		window.addEventListener("resize", schedule, { passive: true });
 
-		// 内容尺寸变化（mermaid 图块异步渲染撑开、懒加载组件挂载）也触发重算，
-		// 否则图块渲染后 heading 位置偏移但 scroll/resize 都不触发，TOC 高亮卡在
-		// 渲染前的中间态位置（刷新到中间锚点时尤其明显）。
 		const resizeObserver = new ResizeObserver(schedule);
 		resizeObserver.observe(el);
 
