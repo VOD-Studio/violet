@@ -1,15 +1,14 @@
 import {
+	isImageOnlyPurpose,
 	MEDIA_PURPOSE_LABELS,
 	MEDIA_PURPOSE_OPTIONS,
 	MEDIA_TYPE_OPTIONS,
-	isImageOnlyPurpose,
 } from "@entities/media/model/constants";
 import type { MediaFile, MediaPurpose } from "@entities/media/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { adminMediaKeys } from "@features/admin-media/api/keys";
 import { useAdminDeleteFile, useBatchDeleteMedia } from "@features/admin-media/api/mutations";
-import { useAdminMedia } from "@features/admin-media/api/queries";
-import type { AdminMediaListQuery } from "@features/admin-media/model/types";
+import { useAdminInfiniteMedia, useAdminMedia } from "@features/admin-media/api/queries";
 import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
@@ -34,7 +33,7 @@ import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	Select,
@@ -91,22 +90,70 @@ function AdminMediaPage() {
 	// 图片预览的触发元素，用于从卡片位置展开动画
 	const [previewTrigger, setPreviewTrigger] = useState<HTMLElement | null>(null);
 
-	// 查询参数
-	const query: AdminMediaListQuery = {
+	// 统一筛选参数
+	const filterParams = useMemo(
+		() => ({
+			purpose: purpose || undefined,
+			type: fileType || undefined,
+			keyword: keyword || undefined,
+		}),
+		[purpose, fileType, keyword],
+	);
+
+	// 1. 表格视图：精确分页查询
+	const { data: tableData, isLoading: isTableLoading } = useAdminMedia({
+		...filterParams,
 		page,
 		limit: pageSize,
-		purpose: purpose || undefined,
-		type: fileType || undefined,
-		keyword: keyword || undefined,
-	};
-	const { data, isLoading } = useAdminMedia(query);
+	});
+	const tableFiles = tableData?.data ?? [];
+	const tableTotal = tableData?.pagination?.total ?? 0;
+	const totalPages = Math.max(1, Math.ceil(tableTotal / pageSize));
+
+	// 2. 网格视图：触底无限滚动加载
+	const {
+		data: infiniteData,
+		isLoading: isGridLoading,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useAdminInfiniteMedia({
+		...filterParams,
+		limit: pageSize,
+	});
+	const gridFiles = useMemo(
+		() => infiniteData?.pages.flatMap((p) => p.data) ?? [],
+		[infiniteData?.pages],
+	);
+	const gridTotal = infiniteData?.pages[0]?.pagination.total ?? 0;
+
+	// 触底哨兵：当滚动至距底部 200px 时自动预加载下一页
+	const sentinelRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (view !== "grid") return;
+		const el = sentinelRef.current;
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+					fetchNextPage();
+				}
+			},
+			{ rootMargin: "200px" },
+		);
+
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [view, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+	// 当前活跃视图的数据与加载状态
+	const currentFiles = view === "grid" ? gridFiles : tableFiles;
+	const currentLoading = view === "grid" ? isGridLoading : isTableLoading;
+
 	const deleteMutation = useAdminDeleteFile();
 	const batchDeleteMutation = useBatchDeleteMedia();
 	const queryClient = useQueryClient();
-
-	const files = data?.data ?? [];
-	const total = data?.pagination?.total ?? 0;
-	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
 	const handleBatchDelete = () => {
 		if (selectedIds.size === 0) return;
@@ -193,7 +240,7 @@ function AdminMediaPage() {
 	};
 
 	const handlePreview = (file: MediaFile, trigger?: HTMLElement | null) => {
-		const idx = files.findIndex((f) => f.id === file.id);
+		const idx = currentFiles.findIndex((f) => f.id === file.id);
 		setPreviewIndex(idx);
 		setPreviewTrigger(trigger ?? null);
 	};
@@ -280,7 +327,7 @@ function AdminMediaPage() {
 			}
 		>
 			{/* 内容区 */}
-			{isLoading ? (
+			{currentLoading && currentFiles.length === 0 ? (
 				view === "grid" ? (
 					<MediaGridSkeleton count={10} />
 				) : (
@@ -291,23 +338,36 @@ function AdminMediaPage() {
 						onSelectionChange={setSelectedIds}
 					/>
 				)
-			) : files.length === 0 ? (
+			) : currentFiles.length === 0 ? (
 				<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
 					<Images className="size-8 opacity-40" />
 					<p className="text-sm">暂无素材</p>
 				</div>
 			) : view === "grid" ? (
-				<MediaGrid
-					files={files}
-					onPreview={handlePreview}
-					onEdit={canUpload ? handleEdit : undefined}
-					onDelete={canDeleteMedia ? handleDelete : undefined}
-					onPickCover={canUpload ? handlePickCover : undefined}
-					onCrop={canUpload ? handleCrop : undefined}
-				/>
+				<div className="space-y-6">
+					<MediaGrid
+						files={gridFiles}
+						onPreview={handlePreview}
+						onEdit={canUpload ? handleEdit : undefined}
+						onDelete={canDeleteMedia ? handleDelete : undefined}
+						onPickCover={canUpload ? handlePickCover : undefined}
+						onCrop={canUpload ? handleCrop : undefined}
+					/>
+
+					{/* 触底哨兵与追加加载状态 */}
+					<div ref={sentinelRef} className="py-2">
+						{isFetchingNextPage ? (
+							<MediaGridSkeleton count={5} />
+						) : !hasNextPage && gridFiles.length > 0 ? (
+							<p className="py-4 text-center text-xs text-muted-foreground">
+								已加载全部 {gridTotal} 个素材
+							</p>
+						) : null}
+					</div>
+				</div>
 			) : (
 				<MediaTable
-					files={files}
+					files={tableFiles}
 					selectedIds={selectedIds}
 					onSelectionChange={setSelectedIds}
 					onEdit={canUpload ? handleEdit : undefined}
@@ -318,8 +378,8 @@ function AdminMediaPage() {
 				/>
 			)}
 
-			{/* 分页 */}
-			{!isLoading && files.length > 0 ? (
+			{/* 表格视图保留底部分页器 */}
+			{view === "table" && !isTableLoading && tableFiles.length > 0 ? (
 				<Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 			) : null}
 
@@ -447,7 +507,7 @@ function AdminMediaPage() {
 						setPreviewTrigger(null);
 					}
 				}}
-				files={files}
+				files={currentFiles}
 				index={Math.max(0, previewIndex)}
 				onIndexChange={setPreviewIndex}
 				triggerElement={previewTrigger}
