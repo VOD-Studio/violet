@@ -10,10 +10,15 @@
 # on_update: resolve——多轮 push 后旧评审线程折叠为 Resolved（留审计轨迹，
 # 有人工回复的线程不动），新评审不与历史堆叠。
 # max_diff_chars: 100000——默认 40000 会把 monorepo 大 PR 的后半 diff 截掉
-# 不评；deepseek-v4-flash 128k context 下 100k 字符仍有充足余量，
-# 超限时仍按文件边界安全截断。
+# 不评；MiniMax-M3 1M context 下余量充足，超限时仍按文件边界安全截断。
 
 language: zh
+# CI/发版配置不评审：即使 workflow 触发，全部文件命中忽略后
+# inori 在 diff 组装阶段早退（空 diff），不耗 LLM 额度
+ignore_patterns:
+  - ".github/**"
+  - "*.md"
+  - "docs/**"
 on_update: resolve
 max_diff_chars: 100000
 
