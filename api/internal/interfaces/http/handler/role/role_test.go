@@ -29,7 +29,7 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// stubRoleRepo 手写 role.RoleRepository stub：FindAll/CountUsers 返回 canned 数据，
+// stubRoleRepo 手写 role.RoleRepository stub：FindAll/CountUsersByIDs 返回 canned 数据，
 // 其余方法返回零值/未找到，供 ListRoles 薄读路径使用。
 type stubRoleRepo struct {
 	roles []*domainrole.Role
@@ -64,6 +64,14 @@ func (s *stubRoleRepo) Save(context.Context, *domainrole.Role) (int32, error)  {
 func (s *stubRoleRepo) SavePermissions(context.Context, int32, []string) error { return nil }
 func (s *stubRoleRepo) Delete(context.Context, int32) error                    { return nil }
 func (s *stubRoleRepo) CountUsers(context.Context, int32) (int64, error)       { return 5, nil }
+
+func (s *stubRoleRepo) CountUsersByIDs(_ context.Context, roleIDs []int32) (map[int32]int64, error) {
+	counts := make(map[int32]int64, len(roleIDs))
+	for _, id := range roleIDs {
+		counts[id] = 5
+	}
+	return counts, nil
+}
 
 // 编译期断言：stub 满足仓储接口。
 var _ domainrole.RoleRepository = (*stubRoleRepo)(nil)

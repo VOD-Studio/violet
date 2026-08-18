@@ -82,6 +82,14 @@ func (m *MockRoleRepository) CountUsers(ctx context.Context, roleID int32) (int6
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (m *MockRoleRepository) CountUsersByIDs(ctx context.Context, roleIDs []int32) (map[int32]int64, error) {
+	args := m.Called(ctx, roleIDs)
+	if args.Get(0) == nil {
+		return map[int32]int64{}, args.Error(1)
+	}
+	return args.Get(0).(map[int32]int64), args.Error(1)
+}
+
 // ============================================================
 // Permission Repository Mock
 // ============================================================

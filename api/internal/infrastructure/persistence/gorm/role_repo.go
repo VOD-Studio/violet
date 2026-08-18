@@ -245,5 +245,35 @@ func (r *RoleRepository) CountUsers(ctx context.Context, roleID int32) (int64, e
 	return count, nil
 }
 
+// CountUsersByIDs 批量统计多个角色的用户数（单查询，避免列表场景 N+1）
+//
+// DDD 后用户角色以 users.role 字符串列为唯一来源（同 CountUsers），按角色名统计。
+func (r *RoleRepository) CountUsersByIDs(ctx context.Context, roleIDs []int32) (map[int32]int64, error) {
+	result := make(map[int32]int64, len(roleIDs))
+	if len(roleIDs) == 0 {
+		return result, nil
+	}
+	type row struct {
+		ID    int32
+		Count int64
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).
+		Table("users").
+		Select("roles.id AS id, COUNT(*) AS count").
+		Joins("JOIN roles ON roles.name = users.role").
+		Where("roles.id IN ?", roleIDs).
+		Where("users.is_root = false").
+		Group("roles.id").
+		Find(&rows).Error
+	if err != nil {
+		return nil, domainshared.Internal("批量统计角色用户数失败", err)
+	}
+	for _, rw := range rows {
+		result[rw.ID] = rw.Count
+	}
+	return result, nil
+}
+
 // 编译期断言：RoleRepository 实现领域端口
 var _ role.RoleRepository = (*RoleRepository)(nil)

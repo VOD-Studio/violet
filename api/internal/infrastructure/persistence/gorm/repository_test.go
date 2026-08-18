@@ -307,6 +307,43 @@ func TestRoleRepository_CountUsers(t *testing.T) {
 	assert.Equal(t, int64(2), count)
 }
 
+func TestRoleRepository_CountUsersByIDs(t *testing.T) {
+	db := setupTestDB(t)
+	roleRepo := NewRoleRepository(db)
+	userRepo := NewUserRepository(db)
+	ctx := context.Background()
+
+	editor := seedRole(t, db, "editor", "编辑")
+	admin := seedRole(t, db, "admin2", "自定义角色")
+	seedRole(t, db, "empty", "无用户角色")
+
+	// editor 2 个用户，admin2 1 个用户
+	seedUserWithRole(t, db, userRepo, ctx, "e1@example.com", "user_e1", editor.Name)
+	seedUserWithRole(t, db, userRepo, ctx, "e2@example.com", "user_e2", editor.Name)
+	seedUserWithRole(t, db, userRepo, ctx, "a1@example.com", "user_a1", admin.Name)
+
+	counts, err := roleRepo.CountUsersByIDs(ctx, []int32{editor.ID, admin.ID})
+	require.NoError(t, err)
+	assert.Equal(t, map[int32]int64{editor.ID: 2, admin.ID: 1}, counts)
+
+	// 空入参返回空 map，不产生查询
+	empty, err := roleRepo.CountUsersByIDs(ctx, nil)
+	require.NoError(t, err)
+	assert.Empty(t, empty)
+}
+
+// seedUserWithRole 创建用户并把角色写入 users.role 字符串列（DDD 后 role_id 外键废弃）
+func seedUserWithRole(t *testing.T, db *gorm.DB, userRepo *UserRepository, ctx context.Context, emailStr, usernameStr, roleName string) {
+	t.Helper()
+	email, err := user.ParseEmail(emailStr)
+	require.NoError(t, err)
+	username, err := user.ParseUsername(usernameStr)
+	require.NoError(t, err)
+	u := user.NewUser(shared.NewID(), email, username, user.NewPasswordHash("hash"))
+	require.NoError(t, userRepo.Save(ctx, u))
+	require.NoError(t, db.Exec("UPDATE users SET role = ? WHERE id = ?", roleName, u.GetID().UUID()).Error)
+}
+
 func TestRoleRepository_SavePermissions_InvalidCode(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewRoleRepository(db)

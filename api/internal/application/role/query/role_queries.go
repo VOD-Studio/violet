@@ -74,7 +74,10 @@ func (h *ListRolesWithUserCountHandler) Handle(ctx context.Context) ([]approle.R
 	if err != nil {
 		return nil, err
 	}
-
+	counts, err := h.userCounts(ctx, roles)
+	if err != nil {
+		return nil, err
+	}
 	dtos := make([]approle.RoleDTO, 0, len(roles))
 	for _, rl := range roles {
 		dto := toRoleDTO(rl)
@@ -82,11 +85,7 @@ func (h *ListRolesWithUserCountHandler) Handle(ctx context.Context) ([]approle.R
 		if rl.Name().String() == role.SuperadminRole {
 			dto.PermissionCodes = []string{role.WildcardPermission}
 		}
-		count, err := h.roleRepo.CountUsers(ctx, rl.RoleID())
-		if err != nil {
-			return nil, err
-		}
-		dto.UserCount = count
+		dto.UserCount = counts[rl.RoleID()]
 		dtos = append(dtos, dto)
 	}
 	return dtos, nil
@@ -98,20 +97,29 @@ func (h *ListRolesWithUserCountHandler) HandlePage(ctx context.Context, q domain
 	if err != nil {
 		return domainshared.PageResult[approle.RoleDTO]{}, err
 	}
+	counts, err := h.userCounts(ctx, result.Items)
+	if err != nil {
+		return domainshared.PageResult[approle.RoleDTO]{}, err
+	}
 	dtos := make([]approle.RoleDTO, 0, len(result.Items))
 	for _, rl := range result.Items {
 		dto := toRoleDTO(rl)
 		if rl.Name().String() == role.SuperadminRole {
 			dto.PermissionCodes = []string{role.WildcardPermission}
 		}
-		count, err := h.roleRepo.CountUsers(ctx, rl.RoleID())
-		if err != nil {
-			return domainshared.PageResult[approle.RoleDTO]{}, err
-		}
-		dto.UserCount = count
+		dto.UserCount = counts[rl.RoleID()]
 		dtos = append(dtos, dto)
 	}
 	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
+}
+
+// userCounts 批量统计各角色用户数（单查询，避免列表场景逐角色 N+1）
+func (h *ListRolesWithUserCountHandler) userCounts(ctx context.Context, roles []*role.Role) (map[int32]int64, error) {
+	ids := make([]int32, 0, len(roles))
+	for _, rl := range roles {
+		ids = append(ids, rl.RoleID())
+	}
+	return h.roleRepo.CountUsersByIDs(ctx, ids)
 }
 
 // ============================================================
