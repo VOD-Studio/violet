@@ -7,6 +7,21 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.12](https://github.com/VOD-Studio/violet/compare/v2.8.11...v2.8.12) (2026-08-18)
+
+
+### 新增
+
+* **admin-settings:** OAuth 凭据卡与登录开关同卡配置 ([7217ad6](https://github.com/VOD-Studio/violet/commit/7217ad6d0bb8e6c75b32d9a0b880285570c8b2f4))
+* **auth:** OAuth 凭据后台配置与登录超时修复 ([5df38b1](https://github.com/VOD-Studio/violet/commit/5df38b1c8d9f7a4e8c6915ef9ec8b702274e66f2))
+* **auth:** OAuth 凭据支持后台检测写入与有效性探测 ([fa3f747](https://github.com/VOD-Studio/violet/commit/fa3f747c377f084292de7be5d327de0ed9659807))
+
+
+### 修复
+
+* **deploy:** api 容器 OAuth 外呼走宿主机 v2ray 分流代理 ([df32693](https://github.com/VOD-Studio/violet/commit/df326932272a78cdc9cf08aedcb7ae4777b7d6ae))
+* **image-cropper:** 修复选区比例劫持 absolute 容器高度致封面未铺满 ([fe8dcbd](https://github.com/VOD-Studio/violet/commit/fe8dcbd29525b316d479d219fd7ee3a11c4cc560))
+
 ## [2.8.11](https://github.com/VOD-Studio/violet/compare/v2.8.10...v2.8.11) (2026-08-18)
 
 
