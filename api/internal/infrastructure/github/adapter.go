@@ -95,13 +95,19 @@ func (a *Adapter) GetContributions(ctx context.Context, username, token string) 
 	}, nil
 }
 
-// GetRepos 获取仓库列表（含 pinned）
+// GetRepos 获取仓库列表（优先 GraphQL 置顶仓库，支持个人与组织置顶；无置顶时退回个人热门仓库）
 func (a *Adapter) GetRepos(ctx context.Context, username, token string) ([]domaingithub.RepoData, error) {
 	if token == "" {
-		return []domaingithub.RepoData{}, nil
+		return nil, nil
 	}
-	pinnedNames, _ := a.fetchPinnedNames(ctx, username, token)
-	apiURL := fmt.Sprintf("https://api.github.com/users/%s/repos?sort=stars&per_page=100&type=owner", url.PathEscape(username))
+	// 优先通过 GraphQL 获取置顶仓库
+	pinnedRepos, err := a.fetchPinnedRepos(ctx, username, token)
+	if err == nil && len(pinnedRepos) > 0 {
+		return pinnedRepos, nil
+	}
+
+	// 无置顶时，退回按 Star 排序拉取个人热门仓库
+	apiURL := fmt.Sprintf("https://api.github.com/users/%s/repos?sort=stars&per_page=10&type=owner", url.PathEscape(username))
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("Authorization", "bearer "+token)
@@ -125,31 +131,17 @@ func (a *Adapter) GetRepos(ctx context.Context, username, token string) ([]domai
 	if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
 		return nil, fmt.Errorf("解析仓库数据失败: %w", err)
 	}
-	var filtered []domaingithub.RepoData
-	if len(pinnedNames) > 0 {
-		pinnedSet := make(map[string]bool, len(pinnedNames))
-		for _, n := range pinnedNames {
-			pinnedSet[n] = true
+	var fallback []domaingithub.RepoData
+	for _, r := range repos {
+		if r.Fork {
+			continue
 		}
-		for _, r := range repos {
-			if pinnedSet[r.Name] {
-				filtered = append(filtered, repoToDomain(r.Name, r.Description, r.Language, r.StargazersCount, r.ForksCount, r.HTMLURL, r.Fork, true))
-			}
-		}
-	} else {
-		count := 0
-		for _, r := range repos {
-			if r.Fork {
-				continue
-			}
-			filtered = append(filtered, repoToDomain(r.Name, r.Description, r.Language, r.StargazersCount, r.ForksCount, r.HTMLURL, r.Fork, false))
-			count++
-			if count >= 6 {
-				break
-			}
+		fallback = append(fallback, repoToDomain(r.Name, r.Description, r.Language, r.StargazersCount, r.ForksCount, r.HTMLURL, r.Fork, false))
+		if len(fallback) >= 6 {
+			break
 		}
 	}
-	return filtered, nil
+	return fallback, nil
 }
 
 func repoToDomain(name string, desc, lang *string, stars, forks int, url string, isFork, pinned bool) domaingithub.RepoData {
@@ -163,11 +155,22 @@ func repoToDomain(name string, desc, lang *string, stars, forks int, url string,
 	return dto
 }
 
-func (a *Adapter) fetchPinnedNames(ctx context.Context, username, token string) ([]string, error) {
+func (a *Adapter) fetchPinnedRepos(ctx context.Context, username, token string) ([]domaingithub.RepoData, error) {
 	query := `query($username: String!) {
 		user(login: $username) {
-			pinnedItems(first: 6) {
-				nodes { ... on Repository { name } }
+			pinnedItems(first: 6, types: [REPOSITORY]) {
+				nodes {
+					... on Repository {
+						name
+						description
+						url
+						stargazerCount
+						forkCount
+						primaryLanguage {
+							name
+						}
+					}
+				}
 			}
 		}
 	}`
@@ -183,7 +186,14 @@ func (a *Adapter) fetchPinnedNames(ctx context.Context, username, token string) 
 			User struct {
 				PinnedItems struct {
 					Nodes []struct {
-						Name string `json:"name"`
+						Name            string  `json:"name"`
+						Description     *string `json:"description"`
+						URL             string  `json:"url"`
+						StargazerCount int     `json:"stargazerCount"`
+						ForkCount      int     `json:"forkCount"`
+						PrimaryLanguage *struct {
+							Name string `json:"name"`
+						} `json:"primaryLanguage"`
 					} `json:"nodes"`
 				} `json:"pinnedItems"`
 			} `json:"user"`
@@ -192,13 +202,30 @@ func (a *Adapter) fetchPinnedNames(ctx context.Context, username, token string) 
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, err
 	}
-	names := make([]string, 0, len(result.Data.User.PinnedItems.Nodes))
-	for _, n := range result.Data.User.PinnedItems.Nodes {
-		if n.Name != "" {
-			names = append(names, n.Name)
-		}
+	nodes := result.Data.User.PinnedItems.Nodes
+	if len(nodes) == 0 {
+		return nil, nil
 	}
-	return names, nil
+	repos := make([]domaingithub.RepoData, 0, len(nodes))
+	for _, n := range nodes {
+		var desc, lang string
+		if n.Description != nil {
+			desc = *n.Description
+		}
+		if n.PrimaryLanguage != nil {
+			lang = n.PrimaryLanguage.Name
+		}
+		repos = append(repos, domaingithub.RepoData{
+			Name:        n.Name,
+			Description: desc,
+			URL:         n.URL,
+			Language:    lang,
+			Stars:       n.StargazerCount,
+			Forks:       n.ForkCount,
+			Pinned:      true,
+		})
+	}
+	return repos, nil
 }
 
 func (a *Adapter) graphql(ctx context.Context, token string, payload []byte) ([]byte, error) {
