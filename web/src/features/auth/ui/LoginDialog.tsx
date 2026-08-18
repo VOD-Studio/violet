@@ -46,7 +46,7 @@ export function LoginDialog() {
 	const csrfToken = useCsrfToken({ enabled: isOpen });
 	const login = useLogin();
 	const googleLogin = useGoogleLoginMutation(csrfToken);
-	const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
+	const { showGoogle, showGithub, showOAuth, githubClientId } = useOAuthVisibility();
 
 	// 弹窗打开时如果用户已手动登录（Header 按钮触发时 sessionActive 可能为 true），
 	// 保持原有语义：登录成功后仅 close。
@@ -78,7 +78,9 @@ export function LoginDialog() {
 
 	const handleGithubLogin = () => {
 		const redirectUri = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-		window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
+		const clientId = githubClientId || import.meta.env.VITE_GITHUB_CLIENT_ID;
+		if (!clientId) return;
+		window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
 	};
 
 	const [form, setForm] = useState<LoginRequest>({ identifier: "", password: "" });

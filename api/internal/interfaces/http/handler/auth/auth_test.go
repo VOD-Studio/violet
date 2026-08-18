@@ -69,7 +69,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 
 	h := NewHandler(
 		nil, login, nil, nil, nil, createSession,
-		nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
 	)
@@ -130,7 +130,7 @@ func TestLogin_ByUsername(t *testing.T) {
 
 	h := NewHandler(
 		nil, login, nil, nil, nil, createSession,
-		nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
 	)
@@ -150,6 +150,7 @@ func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
+		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
 	)
@@ -181,6 +182,7 @@ func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
+		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
 	)
@@ -204,6 +206,7 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, logout, nil,
 		nil, nil, nil, nil, nil, nil, nil,
+		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
 	)

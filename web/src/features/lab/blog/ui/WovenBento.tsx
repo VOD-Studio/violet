@@ -77,6 +77,7 @@ function BentoCell({ post, shape }: { post: Post; shape: BentoShape }) {
 						alt={post.title}
 						loading="lazy"
 						onError={() => setBrokenFor(post.cover_image)}
+						fillContainer
 						className="absolute inset-0"
 						imgClassName="transition-transform duration-500 group-hover:scale-105"
 					/>

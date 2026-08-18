@@ -11,8 +11,14 @@ export interface CroppedImageProps {
 	/** 显示宽度档:传则走 contentImageUrl 缩略(webp,GIF 剥参数保动画),
 	 * crop 参数经合并保留;不传则原图直出(兼容旧行为) */
 	width?: number;
-	/** 容器宽高比(数字);不传则不强制比例 */
+	/** 容器宽高比(数字);与 fillContainer 互斥,不传时见 fillContainer */
 	aspect?: number;
+	/** 容器尺寸完全由 className 决定(absolute 铺满/h-full 等场景)。
+	 *  默认不传时,带 ?crop= 的 src 会把选区宽高比写成容器 inline
+	 *  aspect-ratio(文档流撑高用);但 absolute 容器 height:auto 下该
+	 *  比例会劫持高度、令 bottom inset 失效,图片铺不满格子——此场景
+	 *  必须传 true 跳过自然比例 */
+	fillContainer?: boolean;
 	/** 容器 className */
 	className?: string;
 	/** 内部 img 的额外 className(如 hover 动画) */
@@ -43,6 +49,7 @@ export function CroppedImage({
 	src,
 	width,
 	aspect,
+	fillContainer,
 	className,
 	imgClassName,
 	alt = "",
@@ -50,7 +57,7 @@ export function CroppedImage({
 	onError,
 }: CroppedImageProps) {
 	const rect = useMemo(() => parseCrop(src), [src]);
-	const ratio = aspect ?? (rect ? rect.w / rect.h : undefined);
+	const ratio = fillContainer ? undefined : (aspect ?? (rect ? rect.w / rect.h : undefined));
 	const containerRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [natural, setNatural] = useState<Size | null>(null);

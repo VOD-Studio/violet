@@ -16,6 +16,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/brand"
+	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -25,34 +26,35 @@ type GithubLoginInput struct {
 }
 
 type GithubLoginHandler struct {
-	userRepo     user.UserRepository
-	clientID     string
-	clientSecret string
+	userRepo  user.UserRepository
+	creds     *OAuthCredentials
 	hasher       PasswordHasher
 	bus          appshared.EventBus
 }
 
 func NewGithubLoginHandler(
 	repo user.UserRepository,
-	clientID string,
-	clientSecret string,
+	creds *OAuthCredentials,
 	hasher PasswordHasher,
 	bus appshared.EventBus,
 ) *GithubLoginHandler {
 	return &GithubLoginHandler{
-		userRepo:     repo,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		hasher:       hasher,
-		bus:          bus,
+		userRepo: repo,
+		creds:    creds,
+		hasher:   hasher,
+		bus:      bus,
 	}
 }
 
 func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (LoginOutput, error) {
-	// 1. Get access token
+	if h.creds.GithubClientID() == "" || h.creds.GithubClientSecret() == "" {
+		return LoginOutput{}, domainsettings.ErrOAuthNotConfigured
+	}
+
+	// 1. Get access token（凭据实时读取：后台写入后无需重启即生效）
 	tokenReqBody, _ := json.Marshal(map[string]string{
-		"client_id":     h.clientID,
-		"client_secret": h.clientSecret,
+		"client_id":     h.creds.GithubClientID(),
+		"client_secret": h.creds.GithubClientSecret(),
 		"code":          in.Credential,
 	})
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://github.com/login/oauth/access_token", bytes.NewBuffer(tokenReqBody))

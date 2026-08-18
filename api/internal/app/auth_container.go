@@ -31,6 +31,7 @@ func NewAuthContainer(
 	emailSender authcmd.EmailSender,
 	bus appshared.EventBus,
 	settingsSvc *appsettings.Service,
+	oauthCreds *authcmd.OAuthCredentials,
 ) (*AuthContainer, error) {
 	userRepo := gormrepo.NewUserRepository(db)
 	roleRepo := gormrepo.NewRoleRepository(db)
@@ -43,7 +44,7 @@ func NewAuthContainer(
 	register := authcmd.NewRegisterUserHandler(userRepo, codeStore, emailSender, hasher, bus)
 	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
 	google := authcmd.NewGoogleLoginHandler(userRepo, cfg.GoogleClientID, hasher, bus)
-	github := authcmd.NewGithubLoginHandler(userRepo, cfg.GithubClientID, cfg.GithubClientSecret, hasher, bus)
+	github := authcmd.NewGithubLoginHandler(userRepo, oauthCreds, hasher, bus)
 	logout := authcmd.NewLogoutHandler(sessionStore, bus)
 	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
 	verify := authcmd.NewVerifyEmailHandler(userRepo, codeStore, bus)
@@ -58,7 +59,7 @@ func NewAuthContainer(
 
 	authHandler := authhttp.NewHandler(
 		register, login, google, github, logout, createSession, verify, forgot, reset,
-		updatePf, changePwd, getMe, settingsSvc, cfg.Cookie, cfg.Session,
+		updatePf, changePwd, getMe, settingsSvc, oauthCreds, cfg.Cookie, cfg.Session,
 	)
 
 	return &AuthContainer{AuthHandler: authHandler, ensureSuperAdmin: ensureSuperAdmin, SessionStore: sessionStore}, nil

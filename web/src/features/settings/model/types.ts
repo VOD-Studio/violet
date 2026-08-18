@@ -38,6 +38,10 @@ export interface SiteSettings {
 	google_login_enabled: boolean;
 	/** 是否启用 GitHub 登录 */
 	github_login_enabled: boolean;
+	/** Google OAuth client_id（公开值，后台写入后实时下发，无需重新构建） */
+	google_client_id: string;
+	/** GitHub OAuth client_id（公开值，同上） */
+	github_client_id: string;
 	/** GitHub 用户名 */
 	github_username: string;
 	/** 个人简介 */

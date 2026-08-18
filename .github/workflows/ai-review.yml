@@ -1,11 +1,15 @@
 # AI 代码评审
 #
-# PR 打开或更新时，用配置的 LLM（默认 DeepSeek）自动评审 diff，评审意见以
+# PR 打开或更新时，用配置的 LLM（当前 MiniMax）自动评审 diff，评审意见以
 # review 评论形式出现在 PR 的 File changes 页面。辅助人工 review，不构成合并门禁。
 #
 # 评审逻辑由独立的 GitHub Action VOD-Studio/inori 提供，支持任意 OpenAI 兼容接口。
-# 首次使用前在仓库 Settings → Secrets and variables 添加 DEEPSEEK_API_KEY
-# （platform.deepseek.com 创建）。未配置时本 workflow 跳过，不影响 PR 检查。
+# 首次使用前在仓库 Settings → Secrets and variables 添加 MINIMAX_API_KEY
+# （platform.minimaxi.com 订阅 Token Plan 的 sk-cp- key）。未配置时本 workflow
+# 跳过，不影响 PR 检查。
+#
+# 合规注记：MiniMax ToS 将 Token Plan 限定为指定编程工具使用，自动化 CI
+# 调用存在账号风险（可能被封 key），由仓库所有者知情选择。
 #
 # 评审规则（注释规范、DDD 分层、Tailwind v4 简写等）在 .github/inori.yml 维护，
 # 优先级：workflow inputs > .github/inori.yml > inori 内置默认。
@@ -14,6 +18,7 @@
 #   - release-please 自动生成的 release PR（job 级 if 提前退出，不占 runner；
 #     inori 的 ignore_bots 会兜底跳过其余 bot PR，如 dependabot）
 #   - 锁文件与发版文本（inori 内置忽略清单，无需配置）
+#   - 纯 CI/workflow 改动（评审 workflow 配置无代码语义，白耗额度）
 
 name: AI Review
 
@@ -21,6 +26,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: [main, release/2.0]
+    paths-ignore:
+      - ".github/workflows/**"
+      - ".github/inori.yml"
 
 # 同一 PR 多次 push 时取消旧评审，避免并发产生重复评论
 concurrency:
@@ -36,17 +44,20 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     env:
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
     steps:
       - uses: actions/checkout@v7
 
       - name: 检查 API key
-        if: env.DEEPSEEK_API_KEY == ''
-        run: echo "::warning::DEEPSEEK_API_KEY 未配置，AI 评审跳过。在 Settings → Secrets 添加后生效"
+        if: env.MINIMAX_API_KEY == ''
+        run: echo "::warning::MINIMAX_API_KEY 未配置，AI 评审跳过。在 Settings → Secrets 添加后生效"
 
       - name: AI 评审
-        if: env.DEEPSEEK_API_KEY != ''
+        if: env.MINIMAX_API_KEY != ''
         uses: VOD-Studio/inori@v0
         with:
-          provider: deepseek
-          llm_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
+          provider: minimax-token
+          # M3 为当前旗舰（1M ctx + MSA 稀疏注意力，prefill/decode 显著快于 M2 代）；
+          # 求更快可换 MiniMax-M2.7-highspeed（同订阅额度，速度优先档）
+          llm_model: MiniMax-M3
+          llm_api_key: ${{ secrets.MINIMAX_API_KEY }}

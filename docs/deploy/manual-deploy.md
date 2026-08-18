@@ -45,6 +45,40 @@ blog-api ──► blog-postgres:5432, blog-redis:6379 (via violet_network)
 2. 本地装了 `rsync`。
 3. 服务器 `/root/docker/violet` 已就绪：含 `.env`（敏感凭据，**部署过程绝不覆盖**）。
 4. `nginx-proxy` + `letsencrypt-companion` 容器在跑（负责 TLS 证书与反代）。
+5. v2rayA 分流代理与 socat 中继在跑（API 容器 OAuth 外呼依赖，见下节）。
+
+### 服务器级代理组件（OAuth 外呼）
+
+腾讯云国内机直连 `googleapis.com` 被 GFW 掐断，Google 登录会一直超时。
+`docker-compose.prod.yml` 给 api 服务注入 `HTTPS_PROXY` 指向宿主机 v2rayA 的
+**分流端口 20172**（海外域名走远端节点、B 站等国内域名直连）。
+
+依赖两个服务器级手工组件（不在 compose 内，重装机器需重建）：
+
+```bash
+# 1) v2rayA 容器 + v2ray 监听 127.0.0.1:20170-20172（既有部署，略）
+# 2) socat 中继:v2ray 只听宿主机 loopback,bridge 容器够不到,
+#    经两个 podman 网络网关 IP 中继(host.containers.internal 解析到 10.89.0.1)
+cat >/etc/systemd/system/socat-v2ray@.service <<'EOF'
+[Unit]
+Description=socat relay %i:20172 -> 127.0.0.1:20172 (podman 容器访问宿主机 v2ray 分流代理)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/socat TCP-LISTEN:20172,bind=%i,fork,reuseaddr TCP:127.0.0.1:20172
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+dnf install -y socat   # 未安装时
+systemctl enable --now socat-v2ray@10.89.0.1.service socat-v2ray@10.89.1.1.service
+```
+
+验证：`curl -x http://10.89.0.1:20172 https://www.googleapis.com/` 秒回 404 即通。
+GitHub（`github.com` / `api.github.com`）国内直连可达，走分流端口同样直连不受影响。
 
 ## 完整部署流程
 

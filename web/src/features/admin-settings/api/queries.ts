@@ -7,6 +7,7 @@ import type {
 	GeneralSettingsDTO,
 	GithubSettingsDTO,
 	LlmSettingsDTO,
+	OAuthCredentialsInput,
 	ProfileSettingsDTO,
 } from "../model/types";
 import * as api from "./client";
@@ -121,5 +122,36 @@ export const useUpdateCodeRunner = () => {
 			toast.success("站点设置已保存");
 		},
 		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
+	});
+};
+
+// ---- OAuth 凭据（env 域，独立端点） ----
+export const useOAuthStatus = () =>
+	useQuery({ queryKey: settingsKeys.oauth(), queryFn: api.getOAuthStatus });
+export const useUpdateOAuthCredentials = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: OAuthCredentialsInput) => api.updateOAuthCredentials(body),
+		onSuccess: (data) => {
+			// 覆盖 status 缓存的 provider 部分（enabled 开关字段保持）
+			qc.setQueryData<
+				Partial<{
+					google: typeof data.google;
+					github: typeof data.github;
+					persisted: boolean;
+				}>
+			>(settingsKeys.oauth(), (prev) => ({ ...(prev ?? {}), ...data }));
+			toast.success(
+				data.persisted ? "OAuth 凭据已保存" : "OAuth 凭据已保存（未落盘，重启后失效）",
+			);
+		},
+		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
+	});
+};
+
+export const useVerifyOAuth = () => {
+	return useMutation({
+		mutationFn: (provider: string) => api.verifyOAuthCredentials(provider),
+		onError: (e: Error) => toast.error(`检测失败：${e.message}`),
 	});
 };
