@@ -115,7 +115,7 @@ func TestAdminUserStore_List_Pagination(t *testing.T) {
 	store := NewAdminUserStore(db)
 	ctx := context.Background()
 
-	// 直接插 PO，用递增 created_at 保证分页顺序确定（List 按 created_at DESC）
+	// 直接插 PO，用递增 created_at 保证分页顺序确定（FindPage 按 created_at DESC, id DESC）
 	base := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	seeded := make([]model.User, 5)
 	for i := range 5 {
@@ -123,25 +123,25 @@ func TestAdminUserStore_List_Pagination(t *testing.T) {
 	}
 
 	// page 1, limit 2 → 最新 2 条（seeded[4]、seeded[3]）
-	res, err := store.List(ctx, useradmin.ListFilter{}, 1, 2)
+	res, err := store.FindPage(ctx, useradmin.ListFilter{}, shared.PageQuery{Page: 1, Limit: 2})
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), res.Total)
-	require.Len(t, res.Users, 2)
-	assert.Equal(t, seeded[4].ID, res.Users[0].GetID().UUID())
-	assert.Equal(t, seeded[3].ID, res.Users[1].GetID().UUID())
+	require.Len(t, res.Items, 2)
+	assert.Equal(t, seeded[4].ID, res.Items[0].GetID().UUID())
+	assert.Equal(t, seeded[3].ID, res.Items[1].GetID().UUID())
 
 	// page 3, limit 2 → 仅剩 1 条（seeded[0]）
-	res, err = store.List(ctx, useradmin.ListFilter{}, 3, 2)
+	res, err = store.FindPage(ctx, useradmin.ListFilter{}, shared.PageQuery{Page: 3, Limit: 2})
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), res.Total)
-	require.Len(t, res.Users, 1)
-	assert.Equal(t, seeded[0].ID, res.Users[0].GetID().UUID())
+	require.Len(t, res.Items, 1)
+	assert.Equal(t, seeded[0].ID, res.Items[0].GetID().UUID())
 
 	// page 超出范围 → 空页，total 不变
-	res, err = store.List(ctx, useradmin.ListFilter{}, 10, 2)
+	res, err = store.FindPage(ctx, useradmin.ListFilter{}, shared.PageQuery{Page: 10, Limit: 2})
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), res.Total)
-	assert.Empty(t, res.Users)
+	assert.Empty(t, res.Items)
 }
 
 func TestAdminUserStore_List_Filter(t *testing.T) {
@@ -157,25 +157,25 @@ func TestAdminUserStore_List_Filter(t *testing.T) {
 	seedAdminUserPO(t, db, 4, "user", true, base.Add(4*time.Second))
 
 	// 按 role 筛选
-	res, err := store.List(ctx, useradmin.ListFilter{Role: "admin"}, 1, 100)
+	res, err := store.FindPage(ctx, useradmin.ListFilter{Role: "admin"}, shared.PageQuery{Page: 1, Limit: 100})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), res.Total)
-	for _, u := range res.Users {
+	for _, u := range res.Items {
 		assert.Equal(t, user.Role("admin"), u.Role())
 	}
 
 	// 按 is_active 筛选
 	inactive := false
-	res, err = store.List(ctx, useradmin.ListFilter{IsActive: &inactive}, 1, 100)
+	res, err = store.FindPage(ctx, useradmin.ListFilter{IsActive: &inactive}, shared.PageQuery{Page: 1, Limit: 100})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), res.Total)
-	for _, u := range res.Users {
+	for _, u := range res.Items {
 		assert.False(t, u.IsActive())
 	}
 
 	// 复合筛选 role=user AND is_active=true
 	active := true
-	res, err = store.List(ctx, useradmin.ListFilter{Role: "user", IsActive: &active}, 1, 100)
+	res, err = store.FindPage(ctx, useradmin.ListFilter{Role: "user", IsActive: &active}, shared.PageQuery{Page: 1, Limit: 100})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), res.Total)
 }

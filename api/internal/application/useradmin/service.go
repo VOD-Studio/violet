@@ -70,16 +70,16 @@ type UserDTO struct {
 }
 
 // List 用户列表（分页 + 筛选）
-func (s *Service) List(ctx context.Context, filter ListFilter, page, limit int) ([]UserDTO, int64, error) {
-	result, err := s.store.List(ctx, filter, page, limit)
+func (s *Service) List(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[UserDTO], error) {
+	result, err := s.store.FindPage(ctx, filter, q)
 	if err != nil {
-		return nil, 0, err
+		return shared.PageResult[UserDTO]{}, err
 	}
-	dtos := make([]UserDTO, 0, len(result.Users))
-	for i := range result.Users {
-		dtos = append(dtos, toDTO(&result.Users[i]))
+	dtos := make([]UserDTO, 0, len(result.Items))
+	for i := range result.Items {
+		dtos = append(dtos, toDTO(&result.Items[i]))
 	}
-	return dtos, result.Total, nil
+	return shared.NewPageResult(shared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // GetDetail 用户详情
