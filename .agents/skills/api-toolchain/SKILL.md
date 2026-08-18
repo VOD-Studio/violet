@@ -20,7 +20,7 @@ description: Use when running any Go command or tool — go test/build/vet, wire
 
 项目以 compose 起 dev 环境时，go 命令一律进容器执行：
 
-- 定位 compose 文件（`docker-compose*.yml` / `compose.y*ml`）与 api service 名（`docker compose ls`、`docker ps`）。
+- 定位 compose 文件（`docker-compose*.yml` / `compose.y*ml`）与 api service 名（`docker compose -f <file> config --services`，或 `docker compose ps` 的 Service 列按容器名映射）。
 - 形态：`docker compose -f <file> exec -T <svc> go test ./...`；`-T` 禁用 TTY，输出可直接进管道。
 - Makefile 目标在宿主机不可用时，把目标 recipe 里的 go 命令原样搬进容器执行（参数以 Makefile 当前定义为准）。
 - codegen / 迁移工具容器内缺失时向用户报告，不在宿主机安装。
