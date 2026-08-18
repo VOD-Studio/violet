@@ -1,0 +1,41 @@
+# inori 仓库级评审配置
+#
+# 优先级：workflow inputs > 本文件 > inori 内置默认。
+# provider 与 llm_api_key 涉及密钥，留在 .github/workflows/ai-review.yml；
+# 此处只放评审规则与仓库约定。
+#
+# 规则来源：根 AGENTS.md（代码注释规范 / 架构耦合约束）与
+# web 的 tailwind-canonical-classes 约定，摘选 diff 级可判定的子集。
+#
+# on_update: resolve——多轮 push 后旧评审线程折叠为 Resolved（留审计轨迹，
+# 有人工回复的线程不动），新评审不与历史堆叠。
+# max_diff_chars: 100000——默认 40000 会把 monorepo 大 PR 的后半 diff 截掉
+# 不评；deepseek-v4-flash 128k context 下 100k 字符仍有充足余量，
+# 超限时仍按文件边界安全截断。
+
+language: zh
+on_update: resolve
+max_diff_chars: 100000
+
+custom_instructions: |
+  1. 注释只写代码无法自表达的信息。以下视为无效注释并报告：
+     复读函数名/类型名/字段名的注释、短函数内的分隔标签、
+     把设计论证（why/历史决策）塞进代码注释、指向已删除符号的过期注释。
+  2. Go 领域实体与值对象（internal/domain/**）：每个命名字段应有一行
+     `// fieldName 中文说明`，语义不显然的字段补多行说明；
+     GORM PO 模型、DTO、DI 容器字段豁免，不要求补注释。
+     新增导出符号（大写开头）应有 godoc 契约注释，泛词签名
+     （Handle/Get/List 等）必须说明做什么/查什么。
+  3. 后端 DDD 分层：领域逻辑进 domain、用例编排进 application、
+     基础设施细节进 infrastructure、HTTP 适配进 interfaces，
+     出现跨层越界 import 视为问题。
+  4. 前端 FSD 分层：web/src/shared/ 不反向依赖 features/entities；
+     公共层不得夹带 posts/comments/editor 等 feature 业务逻辑。
+  5. Tailwind CSS v4：4px 倍数的间距/尺寸用裸数字简写（如 max-w-50），
+     不用任意值语法（如 max-w-[200px]）。
+  6. 前端包管理器固定 pnpm：diff 中新增 npm/yarn 相关命令或配置视为问题。
+  7. Go 错误体系：业务错误用 internal/domain/shared 的构造器
+     （NotFound/BadRequest/Unauthorized/Forbidden/Conflict/Validation/Internal），
+     需保留底层错误时用 WithErr；handler 统一走 response.RespondError，
+     手写 http.Error 或 switch 翻译状态码视为问题；跨层包装用
+     fmt.Errorf 以 %w 包装，保持 errors.Is/As 可穿透，不得吞错。

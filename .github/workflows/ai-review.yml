@@ -7,15 +7,19 @@
 # 首次使用前在仓库 Settings → Secrets and variables 添加 DEEPSEEK_API_KEY
 # （platform.deepseek.com 创建）。未配置时本 workflow 跳过，不影响 PR 检查。
 #
+# 评审规则（注释规范、DDD 分层、Tailwind v4 简写等）在 .github/inori.yml 维护，
+# 优先级：workflow inputs > .github/inori.yml > inori 内置默认。
+#
 # 排除：
-#   - release-please 自动生成的 release PR（只改 CHANGELOG 与 manifest 文本，无代码变更）
-#   - 锁文件与发版文本（inori 的 ignore_patterns），避免噪音评论
+#   - release-please 自动生成的 release PR（job 级 if 提前退出，不占 runner；
+#     inori 的 ignore_bots 会兜底跳过其余 bot PR，如 dependabot）
+#   - 锁文件与发版文本（inori 内置忽略清单，无需配置）
 
 name: AI Review
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, ready_for_review]
     branches: [main, release/2.0]
 
 # 同一 PR 多次 push 时取消旧评审，避免并发产生重复评论
@@ -42,9 +46,7 @@ jobs:
 
       - name: AI 评审
         if: env.DEEPSEEK_API_KEY != ''
-        uses: VOD-Studio/inori@b78a8ffcebd3dd4438096696997002e654f0700e
+        uses: VOD-Studio/inori@v0
         with:
-          llm_endpoint: https://api.deepseek.com/v1
-          llm_model: deepseek-v4-flash
+          provider: deepseek
           llm_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
-          ignore_patterns: pnpm-lock.yaml,go.sum,package-lock.json,yarn.lock,CHANGELOG.md,.release-please-manifest.json
