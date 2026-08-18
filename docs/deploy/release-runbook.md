@@ -38,9 +38,16 @@ graph LR
 2. push 到 `release/2.0` 后,release-please 自动开一个「release PR」,标题形如 `chore(release): v2.0.2`,body 含从 commit log 生成的 CHANGELOG 段落。
 3. review release PR 的 CHANGELOG 内容，并按「Release notes 改写规范」把新段落改写为功能聚合风格后**squash merge 合并该 PR**(release PR 固定用 squash 合并,合并 commit 即 `chore(release): vX.Y.Z` 单提交,release-please 据此识别不发新版本;功能/修复 PR 用 merge commit 保留原子提交,见 AGENTS.md「PR 与 issue 规范」)。
 4. 合并即触发:release-please 自动打 `vX.Y.Z` tag → 触发 `Deploy` workflow。
-5. `Deploy` 自动执行(8 job 流水线):detect 按侧变更检测 → prepare 解析版本 → build 构建镜像 → 迁移门禁 → 部署 api(含跨组件冒烟) → 部署 web → release(reload + 建 Release + 回写锚点);失败时 rollback 按侧自动回滚。
+5. `Deploy` 自动执行(13 job 流水线):verify-ci CI 门禁 → detect 按侧变更检测 → prepare 解析版本 → build-api / build-web 构建镜像 → prepare-server 服务器准备 → 迁移门禁 → 部署 api(含跨组件冒烟) → 部署 web → release(reload + 建 Release + 回写锚点) → github-release;失败时 rollback 按侧自动回滚,notify-failure 建告警 issue。
    - **单侧部署**:只部署实际变更侧(api/ 或 web/ 变更分别触发),未改动侧不重建容器;`docker-compose*.yml` 与 `scripts/**` 变更视为双侧。变更基线 = 各侧锚点(线上实际版本)。
 6. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果;成功后各侧版本分别写入 `/root/docker/violet/.current-version-api` 与 `.current-version-web`。
+
+### 部署失败的自愈与告警
+
+- **notify-failure job**:任一 job 失败时创建/追加告警 issue(按 run id 去重)@维护者。跑在 GitHub 托管 runner 上——告警通道不能依赖被告警对象的网络(rua 访问 github.com 不稳定)。issue 未关闭期间兼作「tag 已发布但生产未部署」漂移状态的可见记录,重试成功或下次发版覆盖后人工确认关闭。
+- **auto-retry workflow**(`.github/workflows/auto-retry.yml`):监听 Deploy 的 `workflow_run` failure 事件自动重试;`workflow_dispatch` 支持手动补救(错过事件时)。
+- **workflow 生效语义**:tag push 触发的 Deploy 用 tag 指向 commit 的 workflow 版本(deploy.yml 修复要发版才生效);workflow_run / workflow_dispatch 类(auto-retry.yml)用默认分支版本(修复合并即生效)。
+- 声明发布与执行发布分离:release-please 合并 release PR 的瞬间即打 tag + 建 GitHub Release,部署是 tag push 触发的异步后续。部署失败会出现「Release 页有版本但生产没部署」的漂移,靠告警 issue + auto-retry 接力 + 下次发版 detect 全量 diff 自动补偿,或 `gh workflow run auto-retry.yml -f run_id=<N>` 手动补救。
 
 健康检查失败会自动回滚到各侧锚点记录的上一版本;若回滚后仍失败,工作流报错,需人工介入。
 

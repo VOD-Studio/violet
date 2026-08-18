@@ -3,20 +3,14 @@ import { useEffect } from "react";
 import { type FieldValues, useForm } from "react-hook-form";
 
 /**
- * useSettingsForm - 设置子页表单数据流封装
+ * 设置子页表单数据流:读分组配置 → useForm 回填 → 提交部分字段。
  *
- * 各设置子页共享同一数据流：读本组配置（useXxxSettings）→ useForm 回填 → 提交部分字段。
- * 本 hook 消除 7 个子页重复的 useForm/useEffect/onSubmit 样板。
- *
- * @param query        本组的配置查询（useGeneralSettings 等），返回该组字段子集。
- * @param updateMut    本组的更新 mutation（useUpdateGeneral 等）。
- * @param mapDataToForm 把后端分组 DTO 映射为本子页的表单值（含默认值处理）。
- *                     仅 pick 本子页负责的字段；表单类型 TField 约束提交范围。
- * @returns useForm 解构 + isLoading/onSubmit/isPending，供子页直接绑定。
- *
- * 站点设置已按菜单拆成 7 组独立接口，各子页 queryKey 独立，互不干扰，
- * 消除原单一全量 query 的跨子页回填竞态。TField 为本子页表单类型，
- * TData 为对应分组 DTO（如 GeneralSettingsDTO）。
+ * @typeParam TField - 本子页表单值类型
+ * @typeParam TData - 对应分组 DTO 类型
+ * @param query - 本组配置查询(useGeneralSettings 等)
+ * @param updateMut - 本组更新 mutation(useUpdateGeneral 等)
+ * @param mapDataToForm - DTO → 表单值映射,仅 pick 本子页负责的字段并补默认值
+ * @returns useForm 解构 + isLoading/onSubmit/isPending,供子页直接绑定
  */
 export function useSettingsForm<TField extends FieldValues, TData>(
 	query: UseQueryResult<TData>,
