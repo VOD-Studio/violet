@@ -4,9 +4,7 @@
 
 ## 架构与代码边界
 - **后端 (`api/`)**: Go 1.26, Chi 路由, PostgreSQL 16, Redis 7。
-  - **关键**: 后端正在进行 DDD 架构重构，新旧架构并存。
-  - 新代码使用 DDD 结构: `internal/{domain,application,infrastructure,interfaces,app}`。依赖注入使用 `wire` 管理。
-  - 旧代码使用传统分层: `internal/{handler,service,repository}`（迁移中，请勿混用架构模式）。
+  - **关键**: 后端为 DDD 单一架构: `internal/{domain,application,infrastructure,interfaces,app}`(旧 handler/service/repository 分层已移除)。依赖注入为 `app/` 下手工容器装配(`*Container` + `container.go` 聚合,不使用 wire)。
 - **前端 (`web/`)**: React 19, Vite, Tailwind CSS v4。
   - **关键**: 使用 **`pnpm`** 作为包管理器，**切勿使用 `npm` 或 `yarn`**。
   - 状态管理: Zustand + TanStack Query。
@@ -16,7 +14,7 @@
 > 这是**代码组织原则**,不是 commit 拆分规则。规则 1(公共组件单独提交)管「commit 怎么拆」,本节管「代码该放哪一层」。两者分开理解。
 
 - **前端公共层不夹带 feature 业务逻辑**。`web/src/shared/`(`ui`/`lib`/`api`/`config`/`server`/`vendor`)只放跨 feature 通用件,不写 `posts` / `comments` / `editor` 等特定 feature 的业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)约束依赖方向,`shared` 不反向依赖 `features`。
-- **后端各层各司其职**。DDD 结构(`domain`/`application`/`infrastructure`/`interfaces`)与旧分层(`service`/`middleware`)在迁移期并存,但同样遵守分层约束:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
+- **后端各层各司其职**:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`,HTTP 适配进 `interfaces`;`internal/middleware/` 只放通用横切中间件(auth/cors/csrf/ratelimit 等)。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
 - **判断「是否公共」看是否被多个 feature/domain 引用**,而非位置。某 feature 私有逻辑一旦被第二个 feature 复用,应先 `refactor: 将 X 从 features/A 提到 shared/` 落定代码归属(提交规则见规则 1),再在新 feature 接入。
 
 ## 开发流与命令 (Makefile)
