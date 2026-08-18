@@ -228,15 +228,15 @@ func (s *Service) ListByStatus(ctx context.Context, status string, page, limit i
 	if status != "" && !domain.IsValidStatus(status) {
 		return nil, 0, shared.BadRequest("非法的状态筛选值")
 	}
-	items, total, err := s.repo.FindByStatus(ctx, status, page, limit)
+	result, err := s.repo.FindPage(ctx, domain.ListFilter{Status: status}, shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
-	dtos := make([]FriendLinkAdminDTO, 0, len(items))
-	for _, f := range items {
+	dtos := make([]FriendLinkAdminDTO, 0, len(result.Items))
+	for _, f := range result.Items {
 		dtos = append(dtos, toAdminDTO(f))
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // CountPending 统计待审核申请数量（后台菜单角标）

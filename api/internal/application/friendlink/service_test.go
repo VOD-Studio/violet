@@ -19,7 +19,7 @@ import (
 // 校验链顺序、409 判定与 DTO 映射行为。
 type fakeRepo struct {
 	approved     []*domain.FriendLink // FindApproved 预制返回
-	byStatus     []*domain.FriendLink // FindByStatus 预制返回
+	byStatus     []*domain.FriendLink // FindPage 预制返回
 	statusTotal  int64
 	pendingTotal int64
 	byIdentity   int64 // CountPendingByIdentity 预制返回
@@ -58,9 +58,9 @@ func (f *fakeRepo) FindApproved(context.Context) ([]*domain.FriendLink, error) {
 	return f.approved, nil
 }
 
-func (f *fakeRepo) FindByStatus(_ context.Context, status string, page, limit int) ([]*domain.FriendLink, int64, error) {
-	f.gotStatus, f.gotPage, f.gotLimit = status, page, limit
-	return f.byStatus, f.statusTotal, nil
+func (f *fakeRepo) FindPage(_ context.Context, filter domain.ListFilter, q shared.PageQuery) (shared.PageResult[*domain.FriendLink], error) {
+	f.gotStatus, f.gotPage, f.gotLimit = filter.Status, q.Page, q.Limit
+	return shared.NewPageResult(q, f.byStatus, f.statusTotal), nil
 }
 
 func (f *fakeRepo) CountPending(context.Context) (int64, error) {
