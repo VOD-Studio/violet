@@ -83,7 +83,7 @@ violet/
 │   │   └── test/           测试配置
 │   ├── public/             静态资源
 │   └── server.mjs          SSR 生产服务器（srvx 桥接）
-├── docs/                   项目文档（PRD / ADR / 指南 / issues / 部署手册）
+├── docs/                   项目文档（索引见 docs/README.md）
 ├── scripts/                工具脚本（Git 钩子、冒烟测试）
 ├── docker-compose.yml      开发环境编排
 └── docker-compose.prod.yml 生产环境编排
@@ -117,7 +117,7 @@ make dev
 - 健康检查：http://localhost:9090/api/health
 
 <details>
-<summary>在 Docker 容器内开发（coder / code-server / OMP 等）</summary>
+<summary>在 Docker 容器内开发（如 coder / code-server / omp）</summary>
 
 容器内无法经 `localhost` 访问宿主机上的数据库容器，需用 `host.docker.internal` 覆盖 host：
 
@@ -190,7 +190,7 @@ make build          # 构建前后端生产版本
 - [贡献指南](CONTRIBUTING.md)
 - [后端说明](api/README.md)
 - [前端说明](web/README.md)
-- [文档目录](docs/README.md)（PRD / ADR / 指南 / 部署手册）
+- [文档目录](docs/README.md)
 - [项目代理规范与开发须知](AGENTS.md)
 - [架构决策记录](docs/adr/)
 

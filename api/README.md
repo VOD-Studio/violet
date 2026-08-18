@@ -306,5 +306,5 @@ make api-test
 
 - [项目总览](../README.md)
 - [项目级代理规范与开发须知](../AGENTS.md)
-- [文档目录](../docs/README.md)（PRD / ADR / 指南 / 部署手册）
+- [文档目录](../docs/README.md)
 - [架构决策记录](../docs/adr/)
