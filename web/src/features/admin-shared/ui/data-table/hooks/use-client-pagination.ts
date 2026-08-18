@@ -11,7 +11,9 @@ import { DEFAULT_PAGE_SIZE } from "./use-paged-query";
  * @typeParam T - 列表项数据类型
  *
  * @param data - 全量数据数组
- * @param initialPageSize - 初始每页条数，默认 50
+ * @param initialPageSize - 初始每页条数
+ *
+ * @default 50 (DEFAULT_PAGE_SIZE)
  *
  * @returns 包含当前页切片 `pagedData` 与 `pagination` 配置的对象
  *

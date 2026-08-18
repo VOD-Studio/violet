@@ -62,15 +62,32 @@ interface 字段只在非自解释时加行上注释;组件内部私有函数默
 这两类函数天然自解释:函数名 = 操作,参数类型 = 请求,返回类型 = 响应,下一行代码就是协议与路径。**默认不写头注释**,只补签名外的语义,且不带函数名前缀:
 
 ```ts
-// ✅ 只留签名外语义
-/** pending/rejected → approved;rejected 是改判 */ export const useApproveFriendLink = ...
-/** 后台菜单角标消费 */ export const usePendingFriendLinkCount = ...
+// ✅ 语义写首行正文;取值约束、前置状态用标签或箭头式陈述
+/**
+ * 审核通过。rejected 是改判,即该链接曾被拒绝。
+ */
+export const useApproveFriendLink = ...
 
+/**
+ * 待审核数量。
+ *
+ * @remarks 消费方是后台导航角标,轮询间隔 60s。
+ */
+export const usePendingFriendLinkCount = ...
+```
+
+```ts
 // ❌ 复读:函数名 + 「调 GET /admin/friend-links」全在签名与实现里
 /** listFriendLinks - 调 GET /admin/friend-links(按状态筛选,分页) */
 ```
 
-值得留的:状态机转换(`approved → disabled`)、消费场景(`角标用`)、副作用(`物理删除`)、行为陷阱(「mutationFn 调用时传 id,因为 cell 回调按行触发」——这段是好注释)。
+标签使用约定:
+
+- `@remarks`——次要语义(消费场景、缓存行为),首行装不下的放这。
+- `@default`——默认值语义(`@default 出现时加载`),而非括号里写「默认 false」。
+- `@defaultValue` 同义,项目内统一用 `@default`。
+- 状态机转换(`pending → rejected`)直接写箭头式陈述,这是状态描述不是括号补语。
+- `@param` / `@returns` 保持;自解释参数不写,写了就必须有签名外信息。
 
 ## 组件 props 形态
 
