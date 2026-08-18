@@ -69,7 +69,7 @@ function LoginPage() {
 	const csrfToken = useCsrfToken();
 	const login = useLogin(csrfToken);
 	const googleLogin = useGoogleLoginMutation(csrfToken);
-	const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
+	const { showGoogle, showGithub, showOAuth, githubClientId } = useOAuthVisibility();
 
 	const handleGoogleLogin = useGoogleLogin({
 		flow: "implicit",
@@ -96,7 +96,9 @@ function LoginPage() {
 
 	const handleGithubLogin = () => {
 		const redirectUri = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-		window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
+		const clientId = githubClientId || import.meta.env.VITE_GITHUB_CLIENT_ID;
+		if (!clientId) return;
+		window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
 	};
 
 	const onSubmit = handleSubmit((data) => {

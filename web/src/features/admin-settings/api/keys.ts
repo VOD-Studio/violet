@@ -20,4 +20,6 @@ export const settingsKeys = {
 	llm: () => [...settingsKeys.all, "llm"] as const,
 	/** 代码运行器组 */
 	codeRunner: () => [...settingsKeys.all, "code-runner"] as const,
+	/** OAuth 凭据（env 域，独立端点） */
+	oauth: () => [...settingsKeys.all, "oauth"] as const,
 };
