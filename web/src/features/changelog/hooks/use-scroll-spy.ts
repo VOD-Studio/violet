@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 
 /**
- * useScrollSpy - 追踪当前阅读位置对应的锚点 id。
+ * 追踪阅读位置对应的锚点 id:视口顶部 180px 为阅读线(与锚点 scroll-mt
+ * 联动的安全值),最后一个顶距越过阅读线的段落为激活项;滚到顶回退首个、
+ * 滚到底选中末个。
  *
- * 算法：视口顶部 180px 处为「阅读线」，最后一个顶距越过阅读线的段落算
- * 当前阅读版本。线高与锚点跳转落点（scroll-mt 96~128px）和下一段落顶部
- * （≥96+段落高）之间取中值，保证点击跳转后目标段落必然越线被选中；
- * 页面滚到顶回退首个、滚到底选中末个（IntersectionObserver 窄激活带
- * 方案在首/末段落短小时会丢选中）。scroll 事件经 rAF 节流，SSR 安全。
+ * @param ids - 锚点 id 列表(文档顺序)
+ * @returns 当前激活锚点 id;ids 为空时为 null
  */
 export function useScrollSpy(ids: string[]): string | null {
 	const [active, setActive] = useState<string | null>(ids[0] ?? null);
