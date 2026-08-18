@@ -435,7 +435,8 @@ func (h *Handler) SearchSongs(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, errors.New("keyword 参数不能为空"))
 		return
 	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	// 搜索条数上限语义（无页码）：缺省 10、上限 50，统一走 ParseLimit 钳制
+	limit := response.ParseLimit(r, 10, 50)
 	songs, err := h.musicSvc.Search(keyword, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
