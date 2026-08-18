@@ -93,7 +93,7 @@ func TestTweetCommentRepository_Save_RoundTripPictures(t *testing.T) {
 	assert.Equal(t, int64(1024), got.Pictures()[0].Size)
 }
 
-func TestTweetCommentRepository_FindByTweet_DescOrder(t *testing.T) {
+func TestTweetCommentRepository_FindPage_TweetDescOrder(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	ctx := context.Background()
 	tweetID := domainshared.NewID()
@@ -109,16 +109,17 @@ func TestTweetCommentRepository_FindByTweet_DescOrder(t *testing.T) {
 	otherTweet := domainshared.NewID()
 	mustSeedComment(t, repo, otherTweet, authorID, "其他推文", nil, base)
 
-	comments, total, err := repo.FindByTweet(ctx, tweetID, 1, 20)
+	result, err := repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(3), total)
+	comments := result.Items
+	assert.Equal(t, int64(3), result.Total)
 	require.Len(t, comments, 3)
 	assert.Equal(t, []string{c3.ID().String(), c2.ID().String(), c1.ID().String()},
 		[]string{comments[0].ID().String(), comments[1].ID().String(), comments[2].ID().String()},
 		"应按 created_at 倒序")
 }
 
-func TestTweetCommentRepository_FindByTweet_ExcludesReplies(t *testing.T) {
+func TestTweetCommentRepository_FindPage_TweetExcludesReplies(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	ctx := context.Background()
 	tweetID := domainshared.NewID()
@@ -129,21 +130,21 @@ func TestTweetCommentRepository_FindByTweet_ExcludesReplies(t *testing.T) {
 	require.NoError(t, top.SetParent(nil))
 	require.NoError(t, repo.Save(ctx, top))
 
-	// 造回复（depth=1），FindByTweet 只返回顶层
+	// 造回复（depth=1），FindPage(TweetID) 只返回顶层
 	reply, err := domaintweet.NewComment(tweetID, authorID, "回复")
 	require.NoError(t, err)
 	require.NoError(t, reply.SetParent(top))
 	require.NoError(t, repo.Save(ctx, reply))
 
-	comments, total, err := repo.FindByTweet(ctx, tweetID, 1, 20)
+	result, err := repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "只计顶层评论")
-	require.Len(t, comments, 1)
-	assert.Equal(t, top.ID(), comments[0].ID())
-	assert.Equal(t, int16(0), comments[0].Depth())
+	assert.Equal(t, int64(1), result.Total, "只计顶层评论")
+	require.Len(t, result.Items, 1)
+	assert.Equal(t, top.ID(), result.Items[0].ID())
+	assert.Equal(t, int16(0), result.Items[0].Depth())
 }
 
-func TestTweetCommentRepository_FindByTweet_Pagination(t *testing.T) {
+func TestTweetCommentRepository_FindPage_TweetPagination(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	ctx := context.Background()
 	tweetID := domainshared.NewID()
@@ -154,21 +155,21 @@ func TestTweetCommentRepository_FindByTweet_Pagination(t *testing.T) {
 		mustSeedComment(t, repo, tweetID, authorID, "顶层", nil, base.Add(time.Duration(i)*time.Minute))
 	}
 
-	page1, total, err := repo.FindByTweet(ctx, tweetID, 1, 2)
+	page1, err := repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID}, domainshared.PageQuery{Page: 1, Limit: 2})
 	require.NoError(t, err)
-	assert.Equal(t, int64(5), total)
-	assert.Len(t, page1, 2)
+	assert.Equal(t, int64(5), page1.Total)
+	assert.Len(t, page1.Items, 2)
 
-	page2, _, err := repo.FindByTweet(ctx, tweetID, 2, 2)
+	page2, err := repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID}, domainshared.PageQuery{Page: 2, Limit: 2})
 	require.NoError(t, err)
-	assert.Len(t, page2, 2)
+	assert.Len(t, page2.Items, 2)
 
-	page3, _, err := repo.FindByTweet(ctx, tweetID, 3, 2)
+	page3, err := repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID}, domainshared.PageQuery{Page: 3, Limit: 2})
 	require.NoError(t, err)
-	assert.Len(t, page3, 1)
+	assert.Len(t, page3.Items, 1)
 }
 
-func TestTweetCommentRepository_FindReplies_AscOrder(t *testing.T) {
+func TestTweetCommentRepository_FindPage_RepliesAscOrder(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	ctx := context.Background()
 	tweetID := domainshared.NewID()
@@ -181,9 +182,11 @@ func TestTweetCommentRepository_FindReplies_AscOrder(t *testing.T) {
 	r1 := mustSeedComment(t, repo, tweetID, authorID, "回复1", top, base.Add(time.Minute))
 	r2 := mustSeedComment(t, repo, tweetID, authorID, "回复2", top, base.Add(2*time.Minute))
 
-	replies, total, err := repo.FindReplies(ctx, top.ID(), 1, 20)
+	topID := top.ID()
+	result, err := repo.FindPage(ctx, domaintweet.ListFilter{ParentID: &topID}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total)
+	replies := result.Items
+	assert.Equal(t, int64(2), result.Total)
 	require.Len(t, replies, 2)
 	assert.Equal(t, []string{r1.ID().String(), r2.ID().String()},
 		[]string{replies[0].ID().String(), replies[1].ID().String()},
@@ -193,8 +196,9 @@ func TestTweetCommentRepository_FindReplies_AscOrder(t *testing.T) {
 	}
 }
 
-func TestTweetCommentRepository_FindReplies_ReplyToReply(t *testing.T) {
-	// 回复一条回复：path 挂同一顶层，FindReplies 按顶层前缀能把整条链拉出
+// TestTweetCommentRepository_FindPage_RepliesReplyToReply 回复一条回复：path 挂同一顶层，
+// FindPage(ParentID) 按顶层前缀能把整条链拉出
+func TestTweetCommentRepository_FindPage_RepliesReplyToReply(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	ctx := context.Background()
 	tweetID := domainshared.NewID()
@@ -204,9 +208,11 @@ func TestTweetCommentRepository_FindReplies_ReplyToReply(t *testing.T) {
 	top := mustSeedComment(t, repo, tweetID, authorID, "顶层", nil, base)
 	r1 := mustSeedComment(t, repo, tweetID, authorID, "回复1", top, base.Add(time.Minute))
 	r2 := mustSeedComment(t, repo, tweetID, authorID, "回复2 回复 r1", r1, base.Add(2*time.Minute))
-	replies, total, err := repo.FindReplies(ctx, top.ID(), 1, 20)
+	topID := top.ID()
+	result, err := repo.FindPage(ctx, domaintweet.ListFilter{ParentID: &topID}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total, "r1 + r2 都挂在 top 下，FindReplies 按顶层前缀返回全部回复")
+	assert.Equal(t, int64(2), result.Total, "r1 + r2 都挂在 top 下，FindPage 按顶层前缀返回全部回复")
+	replies := result.Items
 	require.Len(t, replies, 2)
 	// 排除 top 自身，包含 r1 和 r2
 	ids := []string{replies[0].ID().String(), replies[1].ID().String()}
@@ -218,9 +224,10 @@ func TestTweetCommentRepository_FindReplies_ReplyToReply(t *testing.T) {
 	}
 }
 
-func TestTweetCommentRepository_FindReplies_ParentNotFound(t *testing.T) {
+func TestTweetCommentRepository_FindPage_RepliesParentNotFound(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
-	_, _, err := repo.FindReplies(context.Background(), domainshared.NewID(), 1, 20)
+	parentID := domainshared.NewID()
+	_, err := repo.FindPage(context.Background(), domaintweet.ListFilter{ParentID: &parentID}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
 }
 

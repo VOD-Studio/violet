@@ -202,30 +202,31 @@ func (f *fakeCommentRepo) FindByID(_ context.Context, id shared.ID) (*domaintwee
 	return nil, domaintweet.ErrCommentNotFound
 }
 
-func (f *fakeCommentRepo) FindByTweet(_ context.Context, tweetID shared.ID, page, limit int) ([]*domaintweet.Comment, int64, error) {
+func (f *fakeCommentRepo) FindPage(_ context.Context, filter domaintweet.ListFilter, q shared.PageQuery) (shared.PageResult[*domaintweet.Comment], error) {
+	if filter.ParentID != nil {
+		parent, ok := f.byID[filter.ParentID.String()]
+		if !ok {
+			return shared.PageResult[*domaintweet.Comment]{}, domaintweet.ErrCommentNotFound
+		}
+		prefix := parent.ID().String() + "/"
+		var reps []*domaintweet.Comment
+		for _, c := range f.byID {
+			if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
+				reps = append(reps, c)
+			}
+		}
+		return shared.NewPageResult(q, reps, int64(len(reps))), nil
+	}
 	var tops []*domaintweet.Comment
-	for _, c := range f.byID {
-		if c.TweetID() == tweetID && c.Depth() == 0 {
-			tops = append(tops, c)
+	if filter.TweetID != nil {
+		for _, c := range f.byID {
+			if c.TweetID() == *filter.TweetID && c.Depth() == 0 {
+				tops = append(tops, c)
+			}
 		}
 	}
 	// 简化：返回全部，不分页（分页正确性由 gorm 契约测试覆盖）
-	return tops, int64(len(tops)), nil
-}
-
-func (f *fakeCommentRepo) FindReplies(_ context.Context, parentID shared.ID, page, limit int) ([]*domaintweet.Comment, int64, error) {
-	parent, ok := f.byID[parentID.String()]
-	if !ok {
-		return nil, 0, domaintweet.ErrCommentNotFound
-	}
-	var reps []*domaintweet.Comment
-	prefix := parent.ID().String() + "/"
-	for _, c := range f.byID {
-		if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
-			reps = append(reps, c)
-		}
-	}
-	return reps, int64(len(reps)), nil
+	return shared.NewPageResult(q, tops, int64(len(tops))), nil
 }
 
 

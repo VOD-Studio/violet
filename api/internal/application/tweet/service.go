@@ -654,10 +654,12 @@ func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, lim
 	if err != nil {
 		return nil, 0, shared.BadRequest("非法的推文 ID")
 	}
-	comments, total, err := s.commentRepo.FindByTweet(ctx, tweetID, page, limit)
+	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID},
+		shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
+	comments := result.Items
 	dtos := s.commentsToDTOs(ctx, comments)
 	if err := s.attachRepliesCount(ctx, comments, dtos); err != nil {
 		return nil, 0, err
@@ -665,7 +667,7 @@ func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, lim
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // attachRepliesCount 批量填充顶层评论的回复数（一次 GROUP BY 查询，避免 N+1）。
@@ -696,15 +698,17 @@ func (s *Service) ListReplies(ctx context.Context, parentIDStr string, page, lim
 	if err != nil {
 		return nil, 0, shared.BadRequest("非法的评论 ID")
 	}
-	replies, total, err := s.commentRepo.FindReplies(ctx, parentID, page, limit)
+	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{ParentID: &parentID, Sort: "asc"},
+		shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
+	replies := result.Items
 	dtos := s.commentsToDTOs(ctx, replies)
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // commentsToDTOs 领域评论 → DTO，批量填充作者资料（FindByIDs 一次查询避免 N+1）。
