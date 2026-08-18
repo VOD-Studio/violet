@@ -25,7 +25,7 @@
 - **数据库迁移**: `make migrate` (使用 golang-migrate)
 
 ### 后端 (`api/`) 须知
-- **环境依赖**: 后端需要 Go 1.26。如果当前环境没有安装 Go，`make check` 会提示缺失，但**不要自行安装 Go**，应停下来告知用户并等待其处理。
+- **环境依赖**: 后端需要 Go 1.26。本机未装 Go 时,后端命令(测试/构建/lint/迁移等)统一在 dev 容器内执行,见 `.agents/skills/api-docker-dev`;**不要自行安装 Go**。
 - **测试**: `make api-test`
 - **代码检查**: `make api-lint` (使用 golangci-lint)
 
