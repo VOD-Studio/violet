@@ -56,3 +56,40 @@ description: Use when writing or placing frontend code — creating a util/hook/
 - **编排契约**:签名看不出的数据流顺序(「读配置 → 回填 → 提交部分字段」),一行。
 
 interface 字段只在非自解释时加行上注释;组件内部私有函数默认不注释,非显然时一句。
+
+## API client / query hooks 注释特例
+
+这两类函数天然自解释:函数名 = 操作,参数类型 = 请求,返回类型 = 响应,下一行代码就是协议与路径。**默认不写头注释**,只补签名外的语义,且不带函数名前缀:
+
+```ts
+// ✅ 只留签名外语义
+/** pending/rejected → approved;rejected 是改判 */ export const useApproveFriendLink = ...
+/** 后台菜单角标消费 */ export const usePendingFriendLinkCount = ...
+
+// ❌ 复读:函数名 + 「调 GET /admin/friend-links」全在签名与实现里
+/** listFriendLinks - 调 GET /admin/friend-links(按状态筛选,分页) */
+```
+
+值得留的:状态机转换(`approved → disabled`)、消费场景(`角标用`)、副作用(`物理删除`)、行为陷阱(「mutationFn 调用时传 id,因为 cell 回调按行触发」——这段是好注释)。
+
+## 组件 props 形态
+
+- props ≤3 且都是原始类型:内联类型可以。
+- props >3、含回调、或带泛型:抽 `XxxProps` interface,导出并挂 TSDoc,字段在 interface 上加行上注释;组件函数头只写职责,不再堆 props 说明。
+
+```ts
+/**
+ * 展开后的推文回复加载器:懒挂载,拍平 useTweetReplies 交 shared 渲染。
+ */
+function TweetExpandedReplies({ config, tweetId, topLevelId }: TweetExpandedRepliesProps) { ... }
+```
+
+## entities 层定位(FSD)
+
+entities = 业务对象(名词:Post/Tag/User 的领域类型与跨 feature 实体逻辑);features = 用户动作(动词)。**薄实体层是健康形态**——只有 `model/types.ts` 说明项目实体只承载类型,多数展示型项目正是如此,不是缺陷。
+
+判断落点:
+
+- 类型/组件只被单一 feature 用 → 留在该 feature 的 `model/`,不预防性上提。
+- 被 ≥2 features 引用 → 上提到 `entities/<name>/`(独立提交),按需长出 `api/`(实体查询)、`ui/`(实体组件) segment。
+- shared 层禁止业务知识(`shared/user` 这种不存在);有业务语义的类型最低放 entities。
