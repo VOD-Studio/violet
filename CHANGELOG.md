@@ -7,6 +7,62 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.10](https://github.com/VOD-Studio/violet/compare/v2.8.9...v2.8.10) (2026-08-18)
+
+
+### 新增
+
+* **admin:** 素材管理网格视图接入触底无限滚动加载 ([a6da31d](https://github.com/VOD-Studio/violet/commit/a6da31d71122eafce74997c997c19ef0cba7e406))
+* **admin:** 表格页统一接入服务端分页 ([a09bc39](https://github.com/VOD-Studio/violet/commit/a09bc3998eeb13aae3404e0b191633449dc89c29))
+* **api:** 适配订阅与项目分页 query hooks ([5836599](https://github.com/VOD-Studio/violet/commit/5836599a9bd93d50041d614f995cd28308bf4c62))
+* **data-table:** 所有表格显示分页器并默认每页 50 条 ([84f8287](https://github.com/VOD-Studio/violet/commit/84f828716abea0402567bf088f62e5bc577372e6))
+* **domain:** 统一分页原语并补齐五实体服务端分页 ([a4395d6](https://github.com/VOD-Studio/violet/commit/a4395d6f7652002cf671947a4f944a7f00e3c233))
+* **media:** 新增 useAdminInfiniteMedia 无限滚动 Hook ([03a7d08](https://github.com/VOD-Studio/violet/commit/03a7d086e2be7dd34e7ba8e80343ffa782db74b0))
+* **media:** 替换素材管理加载态为网格与表格骨架屏 ([30d629f](https://github.com/VOD-Studio/violet/commit/30d629f0c61930fd9f84dde3283ad19c7cbb2e6d))
+* **media:** 素材库用途与类型全量对齐后端并实现单向联动 ([dd1568f](https://github.com/VOD-Studio/violet/commit/dd1568fbe6231710870d46d64350f52eb912136e))
+* **response:** 新增 ParseLimit 条数钳制原语 ([9d0ccb2](https://github.com/VOD-Studio/violet/commit/9d0ccb239ed1cff1872a7646385712e4b08e568b))
+
+
+### 修复
+
+* **admin-layout:** 恢复表格内部自适应滚动 ([f7a5946](https://github.com/VOD-Studio/violet/commit/f7a59463bda839f08843e57cf31bbfc6e680e387))
+* **admin-subscriptions:** 清理适配层删除后的残留 import ([0ef926e](https://github.com/VOD-Studio/violet/commit/0ef926e2d3b635cb8f73819f5eff33c7debcb55c))
+* **admin:** 恢复表格自适应滚动并统一全站分页架构 ([#211](https://github.com/VOD-Studio/violet/issues/211)) ([1890121](https://github.com/VOD-Studio/violet/commit/18901213af896402c120b1a3b2d0ee4deceaf609))
+* **admin:** 补齐表格列表操作列按钮图标 ([f656665](https://github.com/VOD-Studio/violet/commit/f656665165af73832f665c0fda99e54b51efe3f5))
+* **admin:** 评论与操作日志页显示完整分页器 ([c38d5e6](https://github.com/VOD-Studio/violet/commit/c38d5e6cc90cd70dde3e3f6c33d87951d97d7126))
+* **domain:** 分页页码钳制上限防超大 OFFSET ([2587e57](https://github.com/VOD-Studio/violet/commit/2587e57ac776b3437c6e6043b526df165ed3b973))
+* **emojis:** 空态内容区引导创建时隐藏右上角重复创建按钮 ([23d1b37](https://github.com/VOD-Studio/violet/commit/23d1b3763d24ba2f57468c811d871904884b5025))
+* **media:** 表格模式使用 usePagedQuery 接入标准分页 ([c5860df](https://github.com/VOD-Studio/violet/commit/c5860dfe0f5d4ac35826439be3f5c9f3fc3b77f1))
+* **role:** FindPage 权限回填查询补排序并短路空页 ([4c94db1](https://github.com/VOD-Studio/violet/commit/4c94db13174752306453623f5f15b97ac20e8dd0))
+
+
+### 性能优化
+
+* **role:** 角色列表用户数改为批量统计消除 N+1 ([92069de](https://github.com/VOD-Studio/violet/commit/92069ded8c3dda3d186ecc69b41a4f3f6db03b38))
+
+
+### 重构
+
+* **admin-subscriptions:** 删除订阅列表响应适配层 ([29fc249](https://github.com/VOD-Studio/violet/commit/29fc2496d09e6f4dab4976d0519edea15c11d2d7))
+* **admin:** 表格页面统一接入 usePagedQuery ([658f3d8](https://github.com/VOD-Studio/violet/commit/658f3d8619884f2b813da34d66604684cdc0365b))
+* **audit:** 审计日志分页迁移并收敛 ListResult ([5c1fc8a](https://github.com/VOD-Studio/violet/commit/5c1fc8ac398ab1fe5e66f40803848fb94f8a7a60)), closes [#218](https://github.com/VOD-Studio/violet/issues/218)
+* **auth:** 迁移 useOAuthVisibility 至 hooks 目录并规范 TSDoc ([2eed358](https://github.com/VOD-Studio/violet/commit/2eed3583e3b7ab58a2ff51838d50bd6c47ed4133))
+* **comments:** 迁移 useAnnotations 至 hooks 目录并规范 TSDoc ([eab5611](https://github.com/VOD-Studio/violet/commit/eab5611ecb1cd3fff669f158f8f8189a5ebd5ba4))
+* **comment:** 评论分页迁移 FindPage 统一原语 ([bf99d38](https://github.com/VOD-Studio/violet/commit/bf99d3823e54271d53f14fc00133f3e284223707)), closes [#212](https://github.com/VOD-Studio/violet/issues/212)
+* **data-table:** 统一 usePagedQuery 与 useClientPagination hooks ([6950289](https://github.com/VOD-Studio/violet/commit/6950289b9c789edc4d7fbc0054664a3ff7a3c067))
+* **friendlink:** 友链分页迁移 FindPage 统一原语 ([b34c30e](https://github.com/VOD-Studio/violet/commit/b34c30efe94633ecd9062db4cd3f14241a325777)), closes [#216](https://github.com/VOD-Studio/violet/issues/216)
+* **media:** 拆分媒体领域纯类型与运行时常量 ([69f277f](https://github.com/VOD-Studio/violet/commit/69f277f7f9bb46b8b58ae7fc002cd0ee8a4db201))
+* **media:** 素材分页迁移并收敛 FileListResult ([7ddfbe2](https://github.com/VOD-Studio/violet/commit/7ddfbe255a2346f86e9bc9b93279342f42a9bf98)), closes [#214](https://github.com/VOD-Studio/violet/issues/214)
+* **notification:** 通知列表分页迁移 FindPage 统一原语 ([5300f7f](https://github.com/VOD-Studio/violet/commit/5300f7f13a4323fed3a0fca14afaa452e452af73)), closes [#219](https://github.com/VOD-Studio/violet/issues/219)
+* **post:** 文章分页迁移 FindPage 统一原语 ([7590151](https://github.com/VOD-Studio/violet/commit/759015113a52b6e5882e6ca716bd7030b8ae5775)), closes [#213](https://github.com/VOD-Studio/violet/issues/213)
+* **repository:** 公告与项目 PO 转换函数去掉恒空 error ([3e6c140](https://github.com/VOD-Studio/violet/commit/3e6c1403d89e8470097e63f20fdb3f41f07fcbcb))
+* **shared:** 规范 shared/hooks 目录结构与 TSDoc ([d680298](https://github.com/VOD-Studio/violet/commit/d680298a6bd500c55ad23504c73946fba4041f62))
+* **subscription:** 分页链路迁移至 PageQuery 统一原语 ([a2ebd23](https://github.com/VOD-Studio/violet/commit/a2ebd23e0e073bedcdf9f45b446b611b1e189db6))
+* **tweet:** 推文评论分页迁移 FindPage 统一原语 ([d168a12](https://github.com/VOD-Studio/violet/commit/d168a12c4c371d98d7704f4fcb05b150cd835292)), closes [#215](https://github.com/VOD-Studio/violet/issues/215)
+* **useradmin:** 用户列表分页迁移并收敛 ListResult ([fd4b29a](https://github.com/VOD-Studio/violet/commit/fd4b29aa4262208a5ba0c006477a3b4c80984e1e)), closes [#217](https://github.com/VOD-Studio/violet/issues/217)
+* **web:** 更新 shared/hooks 迁移后的业务层导入路径 ([f8fda41](https://github.com/VOD-Studio/violet/commit/f8fda41d45d630417462a618f617330b65d28f48))
+* **web:** 查询类型统一继承 shared PageQuery ([ef8dc5e](https://github.com/VOD-Studio/violet/commit/ef8dc5eb2c0cd57a56e71a558e80dd938b10421a))
+
 ## [2.8.9](https://github.com/VOD-Studio/violet/compare/v2.8.8...v2.8.9) (2026-08-17)
 
 
