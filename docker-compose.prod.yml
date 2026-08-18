@@ -87,6 +87,15 @@ services:
       # (CORS_ALLOWED_ORIGINS 逗号分隔,如 https://example.com,https://www.example.com)
       COOKIE_SECURE: "true"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required (set in .env)}
+
+      # OAuth 外呼(Google/GitHub userinfo)走宿主机 v2ray 分流代理:腾讯云国内机
+      # 直连 googleapis 被 GFW 掐断,Google 登录一直超时。20172 是 v2rayA 分流
+      # 端口,国内域名(B 站等)仍直连。v2ray 只监听宿主机 loopback,bridge 容器
+      # 经 socat 中继访问(host.containers.internal 见 socat-v2ray@.service,
+      # 部署步骤见 docs/deploy/manual-deploy.md)
+      HTTPS_PROXY: http://host.containers.internal:20172
+      HTTP_PROXY: http://host.containers.internal:20172
+      NO_PROXY: localhost,127.0.0.1,::1,postgres,redis,10.89.0.0/16
     volumes:
       # 持久化上传文件
       - uploads_data:/app/uploads
