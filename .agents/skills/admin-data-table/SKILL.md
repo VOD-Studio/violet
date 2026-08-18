@@ -13,7 +13,7 @@ description: Use when creating or editing an admin list/table page in web/src, w
 | 客户端全量切片 | `useClientPagination(data, initialPageSize?)` |
 | 需全量的下拉（如角色选择） | `useAllRoles` 模式：`limit=100` + `select` 解包 |
 
-- `usePagedQuery` / `useClientPagination` 位于 `web/src/features/admin-shared/ui/data-table/hooks/`；`useAllRoles` 模式是各 feature 自己的查询 hook（如 `admin-roles/api/queries.ts`），不在 data-table 下。新分页 hook 一律放各 feature 的 `hooks/` 目录。
+- 落位看消费方：跨 feature 的通用分页 hook 放 `web/src/features/admin-shared/ui/data-table/hooks/`（扩展既有 hook，见下）；单一 feature 私有的分页 hook 放该 feature 的 `hooks/` 目录。`useAllRoles` 模式即后者（如 `admin-roles/api/queries.ts`），不在 data-table 下。
 - `usePagedQuery` 内管 page/pageSize 状态、拼 PageQuery 调模块 hook，返回的 `pagination` 在 JSX 直接 `pagination={pagination}` 消费。
 - 无额外筛选的页面省略 `baseQuery`。
 - 要新的分页形态，扩展 hook 本身，不在页面组件手搓变体。
