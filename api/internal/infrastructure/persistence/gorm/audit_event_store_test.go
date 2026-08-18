@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	domainaudit "blog-api/internal/domain/audit"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // setupAuditEventDB 初始化 SQLite 临时文件库并迁移 audit_events 表。
@@ -64,13 +65,13 @@ func TestEventStore_AppendAndList(t *testing.T) {
 		e.Resource.ID = "post-2"
 	})))
 
-	res, err := store.List(ctx, 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), res.Total)
-	require.Len(t, res.Events, 2)
+	require.Len(t, res.Items, 2)
 
 	// 较新的事件按 occurred_at DESC 排第一
-	e := res.Events[0]
+	e := res.Items[0]
 	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
 	assert.Equal(t, "post-2", e.Resource.ID)
 	assert.Equal(t, "alice", e.Actor.UserName)
@@ -93,10 +94,10 @@ func TestEventStore_AppendPersistsChangesAndMetadata(t *testing.T) {
 	})
 	require.NoError(t, store.Append(ctx, in))
 
-	res, err := store.List(ctx, 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	require.Len(t, res.Events, 1)
-	got := res.Events[0]
+	require.Len(t, res.Items, 1)
+	got := res.Items[0]
 	require.Len(t, got.Changes, 2)
 	assert.Equal(t, "role", got.Changes[0].Field)
 	assert.Equal(t, "user", got.Changes[0].From)
@@ -114,14 +115,14 @@ func TestEventStore_AppendEmptyChangesAndMetadata(t *testing.T) {
 
 	require.NoError(t, store.Append(ctx, sampleEvent(nil)))
 
-	res, err := store.List(ctx, 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	require.Len(t, res.Events, 1)
-	assert.Empty(t, res.Events[0].Changes)
-	assert.Nil(t, res.Events[0].Metadata)
+	require.Len(t, res.Items, 1)
+	assert.Empty(t, res.Items[0].Changes)
+	assert.Nil(t, res.Items[0].Metadata)
 }
 
-func TestEventStore_ListByActor(t *testing.T) {
+func TestEventStore_FindPage_FilterByActor(t *testing.T) {
 	store := NewEventStore(setupAuditEventDB(t))
 	ctx := context.Background()
 
@@ -140,16 +141,16 @@ func TestEventStore_ListByActor(t *testing.T) {
 		e.Actor.UserID = "" // 匿名
 	})))
 
-	res, err := store.ListByActor(ctx, "alice-uuid", 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{ActorUserID: ptrStr("alice-uuid")}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), res.Total)
-	require.Len(t, res.Events, 3)
-	for _, e := range res.Events {
+	require.Len(t, res.Items, 3)
+	for _, e := range res.Items {
 		assert.Equal(t, "alice-uuid", e.Actor.UserID)
 	}
 
 	// bob 一条
-	res2, err := store.ListByActor(ctx, "bob-uuid", 1, 10)
+	res2, err := store.FindPage(ctx, domainaudit.ListFilter{ActorUserID: ptrStr("bob-uuid")}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), res2.Total)
 }
@@ -168,25 +169,25 @@ func TestEventStore_ListPaginationAndOrder(t *testing.T) {
 	}
 
 	// 第一页 2 条（最新两条：e, d）
-	res, err := store.List(ctx, 1, 2)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 2})
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), res.Total)
-	require.Len(t, res.Events, 2)
-	assert.Equal(t, "e", res.Events[0].Resource.ID)
-	assert.Equal(t, "d", res.Events[1].Resource.ID)
+	require.Len(t, res.Items, 2)
+	assert.Equal(t, "e", res.Items[0].Resource.ID)
+	assert.Equal(t, "d", res.Items[1].Resource.ID)
 
 	// 第二页 2 条
-	res2, err := store.List(ctx, 2, 2)
+	res2, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 2, Limit: 2})
 	require.NoError(t, err)
-	require.Len(t, res2.Events, 2)
-	assert.Equal(t, "c", res2.Events[0].Resource.ID)
-	assert.Equal(t, "b", res2.Events[1].Resource.ID)
+	require.Len(t, res2.Items, 2)
+	assert.Equal(t, "c", res2.Items[0].Resource.ID)
+	assert.Equal(t, "b", res2.Items[1].Resource.ID)
 
 	// 第三页 1 条
-	res3, err := store.List(ctx, 3, 2)
+	res3, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 3, Limit: 2})
 	require.NoError(t, err)
-	assert.Len(t, res3.Events, 1)
-	assert.Equal(t, "a", res3.Events[0].Resource.ID)
+	assert.Len(t, res3.Items, 1)
+	assert.Equal(t, "a", res3.Items[0].Resource.ID)
 }
 
 func TestEventStore_AnonymousActor_NullUserID(t *testing.T) {
@@ -198,20 +199,20 @@ func TestEventStore_AnonymousActor_NullUserID(t *testing.T) {
 		e.Actor.UserID = ""
 	})))
 
-	res, err := store.List(ctx, 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	require.Len(t, res.Events, 1)
-	assert.Empty(t, res.Events[0].Actor.UserID, "匿名操作 UserID 应还原为空串")
+	require.Len(t, res.Items, 1)
+	assert.Empty(t, res.Items[0].Actor.UserID, "匿名操作 UserID 应还原为空串")
 }
 
 func TestEventStore_ListEmpty(t *testing.T) {
 	store := NewEventStore(setupAuditEventDB(t))
 	ctx := context.Background()
 
-	res, err := store.List(ctx, 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), res.Total)
-	assert.Empty(t, res.Events)
+	assert.Empty(t, res.Items)
 }
 
 func TestEventStore_RoundtripEventID(t *testing.T) {
@@ -223,15 +224,15 @@ func TestEventStore_RoundtripEventID(t *testing.T) {
 		e.EventID = want
 	})))
 
-	res, err := store.List(ctx, 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	require.Len(t, res.Events, 1)
-	assert.Equal(t, want, res.Events[0].EventID, "EventID UUID 应在往返后保持一致")
+	require.Len(t, res.Items, 1)
+	assert.Equal(t, want, res.Items[0].EventID, "EventID UUID 应在往返后保持一致")
 }
 
 func TestEventStore_ActorSnapshot_PersistsAfterUserDeletion(t *testing.T) {
 	// 验证 UserName 是写入时快照：即使 users 表没有该用户（这里甚至没有 users 表），
-	// ListByActor 通过 actor_user_id 过滤但 actor_user_name 从 audit_events 行直接读取
+	// FindPage 的 ActorUserID 过滤只匹配 actor_user_id，actor_user_name 从 audit_events 行直接读取
 	// → 删除用户后仍可追溯
 	store := NewEventStore(setupAuditEventDB(t))
 	ctx := context.Background()
@@ -241,9 +242,9 @@ func TestEventStore_ActorSnapshot_PersistsAfterUserDeletion(t *testing.T) {
 		e.Actor.UserName = "deleted-user" // 冗余快照
 	})))
 
-	res, err := store.ListByActor(ctx, "ghost-uuid", 1, 10)
+	res, err := store.FindPage(ctx, domainaudit.ListFilter{ActorUserID: ptrStr("ghost-uuid")}, domainshared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	require.Len(t, res.Events, 1)
-	assert.Equal(t, "deleted-user", res.Events[0].Actor.UserName,
+	require.Len(t, res.Items, 1)
+	assert.Equal(t, "deleted-user", res.Items[0].Actor.UserName,
 		"UserName 必须是写入时快照，不依赖 users 表 JOIN")
 }

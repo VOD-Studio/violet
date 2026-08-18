@@ -14,6 +14,7 @@ import (
 
 	appaudit "blog-api/internal/application/audit"
 	domainaudit "blog-api/internal/domain/audit"
+	"blog-api/internal/domain/shared"
 )
 
 // fakeQuery EventStore 的 stub，供 handler 测试。
@@ -21,21 +22,11 @@ type fakeQuery struct {
 	events     []domainaudit.AuditEvent
 	total      int64
 	listFilter domainaudit.ListFilter
-	byActorID  string
 }
 
-func (f *fakeQuery) List(context.Context, int, int) (domainaudit.ListResult, error) {
-	return domainaudit.ListResult{Events: f.events, Total: f.total}, nil
-}
-
-func (f *fakeQuery) ListFiltered(_ context.Context, filter domainaudit.ListFilter, _ int, _ int) (domainaudit.ListResult, error) {
+func (f *fakeQuery) FindPage(_ context.Context, filter domainaudit.ListFilter, q shared.PageQuery) (shared.PageResult[domainaudit.AuditEvent], error) {
 	f.listFilter = filter
-	return domainaudit.ListResult{Events: f.events, Total: f.total}, nil
-}
-
-func (f *fakeQuery) ListByActor(_ context.Context, userID string, _ int, _ int) (domainaudit.ListResult, error) {
-	f.byActorID = userID
-	return domainaudit.ListResult{Events: f.events, Total: f.total}, nil
+	return shared.PageResult[domainaudit.AuditEvent]{Items: f.events, Total: f.total, Page: q.Page, Limit: q.Limit}, nil
 }
 
 func (f *fakeQuery) Append(context.Context, domainaudit.AuditEvent) error {
@@ -120,5 +111,6 @@ func TestListEventsByActor_PassesUserID(t *testing.T) {
 	h.ListEventsByActor(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "actor-1", fq.byActorID)
+	require.NotNil(t, fq.listFilter.ActorUserID)
+	assert.Equal(t, "actor-1", *fq.listFilter.ActorUserID)
 }
