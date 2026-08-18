@@ -1,9 +1,8 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
-import type { PageQuery } from "@shared/api/types";
+import { apiDelete, apiGet, apiGetPaged, apiPost, apiPut } from "@shared/api/request";
+import type { PageQuery, PagedResponse } from "@shared/api/types";
 import type {
 	CreateSubscriptionRequest,
 	SubscriptionDTO,
-	SubscriptionListResponse,
 	UpdateSubscriptionRequest,
 } from "../model/types";
 
@@ -13,8 +12,8 @@ const BASE = "/admin/subscriptions";
 export const listSubscriptions = async (
 	status: string,
 	query: PageQuery,
-): Promise<SubscriptionListResponse> =>
-	apiGet<SubscriptionListResponse>(BASE, { params: { status, ...query } });
+): Promise<PagedResponse<SubscriptionDTO>> =>
+	apiGetPaged<SubscriptionDTO>(BASE, { params: { status, ...query } });
 
 /** getSubscription - 查单个订阅详情 */
 export const getSubscription = async (id: string): Promise<SubscriptionDTO> =>

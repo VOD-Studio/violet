@@ -15,14 +15,6 @@ export const useSubscriptions = (query: { status?: string } & PageQuery = {}) =>
 	return useQuery({
 		queryKey: subscriptionKeys.list(status, paging),
 		queryFn: () => api.listSubscriptions(status, paging),
-		select: (res): PagedResponse<SubscriptionDTO> => ({
-			data: res.items,
-			pagination: {
-				page: res.page,
-				limit: res.limit,
-				total: res.total,
-			},
-		}),
 	});
 };
 

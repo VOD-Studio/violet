@@ -46,14 +46,6 @@ export interface UpdateSubscriptionRequest {
 	tags?: string[];
 }
 
-/** 分页列表响应 */
-export interface SubscriptionListResponse {
-	items: SubscriptionDTO[];
-	total: number;
-	page: number;
-	limit: number;
-}
-
 /** 抓取报告（POST /admin/subscriptions/{id}/fetch 返回） */
 export interface FetchReportDTO {
 	SubscriptionID: string;
