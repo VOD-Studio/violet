@@ -20,8 +20,8 @@ description: Use when running any Go command or tool — go test/build/vet, wire
 
 项目以 compose 起 dev 环境时，go 命令一律进容器执行：
 
-- 定位 compose 文件（`docker-compose*.yml` / `compose.y*ml`）与 api service 名（`docker compose -f <file> config --services`，或 `docker compose ps` 的 Service 列按容器名映射）。占位符替换为实际值时保持引号。
-- 形态：`docker compose -f "<file>" exec -T "<svc>" go test ./...`；`-T` 禁用 TTY，输出可直接进管道。
+- 定位 compose 文件（`docker-compose*.yml` / `compose.y*ml`）与 api service 名（`docker compose -f <file> config --services`，或 `docker compose ps` 的 Service 列按容器名映射）。
+- 形态：`docker compose -f "<file>" exec -T "<svc>" go test ./...`；`-T` 禁用 TTY，输出可直接进管道。占位符替换为实际值时保持引号。
 - Makefile 目标在宿主机不可用时，把目标 recipe 里的 go 命令搬进容器执行（参数以 Makefile 当前定义为准）：`$(VAR)` 类 make 变量先在 make 层展开成实际值再搬，不原样粘贴；recipe 里的 `cd api` 类相对路径在容器内已由挂载就位（`./api` → `/app`）。
 - codegen / 迁移工具容器内缺失时向用户报告，不在宿主机安装。
 - 前提容器在运行：`docker compose ps` 确认；未启动则从 Makefile help 找启动目标——选纯 compose up 的，走本地脚本、依赖本机工具链的目标同样不可用。
