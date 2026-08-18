@@ -100,4 +100,25 @@ describe("CroppedImage 选区复现", () => {
 		const img = renderCropped(rect);
 		expectWindow(windowFromImgStyle(img.style), rect);
 	});
+
+	it("fillContainer 不写 inline aspect-ratio 且选区复现不受影响", () => {
+		mockContainerBox();
+		// 回归:WovenBento 主格 bug——absolute inset-0 容器 height:auto 下,
+		// inline 选区比例会劫持高度(格子 331px 高只显示 114px)。
+		// 契约:fillContainer 时容器尺寸完全由调用方 className 决定。
+		const rect: CropRect = { x: 0, y: 0.5, w: 1, h: 0.3375 };
+		const src = `/uploads/t.gif?crop=${rect.x},${rect.y},${rect.w},${rect.h}`;
+		const { container } = render(
+			<CroppedImage src={src} fillContainer className="absolute inset-0" alt="封面" />,
+		);
+		const div = container.firstElementChild as HTMLDivElement;
+		expect(div.style.aspectRatio).toBe("");
+		// 选区按容器(而非选区比例)cover 复现,transform 几何照常发出
+		const img = div.querySelector("img");
+		if (!img) throw new Error("未渲染 img");
+		Object.defineProperty(img, "naturalWidth", { value: NATURAL.w, configurable: true });
+		Object.defineProperty(img, "naturalHeight", { value: NATURAL.h, configurable: true });
+		fireEvent.load(img);
+		expectWindow(windowFromImgStyle(img.style), rect);
+	});
 });
