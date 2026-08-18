@@ -94,22 +94,13 @@ func (t *PostTools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, ar
 	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
 		return errResult(err), nil, nil
 	}
-	page, limit := args.Page, args.Limit
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	items, total, err := t.posts.ListAll(ctx, page, limit, "draft", "", nil)
+	q := domainshared.PageQuery{Page: args.Page, Limit: args.Limit}.Normalize()
+	result, err := t.posts.ListAll(ctx, "draft", "", nil, q)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
 	return okResult(map[string]any{
-		"items": items, "total": total, "page": page, "limit": limit,
+		"items": result.Items, "total": result.Total, "page": result.Page, "limit": result.Limit,
 	}), nil, nil
 }
 

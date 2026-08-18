@@ -10,24 +10,11 @@ import (
 type PostRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Post, error)
 	FindBySlug(ctx context.Context, slug string) (*Post, error)
-	FindPublished(ctx context.Context, page, limit int, tag string) ([]*Post, int64, error)
-	// FindAll 后台文章列表（含回收站视图），可选 status / keyword / tags 过滤。
+	// FindPage 分页列出文章（统一入口，筛选与排序语义见 ListFilter 字段注释）。
 	//
-	// status: 空或 "all" 不过滤；draft/published/archived 按 status 列过滤；
-	// "trashed" 切换 Unscoped 取软删除行。keyword 空格分词多关键词 AND，命中
-	// title/excerpt/content_md（LOWER LIKE，大小写不敏感）。tags 为标签 slug 列表，
-	// AND 关系——文章须同时关联全部标签。按 created_at 倒序，返回当前页结果与总数。
-	FindAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]*Post, int64, error)
-	// BatchGetByIDs 批量按 ID 查文章（Unscoped，含软删除行）。
-	// 用于批量操作前一次性校验存在性与所有权，避免逐条查询。
-	BatchGetByIDs(ctx context.Context, ids []shared.ID) ([]*Post, error)
-	// Search 在 authorID 的文章内做大小写不敏感子串检索（title/excerpt/content_md 三列）。
-	// query 空格分词、多词 AND；status 为空或 "all" 不过滤，否则按 draft/published/archived 过滤。
-	// 按 updated_at 倒序，返回当前页结果与总数（has_more 由上层依 total 推导）。
-	Search(ctx context.Context, authorID shared.ID, query, status string, page, limit int) ([]*Post, int64, error)
-	// SearchPublished 在已发布文章内做大小写不敏感子串检索（title/excerpt/content_md 三列）。
-	// 前台公开搜索：无 authorID 限制，固定 status=published，其余语义同 Search。
-	SearchPublished(ctx context.Context, query string, page, limit int) ([]*Post, int64, error)
+	// 各场景排序互不相同（发布列表看 published_at、后台看 created_at、检索看
+	// updated_at），由 ListFilter.Sort 显式指定，避免按筛选维度隐式推导。
+	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*Post], error)
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	Save(ctx context.Context, p *Post) error
 	Delete(ctx context.Context, id shared.ID) error
@@ -55,10 +42,41 @@ type PostRepository interface {
 	// FindCollaboratorIDsByPostIDs 批量返回多篇文章的协同者 ID。
 	// 返回 map[postID][]collaboratorID，每个 post 内的 ID 按首次编辑时间升序、去重、排除 owner。
 	FindCollaboratorIDsByPostIDs(ctx context.Context, postIDs []shared.ID) (map[string][]shared.ID, error)
+	// BatchGetByIDs 批量按 ID 查文章（Unscoped，含软删除行）。
+	BatchGetByIDs(ctx context.Context, ids []shared.ID) ([]*Post, error)
 }
 
 // 领域错误
 var (
 	ErrNotFound     = shared.NotFound("文章")
 	ErrSlugConflict = shared.Conflict("slug 已被占用")
+)
+
+// ListFilter 文章列表筛选条件（FindPage 入参，维度正交组合）。
+//
+// 由调用方按场景组装：前台发布列表传 Status=published + SortPublished（可带
+// Tags 单标签）；后台管理传 Status（trashed 取回收站）+ Keyword/Tags +
+// SortCreatedAt；检索场景传 Keyword + AuthorID + SortUpdated。
+type ListFilter struct {
+	// Status 状态过滤：draft/published/archived 按 status 列过滤；空串或 "all" 不过滤；
+	// "trashed" 切 Unscoped 取软删除行（回收站视图）
+	Status string
+	// Tags 标签 slug 列表（AND 关系，文章须同时关联全部标签）；前台单标签浏览传单元素
+	Tags []string
+	// Keyword 关键词检索（空格分词多关键词 AND，命中 title/excerpt/content_md 三列，大小写不敏感），空串 = 不过滤
+	Keyword string
+	// AuthorID 限定作者（检索自己的文章），nil = 不限作者
+	AuthorID *shared.ID
+	// Sort 排序键，见 SortXxx 常量；空串 = SortCreatedAt
+	Sort string
+}
+
+// 列表排序键（ListFilter.Sort；各场景排序语义不同，显式指定而非按筛选推导）。
+const (
+	// SortPublished 前台发布列表：精选优先，再按发布时间倒序
+	SortPublished = "published"
+	// SortCreatedAt 后台管理列表：创建时间倒序
+	SortCreatedAt = "created_at"
+	// SortUpdated 检索场景：更新时间倒序（最近改过的最相关，与后台的 created_at 区分）
+	SortUpdated = "updated_at"
 )

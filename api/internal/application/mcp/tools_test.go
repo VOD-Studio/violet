@@ -63,11 +63,11 @@ func (f *fakePostService) GetByID(ctx context.Context, id string) (apppost.PostD
 func (f *fakePostService) GetBySlugForAuthor(_ context.Context, slug string) (apppost.PostDTO, error) {
 	return apppost.PostDTO{ID: "post-1", Slug: slug, Title: "草稿标题", ContentMD: "# 草稿\n正文"}, f.getErr
 }
-func (f *fakePostService) ListAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]apppost.PostListItemDTO, int64, error) {
+func (f *fakePostService) ListAll(ctx context.Context, status, keyword string, tags []string, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error) {
 	f.listStatus = status
-	f.listPage = page
-	f.listLimit = limit
-	return []apppost.PostListItemDTO{{ID: "d1", Title: "草稿", Status: "draft"}}, 1, f.listErr
+	f.listPage = q.Page
+	f.listLimit = q.Limit
+	return domainshared.NewPageResult(q, []apppost.PostListItemDTO{{ID: "d1", Title: "草稿", Status: "draft"}}, 1), f.listErr
 }
 func (f *fakePostService) ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error) {
 	f.importURL = rawURL

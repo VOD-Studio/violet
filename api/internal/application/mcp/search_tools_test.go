@@ -30,8 +30,9 @@ type fakeSearchService struct {
 	gotOffset   int
 }
 
-func (f *fakeSearchService) SearchPosts(_ context.Context, authorID shared.ID, query, status string, limit, offset int) (*apppost.SearchPostsResult, error) {
-	f.gotAuthorID, f.gotQuery, f.gotStatus, f.gotLimit, f.gotOffset = authorID, query, status, limit, offset
+func (f *fakeSearchService) SearchPosts(_ context.Context, authorID shared.ID, query, status string, q shared.PageQuery) (*apppost.SearchPostsResult, error) {
+	f.gotAuthorID, f.gotQuery, f.gotStatus = authorID, query, status
+	f.gotLimit, f.gotOffset = q.Limit, q.Offset()
 	return f.postsRes, f.err
 }
 

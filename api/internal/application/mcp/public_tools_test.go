@@ -11,15 +11,14 @@ import (
 
 	apppost "blog-api/internal/application/post"
 	domain "blog-api/internal/domain/post"
+	shared "blog-api/internal/domain/shared"
 )
-
 // fakePublicPostService 内存版公开文章服务，按 slug 预设返回。
 type fakePublicPostService struct {
-	bySlug       map[string]apppost.PostDTO
-	listItems    []apppost.PostListItemDTO
-	listTotal    int64
-	gotListPage  int
-	gotListLimit int
+	bySlug     map[string]apppost.PostDTO
+	listItems  []apppost.PostListItemDTO
+	listTotal  int64
+	gotListPQ  shared.PageQuery
 }
 
 func (f *fakePublicPostService) GetPublishedBySlug(_ context.Context, slug string) (apppost.PostDTO, error) {
@@ -30,11 +29,10 @@ func (f *fakePublicPostService) GetPublishedBySlug(_ context.Context, slug strin
 	return dto, nil
 }
 
-func (f *fakePublicPostService) ListPublished(_ context.Context, page, limit int, _ string) ([]apppost.PostListItemDTO, int64, error) {
-	f.gotListPage, f.gotListLimit = page, limit
-	return f.listItems, f.listTotal, nil
+func (f *fakePublicPostService) ListPublished(_ context.Context, _ string, q shared.PageQuery) (shared.PageResult[apppost.PostListItemDTO], error) {
+	f.gotListPQ = q
+	return shared.NewPageResult(q, f.listItems, f.listTotal), nil
 }
-
 // readReq 构造 ReadResourceRequest（Params 为指针字段）。
 func readReq(uri string) *mcp.ReadResourceRequest {
 	params := mcp.ReadResourceParams{URI: uri}
@@ -115,9 +113,9 @@ func TestPublicTools_ListPosts(t *testing.T) {
 	assert.Contains(t, text, "量子计算")
 	assert.Contains(t, text, "chemistry")
 	assert.Contains(t, text, "化学笔记")
-	// 首页大 limit 取目录（个人博客量级）
-	assert.Equal(t, 1, svc.gotListPage)
-	assert.Equal(t, 200, svc.gotListLimit)
+	// 目录按页聚合：单页传 MaxPageLimit（Normalize 上限），首页即覆盖目录上限
+	assert.Equal(t, 1, svc.gotListPQ.Page)
+	assert.Equal(t, shared.MaxPageLimit, svc.gotListPQ.Limit)
 }
 
 func TestPublicTools_ListPosts_Empty(t *testing.T) {

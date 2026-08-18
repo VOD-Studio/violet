@@ -7,6 +7,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	apppost "blog-api/internal/application/post"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // PublicPostService 公开只读通道依赖的文章服务端口。
@@ -14,7 +15,7 @@ import (
 // reader 是匿名端点，构造上就不该触达草稿/写能力。
 type PublicPostService interface {
 	GetPublishedBySlug(ctx context.Context, slug string) (apppost.PostDTO, error)
-	ListPublished(ctx context.Context, page, limit int, tag string) ([]apppost.PostListItemDTO, int64, error)
+	ListPublished(ctx context.Context, tag string, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error)
 }
 
 // PublicTools 公开只读 server（violet-reader）的 Resource 集合。
@@ -53,16 +54,29 @@ func (t *PublicTools) ReadPost(ctx context.Context, req *mcp.ReadResourceRequest
 		}},
 	}, nil
 }
+// publicListLimit 文章目录的取数上限：目录无分页参数入口（Resource read 不带
+// query），取足够大的上限覆盖个人博客量级。未来文章量增长时升级为带游标的
+// template 形态。
+const publicListLimit = 200
 
 // ListPosts 处理 blog://posts：返回已发布文章目录（slug + 标题，不 dump 正文）。
 // 用于 agent 发现可读文章；resources/list 不自动展开 ResourceTemplate 实例，
 // 故目录需独立静态 Resource（见 PRD-0007 Resources 形状）。
 func (t *PublicTools) ListPosts(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-	// 目录无分页参数入口（Resource read 不带 query）；取首页足够大的 limit
-	// 覆盖个人博客量级。未来文章量增长时升级为带游标的 template 形态。
-	items, _, err := t.posts.ListPublished(ctx, 1, 200, "")
-	if err != nil {
-		return nil, fmt.Errorf("读取文章目录失败: %w", err)
+	// ListPublished 经 Normalize 钳制单页上限 100，按页聚合到目录上限。
+	var items []apppost.PostListItemDTO
+	for page := 1; len(items) < publicListLimit; page++ {
+		result, err := t.posts.ListPublished(ctx, "", domainshared.PageQuery{Page: page, Limit: domainshared.MaxPageLimit})
+		if err != nil {
+			return nil, fmt.Errorf("读取文章目录失败: %w", err)
+		}
+		items = append(items, result.Items...)
+		if len(result.Items) == 0 || int64(len(items)) >= result.Total {
+			break
+		}
+	}
+	if len(items) > publicListLimit {
+		items = items[:publicListLimit]
 	}
 	var sb []byte
 	sb = append(sb, "# 已发布文章目录\n\n"...)

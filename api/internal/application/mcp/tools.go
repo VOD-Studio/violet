@@ -31,7 +31,7 @@ type PostService interface {
 	UpdateStatus(ctx context.Context, id, status string) (apppost.PostDTO, error)
 	GetByID(ctx context.Context, id string) (apppost.PostDTO, error)
 	GetBySlugForAuthor(ctx context.Context, slug string) (apppost.PostDTO, error)
-	ListAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]apppost.PostListItemDTO, int64, error)
+	ListAll(ctx context.Context, status, keyword string, tags []string, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error)
 	ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error)
 }
 
