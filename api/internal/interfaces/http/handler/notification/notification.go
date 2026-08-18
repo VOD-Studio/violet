@@ -26,14 +26,13 @@ func NewHandler(svc *appnotification.Service) *Handler {
 // List 列出当前用户的通知（分页）。
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := mustGetUserID(r)
-	page, limit := response.ParsePaging(r)
 
-	dtos, total, err := h.svc.ListByUser(r.Context(), userID, page, limit)
+	result, err := h.svc.ListByUser(r.Context(), userID, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, dtos, page, limit, total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // UnreadCount 返回当前用户的未读通知数。

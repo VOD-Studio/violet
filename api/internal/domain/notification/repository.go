@@ -21,8 +21,8 @@ type NotificationRepository interface {
 	// FindByID 按 ID + userID 双键查（防跨用户读他人通知）。
 	FindByID(ctx context.Context, id, userID domainshared.ID) (*Notification, error)
 
-	// FindNotify 列出某用户的通知（分页，按 created_at 倒序）。
-	FindNotify(ctx context.Context, userID domainshared.ID, page, limit int) ([]*Notification, int64, error)
+	// FindPage 分页列出某用户的通知（created_at DESC + id DESC tiebreaker）。
+	FindPage(ctx context.Context, filter ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*Notification], error)
 
 	// CountUnread 统计未读数（服务端已读权威：read_at IS NULL 计数）。
 	CountUnread(ctx context.Context, userID domainshared.ID) (int64, error)
@@ -35,4 +35,12 @@ type NotificationRepository interface {
 
 	// FindAfterID 查某用户在指定 ID 之后的通知（SSE 断连补发用）。
 	FindAfterID(ctx context.Context, userID domainshared.ID, afterID domainshared.ID, limit int) ([]*Notification, error)
+}
+
+// ListFilter 通知列表筛选条件（FindPage 入参）。
+//
+// 通知是 per-user 的私有数据，UserID 为必填维度（无「全站通知」场景）。
+type ListFilter struct {
+	// UserID 所属用户 ID，必填（通知列表始终以用户为根）
+	UserID domainshared.ID
 }
