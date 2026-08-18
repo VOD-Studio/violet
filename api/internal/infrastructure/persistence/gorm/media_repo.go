@@ -538,33 +538,16 @@ func (r *FileRepository) FindByURLs(ctx context.Context, urls []string) ([]*uplo
 	return result, nil
 }
 
-func (r *FileRepository) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*upload.File, int64, error) {
-	query := r.db.WithContext(ctx).Model(&model.File{}).Where("owner_id = ?", ownerID.UUID())
-	if purpose != "" {
-		query = query.Where("purpose = ?", purpose)
-	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计文件失败", err)
-	}
-	var pos []model.File
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询文件列表失败", err)
-	}
-	result := make([]*upload.File, 0, len(pos))
-	for _, po := range pos {
-		f, _ := fileToDomain(po)
-		result = append(result, f)
-	}
-	return result, total, nil
-}
-
-// FindAll 全局查询文件列表（后台素材管理用，不限 owner）
+// FindPage 分页列出文件（统一入口，created_at DESC + id DESC tiebreaker 防翻页漂移）。
 //
-// 支持按 purpose/category/mimePrefix/keyword 筛选，默认排除软删除文件。
-func (r *FileRepository) FindAll(ctx context.Context, filter upload.FileListFilter, page, limit int) (*upload.FileListResult, error) {
+// filter 字段语义见 domain FileListFilter 注释：OwnerID/Purpose 供用户素材
+// 列表，其余维度供后台全局管理；默认排除软删除文件（IncludeDeleted=true 时包含）。
+func (r *FileRepository) FindPage(ctx context.Context, filter upload.FileListFilter, q domainshared.PageQuery) (domainshared.PageResult[*upload.File], error) {
+	q = q.Normalize()
 	query := r.db.WithContext(ctx).Model(&model.File{})
+	if filter.OwnerID != nil {
+		query = query.Where("owner_id = ?", filter.OwnerID.UUID())
+	}
 	if filter.Purpose != "" {
 		query = query.Where("purpose = ?", filter.Purpose)
 	}
@@ -580,21 +563,17 @@ func (r *FileRepository) FindAll(ctx context.Context, filter upload.FileListFilt
 	if !filter.IncludeDeleted {
 		query = query.Where("deleted_at IS NULL")
 	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, domainshared.Internal("统计文件失败", err)
-	}
 	var pos []model.File
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, domainshared.Internal("查询文件列表失败", err)
+	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "文件")
+	if err != nil {
+		return domainshared.PageResult[*upload.File]{}, err
 	}
 	files := make([]*upload.File, 0, len(pos))
 	for _, po := range pos {
 		f, _ := fileToDomain(po)
 		files = append(files, f)
 	}
-	return &upload.FileListResult{Files: files, Total: total}, nil
+	return domainshared.NewPageResult(q, files, total), nil
 }
 
 func (r *FileRepository) Save(ctx context.Context, f *upload.File) error {

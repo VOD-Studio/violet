@@ -148,11 +148,8 @@ func (f *fakeFileRepo) FindByHash(ctx context.Context, hash string, ownerID doma
 func (f *fakeFileRepo) FindByURLs(ctx context.Context, urls []string) ([]*domainupload.File, error) {
 	return nil, nil
 }
-func (f *fakeFileRepo) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*domainupload.File, int64, error) {
-	return nil, 0, nil
-}
-func (f *fakeFileRepo) FindAll(ctx context.Context, filter domainupload.FileListFilter, page, limit int) (*domainupload.FileListResult, error) {
-	return &domainupload.FileListResult{}, nil
+func (f *fakeFileRepo) FindPage(ctx context.Context, filter domainupload.FileListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainupload.File], error) {
+	return domainshared.PageResult[*domainupload.File]{}, nil
 }
 func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error { return nil }
 func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error  { return nil }

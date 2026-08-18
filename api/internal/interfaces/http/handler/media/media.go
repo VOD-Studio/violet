@@ -683,13 +683,12 @@ func (h *Handler) CheckInstantUpload(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	purpose := r.URL.Query().Get("purpose")
-	page, limit := response.ParsePaging(r)
-	files, total, err := h.uploadSvc.ListByOwner(r.Context(), userID, purpose, page, limit)
+	result, err := h.uploadSvc.ListByOwner(r.Context(), userID, purpose, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, files, page, limit, total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // DeleteFile 删除文件
@@ -716,20 +715,18 @@ func (h *Handler) GetMedia(w http.ResponseWriter, r *http.Request) {
 // ListAllFiles 全局文件列表（后台素材管理，不限 owner）
 func (h *Handler) ListAllFiles(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	page, limit := response.ParsePaging(r)
-	files, total, err := h.uploadSvc.ListAllFiles(r.Context(), appmedia.ListAllFilesInput{
-		Page:         page,
-		Limit:        limit,
+	in := appmedia.ListAllFilesInput{
 		Purpose:      q.Get("purpose"),
 		MimeCategory: q.Get("type"),
 		Category:     q.Get("category"),
 		Keyword:      q.Get("keyword"),
-	})
+	}
+	result, err := h.uploadSvc.ListAllFiles(r.Context(), in, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, files, page, limit, total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // UpdateFileMetadata 更新素材元数据（描述/分类/文件名）
