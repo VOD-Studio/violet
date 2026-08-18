@@ -137,50 +137,31 @@ func (s *Service) GetByID(ctx context.Context, id, userID string) (SubscriptionD
 	return toDTO(sub), nil
 }
 
-// ListByUser 列出某用户的订阅（分页 + 可选 status 过滤）。
-// status 空串 = 不过滤；page 从 1 起；limit 由调用方钳制上限。
-func (s *Service) ListByUser(ctx context.Context, userID, status string, page, limit int) ([]SubscriptionDTO, int64, error) {
-	return s.list(ctx, status, page, limit, userID)
-}
-
-// ListAll 列出全站订阅（admin 后台用，跨用户）。
-func (s *Service) ListAll(ctx context.Context, status string, page, limit int) ([]SubscriptionDTO, int64, error) {
-	return s.list(ctx, status, page, limit, "")
-}
-
-// list 是 ListByUser/ListAll 的共享实现。userFilter 空串 = 不过滤用户（全站）。
-func (s *Service) list(ctx context.Context, status string, page, limit int, userFilter string) ([]SubscriptionDTO, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	var (
-		subs  []*domainsubscription.Subscription
-		total int64
-		err   error
-	)
-	if userFilter == "" {
-		subs, total, err = s.repo.FindAll(ctx, status, page, limit)
-	} else {
-		uid, perr := shared.ParseID(userFilter)
-		if perr != nil {
-			return nil, 0, perr
-		}
-		subs, total, err = s.repo.FindByUser(ctx, uid, status, page, limit)
-	}
+// ListByUser 分页列出某用户的订阅（可选 status 过滤，空串 = 不过滤）。
+func (s *Service) ListByUser(ctx context.Context, userID, status string, q shared.PageQuery) (shared.PageResult[SubscriptionDTO], error) {
+	uid, err := shared.ParseID(userID)
 	if err != nil {
-		return nil, 0, err
+		return shared.PageResult[SubscriptionDTO]{}, err
 	}
-	dtos := make([]SubscriptionDTO, 0, len(subs))
-	for _, sub := range subs {
+	return s.listPage(ctx, domainsubscription.ListFilter{Status: status, UserID: &uid}, q)
+}
+
+// ListAll 分页列出全站订阅（admin 后台用，跨用户）。
+func (s *Service) ListAll(ctx context.Context, status string, q shared.PageQuery) (shared.PageResult[SubscriptionDTO], error) {
+	return s.listPage(ctx, domainsubscription.ListFilter{Status: status}, q)
+}
+
+// listPage 两者的共享实现：仓储 FindPage → DTO 映射，页码/条数取钳制后的回显值。
+func (s *Service) listPage(ctx context.Context, filter domainsubscription.ListFilter, q shared.PageQuery) (shared.PageResult[SubscriptionDTO], error) {
+	result, err := s.repo.FindPage(ctx, filter, q)
+	if err != nil {
+		return shared.PageResult[SubscriptionDTO]{}, err
+	}
+	dtos := make([]SubscriptionDTO, 0, len(result.Items))
+	for _, sub := range result.Items {
 		dtos = append(dtos, toDTO(sub))
 	}
-	return dtos, total, nil
+	return shared.NewPageResult(shared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // Update 更新订阅配置（不含运行态字段）。

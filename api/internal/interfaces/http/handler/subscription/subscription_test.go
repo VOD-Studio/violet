@@ -23,23 +23,22 @@ import (
 )
 
 // stubSubRepo 手写 stub，实现 domainsubscription.SubscriptionRepository。
-// 仅覆盖 List 用到的 FindAll；其余方法靠内嵌接口保持编译通过（测试不触碰）。
+// 仅覆盖 List 用到的 FindPage；其余方法靠内嵌接口保持编译通过（测试不触碰）。
 type stubSubRepo struct {
 	domainsubscription.SubscriptionRepository
-	subs          []*domainsubscription.Subscription
-	total         int64
-	findAllStatus string
-	findAllPage   int
-	findAllLimit  int
-	findAllCalled bool
+	subs            []*domainsubscription.Subscription
+	total           int64
+	findPageFilter  domainsubscription.ListFilter
+	findPageQuery   domainshared.PageQuery
+	findPageCalled  bool
 }
 
-func (s *stubSubRepo) FindAll(_ context.Context, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
-	s.findAllCalled = true
-	s.findAllStatus = status
-	s.findAllPage = page
-	s.findAllLimit = limit
-	return s.subs, s.total, nil
+func (s *stubSubRepo) FindPage(_ context.Context, filter domainsubscription.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainsubscription.Subscription], error) {
+	s.findPageCalled = true
+	s.findPageFilter = filter
+	q = q.Normalize()
+	s.findPageQuery = q
+	return domainshared.NewPageResult(q, s.subs, s.total), nil
 }
 
 var _ domainsubscription.SubscriptionRepository = (*stubSubRepo)(nil)
@@ -90,27 +89,30 @@ func TestList_OK_ReturnsItemsAndEchoesPaging(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	var got struct {
-		Data struct {
-			Items []appsub.SubscriptionDTO `json:"items"`
-			Total int64                    `json:"total"`
-			Page  int                      `json:"page"`
-			Limit int                      `json:"limit"`
-		} `json:"data"`
+		Data []appsub.SubscriptionDTO `json:"data"`
+		Meta struct {
+			Pagination struct {
+				Page  int   `json:"page"`
+				Limit int   `json:"limit"`
+				Total int64 `json:"total"`
+			} `json:"pagination"`
+		} `json:"meta"`
 	}
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &got))
 
-	require.Len(t, got.Data.Items, 1)
-	assert.Equal(t, "Hacker News", got.Data.Items[0].Title)
-	assert.Equal(t, "active", got.Data.Items[0].Status)
-	assert.Equal(t, int64(1), got.Data.Total)
-	assert.Equal(t, 2, got.Data.Page, "应回显钳制后的 page")
-	assert.Equal(t, 5, got.Data.Limit, "应回显钳制后的 limit")
+	require.Len(t, got.Data, 1)
+	assert.Equal(t, "Hacker News", got.Data[0].Title)
+	assert.Equal(t, "active", got.Data[0].Status)
+	assert.Equal(t, int64(1), got.Meta.Pagination.Total)
+	assert.Equal(t, 2, got.Meta.Pagination.Page, "应回显钳制后的 page")
+	assert.Equal(t, 5, got.Meta.Pagination.Limit, "应回显钳制后的 limit")
 
-	// status/page/limit 应透传到 service（经由 service 内再次钳制后到 repo）
-	assert.True(t, repo.findAllCalled)
-	assert.Equal(t, "active", repo.findAllStatus)
-	assert.Equal(t, 2, repo.findAllPage)
-	assert.Equal(t, 5, repo.findAllLimit)
+	// status/page/limit 应透传到 service（经 ParsePageQuery 钳制后到 repo）
+	assert.True(t, repo.findPageCalled)
+	assert.Equal(t, "active", repo.findPageFilter.Status)
+	assert.Nil(t, repo.findPageFilter.UserID, "admin List 不按用户过滤")
+	assert.Equal(t, 2, repo.findPageQuery.Page)
+	assert.Equal(t, 5, repo.findPageQuery.Limit)
 }
 
 func TestList_ClampsMissingPagingToDefaults(t *testing.T) {
@@ -123,16 +125,20 @@ func TestList_ClampsMissingPagingToDefaults(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	var got struct {
-		Data struct {
-			Page  int `json:"page"`
-			Limit int `json:"limit"`
-		} `json:"data"`
+		Meta struct {
+			Pagination struct {
+				Page  int `json:"page"`
+				Limit int `json:"limit"`
+			} `json:"pagination"`
+		} `json:"meta"`
 	}
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &got))
-	assert.Equal(t, 1, got.Data.Page, "缺省 page 应钳制为 1")
-	assert.Equal(t, 20, got.Data.Limit, "缺省 limit 应钳制为 20")
-	assert.Equal(t, 1, repo.findAllPage)
-	assert.Equal(t, 20, repo.findAllLimit)
+	assert.Equal(t, 1, got.Meta.Pagination.Page, "缺省 page 应钳制为 1")
+	assert.Equal(t, 20, got.Meta.Pagination.Limit, "缺省 limit 应钳制为 20")
+
+	assert.True(t, repo.findPageCalled)
+	assert.Equal(t, 1, repo.findPageQuery.Page)
+	assert.Equal(t, 20, repo.findPageQuery.Limit)
 }
 
 // =====================================================================

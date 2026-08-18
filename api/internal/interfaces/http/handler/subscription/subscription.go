@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	appsub "blog-api/internal/application/subscription"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
@@ -29,26 +28,12 @@ func NewHandler(svc *appsub.Service) *Handler {
 // List 列出全站订阅（分页 + 可选 status 过滤）。
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	// 钳制用于响应回显（Service 内部有同样钳制，保持一致）
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	dtos, total, err := h.svc.ListAll(r.Context(), status, page, limit)
+	result, err := h.svc.ListAll(r.Context(), status, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, map[string]any{
-		"items": dtos, "total": total, "page": page, "limit": limit,
-	})
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // Get 查单个订阅详情。

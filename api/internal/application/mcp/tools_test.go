@@ -15,6 +15,7 @@ import (
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // fakePostService 内存版文章服务，记录被调参数。seam #2：不依赖 DB。
@@ -100,8 +101,7 @@ type fakeSubService struct {
 
 	listUserID string
 	listStatus string
-	listPage   int
-	listLimit  int
+	listQuery  domainshared.PageQuery
 	listResult []appsub.SubscriptionDTO
 	listTotal  int64
 	listErr    error
@@ -126,12 +126,11 @@ func (f *fakeSubService) GetByID(ctx context.Context, id, userID string) (appsub
 	f.getUserID = userID
 	return f.getResult, f.getErr
 }
-func (f *fakeSubService) ListByUser(ctx context.Context, userID, status string, page, limit int) ([]appsub.SubscriptionDTO, int64, error) {
+func (f *fakeSubService) ListByUser(ctx context.Context, userID, status string, q domainshared.PageQuery) (domainshared.PageResult[appsub.SubscriptionDTO], error) {
 	f.listUserID = userID
 	f.listStatus = status
-	f.listPage = page
-	f.listLimit = limit
-	return f.listResult, f.listTotal, f.listErr
+	f.listQuery = q
+	return domainshared.NewPageResult(q, f.listResult, f.listTotal), f.listErr
 }
 func (f *fakeSubService) Update(ctx context.Context, in appsub.UpdateInput) error {
 	f.updateInput = &in
@@ -613,8 +612,8 @@ func TestListSubscriptions_DelegatesWithReadScope(t *testing.T) {
 	assert.False(t, res.IsError)
 	assert.Equal(t, "u-9", fs.listUserID)
 	assert.Equal(t, "active", fs.listStatus)
-	assert.Equal(t, 1, fs.listPage)
-	assert.Equal(t, 5, fs.listLimit)
+	assert.Equal(t, 1, fs.listQuery.Page)
+	assert.Equal(t, 5, fs.listQuery.Limit)
 }
 
 func TestListSubscriptions_RejectedWithoutReadScope(t *testing.T) {

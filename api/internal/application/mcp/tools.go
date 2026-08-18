@@ -13,10 +13,11 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
+	domainapitoken "blog-api/internal/domain/api_token"
+	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/middleware"
 )
 
@@ -39,7 +40,7 @@ type PostService interface {
 type SubscriptionService interface {
 	Create(ctx context.Context, in appsub.CreateInput) (appsub.SubscriptionDTO, error)
 	GetByID(ctx context.Context, id, userID string) (appsub.SubscriptionDTO, error)
-	ListByUser(ctx context.Context, userID, status string, page, limit int) ([]appsub.SubscriptionDTO, int64, error)
+	ListByUser(ctx context.Context, userID, status string, q domainshared.PageQuery) (domainshared.PageResult[appsub.SubscriptionDTO], error)
 	Update(ctx context.Context, in appsub.UpdateInput) error
 	Pause(ctx context.Context, id, userID string) error
 	Resume(ctx context.Context, id, userID string) error

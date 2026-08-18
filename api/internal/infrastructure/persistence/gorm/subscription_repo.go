@@ -86,56 +86,30 @@ func (r *SubscriptionRepository) FindDue(ctx context.Context, now time.Time, lim
 	return result, nil
 }
 
-// FindByUser 列出某用户的订阅（可选 status 过滤，分页）。
-func (r *SubscriptionRepository) FindByUser(ctx context.Context, userID domainshared.ID, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
-	query := r.db.WithContext(ctx).Model(&model.Subscription{}).Where("user_id = ?", userID.UUID())
-	if status != "" {
-		query = query.Where("status = ?", status)
-	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计订阅失败", err)
-	}
-	var pos []model.Subscription
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询订阅列表失败", err)
-	}
-	result := make([]*domainsubscription.Subscription, 0, len(pos))
-	for _, po := range pos {
-		s, err := subscriptionToDomain(po)
-		if err != nil {
-			return nil, 0, err
-		}
-		result = append(result, s)
-	}
-	return result, total, nil
-}
-
-// FindAll 列出全站订阅（admin 后台用，跨用户）。可选 status 过滤，分页。
-func (r *SubscriptionRepository) FindAll(ctx context.Context, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
+// FindPage 分页列出订阅（可选 status/userID 过滤，created_at DESC + id ASC tiebreaker）。
+func (r *SubscriptionRepository) FindPage(ctx context.Context, filter domainsubscription.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainsubscription.Subscription], error) {
+	q = q.Normalize()
 	query := r.db.WithContext(ctx).Model(&model.Subscription{})
-	if status != "" {
-		query = query.Where("status = ?", status)
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
 	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计订阅失败", err)
+	if filter.UserID != nil {
+		query = query.Where("user_id = ?", filter.UserID.UUID())
 	}
 	var pos []model.Subscription
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询订阅列表失败", err)
+	total, err := countAndFind(query.Order("created_at DESC, id ASC"), q, &pos, "订阅")
+	if err != nil {
+		return domainshared.PageResult[*domainsubscription.Subscription]{}, err
 	}
 	result := make([]*domainsubscription.Subscription, 0, len(pos))
 	for _, po := range pos {
 		s, err := subscriptionToDomain(po)
 		if err != nil {
-			return nil, 0, err
+			return domainshared.PageResult[*domainsubscription.Subscription]{}, err
 		}
 		result = append(result, s)
 	}
-	return result, total, nil
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 // Delete 按 (id, userID) 双键删（防跨用户）。
