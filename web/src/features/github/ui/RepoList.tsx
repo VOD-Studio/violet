@@ -60,7 +60,7 @@ export interface RepoListProps {
  * - 列表：置顶仓库优先展示，卡片带语言、star、fork 信息
  */
 const RepoList = ({ className }: RepoListProps) => {
-	const { data: repos = [], isLoading, isError, error } = useRepos();
+	const { data: repos, isLoading, isError, error } = useRepos();
 
 	if (isLoading) {
 		return <RepoListSkeleton className={className} />;
@@ -76,7 +76,7 @@ const RepoList = ({ className }: RepoListProps) => {
 		);
 	}
 
-	if (repos.length === 0) {
+	if (!repos?.length) {
 		return (
 			<Empty title="NO REPOS" description="暂无仓库数据" className={cn("py-20", className)} />
 		);
