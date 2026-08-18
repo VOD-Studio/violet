@@ -14,6 +14,8 @@ const (
 	DefaultPageLimit = 20
 	// MaxPageLimit 每页条数硬上限，防资源耗尽
 	MaxPageLimit = 100
+	// MaxPage 页码硬上限：钳制 Offset 换算不溢出、防止超大 OFFSET 全表扫描
+	MaxPage = 10000
 )
 
 // PageQuery 分页查询值对象（offset 语义）
@@ -27,10 +29,13 @@ type PageQuery struct {
 	Limit int
 }
 
-// Normalize 钳制到合法区间：page≥1、1≤limit≤MaxPageLimit，越界/缺省回默认值。
+// Normalize 钳制到合法区间：1≤page≤MaxPage、1≤limit≤MaxPageLimit，越界/缺省回默认值。
 func (q PageQuery) Normalize() PageQuery {
 	if q.Page < DefaultPage {
 		q.Page = DefaultPage
+	}
+	if q.Page > MaxPage {
+		q.Page = MaxPage
 	}
 	if q.Limit < DefaultPage {
 		q.Limit = DefaultPageLimit

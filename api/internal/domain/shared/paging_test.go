@@ -16,6 +16,7 @@ func TestPageQueryNormalizeClamps(t *testing.T) {
 		{"零值回默认", PageQuery{}, PageQuery{Page: DefaultPage, Limit: DefaultPageLimit}},
 		{"负值回默认", PageQuery{Page: -3, Limit: -1}, PageQuery{Page: DefaultPage, Limit: DefaultPageLimit}},
 		{"超上限钳到100", PageQuery{Page: 2, Limit: 99999}, PageQuery{Page: 2, Limit: MaxPageLimit}},
+		{"页码超上限钳到MaxPage", PageQuery{Page: 1 << 40, Limit: 20}, PageQuery{Page: MaxPage, Limit: 20}},
 		{"合法值不动", PageQuery{Page: 5, Limit: 50}, PageQuery{Page: 5, Limit: 50}},
 	}
 	for _, tc := range cases {

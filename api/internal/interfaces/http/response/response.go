@@ -137,6 +137,7 @@ func RespondCursor(w http.ResponseWriter, data any, limit int, hasMore bool, nex
 const (
 	defaultPage  = domainshared.DefaultPage
 	defaultLimit = domainshared.DefaultPageLimit
+	maxPage      = domainshared.MaxPage
 	maxLimit     = domainshared.MaxPageLimit
 )
 
@@ -149,6 +150,9 @@ func ParsePaging(r *http.Request) (page, limit int) {
 	page, _ = strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
 		page = defaultPage
+	}
+	if page > maxPage {
+		page = maxPage
 	}
 	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit < 1 {
