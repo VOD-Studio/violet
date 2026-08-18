@@ -5,8 +5,11 @@
 #
 # 评审逻辑由独立的 GitHub Action VOD-Studio/inori 提供，支持任意 OpenAI 兼容接口。
 # 首次使用前在仓库 Settings → Secrets and variables 添加 MINIMAX_API_KEY
-# （platform.minimaxi.com 创建，按量计费 key 前缀 sk-）。未配置时本 workflow
+# （platform.minimaxi.com 订阅 Token Plan 的 sk-cp- key）。未配置时本 workflow
 # 跳过，不影响 PR 检查。
+#
+# 合规注记：MiniMax ToS 将 Token Plan 限定为指定编程工具使用，自动化 CI
+# 调用存在账号风险（可能被封 key），由仓库所有者知情选择。
 #
 # 评审规则（注释规范、DDD 分层、Tailwind v4 简写等）在 .github/inori.yml 维护，
 # 优先级：workflow inputs > .github/inori.yml > inori 内置默认。
@@ -49,5 +52,5 @@ jobs:
         if: env.MINIMAX_API_KEY != ''
         uses: VOD-Studio/inori@v0
         with:
-          provider: minimax
+          provider: minimax-token
           llm_api_key: ${{ secrets.MINIMAX_API_KEY }}
