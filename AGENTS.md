@@ -26,7 +26,7 @@
 
 ### 后端 (`api/`) 须知
 - **环境依赖**: 后端需要 Go 1.26。本机未装 Go 时,后端命令(测试/构建/lint/迁移等)统一在 dev 容器内执行,见 `.agents/skills/api-docker-dev`;**不要自行安装 Go**。
-- **测试**: `make api-test`
+- **测试**: `make api-test` (本机无 Go 时按上方容器方式执行,下同)
 - **代码检查**: `make api-lint` (使用 golangci-lint)
 
 ### 前端 (`web/`) 须知
