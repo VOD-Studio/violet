@@ -110,3 +110,35 @@ entities = 业务对象(名词:Post/Tag/User 的领域类型与跨 feature 实�
 - 类型/组件只被单一 feature 用 → 留在该 feature 的 `model/`,不预防性上提。
 - 被 ≥2 features 引用 → 上提到 `entities/<name>/`(独立提交),按需长出 `api/`(实体查询)、`ui/`(实体组件) segment。
 - shared 层禁止业务知识(`shared/user` 这种不存在);有业务语义的类型最低放 entities。
+
+## 空值保护全景规范
+
+空值保护的核心是**在信任边界（API 响应、异步状态、用户输入）进行分层防御**，既不盲目信任外部数据，也不在内部代码中到处堆砌无意义的 `?.`（过度防御会掩盖真实类型错误）：
+
+### 1. DTO 建模与类型真实性
+- **诚实的类型定义**：后端可能返回 `null` 的字段，DTO 必须显式声明为 `T | null`，严禁标注为非空 `T` 欺骗编译器。
+- **语义区分**：`null` 表示后端明确告知“无此数据/未配置/已清空”；`undefined` 表示前端未传参/可选字段/数据未完成加载。
+
+### 2. 操作符选型与假值陷阱
+- **永远优先使用 `??`（空值合并）替代 `||`（逻辑或）**：
+  - ❌ `stars || 0`（当 `stars = 0` 时会被错误覆盖为默认值）
+  - ❌ `isPinned || false`（当 `isPinned = false` 时会被错误触发）
+  - ❌ `title || "默认"`（当 `title = ""` 故意置空时会被覆盖）
+  - ✅ `stars ?? 0`、`title ?? "默认"`：仅在值为 `null` 或 `undefined` 时生效。
+- **解构赋值默认参数陷阱**：
+  - ❌ `const { items = [] } = data || {}`（若 `data.items` 为 `null`，JS 默认参数**完全不生效**，直接读 `items.length` 必崩溃）。
+  - ✅ `const items = data?.items ?? []`。
+
+### 3. TanStack Query 异步状态分层
+- **严格三态守卫**：
+  - **加载中态（`isLoading`）**：`data === undefined`，渲染骨架屏 / 加载指示器。
+  - **请求错误态（`isError`）**：渲染错误提示，不阻断父级。
+  - **成功但为空态（Empty State）**：在守卫之后通过 `!data?.length` 判定，渲染空占位。
+- **反模式**：禁止在调用 hook 时写 `const { data: list = [] } = useQuery()` 以为能防 `null`（混淆加载中与数据为空状态，且遇到 `null` 仍崩溃）。
+
+### 4. 集合与对象渲染
+- **集合型数据**：状态守卫后方可进行 map 迭代或排序；无守卫时使用可选链与兜底 `(list ?? []).map(...)`。
+- **嵌套对象属性**：使用可选链 `user?.profile?.avatarUrl ?? DEFAULT_AVATAR`。在状态守卫已确保对象存在时，避免无意义的冗余链式访问。
+
+### 5. 工具函数与格式化器防御
+- 通用格式化函数（`formatDate`、`formatSize` 等）入参声明为 `val?: string | number | null`，内部统一返回安全占位符（如 `"—"`），避免所有调用方处处手写三元表达式防御。

@@ -24,3 +24,18 @@ Object.defineProperty(globalThis, "ResizeObserver", {
 	configurable: true,
 	value: ResizeObserverMock,
 });
+
+/**
+ * jsdom 未实现 IntersectionObserver，DecryptedText 等可见性动效组件在挂载时依赖。
+ */
+class IntersectionObserverMock {
+	observe = vi.fn();
+	unobserve = vi.fn();
+	disconnect = vi.fn();
+}
+
+Object.defineProperty(globalThis, "IntersectionObserver", {
+	writable: true,
+	configurable: true,
+	value: IntersectionObserverMock,
+});
