@@ -110,3 +110,14 @@ entities = 业务对象(名词:Post/Tag/User 的领域类型与跨 feature 实�
 - 类型/组件只被单一 feature 用 → 留在该 feature 的 `model/`,不预防性上提。
 - 被 ≥2 features 引用 → 上提到 `entities/<name>/`(独立提交),按需长出 `api/`(实体查询)、`ui/`(实体组件) segment。
 - shared 层禁止业务知识(`shared/user` 这种不存在);有业务语义的类型最低放 entities。
+
+## 空值保护与数据层边界
+
+根据 TanStack Query 架构与契约职责，前端空值保护按层分工：
+
+1. **后端返回语义**：后端可能合法返回 `null`（代表模块未配置、未关联数据等状态）或 `[]`（空集合），前端不应强行抹杀此语义差异。
+2. **API 请求层保持纯度**：`queries.ts` / `client.ts` 纯透传响应，禁止在 API 函数内私加 `data ?? []` 篡改原始响应。
+3. **UI 消费层状态分层防御**：
+   - **先状态守卫**：必须先处理 `isLoading`（骨架屏）与 `isError`（错误提示）。
+   - **成功分支判空**：在确认请求成功后，通过可选链 `!data?.length` 判定空数据态，或通过 `const items = data ?? []` 保证数组安全操作。
+   - **反模式**：禁止直接 `const { data: items = [] } = useQuery()` 以为能防 null（JS 默认参数仅防 `undefined`，遇到后端 `null` 仍是 `null`，直接访问 `items.length` 导致 TypeError 崩溃）。
