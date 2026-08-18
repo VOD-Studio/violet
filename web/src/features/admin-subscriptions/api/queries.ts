@@ -1,11 +1,7 @@
-import type { PagedResponse, PageQuery } from "@shared/api/types";
+import type { PageQuery } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type {
-	CreateSubscriptionRequest,
-	SubscriptionDTO,
-	UpdateSubscriptionRequest,
-} from "../model/types";
+import type { CreateSubscriptionRequest, UpdateSubscriptionRequest } from "../model/types";
 import * as api from "./client";
 import { subscriptionKeys } from "./keys";
 

@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiGetPaged, apiPost, apiPut } from "@shared/api/request";
-import type { PageQuery, PagedResponse } from "@shared/api/types";
+import type { PagedResponse, PageQuery } from "@shared/api/types";
 import type {
 	CreateSubscriptionRequest,
 	SubscriptionDTO,
