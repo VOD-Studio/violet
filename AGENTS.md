@@ -32,6 +32,7 @@
 - **类型检查**: `make web-typecheck`
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
+- **工具函数落位与查重、TS 注释形态**: 见 `frontend-conventions` skill(注释的信息量判定仍适用本文件「代码注释规范」节,skill 管前端 TSDoc 形态)。
 
 ## 分支命名
 
