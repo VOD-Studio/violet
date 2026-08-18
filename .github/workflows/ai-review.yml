@@ -53,4 +53,7 @@ jobs:
         uses: VOD-Studio/inori@v0
         with:
           provider: minimax-token
+          # M3 为当前旗舰（1M ctx + MSA 稀疏注意力，prefill/decode 显著快于 M2 代）；
+          # 求更快可换 MiniMax-M2.7-highspeed（同订阅额度，速度优先档）
+          llm_model: MiniMax-M3
           llm_api_key: ${{ secrets.MINIMAX_API_KEY }}
