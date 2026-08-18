@@ -5,27 +5,33 @@ import (
 	"encoding/json"
 	"net/http"
 
+	authcmd "blog-api/internal/application/auth/command"
 	appsettings "blog-api/internal/application/settings"
 	"blog-api/internal/interfaces/http/response"
 )
 
 // Handler 站点配置 HTTP handler
 type Handler struct {
-	svc *appsettings.Service
+	svc   *appsettings.Service
+	creds *authcmd.OAuthCredentials // OAuth 凭据（公开 client_id 随设置下发，前端发起授权用）
 }
 
 // NewHandler 构造配置 handler
-func NewHandler(svc *appsettings.Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *appsettings.Service, creds *authcmd.OAuthCredentials) *Handler {
+	return &Handler{svc: svc, creds: creds}
 }
 
-// GetPublicSettings 获取公开站点配置（不含敏感字段）
+// GetPublicSettings 获取公开站点配置（不含敏感字段）。
+// OAuth client_id 是公开值（前端发起授权必须持有），随运行时凭据实时下发——
+// 后台写入后前端无需重新构建即可用新 id；secret 永不下发。
 func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 	data, err := h.svc.GetPublic(r.Context())
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
+	data["google_client_id"] = h.creds.GoogleClientID()
+	data["github_client_id"] = h.creds.GithubClientID()
 	response.RespondOK(w, data)
 }
 

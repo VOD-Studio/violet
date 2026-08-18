@@ -5,6 +5,7 @@
 package settings
 
 import (
+	authcmd "blog-api/internal/application/auth/command"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -41,7 +42,7 @@ func (s *stubSettingsStore) UpsertMany(context.Context, map[string]string) error
 var _ domainsettings.SettingsStore = (*stubSettingsStore)(nil)
 
 func newSettingsHandler(store *stubSettingsStore) *Handler {
-	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory()))
+	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory()), authcmd.NewOAuthCredentials("", "", ""))
 }
 
 func newJSONRequest(method, target, body string) *http.Request {

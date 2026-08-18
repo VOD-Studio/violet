@@ -328,3 +328,7 @@ var ErrInvalidSetting = shared.BadRequest("无效的站点配置")
 
 // ErrOAuthProviderDisabled OAuth 登录方式已被管理员禁用
 var ErrOAuthProviderDisabled = shared.BadRequest("该登录方式已禁用")
+
+// ErrOAuthNotConfigured OAuth 登录方式已开启但凭据未配置/不完整。
+// 与 Disabled 区分：开关在管理端，凭据在环境/后台凭据写入，两者独立。
+var ErrOAuthNotConfigured = shared.BadRequest("该登录方式未配置凭据，请在后台完成配置")

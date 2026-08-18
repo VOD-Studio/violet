@@ -103,6 +103,9 @@ services:
       # 生产 podman：设 DOCKER_SOCKET_PATH=/run/podman/podman.sock（见 manual-deploy.md）。
       # 安全权衡见 ADR-0006。
       - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
+      # OAuth 凭据后台写入持久化：API 写 /app/.env 即宿主机 ./.env，
+      # 容器重建后 compose env_file 重新注入（需宿主机侧 chmod 使 UID 65532 可写）
+      - ./.env:/app/.env
     depends_on:
       postgres:
         condition: service_healthy

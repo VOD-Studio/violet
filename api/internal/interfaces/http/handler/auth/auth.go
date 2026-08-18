@@ -36,6 +36,7 @@ type Handler struct {
 	changePwd     *authcmd.ChangePasswordHandler  // 修改密码用例
 	getMe         *authquery.GetMeHandler          // 获取当前用户信息用例
 	settings      *appsettings.Service             // 站点设置服务，OAuth 启用判断
+	oauthCreds    *authcmd.OAuthCredentials        // OAuth 凭据运行时存储（后台可写）
 
 	validate  *validator.Validate  // 请求体校验器
 	cookieCfg config.CookieConfig  // session cookie 配置（名/域/Secure/SameSite）
@@ -60,6 +61,7 @@ func NewHandler(
 	changePwd *authcmd.ChangePasswordHandler,
 	getMe *authquery.GetMeHandler,
 	settings *appsettings.Service,
+	oauthCreds *authcmd.OAuthCredentials,
 	cookieCfg config.CookieConfig,
 	session config.SessionConfig,
 ) *Handler {
@@ -68,7 +70,8 @@ func NewHandler(
 		createSession: createSession,
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
-		validate:  validator.New(),
+		oauthCreds: oauthCreds,
+		validate:   validator.New(),
 		cookieCfg: cookieCfg,
 		session:   session,
 	}
@@ -86,7 +89,9 @@ func generateCSRFToken() string {
 	return hex.EncodeToString(b)
 }
 
-// ensureOAuthEnabled 校验指定 OAuth 登录方式是否被管理员启用
+// ensureOAuthEnabled 校验 OAuth 登录方式可用：管理员开关开启 + 凭据已配置。
+// 开关与凭据独立维护（开关在 site_settings，凭据在 env/后台写入），
+// 开而未配时返回明确的「未配置」错误而非登录时才暴露。
 func (h *Handler) ensureOAuthEnabled(ctx context.Context, provider string) error {
 	settings, err := h.settings.GetAll(ctx)
 	if err != nil {
@@ -97,12 +102,89 @@ func (h *Handler) ensureOAuthEnabled(ctx context.Context, provider string) error
 		if !settings.GoogleLoginEnabled {
 			return domainsettings.ErrOAuthProviderDisabled
 		}
+		if h.oauthCreds.GoogleClientID() == "" {
+			return domainsettings.ErrOAuthNotConfigured
+		}
 	case "github":
 		if !settings.GithubLoginEnabled {
 			return domainsettings.ErrOAuthProviderDisabled
 		}
+		if h.oauthCreds.GithubClientID() == "" || h.oauthCreds.GithubClientSecret() == "" {
+			return domainsettings.ErrOAuthNotConfigured
+		}
 	}
 	return nil
+}
+
+// GetOAuthStatus GET /admin/oauth/status —— OAuth 凭据状态检测。
+// 各 provider 返回 enabled（管理员开关）/凭据配置状态/脱敏预览，
+// persisted=false 提示后台写入未落盘（重启后失效）。
+func (h *Handler) GetOAuthStatus(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.settings.GetAll(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	st := h.oauthCreds.Status()
+	response.RespondOK(w, map[string]any{
+		"google_login_enabled": settings.GoogleLoginEnabled,
+		"github_login_enabled": settings.GithubLoginEnabled,
+		"google":               st.Google,
+		"github":               st.Github,
+		"persisted":            st.Persisted,
+	})
+}
+
+// VerifyOAuthCredentials POST /admin/oauth/verify —— 探测凭据在 provider 侧的有效性。
+// 用假 code 打 token 端点读错误码（OAuth 无公开 client 查询端点，防枚举）：
+// GitHub 404=App 已删 / incorrect_client_credentials=secret 错 / bad_verification_code=有效；
+// Google invalid_client=已删 / 其余=client 存在。手动触发，勿自动轮询。
+func (h *Handler) VerifyOAuthCredentials(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Provider string `json:"provider" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	result, err := h.oauthCreds.VerifyProvider(r.Context(), req.Provider)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, result)
+}
+
+// UpdateOAuthCredentials PUT /admin/oauth/credentials —— 后台写入 OAuth 凭据。
+// 内存立即生效；nil 字段不更新（前端留空=保持原值，secret 不回显）。
+func (h *Handler) UpdateOAuthCredentials(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		GoogleClientID     *string `json:"google_client_id"`
+		GithubClientID     *string `json:"github_client_id"`
+		GithubClientSecret *string `json:"github_client_secret"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.GoogleClientID == nil && req.GithubClientID == nil && req.GithubClientSecret == nil {
+		response.RespondError(w, r, domainsettings.ErrInvalidSetting)
+		return
+	}
+	if err := h.oauthCreds.Update(authcmd.OAuthCredentialUpdate{
+		GoogleClientID:     req.GoogleClientID,
+		GithubClientID:     req.GithubClientID,
+		GithubClientSecret: req.GithubClientSecret,
+	}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	st := h.oauthCreds.Status()
+	response.RespondOK(w, map[string]any{
+		"google":    st.Google,
+		"github":    st.Github,
+		"persisted": st.Persisted,
+	})
 }
 
 // Register POST /auth/register

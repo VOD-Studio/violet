@@ -55,6 +55,21 @@ func NewAdminRouter(d *Deps) chi.Router {
 		})
 	})
 
+	// OAuth 凭据（读 settings:view；写 settings:update，与设置组同权限域）
+	r.Route("/oauth", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "settings:view"))
+			r.Get("/status", d.Auth.GetOAuthStatus)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "settings:update"))
+			// 探测虽是读操作（不落盘），但外呼 provider 且管理员手动触发，
+			// 与写入同权限域
+			r.Post("/verify", d.Auth.VerifyOAuthCredentials)
+			r.Put("/credentials", d.Auth.UpdateOAuthCredentials)
+		})
+	})
+
 	// 用户管理（读 user:view；创建/改角色 user:update-role；删除/禁用 user:ban）
 	r.Route("/users", func(r chi.Router) {
 		r.Group(func(r chi.Router) {

@@ -71,9 +71,13 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
 	permissionChecker := role.PermissionChecker
 
-	settings := NewSettingsContainer(db, bus)
+	// OAuth 凭据运行时存储：初始值来自 env；auth（登录链路）与 settings
+	// （公开 client_id 下发）共享同一实例，后台写入即刻全局生效。
+	oauthCreds := authcmd.NewOAuthCredentials(cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret)
 
-	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service)
+	settings := NewSettingsContainer(db, bus, oauthCreds)
+
+	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
 	if err != nil {
 		roleCleanup()
 		return nil, nil, err
