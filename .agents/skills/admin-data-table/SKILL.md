@@ -17,7 +17,7 @@ description: Use when creating or editing an admin list/table page in web/src, w
 - `usePagedQuery` 内管 page/pageSize 状态、拼 PageQuery 调模块 hook，返回的 `pagination` 在 JSX 直接 `pagination={pagination}` 消费。
 - 无额外筛选的页面省略 `baseQuery`。
 - 要新的分页形态，扩展 hook 本身，不在页面组件手搓变体。
-- 默认每页 `DEFAULT_PAGE_SIZE`（导出自 `use-paged-query.ts`）；posts 页传 `initialPageSize: 10`。
+- 默认每页 `DEFAULT_PAGE_SIZE`（导出自 `use-paged-query.ts`）；页面需要偏离默认时显式传 `initialPageSize`（如 posts 页传 10），不复制常量值。
 
 ## 类型约定
 
