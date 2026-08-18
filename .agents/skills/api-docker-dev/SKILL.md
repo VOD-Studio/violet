@@ -17,4 +17,4 @@ docker compose -f docker-compose.dev.yml exec -T api go test ./config/...
 
 ## 前提
 
-dev 容器需在运行。先 `docker compose -f docker-compose.dev.yml ps` 确认；未启动则 `make dev`。
+dev 容器需在运行。先 `docker compose -f docker-compose.dev.yml ps` 确认；未启动则 `make docker-dev`（`make dev` 走本地 `dev.sh`，依赖本机 Go，不可用）。
