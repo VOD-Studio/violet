@@ -8,21 +8,21 @@ import (
 
 // CommentRepository 推文评论仓储接口（端口）。
 //
-// 评论分页沿用 page/limit（评论流无顶部插入问题，与推文时间线的 cursor 分页不同，
-// 见 PRD-0013 难逆决策）。顶层评论列表按 created_at 倒序（最新在前），
-// 回复按 created_at 正序（对话时间线）。
+// 评论分页走 offset 语义的 shared.PageQuery（评论流无顶部插入问题，与推文
+// 时间线的 cursor 分页不同，见 PRD-0013 难逆决策）。顶层评论列表按 created_at
+// 倒序（最新在前），回复按 created_at 正序（对话时间线），均带 id tiebreaker。
 type CommentRepository interface {
 	// Save 保存评论（按主键 upsert；评论无更新路径，upsert 服务重建场景）
 	Save(ctx context.Context, c *Comment) error
 	// FindByID 按 ID 查找评论
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
-	// FindByTweet 列出推文下的顶层评论（depth=0），按 created_at 倒序，page/limit 分页。
-	// 返回 (评论列表, 顶层评论总数)。
-	FindByTweet(ctx context.Context, tweetID shared.ID, page, limit int) ([]*Comment, int64, error)
-	// FindReplies 列出某顶层评论下的全部扁平回复（depth=1），按 created_at 正序，page/limit 分页。
-	// parentID 是顶层评论 id；按 path 前缀查能拿到该顶层下的全部回复（含「回复 @yyy」链）。
-	// 返回 (回复列表, 该顶层下回复总数)。
-	FindReplies(ctx context.Context, parentID shared.ID, page, limit int) ([]*Comment, int64, error)
+	// FindPage 分页列出推文评论（统一入口，筛选维度由 ListFilter 正交组合）。
+	//
+	// TweetID 场景返回顶层评论（depth=0），按 created_at DESC, id DESC（最新在前）；
+	// ParentID 场景按顶层评论 path 前缀拉全部扁平回复（排除自身），排序由 Sort
+	// 决定（默认 asc 对话时间线）。均带 id tiebreaker 防 offset 翻页漂移；
+	// ParentID 指向的评论不存在时返回 ErrCommentNotFound。
+	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*Comment], error)
 	// CountByTweet 统计推文下的评论总数（顶层 + 回复，供详情页展示）。
 	CountByTweet(ctx context.Context, tweetID shared.ID) (int64, error)
 	// CountByTweetIDs 批量统计多推文的评论数（服务时间线/用户主页卡片展示）。
@@ -37,6 +37,19 @@ type CommentRepository interface {
 	// Delete 物理删除评论。
 	// 顶层评论删除时，其回复由 parent_id 自引用 ON DELETE CASCADE 连带清理。
 	Delete(ctx context.Context, id shared.ID) error
+}
+
+// ListFilter 推文评论列表筛选条件（FindPage 入参，维度正交组合）。
+//
+// 由调用方按场景组装：顶层评论列表传 TweetID；回复链传 ParentID+Sort，
+// 两者互斥（TweetID 只出顶层、ParentID 只出回复链）。
+type ListFilter struct {
+	// TweetID 按推文过滤，仅返回顶层评论（depth=0），最新在前
+	TweetID *shared.ID
+	// ParentID 按顶层评论拉全部扁平回复（path 前缀，排除自身），配合 Sort
+	ParentID *shared.ID
+	// Sort 回复链时间排序："asc"（默认，最早优先）/ "desc"，仅 ParentID 场景生效
+	Sort string
 }
 
 // ErrCommentNotFound 评论不存在

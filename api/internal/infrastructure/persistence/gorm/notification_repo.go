@@ -55,35 +55,25 @@ func (r *NotificationRepository) FindByID(ctx context.Context, id, userID domain
 	return notificationToDomain(po)
 }
 
-// FindNotify 列出某用户的通知（分页，按 created_at 倒序）。
-func (r *NotificationRepository) FindNotify(ctx context.Context, userID domainshared.ID, page, limit int) ([]*domainnotification.Notification, int64, error) {
-	var total int64
-	if err := r.db.WithContext(ctx).Model(&model.Notification{}).
-		Where("user_id = ?", userID.UUID()).
-		Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计通知失败", err)
-	}
-
-	offset := (page - 1) * limit
+// FindPage 分页列出某用户的通知（created_at DESC + id DESC tiebreaker）。
+func (r *NotificationRepository) FindPage(ctx context.Context, filter domainnotification.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainnotification.Notification], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Notification{}).
+		Where("user_id = ?", filter.UserID.UUID())
 	var pos []model.Notification
-	if err := r.db.WithContext(ctx).
-		Where("user_id = ?", userID.UUID()).
-		Order("created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询通知列表失败", err)
+	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "通知")
+	if err != nil {
+		return domainshared.PageResult[*domainnotification.Notification]{}, err
 	}
-
 	result := make([]*domainnotification.Notification, 0, len(pos))
 	for _, po := range pos {
 		n, err := notificationToDomain(po)
 		if err != nil {
-			return nil, 0, err
+			return domainshared.PageResult[*domainnotification.Notification]{}, err
 		}
 		result = append(result, n)
 	}
-	return result, total, nil
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 // CountUnread 统计未读数。

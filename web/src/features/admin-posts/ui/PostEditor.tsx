@@ -31,7 +31,7 @@ import {
 	type RichTextEditorHandle,
 } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useDebouncedCallback } from "@shared/lib/hooks/use-debounced-callback";
+import { useDebouncedCallback } from "@shared/hooks/use-debounced-callback";
 import { Input } from "@shared/ui/base/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";

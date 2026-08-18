@@ -9,7 +9,7 @@ import type {
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -43,7 +43,14 @@ function formatTime(s?: string): string {
 }
 
 function AdminAnnouncementsPage() {
-	const { data: announcements = [], isLoading, error, refetch } = useAdminAnnouncements();
+	const {
+		data: paged,
+		isLoading,
+		error,
+		refetch,
+		pagination,
+	} = usePagedQuery(useAdminAnnouncements);
+	const announcements = paged?.data ?? [];
 	const deleteAnn = useDeleteAnnouncement();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<AnnouncementDTO | null>(null);
@@ -51,6 +58,7 @@ function AdminAnnouncementsPage() {
 	const [deleting, setDeleting] = useState<AnnouncementDTO | null>(null);
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 
+	// 排序在当前页内进行（后端列表固定 sort_order 序）
 	const sortedAnnouncements = useMemo(() => {
 		if (!sort) return announcements;
 		const copy = [...announcements];
@@ -181,6 +189,7 @@ function AdminAnnouncementsPage() {
 			<DataTable<AnnouncementDTO>
 				data={sortedAnnouncements}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

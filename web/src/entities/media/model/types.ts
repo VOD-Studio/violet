@@ -1,9 +1,21 @@
 /**
- * MediaFile 与 MediaType - 媒体领域实体
- *
- * 前台素材选择与后台媒体管理共享的读模型，跨 feature 复用故归 entities 层，
- * 放置惯例对齐 entities/user、entities/post。
+ * MediaFile 与 MediaType - 媒体领域实体类型定义（纯类型）
  */
+
+/**
+ * 文件用途分类（对齐后端 domain/upload/entity.go 中的 purposePattern 校验）
+ *
+ * - material: 通用素材库（默认）
+ * - avatar: 用户头像（仅图片）
+ * - emoji: 自定义表情（仅图片/动图）
+ * - post: 文章配图 / 附件
+ * - comment: 评论配图
+ * - tweet: 推文配图
+ */
+export type MediaPurpose = "material" | "avatar" | "post" | "emoji" | "comment" | "tweet";
+
+/** 素材类型，按 MIME 大类划分（对齐后端 application/media/service.go MimeCategory） */
+export type MediaType = "image" | "video" | "audio" | "file";
 
 /**
  * MediaFile - 媒体文件读模型
@@ -15,8 +27,8 @@ export interface MediaFile {
 	id: string;
 	/** 所有者用户 ID */
 	owner_id: string;
-	/** 用途分类，如 material / avatar / cover */
-	purpose: string;
+	/** 用途分类，如 material / avatar / post / emoji / comment / tweet */
+	purpose: MediaPurpose | string;
 	/** 原始文件名 */
 	original_name: string;
 	/** 可访问 URL */
@@ -38,6 +50,3 @@ export interface MediaFile {
 	/** 更新时间，RFC3339 字符串，缩略图版本号用 */
 	updated_at?: string;
 }
-
-/** 素材类型，按 MIME 大类划分 */
-export type MediaType = "image" | "video" | "audio" | "file";

@@ -1,4 +1,4 @@
-import { extractToc, pickActiveByPosition, useActiveHeading } from "@shared/lib/hooks/use-toc";
+import { extractToc, pickActiveByPosition, useActiveHeading } from "@shared/hooks/use-toc";
 import { act, render } from "@testing-library/react";
 import { createElement, createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

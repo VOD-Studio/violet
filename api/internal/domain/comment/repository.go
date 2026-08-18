@@ -67,41 +67,25 @@ type PostCommentStat struct {
 // CommentRepository 评论仓储接口
 type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
-	// FindByPost 按文章列出评论。
+	// FindPage 分页列出评论（统一入口，筛选维度由 ListFilter 正交组合）。
 	//
-	// status 是「所有人可见的基准状态」，前台固定传 StatusApproved。
-	// viewerUserID 控制额外的「自己 pending」可见性：
-	//   - nil（匿名 viewer）：仅返回 status 匹配项。
+	// Status 是「所有人可见的基准状态」，空串 = 不过滤；前台固定传 StatusApproved。
+	// ViewerUserID 控制额外的「自己 pending」可见性：
+	//   - nil（匿名 viewer）：仅返回 Status 匹配项。
 	//     注意 service.ListByPost 会在匿名时短路返回空数组、根本不走到这里；
 	//     nil 分支保留给后台管理等复用场景。
-	//   - 非空（登录 viewer）：返回 status 匹配项 UNION created_by=viewer 的 pending 项。
+	//   - 非空（登录 viewer）：返回 Status 匹配项 UNION created_by=viewer 的 pending 项。
+	//     这样登录提交者能在审核通过前看到自己刚提交的评论（PRD-0001「审批与状态可见性」）。
 	//
-	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），
-	// 见 AnchorFilter 常量；空串视为 AnchorFilterAll（兼容旧调用方）。
+	// AnchorFilter / DepthFilter / BlockID / ParentID / Query 语义见 ListFilter 字段注释。
+	// 排序：ParentID 场景按 Sort（created_at ± id tiebreaker）；
+	// 其余场景 created_at DESC, id DESC tiebreaker（含 Query 检索与后台列表）。
+	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*Comment], error)
+	// FindPageWithPost 分页列出评论并关联所属文章标题/slug（后台管理读模型）。
 	//
-	// depthFilter 控制按 depth 列过滤（顶层 / 回复 / 全部），见 DepthFilter 常量；
-	// 前台顶层评论列表传 DepthFilterTopLevel，配合 FindReplies 按需拉回复。
-	//
-	// blockID 非空时追加 WHERE anchor_block_id = ? 精确过滤（批注按块懒加载用）。
-	//
-	// 这样登录提交者能在审核通过前看到自己刚提交的评论（带「审批中」徽章），
-	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
-	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, depthFilter DepthFilter, blockID string, page, limit int) ([]*Comment, int64, error)
-	// FindReplies 列出某顶层评论下的扁平回复（两层结构，depth=1）。
-	//
-	// parentID 是顶层评论 id。按 parent_id 反查回复——两层扁平下回复的 parent_id
-	// 可能指顶层也可能指另一条回复，但都用 path 挂同一顶层，所以按 path 前缀查
-	// 能拿到该顶层下的全部回复（含「回复 @yyy」链）。
-	//
-	// status / viewerUserID 语义同 FindByPost：approved 联合（登录时）自己的 pending。
-	// sort："asc"（最早优先，默认）/ "desc"（最新优先）。
-	// 「热门」排序未实现，需 reaction_count 冗余（TODO）。
-	FindReplies(ctx context.Context, parentID shared.ID, status string, viewerUserID *shared.ID, sort string, page, limit int) ([]*Comment, int64, error)
-	// FindPending 列出待审核评论（后台）。
-	//
-	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量；
-	// 后台审核列表用 anchorFilter 区分批注与自由评论（Issue-0008）。
-	FindPending(ctx context.Context, anchorFilter AnchorFilter, page, limit int) ([]*Comment, int64, error)
+	// filter.Status 空串 = 不过滤；Query 非空时做 body 多关键词 AND 检索
+	// （每个词都命中 body ILIKE，MCP search_comments 用）。
+	FindPageWithPost(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*CommentWithPost], error)
 	// CountPending 统计待审核评论数量（后台仪表盘角标）
 	CountPending(ctx context.Context) (int64, error)
 	// CountByPostAndAnon 统计某文章下某匿名身份已留存的评论数。
@@ -112,18 +96,8 @@ type CommentRepository interface {
 	// 用于「一篇一次」配额校验（PRD-0001 匿名留言板模式）。
 	CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error)
 	// CountAnnotationsByBlock 按块聚合统计批注数量（仅 depth=0 顶层批注）。
-	// viewerUserID 语义同 FindByPost：nil=仅 approved；非空=approved ∪ 自己 pending。
+	// viewerUserID 语义同 FindPage：nil=仅 approved；非空=approved ∪ 自己 pending。
 	CountAnnotationsByBlock(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID) ([]BlockCount, error)
-	// FindAll 全局评论列表（后台管理，可选状态 + anchor 维度筛选），关联所属文章标题/slug。
-	//
-	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量。
-	FindAll(ctx context.Context, status string, anchorFilter AnchorFilter, page, limit int) ([]*CommentWithPost, int64, error)
-	// Search 按 body 全文检索评论（MCP search_comments），关联所属文章。
-	//
-	// query 空格分词多关键词 AND（每个词都命中 body ILIKE）。status 固定由调用方
-	// 传 approved（MCP 仅消费已审核反馈）。anchorFilter 同 FindAll。created_at DESC。
-	// 复刻 FindAll 的双 query 计数模式（ILIKE WHERE 同步加到 query 和 countQuery）。
-	Search(ctx context.Context, status, query string, anchorFilter AnchorFilter, page, limit int) ([]*CommentWithPost, int64, error)
 	// Stats 按文章聚合评论统计（MCP comment_stats），仅含有反馈的文章。
 	//
 	// 按 post_id GROUP BY，计 annotation_count（anchor_block_id IS NOT NULL）/
@@ -138,6 +112,32 @@ type CommentRepository interface {
 	UpdateStatus(ctx context.Context, id shared.ID, status string) error
 	Delete(ctx context.Context, id shared.ID) error
 }
+
+// ListFilter 评论列表筛选条件（FindPage / FindPageWithPost 入参，维度正交组合）。
+//
+// 由调用方按场景组装：前台文章评论传 PostID+DepthFilter+BlockID；回复链传
+// ParentID+Sort；后台审核传 Status（或固定 pending）；全文检索传 Query。
+type ListFilter struct {
+	// Status 状态基准，空串 = 不过滤；前台/MCP 固定 StatusApproved
+	Status string
+	// ViewerUserID 非 nil 时返回 Status 匹配项 ∪ 该用户自己的 pending（登录可见性）
+	ViewerUserID *shared.ID
+	// AnchorFilter 按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量
+	AnchorFilter AnchorFilter
+	// DepthFilter 按 depth 列过滤（顶层 / 回复），nil = 不过滤；
+	// 仅按文章列评论场景有意义，ParentID 回复链场景勿设
+	DepthFilter *DepthFilter
+	PostID *shared.ID
+	// ParentID 按顶层评论拉全部扁平回复（path 前缀，排除自身），配合 Sort
+	ParentID *shared.ID
+	// BlockID 批注按块精确过滤（懒加载），仅 PostID 场景有意义
+	BlockID string
+	// Sort 回复链时间排序："asc"（默认，最早优先）/ "desc"，仅 ParentID 场景生效
+	Sort string
+	// Query body 全文检索（空格分词多关键词 AND），仅 FindPageWithPost 支持
+	Query string
+}
+
 
 // PostRef 所属文章只读视图（评论列表/详情需要展示文章来源）
 type PostRef struct {

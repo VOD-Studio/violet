@@ -4,6 +4,7 @@ import type { PATScope } from "@features/admin-mcp/model/types";
 import { ClientConnectPanel } from "@features/admin-mcp/ui/ClientConnectPanel";
 import { CreatePATDialog } from "@features/admin-mcp/ui/CreatePATDialog";
 import { PATTable } from "@features/admin-mcp/ui/PATTable";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
@@ -15,7 +16,8 @@ export const Route = createFileRoute("/admin/mcp")({
 });
 
 function AdminMCPPage() {
-	const { data: tokens = [], isLoading } = usePATs();
+	const { data: paged, isLoading, pagination } = usePagedQuery(usePATs);
+	const tokens = paged?.data ?? [];
 	const [createOpen, setCreateOpen] = React.useState(false);
 	// 创建成功后的一次性明文令牌；其余时刻恒为 null（配置走占位符）
 	const [revealToken, setRevealToken] = React.useState<string | null>(null);
@@ -40,6 +42,7 @@ function AdminMCPPage() {
 				<div className="space-y-6">
 					<PATTable
 						tokens={tokens}
+						pagination={pagination}
 						loading={isLoading}
 						onConnect={(scopes) => {
 							setRevealToken(null);

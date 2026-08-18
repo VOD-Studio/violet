@@ -1,22 +1,28 @@
-/**
- * useArticleImagePreview - 文章正文图片点击预览
- *
- * 挂在正文容器 ref 上：拦截容器内 <img> 的点击，收集所有图片 src，
- * 用 ImagePreview 打开全屏预览（缩放/旋转）。
- *
- * 正文显示层已是 w=1200 缩略（markdown-components img 映射），此处：
- * - images（预览原图）：originalImageUrl 剥离处理参数还原，预览必须加载原图
- * - thumbnails（飞入占位）：与正文同档 w=1200，已缓存零额外请求，防原图卡顿
- *
- * 用法：const { bind, preview } = useArticleImagePreview();
- *       <div ref={bind}>...正文...</div>
- *       {preview}
- */
-
 import { contentImageUrl, originalImageUrl } from "@shared/lib/image-url";
 import { useCallback, useRef, useState } from "react";
 import { ImagePreview } from "@/shared/ui/image-preview";
 
+/**
+ * 拦截正文容器内的图片点击与键盘聚焦事件，驱动 {@link ImagePreview} 展开大图轮播预览。
+ *
+ * @remarks
+ * 正文 `<img>` 标签通过 `w=1200` 缩略展示，本 Hook 自动还原原图 URL 供画廊加载，
+ * 并以正文缓存缩略图作为平滑飞入占位。
+ *
+ * @returns 包含容器绑定属性 `bind` 与弹窗 JSX 节点 `preview` 的对象
+ *
+ * @example
+ * ```tsx
+ * const { bind, preview } = useArticleImagePreview();
+ *
+ * return (
+ *   <div {...bind}>
+ *     <ArticleContent />
+ *     {preview}
+ *   </div>
+ * );
+ * ```
+ */
 export function useArticleImagePreview() {
 	const containerRef = useRef<HTMLElement>(null);
 	const [state, setState] = useState<{

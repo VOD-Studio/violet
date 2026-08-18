@@ -1,4 +1,4 @@
-import { type CmdItem, filterCommands } from "@shared/lib/hooks/cmd-filter";
+import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
 import { describe, expect, it } from "vitest";
 
 const items: CmdItem[] = [

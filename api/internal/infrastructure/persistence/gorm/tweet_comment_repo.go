@@ -44,54 +44,43 @@ func (r *TweetCommentRepository) FindByID(ctx context.Context, id domainshared.I
 	return tweetCommentToDomain(po), nil
 }
 
-// FindByTweet 列出推文下的顶层评论（depth=0），按 created_at 倒序，page/limit 分页。
-func (r *TweetCommentRepository) FindByTweet(ctx context.Context, tweetID domainshared.ID, page, limit int) ([]*domaintweet.Comment, int64, error) {
-	query := r.db.WithContext(ctx).Model(&model.TweetComment{}).
-		Where("tweet_id = ? AND depth = 0", tweetID.UUID())
-
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计推文评论失败", err)
+// FindPage 分页列出推文评论（统一入口；筛选与排序语义见 domaintweet.ListFilter）。
+//
+// TweetID 场景返回顶层评论（depth=0）；ParentID 场景先查 parent 拿 path（顶层
+// 评论 path 形如 "<uuid>/"），再按 path 前缀查所有回复（path LIKE "<uuid>/%"），
+// 排除 parent 自身。两层扁平下回复的 parent_id 可能指另一条回复，但 path 都挂
+// 同一顶层，所以按 path 前缀能把「回复 @yyy」整条链都拉出来。
+func (r *TweetCommentRepository) FindPage(ctx context.Context, filter domaintweet.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domaintweet.Comment], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.TweetComment{})
+	if filter.ParentID != nil {
+		var parent model.TweetComment
+		if err := r.db.WithContext(ctx).First(&parent, "id = ?", filter.ParentID.UUID()).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domainshared.PageResult[*domaintweet.Comment]{}, domaintweet.ErrCommentNotFound
+			}
+			return domainshared.PageResult[*domaintweet.Comment]{}, domainshared.Internal("查询父评论失败", err)
+		}
+		query = query.Where("path LIKE ?", parent.Path+"%").
+			Where("id != ?", filter.ParentID.UUID())
+	} else if filter.TweetID != nil {
+		query = query.Where("tweet_id = ? AND depth = 0", filter.TweetID.UUID())
 	}
-
 	var pos []model.TweetComment
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询推文评论列表失败", err)
+	total, err := countAndFind(query.Order(tweetCommentPageOrder(filter)), q, &pos, "推文评论")
+	if err != nil {
+		return domainshared.PageResult[*domaintweet.Comment]{}, err
 	}
-	return tweetCommentPOsToDomain(pos), total, nil
+	return domainshared.NewPageResult(q, tweetCommentPOsToDomain(pos), total), nil
 }
 
-// FindReplies 列出某顶层评论下的全部扁平回复。
-//
-// 先查 parent 拿 path（顶层评论 path 形如 "<uuid>/"），再按 path 前缀查所有回复
-// （path LIKE "<uuid>/%"），排除 parent 自身。两层扁平下回复的 parent_id 可能指
-// 另一条回复，但 path 都挂同一顶层，所以按 path 前缀能把「回复 @yyy」整条链都拉出来。
-// 按 created_at 正序（对话时间线）。
-func (r *TweetCommentRepository) FindReplies(ctx context.Context, parentID domainshared.ID, page, limit int) ([]*domaintweet.Comment, int64, error) {
-	var parent model.TweetComment
-	if err := r.db.WithContext(ctx).First(&parent, "id = ?", parentID.UUID()).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, 0, domaintweet.ErrCommentNotFound
-		}
-		return nil, 0, domainshared.Internal("查询父评论失败", err)
+// tweetCommentPageOrder 由 filter 决定页内排序（均带唯一列 tiebreaker，防 offset 翻页漂移）。
+func tweetCommentPageOrder(filter domaintweet.ListFilter) string {
+	if filter.ParentID != nil && filter.Sort != "desc" {
+		// 回复链默认最早优先（对话时间线）
+		return "created_at ASC, id ASC"
 	}
-
-	query := r.db.WithContext(ctx).Model(&model.TweetComment{}).
-		Where("path LIKE ?", parent.Path+"%").
-		Where("id != ?", parentID.UUID())
-
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计推文回复失败", err)
-	}
-
-	var pos []model.TweetComment
-	offset := (page - 1) * limit
-	if err := query.Order("created_at ASC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询推文回复失败", err)
-	}
-	return tweetCommentPOsToDomain(pos), total, nil
+	return "created_at DESC, id DESC"
 }
 
 // CountByTweet 统计推文下的评论总数（顶层 + 回复）。

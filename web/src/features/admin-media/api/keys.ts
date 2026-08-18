@@ -12,4 +12,7 @@ export const adminMediaKeys = {
 	lists: () => [...adminMediaKeys.all, "list"] as const,
 	/** 具体列表查询 */
 	list: (query: AdminMediaListQuery) => [...adminMediaKeys.lists(), query] as const,
+	/** 无限滚动列表查询 */
+	infinite: (query: Omit<AdminMediaListQuery, "page">) =>
+		[...adminMediaKeys.lists(), "infinite", query] as const,
 };

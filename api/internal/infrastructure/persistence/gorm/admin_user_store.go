@@ -21,15 +21,10 @@ func NewAdminUserStore(db *gorm.DB) *AdminUserStore {
 	return &AdminUserStore{db: db}
 }
 
-// List 分页查询用户（支持筛选）
-func (s *AdminUserStore) List(ctx context.Context, filter domainuseradmin.ListFilter, page, limit int) (domainuseradmin.ListResult, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-	offset := (page - 1) * limit
+// FindPage 分页查询用户（筛选维度由 ListFilter 正交组合），
+// 排序 created_at DESC, id DESC tiebreaker 防翻页漂移。
+func (s *AdminUserStore) FindPage(ctx context.Context, filter domainuseradmin.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[domainuser.User], error) {
+	q = q.Normalize()
 	query := s.db.WithContext(ctx).Model(&newmodel.User{})
 	if filter.Role != "" {
 		query = query.Where("role = ?", filter.Role)
@@ -41,25 +36,22 @@ func (s *AdminUserStore) List(ctx context.Context, filter domainuseradmin.ListFi
 		like := "%" + filter.Keyword + "%"
 		query = query.Where("username LIKE ? OR email LIKE ?", like, like)
 	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return domainuseradmin.ListResult{}, domainshared.Internal("用户计数失败", err)
-	}
 	var pos []newmodel.User
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return domainuseradmin.ListResult{}, domainshared.Internal("查询用户列表失败", err)
+	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "用户")
+	if err != nil {
+		return domainshared.PageResult[domainuser.User]{}, err
 	}
 	users := make([]domainuser.User, 0, len(pos))
 	for _, po := range pos {
 		u, err := toDomain(po)
 		if err != nil {
-			return domainuseradmin.ListResult{}, domainshared.Internal("用户转换失败", err)
+			return domainshared.PageResult[domainuser.User]{}, domainshared.Internal("用户转换失败", err)
 		}
 		if u != nil {
 			users = append(users, *u)
 		}
 	}
-	return domainuseradmin.ListResult{Users: users, Total: total}, nil
+	return domainshared.NewPageResult(q, users, total), nil
 }
 
 // FindByID 按 ID 查找

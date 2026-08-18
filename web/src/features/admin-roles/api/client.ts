@@ -1,7 +1,8 @@
 /**
  * admin-roles API 客户端
  */
-import { apiDelete, apiGet, apiPost, apiPut } from "@/shared/api/request";
+import { apiDelete, apiGet, apiGetPaged, apiPost, apiPut } from "@shared/api/request";
+import type { PagedResponse, PageQuery } from "@shared/api/types";
 import type {
 	CreateRoleRequest,
 	RoleWithPermissionsDTO,
@@ -11,13 +12,13 @@ import type {
 import type { RoleDTO } from "../model/types";
 
 /**
- * 获取所有角色列表
+ * 获取角色列表（分页，含 user_count）
  *
- * GET /admin/roles
- * 返回所有角色（含 user_count）。需管理员权限。
+ * GET /admin/roles?page=&limit=
+ * 需管理员权限。
  */
-export const listRoles = async (): Promise<RoleDTO[]> => {
-	return apiGet<RoleDTO[]>("/admin/roles");
+export const listRoles = async (query: PageQuery): Promise<PagedResponse<RoleDTO>> => {
+	return apiGetPaged<RoleDTO>("/admin/roles", { params: query });
 };
 
 /**

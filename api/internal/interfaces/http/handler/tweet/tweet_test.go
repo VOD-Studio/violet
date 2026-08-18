@@ -124,29 +124,30 @@ func (s *stubCommentRepo) FindByID(_ context.Context, id shared.ID) (*domaintwee
 	return nil, domaintweet.ErrCommentNotFound
 }
 
-func (s *stubCommentRepo) FindByTweet(_ context.Context, tweetID shared.ID, _, _ int) ([]*domaintweet.Comment, int64, error) {
+func (s *stubCommentRepo) FindPage(_ context.Context, filter domaintweet.ListFilter, q shared.PageQuery) (shared.PageResult[*domaintweet.Comment], error) {
+	if filter.ParentID != nil {
+		parent, ok := s.byID[filter.ParentID.String()]
+		if !ok {
+			return shared.PageResult[*domaintweet.Comment]{}, domaintweet.ErrCommentNotFound
+		}
+		prefix := parent.ID().String() + "/"
+		var reps []*domaintweet.Comment
+		for _, c := range s.byID {
+			if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
+				reps = append(reps, c)
+			}
+		}
+		return shared.NewPageResult(q, reps, int64(len(reps))), nil
+	}
 	var tops []*domaintweet.Comment
-	for _, c := range s.byID {
-		if c.TweetID() == tweetID && c.Depth() == 0 {
-			tops = append(tops, c)
+	if filter.TweetID != nil {
+		for _, c := range s.byID {
+			if c.TweetID() == *filter.TweetID && c.Depth() == 0 {
+				tops = append(tops, c)
+			}
 		}
 	}
-	return tops, int64(len(tops)), nil
-}
-
-func (s *stubCommentRepo) FindReplies(_ context.Context, parentID shared.ID, _, _ int) ([]*domaintweet.Comment, int64, error) {
-	parent, ok := s.byID[parentID.String()]
-	if !ok {
-		return nil, 0, domaintweet.ErrCommentNotFound
-	}
-	prefix := parent.ID().String() + "/"
-	var reps []*domaintweet.Comment
-	for _, c := range s.byID {
-		if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
-			reps = append(reps, c)
-		}
-	}
-	return reps, int64(len(reps)), nil
+	return shared.NewPageResult(q, tops, int64(len(tops))), nil
 }
 
 func (s *stubCommentRepo) CountByTweet(_ context.Context, tweetID shared.ID) (int64, error) {

@@ -9,7 +9,11 @@ import {
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/model/types";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	usePagedQuery,
+} from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
@@ -31,6 +35,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Archive,
 	ChevronDown,
+	FileEdit,
 	MoreHorizontal,
 	Pencil,
 	Plus,
@@ -96,8 +101,7 @@ const BATCH_ACTION_LABEL: Record<PostBatchAction, string> = {
 function AdminPostsPage() {
 	const navigate = useNavigate();
 	const [status, setStatus] = useState("all");
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(PAGE_SIZE);
+
 	const [keyword, setKeyword] = useState("");
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -110,20 +114,20 @@ function AdminPostsPage() {
 	const canCreate = useHasPermission("post:create");
 	const { data: me } = useMe({ enabled: true });
 	const { data: tags = [] } = useTags();
-
-	const { data, isLoading, error, refetch } = useAdminPosts({
-		page,
-		limit: pageSize,
-		status: status === "all" ? undefined : status,
-		keyword: keyword || undefined,
-		tags: selectedTags.length > 0 ? selectedTags : undefined,
-	});
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
+		useAdminPosts,
+		{
+			status: status === "all" ? undefined : status,
+			keyword: keyword || undefined,
+			tags: selectedTags.length > 0 ? selectedTags : undefined,
+		},
+		{ initialPageSize: PAGE_SIZE },
+	);
 	const deletePost = useDeletePost(deleting?.id ?? "");
 	const hardDeletePost = useHardDeletePost(deleting?.id ?? "");
 	const batchMut = useBatchAction();
 
 	const posts = data?.data ?? [];
-	const total = data?.pagination?.total ?? 0;
 
 	const handleStatusChange = (v: string) => {
 		setStatus(v);
@@ -342,15 +346,7 @@ function AdminPostsPage() {
 				data={posts}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={{
-					page,
-					pageSize,
-					total,
-					onChange: (p, ps) => {
-						setPage(p);
-						setPageSize(ps);
-					},
-				}}
+				pagination={pagination}
 				selectable
 				selectedIds={selectedIds}
 				onSelectionChange={setSelectedIds}
@@ -592,11 +588,13 @@ function RowActions({
 							<DropdownMenuSeparator />
 							{row.status !== "published" ? (
 								<DropdownMenuItem onClick={() => changeStatus("published")}>
+									<Send className="size-3.5" />
 									发布
 								</DropdownMenuItem>
 							) : null}
 							{row.status !== "draft" ? (
 								<DropdownMenuItem onClick={() => changeStatus("draft")}>
+									<FileEdit className="size-3.5" />
 									移至草稿
 								</DropdownMenuItem>
 							) : null}

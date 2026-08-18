@@ -15,18 +15,21 @@ type FileRepository interface {
 	// FindByURLs 按访问 URL 批量查找就绪（status=ready）文件。
 	// 推文发布归属校验用（TweetImageChecker）：命中数少于传入数即有 URL 不存在/未就绪。
 	FindByURLs(ctx context.Context, urls []string) ([]*File, error)
-	FindByOwner(ctx context.Context, ownerID shared.ID, purpose string, page, limit int) ([]*File, int64, error)
-	// FindAll 全局查询文件列表（后台素材管理用，不限 owner）
-	FindAll(ctx context.Context, filter FileListFilter, page, limit int) (*FileListResult, error)
+	// FindPage 分页列出文件（统一入口，筛选维度由 FileListFilter 正交组合）。
+	// 排序 created_at DESC + id DESC tiebreaker（id 为 UUID），防 offset 翻页漂移。
+	FindPage(ctx context.Context, filter FileListFilter, q shared.PageQuery) (shared.PageResult[*File], error)
 	Save(ctx context.Context, f *File) error
 	Delete(ctx context.Context, id shared.ID) error
 	UpdateRefCount(ctx context.Context, id shared.ID, delta int) error
 }
 
-// FileListFilter 文件列表查询过滤器
+// FileListFilter 文件列表筛选条件（FindPage 入参，维度正交组合）。
 //
-// 用于后台全局素材管理（不限 owner）。所有字段可选，传零值表示不过滤。
+// 用户素材列表传 OwnerID（可叠加 Purpose）；后台全局管理不传 OwnerID，
+// 另可叠加 category/mimePrefix/keyword。所有字段可选，传零值表示不过滤。
 type FileListFilter struct {
+	// OwnerID 只列该用户上传的文件；nil = 全站（后台素材管理视角）
+	OwnerID *shared.ID
 	// 用途分类筛选（material/avatar/post/emoji），空则全部
 	Purpose string
 	// 自定义分类筛选，空则全部
@@ -37,14 +40,6 @@ type FileListFilter struct {
 	Keyword string
 	// 是否包含已软删除的文件，默认 false
 	IncludeDeleted bool
-}
-
-// FileListResult 文件列表查询结果
-type FileListResult struct {
-	// Files 当前页的文件聚合列表
-	Files []*File
-	// Total 满足过滤条件的文件总数（用于分页计算总页数）
-	Total int64
 }
 
 // UploadSessionRepository 上传会话仓储接口

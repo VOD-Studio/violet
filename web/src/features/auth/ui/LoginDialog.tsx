@@ -1,6 +1,6 @@
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { clearAuthCache, useCsrfToken } from "@features/auth/api/queries";
-import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
+import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useGoogleLogin } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";

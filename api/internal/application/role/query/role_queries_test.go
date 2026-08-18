@@ -42,9 +42,8 @@ func TestListRolesWithUserCount_Success(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
 
 	repo.On("FindAll", mock.Anything).Return([]*role.Role{r1, r2}, nil)
-	// 逐角色查用户数：按具体 roleID 设置不同返回
-	repo.On("CountUsers", mock.Anything, r1.RoleID()).Return(int64(5), nil)
-	repo.On("CountUsers", mock.Anything, r2.RoleID()).Return(int64(0), nil)
+	// 批量用户数统计：单查询返回 map
+	repo.On("CountUsersByIDs", mock.Anything, []int32{1, 2}).Return(map[int32]int64{1: 5}, nil)
 
 	h := query.NewListRolesWithUserCountHandler(repo)
 	out, err := h.Handle(context.Background())
@@ -73,6 +72,7 @@ func TestListRolesWithUserCount_Success(t *testing.T) {
 func TestListRolesWithUserCount_EmptyRepo_ReturnsEmpty(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
 	repo.On("FindAll", mock.Anything).Return([]*role.Role{}, nil)
+	repo.On("CountUsersByIDs", mock.Anything, mock.Anything).Return(map[int32]int64{}, nil)
 
 	out, err := query.NewListRolesWithUserCountHandler(repo).Handle(context.Background())
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestListRolesWithUserCount_CountUsersError_Propagates(t *testing.T) {
 	r1 := newRole(1, "editor", "", nil)
 	repo := new(mocks.MockRoleRepository)
 	repo.On("FindAll", mock.Anything).Return([]*role.Role{r1}, nil)
-	repo.On("CountUsers", mock.Anything, r1.RoleID()).Return(int64(0), role.ErrNotFound)
+	repo.On("CountUsersByIDs", mock.Anything, []int32{1}).Return(nil, role.ErrNotFound)
 
 	out, err := query.NewListRolesWithUserCountHandler(repo).Handle(context.Background())
 	require.ErrorIs(t, err, role.ErrNotFound)

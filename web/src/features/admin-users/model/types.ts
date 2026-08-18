@@ -4,6 +4,8 @@
  * 对接后端 /admin/users 系列接口
  */
 
+import type { PageQuery } from "@shared/api/types";
+
 /**
  * AdminUserDTO - 后台用户列表返回的用户对象
  *
@@ -37,31 +39,13 @@ export interface AdminUserDTO {
 /**
  * ListUsersRequest - 用户列表请求参数
  */
-export interface ListUsersRequest {
-	/** 页码，从 1 开始 */
-	page: number;
-	/** 每页数量 */
-	limit: number;
+export interface ListUsersRequest extends PageQuery {
 	/** 角色筛选（可选） */
 	role?: string;
 	/** 状态筛选（可选） */
 	is_active?: boolean;
 	/** 关键词搜索（用户名/邮箱，可选） */
 	keyword?: string;
-}
-
-/**
- * ListUsersResponse - 用户列表响应
- */
-export interface ListUsersResponse {
-	/** 用户列表 */
-	data: AdminUserDTO[];
-	/** 分页信息 */
-	meta: {
-		page: number;
-		limit: number;
-		total: number;
-	};
 }
 
 /**

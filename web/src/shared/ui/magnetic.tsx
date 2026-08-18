@@ -1,4 +1,4 @@
-import { useMagnetic } from "@shared/lib/hooks/use-magnetic";
+import { useMagnetic } from "@shared/hooks/use-magnetic";
 import { cn } from "@shared/lib/utils";
 import type * as React from "react";
 

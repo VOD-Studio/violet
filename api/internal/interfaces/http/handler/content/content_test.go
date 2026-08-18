@@ -44,6 +44,19 @@ func (s *stubAnnRepo) FindByID(context.Context, int32) (*domainann.Announcement,
 func (s *stubAnnRepo) FindAll(context.Context) ([]*domainann.Announcement, error) {
 	return s.all, nil
 }
+func (s *stubAnnRepo) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*domainann.Announcement], error) {
+	q = q.Normalize()
+	start := q.Offset()
+	if start > len(s.all) {
+		start = len(s.all)
+	}
+	end := start + q.Limit
+	if end > len(s.all) {
+		end = len(s.all)
+	}
+	return domainshared.NewPageResult(q, s.all[start:end], int64(len(s.all))), nil
+}
+
 func (s *stubAnnRepo) FindActive(context.Context) ([]*domainann.Announcement, error) {
 	return s.active, nil
 }
@@ -69,6 +82,19 @@ func (s *stubProjRepo) FindByID(context.Context, domainshared.ID) (*domainproj.P
 func (s *stubProjRepo) FindAll(context.Context) ([]*domainproj.Project, error) {
 	return s.items, nil
 }
+func (s *stubProjRepo) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*domainproj.Project], error) {
+	q = q.Normalize()
+	start := q.Offset()
+	if start > len(s.items) {
+		start = len(s.items)
+	}
+	end := start + q.Limit
+	if end > len(s.items) {
+		end = len(s.items)
+	}
+	return domainshared.NewPageResult(q, s.items[start:end], int64(len(s.items))), nil
+}
+
 func (s *stubProjRepo) Save(context.Context, *domainproj.Project) error { return nil }
 func (s *stubProjRepo) Delete(context.Context, domainshared.ID) error   { return nil }
 

@@ -1,7 +1,11 @@
 import { useAdminAuditLogs } from "@features/admin-audit-logs/api/queries";
 import type { AuditEventDTO, FieldChangeDTO } from "@features/admin-audit-logs/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	usePagedQuery,
+} from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -16,10 +20,8 @@ import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { Eye } from "lucide-react";
 import { useState } from "react";
-
-/** 操作日志分页大小 */
-const PAGE_SIZE = 20;
 
 /** 操作类型选项（与后端受控枚举对齐） */
 const ACTION_OPTIONS = [
@@ -65,17 +67,17 @@ const RESOURCE_OPTIONS = [
 ];
 
 function AdminLogsPage() {
-	const [page, setPage] = useState(1);
 	const [action, setAction] = useState("");
 	const [resourceType, setResourceType] = useState("");
 	const [actor, setActor] = useState("");
-	const { data, isLoading, error, refetch } = useAdminAuditLogs({
-		page,
-		limit: PAGE_SIZE,
-		action: action || undefined,
-		resource_type: resourceType || undefined,
-		actor: actor || undefined,
-	});
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
+		useAdminAuditLogs,
+		{
+			action: action || undefined,
+			resource_type: resourceType || undefined,
+			actor: actor || undefined,
+		},
+	);
 	const [detailLog, setDetailLog] = useState<AuditEventDTO | null>(null);
 
 	const columns: DataTableColumn<AuditEventDTO>[] = [
@@ -134,10 +136,15 @@ function AdminLogsPage() {
 			key: "_detail",
 			header: "操作",
 			sticky: "right",
-			width: "80px",
+			width: "64px",
 			cell: (row) => (
-				<Button variant="ghost" size="sm" onClick={() => setDetailLog(row)}>
-					详情
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					title="查看详情"
+					onClick={() => setDetailLog(row)}
+				>
+					<Eye className="size-3.5" />
 				</Button>
 			),
 		},
@@ -201,13 +208,7 @@ function AdminLogsPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.event_id}
-				pagination={{
-					page,
-					pageSize: PAGE_SIZE,
-					total: data?.pagination?.total ?? 0,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
-				}}
+				pagination={pagination}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

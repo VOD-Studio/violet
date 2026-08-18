@@ -13,26 +13,21 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// fakeSearchRepo 记录 Search 调用参数并返回预设文章。
+// fakeSearchRepo 记录 FindPage 调用参数并返回预设文章。
 type fakeSearchRepo struct {
 	fakeSlugRepo // 复用既有 stub（其余方法 panic）
 
 	posts     []*domain.Post
 	total     int64
-	gotQuery  string
-	gotStatus string
+	gotFilter domain.ListFilter
 	gotPage   int
 	gotLimit  int
 }
 
-func (f *fakeSearchRepo) Search(_ context.Context, _ shared.ID, query, status string, page, limit int) ([]*domain.Post, int64, error) {
-	f.gotQuery, f.gotStatus, f.gotPage, f.gotLimit = query, status, page, limit
-	return f.posts, f.total, nil
-}
-
-func (f *fakeSearchRepo) SearchPublished(_ context.Context, query string, page, limit int) ([]*domain.Post, int64, error) {
-	f.gotQuery, f.gotPage, f.gotLimit = query, page, limit
-	return f.posts, f.total, nil
+func (f *fakeSearchRepo) FindPage(_ context.Context, filter domain.ListFilter, q shared.PageQuery) (shared.PageResult[*domain.Post], error) {
+	f.gotFilter = filter
+	f.gotPage, f.gotLimit = q.Page, q.Limit
+	return shared.NewPageResult(q, f.posts, f.total), nil
 }
 
 func newSearchTestService(repo *fakeSearchRepo) *Service {
@@ -61,12 +56,12 @@ func TestService_SearchPosts(t *testing.T) {
 	}
 	svc := newSearchTestService(repo)
 
-	res, err := svc.SearchPosts(context.Background(), shared.NewID(), "量子", "all", 20, 0)
+	res, err := svc.SearchPosts(context.Background(), shared.NewID(), "量子", "all", shared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
 
-	// 编排参数透传：offset 0 / limit 20 → page 1
-	assert.Equal(t, "量子", repo.gotQuery)
-	assert.Equal(t, "all", repo.gotStatus)
+	// 编排参数透传：filter 承载检索维度，page 1 / limit 20 原样传递
+	assert.Equal(t, "量子", repo.gotFilter.Keyword)
+	assert.Equal(t, "all", repo.gotFilter.Status)
 	assert.Equal(t, 1, repo.gotPage)
 	assert.Equal(t, 20, repo.gotLimit)
 
@@ -84,9 +79,9 @@ func TestService_SearchPosts_OffsetPagination(t *testing.T) {
 	repo := &fakeSearchRepo{posts: nil, total: 40}
 	svc := newSearchTestService(repo)
 
-	res, err := svc.SearchPosts(context.Background(), shared.NewID(), "x", "all", 20, 40)
+	res, err := svc.SearchPosts(context.Background(), shared.NewID(), "x", "all", shared.PageQuery{Page: 3, Limit: 20})
 	require.NoError(t, err)
-	// offset 40 / limit 20 → page 3
+	// PageQuery 直传：page 3 原样透传，PageMeta 按 offset 40 回算
 	assert.Equal(t, 3, repo.gotPage)
 	assert.Equal(t, int64(40), res.TotalCount)
 	assert.False(t, res.HasMore)
@@ -102,11 +97,12 @@ func TestService_SearchPublished(t *testing.T) {
 	}
 	svc := newSearchTestService(repo)
 
-	res, err := svc.SearchPublished(context.Background(), "量子", 20, 0)
+	res, err := svc.SearchPublished(context.Background(), "量子", shared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
 
-	// 编排参数透传：offset 0 / limit 20 → page 1
-	assert.Equal(t, "量子", repo.gotQuery)
+	// 编排参数透传：检索维度收敛进 filter，status 由 service 固定 published
+	assert.Equal(t, "量子", repo.gotFilter.Keyword)
+	assert.Equal(t, domain.StatusPublished, repo.gotFilter.Status)
 	assert.Equal(t, 1, repo.gotPage)
 	assert.Equal(t, 20, repo.gotLimit)
 
@@ -119,10 +115,9 @@ func TestService_SearchPublished(t *testing.T) {
 func TestService_SearchPublished_OffsetPagination(t *testing.T) {
 	repo := &fakeSearchRepo{posts: nil, total: 40}
 	svc := newSearchTestService(repo)
-
-	_, err := svc.SearchPublished(context.Background(), "x", 20, 40)
+	_, err := svc.SearchPublished(context.Background(), "x", shared.PageQuery{Page: 3, Limit: 20})
 	require.NoError(t, err)
-	// offset 40 / limit 20 → page 3
+	// PageQuery 直传：page 3 原样透传
 	assert.Equal(t, 3, repo.gotPage)
 }
 
@@ -201,10 +196,11 @@ func TestService_SearchFormulas(t *testing.T) {
 	res, err := svc.SearchFormulas(context.Background(), shared.NewID(), "\\frac", 20, 0)
 	require.NoError(t, err)
 
-	// 初筛参数：query 原样透传、status all、候选上限
-	assert.Equal(t, "\\frac", repo.gotQuery)
+	// 初筛参数：query 原样透传进 filter、status all、单页取 MaxPageLimit 聚合候选
+	assert.Equal(t, "\\frac", repo.gotFilter.Keyword)
+	assert.Equal(t, "all", repo.gotFilter.Status)
 	assert.Equal(t, 1, repo.gotPage)
-	assert.Equal(t, searchCandidateLimit, repo.gotLimit)
+	assert.Equal(t, shared.MaxPageLimit, repo.gotLimit)
 
 	require.Len(t, res.Formulas, 1)
 	f := res.Formulas[0]

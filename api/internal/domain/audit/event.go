@@ -1,7 +1,7 @@
 // Package audit 提供操作日志的领域模型与存储端口。
 //
 // 设计原则：审计日志按定义不可变（append-only），因此领域层只暴露
-// Append/List 写入与读取能力，不提供 Update/Delete 方法。
+// Append/FindPage 写入与读取能力，不提供 Update/Delete 方法。
 //
 // 事件由 EventBus 订阅者写入，而非 service 层手工注入——覆盖范围
 // 由聚合根 RecordEvent 决定，新增业务自动覆盖。
@@ -199,15 +199,7 @@ type AuditEvent struct {
 	OccurredAt time.Time `json:"occurred_at"`
 }
 
-// ListResult 日志列表结果（含分页）
-type ListResult struct {
-	// Events 当前页的事件列表
-	Events []AuditEvent
-	// Total 符合筛选条件的总条数（供分页计算总页数）
-	Total int64
-}
-
-// ListFilter 审计事件查询筛选条件（nil 字段不筛）
+// ListFilter 审计事件查询筛选条件（FindPage 入参，nil 字段不筛）
 type ListFilter struct {
 	// Action 操作类型过滤（精确匹配，nil=不过滤）
 	Action *string
@@ -219,14 +211,11 @@ type ListFilter struct {
 
 // EventStore 操作日志存储端口
 //
-// 实现应保证：Append 失败返回 error，不静默；List/ListByActor 仅做查询，不应修改存储。
+// 实现应保证：Append 失败返回 error，不静默；FindPage 仅做查询，不应修改存储。
 type EventStore interface {
 	// Append 写入一条审计事件（append-only，不可变更存储中的记录）
 	Append(ctx context.Context, event AuditEvent) error
-	// List 分页查询全部事件（按 OccurredAt DESC）
-	List(ctx context.Context, page, limit int) (ListResult, error)
-	// ListByActor 分页查询指定操作人的事件
-	ListByActor(ctx context.Context, userID string, page, limit int) (ListResult, error)
-	// ListFiltered 按筛选条件分页查询（action/resource_type/actor 可选）
-	ListFiltered(ctx context.Context, filter ListFilter, page, limit int) (ListResult, error)
+	// FindPage 分页查询审计事件（occurred_at DESC + id DESC tiebreaker）。
+	// filter 为零值时查全部；ListFilter.ActorUserID 非 nil 即指定操作人视角。
+	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[AuditEvent], error)
 }

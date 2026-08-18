@@ -5,7 +5,7 @@ import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
 import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
 import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -28,8 +28,9 @@ function AdminRolesPage() {
 	const [deletingRole, setDeletingRole] = useState<RoleDTO | null>(null);
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 
-	// 查询角色列表
-	const { data: roles = [], isLoading, error, refetch } = useAdminRoles();
+	// 查询角色列表（分页）
+	const { data: paged, isLoading, error, refetch, pagination } = usePagedQuery(useAdminRoles);
+	const roles = paged?.data ?? [];
 	const deleteRole = useDeleteRole();
 
 	const sortedRoles = useMemo(() => {
@@ -193,6 +194,7 @@ function AdminRolesPage() {
 			<DataTable<RoleDTO>
 				data={sortedRoles}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

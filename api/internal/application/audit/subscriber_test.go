@@ -41,16 +41,8 @@ func (f *fakeStore) Append(_ context.Context, event domainaudit.AuditEvent) erro
 	return nil
 }
 
-func (f *fakeStore) List(context.Context, int, int) (domainaudit.ListResult, error) {
-	return domainaudit.ListResult{}, nil
-}
-
-func (f *fakeStore) ListByActor(context.Context, string, int, int) (domainaudit.ListResult, error) {
-	return domainaudit.ListResult{}, nil
-}
-
-func (f *fakeStore) ListFiltered(context.Context, domainaudit.ListFilter, int, int) (domainaudit.ListResult, error) {
-	return domainaudit.ListResult{}, nil
+func (f *fakeStore) FindPage(context.Context, domainaudit.ListFilter, shared.PageQuery) (shared.PageResult[domainaudit.AuditEvent], error) {
+	return shared.PageResult[domainaudit.AuditEvent]{}, nil
 }
 
 func newTestSubscriber(store *fakeStore) *Subscriber {

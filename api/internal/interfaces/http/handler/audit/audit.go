@@ -23,26 +23,24 @@ func NewHandler(query *appaudit.Query) *Handler {
 //
 // 支持按 action / resource_type / actor（user_id）过滤。
 func (h *Handler) ListEvents(w http.ResponseWriter, r *http.Request) {
-	page, limit := response.ParsePaging(r)
-	filter := parseFilter(r)
-	result, err := h.query.ListFiltered(r.Context(), filter, page, limit)
+	result, err := h.query.List(r.Context(), parseFilter(r), response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, result.Events, page, limit, result.Total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // ListEventsByActor 指定用户操作日志（后台）
 func (h *Handler) ListEventsByActor(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("id")
-	page, limit := response.ParsePaging(r)
-	result, err := h.query.ListByActor(r.Context(), userID, page, limit)
+	filter := domainaudit.ListFilter{ActorUserID: &userID}
+	result, err := h.query.List(r.Context(), filter, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, result.Events, page, limit, result.Total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // parseFilter 从 query 解析筛选条件（action/resource_type/actor）

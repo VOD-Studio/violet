@@ -2,7 +2,7 @@
 
 import { Loader2, Search, X } from "lucide-react";
 import { type ComponentProps, useCallback, useId, useRef, useState } from "react";
-import { useDebouncedCallback } from "@/shared/lib/hooks/use-debounced-callback";
+import { useDebouncedCallback } from "@/shared/hooks/use-debounced-callback";
 import { cn } from "@/shared/lib/utils";
 
 export interface SearchInputProps

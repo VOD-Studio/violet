@@ -50,14 +50,14 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 // ListPublished 列出已发布文章（前台公开）
 func (h *Handler) ListPublished(w http.ResponseWriter, r *http.Request) {
-	page, limit := response.ParsePagingWithMax(r, 50)
 	tag := r.URL.Query().Get("tag")
-	items, total, err := h.svc.ListPublished(r.Context(), page, limit, tag)
+	page, limit := response.ParsePagingWithMax(r, 50)
+	result, err := h.svc.ListPublished(r.Context(), tag, domainshared.PageQuery{Page: page, Limit: limit})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, items, page, limit, total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // ArchiveYears 归档年份索引（前台公开）。
@@ -91,13 +91,14 @@ func (h *Handler) ArchiveByYear(w http.ResponseWriter, r *http.Request) {
 // SearchPublished 前台公开搜索已发布文章（title/excerpt/content_md 三列）。
 // q 为空时直接返回空集，不查询 DB。
 func (h *Handler) SearchPublished(w http.ResponseWriter, r *http.Request) {
-	page, limit := response.ParsePagingWithMax(r, 50)
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	page, limit := response.ParsePagingWithMax(r, 50)
+	pageQuery := domainshared.PageQuery{Page: page, Limit: limit}
 	if q == "" {
 		response.RespondPaged(w, []apppost.SearchPostItem{}, page, limit, 0)
 		return
 	}
-	res, err := h.svc.SearchPublished(r.Context(), q, limit, (page-1)*limit)
+	res, err := h.svc.SearchPublished(r.Context(), q, pageQuery)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -108,19 +109,18 @@ func (h *Handler) SearchPublished(w http.ResponseWriter, r *http.Request) {
 // ListAll 列出所有文章（后台）
 // 支持 keyword（标题+正文搜索）与 tags（逗号分隔的标签 slug，AND 关系）查询参数。
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
-	page, limit := response.ParsePaging(r)
 	status := r.URL.Query().Get("status")
 	keyword := r.URL.Query().Get("keyword")
 	var tags []string
 	if tagsStr := r.URL.Query().Get("tags"); tagsStr != "" {
 		tags = strings.Split(tagsStr, ",")
 	}
-	items, total, err := h.svc.ListAll(r.Context(), page, limit, status, keyword, tags)
+	result, err := h.svc.ListAll(r.Context(), status, keyword, tags, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, items, page, limit, total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 type createPostRequest struct {

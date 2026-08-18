@@ -42,26 +42,21 @@ interface InternalState<TArgs extends unknown[], TResult> {
 }
 
 /**
- * useDebouncedCallback - 回调防抖（语义对齐 lodash）
+ * 为指定回调函数生成防抖包装对象，支持 `leading`、`trailing`、`maxWait` 与手动 `flush` / `cancel`。
  *
- * 核心能力：
- * - callback 始终用最新闭包（内部 ref 持有，每次渲染更新），避免过期状态
- * - leading/trailing/maxWait 完整支持
- * - flush 立即触发挂起的 trailing 调用并返回结果
- * - cancel 丢弃挂起调用
- * - pending 查询是否有挂起
- * - 返回的 run/flush/cancel/pending 引用稳定，可安全放入依赖数组
- * - 卸载时取消所有定时器
+ * @typeParam TArgs - 回调函数入参类型元组
+ * @typeParam TResult - 回调函数返回值类型
  *
- * @param callback 被防抖的函数
- * @param options 防抖配置
+ * @param callback - 待防抖的目标函数（内部通过 ref 始终引用最新闭包）
+ * @param options - 防抖控制选项
+ *
+ * @returns 包含 `run`、`flush`、`cancel`、`pending` 稳定方法的防抖控制器对象
  *
  * @example
- * const debounced = useDebouncedCallback((q: string) => search(q), { delay: 300 });
- * debounced.run("hello");   // 挂起
- * debounced.flush();        // 立即触发
- * debounced.cancel();       // 丢弃
- * debounced.pending();      // 是否挂起
+ * ```tsx
+ * const debouncedSearch = useDebouncedCallback((q: string) => fetchSearch(q), { delay: 300 });
+ * debouncedSearch.run("violet");
+ * ```
  */
 export function useDebouncedCallback<TArgs extends unknown[], TResult>(
 	callback: (...args: TArgs) => TResult,

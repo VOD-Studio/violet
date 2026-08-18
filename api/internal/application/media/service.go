@@ -1186,21 +1186,13 @@ func (s *UploadService) CheckInstantUpload(ctx context.Context, hash, callerID s
 	return &dto, true, nil
 }
 
-// ListByOwner 按用户列出文件
-func (s *UploadService) ListByOwner(ctx context.Context, ownerID, purpose string, page, limit int) ([]FileDTO, int64, error) {
+// ListByOwner 分页列出某用户上传的文件（可选 purpose 过滤，空串 = 不过滤）。
+func (s *UploadService) ListByOwner(ctx context.Context, ownerID, purpose string, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
 	oid, err := shared.ParseID(ownerID)
 	if err != nil {
-		return nil, 0, err
+		return shared.PageResult[FileDTO]{}, err
 	}
-	files, total, err := s.fileRepo.FindByOwner(ctx, oid, purpose, page, limit)
-	if err != nil {
-		return nil, 0, err
-	}
-	dtos := make([]FileDTO, 0, len(files))
-	for _, f := range files {
-		dtos = append(dtos, fileToDTO(f))
-	}
-	return dtos, total, nil
+	return s.listPage(ctx, domainupload.FileListFilter{OwnerID: &oid, Purpose: purpose}, q)
 }
 
 // DeleteFile 删除文件（需引用计数为 0）
@@ -1258,10 +1250,8 @@ func (s *UploadService) BatchDeleteFiles(ctx context.Context, ids []string) (int
 	return deleted, nil
 }
 
-// ListAllFilesInput 全局文件列表查询入参（后台素材管理用）
+// ListAllFilesInput 全局文件列表查询入参（后台素材管理用，分页参数走 PageQuery）
 type ListAllFilesInput struct {
-	Page    int
-	Limit   int
 	Purpose string // 用途筛选
 	// MIME 类型筛选：image / video / audio / file，后端转成前缀查询
 	MimeCategory string
@@ -1269,16 +1259,8 @@ type ListAllFilesInput struct {
 	Keyword      string // 关键词搜索（文件名）
 }
 
-// ListAllFiles 全局查询文件列表（后台素材管理，不限 owner）
-func (s *UploadService) ListAllFiles(ctx context.Context, in ListAllFilesInput) ([]FileDTO, int64, error) {
-	page := in.Page
-	if page < 1 {
-		page = 1
-	}
-	limit := in.Limit
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
+// ListAllFiles 全局分页查询文件列表（后台素材管理，不限 owner）
+func (s *UploadService) ListAllFiles(ctx context.Context, in ListAllFilesInput, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
 	// mimeCategory → mimePrefix 转换
 	mimePrefix := ""
 	switch in.MimeCategory {
@@ -1292,20 +1274,25 @@ func (s *UploadService) ListAllFiles(ctx context.Context, in ListAllFilesInput) 
 		// 「文件」指非媒体类型，用 NOT IN 排除图片/视频/音频（这里简化为不过滤，
 		// 由前端在结果中按需展示；精确排除需仓储支持 NOT LIKE，暂不做）
 	}
-	result, err := s.fileRepo.FindAll(ctx, domainupload.FileListFilter{
+	return s.listPage(ctx, domainupload.FileListFilter{
 		Purpose:    in.Purpose,
 		Category:   in.Category,
 		MimePrefix: mimePrefix,
 		Keyword:    in.Keyword,
-	}, page, limit)
+	}, q)
+}
+
+// listPage 两者的共享实现：仓储 FindPage → DTO 映射，页码/条数取钳制后的回显值。
+func (s *UploadService) listPage(ctx context.Context, filter domainupload.FileListFilter, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
+	result, err := s.fileRepo.FindPage(ctx, filter, q)
 	if err != nil {
-		return nil, 0, err
+		return shared.PageResult[FileDTO]{}, err
 	}
-	dtos := make([]FileDTO, 0, len(result.Files))
-	for _, f := range result.Files {
+	dtos := make([]FileDTO, 0, len(result.Items))
+	for _, f := range result.Items {
 		dtos = append(dtos, fileToDTO(f))
 	}
-	return dtos, result.Total, nil
+	return shared.NewPageResult(shared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // UpdateFileMetadataInput 更新素材元数据入参

@@ -84,49 +84,33 @@ func (r *PostRepository) FindBySlug(ctx context.Context, slug string) (*post.Pos
 	return postToDomain(po)
 }
 
-func (r *PostRepository) FindPublished(ctx context.Context, page, limit int, tag string) ([]*post.Post, int64, error) {
-	query := r.db.WithContext(ctx).Model(&model.Post{}).Where("status = ?", post.StatusPublished)
-	if tag != "" {
-		query = query.Joins("JOIN post_tags ON post_tags.post_id = posts.id").
-			Joins("JOIN tags ON tags.id = post_tags.tag_id AND tags.slug = ?", tag)
-	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计文章失败", err)
-	}
-	var pos []model.Post
-	offset := (page - 1) * limit
-	if err := query.Preload("Tags").Order("is_featured DESC, published_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询文章列表失败", err)
-	}
-	result := make([]*post.Post, 0, len(pos))
-	for _, po := range pos {
-		p, _ := postToDomain(po)
-		result = append(result, p)
-	}
-	return result, total, nil
-}
-
-func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]*post.Post, int64, error) {
+// FindPage 分页列出文章（统一入口；筛选与排序语义见 post.ListFilter）。
+//
+// 关键词检索用 LOWER(col) LIKE LOWER(?) 而非 ILIKE 关键字：语义与 ILIKE 等价
+// （中文无大小写，子串精确命中），且 SQLite 测试库可跑同一 SQL（ILIKE 是
+// PostgreSQL 方言）。tags（slug 列表，AND 关系）：每个 tag 要求 posts.id 属于
+// 该标签的文章集合，多个条件叠加即「同时关联全部标签」。用子查询而非
+// JOIN+HAVING，避免 GROUP BY 与分页 Count/Preload 冲突。
+func (r *PostRepository) FindPage(ctx context.Context, filter post.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*post.Post], error) {
+	q = q.Normalize()
 	query := r.db.WithContext(ctx).Model(&model.Post{})
-	if status == "trashed" {
+	if filter.Status == "trashed" {
 		// 回收站视图：切 Unscoped 取软删除行（deleted_at IS NOT NULL）
 		query = query.Unscoped().Where("deleted_at IS NOT NULL")
-	} else if status != "" {
-		query = query.Where("status = ?", status)
+	} else if filter.Status != "" && filter.Status != "all" {
+		query = query.Where("status = ?", filter.Status)
 	}
-	// keyword：复用 Search 的 LOWER LIKE（空格分词 AND，title/excerpt/content_md 三列）
-	for _, kw := range strings.Fields(keyword) {
+	if filter.AuthorID != nil {
+		query = query.Where("author_id = ?", filter.AuthorID.UUID())
+	}
+	for _, kw := range strings.Fields(filter.Keyword) {
 		like := "%" + likeEscaper.Replace(kw) + "%"
 		query = query.Where(
 			"(LOWER(title) LIKE LOWER(?) ESCAPE '\\' OR LOWER(excerpt) LIKE LOWER(?) ESCAPE '\\' OR LOWER(content_md) LIKE LOWER(?) ESCAPE '\\')",
 			like, like, like,
 		)
 	}
-	// tags（slug 列表，AND 关系）：每个 tag 要求 posts.id 属于该标签的文章集合，
-	// 多个条件叠加即「同时关联全部标签」。用子查询而非 JOIN+HAVING，避免 GROUP BY
-	// 与分页 Count/Preload 冲突。
-	for _, slug := range tags {
+	for _, slug := range filter.Tags {
 		slug = strings.TrimSpace(slug)
 		if slug == "" {
 			continue
@@ -136,21 +120,32 @@ func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status, k
 			slug,
 		)
 	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计文章失败", err)
-	}
 	var pos []model.Post
-	offset := (page - 1) * limit
-	if err := query.Preload("Tags").Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询文章列表失败", err)
+	total, err := countAndFind(query.Order(postPageOrder(filter.Sort)).Preload("Tags"), q, &pos, "文章")
+	if err != nil {
+		return domainshared.PageResult[*post.Post]{}, err
 	}
 	result := make([]*post.Post, 0, len(pos))
 	for _, po := range pos {
-		p, _ := postToDomain(po)
+		p, err := postToDomain(po)
+		if err != nil {
+			return domainshared.PageResult[*post.Post]{}, err
+		}
 		result = append(result, p)
 	}
-	return result, total, nil
+	return domainshared.NewPageResult(q, result, total), nil
+}
+
+// postPageOrder 列表排序子句（唯一列 id tiebreaker 防 offset 翻页漂移）。
+func postPageOrder(sort string) string {
+	switch sort {
+	case post.SortPublished:
+		return "is_featured DESC, published_at DESC, id DESC"
+	case post.SortUpdated:
+		return "updated_at DESC, id DESC"
+	default:
+		return "created_at DESC, id DESC"
+	}
 }
 
 // BatchGetByIDs 批量按 ID 查文章（Unscoped，含软删除行）。
@@ -177,66 +172,6 @@ func (r *PostRepository) BatchGetByIDs(ctx context.Context, ids []domainshared.I
 
 // likeEscaper 转义 LIKE 模式中的特殊字符，配合 ESCAPE '\' 使用。
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
-
-// Search 在 authorID 的文章内做大小写不敏感子串检索。
-// 用 LOWER(col) LIKE LOWER(?) 而非 ILIKE 关键字：语义与 ILIKE 等价（中文无大小写，
-// 子串精确命中），且 SQLite 测试库可跑同一 SQL（ILIKE 是 PostgreSQL 方言）。
-// 排序按 updated_at 倒序——检索场景「最近改过的最相关」，与 FindAll 的 created_at 区分。
-func (r *PostRepository) Search(ctx context.Context, authorID domainshared.ID, query, status string, page, limit int) ([]*post.Post, int64, error) {
-	q := r.db.WithContext(ctx).Model(&model.Post{}).Where("author_id = ?", authorID.UUID())
-	if status != "" && status != "all" {
-		q = q.Where("status = ?", status)
-	}
-	for _, kw := range strings.Fields(query) {
-		like := "%" + likeEscaper.Replace(kw) + "%"
-		q = q.Where(
-			"(LOWER(title) LIKE LOWER(?) ESCAPE '\\' OR LOWER(excerpt) LIKE LOWER(?) ESCAPE '\\' OR LOWER(content_md) LIKE LOWER(?) ESCAPE '\\')",
-			like, like, like,
-		)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计检索结果失败", err)
-	}
-	var pos []model.Post
-	offset := (page - 1) * limit
-	if err := q.Preload("Tags").Order("updated_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询检索结果失败", err)
-	}
-	result := make([]*post.Post, 0, len(pos))
-	for _, po := range pos {
-		p, _ := postToDomain(po)
-		result = append(result, p)
-	}
-	return result, total, nil
-}
-// SearchPublished 在已发布文章内做大小写不敏感子串检索（前台公开搜索）。
-// 与 Search 的区别：无 authorID 限制，固定 status=published；检索语义、排序、转义均同 Search。
-func (r *PostRepository) SearchPublished(ctx context.Context, query string, page, limit int) ([]*post.Post, int64, error) {
-	q := r.db.WithContext(ctx).Model(&model.Post{}).Where("status = ?", post.StatusPublished)
-	for _, kw := range strings.Fields(query) {
-		like := "%" + likeEscaper.Replace(kw) + "%"
-		q = q.Where(
-			"(LOWER(title) LIKE LOWER(?) ESCAPE '\\' OR LOWER(excerpt) LIKE LOWER(?) ESCAPE '\\' OR LOWER(content_md) LIKE LOWER(?) ESCAPE '\\')",
-			like, like, like,
-		)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计检索结果失败", err)
-	}
-	var pos []model.Post
-	offset := (page - 1) * limit
-	if err := q.Preload("Tags").Order("updated_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询检索结果失败", err)
-	}
-	result := make([]*post.Post, 0, len(pos))
-	for _, po := range pos {
-		p, _ := postToDomain(po)
-		result = append(result, p)
-	}
-	return result, total, nil
-}
 
 func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, error) {	var count int64
 	if err := r.db.WithContext(ctx).Model(&model.Post{}).Where("slug = ?", slug).Count(&count).Error; err != nil {

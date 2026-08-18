@@ -1,11 +1,11 @@
 import type { Tag } from "@entities/tag/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { TagDialog } from "@features/admin-tags/ui/TagDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { useDeleteTag } from "@features/tags/api/mutations";
-import { useTags } from "@features/tags/api/queries";
+import { useTagsPaged } from "@features/tags/api/queries";
 import { Button } from "@shared/ui/base/button";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
@@ -17,7 +17,8 @@ export const Route = createFileRoute("/admin/tags")({
 });
 
 function AdminTagsPage() {
-	const { data: tags = [], isLoading, error, refetch } = useTags();
+	const { data: paged, isLoading, error, refetch, pagination } = usePagedQuery(useTagsPaged);
+	const tags = paged?.data ?? [];
 	const deleteTag = useDeleteTag();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<Tag | null>(null);
@@ -130,6 +131,7 @@ function AdminTagsPage() {
 			<DataTable<Tag>
 				data={sortedTags}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => String(row.id)}
 				selectable={false}
 				loading={isLoading}

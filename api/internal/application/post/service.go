@@ -213,29 +213,36 @@ func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	return dto, nil
 }
 
-// ListPublished 列出已发布文章（前台），返回不含正文的列表项，避免响应过大
-func (s *Service) ListPublished(ctx context.Context, page, limit int, tag string) ([]PostListItemDTO, int64, error) {
-	items, total, err := s.repo.FindPublished(ctx, page, limit, tag)
-	if err != nil {
-		return nil, 0, err
+// ListPublished 分页列出已发布文章（前台），返回不含正文的列表项，避免响应过大。
+// tag 为标签 slug，空串 = 不过滤；精选优先，再按发布时间倒序。
+func (s *Service) ListPublished(ctx context.Context, tag string, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
+	var tags []string
+	if tag != "" {
+		tags = []string{tag}
 	}
-	dtos := toListItemDTOs(items)
-	s.fillListItemAuthor(ctx, dtos)
-	s.fillListItemCollaborators(ctx, dtos)
-	return dtos, total, nil
+	return s.listPage(ctx, domain.ListFilter{
+		Status: domain.StatusPublished, Tags: tags, Sort: domain.SortPublished,
+	}, q)
 }
 
-// ListAll 列出所有文章（后台），返回不含正文的列表项，避免响应过大。
+// ListAll 分页列出所有文章（后台，含回收站视图），返回不含正文的列表项。
 // keyword 标题+正文搜索（空格分词 AND）；tags 为标签 slug 列表（AND 关系）。
-func (s *Service) ListAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]PostListItemDTO, int64, error) {
-	items, total, err := s.repo.FindAll(ctx, page, limit, status, keyword, tags)
+func (s *Service) ListAll(ctx context.Context, status, keyword string, tags []string, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
+	return s.listPage(ctx, domain.ListFilter{
+		Status: status, Keyword: keyword, Tags: tags, Sort: domain.SortCreatedAt,
+	}, q)
+}
+
+// listPage 两者的共享实现：仓储 FindPage → 列表项 DTO + 作者/协同者批量填充。
+func (s *Service) listPage(ctx context.Context, filter domain.ListFilter, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
+	result, err := s.repo.FindPage(ctx, filter, q)
 	if err != nil {
-		return nil, 0, err
+		return shared.PageResult[PostListItemDTO]{}, err
 	}
-	dtos := toListItemDTOs(items)
+	dtos := toListItemDTOs(result.Items)
 	s.fillListItemAuthor(ctx, dtos)
 	s.fillListItemCollaborators(ctx, dtos)
-	return dtos, total, nil
+	return shared.NewPageResult(shared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // CreateInput 创建文章入参

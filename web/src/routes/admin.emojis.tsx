@@ -152,7 +152,7 @@ function EmojisPage() {
 			action={
 				<div className="flex items-center gap-2">
 					{canRefetch ? <RefetchBilibiliButton /> : null}
-					{canManageGroup ? (
+					{canManageGroup && !isEmpty ? (
 						<Button size="sm" onClick={handleCreateGroup}>
 							<Plus className="size-3.5" />
 							创建分组

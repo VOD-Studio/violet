@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
 )
 
@@ -89,16 +90,18 @@ type SearchCodeBlocksResult struct {
 }
 
 // SearchPosts 文章检索：仓储分页 + snippet 生成。
-// offset 约定为 limit 的整数倍（tool 层从 0 起按 next_offset 翻页，天然满足）。
-func (s *Service) SearchPosts(ctx context.Context, authorID shared.ID, query, status string, limit, offset int) (*SearchPostsResult, error) {
-	page := offset/limit + 1
-	posts, total, err := s.repo.Search(ctx, authorID, query, status, page, limit)
+// q.Offset 需为 limit 的整数倍（MCP 从 0 起按 next_offset 翻页，天然满足）。
+func (s *Service) SearchPosts(ctx context.Context, authorID shared.ID, query, status string, q shared.PageQuery) (*SearchPostsResult, error) {
+	q = q.Normalize()
+	result, err := s.repo.FindPage(ctx, domain.ListFilter{
+		AuthorID: &authorID, Keyword: query, Status: status, Sort: domain.SortUpdated,
+	}, q)
 	if err != nil {
 		return nil, err
 	}
 	keywords := strings.Fields(query)
-	items := make([]SearchPostItem, 0, len(posts))
-	for _, p := range posts {
+	items := make([]SearchPostItem, 0, len(result.Items))
+	for _, p := range result.Items {
 		items = append(items, SearchPostItem{
 			ID:        p.ID().String(),
 			Slug:      p.Slug(),
@@ -111,21 +114,23 @@ func (s *Service) SearchPosts(ctx context.Context, authorID shared.ID, query, st
 	}
 	return &SearchPostsResult{
 		Posts:    items,
-		PageMeta: newPageMeta(total, offset, len(posts)),
+		PageMeta: newPageMeta(result.Total, q.Offset(), len(items)),
 	}, nil
 }
 
 // SearchPublished 前台公开搜索：在已发布文章内检索，复用 snippet 生成。
 // 与 SearchPosts 的区别：无 authorID 过滤（公开），固定 status=published（仓储层收敛）。
-func (s *Service) SearchPublished(ctx context.Context, query string, limit, offset int) (*SearchPostsResult, error) {
-	page := offset/limit + 1
-	posts, total, err := s.repo.SearchPublished(ctx, query, page, limit)
+func (s *Service) SearchPublished(ctx context.Context, query string, q shared.PageQuery) (*SearchPostsResult, error) {
+	q = q.Normalize()
+	result, err := s.repo.FindPage(ctx, domain.ListFilter{
+		Status: domain.StatusPublished, Keyword: query, Sort: domain.SortUpdated,
+	}, q)
 	if err != nil {
 		return nil, err
 	}
 	keywords := strings.Fields(query)
-	items := make([]SearchPostItem, 0, len(posts))
-	for _, p := range posts {
+	items := make([]SearchPostItem, 0, len(result.Items))
+	for _, p := range result.Items {
 		items = append(items, SearchPostItem{
 			ID:        p.ID().String(),
 			Slug:      p.Slug(),
@@ -138,7 +143,7 @@ func (s *Service) SearchPublished(ctx context.Context, query string, limit, offs
 	}
 	return &SearchPostsResult{
 		Posts:    items,
-		PageMeta: newPageMeta(total, offset, len(posts)),
+		PageMeta: newPageMeta(result.Total, q.Offset(), len(items)),
 	}, nil
 }
 
@@ -146,7 +151,7 @@ func (s *Service) SearchPublished(ctx context.Context, query string, limit, offs
 // query 是 LaTeX 源码片段，大小写敏感（LaTeX 命令语义敏感，\Frac ≠ \frac）。
 // 无漏保证：latex 是 content_md 的子串，初筛必命中含目标公式的文章。
 func (s *Service) SearchFormulas(ctx context.Context, authorID shared.ID, query string, limit, offset int) (*SearchFormulasResult, error) {
-	candidates, _, err := s.repo.Search(ctx, authorID, query, "all", 1, searchCandidateLimit)
+	candidates, err := s.fetchCandidates(ctx, authorID, query)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +184,7 @@ func (s *Service) SearchFormulas(ctx context.Context, authorID shared.ID, query 
 // 大小写敏感：代码标识符语义敏感。
 func (s *Service) SearchCodeBlocks(ctx context.Context, authorID shared.ID, query, lang string, runnableOnly bool, limit, offset int) (*SearchCodeBlocksResult, error) {
 	// query 为空时仓储无法关键词初筛，退化为全量候选（仍按 author 隔离）。
-	candidates, _, err := s.repo.Search(ctx, authorID, query, "all", 1, searchCandidateLimit)
+	candidates, err := s.fetchCandidates(ctx, authorID, query)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +217,29 @@ func (s *Service) SearchCodeBlocks(ctx context.Context, authorID shared.ID, quer
 		CodeBlocks: page,
 		PageMeta:   meta,
 	}, nil
+}
+
+// fetchCandidates 元素级检索的候选文章初筛：按 updated_at 倒序取上限
+// searchCandidateLimit 篇。FindPage 经 Normalize 钳制单页上限 100，超出时
+// 按页聚合到候选上限——个人博客量级通常一页取满。query 为空时退化为全量
+// 候选（仍按作者隔离）。
+func (s *Service) fetchCandidates(ctx context.Context, authorID shared.ID, query string) ([]*domain.Post, error) {
+	filter := domain.ListFilter{AuthorID: &authorID, Keyword: query, Status: "all", Sort: domain.SortUpdated}
+	var all []*domain.Post
+	for page := 1; len(all) < searchCandidateLimit; page++ {
+		result, err := s.repo.FindPage(ctx, filter, shared.PageQuery{Page: page, Limit: shared.MaxPageLimit})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, result.Items...)
+		if len(result.Items) == 0 || int64(len(all)) >= result.Total {
+			break
+		}
+	}
+	if len(all) > searchCandidateLimit {
+		all = all[:searchCandidateLimit]
+	}
+	return all, nil
 }
 
 // snippetWindow snippet 上下文窗口半径（命中点前后各约 80 字符）。

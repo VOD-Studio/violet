@@ -35,17 +35,17 @@ type NotificationDTO struct {
 	CreatedAt  string                 `json:"created_at"`
 }
 
-// ListByUser 列出某用户的通知（分页）。
-func (s *Service) ListByUser(ctx context.Context, userID domainshared.ID, page, limit int) ([]NotificationDTO, int64, error) {
-	items, total, err := s.repo.FindNotify(ctx, userID, page, limit)
+// ListByUser 分页列出某用户的通知（页码/条数取钳制后的回显值）。
+func (s *Service) ListByUser(ctx context.Context, userID domainshared.ID, q domainshared.PageQuery) (domainshared.PageResult[NotificationDTO], error) {
+	result, err := s.repo.FindPage(ctx, domainnotification.ListFilter{UserID: userID}, q)
 	if err != nil {
-		return nil, 0, err
+		return domainshared.PageResult[NotificationDTO]{}, err
 	}
-	dtos := make([]NotificationDTO, 0, len(items))
-	for _, n := range items {
+	dtos := make([]NotificationDTO, 0, len(result.Items))
+	for _, n := range result.Items {
 		dtos = append(dtos, toDTO(n))
 	}
-	return dtos, total, nil
+	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // CountUnread 统计未读数。

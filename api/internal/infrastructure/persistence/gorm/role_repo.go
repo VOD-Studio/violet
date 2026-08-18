@@ -103,6 +103,43 @@ func (r *RoleRepository) FindAll(ctx context.Context) ([]*role.Role, error) {
 	return roles, nil
 }
 
+// FindPage 分页查找角色（含权限）
+func (r *RoleRepository) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*role.Role], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Role{}).Order("id ASC")
+	var pos []model.Role
+	total, err := countAndFind(query, q, &pos, "角色")
+	if err != nil {
+		return domainshared.PageResult[*role.Role]{}, err
+	}
+	// 单独 Preload 权限，避免 Count 阶段带上 join 导致计数翻倍；
+	// 空页提前返回，避免无意义的 IN 空集查询
+	if len(pos) == 0 {
+		return domainshared.NewPageResult[*role.Role](q, nil, total), nil
+	}
+	// IN 查询不保证返回顺序，显式 Order 保持与主查询一致的页内顺序
+	if err := r.db.WithContext(ctx).Preload("Permissions").Order("id ASC").Find(&pos, "id IN ?", idsOf(pos)).Error; err != nil {
+		return domainshared.PageResult[*role.Role]{}, domainshared.Internal("查询角色权限失败", err)
+	}
+	roles := make([]*role.Role, 0, len(pos))
+	for _, po := range pos {
+		rl, err := roleToDomain(po)
+		if err != nil {
+			return domainshared.PageResult[*role.Role]{}, err
+		}
+		roles = append(roles, rl)
+	}
+	return domainshared.NewPageResult(q, roles, total), nil
+}
+
+func idsOf(pos []model.Role) []int32 {
+	ids := make([]int32, 0, len(pos))
+	for _, po := range pos {
+		ids = append(ids, po.ID)
+	}
+	return ids
+}
+
 // ExistsByName 名称是否已存在
 func (r *RoleRepository) ExistsByName(ctx context.Context, name role.RoleName) (bool, error) {
 	var count int64
@@ -211,6 +248,36 @@ func (r *RoleRepository) CountUsers(ctx context.Context, roleID int32) (int64, e
 		return 0, domainshared.Internal("统计角色用户数失败", err)
 	}
 	return count, nil
+}
+
+// CountUsersByIDs 批量统计多个角色的用户数（单查询，避免列表场景 N+1）
+//
+// DDD 后用户角色以 users.role 字符串列为唯一来源（同 CountUsers），按角色名统计。
+func (r *RoleRepository) CountUsersByIDs(ctx context.Context, roleIDs []int32) (map[int32]int64, error) {
+	result := make(map[int32]int64, len(roleIDs))
+	if len(roleIDs) == 0 {
+		return result, nil
+	}
+	type row struct {
+		ID    int32
+		Count int64
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).
+		Table("users").
+		Select("roles.id AS id, COUNT(*) AS count").
+		Joins("JOIN roles ON roles.name = users.role").
+		Where("roles.id IN ?", roleIDs).
+		Where("users.is_root = false").
+		Group("roles.id").
+		Find(&rows).Error
+	if err != nil {
+		return nil, domainshared.Internal("批量统计角色用户数失败", err)
+	}
+	for _, rw := range rows {
+		result[rw.ID] = rw.Count
+	}
+	return result, nil
 }
 
 // 编译期断言：RoleRepository 实现领域端口

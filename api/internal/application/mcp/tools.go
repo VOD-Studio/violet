@@ -13,10 +13,11 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
+	domainapitoken "blog-api/internal/domain/api_token"
+	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/middleware"
 )
 
@@ -30,7 +31,7 @@ type PostService interface {
 	UpdateStatus(ctx context.Context, id, status string) (apppost.PostDTO, error)
 	GetByID(ctx context.Context, id string) (apppost.PostDTO, error)
 	GetBySlugForAuthor(ctx context.Context, slug string) (apppost.PostDTO, error)
-	ListAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]apppost.PostListItemDTO, int64, error)
+	ListAll(ctx context.Context, status, keyword string, tags []string, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error)
 	ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error)
 }
 
@@ -39,7 +40,7 @@ type PostService interface {
 type SubscriptionService interface {
 	Create(ctx context.Context, in appsub.CreateInput) (appsub.SubscriptionDTO, error)
 	GetByID(ctx context.Context, id, userID string) (appsub.SubscriptionDTO, error)
-	ListByUser(ctx context.Context, userID, status string, page, limit int) ([]appsub.SubscriptionDTO, int64, error)
+	ListByUser(ctx context.Context, userID, status string, q domainshared.PageQuery) (domainshared.PageResult[appsub.SubscriptionDTO], error)
 	Update(ctx context.Context, in appsub.UpdateInput) error
 	Pause(ctx context.Context, id, userID string) error
 	Resume(ctx context.Context, id, userID string) error

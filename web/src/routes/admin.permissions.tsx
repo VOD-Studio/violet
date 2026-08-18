@@ -3,7 +3,7 @@ import { useAdminPermissions, useDeletePermission } from "@features/admin-permis
 import type { PermissionDTO } from "@features/admin-permissions/model/types";
 import { CreatePermissionDialog } from "@features/admin-permissions/ui/CreatePermissionDialog";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -92,6 +92,8 @@ function AdminPermissionsPage() {
 		});
 		return rows;
 	}, [tree, expanded]);
+
+	const { pagedData: pagedRows, pagination } = useClientPagination(flatRows);
 
 	const columns: DataTableColumn<FlatRow>[] = [
 		{
@@ -227,8 +229,9 @@ function AdminPermissionsPage() {
 				}
 			>
 				<DataTable<FlatRow>
-					data={flatRows}
+					data={pagedRows}
 					columns={columns}
+					pagination={pagination}
 					keyExtractor={(r) => `${r.menuId}-${r.row.id}`}
 					selectable={false}
 					loading={isLoading}

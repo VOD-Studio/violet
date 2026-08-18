@@ -7,9 +7,10 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
+	domainapitoken "blog-api/internal/domain/api_token"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // errResult 把 error 包成 MCP tool error（IsError=true + 文本内容），不作为 protocol error。
@@ -93,22 +94,13 @@ func (t *PostTools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, ar
 	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
 		return errResult(err), nil, nil
 	}
-	page, limit := args.Page, args.Limit
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	items, total, err := t.posts.ListAll(ctx, page, limit, "draft", "", nil)
+	q := domainshared.PageQuery{Page: args.Page, Limit: args.Limit}.Normalize()
+	result, err := t.posts.ListAll(ctx, "draft", "", nil, q)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
 	return okResult(map[string]any{
-		"items": items, "total": total, "page": page, "limit": limit,
+		"items": result.Items, "total": result.Total, "page": result.Page, "limit": result.Limit,
 	}), nil, nil
 }
 
@@ -223,22 +215,13 @@ func (t *ScraperTools) ListSubscriptions(ctx context.Context, req *mcp.CallToolR
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsRead); err != nil {
 		return errResult(err), nil, nil
 	}
-	page, limit := args.Page, args.Limit
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	items, total, err := t.subs.ListByUser(ctx, operatorUserID(req), args.Status, page, limit)
+	q := domainshared.PageQuery{Page: args.Page, Limit: args.Limit}.Normalize()
+	result, err := t.subs.ListByUser(ctx, operatorUserID(req), args.Status, q)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
 	return okResult(map[string]any{
-		"items": items, "total": total, "page": page, "limit": limit,
+		"items": result.Items, "total": result.Total, "page": result.Page, "limit": result.Limit,
 	}), nil, nil
 }
 

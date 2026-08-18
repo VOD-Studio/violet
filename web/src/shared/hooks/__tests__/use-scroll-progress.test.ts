@@ -1,4 +1,4 @@
-import { computeScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
+import { computeScrollProgress } from "@shared/hooks/use-scroll-progress";
 import { describe, expect, it } from "vitest";
 
 describe("computeScrollProgress", () => {

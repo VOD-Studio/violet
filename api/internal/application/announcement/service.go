@@ -56,6 +56,19 @@ func (s *Service) List(ctx context.Context) ([]AnnouncementDTO, error) {
 	return dtos, nil
 }
 
+// ListPage 分页获取公告（后台）
+func (s *Service) ListPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[AnnouncementDTO], error) {
+	result, err := s.repo.FindPage(ctx, q)
+	if err != nil {
+		return shared.PageResult[AnnouncementDTO]{}, err
+	}
+	dtos := make([]AnnouncementDTO, 0, len(result.Items))
+	for _, a := range result.Items {
+		dtos = append(dtos, toDTO(a))
+	}
+	return shared.NewPageResult(shared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
+}
+
 // ListActive 获取当前生效的公告（前台展示）
 func (s *Service) ListActive(ctx context.Context) ([]AnnouncementDTO, error) {
 	items, err := s.repo.FindActive(ctx)

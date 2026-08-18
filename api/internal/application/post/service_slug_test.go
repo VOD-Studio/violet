@@ -28,19 +28,10 @@ func (f *fakeSlugRepo) FindByID(context.Context, shared.ID) (*domain.Post, error
 func (f *fakeSlugRepo) FindBySlug(context.Context, string) (*domain.Post, error) {
 	panic("not implemented")
 }
-func (f *fakeSlugRepo) FindPublished(context.Context, int, int, string) ([]*domain.Post, int64, error) {
-	panic("not implemented")
-}
-func (f *fakeSlugRepo) FindAll(context.Context, int, int, string, string, []string) ([]*domain.Post, int64, error) {
+func (f *fakeSlugRepo) FindPage(context.Context, domain.ListFilter, shared.PageQuery) (shared.PageResult[*domain.Post], error) {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) BatchGetByIDs(context.Context, []shared.ID) ([]*domain.Post, error) {
-	panic("not implemented")
-}
-func (f *fakeSlugRepo) Search(context.Context, shared.ID, string, string, int, int) ([]*domain.Post, int64, error) {
-	panic("not implemented")
-}
-func (f *fakeSlugRepo) SearchPublished(context.Context, string, int, int) ([]*domain.Post, int64, error) {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) Save(ctx context.Context, p *domain.Post) error {

@@ -160,10 +160,14 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 	if err != nil {
 		return nil, 0, err
 	}
-	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, anchorFilter, depthFilter, blockID, page, limit)
+	result, err := s.commentRepo.FindPage(ctx, domain.ListFilter{
+		PostID: &pid, Status: domain.StatusApproved, ViewerUserID: &viewerID,
+		AnchorFilter: anchorFilter, DepthFilter: &depthFilter, BlockID: blockID,
+	}, shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
+	items := result.Items
 	// is_author 计算需要 post.author_id；解析失败时留空（所有评论都不算作者）。
 	var authorID *shared.ID
 	if postAuthorID != "" {
@@ -184,15 +188,18 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 		// 「查看全部」走独立接口 GET /comments/{id}/replies 分页。
 		// 仅 depthFilter=TopLevel 时补（避免 depthFilter=All 重复填充）。
 		if depthFilter == domain.DepthFilterTopLevel {
-			replies, replyTotal, err := s.commentRepo.FindReplies(ctx, c.ID(), domain.StatusApproved, &viewerID, "asc", 1, replyPreviewLimit)
+			parentID := c.ID()
+			replies, err := s.commentRepo.FindPage(ctx, domain.ListFilter{
+				ParentID: &parentID, Status: domain.StatusApproved, ViewerUserID: &viewerID, Sort: "asc",
+			}, shared.PageQuery{Page: 1, Limit: replyPreviewLimit})
 			if err != nil {
 				return nil, 0, err
 			}
-			dto.RepliesTotal = replyTotal
+			dto.RepliesTotal = replies.Total
 			// 回复预览也走 toDTO，填 reply_to_name（parentNames 已含顶层 id）
-			dto.Replies = make([]CommentDTO, 0, len(replies))
-			replyNameMap := buildParentNameMap(append(items, replies...))
-			for _, r := range replies {
+			dto.Replies = make([]CommentDTO, 0, len(replies.Items))
+			replyNameMap := buildParentNameMap(append(items, replies.Items...))
+			for _, r := range replies.Items {
 				rName := ""
 				if r.ParentID() != nil {
 					rName = replyNameMap[r.ParentID().String()]
@@ -205,7 +212,7 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // AnnotationSummary 按块聚合统计批注数量（轻量，不含正文/回复）。
@@ -246,10 +253,13 @@ type AdminCommentDTO struct {
 // status 控制状态筛选；anchorFilter 控制 anchor 维度筛选（自由评论/批注/全部）。
 // 两个维度正交，后台审核列表用 anchorFilter 区分批注与自由评论（Issue-0008）。
 func (s *Service) ListAll(ctx context.Context, status string, anchorFilter domain.AnchorFilter, page, limit int) ([]AdminCommentDTO, int64, error) {
-	items, total, err := s.commentRepo.FindAll(ctx, status, anchorFilter, page, limit)
+	result, err := s.commentRepo.FindPageWithPost(ctx, domain.ListFilter{
+		Status: status, AnchorFilter: anchorFilter,
+	}, shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
+	items := result.Items
 	// 建 parent_id → author_name 索引（从这批 comments 里取，跨页的 parent 取不到则留空）
 	comments := make([]*domain.Comment, 0, len(items))
 	for _, cwp := range items {
@@ -273,7 +283,7 @@ func (s *Service) ListAll(ctx context.Context, status string, anchorFilter domai
 	if err := s.enrichAdminEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // CountPending 统计待审核评论数量
@@ -324,10 +334,13 @@ func (s *Service) ListReplies(ctx context.Context, parentID, viewerUserID, sort 
 	if err != nil {
 		return nil, 0, err
 	}
-	items, total, err := s.commentRepo.FindReplies(ctx, pid, domain.StatusApproved, &viewerID, sort, page, limit)
+	result, err := s.commentRepo.FindPage(ctx, domain.ListFilter{
+		ParentID: &pid, Status: domain.StatusApproved, ViewerUserID: &viewerID, Sort: sort,
+	}, shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
+	items := result.Items
 	// 建 parent_id → author_name 索引：回复链上的中间节点可能也在这批里
 	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
@@ -341,7 +354,7 @@ func (s *Service) ListReplies(ctx context.Context, parentID, viewerUserID, sort 
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // BatchUpdateStatus 批量更新评论状态，返回受影响行数
@@ -378,10 +391,13 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, ids []string, status st
 
 // ListPending 列出待审核评论（后台，可选 anchor 维度筛选，Issue-0008）
 func (s *Service) ListPending(ctx context.Context, anchorFilter domain.AnchorFilter, page, limit int) ([]CommentDTO, int64, error) {
-	items, total, err := s.commentRepo.FindPending(ctx, anchorFilter, page, limit)
+	result, err := s.commentRepo.FindPage(ctx, domain.ListFilter{
+		Status: domain.StatusPending, AnchorFilter: anchorFilter,
+	}, shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err
 	}
+	items := result.Items
 	// 建 parent_id → author_name 索引（同批里取，跨页 parent 取不到则留空）
 	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
@@ -395,7 +411,7 @@ func (s *Service) ListPending(ctx context.Context, anchorFilter domain.AnchorFil
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
 	}
-	return dtos, total, nil
+	return dtos, result.Total, nil
 }
 
 // CreateInput 创建评论入参（handler 层组装，application 层消费）。

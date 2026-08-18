@@ -1,26 +1,12 @@
 /**
- * useAnnotations —— 批注数据 hook。
- *
- * 接收正文容器 ref 和评论列表，做：
- *  1. 正文渲染后提取 CandidateBlock[]（按正文指纹缓存，正文不变不重算）
- *  2. 对每个 anchor 评论调 relocate（串行），得到 located/page-level 结果
- *  3. 返回 { located: LocatedAnnotation[]; pageLevelComments: Comment[] }
- *
- * located 的每个条目含 comment + relocate 结果（blockId/startOffset/endOffset/selectedText），
- * 用于 AnnotationLayer 渲染高亮、AnnotationSidebar 渲染卡片。
- *
- * 并发模型（串行 + 版本号防竞态）：
- *   - extractCandidateBlocks 昂贵（N 次 crypto.subtle.digest），按正文指纹缓存，正文不变不重算。
- *   - relocate 本身是同步逻辑（包了 async 签名），串行开销小，并行化收益微小但引入 Promise.all 复杂度。
- *   - 竞态用 requestId：每次 effect 自增，async 完成时比对，过期则丢弃——比 cancelled 布尔更精确
- *     （cancelled 只防 unmount，防不了同组件内 anchorComments 快速连续变化）。
+ * 批注数据重定位 Hook，根据正文 DOM 提取候选块并重新计算批注锚点位置。
  */
 import type { Comment } from "@entities/comment/model/types";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fromCommentAnchor } from "./anchor-mapper";
-import { extractCandidateBlocks } from "./extract-blocks";
-import { type CandidateBlock, type RelocateResult, relocate } from "./relocate";
-import type { Anchor } from "./types";
+import { fromCommentAnchor } from "../lib/anchor-mapper";
+import { extractCandidateBlocks } from "../lib/extract-blocks";
+import { type CandidateBlock, type RelocateResult, relocate } from "../lib/relocate";
+import type { Anchor } from "../lib/types";
 
 export interface LocatedAnnotation {
 	comment: Comment;
@@ -54,11 +40,17 @@ function contentFingerprint(text: string): string {
 }
 
 /**
- * useAnnotations 计算批注的 relocate 结果。
+ * 根据正文容器 DOM 计算全部有效批注的重定位结果。
  *
- * @param contentRef 正文容器 ref
- * @param comments 批注列表（约定由调用方保证 anchor 非空，已通过 useAnnotationComments
- *   从接口层过滤）。本 hook 只做 relocate 定位，不再做 anchor 分流。
+ * @param contentRef - 正文渲染容器 DOM Ref
+ * @param comments - 待定位批注列表（要求 anchor 字段非空）
+ *
+ * @returns 包含成功定位的 `located` 批注、降级为页面级的 `pageLevelComments`、候选块列表及加载态
+ *
+ * @example
+ * ```tsx
+ * const { located, pageLevelComments, isLoading } = useAnnotations(articleRef, annotationComments);
+ * ```
  */
 export function useAnnotations(
 	contentRef: React.RefObject<HTMLElement | null>,

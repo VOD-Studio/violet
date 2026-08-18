@@ -1,15 +1,26 @@
-import type { MediaFile } from "@entities/media/model/types";
+import {
+	isImageOnlyPurpose,
+	MEDIA_PURPOSE_LABELS,
+	MEDIA_PURPOSE_OPTIONS,
+	MEDIA_TYPE_OPTIONS,
+} from "@entities/media/model/constants";
+import type { MediaFile, MediaPurpose } from "@entities/media/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { adminMediaKeys } from "@features/admin-media/api/keys";
 import { useAdminDeleteFile, useBatchDeleteMedia } from "@features/admin-media/api/mutations";
-import { useAdminMedia } from "@features/admin-media/api/queries";
-import type { AdminMediaListQuery } from "@features/admin-media/model/types";
+import { useAdminInfiniteMedia, useAdminMedia } from "@features/admin-media/api/queries";
 import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
+import { MediaGridSkeleton } from "@features/admin-media/ui/MediaGridSkeleton";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import {
+	DataTable,
+	type DataTableColumn,
+	type DataTablePagination,
+	DEFAULT_PAGE_SIZE,
+	usePagedQuery,
+} from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
@@ -23,7 +34,7 @@ import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	Select,
@@ -52,10 +63,10 @@ function AdminMediaPage() {
 	// 筛选状态
 	const [purpose, setPurpose] = useState<string>("");
 	const [fileType, setFileType] = useState<string>("");
+	const isImageOnly = isImageOnlyPurpose(purpose);
 	const [keyword, setKeyword] = useState<string>("");
 	const [view, setView] = useState<ViewMode>("grid");
-	const [page, setPage] = useState(1);
-	const pageSize = 60;
+	const pageSize = DEFAULT_PAGE_SIZE;
 
 	// 弹窗状态
 	const [uploadOpen, setUploadOpen] = useState(false);
@@ -79,22 +90,64 @@ function AdminMediaPage() {
 	// 图片预览的触发元素，用于从卡片位置展开动画
 	const [previewTrigger, setPreviewTrigger] = useState<HTMLElement | null>(null);
 
-	// 查询参数
-	const query: AdminMediaListQuery = {
-		page,
+	// 统一筛选参数
+	const filterParams = useMemo(
+		() => ({
+			purpose: purpose || undefined,
+			type: fileType || undefined,
+			keyword: keyword || undefined,
+		}),
+		[purpose, fileType, keyword],
+	);
+
+	const {
+		data: tableData,
+		isLoading: isTableLoading,
+		pagination,
+		setPage,
+	} = usePagedQuery(useAdminMedia, filterParams);
+	const tableFiles = tableData?.data ?? [];
+
+	const {
+		data: infiniteData,
+		isLoading: isGridLoading,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useAdminInfiniteMedia({
+		...filterParams,
 		limit: pageSize,
-		purpose: purpose || undefined,
-		type: fileType || undefined,
-		keyword: keyword || undefined,
-	};
-	const { data, isLoading } = useAdminMedia(query);
+	});
+	const gridFiles = useMemo(
+		() => infiniteData?.pages.flatMap((p) => p.data) ?? [],
+		[infiniteData?.pages],
+	);
+	const gridTotal = infiniteData?.pages[0]?.pagination.total ?? 0;
+
+	const sentinelRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (view !== "grid") return;
+		const el = sentinelRef.current;
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+					fetchNextPage();
+				}
+			},
+			{ rootMargin: "200px" },
+		);
+
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [view, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+	const currentFiles = view === "grid" ? gridFiles : tableFiles;
+	const currentLoading = view === "grid" ? isGridLoading : isTableLoading;
 	const deleteMutation = useAdminDeleteFile();
 	const batchDeleteMutation = useBatchDeleteMedia();
 	const queryClient = useQueryClient();
-
-	const files = data?.data ?? [];
-	const total = data?.pagination?.total ?? 0;
-	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
 	const handleBatchDelete = () => {
 		if (selectedIds.size === 0) return;
@@ -181,7 +234,7 @@ function AdminMediaPage() {
 	};
 
 	const handlePreview = (file: MediaFile, trigger?: HTMLElement | null) => {
-		const idx = files.findIndex((f) => f.id === file.id);
+		const idx = currentFiles.findIndex((f) => f.id === file.id);
 		setPreviewIndex(idx);
 		setPreviewTrigger(trigger ?? null);
 	};
@@ -203,37 +256,46 @@ function AdminMediaPage() {
 					<Select
 						value={purpose || "all"}
 						onValueChange={(v) => {
-							setPurpose(v === "all" ? "" : v);
+							const next = v === "all" ? "" : v;
+							setPurpose(next);
+							if (isImageOnlyPurpose(next)) {
+								setFileType("");
+							}
 							setPage(1);
 						}}
 					>
-						<SelectTrigger className="h-9 w-30 text-xs">
+						<SelectTrigger className="h-9 w-32 text-xs">
 							<SelectValue placeholder="用途" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">全部用途</SelectItem>
-							<SelectItem value="material">素材</SelectItem>
-							<SelectItem value="avatar">头像</SelectItem>
-							<SelectItem value="post">文章配图</SelectItem>
-							<SelectItem value="emoji">表情</SelectItem>
+							{MEDIA_PURPOSE_OPTIONS.map((opt) => (
+								<SelectItem key={opt.value} value={opt.value}>
+									{opt.label}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 
 					<Select
-						value={fileType || "all"}
+						disabled={isImageOnly}
+						value={isImageOnly ? "image" : fileType || "all"}
 						onValueChange={(v) => {
 							setFileType(v === "all" ? "" : v);
 							setPage(1);
 						}}
 					>
-						<SelectTrigger className="h-9 w-30 text-xs">
+						<SelectTrigger
+							className="h-9 w-32 text-xs"
+							title={isImageOnly ? "当前用途仅支持图片格式" : undefined}
+						>
 							<SelectValue placeholder="类型" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">全部类型</SelectItem>
-							<SelectItem value="image">图片</SelectItem>
-							<SelectItem value="video">视频</SelectItem>
-							<SelectItem value="audio">音频</SelectItem>
+							{MEDIA_TYPE_OPTIONS.map((opt) => (
+								<SelectItem key={opt.value} value={opt.value}>
+									{opt.label}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 
@@ -259,27 +321,47 @@ function AdminMediaPage() {
 			}
 		>
 			{/* 内容区 */}
-			{isLoading ? (
-				<div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-					加载中…
-				</div>
-			) : files.length === 0 ? (
+			{currentLoading && currentFiles.length === 0 ? (
+				view === "grid" ? (
+					<MediaGridSkeleton count={10} />
+				) : (
+					<MediaTable
+						files={[]}
+						loading={true}
+						selectedIds={selectedIds}
+						onSelectionChange={setSelectedIds}
+					/>
+				)
+			) : currentFiles.length === 0 ? (
 				<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
 					<Images className="size-8 opacity-40" />
 					<p className="text-sm">暂无素材</p>
 				</div>
 			) : view === "grid" ? (
-				<MediaGrid
-					files={files}
-					onPreview={handlePreview}
-					onEdit={canUpload ? handleEdit : undefined}
-					onDelete={canDeleteMedia ? handleDelete : undefined}
-					onPickCover={canUpload ? handlePickCover : undefined}
-					onCrop={canUpload ? handleCrop : undefined}
-				/>
+				<div className="space-y-6">
+					<MediaGrid
+						files={gridFiles}
+						onPreview={handlePreview}
+						onEdit={canUpload ? handleEdit : undefined}
+						onDelete={canDeleteMedia ? handleDelete : undefined}
+						onPickCover={canUpload ? handlePickCover : undefined}
+						onCrop={canUpload ? handleCrop : undefined}
+					/>
+
+					{/* 触底哨兵与追加加载状态 */}
+					<div ref={sentinelRef} className="py-2">
+						{isFetchingNextPage ? (
+							<MediaGridSkeleton count={5} />
+						) : !hasNextPage && gridFiles.length > 0 ? (
+							<p className="py-4 text-center text-xs text-muted-foreground">
+								已加载全部 {gridTotal} 个素材
+							</p>
+						) : null}
+					</div>
+				</div>
 			) : (
 				<MediaTable
-					files={files}
+					files={tableFiles}
 					selectedIds={selectedIds}
 					onSelectionChange={setSelectedIds}
 					onEdit={canUpload ? handleEdit : undefined}
@@ -287,13 +369,9 @@ function AdminMediaPage() {
 					onPreview={handlePreview}
 					onBatchDelete={canDeleteMedia ? () => setBatchDeleteOpen(true) : undefined}
 					batchDeleting={batchDeleteMutation.isPending}
+					pagination={pagination}
 				/>
 			)}
-
-			{/* 分页 */}
-			{files.length > 0 ? (
-				<Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-			) : null}
 
 			{/* 上传弹窗 */}
 			<Modal
@@ -419,7 +497,7 @@ function AdminMediaPage() {
 						setPreviewTrigger(null);
 					}
 				}}
-				files={files}
+				files={currentFiles}
 				index={Math.max(0, previewIndex)}
 				onIndexChange={setPreviewIndex}
 				triggerElement={previewTrigger}
@@ -442,6 +520,8 @@ function MediaTable({
 	onPreview,
 	onBatchDelete,
 	batchDeleting,
+	loading,
+	pagination,
 }: {
 	files: MediaFile[];
 	selectedIds: Set<string>;
@@ -450,7 +530,9 @@ function MediaTable({
 	onDelete?: (file: MediaFile) => void;
 	onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
 	onBatchDelete?: () => void;
-	batchDeleting: boolean;
+	batchDeleting?: boolean;
+	loading?: boolean;
+	pagination?: DataTablePagination;
 }) {
 	const columns: DataTableColumn<MediaFile>[] = [
 		{
@@ -518,8 +600,12 @@ function MediaTable({
 		{
 			key: "purpose",
 			header: "用途",
-			width: "80px",
-			accessorKey: "purpose",
+			width: "96px",
+			cell: (file) => (
+				<span className="text-xs text-muted-foreground">
+					{MEDIA_PURPOSE_LABELS[file.purpose as MediaPurpose] ?? file.purpose}
+				</span>
+			),
 		},
 		{
 			key: "category",
@@ -546,7 +632,12 @@ function MediaTable({
 			cell: (file) => (
 				<div className="flex justify-center gap-1">
 					{onEdit ? (
-						<Button size="icon-sm" variant="ghost" onClick={() => onEdit(file)}>
+						<Button
+							size="icon-sm"
+							variant="ghost"
+							title="编辑"
+							onClick={() => onEdit(file)}
+						>
 							<Pencil className="size-3.5" />
 						</Button>
 					) : null}
@@ -554,6 +645,7 @@ function MediaTable({
 						<Button
 							size="icon-sm"
 							variant="ghost"
+							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => onDelete(file)}
 						>
@@ -586,7 +678,8 @@ function MediaTable({
 					</Button>
 				) : null
 			}
-			loading={false}
+			pagination={pagination}
+			loading={loading}
 			storageKey="admin-media-table-columns"
 			caption="素材列表"
 			emptyTitle="暂无素材"

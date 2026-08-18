@@ -1,4 +1,4 @@
-import { useAdminRoles } from "@features/admin-roles/api/queries";
+import { useAllRoles } from "@features/admin-roles/api/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -40,7 +40,7 @@ export function CreateUserDialog({
 }: CreateUserDialogProps) {
 	const createUser = useCreateUser();
 	// 动态拉取角色列表（接口返回的角色，而非硬编码）
-	const { data: roles } = useAdminRoles();
+	const { data: roles = [] } = useAllRoles();
 
 	const form = useForm<CreateUserForm>({
 		resolver: zodResolver(createUserSchema),

@@ -55,14 +55,15 @@ func announcementToPO(a *announcement.Announcement) model.Announcement {
 	return po
 }
 
-func announcementToDomain(po model.Announcement) (*announcement.Announcement, error) {
+// announcementPOToDomain PO 重建公告领域对象（纯字段映射，不会失败）
+func announcementPOToDomain(po model.Announcement) *announcement.Announcement {
 	var createdBy *domainshared.ID // simplified: not tracking created_by in domain
 	return announcement.ReconstructAnnouncement(
 		po.ID, po.Title, po.Content, po.Type, po.Display, po.IsActive,
 		po.StartTime, po.EndTime, po.SortOrder, []string(po.Affects),
 		po.ContentMD, po.ContentHTML, po.CoverImage, po.Excerpt,
 		createdBy, po.CreatedAt, po.UpdatedAt,
-	), nil
+	)
 }
 
 func (r *AnnouncementRepository) FindByID(ctx context.Context, id int32) (*announcement.Announcement, error) {
@@ -73,7 +74,7 @@ func (r *AnnouncementRepository) FindByID(ctx context.Context, id int32) (*annou
 		}
 		return nil, domainshared.Internal("查询公告失败", err)
 	}
-	return announcementToDomain(po)
+	return announcementPOToDomain(po), nil
 }
 
 func (r *AnnouncementRepository) FindAll(ctx context.Context) ([]*announcement.Announcement, error) {
@@ -83,10 +84,25 @@ func (r *AnnouncementRepository) FindAll(ctx context.Context) ([]*announcement.A
 	}
 	result := make([]*announcement.Announcement, 0, len(pos))
 	for _, po := range pos {
-		a, _ := announcementToDomain(po)
-		result = append(result, a)
+		result = append(result, announcementPOToDomain(po))
 	}
 	return result, nil
+}
+
+func (r *AnnouncementRepository) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*announcement.Announcement], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Announcement{}).
+		Order("sort_order ASC, created_at DESC, id ASC")
+	var pos []model.Announcement
+	total, err := countAndFind(query, q, &pos, "公告")
+	if err != nil {
+		return domainshared.PageResult[*announcement.Announcement]{}, err
+	}
+	result := make([]*announcement.Announcement, 0, len(pos))
+	for _, po := range pos {
+		result = append(result, announcementPOToDomain(po))
+	}
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 func (r *AnnouncementRepository) FindActive(ctx context.Context) ([]*announcement.Announcement, error) {
@@ -101,8 +117,7 @@ func (r *AnnouncementRepository) FindActive(ctx context.Context) ([]*announcemen
 	}
 	result := make([]*announcement.Announcement, 0, len(pos))
 	for _, po := range pos {
-		a, _ := announcementToDomain(po)
-		result = append(result, a)
+		result = append(result, announcementPOToDomain(po))
 	}
 	return result, nil
 }
@@ -163,12 +178,13 @@ func projectToPO(p *project.Project) model.Project {
 	return po
 }
 
-func projectToDomain(po model.Project) (*project.Project, error) {
+// projectPOToDomain PO 重建项目领域对象（纯字段映射，不会失败）
+func projectPOToDomain(po model.Project) *project.Project {
 	return project.ReconstructProject(
 		domainshared.MustParseID(po.ID.String()),
 		po.Title, po.Description, po.URL, po.GithubURL, po.ImageURL,
 		[]string(po.TechStack), po.SortOrder, po.CreatedAt, po.UpdatedAt,
-	), nil
+	)
 }
 
 func (r *ProjectRepository) FindByID(ctx context.Context, id domainshared.ID) (*project.Project, error) {
@@ -179,7 +195,7 @@ func (r *ProjectRepository) FindByID(ctx context.Context, id domainshared.ID) (*
 		}
 		return nil, domainshared.Internal("查询项目失败", err)
 	}
-	return projectToDomain(po)
+	return projectPOToDomain(po), nil
 }
 
 func (r *ProjectRepository) FindAll(ctx context.Context) ([]*project.Project, error) {
@@ -189,10 +205,25 @@ func (r *ProjectRepository) FindAll(ctx context.Context) ([]*project.Project, er
 	}
 	result := make([]*project.Project, 0, len(pos))
 	for _, po := range pos {
-		p, _ := projectToDomain(po)
-		result = append(result, p)
+		result = append(result, projectPOToDomain(po))
 	}
 	return result, nil
+}
+
+func (r *ProjectRepository) FindPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*project.Project], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Project{}).
+		Order("sort_order ASC, created_at DESC, id ASC")
+	var pos []model.Project
+	total, err := countAndFind(query, q, &pos, "项目")
+	if err != nil {
+		return domainshared.PageResult[*project.Project]{}, err
+	}
+	result := make([]*project.Project, 0, len(pos))
+	for _, po := range pos {
+		result = append(result, projectPOToDomain(po))
+	}
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 func (r *ProjectRepository) Save(ctx context.Context, p *project.Project) error {

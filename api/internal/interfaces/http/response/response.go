@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"strconv"
 
+	domainshared "blog-api/internal/domain/shared"
 	"github.com/rs/zerolog/log"
 )
 
@@ -134,55 +135,76 @@ func RespondCursor(w http.ResponseWriter, data any, limit int, hasMore bool, nex
 // ============================================================
 
 const (
-	defaultPage  = 1
-	defaultLimit = 20
-	maxLimit     = 100
+	defaultPage  = domainshared.DefaultPage
+	defaultLimit = domainshared.DefaultPageLimit
+	maxPage      = domainshared.MaxPage
+	maxLimit     = domainshared.MaxPageLimit
 )
 
 // ParsePaging 从 query 解析 offset 分页参数（page + limit）
 //
-// 统一默认值（page=1, limit=20）、上限（limit≤100）、边界保护。
+// 统一默认值（page=1, limit=20）、上限（page≤MaxPage、limit≤MaxPageLimit）。
 //
 //	page, limit := resp.ParsePaging(r)
 func ParsePaging(r *http.Request) (page, limit int) {
-	page, _ = strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = defaultPage
-	}
-	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 {
-		limit = defaultLimit
-	}
-	if limit > maxLimit {
-		limit = maxLimit
-	}
-	return page, limit
+	return parsePage(r), ParseLimit(r, defaultLimit, maxLimit)
 }
 
-// ParsePagingWithMax 同 ParsePaging，但允许自定义 limit 上限
+// ParsePageQuery 解析 query 参数为 domain/shared.PageQuery 值对象
+//
+// 供仓储 FindPage 签名直接使用；钳制规则同 ParsePaging（Normalize 再兜底）。
+func ParsePageQuery(r *http.Request) domainshared.PageQuery {
+	page, limit := ParsePaging(r)
+	return domainshared.PageQuery{Page: page, Limit: limit}
+}
+
+// ParsePagingWithMax 同 ParsePaging，但 limit 上限由调用方指定
 //
 // 前台展示场景可能需要更小的上限（如 limit≤50）：
 //
 //	page, limit := resp.ParsePagingWithMax(r, 50)
 func ParsePagingWithMax(r *http.Request, max int) (page, limit int) {
-	page, limit = ParsePaging(r)
-	if max > 0 && limit > max {
-		limit = max
+	if max <= 0 || max > maxLimit {
+		max = maxLimit
 	}
-	return page, limit
+	return parsePage(r), ParseLimit(r, defaultLimit, max)
 }
 
 // ParseCursor 从 query 解析 cursor 分页参数
 //
 //	cursor, limit := resp.ParseCursor(r)
 func ParseCursor(r *http.Request) (cursor string, limit int) {
-	cursor = r.URL.Query().Get("cursor")
-	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 {
-		limit = defaultLimit
+	return r.URL.Query().Get("cursor"), ParseLimit(r, defaultLimit, maxLimit)
+}
+
+// ParseLimit 解析纯条数上限参数（无页码/游标语义）
+//
+// 适用场景：搜索条数（?limit=10）、调度批量大小等"只要数量不要分页"的端点。
+// 钳制规则对齐业界惯例（GitHub per_page / Stripe limit）：静默钳制而非报错，
+// 缺省/非法（<1 或非数字）回 def，越界钳到 max。
+//
+//	limit := resp.ParseLimit(r, 10, 50)
+func ParseLimit(r *http.Request, def, max int) int {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	switch {
+	case limit < 1:
+		return def
+	case limit > max:
+		return max
+	default:
+		return limit
 	}
-	if limit > maxLimit {
-		limit = maxLimit
+}
+
+// parsePage 解析并钳制页码：缺省/非法回 1，越界钳到 MaxPage
+func parsePage(r *http.Request) int {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	switch {
+	case page < defaultPage:
+		return defaultPage
+	case page > maxPage:
+		return maxPage
+	default:
+		return page
 	}
-	return cursor, limit
 }

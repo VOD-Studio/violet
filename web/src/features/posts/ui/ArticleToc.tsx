@@ -1,4 +1,4 @@
-import { type TocItem, useActiveHeading } from "@shared/lib/hooks/use-toc";
+import { type TocItem, useActiveHeading } from "@shared/hooks/use-toc";
 import { ScrollArea } from "@shared/ui/scroll-area";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import {

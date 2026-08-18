@@ -36,19 +36,18 @@ func (h *Handler) operatorInfo(r *http.Request) (string, string, bool, string, s
 
 // ListUsers 用户列表
 func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	page, limit := response.ParsePaging(r)
 	isActive := parseBoolPtr(r.URL.Query().Get("is_active"))
 	filter := appuseradmin.ListFilter{
 		Role:     r.URL.Query().Get("role"),
 		IsActive: isActive,
 		Keyword:  r.URL.Query().Get("keyword"),
 	}
-	users, total, err := h.svc.List(r.Context(), filter, page, limit)
+	result, err := h.svc.List(r.Context(), filter, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondPaged(w, users, page, limit, total)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // GetUserDetail 用户详情

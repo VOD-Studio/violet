@@ -10,6 +10,8 @@ import (
 type ProjectRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Project, error)
 	FindAll(ctx context.Context) ([]*Project, error)
+	// FindPage 分页查找项目（按 sort_order ASC, created_at DESC）
+	FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Project], error)
 	Save(ctx context.Context, p *Project) error
 	Delete(ctx context.Context, id shared.ID) error
 }

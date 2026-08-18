@@ -6,6 +6,7 @@ import (
 	"time"
 
 	domain "blog-api/internal/domain/project"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // ProjectDTO 项目读模型
@@ -42,6 +43,19 @@ func (s *Service) List(ctx context.Context) ([]ProjectDTO, error) {
 		dtos = append(dtos, toDTO(p))
 	}
 	return dtos, nil
+}
+
+// ListPage 分页获取项目
+func (s *Service) ListPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[ProjectDTO], error) {
+	result, err := s.repo.FindPage(ctx, q)
+	if err != nil {
+		return domainshared.PageResult[ProjectDTO]{}, err
+	}
+	dtos := make([]ProjectDTO, 0, len(result.Items))
+	for _, p := range result.Items {
+		dtos = append(dtos, toDTO(p))
+	}
+	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // Get 按 ID 获取项目详情

@@ -17,10 +17,12 @@ import (
 func TestService_SearchComments(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	pid := shared.NewID()
-	repo.On("Search", mock.Anything, domain.StatusApproved, "公式", domain.AnchorFilterAll, 1, 20).
-		Return([]*domain.CommentWithPost{
+	repo.On("FindPageWithPost", mock.Anything, domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: domain.AnchorFilterAll, Query: "公式",
+	}, shared.PageQuery{Page: 1, Limit: 20}).
+		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.CommentWithPost{
 			{Comment: mustReconstructComment(t, "公式写错了"), Post: domain.PostRef{ID: pid, Title: "T", Slug: "t"}},
-		}, int64(1), nil)
+		}, 1), nil)
 
 	res, err := svc.SearchComments(context.Background(), "公式", domain.AnchorFilterAll, 20, 0)
 	require.NoError(t, err)
@@ -32,8 +34,10 @@ func TestService_SearchComments(t *testing.T) {
 
 func TestService_SearchComments_LimitDefault(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
-	repo.On("Search", mock.Anything, domain.StatusApproved, "x", domain.AnchorFilterAll, 1, 20).
-		Return(nil, int64(0), nil)
+	repo.On("FindPageWithPost", mock.Anything, domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: domain.AnchorFilterAll, Query: "x",
+	}, shared.PageQuery{Page: 1, Limit: 20}).
+		Return(shared.PageResult[*domain.CommentWithPost]{}, nil)
 
 	// limit=0 → 默认 20；offset 0 → page 1
 	_, err := svc.SearchComments(context.Background(), "x", domain.AnchorFilterAll, 0, 0)
@@ -43,8 +47,10 @@ func TestService_SearchComments_LimitDefault(t *testing.T) {
 func TestService_SearchComments_OffsetToPage(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	// offset 20 / limit 20 → page 2
-	repo.On("Search", mock.Anything, domain.StatusApproved, "x", domain.AnchorFilterAll, 2, 20).
-		Return(nil, int64(0), nil)
+	repo.On("FindPageWithPost", mock.Anything, domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: domain.AnchorFilterAll, Query: "x",
+	}, shared.PageQuery{Page: 2, Limit: 20}).
+		Return(shared.PageResult[*domain.CommentWithPost]{}, nil)
 
 	_, err := svc.SearchComments(context.Background(), "x", domain.AnchorFilterAll, 20, 20)
 	require.NoError(t, err)
@@ -53,11 +59,12 @@ func TestService_SearchComments_OffsetToPage(t *testing.T) {
 func TestService_ListRecentComments(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	pid := shared.NewID()
-	// 复用 FindAll（仓储已 ORDER BY created_at DESC）
-	repo.On("FindAll", mock.Anything, domain.StatusApproved, domain.AnchorFilterAll, 1, 20).
-		Return([]*domain.CommentWithPost{
+	repo.On("FindPageWithPost", mock.Anything, domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: domain.AnchorFilterAll,
+	}, shared.PageQuery{Page: 1, Limit: 20}).
+		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.CommentWithPost{
 			{Comment: mustReconstructComment(t, "最新评论"), Post: domain.PostRef{ID: pid, Title: "T", Slug: "t"}},
-		}, int64(1), nil)
+		}, 1), nil)
 
 	res, err := svc.ListRecentComments(context.Background(), domain.AnchorFilterAll, 20, 0)
 	require.NoError(t, err)

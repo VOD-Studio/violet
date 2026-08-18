@@ -8,6 +8,11 @@
  * 通过 mediaType 限定可选素材类型（如封面图只选 image）。
  */
 
+import {
+	isImageOnlyPurpose,
+	MEDIA_PURPOSE_OPTIONS,
+	MEDIA_TYPE_OPTIONS,
+} from "@entities/media/model/constants";
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { imageUrl } from "@shared/lib/image-url";
@@ -131,6 +136,9 @@ export function MediaPicker({
 					value={purpose}
 					onValueChange={(v) => {
 						setPurpose(v);
+						if (isImageOnlyPurpose(v === "all" ? "" : v)) {
+							setFileType("");
+						}
 						setPage(1);
 					}}
 				>
@@ -138,31 +146,44 @@ export function MediaPicker({
 						<SelectValue placeholder="用途" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="all">全部用途</SelectItem>
-						<SelectItem value="material">素材</SelectItem>
-						<SelectItem value="cover">封面</SelectItem>
-						<SelectItem value="avatar">头像</SelectItem>
-						<SelectItem value="post">文章</SelectItem>
+						{MEDIA_PURPOSE_OPTIONS.map((opt) => (
+							<SelectItem key={opt.value} value={opt.value}>
+								{opt.label}
+							</SelectItem>
+						))}
 					</SelectContent>
 				</Select>
-				{/* mediaType 限定时不显示类型选择器 */}
+				{/* mediaType 限定或当前用途仅限图片时不显示/禁用类型选择器 */}
 				{!mediaType ? (
 					<Select
-						value={fileType}
+						disabled={isImageOnlyPurpose(purpose === "all" ? "" : purpose)}
+						value={
+							isImageOnlyPurpose(purpose === "all" ? "" : purpose)
+								? "image"
+								: fileType
+						}
 						onValueChange={(v) => {
 							setFileType(v);
 							setPage(1);
 						}}
 					>
-						<SelectTrigger className="w-32" onPointerDown={(e) => e.stopPropagation()}>
+						<SelectTrigger
+							className="w-32"
+							title={
+								isImageOnlyPurpose(purpose === "all" ? "" : purpose)
+									? "当前用途仅支持图片格式"
+									: undefined
+							}
+							onPointerDown={(e) => e.stopPropagation()}
+						>
 							<SelectValue placeholder="类型" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">全部类型</SelectItem>
-							<SelectItem value="image">图片</SelectItem>
-							<SelectItem value="video">视频</SelectItem>
-							<SelectItem value="audio">音频</SelectItem>
-							<SelectItem value="file">文件</SelectItem>
+							{MEDIA_TYPE_OPTIONS.map((opt) => (
+								<SelectItem key={opt.value} value={opt.value}>
+									{opt.label}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 				) : null}

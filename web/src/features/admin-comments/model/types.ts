@@ -12,6 +12,7 @@ import type {
 	CommentStatus,
 } from "@entities/comment/model/types";
 import type { CommentType } from "@features/comments/model/types";
+import type { PageQuery } from "@shared/api/types";
 
 /**
  * CommentListQuery - 评论列表查询参数
@@ -19,11 +20,7 @@ import type { CommentType } from "@features/comments/model/types";
  * type 字段控制 anchor 维度筛选（free/annotation/all），
  * 与前台 comments 模块共用 CommentType 字面量联合，API 语义全站统一。
  */
-export interface CommentListQuery {
-	/** 页码，从 1 开始 */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
+export interface CommentListQuery extends PageQuery {
 	/** 状态筛选 */
 	status?: CommentStatus;
 	/** anchor 维度筛选（free/annotation/all）；后台默认 all（不传由后端兜底） */

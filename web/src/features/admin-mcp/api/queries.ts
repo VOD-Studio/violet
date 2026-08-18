@@ -1,14 +1,15 @@
+import type { PageQuery } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { CreatePATRequest } from "../model/types";
 import * as api from "./client";
 import { mcpKeys } from "./keys";
 
-/** usePATs - PAT 列表 hook */
-export const usePATs = () =>
+/** usePATs - PAT 分页列表 hook */
+export const usePATs = (query: PageQuery) =>
 	useQuery({
-		queryKey: mcpKeys.tokens(),
-		queryFn: () => api.listPATs(),
+		queryKey: mcpKeys.tokens(query),
+		queryFn: () => api.listPATs(query),
 	});
 
 /** useCreatePAT - 创建 PAT hook。返回 mutation，onSuccess 含一次性明文 token。 */
@@ -17,7 +18,7 @@ export const useCreatePAT = () => {
 	return useMutation({
 		mutationFn: (body: CreatePATRequest) => api.createPAT(body),
 		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: mcpKeys.tokens() });
+			qc.invalidateQueries({ queryKey: mcpKeys.all });
 			toast.success("令牌已创建");
 		},
 		onError: (e: Error) => toast.error(`创建失败：${e.message}`),
@@ -30,7 +31,7 @@ export const useDeletePAT = () => {
 	return useMutation({
 		mutationFn: (id: string) => api.deletePAT(id),
 		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: mcpKeys.tokens() });
+			qc.invalidateQueries({ queryKey: mcpKeys.all });
 			toast.success("令牌已吊销");
 		},
 		onError: (e: Error) => toast.error(`吊销失败：${e.message}`),

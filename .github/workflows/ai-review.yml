@@ -42,7 +42,7 @@ jobs:
 
       - name: AI 评审
         if: env.DEEPSEEK_API_KEY != ''
-        uses: VOD-Studio/inori@v0.1.0
+        uses: VOD-Studio/inori@b78a8ffcebd3dd4438096696997002e654f0700e
         with:
           llm_endpoint: https://api.deepseek.com/v1
           llm_model: deepseek-v4-flash

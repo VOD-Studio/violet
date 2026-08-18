@@ -16,7 +16,11 @@ import type {
 import { FriendLinkCell } from "@features/admin-friend-links/ui/FriendLinkCell";
 import { FriendLinkFormDialog } from "@features/admin-friend-links/ui/FriendLinkFormDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	usePagedQuery,
+} from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -27,9 +31,6 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
-
-/** 友链分页大小 */
-const PAGE_SIZE = 20;
 
 /** 筛选值："all" 表示全部，其余为具体状态 */
 type FriendLinkFilter = "all" | FriendLinkStatus;
@@ -59,7 +60,6 @@ const STATUS_BADGE: Record<
 
 function AdminFriendLinksPage() {
 	const [filter, setFilter] = useState<FriendLinkFilter>("pending");
-	const [page, setPage] = useState(1);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editing, setEditing] = useState<FriendLinkAdminDTO | null>(null);
 	const [deleting, setDeleting] = useState<FriendLinkAdminDTO | null>(null);
@@ -67,10 +67,8 @@ function AdminFriendLinksPage() {
 	// "all" -> 不传 status（查全部）；其余直接作为筛选值透传后端。
 	const status: FriendLinkStatus | undefined = filter === "all" ? undefined : filter;
 
-	const { data, isLoading, error, refetch } = useFriendLinks({
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(useFriendLinks, {
 		status,
-		page,
-		limit: PAGE_SIZE,
 	});
 	const approveMut = useApproveFriendLink();
 	const rejectMut = useRejectFriendLink();
@@ -261,13 +259,7 @@ function AdminFriendLinksPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={{
-					page,
-					pageSize: PAGE_SIZE,
-					total: data?.pagination?.total ?? 0,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
-				}}
+				pagination={pagination}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}

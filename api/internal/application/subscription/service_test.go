@@ -78,58 +78,33 @@ func (r *fakeRepo) FindDue(ctx context.Context, now time.Time, limit int) ([]*do
 	return result, nil
 }
 
-func (r *fakeRepo) FindByUser(ctx context.Context, userID shared.ID, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
+func (r *fakeRepo) FindPage(ctx context.Context, filter domainsubscription.ListFilter, q shared.PageQuery) (shared.PageResult[*domainsubscription.Subscription], error) {
 	r.listCalls++
 	if r.listErr != nil {
-		return nil, 0, r.listErr
+		return shared.PageResult[*domainsubscription.Subscription]{}, r.listErr
 	}
+	q = q.Normalize()
 	var result []*domainsubscription.Subscription
 	for _, s := range r.subs {
-		if s.UserID() != userID {
+		if filter.UserID != nil && s.UserID() != *filter.UserID {
 			continue
 		}
-		if status != "" && s.Status() != status {
+		if filter.Status != "" && s.Status() != filter.Status {
 			continue
 		}
 		cp := *s
 		result = append(result, &cp)
 	}
 	total := int64(len(result))
-	// 简单分页
-	start := (page - 1) * limit
+	start := q.Offset()
 	if start > len(result) {
-		return nil, total, nil
+		return shared.NewPageResult[*domainsubscription.Subscription](q, nil, total), nil
 	}
-	end := start + limit
+	end := start + q.Limit
 	if end > len(result) {
 		end = len(result)
 	}
-	return result[start:end], total, nil
-}
-
-// FindAll 镜像 FindByUser 但不按 userID 过滤（admin 全站视角）。
-func (r *fakeRepo) FindAll(ctx context.Context, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
-	if r.listErr != nil {
-		return nil, 0, r.listErr
-	}
-	var result []*domainsubscription.Subscription
-	for _, s := range r.subs {
-		if status != "" && s.Status() != status {
-			continue
-		}
-		cp := *s
-		result = append(result, &cp)
-	}
-	total := int64(len(result))
-	start := (page - 1) * limit
-	if start > len(result) {
-		return nil, total, nil
-	}
-	end := start + limit
-	if end > len(result) {
-		end = len(result)
-	}
-	return result[start:end], total, nil
+	return shared.NewPageResult(q, result[start:end], total), nil
 }
 
 func (r *fakeRepo) Delete(ctx context.Context, id, userID shared.ID) error {
@@ -313,17 +288,17 @@ func TestService_ListByUser_PaginationAndStatusFilter(t *testing.T) {
 	svc := NewService(repo, nil, nil)
 
 	// 全部
-	all, total, err := svc.ListByUser(context.Background(), uid.String(), "", 1, 10)
+	all, err := svc.ListByUser(context.Background(), uid.String(), "", shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(3), total)
-	assert.Len(t, all, 3)
+	assert.Equal(t, int64(3), all.Total)
+	assert.Len(t, all.Items, 3)
 
 	// 只 active
-	active, total, err := svc.ListByUser(context.Background(), uid.String(), domainsubscription.StatusActive, 1, 10)
+	active, err := svc.ListByUser(context.Background(), uid.String(), domainsubscription.StatusActive, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Len(t, active, 2)
-	for _, dto := range active {
+	assert.Equal(t, int64(2), active.Total)
+	assert.Len(t, active.Items, 2)
+	for _, dto := range active.Items {
 		assert.Equal(t, domainsubscription.StatusActive, dto.Status)
 	}
 }

@@ -84,7 +84,7 @@ func TestSubscriptionRepository_FindByID_PreventsCrossUser(t *testing.T) {
 	assert.ErrorIs(t, err, domainsub.ErrNotFound, "跨用户查询应返回 NotFound")
 }
 
-func TestSubscriptionRepository_FindByUser_StatusFilterAndPaging(t *testing.T) {
+func TestSubscriptionRepository_FindPage_StatusFilterAndPaging(t *testing.T) {
 	db := setupSubTestDB(t)
 	repo := NewSubscriptionRepository(db)
 	ctx := context.Background()
@@ -101,29 +101,29 @@ func TestSubscriptionRepository_FindByUser_StatusFilterAndPaging(t *testing.T) {
 		require.NoError(t, repo.Save(ctx, s))
 	}
 
-	// 全部
-	all, total, err := repo.FindByUser(ctx, uid, "", 1, 10)
+	// 全部（按 userID 过滤）
+	all, err := repo.FindPage(ctx, domainsub.ListFilter{UserID: &uid}, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(3), total)
-	assert.Len(t, all, 3)
+	assert.Equal(t, int64(3), all.Total)
+	assert.Len(t, all.Items, 3)
 
 	// 只 active
-	active, total, err := repo.FindByUser(ctx, uid, domainsub.StatusActive, 1, 10)
+	active, err := repo.FindPage(ctx, domainsub.ListFilter{UserID: &uid, Status: domainsub.StatusActive}, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Len(t, active, 2)
-	for _, s := range active {
+	assert.Equal(t, int64(2), active.Total)
+	assert.Len(t, active.Items, 2)
+	for _, s := range active.Items {
 		assert.Equal(t, domainsub.StatusActive, s.Status())
 	}
 
 	// 只 paused
-	paused, total, err := repo.FindByUser(ctx, uid, domainsub.StatusPaused, 1, 10)
+	paused, err := repo.FindPage(ctx, domainsub.ListFilter{UserID: &uid, Status: domainsub.StatusPaused}, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total)
-	assert.Len(t, paused, 1)
+	assert.Equal(t, int64(1), paused.Total)
+	assert.Len(t, paused.Items, 1)
 }
 
-func TestSubscriptionRepository_FindByUser_OtherUserEmpty(t *testing.T) {
+func TestSubscriptionRepository_FindPage_OtherUserEmpty(t *testing.T) {
 	db := setupSubTestDB(t)
 	repo := NewSubscriptionRepository(db)
 	ctx := context.Background()
@@ -133,10 +133,10 @@ func TestSubscriptionRepository_FindByUser_OtherUserEmpty(t *testing.T) {
 
 	// 他人查询应空
 	other := shared.NewID()
-	got, total, err := repo.FindByUser(ctx, other, "", 1, 10)
+	got, err := repo.FindPage(ctx, domainsub.ListFilter{UserID: &other}, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(0), total)
-	assert.Empty(t, got)
+	assert.Equal(t, int64(0), got.Total)
+	assert.Empty(t, got.Items)
 }
 
 func TestSubscriptionRepository_Delete(t *testing.T) {

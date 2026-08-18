@@ -36,6 +36,21 @@ func (r *TagRepository) FindAll(ctx context.Context) ([]domaintag.Tag, error) {
 	return tags, nil
 }
 
+func (r *TagRepository) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[domaintag.Tag], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&newmodel.Tag{}).Order("id ASC")
+	var pos []newmodel.Tag
+	total, err := countAndFind(query, q, &pos, "标签")
+	if err != nil {
+		return shared.PageResult[domaintag.Tag]{}, err
+	}
+	tags := make([]domaintag.Tag, 0, len(pos))
+	for _, po := range pos {
+		tags = append(tags, tagToDomain(po))
+	}
+	return shared.NewPageResult(q, tags, total), nil
+}
+
 func (r *TagRepository) FindByID(ctx context.Context, id int32) (domaintag.Tag, error) {
 	var po newmodel.Tag
 	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {

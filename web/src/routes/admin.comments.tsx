@@ -13,7 +13,11 @@ import type {
 import { CommentCell } from "@features/admin-comments/ui/CommentCell";
 import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+	usePagedQuery,
+} from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Badge } from "@shared/ui/base/badge";
@@ -25,9 +29,6 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Ban, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
-
-/** 评论分页大小 */
-const PAGE_SIZE = 20;
 
 // TODO: 评论列表当前无排序能力；后端 /admin/comments 需支持 sort_by + order 查询参数。
 // TODO: 评论管理缺少批量删除后端接口（当前仅有批量更新状态）。
@@ -77,7 +78,6 @@ function AdminCommentsPage() {
 	const [filter, setFilter] = useState<CommentFilter>("pending");
 	// 类型筛选与状态筛选正交：切换任一维度都重置分页与勾选。
 	const [typeFilter, setTypeFilter] = useState<CommentTypeFilter>("all");
-	const [page, setPage] = useState(1);
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -85,11 +85,9 @@ function AdminCommentsPage() {
 	const status: CommentStatus | undefined = filter === "all" ? undefined : filter;
 	const type: CommentType | undefined = typeFilter === "all" ? undefined : typeFilter;
 
-	const { data, isLoading, error, refetch } = useAllComments({
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(useAllComments, {
 		status,
 		type,
-		page,
-		limit: PAGE_SIZE,
 	});
 	const approveMut = useApproveComment();
 	const spamMut = useMarkCommentSpam();
@@ -185,37 +183,42 @@ function AdminCommentsPage() {
 			key: "_actions",
 			header: "操作",
 			sticky: "right",
-			width: "200px",
+			width: "120px",
 			cell: (row) => (
 				<div className="flex items-center gap-1">
 					{canApprove ? (
 						<Button
-							size="sm"
+							size="icon-sm"
 							variant="ghost"
+							title="通过"
 							onClick={() => approveMut.mutate(row.id)}
 							disabled={approveMut.isPending}
 						>
-							通过
+							<Check className="size-3.5" />
 						</Button>
 					) : null}
 					{canApprove ? (
 						<Button
-							size="sm"
+							size="icon-sm"
 							variant="ghost"
+							title="标为垃圾"
+							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => spamMut.mutate(row.id)}
 							disabled={spamMut.isPending}
 						>
-							垃圾
+							<Ban className="size-3.5" />
 						</Button>
 					) : null}
 					{canDelete ? (
 						<Button
-							size="sm"
+							size="icon-sm"
 							variant="ghost"
+							title="删除"
+							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeletingId(row.id)}
 							disabled={deleteMut.isPending}
 						>
-							<Trash2 className="size-4" />
+							<Trash2 className="size-3.5" />
 						</Button>
 					) : null}
 				</div>
@@ -248,13 +251,7 @@ function AdminCommentsPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				pagination={{
-					page,
-					pageSize: PAGE_SIZE,
-					total: data?.pagination?.total ?? 0,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
-				}}
+				pagination={pagination}
 				selectable
 				selectedIds={selected}
 				onSelectionChange={setSelected}

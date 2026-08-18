@@ -1,5 +1,7 @@
 /** admin-audit-logs 模块类型定义 */
 
+import type { PageQuery } from "@shared/api/types";
+
 /** FieldChangeDTO - 单字段 before/after 变更 */
 export interface FieldChangeDTO {
 	/** 字段名（如 role/is_active/username） */
@@ -55,11 +57,7 @@ export interface AuditEventDTO {
 }
 
 /** AuditLogListQuery - 操作日志列表查询参数（分页 + 过滤） */
-export interface AuditLogListQuery {
-	/** 页码（从 1 开始） */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
+export interface AuditLogListQuery extends PageQuery {
 	/** 操作类型过滤（精确匹配） */
 	action?: string;
 	/** 资源类型过滤（精确匹配） */

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"blog-api/internal/domain/shared"
 	domaintag "blog-api/internal/domain/tag"
 )
 
@@ -20,6 +21,10 @@ func (m *mockTagRepo) FindAll(ctx context.Context) ([]domaintag.Tag, error) {
 		return v.([]domaintag.Tag), args.Error(1)
 	}
 	return nil, args.Error(1)
+}
+
+func (m *mockTagRepo) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[domaintag.Tag], error) {
+	return shared.PageResult[domaintag.Tag]{}, nil
 }
 
 func (m *mockTagRepo) FindByID(ctx context.Context, id int32) (domaintag.Tag, error) {

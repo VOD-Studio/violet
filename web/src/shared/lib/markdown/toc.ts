@@ -25,4 +25,4 @@ export function extractMarkdownToc(
 	return out;
 }
 
-export type { TocItem } from "@shared/lib/hooks/use-toc";
+export type { TocItem } from "@shared/hooks/use-toc";

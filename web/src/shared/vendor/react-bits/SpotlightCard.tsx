@@ -1,5 +1,5 @@
 import { cn } from "@shared/lib/utils";
-import { useSpotlight } from "@shared/lib/hooks/use-spotlight";
+import { useSpotlight } from "@shared/hooks/use-spotlight";
 import * as React from "react";
 
 export interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {

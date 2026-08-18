@@ -37,8 +37,8 @@ func (f *fakeStoreCorrect) Save(_ context.Context, n *domainnotification.Notific
 func (f *fakeStoreCorrect) FindByID(context.Context, domainshared.ID, domainshared.ID) (*domainnotification.Notification, error) {
 	return nil, nil
 }
-func (f *fakeStoreCorrect) FindNotify(context.Context, domainshared.ID, int, int) ([]*domainnotification.Notification, int64, error) {
-	return nil, 0, nil
+func (f *fakeStoreCorrect) FindPage(context.Context, domainnotification.ListFilter, domainshared.PageQuery) (domainshared.PageResult[*domainnotification.Notification], error) {
+	return domainshared.PageResult[*domainnotification.Notification]{}, nil
 }
 func (f *fakeStoreCorrect) CountUnread(context.Context, domainshared.ID) (int64, error) {
 	return 0, nil

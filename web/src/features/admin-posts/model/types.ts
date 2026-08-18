@@ -5,16 +5,13 @@
  * 此处 AdminPost 直接复用，保持后台引用名不变。
  */
 import type { PostDetail } from "@entities/post/model/types";
+import type { PageQuery } from "@shared/api/types";
 import type { AvatarUser } from "@shared/ui/avatar-group";
 
 /**
  * AdminPostListQuery - 后台文章列表查询参数
  */
-export interface AdminPostListQuery {
-	/** 页码，从 1 开始 */
-	page?: number;
-	/** 每页条数 */
-	limit?: number;
+export interface AdminPostListQuery extends PageQuery {
 	/** 状态筛选，draft / published / archived / trashed */
 	status?: string;
 	/** 搜索关键词（标题+正文，空格分词 AND） */

@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	domainapitoken "blog-api/internal/domain/api_token"
+	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
@@ -64,6 +65,28 @@ func (r *APITokenRepository) FindByUser(ctx context.Context, userID string) ([]*
 		out = append(out, p)
 	}
 	return out, nil
+}
+
+// FindPageByUser 分页列出某用户 PAT（按创建时间倒序，id 作 tiebreaker）。
+func (r *APITokenRepository) FindPageByUser(ctx context.Context, userID string, q domainshared.PageQuery) (domainshared.PageResult[*domainapitoken.PAT], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.APIToken{}).
+		Where("user_id = ?", userID).
+		Order("created_at DESC, id ASC")
+	var pos []model.APIToken
+	total, err := countAndFind(query, q, &pos, "访问令牌")
+	if err != nil {
+		return domainshared.PageResult[*domainapitoken.PAT]{}, err
+	}
+	out := make([]*domainapitoken.PAT, 0, len(pos))
+	for _, po := range pos {
+		p, err := tokenToDomain(po)
+		if err != nil {
+			return domainshared.PageResult[*domainapitoken.PAT]{}, err
+		}
+		out = append(out, p)
+	}
+	return domainshared.NewPageResult(q, out, total), nil
 }
 
 // Delete 删除（吊销）PAT。按 id + userID 双重定位，防越权删除他人 token。

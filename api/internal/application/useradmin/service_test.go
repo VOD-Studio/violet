@@ -11,18 +11,17 @@ import (
 	domainsession "blog-api/internal/domain/session"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
-	domainuseradmin "blog-api/internal/domain/useradmin"
 )
 
 // fakeStore AdminUserStore 的内存 stub，记录调用参数与返回值。
 type fakeStore struct {
-	listRes   domainuseradmin.ListResult
-	listErr   error
-	findByIDs []*domainuser.User
+	listRes       shared.PageResult[domainuser.User]
+	listErr       error
+	findByIDs     []*domainuser.User
 	findErr       error
 	findByIDUser  *domainuser.User
-	affected  int64
-	batchErr  error
+	affected      int64
+	batchErr      error
 
 	listCalls    []listStoreCall
 	findIDsCalls [][]shared.ID
@@ -39,12 +38,12 @@ type fakeStore struct {
 }
 
 type listStoreCall struct {
-	filter      ListFilter
-	page, limit int
+	filter ListFilter
+	q      shared.PageQuery
 }
 
-func (f *fakeStore) List(_ context.Context, filter ListFilter, page, limit int) (domainuseradmin.ListResult, error) {
-	f.listCalls = append(f.listCalls, listStoreCall{filter, page, limit})
+func (f *fakeStore) FindPage(_ context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[domainuser.User], error) {
+	f.listCalls = append(f.listCalls, listStoreCall{filter, q})
 	return f.listRes, f.listErr
 }
 
@@ -93,8 +92,7 @@ func (noopHasher) Hash(_ string) (domainuser.PasswordHash, error) {
 	return domainuser.NewPasswordHash("$2a$10$stub"), nil
 }
 
-
-// mustUser 构造一个测试用户聚合（值拷贝供 ListResult 使用）。
+// mustUser 构造一个测试用户聚合（值拷贝供 PageResult 使用）。
 func mustUser(t *testing.T, username, email string, role domainuser.Role, active bool) domainuser.User {
 	t.Helper()
 	em, _ := domainuser.ParseEmail(email)
@@ -155,16 +153,22 @@ func TestService_UpdateUserRole_RevokesSession(t *testing.T) {
 func TestService_List_MapsToDTOs(t *testing.T) {
 	u1 := mustUser(t, "alice", "alice@example.com", domainuser.RoleAdmin, true)
 	u2 := mustUser(t, "bob", "bob@example.com", domainuser.RoleUser, false)
-	store := &fakeStore{listRes: domainuseradmin.ListResult{Users: []domainuser.User{u1, u2}, Total: 42}}
+	store := &fakeStore{listRes: shared.PageResult[domainuser.User]{
+		Items: []domainuser.User{u1, u2}, Total: 42, Page: 1, Limit: 20,
+	}}
 	svc := newTestService(store)
 
-	dtos, total, err := svc.List(context.Background(), ListFilter{Role: "admin"}, 1, 20)
+	result, err := svc.List(context.Background(), ListFilter{Role: "admin"}, shared.PageQuery{Page: 1, Limit: 20})
 	if err != nil {
 		t.Fatalf("List 返回错误: %v", err)
 	}
-	if total != 42 {
-		t.Errorf("Total = %d, want 42", total)
+	if result.Total != 42 {
+		t.Errorf("Total = %d, want 42", result.Total)
 	}
+	if result.Page != 1 || result.Limit != 20 {
+		t.Errorf("回显分页 = (%d,%d), want (1,20)", result.Page, result.Limit)
+	}
+	dtos := result.Items
 	if len(dtos) != 2 {
 		t.Fatalf("DTO 数量 = %d, want 2", len(dtos))
 	}
@@ -195,14 +199,14 @@ func TestService_List_MapsToDTOs(t *testing.T) {
 
 	// 筛选与分页参数透传到 store
 	if len(store.listCalls) != 1 {
-		t.Fatalf("store.List 调用 %d 次, want 1", len(store.listCalls))
+		t.Fatalf("store.FindPage 调用 %d 次, want 1", len(store.listCalls))
 	}
 	lc := store.listCalls[0]
 	if lc.filter.Role != "admin" {
 		t.Errorf("透传 filter.Role = %q, want admin", lc.filter.Role)
 	}
-	if lc.page != 1 || lc.limit != 20 {
-		t.Errorf("透传分页 = (%d,%d), want (1,20)", lc.page, lc.limit)
+	if lc.q.Page != 1 || lc.q.Limit != 20 {
+		t.Errorf("透传分页 = (%d,%d), want (1,20)", lc.q.Page, lc.q.Limit)
 	}
 }
 
@@ -211,7 +215,7 @@ func TestService_List_PropagatesStoreError(t *testing.T) {
 	store := &fakeStore{listErr: wantErr}
 	svc := newTestService(store)
 
-	if _, _, err := svc.List(context.Background(), ListFilter{}, 1, 10); !errors.Is(err, wantErr) {
+	if _, err := svc.List(context.Background(), ListFilter{}, shared.PageQuery{Page: 1, Limit: 10}); !errors.Is(err, wantErr) {
 		t.Errorf("err = %v, want %v", err, wantErr)
 	}
 }

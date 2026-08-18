@@ -138,49 +138,32 @@ func (r *CommentRepository) FindByID(ctx context.Context, id domainshared.ID) (*
 	return commentToDomain(po)
 }
 
-func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID, anchorFilter comment.AnchorFilter, depthFilter comment.DepthFilter, blockID string, page, limit int) ([]*comment.Comment, int64, error) {
-	query := r.db.WithContext(ctx).Model(&model.Comment{}).Where("post_id = ?", postID.UUID())
-	// viewer 过滤：approved 评论联合（若 viewer 登录）viewer 自己的 pending。
-	// viewerUserID 为 nil 时（匿名）仅 status 过滤——但 service.ListByPost 会在
-	// 匿名时直接返回空数组，不走到这里；保留 status 分支供后台管理等场景复用。
-	if viewerUserID != nil {
-		query = query.Where(
-			"status = ? OR (status = ? AND created_by = ?)",
-			status, comment.StatusPending, viewerUserID.UUID(),
-		)
-	} else if status != "" {
-		query = query.Where("status = ?", status)
+// FindPage 分页列出评论（统一入口；筛选与排序语义见 comment.ListFilter）。
+//
+// 表引用统一走 Table("comments c") 别名形态，与 FindPageWithPost 的 JOIN 场景
+// 共享同一套 applyCommentFilters（列名一律 c. 前缀，无歧义）。
+func (r *CommentRepository) FindPage(ctx context.Context, filter comment.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*comment.Comment], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Table("comments c")
+	query, err := applyCommentFilters(r.db, ctx, query, filter)
+	if err != nil {
+		return domainshared.PageResult[*comment.Comment]{}, err
 	}
-	// anchor 维度过滤：自由评论（anchor_block_id IS NULL）/ 批注（IS NOT NULL）/ 全部（不过滤）。
-	switch anchorFilter {
-	case comment.AnchorFilterFree:
-		query = query.Where("anchor_block_id IS NULL")
-	case comment.AnchorFilterAnnotation:
-		query = query.Where("anchor_block_id IS NOT NULL")
-	} // AnchorFilterAll / 空串：不过滤
-	// depth 维度过滤：顶层列表只查 depth=0，避免子和父混在一页被分页切走。
-	if depthFilter != comment.DepthFilterAll {
-		query = query.Where("depth = ?", depthFilter)
-	}
-	// block_id 精确过滤（批注按块懒加载）
-	if blockID != "" {
-		query = query.Where("anchor_block_id = ?", blockID)
-	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计评论失败", err)
-	}
+	query = query.Order(commentPageOrder(filter))
 	var pos []model.Comment
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询评论列表失败", err)
+	total, err := countAndFind(query, q, &pos, "评论")
+	if err != nil {
+		return domainshared.PageResult[*comment.Comment]{}, err
 	}
 	result := make([]*comment.Comment, 0, len(pos))
 	for _, po := range pos {
-		c, _ := commentToDomain(po)
+		c, err := commentToDomain(po)
+		if err != nil {
+			return domainshared.PageResult[*comment.Comment]{}, err
+		}
 		result = append(result, c)
 	}
-	return result, total, nil
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 // CountByPostAndAnon 统计某文章下某匿名身份（ip_hash + email）已留存的评论数，
@@ -196,55 +179,68 @@ func (r *CommentRepository) CountByPostAndAnon(ctx context.Context, postID domai
 	return n, nil
 }
 
-// FindReplies 列出某顶层评论下的全部扁平回复。
-//
-// 实现策略：先查 parent 拿 path（顶层评论 path 形如 "<uuid>/"），
-// 再按 path 前缀查所有回复（path LIKE "<uuid>/%"），排除 parent 自身（id != parentID）。
-// 两层扁平下，回复的 parent_id 可能指另一条回复，但 path 都挂同一顶层，
-// 所以按 path 前缀能把「回复 @yyy」整条链都拉出来。
-//
-// status / viewerUserID 语义同 FindByPost；sort 控制时间正倒序。
-func (r *CommentRepository) FindReplies(ctx context.Context, parentID domainshared.ID, status string, viewerUserID *domainshared.ID, sort string, page, limit int) ([]*comment.Comment, int64, error) {
-	// 先查 parent 拿 path（顶层评论 path = "<uuid>/"）
-	var parent model.Comment
-	if err := r.db.WithContext(ctx).First(&parent, "id = ?", parentID.UUID()).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询父评论失败", err)
+// commentPageOrder 由 filter 决定页内排序（均带唯一列 tiebreaker，防 offset 翻页漂移）。
+func commentPageOrder(filter comment.ListFilter) string {
+	if filter.ParentID != nil && filter.Sort != "desc" {
+		// 回复链默认最早优先（时间线阅读顺序）
+		return "c.created_at ASC, c.id ASC"
 	}
-
-	// 按 path 前缀查回复（排除 parent 自身）
-	query := r.db.WithContext(ctx).Model(&model.Comment{}).
-		Where("path LIKE ?", parent.Path+"%").
-		Where("id != ?", parentID.UUID())
-	// viewer 过滤（语义同 FindByPost）
-	if viewerUserID != nil {
+	return "c.created_at DESC, c.id DESC"
+}
+// applyCommentFilters 把 ListFilter 的正交筛选维度组装到 query。
+//
+// 入参 query 必须是 Table("comments c") 别名形态（列名一律 c. 前缀），
+// 与 FindPage / FindPageWithPost 两种调用方保持一致，同一套列名无歧义。
+// parent 查询走独立的 db 入口，不与主 query 链交互。
+func applyCommentFilters(db *gorm.DB, ctx context.Context, query *gorm.DB, filter comment.ListFilter) (*gorm.DB, error) {
+	// ParentID 场景：先查 parent 拿 path（顶层评论 path 形如 "<uuid>/"），
+	// 再按 path 前缀查所有回复（path LIKE "<uuid>/%"），排除 parent 自身。
+	// 两层扁平下，回复的 parent_id 可能指另一条回复，但 path 都挂同一顶层，
+	// 所以按 path 前缀能把「回复 @yyy」整条链都拉出来。
+	if filter.ParentID != nil {
+		var parent model.Comment
+		if err := db.WithContext(ctx).Model(&model.Comment{}).
+			Where("id = ?", filter.ParentID.UUID()).First(&parent).Error; err != nil {
+			return nil, domainshared.Internal("查询父评论失败", err)
+		}
+		query = query.Where("c.path LIKE ?", parent.Path+"%").
+			Where("c.id != ?", filter.ParentID.UUID())
+	}
+	if filter.PostID != nil {
+		query = query.Where("c.post_id = ?", filter.PostID.UUID())
+	}
+	// viewer 过滤：Status 匹配项联合（若 viewer 登录）viewer 自己的 pending；
+	// ViewerUserID 为 nil 时仅 Status 过滤（匿名场景由 service 层短路，此分支供后台复用）。
+	if filter.ViewerUserID != nil {
 		query = query.Where(
-			"status = ? OR (status = ? AND created_by = ?)",
-			status, comment.StatusPending, viewerUserID.UUID(),
+			"c.status = ? OR (c.status = ? AND c.created_by = ?)",
+			filter.Status, comment.StatusPending, filter.ViewerUserID.UUID(),
 		)
-	} else if status != "" {
-		query = query.Where("status = ?", status)
+	} else if filter.Status != "" {
+		query = query.Where("c.status = ?", filter.Status)
 	}
-
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计回复失败", err)
+	// anchor 维度过滤：自由评论（anchor_block_id IS NULL）/ 批注（IS NOT NULL）/ 全部（不过滤）。
+	switch filter.AnchorFilter {
+	case comment.AnchorFilterFree:
+		query = query.Where("c.anchor_block_id IS NULL")
+	case comment.AnchorFilterAnnotation:
+		query = query.Where("c.anchor_block_id IS NOT NULL")
 	}
-
-	order := "created_at ASC"
-	if sort == "desc" {
-		order = "created_at DESC"
+	// depth 维度过滤：nil = 不过滤；顶层列表传 &TopLevel，避免子和父混在一页被分页切走。
+	if filter.DepthFilter != nil {
+		query = query.Where("c.depth = ?", *filter.DepthFilter)
 	}
-	var pos []model.Comment
-	offset := (page - 1) * limit
-	if err := query.Order(order).Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询回复失败", err)
+	// block_id 精确过滤（批注按块懒加载）
+	if filter.BlockID != "" {
+		query = query.Where("c.anchor_block_id = ?", filter.BlockID)
 	}
-	result := make([]*comment.Comment, 0, len(pos))
-	for _, po := range pos {
-		c, _ := commentToDomain(po)
-		result = append(result, c)
+	// 全文检索：多关键词 AND，每个词都命中 body。
+	// 用 LOWER(body) LIKE LOWER(?) 跨库兼容（SQLite 无 ILIKE，PG ILIKE 等价于此）。
+	for _, kw := range strings.Fields(filter.Query) {
+		like := "%" + likeEscaper.Replace(kw) + "%"
+		query = query.Where("LOWER(c.body) LIKE LOWER(?) ESCAPE '\\'", like)
 	}
-	return result, total, nil
+	return query, nil
 }
 
 // CountAnnotationsByBlock 按块聚合统计批注数量（仅 depth=0 顶层批注）。
@@ -271,31 +267,6 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 	return results, nil
 }
 
-func (r *CommentRepository) FindPending(ctx context.Context, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.Comment, int64, error) {
-	query := r.db.WithContext(ctx).Model(&model.Comment{}).Where("status = ?", comment.StatusPending)
-	// anchor 维度过滤（后台审核区分批注/自由评论，Issue-0008）
-	switch anchorFilter {
-	case comment.AnchorFilterFree:
-		query = query.Where("anchor_block_id IS NULL")
-	case comment.AnchorFilterAnnotation:
-		query = query.Where("anchor_block_id IS NOT NULL")
-	}
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计待审核评论失败", err)
-	}
-	var pos []model.Comment
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询待审核评论失败", err)
-	}
-	result := make([]*comment.Comment, 0, len(pos))
-	for _, po := range pos {
-		c, _ := commentToDomain(po)
-		result = append(result, c)
-	}
-	return result, total, nil
-}
 
 // CountPending 统计待审核评论数量
 func (r *CommentRepository) CountPending(ctx context.Context) (int64, error) {
@@ -330,111 +301,36 @@ func rowToCommentWithPost(row commentWithPostRow) (*comment.CommentWithPost, err
 	return &comment.CommentWithPost{Comment: c, Post: ref}, nil
 }
 
-// FindAll 全局评论列表（后台管理，关联文章标题/slug）
+// FindPageWithPost 分页列出评论并关联所属文章（后台管理读模型）。
 //
-// status 控制状态筛选；anchorFilter 控制 anchor 维度筛选（自由评论/批注/全部，Issue-0008）。
-// 两个维度正交：例如 status=approved + anchorFilter=annotation 返回已通过的批注。
-//
-// 实现注意：本查询用独立的 query（含 Select/Order）和 countQuery（仅统计）两个 GORM 查询对象，
-// status 和 anchor 维度的 WHERE 都要同步追加到两个 query 上，否则总数与列表不一致。
-func (r *CommentRepository) FindAll(ctx context.Context, status string, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.CommentWithPost, int64, error) {
+// JOIN posts（主键关联不翻倍），countAndFind 统一计数与切片；
+// Query 非空时做 body 多关键词 AND 检索（MCP search_comments）。
+func (r *CommentRepository) FindPageWithPost(ctx context.Context, filter comment.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*comment.CommentWithPost], error) {
+	q = q.Normalize()
 	query := r.db.WithContext(ctx).
 		Table("comments c").
 		Select("c.*, p.title AS post_title, p.slug AS post_slug").
 		Joins("LEFT JOIN posts p ON p.id = c.post_id")
-	if status != "" {
-		query = query.Where("c.status = ?", status)
+	// 表别名 c. 前缀场景在 helper 内统一改写（锚点/全文列名不带别名会歧义）
+	filterQuery, err := applyCommentFilters(r.db, ctx, query, filter)
+	if err != nil {
+		return domainshared.PageResult[*comment.CommentWithPost]{}, err
 	}
-	// anchor 维度过滤（后台审核区分批注/自由评论，Issue-0008）
-	switch anchorFilter {
-	case comment.AnchorFilterFree:
-		query = query.Where("c.anchor_block_id IS NULL")
-	case comment.AnchorFilterAnnotation:
-		query = query.Where("c.anchor_block_id IS NOT NULL")
-	}
-
-	var total int64
-	countQuery := r.db.WithContext(ctx).
-		Table("comments c").
-		Joins("LEFT JOIN posts p ON p.id = c.post_id")
-	if status != "" {
-		countQuery = countQuery.Where("c.status = ?", status)
-	}
-	// countQuery 同步追加 anchor WHERE，避免总数与列表不一致
-	switch anchorFilter {
-	case comment.AnchorFilterFree:
-		countQuery = countQuery.Where("c.anchor_block_id IS NULL")
-	case comment.AnchorFilterAnnotation:
-		countQuery = countQuery.Where("c.anchor_block_id IS NOT NULL")
-	}
-	if err := countQuery.Distinct("c.id").Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计评论失败", err)
-	}
-	offset := (page - 1) * limit
+	filterQuery = filterQuery.Order(commentPageOrder(filter))
 	var rows []commentWithPostRow
-	if err := query.Order("c.created_at DESC").Offset(offset).Limit(limit).Scan(&rows).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询评论列表失败", err)
+	total, err := countAndFind(filterQuery, q, &rows, "评论")
+	if err != nil {
+		return domainshared.PageResult[*comment.CommentWithPost]{}, err
 	}
 	result := make([]*comment.CommentWithPost, 0, len(rows))
 	for _, row := range rows {
 		cwp, err := rowToCommentWithPost(row)
 		if err != nil {
-			return nil, 0, err
+			return domainshared.PageResult[*comment.CommentWithPost]{}, err
 		}
 		result = append(result, cwp)
 	}
-	return result, total, nil
-}
-
-// Search 按 body 全文检索评论（MCP search_comments），关联所属文章。
-// query 空格分词多关键词 AND；复刻 FindAll 的双 query 计数模式。
-func (r *CommentRepository) Search(ctx context.Context, status, query string, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.CommentWithPost, int64, error) {
-	applyFilters := func(q *gorm.DB) *gorm.DB {
-		if status != "" {
-			q = q.Where("c.status = ?", status)
-		}
-		switch anchorFilter {
-		case comment.AnchorFilterFree:
-			q = q.Where("c.anchor_block_id IS NULL")
-		case comment.AnchorFilterAnnotation:
-			q = q.Where("c.anchor_block_id IS NOT NULL")
-		}
-		// 多关键词 AND：每个词都命中 body 检索。
-		// 用 LOWER(body) LIKE LOWER(?) 跨库兼容（SQLite 无 ILIKE，PG ILIKE 等价于此）。
-		for _, kw := range strings.Fields(query) {
-			like := "%" + likeEscaper.Replace(kw) + "%"
-			q = q.Where("LOWER(c.body) LIKE LOWER(?) ESCAPE '\\'", like)
-		}
-		return q
-	}
-
-	queryDB := applyFilters(r.db.WithContext(ctx).
-		Table("comments c").
-		Select("c.*, p.title AS post_title, p.slug AS post_slug").
-		Joins("LEFT JOIN posts p ON p.id = c.post_id"))
-
-	var total int64
-	countDB := applyFilters(r.db.WithContext(ctx).
-		Table("comments c").
-		Joins("LEFT JOIN posts p ON p.id = c.post_id"))
-	if err := countDB.Distinct("c.id").Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计检索评论失败", err)
-	}
-
-	offset := (page - 1) * limit
-	var rows []commentWithPostRow
-	if err := queryDB.Order("c.created_at DESC").Offset(offset).Limit(limit).Scan(&rows).Error; err != nil {
-		return nil, 0, domainshared.Internal("检索评论失败", err)
-	}
-	result := make([]*comment.CommentWithPost, 0, len(rows))
-	for _, row := range rows {
-		cwp, err := rowToCommentWithPost(row)
-		if err != nil {
-			return nil, 0, err
-		}
-		result = append(result, cwp)
-	}
-	return result, total, nil
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 // Stats 按文章聚合评论统计（MCP comment_stats），仅含有反馈的文章。

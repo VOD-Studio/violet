@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	domainshared "blog-api/internal/domain/shared"
 	domaintag "blog-api/internal/domain/tag"
 )
 
@@ -40,6 +41,19 @@ func (s *Service) List(ctx context.Context) ([]TagDTO, error) {
 		dtos = append(dtos, toDTO(t))
 	}
 	return dtos, nil
+}
+
+// ListPage 分页列出标签
+func (s *Service) ListPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[TagDTO], error) {
+	result, err := s.repo.FindPage(ctx, q)
+	if err != nil {
+		return domainshared.PageResult[TagDTO]{}, err
+	}
+	dtos := make([]TagDTO, 0, len(result.Items))
+	for _, t := range result.Items {
+		dtos = append(dtos, toDTO(t))
+	}
+	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
 }
 
 // Create 创建标签（自动生成 slug）

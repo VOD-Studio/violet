@@ -21,14 +21,23 @@ func NewHandler(svc *apptag.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-// List 列出所有标签（公开）
+// List 列出标签（公开；无分页参数时全量，带 page/limit 时分页）
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.svc.List(r.Context())
+	if r.URL.Query().Get("page") == "" && r.URL.Query().Get("limit") == "" {
+		tags, err := h.svc.List(r.Context())
+		if err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+		response.RespondOK(w, tags)
+		return
+	}
+	result, err := h.svc.ListPage(r.Context(), response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, tags)
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // Create 创建标签（后台）

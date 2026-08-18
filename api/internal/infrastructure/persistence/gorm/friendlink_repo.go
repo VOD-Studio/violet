@@ -55,24 +55,19 @@ func (r *FriendLinkRepository) FindApproved(ctx context.Context) ([]*domainfrien
 	return friendlinkPOsToDomain(pos), nil
 }
 
-// FindByStatus 后台列表：按状态筛选（空串 = 全部），created_at DESC 分页。
-func (r *FriendLinkRepository) FindByStatus(ctx context.Context, status string, page, limit int) ([]*domainfriendlink.FriendLink, int64, error) {
+// FindPage 后台列表分页：按状态筛选（空串 = 全部），created_at DESC + id DESC tiebreaker。
+func (r *FriendLinkRepository) FindPage(ctx context.Context, filter domainfriendlink.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainfriendlink.FriendLink], error) {
+	q = q.Normalize()
 	query := r.db.WithContext(ctx).Model(&model.FriendLink{})
-	if status != "" {
-		query = query.Where("status = ?", status)
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
 	}
-
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, domainshared.Internal("统计友链失败", err)
-	}
-
 	var pos []model.FriendLink
-	offset := (page - 1) * limit
-	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
-		return nil, 0, domainshared.Internal("查询友链列表失败", err)
+	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "友链")
+	if err != nil {
+		return domainshared.PageResult[*domainfriendlink.FriendLink]{}, err
 	}
-	return friendlinkPOsToDomain(pos), total, nil
+	return domainshared.NewPageResult(q, friendlinkPOsToDomain(pos), total), nil
 }
 
 // CountPending 待审核计数（后台菜单角标）。

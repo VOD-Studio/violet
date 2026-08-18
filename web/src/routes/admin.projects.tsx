@@ -10,9 +10,11 @@ import {
 	DataTable,
 	type DataTableColumn,
 	type DataTableSort,
+	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { useProjects } from "@features/projects/api/queries";
+import { useProjects, useProjectsPaged } from "@features/projects/api/queries";
+
 import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -35,9 +37,9 @@ const EMPTY: CreateProject = {
 	tech_stack: [],
 	sort_order: 0,
 };
-
 function AdminProjectsPage() {
-	const { data: projects = [], isLoading, error, refetch } = useProjects();
+	const { data: paged, isLoading, error, refetch, pagination } = usePagedQuery(useProjectsPaged);
+	const projects = paged?.data ?? [];
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -143,13 +145,24 @@ function AdminProjectsPage() {
 			cell: (row) => (
 				<div className="flex items-center gap-1">
 					{canUpdate ? (
-						<Button size="sm" variant="ghost" onClick={() => openEdit(row)}>
-							<Pencil className="size-4" />
+						<Button
+							size="icon-sm"
+							variant="ghost"
+							title="编辑"
+							onClick={() => openEdit(row)}
+						>
+							<Pencil className="size-3.5" />
 						</Button>
 					) : null}
 					{canDelete ? (
-						<Button size="sm" variant="ghost" onClick={() => setDeleteId(row.id)}>
-							<Trash2 className="size-4" />
+						<Button
+							size="icon-sm"
+							variant="ghost"
+							title="删除"
+							className="hover:bg-destructive/10 hover:text-destructive"
+							onClick={() => setDeleteId(row.id)}
+						>
+							<Trash2 className="size-3.5" />
 						</Button>
 					) : null}
 				</div>
@@ -172,6 +185,7 @@ function AdminProjectsPage() {
 			<DataTable<Project>
 				data={sortedProjects}
 				columns={columns}
+				pagination={pagination}
 				keyExtractor={(row) => row.id}
 				selectable={false}
 				loading={isLoading}

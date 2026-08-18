@@ -51,6 +51,14 @@ func (m *MockRoleRepository) FindAll(ctx context.Context) ([]*role.Role, error) 
 	return args.Get(0).([]*role.Role), args.Error(1)
 }
 
+func (m *MockRoleRepository) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*role.Role], error) {
+	args := m.Called(ctx, q)
+	if args.Get(0) == nil {
+		return shared.PageResult[*role.Role]{}, args.Error(1)
+	}
+	return args.Get(0).(shared.PageResult[*role.Role]), args.Error(1)
+}
+
 func (m *MockRoleRepository) ExistsByName(ctx context.Context, name role.RoleName) (bool, error) {
 	args := m.Called(ctx, name)
 	return args.Bool(0), args.Error(1)
@@ -72,6 +80,14 @@ func (m *MockRoleRepository) Delete(ctx context.Context, id int32) error {
 func (m *MockRoleRepository) CountUsers(ctx context.Context, roleID int32) (int64, error) {
 	args := m.Called(ctx, roleID)
 	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockRoleRepository) CountUsersByIDs(ctx context.Context, roleIDs []int32) (map[int32]int64, error) {
+	args := m.Called(ctx, roleIDs)
+	if args.Get(0) == nil {
+		return map[int32]int64{}, args.Error(1)
+	}
+	return args.Get(0).(map[int32]int64), args.Error(1)
 }
 
 // ============================================================
@@ -255,6 +271,14 @@ func (m *MockAnnouncementRepository) FindAll(ctx context.Context) ([]*announceme
 	return args.Get(0).([]*announcement.Announcement), args.Error(1)
 }
 
+func (m *MockAnnouncementRepository) FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*announcement.Announcement], error) {
+	args := m.Called(ctx, q)
+	if args.Get(0) == nil {
+		return shared.PageResult[*announcement.Announcement]{}, args.Error(1)
+	}
+	return args.Get(0).(shared.PageResult[*announcement.Announcement]), args.Error(1)
+}
+
 func (m *MockAnnouncementRepository) FindActive(ctx context.Context) ([]*announcement.Announcement, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
@@ -287,28 +311,12 @@ func (m *MockCommentRepository) FindByID(ctx context.Context, id shared.ID) (*do
 	return args.Get(0).(*domaincomment.Comment), args.Error(1)
 }
 
-func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID string, page, limit int) ([]*domaincomment.Comment, int64, error) {
-	args := m.Called(ctx, postID, status, viewerUserID, anchorFilter, depthFilter, blockID, page, limit)
+func (m *MockCommentRepository) FindPage(ctx context.Context, filter domaincomment.ListFilter, q shared.PageQuery) (shared.PageResult[*domaincomment.Comment], error) {
+	args := m.Called(ctx, filter, q)
 	if args.Get(0) == nil {
-		return nil, args.Get(1).(int64), args.Error(2)
+		return shared.PageResult[*domaincomment.Comment]{}, args.Error(1)
 	}
-	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
-}
-
-func (m *MockCommentRepository) FindReplies(ctx context.Context, parentID shared.ID, status string, viewerUserID *shared.ID, sort string, page, limit int) ([]*domaincomment.Comment, int64, error) {
-	args := m.Called(ctx, parentID, status, viewerUserID, sort, page, limit)
-	if args.Get(0) == nil {
-		return nil, args.Get(1).(int64), args.Error(2)
-	}
-	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
-}
-
-func (m *MockCommentRepository) FindPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.Comment, int64, error) {
-	args := m.Called(ctx, anchorFilter, page, limit)
-	if args.Get(0) == nil {
-		return nil, args.Get(1).(int64), args.Error(2)
-	}
-	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
+	return args.Get(0).(shared.PageResult[*domaincomment.Comment]), args.Error(1)
 }
 
 func (m *MockCommentRepository) CountPending(ctx context.Context) (int64, error) {
@@ -329,20 +337,12 @@ func (m *MockCommentRepository) CountAnnotationsByBlock(ctx context.Context, pos
 	return args.Get(0).([]domaincomment.BlockCount), args.Error(1)
 }
 
-func (m *MockCommentRepository) FindAll(ctx context.Context, status string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {
-	args := m.Called(ctx, status, anchorFilter, page, limit)
+func (m *MockCommentRepository) FindPageWithPost(ctx context.Context, filter domaincomment.ListFilter, q shared.PageQuery) (shared.PageResult[*domaincomment.CommentWithPost], error) {
+	args := m.Called(ctx, filter, q)
 	if args.Get(0) == nil {
-		return nil, args.Get(1).(int64), args.Error(2)
+		return shared.PageResult[*domaincomment.CommentWithPost]{}, args.Error(1)
 	}
-	return args.Get(0).([]*domaincomment.CommentWithPost), args.Get(1).(int64), args.Error(2)
-}
-
-func (m *MockCommentRepository) Search(ctx context.Context, status, query string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {
-	args := m.Called(ctx, status, query, anchorFilter, page, limit)
-	if args.Get(0) == nil {
-		return nil, args.Get(1).(int64), args.Error(2)
-	}
-	return args.Get(0).([]*domaincomment.CommentWithPost), args.Get(1).(int64), args.Error(2)
+	return args.Get(0).(shared.PageResult[*domaincomment.CommentWithPost]), args.Error(1)
 }
 
 func (m *MockCommentRepository) Stats(ctx context.Context, status string) ([]domaincomment.PostCommentStat, error) {

@@ -73,62 +73,25 @@ func (s *EventStore) Append(ctx context.Context, event domainaudit.AuditEvent) e
 	return s.db.WithContext(ctx).Create(&po).Error
 }
 
-// List 分页查询全部事件（按 OccurredAt DESC）
-func (s *EventStore) List(ctx context.Context, page, limit int) (domainaudit.ListResult, error) {
-	return s.list(ctx, nil, page, limit, "审计事件")
-}
-
-// ListByActor 分页查询指定操作人的事件
-func (s *EventStore) ListByActor(ctx context.Context, userID string, page, limit int) (domainaudit.ListResult, error) {
-	return s.list(ctx, s.db.WithContext(ctx).Where("actor_user_id = ?", userID), page, limit, "用户审计事件")
-}
-
-// ListFiltered 按筛选条件分页查询（action/resource_type/actor 可选）
-func (s *EventStore) ListFiltered(ctx context.Context, filter domainaudit.ListFilter, page, limit int) (domainaudit.ListResult, error) {
-	q := s.db.WithContext(ctx)
+// FindPage 分页查询审计事件（可选 action/resource_type/actor 过滤，occurred_at DESC + id DESC tiebreaker）。
+func (s *EventStore) FindPage(ctx context.Context, filter domainaudit.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[domainaudit.AuditEvent], error) {
+	q = q.Normalize()
+	query := s.db.WithContext(ctx).Model(&AuditEventPO{})
 	if filter.Action != nil {
-		q = q.Where("action = ?", *filter.Action)
+		query = query.Where("action = ?", *filter.Action)
 	}
 	if filter.ResourceType != nil {
-		q = q.Where("resource_type = ?", *filter.ResourceType)
+		query = query.Where("resource_type = ?", *filter.ResourceType)
 	}
 	if filter.ActorUserID != nil {
-		q = q.Where("actor_user_id = ?", *filter.ActorUserID)
-	}
-	return s.list(ctx, q, page, limit, "审计事件")
-}
-
-// list 分页查询公共骨架：count + find + 转换。
-//
-// query 为 nil 时查全部；否则在 query 上追加 Where/Order/Offset/Limit。
-// 返回的 ListResult 按 OccurredAt DESC 排序。
-func (s *EventStore) list(ctx context.Context, query *gorm.DB, page, limit int, label string) (domainaudit.ListResult, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-	offset := (page - 1) * limit
-
-	base := query
-	if base == nil {
-		base = s.db.WithContext(ctx)
-	}
-	base = base.Model(&AuditEventPO{})
-
-	var total int64
-	if err := base.Count(&total).Error; err != nil {
-		return domainaudit.ListResult{}, domainshared.Internal(label+"计数失败", err)
+		query = query.Where("actor_user_id = ?", *filter.ActorUserID)
 	}
 	var pos []AuditEventPO
-	if err := base.
-		Order("occurred_at DESC").
-		Offset(offset).Limit(limit).
-		Find(&pos).Error; err != nil {
-		return domainaudit.ListResult{}, domainshared.Internal(label+"查询失败", err)
+	total, err := countAndFind(query.Order("occurred_at DESC, id DESC"), q, &pos, "审计事件")
+	if err != nil {
+		return domainshared.PageResult[domainaudit.AuditEvent]{}, err
 	}
-	return domainaudit.ListResult{Events: poSliceToDomain(pos), Total: total}, nil
+	return domainshared.NewPageResult(q, poSliceToDomain(pos), total), nil
 }
 
 // buildPO 把领域事件转换为 PO。Changes/Metadata 序列化为 JSON。

@@ -15,7 +15,7 @@ import (
 // application/post.Service 实现之；抽接口便于单测 fake 替换（与 PostService 分离，
 // 检索消费方不需要 CRUD 面）。
 type SearchService interface {
-	SearchPosts(ctx context.Context, authorID shared.ID, query, status string, limit, offset int) (*apppost.SearchPostsResult, error)
+	SearchPosts(ctx context.Context, authorID shared.ID, query, status string, q shared.PageQuery) (*apppost.SearchPostsResult, error)
 	SearchFormulas(ctx context.Context, authorID shared.ID, query string, limit, offset int) (*apppost.SearchFormulasResult, error)
 	SearchCodeBlocks(ctx context.Context, authorID shared.ID, query, lang string, runnableOnly bool, limit, offset int) (*apppost.SearchCodeBlocksResult, error)
 }
@@ -125,7 +125,9 @@ func (t *SearchTools) SearchPosts(ctx context.Context, req *mcp.CallToolRequest,
 		return errResult(fmt.Errorf("status 必须是 all / draft / published / archived 之一，收到 %q", args.Status)), nil, nil
 	}
 	limit, offset := normalizePage(args.Limit, args.Offset)
-	res, err := t.search.SearchPosts(ctx, authorID, args.Query, status, limit, offset)
+	res, err := t.search.SearchPosts(ctx, authorID, args.Query, status, shared.PageQuery{
+		Page: offset/limit + 1, Limit: limit,
+	})
 	if err != nil {
 		return errResult(err), nil, nil
 	}
