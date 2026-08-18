@@ -28,8 +28,3 @@ RBAC 权限点格式 `module:action`（正则 `^[a-z]+(:[a-z][a-z-]*)?$`，见 `
 
 四层全部落地才算完成；漏前端会让无权限用户看到入口，漏迁移会让常量指向不存在的权限点。
 
-## 现状债务（存量，新代码不得跟随）
-
-- `admin_router.go` 全量裸字符串权限码——新路由用 domain 常量。
-- 常量表缺 `subscription:manage` / `friendlink:manage` / `tweet:delete-any`（`tweet:delete-any` 现定义在 `application/tweet/service.go`）。
-- `application/post/service.go` 存在裸字符串 `HasPermission` 调用。
