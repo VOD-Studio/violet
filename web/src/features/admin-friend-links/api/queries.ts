@@ -4,14 +4,14 @@ import type { FriendLinkListQuery, FriendLinkManualRequest } from "../model/type
 import * as api from "./client";
 import { friendLinkKeys } from "./keys";
 
-/** useFriendLinks - 后台友链列表 hook（按状态筛选，服务端分页） */
+/** 按状态筛选,服务端分页 */
 export const useFriendLinks = (query: FriendLinkListQuery = {}) =>
 	useQuery({
 		queryKey: friendLinkKeys.adminList(query),
 		queryFn: () => api.listFriendLinks(query),
 	});
 
-/** usePendingFriendLinkCount - 待审核友链数量 hook（后台菜单角标用） */
+/** 待审核数量,后台菜单角标消费 */
 export const usePendingFriendLinkCount = () =>
 	useQuery({
 		queryKey: friendLinkKeys.pendingCount(),
@@ -32,7 +32,7 @@ const useInvalidateFriendLinks = () => {
  * 而不是 hook 创建时绑定——DataTable cell 回调按行触发，无法按行调 hook。
  */
 
-/** useApproveFriendLink - 批准（pending → approved；rejected 改判 → approved） */
+/** pending/rejected → approved(rejected 为改判) */
 export const useApproveFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({
@@ -45,7 +45,7 @@ export const useApproveFriendLink = () => {
 	});
 };
 
-/** useRejectFriendLink - 拒绝（pending → rejected） */
+/** pending → rejected */
 export const useRejectFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({
@@ -58,7 +58,7 @@ export const useRejectFriendLink = () => {
 	});
 };
 
-/** useDisableFriendLink - 下柜（approved → disabled） */
+/** approved → disabled(下柜) */
 export const useDisableFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({
@@ -71,7 +71,7 @@ export const useDisableFriendLink = () => {
 	});
 };
 
-/** useRestoreFriendLink - 恢复（disabled → approved） */
+/** disabled → approved */
 export const useRestoreFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({
@@ -84,7 +84,7 @@ export const useRestoreFriendLink = () => {
 	});
 };
 
-/** useCreateFriendLink - 手动添加友链（直接 approved） */
+/** 手动添加,直接 approved */
 export const useCreateFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({
@@ -97,7 +97,7 @@ export const useCreateFriendLink = () => {
 	});
 };
 
-/** useUpdateFriendLink - 编辑友链字段/排序 */
+/** 编辑字段/排序 */
 export const useUpdateFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({
@@ -111,7 +111,7 @@ export const useUpdateFriendLink = () => {
 	});
 };
 
-/** useDeleteFriendLink - 物理删除友链 */
+/** 物理删除 */
 export const useDeleteFriendLink = () => {
 	const invalidate = useInvalidateFriendLinks();
 	return useMutation({

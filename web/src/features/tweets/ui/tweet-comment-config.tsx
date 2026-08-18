@@ -139,11 +139,24 @@ export function buildTweetCommentConfig({
 	return config;
 }
 
-/**
- * TweetExpandedReplies - 展开后的回复加载器（推文：GET /tweets/{id}/comments/{id}/replies）
- *
- * 仅展开时挂载（懒加载），把 useTweetReplies 结果拍平传给 shared ExpandedReplies 渲染。
- */
+interface TweetExpandedRepliesProps {
+	/** 所属推文 id(取回复列表的 URL 需要) */
+	tweetId: string;
+	/** 顶层评论 id(取其下的回复) */
+	topLevelId: string;
+	/** shared 层已渲染过的回复 id,拉回后过滤去重 */
+	excludeIds: Set<string>;
+	/** 本地已有的回复(无网络时兜底渲染) */
+	knownReplies: CommentDisplayItem<TweetComment>[];
+	/** 是否登录(透传 shared,控制回复表单显隐) */
+	isLoggedIn: boolean;
+	/** 新回复落地回调(写入 knownReplies 所在缓存) */
+	onReplyAdded: (reply: CommentDisplayItem<TweetComment>) => void;
+	/** shared 展示层配置 */
+	config: CommentSectionConfig<TweetComment>;
+}
+
+/** 展开后的推文回复加载器:仅展开时挂载(懒加载),拍平 useTweetReplies 交 shared 渲染。 */
 function TweetExpandedReplies({
 	config,
 	tweetId,
@@ -152,15 +165,7 @@ function TweetExpandedReplies({
 	knownReplies,
 	isLoggedIn,
 	onReplyAdded,
-}: {
-	config: CommentSectionConfig<TweetComment>;
-	tweetId: string;
-	topLevelId: string;
-	excludeIds: Set<string>;
-	knownReplies: CommentDisplayItem<TweetComment>[];
-	isLoggedIn: boolean;
-	onReplyAdded: (reply: CommentDisplayItem<TweetComment>) => void;
-}) {
+}: TweetExpandedRepliesProps) {
 	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useTweetReplies(
 		tweetId,
 		topLevelId,
