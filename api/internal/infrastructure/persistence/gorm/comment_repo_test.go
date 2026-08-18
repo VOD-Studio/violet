@@ -134,11 +134,11 @@ func TestFindByPost_LoggedInViewer_IncludesOwnPending(t *testing.T) {
 	// 他人的 pending（不可见）
 	saveComment(t, db, domaincomment.StatusPending, "ip", "c@x.com", &otherStr, false)
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, "", 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{PostID: &pid, Status: domaincomment.StatusApproved, ViewerUserID: &viewer, AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total, "应见 approved(1) + 自己 pending(1) = 2")
+	assert.Equal(t, int64(2), result.Total, "应见 approved(1) + 自己 pending(1) = 2")
 	statuses := map[string]bool{}
-	for _, c := range items {
+	for _, c := range result.Items {
 		statuses[c.Status()] = true
 	}
 	assert.True(t, statuses[domaincomment.StatusApproved])
@@ -158,10 +158,10 @@ func TestFindByPost_NilViewer_OnlyApproved(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false)
 	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr, false) // 即使有 owner，nil viewer 也不可见
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, "", 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{PostID: &pid, Status: domaincomment.StatusApproved, ViewerUserID: nil, AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "nil viewer 只见 approved")
-	for _, c := range items {
+	assert.Equal(t, int64(1), result.Total, "nil viewer 只见 approved")
+	for _, c := range result.Items {
 		assert.Equal(t, domaincomment.StatusApproved, c.Status(), "不应泄漏 pending")
 	}
 }
@@ -177,10 +177,10 @@ func TestFindByPost_AnchorFilter_Free_OnlyReturnsFreeComments(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterFree, domaincomment.DepthFilterAll, "", 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{PostID: &pid, Status: domaincomment.StatusApproved, ViewerUserID: nil, AnchorFilter: domaincomment.AnchorFilterFree}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "free 过滤只返回自由评论")
-	for _, c := range items {
+	assert.Equal(t, int64(1), result.Total, "free 过滤只返回自由评论")
+	for _, c := range result.Items {
 		assert.Nil(t, c.Anchor(), "free 过滤不应返回批注")
 	}
 }
@@ -196,10 +196,10 @@ func TestFindByPost_AnchorFilter_Annotation_OnlyReturnsAnnotations(t *testing.T)
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAnnotation, domaincomment.DepthFilterAll, "", 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{PostID: &pid, Status: domaincomment.StatusApproved, ViewerUserID: nil, AnchorFilter: domaincomment.AnchorFilterAnnotation}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "annotation 过滤只返回批注")
-	for _, c := range items {
+	assert.Equal(t, int64(1), result.Total, "annotation 过滤只返回批注")
+	for _, c := range result.Items {
 		require.NotNil(t, c.Anchor(), "annotation 过滤应返回批注")
 	}
 }
@@ -215,10 +215,10 @@ func TestFindPending_AnchorFilterAnnotation_OnlyReturnsAnnotations(t *testing.T)
 	saveComment(t, db, domaincomment.StatusPending, "ip", "a@x.com", nil, false) // 自由评论
 	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindPending(ctx, domaincomment.AnchorFilterAnnotation, 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{Status: domaincomment.StatusPending, AnchorFilter: domaincomment.AnchorFilterAnnotation}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "annotation 过滤只返回批注")
-	for _, c := range items {
+	assert.Equal(t, int64(1), result.Total, "annotation 过滤只返回批注")
+	for _, c := range result.Items {
 		require.NotNil(t, c.Anchor(), "annotation 过滤应返回批注")
 	}
 }
@@ -233,10 +233,10 @@ func TestFindPending_AnchorFilterFree_OnlyReturnsFreeComments(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusPending, "ip", "a@x.com", nil, false) // 自由评论
 	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindPending(ctx, domaincomment.AnchorFilterFree, 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{Status: domaincomment.StatusPending, AnchorFilter: domaincomment.AnchorFilterFree}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "free 过滤只返回自由评论")
-	for _, c := range items {
+	assert.Equal(t, int64(1), result.Total, "free 过滤只返回自由评论")
+	for _, c := range result.Items {
 		assert.Nil(t, c.Anchor(), "free 过滤不应返回批注")
 	}
 }
@@ -251,12 +251,12 @@ func TestFindPending_AnchorFilterAll_ReturnsBoth(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusPending, "ip", "a@x.com", nil, false) // 自由评论
 	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindPending(ctx, domaincomment.AnchorFilterAll, 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{Status: domaincomment.StatusPending, AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total, "all 过滤返回自由评论 + 批注全部")
+	assert.Equal(t, int64(2), result.Total, "all 过滤返回自由评论 + 批注全部")
 	hasAnchor := false
 	hasFree := false
-	for _, c := range items {
+	for _, c := range result.Items {
 		if c.Anchor() != nil {
 			hasAnchor = true
 		} else {
@@ -274,16 +274,16 @@ func TestFindByPost_DepthFilterTopLevel_OnlyReturnsTopLevel(t *testing.T) {
 	repo := NewCommentRepository(db)
 	ctx := context.Background()
 	pid := fixedPostID
-
+	topLevelFilter := domaincomment.DepthFilterTopLevel
 	// 顶层评论（depth=0）
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false, 0, domainshared.NewID().String()+"/")
 	// 回复（depth=1）
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1, domainshared.NewID().String()+"/")
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterTopLevel, "", 1, 50)
+	result, err := repo.FindPage(ctx, domaincomment.ListFilter{PostID: &pid, Status: domaincomment.StatusApproved, ViewerUserID: nil, AnchorFilter: domaincomment.AnchorFilterAll, DepthFilter: &topLevelFilter}, domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "DepthFilterTopLevel 只返回顶层评论")
-	for _, c := range items {
+	assert.Equal(t, int64(1), result.Total, "DepthFilterTopLevel 只返回顶层评论")
+	for _, c := range result.Items {
 		assert.Equal(t, int16(0), c.Depth(), "DepthFilterTopLevel 应只返回 depth=0")
 	}
 }
@@ -308,10 +308,10 @@ func TestFindReplies_ReturnsRepliesUnderTopLevel(t *testing.T) {
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "c@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
 
-	items, total, err := repo.FindReplies(ctx, domainshared.MustParseID(topID.String()), domaincomment.StatusApproved, nil, "asc", 1, 50)
+	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter { id := domainshared.MustParseID(topID.String()); return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: nil, Sort: "asc"} }(), domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), total, "应返回 2 条回复（排除父自身）")
-	for _, c := range items {
+	assert.Equal(t, int64(2), result.Total, "应返回 2 条回复（排除父自身）")
+	for _, c := range result.Items {
 		assert.Equal(t, int16(1), c.Depth(), "FindReplies 返回的都应是回复（depth=1）")
 	}
 }
@@ -345,11 +345,11 @@ func TestFindReplies_SortDesc(t *testing.T) {
 	require.NoError(t, db.Create(&oldReply).Error)
 	require.NoError(t, db.Create(&newReply).Error)
 
-	items, _, err := repo.FindReplies(ctx, domainshared.MustParseID(topID.String()), domaincomment.StatusApproved, nil, "desc", 1, 50)
+	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter { id := domainshared.MustParseID(topID.String()); return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: nil, Sort: "desc"} }(), domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
-	require.Len(t, items, 2)
-	assert.Equal(t, "new", items[0].Body(), "desc 排序：最新的在前")
-	assert.Equal(t, "old", items[1].Body())
+	require.Len(t, result.Items, 2)
+	assert.Equal(t, "new", result.Items[0].Body(), "desc 排序：最新的在前")
+	assert.Equal(t, "old", result.Items[1].Body())
 }
 
 // TestFindReplies_ViewerFilter_ExcludesOtherPending 验证回复计数与列表不泄漏他人的 pending：
@@ -381,11 +381,11 @@ func TestFindReplies_ViewerFilter_ExcludesOtherPending(t *testing.T) {
 	saveCommentWithDepth(t, db, domaincomment.StatusPending, "ip", "bob@x.com", &bobStr, false, 1, topPath+uuid.New().String()+"/")
 
 	aliceViewer := domainshared.MustParseID(aliceStr)
-	items, total, err := repo.FindReplies(ctx, domainshared.MustParseID(topID.String()), domaincomment.StatusApproved, &aliceViewer, "asc", 1, 50)
+	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter { id := domainshared.MustParseID(topID.String()); return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: &aliceViewer, Sort: "asc"} }(), domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
 	// alice 应见 approved(1) + 自己 pending(1) = 2，bob 的 pending 不计入
-	assert.Equal(t, int64(2), total, "viewer 不应看到他人的 pending 回复被计入 total")
-	assert.Len(t, items, 2, "viewer 不应看到他人的 pending 回复出现在列表")
+	assert.Equal(t, int64(2), result.Total, "viewer 不应看到他人的 pending 回复被计入 total")
+	assert.Len(t, result.Items, 2, "viewer 不应看到他人的 pending 回复出现在列表")
 }
 
 // saveCommentWithDepth saveComment 的扩展版，支持指定 depth + path。

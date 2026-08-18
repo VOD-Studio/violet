@@ -5,6 +5,7 @@ import (
 	"time"
 
 	domain "blog-api/internal/domain/comment"
+	"blog-api/internal/domain/shared"
 )
 
 // commentPageMeta 评论检索分页元数据（内嵌进结果，JSON 展平）。
@@ -60,17 +61,19 @@ func (s *Service) SearchComments(ctx context.Context, query string, anchorFilter
 		limit = 20
 	}
 	page := offset/limit + 1
-	items, total, err := s.commentRepo.Search(ctx, domain.StatusApproved, query, anchorFilter, page, limit)
+	result, err := s.commentRepo.FindPageWithPost(ctx, domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: anchorFilter, Query: query,
+	}, shared.PageQuery{Page: page, Limit: limit})
 	if err != nil {
 		return nil, err
 	}
-	dtos := toAdminCommentDTOs(items)
+	dtos := toAdminCommentDTOs(result.Items)
 	if err := s.enrichAdminEmotes(ctx, dtos); err != nil {
 		return nil, err
 	}
 	return &SearchCommentsResult{
 		Comments:       dtos,
-		commentPageMeta: newCommentPageMeta(total, offset, len(dtos)),
+		commentPageMeta: newCommentPageMeta(result.Total, offset, len(dtos)),
 	}, nil
 }
 
@@ -83,17 +86,19 @@ func (s *Service) ListRecentComments(ctx context.Context, anchorFilter domain.An
 		limit = 20
 	}
 	page := offset/limit + 1
-	items, total, err := s.commentRepo.FindAll(ctx, domain.StatusApproved, anchorFilter, page, limit)
+	result, err := s.commentRepo.FindPageWithPost(ctx, domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: anchorFilter,
+	}, shared.PageQuery{Page: page, Limit: limit})
 	if err != nil {
 		return nil, err
 	}
-	dtos := toAdminCommentDTOs(items)
+	dtos := toAdminCommentDTOs(result.Items)
 	if err := s.enrichAdminEmotes(ctx, dtos); err != nil {
 		return nil, err
 	}
 	return &SearchCommentsResult{
 		Comments:       dtos,
-		commentPageMeta: newCommentPageMeta(total, offset, len(dtos)),
+		commentPageMeta: newCommentPageMeta(result.Total, offset, len(dtos)),
 	}, nil
 }
 

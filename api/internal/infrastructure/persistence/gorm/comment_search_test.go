@@ -73,13 +73,13 @@ func TestCommentRepository_Search_BodyKeyword(t *testing.T) {
 	saveCommentWithBody(t, db, pid.UUID(), "讲得很清楚", domaincomment.StatusApproved, false)
 
 	// 关键词「公式」只命中第一条
-	items, total, err := repo.Search(ctx, domaincomment.StatusApproved, "公式", domaincomment.AnchorFilterAll, 1, 20)
+	result, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "公式", AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total)
-	require.Len(t, items, 1)
-	assert.Contains(t, items[0].Comment.Body(), "公式")
+	assert.Equal(t, int64(1), result.Total)
+	require.Len(t, result.Items, 1)
+	assert.Contains(t, result.Items[0].Comment.Body(), "公式")
 	// JOIN 取到 post 信息
-	assert.Equal(t, "quantum", items[0].Post.Slug)
+	assert.Equal(t, "quantum", result.Items[0].Post.Slug)
 }
 
 func TestCommentRepository_Search_MultiKeywordAND(t *testing.T) {
@@ -92,10 +92,10 @@ func TestCommentRepository_Search_MultiKeywordAND(t *testing.T) {
 	saveCommentWithBody(t, db, pid.UUID(), "公式 错误 这里", domaincomment.StatusApproved, false) // 两词都命中
 	saveCommentWithBody(t, db, pid.UUID(), "公式 正确", domaincomment.StatusApproved, false)       // 只命中公式
 
-	items, total, err := repo.Search(ctx, domaincomment.StatusApproved, "公式 错误", domaincomment.AnchorFilterAll, 1, 20)
+	result, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "公式 错误", AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "多关键词 AND，缺一词不命中")
-	require.Len(t, items, 1)
+	assert.Equal(t, int64(1), result.Total, "多关键词 AND，缺一词不命中")
+	require.Len(t, result.Items, 1)
 }
 
 func TestCommentRepository_Search_StatusFilter(t *testing.T) {
@@ -109,11 +109,11 @@ func TestCommentRepository_Search_StatusFilter(t *testing.T) {
 	saveCommentWithBody(t, db, pid.UUID(), "公式 pending", domaincomment.StatusPending, false)
 
 	// MCP 固定传 approved，pending 不命中
-	items, total, err := repo.Search(ctx, domaincomment.StatusApproved, "公式", domaincomment.AnchorFilterAll, 1, 20)
+	result, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "公式", AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total)
-	require.Len(t, items, 1)
-	assert.Contains(t, items[0].Comment.Body(), "approved")
+	assert.Equal(t, int64(1), result.Total)
+	require.Len(t, result.Items, 1)
+	assert.Contains(t, result.Items[0].Comment.Body(), "approved")
 }
 
 func TestCommentRepository_Search_AnchorFilter(t *testing.T) {
@@ -127,18 +127,18 @@ func TestCommentRepository_Search_AnchorFilter(t *testing.T) {
 	saveCommentWithBody(t, db, pid.UUID(), "批注反馈", domaincomment.StatusApproved, true)
 
 	// type=annotation 只命中批注
-	annItems, annTotal, err := repo.Search(ctx, domaincomment.StatusApproved, "", domaincomment.AnchorFilterAnnotation, 1, 20)
+	ann, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "", AnchorFilter: domaincomment.AnchorFilterAnnotation}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), annTotal)
-	require.Len(t, annItems, 1)
-	assert.Contains(t, annItems[0].Comment.Body(), "批注")
+	assert.Equal(t, int64(1), ann.Total)
+	require.Len(t, ann.Items, 1)
+	assert.Contains(t, ann.Items[0].Comment.Body(), "批注")
 
 	// type=free 只命中自由评论
-	freeItems, freeTotal, err := repo.Search(ctx, domaincomment.StatusApproved, "", domaincomment.AnchorFilterFree, 1, 20)
+	free, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "", AnchorFilter: domaincomment.AnchorFilterFree}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), freeTotal)
-	require.Len(t, freeItems, 1)
-	assert.Contains(t, freeItems[0].Comment.Body(), "自由")
+	assert.Equal(t, int64(1), free.Total)
+	require.Len(t, free.Items, 1)
+	assert.Contains(t, free.Items[0].Comment.Body(), "自由")
 }
 
 func TestCommentRepository_Search_CaseInsensitiveChinese(t *testing.T) {
@@ -151,10 +151,10 @@ func TestCommentRepository_Search_CaseInsensitiveChinese(t *testing.T) {
 	saveCommentWithBody(t, db, pid.UUID(), "Python 代码有问题", domaincomment.StatusApproved, false)
 
 	// 中文子串精确命中；英文大小写不敏感
-	items, total, err := repo.Search(ctx, domaincomment.StatusApproved, "python", domaincomment.AnchorFilterAll, 1, 20)
+	result, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "python", AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 1, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total, "LOWER 大小写不敏感应命中 Python")
-	require.Len(t, items, 1)
+	assert.Equal(t, int64(1), result.Total, "LOWER 大小写不敏感应命中 Python")
+	require.Len(t, result.Items, 1)
 }
 
 func TestCommentRepository_Search_OffsetBeyondReturnsEmpty(t *testing.T) {
@@ -166,10 +166,10 @@ func TestCommentRepository_Search_OffsetBeyondReturnsEmpty(t *testing.T) {
 	saveCommentWithBody(t, db, pid.UUID(), "命中", domaincomment.StatusApproved, false)
 
 	// offset 超出：列表空但 has_more 由 total 计算（total 仍为 1）
-	items, total, err := repo.Search(ctx, domaincomment.StatusApproved, "命中", domaincomment.AnchorFilterAll, 2, 20)
+	result, err := repo.FindPageWithPost(ctx, domaincomment.ListFilter{Status: domaincomment.StatusApproved, Query: "命中", AnchorFilter: domaincomment.AnchorFilterAll}, domainshared.PageQuery{Page: 2, Limit: 20})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), total)
-	assert.Empty(t, items)
+	assert.Equal(t, int64(1), result.Total)
+	assert.Empty(t, result.Items)
 }
 
 func TestCommentRepository_Stats_Aggregation(t *testing.T) {

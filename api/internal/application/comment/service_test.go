@@ -219,7 +219,7 @@ func TestSendCode_SiteDisabled_RejectsWithoutMail(t *testing.T) {
 func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	// 匿名 viewer 不应查 DB
-	repo.AssertNotCalled(t, "FindByPost")
+	repo.AssertNotCalled(t, "FindPage")
 
 	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20)
 	assert.NoError(t, err)
@@ -231,12 +231,16 @@ func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	viewer := shared.NewID()
 	postID := shared.NewID()
+	allDepth := domain.DepthFilterAll
 
 	// 构造一条 approved + 一条 viewer 自己的 pending
 	approved, _ := newDomainComment(shared.NewID(), postID, "alice", "approved")
 	myPending, _ := newDomainComment(shared.NewID(), postID, "bob", "pending")
-	repo.On("FindByPost", mock.Anything, postID, domain.StatusApproved, &viewer, domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20).
-		Return([]*domain.Comment{approved, myPending}, int64(2), nil).Once()
+	repo.On("FindPage", mock.Anything, domain.ListFilter{
+		PostID: &postID, Status: domain.StatusApproved, ViewerUserID: &viewer,
+		AnchorFilter: domain.AnchorFilterAll, DepthFilter: &allDepth,
+	}, shared.PageQuery{Page: 1, Limit: 20}).
+		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.Comment{approved, myPending}, 2), nil).Once()
 
 	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20)
 	assert.NoError(t, err)
@@ -251,10 +255,14 @@ func TestListByPost_AnchorFilter_PassthroughToRepo(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
 	viewer := shared.NewID()
 	postID := shared.NewID()
+	allDepth := domain.DepthFilterAll
 
 	// 期望 repo 收到 AnchorFilterAnnotation（与 AnchorFilterAll 的用例区分）
-	repo.On("FindByPost", mock.Anything, postID, domain.StatusApproved, &viewer, domain.AnchorFilterAnnotation, domain.DepthFilterAll, "", 1, 20).
-		Return([]*domain.Comment{}, int64(0), nil).Once()
+	repo.On("FindPage", mock.Anything, domain.ListFilter{
+		PostID: &postID, Status: domain.StatusApproved, ViewerUserID: &viewer,
+		AnchorFilter: domain.AnchorFilterAnnotation, DepthFilter: &allDepth,
+	}, shared.PageQuery{Page: 1, Limit: 20}).
+		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.Comment{}, 0), nil).Once()
 
 	_, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAnnotation, domain.DepthFilterAll, "", 1, 20)
 	assert.NoError(t, err)
