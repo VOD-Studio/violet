@@ -1,6 +1,6 @@
 ---
 name: permission-points
-description: Use when adding, renaming, or wiring RBAC permission points — creating an admin page or endpoint that needs RequirePermission, gating admin nav or UI with useHasPermission/PermissionGuard, adding a permission seed migration, or deciding action granularity (manage vs fine-grained verbs).
+description: Use when adding, removing, or wiring RBAC permission points — creating an admin page or endpoint that needs RequirePermission, gating admin nav or UI with useHasPermission/PermissionGuard, adding a permission seed migration, deciding action granularity (manage vs fine-grained verbs), or retiring a feature's permissions.
 ---
 
 # 权限点设计规范
@@ -27,4 +27,19 @@ RBAC 权限点格式 `module:action`（正则 `^[a-z]+(:[a-z][a-z-]*)?$`，见 `
 4. **前端**：`web/src/features/admin-layout/ui/nav-menu/nav-menu-config.ts` 的 `permissions` 数组 + 页面内 `useHasPermission` / `PermissionGuard`。
 
 四层全部落地才算完成；漏前端会让无权限用户看到入口，漏迁移会让常量指向不存在的权限点。
+
+## 鉴权位置
+
+- 路由中间件 `RequirePermission` 管模块入口（整组端点的粗门禁）。
+- 「作者本人 or 持某权限」的双轨判断放应用层（`post.canModify` / `tweet:delete-any` 模式）：路由不挂中间件，service 内 `HasPermission(role, isRoot, code)` 放行作者或权限持有者。
+
+## 删除权限点
+
+功能下线时反向清理四层，迁移照抄 `055_remove_dead_permissions.up.sql` 的顺序——外键依赖决定顺序：
+
+1. **迁移**：先删 `role_permissions` 关联，再删孤立 menu 分组节点，最后删 `permissions` 行；`{up,down}.sql` 成对。
+2. **后端引用**：确认路由与应用层无引用后，删 domain 常量；容器内 `go build ./...` 验证。
+3. **前端**：nav-menu-config、`PermissionGuard`、`useHasPermission` 调用点同步移除。
+
+拆分 `manage`（判断树第 5 条）= 先按四层同步新增动词权限点并 seed 给原有角色，引用点全部切换后，旧 `manage` 若无消费方按上述流程删除。
 
