@@ -112,8 +112,13 @@ func (r *RoleRepository) FindPage(ctx context.Context, q domainshared.PageQuery)
 	if err != nil {
 		return domainshared.PageResult[*role.Role]{}, err
 	}
-	// 单独 Preload 权限，避免 Count 阶段带上 join 导致计数翻倍
-	if err := r.db.WithContext(ctx).Preload("Permissions").Find(&pos, "id IN ?", idsOf(pos)).Error; err != nil {
+	// 单独 Preload 权限，避免 Count 阶段带上 join 导致计数翻倍；
+	// 空页提前返回，避免无意义的 IN 空集查询
+	if len(pos) == 0 {
+		return domainshared.NewPageResult[*role.Role](q, nil, total), nil
+	}
+	// IN 查询不保证返回顺序，显式 Order 保持与主查询一致的页内顺序
+	if err := r.db.WithContext(ctx).Preload("Permissions").Order("id ASC").Find(&pos, "id IN ?", idsOf(pos)).Error; err != nil {
 		return domainshared.PageResult[*role.Role]{}, domainshared.Internal("查询角色权限失败", err)
 	}
 	roles := make([]*role.Role, 0, len(pos))

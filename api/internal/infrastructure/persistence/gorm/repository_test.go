@@ -332,6 +332,30 @@ func TestRoleRepository_CountUsersByIDs(t *testing.T) {
 	assert.Empty(t, empty)
 }
 
+func TestRoleRepository_FindPage(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewRoleRepository(db)
+	ctx := context.Background()
+
+	seedPermissions(t, db, "post:create", "post:edit")
+	seedRole(t, db, "admin", "管理员")
+	seedRole(t, db, "editor", "编辑")
+	seedRole(t, db, "viewer", "查看者")
+
+	// 第 2 页（每页 2 条）：页内顺序与主查询一致（id ASC），Total 为全量
+	page2, err := repo.FindPage(ctx, shared.PageQuery{Page: 2, Limit: 2})
+	require.NoError(t, err)
+	require.Len(t, page2.Items, 1)
+	assert.Equal(t, "viewer", page2.Items[0].Name().String())
+	assert.Equal(t, int64(3), page2.Total)
+
+	// 超出总页数的空页：返回空 Items 而非错误
+	emptyPage, err := repo.FindPage(ctx, shared.PageQuery{Page: 99, Limit: 2})
+	require.NoError(t, err)
+	assert.Empty(t, emptyPage.Items)
+	assert.Equal(t, int64(3), emptyPage.Total)
+}
+
 // seedUserWithRole 创建用户并把角色写入 users.role 字符串列（DDD 后 role_id 外键废弃）
 func seedUserWithRole(t *testing.T, db *gorm.DB, userRepo *UserRepository, ctx context.Context, emailStr, usernameStr, roleName string) {
 	t.Helper()
