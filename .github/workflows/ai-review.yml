@@ -1,11 +1,12 @@
 # AI 代码评审
 #
-# PR 打开或更新时，用配置的 LLM（默认 DeepSeek）自动评审 diff，评审意见以
+# PR 打开或更新时，用配置的 LLM（当前 MiniMax）自动评审 diff，评审意见以
 # review 评论形式出现在 PR 的 File changes 页面。辅助人工 review，不构成合并门禁。
 #
 # 评审逻辑由独立的 GitHub Action VOD-Studio/inori 提供，支持任意 OpenAI 兼容接口。
-# 首次使用前在仓库 Settings → Secrets and variables 添加 DEEPSEEK_API_KEY
-# （platform.deepseek.com 创建）。未配置时本 workflow 跳过，不影响 PR 检查。
+# 首次使用前在仓库 Settings → Secrets and variables 添加 MINIMAX_API_KEY
+# （platform.minimaxi.com 创建，按量计费 key 前缀 sk-）。未配置时本 workflow
+# 跳过，不影响 PR 检查。
 #
 # 评审规则（注释规范、DDD 分层、Tailwind v4 简写等）在 .github/inori.yml 维护，
 # 优先级：workflow inputs > .github/inori.yml > inori 内置默认。
@@ -36,17 +37,17 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     env:
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
     steps:
       - uses: actions/checkout@v7
 
       - name: 检查 API key
-        if: env.DEEPSEEK_API_KEY == ''
-        run: echo "::warning::DEEPSEEK_API_KEY 未配置，AI 评审跳过。在 Settings → Secrets 添加后生效"
+        if: env.MINIMAX_API_KEY == ''
+        run: echo "::warning::MINIMAX_API_KEY 未配置，AI 评审跳过。在 Settings → Secrets 添加后生效"
 
       - name: AI 评审
-        if: env.DEEPSEEK_API_KEY != ''
+        if: env.MINIMAX_API_KEY != ''
         uses: VOD-Studio/inori@v0
         with:
-          provider: deepseek
-          llm_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
+          provider: minimax
+          llm_api_key: ${{ secrets.MINIMAX_API_KEY }}
