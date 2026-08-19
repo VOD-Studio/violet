@@ -6,10 +6,11 @@ import {
 	RouterProvider,
 } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
+import { MessageSquareWarning } from "lucide-react";
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
+import { ActionTile } from "../ActionTile";
 import { HeroViewsTile } from "../HeroViewsTile";
-import { PendingCommentsTile } from "../PendingCommentsTile";
 import { PopularPostsTile } from "../PopularPostsTile";
 import { RecentPostsTile } from "../RecentPostsTile";
 
@@ -47,13 +48,31 @@ async function renderWithRouter(ui: ReactElement) {
 }
 
 describe("tile 空态", () => {
-	it("待审 0 显示队列已清空", async () => {
-		await renderWithRouter(<PendingCommentsTile count={0} />);
+	it("行动卡待办 0 显示安心文案", async () => {
+		await renderWithRouter(
+			<ActionTile
+				title="待审评论"
+				count={0}
+				icon={MessageSquareWarning}
+				emptyLabel="队列已清空"
+				actionLabel="去审核"
+				to="/admin/comments"
+			/>,
+		);
 		expect(screen.getByText("队列已清空")).toBeTruthy();
 	});
 
-	it("待审 >0 显示数字与去审核入口", async () => {
-		await renderWithRouter(<PendingCommentsTile count={3} />);
+	it("行动卡待办 >0 显示数字与直达入口", async () => {
+		await renderWithRouter(
+			<ActionTile
+				title="待审评论"
+				count={3}
+				icon={MessageSquareWarning}
+				emptyLabel="队列已清空"
+				actionLabel="去审核"
+				to="/admin/comments"
+			/>,
+		);
 		expect(screen.getByText("3")).toBeTruthy();
 		expect(screen.getByText("去审核")).toBeTruthy();
 	});

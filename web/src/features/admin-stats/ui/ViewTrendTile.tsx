@@ -47,8 +47,7 @@ export function ViewTrendTile() {
 	}, [range, daily7.data, daily30.data]);
 
 	// 后端按窗口补零（缺失自然日计 0），序列恒非空；全零才视为无数据
-	const isEmpty =
-		!active.isLoading && points.length > 0 && points.every((p) => p.count === 0);
+	const isEmpty = !active.isLoading && points.length > 0 && points.every((p) => p.count === 0);
 
 	return (
 		<Card className="border-border/60 h-full">

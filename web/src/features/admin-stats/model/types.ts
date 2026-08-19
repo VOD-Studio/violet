@@ -8,7 +8,6 @@ export interface PostSummaryDTO {
 	/** 'draft' | 'published' | 'archived' */
 	status: string;
 	view_count: number;
-	/** RFC3339；未发布时省略 */
 	published_at?: string;
 }
 
@@ -17,6 +16,8 @@ export interface DashboardStatsDTO {
 	total_posts: number;
 	total_comments: number;
 	pending_comments: number;
+	pending_friend_links: number;
+	failing_subscriptions: number;
 	total_views: number;
 	today_views: number;
 	yesterday_views: number;
