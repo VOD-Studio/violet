@@ -32,7 +32,7 @@
 - **类型检查**: `make web-typecheck`
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
-- **工具函数落位与查重、TS 注释形态**: 见 `frontend-conventions` skill(注释的信息量判定仍适用本文件「代码注释规范」节,skill 管前端 TSDoc 形态)。
+- **前端动笔前读 skill**:新建或编辑前端代码(组件/hook/util/测试)前读 `frontend-conventions`,编辑 className 前读 `tailwind-canonical-classes`——触发即读,不凭记忆;写完对照 skill 关键规则自查(TSDoc 标签形态、canonical 类形态)。
 
 ## 分支命名
 
@@ -98,7 +98,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
   - ❌ 错误：`fix(api/handler): 搜索接口 URL 编码修复`（api 是冗余前缀）
   - ❌ 错误：`feat(api): 登录能力`（改动在多个子模块时，用最贴近的模块名而非项目名）
   - 判断方法：如果去掉 scope 里的某一段，剩下的仍然能准确定位改动位置，那被去掉的那段就是冗余的。
-- **body 用 bullet points 列出改动事实**，不写散文、不夹带主观评判。详细的决策过程应写在 PR 描述或 ADR。
+- **body 用 bullet points 列出改动事实**,不写散文、不夹带主观评判;方案论证、被否决对比、机制解释不进 body。详细的决策过程应写在 PR 描述或 ADR。
 - **请勿推送**，仅在本地进行 commit。
 
 ### 原子性
