@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.14](https://github.com/VOD-Studio/violet/compare/v2.8.13...v2.8.14) (2026-08-19)
+
+
+### 修复
+
+* **comment-section:** SpotlightCard 聚光联动改命名组修复回复 hover 串扰 ([#228](https://github.com/VOD-Studio/violet/issues/228)) ([f369282](https://github.com/VOD-Studio/violet/commit/f369282b23f8a3837d617647c71dc66b2c9802a9))
+
 ## [2.8.13](https://github.com/VOD-Studio/violet/compare/v2.8.12...v2.8.13) (2026-08-19)
 
 
