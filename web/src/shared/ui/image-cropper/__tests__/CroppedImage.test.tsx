@@ -48,15 +48,17 @@ function windowFromImgStyle(style: CSSStyleDeclaration): CropRect {
 }
 
 function mockContainerBox() {
+	vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(BOX.w);
+	vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(BOX.h);
 	vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-		width: BOX.w,
-		height: BOX.h,
+		width: BOX.w * 0.94,
+		height: BOX.h * 0.94,
 		x: 0,
 		y: 0,
 		top: 0,
 		left: 0,
-		right: BOX.w,
-		bottom: BOX.h,
+		right: BOX.w * 0.94,
+		bottom: BOX.h * 0.94,
 		toJSON: () => ({}),
 	} as DOMRect);
 }
