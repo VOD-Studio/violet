@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import * as api from "./client";
 import { statsKeys } from "./keys";
 
@@ -29,4 +29,6 @@ export const useViewTrends = (days: number, enabled = true) =>
 		queryFn: () => api.getViewTrends(days),
 		staleTime: STALE_TIME_MS,
 		enabled,
+		// 切档时保留上一档数据渲染，避免整图闪骨架
+		placeholderData: keepPreviousData,
 	});

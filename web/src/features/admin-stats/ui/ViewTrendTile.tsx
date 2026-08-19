@@ -1,4 +1,3 @@
-import { cn } from "@shared/lib/utils";
 import { Card, CardContent } from "@shared/ui/base/card";
 import {
 	type ChartConfig,
@@ -6,19 +5,23 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@shared/ui/base/chart";
+import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useViewTrends } from "../api/queries";
 
 /** 档位定义：日聚合两档（后端 days 白名单）+ 月聚合一档（固定 12 个月） */
-const RANGES = [
-	{ key: "7d", label: "近 7 天", days: 7 },
-	{ key: "30d", label: "近 30 天", days: 30 },
-	{ key: "12m", label: "近 12 月", days: null },
-] as const;
+const RANGES = ["7d", "30d", "12m"] as const;
 
-type RangeKey = (typeof RANGES)[number]["key"];
+type RangeKey = (typeof RANGES)[number];
+
+/** 档位 → Segmented 配置（声明于此避免每次渲染重建） */
+const SEGMENTS: SegmentedItem<RangeKey>[] = [
+	{ value: "7d", label: "近 7 天" },
+	{ value: "30d", label: "近 30 天" },
+	{ value: "12m", label: "近 12 月" },
+];
 
 const chartConfig = {
 	views: { label: "浏览量", color: "var(--chart-1)" },
@@ -27,45 +30,30 @@ const chartConfig = {
 /**
  * 浏览趋势卡。
  *
- * 三档切换：7/30 天切 daily 序列，12 月切 monthly 序列；
- * 7/30 档共享 useViewTrends 的 days 缓存键。
+ * 三档切换（Segmented 滑块）：7/30 天切 daily 序列，12 月切 monthly 序列；
+ * 切档保留上一档数据渲染（keepPreviousData），不闪骨架。
  */
 export function ViewTrendTile() {
 	const [range, setRange] = useState<RangeKey>("30d");
-	const active = RANGES.find((r) => r.key === range) ?? RANGES[1];
 	// 30 档常驻（默认档 + 12 月档的 monthly 数据源）；7 档仅激活时拉取
 	const daily30 = useViewTrends(30);
-	const daily7 = useViewTrends(7, active.days === 7);
-	const isLoading = active.days === 7 ? daily7.isLoading : daily30.isLoading;
+	const daily7 = useViewTrends(7, range === "7d");
+	const active = range === "7d" ? daily7 : daily30;
 
 	const points = useMemo(() => {
-		if (active.days === 7) return daily7.data?.daily ?? [];
-		if (active.days === 30) return daily30.data?.daily ?? [];
+		if (range === "7d") return daily7.data?.daily ?? [];
+		if (range === "30d") return daily30.data?.daily ?? [];
 		return daily30.data?.monthly ?? [];
-	}, [active, daily7.data, daily30.data]);
+	}, [range, daily7.data, daily30.data]);
 
-	const isEmpty = !isLoading && points.length === 0;
+	const isEmpty = !active.isLoading && points.length === 0;
 
 	return (
-		<Card className="border-border/60">
+		<Card className="border-border/60 h-full">
 			<CardContent className="flex h-full flex-col gap-4 p-6">
 				<div className="flex items-center justify-between">
 					<span className="text-sm font-medium">浏览趋势</span>
-					<div className="bg-secondary text-muted-foreground inline-flex rounded-lg p-0.5 text-xs">
-						{RANGES.map((r) => (
-							<button
-								key={r.key}
-								type="button"
-								onClick={() => setRange(r.key)}
-								className={cn(
-									"rounded-md px-2.5 py-1 transition-colors",
-									range === r.key && "bg-background text-foreground shadow-sm",
-								)}
-							>
-								{r.label}
-							</button>
-						))}
-					</div>
+					<Segmented value={range} onValueChange={setRange} segments={SEGMENTS} />
 				</div>
 
 				{isEmpty ? (
@@ -96,7 +84,7 @@ export function ViewTrendTile() {
 								axisLine={false}
 								tickMargin={8}
 								minTickGap={28}
-								// 日档取月日出头，月档取年月
+								// 日档取月日出头（08-19），月档原样（2026-08）
 								tickFormatter={(v: string) => (v.length > 7 ? v.slice(5) : v)}
 							/>
 							<YAxis
