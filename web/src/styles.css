@@ -554,6 +554,25 @@ html.theme-vt-freeze *::after {
 	animation: shake 0.4s ease-in-out;
 }
 
+/* 吉祥物对白气泡：弹入 → 驻留 → 淡出，一轮 = 一次表情切换的台词寿命 */
+@keyframes mascot-bubble {
+	0% {
+		opacity: 0;
+		transform: translateY(6px) scale(0.9);
+	}
+	8% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	82% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-4px) scale(0.96);
+	}
+}
+
 /* AnnotationLayer 批注高亮块（块级背景标记 + 左色条，PRD-0001 Issue-0005） */
 .annotation-highlight {
 	border-left: 3px solid hsl(217 91% 60% / 0.6);

@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 /**
  * /lab/mascot - 吉祥物形象实验室
  *
- * 深色画布独立风格,内容区不遵循主站设计语言。
+ * 深色聚光灯舞台 sticky 常驻视线，亮色表情目录滚动浏览——hover 即预览、点击固定。
  */
 function MascotLabPage() {
 	return (
