@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.13](https://github.com/VOD-Studio/violet/compare/v2.8.12...v2.8.13) (2026-08-19)
+
+
+### 修复
+
+* **image-cropper:** 容器测量改读布局尺寸防动画污染 ([#227](https://github.com/VOD-Studio/violet/issues/227)) ([b220b71](https://github.com/VOD-Studio/violet/commit/b220b7104eaacf112780347a7508a33e80951236))
+
 ## [2.8.12](https://github.com/VOD-Studio/violet/compare/v2.8.11...v2.8.12) (2026-08-18)
 
 
