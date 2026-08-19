@@ -7,6 +7,41 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.15](https://github.com/VOD-Studio/violet/compare/v2.8.14...v2.8.15) (2026-08-19)
+
+
+### 新增
+
+* **admin-stats:** 概览待办三行动卡与最近活动流 ([526e764](https://github.com/VOD-Studio/violet/commit/526e764480c9be087860de57ad84b4901cc0cf9d))
+* **admin-stats:** 概览驾驶舱 feature 与 bento tile 组件 ([7604b5c](https://github.com/VOD-Studio/violet/commit/7604b5cad552e367f95601512d2fe704a0c0dcae))
+* **admin:** 实现后台概览驾驶舱（PRD-0016） ([f817344](https://github.com/VOD-Studio/violet/commit/f817344c2c1d49dc69adeeb3c0cb55104083a34e))
+* **admin:** 概览页接线驾驶舱并清理占位内容 ([092adcf](https://github.com/VOD-Studio/violet/commit/092adcf15207270d429a23d766fa517e07a7421a))
+* **stats:** 总览统计补待办聚合口径 ([e7bcc8d](https://github.com/VOD-Studio/violet/commit/e7bcc8d8d491ae5e5950020e4d66778357a23fb0))
+* **stats:** 概览统计补对比口径并参数化趋势窗口 ([1b27bd7](https://github.com/VOD-Studio/violet/commit/1b27bd708348faa2e6d3d61563e2edf6ec3f63e3))
+
+
+### 修复
+
+* **admin-stats:** bento 同行等高与断点空洞修复 ([a2ff08a](https://github.com/VOD-Studio/violet/commit/a2ff08ad8f5c94d724cc840348575591abef9baf))
+* **admin-stats:** 最近活动改为 GPU 驱动的自适应无缝循环滚动 ([d2e905f](https://github.com/VOD-Studio/violet/commit/d2e905ff65e3d927fe22568dbc951acfb87e6e2a))
+* **admin-stats:** 概览首屏仪表带排版与信息层级重构 ([a36ca9d](https://github.com/VOD-Studio/violet/commit/a36ca9d066c925e40609abc42860bbbb265f6644))
+* **admin-stats:** 热门与最近列表靠上对齐并补跳转交互 ([24236b9](https://github.com/VOD-Studio/violet/commit/24236b9f9096a99fef866abf46a4a8fdc16434d1))
+* **admin-stats:** 趋势分段器换用 shared Segmented 组件 ([b615a64](https://github.com/VOD-Studio/violet/commit/b615a64eba99d8fc94f6c1faca285f353ceaca86))
+* **admin-stats:** 趋势卡适配补零序列的空态与加载态 ([5c819a4](https://github.com/VOD-Studio/violet/commit/5c819a4fb5f9e0ddbc196f5baeb58b955eba0ff9))
+* **stats:** 最近发布口径改为仅已发布文章 ([1f0e1b8](https://github.com/VOD-Studio/violet/commit/1f0e1b8ca89ab1a15eccc61fbeff439b34421308))
+* **stats:** 浏览趋势按窗口补零输出完整时间序列 ([fc069e6](https://github.com/VOD-Studio/violet/commit/fc069e6c22b9a97373479e5fa74f97eacca484b6))
+
+
+### 重构
+
+* **admin-stats:** 概览重构为终端驾驶舱视觉 ([4cecef8](https://github.com/VOD-Studio/violet/commit/4cecef89bb9a5057431d43a1f62a86c1e225c1f4))
+* **shared:** useCountUp 上提到 shared/hooks 并支持首屏入场动画 ([61b8f3e](https://github.com/VOD-Studio/violet/commit/61b8f3e05345f048fb9ad998bfd4972c5eadf3cc))
+
+
+### 内部维护
+
+* **release:** 锁定下个版本为 v2.8.15 ([#243](https://github.com/VOD-Studio/violet/issues/243)) ([080999b](https://github.com/VOD-Studio/violet/commit/080999bf9dcab27170c95ee0299ec6d75a9a8869))
+
 ## [2.8.14](https://github.com/VOD-Studio/violet/compare/v2.8.13...v2.8.14) (2026-08-19)
 
 
