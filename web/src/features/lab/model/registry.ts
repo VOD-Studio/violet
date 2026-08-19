@@ -43,4 +43,12 @@ export const LABS = [
 		description: "读到文章中段，返回入口已经离场——四种方案补上这条退路。",
 		meta: "方案 ×4",
 	},
+	{
+		to: "/lab/mascot",
+		en: "Mascot",
+		title: "吉祥物形象实验室",
+		description:
+			"violet 软萌猫猫团吉祥物「堇喵」——双耳旋转（立耳/飞机耳）、尾巴摇曳、肉垫爪爪、36 套动作表情与双视图展示馆。",
+		meta: "表情 ×36",
+	},
 ] as const;
