@@ -1,7 +1,7 @@
+import { useCountUp } from "@shared/hooks/use-count-up";
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
 import { formatPercent, thresholdColor } from "./format";
-import { useCountUp } from "./useCountUp";
 
 /** MetricCardProps - 实时指标卡 props */
 interface MetricCardProps {
