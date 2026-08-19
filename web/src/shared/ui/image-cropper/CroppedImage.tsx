@@ -74,12 +74,9 @@ export function CroppedImage({
 		const el = containerRef.current;
 		if (!el) return;
 		const measure = () => {
-			const r = el.getBoundingClientRect();
-			setBox((prev) =>
-				prev && prev.w === r.width && prev.h === r.height
-					? prev
-					: { w: r.width, h: r.height },
-			);
+			const w = el.offsetWidth;
+			const h = el.offsetHeight;
+			setBox((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }));
 		};
 		measure();
 		const ro = new ResizeObserver(measure);
