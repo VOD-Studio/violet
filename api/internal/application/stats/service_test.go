@@ -18,8 +18,8 @@ func (m *mockStatsStore) GetDashboard(ctx context.Context) (domainstats.Dashboar
 	return args.Get(0).(domainstats.DashboardStats), args.Error(1)
 }
 
-func (m *mockStatsStore) GetViewTrends(ctx context.Context) (domainstats.ViewTrends, error) {
-	args := m.Called(ctx)
+func (m *mockStatsStore) GetViewTrends(ctx context.Context, days int) (domainstats.ViewTrends, error) {
+	args := m.Called(ctx, days)
 	return args.Get(0).(domainstats.ViewTrends), args.Error(1)
 }
 
@@ -82,4 +82,29 @@ func TestService_GetPublic_Error(t *testing.T) {
 	_, err := svc.GetPublic(context.Background())
 	assert.Error(t, err)
 	store.AssertExpectations(t)
+}
+
+func TestService_GetViewTrends_NormalizesDays(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      int
+		wantArg int
+	}{
+		{"档位 7 原样透传", 7, 7},
+		{"档位 30 原样透传", 30, 30},
+		{"非法值归一为默认 30", 90, 30},
+		{"零归一为默认 30", 0, 30},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc, store := newSvc()
+			want := domainstats.ViewTrends{Daily: []domainstats.ViewPoint{{Label: "2026-08-19", Count: 5}}}
+			store.On("GetViewTrends", mock.Anything, tt.wantArg).Return(want, nil).Once()
+
+			got, err := svc.GetViewTrends(context.Background(), tt.in)
+			assert.NoError(t, err)
+			assert.Equal(t, want, got)
+			store.AssertExpectations(t)
+		})
+	}
 }

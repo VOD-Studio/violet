@@ -33,6 +33,14 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 	if err := s.db.WithContext(ctx).Model(&newmodel.Comment{}).Where("status = ?", "pending").Count(&stats.PendingComments).Error; err != nil {
 		return stats, domainshared.Internal("统计待审评论数失败", err)
 	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.FriendLink{}).Where("status = ?", "pending").Count(&stats.PendingFriendLinks).Error; err != nil {
+		return stats, domainshared.Internal("统计待审友链数失败", err)
+	}
+	// consecutive_failures > 0 即抓取异常；手动 Pause 的源该计数为 0，不计入
+	if err := s.db.WithContext(ctx).Model(&newmodel.Subscription{}).
+		Where("consecutive_failures > 0").Count(&stats.FailingSubscriptions).Error; err != nil {
+		return stats, domainshared.Internal("统计订阅异常数失败", err)
+	}
 	if err := s.db.WithContext(ctx).Model(&newmodel.User{}).Count(&stats.TotalUsers).Error; err != nil {
 		return stats, domainshared.Internal("统计用户数失败", err)
 	}
@@ -44,10 +52,35 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 	}
 	stats.TotalViews = vs.Total
 
-	// 最近 5 篇文章
+	// 对比口径窗口边界（本地时区）：今日/昨日自然日、本周/上周（周一起算）。
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	yesterdayStart := todayStart.AddDate(0, 0, -1)
+	mondayStart := todayStart.AddDate(0, 0, -((int(now.Weekday())+6)%7))
+	lastMondayStart := mondayStart.AddDate(0, 0, -7)
+	if err := s.db.WithContext(ctx).Model(&newmodel.PostView{}).
+		Where("created_at >= ?", todayStart).Count(&stats.TodayViews).Error; err != nil {
+		return stats, domainshared.Internal("统计今日浏览量失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.PostView{}).
+		Where("created_at >= ? AND created_at < ?", yesterdayStart, todayStart).Count(&stats.YesterdayViews).Error; err != nil {
+		return stats, domainshared.Internal("统计昨日浏览量失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.Comment{}).
+		Where("created_at >= ?", mondayStart).Count(&stats.WeekComments).Error; err != nil {
+		return stats, domainshared.Internal("统计本周评论数失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.Comment{}).
+		Where("created_at >= ? AND created_at < ?", lastMondayStart, mondayStart).Count(&stats.LastWeekComments).Error; err != nil {
+		return stats, domainshared.Internal("统计上周评论数失败", err)
+	}
+
+	// 最近发布 5 篇：仅已发布（草稿未发生「发布」动作，不计入），按发布时间倒序
 	var recent []newmodel.Post
-	if err := s.db.WithContext(ctx).Order("created_at DESC").Limit(5).Find(&recent).Error; err != nil {
-		return stats, domainshared.Internal("查询最近文章失败", err)
+	if err := s.db.WithContext(ctx).
+		Where("status = ? AND published_at IS NOT NULL", "published").
+		Order("published_at DESC").Limit(5).Find(&recent).Error; err != nil {
+		return stats, domainshared.Internal("查询最近发布文章失败", err)
 	}
 	for _, p := range recent {
 		stats.RecentPosts = append(stats.RecentPosts, postToSummary(p))
@@ -65,44 +98,45 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 	return stats, nil
 }
 
-func (s *StatsStore) GetViewTrends(ctx context.Context) (domainstats.ViewTrends, error) {
+func (s *StatsStore) GetViewTrends(ctx context.Context, days int) (domainstats.ViewTrends, error) {
 	var trends domainstats.ViewTrends
-	// 最近 30 天每日浏览量（从 post_views 表）
+	// 拉取月窗口原始浏览事件，日/月两个口径在应用层分桶共享同一批行。
+	// 应用层聚合而非 SQL TO_CHAR：后者是 PostgreSQL 专属函数，会让 SQLite
+	// 集成测试失败；分桶统一走本地时区，双后端口径一致（对齐 countStrippedChars 先例）。
 	now := time.Now()
-	from := now.AddDate(0, 0, -30)
-	type dailyRow struct {
-		Date  string
-		Count int64
-	}
-	var daily []dailyRow
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	firstDay := todayStart.AddDate(0, 0, -(days - 1))
+	// 月窗口从 12 个月前的月初起（含本月共 12 个自然月）；按 now 往前一年取
+	// 会漏掉首月月初的数据行。
+	firstMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).AddDate(0, -11, 0)
+	var rows []struct{ CreatedAt time.Time }
 	if err := s.db.WithContext(ctx).
-		Table("post_views").
-		Select("COALESCE(TO_CHAR(created_at, 'YYYY-MM-DD'),'') AS date, COUNT(*) AS count").
-		Where("created_at >= ?", from).
-		Group("date").Order("date ASC").
-		Scan(&daily).Error; err != nil {
-		return trends, domainshared.Internal("查询每日浏览趋势失败", err)
+		Model(&newmodel.PostView{}).
+		Select("created_at").
+		Where("created_at >= ?", firstMonth).
+		Scan(&rows).Error; err != nil {
+		return trends, domainshared.Internal("查询浏览趋势失败", err)
 	}
-	for _, d := range daily {
-		trends.Daily = append(trends.Daily, domainstats.ViewPoint{Label: d.Date, Count: d.Count})
+	dailyBuckets := make(map[string]int64)
+	monthlyBuckets := make(map[string]int64)
+	for _, r := range rows {
+		local := r.CreatedAt.In(time.Local)
+		if !local.Before(firstDay) {
+			dailyBuckets[local.Format("2006-01-02")]++
+		}
+		monthlyBuckets[local.Format("2006-01")]++
 	}
-	// 最近 12 个月每月浏览量
-	fromMonth := now.AddDate(-1, 0, 0)
-	type monthRow struct {
-		Month string
-		Count int64
+	// 补零：窗口内每个自然日/月都输出数据点，缺失计 0。
+	// 时间序列的空白与零是两种语义，稀疏序列会让类目轴压缩时间轴。
+	trends.Daily = make([]domainstats.ViewPoint, 0, days)
+	for i := days - 1; i >= 0; i-- {
+		label := todayStart.AddDate(0, 0, -i).Format("2006-01-02")
+		trends.Daily = append(trends.Daily, domainstats.ViewPoint{Label: label, Count: dailyBuckets[label]})
 	}
-	var monthly []monthRow
-	if err := s.db.WithContext(ctx).
-		Table("post_views").
-		Select("COALESCE(TO_CHAR(created_at, 'YYYY-MM'),'') AS month, COUNT(*) AS count").
-		Where("created_at >= ?", fromMonth).
-		Group("month").Order("month ASC").
-		Scan(&monthly).Error; err != nil {
-		return trends, domainshared.Internal("查询每月浏览趋势失败", err)
-	}
-	for _, m := range monthly {
-		trends.Monthly = append(trends.Monthly, domainstats.ViewPoint{Label: m.Month, Count: m.Count})
+	trends.Monthly = make([]domainstats.ViewPoint, 0, 12)
+	for i := 0; i < 12; i++ {
+		label := firstMonth.AddDate(0, i, 0).Format("2006-01")
+		trends.Monthly = append(trends.Monthly, domainstats.ViewPoint{Label: label, Count: monthlyBuckets[label]})
 	}
 	return trends, nil
 }

@@ -1,24 +1,37 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * useCountUp - 数字平滑滚动 hook
+ * useCountUp - 数字平滑滚动 Hook
  *
- * target 变化时从当前显示值用 requestAnimationFrame 平滑过渡到新值。
- * 适用于轮询场景：每次数据刷新时数字从旧值动画到新值。
+ * 首屏挂载时从 0 平滑滚动到目标值；后续数据刷新时从当前值平滑过渡到新值。
  *
  * @param target 目标值
  * @param duration 动画时长（ms），默认 800
  * @param decimals 保留小数位，默认 0
+ * @param initial 初始起始值，默认 0
  */
-export function useCountUp(target: number, duration = 800, decimals = 0): number {
-	const [display, setDisplay] = useState(target);
-	const fromRef = useRef(target);
+export function useCountUp(target: number, duration = 800, decimals = 0, initial = 0): number {
+	const [display, setDisplay] = useState(initial);
+	const fromRef = useRef(initial);
 	const rafRef = useRef<number>(0);
 
 	useEffect(() => {
+		const reduced =
+			typeof window !== "undefined" && typeof window.matchMedia === "function"
+				? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+				: false;
+		if (reduced) {
+			setDisplay(target);
+			fromRef.current = target;
+			return;
+		}
+
 		const from = fromRef.current;
 		const diff = target - from;
-		if (diff === 0) return;
+		if (diff === 0) {
+			setDisplay(target);
+			return;
+		}
 
 		const start = performance.now();
 		cancelAnimationFrame(rafRef.current);

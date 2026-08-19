@@ -11,7 +11,9 @@ description: Use when designing, adding, removing, or wiring RBAC permission poi
 
 按序判定：
 
-1. 有独立后台页面的 module → 必建 `view`（页面可见性 + 读接口共用）。
+1. 有独立后台页面的 module，先按页面性质分两支：
+   - **有独立管理对象**（存在 CRUD 语义的资源，如文章/评论/用户）→ 必建 `view`（页面可见性 + 读接口共用）。
+   - **纯聚合只读页**（无管理对象，如后台概览/统计总览）→ 跟随所在区域门禁（如 `admin:access`），不单独建点。裁决标准是**受众**：已持区域门禁者看聚合数字不构成最小权限违规（无被迫升权）；仅当预期出现独立受众角色（如只读运营只看统计、不进其他管理页）时才建 `xxx:view`，属 additive 拆分（第 4 条）。
 2. 写操作默认合用一个 `manage`——前提：所有角色对该 module 的写操作总是同时授予，无拆分需求。
 3. 出现具体授权差异（存在「能 X 不能 Y」的角色需求）时才拆：
    - CRUD 语义用标准动词 `create` / `update` / `delete`；

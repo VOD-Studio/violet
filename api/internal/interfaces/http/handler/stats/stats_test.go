@@ -22,6 +22,7 @@ import (
 type stubStatsStore struct {
 	dashboard  domainstats.DashboardStats
 	viewTrends domainstats.ViewTrends
+	days       int
 	public     domainstats.PublicStats
 	err        error
 }
@@ -30,7 +31,8 @@ func (s *stubStatsStore) GetDashboard(context.Context) (domainstats.DashboardSta
 	return s.dashboard, s.err
 }
 
-func (s *stubStatsStore) GetViewTrends(context.Context) (domainstats.ViewTrends, error) {
+func (s *stubStatsStore) GetViewTrends(_ context.Context, days int) (domainstats.ViewTrends, error) {
+	s.days = days
 	return s.viewTrends, s.err
 }
 
@@ -98,4 +100,40 @@ func TestGetDashboardStats_OK_ReturnsDashboard(t *testing.T) {
 	assert.Equal(t, int64(10), got.Data.TotalPosts)
 	assert.Equal(t, int64(3), got.Data.PendingComments)
 	assert.Equal(t, int64(9999), got.Data.TotalViews)
+}
+
+// =====================================================================
+// GetViewTrends days 参数
+// =====================================================================
+
+func TestGetViewTrends_DaysParam(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		wantDay int
+	}{
+		{"缺省默认 30", "", domainstats.DefaultTrendDays},
+		{"days=7 透传", "?days=7", 7},
+		{"非数字走默认", "?days=abc", domainstats.DefaultTrendDays},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &stubStatsStore{viewTrends: domainstats.ViewTrends{
+				Daily: []domainstats.ViewPoint{{Label: "2026-08-19", Count: 4}},
+			}}
+			h := newStatsHandler(store)
+
+			rr := httptest.NewRecorder()
+			h.GetViewTrends(rr, httptest.NewRequest(http.MethodGet, "/admin/stats/views"+tt.query, nil))
+
+			require.Equal(t, http.StatusOK, rr.Code)
+			assert.Equal(t, tt.wantDay, store.days)
+			var got struct {
+				Data domainstats.ViewTrends `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &got))
+			require.Len(t, got.Data.Daily, 1)
+			assert.Equal(t, int64(4), got.Data.Daily[0].Count)
+		})
+	}
 }
