@@ -68,10 +68,12 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 		return stats, domainshared.Internal("统计上周评论数失败", err)
 	}
 
-	// 最近 5 篇文章
+	// 最近发布 5 篇：仅已发布（草稿未发生「发布」动作，不计入），按发布时间倒序
 	var recent []newmodel.Post
-	if err := s.db.WithContext(ctx).Order("created_at DESC").Limit(5).Find(&recent).Error; err != nil {
-		return stats, domainshared.Internal("查询最近文章失败", err)
+	if err := s.db.WithContext(ctx).
+		Where("status = ? AND published_at IS NOT NULL", "published").
+		Order("published_at DESC").Limit(5).Find(&recent).Error; err != nil {
+		return stats, domainshared.Internal("查询最近发布文章失败", err)
 	}
 	for _, p := range recent {
 		stats.RecentPosts = append(stats.RecentPosts, postToSummary(p))

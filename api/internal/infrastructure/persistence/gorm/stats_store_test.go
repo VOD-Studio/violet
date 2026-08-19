@@ -38,12 +38,12 @@ func setupStatsTestDB(t *testing.T) *gorm.DB {
 }
 
 // seedPost 直接用 GORM 写一条文章记录（绕过 domain），便于验证统计聚合查询。
-func seedPost(t *testing.T, db *gorm.DB, id uuid.UUID, title, slug, status, contentHTML string, viewCount int, createdAt time.Time) {
+func seedPost(t *testing.T, db *gorm.DB, id uuid.UUID, title, slug, status, contentHTML string, viewCount int, createdAt time.Time, publishedAt *time.Time) {
 	t.Helper()
 	p := model.Post{
 		ID: id, Title: title, Slug: slug, Status: status, ContentHTML: contentHTML,
 		ViewCount: viewCount, AuthorID: uuid.New(),
-		CreatedAt: createdAt, UpdatedAt: createdAt,
+		CreatedAt: createdAt, UpdatedAt: createdAt, PublishedAt: publishedAt,
 	}
 	require.NoError(t, db.Create(&p).Error)
 }
@@ -108,9 +108,11 @@ func TestStatsStore_GetDashboard_WithData(t *testing.T) {
 	postA := uuid.New() // published, view 10, 最早
 	postB := uuid.New() // published, view 5,  中间
 	postC := uuid.New() // draft,     view 0, 最新
-	seedPost(t, db, postA, "PostA", "slug-a", "published", "", 10, base)
-	seedPost(t, db, postB, "PostB", "slug-b", "published", "", 5, base.Add(time.Hour))
-	seedPost(t, db, postC, "PostC", "slug-c", "draft", "", 0, base.Add(2*time.Hour))
+	pubA := base.Add(2 * time.Hour) // PostA 发布时间
+	pubB := base.Add(3 * time.Hour) // PostB 发布时间，晚于 A → recent 首位
+	seedPost(t, db, postA, "PostA", "slug-a", "published", "", 10, base, &pubA)
+	seedPost(t, db, postB, "PostB", "slug-b", "published", "", 5, base.Add(time.Hour), &pubB)
+	seedPost(t, db, postC, "PostC", "slug-c", "draft", "", 0, base.Add(2*time.Hour), nil)
 
 	// 两条评论：1 pending + 1 approved
 	seedComment(t, db, postA, "pending")
@@ -135,11 +137,10 @@ func TestStatsStore_GetDashboard_WithData(t *testing.T) {
 	assert.Equal(t, int64(1), stats.TotalUsers)
 	assert.Equal(t, int64(15), stats.TotalViews)           // 10 + 5 + 0
 
-	// RecentPosts：按 created_at DESC，无 status 过滤 → PostC, PostB, PostA
-	require.Len(t, stats.RecentPosts, 3)
-	assert.Equal(t, "PostC", stats.RecentPosts[0].Title)
-	assert.Equal(t, "PostB", stats.RecentPosts[1].Title)
-	assert.Equal(t, "PostA", stats.RecentPosts[2].Title)
+	// RecentPosts：仅 published，按 published_at DESC → PostB, PostA（draft PostC 不计）
+	require.Len(t, stats.RecentPosts, 2)
+	assert.Equal(t, "PostB", stats.RecentPosts[0].Title)
+	assert.Equal(t, "PostA", stats.RecentPosts[1].Title)
 
 	// PopularPosts：仅 published，按 view_count DESC → PostA(10), PostB(5)
 	require.Len(t, stats.PopularPosts, 2)
@@ -161,9 +162,8 @@ func TestStatsStore_GetDashboard_ComparisonWindows(t *testing.T) {
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	yesterdayStart := todayStart.AddDate(0, 0, -1)
 	mondayStart := todayStart.AddDate(0, 0, -((int(now.Weekday())+6)%7))
-
 	post := uuid.New()
-	seedPost(t, db, post, "P", "slug", "published", "", 0, now)
+	seedPost(t, db, post, "P", "slug", "published", "", 0, now, nil)
 
 	// 浏览：今日 2（now 与今早之间取值）、昨日 3、前日 1（两窗口均不计）
 	seedView(t, db, post, now)
@@ -199,7 +199,7 @@ func TestStatsStore_GetViewTrends_Bucketing(t *testing.T) {
 
 	now := time.Now()
 	post := uuid.New()
-	seedPost(t, db, post, "P", "slug", "published", "", 0, now)
+	seedPost(t, db, post, "P", "slug", "published", "", 0, now, nil)
 
 	// 今日 2、8 天前 3（7 天窗口外、30 天窗口内）、400 天前 1（12 个月外全排除）
 	seedView(t, db, post, now)
@@ -260,8 +260,9 @@ func TestStatsStore_GetPublic(t *testing.T) {
 
 	// 一篇 published（带 HTML 正文，验证字数剥离口径）+ 一篇 draft（不计入）
 	postA := uuid.New()
-	seedPost(t, db, postA, "PublishedA", "slug-a", "published", "<p>hello</p>", 3, time.Now())
-	seedPost(t, db, uuid.New(), "DraftB", "slug-b", "draft", "", 0, time.Now())
+	pubAt := time.Now()
+	seedPost(t, db, postA, "PublishedA", "slug-a", "published", "<p>hello</p>", 3, time.Now(), &pubAt)
+	seedPost(t, db, uuid.New(), "DraftB", "slug-b", "draft", "", 0, time.Now(), nil)
 
 	// 评论：1 approved（计入）+ 1 pending（不计入）
 	seedComment(t, db, postA, "approved")
