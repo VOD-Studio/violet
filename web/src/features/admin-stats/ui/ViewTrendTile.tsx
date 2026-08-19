@@ -46,7 +46,9 @@ export function ViewTrendTile() {
 		return daily30.data?.monthly ?? [];
 	}, [range, daily7.data, daily30.data]);
 
-	const isEmpty = !active.isLoading && points.length === 0;
+	// 后端按窗口补零（缺失自然日计 0），序列恒非空；全零才视为无数据
+	const isEmpty =
+		!active.isLoading && points.length > 0 && points.every((p) => p.count === 0);
 
 	return (
 		<Card className="border-border/60 h-full">
@@ -56,7 +58,9 @@ export function ViewTrendTile() {
 					<Segmented value={range} onValueChange={setRange} segments={SEGMENTS} />
 				</div>
 
-				{isEmpty ? (
+				{active.isLoading ? (
+					<div className="h-56" aria-busy />
+				) : isEmpty ? (
 					<div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
 						还没有浏览数据
 					</div>
