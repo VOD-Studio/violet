@@ -24,11 +24,11 @@ export function RecentPostsTile({ posts }: { posts: PostSummaryDTO[] }) {
 						</span>
 					</div>
 				) : (
-					<ul className="flex flex-1 flex-col justify-center">
+					<ul className="flex flex-col">
 						{posts.map((post) => (
 							<li
 								key={post.id}
-								className="border-border/60 flex items-center justify-between gap-3 border-b py-2.5 last:border-b-0 last:pb-0 first:pt-0"
+								className="border-border/60 flex items-center justify-between gap-3 border-b py-2.5 first:pt-0 last:border-b-0 last:pb-0"
 							>
 								<div className="flex min-w-0 items-center gap-2">
 									<span className="text-muted-foreground size-1.5 shrink-0 rounded-full bg-current" />
