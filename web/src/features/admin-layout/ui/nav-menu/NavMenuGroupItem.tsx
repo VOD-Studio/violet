@@ -77,30 +77,25 @@ export function NavMenuGroupItem({
 					? undefined // Popover 接管开关，不动 expandedGroups（收起态子项不内联渲染）
 					: () => setGroupExpanded(item.to, !expanded)
 			}
-			className={cn(
-				NAV_ITEM_BASE,
-				"w-full",
-				collapsed && "justify-center gap-0 px-0",
-				showActive && NAV_ITEM_ACTIVE,
-			)}
+			className={cn(NAV_ITEM_BASE, "w-full", showActive && NAV_ITEM_ACTIVE)}
 		>
 			<Icon className="size-4 shrink-0" />
 			<span
 				className={cn(
-					"flex-1 overflow-hidden text-left transition-all duration-200",
+					"flex-1 overflow-hidden text-left transition-[max-width,opacity] duration-200",
 					collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
 				)}
 			>
 				{item.label}
 			</span>
-			{!collapsed && (
-				<ChevronDown
-					className={cn(
-						"size-4 shrink-0 text-muted-foreground transition-transform",
-						expanded && "rotate-180",
-					)}
-				/>
-			)}
+			{/* 恒渲染渐隐：条件切换会瞬现瞬消；max-w 收宽与 rotate 同列表过渡 */}
+			<ChevronDown
+				className={cn(
+					"size-4 shrink-0 text-muted-foreground transition-[max-width,opacity,transform] duration-200",
+					collapsed ? "max-w-0 opacity-0" : "max-w-4 opacity-100",
+					expanded && "rotate-180",
+				)}
+			/>
 		</button>
 	);
 

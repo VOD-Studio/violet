@@ -10,7 +10,11 @@ export const NAV_ITEM_BASE =
 export const NAV_ITEM_ACTIVE =
 	"bg-accent text-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-primary before:content-['']";
 
-/** 单个菜单项（顶级项与分组项共用渲染）；collapsed 时仅图标 + 右侧 Tooltip */
+/**
+ * 单个菜单项（顶级项与分组项共用渲染）；collapsed 时仅图标 + 右侧 Tooltip。
+ * 布局恒 px-3/gap-3：滚动区 p-3 + 项 px-3 使图标两态恒 x=24（收起态天然
+ * 居中，与品牌 logo 中心对齐），文字 max-w 渐隐，无 justify 硬切摇晃
+ */
 export function NavMenuLink({
 	item,
 	onNavigate,
@@ -27,13 +31,13 @@ export function NavMenuLink({
 			to={item.to}
 			activeOptions={{ exact: item.exact ?? false }}
 			activeProps={{ className: NAV_ITEM_ACTIVE }}
-			className={cn(NAV_ITEM_BASE, "group", collapsed && "justify-center gap-0 px-0")}
+			className={cn(NAV_ITEM_BASE, "group")}
 			onClick={onNavigate}
 		>
 			<Icon className="size-4 shrink-0" />
 			<span
 				className={cn(
-					"overflow-hidden transition-all duration-200",
+					"overflow-hidden transition-[max-width,opacity] duration-200",
 					collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
 				)}
 			>

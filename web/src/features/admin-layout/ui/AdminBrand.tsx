@@ -22,7 +22,7 @@ export function AdminBrand({ collapsed = false }: { collapsed?: boolean }) {
 				<img src="/logo.png" alt="" className="size-8 shrink-0" />
 				<span
 					className={cn(
-						"flex flex-col overflow-hidden transition-all duration-200",
+						"flex flex-col overflow-hidden transition-[max-width,opacity] duration-200",
 						collapsed ? "max-w-0 opacity-0" : "max-w-24 opacity-100",
 					)}
 				>

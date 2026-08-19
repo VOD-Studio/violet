@@ -59,13 +59,28 @@ export function NavMenu({
 				if (items.length === 0) return null;
 				return (
 					<div key={group.key} className="mt-4 flex flex-col gap-1">
-						{collapsed ? (
-							<div className="mx-2 mb-1 border-t" />
-						) : (
-							<p className="text-muted-foreground/60 px-3 pb-1 text-xs font-medium tracking-wider">
-								{group.label}
-							</p>
-						)}
+						{/* 组标题 grid-rows 收展 + 分隔线渐显：条件互换会瞬跳，
+						    两元素恒渲染（同卡片显隐先例），motion-reduce 禁过渡 */}
+						<div
+							className={cn(
+								"grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none",
+								collapsed
+									? "grid-rows-[0fr] opacity-0"
+									: "grid-rows-[1fr] opacity-100",
+							)}
+						>
+							<div className="min-h-0 overflow-hidden">
+								<p className="text-muted-foreground/60 px-3 pb-1 text-xs font-medium tracking-wider">
+									{group.label}
+								</p>
+							</div>
+						</div>
+						<div
+							className={cn(
+								"mx-2 mb-1 overflow-hidden border-t transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none",
+								collapsed ? "max-h-2 opacity-100" : "max-h-0 opacity-0",
+							)}
+						/>
 						{items.map((item) => renderItem(item, onNavigate, collapsed))}
 					</div>
 				);
