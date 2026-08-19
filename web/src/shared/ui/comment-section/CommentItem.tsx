@@ -13,7 +13,12 @@ import { useState } from "react";
 import { CommentMeta } from "./CommentMeta";
 import { CommentRepliesBlock } from "./CommentRepliesBlock";
 import { getCommentToneCfg } from "./tone";
-import type { CommentDisplayItem, CommentRaw, CommentSectionConfig } from "./types";
+import type {
+	CommentDisplayItem,
+	CommentRaw,
+	CommentRepliesMode,
+	CommentSectionConfig,
+} from "./types";
 
 export interface CommentItemProps<T extends CommentRaw> {
 	/** 当前评论（顶层 depth=0 或回复 depth=1） */
@@ -26,6 +31,30 @@ export interface CommentItemProps<T extends CommentRaw> {
 	config: CommentSectionConfig<T>;
 	/** 回复提交回调（level=1 时由父级传入，将新回复冒泡到顶层 pendingReplies） */
 	onReplyAdded?: (reply: CommentDisplayItem<T>) => void;
+}
+
+/**
+ * 回复区是否需要渲染。
+ *
+ * @remarks toggle（推文）下 `repliesTotal` 未知也渲染（「查看回复」展开才拉取）；
+ * preview（文章）需总数或预览任一非空。`repliesTotal` 为 0 且无 pending 时
+ * 不渲染，避免空回复的「查看回复」误导。
+ *
+ * @param item - 顶层评论（读 `repliesTotal` / `repliesPreview`）
+ * @param mode - 回复区模式
+ * @param pendingCount - 刚内联提交、尚未进预览的回复条数；>0 时强制渲染
+ * @returns 是否渲染 {@link CommentRepliesBlock}
+ */
+export function shouldRenderRepliesBlock(
+	item: Pick<CommentDisplayItem, "repliesTotal" | "repliesPreview">,
+	mode: CommentRepliesMode,
+	pendingCount: number,
+): boolean {
+	if (pendingCount > 0) return true;
+	if (mode === "toggle") {
+		return item.repliesTotal === undefined || item.repliesTotal > 0;
+	}
+	return (item.repliesTotal ?? 0) > 0 || (item.repliesPreview?.length ?? 0) > 0;
 }
 
 export function CommentItem<T extends CommentRaw>({
@@ -51,7 +80,7 @@ export function CommentItem<T extends CommentRaw>({
 	};
 
 	return (
-		<div className="group relative">
+		<div>
 			<SpotlightCard className="flex gap-3 p-4">
 				<div className={`w-1 shrink-0 rounded-full ${tone.bar}`} aria-hidden />
 
@@ -92,16 +121,7 @@ export function CommentItem<T extends CommentRaw>({
 
 			{/* 回复区：仅顶层评论渲染（两层扁平，回复不再嵌套回复区） */}
 			{level === 0 &&
-				(config.repliesMode === "toggle"
-					? // 有回复数（含未知=undefined 兜底）或刚提交的 pending 回复才渲染；
-						// repliesTotal 为 0 时整块不渲染，避免空回复的「查看回复」误导
-						item.repliesTotal === undefined ||
-						(item.repliesTotal ?? 0) > 0 ||
-						pendingReplies.length > 0
-					: config.repliesMode === "preview" &&
-						((item.repliesTotal ?? 0) > 0 ||
-							(item.repliesPreview?.length ?? 0) > 0 ||
-							pendingReplies.length > 0)) && (
+				shouldRenderRepliesBlock(item, config.repliesMode, pendingReplies.length) && (
 					<CommentRepliesBlock
 						comment={item}
 						isLoggedIn={isLoggedIn}

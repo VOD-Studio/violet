@@ -3,10 +3,10 @@ import { useSpotlight } from "@shared/hooks/use-spotlight";
 import * as React from "react";
 
 export interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
-    /** 聚光半径（px） */
-    radius?: number;
-    /** 渲染的根元素类型 */
-    as?: React.ElementType;
+	/** 聚光半径（px） */
+	radius?: number;
+	/** 渲染的根元素类型 */
+	as?: React.ElementType;
 }
 
 /**
@@ -21,55 +21,58 @@ export interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement>
  * Light：超柔多层物理阴影 + 1px rgba(0,0,0,0.05) 边框（无发光）
  */
 function SpotlightCard({
-    className,
-    children,
-    radius = 220,
-    as: Comp = "div",
-    ...props
+	className,
+	children,
+	radius = 220,
+	as: Comp = "div",
+	...props
 }: SpotlightCardProps) {
-    const onMove = useSpotlight();
-    return (
-        <Comp
-            onMouseMove={onMove}
-            className={cn(
-                "group relative overflow-hidden rounded-xl",
-                "bg-card text-card-foreground",
-                "border border-edge-hairline",
-                "transition-[box-shadow,transform] duration-300",
-                // dark 毛玻璃 + glow；light 多层柔阴影（由 --shadow-physical 控制）
-                "dark:bg-surface-glass/60 dark:backdrop-blur-xl",
-                "shadow-(--shadow-physical)",
-                className,
-            )}
-            style={
-                {
-                    "--spot-radius": `${radius}px`,
-                    ...props.style,
-                } as React.CSSProperties
-            }
-            {...props}
-        >
-            {/* 聚光层 */}
-            <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                style={{
-                    background:
-                        "radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / 0.18), transparent 60%)",
-                }}
-            />
-            {/* 渐变边框层（dark 模式） */}
-            <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 hidden rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:block"
-                style={{
-                    boxShadow:
-                        "inset 0 0 0 1px hsl(var(--neon-blue) / 0.35), inset 0 0 24px hsl(var(--neon-blue) / 0.08)",
-                }}
-            />
-            <div className="relative z-10 contents">{children}</div>
-        </Comp>
-    );
+	const onMove = useSpotlight();
+	return (
+		<Comp
+			onMouseMove={onMove}
+			className={cn(
+				// 命名组:聚光联动仅由卡片自身的 group/spotlight 触发,
+				// 调用方叠加的匿名 group(如 PostCard 的 hover 放大)或
+				// 外层容器的 group 都无法命中,杜绝嵌套场景的 hover 串扰
+				"group/spotlight relative overflow-hidden rounded-xl",
+				"bg-card text-card-foreground",
+				"border border-edge-hairline",
+				"transition-[box-shadow,transform] duration-300",
+				// dark 毛玻璃 + glow；light 多层柔阴影（由 --shadow-physical 控制）
+				"dark:bg-surface-glass/60 dark:backdrop-blur-xl",
+				"shadow-(--shadow-physical)",
+				className,
+			)}
+			style={
+				{
+					"--spot-radius": `${radius}px`,
+					...props.style,
+				} as React.CSSProperties
+			}
+			{...props}
+		>
+			{/* 聚光层 */}
+			<span
+				aria-hidden
+				className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/spotlight:opacity-100"
+				style={{
+					background:
+						"radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / 0.18), transparent 60%)",
+				}}
+			/>
+			{/* 渐变边框层（dark 模式） */}
+			<span
+				aria-hidden
+				className="pointer-events-none absolute inset-0 hidden rounded-xl opacity-0 transition-opacity duration-300 group-hover/spotlight:opacity-100 dark:block"
+				style={{
+					boxShadow:
+						"inset 0 0 0 1px hsl(var(--neon-blue) / 0.35), inset 0 0 24px hsl(var(--neon-blue) / 0.08)",
+				}}
+			/>
+			<div className="relative z-10 contents">{children}</div>
+		</Comp>
+	);
 }
 
 export { SpotlightCard };
