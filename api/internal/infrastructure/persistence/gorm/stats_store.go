@@ -33,6 +33,14 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 	if err := s.db.WithContext(ctx).Model(&newmodel.Comment{}).Where("status = ?", "pending").Count(&stats.PendingComments).Error; err != nil {
 		return stats, domainshared.Internal("统计待审评论数失败", err)
 	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.FriendLink{}).Where("status = ?", "pending").Count(&stats.PendingFriendLinks).Error; err != nil {
+		return stats, domainshared.Internal("统计待审友链数失败", err)
+	}
+	// consecutive_failures > 0 即抓取异常；手动 Pause 的源该计数为 0，不计入
+	if err := s.db.WithContext(ctx).Model(&newmodel.Subscription{}).
+		Where("consecutive_failures > 0").Count(&stats.FailingSubscriptions).Error; err != nil {
+		return stats, domainshared.Internal("统计订阅异常数失败", err)
+	}
 	if err := s.db.WithContext(ctx).Model(&newmodel.User{}).Count(&stats.TotalUsers).Error; err != nil {
 		return stats, domainshared.Internal("统计用户数失败", err)
 	}

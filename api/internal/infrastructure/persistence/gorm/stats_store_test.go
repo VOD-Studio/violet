@@ -28,7 +28,7 @@ func setupStatsTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&model.Post{}, &model.Comment{}, &model.User{}, &model.PostView{}))
+	require.NoError(t, db.AutoMigrate(&model.Post{}, &model.Comment{}, &model.User{}, &model.PostView{}, &model.FriendLink{}, &model.Subscription{}))
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
@@ -79,6 +79,23 @@ func seedCommentAt(t *testing.T, db *gorm.DB, postID uuid.UUID, status string, c
 	require.NoError(t, db.Create(&c).Error)
 }
 
+// seedFriendLink 写一条友链申请记录。
+func seedFriendLink(t *testing.T, db *gorm.DB, status string) {
+	t.Helper()
+	require.NoError(t, db.Create(&model.FriendLink{
+		ID: uuid.New(), Name: "foo", URL: "https://example.com", Status: status,
+	}).Error)
+}
+
+// seedSubscription 写一条订阅源记录。failures 为连续失败次数。
+func seedSubscription(t *testing.T, db *gorm.DB, failures int) {
+	t.Helper()
+	require.NoError(t, db.Create(&model.Subscription{
+		ID: uuid.New(), UserID: uuid.New(), FeedURL: "https://example.com/rss",
+		Interval: "daily", Status: "active", ConsecutiveFailures: failures,
+	}).Error)
+}
+
 // ============================================================
 // StatsStore.GetDashboard 集成测试
 // ============================================================
@@ -126,11 +143,21 @@ func TestStatsStore_GetDashboard_WithData(t *testing.T) {
 		PasswordHash: "x",
 	}).Error)
 
+	// 友链：1 pending（计入待审）+ 1 approved（不计）
+	seedFriendLink(t, db, "pending")
+	seedFriendLink(t, db, "approved")
+	// 订阅：连续失败 2 个（计入异常）+ 正常 1 个（不计）
+	seedSubscription(t, db, 3)
+	seedSubscription(t, db, 5)
+	seedSubscription(t, db, 0)
+
 	store := NewStatsStore(db)
 	stats, err := store.GetDashboard(ctx)
 	require.NoError(t, err)
 
 	// 计数口径
+	assert.Equal(t, int64(1), stats.PendingFriendLinks, "待审友链：仅 pending 计入")
+	assert.Equal(t, int64(2), stats.FailingSubscriptions, "订阅异常：consecutive_failures>0 的 2 个")
 	assert.Equal(t, int64(3), stats.TotalPosts)            // 含 draft
 	assert.Equal(t, int64(2), stats.TotalComments)         // 含 pending
 	assert.Equal(t, int64(1), stats.PendingComments)       // 仅 pending

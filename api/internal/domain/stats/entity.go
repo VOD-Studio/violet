@@ -11,6 +11,10 @@ type DashboardStats struct {
 	TotalComments int64 `json:"total_comments"`
 	// PendingComments 待审核评论数
 	PendingComments int64 `json:"pending_comments"`
+	// PendingFriendLinks 待审核友链申请数
+	PendingFriendLinks int64 `json:"pending_friend_links"`
+	// FailingSubscriptions 抓取异常的订阅源数（consecutive_failures > 0，不含手动暂停）
+	FailingSubscriptions int64 `json:"failing_subscriptions"`
 	// TotalViews 累计浏览量
 	TotalViews int64 `json:"total_views"`
 	// TodayViews 今日浏览量（本地时区自然日零点起，post_views 计数）
