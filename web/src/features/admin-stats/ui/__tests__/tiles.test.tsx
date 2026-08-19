@@ -64,15 +64,15 @@ const emptyStats: DashboardStatsDTO = {
 };
 
 describe("StatsStrip 仪表带", () => {
-	it("全零读数渲染所有 mono 小签与标签", () => {
+	it("全零读数渲染所有核心指标标签", () => {
 		render(<StatsStrip data={emptyStats} daily={[]} />);
-		expect(screen.getByText("views.today")).toBeTruthy();
 		expect(screen.getByText("今日浏览")).toBeTruthy();
-		expect(screen.getByText("comments.pending")).toBeTruthy();
-		// 仪表带无空态文案，=0 就是安静的 0 读数
-		expect(screen.queryByText("订阅运行正常")).toBeNull();
+		expect(screen.getByText("待审评论")).toBeTruthy();
+		expect(screen.getByText("友链申请")).toBeTruthy();
+		expect(screen.getByText("订阅异常")).toBeTruthy();
+		expect(screen.getByText("本周评论")).toBeTruthy();
+		expect(screen.getByText("文章总数")).toBeTruthy();
 	});
-
 	it("待办 >0 的格子变成直达链接", async () => {
 		await renderWithRouter(
 			<StatsStrip data={{ ...emptyStats, pending_comments: 3 }} daily={[]} />,

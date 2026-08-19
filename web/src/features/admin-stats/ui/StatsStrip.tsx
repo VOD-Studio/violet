@@ -1,120 +1,132 @@
+import { useCountUp } from "@shared/hooks/use-count-up";
 import { Link } from "@tanstack/react-router";
-
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { computeDelta } from "../lib/metrics";
 import type { DashboardStatsDTO, ViewPointDTO } from "../model/types";
 
 interface StripCell {
-	/** mono 小签（终端变量风格） */
-	tag: string;
-	/** 中文标签 */
+	/** 中文指标名称（顶部标题） */
 	label: string;
+	/** 核心读数 */
 	value: number;
-	/** 上下文行（环比/单位等），无则省略 */
+	/** 底部辅助说明（如环比/状态） */
 	context?: string;
-	/** 上下文行的趋势方向着色 */
+	/** 环比趋势方向 */
 	trend?: "up" | "down" | "flat";
-	/** 待办 >0 时的直达路由与警示 */
+	/** 待办 >0 时的直达路由与操作文案 */
 	action?: { to: string; hint: string };
 }
 
 interface StatsStripProps {
 	data: DashboardStatsDTO;
-	/** 近 7 日数据点（今日浏览格的 sparkline） */
-	daily: ViewPointDTO[];
+	/** 近 30 日数据点（可选） */
+	daily?: ViewPointDTO[];
 }
 
 /**
- * StatsStrip - mono 仪表带。
+ * 概览首屏仪表带。
  *
- * 概览首屏的全宽指标带：大号 tabular-nums 数字 + mono 变量小签 +
- * hairline 分隔，取代六张卡片——仪表读数不需要卡片壳。待办指标
- * >0 时整格 amber 化并成为直达入口，=0 时回归安静读数。
+ * 严整的等宽六格布局，每格统一三段式结构：
+ * 顶部指标标题 → 中部核心读数 → 底部上下文/待办直达。
  */
-export function StatsStrip({ data, daily }: StatsStripProps) {
+export function StatsStrip({ data }: StatsStripProps) {
 	const viewsDelta = computeDelta(data.today_views, data.yesterday_views);
 	const weekDelta = computeDelta(data.week_comments, data.last_week_comments);
 
 	const cells: StripCell[] = [
 		{
-			tag: "views.today",
 			label: "今日浏览",
 			value: data.today_views,
 			context:
 				viewsDelta === null
 					? data.yesterday_views > 0
-						? "昨日无环比"
-						: ""
+						? `昨日 ${data.yesterday_views} 次`
+						: "昨日 0 次"
 					: viewsDelta.direction === "flat"
 						? "与昨日持平"
 						: `较昨日 ${viewsDelta.direction === "up" ? "+" : "-"}${viewsDelta.percent}%`,
 			trend: viewsDelta?.direction,
 		},
 		{
-			tag: "comments.pending",
 			label: "待审评论",
 			value: data.pending_comments,
+			context: data.pending_comments === 0 ? "暂无待审" : undefined,
 			action: { to: "/admin/comments", hint: "去审核" },
 		},
 		{
-			tag: "friendlinks.pending",
 			label: "友链申请",
 			value: data.pending_friend_links,
+			context: data.pending_friend_links === 0 ? "暂无待办" : undefined,
 			action: { to: "/admin/friend-links", hint: "去处理" },
 		},
 		{
-			tag: "subscriptions.failing",
 			label: "订阅异常",
 			value: data.failing_subscriptions,
+			context: data.failing_subscriptions === 0 ? "运行正常" : undefined,
 			action: { to: "/admin/subscriptions", hint: "去排查" },
 		},
 		{
-			tag: "comments.week",
 			label: "本周评论",
 			value: data.week_comments,
 			context:
 				weekDelta === null
-					? "上周无评论"
+					? data.last_week_comments > 0
+						? `上周 ${data.last_week_comments} 条`
+						: "上周 0 条"
 					: weekDelta.direction === "flat"
 						? "与上周持平"
 						: `较上周 ${weekDelta.direction === "up" ? "+" : "-"}${weekDelta.percent}%`,
 			trend: weekDelta?.direction,
 		},
 		{
-			tag: "content.stock",
-			label: "内容存量",
+			label: "文章总数",
 			value: data.total_posts,
-			context: `${data.total_posts} 篇 · ${data.total_users} 位用户`,
+			context: `全站 ${data.total_users} 位注册用户`,
 		},
 	];
 
 	return (
-		<section className="border-edge-hairline bg-card flex flex-wrap rounded-sm border">
-			{cells.map((cell, i) => (
-				<Cell key={cell.tag} cell={cell} sparkline={i === 0 ? daily : undefined} />
+		<section className="border-edge-hairline bg-edge-hairline grid grid-cols-2 gap-px overflow-hidden rounded-sm border sm:grid-cols-3 lg:grid-cols-6">
+			{cells.map((cell) => (
+				<Cell key={cell.label} cell={cell} />
 			))}
 		</section>
 	);
 }
 
-/** Cell - 仪表带单格。今日浏览格（首格）额外内嵌 sparkline。 */
-function Cell({ cell, sparkline }: { cell: StripCell; sparkline?: ViewPointDTO[] }) {
+/** 仪表带单格：顶栏标题 + 中部大数字 + 底栏上下文，严格基线对齐 */
+function Cell({ cell }: { cell: StripCell }) {
 	const alert = cell.action && cell.value > 0;
-	const content = (
+	const display = useCountUp(cell.value, 900);
+
+	const body = (
 		<>
-			<div className="text-muted-foreground font-mono text-xs">{cell.tag}</div>
-			<div
-				className={`mt-1 text-4xl leading-none font-bold tabular-nums ${
-					alert ? "text-amber-600 dark:text-amber-400" : ""
-				}`}
-			>
-				{cell.value}
-			</div>
-			<div className="mt-1.5 flex items-center gap-1.5 text-xs">
-				<span className="text-foreground/80 font-medium">{cell.label}</span>
-				{cell.context && (
+			<div className="flex items-center justify-between">
+				<span className="text-muted-foreground text-xs font-medium">{cell.label}</span>
+				{alert && (
 					<span
-						className={`flex items-center gap-0.5 ${
+						className="size-1.5 rounded-full bg-amber-500 animate-pulse"
+						aria-hidden
+					/>
+				)}
+			</div>
+			<div className="my-2.5 flex items-baseline">
+				<span
+					className={`font-mono text-3xl font-bold tracking-tight tabular-nums leading-none ${
+						alert ? "text-amber-600 dark:text-amber-400" : "text-foreground"
+					}`}
+				>
+					{display}
+				</span>
+			</div>
+			<div className="flex h-4 items-center text-xs">
+				{cell.action && cell.value > 0 ? (
+					<span className="text-amber-600 dark:text-amber-400 flex items-center font-medium">
+						{cell.action.hint} →
+					</span>
+				) : cell.context ? (
+					<span
+						className={`flex items-center gap-1 truncate ${
 							cell.trend === "up"
 								? "text-emerald-500"
 								: cell.trend === "down"
@@ -123,61 +135,24 @@ function Cell({ cell, sparkline }: { cell: StripCell; sparkline?: ViewPointDTO[]
 						}`}
 					>
 						{cell.trend === "up" ? (
-							<TrendingUp className="size-3" />
+							<TrendingUp className="size-3 shrink-0" />
 						) : cell.trend === "down" ? (
-							<TrendingDown className="size-3" />
+							<TrendingDown className="size-3 shrink-0" />
 						) : null}
-						{cell.context}
+						<span className="truncate">{cell.context}</span>
 					</span>
-				)}
-				{alert && (
-					<span className="text-amber-600 dark:text-amber-400">
-						{cell.action?.hint} →
-					</span>
-				)}
+				) : null}
 			</div>
-			{sparkline && sparkline.length > 1 && <Sparkline data={sparkline} />}
 		</>
 	);
 
-	const base = "border-edge-hairline min-w-40 flex-1 border-r border-b px-5 py-4 last:border-r-0";
+	const base = "bg-card flex min-h-24 flex-col justify-between p-4";
 	if (cell.action && cell.value > 0) {
 		return (
 			<Link to={cell.action.to} className={`${base} hover:bg-accent/60 transition-colors`}>
-				{content}
+				{body}
 			</Link>
 		);
 	}
-	return <div className={base}>{content}</div>;
-}
-
-/** Sparkline - 无轴微缩趋势线（纯装饰，外层视觉锚点） */
-function Sparkline({ data }: { data: ViewPointDTO[] }) {
-	const spark = data.slice(-7);
-	const max = Math.max(...spark.map((p) => p.count), 1);
-	const points = spark
-		.map((p, i) => {
-			const x = (i / (spark.length - 1)) * 100;
-			const y = 30 - (p.count / max) * 26;
-			return `${x},${y}`;
-		})
-		.join(" ");
-	return (
-		<svg
-			viewBox="0 0 100 32"
-			className="mt-3 h-8 w-full"
-			preserveAspectRatio="none"
-			role="presentation"
-		>
-			<polyline
-				points={points}
-				fill="none"
-				stroke="var(--color-chart-1)"
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-				vectorEffect="non-scaling-stroke"
-			/>
-		</svg>
-	);
+	return <div className={base}>{body}</div>;
 }
