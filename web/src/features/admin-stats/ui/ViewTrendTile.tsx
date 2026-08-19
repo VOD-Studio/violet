@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@shared/ui/base/card";
 import {
 	type ChartConfig,
 	ChartContainer,
@@ -10,6 +9,7 @@ import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useViewTrends } from "../api/queries";
+import { TermPane } from "./TermPane";
 
 /** 档位定义：日聚合两档（后端 days 白名单）+ 月聚合一档（固定 12 个月） */
 const RANGES = ["7d", "30d", "12m"] as const;
@@ -50,13 +50,13 @@ export function ViewTrendTile() {
 	const isEmpty = !active.isLoading && points.length > 0 && points.every((p) => p.count === 0);
 
 	return (
-		<Card className="border-border/60 h-full">
-			<CardContent className="flex h-full flex-col gap-4 p-6">
-				<div className="flex items-center justify-between">
-					<span className="text-sm font-medium">浏览趋势</span>
-					<Segmented value={range} onValueChange={setRange} segments={SEGMENTS} />
-				</div>
-
+		<TermPane
+			tag="~/trend"
+			title="浏览趋势"
+			className="h-full"
+			trailing={<Segmented value={range} onValueChange={setRange} segments={SEGMENTS} />}
+		>
+			<div className="flex h-full flex-col pt-1">
 				{active.isLoading ? (
 					<div className="h-56" aria-busy />
 				) : isEmpty ? (
@@ -119,7 +119,7 @@ export function ViewTrendTile() {
 						</AreaChart>
 					</ChartContainer>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</TermPane>
 	);
 }

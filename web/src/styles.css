@@ -236,6 +236,16 @@
 	}
 }
 
+/* 概览活动流无缝竖滚：内容渲染两遍，整体位移 -50% 循环 */
+@keyframes ticker-scroll {
+	from {
+		transform: translateY(0);
+	}
+	to {
+		transform: translateY(-50%);
+	}
+}
+
 /* 横幅驻留进度线：scaleX 拉满一轮 = 一条公告的驻留时长 */
 @keyframes banner-progress {
 	from {

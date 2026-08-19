@@ -6,22 +6,21 @@ import {
 	RouterProvider,
 } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
-import { MessageSquareWarning } from "lucide-react";
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
-import { ActionTile } from "../ActionTile";
-import { HeroViewsTile } from "../HeroViewsTile";
+import type { DashboardStatsDTO } from "../../model/types";
+import { MilestoneTile } from "../MilestoneTile";
 import { PopularPostsTile } from "../PopularPostsTile";
 import { RecentPostsTile } from "../RecentPostsTile";
+import { StatsStrip } from "../StatsStrip";
 
 /**
- * 概览 tile 空态/边界态渲染测试。
+ * 概览区块空态/边界态渲染测试。
  *
- * 空态是驾驶舱的情感设计面（等待第一位读者 / 队列已清空），
- * 新站点首次进入后台必然命中，回归价值高。
+ * 空态是驾驶舱的情感设计面，新站点首次进入后台必然命中，回归价值高。
  */
 
-/** tile 内 Link 依赖 router 上下文，用最小 memory history router 渲染；RouterProvider 挂载是异步的，断言一律用 findBy* */
+/** 区块内 Link 依赖 router 上下文，用最小 memory history router 渲染；RouterProvider 挂载是异步的，断言一律等待 load() */
 async function renderWithRouter(ui: ReactElement) {
 	const rootRoute = createRootRoute();
 	const indexRoute = createRoute({
@@ -47,47 +46,47 @@ async function renderWithRouter(ui: ReactElement) {
 	await router.load();
 }
 
-describe("tile 空态", () => {
-	it("行动卡待办 0 显示安心文案", async () => {
+/** 全零统计：新站点首进概览的形态 */
+const emptyStats: DashboardStatsDTO = {
+	total_posts: 0,
+	total_comments: 0,
+	pending_comments: 0,
+	pending_friend_links: 0,
+	failing_subscriptions: 0,
+	total_views: 0,
+	today_views: 0,
+	yesterday_views: 0,
+	week_comments: 0,
+	last_week_comments: 0,
+	total_users: 0,
+	recent_posts: [],
+	popular_posts: [],
+};
+
+describe("StatsStrip 仪表带", () => {
+	it("全零读数渲染所有 mono 小签与标签", () => {
+		render(<StatsStrip data={emptyStats} daily={[]} />);
+		expect(screen.getByText("views.today")).toBeTruthy();
+		expect(screen.getByText("今日浏览")).toBeTruthy();
+		expect(screen.getByText("comments.pending")).toBeTruthy();
+		// 仪表带无空态文案，=0 就是安静的 0 读数
+		expect(screen.queryByText("订阅运行正常")).toBeNull();
+	});
+
+	it("待办 >0 的格子变成直达链接", async () => {
 		await renderWithRouter(
-			<ActionTile
-				title="待审评论"
-				count={0}
-				icon={MessageSquareWarning}
-				emptyLabel="队列已清空"
-				actionLabel="去审核"
-				to="/admin/comments"
-			/>,
+			<StatsStrip data={{ ...emptyStats, pending_comments: 3 }} daily={[]} />,
 		);
-		expect(screen.getByText("队列已清空")).toBeTruthy();
+		expect(screen.getByText("去审核 →")).toBeTruthy();
 	});
 
-	it("行动卡待办 >0 显示数字与直达入口", async () => {
-		await renderWithRouter(
-			<ActionTile
-				title="待审评论"
-				count={3}
-				icon={MessageSquareWarning}
-				emptyLabel="队列已清空"
-				actionLabel="去审核"
-				to="/admin/comments"
-			/>,
-		);
-		expect(screen.getByText("3")).toBeTruthy();
-		expect(screen.getByText("去审核")).toBeTruthy();
+	it("待办 =0 的格子是安静读数（无直达文案）", () => {
+		render(<StatsStrip data={emptyStats} daily={[]} />);
+		expect(screen.queryByText(/→$/)).toBeNull();
 	});
+});
 
-	it("Hero 全零显示等待第一位读者", () => {
-		render(<HeroViewsTile today={0} yesterday={0} daily={[]} />);
-		expect(screen.getByText("等待第一位读者")).toBeTruthy();
-	});
-
-	it("Hero 昨日 0 今日有量显示无环比提示", () => {
-		render(<HeroViewsTile today={5} yesterday={0} daily={[]} />);
-		expect(screen.getByText("5")).toBeTruthy();
-		expect(screen.getByText("昨日无浏览，无环比")).toBeTruthy();
-	});
-
+describe("区块空态", () => {
 	it("热门文章空列表显示占位", async () => {
 		await renderWithRouter(<PopularPostsTile posts={[]} />);
 		expect(screen.getByText("暂无热门文章")).toBeTruthy();
@@ -96,5 +95,12 @@ describe("tile 空态", () => {
 	it("最近发布空列表显示引导文案", () => {
 		render(<RecentPostsTile posts={[]} />);
 		expect(screen.getByText("还没有文章")).toBeTruthy();
+	});
+
+	it("里程碑零值显示累计读数与差额", () => {
+		render(<MilestoneTile totalViews={0} />);
+		expect(screen.getByText("累计浏览")).toBeTruthy();
+		// 1k 档差额 1,000（remaining 独立 span，数字部分单独断言）
+		expect(screen.getByText("1,000")).toBeTruthy();
 	});
 });
