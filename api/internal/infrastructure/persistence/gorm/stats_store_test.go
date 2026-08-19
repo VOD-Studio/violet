@@ -59,6 +59,26 @@ func seedComment(t *testing.T, db *gorm.DB, postID uuid.UUID, status string) {
 	require.NoError(t, db.Create(&c).Error)
 }
 
+// seedView 直接写一条浏览事件记录。
+func seedView(t *testing.T, db *gorm.DB, postID uuid.UUID, createdAt time.Time) {
+	t.Helper()
+	require.NoError(t, db.Create(&model.PostView{
+		PostID: postID, IPAddress: "127.0.0.1", CreatedAt: createdAt,
+	}).Error)
+}
+
+// seedCommentAt 写一条指定创建时间的评论（对比口径测试用）。
+func seedCommentAt(t *testing.T, db *gorm.DB, postID uuid.UUID, status string, createdAt time.Time) {
+	t.Helper()
+	c := model.Comment{
+		ID: uuid.New(), PostID: postID, Path: "/",
+		AuthorName: "anon", AuthorEmail: "c@example.com",
+		Body: "nice", Pictures: []byte("[]"), Status: status,
+		CreatedAt: createdAt, UpdatedAt: createdAt,
+	}
+	require.NoError(t, db.Create(&c).Error)
+}
+
 // ============================================================
 // StatsStore.GetDashboard 集成测试
 // ============================================================
@@ -127,6 +147,107 @@ func TestStatsStore_GetDashboard_WithData(t *testing.T) {
 	assert.Equal(t, 10, stats.PopularPosts[0].ViewCount)
 	assert.Equal(t, "PostB", stats.PopularPosts[1].Title)
 	assert.Equal(t, 5, stats.PopularPosts[1].ViewCount)
+}
+
+// ============================================================
+// StatsStore 对比口径（今日/昨日浏览、本周/上周评论）
+// ============================================================
+
+func TestStatsStore_GetDashboard_ComparisonWindows(t *testing.T) {
+	db := setupStatsTestDB(t)
+	ctx := context.Background()
+
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	yesterdayStart := todayStart.AddDate(0, 0, -1)
+	mondayStart := todayStart.AddDate(0, 0, -((int(now.Weekday())+6)%7))
+
+	post := uuid.New()
+	seedPost(t, db, post, "P", "slug", "published", "", 0, now)
+
+	// 浏览：今日 2（now 与今早之间取值）、昨日 3、前日 1（两窗口均不计）
+	seedView(t, db, post, now)
+	seedView(t, db, post, now)
+	seedView(t, db, post, yesterdayStart.Add(2*time.Hour))
+	seedView(t, db, post, yesterdayStart.Add(3*time.Hour))
+	seedView(t, db, post, yesterdayStart.Add(4*time.Hour))
+	seedView(t, db, post, yesterdayStart.Add(-1*time.Hour))
+
+	// 评论：本周 2（now 与本周内取值）、上周 1、上上周 1（不计）
+	seedCommentAt(t, db, post, "approved", now)
+	seedCommentAt(t, db, post, "pending", mondayStart.Add(12*time.Hour))
+	seedCommentAt(t, db, post, "approved", mondayStart.AddDate(0, 0, -1).Add(12*time.Hour))
+	seedCommentAt(t, db, post, "approved", mondayStart.AddDate(0, 0, -8))
+
+	store := NewStatsStore(db)
+	stats, err := store.GetDashboard(ctx)
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(2), stats.TodayViews, "今日浏览：now 两条")
+	assert.Equal(t, int64(3), stats.YesterdayViews, "昨日浏览：昨日窗口三条")
+	assert.Equal(t, int64(2), stats.WeekComments, "本周评论：now + 周一 12 点（含 pending）")
+	assert.Equal(t, int64(1), stats.LastWeekComments, "上周评论：上周内一条")
+}
+
+// ============================================================
+// StatsStore.GetViewTrends 应用层分桶
+// ============================================================
+
+func TestStatsStore_GetViewTrends_Bucketing(t *testing.T) {
+	db := setupStatsTestDB(t)
+	ctx := context.Background()
+
+	now := time.Now()
+	post := uuid.New()
+	seedPost(t, db, post, "P", "slug", "published", "", 0, now)
+
+	// 今日 2、8 天前 3（7 天窗口外、30 天窗口内）、400 天前 1（12 个月外全排除）
+	seedView(t, db, post, now)
+	seedView(t, db, post, now)
+	seedView(t, db, post, now.AddDate(0, 0, -8))
+	seedView(t, db, post, now.AddDate(0, 0, -8))
+	seedView(t, db, post, now.AddDate(0, 0, -8))
+	seedView(t, db, post, now.AddDate(0, 0, -400))
+
+	store := NewStatsStore(db)
+
+	// days=7：仅今日 2 条进日聚合
+	t7, err := store.GetViewTrends(ctx, 7)
+	require.NoError(t, err)
+	var sum7 int64
+	for _, p := range t7.Daily {
+		sum7 += p.Count
+	}
+	assert.Equal(t, int64(2), sum7, "7 天窗口：8 天前与 400 天前均排除")
+
+	// days=30：今日 2 + 8 天前 3
+	t30, err := store.GetViewTrends(ctx, 30)
+	require.NoError(t, err)
+	var sum30 int64
+	for _, p := range t30.Daily {
+		sum30 += p.Count
+	}
+	assert.Equal(t, int64(5), sum30, "30 天窗口：400 天前仍排除")
+
+	// 月聚合与 days 无关：始终覆盖 12 个月内的全部 5 条
+	var sumM int64
+	for i, p := range t30.Monthly {
+		sumM += p.Count
+		if i > 0 {
+			assert.Less(t, t30.Monthly[i-1].Label, p.Label, "月聚合按 Label 升序")
+		}
+	}
+	assert.Equal(t, int64(5), sumM, "月口径：400 天前排除，其余 5 条计入")
+
+	// days=90 非白名单值：归一化在 service 层，store 按原始窗口处理，
+	// 90 天窗口内仍含 8 天前数据 → 5
+	tn, err := store.GetViewTrends(ctx, 90)
+	require.NoError(t, err)
+	var sumN int64
+	for _, p := range tn.Daily {
+		sumN += p.Count
+	}
+	assert.Equal(t, int64(5), sumN)
 }
 
 // ============================================================

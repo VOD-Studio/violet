@@ -3,8 +3,10 @@ package stats
 
 import (
 	"net/http"
+	"strconv"
 
 	appstats "blog-api/internal/application/stats"
+	domainstats "blog-api/internal/domain/stats"
 	"blog-api/internal/interfaces/http/response"
 )
 
@@ -28,9 +30,15 @@ func (h *Handler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, data)
 }
 
-// GetViewTrends 浏览量趋势
+// GetViewTrends 浏览量趋势，days 查询参数指定日聚合窗口（7/30，默认 30）
 func (h *Handler) GetViewTrends(w http.ResponseWriter, r *http.Request) {
-	data, err := h.svc.GetViewTrends(r.Context())
+	days := domainstats.DefaultTrendDays
+	if v := r.URL.Query().Get("days"); v != "" {
+		if d, err := strconv.Atoi(v); err == nil {
+			days = d
+		}
+	}
+	data, err := h.svc.GetViewTrends(r.Context(), days)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

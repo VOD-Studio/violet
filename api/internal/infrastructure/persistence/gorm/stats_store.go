@@ -4,6 +4,7 @@ package gorm
 import (
 	"context"
 	"regexp"
+	"sort"
 	"time"
 	"unicode/utf8"
 
@@ -44,6 +45,29 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 	}
 	stats.TotalViews = vs.Total
 
+	// 对比口径窗口边界（本地时区）：今日/昨日自然日、本周/上周（周一起算）。
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	yesterdayStart := todayStart.AddDate(0, 0, -1)
+	mondayStart := todayStart.AddDate(0, 0, -((int(now.Weekday())+6)%7))
+	lastMondayStart := mondayStart.AddDate(0, 0, -7)
+	if err := s.db.WithContext(ctx).Model(&newmodel.PostView{}).
+		Where("created_at >= ?", todayStart).Count(&stats.TodayViews).Error; err != nil {
+		return stats, domainshared.Internal("统计今日浏览量失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.PostView{}).
+		Where("created_at >= ? AND created_at < ?", yesterdayStart, todayStart).Count(&stats.YesterdayViews).Error; err != nil {
+		return stats, domainshared.Internal("统计昨日浏览量失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.Comment{}).
+		Where("created_at >= ?", mondayStart).Count(&stats.WeekComments).Error; err != nil {
+		return stats, domainshared.Internal("统计本周评论数失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&newmodel.Comment{}).
+		Where("created_at >= ? AND created_at < ?", lastMondayStart, mondayStart).Count(&stats.LastWeekComments).Error; err != nil {
+		return stats, domainshared.Internal("统计上周评论数失败", err)
+	}
+
 	// 最近 5 篇文章
 	var recent []newmodel.Post
 	if err := s.db.WithContext(ctx).Order("created_at DESC").Limit(5).Find(&recent).Error; err != nil {
@@ -65,46 +89,44 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 	return stats, nil
 }
 
-func (s *StatsStore) GetViewTrends(ctx context.Context) (domainstats.ViewTrends, error) {
+func (s *StatsStore) GetViewTrends(ctx context.Context, days int) (domainstats.ViewTrends, error) {
 	var trends domainstats.ViewTrends
-	// 最近 30 天每日浏览量（从 post_views 表）
+	// 拉取最近 12 个月原始浏览事件，日/月两个口径在应用层分桶共享同一批行。
+	// 应用层聚合而非 SQL TO_CHAR：后者是 PostgreSQL 专属函数，会让 SQLite
+	// 集成测试失败；分桶统一走本地时区，双后端口径一致（对齐 countStrippedChars 先例）。
 	now := time.Now()
-	from := now.AddDate(0, 0, -30)
-	type dailyRow struct {
-		Date  string
-		Count int64
-	}
-	var daily []dailyRow
+	monthFrom := now.AddDate(-1, 0, 0)
+	dayFrom := now.AddDate(0, 0, -days)
+	var rows []struct{ CreatedAt time.Time }
 	if err := s.db.WithContext(ctx).
-		Table("post_views").
-		Select("COALESCE(TO_CHAR(created_at, 'YYYY-MM-DD'),'') AS date, COUNT(*) AS count").
-		Where("created_at >= ?", from).
-		Group("date").Order("date ASC").
-		Scan(&daily).Error; err != nil {
-		return trends, domainshared.Internal("查询每日浏览趋势失败", err)
+		Model(&newmodel.PostView{}).
+		Select("created_at").
+		Where("created_at >= ?", monthFrom).
+		Scan(&rows).Error; err != nil {
+		return trends, domainshared.Internal("查询浏览趋势失败", err)
 	}
-	for _, d := range daily {
-		trends.Daily = append(trends.Daily, domainstats.ViewPoint{Label: d.Date, Count: d.Count})
+	dailyBuckets := make(map[string]int64)
+	monthlyBuckets := make(map[string]int64)
+	for _, r := range rows {
+		local := r.CreatedAt.In(time.Local)
+		if !local.Before(dayFrom) {
+			dailyBuckets[local.Format("2006-01-02")]++
+		}
+		monthlyBuckets[local.Format("2006-01")]++
 	}
-	// 最近 12 个月每月浏览量
-	fromMonth := now.AddDate(-1, 0, 0)
-	type monthRow struct {
-		Month string
-		Count int64
-	}
-	var monthly []monthRow
-	if err := s.db.WithContext(ctx).
-		Table("post_views").
-		Select("COALESCE(TO_CHAR(created_at, 'YYYY-MM'),'') AS month, COUNT(*) AS count").
-		Where("created_at >= ?", fromMonth).
-		Group("month").Order("month ASC").
-		Scan(&monthly).Error; err != nil {
-		return trends, domainshared.Internal("查询每月浏览趋势失败", err)
-	}
-	for _, m := range monthly {
-		trends.Monthly = append(trends.Monthly, domainstats.ViewPoint{Label: m.Month, Count: m.Count})
-	}
+	trends.Daily = sortedViewPoints(dailyBuckets)
+	trends.Monthly = sortedViewPoints(monthlyBuckets)
 	return trends, nil
+}
+
+// sortedViewPoints 按 Label 升序输出分桶结果，保证时间轴单调。
+func sortedViewPoints(buckets map[string]int64) []domainstats.ViewPoint {
+	points := make([]domainstats.ViewPoint, 0, len(buckets))
+	for label, count := range buckets {
+		points = append(points, domainstats.ViewPoint{Label: label, Count: count})
+	}
+	sort.Slice(points, func(i, j int) bool { return points[i].Label < points[j].Label })
+	return points
 }
 
 func postToSummary(p newmodel.Post) domainstats.PostSummary {

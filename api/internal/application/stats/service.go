@@ -22,9 +22,9 @@ func (s *Service) GetDashboard(ctx context.Context) (domainstats.DashboardStats,
 	return s.store.GetDashboard(ctx)
 }
 
-// GetViewTrends 获取浏览量趋势
-func (s *Service) GetViewTrends(ctx context.Context) (domainstats.ViewTrends, error) {
-	return s.store.GetViewTrends(ctx)
+// GetViewTrends 获取浏览量趋势，days 为日聚合窗口天数（非法值归一为默认档）
+func (s *Service) GetViewTrends(ctx context.Context, days int) (domainstats.ViewTrends, error) {
+	return s.store.GetViewTrends(ctx, domainstats.NormalizeTrendDays(days))
 }
 
 // GetPublic 获取公开只读统计（About 页站点生命体征用，仅安全字段）

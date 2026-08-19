@@ -13,12 +13,40 @@ type DashboardStats struct {
 	PendingComments int64 `json:"pending_comments"`
 	// TotalViews 累计浏览量
 	TotalViews int64 `json:"total_views"`
+	// TodayViews 今日浏览量（本地时区自然日零点起，post_views 计数）
+	TodayViews int64 `json:"today_views"`
+	// YesterdayViews 昨日浏览量，供前端计算日环比
+	YesterdayViews int64 `json:"yesterday_views"`
+	// WeekComments 本周新增评论数（周一零点起，含待审核）
+	WeekComments int64 `json:"week_comments"`
+	// LastWeekComments 上周评论数，供前端计算周环比
+	LastWeekComments int64 `json:"last_week_comments"`
 	// TotalUsers 注册用户总数
 	TotalUsers int64 `json:"total_users"`
 	// RecentPosts 最近发布的文章摘要列表
 	RecentPosts []PostSummary `json:"recent_posts"`
 	// PopularPosts 热门文章摘要列表（按浏览量排序）
 	PopularPosts []PostSummary `json:"popular_posts"`
+}
+
+// 趋势窗口档位：days 查询参数仅接受白名单值，非法回退 DefaultTrendDays。
+const (
+	// TrendDays7 近 7 天日聚合档位
+	TrendDays7 = 7
+	// TrendDays30 近 30 天日聚合档位
+	TrendDays30 = 30
+	// DefaultTrendDays 默认趋势窗口
+	DefaultTrendDays = TrendDays30
+)
+
+// NormalizeTrendDays 校验趋势窗口天数，非法值回退默认 30 天。
+func NormalizeTrendDays(days int) int {
+	switch days {
+	case TrendDays7, TrendDays30:
+		return days
+	default:
+		return DefaultTrendDays
+	}
 }
 
 // PostSummary 文章摘要
@@ -71,6 +99,6 @@ type PublicStats struct {
 // StatsStore 统计查询端口
 type StatsStore interface {
 	GetDashboard(ctx context.Context) (DashboardStats, error)
-	GetViewTrends(ctx context.Context) (ViewTrends, error)
+	GetViewTrends(ctx context.Context, days int) (ViewTrends, error)
 	GetPublic(ctx context.Context) (PublicStats, error)
 }
