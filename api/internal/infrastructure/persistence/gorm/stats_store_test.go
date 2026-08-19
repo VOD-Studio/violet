@@ -211,25 +211,34 @@ func TestStatsStore_GetViewTrends_Bucketing(t *testing.T) {
 
 	store := NewStatsStore(db)
 
-	// days=7：仅今日 2 条进日聚合
+	// days=7：补零输出 7 个自然日（含今天），8 天前与 400 天前均排除 → 仅今日 2 条
 	t7, err := store.GetViewTrends(ctx, 7)
 	require.NoError(t, err)
+	require.Len(t, t7.Daily, 7, "7 天档补零输出 7 个自然日")
 	var sum7 int64
+	zeroDays7 := 0
 	for _, p := range t7.Daily {
 		sum7 += p.Count
+		if p.Count == 0 {
+			zeroDays7++
+		}
 	}
 	assert.Equal(t, int64(2), sum7, "7 天窗口：8 天前与 400 天前均排除")
+	assert.Equal(t, 6, zeroDays7, "无浏览的 6 天补零点")
+	assert.Equal(t, now.Format("2006-01-02"), t7.Daily[6].Label, "末位为今天")
 
-	// days=30：今日 2 + 8 天前 3
+	// days=30：补零 30 个自然日；今日 2 + 8 天前 3
 	t30, err := store.GetViewTrends(ctx, 30)
 	require.NoError(t, err)
+	require.Len(t, t30.Daily, 30, "30 天档补零输出 30 个自然日")
 	var sum30 int64
 	for _, p := range t30.Daily {
 		sum30 += p.Count
 	}
 	assert.Equal(t, int64(5), sum30, "30 天窗口：400 天前仍排除")
 
-	// 月聚合与 days 无关：始终覆盖 12 个月内的全部 5 条
+	// 月聚合与 days 无关：补零 12 个自然月，覆盖窗口内全部 5 条
+	require.Len(t, t30.Monthly, 12, "月档补零输出 12 个自然月")
 	var sumM int64
 	for i, p := range t30.Monthly {
 		sumM += p.Count
@@ -238,16 +247,31 @@ func TestStatsStore_GetViewTrends_Bucketing(t *testing.T) {
 		}
 	}
 	assert.Equal(t, int64(5), sumM, "月口径：400 天前排除，其余 5 条计入")
+	assert.Equal(t, now.Format("2006-01"), t30.Monthly[11].Label, "末位为当月")
 
-	// days=90 非白名单值：归一化在 service 层，store 按原始窗口处理，
-	// 90 天窗口内仍含 8 天前数据 → 5
+	// days=90 非白名单值：归一化在 service 层，store 按原始窗口补零 90 天
 	tn, err := store.GetViewTrends(ctx, 90)
 	require.NoError(t, err)
+	require.Len(t, tn.Daily, 90)
 	var sumN int64
 	for _, p := range tn.Daily {
 		sumN += p.Count
 	}
 	assert.Equal(t, int64(5), sumN)
+}
+
+func TestStatsStore_GetViewTrends_ZeroFilled(t *testing.T) {
+	db := setupStatsTestDB(t)
+
+	// 空库：无任何浏览事件，序列仍完整输出（全零），而非空数组
+	store := NewStatsStore(db)
+	trends, err := store.GetViewTrends(context.Background(), 30)
+	require.NoError(t, err)
+	require.Len(t, trends.Daily, 30, "空库 30 天档输出 30 个零点")
+	require.Len(t, trends.Monthly, 12, "空库月档输出 12 个零点")
+	for _, p := range trends.Daily {
+		assert.Equal(t, int64(0), p.Count)
+	}
 }
 
 // ============================================================

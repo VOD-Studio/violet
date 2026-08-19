@@ -4,7 +4,6 @@ package gorm
 import (
 	"context"
 	"regexp"
-	"sort"
 	"time"
 	"unicode/utf8"
 
@@ -93,17 +92,20 @@ func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardSta
 
 func (s *StatsStore) GetViewTrends(ctx context.Context, days int) (domainstats.ViewTrends, error) {
 	var trends domainstats.ViewTrends
-	// 拉取最近 12 个月原始浏览事件，日/月两个口径在应用层分桶共享同一批行。
+	// 拉取月窗口原始浏览事件，日/月两个口径在应用层分桶共享同一批行。
 	// 应用层聚合而非 SQL TO_CHAR：后者是 PostgreSQL 专属函数，会让 SQLite
 	// 集成测试失败；分桶统一走本地时区，双后端口径一致（对齐 countStrippedChars 先例）。
 	now := time.Now()
-	monthFrom := now.AddDate(-1, 0, 0)
-	dayFrom := now.AddDate(0, 0, -days)
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	firstDay := todayStart.AddDate(0, 0, -(days - 1))
+	// 月窗口从 12 个月前的月初起（含本月共 12 个自然月）；按 now 往前一年取
+	// 会漏掉首月月初的数据行。
+	firstMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).AddDate(0, -11, 0)
 	var rows []struct{ CreatedAt time.Time }
 	if err := s.db.WithContext(ctx).
 		Model(&newmodel.PostView{}).
 		Select("created_at").
-		Where("created_at >= ?", monthFrom).
+		Where("created_at >= ?", firstMonth).
 		Scan(&rows).Error; err != nil {
 		return trends, domainshared.Internal("查询浏览趋势失败", err)
 	}
@@ -111,24 +113,24 @@ func (s *StatsStore) GetViewTrends(ctx context.Context, days int) (domainstats.V
 	monthlyBuckets := make(map[string]int64)
 	for _, r := range rows {
 		local := r.CreatedAt.In(time.Local)
-		if !local.Before(dayFrom) {
+		if !local.Before(firstDay) {
 			dailyBuckets[local.Format("2006-01-02")]++
 		}
 		monthlyBuckets[local.Format("2006-01")]++
 	}
-	trends.Daily = sortedViewPoints(dailyBuckets)
-	trends.Monthly = sortedViewPoints(monthlyBuckets)
-	return trends, nil
-}
-
-// sortedViewPoints 按 Label 升序输出分桶结果，保证时间轴单调。
-func sortedViewPoints(buckets map[string]int64) []domainstats.ViewPoint {
-	points := make([]domainstats.ViewPoint, 0, len(buckets))
-	for label, count := range buckets {
-		points = append(points, domainstats.ViewPoint{Label: label, Count: count})
+	// 补零：窗口内每个自然日/月都输出数据点，缺失计 0。
+	// 时间序列的空白与零是两种语义，稀疏序列会让类目轴压缩时间轴。
+	trends.Daily = make([]domainstats.ViewPoint, 0, days)
+	for i := days - 1; i >= 0; i-- {
+		label := todayStart.AddDate(0, 0, -i).Format("2006-01-02")
+		trends.Daily = append(trends.Daily, domainstats.ViewPoint{Label: label, Count: dailyBuckets[label]})
 	}
-	sort.Slice(points, func(i, j int) bool { return points[i].Label < points[j].Label })
-	return points
+	trends.Monthly = make([]domainstats.ViewPoint, 0, 12)
+	for i := 0; i < 12; i++ {
+		label := firstMonth.AddDate(0, i, 0).Format("2006-01")
+		trends.Monthly = append(trends.Monthly, domainstats.ViewPoint{Label: label, Count: monthlyBuckets[label]})
+	}
+	return trends, nil
 }
 
 func postToSummary(p newmodel.Post) domainstats.PostSummary {
