@@ -1,4 +1,3 @@
-import { Badge } from "@shared/ui/base/badge";
 import { Card, CardContent } from "@shared/ui/base/card";
 import { format } from "date-fns";
 import { Clock3 } from "lucide-react";
@@ -7,11 +6,11 @@ import type { PostSummaryDTO } from "../model/types";
 /**
  * 最近发布时间线卡。
  *
- * 后端按 created_at DESC 取 5 条（含 draft）；状态徽章区分草稿/已发布。
+ * 后端口径：仅 published、按 published_at DESC 取 5 条，发布时间必有值。
  */
 export function RecentPostsTile({ posts }: { posts: PostSummaryDTO[] }) {
 	return (
-		<Card className="border-border/60">
+		<Card className="border-border/60 h-full">
 			<CardContent className="flex h-full flex-col gap-3 p-6">
 				<div className="flex items-center justify-between">
 					<span className="text-sm font-medium">最近发布</span>
@@ -34,16 +33,11 @@ export function RecentPostsTile({ posts }: { posts: PostSummaryDTO[] }) {
 								<div className="flex min-w-0 items-center gap-2">
 									<span className="text-muted-foreground size-1.5 shrink-0 rounded-full bg-current" />
 									<span className="truncate text-sm">{post.title}</span>
-									{post.status !== "published" && (
-										<Badge variant="secondary" className="shrink-0">
-											{post.status === "draft" ? "草稿" : post.status}
-										</Badge>
-									)}
 								</div>
 								<span className="text-muted-foreground shrink-0 text-xs tabular-nums">
 									{post.published_at
 										? format(new Date(post.published_at), "MM-dd HH:mm")
-										: "未发布"}
+										: "—"}
 								</span>
 							</li>
 						))}

@@ -23,7 +23,7 @@ export function HeroViewsTile({ today, yesterday, daily }: HeroViewsTileProps) {
 	const idle = today === 0 && yesterday === 0 && spark.every((p) => p.count === 0);
 
 	return (
-		<Card className="border-border/60">
+		<Card className="border-border/60 h-full">
 			<CardContent className="flex h-full flex-col gap-3 p-6">
 				<div className="flex items-center justify-between">
 					<span className="text-muted-foreground text-sm font-medium">今日浏览</span>
@@ -47,12 +47,13 @@ export function HeroViewsTile({ today, yesterday, daily }: HeroViewsTileProps) {
 							</span>
 							{delta && (
 								<span
-									className={`mb-1 flex items-center gap-1 text-sm ${delta.direction === "down"
+									className={`mb-1 flex items-center gap-1 text-sm ${
+										delta.direction === "down"
 											? "text-red-500"
 											: delta.direction === "up"
 												? "text-emerald-500"
 												: "text-muted-foreground"
-										}`}
+									}`}
 								>
 									{delta.direction === "up" ? (
 										<TrendingUp className="size-4" />

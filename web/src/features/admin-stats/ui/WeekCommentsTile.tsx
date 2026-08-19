@@ -10,8 +10,8 @@ import { computeDelta } from "../lib/metrics";
 export function WeekCommentsTile({ week, lastWeek }: { week: number; lastWeek: number }) {
 	const delta = computeDelta(week, lastWeek);
 	return (
-		<Card className="border-border/60">
-			<CardContent className="flex h-full flex-col gap-2 p-5">
+		<Card className="border-border/60 h-full">
+			<CardContent className="flex h-full flex-col gap-2 p-6">
 				<span className="text-muted-foreground text-sm font-medium">本周新评论</span>
 				<div className="text-3xl font-bold tabular-nums">{week}</div>
 				{delta ? (

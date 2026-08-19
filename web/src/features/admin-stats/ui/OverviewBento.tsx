@@ -49,7 +49,7 @@ export function OverviewBento() {
 			<div className="lg:col-span-2">
 				<WeekCommentsTile week={data.week_comments} lastWeek={data.last_week_comments} />
 			</div>
-			<div className="lg:col-span-2">
+			<div className="sm:col-span-2 lg:col-span-2">
 				<ContentStockTile posts={data.total_posts} users={data.total_users} />
 			</div>
 
@@ -77,7 +77,7 @@ function BentoSkeleton() {
 			<ShimmerSkeleton className="h-44 sm:col-span-2 lg:col-span-6" />
 			<ShimmerSkeleton className="h-44 lg:col-span-2" />
 			<ShimmerSkeleton className="h-44 lg:col-span-2" />
-			<ShimmerSkeleton className="h-44 lg:col-span-2" />
+			<ShimmerSkeleton className="h-44 sm:col-span-2 lg:col-span-2" />
 			<ShimmerSkeleton className="h-72 sm:col-span-2 lg:col-span-8" />
 			<ShimmerSkeleton className="h-72 sm:col-span-2 lg:col-span-4" />
 			<ShimmerSkeleton className="h-48 sm:col-span-2 lg:col-span-7" />

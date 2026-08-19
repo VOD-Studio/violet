@@ -11,8 +11,8 @@ export function MilestoneTile({ totalViews }: { totalViews: number }) {
 	const { target, remaining, progress } = nextMilestone(totalViews);
 	const percent = Math.min(100, Math.round(progress * 100));
 	return (
-		<Card className="border-border/60">
-			<CardContent className="flex h-full flex-col p-5">
+		<Card className="border-border/60 h-full">
+			<CardContent className="flex h-full flex-col p-6">
 				<div className="flex items-center justify-between">
 					<span className="text-muted-foreground text-sm font-medium">浏览里程碑</span>
 					<Flag className="text-muted-foreground size-4" />

@@ -8,8 +8,8 @@ import { FileText, Users } from "lucide-react";
  */
 export function ContentStockTile({ posts, users }: { posts: number; users: number }) {
 	return (
-		<Card className="border-border/60">
-			<CardContent className="flex h-full flex-col gap-2 p-5">
+		<Card className="border-border/60 h-full">
+			<CardContent className="flex h-full flex-col gap-2 p-6">
 				<span className="text-muted-foreground text-sm font-medium">内容存量</span>
 				<div className="mt-auto flex flex-col gap-3">
 					<div className="flex items-baseline gap-2">

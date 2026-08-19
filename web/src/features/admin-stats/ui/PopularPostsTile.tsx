@@ -11,7 +11,7 @@ import type { PostSummaryDTO } from "../model/types";
 export function PopularPostsTile({ posts }: { posts: PostSummaryDTO[] }) {
 	const max = Math.max(...posts.map((p) => p.view_count), 1);
 	return (
-		<Card className="border-border/60">
+		<Card className="border-border/60 h-full">
 			<CardContent className="flex h-full flex-col gap-3 p-6">
 				<div className="flex items-center justify-between">
 					<span className="text-sm font-medium">热门文章</span>

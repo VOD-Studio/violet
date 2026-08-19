@@ -11,8 +11,8 @@ import { ArrowRight, CheckCircle2, MessageSquareWarning } from "lucide-react";
 export function PendingCommentsTile({ count }: { count: number }) {
 	const hasPending = count > 0;
 	return (
-		<Card className="border-border/60">
-			<CardContent className="flex h-full flex-col gap-2 p-5">
+		<Card className="border-border/60 h-full">
+			<CardContent className="flex h-full flex-col gap-2 p-6">
 				<div className="flex items-center justify-between">
 					<span className="text-muted-foreground text-sm font-medium">待审评论</span>
 					{hasPending ? (
