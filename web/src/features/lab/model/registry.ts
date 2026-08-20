@@ -43,4 +43,11 @@ export const LABS = [
 		description: "读到文章中段，返回入口已经离场——四种方案补上这条退路。",
 		meta: "方案 ×4",
 	},
+	{
+		to: "/lab/mascot",
+		en: "Mascot",
+		title: "吉祥物形象实验室",
+		description: "violet 软萌猫猫团吉祥物「堇喵」——聚光灯舞台常驻视口，38 套动作表情点击即演。",
+		meta: "表情 ×38",
+	},
 ] as const;

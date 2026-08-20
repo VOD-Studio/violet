@@ -15,3 +15,9 @@ todos.json
 
 # 体积分析报告（ANALYZE=true 生成）
 .reports/
+
+# agent 状态文件(dev 传输链,适配器写入)
+.agent-status.json
+
+# Codex 桌宠导出产物(脚本生成)
+web/scripts/codex-pet/dist/

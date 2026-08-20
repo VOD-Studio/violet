@@ -1,0 +1,11 @@
+{
+	"name": "@violet/agent-status",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./transport": "./src/transport.ts",
+		"./transport/sse": "./src/transport/sse.ts"
+	}
+}

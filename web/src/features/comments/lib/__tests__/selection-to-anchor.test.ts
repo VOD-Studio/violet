@@ -42,13 +42,13 @@ function firstChild(el: HTMLElement): Node {
 	return node;
 }
 
-/** 构造正文容器，模拟阅读端真实 DOM 结构（FencedCodeBlock 外层有 div 包装）。 */
+/** 构造正文容器，模拟阅读端真实 DOM 结构（CodeCard 外层有 div 包装）。 */
 function buildRoot(): HTMLElement {
 	const root = document.createElement("main");
 	root.setAttribute("data-article-content", "");
 	root.innerHTML = `
     <p id="p-text">这是普通段落，可以被批注。</p>
-    <!-- FencedCodeBlock：外层 div 包装（含语言标签/复制按钮），内部 shiki 输出 pre>code -->
+    <!-- CodeCard：外层 div 包装（含语言标签/复制按钮），内部 shiki 输出 pre>code -->
     <div class="group relative">
       <div class="shiki-code">
         <pre class="shiki"><code id="code-text">const x = 1;</code></pre>
@@ -89,7 +89,7 @@ describe("selectionToAnchor", () => {
 		expect(anchor).not.toBeNull();
 	});
 
-	it("代码块 pre（FencedCodeBlock 内 shiki pre>code）→ 返回 null（不可批注）", async () => {
+	it("代码块 pre（CodeCard 内 shiki pre>code）→ 返回 null（不可批注）", async () => {
 		const code = byId("code-text");
 		const textNode = firstChild(code);
 		selectRange(textNode, 0, textNode, 4);

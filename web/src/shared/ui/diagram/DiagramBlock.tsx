@@ -13,12 +13,12 @@
  * 面板（无旋转 spinner）；SVG 就绪后纯 opacity 淡入（不用 transform 动画——
  * transform 会触发 SVG 按当前倍率重栅格化，放大后发虚）。
  *
- * 失败降级：renderMermaid 返回 { error } → 直接复用 FencedCodeBlock 呈现源码。
+ * 失败降级：renderMermaid 返回 { error } → 直接复用 CodeCard 呈现源码。
  * 失败 = 退化回代码呈现，不做错误装饰（告警/边线/提示行都去掉），与文章围栏
  * 代码块同视觉（shiki 高亮 + 语言标签 + 复制按钮），让源码本身成为内容。
  * 不向读者暴露详细错误（作者在编辑弹层看）。
  *
- * 布局：根容器用 block（不 flex）——失败态 FencedCodeBlock 在 flex 容器里会被
+ * 布局：根容器用 block（不 flex）——失败态 CodeCard 在 flex 容器里会被
  * 收缩为内容宽度（xychart 源码行短时整块仅 ~368px），block 容器让失败态自然
  * 占满父宽。成功态 SVG 居中改在内层 flex wrapper 内部，保留视觉。
  */
@@ -26,7 +26,7 @@ import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { subscribeThemeRerender } from "@/shared/lib/theme-rerender";
 import { cn } from "@/shared/lib/utils";
-import { FencedCodeBlock } from "@/shared/ui/markdown-preview/components/CodeBlock";
+import { CodeCard } from "@/shared/ui/code-preview/components/CodeCard";
 import { DiagramFullscreen } from "./DiagramFullscreen";
 import { DiagramPlaceholder } from "./DiagramPlaceholder";
 import { DiagramViewport } from "./DiagramViewport";
@@ -48,7 +48,7 @@ function readCurrentTheme(): DiagramTheme {
 }
 
 function DiagramError({ format, source }: { format: string; source: string }) {
-	return <FencedCodeBlock code={source} language={format} />;
+	return <CodeCard code={source} language={format} />;
 }
 
 export function DiagramBlock({ format, source }: DiagramBlockProps) {
@@ -124,7 +124,7 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 	};
 
 	// 容器结构全程稳定：加载与加载完用同一 DOM，仅内容填充不同。
-	// 根容器 block 布局：失败态 FencedCodeBlock 在 block 里自然 w-full（不被 flex
+	// 根容器 block 布局：失败态 CodeCard 在 block 里自然 w-full（不被 flex
 	// 收缩为内容宽度）。成功态 DiagramViewport + 居中 wrapper 在块级里仍居中。
 	// data-type 与编辑器节点载体同名：批注的 UNANNOTATABLE_SELECTOR 靠它拦截；
 	// select-none 使图内文字（SVG text / foreignObject HTML）不可选，从源头
