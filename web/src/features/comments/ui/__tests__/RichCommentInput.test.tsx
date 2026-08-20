@@ -66,6 +66,25 @@ describe("RichCommentInput", () => {
 		fireEvent.keyDown(editor, { key: "Enter", ctrlKey: true });
 		expect(onSubmit).toHaveBeenCalledOnce();
 	});
+	it("submitOnEnter=true 时普通 Enter 触发 onSubmit", () => {
+		const onSubmit = vi.fn();
+		const { container } = render(
+			<RichCommentInput value="" onChange={() => {}} onSubmit={onSubmit} submitOnEnter />,
+		);
+		const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
+		fireEvent.keyDown(editor, { key: "Enter" });
+		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	it("submitOnEnter=true 时 Shift+Enter 不触发 onSubmit", () => {
+		const onSubmit = vi.fn();
+		const { container } = render(
+			<RichCommentInput value="" onChange={() => {}} onSubmit={onSubmit} submitOnEnter />,
+		);
+		const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
+		fireEvent.keyDown(editor, { key: "Enter", shiftKey: true });
+		expect(onSubmit).not.toHaveBeenCalled();
+	});
 
 	it("compact 模式应用更小的 padding", () => {
 		const { container } = render(<RichCommentInput value="" onChange={() => {}} compact />);

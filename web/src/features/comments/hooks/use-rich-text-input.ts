@@ -23,6 +23,10 @@ export interface UseRichTextInputOptions {
 	onChange?: (markdown: string) => void;
 	onSubmit?: () => void;
 	disabled?: boolean;
+	/** 是否按 Enter 键即提交（Shift+Enter 换行），默认 false（仅 Ctrl/Cmd+Enter 提交） */
+	submitOnEnter?: boolean;
+	/** 剪贴板粘贴图片文件回调 */
+	onPasteFiles?: (files: File[]) => void;
 }
 
 export interface UseRichTextInputReturn {
@@ -50,6 +54,8 @@ export function useRichTextInput({
 	onChange,
 	onSubmit,
 	disabled,
+	submitOnEnter = false,
+	onPasteFiles,
 }: UseRichTextInputOptions): UseRichTextInputReturn {
 	const contentRef = useRef<HTMLDivElement>(null);
 	const lastSyncedRef = useRef("");
@@ -187,6 +193,14 @@ export function useRichTextInput({
 
 	const handlePaste = useCallback(
 		(e: React.ClipboardEvent) => {
+			const files = Array.from(e.clipboardData.files || []);
+			const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+			if (imageFiles.length > 0 && onPasteFiles) {
+				e.preventDefault();
+				onPasteFiles(imageFiles);
+				return;
+			}
+
 			e.preventDefault();
 			const text = e.clipboardData.getData("text/plain");
 			const selection = window.getSelection();
@@ -201,16 +215,28 @@ export function useRichTextInput({
 			selection.addRange(range);
 			handleInput();
 		},
-		[handleInput],
+		[handleInput, onPasteFiles],
 	);
 
-	const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-		if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-			e.preventDefault();
-			onSubmitRef.current?.();
-		}
-	}, []);
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			// 正在使用中文输入法合成字时忽略回车
+			if (e.nativeEvent.isComposing) return;
 
+			if (submitOnEnter) {
+				if (e.key === "Enter" && !e.shiftKey) {
+					e.preventDefault();
+					onSubmitRef.current?.();
+					return;
+				}
+			}
+			if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+				e.preventDefault();
+				onSubmitRef.current?.();
+			}
+		},
+		[submitOnEnter],
+	);
 	const clear = useCallback(() => {
 		if (contentRef.current) {
 			contentRef.current.innerHTML = "";

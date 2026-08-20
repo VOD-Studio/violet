@@ -19,6 +19,7 @@ import { cn } from "@/shared/lib/utils";
 import { useRichTextInput } from "../hooks/use-rich-text-input";
 
 export interface PictureInput {
+	id?: string;
 	url: string;
 	width: number;
 	height: number;
@@ -32,6 +33,10 @@ export interface RichCommentInputProps {
 	maxImages?: number;
 	enableEmoji?: boolean;
 	enableImage?: boolean;
+	/** 分片上传 purpose，默认 "comment" */
+	uploadPurpose?: string;
+	/** 是否按 Enter 发送（Shift+Enter 换行） */
+	submitOnEnter?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
 	placeholder?: string;
@@ -39,6 +44,8 @@ export interface RichCommentInputProps {
 	onImagesChange?: (images: PictureInput[]) => void;
 	onUploadingChange?: (uploading: boolean) => void;
 	toolbarEnd?: ReactNode;
+	className?: string;
+	inputClassName?: string;
 }
 
 interface ImageItem {
@@ -56,6 +63,8 @@ export function RichCommentInput({
 	maxImages = 10,
 	enableEmoji = true,
 	enableImage = false,
+	uploadPurpose = "comment",
+	submitOnEnter = false,
 	compact = false,
 	disabled = false,
 	placeholder = "写下你的评论…",
@@ -63,17 +72,80 @@ export function RichCommentInput({
 	onImagesChange,
 	onUploadingChange,
 	toolbarEnd,
+	className,
+	inputClassName,
 }: RichCommentInputProps) {
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const { uploadFile } = useChunkedUpload({ purpose: uploadPurpose });
+	const [imageItems, setImageItems] = useState<ImageItem[]>([]);
+
+	const uploadFilesList = useCallback(
+		async (files: File[]) => {
+			if (!enableImage || disabled || files.length === 0) return;
+			const remaining = maxImages - imageItems.length;
+			if (remaining <= 0) return;
+			const toUpload = files.slice(0, remaining);
+
+			const newItems: ImageItem[] = toUpload.map((file) => ({
+				id: crypto.randomUUID(),
+				previewUrl: URL.createObjectURL(file),
+				progress: 0,
+				status: "uploading" as const,
+			}));
+
+			setImageItems((prev) => [...prev, ...newItems]);
+
+			for (let i = 0; i < toUpload.length; i++) {
+				const file = toUpload[i];
+				const itemId = newItems[i].id;
+
+				try {
+					const result = await uploadFile(file, (progress) => {
+						setImageItems((prev) =>
+							prev.map((item) =>
+								item.id === itemId ? { ...item, progress: progress.percent } : item,
+							),
+						);
+					});
+
+					setImageItems((prev) =>
+						prev.map((item) =>
+							item.id === itemId
+								? {
+										...item,
+										status: "done" as const,
+										progress: 100,
+										data: {
+											id: result.file_id,
+											url: result.url,
+											width: result.width ?? 0,
+											height: result.height ?? 0,
+											size: file.size,
+										},
+									}
+								: item,
+						),
+					);
+				} catch {
+					setImageItems((prev) =>
+						prev.map((item) =>
+							item.id === itemId ? { ...item, status: "error" as const } : item,
+						),
+					);
+				}
+			}
+		},
+		[disabled, enableImage, imageItems.length, maxImages, uploadFile],
+	);
+
 	const { contentRef, insertEmoji, handleInput, handlePaste, handleKeyDown } = useRichTextInput({
 		value,
 		onChange,
 		onSubmit,
 		disabled,
+		submitOnEnter,
+		onPasteFiles: enableImage ? uploadFilesList : undefined,
 	});
-
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const { uploadFile } = useChunkedUpload({ purpose: "comment" });
-	const [imageItems, setImageItems] = useState<ImageItem[]>([]);
 
 	useEffect(() => {
 		const completed = imageItems.filter(
@@ -113,61 +185,10 @@ export function RichCommentInput({
 	const handleFileSelect = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const files = Array.from(e.target.files ?? []);
-			if (files.length === 0) return;
-
-			const remaining = maxImages - imageItems.length;
-			const toUpload = files.slice(0, remaining);
-
-			const newItems: ImageItem[] = toUpload.map((file) => ({
-				id: crypto.randomUUID(),
-				previewUrl: URL.createObjectURL(file),
-				progress: 0,
-				status: "uploading" as const,
-			}));
-
-			setImageItems((prev) => [...prev, ...newItems]);
 			e.target.value = "";
-
-			for (let i = 0; i < toUpload.length; i++) {
-				const file = toUpload[i];
-				const itemId = newItems[i].id;
-
-				try {
-					const result = await uploadFile(file, (progress) => {
-						setImageItems((prev) =>
-							prev.map((item) =>
-								item.id === itemId ? { ...item, progress: progress.percent } : item,
-							),
-						);
-					});
-
-					setImageItems((prev) =>
-						prev.map((item) =>
-							item.id === itemId
-								? {
-										...item,
-										status: "done" as const,
-										progress: 100,
-										data: {
-											url: result.url,
-											width: result.width ?? 0,
-											height: result.height ?? 0,
-											size: file.size,
-										},
-									}
-								: item,
-						),
-					);
-				} catch {
-					setImageItems((prev) =>
-						prev.map((item) =>
-							item.id === itemId ? { ...item, status: "error" as const } : item,
-						),
-					);
-				}
-			}
+			await uploadFilesList(files);
 		},
-		[maxImages, imageItems.length, uploadFile],
+		[uploadFilesList],
 	);
 
 	const handleRemoveImage = (id: string) => {
@@ -187,6 +208,7 @@ export function RichCommentInput({
 				"focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
 				"transition-all",
 				disabled && "opacity-50",
+				className,
 			)}
 		>
 			{/* Hidden file input */}
@@ -216,6 +238,7 @@ export function RichCommentInput({
 					"max-h-60 overflow-y-auto bg-transparent focus:outline-none",
 					compact ? "min-h-10 px-3 py-2 text-sm" : "min-h-24 px-4 py-3 text-sm",
 					"empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none",
+					inputClassName,
 				)}
 			/>
 
