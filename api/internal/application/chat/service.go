@@ -740,10 +740,24 @@ func (s *Service) chatImage(ctx context.Context, mediaID, userID domainshared.ID
 	if err != nil {
 		return nil, err
 	}
-	if !file.OwnerID().Equal(userID) || file.Purpose() != domainupload.PurposeChat || file.Status() != domainupload.StatusReady || !strings.HasPrefix(file.MimeType(), "image/") {
+	if !file.OwnerID().Equal(userID) || file.Status() != domainupload.StatusReady || !strings.HasPrefix(file.MimeType(), "image/") || !isAllowedChatImagePurpose(file.Purpose()) {
 		return nil, domainshared.Forbidden("图片媒体不可用于聊天")
 	}
 	return file, nil
+}
+
+func isAllowedChatImagePurpose(purpose string) bool {
+	switch purpose {
+	case domainupload.PurposeChat,
+		domainupload.PurposeMaterial,
+		domainupload.PurposePost,
+		domainupload.PurposeTweet,
+		"comment",
+		domainupload.PurposeEmoji:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
