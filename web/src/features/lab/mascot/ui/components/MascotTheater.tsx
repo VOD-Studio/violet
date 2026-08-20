@@ -96,7 +96,8 @@ export function MascotTheater({
 	const agentMsg = useAgentStatus();
 	const agentEmotion = agentMsg ? resolveEmotionId(agentMsg) : null;
 
-	// 视线跟随:舞台内指针位置归一化为 [-1, 1],带 2.4 倍增益提前触及边缘
+	// 视线跟随:仅指针在舞台场景区内时跟随,位置归一化为 [-1, 1],带 2.4 倍增益提前触及边缘;
+	// 离开舞台(进入控制区或卡片外)视线回中
 	const onStageMove = (e: ReactPointerEvent) => {
 		const rect = stageRef.current?.getBoundingClientRect();
 		if (!rect) return;
@@ -110,6 +111,8 @@ export function MascotTheater({
 		);
 		heroRef.current?.setGaze(nx, ny);
 	};
+
+	const onStageLeave = () => heroRef.current?.setGaze(0, 0);
 
 	const antics: StageAction[] = [
 		{
@@ -154,13 +157,14 @@ export function MascotTheater({
 		}
 	};
 	return (
-		<section
-			ref={stageRef}
-			onPointerMove={onStageMove}
-			className="relative overflow-hidden rounded-2xl bg-[#151022] text-center shadow-2xl shadow-black/30 ring-1 ring-white/10"
-		>
-			{/* 舞台场景区:猫是唯一交互主体,布景层全部 pointer-events-none */}
-			<div className="relative h-72 overflow-hidden bg-[#100b1c] sm:h-88">
+		<section className="relative overflow-hidden rounded-2xl bg-[#151022] text-center shadow-2xl shadow-black/30 ring-1 ring-white/10">
+			{/* 舞台场景区:猫是唯一交互主体,布景层全部 pointer-events-none;指针仅在此区内驱动视线 */}
+			<div
+				ref={stageRef}
+				onPointerMove={onStageMove}
+				onPointerLeave={onStageLeave}
+				className="relative h-72 overflow-hidden bg-[#100b1c] sm:h-88"
+			>
 				{/* 后墙环境冷光:暗部留冷紫底,猫的轮廓才读得出来 */}
 				<div
 					aria-hidden
