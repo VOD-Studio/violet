@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"blog-api/internal/domain/permission"
 	"blog-api/internal/middleware"
 	"blog-api/internal/openapi"
 )
@@ -66,6 +67,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 
 		// 通知（登录用户：列表/未读计数/标记已读）
 		registerNotificationRoutes(v1, d)
+
+		// 聊天（登录用户：私聊/私有房间/消息/事件流/推送订阅）
+		registerChatRoutes(v1, d)
 
 		// 项目 / 公告（公开）
 		v1.Route("/projects", func(r chi.Router) {
@@ -295,7 +299,8 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 }
 
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
-func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {	redisClient := d.Redis
+func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
+	redisClient := d.Redis
 	codeRunnerH := d.CodeRunner
 
 	v1.Route("/code-runner", func(r chi.Router) {
@@ -323,6 +328,7 @@ func registerMCPRoutes(r chi.Router, d *Deps) {
 	r.With(middleware.RateLimit("mcp-comments", redisClient, time.Minute, 60)).
 		Handle("/api/v1/mcp/comments", mcp.Comments)
 }
+
 // registerFriendLinkRoutes 注册友链前台公开路由。
 //
 // 公开端点：
@@ -359,5 +365,33 @@ func registerNotificationRoutes(v1 chi.Router, d *Deps) {
 			r.Post("/read-all", notifH.MarkAllRead)
 			r.Post("/{id}/read", notifH.MarkRead)
 		})
+	})
+}
+
+// registerChatRoutes 注册集中式聊天路由（全部登录鉴权）。
+func registerChatRoutes(v1 chi.Router, d *Deps) {
+	h := d.Chat
+	v1.Route("/chat", func(r chi.Router) {
+		r.With(d.SessionAuth).Get("/users/{username}", h.FindUserByUsername)
+		r.With(d.SessionAuth).Get("/unread-count", h.UnreadCount)
+		r.With(d.SessionAuth).Get("/events", d.ChatStream.Stream)
+		r.With(d.SessionAuth).Get("/push/config", h.PushConfig)
+		r.With(d.SessionAuth).Post("/push/subscription", h.SavePushSubscription)
+		r.With(d.SessionAuth).Delete("/push/subscription", h.DeletePushSubscription)
+
+		r.With(d.SessionAuth).Get("/conversations", h.ListConversations)
+		r.With(d.SessionAuth).Post("/conversations", h.CreateConversation)
+		r.With(d.SessionAuth).Get("/conversations/{conversationId}", h.GetConversation)
+		r.With(d.SessionAuth).Patch("/conversations/{conversationId}", h.RenameConversation)
+		r.With(d.SessionAuth).Get("/conversations/{conversationId}/members", h.ListMembers)
+		r.With(d.SessionAuth).Post("/conversations/{conversationId}/members", h.InviteMember)
+		r.With(d.SessionAuth).Delete("/conversations/{conversationId}/members/me", h.LeaveConversation)
+		r.With(d.SessionAuth).Delete("/conversations/{conversationId}/members/{userId}", h.RemoveMember)
+		r.With(d.SessionAuth).Get("/conversations/{conversationId}/messages", h.ListMessages)
+		r.With(d.SessionAuth).Post("/conversations/{conversationId}/messages", h.SendMessage)
+		r.With(d.SessionAuth).Post("/conversations/{conversationId}/read", h.MarkRead)
+		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/mute", h.SetMuted)
+		r.With(d.SessionAuth, middleware.RequirePermission(d.PermissionChecker, permission.ChatManage.String())).
+			Delete("/conversations/{conversationId}/messages/{messageId}", h.DeleteMessage)
 	})
 }

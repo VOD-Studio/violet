@@ -72,6 +72,27 @@ func TestAuthPaths(t *testing.T) {
 	require.NotEmpty(t, spec.Paths.Find("/auth/session").Get.Security)
 }
 
+func TestChatPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, path := range []string{
+		"/chat/conversations",
+		"/chat/conversations/{conversationId}",
+		"/chat/conversations/{conversationId}/members",
+		"/chat/conversations/{conversationId}/messages",
+		"/chat/conversations/{conversationId}/read",
+		"/chat/events",
+		"/chat/unread-count",
+		"/chat/push/subscription",
+	} {
+		require.NotNil(t, spec.Paths.Find(path), "missing chat path %s", path)
+	}
+	require.Contains(t, spec.Components.Schemas, "ChatEventDTO")
+	require.Contains(t, spec.Components.Schemas, "ChatMessageDTO")
+	send := spec.Paths.Find("/chat/conversations/{conversationId}/messages").Post
+	require.NotNil(t, send)
+	require.True(t, hasParam(send.Parameters, "Idempotency-Key"))
+}
+
 // hasParam 检查参数列表是否包含指定名称
 func hasParam(params openapi3.Parameters, name string) bool {
 	for _, p := range params {

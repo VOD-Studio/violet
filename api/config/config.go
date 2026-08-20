@@ -49,6 +49,8 @@ type Config struct {
 	Cookie CookieConfig
 	// Session opaque session 生命周期配置（IdleTTL 滑动续期 + MaxTTL 绝对寿命）
 	Session SessionConfig
+	// WebPush 浏览器 Web Push 的 VAPID 配置；私钥仅从环境变量读取。
+	WebPush WebPushConfig
 	// CORSAllowedOrigins 允许的前端来源列表（用于跨域 Cookie 与 CSRF 防护）
 	// 生产环境通过 CORS_ALLOWED_ORIGINS 环境变量覆盖
 	CORSAllowedOrigins []string
@@ -64,6 +66,16 @@ type Config struct {
 	// FeedProxyURL feed 抓取出站代理地址（如 http://127.0.0.1:7890）。
 	// 空串 = 直连 + SSRF 防护（生产默认）；非空 = 走代理，SSRF 防护交给代理（本地开发穿 GFW）。
 	FeedProxyURL string
+}
+
+// WebPushConfig 浏览器 Web Push VAPID 配置。
+type WebPushConfig struct {
+	// VAPIDPublicKey 下发给浏览器的公钥。
+	VAPIDPublicKey string
+	// VAPIDPrivateKey 服务端签名私钥，禁止写入配置文件。
+	VAPIDPrivateKey string
+	// VAPIDSubject 推送服务要求的联系地址或 HTTPS URL。
+	VAPIDSubject string
 }
 
 // CodeRunnerConfig 代码运行器配置。
@@ -264,6 +276,9 @@ func Load() *Config {
 	// session 滑动续期默认 7 天，绝对寿命默认 0（无上限）
 	v.SetDefault("session.idle_ttl", "168h")
 	v.SetDefault("session.max_ttl", "0s")
+	v.SetDefault("web_push.vapid_public_key", "")
+	v.SetDefault("web_push.vapid_private_key", "")
+	v.SetDefault("web_push.vapid_subject", "mailto:admin@example.com")
 	// CORS 允许来源默认覆盖前端开发服务器
 	v.SetDefault("cors_allowed_origins", []string{
 		"http://localhost:3000",
@@ -332,17 +347,17 @@ func Load() *Config {
 			DB:       v.GetInt("redis.db"),
 			Password: v.GetString("redis.password"),
 		},
-		GoogleClientID:       v.GetString("google_client_id"),
-		GithubClientID:       v.GetString("github_client_id"),
-		GithubClientSecret:   v.GetString("github_client_secret"),
-		ResendAPIKey:         v.GetString("resend_api_key"),
-		EmailFrom:            v.GetString("email_from"),
-		Port:                 v.GetString("port"),
-		UploadPathPrefix:     v.GetString("upload_path_prefix"),
-		UploadDir:            v.GetString("upload_dir"),
-		BilibiliCookie:       bilibiliCookie,
-		BilibiliAPIType:      v.GetString("bilibili_api_type"),
-		KiteURL:              v.GetString("kite_url"),
+		GoogleClientID:     v.GetString("google_client_id"),
+		GithubClientID:     v.GetString("github_client_id"),
+		GithubClientSecret: v.GetString("github_client_secret"),
+		ResendAPIKey:       v.GetString("resend_api_key"),
+		EmailFrom:          v.GetString("email_from"),
+		Port:               v.GetString("port"),
+		UploadPathPrefix:   v.GetString("upload_path_prefix"),
+		UploadDir:          v.GetString("upload_dir"),
+		BilibiliCookie:     bilibiliCookie,
+		BilibiliAPIType:    v.GetString("bilibili_api_type"),
+		KiteURL:            v.GetString("kite_url"),
 		Cookie: CookieConfig{
 			Domain:      v.GetString("cookie.domain"),
 			Secure:      v.GetBool("cookie.secure"),
@@ -353,6 +368,11 @@ func Load() *Config {
 		Session: SessionConfig{
 			IdleTTL: sessionIdleTTL,
 			MaxTTL:  sessionMaxTTL,
+		},
+		WebPush: WebPushConfig{
+			VAPIDPublicKey:  v.GetString("web_push.vapid_public_key"),
+			VAPIDPrivateKey: v.GetString("web_push.vapid_private_key"),
+			VAPIDSubject:    v.GetString("web_push.vapid_subject"),
 		},
 		CORSAllowedOrigins: getStringSlice(v, "cors_allowed_origins"),
 		SuperAdmin: SuperAdminConfig{
@@ -503,8 +523,9 @@ func (c *Config) Validate() error {
 //
 // viper 对 env 中的列表值按空白预切分(元素可能带逗号残留),对无空格逗号串又不切,
 // 两种写法都兼容:逐元素再按逗号切分并去空白。
-//   CORS_ALLOWED_ORIGINS=https://a.com,https://b.com   →  [a.com, b.com]
-//   CORS_ALLOWED_ORIGINS="https://a.com, https://b.com" →  [a.com, b.com]
+//
+//	CORS_ALLOWED_ORIGINS=https://a.com,https://b.com   →  [a.com, b.com]
+//	CORS_ALLOWED_ORIGINS="https://a.com, https://b.com" →  [a.com, b.com]
 func getStringSlice(v *viper.Viper, key string) []string {
 	raw := v.GetStringSlice(key)
 	var out []string

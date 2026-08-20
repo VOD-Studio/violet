@@ -10,8 +10,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"blog-api/config"
-	authcmd "blog-api/internal/application/auth/command"
 	appaudit "blog-api/internal/application/audit"
+	authcmd "blog-api/internal/application/auth/command"
 	infraemail "blog-api/internal/infrastructure/email"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -40,7 +40,8 @@ type Container struct {
 	Image           *ImageContainer
 	Tweet           *TweetContainer
 	FriendLink      *FriendLinkContainer
-	Notification     *NotificationContainer
+	Notification    *NotificationContainer
+	Chat            *ChatContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -103,6 +104,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	tweet := NewTweetContainer(db, permissionChecker, bus)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
 	notification := NewNotificationContainer(db, bus)
+	chat := NewChatContainer(db, cfg, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
@@ -110,7 +112,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Notification: notification,
+		Notification: notification, Chat: chat,
 	}
 	return c, roleCleanup, nil
 }

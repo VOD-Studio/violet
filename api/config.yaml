@@ -85,6 +85,16 @@ session:
   # env: SESSION_MAX_TTL
   max_ttl: 0s
 
+# ── 浏览器 Web Push ───────────────────────────
+# VAPID 公钥/私钥由 Web Push 服务生成；私钥禁止写入本文件。
+web_push:
+  # env: WEB_PUSH_VAPID_PUBLIC_KEY
+  vapid_public_key: ""
+  # env: WEB_PUSH_VAPID_PRIVATE_KEY（密钥，禁止写入本文件）
+  vapid_private_key: ""
+  # env: WEB_PUSH_VAPID_SUBJECT
+  vapid_subject: mailto:admin@example.com
+
 # ── CORS 允许来源 ────────────────────────────
 # env: CORS_ALLOWED_ORIGINS（空格分隔的 origin 列表）
 # 生产环境必须显式覆盖为真实域名，禁止使用 localhost 值
