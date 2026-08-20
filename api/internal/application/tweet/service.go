@@ -87,27 +87,29 @@ type UserProfileDTO struct {
 
 // QuotedTweetDTO 被引用推文读模型。
 type QuotedTweetDTO struct {
-	ID         string    `json:"id"`
-	Author     AuthorDTO `json:"author"`
-	Content    string    `json:"content"`
-	Images     []string  `json:"images"`
-	QuoteCount int       `json:"quote_count"`
-	CreatedAt  string    `json:"created_at"`
+	ID         string              `json:"id"`
+	Author     AuthorDTO           `json:"author"`
+	Content    string              `json:"content"`
+	Images     []string            `json:"images"`
+	Emote      map[string]EmojiRef `json:"emote,omitempty"`
+	QuoteCount int                 `json:"quote_count"`
+	CreatedAt  string              `json:"created_at"`
 }
 
 // TweetDTO 推文读模型（序列化跨层传输）。
 type TweetDTO struct {
-	ID           string          `json:"id"`
-	Author       AuthorDTO       `json:"author"`
-	Content      string          `json:"content"`
-	Images       []string        `json:"images"`
-	LikeCount    int             `json:"like_count"`
-	IsLiked      bool            `json:"is_liked"`
-	CommentCount int             `json:"comment_count"`
-	QuoteCount   int             `json:"quote_count"`
-	QuoteOf      *string         `json:"quote_of,omitempty"`
-	QuotedTweet  *QuotedTweetDTO `json:"quoted_tweet,omitempty"`
-	CreatedAt    string          `json:"created_at"`
+	ID           string              `json:"id"`
+	Author       AuthorDTO           `json:"author"`
+	Content      string              `json:"content"`
+	Images       []string            `json:"images"`
+	Emote        map[string]EmojiRef `json:"emote,omitempty"`
+	LikeCount    int                 `json:"like_count"`
+	IsLiked      bool                `json:"is_liked"`
+	CommentCount int                 `json:"comment_count"`
+	QuoteCount   int                 `json:"quote_count"`
+	QuoteOf      *string             `json:"quote_of,omitempty"`
+	QuotedTweet  *QuotedTweetDTO     `json:"quoted_tweet,omitempty"`
+	CreatedAt    string              `json:"created_at"`
 }
 
 // --- 写用例 ---
@@ -435,6 +437,29 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 		}
 	}
 
+	// 批量查表构建 emote 表情映射（推文正文与被引用推文正文）
+	allEmoteMap := make(map[string]EmojiRef)
+	if s.emojiLookup != nil && (len(tweets) > 0 || len(quotedTweetsMap) > 0) {
+		nameSet := make(map[string]bool)
+		for _, tw := range tweets {
+			collectEmojiNames(tw.Content(), nameSet)
+		}
+		for _, qt := range quotedTweetsMap {
+			collectEmojiNames(qt.Content(), nameSet)
+		}
+		if len(nameSet) > 0 {
+			names := make([]string, 0, len(nameSet))
+			for n := range nameSet {
+				names = append(names, n)
+			}
+			if em, err := s.emojiLookup.FindByNames(ctx, names); err == nil {
+				allEmoteMap = em
+			} else {
+				log.Warn().Err(err).Msg("推文表情批量查询失败，降级为空表情")
+			}
+		}
+	}
+
 	dtos := make([]TweetDTO, 0, len(tweets))
 	for _, tw := range tweets {
 		var quoteOfStr *string
@@ -448,6 +473,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 					Author:     authors[qt.AuthorID().String()],
 					Content:    qt.Content(),
 					Images:     qt.Images(),
+					Emote:      filterEmoteForBody(qt.Content(), allEmoteMap),
 					QuoteCount: int(quoteCountMap[qt.ID().String()]),
 					CreatedAt:  qt.CreatedAt().UTC().Format(time.RFC3339),
 				}
@@ -459,6 +485,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			Author:       authors[tw.AuthorID().String()],
 			Content:      tw.Content(),
 			Images:       tw.Images(),
+			Emote:        filterEmoteForBody(tw.Content(), allEmoteMap),
 			LikeCount:    tw.LikeCount(),
 			IsLiked:      likedMap[tw.ID().String()],
 			CommentCount: int(commentCountMap[tw.ID().String()]),
@@ -789,9 +816,15 @@ func collectEmojiNames(body string, set map[string]bool) {
 
 // filterEmoteForBody 从全量 emote 表中筛出 body 实际用到的表情。
 func filterEmoteForBody(body string, all map[string]EmojiRef) map[string]EmojiRef {
-	result := make(map[string]EmojiRef)
+	if len(all) == 0 {
+		return nil
+	}
+	var result map[string]EmojiRef
 	for _, m := range emojiBodyPattern.FindAllString(body, -1) {
 		if ref, ok := all[m]; ok {
+			if result == nil {
+				result = make(map[string]EmojiRef)
+			}
 			result[m] = ref
 		}
 	}
