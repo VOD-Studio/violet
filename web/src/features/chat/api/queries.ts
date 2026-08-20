@@ -103,8 +103,11 @@ export const useInviteChatMember = () => {
 	return useMutation({
 		mutationFn: ({ id, userId }: { id: string; userId: string }) =>
 			inviteChatMember(id, userId),
-		onSuccess: (_, variables) =>
-			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) }),
+		onSuccess: (_, variables) => {
+			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) });
+			qc.invalidateQueries({ queryKey: chatKeys.members(variables.id) });
+			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
+		},
 	});
 };
 
@@ -121,8 +124,11 @@ export const useRemoveChatMember = () => {
 	return useMutation({
 		mutationFn: ({ id, userId }: { id: string; userId: string }) =>
 			removeChatMember(id, userId),
-		onSuccess: (_, variables) =>
-			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) }),
+		onSuccess: (_, variables) => {
+			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) });
+			qc.invalidateQueries({ queryKey: chatKeys.members(variables.id) });
+			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
+		},
 	});
 };
 

@@ -31,6 +31,12 @@ const mockContact = {
 	display_name: "Alice",
 	avatar_url: "",
 };
+const mockSecondContact = {
+	id: "u_second_contact",
+	username: "bob",
+	display_name: "Bob",
+	avatar_url: "",
+};
 
 const mockCreateMutateAsync = vi.fn().mockResolvedValue({ id: "c_2" });
 
@@ -108,7 +114,54 @@ vi.mock("@features/chat/api/queries", () => ({
 	}),
 	useChatContacts: () => ({
 		data: {
-			pages: [{ data: [mockContact], pagination: { has_more: false, limit: 50 } }],
+			pages: [
+				{
+					data: [mockContact, mockSecondContact],
+					pagination: { has_more: false, limit: 50 },
+				},
+			],
+			pageParams: [""],
+		},
+		isLoading: false,
+		isError: false,
+		hasNextPage: false,
+		isFetchingNextPage: false,
+		fetchNextPage: vi.fn(),
+	}),
+	useChatMessages: () => ({
+		data: { data: [mockConversation.last_message], next_cursor: null },
+		isLoading: false,
+	}),
+	useChatMembers: () => ({
+		data: mockConversation.members,
+		isLoading: false,
+	}),
+	useCreateChatConversation: () => ({ mutateAsync: mockCreateMutateAsync }),
+	useDeleteChatMessage: () => ({ mutate: vi.fn() }),
+	useInviteChatMember: () => ({ mutateAsync: vi.fn() }),
+	useLeaveChatConversation: () => ({ mutateAsync: vi.fn() }),
+	useMarkChatRead: () => ({ mutate: vi.fn() }),
+	useRemoveChatMember: () => ({ mutate: vi.fn() }),
+	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
+	useSendChatMessage: () => ({
+		mutateAsync: mockSendMutateAsync,
+		isPending: false,
+	}),
+	useSetChatMuted: () => ({ mutate: vi.fn() }),
+}));
+vi.mock("../api/queries", () => ({
+	useChatConversations: () => ({
+		data: { data: [mockConversation], next_cursor: null },
+		isLoading: false,
+	}),
+	useChatContacts: () => ({
+		data: {
+			pages: [
+				{
+					data: [mockContact, mockSecondContact],
+					pagination: { has_more: false, limit: 50 },
+				},
+			],
 			pageParams: [""],
 		},
 		isLoading: false,
@@ -162,7 +215,12 @@ vi.mock("../api/queries", () => ({
 	}),
 	useChatContacts: () => ({
 		data: {
-			pages: [{ data: [mockContact], pagination: { has_more: false, limit: 50 } }],
+			pages: [
+				{
+					data: [mockContact, mockSecondContact],
+					pagination: { has_more: false, limit: 50 },
+				},
+			],
 			pageParams: [""],
 		},
 		isLoading: false,
@@ -211,6 +269,7 @@ describe("ChatWorkspace", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		window.HTMLElement.prototype.scrollIntoView = vi.fn();
+		window.history.replaceState({}, "", "/chat?c=c_1");
 		window.HTMLElement.prototype.scrollTo = vi.fn(function (
 			this: HTMLElement,
 			optionsOrX?: ScrollToOptions | number,
@@ -221,6 +280,7 @@ describe("ChatWorkspace", () => {
 	});
 
 	afterEach(() => {
+		window.history.replaceState({}, "", "/chat");
 		cleanup();
 	});
 
@@ -229,7 +289,7 @@ describe("ChatWorkspace", () => {
 
 		// 侧边栏
 		expect(screen.getByText("聊天")).toBeTruthy();
-		expect(screen.getByPlaceholderText("搜索用户名或房间")).toBeTruthy();
+		expect(screen.getByPlaceholderText("搜索会话、用户或群聊")).toBeTruthy();
 
 		// 会话行
 		expect(screen.getAllByText("dfy").length).toBeGreaterThan(0);
@@ -284,21 +344,58 @@ describe("ChatWorkspace", () => {
 		expect(window.HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
 	});
 
-	it("从联系人列表发起私聊", () => {
+	it("从统一搜索结果发起私聊", () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		fireEvent.click(screen.getByRole("button", { name: "打开联系人" }));
+		fireEvent.change(screen.getByRole("textbox", { name: "搜索会话、用户或群聊" }), {
+			target: { value: "alice" },
+		});
 
-		expect(screen.getByRole("heading", { name: "联系人" })).toBeTruthy();
-		expect(screen.getByPlaceholderText("搜索用户名或展示名")).toBeTruthy();
 		expect(screen.getByText("Alice")).toBeTruthy();
-
 		fireEvent.click(screen.getByRole("button", { name: "发起与Alice的私聊" }));
 
 		expect(mockCreateMutateAsync).toHaveBeenCalledWith({
 			kind: "direct",
 			participant_ids: ["u_contact"],
 		});
+	});
+
+	it("从新建对话中选择多个成员创建群聊", async () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
+		fireEvent.change(screen.getByRole("textbox", { name: "搜索成员" }), {
+			target: { value: "a" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "选择 Alice" }));
+		fireEvent.click(screen.getByRole("button", { name: "选择 Bob" }));
+		fireEvent.click(screen.getByRole("button", { name: "创建群聊" }));
+
+		await waitFor(() => {
+			expect(mockCreateMutateAsync).toHaveBeenCalledWith({
+				kind: "room",
+				participant_ids: ["u_contact", "u_second_contact"],
+			});
+			expect(new URL(window.location.href).searchParams.get("c")).toBe("c_2");
+		});
+	});
+
+	it("未选择会话时显示新建对话引导", () => {
+		window.history.replaceState({}, "", "/chat");
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		expect(screen.getByText("选择一个会话")).toBeTruthy();
+		expect(screen.getAllByRole("button", { name: "新建会话" }).length).toBeGreaterThan(0);
+	});
+
+	it("切换会话时同步 URL 并支持返回列表", () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		expect(new URL(window.location.href).searchParams.get("c")).toBe("c_1");
+		fireEvent.click(screen.getByRole("button", { name: "返回会话列表" }));
+
+		expect(new URL(window.location.href).searchParams.has("c")).toBe(false);
+		expect(screen.getByText("选择一个会话")).toBeTruthy();
 	});
 
 	it("私聊会话展示对方头像首字母，而非当前用户自己的头像", () => {

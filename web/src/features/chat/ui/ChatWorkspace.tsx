@@ -11,7 +11,6 @@ import {
 	ArrowLeft,
 	Bell,
 	BellOff,
-	ContactRound,
 	Image as ImageIcon,
 	LoaderCircle,
 	LogOut,
@@ -27,8 +26,13 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
+import { ChatAvatar } from "./ChatAvatar";
+import { ChatContactSkeleton } from "./ChatContactSkeleton";
+import { useChatSelection } from "../hooks/useChatSelection";
+import { NewConversationForm } from "./NewConversationForm";
 import {
 	useChatContacts,
 	useChatConversations,
@@ -52,7 +56,6 @@ import type {
 	ChatMember,
 	ChatMessage,
 	ChatUser,
-	ConversationKind,
 } from "../model/types";
 
 /** 聊天工作区：会话索引、消息流、房间成员抽屉与富文本 composer。 */
@@ -61,15 +64,10 @@ export function ChatWorkspace() {
 	const { data: me } = useMe();
 	const { data: conversationsPage, isLoading: conversationsLoading } = useChatConversations();
 	const conversations = conversationsPage?.data ?? [];
-	const [selectedID, setSelectedID] = useState<string | null>(null);
+	const { selectedID, selectConversation, clearSelection } = useChatSelection();
 	const [search, setSearch] = useState("");
 	const [showDetails, setShowDetails] = useState(false);
 	const [showNew, setShowNew] = useState(false);
-	const [showContacts, setShowContacts] = useState(false);
-
-	useEffect(() => {
-		if (!selectedID && conversations.length > 0) setSelectedID(conversations[0].id);
-	}, [conversations, selectedID]);
 
 	const selected = conversations.find((conversation) => conversation.id === selectedID) ?? null;
 	const filtered = useMemo(() => {
@@ -80,9 +78,12 @@ export function ChatWorkspace() {
 		);
 	}, [conversations, me?.id, search]);
 
+	useEffect(() => {
+		if (selectedID && !selected && !conversationsLoading) clearSelection(true);
+	}, [clearSelection, conversationsLoading, selected, selectedID]);
+
 	return (
 		<div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-7xl overflow-hidden border-x border-edge-hairline bg-background shadow-xl">
-			{/* 侧边栏会话列表 */}
 			<aside
 				className={cn(
 					"flex w-full shrink-0 flex-col border-r border-edge-hairline bg-background/50 backdrop-blur-xs md:flex md:w-80",
@@ -95,21 +96,17 @@ export function ChatWorkspace() {
 					loading={conversationsLoading}
 					selectedID={selectedID}
 					search={search}
-					showContacts={showContacts}
 					showNew={showNew}
 					onSearch={setSearch}
-					onToggleContacts={() => setShowContacts((value) => !value)}
 					onToggleNew={() => setShowNew((value) => !value)}
-					onSelect={setSelectedID}
+					onSelect={selectConversation}
 					onCreated={(id) => {
-						setSelectedID(id);
-						setShowContacts(false);
+						selectConversation(id);
 						setShowNew(false);
 					}}
 				/>
 			</aside>
 
-			{/* 主聊天区 */}
 			<main
 				className={cn(
 					"flex min-h-0 min-w-0 flex-1 flex-col bg-background/80",
@@ -120,12 +117,12 @@ export function ChatWorkspace() {
 					<ConversationPanel
 						conversation={selected}
 						currentUserID={me?.id ?? ""}
-						onBack={() => setSelectedID(null)}
+						onBack={clearSelection}
 						showDetails={showDetails}
 						onToggleDetails={() => setShowDetails((value) => !value)}
 					/>
 				) : (
-					<EmptyConversation />
+					<EmptyConversation onCreate={() => setShowNew(true)} />
 				)}
 			</main>
 		</div>
@@ -138,10 +135,8 @@ interface ConversationIndexProps {
 	loading: boolean;
 	selectedID: string | null;
 	search: string;
-	showContacts: boolean;
 	showNew: boolean;
 	onSearch: (value: string) => void;
-	onToggleContacts: () => void;
 	onToggleNew: () => void;
 	onSelect: (id: string) => void;
 	onCreated: (id: string) => void;
@@ -153,14 +148,16 @@ function ConversationIndex({
 	loading,
 	selectedID,
 	search,
-	showContacts,
 	showNew,
 	onSearch,
-	onToggleContacts,
 	onToggleNew,
 	onSelect,
 	onCreated,
 }: ConversationIndexProps) {
+	const deferredSearch = useDeferredValue(search.trim());
+	const contactsQuery = useChatContacts(deferredSearch, Boolean(deferredSearch));
+	const contacts = contactsQuery.data?.pages.flatMap((page) => page.data) ?? [];
+
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<header className="shrink-0 border-b border-edge-hairline px-4 pb-3 pt-5 md:px-5">
@@ -169,61 +166,48 @@ function ConversationIndex({
 						<p className="font-mono text-[10px] font-medium uppercase tracking-[0.28em] text-neon-cyan">
 							Private channel
 						</p>
-						<h1 className="mt-1 font-mono text-xl font-bold tracking-tight">
-							{showContacts ? "联系人" : "聊天"}
-						</h1>
+						<h1 className="mt-1 font-mono text-xl font-bold tracking-tight">聊天</h1>
 					</div>
-					<div className="flex items-center gap-2">
-						<Button
-							aria-label={showContacts ? "返回会话" : "打开联系人"}
-							className="size-8 rounded-full shadow-xs"
-							onClick={onToggleContacts}
-							size="icon"
-							variant={showContacts ? "secondary" : "outline"}
-						>
-							{showContacts ? (
-								<ArrowLeft className="size-4" />
-							) : (
-								<ContactRound className="size-4" />
+					<Button
+						aria-label="新建会话"
+						className="size-8 rounded-full shadow-xs"
+						onClick={onToggleNew}
+						size="icon"
+						variant={showNew ? "secondary" : "outline"}
+					>
+						<Plus
+							className={cn(
+								"size-4 transition-transform duration-200",
+								showNew && "rotate-45",
 							)}
-						</Button>
-						{!showContacts && (
-							<Button
-								aria-label="新建会话"
-								className="size-8 rounded-full shadow-xs"
-								onClick={onToggleNew}
-								size="icon"
-								variant={showNew ? "secondary" : "outline"}
-							>
-								<Plus
-									className={cn(
-										"size-4 transition-transform duration-200",
-										showNew && "rotate-45",
-									)}
-								/>
-							</Button>
-						)}
-					</div>
-				</div>
-				{!showContacts && (
-					<div className="relative mt-3.5">
-						<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-						<input
-							aria-label="搜索会话"
-							className="h-9 w-full rounded-lg border border-input bg-secondary/30 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
-							onChange={(event) => onSearch(event.target.value)}
-							placeholder="搜索用户名或房间"
-							value={search}
 						/>
-					</div>
-				)}
+					</Button>
+				</div>
+				<div className="relative mt-3.5">
+					<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+					<input
+						aria-label="搜索会话、用户或群聊"
+						className="h-9 w-full rounded-lg border border-input bg-secondary/30 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
+						onChange={(event) => onSearch(event.target.value)}
+						placeholder="搜索会话、用户或群聊"
+						value={search}
+					/>
+				</div>
 			</header>
-			{showContacts ? (
-				<ContactsPanel onCreated={onCreated} />
-			) : (
-				<>
-					{showNew && <NewConversationForm onCreated={onCreated} />}
-					<div className="min-h-0 flex-1 overflow-y-auto px-2 py-2.5">
+			{showNew && <NewConversationForm onCreated={onCreated} />}
+			<div className="min-h-0 flex-1 overflow-y-auto px-2 py-2.5">
+				{search.trim() ? (
+					<SearchResults
+						contacts={contacts}
+						contactsLoading={contactsQuery.isLoading}
+						conversations={conversations}
+						currentUserID={currentUserID}
+						onCreated={onCreated}
+						onSelect={onSelect}
+						selectedID={selectedID}
+					/>
+				) : (
+					<>
 						<div className="mb-2 flex items-center justify-between px-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
 							<span>Conversations</span>
 							<span className="rounded bg-secondary/60 px-1.5 py-0.5 text-[9px]">
@@ -247,20 +231,32 @@ function ConversationIndex({
 								))}
 							</div>
 						)}
-					</div>
-				</>
-			)}
+					</>
+				)}
+			</div>
 		</div>
 	);
 }
 
-function ContactsPanel({ onCreated }: { onCreated: (id: string) => void }) {
-	const [search, setSearch] = useState("");
-	const deferredSearch = useDeferredValue(search.trim());
-	const contactsQuery = useChatContacts(deferredSearch);
+function SearchResults({
+	conversations,
+	contacts,
+	contactsLoading,
+	currentUserID,
+	selectedID,
+	onCreated,
+	onSelect,
+}: {
+	conversations: ChatConversation[];
+	contacts: ChatUser[];
+	contactsLoading: boolean;
+	currentUserID: string;
+	selectedID: string | null;
+	onCreated: (id: string) => void;
+	onSelect: (id: string) => void;
+}) {
 	const create = useCreateChatConversation();
 	const [busyID, setBusyID] = useState<string | null>(null);
-	const contacts = contactsQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
 	const startPrivateChat = async (user: ChatUser) => {
 		setBusyID(user.id);
@@ -278,182 +274,84 @@ function ContactsPanel({ onCreated }: { onCreated: (id: string) => void }) {
 	};
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col">
-			<div className="shrink-0 border-b border-edge-hairline px-4 py-3">
-				<p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-					Registered users
-				</p>
-				<div className="relative">
-					<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-					<input
-						aria-label="搜索联系人"
-						className="h-9 w-full rounded-lg border border-input bg-secondary/30 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
-						onChange={(event) => setSearch(event.target.value)}
-						placeholder="搜索用户名或展示名"
-						value={search}
-					/>
-				</div>
-			</div>
-			<div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-				{contactsQuery.isLoading ? (
-					<ContactSkeleton />
-				) : contactsQuery.isError ? (
-					<p className="px-2 py-8 text-center text-xs text-destructive">
-						联系人加载失败，请重试
-					</p>
-				) : contacts.length === 0 ? (
-					<div className="px-2 py-8 text-center">
-						<ContactRound className="mx-auto size-7 text-muted-foreground/50" />
-						<p className="mt-2 text-xs text-muted-foreground">
-							{deferredSearch ? "没有找到匹配的用户" : "暂时没有可联系的用户"}
-						</p>
+		<div className="space-y-4">
+			<SearchResultSection label="已有会话" count={conversations.length}>
+				{conversations.length > 0 ? (
+					<div className="space-y-1">
+						{conversations.map((conversation) => (
+							<ConversationRow
+								active={conversation.id === selectedID}
+								conversation={conversation}
+								currentUserID={currentUserID}
+								key={conversation.id}
+								onClick={() => onSelect(conversation.id)}
+							/>
+						))}
 					</div>
 				) : (
-					<>
-						<div className="space-y-1">
-							{contacts.map((user) => (
-								<div
-									className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-edge-hairline hover:bg-secondary/35"
-									key={user.id}
-								>
-									<Avatar user={user} className="size-10 shrink-0" />
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-xs font-semibold text-foreground">
-											{user.display_name}
-										</p>
-										<p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
-											@{user.username}
-										</p>
-									</div>
-									<Button
-										aria-label={`发起与${user.display_name}的私聊`}
-										className="h-8 shrink-0 px-2.5 text-xs"
-										disabled={busyID !== null}
-										onClick={() => void startPrivateChat(user)}
-										size="sm"
-									>
-										{busyID === user.id ? (
-											<LoaderCircle className="size-3.5 animate-spin" />
-										) : (
-											<MessageCircle className="size-3.5" />
-										)}
-										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
-									</Button>
-								</div>
-							))}
-						</div>
-						{contactsQuery.hasNextPage && (
-							<Button
-								className="mt-3 w-full text-xs"
-								disabled={contactsQuery.isFetchingNextPage}
-								onClick={() => void contactsQuery.fetchNextPage()}
-								variant="outline"
-							>
-								{contactsQuery.isFetchingNextPage ? (
-									<LoaderCircle className="size-3.5 animate-spin" />
-								) : (
-									"加载更多"
-								)}
-							</Button>
-						)}
-					</>
+					<p className="px-2.5 text-xs text-muted-foreground">没有匹配的会话</p>
 				)}
-			</div>
-		</section>
-	);
-}
-
-function ContactSkeleton() {
-	return (
-		<div className="space-y-2">
-			{Array.from({ length: 5 }, (_, index) => (
-				<div className="flex items-center gap-3 rounded-xl px-3 py-2.5" key={index}>
-					<div className="size-10 animate-pulse rounded-full bg-secondary" />
-					<div className="flex-1 space-y-1.5">
-						<div className="h-3 w-2/3 animate-pulse rounded bg-secondary" />
-						<div className="h-2.5 w-1/2 animate-pulse rounded bg-secondary" />
+			</SearchResultSection>
+			<SearchResultSection label="用户" count={contacts.length}>
+				{contactsLoading ? (
+					<ChatContactSkeleton />
+				) : contacts.length > 0 ? (
+					<div className="space-y-1">
+						{contacts.map((user) => (
+							<div
+								className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-edge-hairline hover:bg-secondary/35"
+								key={user.id}
+							>
+								<ChatAvatar user={user} className="size-9 shrink-0" />
+								<div className="min-w-0 flex-1">
+									<p className="truncate text-xs font-semibold">
+										{user.display_name}
+									</p>
+									<p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+										@{user.username}
+									</p>
+								</div>
+								<Button
+									aria-label={`发起与${user.display_name}的私聊`}
+									disabled={busyID !== null}
+									onClick={() => void startPrivateChat(user)}
+									size="sm"
+									className="h-8 shrink-0 px-2.5 text-xs"
+								>
+									{busyID === user.id ? (
+										<LoaderCircle className="size-3.5 animate-spin" />
+									) : (
+										<MessageCircle className="size-3.5" />
+									)}
+									<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
+								</Button>
+							</div>
+						))}
 					</div>
-				</div>
-			))}
+				) : (
+					<p className="px-2.5 text-xs text-muted-foreground">没有匹配的用户</p>
+				)}
+			</SearchResultSection>
 		</div>
 	);
 }
-function NewConversationForm({ onCreated }: { onCreated: (id: string) => void }) {
-	const [kind, setKind] = useState<ConversationKind>("direct");
-	const [username, setUsername] = useState("");
-	const [title, setTitle] = useState("");
-	const [busy, setBusy] = useState(false);
-	const create = useCreateChatConversation();
-	const submit = async () => {
-		if (username.trim().length < 3 || (kind === "room" && title.trim().length === 0)) return;
-		setBusy(true);
-		try {
-			const user = await fetchChatUser(username.trim());
-			const conversation = await create.mutateAsync({
-				kind,
-				title: kind === "room" ? title.trim() : undefined,
-				participant_ids: [user.id],
-			});
-			onCreated(conversation.id);
-			setUsername("");
-			setTitle("");
-		} catch {
-			toast.error("无法创建会话", { description: "请确认用户名和房间名称" });
-		} finally {
-			setBusy(false);
-		}
-	};
+
+function SearchResultSection({
+	label,
+	count,
+	children,
+}: {
+	label: string;
+	count: number;
+	children: ReactNode;
+}) {
 	return (
-		<section className="shrink-0 border-b border-edge-hairline bg-secondary/15 px-4 py-3">
-			<div className="mb-2.5 flex items-center justify-between">
-				<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-					New channel
-				</p>
-				<div className="flex rounded-md border border-edge-hairline bg-background/50 p-0.5">
-					{(["direct", "room"] as const).map((value) => (
-						<button
-							className={cn(
-								"rounded px-2.5 py-0.5 font-mono text-[10px] transition-colors",
-								kind === value
-									? "bg-primary text-primary-foreground font-medium shadow-xs"
-									: "text-muted-foreground hover:text-foreground",
-							)}
-							key={value}
-							onClick={() => setKind(value)}
-							type="button"
-						>
-							{value === "direct" ? "私聊" : "房间"}
-						</button>
-					))}
-				</div>
+		<section>
+			<div className="mb-2 flex items-center justify-between px-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+				<span>{label}</span>
+				<span className="rounded bg-secondary/60 px-1.5 py-0.5 text-[9px]">{count}</span>
 			</div>
-			{kind === "room" && (
-				<input
-					aria-label="房间名称"
-					className="mb-2 h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs outline-none transition focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/20"
-					onChange={(event) => setTitle(event.target.value)}
-					placeholder="房间名称"
-					value={title}
-				/>
-			)}
-			<div className="flex gap-2">
-				<input
-					aria-label="用户名"
-					className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-xs outline-none transition focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/20"
-					onChange={(event) => setUsername(event.target.value)}
-					onKeyDown={(event) => event.key === "Enter" && void submit()}
-					placeholder="输入用户名发起会话"
-					value={username}
-				/>
-				<Button
-					disabled={busy}
-					onClick={() => void submit()}
-					size="sm"
-					className="h-8 px-3 text-xs"
-				>
-					{busy ? <LoaderCircle className="size-3.5 animate-spin" /> : "发起"}
-				</Button>
-			</div>
+			{children}
 		</section>
 	);
 }
@@ -485,7 +383,7 @@ function ConversationRow({ conversation, currentUserID, active, onClick }: Conve
 			type="button"
 		>
 			<div className="relative shrink-0">
-				<Avatar user={avatarUser} className="size-10" />
+				<ChatAvatar user={avatarUser} className="size-10" />
 				{conversation.kind === "direct" && (
 					<span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background bg-neon-green" />
 				)}
@@ -558,7 +456,6 @@ function ConversationPanel({
 
 	const messages = useMemo(() => [...(messagePage?.data ?? [])].reverse(), [messagePage?.data]);
 	const lastMessage = messages.at(-1);
-
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [showScrollBottom, setShowScrollBottom] = useState(false);
 
@@ -571,34 +468,27 @@ function ConversationPanel({
 		});
 	}, []);
 
-	// 监听已读上报
 	useEffect(() => {
 		if (lastMessage?.id && conversation.unread_count > 0) {
 			read.mutate({ id: conversation.id, messageId: lastMessage.id });
 		}
 	}, [conversation.id, conversation.unread_count, lastMessage?.id, read.mutate]);
 
-	// 收到新消息或切换会话时自动滚动到底部
 	useEffect(() => {
-		if (messages.length > 0) {
-			scrollToBottom(false);
-		}
+		if (messages.length > 0) scrollToBottom(false);
 	}, [messages.length, scrollToBottom]);
 
 	const handleScroll = useCallback(() => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
 		const { scrollTop, scrollHeight, clientHeight } = container;
-		const distanceToBottom = scrollHeight - scrollTop - clientHeight;
-		setShowScrollBottom(distanceToBottom > 150);
+		setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 150);
 	}, []);
 
-	// 全局构建 emote 映射表，支持消息文本中的表情解析
 	const emoteMap = useEmojiEmoteMap();
 
 	return (
 		<div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-			{/* 顶栏 Header */}
 			<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline bg-background/80 px-4 backdrop-blur-md md:px-6">
 				<div className="flex min-w-0 items-center gap-2.5">
 					<Button
@@ -610,7 +500,7 @@ function ConversationPanel({
 					>
 						<ArrowLeft className="size-4" />
 					</Button>
-					<Avatar
+					<ChatAvatar
 						user={conversationTargetUser(conversation, currentUserID)}
 						className="size-8 shrink-0"
 					/>
@@ -620,13 +510,11 @@ function ConversationPanel({
 								{conversationLabel(conversation, currentUserID)}
 							</h2>
 							<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-neon-cyan">
-								{conversation.kind === "room" ? "Room" : "DM"}
+								{conversation.kind === "room" ? "群聊" : "私聊"}
 							</span>
 						</div>
 						<p className="hidden font-mono text-[10px] text-muted-foreground sm:block">
-							{conversation.kind === "room"
-								? `${members.length} 位成员`
-								: "端到端会话通道"}
+							{conversation.kind === "room" ? `${members.length} 位成员` : "私聊会话"}
 						</p>
 					</div>
 				</div>
@@ -635,7 +523,7 @@ function ConversationPanel({
 					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/30 px-2.5 py-1 text-muted-foreground sm:flex">
 						<span className="size-1.5 rounded-full bg-neon-green" />
 						<span className="font-mono text-[9px] uppercase tracking-[0.14em]">
-							secure channel
+							private channel
 						</span>
 					</div>
 					<Button
@@ -650,10 +538,8 @@ function ConversationPanel({
 				</div>
 			</header>
 
-			{/* 主内容：消息列表 + 底部输入框 + 右侧抽屉 */}
 			<div className="relative flex min-h-0 flex-1 overflow-hidden">
 				<section className="flex min-h-0 min-w-0 flex-1 flex-col">
-					{/* 消息可滚动区 */}
 					<div
 						ref={scrollContainerRef}
 						data-testid="chat-message-list"
@@ -672,12 +558,17 @@ function ConversationPanel({
 							) : messages.length === 0 ? (
 								<MessageEmpty />
 							) : (
-								messages.map((message) => (
+								messages.map((message, index) => (
 									<MessageBubble
 										currentUserID={currentUserID}
 										emoteMap={emoteMap}
 										key={message.id}
 										message={message}
+										showSender={
+											conversation.kind !== "room" ||
+											index === 0 ||
+											messages[index - 1]?.sender.id !== message.sender.id
+										}
 										onDelete={
 											canManage
 												? () =>
@@ -695,7 +586,6 @@ function ConversationPanel({
 						</div>
 					</div>
 
-					{/* 滚到底部悬浮快捷按钮 */}
 					{showScrollBottom && (
 						<div className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10">
 							<Button
@@ -710,14 +600,12 @@ function ConversationPanel({
 						</div>
 					)}
 
-					{/* 底部输入框 */}
 					<MessageComposer
 						conversationID={conversation.id}
 						onMessageSent={() => scrollToBottom(true)}
 					/>
 				</section>
 
-				{/* 房间成员详情抽屉 */}
 				{showDetails && (
 					<RoomDetails
 						conversation={conversation}
@@ -728,7 +616,6 @@ function ConversationPanel({
 				)}
 			</div>
 
-			{/* 图片大图预览浮层 */}
 			{lightbox && <ImageLightbox media={lightbox} onClose={() => setLightbox(null)} />}
 		</div>
 	);
@@ -738,46 +625,61 @@ function MessageBubble({
 	message,
 	currentUserID,
 	emoteMap,
+	showSender,
 	onDelete,
 	onImage,
 }: {
 	message: ChatMessage;
 	currentUserID: string;
 	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
+	showSender: boolean;
 	onDelete?: () => void;
 	onImage: (media: ChatMedia) => void;
 }) {
 	const mine = message.sender.id === currentUserID;
 
 	return (
-		<article className={cn("group flex gap-2.5", mine && "flex-row-reverse")}>
-			<Avatar user={message.sender} className="size-8 shrink-0 mt-0.5" />
+		<article
+			className={cn("group flex gap-2.5", mine && "flex-row-reverse", !showSender && "mt-1")}
+		>
+			{showSender ? (
+				<ChatAvatar user={message.sender} className="mt-0.5 size-8 shrink-0" />
+			) : (
+				<div aria-hidden="true" className="size-8 shrink-0" />
+			)}
 			<div
 				className={cn(
 					"flex max-w-[min(82%,36rem)] flex-col",
 					mine && "items-end text-right",
 				)}
 			>
-				<div className={cn("mb-1 flex items-baseline gap-2 px-0.5", mine && "justify-end")}>
-					{!mine && (
-						<span className="text-xs font-semibold text-foreground/90">
-							{message.sender.display_name}
-						</span>
-					)}
-					<time className="font-mono text-[10px] text-muted-foreground/70">
-						{formatTime(message.created_at)}
-					</time>
-					{onDelete && !message.is_deleted && (
-						<button
-							aria-label="删除违规消息"
-							className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-							onClick={onDelete}
-							type="button"
-						>
-							<Trash2 className="size-3" />
-						</button>
-					)}
-				</div>
+				{showSender && (
+					<div
+						className={cn(
+							"mb-1 flex items-baseline gap-2 px-0.5",
+							mine && "justify-end",
+						)}
+					>
+						{!mine && (
+							<span className="text-xs font-semibold text-foreground/90">
+								{message.sender.display_name}
+							</span>
+						)}
+						<time className="font-mono text-[10px] text-muted-foreground/70">
+							{formatTime(message.created_at)}
+						</time>
+						{onDelete && !message.is_deleted && (
+							<button
+								aria-label="删除违规消息"
+								className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+								onClick={onDelete}
+								type="button"
+							>
+								<Trash2 className="size-3" />
+							</button>
+						)}
+					</div>
+				)}
 
 				{message.is_deleted ? (
 					<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
@@ -809,10 +711,10 @@ function MessageBubble({
 				) : (
 					<div
 						className={cn(
-							"rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed shadow-2xs select-text",
+							"select-text rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed shadow-2xs",
 							mine
 								? "rounded-tr-xs bg-primary text-primary-foreground"
-								: "rounded-tl-xs bg-secondary/70 border border-edge-hairline/50 text-foreground",
+								: "rounded-tl-xs border border-edge-hairline/50 bg-secondary/70 text-foreground",
 						)}
 					>
 						<p className="whitespace-pre-wrap wrap-break-word">
@@ -944,6 +846,9 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 	const leave = useLeaveChatConversation();
 	const currentMember = members.find((member) => member.user.id === currentUserID);
 	const isOwner = currentMember?.role === "owner";
+	useEffect(() => {
+		setTitle(conversation.title);
+	}, [conversation.title]);
 
 	const saveTitle = async () => {
 		if (conversation.kind !== "room" || !title.trim() || title === conversation.title) return;
@@ -978,7 +883,7 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 			<div className="flex-1 space-y-5 overflow-y-auto p-4">
 				<div className="rounded-xl border border-edge-hairline bg-secondary/15 p-3.5">
 					<div className="mb-2.5 flex items-center gap-3">
-						<Avatar
+						<ChatAvatar
 							user={conversationTargetUser(conversation, currentUserID)}
 							className="size-11"
 						/>
@@ -1015,7 +920,7 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 								className="flex items-center gap-2.5 rounded-lg p-1.5 hover:bg-secondary/30"
 								key={member.user.id}
 							>
-								<Avatar user={member.user} className="size-7" />
+								<ChatAvatar user={member.user} className="size-7" />
 								<div className="min-w-0 flex-1">
 									<p className="truncate text-xs font-medium">
 										{member.user.display_name}
@@ -1049,7 +954,7 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 					</div>
 				</div>
 
-				{conversation.kind === "room" && isOwner && (
+				{conversation.kind === "room" && currentMember && (
 					<div className="rounded-xl border border-dashed border-edge-hairline p-3">
 						<p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
 							Invite member
@@ -1072,6 +977,9 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 								<Plus className="size-3.5" />
 							</Button>
 						</div>
+						<p className="mt-2 text-[10px] text-muted-foreground">
+							所有成员都可以邀请新成员
+						</p>
 					</div>
 				)}
 
@@ -1083,16 +991,15 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 				<div className="border-t border-edge-hairline pt-3">
 					<Button
 						className="w-full justify-start text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-						disabled={
-							leave.isPending ||
-							(conversation.kind === "room" &&
-								members.some(
-									(member) =>
-										member.role === "owner" &&
-										member.user.id === conversation.owner.id,
-								))
-						}
-						onClick={() => void leave.mutateAsync(conversation.id)}
+						disabled={leave.isPending}
+						onClick={async () => {
+							try {
+								await leave.mutateAsync(conversation.id);
+								onClose();
+							} catch {
+								toast.error("无法离开会话", { description: "请稍后重试" });
+							}
+						}}
 						variant="ghost"
 						size="sm"
 					>
@@ -1177,6 +1084,28 @@ function NotificationSettings({
 		</section>
 	);
 }
+function EmptyConversation({ onCreate }: { onCreate: () => void }) {
+	return (
+		<div className="flex flex-1 items-center justify-center p-8">
+			<div className="max-w-sm text-center">
+				<div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan shadow-sm">
+					<MessageCircle className="size-6" />
+				</div>
+				<p className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+					No conversation selected
+				</p>
+				<h2 className="mt-1.5 text-xl font-semibold">选择一个会话</h2>
+				<p className="mt-2 text-xs leading-5 text-muted-foreground">
+					从左侧选择私聊或群聊，或直接新建一个对话。
+				</p>
+				<Button className="mt-4 text-xs" onClick={onCreate} size="sm">
+					<Plus className="mr-1.5 size-3.5" />
+					新建会话
+				</Button>
+			</div>
+		</div>
+	);
+}
 
 function ImageLightbox({ media, onClose }: { media: ChatMedia; onClose: () => void }) {
 	return (
@@ -1205,44 +1134,6 @@ function ImageLightbox({ media, onClose }: { media: ChatMedia; onClose: () => vo
 				className="relative z-10 max-h-[88dvh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
 				src={media.url}
 			/>
-		</div>
-	);
-}
-
-function Avatar({ user, className }: { user: ChatUser; className?: string }) {
-	return user.avatar_url ? (
-		<img
-			alt={`${user.display_name} 的头像`}
-			className={cn("rounded-full object-cover ring-1 ring-edge-hairline/60", className)}
-			src={user.avatar_url}
-		/>
-	) : (
-		<div
-			className={cn(
-				"flex items-center justify-center rounded-full bg-neon-purple/15 font-mono text-xs font-bold text-neon-purple ring-1 ring-neon-purple/25",
-				className,
-			)}
-		>
-			{user.display_name.slice(0, 1).toUpperCase()}
-		</div>
-	);
-}
-
-function EmptyConversation() {
-	return (
-		<div className="flex flex-1 items-center justify-center p-8">
-			<div className="max-w-sm text-center">
-				<div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan shadow-sm">
-					<MessageCircle className="size-6" />
-				</div>
-				<p className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-					No channel selected
-				</p>
-				<h2 className="mt-1.5 text-xl font-semibold">选择一个会话</h2>
-				<p className="mt-2 text-xs leading-5 text-muted-foreground">
-					从左侧选择私聊或房间。消息、图片和表情将在多端实时同步。
-				</p>
-			</div>
 		</div>
 	);
 }
@@ -1330,10 +1221,13 @@ function useEmojiEmoteMap(): Record<string, { url: string; gif_url?: string; siz
 
 function conversationLabel(conversation: ChatConversation, currentUserID?: string) {
 	if (conversation.title) return conversation.title;
-	const participant = conversation.members?.find((member) => member.user.id !== currentUserID);
-	if (participant) return participant.user.display_name;
+	const participants =
+		conversation.members?.filter((member) => member.user.id !== currentUserID) ?? [];
+	if (conversation.kind === "direct") {
+		return participants[0]?.user.display_name ?? conversation.owner.display_name;
+	}
 	return (
-		conversation.members?.map((member) => member.user.display_name).join("、") ||
+		participants.map((member) => member.user.display_name).join("、") ||
 		conversation.owner.display_name
 	);
 }
@@ -1348,7 +1242,6 @@ function conversationTargetUser(conversation: ChatConversation, currentUserID?: 
 	}
 	return conversation.owner;
 }
-
 function messagePreview(message: ChatMessage) {
 	if (message.is_deleted) return "消息已删除";
 	if (message.type === "image") return "发送了一张图片";
