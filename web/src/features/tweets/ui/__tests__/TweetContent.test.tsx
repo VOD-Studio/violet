@@ -41,4 +41,31 @@ describe("TweetContent Component", () => {
 		expect(links[1].textContent).toBe("#React#");
 		expect(links[1].getAttribute("href")).toBe("/tweets/topics/React");
 	});
+
+	it("renders inline emoji images when emote mapping is provided", () => {
+		const emote = {
+			"[doge]": { url: "https://emoji.test/doge.png" },
+		};
+		render(<TweetContent content="今天心情很好 [doge] 汪汪" emote={emote} />);
+		expect(screen.getByText(/今天心情很好/)).toBeTruthy();
+		expect(screen.getByText(/汪汪/)).toBeTruthy();
+
+		const emojiImg = screen.getByAltText("[doge]");
+		expect(emojiImg).toBeTruthy();
+		expect(emojiImg.getAttribute("src")).toBe("https://emoji.test/doge.png");
+	});
+
+	it("handles hashtags and emojis coexisting in text", () => {
+		const emote = {
+			"[cat]": { url: "https://emoji.test/cat.png", size: 2 },
+		};
+		render(<TweetContent content="#猫咪# 来看可爱的小猫 [cat] 喵~" emote={emote} />);
+
+		const link = screen.getByTestId("hashtag-link");
+		expect(link.textContent).toBe("#猫咪#");
+
+		const emojiImg = screen.getByAltText("[cat]");
+		expect(emojiImg.getAttribute("src")).toBe("https://emoji.test/cat.png");
+		expect(screen.getByText(/来看可爱的小猫/)).toBeTruthy();
+	});
 });

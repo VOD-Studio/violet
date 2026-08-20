@@ -205,6 +205,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					{hasContent && (
 						<TweetContent
 							content={tweet.content}
+							emote={tweet.emote}
 							className={
 								isDetail
 									? "text-base sm:text-lg leading-relaxed my-1"
@@ -273,6 +274,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							{tweet.quoted_tweet.content && (
 								<TweetContent
 									content={tweet.quoted_tweet.content}
+									emote={tweet.quoted_tweet.emote}
 									className="line-clamp-3 text-xs leading-normal text-foreground/90"
 								/>
 							)}

@@ -36,6 +36,8 @@ export interface QuotedTweet {
 	content: string;
 	/** 图片 URL 列表 */
 	images: string[];
+	/** 表情映射表。key 为 [name]（含方括号），渲染时查表替换为 img。对应后端 QuotedTweetDTO.emote。 */
+	emote?: Record<string, TweetCommentEmoteRef>;
 	/** 引用计数 */
 	quote_count: number;
 	/** 创建时间，RFC3339 字符串 */
@@ -56,6 +58,8 @@ export interface Tweet {
 	content: string;
 	/** 图片 URL 列表（/uploads/...），≤4 张；纯文本推文为空数组 */
 	images: string[];
+	/** 表情映射表。key 为 [name]（含方括号），渲染时查表替换为 img。对应后端 TweetDTO.emote。 */
+	emote?: Record<string, TweetCommentEmoteRef>;
 	/** 赞数（冗余计数，列表页性能用；点赞数据源见 tweet_likes） */
 	like_count: number;
 	/** 当前登录用户是否已点赞 */
@@ -70,6 +74,9 @@ export interface Tweet {
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 }
+
+/** TweetEmoteRef - 推文表情映射值别名 */
+export type TweetEmoteRef = TweetCommentEmoteRef;
 
 /**
  * TweetCommentPicture - 推文评论附图
