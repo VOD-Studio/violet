@@ -235,22 +235,27 @@ export function MascotTheater({
 			</div>
 
 			{/* 观众席控制区:舞台外,不打光 */}
+			{/* 观众席控制区:舞台外,不打光，严格固定各行几何高度消除切换抖动 */}
 			<div className="relative px-5 pt-4 pb-5 sm:px-6">
 				{/* 表情标题与描述 */}
 				<div className="text-center">
-					<div className="inline-flex items-center gap-2">
-						<h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">
+					<div className="flex h-7 items-center justify-center gap-2">
+						<h2 className="text-lg font-bold leading-none tracking-tight text-white sm:text-xl">
 							{def.name}
 						</h2>
-						<span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 font-mono text-[11px] font-normal text-white/50">
+						<span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-white/50">
 							{def.en}
 						</span>
 					</div>
-					<p className="mt-1 line-clamp-1 text-xs text-white/45">{def.desc}</p>
+					<div className="mt-1 flex h-4 items-center justify-center">
+						<p className="max-w-xs truncate text-xs leading-none text-white/45 sm:max-w-sm">
+							{def.desc}
+						</p>
+					</div>
 				</div>
 
 				{/* 互动动作工具栏 */}
-				<div className="mt-3.5 flex justify-center">
+				<div className="mt-3 flex h-9 items-center justify-center">
 					<div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-md shadow-black/25 backdrop-blur-md">
 						{actions.map((a) => (
 							<StageButton key={a.label} {...a} />
@@ -271,27 +276,29 @@ export function MascotTheater({
 					</div>
 				</div>
 
-				<p className="mt-2 text-center text-[10px] text-white/25">
-					轻触头部触发飞机耳 · 点击身体弹跳 · 移动指针视线追随
-				</p>
+				<div className="mt-2 flex h-3.5 items-center justify-center">
+					<p className="text-[10px] leading-none text-white/25">
+						轻触头部触发飞机耳 · 点击身体弹跳 · 移动指针视线追随
+					</p>
+				</div>
 
 				{/* AI 消息协议控制台 */}
-				<div className="mt-4 text-left" aria-live="polite">
-					<div className="mb-1.5 flex items-center justify-between px-0.5">
+				<div className="mt-3.5 text-left" aria-live="polite">
+					<div className="mb-1.5 flex h-4 items-center justify-between px-0.5">
 						<span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wider text-white/40 uppercase">
 							<Terminal className="size-3 text-amber-300/80" />
 							AI 消息协议控制台
 						</span>
 						<span className="font-mono text-[10px] text-white/25">按 Enter ↵ 发送</span>
 					</div>
-					<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 transition-all focus-within:border-amber-300/45 focus-within:bg-black/60 focus-within:ring-1 focus-within:ring-amber-300/20 has-[textarea[aria-invalid=true]]:border-red-400/50">
+					<div className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 transition-all focus-within:border-amber-300/45 focus-within:bg-black/60 focus-within:ring-1 focus-within:ring-amber-300/20 has-[textarea[aria-invalid=true]]:border-red-400/50">
 						<textarea
 							ref={jsonInputRef}
 							rows={1}
 							onKeyDown={handleKeyDown}
 							spellCheck={false}
 							placeholder={`{"emotionId": "${def.id}", "tips": "喵~"}`}
-							className="min-w-0 flex-1 resize-none bg-transparent px-2 py-1 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
+							className="min-w-0 flex-1 resize-none bg-transparent px-2 py-0.5 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
 						/>
 						<button
 							type="button"

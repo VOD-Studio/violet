@@ -43,15 +43,18 @@ export function MascotLab() {
 						</span>
 					</div>
 
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-						{exhibit.groupList.map((e) => (
-							<EmotionGridItem
-								key={e.id}
-								def={e}
-								active={e.id === exhibit.pinnedDef.id}
-								onSelect={exhibit.selectEmotion}
-							/>
-						))}
+					{/* 最小高度锁死：消除切换不同条目数分组时整个页面高度骤缩带来的剧烈跳动 */}
+					<div className="min-h-[580px]">
+						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+							{exhibit.groupList.map((e) => (
+								<EmotionGridItem
+									key={e.id}
+									def={e}
+									active={e.id === exhibit.pinnedDef.id}
+									onSelect={exhibit.selectEmotion}
+								/>
+							))}
+						</div>
 					</div>
 				</div>
 			</div>

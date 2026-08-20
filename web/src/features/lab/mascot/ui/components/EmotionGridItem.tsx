@@ -33,10 +33,10 @@ export function EmotionGridItem({ def, active, onSelect }: EmotionGridItemProps)
 			tabIndex={0}
 			role="button"
 			className={cn(
-				"flex cursor-pointer flex-col items-center justify-between rounded-xl border p-3 text-center transition-colors duration-150",
+				"flex h-34 cursor-pointer flex-col items-center justify-between rounded-xl border p-3 text-center transition-all duration-150 active:scale-98",
 				active
-					? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary"
-					: "border-border bg-card hover:border-foreground/40",
+					? "border-amber-400/80 bg-amber-400/8 shadow-sm ring-1 ring-amber-400/50"
+					: "border-border bg-card hover:border-foreground/30",
 			)}
 		>
 			<span className="self-start font-mono text-[11px] text-muted-foreground">
