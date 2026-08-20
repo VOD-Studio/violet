@@ -23,32 +23,42 @@ export function AdminSidebar() {
 	const collapsed = useAdminSidebarStore((s) => s.collapsed);
 	const toggle = useAdminSidebarStore((s) => s.toggle);
 
-	// FLIP：宽度瞬时切换（一次重排），内容区用 translateX 反向补偿做滑动。
-	// transform 走合成器，滑动期间内容零逐帧 reflow/paint——宽度过渡会让
-	// 大表格页（如权限管理全展开）每帧按新宽度重排重绘，造成掉帧。
+	// FLIP：宽度瞬时切换（一次重排），内容区与折叠球用 translateX 反向补偿
+	// 做滑动。transform 走合成器，滑动期间内容零逐帧 reflow/paint——宽度过渡
+	// 会让大表格页（如权限管理全展开）每帧按新宽度重排重绘，造成掉帧。
+	// 折叠球钉在 aside 右缘，宽度瞬切时随缘瞬移，同法补偿出滑动动画。
 	const handleToggle = () => {
 		const content = document.getElementById("admin-content");
+		const toggleBtn = document.getElementById("sidebar-toggle");
 		content?.getAnimations().forEach((a) => {
 			a.cancel();
 		});
+		toggleBtn?.getAnimations().forEach((a) => {
+			a.cancel();
+		});
 		const before = content?.getBoundingClientRect().left ?? 0;
+		const btnBefore = toggleBtn?.getBoundingClientRect().left ?? 0;
 		toggle();
-		if (!content) return;
+		if (!content && !toggleBtn) return;
 		requestAnimationFrame(() => {
-			const delta = before - content.getBoundingClientRect().left;
-			if (delta === 0) return;
 			// 强制提升为合成层：transform 动画才能走合成器，
 			// 否则逐帧主线程重绘大子树，等同退回到原掉帧。
-			content.style.willChange = "transform";
-			const anim = content.animate(
-				[{ transform: `translateX(${delta}px)` }, { transform: "translateX(0)" }],
-				{ duration: 200, easing: "ease-out" },
-			);
-			anim.finished
-				.catch(() => {})
-				.finally(() => {
-					content.style.willChange = "";
-				});
+			const flip = (el: HTMLElement, from: number) => {
+				const delta = from - el.getBoundingClientRect().left;
+				if (delta === 0) return;
+				el.style.willChange = "transform";
+				const anim = el.animate(
+					[{ transform: `translateX(${delta}px)` }, { transform: "translateX(0)" }],
+					{ duration: 200, easing: "ease-out" },
+				);
+				anim.finished
+					.catch(() => {})
+					.finally(() => {
+						el.style.willChange = "";
+					});
+			};
+			if (content) flip(content, before);
+			if (toggleBtn) flip(toggleBtn, btnBefore);
 		});
 	};
 
@@ -63,6 +73,7 @@ export function AdminSidebar() {
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
+							id="sidebar-toggle"
 							variant="outline"
 							size="icon"
 							onClick={handleToggle}
@@ -84,33 +95,32 @@ export function AdminSidebar() {
 				<div className="flex-1 overflow-x-hidden overflow-y-auto p-3">
 					<NavMenu collapsed={collapsed} />
 				</div>
-				<div
-					className={cn(
-						"flex items-center border-t p-3",
-						collapsed ? "justify-center" : "justify-between",
-					)}
-				>
+				{/* 恒 px-3/gap-2（同菜单项恒定布局理由）：图标两态恒 x=24 与菜单
+				    图标对齐；v2.0 恒渲染渐隐，ml-auto 推右，收起态不占宽 */}
+				<div className="flex items-center border-t p-3">
 					<Link
 						to="/"
 						aria-label="返回前台"
-						className={cn(
-							"text-muted-foreground hover:bg-accent hover:text-accent-foreground flex items-center rounded-md py-2 text-sm font-medium transition-colors",
-							collapsed ? "justify-center px-2" : "gap-2 px-3",
-						)}
+						className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
 					>
 						<ArrowLeft className="size-4 shrink-0" />
 						<span
 							className={cn(
-								"overflow-hidden whitespace-nowrap transition-all duration-200",
+								"overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200",
 								collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
 							)}
 						>
 							返回前台
 						</span>
 					</Link>
-					{!collapsed && (
-						<span className="text-muted-foreground/60 px-3 text-xs">v2.0</span>
-					)}
+					<span
+						className={cn(
+							"text-muted-foreground/60 ml-auto overflow-hidden px-3 text-xs transition-[max-width,opacity] duration-200",
+							collapsed ? "max-w-0 px-0 opacity-0" : "max-w-24 opacity-100",
+						)}
+					>
+						v2.0
+					</span>
 				</div>
 			</aside>
 		</TooltipProvider>

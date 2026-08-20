@@ -2,7 +2,7 @@ import { cn } from "@shared/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { useRouterState } from "@tanstack/react-router";
 import { ChevronDown, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdminSidebarStore } from "../admin-sidebar-store";
 import { NAV_ITEM_ACTIVE, NAV_ITEM_BASE, NavMenuLink } from "./NavMenuLink";
 import type { NavMenuItem } from "./nav-menu-config";
@@ -19,6 +19,9 @@ import type { NavMenuItem } from "./nav-menu-config";
  *
  * collapsed（侧边栏收起）时：子项无法内联渲染（撑破窄栏），点按图标改为
  * 右侧 Popover 飞出子菜单，子项导航后自动关闭；图标在子路由命中时保持激活态。
+ *
+ * 展开动画 grid-rows 0fr↔1fr 高度过渡；分组位于滚动区底部时展开内容会
+ * 溢出可视区，effect 里 scrollIntoView(nearest) 把子菜单滚进视野。
  */
 export function NavMenuGroupItem({
 	item,
@@ -36,7 +39,31 @@ export function NavMenuGroupItem({
 	const expanded = manualState ?? false;
 
 	const [flyoutOpen, setFlyoutOpen] = useState(false);
+	const submenuRef = useRef<HTMLDivElement>(null);
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+	// 展开时把子菜单滚进视野（底部组展开后内容溢出滚动区可视范围）。
+	// 必须等 grid-rows 过渡结束再滚：effect 触发时容器仍是 0fr 收起态几何，
+	// nearest 判定「已可见」会跳过滚动。transitionend 只在值变化时触发，
+	// 期间被收起则 cleanup 摘除监听，不误滚。
+	// scrollIntoView/matchMedia 判存在：jsdom 均未实现，测试环境跳过。
+	useEffect(() => {
+		if (!expanded || collapsed) return;
+		const el = submenuRef.current;
+		if (!el || typeof el.scrollIntoView !== "function") return;
+		const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+		if (reduce) {
+			el.scrollIntoView({ block: "nearest", behavior: "auto" });
+			return;
+		}
+		const onEnd = (e: TransitionEvent) => {
+			if (e.propertyName === "grid-template-rows") {
+				el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+			}
+		};
+		el.addEventListener("transitionend", onEnd);
+		return () => el.removeEventListener("transitionend", onEnd);
+	}, [expanded, collapsed]);
 	const childActive = pathname === item.to || pathname.startsWith(`${item.to}/`);
 	const showActive = childActive && (collapsed || !expanded);
 
@@ -50,30 +77,25 @@ export function NavMenuGroupItem({
 					? undefined // Popover 接管开关，不动 expandedGroups（收起态子项不内联渲染）
 					: () => setGroupExpanded(item.to, !expanded)
 			}
-			className={cn(
-				NAV_ITEM_BASE,
-				"w-full",
-				collapsed && "justify-center gap-0 px-0",
-				showActive && NAV_ITEM_ACTIVE,
-			)}
+			className={cn(NAV_ITEM_BASE, "w-full", showActive && NAV_ITEM_ACTIVE)}
 		>
 			<Icon className="size-4 shrink-0" />
 			<span
 				className={cn(
-					"flex-1 overflow-hidden text-left transition-all duration-200",
+					"flex-1 overflow-hidden text-left transition-[max-width,opacity] duration-200",
 					collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
 				)}
 			>
 				{item.label}
 			</span>
-			{!collapsed && (
-				<ChevronDown
-					className={cn(
-						"size-4 shrink-0 text-muted-foreground transition-transform",
-						expanded && "rotate-180",
-					)}
-				/>
-			)}
+			{/* 恒渲染渐隐：条件切换会瞬现瞬消；max-w 收宽与 rotate 同列表过渡 */}
+			<ChevronDown
+				className={cn(
+					"size-4 shrink-0 text-muted-foreground transition-[max-width,opacity,transform] duration-200",
+					collapsed ? "max-w-0 opacity-0" : "max-w-4 opacity-100",
+					expanded && "rotate-180",
+				)}
+			/>
 		</button>
 	);
 
@@ -105,18 +127,31 @@ export function NavMenuGroupItem({
 	return (
 		<div className="flex flex-col">
 			{trigger}
-			{expanded && item.children && (
-				<div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l pl-2">
-					{item.children.map((child) => (
-						<NavMenuLink
-							key={child.to}
-							item={child}
-							onNavigate={onNavigate}
-							collapsed={false}
-						/>
-					))}
+			{/* 子菜单：grid-rows 0fr↔1fr 高度过渡（同 OAuthProviderCard 先例），展开/收起不跳布局；
+			    data-state 供测试断言可见性；visibility 随过渡切换，收起后子项不可被 tab 聚焦 */}
+			<div
+				ref={submenuRef}
+				data-state={expanded ? "open" : "closed"}
+				className={cn(
+					"grid transition-[grid-template-rows,margin-top,opacity,visibility] duration-300 ease-out motion-reduce:transition-none",
+					expanded
+						? "mt-0.5 grid-rows-[1fr] opacity-100 visible"
+						: "mt-0 grid-rows-[0fr] opacity-0 invisible",
+				)}
+			>
+				<div className="ml-3 min-h-0 overflow-hidden pl-2">
+					<div className="flex flex-col gap-0.5 border-l">
+						{item.children?.map((child) => (
+							<NavMenuLink
+								key={child.to}
+								item={child}
+								onNavigate={onNavigate}
+								collapsed={false}
+							/>
+						))}
+					</div>
 				</div>
-			)}
+			</div>
 		</div>
 	);
 }

@@ -77,15 +77,19 @@ const getSettingsParent = () =>
 		.getAllByRole("button", { name: /站点设置/ })
 		.find((b) => b.hasAttribute("aria-expanded"));
 
+/** 取「站点设置」子菜单容器（data-state 标识展开态） */
+const getSettingsSubmenu = () => document.querySelector('[data-state][class*="grid-rows"]');
+
 describe("NavMenu 子菜单渲染", () => {
-	it("默认折叠，子项不渲染", () => {
+	it("默认折叠，子项不可见", () => {
 		setPath("/admin/settings/github");
 		render(<NavMenu />);
 
 		// 即使命中子项路由，父项仍默认折叠
 		expect(getSettingsParent()?.getAttribute("aria-expanded")).toBe("false");
-		expect(screen.queryAllByTestId("link-/admin/settings/github").length).toBe(0);
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBe(0);
+		// 子项 DOM 恒渲染（grid-rows 高度过渡需要内容存在），收起态靠容器 closed + invisible 隐藏
+		expect(getSettingsSubmenu()?.getAttribute("data-state")).toBe("closed");
+		expect(getSettingsSubmenu()?.className).toContain("invisible");
 	});
 
 	it("手动点击父项后展开子项", () => {
@@ -107,17 +111,17 @@ describe("NavMenu 子菜单渲染", () => {
 		render(<NavMenu />);
 
 		const parent = getSettingsParent();
-		// 初始折叠，子项不可见
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBe(0);
+		// 初始折叠，子菜单容器 closed
+		expect(getSettingsSubmenu()?.getAttribute("data-state")).toBe("closed");
 
 		// 点击展开（fireEvent 包裹 act，确保 zustand 状态更新同步到 DOM）
 		fireEvent.click(parent as HTMLElement);
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBeGreaterThan(0);
+		expect(getSettingsSubmenu()?.getAttribute("data-state")).toBe("open");
 		expect(parent?.getAttribute("aria-expanded")).toBe("true");
 
 		// 再次点击折叠
 		fireEvent.click(parent as HTMLElement);
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBe(0);
+		expect(getSettingsSubmenu()?.getAttribute("data-state")).toBe("closed");
 		expect(parent?.getAttribute("aria-expanded")).toBe("false");
 	});
 
