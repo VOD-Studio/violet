@@ -379,7 +379,7 @@ export const EMOTIONS: EmotionDef[] = [
 
 	// ==================== 2）情绪反应 (10-26) ====================
 	{
-		id: "26",
+		id: "08",
 		name: "Ciallo～",
 		en: "Ciallo",
 		group: "emotion",
@@ -410,7 +410,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "10",
+		id: "09",
 		name: "开心",
 		en: "Happy",
 		group: "emotion",
@@ -437,7 +437,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "11",
+		id: "10",
 		name: "狂喜大笑",
 		en: "Laughing",
 		group: "emotion",
@@ -486,7 +486,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "12",
+		id: "11",
 		name: "害羞",
 		en: "Shy",
 		group: "emotion",
@@ -529,7 +529,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "13",
+		id: "12",
 		name: "愤怒炸毛",
 		en: "Angry",
 		group: "emotion",
@@ -560,7 +560,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "14",
+		id: "13",
 		name: "惊讶呆住",
 		en: "Surprised",
 		group: "emotion",
@@ -604,7 +604,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "15",
+		id: "14",
 		name: "疑惑不解",
 		en: "Puzzled",
 		group: "emotion",
@@ -629,7 +629,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "sine", target: "body", prop: "rotate", amp: 1.4, period: 3200 }],
 	},
 	{
-		id: "16",
+		id: "15",
 		name: "难过委屈",
 		en: "Sad",
 		group: "emotion",
@@ -653,7 +653,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "sine", target: "eyes", prop: "y", amp: 1.6, period: 3600 }],
 	},
 	{
-		id: "17",
+		id: "16",
 		name: "失落消沉",
 		en: "Gloomy",
 		group: "emotion",
@@ -687,7 +687,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "18",
+		id: "17",
 		name: "撒娇爱意",
 		en: "Love",
 		group: "emotion",
@@ -711,7 +711,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "19",
+		id: "18",
 		name: "傲娇得意",
 		en: "Proud",
 		group: "emotion",
@@ -729,7 +729,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "20",
+		id: "19",
 		name: "委屈抽泣",
 		en: "Pouting / Crying",
 		group: "emotion",
@@ -755,7 +755,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "21",
+		id: "20",
 		name: "害怕惊吓",
 		en: "Scared",
 		group: "emotion",
@@ -781,7 +781,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "22",
+		id: "21",
 		name: "俏皮眨眼",
 		en: "Winking",
 		group: "emotion",
@@ -805,7 +805,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "sine", target: "body", prop: "rotate", amp: 2, period: 2200 }],
 	},
 	{
-		id: "23",
+		id: "22",
 		name: "舒适呼噜",
 		en: "Purring",
 		group: "emotion",
@@ -830,7 +830,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "24",
+		id: "23",
 		name: "嫌弃无语",
 		en: "Disgusted",
 		group: "emotion",
@@ -844,7 +844,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "sine", target: "eyes", prop: "lookY", amp: 1.2, period: 3200 }],
 	},
 	{
-		id: "25",
+		id: "24",
 		name: "乞求拜托",
 		en: "Pleading",
 		group: "emotion",
@@ -874,7 +874,7 @@ export const EMOTIONS: EmotionDef[] = [
 
 	// ==================== 3）代理与工作状态 (30-42) ====================
 	{
-		id: "30",
+		id: "25",
 		name: "思考中",
 		en: "Thinking",
 		group: "agent",
@@ -896,7 +896,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "sine", target: "eyes", prop: "lookX", amp: 9, period: 2600 }],
 	},
 	{
-		id: "31",
+		id: "26",
 		name: "检索资料",
 		en: "Searching",
 		group: "agent",
@@ -910,7 +910,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "scan", target: "eyes", prop: "lookX", amp: 11, period: 700 }],
 	},
 	{
-		id: "32",
+		id: "27",
 		name: "出错了",
 		en: "Error",
 		group: "agent",
@@ -937,7 +937,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "33",
+		id: "28",
 		name: "任务完成",
 		en: "Done",
 		group: "agent",
@@ -987,7 +987,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "34",
+		id: "29",
 		name: "拒绝受限",
 		en: "Refusing",
 		group: "agent",
@@ -1020,7 +1020,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "35",
+		id: "30",
 		name: "正在回复",
 		en: "Replying",
 		group: "agent",
@@ -1046,7 +1046,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "36",
+		id: "31",
 		name: "网络加载",
 		en: "Loading",
 		group: "agent",
@@ -1063,7 +1063,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "37",
+		id: "32",
 		name: "翻检记忆",
 		en: "Recalling",
 		group: "agent",
@@ -1085,7 +1085,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "sine", target: "eyes", prop: "lookY", amp: 2.4, period: 4000 }],
 	},
 	{
-		id: "38",
+		id: "33",
 		name: "接收确认",
 		en: "Acknowledged",
 		group: "agent",
@@ -1110,7 +1110,7 @@ export const EMOTIONS: EmotionDef[] = [
 		},
 	},
 	{
-		id: "39",
+		id: "34",
 		name: "忙碌处理",
 		en: "Crunching",
 		group: "agent",
@@ -1130,7 +1130,7 @@ export const EMOTIONS: EmotionDef[] = [
 		],
 	},
 	{
-		id: "40",
+		id: "35",
 		name: "狂欢派对",
 		en: "Party",
 		group: "agent",
@@ -1156,7 +1156,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "pulse", target: "body", prop: "scale", amp: 0.05, period: 600 }],
 	},
 	{
-		id: "41",
+		id: "36",
 		name: "警戒巡视",
 		en: "Patrolling",
 		group: "agent",
@@ -1169,7 +1169,7 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [{ type: "scan", target: "eyes", prop: "lookX", amp: 14, period: 3200 }],
 	},
 	{
-		id: "42",
+		id: "37",
 		name: "警觉警戒",
 		en: "Alert",
 		group: "agent",
