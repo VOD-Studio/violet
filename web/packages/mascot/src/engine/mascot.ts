@@ -16,9 +16,12 @@ import {
 	catMochiOutline,
 	catTailPath,
 	FACE,
+	FACE_PROJECTION_RADIUS,
 	MOUTH_SHAPES,
 	type MouthShapeId,
+	projectSurfaceAngle,
 	smoothClosedPath,
+	surfaceAngleForX,
 } from "./body";
 import { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./emotions";
 import { EYE_RINGS, type EyeRing } from "./eyes";
@@ -61,11 +64,8 @@ const GAZE_Y = 15;
 const GAZE_LEAN_SHIFT = 0.22;
 const GAZE_LEAN_ROT = 0.04;
 const GAZE_LEAN_SQUASH = 0.05;
-/**
- * 面部柱面统一投影半径:全部面部部件锚在同一圆周上,
- * 位置/透视压缩/淡出共用同一条球面投影曲线,构成刚体式整脸旋转。
- */
-const FACE_R = 52;
+/** 身体侧视最小宽度:保留软糯团子的体积,同时让身体轮廓响应偏航。 */
+const BODY_YAW_MIN = 0.72;
 /** 身体跟随平滑速率(1/s):比注视通道(5.66)慢,眼睛先动身体慢半拍跟上 */
 const GAZE_LEAN_K = 2.6;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
@@ -345,6 +345,7 @@ export class Mascot {
 	 */
 	setDevYaw(deg: number): void {
 		this.devYawDeg = deg;
+		if (!this.spin) this.clearRibbons();
 		if (!this.running) this.renderStatic();
 	}
 
@@ -525,6 +526,21 @@ export class Mascot {
 			d0 = i2 + 1;
 		}
 		return { front, back };
+	}
+	/**
+	 * 清掉手动偏航检查前一帧留下的运动彩带。
+	 * 调试滑条表达静态姿态,不应把角度跳变误判成真实旋转速度。
+	 */
+	private clearRibbons(): void {
+		for (const ribbon of this.ribbons) {
+			ribbon.back.remove();
+			ribbon.front.remove();
+			ribbon.gradEl.remove();
+		}
+		this.ribbons.length = 0;
+		this.ribbonSpawnAt.length = 0;
+		this.ribbonWasFast = false;
+		this.ribbonPrevYaw = Number.NaN;
 	}
 
 	/** 彩带逐帧:跟随自旋转过身体、惯性衰减、smoothstep 回缩、色相漂移 */
@@ -1406,20 +1422,11 @@ export class Mascot {
 		const phi = pose.yaw + avgLookX / 75;
 		const pitchY = avgLookY * 0.65;
 		// 整脸透明度:随偏航提早下降,配合位置滑动读出侧面
-		const faceOp = clamp((Math.cos(pose.yaw) - 0.2) / 0.5, 0, 1);
-		// 统一球面投影:全部部件共用 FACE_R 与同一条投影曲线;θ0 为部件本体经度
-		// (正面锚点经 thetaOf 换算,背面部件如尾巴根直接给显式经度),
-		// 位置/压缩/淡出三通道同源,构成刚体式整猫旋转
-		const thetaOf = (x0: number) => Math.asin(clamp((x0 - 130) / FACE_R, -1, 1));
-		const faceProj = (theta0: number, a: number) => {
-			const p = theta0 + a;
-			const nz = Math.cos(p);
-			return {
-				x: 130 + FACE_R * Math.sin(p),
-				sx: clamp(nz, 0.02, 1),
-				op: clamp(nz / 0.16, 0, 1),
-			};
-		};
+		const faceOp = clamp((Math.cos(phi) - 0.2) / 0.5, 0, 1);
+		// 所有面部锚点与尾根都经由 body.ts 的同一条表面投影曲线。
+		const thetaOf = (x0: number) => surfaceAngleForX(x0, FACE_PROJECTION_RADIUS);
+		const faceProj = (theta0: number, a: number) =>
+			projectSurfaceAngle(theta0, a, FACE_PROJECTION_RADIUS);
 
 		// 身体注视跟随(次级动作):仅指针注意力(gaze.x)驱动——avgLookX 还混有微漂移与
 		// 表情 lookX 动画(scan 类),直接用会连带身体摇摆。独立慢平滑让身体比眼睛
@@ -1428,10 +1435,9 @@ export class Mascot {
 		const leanShift = this.leanCur * GAZE_LEAN_SHIFT;
 		const leanRot = this.leanCur * GAZE_LEAN_ROT;
 
-		// 身体 rig:中心 130,贴地 226。偏航横向压缩已由 faceProj 统一驱动五官,
-		// rigG 不再做 yaw 压缩——否则五官(faceProj.sx)和身体(yawSquash)双重压缩,
-		// 各部件因 theta0 不同受到不同程度叠加,旋转时"各自为伍"。
-		// 仅保留注视跟随的微量 lean 压缩(身体看向一侧时轻微收窄,幅度极小)
+		// 身体轮廓单独使用同一偏航的表面宽度,避免把 faceProj 的局部压缩再次
+		// 施加到五官;身体与五官因此共享 yaw,但各自只投影一次。
+		const bodyYawScale = BODY_YAW_MIN + (1 - BODY_YAW_MIN) * Math.abs(Math.cos(phi));
 		const leanSquash = 1 - GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
 		this.rigG.setAttribute(
 			"transform",
@@ -1441,6 +1447,10 @@ export class Mascot {
 				`scale(${(b.scale * leanSquash).toFixed(4)} ${(b.scale * b.stretchY).toFixed(4)})`,
 				`translate(${(-cx).toFixed(2)} ${(-anchorY).toFixed(2)})`,
 			].join(" "),
+		);
+		this.bodyPath.setAttribute(
+			"transform",
+			`translate(${cx} 0) scale(${bodyYawScale.toFixed(4)} 1) translate(${-cx} 0)`,
 		);
 
 		// 地面投影随跳起高度缩小变淡(b.y 负为升空),随偏航与注视跟随微移增强立体感
@@ -1467,27 +1477,36 @@ export class Mascot {
 		this.bodyGrad.setAttribute("cx", gradCx);
 		this.bodyGrad.setAttribute("cy", gradCy);
 
-		// 尾巴 3D 环绕与摆动(投影半径与面部统一,刚体旋转)
+		// 尾巴根与耳朵都挂在同一表面坐标;尾巴的横向收窄在 catTailPath 内完成。
 		const tailSway = Math.sin((TAU * now) / 2400) * b.tail;
-		this.tailEl.setAttribute("d", catTailPath(tailSway, b.tailElev, phi, FACE_R));
-		// 猫耳:统一球面投影(锚点为耳 pivot),背面交换位置;内耳淡出走同一条投影曲线
+		this.tailEl.setAttribute(
+			"d",
+			catTailPath(tailSway, b.tailElev, phi, FACE_PROJECTION_RADIUS),
+		);
+
+		// 耳朵按 pivot 的表面深度缩放;背面保留外耳轮廓,内耳窝只在朝向观察者时显示。
 		const earL = faceProj(thetaOf(CAT_EARS.left.pivot[0]), phi);
 		const earR = faceProj(thetaOf(CAT_EARS.right.pivot[0]), phi);
-		const earLDx = earL.x - CAT_EARS.left.pivot[0];
-		const earRDx = earR.x - CAT_EARS.right.pivot[0];
 		const earLRot = b.earL + Math.sin((TAU * now) / 3200) * 1.5 - avgLookX * 0.1;
 		const earRRot = b.earR - Math.sin((TAU * now) / 3200 + 0.4) * 1.5 - avgLookX * 0.1;
+		const earLOp = clamp(Math.abs(earL.depth) / 0.16, 0.18, 1);
+		const earROp = clamp(Math.abs(earR.depth) / 0.16, 0.18, 1);
 
+		this.earLG.setAttribute("opacity", earLOp.toFixed(3));
 		this.earLG.setAttribute(
 			"transform",
-			`translate(${earLDx.toFixed(2)} 0) rotate(${earLRot.toFixed(2)} ${CAT_EARS.left.pivot[0]} ${CAT_EARS.left.pivot[1]})`,
+			`translate(${earL.x.toFixed(2)} ${(CAT_EARS.left.pivot[1] + pitchY).toFixed(2)}) ` +
+				`rotate(${earLRot.toFixed(2)}) scale(${earL.sx.toFixed(3)} 1) ` +
+				`translate(${-CAT_EARS.left.pivot[0]} ${-CAT_EARS.left.pivot[1]})`,
 		);
+		this.earRG.setAttribute("opacity", earROp.toFixed(3));
 		this.earRG.setAttribute(
 			"transform",
-			`translate(${earRDx.toFixed(2)} 0) rotate(${earRRot.toFixed(2)} ${CAT_EARS.right.pivot[0]} ${CAT_EARS.right.pivot[1]})`,
+			`translate(${earR.x.toFixed(2)} ${(CAT_EARS.right.pivot[1] + pitchY).toFixed(2)}) ` +
+				`rotate(${earRRot.toFixed(2)}) scale(${earR.sx.toFixed(3)} 1) ` +
+				`translate(${-CAT_EARS.right.pivot[0]} ${-CAT_EARS.right.pivot[1]})`,
 		);
 
-		// 粉嫩内耳窝淡出(与全脸同一条投影曲线,正面显示背面只露外耳毛色)
 		this.earLInner.setAttribute("opacity", earL.op.toFixed(3));
 		this.earRInner.setAttribute("opacity", earR.op.toFixed(3));
 
@@ -1527,40 +1546,47 @@ export class Mascot {
 		const mouthY = 142 + pitchY + 14 + b.mouthY;
 		this.renderMouth(b, m.x, mouthY, (b.mouthScale ?? 1) * m.sx, m.op * faceOp);
 
-		// 腮红:统一投影,锚点为 FACE 腮红位,几何恒定
+		// 腮红跟随同一投影中心,横向尺度限制在贴纸几何的安全区间,避免边缘
+		// 经度的导数把腮红突然放大成漂浮的椭圆。
 		const bl = faceProj(thetaOf(FACE.blushL[0]), phi);
 		const br = faceProj(thetaOf(FACE.blushR[0]), phi);
 		const blushY = 162 + pitchY * 0.85;
 		const blushR0 = 15;
+		const blushScaleL = clamp(Math.abs(bl.sx), 0.4, 1.15);
+		const blushScaleR = clamp(Math.abs(br.sx), 0.4, 1.15);
 
 		this.blushL.setAttribute("cx", bl.x.toFixed(2));
 		this.blushL.setAttribute("cy", blushY.toFixed(2));
-		this.blushL.setAttribute("rx", blushR0.toFixed(2));
+		this.blushL.setAttribute("rx", (blushR0 * blushScaleL).toFixed(2));
 		this.blushL.setAttribute("opacity", (b.blush * bl.op * faceOp).toFixed(3));
 
 		this.blushR.setAttribute("cx", br.x.toFixed(2));
 		this.blushR.setAttribute("cy", blushY.toFixed(2));
-		this.blushR.setAttribute("rx", blushR0.toFixed(2));
+		this.blushR.setAttribute("rx", (blushR0 * blushScaleR).toFixed(2));
 		this.blushR.setAttribute("opacity", (b.blush * br.op * faceOp).toFixed(3));
 
-		// 轻柔猫咪胡须:统一投影,锚点为 FACE 胡须位;wobble 微颤保留
+		// 胡须以锚点为局部原点缩放与平移;原始路径在 yaw=0 精确保持,
+		// 不再用相对原点的 translate + scale 把须线甩离脸缘。
 		const wl = faceProj(thetaOf(FACE.whiskerL[0]), phi);
 		const wr = faceProj(thetaOf(FACE.whiskerR[0]), phi);
 		const whiskerWobble = Math.sin((TAU * now) / 2800) * 1.2;
 		const whiskerBaseOp = b.whiskers * 0.55;
+		const whiskerScaleL = clamp(Math.abs(wl.sx), 0.25, 1);
+		const whiskerScaleR = clamp(Math.abs(wr.sx), 0.25, 1);
 
 		this.whiskerLG.setAttribute("opacity", (whiskerBaseOp * wl.op * faceOp).toFixed(3));
 		this.whiskerRG.setAttribute("opacity", (whiskerBaseOp * wr.op * faceOp).toFixed(3));
-
 		this.whiskerLG.setAttribute(
 			"transform",
-			`translate(${(wl.x - FACE.whiskerL[0]).toFixed(2)} ${pitchY.toFixed(2)}) ` +
-				`rotate(${whiskerWobble.toFixed(2)} ${FACE.whiskerL[0]} ${FACE.whiskerL[1]}) scale(${wl.sx.toFixed(3)} 1)`,
+			`translate(${wl.x.toFixed(2)} ${(FACE.whiskerL[1] + pitchY).toFixed(2)}) ` +
+				`rotate(${whiskerWobble.toFixed(2)}) scale(${whiskerScaleL.toFixed(3)} 1) ` +
+				`translate(${-FACE.whiskerL[0]} ${-FACE.whiskerL[1]})`,
 		);
 		this.whiskerRG.setAttribute(
 			"transform",
-			`translate(${(wr.x - FACE.whiskerR[0]).toFixed(2)} ${pitchY.toFixed(2)}) ` +
-				`rotate(${(-whiskerWobble).toFixed(2)} ${FACE.whiskerR[0]} ${FACE.whiskerR[1]}) scale(${wr.sx.toFixed(3)} 1)`,
+			`translate(${wr.x.toFixed(2)} ${(FACE.whiskerR[1] + pitchY).toFixed(2)}) ` +
+				`rotate(${(-whiskerWobble).toFixed(2)}) scale(${whiskerScaleR.toFixed(3)} 1) ` +
+				`translate(${-FACE.whiskerR[0]} ${-FACE.whiskerR[1]})`,
 		);
 		// 左右前爪:统一投影,锚点为 FACE 爪位
 		const pl = faceProj(thetaOf(FACE.pawL[0]), phi);
@@ -1624,6 +1650,7 @@ export class Mascot {
 		opacity: number,
 	): void {
 		if (opacity <= 0.01) {
+			this.mouthG.setAttribute("opacity", "0");
 			this.mouthG.style.display = "none";
 			return;
 		}
@@ -1684,6 +1711,7 @@ export class Mascot {
 		}
 
 		if (cn <= 0.02 || opacity <= 0.01) {
+			eyeG.setAttribute("opacity", "0");
 			eyeG.style.display = "none";
 			return;
 		}

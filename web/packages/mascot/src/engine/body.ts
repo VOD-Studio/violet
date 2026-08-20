@@ -34,6 +34,42 @@ export const FACE = {
 };
 
 const CX = 130;
+/** 所有可绕身体表面旋转的部件共用的横向投影半径。 */
+export const FACE_PROJECTION_RADIUS = 72;
+
+/** 身体表面投影结果。 */
+export interface SurfaceProjection {
+	/** 投影后的横向位置 */
+	x: number;
+	/** 相对基准姿态的横向缩放,带符号表示背面镜像 */
+	sx: number;
+	/** 投影后的深度,正值朝向观察者 */
+	depth: number;
+	/** 朝向观察者的可见度 */
+	op: number;
+}
+
+/** 将基准经度沿同一条表面曲线投影到当前偏航角。 */
+export function projectSurfaceAngle(
+	theta0: number,
+	phi: number,
+	radius = FACE_PROJECTION_RADIUS,
+): SurfaceProjection {
+	const p = theta0 + phi;
+	const depth = Math.cos(p);
+	const baseDepth = Math.max(Math.cos(theta0), 0.16);
+	return {
+		x: CX + radius * Math.sin(p),
+		sx: Math.max(-1, Math.min(1, depth / baseDepth)),
+		depth,
+		op: Math.max(0, Math.min(1, depth / 0.16)),
+	};
+}
+
+/** 从基准姿态的横向锚点反推出表面经度。 */
+export function surfaceAngleForX(x0: number, radius = FACE_PROJECTION_RADIUS): number {
+	return Math.asin(Math.max(-1, Math.min(1, (x0 - CX) / radius)));
+}
 
 /**
  * 折线转平滑闭合 path (Catmull-Rom 转三次贝塞尔,闭合)。
@@ -154,24 +190,29 @@ export const CAT_EARS = {
  * @param sway - 尾巴摇晃量 [-1, 1]
  * @param elevation - 尾巴抬升高度 [-1, 1]，正值高高竖起，负值低垂
  */
-export function catTailPath(sway: number, elevation = 0, phi = 0, r = 66): string {
-	// 尾巴根本体经度在背面 (π-0.72);投影半径与面部共用统一值时整体刚体旋转
-	const tailAngle = Math.PI - 0.72 + phi;
-	const sinT = Math.sin(tailAngle);
-	// 尾巴根部随身体 3D 旋转在左右后侧环绕
-	const rootX = 130 + r * sinT;
+export function catTailPath(
+	sway: number,
+	elevation = 0,
+	phi = 0,
+	r = FACE_PROJECTION_RADIUS,
+): string {
+	// 尾根使用与五官相同的显式背面经度,避免另起一套旋转坐标。
+	const baseAngle = Math.PI - 0.72;
+	const root = projectSurfaceAngle(baseAngle, phi, r);
+	const tailSx = Math.max(0.08, Math.abs(root.sx));
+	const tailSy = 0.35 + tailSx * 0.65;
 	const rootY = 192;
 	const liftY = elevation * 22;
-	const sideDir = sinT >= 0 ? 1 : -1;
-	const reach = 32 + Math.abs(sinT) * 12 + sway * 16 * sideDir;
-	const tipX = rootX + sideDir * reach;
-	const tipY = 138 - Math.abs(sway) * 8 - liftY;
-	const c1x = rootX + sideDir * (reach * 0.4);
-	const c1y = 202 - liftY * 0.4;
-	const c2x = rootX + sideDir * (reach * 0.9);
-	const c2y = 168 - liftY * 0.8;
+	const sideDir = Math.sin(baseAngle + phi) >= 0 ? 1 : -1;
+	const reach = (32 + Math.abs(Math.sin(baseAngle + phi)) * 12 + sway * 16 * sideDir) * tailSx;
+	const tipX = root.x + sideDir * reach;
+	const tipY = rootY + (138 - Math.abs(sway) * 8 - liftY - rootY) * tailSy;
+	const c1x = root.x + sideDir * (reach * 0.4);
+	const c1y = rootY + (202 - liftY * 0.4 - rootY) * tailSy;
+	const c2x = root.x + sideDir * (reach * 0.9);
+	const c2y = rootY + (168 - liftY * 0.8 - rootY) * tailSy;
 
-	return `M ${rootX.toFixed(2)} ${rootY.toFixed(2)} C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${tipX.toFixed(2)} ${tipY.toFixed(2)}`;
+	return `M ${root.x.toFixed(2)} ${rootY.toFixed(2)} C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${tipX.toFixed(2)} ${tipY.toFixed(2)}`;
 }
 
 /** 猫咪胡须路径定义 (左右各 2 根轻柔细须)。 */
