@@ -35,7 +35,7 @@ export function EmotionGridItem({ def, active, onSelect }: EmotionGridItemProps)
 			className={cn(
 				"flex h-34 cursor-pointer flex-col items-center justify-between rounded-xl border p-3 text-center transition-all duration-150 active:scale-98",
 				active
-					? "border-amber-400/80 bg-amber-400/8 shadow-sm ring-1 ring-amber-400/50"
+					? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40 text-foreground"
 					: "border-border bg-card hover:border-foreground/30",
 			)}
 		>

@@ -51,8 +51,8 @@ function StageButton({ label, icon, onClick, active }: StageAction) {
 			className={cn(
 				"inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all active:scale-95",
 				active
-					? "border border-amber-300/40 bg-amber-300/20 text-amber-100 shadow-xs shadow-amber-300/10"
-					: "text-white/75 hover:bg-white/10 hover:text-white",
+					? "border border-white/25 bg-white/15 text-white shadow-xs shadow-black/20"
+					: "text-white/70 hover:bg-white/10 hover:text-white",
 			)}
 		>
 			{icon}
@@ -240,7 +240,7 @@ export function MascotTheater({
 					#{def.id}
 					<span
 						aria-hidden
-						className="size-1 animate-pulse rounded-full bg-amber-200/80"
+						className="size-1 animate-pulse rounded-full bg-emerald-400/80"
 					/>
 				</p>
 
@@ -252,7 +252,6 @@ export function MascotTheater({
 				/>
 				<EmotionBubble text={bubble.text} gen={bubble.gen} />
 			</div>
-
 			{/* 观众席控制区:舞台外,不打光 */}
 			{/* 观众席控制区:舞台外,不打光，严格固定各行几何高度消除切换抖动 */}
 			<div className="relative px-5 pt-4 pb-5 sm:px-6">
@@ -305,12 +304,12 @@ export function MascotTheater({
 				<div className="mt-3.5 text-left" aria-live="polite">
 					<div className="mb-1.5 flex h-4 items-center justify-between px-0.5">
 						<span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wider text-white/40 uppercase">
-							<Terminal className="size-3 text-amber-300/80" />
+							<Terminal className="size-3 text-white/60" />
 							AI 消息协议控制台
 						</span>
 						<span className="font-mono text-[10px] text-white/25">按 Enter ↵ 发送</span>
 					</div>
-					<div className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 transition-all focus-within:border-amber-300/45 focus-within:bg-black/60 focus-within:ring-1 focus-within:ring-amber-300/20 has-[textarea[aria-invalid=true]]:border-red-400/50">
+					<div className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-black/45 p-1.5 transition-all focus-within:border-white/25 focus-within:bg-black/65 focus-within:ring-1 focus-within:ring-white/10 has-[textarea[aria-invalid=true]]:border-red-400/50">
 						<textarea
 							ref={jsonInputRef}
 							rows={1}
@@ -322,9 +321,9 @@ export function MascotTheater({
 						<button
 							type="button"
 							onClick={sendJson}
-							className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-amber-300/90 px-3 py-1.5 text-xs font-semibold text-[#3b2a08] shadow-xs shadow-amber-300/20 transition-all hover:bg-amber-300 active:scale-95"
+							className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 shadow-xs transition-all hover:bg-white/90 active:scale-95"
 						>
-							<Send className="size-3" />
+							<Send className="size-3 text-neutral-950" />
 							<span>发送</span>
 						</button>
 					</div>
