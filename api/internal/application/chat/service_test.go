@@ -1,11 +1,12 @@
 package chat
 
 import (
-	"context"
-	"testing"
-
+	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
+	"context"
+	"strings"
+	"testing"
 )
 
 type mockFileRepo struct {
@@ -21,6 +22,24 @@ func (m *mockFileRepo) FindByID(_ context.Context, id domainshared.ID) (*domainu
 
 func (m *mockFileRepo) UpdateRefCount(_ context.Context, _ domainshared.ID, _ int) error {
 	return nil
+}
+
+func TestGeneratedRoomTitle(t *testing.T) {
+	t.Run("joins participant display names", func(t *testing.T) {
+		if got := generatedRoomTitle([]string{"Alice", "Bob"}); got != "Alice、Bob" {
+			t.Fatalf("generatedRoomTitle() = %q, want %q", got, "Alice、Bob")
+		}
+	})
+
+	t.Run("truncates long names without splitting Unicode", func(t *testing.T) {
+		got := generatedRoomTitle([]string{strings.Repeat("你", 90)})
+		if len([]rune(got)) != domainchat.MaxRoomTitleLength {
+			t.Fatalf("generatedRoomTitle() rune length = %d, want %d", len([]rune(got)), domainchat.MaxRoomTitleLength)
+		}
+		if !strings.HasSuffix(got, "…") {
+			t.Fatalf("generatedRoomTitle() = %q, want ellipsis suffix", got)
+		}
+	})
 }
 
 func TestChatImagePurposeValidation(t *testing.T) {

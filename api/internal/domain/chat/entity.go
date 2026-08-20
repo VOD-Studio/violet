@@ -146,6 +146,19 @@ func (c *Conversation) Rename(title string, now time.Time) error {
 	return nil
 }
 
+// TransferOwnership 将房主职责转给当前有效成员。
+func (c *Conversation) TransferOwnership(userID shared.ID, now time.Time) error {
+	if c.kind != ConversationRoom {
+		return shared.BadRequest("私聊不能转移房主")
+	}
+	if userID.IsZero() {
+		return shared.BadRequest("房主不能为空")
+	}
+	c.ownerID = userID
+	c.UpdatedAt = now
+	return nil
+}
+
 // TouchMessage 更新会话最近消息时间。
 func (c *Conversation) TouchMessage(at time.Time) {
 	c.lastMessageAt = &at
@@ -213,6 +226,12 @@ func (m *Member) UserID() shared.ID { return m.userID }
 
 // Role 返回成员角色。
 func (m *Member) Role() MemberRole { return m.role }
+
+// PromoteToOwner 将成员提升为房主。
+func (m *Member) PromoteToOwner() { m.role = MemberOwner }
+
+// DemoteToMember 将房主降为普通成员。
+func (m *Member) DemoteToMember() { m.role = MemberMember }
 
 // JoinedAt 返回加入时间。
 func (m *Member) JoinedAt() time.Time { return m.joinedAt }

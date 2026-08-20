@@ -251,10 +251,24 @@ func (s *Service) CreateConversation(ctx context.Context, in CreateConversationI
 	} else {
 		return ConversationDTO{}, domainshared.BadRequest("非法会话类型")
 	}
+	participantUsers := make([]*domainuser.User, 0, len(participants))
 	for _, participantID := range participants {
-		if _, err := s.users.FindByID(ctx, participantID); err != nil {
+		user, err := s.users.FindByID(ctx, participantID)
+		if err != nil {
 			return ConversationDTO{}, err
 		}
+		participantUsers = append(participantUsers, user)
+	}
+	if in.Kind == domainchat.ConversationRoom && strings.TrimSpace(in.Title) == "" {
+		names := make([]string, 0, len(participantUsers))
+		for _, user := range participantUsers {
+			displayName := user.DisplayName().String()
+			if displayName == "" {
+				displayName = user.Username().String()
+			}
+			names = append(names, displayName)
+		}
+		in.Title = generatedRoomTitle(names)
 	}
 	conversation, err := domainchat.NewConversation(in.Kind, in.UserID, in.Title, now)
 	if err != nil {
@@ -320,9 +334,8 @@ func (s *Service) InviteMember(ctx context.Context, userID, conversationID, invi
 	if conversation.Kind() != domainchat.ConversationRoom {
 		return domainshared.BadRequest("私聊不能邀请成员")
 	}
-	member, err := s.repo.FindMember(ctx, conversationID, userID)
-	if err != nil || member.Role() != domainchat.MemberOwner {
-		return domainshared.Forbidden("只有房主可以邀请成员")
+	if _, err := s.repo.FindMember(ctx, conversationID, userID); err != nil {
+		return err
 	}
 	if _, err := s.users.FindByID(ctx, inviteeID); err != nil {
 		return err
@@ -396,7 +409,7 @@ func (s *Service) RemoveMember(ctx context.Context, userID, conversationID, targ
 	return nil
 }
 
-// LeaveConversation 当前用户离开会话。
+// LeaveConversation 当前用户离开会话；房主离开时先把房主职责转给最早加入的成员。
 func (s *Service) LeaveConversation(ctx context.Context, userID, conversationID domainshared.ID) error {
 	conversation, err := s.repo.FindByIDForMember(ctx, conversationID, userID)
 	if err != nil {
@@ -406,18 +419,38 @@ func (s *Service) LeaveConversation(ctx context.Context, userID, conversationID 
 	if err != nil {
 		return err
 	}
-	if conversation.Kind() == domainchat.ConversationRoom && member.Role() == domainchat.MemberOwner {
-		return domainshared.BadRequest("房主不能离开房间")
-	}
-	if err := s.repo.LeaveMember(ctx, conversationID, userID, s.now()); err != nil {
-		return err
-	}
+	now := s.now()
 	members, err := s.repo.ListMembers(ctx, conversationID, false)
 	if err != nil {
 		return err
 	}
-	recipients := append(memberIDs(members), userID)
-	events, err := s.repo.SaveEvent(ctx, recipients, domainchat.EventMemberChanged, map[string]any{"conversation_id": conversationID.String(), "user_id": userID.String()})
+	recipients := memberIDs(members)
+	if conversation.Kind() == domainchat.ConversationRoom && member.Role() == domainchat.MemberOwner {
+		var nextOwner *domainchat.Member
+		for _, candidate := range members {
+			if !candidate.UserID().Equal(userID) {
+				nextOwner = candidate
+				break
+			}
+		}
+		if nextOwner == nil {
+			return s.repo.DeleteConversation(ctx, conversationID)
+		}
+		if err := conversation.TransferOwnership(nextOwner.UserID(), now); err != nil {
+			return err
+		}
+		if err := s.repo.TransferOwnership(ctx, conversationID, userID, nextOwner.UserID(), now); err != nil {
+			return err
+		}
+	}
+	if err := s.repo.LeaveMember(ctx, conversationID, userID, now); err != nil {
+		return err
+	}
+	recipients = withoutID(recipients, userID)
+	events, err := s.repo.SaveEvent(ctx, recipients, domainchat.EventMemberChanged, map[string]any{
+		"conversation_id": conversationID.String(),
+		"user_id":         userID.String(),
+	})
 	if err != nil {
 		return err
 	}
@@ -869,6 +902,14 @@ func memberIDs(members []*domainchat.Member) []domainshared.ID {
 	return ids
 }
 
+func generatedRoomTitle(names []string) string {
+	title := strings.Join(names, "、")
+	runes := []rune(title)
+	if len(runes) <= domainchat.MaxRoomTitleLength {
+		return title
+	}
+	return string(runes[:domainchat.MaxRoomTitleLength-1]) + "…"
+}
 func uniqueIDs(ids []domainshared.ID) []domainshared.ID {
 	seen := make(map[string]struct{}, len(ids))
 	out := make([]domainshared.ID, 0, len(ids))

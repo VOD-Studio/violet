@@ -105,6 +105,11 @@ func (r *ChatRepository) SaveConversation(ctx context.Context, conversation *dom
 	})
 }
 
+// DeleteConversation 删除已无成员的私有房间。
+func (r *ChatRepository) DeleteConversation(ctx context.Context, conversationID domainshared.ID) error {
+	return r.db.WithContext(ctx).Where("id = ?", conversationID.UUID()).Delete(&model.ChatConversation{}).Error
+}
+
 // RenameConversation 修改房间名称。
 func (r *ChatRepository) RenameConversation(ctx context.Context, conversation *domainchat.Conversation) error {
 	return r.db.WithContext(ctx).Model(&model.ChatConversation{}).
@@ -175,6 +180,32 @@ func (r *ChatRepository) LeaveMember(ctx context.Context, conversationID, userID
 // RemoveMember 标记成员被房主移除。
 func (r *ChatRepository) RemoveMember(ctx context.Context, conversationID, userID domainshared.ID, now time.Time) error {
 	return r.LeaveMember(ctx, conversationID, userID, now)
+}
+
+// TransferOwnership 原子更新会话房主及成员角色。
+func (r *ChatRepository) TransferOwnership(ctx context.Context, conversationID, previousOwnerID, nextOwnerID domainshared.ID, now time.Time) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.ChatConversation{}).
+			Where("id = ? AND owner_id = ?", conversationID.UUID(), previousOwnerID.UUID()).
+			Updates(map[string]any{"owner_id": nextOwnerID.UUID(), "updated_at": now})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return domainchat.ErrConversationNotFound
+		}
+		if err := tx.Model(&model.ChatConversationMember{}).
+			Where("conversation_id = ? AND user_id = ? AND left_at IS NULL", conversationID.UUID(), previousOwnerID.UUID()).
+			Update("role", string(domainchat.MemberMember)).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&model.ChatConversationMember{}).
+			Where("conversation_id = ? AND user_id = ? AND left_at IS NULL", conversationID.UUID(), nextOwnerID.UUID()).
+			Update("role", string(domainchat.MemberOwner)).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // SetMemberMuted 更新当前成员的会话通知静音状态。

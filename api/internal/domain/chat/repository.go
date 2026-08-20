@@ -35,6 +35,8 @@ type ConversationRepository interface {
 	SaveConversation(ctx context.Context, conversation *Conversation, members []*Member) error
 	// RenameConversation 修改房间名称并更新时间。
 	RenameConversation(ctx context.Context, conversation *Conversation) error
+	// DeleteConversation 删除已无成员的私有房间。
+	DeleteConversation(ctx context.Context, conversationID shared.ID) error
 	// ListMembers 列出会话成员；includeInactive 控制是否包含已离开成员。
 	ListMembers(ctx context.Context, conversationID shared.ID, includeInactive bool) ([]*Member, error)
 	// FindMember 查找会话成员记录。
@@ -45,6 +47,8 @@ type ConversationRepository interface {
 	LeaveMember(ctx context.Context, conversationID, userID shared.ID, now time.Time) error
 	// RemoveMember 标记成员被房主移除。
 	RemoveMember(ctx context.Context, conversationID, userID shared.ID, now time.Time) error
+	// TransferOwnership 原子更新会话房主及成员角色。
+	TransferOwnership(ctx context.Context, conversationID, previousOwnerID, nextOwnerID shared.ID, now time.Time) error
 	// SetMemberMuted 更新当前成员的会话通知静音状态。
 	SetMemberMuted(ctx context.Context, conversationID, userID shared.ID, muted bool) error
 
