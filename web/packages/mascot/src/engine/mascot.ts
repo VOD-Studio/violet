@@ -1428,18 +1428,17 @@ export class Mascot {
 		const leanShift = this.leanCur * GAZE_LEAN_SHIFT;
 		const leanRot = this.leanCur * GAZE_LEAN_ROT;
 
-		// 身体 rig:中心 130,贴地 226;水平压缩模拟转身收窄(60° 收 15%,90° 收 30%)。
-		// 注视压缩单列:余弦项对小角度太钝,补线性项才可感知
-		const yawSquash =
-			1 -
-			0.3 * (1 - Math.abs(Math.cos(phi))) -
-			GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
+		// 身体 rig:中心 130,贴地 226。偏航横向压缩已由 faceProj 统一驱动五官,
+		// rigG 不再做 yaw 压缩——否则五官(faceProj.sx)和身体(yawSquash)双重压缩,
+		// 各部件因 theta0 不同受到不同程度叠加,旋转时"各自为伍"。
+		// 仅保留注视跟随的微量 lean 压缩(身体看向一侧时轻微收窄,幅度极小)
+		const leanSquash = 1 - GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
 		this.rigG.setAttribute(
 			"transform",
 			[
 				`translate(${(cx + b.x + leanShift).toFixed(2)} ${(anchorY + b.y).toFixed(2)})`,
 				`rotate(${(b.rotate + leanRot).toFixed(2)})`,
-				`scale(${(b.scale * yawSquash).toFixed(4)} ${(b.scale * b.stretchY).toFixed(4)})`,
+				`scale(${(b.scale * leanSquash).toFixed(4)} ${(b.scale * b.stretchY).toFixed(4)})`,
 				`translate(${(-cx).toFixed(2)} ${(-anchorY).toFixed(2)})`,
 			].join(" "),
 		);
