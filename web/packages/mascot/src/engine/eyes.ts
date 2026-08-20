@@ -113,10 +113,10 @@ export const EYE_RINGS = {
 	grin: crescent(1.05, 0.8, 0.5),
 	/** 上弯月牙(难过 ∩) */
 	sad: crescent(0.9, -0.68, 0.4),
-	/** 斜线眼(无奈 -) */
-	uneasyA: fromEndpoints([-0.9, -0.35], [0.9, 0.35], 0.42),
+	/** 斜线眼(无奈 -):细斜条,粗了读成长方块 */
+	uneasyA: fromEndpoints([-0.9, -0.35], [0.9, 0.35], 0.24),
 	/** 反斜线眼 */
-	uneasyB: fromEndpoints([-0.9, 0.35], [0.9, -0.35], 0.42),
+	uneasyB: fromEndpoints([-0.9, 0.35], [0.9, -0.35], 0.24),
 	/** 内高外低斜椭圆(生气):更扁更斜才有怒目压眉感 */
 	anger: ellipseRing(1.02, 0.62, -0.5),
 	/** 内低外高斜椭圆(另一侧生气,组合成怒目) */

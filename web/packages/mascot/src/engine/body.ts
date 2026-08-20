@@ -35,18 +35,47 @@ export const FACE = {
 
 const CX = 130;
 
-/** 折线转平滑闭合 path (Catmull-Rom 转三次贝塞尔，闭合)。 */
+/**
+ * 折线转平滑闭合 path (Catmull-Rom 转三次贝塞尔,闭合)。
+ *
+ * 带角点保持:某顶点处折线方向变化超过阈值(60°)时视为硬角,
+ * 该点切线清零(控制点回缩到顶点本身),样条不再强行圆化——
+ * 否则月牙端尖会被过冲成鼓包、矩形直角被吹成方块(视觉呈"长方形眼")。
+ */
 export function smoothClosedPath(pts: readonly (readonly [number, number])[]): string {
 	const n = pts.length;
 	if (n < 3) return "";
+	const CORNER_TURN = Math.PI / 3;
+	const corner: boolean[] = [];
+	for (let i = 0; i < n; i++) {
+		const a = pts[(i - 1 + n) % n];
+		const b = pts[i];
+		const c = pts[(i + 1) % n];
+		const v1x = b[0] - a[0];
+		const v1y = b[1] - a[1];
+		const v2x = c[0] - b[0];
+		const v2y = c[1] - b[1];
+		const l1 = Math.hypot(v1x, v1y);
+		const l2 = Math.hypot(v2x, v2y);
+		if (l1 < 1e-6 || l2 < 1e-6) {
+			corner.push(false);
+			continue;
+		}
+		const dot = (v1x * v2x + v1y * v2y) / (l1 * l2);
+		corner.push(Math.acos(Math.min(1, Math.max(-1, dot))) > CORNER_TURN);
+	}
 	let d = `M ${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
 	for (let i = 0; i < n; i++) {
 		const p0 = pts[(i - 1 + n) % n];
 		const p1 = pts[i];
 		const p2 = pts[(i + 1) % n];
 		const p3 = pts[(i + 2) % n];
-		const c1: [number, number] = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-		const c2: [number, number] = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+		const c1: [number, number] = corner[i]
+			? [p1[0], p1[1]]
+			: [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+		const c2: [number, number] = corner[(i + 1) % n]
+			? [p2[0], p2[1]]
+			: [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
 		d += ` C ${c1[0].toFixed(2)} ${c1[1].toFixed(2)}, ${c2[0].toFixed(2)} ${c2[1].toFixed(2)}, ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`;
 	}
 	return `${d} Z`;
