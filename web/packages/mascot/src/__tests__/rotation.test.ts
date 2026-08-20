@@ -1,10 +1,24 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { FACE, FACE_PROJECTION_RADIUS, projectSurfaceAngle } from "../engine/body";
+import { FACE, projectSurfaceAngle, TAIL_ROOT_ANGLE, TAIL_ROOT_RADIUS } from "../engine/body";
 import { Mascot } from "../engine/mascot";
 
 const instances: Mascot[] = [];
 
-function createMascot(): { host: HTMLDivElement; rig: SVGGElement; parts: Element[] } {
+type MascotParts = {
+	host: HTMLDivElement;
+	rig: SVGGElement;
+	tail: SVGPathElement;
+	earL: SVGGElement;
+	earR: SVGGElement;
+	body: SVGPathElement;
+	whiskerL: SVGGElement;
+	blushL: SVGEllipseElement;
+	blushR: SVGEllipseElement;
+	eyeL: SVGGElement;
+	eyeR: SVGGElement;
+};
+
+function createMascot(): MascotParts {
 	const host = document.createElement("div");
 	document.body.appendChild(host);
 	const mascot = new Mascot(host, { emotion: "08", frozen: true });
@@ -15,9 +29,61 @@ function createMascot(): { host: HTMLDivElement; rig: SVGGElement; parts: Elemen
 		(child): child is SVGGElement => child.tagName === "g" && child.children.length >= 13,
 	);
 	if (!rig) throw new Error("Mascot rig was not created");
-	return { host, rig, parts: Array.from(rig.children) };
+	const children = Array.from(rig.children);
+	const tail = children.find(
+		(child): child is SVGPathElement =>
+			child.tagName === "path" && child.getAttribute("stroke-width") === "12",
+	);
+	const ears = children.filter(
+		(child): child is SVGGElement =>
+			child.tagName === "g" &&
+			child.children.length === 2 &&
+			child.children[0].getAttribute("stroke-width") === "1.6",
+	);
+	const body = children.find(
+		(child): child is SVGPathElement =>
+			child.tagName === "path" &&
+			child.getAttribute("fill")?.startsWith("url(#cat-body-grad-") === true,
+	);
+	const whiskerL = children.find(
+		(child): child is SVGGElement =>
+			child.tagName === "g" &&
+			child.children[0]?.getAttribute("d")?.startsWith("M 56") === true,
+	);
+	const blushes = children.filter(
+		(child): child is SVGEllipseElement => child.tagName === "ellipse",
+	);
+	const eyes = children.filter(
+		(child): child is SVGGElement =>
+			child.tagName === "g" &&
+			child.children.length === 3 &&
+			child.children[0].tagName === "path" &&
+			child.children[1].tagName === "circle",
+	);
+	if (
+		!tail ||
+		ears.length !== 2 ||
+		!body ||
+		!whiskerL ||
+		blushes.length !== 2 ||
+		eyes.length !== 2
+	) {
+		throw new Error("Mascot rotation parts were not found");
+	}
+	return {
+		host,
+		rig,
+		tail,
+		earL: ears[0],
+		earR: ears[1],
+		body,
+		whiskerL,
+		blushL: blushes[0],
+		blushR: blushes[1],
+		eyeL: eyes[0],
+		eyeR: eyes[1],
+	};
 }
-
 function scaleX(transform: string | null): number {
 	const match = transform?.match(/scale\((-?[0-9.]+)/);
 	if (!match) throw new Error(`Missing scale in transform: ${transform}`);
@@ -37,35 +103,59 @@ function tailRootX(path: string | null): number {
 	return Number(match[1]);
 }
 
+function childIndex(parent: Element, child: Element): number {
+	const index = Array.from(parent.children).indexOf(child);
+	if (index < 0) throw new Error("Mascot part is not attached to rig");
+	return index;
+}
+
 afterEach(() => {
 	for (const mascot of instances.splice(0)) mascot.destroy();
 });
 
 describe("Mascot rotation projection", () => {
 	it("keeps neutral anchors and projects the complete rig as one surface", () => {
-		const { parts } = createMascot();
-		const [tail, earL, earR, body, whiskerL, , blushL, blushR, eyeL, eyeR] = parts;
+		const { rig, tail, earL, earR, body, whiskerL, blushL, blushR, eyeL, eyeR } =
+			createMascot();
 
 		const neutralBlushL = Number(blushL.getAttribute("cx"));
 		expect(Math.abs(neutralBlushL - FACE.blushL[0])).toBeLessThan(1);
 		expect(scaleX(whiskerL.getAttribute("transform"))).toBeGreaterThan(0.9);
 		expect(Math.abs(scaleX(earL.getAttribute("transform")))).toBeGreaterThan(0.9);
 		expect(Math.abs(scaleX(earR.getAttribute("transform")))).toBeGreaterThan(0.9);
-		expect(scaleX(body.getAttribute("transform"))).toBeCloseTo(1, 2);
+		expect(body.parentElement).toBe(rig);
+		expect(body.getAttribute("transform")).toBeNull();
+		expect(childIndex(rig, tail)).toBeGreaterThan(childIndex(rig, body));
 
 		const mascot = instances[0];
-		mascot.setDevYaw(270);
-		expect(scaleX(body.getAttribute("transform"))).toBeLessThan(0.8);
-		expect((eyeL as SVGGElement).style.display).toBe("none");
-		expect((eyeR as SVGGElement).style.display).toBe("none");
+		mascot.setDevYaw(90);
+		expect(body.getAttribute("transform")).toBeNull();
+		expect(Number(earL.getAttribute("opacity"))).toBeGreaterThan(0.8);
+		expect(Number(earR.getAttribute("opacity"))).toBe(0);
+		expect(childIndex(rig, tail)).toBeLessThan(childIndex(rig, body));
 		expect(tailYSpan(tail.getAttribute("d"))).toBeLessThan(90);
 
+		mascot.setDevYaw(125);
+		expect(Number(earL.getAttribute("opacity"))).toBe(0);
+		expect(Number(earR.getAttribute("opacity"))).toBeGreaterThan(0.8);
+
+		mascot.setDevYaw(180);
+		expect(body.getAttribute("transform")).toBeNull();
+		expect(childIndex(rig, tail)).toBeLessThan(childIndex(rig, body));
+		expect(tailRootX(tail.getAttribute("d"))).toBeLessThan(75);
+
+		mascot.setDevYaw(270);
+		expect((eyeL as SVGGElement).style.display).toBe("none");
+		expect((eyeR as SVGGElement).style.display).toBe("none");
+		expect(childIndex(rig, tail)).toBeLessThan(childIndex(rig, body));
+
 		mascot.setDevYaw(315);
-		expect(scaleX(body.getAttribute("transform"))).toBeGreaterThan(0.85);
+		expect(body.getAttribute("transform")).toBeNull();
+		expect(childIndex(rig, tail)).toBeGreaterThan(childIndex(rig, body));
 		const expectedTailRoot = projectSurfaceAngle(
-			Math.PI - 0.72,
+			TAIL_ROOT_ANGLE,
 			(315 * Math.PI) / 180,
-			FACE_PROJECTION_RADIUS,
+			TAIL_ROOT_RADIUS,
 		).x;
 		expect(Math.abs(tailRootX(tail.getAttribute("d")) - expectedTailRoot)).toBeLessThan(3);
 		expect((eyeL as SVGGElement).style.display).toBe("");

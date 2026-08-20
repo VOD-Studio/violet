@@ -36,6 +36,10 @@ export const FACE = {
 const CX = 130;
 /** 所有可绕身体表面旋转的部件共用的横向投影半径。 */
 export const FACE_PROJECTION_RADIUS = 72;
+/** 尾根连接身体表面的半径,使尾巴从轮廓边缘而不是团子中心冒出。 */
+export const TAIL_ROOT_RADIUS = 92;
+/** 尾根在基准姿态中的固定经度。 */
+export const TAIL_ROOT_ANGLE = Math.PI - 0.72;
 
 /** 身体表面投影结果。 */
 export interface SurfaceProjection {
@@ -190,14 +194,9 @@ export const CAT_EARS = {
  * @param sway - 尾巴摇晃量 [-1, 1]
  * @param elevation - 尾巴抬升高度 [-1, 1]，正值高高竖起，负值低垂
  */
-export function catTailPath(
-	sway: number,
-	elevation = 0,
-	phi = 0,
-	r = FACE_PROJECTION_RADIUS,
-): string {
+export function catTailPath(sway: number, elevation = 0, phi = 0, r = TAIL_ROOT_RADIUS): string {
 	// 尾根使用与五官相同的显式背面经度,避免另起一套旋转坐标。
-	const baseAngle = Math.PI - 0.72;
+	const baseAngle = TAIL_ROOT_ANGLE;
 	const root = projectSurfaceAngle(baseAngle, phi, r);
 	const tailSx = Math.max(0.08, Math.abs(root.sx));
 	const tailSy = 0.35 + tailSx * 0.65;

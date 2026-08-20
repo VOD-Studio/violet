@@ -22,6 +22,7 @@ import {
 	projectSurfaceAngle,
 	smoothClosedPath,
 	surfaceAngleForX,
+	TAIL_ROOT_RADIUS,
 } from "./body";
 import { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./emotions";
 import { EYE_RINGS, type EyeRing } from "./eyes";
@@ -64,8 +65,6 @@ const GAZE_Y = 15;
 const GAZE_LEAN_SHIFT = 0.22;
 const GAZE_LEAN_ROT = 0.04;
 const GAZE_LEAN_SQUASH = 0.05;
-/** 身体侧视最小宽度:保留软糯团子的体积,同时让身体轮廓响应偏航。 */
-const BODY_YAW_MIN = 0.72;
 /** 身体跟随平滑速率(1/s):比注视通道(5.66)慢,眼睛先动身体慢半拍跟上 */
 const GAZE_LEAN_K = 2.6;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
@@ -178,6 +177,7 @@ export class Mascot {
 	private shadowEl!: SVGEllipseElement;
 	private rigG!: SVGGElement;
 	private tailEl!: SVGPathElement;
+	private tailInFront = false;
 	private bodyPath!: SVGPathElement;
 	private bodyGrad!: SVGElement;
 	private earLG!: SVGGElement;
@@ -842,7 +842,7 @@ export class Mascot {
 		// rig 容器
 		this.rigG = this.mk("g", {}) as SVGGElement;
 
-		// 尾巴 (身体后方)
+		// 尾巴默认挂在身体后层,渲染时按角色朝向切换前后层。
 		this.tailEl = this.mk("path", {
 			d: catTailPath(0.5, 0.3),
 			fill: "none",
@@ -1435,9 +1435,7 @@ export class Mascot {
 		const leanShift = this.leanCur * GAZE_LEAN_SHIFT;
 		const leanRot = this.leanCur * GAZE_LEAN_ROT;
 
-		// 身体轮廓单独使用同一偏航的表面宽度,避免把 faceProj 的局部压缩再次
-		// 施加到五官;身体与五官因此共享 yaw,但各自只投影一次。
-		const bodyYawScale = BODY_YAW_MIN + (1 - BODY_YAW_MIN) * Math.abs(Math.cos(phi));
+		// 身体轮廓是近圆团子,不额外按 yaw 压缩;身体与五官共享同一个 rig 变换。
 		const leanSquash = 1 - GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
 		this.rigG.setAttribute(
 			"transform",
@@ -1447,10 +1445,6 @@ export class Mascot {
 				`scale(${(b.scale * leanSquash).toFixed(4)} ${(b.scale * b.stretchY).toFixed(4)})`,
 				`translate(${(-cx).toFixed(2)} ${(-anchorY).toFixed(2)})`,
 			].join(" "),
-		);
-		this.bodyPath.setAttribute(
-			"transform",
-			`translate(${cx} 0) scale(${bodyYawScale.toFixed(4)} 1) translate(${-cx} 0)`,
 		);
 
 		// 地面投影随跳起高度缩小变淡(b.y 负为升空),随偏航与注视跟随微移增强立体感
@@ -1479,18 +1473,35 @@ export class Mascot {
 
 		// 尾巴根与耳朵都挂在同一表面坐标;尾巴的横向收窄在 catTailPath 内完成。
 		const tailSway = Math.sin((TAU * now) / 2400) * b.tail;
-		this.tailEl.setAttribute(
-			"d",
-			catTailPath(tailSway, b.tailElev, phi, FACE_PROJECTION_RADIUS),
-		);
+		this.tailEl.setAttribute("d", catTailPath(tailSway, b.tailElev, phi, TAIL_ROOT_RADIUS));
+		// 角色朝向观察者时尾巴从身体前层露出,转到侧面或背面则回到身体后层。
+		const tailInFront = Math.cos(pose.yaw) > 0.2;
+		if (tailInFront !== this.tailInFront) {
+			this.tailInFront = tailInFront;
+			if (tailInFront) {
+				this.rigG.insertBefore(this.tailEl, this.whiskerLG);
+			} else if (this.rigG.firstChild !== this.tailEl) {
+				this.rigG.insertBefore(this.tailEl, this.rigG.firstChild);
+			}
+		}
 
-		// 耳朵按 pivot 的表面深度缩放;背面保留外耳轮廓,内耳窝只在朝向观察者时显示。
+		// 侧视时只保留更靠近观察者的耳朵,避免两只耳朵挤成一根重叠尖刺。
 		const earL = faceProj(thetaOf(CAT_EARS.left.pivot[0]), phi);
 		const earR = faceProj(thetaOf(CAT_EARS.right.pivot[0]), phi);
 		const earLRot = b.earL + Math.sin((TAU * now) / 3200) * 1.5 - avgLookX * 0.1;
 		const earRRot = b.earR - Math.sin((TAU * now) / 3200 + 0.4) * 1.5 - avgLookX * 0.1;
-		const earLOp = clamp(Math.abs(earL.depth) / 0.16, 0.18, 1);
-		const earROp = clamp(Math.abs(earR.depth) / 0.16, 0.18, 1);
+		const absEarLDepth = Math.abs(earL.depth);
+		const absEarRDepth = Math.abs(earR.depth);
+		const sideView = Math.abs(Math.cos(phi)) < 0.82;
+		const equalDepth = Math.abs(absEarLDepth - absEarRDepth) < 0.08;
+		const earLVisible =
+			!sideView || (equalDepth ? earL.depth >= earR.depth : absEarLDepth >= absEarRDepth);
+		const earRVisible =
+			!sideView || (equalDepth ? earR.depth > earL.depth : absEarRDepth > absEarLDepth);
+		const earLOp = earLVisible ? clamp((absEarLDepth - 0.18) / 0.42, 0, 1) : 0;
+		const earROp = earRVisible ? clamp((absEarRDepth - 0.18) / 0.42, 0, 1) : 0;
+		const earLInnerOp = earLVisible ? earL.op : 0;
+		const earRInnerOp = earRVisible ? earR.op : 0;
 
 		this.earLG.setAttribute("opacity", earLOp.toFixed(3));
 		this.earLG.setAttribute(
@@ -1507,8 +1518,8 @@ export class Mascot {
 				`translate(${-CAT_EARS.right.pivot[0]} ${-CAT_EARS.right.pivot[1]})`,
 		);
 
-		this.earLInner.setAttribute("opacity", earL.op.toFixed(3));
-		this.earRInner.setAttribute("opacity", earR.op.toFixed(3));
+		this.earLInner.setAttribute("opacity", earLInnerOp.toFixed(3));
+		this.earRInner.setAttribute("opacity", earRInnerOp.toFixed(3));
 
 		// 左右眼:统一投影,锚点为 FACE 眼位
 		const eL = faceProj(thetaOf(FACE.eyeL[0]), phi);
