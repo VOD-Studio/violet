@@ -18,8 +18,8 @@ export function MascotLab() {
 
 	return (
 		<div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10">
-			{/* 舞台:移动端在站点 header (h-16) 下吸顶、桌面端 sticky 左栏,切换时形象永远在视口内 */}
-			<div className="sticky top-16 z-40 -mx-6 bg-background/95 px-6 pt-1 pb-4 backdrop-blur lg:top-24 lg:mx-0 lg:self-start lg:bg-transparent lg:px-0 lg:pt-0 lg:pb-0 lg:backdrop-blur-none">
+			{/* 舞台:桌面端 sticky 左栏常驻视线;移动端不吸顶——舞台高占视口 71%,吸顶会把下方目录全挡死 */}
+			<div className="lg:sticky lg:top-24 lg:z-40 lg:self-start">
 				<MascotTheater
 					def={exhibit.def}
 					bubble={exhibit.bubble}
@@ -28,7 +28,6 @@ export function MascotLab() {
 					onAIMessage={(msg) => exhibit.applyAIMessage(msg.emotionId, msg.tips)}
 				/>
 			</div>
-
 			{/* 目录:分段切换分组,hover 只起动缩略卡自身,click 固定并交舞台上演 */}
 			<div className="mt-10 lg:mt-0">
 				<div className="mb-5 flex items-center justify-between gap-4">

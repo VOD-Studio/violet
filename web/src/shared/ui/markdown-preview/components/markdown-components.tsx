@@ -18,11 +18,11 @@ import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 import { diagramRenderers } from "../../diagram/renderers";
 
 /**
- * FencedCodeBlock 懒加载：避免 shiki 高亮链（CodeBlock → useShikiHighlight →
+ * CodeCard 懒加载：避免 shiki 高亮链（CodeCard → useShikiHighlight →
  * shiki core 单例）进入文章正文主 chunk。只有文章真有围栏代码块时才拉取。
  */
-const LazyFencedCodeBlock = lazy(() =>
-	import("./CodeBlock").then((m) => ({ default: m.FencedCodeBlock })),
+const LazyCodeCard = lazy(() =>
+	import("../../code-preview/components/CodeCard").then((m) => ({ default: m.CodeCard })),
 );
 
 /** 公式组件懒加载：KaTeX + 字体只在含公式的文章页拉取 */
@@ -253,7 +253,7 @@ export const markdownComponents: Components = {
 		}
 		return <div>{children}</div>;
 	},
-	// 代码：围栏块走 FencedCodeBlock（shiki 高亮 + 语言标签 + 复制），行内走纯样式。
+	// 代码：围栏块走 CodeCard（shiki 高亮 + 语言标签 + 复制），行内走纯样式。
 	// 围栏块懒加载，loading 时 Suspense fallback 显示纯文本占位。
 	code: ({ className, children }) => {
 		const cls = className || "";
@@ -291,7 +291,7 @@ export const markdownComponents: Components = {
 					</pre>
 				}
 			>
-				<LazyFencedCodeBlock code={code} language={language} />
+				<LazyCodeCard code={code} language={language} className="my-6" />
 			</Suspense>
 		);
 	},

@@ -3,12 +3,12 @@ import { Button } from "@shared/ui/base/button";
 import { lazy, Suspense } from "react";
 
 /**
- * FencedCodeBlock 懒加载：与 markdown-components 同理，避免 shiki 高亮链
+ * CodeCard 懒加载：与 markdown-components 同理，避免 shiki 高亮链
  * 进入 admin 主 chunk，仅接入面板真正渲染代码块时拉取。
  */
-const LazyFencedCodeBlock = lazy(() =>
-	import("@shared/ui/markdown-preview/components/CodeBlock").then((m) => ({
-		default: m.FencedCodeBlock,
+const LazyCodeCard = lazy(() =>
+	import("@shared/ui/code-preview/components/CodeCard").then((m) => ({
+		default: m.CodeCard,
 	})),
 );
 
@@ -29,7 +29,7 @@ export function ClientInstallView({ view }: { view: InstallView }) {
 function CodeBlock({ code, language }: { code: string; language: string }) {
 	return (
 		<Suspense fallback={<div className="my-6 h-24 animate-pulse rounded-lg bg-muted" />}>
-			<LazyFencedCodeBlock code={code} language={language} />
+			<LazyCodeCard code={code} language={language} className="my-6" />
 		</Suspense>
 	);
 }
