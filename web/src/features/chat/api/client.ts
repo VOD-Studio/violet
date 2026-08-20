@@ -16,6 +16,11 @@ export const fetchChatConversations = (cursor?: string, limit = 20) =>
 		params: { cursor, limit },
 	});
 
+export const fetchChatContacts = (query = "", cursor?: string, limit = 50) =>
+	apiGetPaged<ChatUser>("/chat/contacts", {
+		params: { q: query.trim() || undefined, cursor, limit },
+	});
+
 export const fetchChatConversation = (id: string) =>
 	apiGet<ChatConversation>(`/chat/conversations/${id}`);
 

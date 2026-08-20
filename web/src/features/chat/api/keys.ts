@@ -8,5 +8,6 @@ export const chatKeys = {
 	messages: (id: string) => [...root, "conversation", id, "messages"] as const,
 	unreadCount: () => [...root, "unread-count"] as const,
 	user: (username: string) => [...root, "user", username] as const,
+	contacts: (query: string) => [...root, "contacts", query] as const,
 	pushConfig: () => [...root, "push-config"] as const,
 };

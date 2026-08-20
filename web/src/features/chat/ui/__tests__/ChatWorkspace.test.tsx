@@ -25,6 +25,15 @@ const mockOtherUser = {
 	avatar_url: "",
 };
 
+const mockContact = {
+	id: "u_contact",
+	username: "alice",
+	display_name: "Alice",
+	avatar_url: "",
+};
+
+const mockCreateMutateAsync = vi.fn().mockResolvedValue({ id: "c_2" });
+
 const mockConversation = {
 	id: "c_1",
 	kind: "direct" as const,
@@ -97,6 +106,17 @@ vi.mock("@features/chat/api/queries", () => ({
 		data: { data: [mockConversation], next_cursor: null },
 		isLoading: false,
 	}),
+	useChatContacts: () => ({
+		data: {
+			pages: [{ data: [mockContact], pagination: { has_more: false, limit: 50 } }],
+			pageParams: [""],
+		},
+		isLoading: false,
+		isError: false,
+		hasNextPage: false,
+		isFetchingNextPage: false,
+		fetchNextPage: vi.fn(),
+	}),
 	useChatMessages: () => ({
 		data: { data: [mockConversation.last_message], next_cursor: null },
 		isLoading: false,
@@ -105,7 +125,7 @@ vi.mock("@features/chat/api/queries", () => ({
 		data: mockConversation.members,
 		isLoading: false,
 	}),
-	useCreateChatConversation: () => ({ mutateAsync: vi.fn() }),
+	useCreateChatConversation: () => ({ mutateAsync: mockCreateMutateAsync }),
 	useDeleteChatMessage: () => ({ mutate: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn() }),
 	useLeaveChatConversation: () => ({ mutateAsync: vi.fn() }),
@@ -140,6 +160,17 @@ vi.mock("../api/queries", () => ({
 		data: { data: [mockConversation], next_cursor: null },
 		isLoading: false,
 	}),
+	useChatContacts: () => ({
+		data: {
+			pages: [{ data: [mockContact], pagination: { has_more: false, limit: 50 } }],
+			pageParams: [""],
+		},
+		isLoading: false,
+		isError: false,
+		hasNextPage: false,
+		isFetchingNextPage: false,
+		fetchNextPage: vi.fn(),
+	}),
 	useChatMessages: () => ({
 		data: { data: [mockConversation.last_message], next_cursor: null },
 		isLoading: false,
@@ -148,7 +179,7 @@ vi.mock("../api/queries", () => ({
 		data: mockConversation.members,
 		isLoading: false,
 	}),
-	useCreateChatConversation: () => ({ mutateAsync: vi.fn() }),
+	useCreateChatConversation: () => ({ mutateAsync: mockCreateMutateAsync }),
 	useDeleteChatMessage: () => ({ mutate: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn() }),
 	useLeaveChatConversation: () => ({ mutateAsync: vi.fn() }),
@@ -224,6 +255,23 @@ describe("ChatWorkspace", () => {
 				},
 			}),
 		);
+	});
+
+	it("从联系人列表发起私聊", () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		fireEvent.click(screen.getByRole("button", { name: "打开联系人" }));
+
+		expect(screen.getByRole("heading", { name: "联系人" })).toBeTruthy();
+		expect(screen.getByPlaceholderText("搜索用户名或展示名")).toBeTruthy();
+		expect(screen.getByText("Alice")).toBeTruthy();
+
+		fireEvent.click(screen.getByRole("button", { name: "发起与Alice的私聊" }));
+
+		expect(mockCreateMutateAsync).toHaveBeenCalledWith({
+			kind: "direct",
+			participant_ids: ["u_contact"],
+		});
 	});
 
 	it("私聊会话展示对方头像首字母，而非当前用户自己的头像", () => {

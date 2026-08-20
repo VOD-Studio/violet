@@ -1,5 +1,5 @@
 import type { PagedResponse } from "@shared/api/types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
 	ChatMessage,
 	CreateConversationInput,
@@ -10,6 +10,7 @@ import {
 	createChatConversation,
 	deleteChatMessage,
 	deleteChatPushSubscription,
+	fetchChatContacts,
 	fetchChatConversation,
 	fetchChatConversations,
 	fetchChatMembers,
@@ -30,6 +31,16 @@ import { chatKeys } from "./keys";
 
 export const useChatConversations = () =>
 	useQuery({ queryKey: chatKeys.conversations(), queryFn: () => fetchChatConversations() });
+
+export const useChatContacts = (query: string, enabled = true) =>
+	useInfiniteQuery({
+		queryKey: chatKeys.contacts(query),
+		queryFn: ({ pageParam }) => fetchChatContacts(query, pageParam),
+		initialPageParam: "",
+		getNextPageParam: (lastPage) => lastPage.pagination.next_cursor ?? undefined,
+		enabled,
+		staleTime: 30_000,
+	});
 
 export const useChatConversation = (id: string | null) =>
 	useQuery({

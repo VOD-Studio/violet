@@ -11,6 +11,7 @@ import {
 	ArrowLeft,
 	Bell,
 	BellOff,
+	ContactRound,
 	Image as ImageIcon,
 	LoaderCircle,
 	LogOut,
@@ -25,10 +26,11 @@ import {
 	Users,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
 import {
+	useChatContacts,
 	useChatConversations,
 	useChatMembers,
 	useChatMessages,
@@ -63,6 +65,7 @@ export function ChatWorkspace() {
 	const [search, setSearch] = useState("");
 	const [showDetails, setShowDetails] = useState(false);
 	const [showNew, setShowNew] = useState(false);
+	const [showContacts, setShowContacts] = useState(false);
 
 	useEffect(() => {
 		if (!selectedID && conversations.length > 0) setSelectedID(conversations[0].id);
@@ -92,11 +95,17 @@ export function ChatWorkspace() {
 					loading={conversationsLoading}
 					selectedID={selectedID}
 					search={search}
+					showContacts={showContacts}
 					showNew={showNew}
 					onSearch={setSearch}
+					onToggleContacts={() => setShowContacts((value) => !value)}
 					onToggleNew={() => setShowNew((value) => !value)}
 					onSelect={setSelectedID}
-					onCreated={setSelectedID}
+					onCreated={(id) => {
+						setSelectedID(id);
+						setShowContacts(false);
+						setShowNew(false);
+					}}
 				/>
 			</aside>
 
@@ -129,8 +138,10 @@ interface ConversationIndexProps {
 	loading: boolean;
 	selectedID: string | null;
 	search: string;
+	showContacts: boolean;
 	showNew: boolean;
 	onSearch: (value: string) => void;
+	onToggleContacts: () => void;
 	onToggleNew: () => void;
 	onSelect: (id: string) => void;
 	onCreated: (id: string) => void;
@@ -142,8 +153,10 @@ function ConversationIndex({
 	loading,
 	selectedID,
 	search,
+	showContacts,
 	showNew,
 	onSearch,
+	onToggleContacts,
 	onToggleNew,
 	onSelect,
 	onCreated,
@@ -156,64 +169,215 @@ function ConversationIndex({
 						<p className="font-mono text-[10px] font-medium uppercase tracking-[0.28em] text-neon-cyan">
 							Private channel
 						</p>
-						<h1 className="mt-1 font-mono text-xl font-bold tracking-tight">聊天</h1>
+						<h1 className="mt-1 font-mono text-xl font-bold tracking-tight">
+							{showContacts ? "联系人" : "聊天"}
+						</h1>
 					</div>
-					<Button
-						aria-label="新建会话"
-						className="size-8 rounded-full shadow-xs"
-						onClick={onToggleNew}
-						size="icon"
-						variant={showNew ? "secondary" : "outline"}
-					>
-						<Plus
-							className={cn(
-								"size-4 transition-transform duration-200",
-								showNew && "rotate-45",
+					<div className="flex items-center gap-2">
+						<Button
+							aria-label={showContacts ? "返回会话" : "打开联系人"}
+							className="size-8 rounded-full shadow-xs"
+							onClick={onToggleContacts}
+							size="icon"
+							variant={showContacts ? "secondary" : "outline"}
+						>
+							{showContacts ? (
+								<ArrowLeft className="size-4" />
+							) : (
+								<ContactRound className="size-4" />
 							)}
+						</Button>
+						{!showContacts && (
+							<Button
+								aria-label="新建会话"
+								className="size-8 rounded-full shadow-xs"
+								onClick={onToggleNew}
+								size="icon"
+								variant={showNew ? "secondary" : "outline"}
+							>
+								<Plus
+									className={cn(
+										"size-4 transition-transform duration-200",
+										showNew && "rotate-45",
+									)}
+								/>
+							</Button>
+						)}
+					</div>
+				</div>
+				{!showContacts && (
+					<div className="relative mt-3.5">
+						<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+						<input
+							aria-label="搜索会话"
+							className="h-9 w-full rounded-lg border border-input bg-secondary/30 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
+							onChange={(event) => onSearch(event.target.value)}
+							placeholder="搜索用户名或房间"
+							value={search}
 						/>
-					</Button>
-				</div>
-				<div className="relative mt-3.5">
-					<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-					<input
-						aria-label="搜索会话"
-						className="h-9 w-full rounded-lg border border-input bg-secondary/30 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
-						onChange={(event) => onSearch(event.target.value)}
-						placeholder="搜索用户名或房间"
-						value={search}
-					/>
-				</div>
-			</header>
-			{showNew && <NewConversationForm onCreated={onCreated} />}
-			<div className="min-h-0 flex-1 overflow-y-auto px-2 py-2.5">
-				<div className="mb-2 flex items-center justify-between px-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-					<span>Conversations</span>
-					<span className="rounded bg-secondary/60 px-1.5 py-0.5 text-[9px]">
-						{conversations.length}
-					</span>
-				</div>
-				{loading ? (
-					<ConversationSkeleton />
-				) : conversations.length === 0 ? (
-					<ConversationEmpty onCreate={onToggleNew} />
-				) : (
-					<div className="space-y-1">
-						{conversations.map((conversation) => (
-							<ConversationRow
-								active={conversation.id === selectedID}
-								conversation={conversation}
-								currentUserID={currentUserID}
-								key={conversation.id}
-								onClick={() => onSelect(conversation.id)}
-							/>
-						))}
 					</div>
 				)}
-			</div>
+			</header>
+			{showContacts ? (
+				<ContactsPanel onCreated={onCreated} />
+			) : (
+				<>
+					{showNew && <NewConversationForm onCreated={onCreated} />}
+					<div className="min-h-0 flex-1 overflow-y-auto px-2 py-2.5">
+						<div className="mb-2 flex items-center justify-between px-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+							<span>Conversations</span>
+							<span className="rounded bg-secondary/60 px-1.5 py-0.5 text-[9px]">
+								{conversations.length}
+							</span>
+						</div>
+						{loading ? (
+							<ConversationSkeleton />
+						) : conversations.length === 0 ? (
+							<ConversationEmpty onCreate={onToggleNew} />
+						) : (
+							<div className="space-y-1">
+								{conversations.map((conversation) => (
+									<ConversationRow
+										active={conversation.id === selectedID}
+										conversation={conversation}
+										currentUserID={currentUserID}
+										key={conversation.id}
+										onClick={() => onSelect(conversation.id)}
+									/>
+								))}
+							</div>
+						)}
+					</div>
+				</>
+			)}
 		</div>
 	);
 }
 
+function ContactsPanel({ onCreated }: { onCreated: (id: string) => void }) {
+	const [search, setSearch] = useState("");
+	const deferredSearch = useDeferredValue(search.trim());
+	const contactsQuery = useChatContacts(deferredSearch);
+	const create = useCreateChatConversation();
+	const [busyID, setBusyID] = useState<string | null>(null);
+	const contacts = contactsQuery.data?.pages.flatMap((page) => page.data) ?? [];
+
+	const startPrivateChat = async (user: ChatUser) => {
+		setBusyID(user.id);
+		try {
+			const conversation = await create.mutateAsync({
+				kind: "direct",
+				participant_ids: [user.id],
+			});
+			onCreated(conversation.id);
+		} catch {
+			toast.error("无法发起私聊", { description: "请稍后重试" });
+		} finally {
+			setBusyID(null);
+		}
+	};
+
+	return (
+		<section className="flex min-h-0 flex-1 flex-col">
+			<div className="shrink-0 border-b border-edge-hairline px-4 py-3">
+				<p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+					Registered users
+				</p>
+				<div className="relative">
+					<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+					<input
+						aria-label="搜索联系人"
+						className="h-9 w-full rounded-lg border border-input bg-secondary/30 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
+						onChange={(event) => setSearch(event.target.value)}
+						placeholder="搜索用户名或展示名"
+						value={search}
+					/>
+				</div>
+			</div>
+			<div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+				{contactsQuery.isLoading ? (
+					<ContactSkeleton />
+				) : contactsQuery.isError ? (
+					<p className="px-2 py-8 text-center text-xs text-destructive">
+						联系人加载失败，请重试
+					</p>
+				) : contacts.length === 0 ? (
+					<div className="px-2 py-8 text-center">
+						<ContactRound className="mx-auto size-7 text-muted-foreground/50" />
+						<p className="mt-2 text-xs text-muted-foreground">
+							{deferredSearch ? "没有找到匹配的用户" : "暂时没有可联系的用户"}
+						</p>
+					</div>
+				) : (
+					<>
+						<div className="space-y-1">
+							{contacts.map((user) => (
+								<div
+									className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-edge-hairline hover:bg-secondary/35"
+									key={user.id}
+								>
+									<Avatar user={user} className="size-10 shrink-0" />
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-xs font-semibold text-foreground">
+											{user.display_name}
+										</p>
+										<p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+											@{user.username}
+										</p>
+									</div>
+									<Button
+										aria-label={`发起与${user.display_name}的私聊`}
+										className="h-8 shrink-0 px-2.5 text-xs"
+										disabled={busyID !== null}
+										onClick={() => void startPrivateChat(user)}
+										size="sm"
+									>
+										{busyID === user.id ? (
+											<LoaderCircle className="size-3.5 animate-spin" />
+										) : (
+											<MessageCircle className="size-3.5" />
+										)}
+										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
+									</Button>
+								</div>
+							))}
+						</div>
+						{contactsQuery.hasNextPage && (
+							<Button
+								className="mt-3 w-full text-xs"
+								disabled={contactsQuery.isFetchingNextPage}
+								onClick={() => void contactsQuery.fetchNextPage()}
+								variant="outline"
+							>
+								{contactsQuery.isFetchingNextPage ? (
+									<LoaderCircle className="size-3.5 animate-spin" />
+								) : (
+									"加载更多"
+								)}
+							</Button>
+						)}
+					</>
+				)}
+			</div>
+		</section>
+	);
+}
+
+function ContactSkeleton() {
+	return (
+		<div className="space-y-2">
+			{Array.from({ length: 5 }, (_, index) => (
+				<div className="flex items-center gap-3 rounded-xl px-3 py-2.5" key={index}>
+					<div className="size-10 animate-pulse rounded-full bg-secondary" />
+					<div className="flex-1 space-y-1.5">
+						<div className="h-3 w-2/3 animate-pulse rounded bg-secondary" />
+						<div className="h-2.5 w-1/2 animate-pulse rounded bg-secondary" />
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
 function NewConversationForm({ onCreated }: { onCreated: (id: string) => void }) {
 	const [kind, setKind] = useState<ConversationKind>("direct");
 	const [username, setUsername] = useState("");
