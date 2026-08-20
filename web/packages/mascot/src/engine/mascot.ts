@@ -53,6 +53,14 @@ export interface MascotOptions {
 /** 注视幅度(viewBox 像素):横 24 纵 15 */
 const GAZE_X = 24;
 const GAZE_Y = 15;
+/**
+ * 身体注视跟随系数:视线看哪边,身体重心微移+侧倾+轮廓轻压。
+ * 次级动作,幅度须比五官滑动小一个量级(五官 ±14~20px,身体 ±5px/±3°),
+ * 否则变成整体平移、丧失"头带动身"的层级感。
+ */
+const GAZE_LEAN_SHIFT = 0.22;
+const GAZE_LEAN_ROT = 0.14;
+const GAZE_LEAN_SQUASH = 0.06;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
 const SPIN_TURN_MS = 850;
 const CONFETTI_COLORS = ["#8B7CF6", "#6D5CE7", "#F4C34E", "#F472B6", "#34D399", "#FB923C"];
@@ -1073,23 +1081,32 @@ export class Mascot {
 		// 整脸统一淡出:转过侧面时脸渐隐、背面隐藏,杜绝「单眼+错位嘴」的残缺中间帧
 		const faceOp = clamp((Math.cos(pose.yaw) - 0.02) / 0.55, 0, 1);
 
-		// 身体 rig:中心 130,贴地 226;水平压缩模拟转身收窄 (正面全宽,侧面 ~0.8)
-		const yawSquash = 1 - 0.2 * (1 - Math.abs(Math.cos(phi)));
+		// 身体注视跟随(次级动作):重心微移+绕贴地点侧倾,与五官同相但幅度小一个量级,
+		// 让"脸转向哪边"有身体呼应,而非只有五官在贴图上滑动
+		const leanShift = avgLookX * GAZE_LEAN_SHIFT;
+		const leanRot = avgLookX * GAZE_LEAN_ROT;
+
+		// 身体 rig:中心 130,贴地 226;水平压缩模拟转身收窄 (正面全宽,侧面 ~0.8)。
+		// 注视压缩单列:余弦项对小角度太钝(±0.32rad 仅收 1%),补 sin 项才可感知
+		const yawSquash =
+			1 -
+			0.2 * (1 - Math.abs(Math.cos(phi))) -
+			GAZE_LEAN_SQUASH * Math.abs(Math.sin(facePhi));
 		this.rigG.setAttribute(
 			"transform",
 			[
-				`translate(${(cx + b.x).toFixed(2)} ${(anchorY + b.y).toFixed(2)})`,
-				`rotate(${b.rotate.toFixed(2)})`,
+				`translate(${(cx + b.x + leanShift).toFixed(2)} ${(anchorY + b.y).toFixed(2)})`,
+				`rotate(${(b.rotate + leanRot).toFixed(2)})`,
 				`scale(${(b.scale * yawSquash).toFixed(4)} ${b.scale.toFixed(4)})`,
 				`translate(${(-cx).toFixed(2)} ${(-anchorY).toFixed(2)})`,
 			].join(" "),
 		);
 
-		// 地面投影随呼吸与弹跳缩放,并随偏航微移增强转身立体感
+		// 地面投影随呼吸与弹跳缩放,随偏航与注视跟随微移增强转身立体感
 		const shadowScale = clamp(b.scale * (1 - b.y * 0.008), 0.5, 1.4);
 		this.shadowEl.setAttribute(
 			"transform",
-			`translate(${(cx + b.x * 0.4 + Math.sin(phi) * 7).toFixed(2)} 234) scale(${shadowScale.toFixed(3)}) translate(${-cx} -234)`,
+			`translate(${(cx + b.x * 0.4 + Math.sin(phi) * 7 + leanShift * 0.5).toFixed(2)} 234) scale(${shadowScale.toFixed(3)}) translate(${-cx} -234)`,
 		);
 
 		// 身体变色与高光梯度
