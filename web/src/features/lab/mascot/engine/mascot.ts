@@ -681,6 +681,9 @@ export class Mascot {
 		svg.style.height = "100%";
 		svg.style.display = "block";
 		svg.style.cursor = "pointer";
+		// 粒子层溢出可见：confetti 从中心爆开后会飞出 viewBox，
+		// 默认 overflow:hidden 会拦腰裁断烟花（宿主容器自行决定最终裁剪边界）
+		svg.style.overflow = "visible";
 		this.svg = svg;
 
 		const defs = this.mk("defs", {});

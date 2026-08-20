@@ -39,7 +39,7 @@ function StageButton({ label, onClick, active }: StageAction) {
 			className={cn(
 				"cursor-pointer rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
 				active
-					? "border-violet-400/50 bg-violet-500/80 text-white hover:bg-violet-500"
+					? "border-amber-300/40 bg-amber-300/15 text-amber-100 hover:bg-amber-300/25"
 					: "border-white/12 bg-white/[0.04] text-white/80 hover:bg-white/10",
 			)}
 		>
@@ -194,7 +194,10 @@ export function MascotTheater({
 						·
 					</span>
 					#{def.id}
-					<span aria-hidden className="size-1 animate-pulse rounded-full bg-violet-300" />
+					<span
+						aria-hidden
+						className="size-1 animate-pulse rounded-full bg-amber-200/80"
+					/>
 				</p>
 
 				<MascotStage
@@ -230,20 +233,23 @@ export function MascotTheater({
 					头部轻拂触发呼噜飞机耳 · 点击身体弹跳 · 移动鼠标视线追随
 				</p>
 
-				{/* AI 消息实测:输入协议 JSON,实时驱动舞台 */}
+				{/* AI 消息协议实测:输入协议 JSON,实时驱动舞台 */}
 				<div className="mt-5 text-left" aria-live="polite">
-					<div className="flex gap-2">
+					<p className="mb-1.5 font-mono text-[10px] tracking-[0.15em] text-white/35 uppercase">
+						AI 消息协议
+					</p>
+					<div className="flex gap-2 rounded-xl border border-white/12 bg-black/30 p-2 transition-colors focus-within:border-amber-200/40 has-[textarea[aria-invalid=true]]:border-red-400/50">
 						<textarea
 							ref={jsonInputRef}
 							rows={2}
 							spellCheck={false}
 							placeholder={`{"emotionId": "${def.id}", "tips": "喵~"}`}
-							className="min-w-0 flex-1 resize-none rounded-lg border border-white/12 bg-black/30 px-3 py-2 font-mono text-[11px] text-white/85 placeholder:text-white/25 focus:border-violet-400/50 focus:outline-none"
+							className="min-w-0 flex-1 resize-none bg-transparent px-1 py-0.5 font-mono text-[11px] text-white/85 placeholder:text-white/25 focus:outline-none"
 						/>
 						<button
 							type="button"
 							onClick={sendJson}
-							className="shrink-0 cursor-pointer rounded-lg bg-violet-500/90 px-3.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-violet-500"
+							className="shrink-0 cursor-pointer self-stretch rounded-lg bg-amber-300/90 px-3.5 text-[11px] font-semibold text-[#3b2a08] transition-colors hover:bg-amber-300"
 						>
 							发送
 						</button>
