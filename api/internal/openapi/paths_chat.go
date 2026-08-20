@@ -117,6 +117,11 @@ func registerChatPaths(t *openapi3.T) {
 	registerSchema(t, "ChatPushConfig", openapi3.Schemas{"public_key": optStr("VAPID 公钥"), "enabled": optBool("是否启用")})
 	post(t, "/chat/push/subscription", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "启用浏览器通知", Security: secure, Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatPushSubscriptionRequest", true, "推送订阅"), Responses: responses(201, messageResponse("浏览器通知已启用"))})
 	get(t, "/chat/users/{username}", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "按用户名查找用户", Security: secure, Parameters: openapi3.Parameters{pathStrParam("username", "用户名")}, Responses: responses(200, dataResponse("ChatUserDTO", "用户资料", 200))})
+	get(t, "/chat/contacts", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "联系人列表", Security: secure,
+		Parameters: openapi3.Parameters{queryStrParam("q", "用户名或展示名关键词"), queryStrParam("cursor", "联系人游标"), limitParam(50)},
+		Responses:  responses(200, dataArrayResponse("ChatUserDTO", "联系人列表", 200, true)),
+	})
 	get(t, "/chat/conversations/{conversationId}/members", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "会话成员", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID")}, Responses: responses(200, dataArrayResponse("ChatMemberDTO", "成员列表", 200, false))})
 	post(t, "/chat/conversations/{conversationId}/members", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "邀请成员", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatMemberRequest", true, "成员参数"), Responses: responses(201, messageResponse("成员已加入房间"))})
 	del(t, "/chat/conversations/{conversationId}/members/me", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "离开会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("已离开会话"))})

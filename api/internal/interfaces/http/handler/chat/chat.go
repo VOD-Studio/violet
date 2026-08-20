@@ -360,6 +360,22 @@ func (h *Handler) FindUserByUsername(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+// ListContacts 返回当前用户可发起私聊的联系人。
+func (h *Handler) ListContacts(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	limit := response.ParseLimit(r, 20, 50)
+	result, err := h.svc.ListContacts(r.Context(), userID, r.URL.Query().Get("q"), r.URL.Query().Get("cursor"), limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondCursor(w, result.Items, limit, result.HasMore, result.NextCursor)
+}
+
 // UnreadCount 返回当前用户全部未读数。
 func (h *Handler) UnreadCount(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)

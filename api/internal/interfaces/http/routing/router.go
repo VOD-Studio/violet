@@ -372,6 +372,7 @@ func registerNotificationRoutes(v1 chi.Router, d *Deps) {
 func registerChatRoutes(v1 chi.Router, d *Deps) {
 	h := d.Chat
 	v1.Route("/chat", func(r chi.Router) {
+		r.With(d.SessionAuth).Get("/contacts", h.ListContacts)
 		r.With(d.SessionAuth).Get("/users/{username}", h.FindUserByUsername)
 		r.With(d.SessionAuth).Get("/unread-count", h.UnreadCount)
 		r.With(d.SessionAuth).Get("/events", d.ChatStream.Stream)

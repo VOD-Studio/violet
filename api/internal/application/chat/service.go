@@ -617,6 +617,41 @@ func (s *Service) FindUserByUsername(ctx context.Context, username string) (User
 	return userToDTO(user), nil
 }
 
+// ListContacts 按用户名或展示名查找可发起私聊的用户。
+func (s *Service) ListContacts(ctx context.Context, userID domainshared.ID, query, cursorValue string, limit int) (ListResult[UserDTO], error) {
+	if userID.IsZero() {
+		return ListResult[UserDTO]{}, domainshared.Unauthorized("请先登录")
+	}
+	cursor, err := decodeContactCursor(cursorValue)
+	if err != nil {
+		return ListResult[UserDTO]{}, err
+	}
+	limit = clampLimit(limit)
+	var afterUsername string
+	var afterID domainshared.ID
+	if cursor != nil {
+		afterUsername = cursor.Username
+		afterID = cursor.ID
+	}
+	users, err := s.users.ListContacts(ctx, strings.TrimSpace(query), userID, afterUsername, afterID, limit+1)
+	if err != nil {
+		return ListResult[UserDTO]{}, err
+	}
+	result := ListResult[UserDTO]{Items: make([]UserDTO, 0, min(len(users), limit))}
+	if len(users) > limit {
+		result.HasMore = true
+		users = users[:limit]
+	}
+	for _, user := range users {
+		result.Items = append(result.Items, userToDTO(user))
+	}
+	if result.HasMore && len(users) > 0 {
+		last := users[len(users)-1]
+		result.NextCursor = encodeContactCursor(last.Username().String(), last.GetID())
+	}
+	return result, nil
+}
+
 // EventsAfter 返回指定序号之后的 SSE 事件。
 func (s *Service) EventsAfter(ctx context.Context, userID domainshared.ID, afterSequence int64, limit int) ([]EventDTO, error) {
 	if limit <= 0 || limit > 100 {
@@ -908,6 +943,35 @@ func decodeConversationCursor(value string) (*domainchat.ConversationCursor, err
 		return nil, domainshared.BadRequest("非法的分页游标")
 	}
 	return &domainchat.ConversationCursor{UpdatedAt: updatedAt, ID: id}, nil
+}
+
+type contactCursor struct {
+	Username string
+	ID       domainshared.ID
+}
+
+func encodeContactCursor(username string, id domainshared.ID) string {
+	raw := username + cursorSep + id.String()
+	return base64.RawURLEncoding.EncodeToString([]byte(raw))
+}
+
+func decodeContactCursor(value string) (*contactCursor, error) {
+	if value == "" {
+		return nil, nil
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(value)
+	if err != nil {
+		return nil, domainshared.BadRequest("非法的分页游标")
+	}
+	parts := strings.Split(string(raw), cursorSep)
+	if len(parts) != 2 || parts[0] == "" {
+		return nil, domainshared.BadRequest("非法的分页游标")
+	}
+	id, err := domainshared.ParseID(parts[1])
+	if err != nil {
+		return nil, domainshared.BadRequest("非法的分页游标")
+	}
+	return &contactCursor{Username: parts[0], ID: id}, nil
 }
 
 func encodeMessageCursor(cursor domainchat.MessageCursor) string {

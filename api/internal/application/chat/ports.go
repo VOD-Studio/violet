@@ -14,6 +14,7 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id domainshared.ID) (*domainuser.User, error)
 	FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domainuser.User, error)
 	FindByUsername(ctx context.Context, username domainuser.Username) (*domainuser.User, error)
+	ListContacts(ctx context.Context, query string, excludeID domainshared.ID, afterUsername string, afterID domainshared.ID, limit int) ([]*domainuser.User, error)
 }
 
 // FileRepository 聊天图片归属与引用计数端口。
