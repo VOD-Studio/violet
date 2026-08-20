@@ -27,6 +27,7 @@ export function MascotLab() {
 						bubble={exhibit.bubble}
 						isTouring={exhibit.isTouring}
 						onToggleTour={exhibit.toggleTour}
+						onReplay={exhibit.replay}
 						onAIMessage={(msg) => exhibit.applyAIMessage(msg.emotionId, msg.tips)}
 					/>
 				</div>

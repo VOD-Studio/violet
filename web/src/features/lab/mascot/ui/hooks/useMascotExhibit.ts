@@ -89,6 +89,11 @@ export function useMascotExhibit() {
 		if (tips !== undefined) pushBubble(tips);
 	};
 
+	/** 重播当前表情动画与台词气泡 */
+	const replay = () => {
+		pushBubble(def.desc);
+	};
+
 	return {
 		emotionId,
 		def,
@@ -98,6 +103,7 @@ export function useMascotExhibit() {
 		setGroup,
 		isTouring,
 		toggleTour,
+		replay,
 		bubble,
 		pushBubble,
 		selectEmotion,

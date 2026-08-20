@@ -1,4 +1,14 @@
-import { Hand, Pause, Play, RotateCw, Send, Sparkles, Terminal, Zap } from "lucide-react";
+import {
+	Hand,
+	Pause,
+	Play,
+	RotateCcw,
+	RotateCw,
+	Send,
+	Sparkles,
+	Terminal,
+	Zap,
+} from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -62,10 +72,10 @@ export interface MascotTheaterProps {
 	bubble: EmotionBubbleProps;
 	isTouring: boolean;
 	onToggleTour: () => void;
+	onReplay: () => void;
 	/** AI 消息落定:同步固定选中与台词(由 handleAIMessage 解析后回调) */
 	onAIMessage: (msg: { emotionId: string; tips?: string }) => void;
 }
-
 /**
  * 聚光舞台卡:上段舞台场景(顶光光束、猫脚下台面光斑、台口溢光),
  * 下段观众席控制区(动作按钮与 AI 协议实测),布景层均不接事件。
@@ -75,6 +85,7 @@ export function MascotTheater({
 	bubble,
 	isTouring,
 	onToggleTour,
+	onReplay,
 	onAIMessage,
 }: MascotTheaterProps) {
 	const heroRef = useRef<MascotHandle>(null);
@@ -98,12 +109,20 @@ export function MascotTheater({
 
 	const actions: StageAction[] = [
 		{
-			label: "摸摸头",
+			label: "重播",
+			icon: <RotateCcw className="size-3.5" />,
+			onClick: () => {
+				heroRef.current?.setEmotion(def.id);
+				onReplay();
+			},
+		},
+		{
+			label: "摸头",
 			icon: <Hand className="size-3.5" />,
 			onClick: () => heroRef.current?.pet(),
 		},
 		{
-			label: "转一圈",
+			label: "转圈",
 			icon: <RotateCw className="size-3.5" />,
 			onClick: () => heroRef.current?.spin(),
 		},
@@ -262,7 +281,7 @@ export function MascotTheater({
 						))}
 						<div className="mx-0.5 h-3.5 w-px bg-white/10" aria-hidden />
 						<StageButton
-							label={isTouring ? "巡演中" : "自动巡演"}
+							label="巡演"
 							icon={
 								isTouring ? (
 									<Pause className="size-3.5" />
