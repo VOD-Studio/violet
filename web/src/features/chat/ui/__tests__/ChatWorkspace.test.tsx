@@ -18,16 +18,18 @@ const mockMe = {
 	avatar_url: "",
 };
 
+const mockOtherUser = {
+	id: "u_other",
+	username: "dfy",
+	display_name: "dfy",
+	avatar_url: "",
+};
+
 const mockConversation = {
 	id: "c_1",
 	kind: "direct" as const,
 	title: "",
-	owner: {
-		id: "u_other",
-		username: "dfy",
-		display_name: "dfy",
-		avatar_url: "",
-	},
+	owner: mockMe,
 	members: [
 		{
 			user: mockMe,
@@ -36,12 +38,7 @@ const mockConversation = {
 			is_muted: false,
 		},
 		{
-			user: {
-				id: "u_other",
-				username: "dfy",
-				display_name: "dfy",
-				avatar_url: "",
-			},
+			user: mockOtherUser,
 			role: "member" as const,
 			joined_at: "2026-08-20T08:00:00Z",
 			is_muted: false,
@@ -53,12 +50,7 @@ const mockConversation = {
 	last_message: {
 		id: "m_1",
 		conversation_id: "c_1",
-		sender: {
-			id: "u_other",
-			username: "dfy",
-			display_name: "dfy",
-			avatar_url: "",
-		},
+		sender: mockMe,
 		type: "text" as const,
 		content: "hello world",
 		is_deleted: false,
@@ -232,5 +224,18 @@ describe("ChatWorkspace", () => {
 				},
 			}),
 		);
+	});
+
+	it("私聊会话展示对方头像首字母，而非当前用户自己的头像", () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		// 对方是 dfy，首字母 D；当前用户是 xfy，首字母 X
+		// 侧边栏会话项与顶部面板头像应为 D
+		const dAvatars = screen.getAllByText("D");
+		expect(dAvatars.length).toBeGreaterThanOrEqual(2);
+
+		// 消息列表中 mockConversation.last_message 由 mockMe 发送，消息气泡处才展示 X
+		const xAvatars = screen.getAllByText("X");
+		expect(xAvatars.length).toBe(1);
 	});
 });

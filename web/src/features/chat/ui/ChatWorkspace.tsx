@@ -306,7 +306,7 @@ export interface ConversationRowProps {
 }
 
 function ConversationRow({ conversation, currentUserID, active, onClick }: ConversationRowProps) {
-	const avatar = conversation.last_message?.sender;
+	const avatarUser = conversationTargetUser(conversation, currentUserID);
 	const lastTime = conversation.last_message?.created_at || conversation.updated_at;
 
 	return (
@@ -321,7 +321,7 @@ function ConversationRow({ conversation, currentUserID, active, onClick }: Conve
 			type="button"
 		>
 			<div className="relative shrink-0">
-				<Avatar user={avatar ?? conversation.owner} className="size-10" />
+				<Avatar user={avatarUser} className="size-10" />
 				{conversation.kind === "direct" && (
 					<span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background bg-neon-green" />
 				)}
@@ -442,7 +442,10 @@ function ConversationPanel({
 					>
 						<ArrowLeft className="size-4" />
 					</Button>
-					<Avatar user={conversation.owner} className="size-8 shrink-0" />
+					<Avatar
+						user={conversationTargetUser(conversation, currentUserID)}
+						className="size-8 shrink-0"
+					/>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
 							<h2 className="truncate text-sm font-semibold">
@@ -806,7 +809,10 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 			<div className="flex-1 space-y-5 overflow-y-auto p-4">
 				<div className="rounded-xl border border-edge-hairline bg-secondary/15 p-3.5">
 					<div className="mb-2.5 flex items-center gap-3">
-						<Avatar user={conversation.owner} className="size-11" />
+						<Avatar
+							user={conversationTargetUser(conversation, currentUserID)}
+							className="size-11"
+						/>
 						<div className="min-w-0">
 							<p className="truncate text-sm font-semibold">
 								{conversationLabel(conversation, currentUserID)}
@@ -1161,6 +1167,17 @@ function conversationLabel(conversation: ChatConversation, currentUserID?: strin
 		conversation.members?.map((member) => member.user.display_name).join("、") ||
 		conversation.owner.display_name
 	);
+}
+
+function conversationTargetUser(conversation: ChatConversation, currentUserID?: string): ChatUser {
+	if (conversation.kind === "direct") {
+		const participant = conversation.members?.find(
+			(member) => member.user.id !== currentUserID,
+		);
+		if (participant) return participant.user;
+		if (conversation.owner.id !== currentUserID) return conversation.owner;
+	}
+	return conversation.owner;
 }
 
 function messagePreview(message: ChatMessage) {
