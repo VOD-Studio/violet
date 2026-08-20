@@ -1,10 +1,10 @@
-import { Segmented } from "@/shared/ui/segmented";
 import type { SegmentedItem } from "@/shared/ui/segmented";
+import { Segmented } from "@/shared/ui/segmented";
 import type { EmotionDef } from "../engine/expressions";
-import { useMascotExhibit } from "./hooks/useMascotExhibit";
 import { EmotionGridItem } from "./components/EmotionGridItem";
 import { MascotSdkSection } from "./components/MascotSdkSection";
 import { MascotTheater } from "./components/MascotTheater";
+import { useMascotExhibit } from "./hooks/useMascotExhibit";
 
 const GROUP_SEGMENTS: SegmentedItem<EmotionDef["group"]>[] = [
 	{ value: "lifecycle", label: <>生命周期</> },
