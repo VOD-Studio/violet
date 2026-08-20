@@ -310,32 +310,39 @@ export function MascotTheater({
 					</p>
 				</div>
 
-				{/* AI 消息协议控制台 */}
+				{/* AI 消息协议控制台: 多行代码编辑区 + 底部操作栏 */}
 				<div className="mt-3.5 text-left" aria-live="polite">
 					<div className="mb-1.5 flex h-4 items-center justify-between px-0.5">
 						<span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wider text-white/40 uppercase">
 							<Terminal className="size-3 text-white/60" />
 							AI 消息协议控制台
 						</span>
-						<span className="font-mono text-[10px] text-white/25">按 Enter ↵ 发送</span>
+						<span className="font-mono text-[10px] text-white/25">
+							Enter 发送 · Shift+Enter 换行
+						</span>
 					</div>
-					<div className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-black/45 p-1.5 transition-all focus-within:border-white/25 focus-within:bg-black/65 focus-within:ring-1 focus-within:ring-white/10 has-[textarea[aria-invalid=true]]:border-red-400/50">
+					<div className="rounded-xl border border-white/10 bg-black/45 p-2 transition-all focus-within:border-white/25 focus-within:bg-black/65 focus-within:ring-1 focus-within:ring-white/10 has-[textarea[aria-invalid=true]]:border-red-400/50">
 						<textarea
 							ref={jsonInputRef}
-							rows={1}
+							rows={2}
 							onKeyDown={handleKeyDown}
 							spellCheck={false}
-							placeholder={`{"emotionId": "${def.id}", "tips": "喵~"}`}
-							className="min-w-0 flex-1 resize-none bg-transparent px-2 py-0.5 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
+							placeholder={`{\n  "emotionId": "${def.id}",\n  "tips": "喵~"\n}`}
+							className="code-block-scrollbar max-h-28 min-h-[44px] w-full resize-none bg-transparent px-1 py-0.5 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
 						/>
-						<button
-							type="button"
-							onClick={sendJson}
-							className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 shadow-xs transition-all hover:bg-white/90 active:scale-95"
-						>
-							<Send className="size-3 text-neutral-950" />
-							<span>发送</span>
-						</button>
+						<div className="mt-1.5 flex items-center justify-between border-t border-white/[0.06] pt-1.5">
+							<span className="font-mono text-[10px] text-white/30">
+								JSON Protocol
+							</span>
+							<button
+								type="button"
+								onClick={sendJson}
+								className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-neutral-950 shadow-xs transition-all hover:bg-white/90 active:scale-95"
+							>
+								<Send className="size-3 text-neutral-950" />
+								<span>发送</span>
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
