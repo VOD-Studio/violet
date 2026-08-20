@@ -1,3 +1,4 @@
+import { Hand, Pause, Play, RotateCw, Send, Sparkles, Terminal, Zap } from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -27,27 +28,28 @@ function EmotionBubble({ text, gen }: EmotionBubbleProps) {
 
 interface StageAction {
 	label: string;
+	icon: React.ReactNode;
 	onClick: () => void;
 	active?: boolean;
 }
 
-function StageButton({ label, onClick, active }: StageAction) {
+function StageButton({ label, icon, onClick, active }: StageAction) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"cursor-pointer rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
+				"inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all active:scale-95",
 				active
-					? "border-amber-300/40 bg-amber-300/15 text-amber-100 hover:bg-amber-300/25"
-					: "border-white/12 bg-white/[0.04] text-white/80 hover:bg-white/10",
+					? "border border-amber-300/40 bg-amber-300/20 text-amber-100 shadow-xs shadow-amber-300/10"
+					: "text-white/75 hover:bg-white/10 hover:text-white",
 			)}
 		>
-			{label}
+			{icon}
+			<span>{label}</span>
 		</button>
 	);
 }
-
 /** 光束微尘:left/top 定位与节奏错开,光柱里有没有介质飘浮决定像不像真光 */
 const DUST_MOTES = [
 	{ key: "l", left: "46.5%", top: "38%", duration: "9s", delay: "0s" },
@@ -95,11 +97,28 @@ export function MascotTheater({
 	};
 
 	const actions: StageAction[] = [
-		{ label: "摸摸头", onClick: () => heroRef.current?.pet() },
-		{ label: "转一圈", onClick: () => heroRef.current?.spin() },
-		{ label: "撒花", onClick: () => heroRef.current?.burst(25) },
-		{ label: "弹跳", onClick: () => heroRef.current?.bounce() },
+		{
+			label: "摸摸头",
+			icon: <Hand className="size-3.5" />,
+			onClick: () => heroRef.current?.pet(),
+		},
+		{
+			label: "转一圈",
+			icon: <RotateCw className="size-3.5" />,
+			onClick: () => heroRef.current?.spin(),
+		},
+		{
+			label: "撒花",
+			icon: <Sparkles className="size-3.5" />,
+			onClick: () => heroRef.current?.burst(25),
+		},
+		{
+			label: "弹跳",
+			icon: <Zap className="size-3.5" />,
+			onClick: () => heroRef.current?.bounce(),
+		},
 	];
+
 	const sendJson = () => {
 		const raw = jsonInputRef.current?.value.trim();
 		if (!raw) return;
@@ -113,6 +132,12 @@ export function MascotTheater({
 		}
 	};
 
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+			sendJson();
+		}
+	};
 	return (
 		<section
 			ref={stageRef}
@@ -210,48 +235,71 @@ export function MascotTheater({
 			</div>
 
 			{/* 观众席控制区:舞台外,不打光 */}
-			<div className="relative px-6 pt-5 pb-6 sm:px-8">
-				<h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-					{def.name}
-					<span className="ml-2 font-mono text-sm font-normal text-white/45">
-						{def.en}
-					</span>
-				</h2>
-
-				<div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-					{actions.map((a) => (
-						<StageButton key={a.label} {...a} />
-					))}
-					<StageButton
-						label={isTouring ? "暂停巡演" : "自动巡演"}
-						onClick={onToggleTour}
-						active={isTouring}
-					/>
+			<div className="relative px-5 pt-4 pb-5 sm:px-6">
+				{/* 表情标题与描述 */}
+				<div className="text-center">
+					<div className="inline-flex items-center gap-2">
+						<h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">
+							{def.name}
+						</h2>
+						<span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 font-mono text-[11px] font-normal text-white/50">
+							{def.en}
+						</span>
+					</div>
+					<p className="mt-1 line-clamp-1 text-xs text-white/45">{def.desc}</p>
 				</div>
 
-				<p className="mt-3.5 text-[10px] text-white/30">
-					头部轻拂触发呼噜飞机耳 · 点击身体弹跳 · 移动鼠标视线追随
+				{/* 互动动作工具栏 */}
+				<div className="mt-3.5 flex justify-center">
+					<div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-md shadow-black/25 backdrop-blur-md">
+						{actions.map((a) => (
+							<StageButton key={a.label} {...a} />
+						))}
+						<div className="mx-0.5 h-3.5 w-px bg-white/10" aria-hidden />
+						<StageButton
+							label={isTouring ? "巡演中" : "自动巡演"}
+							icon={
+								isTouring ? (
+									<Pause className="size-3.5" />
+								) : (
+									<Play className="size-3.5" />
+								)
+							}
+							onClick={onToggleTour}
+							active={isTouring}
+						/>
+					</div>
+				</div>
+
+				<p className="mt-2 text-center text-[10px] text-white/25">
+					轻触头部触发飞机耳 · 点击身体弹跳 · 移动指针视线追随
 				</p>
 
-				{/* AI 消息协议实测:输入协议 JSON,实时驱动舞台 */}
-				<div className="mt-5 text-left" aria-live="polite">
-					<p className="mb-1.5 font-mono text-[10px] tracking-[0.15em] text-white/35 uppercase">
-						AI 消息协议
-					</p>
-					<div className="flex gap-2 rounded-xl border border-white/12 bg-black/30 p-2 transition-colors focus-within:border-amber-200/40 has-[textarea[aria-invalid=true]]:border-red-400/50">
+				{/* AI 消息协议控制台 */}
+				<div className="mt-4 text-left" aria-live="polite">
+					<div className="mb-1.5 flex items-center justify-between px-0.5">
+						<span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wider text-white/40 uppercase">
+							<Terminal className="size-3 text-amber-300/80" />
+							AI 消息协议控制台
+						</span>
+						<span className="font-mono text-[10px] text-white/25">按 Enter ↵ 发送</span>
+					</div>
+					<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 transition-all focus-within:border-amber-300/45 focus-within:bg-black/60 focus-within:ring-1 focus-within:ring-amber-300/20 has-[textarea[aria-invalid=true]]:border-red-400/50">
 						<textarea
 							ref={jsonInputRef}
-							rows={2}
+							rows={1}
+							onKeyDown={handleKeyDown}
 							spellCheck={false}
 							placeholder={`{"emotionId": "${def.id}", "tips": "喵~"}`}
-							className="min-w-0 flex-1 resize-none bg-transparent px-1 py-0.5 font-mono text-[11px] text-white/85 placeholder:text-white/25 focus:outline-none"
+							className="min-w-0 flex-1 resize-none bg-transparent px-2 py-1 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
 						/>
 						<button
 							type="button"
 							onClick={sendJson}
-							className="shrink-0 cursor-pointer self-stretch rounded-lg bg-amber-300/90 px-3.5 text-[11px] font-semibold text-[#3b2a08] transition-colors hover:bg-amber-300"
+							className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-amber-300/90 px-3 py-1.5 text-xs font-semibold text-[#3b2a08] shadow-xs shadow-amber-300/20 transition-all hover:bg-amber-300 active:scale-95"
 						>
-							发送
+							<Send className="size-3" />
+							<span>发送</span>
 						</button>
 					</div>
 				</div>

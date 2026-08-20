@@ -7,8 +7,8 @@ import { MascotTheater } from "./components/MascotTheater";
 import { useMascotExhibit } from "./hooks/useMascotExhibit";
 
 const GROUP_SEGMENTS: SegmentedItem<EmotionDef["group"]>[] = [
-	{ value: "lifecycle", label: <>生命周期</> },
 	{ value: "emotion", label: <>情绪反应</> },
+	{ value: "lifecycle", label: <>生命周期</> },
 	{ value: "agent", label: <>代理工作</> },
 ];
 

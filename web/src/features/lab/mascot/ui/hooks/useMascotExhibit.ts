@@ -13,11 +13,11 @@ export interface BubbleLine {
  * 手动点选结束巡演并同步分组;台词随表情切换推陈。
  */
 export function useMascotExhibit() {
-	const [pinnedId, setPinnedId] = useState("00");
-	const [group, setGroup] = useState<EmotionDef["group"]>("lifecycle");
+	const [pinnedId, setPinnedId] = useState("26");
+	const [group, setGroup] = useState<EmotionDef["group"]>("emotion");
 	const [isTouring, setIsTouring] = useState(false);
 	const [bubble, setBubble] = useState<BubbleLine>(() => ({
-		text: (EMOTION_MAP.get("00") ?? EMOTIONS[0]).desc,
+		text: (EMOTION_MAP.get("26") ?? EMOTIONS[0]).desc,
 		gen: 0,
 	}));
 	const tourTimerRef = useRef<number | undefined>(undefined);
