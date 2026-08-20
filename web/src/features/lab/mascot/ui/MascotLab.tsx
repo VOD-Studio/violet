@@ -45,7 +45,7 @@ export function MascotLab() {
 					</div>
 
 					{/* 最小高度锁死：消除切换不同条目数分组时整个页面高度骤缩带来的剧烈跳动 */}
-					<div className="min-h-[580px]">
+					<div className="min-h-145">
 						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
 							{exhibit.groupList.map((e) => (
 								<EmotionGridItem
