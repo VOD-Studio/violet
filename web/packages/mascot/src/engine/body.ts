@@ -154,11 +154,12 @@ export const CAT_EARS = {
  * @param sway - 尾巴摇晃量 [-1, 1]
  * @param elevation - 尾巴抬升高度 [-1, 1]，正值高高竖起，负值低垂
  */
-export function catTailPath(sway: number, elevation = 0, phi = 0): string {
+export function catTailPath(sway: number, elevation = 0, phi = 0, r = 66): string {
+	// 尾巴根本体经度在背面 (π-0.72);投影半径与面部共用统一值时整体刚体旋转
 	const tailAngle = Math.PI - 0.72 + phi;
 	const sinT = Math.sin(tailAngle);
-	// 尾巴根部随身体 3D 旋转在左右后侧环绕 (中心 130，半径 66)
-	const rootX = 130 + 66 * sinT;
+	// 尾巴根部随身体 3D 旋转在左右后侧环绕
+	const rootX = 130 + r * sinT;
 	const rootY = 192;
 	const liftY = elevation * 22;
 	const sideDir = sinT >= 0 ? 1 : -1;

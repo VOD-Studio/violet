@@ -1407,10 +1407,12 @@ export class Mascot {
 		const pitchY = avgLookY * 0.65;
 		// 整脸透明度:随偏航提早下降,配合位置滑动读出侧面
 		const faceOp = clamp((Math.cos(pose.yaw) - 0.2) / 0.5, 0, 1);
-		// yaw=0 精确回锚;旋转时位置/压缩/淡出三通道速率一致,构成刚体旋转
-		const faceProj = (x0: number, a: number) => {
-			const theta = Math.asin(clamp((x0 - 130) / FACE_R, -1, 1));
-			const p = theta + a;
+		// 统一球面投影:全部部件共用 FACE_R 与同一条投影曲线;θ0 为部件本体经度
+		// (正面锚点经 thetaOf 换算,背面部件如尾巴根直接给显式经度),
+		// 位置/压缩/淡出三通道同源,构成刚体式整猫旋转
+		const thetaOf = (x0: number) => Math.asin(clamp((x0 - 130) / FACE_R, -1, 1));
+		const faceProj = (theta0: number, a: number) => {
+			const p = theta0 + a;
 			const nz = Math.cos(p);
 			return {
 				x: 130 + FACE_R * Math.sin(p),
@@ -1466,20 +1468,14 @@ export class Mascot {
 		this.bodyGrad.setAttribute("cx", gradCx);
 		this.bodyGrad.setAttribute("cy", gradCy);
 
-		// 尾巴 3D 环绕与摆动
+		// 尾巴 3D 环绕与摆动(投影半径与面部统一,刚体旋转)
 		const tailSway = Math.sin((TAU * now) / 2400) * b.tail;
-		this.tailEl.setAttribute("d", catTailPath(tailSway, b.tailElev, phi));
-
-		// 猫耳旋转系统与 3D 视差 (围绕 pivot 支点，背向时内耳粉色耳窝淡出)
-		const earLPhi = -0.65 + phi;
-		const earRPhi = 0.65 + phi;
-		const earL_Nz = Math.cos(earLPhi);
-		const earR_Nz = Math.cos(earRPhi);
-
-		// 耳朵球面投影:半径取真实耳距(左右 pivot 各距中心 50),侧面两耳投影越过中线、
-		// 背面交换位置——旋转整圈的方位感由耳朵换位承载,半径过小读不出转身
-		const earLDx = 50 * Math.sin(earLPhi) - 50 * Math.sin(-0.65);
-		const earRDx = 50 * Math.sin(earRPhi) - 50 * Math.sin(0.65);
+		this.tailEl.setAttribute("d", catTailPath(tailSway, b.tailElev, phi, FACE_R));
+		// 猫耳:统一球面投影(锚点为耳 pivot),背面交换位置;内耳淡出走同一条投影曲线
+		const earL = faceProj(thetaOf(CAT_EARS.left.pivot[0]), phi);
+		const earR = faceProj(thetaOf(CAT_EARS.right.pivot[0]), phi);
+		const earLDx = earL.x - CAT_EARS.left.pivot[0];
+		const earRDx = earR.x - CAT_EARS.right.pivot[0];
 		const earLRot = b.earL + Math.sin((TAU * now) / 3200) * 1.5 - avgLookX * 0.1;
 		const earRRot = b.earR - Math.sin((TAU * now) / 3200 + 0.4) * 1.5 - avgLookX * 0.1;
 
@@ -1492,15 +1488,13 @@ export class Mascot {
 			`translate(${earRDx.toFixed(2)} 0) rotate(${earRRot.toFixed(2)} ${CAT_EARS.right.pivot[0]} ${CAT_EARS.right.pivot[1]})`,
 		);
 
-		// 粉嫩内耳窝在背面时淡出 (正面显示，背面只露外耳毛色)
-		const innerEarLOpacity = clamp((earL_Nz + 0.1) / 0.35, 0, 1);
-		const innerEarROpacity = clamp((earR_Nz + 0.1) / 0.35, 0, 1);
-		this.earLInner.setAttribute("opacity", innerEarLOpacity.toFixed(3));
-		this.earRInner.setAttribute("opacity", innerEarROpacity.toFixed(3));
+		// 粉嫩内耳窝淡出(与全脸同一条投影曲线,正面显示背面只露外耳毛色)
+		this.earLInner.setAttribute("opacity", earL.op.toFixed(3));
+		this.earRInner.setAttribute("opacity", earR.op.toFixed(3));
 
 		// 左右眼:统一投影,锚点为 FACE 眼位
-		const eL = faceProj(FACE.eyeL[0], phi);
-		const eR = faceProj(FACE.eyeR[0], phi);
+		const eL = faceProj(thetaOf(FACE.eyeL[0]), phi);
+		const eR = faceProj(thetaOf(FACE.eyeR[0]), phi);
 		const eyeLX = eL.x + pose.left.x + pose.left.lookX * 0.2;
 		const eyeRX = eR.x + pose.right.x + pose.right.lookX * 0.2;
 		const eyeLY = 142 + pitchY + pose.left.y;
@@ -1530,13 +1524,13 @@ export class Mascot {
 		);
 
 		// 猫咪小嘴:统一投影,锚点 130
-		const m = faceProj(130, phi);
+		const m = faceProj(0, phi);
 		const mouthY = 142 + pitchY + 14 + b.mouthY;
 		this.renderMouth(b, m.x, mouthY, (b.mouthScale ?? 1) * m.sx, m.op * faceOp);
 
 		// 腮红:统一投影,锚点为 FACE 腮红位,几何恒定
-		const bl = faceProj(FACE.blushL[0], phi);
-		const br = faceProj(FACE.blushR[0], phi);
+		const bl = faceProj(thetaOf(FACE.blushL[0]), phi);
+		const br = faceProj(thetaOf(FACE.blushR[0]), phi);
 		const blushY = 162 + pitchY * 0.85;
 		const blushR0 = 15;
 
@@ -1551,8 +1545,8 @@ export class Mascot {
 		this.blushR.setAttribute("opacity", (b.blush * br.op * faceOp).toFixed(3));
 
 		// 轻柔猫咪胡须:统一投影,锚点为 FACE 胡须位;wobble 微颤保留
-		const wl = faceProj(FACE.whiskerL[0], phi);
-		const wr = faceProj(FACE.whiskerR[0], phi);
+		const wl = faceProj(thetaOf(FACE.whiskerL[0]), phi);
+		const wr = faceProj(thetaOf(FACE.whiskerR[0]), phi);
 		const whiskerWobble = Math.sin((TAU * now) / 2800) * 1.2;
 		const whiskerBaseOp = b.whiskers * 0.55;
 
@@ -1570,8 +1564,8 @@ export class Mascot {
 				`rotate(${(-whiskerWobble).toFixed(2)} ${FACE.whiskerR[0]} ${FACE.whiskerR[1]}) scale(${wr.sx.toFixed(3)} 1)`,
 		);
 		// 左右前爪:统一投影,锚点为 FACE 爪位
-		const pl = faceProj(FACE.pawL[0], phi);
-		const pr = faceProj(FACE.pawR[0], phi);
+		const pl = faceProj(thetaOf(FACE.pawL[0]), phi);
+		const pr = faceProj(thetaOf(FACE.pawR[0]), phi);
 
 		this.pawLG.setAttribute("opacity", (pl.op * faceOp).toFixed(3));
 		this.pawRG.setAttribute("opacity", (pr.op * faceOp).toFixed(3));
