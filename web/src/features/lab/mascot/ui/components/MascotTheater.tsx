@@ -1,4 +1,7 @@
-import { resolveEmotionId } from "@violet/agent-status";
+import type { EmotionDef } from "@violet/mascot";
+import { resolveEmotionId } from "@violet/mascot";
+import type { MascotHandle } from "@violet/mascot/react";
+import { MascotStage } from "@violet/mascot/react";
 import {
 	Hand,
 	Pause,
@@ -13,9 +16,8 @@ import {
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 import { cn } from "@/shared/lib/utils";
-import type { EmotionDef } from "../../engine/expressions";
 import { useAgentStatus } from "../hooks/useAgentStatus";
-import { GROUP_LABEL, type MascotHandle, MascotStage } from "./MascotStage";
+import { GROUP_LABEL } from "../hooks/useMascotExhibit";
 
 interface EmotionBubbleProps {
 	text: string;

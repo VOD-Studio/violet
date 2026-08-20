@@ -1,15 +1,15 @@
+import type { EmotionDef } from "@violet/mascot";
 import type { SegmentedItem } from "@/shared/ui/segmented";
 import { Segmented } from "@/shared/ui/segmented";
-import type { EmotionDef } from "../engine/expressions";
 import { EmotionGridItem } from "./components/EmotionGridItem";
 import { MascotSdkSection } from "./components/MascotSdkSection";
 import { MascotTheater } from "./components/MascotTheater";
-import { useMascotExhibit } from "./hooks/useMascotExhibit";
+import { GROUP_LABEL, useMascotExhibit } from "./hooks/useMascotExhibit";
 
 const GROUP_SEGMENTS: SegmentedItem<EmotionDef["group"]>[] = [
-	{ value: "emotion", label: <>喜怒哀乐</> },
-	{ value: "lifecycle", label: <>猫猫日常</> },
-	{ value: "agent", label: <>工作模式</> },
+	{ value: "emotion", label: <>{GROUP_LABEL.emotion}</> },
+	{ value: "lifecycle", label: <>{GROUP_LABEL.lifecycle}</> },
+	{ value: "agent", label: <>{GROUP_LABEL.agent}</> },
 ];
 
 /** 吉祥物展馆:聚光舞台 sticky 常驻视线,目录分段切换、缩略卡 hover 本地预览、点击固定上演,SDK 协议全宽收尾。 */

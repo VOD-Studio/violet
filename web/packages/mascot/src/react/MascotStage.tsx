@@ -1,32 +1,57 @@
 import { type Ref, useEffect, useRef } from "react";
-import type { EmotionDef } from "../../engine/expressions";
-import { Mascot } from "../../engine/mascot";
+import { DEFAULT_EMOTION_ID } from "../engine/expressions";
+import { Mascot } from "../engine/mascot";
+import type { AIMessage, AIMessageResult } from "../protocol";
 
+/**
+ * 引擎实例的命令式句柄:经 ref 暴露给宿主,驱动一次性动作与受控状态。
+ */
 export interface MascotHandle {
+	/** 自旋一圈 */
 	spin(): void;
+	/** 弹跳一次 */
 	bounce(): void;
+	/** 摸头互动(飞机耳) */
 	pet(): void;
+	/** 撒花庆祝
+	 *
+	 * @param count - 粒子数,缺省 20
+	 */
 	burst(count?: number): void;
+	/**
+	 * 视线跟随。
+	 *
+	 * @param nx - 水平归一化 [-1, 1]
+	 * @param ny - 垂直归一化 [-1, 1]
+	 */
 	setGaze(nx: number, ny: number): void;
+	/** 切换表情;未知 ID 回退待机 */
 	setEmotion(id: string): void;
-	/** AI 消息协议入口:未知 emotionId 回退待机,返回解析结果供外部同步固定选中与台词 */
+	/**
+	 * AI 消息协议入口:未知 emotionId 回退待机。
+	 *
+	 * @returns 解析结果(回退后的 emotionId + 透传台词),供外部同步固定选中与台词
+	 */
 	handleAIMessage(msg: AIMessage): AIMessageResult;
 }
 
-export interface AIMessage {
-	emotionId?: string;
-	tips?: string;
-}
-
-export type AIMessageResult = { emotionId: string; tips?: string };
-
-interface MascotStageProps {
+/**
+ * MascotStage 的 props。
+ */
+export interface MascotStageProps {
+	/** 受控表情 ID */
 	emotion: string;
+	/** 冻结为静态快照(目录缩略卡用),不启动动画循环 */
 	frozen?: boolean;
+	/** 点击身体回调 */
 	onClick?: () => void;
+	/** 摸头回调 */
 	onPet?: () => void;
+	/** handleAIMessage 带台词时回调,供对白气泡消费 */
 	onTips?: (tips: string | undefined) => void;
+	/** 命令式句柄(React 19 ref-as-prop) */
 	ref?: Ref<MascotHandle>;
+	/** 透传给宿主容器的类名 */
 	className?: string;
 }
 
@@ -75,7 +100,7 @@ export function MascotStage({
 			setEmotion: (id) => mascotRef.current?.setEmotion(id),
 			handleAIMessage: (msg) => {
 				const id = msg.emotionId?.trim();
-				const resolved = id && id.length > 0 ? id : "00";
+				const resolved = id && id.length > 0 ? id : DEFAULT_EMOTION_ID;
 				mascotRef.current?.setEmotion(resolved);
 				return { emotionId: resolved, ...(msg.tips !== undefined && { tips: msg.tips }) };
 			},
@@ -90,10 +115,3 @@ export function MascotStage({
 
 	return <div ref={hostRef} data-emotion={emotion} className={className} />;
 }
-
-/** 分组元数据:标题与 segment 定义同源,目录与舞台状态签共用。 */
-export const GROUP_LABEL: Record<EmotionDef["group"], string> = {
-	lifecycle: "猫猫日常",
-	emotion: "喜怒哀乐",
-	agent: "工作模式",
-};

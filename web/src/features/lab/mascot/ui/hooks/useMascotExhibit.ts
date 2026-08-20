@@ -1,5 +1,12 @@
+import { EMOTION_MAP, EMOTIONS, type EmotionDef } from "@violet/mascot";
 import { useEffect, useRef, useState } from "react";
-import { EMOTION_MAP, EMOTIONS, type EmotionDef } from "../../engine/expressions";
+
+/** 分组标题:目录分段器与舞台 HUD 状态签共用此单源。 */
+export const GROUP_LABEL: Record<EmotionDef["group"], string> = {
+	lifecycle: "猫猫日常",
+	emotion: "喜怒哀乐",
+	agent: "工作模式",
+};
 
 /** 台词:来自表情 desc 或 AI 消息 tips,带代际计数——新一轮台词到达时重挂气泡重播动画。 */
 export interface BubbleLine {

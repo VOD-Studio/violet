@@ -1,5 +1,5 @@
+import type { EmotionDef } from "@violet/mascot";
 import { CodeCard } from "@/shared/ui/code-preview";
-import type { EmotionDef } from "../../engine/expressions";
 
 interface MascotSdkSectionProps {
 	pinnedDef: EmotionDef;

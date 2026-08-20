@@ -158,6 +158,9 @@ importers:
       '@violet/agent-status':
         specifier: workspace:*
         version: link:packages/agent-status
+      '@violet/mascot':
+        specifier: workspace:*
+        version: link:packages/mascot
       '@xterm/addon-fit':
         specifier: ^0.11.0
         version: 0.11.0
@@ -344,6 +347,12 @@ importers:
         version: 4.1.9(@types/node@22.20.0)(jsdom@28.1.0)(vite@8.1.3(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0))
 
   packages/agent-status: {}
+
+  packages/mascot:
+    dependencies:
+      '@violet/agent-status':
+        specifier: workspace:*
+        version: link:../agent-status
 
 packages:
 
