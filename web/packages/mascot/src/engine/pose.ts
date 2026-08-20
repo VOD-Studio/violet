@@ -7,9 +7,9 @@
 
 import { lerpColor } from "../lib/color";
 import { clamp, lerp, TAU } from "../lib/math";
-import type { MouthShapeId } from "./body";
+import type { MouthShapeId } from "./characters/catMochi/geometry";
+import { PALETTE } from "./characters/catMochi/palette";
 import type { EyeRing } from "./eyes";
-import { PALETTE } from "./palette";
 import type { Anim, BodyPose, EyePose } from "./types";
 
 /**

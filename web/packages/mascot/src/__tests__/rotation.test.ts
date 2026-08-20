@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { FACE, projectSurfaceAngle, TAIL_ROOT_ANGLE, TAIL_ROOT_RADIUS } from "../engine/body";
+import {
+	FACE,
+	projectSurfaceAngle,
+	TAIL_ROOT_ANGLE,
+	TAIL_ROOT_RADIUS,
+} from "../engine/characters/catMochi/geometry";
 import { Mascot } from "../engine/mascot";
 
 const instances: Mascot[] = [];

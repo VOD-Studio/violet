@@ -1,4 +1,4 @@
-/** 全局配色(猫猫团浅紫基调 + 深蓝五官) */
+/** 堇喵配色:浅紫身体基调 + 深蓝五官。 */
 export const PALETTE = {
 	body: "#FAF8FF",
 	bodyStroke: "#C4B5FD",

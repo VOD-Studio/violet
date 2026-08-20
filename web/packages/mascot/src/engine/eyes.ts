@@ -131,11 +131,11 @@ export const EYE_RINGS = {
 	heart: heart(),
 	/** 下垂半闭(失落/困倦) */
 	droop: ellipseRing(0.95, 0.58, 0),
-	/** 调皮俏皮 Wink (>):粗弯月牙,闭合感强才像眨眼 */
+	/** Wink 眨眼 (>):粗弯月牙,闭合感强才像眨眼 */
 	wink: crescent(1.0, 0.8, 0.52),
-	/** 水汪汪乞求大眼 (Pleading) */
+	/** 乞求大眼 */
 	pleading: ellipseRing(1.22, 1.28),
-	/** 陶醉呼噜舒适眯眼 */
+	/** 舒适呼噜眯眼 */
 	purr: crescent(1.0, 0.62, 0.48),
 	/** 委屈波浪眼 */
 	tear: crescent(0.95, -0.78, 0.38),
