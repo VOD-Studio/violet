@@ -107,15 +107,7 @@ export function MascotTheater({
 		heroRef.current?.setGaze(nx, ny);
 	};
 
-	const actions: StageAction[] = [
-		{
-			label: "重播",
-			icon: <RotateCcw className="size-3.5" />,
-			onClick: () => {
-				heroRef.current?.setEmotion(def.id);
-				onReplay();
-			},
-		},
+	const antics: StageAction[] = [
 		{
 			label: "摸头",
 			icon: <Hand className="size-3.5" />,
@@ -232,9 +224,10 @@ export function MascotTheater({
 					/>
 				))}
 
+				{/* 舞台顶栏 HUD: 左侧状态小签 + 右侧播放/巡演控制器 */}
 				<p className="absolute inset-x-0 top-3.5 z-10 flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.2em] text-white/40 uppercase">
 					{GROUP_LABEL[def.group]}
-					<span aria-hidden className="text-white/25">
+					<span aria-hidden className="text-white/20">
 						·
 					</span>
 					#{def.id}
@@ -255,9 +248,9 @@ export function MascotTheater({
 			{/* 观众席控制区:舞台外,不打光 */}
 			{/* 观众席控制区:舞台外,不打光，严格固定各行几何高度消除切换抖动 */}
 			<div className="relative px-5 pt-4 pb-5 sm:px-6">
-				{/* 表情标题与描述 */}
-				<div className="text-center">
-					<div className="flex h-7 items-center justify-center gap-2">
+				{/* 顶栏：表情名称与展馆播放控制 */}
+				<div className="flex h-7 items-center justify-between">
+					<div className="flex items-center gap-2">
 						<h2 className="text-lg font-bold leading-none tracking-tight text-white sm:text-xl">
 							{def.name}
 						</h2>
@@ -265,35 +258,52 @@ export function MascotTheater({
 							{def.en}
 						</span>
 					</div>
-					<div className="mt-1 flex h-4 items-center justify-center">
-						<p className="max-w-xs truncate text-xs leading-none text-white/45 sm:max-w-sm">
-							{def.desc}
-						</p>
+
+					{/* 展馆播放控制：重播与巡演 */}
+					<div className="inline-flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 shadow-xs backdrop-blur-md">
+						<button
+							type="button"
+							onClick={() => {
+								heroRef.current?.setEmotion(def.id);
+								onReplay();
+							}}
+							className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[11px] text-white/70 transition-all hover:bg-white/10 hover:text-white active:scale-95"
+							title="重播当前表情动画与对白"
+						>
+							<RotateCcw className="size-3" />
+							<span>重播</span>
+						</button>
+						<div className="h-3 w-px bg-white/10" aria-hidden />
+						<button
+							type="button"
+							onClick={onToggleTour}
+							className={cn(
+								"inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[11px] transition-all active:scale-95",
+								isTouring
+									? "border border-white/20 bg-white/20 text-white shadow-xs"
+									: "text-white/70 hover:bg-white/10 hover:text-white",
+							)}
+							title={isTouring ? "暂停自动巡演" : "开始自动巡演"}
+						>
+							{isTouring ? <Pause className="size-3" /> : <Play className="size-3" />}
+							<span>巡演</span>
+						</button>
 					</div>
 				</div>
 
-				{/* 互动动作工具栏 */}
-				<div className="mt-3 flex h-9 items-center justify-center">
+				{/* 描述文案 */}
+				<div className="mt-1 flex h-4 items-center">
+					<p className="truncate text-xs leading-none text-white/45">{def.desc}</p>
+				</div>
+
+				{/* 互动动作工具栏：纯粹的 4 个猫猫互动手势 */}
+				<div className="mt-3.5 flex h-9 items-center justify-center">
 					<div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-md shadow-black/25 backdrop-blur-md">
-						{actions.map((a) => (
+						{antics.map((a) => (
 							<StageButton key={a.label} {...a} />
 						))}
-						<div className="mx-0.5 h-3.5 w-px bg-white/10" aria-hidden />
-						<StageButton
-							label="巡演"
-							icon={
-								isTouring ? (
-									<Pause className="size-3.5" />
-								) : (
-									<Play className="size-3.5" />
-								)
-							}
-							onClick={onToggleTour}
-							active={isTouring}
-						/>
 					</div>
 				</div>
-
 				<div className="mt-2 flex h-3.5 items-center justify-center">
 					<p className="text-[10px] leading-none text-white/25">
 						轻触头部触发飞机耳 · 点击身体弹跳 · 移动指针视线追随
