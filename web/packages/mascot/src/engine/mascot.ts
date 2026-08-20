@@ -1,11 +1,11 @@
 /**
- * Mascot 引擎 —— 软萌猫猫团 (Cat-Mochi) 渲染与物理状态机。
+ * Mascot 引擎 —— 软萌猫猫团 (Cat-Mochi) 渲染状态机与共享 ticker。
  *
  * 核心架构：
  *   - 渲染层：带质感径向渐变、地底软阴影、灵动猫耳系统 (外耳+内耳耳窝, 独立支点旋转)、
  *     摇曳尾巴、胸前肉垫小爪爪、腮红、球面投影眼环。
- *   - 物理与姿态：pose 合成 (base/sequence/anims/过渡)、临界阻尼弹簧、眨眼关键帧过冲、
- *     眼神微漂移、自旋 yaw 球面投影、4 段衰减弹跳、antics 待机小动作。
+ *   - 物理与姿态：pose 合成 (base/sequence/anims/过渡) 见 pose.ts、临界阻尼弹簧见 math.ts、
+ *     眨眼关键帧过冲、眼神微漂移、自旋 yaw 球面投影、4 段衰减弹跳、antics 待机小动作。
  */
 import {
 	CAT_EARS,
@@ -17,10 +17,23 @@ import {
 	type MouthShapeId,
 	smoothClosedPath,
 } from "./body";
+import { shade } from "./color";
 import { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./emotions";
 import { EYE_RINGS, type EyeRing } from "./eyes";
+import { clamp, easeInOutCubic, lerp, rand, spring, springStep, TAU } from "./math";
 import { PALETTE } from "./palette";
-import type { Anim, BodyPose, EmotionDef, EyePose, SequenceFrame } from "./types";
+import {
+	applyAnim,
+	applySpec,
+	type BodyState,
+	clonePose,
+	defaultPose,
+	type EyeState,
+	lerpPose,
+	lerpRing,
+	type Pose,
+} from "./pose";
+import type { EmotionDef, SequenceFrame } from "./types";
 
 /**
  * 引擎实例化选项。
@@ -36,7 +49,6 @@ export interface MascotOptions {
 	onPet?: () => void;
 }
 
-const TAU = Math.PI * 2;
 /** 注视幅度(viewBox 像素):横 24 纵 15 */
 const GAZE_X = 24;
 const GAZE_Y = 15;
@@ -74,293 +86,6 @@ function loop(now: number) {
 	for (const m of active) m.tick(now, dt);
 	rafId = active.size > 0 ? requestAnimationFrame(loop) : 0;
 }
-
-/* ---------- 工具 ---------- */
-
-function clamp(v: number, a: number, b: number): number {
-	return v < a ? a : v > b ? b : v;
-}
-function lerp(a: number, b: number, t: number): number {
-	return a + (b - a) * t;
-}
-function rand(a: number, b: number): number {
-	return a + Math.random() * (b - a);
-}
-function easeInOutCubic(t: number): number {
-	return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-}
-function hexToRgb(hex: string): [number, number, number] {
-	const n = Number.parseInt(hex.replace("#", ""), 16);
-	if (hex.length <= 4) {
-		const r = (n >> 8) & 0xf;
-		const g = (n >> 4) & 0xf;
-		const b = n & 0xf;
-		return [(r << 4) | r, (g << 4) | g, (b << 4) | b];
-	}
-	return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
-}
-function rgbToHex(c: readonly [number, number, number]): string {
-	return `#${c.map((x) => clamp(Math.round(x), 0, 255).toString(16).padStart(2, "0")).join("")}`;
-}
-function shade(hex: string, amt: number): string {
-	const rgb = hexToRgb(hex);
-	return rgbToHex(
-		rgb.map((c) => clamp(amt >= 0 ? c + (255 - c) * amt : c * (1 + amt), 0, 255)) as [
-			number,
-			number,
-			number,
-		],
-	);
-}
-function lerpColor(a: string, b: string, t: number): string {
-	const ra = hexToRgb(a);
-	const rb = hexToRgb(b);
-	return rgbToHex([lerp(ra[0], rb[0], t), lerp(ra[1], rb[1], t), lerp(ra[2], rb[2], t)]);
-}
-
-/** 临界阻尼弹簧 */
-interface Spring {
-	x: number;
-	v: number;
-	t: number;
-}
-function spring(v0: number): Spring {
-	return { x: v0, v: 0, t: v0 };
-}
-function springStep(s: Spring, w: number, z: number, dt: number): void {
-	const d = s.x - s.t;
-	const ww = w * w;
-	const f = -ww * d - 2 * z * w * s.v;
-	s.v += f * dt;
-	s.x += s.v * dt;
-}
-
-function lerpRing(a: EyeRing, b: EyeRing, t: number): [number, number][] {
-	const out: [number, number][] = new Array(a.length);
-	for (let i = 0; i < a.length; i++) {
-		out[i] = [a[i][0] + (b[i][0] - a[i][0]) * t, a[i][1] + (b[i][1] - a[i][1]) * t];
-	}
-	return out;
-}
-
-/* ---------- Pose 系统 ---------- */
-
-interface BodyState {
-	x: number;
-	y: number;
-	scale: number;
-	rotate: number;
-	color: string;
-	breathe: number;
-	blush: number;
-	earL: number;
-	earR: number;
-	tail: number;
-	tailElev: number;
-	pawY: number;
-	pawLX: number;
-	pawLY: number;
-	pawLRot: number;
-	pawLScale: number;
-	pawRX: number;
-	pawRY: number;
-	pawRRot: number;
-	pawRScale: number;
-	mouth: MouthShapeId;
-	mouthY: number;
-	mouthScale: number;
-	whiskers: number;
-	halo: number;
-	zzz: number;
-}
-interface EyeState {
-	x: number;
-	y: number;
-	scaleX: number;
-	scaleY: number;
-	rotate: number;
-	open: number;
-	lookX: number;
-	lookY: number;
-	ring?: EyeRing;
-}
-interface Pose {
-	body: BodyState;
-	left: EyeState;
-	right: EyeState;
-	yaw: number;
-}
-
-const DEFAULT_BODY: BodyState = {
-	x: 0,
-	y: 0,
-	scale: 1,
-	rotate: 0,
-	color: PALETTE.body,
-	breathe: 0.01,
-	blush: 0,
-	earL: 0,
-	earR: 0,
-	tail: 0.5,
-	tailElev: 0.3,
-	pawY: 0,
-	pawLX: 0,
-	pawLY: 0,
-	pawLRot: 0,
-	pawLScale: 1,
-	pawRX: 0,
-	pawRY: 0,
-	pawRRot: 0,
-	pawRScale: 1,
-	mouth: "w",
-	mouthY: 0,
-	mouthScale: 1,
-	whiskers: 1,
-	halo: 0,
-	zzz: 0,
-};
-const DEFAULT_EYE: EyeState = {
-	x: 0,
-	y: 0,
-	scaleX: 1,
-	scaleY: 1,
-	rotate: 0,
-	open: 1,
-	lookX: 0,
-	lookY: 0,
-};
-
-function defaultPose(): Pose {
-	return {
-		body: { ...DEFAULT_BODY },
-		left: { ...DEFAULT_EYE },
-		right: { ...DEFAULT_EYE },
-		yaw: 0,
-	};
-}
-function clonePose(p: Pose): Pose {
-	return { body: { ...p.body }, left: { ...p.left }, right: { ...p.right }, yaw: p.yaw };
-}
-
-function applySpec(
-	pose: Pose,
-	body?: BodyPose,
-	eyes?: { both?: EyePose; left?: EyePose; right?: EyePose },
-): Pose {
-	if (body) {
-		const { pawL, pawR, ...rest } = body;
-		Object.assign(pose.body, rest);
-		if (pawL) {
-			if (pawL.x !== undefined) pose.body.pawLX = pawL.x;
-			if (pawL.y !== undefined) pose.body.pawLY = pawL.y;
-			if (pawL.rotate !== undefined) pose.body.pawLRot = pawL.rotate;
-			if (pawL.scale !== undefined) pose.body.pawLScale = pawL.scale;
-		}
-		if (pawR) {
-			if (pawR.x !== undefined) pose.body.pawRX = pawR.x;
-			if (pawR.y !== undefined) pose.body.pawRY = pawR.y;
-			if (pawR.rotate !== undefined) pose.body.pawRRot = pawR.rotate;
-			if (pawR.scale !== undefined) pose.body.pawRScale = pawR.scale;
-		}
-	}
-	if (eyes) {
-		if (eyes.both) {
-			Object.assign(pose.left, eyes.both);
-			Object.assign(pose.right, eyes.both);
-		}
-		if (eyes.left) Object.assign(pose.left, eyes.left);
-		if (eyes.right) Object.assign(pose.right, eyes.right);
-	}
-	return pose;
-}
-
-function lerpPose(a: Pose, b: Pose, t: number): Pose {
-	const out = defaultPose();
-	for (const part of ["body", "left", "right"] as const) {
-		const pa = a[part] as unknown as Record<string, number | string>;
-		const pb = b[part] as unknown as Record<string, number | string>;
-		const po = out[part] as unknown as Record<string, number | string>;
-		for (const k in pb) {
-			const vb = pb[k];
-			if (typeof vb === "number") {
-				const va = typeof pa[k] === "number" ? pa[k] : vb;
-				po[k] = lerp(va, vb, t);
-			} else if (k === "color" && typeof vb === "string") {
-				po.color = lerpColor(typeof pa.color === "string" ? pa.color : vb, vb, t);
-			} else if (k === "mouth" && typeof vb === "string") {
-				po.mouth = t >= 0.5 ? vb : pa.mouth;
-			}
-		}
-	}
-	return out;
-}
-
-/** anim 原语 */
-function animValue(anim: Anim, t: number, seed: number): number {
-	const amp = anim.amp ?? 1;
-	switch (anim.type) {
-		case "sine":
-			return amp * Math.sin((TAU * t) / (anim.period ?? 2000) + (anim.phase ?? 0));
-		case "pulse":
-			return (
-				amp * 0.5 * (1 - Math.cos((TAU * t) / (anim.period ?? 1000) + (anim.phase ?? 0)))
-			);
-		case "jitter": {
-			const s = (t / 1000) * (anim.speed ?? 8);
-			const v =
-				((Math.sin(s * 3.1 + seed) +
-					Math.sin(s * 5.7 + seed * 2.3) +
-					Math.sin(s * 9.3 + seed * 4.1)) /
-					3) *
-				amp;
-			if (anim.decay) return v * clamp(1 - t / anim.decay, 0, 1);
-			return v;
-		}
-		case "scan": {
-			const per = anim.period ?? 800;
-			const p = ((((t + (anim.phaseMs ?? 0)) % per) + per) % per) / per;
-			const tri = p < 0.5 ? p * 4 - 1 : 3 - p * 4;
-			return amp * tri;
-		}
-		case "glance": {
-			const per = anim.period ?? 3600;
-			const ph =
-				(TAU * ((((t + (anim.phaseMs ?? 0)) % per) + per) % per)) / per + (anim.phase ?? 0);
-			return amp * Math.tanh(2.8 * Math.sin(ph));
-		}
-		case "blink": {
-			const interval = anim.period ?? 3800;
-			const dur = anim.dur ?? 200;
-			const p = (t + (anim.phaseMs ?? 0) + seed * 97) % interval;
-			if (p >= dur) return 0;
-			return -Math.sin((Math.PI * p) / dur);
-		}
-	}
-}
-
-function applyAnim(pose: Pose, anim: Anim, t: number, seed: number): void {
-	const v = animValue(anim, t, seed);
-	const targets: EyeState[] | BodyState[] =
-		anim.target === "eyes"
-			? [pose.left, pose.right]
-			: anim.target === "body"
-				? [pose.body]
-				: anim.target === "left"
-					? [pose.left]
-					: [pose.right];
-	for (const tg of targets) {
-		if (anim.prop === "scale") {
-			if (tg === pose.body) tg.scale += v;
-			else {
-				(tg as EyeState).scaleX += v;
-				(tg as EyeState).scaleY += v;
-			}
-		} else if (anim.prop in tg) {
-			(tg as unknown as Record<string, number>)[anim.prop] += v;
-		}
-	}
-}
-
 /* ---------- 粒子 ---------- */
 
 interface ConfettiPiece {
