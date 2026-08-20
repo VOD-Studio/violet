@@ -40,20 +40,18 @@ interface StageAction {
 	label: string;
 	icon: React.ReactNode;
 	onClick: () => void;
-	active?: boolean;
 }
 
-function StageButton({ label, icon, onClick, active }: StageAction) {
+/**
+ * 动作按钮:瞬时互动手势。交互状态只走背景/文字/阴影通道——
+ * 激活与悬停永不改变占布局的几何(border/padding/尺寸),杜绝工具栏抖动。
+ */
+function StageButton({ label, icon, onClick }: StageAction) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className={cn(
-				"inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all active:scale-95",
-				active
-					? "border border-white/25 bg-white/15 text-white shadow-xs shadow-black/20"
-					: "text-white/70 hover:bg-white/10 hover:text-white",
-			)}
+			className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-medium text-white/70 transition-[color,background-color,box-shadow] hover:duration-0 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
 		>
 			{icon}
 			<span>{label}</span>
@@ -260,14 +258,14 @@ export function MascotTheater({
 					</div>
 
 					{/* 展馆播放控制：重播与巡演 */}
-					<div className="inline-flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] p-0.5 shadow-xs backdrop-blur-md">
+					<div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] p-0.5 shadow-xs backdrop-blur-md">
 						<button
 							type="button"
 							onClick={() => {
 								heroRef.current?.setEmotion(def.id);
 								onReplay();
 							}}
-							className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[11px] text-white/70 transition-all hover:bg-white/10 hover:text-white active:scale-95"
+							className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] text-white/70 transition-[color,background-color,box-shadow] hover:duration-0 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
 							title="重播当前表情动画与对白"
 						>
 							<RotateCcw className="size-3" />
@@ -277,10 +275,12 @@ export function MascotTheater({
 						<button
 							type="button"
 							onClick={onToggleTour}
+							aria-pressed={isTouring}
 							className={cn(
-								"inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[11px] transition-all active:scale-95",
+								"inline-flex h-6 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] transition-[color,background-color,box-shadow] hover:duration-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+								// 激活态用 ring-inset 替代 border:box-shadow 通道不占布局,开关切换零位移
 								isTouring
-									? "border border-white/20 bg-white/20 text-white shadow-xs"
+									? "bg-white/15 text-white shadow-xs shadow-black/20 ring-1 ring-white/25 ring-inset"
 									: "text-white/70 hover:bg-white/10 hover:text-white",
 							)}
 							title={isTouring ? "暂停自动巡演" : "开始自动巡演"}
@@ -321,7 +321,7 @@ export function MascotTheater({
 							Enter 发送 · Shift+Enter 换行
 						</span>
 					</div>
-					<div className="rounded-xl border border-white/10 bg-black/45 p-2 transition-all focus-within:border-white/25 focus-within:bg-black/65 focus-within:ring-1 focus-within:ring-white/10 has-[textarea[aria-invalid=true]]:border-red-400/50">
+					<div className="rounded-xl border border-white/10 bg-black/45 p-2 transition-[border-color,background-color,box-shadow] focus-within:border-white/25 focus-within:bg-black/65 focus-within:ring-1 focus-within:ring-white/10 has-[textarea[aria-invalid=true]]:border-red-400/50">
 						<textarea
 							ref={jsonInputRef}
 							rows={2}
@@ -337,7 +337,7 @@ export function MascotTheater({
 							<button
 								type="button"
 								onClick={sendJson}
-								className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-neutral-950 shadow-xs transition-all hover:bg-white/90 active:scale-95"
+								className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-neutral-950 shadow-xs transition-[color,background-color,box-shadow] hover:duration-0 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
 							>
 								<Send className="size-3 text-neutral-950" />
 								<span>发送</span>
