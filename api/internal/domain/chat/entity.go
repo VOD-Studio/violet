@@ -257,7 +257,7 @@ type Message struct {
 	conversationID shared.ID
 	// senderID 发送者 ID，创建后不可变。
 	senderID shared.ID
-	// messageType 消息类型：text 或 image。
+	// messageType 消息类型：text、image 或 system。
 	messageType MessageType
 	// content 文本内容；图片消息为空。
 	content string

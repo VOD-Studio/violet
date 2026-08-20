@@ -475,9 +475,6 @@ func (s *Service) LeaveConversation(ctx context.Context, userID, conversationID 
 			return err
 		}
 	}
-	if err := s.repo.LeaveMember(ctx, conversationID, userID, now); err != nil {
-		return err
-	}
 	recipients = withoutID(recipients, userID)
 	events, err := s.repo.SaveEvent(ctx, recipients, domainchat.EventMemberChanged, map[string]any{
 		"conversation_id": conversationID.String(),
