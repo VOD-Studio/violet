@@ -177,7 +177,6 @@ export class Mascot {
 	private shadowEl!: SVGEllipseElement;
 	private rigG!: SVGGElement;
 	private tailEl!: SVGPathElement;
-	private tailInFront = false;
 	private bodyPath!: SVGPathElement;
 	private bodyGrad!: SVGElement;
 	private earLG!: SVGGElement;
@@ -1474,16 +1473,6 @@ export class Mascot {
 		// 尾巴根与耳朵都挂在同一表面坐标;尾巴的横向收窄在 catTailPath 内完成。
 		const tailSway = Math.sin((TAU * now) / 2400) * b.tail;
 		this.tailEl.setAttribute("d", catTailPath(tailSway, b.tailElev, phi, TAIL_ROOT_RADIUS));
-		// 角色朝向观察者时尾巴从身体前层露出,转到侧面或背面则回到身体后层。
-		const tailInFront = Math.cos(pose.yaw) > 0.2;
-		if (tailInFront !== this.tailInFront) {
-			this.tailInFront = tailInFront;
-			if (tailInFront) {
-				this.rigG.insertBefore(this.tailEl, this.whiskerLG);
-			} else if (this.rigG.firstChild !== this.tailEl) {
-				this.rigG.insertBefore(this.tailEl, this.rigG.firstChild);
-			}
-		}
 
 		// 侧视时只保留更靠近观察者的耳朵,避免两只耳朵挤成一根重叠尖刺。
 		const earL = faceProj(thetaOf(CAT_EARS.left.pivot[0]), phi);

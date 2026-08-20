@@ -125,7 +125,7 @@ describe("Mascot rotation projection", () => {
 		expect(Math.abs(scaleX(earR.getAttribute("transform")))).toBeGreaterThan(0.9);
 		expect(body.parentElement).toBe(rig);
 		expect(body.getAttribute("transform")).toBeNull();
-		expect(childIndex(rig, tail)).toBeGreaterThan(childIndex(rig, body));
+		expect(childIndex(rig, tail)).toBeLessThan(childIndex(rig, body));
 
 		const mascot = instances[0];
 		mascot.setDevYaw(90);
@@ -151,7 +151,7 @@ describe("Mascot rotation projection", () => {
 
 		mascot.setDevYaw(315);
 		expect(body.getAttribute("transform")).toBeNull();
-		expect(childIndex(rig, tail)).toBeGreaterThan(childIndex(rig, body));
+		expect(childIndex(rig, tail)).toBeLessThan(childIndex(rig, body));
 		const expectedTailRoot = projectSurfaceAngle(
 			TAIL_ROOT_ANGLE,
 			(315 * Math.PI) / 180,
