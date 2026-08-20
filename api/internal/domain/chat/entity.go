@@ -114,10 +114,12 @@ func NewConversation(kind ConversationKind, ownerID shared.ID, title string, now
 			return nil, shared.BadRequest("房间名称过长")
 		}
 	}
-	return &Conversation{
+	conversation := &Conversation{
 		kind: kind, ownerID: ownerID, title: title,
 		Timestamps: shared.Timestamps{CreatedAt: now, UpdatedAt: now},
-	}, nil
+	}
+	conversation.SetID(shared.NewID())
+	return conversation, nil
 }
 
 // ReconstructConversation 从持久化数据重建会话。

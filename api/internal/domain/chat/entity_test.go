@@ -18,6 +18,10 @@ func TestNewConversationValidatesRoomTitle(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Violet Core", room.Title())
 	require.Equal(t, chat.ConversationRoom, room.Kind())
+	require.False(t, room.ID().IsZero())
+	member, memberErr := chat.NewMember(room.ID(), shared.NewID(), chat.MemberMember, now)
+	require.NoError(t, memberErr)
+	require.NotNil(t, member)
 
 	_, err = chat.NewConversation(chat.ConversationRoom, owner, "   ", now)
 	require.Error(t, err)
