@@ -7,7 +7,7 @@
  * 3. 消息列表中正确渲染消息内容与气泡
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -211,6 +211,13 @@ describe("ChatWorkspace", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		window.HTMLElement.prototype.scrollIntoView = vi.fn();
+		window.HTMLElement.prototype.scrollTo = vi.fn(function (
+			this: HTMLElement,
+			optionsOrX?: ScrollToOptions | number,
+			y?: number,
+		) {
+			this.scrollTop = typeof optionsOrX === "number" ? (y ?? 0) : (optionsOrX?.top ?? 0);
+		}) as typeof window.HTMLElement.prototype.scrollTo;
 	});
 
 	afterEach(() => {
@@ -255,6 +262,26 @@ describe("ChatWorkspace", () => {
 				},
 			}),
 		);
+	});
+
+	it("发送消息后只滚动消息列表，不滚动外层聊天布局", async () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		const messageScroller = screen.getByTestId("chat-message-list") as HTMLDivElement;
+		Object.defineProperties(messageScroller, {
+			clientHeight: { configurable: true, value: 300 },
+			scrollHeight: { configurable: true, value: 1000 },
+		});
+
+		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		editor.textContent = "滚动目标测试";
+		fireEvent.input(editor);
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+
+		await waitFor(() => {
+			expect(messageScroller.scrollTop).toBe(700);
+		});
+		expect(window.HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
 	});
 
 	it("从联系人列表发起私聊", () => {

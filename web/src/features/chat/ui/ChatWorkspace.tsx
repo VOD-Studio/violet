@@ -559,12 +559,16 @@ function ConversationPanel({
 	const messages = useMemo(() => [...(messagePage?.data ?? [])].reverse(), [messagePage?.data]);
 	const lastMessage = messages.at(-1);
 
-	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [showScrollBottom, setShowScrollBottom] = useState(false);
 
 	const scrollToBottom = useCallback((smooth = true) => {
-		messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+		const container = scrollContainerRef.current;
+		if (!container) return;
+		container.scrollTo({
+			top: Math.max(0, container.scrollHeight - container.clientHeight),
+			behavior: smooth ? "smooth" : "auto",
+		});
 	}, []);
 
 	// 监听已读上报
@@ -652,6 +656,7 @@ function ConversationPanel({
 					{/* 消息可滚动区 */}
 					<div
 						ref={scrollContainerRef}
+						data-testid="chat-message-list"
 						onScroll={handleScroll}
 						className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8"
 					>
@@ -686,7 +691,7 @@ function ConversationPanel({
 									/>
 								))
 							)}
-							<div ref={messagesEndRef} className="h-0" />
+							<div className="h-0" />
 						</div>
 					</div>
 
