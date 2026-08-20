@@ -54,13 +54,15 @@ export interface MascotOptions {
 const GAZE_X = 24;
 const GAZE_Y = 15;
 /**
- * 身体注视跟随系数:视线看哪边,身体重心微移+侧倾+轮廓轻压。
- * 次级动作,幅度须比五官滑动小一个量级(五官 ±14~20px,身体 ±5px/±3°),
- * 否则变成整体平移、丧失"头带动身"的层级感。
+ * 身体注视跟随系数:视线看哪边,身体重心微移+微侧倾+轮廓轻压。
+ * 次级动作,幅度须比五官滑动小一个量级;侧倾刻意极小——身体底部是平的,
+ * 绕贴地点滚转过大会让一侧边缘翘起悬空,破坏贴地的软糯感
  */
 const GAZE_LEAN_SHIFT = 0.22;
-const GAZE_LEAN_ROT = 0.14;
-const GAZE_LEAN_SQUASH = 0.06;
+const GAZE_LEAN_ROT = 0.04;
+const GAZE_LEAN_SQUASH = 0.05;
+/** 身体跟随平滑速率(1/s):比注视通道(5.66)慢,眼睛先动身体慢半拍跟上 */
+const GAZE_LEAN_K = 2.6;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
 const SPIN_TURN_MS = 850;
 const CONFETTI_COLORS = ["#8B7CF6", "#6D5CE7", "#F4C34E", "#F472B6", "#34D399", "#FB923C"];
@@ -202,6 +204,8 @@ export class Mascot {
 	private anticNext = 0;
 	/* 注视 */
 	private gaze = { x: 0, y: 0, tx: 0, ty: 0 };
+	/* 身体跟随平滑值:滞后于 gaze.x,产生眼睛先动身体慢半拍的 follow-through */
+	private leanCur = 0;
 
 	/* 渲染缓存 */
 	private curBodyColor = "";
@@ -1081,17 +1085,19 @@ export class Mascot {
 		// 整脸统一淡出:转过侧面时脸渐隐、背面隐藏,杜绝「单眼+错位嘴」的残缺中间帧
 		const faceOp = clamp((Math.cos(pose.yaw) - 0.02) / 0.55, 0, 1);
 
-		// 身体注视跟随(次级动作):重心微移+绕贴地点侧倾,与五官同相但幅度小一个量级,
-		// 让"脸转向哪边"有身体呼应,而非只有五官在贴图上滑动
-		const leanShift = avgLookX * GAZE_LEAN_SHIFT;
-		const leanRot = avgLookX * GAZE_LEAN_ROT;
+		// 身体注视跟随(次级动作):仅指针注意力(gaze.x)驱动——avgLookX 还混有微漂移与
+		// 表情 lookX 动画(scan 类),直接用会连带身体摇摆。独立慢平滑让身体比眼睛
+		// 慢半拍跟上,产生 follow-through 而非刚体同进同退
+		this.leanCur += (this.gaze.x - this.leanCur) * (1 - Math.exp(-GAZE_LEAN_K * dt));
+		const leanShift = this.leanCur * GAZE_LEAN_SHIFT;
+		const leanRot = this.leanCur * GAZE_LEAN_ROT;
 
 		// 身体 rig:中心 130,贴地 226;水平压缩模拟转身收窄 (正面全宽,侧面 ~0.8)。
-		// 注视压缩单列:余弦项对小角度太钝(±0.32rad 仅收 1%),补 sin 项才可感知
+		// 注视压缩单列:余弦项对小角度太钝(±0.32rad 仅收 1%),补线性项才可感知
 		const yawSquash =
 			1 -
 			0.2 * (1 - Math.abs(Math.cos(phi))) -
-			GAZE_LEAN_SQUASH * Math.abs(Math.sin(facePhi));
+			GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
 		this.rigG.setAttribute(
 			"transform",
 			[
@@ -1205,54 +1211,39 @@ export class Mascot {
 
 		this.renderMouth(b, mouthX, mouthY, persScaleX, mouthOp);
 
-		// 腮红注视滑动 (正面化)
-		const phiBlushL = -1.18 + facePhi;
-		const phiBlushR = 1.18 + facePhi;
-		const nzBlushL = Math.cos(phiBlushL);
-		const nzBlushR = Math.cos(phiBlushR);
-
-		const blushLX = 130 + 56 * Math.sin(phiBlushL);
-		const blushRX = 130 + 56 * Math.sin(phiBlushR);
+		// 腮红:脸颊贴纸式注视微移。base 角 ±1.18 已近侧面,球面投影对小注视角的导数过大
+		// (一胀一缩、透明度骤降),观感如平面旋转卡进脸里;改为固定正面几何+小幅同步平移
+		const blushLX = 130 + 56 * Math.sin(-1.18) + 10 * Math.sin(facePhi);
+		const blushRX = 130 + 56 * Math.sin(1.18) + 10 * Math.sin(facePhi);
 		const blushY = 162 + pitchY * 0.85;
-
-		const blushLOp = clamp(nzBlushL / 0.18, 0, 1) * b.blush * faceOp;
-		const blushROp = clamp(nzBlushR / 0.18, 0, 1) * b.blush * faceOp;
+		const blushRXr = 15 * Math.cos(1.18);
 
 		this.blushL.setAttribute("cx", blushLX.toFixed(2));
 		this.blushL.setAttribute("cy", blushY.toFixed(2));
-		this.blushL.setAttribute("rx", (15 * clamp(nzBlushL, 0.1, 1)).toFixed(2));
-		this.blushL.setAttribute("opacity", blushLOp.toFixed(3));
+		this.blushL.setAttribute("rx", blushRXr.toFixed(2));
+		this.blushL.setAttribute("opacity", (b.blush * faceOp).toFixed(3));
 
 		this.blushR.setAttribute("cx", blushRX.toFixed(2));
 		this.blushR.setAttribute("cy", blushY.toFixed(2));
-		this.blushR.setAttribute("rx", (15 * clamp(nzBlushR, 0.1, 1)).toFixed(2));
-		this.blushR.setAttribute("opacity", blushROp.toFixed(3));
+		this.blushR.setAttribute("rx", blushRXr.toFixed(2));
+		this.blushR.setAttribute("opacity", (b.blush * faceOp).toFixed(3));
 
-		// 轻柔猫咪胡须注视滑动 (正面化)
-		const phiWhiskerL = -1.35 + facePhi;
-		const phiWhiskerR = 1.35 + facePhi;
-		const nzWhiskerL = Math.cos(phiWhiskerL);
-		const nzWhiskerR = Math.cos(phiWhiskerR);
-
+		// 轻柔猫咪胡须:同腮红,贴纸式微移(base 角 ±1.35 球面导数会把右胡须直接转到消失)
 		const whiskerWobble = Math.sin((TAU * now) / 2800) * 1.2;
-		const whiskerBaseOp = b.whiskers * 0.55;
-		const whiskerLOp = whiskerBaseOp * clamp(nzWhiskerL / 0.18, 0, 1) * faceOp;
-		const whiskerROp = whiskerBaseOp * clamp(nzWhiskerR / 0.18, 0, 1) * faceOp;
+		const whiskerBaseOp = b.whiskers * 0.55 * faceOp;
+		const whiskerDx = 8 * Math.sin(facePhi);
 
-		this.whiskerLG.setAttribute("opacity", whiskerLOp.toFixed(3));
-		this.whiskerRG.setAttribute("opacity", whiskerROp.toFixed(3));
-
-		const whiskerLDx = 64 * Math.sin(phiWhiskerL) - 64 * Math.sin(-1.35);
-		const whiskerRDx = 64 * Math.sin(phiWhiskerR) - 64 * Math.sin(1.35);
+		this.whiskerLG.setAttribute("opacity", whiskerBaseOp.toFixed(3));
+		this.whiskerRG.setAttribute("opacity", whiskerBaseOp.toFixed(3));
 
 		this.whiskerLG.setAttribute(
 			"transform",
-			`translate(${whiskerLDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
+			`translate(${whiskerDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
 				`rotate(${whiskerWobble.toFixed(2)} ${FACE.whiskerL[0]} ${FACE.whiskerL[1]})`,
 		);
 		this.whiskerRG.setAttribute(
 			"transform",
-			`translate(${whiskerRDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
+			`translate(${whiskerDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
 				`rotate(${(-whiskerWobble).toFixed(2)} ${FACE.whiskerR[0]} ${FACE.whiskerR[1]})`,
 		);
 
