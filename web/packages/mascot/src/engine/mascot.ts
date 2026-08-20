@@ -7,6 +7,9 @@
  *   - 物理与姿态：pose 合成 (base/sequence/anims/过渡) 见 pose.ts、临界阻尼弹簧见 math.ts、
  *     眨眼关键帧过冲、眼神微漂移、自旋 yaw 球面投影、4 段衰减弹跳、antics 待机小动作。
  */
+
+import { shade } from "../lib/color";
+import { clamp, easeInOutCubic, lerp, rand, spring, springStep, TAU } from "../lib/math";
 import {
 	CAT_EARS,
 	CAT_WHISKERS,
@@ -17,10 +20,8 @@ import {
 	type MouthShapeId,
 	smoothClosedPath,
 } from "./body";
-import { shade } from "./color";
 import { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./emotions";
 import { EYE_RINGS, type EyeRing } from "./eyes";
-import { clamp, easeInOutCubic, lerp, rand, spring, springStep, TAU } from "./math";
 import { PALETTE } from "./palette";
 import {
 	applyAnim,

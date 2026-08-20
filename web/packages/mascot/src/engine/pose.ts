@@ -4,10 +4,11 @@
  * 合成次序:defaultPose 基态 → applySpec 叠加表情静态层 →
  * animValue/applyAnim 叠加循环动画层 → lerpPose 做表情间过渡插值。
  */
+
+import { lerpColor } from "../lib/color";
+import { clamp, lerp, TAU } from "../lib/math";
 import type { MouthShapeId } from "./body";
-import { lerpColor } from "./color";
 import type { EyeRing } from "./eyes";
-import { clamp, lerp, TAU } from "./math";
 import { PALETTE } from "./palette";
 import type { Anim, BodyPose, EyePose } from "./types";
 
