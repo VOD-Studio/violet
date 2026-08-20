@@ -1,10 +1,10 @@
 /**
- * 表情配置 —— 软萌猫猫团 (Cat-Mochi) 36 套全量动作与情绪体系。
+ * 表情配置 —— 软萌猫猫团 (Cat-Mochi) 37 套全量动作与情绪体系。
  *
  * 体系分段（编号连续，消除断层）：
  *   - 00-07 生命周期（待机 / 睡眠 / 唤醒 / 待命 / 伸懒腰 / 探头好奇 / 摸鱼发呆 / 启动自检）
- *   - 10-25 情绪反应（开心 / 大笑 / 害羞 / 生气 / 惊讶 / 疑惑 / 难过 / 失落 / 爱意 / 得意 /
- *                    委屈抽泣 / 害怕惊吓 / 俏皮Wink / 舒适呼噜 / 嫌弃无语 / 乞求拜托）
+ *   - 10-26 情绪反应（开心 / 大笑 / 害羞 / 生气 / 惊讶 / 疑惑 / 难过 / 失落 / 爱意 / 得意 /
+ *                    委屈抽泣 / 害怕惊吓 / 俏皮Wink / 舒适呼噜 / 嫌弃无语 / 乞求拜托 / Ciallo～）
  *   - 30-42 代理工作（思考中 / 检索资料 / 出错了 / 任务完成 / 拒绝受限 / 正在回复 /
  *                    网络加载 / 翻检记忆 / 接收确认 / 忙碌处理 / 狂欢派对 / 警戒巡视 / 警觉警戒）
  */
@@ -838,6 +838,37 @@ export const EMOTIONS: EmotionDef[] = [
 		anims: [
 			{ type: "pulse", target: "eyes", prop: "scale", amp: 0.06, period: 1200 },
 			{ type: "sine", target: "body", prop: "y", amp: 2, period: 1200 },
+		],
+	},
+	{
+		id: "26",
+		name: "Ciallo～",
+		en: "Ciallo",
+		group: "emotion",
+		desc: "Ciallo～(∠・ω< )⌒★! 经典的 Wink 眨眼与额角招手元气问候！",
+		transition: 260,
+		pair: ["sparkle", "wink"],
+		pool: ["sparkle", "wink"],
+		poolMs: [4000, 8000],
+		blinkMs: null,
+		confetti: 22,
+		body: {
+			rotate: 7,
+			y: -3,
+			earL: 14,
+			earR: -16,
+			tail: 0.95,
+			tailElev: 0.9,
+			blush: 0.85,
+			mouth: "w",
+			pawL: { y: 2, x: -4, rotate: 12 },
+			pawR: { y: -82, x: 20, rotate: -48, scale: 1.25 },
+		},
+		eyes: { left: { scaleX: 1.15, scaleY: 1.15, y: -1 }, right: { scaleY: 0.95, y: 1 } },
+		anims: [
+			{ type: "sine", target: "body", prop: "rotate", amp: 2.2, period: 1800 },
+			{ type: "pulse", target: "eyes", prop: "scale", amp: 0.08, period: 1200 },
+			{ type: "sine", target: "right", prop: "pawRY", amp: 3, period: 1400 },
 		],
 	},
 
