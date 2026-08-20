@@ -29,7 +29,7 @@ func registerChatPaths(t *openapi3.T) {
 		"id":              reqStr("消息 ID"),
 		"conversation_id": reqStr("会话 ID"),
 		"sender":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
-		"type":            reqStr("text 或 image"),
+		"type":            reqStr("text、image 或 system"),
 		"content":         optStr("文本内容"),
 		"media":           &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"},
 		"is_deleted":      optBool("是否已被管理员删除"),

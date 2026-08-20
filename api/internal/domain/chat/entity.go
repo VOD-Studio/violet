@@ -39,6 +39,8 @@ const (
 	MessageText MessageType = "text"
 	// MessageImage 图片消息。
 	MessageImage MessageType = "image"
+	// MessageSystem 群聊系统事件消息。
+	MessageSystem MessageType = "system"
 )
 
 // ChatEventType 聊天事件类型。
@@ -284,6 +286,21 @@ func NewTextMessage(conversationID, senderID shared.ID, content, idempotencyKey 
 		return nil, err
 	}
 	return newMessage(conversationID, senderID, MessageText, content, nil, idempotencyKey, now), nil
+}
+
+// NewSystemMessage 创建群聊系统事件消息。
+func NewSystemMessage(conversationID, senderID shared.ID, content, idempotencyKey string, now time.Time) (*Message, error) {
+	content = strings.TrimSpace(content)
+	if conversationID.IsZero() || senderID.IsZero() {
+		return nil, shared.BadRequest("消息归属不能为空")
+	}
+	if content == "" || len([]rune(content)) > MaxMessageContentLength {
+		return nil, shared.BadRequest("系统消息无效")
+	}
+	if err := validateIdempotencyKey(idempotencyKey); err != nil {
+		return nil, err
+	}
+	return newMessage(conversationID, senderID, MessageSystem, content, nil, idempotencyKey, now), nil
 }
 
 // NewImageMessage 创建图片消息。

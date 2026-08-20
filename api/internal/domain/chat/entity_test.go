@@ -48,6 +48,20 @@ func TestMessageFactoriesEnforcePayloadShapeAndIdempotency(t *testing.T) {
 	require.NotNil(t, image.MediaID())
 }
 
+func TestSystemMessageFactory(t *testing.T) {
+	message, err := chat.NewSystemMessage(
+		shared.NewID(),
+		shared.NewID(),
+		" Alice 加入了群聊 ",
+		"system-1",
+		time.Now(),
+	)
+	require.NoError(t, err)
+	require.Equal(t, chat.MessageSystem, message.Type())
+	require.Equal(t, "Alice 加入了群聊", message.Content())
+	require.Nil(t, message.MediaID())
+}
+
 func TestMessageDeleteIsOneWay(t *testing.T) {
 	message, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "moderate me", "retry-1", time.Now())
 	require.NoError(t, err)

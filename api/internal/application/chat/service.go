@@ -322,6 +322,9 @@ func (s *Service) RenameConversation(ctx context.Context, in RenameConversationI
 	if err := s.repo.RenameConversation(ctx, conversation); err != nil {
 		return ConversationDTO{}, err
 	}
+	if err := s.saveSystemMessage(ctx, in.ConversationID, in.UserID, "群聊名称已修改为「"+conversation.Title()+"」"); err != nil {
+		return ConversationDTO{}, err
+	}
 	return s.conversationDTO(ctx, conversation, in.UserID, true)
 }
 
@@ -337,13 +340,17 @@ func (s *Service) InviteMember(ctx context.Context, userID, conversationID, invi
 	if _, err := s.repo.FindMember(ctx, conversationID, userID); err != nil {
 		return err
 	}
-	if _, err := s.users.FindByID(ctx, inviteeID); err != nil {
+	invitee, err := s.users.FindByID(ctx, inviteeID)
+	if err != nil {
 		return err
 	}
 	if inviteeID.Equal(userID) {
 		return domainshared.BadRequest("不能邀请自己")
 	}
 	if err := s.repo.SaveMember(ctx, mustMember(conversationID, inviteeID, domainchat.MemberMember, s.now())); err != nil {
+		return err
+	}
+	if err := s.saveSystemMessage(ctx, conversationID, userID, userToDTO(invitee).DisplayName+"已加入群聊"); err != nil {
 		return err
 	}
 	members, err := s.repo.ListMembers(ctx, conversationID, false)
@@ -393,7 +400,14 @@ func (s *Service) RemoveMember(ctx context.Context, userID, conversationID, targ
 	if targetID.Equal(userID) {
 		return domainshared.BadRequest("房主不能移除自己")
 	}
+	target, err := s.users.FindByID(ctx, targetID)
+	if err != nil {
+		return err
+	}
 	if err := s.repo.RemoveMember(ctx, conversationID, targetID, s.now()); err != nil {
+		return err
+	}
+	if err := s.saveSystemMessage(ctx, conversationID, userID, userToDTO(target).DisplayName+"已被移出群聊"); err != nil {
 		return err
 	}
 	members, err := s.repo.ListMembers(ctx, conversationID, false)
@@ -419,13 +433,18 @@ func (s *Service) LeaveConversation(ctx context.Context, userID, conversationID 
 	if err != nil {
 		return err
 	}
+	leaver, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
 	now := s.now()
+	ownerLeft := conversation.Kind() == domainchat.ConversationRoom && member.Role() == domainchat.MemberOwner
 	members, err := s.repo.ListMembers(ctx, conversationID, false)
 	if err != nil {
 		return err
 	}
 	recipients := memberIDs(members)
-	if conversation.Kind() == domainchat.ConversationRoom && member.Role() == domainchat.MemberOwner {
+	if ownerLeft {
 		var nextOwner *domainchat.Member
 		for _, candidate := range members {
 			if !candidate.UserID().Equal(userID) {
@@ -440,6 +459,19 @@ func (s *Service) LeaveConversation(ctx context.Context, userID, conversationID 
 			return err
 		}
 		if err := s.repo.TransferOwnership(ctx, conversationID, userID, nextOwner.UserID(), now); err != nil {
+			return err
+		}
+	}
+	if err := s.repo.LeaveMember(ctx, conversationID, userID, now); err != nil {
+		return err
+	}
+	leaverName := userToDTO(leaver).DisplayName
+	systemContent := leaverName + "已离开群聊"
+	if ownerLeft {
+		systemContent += "，房主已转交"
+	}
+	if conversation.Kind() == domainchat.ConversationRoom {
+		if err := s.saveSystemMessage(ctx, conversationID, userID, systemContent); err != nil {
 			return err
 		}
 	}
@@ -869,6 +901,30 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 			}
 		}
 	}
+}
+func (s *Service) saveSystemMessage(ctx context.Context, conversationID, senderID domainshared.ID, content string) error {
+	message, err := domainchat.NewSystemMessage(
+		conversationID,
+		senderID,
+		content,
+		"system:"+domainshared.NewID().String(),
+		s.now(),
+	)
+	if err != nil {
+		return err
+	}
+	members, err := s.repo.ListMembers(ctx, conversationID, false)
+	if err != nil {
+		return err
+	}
+	events, err := s.repo.SaveMessage(ctx, message, memberIDs(members), map[string]any{
+		"preview": message.Content(),
+	})
+	if err != nil {
+		return err
+	}
+	s.notifyEvents(ctx, events)
+	return nil
 }
 
 func eventConversationID(event domainchat.Event) (domainshared.ID, error) {
