@@ -554,6 +554,24 @@ html.theme-vt-freeze *::after {
 	animation: shake 0.4s ease-in-out;
 }
 
+/* 吉祥物舞台光束微尘：慢速上浮 + 左右摇曳，光柱里的空气介质感 */
+@keyframes mascot-dust {
+	0% {
+		opacity: 0;
+		transform: translate3d(0, 8px, 0);
+	}
+	18% {
+		opacity: 0.75;
+	}
+	55% {
+		transform: translate3d(5px, -14px, 0);
+	}
+	100% {
+		opacity: 0;
+		transform: translate3d(-3px, -36px, 0);
+	}
+}
+
 /* 吉祥物对白气泡：弹入 → 驻留 → 淡出，一轮 = 一次表情切换的台词寿命 */
 @keyframes mascot-bubble {
 	0% {
