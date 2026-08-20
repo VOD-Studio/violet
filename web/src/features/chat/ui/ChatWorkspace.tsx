@@ -237,6 +237,15 @@ function ConversationIndex({
 		</div>
 	);
 }
+interface SearchResultsProps {
+	conversations: ChatConversation[];
+	contacts: ChatUser[];
+	contactsLoading: boolean;
+	currentUserID: string;
+	selectedID: string | null;
+	onCreated: (id: string) => void;
+	onSelect: (id: string) => void;
+}
 
 function SearchResults({
 	conversations,
@@ -246,15 +255,7 @@ function SearchResults({
 	selectedID,
 	onCreated,
 	onSelect,
-}: {
-	conversations: ChatConversation[];
-	contacts: ChatUser[];
-	contactsLoading: boolean;
-	currentUserID: string;
-	selectedID: string | null;
-	onCreated: (id: string) => void;
-	onSelect: (id: string) => void;
-}) {
+}: SearchResultsProps) {
 	const create = useCreateChatConversation();
 	const [busyID, setBusyID] = useState<string | null>(null);
 
@@ -369,7 +370,7 @@ export interface ConversationRowProps {
 
 function ConversationRow({ conversation, currentUserID, active, onClick }: ConversationRowProps) {
 	const avatarUser = conversationTargetUser(conversation, currentUserID);
-	const lastTime = conversation.last_message?.created_at || conversation.updated_at;
+	const lastTime = conversation.last_message?.created_at ?? conversation.updated_at;
 
 	return (
 		<button
@@ -621,6 +622,15 @@ function ConversationPanel({
 	);
 }
 
+interface MessageBubbleProps {
+	message: ChatMessage;
+	currentUserID: string;
+	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
+	showSender: boolean;
+	onDelete?: () => void;
+	onImage: (media: ChatMedia) => void;
+}
+
 function MessageBubble({
 	message,
 	currentUserID,
@@ -628,14 +638,7 @@ function MessageBubble({
 	showSender,
 	onDelete,
 	onImage,
-}: {
-	message: ChatMessage;
-	currentUserID: string;
-	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
-	showSender: boolean;
-	onDelete?: () => void;
-	onImage: (media: ChatMedia) => void;
-}) {
+}: MessageBubbleProps) {
 	const mine = message.sender.id === currentUserID;
 	if (message.type === "system") {
 		return (
