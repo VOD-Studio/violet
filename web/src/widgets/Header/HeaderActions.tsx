@@ -2,6 +2,7 @@ import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { useChatUnreadCount } from "@features/chat/api/queries";
 import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
@@ -17,7 +18,7 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
-import { CheckCircle2, LayoutDashboard, LogOut, Search, User } from "lucide-react";
+import { CheckCircle2, LayoutDashboard, LogOut, MessageCircle, Search, User } from "lucide-react";
 
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 	const logout = useLogout();
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
 
 	// Cmd/Ctrl + L 直达登录页（仅未登录时生效，已登录无需鉴权）
 	useEffect(() => {
@@ -86,6 +88,20 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 				<Search className="size-4" />
 			</Button>
 			{user && <NotificationBell />}
+			{user && (
+				<Link
+					aria-label="聊天"
+					className="relative inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
+					to="/chat"
+				>
+					<MessageCircle className="size-4" />
+					{chatUnread && chatUnread.unread_count > 0 && (
+						<span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-neon-blue px-1 text-center font-mono text-[10px] leading-4 text-white">
+							{chatUnread.unread_count > 99 ? "99+" : chatUnread.unread_count}
+						</span>
+					)}
+				</Link>
+			)}
 			<ThemeToggle />
 
 			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}

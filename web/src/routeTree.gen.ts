@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -80,6 +81,11 @@ const FriendsRoute = FriendsRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChangelogRoute = ChangelogRouteImport.update({
@@ -327,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/changelog': typeof ChangelogRoute
+  '/chat': typeof ChatRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
@@ -380,6 +387,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
+  '/chat': typeof ChatRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
@@ -434,6 +442,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/changelog': typeof ChangelogRoute
+  '/chat': typeof ChatRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
@@ -490,6 +499,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/changelog'
+    | '/chat'
     | '/forgot-password'
     | '/friends'
     | '/login'
@@ -543,6 +553,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/changelog'
+    | '/chat'
     | '/forgot-password'
     | '/friends'
     | '/login'
@@ -596,6 +607,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/changelog'
+    | '/chat'
     | '/forgot-password'
     | '/friends'
     | '/login'
@@ -651,6 +663,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   ChangelogRoute: typeof ChangelogRoute
+  ChatRoute: typeof ChatRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
   LoginRoute: typeof LoginRoute
@@ -703,6 +716,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/changelog': {
@@ -1130,6 +1150,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   ChangelogRoute: ChangelogRoute,
+  ChatRoute: ChatRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
   LoginRoute: LoginRoute,

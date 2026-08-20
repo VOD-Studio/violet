@@ -25,6 +25,7 @@ import {
 	Link2,
 	MessageCircle,
 	MessageCircleX,
+	MessagesSquare,
 	Rss,
 	ShieldCheck,
 	UserPlus,
@@ -51,6 +52,7 @@ const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	comment_rejected: MessageCircleX,
 	user_registered: UserPlus,
 	account_security: ShieldCheck,
+	chat_room_invited: MessagesSquare,
 };
 
 /** source_type → 颜色映射 */
@@ -65,6 +67,7 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	comment_rejected: "text-red-500",
 	user_registered: "text-blue-500",
 	account_security: "text-purple-500",
+	chat_room_invited: "text-neon-cyan",
 };
 
 const NotificationBell = () => {
