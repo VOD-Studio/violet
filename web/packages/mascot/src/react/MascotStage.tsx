@@ -25,6 +25,10 @@ export interface MascotHandle {
 	 * @param ny - 垂直归一化 [-1, 1]
 	 */
 	setGaze(nx: number, ny: number): void;
+	/**
+	 * 手动偏航角(度):调试通道,直接叠加在自旋结果上。
+	 */
+	setDevYaw(deg: number): void;
 	/** 切换表情;未知 ID 回退待机 */
 	setEmotion(id: string): void;
 	/**
@@ -88,7 +92,6 @@ export function MascotStage({
 	useEffect(() => {
 		mascotRef.current?.setEmotion(emotion);
 	}, [emotion]);
-
 	useEffect(() => {
 		if (!ref) return;
 		const handle: MascotHandle = {
@@ -97,6 +100,7 @@ export function MascotStage({
 			pet: () => mascotRef.current?.pet(1200),
 			burst: (count = 20) => mascotRef.current?.burst(count),
 			setGaze: (nx: number, ny: number) => mascotRef.current?.setGaze(nx, ny),
+			setDevYaw: (deg: number) => mascotRef.current?.setDevYaw(deg),
 			setEmotion: (id) => mascotRef.current?.setEmotion(id),
 			handleAIMessage: (msg) => {
 				const id = msg.emotionId?.trim();

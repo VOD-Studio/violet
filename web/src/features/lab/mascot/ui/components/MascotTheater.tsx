@@ -14,7 +14,7 @@ import {
 	Zap,
 } from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStatus } from "../hooks/useAgentStatus";
 import { GROUP_LABEL } from "../hooks/useMascotExhibit";
@@ -114,6 +114,8 @@ export function MascotTheater({
 
 	const onStageLeave = () => heroRef.current?.setGaze(0, 0);
 
+	const [devYaw, setDevYaw] = useState(0);
+
 	const antics: StageAction[] = [
 		{
 			label: "摸头",
@@ -136,6 +138,11 @@ export function MascotTheater({
 			onClick: () => heroRef.current?.bounce(),
 		},
 	];
+
+	// 偏航滑条:手动逐度检查旋转渲染(0/360=正面,180=背面)
+	useEffect(() => {
+		heroRef.current?.setDevYaw(devYaw);
+	}, [devYaw]);
 
 	const sendJson = () => {
 		const raw = jsonInputRef.current?.value.trim();
@@ -187,7 +194,7 @@ export function MascotTheater({
 				{/* 顶光光束:光源悬在舞台上方,conic 楔形两侧各 18° 半影衰减,近台面渐隐 */}
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[conic-gradient(at_50%_-22%,transparent_43.5%,rgba(255,243,209,0.2)_48.5%_51.5%,transparent_56.5%)] [mask-image:linear-gradient(to_bottom,#000_0%,#000_55%,transparent_92%)]"
+					className="pointer-events-none absolute inset-0 bg-[conic-gradient(at_50%_-22%,transparent_43.5%,rgba(255,243,209,0.2)_48.5%_51.5%,transparent_56.5%)] mask-[linear-gradient(to_bottom,#000_0%,#000_55%,transparent_92%)]"
 				/>
 				{/* 灯具源光:顶部一簇热核 */}
 				<div
@@ -272,13 +279,13 @@ export function MascotTheater({
 						<h2 className="text-lg font-bold leading-none tracking-tight text-white sm:text-xl">
 							{def.name}
 						</h2>
-						<span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-white/50">
+						<span className="rounded-full border border-white/10 bg-white/6 px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-white/50">
 							{def.en}
 						</span>
 					</div>
 
 					{/* 展馆播放控制：重播与巡演 */}
-					<div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] p-0.5 shadow-xs backdrop-blur-md">
+					<div className="inline-flex items-center rounded-full border border-white/10 bg-white/4 p-0.5 shadow-xs backdrop-blur-md">
 						<button
 							type="button"
 							onClick={() => {
@@ -318,11 +325,31 @@ export function MascotTheater({
 
 				{/* 互动动作工具栏：纯粹的 4 个猫猫互动手势 */}
 				<div className="mt-3.5 flex h-9 items-center justify-center">
-					<div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-md shadow-black/25 backdrop-blur-md">
+					<div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/4 p-1 shadow-md shadow-black/25 backdrop-blur-md">
 						{antics.map((a) => (
 							<StageButton key={a.label} {...a} />
 						))}
 					</div>
+				</div>
+
+				{/* 偏航调试滑条:手动逐度检查旋转渲染 */}
+				<div className="mt-2.5 flex h-6 items-center gap-2.5">
+					<span className="shrink-0 font-mono text-[10px] tracking-widest text-white/35 uppercase">
+						yaw
+					</span>
+					<input
+						type="range"
+						min={0}
+						max={360}
+						step={5}
+						value={devYaw}
+						onChange={(e) => setDevYaw(+e.target.value)}
+						className="h-1 max-w-56 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-white/70"
+						aria-label="手动偏航角"
+					/>
+					<span className="w-10 shrink-0 text-right font-mono text-[10px] text-white/50 tabular-nums">
+						{devYaw}°
+					</span>
 				</div>
 				<div className="mt-2 flex h-3.5 items-center justify-center">
 					<p className="text-[10px] leading-none text-white/25">
@@ -348,9 +375,9 @@ export function MascotTheater({
 							onKeyDown={handleKeyDown}
 							spellCheck={false}
 							placeholder={`{\n  "emotionId": "${def.id}",\n  "tips": "喵~"\n}`}
-							className="code-block-scrollbar max-h-28 min-h-[44px] w-full resize-none bg-transparent px-1 py-0.5 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
+							className="code-block-scrollbar max-h-28 min-h-11 w-full resize-none bg-transparent px-1 py-0.5 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
 						/>
-						<div className="mt-1.5 flex items-center justify-between border-t border-white/[0.06] pt-1.5">
+						<div className="mt-1.5 flex items-center justify-between border-t border-white/6 pt-1.5">
 							<span className="font-mono text-[10px] text-white/30">
 								JSON Protocol
 							</span>

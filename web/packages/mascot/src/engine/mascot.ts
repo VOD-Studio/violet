@@ -65,6 +65,10 @@ const GAZE_LEAN_SQUASH = 0.05;
 const GAZE_LEAN_K = 2.6;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
 const SPIN_TURN_MS = 850;
+/** 自旋滞空高度 (viewBox px):抛物线跳起,让旋转发生在空中而非地面拧转 */
+const SPIN_HOP = 30;
+/** 自旋落地压扁时长 (ms):正弦包络压扁-回弹 */
+const SPIN_LAND_MS = 220;
 const CONFETTI_COLORS = ["#8B7CF6", "#6D5CE7", "#F4C34E", "#F472B6", "#34D399", "#FB923C"];
 /** 五角星 path */
 const STAR_PATH = (() => {
@@ -111,6 +115,51 @@ interface ConfettiPiece {
 	rot: number;
 	vr: number;
 	stretch: number;
+}
+/* ---------- 自旋彩带 ---------- */
+
+/** 轨道点:绕身体中心的倾斜圆轨道 3D 投影,z 决定画在身体前层还是后层 */
+interface RibbonPoint {
+	x: number;
+	y: number;
+	z: number;
+	l: number;
+}
+
+interface RibbonOrbit {
+	/** 经度 */
+	lam: number;
+	/** 自转角速度 (rad/s) */
+	lamVel: number;
+	/** 轨道面倾角 */
+	tilt: number;
+	/** 轨道面滚转 */
+	roll: number;
+	/** 轨道半径 */
+	rad: number;
+	radVel: number;
+	/** 跟随自旋的比例 */
+	follow: number;
+	/** 惯性携带角速度 */
+	carry: number;
+	/** 拖尾弧长 (rad) */
+	arc: number;
+}
+
+interface Ribbon {
+	o: RibbonOrbit;
+	hist: RibbonPoint[];
+	life: number;
+	/** 回缩进度 0~1 */
+	ret: number;
+	r: number;
+	hue: number;
+	hueSpan: number;
+	hueVel: number;
+	back: SVGPathElement;
+	front: SVGPathElement;
+	gradEl: SVGElement;
+	stops: SVGStopElement[];
 }
 let uidCounter = 0;
 
@@ -159,6 +208,9 @@ export class Mascot {
 	private haloDots: SVGCircleElement[] = [];
 	private zzzEls: SVGTextElement[] = [];
 	private fxLayer!: SVGGElement;
+	/* 彩带后层(画在身体之下,被身体遮挡的轨道段)与 defs 引用 */
+	private fxBackG!: SVGGElement;
+	private defsEl!: SVGElement;
 
 	/* 渐变 Stops 用于动态变色 */
 	private gradStopA!: SVGStopElement;
@@ -200,8 +252,19 @@ export class Mascot {
 	 * 重复调用从当前角度续转 (反向),不再吞掉用户操作。
 	 */
 	private spin: { start: number; dur: number; from: number; delta: number } | null = null;
+	/* 自旋彩带:3D 倾斜轨道拖尾,前后分层遮挡,承载旋转可读性 */
+	private ribbons: Ribbon[] = [];
+	private ribbonPlane: { tilt: number; roll: number; count: number; baseHue: number } | null =
+		null;
+	private ribbonSpawnAt: number[] = [];
+	private ribbonSpawnIdx = 0;
+	private ribbonPrevYaw = 0;
+	private ribbonWasFast = false;
+	private ribbonUid = 0;
 	private bounceAt = -1;
 	private anticNext = 0;
+	/* 手动偏航角(度):调试用,叠加在自旋时间线上,逐度检查旋转渲染 */
+	private devYawDeg = 0;
 	/* 注视 */
 	private gaze = { x: 0, y: 0, tx: 0, ty: 0 };
 	/* 身体跟随平滑值:滞后于 gaze.x,产生眼睛先动身体慢半拍的 follow-through */
@@ -269,6 +332,14 @@ export class Mascot {
 
 		if (def.spin) this.spinTurns(def.spin);
 		if (def.confetti && this.running) this.burst(Math.round(20 * def.confetti));
+	}
+
+	/**
+	 * 手动设置偏航角(度):调试通道,直接叠加在自旋结果上。
+	 * 非运行实例重渲静态帧。
+	 */
+	setDevYaw(deg: number): void {
+		this.devYawDeg = deg;
 		if (!this.running) this.renderStatic();
 	}
 
@@ -315,6 +386,243 @@ export class Mascot {
 		};
 	}
 
+	/** 本次自旋的彩带轨道平面:随机倾角 + 随机基色相,一次自旋内所有彩带共享 */
+	private makeRibbonPlane(): void {
+		const base = rand(0, TAU);
+		this.ribbonPlane = {
+			tilt: rand(0.16, 0.5),
+			roll: base + rand(-0.12, 0.12),
+			count: Math.round(rand(3, 5)),
+			baseHue: rand(0, 360),
+		};
+		this.ribbonSpawnIdx = 0;
+	}
+
+	/** 轨道点:绕身体中心 (130,147) 的倾斜圆轨道,z=cosλ·cos(tilt) 决定前后层 */
+	private ribbonPoint(o: RibbonOrbit, lam: number): RibbonPoint {
+		const hx = o.rad * Math.sin(lam);
+		const hy = -o.rad * Math.cos(lam) * Math.sin(o.tilt);
+		const ca = Math.cos(o.roll);
+		const sa = Math.sin(o.roll);
+		return {
+			x: 130 + hx * ca - hy * sa,
+			y: 147 + hx * sa + hy * ca,
+			z: Math.cos(lam) * Math.cos(o.tilt),
+			l: lam,
+		};
+	}
+
+	private createRibbon(cfg: { o: RibbonOrbit; r: number; hue: number }): void {
+		if (this.ribbons.length >= 8) return;
+		this.ribbonUid++;
+		const gradEl = this.mk("linearGradient", {
+			id: `ribbon-grad-${this.uid}-${this.ribbonUid}`,
+			gradientUnits: "userSpaceOnUse",
+		}) as SVGElement;
+		const stops: SVGStopElement[] = [];
+		for (let s = 0; s < 5; s++) {
+			const st = this.mk("stop", { offset: (s / 4).toFixed(3) }) as SVGStopElement;
+			gradEl.appendChild(st);
+			stops.push(st);
+		}
+		this.defsEl.appendChild(gradEl);
+		const fill = `url(#ribbon-grad-${this.uid}-${this.ribbonUid})`;
+		const back = this.mk("path", { fill, opacity: "0" }) as SVGPathElement;
+		const front = this.mk("path", { fill, opacity: "0" }) as SVGPathElement;
+		this.fxBackG.appendChild(back);
+		this.fxLayer.appendChild(front);
+		this.ribbons.push({
+			o: cfg.o,
+			hist: [],
+			life: 0,
+			ret: 0,
+			r: cfg.r,
+			hue: cfg.hue,
+			hueSpan: rand(45, 95) * (Math.random() < 0.5 ? 1 : -1),
+			hueVel: rand(18, 42) * (Math.random() < 0.5 ? 1 : -1),
+			gradEl,
+			stops,
+			back,
+			front,
+		});
+	}
+
+	/** 自旋甩带:沿本次轨道平面错峰甩出,层间距随数量摊薄 */
+	private spawnRibbon(lam0: number, dir: number): void {
+		const pl = this.ribbonPlane;
+		if (!pl) return;
+		const tierStep = 36 / Math.max(pl.count - 1, 1);
+		const rw = pl.count <= 3 ? rand(8, 10.5) : pl.count === 4 ? rand(6.6, 8.6) : rand(5.6, 7.4);
+		this.createRibbon({
+			o: {
+				lam: lam0,
+				lamVel: dir * rand(0.5, 1.1),
+				tilt: pl.tilt + rand(-0.04, 0.04),
+				roll: pl.roll + rand(-0.05, 0.05),
+				rad: 110 + this.ribbonSpawnIdx * tierStep + rand(-1.5, 1.5),
+				radVel: rand(0, 2.5),
+				follow: rand(0.74, 0.94),
+				carry: 0,
+				arc: rand(2.2, 3.4),
+			},
+			r: rw,
+			hue: pl.baseHue + (360 * this.ribbonSpawnIdx) / Math.max(pl.count, 1) + rand(-14, 14),
+		});
+		this.ribbonSpawnIdx++;
+	}
+	/** 拖尾轮廓:头宽尾细 + 圆头封口,按 z 正负拆前后段 */
+	private ribbonOutline(pts: RibbonPoint[], width: number): { front: string; back: string } {
+		const n = pts.length;
+		if (n < 2) return { front: "", back: "" };
+		const nx: number[] = [];
+		const ny: number[] = [];
+		for (let e = 0; e < n; e++) {
+			const p0 = pts[e > 0 ? e - 1 : 0];
+			const p1 = pts[e < n - 1 ? e + 1 : n - 1];
+			let dx = p1.x - p0.x;
+			let dy = p1.y - p0.y;
+			const h = Math.hypot(dx, dy) || 1;
+			dx /= h;
+			dy /= h;
+			const d = (width * (0.5 + (e / (n - 1)) * 0.5)) / 2;
+			nx.push(-dy * d);
+			ny.push(dx * d);
+		}
+		const cap = (idx: number) => {
+			const hw = Math.max(Math.hypot(nx[idx], ny[idx]), 0.2);
+			return `A${hw.toFixed(2)} ${hw.toFixed(2)} 0 0 0 `;
+		};
+		const seg = (a: number, b: number) => {
+			let s = "";
+			for (let k = a; k <= b; k++)
+				s += `${k === a ? "M" : "L"}${(pts[k].x + nx[k]).toFixed(2)} ${(pts[k].y + ny[k]).toFixed(2)}`;
+			s += b === n - 1 ? cap(b) : "L";
+			for (let k = b; k >= a; k--)
+				s += `${k === b ? "" : "L"}${(pts[k].x - nx[k]).toFixed(2)} ${(pts[k].y - ny[k]).toFixed(2)}`;
+			if (a === 0)
+				s += `${cap(0)}${(pts[0].x + nx[0]).toFixed(2)} ${(pts[0].y + ny[0]).toFixed(2)}`;
+			return `${s}Z`;
+		};
+		let front = "";
+		let back = "";
+		let d0 = 0;
+		while (d0 < n) {
+			const isF = pts[d0].z >= 0;
+			let i2 = d0;
+			while (i2 + 1 < n && pts[i2 + 1].z >= 0 === isF) i2++;
+			const a2 = Math.max(d0 - 1, 0);
+			const b2 = Math.min(i2 + 1, n - 1);
+			if (b2 > a2) {
+				const str = seg(a2, b2);
+				if (isF) front += str;
+				else back += str;
+			}
+			d0 = i2 + 1;
+		}
+		return { front, back };
+	}
+
+	/** 彩带逐帧:跟随自旋转过身体、惯性衰减、smoothstep 回缩、色相漂移 */
+	private stepRibbons(now: number, dt: number, yaw: number): void {
+		const dYawRaw = yaw - this.ribbonPrevYaw;
+		const dYaw = Number.isFinite(dYawRaw) && Math.abs(dYawRaw) <= 1.2 ? dYawRaw : 0;
+		this.ribbonPrevYaw = yaw;
+		const vel = dYaw / dt;
+		const fast = Math.abs(vel) >= 0.9;
+		const dir = vel >= 0 ? 1 : -1;
+
+		if (fast && !this.ribbonWasFast) {
+			this.makeRibbonPlane();
+			this.ribbonSpawnAt = [];
+			const cnt = this.ribbonPlane?.count ?? 0;
+			for (let q = 0; q < cnt; q++) {
+				this.ribbonSpawnAt.push(now + q * rand(55, 105));
+			}
+		}
+		if (!fast) this.ribbonSpawnAt.length = 0;
+		this.ribbonWasFast = fast;
+		if (Math.abs(vel) >= 5) {
+			while (this.ribbonSpawnAt.length && now >= this.ribbonSpawnAt[0]) {
+				this.ribbonSpawnAt.shift();
+				this.spawnRibbon(yaw - rand(0, 0.18) * dir, dir);
+			}
+		}
+
+		for (let ti = this.ribbons.length - 1; ti >= 0; ti--) {
+			const rb = this.ribbons[ti];
+			const o = rb.o;
+			rb.life += dt;
+			const retract = !fast || rb.life > 5;
+			rb.ret = clamp(rb.ret + (retract ? dt / 0.5 : -dt / 0.35), 0, 1);
+			if (retract && rb.ret >= 1) {
+				rb.back.remove();
+				rb.front.remove();
+				rb.gradEl.remove();
+				this.ribbons.splice(ti, 1);
+				continue;
+			}
+			if (fast) {
+				o.carry = vel * o.follow;
+				o.lam += dYaw * o.follow + o.lamVel * dt;
+			} else {
+				o.lam += (o.carry + o.lamVel) * dt;
+				o.carry *= Math.exp(-2.6 * dt);
+				o.lamVel *= Math.exp(-2.6 * dt);
+			}
+			o.rad += o.radVel * dt;
+
+			const hist = rb.hist;
+			const lastL = hist.length ? hist[hist.length - 1].l : o.lam - 0.001 * dir;
+			const dl = o.lam - lastL;
+			const steps = Math.min(Math.ceil(Math.abs(dl) / 0.09), 24);
+			for (let st = 1; st <= steps; st++)
+				hist.push(this.ribbonPoint(o, lastL + (dl * st) / steps));
+			if (!hist.length) hist.push(this.ribbonPoint(o, o.lam));
+
+			const span = o.arc * (1 - rb.ret * rb.ret * (3 - 2 * rb.ret));
+			while (hist.length > 2 && Math.abs(o.lam - hist[0].l) > span) hist.shift();
+			const over = Math.abs(o.lam - hist[0].l) - span;
+			if (hist.length >= 2 && over > 0) {
+				const tl = hist[0].l + (o.lam - hist[0].l >= 0 ? 1 : -1) * over;
+				hist[0] = this.ribbonPoint(o, tl);
+			}
+			if (hist.length > 48) hist.splice(0, hist.length - 48);
+
+			const zHead = Math.cos(o.lam) * Math.cos(o.tilt);
+			const pz = 0.72 + 0.28 * clamp(zHead, 0, 1);
+			let grow = Math.min(rb.life / 0.34, 1);
+			grow = grow * grow * (3 - 2 * grow);
+			const width = rb.r * pz * 1.7 * grow * (1 - 0.72 * rb.ret * rb.ret);
+			const fade = Math.min(rb.life / 0.26, 1).toFixed(3);
+
+			if (hist.length < 2 || width < 0.5) {
+				rb.back.setAttribute("opacity", "0");
+				rb.front.setAttribute("opacity", "0");
+				continue;
+			}
+			const dstr = this.ribbonOutline(hist, width);
+			rb.back.setAttribute("d", dstr.back);
+			rb.front.setAttribute("d", dstr.front);
+			rb.back.setAttribute("opacity", fade);
+			rb.front.setAttribute("opacity", fade);
+
+			const hue = rb.hue + rb.hueVel * rb.life;
+			for (let si = 0; si < rb.stops.length; si++) {
+				const frac = si / (rb.stops.length - 1);
+				const hv = hue + frac * rb.hueSpan;
+				rb.stops[si].setAttribute(
+					"stop-color",
+					`hsl(${(((hv % 360) + 360) % 360).toFixed(0)} 56% ${(56 + 11 * frac).toFixed(0)}%)`,
+				);
+			}
+			const tail = hist[0];
+			const headP = hist[hist.length - 1];
+			rb.gradEl.setAttribute("x1", tail.x.toFixed(1));
+			rb.gradEl.setAttribute("y1", tail.y.toFixed(1));
+			rb.gradEl.setAttribute("x2", headP.x.toFixed(1));
+			rb.gradEl.setAttribute("y2", headP.y.toFixed(1));
+		}
+	}
 	/** 当前自旋偏航角 (rad);无自旋时为 0 */
 	private spinYaw(now: number): number {
 		const s = this.spin;
@@ -450,6 +758,7 @@ export class Mascot {
 		this.svg = svg;
 
 		const defs = this.mk("defs", {});
+		this.defsEl = defs;
 		const gradId = `cat-body-grad-${this.uid}`;
 		const grad = this.mk("radialGradient", {
 			id: gradId,
@@ -782,6 +1091,9 @@ export class Mascot {
 		);
 		this.rigG.appendChild(this.pawRG);
 
+		// 彩带后层:先于 rig 挂载,轨道绕到身体背面的段被身体遮挡
+		this.fxBackG = this.mk("g", { "pointer-events": "none" }) as SVGGElement;
+		svg.appendChild(this.fxBackG);
 		svg.appendChild(this.rigG);
 
 		// 睡眠 zzz
@@ -926,14 +1238,22 @@ export class Mascot {
 			springStep(this.ringSpring, this.ringSpeed, 1, j);
 			springStep(this.openSpring, 26, 1, j);
 		}
-		pose.yaw = this.spinYaw(now);
+		pose.yaw = this.spinYaw(now) + (this.devYawDeg / 180) * Math.PI;
 		if (this.spin) {
-			// 自旋时面团轻微起跳与弹性拉伸
-			const spinProg = clamp((now - this.spin.start) / this.spin.dur, 0, 1);
-			const hop = Math.sin(Math.PI * spinProg);
-			pose.body.y += -hop * 10;
-			pose.body.scale += hop * 0.04;
-			if (spinProg >= 1) this.spin = null;
+			const raw = (now - this.spin.start) / this.spin.dur;
+			if (raw < 1) {
+				// 滞空:抛物线跳起 + 纵向拉伸(体积守恒),旋转发生在空中
+				const hop = Math.sin(Math.PI * raw);
+				pose.body.y += -SPIN_HOP * hop;
+				pose.body.stretchY += 0.22 * hop;
+			} else {
+				// 落地压扁回弹:横向鼓出纵向压扁,正弦包络落回 1
+				const land = clamp((now - this.spin.start - this.spin.dur) / SPIN_LAND_MS, 0, 1);
+				const sq = Math.sin(Math.PI * land);
+				pose.body.scale += 0.07 * sq;
+				pose.body.stretchY += -0.2 * sq;
+				if (land >= 1) this.spin = null;
+			}
 		}
 
 		if (this.bounceAt >= 0) {
@@ -1080,9 +1400,8 @@ export class Mascot {
 		const avgLookY = (pose.left.lookY + pose.right.lookY) * 0.5;
 		const phi = pose.yaw + avgLookX / 75;
 		const pitchY = avgLookY * 0.65;
-		// 脸部正面化:五官只随注视微移,不随自旋 yaw 滑动
-		const facePhi = avgLookX / 75;
-		// 整脸统一淡出:转过侧面时脸渐隐、背面隐藏,杜绝「单眼+错位嘴」的残缺中间帧
+		// 脸部正面化仅保留「整脸统一透明度」:五官位置随 phi 连续球面滑动,
+		// 为旋转全程提供位置信号;透明度统一调制杜绝单眼+错位嘴的残缺中间帧
 		const faceOp = clamp((Math.cos(pose.yaw) - 0.02) / 0.55, 0, 1);
 
 		// 身体注视跟随(次级动作):仅指针注意力(gaze.x)驱动——avgLookX 还混有微漂移与
@@ -1103,17 +1422,18 @@ export class Mascot {
 			[
 				`translate(${(cx + b.x + leanShift).toFixed(2)} ${(anchorY + b.y).toFixed(2)})`,
 				`rotate(${(b.rotate + leanRot).toFixed(2)})`,
-				`scale(${(b.scale * yawSquash).toFixed(4)} ${b.scale.toFixed(4)})`,
+				`scale(${(b.scale * yawSquash).toFixed(4)} ${(b.scale * b.stretchY).toFixed(4)})`,
 				`translate(${(-cx).toFixed(2)} ${(-anchorY).toFixed(2)})`,
 			].join(" "),
 		);
 
-		// 地面投影随呼吸与弹跳缩放,随偏航与注视跟随微移增强转身立体感
-		const shadowScale = clamp(b.scale * (1 - b.y * 0.008), 0.5, 1.4);
+		// 地面投影随跳起高度缩小变淡(b.y 负为升空),随偏航与注视跟随微移增强立体感
+		const shadowScale = clamp(b.scale * (1 + b.y * 0.008), 0.5, 1.4);
 		this.shadowEl.setAttribute(
 			"transform",
 			`translate(${(cx + b.x * 0.4 + Math.sin(phi) * 7 + leanShift * 0.5).toFixed(2)} 234) scale(${shadowScale.toFixed(3)}) translate(${-cx} -234)`,
 		);
+		this.shadowEl.setAttribute("opacity", clamp(1 + b.y * 0.01, 0.45, 1).toFixed(3));
 
 		// 身体变色与高光梯度
 		if (b.color !== this.curBodyColor) {
@@ -1141,8 +1461,10 @@ export class Mascot {
 		const earL_Nz = Math.cos(earLPhi);
 		const earR_Nz = Math.cos(earRPhi);
 
-		const earLDx = 16 * Math.sin(earLPhi) - 16 * Math.sin(-0.65);
-		const earRDx = 16 * Math.sin(earRPhi) - 16 * Math.sin(0.65);
+		// 耳朵球面投影:半径取真实耳距(左右 pivot 各距中心 50),侧面两耳投影越过中线、
+		// 背面交换位置——旋转整圈的方位感由耳朵换位承载,半径过小读不出转身
+		const earLDx = 50 * Math.sin(earLPhi) - 50 * Math.sin(-0.65);
+		const earRDx = 50 * Math.sin(earRPhi) - 50 * Math.sin(0.65);
 		const earLRot = b.earL + Math.sin((TAU * now) / 3200) * 1.5 - avgLookX * 0.1;
 		const earRRot = b.earR - Math.sin((TAU * now) / 3200 + 0.4) * 1.5 - avgLookX * 0.1;
 
@@ -1161,10 +1483,10 @@ export class Mascot {
 		this.earLInner.setAttribute("opacity", innerEarLOpacity.toFixed(3));
 		this.earRInner.setAttribute("opacity", innerEarROpacity.toFixed(3));
 
-		// 左右眼注视滑动 (正面化,不参与自旋)
+		// 左右眼随偏航球面滑动:位置信号贯穿旋转全程
 		const R_FACE = 44;
-		const phiEyeL = -0.74 + facePhi;
-		const phiEyeR = 0.74 + facePhi;
+		const phiEyeL = -0.74 + phi;
+		const phiEyeR = 0.74 + phi;
 		const nzL = Math.cos(phiEyeL);
 		const nzR = Math.cos(phiEyeR);
 
@@ -1201,8 +1523,8 @@ export class Mascot {
 			opR,
 		);
 
-		// 猫咪小嘴注视滑动 (正面化)
-		const phiMouth = facePhi;
+		// 猫咪小嘴随偏航球面滑动,几何随透视压缩,透明度随整脸
+		const phiMouth = phi;
 		const nzMouth = Math.cos(phiMouth);
 		const mouthX = 130 + R_FACE * Math.sin(phiMouth);
 		const mouthY = 142 + pitchY + 14 + b.mouthY;
@@ -1211,10 +1533,9 @@ export class Mascot {
 
 		this.renderMouth(b, mouthX, mouthY, persScaleX, mouthOp);
 
-		// 腮红:脸颊贴纸式注视微移。base 角 ±1.18 已近侧面,球面投影对小注视角的导数过大
-		// (一胀一缩、透明度骤降),观感如平面旋转卡进脸里;改为固定正面几何+小幅同步平移
-		const blushLX = 130 + 56 * Math.sin(-1.18) + 10 * Math.sin(facePhi);
-		const blushRX = 130 + 56 * Math.sin(1.18) + 10 * Math.sin(facePhi);
+		// 腮红:位置随偏航球面滑动(绕到背面时左右互换),几何恒定防小角度胀缩
+		const blushLX = 130 + 56 * Math.sin(-1.18 + phi);
+		const blushRX = 130 + 56 * Math.sin(1.18 + phi);
 		const blushY = 162 + pitchY * 0.85;
 		const blushRXr = 15 * Math.cos(1.18);
 
@@ -1228,28 +1549,30 @@ export class Mascot {
 		this.blushR.setAttribute("rx", blushRXr.toFixed(2));
 		this.blushR.setAttribute("opacity", (b.blush * faceOp).toFixed(3));
 
-		// 轻柔猫咪胡须:同腮红,贴纸式微移(base 角 ±1.35 球面导数会把右胡须直接转到消失)
+		// 轻柔猫咪胡须:位置随偏航球面滑动,左右各按自身经度投影
 		const whiskerWobble = Math.sin((TAU * now) / 2800) * 1.2;
 		const whiskerBaseOp = b.whiskers * 0.55 * faceOp;
-		const whiskerDx = 8 * Math.sin(facePhi);
+		const whiskerLDx = 64 * Math.sin(-1.35 + phi) - 64 * Math.sin(-1.35);
+		const whiskerRDx = 64 * Math.sin(1.35 + phi) - 64 * Math.sin(1.35);
 
 		this.whiskerLG.setAttribute("opacity", whiskerBaseOp.toFixed(3));
 		this.whiskerRG.setAttribute("opacity", whiskerBaseOp.toFixed(3));
 
 		this.whiskerLG.setAttribute(
 			"transform",
-			`translate(${whiskerDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
+			`translate(${whiskerLDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
 				`rotate(${whiskerWobble.toFixed(2)} ${FACE.whiskerL[0]} ${FACE.whiskerL[1]})`,
 		);
 		this.whiskerRG.setAttribute(
 			"transform",
-			`translate(${whiskerDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
+			`translate(${whiskerRDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
 				`rotate(${(-whiskerWobble).toFixed(2)} ${FACE.whiskerR[0]} ${FACE.whiskerR[1]})`,
 		);
 
-		// 独立左右前爪注视滑动 (正面化,随整脸淡出)
-		const phiPawL = -0.56 + facePhi;
-		const phiPawR = 0.56 + facePhi;
+		// 独立左右前爪随偏航球面滑动,随整脸淡出
+		const phiPawL = -0.56 + phi;
+		const phiPawR = 0.56 + phi;
+
 		const nzPawL = Math.cos(phiPawL);
 		const nzPawR = Math.cos(phiPawR);
 
@@ -1307,6 +1630,7 @@ export class Mascot {
 			);
 		}
 
+		this.stepRibbons(now, dt, pose.yaw);
 		this.stepConfetti(dt);
 	}
 
