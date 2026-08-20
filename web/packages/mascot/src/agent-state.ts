@@ -1,5 +1,5 @@
 import type { AgentState, AgentStatusMessage } from "@violet/agent-status";
-import { DEFAULT_EMOTION_ID } from "./engine/expressions";
+import { DEFAULT_EMOTION_ID } from "./engine/emotions";
 
 /**
  * 各语义状态的默认表情(violet mascot 表情 ID);

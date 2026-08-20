@@ -17,23 +17,22 @@ import {
 	type MouthShapeId,
 	smoothClosedPath,
 } from "./body";
-import {
-	type Anim,
-	type BodyPose,
-	DEFAULT_EMOTION_ID,
-	EMOTION_MAP,
-	EMOTIONS,
-	type EmotionDef,
-	type EyePose,
-	PALETTE,
-	type SequenceFrame,
-} from "./expressions";
+import { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./emotions";
 import { EYE_RINGS, type EyeRing } from "./eyes";
+import { PALETTE } from "./palette";
+import type { Anim, BodyPose, EmotionDef, EyePose, SequenceFrame } from "./types";
 
+/**
+ * 引擎实例化选项。
+ */
 export interface MascotOptions {
+	/** 初始表情 ID;缺省待机,未知值回退待机 */
 	emotion?: string;
+	/** 渲染一帧静态快照后停表(目录缩略卡用);可后续 start() 或手动 tick 驱动 */
 	frozen?: boolean;
+	/** 点击身体回调 */
 	onClick?: () => void;
+	/** 摸头命中回调(头部区域指针停留) */
 	onPet?: () => void;
 }
 
@@ -500,6 +499,13 @@ export class Mascot {
 
 	/* ----- 对外 SDK ----- */
 
+	/**
+	 * 切换表情并重锚时间轴:从当前姿态弹簧过渡到新表情 base。
+	 *
+	 * 触发表情的入场一次性动作(spin/confetti);frozen 实例重渲静态帧。
+	 *
+	 * @param id - 表情 ID;未知值回退待机
+	 */
 	setEmotion(id: string): void {
 		const def = EMOTION_MAP.get(id) ?? Mascot.FALLBACK;
 		const now = performance.now();
@@ -528,18 +534,33 @@ export class Mascot {
 		if (!this.running) this.renderStatic();
 	}
 
+	/**
+	 * 设置注视目标。
+	 *
+	 * @param nx - 水平归一化 [-1, 1],越界钳制
+	 * @param ny - 垂直归一化 [-1, 1],越界钳制
+	 */
 	setGaze(nx: number, ny: number): void {
 		this.gaze.tx = clamp(nx, -1, 1) * GAZE_X;
 		this.gaze.ty = clamp(ny, -1, 1) * GAZE_Y;
 	}
 
-	/** 摸摸头互动 (Petting) */
+	/**
+	 * 触发摸头互动:飞机耳 + 头顶爱心,持续期内可重复触发。
+	 *
+	 * @param durationMs - 互动持续时间(毫秒),缺省 1200
+	 */
 	pet(durationMs = 1200): void {
 		const now = performance.now();
 		this.petUntil = Math.max(this.petUntil, now + durationMs);
 		this.onPetHandler?.();
 	}
 
+	/**
+	 * 自旋指定圈数:落点取 n 圈外最近整圈位,结束时 yaw 归零无跳变。
+	 *
+	 * @param turns - 圈数(向上取整),缺省 1
+	 */
 	spinTurns(turns = 1): void {
 		const now = performance.now();
 		const n = Math.max(1, Math.round(turns));
@@ -564,6 +585,11 @@ export class Mascot {
 		return s.from + s.delta * easeInOutCubic(u);
 	}
 
+	/**
+	 * 撒花庆祝:从身体中心向外爆开彩纸/星星。
+	 *
+	 * @param count - 目标粒子数,缺省 20;场上上限 60
+	 */
 	burst(count = 20): void {
 		for (let i = 0; i < count && this.confettiPieces.length < 60; i++) {
 			const ang = (i / count) * TAU + rand(-0.35, 0.35);
@@ -608,7 +634,6 @@ export class Mascot {
 			rafId = requestAnimationFrame(loop);
 		}
 	}
-
 	bounce(): void {
 		if (this.bounceAt < 0) this.bounceAt = performance.now();
 	}

@@ -1,5 +1,5 @@
 import { type Ref, useEffect, useRef } from "react";
-import { DEFAULT_EMOTION_ID } from "../engine/expressions";
+import { DEFAULT_EMOTION_ID } from "../engine/emotions";
 import { Mascot } from "../engine/mascot";
 import type { AIMessage, AIMessageResult } from "../protocol";
 
