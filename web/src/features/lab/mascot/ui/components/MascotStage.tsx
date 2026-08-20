@@ -88,7 +88,7 @@ export function MascotStage({
 		};
 	}, [ref]);
 
-	return <div ref={hostRef} className={className} />;
+	return <div ref={hostRef} data-emotion={emotion} className={className} />;
 }
 
 /** 分组元数据:标题与 segment 定义同源,目录与舞台状态签共用。 */

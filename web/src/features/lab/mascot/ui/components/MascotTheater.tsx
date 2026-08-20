@@ -1,3 +1,4 @@
+import { resolveEmotionId } from "@violet/agent-status";
 import {
 	Hand,
 	Pause,
@@ -13,6 +14,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 import type { EmotionDef } from "../../engine/expressions";
+import { useAgentStatus } from "../hooks/useAgentStatus";
 import { GROUP_LABEL, type MascotHandle, MascotStage } from "./MascotStage";
 
 interface EmotionBubbleProps {
@@ -89,6 +91,8 @@ export function MascotTheater({
 	const heroRef = useRef<MascotHandle>(null);
 	const stageRef = useRef<HTMLDivElement>(null);
 	const jsonInputRef = useRef<HTMLTextAreaElement>(null);
+	const agentMsg = useAgentStatus();
+	const agentEmotion = agentMsg ? resolveEmotionId(agentMsg) : null;
 
 	// 视线跟随:舞台内指针位置归一化为 [-1, 1],带 2.4 倍增益提前触及边缘
 	const onStageMove = (e: ReactPointerEvent) => {
@@ -229,6 +233,16 @@ export function MascotTheater({
 						·
 					</span>
 					#{def.id}
+					{agentMsg && (
+						<>
+							<span aria-hidden className="text-white/20">
+								·
+							</span>
+							<span data-agent-state={agentMsg.state} className="text-amber-200/70">
+								{agentMsg.agent} {agentMsg.state}
+							</span>
+						</>
+					)}
 					<span
 						aria-hidden
 						className="size-1 animate-pulse rounded-full bg-emerald-400/80"
@@ -237,7 +251,7 @@ export function MascotTheater({
 
 				<MascotStage
 					ref={heroRef}
-					emotion={def.id}
+					emotion={agentEmotion ?? def.id}
 					onClick={() => heroRef.current?.bounce()}
 					className="absolute bottom-[11%] left-1/2 size-52 -translate-x-1/2 cursor-pointer drop-shadow-[0_0_18px_rgba(255,240,200,0.14)] sm:size-60"
 				/>
