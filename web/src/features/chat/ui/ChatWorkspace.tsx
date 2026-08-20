@@ -637,6 +637,15 @@ function MessageBubble({
 	onImage: (media: ChatMedia) => void;
 }) {
 	const mine = message.sender.id === currentUserID;
+	if (message.type === "system") {
+		return (
+			<div className="my-2 flex justify-center">
+				<p className="rounded-full border border-edge-hairline/60 bg-secondary/45 px-3 py-1.5 text-center text-xs text-muted-foreground">
+					{message.content}
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<article

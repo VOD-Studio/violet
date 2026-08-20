@@ -1,5 +1,5 @@
 export type ConversationKind = "direct" | "room";
-export type MessageType = "text" | "image";
+export type MessageType = "text" | "image" | "system";
 export type MemberRole = "owner" | "member";
 
 export interface ChatUser {
