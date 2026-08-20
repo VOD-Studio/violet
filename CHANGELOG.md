@@ -7,6 +7,55 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.16](https://github.com/VOD-Studio/violet/compare/v2.8.15...v2.8.16) (2026-08-20)
+
+
+### 新增
+
+* **admin-settings:** OAuth 卡片已配置折叠与回调地址展示 ([e670a9f](https://github.com/VOD-Studio/violet/commit/e670a9febf082de323b3c6a5c7e58aca65c77257))
+* **admin:** OAuth 认证设置页交互优化与后台侧边栏动画治理 ([ea61952](https://github.com/VOD-Studio/violet/commit/ea61952eb96ce00d2cf17dc170cf7715517a11bd))
+* **agent-status:** SSE 通道实现 transport SPI ([91c495f](https://github.com/VOD-Studio/violet/commit/91c495fedbc76f6f336ff30e3a7ff881dbc5c1ac))
+* **agent-status:** 新建协议 v2 独立包与 TTL 状态机 ([7cbfec8](https://github.com/VOD-Studio/violet/commit/7cbfec88210d95845f24c172fa400393eea98363))
+* **mascot:** 吉祥物「堇喵」形象实验室与展馆重构 ([1cf598e](https://github.com/VOD-Studio/violet/commit/1cf598e06b8a8f914869847cabe45cd4b81c29dc))
+* **mascot:** 吉祥物形象实验室新增 Ciallo 专属动作表情 ([9771a14](https://github.com/VOD-Studio/violet/commit/9771a142e3bc7153c2096823a645e2ed40e68015))
+* **mascot:** 堇喵 Codex 桌宠导出与一键安装工具链 ([249c31e](https://github.com/VOD-Studio/violet/commit/249c31e191c37c2716c7e1582bbae08fbe6c9a4f))
+* **mascot:** 堇喵舞台接入 agent 状态流 ([e390bb7](https://github.com/VOD-Studio/violet/commit/e390bb7ef8beecec66774c48736ba26e7c33496d))
+* **mascot:** 引擎与 React 宿主独立为 @violet/mascot 包 ([f42c404](https://github.com/VOD-Studio/violet/commit/f42c4045975e2fa6f41f0e2d99c8628c039cdef7))
+* **mascot:** 新增吉祥物「堇喵」形象与交互实验室 ([3a2470c](https://github.com/VOD-Studio/violet/commit/3a2470cf215db99f73a920837157c88b00285225))
+* **mascot:** 目录悬停不再切换舞台 ([99730ba](https://github.com/VOD-Studio/violet/commit/99730bae24d44dd5c835bc0247e35ee4cdb74ae6))
+* **mascot:** 重做聚光舞台光影 ([6867202](https://github.com/VOD-Studio/violet/commit/68672025bcd2edbc6de61795cf6465917d531f74))
+* **mascot:** 重构展馆排版与聚光舞台并落地 AI 协议 ([6659aaa](https://github.com/VOD-Studio/violet/commit/6659aaac30e3035cf1e612d3bd8a0faab2d879be))
+* **mascot:** 重构舞台控制台与AI输入区并置顶Ciallo表情 ([ffd453d](https://github.com/VOD-Studio/violet/commit/ffd453daf2531aa77e000df1264a36facc528c1a))
+* **nav-menu:** 二级菜单展开收起改高度过渡并自动滚入视野 ([3bdebb9](https://github.com/VOD-Studio/violet/commit/3bdebb9d6cd43c6505745f1deb19ab7fc45568a6))
+* **tweets:** 推文发布框与正文支持表情选择与内联渲染 ([dbb4e26](https://github.com/VOD-Studio/violet/commit/dbb4e26666cddc1dc16f3fed158ce9f078bd47dc))
+* **tweets:** 推文发布框与正文支持表情选择与内联渲染 ([0215ae3](https://github.com/VOD-Studio/violet/commit/0215ae370b0ded0a905c7d33ea95897066003a1b))
+* **tweet:** 推文读模型补充 emote 表情富化 ([5cbad58](https://github.com/VOD-Studio/violet/commit/5cbad58ca0a5c59068a5216c2aa0aea4863e6fdd))
+* **web:** dev 汇聚端中间件打通 agent 状态 SSE endpoint ([85065e6](https://github.com/VOD-Studio/violet/commit/85065e67c2c92d5e4a84910110799a5eb67f9730))
+
+
+### 修复
+
+* **admin-layout:** 侧边栏收展动画全链路消除硬切 ([b738d60](https://github.com/VOD-Studio/violet/commit/b738d60da7357c9546263e91fcaf49ea80e7c0ef))
+* **admin-layout:** 品牌区收展过渡消除 logo 摇晃与文字溢出 ([eb9c800](https://github.com/VOD-Studio/violet/commit/eb9c800a5944a436dbee70b25fb8ce5cda47547e))
+* **admin-settings:** OAuth 卡片显隐改用高度过渡消除布局抖动 ([5402505](https://github.com/VOD-Studio/violet/commit/54025059e1daabd94f4e950ee13b529248e4e546))
+* **mascot:** SDK 协议区移出两列 grid 修复 sticky 舞台遮挡 ([5a1cddf](https://github.com/VOD-Studio/violet/commit/5a1cddf89103a29871e440b1422e42d76401923b))
+* **mascot:** 优化动作文案字数并增加重播按钮 ([c652645](https://github.com/VOD-Studio/violet/commit/c6526452f987a1b0052fa4211b51554d5b1515e8))
+* **mascot:** 重设舞台按钮交互状态为几何恒定 ([0833b81](https://github.com/VOD-Studio/violet/commit/0833b8187cc0815ca44b5917c4b1d77147019b57))
+* **mascot:** 锁定几何高度与网格容器消除切换页面抖动 ([04592a5](https://github.com/VOD-Studio/violet/commit/04592a5c77a0666ee446fb44f353e9630327c095))
+
+
+### 重构
+
+* **agent-status:** 表情映射移交 mascot 包回归纯协议 ([38bbba0](https://github.com/VOD-Studio/violet/commit/38bbba09aed5bb00689b86cff90b549d1ee59922))
+* **mascot:** SDK 示例接入公共 CodeCard ([1ea8926](https://github.com/VOD-Studio/violet/commit/1ea8926ee4b32a2418a50d03361ac0a341068daf))
+* **mascot:** 引擎纯函数域拆分独立文件并补全 JSDoc ([cfb591f](https://github.com/VOD-Studio/violet/commit/cfb591f7a7a9cb28704ed2fe9fa89a17a4c4edfc))
+* **mascot:** 消费方切换拆分后模块路径 ([367292d](https://github.com/VOD-Studio/violet/commit/367292dc85dbf7caa5ab2c34ea9ea3ad749caeff))
+* **mascot:** 表情类型与数据按职责拆分独立文件 ([780af7d](https://github.com/VOD-Studio/violet/commit/780af7d94f6991b5ea47d8c2c9a016e7fcdde532))
+* **mascot:** 通用数值工具归位 lib 目录对齐 web 结构惯例 ([5268c3d](https://github.com/VOD-Studio/violet/commit/5268c3d0d18770007b1ebc0b682273f2bc1c2d2d))
+* **mascot:** 重构控制台信息架构分离播放控制与互动手势 ([8f7526e](https://github.com/VOD-Studio/violet/commit/8f7526e42c693798e83d264606c68c5b81b28149))
+* **shared-ui:** 代码卡上提为 code-preview 公共 CodeCard ([5f8529e](https://github.com/VOD-Studio/violet/commit/5f8529e755b1539a92d847f51d72294d229e4a45))
+* **shared-ui:** 删除 FencedCodeBlock 薄壳全量切换公共 CodeCard ([ce9ebc3](https://github.com/VOD-Studio/violet/commit/ce9ebc32a3a61c69112729b51c92dc23b1be0243))
+
 ## [2.8.15](https://github.com/VOD-Studio/violet/compare/v2.8.14...v2.8.15) (2026-08-19)
 
 
