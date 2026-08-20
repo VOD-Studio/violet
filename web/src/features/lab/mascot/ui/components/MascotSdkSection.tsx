@@ -8,7 +8,7 @@ interface MascotSdkSectionProps {
 /** AI 协议与实例化示例:全宽放在舞台布局下方,示例取当前固定表情。 */
 export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 	return (
-		<section className="mt-16 lg:col-span-2">
+		<section className="mt-16">
 			<div className="border-b border-border pb-2.5">
 				<h3 className="text-base font-semibold text-foreground">AI 对接与实例化协议</h3>
 				<p className="mt-1 text-xs text-muted-foreground">
