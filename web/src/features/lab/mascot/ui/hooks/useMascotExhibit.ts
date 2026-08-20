@@ -8,13 +8,12 @@ export interface BubbleLine {
 }
 
 /**
- * 吉祥物实验室的展馆状态机:pinned(固定) + preview(hover 覆盖) + 巡演 + 台词代际。
+ * 吉祥物实验室的展馆状态机:固定选中 + 巡演 + 台词代际。
  *
- * preview 离开目录后回落 pinned;手动点选结束巡演并同步分组;台词随表情切换推陈。
+ * 手动点选结束巡演并同步分组;台词随表情切换推陈。
  */
 export function useMascotExhibit() {
 	const [pinnedId, setPinnedId] = useState("00");
-	const [previewId, setPreviewId] = useState<string | null>(null);
 	const [group, setGroup] = useState<EmotionDef["group"]>("lifecycle");
 	const [isTouring, setIsTouring] = useState(false);
 	const [bubble, setBubble] = useState<BubbleLine>(() => ({
@@ -24,7 +23,7 @@ export function useMascotExhibit() {
 	const tourTimerRef = useRef<number | undefined>(undefined);
 	const genRef = useRef(0);
 
-	const emotionId = previewId ?? pinnedId;
+	const emotionId = pinnedId;
 	const def = EMOTION_MAP.get(emotionId) ?? EMOTIONS[0];
 	const pinnedDef = EMOTION_MAP.get(pinnedId) ?? EMOTIONS[0];
 	const groupList = EMOTIONS.filter((e) => e.group === group);
@@ -75,10 +74,9 @@ export function useMascotExhibit() {
 		};
 	}, []);
 
-	/** 手动点选:固定 + 清预览 + 带回所属分组 + 结束巡演 */
+	/** 手动点选:固定 + 带回所属分组 + 结束巡演 */
 	const selectEmotion = (id: string) => {
 		setPinnedId(id);
-		setPreviewId(null);
 		const g = EMOTION_MAP.get(id)?.group;
 		if (g) setGroup(g);
 		if (isTouring) stopTour();
@@ -104,6 +102,5 @@ export function useMascotExhibit() {
 		pushBubble,
 		selectEmotion,
 		applyAIMessage,
-		setPreviewId,
 	};
 }

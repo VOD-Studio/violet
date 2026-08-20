@@ -12,7 +12,7 @@ const GROUP_SEGMENTS: SegmentedItem<EmotionDef["group"]>[] = [
 	{ value: "agent", label: <>代理工作</> },
 ];
 
-/** 吉祥物展馆:聚光舞台 sticky 常驻视线,目录分段切换、hover 即预览、点击固定,SDK 协议全宽收尾。 */
+/** 吉祥物展馆:聚光舞台 sticky 常驻视线,目录分段切换、缩略卡 hover 本地预览、点击固定上演,SDK 协议全宽收尾。 */
 export function MascotLab() {
 	const exhibit = useMascotExhibit();
 
@@ -29,8 +29,8 @@ export function MascotLab() {
 				/>
 			</div>
 
-			{/* 目录:分段切换分组,hover 任意缩略图 → 左侧舞台实时预览;click 固定;离开目录恢复固定项 */}
-			<div className="mt-10 lg:mt-0" onPointerLeave={() => exhibit.setPreviewId(null)}>
+			{/* 目录:分段切换分组,hover 只起动缩略卡自身,click 固定并交舞台上演 */}
+			<div className="mt-10 lg:mt-0">
 				<div className="mb-5 flex items-center justify-between gap-4">
 					<Segmented
 						value={exhibit.group}
@@ -49,7 +49,6 @@ export function MascotLab() {
 							def={e}
 							active={e.id === exhibit.pinnedDef.id}
 							onSelect={exhibit.selectEmotion}
-							onPreview={exhibit.setPreviewId}
 						/>
 					))}
 				</div>

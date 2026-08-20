@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 /**
  * /lab/mascot - 吉祥物形象实验室
  *
- * 深色聚光灯舞台 sticky 常驻视线，亮色表情目录滚动浏览——hover 即预览、点击固定。
+ * 深色聚光灯舞台 sticky 常驻视线，亮色表情目录滚动浏览——缩略卡 hover 本地预览、点击固定上演。
  */
 function MascotLabPage() {
 	return (

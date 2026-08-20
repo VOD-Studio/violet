@@ -7,11 +7,10 @@ interface EmotionGridItemProps {
 	def: EmotionDef;
 	active: boolean;
 	onSelect: (id: string) => void;
-	onPreview: (id: string) => void;
 }
 
-/** 陈列卡:frozen 静态快照,hover 时本地起动并通知舞台预览,click 固定。 */
-export function EmotionGridItem({ def, active, onSelect, onPreview }: EmotionGridItemProps) {
+/** 陈列卡:frozen 静态快照,hover 本地起动预览,click 固定并交由舞台上演。 */
+export function EmotionGridItem({ def, active, onSelect }: EmotionGridItemProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const mascotRef = useRef<Mascot | null>(null);
 
@@ -29,10 +28,7 @@ export function EmotionGridItem({ def, active, onSelect, onPreview }: EmotionGri
 		<div
 			onClick={() => onSelect(def.id)}
 			onKeyDown={(e) => e.key === "Enter" && onSelect(def.id)}
-			onPointerEnter={() => {
-				mascotRef.current?.start();
-				onPreview(def.id);
-			}}
+			onPointerEnter={() => mascotRef.current?.start()}
 			onPointerLeave={() => mascotRef.current?.stop()}
 			tabIndex={0}
 			role="button"

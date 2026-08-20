@@ -47,8 +47,7 @@ export const LABS = [
 		to: "/lab/mascot",
 		en: "Mascot",
 		title: "吉祥物形象实验室",
-		description:
-			"violet 软萌猫猫团吉祥物「堇喵」——聚光灯舞台常驻视口，36 套动作表情悬停即预览、点击即演。",
+		description: "violet 软萌猫猫团吉祥物「堇喵」——聚光灯舞台常驻视口，36 套动作表情点击即演。",
 		meta: "表情 ×36",
 	},
 ] as const;
