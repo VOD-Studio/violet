@@ -37,10 +37,10 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 			<div className="mt-4 grid gap-4 md:grid-cols-2">
 				<div className="rounded-xl border border-border bg-card p-4 font-mono text-xs">
 					<p className="mb-2 text-[11px] font-semibold text-muted-foreground">
-						1. AI 交互协议(舞台输入框可直接实测)
+						1. AI 消息协议
 					</p>
 					<pre className="overflow-x-auto text-foreground">
-						{`ball.handleAIMessage({
+						{`mascot.handleAIMessage({
   "emotionId": "${pinnedDef.id}",
   "tips": "${pinnedDef.desc.slice(0, 24)}..."
 });`}
@@ -49,10 +49,10 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 
 				<div className="rounded-xl border border-border bg-card p-4 font-mono text-xs">
 					<p className="mb-2 text-[11px] font-semibold text-muted-foreground">
-						2. 原生实例化(React 宿主见 MascotStage)
+						2. 实例化
 					</p>
 					<pre className="overflow-x-auto text-foreground">
-						{`const ball = new Mascot(container, {
+						{`const mascot = new Mascot(container, {
   emotion: "${pinnedDef.id}"
 });`}
 					</pre>
