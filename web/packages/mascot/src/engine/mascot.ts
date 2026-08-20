@@ -61,6 +61,11 @@ const GAZE_Y = 15;
 const GAZE_LEAN_SHIFT = 0.22;
 const GAZE_LEAN_ROT = 0.04;
 const GAZE_LEAN_SQUASH = 0.05;
+/**
+ * 面部柱面统一投影半径:全部面部部件锚在同一圆周上,
+ * 位置/透视压缩/淡出共用同一条球面投影曲线,构成刚体式整脸旋转。
+ */
+const FACE_R = 52;
 /** 身体跟随平滑速率(1/s):比注视通道(5.66)慢,眼睛先动身体慢半拍跟上 */
 const GAZE_LEAN_K = 2.6;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
@@ -1400,9 +1405,19 @@ export class Mascot {
 		const avgLookY = (pose.left.lookY + pose.right.lookY) * 0.5;
 		const phi = pose.yaw + avgLookX / 75;
 		const pitchY = avgLookY * 0.65;
-		// 整脸透明度随偏航提早下降:60° 即半隐(cos 曲线从 0.2 起、0.5 归一),
-		// 单眼+高透明度会被读成「眨眼」而非「转头」;位置滑动配合变淡才读出侧面
+		// 整脸透明度:随偏航提早下降,配合位置滑动读出侧面
 		const faceOp = clamp((Math.cos(pose.yaw) - 0.2) / 0.5, 0, 1);
+		// yaw=0 精确回锚;旋转时位置/压缩/淡出三通道速率一致,构成刚体旋转
+		const faceProj = (x0: number, a: number) => {
+			const theta = Math.asin(clamp((x0 - 130) / FACE_R, -1, 1));
+			const p = theta + a;
+			const nz = Math.cos(p);
+			return {
+				x: 130 + FACE_R * Math.sin(p),
+				sx: clamp(nz, 0.02, 1),
+				op: clamp(nz / 0.16, 0, 1),
+			};
+		};
 
 		// 身体注视跟随(次级动作):仅指针注意力(gaze.x)驱动——avgLookX 还混有微漂移与
 		// 表情 lookX 动画(scan 类),直接用会连带身体摇摆。独立慢平滑让身体比眼睛
@@ -1483,22 +1498,13 @@ export class Mascot {
 		this.earLInner.setAttribute("opacity", innerEarLOpacity.toFixed(3));
 		this.earRInner.setAttribute("opacity", innerEarROpacity.toFixed(3));
 
-		// 左右眼随偏航球面滑动:位置信号贯穿旋转全程
-		const R_FACE = 50;
-		const phiEyeL = -0.74 + phi;
-		const phiEyeR = 0.74 + phi;
-		const nzL = Math.cos(phiEyeL);
-		const nzR = Math.cos(phiEyeR);
-
-		const eyeLX = 130 + R_FACE * Math.sin(phiEyeL) + pose.left.x + pose.left.lookX * 0.2;
-		const eyeRX = 130 + R_FACE * Math.sin(phiEyeR) + pose.right.x + pose.right.lookX * 0.2;
+		// 左右眼:统一投影,锚点为 FACE 眼位
+		const eL = faceProj(FACE.eyeL[0], phi);
+		const eR = faceProj(FACE.eyeR[0], phi);
+		const eyeLX = eL.x + pose.left.x + pose.left.lookX * 0.2;
+		const eyeRX = eR.x + pose.right.x + pose.right.lookX * 0.2;
 		const eyeLY = 142 + pitchY + pose.left.y;
 		const eyeRY = 142 + pitchY + pose.right.y;
-
-		const cnL = clamp(nzL, 0, 1);
-		const cnR = clamp(nzR, 0, 1);
-		const opL = clamp(nzL / 0.16, 0, 1) * faceOp;
-		const opR = clamp(nzR / 0.16, 0, 1) * faceOp;
 
 		this.renderEye(
 			this.eyeLG,
@@ -1508,8 +1514,8 @@ export class Mascot {
 			pose.left,
 			eyeLX,
 			eyeLY,
-			cnL,
-			opL,
+			eL.sx,
+			eL.op * faceOp,
 		);
 		this.renderEye(
 			this.eyeRG,
@@ -1519,84 +1525,67 @@ export class Mascot {
 			pose.right,
 			eyeRX,
 			eyeRY,
-			cnR,
-			opR,
+			eR.sx,
+			eR.op * faceOp,
 		);
 
-		// 猫咪小嘴随偏航球面滑动,几何随透视压缩,透明度随整脸
-		const phiMouth = phi;
-		const nzMouth = Math.cos(phiMouth);
-		const mouthX = 130 + R_FACE * Math.sin(phiMouth);
+		// 猫咪小嘴:统一投影,锚点 130
+		const m = faceProj(130, phi);
 		const mouthY = 142 + pitchY + 14 + b.mouthY;
-		const mouthOp = clamp(nzMouth / 0.16, 0, 1) * faceOp;
-		const persScaleX = (b.mouthScale ?? 1) * clamp(nzMouth, 0.02, 1);
+		this.renderMouth(b, m.x, mouthY, (b.mouthScale ?? 1) * m.sx, m.op * faceOp);
 
-		this.renderMouth(b, mouthX, mouthY, persScaleX, mouthOp);
-
-		// 腮红:位置随偏航球面滑动(绕到背面时左右互换),几何恒定防小角度胀缩
-		const blushLX = 130 + 56 * Math.sin(-1.18 + phi);
-		const blushRX = 130 + 56 * Math.sin(1.18 + phi);
+		// 腮红:统一投影,锚点为 FACE 腮红位,几何恒定
+		const bl = faceProj(FACE.blushL[0], phi);
+		const br = faceProj(FACE.blushR[0], phi);
 		const blushY = 162 + pitchY * 0.85;
-		const blushRXr = 15 * Math.cos(1.18);
+		const blushR0 = 15;
 
-		this.blushL.setAttribute("cx", blushLX.toFixed(2));
+		this.blushL.setAttribute("cx", bl.x.toFixed(2));
 		this.blushL.setAttribute("cy", blushY.toFixed(2));
-		this.blushL.setAttribute("rx", blushRXr.toFixed(2));
-		this.blushL.setAttribute("opacity", (b.blush * faceOp).toFixed(3));
+		this.blushL.setAttribute("rx", blushR0.toFixed(2));
+		this.blushL.setAttribute("opacity", (b.blush * bl.op * faceOp).toFixed(3));
 
-		this.blushR.setAttribute("cx", blushRX.toFixed(2));
+		this.blushR.setAttribute("cx", br.x.toFixed(2));
 		this.blushR.setAttribute("cy", blushY.toFixed(2));
-		this.blushR.setAttribute("rx", blushRXr.toFixed(2));
-		this.blushR.setAttribute("opacity", (b.blush * faceOp).toFixed(3));
+		this.blushR.setAttribute("rx", blushR0.toFixed(2));
+		this.blushR.setAttribute("opacity", (b.blush * br.op * faceOp).toFixed(3));
 
-		// 轻柔猫咪胡须:位置随偏航球面滑动,左右各按自身经度投影
+		// 轻柔猫咪胡须:统一投影,锚点为 FACE 胡须位;wobble 微颤保留
+		const wl = faceProj(FACE.whiskerL[0], phi);
+		const wr = faceProj(FACE.whiskerR[0], phi);
 		const whiskerWobble = Math.sin((TAU * now) / 2800) * 1.2;
-		const whiskerBaseOp = b.whiskers * 0.55 * faceOp;
-		const whiskerLDx = 64 * Math.sin(-1.35 + phi) - 64 * Math.sin(-1.35);
-		const whiskerRDx = 64 * Math.sin(1.35 + phi) - 64 * Math.sin(1.35);
+		const whiskerBaseOp = b.whiskers * 0.55;
 
-		this.whiskerLG.setAttribute("opacity", whiskerBaseOp.toFixed(3));
-		this.whiskerRG.setAttribute("opacity", whiskerBaseOp.toFixed(3));
+		this.whiskerLG.setAttribute("opacity", (whiskerBaseOp * wl.op * faceOp).toFixed(3));
+		this.whiskerRG.setAttribute("opacity", (whiskerBaseOp * wr.op * faceOp).toFixed(3));
 
 		this.whiskerLG.setAttribute(
 			"transform",
-			`translate(${whiskerLDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
-				`rotate(${whiskerWobble.toFixed(2)} ${FACE.whiskerL[0]} ${FACE.whiskerL[1]})`,
+			`translate(${(wl.x - FACE.whiskerL[0]).toFixed(2)} ${pitchY.toFixed(2)}) ` +
+				`rotate(${whiskerWobble.toFixed(2)} ${FACE.whiskerL[0]} ${FACE.whiskerL[1]}) scale(${wl.sx.toFixed(3)} 1)`,
 		);
 		this.whiskerRG.setAttribute(
 			"transform",
-			`translate(${whiskerRDx.toFixed(2)} ${pitchY.toFixed(2)}) ` +
-				`rotate(${(-whiskerWobble).toFixed(2)} ${FACE.whiskerR[0]} ${FACE.whiskerR[1]})`,
+			`translate(${(wr.x - FACE.whiskerR[0]).toFixed(2)} ${pitchY.toFixed(2)}) ` +
+				`rotate(${(-whiskerWobble).toFixed(2)} ${FACE.whiskerR[0]} ${FACE.whiskerR[1]}) scale(${wr.sx.toFixed(3)} 1)`,
 		);
+		// 左右前爪:统一投影,锚点为 FACE 爪位
+		const pl = faceProj(FACE.pawL[0], phi);
+		const pr = faceProj(FACE.pawR[0], phi);
 
-		// 独立左右前爪随偏航球面滑动,随整脸淡出
-		const phiPawL = -0.56 + phi;
-		const phiPawR = 0.56 + phi;
-
-		const nzPawL = Math.cos(phiPawL);
-		const nzPawR = Math.cos(phiPawR);
-
-		const pawLOp = clamp(nzPawL / 0.18, 0, 1) * faceOp;
-		const pawROp = clamp(nzPawR / 0.18, 0, 1) * faceOp;
-
-		const pawLDx = 44 * Math.sin(phiPawL) - 44 * Math.sin(-0.56) + b.pawLX;
-		const pawRDx = 44 * Math.sin(phiPawR) - 44 * Math.sin(0.56) + b.pawRX;
-		const pawScaleXL = b.pawLScale * clamp(nzPawL, 0.1, 1);
-		const pawScaleXR = b.pawRScale * clamp(nzPawR, 0.1, 1);
-
-		this.pawLG.setAttribute("opacity", pawLOp.toFixed(3));
-		this.pawRG.setAttribute("opacity", pawROp.toFixed(3));
+		this.pawLG.setAttribute("opacity", (pl.op * faceOp).toFixed(3));
+		this.pawRG.setAttribute("opacity", (pr.op * faceOp).toFixed(3));
 
 		this.pawLG.setAttribute(
 			"transform",
-			`translate(${(FACE.pawL[0] + pawLDx).toFixed(2)} ${(FACE.pawL[1] + b.pawY + b.pawLY).toFixed(2)}) ` +
-				`rotate(${b.pawLRot.toFixed(2)}) scale(${pawScaleXL.toFixed(3)} ${b.pawLScale.toFixed(3)}) ` +
+			`translate(${(FACE.pawL[0] + b.pawLX + (pl.x - FACE.pawL[0])).toFixed(2)} ${(FACE.pawL[1] + b.pawY + b.pawLY).toFixed(2)}) ` +
+				`rotate(${b.pawLRot.toFixed(2)}) scale(${(b.pawLScale * pl.sx).toFixed(3)} ${b.pawLScale.toFixed(3)}) ` +
 				`translate(${-FACE.pawL[0]} ${-FACE.pawL[1]})`,
 		);
 		this.pawRG.setAttribute(
 			"transform",
-			`translate(${(FACE.pawR[0] + pawRDx).toFixed(2)} ${(FACE.pawR[1] + b.pawY + b.pawRY).toFixed(2)}) ` +
-				`rotate(${b.pawRRot.toFixed(2)}) scale(${pawScaleXR.toFixed(3)} ${b.pawRScale.toFixed(3)}) ` +
+			`translate(${(FACE.pawR[0] + b.pawRX + (pr.x - FACE.pawR[0])).toFixed(2)} ${(FACE.pawR[1] + b.pawY + b.pawRY).toFixed(2)}) ` +
+				`rotate(${b.pawRRot.toFixed(2)}) scale(${(b.pawRScale * pr.sx).toFixed(3)} ${b.pawRScale.toFixed(3)}) ` +
 				`translate(${-FACE.pawR[0]} ${-FACE.pawR[1]})`,
 		);
 
