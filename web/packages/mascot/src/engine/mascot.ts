@@ -1400,9 +1400,9 @@ export class Mascot {
 		const avgLookY = (pose.left.lookY + pose.right.lookY) * 0.5;
 		const phi = pose.yaw + avgLookX / 75;
 		const pitchY = avgLookY * 0.65;
-		// 脸部正面化仅保留「整脸统一透明度」:五官位置随 phi 连续球面滑动,
-		// 为旋转全程提供位置信号;透明度统一调制杜绝单眼+错位嘴的残缺中间帧
-		const faceOp = clamp((Math.cos(pose.yaw) - 0.02) / 0.55, 0, 1);
+		// 整脸透明度随偏航提早下降:60° 即半隐(cos 曲线从 0.2 起、0.5 归一),
+		// 单眼+高透明度会被读成「眨眼」而非「转头」;位置滑动配合变淡才读出侧面
+		const faceOp = clamp((Math.cos(pose.yaw) - 0.2) / 0.5, 0, 1);
 
 		// 身体注视跟随(次级动作):仅指针注意力(gaze.x)驱动——avgLookX 还混有微漂移与
 		// 表情 lookX 动画(scan 类),直接用会连带身体摇摆。独立慢平滑让身体比眼睛
@@ -1411,11 +1411,11 @@ export class Mascot {
 		const leanShift = this.leanCur * GAZE_LEAN_SHIFT;
 		const leanRot = this.leanCur * GAZE_LEAN_ROT;
 
-		// 身体 rig:中心 130,贴地 226;水平压缩模拟转身收窄 (正面全宽,侧面 ~0.8)。
-		// 注视压缩单列:余弦项对小角度太钝(±0.32rad 仅收 1%),补线性项才可感知
+		// 身体 rig:中心 130,贴地 226;水平压缩模拟转身收窄(60° 收 15%,90° 收 30%)。
+		// 注视压缩单列:余弦项对小角度太钝,补线性项才可感知
 		const yawSquash =
 			1 -
-			0.2 * (1 - Math.abs(Math.cos(phi))) -
+			0.3 * (1 - Math.abs(Math.cos(phi))) -
 			GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
 		this.rigG.setAttribute(
 			"transform",
@@ -1484,7 +1484,7 @@ export class Mascot {
 		this.earRInner.setAttribute("opacity", innerEarROpacity.toFixed(3));
 
 		// 左右眼随偏航球面滑动:位置信号贯穿旋转全程
-		const R_FACE = 44;
+		const R_FACE = 50;
 		const phiEyeL = -0.74 + phi;
 		const phiEyeR = 0.74 + phi;
 		const nzL = Math.cos(phiEyeL);
