@@ -1364,15 +1364,17 @@ export class Mascot {
 		const ring = eye.ring ?? EYE_RINGS.round;
 		if (ring !== (node as unknown as { __ring?: EyeRing }).__ring) {
 			(node as unknown as { __ring?: EyeRing }).__ring = ring;
-			// 归一化轮廓点乘以眼半径
-			node.setAttribute(
-				"d",
-				smoothClosedPath(
-					ring.map(
-						(p) => [p[0] * FACE.eyeRadius, p[1] * FACE.eyeRadius] as [number, number],
-					),
-				),
-			);
+			// 归一化轮廓点乘以眼半径,并缓存谷底半径(高光内收用)
+			let rMin = Number.POSITIVE_INFINITY;
+			const scaled: [number, number][] = [];
+			for (const p of ring) {
+				const x = p[0] * FACE.eyeRadius;
+				const y = p[1] * FACE.eyeRadius;
+				scaled.push([x, y]);
+				rMin = Math.min(rMin, Math.hypot(x, y));
+			}
+			(node as unknown as { __rMin?: number }).__rMin = rMin;
+			node.setAttribute("d", smoothClosedPath(scaled));
 		}
 
 		if (cn <= 0.02 || opacity <= 0.01) {
@@ -1397,14 +1399,25 @@ export class Mascot {
 		const sparkleOp = clamp((open - 0.28) / 0.5, 0, 1);
 		sparkleA.setAttribute("opacity", (0.95 * sparkleOp).toFixed(3));
 		sparkleB.setAttribute("opacity", (0.75 * sparkleOp).toFixed(3));
-
-		// 高光视差漂移
+		// 高光视差漂移;窄谷眼环(星形/月牙)内收防贴边出界
 		const spx = eye.lookX * 0.12;
 		const spy = eye.lookY * 0.12;
-		sparkleA.setAttribute("cx", (-4.5 + spx).toFixed(2));
-		sparkleA.setAttribute("cy", (-4.5 + spy).toFixed(2));
-		sparkleB.setAttribute("cx", (4.0 + spx * 0.6).toFixed(2));
-		sparkleB.setAttribute("cy", (3.5 + spy * 0.6).toFixed(2));
+		const rMin = (node as unknown as { __rMin?: number }).__rMin ?? FACE.eyeRadius;
+		const pull = (x: number, y: number, cap: number): [number, number] => {
+			const r = Math.hypot(x, y);
+			return r > cap ? [(x / r) * cap, (y / r) * cap] : [x, y];
+		};
+		const [ax, ay] = pull(-4.5 + spx, -4.5 + spy, rMin * 0.6);
+		const [bx, by] = pull(4.0 + spx * 0.6, 3.5 + spy * 0.6, rMin * 0.55);
+		// 高光抵抗透视压扁:水平向反向缩放抵消眼形的 cn 压缩,保持正圆;
+		// 垂直向保留压缩(眼睑压光的物理语义)
+		const inv = 1 / Math.max(sx, 0.3);
+		sparkleA.setAttribute("cx", ax.toFixed(2));
+		sparkleA.setAttribute("cy", ay.toFixed(2));
+		sparkleA.setAttribute("transform", `scale(${inv.toFixed(3)} 1)`);
+		sparkleB.setAttribute("cx", bx.toFixed(2));
+		sparkleB.setAttribute("cy", by.toFixed(2));
+		sparkleB.setAttribute("transform", `scale(${inv.toFixed(3)} 1)`);
 	}
 
 	private stepConfetti(dt: number): void {

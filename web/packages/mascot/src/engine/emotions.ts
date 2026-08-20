@@ -499,7 +499,7 @@ export const EMOTIONS: EmotionDef[] = [
 		group: "emotion",
 		desc: "耳朵无力下垂，眼神可怜巴巴地低垂，缩成一小团。",
 		transition: 820,
-		pool: ["sad", "droop", "tear"],
+		pool: ["sad", "droop"],
 		poolMs: [4000, 7000],
 		blinkMs: [4000, 8000],
 		body: {
@@ -704,7 +704,7 @@ export const EMOTIONS: EmotionDef[] = [
 		poolMs: [3000, 5000],
 		blinkMs: [4000, 7000],
 		body: { rotate: -9, earL: -14, earR: 22, tail: -0.4, tailElev: -0.3, mouth: "flat" },
-		eyes: { both: { lookX: -8, lookY: -7 } },
+		eyes: { both: { lookX: -8, lookY: -7, y: -3 } },
 		anims: [{ type: "sine", target: "eyes", prop: "lookY", amp: 1.2, period: 3200 }],
 	},
 	{
@@ -860,7 +860,7 @@ export const EMOTIONS: EmotionDef[] = [
 		pool: ["uneasyA", "round", "uneasyB"],
 		poolMs: [2600, 4500],
 		blinkMs: [4500, 8000],
-		openness: 0.6,
+		openness: 0.85,
 		body: {
 			y: 2,
 			rotate: -2,

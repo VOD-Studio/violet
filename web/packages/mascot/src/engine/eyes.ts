@@ -79,10 +79,10 @@ function crescent(w: number, bow: number, thick: number): EyeRing {
 	});
 }
 
-/** 圆润星形:r(θ) = 1 + amp·cos(kθ),amp 足够小保证轮廓平滑。 */
+/** 圆润星形:r(θ) = base + amp·cos(kθ),角谷对比 ~3:1 才有 ✦ 辨识度(2:1 会读成齿轮)。 */
 function star(k: number, amp: number): EyeRing {
 	return sample((t) => {
-		const r = 0.85 + amp * Math.cos(k * t);
+		const r = 0.78 + amp * Math.cos(k * t);
 		return [Math.cos(t) * r, Math.sin(t) * r];
 	});
 }
@@ -112,35 +112,35 @@ export const EYE_RINGS = {
 	/** 更弯的下月牙(大笑) */
 	grin: crescent(1.05, 0.8, 0.5),
 	/** 上弯月牙(难过 ∩) */
-	sad: crescent(0.9, -0.55, 0.4),
+	sad: crescent(0.9, -0.68, 0.4),
 	/** 斜线眼(无奈 -) */
 	uneasyA: fromEndpoints([-0.9, -0.35], [0.9, 0.35], 0.42),
 	/** 反斜线眼 */
 	uneasyB: fromEndpoints([-0.9, 0.35], [0.9, -0.35], 0.42),
-	/** 内高外低斜椭圆(生气) */
-	anger: ellipseRing(1.0, 0.78, -0.38),
+	/** 内高外低斜椭圆(生气):更扁更斜才有怒目压眉感 */
+	anger: ellipseRing(1.02, 0.62, -0.5),
 	/** 内低外高斜椭圆(另一侧生气,组合成怒目) */
-	angerMirror: ellipseRing(1.0, 0.78, 0.38),
+	angerMirror: ellipseRing(1.02, 0.62, 0.5),
 	/** 一大一小圆(疑惑,配合左右不同尺寸) */
 	small: ellipseRing(0.66, 0.66),
 	/** 扫读窄椭圆(检索/阅读) */
 	scan: ellipseRing(0.9, 0.5),
 	/** 圆润四角星(兴奋/完成) */
-	sparkle: star(4, 0.28),
+	sparkle: star(4, 0.38),
 	/** 心形(爱意) */
 	heart: heart(),
 	/** 下垂半闭(失落/困倦) */
 	droop: ellipseRing(0.95, 0.58, 0),
-	/** 调皮俏皮 Wink (>) */
-	wink: crescent(0.95, 0.72, 0.38),
+	/** 调皮俏皮 Wink (>):粗弯月牙,闭合感强才像眨眼 */
+	wink: crescent(1.0, 0.8, 0.52),
 	/** 水汪汪乞求大眼 (Pleading) */
 	pleading: ellipseRing(1.22, 1.28),
 	/** 陶醉呼噜舒适眯眼 */
-	purr: crescent(1.0, 0.52, 0.45),
+	purr: crescent(1.0, 0.62, 0.48),
 	/** 委屈波浪眼 */
-	tear: crescent(0.95, -0.65, 0.38),
+	tear: crescent(0.95, -0.78, 0.38),
 	/** 嫌弃翻白眼 */
-	disdain: crescent(0.9, -0.4, 0.45),
+	disdain: crescent(0.9, -0.56, 0.45),
 } as const satisfies Record<string, EyeRing>;
 
 export type EyeShapeId = keyof typeof EYE_RINGS;
