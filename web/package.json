@@ -17,6 +17,7 @@
 		"postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\""
 	},
 	"dependencies": {
+		"@violet/agent-status": "workspace:*",
 		"@codemirror/autocomplete": "^6.20.3",
 		"@codemirror/commands": "^6.10.4",
 		"@codemirror/lang-javascript": "^6.2.5",
