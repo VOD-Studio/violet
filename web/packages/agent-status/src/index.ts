@@ -70,18 +70,6 @@ export const DEFAULT_STATE_TTL_MS: Record<AgentState, number> = {
 export type AgentTimerHandle = ReturnType<typeof setTimeout>;
 
 /**
- * 各语义状态的默认表现(violet mascot 表情 ID);
- * 消费端可用自有映射表整体覆盖(见 {@link resolveEmotionId})。
- */
-export const DEFAULT_EMOTION_BY_STATE: Record<AgentState, string> = {
-	thinking: "25",
-	executing: "34",
-	error: "27",
-	done: "28",
-	idle: "00",
-};
-
-/**
  * 构造 v2 消息:自动填 type 判别标识。
  *
  * @param fields - 除 type 外的全部字段
@@ -107,20 +95,6 @@ export function isAgentStatusMessage(v: unknown): v is AgentStatusMessage {
 		Number.isFinite(m.seq) &&
 		Number.isFinite(m.ts)
 	);
-}
-
-/**
- * 解析消息最终表现:emotionId 覆盖逃生舱优先,state 默认映射兜底。
- *
- * @param msg - 待解析消息
- * @param emotionByState - 消费端自有映射表,缺省用 violet mascot 默认映射
- * @returns 表现标识(表情 ID)
- */
-export function resolveEmotionId(
-	msg: AgentStatusMessage,
-	emotionByState: Record<AgentState, string> = DEFAULT_EMOTION_BY_STATE,
-): string {
-	return msg.emotionId ?? emotionByState[msg.state];
 }
 
 /** {@link AgentStatusStore.accept} 的结果:生效或被丢弃(附原因) */
