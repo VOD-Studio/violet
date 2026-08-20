@@ -7,9 +7,9 @@ import { MascotTheater } from "./components/MascotTheater";
 import { useMascotExhibit } from "./hooks/useMascotExhibit";
 
 const GROUP_SEGMENTS: SegmentedItem<EmotionDef["group"]>[] = [
-	{ value: "emotion", label: <>情绪反应</> },
-	{ value: "lifecycle", label: <>生命周期</> },
-	{ value: "agent", label: <>代理工作</> },
+	{ value: "emotion", label: <>喜怒哀乐</> },
+	{ value: "lifecycle", label: <>猫猫日常</> },
+	{ value: "agent", label: <>工作模式</> },
 ];
 
 /** 吉祥物展馆:聚光舞台 sticky 常驻视线,目录分段切换、缩略卡 hover 本地预览、点击固定上演,SDK 协议全宽收尾。 */

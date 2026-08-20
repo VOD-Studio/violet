@@ -93,7 +93,7 @@ export function MascotStage({
 
 /** 分组元数据:标题与 segment 定义同源,目录与舞台状态签共用。 */
 export const GROUP_LABEL: Record<EmotionDef["group"], string> = {
-	lifecycle: "生命周期",
-	emotion: "情绪反应",
-	agent: "代理工作",
+	lifecycle: "猫猫日常",
+	emotion: "喜怒哀乐",
+	agent: "工作模式",
 };
