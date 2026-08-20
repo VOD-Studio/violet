@@ -141,7 +141,7 @@ describe("Mascot rotation projection", () => {
 
 		mascot.setDevYaw(180);
 		expect(body.getAttribute("transform")).toBeNull();
-		expect(childIndex(rig, tail)).toBeLessThan(childIndex(rig, body));
+		expect(childIndex(rig, tail)).toBeGreaterThan(childIndex(rig, body));
 		expect(tailRootX(tail.getAttribute("d"))).toBeLessThan(75);
 
 		mascot.setDevYaw(270);
