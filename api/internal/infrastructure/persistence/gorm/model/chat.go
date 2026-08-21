@@ -52,6 +52,7 @@ type ChatMessage struct {
 	MessageType    string     `gorm:"type:varchar(16);column:message_type;not null" json:"message_type"`
 	Content        string     `gorm:"type:text;not null;default:''" json:"content"`
 	MediaID        *uuid.UUID `gorm:"type:uuid;column:media_id" json:"media_id,omitempty"`
+	SharedTweetID  *uuid.UUID `gorm:"type:uuid;column:shared_tweet_id" json:"shared_tweet_id,omitempty"`
 	ReplyToID      *uuid.UUID `gorm:"type:uuid;column:reply_to_id" json:"reply_to_id,omitempty"`
 	IdempotencyKey string     `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
 	DeletedAt      *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`

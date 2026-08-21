@@ -90,3 +90,35 @@ func TestMessageFactoryRejectsZeroReplyTarget(t *testing.T) {
 	_, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "reply", "retry-reply-zero", time.Now(), &zeroID)
 	require.Error(t, err)
 }
+
+func TestNewTweetShareMessageValidatesPayload(t *testing.T) {
+	now := time.Now()
+	conversationID := shared.NewID()
+	senderID := shared.NewID()
+	tweetID := shared.NewID()
+
+	share, err := chat.NewTweetShareMessage(conversationID, senderID, tweetID, "  快来看  ", "retry-share-1", now, nil)
+	require.NoError(t, err)
+	require.Equal(t, chat.MessageTweetShare, share.Type())
+	require.Equal(t, "快来看", share.Content())
+	require.NotNil(t, share.SharedTweetID())
+	require.Equal(t, tweetID, *share.SharedTweetID())
+	require.Nil(t, share.MediaID())
+
+	withoutCaption, err := chat.NewTweetShareMessage(conversationID, senderID, tweetID, "   ", "retry-share-2", now, nil)
+	require.NoError(t, err)
+	require.Equal(t, "", withoutCaption.Content())
+
+	_, err = chat.NewTweetShareMessage(conversationID, senderID, shared.ID{}, "", "retry-share-3", now, nil)
+	require.Error(t, err)
+
+	overLong := make([]rune, chat.MaxMessageContentLength+1)
+	for i := range overLong {
+		overLong[i] = 'a'
+	}
+	_, err = chat.NewTweetShareMessage(conversationID, senderID, tweetID, string(overLong), "retry-share-4", now, nil)
+	require.Error(t, err)
+
+	_, err = chat.NewTweetShareMessage(conversationID, senderID, tweetID, "caption", "", now, nil)
+	require.Error(t, err)
+}

@@ -12,6 +12,7 @@ import (
 	domainchat "blog-api/internal/domain/chat"
 	domainchatreaction "blog-api/internal/domain/chatreaction"
 	domainshared "blog-api/internal/domain/shared"
+	domaintweet "blog-api/internal/domain/tweet"
 	domainupload "blog-api/internal/domain/upload"
 	domainuser "blog-api/internal/domain/user"
 )
@@ -27,6 +28,7 @@ type Service struct {
 	repo      domainchat.ConversationRepository
 	users     UserRepository
 	files     FileRepository
+	tweets    TweetRepository
 	reactions domainchatreaction.Store
 	notifier  EventNotifier
 	push      PushSender
@@ -36,14 +38,14 @@ type Service struct {
 }
 
 // NewService 构造聊天服务。
-func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus, reactions domainchatreaction.Store) *Service {
+func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus, reactions domainchatreaction.Store, tweets TweetRepository) *Service {
 	if now == nil {
 		now = time.Now
 	}
 	if push == nil {
 		push = NoopPushSender{}
 	}
-	return &Service{repo: repo, users: users, files: files, reactions: reactions, notifier: notifier, push: push, bus: bus, publicKey: publicKey, now: now}
+	return &Service{repo: repo, users: users, files: files, tweets: tweets, reactions: reactions, notifier: notifier, push: push, bus: bus, publicKey: publicKey, now: now}
 }
 
 // CreateConversationInput 创建会话入参。
@@ -80,6 +82,8 @@ type SendMessageInput struct {
 	Content string
 	// MediaID 图片媒体 ID。
 	MediaID domainshared.ID
+	// SharedTweetID 分享消息引用的推文 ID；零值表示不分享推文。
+	SharedTweetID domainshared.ID
 	// ReplyToID 被引用的同会话消息 ID；零值表示不引用消息。
 	ReplyToID domainshared.ID
 	// IdempotencyKey 客户端发送幂等键。
@@ -156,6 +160,25 @@ type MediaDTO struct {
 	Height *int `json:"height,omitempty"`
 }
 
+// SharedTweetDTO 分享到聊天的推文快照读模型。
+//
+// 不建外键：Author/Content/Images/CreatedAt 均在被分享推文物理删除后清空，仅保留 IsDeleted 占位标记
+// （与 tweets.quote_of 对已删除被引用推文的处理同构，见 CONTEXT.md「推文分享消息」词条）。
+type SharedTweetDTO struct {
+	// ID 推文 ID。
+	ID string `json:"id"`
+	// Author 推文作者资料；推文已删除时为空。
+	Author *UserDTO `json:"author,omitempty"`
+	// Content 推文正文；推文已删除时为空。
+	Content string `json:"content,omitempty"`
+	// Images 推文图片 URL 列表；推文已删除时为空。
+	Images []string `json:"images,omitempty"`
+	// CreatedAt 推文创建时间；推文已删除时为空。
+	CreatedAt string `json:"created_at,omitempty"`
+	// IsDeleted 被分享的推文是否已被物理删除。
+	IsDeleted bool `json:"is_deleted"`
+}
+
 // MemberDTO 会话成员读模型。
 type MemberDTO struct {
 	// User 成员用户资料。
@@ -182,6 +205,8 @@ type MessageDTO struct {
 	Content string `json:"content,omitempty"`
 	// Media 图片媒体；文本消息为空。
 	Media *MediaDTO `json:"media,omitempty"`
+	// SharedTweet 分享推文的动态快照；被分享推文物理删除后为已删除占位。
+	SharedTweet *SharedTweetDTO `json:"shared_tweet,omitempty"`
 	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
 	ReplyTo *MessageReferenceDTO `json:"reply_to,omitempty"`
 	// Reactions 消息的聚合表情反应。
@@ -717,6 +742,10 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		if err == nil {
 			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaID, in.IdempotencyKey, now, replyToID)
 		}
+	case domainchat.MessageTweetShare:
+		if _, err = s.tweets.FindByID(ctx, in.SharedTweetID); err == nil {
+			message, err = domainchat.NewTweetShareMessage(in.ConversationID, in.UserID, in.SharedTweetID, in.Content, in.IdempotencyKey, now, replyToID)
+		}
 	default:
 		err = domainshared.BadRequest("非法消息类型")
 	}
@@ -734,8 +763,11 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		}
 	}
 	preview := "发送了一张图片"
-	if message.Type() == domainchat.MessageText {
+	switch message.Type() {
+	case domainchat.MessageText:
 		preview = truncatePreview(message.Content(), 120)
+	case domainchat.MessageTweetShare:
+		preview = "分享了一条推文"
 	}
 	events, err := s.repo.SaveMessage(ctx, message, recipients, map[string]any{"preview": preview})
 	if err != nil {
@@ -1002,8 +1034,14 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		dto.Reactions = []MessageReactionDTO{}
 		return dto, nil
 	}
-	if message.Type() == domainchat.MessageText {
+	if message.Type() == domainchat.MessageText || message.Type() == domainchat.MessageTweetShare {
 		dto.Content = message.Content()
+	}
+	if message.SharedTweetID() != nil {
+		dto.SharedTweet, err = s.sharedTweetDTO(ctx, *message.SharedTweetID())
+		if err != nil {
+			return MessageDTO{}, err
+		}
 	}
 	if message.MediaID() != nil {
 		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
@@ -1048,7 +1086,7 @@ func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.M
 		dto.IsDeleted = true
 		return dto, nil
 	}
-	if message.Type() == domainchat.MessageText {
+	if message.Type() == domainchat.MessageText || message.Type() == domainchat.MessageTweetShare {
 		dto.Content = truncatePreview(message.Content(), 120)
 	}
 	if message.MediaID() != nil {
@@ -1066,6 +1104,25 @@ func (s *Service) mediaDTO(ctx context.Context, mediaID domainshared.ID) (*Media
 		return nil, err
 	}
 	return &MediaDTO{ID: file.ID().String(), URL: file.URL(), Thumbnail: file.Thumbnail(), MIMEType: file.MimeType(), Size: file.Size(), Width: file.Width(), Height: file.Height()}, nil
+}
+
+func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID) (*SharedTweetDTO, error) {
+	t, err := s.tweets.FindByID(ctx, tweetID)
+	if err != nil {
+		if errors.Is(err, domaintweet.ErrNotFound) {
+			return &SharedTweetDTO{ID: tweetID.String(), IsDeleted: true}, nil
+		}
+		return nil, err
+	}
+	author, err := s.users.FindByID(ctx, t.AuthorID())
+	if err != nil {
+		return nil, err
+	}
+	authorDTO := userToDTO(author)
+	return &SharedTweetDTO{
+		ID: t.ID().String(), Author: &authorDTO, Content: t.Content(), Images: t.Images(),
+		CreatedAt: t.CreatedAt().Format(time.RFC3339Nano),
+	}, nil
 }
 
 func truncatePreview(content string, maxRunes int) string {

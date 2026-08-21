@@ -5,6 +5,7 @@ import (
 
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
+	domaintweet "blog-api/internal/domain/tweet"
 	domainupload "blog-api/internal/domain/upload"
 	domainuser "blog-api/internal/domain/user"
 )
@@ -21,6 +22,11 @@ type UserRepository interface {
 type FileRepository interface {
 	FindByID(ctx context.Context, id domainshared.ID) (*domainupload.File, error)
 	UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error
+}
+
+// TweetRepository 聊天分享推文的查询端口（分享到聊天，只读）。
+type TweetRepository interface {
+	FindByID(ctx context.Context, id domainshared.ID) (*domaintweet.Tweet, error)
 }
 
 // EventNotifier 向在线聊天 SSE 连接广播事件。

@@ -41,6 +41,8 @@ const (
 	MessageImage MessageType = "image"
 	// MessageSystem 群聊系统事件消息。
 	MessageSystem MessageType = "system"
+	// MessageTweetShare 推文分享消息（分享到聊天，见 CONTEXT.md「分享到聊天」词条）。
+	MessageTweetShare MessageType = "tweet_share"
 )
 
 // ChatEventType 聊天事件类型。
@@ -265,6 +267,8 @@ type Message struct {
 	content string
 	// mediaID 图片消息引用的上传文件 ID。
 	mediaID *shared.ID
+	// sharedTweetID 分享消息引用的推文 ID；不建外键，推文物理删除后仍保留（与 tweets.quote_of 同构）。
+	sharedTweetID *shared.ID
 	// replyToID 被引用的同会话文本或图片消息 ID；nil 表示普通消息。
 	replyToID *shared.ID
 	// idempotencyKey 客户端发送幂等键。
@@ -292,7 +296,7 @@ func NewTextMessage(conversationID, senderID shared.ID, content, idempotencyKey 
 	if err := validateReplyToID(replyToID); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageText, content, nil, replyToID, idempotencyKey, now), nil
+	return newMessage(conversationID, senderID, MessageText, content, nil, nil, replyToID, idempotencyKey, now), nil
 }
 
 // NewSystemMessage 创建群聊系统事件消息。
@@ -307,7 +311,7 @@ func NewSystemMessage(conversationID, senderID shared.ID, content, idempotencyKe
 	if err := validateIdempotencyKey(idempotencyKey); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageSystem, content, nil, nil, idempotencyKey, now), nil
+	return newMessage(conversationID, senderID, MessageSystem, content, nil, nil, nil, idempotencyKey, now), nil
 }
 
 // NewImageMessage 创建图片消息。
@@ -321,13 +325,33 @@ func NewImageMessage(conversationID, senderID, mediaID shared.ID, idempotencyKey
 	if err := validateReplyToID(replyToID); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageImage, "", &mediaID, replyToID, idempotencyKey, now), nil
+	return newMessage(conversationID, senderID, MessageImage, "", &mediaID, nil, replyToID, idempotencyKey, now), nil
 }
 
-func newMessage(conversationID, senderID shared.ID, messageType MessageType, content string, mediaID, replyToID *shared.ID, idempotencyKey string, now time.Time) *Message {
+// NewTweetShareMessage 创建推文分享消息（分享到聊天）。
+//
+// tweetID 必填；caption 为可选文字说明，trim 后按文本消息同一长度上限校验，允许为空。
+func NewTweetShareMessage(conversationID, senderID, tweetID shared.ID, caption, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
+	caption = strings.TrimSpace(caption)
+	if conversationID.IsZero() || senderID.IsZero() || tweetID.IsZero() {
+		return nil, shared.BadRequest("分享消息参数不完整")
+	}
+	if len([]rune(caption)) > MaxMessageContentLength {
+		return nil, shared.BadRequest("分享消息配文过长")
+	}
+	if err := validateIdempotencyKey(idempotencyKey); err != nil {
+		return nil, err
+	}
+	if err := validateReplyToID(replyToID); err != nil {
+		return nil, err
+	}
+	return newMessage(conversationID, senderID, MessageTweetShare, caption, nil, &tweetID, replyToID, idempotencyKey, now), nil
+}
+
+func newMessage(conversationID, senderID shared.ID, messageType MessageType, content string, mediaID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, now time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
-		content: content, mediaID: mediaID, replyToID: replyToID, idempotencyKey: idempotencyKey,
+		content: content, mediaID: mediaID, sharedTweetID: sharedTweetID, replyToID: replyToID, idempotencyKey: idempotencyKey,
 		Timestamps: shared.Timestamps{CreatedAt: now, UpdatedAt: now},
 	}
 	m.SetID(shared.NewID())
@@ -350,10 +374,10 @@ func validateReplyToID(replyToID *shared.ID) error {
 }
 
 // ReconstructMessage 从持久化数据重建消息。
-func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, createdAt, updatedAt time.Time) *Message {
+func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, createdAt, updatedAt time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
-		content: content, mediaID: mediaID, replyToID: replyToID, idempotencyKey: idempotencyKey,
+		content: content, mediaID: mediaID, sharedTweetID: sharedTweetID, replyToID: replyToID, idempotencyKey: idempotencyKey,
 		deletedAt: deletedAt, deletedBy: deletedBy,
 		Timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
@@ -392,6 +416,9 @@ func (m *Message) Content() string { return m.content }
 
 // MediaID 返回图片媒体 ID。
 func (m *Message) MediaID() *shared.ID { return m.mediaID }
+
+// SharedTweetID 返回分享消息引用的推文 ID。
+func (m *Message) SharedTweetID() *shared.ID { return m.sharedTweetID }
 
 // ReplyToID 返回被引用的消息 ID。
 func (m *Message) ReplyToID() *shared.ID { return m.replyToID }

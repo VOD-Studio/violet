@@ -25,6 +25,14 @@ func registerChatPaths(t *openapi3.T) {
 		"width":     optInt("图片宽度"),
 		"height":    optInt("图片高度"),
 	})
+	registerSchema(t, "ChatSharedTweetDTO", openapi3.Schemas{
+		"id":         reqStr("推文 ID"),
+		"author":     &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
+		"content":    optStr("推文正文；推文已删除时为空"),
+		"images":     strArray("推文图片 URL 列表；推文已删除时为空"),
+		"created_at": optStr("推文创建时间；推文已删除时为空"),
+		"is_deleted": optBool("被分享的推文是否已被物理删除"),
+	})
 	registerSchema(t, "ChatMessageReferenceDTO", openapi3.Schemas{
 		"id":         reqStr("被引用消息 ID"),
 		"sender":     &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
@@ -37,9 +45,10 @@ func registerChatPaths(t *openapi3.T) {
 		"id":              reqStr("消息 ID"),
 		"conversation_id": reqStr("会话 ID"),
 		"sender":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
-		"type":            reqStr("text、image 或 system"),
-		"content":         optStr("文本内容"),
+		"type":            reqStr("text、image、system 或 tweet_share"),
+		"content":         optStr("文本内容或分享推文的配文"),
 		"media":           &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"},
+		"shared_tweet":    &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
 		"reply_to":        &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
 		"is_deleted":      optBool("是否已被管理员删除"),
 		"deleted_at":      optStr("删除时间"),
@@ -72,10 +81,11 @@ func registerChatPaths(t *openapi3.T) {
 		"title": reqStr("新房间名称"),
 	}, "title")
 	registerSchema(t, "ChatSendMessageRequest", openapi3.Schemas{
-		"type":        reqStr("text 或 image"),
-		"content":     optStr("文本消息内容"),
-		"media_id":    optStr("图片媒体 ID"),
-		"reply_to_id": optStr("被引用消息 ID"),
+		"type":            reqStr("text、image 或 tweet_share"),
+		"content":         optStr("文本消息内容或分享推文的配文"),
+		"media_id":        optStr("图片媒体 ID"),
+		"shared_tweet_id": optStr("分享的推文 ID"),
+		"reply_to_id":     optStr("被引用消息 ID"),
 	}, "type")
 	registerSchema(t, "ChatPushSubscriptionRequest", openapi3.Schemas{
 		"endpoint":     reqStr("浏览器 Push endpoint"),
