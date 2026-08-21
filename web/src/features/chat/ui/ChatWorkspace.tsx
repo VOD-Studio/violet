@@ -5,6 +5,10 @@ import { useAllEmojis } from "@features/emojis/api/queries";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { EmojiText } from "@shared/ui/emoji-text";
+import { Magnetic } from "@shared/ui/magnetic";
+import { ParticleField } from "@shared/ui/particle-field";
+import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
+import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import {
 	AlertTriangle,
 	ArrowDown,
@@ -168,20 +172,22 @@ function ConversationIndex({
 						</p>
 						<h1 className="mt-1 font-mono text-xl font-bold tracking-tight">聊天</h1>
 					</div>
-					<Button
-						aria-label="新建会话"
-						className="size-8 rounded-full shadow-xs"
-						onClick={onToggleNew}
-						size="icon"
-						variant={showNew ? "secondary" : "outline"}
-					>
-						<Plus
-							className={cn(
-								"size-4 transition-transform duration-200",
-								showNew && "rotate-45",
-							)}
-						/>
-					</Button>
+					<Magnetic strength={0.25}>
+						<Button
+							aria-label="新建会话"
+							className="size-8 rounded-full shadow-xs"
+							onClick={onToggleNew}
+							size="icon"
+							variant={showNew ? "secondary" : "outline"}
+						>
+							<Plus
+								className={cn(
+									"size-4 transition-transform duration-200",
+									showNew && "rotate-45",
+								)}
+							/>
+						</Button>
+					</Magnetic>
 				</div>
 				<div className="relative mt-3.5">
 					<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -523,9 +529,13 @@ function ConversationPanel({
 				<div className="flex items-center gap-2">
 					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/30 px-2.5 py-1 text-muted-foreground sm:flex">
 						<span className="size-1.5 rounded-full bg-neon-green" />
-						<span className="font-mono text-[9px] uppercase tracking-[0.14em]">
-							private channel
-						</span>
+						<DecryptedText
+							text={conversation.kind === "room" ? "ROOM CHANNEL" : "PRIVATE CHANNEL"}
+							speed={30}
+							maxIterations={8}
+							animateOn="view"
+							className="font-mono text-[9px] uppercase tracking-[0.14em]"
+						/>
 					</div>
 					<Button
 						aria-label="打开会话详情"
@@ -813,22 +823,24 @@ function MessageComposer({
 							<span className="hidden font-mono text-[10px] text-muted-foreground/60 sm:inline">
 								Enter 发送 / Shift+Enter 换行
 							</span>
-							<Button
-								aria-label="发送消息"
-								disabled={!canSend}
-								onClick={() => void sendMessage()}
-								size="sm"
-								className="h-7 gap-1.5 px-3 text-xs shadow-xs"
-							>
-								{send.isPending ? (
-									<LoaderCircle className="size-3.5 animate-spin" />
-								) : (
-									<>
-										<Send className="size-3" />
-										<span>发送</span>
-									</>
-								)}
-							</Button>
+							<Magnetic strength={0.2}>
+								<Button
+									aria-label="发送消息"
+									disabled={!canSend}
+									onClick={() => void sendMessage()}
+									size="sm"
+									className="h-7 gap-1.5 px-3 text-xs shadow-xs"
+								>
+									{send.isPending ? (
+										<LoaderCircle className="size-3.5 animate-spin" />
+									) : (
+										<>
+											<Send className="size-3" />
+											<span>发送</span>
+										</>
+									)}
+								</Button>
+							</Magnetic>
 						</div>
 					}
 				/>
@@ -1036,7 +1048,7 @@ function NotificationSettings({
 	const granted = push.permission === "granted";
 
 	return (
-		<section className="rounded-xl border border-edge-hairline bg-secondary/15 p-3.5">
+		<SpotlightCard className="rounded-xl border border-edge-hairline bg-secondary/15 p-3.5">
 			<div className="flex items-start gap-2.5">
 				<div className="mt-0.5 rounded-md bg-neon-cyan/10 p-1.5 text-neon-cyan">
 					<Bell className="size-3.5" />
@@ -1093,28 +1105,47 @@ function NotificationSettings({
 					</Button>
 				</div>
 			</div>
-		</section>
+		</SpotlightCard>
 	);
 }
 function EmptyConversation({ onCreate }: { onCreate: () => void }) {
 	return (
-		<div className="flex flex-1 items-center justify-center p-8">
-			<div className="max-w-sm text-center">
+		<div className="relative flex flex-1 items-center justify-center overflow-hidden p-8">
+			<div className="pointer-events-none absolute inset-0 overflow-hidden">
+				<ParticleField density={0.15} />
+			</div>
+			<SpotlightCard className="relative max-w-sm rounded-3xl border border-edge-hairline/80 bg-card/60 p-8 text-center shadow-2xl backdrop-blur-xl">
 				<div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan shadow-sm">
 					<MessageCircle className="size-6" />
 				</div>
 				<p className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-					No conversation selected
+					<DecryptedText
+						text="NO CONVERSATION SELECTED"
+						speed={30}
+						maxIterations={8}
+						animateOn="view"
+					/>
 				</p>
-				<h2 className="mt-1.5 text-xl font-semibold">选择一个会话</h2>
+				<h2 className="mt-1.5 text-xl font-semibold">
+					<DecryptedText
+						text="选择一个会话"
+						speed={40}
+						maxIterations={8}
+						animateOn="view"
+					/>
+				</h2>
 				<p className="mt-2 text-xs leading-5 text-muted-foreground">
 					从左侧选择私聊或群聊，或直接新建一个对话。
 				</p>
-				<Button className="mt-4 text-xs" onClick={onCreate} size="sm">
-					<Plus className="mr-1.5 size-3.5" />
-					新建会话
-				</Button>
-			</div>
+				<div className="mt-5 flex justify-center">
+					<Magnetic strength={0.2}>
+						<Button className="text-xs" onClick={onCreate} size="sm">
+							<Plus className="mr-1.5 size-3.5" />
+							新建会话
+						</Button>
+					</Magnetic>
+				</div>
+			</SpotlightCard>
 		</div>
 	);
 }
