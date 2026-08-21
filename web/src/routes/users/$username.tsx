@@ -211,9 +211,9 @@ function UserPublicProfilePage() {
 
 	if (isProfileLoading && !profile) {
 		return (
-			<PageShell>
-				<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
-					<div className="overflow-hidden rounded-3xl border border-edge-hairline bg-card/60 p-6 backdrop-blur lg:sticky lg:top-24 lg:self-start">
+			<PageShell className="lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:overflow-hidden lg:py-6">
+				<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:h-full lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
+					<div className="shrink-0 overflow-hidden rounded-3xl border border-edge-hairline bg-card/60 p-6 backdrop-blur">
 						<ShimmerSkeleton className="h-32 w-full rounded-2xl" />
 						<div className="-mt-14 ml-4">
 							<ShimmerSkeleton className="size-24 rounded-3xl" />
@@ -228,13 +228,15 @@ function UserPublicProfilePage() {
 							<ShimmerSkeleton className="h-20 rounded-2xl" />
 						</div>
 					</div>
-					<div className="space-y-6">
-						<div className="flex items-center justify-between">
+					<div className="min-w-0 space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
+						<div className="flex shrink-0 items-center justify-between">
 							<ShimmerSkeleton className="h-8 w-36 rounded-xl" />
 							<ShimmerSkeleton className="h-8 w-24 rounded-xl" />
 						</div>
-						<ShimmerSkeleton className="h-44 w-full rounded-3xl" />
-						<ShimmerSkeleton className="h-44 w-full rounded-3xl" />
+						<div className="space-y-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2">
+							<ShimmerSkeleton className="h-44 w-full rounded-3xl" />
+							<ShimmerSkeleton className="h-44 w-full rounded-3xl" />
+						</div>
 					</div>
 				</div>
 			</PageShell>
@@ -282,7 +284,7 @@ function UserPublicProfilePage() {
 	const mediaCount = allTweets.filter((t) => t.images && t.images.length > 0).length;
 
 	return (
-		<PageShell>
+		<PageShell className="lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:overflow-hidden lg:py-6">
 			{/* 沉浸式环境光晕背景 */}
 			<div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 				<div
@@ -298,9 +300,9 @@ function UserPublicProfilePage() {
 				/>
 			</div>
 
-			<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
-				{/* 左侧：Bento 个人信息名片（桌面端固定不随页面滚动） */}
-				<aside className="h-fit lg:sticky lg:top-24 lg:self-start">
+			<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:h-full lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
+				{/* 左侧：Bento 个人信息名片（桌面端常驻固定） */}
+				<aside className="shrink-0">
 					<div className="group/card relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/60 shadow-xl shadow-primary/5 backdrop-blur-xl transition-all duration-300 hover:border-edge-hairline hover:shadow-2xl hover:shadow-primary/10">
 						{/* 顶栏艺术 Cover Banner */}
 						<div
@@ -495,9 +497,9 @@ function UserPublicProfilePage() {
 				</aside>
 
 				{/* 右侧：推文与动态流 */}
-				<main className="min-w-0">
-					{/* 动态 Header 与筛选 Tabs */}
-					<header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-edge-hairline/60 pb-4">
+				<main className="min-w-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
+					{/* 动态 Header 与筛选 Tabs（常驻顶部） */}
+					<header className="mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 border-b border-edge-hairline/60 pb-4">
 						<div>
 							<div className="flex items-center gap-2">
 								<span
@@ -547,96 +549,101 @@ function UserPublicProfilePage() {
 						</div>
 					</header>
 
-					{/* 动态内容区 */}
-					{isTimelineLoading ? (
-						<div className="space-y-4">
-							{Array.from({ length: 3 }).map((_, index) => (
-								<ShimmerSkeleton key={index} className="h-44 w-full rounded-3xl" />
-							))}
-						</div>
-					) : isTimelineError ? (
-						<div className="rounded-3xl border border-edge-hairline/80 bg-card/50 p-12 text-center backdrop-blur">
-							<div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-destructive/20 bg-destructive/10 text-destructive">
-								<MessageSquare className="size-6" />
-							</div>
-							<h3 className="mt-4 text-base font-semibold text-foreground">
-								加载动态失败
-							</h3>
-							<p className="mt-1 text-sm text-muted-foreground">
-								{timelineError instanceof Error
-									? timelineError.message
-									: "获取推文时间线时发生未知错误"}
-							</p>
-						</div>
-					) : tweets.length === 0 ? (
-						/* 现代化科技感空状态 */
-						<div className="relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/40 p-12 text-center backdrop-blur-xl">
-							<div
-								aria-hidden="true"
-								className={cn(
-									"pointer-events-none absolute top-1/2 left-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl opacity-20",
-									theme.glowBg,
-								)}
-							/>
-
-							<div className="relative">
-								<div className="relative mx-auto flex size-16 items-center justify-center rounded-2xl border border-edge-hairline bg-background/80 shadow-inner">
-									<Feather className={cn("size-7", theme.accentColor)} />
-									<Sparkles className="absolute -top-1.5 -right-1.5 size-4 text-neon-purple animate-bounce" />
-								</div>
-
-								<h3 className="mt-5 text-lg font-bold tracking-tight text-foreground">
-									{feedTab === "media" ? "暂无图文推文" : "静候发声"}
-								</h3>
-								<p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-									{feedTab === "media"
-										? "该用户目前还没有发布包含图片的推文。"
-										: "该用户尚未发布任何推文。保持关注，静待最新发声。"}
-								</p>
-
-								{isSelf && feedTab === "all" ? (
-									<div className="mt-6 flex justify-center">
-										<Button asChild className="gap-2 rounded-xl shadow-md">
-											<Link to="/tweets">
-												发布第一条推文
-												<MoveRight className="size-4" />
-											</Link>
-										</Button>
-									</div>
-								) : null}
-							</div>
-						</div>
-					) : (
-						/* 推文列表流 */
-						<div className="space-y-4">
-							<div className="flex flex-col gap-4">
-								{tweets.map((tweet) => (
-									<TweetCard key={tweet.id} tweet={tweet} />
+					{/* 动态内容区（桌面端内部独立滚动） */}
+					<div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2">
+						{isTimelineLoading ? (
+							<div className="space-y-4">
+								{Array.from({ length: 3 }).map((_, index) => (
+									<ShimmerSkeleton
+										key={index}
+										className="h-44 w-full rounded-3xl"
+									/>
 								))}
 							</div>
-
-							{hasNextPage && (
-								<div className="flex justify-center pt-6 pb-2">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => fetchNextPage()}
-										disabled={isFetchingNextPage}
-										className="gap-2 rounded-xl border-edge-hairline bg-card/80 px-6 backdrop-blur hover:bg-accent"
-									>
-										{isFetchingNextPage ? (
-											<>
-												<Loader2 className="size-3.5 animate-spin" />
-												加载中…
-											</>
-										) : (
-											"加载更多动态"
-										)}
-									</Button>
+						) : isTimelineError ? (
+							<div className="rounded-3xl border border-edge-hairline/80 bg-card/50 p-12 text-center backdrop-blur">
+								<div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-destructive/20 bg-destructive/10 text-destructive">
+									<MessageSquare className="size-6" />
 								</div>
-							)}
-						</div>
-					)}
+								<h3 className="mt-4 text-base font-semibold text-foreground">
+									加载动态失败
+								</h3>
+								<p className="mt-1 text-sm text-muted-foreground">
+									{timelineError instanceof Error
+										? timelineError.message
+										: "获取推文时间线时发生未知错误"}
+								</p>
+							</div>
+						) : tweets.length === 0 ? (
+							/* 现代化科技感空状态 */
+							<div className="relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/40 p-12 text-center backdrop-blur-xl">
+								<div
+									aria-hidden="true"
+									className={cn(
+										"pointer-events-none absolute top-1/2 left-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl opacity-20",
+										theme.glowBg,
+									)}
+								/>
+
+								<div className="relative">
+									<div className="relative mx-auto flex size-16 items-center justify-center rounded-2xl border border-edge-hairline bg-background/80 shadow-inner">
+										<Feather className={cn("size-7", theme.accentColor)} />
+										<Sparkles className="absolute -top-1.5 -right-1.5 size-4 text-neon-purple animate-bounce" />
+									</div>
+
+									<h3 className="mt-5 text-lg font-bold tracking-tight text-foreground">
+										{feedTab === "media" ? "暂无图文推文" : "静候发声"}
+									</h3>
+									<p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+										{feedTab === "media"
+											? "该用户目前还没有发布包含图片的推文。"
+											: "该用户尚未发布任何推文。保持关注，静待最新发声。"}
+									</p>
+
+									{isSelf && feedTab === "all" ? (
+										<div className="mt-6 flex justify-center">
+											<Button asChild className="gap-2 rounded-xl shadow-md">
+												<Link to="/tweets">
+													发布第一条推文
+													<MoveRight className="size-4" />
+												</Link>
+											</Button>
+										</div>
+									) : null}
+								</div>
+							</div>
+						) : (
+							/* 推文列表流 */
+							<div className="space-y-4">
+								<div className="flex flex-col gap-4">
+									{tweets.map((tweet) => (
+										<TweetCard key={tweet.id} tweet={tweet} />
+									))}
+								</div>
+
+								{hasNextPage && (
+									<div className="flex justify-center pt-6 pb-2">
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => fetchNextPage()}
+											disabled={isFetchingNextPage}
+											className="gap-2 rounded-xl border-edge-hairline bg-card/80 px-6 backdrop-blur hover:bg-accent"
+										>
+											{isFetchingNextPage ? (
+												<>
+													<Loader2 className="size-3.5 animate-spin" />
+													加载中…
+												</>
+											) : (
+												"加载更多动态"
+											)}
+										</Button>
+									</div>
+								)}
+							</div>
+						)}
+					</div>
 				</main>
 			</div>
 		</PageShell>
