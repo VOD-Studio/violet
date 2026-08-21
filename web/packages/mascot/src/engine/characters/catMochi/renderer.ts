@@ -69,13 +69,18 @@ export class CatMochiRenderer implements CharacterRenderer {
 			].join(" "),
 		);
 
-		// 地面投影随跳起高度缩小变淡(b.y 负为升空),随偏航与注视跟随微移增强立体感
-		const shadowScale = clamp(b.scale * (1 + b.y * 0.008), 0.5, 1.4);
+		// 阴影固定在地面接触点:角色升高只缩小并减淡,偏航不应让脚下阴影横移。
+		const height = Math.max(0, -b.y);
+		const shadowScale = clamp(b.scale * (1 - height * 0.006), 0.46, 1.1);
+		const shadowX = cx + b.x * 0.4 + frame.leanShift * 0.5;
 		this.rig.shadowEl.setAttribute(
 			"transform",
-			`translate(${(cx + b.x * 0.4 + Math.sin(phi) * 7 + frame.leanShift * 0.5).toFixed(2)} 234) scale(${shadowScale.toFixed(3)}) translate(${-cx} -234)`,
+			`translate(${shadowX.toFixed(2)} 234) scale(${shadowScale.toFixed(3)}) translate(${-cx} -234)`,
 		);
-		this.rig.shadowEl.setAttribute("opacity", clamp(1 + b.y * 0.01, 0.45, 1).toFixed(3));
+		this.rig.shadowEl.setAttribute(
+			"opacity",
+			clamp(0.88 - height * 0.008, 0.2, 0.88).toFixed(3),
+		);
 
 		// 身体变色与高光梯度
 		if (b.color !== this.curBodyColor) {

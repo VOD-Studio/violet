@@ -165,7 +165,7 @@ export class Mascot {
 
 	/** 触发三组分层烟花，不改变角色姿态。 */
 	fireworks(): void {
-		this.stageFx.fireworks();
+		this.stageFx.fireworksBurst();
 		this.wakeEffects();
 	}
 
@@ -177,13 +177,13 @@ export class Mascot {
 
 	/** 触发斜向掠过舞台的流星群。 */
 	meteors(): void {
-		this.stageFx.meteors();
+		this.stageFx.meteorShower();
 		this.wakeEffects();
 	}
 
 	/** 触发暖金闪耀环与周身星光。 */
 	spotlight(): void {
-		this.stageFx.spotlight();
+		this.stageFx.spotlightBurst();
 		this.wakeEffects();
 	}
 

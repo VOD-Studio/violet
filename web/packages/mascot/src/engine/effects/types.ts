@@ -13,3 +13,8 @@ export interface EffectMounts {
 export interface Effect {
 	clear(): void;
 }
+/** 可由舞台按钮触发并由统一 ticker 推进的独立特效。 */
+export interface StageEffect extends Effect {
+	trigger(): void;
+	step(dt: number): void;
+}

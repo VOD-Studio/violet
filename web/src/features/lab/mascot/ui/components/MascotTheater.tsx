@@ -5,6 +5,7 @@ import { MascotStage } from "@violet/mascot/react";
 import {
 	Hand,
 	Heart,
+	PartyPopper,
 	Pause,
 	Play,
 	Rocket,
@@ -12,7 +13,6 @@ import {
 	RotateCw,
 	Send,
 	Sparkles,
-	Star,
 	Terminal,
 	WandSparkles,
 	Zap,
@@ -46,23 +46,41 @@ function EmotionBubble({ text, gen }: EmotionBubbleProps) {
 
 interface StageAction {
 	label: string;
+	description?: string;
 	icon: React.ReactNode;
 	onClick: () => void;
 }
 
 /**
- * 动作按钮:瞬时互动手势。交互状态只走背景/文字/阴影通道——
- * 激活与悬停永不改变占布局的几何(border/padding/尺寸),杜绝工具栏抖动。
+ * 舞台按钮:基础动作保持横向紧凑，独立特效展示名称与语义短句。
  */
-function StageButton({ label, icon, onClick }: StageAction) {
+function StageButton({ label, description, icon, onClick }: StageAction) {
+	const isEffect = description !== undefined;
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-medium text-white/70 transition-[color,background-color,box-shadow] hover:duration-0 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+			className={cn(
+				"group cursor-pointer font-medium text-white/70 transition-[background-color,color,box-shadow,transform] hover:-translate-y-px hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+				isEffect
+					? "flex min-h-18 flex-col items-start justify-between rounded-xl border border-white/8 bg-black/15 p-2.5 text-left"
+					: "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-xs",
+			)}
 		>
-			{icon}
-			<span>{label}</span>
+			<span className={cn("flex items-center", isEffect ? "gap-2" : "gap-1.5")}>
+				<span
+					className={cn(
+						"inline-flex shrink-0 items-center justify-center text-white/70 transition-colors group-hover:text-amber-100",
+						isEffect ? "size-6 rounded-lg bg-white/8" : "size-4",
+					)}
+				>
+					{icon}
+				</span>
+				<span className={isEffect ? "text-xs text-white/90" : undefined}>{label}</span>
+			</span>
+			{description ? (
+				<span className="pl-8 text-[10px] leading-none text-white/35">{description}</span>
+			) : null}
 		</button>
 	);
 }
@@ -141,30 +159,34 @@ export function MascotTheater({
 		},
 	];
 
-	// 独立特效不改变角色姿态，统一放在第二排，便于继续增加而不挤压基础动作。
 	const effects: StageAction[] = [
 		{
 			label: "魔法阵",
+			description: "脚下召唤",
 			icon: <WandSparkles className="size-3.5" />,
 			onClick: () => heroRef.current?.magic(),
 		},
 		{
-			label: "烟花",
-			icon: <Star className="size-3.5" />,
-			onClick: () => heroRef.current?.fireworks(),
-		},
-		{
-			label: "爱心雨",
-			icon: <Heart className="size-3.5" />,
-			onClick: () => heroRef.current?.hearts(),
-		},
-		{
 			label: "流星",
+			description: "许愿掠过",
 			icon: <Rocket className="size-3.5" />,
 			onClick: () => heroRef.current?.meteors(),
 		},
 		{
+			label: "烟花",
+			description: "高空绽放",
+			icon: <PartyPopper className="size-3.5" />,
+			onClick: () => heroRef.current?.fireworks(),
+		},
+		{
+			label: "爱心雨",
+			description: "甜蜜落下",
+			icon: <Heart className="size-3.5" />,
+			onClick: () => heroRef.current?.hearts(),
+		},
+		{
 			label: "闪耀",
+			description: "聚光登场",
 			icon: <Sparkles className="size-3.5" />,
 			onClick: () => heroRef.current?.spotlight(),
 		},
@@ -355,22 +377,45 @@ export function MascotTheater({
 				</div>
 
 				<div className="mt-4 rounded-2xl border border-white/10 bg-white/4 p-3 shadow-lg shadow-black/20">
-					<div className="mb-2 flex items-center justify-between px-1">
-						<span className="font-mono text-[10px] tracking-[0.22em] text-white/35 uppercase">
-							Stage controls
+					<div className="flex items-center justify-between px-1">
+						<div>
+							<p className="font-mono text-[10px] tracking-[0.22em] text-white/40 uppercase">
+								Stage controls
+							</p>
+							<p className="mt-1 text-[10px] text-white/25">
+								先控制角色，再选择舞台氛围
+							</p>
+						</div>
+						<span className="rounded-full bg-white/6 px-2 py-1 font-mono text-[9px] text-white/30">
+							{effects.length} effects
 						</span>
-						<span className="text-[10px] text-white/25">动作与独立特效</span>
 					</div>
-					<div className="grid grid-cols-4 gap-1.5">
-						{antics.map((a) => (
-							<StageButton key={a.label} {...a} />
-						))}
+
+					<div className="mt-3">
+						<p className="mb-1.5 px-1 font-mono text-[10px] tracking-wider text-white/35 uppercase">
+							角色动作
+						</p>
+						<div className="grid grid-cols-2 gap-1.5 min-[480px]:grid-cols-4">
+							{antics.map((a) => (
+								<StageButton key={a.label} {...a} />
+							))}
+						</div>
 					</div>
-					<div className="my-2 border-t border-white/8" />
-					<div className="grid grid-cols-5 gap-1.5">
-						{effects.map((a) => (
-							<StageButton key={a.label} {...a} />
-						))}
+
+					<div className="mt-3 border-t border-white/8 pt-3">
+						<div className="mb-1.5 flex items-center justify-between px-1">
+							<p className="font-mono text-[10px] tracking-wider text-white/35 uppercase">
+								独立特效
+							</p>
+							<span className="text-[10px] text-white/25">
+								每个按钮是一种舞台语言
+							</span>
+						</div>
+						<div className="grid grid-cols-2 gap-2 min-[480px]:grid-cols-3 sm:grid-cols-5">
+							{effects.map((a) => (
+								<StageButton key={a.label} {...a} />
+							))}
+						</div>
 					</div>
 				</div>
 

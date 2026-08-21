@@ -61,7 +61,7 @@ export interface CatMochiRig {
 /**
  * 一次性创建堇喵全部 SVG 结构并返回节点引用。
  *
- * svg 子节点顺序:defs → shadow → halo → fxBackG → rigG → zzz×3 → fxLayer。
+ * svg 子节点顺序:defs → halo → fxBackG → shadow → rigG → zzz×3 → fxLayer。
  */
 export function buildCatMochiRig(): CatMochiRig {
 	const uid = ++uidCounter;
@@ -98,17 +98,28 @@ export function buildCatMochiRig(): CatMochiRig {
 	grad.appendChild(gradStopB);
 	grad.appendChild(gradStopC);
 	defs.appendChild(grad);
+	const shadowFilterId = `cat-shadow-blur-${uid}`;
+	const shadowFilter = svgEl("filter", {
+		id: shadowFilterId,
+		x: "-35%",
+		y: "-100%",
+		width: "170%",
+		height: "300%",
+	});
+	shadowFilter.appendChild(svgEl("feGaussianBlur", { stdDeviation: "3.2" }));
+	defs.appendChild(shadowFilter);
 	svg.appendChild(defs);
 
-	// 地面软阴影
+	// 地面软阴影:宽度小于魔法阵,作为遮挡层压在地面光效之上。
 	const shadowEl = svgEl("ellipse", {
 		cx: "130",
 		cy: "234",
-		rx: "82",
-		ry: "11",
-		fill: "rgba(18, 14, 38, 0.4)",
+		rx: "68",
+		ry: "8",
+		fill: "rgba(18, 14, 38, 0.58)",
+		filter: `url(#${shadowFilterId})`,
+		"data-ground-shadow": "true",
 	}) as SVGEllipseElement;
-	svg.appendChild(shadowEl);
 
 	// 思考环带
 	const haloG = svgEl("g", { opacity: "0" }) as SVGGElement;
@@ -408,8 +419,12 @@ export function buildCatMochiRig(): CatMochiRig {
 	rigG.appendChild(pawRG);
 
 	// 彩带后层:先于 rig 挂载,轨道绕到身体背面的段被身体遮挡
-	const fxBackG = svgEl("g", { "pointer-events": "none" }) as SVGGElement;
+	const fxBackG = svgEl("g", {
+		"pointer-events": "none",
+		"data-effect-layer": "back",
+	}) as SVGGElement;
 	svg.appendChild(fxBackG);
+	svg.appendChild(shadowEl);
 	svg.appendChild(rigG);
 
 	// 睡眠 zzz
@@ -430,7 +445,10 @@ export function buildCatMochiRig(): CatMochiRig {
 		svg.appendChild(z);
 	}
 
-	const fxLayer = svgEl("g", { "pointer-events": "none" }) as SVGGElement;
+	const fxLayer = svgEl("g", {
+		"pointer-events": "none",
+		"data-effect-layer": "front",
+	}) as SVGGElement;
 	svg.appendChild(fxLayer);
 
 	return {
