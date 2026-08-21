@@ -111,6 +111,7 @@ api/
 | **friendlink** | friendlink | friendlink | 友链申请、审核、上下架管理 |
 | **notification** | notification | notification | 站内通知（SSE 实时推送、未读中心、事件订阅写通知） |
 | **chat** | chat | chat | 私聊/私有房间、文本与图片消息、cursor 历史、SSE 事件流、Web Push 订阅 |
+| **chatreaction** | chatreaction | chat | 聊天消息表情反应（成员鉴权、聚合计数、SSE 变化事件） |
 | **api_token** | api_token | api_token | 个人访问令牌 PAT（MCP 授权凭证） |
 | **project** | project | project | 项目展示 CRUD |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |

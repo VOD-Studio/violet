@@ -1,7 +1,9 @@
+import type { Emoji } from "@entities/emoji/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { useAllEmojis } from "@features/emojis/api/queries";
+import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { EmojiText } from "@shared/ui/emoji-text";
@@ -27,6 +29,7 @@ import {
 	Search,
 	Send,
 	ShieldCheck,
+	Smile,
 	Sparkles,
 	Trash2,
 	Users,
@@ -38,6 +41,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
 import {
+	useAddChatMessageReaction,
 	useChatContacts,
 	useChatConversations,
 	useChatMembers,
@@ -48,12 +52,14 @@ import {
 	useLeaveChatConversation,
 	useMarkChatRead,
 	useRemoveChatMember,
+	useRemoveChatMessageReaction,
 	useRenameChatConversation,
 	useSendChatMessage,
 	useSetChatMuted,
 } from "../api/queries";
 import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
 import { useChatSelection } from "../hooks/useChatSelection";
+import { useChatStream } from "../hooks/useChatStream";
 import type {
 	ChatConversation,
 	ChatMedia,
@@ -62,9 +68,9 @@ import type {
 	ChatMessageReference,
 	ChatUser,
 } from "../model/types";
-import { useChatStream } from "../hooks/useChatStream";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
+import { ChatReactionBar } from "./ChatReactionBar";
 import { NewConversationForm } from "./NewConversationForm";
 
 /** 聊天工作区：会话索引、消息流、房间成员抽屉与富文本 composer。 */
@@ -832,7 +838,19 @@ function MessageBubble({
 	onReplyTo,
 }: MessageBubbleProps) {
 	const mine = message.sender.id === currentUserID;
+	const reactions = message.reactions ?? [];
+	const selfReactionIds = useMemo(
+		() =>
+			new Set(
+				reactions.filter((reaction) => reaction.self).map((reaction) => reaction.emoji_id),
+			),
+		[reactions],
+	);
+	const addReaction = useAddChatMessageReaction(message.conversation_id, message.id);
+	const removeReaction = useRemoveChatMessageReaction(message.conversation_id, message.id);
+	const reactionBusy = addReaction.isPending || removeReaction.isPending;
 	const [copied, setCopied] = useState(false);
+	const [touchActionsVisible, setTouchActionsVisible] = useState(false);
 	const longPressTimer = useRef<number | null>(null);
 	const clearLongPress = () => {
 		if (longPressTimer.current === null) return;
@@ -840,9 +858,12 @@ function MessageBubble({
 		longPressTimer.current = null;
 	};
 	const startLongPress = (event: PointerEvent) => {
-		if (!onReply || event.pointerType !== "touch") return;
+		if (event.pointerType !== "touch") return;
 		clearLongPress();
-		longPressTimer.current = window.setTimeout(onReply, 500);
+		longPressTimer.current = window.setTimeout(() => {
+			setTouchActionsVisible(true);
+			longPressTimer.current = null;
+		}, 500);
 	};
 
 	useEffect(() => {
@@ -861,6 +882,28 @@ function MessageBubble({
 		} catch {
 			toast.error("复制失败");
 		}
+	};
+
+	const handleToggleReaction = (emojiID: number) => {
+		if (reactionBusy) return;
+		if (selfReactionIds.has(emojiID)) {
+			removeReaction.mutate(emojiID);
+			return;
+		}
+		if (selfReactionIds.size >= 3) {
+			toast.info("单条消息最多添加 3 种表情");
+			return;
+		}
+		addReaction.mutate(emojiID);
+	};
+
+	const handleAddReaction = (emoji: Emoji) => {
+		if (reactionBusy || selfReactionIds.has(emoji.id)) return;
+		if (selfReactionIds.size >= 3) {
+			toast.info("单条消息最多添加 3 种表情");
+			return;
+		}
+		addReaction.mutate(emoji.id);
 	};
 
 	if (message.type === "system") {
@@ -973,9 +1016,29 @@ function MessageBubble({
 						<div
 							className={cn(
 								"absolute -top-3 z-10 flex items-center gap-0.5 rounded-full border border-edge-hairline bg-background/90 p-0.5 shadow-md backdrop-blur-md opacity-0 transition-all duration-150 group-hover:opacity-100 focus-within:opacity-100",
+								touchActionsVisible && "opacity-100",
 								mine ? "left-1" : "right-1",
 							)}
 						>
+							<EmojiPicker
+								align={mine ? "start" : "end"}
+								onSelect={handleAddReaction}
+								selectedIds={selfReactionIds}
+								trigger={
+									<button
+										aria-label={
+											selfReactionIds.size >= 3
+												? "消息表情数量已达上限"
+												: "添加消息表情"
+										}
+										className="flex size-5.5 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+										disabled={reactionBusy || selfReactionIds.size >= 3}
+										type="button"
+									>
+										<Smile className="size-3" />
+									</button>
+								}
+							/>
 							{onReply && (
 								<button
 									aria-label="回复消息"
@@ -1013,6 +1076,11 @@ function MessageBubble({
 						</div>
 					)}
 				</div>
+				<ChatReactionBar
+					disabled={reactionBusy}
+					onToggle={handleToggleReaction}
+					reactions={reactions}
+				/>
 			</div>
 		</motion.article>
 	);

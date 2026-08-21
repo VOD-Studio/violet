@@ -55,6 +55,8 @@ const (
 	EventMemberChanged ChatEventType = "member.changed"
 	// EventMessageDeleted 消息被管理员删除事件。
 	EventMessageDeleted ChatEventType = "message.deleted"
+	// EventMessageReactionUpdated 消息反应发生变化事件。
+	EventMessageReactionUpdated ChatEventType = "message.reaction.updated"
 )
 
 // RoomInvited 私有房间成员邀请事实。

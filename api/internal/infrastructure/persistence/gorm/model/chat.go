@@ -63,6 +63,18 @@ type ChatMessage struct {
 // TableName 显式指定表名。
 func (ChatMessage) TableName() string { return "chat_messages" }
 
+// ChatMessageReaction 聊天消息反应持久化模型。
+type ChatMessageReaction struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	MessageID uuid.UUID `gorm:"type:uuid;column:message_id;not null" json:"message_id"`
+	EmojiID   int32     `gorm:"column:emoji_id;not null" json:"emoji_id"`
+	UserID    uuid.UUID `gorm:"type:uuid;column:user_id;not null" json:"user_id"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TableName 显式指定表名。
+func (ChatMessageReaction) TableName() string { return "chat_message_reactions" }
+
 // ChatReadPosition 用户阅读位置持久化模型。
 type ChatReadPosition struct {
 	ConversationID uuid.UUID  `gorm:"type:uuid;column:conversation_id;primaryKey" json:"conversation_id"`

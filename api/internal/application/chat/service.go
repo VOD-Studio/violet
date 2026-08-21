@@ -10,6 +10,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	domainchat "blog-api/internal/domain/chat"
+	domainchatreaction "blog-api/internal/domain/chatreaction"
 	domainshared "blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
 	domainuser "blog-api/internal/domain/user"
@@ -26,6 +27,7 @@ type Service struct {
 	repo      domainchat.ConversationRepository
 	users     UserRepository
 	files     FileRepository
+	reactions domainchatreaction.Store
 	notifier  EventNotifier
 	push      PushSender
 	bus       appshared.EventBus
@@ -34,14 +36,14 @@ type Service struct {
 }
 
 // NewService 构造聊天服务。
-func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus) *Service {
+func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus, reactions domainchatreaction.Store) *Service {
 	if now == nil {
 		now = time.Now
 	}
 	if push == nil {
 		push = NoopPushSender{}
 	}
-	return &Service{repo: repo, users: users, files: files, notifier: notifier, push: push, bus: bus, publicKey: publicKey, now: now}
+	return &Service{repo: repo, users: users, files: files, reactions: reactions, notifier: notifier, push: push, bus: bus, publicKey: publicKey, now: now}
 }
 
 // CreateConversationInput 创建会话入参。
@@ -84,6 +86,46 @@ type SendMessageInput struct {
 	IdempotencyKey string
 }
 
+// AddMessageReactionInput 添加聊天消息反应入参。
+type AddMessageReactionInput struct {
+	// UserID 当前用户 ID。
+	UserID domainshared.ID
+	// ConversationID 所属会话 ID。
+	ConversationID domainshared.ID
+	// MessageID 目标消息 ID。
+	MessageID domainshared.ID
+	// EmojiID 表情 ID。
+	EmojiID int32
+}
+
+// RemoveMessageReactionInput 移除聊天消息反应入参。
+type RemoveMessageReactionInput struct {
+	// UserID 当前用户 ID。
+	UserID domainshared.ID
+	// ConversationID 所属会话 ID。
+	ConversationID domainshared.ID
+	// MessageID 目标消息 ID。
+	MessageID domainshared.ID
+	// EmojiID 表情 ID。
+	EmojiID int32
+}
+
+// MessageReactionDTO 消息反应聚合读模型。
+type MessageReactionDTO struct {
+	// EmojiID 表情 ID。
+	EmojiID int32 `json:"emoji_id"`
+	// EmojiName 表情名称。
+	EmojiName string `json:"emoji_name"`
+	// EmojiURL 表情静态图 URL。
+	EmojiURL string `json:"emoji_url"`
+	// GifURL 表情动图 URL；无动图时为空。
+	GifURL string `json:"gif_url"`
+	// Count 该表情的反应数量。
+	Count int64 `json:"count"`
+	// Self 当前用户是否已添加该表情。
+	Self bool `json:"self"`
+}
+
 // UserDTO 用户公开资料读模型。
 type UserDTO struct {
 	// ID 用户 ID。
@@ -94,18 +136,6 @@ type UserDTO struct {
 	DisplayName string `json:"display_name"`
 	// AvatarURL 头像地址。
 	AvatarURL string `json:"avatar_url"`
-}
-
-// MemberDTO 会话成员读模型。
-type MemberDTO struct {
-	// User 成员用户资料。
-	User UserDTO `json:"user"`
-	// Role 成员角色。
-	Role string `json:"role"`
-	// JoinedAt 加入时间。
-	JoinedAt string `json:"joined_at"`
-	// IsMuted 当前用户是否静音该会话。
-	IsMuted bool `json:"is_muted"`
 }
 
 // MediaDTO 图片媒体读模型。
@@ -126,6 +156,18 @@ type MediaDTO struct {
 	Height *int `json:"height,omitempty"`
 }
 
+// MemberDTO 会话成员读模型。
+type MemberDTO struct {
+	// User 成员用户资料。
+	User UserDTO `json:"user"`
+	// Role 成员角色。
+	Role string `json:"role"`
+	// JoinedAt 加入时间。
+	JoinedAt string `json:"joined_at"`
+	// IsMuted 当前用户是否静音该会话。
+	IsMuted bool `json:"is_muted"`
+}
+
 // MessageDTO 消息读模型。
 type MessageDTO struct {
 	// ID 消息 ID。
@@ -142,11 +184,13 @@ type MessageDTO struct {
 	Media *MediaDTO `json:"media,omitempty"`
 	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
 	ReplyTo *MessageReferenceDTO `json:"reply_to,omitempty"`
+	// Reactions 消息的聚合表情反应。
+	Reactions []MessageReactionDTO `json:"reactions"`
 	// IsDeleted 是否已被管理员删除。
 	IsDeleted bool `json:"is_deleted"`
 	// DeletedAt 删除时间。
 	DeletedAt *string `json:"deleted_at,omitempty"`
-	// CreatedAt 创建时间。
+	// CreatedAt 消息创建时间。
 	CreatedAt string `json:"created_at"`
 }
 
@@ -527,6 +571,82 @@ func (s *Service) SetConversationMuted(ctx context.Context, userID, conversation
 	return s.repo.SetMemberMuted(ctx, conversationID, userID, muted)
 }
 
+// ListMessageReactions 查询当前会话成员可见的消息反应。
+func (s *Service) ListMessageReactions(ctx context.Context, userID, conversationID, messageID domainshared.ID) ([]MessageReactionDTO, error) {
+	message, err := s.validateMessageReactionTarget(ctx, userID, conversationID, messageID)
+	if err != nil {
+		return nil, err
+	}
+	reactions, err := s.reactions.ListByMessages(ctx, []domainshared.ID{message.ID()}, userID)
+	if err != nil {
+		return nil, err
+	}
+	return messageReactionDTOs(reactions[message.ID().String()]), nil
+}
+
+// AddMessageReaction 添加聊天消息反应，并向会话成员广播变化事件。
+func (s *Service) AddMessageReaction(ctx context.Context, in AddMessageReactionInput) error {
+	message, err := s.validateMessageReactionTarget(ctx, in.UserID, in.ConversationID, in.MessageID)
+	if err != nil {
+		return err
+	}
+	if in.EmojiID <= 0 {
+		return domainshared.BadRequest("表情 ID 无效")
+	}
+	if err := s.reactions.Add(ctx, message.ID(), in.UserID, in.EmojiID); err != nil {
+		return err
+	}
+	return s.publishMessageReactionUpdated(ctx, in.ConversationID, message.ID())
+}
+
+// RemoveMessageReaction 移除当前用户对聊天消息的指定反应。
+func (s *Service) RemoveMessageReaction(ctx context.Context, in RemoveMessageReactionInput) error {
+	message, err := s.validateMessageReactionTarget(ctx, in.UserID, in.ConversationID, in.MessageID)
+	if err != nil {
+		return err
+	}
+	if in.EmojiID <= 0 {
+		return domainshared.BadRequest("表情 ID 无效")
+	}
+	if err := s.reactions.Remove(ctx, message.ID(), in.UserID, in.EmojiID); err != nil {
+		return err
+	}
+	return s.publishMessageReactionUpdated(ctx, in.ConversationID, message.ID())
+}
+
+func (s *Service) validateMessageReactionTarget(ctx context.Context, userID, conversationID, messageID domainshared.ID) (*domainchat.Message, error) {
+	if s.reactions == nil {
+		return nil, domainshared.Internal("聊天消息反应未配置", nil)
+	}
+	if _, err := s.repo.FindByIDForMember(ctx, conversationID, userID); err != nil {
+		return nil, err
+	}
+	message, err := s.repo.FindMessage(ctx, conversationID, messageID)
+	if err != nil {
+		return nil, err
+	}
+	if message.DeletedAt() != nil || message.Type() == domainchat.MessageSystem {
+		return nil, domainshared.BadRequest("该消息不支持表情")
+	}
+	return message, nil
+}
+
+func (s *Service) publishMessageReactionUpdated(ctx context.Context, conversationID, messageID domainshared.ID) error {
+	members, err := s.repo.ListMembers(ctx, conversationID, false)
+	if err != nil {
+		return err
+	}
+	events, err := s.repo.SaveEvent(ctx, memberIDs(members), domainchat.EventMessageReactionUpdated, map[string]any{
+		"conversation_id": conversationID.String(),
+		"message_id":      messageID.String(),
+	})
+	if err != nil {
+		return err
+	}
+	s.notifyEvents(ctx, events)
+	return nil
+}
+
 // ListMessages 列出消息历史。
 func (s *Service) ListMessages(ctx context.Context, userID, conversationID domainshared.ID, cursorValue string, limit int) (ListResult[MessageDTO], error) {
 	if _, err := s.repo.FindByIDForMember(ctx, conversationID, userID); err != nil {
@@ -546,8 +666,12 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 		result.HasMore = true
 		rows = rows[:limit]
 	}
+	reactions, err := s.listMessageReactions(ctx, rows, userID)
+	if err != nil {
+		return ListResult[MessageDTO]{}, err
+	}
 	for _, row := range rows {
-		dto, err := s.messageDTO(ctx, row)
+		dto, err := s.messageDTOWithReactions(ctx, row, reactions[row.ID().String()])
 		if err != nil {
 			return ListResult[MessageDTO]{}, err
 		}
@@ -566,7 +690,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	if existing, err := s.repo.FindMessageByIdempotency(ctx, in.ConversationID, in.UserID, in.IdempotencyKey); err == nil {
-		return s.messageDTO(ctx, existing)
+		return s.messageDTO(ctx, existing, in.UserID)
 	} else if !errors.Is(err, domainchat.ErrMessageNotFound) {
 		return MessageDTO{}, err
 	}
@@ -619,12 +743,12 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 			_ = s.files.UpdateRefCount(ctx, file.ID(), -1)
 		}
 		if existing, findErr := s.repo.FindMessageByIdempotency(ctx, in.ConversationID, in.UserID, in.IdempotencyKey); findErr == nil {
-			return s.messageDTO(ctx, existing)
+			return s.messageDTO(ctx, existing, in.UserID)
 		}
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
-	return s.messageDTO(ctx, message)
+	return s.messageDTO(ctx, message, in.UserID)
 }
 
 // MarkRead 更新用户在会话中的阅读位置。
@@ -677,6 +801,11 @@ func (s *Service) DeleteMessage(ctx context.Context, adminID, conversationID, me
 	}
 	if err := s.repo.DeleteMessage(ctx, message); err != nil {
 		return err
+	}
+	if s.reactions != nil {
+		if err := s.reactions.RemoveByMessage(ctx, message.ID()); err != nil {
+			return err
+		}
 	}
 	if message.MediaID() != nil {
 		_ = s.files.UpdateRefCount(ctx, *message.MediaID(), -1)
@@ -790,7 +919,7 @@ func (s *Service) conversationDTO(ctx context.Context, conversation *domainchat.
 		return ConversationDTO{}, err
 	}
 	if len(latest) > 0 {
-		last, err := s.messageDTO(ctx, latest[0])
+		last, err := s.messageDTO(ctx, latest[0], userID)
 		if err != nil {
 			return ConversationDTO{}, err
 		}
@@ -830,16 +959,47 @@ func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member
 	return out, nil
 }
 
-func (s *Service) messageDTO(ctx context.Context, message *domainchat.Message) (MessageDTO, error) {
+func (s *Service) messageDTO(ctx context.Context, message *domainchat.Message, viewerUserID domainshared.ID) (MessageDTO, error) {
+	var reactions []domainchatreaction.AggregatedReaction
+	if message.DeletedAt() == nil {
+		byMessage, err := s.listMessageReactions(ctx, []*domainchat.Message{message}, viewerUserID)
+		if err != nil {
+			return MessageDTO{}, err
+		}
+		reactions = byMessage[message.ID().String()]
+	}
+	return s.messageDTOWithReactions(ctx, message, reactions)
+}
+
+func (s *Service) listMessageReactions(ctx context.Context, messages []*domainchat.Message, viewerUserID domainshared.ID) (map[string][]domainchatreaction.AggregatedReaction, error) {
+	if s.reactions == nil || len(messages) == 0 {
+		return map[string][]domainchatreaction.AggregatedReaction{}, nil
+	}
+	ids := make([]domainshared.ID, 0, len(messages))
+	for _, message := range messages {
+		ids = append(ids, message.ID())
+	}
+	return s.reactions.ListByMessages(ctx, ids, viewerUserID)
+}
+
+func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainchat.Message, reactions []domainchatreaction.AggregatedReaction) (MessageDTO, error) {
 	sender, err := s.users.FindByID(ctx, message.SenderID())
 	if err != nil {
 		return MessageDTO{}, err
 	}
-	dto := MessageDTO{ID: message.ID().String(), ConversationID: message.ConversationID().String(), Sender: userToDTO(sender), Type: string(message.Type()), CreatedAt: message.CreatedAt().Format(time.RFC3339Nano)}
+	dto := MessageDTO{
+		ID:             message.ID().String(),
+		ConversationID: message.ConversationID().String(),
+		Sender:         userToDTO(sender),
+		Type:           string(message.Type()),
+		Reactions:      messageReactionDTOs(reactions),
+		CreatedAt:      message.CreatedAt().Format(time.RFC3339Nano),
+	}
 	if message.DeletedAt() != nil {
 		dto.IsDeleted = true
 		deletedAt := message.DeletedAt().Format(time.RFC3339Nano)
 		dto.DeletedAt = &deletedAt
+		dto.Reactions = []MessageReactionDTO{}
 		return dto, nil
 	}
 	if message.Type() == domainchat.MessageText {
@@ -865,6 +1025,17 @@ func (s *Service) messageDTO(ctx context.Context, message *domainchat.Message) (
 		}
 	}
 	return dto, nil
+}
+
+func messageReactionDTOs(reactions []domainchatreaction.AggregatedReaction) []MessageReactionDTO {
+	result := make([]MessageReactionDTO, 0, len(reactions))
+	for _, reaction := range reactions {
+		result = append(result, MessageReactionDTO{
+			EmojiID: reaction.EmojiID, EmojiName: reaction.EmojiName, EmojiURL: reaction.EmojiURL,
+			GifURL: reaction.GifURL, Count: reaction.Count, Self: reaction.Self,
+		})
+	}
+	return result
 }
 
 func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.Message) (*MessageReferenceDTO, error) {

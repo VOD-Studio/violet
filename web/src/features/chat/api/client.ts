@@ -3,6 +3,7 @@ import type {
 	ChatConversation,
 	ChatMember,
 	ChatMessage,
+	ChatMessageReaction,
 	ChatUnreadCount,
 	ChatUser,
 	CreateConversationInput,
@@ -31,6 +32,11 @@ export const fetchChatMessages = (id: string, cursor?: string, limit = 30) =>
 	apiGetPaged<ChatMessage>(`/chat/conversations/${id}/messages`, {
 		params: { cursor, limit },
 	});
+
+export const fetchChatMessageReactions = (conversationID: string, messageID: string) =>
+	apiGet<ChatMessageReaction[]>(
+		`/chat/conversations/${conversationID}/messages/${messageID}/reactions`,
+	);
 
 export const fetchChatUser = (username: string) =>
 	apiGet<ChatUser>(`/chat/users/${encodeURIComponent(username)}`);
@@ -63,6 +69,24 @@ export const sendChatMessage = (id: string, input: SendMessageInput, idempotency
 	apiPost<ChatMessage>(`/chat/conversations/${id}/messages`, input, {
 		headers: { "Idempotency-Key": idempotencyKey },
 	});
+
+export const addChatMessageReaction = (
+	conversationID: string,
+	messageID: string,
+	emojiID: number,
+) =>
+	apiPost<null>(`/chat/conversations/${conversationID}/messages/${messageID}/reactions`, {
+		emoji_id: emojiID,
+	});
+
+export const removeChatMessageReaction = (
+	conversationID: string,
+	messageID: string,
+	emojiID: number,
+) =>
+	apiDelete<null>(
+		`/chat/conversations/${conversationID}/messages/${messageID}/reactions/${emojiID}`,
+	);
 
 export const markChatRead = (id: string, messageId?: string) =>
 	apiPost<{ conversation_id: string; unread_count: number }>(`/chat/conversations/${id}/read`, {

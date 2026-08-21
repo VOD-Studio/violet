@@ -9,8 +9,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import type { ChatMessageReference } from "../../model/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ChatMessageReference } from "../../model/types";
 
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({
@@ -90,6 +90,7 @@ const mockConversation = {
 		content: "hello world",
 		is_deleted: false,
 		reply_to: undefined as ChatMessageReference | undefined,
+		reactions: [],
 		created_at: "2026-08-20T08:30:00Z",
 	},
 };
@@ -175,6 +176,8 @@ vi.mock("@features/chat/api/queries", () => ({
 		isPending: false,
 	}),
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
+	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("../api/queries", () => ({
 	useChatConversations: () => ({
@@ -223,6 +226,8 @@ vi.mock("../api/queries", () => ({
 		isPending: false,
 	}),
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
+	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock("../hooks/useChatStream", () => ({
@@ -288,6 +293,8 @@ vi.mock("../api/queries", () => ({
 		isPending: false,
 	}),
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
+	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 import { ChatWorkspace } from "../ChatWorkspace";
@@ -344,6 +351,20 @@ describe("ChatWorkspace", () => {
 		expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "上传图片" })).toBeTruthy();
+	});
+
+	it("长按聊天消息显示消息操作栏", () => {
+		vi.useFakeTimers();
+		try {
+			render(<ChatWorkspace />, { wrapper: createWrapper() });
+			fireEvent.pointerDown(screen.getByTestId("chat-message-m_1"), {
+				pointerType: "touch",
+			});
+			vi.advanceTimersByTime(500);
+			expect(screen.getByRole("button", { name: "添加消息表情" })).toBeTruthy();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("聊天用户头像链接到对应的公开个人主页", () => {

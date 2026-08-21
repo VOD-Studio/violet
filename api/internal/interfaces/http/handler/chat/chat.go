@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
-
-	"github.com/go-chi/chi/v5"
 
 	appchat "blog-api/internal/application/chat"
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/interfaces/http/response"
 	"blog-api/internal/middleware"
+	"github.com/go-chi/chi/v5"
 )
 
 // Handler 聊天 HTTP 适配器。
@@ -226,6 +226,95 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondCursor(w, result.Items, response.ParseLimit(r, 20, 50), result.HasMore, result.NextCursor)
+}
+
+// ListMessageReactions 获取聊天消息反应。
+func (h *Handler) ListMessageReactions(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	messageID, err := parsePathID(chi.URLParam(r, "messageId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	reactions, err := h.svc.ListMessageReactions(r.Context(), userID, conversationID, messageID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, reactions)
+}
+
+// AddMessageReaction 添加聊天消息反应。
+func (h *Handler) AddMessageReaction(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	messageID, err := parsePathID(chi.URLParam(r, "messageId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		EmojiID int32 `json:"emoji_id"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.svc.AddMessageReaction(r.Context(), appchat.AddMessageReactionInput{
+		UserID: userID, ConversationID: conversationID, MessageID: messageID, EmojiID: req.EmojiID,
+	}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "反应已添加")
+}
+
+// RemoveMessageReaction 移除聊天消息反应。
+func (h *Handler) RemoveMessageReaction(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	messageID, err := parsePathID(chi.URLParam(r, "messageId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	emojiID, err := strconv.Atoi(chi.URLParam(r, "emojiId"))
+	if err != nil {
+		response.RespondError(w, r, domainshared.BadRequest("表情 ID 无效"))
+		return
+	}
+	if err := h.svc.RemoveMessageReaction(r.Context(), appchat.RemoveMessageReactionInput{
+		UserID: userID, ConversationID: conversationID, MessageID: messageID, EmojiID: int32(emojiID),
+	}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondNoContent(w)
 }
 
 // SendMessage 发送文本或图片消息。

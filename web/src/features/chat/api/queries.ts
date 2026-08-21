@@ -1,6 +1,9 @@
+import type { EmojiGroup } from "@entities/emoji/model/types";
+import { emojiKeys } from "@features/emojis/api/keys";
 import type { PagedResponse } from "@shared/api/types";
 import {
 	type InfiniteData,
+	type QueryClient,
 	useInfiniteQuery,
 	useMutation,
 	useQuery,
@@ -8,11 +11,13 @@ import {
 } from "@tanstack/react-query";
 import type {
 	ChatMessage,
+	ChatMessageReaction,
 	CreateConversationInput,
 	PushSubscriptionInput,
 	SendMessageInput,
 } from "../model/types";
 import {
+	addChatMessageReaction,
 	createChatConversation,
 	deleteChatMessage,
 	deleteChatPushSubscription,
@@ -28,6 +33,7 @@ import {
 	leaveChatConversation,
 	markChatRead,
 	removeChatMember,
+	removeChatMessageReaction,
 	renameChatConversation,
 	saveChatPushSubscription,
 	sendChatMessage,
@@ -198,6 +204,89 @@ export const useSendChatMessage = () => {
 	});
 };
 
+export const useAddChatMessageReaction = (conversationID: string, messageID: string) => {
+	const qc = useQueryClient();
+	const queryKey = chatKeys.messages(conversationID);
+	return useMutation({
+		mutationFn: (emojiID: number) => addChatMessageReaction(conversationID, messageID, emojiID),
+		onMutate: async (emojiID) => {
+			await qc.cancelQueries({ queryKey });
+			const previous = qc.getQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey);
+			const emoji = findEmojiById(qc, emojiID);
+			if (emoji) {
+				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
+					updateChatMessageReactions(old, messageID, (reactions) => {
+						const index = reactions.findIndex(
+							(reaction) => reaction.emoji_id === emojiID,
+						);
+						if (index >= 0) {
+							const reaction = reactions[index];
+							if (reaction.self) return reactions;
+							const next = [...reactions];
+							next[index] = { ...reaction, count: reaction.count + 1, self: true };
+							return next;
+						}
+						return [
+							...reactions,
+							{
+								emoji_id: emojiID,
+								emoji_name: emoji.name,
+								emoji_url: emoji.url,
+								gif_url: emoji.gif_url ?? "",
+								count: 1,
+								self: true,
+							},
+						];
+					}),
+				);
+			}
+			return { previous };
+		},
+		onError: (_error, _emojiID, context) => {
+			if (context?.previous) qc.setQueryData(queryKey, context.previous);
+		},
+		onSettled: () => {
+			qc.invalidateQueries({ queryKey });
+		},
+	});
+};
+
+export const useRemoveChatMessageReaction = (conversationID: string, messageID: string) => {
+	const qc = useQueryClient();
+	const queryKey = chatKeys.messages(conversationID);
+	return useMutation({
+		mutationFn: (emojiID: number) =>
+			removeChatMessageReaction(conversationID, messageID, emojiID),
+		onMutate: async (emojiID) => {
+			await qc.cancelQueries({ queryKey });
+			const previous = qc.getQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey);
+			qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
+				updateChatMessageReactions(old, messageID, (reactions) => {
+					const index = reactions.findIndex((reaction) => reaction.emoji_id === emojiID);
+					if (index < 0 || !reactions[index].self) return reactions;
+					if (reactions[index].count <= 1) {
+						return reactions.filter((_, reactionIndex) => reactionIndex !== index);
+					}
+					const next = [...reactions];
+					next[index] = {
+						...reactions[index],
+						count: reactions[index].count - 1,
+						self: false,
+					};
+					return next;
+				}),
+			);
+			return { previous };
+		},
+		onError: (_error, _emojiID, context) => {
+			if (context?.previous) qc.setQueryData(queryKey, context.previous);
+		},
+		onSettled: () => {
+			qc.invalidateQueries({ queryKey });
+		},
+	});
+};
+
 export const useMarkChatRead = () => {
 	const qc = useQueryClient();
 	return useMutation({
@@ -219,3 +308,31 @@ export const useSaveChatPushSubscription = () =>
 
 export const useDeleteChatPushSubscription = () =>
 	useMutation({ mutationFn: (endpoint: string) => deleteChatPushSubscription(endpoint) });
+
+function findEmojiById(qc: QueryClient, emojiID: number) {
+	const groups = qc.getQueryData<EmojiGroup[]>(emojiKeys.publicGroupList());
+	for (const group of groups ?? []) {
+		const emoji = group.emojis.find((item) => item.id === emojiID);
+		if (emoji) return emoji;
+	}
+	return null;
+}
+
+function updateChatMessageReactions(
+	data: InfiniteData<PagedResponse<ChatMessage>> | undefined,
+	messageID: string,
+	update: (reactions: ChatMessageReaction[]) => ChatMessageReaction[],
+) {
+	if (!data) return data;
+	return {
+		...data,
+		pages: data.pages.map((page) => ({
+			...page,
+			data: page.data.map((message) =>
+				message.id === messageID
+					? { ...message, reactions: update(message.reactions ?? []) }
+					: message,
+			),
+		})),
+	};
+}

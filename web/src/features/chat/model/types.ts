@@ -35,6 +35,15 @@ export interface ChatMessageReference {
 	is_deleted: boolean;
 }
 
+export interface ChatMessageReaction {
+	emoji_id: number;
+	emoji_name: string;
+	emoji_url: string;
+	gif_url: string;
+	count: number;
+	self: boolean;
+}
+
 export interface ChatMessage {
 	id: string;
 	conversation_id: string;
@@ -43,6 +52,7 @@ export interface ChatMessage {
 	content?: string;
 	media?: ChatMedia;
 	reply_to?: ChatMessageReference;
+	reactions: ChatMessageReaction[];
 	is_deleted: boolean;
 	deleted_at?: string;
 	created_at: string;
@@ -75,7 +85,12 @@ export interface SendMessageInput {
 
 export interface ChatEvent {
 	id: string;
-	type: "message.created" | "room.invited" | "member.changed" | "message.deleted";
+	type:
+		| "message.created"
+		| "room.invited"
+		| "member.changed"
+		| "message.deleted"
+		| "message.reaction.updated";
 	version: number;
 	occurred_at: string;
 	data: Record<string, unknown>;
