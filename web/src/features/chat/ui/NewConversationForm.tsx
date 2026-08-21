@@ -1,6 +1,7 @@
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
-import { LoaderCircle, Search, X } from "lucide-react";
+import { Check, LoaderCircle, Search, Sparkles, Users, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import { useChatContacts, useCreateChatConversation } from "../api/queries";
@@ -54,45 +55,78 @@ export function NewConversationForm({ onCreated }: NewConversationFormProps) {
 	};
 
 	return (
-		<section className="shrink-0 border-b border-edge-hairline bg-secondary/15 px-4 py-3">
-			<div className="mb-2.5 flex items-center justify-between">
-				<div>
-					<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-						New conversation
-					</p>
-					<p className="mt-1 text-xs font-semibold">新建对话</p>
+		<motion.section
+			initial={{ opacity: 0, height: 0, y: -10 }}
+			animate={{ opacity: 1, height: "auto", y: 0 }}
+			exit={{ opacity: 0, height: 0, y: -10 }}
+			transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+			className="shrink-0 overflow-hidden border-b border-edge-hairline bg-secondary/20 px-4 py-3.5 backdrop-blur-md"
+		>
+			<div className="mb-3 flex items-center justify-between">
+				<div className="flex items-center gap-1.5">
+					<div className="flex size-5 items-center justify-center rounded-md bg-neon-cyan/15 text-neon-cyan">
+						<Sparkles className="size-3" />
+					</div>
+					<div>
+						<p className="font-mono text-[9px] uppercase tracking-[0.2em] text-neon-cyan">
+							New conversation
+						</p>
+						<p className="text-xs font-semibold text-foreground">发起新对话</p>
+					</div>
 				</div>
-				<span className="rounded-full bg-background/70 px-2 py-1 font-mono text-[10px] text-muted-foreground">
-					{isRoom ? "群聊" : "私聊"}
+				<span className="flex items-center gap-1 rounded-full border border-edge-hairline bg-background/80 px-2 py-0.5 font-mono text-[10px] text-muted-foreground shadow-2xs">
+					{isRoom ? (
+						<>
+							<Users className="size-2.5 text-neon-purple" />
+							<span>群聊 ({selectedUsers.length})</span>
+						</>
+					) : (
+						<span>私聊</span>
+					)}
 				</span>
 			</div>
-			{selectedUsers.length > 0 && (
-				<div className="mb-2 flex flex-wrap gap-1.5">
-					{selectedUsers.map((user) => (
-						<button
-							aria-label={`移除 ${user.display_name}`}
-							className="inline-flex items-center gap-1 rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-2 py-1 text-[10px] text-neon-cyan"
-							key={user.id}
-							onClick={() => toggleUser(user)}
-							type="button"
-						>
-							{user.display_name}
-							<X className="size-3" />
-						</button>
-					))}
-				</div>
-			)}
+
+			<AnimatePresence>
+				{selectedUsers.length > 0 && (
+					<motion.div
+						initial={{ opacity: 0, scale: 0.95 }}
+						animate={{ opacity: 1, scale: 1 }}
+						exit={{ opacity: 0, scale: 0.95 }}
+						className="mb-2.5 flex flex-wrap gap-1.5"
+					>
+						{selectedUsers.map((user) => (
+							<motion.button
+								layout
+								initial={{ opacity: 0, scale: 0.8 }}
+								animate={{ opacity: 1, scale: 1 }}
+								exit={{ opacity: 0, scale: 0.8 }}
+								aria-label={`移除 ${user.display_name}`}
+								className="group inline-flex items-center gap-1.5 rounded-full border border-neon-cyan/40 bg-neon-cyan/10 py-0.5 pl-1.5 pr-2 text-[11px] font-medium text-neon-cyan transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+								key={user.id}
+								onClick={() => toggleUser(user)}
+								type="button"
+							>
+								<ChatAvatar user={user} className="size-3.5" />
+								<span>{user.display_name}</span>
+								<X className="size-3 opacity-60 transition-opacity group-hover:opacity-100" />
+							</motion.button>
+						))}
+					</motion.div>
+				)}
+			</AnimatePresence>
+
 			<div className="relative">
 				<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
 				<input
 					aria-label="搜索成员"
-					className="h-9 w-full rounded-lg border border-input bg-background pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/20"
+					className="h-9 w-full rounded-xl border border-input bg-background/80 pl-8.5 pr-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
 					onChange={(event) => setMemberSearch(event.target.value)}
 					placeholder="搜索用户名或展示名"
 					value={memberSearch}
 				/>
 			</div>
-			<div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+
+			<div className="mt-2 max-h-44 space-y-1 overflow-y-auto pr-0.5">
 				{contactsQuery.isLoading ? (
 					<ChatContactSkeleton />
 				) : contactsQuery.isError ? (
@@ -107,10 +141,10 @@ export function NewConversationForm({ onCreated }: NewConversationFormProps) {
 								aria-pressed={selected}
 								aria-label={`${selected ? "取消选择" : "选择"} ${user.display_name}`}
 								className={cn(
-									"flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors",
+									"flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-all duration-150",
 									selected
-										? "bg-neon-cyan/10 text-neon-cyan"
-										: "hover:bg-secondary/50",
+										? "border border-neon-cyan/30 bg-neon-cyan/10 text-foreground"
+										: "border border-transparent text-muted-foreground hover:border-edge-hairline hover:bg-secondary/40 hover:text-foreground",
 								)}
 								key={user.id}
 								onClick={() => toggleUser(user)}
@@ -118,14 +152,20 @@ export function NewConversationForm({ onCreated }: NewConversationFormProps) {
 							>
 								<ChatAvatar user={user} className="size-8 shrink-0" />
 								<span className="min-w-0 flex-1">
-									<span className="block truncate text-xs font-medium">
+									<span className="block truncate text-xs font-semibold text-foreground">
 										{user.display_name}
 									</span>
 									<span className="mt-0.5 block truncate font-mono text-[10px] text-muted-foreground">
 										@{user.username}
 									</span>
 								</span>
-								{selected && <span className="text-[10px]">已选</span>}
+								{selected ? (
+									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-neon-cyan text-primary-foreground shadow-2xs">
+										<Check className="size-3" />
+									</span>
+								) : (
+									<span className="size-5 shrink-0 rounded-full border border-edge-hairline/80 bg-background/50" />
+								)}
 							</button>
 						);
 					})
@@ -135,17 +175,26 @@ export function NewConversationForm({ onCreated }: NewConversationFormProps) {
 					</p>
 				)}
 			</div>
+
 			{isRoom && (
-				<input
-					aria-label="群聊名称"
-					className="mt-2 h-9 w-full rounded-lg border border-input bg-background px-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/20"
-					onChange={(event) => setTitle(event.target.value)}
-					placeholder="群聊名称（可选）"
-					value={title}
-				/>
+				<motion.div
+					initial={{ opacity: 0, height: 0 }}
+					animate={{ opacity: 1, height: "auto" }}
+					exit={{ opacity: 0, height: 0 }}
+					className="overflow-hidden"
+				>
+					<input
+						aria-label="群聊名称"
+						className="mt-2 h-9 w-full rounded-xl border border-input bg-background/80 px-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/70"
+						onChange={(event) => setTitle(event.target.value)}
+						placeholder="群聊名称（可选）"
+						value={title}
+					/>
+				</motion.div>
 			)}
+
 			<Button
-				className="mt-2.5 w-full text-xs"
+				className="mt-2.5 w-full text-xs font-medium shadow-xs"
 				disabled={busy || selectedUsers.length === 0}
 				onClick={() => void submit()}
 				size="sm"
@@ -158,6 +207,6 @@ export function NewConversationForm({ onCreated }: NewConversationFormProps) {
 					"发起私聊"
 				)}
 			</Button>
-		</section>
+		</motion.section>
 	);
 }

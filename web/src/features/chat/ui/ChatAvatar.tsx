@@ -12,23 +12,26 @@ export interface ChatAvatarProps {
 /** 聊天用户头像，缺少图片时显示展示名或用户名首字母。 */
 export function ChatAvatar({ user, className }: ChatAvatarProps) {
 	const label = user.display_name.trim() ? user.display_name : user.username;
+	const initial = label.slice(0, 1).toUpperCase();
 	const avatar = user.avatar_url ? (
 		<img
 			alt={`${label} 的头像`}
-			className={cn("rounded-full object-cover ring-1 ring-edge-hairline/60", className)}
+			className={cn(
+				"rounded-full object-cover ring-1 ring-edge-hairline/80 shadow-2xs transition-transform duration-200 group-hover:scale-105",
+				className,
+			)}
 			src={user.avatar_url}
 		/>
 	) : (
 		<div
 			className={cn(
-				"flex items-center justify-center rounded-full bg-neon-purple/15 font-mono text-xs font-bold text-neon-purple ring-1 ring-neon-purple/25",
+				"flex items-center justify-center rounded-full bg-gradient-to-br from-neon-purple/20 via-neon-purple/10 to-neon-blue/15 font-mono text-xs font-bold text-neon-purple ring-1 ring-neon-purple/30 shadow-2xs transition-transform duration-200 group-hover:scale-105",
 				className,
 			)}
 		>
-			{label.slice(0, 1).toUpperCase()}
+			{initial}
 		</div>
 	);
-
 	return (
 		<Link
 			aria-label={`${label} 的个人主页`}
