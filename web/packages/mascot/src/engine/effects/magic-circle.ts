@@ -16,6 +16,12 @@ type Glyph = {
 	phase: number;
 };
 
+export interface MagicCircleConfig {
+	size?: number;
+	intensity?: number;
+	speed?: number;
+}
+
 /** 地面召唤阵:先在水平圆盘上旋转，再统一压缩为舞台地面透视。 */
 export class MagicCircleFX implements StageEffect {
 	private readonly back: SVGGElement;
@@ -24,6 +30,10 @@ export class MagicCircleFX implements StageEffect {
 	private readonly glyphs: Glyph[] = [];
 	private life = 0;
 	private readonly maxLife = 1.65;
+	private persistent = false;
+	private size = 1;
+	private intensity = 1;
+	private speed = 1;
 
 	constructor(mounts: EffectMounts) {
 		this.back = mounts.back;
@@ -32,6 +42,93 @@ export class MagicCircleFX implements StageEffect {
 
 	trigger(): void {
 		this.clear();
+		this.spawn();
+	}
+
+	setPersistent(enabled: boolean, config: MagicCircleConfig = {}): void {
+		this.setConfig(config);
+		if (!enabled) {
+			this.clear();
+			return;
+		}
+		this.persistent = true;
+		if (!this.circle) this.spawn();
+	}
+
+	setConfig(config: MagicCircleConfig): void {
+		if (config.size !== undefined) this.size = clamp(config.size, 0.65, 1.5);
+		if (config.intensity !== undefined) this.intensity = clamp(config.intensity, 0.2, 1.4);
+		if (config.speed !== undefined) this.speed = clamp(config.speed, 0, 2);
+	}
+
+	step(dt: number): void {
+		if (this.circle) {
+			this.life += dt;
+			if (!this.persistent && this.life >= this.maxLife) {
+				this.circle.remove();
+				this.circle = null;
+			} else {
+				const intro = clamp(this.life / 0.55, 0, 1);
+				const reveal = this.persistent
+					? intro
+					: this.life < 0.45
+						? this.life / 0.45
+						: 1 - Math.max(0, this.life - 0.95) / 0.7;
+				const scale =
+					this.size *
+					(this.persistent
+						? 0.92 + 0.08 * intro
+						: 0.48 + Math.min(this.life, 0.42) * 1.24);
+				const rotation = this.life * 110 * this.speed;
+				// 环只在入场时扩张,持续态保持稳定尺寸,避免魔法阵像呼吸灯一样跳动。
+				this.circle.setAttribute(
+					"opacity",
+					(clamp(reveal, 0, 1) * 0.62 * this.intensity).toFixed(3),
+				);
+				this.circle.setAttribute(
+					"transform",
+					`translate(130 232) scale(${(1.04 * scale).toFixed(3)} ${(0.25 * scale).toFixed(3)})`,
+				);
+				this.circle
+					.querySelector("[data-ring=outer]")
+					?.setAttribute("transform", `rotate(${rotation.toFixed(1)})`);
+				this.circle
+					.querySelector("[data-ring=inner]")
+					?.setAttribute("transform", `rotate(${(-rotation * 1.5).toFixed(1)})`);
+			}
+		}
+		for (let i = this.glyphs.length - 1; i >= 0; i--) {
+			const glyph = this.glyphs[i];
+			glyph.life += dt;
+			const t = glyph.life - glyph.delay;
+			if (t >= glyph.max) {
+				glyph.el.remove();
+				this.glyphs.splice(i, 1);
+				continue;
+			}
+			if (t < 0) continue;
+			glyph.x += glyph.vx * dt;
+			glyph.y += glyph.vy * dt;
+			const u = t / glyph.max;
+			const opacity = u < 0.15 ? u / 0.15 : (1 - u) ** 1.4;
+			glyph.el.setAttribute("opacity", (clamp(opacity, 0, 1) * this.intensity).toFixed(3));
+			glyph.el.setAttribute(
+				"transform",
+				`translate(${glyph.x.toFixed(1)} ${glyph.y.toFixed(1)}) rotate(${(glyph.phase * 57.3 + t * 80).toFixed(1)}) scale(${(glyph.size * this.size).toFixed(2)})`,
+			);
+		}
+	}
+
+	clear(): void {
+		this.circle?.remove();
+		this.circle = null;
+		for (const glyph of this.glyphs) glyph.el.remove();
+		this.glyphs.length = 0;
+		this.life = 0;
+		this.persistent = false;
+	}
+
+	private spawn(): void {
 		this.life = 0;
 		this.circle = this.createCircle();
 		this.back.appendChild(this.circle);
@@ -39,7 +136,7 @@ export class MagicCircleFX implements StageEffect {
 			const angle = (i / 6) * TAU + Math.PI / 6;
 			const el = svgEl("path", {
 				d: i % 2 ? SPARK_PATH : STAR_PATH,
-				fill: "#FFF3C4",
+				fill: "#F5E5B8",
 				opacity: "0",
 				"pointer-events": "none",
 			}) as SVGPathElement;
@@ -59,60 +156,6 @@ export class MagicCircleFX implements StageEffect {
 		}
 	}
 
-	step(dt: number): void {
-		if (this.circle) {
-			this.life += dt;
-			if (this.life >= this.maxLife) {
-				this.circle.remove();
-				this.circle = null;
-			} else {
-				const u = this.life / this.maxLife;
-				const reveal = u < 0.28 ? u / 0.28 : 1 - Math.max(0, u - 0.72) / 0.28;
-				const scale = 0.48 + Math.min(u, 0.42) * 1.24;
-				// 环在水平圆盘坐标系内反向旋转，再由 root 的非等比缩放投影到地面。
-				this.circle.setAttribute("opacity", (clamp(reveal, 0, 1) * 0.84).toFixed(3));
-				this.circle.setAttribute(
-					"transform",
-					`translate(130 232) scale(${(1.04 * scale).toFixed(3)} ${(0.25 * scale).toFixed(3)})`,
-				);
-				this.circle
-					.querySelector("[data-ring=outer]")
-					?.setAttribute("transform", `rotate(${(u * 110).toFixed(1)})`);
-				this.circle
-					.querySelector("[data-ring=inner]")
-					?.setAttribute("transform", `rotate(${(-u * 165).toFixed(1)})`);
-			}
-		}
-		for (let i = this.glyphs.length - 1; i >= 0; i--) {
-			const glyph = this.glyphs[i];
-			glyph.life += dt;
-			const t = glyph.life - glyph.delay;
-			if (t >= glyph.max) {
-				glyph.el.remove();
-				this.glyphs.splice(i, 1);
-				continue;
-			}
-			if (t < 0) continue;
-			glyph.x += glyph.vx * dt;
-			glyph.y += glyph.vy * dt;
-			const u = t / glyph.max;
-			const opacity = u < 0.15 ? u / 0.15 : (1 - u) ** 1.4;
-			glyph.el.setAttribute("opacity", clamp(opacity, 0, 1).toFixed(3));
-			glyph.el.setAttribute(
-				"transform",
-				`translate(${glyph.x.toFixed(1)} ${glyph.y.toFixed(1)}) rotate(${(glyph.phase * 57.3 + t * 80).toFixed(1)}) scale(${glyph.size.toFixed(2)})`,
-			);
-		}
-	}
-
-	clear(): void {
-		this.circle?.remove();
-		this.circle = null;
-		for (const glyph of this.glyphs) glyph.el.remove();
-		this.glyphs.length = 0;
-		this.life = 0;
-	}
-
 	private createCircle(): SVGGElement {
 		const root = svgEl("g", {
 			opacity: "0",
@@ -123,7 +166,7 @@ export class MagicCircleFX implements StageEffect {
 			rx: "112",
 			ry: "78",
 			fill: "none",
-			stroke: "#8B7BFF",
+			stroke: "#A8C7C3",
 			"stroke-width": "18",
 			opacity: "0.09",
 		});
@@ -133,14 +176,14 @@ export class MagicCircleFX implements StageEffect {
 			svgEl("circle", {
 				r: "105",
 				fill: "none",
-				stroke: "#A997FF",
+				stroke: "#BFD9D0",
 				"stroke-width": "1.2",
 				"stroke-dasharray": "2 7 18 4 30 6",
 			}),
 			svgEl("circle", {
 				r: "93",
 				fill: "none",
-				stroke: "#F6C95B",
+				stroke: "#D9B76C",
 				"stroke-width": "0.9",
 				"stroke-dasharray": "1 5 12 3",
 			}),
@@ -149,14 +192,14 @@ export class MagicCircleFX implements StageEffect {
 			svgEl("circle", {
 				r: "68",
 				fill: "none",
-				stroke: "#FFF3C4",
+				stroke: "#F5E5B8",
 				"stroke-width": "0.7",
 				"stroke-dasharray": "1 6",
 			}),
 			svgEl("circle", {
 				r: "42",
 				fill: "none",
-				stroke: "#A997FF",
+				stroke: "#A8C7C3",
 				"stroke-width": "0.65",
 				"stroke-dasharray": "3 8",
 			}),
@@ -170,7 +213,7 @@ export class MagicCircleFX implements StageEffect {
 					y1: String(Math.sin(angle) * (major ? 93 : 98)),
 					x2: String(Math.cos(angle) * 104),
 					y2: String(Math.sin(angle) * 104),
-					stroke: major ? "#F6C95B" : "#A997FF",
+					stroke: major ? "#D9B76C" : "#BFD9D0",
 					"stroke-width": major ? "1.5" : "0.65",
 					"stroke-linecap": "round",
 				}),
@@ -181,7 +224,7 @@ export class MagicCircleFX implements StageEffect {
 			const rune = svgEl("path", {
 				d: "M -4 -5 L 0 5 L 4 -5 M -4 0 L 4 0",
 				fill: "none",
-				stroke: "#FFF3C4",
+				stroke: "#F5E5B8",
 				"stroke-width": "0.9",
 				opacity: "0.75",
 				transform: `translate(${(Math.cos(angle) * 76).toFixed(1)} ${(Math.sin(angle) * 76).toFixed(1)}) rotate(${((angle * 180) / Math.PI + 90).toFixed(1)})`,
@@ -193,10 +236,10 @@ export class MagicCircleFX implements StageEffect {
 			svgEl("path", {
 				d: "M 0 -18 L 5 -5 L 18 0 L 5 5 L 0 18 L -5 5 L -18 0 L -5 -5 Z",
 				fill: "none",
-				stroke: "#FFF3C4",
+				stroke: "#F5E5B8",
 				"stroke-width": "1",
 			}),
-			svgEl("circle", { r: "4", fill: "none", stroke: "#F6C95B", "stroke-width": "0.8" }),
+			svgEl("circle", { r: "4", fill: "none", stroke: "#D9B76C", "stroke-width": "0.8" }),
 		);
 		root.append(glow, outer, inner, sigil);
 		return root;

@@ -36,7 +36,7 @@ export function LabHeader({
 					{lab.meta}
 				</p>
 			</div>
-			<p className="mt-6 max-w-xl text-muted-foreground">{lab.description}</p>
+			<p className="mt-6 text-muted-foreground">{lab.description}</p>
 		</header>
 	);
 }

@@ -49,21 +49,28 @@ interface StageAction {
 	description?: string;
 	icon: React.ReactNode;
 	onClick: () => void;
+	active?: boolean;
 }
 
 /**
- * 舞台按钮:基础动作保持横向紧凑，独立特效展示名称与语义短句。
+ * 舞台按钮:基础动作保持横向紧凑,独立特效展示名称与语义短句。
  */
-function StageButton({ label, description, icon, onClick }: StageAction) {
+function StageButton({ label, description, icon, onClick, active }: StageAction) {
 	const isEffect = description !== undefined;
 	return (
 		<button
 			type="button"
 			onClick={onClick}
+			aria-pressed={isEffect ? active : undefined}
 			className={cn(
 				"group cursor-pointer font-medium text-white/70 transition-[background-color,color,box-shadow,transform] hover:-translate-y-px hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
 				isEffect
-					? "flex min-h-18 flex-col items-start justify-between rounded-xl border border-white/8 bg-black/15 p-2.5 text-left"
+					? cn(
+							"flex min-h-18 flex-col items-start justify-between rounded-xl border p-2.5 text-left",
+							active
+								? "border-amber-100/25 bg-amber-100/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+								: "border-white/8 bg-black/15",
+						)
 					: "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-xs",
 			)}
 		>
@@ -136,6 +143,7 @@ export function MascotTheater({
 
 	const onStageLeave = () => heroRef.current?.setGaze(0, 0);
 	const [devYaw, setDevYaw] = useState(0);
+	const [magicPersistent, setMagicPersistent] = useState(false);
 	const antics: StageAction[] = [
 		{
 			label: "摸头",
@@ -161,10 +169,25 @@ export function MascotTheater({
 
 	const effects: StageAction[] = [
 		{
-			label: "魔法阵",
-			description: "脚下召唤",
+			label: magicPersistent ? "收起阵" : "魔法阵",
+			description: magicPersistent ? "常驻地面" : "脚下召唤",
 			icon: <WandSparkles className="size-3.5" />,
-			onClick: () => heroRef.current?.magic(),
+			active: magicPersistent,
+			onClick: () => {
+				const next = !magicPersistent;
+				setMagicPersistent(next);
+				heroRef.current?.setMagicPersistent(next, {
+					size: 1.04,
+					intensity: 0.84,
+					speed: 0.32,
+				});
+			},
+		},
+		{
+			label: "彩带",
+			description: "轻薄流线",
+			icon: <Sparkles className="size-3.5" />,
+			onClick: () => heroRef.current?.streamers(),
 		},
 		{
 			label: "流星",
@@ -217,32 +240,32 @@ export function MascotTheater({
 		}
 	};
 	return (
-		<section className="relative overflow-hidden rounded-2xl bg-[#151022] text-center shadow-2xl shadow-black/30 ring-1 ring-white/10">
+		<section className="relative grid overflow-hidden rounded-2xl bg-[#131715] text-center shadow-2xl shadow-black/30 ring-1 ring-white/10 lg:h-172 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
 			{/* 舞台场景区:猫是唯一交互主体,布景层全部 pointer-events-none;指针仅在此区内驱动视线 */}
 			<div
 				ref={stageRef}
 				onPointerMove={onStageMove}
 				onPointerLeave={onStageLeave}
-				className="relative h-72 overflow-hidden bg-[#100b1c] sm:h-88"
+				className="relative h-72 overflow-hidden bg-[#0f1412] sm:h-88 lg:h-full"
 			>
-				{/* 后墙环境冷光:暗部留冷紫底,猫的轮廓才读得出来 */}
+				{/* 后墙环境柔光:透明冷灰把角色从暗部托起,不再依赖紫色底。 */}
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgba(97,80,153,0.15),transparent_72%)]"
+					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgba(122,157,143,0.14),transparent_72%)]"
 				/>
 				{/* 台面地板:受光地界比后墙略亮 */}
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-x-0 bottom-0 h-38 bg-linear-to-b from-transparent via-[rgba(104,86,158,0.09)] to-[rgba(104,86,158,0.15)]"
+					className="pointer-events-none absolute inset-x-0 bottom-0 h-38 bg-linear-to-b from-transparent via-[rgba(112,145,129,0.08)] to-[rgba(112,145,129,0.14)]"
 				/>
 				{/* 两侧台翼暗化:舞台进深 */}
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-y-0 left-0 w-[15%] bg-linear-to-r from-[rgba(8,5,16,0.6)] to-transparent"
+					className="pointer-events-none absolute inset-y-0 left-0 w-[15%] bg-linear-to-r from-[rgba(5,9,7,0.62)] to-transparent"
 				/>
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-y-0 right-0 w-[15%] bg-linear-to-l from-[rgba(8,5,16,0.6)] to-transparent"
+					className="pointer-events-none absolute inset-y-0 right-0 w-[15%] bg-linear-to-l from-[rgba(5,9,7,0.62)] to-transparent"
 				/>
 				{/* 顶光光束:光源悬在舞台上方,conic 楔形两侧各 18° 半影衰减,近台面渐隐 */}
 				<div
@@ -273,10 +296,10 @@ export function MascotTheater({
 					aria-hidden
 					className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-linear-to-r from-transparent via-[rgba(255,242,205,0.28)] to-transparent"
 				/>
-				{/* 舞台暗角:只收舞台四角,不碰控制区 */}
+				{/* 舞台暗角:只收舞台四角,不碰导演台 */}
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_88%_78%_at_50%_42%,transparent_56%,rgba(7,4,14,0.5)_100%)]"
+					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_88%_78%_at_50%_42%,transparent_56%,rgba(3,7,5,0.52)_100%)]"
 				/>
 				{DUST_MOTES.map((d) => (
 					<span
@@ -323,9 +346,8 @@ export function MascotTheater({
 				/>
 				<EmotionBubble text={bubble.text} gen={bubble.gen} />
 			</div>
-			{/* 观众席控制区:舞台外,不打光 */}
-			{/* 观众席控制区:舞台外,不打光，严格固定各行几何高度消除切换抖动 */}
-			<div className="relative px-5 pt-4 pb-5 sm:px-6">
+			{/* 导演台:桌面端固定在舞台右侧,移动端顺序回退为舞台下方。 */}
+			<div className="relative min-h-0 overflow-y-auto border-t border-white/8 bg-[rgba(20,25,22,0.72)] px-5 pt-4 pb-5 sm:px-6 lg:border-t-0 lg:border-l lg:bg-[rgba(20,25,22,0.56)]">
 				{/* 顶栏：表情名称与展馆播放控制 */}
 				<div className="flex h-7 items-center justify-between">
 					<div className="flex items-center gap-2">
@@ -380,10 +402,10 @@ export function MascotTheater({
 					<div className="flex items-center justify-between px-1">
 						<div>
 							<p className="font-mono text-[10px] tracking-[0.22em] text-white/40 uppercase">
-								Stage controls
+								Director desk
 							</p>
 							<p className="mt-1 text-[10px] text-white/25">
-								先控制角色，再选择舞台氛围
+								动作是瞬间指令,氛围是可叠加图层
 							</p>
 						</div>
 						<span className="rounded-full bg-white/6 px-2 py-1 font-mono text-[9px] text-white/30">
@@ -411,7 +433,7 @@ export function MascotTheater({
 								每个按钮是一种舞台语言
 							</span>
 						</div>
-						<div className="grid grid-cols-2 gap-2 min-[480px]:grid-cols-3 sm:grid-cols-5">
+						<div className="grid grid-cols-2 gap-2 min-[480px]:grid-cols-3 lg:grid-cols-2">
 							{effects.map((a) => (
 								<StageButton key={a.label} {...a} />
 							))}

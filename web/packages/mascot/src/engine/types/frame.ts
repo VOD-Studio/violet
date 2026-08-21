@@ -17,4 +17,6 @@ export interface FrameContext {
 	leanSquash: number;
 	/** 思考环带快转档:poolMs < 600 的表情转得更快 */
 	haloFast: boolean;
+	/** 自旋期间固定身体比例与接地状态,避免视线跟随带来拉伸。 */
+	isSpinning: boolean;
 }

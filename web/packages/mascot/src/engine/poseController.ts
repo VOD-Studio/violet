@@ -234,7 +234,7 @@ export class PoseController {
 		if (!pose) pose = applySpec(defaultPose(), def.body, def.eyes);
 
 		const br = pose.body.breathe || 0;
-		if (br) {
+		if (br && !this.spin) {
 			const ph = (TAU * now) / 3600;
 			pose.body.scale += br * Math.sin(ph);
 			pose.body.y += br * 45 * Math.sin(ph + 0.6);
@@ -365,9 +365,13 @@ export class PoseController {
 		// 微漂移与表情 lookX 动画(scan 类),直接用会连带身体摇摆。独立慢平滑
 		// 让身体比眼睛慢半拍跟上,产生 follow-through 而非刚体同进同退
 		this.leanCur += (this.gaze.x - this.leanCur) * (1 - Math.exp(-GAZE_LEAN_K * dt));
-		frame.leanShift = this.leanCur * GAZE_LEAN_SHIFT;
-		frame.leanRot = this.leanCur * GAZE_LEAN_ROT;
-		frame.leanSquash = 1 - GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
+		const isSpinning = this.spin !== null;
+		frame.leanShift = isSpinning ? 0 : this.leanCur * GAZE_LEAN_SHIFT;
+		frame.leanRot = isSpinning ? 0 : this.leanCur * GAZE_LEAN_ROT;
+		frame.leanSquash = isSpinning
+			? 1
+			: 1 - GAZE_LEAN_SQUASH * (Math.abs(this.leanCur) / GAZE_X);
+		frame.isSpinning = isSpinning;
 		frame.haloFast = (def.poolMs?.[0] ?? 2000) < 600;
 		this.lastPose = pose;
 		return pose;

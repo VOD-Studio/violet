@@ -58,13 +58,15 @@ export class CatMochiRenderer implements CharacterRenderer {
 			projectSurfaceAngle(theta0, a, FACE_PROJECTION_RADIUS);
 
 		// 身体轮廓是近圆团子,不额外按 yaw 压缩;身体与五官共享同一个 rig 变换。
-		const leanSquash = frame.leanSquash;
+		// 自旋时保持身体比例和接地点不变,避免角色像橡皮泥一样被横向拉扯。
+		const leanSquash = frame.isSpinning ? 1 : frame.leanSquash;
+		const stretchY = frame.isSpinning ? 1 : b.stretchY;
 		this.rig.rigG.setAttribute(
 			"transform",
 			[
 				`translate(${(cx + b.x + frame.leanShift).toFixed(2)} ${(anchorY + b.y).toFixed(2)})`,
 				`rotate(${(b.rotate + frame.leanRot).toFixed(2)})`,
-				`scale(${(b.scale * leanSquash).toFixed(4)} ${(b.scale * b.stretchY).toFixed(4)})`,
+				`scale(${(b.scale * leanSquash).toFixed(4)} ${(b.scale * stretchY).toFixed(4)})`,
 				`translate(${(-cx).toFixed(2)} ${(-anchorY).toFixed(2)})`,
 			].join(" "),
 		);

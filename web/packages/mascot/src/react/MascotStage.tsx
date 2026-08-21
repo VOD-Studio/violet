@@ -1,5 +1,6 @@
 import { type Ref, useEffect, useRef } from "react";
 import { DEFAULT_EMOTION_ID } from "../engine/emotions";
+import type { MascotEffectConfig } from "../engine/mascot";
 import { Mascot } from "../engine/mascot";
 import type { AIMessage, AIMessageResult } from "../protocol";
 
@@ -13,11 +14,18 @@ export interface MascotHandle {
 	bounce(): void;
 	/** 摸头互动(飞机耳) */
 	pet(): void;
-	/** 撒花庆祝
+	/**
+	 * 撒花庆祝。
 	 *
 	 * @param count - 粒子数,缺省 20
 	 */
 	burst(count?: number): void;
+	/** 独立彩带流线特效,不依赖角色自旋 */
+	streamers(): void;
+	/** 设置魔法阵是否持续存在 */
+	setMagicPersistent(enabled: boolean, config?: MascotEffectConfig): void;
+	/** 更新持续魔法阵的视觉参数 */
+	configureMagic(config: MascotEffectConfig): void;
 	/** 独立魔法阵特效 */
 	magic(): void;
 	/** 独立烟花特效 */
@@ -109,6 +117,10 @@ export function MascotStage({
 			bounce: () => mascotRef.current?.bounce(),
 			pet: () => mascotRef.current?.pet(1200),
 			burst: (count = 20) => mascotRef.current?.burst(count),
+			streamers: () => mascotRef.current?.streamers(),
+			setMagicPersistent: (enabled, config) =>
+				mascotRef.current?.setMagicPersistent(enabled, config),
+			configureMagic: (config) => mascotRef.current?.configureMagic(config),
 			magic: () => mascotRef.current?.magic(),
 			fireworks: () => mascotRef.current?.fireworks(),
 			hearts: () => mascotRef.current?.hearts(),

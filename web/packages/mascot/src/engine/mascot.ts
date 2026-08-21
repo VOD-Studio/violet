@@ -26,6 +26,14 @@ export interface MascotOptions {
 	/** 摸头命中回调(头部区域指针停留) */
 	onPet?: () => void;
 }
+export interface MascotEffectConfig {
+	/** 效果相对舞台默认尺寸的倍率。 */
+	size?: number;
+	/** 效果不透明度与粒子密度的倍率。 */
+	intensity?: number;
+	/** 持续效果的旋转或循环速度倍率。 */
+	speed?: number;
+}
 
 /* ---------- 共享 ticker ---------- */
 
@@ -57,6 +65,7 @@ export class Mascot {
 		leanRot: 0,
 		leanSquash: 1,
 		haloFast: false,
+		isSpinning: false,
 	};
 
 	/* 摸摸头指针检测状态 */
@@ -154,6 +163,24 @@ export class Mascot {
 	 */
 	burst(count = 20): void {
 		this.confetti.burst(count);
+		this.wakeEffects();
+	}
+
+	/** 触发不依赖角色自旋的独立彩带流线。 */
+	streamers(): void {
+		this.ribbons.trigger();
+		this.wakeEffects();
+	}
+
+	/** 设置魔法阵是否持续存在,可同时调整尺寸、亮度和旋转速度。 */
+	setMagicPersistent(enabled: boolean, config?: MascotEffectConfig): void {
+		this.stageFx.setMagicPersistent(enabled, config);
+		this.wakeEffects();
+	}
+
+	/** 更新持续魔法阵的视觉参数。 */
+	configureMagic(config: MascotEffectConfig): void {
+		this.stageFx.configureMagic(config);
 		this.wakeEffects();
 	}
 

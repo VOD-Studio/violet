@@ -1,6 +1,6 @@
 import { FireworksFX } from "./fireworks";
 import { HeartRainFX } from "./heart-rain";
-import { MagicCircleFX } from "./magic-circle";
+import { type MagicCircleConfig, MagicCircleFX } from "./magic-circle";
 import { MeteorsFX } from "./meteors";
 import { SpotlightFX } from "./spotlight";
 import type { EffectMounts, StageEffect } from "./types";
@@ -31,6 +31,13 @@ export class StageFX {
 
 	magic(): void {
 		this.magicCircle.trigger();
+	}
+	setMagicPersistent(enabled: boolean, config?: MagicCircleConfig): void {
+		this.magicCircle.setPersistent(enabled, config);
+	}
+
+	configureMagic(config: MagicCircleConfig): void {
+		this.magicCircle.setConfig(config);
 	}
 
 	fireworksBurst(): void {

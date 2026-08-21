@@ -168,4 +168,17 @@ describe("Mascot rotation projection", () => {
 		expect(Number(blushR.getAttribute("cx"))).not.toBeCloseTo(FACE.blushR[0], 0);
 		expect(tailYSpan(tail.getAttribute("d"))).toBeLessThan(70);
 	});
+
+	it("keeps the body scale isotropic while spinning", () => {
+		const { rig } = createMascot();
+		const mascot = instances[0];
+		const now = performance.now();
+
+		mascot.spinTurns(1);
+		mascot.tick(now + 120, 0.12);
+
+		const scale = rig.getAttribute("transform")?.match(/scale\((-?[0-9.]+) (-?[0-9.]+)\)/);
+		if (!scale) throw new Error("Missing spinning rig scale");
+		expect(Number(scale[1])).toBeCloseTo(Number(scale[2]), 4);
+	});
 });

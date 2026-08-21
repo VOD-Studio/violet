@@ -40,4 +40,32 @@ describe("stage effects", () => {
 		expect(shadow?.getAttribute("filter")).toContain("cat-shadow-blur");
 		expect(shadowIndex).toBeGreaterThan(backIndex);
 	});
+
+	it("starts a standalone ribbon layer without requiring a spin", () => {
+		const host = document.createElement("div");
+		document.body.appendChild(host);
+		const mascot = new Mascot(host, { emotion: "08", frozen: true });
+		instances.push(mascot);
+		const now = performance.now();
+
+		mascot.streamers();
+		mascot.tick(now + 120, 0.12);
+		expect(host.querySelectorAll('linearGradient[id^="ribbon-grad-"]').length).toBe(3);
+
+		mascot.tick(now + 4000, 4);
+		expect(host.querySelectorAll('linearGradient[id^="ribbon-grad-"]').length).toBe(0);
+	});
+	it("keeps a persistent magic circle alive until explicitly disabled", () => {
+		const host = document.createElement("div");
+		document.body.appendChild(host);
+		const mascot = new Mascot(host, { emotion: "08", frozen: true });
+		instances.push(mascot);
+
+		mascot.setMagicPersistent(true, { size: 1.1, intensity: 0.8, speed: 0.3 });
+		mascot.tick(performance.now() + 2200, 2.2);
+		expect(host.querySelector("[data-ring=outer]")).not.toBeNull();
+
+		mascot.setMagicPersistent(false);
+		expect(host.querySelector("[data-ring=outer]")).toBeNull();
+	});
 });

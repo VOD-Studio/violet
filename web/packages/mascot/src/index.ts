@@ -7,7 +7,7 @@
 export { DEFAULT_EMOTION_BY_STATE, resolveEmotionId } from "./agent-state";
 export { PALETTE } from "./engine/characters/catMochi/palette";
 export { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./engine/emotions";
-export type { MascotOptions } from "./engine/mascot";
+export type { MascotEffectConfig, MascotOptions } from "./engine/mascot";
 export { Mascot } from "./engine/mascot";
 export type * from "./engine/types";
 export type { AIMessage, AIMessageResult } from "./protocol";
