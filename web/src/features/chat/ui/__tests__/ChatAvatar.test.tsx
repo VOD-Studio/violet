@@ -47,11 +47,7 @@ describe("ChatAvatar", () => {
 	});
 
 	it("links the fallback avatar to the user's public profile", () => {
-		render(
-			<ChatAvatar
-				user={user({ username: "bob", display_name: "", avatar_url: "" })}
-			/>,
-		);
+		render(<ChatAvatar user={user({ username: "bob", display_name: "", avatar_url: "" })} />);
 
 		const link = screen.getByRole("link", { name: "bob 的个人主页" });
 		expect(link.getAttribute("href")).toBe("/users/bob");

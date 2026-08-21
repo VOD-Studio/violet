@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({
 		to,
@@ -23,15 +24,11 @@ vi.mock("@tanstack/react-router", () => ({
 		"aria-label"?: string;
 		className?: string;
 	}) => (
-		<a
-			{...props}
-			href={params?.username ? `/users/${params.username}` : to}
-		>
+		<a {...props} href={params?.username ? `/users/${params.username}` : to}>
 			{children}
 		</a>
 	),
 }));
-
 
 const mockMe = {
 	id: "u_me",
