@@ -63,7 +63,7 @@ function StageButton({ label, description, icon, onClick, active }: StageAction)
 			onClick={onClick}
 			aria-pressed={isEffect ? active : undefined}
 			className={cn(
-				"group cursor-pointer font-medium text-white/70 transition-[background-color,color,box-shadow,transform] hover:-translate-y-px hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+				"group cursor-pointer font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
 				isEffect
 					? cn(
 							"flex min-h-18 flex-col items-start justify-between rounded-xl border p-2.5 text-left",
@@ -108,8 +108,8 @@ export interface MascotTheaterProps {
 	onAIMessage: (msg: { emotionId: string; tips?: string }) => void;
 }
 /**
- * 聚光舞台卡:上段舞台场景(顶光光束、猫脚下台面光斑、台口溢光),
- * 下段观众席控制区(动作按钮与 AI 协议实测),布景层均不接事件。
+ * 聚光舞台与导演台:舞台、控制面板、协议区分为独立卡片,
+ * 舞台只承载角色与视线交互,控制区不覆盖舞台。
  */
 export function MascotTheater({
 	def,
@@ -240,134 +240,31 @@ export function MascotTheater({
 		}
 	};
 	return (
-		<section className="relative grid overflow-hidden rounded-2xl bg-[#131715] text-center shadow-2xl shadow-black/30 ring-1 ring-white/10 lg:h-172 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
-			{/* 舞台场景区:猫是唯一交互主体,布景层全部 pointer-events-none;指针仅在此区内驱动视线 */}
-			<div
-				ref={stageRef}
-				onPointerMove={onStageMove}
-				onPointerLeave={onStageLeave}
-				className="relative h-72 overflow-hidden bg-[#0f1412] sm:h-88 lg:h-full"
-			>
-				{/* 后墙环境柔光:透明冷灰把角色从暗部托起,不再依赖紫色底。 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgba(122,157,143,0.14),transparent_72%)]"
-				/>
-				{/* 台面地板:受光地界比后墙略亮 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 bottom-0 h-38 bg-linear-to-b from-transparent via-[rgba(112,145,129,0.08)] to-[rgba(112,145,129,0.14)]"
-				/>
-				{/* 两侧台翼暗化:舞台进深 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-y-0 left-0 w-[15%] bg-linear-to-r from-[rgba(5,9,7,0.62)] to-transparent"
-				/>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-y-0 right-0 w-[15%] bg-linear-to-l from-[rgba(5,9,7,0.62)] to-transparent"
-				/>
-				{/* 顶光光束:光源悬在舞台上方,conic 楔形两侧各 18° 半影衰减,近台面渐隐 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[conic-gradient(at_50%_-22%,transparent_43.5%,rgba(255,243,209,0.2)_48.5%_51.5%,transparent_56.5%)] mask-[linear-gradient(to_bottom,#000_0%,#000_55%,transparent_92%)]"
-				/>
-				{/* 灯具源光:顶部一簇热核 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-[radial-gradient(ellipse_30%_62%_at_50%_0%,rgba(255,247,224,0.33),rgba(255,247,224,0.1)_45%,transparent_70%)]"
-				/>
-				{/* 台面光斑:热核 + 柔边两层,中心正对猫脚 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_46%_20%_at_50%_86%,rgba(255,242,205,0.24),rgba(255,242,205,0.08)_52%,transparent_74%)]"
-				/>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_24%_9%_at_50%_87%,rgba(255,246,222,0.4),transparent_72%)]"
-				/>
-				{/* 台口溢光:漫过舞台前沿被裁掉,光"到边外去"的边界感 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_64%_24%_at_50%_106%,rgba(255,240,200,0.12),transparent_68%)]"
-				/>
-				{/* 台口沿:中央亮的发丝线 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-linear-to-r from-transparent via-[rgba(255,242,205,0.28)] to-transparent"
-				/>
-				{/* 舞台暗角:只收舞台四角,不碰导演台 */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_88%_78%_at_50%_42%,transparent_56%,rgba(3,7,5,0.52)_100%)]"
-				/>
-				{DUST_MOTES.map((d) => (
-					<span
-						key={d.key}
-						aria-hidden
-						style={{
-							left: d.left,
-							top: d.top,
-							animationDuration: d.duration,
-							animationDelay: d.delay,
-						}}
-						className="animate-[mascot-dust_linear_infinite] motion-reduce:hidden absolute size-1 rounded-full bg-[#ffedbe]/60"
-					/>
-				))}
-
-				{/* 舞台顶栏 HUD: 左侧状态小签 + 右侧播放/巡演控制器 */}
-				<p className="absolute inset-x-0 top-3.5 z-10 flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.2em] text-white/40 uppercase">
-					{GROUP_LABEL[def.group]}
-					<span aria-hidden className="text-white/20">
-						·
-					</span>
-					#{def.id}
-					{agentMsg && (
-						<>
-							<span aria-hidden className="text-white/20">
-								·
+		<div className="space-y-4">
+			<section className="overflow-hidden rounded-2xl bg-[#131715] shadow-2xl shadow-black/30 ring-1 ring-white/10">
+				<header className="flex min-h-18 items-center justify-between gap-4 border-b border-white/8 bg-[rgba(20,25,22,0.72)] px-5 py-3 text-left sm:px-6">
+					<div className="min-w-0">
+						<div className="flex items-center gap-2">
+							<h2 className="truncate text-lg font-bold leading-none tracking-tight text-white sm:text-xl">
+								{def.name}
+							</h2>
+							<span className="shrink-0 rounded-full border border-white/10 bg-white/6 px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-white/50">
+								{def.en}
 							</span>
-							<span data-agent-state={agentMsg.state} className="text-amber-200/70">
-								{agentMsg.agent} {agentMsg.state}
-							</span>
-						</>
-					)}
-					<span
-						aria-hidden
-						className="size-1 animate-pulse rounded-full bg-emerald-400/80"
-					/>
-				</p>
-
-				<MascotStage
-					ref={heroRef}
-					emotion={agentEmotion ?? def.id}
-					onClick={() => heroRef.current?.bounce()}
-					className="absolute bottom-[11%] left-1/2 size-52 -translate-x-1/2 cursor-pointer drop-shadow-[0_0_18px_rgba(255,240,200,0.14)] sm:size-60"
-				/>
-				<EmotionBubble text={bubble.text} gen={bubble.gen} />
-			</div>
-			{/* 导演台:桌面端固定在舞台右侧,移动端顺序回退为舞台下方。 */}
-			<div className="relative min-h-0 overflow-y-auto border-t border-white/8 bg-[rgba(20,25,22,0.72)] px-5 pt-4 pb-5 sm:px-6 lg:border-t-0 lg:border-l lg:bg-[rgba(20,25,22,0.56)]">
-				{/* 顶栏：表情名称与展馆播放控制 */}
-				<div className="flex h-7 items-center justify-between">
-					<div className="flex items-center gap-2">
-						<h2 className="text-lg font-bold leading-none tracking-tight text-white sm:text-xl">
-							{def.name}
-						</h2>
-						<span className="rounded-full border border-white/10 bg-white/6 px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-white/50">
-							{def.en}
-						</span>
+						</div>
+						<p className="mt-1 truncate text-xs leading-none text-white/45">
+							{def.desc}
+						</p>
 					</div>
 
-					{/* 展馆播放控制：重播与巡演 */}
-					<div className="inline-flex items-center rounded-full border border-white/10 bg-white/4 p-0.5 shadow-xs backdrop-blur-md">
+					<div className="inline-flex shrink-0 items-center rounded-full border border-white/10 bg-white/4 p-0.5 shadow-xs backdrop-blur-md">
 						<button
 							type="button"
 							onClick={() => {
 								heroRef.current?.setEmotion(def.id);
 								onReplay();
 							}}
-							className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] text-white/70 transition-[color,background-color,box-shadow] hover:duration-0 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+							className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
 							title="重播当前表情动画与对白"
 						>
 							<RotateCcw className="size-3" />
@@ -379,8 +276,7 @@ export function MascotTheater({
 							onClick={onToggleTour}
 							aria-pressed={isTouring}
 							className={cn(
-								"inline-flex h-6 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] transition-[color,background-color,box-shadow] hover:duration-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-								// 激活态用 ring-inset 替代 border:box-shadow 通道不占布局,开关切换零位移
+								"inline-flex h-7 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
 								isTouring
 									? "bg-white/15 text-white shadow-xs shadow-black/20 ring-1 ring-white/25 ring-inset"
 									: "text-white/70 hover:bg-white/10 hover:text-white",
@@ -391,14 +287,118 @@ export function MascotTheater({
 							<span>巡演</span>
 						</button>
 					</div>
-				</div>
+				</header>
+				{/* 舞台场景区:猫是唯一交互主体,布景层全部 pointer-events-none;指针仅在此区内驱动视线 */}
+				<div
+					ref={stageRef}
+					onPointerMove={onStageMove}
+					onPointerLeave={onStageLeave}
+					className="relative h-72 overflow-hidden bg-[#0f1412] sm:h-88 lg:h-120"
+				>
+					{/* 后墙环境柔光:透明冷灰把角色从暗部托起,不再依赖紫色底。 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgba(122,157,143,0.14),transparent_72%)]"
+					/>
+					{/* 台面地板:受光地界比后墙略亮 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-x-0 bottom-0 h-38 bg-linear-to-b from-transparent via-[rgba(112,145,129,0.08)] to-[rgba(112,145,129,0.14)]"
+					/>
+					{/* 两侧台翼暗化:舞台进深 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-y-0 left-0 w-[15%] bg-linear-to-r from-[rgba(5,9,7,0.62)] to-transparent"
+					/>
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-y-0 right-0 w-[15%] bg-linear-to-l from-[rgba(5,9,7,0.62)] to-transparent"
+					/>
+					{/* 顶光光束:光源悬在舞台上方,conic 楔形两侧各 18° 半影衰减,近台面渐隐 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-[conic-gradient(at_50%_-22%,transparent_43.5%,rgba(255,243,209,0.2)_48.5%_51.5%,transparent_56.5%)] mask-[linear-gradient(to_bottom,#000_0%,#000_55%,transparent_92%)]"
+					/>
+					{/* 灯具源光:顶部一簇热核 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-[radial-gradient(ellipse_30%_62%_at_50%_0%,rgba(255,247,224,0.33),rgba(255,247,224,0.1)_45%,transparent_70%)]"
+					/>
+					{/* 台面光斑:热核 + 柔边两层,中心正对猫脚 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_46%_20%_at_50%_86%,rgba(255,242,205,0.24),rgba(255,242,205,0.08)_52%,transparent_74%)]"
+					/>
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_24%_9%_at_50%_87%,rgba(255,246,222,0.4),transparent_72%)]"
+					/>
+					{/* 台口溢光:漫过舞台前沿被裁掉,光"到边外去"的边界感 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_64%_24%_at_50%_106%,rgba(255,240,200,0.12),transparent_68%)]"
+					/>
+					{/* 台口沿:中央亮的发丝线 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-linear-to-r from-transparent via-[rgba(255,242,205,0.28)] to-transparent"
+					/>
+					{/* 舞台暗角:只收舞台四角,不碰导演台 */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_88%_78%_at_50%_42%,transparent_56%,rgba(3,7,5,0.52)_100%)]"
+					/>
+					{DUST_MOTES.map((d) => (
+						<span
+							key={d.key}
+							aria-hidden
+							style={{
+								left: d.left,
+								top: d.top,
+								animationDuration: d.duration,
+								animationDelay: d.delay,
+							}}
+							className="animate-[mascot-dust_linear_infinite] motion-reduce:hidden absolute size-1 rounded-full bg-[#ffedbe]/60"
+						/>
+					))}
 
-				{/* 描述文案 */}
-				<div className="mt-1 flex h-4 items-center">
-					<p className="truncate text-xs leading-none text-white/45">{def.desc}</p>
-				</div>
+					{/* 舞台顶栏 HUD: 左侧状态小签 + 右侧播放/巡演控制器 */}
+					<p className="absolute inset-x-0 top-3.5 z-10 flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.2em] text-white/40 uppercase">
+						{GROUP_LABEL[def.group]}
+						<span aria-hidden className="text-white/20">
+							·
+						</span>
+						#{def.id}
+						{agentMsg && (
+							<>
+								<span aria-hidden className="text-white/20">
+									·
+								</span>
+								<span
+									data-agent-state={agentMsg.state}
+									className="text-amber-200/70"
+								>
+									{agentMsg.agent} {agentMsg.state}
+								</span>
+							</>
+						)}
+						<span
+							aria-hidden
+							className="size-1 animate-pulse rounded-full bg-emerald-400/80"
+						/>
+					</p>
 
-				<div className="mt-4 rounded-2xl border border-white/10 bg-white/4 p-3 shadow-lg shadow-black/20">
+					<MascotStage
+						ref={heroRef}
+						emotion={agentEmotion ?? def.id}
+						onClick={() => heroRef.current?.bounce()}
+						className="absolute bottom-[11%] left-1/2 size-52 -translate-x-1/2 cursor-pointer drop-shadow-[0_0_18px_rgba(255,240,200,0.14)] sm:size-60"
+					/>
+					<EmotionBubble text={bubble.text} gen={bubble.gen} />
+				</div>
+			</section>
+			<section className="rounded-2xl border border-white/10 bg-[rgba(20,25,22,0.72)] p-4 text-left shadow-lg shadow-black/20 sm:p-5">
+				<div>
 					<div className="flex items-center justify-between px-1">
 						<div>
 							<p className="font-mono text-[10px] tracking-[0.22em] text-white/40 uppercase">
@@ -507,7 +507,7 @@ export function MascotTheater({
 						</div>
 					</div>
 				</div>
-			</div>
-		</section>
+			</section>
+		</div>
 	);
 }
