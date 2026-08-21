@@ -4,13 +4,17 @@ import type { MascotHandle } from "@violet/mascot/react";
 import { MascotStage } from "@violet/mascot/react";
 import {
 	Hand,
+	Heart,
 	Pause,
 	Play,
+	Rocket,
 	RotateCcw,
 	RotateCw,
 	Send,
 	Sparkles,
+	Star,
 	Terminal,
+	WandSparkles,
 	Zap,
 } from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
@@ -113,9 +117,7 @@ export function MascotTheater({
 	};
 
 	const onStageLeave = () => heroRef.current?.setGaze(0, 0);
-
 	const [devYaw, setDevYaw] = useState(0);
-
 	const antics: StageAction[] = [
 		{
 			label: "摸头",
@@ -136,6 +138,35 @@ export function MascotTheater({
 			label: "弹跳",
 			icon: <Zap className="size-3.5" />,
 			onClick: () => heroRef.current?.bounce(),
+		},
+	];
+
+	// 独立特效不改变角色姿态，统一放在第二排，便于继续增加而不挤压基础动作。
+	const effects: StageAction[] = [
+		{
+			label: "魔法阵",
+			icon: <WandSparkles className="size-3.5" />,
+			onClick: () => heroRef.current?.magic(),
+		},
+		{
+			label: "烟花",
+			icon: <Star className="size-3.5" />,
+			onClick: () => heroRef.current?.fireworks(),
+		},
+		{
+			label: "爱心雨",
+			icon: <Heart className="size-3.5" />,
+			onClick: () => heroRef.current?.hearts(),
+		},
+		{
+			label: "流星",
+			icon: <Rocket className="size-3.5" />,
+			onClick: () => heroRef.current?.meteors(),
+		},
+		{
+			label: "闪耀",
+			icon: <Sparkles className="size-3.5" />,
+			onClick: () => heroRef.current?.spotlight(),
 		},
 	];
 
@@ -323,33 +354,50 @@ export function MascotTheater({
 					<p className="truncate text-xs leading-none text-white/45">{def.desc}</p>
 				</div>
 
-				{/* 互动动作工具栏：纯粹的 4 个猫猫互动手势 */}
-				<div className="mt-3.5 flex h-9 items-center justify-center">
-					<div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/4 p-1 shadow-md shadow-black/25 backdrop-blur-md">
+				<div className="mt-4 rounded-2xl border border-white/10 bg-white/4 p-3 shadow-lg shadow-black/20">
+					<div className="mb-2 flex items-center justify-between px-1">
+						<span className="font-mono text-[10px] tracking-[0.22em] text-white/35 uppercase">
+							Stage controls
+						</span>
+						<span className="text-[10px] text-white/25">动作与独立特效</span>
+					</div>
+					<div className="grid grid-cols-4 gap-1.5">
 						{antics.map((a) => (
+							<StageButton key={a.label} {...a} />
+						))}
+					</div>
+					<div className="my-2 border-t border-white/8" />
+					<div className="grid grid-cols-5 gap-1.5">
+						{effects.map((a) => (
 							<StageButton key={a.label} {...a} />
 						))}
 					</div>
 				</div>
 
-				{/* 偏航调试滑条:手动逐度检查旋转渲染 */}
-				<div className="mt-2.5 flex h-6 items-center gap-2.5">
-					<span className="shrink-0 font-mono text-[10px] tracking-widest text-white/35 uppercase">
-						yaw
-					</span>
+				<div className="mt-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
+					<div className="mb-1.5 flex items-center justify-between">
+						<span className="font-mono text-[10px] tracking-[0.2em] text-white/35 uppercase">
+							Yaw / 方向
+						</span>
+						<span className="font-mono text-[11px] text-white/60 tabular-nums">
+							{devYaw}°
+						</span>
+					</div>
 					<input
 						type="range"
-						min={0}
+						min={-360}
 						max={360}
 						step={5}
 						value={devYaw}
 						onChange={(e) => setDevYaw(+e.target.value)}
-						className="h-1 max-w-56 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-white/70"
-						aria-label="手动偏航角"
+						className="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-amber-200/80"
+						aria-label="手动偏航角，范围负360度到正360度"
 					/>
-					<span className="w-10 shrink-0 text-right font-mono text-[10px] text-white/50 tabular-nums">
-						{devYaw}°
-					</span>
+					<div className="mt-1 flex justify-between font-mono text-[9px] text-white/25">
+						<span>-360°</span>
+						<span>0° 正面</span>
+						<span>+360°</span>
+					</div>
 				</div>
 				<div className="mt-2 flex h-3.5 items-center justify-center">
 					<p className="text-[10px] leading-none text-white/25">

@@ -8,6 +8,7 @@
 import { CatMochiRenderer } from "./characters/catMochi";
 import { ConfettiFX } from "./effects/confetti";
 import { RibbonFX } from "./effects/ribbons";
+import { StageFX } from "./effects/stage";
 import { DEFAULT_EMOTION_ID, EMOTION_MAP, EMOTIONS } from "./emotions";
 import { PoseController } from "./poseController";
 import type { FrameContext } from "./types";
@@ -47,6 +48,7 @@ export class Mascot {
 	private readonly controller: PoseController;
 	private readonly ribbons: RibbonFX;
 	private readonly confetti: ConfettiFX;
+	private readonly stageFx: StageFX;
 	/** 复用的帧上下文:compose 填充时间与身体跟随参数,render 消费 */
 	private readonly frame: FrameContext = {
 		now: 0,
@@ -77,6 +79,7 @@ export class Mascot {
 		this.controller = new PoseController(def);
 		this.ribbons = new RibbonFX(this.renderer.mounts);
 		this.confetti = new ConfettiFX(this.renderer.mounts);
+		this.stageFx = new StageFX(this.renderer.mounts);
 		this.el.appendChild(this.renderer.root);
 		if (opts.onClick) {
 			this.clickHandler = opts.onClick;
@@ -151,6 +154,40 @@ export class Mascot {
 	 */
 	burst(count = 20): void {
 		this.confetti.burst(count);
+		this.wakeEffects();
+	}
+
+	/** 触发脚下魔法阵与上浮闪星，不改变角色姿态。 */
+	magic(): void {
+		this.stageFx.magic();
+		this.wakeEffects();
+	}
+
+	/** 触发三组分层烟花，不改变角色姿态。 */
+	fireworks(): void {
+		this.stageFx.fireworks();
+		this.wakeEffects();
+	}
+
+	/** 触发从舞台顶部落下的爱心雨。 */
+	hearts(): void {
+		this.stageFx.hearts();
+		this.wakeEffects();
+	}
+
+	/** 触发斜向掠过舞台的流星群。 */
+	meteors(): void {
+		this.stageFx.meteors();
+		this.wakeEffects();
+	}
+
+	/** 触发暖金闪耀环与周身星光。 */
+	spotlight(): void {
+		this.stageFx.spotlight();
+		this.wakeEffects();
+	}
+
+	private wakeEffects(): void {
 		if (this.running && !rafId) {
 			lastT = performance.now();
 			rafId = requestAnimationFrame(loop);
@@ -187,6 +224,7 @@ export class Mascot {
 			this.renderer.root.removeEventListener("pointermove", this.pointerMoveHandler);
 		this.ribbons.clear();
 		this.confetti.clear();
+		this.stageFx.clear();
 		this.renderer.destroy();
 		this.destroyed = true;
 	}
@@ -201,6 +239,7 @@ export class Mascot {
 		this.renderer.render(pose, this.frame);
 		this.ribbons.step(now, dt, pose.yaw);
 		this.confetti.step(dt);
+		this.stageFx.step(dt);
 	}
 
 	private renderStatic(): void {

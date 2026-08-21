@@ -18,6 +18,16 @@ export interface MascotHandle {
 	 * @param count - 粒子数,缺省 20
 	 */
 	burst(count?: number): void;
+	/** 独立魔法阵特效 */
+	magic(): void;
+	/** 独立烟花特效 */
+	fireworks(): void;
+	/** 独立爱心雨特效 */
+	hearts(): void;
+	/** 独立流星特效 */
+	meteors(): void;
+	/** 独立闪耀登场特效 */
+	spotlight(): void;
 	/**
 	 * 视线跟随。
 	 *
@@ -99,6 +109,11 @@ export function MascotStage({
 			bounce: () => mascotRef.current?.bounce(),
 			pet: () => mascotRef.current?.pet(1200),
 			burst: (count = 20) => mascotRef.current?.burst(count),
+			magic: () => mascotRef.current?.magic(),
+			fireworks: () => mascotRef.current?.fireworks(),
+			hearts: () => mascotRef.current?.hearts(),
+			meteors: () => mascotRef.current?.meteors(),
+			spotlight: () => mascotRef.current?.spotlight(),
 			setGaze: (nx: number, ny: number) => mascotRef.current?.setGaze(nx, ny),
 			setDevYaw: (deg: number) => mascotRef.current?.setDevYaw(deg),
 			setEmotion: (id) => mascotRef.current?.setEmotion(id),

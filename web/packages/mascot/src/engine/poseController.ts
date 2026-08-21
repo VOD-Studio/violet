@@ -34,10 +34,6 @@ const GAZE_LEAN_SQUASH = 0.05;
 const GAZE_LEAN_K = 2.6;
 /** 单圈自旋时长 (ms):时间线驱动,角速度均匀、起止缓动 */
 const SPIN_TURN_MS = 850;
-/** 自旋滞空高度 (viewBox px):抛物线跳起,让旋转发生在空中而非地面拧转 */
-const SPIN_HOP = 30;
-/** 自旋落地压扁时长 (ms):正弦包络压扁-回弹 */
-const SPIN_LAND_MS = 220;
 /** 弹跳:4 段递减抛物线 */
 const BOUNCE_SEGS = [
 	{ d: 0.28, h: 22 },
@@ -286,21 +282,8 @@ export class PoseController {
 			springStep(this.openSpring, 26, 1, j);
 		}
 		pose.yaw = this.spinYaw(now) + (this.devYawDeg / 180) * Math.PI;
-		if (this.spin) {
-			const raw = (now - this.spin.start) / this.spin.dur;
-			if (raw < 1) {
-				// 滞空:抛物线跳起 + 纵向拉伸(体积守恒),旋转发生在空中
-				const hop = Math.sin(Math.PI * raw);
-				pose.body.y += -SPIN_HOP * hop;
-				pose.body.stretchY += 0.22 * hop;
-			} else {
-				// 落地压扁回弹:横向鼓出纵向压扁,正弦包络落回 1
-				const land = clamp((now - this.spin.start - this.spin.dur) / SPIN_LAND_MS, 0, 1);
-				const sq = Math.sin(Math.PI * land);
-				pose.body.scale += 0.07 * sq;
-				pose.body.stretchY += -0.2 * sq;
-				if (land >= 1) this.spin = null;
-			}
+		if (this.spin && (now - this.spin.start) / this.spin.dur >= 1) {
+			this.spin = null;
 		}
 
 		if (this.bounceAt >= 0) {
