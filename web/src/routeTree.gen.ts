@@ -28,6 +28,7 @@ import { Route as UsersUsernameRouteImport } from './routes/users/$username'
 import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
+import { Route as LabMascotRouteImport } from './routes/lab.mascot'
 import { Route as LabFriendsRouteImport } from './routes/lab.friends'
 import { Route as LabBlogRouteImport } from './routes/lab.blog'
 import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
@@ -156,6 +157,11 @@ const LabThemeRoute = LabThemeRouteImport.update({
 const LabNavRoute = LabNavRouteImport.update({
   id: '/lab/nav',
   path: '/lab/nav',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabMascotRoute = LabMascotRouteImport.update({
+  id: '/lab/mascot',
+  path: '/lab/mascot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabFriendsRoute = LabFriendsRouteImport.update({
@@ -360,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
+  '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
   '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
+  '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
   '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
+  '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
   '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
@@ -526,6 +535,7 @@ export interface FileRouteTypes {
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
+    | '/lab/mascot'
     | '/lab/nav'
     | '/lab/theme'
     | '/tweets/$id'
@@ -579,6 +589,7 @@ export interface FileRouteTypes {
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
+    | '/lab/mascot'
     | '/lab/nav'
     | '/lab/theme'
     | '/tweets/$id'
@@ -634,6 +645,7 @@ export interface FileRouteTypes {
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
+    | '/lab/mascot'
     | '/lab/nav'
     | '/lab/theme'
     | '/tweets/$id'
@@ -674,6 +686,7 @@ export interface RootRouteChildren {
   LabAnnouncementRoute: typeof LabAnnouncementRoute
   LabBlogRoute: typeof LabBlogRoute
   LabFriendsRoute: typeof LabFriendsRoute
+  LabMascotRoute: typeof LabMascotRoute
   LabNavRoute: typeof LabNavRoute
   LabThemeRoute: typeof LabThemeRoute
   TweetsIdRoute: typeof TweetsIdRoute
@@ -821,6 +834,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/nav'
       fullPath: '/lab/nav'
       preLoaderRoute: typeof LabNavRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/mascot': {
+      id: '/lab/mascot'
+      path: '/lab/mascot'
+      fullPath: '/lab/mascot'
+      preLoaderRoute: typeof LabMascotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/friends': {
@@ -1161,6 +1181,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabAnnouncementRoute: LabAnnouncementRoute,
   LabBlogRoute: LabBlogRoute,
   LabFriendsRoute: LabFriendsRoute,
+  LabMascotRoute: LabMascotRoute,
   LabNavRoute: LabNavRoute,
   LabThemeRoute: LabThemeRoute,
   TweetsIdRoute: TweetsIdRoute,

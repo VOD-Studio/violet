@@ -57,7 +57,7 @@ describe("DiagramBlock 加载与渲染", () => {
 		expect(img?.className).toContain("animate-diagram-enter");
 	});
 
-	it("渲染失败降级为 shiki 高亮源码块（与 FencedCodeBlock 同视觉）", async () => {
+	it("渲染失败降级为 shiki 高亮源码块（与 CodeCard 同视觉）", async () => {
 		vi.mocked(renderMermaid).mockResolvedValue({ error: "syntax error" });
 		const { container } = render(<DiagramBlock format="mermaid" source="bad source" />);
 		// 不显示 "图表渲染失败" 装饰文字——失败 = 退化回代码呈现，源码自身是内容

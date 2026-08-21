@@ -1,14 +1,17 @@
 /** TweetComposer - 推文发布框（登录态：文本 ≤500 rune + ≤4 图，前端拦截边界） */
 
+import type { Emoji } from "@entities/emoji/model/types";
 import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
+import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
+import { isImageURL } from "@shared/lib/url";
 import { Button } from "@shared/ui/base/button";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { AlertCircle, ImagePlus, Loader2, Send, X } from "lucide-react";
+import { AlertCircle, ImagePlus, Loader2, Send, Smile, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateTweet } from "../api/mutations";
@@ -44,6 +47,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	const me = useMe();
 	const [content, setContent] = useState("");
 	const [images, setImages] = useState<ImageItem[]>([]);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const idRef = useRef(0);
 	const createTweet = useCreateTweet();
@@ -116,6 +120,29 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 		setImages((prev) => prev.filter((i) => i.id !== id));
 	};
 
+	const handleEmojiSelect = (emoji: Emoji) => {
+		const imageUrl = emoji.gif_url || emoji.url;
+		const emojiText =
+			imageUrl && isImageURL(imageUrl) ? `[${emoji.name}]` : emoji.text_content || emoji.name;
+
+		const textarea = textareaRef.current;
+		if (!textarea) {
+			setContent((prev) => prev + emojiText);
+			return;
+		}
+
+		const start = textarea.selectionStart ?? content.length;
+		const end = textarea.selectionEnd ?? content.length;
+		const nextContent = content.slice(0, start) + emojiText + content.slice(end);
+		setContent(nextContent);
+
+		const nextCursor = start + emojiText.length;
+		requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(nextCursor, nextCursor);
+		});
+	};
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (overLimit) {
@@ -155,6 +182,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 			)}
 			<div className="flex-1 min-w-0 flex flex-col">
 				<textarea
+					ref={textareaRef}
 					value={content}
 					onChange={(e) => setContent(e.target.value)}
 					placeholder="有什么新鲜事？"
@@ -263,6 +291,23 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 						>
 							<ImagePlus className="size-4" />
 						</Button>
+						<EmojiPicker
+							onSelect={handleEmojiSelect}
+							align="start"
+							closeOnSelect={false}
+							trigger={
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="size-8 text-muted-foreground hover:text-foreground"
+									aria-label="添加表情"
+									title="添加表情"
+								>
+									<Smile className="size-4" />
+								</Button>
+							}
+						/>
 						<span
 							className={
 								overLimit

@@ -1,4 +1,7 @@
 // 主组件
+
+// 代码展示卡
+export { CodeCard, type CodeCardProps } from "./components/CodeCard";
 export { CodePreview } from "./components/CodePreview";
 // Hook
 export { useCodeHighlight } from "./hooks/useCodeHighlight";

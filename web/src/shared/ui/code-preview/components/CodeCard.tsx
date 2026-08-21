@@ -1,20 +1,29 @@
 /**
- * FencedCodeBlock - 围栏代码块（shiki 高亮 + 语言标签 + 复制）
+ * CodeCard - 静态代码展示卡（shiki 高亮 + 标题栏 + 复制按钮）
  *
- * 供 markdown-components 懒加载：只有文章正文出现围栏代码块时，才拉取本模块
- * 及其依赖（useShikiHighlight → shiki core 单例），不进入文章正文主 chunk。
+ * 接受内联代码字符串渲染只读代码块，跨 feature 复用（文章正文 / 图块降级 /
+ * MCP 接入示例 / SDK 文档）。外边距由调用方通过 className 控制。
  *
- * 行内代码由 markdown-components 内联处理（纯样式，无高亮），不走本组件。
+ * @remarks 走懒加载消费时与 shiki 高亮链同 chunk 拉取，不进宿主主包。
  */
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/shared/lib/clipboard";
-import { useShikiHighlight } from "@/shared/ui/code-preview/use-shiki-highlight";
+import { cn } from "@/shared/lib/utils";
+import { useShikiHighlight } from "../use-shiki-highlight";
 
-/**
- * FencedCodeBlock - 围栏代码块：shiki 高亮 + 语言标签 + 复制按钮
- */
-export function FencedCodeBlock({ code, language }: { code: string; language: string }) {
+export interface CodeCardProps {
+	/** 原始代码字符串 */
+	code: string;
+	/** shiki 语言 ID（如 typescript / go / bash），未知传 "text" */
+	language: string;
+	/** 标题栏文案，默认显示 language */
+	title?: string;
+	/** 根容器类名（控制外边距等布局属性） */
+	className?: string;
+}
+
+export function CodeCard({ code, language, title, className }: CodeCardProps) {
 	const { html, loading } = useShikiHighlight(code, language);
 	const [copied, setCopied] = useState(false);
 
@@ -30,10 +39,17 @@ export function FencedCodeBlock({ code, language }: { code: string; language: st
 	};
 
 	return (
-		<div className="group relative my-6 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]">
-			{/* 顶部：语言标签 + 复制按钮 */}
+		<div
+			className={cn(
+				"group relative overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]",
+				className,
+			)}
+		>
+			{/* 顶部：标题 + 复制按钮 */}
 			<div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-				<span className="font-mono text-xs text-white/70">{language || "text"}</span>
+				<span className="font-mono text-xs text-white/70">
+					{(title ?? language) || "text"}
+				</span>
 				<button
 					type="button"
 					onClick={handleCopy}

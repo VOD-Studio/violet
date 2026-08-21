@@ -6,6 +6,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig, loadEnv } from "vite";
+import { agentStatusDevPlugin } from "./vite-plugins/agent-status-dev";
 
 // 读取 .env / .env.local，使 dev 反向代理目标可配置，不污染已提交文件
 const env = loadEnv("development", process.cwd(), "");
@@ -21,6 +22,7 @@ const config = defineConfig({
 		tailwindcss(),
 		tanstackStart(),
 		viteReact(),
+		agentStatusDevPlugin(import.meta.dirname),
 		// 体积分析报告（仅 ANALYZE=true 时启用）
 		enableAnalyze &&
 			visualizer({

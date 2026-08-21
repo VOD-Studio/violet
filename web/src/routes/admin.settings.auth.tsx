@@ -21,8 +21,10 @@ interface AuthForm {
 /**
  * 认证设置页：第三方登录开关与 OAuth 凭据同卡同存。
  *
- * 开关控制同卡凭据输入区的显隐（表单实时值，改即预览）；一个保存按钮
- * 先落开关（site_settings 域），凭据输入了再落凭据（env 域，留空=保持原值）。
+ * 开关控制同卡凭据输入区的显隐（表单实时值，改即预览）；已配置且生效时
+ * 输入区折叠，只留脱敏预览与「修改」入口。一个保存按钮先落开关
+ * （site_settings 域），凭据输入了再落凭据（env 域，留空=保持原值），
+ * 成功后递增 revision（作卡片 key）重置编辑态与检测结果。
  */
 function AuthSettingsPage() {
 	const { data: authData, isLoading } = useAuthSettings();
@@ -43,6 +45,7 @@ function AuthSettingsPage() {
 	const [googleId, setGoogleId] = useState("");
 	const [githubId, setGithubId] = useState("");
 	const [githubSecret, setGithubSecret] = useState("");
+	const [credRevision, setCredRevision] = useState(0);
 
 	const onSubmit = handleSubmit(async (values) => {
 		await updateAuth.mutateAsync(values);
@@ -61,6 +64,7 @@ function AuthSettingsPage() {
 			setGithubId("");
 			setGithubSecret("");
 		}
+		setCredRevision((r) => r + 1);
 	});
 
 	return (
@@ -73,6 +77,11 @@ function AuthSettingsPage() {
 		>
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">第三方登录</h3>
+				{oauthStatus && !oauthStatus.persisted && (
+					<p className="text-xs text-amber-600">
+						上次保存的 OAuth 凭据未能写入 .env，API 重启后将失效
+					</p>
+				)}
 				<Controller
 					control={control}
 					name="google_login_enabled"
@@ -84,6 +93,11 @@ function AuthSettingsPage() {
 							onEnabledChange={field.onChange}
 							status={oauthStatus?.google}
 							docsUrl="https://console.cloud.google.com/apis/credentials"
+							callbackHint={{
+								label: "Authorized JavaScript origins",
+								value: window.location.origin,
+							}}
+							key={`google-${credRevision}`}
 						>
 							<Field label="Google Client ID">
 								<Input
@@ -107,6 +121,11 @@ function AuthSettingsPage() {
 							onEnabledChange={field.onChange}
 							status={oauthStatus?.github}
 							docsUrl={`https://github.com/settings/applications/new?redirect_uri=${encodeURIComponent(`${window.location.origin}/auth/github/callback`)}`}
+							callbackHint={{
+								label: "Authorization callback URL",
+								value: `${window.location.origin}/auth/github/callback`,
+							}}
+							key={`github-${credRevision}`}
 						>
 							<Field label="GitHub Client ID">
 								<Input

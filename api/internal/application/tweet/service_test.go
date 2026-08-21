@@ -1156,3 +1156,47 @@ func TestCreateComment_EmoteEnriched(t *testing.T) {
 	require.Contains(t, dto.Emote, "[dog]", "创建返回的单条 DTO 也应富化 emote")
 	assert.Equal(t, "https://emoji/dog.png", dto.Emote["[dog]"].URL)
 }
+
+func TestTweet_EmoteEnriched(t *testing.T) {
+	author := newTestUser(t, "author")
+	authorID := author.GetID()
+	lookup := &fakeEmojiLookup{refs: map[string]EmojiRef{
+		"[doge]": {URL: "https://emoji/doge.png", GifURL: "https://emoji/doge.gif", Size: 2},
+		"[cat]":  {URL: "https://emoji/cat.png", Size: 1},
+	}}
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{authorID.String(): author}}
+
+	quotedID := shared.NewID()
+	quoted := domaintweet.ReconstructTweet(quotedID, authorID, "原推 [cat]", []string{}, nil, 0, time.Now(), time.Now())
+
+	mainID := shared.NewID()
+	mainTw := domaintweet.ReconstructTweet(mainID, authorID, "转推 [doge]", []string{}, &quotedID, 0, time.Now(), time.Now())
+
+	repo := &fakeTweetRepo{
+		findByIDData: map[string]*domaintweet.Tweet{
+			mainID.String():   mainTw,
+			quotedID.String(): quoted,
+		},
+		tweets: []*domaintweet.Tweet{mainTw},
+	}
+
+	svc := NewService(repo, nil, users, nil, nil, lookup, appshared.NoopEventBus{})
+
+	// 1. GetByID 富化
+	dto, err := svc.GetByID(context.Background(), mainID.String())
+	require.NoError(t, err)
+	require.Contains(t, dto.Emote, "[doge]")
+	assert.Equal(t, "https://emoji/doge.png", dto.Emote["[doge]"].URL)
+	assert.NotContains(t, dto.Emote, "[cat]", "主推文不包含未引用的 [cat]")
+	require.NotNil(t, dto.QuotedTweet)
+	require.Contains(t, dto.QuotedTweet.Emote, "[cat]")
+	assert.Equal(t, "https://emoji/cat.png", dto.QuotedTweet.Emote["[cat]"].URL)
+
+	// 2. ListTimeline 富化
+	dtos, _, err := svc.ListTimeline(context.Background(), "", 10)
+	require.NoError(t, err)
+	require.Len(t, dtos, 1)
+	require.Contains(t, dtos[0].Emote, "[doge]")
+	require.NotNil(t, dtos[0].QuotedTweet)
+	require.Contains(t, dtos[0].QuotedTweet.Emote, "[cat]")
+}

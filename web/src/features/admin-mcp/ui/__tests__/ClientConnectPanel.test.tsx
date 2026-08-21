@@ -4,8 +4,8 @@ import { ClientConnectPanel } from "../ClientConnectPanel";
 
 // shiki 高亮是异步且把文本拆进多个着色 span，与面板行为无关；
 // mock 为同步纯文本，让断言聚焦面板自身逻辑。
-vi.mock("@shared/ui/markdown-preview/components/CodeBlock", () => ({
-	FencedCodeBlock: ({ code }: { code: string; language: string }) => <pre>{code}</pre>,
+vi.mock("@shared/ui/code-preview/components/CodeCard", () => ({
+	CodeCard: ({ code }: { code: string; language: string }) => <pre>{code}</pre>,
 }));
 
 describe("ClientConnectPanel", () => {
