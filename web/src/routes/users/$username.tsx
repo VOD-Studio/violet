@@ -20,6 +20,7 @@ import { PageShell } from "@shared/ui/page-shell";
 import { ParticleField } from "@shared/ui/particle-field";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
+import { ProfileCard } from "@shared/vendor/react-bits/ProfileCard";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { differenceInDays, format } from "date-fns";
@@ -215,7 +216,7 @@ function UserPublicProfilePage() {
 
 	if (isProfileLoading && !profile) {
 		return (
-			<PageShell className="lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:overflow-hidden lg:py-6">
+			<PageShell className="h-full min-h-0 flex-1 overflow-hidden py-4 md:py-6">
 				<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:h-full lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
 					<div className="shrink-0 overflow-hidden rounded-3xl border border-edge-hairline bg-card/60 p-6 backdrop-blur">
 						<ShimmerSkeleton className="h-32 w-full rounded-2xl" />
@@ -288,7 +289,7 @@ function UserPublicProfilePage() {
 	const mediaCount = allTweets.filter((t) => t.images && t.images.length > 0).length;
 
 	return (
-		<PageShell className="lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:overflow-hidden lg:py-6">
+		<PageShell className="h-full min-h-0 flex-1 overflow-hidden py-4 md:py-6">
 			{/* 沉浸式环境光晕背景与星尘粒子 */}
 			<div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 				<ParticleField density={0.2} />
@@ -308,7 +309,10 @@ function UserPublicProfilePage() {
 			<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:h-full lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
 				{/* 左侧：Bento 个人信息名片（桌面端常驻固定） */}
 				<aside className="shrink-0">
-					<div className="group/card relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/60 shadow-xl shadow-primary/5 backdrop-blur-xl transition-all duration-300 hover:border-edge-hairline hover:shadow-2xl hover:shadow-primary/10">
+					<ProfileCard
+						behindGlowClass={theme.glowBg}
+						className="hover:border-edge-hairline hover:shadow-primary/10"
+					>
 						{/* 顶栏艺术 Cover Banner */}
 						<div
 							className={cn(
@@ -509,7 +513,7 @@ function UserPublicProfilePage() {
 								</div>
 							)}
 						</div>
-					</div>
+					</ProfileCard>
 				</aside>
 
 				{/* 右侧：推文与动态流 */}

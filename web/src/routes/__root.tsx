@@ -128,7 +128,8 @@ function RootComponent() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const isAdminRoute = pathname.startsWith("/admin");
 	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
-
+	const isUsersRoute = pathname.startsWith("/users/");
+	const isFullscreenRoute = isChatRoute || isUsersRoute;
 	return (
 		<AppProvider>
 			<SystemThemeTransition />
@@ -136,11 +137,11 @@ function RootComponent() {
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
 			) : (
-				// 前台路由：包含 Header/Footer 的标准布局（/chat 隐藏 Footer 并锁定视口高度）
+				// 前台路由：包含 Header/Footer 的标准布局（/chat 和 /users 隐藏 Footer 并锁定视口高度）
 				<div
 					className={cn(
 						"flex min-h-screen flex-col",
-						isChatRoute && "h-dvh overflow-hidden",
+						isFullscreenRoute && "h-dvh overflow-hidden",
 					)}
 				>
 					<AnnouncementBar />
@@ -148,12 +149,12 @@ function RootComponent() {
 					<main
 						className={cn(
 							"flex-1 flex-col",
-							isChatRoute && "flex min-h-0 overflow-hidden",
+							isFullscreenRoute && "flex min-h-0 overflow-hidden",
 						)}
 					>
 						<Outlet />
 					</main>
-					{!isChatRoute && <Footer />}
+					{!isFullscreenRoute && <Footer />}
 				</div>
 			)}
 			<MusicPlayer />
