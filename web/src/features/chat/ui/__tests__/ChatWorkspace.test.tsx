@@ -9,6 +9,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
+import type { ChatMessageReference } from "../../model/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -88,6 +89,7 @@ const mockConversation = {
 		type: "text" as const,
 		content: "hello world",
 		is_deleted: false,
+		reply_to: undefined as ChatMessageReference | undefined,
 		created_at: "2026-08-20T08:30:00Z",
 	},
 };
@@ -148,8 +150,14 @@ vi.mock("@features/chat/api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => ({
-		data: { data: [mockConversation.last_message], next_cursor: null },
+		data: {
+			pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
+			pageParams: [""],
+		},
 		isLoading: false,
+		hasNextPage: false,
+		isFetchingNextPage: false,
+		fetchNextPage: vi.fn(),
 	}),
 	useChatMembers: () => ({
 		data: mockConversation.members,
@@ -190,8 +198,14 @@ vi.mock("../api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => ({
-		data: { data: [mockConversation.last_message], next_cursor: null },
+		data: {
+			pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
+			pageParams: [""],
+		},
 		isLoading: false,
+		hasNextPage: false,
+		isFetchingNextPage: false,
+		fetchNextPage: vi.fn(),
 	}),
 	useChatMembers: () => ({
 		data: mockConversation.members,
@@ -249,8 +263,14 @@ vi.mock("../api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => ({
-		data: { data: [mockConversation.last_message], next_cursor: null },
+		data: {
+			pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
+			pageParams: [""],
+		},
 		isLoading: false,
+		hasNextPage: false,
+		isFetchingNextPage: false,
+		fetchNextPage: vi.fn(),
 	}),
 	useChatMembers: () => ({
 		data: mockConversation.members,
@@ -299,6 +319,7 @@ describe("ChatWorkspace", () => {
 	});
 
 	afterEach(() => {
+		mockConversation.last_message.reply_to = undefined;
 		window.history.replaceState({}, "", "/chat");
 		cleanup();
 	});
@@ -352,6 +373,43 @@ describe("ChatWorkspace", () => {
 				},
 			}),
 		);
+	});
+
+	it("选择消息回复并在发送请求中携带引用", async () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		fireEvent.click(screen.getByRole("button", { name: "回复消息" }));
+		expect(screen.getByText("回复 xfy")).toBeTruthy();
+		fireEvent.input(screen.getByRole("textbox", { name: "评论内容" }), {
+			target: { textContent: "这是回复" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+
+		await waitFor(() => {
+			expect(mockSendMutateAsync).toHaveBeenCalledWith(
+				expect.objectContaining({
+					input: { type: "text", content: "这是回复", reply_to_id: "m_1" },
+				}),
+			);
+		});
+	});
+
+	it("展示引用预览并定位到原消息", async () => {
+		mockConversation.last_message.reply_to = {
+			id: "m_1",
+			sender: mockOtherUser,
+			type: "text",
+			content: "被引用的内容",
+			is_deleted: false,
+		};
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		expect(screen.getByText("被引用的内容")).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "跳转到dfy的引用消息" }));
+
+		await waitFor(() => {
+			expect(screen.getByTestId("chat-message-m_1").className).toContain("ring-2");
+		});
 	});
 
 	it("发送消息后只滚动消息列表，不滚动外层聊天布局", async () => {

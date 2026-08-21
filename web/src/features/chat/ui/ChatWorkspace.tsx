@@ -23,6 +23,7 @@ import {
 	MessageCircle,
 	PanelRight,
 	Plus,
+	Reply,
 	Search,
 	Send,
 	ShieldCheck,
@@ -32,7 +33,7 @@ import {
 	X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
+import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
@@ -53,14 +54,15 @@ import {
 } from "../api/queries";
 import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
 import { useChatSelection } from "../hooks/useChatSelection";
-import { useChatStream } from "../hooks/useChatStream";
 import type {
 	ChatConversation,
 	ChatMedia,
 	ChatMember,
 	ChatMessage,
+	ChatMessageReference,
 	ChatUser,
 } from "../model/types";
+import { useChatStream } from "../hooks/useChatStream";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
 import { NewConversationForm } from "./NewConversationForm";
@@ -513,17 +515,30 @@ function ConversationPanel({
 	showDetails,
 	onToggleDetails,
 }: ConversationPanelProps) {
-	const { data: messagePage, isLoading: messagesLoading } = useChatMessages(conversation.id);
+	const {
+		data: messagePages,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+		isLoading: messagesLoading,
+	} = useChatMessages(conversation.id);
 	const { data: memberData } = useChatMembers(conversation.id);
 	const members = memberData ?? [];
 	const canManage = useHasPermission("chat:manage");
 	const deleteMessage = useDeleteChatMessage();
 	const read = useMarkChatRead();
 	const [lightbox, setLightbox] = useState<ChatMedia | null>(null);
+	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
+	const [highlightedID, setHighlightedID] = useState<string | null>(null);
 
-	const messages = useMemo(() => [...(messagePage?.data ?? [])].reverse(), [messagePage?.data]);
+	const messages = useMemo(
+		() => messagePages?.pages.flatMap((page) => page.data).reverse() ?? [],
+		[messagePages?.pages],
+	);
 	const lastMessage = messages.at(-1);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const messageRefs = useRef<Record<string, HTMLElement | null>>({});
 	const [showScrollBottom, setShowScrollBottom] = useState(false);
 
 	const scrollToBottom = useCallback((smooth = true) => {
@@ -542,8 +557,48 @@ function ConversationPanel({
 	}, [conversation.id, conversation.unread_count, lastMessage?.id, read.mutate]);
 
 	useEffect(() => {
-		if (messages.length > 0) scrollToBottom(false);
-	}, [messages.length, scrollToBottom]);
+		if (lastMessage?.id) scrollToBottom(false);
+	}, [lastMessage?.id, scrollToBottom]);
+
+	useEffect(() => {
+		if (!conversation.id) return;
+		setReplyTarget(null);
+		setPendingFocusID(null);
+		setHighlightedID(null);
+		return () => {
+			messageRefs.current = {};
+		};
+	}, [conversation.id]);
+
+	useEffect(() => {
+		if (!pendingFocusID) return;
+		const target = messageRefs.current[pendingFocusID];
+		if (target) {
+			const container = scrollContainerRef.current;
+			if (container) {
+				const offset =
+					target.getBoundingClientRect().top - container.getBoundingClientRect().top;
+				container.scrollTo({ top: container.scrollTop + offset - 24, behavior: "smooth" });
+			}
+			setHighlightedID(pendingFocusID);
+			setPendingFocusID(null);
+			return;
+		}
+		if (hasNextPage && !isFetchingNextPage) {
+			void fetchNextPage();
+			return;
+		}
+		if (!hasNextPage && !isFetchingNextPage) {
+			toast.info("原消息不可用");
+			setPendingFocusID(null);
+		}
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage, pendingFocusID]);
+
+	useEffect(() => {
+		if (!highlightedID) return;
+		const timer = window.setTimeout(() => setHighlightedID(null), 1400);
+		return () => window.clearTimeout(timer);
+	}, [highlightedID]);
 
 	const handleScroll = useCallback(() => {
 		const container = scrollContainerRef.current;
@@ -661,8 +716,12 @@ function ConversationPanel({
 									<MessageBubble
 										currentUserID={currentUserID}
 										emoteMap={emoteMap}
+										highlighted={highlightedID === message.id}
 										key={message.id}
 										message={message}
+										messageRef={(node) => {
+											messageRefs.current[message.id] = node;
+										}}
 										showSender={
 											conversation.kind !== "room" ||
 											index === 0 ||
@@ -678,6 +737,19 @@ function ConversationPanel({
 												: undefined
 										}
 										onImage={setLightbox}
+										onReply={
+											message.type !== "system" && !message.is_deleted
+												? () => setReplyTarget(message)
+												: undefined
+										}
+										onReplyTo={
+											message.reply_to && !message.reply_to.is_deleted
+												? () =>
+														setPendingFocusID(
+															message.reply_to?.id ?? null,
+														)
+												: undefined
+										}
 									/>
 								))
 							)}
@@ -709,7 +781,12 @@ function ConversationPanel({
 					</AnimatePresence>
 					<MessageComposer
 						conversationID={conversation.id}
-						onMessageSent={() => scrollToBottom(true)}
+						onCancelReply={() => setReplyTarget(null)}
+						onMessageSent={() => {
+							setReplyTarget(null);
+							scrollToBottom(true);
+						}}
+						replyTarget={replyTarget}
 					/>
 				</section>
 
@@ -733,21 +810,46 @@ interface MessageBubbleProps {
 	message: ChatMessage;
 	currentUserID: string;
 	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
+	highlighted: boolean;
 	showSender: boolean;
+	messageRef: (node: HTMLElement | null) => void;
 	onDelete?: () => void;
 	onImage: (media: ChatMedia) => void;
+	onReply?: () => void;
+	onReplyTo?: () => void;
 }
 
 function MessageBubble({
 	message,
 	currentUserID,
 	emoteMap,
+	highlighted,
 	showSender,
+	messageRef,
 	onDelete,
 	onImage,
+	onReply,
+	onReplyTo,
 }: MessageBubbleProps) {
 	const mine = message.sender.id === currentUserID;
 	const [copied, setCopied] = useState(false);
+	const longPressTimer = useRef<number | null>(null);
+	const clearLongPress = () => {
+		if (longPressTimer.current === null) return;
+		window.clearTimeout(longPressTimer.current);
+		longPressTimer.current = null;
+	};
+	const startLongPress = (event: PointerEvent) => {
+		if (!onReply || event.pointerType !== "touch") return;
+		clearLongPress();
+		longPressTimer.current = window.setTimeout(onReply, 500);
+	};
+
+	useEffect(() => {
+		return () => {
+			if (longPressTimer.current !== null) window.clearTimeout(longPressTimer.current);
+		};
+	}, []);
 
 	const copyText = async () => {
 		if (!message.content) return;
@@ -773,14 +875,22 @@ function MessageBubble({
 
 	return (
 		<motion.article
+			ref={messageRef}
+			data-testid={`chat-message-${message.id}`}
 			layout="position"
 			initial={{ opacity: 0, y: 12, scale: 0.98 }}
 			animate={{ opacity: 1, y: 0, scale: 1 }}
 			transition={{ type: "spring", stiffness: 450, damping: 28 }}
+			onPointerDown={startLongPress}
+			onPointerLeave={clearLongPress}
+			onPointerCancel={clearLongPress}
+			onPointerUp={clearLongPress}
 			className={cn(
-				"group relative flex gap-2.5",
+				"group relative flex gap-2.5 transition-shadow duration-300",
 				mine && "flex-row-reverse",
 				!showSender && "mt-1",
+				highlighted &&
+					"rounded-lg ring-2 ring-neon-cyan/50 ring-offset-2 ring-offset-background",
 			)}
 		>
 			{showSender ? (
@@ -813,6 +923,9 @@ function MessageBubble({
 				)}
 
 				<div className="relative">
+					{message.reply_to && (
+						<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
+					)}
 					{message.is_deleted ? (
 						<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
 							<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
@@ -859,10 +972,20 @@ function MessageBubble({
 					{!message.is_deleted && (
 						<div
 							className={cn(
-								"absolute -top-3 z-10 flex items-center gap-0.5 rounded-full border border-edge-hairline bg-background/90 p-0.5 shadow-md backdrop-blur-md opacity-0 transition-all duration-150 group-hover:opacity-100",
+								"absolute -top-3 z-10 flex items-center gap-0.5 rounded-full border border-edge-hairline bg-background/90 p-0.5 shadow-md backdrop-blur-md opacity-0 transition-all duration-150 group-hover:opacity-100 focus-within:opacity-100",
 								mine ? "left-1" : "right-1",
 							)}
 						>
+							{onReply && (
+								<button
+									aria-label="回复消息"
+									className="flex size-5.5 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+									onClick={onReply}
+									type="button"
+								>
+									<Reply className="size-3" />
+								</button>
+							)}
 							{message.type === "text" && (
 								<button
 									aria-label="复制消息"
@@ -895,46 +1018,117 @@ function MessageBubble({
 	);
 }
 
+function ReplyPreview({
+	reference,
+	onClick,
+}: {
+	reference: ChatMessageReference;
+	onClick?: () => void;
+}) {
+	const content = reference.is_deleted
+		? "消息已删除"
+		: reference.type === "image"
+			? "图片消息"
+			: (reference.content ?? "文本消息");
+	const className =
+		"flex max-w-60 items-center gap-2 border-s-2 border-neon-cyan/70 bg-secondary/50 px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
+	const body = (
+		<>
+			<div className="min-w-0 flex-1">
+				<p className="truncate font-semibold text-foreground/80">
+					{reference.sender.display_name}
+				</p>
+				<p className="truncate">{content}</p>
+			</div>
+			{reference.type === "image" && reference.media && !reference.is_deleted && (
+				<img
+					alt="引用的聊天图片"
+					className="size-10 shrink-0 rounded object-cover"
+					src={reference.media.thumbnail ?? reference.media.url}
+				/>
+			)}
+		</>
+	);
+	if (!onClick || reference.is_deleted)
+		return <div className={cn(className, "mb-1 rounded-lg")}>{body}</div>;
+	return (
+		<button
+			aria-label={`跳转到${reference.sender.display_name}的引用消息`}
+			className={cn(className, "mb-1 rounded-lg hover:text-foreground")}
+			onClick={onClick}
+			type="button"
+		>
+			{body}
+		</button>
+	);
+}
+
+interface MessageComposerProps {
+	conversationID: string;
+	replyTarget: ChatMessage | null;
+	onCancelReply: () => void;
+	onMessageSent?: () => void;
+}
+
 function MessageComposer({
 	conversationID,
+	replyTarget,
+	onCancelReply,
 	onMessageSent,
-}: {
-	conversationID: string;
-	onMessageSent?: () => void;
-}) {
+}: MessageComposerProps) {
 	const [content, setContent] = useState("");
 	const [images, setImages] = useState<PictureInput[]>([]);
 	const [uploading, setUploading] = useState(false);
 	const [resetNonce, setResetNonce] = useState(0);
 
 	const send = useSendChatMessage();
+	const sentImageIDsRef = useRef(new Set<string>());
+	const replyAttachedRef = useRef(false);
+	const replyTargetIDRef = useRef<string | undefined>(replyTarget?.id);
 
 	const sendMessage = async () => {
 		if (uploading || send.isPending) return;
 		if (!content.trim() && images.length === 0) return;
 
+		const replyToID = replyTarget?.id;
+		if (replyTargetIDRef.current !== replyToID) {
+			replyTargetIDRef.current = replyToID;
+			replyAttachedRef.current = false;
+		}
 		try {
-			// 先按顺序发送已完成上传的图片消息
+			// 当前消息模型按单条消息保存图片；引用只附着到第一条实际发送的消息。
 			for (const img of images) {
-				if (img.id) {
-					await send.mutateAsync({
-						id: conversationID,
-						input: { type: "image", media_id: img.id },
-						idempotencyKey: crypto.randomUUID(),
-					});
-				}
-			}
-
-			// 如果有文本内容，发送文本消息
-			if (content.trim()) {
+				if (!img.id || sentImageIDsRef.current.has(img.id)) continue;
+				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
 				await send.mutateAsync({
 					id: conversationID,
-					input: { type: "text", content: content.trim() },
+					input: {
+						type: "image",
+						media_id: img.id,
+						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
+					},
 					idempotencyKey: crypto.randomUUID(),
 				});
+				sentImageIDsRef.current.add(img.id);
+				if (attachReply) replyAttachedRef.current = true;
 			}
 
-			// 发送完成重置表单并触发滚动
+			if (content.trim()) {
+				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
+				await send.mutateAsync({
+					id: conversationID,
+					input: {
+						type: "text",
+						content: content.trim(),
+						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
+					},
+					idempotencyKey: crypto.randomUUID(),
+				});
+				if (attachReply) replyAttachedRef.current = true;
+			}
+
+			sentImageIDsRef.current.clear();
+			replyAttachedRef.current = false;
 			setContent("");
 			setImages([]);
 			setResetNonce((n) => n + 1);
@@ -947,8 +1141,39 @@ function MessageComposer({
 	const canSend = !uploading && !send.isPending && (Boolean(content.trim()) || images.length > 0);
 
 	return (
-		<div className="shrink-0 border-t border-edge-hairline/80 bg-gradient-to-t from-background via-background/95 to-background/80 p-3 backdrop-blur-md md:p-4">
+		<div
+			onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+				if (event.key === "Escape" && replyTarget) {
+					event.preventDefault();
+					onCancelReply();
+				}
+			}}
+			className="shrink-0 border-t border-edge-hairline/80 bg-gradient-to-t from-background via-background/95 to-background/80 p-3 backdrop-blur-md md:p-4"
+		>
 			<div className="mx-auto max-w-3xl">
+				{replyTarget && (
+					<div className="mb-2 flex items-center gap-2 rounded-xl border border-neon-cyan/25 bg-neon-cyan/5 px-3 py-2">
+						<Reply className="size-3.5 shrink-0 text-neon-cyan" />
+						<div className="min-w-0 flex-1">
+							<p className="font-mono text-[10px] uppercase tracking-[0.12em] text-neon-cyan">
+								回复 {replyTarget.sender.display_name}
+							</p>
+							<p className="truncate text-xs text-muted-foreground">
+								{replyTarget.type === "image"
+									? "图片消息"
+									: (replyTarget.content ?? "文本消息")}
+							</p>
+						</div>
+						<button
+							aria-label="取消回复"
+							className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+							onClick={onCancelReply}
+							type="button"
+						>
+							<X className="size-3.5" />
+						</button>
+					</div>
+				)}
 				<RichCommentInput
 					value={content}
 					onChange={setContent}

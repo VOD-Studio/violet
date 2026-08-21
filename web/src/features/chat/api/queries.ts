@@ -1,5 +1,11 @@
 import type { PagedResponse } from "@shared/api/types";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	type InfiniteData,
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import type {
 	ChatMessage,
 	CreateConversationInput,
@@ -57,9 +63,11 @@ export const useChatMembers = (id: string | null) =>
 	});
 
 export const useChatMessages = (id: string | null) =>
-	useQuery({
+	useInfiniteQuery({
 		queryKey: id ? chatKeys.messages(id) : chatKeys.root,
-		queryFn: () => fetchChatMessages(id as string),
+		queryFn: ({ pageParam }) => fetchChatMessages(id as string, pageParam || undefined),
+		initialPageParam: "",
+		getNextPageParam: (lastPage) => lastPage.pagination.next_cursor ?? undefined,
 		enabled: Boolean(id),
 	});
 export const useChatUnreadCount = (enabled = true) =>
@@ -173,8 +181,17 @@ export const useSendChatMessage = () => {
 			idempotencyKey: string;
 		}) => sendChatMessage(id, input, idempotencyKey),
 		onSuccess: (message, variables) => {
-			qc.setQueryData<PagedResponse<ChatMessage>>(chatKeys.messages(variables.id), (old) =>
-				old ? { ...old, data: [message, ...old.data] } : old,
+			qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(
+				chatKeys.messages(variables.id),
+				(old) => {
+					if (!old) return old;
+					return {
+						...old,
+						pages: old.pages.map((page, index) =>
+							index === 0 ? { ...page, data: [message, ...page.data] } : page,
+						),
+					};
+				},
 			);
 			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
 		},

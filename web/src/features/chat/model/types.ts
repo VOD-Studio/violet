@@ -26,6 +26,15 @@ export interface ChatMedia {
 	height?: number;
 }
 
+export interface ChatMessageReference {
+	id: string;
+	sender: ChatUser;
+	type: Exclude<MessageType, "system">;
+	content?: string;
+	media?: ChatMedia;
+	is_deleted: boolean;
+}
+
 export interface ChatMessage {
 	id: string;
 	conversation_id: string;
@@ -33,6 +42,7 @@ export interface ChatMessage {
 	type: MessageType;
 	content?: string;
 	media?: ChatMedia;
+	reply_to?: ChatMessageReference;
 	is_deleted: boolean;
 	deleted_at?: string;
 	created_at: string;
@@ -57,9 +67,10 @@ export interface CreateConversationInput {
 }
 
 export interface SendMessageInput {
-	type: MessageType;
+	type: Exclude<MessageType, "system">;
 	content?: string;
 	media_id?: string;
+	reply_to_id?: string;
 }
 
 export interface ChatEvent {
