@@ -15,8 +15,12 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Magnetic } from "@shared/ui/magnetic";
 import { PageShell } from "@shared/ui/page-shell";
+import { ParticleField } from "@shared/ui/particle-field";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
+import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { differenceInDays, format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -285,8 +289,9 @@ function UserPublicProfilePage() {
 
 	return (
 		<PageShell className="lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:overflow-hidden lg:py-6">
-			{/* 沉浸式环境光晕背景 */}
+			{/* 沉浸式环境光晕背景与星尘粒子 */}
 			<div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+				<ParticleField density={0.2} />
 				<div
 					aria-hidden="true"
 					className={cn(
@@ -328,7 +333,13 @@ function UserPublicProfilePage() {
 							{/* 右上角胶囊徽章 */}
 							<div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-background/40 px-3 py-1 font-mono text-[10px] font-medium tracking-[0.2em] text-foreground/90 uppercase backdrop-blur-md">
 								<Sparkles className={cn("size-3", theme.accentColor)} />
-								<span>Profile</span>
+								<DecryptedText
+									text="PROFILE"
+									speed={40}
+									maxIterations={8}
+									animateOn="view"
+									className="font-mono text-[10px]"
+								/>
 							</div>
 						</div>
 
@@ -391,64 +402,69 @@ function UserPublicProfilePage() {
 							</div>
 
 							{/* 个人简介 */}
-							<div className="mt-4 rounded-2xl border border-edge-hairline/60 bg-muted/25 p-3.5 backdrop-blur-sm">
+							<SpotlightCard className="mt-4 rounded-2xl border border-edge-hairline/60 bg-muted/25 p-3.5 backdrop-blur-sm">
 								<p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-muted-foreground">
 									{profile.bio?.trim() || "这个人很神秘，还没有留下任何简介 ✨"}
 								</p>
-							</div>
-
+							</SpotlightCard>
 							{/* 快捷操作动作条 */}
 							<div className="mt-5 flex gap-2">
 								{isSelf ? (
+									<Magnetic strength={0.2} className="flex-1">
+										<Button
+											variant="outline"
+											size="sm"
+											className="w-full gap-1.5 rounded-xl border-edge-hairline hover:bg-accent"
+											asChild
+										>
+											<Link to="/profile">
+												<PenSquare className="size-3.5" />
+												编辑资料
+											</Link>
+										</Button>
+									</Magnetic>
+								) : (
+									<Magnetic strength={0.2} className="flex-1">
+										<Button
+											size="sm"
+											onClick={handleStartChat}
+											disabled={isChatStarting}
+											className={cn(
+												"w-full gap-1.5 rounded-xl font-medium shadow-md transition-all",
+												"bg-primary text-primary-foreground hover:opacity-95",
+											)}
+										>
+											{isChatStarting ? (
+												<Loader2 className="size-3.5 animate-spin" />
+											) : (
+												<MessageCircle className="size-3.5" />
+											)}
+											发起私聊
+										</Button>
+									</Magnetic>
+								)}
+
+								<Magnetic strength={0.25}>
 									<Button
 										variant="outline"
 										size="sm"
-										className="flex-1 gap-1.5 rounded-xl border-edge-hairline hover:bg-accent"
-										asChild
+										onClick={handleCopyLink}
+										title="分享与复制链接"
+										className="rounded-xl border-edge-hairline px-3 hover:bg-accent"
 									>
-										<Link to="/profile">
-											<PenSquare className="size-3.5" />
-											编辑资料
-										</Link>
-									</Button>
-								) : (
-									<Button
-										size="sm"
-										onClick={handleStartChat}
-										disabled={isChatStarting}
-										className={cn(
-											"flex-1 gap-1.5 rounded-xl font-medium shadow-md transition-all",
-											"bg-primary text-primary-foreground hover:opacity-95",
-										)}
-									>
-										{isChatStarting ? (
-											<Loader2 className="size-3.5 animate-spin" />
+										{hasCopiedLink ? (
+											<Check className="size-3.5 text-neon-green" />
 										) : (
-											<MessageCircle className="size-3.5" />
+											<Share2 className="size-3.5 text-muted-foreground" />
 										)}
-										发起私聊
 									</Button>
-								)}
-
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleCopyLink}
-									title="分享与复制链接"
-									className="rounded-xl border-edge-hairline px-3 hover:bg-accent"
-								>
-									{hasCopiedLink ? (
-										<Check className="size-3.5 text-neon-green" />
-									) : (
-										<Share2 className="size-3.5 text-muted-foreground" />
-									)}
-								</Button>
+								</Magnetic>
 							</div>
 
 							{/* Bento 详细数据网格 */}
 							<div className="mt-5 grid grid-cols-2 gap-2.5">
 								{/* 推文卡 */}
-								<div className="group/stat rounded-2xl border border-edge-hairline/70 bg-background/50 p-3.5 transition hover:border-edge-hairline hover:bg-background/80">
+								<SpotlightCard className="group/stat rounded-2xl border border-edge-hairline/70 bg-background/50 p-3.5 transition hover:border-edge-hairline hover:bg-background/80">
 									<div className="flex items-center justify-between text-muted-foreground">
 										<span className="font-mono text-[10px] font-medium tracking-[0.16em] uppercase">
 											Tweets
@@ -461,10 +477,10 @@ function UserPublicProfilePage() {
 									<p className="mt-0.5 text-[11px] text-muted-foreground">
 										累计发文
 									</p>
-								</div>
+								</SpotlightCard>
 
 								{/* 入驻天数卡 */}
-								<div className="group/stat rounded-2xl border border-edge-hairline/70 bg-background/50 p-3.5 transition hover:border-edge-hairline hover:bg-background/80">
+								<SpotlightCard className="group/stat rounded-2xl border border-edge-hairline/70 bg-background/50 p-3.5 transition hover:border-edge-hairline hover:bg-background/80">
 									<div className="flex items-center justify-between text-muted-foreground">
 										<span className="font-mono text-[10px] font-medium tracking-[0.16em] uppercase">
 											Tenure
@@ -477,7 +493,7 @@ function UserPublicProfilePage() {
 									<p className="mt-0.5 text-[11px] text-muted-foreground">
 										加入时长
 									</p>
-								</div>
+								</SpotlightCard>
 							</div>
 
 							{/* 加入日期横条 */}
@@ -502,14 +518,16 @@ function UserPublicProfilePage() {
 					<header className="mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 border-b border-edge-hairline/60 pb-4">
 						<div>
 							<div className="flex items-center gap-2">
-								<span
+								<DecryptedText
+									text="TIMELINE & ACTIVITY"
+									speed={30}
+									maxIterations={8}
+									animateOn="view"
 									className={cn(
 										"font-mono text-[10px] font-semibold tracking-[0.24em] uppercase",
 										theme.accentColor,
 									)}
-								>
-									Timeline & Activity
-								</span>
+								/>
 								<div className="size-1.5 rounded-full bg-neon-green animate-pulse" />
 							</div>
 							<h2 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
@@ -576,7 +594,7 @@ function UserPublicProfilePage() {
 							</div>
 						) : tweets.length === 0 ? (
 							/* 现代化科技感空状态 */
-							<div className="relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/40 p-12 text-center backdrop-blur-xl">
+							<SpotlightCard className="relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/40 p-12 text-center backdrop-blur-xl">
 								<div
 									aria-hidden="true"
 									className={cn(
@@ -592,7 +610,12 @@ function UserPublicProfilePage() {
 									</div>
 
 									<h3 className="mt-5 text-lg font-bold tracking-tight text-foreground">
-										{feedTab === "media" ? "暂无图文推文" : "静候发声"}
+										<DecryptedText
+											text={feedTab === "media" ? "暂无图文推文" : "静候发声"}
+											speed={40}
+											maxIterations={10}
+											animateOn="view"
+										/>
 									</h3>
 									<p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
 										{feedTab === "media"
@@ -602,16 +625,21 @@ function UserPublicProfilePage() {
 
 									{isSelf && feedTab === "all" ? (
 										<div className="mt-6 flex justify-center">
-											<Button asChild className="gap-2 rounded-xl shadow-md">
-												<Link to="/tweets">
-													发布第一条推文
-													<MoveRight className="size-4" />
-												</Link>
-											</Button>
+											<Magnetic strength={0.2}>
+												<Button
+													asChild
+													className="gap-2 rounded-xl shadow-md"
+												>
+													<Link to="/tweets">
+														发布第一条推文
+														<MoveRight className="size-4" />
+													</Link>
+												</Button>
+											</Magnetic>
 										</div>
 									) : null}
 								</div>
-							</div>
+							</SpotlightCard>
 						) : (
 							/* 推文列表流 */
 							<div className="space-y-4">
