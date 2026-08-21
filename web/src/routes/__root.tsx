@@ -17,6 +17,7 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
+import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
 import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
@@ -160,6 +161,7 @@ function RootComponent() {
 			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
+			<ShareTweetDialog />
 			<CustomCursor />
 			<TanStackDevtools
 				config={{ position: "bottom-left" }}

@@ -1,5 +1,5 @@
 export type ConversationKind = "direct" | "room";
-export type MessageType = "text" | "image" | "system";
+export type MessageType = "text" | "image" | "system" | "tweet_share";
 export type MemberRole = "owner" | "member";
 
 export interface ChatUser {
@@ -24,6 +24,16 @@ export interface ChatMedia {
 	size: number;
 	width?: number;
 	height?: number;
+}
+
+/** 分享到聊天的推文快照；`is_deleted` 时其余字段均为空（被分享推文已物理删除）。 */
+export interface SharedTweet {
+	id: string;
+	author?: ChatUser;
+	content?: string;
+	images?: string[];
+	created_at?: string;
+	is_deleted: boolean;
 }
 
 export interface ChatMessageReference {
@@ -51,6 +61,7 @@ export interface ChatMessage {
 	type: MessageType;
 	content?: string;
 	media?: ChatMedia;
+	shared_tweet?: SharedTweet;
 	reply_to?: ChatMessageReference;
 	reactions: ChatMessageReaction[];
 	is_deleted: boolean;
@@ -80,6 +91,7 @@ export interface SendMessageInput {
 	type: Exclude<MessageType, "system">;
 	content?: string;
 	media_id?: string;
+	shared_tweet_id?: string;
 	reply_to_id?: string;
 }
 

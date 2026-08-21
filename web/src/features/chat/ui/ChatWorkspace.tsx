@@ -4,6 +4,7 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
+import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { Magnetic } from "@shared/ui/magnetic";
@@ -22,6 +23,7 @@ import {
 	LoaderCircle,
 	LogOut,
 	MessageCircle,
+	MessageSquareQuote,
 	PanelRight,
 	Plus,
 	Reply,
@@ -72,6 +74,7 @@ import { ChatContactSkeleton } from "./ChatContactSkeleton";
 import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatReactionBar } from "./ChatReactionBar";
 import { NewConversationForm } from "./NewConversationForm";
+import { TweetShareCard } from "./TweetShareCard";
 
 /** 聊天工作区：会话索引、消息流、房间成员抽屉与富文本 composer。 */
 export function ChatWorkspace() {
@@ -80,6 +83,7 @@ export function ChatWorkspace() {
 	const { data: conversationsPage, isLoading: conversationsLoading } = useChatConversations();
 	const conversations = conversationsPage?.data ?? [];
 	const { selectedID, selectConversation, clearSelection } = useChatSelection();
+	const pendingShare = useShareTweetStore((s) => s.pending);
 	const [search, setSearch] = useState("");
 	const [showDetails, setShowDetails] = useState(false);
 	const [showNew, setShowNew] = useState(false);
@@ -96,6 +100,11 @@ export function ChatWorkspace() {
 	useEffect(() => {
 		if (selectedID && !selected && !conversationsLoading) clearSelection(true);
 	}, [clearSelection, conversationsLoading, selected, selectedID]);
+
+	// 从 ShareTweetDialog 落定的待发分享：自动切到目标会话，输入框读同一 store 的 pending 展示 banner。
+	useEffect(() => {
+		if (pendingShare) selectConversation(pendingShare.conversationId);
+	}, [pendingShare, selectConversation]);
 
 	return (
 		<div className="relative flex h-full min-h-0 w-full overflow-hidden bg-background">
@@ -145,6 +154,9 @@ export function ChatWorkspace() {
 						conversation={selected}
 						currentUserID={me?.id ?? ""}
 						onBack={clearSelection}
+						pendingShare={
+							pendingShare?.conversationId === selected.id ? pendingShare : null
+						}
 						showDetails={showDetails}
 						onToggleDetails={() => setShowDetails((value) => !value)}
 					/>
@@ -508,6 +520,8 @@ export interface ConversationPanelProps {
 	currentUserID: string;
 	/** 返回会话列表。 */
 	onBack: () => void;
+	/** 落定到当前会话的待发分享；非本会话或无分享时为 null。 */
+	pendingShare: PendingChatShare | null;
 	/** 是否显示成员详情。 */
 	showDetails: boolean;
 	/** 切换成员详情抽屉。 */
@@ -518,6 +532,7 @@ function ConversationPanel({
 	conversation,
 	currentUserID,
 	onBack,
+	pendingShare,
 	showDetails,
 	onToggleDetails,
 }: ConversationPanelProps) {
@@ -674,7 +689,7 @@ function ConversationPanel({
 				</div>
 
 				<div className="flex items-center gap-2">
-					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/40 px-3 py-1 text-muted-foreground backdrop-blur-sm sm:flex">
+					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/40 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground backdrop-blur-sm sm:flex">
 						<span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
 						<DecryptedText
 							text={conversation.kind === "room" ? "ROOM CHANNEL" : "PRIVATE CHANNEL"}
@@ -792,6 +807,7 @@ function ConversationPanel({
 							setReplyTarget(null);
 							scrollToBottom(true);
 						}}
+						pendingShare={pendingShare}
 						replyTarget={replyTarget}
 					/>
 				</section>
@@ -996,6 +1012,28 @@ function MessageBubble({
 								)}
 							</span>
 						</button>
+					) : message.type === "tweet_share" ? (
+						<div className="flex flex-col gap-1.5">
+							{message.content && (
+								<div
+									className={cn(
+										"select-text rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed transition-all",
+										mine
+											? "rounded-tr-xs bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-sm shadow-primary/15 border border-primary-foreground/10"
+											: "rounded-tl-xs border border-edge-hairline/80 bg-card/90 dark:bg-secondary/40 backdrop-blur-md text-foreground shadow-2xs hover:border-edge-hairline hover:bg-card/95",
+									)}
+								>
+									<ChatMessageContent
+										content={message.content}
+										emote={emoteMap}
+										className="wrap-break-word"
+									/>
+								</div>
+							)}
+							<TweetShareCard
+								tweet={message.shared_tweet ?? { id: message.id, is_deleted: true }}
+							/>
+						</div>
 					) : (
 						<div
 							className={cn(
@@ -1099,7 +1137,9 @@ function ReplyPreview({
 		? "消息已删除"
 		: reference.type === "image"
 			? "图片消息"
-			: (reference.content ?? "文本消息");
+			: reference.type === "tweet_share"
+				? reference.content || "分享了一条推文"
+				: (reference.content ?? "文本消息");
 	const className =
 		"flex max-w-60 items-center gap-2 border-s-2 border-neon-cyan/70 bg-secondary/50 px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
 	const body = (
@@ -1135,6 +1175,8 @@ function ReplyPreview({
 
 interface MessageComposerProps {
 	conversationID: string;
+	/** 落定到当前会话的待发分享；非空时优先展示分享 banner 并接管发送逻辑。 */
+	pendingShare: PendingChatShare | null;
 	replyTarget: ChatMessage | null;
 	onCancelReply: () => void;
 	onMessageSent?: () => void;
@@ -1142,6 +1184,7 @@ interface MessageComposerProps {
 
 function MessageComposer({
 	conversationID,
+	pendingShare,
 	replyTarget,
 	onCancelReply,
 	onMessageSent,
@@ -1150,6 +1193,7 @@ function MessageComposer({
 	const [images, setImages] = useState<PictureInput[]>([]);
 	const [uploading, setUploading] = useState(false);
 	const [resetNonce, setResetNonce] = useState(0);
+	const clearPendingShare = useShareTweetStore((s) => s.clearPending);
 
 	const send = useSendChatMessage();
 	const sentImageIDsRef = useRef(new Set<string>());
@@ -1158,6 +1202,28 @@ function MessageComposer({
 
 	const sendMessage = async () => {
 		if (uploading || send.isPending) return;
+
+		if (pendingShare) {
+			try {
+				await send.mutateAsync({
+					id: conversationID,
+					input: {
+						type: "tweet_share",
+						content: content.trim(),
+						shared_tweet_id: pendingShare.tweet.id,
+					},
+					idempotencyKey: crypto.randomUUID(),
+				});
+				clearPendingShare();
+				setContent("");
+				setResetNonce((n) => n + 1);
+				onMessageSent?.();
+			} catch {
+				toast.error("消息发送失败，请重试");
+			}
+			return;
+		}
+
 		if (!content.trim() && images.length === 0) return;
 
 		const replyToID = replyTarget?.id;
@@ -1208,12 +1274,18 @@ function MessageComposer({
 		}
 	};
 
-	const canSend = !uploading && !send.isPending && (Boolean(content.trim()) || images.length > 0);
+	const canSend =
+		!uploading &&
+		!send.isPending &&
+		(pendingShare ? true : Boolean(content.trim()) || images.length > 0);
 
 	return (
 		<div
 			onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-				if (event.key === "Escape" && replyTarget) {
+				if (event.key === "Escape" && pendingShare) {
+					event.preventDefault();
+					clearPendingShare();
+				} else if (event.key === "Escape" && replyTarget) {
 					event.preventDefault();
 					onCancelReply();
 				}
@@ -1221,35 +1293,57 @@ function MessageComposer({
 			className="shrink-0 border-t border-edge-hairline/80 bg-gradient-to-t from-background via-background/95 to-background/80 p-3 backdrop-blur-md md:p-4"
 		>
 			<div className="mx-auto max-w-3xl">
-				{replyTarget && (
+				{pendingShare ? (
 					<div className="mb-2 flex items-center gap-2 rounded-xl border border-neon-cyan/25 bg-neon-cyan/5 px-3 py-2">
-						<Reply className="size-3.5 shrink-0 text-neon-cyan" />
+						<MessageSquareQuote className="size-3.5 shrink-0 text-neon-cyan" />
 						<div className="min-w-0 flex-1">
 							<p className="font-mono text-[10px] uppercase tracking-[0.12em] text-neon-cyan">
-								回复 {replyTarget.sender.display_name}
+								分享推文 @{pendingShare.tweet.authorUsername}
 							</p>
 							<p className="truncate text-xs text-muted-foreground">
-								{replyTarget.type === "image"
-									? "图片消息"
-									: (replyTarget.content ?? "文本消息")}
+								{pendingShare.tweet.content || "（图片推文）"}
 							</p>
 						</div>
 						<button
-							aria-label="取消回复"
+							aria-label="取消分享"
 							className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-							onClick={onCancelReply}
+							onClick={clearPendingShare}
 							type="button"
 						>
 							<X className="size-3.5" />
 						</button>
 					</div>
+				) : (
+					replyTarget && (
+						<div className="mb-2 flex items-center gap-2 rounded-xl border border-neon-cyan/25 bg-neon-cyan/5 px-3 py-2">
+							<Reply className="size-3.5 shrink-0 text-neon-cyan" />
+							<div className="min-w-0 flex-1">
+								<p className="font-mono text-[10px] uppercase tracking-[0.12em] text-neon-cyan">
+									回复 {replyTarget.sender.display_name}
+								</p>
+								<p className="truncate text-xs text-muted-foreground">
+									{replyTarget.type === "image"
+										? "图片消息"
+										: (replyTarget.content ?? "文本消息")}
+								</p>
+							</div>
+							<button
+								aria-label="取消回复"
+								className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+								onClick={onCancelReply}
+								type="button"
+							>
+								<X className="size-3.5" />
+							</button>
+						</div>
+					)
 				)}
 				<RichCommentInput
 					value={content}
 					onChange={setContent}
 					onSubmit={sendMessage}
 					enableEmoji={true}
-					enableImage={true}
+					enableImage={!pendingShare}
 					uploadPurpose="chat"
 					submitOnEnter={true}
 					compact={true}
@@ -1714,7 +1808,7 @@ function useEmojiEmoteMap(): Record<string, { url: string; gif_url?: string; siz
 	}, [groups]);
 }
 
-function conversationLabel(conversation: ChatConversation, currentUserID?: string) {
+export function conversationLabel(conversation: ChatConversation, currentUserID?: string) {
 	if (conversation.title) return conversation.title;
 	const participants =
 		conversation.members?.filter((member) => member.user.id !== currentUserID) ?? [];
@@ -1727,7 +1821,10 @@ function conversationLabel(conversation: ChatConversation, currentUserID?: strin
 	);
 }
 
-function conversationTargetUser(conversation: ChatConversation, currentUserID?: string): ChatUser {
+export function conversationTargetUser(
+	conversation: ChatConversation,
+	currentUserID?: string,
+): ChatUser {
 	if (conversation.kind === "direct") {
 		const participant = conversation.members?.find(
 			(member) => member.user.id !== currentUserID,
@@ -1741,6 +1838,7 @@ function conversationTargetUser(conversation: ChatConversation, currentUserID?: 
 function messagePreview(message: ChatMessage) {
 	if (message.is_deleted) return "消息已删除";
 	if (message.type === "image") return "发送了一张图片";
+	if (message.type === "tweet_share") return message.content || "分享了一条推文";
 	return message.content ?? "";
 }
 
