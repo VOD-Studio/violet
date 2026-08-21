@@ -254,6 +254,9 @@ func (r *ChatRepository) SaveMessage(ctx context.Context, message *domainchat.Me
 			"sender_id":       message.SenderID().String(),
 			"message_type":    string(message.Type()),
 		}
+		if replyToID := message.ReplyToID(); replyToID != nil {
+			eventPayload["reply_to_id"] = replyToID.String()
+		}
 		for key, value := range payload {
 			eventPayload[key] = value
 		}
@@ -457,10 +460,14 @@ func memberToDomain(po model.ChatConversationMember) *domainchat.Member {
 }
 
 func messageToPO(m *domainchat.Message) *model.ChatMessage {
-	var mediaID, deletedBy *uuid.UUID
+	var mediaID, replyToID, deletedBy *uuid.UUID
 	if m.MediaID() != nil {
 		u := m.MediaID().UUID()
 		mediaID = &u
+	}
+	if m.ReplyToID() != nil {
+		u := m.ReplyToID().UUID()
+		replyToID = &u
 	}
 	if m.DeletedBy() != nil {
 		u := m.DeletedBy().UUID()
@@ -468,22 +475,26 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 	}
 	return &model.ChatMessage{
 		ID: m.ID().UUID(), ConversationID: m.ConversationID().UUID(), SenderID: m.SenderID().UUID(),
-		MessageType: string(m.Type()), Content: m.Content(), MediaID: mediaID, IdempotencyKey: m.IdempotencyKey(),
+		MessageType: string(m.Type()), Content: m.Content(), MediaID: mediaID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
 		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
 	}
 }
 
 func messageToDomain(po model.ChatMessage) *domainchat.Message {
-	var mediaID, deletedBy *domainshared.ID
+	var mediaID, replyToID, deletedBy *domainshared.ID
 	if po.MediaID != nil {
 		id := domainshared.IDFromUUID(*po.MediaID)
 		mediaID = &id
+	}
+	if po.ReplyToID != nil {
+		id := domainshared.IDFromUUID(*po.ReplyToID)
+		replyToID = &id
 	}
 	if po.DeletedBy != nil {
 		id := domainshared.IDFromUUID(*po.DeletedBy)
 		deletedBy = &id
 	}
-	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.CreatedAt, po.UpdatedAt)
+	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.CreatedAt, po.UpdatedAt)
 }
 
 func readPositionToPO(p *domainchat.ReadPosition) *model.ChatReadPosition {

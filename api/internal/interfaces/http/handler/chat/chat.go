@@ -241,15 +241,16 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Type    string `json:"type" validate:"required"`
-		Content string `json:"content"`
-		MediaID string `json:"media_id"`
+		Type      string `json:"type" validate:"required"`
+		Content   string `json:"content"`
+		MediaID   string `json:"media_id"`
+		ReplyToID string `json:"reply_to_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	var mediaID domainshared.ID
+	var mediaID, replyToID domainshared.ID
 	if req.MediaID != "" {
 		mediaID, err = parsePathID(req.MediaID)
 		if err != nil {
@@ -257,7 +258,14 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaID: mediaID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
+	if req.ReplyToID != "" {
+		replyToID, err = parsePathID(req.ReplyToID)
+		if err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+	}
+	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaID: mediaID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

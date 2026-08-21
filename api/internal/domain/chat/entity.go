@@ -263,6 +263,8 @@ type Message struct {
 	content string
 	// mediaID 图片消息引用的上传文件 ID。
 	mediaID *shared.ID
+	// replyToID 被引用的同会话文本或图片消息 ID；nil 表示普通消息。
+	replyToID *shared.ID
 	// idempotencyKey 客户端发送幂等键。
 	idempotencyKey string
 	// deletedAt 管理员删除时间；非空表示内容已删除。
@@ -274,7 +276,7 @@ type Message struct {
 }
 
 // NewTextMessage 创建文本消息。
-func NewTextMessage(conversationID, senderID shared.ID, content, idempotencyKey string, now time.Time) (*Message, error) {
+func NewTextMessage(conversationID, senderID shared.ID, content, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
 	content = strings.TrimSpace(content)
 	if conversationID.IsZero() || senderID.IsZero() {
 		return nil, shared.BadRequest("消息归属不能为空")
@@ -285,7 +287,10 @@ func NewTextMessage(conversationID, senderID shared.ID, content, idempotencyKey 
 	if err := validateIdempotencyKey(idempotencyKey); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageText, content, nil, idempotencyKey, now), nil
+	if err := validateReplyToID(replyToID); err != nil {
+		return nil, err
+	}
+	return newMessage(conversationID, senderID, MessageText, content, nil, replyToID, idempotencyKey, now), nil
 }
 
 // NewSystemMessage 创建群聊系统事件消息。
@@ -300,24 +305,27 @@ func NewSystemMessage(conversationID, senderID shared.ID, content, idempotencyKe
 	if err := validateIdempotencyKey(idempotencyKey); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageSystem, content, nil, idempotencyKey, now), nil
+	return newMessage(conversationID, senderID, MessageSystem, content, nil, nil, idempotencyKey, now), nil
 }
 
 // NewImageMessage 创建图片消息。
-func NewImageMessage(conversationID, senderID, mediaID shared.ID, idempotencyKey string, now time.Time) (*Message, error) {
+func NewImageMessage(conversationID, senderID, mediaID shared.ID, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
 	if conversationID.IsZero() || senderID.IsZero() || mediaID.IsZero() {
 		return nil, shared.BadRequest("图片消息参数不完整")
 	}
 	if err := validateIdempotencyKey(idempotencyKey); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageImage, "", &mediaID, idempotencyKey, now), nil
+	if err := validateReplyToID(replyToID); err != nil {
+		return nil, err
+	}
+	return newMessage(conversationID, senderID, MessageImage, "", &mediaID, replyToID, idempotencyKey, now), nil
 }
 
-func newMessage(conversationID, senderID shared.ID, messageType MessageType, content string, mediaID *shared.ID, idempotencyKey string, now time.Time) *Message {
+func newMessage(conversationID, senderID shared.ID, messageType MessageType, content string, mediaID, replyToID *shared.ID, idempotencyKey string, now time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
-		content: content, mediaID: mediaID, idempotencyKey: idempotencyKey,
+		content: content, mediaID: mediaID, replyToID: replyToID, idempotencyKey: idempotencyKey,
 		Timestamps: shared.Timestamps{CreatedAt: now, UpdatedAt: now},
 	}
 	m.SetID(shared.NewID())
@@ -332,11 +340,18 @@ func validateIdempotencyKey(key string) error {
 	return nil
 }
 
+func validateReplyToID(replyToID *shared.ID) error {
+	if replyToID != nil && replyToID.IsZero() {
+		return shared.BadRequest("引用消息不能为空")
+	}
+	return nil
+}
+
 // ReconstructMessage 从持久化数据重建消息。
-func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, createdAt, updatedAt time.Time) *Message {
+func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, createdAt, updatedAt time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
-		content: content, mediaID: mediaID, idempotencyKey: idempotencyKey,
+		content: content, mediaID: mediaID, replyToID: replyToID, idempotencyKey: idempotencyKey,
 		deletedAt: deletedAt, deletedBy: deletedBy,
 		Timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
@@ -375,6 +390,9 @@ func (m *Message) Content() string { return m.content }
 
 // MediaID 返回图片媒体 ID。
 func (m *Message) MediaID() *shared.ID { return m.mediaID }
+
+// ReplyToID 返回被引用的消息 ID。
+func (m *Message) ReplyToID() *shared.ID { return m.replyToID }
 
 // IdempotencyKey 返回客户端幂等键。
 func (m *Message) IdempotencyKey() string { return m.idempotencyKey }

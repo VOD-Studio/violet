@@ -25,6 +25,14 @@ func registerChatPaths(t *openapi3.T) {
 		"width":     optInt("图片宽度"),
 		"height":    optInt("图片高度"),
 	})
+	registerSchema(t, "ChatMessageReferenceDTO", openapi3.Schemas{
+		"id":         reqStr("被引用消息 ID"),
+		"sender":     &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
+		"type":       reqStr("被引用消息类型"),
+		"content":    optStr("被引用文本预览"),
+		"media":      &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"},
+		"is_deleted": optBool("原消息是否已被管理员删除"),
+	})
 	registerSchema(t, "ChatMessageDTO", openapi3.Schemas{
 		"id":              reqStr("消息 ID"),
 		"conversation_id": reqStr("会话 ID"),
@@ -32,6 +40,7 @@ func registerChatPaths(t *openapi3.T) {
 		"type":            reqStr("text、image 或 system"),
 		"content":         optStr("文本内容"),
 		"media":           &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"},
+		"reply_to":        &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
 		"is_deleted":      optBool("是否已被管理员删除"),
 		"deleted_at":      optStr("删除时间"),
 		"created_at":      reqStr("RFC3339 时间"),
@@ -63,9 +72,10 @@ func registerChatPaths(t *openapi3.T) {
 		"title": reqStr("新房间名称"),
 	}, "title")
 	registerSchema(t, "ChatSendMessageRequest", openapi3.Schemas{
-		"type":     reqStr("text 或 image"),
-		"content":  optStr("文本消息内容"),
-		"media_id": optStr("图片媒体 ID"),
+		"type":        reqStr("text 或 image"),
+		"content":     optStr("文本消息内容"),
+		"media_id":    optStr("图片媒体 ID"),
+		"reply_to_id": optStr("被引用消息 ID"),
 	}, "type")
 	registerSchema(t, "ChatPushSubscriptionRequest", openapi3.Schemas{
 		"endpoint":     reqStr("浏览器 Push endpoint"),

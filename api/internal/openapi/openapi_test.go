@@ -88,6 +88,9 @@ func TestChatPaths(t *testing.T) {
 	}
 	require.Contains(t, spec.Components.Schemas, "ChatEventDTO")
 	require.Contains(t, spec.Components.Schemas, "ChatMessageDTO")
+	require.Contains(t, spec.Components.Schemas, "ChatMessageReferenceDTO")
+	require.Contains(t, spec.Components.Schemas["ChatMessageDTO"].Value.Properties, "reply_to")
+	require.Contains(t, spec.Components.Schemas["ChatSendMessageRequest"].Value.Properties, "reply_to_id")
 	send := spec.Paths.Find("/chat/conversations/{conversationId}/messages").Post
 	require.NotNil(t, send)
 	require.True(t, hasParam(send.Parameters, "Idempotency-Key"))

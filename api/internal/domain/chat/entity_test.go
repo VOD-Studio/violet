@@ -32,17 +32,17 @@ func TestMessageFactoriesEnforcePayloadShapeAndIdempotency(t *testing.T) {
 	conversationID := shared.NewID()
 	senderID := shared.NewID()
 
-	text, err := chat.NewTextMessage(conversationID, senderID, " hello ", "retry-1", now)
+	text, err := chat.NewTextMessage(conversationID, senderID, " hello ", "retry-1", now, nil)
 	require.NoError(t, err)
 	require.Equal(t, "hello", text.Content())
 	require.Equal(t, chat.MessageText, text.Type())
 
-	_, err = chat.NewTextMessage(conversationID, senderID, "", "retry-2", now)
+	_, err = chat.NewTextMessage(conversationID, senderID, "", "retry-2", now, nil)
 	require.Error(t, err)
-	_, err = chat.NewTextMessage(conversationID, senderID, "hello", "", now)
+	_, err = chat.NewTextMessage(conversationID, senderID, "hello", "", now, nil)
 	require.Error(t, err)
 
-	image, err := chat.NewImageMessage(conversationID, senderID, shared.NewID(), "retry-3", now)
+	image, err := chat.NewImageMessage(conversationID, senderID, shared.NewID(), "retry-3", now, nil)
 	require.NoError(t, err)
 	require.Equal(t, chat.MessageImage, image.Type())
 	require.NotNil(t, image.MediaID())
@@ -63,7 +63,7 @@ func TestSystemMessageFactory(t *testing.T) {
 }
 
 func TestMessageDeleteIsOneWay(t *testing.T) {
-	message, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "moderate me", "retry-1", time.Now())
+	message, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "moderate me", "retry-1", time.Now(), nil)
 	require.NoError(t, err)
 	adminID := shared.NewID()
 
@@ -71,4 +71,22 @@ func TestMessageDeleteIsOneWay(t *testing.T) {
 	require.NotNil(t, message.DeletedAt())
 	require.Equal(t, adminID, *message.DeletedBy())
 	require.Error(t, message.Delete(adminID, time.Now()))
+}
+
+func TestMessageFactoryPreservesReplyTarget(t *testing.T) {
+	conversationID := shared.NewID()
+	senderID := shared.NewID()
+	replyToID := shared.NewID()
+
+	message, err := chat.NewTextMessage(conversationID, senderID, "reply", "retry-reply", time.Now(), &replyToID)
+	require.NoError(t, err)
+	require.NotNil(t, message.ReplyToID())
+	require.Equal(t, replyToID, *message.ReplyToID())
+}
+
+func TestMessageFactoryRejectsZeroReplyTarget(t *testing.T) {
+	zeroID := shared.ID{}
+
+	_, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "reply", "retry-reply-zero", time.Now(), &zeroID)
+	require.Error(t, err)
 }

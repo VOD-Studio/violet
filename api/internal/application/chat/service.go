@@ -78,7 +78,9 @@ type SendMessageInput struct {
 	Content string
 	// MediaID 图片媒体 ID。
 	MediaID domainshared.ID
-	// IdempotencyKey 客户端重试幂等键。
+	// ReplyToID 被引用的同会话消息 ID；零值表示不引用消息。
+	ReplyToID domainshared.ID
+	// IdempotencyKey 客户端发送幂等键。
 	IdempotencyKey string
 }
 
@@ -138,12 +140,30 @@ type MessageDTO struct {
 	Content string `json:"content,omitempty"`
 	// Media 图片媒体；文本消息为空。
 	Media *MediaDTO `json:"media,omitempty"`
+	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
+	ReplyTo *MessageReferenceDTO `json:"reply_to,omitempty"`
 	// IsDeleted 是否已被管理员删除。
 	IsDeleted bool `json:"is_deleted"`
 	// DeletedAt 删除时间。
 	DeletedAt *string `json:"deleted_at,omitempty"`
 	// CreatedAt 创建时间。
 	CreatedAt string `json:"created_at"`
+}
+
+// MessageReferenceDTO 引用消息的紧凑读模型。
+type MessageReferenceDTO struct {
+	// ID 被引用消息 ID。
+	ID string `json:"id"`
+	// Sender 被引用消息发送者资料。
+	Sender UserDTO `json:"sender"`
+	// Type 被引用消息类型。
+	Type string `json:"type"`
+	// Content 被引用文本的最多 120 个 Unicode 字符预览。
+	Content string `json:"content,omitempty"`
+	// Media 被引用图片的媒体预览。
+	Media *MediaDTO `json:"media,omitempty"`
+	// IsDeleted 原消息是否已被管理员删除。
+	IsDeleted bool `json:"is_deleted"`
 }
 
 // ConversationDTO 会话读模型。
@@ -550,17 +570,28 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	} else if !errors.Is(err, domainchat.ErrMessageNotFound) {
 		return MessageDTO{}, err
 	}
+	var replyToID *domainshared.ID
+	if !in.ReplyToID.IsZero() {
+		target, err := s.repo.FindMessage(ctx, in.ConversationID, in.ReplyToID)
+		if err != nil {
+			return MessageDTO{}, err
+		}
+		if target.DeletedAt() != nil || target.Type() == domainchat.MessageSystem {
+			return MessageDTO{}, domainshared.BadRequest("消息不可引用")
+		}
+		replyToID = &in.ReplyToID
+	}
 	now := s.now()
 	var message *domainchat.Message
 	var file *domainupload.File
 	var err error
 	switch in.Type {
 	case domainchat.MessageText:
-		message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now)
+		message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now, replyToID)
 	case domainchat.MessageImage:
 		file, err = s.chatImage(ctx, in.MediaID, in.UserID)
 		if err == nil {
-			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaID, in.IdempotencyKey, now)
+			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaID, in.IdempotencyKey, now, replyToID)
 		}
 	default:
 		err = domainshared.BadRequest("非法消息类型")
@@ -580,11 +611,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	}
 	preview := "发送了一张图片"
 	if message.Type() == domainchat.MessageText {
-		preview = message.Content()
-		runes := []rune(preview)
-		if len(runes) > 120 {
-			preview = string(runes[:120]) + "…"
-		}
+		preview = truncatePreview(message.Content(), 120)
 	}
 	events, err := s.repo.SaveMessage(ctx, message, recipients, map[string]any{"preview": preview})
 	if err != nil {
@@ -817,16 +844,65 @@ func (s *Service) messageDTO(ctx context.Context, message *domainchat.Message) (
 	}
 	if message.Type() == domainchat.MessageText {
 		dto.Content = message.Content()
-		return dto, nil
 	}
 	if message.MediaID() != nil {
-		file, err := s.files.FindByID(ctx, *message.MediaID())
+		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
 		if err != nil {
 			return MessageDTO{}, err
 		}
-		dto.Media = &MediaDTO{ID: file.ID().String(), URL: file.URL(), Thumbnail: file.Thumbnail(), MIMEType: file.MimeType(), Size: file.Size(), Width: file.Width(), Height: file.Height()}
+	}
+	if message.ReplyToID() != nil {
+		target, err := s.repo.FindMessage(ctx, message.ConversationID(), *message.ReplyToID())
+		if err != nil {
+			if !errors.Is(err, domainchat.ErrMessageNotFound) {
+				return MessageDTO{}, err
+			}
+		} else {
+			dto.ReplyTo, err = s.messageReferenceDTO(ctx, target)
+			if err != nil {
+				return MessageDTO{}, err
+			}
+		}
 	}
 	return dto, nil
+}
+
+func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.Message) (*MessageReferenceDTO, error) {
+	sender, err := s.users.FindByID(ctx, message.SenderID())
+	if err != nil {
+		return nil, err
+	}
+	dto := &MessageReferenceDTO{ID: message.ID().String(), Sender: userToDTO(sender), Type: string(message.Type())}
+	if message.DeletedAt() != nil {
+		dto.IsDeleted = true
+		return dto, nil
+	}
+	if message.Type() == domainchat.MessageText {
+		dto.Content = truncatePreview(message.Content(), 120)
+	}
+	if message.MediaID() != nil {
+		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
+		if err != nil {
+			return nil, err
+		}
+	}
+	return dto, nil
+}
+
+func (s *Service) mediaDTO(ctx context.Context, mediaID domainshared.ID) (*MediaDTO, error) {
+	file, err := s.files.FindByID(ctx, mediaID)
+	if err != nil {
+		return nil, err
+	}
+	return &MediaDTO{ID: file.ID().String(), URL: file.URL(), Thumbnail: file.Thumbnail(), MIMEType: file.MimeType(), Size: file.Size(), Width: file.Width(), Height: file.Height()}, nil
+}
+
+func truncatePreview(content string, maxRunes int) string {
+	runes := []rune(content)
+	if len(runes) <= maxRunes {
+		return content
+	}
+	return string(runes[:maxRunes]) + "…"
 }
 
 func (s *Service) chatImage(ctx context.Context, mediaID, userID domainshared.ID) (*domainupload.File, error) {
