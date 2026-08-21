@@ -6,7 +6,6 @@ import { useAllEmojis } from "@features/emojis/api/queries";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
-import { EmojiText } from "@shared/ui/emoji-text";
 import { Magnetic } from "@shared/ui/magnetic";
 import { ParticleField } from "@shared/ui/particle-field";
 import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
@@ -70,6 +69,7 @@ import type {
 } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
+import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatReactionBar } from "./ChatReactionBar";
 import { NewConversationForm } from "./NewConversationForm";
 
@@ -1005,9 +1005,11 @@ function MessageBubble({
 									: "rounded-tl-xs border border-edge-hairline/80 bg-card/90 dark:bg-secondary/40 backdrop-blur-md text-foreground shadow-2xs hover:border-edge-hairline hover:bg-card/95",
 							)}
 						>
-							<p className="whitespace-pre-wrap wrap-break-word">
-								<EmojiText text={message.content ?? ""} emote={emoteMap} />
-							</p>
+							<ChatMessageContent
+								content={message.content ?? ""}
+								emote={emoteMap}
+								className="wrap-break-word"
+							/>
 						</div>
 					)}
 
