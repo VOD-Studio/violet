@@ -10,6 +10,28 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({
+		to,
+		params,
+		children,
+		...props
+	}: {
+		to: string;
+		params?: { username?: string };
+		children: ReactNode;
+		"aria-label"?: string;
+		className?: string;
+	}) => (
+		<a
+			{...props}
+			href={params?.username ? `/users/${params.username}` : to}
+		>
+			{children}
+		</a>
+	),
+}));
+
 
 const mockMe = {
 	id: "u_me",
@@ -294,12 +316,23 @@ describe("ChatWorkspace", () => {
 		// 会话行
 		expect(screen.getAllByText("dfy").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("hello world").length).toBeGreaterThan(0);
+		expect(screen.getByRole("link", { name: "xfy 的个人主页" })).toBeTruthy();
+		expect(
+			screen.getAllByRole("link", { name: "dfy 的个人主页" }).length,
+		).toBeGreaterThanOrEqual(2);
 		// 消息输入框与富文本组件（RichCommentInput）
 		const editor = screen.getByRole("textbox", { name: "评论内容" });
 		expect(editor).toBeTruthy();
 		expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "上传图片" })).toBeTruthy();
+	});
+
+	it("聊天用户头像链接到对应的公开个人主页", () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		const profileLinks = screen.getAllByRole("link", { name: "dfy 的个人主页" });
+		expect(profileLinks[0]?.getAttribute("href")).toBe("/users/dfy");
 	});
 
 	it("输入消息并发送", async () => {
@@ -352,6 +385,8 @@ describe("ChatWorkspace", () => {
 		});
 
 		expect(screen.getByText("Alice")).toBeTruthy();
+		const profileLink = screen.getByRole("link", { name: "Alice 的个人主页" });
+		expect(profileLink.getAttribute("href")).toBe("/users/alice");
 		fireEvent.click(screen.getByRole("button", { name: "发起与Alice的私聊" }));
 
 		expect(mockCreateMutateAsync).toHaveBeenCalledWith({

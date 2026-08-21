@@ -30,11 +30,11 @@ describe("/users/$username Route.loader", () => {
 		const mockProfile: UserProfile = {
 			id: "u1",
 			username: "大鸟哥",
+			display_name: "大鸟哥",
 			avatar_url: "",
 			bio: "Hello bio",
 			created_at: "2026-01-01T00:00:00Z",
 		};
-
 		const mockTimeline: PagedResponse<Tweet> = {
 			data: [
 				{
