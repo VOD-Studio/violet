@@ -626,6 +626,9 @@ func TestService_ListByUser(t *testing.T) {
 }
 func TestService_GetUserProfile(t *testing.T) {
 	author := newTestUser(t, "alice")
+	displayName, err := domainuser.ParseDisplayName("Alice")
+	require.NoError(t, err)
+	author.UpdateDisplayName(displayName)
 	users := &fakeUserRepo{
 		byUsername: map[string]*domainuser.User{"alice": author},
 		byIDs:      map[string]*domainuser.User{author.GetID().String(): author},
@@ -636,6 +639,7 @@ func TestService_GetUserProfile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, author.GetID().String(), profile.ID)
 	assert.Equal(t, "alice", profile.Username)
+	assert.Equal(t, "Alice", profile.DisplayName)
 	assert.NotEmpty(t, profile.CreatedAt)
 
 	_, err = svc.GetUserProfile(context.Background(), "ghost_user")

@@ -77,10 +77,11 @@ type AuthorDTO struct {
 
 // UserProfileDTO 用户公开资料卡（公开，仅包含不敏感的非私域字段）。
 type UserProfileDTO struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	AvatarURL string `json:"avatar_url"`
-	Bio       string `json:"bio"`
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+	Bio         string `json:"bio"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
 }
@@ -280,11 +281,12 @@ func (s *Service) GetUserProfile(ctx context.Context, username string) (UserProf
 		return UserProfileDTO{}, err
 	}
 	return UserProfileDTO{
-		ID:        u.GetID().String(),
-		Username:  u.Username().String(),
-		AvatarURL: u.AvatarURL(),
-		Bio:       u.Bio(),
-		CreatedAt: u.CreatedAt().Format(time.RFC3339),
+		ID:          u.GetID().String(),
+		Username:    u.Username().String(),
+		DisplayName: u.DisplayName().String(),
+		AvatarURL:   u.AvatarURL(),
+		Bio:         u.Bio(),
+		CreatedAt:   u.CreatedAt().Format(time.RFC3339),
 	}, nil
 }
 
