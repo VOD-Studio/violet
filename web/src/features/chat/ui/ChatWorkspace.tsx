@@ -29,6 +29,7 @@ import {
 	Users,
 	X,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -495,9 +496,27 @@ function ConversationPanel({
 	const emoteMap = useEmojiEmoteMap();
 
 	return (
-		<div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-			<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline bg-background/80 px-4 backdrop-blur-md md:px-6">
-				<div className="flex min-w-0 items-center gap-2.5">
+		<motion.div
+			key={conversation.id}
+			initial={{ opacity: 0, y: 6 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.2, ease: "easeOut" }}
+			className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+		>
+			{/* 沉浸式微光氛围层 */}
+			<div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+				<div
+					aria-hidden="true"
+					className="absolute -top-10 left-1/4 size-72 rounded-full bg-neon-cyan/8 blur-[120px]"
+				/>
+				<div
+					aria-hidden="true"
+					className="absolute bottom-10 right-1/4 size-80 rounded-full bg-neon-purple/8 blur-[140px]"
+				/>
+			</div>
+
+			<header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline/80 bg-background/75 px-4 backdrop-blur-xl md:px-6 shadow-xs">
+				<div className="flex min-w-0 items-center gap-3">
 					<Button
 						aria-label="返回会话列表"
 						className="size-8 md:hidden"
@@ -507,28 +526,35 @@ function ConversationPanel({
 					>
 						<ArrowLeft className="size-4" />
 					</Button>
-					<ChatAvatar
-						user={conversationTargetUser(conversation, currentUserID)}
-						className="size-8 shrink-0"
-					/>
+					<div className="relative shrink-0">
+						<ChatAvatar
+							user={conversationTargetUser(conversation, currentUserID)}
+							className="size-9 shrink-0"
+						/>
+						{conversation.kind === "direct" && (
+							<span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background bg-neon-green ring-2 ring-neon-green/20 animate-pulse" />
+						)}
+					</div>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
-							<h2 className="truncate text-sm font-semibold">
+							<h2 className="truncate text-sm font-semibold tracking-tight text-foreground">
 								{conversationLabel(conversation, currentUserID)}
 							</h2>
-							<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-neon-cyan">
+							<span className="rounded-full border border-edge-hairline/80 bg-secondary/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-neon-cyan">
 								{conversation.kind === "room" ? "群聊" : "私聊"}
 							</span>
 						</div>
-						<p className="hidden font-mono text-[10px] text-muted-foreground sm:block">
-							{conversation.kind === "room" ? `${members.length} 位成员` : "私聊会话"}
+						<p className="hidden font-mono text-[10px] text-muted-foreground/80 sm:block">
+							{conversation.kind === "room"
+								? `${members.length} 位成员`
+								: "实时端到端连接通道"}
 						</p>
 					</div>
 				</div>
 
 				<div className="flex items-center gap-2">
-					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/30 px-2.5 py-1 text-muted-foreground sm:flex">
-						<span className="size-1.5 rounded-full bg-neon-green" />
+					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/40 px-3 py-1 text-muted-foreground backdrop-blur-sm sm:flex">
+						<span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
 						<DecryptedText
 							text={conversation.kind === "room" ? "ROOM CHANNEL" : "PRIVATE CHANNEL"}
 							speed={30}
@@ -539,7 +565,7 @@ function ConversationPanel({
 					</div>
 					<Button
 						aria-label="打开会话详情"
-						className="size-8"
+						className="size-8.5 rounded-xl border border-edge-hairline/60"
 						onClick={onToggleDetails}
 						size="icon-sm"
 						variant={showDetails ? "secondary" : "ghost"}
@@ -558,10 +584,12 @@ function ConversationPanel({
 						className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8"
 					>
 						<div className="mx-auto max-w-3xl space-y-4">
-							<div className="my-2 flex items-center justify-center">
-								<span className="rounded-full border border-edge-hairline/60 bg-secondary/50 px-3 py-0.5 font-mono text-[10px] text-muted-foreground shadow-2xs">
+							<div className="my-3 flex items-center justify-center gap-3">
+								<div className="h-px flex-1 bg-gradient-to-r from-transparent via-edge-hairline to-transparent" />
+								<span className="rounded-full border border-edge-hairline/60 bg-secondary/50 px-3.5 py-0.5 font-mono text-[10px] text-muted-foreground shadow-2xs backdrop-blur-md">
 									{formatDate(conversation.created_at)}
 								</span>
+								<div className="h-px flex-1 bg-gradient-to-r from-transparent via-edge-hairline to-transparent" />
 							</div>
 
 							{messagesLoading ? (
@@ -596,21 +624,29 @@ function ConversationPanel({
 							<div className="h-0" />
 						</div>
 					</div>
-
-					{showScrollBottom && (
-						<div className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10">
-							<Button
-								aria-label="回到底部"
-								className="pointer-events-auto size-8 rounded-full bg-background/90 shadow-md backdrop-blur-sm transition-transform hover:scale-105"
-								onClick={() => scrollToBottom(true)}
-								size="icon-sm"
-								variant="outline"
+					<AnimatePresence>
+						{showScrollBottom && (
+							<motion.div
+								initial={{ opacity: 0, y: 12, scale: 0.8 }}
+								animate={{ opacity: 1, y: 0, scale: 1 }}
+								exit={{ opacity: 0, y: 12, scale: 0.8 }}
+								transition={{ duration: 0.15 }}
+								className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10"
 							>
-								<ArrowDown className="size-4" />
-							</Button>
-						</div>
-					)}
-
+								<Magnetic strength={0.25}>
+									<Button
+										aria-label="回到底部"
+										className="pointer-events-auto size-8.5 rounded-full bg-card/90 shadow-lg backdrop-blur-md border border-edge-hairline transition-transform hover:scale-105"
+										onClick={() => scrollToBottom(true)}
+										size="icon-sm"
+										variant="outline"
+									>
+										<ArrowDown className="size-4" />
+									</Button>
+								</Magnetic>
+							</motion.div>
+						)}
+					</AnimatePresence>
 					<MessageComposer
 						conversationID={conversation.id}
 						onMessageSent={() => scrollToBottom(true)}
@@ -626,9 +662,8 @@ function ConversationPanel({
 					/>
 				)}
 			</div>
-
 			{lightbox && <ImageLightbox media={lightbox} onClose={() => setLightbox(null)} />}
-		</div>
+		</motion.div>
 	);
 }
 
@@ -653,7 +688,7 @@ function MessageBubble({
 	if (message.type === "system") {
 		return (
 			<div className="my-2 flex justify-center">
-				<p className="rounded-full border border-edge-hairline/60 bg-secondary/45 px-3 py-1.5 text-center text-xs text-muted-foreground">
+				<p className="rounded-full border border-edge-hairline/60 bg-secondary/40 px-3.5 py-1.5 text-center text-xs text-muted-foreground shadow-2xs backdrop-blur-sm">
 					{message.content}
 				</p>
 			</div>
@@ -661,8 +696,16 @@ function MessageBubble({
 	}
 
 	return (
-		<article
-			className={cn("group flex gap-2.5", mine && "flex-row-reverse", !showSender && "mt-1")}
+		<motion.article
+			layout="position"
+			initial={{ opacity: 0, y: 12, scale: 0.98 }}
+			animate={{ opacity: 1, y: 0, scale: 1 }}
+			transition={{ type: "spring", stiffness: 450, damping: 28 }}
+			className={cn(
+				"group relative flex gap-2.5",
+				mine && "flex-row-reverse",
+				!showSender && "mt-1",
+			)}
 		>
 			{showSender ? (
 				<ChatAvatar user={message.sender} className="mt-0.5 size-8 shrink-0" />
@@ -733,10 +776,10 @@ function MessageBubble({
 				) : (
 					<div
 						className={cn(
-							"select-text rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed shadow-2xs",
+							"select-text rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed transition-all",
 							mine
-								? "rounded-tr-xs bg-primary text-primary-foreground"
-								: "rounded-tl-xs border border-edge-hairline/50 bg-secondary/70 text-foreground",
+								? "rounded-tr-xs bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/10 border border-primary-foreground/10"
+								: "rounded-tl-xs border border-edge-hairline/80 bg-card/85 text-foreground backdrop-blur-md shadow-xs hover:border-edge-hairline hover:bg-card/95",
 						)}
 					>
 						<p className="whitespace-pre-wrap wrap-break-word">
@@ -745,7 +788,7 @@ function MessageBubble({
 					</div>
 				)}
 			</div>
-		</article>
+		</motion.article>
 	);
 }
 
@@ -801,7 +844,7 @@ function MessageComposer({
 	const canSend = !uploading && !send.isPending && (Boolean(content.trim()) || images.length > 0);
 
 	return (
-		<div className="shrink-0 border-t border-edge-hairline bg-background/95 p-3 backdrop-blur-md md:p-4">
+		<div className="shrink-0 border-t border-edge-hairline/70 bg-gradient-to-t from-background via-background/95 to-background/80 p-3 backdrop-blur-md md:p-4">
 			<div className="mx-auto max-w-3xl">
 				<RichCommentInput
 					value={content}
@@ -816,8 +859,8 @@ function MessageComposer({
 					resetNonce={resetNonce}
 					onImagesChange={setImages}
 					onUploadingChange={setUploading}
-					inputClassName="min-h-12 max-h-36 py-2 px-3 text-sm leading-relaxed"
-					className="border-input/80 bg-secondary/20 transition-all focus-within:border-neon-cyan focus-within:ring-2 focus-within:ring-neon-cyan/15 rounded-xl"
+					inputClassName="min-h-12 max-h-36 py-2.5 px-3 text-sm leading-relaxed"
+					className="border-input/70 bg-card/60 shadow-lg shadow-primary/5 backdrop-blur-xl transition-all focus-within:border-neon-cyan/50 focus-within:ring-4 focus-within:ring-neon-cyan/10 rounded-2xl"
 					toolbarEnd={
 						<div className="flex items-center gap-2">
 							<span className="hidden font-mono text-[10px] text-muted-foreground/60 sm:inline">
