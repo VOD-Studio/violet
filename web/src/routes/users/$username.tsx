@@ -212,8 +212,8 @@ function UserPublicProfilePage() {
 	if (isProfileLoading && !profile) {
 		return (
 			<PageShell>
-				<div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
-					<div className="overflow-hidden rounded-3xl border border-edge-hairline bg-card/60 p-6 backdrop-blur">
+				<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
+					<div className="overflow-hidden rounded-3xl border border-edge-hairline bg-card/60 p-6 backdrop-blur lg:sticky lg:top-24 lg:self-start">
 						<ShimmerSkeleton className="h-32 w-full rounded-2xl" />
 						<div className="-mt-14 ml-4">
 							<ShimmerSkeleton className="size-24 rounded-3xl" />
@@ -298,9 +298,9 @@ function UserPublicProfilePage() {
 				/>
 			</div>
 
-			<div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
-				{/* 左侧：Bento 个人信息名片 */}
-				<aside className="h-fit">
+			<div className="mx-auto grid w-full max-w-6xl items-start gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
+				{/* 左侧：Bento 个人信息名片（桌面端固定不随页面滚动） */}
+				<aside className="h-fit lg:sticky lg:top-24 lg:self-start">
 					<div className="group/card relative overflow-hidden rounded-3xl border border-edge-hairline/80 bg-card/60 shadow-xl shadow-primary/5 backdrop-blur-xl transition-all duration-300 hover:border-edge-hairline hover:shadow-2xl hover:shadow-primary/10">
 						{/* 顶栏艺术 Cover Banner */}
 						<div
