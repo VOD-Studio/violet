@@ -83,7 +83,7 @@ export function ChatWorkspace() {
 	}, [clearSelection, conversationsLoading, selected, selectedID]);
 
 	return (
-		<div className="flex h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background">
+		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background">
 			<aside
 				className={cn(
 					"flex w-full shrink-0 flex-col border-r border-edge-hairline bg-background/50 backdrop-blur-xs md:flex md:w-80",
