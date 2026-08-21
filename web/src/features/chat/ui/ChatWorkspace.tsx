@@ -25,14 +25,10 @@ import {
 	Users,
 	X,
 } from "lucide-react";
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
-import { ChatAvatar } from "./ChatAvatar";
-import { ChatContactSkeleton } from "./ChatContactSkeleton";
-import { useChatSelection } from "../hooks/useChatSelection";
-import { NewConversationForm } from "./NewConversationForm";
 import {
 	useChatContacts,
 	useChatConversations,
@@ -49,6 +45,7 @@ import {
 	useSetChatMuted,
 } from "../api/queries";
 import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
+import { useChatSelection } from "../hooks/useChatSelection";
 import { useChatStream } from "../hooks/useChatStream";
 import type {
 	ChatConversation,
@@ -57,6 +54,9 @@ import type {
 	ChatMessage,
 	ChatUser,
 } from "../model/types";
+import { ChatAvatar } from "./ChatAvatar";
+import { ChatContactSkeleton } from "./ChatContactSkeleton";
+import { NewConversationForm } from "./NewConversationForm";
 
 /** 聊天工作区：会话索引、消息流、房间成员抽屉与富文本 composer。 */
 export function ChatWorkspace() {
@@ -83,7 +83,7 @@ export function ChatWorkspace() {
 	}, [clearSelection, conversationsLoading, selected, selectedID]);
 
 	return (
-		<div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-7xl overflow-hidden border-x border-edge-hairline bg-background shadow-xl">
+		<div className="flex h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background">
 			<aside
 				className={cn(
 					"flex w-full shrink-0 flex-col border-r border-edge-hairline bg-background/50 backdrop-blur-xs md:flex md:w-80",
