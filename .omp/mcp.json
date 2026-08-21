@@ -58,6 +58,12 @@
       "headers": {
         "Authorization": "Bearer ${VIOLET_MCP_PAT}"
       }
+    },
+    "shadcn": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"],
+      "cwd": "web"
     }
   }
 }
