@@ -39,9 +39,8 @@ export function EmotionGridItem({ def, active, onSelect }: EmotionGridItemProps)
 			onBlur={() => mascotRef.current?.stop()}
 			aria-pressed={active}
 			className={cn(
-				"group relative flex min-h-28 cursor-pointer flex-col items-center justify-end bg-[#f8f9f5] p-2.5 text-center text-[#11110f] transition-[background-color,box-shadow,transform] duration-200 hover:bg-[#eceee9] active:translate-y-px focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset",
-				active &&
-					"bg-[#ebe7e0] shadow-[inset_3px_0_0_var(--mascot-accent)] hover:bg-[#ebe7e0]",
+				"group relative flex min-h-28 cursor-pointer flex-col items-center justify-end bg-[#f8f9f5] p-2.5 text-center text-[#11110f] transition-colors duration-200 hover:bg-[#eceee9] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent)",
+				active && "bg-[#ebe7e0] hover:bg-[#ebe7e0]",
 			)}
 		>
 			{active ? (
