@@ -46,7 +46,7 @@ export const LABS = [
 	{
 		to: "/lab/mascot",
 		en: "Mascot",
-		title: "堇喵动作室",
+		title: "吉祥物形象实验室",
 		description: "选状态、做动作、测反应，38 套表情与完整导演控制都围在角色身边。",
 		meta: "表情 ×38",
 	},

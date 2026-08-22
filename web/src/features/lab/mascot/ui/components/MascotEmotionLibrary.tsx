@@ -40,7 +40,7 @@ export function MascotEmotionLibrary({
 
 	return (
 		<aside className="order-2 flex min-h-0 flex-col border-2 border-[#11110f] bg-[#f8f9f5] lg:order-1 lg:h-147">
-			<header className="border-b-2 border-[#11110f] p-3">
+			<header className="p-3 pb-4">
 				<div className="flex items-end justify-between gap-3">
 					<div>
 						<p className="font-mono text-[10px] font-semibold tracking-[0.16em] text-[#11110f]/55">
@@ -53,17 +53,17 @@ export function MascotEmotionLibrary({
 					</p>
 				</div>
 
-				<div className="mt-3 grid grid-cols-4 border border-[#11110f]">
-					{GROUP_FILTERS.map((filter, index) => (
+				<div className="mt-3 flex flex-wrap gap-1">
+					{GROUP_FILTERS.map((filter) => (
 						<button
 							key={filter.value}
 							type="button"
 							onClick={() => onSelectGroup(filter.value)}
 							aria-pressed={group === filter.value}
-							className={`h-8 cursor-pointer border-[#11110f] text-[11px] font-semibold transition-[background-color,box-shadow] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset ${index > 0 ? "border-l" : ""} ${
+							className={`inline-flex h-8 cursor-pointer items-center justify-center rounded-full px-3 text-[11px] font-semibold transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) ${
 								group === filter.value
-									? "bg-[#e9e5de] text-[#11110f] shadow-[inset_0_-2px_0_var(--mascot-accent)]"
-									: "bg-transparent text-[#11110f] hover:bg-[#eceee9]"
+									? "bg-[#11110f] text-white"
+									: "text-[#11110f]/55 hover:bg-[#eceee9] hover:text-[#11110f]"
 							}`}
 						>
 							{filter.label}
@@ -71,7 +71,7 @@ export function MascotEmotionLibrary({
 					))}
 				</div>
 
-				<label className="relative mt-2 block">
+				<label className="relative mt-2 block rounded-md bg-[#eceee9] transition-[background-color,box-shadow] focus-within:bg-white focus-within:ring-1 focus-within:ring-(--mascot-accent)">
 					<Search
 						aria-hidden
 						className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
@@ -81,14 +81,14 @@ export function MascotEmotionLibrary({
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
 						placeholder="搜索表情、状态或编号"
-						className="h-9 w-full border border-[#11110f] bg-white pr-9 pl-8 text-xs text-[#11110f] outline-none placeholder:text-[#11110f]/40 focus:border-(--mascot-accent) focus:ring-1 focus:ring-(--mascot-accent)"
+						className="h-9 w-full border-0 bg-transparent pr-9 pl-8 text-xs text-[#11110f] outline-none placeholder:text-[#11110f]/40 focus:ring-0"
 					/>
 					{query ? (
 						<button
 							type="button"
 							onClick={() => setQuery("")}
 							aria-label="清空搜索"
-							className="absolute top-1/2 right-1.5 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center transition-colors hover:bg-[#eceee9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset"
+							className="absolute top-1/2 right-1.5 inline-flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center transition-colors hover:bg-[#dfe2dd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent)"
 						>
 							<X className="size-3.5" />
 						</button>

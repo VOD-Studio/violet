@@ -56,7 +56,7 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 
 	return (
 		<section className="mt-8 border-2 border-[#11110f] bg-[#f8f9f5]">
-			<header className="grid gap-5 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(16rem,0.7fr)] sm:items-end lg:p-6">
+			<header className="flex flex-wrap items-end justify-between gap-5 p-5 lg:p-6">
 				<div>
 					<p className="font-mono text-[10px] font-semibold tracking-[0.16em] text-[#11110f]/50">
 						Developer handoff
@@ -65,15 +65,9 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 						接到你的界面里
 					</h2>
 				</div>
-				<div>
-					<p className="max-w-100 text-sm leading-relaxed text-[#11110f]/65">
-						AI 只需发送表情 ID
-						与一句提示。未知状态会回到待机，当前选择会直接写入下面的示例。
-					</p>
-					<p className="mt-3 inline-flex items-center gap-2 text-xs font-bold">
-						当前状态 {pinnedDef.id} / {pinnedDef.en}
-						<MoveRight className="size-3.5" />
-					</p>
+				<div className="flex items-center gap-2 pb-1 text-xs font-bold">
+					当前状态 {pinnedDef.id} / {pinnedDef.en}
+					<MoveRight className="size-3.5" />
 				</div>
 			</header>
 

@@ -38,12 +38,11 @@ function StageActionButton({ label, description, icon, onClick, active }: StageA
 			onClick={onClick}
 			aria-pressed={active}
 			className={cn(
-				"cursor-pointer border border-[#11110f] text-[#11110f] transition-[background-color,box-shadow,transform] duration-200 hover:bg-[#eceee9] active:translate-y-px focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset",
+				"cursor-pointer text-[#11110f] transition-colors duration-200 hover:bg-[#eceee9] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent)",
 				isEffect
 					? "flex min-h-12 flex-col items-start justify-center bg-[#f8f9f5] px-2 py-1.5 text-left"
 					: "flex min-h-12 flex-col items-center justify-center gap-1 bg-white p-1 text-center",
-				active &&
-					"bg-[#ebe7e0] text-(--mascot-accent) shadow-[inset_3px_0_0_var(--mascot-accent)] hover:bg-[#ebe7e0]",
+				active && "bg-[#ebe7e0] text-(--mascot-accent) hover:bg-[#ebe7e0]",
 			)}
 		>
 			<span className={cn("flex items-center", isEffect ? "gap-1.5" : "flex-col gap-1")}>
@@ -244,9 +243,8 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 				</div>
 				<div
 					className={cn(
-						"flex min-h-0 flex-1 flex-col border border-[#11110f] bg-white focus-within:ring-2 focus-within:ring-(--mascot-accent) focus-within:ring-inset",
-						protocolError &&
-							"border-(--mascot-accent) outline-1 outline-(--mascot-accent)",
+						"flex min-h-0 flex-1 flex-col bg-[#eceee9] transition-colors focus-within:bg-white",
+						protocolError && "bg-[#f7e6e1]",
 					)}
 				>
 					<textarea
@@ -259,14 +257,19 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 						placeholder={`{\n  "emotionId": "${def.id}",\n  "tips": "喵~"\n}`}
 						className="min-h-17 flex-1 resize-none bg-transparent p-2 font-mono text-[10px] leading-relaxed text-[#11110f] outline-none placeholder:text-[#11110f]/30"
 					/>
-					<div className="flex min-h-8 items-center justify-between gap-2 border-t border-[#11110f] pl-2">
-						<p className="truncate font-mono text-[8px] text-[#11110f]/55">
+					<div className="flex min-h-8 items-center justify-between gap-2 px-2 pb-2">
+						<p
+							className={cn(
+								"truncate font-mono text-[8px] text-[#11110f]/55",
+								protocolError && "text-(--mascot-accent)",
+							)}
+						>
 							{protocolError ?? "JSON protocol"}
 						</p>
 						<button
 							type="button"
 							onClick={sendJson}
-							className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 border-l border-[#11110f] bg-[#11110f] px-3 text-[10px] font-bold text-white transition-colors hover:bg-[#30312e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset"
+							className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[#11110f] px-3 text-[10px] font-bold text-white transition-colors hover:bg-[#30312e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent)"
 						>
 							<Send className="size-3" />
 							发送
