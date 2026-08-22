@@ -1,46 +1,57 @@
 import { EMOTION_MAP, EMOTIONS, type EmotionDef } from "@violet/mascot";
 import { useEffect, useRef, useState } from "react";
 
-/** 分组标题:目录分段器与舞台 HUD 状态签共用此单源。 */
+export type MascotGroupFilter = EmotionDef["group"] | "all";
+
+/** 分组标题，供状态库与舞台状态标签共用。 */
 export const GROUP_LABEL: Record<EmotionDef["group"], string> = {
 	lifecycle: "猫猫日常",
 	emotion: "喜怒哀乐",
 	agent: "工作模式",
 };
 
-/** 台词:来自表情 desc 或 AI 消息 tips,带代际计数——新一轮台词到达时重挂气泡重播动画。 */
+/** 新台词抵达时递增 gen，让气泡重新播放入场动画。 */
 export interface BubbleLine {
 	text: string;
 	gen: number;
 }
 
-/**
- * 吉祥物实验室的展馆状态机:固定选中 + 巡演 + 台词代际。
- *
- * 手动点选结束巡演并同步分组;台词随表情切换推陈。
- */
-export function useMascotExhibit() {
+/** 吉祥物展馆提供给工作台的状态与动作。 */
+export interface MascotExhibitState {
+	def: EmotionDef;
+	pinnedDef: EmotionDef;
+	group: MascotGroupFilter;
+	groupList: EmotionDef[];
+	selectGroup: (group: MascotGroupFilter) => void;
+	isTouring: boolean;
+	toggleTour: () => void;
+	replay: () => void;
+	bubble: BubbleLine;
+	selectEmotion: (id: string) => void;
+	applyAIMessage: (emotionId: string, tips?: string) => void;
+}
+
+/** 管理固定状态、分组筛选、自动巡演与台词代际。 */
+export function useMascotExhibit(): MascotExhibitState {
 	const [pinnedId, setPinnedId] = useState("08");
-	const [group, setGroup] = useState<EmotionDef["group"]>("emotion");
+	const [group, setGroup] = useState<MascotGroupFilter>("all");
 	const [isTouring, setIsTouring] = useState(false);
 	const [bubble, setBubble] = useState<BubbleLine>(() => ({
 		text: (EMOTION_MAP.get("08") ?? EMOTIONS[0]).desc,
 		gen: 0,
 	}));
 	const tourTimerRef = useRef<number | undefined>(undefined);
-	const genRef = useRef(0);
-
-	const emotionId = pinnedId;
-	const def = EMOTION_MAP.get(emotionId) ?? EMOTIONS[0];
-	const pinnedDef = EMOTION_MAP.get(pinnedId) ?? EMOTIONS[0];
-	const groupList = EMOTIONS.filter((e) => e.group === group);
-
-	/** AI 消息携带的台词:def.id 副作用检测到它时跳过默认 desc,避免覆盖 tips */
+	const generationRef = useRef(0);
 	const aiTipsRef = useRef<string | null>(null);
 
+	const pinnedDef = EMOTION_MAP.get(pinnedId) ?? EMOTIONS[0];
+	const def = pinnedDef;
+	const groupList =
+		group === "all" ? EMOTIONS : EMOTIONS.filter((emotion) => emotion.group === group);
+
 	const pushBubble = (text: string) => {
-		genRef.current += 1;
-		setBubble({ text, gen: genRef.current });
+		generationRef.current += 1;
+		setBubble({ text, gen: generationRef.current });
 	};
 
 	const stopTour = () => {
@@ -56,15 +67,16 @@ export function useMascotExhibit() {
 		}
 		setIsTouring(true);
 		tourTimerRef.current = window.setInterval(() => {
-			setPinnedId((prev) => {
-				const curIdx = EMOTIONS.findIndex((e) => e.id === prev);
-				return EMOTIONS[(curIdx + 1) % EMOTIONS.length].id;
+			setPinnedId((previousId) => {
+				const currentIndex = EMOTIONS.findIndex((emotion) => emotion.id === previousId);
+				const next = EMOTIONS[(currentIndex + 1) % EMOTIONS.length];
+				setGroup((currentGroup) => (currentGroup === "all" ? currentGroup : next.group));
+				return next.id;
 			});
 		}, 3200);
 	};
 
-	// 表情切换推默认台词;AI 消息路径先落 tips 再切 id,effect 检测到 tips 让位
-	// biome-ignore lint/correctness/useExhaustiveDependencies: def.id 是触发键,desc/pushBubble 随 id 走
+	// biome-ignore lint/correctness/useExhaustiveDependencies: def.id 是台词切换的唯一触发键
 	useEffect(() => {
 		if (aiTipsRef.current !== null) {
 			const tips = aiTipsRef.current;
@@ -76,43 +88,39 @@ export function useMascotExhibit() {
 	}, [def.id]);
 
 	useEffect(() => {
-		return () => {
-			clearInterval(tourTimerRef.current);
-		};
+		return () => clearInterval(tourTimerRef.current);
 	}, []);
 
-	/** 手动点选:固定 + 带回所属分组 + 结束巡演 */
 	const selectEmotion = (id: string) => {
 		setPinnedId(id);
-		const g = EMOTION_MAP.get(id)?.group;
-		if (g) setGroup(g);
+		const nextGroup = EMOTION_MAP.get(id)?.group;
+		if (nextGroup) {
+			setGroup((currentGroup) => (currentGroup === "all" ? currentGroup : nextGroup));
+		}
 		if (isTouring) stopTour();
 	};
 
-	/** AI 消息落定:固定选中 + 台词覆盖 + 结束巡演(tips 经 aiTipsRef 传递,防被 desc 副作用覆盖) */
 	const applyAIMessage = (emotionId: string, tips?: string) => {
-		aiTipsRef.current = tips !== undefined ? tips : null;
-		selectEmotion(emotionId);
-		if (tips !== undefined) pushBubble(tips);
-	};
-
-	/** 重播当前表情动画与台词气泡 */
-	const replay = () => {
-		pushBubble(def.desc);
+		const nextDef = EMOTION_MAP.get(emotionId) ?? EMOTIONS[0];
+		const isSameEmotion = nextDef.id === pinnedId;
+		aiTipsRef.current = tips ?? null;
+		selectEmotion(nextDef.id);
+		if (isSameEmotion) {
+			aiTipsRef.current = null;
+			pushBubble(tips ?? nextDef.desc);
+		}
 	};
 
 	return {
-		emotionId,
 		def,
 		pinnedDef,
 		group,
 		groupList,
-		setGroup,
+		selectGroup: setGroup,
 		isTouring,
 		toggleTour,
-		replay,
+		replay: () => pushBubble(def.desc),
 		bubble,
-		pushBubble,
 		selectEmotion,
 		applyAIMessage,
 	};

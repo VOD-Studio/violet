@@ -2,115 +2,47 @@ import type { EmotionDef } from "@violet/mascot";
 import { resolveEmotionId } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
 import { MascotStage } from "@violet/mascot/react";
-import {
-	Hand,
-	Heart,
-	PartyPopper,
-	Pause,
-	Play,
-	Rocket,
-	RotateCcw,
-	RotateCw,
-	Send,
-	Sparkles,
-	Terminal,
-	WandSparkles,
-	Zap,
-} from "lucide-react";
-import type { PointerEvent as ReactPointerEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { Pause, Play, RotateCcw } from "lucide-react";
+import { type PointerEvent as ReactPointerEvent, useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStatus } from "../hooks/useAgentStatus";
 import { GROUP_LABEL } from "../hooks/useMascotExhibit";
+import { MascotDirectorPanel } from "./MascotDirectorPanel";
 
 interface EmotionBubbleProps {
 	text: string;
 	gen: number;
 }
 
-/** 对白气泡:gen 变化重挂重播,台词寿命由 keyframes 一轮走完。 */
+const FOOTLIGHTS = ["1", "2", "3", "4", "5", "6", "7"];
+
+/** 当前台词，固定在角色斜上方并随新消息重新入场。 */
 function EmotionBubble({ text, gen }: EmotionBubbleProps) {
 	return (
 		<div
 			key={gen}
-			className="animate-[mascot-bubble_4.5s_ease-in-out_forwards] motion-reduce:animate-none absolute top-3.5 right-4 z-10 w-38 rounded-xl bg-[#fffaee] px-3 py-2 text-left text-[11px] leading-snug font-medium text-[#3b3358] shadow-lg shadow-[#4a3814]/45 ring-1 ring-[#ffe9bd]/60 sm:top-5 sm:right-6 sm:w-44"
+			className="absolute top-[18%] right-[17%] z-30 w-40 animate-[mascot-bubble_4.5s_ease-in-out_forwards] rounded-lg border border-[#8c765f]/55 bg-[#fff9ec] px-3 py-2 text-left text-[11px] leading-snug font-semibold text-[#352820] shadow-[0_10px_28px_rgba(16,10,8,0.34)] motion-reduce:animate-none sm:w-48"
 		>
 			<span
 				aria-hidden
-				className="absolute bottom-0 left-3 size-2 translate-y-1/2 rotate-45 bg-[#fffaee]"
+				className="absolute -bottom-1.5 left-5 size-3 rotate-45 border-r border-b border-[#8c765f]/55 bg-[#fff9ec]"
 			/>
 			{text}
 		</div>
 	);
 }
 
-interface StageAction {
-	label: string;
-	description?: string;
-	icon: React.ReactNode;
-	onClick: () => void;
-	active?: boolean;
-}
-
-/**
- * 舞台按钮:基础动作保持横向紧凑,独立特效展示名称与语义短句。
- */
-function StageButton({ label, description, icon, onClick, active }: StageAction) {
-	const isEffect = description !== undefined;
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			aria-pressed={isEffect ? active : undefined}
-			className={cn(
-				"group cursor-pointer font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-				isEffect
-					? cn(
-							"flex min-h-18 flex-col items-start justify-between rounded-xl border p-2.5 text-left",
-							active
-								? "border-amber-100/25 bg-amber-100/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
-								: "border-white/8 bg-black/15",
-						)
-					: "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-xs",
-			)}
-		>
-			<span className={cn("flex items-center", isEffect ? "gap-2" : "gap-1.5")}>
-				<span
-					className={cn(
-						"inline-flex shrink-0 items-center justify-center text-white/70 transition-colors group-hover:text-amber-100",
-						isEffect ? "size-6 rounded-lg bg-white/8" : "size-4",
-					)}
-				>
-					{icon}
-				</span>
-				<span className={isEffect ? "text-xs text-white/90" : undefined}>{label}</span>
-			</span>
-			{description ? (
-				<span className="pl-8 text-[10px] leading-none text-white/35">{description}</span>
-			) : null}
-		</button>
-	);
-}
-/** 光束微尘:left/top 定位与节奏错开,光柱里有没有介质飘浮决定像不像真光 */
-const DUST_MOTES = [
-	{ key: "l", left: "46.5%", top: "38%", duration: "9s", delay: "0s" },
-	{ key: "c", left: "51%", top: "58%", duration: "11s", delay: "-5s" },
-	{ key: "r", left: "54%", top: "26%", duration: "8s", delay: "-2.5s" },
-];
-
+/** 主舞台接收当前状态，并把播放与 AI 消息事件回传给展馆状态机。 */
 export interface MascotTheaterProps {
 	def: EmotionDef;
 	bubble: EmotionBubbleProps;
 	isTouring: boolean;
 	onToggleTour: () => void;
 	onReplay: () => void;
-	/** AI 消息落定:同步固定选中与台词(由 handleAIMessage 解析后回调) */
-	onAIMessage: (msg: { emotionId: string; tips?: string }) => void;
+	onAIMessage: (emotionId: string, tips?: string) => void;
 }
-/**
- * 聚光舞台与导演台:舞台、控制面板、协议区分为独立卡片,
- * 舞台只承载角色与视线交互,控制区不覆盖舞台。
- */
+
+/** 角色舞台与导演控制台，所有高频操作始终围绕角色排布。 */
 export function MascotTheater({
 	def,
 	bubble,
@@ -119,395 +51,167 @@ export function MascotTheater({
 	onReplay,
 	onAIMessage,
 }: MascotTheaterProps) {
-	const heroRef = useRef<MascotHandle>(null);
+	const mascotRef = useRef<MascotHandle>(null);
 	const stageRef = useRef<HTMLDivElement>(null);
-	const jsonInputRef = useRef<HTMLTextAreaElement>(null);
-	const agentMsg = useAgentStatus();
-	const agentEmotion = agentMsg ? resolveEmotionId(agentMsg) : null;
+	const agentMessage = useAgentStatus();
+	const agentEmotion = agentMessage ? resolveEmotionId(agentMessage) : null;
 
-	// 视线跟随:仅指针在舞台场景区内时跟随,位置归一化为 [-1, 1],带 2.4 倍增益提前触及边缘;
-	// 离开舞台(进入控制区或卡片外)视线回中
-	const onStageMove = (e: ReactPointerEvent) => {
+	const handleStageMove = (event: ReactPointerEvent) => {
 		const rect = stageRef.current?.getBoundingClientRect();
 		if (!rect) return;
-		const nx = Math.max(
+		const gazeX = Math.max(
 			-1,
-			Math.min(1, ((e.clientX - rect.left - rect.width / 2) / rect.width) * 2.4),
+			Math.min(1, ((event.clientX - rect.left - rect.width / 2) / rect.width) * 2.4),
 		);
-		const ny = Math.max(
+		const gazeY = Math.max(
 			-1,
-			Math.min(1, ((e.clientY - rect.top - rect.height / 2) / rect.height) * 2.4),
+			Math.min(1, ((event.clientY - rect.top - rect.height / 2) / rect.height) * 2.4),
 		);
-		heroRef.current?.setGaze(nx, ny);
+		mascotRef.current?.setGaze(gazeX, gazeY);
 	};
 
-	const onStageLeave = () => heroRef.current?.setGaze(0, 0);
-	const [devYaw, setDevYaw] = useState(0);
-	const [magicPersistent, setMagicPersistent] = useState(false);
-	const antics: StageAction[] = [
-		{
-			label: "摸头",
-			icon: <Hand className="size-3.5" />,
-			onClick: () => heroRef.current?.pet(),
-		},
-		{
-			label: "转圈",
-			icon: <RotateCw className="size-3.5" />,
-			onClick: () => heroRef.current?.spin(),
-		},
-		{
-			label: "撒花",
-			icon: <Sparkles className="size-3.5" />,
-			onClick: () => heroRef.current?.burst(25),
-		},
-		{
-			label: "弹跳",
-			icon: <Zap className="size-3.5" />,
-			onClick: () => heroRef.current?.bounce(),
-		},
-	];
-
-	const effects: StageAction[] = [
-		{
-			label: magicPersistent ? "收起阵" : "魔法阵",
-			description: magicPersistent ? "常驻地面" : "脚下召唤",
-			icon: <WandSparkles className="size-3.5" />,
-			active: magicPersistent,
-			onClick: () => {
-				const next = !magicPersistent;
-				setMagicPersistent(next);
-				heroRef.current?.setMagicPersistent(next, {
-					size: 1.04,
-					intensity: 0.84,
-					speed: 0.32,
-				});
-			},
-		},
-		{
-			label: "彩带",
-			description: "轻薄流线",
-			icon: <Sparkles className="size-3.5" />,
-			onClick: () => heroRef.current?.streamers(),
-		},
-		{
-			label: "流星",
-			description: "许愿掠过",
-			icon: <Rocket className="size-3.5" />,
-			onClick: () => heroRef.current?.meteors(),
-		},
-		{
-			label: "烟花",
-			description: "高空绽放",
-			icon: <PartyPopper className="size-3.5" />,
-			onClick: () => heroRef.current?.fireworks(),
-		},
-		{
-			label: "爱心雨",
-			description: "甜蜜落下",
-			icon: <Heart className="size-3.5" />,
-			onClick: () => heroRef.current?.hearts(),
-		},
-		{
-			label: "闪耀",
-			description: "聚光登场",
-			icon: <Sparkles className="size-3.5" />,
-			onClick: () => heroRef.current?.spotlight(),
-		},
-	];
-
-	// 偏航滑条:手动逐度检查旋转渲染(0/360=正面,180=背面)
-	useEffect(() => {
-		heroRef.current?.setDevYaw(devYaw);
-	}, [devYaw]);
-
-	const sendJson = () => {
-		const raw = jsonInputRef.current?.value.trim();
-		if (!raw) return;
-		try {
-			const msg = JSON.parse(raw);
-			const result = heroRef.current?.handleAIMessage(msg);
-			if (result) onAIMessage(result);
-			jsonInputRef.current?.removeAttribute("aria-invalid");
-		} catch {
-			jsonInputRef.current?.setAttribute("aria-invalid", "true");
-		}
+	const replay = () => {
+		mascotRef.current?.setEmotion(def.id);
+		onReplay();
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
-			sendJson();
-		}
-	};
 	return (
-		<div className="space-y-4">
-			<section className="overflow-hidden rounded-2xl bg-[#131715] shadow-2xl shadow-black/30 ring-1 ring-white/10">
-				<header className="flex min-h-18 items-center justify-between gap-4 border-b border-white/8 bg-[rgba(20,25,22,0.72)] px-5 py-3 text-left sm:px-6">
-					<div className="min-w-0">
-						<div className="flex items-center gap-2">
-							<h2 className="truncate text-lg font-bold leading-none tracking-tight text-white sm:text-xl">
-								{def.name}
-							</h2>
-							<span className="shrink-0 rounded-full border border-white/10 bg-white/6 px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-white/50">
-								{def.en}
-							</span>
+		<div className="order-1 grid min-w-0 gap-4 lg:order-2 lg:grid-cols-[minmax(0,1fr)_17rem]">
+			<section className="flex min-w-0 flex-col border-2 border-[#11110f] bg-[#f8f9f5] lg:h-147">
+				<header className="flex h-17 shrink-0 items-center justify-between gap-3 border-b-2 border-[#11110f] px-3 sm:px-4">
+					<div className="flex min-w-0 items-center gap-2.5">
+						<span aria-hidden className="size-2 shrink-0 bg-(--mascot-accent)" />
+						<div className="min-w-0">
+							<div className="flex items-baseline gap-2">
+								<h2
+									data-stage-emotion={def.id}
+									className="truncate text-lg font-black tracking-[-0.04em] sm:text-xl"
+								>
+									{def.name}
+								</h2>
+								<span className="shrink-0 font-mono text-[9px] text-[#11110f]/45">
+									{def.id} / {def.en}
+								</span>
+							</div>
+							<p className="mt-0.5 truncate text-[10px] text-[#11110f]/55">
+								{def.desc}
+							</p>
 						</div>
-						<p className="mt-1 truncate text-xs leading-none text-white/45">
-							{def.desc}
-						</p>
 					</div>
 
-					<div className="inline-flex shrink-0 items-center rounded-full border border-white/10 bg-white/4 p-0.5 shadow-xs backdrop-blur-md">
+					<div className="flex shrink-0 border border-[#11110f] bg-white">
 						<button
 							type="button"
-							onClick={() => {
-								heroRef.current?.setEmotion(def.id);
-								onReplay();
-							}}
-							className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+							onClick={replay}
+							className="inline-flex h-8 cursor-pointer items-center gap-1.5 px-2.5 text-[10px] font-bold transition-colors hover:bg-[#eceee9] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset"
 							title="重播当前表情动画与对白"
 						>
 							<RotateCcw className="size-3" />
-							<span>重播</span>
+							重播
 						</button>
-						<div className="h-3 w-px bg-white/10" aria-hidden />
 						<button
 							type="button"
 							onClick={onToggleTour}
 							aria-pressed={isTouring}
 							className={cn(
-								"inline-flex h-7 cursor-pointer items-center gap-1 rounded-full px-2.5 font-mono text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+								"inline-flex h-8 cursor-pointer items-center gap-1.5 border-l border-[#11110f] px-2.5 text-[10px] font-bold transition-[background-color,box-shadow] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset",
 								isTouring
-									? "bg-white/15 text-white shadow-xs shadow-black/20 ring-1 ring-white/25 ring-inset"
-									: "text-white/70 hover:bg-white/10 hover:text-white",
+									? "bg-[#e9e5de] shadow-[inset_0_-2px_0_var(--mascot-accent)]"
+									: "hover:bg-[#eceee9]",
 							)}
 							title={isTouring ? "暂停自动巡演" : "开始自动巡演"}
 						>
 							{isTouring ? <Pause className="size-3" /> : <Play className="size-3" />}
-							<span>巡演</span>
+							巡演
 						</button>
 					</div>
 				</header>
-				{/* 舞台场景区:猫是唯一交互主体,布景层全部 pointer-events-none;指针仅在此区内驱动视线 */}
+
 				<div
 					ref={stageRef}
-					onPointerMove={onStageMove}
-					onPointerLeave={onStageLeave}
-					className="relative h-72 overflow-hidden bg-[#0f1412] sm:h-88 lg:h-120"
+					onPointerMove={handleStageMove}
+					onPointerLeave={() => mascotRef.current?.setGaze(0, 0)}
+					className="relative h-104 min-h-0 overflow-hidden bg-[#130f0e] sm:h-120 lg:h-auto lg:flex-1"
 				>
-					{/* 后墙环境柔光:透明冷灰把角色从暗部托起,不再依赖紫色底。 */}
 					<div
 						aria-hidden
-						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgba(122,157,143,0.14),transparent_72%)]"
-					/>
-					{/* 台面地板:受光地界比后墙略亮 */}
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-x-0 bottom-0 h-38 bg-linear-to-b from-transparent via-[rgba(112,145,129,0.08)] to-[rgba(112,145,129,0.14)]"
-					/>
-					{/* 两侧台翼暗化:舞台进深 */}
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-y-0 left-0 w-[15%] bg-linear-to-r from-[rgba(5,9,7,0.62)] to-transparent"
+						className="absolute inset-x-[8%] top-[8%] bottom-[12%] bg-[radial-gradient(ellipse_70%_70%_at_50%_42%,#292322_0%,#171313_58%,#0d0a0a_100%)]"
 					/>
 					<div
 						aria-hidden
-						className="pointer-events-none absolute inset-y-0 right-0 w-[15%] bg-linear-to-l from-[rgba(5,9,7,0.62)] to-transparent"
-					/>
-					{/* 顶光光束:光源悬在舞台上方,conic 楔形两侧各 18° 半影衰减,近台面渐隐 */}
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-0 bg-[conic-gradient(at_50%_-22%,transparent_43.5%,rgba(255,243,209,0.2)_48.5%_51.5%,transparent_56.5%)] mask-[linear-gradient(to_bottom,#000_0%,#000_55%,transparent_92%)]"
-					/>
-					{/* 灯具源光:顶部一簇热核 */}
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-[radial-gradient(ellipse_30%_62%_at_50%_0%,rgba(255,247,224,0.33),rgba(255,247,224,0.1)_45%,transparent_70%)]"
-					/>
-					{/* 台面光斑:热核 + 柔边两层,中心正对猫脚 */}
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_46%_20%_at_50%_86%,rgba(255,242,205,0.24),rgba(255,242,205,0.08)_52%,transparent_74%)]"
+						className="absolute inset-x-[8%] top-[8%] bottom-[12%] bg-[conic-gradient(at_50%_-14%,transparent_43%,rgba(255,242,205,0.11)_46%,rgba(255,246,221,0.3)_50%,rgba(255,242,205,0.11)_54%,transparent_57%)] mask-[linear-gradient(to_bottom,#000_0%,#000_70%,transparent_98%)]"
 					/>
 					<div
 						aria-hidden
-						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_24%_9%_at_50%_87%,rgba(255,246,222,0.4),transparent_72%)]"
+						className="absolute right-[8%] bottom-[12%] left-[8%] h-[29%] bg-[linear-gradient(to_bottom,#4a3429_0%,#2d1e19_56%,#17100e_100%)]"
 					/>
-					{/* 台口溢光:漫过舞台前沿被裁掉,光"到边外去"的边界感 */}
 					<div
 						aria-hidden
-						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_64%_24%_at_50%_106%,rgba(255,240,200,0.12),transparent_68%)]"
+						className="absolute right-[8%] bottom-[12%] left-[8%] h-[29%] bg-[repeating-linear-gradient(90deg,transparent_0,transparent_calc(12.5%_-_1px),rgba(255,226,190,0.08)_calc(12.5%_-_1px),rgba(255,226,190,0.08)_12.5%)]"
 					/>
-					{/* 台口沿:中央亮的发丝线 */}
 					<div
 						aria-hidden
-						className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-linear-to-r from-transparent via-[rgba(255,242,205,0.28)] to-transparent"
+						className="absolute inset-0 bg-[radial-gradient(ellipse_34%_15%_at_50%_80%,rgba(255,234,191,0.35),rgba(255,222,166,0.08)_56%,transparent_76%)]"
 					/>
-					{/* 舞台暗角:只收舞台四角,不碰导演台 */}
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_88%_78%_at_50%_42%,transparent_56%,rgba(3,7,5,0.52)_100%)]"
-					/>
-					{DUST_MOTES.map((d) => (
-						<span
-							key={d.key}
-							aria-hidden
-							style={{
-								left: d.left,
-								top: d.top,
-								animationDuration: d.duration,
-								animationDelay: d.delay,
-							}}
-							className="animate-[mascot-dust_linear_infinite] motion-reduce:hidden absolute size-1 rounded-full bg-[#ffedbe]/60"
-						/>
-					))}
 
-					{/* 舞台顶栏 HUD: 左侧状态小签 + 右侧播放/巡演控制器 */}
-					<p className="absolute inset-x-0 top-3.5 z-10 flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.2em] text-white/40 uppercase">
-						{GROUP_LABEL[def.group]}
-						<span aria-hidden className="text-white/20">
-							·
-						</span>
-						#{def.id}
-						{agentMsg && (
-							<>
-								<span aria-hidden className="text-white/20">
-									·
-								</span>
-								<span
-									data-agent-state={agentMsg.state}
-									className="text-amber-200/70"
-								>
-									{agentMsg.agent} {agentMsg.state}
-								</span>
-							</>
-						)}
+					<div
+						aria-hidden
+						className="absolute top-[8%] bottom-[12%] left-[8%] z-20 w-[18%] bg-[repeating-linear-gradient(90deg,#40141a_0%,#7b2731_18%,#4d171f_40%,#8a2d37_62%,#45141b_82%)] [clip-path:polygon(0_0,100%_0,70%_100%,0_100%)] shadow-[8px_0_24px_rgba(0,0,0,0.45)]"
+					/>
+					<div
+						aria-hidden
+						className="absolute top-[8%] right-[8%] bottom-[12%] z-20 w-[18%] bg-[repeating-linear-gradient(90deg,#45141b_0%,#8a2d37_18%,#4d171f_40%,#7b2731_62%,#40141a_82%)] [clip-path:polygon(0_0,100%_0,100%_100%,30%_100%)] shadow-[-8px_0_24px_rgba(0,0,0,0.45)]"
+					/>
+					<div
+						aria-hidden
+						className="absolute top-[8%] right-[8%] left-[8%] z-20 h-[15%] bg-[repeating-linear-gradient(90deg,#4a151c_0%,#8a2d37_11%,#511820_22%)] [clip-path:polygon(0_0,100%_0,100%_72%,76%_82%,50%_67%,24%_82%,0_72%)] shadow-[0_8px_20px_rgba(0,0,0,0.42)]"
+					/>
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-x-[6.5%] top-[5.5%] bottom-[9.5%] z-30 border-[6px] border-[#5f422c] shadow-[inset_0_0_0_2px_#98744a,0_10px_28px_rgba(0,0,0,0.38)]"
+					/>
+
+					<div
+						aria-hidden
+						className="absolute bottom-[14%] left-1/2 z-20 flex -translate-x-1/2 gap-3"
+					>
+						{FOOTLIGHTS.map((light) => (
+							<span
+								key={light}
+								className="size-1.5 rounded-full bg-[#ffe9b5] shadow-[0_0_8px_3px_rgba(255,222,151,0.35)]"
+							/>
+						))}
+					</div>
+
+					<div className="absolute top-[15%] left-[18%] z-30 bg-black/55 px-2 py-1 font-mono text-[9px] font-semibold text-white/75 backdrop-blur-sm">
 						<span
+							className="mr-1.5 inline-block size-1.5 bg-(--mascot-accent)"
 							aria-hidden
-							className="size-1 animate-pulse rounded-full bg-emerald-400/80"
 						/>
+						{agentMessage
+							? `${agentMessage.agent} / ${agentMessage.state}`
+							: "Local preview"}
+					</div>
+					<p className="absolute bottom-[7%] left-[17%] z-30 bg-black/60 px-2 py-1 font-mono text-[9px] text-white/75">
+						{GROUP_LABEL[def.group]} / {def.id}
 					</p>
 
 					<MascotStage
-						ref={heroRef}
+						ref={mascotRef}
 						emotion={agentEmotion ?? def.id}
-						onClick={() => heroRef.current?.bounce()}
-						className="absolute bottom-[11%] left-1/2 size-52 -translate-x-1/2 cursor-pointer drop-shadow-[0_0_18px_rgba(255,240,200,0.14)] sm:size-60"
+						onClick={() => mascotRef.current?.bounce()}
+						className="absolute bottom-[13%] left-1/2 z-10 size-60 -translate-x-1/2 cursor-pointer drop-shadow-[0_18px_15px_rgba(0,0,0,0.42)] sm:size-68"
 					/>
 					<EmotionBubble text={bubble.text} gen={bubble.gen} />
 				</div>
+
+				<footer className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t-2 border-[#11110f] px-3 text-[9px] text-[#11110f]/55 sm:px-4">
+					<p>移动指针控制视线，点击角色让它弹跳</p>
+					<p className="hidden font-mono sm:block">Live SVG renderer</p>
+				</footer>
 			</section>
-			<section className="rounded-2xl border border-white/10 bg-[rgba(20,25,22,0.72)] p-4 text-left shadow-lg shadow-black/20 sm:p-5">
-				<div>
-					<div className="flex items-center justify-between px-1">
-						<div>
-							<p className="font-mono text-[10px] tracking-[0.22em] text-white/40 uppercase">
-								Director desk
-							</p>
-							<p className="mt-1 text-[10px] text-white/25">
-								动作是瞬间指令,氛围是可叠加图层
-							</p>
-						</div>
-						<span className="rounded-full bg-white/6 px-2 py-1 font-mono text-[9px] text-white/30">
-							{effects.length} effects
-						</span>
-					</div>
 
-					<div className="mt-3">
-						<p className="mb-1.5 px-1 font-mono text-[10px] tracking-wider text-white/35 uppercase">
-							角色动作
-						</p>
-						<div className="grid grid-cols-2 gap-1.5 min-[480px]:grid-cols-4">
-							{antics.map((a) => (
-								<StageButton key={a.label} {...a} />
-							))}
-						</div>
-					</div>
-
-					<div className="mt-3 border-t border-white/8 pt-3">
-						<div className="mb-1.5 flex items-center justify-between px-1">
-							<p className="font-mono text-[10px] tracking-wider text-white/35 uppercase">
-								独立特效
-							</p>
-							<span className="text-[10px] text-white/25">
-								每个按钮是一种舞台语言
-							</span>
-						</div>
-						<div className="grid grid-cols-2 gap-2 min-[480px]:grid-cols-3 lg:grid-cols-2">
-							{effects.map((a) => (
-								<StageButton key={a.label} {...a} />
-							))}
-						</div>
-					</div>
-				</div>
-
-				<div className="mt-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
-					<div className="mb-1.5 flex items-center justify-between">
-						<span className="font-mono text-[10px] tracking-[0.2em] text-white/35 uppercase">
-							Yaw / 方向
-						</span>
-						<span className="font-mono text-[11px] text-white/60 tabular-nums">
-							{devYaw}°
-						</span>
-					</div>
-					<input
-						type="range"
-						min={-360}
-						max={360}
-						step={5}
-						value={devYaw}
-						onChange={(e) => setDevYaw(+e.target.value)}
-						className="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-amber-200/80"
-						aria-label="手动偏航角，范围负360度到正360度"
-					/>
-					<div className="mt-1 flex justify-between font-mono text-[9px] text-white/25">
-						<span>-360°</span>
-						<span>0° 正面</span>
-						<span>+360°</span>
-					</div>
-				</div>
-				<div className="mt-2 flex h-3.5 items-center justify-center">
-					<p className="text-[10px] leading-none text-white/25">
-						轻触头部触发飞机耳 · 点击身体弹跳 · 移动指针视线追随
-					</p>
-				</div>
-
-				{/* AI 消息协议控制台: 多行代码编辑区 + 底部操作栏 */}
-				<div className="mt-3.5 text-left" aria-live="polite">
-					<div className="mb-1.5 flex h-4 items-center justify-between px-0.5">
-						<span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wider text-white/40 uppercase">
-							<Terminal className="size-3 text-white/60" />
-							AI 消息协议控制台
-						</span>
-						<span className="font-mono text-[10px] text-white/25">
-							Enter 发送 · Shift+Enter 换行
-						</span>
-					</div>
-					<div className="rounded-xl border border-white/10 bg-black/45 p-2 transition-[border-color,background-color,box-shadow] focus-within:border-white/25 focus-within:bg-black/65 focus-within:ring-1 focus-within:ring-white/10 has-[textarea[aria-invalid=true]]:border-red-400/50">
-						<textarea
-							ref={jsonInputRef}
-							rows={2}
-							onKeyDown={handleKeyDown}
-							spellCheck={false}
-							placeholder={`{\n  "emotionId": "${def.id}",\n  "tips": "喵~"\n}`}
-							className="code-block-scrollbar max-h-28 min-h-11 w-full resize-none bg-transparent px-1 py-0.5 font-mono text-[11px] leading-relaxed text-white/90 placeholder:text-white/25 focus:outline-none"
-						/>
-						<div className="mt-1.5 flex items-center justify-between border-t border-white/6 pt-1.5">
-							<span className="font-mono text-[10px] text-white/30">
-								JSON Protocol
-							</span>
-							<button
-								type="button"
-								onClick={sendJson}
-								className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-neutral-950 shadow-xs transition-[color,background-color,box-shadow] hover:duration-0 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-							>
-								<Send className="size-3 text-neutral-950" />
-								<span>发送</span>
-							</button>
-						</div>
-					</div>
-				</div>
-			</section>
+			<MascotDirectorPanel mascotRef={mascotRef} def={def} onAIMessage={onAIMessage} />
 		</div>
 	);
 }
