@@ -6,15 +6,12 @@ import { Pause, Play, RotateCcw } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStatus } from "../hooks/useAgentStatus";
-import { GROUP_LABEL } from "../hooks/useMascotExhibit";
 import { MascotDirectorPanel } from "./MascotDirectorPanel";
 
 interface EmotionBubbleProps {
 	text: string;
 	gen: number;
 }
-
-const FOOTLIGHTS = ["1", "2", "3", "4", "5", "6", "7"];
 
 /** 当前台词，固定在角色斜上方并随新消息重新入场。 */
 function EmotionBubble({ text, gen }: EmotionBubbleProps) {
@@ -131,76 +128,38 @@ export function MascotTheater({
 					ref={stageRef}
 					onPointerMove={handleStageMove}
 					onPointerLeave={() => mascotRef.current?.setGaze(0, 0)}
-					className="relative h-104 min-h-0 overflow-hidden bg-[#130f0e] sm:h-120 lg:h-auto lg:flex-1"
+					className="mascot-stage-scene relative h-104 min-h-0 overflow-hidden sm:h-120 lg:h-auto lg:flex-1"
 				>
-					<div
-						aria-hidden
-						className="absolute inset-x-[8%] top-[8%] bottom-[12%] bg-[radial-gradient(ellipse_70%_70%_at_50%_42%,#292322_0%,#171313_58%,#0d0a0a_100%)]"
-					/>
-					<div
-						aria-hidden
-						className="absolute inset-x-[8%] top-[8%] bottom-[12%] bg-[conic-gradient(at_50%_-14%,transparent_43%,rgba(255,242,205,0.11)_46%,rgba(255,246,221,0.3)_50%,rgba(255,242,205,0.11)_54%,transparent_57%)] mask-[linear-gradient(to_bottom,#000_0%,#000_70%,transparent_98%)]"
-					/>
-					<div
-						aria-hidden
-						className="absolute right-[8%] bottom-[12%] left-[8%] h-[29%] bg-[linear-gradient(to_bottom,#4a3429_0%,#2d1e19_56%,#17100e_100%)]"
-					/>
-					<div
-						aria-hidden
-						className="absolute right-[8%] bottom-[12%] left-[8%] h-[29%] bg-[repeating-linear-gradient(90deg,transparent_0,transparent_calc(12.5%_-_1px),rgba(255,226,190,0.08)_calc(12.5%_-_1px),rgba(255,226,190,0.08)_12.5%)]"
-					/>
-					<div
-						aria-hidden
-						className="absolute inset-0 bg-[radial-gradient(ellipse_34%_15%_at_50%_80%,rgba(255,234,191,0.35),rgba(255,222,166,0.08)_56%,transparent_76%)]"
-					/>
-
-					<div
-						aria-hidden
-						className="absolute top-[8%] bottom-[12%] left-[8%] z-20 w-[18%] bg-[repeating-linear-gradient(90deg,#40141a_0%,#7b2731_18%,#4d171f_40%,#8a2d37_62%,#45141b_82%)] [clip-path:polygon(0_0,100%_0,70%_100%,0_100%)] shadow-[8px_0_24px_rgba(0,0,0,0.45)]"
-					/>
-					<div
-						aria-hidden
-						className="absolute top-[8%] right-[8%] bottom-[12%] z-20 w-[18%] bg-[repeating-linear-gradient(90deg,#45141b_0%,#8a2d37_18%,#4d171f_40%,#7b2731_62%,#40141a_82%)] [clip-path:polygon(0_0,100%_0,100%_100%,30%_100%)] shadow-[-8px_0_24px_rgba(0,0,0,0.45)]"
-					/>
-					<div
-						aria-hidden
-						className="absolute top-[8%] right-[8%] left-[8%] z-20 h-[15%] bg-[repeating-linear-gradient(90deg,#4a151c_0%,#8a2d37_11%,#511820_22%)] [clip-path:polygon(0_0,100%_0,100%_72%,76%_82%,50%_67%,24%_82%,0_72%)] shadow-[0_8px_20px_rgba(0,0,0,0.42)]"
-					/>
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-x-[6.5%] top-[5.5%] bottom-[9.5%] z-30 border-[6px] border-[#5f422c] shadow-[inset_0_0_0_2px_#98744a,0_10px_28px_rgba(0,0,0,0.38)]"
-					/>
-
-					<div
-						aria-hidden
-						className="absolute bottom-[14%] left-1/2 z-20 flex -translate-x-1/2 gap-3"
-					>
-						{FOOTLIGHTS.map((light) => (
-							<span
-								key={light}
-								className="size-1.5 rounded-full bg-[#ffe9b5] shadow-[0_0_8px_3px_rgba(255,222,151,0.35)]"
-							/>
-						))}
+					<div aria-hidden className="mascot-stage-cyclorama" />
+					<div aria-hidden className="mascot-stage-cyclorama-glow" />
+					<div aria-hidden className="mascot-stage-haze mascot-stage-haze-left" />
+					<div aria-hidden className="mascot-stage-haze mascot-stage-haze-right" />
+					<div aria-hidden className="mascot-stage-rig">
+						<span className="mascot-stage-fixture mascot-stage-fixture-left" />
+						<span className="mascot-stage-fixture mascot-stage-fixture-center" />
+						<span className="mascot-stage-fixture mascot-stage-fixture-right" />
 					</div>
-
-					<div className="absolute top-[15%] left-[18%] z-30 bg-black/55 px-2 py-1 font-mono text-[9px] font-semibold text-white/75 backdrop-blur-sm">
-						<span
-							className="mr-1.5 inline-block size-1.5 bg-(--mascot-accent)"
-							aria-hidden
-						/>
-						{agentMessage
-							? `${agentMessage.agent} / ${agentMessage.state}`
-							: "Local preview"}
-					</div>
-					<p className="absolute bottom-[7%] left-[17%] z-30 bg-black/60 px-2 py-1 font-mono text-[9px] text-white/75">
-						{GROUP_LABEL[def.group]} / {def.id}
-					</p>
+					<div aria-hidden className="mascot-stage-beam mascot-stage-beam-left" />
+					<div aria-hidden className="mascot-stage-beam mascot-stage-beam-center" />
+					<div aria-hidden className="mascot-stage-beam mascot-stage-beam-right" />
+					<div aria-hidden className="mascot-stage-sidewash mascot-stage-sidewash-left" />
+					<div
+						aria-hidden
+						className="mascot-stage-sidewash mascot-stage-sidewash-right"
+					/>
+					<div aria-hidden className="mascot-stage-floor" />
+					<div aria-hidden className="mascot-stage-floor-grid" />
+					<div aria-hidden className="mascot-stage-light-pool" />
+					<div aria-hidden className="mascot-stage-platform-shadow" />
+					<div aria-hidden className="mascot-stage-platform" />
+					<div aria-hidden className="mascot-stage-platform-ring" />
+					<div aria-hidden className="mascot-stage-apron" />
 
 					<MascotStage
 						ref={mascotRef}
 						emotion={agentEmotion ?? def.id}
 						onClick={() => mascotRef.current?.bounce()}
-						className="absolute bottom-[13%] left-1/2 z-10 size-60 -translate-x-1/2 cursor-pointer drop-shadow-[0_18px_15px_rgba(0,0,0,0.42)] sm:size-68"
+						className="absolute bottom-[16%] left-1/2 z-30 size-60 -translate-x-1/2 cursor-pointer drop-shadow-[0_18px_15px_rgba(0,0,0,0.42)] sm:size-68"
 					/>
 					<EmotionBubble text={bubble.text} gen={bubble.gen} />
 				</div>

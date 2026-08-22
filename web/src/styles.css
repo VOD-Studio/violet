@@ -573,6 +573,337 @@ html.theme-vt-freeze *::after {
 	}
 }
 
+/* 吉祥物黑盒舞台：后墙、三点灯位与透视地台构成景深，角色始终占视觉焦点。 */
+.mascot-stage-scene {
+	--stage-ink: #07080d;
+	isolation: isolate;
+	perspective: 900px;
+	background:
+		radial-gradient(ellipse at 50% 100%, rgb(255 123 100 / 0.13), transparent 35%),
+		linear-gradient(180deg, #101425 0%, #080a11 65%, #06070b 100%);
+}
+
+.mascot-stage-cyclorama,
+.mascot-stage-cyclorama-glow,
+.mascot-stage-haze,
+.mascot-stage-rig,
+.mascot-stage-beam,
+.mascot-stage-sidewash,
+.mascot-stage-floor,
+.mascot-stage-floor-grid,
+.mascot-stage-light-pool,
+.mascot-stage-platform-shadow,
+.mascot-stage-platform,
+.mascot-stage-platform-ring,
+.mascot-stage-apron {
+	pointer-events: none;
+	position: absolute;
+}
+
+.mascot-stage-cyclorama {
+	inset: 8% 10% 28%;
+	z-index: 1;
+	border-radius: 50% 50% 0 0 / 14% 14% 0 0;
+	background:
+		radial-gradient(ellipse at 50% 58%, rgb(142 132 255 / 0.22), transparent 42%),
+		linear-gradient(180deg, #20253e 0%, #151a2c 48%, #090b13 100%);
+	box-shadow:
+		inset 0 28px 44px rgb(255 255 255 / 0.04),
+		inset 0 -70px 90px rgb(0 0 0 / 0.64),
+		0 18px 32px rgb(0 0 0 / 0.3);
+}
+
+.mascot-stage-cyclorama-glow {
+	inset: 12% 14% 29%;
+	z-index: 2;
+	border-radius: 50% 50% 0 0 / 14% 14% 0 0;
+	background:
+		radial-gradient(ellipse at 50% 64%, rgb(149 135 255 / 0.3), transparent 54%),
+		radial-gradient(ellipse at 50% 94%, rgb(255 157 125 / 0.17), transparent 36%);
+	filter: blur(18px);
+	mix-blend-mode: screen;
+	opacity: 0.72;
+	animation: mascot-stage-breathe 7s ease-in-out infinite;
+}
+
+.mascot-stage-haze {
+	top: 14%;
+	z-index: 4;
+	width: 34%;
+	height: 56%;
+	filter: blur(11px);
+	mix-blend-mode: screen;
+	opacity: 0.27;
+}
+
+.mascot-stage-haze-left {
+	left: 4%;
+	background: linear-gradient(105deg, rgb(102 119 255 / 0.28), transparent 70%);
+	clip-path: polygon(0 0, 34% 0, 100% 100%, 0 100%);
+}
+
+.mascot-stage-haze-right {
+	right: 4%;
+	background: linear-gradient(255deg, rgb(255 146 129 / 0.2), transparent 70%);
+	clip-path: polygon(66% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.mascot-stage-rig {
+	top: 7%;
+	right: 10%;
+	left: 10%;
+	z-index: 15;
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgb(201 205 237 / 0.5) 14%,
+		rgb(201 205 237 / 0.5) 86%,
+		transparent
+	);
+	box-shadow: 0 0 12px rgb(163 159 255 / 0.25);
+}
+
+.mascot-stage-fixture {
+	top: -3px;
+	width: 13px;
+	height: 7px;
+	border: 1px solid rgb(199 204 237 / 0.52);
+	border-radius: 2px 2px 5px 5px;
+	background: linear-gradient(180deg, #e8e5d5, #9c8d68);
+	box-shadow: 0 3px 8px rgb(255 185 120 / 0.34);
+}
+
+.mascot-stage-fixture-left {
+	left: 23%;
+}
+
+.mascot-stage-fixture-center {
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+.mascot-stage-fixture-right {
+	right: 23%;
+}
+
+.mascot-stage-beam {
+	top: 8%;
+	z-index: 3;
+	width: 24%;
+	height: 67%;
+	clip-path: polygon(43% 0, 57% 0, 94% 100%, 6% 100%);
+	filter: blur(6px);
+	mix-blend-mode: screen;
+	opacity: 0.32;
+	animation: mascot-stage-beam 8s ease-in-out infinite alternate;
+}
+
+.mascot-stage-beam-left {
+	left: 11%;
+	transform: rotate(-17deg);
+	background: linear-gradient(
+		180deg,
+		rgb(153 167 255 / 0.03),
+		rgb(118 132 255 / 0.22) 76%,
+		transparent
+	);
+}
+
+.mascot-stage-beam-center {
+	left: 38%;
+	background: linear-gradient(
+		180deg,
+		rgb(255 248 212 / 0.07),
+		rgb(255 227 173 / 0.24) 76%,
+		transparent
+	);
+}
+
+.mascot-stage-beam-right {
+	right: 11%;
+	transform: rotate(17deg);
+	background: linear-gradient(
+		180deg,
+		rgb(255 174 151 / 0.03),
+		rgb(255 133 124 / 0.18) 76%,
+		transparent
+	);
+}
+
+.mascot-stage-sidewash {
+	top: 20%;
+	bottom: 25%;
+	z-index: 5;
+	width: 24%;
+	filter: blur(12px);
+	mix-blend-mode: screen;
+	opacity: 0.4;
+}
+
+.mascot-stage-sidewash-left {
+	left: -4%;
+	background: radial-gradient(ellipse at 0 52%, rgb(108 132 255 / 0.28), transparent 68%);
+}
+
+.mascot-stage-sidewash-right {
+	right: -4%;
+	background: radial-gradient(ellipse at 100% 52%, rgb(255 134 125 / 0.22), transparent 68%);
+}
+
+.mascot-stage-floor {
+	right: -8%;
+	bottom: -18%;
+	left: -8%;
+	z-index: 6;
+	height: 57%;
+	transform: perspective(500px) rotateX(60deg);
+	transform-origin: center bottom;
+	background:
+		radial-gradient(ellipse at 50% 15%, rgb(255 191 143 / 0.2), transparent 39%),
+		linear-gradient(180deg, #29334a 0%, #151b2c 48%, var(--stage-ink) 100%);
+	box-shadow:
+		inset 0 1px 0 rgb(219 224 255 / 0.2),
+		inset 0 -35px 48px rgb(0 0 0 / 0.5);
+}
+
+.mascot-stage-floor-grid {
+	right: -8%;
+	bottom: -18%;
+	left: -8%;
+	z-index: 7;
+	height: 57%;
+	transform: perspective(500px) rotateX(60deg);
+	transform-origin: center bottom;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			transparent 0,
+			transparent 11.9%,
+			rgb(197 201 239 / 0.08) 12%,
+			transparent 12.2%
+		),
+		repeating-linear-gradient(
+			0deg,
+			transparent 0,
+			transparent 15%,
+			rgb(197 201 239 / 0.08) 15.1%,
+			transparent 15.4%
+		);
+	opacity: 0.5;
+}
+
+.mascot-stage-light-pool {
+	bottom: 12%;
+	left: 50%;
+	z-index: 8;
+	width: 58%;
+	height: 23%;
+	transform: translateX(-50%) rotateX(63deg);
+	transform-origin: center bottom;
+	border-radius: 50%;
+	background: radial-gradient(
+		ellipse,
+		rgb(255 214 168 / 0.34),
+		rgb(255 170 141 / 0.1) 45%,
+		transparent 72%
+	);
+	filter: blur(3px);
+	mix-blend-mode: screen;
+	opacity: 0.72;
+	animation: mascot-stage-pool 5s ease-in-out infinite;
+}
+
+.mascot-stage-platform-shadow {
+	bottom: 11%;
+	left: 50%;
+	z-index: 9;
+	width: 47%;
+	height: 9%;
+	transform: translateX(-50%);
+	border-radius: 50%;
+	background: rgb(0 0 0 / 0.78);
+	filter: blur(13px);
+}
+
+.mascot-stage-platform {
+	bottom: 12%;
+	left: 50%;
+	z-index: 10;
+	width: 42%;
+	height: 11%;
+	transform: translateX(-50%) perspective(420px) rotateX(64deg);
+	transform-origin: center bottom;
+	border: 1px solid rgb(155 150 255 / 0.5);
+	border-radius: 50%;
+	background:
+		radial-gradient(ellipse at 50% 27%, rgb(255 207 165 / 0.24), transparent 50%),
+		linear-gradient(180deg, #3a4761 0%, #202a41 58%, #0f1422 100%);
+	box-shadow:
+		inset 0 2px 4px rgb(255 255 255 / 0.16),
+		inset 0 -9px 12px rgb(0 0 0 / 0.42),
+		0 8px 14px rgb(0 0 0 / 0.35);
+}
+
+.mascot-stage-platform-ring {
+	bottom: 13.3%;
+	left: 50%;
+	z-index: 11;
+	width: 34%;
+	height: 5%;
+	transform: translateX(-50%) perspective(420px) rotateX(64deg);
+	border: 1px solid rgb(255 179 143 / 0.45);
+	border-radius: 50%;
+	box-shadow: 0 0 12px rgb(255 155 130 / 0.24);
+}
+
+.mascot-stage-apron {
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 17;
+	height: 19%;
+	border-top: 1px solid rgb(222 204 182 / 0.12);
+	background: linear-gradient(180deg, transparent, rgb(4 5 9 / 0.72) 62%, rgb(3 4 7 / 0.96));
+	box-shadow: inset 0 20px 26px rgb(0 0 0 / 0.18);
+}
+
+@keyframes mascot-stage-breathe {
+	0%,
+	100% {
+		opacity: 0.62;
+	}
+	50% {
+		opacity: 0.82;
+	}
+}
+
+@keyframes mascot-stage-beam {
+	from {
+		opacity: 0.24;
+	}
+	to {
+		opacity: 0.38;
+	}
+}
+
+@keyframes mascot-stage-pool {
+	0%,
+	100% {
+		opacity: 0.58;
+	}
+	50% {
+		opacity: 0.8;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mascot-stage-beam,
+	.mascot-stage-cyclorama-glow,
+	.mascot-stage-light-pool {
+		animation: none;
+	}
+}
 /* AnnotationLayer 批注高亮块（块级背景标记 + 左色条，PRD-0001 Issue-0005） */
 .annotation-highlight {
 	border-left: 3px solid hsl(217 91% 60% / 0.6);
