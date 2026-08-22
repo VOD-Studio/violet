@@ -6,6 +6,7 @@ import { Pause, Play, RotateCcw } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStatus } from "../hooks/useAgentStatus";
+import { GROUP_LABEL } from "../hooks/useMascotExhibit";
 import { MascotDirectorPanel } from "./MascotDirectorPanel";
 
 interface EmotionBubbleProps {
@@ -130,36 +131,38 @@ export function MascotTheater({
 					onPointerLeave={() => mascotRef.current?.setGaze(0, 0)}
 					className="mascot-stage-scene relative h-104 min-h-0 overflow-hidden sm:h-120 lg:h-auto lg:flex-1"
 				>
-					<div aria-hidden className="mascot-stage-cyclorama" />
-					<div aria-hidden className="mascot-stage-cyclorama-glow" />
-					<div aria-hidden className="mascot-stage-haze mascot-stage-haze-left" />
-					<div aria-hidden className="mascot-stage-haze mascot-stage-haze-right" />
-					<div aria-hidden className="mascot-stage-rig">
-						<span className="mascot-stage-fixture mascot-stage-fixture-left" />
-						<span className="mascot-stage-fixture mascot-stage-fixture-center" />
-						<span className="mascot-stage-fixture mascot-stage-fixture-right" />
-					</div>
-					<div aria-hidden className="mascot-stage-beam mascot-stage-beam-left" />
-					<div aria-hidden className="mascot-stage-beam mascot-stage-beam-center" />
-					<div aria-hidden className="mascot-stage-beam mascot-stage-beam-right" />
+					<div aria-hidden className="mascot-stage-ambient" />
+					<div aria-hidden className="mascot-stage-floor-light" />
 					<div aria-hidden className="mascot-stage-sidewash mascot-stage-sidewash-left" />
 					<div
 						aria-hidden
 						className="mascot-stage-sidewash mascot-stage-sidewash-right"
 					/>
-					<div aria-hidden className="mascot-stage-floor" />
-					<div aria-hidden className="mascot-stage-floor-grid" />
-					<div aria-hidden className="mascot-stage-light-pool" />
-					<div aria-hidden className="mascot-stage-platform-shadow" />
-					<div aria-hidden className="mascot-stage-platform" />
-					<div aria-hidden className="mascot-stage-platform-ring" />
-					<div aria-hidden className="mascot-stage-apron" />
+					<div aria-hidden className="mascot-stage-beam" />
+					<div aria-hidden className="mascot-stage-source" />
+					<div aria-hidden className="mascot-stage-pool" />
+					<div aria-hidden className="mascot-stage-edge" />
+					<div aria-hidden className="mascot-stage-vignette" />
+
+					<p className="mascot-stage-hud">
+						{GROUP_LABEL[def.group]}
+						<span aria-hidden>·</span>#{def.id}
+						{agentMessage && (
+							<>
+								<span aria-hidden>·</span>
+								<span data-agent-state={agentMessage.state}>
+									{agentMessage.agent} {agentMessage.state}
+								</span>
+							</>
+						)}
+						<span aria-hidden className="mascot-stage-live-dot" />
+					</p>
 
 					<MascotStage
 						ref={mascotRef}
 						emotion={agentEmotion ?? def.id}
 						onClick={() => mascotRef.current?.bounce()}
-						className="absolute bottom-[16%] left-1/2 z-30 size-60 -translate-x-1/2 cursor-pointer drop-shadow-[0_18px_15px_rgba(0,0,0,0.42)] sm:size-68"
+						className="mascot-stage-character"
 					/>
 					<EmotionBubble text={bubble.text} gen={bubble.gen} />
 				</div>
