@@ -95,7 +95,7 @@ function AnnouncementLab() {
 	const activeBanner = BANNER_DIRECTIONS.find((d) => d.value === banner) ?? BANNER_DIRECTIONS[0];
 
 	return (
-		<div className="container mx-auto px-6 py-24">
+		<div className="container mx-auto px-6 py-4">
 			<LabHeader to="/lab/announcement" />
 
 			{/* ============ 公告区展示方向：五方向 × 三态 ============ */}

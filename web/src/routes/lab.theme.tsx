@@ -46,7 +46,7 @@ function ThemeLab() {
 	const active = DIRECTIONS.find((d) => d.value === direction) ?? DIRECTIONS[0];
 
 	return (
-		<div className="container mx-auto px-6 py-24">
+		<div className="container mx-auto px-6 py-4">
 			<LabHeader to="/lab/theme" />
 
 			<section>
