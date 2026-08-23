@@ -19,6 +19,12 @@ import {
 } from "./geometry";
 import { buildCatMochiRig } from "./rig";
 
+/** 外耳只有接近身体切线时才淡出,浅偏航仍保持完整可读。 */
+const EAR_FADE_START_DEPTH = 0.05;
+const EAR_FADE_DEPTH_RANGE = 0.35;
+const EAR_SIDE_FADE_START = 0.82;
+const EAR_SIDE_FADE_END = 0.62;
+
 /**
  * 堇喵渲染器:把 Pose 写入 rig。持有渲染专属缓存(身体变色、尾巴前后
  * 画序、嘴型切换);动画语义状态全部在 PoseController。
@@ -114,23 +120,28 @@ export class CatMochiRenderer implements CharacterRenderer {
 			}
 		}
 
-		// 侧视时只保留更靠近观察者的耳朵,避免两只耳朵挤成一根重叠尖刺。
+		// 侧视区间平滑压低远侧耳朵,避免旋转过程中突然闪断。
 		const earL = faceProj(thetaOf(CAT_EARS.left.pivot[0]), phi);
 		const earR = faceProj(thetaOf(CAT_EARS.right.pivot[0]), phi);
 		const earLRot = b.earL + Math.sin((TAU * now) / 3200) * 1.5 - avgLookX * 0.1;
 		const earRRot = b.earR - Math.sin((TAU * now) / 3200 + 0.4) * 1.5 - avgLookX * 0.1;
 		const absEarLDepth = Math.abs(earL.depth);
 		const absEarRDepth = Math.abs(earR.depth);
-		const sideView = Math.abs(Math.cos(phi)) < 0.82;
+		const sideT = clamp(
+			(EAR_SIDE_FADE_START - Math.abs(Math.cos(phi))) /
+				(EAR_SIDE_FADE_START - EAR_SIDE_FADE_END),
+			0,
+			1,
+		);
+		const sideBlend = sideT * sideT * (3 - 2 * sideT);
 		const equalDepth = Math.abs(absEarLDepth - absEarRDepth) < 0.08;
-		const earLVisible =
-			!sideView || (equalDepth ? earL.depth >= earR.depth : absEarLDepth >= absEarRDepth);
-		const earRVisible =
-			!sideView || (equalDepth ? earR.depth > earL.depth : absEarRDepth > absEarLDepth);
-		const earLOp = earLVisible ? clamp((absEarLDepth - 0.18) / 0.42, 0, 1) : 0;
-		const earROp = earRVisible ? clamp((absEarRDepth - 0.18) / 0.42, 0, 1) : 0;
-		const earLInnerOp = earLVisible ? earL.op : 0;
-		const earRInnerOp = earRVisible ? earR.op : 0;
+		const leftDominant = equalDepth ? earL.depth >= earR.depth : absEarLDepth >= absEarRDepth;
+		const earOpacity = (depth: number) =>
+			clamp((Math.abs(depth) - EAR_FADE_START_DEPTH) / EAR_FADE_DEPTH_RANGE, 0, 1);
+		const earLOp = earOpacity(earL.depth) * (leftDominant ? 1 : 1 - sideBlend);
+		const earROp = earOpacity(earR.depth) * (leftDominant ? 1 - sideBlend : 1);
+		const earLInnerOp = earL.op;
+		const earRInnerOp = earR.op;
 
 		this.rig.earLG.setAttribute("opacity", earLOp.toFixed(3));
 		this.rig.earLG.setAttribute(

@@ -169,6 +169,30 @@ describe("Mascot rotation projection", () => {
 		expect(tailYSpan(tail.getAttribute("d"))).toBeLessThan(70);
 	});
 
+	it("keeps both ears readable during shallow left and right yaw", () => {
+		const { earL, earR } = createMascot();
+		const mascot = instances[0];
+
+		for (const yaw of [-30, 30]) {
+			mascot.setDevYaw(yaw);
+			expect(Number(earL.getAttribute("opacity"))).toBeGreaterThan(0.4);
+			expect(Number(earR.getAttribute("opacity"))).toBeGreaterThan(0.4);
+		}
+	});
+
+	it("fades the far ear continuously into side view", () => {
+		const { earR } = createMascot();
+		const mascot = instances[0];
+
+		mascot.setDevYaw(34);
+		const beforeSide = Number(earR.getAttribute("opacity"));
+		mascot.setDevYaw(38);
+		const approachingSide = Number(earR.getAttribute("opacity"));
+
+		expect(beforeSide).toBeGreaterThan(approachingSide);
+		expect(approachingSide).toBeGreaterThan(0);
+	});
+
 	it("keeps the body scale isotropic while spinning", () => {
 		const { rig } = createMascot();
 		const mascot = instances[0];
