@@ -25,7 +25,7 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 
 	if (tweet.is_deleted || !tweet.author) {
 		return (
-			<div className="flex items-center gap-2 rounded-xl border border-dashed border-edge-hairline bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">
+			<div className="flex items-center gap-2 rounded-xl border border-dashed border-edge-hairline bg-muted/20 px-3 py-2.5 text-left text-xs text-muted-foreground">
 				<AlertCircle className="size-4 shrink-0" />
 				<span>该推文已被删除</span>
 			</div>
@@ -42,7 +42,7 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 	return (
 		<div
 			aria-label="查看推文"
-			className="w-72 max-w-full cursor-pointer overflow-hidden rounded-xl border border-neon-cyan/30 bg-card/80 backdrop-blur-md transition-colors hover:border-neon-cyan/60 hover:bg-card/95"
+			className="w-72 max-w-full cursor-pointer overflow-hidden rounded-xl border border-neon-cyan/30 bg-card/80 text-left backdrop-blur-md transition-colors hover:border-neon-cyan/60 hover:bg-card/95"
 			onClick={openDetail}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
