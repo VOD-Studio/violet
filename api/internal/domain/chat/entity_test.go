@@ -42,10 +42,39 @@ func TestMessageFactoriesEnforcePayloadShapeAndIdempotency(t *testing.T) {
 	_, err = chat.NewTextMessage(conversationID, senderID, "hello", "", now, nil)
 	require.Error(t, err)
 
-	image, err := chat.NewImageMessage(conversationID, senderID, shared.NewID(), "retry-3", now, nil)
+	image, err := chat.NewImageMessage(conversationID, senderID, shared.NewID(), "", "retry-3", now, nil)
 	require.NoError(t, err)
 	require.Equal(t, chat.MessageImage, image.Type())
 	require.NotNil(t, image.MediaID())
+	require.Equal(t, "", image.Content())
+}
+
+func TestNewImageMessageAllowsOptionalCaption(t *testing.T) {
+	now := time.Now()
+	conversationID := shared.NewID()
+	senderID := shared.NewID()
+	mediaID := shared.NewID()
+
+	captioned, err := chat.NewImageMessage(conversationID, senderID, mediaID, "  快来看  ", "retry-caption-1", now, nil)
+	require.NoError(t, err)
+	require.Equal(t, "快来看", captioned.Content())
+	require.NotNil(t, captioned.MediaID())
+	require.Equal(t, mediaID, *captioned.MediaID())
+
+	withoutCaption, err := chat.NewImageMessage(conversationID, senderID, mediaID, "   ", "retry-caption-2", now, nil)
+	require.NoError(t, err)
+	require.Equal(t, "", withoutCaption.Content())
+
+	overLong := make([]rune, chat.MaxMessageContentLength+1)
+	for i := range overLong {
+		overLong[i] = 'a'
+	}
+	_, err = chat.NewImageMessage(conversationID, senderID, mediaID, string(overLong), "retry-caption-3", now, nil)
+	require.Error(t, err)
+
+	_, err = chat.NewImageMessage(conversationID, senderID, shared.ID{}, "caption", "retry-caption-4", now, nil)
+	require.Error(t, err)
+
 }
 
 func TestSystemMessageFactory(t *testing.T) {

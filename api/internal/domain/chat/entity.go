@@ -263,7 +263,7 @@ type Message struct {
 	senderID shared.ID
 	// messageType 消息类型：text、image 或 system。
 	messageType MessageType
-	// content 文本内容；图片消息为空。
+	// content 文本内容；图片消息可选携带说明文字（caption），系统消息不为空。
 	content string
 	// mediaID 图片消息引用的上传文件 ID。
 	mediaID *shared.ID
@@ -315,9 +315,16 @@ func NewSystemMessage(conversationID, senderID shared.ID, content, idempotencyKe
 }
 
 // NewImageMessage 创建图片消息。
-func NewImageMessage(conversationID, senderID, mediaID shared.ID, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
+//
+// content 为可选说明文字（caption），trim 后按文本消息同一长度上限校验，允许为空；
+// 单图+文字合一发送场景下与 mediaID 共存（见 CONTEXT.md「图片消息」词条）。
+func NewImageMessage(conversationID, senderID, mediaID shared.ID, content, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
+	content = strings.TrimSpace(content)
 	if conversationID.IsZero() || senderID.IsZero() || mediaID.IsZero() {
 		return nil, shared.BadRequest("图片消息参数不完整")
+	}
+	if len([]rune(content)) > MaxMessageContentLength {
+		return nil, shared.BadRequest("图片消息说明文字过长")
 	}
 	if err := validateIdempotencyKey(idempotencyKey); err != nil {
 		return nil, err
@@ -325,7 +332,7 @@ func NewImageMessage(conversationID, senderID, mediaID shared.ID, idempotencyKey
 	if err := validateReplyToID(replyToID); err != nil {
 		return nil, err
 	}
-	return newMessage(conversationID, senderID, MessageImage, "", &mediaID, nil, replyToID, idempotencyKey, now), nil
+	return newMessage(conversationID, senderID, MessageImage, content, &mediaID, nil, replyToID, idempotencyKey, now), nil
 }
 
 // NewTweetShareMessage 创建推文分享消息（分享到聊天）。
@@ -413,6 +420,12 @@ func (m *Message) Type() MessageType { return m.messageType }
 
 // Content 返回文本内容。
 func (m *Message) Content() string { return m.content }
+
+// HasTextContent 判断该消息类型是否会携带展示性文本（text/image 的可选 caption/tweet_share 的可选配文）；
+// system 消息始终有 content 但走独立展示路径，不计入此判定。
+func (m *Message) HasTextContent() bool {
+	return m.messageType == MessageText || m.messageType == MessageImage || m.messageType == MessageTweetShare
+}
 
 // MediaID 返回图片媒体 ID。
 func (m *Message) MediaID() *shared.ID { return m.mediaID }

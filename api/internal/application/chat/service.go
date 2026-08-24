@@ -740,7 +740,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	case domainchat.MessageImage:
 		file, err = s.chatImage(ctx, in.MediaID, in.UserID)
 		if err == nil {
-			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaID, in.IdempotencyKey, now, replyToID)
+			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaID, in.Content, in.IdempotencyKey, now, replyToID)
 		}
 	case domainchat.MessageTweetShare:
 		if _, err = s.tweets.FindByID(ctx, in.SharedTweetID); err == nil {
@@ -1034,7 +1034,7 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		dto.Reactions = []MessageReactionDTO{}
 		return dto, nil
 	}
-	if message.Type() == domainchat.MessageText || message.Type() == domainchat.MessageTweetShare {
+	if message.HasTextContent() {
 		dto.Content = message.Content()
 	}
 	if message.SharedTweetID() != nil {
@@ -1086,7 +1086,7 @@ func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.M
 		dto.IsDeleted = true
 		return dto, nil
 	}
-	if message.Type() == domainchat.MessageText || message.Type() == domainchat.MessageTweetShare {
+	if message.HasTextContent() {
 		dto.Content = truncatePreview(message.Content(), 120)
 	}
 	if message.MediaID() != nil {
