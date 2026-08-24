@@ -1,5 +1,6 @@
 import { type Ref, useEffect, useRef } from "react";
 import { DEFAULT_EMOTION_ID } from "../engine/emotions";
+import type { MascotEffectConfig } from "../engine/mascot";
 import { Mascot } from "../engine/mascot";
 import type { AIMessage, AIMessageResult } from "../protocol";
 
@@ -13,11 +14,28 @@ export interface MascotHandle {
 	bounce(): void;
 	/** 摸头互动(飞机耳) */
 	pet(): void;
-	/** 撒花庆祝
+	/**
+	 * 撒花庆祝。
 	 *
 	 * @param count - 粒子数,缺省 20
 	 */
 	burst(count?: number): void;
+	/** 独立彩带流线特效,不依赖角色自旋 */
+	streamers(): void;
+	/** 设置魔法阵是否持续存在 */
+	setMagicPersistent(enabled: boolean, config?: MascotEffectConfig): void;
+	/** 更新持续魔法阵的视觉参数 */
+	configureMagic(config: MascotEffectConfig): void;
+	/** 独立魔法阵特效 */
+	magic(): void;
+	/** 独立烟花特效 */
+	fireworks(): void;
+	/** 独立爱心雨特效 */
+	hearts(): void;
+	/** 独立流星特效 */
+	meteors(): void;
+	/** 独立闪耀登场特效 */
+	spotlight(): void;
 	/**
 	 * 视线跟随。
 	 *
@@ -25,6 +43,10 @@ export interface MascotHandle {
 	 * @param ny - 垂直归一化 [-1, 1]
 	 */
 	setGaze(nx: number, ny: number): void;
+	/**
+	 * 手动偏航角(度):调试通道,直接叠加在自旋结果上。
+	 */
+	setDevYaw(deg: number): void;
 	/** 切换表情;未知 ID 回退待机 */
 	setEmotion(id: string): void;
 	/**
@@ -88,7 +110,6 @@ export function MascotStage({
 	useEffect(() => {
 		mascotRef.current?.setEmotion(emotion);
 	}, [emotion]);
-
 	useEffect(() => {
 		if (!ref) return;
 		const handle: MascotHandle = {
@@ -96,7 +117,17 @@ export function MascotStage({
 			bounce: () => mascotRef.current?.bounce(),
 			pet: () => mascotRef.current?.pet(1200),
 			burst: (count = 20) => mascotRef.current?.burst(count),
+			streamers: () => mascotRef.current?.streamers(),
+			setMagicPersistent: (enabled, config) =>
+				mascotRef.current?.setMagicPersistent(enabled, config),
+			configureMagic: (config) => mascotRef.current?.configureMagic(config),
+			magic: () => mascotRef.current?.magic(),
+			fireworks: () => mascotRef.current?.fireworks(),
+			hearts: () => mascotRef.current?.hearts(),
+			meteors: () => mascotRef.current?.meteors(),
+			spotlight: () => mascotRef.current?.spotlight(),
 			setGaze: (nx: number, ny: number) => mascotRef.current?.setGaze(nx, ny),
+			setDevYaw: (deg: number) => mascotRef.current?.setDevYaw(deg),
 			setEmotion: (id) => mascotRef.current?.setEmotion(id),
 			handleAIMessage: (msg) => {
 				const id = msg.emotionId?.trim();

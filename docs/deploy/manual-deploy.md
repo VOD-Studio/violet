@@ -8,7 +8,7 @@
 
 | 项 | 值 |
 |---|---|
-| 主机 | `xunrua.top`（root 登录，SSH 已配免密） |
+| 主机 | `xunrua.top`（root 登录，SSH 已配免密；服务器 SSH 端口为 `29888`） |
 | 架构 | `linux/amd64`（x86_64） |
 | 容器运行时 | `podman` + `podman-compose`（**非 docker**） |
 | 默认 shell | `fish`（脚本一律用 `bash -lc '...'` 显式调用） |

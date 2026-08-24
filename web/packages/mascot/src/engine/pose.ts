@@ -7,9 +7,9 @@
 
 import { lerpColor } from "../lib/color";
 import { clamp, lerp, TAU } from "../lib/math";
-import type { MouthShapeId } from "./body";
+import type { MouthShapeId } from "./characters/catMochi/geometry";
+import { PALETTE } from "./characters/catMochi/palette";
 import type { EyeRing } from "./eyes";
-import { PALETTE } from "./palette";
 import type { Anim, BodyPose, EyePose } from "./types";
 
 /**
@@ -34,6 +34,8 @@ export interface BodyState {
 	y: number;
 	scale: number;
 	rotate: number;
+	/** 纵向拉伸系数:自旋滞空 >1 拉长,落地 <1 压扁,配合横向压缩构成体积守恒 */
+	stretchY: number;
 	color: string;
 	breathe: number;
 	blush: number;
@@ -85,6 +87,7 @@ export const DEFAULT_BODY: BodyState = {
 	y: 0,
 	scale: 1,
 	rotate: 0,
+	stretchY: 1,
 	color: PALETTE.body,
 	breathe: 0.01,
 	blush: 0,

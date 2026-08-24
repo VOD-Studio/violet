@@ -554,24 +554,6 @@ html.theme-vt-freeze *::after {
 	animation: shake 0.4s ease-in-out;
 }
 
-/* 吉祥物舞台光束微尘：慢速上浮 + 左右摇曳，光柱里的空气介质感 */
-@keyframes mascot-dust {
-	0% {
-		opacity: 0;
-		transform: translate3d(0, 8px, 0);
-	}
-	18% {
-		opacity: 0.75;
-	}
-	55% {
-		transform: translate3d(5px, -14px, 0);
-	}
-	100% {
-		opacity: 0;
-		transform: translate3d(-3px, -36px, 0);
-	}
-}
-
 /* 吉祥物对白气泡：弹入 → 驻留 → 淡出，一轮 = 一次表情切换的台词寿命 */
 @keyframes mascot-bubble {
 	0% {
@@ -591,6 +573,197 @@ html.theme-vt-freeze *::after {
 	}
 }
 
+/* 吉祥物黑盒舞台：克制的冷绿环境光、台面与顶光，保持角色是唯一主角。 */
+.mascot-stage-scene {
+	--stage-ink: #0f1412;
+	/* 聚光驱动位：引擎 SpotlightFX 在 0..1 间推动，真实灯光层随之增亮 */
+	--mascot-spotlight: 0;
+	isolation: isolate;
+	background: var(--stage-ink);
+}
+
+.mascot-stage-ambient,
+.mascot-stage-floor-light,
+.mascot-stage-sidewash,
+.mascot-stage-beam,
+.mascot-stage-source,
+.mascot-stage-pool,
+.mascot-stage-edge,
+.mascot-stage-vignette {
+	pointer-events: none;
+	position: absolute;
+}
+
+.mascot-stage-ambient {
+	inset: 0;
+	z-index: 0;
+	background: radial-gradient(
+		ellipse 62% 52% at 50% 44%,
+		rgb(122 157 143 / 0.14),
+		transparent 72%
+	);
+}
+
+/* 主光 trio 由聚光驱动增亮；idle 时以极缓呼吸消除完全静态 */
+.mascot-stage-beam,
+.mascot-stage-source,
+.mascot-stage-pool,
+.mascot-stage-floor-light {
+	filter: brightness(calc(1 + var(--mascot-spotlight) * 0.9));
+	animation: mascot-stage-breathe 8s ease-in-out infinite;
+}
+
+@keyframes mascot-stage-breathe {
+	50% {
+		opacity: 0.86;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mascot-stage-beam,
+	.mascot-stage-source,
+	.mascot-stage-pool,
+	.mascot-stage-floor-light {
+		animation: none;
+	}
+}
+
+.mascot-stage-floor-light {
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 1;
+	height: 32%;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		rgb(112 145 129 / 0.08),
+		rgb(112 145 129 / 0.14)
+	);
+}
+
+.mascot-stage-sidewash {
+	top: 0;
+	bottom: 0;
+	z-index: 2;
+	width: 15%;
+}
+
+.mascot-stage-sidewash-left {
+	left: 0;
+	background: linear-gradient(to right, rgb(5 9 7 / 0.62), transparent);
+}
+
+.mascot-stage-sidewash-right {
+	right: 0;
+	background: linear-gradient(to left, rgb(5 9 7 / 0.62), transparent);
+}
+
+.mascot-stage-beam {
+	inset: 0;
+	z-index: 3;
+	background: conic-gradient(
+		at 50% -22%,
+		transparent 43.5%,
+		rgb(255 243 209 / 0.2) 48.5% 51.5%,
+		transparent 56.5%
+	);
+	mask: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+}
+
+.mascot-stage-source {
+	top: 0;
+	right: 0;
+	left: 0;
+	z-index: 4;
+	height: 5rem;
+	background: radial-gradient(
+		ellipse 30% 62% at 50% 0%,
+		rgb(255 247 224 / 0.33),
+		rgb(255 247 224 / 0.1) 45%,
+		transparent 70%
+	);
+}
+
+.mascot-stage-pool {
+	inset: 0;
+	z-index: 5;
+	background:
+		radial-gradient(ellipse 24% 9% at 50% 87%, rgb(255 246 222 / 0.4), transparent 72%),
+		radial-gradient(
+			ellipse 46% 20% at 50% 86%,
+			rgb(255 242 205 / 0.24),
+			rgb(255 242 205 / 0.08) 52%,
+			transparent 74%
+		);
+}
+
+.mascot-stage-edge {
+	right: 2.5rem;
+	bottom: 0;
+	left: 2.5rem;
+	z-index: 6;
+	height: 1px;
+	background: linear-gradient(to right, transparent, rgb(255 242 205 / 0.28), transparent);
+}
+
+.mascot-stage-vignette {
+	inset: 0;
+	z-index: 7;
+	background: radial-gradient(
+		ellipse 88% 78% at 50% 42%,
+		transparent 56%,
+		rgb(3 7 5 / 0.52) 100%
+	);
+}
+
+.mascot-stage-hud {
+	position: absolute;
+	top: 3.5%;
+	right: 0;
+	left: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	color: rgb(255 255 255 / 0.4);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 11px;
+	letter-spacing: 0.2em;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+.mascot-stage-hud [data-agent-state] {
+	color: rgb(253 230 138 / 0.7);
+}
+
+.mascot-stage-live-dot {
+	width: 4px;
+	height: 4px;
+	border-radius: 9999px;
+	background: rgb(74 222 128 / 0.8);
+}
+
+.mascot-stage-character {
+	position: absolute;
+	bottom: 11%;
+	left: 50%;
+	z-index: 10;
+	width: 14rem;
+	height: 14rem;
+	transform: translateX(-50%);
+	cursor: pointer;
+	filter: drop-shadow(0 0 18px rgb(255 240 200 / 0.14));
+}
+
+@media (min-width: 640px) {
+	.mascot-stage-character {
+		width: 15rem;
+		height: 15rem;
+	}
+}
 /* AnnotationLayer 批注高亮块（块级背景标记 + 左色条，PRD-0001 Issue-0005） */
 .annotation-highlight {
 	border-left: 3px solid hsl(217 91% 60% / 0.6);

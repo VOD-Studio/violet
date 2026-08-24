@@ -1,10 +1,9 @@
 /**
  * 静态姿态契约:表情定义中的可选姿态层(body/eyes)与时间轴关键帧。
  */
-import type { MouthShapeId } from "../body";
+import type { MouthShapeId } from "../characters/catMochi/geometry";
 
-/** 眼睛姿态分层:both 打底,left/right 覆盖,支持左右异形(如疑惑/Wink) */
-/** 单眼姿态:全部可选,缺省继承 both 再被覆盖 */
+/** 单眼姿态:全部可选,both 打底、left/right 覆盖,支持左右异形 */
 export interface EyePose {
 	/** 水平位移(viewBox 像素) */
 	x?: number;

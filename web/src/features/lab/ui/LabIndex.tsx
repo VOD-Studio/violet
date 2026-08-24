@@ -12,7 +12,7 @@ import { motion } from "motion/react";
  */
 export function LabIndex() {
 	return (
-		<div className="container mx-auto px-6 py-24">
+		<div className="container mx-auto px-6 py-4">
 			<header className="mb-16 md:mb-24">
 				<div className="mb-4 flex items-center justify-between font-mono text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
 					<span>Violet · Design Lab</span>

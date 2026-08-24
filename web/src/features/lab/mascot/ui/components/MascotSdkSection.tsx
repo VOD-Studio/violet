@@ -1,37 +1,45 @@
 import type { EmotionDef } from "@violet/mascot";
+import { Code2, MoveRight } from "lucide-react";
 import { CodeCard } from "@/shared/ui/code-preview";
 
 interface MascotSdkSectionProps {
 	pinnedDef: EmotionDef;
 }
 
-/** AI 协议与实例化示例:全宽放在舞台布局下方,示例取当前固定表情。 */
+/** 展示当前状态对应的 AI 消息与实例化代码。 */
 export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
-	return (
-		<section className="mt-16">
-			<div className="border-b border-border pb-2.5">
-				<h3 className="text-base font-semibold text-foreground">AI 对接与实例化协议</h3>
-				<p className="mt-1 text-xs text-muted-foreground">
-					通过标准 JSON 协议接收模型输出。未识别的表情 ID 将自动平滑回退待机。
-				</p>
-			</div>
-
-			<div className="mt-4 grid items-start gap-4 md:grid-cols-2">
-				<CodeCard
-					title="AI 消息协议"
-					language="typescript"
-					code={`mascot.handleAIMessage({
+	const messageCode = `mascot.handleAIMessage({
   emotionId: "${pinnedDef.id}",
   tips: "${pinnedDef.desc.slice(0, 24)}..."
-});`}
-				/>
-				<CodeCard
-					title="实例化"
-					language="typescript"
-					code={`const mascot = new Mascot(container, {
+});`;
+	const instanceCode = `const mascot = new Mascot(container, {
   emotion: "${pinnedDef.id}"
-});`}
-				/>
+});`;
+
+	return (
+		<section className="mt-8 border border-edge-hairline bg-background">
+			<header className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+				<div className="flex items-center gap-3">
+					<Code2 className="size-5 shrink-0 text-neon-blue" />
+					<div>
+						<p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
+							开发者接入
+						</p>
+						<h2 className="mt-1 text-2xl font-semibold tracking-tight">
+							接到你的界面里
+						</h2>
+					</div>
+				</div>
+				<div className="flex items-center gap-2 font-mono text-[9px] text-muted-foreground">
+					<span className="size-1.5 bg-neon-blue" />
+					{pinnedDef.id} / {pinnedDef.en}
+					<MoveRight className="size-3.5 text-neon-blue" />
+				</div>
+			</header>
+
+			<div className="grid gap-4 border-t border-edge-hairline bg-muted/20 p-4 md:grid-cols-2">
+				<CodeCard title="AI 消息协议" language="typescript" code={messageCode} />
+				<CodeCard title="实例化" language="typescript" code={instanceCode} />
 			</div>
 		</section>
 	);
