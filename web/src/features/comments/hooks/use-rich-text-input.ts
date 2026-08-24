@@ -68,6 +68,12 @@ export function extractImageIds(markdown: string): string[] {
 	}
 	return ids;
 }
+
+/** 剥离 markdown 中的 `![img:<id>]` 图片占位符，只留文字部分（供图文合一发送场景剥离 caption 草稿复用）。 */
+export function stripImagePlaceholders(markdown: string): string {
+	return markdown.replace(IMAGE_TOKEN_PATTERN, "");
+}
+
 function escapeHtml(text: string): string {
 	return text
 		.replace(/&/g, "&amp;")

@@ -1,6 +1,7 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { stripImagePlaceholders } from "@features/comments/hooks/use-rich-text-input";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
@@ -1189,15 +1190,6 @@ interface MessageComposerProps {
 	replyTarget: ChatMessage | null;
 	onCancelReply: () => void;
 	onMessageSent?: () => void;
-}
-
-/**
- * 去掉 caption 草稿里的 `![img:id]` 图片占位符，只留文字部分发给后端——图片本身已通过
- * media_id 另行携带，占位符原文不应重复出现在消息 content 里。格式与
- * useRichTextInput（features/comments）的图片占位语法保持一致。
- */
-function stripImagePlaceholders(markdown: string): string {
-	return markdown.replace(/!\[img:[^\]]+\]/g, "");
 }
 
 function MessageComposer({
