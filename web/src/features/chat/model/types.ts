@@ -102,10 +102,18 @@ export interface ChatEvent {
 		| "room.invited"
 		| "member.changed"
 		| "message.deleted"
-		| "message.reaction.updated";
+		| "message.reaction.updated"
+		| "typing.updated";
 	version: number;
 	occurred_at: string;
 	data: Record<string, unknown>;
+}
+
+/** typing.updated 事件的 data 载荷；不持久化，仅供实时推送消费。 */
+export interface ChatTypingEventData {
+	conversation_id: string;
+	user_id: string;
+	is_typing: boolean;
 }
 
 export interface PushConfig {

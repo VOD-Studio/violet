@@ -93,6 +93,9 @@ export const markChatRead = (id: string, messageId?: string) =>
 		message_id: messageId,
 	});
 
+export const setChatTyping = (id: string, isTyping: boolean) =>
+	apiPost<null>(`/chat/conversations/${id}/typing`, { is_typing: isTyping });
+
 export const fetchChatPushConfig = () => apiGet<PushConfig>("/chat/push/config");
 
 export const saveChatPushSubscription = (input: PushSubscriptionInput) =>

@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
-import type { ChatEvent } from "../model/types";
+import { useChatTypingStore } from "../model/chat-typing-store";
+import type { ChatEvent, ChatTypingEventData } from "../model/types";
 
 /** 建立聊天 SSE 事件流，断线由浏览器自动重连并携带 Last-Event-ID。 */
 export const useChatStream = () => {
@@ -21,6 +22,17 @@ export const useChatStream = () => {
 		stream.addEventListener("chat", (event) => {
 			try {
 				const payload = JSON.parse((event as MessageEvent).data) as ChatEvent;
+				if (payload.type === "typing.updated") {
+					// 瞬态事件：不进事件表持久化，不参与断线补发（见 CONTEXT.md「输入状态」词条），
+					// 只驱动展示状态，不触发任何查询失效。
+					const data = payload.data as unknown as ChatTypingEventData;
+					if (data.is_typing) {
+						useChatTypingStore.getState().setTyping(data.conversation_id, data.user_id);
+					} else {
+						useChatTypingStore.getState().clearTyping(data.conversation_id, data.user_id);
+					}
+					return;
+				}
 				const conversationID = payload.data.conversation_id;
 				queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
 				queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() });

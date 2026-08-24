@@ -62,6 +62,7 @@ import {
 import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
 import { useChatSelection } from "../hooks/useChatSelection";
 import { useChatStream } from "../hooks/useChatStream";
+import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
 import type {
 	ChatConversation,
 	ChatMedia,
@@ -76,6 +77,7 @@ import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatReactionBar } from "./ChatReactionBar";
 import { NewConversationForm } from "./NewConversationForm";
 import { TweetShareCard } from "./TweetShareCard";
+import { TypingIndicator } from "./TypingIndicator";
 
 /** 聊天工作区：会话索引、消息流、房间成员抽屉与富文本 composer。 */
 export function ChatWorkspace() {
@@ -801,6 +803,7 @@ function ConversationPanel({
 							</motion.div>
 						)}
 					</AnimatePresence>
+					<TypingIndicator conversationID={conversation.id} members={members} />
 					<MessageComposer
 						conversationID={conversation.id}
 						onCancelReply={() => setReplyTarget(null)}
@@ -1204,6 +1207,15 @@ function MessageComposer({
 	const [uploading, setUploading] = useState(false);
 	const [resetNonce, setResetNonce] = useState(0);
 	const clearPendingShare = useShareTweetStore((s) => s.clearPending);
+	const { notifyTyping, notifyStopped } = useChatTypingBroadcaster(conversationID);
+
+	useEffect(() => {
+		if (content.trim()) {
+			notifyTyping();
+		} else {
+			notifyStopped();
+		}
+	}, [content, notifyTyping, notifyStopped]);
 
 	const send = useSendChatMessage();
 	const sentImageIDsRef = useRef(new Set<string>());
