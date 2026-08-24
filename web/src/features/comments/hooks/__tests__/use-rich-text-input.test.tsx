@@ -159,6 +159,40 @@ describe("useRichTextInput 图片行内节点", () => {
 
 		expect(onChange).toHaveBeenLastCalledWith("[smile]![img:img-4]");
 	});
+	it("文字后粘贴图片：uploading → done 原地替换后光标保持在图片右侧", () => {
+		const onChange = vi.fn();
+		const { container } = render(<Host value="123" onChange={onChange} onReady={onReady} />);
+		const editor = container.querySelector('[data-testid="editor"]') as HTMLElement;
+		editor.focus();
+
+		// 光标放到 "123" 末尾，模拟用户输入文字后粘贴图片前的光标位置。
+		const selection = window.getSelection();
+		const initialRange = document.createRange();
+		initialRange.selectNodeContents(editor);
+		initialRange.collapse(false);
+		selection?.removeAllRanges();
+		selection?.addRange(initialRange);
+
+		act(() => {
+			api.insertImage("img-caret", "blob:preview", "uploading");
+		});
+
+		const uploadingNode = editor.querySelector('[data-image="img-caret"]');
+		let caret = window.getSelection()?.getRangeAt(0);
+		expect(caret?.collapsed).toBe(true);
+		expect(editor.childNodes[(caret?.startOffset ?? 0) - 1]).toBe(uploadingNode);
+
+		act(() => {
+			api.insertImage("img-caret", "https://cdn.example.com/img-caret.png", "done");
+		});
+
+		const doneNode = editor.querySelector('[data-image="img-caret"]');
+		expect(doneNode?.getAttribute("data-image-status")).toBe("done");
+		caret = window.getSelection()?.getRangeAt(0);
+		expect(caret?.collapsed).toBe(true);
+		expect(caret?.startContainer).toBe(editor);
+		expect(editor.childNodes[(caret?.startOffset ?? 0) - 1]).toBe(doneNode);
+	});
 	it("自定义表情插入 [name:uuid] 占位符", () => {
 		const onChange = vi.fn();
 		const { container } = render(<Host value="" onChange={onChange} onReady={onReady} />);

@@ -268,7 +268,24 @@ export function useRichTextInput({
 			});
 
 			if (existing) {
+				// replaceWith 的 Range 调整是"remove 后 insert"两步：紧贴旧节点右侧的光标
+				// 在 remove 时 offset 减 1，insert 时因 offset == index 不加回——净效果是光标
+				// 滑到新节点左侧。替换前记住这一位置关系，替换后把光标补回新节点右侧；
+				// 光标在别处（上传期间继续打字/点选）则不抢。
+				const selection = window.getSelection();
+				const range =
+					selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+				const caretAfterExisting =
+					range?.collapsed &&
+					range.startContainer === existing.parentNode &&
+					existing.parentNode?.childNodes[range.startOffset - 1] === existing;
 				existing.replaceWith(element);
+				if (caretAfterExisting && selection && range) {
+					range.setStartAfter(element);
+					range.collapse(true);
+					selection.removeAllRanges();
+					selection.addRange(range);
+				}
 			} else {
 				div.focus();
 				const selection = window.getSelection();
