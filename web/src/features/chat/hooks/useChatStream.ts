@@ -1,11 +1,35 @@
 import { useSessionStore } from "@shared/api/session";
-import { useQueryClient } from "@tanstack/react-query";
+import type { PagedResponse } from "@shared/api/types";
+import { type InfiniteData, type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
 import { useChatTypingStore } from "../model/chat-typing-store";
-import type { ChatEvent, ChatTypingEventData } from "../model/types";
+import type { ChatEvent, ChatMessage, ChatTypingEventData } from "../model/types";
+
+type ChatMessagesCache = InfiniteData<PagedResponse<ChatMessage>, unknown>;
+
+function mergeCustomEmote(
+	queryClient: QueryClient,
+	conversationID: string,
+	messageID: string,
+	customEmote: NonNullable<ChatEvent["custom_emote"]>,
+) {
+	queryClient.setQueryData<ChatMessagesCache>(chatKeys.messages(conversationID), (current) => {
+		if (!current) return current;
+		let changed = false;
+		const pages = current.pages.map((page) => {
+			const data = page.data.map((message) => {
+				if (message.id !== messageID) return message;
+				changed = true;
+				return { ...message, custom_emote: customEmote };
+			});
+			return changed ? { ...page, data } : page;
+		});
+		return changed ? { ...current, pages } : current;
+	});
+}
 
 /** 建立聊天 SSE 事件流，断线由浏览器自动重连并携带 Last-Event-ID。 */
 export const useChatStream = () => {
@@ -29,11 +53,22 @@ export const useChatStream = () => {
 					if (data.is_typing) {
 						useChatTypingStore.getState().setTyping(data.conversation_id, data.user_id);
 					} else {
-						useChatTypingStore.getState().clearTyping(data.conversation_id, data.user_id);
+						useChatTypingStore
+							.getState()
+							.clearTyping(data.conversation_id, data.user_id);
 					}
 					return;
 				}
 				const conversationID = payload.data.conversation_id;
+				const messageID = payload.data.message_id;
+				if (
+					payload.type === "message.created" &&
+					typeof conversationID === "string" &&
+					typeof messageID === "string" &&
+					payload.custom_emote
+				) {
+					mergeCustomEmote(queryClient, conversationID, messageID, payload.custom_emote);
+				}
 				queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
 				queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() });
 				if (typeof conversationID === "string") {

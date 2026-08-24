@@ -1081,6 +1081,7 @@ function MessageBubble({
 								align={mine ? "start" : "end"}
 								onSelect={handleAddReaction}
 								selectedIds={selfReactionIds}
+								showMyEmojis={false}
 								trigger={
 									<button
 										aria-label={

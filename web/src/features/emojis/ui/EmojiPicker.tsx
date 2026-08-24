@@ -4,7 +4,7 @@
  * 基于后端 GET /emojis 返回的分组数据，按分组标签页展示可点击表情网格。
  * 图片表情用 img 渲染，纯文字表情用 text_content 兜底。
  *
- * 登录态下额外追加一个「我的表情」标签页（自传 + 收藏，PRD-0020），数据来自
+ * 登录态下额外追加一个「我的表情」标签页（自传 + 收藏），数据来自
  * GET /custom-emojis/mine，自给自足获取，既有调用方无需新增个人表情数据 prop。
  */
 import type { Emoji } from "@entities/emoji/model/types";
@@ -33,6 +33,8 @@ export interface EmojiPickerProps {
 	selectedIds?: Set<number>;
 	/** 选中表情后是否关闭面板，默认 true */
 	closeOnSelect?: boolean;
+	/** 是否展示自定义表情 tab；只支持系统表情的回应选择器可关闭。 */
+	showMyEmojis?: boolean;
 }
 
 /** 「我的表情」伪分组的标签 key，不与真实分组名冲突（分组名不含前后双下划线）。 */
@@ -49,6 +51,7 @@ export function EmojiPicker({
 	align = "start",
 	selectedIds = new Set(),
 	closeOnSelect = true,
+	showMyEmojis = true,
 }: EmojiPickerProps) {
 	const [open, setOpen] = useState(false);
 	const { data: groups = [], isLoading } = useAllEmojis();
@@ -79,14 +82,14 @@ export function EmojiPicker({
 		}
 	};
 
-	const tabCount = groups.length + (isLoggedIn ? 1 : 0);
+	const tabCount = groups.length + (isLoggedIn && showMyEmojis ? 1 : 0);
 	const activeIndex =
 		activeGroup === MINE_TAB_KEY
 			? groups.length
 			: groups.findIndex((g) => g.name === activeGroup);
 	const activeGroupData =
 		groups[activeIndex] ?? (activeGroup === MINE_TAB_KEY ? undefined : groups[0]);
-	const showingMine = activeGroup === MINE_TAB_KEY;
+	const showingMine = isLoggedIn && showMyEmojis && activeGroup === MINE_TAB_KEY;
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -165,7 +168,7 @@ export function EmojiPicker({
 										</button>
 									);
 								})}
-								{isLoggedIn && (
+								{isLoggedIn && showMyEmojis && (
 									<button
 										key={MINE_TAB_KEY}
 										ref={showingMine ? activeButtonRef : undefined}
@@ -272,6 +275,20 @@ function EmojiGrid({
 /** 单用户表情上传大小上限（与后端 UploadEmoji 校验一致） */
 const MAX_EMOJI_SIZE = 10 * 1024 * 1024;
 
+/** 「我的表情」标签页内容。 */
+export interface MyEmojisPanelProps {
+	/** 选中表情回调 */
+	onSelect: (emoji: Emoji) => void;
+}
+
+/** 自定义表情网格项属性。 */
+export interface CustomEmojiTileProps {
+	/** 表情读模型 */
+	emoji: Emoji;
+	/** 选中表情回调 */
+	onSelect: (emoji: Emoji) => void;
+}
+
 /**
  * MyEmojisPanel - 「我的表情」标签页内容：我传的 + 收藏来的两个分组 + 上传入口。
  *
@@ -279,7 +296,7 @@ const MAX_EMOJI_SIZE = 10 * 1024 * 1024;
  * data-custom-emoji-id/data-relation，右键行为与消息正文内一致），本组件
  * 不重复造轮子。
  */
-function MyEmojisPanel({ onSelect }: { onSelect: (emoji: Emoji) => void }) {
+function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 	const { data: mine, isLoading } = useMyCustomEmojis(true);
 	const uploadEmoji = useUploadEmoji();
 	const createEmoji = useCreateCustomEmoji();
@@ -429,7 +446,7 @@ function MyEmojisPanel({ onSelect }: { onSelect: (emoji: Emoji) => void }) {
 }
 
 /** CustomEmojiTile - 自定义表情网格项；img 挂 data-custom-emoji-id/data-relation 供全站右键菜单识别。 */
-function CustomEmojiTile({ emoji, onSelect }: { emoji: Emoji; onSelect: (emoji: Emoji) => void }) {
+function CustomEmojiTile({ emoji, onSelect }: CustomEmojiTileProps) {
 	return (
 		<button
 			type="button"

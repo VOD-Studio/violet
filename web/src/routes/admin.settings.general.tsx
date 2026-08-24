@@ -29,8 +29,7 @@ function GeneralSettingsPage() {
 		posts_per_page: data.posts_per_page,
 		comments_enabled: data.comments_enabled,
 		comments_moderation: data.comments_moderation,
-		custom_emoji_max_per_user:
-			data.custom_emoji_max_per_user > 0 ? data.custom_emoji_max_per_user : 100,
+		custom_emoji_max_per_user: data.custom_emoji_max_per_user,
 	}));
 
 	return (
@@ -94,7 +93,7 @@ function GeneralSettingsPage() {
 
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">表情</h3>
-				<Field label="单用户自定义表情上限（自传 + 收藏合计）">
+				<Field label="单用户自定义表情上限（自传 + 收藏合计，0=使用部署默认值）">
 					<Input
 						type="number"
 						min={0}
