@@ -1001,6 +1001,15 @@ function MessageBubble({
 								className="max-h-80 w-auto max-w-full object-cover transition duration-200 group-hover/img:scale-[1.01]"
 								src={message.media.thumbnail || message.media.url}
 							/>
+							{message.content && (
+								<div className="border-t border-edge-hairline/40 bg-background/50 px-3 py-2 text-left text-sm leading-relaxed">
+									<ChatMessageContent
+										content={message.content}
+										emote={emoteMap}
+										className="wrap-break-word"
+									/>
+								</div>
+							)}
 							<span className="flex items-center gap-2 border-t border-edge-hairline/40 bg-background/50 px-2.5 py-1.5 font-mono text-[10px] text-muted-foreground">
 								<ImageIcon className="size-3" />
 								{formatBytes(message.media.size)}
@@ -1136,7 +1145,7 @@ function ReplyPreview({
 	const content = reference.is_deleted
 		? "消息已删除"
 		: reference.type === "image"
-			? "图片消息"
+			? reference.content || "图片消息"
 			: reference.type === "tweet_share"
 				? reference.content || "分享了一条推文"
 				: (reference.content ?? "文本消息");
@@ -1180,6 +1189,15 @@ interface MessageComposerProps {
 	replyTarget: ChatMessage | null;
 	onCancelReply: () => void;
 	onMessageSent?: () => void;
+}
+
+/**
+ * 去掉 caption 草稿里的 `![img:id]` 图片占位符，只留文字部分发给后端——图片本身已通过
+ * media_id 另行携带，占位符原文不应重复出现在消息 content 里。格式与
+ * useRichTextInput（features/comments）的图片占位语法保持一致。
+ */
+function stripImagePlaceholders(markdown: string): string {
+	return markdown.replace(/!\[img:[^\]]+\]/g, "");
 }
 
 function MessageComposer({
@@ -1231,16 +1249,25 @@ function MessageComposer({
 			replyTargetIDRef.current = replyToID;
 			replyAttachedRef.current = false;
 		}
+		const trimmedContent = stripImagePlaceholders(content).trim();
+		// 尚未发送成功的图片（排除重试时已成功发送过的）。
+		const pendingImages = images.filter(
+			(img): img is PictureInput & { id: string } =>
+				!!img.id && !sentImageIDsRef.current.has(img.id),
+		);
 		try {
-			// 当前消息模型按单条消息保存图片；引用只附着到第一条实际发送的消息。
-			for (const img of images) {
-				if (!img.id || sentImageIDsRef.current.has(img.id)) continue;
+			// 当前消息模型按单条消息保存图片；引用只附着到本轮首条实际发送的消息。
+			// 有图片时，文字说明随本轮最后一张图片合并发送（图文合一）；只有文字、没有图片时单独发一条文本消息。
+			for (let i = 0; i < pendingImages.length; i++) {
+				const img = pendingImages[i];
+				const isLastImage = i === pendingImages.length - 1;
 				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
 				await send.mutateAsync({
 					id: conversationID,
 					input: {
 						type: "image",
 						media_id: img.id,
+						...(isLastImage && trimmedContent ? { content: trimmedContent } : {}),
 						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
 					},
 					idempotencyKey: crypto.randomUUID(),
@@ -1249,13 +1276,13 @@ function MessageComposer({
 				if (attachReply) replyAttachedRef.current = true;
 			}
 
-			if (content.trim()) {
+			if (trimmedContent && pendingImages.length === 0) {
 				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
 				await send.mutateAsync({
 					id: conversationID,
 					input: {
 						type: "text",
-						content: content.trim(),
+						content: trimmedContent,
 						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
 					},
 					idempotencyKey: crypto.randomUUID(),
@@ -1323,7 +1350,7 @@ function MessageComposer({
 								</p>
 								<p className="truncate text-xs text-muted-foreground">
 									{replyTarget.type === "image"
-										? "图片消息"
+										? replyTarget.content || "图片消息"
 										: (replyTarget.content ?? "文本消息")}
 								</p>
 							</div>
@@ -1344,6 +1371,7 @@ function MessageComposer({
 					onSubmit={sendMessage}
 					enableEmoji={true}
 					enableImage={!pendingShare}
+					inlineImages={!pendingShare}
 					uploadPurpose="chat"
 					submitOnEnter={true}
 					compact={true}
@@ -1837,7 +1865,7 @@ export function conversationTargetUser(
 
 function messagePreview(message: ChatMessage) {
 	if (message.is_deleted) return "消息已删除";
-	if (message.type === "image") return "发送了一张图片";
+	if (message.type === "image") return message.content || "发送了一张图片";
 	if (message.type === "tweet_share") return message.content || "分享了一条推文";
 	return message.content ?? "";
 }

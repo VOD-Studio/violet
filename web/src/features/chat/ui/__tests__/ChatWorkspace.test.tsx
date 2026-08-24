@@ -109,8 +109,10 @@ vi.mock("@features/emojis/api/queries", () => ({
 	useAllEmojis: () => ({ data: [], isLoading: false }),
 }));
 
+const { mockUploadFile } = vi.hoisted(() => ({ mockUploadFile: vi.fn() }));
+
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
-	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
+	useChunkedUpload: () => ({ uploadFile: mockUploadFile }),
 }));
 
 vi.mock("@features/chat/hooks/useChatStream", () => ({
@@ -314,6 +316,7 @@ function createWrapper() {
 describe("ChatWorkspace", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUploadFile.mockReset();
 		window.HTMLElement.prototype.scrollIntoView = vi.fn();
 		window.history.replaceState({}, "", "/chat?c=c_1");
 		window.HTMLElement.prototype.scrollTo = vi.fn(function (
@@ -392,6 +395,77 @@ describe("ChatWorkspace", () => {
 					type: "text",
 					content: "新消息测试",
 				},
+			}),
+		);
+	});
+
+	it("选 1 张图 + 文字发送：合并为一条图文消息，而非两条", async () => {
+		mockUploadFile.mockResolvedValue({
+			file_id: "media-1",
+			url: "https://cdn.example.com/media-1.png",
+			width: 100,
+			height: 80,
+		});
+		const { container } = render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+		const file = new File(["binary"], "photo.png", { type: "image/png" });
+		fireEvent.change(fileInput, { target: { files: [file] } });
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-image-status="done"]')).toBeTruthy();
+		});
+
+		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		// 用 appendChild 而非 textContent 赋值：后者会清空既有子节点，连带删掉刚插入的图片节点。
+		editor.appendChild(document.createTextNode("配图文字"));
+		fireEvent.input(editor);
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+
+		await waitFor(() => {
+			expect(mockSendMutateAsync).toHaveBeenCalledTimes(1);
+		});
+		expect(mockSendMutateAsync).toHaveBeenCalledWith(
+			expect.objectContaining({
+				id: "c_1",
+				input: { type: "image", media_id: "media-1", content: "配图文字" },
+			}),
+		);
+	});
+
+	it("多图 + 文字发送：只有最后一张图片的请求携带说明文字", async () => {
+		mockUploadFile.mockImplementation(async (file: File) =>
+			file.name === "a.png"
+				? { file_id: "media-a", url: "https://cdn.example.com/a.png", width: 1, height: 1 }
+				: { file_id: "media-b", url: "https://cdn.example.com/b.png", width: 1, height: 1 },
+		);
+		const { container } = render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+		const fileA = new File(["a"], "a.png", { type: "image/png" });
+		const fileB = new File(["b"], "b.png", { type: "image/png" });
+		fireEvent.change(fileInput, { target: { files: [fileA, fileB] } });
+
+		await waitFor(() => {
+			expect(container.querySelectorAll('[data-image-status="done"]').length).toBe(2);
+		});
+
+		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		editor.appendChild(document.createTextNode("两张图"));
+		fireEvent.input(editor);
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+
+		await waitFor(() => {
+			expect(mockSendMutateAsync).toHaveBeenCalledTimes(2);
+		});
+		expect(mockSendMutateAsync).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({ input: { type: "image", media_id: "media-a" } }),
+		);
+		expect(mockSendMutateAsync).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({
+				input: { type: "image", media_id: "media-b", content: "两张图" },
 			}),
 		);
 	});
