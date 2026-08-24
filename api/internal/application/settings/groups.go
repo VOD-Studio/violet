@@ -33,6 +33,8 @@ type GeneralView struct {
 	CommentsEnabled    bool   `json:"comments_enabled"`
 	CommentsModeration bool   `json:"comments_moderation"`
 	TechStack          string `json:"tech_stack"`
+	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（0 表示未配置，前端显示时按 env 默认兜底）
+	CustomEmojiMaxPerUser int `json:"custom_emoji_max_per_user"`
 }
 
 // AuthView 认证组：第三方登录开关
@@ -95,13 +97,14 @@ type CodeRunnerView struct {
 
 func generalView(s domainsettings.SiteSettings) GeneralView {
 	return GeneralView{
-		SiteName:           s.SiteName,
-		SiteURL:            s.SiteURL,
-		FooterText:         s.FooterText,
-		PostsPerPage:       s.PostsPerPage,
-		CommentsEnabled:    s.CommentsEnabled,
-		CommentsModeration: s.CommentsModeration,
-		TechStack:          s.TechStack,
+		SiteName:              s.SiteName,
+		SiteURL:               s.SiteURL,
+		FooterText:            s.FooterText,
+		PostsPerPage:          s.PostsPerPage,
+		CommentsEnabled:       s.CommentsEnabled,
+		CommentsModeration:    s.CommentsModeration,
+		TechStack:             s.TechStack,
+		CustomEmojiMaxPerUser: s.CustomEmojiMaxPerUser,
 	}
 }
 
@@ -171,13 +174,14 @@ func codeRunnerView(s domainsettings.SiteSettings) CodeRunnerView {
 
 // GeneralUpdate 基础信息组更新入参
 type GeneralUpdate struct {
-	SiteName           *string
-	SiteURL            *string
-	FooterText         *string
-	PostsPerPage       *int
-	CommentsEnabled    *bool
-	CommentsModeration *bool
-	TechStack          *string
+	SiteName              *string
+	SiteURL               *string
+	FooterText            *string
+	PostsPerPage          *int
+	CommentsEnabled       *bool
+	CommentsModeration    *bool
+	TechStack             *string
+	CustomEmojiMaxPerUser *int
 }
 
 // AuthUpdate 认证组更新入参

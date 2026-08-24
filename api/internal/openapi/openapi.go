@@ -98,5 +98,6 @@ func build() (*openapi3.T, error) {
 	registerAdminMusicPaths(t)
 	registerAdminEmojiPaths(t)
 	registerChatPaths(t)
+	registerCustomEmojiPaths(t)
 	return t, nil
 }

@@ -58,3 +58,22 @@ type NoopPushSender struct{}
 func (NoopPushSender) Send(context.Context, *domainchat.PushSubscription, PushPayload) error {
 	return nil
 }
+
+// CustomEmojiRefDTO 自定义表情解析结果（命名与含义镜像评论域 EmojiRef，仅取
+// 渲染/菜单所需字段；聊天不复用评论/推文的 EmojiLookup——那是客户端全局 map
+// 架构，聊天走本端口 + 共享 application/customemoji.Service 实现，见 PRD-0020）。
+type CustomEmojiRefDTO struct {
+	// URL 表情图片 URL；任意 viewer 均可见渲染结果，与 Relation 无关。
+	URL string `json:"url"`
+	// CustomEmojiID 表情 ID，供前端挂右键菜单操作目标（与 comment/tweet 域
+	// EmojiRef.CustomEmojiID 同构，避免前端反解析 token key 提取 ID）。
+	CustomEmojiID string `json:"custom_emoji_id"`
+	// Relation viewer 与该表情的关系（owned/favorited/none），决定右键菜单项。
+	Relation string `json:"relation"`
+}
+
+// CustomEmojiResolver 自定义表情批量解析端口（共享 application/customemoji.Service
+// 实现，接口按域拆分避免直接依赖 customemoji 包）。
+type CustomEmojiResolver interface {
+	ResolveByIDs(ctx context.Context, ids []domainshared.ID, viewerID domainshared.ID) (map[domainshared.ID]CustomEmojiRefDTO, error)
+}

@@ -66,6 +66,9 @@ type Config struct {
 	// FeedProxyURL feed 抓取出站代理地址（如 http://127.0.0.1:7890）。
 	// 空串 = 直连 + SSRF 防护（生产默认）；非空 = 走代理，SSRF 防护交给代理（本地开发穿 GFW）。
 	FeedProxyURL string
+	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计）的 env 兜底默认值，
+	// 仅当 site_settings 未配置（值为 0）时生效，见 docs/adr/0013。
+	CustomEmojiMaxPerUser int
 }
 
 // WebPushConfig 浏览器 Web Push VAPID 配置。
@@ -307,6 +310,7 @@ func Load() *Config {
 	v.SetDefault("code_runner.task_ttl_secs", 300)
 	v.SetDefault("code_runner.docker_socket_path", "/var/run/docker.sock")
 	v.SetDefault("code_runner.languages", []string{})
+	v.SetDefault("custom_emoji_max_per_user", 100)
 
 	// 读取配置文件（不存在也不报错）
 	_ = v.ReadInConfig()
@@ -396,7 +400,8 @@ func Load() *Config {
 			DockerSocketPath: v.GetString("code_runner.docker_socket_path"),
 			Languages:        getStringSlice(v, "code_runner.languages"),
 		},
-		FeedProxyURL: v.GetString("feed_proxy_url"),
+		FeedProxyURL:          v.GetString("feed_proxy_url"),
+		CustomEmojiMaxPerUser: v.GetInt("custom_emoji_max_per_user"),
 	}
 
 	// 验证必需配置

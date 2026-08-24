@@ -133,6 +133,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		NotificationStream:    c.Notification.StreamHandler,
 		Chat:                  c.Chat.ChatHandler,
 		ChatStream:            c.Chat.StreamHandler,
+		CustomEmoji:           c.CustomEmoji.Handler,
 		MCP: routing.MCPHandlers{
 			Post:     c.MCP.PostHandler,
 			Scraper:  c.MCP.ScraperHandler,

@@ -113,7 +113,7 @@ func newReplyService(t *testing.T, target *domainchat.Message, userID, targetSen
 		userID:         newReplyUser(userID, "alice"),
 		targetSenderID: newReplyUser(targetSenderID, "bob"),
 	}}
-	return NewService(repo, users, nil, nil, nil, "", func() time.Time { return now }, nil, nil, nil), repo
+	return NewService(repo, users, nil, nil, nil, "", func() time.Time { return now }, nil, nil, nil, nil), repo
 }
 
 func TestSendMessageIncludesDynamicReplyPreview(t *testing.T) {

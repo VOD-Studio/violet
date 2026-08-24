@@ -29,7 +29,7 @@ func newImageCaptionService(
 	repo := &replyChatRepo{conversation: conversation, member: member}
 	users := &replyUserRepo{users: map[domainshared.ID]*domainuser.User{userID: newReplyUser(userID, "alice")}}
 	files := &mockFileRepo{files: map[domainshared.ID]*domainupload.File{file.ID(): file}}
-	svc := NewService(repo, users, files, nil, nil, "", func() time.Time { return now }, nil, nil, nil)
+	svc := NewService(repo, users, files, nil, nil, "", func() time.Time { return now }, nil, nil, nil, nil)
 	return svc, repo
 }
 

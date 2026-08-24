@@ -5,9 +5,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
+	appcustomemoji "blog-api/internal/application/customemoji"
 	appshared "blog-api/internal/application/shared"
 	domainchat "blog-api/internal/domain/chat"
 	domainchatreaction "blog-api/internal/domain/chatreaction"
@@ -25,27 +29,30 @@ const (
 
 // Service 聊天用例服务。
 type Service struct {
-	repo      domainchat.ConversationRepository
-	users     UserRepository
-	files     FileRepository
-	tweets    TweetRepository
-	reactions domainchatreaction.Store
-	notifier  EventNotifier
-	push      PushSender
-	bus       appshared.EventBus
-	now       func() time.Time
-	publicKey string
+	repo         domainchat.ConversationRepository
+	users        UserRepository
+	files        FileRepository
+	tweets       TweetRepository
+	reactions    domainchatreaction.Store
+	notifier     EventNotifier
+	push         PushSender
+	bus          appshared.EventBus
+	now          func() time.Time
+	publicKey    string
+	customEmojis CustomEmojiResolver
 }
 
 // NewService 构造聊天服务。
-func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus, reactions domainchatreaction.Store, tweets TweetRepository) *Service {
+// customEmojis 为 nil 时跳过消息正文中 [name:uuid] 自定义表情占位符的解析
+// （仅限测试场景；生产容器必须注入，见 PRD-0020）。
+func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus, reactions domainchatreaction.Store, tweets TweetRepository, customEmojis CustomEmojiResolver) *Service {
 	if now == nil {
 		now = time.Now
 	}
 	if push == nil {
 		push = NoopPushSender{}
 	}
-	return &Service{repo: repo, users: users, files: files, tweets: tweets, reactions: reactions, notifier: notifier, push: push, bus: bus, publicKey: publicKey, now: now}
+	return &Service{repo: repo, users: users, files: files, tweets: tweets, reactions: reactions, notifier: notifier, push: push, bus: bus, publicKey: publicKey, now: now, customEmojis: customEmojis}
 }
 
 // CreateConversationInput 创建会话入参。
@@ -203,6 +210,10 @@ type MessageDTO struct {
 	Type string `json:"type"`
 	// Content 文本内容；删除消息为空。
 	Content string `json:"content,omitempty"`
+	// CustomEmote 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符
+	// （含方括号，如 "[mycat:<uuid>]"）。命名/含义镜像评论域 Emote；系统表情
+	// [name] 不在此列，继续走客户端全局 GET /emojis 路径解析（PRD-0020）。
+	CustomEmote map[string]CustomEmojiRefDTO `json:"custom_emote,omitempty"`
 	// Media 图片媒体；文本消息为空。
 	Media *MediaDTO `json:"media,omitempty"`
 	// SharedTweet 分享推文的动态快照；被分享推文物理删除后为已删除占位。
@@ -269,6 +280,9 @@ type EventDTO struct {
 	OccurredAt string `json:"occurred_at"`
 	// Data 事件数据。
 	Data map[string]any `json:"data"`
+	// CustomEmote 新消息正文中自定义表情占位符的解析结果，key 为完整 token。
+	// 关系按事件接收者计算；系统表情继续由客户端全局表情目录解析。
+	CustomEmote map[string]CustomEmojiRefDTO `json:"custom_emote,omitempty"`
 }
 
 // ListResult 聊天列表 cursor 结果。
@@ -696,7 +710,7 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 		return ListResult[MessageDTO]{}, err
 	}
 	for _, row := range rows {
-		dto, err := s.messageDTOWithReactions(ctx, row, reactions[row.ID().String()])
+		dto, err := s.messageDTOWithReactions(ctx, row, reactions[row.ID().String()], userID)
 		if err != nil {
 			return ListResult[MessageDTO]{}, err
 		}
@@ -913,7 +927,12 @@ func (s *Service) EventsAfter(ctx context.Context, userID domainshared.ID, after
 	}
 	out := make([]EventDTO, 0, len(events))
 	for _, event := range events {
-		out = append(out, eventToDTO(event))
+		dto, err := s.eventToDTO(ctx, event)
+		if err != nil {
+			log.Warn().Err(err).Str("event_type", string(event.Type)).Msg("聊天事件自定义表情解析失败")
+			dto = eventEnvelope(event)
+		}
+		out = append(out, dto)
 	}
 	return out, nil
 }
@@ -1000,7 +1019,7 @@ func (s *Service) messageDTO(ctx context.Context, message *domainchat.Message, v
 		}
 		reactions = byMessage[message.ID().String()]
 	}
-	return s.messageDTOWithReactions(ctx, message, reactions)
+	return s.messageDTOWithReactions(ctx, message, reactions, viewerUserID)
 }
 
 func (s *Service) listMessageReactions(ctx context.Context, messages []*domainchat.Message, viewerUserID domainshared.ID) (map[string][]domainchatreaction.AggregatedReaction, error) {
@@ -1014,7 +1033,7 @@ func (s *Service) listMessageReactions(ctx context.Context, messages []*domainch
 	return s.reactions.ListByMessages(ctx, ids, viewerUserID)
 }
 
-func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainchat.Message, reactions []domainchatreaction.AggregatedReaction) (MessageDTO, error) {
+func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainchat.Message, reactions []domainchatreaction.AggregatedReaction, viewerUserID domainshared.ID) (MessageDTO, error) {
 	sender, err := s.users.FindByID(ctx, message.SenderID())
 	if err != nil {
 		return MessageDTO{}, err
@@ -1036,6 +1055,10 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 	}
 	if message.HasTextContent() {
 		dto.Content = message.Content()
+		dto.CustomEmote, err = s.resolveCustomEmote(ctx, dto.Content, viewerUserID)
+		if err != nil {
+			return MessageDTO{}, err
+		}
 	}
 	if message.SharedTweetID() != nil {
 		dto.SharedTweet, err = s.sharedTweetDTO(ctx, *message.SharedTweetID())
@@ -1063,6 +1086,53 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		}
 	}
 	return dto, nil
+}
+
+// customEmojiBodyPattern 匹配正文中的 [xxx] 占位符（含方括号）；与评论/推文域的
+// emojiBodyPattern 同构。是否为自定义表情 token（冒号后段是合法 UUID）由
+// appcustomemoji.ParseToken 判定；聊天没有系统表情按名解析分支，故此处只收集
+// 自定义表情 ID，普通 [name] 系统表情占位符原样忽略（客户端全局 map 解析）。
+var customEmojiBodyPattern = regexp.MustCompile(`\[([^\]]+)\]`)
+
+// resolveCustomEmote 解析正文中的自定义表情占位符，返回 token → 解析结果映射。
+// s.customEmojis 为 nil（未注入）或正文不含合法 token 时返回 nil（JSON 省略）。
+func (s *Service) resolveCustomEmote(ctx context.Context, content string, viewerUserID domainshared.ID) (map[string]CustomEmojiRefDTO, error) {
+	if s.customEmojis == nil || content == "" {
+		return nil, nil
+	}
+	var ids []domainshared.ID
+	tokenByID := make(map[domainshared.ID][]string)
+	seenIDs := make(map[domainshared.ID]struct{})
+	for _, m := range customEmojiBodyPattern.FindAllString(content, -1) {
+		if len(m) < 2 {
+			continue
+		}
+		if id, ok := appcustomemoji.ParseToken(m[1 : len(m)-1]); ok {
+			tokenByID[id] = append(tokenByID[id], m)
+			if _, seen := seenIDs[id]; !seen {
+				seenIDs[id] = struct{}{}
+				ids = append(ids, id)
+			}
+		}
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	refs, err := s.customEmojis.ResolveByIDs(ctx, ids, viewerUserID)
+	if err != nil {
+		return nil, err
+	}
+	if len(refs) == 0 {
+		return nil, nil
+	}
+	result := make(map[string]CustomEmojiRefDTO, len(refs))
+	for id, ref := range refs {
+		ref.CustomEmojiID = id.String()
+		for _, token := range tokenByID[id] {
+			result[token] = ref
+		}
+	}
+	return result, nil
 }
 
 func messageReactionDTOs(reactions []domainchatreaction.AggregatedReaction) []MessageReactionDTO {
@@ -1163,7 +1233,11 @@ func isAllowedChatImagePurpose(purpose string) bool {
 
 func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 	for _, event := range events {
-		dto := eventToDTO(event)
+		dto, err := s.eventToDTO(ctx, event)
+		if err != nil {
+			log.Warn().Err(err).Str("event_type", string(event.Type)).Msg("聊天事件自定义表情解析失败")
+			dto = eventEnvelope(event)
+		}
 		if s.notifier != nil {
 			s.notifier.Push(event.UserID, dto)
 		}
@@ -1236,8 +1310,55 @@ func eventConversationID(event domainchat.Event) (domainshared.ID, error) {
 	return domainshared.ParseID(value)
 }
 
-func eventToDTO(event domainchat.Event) EventDTO {
-	return EventDTO{ID: fmt.Sprint(event.Sequence), Type: string(event.Type), Version: 1, OccurredAt: event.CreatedAt.Format(time.RFC3339Nano), Data: event.Payload}
+func (s *Service) eventToDTO(ctx context.Context, event domainchat.Event) (EventDTO, error) {
+	dto := eventEnvelope(event)
+	if event.Type != domainchat.EventMessageCreated || s.customEmojis == nil {
+		return dto, nil
+	}
+	conversationID, err := eventConversationID(event)
+	if err != nil {
+		return dto, nil
+	}
+	messageIDValue, ok := event.Payload["message_id"].(string)
+	if !ok {
+		return dto, nil
+	}
+	messageID, err := domainshared.ParseID(messageIDValue)
+	if err != nil {
+		return dto, nil
+	}
+	message, err := s.repo.FindMessage(ctx, conversationID, messageID)
+	if err != nil {
+		if errors.Is(err, domainchat.ErrMessageNotFound) {
+			return dto, nil
+		}
+		return EventDTO{}, err
+	}
+	if message == nil {
+		return dto, nil
+	}
+	if !message.HasTextContent() {
+		return dto, nil
+	}
+	dto.CustomEmote, err = s.resolveCustomEmote(ctx, message.Content(), event.UserID)
+	if err != nil {
+		return EventDTO{}, err
+	}
+	return dto, nil
+}
+
+func eventEnvelope(event domainchat.Event) EventDTO {
+	data := make(map[string]any, len(event.Payload))
+	for key, value := range event.Payload {
+		data[key] = value
+	}
+	return EventDTO{
+		ID:         fmt.Sprint(event.Sequence),
+		Type:       string(event.Type),
+		Version:    1,
+		OccurredAt: event.CreatedAt.Format(time.RFC3339Nano),
+		Data:       data,
+	}
 }
 
 func userToDTO(user *domainuser.User) UserDTO {

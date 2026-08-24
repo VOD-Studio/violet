@@ -47,6 +47,7 @@ func registerChatPaths(t *openapi3.T) {
 		"sender":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
 		"type":            reqStr("text、image、system 或 tweet_share"),
 		"content":         optStr("文本内容或分享推文的配文"),
+		"custom_emote":    &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
 		"media":           &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"},
 		"shared_tweet":    &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
 		"reply_to":        &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
@@ -66,11 +67,12 @@ func registerChatPaths(t *openapi3.T) {
 		"updated_at":   reqStr("RFC3339 时间"),
 	})
 	registerSchema(t, "ChatEventDTO", openapi3.Schemas{
-		"id":          reqStr("单调递增事件序号"),
-		"type":        reqStr("事件类型"),
-		"version":     optInt("事件契约版本"),
-		"occurred_at": reqStr("RFC3339 时间"),
-		"data":        &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeObject}, AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(true)}}},
+		"id":           reqStr("单调递增事件序号"),
+		"type":         reqStr("事件类型"),
+		"version":      optInt("事件契约版本"),
+		"occurred_at":  reqStr("RFC3339 时间"),
+		"data":         &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeObject}, AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(true)}}},
+		"custom_emote": &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
 	})
 	registerSchema(t, "ChatCreateConversationRequest", openapi3.Schemas{
 		"kind":            reqStr("direct 或 room"),

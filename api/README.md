@@ -116,8 +116,8 @@ api/
 | **project** | project | project | 项目展示 CRUD |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
+| **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
-| **media** | upload, music | media | 文件详情/批量删除/缩略图、音乐解析 |
 | **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文/动态发布 |

@@ -63,7 +63,7 @@ func TestChatImagePurposeValidation(t *testing.T) {
 				t.Fatalf("failed to create file: %v", err)
 			}
 			repo := &mockFileRepo{files: map[domainshared.ID]*domainupload.File{fileID: file}}
-			svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil)
+			svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil, nil)
 
 			res, err := svc.chatImage(context.Background(), fileID, userID)
 			if err != nil {
@@ -82,7 +82,7 @@ func TestChatImagePurposeValidation(t *testing.T) {
 			t.Fatalf("failed to create file: %v", err)
 		}
 		repo := &mockFileRepo{files: map[domainshared.ID]*domainupload.File{fileID: file}}
-		svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil)
+		svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil, nil)
 
 		_, err = svc.chatImage(context.Background(), fileID, userID)
 		if err == nil {
@@ -97,7 +97,7 @@ func TestChatImagePurposeValidation(t *testing.T) {
 			t.Fatalf("failed to create file: %v", err)
 		}
 		repo := &mockFileRepo{files: map[domainshared.ID]*domainupload.File{fileID: file}}
-		svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil)
+		svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil, nil)
 
 		_, err = svc.chatImage(context.Background(), fileID, userID)
 		if err == nil {
@@ -112,7 +112,7 @@ func TestChatImagePurposeValidation(t *testing.T) {
 			t.Fatalf("failed to create file: %v", err)
 		}
 		repo := &mockFileRepo{files: map[domainshared.ID]*domainupload.File{fileID: file}}
-		svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil)
+		svc := NewService(nil, nil, repo, nil, nil, "", nil, nil, nil, nil, nil)
 
 		_, err = svc.chatImage(context.Background(), fileID, userID)
 		if err == nil {

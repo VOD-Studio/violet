@@ -42,7 +42,7 @@ func newShareService(t *testing.T, tweet *domaintweet.Tweet, userID, authorID, c
 	if tweet != nil {
 		tweets.tweets[tweet.ID()] = tweet
 	}
-	svc := NewService(repo, users, nil, nil, nil, "", func() time.Time { return now }, nil, nil, tweets)
+	svc := NewService(repo, users, nil, nil, nil, "", func() time.Time { return now }, nil, nil, tweets, nil)
 	return svc, repo
 }
 

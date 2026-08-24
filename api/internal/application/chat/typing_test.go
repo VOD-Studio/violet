@@ -55,7 +55,7 @@ func newTypingService(t *testing.T, conversationID domainshared.ID, members []*d
 	}
 	repo := &typingChatRepo{conversation: conversation, members: members, findErr: findErr}
 	notifier := &typingNotifier{}
-	svc := NewService(repo, nil, nil, notifier, nil, "", func() time.Time { return now }, nil, nil, nil)
+	svc := NewService(repo, nil, nil, notifier, nil, "", func() time.Time { return now }, nil, nil, nil, nil)
 	return svc, repo, notifier
 }
 

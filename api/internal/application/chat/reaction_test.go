@@ -115,7 +115,7 @@ func newReactionService(t *testing.T, message *domainchat.Message, userID, conve
 	}
 	user := newReplyUser(userID, "alice")
 	repo := &reactionChatRepo{conversation: conversation, message: message, member: member}
-	svc := NewService(repo, &reactionUserRepo{user: user}, nil, nil, nil, "", func() time.Time { return now }, nil, store, nil)
+	svc := NewService(repo, &reactionUserRepo{user: user}, nil, nil, nil, "", func() time.Time { return now }, nil, store, nil, nil)
 	return svc, repo
 }
 

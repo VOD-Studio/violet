@@ -162,3 +162,8 @@ code_runner:
   docker_socket_path: /var/run/docker.sock
   # env: CODE_RUNNER_LANGUAGES（空格分隔 canonical key，空=全部）
   languages: []
+
+# ── 自定义表情（用户自助上传，默认私有）────────────
+# 架构决策见 docs/adr/0013-custom-emoji-private-favorite-model.md
+# env: CUSTOM_EMOJI_MAX_PER_USER（仅当 site_settings 后台未配置时生效）
+custom_emoji_max_per_user: 100 # 单用户自传+收藏合计上限

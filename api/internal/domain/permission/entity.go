@@ -127,6 +127,8 @@ var (
 	// chat
 	ChatManage  = MustParse("chat:manage") // 管理违规聊天消息
 	AdminAccess = MustParse("admin:access")
+	// customemoji
+	CustomEmojiManage = MustParse("customemoji:manage") // 管理自定义表情（强制下架任意用户的违规表情）
 )
 
 // ============================================================

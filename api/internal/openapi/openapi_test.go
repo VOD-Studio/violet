@@ -99,6 +99,22 @@ func TestChatPaths(t *testing.T) {
 	require.NotNil(t, send)
 	require.True(t, hasParam(send.Parameters, "Idempotency-Key"))
 }
+func TestCustomEmojiPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, path := range []string{
+		"/custom-emojis",
+		"/custom-emojis/mine",
+		"/custom-emojis/{id}",
+		"/custom-emojis/{id}/favorite",
+	} {
+		require.NotNil(t, spec.Paths.Find(path), "missing custom emoji path %s", path)
+	}
+	for _, schema := range []string{"CustomEmojiDTO", "CustomEmojiMineDTO", "CustomEmojiCreateRequest", "CustomEmojiRefMap"} {
+		require.Contains(t, spec.Components.Schemas, schema, "missing schema %s", schema)
+	}
+	require.NotNil(t, spec.Paths.Find("/custom-emojis").Post)
+	require.True(t, hasParam(spec.Paths.Find("/custom-emojis").Post.Parameters, "X-CSRF-Token"))
+}
 
 // hasParam 检查参数列表是否包含指定名称
 func hasParam(params openapi3.Parameters, name string) bool {
