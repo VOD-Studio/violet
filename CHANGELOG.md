@@ -7,6 +7,52 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.17](https://github.com/VOD-Studio/violet/compare/v2.8.16...v2.8.17) (2026-08-24)
+
+
+### 新增
+
+* **mascot:** 聚光特效改为驱动舞台真实灯光 ([33fc1a7](https://github.com/VOD-Studio/violet/commit/33fc1a72deb39ad98a5bf3da347f38553cf07e3f))
+* **mascot:** 重设实验室标题与无边框控件 ([ebf8fc1](https://github.com/VOD-Studio/violet/commit/ebf8fc1f097c03253411a5de34148c7647acf717))
+* **mascot:** 重设计堇喵动作室 ([669ae67](https://github.com/VOD-Studio/violet/commit/669ae673d69696b01c57df709d99378d31ab13ef))
+* **mascot:** 重设计实验室工作台界面 ([62297b6](https://github.com/VOD-Studio/violet/commit/62297b6229f36e9c64e07140fd48bb1e79ac1327))
+* **mascot:** 重设计实验室工作台界面 ([6993c20](https://github.com/VOD-Studio/violet/commit/6993c2003a6323e203a06e47e3fc1035fe140dfb))
+* **mascot:** 重设计舞台特效与导演台 ([479d6fe](https://github.com/VOD-Studio/violet/commit/479d6fe46a1cbd287b3bb0922d1a7e848329d424))
+* **mascot:** 重设计舞台特效控制区 ([bc14a38](https://github.com/VOD-Studio/violet/commit/bc14a3897e0229eddb70a8f3a3c2dbb2ff995c0d))
+* **mascot:** 重设计黑盒舞台 ([1562eb1](https://github.com/VOD-Studio/violet/commit/1562eb1238fdafdbbace5f381f31f567440b8190))
+
+
+### 修复
+
+* **lab:** 调整各实验室页面的内边距 ([4d5af52](https://github.com/VOD-Studio/violet/commit/4d5af520f9ce02e242f3a117e1f092ae53ca7bf3))
+* **mascot:** 优化表情卡片选中反馈 ([10c8ce2](https://github.com/VOD-Studio/violet/commit/10c8ce2c9770b6c26d2b829d733a1f7ed4ff58a5))
+* **mascot:** 保持尾巴位于身体后层 ([aeec463](https://github.com/VOD-Studio/violet/commit/aeec463f62bef98fa19e45d799ee733d77751302))
+* **mascot:** 修复浅角度旋转耳朵淡出 ([595b1f1](https://github.com/VOD-Studio/violet/commit/595b1f172e707a7710cbbdb5a8b26850ce816ece))
+* **mascot:** 修正侧视旋转层级 ([2d950f2](https://github.com/VOD-Studio/violet/commit/2d950f2a6ead0e2063bd52af95d5a293801d090b))
+* **mascot:** 修正背面尾巴层级 ([f90a8b8](https://github.com/VOD-Studio/violet/commit/f90a8b86a8c2c8c5e2b6231067d1aa0771351649))
+* **mascot:** 分离舞台与导演台 ([647ff16](https://github.com/VOD-Studio/violet/commit/647ff16716bfdb3eaba6bc47a295f948e5e216ca))
+* **mascot:** 加强偏航静态帧的侧面可读性 ([46f7be3](https://github.com/VOD-Studio/violet/commit/46f7be33443457fae7ebe4c0f842440c63709bbc))
+* **mascot:** 固定移动端工作台高度避免切换跳动 ([063bea6](https://github.com/VOD-Studio/violet/commit/063bea66392e6e7f2dae60060b903218e8c44a54))
+* **mascot:** 对齐远程黑盒舞台质感 ([52fd683](https://github.com/VOD-Studio/violet/commit/52fd683b48c63ad2fef387dad7a2ce0a78550e89))
+* **mascot:** 平滑路径加角点保持修复眼环畸形 ([b423aab](https://github.com/VOD-Studio/violet/commit/b423aabe9c87a456d6eb3e8a2c4325d959c145cf))
+* **mascot:** 指针注视跟随从五官扩展到身体 ([c8b52d1](https://github.com/VOD-Studio/violet/commit/c8b52d16fc1c2cf039c5cca2215400e72e3f0c5d))
+* **mascot:** 界面文案统一为中文 ([4e83adf](https://github.com/VOD-Studio/violet/commit/4e83adff596c37654d090d082008bfdb42d3b1a4))
+* **mascot:** 视线跟随限定舞台区并在离开时回中 ([38a591f](https://github.com/VOD-Studio/violet/commit/38a591f0907911f26c778f16248b62ba9cf0d129))
+* **mascot:** 移除 rigG 偏航压缩，消除转圈时各部件双重投影 ([ec22e65](https://github.com/VOD-Studio/violet/commit/ec22e65973d71bbe6ff6a261d29a799c976d6f2d))
+* **mascot:** 统一转圈部件投影 ([014fda4](https://github.com/VOD-Studio/violet/commit/014fda4f911430442e60a7d5d1241dff5233d2aa))
+* **mascot:** 统一返回入口并稳定图鉴计数宽度 ([bcaaa3d](https://github.com/VOD-Studio/violet/commit/bcaaa3d5f40a71f8cf9ed7bab6014fb29c057e3f))
+* **mascot:** 腮红胡须改贴纸式跟随消除平面旋转感 ([3bc2dda](https://github.com/VOD-Studio/violet/commit/3bc2dda61da088b2325b6dfd87624d35c9edc1cb))
+* **mascot:** 自旋补全旋转叙事并新增偏航调试滑条 ([c4bad43](https://github.com/VOD-Studio/violet/commit/c4bad4316c1200ce907799ce3ad26b433594baf0))
+* **mascot:** 逐项调优眼环几何与高光渲染 ([00dc0d1](https://github.com/VOD-Studio/violet/commit/00dc0d11d88239a6916071c6ee9ad7b366d9ff4c))
+
+
+### 重构
+
+* **mascot:** 引擎按职责拆分为门面/姿态控制器/形象渲染器/特效 ([0202e98](https://github.com/VOD-Studio/violet/commit/0202e984e1fc756813554912204ec41d47f2b7cf))
+* **mascot:** 拆分舞台特效模块 ([1bb5f35](https://github.com/VOD-Studio/violet/commit/1bb5f35844486bdb8dc52eeb9cc2d1ee2cf29c1f))
+* **mascot:** 耳朵尾巴并入统一球面投影 ([47ccc7e](https://github.com/VOD-Studio/violet/commit/47ccc7e835c8bc720950baae138194049eae63c5))
+* **mascot:** 面部部件统一球面投影 ([f5c0b30](https://github.com/VOD-Studio/violet/commit/f5c0b3015c76b3c3eb131428d4a91d78dea2e3b3))
+
 ## [2.8.16](https://github.com/VOD-Studio/violet/compare/v2.8.15...v2.8.16) (2026-08-20)
 
 
