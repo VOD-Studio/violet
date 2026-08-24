@@ -11,7 +11,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	appcustomemoji "blog-api/internal/application/customemoji"
 	appshared "blog-api/internal/application/shared"
 	domainchat "blog-api/internal/domain/chat"
 	domainchatreaction "blog-api/internal/domain/chatreaction"
@@ -43,8 +42,7 @@ type Service struct {
 }
 
 // NewService 构造聊天服务。
-// customEmojis 为 nil 时跳过消息正文中 [name:uuid] 自定义表情占位符的解析
-// （仅限测试场景；生产容器必须注入，见 PRD-0020）。
+// customEmojis 为 nil 时跳过消息正文中 [name:uuid] 自定义表情占位符的解析。
 func NewService(repo domainchat.ConversationRepository, users UserRepository, files FileRepository, notifier EventNotifier, push PushSender, publicKey string, now func() time.Time, bus appshared.EventBus, reactions domainchatreaction.Store, tweets TweetRepository, customEmojis CustomEmojiResolver) *Service {
 	if now == nil {
 		now = time.Now
@@ -211,8 +209,7 @@ type MessageDTO struct {
 	// Content 文本内容；删除消息为空。
 	Content string `json:"content,omitempty"`
 	// CustomEmote 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符
-	// （含方括号，如 "[mycat:<uuid>]"）。命名/含义镜像评论域 Emote；系统表情
-	// [name] 不在此列，继续走客户端全局 GET /emojis 路径解析（PRD-0020）。
+	// （含方括号，如 "[mycat:<uuid>]"）。系统表情不在此列，继续走客户端全局目录。
 	CustomEmote map[string]CustomEmojiRefDTO `json:"custom_emote,omitempty"`
 	// Media 图片媒体；文本消息为空。
 	Media *MediaDTO `json:"media,omitempty"`
@@ -744,6 +741,11 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		}
 		replyToID = &in.ReplyToID
 	}
+	if s.customEmojis != nil && in.Content != "" {
+		if err := s.customEmojis.ValidateContent(ctx, in.Content, in.UserID); err != nil {
+			return MessageDTO{}, err
+		}
+	}
 	now := s.now()
 	var message *domainchat.Message
 	var file *domainupload.File
@@ -1088,10 +1090,8 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 	return dto, nil
 }
 
-// customEmojiBodyPattern 匹配正文中的 [xxx] 占位符（含方括号）；与评论/推文域的
-// emojiBodyPattern 同构。是否为自定义表情 token（冒号后段是合法 UUID）由
-// appcustomemoji.ParseToken 判定；聊天没有系统表情按名解析分支，故此处只收集
-// 自定义表情 ID，普通 [name] 系统表情占位符原样忽略（客户端全局 map 解析）。
+// customEmojiBodyPattern 匹配正文中的 [xxx] 占位符（含方括号）。
+// 聊天只收集冒号后段为合法 UUID 的自定义表情 token，普通 [name] 继续走客户端表情目录。
 var customEmojiBodyPattern = regexp.MustCompile(`\[([^\]]+)\]`)
 
 // resolveCustomEmote 解析正文中的自定义表情占位符，返回 token → 解析结果映射。
@@ -1107,7 +1107,7 @@ func (s *Service) resolveCustomEmote(ctx context.Context, content string, viewer
 		if len(m) < 2 {
 			continue
 		}
-		if id, ok := appcustomemoji.ParseToken(m[1 : len(m)-1]); ok {
+		if id, ok := appshared.ParseCustomEmojiToken(m[1 : len(m)-1]); ok {
 			tokenByID[id] = append(tokenByID[id], m)
 			if _, seen := seenIDs[id]; !seen {
 				seenIDs[id] = struct{}{}

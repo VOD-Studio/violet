@@ -71,7 +71,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 聊天（登录用户：私聊/私有房间/消息/事件流/推送订阅）
 		registerChatRoutes(v1, d)
 
-		// 自定义表情（登录用户：自助上传/删除/收藏，PRD-0020）
+		// 自定义表情（登录用户：自助上传/删除/收藏）
 		registerCustomEmojiRoutes(v1, d)
 
 		// 项目 / 公告（公开）
@@ -404,7 +404,7 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 	})
 }
 
-// registerCustomEmojiRoutes 注册自定义表情路由（全部登录鉴权，PRD-0020）。
+// registerCustomEmojiRoutes 注册自定义表情路由（全部登录鉴权）。
 // DELETE 的「owner 本人或 customemoji:manage」双重判定在 application 层完成
 // （与 tweet:delete-any 同构，路由仅卡登录）。
 func registerCustomEmojiRoutes(v1 chi.Router, d *Deps) {

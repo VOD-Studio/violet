@@ -123,6 +123,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 	if err != nil {
 		return TweetDTO{}, shared.BadRequest("非法的作者 ID")
 	}
+	if validator, ok := s.emojiLookup.(appshared.CustomEmojiContentValidator); ok {
+		if err := validator.ValidateContent(ctx, in.Content, authorID); err != nil {
+			return TweetDTO{}, err
+		}
+	}
 
 	var quoteOf *shared.ID
 	if in.QuoteOf != nil && *in.QuoteOf != "" {
@@ -517,8 +522,7 @@ func (s *Service) publishEvents(ctx context.Context, events []shared.DomainEvent
 // EmojiRef 表情映射值（emote map 的 value）。
 // 前端渲染 body 中的 [name] 占位符时查此表，优先使用 GifURL。
 // Size 携带表情尺寸（1=小 2=大），供前端按尺寸渲染内联表情。
-// CustomEmojiID/Relation 仅自定义表情（[name:uuid] token）非空，供前端挂右键菜单
-// （PRD-0020：Relation 取值 owned/favorited/none，决定菜单项是删除/移出/收藏）。
+// CustomEmojiID/Relation 仅自定义表情 token 非空，供前端挂右键菜单。
 type EmojiRef struct {
 	URL           string `json:"url"`
 	GifURL        string `json:"gif_url,omitempty"`

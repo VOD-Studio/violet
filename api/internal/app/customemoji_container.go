@@ -18,14 +18,16 @@ type CustomEmojiContainer struct {
 }
 
 // NewCustomEmojiContainer 装配自定义表情 DDD 模块。
-//
-// perm 供「owner 本人或 customemoji:manage」删除判定的权限码分支（结构化接口，
-// *appperm.Checker 天然满足，与 tweet 容器的 permissionChecker 传参同构）；
-// settingsSvc + envDefault 组成份额上限的运行时配置 + env 兜底（见 ADR-0013）。
-func NewCustomEmojiContainer(db *gorm.DB, perm appcustomemoji.PermissionChecker, settingsSvc *appsettings.Service, envDefault int) *CustomEmojiContainer {
+func NewCustomEmojiContainer(
+	db *gorm.DB,
+	perm appcustomemoji.PermissionChecker,
+	settingsSvc *appsettings.Service,
+	envDefault int,
+	emojiURLPrefix string,
+) *CustomEmojiContainer {
 	repo := gormrepo.NewCustomEmojiRepository(db)
 	quota := &customEmojiQuotaPolicy{settingsSvc: settingsSvc, envDefault: envDefault}
-	svc := appcustomemoji.NewService(repo, quota, perm)
+	svc := appcustomemoji.NewService(repo, quota, perm, emojiURLPrefix)
 	return &CustomEmojiContainer{
 		Handler: customemojihttp.NewHandler(svc),
 		Service: svc,

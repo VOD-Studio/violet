@@ -6,11 +6,7 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// Repository 自定义表情持久化端口，涵盖表情自身与收藏关系两组操作。
-//
-// 收藏关系（custom_emoji_favorites）不建模成 CustomEmoji 聚合内部集合——它是
-// 「谁收藏了谁的表情」的多对多关系，不属于表情自身的不变量，故收藏读写方法与
-// 表情 CRUD 方法并列在同一端口，而非拆成第二个聚合（镶镜 PRD-0020 设计决策）。
+// Repository 自定义表情与收藏关系的持久化端口。
 type Repository interface {
 	// Save 保存新创建的自定义表情。
 	Save(ctx context.Context, e *CustomEmoji) error
@@ -41,6 +37,12 @@ type Repository interface {
 	ListFavorited(ctx context.Context, userID shared.ID) ([]*CustomEmoji, error)
 	// FindFavoritedIDs 批量判断 userID 对 emojiIDs 中每个 ID 的收藏状态（ResolveByIDs 批量解析用）。
 	FindFavoritedIDs(ctx context.Context, userID shared.ID, emojiIDs []shared.ID) (map[shared.ID]bool, error)
+}
+
+// QuotaRepository 在持久化层以用户级事务锁原子执行份额校验与写入。
+type QuotaRepository interface {
+	SaveWithQuota(ctx context.Context, e *CustomEmoji, maxPerUser int64) error
+	AddFavoriteWithQuota(ctx context.Context, userID, emojiID shared.ID, maxPerUser int64) error
 }
 
 var (

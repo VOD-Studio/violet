@@ -24,7 +24,7 @@ type ChatContainer struct {
 }
 
 // NewChatContainer 装配聊天领域、持久化与浏览器推送。
-// customEmojiSvc 用于解析消息正文中的 [name:uuid] 自定义表情占位符（PRD-0020）。
+// customEmojiSvc 解析消息正文中的 [name:uuid] 自定义表情占位符。
 func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, bus appshared.EventBus) *ChatContainer {
 	repo := gormrepo.NewChatRepository(db)
 	reactionStore := gormrepo.NewChatMessageReactionStore(db)
@@ -61,4 +61,8 @@ func (a *chatCustomEmojiResolver) ResolveByIDs(ctx context.Context, ids []domain
 		}
 	}
 	return result, nil
+}
+
+func (a *chatCustomEmojiResolver) ValidateContent(ctx context.Context, content string, viewerID domainshared.ID) error {
+	return a.svc.ValidateContent(ctx, content, viewerID)
 }

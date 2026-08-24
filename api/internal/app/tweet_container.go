@@ -26,7 +26,7 @@ type TweetContainer struct {
 //
 // fileRepo 适配为 TweetImageChecker（发布时图片归属校验）；
 // emojiRepo 适配为 EmojiLookup（评论 emote 富化，解析 body [name] 查表）；
-// customEmojiSvc 用于解析 body 中的 [name:uuid] 自定义表情占位符（PRD-0020）；
+// customEmojiSvc 解析 body 中的 [name:uuid] 自定义表情占位符；
 // userRepo 供作者资料填充与 username 解析；
 // perm 供「作者或 tweet:delete-any」删除判定的权限码分支；
 // bus 发布 TweetCreated/TweetDeleted（审计订阅者消费）。
@@ -56,10 +56,7 @@ func NewTweetContainer(
 	}
 }
 
-// tweetEmojiLookupAdapter 将 EmojiGroupRepository + customemoji.Service 适配为
-// tweet.EmojiLookup 端口（与 comment 容器 emojiLookupAdapter 同构，仅返回类型按
-// tweet 域独立）。token 含 : 且冒号后段是合法 UUID 时委托给共享 customemoji
-// resolver（PRD-0020），两条分支合并进同一个 map[string]EmojiRef 返回值。
+// tweetEmojiLookupAdapter 将系统表情目录与自定义表情 resolver 适配为 tweet.EmojiLookup。
 type tweetEmojiLookupAdapter struct {
 	repo           domainemoji.EmojiGroupRepository
 	customEmojiSvc *appcustomemoji.Service
@@ -68,32 +65,16 @@ type tweetEmojiLookupAdapter struct {
 var _ apptweet.EmojiLookup = (*tweetEmojiLookupAdapter)(nil)
 
 func (a *tweetEmojiLookupAdapter) FindByNames(ctx context.Context, names []string) (map[string]apptweet.EmojiRef, error) {
-	nameSet := make(map[string]bool, len(names))
-	var customIDs []shared.ID
-	tokenByID := make(map[shared.ID][]string, len(names))
-	seenCustomIDs := make(map[shared.ID]struct{}, len(names))
-	for _, n := range names {
-		if len(n) >= 2 {
-			if id, ok := appcustomemoji.ParseToken(n[1 : len(n)-1]); ok {
-				tokenByID[id] = append(tokenByID[id], n)
-				if _, seen := seenCustomIDs[id]; !seen {
-					seenCustomIDs[id] = struct{}{}
-					customIDs = append(customIDs, id)
-				}
-				continue
-			}
-		}
-		nameSet[n] = true
-	}
+	tokens := appshared.SplitCustomEmojiTokens(names)
 	result := make(map[string]apptweet.EmojiRef)
-	if len(customIDs) > 0 && a.customEmojiSvc != nil {
+	if len(tokens.IDs) > 0 && a.customEmojiSvc != nil {
 		viewerID, _ := shared.ParseID(middleware.GetUserID(ctx))
-		refs, err := a.customEmojiSvc.ResolveByIDs(ctx, customIDs, viewerID)
+		refs, err := a.customEmojiSvc.ResolveByIDs(ctx, tokens.IDs, viewerID)
 		if err != nil {
 			return nil, err
 		}
 		for id, ref := range refs {
-			for _, token := range tokenByID[id] {
+			for _, token := range tokens.TokensByID[id] {
 				result[token] = apptweet.EmojiRef{
 					URL:           ref.URL,
 					CustomEmojiID: id.String(),
@@ -108,7 +89,7 @@ func (a *tweetEmojiLookupAdapter) FindByNames(ctx context.Context, names []strin
 	}
 	for _, g := range groups {
 		for _, e := range g.Emojis() {
-			if nameSet[e.Name()] {
+			if tokens.SystemNames[e.Name()] {
 				result[e.Name()] = apptweet.EmojiRef{
 					URL:    e.URL(),
 					GifURL: e.GifURL(),
@@ -118,6 +99,13 @@ func (a *tweetEmojiLookupAdapter) FindByNames(ctx context.Context, names []strin
 		}
 	}
 	return result, nil
+}
+
+func (a *tweetEmojiLookupAdapter) ValidateContent(ctx context.Context, content string, viewerID shared.ID) error {
+	if a.customEmojiSvc == nil {
+		return nil
+	}
+	return a.customEmojiSvc.ValidateContent(ctx, content, viewerID)
 }
 
 // tweetImageCheckerAdapter 将 upload.FileRepository 适配为 TweetImageChecker 端口

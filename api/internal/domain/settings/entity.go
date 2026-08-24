@@ -119,7 +119,7 @@ type SiteSettings struct {
 	// CodeRunnerLanguages 允许运行的语言列表（逗号分隔的 canonical key：python/node/go/rust/bun）
 	CodeRunnerLanguages string `json:"code_runner_languages"`
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计，0 表示未配置，
-	// 消费方 fallback 到 env config，见 ADR-0013）
+	// 消费方 fallback 到 env config）
 	CustomEmojiMaxPerUser int `json:"custom_emoji_max_per_user"`
 }
 

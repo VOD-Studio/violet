@@ -1,9 +1,4 @@
-// Package customemoji 定义自定义表情聚合的领域模型。
-//
-// 与 domain/emoji（后台管理员维护的系统表情目录）并列但独立：自定义表情由用户
-// 自助上传，默认私有（仅上传者可选用），他人需通过收藏获得选用权；渲染解析
-// 按 ID 而非按名称（系统表情继续按名称，两套 token 互不冲突）。
-// 详见 docs/adr/0013-custom-emoji-private-favorite-model.md。
+// Package customemoji 定义用户自定义表情聚合。
 package customemoji
 
 import (
@@ -15,8 +10,7 @@ import (
 
 // CustomEmoji 自定义表情聚合根。
 //
-// 不可变：无 Update 方法——改名/换图需删除重传，与 Tweet「不可编辑，只可删除
-// 重发」同构，保持简单。
+// 名称与图片创建后不可变，改名或换图需删除后重新上传。
 type CustomEmoji struct {
 	shared.AggregateRoot
 	// ownerID 上传者，创建时固定不可变。

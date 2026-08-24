@@ -31,7 +31,7 @@ type CommentContainer struct {
 // emailSender 用于匿名评论邮箱验证码两步流（PRD-0001）；
 // userRepo 用于登录评论者的 author_* 资料填充；
 // emojiRepo 用于评论 emote 映射（解析 body 中的 [name] 查表构建）；
-// customEmojiSvc 用于解析 body 中的 [name:uuid] 自定义表情占位符（PRD-0020）。
+// customEmojiSvc 解析 body 中的 [name:uuid] 自定义表情占位符。
 func NewCommentContainer(db *gorm.DB, redisClient *redis.Client, emailSender *infraemail.Sender, settingsSvc *appsettings.Service, customEmojiSvc *appcustomemoji.Service, bus appshared.EventBus) *CommentContainer {
 	commentRepo := gormrepo.NewCommentRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
@@ -58,42 +58,23 @@ func (a *commentSitePolicy) CommentPolicy(ctx context.Context) (bool, bool, erro
 	return s.CommentsEnabled, s.CommentsModeration, nil
 }
 
-// emojiLookupAdapter 将 EmojiGroupRepository + customemoji.Service 适配为
-// comment.EmojiLookup 端口。系统表情走 FindAll 按名查找；token 含 : 且冒号后段
-// 是合法 UUID 时委托给共享 customemoji resolver（PRD-0020），两条分支合并进
-// 同一个 map[string]EmojiRef 返回值，调用方（enrichEmotes）无感知。
+// emojiLookupAdapter 将系统表情目录与自定义表情 resolver 适配为 comment.EmojiLookup。
 type emojiLookupAdapter struct {
 	repo           domainemoji.EmojiGroupRepository
 	customEmojiSvc *appcustomemoji.Service
 }
 
 func (a *emojiLookupAdapter) FindByNames(ctx context.Context, names []string) (map[string]appcomment.EmojiRef, error) {
-	nameSet := make(map[string]bool, len(names))
-	var customIDs []shared.ID
-	tokenByID := make(map[shared.ID][]string, len(names))
-	seenCustomIDs := make(map[shared.ID]struct{}, len(names))
-	for _, n := range names {
-		if len(n) >= 2 {
-			if id, ok := appcustomemoji.ParseToken(n[1 : len(n)-1]); ok {
-				tokenByID[id] = append(tokenByID[id], n)
-				if _, seen := seenCustomIDs[id]; !seen {
-					seenCustomIDs[id] = struct{}{}
-					customIDs = append(customIDs, id)
-				}
-				continue
-			}
-		}
-		nameSet[n] = true
-	}
+	tokens := appshared.SplitCustomEmojiTokens(names)
 	result := make(map[string]appcomment.EmojiRef)
-	if len(customIDs) > 0 && a.customEmojiSvc != nil {
+	if len(tokens.IDs) > 0 && a.customEmojiSvc != nil {
 		viewerID, _ := shared.ParseID(middleware.GetUserID(ctx))
-		refs, err := a.customEmojiSvc.ResolveByIDs(ctx, customIDs, viewerID)
+		refs, err := a.customEmojiSvc.ResolveByIDs(ctx, tokens.IDs, viewerID)
 		if err != nil {
 			return nil, err
 		}
 		for id, ref := range refs {
-			for _, token := range tokenByID[id] {
+			for _, token := range tokens.TokensByID[id] {
 				result[token] = appcomment.EmojiRef{
 					URL:           ref.URL,
 					CustomEmojiID: id.String(),
@@ -108,7 +89,7 @@ func (a *emojiLookupAdapter) FindByNames(ctx context.Context, names []string) (m
 	}
 	for _, g := range groups {
 		for _, e := range g.Emojis() {
-			if nameSet[e.Name()] {
+			if tokens.SystemNames[e.Name()] {
 				result[e.Name()] = appcomment.EmojiRef{
 					URL:    e.URL(),
 					GifURL: e.GifURL(),
@@ -118,4 +99,11 @@ func (a *emojiLookupAdapter) FindByNames(ctx context.Context, names []string) (m
 		}
 	}
 	return result, nil
+}
+
+func (a *emojiLookupAdapter) ValidateContent(ctx context.Context, content string, viewerID shared.ID) error {
+	if a.customEmojiSvc == nil {
+		return nil
+	}
+	return a.customEmojiSvc.ValidateContent(ctx, content, viewerID)
 }

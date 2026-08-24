@@ -27,6 +27,68 @@ func (r *CustomEmojiRepository) Save(ctx context.Context, e *domaincustomemoji.C
 	return r.db.WithContext(ctx).Create(customEmojiToPO(e)).Error
 }
 
+// SaveWithQuota 在用户级事务锁内校验份额并创建自定义表情。
+func (r *CustomEmojiRepository) SaveWithQuota(ctx context.Context, e *domaincustomemoji.CustomEmoji, maxPerUser int64) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := lockCustomEmojiQuota(tx, e.OwnerID()); err != nil {
+			return err
+		}
+		if err := checkCustomEmojiQuota(tx, e.OwnerID(), maxPerUser); err != nil {
+			return err
+		}
+		return tx.Create(customEmojiToPO(e)).Error
+	})
+}
+
+// AddFavoriteWithQuota 在用户级事务锁内校验份额并创建收藏关系。
+func (r *CustomEmojiRepository) AddFavoriteWithQuota(ctx context.Context, userID, emojiID domainshared.ID, maxPerUser int64) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := lockCustomEmojiQuota(tx, userID); err != nil {
+			return err
+		}
+		var existing int64
+		if err := tx.Model(&model.CustomEmojiFavorite{}).
+			Where("user_id = ? AND emoji_id = ?", userID.UUID(), emojiID.UUID()).
+			Count(&existing).Error; err != nil {
+			return err
+		}
+		if existing > 0 {
+			return nil
+		}
+		if err := checkCustomEmojiQuota(tx, userID, maxPerUser); err != nil {
+			return err
+		}
+		po := model.CustomEmojiFavorite{UserID: userID.UUID(), EmojiID: emojiID.UUID()}
+		return tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&po).Error
+	})
+}
+
+func lockCustomEmojiQuota(tx *gorm.DB, userID domainshared.ID) error {
+	return tx.Exec("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", userID.String()).Error
+}
+
+func checkCustomEmojiQuota(tx *gorm.DB, userID domainshared.ID, maxPerUser int64) error {
+	if maxPerUser <= 0 {
+		return domaincustomemoji.ErrQuotaExceeded
+	}
+	var owned, favorited int64
+	if err := tx.Model(&model.CustomEmoji{}).
+		Where("owner_id = ? AND deleted_at IS NULL", userID.UUID()).
+		Count(&owned).Error; err != nil {
+		return err
+	}
+	if err := tx.Model(&model.CustomEmojiFavorite{}).
+		Joins("JOIN custom_emojis ON custom_emojis.id = custom_emoji_favorites.emoji_id").
+		Where("custom_emoji_favorites.user_id = ? AND custom_emojis.deleted_at IS NULL", userID.UUID()).
+		Count(&favorited).Error; err != nil {
+		return err
+	}
+	if owned+favorited >= maxPerUser {
+		return domaincustomemoji.ErrQuotaExceeded
+	}
+	return nil
+}
+
 // FindByID 按 ID 查找单条（含已软删除；deleted_at 是普通列，非 gorm.DeletedAt，
 // 故不受 GORM 自动软删除过滤影响，调用方按 IsUsable 判断可用性）。
 func (r *CustomEmojiRepository) FindByID(ctx context.Context, id domainshared.ID) (*domaincustomemoji.CustomEmoji, error) {
@@ -189,3 +251,4 @@ func customEmojiToDomain(po model.CustomEmoji) *domaincustomemoji.CustomEmoji {
 }
 
 var _ domaincustomemoji.Repository = (*CustomEmojiRepository)(nil)
+var _ domaincustomemoji.QuotaRepository = (*CustomEmojiRepository)(nil)

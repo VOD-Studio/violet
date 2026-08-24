@@ -68,6 +68,9 @@ func (f *fakeCustomEmojiResolver) ResolveByIDs(_ context.Context, ids []domainsh
 	}
 	return out, nil
 }
+func (f *fakeCustomEmojiResolver) ValidateContent(context.Context, string, domainshared.ID) error {
+	return nil
+}
 
 func newCustomEmoteService(t *testing.T, userID, conversationID domainshared.ID, now time.Time, resolver CustomEmojiResolver) (*Service, *customEmoteChatRepo) {
 	t.Helper()

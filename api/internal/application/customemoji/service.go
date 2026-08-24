@@ -2,9 +2,13 @@ package customemoji
 
 import (
 	"context"
+	"net/url"
+	"path"
+	"regexp"
 	"strings"
 	"time"
 
+	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/customemoji"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/middleware"
@@ -19,6 +23,11 @@ const (
 	RelationFavorited Relation = "favorited"
 	RelationNone      Relation = "none"
 )
+
+// ErrInvalidURL 上传结果不是允许的本地表情图片地址。
+var ErrInvalidURL = shared.BadRequest("自定义表情图片地址无效")
+
+var customEmojiTokenPattern = regexp.MustCompile(`\[([^\]]+)\]`)
 
 // CustomEmojiRef 表情解析结果（共享 resolver 的返回值），供 comment/tweet/chat
 // 三域的 adapter 各自转换成本域 DTO 形态。
@@ -43,15 +52,16 @@ type MineDTO struct {
 
 // Service 自定义表情用例服务。
 type Service struct {
-	repo  domain.Repository
-	quota QuotaPolicy
-	perm  PermissionChecker
+	repo           domain.Repository
+	quota          QuotaPolicy
+	perm           PermissionChecker
+	emojiURLPrefix string
 }
 
 // NewService 构造自定义表情用例服务。
-// perm 为 nil 时管理员强制下架分支恒不放行（仅限测试场景；生产容器必须注入）。
-func NewService(repo domain.Repository, quota QuotaPolicy, perm PermissionChecker) *Service {
-	return &Service{repo: repo, quota: quota, perm: perm}
+// emojiURLPrefix 为空时跳过 URL 路径校验，仅供不涉及 HTTP 装配的单元测试使用。
+func NewService(repo domain.Repository, quota QuotaPolicy, perm PermissionChecker, emojiURLPrefix string) *Service {
+	return &Service{repo: repo, quota: quota, perm: perm, emojiURLPrefix: emojiURLPrefix}
 }
 
 // CreateInput 上传自定义表情入参。
@@ -70,6 +80,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CustomEmojiDTO, e
 	if name == "" {
 		return CustomEmojiDTO{}, domain.ErrEmptyName
 	}
+	if err := validateEmojiURL(in.URL, s.emojiURLPrefix); err != nil {
+		return CustomEmojiDTO{}, err
+	}
 	exists, err := s.repo.ExistsByOwnerAndName(ctx, in.OwnerID, name)
 	if err != nil {
 		return CustomEmojiDTO{}, err
@@ -77,17 +90,51 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CustomEmojiDTO, e
 	if exists {
 		return CustomEmojiDTO{}, domain.ErrNameExists
 	}
-	if err := s.checkQuota(ctx, in.OwnerID); err != nil {
+	maxPerUser, err := s.quota.MaxPerUser(ctx)
+	if err != nil {
 		return CustomEmojiDTO{}, err
 	}
 	e, err := domain.NewCustomEmoji(in.OwnerID, name, in.URL, time.Now())
 	if err != nil {
 		return CustomEmojiDTO{}, err
 	}
-	if err := s.repo.Save(ctx, e); err != nil {
-		return CustomEmojiDTO{}, err
+	if atomicRepo, ok := s.repo.(domain.QuotaRepository); ok {
+		if err := atomicRepo.SaveWithQuota(ctx, e, int64(maxPerUser)); err != nil {
+			return CustomEmojiDTO{}, err
+		}
+	} else {
+		if err := s.checkQuotaAt(ctx, in.OwnerID, int64(maxPerUser)); err != nil {
+			return CustomEmojiDTO{}, err
+		}
+		if err := s.repo.Save(ctx, e); err != nil {
+			return CustomEmojiDTO{}, err
+		}
 	}
 	return toDTO(e), nil
+}
+func validateEmojiURL(value, prefix string) error {
+	value = strings.TrimSpace(value)
+	if value == "" || len(value) > 512 {
+		return ErrInvalidURL
+	}
+	if prefix == "" {
+		return nil
+	}
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.IsAbs() || parsed.Host != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return ErrInvalidURL
+	}
+	cleanPath := path.Clean(parsed.Path)
+	expectedPrefix := strings.TrimRight(prefix, "/") + "/emojis/"
+	if cleanPath != parsed.Path || !strings.HasPrefix(cleanPath, expectedPrefix) {
+		return ErrInvalidURL
+	}
+	switch strings.ToLower(path.Ext(cleanPath)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp":
+		return nil
+	default:
+		return ErrInvalidURL
+	}
 }
 
 // Delete 删除自定义表情（软删除）。
@@ -133,6 +180,40 @@ func (s *Service) ListMine(ctx context.Context, userID shared.ID) (MineDTO, erro
 	return MineDTO{Owned: toDTOs(owned), Favorited: toDTOs(favorited)}, nil
 }
 
+// ValidateContent 校验正文中的自定义表情均属于当前用户或其收藏。
+func (s *Service) ValidateContent(ctx context.Context, content string, viewerID shared.ID) error {
+	var ids []shared.ID
+	seen := make(map[shared.ID]struct{})
+	for _, token := range customEmojiTokenPattern.FindAllString(content, -1) {
+		if len(token) < 2 {
+			continue
+		}
+		id, ok := appshared.ParseCustomEmojiToken(token[1 : len(token)-1])
+		if !ok {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	refs, err := s.ResolveByIDs(ctx, ids, viewerID)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		ref, ok := refs[id]
+		if !ok || (ref.Relation != RelationOwned && ref.Relation != RelationFavorited) {
+			return shared.Forbidden("无权使用该自定义表情")
+		}
+	}
+	return nil
+}
+
 // Favorite 收藏一个表情（引用式，非拷贝）。
 //
 // 拒绝收藏自己上传的表情（无意义操作）；拒绝超份额（owned+favorited 合计）；
@@ -155,7 +236,14 @@ func (s *Service) Favorite(ctx context.Context, userID, emojiID shared.ID) error
 	if already {
 		return nil
 	}
-	if err := s.checkQuota(ctx, userID); err != nil {
+	maxPerUser, err := s.quota.MaxPerUser(ctx)
+	if err != nil {
+		return err
+	}
+	if atomicRepo, ok := s.repo.(domain.QuotaRepository); ok {
+		return atomicRepo.AddFavoriteWithQuota(ctx, userID, emojiID, int64(maxPerUser))
+	}
+	if err := s.checkQuotaAt(ctx, userID, int64(maxPerUser)); err != nil {
 		return err
 	}
 	return s.repo.AddFavorite(ctx, userID, emojiID)
@@ -166,12 +254,8 @@ func (s *Service) Unfavorite(ctx context.Context, userID, emojiID shared.ID) err
 	return s.repo.RemoveFavorite(ctx, userID, emojiID)
 }
 
-// checkQuota 校验当前份额（自传+收藏合计）未超上限。
-func (s *Service) checkQuota(ctx context.Context, userID shared.ID) error {
-	maxPerUser, err := s.quota.MaxPerUser(ctx)
-	if err != nil {
-		return err
-	}
+// checkQuotaAt 校验当前份额（自传+收藏合计）未超上限。
+func (s *Service) checkQuotaAt(ctx context.Context, userID shared.ID, maxPerUser int64) error {
 	owned, err := s.repo.CountOwned(ctx, userID)
 	if err != nil {
 		return err
@@ -180,7 +264,7 @@ func (s *Service) checkQuota(ctx context.Context, userID shared.ID) error {
 	if err != nil {
 		return err
 	}
-	if owned+favorited >= int64(maxPerUser) {
+	if owned+favorited >= maxPerUser {
 		return domain.ErrQuotaExceeded
 	}
 	return nil

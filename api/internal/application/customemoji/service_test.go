@@ -147,7 +147,7 @@ func ctxWithUser(userID, role string, isBuiltin bool) context.Context {
 }
 
 func newTestService(repo domain.Repository, max int, perm PermissionChecker) *Service {
-	return NewService(repo, fakeQuota{max: max}, perm)
+	return NewService(repo, fakeQuota{max: max}, perm, "")
 }
 
 func TestCreate_Success(t *testing.T) {
@@ -195,6 +195,34 @@ func TestCreate_QuotaExceeded_Rejected(t *testing.T) {
 
 	_, err = svc.Create(context.Background(), CreateInput{OwnerID: ownerID, Name: "two", URL: "/b.png"})
 	require.ErrorIs(t, err, domain.ErrQuotaExceeded)
+}
+func TestCreate_InvalidURL_Rejected(t *testing.T) {
+	repo := newFakeRepo()
+	svc := NewService(repo, fakeQuota{max: 100}, nil, "/uploads/")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		OwnerID: shared.NewID(),
+		Name:    "mycat",
+		URL:     "https://evil.example/cat.png",
+	})
+
+	require.ErrorIs(t, err, ErrInvalidURL)
+}
+func TestValidateContent_RequiresOwnedOrFavorited(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo, 100, nil)
+	ownerID := shared.NewID()
+	viewerID := shared.NewID()
+	dto, err := svc.Create(context.Background(), CreateInput{OwnerID: ownerID, Name: "mycat", URL: "/a.png"})
+	require.NoError(t, err)
+	id := shared.MustParseID(dto.ID)
+
+	err = svc.ValidateContent(context.Background(), "[mycat:"+id.String()+"]", viewerID)
+	require.Error(t, err)
+
+	require.NoError(t, svc.Favorite(context.Background(), viewerID, id))
+	require.NoError(t, svc.ValidateContent(context.Background(), "[mycat:"+id.String()+"]", viewerID))
+	require.NoError(t, svc.ValidateContent(context.Background(), "[doge]", viewerID))
 }
 
 func TestDelete_Owner_Succeeds(t *testing.T) {
