@@ -719,7 +719,7 @@ function ConversationPanel({
 						onScroll={handleScroll}
 						className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8"
 					>
-						<div className="mx-auto max-w-3xl space-y-4">
+						<div className="mx-auto max-w-4xl space-y-4">
 							<div className="my-3 flex items-center justify-center gap-3">
 								<div className="h-px flex-1 bg-gradient-to-r from-transparent via-edge-hairline to-transparent" />
 								<span className="rounded-full border border-edge-hairline/60 bg-secondary/50 px-3.5 py-0.5 font-mono text-[10px] text-muted-foreground shadow-2xs backdrop-blur-md">
@@ -1290,9 +1290,9 @@ function MessageComposer({
 					onCancelReply();
 				}
 			}}
-			className="shrink-0 border-t border-edge-hairline/80 bg-gradient-to-t from-background via-background/95 to-background/80 p-3 backdrop-blur-md md:p-4"
+			className="shrink-0 border-t border-edge-hairline/80 bg-gradient-to-t from-background via-background/95 to-background/80 p-4 backdrop-blur-md md:p-5"
 		>
-			<div className="mx-auto max-w-3xl">
+			<div className="mx-auto max-w-4xl">
 				{pendingShare ? (
 					<div className="mb-2 flex items-center gap-2 rounded-xl border border-neon-cyan/25 bg-neon-cyan/5 px-3 py-2">
 						<MessageSquareQuote className="size-3.5 shrink-0 text-neon-cyan" />
@@ -1351,7 +1351,7 @@ function MessageComposer({
 					resetNonce={resetNonce}
 					onImagesChange={setImages}
 					onUploadingChange={setUploading}
-					inputClassName="min-h-12 max-h-36 py-2.5 px-3 text-sm leading-relaxed"
+					inputClassName="min-h-14 max-h-56 py-3.5 px-4 text-sm leading-relaxed"
 					className="rounded-2xl border-input/70 bg-card/60 shadow-lg shadow-primary/5 backdrop-blur-xl transition-all focus-within:border-neon-cyan/50 focus-within:ring-4 focus-within:ring-neon-cyan/10"
 					toolbarEnd={
 						<div className="flex items-center gap-2">
@@ -1364,7 +1364,7 @@ function MessageComposer({
 									disabled={!canSend}
 									onClick={() => void sendMessage()}
 									size="sm"
-									className="h-7 gap-1.5 px-3 text-xs shadow-xs"
+									className="h-8 gap-1.5 px-3 text-xs shadow-xs"
 								>
 									{send.isPending ? (
 										<LoaderCircle className="size-3.5 animate-spin" />
