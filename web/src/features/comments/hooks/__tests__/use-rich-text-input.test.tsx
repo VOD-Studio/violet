@@ -87,9 +87,7 @@ describe("useRichTextInput 图片行内节点", () => {
 
 	it("插入 uploading 占位节点：DOM 立即可见，但 value 尚不包含占位符", () => {
 		const onChange = vi.fn();
-		const { container } = render(
-			<Host value="" onChange={onChange} onReady={onReady} />,
-		);
+		const { container } = render(<Host value="" onChange={onChange} onReady={onReady} />);
 
 		act(() => {
 			api.insertImage("img-1", "blob:preview", "uploading");
@@ -103,9 +101,7 @@ describe("useRichTextInput 图片行内节点", () => {
 
 	it("上传完成后原地替换为 done 节点，value 序列化为 ![img:id] 占位符", () => {
 		const onChange = vi.fn();
-		const { container } = render(
-			<Host value="" onChange={onChange} onReady={onReady} />,
-		);
+		const { container } = render(<Host value="" onChange={onChange} onReady={onReady} />);
 
 		act(() => {
 			api.insertImage("img-2", "blob:preview", "uploading");
@@ -150,9 +146,7 @@ describe("useRichTextInput 图片行内节点", () => {
 
 	it("emoji 与图片混合插入互不干扰，value 按插入顺序拼接两种占位符", () => {
 		const onChange = vi.fn();
-		const { container } = render(
-			<Host value="" onChange={onChange} onReady={onReady} />,
-		);
+		const { container } = render(<Host value="" onChange={onChange} onReady={onReady} />);
 		const editor = container.querySelector('[data-testid="editor"]') as HTMLElement;
 		editor.focus();
 
@@ -171,7 +165,12 @@ describe("useRichTextInput 图片行内节点", () => {
 		const resolveImage = (id: string) =>
 			id === "known" ? "https://cdn.example.com/known.png" : undefined;
 		const { container } = render(
-			<Host value="![img:known]" onChange={onChange} resolveImage={resolveImage} onReady={onReady} />,
+			<Host
+				value="![img:known]"
+				onChange={onChange}
+				resolveImage={resolveImage}
+				onReady={onReady}
+			/>,
 		);
 
 		const node = container.querySelector('[data-image="known"]') as HTMLImageElement;
