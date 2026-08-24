@@ -96,6 +96,7 @@ func registerChatPaths(t *openapi3.T) {
 	registerSchema(t, "ChatPushUnsubscribeRequest", openapi3.Schemas{"endpoint": reqStr("浏览器 Push endpoint")}, "endpoint")
 	registerSchema(t, "ChatMuteResponse", openapi3.Schemas{"conversation_id": reqStr("会话 ID"), "is_muted": optBool("静音状态")})
 	registerSchema(t, "ChatReadRequest", openapi3.Schemas{"message_id": optStr("读到的最后一条消息 ID")})
+	registerSchema(t, "ChatTypingRequest", openapi3.Schemas{"is_typing": optBool("true 表示开始/持续输入，false 表示显式停止")}, "is_typing")
 
 	secure := securityCookie()
 	get(t, "/chat/conversations", &openapi3.Operation{
@@ -147,6 +148,7 @@ func registerChatPaths(t *openapi3.T) {
 	del(t, "/chat/conversations/{conversationId}/members/me", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "离开会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("已离开会话"))})
 	patch(t, "/chat/conversations/{conversationId}/mute", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "静音会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatMuteRequest", true, "通知静音设置"), Responses: responses(200, dataResponse("ChatMuteResponse", "静音状态", 200))})
 	post(t, "/chat/conversations/{conversationId}/read", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "标记会话已读", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatReadRequest", true, "阅读位置"), Responses: responses(200, dataResponse("ChatUnreadCount", "会话未读数", 200))})
+	post(t, "/chat/conversations/{conversationId}/typing", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "上报输入状态", Description: "瞬态事件，不参与断线补发。", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatTypingRequest", true, "输入状态"), Responses: responses(204, noContentResponse("输入状态已上报"))})
 	del(t, "/chat/conversations/{conversationId}/messages/{messageId}", &openapi3.Operation{Tags: []string{"聊天管理"}, Summary: "删除违规消息", Description: "需 chat:manage 权限。", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("消息已删除"))})
 	del(t, "/chat/push/subscription", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "关闭浏览器通知", Security: secure, Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatPushUnsubscribeRequest", true, "推送订阅"), Responses: responses(204, noContentResponse("浏览器通知已关闭"))})
 }

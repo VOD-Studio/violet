@@ -74,6 +74,12 @@ func (h *StreamHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// writeEvent 写一帧 SSE。空 ID（瞬态事件，如输入状态）不写 `id:` 行——
+// 该字段驱动浏览器自动重连的 Last-Event-ID，写入瞬态事件会污染其他事件类型
+// 依赖的补发序号。
 func writeEvent(w http.ResponseWriter, event appchat.EventDTO) {
-	fmt.Fprintf(w, "id: %s\nevent: chat\ndata: %s\n\n", event.ID, appchat.MarshalEvent(event))
+	if event.ID != "" {
+		fmt.Fprintf(w, "id: %s\n", event.ID)
+	}
+	fmt.Fprintf(w, "event: chat\ndata: %s\n\n", appchat.MarshalEvent(event))
 }

@@ -80,6 +80,7 @@ func TestChatPaths(t *testing.T) {
 		"/chat/conversations/{conversationId}/members",
 		"/chat/conversations/{conversationId}/messages",
 		"/chat/conversations/{conversationId}/read",
+		"/chat/conversations/{conversationId}/typing",
 		"/chat/events",
 		"/chat/unread-count",
 		"/chat/push/subscription",

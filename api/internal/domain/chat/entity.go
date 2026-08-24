@@ -59,6 +59,9 @@ const (
 	EventMessageDeleted ChatEventType = "message.deleted"
 	// EventMessageReactionUpdated 消息反应发生变化事件。
 	EventMessageReactionUpdated ChatEventType = "message.reaction.updated"
+	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发——
+	// 是聊天域内唯一纯内存实时推送的事件类型（见 CONTEXT.md「输入状态」词条）。
+	EventTypingUpdated ChatEventType = "typing.updated"
 )
 
 // RoomInvited 私有房间成员邀请事实。

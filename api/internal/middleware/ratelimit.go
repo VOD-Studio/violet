@@ -127,6 +127,14 @@ func TweetRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimitByUser("tweet", redisClient, time.Hour, 10)
 }
 
+// ChatTypingRateLimit 输入状态上报限流（每用户每分钟 20 次）。
+//
+// 客户端节流发送间隔为 3s，正常持续输入每分钟最多 20 次；此限流是防滥用兜底，
+// 不承担主要节流职责（须挂在 SessionAuth 之后）。
+func ChatTypingRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimitByUser("chat_typing", redisClient, time.Minute, 20)
+}
+
 // CodeRunnerRateLimit 代码运行器限流（每分钟 5 次/IP）。
 //
 // 阈值理由：每次执行起一个 Docker 容器，资源开销大。5/min 对正常读者

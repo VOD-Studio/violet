@@ -431,6 +431,32 @@ func (h *Handler) SetMuted(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{"conversation_id": conversationID.String(), "is_muted": req.Muted})
 }
 
+// SetTyping 上报当前用户在会话中的输入状态。
+func (h *Handler) SetTyping(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		IsTyping bool `json:"is_typing"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.svc.SetTyping(r.Context(), appchat.SetTypingInput{UserID: userID, ConversationID: conversationID, IsTyping: req.IsTyping}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondNoContent(w)
+}
+
 // DeleteMessage 管理员删除违规消息。
 func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 	adminID, err := currentUserID(r)
