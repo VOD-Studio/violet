@@ -11,6 +11,7 @@
  * onUploadingChange 回调通知父组件上传状态（供禁用提交按钮）。
  * resetNonce 变化时清空内部图片状态（供提交成功后重置）。
  */
+import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
@@ -247,10 +248,11 @@ export function RichCommentInput({
 	const handleEmojiSelect = (emoji: Emoji) => {
 		const imageUrl = emoji.gif_url || emoji.url;
 		const size = emoji.meta?.size;
+		const token = toEmojiToken(emoji);
 		if (imageUrl && isImageURL(imageUrl)) {
-			insertEmoji(emoji.name, imageUrl, size);
+			insertEmoji(token, imageUrl, size);
 		} else {
-			insertEmoji(emoji.name, emoji.text_content || emoji.name, size);
+			insertEmoji(token, emoji.text_content || emoji.name, size);
 		}
 	};
 

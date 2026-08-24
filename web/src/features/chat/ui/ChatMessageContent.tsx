@@ -80,10 +80,18 @@ const chatMarkdownComponents: Components = {
 	img: ({ src, alt, ...rest }) => {
 		const props = rest as Record<string, unknown>;
 		if (props["data-emoji"]) {
+			const customEmojiID =
+				typeof props["data-custom-emoji-id"] === "string"
+					? props["data-custom-emoji-id"]
+					: undefined;
+			const relation =
+				typeof props["data-relation"] === "string" ? props["data-relation"] : undefined;
 			return (
 				<img
 					src={typeof src === "string" ? src : undefined}
 					alt={alt ?? ""}
+					data-custom-emoji-id={customEmojiID}
+					data-relation={customEmojiID ? (relation ?? "none") : undefined}
 					className={props.className as string | undefined}
 					loading="lazy"
 				/>

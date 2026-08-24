@@ -10,6 +10,8 @@ export interface GeneralSettingsDTO {
 	comments_enabled: boolean;
 	comments_moderation: boolean;
 	tech_stack: string;
+	/** 单用户自定义表情份额上限（自传+收藏合计），0=未配置，前端显示时按 env 默认兜底 */
+	custom_emoji_max_per_user: number;
 }
 
 /** 认证组（第三方登录开关） */

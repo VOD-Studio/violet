@@ -1,3 +1,5 @@
+import type { CommentEmoteRef } from "@entities/comment/model/types";
+
 export type ConversationKind = "direct" | "room";
 export type MessageType = "text" | "image" | "system" | "tweet_share";
 export type MemberRole = "owner" | "member";
@@ -60,6 +62,8 @@ export interface ChatMessage {
 	sender: ChatUser;
 	type: MessageType;
 	content?: string;
+	/** 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符（含方括号） */
+	custom_emote?: Record<string, CommentEmoteRef>;
 	media?: ChatMedia;
 	shared_tweet?: SharedTweet;
 	reply_to?: ChatMessageReference;
@@ -107,6 +111,8 @@ export interface ChatEvent {
 	version: number;
 	occurred_at: string;
 	data: Record<string, unknown>;
+	/** 新消息正文中自定义表情的解析结果；关系按当前事件接收者计算。 */
+	custom_emote?: Record<string, CommentEmoteRef>;
 }
 
 /** typing.updated 事件的 data 载荷；不持久化，仅供实时推送消费。 */

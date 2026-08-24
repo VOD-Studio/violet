@@ -71,6 +71,23 @@ describe("ChatMessageContent", () => {
 			"/uploads/emojis/doge.png",
 		);
 	});
+	it("自定义表情图片带 ID 与关系属性，系统表情不带自定义属性", () => {
+		const emote = {
+			"[mycat:emoji-1]": {
+				url: "/uploads/emojis/mycat.png",
+				custom_emoji_id: "emoji-1",
+				relation: "none" as const,
+			},
+			"[doge]": { url: "/uploads/emojis/doge.png" },
+		};
+		const { container } = render(
+			<ChatMessageContent content="[mycat:emoji-1][doge]" emote={emote} />,
+		);
+		const [custom, system] = container.querySelectorAll("img");
+		expect(custom?.dataset.customEmojiId).toBe("emoji-1");
+		expect(custom?.dataset.relation).toBe("none");
+		expect(system?.dataset.customEmojiId).toBeUndefined();
+	});
 
 	it("未命中 emote 表的占位符保持字面文本", () => {
 		const emote = { "[doge]": { url: "/uploads/emojis/doge.png" } };

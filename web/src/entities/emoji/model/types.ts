@@ -30,6 +30,10 @@ export interface Emoji {
 	sort_order?: number;
 	/** 表情元数据，可选，源自 B站 meta 子对象与顶层 type */
 	meta?: EmojiMeta;
+	/** 自定义表情 ID；仅"我的表情" tab 返回的条目携带，系统表情为空（PRD-0020） */
+	custom_emoji_id?: string;
+	/** 当前用户与该自定义表情的关系；仅"我的表情" tab 返回的条目携带 */
+	relation?: "owned" | "favorited";
 }
 
 /**

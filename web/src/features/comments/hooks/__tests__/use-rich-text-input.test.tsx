@@ -159,6 +159,21 @@ describe("useRichTextInput 图片行内节点", () => {
 
 		expect(onChange).toHaveBeenLastCalledWith("[smile]![img:img-4]");
 	});
+	it("自定义表情插入 [name:uuid] 占位符", () => {
+		const onChange = vi.fn();
+		const { container } = render(<Host value="" onChange={onChange} onReady={onReady} />);
+		const editor = container.querySelector('[data-testid="editor"]') as HTMLElement;
+		editor.focus();
+
+		act(() => {
+			api.insertEmoji(
+				"[mycat:00000000-0000-0000-0000-000000000001]",
+				"https://example.com/mycat.png",
+			);
+		});
+
+		expect(onChange).toHaveBeenLastCalledWith("[mycat:00000000-0000-0000-0000-000000000001]");
+	});
 
 	it("markdownToHtml 借助 resolveImage 从占位符还原图片节点（外部 value 注入）", () => {
 		const onChange = vi.fn();

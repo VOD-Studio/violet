@@ -57,6 +57,10 @@ export interface CommentEmoteRef {
 	gif_url?: string;
 	/** 表情尺寸：1=小 2=大，缺省按小渲染 */
 	size?: number;
+	/** 自定义表情 ID；仅自定义表情（[name:uuid] token）非空（PRD-0020） */
+	custom_emoji_id?: string;
+	/** viewer 与该自定义表情的关系，决定右键菜单项；仅自定义表情非空 */
+	relation?: "owned" | "favorited" | "none";
 }
 
 /**

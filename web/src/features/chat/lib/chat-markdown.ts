@@ -65,7 +65,7 @@ function splitEmojiText(
 		const src = ref.gif_url || ref.url;
 		nodes.push(
 			src && isImageURL(src)
-				? emojiImageNode(fullMatch, src, ref.size)
+				? emojiImageNode(fullMatch, src, ref)
 				: textNode(src || fullMatch),
 		);
 		lastIndex = match.index + fullMatch.length;
@@ -79,7 +79,7 @@ function textNode(value: string): HastText {
 	return { type: "text", value };
 }
 
-function emojiImageNode(alt: string, src: string, size: number | undefined): Element {
+function emojiImageNode(alt: string, src: string, ref: CommentEmoteRef): Element {
 	return {
 		type: "element",
 		tagName: "img",
@@ -88,7 +88,13 @@ function emojiImageNode(alt: string, src: string, size: number | undefined): Ele
 			alt,
 			// 与 Markdown 图片语法 ![]() 的 img 区分：那类降级为链接不加载，见 img 组件覆盖
 			"data-emoji": "true",
-			className: ["inline-block", "align-text-bottom", size === 2 ? "size-10" : "size-5"],
+			...(ref.custom_emoji_id
+				? {
+						"data-custom-emoji-id": ref.custom_emoji_id,
+						"data-relation": ref.relation ?? "none",
+					}
+				: {}),
+			className: ["inline-block", "align-text-bottom", ref.size === 2 ? "size-10" : "size-5"],
 			loading: "lazy",
 		},
 		children: [],

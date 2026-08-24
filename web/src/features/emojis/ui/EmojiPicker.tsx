@@ -3,16 +3,24 @@
  *
  * 基于后端 GET /emojis 返回的分组数据，按分组标签页展示可点击表情网格。
  * 图片表情用 img 渲染，纯文字表情用 text_content 兜底。
+ *
+ * 登录态下额外追加一个「我的表情」标签页（自传 + 收藏，PRD-0020），数据来自
+ * GET /custom-emojis/mine，自给自足获取，既有调用方无需新增个人表情数据 prop。
  */
 import type { Emoji } from "@entities/emoji/model/types";
+import { useCreateCustomEmoji, useMyCustomEmojis } from "@features/customemoji/api/queries";
+import { useUploadEmoji } from "@features/emojis/api/mutations";
 import { useAllEmojis } from "@features/emojis/api/queries";
+import { useSessionStore } from "@shared/api/session";
 import { isImageURL } from "@shared/lib/url";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { ScrollArea } from "@shared/ui/scroll-area";
-import { Loader2, Smile } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ImagePlus, Loader2, Smile } from "lucide-react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export interface EmojiPickerProps {
 	/** 触发器按钮，未传时使用默认笑脸图标 */
@@ -26,6 +34,9 @@ export interface EmojiPickerProps {
 	/** 选中表情后是否关闭面板，默认 true */
 	closeOnSelect?: boolean;
 }
+
+/** 「我的表情」伪分组的标签 key，不与真实分组名冲突（分组名不含前后双下划线）。 */
+const MINE_TAB_KEY = "__mine__";
 
 /**
  * EmojiPicker - 表情选择浮层
@@ -41,6 +52,7 @@ export function EmojiPicker({
 }: EmojiPickerProps) {
 	const [open, setOpen] = useState(false);
 	const { data: groups = [], isLoading } = useAllEmojis();
+	const isLoggedIn = useSessionStore((state) => state.sessionActive);
 
 	const firstGroup = groups[0]?.name ?? "";
 	const [activeGroup, setActiveGroup] = useState(firstGroup);
@@ -67,8 +79,14 @@ export function EmojiPicker({
 		}
 	};
 
-	const activeIndex = groups.findIndex((g) => g.name === activeGroup);
-	const activeGroupData = groups[activeIndex] ?? groups[0];
+	const tabCount = groups.length + (isLoggedIn ? 1 : 0);
+	const activeIndex =
+		activeGroup === MINE_TAB_KEY
+			? groups.length
+			: groups.findIndex((g) => g.name === activeGroup);
+	const activeGroupData =
+		groups[activeIndex] ?? (activeGroup === MINE_TAB_KEY ? undefined : groups[0]);
+	const showingMine = activeGroup === MINE_TAB_KEY;
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -102,7 +120,7 @@ export function EmojiPicker({
 							<Loader2 className="mr-2 size-4 animate-spin" />
 							加载中…
 						</div>
-					) : groups.length === 0 ? (
+					) : tabCount === 0 ? (
 						<div className="py-8 text-center text-sm text-muted-foreground">
 							暂无可用表情
 						</div>
@@ -147,16 +165,36 @@ export function EmojiPicker({
 										</button>
 									);
 								})}
+								{isLoggedIn && (
+									<button
+										key={MINE_TAB_KEY}
+										ref={showingMine ? activeButtonRef : undefined}
+										type="button"
+										onClick={() => setActiveGroup(MINE_TAB_KEY)}
+										title="我的表情"
+										className={`relative z-10 flex size-7 shrink-0 items-center justify-center text-xs transition-colors ${
+											showingMine
+												? "font-medium text-foreground"
+												: "text-muted-foreground hover:text-foreground"
+										}`}
+									>
+										<span className="truncate">我的</span>
+									</button>
+								)}
 							</div>
 							<ScrollArea className="h-48 px-3 pb-3">
-								{activeGroupData && (
-									<EmojiGrid
-										emojis={activeGroupData.emojis}
-										groupType={activeGroupData.type}
-										metaSize={activeGroupData.meta?.size}
-										selectedIds={selectedIds}
-										onSelect={handleSelect}
-									/>
+								{showingMine ? (
+									<MyEmojisPanel onSelect={handleSelect} />
+								) : (
+									activeGroupData && (
+										<EmojiGrid
+											emojis={activeGroupData.emojis}
+											groupType={activeGroupData.type}
+											metaSize={activeGroupData.meta?.size}
+											selectedIds={selectedIds}
+											onSelect={handleSelect}
+										/>
+									)
 								)}
 							</ScrollArea>
 						</div>
@@ -228,5 +266,185 @@ function EmojiGrid({
 				);
 			})}
 		</div>
+	);
+}
+
+/** 单用户表情上传大小上限（与后端 UploadEmoji 校验一致） */
+const MAX_EMOJI_SIZE = 10 * 1024 * 1024;
+
+/**
+ * MyEmojisPanel - 「我的表情」标签页内容：我传的 + 收藏来的两个分组 + 上传入口。
+ *
+ * 删除自己的表情 / 移出收藏均由全站右键菜单处理（渲染在此的 img 也带
+ * data-custom-emoji-id/data-relation，右键行为与消息正文内一致），本组件
+ * 不重复造轮子。
+ */
+function MyEmojisPanel({ onSelect }: { onSelect: (emoji: Emoji) => void }) {
+	const { data: mine, isLoading } = useMyCustomEmojis(true);
+	const uploadEmoji = useUploadEmoji();
+	const createEmoji = useCreateCustomEmoji();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [pending, setPending] = useState<{ file: File; preview: string; name: string } | null>(
+		null,
+	);
+
+	const busy = uploadEmoji.isPending || createEmoji.isPending;
+
+	const handleFilePicked = (e: ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		e.target.value = "";
+		if (!file) return;
+		if (file.size > MAX_EMOJI_SIZE) {
+			toast.error("表情图片不能超过 10MB");
+			return;
+		}
+		const defaultName = file.name.replace(/\.[^./]+$/, "").slice(0, 50) || "表情";
+		setPending({ file, preview: URL.createObjectURL(file), name: defaultName });
+	};
+
+	const cancelPending = () => {
+		if (pending) URL.revokeObjectURL(pending.preview);
+		setPending(null);
+	};
+
+	const confirmUpload = async () => {
+		if (!pending?.name.trim()) return;
+		try {
+			const uploaded = await uploadEmoji.mutateAsync(pending.file);
+			await createEmoji.mutateAsync({ name: pending.name.trim(), url: uploaded.url });
+			URL.revokeObjectURL(pending.preview);
+			setPending(null);
+		} catch {
+			// 错误已由 mutation 的 onError 统一 toast，此处仅保留输入态供用户重试。
+		}
+	};
+
+	if (pending) {
+		return (
+			<div className="flex flex-col gap-2 pt-2">
+				<div className="flex items-center gap-2">
+					<img
+						src={pending.preview}
+						alt="预览"
+						className="size-12 shrink-0 rounded-md object-contain"
+					/>
+					<Input
+						value={pending.name}
+						onChange={(e) => setPending({ ...pending, name: e.target.value })}
+						placeholder="给表情起个名字"
+						maxLength={50}
+						disabled={busy}
+						autoFocus
+					/>
+				</div>
+				<div className="flex justify-end gap-2">
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={cancelPending}
+						disabled={busy}
+					>
+						取消
+					</Button>
+					<Button
+						type="button"
+						size="sm"
+						onClick={confirmUpload}
+						disabled={busy || !pending.name.trim()}
+					>
+						{busy ? <Loader2 className="size-3.5 animate-spin" /> : "上传"}
+					</Button>
+				</div>
+			</div>
+		);
+	}
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center py-8 text-muted-foreground">
+				<Loader2 className="mr-2 size-4 animate-spin" />
+				加载中…
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex flex-col gap-3 pt-2">
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept="image/png,image/jpeg,image/gif,image/webp"
+				className="hidden"
+				onChange={handleFilePicked}
+			/>
+			<section>
+				<div className="mb-1 flex items-center justify-between">
+					<h4 className="text-xs font-medium text-muted-foreground">我传的</h4>
+					<button
+						type="button"
+						onClick={() => fileInputRef.current?.click()}
+						className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+					>
+						<ImagePlus className="size-3.5" />
+						上传
+					</button>
+				</div>
+				{mine && mine.owned.length > 0 ? (
+					<div className="grid grid-cols-10 gap-1">
+						{mine.owned.map((emoji) => (
+							<CustomEmojiTile
+								key={emoji.custom_emoji_id}
+								emoji={emoji}
+								onSelect={onSelect}
+							/>
+						))}
+					</div>
+				) : (
+					<div className="py-2 text-center text-xs text-muted-foreground">
+						还没有自己上传的表情
+					</div>
+				)}
+			</section>
+			<section>
+				<h4 className="mb-1 text-xs font-medium text-muted-foreground">收藏来的</h4>
+				{mine && mine.favorited.length > 0 ? (
+					<div className="grid grid-cols-10 gap-1">
+						{mine.favorited.map((emoji) => (
+							<CustomEmojiTile
+								key={emoji.custom_emoji_id}
+								emoji={emoji}
+								onSelect={onSelect}
+							/>
+						))}
+					</div>
+				) : (
+					<div className="py-2 text-center text-xs text-muted-foreground">
+						右键别人发的表情即可收藏
+					</div>
+				)}
+			</section>
+		</div>
+	);
+}
+
+/** CustomEmojiTile - 自定义表情网格项；img 挂 data-custom-emoji-id/data-relation 供全站右键菜单识别。 */
+function CustomEmojiTile({ emoji, onSelect }: { emoji: Emoji; onSelect: (emoji: Emoji) => void }) {
+	return (
+		<button
+			type="button"
+			onClick={() => onSelect(emoji)}
+			title={emoji.name}
+			className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-md p-0.5 transition-colors hover:bg-accent"
+		>
+			<img
+				src={emoji.url}
+				alt={emoji.name}
+				data-custom-emoji-id={emoji.custom_emoji_id}
+				data-relation={emoji.relation}
+				className="h-full w-full object-contain"
+				loading="lazy"
+			/>
+		</button>
 	);
 }

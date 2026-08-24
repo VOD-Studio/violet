@@ -866,6 +866,10 @@ function MessageBubble({
 			),
 		[reactions],
 	);
+	const mergedEmote = useMemo(
+		() => (message.custom_emote ? { ...emoteMap, ...message.custom_emote } : emoteMap),
+		[emoteMap, message.custom_emote],
+	);
 	const addReaction = useAddChatMessageReaction(message.conversation_id, message.id);
 	const removeReaction = useRemoveChatMessageReaction(message.conversation_id, message.id);
 	const reactionBusy = addReaction.isPending || removeReaction.isPending;
@@ -1009,7 +1013,7 @@ function MessageBubble({
 								<div className="border-t border-edge-hairline/40 bg-background/50 px-3 py-2 text-left text-sm leading-relaxed">
 									<ChatMessageContent
 										content={message.content}
-										emote={emoteMap}
+										emote={mergedEmote}
 										className="wrap-break-word"
 									/>
 								</div>
@@ -1038,7 +1042,7 @@ function MessageBubble({
 								>
 									<ChatMessageContent
 										content={message.content}
-										emote={emoteMap}
+										emote={mergedEmote}
 										className="wrap-break-word"
 									/>
 								</div>
@@ -1058,7 +1062,7 @@ function MessageBubble({
 						>
 							<ChatMessageContent
 								content={message.content ?? ""}
-								emote={emoteMap}
+								emote={mergedEmote}
 								className="wrap-break-word"
 							/>
 						</div>
