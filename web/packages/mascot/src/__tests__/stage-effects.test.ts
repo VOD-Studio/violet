@@ -55,6 +55,27 @@ describe("stage effects", () => {
 		mascot.tick(now + 4000, 4);
 		expect(host.querySelectorAll('linearGradient[id^="ribbon-grad-"]').length).toBe(0);
 	});
+
+	it("drives the ambient stage lights through the spotlight variable", () => {
+		const stage = document.createElement("div");
+		const host = document.createElement("div");
+		stage.appendChild(host);
+		document.body.appendChild(stage);
+		const mascot = new Mascot(host, { emotion: "08", frozen: true });
+		instances.push(mascot);
+
+		mascot.spotlight();
+		mascot.tick(performance.now() + 200, 0.2);
+		const glow = stage.style.getPropertyValue("--mascot-spotlight");
+		expect(Number.parseFloat(glow)).toBeGreaterThan(0);
+		expect(host.querySelectorAll("path[fill='#FFF3C4']").length).toBe(4);
+
+		mascot.tick(performance.now() + 1800, 1.4);
+		expect(stage.style.getPropertyValue("--mascot-spotlight")).toBe("");
+
+		mascot.destroy();
+		expect(stage.style.getPropertyValue("--mascot-spotlight")).toBe("");
+	});
 	it("keeps a persistent magic circle alive until explicitly disabled", () => {
 		const host = document.createElement("div");
 		document.body.appendChild(host);

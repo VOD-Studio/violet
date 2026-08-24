@@ -576,6 +576,8 @@ html.theme-vt-freeze *::after {
 /* 吉祥物黑盒舞台：克制的冷绿环境光、台面与顶光，保持角色是唯一主角。 */
 .mascot-stage-scene {
 	--stage-ink: #0f1412;
+	/* 聚光驱动位：引擎 SpotlightFX 在 0..1 间推动，真实灯光层随之增亮 */
+	--mascot-spotlight: 0;
 	isolation: isolate;
 	background: var(--stage-ink);
 }
@@ -600,6 +602,30 @@ html.theme-vt-freeze *::after {
 		rgb(122 157 143 / 0.14),
 		transparent 72%
 	);
+}
+
+/* 主光 trio 由聚光驱动增亮；idle 时以极缓呼吸消除完全静态 */
+.mascot-stage-beam,
+.mascot-stage-source,
+.mascot-stage-pool,
+.mascot-stage-floor-light {
+	filter: brightness(calc(1 + var(--mascot-spotlight) * 0.9));
+	animation: mascot-stage-breathe 8s ease-in-out infinite;
+}
+
+@keyframes mascot-stage-breathe {
+	50% {
+		opacity: 0.86;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mascot-stage-beam,
+	.mascot-stage-source,
+	.mascot-stage-pool,
+	.mascot-stage-floor-light {
+		animation: none;
+	}
 }
 
 .mascot-stage-floor-light {

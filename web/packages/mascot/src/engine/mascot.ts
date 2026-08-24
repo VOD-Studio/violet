@@ -88,7 +88,7 @@ export class Mascot {
 		this.controller = new PoseController(def);
 		this.ribbons = new RibbonFX(this.renderer.mounts);
 		this.confetti = new ConfettiFX(this.renderer.mounts);
-		this.stageFx = new StageFX(this.renderer.mounts);
+		this.stageFx = new StageFX(this.renderer.mounts, el);
 		this.el.appendChild(this.renderer.root);
 		if (opts.onClick) {
 			this.clickHandler = opts.onClick;

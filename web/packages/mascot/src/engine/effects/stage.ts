@@ -14,12 +14,12 @@ export class StageFX {
 	private readonly meteors: MeteorsFX;
 	private readonly spotlight: SpotlightFX;
 
-	constructor(mounts: EffectMounts) {
+	constructor(mounts: EffectMounts, host: HTMLElement) {
 		this.magicCircle = new MagicCircleFX(mounts);
 		this.fireworks = new FireworksFX(mounts);
 		this.heartRain = new HeartRainFX(mounts);
 		this.meteors = new MeteorsFX(mounts);
-		this.spotlight = new SpotlightFX(mounts);
+		this.spotlight = new SpotlightFX(mounts, host);
 		this.effects = [
 			this.magicCircle,
 			this.fireworks,

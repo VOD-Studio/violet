@@ -13,44 +13,29 @@ type Spark = {
 	size: number;
 };
 
-type Spotlight = {
-	beam: SVGPathElement;
-	glow: SVGEllipseElement;
-	life: number;
-	max: number;
-};
+/** 舞台灯光驱动位：0 静默，1 满格；宿主环境层（beam/source/pool）按此变量起伏。 */
+const GLOW_VAR = "--mascot-spotlight";
 
-/** 闪耀:聚光锥锁定角色，再以四向星芒给出一次性的完成提示。 */
+/**
+ * 闪耀:不另画光源，而是驱动宿主舞台的真实灯光——把 GLOW_VAR
+ * 从 0 推到峰值再回落，光锥、顶光与地面光池随之起伏；
+ * 四向星芒作为一次性的完成提示画在角色前层。
+ */
 export class SpotlightFX implements StageEffect {
-	private readonly back: SVGGElement;
 	private readonly front: SVGGElement;
-	private readonly spotlights: Spotlight[] = [];
+	/** 特效写入 GLOW_VAR 的目标：宿主元素的父级（舞台环境容器）。 */
+	private readonly ambient: HTMLElement | null;
 	private readonly sparks: Spark[] = [];
+	private glowLife = -1;
 
-	constructor(mounts: EffectMounts) {
-		this.back = mounts.back;
+	constructor(mounts: EffectMounts, host: HTMLElement) {
 		this.front = mounts.front;
+		this.ambient = host.parentElement;
 	}
 
 	trigger(): void {
 		this.clear();
-		const beam = svgEl("path", {
-			d: "M 92 0 L 168 0 L 151 194 Q 130 207 109 194 Z",
-			fill: "#FFF1B8",
-			opacity: "0",
-			"pointer-events": "none",
-		}) as SVGPathElement;
-		const glow = svgEl("ellipse", {
-			cx: "130",
-			cy: "204",
-			rx: "38",
-			ry: "7",
-			fill: "#FFF1B8",
-			opacity: "0",
-			"pointer-events": "none",
-		}) as SVGEllipseElement;
-		this.back.append(beam, glow);
-		this.spotlights.push({ beam, glow, life: 0, max: 1.25 });
+		this.glowLife = 0;
 		for (const [i, point] of [
 			{ x: 84, y: 91 },
 			{ x: 176, y: 86 },
@@ -77,20 +62,18 @@ export class SpotlightFX implements StageEffect {
 	}
 
 	step(dt: number): void {
-		for (let i = this.spotlights.length - 1; i >= 0; i--) {
-			const spotlight = this.spotlights[i];
-			spotlight.life += dt;
-			if (spotlight.life >= spotlight.max) {
-				spotlight.beam.remove();
-				spotlight.glow.remove();
-				this.spotlights.splice(i, 1);
-				continue;
+		if (this.glowLife >= 0) {
+			this.glowLife += dt;
+			const max = 1.25;
+			if (this.glowLife >= max) {
+				this.setGlow(null);
+				this.glowLife = -1;
+			} else {
+				const u = this.glowLife / max;
+				// 前 20% 快速推亮，随后幂次回落，与星芒节奏一致
+				const fade = u < 0.2 ? u / 0.2 : (1 - u) ** 1.2;
+				this.setGlow(clamp(fade, 0, 1));
 			}
-			const u = spotlight.life / spotlight.max;
-			const fade = u < 0.2 ? u / 0.2 : (1 - u) ** 1.2;
-			spotlight.beam.setAttribute("opacity", (fade * 0.11).toFixed(3));
-			spotlight.glow.setAttribute("opacity", (fade * 0.38).toFixed(3));
-			spotlight.glow.setAttribute("rx", (38 + Math.sin(u * Math.PI) * 10).toFixed(1));
 		}
 		for (let i = this.sparks.length - 1; i >= 0; i--) {
 			const spark = this.sparks[i];
@@ -113,12 +96,13 @@ export class SpotlightFX implements StageEffect {
 	}
 
 	clear(): void {
-		for (const spotlight of this.spotlights) {
-			spotlight.beam.remove();
-			spotlight.glow.remove();
-		}
+		this.setGlow(null);
+		this.glowLife = -1;
 		for (const spark of this.sparks) spark.el.remove();
-		this.spotlights.length = 0;
 		this.sparks.length = 0;
+	}
+
+	private setGlow(level: number | null): void {
+		this.ambient?.style.setProperty(GLOW_VAR, level === null ? "" : level.toFixed(3));
 	}
 }
