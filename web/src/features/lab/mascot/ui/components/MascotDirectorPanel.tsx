@@ -21,6 +21,7 @@ import {
 	useState,
 } from "react";
 import { cn } from "@/shared/lib/utils";
+import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 
 interface StageAction {
 	label: string;
@@ -38,22 +39,25 @@ function StageActionButton({ label, description, icon, onClick, active }: StageA
 			onClick={onClick}
 			aria-pressed={active}
 			className={cn(
-				"cursor-pointer text-[#11110f] transition-colors duration-200 hover:bg-[#eceee9] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent)",
+				"cursor-pointer border-r border-b border-edge-hairline bg-background text-foreground transition-colors hover:bg-muted/40 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue",
 				isEffect
-					? "flex min-h-12 flex-col items-start justify-center bg-[#f8f9f5] px-2 py-1.5 text-left"
-					: "flex min-h-12 flex-col items-center justify-center gap-1 bg-white p-1 text-center",
-				active && "bg-[#ebe7e0] text-(--mascot-accent) hover:bg-[#ebe7e0]",
+					? "flex min-h-14 items-center gap-2.5 px-2.5 py-2 text-left"
+					: "flex min-h-14 flex-col items-center justify-center gap-1.5 px-1.5 py-2 text-center",
+				active &&
+					"bg-muted/60 text-neon-blue shadow-[inset_3px_0_0_var(--color-neon-blue)]",
 			)}
 		>
-			<span className={cn("flex items-center", isEffect ? "gap-1.5" : "flex-col gap-1")}>
+			<span className="inline-flex shrink-0 items-center justify-center text-neon-blue">
 				{icon}
-				<span className="text-[10px] font-bold leading-none">{label}</span>
 			</span>
-			{description ? (
-				<span className="mt-1 pl-5 text-[9px] leading-none text-[#11110f]/45">
-					{description}
-				</span>
-			) : null}
+			<span className={cn(isEffect && "min-w-0")}>
+				<span className="block text-[10px] font-semibold leading-none">{label}</span>
+				{description ? (
+					<span className="mt-1 block truncate text-[9px] leading-none text-muted-foreground">
+						{description}
+					</span>
+				) : null}
+			</span>
 		</button>
 	);
 }
@@ -170,48 +174,63 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 	};
 
 	return (
-		<aside className="flex min-h-0 flex-col border-2 border-[#11110f] bg-[#f8f9f5] lg:h-147">
-			<header className="flex h-14 shrink-0 items-center justify-between bg-[#11110f] px-3 text-white">
-				<div>
-					<p className="font-mono text-[9px] tracking-[0.18em] text-white/55">
-						Director desk
-					</p>
-					<h2 className="mt-0.5 text-base font-black tracking-[-0.03em]">导演台</h2>
+		<OverlayScroll className="h-full min-h-0">
+			<section className="border-b border-edge-hairline p-4">
+				<div className="mb-3 flex items-center justify-between gap-2">
+					<div className="flex items-center gap-2">
+						<Hand className="size-3.5 text-neon-blue" />
+						<div>
+							<h3 className="text-xs font-semibold">角色动作</h3>
+							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
+								Instant feedback
+							</p>
+						</div>
+					</div>
+					<span className="font-mono text-[8px] text-muted-foreground">04</span>
 				</div>
-				<span className="border border-white/35 px-1.5 py-1 font-mono text-[9px] text-white/70">
-					Live control
-				</span>
-			</header>
-
-			<section className="border-b border-[#11110f] p-2.5">
-				<p className="mb-1.5 text-[10px] font-bold">角色动作</p>
-				<div className="grid grid-cols-4 gap-1">
+				<div className="grid grid-cols-4 border-t border-l border-edge-hairline">
 					{antics.map((action) => (
 						<StageActionButton key={action.label} {...action} />
 					))}
 				</div>
 			</section>
 
-			<section className="border-b border-[#11110f] p-2.5">
-				<div className="mb-1.5 flex items-center justify-between gap-2">
-					<p className="text-[10px] font-bold">舞台特效</p>
-					<p className="font-mono text-[9px] text-[#11110f]/45">可叠加</p>
+			<section className="border-b border-edge-hairline p-4">
+				<div className="mb-3 flex items-center justify-between gap-2">
+					<div className="flex items-center gap-2">
+						<WandSparkles className="size-3.5 text-neon-blue" />
+						<div>
+							<h3 className="text-xs font-semibold">舞台特效</h3>
+							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
+								Stackable effects
+							</p>
+						</div>
+					</div>
+					<span className="font-mono text-[8px] text-muted-foreground">06</span>
 				</div>
-				<div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-2">
+				<div className="grid grid-cols-2 border-t border-l border-edge-hairline">
 					{effects.map((action) => (
 						<StageActionButton key={action.label} {...action} />
 					))}
 				</div>
 			</section>
 
-			<section className="border-b border-[#11110f] p-2.5">
-				<div className="flex items-center justify-between">
-					<label htmlFor="mascot-yaw" className="text-[10px] font-bold">
-						手动方向
-					</label>
+			<section className="border-b border-edge-hairline p-4">
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-2">
+						<RotateCw className="size-3.5 text-neon-blue" />
+						<div>
+							<label htmlFor="mascot-yaw" className="text-xs font-semibold">
+								手动方向
+							</label>
+							<p className="font-mono text-[8px] tracking-[0.08em] text-muted-foreground uppercase">
+								Character yaw
+							</p>
+						</div>
+					</div>
 					<output
 						htmlFor="mascot-yaw"
-						className="font-mono text-xs font-semibold tabular-nums"
+						className="font-mono text-[10px] tabular-nums text-neon-blue"
 					>
 						{devYaw}°
 					</output>
@@ -224,52 +243,57 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 					step={5}
 					value={devYaw}
 					onChange={(event) => setDevYaw(Number(event.target.value))}
-					className="mt-2 h-1 w-full cursor-pointer appearance-none bg-[#11110f]/20 accent-(--mascot-accent)"
+					className="mt-3 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-neon-blue"
 				/>
-				<div className="mt-1 flex justify-between font-mono text-[8px] text-[#11110f]/40">
+				<div className="mt-1.5 flex justify-between font-mono text-[8px] text-muted-foreground">
 					<span>-360°</span>
 					<span>正面</span>
 					<span>+360°</span>
 				</div>
 			</section>
 
-			<section className="flex min-h-0 flex-1 flex-col p-2.5" aria-live="polite">
-				<div className="mb-1.5 flex items-center justify-between gap-2">
-					<p className="inline-flex items-center gap-1.5 text-[10px] font-bold">
-						<Terminal className="size-3.5" />
-						AI 消息
-					</p>
-					<p className="font-mono text-[8px] text-[#11110f]/40">Enter 发送</p>
+			<section className="p-4" aria-live="polite">
+				<div className="mb-3 flex items-center justify-between gap-2">
+					<div className="flex items-center gap-2">
+						<Terminal className="size-3.5 text-neon-blue" />
+						<div>
+							<h3 className="text-xs font-semibold">AI 消息</h3>
+							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
+								JSON protocol
+							</p>
+						</div>
+					</div>
+					<p className="font-mono text-[8px] text-muted-foreground">Enter 发送</p>
 				</div>
 				<div
 					className={cn(
-						"flex min-h-0 flex-1 flex-col bg-[#eceee9] transition-colors focus-within:bg-white",
-						protocolError && "bg-[#f7e6e1]",
+						"overflow-hidden border border-edge-hairline bg-background transition-colors focus-within:border-neon-blue",
+						protocolError && "border-destructive",
 					)}
 				>
 					<textarea
 						ref={jsonInputRef}
-						rows={2}
+						rows={4}
 						onKeyDown={handleKeyDown}
 						spellCheck={false}
 						aria-label="AI 消息 JSON"
 						aria-invalid={protocolError ? true : undefined}
 						placeholder={`{\n  "emotionId": "${def.id}",\n  "tips": "喵~"\n}`}
-						className="min-h-17 flex-1 resize-none bg-transparent p-2 font-mono text-[10px] leading-relaxed text-[#11110f] outline-none placeholder:text-[#11110f]/30"
+						className="min-h-28 w-full resize-none bg-transparent p-3 font-mono text-[10px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
 					/>
-					<div className="flex min-h-8 items-center justify-between gap-2 px-2 pb-2">
+					<div className="flex min-h-10 items-center justify-between gap-2 border-t border-edge-hairline px-2.5 py-1.5">
 						<p
 							className={cn(
-								"truncate font-mono text-[8px] text-[#11110f]/55",
-								protocolError && "text-(--mascot-accent)",
+								"truncate font-mono text-[8px] text-muted-foreground",
+								protocolError && "text-destructive",
 							)}
 						>
-							{protocolError ?? "JSON protocol"}
+							{protocolError ?? "Ready to receive"}
 						</p>
 						<button
 							type="button"
 							onClick={sendJson}
-							className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[#11110f] px-3 text-[10px] font-bold text-white transition-colors hover:bg-[#30312e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent)"
+							className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 bg-foreground px-3 font-mono text-[9px] tracking-[0.08em] text-background uppercase transition-colors hover:bg-neon-blue hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
 						>
 							<Send className="size-3" />
 							发送
@@ -277,6 +301,6 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 					</div>
 				</div>
 			</section>
-		</aside>
+		</OverlayScroll>
 	);
 }

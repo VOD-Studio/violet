@@ -2,12 +2,37 @@ import type { EmotionDef } from "@violet/mascot";
 import { resolveEmotionId } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
 import { MascotStage } from "@violet/mascot/react";
-import { Pause, Play, RotateCcw } from "lucide-react";
-import { type PointerEvent as ReactPointerEvent, useRef } from "react";
+import { Grid2X2, Pause, Play, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { type PointerEvent as ReactPointerEvent, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
+import { Segmented, type SegmentedItem } from "@/shared/ui/segmented";
 import { useAgentStatus } from "../hooks/useAgentStatus";
-import { GROUP_LABEL } from "../hooks/useMascotExhibit";
+import { GROUP_LABEL, type MascotGroupFilter } from "../hooks/useMascotExhibit";
 import { MascotDirectorPanel } from "./MascotDirectorPanel";
+import { MascotEmotionLibrary } from "./MascotEmotionLibrary";
+
+type DockView = "states" | "controls";
+
+const DOCK_SEGMENTS: SegmentedItem<DockView>[] = [
+	{
+		value: "states",
+		label: (
+			<>
+				<Grid2X2 className="size-3" />
+				状态
+			</>
+		),
+	},
+	{
+		value: "controls",
+		label: (
+			<>
+				<SlidersHorizontal className="size-3" />
+				控制
+			</>
+		),
+	},
+];
 
 interface EmotionBubbleProps {
 	text: string;
@@ -30,27 +55,38 @@ function EmotionBubble({ text, gen }: EmotionBubbleProps) {
 	);
 }
 
-/** 主舞台接收当前状态，并把播放与 AI 消息事件回传给展馆状态机。 */
+/** 主舞台接收当前状态，并把播放、选择与 AI 消息事件回传给展馆状态机。 */
 export interface MascotTheaterProps {
 	def: EmotionDef;
 	bubble: EmotionBubbleProps;
+	group: MascotGroupFilter;
+	groupList: EmotionDef[];
+	activeId: string;
 	isTouring: boolean;
+	onSelectGroup: (group: MascotGroupFilter) => void;
+	onSelectEmotion: (id: string) => void;
 	onToggleTour: () => void;
 	onReplay: () => void;
 	onAIMessage: (emotionId: string, tips?: string) => void;
 }
 
-/** 角色舞台与导演控制台，所有高频操作始终围绕角色排布。 */
+/** 角色舞台与 Studio Dock，让状态切换和演出控制始终靠近舞台。 */
 export function MascotTheater({
 	def,
 	bubble,
+	group,
+	groupList,
+	activeId,
 	isTouring,
+	onSelectGroup,
+	onSelectEmotion,
 	onToggleTour,
 	onReplay,
 	onAIMessage,
 }: MascotTheaterProps) {
 	const mascotRef = useRef<MascotHandle>(null);
 	const stageRef = useRef<HTMLDivElement>(null);
+	const [dockView, setDockView] = useState<DockView>("states");
 	const agentMessage = useAgentStatus();
 	const agentEmotion = agentMessage ? resolveEmotionId(agentMessage) : null;
 
@@ -74,53 +110,53 @@ export function MascotTheater({
 	};
 
 	return (
-		<div className="order-1 grid min-w-0 gap-4 lg:order-2 lg:grid-cols-[minmax(0,1fr)_17rem]">
-			<section className="flex min-w-0 flex-col border-2 border-[#11110f] bg-[#f8f9f5] lg:h-147">
-				<header className="flex h-17 shrink-0 items-center justify-between gap-3 border-b-2 border-[#11110f] px-3 sm:px-4">
-					<div className="flex min-w-0 items-center gap-2.5">
-						<span aria-hidden className="size-2 shrink-0 bg-(--mascot-accent)" />
+		<div className="grid min-w-0 items-stretch gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
+			<section className="flex min-w-0 flex-col overflow-hidden border border-edge-hairline bg-background lg:h-147">
+				<header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline px-3 sm:px-4">
+					<div className="flex min-w-0 items-center gap-3">
+						<span aria-hidden className="size-1.5 shrink-0 bg-neon-blue" />
 						<div className="min-w-0">
 							<div className="flex items-baseline gap-2">
 								<h2
 									data-stage-emotion={def.id}
-									className="truncate text-lg font-black tracking-[-0.04em] sm:text-xl"
+									className="truncate text-lg font-semibold tracking-tight sm:text-xl"
 								>
 									{def.name}
 								</h2>
-								<span className="shrink-0 font-mono text-[9px] text-[#11110f]/45">
+								<span className="shrink-0 font-mono text-[9px] text-muted-foreground">
 									{def.id} / {def.en}
 								</span>
 							</div>
-							<p className="mt-0.5 truncate text-[10px] text-[#11110f]/55">
+							<p className="mt-0.5 max-w-120 truncate text-[10px] text-muted-foreground">
 								{def.desc}
 							</p>
 						</div>
 					</div>
 
-					<div className="flex shrink-0 border border-[#11110f] bg-white">
+					<div className="flex shrink-0 divide-x divide-edge-hairline border border-edge-hairline">
 						<button
 							type="button"
 							onClick={replay}
-							className="inline-flex h-8 cursor-pointer items-center gap-1.5 px-2.5 text-[10px] font-bold transition-colors hover:bg-[#eceee9] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset"
+							className="inline-flex h-8 cursor-pointer items-center gap-1.5 px-2.5 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue"
 							title="重播当前表情动画与对白"
 						>
 							<RotateCcw className="size-3" />
-							重播
+							<span className="hidden sm:inline">Replay</span>
 						</button>
 						<button
 							type="button"
 							onClick={onToggleTour}
 							aria-pressed={isTouring}
 							className={cn(
-								"inline-flex h-8 cursor-pointer items-center gap-1.5 border-l border-[#11110f] px-2.5 text-[10px] font-bold transition-[background-color,box-shadow] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--mascot-accent) focus-visible:ring-inset",
+								"inline-flex h-8 cursor-pointer items-center gap-1.5 px-2.5 font-mono text-[9px] tracking-[0.08em] uppercase transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue",
 								isTouring
-									? "bg-[#e9e5de] shadow-[inset_0_-2px_0_var(--mascot-accent)]"
-									: "hover:bg-[#eceee9]",
+									? "bg-foreground text-background"
+									: "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
 							)}
 							title={isTouring ? "暂停自动巡演" : "开始自动巡演"}
 						>
 							{isTouring ? <Pause className="size-3" /> : <Play className="size-3" />}
-							巡演
+							<span className="hidden sm:inline">Tour</span>
 						</button>
 					</div>
 				</header>
@@ -129,7 +165,7 @@ export function MascotTheater({
 					ref={stageRef}
 					onPointerMove={handleStageMove}
 					onPointerLeave={() => mascotRef.current?.setGaze(0, 0)}
-					className="mascot-stage-scene relative h-104 min-h-0 overflow-hidden sm:h-120 lg:h-auto lg:flex-1"
+					className="mascot-stage-scene relative h-[clamp(20rem,42dvh,26rem)] min-h-0 overflow-hidden lg:h-auto lg:flex-1"
 				>
 					<div aria-hidden className="mascot-stage-ambient" />
 					<div aria-hidden className="mascot-stage-floor-light" />
@@ -167,13 +203,49 @@ export function MascotTheater({
 					<EmotionBubble text={bubble.text} gen={bubble.gen} />
 				</div>
 
-				<footer className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t-2 border-[#11110f] px-3 text-[9px] text-[#11110f]/55 sm:px-4">
+				<footer className="flex min-h-9 shrink-0 items-center justify-between gap-3 border-t border-edge-hairline px-3 text-[9px] text-muted-foreground sm:px-4">
 					<p>移动指针控制视线，点击角色让它弹跳</p>
-					<p className="hidden font-mono sm:block">Live SVG renderer</p>
+					<p className="hidden font-mono tracking-[0.14em] uppercase sm:block">
+						Live SVG renderer
+					</p>
 				</footer>
 			</section>
 
-			<MascotDirectorPanel mascotRef={mascotRef} def={def} onAIMessage={onAIMessage} />
+			<aside className="flex min-h-0 flex-col overflow-hidden border border-edge-hairline bg-background lg:h-147">
+				<header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline px-3 sm:px-4">
+					<div className="min-w-0">
+						<p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
+							Studio dock
+						</p>
+						<p className="mt-1 truncate font-mono text-[10px] text-neon-blue">
+							#{activeId} / {def.en}
+						</p>
+					</div>
+					<Segmented
+						value={dockView}
+						onValueChange={setDockView}
+						segments={DOCK_SEGMENTS}
+						className="shrink-0 font-mono text-[9px] tracking-[0.08em]"
+					/>
+				</header>
+
+				<div hidden={dockView !== "states"} className="min-h-0 flex-1 overflow-hidden">
+					<MascotEmotionLibrary
+						group={group}
+						groupList={groupList}
+						activeId={activeId}
+						onSelectGroup={onSelectGroup}
+						onSelectEmotion={onSelectEmotion}
+					/>
+				</div>
+				<div hidden={dockView !== "controls"} className="min-h-0 flex-1 overflow-hidden">
+					<MascotDirectorPanel
+						mascotRef={mascotRef}
+						def={def}
+						onAIMessage={onAIMessage}
+					/>
+				</div>
+			</aside>
 		</div>
 	);
 }
