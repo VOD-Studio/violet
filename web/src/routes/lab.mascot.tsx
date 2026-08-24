@@ -1,7 +1,7 @@
 import { MascotLab } from "@features/lab/mascot/ui/MascotLab";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { BackLink } from "@features/lab/nav/ui/BackLink";
+import { createFileRoute } from "@tanstack/react-router";
 import { EMOTIONS } from "@violet/mascot";
-import { ArrowLeft } from "lucide-react";
 
 function MascotLabPage() {
 	return (
@@ -9,13 +9,7 @@ function MascotLabPage() {
 			<header className="container mx-auto max-w-360 px-4 pt-5 pb-4 sm:px-6 lg:px-8">
 				<div className="flex min-h-14 flex-wrap items-center justify-between gap-4 border-b border-edge-hairline pb-4">
 					<div className="flex min-w-0 items-center gap-4">
-						<Link
-							to="/lab"
-							className="inline-flex shrink-0 items-center gap-2 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase transition-colors hover:text-neon-blue focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-blue"
-						>
-							<ArrowLeft className="size-3.5" />
-							<span className="hidden sm:inline">Design lab</span>
-						</Link>
+						<BackLink to="/lab" label="Labs" className="-ml-3 sm:ml-0" />
 						<span aria-hidden className="h-7 w-px bg-edge-hairline" />
 						<div className="min-w-0">
 							<p className="font-mono text-[9px] tracking-[0.24em] text-muted-foreground uppercase">

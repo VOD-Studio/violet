@@ -58,7 +58,8 @@ function LibraryFilters({
 					block
 					className="min-w-0 flex-1 font-mono text-[9px] tracking-[0.08em]"
 				/>
-				<p className="shrink-0 font-mono text-[9px] tabular-nums text-muted-foreground">
+				{/* 固定宽度：计数位数变化时不挤压 Segmented，段宽与滑块位置保持稳定 */}
+				<p className="w-13 shrink-0 text-right font-mono text-[9px] tabular-nums text-muted-foreground">
 					{visibleCount}/{totalCount}
 				</p>
 			</div>
