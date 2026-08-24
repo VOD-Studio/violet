@@ -147,7 +147,7 @@ export function MascotEmotionLibrary({
 				</div>
 			</OverlayScroll>
 
-			<div className="min-h-0 lg:hidden">
+			<div className="flex min-h-0 flex-1 flex-col lg:hidden">
 				<div className="flex items-center justify-between gap-3 border-b border-edge-hairline px-3 py-2.5">
 					<div>
 						<p className="font-mono text-[9px] tracking-[0.16em] text-muted-foreground uppercase">
@@ -217,7 +217,7 @@ export function MascotEmotionLibrary({
 					</Dialog>
 				</div>
 
-				<OverlayScroll data-emotion-scroll>
+				<OverlayScroll data-emotion-scroll className="min-h-0 flex-1">
 					<div className="p-3">
 						<div className="flex w-max gap-2" role="group" aria-label="状态胶片">
 							{visibleDefs.map((def) => (

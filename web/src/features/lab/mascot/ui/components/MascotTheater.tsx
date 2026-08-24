@@ -211,7 +211,7 @@ export function MascotTheater({
 				</footer>
 			</section>
 
-			<aside className="flex min-h-0 flex-col overflow-hidden border border-edge-hairline bg-background lg:h-147">
+			<aside className="flex h-80 min-h-0 flex-col overflow-hidden border border-edge-hairline bg-background lg:h-147">
 				<header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline px-3 sm:px-4">
 					<div className="min-w-0">
 						<p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
