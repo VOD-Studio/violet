@@ -105,7 +105,7 @@ export function MascotEmotionLibrary({
 				<div className="mb-3 flex items-end justify-between gap-3">
 					<div>
 						<p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
-							Expression library
+							表情图鉴库
 						</p>
 						<h2 className="mt-1 text-lg font-semibold tracking-tight">状态图鉴</h2>
 					</div>
@@ -140,7 +140,7 @@ export function MascotEmotionLibrary({
 									onClick={() => setQuery("")}
 									className="mt-3 cursor-pointer font-mono text-[9px] tracking-[0.12em] text-neon-blue uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-blue"
 								>
-									Clear query
+									清空搜索
 								</button>
 							</div>
 						) : null}
@@ -152,7 +152,7 @@ export function MascotEmotionLibrary({
 				<div className="flex items-center justify-between gap-3 border-b border-edge-hairline px-3 py-2.5">
 					<div>
 						<p className="font-mono text-[9px] tracking-[0.16em] text-muted-foreground uppercase">
-							Expression reel
+							横向滑动 · 舞台同步预览
 						</p>
 						<p className="mt-0.5 text-xs font-semibold">状态胶片</p>
 					</div>
@@ -207,7 +207,7 @@ export function MascotEmotionLibrary({
 													onClick={() => setQuery("")}
 													className="mt-3 cursor-pointer font-mono text-[9px] tracking-[0.12em] text-neon-blue uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-blue"
 												>
-													Clear query
+													清空搜索
 												</button>
 											</div>
 										) : null}

@@ -182,7 +182,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 						<div>
 							<h3 className="text-xs font-semibold">角色动作</h3>
 							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
-								Instant feedback
+								即时反馈
 							</p>
 						</div>
 					</div>
@@ -202,7 +202,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 						<div>
 							<h3 className="text-xs font-semibold">舞台特效</h3>
 							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
-								Stackable effects
+								效果可叠加
 							</p>
 						</div>
 					</div>
@@ -224,7 +224,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 								手动方向
 							</label>
 							<p className="font-mono text-[8px] tracking-[0.08em] text-muted-foreground uppercase">
-								Character yaw
+								手动调整朝向
 							</p>
 						</div>
 					</div>
@@ -259,7 +259,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 						<div>
 							<h3 className="text-xs font-semibold">AI 消息</h3>
 							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
-								JSON protocol
+								JSON 协议
 							</p>
 						</div>
 					</div>
@@ -288,7 +288,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 								protocolError && "text-destructive",
 							)}
 						>
-							{protocolError ?? "Ready to receive"}
+							{protocolError ?? "等待接收消息"}
 						</p>
 						<button
 							type="button"

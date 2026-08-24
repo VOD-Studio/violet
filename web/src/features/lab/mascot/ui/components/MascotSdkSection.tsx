@@ -23,7 +23,7 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 					<Code2 className="size-5 shrink-0 text-neon-blue" />
 					<div>
 						<p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
-							Developer handoff
+							开发者接入
 						</p>
 						<h2 className="mt-1 text-2xl font-semibold tracking-tight">
 							接到你的界面里

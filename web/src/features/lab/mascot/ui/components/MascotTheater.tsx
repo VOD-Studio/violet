@@ -141,7 +141,7 @@ export function MascotTheater({
 							title="重播当前表情动画与对白"
 						>
 							<RotateCcw className="size-3" />
-							<span className="hidden sm:inline">Replay</span>
+							<span className="hidden sm:inline">重播</span>
 						</button>
 						<button
 							type="button"
@@ -156,7 +156,7 @@ export function MascotTheater({
 							title={isTouring ? "暂停自动巡演" : "开始自动巡演"}
 						>
 							{isTouring ? <Pause className="size-3" /> : <Play className="size-3" />}
-							<span className="hidden sm:inline">Tour</span>
+							<span className="hidden sm:inline">巡演</span>
 						</button>
 					</div>
 				</header>
@@ -206,7 +206,7 @@ export function MascotTheater({
 				<footer className="flex min-h-9 shrink-0 items-center justify-between gap-3 border-t border-edge-hairline px-3 text-[9px] text-muted-foreground sm:px-4">
 					<p>移动指针控制视线，点击角色让它弹跳</p>
 					<p className="hidden font-mono tracking-[0.14em] uppercase sm:block">
-						Live SVG renderer
+						实时 SVG 渲染
 					</p>
 				</footer>
 			</section>
@@ -215,7 +215,7 @@ export function MascotTheater({
 				<header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline px-3 sm:px-4">
 					<div className="min-w-0">
 						<p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
-							Studio dock
+							控制台
 						</p>
 						<p className="mt-1 truncate font-mono text-[10px] text-neon-blue">
 							#{activeId} / {def.en}
