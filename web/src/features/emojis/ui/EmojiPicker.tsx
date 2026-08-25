@@ -410,8 +410,8 @@ function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 						上传
 					</button>
 				</div>
-				{mine && mine.owned.length > 0 ? (
-					<div className="grid grid-cols-10 gap-1">
+							{mine && mine.owned.length > 0 ? (
+				<div className="grid grid-cols-6 gap-1">
 						{mine.owned.map((emoji) => (
 							<CustomEmojiTile
 								key={emoji.custom_emoji_id}
@@ -428,8 +428,8 @@ function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 			</section>
 			<section>
 				<h4 className="mb-1 text-xs font-medium text-muted-foreground">收藏来的</h4>
-				{mine && mine.favorited.length > 0 ? (
-					<div className="grid grid-cols-10 gap-1">
+							{mine && mine.favorited.length > 0 ? (
+				<div className="grid grid-cols-6 gap-1">
 						{mine.favorited.map((emoji) => (
 							<CustomEmojiTile
 								key={emoji.custom_emoji_id}
