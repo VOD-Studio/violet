@@ -177,25 +177,36 @@ export function MessageBubble({
 							消息已被管理员删除
 						</div>
 					) : message.type === "image" && message.media ? (
-						<button
-							className={cn(
-								"group/img relative block overflow-hidden rounded-2xl text-left",
-								mine ? "rounded-tr-md" : "rounded-tl-md",
-							)}
-							onClick={() => onImage(message.media as ChatMedia)}
-							type="button"
-						>
-							<img
-								alt="聊天图片"
-								className="max-h-80 w-auto max-w-full rounded-2xl object-cover"
-								src={message.media.thumbnail || message.media.url}
-							/>
-							<BubbleTimestamp
-								className="absolute bottom-1.5 right-1.5"
-								mine={mine}
-								time={message.created_at}
-							/>
-						</button>
+						<div className="flex flex-col gap-1.5">
+							<button
+								className={cn(
+									"group/img relative block overflow-hidden rounded-2xl text-left",
+									mine ? "rounded-tr-md" : "rounded-tl-md",
+								)}
+								onClick={() => onImage(message.media as ChatMedia)}
+								type="button"
+							>
+								<img
+									alt="聊天图片"
+									className="max-h-80 w-auto max-w-full rounded-2xl object-cover"
+									src={message.media.thumbnail || message.media.url}
+								/>
+								<BubbleTimestamp
+									className="absolute bottom-1.5 right-1.5"
+									mine={mine}
+									time={message.created_at}
+								/>
+							</button>
+							{message.content ? (
+								<BubbleShell mine={mine}>
+									<ChatMessageContent
+										content={message.content}
+										emote={mergedEmote}
+										className="wrap-break-word"
+									/>
+								</BubbleShell>
+							) : null}
+						</div>
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
 							{message.content && (
