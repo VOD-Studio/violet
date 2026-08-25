@@ -98,7 +98,7 @@ func newNotifyService(t *testing.T, existing *domainchat.Conversation, users map
 	repo := &notifyChatRepo{existingDirect: existing}
 	userRepo := &notifyUserRepo{users: users}
 	notifier := &captureNotifier{}
-	return NewService(repo, userRepo, nil, notifier, nil, "", func() time.Time { return now }, nil, nil, nil), repo, notifier
+	return NewService(repo, userRepo, nil, notifier, nil, "", func() time.Time { return now }, nil, nil, nil, nil), repo, notifier
 }
 
 // 私聊创建必须广播会话事件，否则接收方只能靠刷新看到新会话。
