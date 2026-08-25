@@ -40,9 +40,18 @@ export const useNotificationStream = () => {
 				// 新通知到达 → 刷新列表 + 未读数
 				qc.invalidateQueries({ queryKey: notificationKeys.list });
 				qc.invalidateQueries({ queryKey: notificationKeys.unreadCount });
+				// 正在查看来源会话时不弹 toast——消息已在聊天窗口实时渲染，再弹是噪音
+				const viewingConversation =
+					event.source_type === "chat_message" &&
+					window.location.pathname === "/chat" &&
+					new URLSearchParams(window.location.search).get("c") ===
+						event.payload?.conversation_id;
 				// badge +1 太隐蔽，「完成后会通知你」的承诺靠 toast 兑现；
 				// 只弹 1 分钟内的新通知——重连补发（Last-Event-ID）的是旧通知，不再弹
-				if (Date.now() - new Date(event.created_at).getTime() < 60_000) {
+				if (
+					!viewingConversation &&
+					Date.now() - new Date(event.created_at).getTime() < 60_000
+				) {
 					toast(event.title, { description: event.body || undefined });
 				}
 			} catch {
