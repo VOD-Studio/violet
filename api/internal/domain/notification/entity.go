@@ -41,8 +41,6 @@ const (
 	SourceAccountSecurity SourceType = "account_security"
 	// SourceChatRoomInvited 私有房间邀请。
 	SourceChatRoomInvited SourceType = "chat_room_invited"
-	// SourceChatMessage 会话收到新聊天消息（通知未静音的接收者）。
-	SourceChatMessage SourceType = "chat_message"
 )
 
 // validSourceTypes 合法来源类型集合，供校验与 DB CHECK 同步参照。
@@ -58,7 +56,6 @@ var validSourceTypes = map[SourceType]bool{
 	SourceUserRegistered:        true,
 	SourceAccountSecurity:       true,
 	SourceChatRoomInvited:       true,
-	SourceChatMessage:           true,
 }
 
 // IsValidSourceType 判断来源类型是否合法。

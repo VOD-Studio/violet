@@ -122,17 +122,6 @@ func (r *NotificationRepository) MarkAllAsRead(ctx context.Context, userID domai
 	return nil
 }
 
-// MarkUnreadBySourceAsRead 把某用户某来源对象的未读通知批量置已读。
-func (r *NotificationRepository) MarkUnreadBySourceAsRead(ctx context.Context, userID domainshared.ID, sourceType domainnotification.SourceType, sourceID domainshared.ID, now time.Time) error {
-	err := r.db.WithContext(ctx).Model(&model.Notification{}).
-		Where("user_id = ? AND source_type = ? AND source_id = ? AND read_at IS NULL", userID.UUID(), string(sourceType), sourceID.UUID()).
-		Update("read_at", now).Error
-	if err != nil {
-		return domainshared.Internal("按来源标记已读失败", err)
-	}
-	return nil
-}
-
 // FindAfterID 查某用户在指定 ID 之后的通知（SSE 断连补发用）。
 func (r *NotificationRepository) FindAfterID(ctx context.Context, userID domainshared.ID, afterID domainshared.ID, limit int) ([]*domainnotification.Notification, error) {
 	var pos []model.Notification

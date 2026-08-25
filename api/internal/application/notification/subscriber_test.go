@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	domainapitoken "blog-api/internal/domain/api_token"
-	domainchat "blog-api/internal/domain/chat"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainnotification "blog-api/internal/domain/notification"
@@ -24,16 +23,8 @@ import (
 
 // fakeStoreCorrect 实现完整的 NotificationRepository 接口（只关心 Save）。
 type fakeStoreCorrect struct {
-	saved          []*domainnotification.Notification
-	err            error
-	markedBySource []markedBySourceCall
-}
-
-// markedBySourceCall 记录一次 MarkUnreadBySourceAsRead 调用。
-type markedBySourceCall struct {
-	userID     domainshared.ID
-	sourceType domainnotification.SourceType
-	sourceID   domainshared.ID
+	saved []*domainnotification.Notification
+	err   error
 }
 
 func (f *fakeStoreCorrect) Save(_ context.Context, n *domainnotification.Notification) error {
@@ -56,10 +47,6 @@ func (f *fakeStoreCorrect) MarkAsRead(context.Context, domainshared.ID, domainsh
 	return nil
 }
 func (f *fakeStoreCorrect) MarkAllAsRead(context.Context, domainshared.ID, time.Time) error {
-	return nil
-}
-func (f *fakeStoreCorrect) MarkUnreadBySourceAsRead(_ context.Context, userID domainshared.ID, sourceType domainnotification.SourceType, sourceID domainshared.ID, _ time.Time) error {
-	f.markedBySource = append(f.markedBySource, markedBySourceCall{userID: userID, sourceType: sourceType, sourceID: sourceID})
 	return nil
 }
 func (f *fakeStoreCorrect) FindAfterID(context.Context, domainshared.ID, domainshared.ID, int) ([]*domainnotification.Notification, error) {
@@ -552,79 +539,4 @@ func TestSubscriber_CommentAutoApproved_SkipsCommenterNotifiesPostAuthor(t *test
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, domainnotification.SourceCommentCreated, store.saved[0].SourceType())
 	assert.Equal(t, postAuthorID, store.saved[0].UserID())
-}
-
-// --- 聊天消息通知 ---
-
-func TestSubscriber_MessageReceived_Direct_WritesNotification(t *testing.T) {
-	store := &fakeStoreCorrect{}
-	recipientID := newID()
-	conversationID := newID()
-	messageID := newID()
-	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
-
-	err := sub.Handle(context.Background(), domainchat.NewMessageReceived(
-		conversationID, recipientID, messageID, domainchat.ConversationDirect, "小明", "", "晚上好",
-	))
-	require.NoError(t, err)
-	require.Len(t, store.saved, 1)
-	n := store.saved[0]
-	assert.Equal(t, recipientID, n.UserID())
-	assert.Equal(t, domainnotification.SourceChatMessage, n.SourceType())
-	assert.Equal(t, conversationID, n.SourceID())
-	assert.Equal(t, "小明", n.Title())
-	assert.Equal(t, "晚上好", n.Body())
-	assert.Equal(t, conversationID.String(), n.Payload()["conversation_id"])
-	assert.Equal(t, messageID.String(), n.Payload()["message_id"])
-
-	// 折叠：写入新通知前把同会话旧未读置已读
-	require.Len(t, store.markedBySource, 1)
-	assert.Equal(t, markedBySourceCall{userID: recipientID, sourceType: domainnotification.SourceChatMessage, sourceID: conversationID}, store.markedBySource[0])
-}
-
-func TestSubscriber_MessageReceived_Room_PrefixesSender(t *testing.T) {
-	store := &fakeStoreCorrect{}
-	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
-
-	err := sub.Handle(context.Background(), domainchat.NewMessageReceived(
-		newID(), newID(), newID(), domainchat.ConversationRoom, "小明", "前端夜谈", "这个方案可行",
-	))
-	require.NoError(t, err)
-	require.Len(t, store.saved, 1)
-	assert.Equal(t, "前端夜谈", store.saved[0].Title())
-	assert.Equal(t, "小明：这个方案可行", store.saved[0].Body())
-}
-
-func TestSubscriber_ConversationRead_SyncsNotificationsRead(t *testing.T) {
-	store := &fakeStoreCorrect{}
-	readerID := newID()
-	conversationID := newID()
-	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
-
-	err := sub.Handle(context.Background(), domainchat.NewConversationRead(conversationID, readerID))
-	require.NoError(t, err)
-	assert.Empty(t, store.saved)
-	require.Len(t, store.markedBySource, 1)
-	assert.Equal(t, markedBySourceCall{userID: readerID, sourceType: domainnotification.SourceChatMessage, sourceID: conversationID}, store.markedBySource[0])
-}
-
-func TestPushingSubscriber_MessageReceived_Pushes(t *testing.T) {
-	store := &fakeStoreCorrect{}
-	notif := &fakeNotifier{}
-	recipientID := newID()
-	sub := NewPushingSubscriber(store,
-		&fakeSubLookup{},
-		&fakeCommentLookup{},
-		&fakeAdminLookup{},
-		&fakeFriendlinkLookup{},
-		&fakePostAuthorLookup{},
-		notif,
-		zerolog.Nop(),
-	)
-
-	err := sub.Handle(context.Background(), domainchat.NewMessageReceived(
-		newID(), recipientID, newID(), domainchat.ConversationDirect, "小明", "", "在吗",
-	))
-	require.NoError(t, err)
-	assert.Equal(t, []domainshared.ID{recipientID}, notif.pushed)
 }

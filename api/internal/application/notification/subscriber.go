@@ -3,7 +3,6 @@ package notification
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rs/zerolog"
 
@@ -92,9 +91,6 @@ func (s *Subscriber) Subscribe(bus appshared.EventBus) {
 
 // Handle 处理单个领域事件。
 func (s *Subscriber) Handle(ctx context.Context, event domainshared.DomainEvent) error {
-	if s.syncChatRead(ctx, event) {
-		return nil
-	}
 	actions, ok := s.mapEvent(ctx, event)
 	if !ok || len(actions) == 0 {
 		return nil
@@ -106,7 +102,6 @@ func (s *Subscriber) Handle(ctx context.Context, event domainshared.DomainEvent)
 			s.log.Error().Err(err).Str("event", event.EventName()).Msg("构造通知失败")
 			continue
 		}
-		s.collapseChatMessage(ctx, act)
 		if err := s.store.Save(ctx, n); err != nil {
 			s.log.Error().
 				Err(err).
@@ -128,30 +123,6 @@ type notifyAction struct {
 	title      string
 	body       string
 	payload    map[string]any
-}
-
-// syncChatRead 会话已读事件 → 该会话的聊天消息通知同步置已读。
-// 返回 true 表示事件已消费（不产生新通知）。
-func (s *Subscriber) syncChatRead(ctx context.Context, event domainshared.DomainEvent) bool {
-	e, ok := event.(domainchat.ConversationRead)
-	if !ok {
-		return false
-	}
-	if err := s.store.MarkUnreadBySourceAsRead(ctx, e.ReaderID, domainnotification.SourceChatMessage, e.AggregateID(), time.Now()); err != nil {
-		s.log.Error().Err(err).Str("event", event.EventName()).Msg("聊天通知同步已读失败")
-	}
-	return true
-}
-
-// collapseChatMessage 同会话新聊天通知写入前把旧未读置已读：
-// 一个会话在铃铛里至多一条未读，活跃聊天不会打爆未读角标（历史行保留）。
-func (s *Subscriber) collapseChatMessage(ctx context.Context, act notifyAction) {
-	if act.sourceType != domainnotification.SourceChatMessage {
-		return
-	}
-	if err := s.store.MarkUnreadBySourceAsRead(ctx, act.userID, act.sourceType, act.sourceID, time.Now()); err != nil {
-		s.log.Error().Err(err).Str("source_type", string(act.sourceType)).Msg("聊天通知折叠失败")
-	}
 }
 
 // mapEvent 把领域事件映射为通知创建动作列表。
@@ -209,36 +180,8 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 			},
 		}}, true
 
-	case domainchat.MessageReceived:
-		return []notifyAction{chatMessageAction(e)}, true
-
 	default:
 		return nil, false
-	}
-}
-
-// chatMessageAction 新聊天消息 → 接收者一条通知。
-// 私聊标题用发送者展示名；房间用房间名，正文带发送者前缀区分发言人。
-func chatMessageAction(e domainchat.MessageReceived) notifyAction {
-	title := e.SenderName
-	body := e.Preview
-	if e.Kind == domainchat.ConversationRoom {
-		title = e.ConversationTitle
-		if title == "" {
-			title = "群聊"
-		}
-		body = fmt.Sprintf("%s：%s", e.SenderName, e.Preview)
-	}
-	return notifyAction{
-		userID:     e.RecipientID,
-		sourceType: domainnotification.SourceChatMessage,
-		sourceID:   e.AggregateID(),
-		title:      title,
-		body:       body,
-		payload: map[string]any{
-			"conversation_id": e.AggregateID().String(),
-			"message_id":      e.MessageID.String(),
-		},
 	}
 }
 

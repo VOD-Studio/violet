@@ -730,8 +730,7 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 
 // SendMessage 发送文本或图片消息。
 func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (MessageDTO, error) {
-	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
-	if err != nil {
+	if _, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID); err != nil {
 		return MessageDTO{}, err
 	}
 	if existing, err := s.repo.FindMessageByIdempotency(ctx, in.ConversationID, in.UserID, in.IdempotencyKey); err == nil {
@@ -758,6 +757,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	now := s.now()
 	var message *domainchat.Message
 	var file *domainupload.File
+	var err error
 	switch in.Type {
 	case domainchat.MessageText:
 		message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now, replyToID)
@@ -804,37 +804,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
-	s.publishMessageNotifications(ctx, conversation, message, members, preview)
 	return s.messageDTO(ctx, message, in.UserID)
-}
-
-// publishMessageNotifications 把新消息作为站内通知领域事件发布给未静音的其他成员。
-//
-// 站点通知与 Web Push 同一接收口径：排除发送者本人与已静音成员；
-// 系统消息不走这里（saveSystemMessage 不发站内通知，避免成员变动刷铃铛）。
-func (s *Service) publishMessageNotifications(ctx context.Context, conversation *domainchat.Conversation, message *domainchat.Message, members []*domainchat.Member, preview string) {
-	if s.bus == nil {
-		return
-	}
-	sender, err := s.users.FindByID(ctx, message.SenderID())
-	if err != nil {
-		log.Warn().Err(err).Str("sender_id", message.SenderID().String()).Msg("聊天消息站内通知：发送者查询失败，跳过")
-		return
-	}
-	senderName := userToDTO(sender).DisplayName
-	events := make([]domainshared.DomainEvent, 0, len(members))
-	for _, member := range members {
-		if !member.IsActive() || member.IsMuted() || member.UserID().Equal(message.SenderID()) {
-			continue
-		}
-		events = append(events, domainchat.NewMessageReceived(
-			conversation.ID(), member.UserID(), message.ID(),
-			conversation.Kind(), senderName, conversation.Title(), preview,
-		))
-	}
-	if len(events) > 0 {
-		_ = s.bus.Publish(ctx, events)
-	}
 }
 
 // MarkRead 更新用户在会话中的阅读位置。
@@ -867,10 +837,6 @@ func (s *Service) MarkRead(ctx context.Context, userID, conversationID, messageI
 	position := domainchat.ReconstructReadPosition(conversationID, userID, last, readAt)
 	if err := s.repo.SaveReadPosition(ctx, position); err != nil {
 		return 0, err
-	}
-	// 已读同步：通知 subscriber 消费后把该会话的站内聊天通知置为已读。
-	if s.bus != nil {
-		_ = s.bus.Publish(ctx, []domainshared.DomainEvent{domainchat.NewConversationRead(conversationID, userID)})
 	}
 	return s.repo.CountUnread(ctx, conversationID, userID)
 }

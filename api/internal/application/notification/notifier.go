@@ -141,9 +141,6 @@ func (s *PushingSubscriber) Subscribe(bus appshared.EventBus) {
 
 // Handle 处理事件 → 写通知 → 推送。
 func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.DomainEvent) error {
-	if s.syncChatRead(ctx, event) {
-		return nil
-	}
 	actions, ok := s.mapEvent(ctx, event)
 	if !ok || len(actions) == 0 {
 		return nil
@@ -155,7 +152,6 @@ func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.Domai
 			s.log.Error().Err(err).Str("event", event.EventName()).Msg("构造通知失败")
 			continue
 		}
-		s.collapseChatMessage(ctx, act)
 		if err := s.store.Save(ctx, n); err != nil {
 			s.log.Error().
 				Err(err).
