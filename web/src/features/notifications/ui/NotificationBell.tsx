@@ -26,7 +26,6 @@ import {
 	Link2,
 	MessageCircle,
 	MessageCircleX,
-	MessageSquareText,
 	MessagesSquare,
 	Rss,
 	ShieldCheck,
@@ -55,7 +54,6 @@ const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	user_registered: UserPlus,
 	account_security: ShieldCheck,
 	chat_room_invited: MessagesSquare,
-	chat_message: MessageSquareText,
 };
 
 /** source_type → 颜色映射 */
@@ -71,7 +69,6 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	user_registered: "text-blue-500",
 	account_security: "text-purple-500",
 	chat_room_invited: "text-neon-cyan",
-	chat_message: "text-neon-cyan",
 };
 
 /**
@@ -98,7 +95,7 @@ const NotificationBell = () => {
 
 	const handleSelect = (item: NotificationItem) => {
 		if (!item.is_read) markRead.mutate(item.id);
-		if (item.source_type === "chat_message" || item.source_type === "chat_room_invited") {
+		if (item.source_type === "chat_room_invited") {
 			const conversationID = item.payload?.conversation_id;
 			if (typeof conversationID === "string" && conversationID) {
 				openChatConversation(conversationID);

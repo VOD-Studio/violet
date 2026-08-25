@@ -12,8 +12,7 @@ export type NotificationSourceType =
 	| "comment_rejected"
 	| "user_registered"
 	| "account_security"
-	| "chat_room_invited"
-	| "chat_message";
+	| "chat_room_invited";
 
 /** 通知读模型（后端 NotificationDTO 对应） */
 export interface NotificationItem {

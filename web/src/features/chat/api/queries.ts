@@ -1,6 +1,5 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { emojiKeys } from "@features/emojis/api/keys";
-import { notificationKeys } from "@features/notifications/api/keys";
 import type { PagedResponse } from "@shared/api/types";
 import {
 	type InfiniteData,
@@ -297,8 +296,6 @@ export const useMarkChatRead = () => {
 			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) });
 			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
 			qc.invalidateQueries({ queryKey: chatKeys.unreadCount() });
-			// 后端已把该会话的站内聊天通知同步置已读，铃铛未读数随列表一起失效
-			qc.invalidateQueries({ queryKey: notificationKeys.all });
 		},
 	});
 };
