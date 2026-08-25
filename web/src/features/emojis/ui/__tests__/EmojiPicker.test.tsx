@@ -46,6 +46,9 @@ vi.mock("@features/customemoji/api/queries", () => ({
 	useCreateCustomEmoji: () => ({ mutateAsync: createCustomEmojiMutateAsync, isPending: false }),
 }));
 
+const toastError = vi.fn();
+vi.mock("sonner", () => ({ toast: { error: (...args: unknown[]) => toastError(...args) } }));
+
 import { EmojiPicker } from "../EmojiPicker";
 
 describe("EmojiPicker", () => {
@@ -148,6 +151,47 @@ describe("EmojiPicker", () => {
 		expect(onSelect).toHaveBeenCalledWith(
 			expect.objectContaining({ custom_emoji_id: "e-1", relation: "owned" }),
 		);
+	});
+
+	it("文件名含禁用字符时默认名清洗后再命名", async () => {
+		useAllEmojis.mockReturnValue({ data: groups, isLoading: false });
+		useSessionStore.mockReturnValue(true);
+		useMyCustomEmojis.mockReturnValue({ data: { owned: [], favorited: [] }, isLoading: false });
+
+		render(<EmojiPicker onSelect={vi.fn()} />);
+		fireEvent.click(screen.getByLabelText("添加表情"));
+
+		const file = new File(["x"], "my_cat (2).png", { type: "image/png" });
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		await act(async () => {
+			fireEvent.change(fileInput, { target: { files: [file] } });
+		});
+
+		const nameInput = screen.getByPlaceholderText("给表情起个名字") as HTMLInputElement;
+		expect(nameInput.value).toBe("mycat (2)");
+	});
+
+	it("名称含 markdown 语法字符时拦截上传并提示", async () => {
+		useAllEmojis.mockReturnValue({ data: groups, isLoading: false });
+		useSessionStore.mockReturnValue(true);
+		useMyCustomEmojis.mockReturnValue({ data: { owned: [], favorited: [] }, isLoading: false });
+
+		render(<EmojiPicker onSelect={vi.fn()} />);
+		fireEvent.click(screen.getByLabelText("添加表情"));
+
+		const file = new File(["x"], "ok.png", { type: "image/png" });
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		await act(async () => {
+			fireEvent.change(fileInput, { target: { files: [file] } });
+		});
+
+		const nameInput = screen.getByPlaceholderText("给表情起个名字") as HTMLInputElement;
+		fireEvent.change(nameInput, { target: { value: "a_b" } });
+		fireEvent.click(screen.getByText("上传"));
+
+		expect(toastError).toHaveBeenCalledWith("表情名称不能包含 _ * ~ ` [ ] \\ 字符");
+		expect(uploadEmojiMutateAsync).not.toHaveBeenCalled();
+		expect(createCustomEmojiMutateAsync).not.toHaveBeenCalled();
 	});
 
 	it("上传流程：选文件后进入命名态，确认后依次调用上传与创建", async () => {

@@ -278,6 +278,13 @@ function EmojiGrid({
 /** 单用户表情上传大小上限（与后端 UploadEmoji 校验一致） */
 const MAX_EMOJI_SIZE = 10 * 1024 * 1024;
 
+/**
+ * 与后端 customemoji.ValidateName 同源：_ * ~ ` 会被消息 markdown 管线解析，
+ * 把 [name:id] 占位符拆散导致发出去无法渲染；[ ] \ 是占位符边界与转义字符。
+ */
+const NAME_FORBIDDEN_RE = /[_*~`[\]\\]/;
+const NAME_FORBIDDEN_RE_GLOBAL = /[_*~`[\]\\]/g;
+
 /** 「我的表情」标签页内容。 */
 export interface MyEmojisPanelProps {
 	/** 选中表情回调 */
@@ -318,7 +325,12 @@ function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 			toast.error("表情图片不能超过 10MB");
 			return;
 		}
-		const defaultName = file.name.replace(/\.[^./]+$/, "").slice(0, 50) || "表情";
+		const defaultName =
+			file.name
+				.replace(/\.[^./]+$/, "")
+				.replace(NAME_FORBIDDEN_RE_GLOBAL, "")
+				.trim()
+				.slice(0, 50) || "表情";
 		setPending({ file, preview: URL.createObjectURL(file), name: defaultName });
 	};
 
@@ -329,6 +341,10 @@ function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 
 	const confirmUpload = async () => {
 		if (!pending?.name.trim()) return;
+		if (NAME_FORBIDDEN_RE.test(pending.name)) {
+			toast.error(`表情名称不能包含 _ * ~ \` [ ] \\ 字符`);
+			return;
+		}
 		try {
 			const uploaded = await uploadEmoji.mutateAsync(pending.file);
 			await createEmoji.mutateAsync({ name: pending.name.trim(), url: uploaded.url });
@@ -410,8 +426,8 @@ function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 						上传
 					</button>
 				</div>
-							{mine && mine.owned.length > 0 ? (
-				<div className="grid grid-cols-6 gap-1">
+				{mine && mine.owned.length > 0 ? (
+					<div className="grid grid-cols-6 gap-1">
 						{mine.owned.map((emoji) => (
 							<CustomEmojiTile
 								key={emoji.custom_emoji_id}
@@ -428,8 +444,8 @@ function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 			</section>
 			<section>
 				<h4 className="mb-1 text-xs font-medium text-muted-foreground">收藏来的</h4>
-							{mine && mine.favorited.length > 0 ? (
-				<div className="grid grid-cols-6 gap-1">
+				{mine && mine.favorited.length > 0 ? (
+					<div className="grid grid-cols-6 gap-1">
 						{mine.favorited.map((emoji) => (
 							<CustomEmojiTile
 								key={emoji.custom_emoji_id}
