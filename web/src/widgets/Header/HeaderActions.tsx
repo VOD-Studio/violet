@@ -3,6 +3,7 @@ import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useChatUnreadCount } from "@features/chat/api/queries";
+import { useChatStream } from "@features/chat/hooks/useChatStream";
 import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
@@ -46,6 +47,8 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
+	// 聊天事件流全局挂载：任意页面收到新消息，聊天图标未读角标即时刷新
+	useChatStream();
 
 	// Cmd/Ctrl + L 直达登录页（仅未登录时生效，已登录无需鉴权）
 	useEffect(() => {

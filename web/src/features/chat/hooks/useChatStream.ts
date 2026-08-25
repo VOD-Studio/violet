@@ -2,7 +2,6 @@ import { useSessionStore } from "@shared/api/session";
 import type { PagedResponse } from "@shared/api/types";
 import { type InfiniteData, type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { toast } from "sonner";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
 import { useChatTypingStore } from "../model/chat-typing-store";
@@ -31,7 +30,12 @@ function mergeCustomEmote(
 	});
 }
 
-/** 建立聊天 SSE 事件流，断线由浏览器自动重连并携带 Last-Event-ID。 */
+/**
+ * 建立聊天 SSE 事件流，断线由浏览器自动重连并携带 Last-Event-ID。
+ *
+ * 挂载在站点 Header（登录即建连），聊天图标未读角标全站实时；
+ * 房间邀请的 toast 由通知铃铛的 SSE 通道统一弹出，这里不再重复。
+ */
 export const useChatStream = () => {
 	const queryClient = useQueryClient();
 	const sessionActive = useSessionStore((state) => state.sessionActive);
@@ -81,9 +85,6 @@ export const useChatStream = () => {
 							queryKey: chatKeys.members(conversationID),
 						});
 					}
-				}
-				if (payload.type === "room.invited") {
-					toast.info("新的聊天邀请", { description: "打开聊天工作区查看房间" });
 				}
 			} catch {
 				// 畸形事件交给下一次对账请求恢复。

@@ -69,7 +69,6 @@ import {
 } from "../api/queries";
 import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
 import { useChatSelection } from "../hooks/useChatSelection";
-import { useChatStream } from "../hooks/useChatStream";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
 import type {
 	ChatConversation,
@@ -89,7 +88,6 @@ import { TypingIndicator } from "./TypingIndicator";
 
 /** 聊天工作区：会话索引、消息流、房间成员抽屉与富文本 composer。 */
 export function ChatWorkspace() {
-	useChatStream();
 	const { data: me } = useMe();
 	const { data: conversationsPage, isLoading: conversationsLoading } = useChatConversations();
 	const conversations = conversationsPage?.data ?? [];
