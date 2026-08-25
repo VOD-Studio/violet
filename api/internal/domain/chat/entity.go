@@ -80,6 +80,48 @@ func NewRoomInvited(conversationID, inviteeID shared.ID, title string) RoomInvit
 	return RoomInvited{BaseEvent: shared.NewBaseEvent("chat.room.invited", conversationID), InviteeID: inviteeID, Title: title}
 }
 
+// MessageReceived 会话新消息送达某个接收者的事实（站内通知用，每个接收者一条）。
+type MessageReceived struct {
+	shared.BaseEvent
+	// RecipientID 接收者用户 ID。
+	RecipientID shared.ID
+	// MessageID 消息 ID。
+	MessageID shared.ID
+	// SenderName 发送者展示名快照。
+	SenderName string
+	// Kind 会话类型（direct/room），决定通知标题形态。
+	Kind ConversationKind
+	// ConversationTitle 房间名称快照；私聊为空。
+	ConversationTitle string
+	// Preview 消息预览快照。
+	Preview string
+}
+
+// NewMessageReceived 创建消息送达事件（聚合 ID = 会话 ID）。
+func NewMessageReceived(conversationID, recipientID, messageID shared.ID, kind ConversationKind, senderName, conversationTitle, preview string) MessageReceived {
+	return MessageReceived{
+		BaseEvent:         shared.NewBaseEvent("chat.message.received", conversationID),
+		RecipientID:       recipientID,
+		MessageID:         messageID,
+		SenderName:        senderName,
+		Kind:              kind,
+		ConversationTitle: conversationTitle,
+		Preview:           preview,
+	}
+}
+
+// ConversationRead 用户已读会话的事实（站内通知同步已读用）。
+type ConversationRead struct {
+	shared.BaseEvent
+	// ReaderID 已读用户 ID。
+	ReaderID shared.ID
+}
+
+// NewConversationRead 创建会话已读事件（聚合 ID = 会话 ID）。
+func NewConversationRead(conversationID, readerID shared.ID) ConversationRead {
+	return ConversationRead{BaseEvent: shared.NewBaseEvent("chat.conversation.read", conversationID), ReaderID: readerID}
+}
+
 const (
 	// MaxRoomTitleLength 房间名称最大字符数。
 	MaxRoomTitleLength = 80

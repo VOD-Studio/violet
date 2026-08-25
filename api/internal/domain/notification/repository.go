@@ -33,6 +33,12 @@ type NotificationRepository interface {
 	// MarkAllAsRead 标记某用户全部未读通知为已读。
 	MarkAllAsRead(ctx context.Context, userID domainshared.ID, now time.Time) error
 
+	// MarkUnreadBySourceAsRead 把某用户某来源对象的未读通知批量置已读。
+	//
+	// 用途：聊天消息通知的折叠（同会话新通知到达时旧未读置已读）与
+	// 已读同步（用户在 /chat 读完会话后清掉铃铛里的对应未读）。
+	MarkUnreadBySourceAsRead(ctx context.Context, userID domainshared.ID, sourceType SourceType, sourceID domainshared.ID, now time.Time) error
+
 	// FindAfterID 查某用户在指定 ID 之后的通知（SSE 断连补发用）。
 	FindAfterID(ctx context.Context, userID domainshared.ID, afterID domainshared.ID, limit int) ([]*Notification, error)
 }

@@ -104,3 +104,40 @@ func TestNotificationRepository_MarkAsRead_WrongOwner(t *testing.T) {
 	err := repo.MarkAsRead(context.Background(), n.GetID(), domainshared.NewID(), time.Now())
 	assert.Error(t, err)
 }
+
+// 按来源批量已读只命中「同用户 + 同类型 + 同来源对象」的未读行。
+func TestNotificationRepository_MarkUnreadBySourceAsRead(t *testing.T) {
+	repo := setupNotificationDB(t)
+	ctx := context.Background()
+	userID := domainshared.NewID()
+	convID := domainshared.NewID()
+
+	mk := func(owner domainshared.ID, sourceType domainnotification.SourceType, sourceID domainshared.ID) *domainnotification.Notification {
+		n, err := domainnotification.NewNotification(owner, domainshared.NewID(), sourceType, sourceID, "标题", "正文", nil)
+		require.NoError(t, err)
+		require.NoError(t, repo.Save(ctx, n))
+		return n
+	}
+	target1 := mk(userID, domainnotification.SourceChatMessage, convID)
+	target2 := mk(userID, domainnotification.SourceChatMessage, convID)
+	otherConv := mk(userID, domainnotification.SourceChatMessage, domainshared.NewID())
+	otherType := mk(userID, domainnotification.SourceCommentApproved, convID)
+	otherUser := mk(domainshared.NewID(), domainnotification.SourceChatMessage, convID)
+
+	require.NoError(t, repo.MarkUnreadBySourceAsRead(ctx, userID, domainnotification.SourceChatMessage, convID, time.Now()))
+
+	for _, tc := range []struct {
+		n    *domainnotification.Notification
+		read bool
+	}{
+		{target1, true},
+		{target2, true},
+		{otherConv, false},
+		{otherType, false},
+		{otherUser, false},
+	} {
+		got, err := repo.FindByID(ctx, tc.n.GetID(), tc.n.UserID())
+		require.NoError(t, err)
+		assert.Equal(t, tc.read, got.IsRead(), "notification %s", tc.n.GetID())
+	}
+}
