@@ -87,6 +87,9 @@ describe("ChatMessageContent", () => {
 		expect(custom?.dataset.customEmojiId).toBe("emoji-1");
 		expect(custom?.dataset.relation).toBe("none");
 		expect(system?.dataset.customEmojiId).toBeUndefined();
+		// 自定义表情是贴纸语义，按大表情档渲染；系统表情无 size 元数据时保持小档
+		expect(custom?.className).toContain("size-10");
+		expect(system?.className).toContain("size-5");
 	});
 
 	it("未命中 emote 表的占位符保持字面文本", () => {

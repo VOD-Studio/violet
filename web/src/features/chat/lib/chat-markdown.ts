@@ -94,7 +94,12 @@ function emojiImageNode(alt: string, src: string, ref: CommentEmoteRef): Element
 						"data-relation": ref.relation ?? "none",
 					}
 				: {}),
-			className: ["inline-block", "align-text-bottom", ref.size === 2 ? "size-10" : "size-5"],
+			// 自定义表情没有 size 元数据，按贴纸语义渲染为大表情档
+			className: [
+				"inline-block",
+				"align-text-bottom",
+				ref.custom_emoji_id || ref.size === 2 ? "size-10" : "size-5",
+			],
 			loading: "lazy",
 		},
 		children: [],
