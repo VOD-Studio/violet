@@ -80,6 +80,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CustomEmojiDTO, e
 	if name == "" {
 		return CustomEmojiDTO{}, domain.ErrEmptyName
 	}
+	if err := domain.ValidateName(name); err != nil {
+		return CustomEmojiDTO{}, err
+	}
 	if err := validateEmojiURL(in.URL, s.emojiURLPrefix); err != nil {
 		return CustomEmojiDTO{}, err
 	}

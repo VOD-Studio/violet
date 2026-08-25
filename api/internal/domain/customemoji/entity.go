@@ -29,13 +29,16 @@ type CustomEmoji struct {
 
 // NewCustomEmoji 创建自定义表情。
 //
-// name trim 后非空，否则返回 ErrEmptyName。同一 ownerID 下 name 唯一的校验
-// 需要查库，本构造函数不做 I/O，由 application 层在调用前预检查
-// （数据库唯一索引兜底并发场景）。
+// name trim 后非空且不含 markdown/占位符语法字符（ValidateName），否则返回
+// ErrEmptyName/ErrInvalidName。同一 ownerID 下 name 唯一的校验需要查库，
+// 本构造函数不做 I/O，由 application 层在调用前预检查（数据库唯一索引兜底并发场景）。
 func NewCustomEmoji(ownerID shared.ID, name, url string, now time.Time) (*CustomEmoji, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, ErrEmptyName
+	}
+	if err := ValidateName(name); err != nil {
+		return nil, err
 	}
 	e := &CustomEmoji{ownerID: ownerID, name: name, url: url, createdAt: now}
 	e.SetID(shared.NewID())
@@ -77,3 +80,19 @@ func (e *CustomEmoji) DeletedAt() *time.Time { return e.deletedAt }
 
 // ErrEmptyName 表情名称为空。
 var ErrEmptyName = shared.Validation("表情名称不能为空")
+
+// ErrInvalidName 表情名称含 markdown/占位符语法特殊字符。
+var ErrInvalidName = shared.Validation("表情名称不能包含 _ * ~ ` [ ] \\ 字符")
+
+// nameForbiddenChars 名称禁用字符集：_ * ~ ` 会被消息 markdown 渲染管线解析为
+// 强调/删除线/行内代码，把 [name:id] 占位符拆散导致前端无法替换为图片；[ ] \
+// 是占位符边界与转义语法本身。历史数据可能含此类字符，Reconstruct 不校验。
+const nameForbiddenChars = "_*~`[]\\"
+
+// ValidateName 校验展示名不含会破坏 [name:id] 占位符解析的字符。
+func ValidateName(name string) error {
+	if strings.ContainsAny(name, nameForbiddenChars) {
+		return ErrInvalidName
+	}
+	return nil
+}
