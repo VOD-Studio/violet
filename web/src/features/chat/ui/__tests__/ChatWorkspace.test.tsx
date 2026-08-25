@@ -97,6 +97,18 @@ const mockConversation = {
 
 const mockSendMutateAsync = vi.fn().mockResolvedValue({});
 
+const defaultChatMessagesResult = () => ({
+	data: {
+		pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
+		pageParams: [""],
+	},
+	isLoading: false,
+	hasNextPage: false,
+	isFetchingNextPage: false,
+	fetchNextPage: vi.fn(),
+});
+const useChatMessagesMock = vi.fn(defaultChatMessagesResult);
+
 vi.mock("@features/auth/api/queries", () => ({
 	useMe: () => ({ data: mockMe, isLoading: false }),
 }));
@@ -152,16 +164,7 @@ vi.mock("@features/chat/api/queries", () => ({
 		isFetchingNextPage: false,
 		fetchNextPage: vi.fn(),
 	}),
-	useChatMessages: () => ({
-		data: {
-			pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
-			pageParams: [""],
-		},
-		isLoading: false,
-		hasNextPage: false,
-		isFetchingNextPage: false,
-		fetchNextPage: vi.fn(),
-	}),
+	useChatMessages: () => useChatMessagesMock(),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -202,16 +205,7 @@ vi.mock("../api/queries", () => ({
 		isFetchingNextPage: false,
 		fetchNextPage: vi.fn(),
 	}),
-	useChatMessages: () => ({
-		data: {
-			pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
-			pageParams: [""],
-		},
-		isLoading: false,
-		hasNextPage: false,
-		isFetchingNextPage: false,
-		fetchNextPage: vi.fn(),
-	}),
+	useChatMessages: () => useChatMessagesMock(),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -269,16 +263,7 @@ vi.mock("../api/queries", () => ({
 		isFetchingNextPage: false,
 		fetchNextPage: vi.fn(),
 	}),
-	useChatMessages: () => ({
-		data: {
-			pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
-			pageParams: [""],
-		},
-		isLoading: false,
-		hasNextPage: false,
-		isFetchingNextPage: false,
-		fetchNextPage: vi.fn(),
-	}),
+	useChatMessages: () => useChatMessagesMock(),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -330,6 +315,7 @@ describe("ChatWorkspace", () => {
 
 	afterEach(() => {
 		mockConversation.last_message.reply_to = undefined;
+		useChatMessagesMock.mockReturnValue(defaultChatMessagesResult());
 		window.history.replaceState({}, "", "/chat");
 		cleanup();
 	});
@@ -594,5 +580,25 @@ describe("ChatWorkspace", () => {
 		// 消息列表中 mockConversation.last_message 由 mockMe 发送，消息气泡处才展示 X
 		const xAvatars = screen.getAllByText("X");
 		expect(xAvatars.length).toBe(1);
+	});
+
+	it("还有更早消息可加载时用哨兵替代会话起始分割线，抓取中显示加载提示", () => {
+		useChatMessagesMock.mockReturnValue({
+			...defaultChatMessagesResult(),
+			hasNextPage: true,
+			isFetchingNextPage: true,
+		});
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		expect(screen.queryByTestId("chat-history-start")).toBeNull();
+		expect(screen.getByTestId("chat-load-older-sentinel")).toBeTruthy();
+		expect(screen.getByText("加载更早的消息…")).toBeTruthy();
+	});
+
+	it("没有更早消息时展示会话起始分割线，不展示加载哨兵", () => {
+		render(<ChatWorkspace />, { wrapper: createWrapper() });
+
+		expect(screen.getByTestId("chat-history-start")).toBeTruthy();
+		expect(screen.queryByTestId("chat-load-older-sentinel")).toBeNull();
 	});
 });

@@ -28,7 +28,7 @@ export const fetchChatConversation = (id: string) =>
 export const fetchChatMembers = (id: string) =>
 	apiGet<ChatMember[]>(`/chat/conversations/${id}/members`);
 
-export const fetchChatMessages = (id: string, cursor?: string, limit = 30) =>
+export const fetchChatMessages = (id: string, cursor?: string, limit = 50) =>
 	apiGetPaged<ChatMessage>(`/chat/conversations/${id}/messages`, {
 		params: { cursor, limit },
 	});
