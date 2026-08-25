@@ -1483,36 +1483,34 @@ function MessageComposer({
 					uploadPurpose="chat"
 					submitOnEnter={true}
 					compact={true}
-					placeholder="写点什么… Enter 发送，Shift+Enter 换行"
+					layout="inline"
+					placeholder="输入消息…"
 					resetNonce={resetNonce}
 					onImagesChange={setImages}
 					onUploadingChange={setUploading}
-					inputClassName="min-h-14 max-h-56 py-3.5 px-4 text-sm leading-relaxed"
-					className="rounded-2xl border-input/70 bg-card/60 shadow-lg shadow-primary/5 backdrop-blur-xl transition-all focus-within:border-neon-cyan/50 focus-within:ring-4 focus-within:ring-neon-cyan/10"
+					className="rounded-3xl border-input/70 bg-card/60 shadow-lg shadow-primary/5 backdrop-blur-xl transition-all focus-within:border-neon-cyan/50 focus-within:ring-4 focus-within:ring-neon-cyan/10"
 					toolbarEnd={
-						<div className="flex items-center gap-2">
-							<span className="hidden font-mono text-[10px] text-muted-foreground/60 sm:inline">
-								Enter 发送 / Shift+Enter 换行
-							</span>
-							<Magnetic strength={0.2}>
-								<Button
-									aria-label="发送消息"
-									disabled={!canSend}
-									onClick={() => void sendMessage()}
-									size="sm"
-									className="h-8 gap-1.5 px-3 text-xs shadow-xs"
-								>
-									{send.isPending ? (
-										<LoaderCircle className="size-3.5 animate-spin" />
-									) : (
-										<>
-											<Send className="size-3" />
-											<span>发送</span>
-										</>
-									)}
-								</Button>
-							</Magnetic>
-						</div>
+						<Magnetic strength={0.2}>
+							<Button
+								aria-label="发送消息"
+								title="发送（Enter），Shift+Enter 换行"
+								disabled={!canSend}
+								onClick={() => void sendMessage()}
+								size="icon"
+								className={cn(
+									"rounded-full shadow-xs transition-all",
+									canSend
+										? "bg-neon-cyan text-primary-foreground hover:bg-neon-cyan/90"
+										: "bg-secondary text-muted-foreground",
+								)}
+							>
+								{send.isPending ? (
+									<LoaderCircle className="size-4 animate-spin" />
+								) : (
+									<Send className="size-4" />
+								)}
+							</Button>
+						</Magnetic>
 					}
 				/>
 			</div>
