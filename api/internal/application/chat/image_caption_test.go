@@ -104,3 +104,45 @@ func TestSendMessageAllowsImageWithoutCaption(t *testing.T) {
 		t.Fatalf("dto content = %q, want empty (existing behavior unchanged)", got.Content)
 	}
 }
+
+func TestReferencePreviewStripsImageTokens(t *testing.T) {
+	conversationID := domainshared.NewID()
+	userID := domainshared.NewID()
+	mediaID := domainshared.NewID()
+	svc, repo := newImageCaptionService(t, newChatImageFile(t, mediaID, userID), userID, conversationID)
+
+	image, err := svc.SendMessage(context.Background(), SendMessageInput{
+		UserID:         userID,
+		ConversationID: conversationID,
+		Type:           domainchat.MessageImage,
+		Content:        "看![img:" + mediaID.String() + "]图",
+		MediaID:        mediaID,
+		IdempotencyKey: "image-caption-3",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo.target = repo.saved
+	imageID, err := domainshared.ParseID(image.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reply, err := svc.SendMessage(context.Background(), SendMessageInput{
+		UserID:         userID,
+		ConversationID: conversationID,
+		Type:           domainchat.MessageText,
+		Content:        "收到",
+		ReplyToID:      imageID,
+		IdempotencyKey: "image-caption-4",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply.ReplyTo == nil {
+		t.Fatal("expected reply preview")
+	}
+	if reply.ReplyTo.Content != "看图" {
+		t.Fatalf("reference preview = %q, want image tokens stripped", reply.ReplyTo.Content)
+	}
+}

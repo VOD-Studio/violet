@@ -1165,7 +1165,7 @@ func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.M
 		return dto, nil
 	}
 	if message.HasTextContent() {
-		dto.Content = truncatePreview(message.Content(), 120)
+		dto.Content = truncatePreview(stripChatImageTokens(message.Content()), 120)
 	}
 	if message.MediaID() != nil {
 		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
@@ -1201,6 +1201,13 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID) (
 		ID: t.ID().String(), Author: &authorDTO, Content: t.Content(), Images: t.Images(),
 		CreatedAt: t.CreatedAt().Format(time.RFC3339Nano),
 	}, nil
+}
+
+// chatImageToken 匹配前端富文本内联图片占位符 ![img:<id>]；预览等人类可读场景需剥离。
+var chatImageToken = regexp.MustCompile(`!\[img:[^\]]+\]`)
+
+func stripChatImageTokens(content string) string {
+	return strings.TrimSpace(chatImageToken.ReplaceAllString(content, ""))
 }
 
 func truncatePreview(content string, maxRunes int) string {
