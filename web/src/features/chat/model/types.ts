@@ -102,13 +102,13 @@ export interface SendMessageInput {
 export interface ChatEvent {
 	id: string;
 	type:
-	| "message.created"
-	| "room.invited"
-	| "conversation.created"
-	| "member.changed"
-	| "message.deleted"
-	| "message.reaction.updated"
-	| "typing.updated";
+		| "message.created"
+		| "room.invited"
+		| "conversation.created"
+		| "member.changed"
+		| "message.deleted"
+		| "message.reaction.updated"
+		| "typing.updated";
 	version: number;
 	occurred_at: string;
 	data: Record<string, unknown>;

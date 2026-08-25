@@ -9,23 +9,45 @@ export interface ChatAvatarProps {
 	className?: string;
 }
 
-/** 聊天用户头像，缺少图片时显示展示名或用户名首字母。 */
+/**
+ * 无头像时的背景色盘：按用户名哈希取色，同一用户每次渲染结果稳定。
+ * 低饱和度中明度，白字对比度全部达标。
+ */
+const FALLBACK_COLORS = [
+	"bg-[#e17076]", // 红
+	"bg-[#7bc862]", // 绿
+	"bg-[#e5ca77]", // 黄
+	"bg-[#65aadd]", // 蓝
+	"bg-[#a695e7]", // 紫
+	"bg-[#ee7aae]", // 粉
+	"bg-[#6ec9cb]", // 青
+	"bg-[#faa774]", // 橙
+] as const;
+
+function fallbackColorClass(name: string): string {
+	let hash = 0;
+	for (let i = 0; i < name.length; i++) {
+		hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+	}
+	return FALLBACK_COLORS[hash % FALLBACK_COLORS.length];
+}
+
+/** 聊天用户头像：有图片时渲染图片；无图片时渲染纯色圆盘 + 白色首字母。 */
 export function ChatAvatar({ user, className }: ChatAvatarProps) {
 	const label = user.display_name.trim() ? user.display_name : user.username;
 	const initial = label.slice(0, 1).toUpperCase();
 	const avatar = user.avatar_url ? (
 		<img
 			alt={`${label} 的头像`}
-			className={cn(
-				"rounded-full object-cover ring-1 ring-edge-hairline/80 shadow-2xs transition-transform duration-200 group-hover:scale-105",
-				className,
-			)}
+			className={cn("rounded-full object-cover", className)}
 			src={user.avatar_url}
 		/>
 	) : (
 		<div
+			aria-hidden="true"
 			className={cn(
-				"flex items-center justify-center rounded-full bg-gradient-to-br from-neon-purple/20 via-neon-purple/10 to-neon-blue/15 font-mono text-xs font-bold text-neon-purple ring-1 ring-neon-purple/30 shadow-2xs transition-transform duration-200 group-hover:scale-105",
+				"flex items-center justify-center rounded-full font-semibold text-white select-none",
+				fallbackColorClass(user.username || user.id),
 				className,
 			)}
 		>
@@ -35,7 +57,7 @@ export function ChatAvatar({ user, className }: ChatAvatarProps) {
 	return (
 		<Link
 			aria-label={`${label} 的个人主页`}
-			className="block shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan"
+			className="block shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 			params={{ username: user.username }}
 			to="/users/$username"
 		>

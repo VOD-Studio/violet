@@ -325,7 +325,7 @@ describe("ChatWorkspace", () => {
 
 		// 侧边栏
 		expect(screen.getByText("聊天")).toBeTruthy();
-		expect(screen.getByPlaceholderText("搜索会话、用户或群聊")).toBeTruthy();
+		expect(screen.getByLabelText("搜索会话、用户或群聊")).toBeTruthy();
 
 		// 会话行
 		expect(screen.getAllByText("dfy").length).toBeGreaterThan(0);

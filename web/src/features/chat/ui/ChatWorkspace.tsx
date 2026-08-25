@@ -8,10 +8,6 @@ import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
-import { Magnetic } from "@shared/ui/magnetic";
-import { ParticleField } from "@shared/ui/particle-field";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
-import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import {
 	AlertTriangle,
 	ArrowDown,
@@ -25,14 +21,13 @@ import {
 	LogOut,
 	MessageCircle,
 	MessageSquareQuote,
-	PanelRight,
+	MoreVertical,
 	Plus,
 	Reply,
 	Search,
 	Send,
 	ShieldCheck,
 	Smile,
-	Sparkles,
 	Trash2,
 	Users,
 	X,
@@ -116,22 +111,10 @@ export function ChatWorkspace() {
 	}, [pendingShare, selectConversation]);
 
 	return (
-		<div className="relative flex h-full min-h-0 w-full overflow-hidden bg-background">
-			{/* 全局微光氛围层 */}
-			<div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-				<div
-					aria-hidden="true"
-					className="absolute -left-20 -top-20 size-96 rounded-full bg-neon-cyan/5 blur-[120px]"
-				/>
-				<div
-					aria-hidden="true"
-					className="absolute -bottom-20 -right-20 size-96 rounded-full bg-neon-purple/5 blur-[140px]"
-				/>
-			</div>
-
+		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background">
 			<aside
 				className={cn(
-					"flex w-full shrink-0 flex-col border-r border-edge-hairline/80 bg-card/40 backdrop-blur-xl transition-all duration-300 md:flex md:w-80 lg:w-84",
+					"relative flex w-full shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur-xl md:flex md:w-80 lg:w-84",
 					selectedID && "hidden md:flex",
 				)}
 			>
@@ -208,65 +191,52 @@ function ConversationIndex({
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<header className="shrink-0 border-b border-edge-hairline/80 px-4 pb-3.5 pt-5 md:px-5">
-				<div className="flex items-center justify-between gap-3">
-					<div>
-						<div className="flex items-center gap-1.5">
-							<span className="size-1.5 rounded-full bg-neon-cyan animate-pulse" />
-							<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-neon-cyan">
-								Private channel
-							</p>
-						</div>
-						<h1 className="mt-1 font-mono text-xl font-bold tracking-tight text-foreground">
-							聊天
-						</h1>
-					</div>
-					<Magnetic strength={0.25}>
-						<Button
-							aria-label="新建会话"
-							className={cn(
-								"size-8.5 rounded-full border shadow-xs transition-all duration-200",
-								showNew
-									? "border-neon-cyan/40 bg-neon-cyan/15 text-neon-cyan"
-									: "border-edge-hairline bg-background/80 hover:border-edge-hairline/80 hover:bg-secondary/60",
-							)}
-							onClick={onToggleNew}
-							size="icon"
-							variant="ghost"
-						>
-							<Plus
-								className={cn(
-									"size-4 transition-transform duration-250 ease-out",
-									showNew && "rotate-45 text-neon-cyan",
-								)}
-							/>
-						</Button>
-					</Magnetic>
+			<header className="shrink-0 px-3 pb-2 pt-4 md:px-4">
+				<div className="flex h-11 items-center justify-between gap-3 px-1">
+					<h1 className="text-[1.35rem] font-semibold text-foreground">聊天</h1>
+					<Button
+						aria-label="新建会话"
+						className={cn(
+							"size-9 rounded-full text-muted-foreground transition-colors",
+							showNew
+								? "bg-secondary text-foreground"
+								: "hover:bg-secondary hover:text-foreground",
+						)}
+						onClick={onToggleNew}
+						size="icon"
+						variant="ghost"
+					>
+						<Plus
+							className={cn("size-5 transition-transform", showNew && "rotate-45")}
+						/>
+					</Button>
 				</div>
-				<div className="relative mt-3.5">
-					<Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
-					<input
-						aria-label="搜索会话、用户或群聊"
-						className="h-9 w-full rounded-xl border border-input/80 bg-secondary/30 pl-8.5 pr-8 text-xs outline-none transition-all duration-200 focus:border-neon-cyan focus:bg-background focus:ring-2 focus:ring-neon-cyan/15 placeholder:text-muted-foreground/60"
-						onChange={(event) => onSearch(event.target.value)}
-						placeholder="搜索会话、用户或群聊"
-						value={search}
-					/>
-					{search && (
-						<button
-							aria-label="清空搜索"
-							className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground"
-							onClick={() => onSearch("")}
-							type="button"
-						>
-							<X className="size-3" />
-						</button>
-					)}
+				<div className="px-1 pb-1">
+					<div className="relative">
+						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+						<input
+							aria-label="搜索会话、用户或群聊"
+							className="h-10 w-full rounded-full border-none bg-secondary pl-10 pr-8 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
+							onChange={(event) => onSearch(event.target.value)}
+							placeholder="搜索"
+							value={search}
+						/>
+						{search && (
+							<button
+								aria-label="清空搜索"
+								className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+								onClick={() => onSearch("")}
+								type="button"
+							>
+								<X className="size-4" />
+							</button>
+						)}
+					</div>
 				</div>
 			</header>
 
 			<AnimatePresence>
-				{showNew && <NewConversationForm onCreated={onCreated} />}
+				{showNew && <NewConversationForm onCreated={onCreated} onClose={onToggleNew} />}
 			</AnimatePresence>
 
 			<div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5">
@@ -282,11 +252,9 @@ function ConversationIndex({
 					/>
 				) : (
 					<>
-						<div className="mb-2 flex items-center justify-between px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-							<span className="font-medium">Conversations</span>
-							<span className="rounded-full border border-edge-hairline bg-secondary/60 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground/90">
-								{conversations.length}
-							</span>
+						<div className="mb-2 flex items-center justify-between px-2 text-xs text-muted-foreground">
+							<span>会话</span>
+							<span className="tabular-nums">{conversations.length}</span>
 						</div>
 						{loading ? (
 							<ConversationSkeleton />
@@ -383,7 +351,7 @@ function SearchResults({
 									<p className="truncate text-xs font-semibold text-foreground">
 										{user.display_name}
 									</p>
-									<p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+									<p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
 										@{user.username}
 									</p>
 								</div>
@@ -423,11 +391,9 @@ function SearchResultSection({
 }) {
 	return (
 		<section>
-			<div className="mb-2 flex items-center justify-between px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-				<span className="font-medium">{label}</span>
-				<span className="rounded-full border border-edge-hairline bg-secondary/60 px-1.5 py-0.5 text-[9px] font-semibold">
-					{count}
-				</span>
+			<div className="mb-2 flex items-center justify-between px-2 text-xs text-muted-foreground">
+				<span>{label}</span>
+				<span className="tabular-nums">{count}</span>
 			</div>
 			{children}
 		</section>
@@ -452,69 +418,44 @@ function ConversationRow({ conversation, currentUserID, active, onClick }: Conve
 	return (
 		<button
 			className={cn(
-				"group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150 outline-none",
-				active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+				"group relative flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left outline-none md:px-3",
+				active ? "text-foreground" : "text-foreground/90 hover:text-foreground",
 			)}
 			onClick={onClick}
 			type="button"
 		>
-			{/* 丝滑选中的高光滑动卡片 */}
+			{/* 选中态：滑动高亮卡片（layoutId 跨行平滑过渡） */}
 			{active && (
 				<motion.div
 					layoutId="active-chat-row-highlight"
-					className="absolute inset-0 rounded-xl border border-primary/20 bg-accent/80 dark:bg-accent/40 shadow-xs backdrop-blur-md"
+					className="absolute inset-0 rounded-2xl bg-accent"
 					transition={{ type: "spring", stiffness: 450, damping: 35 }}
-				>
-					<div className="absolute bottom-2.5 left-0 top-2.5 w-1 rounded-r bg-primary shadow-xs" />
-				</motion.div>
+				/>
 			)}
 
 			<div className="relative z-10 shrink-0">
-				<ChatAvatar user={avatarUser} className="size-10" />
-				{conversation.kind === "direct" && (
-					<span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background bg-neon-green ring-2 ring-neon-green/20 animate-pulse" />
-				)}
+				<ChatAvatar user={avatarUser} className="size-12" />
 			</div>
 
-			<span className="relative z-10 min-w-0 flex-1">
-				<span className="flex items-center justify-between gap-1.5">
-					<strong
-						className={cn(
-							"truncate text-xs font-semibold tracking-tight",
-							active
-								? "text-foreground"
-								: "text-foreground/90 group-hover:text-foreground",
-						)}
-					>
+			<span className="relative z-10 min-w-0 flex-1 border-b border-border/60 pb-2 group-last:border-0">
+				<span className="flex items-center justify-between gap-2 pt-0.5">
+					<strong className="truncate text-[0.95rem] font-semibold text-foreground">
 						{conversationLabel(conversation, currentUserID)}
 					</strong>
-					{lastTime && (
-						<time className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
-							{formatRelativeTime(lastTime)}
-						</time>
-					)}
+					<time className="shrink-0 text-xs leading-5 text-muted-foreground">
+						{lastTime ? formatRelativeTime(lastTime) : ""}
+					</time>
 				</span>
-				<span className="mt-1 flex items-center justify-between gap-2">
-					<span
-						className={cn(
-							"truncate text-[11px] leading-tight",
-							active
-								? "text-muted-foreground"
-								: "text-muted-foreground/80 group-hover:text-muted-foreground",
-						)}
-					>
+				<span className="mt-0.5 flex items-center justify-between gap-2">
+					<span className="truncate text-sm leading-5 text-muted-foreground">
 						{conversation.last_message
 							? messagePreview(conversation.last_message)
 							: "还没有消息，打个招呼吧"}
 					</span>
 					{conversation.unread_count > 0 && (
-						<motion.span
-							initial={{ scale: 0.8, opacity: 0 }}
-							animate={{ scale: 1, opacity: 1 }}
-							className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-center font-mono text-[9px] font-bold text-primary-foreground shadow-xs"
-						>
+						<span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium leading-none text-primary-foreground tabular-nums">
 							{conversation.unread_count > 99 ? "99+" : conversation.unread_count}
-						</motion.span>
+						</span>
 					)}
 				</span>
 			</span>
@@ -714,74 +655,44 @@ function ConversationPanel({
 			transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
 			className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
 		>
-			{/* 沉浸式微光氛围层 */}
-			<div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-				<div
-					aria-hidden="true"
-					className="absolute -top-10 left-1/4 size-72 rounded-full bg-neon-cyan/8 blur-[120px]"
-				/>
-				<div
-					aria-hidden="true"
-					className="absolute bottom-10 right-1/4 size-80 rounded-full bg-neon-purple/8 blur-[140px]"
-				/>
-			</div>
-
-			<header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-edge-hairline/80 bg-background/75 px-4 backdrop-blur-xl md:px-6 shadow-xs">
-				<div className="flex min-w-0 items-center gap-3">
+			<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
+				<div className="flex min-w-0 items-center gap-2.5">
 					<Button
 						aria-label="返回会话列表"
-						className="size-8 md:hidden"
+						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
 						onClick={onBack}
-						size="icon-sm"
+						size="icon"
 						variant="ghost"
 					>
-						<ArrowLeft className="size-4" />
+						<ArrowLeft className="size-5" />
 					</Button>
-					<div className="relative shrink-0">
+					<div className="shrink-0">
 						<ChatAvatar
 							user={conversationTargetUser(conversation, currentUserID)}
-							className="size-9.5 shrink-0"
+							className="size-10 shrink-0"
 						/>
-						{conversation.kind === "direct" && (
-							<span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background bg-neon-green ring-2 ring-neon-green/20 animate-pulse" />
-						)}
 					</div>
 					<div className="min-w-0">
-						<div className="flex items-center gap-2">
-							<h2 className="truncate text-sm font-semibold tracking-tight text-foreground">
-								{conversationLabel(conversation, currentUserID)}
-							</h2>
-							<span className="rounded-full border border-edge-hairline/80 bg-secondary/60 px-2 py-0.5 font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-neon-cyan">
-								{conversation.kind === "room" ? "群聊" : "私聊"}
-							</span>
-						</div>
-						<p className="hidden font-mono text-[10px] text-muted-foreground/80 sm:block">
+						<h2 className="truncate text-[0.95rem] font-semibold text-foreground">
+							{conversationLabel(conversation, currentUserID)}
+						</h2>
+						<p className="text-xs leading-4 text-muted-foreground">
 							{conversation.kind === "room"
 								? `${members.length} 位成员`
-								: "实时端到端连接通道"}
+								: "最后登录于最近"}
 						</p>
 					</div>
 				</div>
 
-				<div className="flex items-center gap-2">
-					<div className="hidden items-center gap-1.5 rounded-full border border-edge-hairline/60 bg-secondary/40 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground backdrop-blur-sm sm:flex">
-						<span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
-						<DecryptedText
-							text={conversation.kind === "room" ? "ROOM CHANNEL" : "PRIVATE CHANNEL"}
-							speed={30}
-							maxIterations={8}
-							animateOn="view"
-							className="font-mono text-[9px] uppercase tracking-[0.14em]"
-						/>
-					</div>
+				<div className="flex items-center gap-1">
 					<Button
 						aria-label="打开会话详情"
-						className="size-8.5 rounded-xl border border-edge-hairline/60"
+						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
 						onClick={onToggleDetails}
-						size="icon-sm"
-						variant={showDetails ? "secondary" : "ghost"}
+						size="icon"
+						variant="ghost"
 					>
-						<PanelRight className="size-4" />
+						<MoreVertical className="size-5" />
 					</Button>
 				</div>
 			</header>
@@ -795,7 +706,7 @@ function ConversationPanel({
 						className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8"
 					>
 						<div className="mx-auto max-w-4xl space-y-4">
-							{messages.length > 0 &&
+{messages.length > 0 &&
 								(hasNextPage ? (
 									<div
 										ref={topSentinelRef}
@@ -811,14 +722,12 @@ function ConversationPanel({
 									</div>
 								) : (
 									<div
-										className="my-3 flex items-center justify-center gap-3"
+										className="my-4 flex items-center justify-center"
 										data-testid="chat-history-start"
 									>
-										<div className="h-px flex-1 bg-gradient-to-r from-transparent via-edge-hairline to-transparent" />
-										<span className="rounded-full border border-edge-hairline/60 bg-secondary/50 px-3.5 py-0.5 font-mono text-[10px] text-muted-foreground shadow-2xs backdrop-blur-md">
+										<span className="rounded-full bg-secondary px-3 py-0.5 text-[11px] text-muted-foreground">
 											{formatDate(conversation.created_at)}
 										</span>
-										<div className="h-px flex-1 bg-gradient-to-r from-transparent via-edge-hairline to-transparent" />
 									</div>
 								))}
 
@@ -844,6 +753,7 @@ function ConversationPanel({
 											index === 0 ||
 											messages[index - 1]?.sender.id !== message.sender.id
 										}
+										showSenderName={conversation.kind === "room"}
 										onDelete={
 											canManage
 												? () =>
@@ -882,17 +792,15 @@ function ConversationPanel({
 								transition={{ duration: 0.15 }}
 								className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10"
 							>
-								<Magnetic strength={0.25}>
-									<Button
-										aria-label="回到底部"
-										className="pointer-events-auto size-8.5 rounded-full bg-card/90 shadow-lg backdrop-blur-md border border-edge-hairline transition-transform hover:scale-105"
-										onClick={() => scrollToBottom(true)}
-										size="icon-sm"
-										variant="outline"
-									>
-										<ArrowDown className="size-4" />
-									</Button>
-								</Magnetic>
+								<Button
+									aria-label="回到底部"
+									className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
+									onClick={() => scrollToBottom(true)}
+									size="icon-sm"
+									variant="outline"
+								>
+									<ArrowDown className="size-4" />
+								</Button>
 							</motion.div>
 						)}
 					</AnimatePresence>
@@ -928,9 +836,10 @@ function ConversationPanel({
 interface MessageBubbleProps {
 	message: ChatMessage;
 	currentUserID: string;
-	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
 	highlighted: boolean;
+	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
 	showSender: boolean;
+	showSenderName: boolean;
 	messageRef: (node: HTMLElement | null) => void;
 	onDelete?: () => void;
 	onImage: (media: ChatMedia) => void;
@@ -948,6 +857,7 @@ function MessageBubble({
 	emoteMap,
 	highlighted,
 	showSender,
+	showSenderName,
 	messageRef,
 	onDelete,
 	onImage,
@@ -1030,7 +940,7 @@ function MessageBubble({
 	if (message.type === "system") {
 		return (
 			<div className="my-2 flex justify-center">
-				<p className="rounded-full border border-edge-hairline/60 bg-secondary/40 px-3.5 py-1.5 text-center text-xs text-muted-foreground shadow-2xs backdrop-blur-sm">
+				<p className="rounded-full bg-secondary px-3.5 py-1.5 text-center text-xs text-muted-foreground">
 					{message.content}
 				</p>
 			</div>
@@ -1053,8 +963,7 @@ function MessageBubble({
 				"group relative flex gap-2.5 transition-shadow duration-300",
 				mine && "flex-row-reverse",
 				!showSender && "mt-1",
-				highlighted &&
-					"rounded-lg ring-2 ring-neon-cyan/50 ring-offset-2 ring-offset-background",
+				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
 			{showSender ? (
@@ -1068,22 +977,10 @@ function MessageBubble({
 					mine && "items-end text-right",
 				)}
 			>
-				{showSender && (
-					<div
-						className={cn(
-							"mb-1 flex items-baseline gap-2 px-0.5",
-							mine && "justify-end",
-						)}
-					>
-						{!mine && (
-							<span className="text-xs font-semibold text-foreground/90">
-								{message.sender.display_name}
-							</span>
-						)}
-						<time className="font-mono text-[10px] text-muted-foreground/70">
-							{formatTime(message.created_at)}
-						</time>
-					</div>
+				{showSender && !mine && showSenderName && (
+					<span className="mb-0.5 px-0.5 text-xs font-medium text-primary">
+						{message.sender.display_name}
+					</span>
 				)}
 
 				<div className="relative">
@@ -1097,79 +994,56 @@ function MessageBubble({
 						</div>
 					) : message.type === "image" && message.media ? (
 						<button
-							className="group/img block overflow-hidden rounded-2xl border border-edge-hairline bg-secondary/25 text-left shadow-xs transition-all duration-200 hover:border-neon-cyan/50 hover:shadow-md"
+							className={cn(
+								"group/img relative block overflow-hidden rounded-2xl text-left",
+								mine ? "rounded-tr-md" : "rounded-tl-md",
+							)}
 							onClick={() => onImage(message.media as ChatMedia)}
 							type="button"
 						>
 							<img
 								alt="聊天图片"
-								className="max-h-80 w-auto max-w-full object-cover transition duration-200 group-hover/img:scale-[1.01]"
+								className="max-h-80 w-auto max-w-full rounded-2xl object-cover"
 								src={message.media.thumbnail || message.media.url}
 							/>
-							{message.content && (
-								<div className="border-t border-edge-hairline/40 bg-background/50 px-3 py-2 text-left text-sm leading-relaxed">
-									<ChatMessageContent
-										content={message.content}
-										emote={mergedEmote}
-										className="wrap-break-word"
-									/>
-								</div>
-							)}
-							<span className="flex items-center gap-2 border-t border-edge-hairline/40 bg-background/50 px-2.5 py-1.5 font-mono text-[10px] text-muted-foreground">
-								<ImageIcon className="size-3" />
-								{formatBytes(message.media.size)}
-								{message.media.width && message.media.height && (
-									<>
-										<span className="text-edge-hairline">·</span>
-										{message.media.width} × {message.media.height}
-									</>
-								)}
-							</span>
+							<BubbleTimestamp
+								className="absolute bottom-1.5 right-1.5"
+								mine={mine}
+								time={message.created_at}
+							/>
 						</button>
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
 							{message.content && (
-								<div
-									className={cn(
-										"select-text rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed transition-all",
-										mine
-											? "rounded-tr-xs bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-sm shadow-primary/15 border border-primary-foreground/10"
-											: "rounded-tl-xs border border-edge-hairline/80 bg-card/90 dark:bg-secondary/40 backdrop-blur-md text-foreground shadow-2xs hover:border-edge-hairline hover:bg-card/95",
-									)}
-								>
+								<BubbleShell mine={mine}>
 									<ChatMessageContent
 										content={message.content}
 										emote={mergedEmote}
 										className="wrap-break-word"
 									/>
-								</div>
+									<BubbleTimestamp inline mine={mine} time={message.created_at} />
+								</BubbleShell>
 							)}
 							<TweetShareCard
 								tweet={message.shared_tweet ?? { id: message.id, is_deleted: true }}
 							/>
 						</div>
 					) : (
-						<div
-							className={cn(
-								"select-text rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed transition-all",
-								mine
-									? "rounded-tr-xs bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-sm shadow-primary/15 border border-primary-foreground/10"
-									: "rounded-tl-xs border border-edge-hairline/80 bg-card/90 dark:bg-secondary/40 backdrop-blur-md text-foreground shadow-2xs hover:border-edge-hairline hover:bg-card/95",
-							)}
-						>
+						<BubbleShell mine={mine}>
 							<ChatMessageContent
 								content={message.content ?? ""}
 								emote={mergedEmote}
 								className="wrap-break-word"
 							/>
-						</div>
+							<BubbleTimestamp inline mine={mine} time={message.created_at} />
+						</BubbleShell>
 					)}
 
 					{/* Hover 浮动微操作条 */}
 					{!message.is_deleted && (
 						<div
 							className={cn(
-								"absolute -top-3 z-10 flex items-center gap-0.5 rounded-full border border-edge-hairline bg-background/90 p-0.5 shadow-md backdrop-blur-md opacity-0 transition-all duration-150 group-hover:opacity-100 focus-within:opacity-100",
+								"absolute -top-3.5 z-10 flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
 								touchActionsVisible && "opacity-100",
 								mine ? "left-1" : "right-1",
 							)}
@@ -1186,46 +1060,46 @@ function MessageBubble({
 												? "消息表情数量已达上限"
 												: "添加消息表情"
 										}
-										className="flex size-5.5 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+										className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
 										disabled={reactionBusy || selfReactionIds.size >= 3}
 										type="button"
 									>
-										<Smile className="size-3" />
+										<Smile className="size-3.5" />
 									</button>
 								}
 							/>
 							{onReply && (
 								<button
 									aria-label="回复消息"
-									className="flex size-5.5 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
 									onClick={onReply}
 									type="button"
 								>
-									<Reply className="size-3" />
+									<Reply className="size-3.5" />
 								</button>
 							)}
 							{message.type === "text" && (
 								<button
 									aria-label="复制消息"
-									className="flex size-5.5 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
 									onClick={() => void copyText()}
 									type="button"
 								>
 									{copied ? (
-										<Check className="size-3 text-neon-green" />
+										<Check className="size-3.5 text-primary" />
 									) : (
-										<Copy className="size-3" />
+										<Copy className="size-3.5" />
 									)}
 								</button>
 							)}
 							{onDelete && (
 								<button
 									aria-label="删除违规消息"
-									className="flex size-5.5 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
+									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
 									onClick={onDelete}
 									type="button"
 								>
-									<Trash2 className="size-3" />
+									<Trash2 className="size-3.5" />
 								</button>
 							)}
 						</div>
@@ -1240,7 +1114,47 @@ function MessageBubble({
 		</motion.article>
 	);
 }
+/** 消息气泡容器：mine 为实色主色，other 为浅底。 */
+function BubbleShell({ mine, children }: { mine: boolean; children: ReactNode }) {
+	return (
+		<div
+			className={cn(
+				"flex flex-wrap items-end gap-x-1.5 px-3.5 py-2 text-left text-[0.95rem] leading-relaxed",
+				mine
+					? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
+					: "rounded-2xl rounded-bl-md bg-secondary text-foreground",
+			)}
+		>
+			{children}
+		</div>
+	);
+}
 
+/** 气泡内时间戳：随正文行尾流动，mine 半透明白、other 弱化灰。 */
+function BubbleTimestamp({
+	mine,
+	time,
+	inline = false,
+	className,
+}: {
+	mine: boolean;
+	time: string;
+	inline?: boolean;
+	className?: string;
+}) {
+	return (
+		<span
+			className={cn(
+				"ml-auto inline-block whitespace-nowrap text-[11px] leading-5 tabular-nums",
+				mine ? "text-primary-foreground/60" : "text-muted-foreground",
+				inline && "float-right translate-y-0.5",
+				className,
+			)}
+		>
+			{formatTime(time)}
+		</span>
+	);
+}
 function ReplyPreview({
 	reference,
 	onClick,
@@ -1256,7 +1170,7 @@ function ReplyPreview({
 				? reference.content || "分享了一条推文"
 				: (reference.content ?? "文本消息");
 	const className =
-		"flex max-w-60 items-center gap-2 border-s-2 border-neon-cyan/70 bg-secondary/50 px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
+		"flex max-w-60 items-center gap-2 border-s-2 border-primary/60 bg-secondary px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
 	const body = (
 		<>
 			<div className="min-w-0 flex-1">
@@ -1423,14 +1337,14 @@ function MessageComposer({
 					onCancelReply();
 				}
 			}}
-			className="shrink-0 border-t border-edge-hairline/80 bg-gradient-to-t from-background via-background/95 to-background/80 p-4 backdrop-blur-md md:p-5"
+			className="shrink-0 border-t border-border bg-card/70 p-4 backdrop-blur-xl md:p-5"
 		>
 			<div className="mx-auto max-w-4xl">
 				{pendingShare ? (
-					<div className="mb-2 flex items-center gap-2 rounded-xl border border-neon-cyan/25 bg-neon-cyan/5 px-3 py-2">
-						<MessageSquareQuote className="size-3.5 shrink-0 text-neon-cyan" />
+					<div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
+						<MessageSquareQuote className="size-4 shrink-0 text-muted-foreground" />
 						<div className="min-w-0 flex-1">
-							<p className="font-mono text-[10px] uppercase tracking-[0.12em] text-neon-cyan">
+							<p className="text-xs font-medium text-foreground">
 								分享推文 @{pendingShare.tweet.authorUsername}
 							</p>
 							<p className="truncate text-xs text-muted-foreground">
@@ -1448,10 +1362,10 @@ function MessageComposer({
 					</div>
 				) : (
 					replyTarget && (
-						<div className="mb-2 flex items-center gap-2 rounded-xl border border-neon-cyan/25 bg-neon-cyan/5 px-3 py-2">
-							<Reply className="size-3.5 shrink-0 text-neon-cyan" />
+						<div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
+							<Reply className="size-4 shrink-0 text-muted-foreground" />
 							<div className="min-w-0 flex-1">
-								<p className="font-mono text-[10px] uppercase tracking-[0.12em] text-neon-cyan">
+								<p className="text-xs font-medium text-foreground">
 									回复 {replyTarget.sender.display_name}
 								</p>
 								<p className="truncate text-xs text-muted-foreground">
@@ -1481,34 +1395,32 @@ function MessageComposer({
 					uploadPurpose="chat"
 					submitOnEnter={true}
 					compact={true}
-					layout="inline"
+layout="inline"
 					placeholder="输入消息…"
 					resetNonce={resetNonce}
 					onImagesChange={setImages}
 					onUploadingChange={setUploading}
-					className="rounded-3xl border-input/70 bg-card/60 shadow-lg shadow-primary/5 backdrop-blur-xl transition-all focus-within:border-neon-cyan/50 focus-within:ring-4 focus-within:ring-neon-cyan/10"
+					className="rounded-3xl border border-input bg-card transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
 					toolbarEnd={
-						<Magnetic strength={0.2}>
-							<Button
-								aria-label="发送消息"
-								title="发送（Enter），Shift+Enter 换行"
-								disabled={!canSend}
-								onClick={() => void sendMessage()}
-								size="icon"
-								className={cn(
-									"rounded-full shadow-xs transition-all",
-									canSend
-										? "bg-neon-cyan text-primary-foreground hover:bg-neon-cyan/90"
-										: "bg-secondary text-muted-foreground",
-								)}
-							>
-								{send.isPending ? (
-									<LoaderCircle className="size-4 animate-spin" />
-								) : (
-									<Send className="size-4" />
-								)}
-							</Button>
-						</Magnetic>
+						<Button
+							aria-label="发送消息"
+							title="发送（Enter），Shift+Enter 换行"
+							disabled={!canSend}
+							onClick={() => void sendMessage()}
+							size="icon"
+							className={cn(
+								"rounded-full transition-colors",
+								canSend
+									? "bg-primary text-primary-foreground hover:bg-primary/90"
+									: "bg-secondary text-muted-foreground",
+							)}
+						>
+							{send.isPending ? (
+								<LoaderCircle className="size-4 animate-spin" />
+							) : (
+								<Send className="size-4" />
+							)}
+						</Button>
 					}
 				/>
 			</div>
@@ -1564,21 +1476,16 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 			animate={{ x: 0, opacity: 1 }}
 			exit={{ x: "100%", opacity: 0 }}
 			transition={{ type: "spring", stiffness: 350, damping: 32 }}
-			className="absolute inset-y-0 right-0 z-20 flex w-full flex-col border-l border-edge-hairline bg-background/95 shadow-2xl backdrop-blur-xl sm:w-80 xl:static xl:z-auto xl:shadow-none"
+			className="absolute inset-y-0 right-0 z-20 flex w-full flex-col border-l border-border bg-card/95 backdrop-blur-xl sm:w-80 xl:static xl:z-auto xl:shadow-none"
 		>
-			<header className="flex h-16 shrink-0 items-center justify-between border-b border-edge-hairline px-5">
-				<div>
-					<p className="font-mono text-[10px] uppercase tracking-[0.22em] text-neon-cyan">
-						Inspector
-					</p>
-					<h3 className="text-sm font-semibold text-foreground">会话详情</h3>
-				</div>
+			<header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
+				<h3 className="text-sm font-semibold text-foreground">会话详情</h3>
 				<Button aria-label="关闭详情" onClick={onClose} size="icon-sm" variant="ghost">
 					<X className="size-4" />
 				</Button>
 			</header>
 			<div className="flex-1 space-y-5 overflow-y-auto p-4">
-				<div className="rounded-2xl border border-edge-hairline bg-secondary/20 p-4 shadow-2xs backdrop-blur-sm">
+				<div className="rounded-2xl border border-border bg-secondary/40 p-4">
 					<div className="mb-2.5 flex items-center gap-3">
 						<ChatAvatar
 							user={conversationTargetUser(conversation, currentUserID)}
@@ -1588,15 +1495,15 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 							<p className="truncate text-sm font-semibold text-foreground">
 								{conversationLabel(conversation, currentUserID)}
 							</p>
-							<p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-								{conversation.kind === "room" ? "Private room" : "Direct channel"}
+							<p className="text-xs text-muted-foreground">
+								{conversation.kind === "room" ? "群聊" : "私聊"}
 							</p>
 						</div>
 					</div>
 					{conversation.kind === "room" && isOwner && (
 						<input
 							aria-label="房间名称"
-							className="mt-2 h-8.5 w-full rounded-xl border border-input bg-background px-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15"
+							className="mt-2 h-9 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
 							onBlur={() => void saveTitle()}
 							onChange={(event) => setTitle(event.target.value)}
 							value={title}
@@ -1606,9 +1513,7 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 
 				<div>
 					<div className="mb-2.5 flex items-center justify-between px-1">
-						<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-							Members · {members.length}
-						</p>
+						<p className="text-xs text-muted-foreground">成员 · {members.length}</p>
 						<Users className="size-3.5 text-muted-foreground" />
 					</div>
 					<div className="space-y-1">
@@ -1622,12 +1527,12 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 									<p className="truncate text-xs font-medium text-foreground">
 										{member.user.display_name}
 									</p>
-									<p className="font-mono text-[9px] text-muted-foreground">
+									<p className="truncate font-mono text-[11px] text-muted-foreground">
 										@{member.user.username}
 									</p>
 								</div>
 								{member.role === "owner" ? (
-									<ShieldCheck className="size-3.5 text-neon-cyan" />
+									<ShieldCheck className="size-4 text-muted-foreground" />
 								) : (
 									isOwner && (
 										<button
@@ -1652,14 +1557,12 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 				</div>
 
 				{conversation.kind === "room" && currentMember && (
-					<div className="rounded-2xl border border-dashed border-edge-hairline p-3.5">
-						<p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-							Invite member
-						</p>
+					<div className="rounded-2xl border border-dashed border-border p-3.5">
+						<p className="mb-2 text-xs text-muted-foreground">邀请成员</p>
 						<div className="flex gap-2">
 							<input
 								aria-label="邀请用户名"
-								className="h-8.5 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-xs outline-none transition focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/15"
+								className="h-9 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
 								onChange={(event) => setInviteUsername(event.target.value)}
 								onKeyDown={(event) => event.key === "Enter" && void inviteUser()}
 								placeholder="username"
@@ -1669,12 +1572,12 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 								disabled={invite.isPending}
 								onClick={() => void inviteUser()}
 								size="icon-sm"
-								className="size-8.5 rounded-xl"
+								className="size-9 rounded-xl"
 							>
-								<Plus className="size-3.5" />
+								<Plus className="size-4" />
 							</Button>
 						</div>
-						<p className="mt-2 text-[10px] text-muted-foreground/80">
+						<p className="mt-2 text-xs text-muted-foreground">
 							所有成员都可以邀请新成员
 						</p>
 					</div>
@@ -1685,7 +1588,7 @@ function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDeta
 					onMute={(muted) => mute.mutate({ id: conversation.id, muted })}
 				/>
 
-				<div className="border-t border-edge-hairline pt-3">
+				<div className="border-t border-border pt-3">
 					<Button
 						className="w-full justify-start rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
 						disabled={leave.isPending}
@@ -1721,10 +1624,10 @@ function NotificationSettings({
 	const granted = push.permission === "granted";
 
 	return (
-		<SpotlightCard className="rounded-2xl border border-edge-hairline bg-secondary/15 p-4">
+		<div className="rounded-2xl border border-border bg-secondary/40 p-4">
 			<div className="flex items-start gap-2.5">
-				<div className="mt-0.5 rounded-lg bg-neon-cyan/10 p-1.5 text-neon-cyan">
-					<Bell className="size-3.5" />
+				<div className="mt-0.5 rounded-lg bg-secondary p-1.5 text-muted-foreground">
+					<Bell className="size-4" />
 				</div>
 				<div className="min-w-0 flex-1">
 					<p className="text-xs font-semibold text-foreground">桌面通知</p>
@@ -1778,52 +1681,28 @@ function NotificationSettings({
 					</Button>
 				</div>
 			</div>
-		</SpotlightCard>
+		</div>
 	);
 }
 
 function EmptyConversation({ onCreate }: { onCreate: () => void }) {
 	return (
-		<div className="relative flex flex-1 items-center justify-center overflow-hidden p-8">
-			<div className="pointer-events-none absolute inset-0 overflow-hidden">
-				<ParticleField density={0.15} />
-			</div>
-			<SpotlightCard className="relative max-w-sm rounded-3xl border border-edge-hairline/80 bg-card/60 p-8 text-center shadow-2xl backdrop-blur-xl">
-				<div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan shadow-sm">
-					<MessageCircle className="size-6" />
+		<div className="flex flex-1 items-center justify-center p-8">
+			<div className="max-w-sm text-center">
+				<div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+					<MessageCircle className="size-5" />
 				</div>
-				<p className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-					<DecryptedText
-						text="NO CONVERSATION SELECTED"
-						speed={30}
-						maxIterations={8}
-						animateOn="view"
-					/>
-				</p>
-				<h2 className="mt-1.5 text-xl font-semibold">
-					<DecryptedText
-						text="选择一个会话"
-						speed={40}
-						maxIterations={8}
-						animateOn="view"
-					/>
-				</h2>
-				<p className="mt-2 text-xs leading-5 text-muted-foreground">
+				<h2 className="mt-4 text-base font-semibold text-foreground">选择一个会话</h2>
+				<p className="mt-1.5 text-sm leading-6 text-muted-foreground">
 					从左侧选择私聊或群聊，或直接新建一个对话。
 				</p>
 				<div className="mt-5 flex justify-center">
-					<Magnetic strength={0.2}>
-						<Button
-							className="text-xs font-medium shadow-xs"
-							onClick={onCreate}
-							size="sm"
-						>
-							<Plus className="mr-1.5 size-3.5" />
-							新建会话
-						</Button>
-					</Magnetic>
+					<Button onClick={onCreate} size="sm">
+						<Plus className="size-4" />
+						新建会话
+					</Button>
 				</div>
-			</SpotlightCard>
+			</div>
 		</div>
 	);
 }
@@ -1862,16 +1741,16 @@ function ImageLightbox({ media, onClose }: { media: ChatMedia; onClose: () => vo
 function ConversationEmpty({ onCreate }: { onCreate: () => void }) {
 	return (
 		<div className="px-4 py-10 text-center">
-			<Sparkles className="mx-auto size-5 text-neon-cyan" />
+			<MessageCircle className="mx-auto size-5 text-muted-foreground" />
 			<p className="mt-2.5 text-xs font-medium">还没有会话</p>
-			<p className="mt-0.5 text-[11px] text-muted-foreground">发起一次私聊即可建立连接。</p>
+			<p className="mt-0.5 text-xs text-muted-foreground">发起一次私聊即可建立连接。</p>
 			<Button
-				className="mt-3.5 h-7 px-3 text-xs"
+				className="mt-3.5 h-8 px-3 text-xs"
 				onClick={onCreate}
 				size="sm"
 				variant="outline"
 			>
-				<Plus className="mr-1 size-3" />
+				<Plus className="mr-1 size-3.5" />
 				新建会话
 			</Button>
 		</div>
@@ -1912,12 +1791,10 @@ function MessageSkeleton() {
 
 function MessageEmpty() {
 	return (
-		<div className="rounded-2xl border border-dashed border-edge-hairline/80 px-6 py-10 text-center bg-secondary/10">
-			<ImageIcon className="mx-auto size-5 text-muted-foreground/60" />
-			<p className="mt-2.5 text-xs font-medium text-foreground/80">这是新的会话</p>
-			<p className="mt-0.5 text-[11px] text-muted-foreground">
-				发送第一条消息或图片，建立连接。
-			</p>
+		<div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
+			<ImageIcon className="mx-auto size-5 text-muted-foreground" />
+			<p className="mt-2.5 text-sm font-medium text-foreground">这是新的会话</p>
+			<p className="mt-1 text-xs text-muted-foreground">发送第一条消息或图片，开始对话。</p>
 		</div>
 	);
 }
@@ -2002,9 +1879,4 @@ function formatRelativeTime(value: string) {
 		return `${diffDays}天前`;
 	}
 	return `${date.getMonth() + 1}/${date.getDate()}`;
-}
-
-function formatBytes(value: number) {
-	if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
-	return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
