@@ -58,13 +58,16 @@ export function EmojiPicker({
 	const isLoggedIn = useSessionStore((state) => state.sessionActive);
 
 	const firstGroup = groups[0]?.name ?? "";
-	const [activeGroup, setActiveGroup] = useState(firstGroup);
+	// 登录且开启我的表情时默认选中「我的」：聊天场景下自传/收藏的使用频率高于系统分组
+	const defaultTab = isLoggedIn && showMyEmojis ? MINE_TAB_KEY : firstGroup;
+	const [activeGroup, setActiveGroup] = useState(defaultTab);
 	const tabsListRef = useRef<HTMLDivElement>(null);
 	const activeButtonRef = useRef<HTMLButtonElement>(null);
 
+	// 每次打开浮层重置回默认 tab；分组异步加载完成（defaultTab 随之变化）时同步一次
 	useEffect(() => {
-		setActiveGroup(firstGroup);
-	}, [firstGroup]);
+		if (open) setActiveGroup(defaultTab);
+	}, [open, defaultTab]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 需要监听 activeGroup 变化以滚动当前标签到可视区
 	useEffect(() => {

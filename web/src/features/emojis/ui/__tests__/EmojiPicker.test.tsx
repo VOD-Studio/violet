@@ -106,7 +106,7 @@ describe("EmojiPicker", () => {
 		expect(screen.queryByTitle("我的表情")).toBeNull();
 	});
 
-	it("登录后展示我的表情 tab，切换后渲染我传的与收藏来的", () => {
+	it("登录后打开默认选中我的表情 tab，渲染我传的与收藏来的", () => {
 		const onSelect = vi.fn();
 		useAllEmojis.mockReturnValue({ data: groups, isLoading: false });
 		useSessionStore.mockReturnValue(true);
@@ -136,7 +136,6 @@ describe("EmojiPicker", () => {
 		render(<EmojiPicker onSelect={onSelect} />);
 
 		fireEvent.click(screen.getByLabelText("添加表情"));
-		fireEvent.click(screen.getByTitle("我的表情"));
 
 		expect(screen.getByText("我传的")).toBeTruthy();
 		expect(screen.getByText("收藏来的")).toBeTruthy();
