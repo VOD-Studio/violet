@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -162,6 +163,49 @@ func (r *CustomEmojiRepository) Delete(ctx context.Context, e *domaincustomemoji
 	return r.db.WithContext(ctx).Model(&model.CustomEmoji{}).
 		Where("id = ?", e.ID().UUID()).
 		Update("deleted_at", e.DeletedAt()).Error
+}
+// customEmojiWithOwnerRow FindPageWithOwner 的联表行（ce.* + 上传者字段）。
+type customEmojiWithOwnerRow struct {
+	model.CustomEmoji
+	OwnerUsername    string `gorm:"column:owner_username"`
+	OwnerDisplayName string `gorm:"column:owner_display_name"`
+	OwnerAvatarURL   string `gorm:"column:owner_avatar_url"`
+}
+
+// FindPageWithOwner 分页列出全部用户的未软删除表情并关联上传者信息（后台管理读模型）。
+//
+// LEFT JOIN users（主键关联不翻倍），countAndFind 统一计数与切片；
+// keyword 非空时按表情名/上传者用户名/展示名 ILIKE 模糊匹配（OR 关系）。
+func (r *CustomEmojiRepository) FindPageWithOwner(ctx context.Context, keyword string, q domainshared.PageQuery) (domainshared.PageResult[*domaincustomemoji.CustomEmojiWithOwner], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).
+		Table("custom_emojis ce").
+		Select("ce.*, u.username AS owner_username, u.display_name AS owner_display_name, u.avatar_url AS owner_avatar_url").
+		Joins("LEFT JOIN users u ON u.id = ce.owner_id").
+		Where("ce.deleted_at IS NULL")
+	if keyword = strings.TrimSpace(keyword); keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("ce.name ILIKE ? OR u.username ILIKE ? OR u.display_name ILIKE ?", like, like, like)
+	}
+	query = query.Order("ce.created_at DESC, ce.id ASC")
+	var rows []customEmojiWithOwnerRow
+	total, err := countAndFind(query, q, &rows, "自定义表情")
+	if err != nil {
+		return domainshared.PageResult[*domaincustomemoji.CustomEmojiWithOwner]{}, err
+	}
+	result := make([]*domaincustomemoji.CustomEmojiWithOwner, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, &domaincustomemoji.CustomEmojiWithOwner{
+			Emoji: customEmojiToDomain(row.CustomEmoji),
+			Owner: domaincustomemoji.OwnerRef{
+				ID:          domainshared.IDFromUUID(row.OwnerID),
+				Username:    row.OwnerUsername,
+				DisplayName: row.OwnerDisplayName,
+				AvatarURL:   row.OwnerAvatarURL,
+			},
+		})
+	}
+	return domainshared.NewPageResult(q, result, total), nil
 }
 
 // AddFavorite 收藏一个表情（幂等：已收藏不报错，不产生重复行）。

@@ -78,6 +78,19 @@ func (r *fakeRepo) Delete(_ context.Context, e *domain.CustomEmoji) error {
 	r.byID[e.ID()] = e
 	return nil
 }
+// FindPageWithOwner 内存版后台分页：不做关键词匹配与排序，仅验证 service 的透传与 DTO 组装。
+func (r *fakeRepo) FindPageWithOwner(_ context.Context, _ string, q shared.PageQuery) (shared.PageResult[*domain.CustomEmojiWithOwner], error) {
+	var out []*domain.CustomEmojiWithOwner
+	for _, e := range r.byID {
+		if e.IsUsable() {
+			out = append(out, &domain.CustomEmojiWithOwner{
+				Emoji: e,
+				Owner: domain.OwnerRef{ID: e.OwnerID(), Username: "owner-" + e.OwnerID().String()[:8]},
+			})
+		}
+	}
+	return shared.NewPageResult(q.Normalize(), out, int64(len(out))), nil
+}
 
 func (r *fakeRepo) AddFavorite(_ context.Context, userID, emojiID shared.ID) error {
 	if r.favorites[userID] == nil {
@@ -416,6 +429,43 @@ func TestResolveByIDs_UnknownID_NotInResult(t *testing.T) {
 	refs, err := svc.ResolveByIDs(context.Background(), []shared.ID{shared.NewID()}, shared.NewID())
 	require.NoError(t, err)
 	assert.Empty(t, refs)
+}
+
+// TestListAll_ReturnsAdminDTOWithOwner 验证后台列表的 DTO 组装：跨 owner 全量返回，
+// 含上传者视图与创建时间，软删除表情不出现。
+func TestListAll_ReturnsAdminDTOWithOwner(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo, 100, nil)
+	aliceID := shared.NewID()
+	bobID := shared.NewID()
+
+	mustCreate(t, svc, aliceID, "mycat")
+	mustCreate(t, svc, bobID, "doge")
+	// 下架 bob 的另一个表情，不应出现在后台列表
+	require.NoError(t, svc.Delete(ctxWithUser(bobID.String(), "user", false), shared.MustParseID(mustCreate(t, svc, bobID, "gone").ID)))
+
+	result, err := svc.ListAll(context.Background(), "", shared.PageQuery{Page: 1, Limit: 20})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), result.Total)
+	require.Len(t, result.Items, 2)
+
+	byName := map[string]AdminCustomEmojiDTO{}
+	for _, item := range result.Items {
+		byName[item.Name] = item
+	}
+	require.Contains(t, byName, "mycat")
+	assert.Equal(t, aliceID.String(), byName["mycat"].Owner.ID)
+	assert.NotEmpty(t, byName["mycat"].Owner.Username)
+	assert.False(t, byName["mycat"].CreatedAt.IsZero())
+	assert.Contains(t, byName, "doge")
+	assert.NotContains(t, byName, "gone", "已软删除的表情不出现在后台列表")
+}
+
+func mustCreate(t *testing.T, svc *Service, ownerID shared.ID, name string) CustomEmojiDTO {
+	t.Helper()
+	dto, err := svc.Create(context.Background(), CreateInput{OwnerID: ownerID, Name: name, URL: "/x.png"})
+	require.NoError(t, err)
+	return dto
 }
 
 func TestListMine_ReturnsOwnedAndFavorited(t *testing.T) {

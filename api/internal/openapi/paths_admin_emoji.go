@@ -222,4 +222,33 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 			404, errorResponse("表情不存在"),
 		),
 	})
+
+	// ---- 用户自定义表情 ----
+	registerSchema(t, "AdminCustomEmojiOwnerDTO", openapi3.Schemas{
+		"id":           reqStr("上传者用户 ID"),
+		"username":     reqStr("上传者用户名"),
+		"display_name": optStr("上传者展示名"),
+		"avatar_url":   optStr("上传者头像 URL"),
+	})
+	registerSchema(t, "AdminCustomEmojiDTO", openapi3.Schemas{
+		"id":         reqStr("自定义表情 ID"),
+		"name":       reqStr("表情展示名"),
+		"url":        reqStr("图片 URL"),
+		"owner":      optRef("上传者", "AdminCustomEmojiOwnerDTO"),
+		"created_at": reqStr("创建时间（RFC3339）"),
+	})
+
+	get(t, "/admin/emojis/custom", &openapi3.Operation{
+		Tags:        []string{"表情管理"},
+		Summary:     "用户自定义表情列表",
+		Description: "分页列出全站用户上传的自定义表情（未软删除），按创建时间倒序。需 customemoji:manage 权限。下架走 DELETE /custom-emojis/{id}。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pageParam(), limitParam(100),
+			queryStrParam("keyword", "关键词（表情名/上传者用户名/展示名，模糊匹配）"),
+		},
+		Responses: responses(
+			200, dataArrayResponse("AdminCustomEmojiDTO", "用户自定义表情列表", 200, true),
+		),
+	})
 }

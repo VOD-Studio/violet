@@ -24,6 +24,10 @@ type Repository interface {
 	ListOwned(ctx context.Context, ownerID shared.ID) ([]*CustomEmoji, error)
 	// Delete 持久化软删除状态（自行删除或管理员下架，由调用方决定谁能调用）。
 	Delete(ctx context.Context, e *CustomEmoji) error
+	// FindPageWithOwner 分页列出全部用户的未软删除表情并关联上传者信息
+	// （后台管理读模型，跨 owner）。keyword 非空时按表情名/上传者用户名/展示名
+	// ILIKE 模糊匹配（OR 关系）；按创建时间倒序。
+	FindPageWithOwner(ctx context.Context, keyword string, q shared.PageQuery) (shared.PageResult[*CustomEmojiWithOwner], error)
 
 	// AddFavorite 收藏一个表情（幂等：已收藏不报错，不产生重复行）。
 	AddFavorite(ctx context.Context, userID, emojiID shared.ID) error
@@ -43,6 +47,25 @@ type Repository interface {
 type QuotaRepository interface {
 	SaveWithQuota(ctx context.Context, e *CustomEmoji, maxPerUser int64) error
 	AddFavoriteWithQuota(ctx context.Context, userID, emojiID shared.ID, maxPerUser int64) error
+}
+// OwnerRef 上传者只读视图（后台管理列表展示上传者用）。
+type OwnerRef struct {
+	// ID 上传者用户 ID
+	ID shared.ID
+	// Username 上传者用户名
+	Username string
+	// DisplayName 上传者展示名（可能为空，展示侧自行回退 Username）
+	DisplayName string
+	// AvatarURL 上传者头像地址（可能为空）
+	AvatarURL string
+}
+
+// CustomEmojiWithOwner 自定义表情 + 上传者视图（后台管理读模型）。
+type CustomEmojiWithOwner struct {
+	// Emoji 自定义表情
+	Emoji *CustomEmoji
+	// Owner 上传者只读视图
+	Owner OwnerRef
 }
 
 var (

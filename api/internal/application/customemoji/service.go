@@ -49,6 +49,22 @@ type MineDTO struct {
 	Owned     []CustomEmojiDTO `json:"owned"`
 	Favorited []CustomEmojiDTO `json:"favorited"`
 }
+// AdminOwnerDTO 后台管理列表中的上传者读模型。
+type AdminOwnerDTO struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+}
+
+// AdminCustomEmojiDTO 后台管理自定义表情读模型（跨 owner 全站列表用）。
+type AdminCustomEmojiDTO struct {
+	ID        string        `json:"id"`
+	Name      string        `json:"name"`
+	URL       string        `json:"url"`
+	Owner     AdminOwnerDTO `json:"owner"`
+	CreatedAt time.Time     `json:"created_at"`
+}
 
 // Service 自定义表情用例服务。
 type Service struct {
@@ -181,6 +197,22 @@ func (s *Service) ListMine(ctx context.Context, userID shared.ID) (MineDTO, erro
 		return MineDTO{}, err
 	}
 	return MineDTO{Owned: toDTOs(owned), Favorited: toDTOs(favorited)}, nil
+}
+
+// ListAll 分页列出全站未软删除的自定义表情（后台管理，跨 owner）。
+//
+// 鉴权在路由层（customemoji:manage 中间件），与 comment.ListAll 同构。
+// keyword 非空时按表情名/上传者用户名/展示名模糊匹配（OR 关系）。
+func (s *Service) ListAll(ctx context.Context, keyword string, q shared.PageQuery) (shared.PageResult[AdminCustomEmojiDTO], error) {
+	result, err := s.repo.FindPageWithOwner(ctx, keyword, q)
+	if err != nil {
+		return shared.PageResult[AdminCustomEmojiDTO]{}, err
+	}
+	items := make([]AdminCustomEmojiDTO, 0, len(result.Items))
+	for _, item := range result.Items {
+		items = append(items, toAdminDTO(item))
+	}
+	return shared.PageResult[AdminCustomEmojiDTO]{Items: items, Total: result.Total, Page: result.Page, Limit: result.Limit}, nil
 }
 
 // ValidateContent 校验正文中的自定义表情均属于当前用户或其收藏。
@@ -321,4 +353,18 @@ func toDTOs(emojis []*domain.CustomEmoji) []CustomEmojiDTO {
 		out = append(out, toDTO(e))
 	}
 	return out
+}
+func toAdminDTO(item *domain.CustomEmojiWithOwner) AdminCustomEmojiDTO {
+	return AdminCustomEmojiDTO{
+		ID:        item.Emoji.ID().String(),
+		Name:      item.Emoji.Name(),
+		URL:       item.Emoji.URL(),
+		CreatedAt: item.Emoji.CreatedAt(),
+		Owner: AdminOwnerDTO{
+			ID:          item.Owner.ID.String(),
+			Username:    item.Owner.Username,
+			DisplayName: item.Owner.DisplayName,
+			AvatarURL:   item.Owner.AvatarURL,
+		},
+	}
 }

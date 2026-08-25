@@ -21,6 +21,7 @@ type customEmojiService interface {
 	Delete(ctx context.Context, emojiID domainshared.ID) error
 	Favorite(ctx context.Context, userID, emojiID domainshared.ID) error
 	Unfavorite(ctx context.Context, userID, emojiID domainshared.ID) error
+	ListAll(ctx context.Context, keyword string, q domainshared.PageQuery) (domainshared.PageResult[appcustomemoji.AdminCustomEmojiDTO], error)
 }
 
 // Handler 自定义表情 HTTP 处理器
@@ -73,6 +74,20 @@ func (h *Handler) ListMine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, dto)
+}
+
+// ListAll 全站自定义表情分页列表（后台管理）：GET /admin/emojis/custom
+//
+// keyword query param 按表情名/上传者用户名/展示名模糊匹配。
+// 权限（customemoji:manage）由 admin 路由中间件把关，本 handler 不重复校验。
+func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
+	q := response.ParsePageQuery(r)
+	result, err := h.svc.ListAll(r.Context(), r.URL.Query().Get("keyword"), q)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // Delete 删除自定义表情：DELETE /custom-emojis/{id}

@@ -31,6 +31,11 @@ type stubService struct {
 	unfavUserID  domainshared.ID
 	unfavEmojiID domainshared.ID
 	unfavErr     error
+
+	listAllKeyword string
+	listAllQuery   domainshared.PageQuery
+	listAllOut     domainshared.PageResult[appcustomemoji.AdminCustomEmojiDTO]
+	listAllErr     error
 }
 
 func (s *stubService) Create(_ context.Context, in appcustomemoji.CreateInput) (appcustomemoji.CustomEmojiDTO, error) {
@@ -55,6 +60,10 @@ func (s *stubService) Favorite(_ context.Context, userID, emojiID domainshared.I
 func (s *stubService) Unfavorite(_ context.Context, userID, emojiID domainshared.ID) error {
 	s.unfavUserID, s.unfavEmojiID = userID, emojiID
 	return s.unfavErr
+}
+func (s *stubService) ListAll(_ context.Context, keyword string, q domainshared.PageQuery) (domainshared.PageResult[appcustomemoji.AdminCustomEmojiDTO], error) {
+	s.listAllKeyword, s.listAllQuery = keyword, q
+	return s.listAllOut, s.listAllErr
 }
 
 func withViewer(req *http.Request, userID string) *http.Request {
@@ -121,6 +130,37 @@ func TestListMine_LoggedIn_ReturnsData(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "\"a\"")
+}
+func TestListAll_PassesKeywordAndPaging_ReturnsPaged(t *testing.T) {
+	svc := &stubService{listAllOut: domainshared.PageResult[appcustomemoji.AdminCustomEmojiDTO]{
+		Items: []appcustomemoji.AdminCustomEmojiDTO{{ID: "1", Name: "mycat", URL: "/a.png"}},
+		Total: 1, Page: 2, Limit: 10,
+	}}
+	h := NewHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/emojis/custom?keyword=mycat&page=2&limit=10", nil)
+	rec := httptest.NewRecorder()
+
+	h.ListAll(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "mycat", svc.listAllKeyword)
+	assert.Equal(t, 2, svc.listAllQuery.Page)
+	assert.Equal(t, 10, svc.listAllQuery.Limit)
+	assert.Contains(t, rec.Body.String(), "mycat")
+	assert.Contains(t, rec.Body.String(), "\"total\":1")
+}
+
+func TestListAll_ServiceError_Propagates(t *testing.T) {
+	svc := &stubService{listAllErr: domainshared.Internal("查询失败", nil)}
+	h := NewHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/emojis/custom", nil)
+	rec := httptest.NewRecorder()
+
+	h.ListAll(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }
 
 func TestDelete_ValidID_CallsServiceAndReturns200(t *testing.T) {
