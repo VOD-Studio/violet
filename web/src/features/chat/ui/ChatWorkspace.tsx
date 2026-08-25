@@ -703,7 +703,7 @@ function ConversationPanel({
 						ref={scrollContainerRef}
 						data-testid="chat-message-list"
 						onScroll={handleScroll}
-						className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8"
+						className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 md:px-8"
 					>
 						<div className="mx-auto max-w-4xl space-y-4">
 {messages.length > 0 &&
@@ -973,7 +973,7 @@ function MessageBubble({
 			)}
 			<div
 				className={cn(
-					"relative flex max-w-[min(82%,36rem)] flex-col",
+					"relative flex max-w-[min(70%,36rem)] flex-col",
 					mine && "items-end text-right",
 				)}
 			>
@@ -1043,9 +1043,9 @@ function MessageBubble({
 					{!message.is_deleted && (
 						<div
 							className={cn(
-								"absolute -top-3.5 z-10 flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+								"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
 								touchActionsVisible && "opacity-100",
-								mine ? "left-1" : "right-1",
+								mine ? "right-full mr-1.5" : "left-full ml-1.5",
 							)}
 						>
 							<EmojiPicker
