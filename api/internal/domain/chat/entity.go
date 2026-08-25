@@ -53,6 +53,8 @@ const (
 	EventMessageCreated ChatEventType = "message.created"
 	// EventRoomInvited 房间邀请事件。
 	EventRoomInvited ChatEventType = "room.invited"
+	// EventConversationCreated 会话创建事件。私聊发起时通知对端刷新会话列表。
+	EventConversationCreated ChatEventType = "conversation.created"
 	// EventMemberChanged 成员变更事件。
 	EventMemberChanged ChatEventType = "member.changed"
 	// EventMessageDeleted 消息被管理员删除事件。

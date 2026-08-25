@@ -386,12 +386,20 @@ func (s *Service) CreateConversation(ctx context.Context, in CreateConversationI
 	if err := s.repo.SaveConversation(ctx, conversation, members); err != nil {
 		return ConversationDTO{}, err
 	}
-	if in.Kind == domainchat.ConversationRoom {
+	switch in.Kind {
+	case domainchat.ConversationRoom:
 		events, err := s.repo.SaveEvent(ctx, participants, domainchat.EventRoomInvited, map[string]any{"conversation_id": conversation.ID().String()})
 		if err != nil {
 			return ConversationDTO{}, err
 		}
 		s.publishRoomInvites(ctx, conversation, participants)
+		s.notifyEvents(ctx, events)
+	case domainchat.ConversationDirect:
+		// 对端不在场：没有会话创建事件就只能刷新才能看到新私聊。
+		events, err := s.repo.SaveEvent(ctx, participants, domainchat.EventConversationCreated, map[string]any{"conversation_id": conversation.ID().String()})
+		if err != nil {
+			return ConversationDTO{}, err
+		}
 		s.notifyEvents(ctx, events)
 	}
 	return s.conversationDTO(ctx, conversation, in.UserID, true)
