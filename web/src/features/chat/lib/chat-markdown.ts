@@ -105,3 +105,59 @@ function emojiImageNode(alt: string, src: string, ref: CommentEmoteRef): Element
 		children: [],
 	};
 }
+
+const INLINE_IMAGE_TOKEN = /!\[img:([^\]]+)\]/g;
+
+/**
+ * 内联图片占位符替换插件：`![img:id]` 转为带 data-image 的 img 节点（不含 src）。
+ * 真实 URL 由渲染端组件按 id 解析自家上传媒体填充——第三方 URL 仍走 img 组件
+ * 降级为链接的隐私决策不受影响。
+ */
+export function rehypeChatInlineImage() {
+	return () => (tree: HastRoot) => {
+		visit(tree, "text", (node, index, parent) => {
+			if (index === undefined || !parent) return;
+			const replacement = splitInlineImageText(node.value);
+			if (replacement) parent.children.splice(index, 1, ...replacement);
+		});
+	};
+}
+
+function splitInlineImageText(text: string): ElementContent[] | null {
+	INLINE_IMAGE_TOKEN.lastIndex = 0;
+	let lastIndex = 0;
+	let matched = false;
+	const nodes: ElementContent[] = [];
+	for (let match = INLINE_IMAGE_TOKEN.exec(text); match; match = INLINE_IMAGE_TOKEN.exec(text)) {
+		const [fullMatch, id] = match;
+		if (!id) continue;
+		matched = true;
+		if (match.index > lastIndex) nodes.push(textNode(text.slice(lastIndex, match.index)));
+		nodes.push(inlineImageNode(id));
+		lastIndex = match.index + fullMatch.length;
+	}
+	if (!matched) return null;
+	if (lastIndex < text.length) nodes.push(textNode(text.slice(lastIndex)));
+	return nodes;
+}
+
+function inlineImageNode(id: string): Element {
+	return {
+		type: "element",
+		tagName: "img",
+		properties: {
+			alt: "聊天图片",
+			"data-image": id,
+			// 与输入框内联图片节点同尺寸同形态（见 use-rich-text-input createImageElement）
+			className: [
+				"inline-block",
+				"size-16",
+				"rounded-lg",
+				"object-cover",
+				"align-text-bottom",
+			],
+			loading: "lazy",
+		},
+		children: [],
+	};
+}

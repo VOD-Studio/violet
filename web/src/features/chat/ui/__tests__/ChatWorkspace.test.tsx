@@ -414,7 +414,7 @@ describe("ChatWorkspace", () => {
 		expect(mockSendMutateAsync).toHaveBeenCalledWith(
 			expect.objectContaining({
 				id: "c_1",
-				input: { type: "image", media_id: "media-1", content: "配图文字" },
+				input: { type: "image", media_id: "media-1", content: "![img:media-1]配图文字" },
 			}),
 		);
 	});
@@ -451,7 +451,7 @@ describe("ChatWorkspace", () => {
 		expect(mockSendMutateAsync).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
-				input: { type: "image", media_id: "media-b", content: "两张图" },
+				input: { type: "image", media_id: "media-b", content: "![img:media-b]两张图" },
 			}),
 		);
 	});

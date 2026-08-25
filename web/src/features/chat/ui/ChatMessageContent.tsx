@@ -16,11 +16,12 @@
  */
 import type { CommentEmoteRef } from "@entities/comment/model/types";
 import { cn } from "@shared/lib/utils";
-import type { ReactElement, ReactNode } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { lazy, Suspense, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
-import { rehypeChatEmoji, remarkChatInline } from "../lib/chat-markdown";
+import { rehypeChatEmoji, rehypeChatInlineImage, remarkChatInline } from "../lib/chat-markdown";
+import type { ChatMedia } from "../model/types";
 
 const LazyCodeCard = lazy(() =>
 	import("@shared/ui/code-preview/components/CodeCard").then((m) => ({ default: m.CodeCard })),
@@ -42,6 +43,45 @@ function nodeToText(node: ReactNode): string {
 
 function HeadingFallback({ children }: { children?: ReactNode }) {
 	return <strong className="font-semibold">{children}</strong>;
+}
+
+/** Markdown 图片语法 ![]() 降级为链接，不加载：见文件头注释的隐私考虑。 */
+function chatImg({
+	src,
+	alt,
+	...rest
+}: ComponentProps<NonNullable<Exclude<Components["img"], string>>>) {
+	const props = rest as Record<string, unknown>;
+	if (props["data-emoji"]) {
+		const customEmojiID =
+			typeof props["data-custom-emoji-id"] === "string"
+				? props["data-custom-emoji-id"]
+				: undefined;
+		const relation =
+			typeof props["data-relation"] === "string" ? props["data-relation"] : undefined;
+		return (
+			<img
+				src={typeof src === "string" ? src : undefined}
+				alt={alt ?? ""}
+				data-custom-emoji-id={customEmojiID}
+				data-relation={customEmojiID ? (relation ?? "none") : undefined}
+				className={props.className as string | undefined}
+				loading="lazy"
+			/>
+		);
+	}
+	// 内联图片占位符 ![img:id] 未命中 inlineMedia（如文本消息）时不渲染，避免占位符泄漏
+	if (props["data-image"]) return null;
+	return (
+		<a
+			href={typeof src === "string" ? src : undefined}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="underline underline-offset-2 hover:opacity-80"
+		>
+			{alt || src}
+		</a>
+	);
 }
 
 const chatMarkdownComponents: Components = {
@@ -75,39 +115,8 @@ const chatMarkdownComponents: Components = {
 	h4: HeadingFallback,
 	h5: HeadingFallback,
 	h6: HeadingFallback,
-	// Markdown 图片语法 ![]() 降级为链接，不加载：见文件头注释的隐私考虑。
 	// 表情占位符替换出的 img（带 data-emoji 标记，见 chat-markdown.ts）不受影响，正常渲染。
-	img: ({ src, alt, ...rest }) => {
-		const props = rest as Record<string, unknown>;
-		if (props["data-emoji"]) {
-			const customEmojiID =
-				typeof props["data-custom-emoji-id"] === "string"
-					? props["data-custom-emoji-id"]
-					: undefined;
-			const relation =
-				typeof props["data-relation"] === "string" ? props["data-relation"] : undefined;
-			return (
-				<img
-					src={typeof src === "string" ? src : undefined}
-					alt={alt ?? ""}
-					data-custom-emoji-id={customEmojiID}
-					data-relation={customEmojiID ? (relation ?? "none") : undefined}
-					className={props.className as string | undefined}
-					loading="lazy"
-				/>
-			);
-		}
-		return (
-			<a
-				href={typeof src === "string" ? src : undefined}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="underline underline-offset-2 hover:opacity-80"
-			>
-				{alt || src}
-			</a>
-		);
-	},
+	img: chatImg,
 	// 围栏块走 CodeCard（shiki 高亮 + 复制），懒加载；行内走纯样式。pre 透传给 code 分支。
 	pre: ({ children }) => <>{children}</>,
 	code: ({ className, children }) => {
@@ -143,16 +152,59 @@ export interface ChatMessageContentProps {
 	/** 表情映射表，key 为 "[name]" */
 	emote?: Record<string, CommentEmoteRef>;
 	className?: string;
+	/** 消息自带的上传媒体：`![img:id]` 占位符命中其 id 时还原为内联图片 */
+	inlineMedia?: ChatMedia;
+	/** 内联图片点击回调（打开原图预览） */
+	onImage?: (media: ChatMedia) => void;
 }
 
-export function ChatMessageContent({ content, emote, className }: ChatMessageContentProps) {
-	const rehypePlugins = useMemo(() => [rehypeChatEmoji(emote)], [emote]);
+export function ChatMessageContent({
+	content,
+	emote,
+	className,
+	inlineMedia,
+	onImage,
+}: ChatMessageContentProps) {
+	const rehypePlugins = useMemo(() => [rehypeChatEmoji(emote), rehypeChatInlineImage()], [emote]);
+	const components = useMemo<Components>(() => {
+		if (!inlineMedia) return chatMarkdownComponents;
+		return {
+			...chatMarkdownComponents,
+			img: ({ src, alt, ...rest }) => {
+				const props = rest as Record<string, unknown>;
+				const imageID = props["data-image"];
+				if (typeof imageID !== "string" || imageID !== inlineMedia.id) {
+					return chatImg({ src, alt, ...rest });
+				}
+				const img = (
+					<img
+						src={inlineMedia.thumbnail || inlineMedia.url}
+						alt={alt ?? "聊天图片"}
+						className={props.className as string | undefined}
+						loading="lazy"
+						draggable={false}
+					/>
+				);
+				if (!onImage) return img;
+				return (
+					<button
+						aria-label="查看图片"
+						className="inline-block align-text-bottom"
+						onClick={() => onImage(inlineMedia)}
+						type="button"
+					>
+						{img}
+					</button>
+				);
+			},
+		};
+	}, [inlineMedia, onImage]);
 	return (
 		<div className={cn(className)}>
 			<ReactMarkdown
 				remarkPlugins={REMARK_PLUGINS}
 				rehypePlugins={rehypePlugins}
-				components={chatMarkdownComponents}
+				components={components}
 			>
 				{content}
 			</ReactMarkdown>

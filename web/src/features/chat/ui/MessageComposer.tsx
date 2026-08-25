@@ -1,7 +1,10 @@
 /**
  * 消息输入区：回复/推文分享 banner 与富文本 composer，Enter 发送。
  */
-import { stripImagePlaceholders } from "@features/comments/hooks/use-rich-text-input";
+import {
+	splitRichTextByImages,
+	stripImagePlaceholders,
+} from "@features/comments/hooks/use-rich-text-input";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import { cn } from "@shared/lib/utils";
@@ -80,25 +83,31 @@ export function MessageComposer({
 			replyTargetIDRef.current = replyToID;
 			replyAttachedRef.current = false;
 		}
-		const trimmedContent = stripImagePlaceholders(content).trim();
 		// 尚未发送成功的图片（排除重试时已成功发送过的）。
 		const pendingImages = images.filter(
 			(img): img is PictureInput & { id: string } =>
 				!!img.id && !sentImageIDsRef.current.has(img.id),
 		);
+		const pendingByID = new Map(pendingImages.map((img) => [img.id, img]));
+		// 保留 ![img:id] 占位符位置按图切分：每条图片消息携带输入流中环绕自身的文字，
+		// 渲染端把占位符还原为内联图片，发出消息即与输入框一致的图文环绕。
+		const imageSegments = splitRichTextByImages(content).filter(
+			(segment): segment is { imageId: string; text: string } =>
+				segment.imageId !== null && pendingByID.has(segment.imageId),
+		);
 		try {
 			// 当前消息模型按单条消息保存图片；引用只附着到本轮首条实际发送的消息。
-			// 有图片时，文字说明随本轮最后一张图片合并发送（图文合一）；只有文字、没有图片时单独发一条文本消息。
-			for (let i = 0; i < pendingImages.length; i++) {
-				const img = pendingImages[i];
-				const isLastImage = i === pendingImages.length - 1;
+			for (const segment of imageSegments) {
+				const img = pendingByID.get(segment.imageId) as PictureInput & { id: string };
 				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
+				const segmentText = segment.text.trim();
+				const hasText = stripImagePlaceholders(segmentText).length > 0;
 				await send.mutateAsync({
 					id: conversationID,
 					input: {
 						type: "image",
 						media_id: img.id,
-						...(isLastImage && trimmedContent ? { content: trimmedContent } : {}),
+						...(hasText ? { content: segmentText } : {}),
 						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
 					},
 					idempotencyKey: crypto.randomUUID(),
@@ -107,18 +116,21 @@ export function MessageComposer({
 				if (attachReply) replyAttachedRef.current = true;
 			}
 
-			if (trimmedContent && pendingImages.length === 0) {
-				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
-				await send.mutateAsync({
-					id: conversationID,
-					input: {
-						type: "text",
-						content: trimmedContent,
-						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
-					},
-					idempotencyKey: crypto.randomUUID(),
-				});
-				if (attachReply) replyAttachedRef.current = true;
+			if (imageSegments.length === 0) {
+				const trimmedContent = stripImagePlaceholders(content).trim();
+				if (trimmedContent) {
+					const attachReply = Boolean(replyToID && !replyAttachedRef.current);
+					await send.mutateAsync({
+						id: conversationID,
+						input: {
+							type: "text",
+							content: trimmedContent,
+							...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
+						},
+						idempotencyKey: crypto.randomUUID(),
+					});
+					if (attachReply) replyAttachedRef.current = true;
+				}
 			}
 
 			sentImageIDsRef.current.clear();
@@ -181,7 +193,9 @@ export function MessageComposer({
 								</p>
 								<p className="truncate text-xs text-muted-foreground">
 									{replyTarget.type === "image"
-										? replyTarget.content || "图片消息"
+										? stripImagePlaceholders(
+												replyTarget.content ?? "",
+											).trim() || "图片消息"
 										: (replyTarget.content ?? "文本消息")}
 								</p>
 							</div>

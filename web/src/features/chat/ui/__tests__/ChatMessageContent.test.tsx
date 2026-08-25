@@ -5,8 +5,8 @@
  * 列表/标题；单换行保留为 <br>；Markdown 图片降级为链接；表情占位符替换与
  * 嵌套格式兼容。
  */
-import { cleanup, render, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatMessageContent } from "../ChatMessageContent";
 
 describe("ChatMessageContent", () => {
@@ -112,5 +112,36 @@ describe("ChatMessageContent", () => {
 		const { container } = render(<ChatMessageContent content={"```ts\nconst a = 1;\n```"} />);
 		await waitFor(() => expect(container.querySelector(".shiki-code")).toBeTruthy());
 		expect(container.textContent).toContain("const a = 1;");
+	});
+
+	it("![img:id] 命中 inlineMedia 还原为内联图片，文字环绕且点击回调媒体", () => {
+		const media = {
+			id: "media-1",
+			url: "https://cdn.example.com/a.png",
+			mime_type: "image/png",
+			size: 1,
+		};
+		const onImage = vi.fn();
+		const { container } = render(
+			<ChatMessageContent
+				content="123![img:media-1]456"
+				inlineMedia={media}
+				onImage={onImage}
+			/>,
+		);
+		const img = container.querySelector("img");
+		expect(img?.getAttribute("src")).toBe("https://cdn.example.com/a.png");
+		const p = container.querySelector("p");
+		expect(p?.childNodes[0]?.textContent).toBe("123");
+		expect(p?.childNodes[2]?.textContent).toBe("456");
+		fireEvent.click(img as Element);
+		expect(onImage).toHaveBeenCalledWith(media);
+	});
+
+	it("![img:id] 未提供 inlineMedia 时不渲染图片也不泄漏占位符", () => {
+		const { container } = render(<ChatMessageContent content="文字![img:other]文字" />);
+		expect(container.querySelector("img")).toBeNull();
+		expect(container.textContent).not.toContain("![img:other]");
+		expect(container.textContent).toContain("文字");
 	});
 });

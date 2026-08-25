@@ -98,7 +98,7 @@ export function RichCommentInput({
 	// insertImage 来自下方 useRichTextInput，而 useRichTextInput 又需要引用本函数（onPasteFiles）
 	// 构造 uploadFilesList——用 ref 打破这个循环依赖，本函数只在异步回调里读取，不影响其 deps。
 	const insertImageRef = useRef<
-		((id: string, url: string, status: ImageNodeStatus) => void) | null
+		((id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void) | null
 	>(null);
 
 	const uploadFilesList = useCallback(
@@ -143,6 +143,8 @@ export function RichCommentInput({
 							item.id === itemId
 								? {
 										...item,
+										// 换键为服务端 file_id：value 占位符即媒体 id，提交内容可直接解析
+										id: result.file_id,
 										status: "done" as const,
 										progress: 100,
 										data: {
@@ -156,7 +158,8 @@ export function RichCommentInput({
 								: item,
 						),
 					);
-					if (inlineImages) insertImageRef.current?.(itemId, result.url, "done");
+					if (inlineImages)
+						insertImageRef.current?.(result.file_id, result.url, "done", itemId);
 				} catch {
 					if (!imageItemsRef.current.some((item) => item.id === itemId)) continue;
 					setImageItems((prev) =>

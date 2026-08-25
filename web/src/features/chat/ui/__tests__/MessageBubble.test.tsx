@@ -1,13 +1,13 @@
 /**
  * MessageBubble 组件测试
  *
- * 回归：图片消息可携带说明文字（composer 图文合一发送，见 CONTEXT.md
- * 「图片消息」词条），气泡的图片形态必须渲染 content，不能只渲染图片。
+ * 回归：图片消息正文保留 ![img:id] 占位符（composer 按图切分发送），气泡渲染端
+ * 把占位符还原为内联图片，实现与输入框一致的图文环绕；旧格式纯文字说明兼容前置渲染。
  */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ChatMessage } from "../../model/types";
+import type { ChatMedia, ChatMessage } from "../../model/types";
 import { MessageBubble } from "../MessageBubble";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -74,7 +74,7 @@ function imageMessage(content?: string): ChatMessage {
 	};
 }
 
-function renderBubble(message: ChatMessage) {
+function renderBubble(message: ChatMessage, onImage: (media: ChatMedia) => void = () => {}) {
 	return render(
 		<MessageBubble
 			animateIn={false}
@@ -84,7 +84,7 @@ function renderBubble(message: ChatMessage) {
 			layout={false}
 			message={message}
 			messageRef={() => {}}
-			onImage={vi.fn()}
+			onImage={onImage}
 			showSender
 			showSenderName
 		/>,
@@ -94,18 +94,29 @@ function renderBubble(message: ChatMessage) {
 afterEach(() => cleanup());
 
 describe("MessageBubble", () => {
-	it("带说明文字的图片消息同时渲染图片与文字", () => {
+	it("图片消息占位符还原为内联图片，文字环绕且点击打开预览", () => {
+		const onImage = vi.fn();
+		const { container } = renderBubble(imageMessage("123![img:media-1]456"), onImage);
+
+		const img = screen.getByAltText("聊天图片");
+		const p = container.querySelector("p");
+		expect(p?.childNodes[0]?.textContent).toBe("123");
+		expect(p?.childNodes[2]?.textContent).toBe("456");
+		fireEvent.click(img);
+		expect(onImage).toHaveBeenCalledWith(media);
+	});
+
+	it("旧格式纯文字说明前置占位符内联渲染", () => {
 		renderBubble(imageMessage("123123"));
 
 		expect(screen.getByAltText("聊天图片")).toBeTruthy();
 		expect(screen.getByText("123123")).toBeTruthy();
 	});
 
-	it("无说明文字的图片消息只渲染图片，不产生空气泡", () => {
+	it("无说明图片消息只渲染内联图片，不泄漏占位符", () => {
 		const { container } = renderBubble(imageMessage(undefined));
 
 		expect(screen.getByAltText("聊天图片")).toBeTruthy();
-		// BubbleShell 根节点特征类；无 caption 时不应出现文字气泡
-		expect(container.querySelector("div.leading-relaxed")).toBeNull();
+		expect(container.textContent).not.toContain("![img:");
 	});
 });

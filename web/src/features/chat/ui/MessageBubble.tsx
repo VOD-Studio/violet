@@ -2,6 +2,7 @@
  * 消息气泡：正文/图片/推文分享三种形态，hover 长按操作条与 reaction 挂载点。
  */
 import type { Emoji } from "@entities/emoji/model/types";
+import { stripImagePlaceholders } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { cn } from "@shared/lib/utils";
 import { AlertTriangle, Check, Copy, Reply, Smile, Trash2 } from "lucide-react";
@@ -177,36 +178,16 @@ export function MessageBubble({
 							消息已被管理员删除
 						</div>
 					) : message.type === "image" && message.media ? (
-						<div className="flex flex-col gap-1.5">
-							<button
-								className={cn(
-									"group/img relative block overflow-hidden rounded-2xl text-left",
-									mine ? "rounded-tr-md" : "rounded-tl-md",
-								)}
-								onClick={() => onImage(message.media as ChatMedia)}
-								type="button"
-							>
-								<img
-									alt="聊天图片"
-									className="max-h-80 w-auto max-w-full rounded-2xl object-cover"
-									src={message.media.thumbnail || message.media.url}
-								/>
-								<BubbleTimestamp
-									className="absolute bottom-1.5 right-1.5"
-									mine={mine}
-									time={message.created_at}
-								/>
-							</button>
-							{message.content ? (
-								<BubbleShell mine={mine}>
-									<ChatMessageContent
-										content={message.content}
-										emote={mergedEmote}
-										className="wrap-break-word"
-									/>
-								</BubbleShell>
-							) : null}
-						</div>
+						<BubbleShell mine={mine}>
+							<ChatMessageContent
+								content={imageBubbleContent(message)}
+								emote={mergedEmote}
+								inlineMedia={message.media}
+								onImage={onImage}
+								className="wrap-break-word"
+							/>
+							<BubbleTimestamp inline mine={mine} time={message.created_at} />
+						</BubbleShell>
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
 							{message.content && (
@@ -319,7 +300,7 @@ function ReplyPreview({
 	const content = reference.is_deleted
 		? "消息已删除"
 		: reference.type === "image"
-			? reference.content || "图片消息"
+			? stripImagePlaceholders(reference.content ?? "").trim() || "图片消息"
 			: reference.type === "tweet_share"
 				? reference.content || "分享了一条推文"
 				: (reference.content ?? "文本消息");
@@ -354,4 +335,12 @@ function ReplyPreview({
 			{body}
 		</button>
 	);
+}
+
+/** 图片消息可渲染正文：新格式 content 自带 ![img:id] 携带环绕位置；旧格式纯文字说明前置占位符内联渲染。 */
+function imageBubbleContent(message: ChatMessage): string {
+	const media = message.media as ChatMedia;
+	const placeholder = `![img:${media.id}]`;
+	if (!message.content) return placeholder;
+	return message.content.includes(placeholder) ? message.content : placeholder + message.content;
 }

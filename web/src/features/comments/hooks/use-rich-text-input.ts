@@ -42,8 +42,9 @@ export type ImageNodeStatus = "uploading" | "done" | "error";
 export interface UseRichTextInputReturn {
 	contentRef: React.RefObject<HTMLDivElement | null>;
 	insertEmoji: (name: string, display: string, size?: number) => void;
-	/** 在光标处插入/原地更新一个内嵌图片节点；同一 id 重复调用会替换已有节点（uploading → done/error） */
-	insertImage: (id: string, url: string, status: ImageNodeStatus) => void;
+	/** 在光标处插入/原地更新一个内嵌图片节点；同一 id 重复调用会替换已有节点（uploading → done/error）。
+	 * replaceId 传入时按它定位旧节点替换为新 id 节点（上传完成把本地 uuid 换键为服务端 file_id）。 */
+	insertImage: (id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void;
 	handleInput: () => void;
 	handlePaste: (e: React.ClipboardEvent) => void;
 	handleKeyDown: (e: React.KeyboardEvent) => void;
@@ -72,6 +73,34 @@ export function extractImageIds(markdown: string): string[] {
 /** 剥离 markdown 中的 `![img:<id>]` 图片占位符，只留文字部分（供图文合一发送场景剥离 caption 草稿复用）。 */
 export function stripImagePlaceholders(markdown: string): string {
 	return markdown.replace(IMAGE_TOKEN_PATTERN, "");
+}
+
+/** 按图片占位符切分出的富文本片段；imageId 为 null 表示无图纯文本。 */
+export interface RichTextSegment {
+	imageId: string | null;
+	text: string;
+}
+
+/**
+ * 按 `![img:<id>]` 出现顺序把 markdown 切成每图一段：片段含上一图片（或开头）到
+ * 自身占位符的文字，末图并入尾部文字。聊天图文发送按片段各发一条图片消息，
+ * 使每条消息携带输入流中环绕自身的文字（渲染端占位符还原为内联图片即图文环绕）。
+ */
+export function splitRichTextByImages(markdown: string): RichTextSegment[] {
+	const segments: RichTextSegment[] = [];
+	let cursor = 0;
+	let pendingText = "";
+	for (const match of markdown.matchAll(IMAGE_TOKEN_PATTERN)) {
+		const index = match.index ?? 0;
+		pendingText += markdown.slice(cursor, index);
+		segments.push({ imageId: match[1] ?? null, text: pendingText + match[0] });
+		pendingText = "";
+		cursor = index + match[0].length;
+	}
+	pendingText += markdown.slice(cursor);
+	if (segments.length === 0) return [{ imageId: null, text: markdown }];
+	segments[segments.length - 1].text += pendingText;
+	return segments;
 }
 
 function escapeHtml(text: string): string {
@@ -249,12 +278,12 @@ export function useRichTextInput({
 	);
 
 	const insertImage = useCallback(
-		(id: string, url: string, status: ImageNodeStatus) => {
+		(id: string, url: string, status: ImageNodeStatus, replaceId?: string) => {
 			const div = contentRef.current;
 			if (!div || disabled) return;
 
 			const existing = div.querySelector<HTMLElement>(
-				`[data-image="${escapeAttributeSelectorValue(id)}"]`,
+				`[data-image="${escapeAttributeSelectorValue(replaceId ?? id)}"]`,
 			);
 			const element = createImageElement(id, url, status, (removedId) => {
 				contentRef.current

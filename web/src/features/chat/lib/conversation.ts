@@ -2,6 +2,7 @@
  * 会话展示辅助：会话命名、对方解析与消息预览/时间格式化。
  */
 import type { ChatConversation, ChatMessage } from "../model/types";
+import { stripImagePlaceholders } from "@features/comments/hooks/use-rich-text-input";
 
 export function conversationLabel(conversation: ChatConversation, currentUserID?: string) {
 	if (conversation.title) return conversation.title;
@@ -32,7 +33,8 @@ export function conversationTargetUser(
 
 export function messagePreview(message: ChatMessage) {
 	if (message.is_deleted) return "消息已删除";
-	if (message.type === "image") return message.content || "发送了一张图片";
+	if (message.type === "image")
+		return stripImagePlaceholders(message.content ?? "").trim() || "发送了一张图片";
 	if (message.type === "tweet_share") return message.content || "分享了一条推文";
 	return message.content ?? "";
 }
