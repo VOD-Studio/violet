@@ -19,9 +19,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { LoaderCircle, Search } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
+import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
-import { conversationLabel, conversationTargetUser } from "./ChatWorkspace";
 
 export function ShareTweetDialog() {
 	const tweet = useShareTweetStore((s) => s.tweet);
