@@ -1108,6 +1108,7 @@ func (s *Service) resolveCustomEmote(ctx context.Context, content string, viewer
 	if s.customEmojis == nil || content == "" {
 		return nil, nil
 	}
+	content = appshared.WithoutInlineImagePlaceholders(content)
 	var ids []domainshared.ID
 	tokenByID := make(map[domainshared.ID][]string)
 	seenIDs := make(map[domainshared.ID]struct{})
@@ -1203,11 +1204,9 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID) (
 	}, nil
 }
 
-// chatImageToken 匹配前端富文本内联图片占位符 ![img:<id>]；预览等人类可读场景需剥离。
-var chatImageToken = regexp.MustCompile(`!\[img:[^\]]+\]`)
-
+// stripChatImageTokens 剥离内联图片占位符并修剪空白，供预览等人类可读场景使用。
 func stripChatImageTokens(content string) string {
-	return strings.TrimSpace(chatImageToken.ReplaceAllString(content, ""))
+	return strings.TrimSpace(appshared.WithoutInlineImagePlaceholders(content))
 }
 
 func truncatePreview(content string, maxRunes int) string {

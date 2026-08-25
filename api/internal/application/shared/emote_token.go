@@ -2,6 +2,7 @@ package shared
 
 import (
 	"context"
+	"regexp"
 	"strings"
 
 	domainshared "blog-api/internal/domain/shared"
@@ -25,6 +26,16 @@ func ParseCustomEmojiToken(content string) (domainshared.ID, bool) {
 		return domainshared.ID{}, false
 	}
 	return id, true
+}
+
+// inlineImagePlaceholder 匹配富文本内联图片占位符 ![img:<id>]。
+var inlineImagePlaceholder = regexp.MustCompile(`!\[img:[^\]]+\]`)
+
+// WithoutInlineImagePlaceholders 剥离正文中的内联图片占位符。
+// 表情 token 扫描/校验必须先剥离：否则占位符尾段 [img:<uuid>] 会被
+// `\[([^\]]+)\]` 误判为自定义表情 token，media UUID 进入表情权限校验报 FORBIDDEN。
+func WithoutInlineImagePlaceholders(content string) string {
+	return inlineImagePlaceholder.ReplaceAllString(content, "")
 }
 
 // CustomEmojiContentValidator 校验正文中的自定义表情是否允许当前用户使用。

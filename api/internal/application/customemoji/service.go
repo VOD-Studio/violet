@@ -217,6 +217,7 @@ func (s *Service) ListAll(ctx context.Context, keyword string, q shared.PageQuer
 
 // ValidateContent 校验正文中的自定义表情均属于当前用户或其收藏。
 func (s *Service) ValidateContent(ctx context.Context, content string, viewerID shared.ID) error {
+	content = appshared.WithoutInlineImagePlaceholders(content)
 	var ids []shared.ID
 	seen := make(map[shared.ID]struct{})
 	for _, token := range customEmojiTokenPattern.FindAllString(content, -1) {

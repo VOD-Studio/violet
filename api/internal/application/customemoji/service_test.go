@@ -238,6 +238,21 @@ func TestValidateContent_RequiresOwnedOrFavorited(t *testing.T) {
 	require.NoError(t, svc.ValidateContent(context.Background(), "[doge]", viewerID))
 }
 
+func TestValidateContent_IgnoresInlineImagePlaceholders(t *testing.T) {
+	repo := newFakeRepo()
+	svc := newTestService(repo, 100, nil)
+	ownerID := shared.NewID()
+	viewerID := shared.NewID()
+	emoji, err := svc.Create(context.Background(), CreateInput{OwnerID: ownerID, Name: "mycat", URL: "/a.png"})
+	require.NoError(t, err)
+	id := shared.MustParseID(emoji.ID)
+
+	// 富文本内联图片占位符 ![img:<uuid>] 不得被误判为自定义表情 token
+	require.NoError(t, svc.ValidateContent(context.Background(), "123![img:"+id.String()+"]456", viewerID))
+	// 剥离占位符后真实 token 校验仍生效：引用他人表情依旧报权限错
+	require.Error(t, svc.ValidateContent(context.Background(), "![img:"+id.String()+"][mycat:"+id.String()+"]", viewerID))
+}
+
 func TestDelete_Owner_Succeeds(t *testing.T) {
 	repo := newFakeRepo()
 	svc := newTestService(repo, 100, nil)
