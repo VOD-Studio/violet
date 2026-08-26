@@ -26,6 +26,7 @@ import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as UsersUsernameRouteImport } from './routes/users/$username'
 import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
+import { Route as LabSeriesRouteImport } from './routes/lab.series'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
 import { Route as LabMascotRouteImport } from './routes/lab.mascot'
 import { Route as LabFriendsRouteImport } from './routes/lab.friends'
@@ -146,6 +147,11 @@ const TweetsIdRoute = TweetsIdRouteImport.update({
 const LabThemeRoute = LabThemeRouteImport.update({
   id: '/lab/theme',
   path: '/lab/theme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabSeriesRoute = LabSeriesRouteImport.update({
+  id: '/lab/series',
+  path: '/lab/series',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabNavRoute = LabNavRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/lab/friends': typeof LabFriendsRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
+  '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -414,6 +421,7 @@ export interface FileRoutesByTo {
   '/lab/friends': typeof LabFriendsRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
+  '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/lab/friends': typeof LabFriendsRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
+  '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -527,6 +536,7 @@ export interface FileRouteTypes {
     | '/lab/friends'
     | '/lab/mascot'
     | '/lab/nav'
+    | '/lab/series'
     | '/lab/theme'
     | '/tweets/$id'
     | '/users/$username'
@@ -580,6 +590,7 @@ export interface FileRouteTypes {
     | '/lab/friends'
     | '/lab/mascot'
     | '/lab/nav'
+    | '/lab/series'
     | '/lab/theme'
     | '/tweets/$id'
     | '/users/$username'
@@ -635,6 +646,7 @@ export interface FileRouteTypes {
     | '/lab/friends'
     | '/lab/mascot'
     | '/lab/nav'
+    | '/lab/series'
     | '/lab/theme'
     | '/tweets/$id'
     | '/users/$username'
@@ -675,6 +687,7 @@ export interface RootRouteChildren {
   LabFriendsRoute: typeof LabFriendsRoute
   LabMascotRoute: typeof LabMascotRoute
   LabNavRoute: typeof LabNavRoute
+  LabSeriesRoute: typeof LabSeriesRoute
   LabThemeRoute: typeof LabThemeRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
@@ -807,6 +820,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/theme'
       fullPath: '/lab/theme'
       preLoaderRoute: typeof LabThemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/series': {
+      id: '/lab/series'
+      path: '/lab/series'
+      fullPath: '/lab/series'
+      preLoaderRoute: typeof LabSeriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/nav': {
@@ -1162,6 +1182,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabFriendsRoute: LabFriendsRoute,
   LabMascotRoute: LabMascotRoute,
   LabNavRoute: LabNavRoute,
+  LabSeriesRoute: LabSeriesRoute,
   LabThemeRoute: LabThemeRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,
@@ -1177,12 +1198,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
