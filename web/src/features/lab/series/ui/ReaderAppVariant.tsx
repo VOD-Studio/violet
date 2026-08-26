@@ -12,62 +12,69 @@ export function ReaderAppVariant({ surface }: { surface: SeriesSurface }) {
 function Shelf() {
 	return (
 		<div className="min-h-[720px] rounded-3xl bg-background p-6 text-foreground md:p-10">
-			<header className="mb-10 flex items-end justify-between">
-				<div>
-					<p className="mb-2 font-mono text-xs tracking-[0.25em] opacity-50 uppercase">
-						My Library
-					</p>
-					<h1 className="text-4xl font-semibold tracking-tight">书架</h1>
-				</div>
-				<button type="button" className="rounded-full border border-current/15 p-3">
-					<Search className="size-5" />
-				</button>
-			</header>
-
-			<section className="mb-12 grid items-center gap-7 rounded-3xl border border-border bg-card p-6 md:grid-cols-[128px_1fr_auto]">
-				<BookCover book={JAVA_BOOK} className="w-32 shadow-lg" />
-				<div>
-					<p className="mb-2 text-sm opacity-55">继续阅读 · 第二部</p>
-					<h2 className="text-2xl font-semibold">{CURRENT_CHAPTER.title}</h2>
-					<p className="mt-2 text-sm opacity-65">
-						《{JAVA_BOOK.title}》· 第 {CURRENT_CHAPTER.no} 章
-					</p>
-					<div className="mt-5 h-1.5 max-w-sm rounded-full bg-muted">
-						<div className="h-full w-[46%] rounded-full bg-primary" />
+			<div className="mx-auto max-w-6xl">
+				<header className="mb-10 flex items-end justify-between">
+					<div>
+						<p className="mb-2 font-mono text-xs tracking-[0.25em] opacity-50 uppercase">
+							My Library
+						</p>
+						<h1 className="text-4xl font-semibold tracking-tight">书架</h1>
 					</div>
-				</div>
-				<button
-					type="button"
-					className="flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm text-primary-foreground"
-				>
-					<BookOpen className="size-4" />
-					继续阅读
-				</button>
-			</section>
+					<button type="button" className="rounded-full border border-current/15 p-3">
+						<Search className="size-5" />
+					</button>
+				</header>
 
-			<h2 className="mb-6 text-lg font-semibold">全部书籍</h2>
-			<div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-3 lg:grid-cols-4">
-				{SHELF_BOOKS.map((book) => (
-					<ShelfBook key={book.slug} book={book} />
-				))}
+				<section className="mb-14 grid items-center gap-7 rounded-3xl border border-border bg-card p-6 md:grid-cols-[144px_minmax(0,1fr)_auto] md:p-8">
+					<BookCover
+						book={JAVA_BOOK}
+						size="sm"
+						className="w-36 justify-self-center md:justify-self-start"
+					/>
+					<div>
+						<p className="mb-2 text-sm opacity-55">继续阅读 · 第二部</p>
+						<h2 className="text-2xl font-semibold">{CURRENT_CHAPTER.title}</h2>
+						<p className="mt-2 text-sm opacity-65">
+							《{JAVA_BOOK.title}》· 第 {CURRENT_CHAPTER.no} 章
+						</p>
+						<div className="mt-5 h-1.5 max-w-xs rounded-full bg-muted">
+							<div className="h-full w-[46%] rounded-full bg-primary" />
+						</div>
+					</div>
+					<button
+						type="button"
+						className="flex items-center gap-2 justify-self-start rounded-full bg-primary px-5 py-3 text-sm text-primary-foreground md:justify-self-end"
+					>
+						<BookOpen className="size-4" />
+						继续阅读
+					</button>
+				</section>
+
+				<h2 className="mb-6 text-lg font-semibold">全部书籍</h2>
+				<div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
+					{SHELF_BOOKS.map((book) => (
+						<ShelfBook key={book.slug} book={book} />
+					))}
+				</div>
 			</div>
 		</div>
 	);
 }
 
+function readingState(book: MockBook) {
+	if (book.progress <= 0) return "尚未开始";
+	if (book.progress >= 100) return "已读完";
+	return `已读 ${book.progress}%`;
+}
+
 function ShelfBook({ book }: { book: MockBook }) {
 	return (
-		<article>
-			<BookCover book={book} className="w-full shadow-md" />
-			<h3 className="mt-3 line-clamp-1 font-semibold">{book.title}</h3>
-			<p className="mt-1 line-clamp-1 text-sm opacity-55">
-				{book.author} · {book.status === "ongoing" ? "连载中" : "已完结"}
-			</p>
-			<div className="mt-2 h-1 rounded-full bg-muted">
-				<div
-					className="h-full rounded-full bg-primary"
-					style={{ width: `${book.progress}%` }}
-				/>
+		<article className="mx-auto w-full max-w-56">
+			<BookCover book={book} className="w-full" />
+			<h3 className="mt-4 line-clamp-1 font-semibold">{book.title}</h3>
+			<div className="mt-1.5 flex items-center justify-between gap-3 text-sm opacity-55">
+				<span className="truncate">{book.author}</span>
+				<span className="shrink-0">{readingState(book)}</span>
 			</div>
 		</article>
 	);
@@ -81,7 +88,7 @@ function Detail() {
 				返回书架
 			</button>
 			<header className="grid gap-10 md:grid-cols-[220px_1fr]">
-				<BookCover book={JAVA_BOOK} className="w-full shadow-xl" />
+				<BookCover book={JAVA_BOOK} size="lg" className="w-full" />
 				<div className="flex flex-col justify-center">
 					<p className="mb-3 text-sm opacity-55">连载中 · 12 章 · 最近更新 2026-06-20</p>
 					<h1 className="text-4xl font-semibold tracking-tight md:text-5xl">

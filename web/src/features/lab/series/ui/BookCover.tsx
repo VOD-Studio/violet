@@ -1,34 +1,13 @@
-import type { ReactNode } from "react";
-
 import { cn } from "@shared/lib/utils";
+import type { ReactNode } from "react";
 import type { MockBook } from "../model/mock";
 
-const COVER_PLANE =
-	"absolute inset-y-0 right-1 bottom-1 left-0 overflow-hidden rounded-sm shadow-lg [backface-visibility:hidden]";
+type BookCoverSize = "sm" | "md" | "lg";
 
-const COVER_PLANE_STYLE = {
-	transform: "rotateY(-4deg)",
-	transformOrigin: "left center",
-	transformStyle: "preserve-3d",
-} as const;
-
-function CoverEdges() {
-	return (
-		<>
-			<div
-				aria-hidden="true"
-				className="absolute inset-y-1 right-0 z-0 w-2.5 rounded-r-sm bg-stone-200/90"
-			>
-				<span className="absolute inset-y-1 left-1/2 w-px bg-stone-500/30" />
-			</div>
-			<div
-				aria-hidden="true"
-				className="absolute right-1 bottom-0 left-1 z-0 h-1.5 rounded-b-sm bg-stone-200/90"
-			>
-				<span className="absolute inset-x-2 top-1/2 h-px bg-stone-500/30" />
-			</div>
-		</>
-	);
+interface BookCoverProps {
+	book: MockBook;
+	className?: string;
+	size?: BookCoverSize;
 }
 
 function CoverShell({
@@ -44,16 +23,37 @@ function CoverShell({
 		<div
 			role="img"
 			aria-label={`${book.title}封面`}
-			className={cn("relative isolate aspect-2/3 [perspective:900px]", className)}
+			className={cn("relative isolate aspect-2/3 [perspective:1200px]", className)}
 		>
-			<CoverEdges />
-			<div className={COVER_PLANE} style={COVER_PLANE_STYLE}>
-				{children}
-			</div>
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute inset-y-0 left-0 z-10 w-2 bg-linear-to-r from-black/35 to-transparent"
+				className="absolute -bottom-1 right-1 left-2 h-3 rounded-full bg-black/25 blur-md"
 			/>
+			<div
+				aria-hidden="true"
+				className="absolute inset-y-1 right-0 w-3 rounded-r-sm border-r-2 border-stone-700 bg-[#e8e2d8] shadow-sm"
+			>
+				<span className="absolute inset-y-1 left-1/3 w-px bg-stone-400/55" />
+				<span className="absolute inset-y-1 left-2/3 w-px bg-stone-400/30" />
+			</div>
+			<div
+				className="absolute inset-y-0 right-2 left-0 overflow-hidden rounded-sm border border-black/10 shadow-lg [backface-visibility:hidden]"
+				style={{
+					transform: "rotateY(-5deg)",
+					transformOrigin: "left center",
+					transformStyle: "preserve-3d",
+				}}
+			>
+				{children}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-y-0 left-0 z-20 w-2 bg-linear-to-r from-black/30 to-transparent"
+				/>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-px rounded-xs ring-1 ring-white/15"
+				/>
+			</div>
 		</div>
 	);
 }
@@ -62,38 +62,59 @@ function statusLabel(book: MockBook) {
 	return book.status === "ongoing" ? "Serial" : "Complete";
 }
 
-export function BookCover({ book, className }: { book: MockBook; className?: string }) {
+export function BookCover({ book, className, size = "md" }: BookCoverProps) {
+	const compact = size === "sm";
+	const large = size === "lg";
+
 	if (!book.coverUrl) {
 		const coverMark = book.title.slice(0, 2);
 
 		return (
 			<CoverShell book={book} className={className}>
-				<div className="relative h-full w-full overflow-hidden bg-stone-100 text-stone-900">
-					<div className="pointer-events-none absolute inset-3 border border-stone-900/20" />
+				<div className="relative h-full overflow-hidden bg-[#d8e1dc] text-[#17372f]">
+					<div className="flex h-[18%] items-center justify-between bg-[#315b50] px-4 font-mono text-[8px] tracking-[0.18em] text-white/80 uppercase">
+						<span>Violet Editions</span>
+						<span>{statusLabel(book)}</span>
+					</div>
 					<div
 						aria-hidden="true"
-						className="pointer-events-none absolute -top-2 right-0 font-serif text-7xl leading-none text-stone-900/10"
+						className={cn(
+							"pointer-events-none absolute top-[18%] right-0 font-serif leading-none text-[#315b50]/10",
+							compact ? "text-5xl" : large ? "text-8xl" : "text-7xl",
+						)}
 					>
 						{coverMark}
 					</div>
-					<div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1 bg-linear-to-r from-stone-900/25 to-transparent" />
-					<div className="relative flex h-full flex-col p-4">
-						<div className="flex items-center justify-between border-b border-stone-900/20 pb-2 font-mono text-[9px] tracking-[0.2em] text-stone-900/60 uppercase">
-							<span>Violet Editions</span>
-							<span>{statusLabel(book)}</span>
-						</div>
-						<div className="flex flex-1 flex-col justify-center">
-							<p className="font-mono text-[9px] tracking-[0.2em] text-stone-900/45 uppercase">
-								Online Book
-							</p>
-							<h2 className="mt-3 line-clamp-3 font-serif text-2xl leading-tight">
+					<div
+						className={cn(
+							"flex h-[82%] flex-col justify-between",
+							compact ? "p-3" : "p-4",
+						)}
+					>
+						<p className="font-mono text-[8px] tracking-[0.2em] text-[#315b50]/60 uppercase">
+							Online Book
+						</p>
+						<div>
+							<h2
+								className={cn(
+									"line-clamp-3 font-serif leading-tight",
+									compact ? "text-sm" : large ? "text-2xl" : "text-lg",
+								)}
+							>
 								{book.title}
 							</h2>
-							<p className="mt-2 line-clamp-3 font-serif text-sm leading-snug text-stone-900/60 italic">
-								{book.subtitle}
-							</p>
+							{compact ? null : (
+								<p
+									className={cn(
+										"mt-2 line-clamp-3 font-serif leading-snug text-[#315b50]/70 italic",
+										large ? "text-sm" : "text-[11px]",
+									)}
+								>
+									{book.subtitle}
+								</p>
+							)}
 						</div>
-						<div className="flex items-end justify-between border-t border-stone-900/20 pt-3 font-mono text-[9px] text-stone-900/50 uppercase">
+						<div className="flex justify-between border-t border-[#315b50]/25 pt-2 font-mono text-[8px] text-[#315b50]/65 uppercase">
 							<span>{book.author}</span>
 							<span>Technical Series</span>
 						</div>
@@ -105,24 +126,41 @@ export function BookCover({ book, className }: { book: MockBook; className?: str
 
 	return (
 		<CoverShell book={book} className={className}>
-			<div className="relative h-full w-full bg-muted">
+			<div className="relative h-full bg-stone-950 text-white">
 				<img
 					src={book.coverUrl}
 					alt=""
 					loading="lazy"
-					className="size-full object-cover"
+					className="h-[74%] w-full object-cover"
 				/>
-				<div className="pointer-events-none absolute inset-3 border border-white/40" />
-				<div className="absolute inset-x-4 top-4 flex items-center justify-between font-mono text-[8px] tracking-[0.2em] text-white/80 uppercase drop-shadow-sm">
+				<div className="absolute inset-x-0 top-0 flex items-center justify-between bg-black/55 px-3 py-2 font-mono text-[7px] tracking-[0.18em] text-white/80 uppercase">
 					<span>Violet Editions</span>
 					<span>{statusLabel(book)}</span>
 				</div>
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-black/85 via-black/30 to-transparent" />
-				<div className="absolute inset-x-4 bottom-4 text-white drop-shadow-sm">
-					<p className="line-clamp-2 font-serif text-base leading-tight">{book.title}</p>
-					<p className="mt-1 line-clamp-2 font-serif text-[10px] leading-snug text-white/75 italic">
-						{book.subtitle}
+				<div
+					className={cn(
+						"absolute inset-x-0 bottom-0 flex h-[26%] flex-col justify-center bg-stone-950",
+						compact ? "px-3" : "px-4",
+					)}
+				>
+					<p
+						className={cn(
+							"line-clamp-2 font-serif leading-tight",
+							compact ? "text-xs" : large ? "text-lg" : "text-sm",
+						)}
+					>
+						{book.title}
 					</p>
+					{compact ? null : (
+						<p
+							className={cn(
+								"mt-1 line-clamp-1 font-serif text-white/60 italic",
+								large ? "text-xs" : "text-[9px]",
+							)}
+						>
+							{book.subtitle}
+						</p>
+					)}
 				</div>
 			</div>
 		</CoverShell>

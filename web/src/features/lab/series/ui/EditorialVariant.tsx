@@ -35,7 +35,7 @@ function CatalogueRow({ book, index }: { book: MockBook; index: number }) {
 			<span className="font-mono text-xs opacity-40">
 				{String(index + 1).padStart(2, "0")}
 			</span>
-			<BookCover book={book} className="w-36 shadow-md" />
+			<BookCover book={book} size="sm" className="w-36" />
 			<div>
 				<p className="mb-2 font-mono text-[10px] tracking-[0.25em] opacity-45 uppercase">
 					{book.status === "ongoing" ? "Serial Edition" : "Complete Edition"}
