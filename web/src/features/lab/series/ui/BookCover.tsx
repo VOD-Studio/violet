@@ -4,10 +4,10 @@ import { cn } from "@shared/lib/utils";
 import type { MockBook } from "../model/mock";
 
 const COVER_PLANE =
-	"absolute inset-y-0 right-2 bottom-2 left-0 overflow-hidden rounded-sm shadow-xl [backface-visibility:hidden]";
+	"absolute inset-y-0 right-1 bottom-1 left-0 overflow-hidden rounded-sm shadow-lg [backface-visibility:hidden]";
 
 const COVER_PLANE_STYLE = {
-	transform: "rotateY(-7deg)",
+	transform: "rotateY(-4deg)",
 	transformOrigin: "left center",
 	transformStyle: "preserve-3d",
 } as const;
@@ -17,17 +17,15 @@ function CoverEdges() {
 		<>
 			<div
 				aria-hidden="true"
-				className="absolute inset-y-1 right-0 z-0 w-3 rounded-r-sm border border-stone-400/50 bg-stone-200 shadow-sm"
+				className="absolute inset-y-1 right-0 z-0 w-2.5 rounded-r-sm bg-stone-200/90"
 			>
-				<span className="absolute inset-y-2 left-1/3 w-px bg-stone-500/40" />
-				<span className="absolute inset-y-2 left-2/3 w-px bg-stone-500/25" />
+				<span className="absolute inset-y-1 left-1/2 w-px bg-stone-500/30" />
 			</div>
 			<div
 				aria-hidden="true"
-				className="absolute right-1 bottom-0 left-1 z-0 h-2 rounded-b-sm border border-stone-400/50 bg-stone-200 shadow-sm"
+				className="absolute right-1 bottom-0 left-1 z-0 h-1.5 rounded-b-sm bg-stone-200/90"
 			>
-				<span className="absolute inset-x-2 top-1/3 h-px bg-stone-500/35" />
-				<span className="absolute inset-x-2 top-2/3 h-px bg-stone-500/20" />
+				<span className="absolute inset-x-2 top-1/2 h-px bg-stone-500/30" />
 			</div>
 		</>
 	);
