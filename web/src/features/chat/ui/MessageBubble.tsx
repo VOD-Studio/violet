@@ -2,7 +2,7 @@
  * 消息气泡：正文/图片/推文分享三种形态，hover 长按操作条与 reaction 挂载点。
  */
 import type { Emoji } from "@entities/emoji/model/types";
-import { stripImagePlaceholders } from "@features/comments/hooks/use-rich-text-input";
+import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { cn } from "@shared/lib/utils";
 import { AlertTriangle, Check, Copy, Reply, Smile, Trash2 } from "lucide-react";
@@ -300,10 +300,10 @@ function ReplyPreview({
 	const content = reference.is_deleted
 		? "消息已删除"
 		: reference.type === "image"
-			? stripImagePlaceholders(reference.content ?? "").trim() || "图片消息"
+			? stripPlaceholdersForPreview(reference.content ?? "").trim() || "图片消息"
 			: reference.type === "tweet_share"
-				? reference.content || "分享了一条推文"
-				: (reference.content ?? "文本消息");
+				? stripPlaceholdersForPreview(reference.content ?? "").trim() || "分享了一条推文"
+				: stripPlaceholdersForPreview(reference.content ?? "").trim() || "文本消息";
 	const className =
 		"flex max-w-60 items-center gap-2 border-s-2 border-primary/60 bg-secondary px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
 	const body = (

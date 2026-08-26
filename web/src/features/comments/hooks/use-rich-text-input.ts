@@ -75,6 +75,20 @@ export function stripImagePlaceholders(markdown: string): string {
 	return markdown.replace(IMAGE_TOKEN_PATTERN, "");
 }
 
+/** 匹配表情占位符：系统表情 `[name]` 或自定义表情 `[name:uuid]`（含方括号）。 */
+const EMOJI_PLACEHOLDER_PATTERN = /\[([^\]]+)\]/g;
+
+/**
+ * 剥离 markdown 中的图片占位符与表情占位符，只留环绕文字——供无 emote 映射可查的
+ * 纯文本预览场景复用（回复/引用预览、会话列表最后一条消息摘要）：这些场景拿不到
+ * 表情解析结果，裸吐占位符文本（如 `[1:<uuid>]`）不可读，剥离比展示更合适。
+ * 顺序不可换：先剥图片再剥表情——图片占位符自身形如 `[img:<id>]`，颠倒顺序会把
+ * 开头的 `!` 落单残留。
+ */
+export function stripPlaceholdersForPreview(markdown: string): string {
+	return stripImagePlaceholders(markdown).replace(EMOJI_PLACEHOLDER_PATTERN, "");
+}
+
 /** 按图片占位符切分出的富文本片段；imageId 为 null 表示无图纯文本。 */
 export interface RichTextSegment {
 	imageId: string | null;

@@ -29,6 +29,7 @@ vi.mock("@features/emojis/api/queries", () => ({
 import {
 	extractImageIds,
 	splitRichTextByImages,
+	stripPlaceholdersForPreview,
 	type UseRichTextInputReturn,
 	useRichTextInput,
 } from "../use-rich-text-input";
@@ -83,6 +84,25 @@ describe("splitRichTextByImages", () => {
 			{ imageId: "a", text: "123![img:a]" },
 			{ imageId: "b", text: "456![img:b]789" },
 		]);
+	});
+});
+
+describe("stripPlaceholdersForPreview", () => {
+	it("剥离图片占位符，保留环绕文字", () => {
+		expect(stripPlaceholdersForPreview("你好![img:media-1]世界")).toBe("你好世界");
+	});
+
+	it("剥离系统表情与自定义表情占位符，保留环绕文字", () => {
+		expect(stripPlaceholdersForPreview("你好[smile]世界")).toBe("你好世界");
+		expect(
+			stripPlaceholdersForPreview("你好[1:00000000-0000-0000-0000-000000000001]世界"),
+		).toBe("你好世界");
+	});
+
+	it("图片与表情占位符混排时按顺序全部剥离，不留 ! 残留", () => {
+		expect(
+			stripPlaceholdersForPreview("123![img:a][1:00000000-0000-0000-0000-000000000001]456"),
+		).toBe("123456");
 	});
 });
 

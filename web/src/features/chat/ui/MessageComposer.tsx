@@ -4,6 +4,7 @@
 import {
 	splitRichTextByImages,
 	stripImagePlaceholders,
+	stripPlaceholdersForPreview,
 } from "@features/comments/hooks/use-rich-text-input";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
@@ -193,10 +194,12 @@ export function MessageComposer({
 								</p>
 								<p className="truncate text-xs text-muted-foreground">
 									{replyTarget.type === "image"
-										? stripImagePlaceholders(
+										? stripPlaceholdersForPreview(
 												replyTarget.content ?? "",
 											).trim() || "图片消息"
-										: (replyTarget.content ?? "文本消息")}
+										: stripPlaceholdersForPreview(
+												replyTarget.content ?? "",
+											).trim() || "文本消息"}
 								</p>
 							</div>
 							<button

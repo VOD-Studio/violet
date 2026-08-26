@@ -119,4 +119,22 @@ describe("MessageBubble", () => {
 		expect(screen.getByAltText("聊天图片")).toBeTruthy();
 		expect(container.textContent).not.toContain("![img:");
 	});
+
+	// 回归：回复预览没有 custom_emote 解析结果可查，自定义/系统表情占位符必须剥离，
+	// 否则裸吐 [name:uuid] 形状的 token 文本（见 ReplyPreview）。
+	it("回复预览剥离表情占位符，不泄漏裸 token 文本", () => {
+		const message = imageMessage("123123");
+		message.reply_to = {
+			id: "m_ref",
+			sender: { id: "u_2", username: "bob", display_name: "Bob", avatar_url: "" },
+			type: "text",
+			content: "你好[1:00000000-0000-0000-0000-000000000001]世界",
+			is_deleted: false,
+		};
+
+		renderBubble(message);
+
+		expect(screen.getByText("你好世界")).toBeTruthy();
+		expect(screen.queryByText(/\[1:/)).toBeNull();
+	});
 });
