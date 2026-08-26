@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { Segmented } from "@shared/ui/segmented";
 import { ArrowLeft, ArrowRight, BookOpen, Library, ListTree } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import type { SeriesSurface, SeriesVariant } from "../model/mock";
@@ -23,23 +23,22 @@ export function SurfaceNav({
 	onChange: (surface: SeriesSurface) => void;
 }) {
 	return (
-		<nav className="sticky top-3 z-40 mx-auto mb-8 flex w-fit rounded-full border border-edge-hairline bg-background/90 p-1 shadow-sm backdrop-blur">
-			{SURFACES.map(({ value, label, icon: Icon }) => (
-				<button
-					key={value}
-					type="button"
-					onClick={() => onChange(value)}
-					className={cn(
-						"flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-colors",
-						current === value
-							? "bg-foreground text-background"
-							: "text-muted-foreground hover:text-foreground",
-					)}
-				>
-					<Icon className="size-4" />
-					{label}
-				</button>
-			))}
+		<nav className="sticky top-3 z-40 mx-auto mb-8 flex w-fit">
+			<Segmented
+				value={current}
+				onValueChange={onChange}
+				segments={SURFACES.map(({ value, label, icon: Icon }) => ({
+					value,
+					label: (
+						<>
+							<Icon className="size-4" />
+							{label}
+						</>
+					),
+				}))}
+				size="default"
+				rounded="full"
+			/>
 		</nav>
 	);
 }
