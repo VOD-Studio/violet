@@ -11,6 +11,7 @@ import {
 	KeyRound,
 	LayoutDashboard,
 	LayoutPanelLeft,
+	Library,
 	Link2,
 	Megaphone,
 	MessageSquare,
@@ -90,6 +91,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: FileText,
 		group: "content",
 		permissions: ["post:view"],
+	},
+	{
+		label: "系列书管理",
+		to: "/admin/series",
+		icon: Library,
+		group: "content",
+		permissions: ["series:view"],
 	},
 	{
 		label: "标签管理",
