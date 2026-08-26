@@ -53,8 +53,17 @@ func TestNewSeriesCoverURL(t *testing.T) {
 	if _, err := NewSeries(shared.NewID(), author, "T", "t", "", "javascript:alert(1)"); err == nil {
 		t.Fatal("伪协议封面应被拒绝")
 	}
+	if _, err := NewSeries(shared.NewID(), author, "T", "t", "", "data:image/png;base64,xx"); err == nil {
+		t.Fatal("data 伪协议封面应被拒绝")
+	}
 	if _, err := NewSeries(shared.NewID(), author, "T", "t", "", ""); err != nil {
 		t.Fatalf("空封面应允许: %v", err)
+	}
+	if _, err := NewSeries(shared.NewID(), author, "T", "t", "", "/uploads/abc.png?crop=1:2"); err != nil {
+		t.Fatalf("素材库相对路径应允许: %v", err)
+	}
+	if _, err := NewSeries(shared.NewID(), author, "T", "t", "", "https://img.example.com/c.jpg"); err != nil {
+		t.Fatalf("http 外链应允许: %v", err)
 	}
 }
 

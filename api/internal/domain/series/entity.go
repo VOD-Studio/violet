@@ -239,15 +239,22 @@ func validateFields(title, description, coverImage string) error {
 	if utf8.RuneCountInString(strings.TrimSpace(description)) > maxDescriptionLen {
 		return shared.BadRequest("简介不能超过 2000 个字符")
 	}
-	if strings.TrimSpace(coverImage) != "" && !isHTTPURL(coverImage) {
-		return shared.BadRequest("封面图必须是 http/https 地址")
+	// 对齐 post 域惯例：封面存素材库回填的相对路径（/uploads/...）或外链 http(s)，
+	// 只拦伪协议（javascript:/data:），不强制绝对地址
+	if strings.TrimSpace(coverImage) != "" && !isSafeImageRef(coverImage) {
+		return shared.BadRequest("封面图地址不合法")
 	}
 	return nil
 }
 
-// isHTTPURL 校验 http/https 绝对地址（防伪协议进前台渲染）。
-func isHTTPURL(raw string) bool {
-	u, err := url.Parse(strings.TrimSpace(raw))
+// isSafeImageRef 校验封面引用安全：http(s) 绝对地址或站内相对路径，
+// 拒绝 javascript:/data: 等伪协议（防进前台渲染）。
+func isSafeImageRef(raw string) bool {
+	trimmed := strings.TrimSpace(raw)
+	if strings.HasPrefix(trimmed, "/") {
+		return true // 站内相对路径（素材库上传文件）
+	}
+	u, err := url.Parse(trimmed)
 	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }
 

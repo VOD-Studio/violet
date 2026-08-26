@@ -75,7 +75,9 @@ type SectionChaptersDTO struct {
 //
 // 目录为两层：根章节在前，各卷按 sort_order 依次排列；ChapterNo 全书连续编号。
 type SeriesDetailDTO struct {
-	SeriesDTO
+	// 嵌管理 DTO：编辑页消费 status/updated_at/total_chapter_count；
+	// 公开视角多出的字段无害（published 恒真，前端公开页不消费）
+	SeriesAdminDTO
 	// Sections 卷列表（sort_order 升序，含空卷——空卷是发布书中的占位结构，
 	// 是否展示由前端决定）
 	Sections []SectionChaptersDTO `json:"sections"`
@@ -150,10 +152,12 @@ func toSectionDTO(sec *domain.SeriesSection) SectionDTO {
 // 先按聚合卷序建好全部卷桶再填章节，空卷保留在原位。
 func buildDetailDTO(s *domain.Series, chapters []domain.Chapter, publicView bool) SeriesDetailDTO {
 	dto := SeriesDetailDTO{
-		SeriesDTO:    toSeriesDTO(s),
-		RootChapters: make([]ChapterDTO, 0),
-		Sections:     make([]SectionChaptersDTO, 0, len(s.Sections())),
+		SeriesAdminDTO: toAdminDTO(s),
+		RootChapters:   make([]ChapterDTO, 0),
+		Sections:       make([]SectionChaptersDTO, 0, len(s.Sections())),
 	}
+	// 详情也带总章节数（编辑页描述行「x 已发布 / y 总计」消费）
+	dto.TotalChapterCount = int64(len(chapters))
 	for _, sec := range s.Sections() {
 		dto.Sections = append(dto.Sections, SectionChaptersDTO{
 			Section:  toSectionDTO(sec),
