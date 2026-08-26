@@ -176,6 +176,7 @@ func (s *Service) buildDetail(ctx context.Context, series *domain.Series, public
 	for _, sec := range dto.Sections {
 		dto.ChapterCount += int64(len(sec.Chapters))
 	}
+	fillChapterCounts(&dto.SeriesDTO, chapters)
 	return dto, nil
 }
 
