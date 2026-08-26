@@ -40,6 +40,7 @@ type Container struct {
 	Image           *ImageContainer
 	Tweet           *TweetContainer
 	FriendLink      *FriendLinkContainer
+	Series          *SeriesContainer
 	Notification     *NotificationContainer
 }
 
@@ -92,17 +93,18 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
-	commentReaction := NewCommentReactionContainer(db)
 	apiToken := NewAPITokenContainer(db, bus)
 	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
+	commentReaction := NewCommentReactionContainer(db)
+	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
+	series := NewSeriesContainer(db, bus)
+	notification := NewNotificationContainer(db, bus)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService)
 	system := NewSystemContainer(db, rdb, ctx)
 	media := NewMediaContainer(db, rdb, cfg)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, bus)
-	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
-	notification := NewNotificationContainer(db, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
@@ -110,7 +112,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Notification: notification,
+		Series: series, Notification: notification,
 	}
 	return c, roleCleanup, nil
 }

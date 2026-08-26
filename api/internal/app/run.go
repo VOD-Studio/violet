@@ -129,6 +129,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Image:                 c.Image.ImageHandler,
 		Tweet:                 c.Tweet.TweetHandler,
 		FriendLink:            c.FriendLink.FriendLinkHandler,
+		Series:                c.Series.SeriesHandler,
 		Notification:          c.Notification.NotificationHandler,
 		NotificationStream:    c.Notification.StreamHandler,
 		MCP: routing.MCPHandlers{

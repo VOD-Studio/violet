@@ -186,8 +186,9 @@ func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, e
 func (r *PostRepository) Save(ctx context.Context, p *post.Post) error {
 	po := postToPO(p)
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 保存文章基本信息
-		if err := tx.Save(&po).Error; err != nil {
+		// Omit 章节归属三列：post 聚合不感知书，全量 Save 不得覆盖
+		// series 域写入的归属（PRD-0021，否则发布/编辑会清掉挂章）。
+		if err := tx.Omit("series_id", "series_section_id", "chapter_order").Save(&po).Error; err != nil {
 			return domainshared.Internal("保存文章失败", err)
 		}
 		// 同步标签关联：按 name 查 tag → 替换关联

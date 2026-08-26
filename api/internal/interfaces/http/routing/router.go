@@ -80,6 +80,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 友链（前台公开：列表 + 申请 + 发码）
 		registerFriendLinkRoutes(v1, d)
 
+		// 系列书（前台公开：书架 + 详情 + 章节上下文）
+		registerSeriesRoutes(v1, d)
+
 		// 代码运行器（登录可执行，SSE 用 GET 绕过 CSRF）
 		registerCodeRunnerRoutes(v1, d)
 
@@ -145,6 +148,17 @@ func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
 		r.Get("/search", postH.SearchPublished)
 		r.Get("/{slug}", postH.GetBySlug)
 		r.Post("/{id}/view", postH.IncrementView)
+	})
+}
+
+// registerSeriesRoutes 注册 /series 前台公开路由（PRD-0021）。
+// 章节上下文按文章 slug 反查（阅读器壳与文章页归属标注消费）。
+func registerSeriesRoutes(v1 chi.Router, d *Deps) {
+	seriesH := d.Series
+	v1.Route("/series", func(r chi.Router) {
+		r.Get("/", seriesH.ListPublished)
+		r.Get("/context/{postSlug}", seriesH.GetChapterContext)
+		r.Get("/{slug}", seriesH.GetBySlug)
 	})
 }
 
