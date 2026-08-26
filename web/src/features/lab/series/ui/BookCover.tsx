@@ -54,7 +54,7 @@ function CoverShell({
 			</div>
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1.5 bg-linear-to-r from-black/35 to-transparent"
+				className="pointer-events-none absolute inset-y-0 left-0 z-10 w-2 bg-linear-to-r from-black/35 to-transparent"
 			/>
 		</div>
 	);
@@ -70,31 +70,32 @@ export function BookCover({ book, className }: { book: MockBook; className?: str
 
 		return (
 			<CoverShell book={book} className={className}>
-				<div className="relative h-full w-full overflow-hidden bg-foreground text-background">
-					<div className="pointer-events-none absolute inset-3 border border-background/25" />
+				<div className="relative h-full w-full overflow-hidden bg-stone-100 text-stone-900">
+					<div className="pointer-events-none absolute inset-3 border border-stone-900/20" />
 					<div
 						aria-hidden="true"
-						className="pointer-events-none absolute -top-2 right-0 font-serif text-7xl leading-none text-background/10"
+						className="pointer-events-none absolute -top-2 right-0 font-serif text-7xl leading-none text-stone-900/10"
 					>
 						{coverMark}
 					</div>
+					<div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1 bg-linear-to-r from-stone-900/25 to-transparent" />
 					<div className="relative flex h-full flex-col p-4">
-						<div className="flex items-center justify-between border-b border-background/25 pb-2 font-mono text-[9px] tracking-[0.2em] text-background/65 uppercase">
+						<div className="flex items-center justify-between border-b border-stone-900/20 pb-2 font-mono text-[9px] tracking-[0.2em] text-stone-900/60 uppercase">
 							<span>Violet Editions</span>
 							<span>{statusLabel(book)}</span>
 						</div>
 						<div className="flex flex-1 flex-col justify-center">
-							<p className="font-mono text-[9px] tracking-[0.2em] text-background/50 uppercase">
+							<p className="font-mono text-[9px] tracking-[0.2em] text-stone-900/45 uppercase">
 								Online Book
 							</p>
 							<h2 className="mt-3 line-clamp-3 font-serif text-2xl leading-tight">
 								{book.title}
 							</h2>
-							<p className="mt-2 line-clamp-3 font-serif text-sm leading-snug text-background/65 italic">
+							<p className="mt-2 line-clamp-3 font-serif text-sm leading-snug text-stone-900/60 italic">
 								{book.subtitle}
 							</p>
 						</div>
-						<div className="flex items-end justify-between border-t border-background/25 pt-3 font-mono text-[9px] text-background/55 uppercase">
+						<div className="flex items-end justify-between border-t border-stone-900/20 pt-3 font-mono text-[9px] text-stone-900/50 uppercase">
 							<span>{book.author}</span>
 							<span>Technical Series</span>
 						</div>
