@@ -24,7 +24,7 @@ export interface SegmentedItem<V extends string = string> {
 	disabled?: boolean;
 }
 
-interface SegmentedProps<V extends string = string> {
+export interface SegmentedProps<V extends string = string> {
 	/** 当前选中值（受控） */
 	value: V;
 	/** 值变化回调 */
@@ -35,6 +35,8 @@ interface SegmentedProps<V extends string = string> {
 	size?: "sm" | "default";
 	/** 块级模式：宽度填满容器，各段等分 */
 	block?: boolean;
+	/** 外轮廓形状，默认 rounded */
+	rounded?: "default" | "full";
 	/** 自定义类名 */
 	className?: string;
 }
@@ -72,6 +74,7 @@ export function Segmented<V extends string = string>({
 	segments,
 	size = "sm",
 	block = false,
+	rounded = "default",
 	className,
 }: SegmentedProps<V>) {
 	const activeIndex = Math.max(
@@ -113,7 +116,8 @@ export function Segmented<V extends string = string>({
 			ref={containerRef}
 			data-slot="segmented"
 			className={cn(
-				"relative flex items-stretch gap-0.5 rounded-lg bg-muted p-0.5 text-muted-foreground",
+				"relative flex items-stretch gap-0.5 bg-muted p-0.5 text-muted-foreground",
+				rounded === "full" ? "rounded-full" : "rounded-lg",
 				block ? "w-full" : "inline-flex w-fit",
 				sizeMap[size],
 				className,
@@ -121,7 +125,10 @@ export function Segmented<V extends string = string>({
 		>
 			<span
 				aria-hidden="true"
-				className="absolute top-0.5 bottom-0.5 rounded-[calc(var(--radius-lg)-2px)] bg-background shadow-sm ring-1 ring-black/5 transition-[left,width] duration-200 ease-out dark:ring-white/10"
+				className={cn(
+					"absolute top-0.5 bottom-0.5 bg-background shadow-sm ring-1 ring-black/5 transition-[left,width] duration-200 ease-out dark:ring-white/10",
+					rounded === "full" ? "rounded-full" : "rounded-[calc(var(--radius-lg)-2px)]",
+				)}
 				style={sliderStyle}
 			/>
 			{segments.map((seg, i) => {
@@ -134,7 +141,8 @@ export function Segmented<V extends string = string>({
 						disabled={seg.disabled}
 						onClick={() => onValueChange(seg.value)}
 						className={cn(
-							"relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+							"relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+							rounded === "full" ? "rounded-full" : "rounded-md",
 							block && "flex-1",
 							isActive
 								? "text-foreground"
