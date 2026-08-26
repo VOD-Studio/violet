@@ -1,11 +1,13 @@
+import type { ReactNode } from "react";
+
 import { cn } from "@shared/lib/utils";
 import type { MockBook } from "../model/mock";
 
 const COVER_PLANE =
-	"absolute inset-y-0 right-1 bottom-1 left-0 overflow-hidden rounded-sm shadow-lg [backface-visibility:hidden]";
+	"absolute inset-y-0 right-2 bottom-2 left-0 overflow-hidden rounded-sm shadow-xl [backface-visibility:hidden]";
 
 const COVER_PLANE_STYLE = {
-	transform: "rotateY(-5deg)",
+	transform: "rotateY(-7deg)",
 	transformOrigin: "left center",
 	transformStyle: "preserve-3d",
 } as const;
@@ -15,44 +17,73 @@ function CoverEdges() {
 		<>
 			<div
 				aria-hidden="true"
-				className="absolute inset-y-1 right-0 w-2 rounded-r-sm bg-stone-200 shadow-sm"
+				className="absolute inset-y-1 right-0 z-0 w-3 rounded-r-sm border border-stone-400/50 bg-stone-200 shadow-sm"
 			>
-				<span className="absolute inset-y-1 left-1/2 w-px bg-stone-500/40" />
-				<span className="absolute inset-y-2 left-1/4 w-px bg-stone-500/25" />
+				<span className="absolute inset-y-2 left-1/3 w-px bg-stone-500/40" />
+				<span className="absolute inset-y-2 left-2/3 w-px bg-stone-500/25" />
 			</div>
 			<div
 				aria-hidden="true"
-				className="absolute right-1 bottom-0 left-1 h-1.5 rounded-b-sm bg-stone-200 shadow-sm"
+				className="absolute right-1 bottom-0 left-1 z-0 h-2 rounded-b-sm border border-stone-400/50 bg-stone-200 shadow-sm"
 			>
-				<span className="absolute inset-x-1 top-1/2 h-px bg-stone-500/40" />
+				<span className="absolute inset-x-2 top-1/3 h-px bg-stone-500/35" />
+				<span className="absolute inset-x-2 top-2/3 h-px bg-stone-500/20" />
 			</div>
 		</>
 	);
 }
 
-export function BookCover({ book, className }: { book: MockBook; className?: string }) {
-	const label = `${book.title}封面`;
-
-	if (!book.coverUrl) {
-		return (
+function CoverShell({
+	book,
+	className,
+	children,
+}: {
+	book: MockBook;
+	className?: string;
+	children: ReactNode;
+}) {
+	return (
+		<div
+			role="img"
+			aria-label={`${book.title}封面`}
+			className={cn("relative isolate aspect-2/3 [perspective:900px]", className)}
+		>
+			<CoverEdges />
+			<div className={COVER_PLANE} style={COVER_PLANE_STYLE}>
+				{children}
+			</div>
 			<div
-				role="img"
-				aria-label={label}
-				className={cn("relative isolate aspect-2/3 [perspective:900px]", className)}
-			>
-				<CoverEdges />
-				<div
-					className={cn(COVER_PLANE, "bg-foreground text-background")}
-					style={COVER_PLANE_STYLE}
-				>
-					<div className="pointer-events-none absolute inset-2 border border-background/20" />
-					<div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1 bg-linear-to-r from-black/20 to-transparent" />
-					<div className="relative flex h-full flex-col justify-between p-4">
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1.5 bg-linear-to-r from-black/35 to-transparent"
+			/>
+		</div>
+	);
+}
+
+function statusLabel(book: MockBook) {
+	return book.status === "ongoing" ? "Serial" : "Complete";
+}
+
+export function BookCover({ book, className }: { book: MockBook; className?: string }) {
+	if (!book.coverUrl) {
+		const coverMark = book.title.slice(0, 2);
+
+		return (
+			<CoverShell book={book} className={className}>
+				<div className="relative h-full w-full overflow-hidden bg-foreground text-background">
+					<div className="pointer-events-none absolute inset-3 border border-background/25" />
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute -top-2 right-0 font-serif text-7xl leading-none text-background/10"
+					>
+						{coverMark}
+					</div>
+					<div className="relative flex h-full flex-col p-4">
 						<div className="flex items-center justify-between border-b border-background/25 pb-2 font-mono text-[9px] tracking-[0.2em] text-background/65 uppercase">
-							<span>Violet</span>
-							<span>Editions</span>
+							<span>Violet Editions</span>
+							<span>{statusLabel(book)}</span>
 						</div>
-						<div className="my-6">
+						<div className="flex flex-1 flex-col justify-center">
 							<p className="font-mono text-[9px] tracking-[0.2em] text-background/50 uppercase">
 								Online Book
 							</p>
@@ -65,41 +96,36 @@ export function BookCover({ book, className }: { book: MockBook; className?: str
 						</div>
 						<div className="flex items-end justify-between border-t border-background/25 pt-3 font-mono text-[9px] text-background/55 uppercase">
 							<span>{book.author}</span>
-							<span>{book.status === "ongoing" ? "Serial" : "Complete"}</span>
+							<span>Technical Series</span>
 						</div>
 					</div>
 				</div>
-			</div>
+			</CoverShell>
 		);
 	}
 
 	return (
-		<div
-			role="img"
-			aria-label={label}
-			className={cn("relative isolate aspect-2/3 [perspective:900px]", className)}
-		>
-			<CoverEdges />
-			<div className={cn(COVER_PLANE, "bg-muted")} style={COVER_PLANE_STYLE}>
+		<CoverShell book={book} className={className}>
+			<div className="relative h-full w-full bg-muted">
 				<img
 					src={book.coverUrl}
 					alt=""
 					loading="lazy"
 					className="size-full object-cover"
 				/>
-				<div className="pointer-events-none absolute inset-2 border border-white/35" />
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
-				<div className="absolute inset-x-3 bottom-3 text-white">
-					<p className="font-mono text-[8px] tracking-[0.2em] text-white/75 uppercase">
-						Violet Editions
+				<div className="pointer-events-none absolute inset-3 border border-white/40" />
+				<div className="absolute inset-x-4 top-4 flex items-center justify-between font-mono text-[8px] tracking-[0.2em] text-white/80 uppercase drop-shadow-sm">
+					<span>Violet Editions</span>
+					<span>{statusLabel(book)}</span>
+				</div>
+				<div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-black/85 via-black/30 to-transparent" />
+				<div className="absolute inset-x-4 bottom-4 text-white drop-shadow-sm">
+					<p className="line-clamp-2 font-serif text-base leading-tight">{book.title}</p>
+					<p className="mt-1 line-clamp-2 font-serif text-[10px] leading-snug text-white/75 italic">
+						{book.subtitle}
 					</p>
-					<p className="mt-1 line-clamp-2 font-serif text-sm leading-tight">{book.title}</p>
 				</div>
 			</div>
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1 bg-linear-to-r from-black/30 to-transparent"
-			/>
-		</div>
+		</CoverShell>
 	);
 }
