@@ -17,6 +17,7 @@ import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
+import { Route as SeriesIndexRouteImport } from './routes/series.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as LabIndexRouteImport } from './routes/lab.index'
@@ -25,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as UsersUsernameRouteImport } from './routes/users/$username'
 import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
+import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabSeriesRouteImport } from './routes/lab.series'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
@@ -40,6 +42,7 @@ import { Route as AdminTagsRouteImport } from './routes/admin.tags'
 import { Route as AdminSystemRouteImport } from './routes/admin.system'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminSeriesRouteImport } from './routes/admin.series'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
@@ -51,6 +54,7 @@ import { Route as AdminFriendLinksRouteImport } from './routes/admin.friend-link
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
+import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
@@ -61,6 +65,7 @@ import { Route as AdminSettingsGeneralRouteImport } from './routes/admin.setting
 import { Route as AdminSettingsCodeRunnerRouteImport } from './routes/admin.settings.code-runner'
 import { Route as AdminSettingsAuthRouteImport } from './routes/admin.settings.auth'
 import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.about'
+import { Route as AdminSeriesIdRouteImport } from './routes/admin.series.$id'
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
 
@@ -104,6 +109,11 @@ const TweetsIndexRoute = TweetsIndexRouteImport.update({
   path: '/tweets/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SeriesIndexRoute = SeriesIndexRouteImport.update({
+  id: '/series/',
+  path: '/series/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -142,6 +152,11 @@ const UsersUsernameRoute = UsersUsernameRouteImport.update({
 const TweetsIdRoute = TweetsIdRouteImport.update({
   id: '/tweets/$id',
   path: '/tweets/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SeriesSlugRoute = SeriesSlugRouteImport.update({
+  id: '/series/$slug',
+  path: '/series/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabThemeRoute = LabThemeRouteImport.update({
@@ -219,6 +234,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSeriesRoute = AdminSeriesRouteImport.update({
+  id: '/series',
+  path: '/series',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -274,6 +294,11 @@ const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   path: '/announcements',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSeriesIndexRoute = AdminSeriesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSeriesRoute,
+} as any)
 const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -324,6 +349,11 @@ const AdminSettingsAboutRoute = AdminSettingsAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
+const AdminSeriesIdRoute = AdminSeriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminSeriesRoute,
+} as any)
 const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -354,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/series': typeof AdminSeriesRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/system': typeof AdminSystemRoute
@@ -369,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
+  '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
   '/about/': typeof AboutIndexRoute
@@ -377,9 +409,11 @@ export interface FileRoutesByFullPath {
   '/lab/': typeof LabIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/series/': typeof SeriesIndexRoute
   '/tweets/': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/series/$id': typeof AdminSeriesIdRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
   '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
@@ -390,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
+  '/admin/series/': typeof AdminSeriesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -423,6 +458,7 @@ export interface FileRoutesByTo {
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
+  '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
   '/about': typeof AboutIndexRoute
@@ -431,9 +467,11 @@ export interface FileRoutesByTo {
   '/lab': typeof LabIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/series': typeof SeriesIndexRoute
   '/tweets': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/series/$id': typeof AdminSeriesIdRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
   '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
@@ -444,6 +482,7 @@ export interface FileRoutesByTo {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts': typeof AdminPostsIndexRoute
+  '/admin/series': typeof AdminSeriesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -465,6 +504,7 @@ export interface FileRoutesById {
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/series': typeof AdminSeriesRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/system': typeof AdminSystemRoute
@@ -480,6 +520,7 @@ export interface FileRoutesById {
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
+  '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
   '/about/': typeof AboutIndexRoute
@@ -488,9 +529,11 @@ export interface FileRoutesById {
   '/lab/': typeof LabIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/series/': typeof SeriesIndexRoute
   '/tweets/': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/series/$id': typeof AdminSeriesIdRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
   '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
@@ -501,6 +544,7 @@ export interface FileRoutesById {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
+  '/admin/series/': typeof AdminSeriesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -523,6 +567,7 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/admin/projects'
     | '/admin/roles'
+    | '/admin/series'
     | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/system'
@@ -538,6 +583,7 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/series'
     | '/lab/theme'
+    | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
     | '/about/'
@@ -546,9 +592,11 @@ export interface FileRouteTypes {
     | '/lab/'
     | '/profile/'
     | '/projects/'
+    | '/series/'
     | '/tweets/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/series/$id'
     | '/admin/settings/about'
     | '/admin/settings/auth'
     | '/admin/settings/code-runner'
@@ -559,6 +607,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
     | '/admin/posts/'
+    | '/admin/series/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -592,6 +641,7 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/series'
     | '/lab/theme'
+    | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
     | '/about'
@@ -600,9 +650,11 @@ export interface FileRouteTypes {
     | '/lab'
     | '/profile'
     | '/projects'
+    | '/series'
     | '/tweets'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/series/$id'
     | '/admin/settings/about'
     | '/admin/settings/auth'
     | '/admin/settings/code-runner'
@@ -613,6 +665,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
     | '/admin/posts'
+    | '/admin/series'
   id:
     | '__root__'
     | '/'
@@ -633,6 +686,7 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/admin/projects'
     | '/admin/roles'
+    | '/admin/series'
     | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/system'
@@ -648,6 +702,7 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/series'
     | '/lab/theme'
+    | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
     | '/about/'
@@ -656,9 +711,11 @@ export interface FileRouteTypes {
     | '/lab/'
     | '/profile/'
     | '/projects/'
+    | '/series/'
     | '/tweets/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/series/$id'
     | '/admin/settings/about'
     | '/admin/settings/auth'
     | '/admin/settings/code-runner'
@@ -669,6 +726,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
     | '/admin/posts/'
+    | '/admin/series/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -689,6 +747,7 @@ export interface RootRouteChildren {
   LabNavRoute: typeof LabNavRoute
   LabSeriesRoute: typeof LabSeriesRoute
   LabThemeRoute: typeof LabThemeRoute
+  SeriesSlugRoute: typeof SeriesSlugRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
   AboutIndexRoute: typeof AboutIndexRoute
@@ -696,6 +755,7 @@ export interface RootRouteChildren {
   LabIndexRoute: typeof LabIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  SeriesIndexRoute: typeof SeriesIndexRoute
   TweetsIndexRoute: typeof TweetsIndexRoute
   AuthGithubCallbackRoute: typeof AuthGithubCallbackRoute
   TweetsTopicsTagRoute: typeof TweetsTopicsTagRoute
@@ -759,6 +819,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TweetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/series/': {
+      id: '/series/'
+      path: '/series'
+      fullPath: '/series/'
+      preLoaderRoute: typeof SeriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
@@ -813,6 +880,13 @@ declare module '@tanstack/react-router' {
       path: '/tweets/$id'
       fullPath: '/tweets/$id'
       preLoaderRoute: typeof TweetsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/series/$slug': {
+      id: '/series/$slug'
+      path: '/series/$slug'
+      fullPath: '/series/$slug'
+      preLoaderRoute: typeof SeriesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/theme': {
@@ -920,6 +994,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/series': {
+      id: '/admin/series'
+      path: '/series'
+      fullPath: '/admin/series'
+      preLoaderRoute: typeof AdminSeriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/roles': {
       id: '/admin/roles'
       path: '/roles'
@@ -997,6 +1078,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/series/': {
+      id: '/admin/series/'
+      path: '/'
+      fullPath: '/admin/series/'
+      preLoaderRoute: typeof AdminSeriesIndexRouteImport
+      parentRoute: typeof AdminSeriesRoute
+    }
     '/admin/posts/': {
       id: '/admin/posts/'
       path: '/'
@@ -1067,6 +1155,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsAboutRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
+    '/admin/series/$id': {
+      id: '/admin/series/$id'
+      path: '/$id'
+      fullPath: '/admin/series/$id'
+      preLoaderRoute: typeof AdminSeriesIdRouteImport
+      parentRoute: typeof AdminSeriesRoute
+    }
     '/admin/posts/new': {
       id: '/admin/posts/new'
       path: '/new'
@@ -1098,6 +1193,20 @@ const AdminPostsRouteChildren: AdminPostsRouteChildren = {
 
 const AdminPostsRouteWithChildren = AdminPostsRoute._addFileChildren(
   AdminPostsRouteChildren,
+)
+
+interface AdminSeriesRouteChildren {
+  AdminSeriesIdRoute: typeof AdminSeriesIdRoute
+  AdminSeriesIndexRoute: typeof AdminSeriesIndexRoute
+}
+
+const AdminSeriesRouteChildren: AdminSeriesRouteChildren = {
+  AdminSeriesIdRoute: AdminSeriesIdRoute,
+  AdminSeriesIndexRoute: AdminSeriesIndexRoute,
+}
+
+const AdminSeriesRouteWithChildren = AdminSeriesRoute._addFileChildren(
+  AdminSeriesRouteChildren,
 )
 
 interface AdminSettingsRouteChildren {
@@ -1136,6 +1245,7 @@ interface AdminRouteChildren {
   AdminPostsRoute: typeof AdminPostsRouteWithChildren
   AdminProjectsRoute: typeof AdminProjectsRoute
   AdminRolesRoute: typeof AdminRolesRoute
+  AdminSeriesRoute: typeof AdminSeriesRouteWithChildren
   AdminSettingsRoute: typeof AdminSettingsRouteWithChildren
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminSystemRoute: typeof AdminSystemRoute
@@ -1156,6 +1266,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPostsRoute: AdminPostsRouteWithChildren,
   AdminProjectsRoute: AdminProjectsRoute,
   AdminRolesRoute: AdminRolesRoute,
+  AdminSeriesRoute: AdminSeriesRouteWithChildren,
   AdminSettingsRoute: AdminSettingsRouteWithChildren,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminSystemRoute: AdminSystemRoute,
@@ -1184,6 +1295,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabNavRoute: LabNavRoute,
   LabSeriesRoute: LabSeriesRoute,
   LabThemeRoute: LabThemeRoute,
+  SeriesSlugRoute: SeriesSlugRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,
   AboutIndexRoute: AboutIndexRoute,
@@ -1191,6 +1303,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabIndexRoute: LabIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  SeriesIndexRoute: SeriesIndexRoute,
   TweetsIndexRoute: TweetsIndexRoute,
   AuthGithubCallbackRoute: AuthGithubCallbackRoute,
   TweetsTopicsTagRoute: TweetsTopicsTagRoute,
@@ -1198,3 +1311,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
