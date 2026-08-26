@@ -13,7 +13,7 @@ const serif = "font-serif";
 
 function Shelf() {
 	return (
-		<div className="min-h-[760px] rounded-sm bg-[#f2eee5] px-7 py-12 text-[#27231d] md:px-14 dark:bg-[#1d1b17] dark:text-[#eee9df]">
+		<div className="min-h-[760px] rounded-sm bg-background px-7 py-12 text-foreground md:px-14">
 			<header className="mb-16 border-y border-current/25 py-8 text-center">
 				<p className="font-mono text-[10px] tracking-[0.35em] opacity-50 uppercase">
 					Violet Editions · Online Books
@@ -55,7 +55,7 @@ function CatalogueRow({ book, index }: { book: MockBook; index: number }) {
 
 function Detail() {
 	return (
-		<div className="min-h-[800px] rounded-sm bg-[#f2eee5] px-7 py-12 text-[#27231d] md:px-16 dark:bg-[#1d1b17] dark:text-[#eee9df]">
+		<div className="min-h-[800px] rounded-sm bg-background px-7 py-12 text-foreground md:px-16">
 			<p className="mb-12 text-center font-mono text-[10px] tracking-[0.35em] opacity-45 uppercase">
 				Violet Editions · No. 001
 			</p>
@@ -117,7 +117,7 @@ function Detail() {
 
 function Reader() {
 	return (
-		<div className="min-h-[850px] rounded-sm bg-[#f7f3eb] text-[#27231d] dark:bg-[#1d1b17] dark:text-[#eee9df]">
+		<div className="min-h-[850px] rounded-sm bg-background text-foreground">
 			<header className="flex items-center justify-between border-b border-current/15 px-8 py-4 font-mono text-[10px] tracking-[0.2em] opacity-45 uppercase">
 				<span>{JAVA_BOOK.title}</span>
 				<span>Chapter {CURRENT_CHAPTER.no}</span>

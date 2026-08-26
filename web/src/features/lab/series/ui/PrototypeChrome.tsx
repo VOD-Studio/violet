@@ -78,12 +78,12 @@ export function VariantSwitcher({
 
 	const active = VARIANTS[index];
 	return (
-		<div className="fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit items-center gap-1 rounded-full bg-zinc-950 p-1.5 text-white shadow-2xl ring-1 ring-white/15">
+		<div className="fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit items-center gap-1 rounded-full bg-foreground p-1.5 text-background shadow-2xl ring-1 ring-foreground/15">
 			<button
 				type="button"
 				onClick={() => move(-1)}
 				aria-label="上一个设计方向"
-				className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-white"
+				className="rounded-full p-2 text-background/70 hover:bg-background/10 hover:text-background"
 			>
 				<ArrowLeft className="size-4" />
 			</button>
@@ -94,7 +94,7 @@ export function VariantSwitcher({
 				type="button"
 				onClick={() => move(1)}
 				aria-label="下一个设计方向"
-				className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-white"
+				className="rounded-full p-2 text-background/70 hover:bg-background/10 hover:text-background"
 			>
 				<ArrowRight className="size-4" />
 			</button>

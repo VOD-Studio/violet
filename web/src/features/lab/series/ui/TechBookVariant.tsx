@@ -165,7 +165,7 @@ function Reader() {
 						<p>
 							继承让一个类型获得另一个类型的行为。多态真正解决的是调用方只依赖稳定契约，而不关心运行时对象的具体身份。
 						</p>
-						<pre className="overflow-x-auto rounded-xl bg-zinc-950 p-5 text-sm text-zinc-100">
+						<pre className="overflow-x-auto rounded-xl bg-foreground p-5 text-sm text-background">
 							<code>{`Animal animal = new Cat();\nanimal.speak(); // 动态分派到 Cat.speak`}</code>
 						</pre>
 						<h2 className="text-2xl font-semibold">组合为什么更稳</h2>
