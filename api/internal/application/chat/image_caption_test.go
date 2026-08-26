@@ -146,3 +146,48 @@ func TestReferencePreviewStripsImageTokens(t *testing.T) {
 		t.Fatalf("reference preview = %q, want image tokens stripped", reply.ReplyTo.Content)
 	}
 }
+
+// TestReferencePreviewStripsEmojiTokens 回归：自定义表情占位符 [name:uuid]（含系统表情
+// [name]）与图片占位符同形（都是方括号包裹），引用预览没有 custom_emote 解析结果可查，
+// 裸吐 token 文本不可读，必须一并剥离（见 messageReferenceDTO/stripChatEmojiTokens）。
+func TestReferencePreviewStripsEmojiTokens(t *testing.T) {
+	conversationID := domainshared.NewID()
+	userID := domainshared.NewID()
+	mediaID := domainshared.NewID()
+	svc, repo := newImageCaptionService(t, newChatImageFile(t, mediaID, userID), userID, conversationID)
+
+	image, err := svc.SendMessage(context.Background(), SendMessageInput{
+		UserID:         userID,
+		ConversationID: conversationID,
+		Type:           domainchat.MessageImage,
+		Content:        "看[1:" + domainshared.NewID().String() + "]图",
+		MediaID:        mediaID,
+		IdempotencyKey: "image-caption-5",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo.target = repo.saved
+	imageID, err := domainshared.ParseID(image.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reply, err := svc.SendMessage(context.Background(), SendMessageInput{
+		UserID:         userID,
+		ConversationID: conversationID,
+		Type:           domainchat.MessageText,
+		Content:        "收到",
+		ReplyToID:      imageID,
+		IdempotencyKey: "image-caption-6",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply.ReplyTo == nil {
+		t.Fatal("expected reply preview")
+	}
+	if reply.ReplyTo.Content != "看图" {
+		t.Fatalf("reference preview = %q, want emoji token stripped", reply.ReplyTo.Content)
+	}
+}

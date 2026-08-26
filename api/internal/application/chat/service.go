@@ -1166,7 +1166,7 @@ func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.M
 		return dto, nil
 	}
 	if message.HasTextContent() {
-		dto.Content = truncatePreview(stripChatImageTokens(message.Content()), 120)
+		dto.Content = truncatePreview(stripChatEmojiTokens(stripChatImageTokens(message.Content())), 120)
 	}
 	if message.MediaID() != nil {
 		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
@@ -1207,6 +1207,14 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID) (
 // stripChatImageTokens 剥离内联图片占位符并修剪空白，供预览等人类可读场景使用。
 func stripChatImageTokens(content string) string {
 	return strings.TrimSpace(appshared.WithoutInlineImagePlaceholders(content))
+}
+
+// stripChatEmojiTokens 剥离正文中的表情占位符（系统 [name] 或自定义 [name:uuid]）。
+// 引用预览（MessageReferenceDTO）不携带 custom_emote 解析结果，无法把占位符还原成
+// 表情图片；裸吐占位符文本（如 "[1:<uuid>]"）对用户不可读，剥离后只留环绕文字，
+// 与图片占位符的预览处理方式一致。
+func stripChatEmojiTokens(content string) string {
+	return strings.TrimSpace(customEmojiBodyPattern.ReplaceAllString(content, ""))
 }
 
 func truncatePreview(content string, maxRunes int) string {
