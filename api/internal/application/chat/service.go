@@ -85,8 +85,8 @@ type SendMessageInput struct {
 	Type domainchat.MessageType
 	// Content 文本内容。
 	Content string
-	// MediaID 图片媒体 ID。
-	MediaID domainshared.ID
+	// MediaIDs 图片媒体 ID 列表，按输入流中的占位符顺序排列。
+	MediaIDs []domainshared.ID
 	// SharedTweetID 分享消息引用的推文 ID；零值表示不分享推文。
 	SharedTweetID domainshared.ID
 	// ReplyToID 被引用的同会话消息 ID；零值表示不引用消息。
@@ -211,8 +211,8 @@ type MessageDTO struct {
 	// CustomEmote 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符
 	// （含方括号，如 "[mycat:<uuid>]"）。系统表情不在此列，继续走客户端全局目录。
 	CustomEmote map[string]CustomEmojiRefDTO `json:"custom_emote,omitempty"`
-	// Media 图片媒体；文本消息为空。
-	Media *MediaDTO `json:"media,omitempty"`
+	// Media 图片媒体列表，按输入流顺序；文本消息为空。
+	Media []MediaDTO `json:"media,omitempty"`
 	// SharedTweet 分享推文的动态快照；被分享推文物理删除后为已删除占位。
 	SharedTweet *SharedTweetDTO `json:"shared_tweet,omitempty"`
 	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
@@ -237,7 +237,7 @@ type MessageReferenceDTO struct {
 	Type string `json:"type"`
 	// Content 被引用文本的最多 120 个 Unicode 字符预览。
 	Content string `json:"content,omitempty"`
-	// Media 被引用图片的媒体预览。
+	// Media 被引用图片的首图媒体预览。
 	Media *MediaDTO `json:"media,omitempty"`
 	// IsDeleted 原消息是否已被管理员删除。
 	IsDeleted bool `json:"is_deleted"`
@@ -756,15 +756,15 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	}
 	now := s.now()
 	var message *domainchat.Message
-	var file *domainupload.File
+	var files []*domainupload.File
 	var err error
 	switch in.Type {
 	case domainchat.MessageText:
 		message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now, replyToID)
 	case domainchat.MessageImage:
-		file, err = s.chatImage(ctx, in.MediaID, in.UserID)
+		files, err = s.chatImages(ctx, in.MediaIDs, in.UserID)
 		if err == nil {
-			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaID, in.Content, in.IdempotencyKey, now, replyToID)
+			message, err = domainchat.NewImageMessage(in.ConversationID, in.UserID, in.MediaIDs, in.Content, in.IdempotencyKey, now, replyToID)
 		}
 	case domainchat.MessageTweetShare:
 		if _, err = s.tweets.FindByID(ctx, in.SharedTweetID); err == nil {
@@ -781,8 +781,11 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	recipients := memberIDs(members)
-	if file != nil {
+	for i, file := range files {
 		if err := s.files.UpdateRefCount(ctx, file.ID(), 1); err != nil {
+			for _, previous := range files[:i] {
+				_ = s.files.UpdateRefCount(ctx, previous.ID(), -1)
+			}
 			return MessageDTO{}, err
 		}
 	}
@@ -795,7 +798,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	}
 	events, err := s.repo.SaveMessage(ctx, message, recipients, map[string]any{"preview": preview})
 	if err != nil {
-		if file != nil {
+		for _, file := range files {
 			_ = s.files.UpdateRefCount(ctx, file.ID(), -1)
 		}
 		if existing, findErr := s.repo.FindMessageByIdempotency(ctx, in.ConversationID, in.UserID, in.IdempotencyKey); findErr == nil {
@@ -863,8 +866,8 @@ func (s *Service) DeleteMessage(ctx context.Context, adminID, conversationID, me
 			return err
 		}
 	}
-	if message.MediaID() != nil {
-		_ = s.files.UpdateRefCount(ctx, *message.MediaID(), -1)
+	for _, mediaID := range message.MediaIDs() {
+		_ = s.files.UpdateRefCount(ctx, mediaID, -1)
 	}
 	members, err := s.repo.ListMembers(ctx, conversationID, false)
 	if err != nil {
@@ -1076,11 +1079,12 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 			return MessageDTO{}, err
 		}
 	}
-	if message.MediaID() != nil {
-		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
+	for _, mediaID := range message.MediaIDs() {
+		media, err := s.mediaDTO(ctx, mediaID)
 		if err != nil {
 			return MessageDTO{}, err
 		}
+		dto.Media = append(dto.Media, *media)
 	}
 	if message.ReplyToID() != nil {
 		target, err := s.repo.FindMessage(ctx, message.ConversationID(), *message.ReplyToID())
@@ -1168,8 +1172,8 @@ func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.M
 	if message.HasTextContent() {
 		dto.Content = truncatePreview(stripChatEmojiTokens(stripChatImageTokens(message.Content())), 120)
 	}
-	if message.MediaID() != nil {
-		dto.Media, err = s.mediaDTO(ctx, *message.MediaID())
+	if ids := message.MediaIDs(); len(ids) > 0 {
+		dto.Media, err = s.mediaDTO(ctx, ids[0])
 		if err != nil {
 			return nil, err
 		}
@@ -1223,6 +1227,22 @@ func truncatePreview(content string, maxRunes int) string {
 		return content
 	}
 	return string(runes[:maxRunes]) + "…"
+}
+
+// chatImages 按入参顺序校验并加载全部图片媒体；空列表与零值 ID 同样拒绝。
+func (s *Service) chatImages(ctx context.Context, mediaIDs []domainshared.ID, userID domainshared.ID) ([]*domainupload.File, error) {
+	if len(mediaIDs) == 0 {
+		return nil, domainshared.BadRequest("图片媒体不能为空")
+	}
+	files := make([]*domainupload.File, 0, len(mediaIDs))
+	for _, mediaID := range mediaIDs {
+		file, err := s.chatImage(ctx, mediaID, userID)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, file)
+	}
+	return files, nil
 }
 
 func (s *Service) chatImage(ctx context.Context, mediaID, userID domainshared.ID) (*domainupload.File, error) {

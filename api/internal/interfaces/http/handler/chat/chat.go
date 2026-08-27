@@ -330,24 +330,26 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Type          string `json:"type" validate:"required"`
-		Content       string `json:"content"`
-		MediaID       string `json:"media_id"`
-		SharedTweetID string `json:"shared_tweet_id"`
-		ReplyToID     string `json:"reply_to_id"`
+		Type          string   `json:"type" validate:"required"`
+		Content       string   `json:"content"`
+		MediaIDs      []string `json:"media_ids"`
+		SharedTweetID string   `json:"shared_tweet_id"`
+		ReplyToID     string   `json:"reply_to_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	var mediaID, sharedTweetID, replyToID domainshared.ID
-	if req.MediaID != "" {
-		mediaID, err = parsePathID(req.MediaID)
-		if err != nil {
-			response.RespondError(w, r, err)
+	mediaIDs := make([]domainshared.ID, 0, len(req.MediaIDs))
+	for _, raw := range req.MediaIDs {
+		mediaID, parseErr := parsePathID(raw)
+		if parseErr != nil {
+			response.RespondError(w, r, parseErr)
 			return
 		}
+		mediaIDs = append(mediaIDs, mediaID)
 	}
+	var sharedTweetID, replyToID domainshared.ID
 	if req.SharedTweetID != "" {
 		sharedTweetID, err = parsePathID(req.SharedTweetID)
 		if err != nil {
@@ -362,7 +364,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaID: mediaID, SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
+	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaIDs: mediaIDs, SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

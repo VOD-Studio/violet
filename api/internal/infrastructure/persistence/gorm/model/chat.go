@@ -51,7 +51,6 @@ type ChatMessage struct {
 	SenderID       uuid.UUID  `gorm:"type:uuid;column:sender_id;not null" json:"sender_id"`
 	MessageType    string     `gorm:"type:varchar(16);column:message_type;not null" json:"message_type"`
 	Content        string     `gorm:"type:text;not null;default:''" json:"content"`
-	MediaID        *uuid.UUID `gorm:"type:uuid;column:media_id" json:"media_id,omitempty"`
 	SharedTweetID  *uuid.UUID `gorm:"type:uuid;column:shared_tweet_id" json:"shared_tweet_id,omitempty"`
 	ReplyToID      *uuid.UUID `gorm:"type:uuid;column:reply_to_id" json:"reply_to_id,omitempty"`
 	IdempotencyKey string     `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
@@ -63,6 +62,16 @@ type ChatMessage struct {
 
 // TableName 显式指定表名。
 func (ChatMessage) TableName() string { return "chat_messages" }
+
+// ChatMessageMedia 聊天消息图片媒体关联持久化模型；position 为输入流中的占位符顺序。
+type ChatMessageMedia struct {
+	MessageID uuid.UUID `gorm:"type:uuid;column:message_id;primaryKey" json:"message_id"`
+	MediaID   uuid.UUID `gorm:"type:uuid;column:media_id;primaryKey" json:"media_id"`
+	Position  int16     `gorm:"column:position;not null" json:"position"`
+}
+
+// TableName 显式指定表名。
+func (ChatMessageMedia) TableName() string { return "chat_message_media" }
 
 // ChatMessageReaction 聊天消息反应持久化模型。
 type ChatMessageReaction struct {

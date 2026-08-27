@@ -42,11 +42,31 @@ func TestMessageFactoriesEnforcePayloadShapeAndIdempotency(t *testing.T) {
 	_, err = chat.NewTextMessage(conversationID, senderID, "hello", "", now, nil)
 	require.Error(t, err)
 
-	image, err := chat.NewImageMessage(conversationID, senderID, shared.NewID(), "", "retry-3", now, nil)
+	image, err := chat.NewImageMessage(conversationID, senderID, []shared.ID{shared.NewID()}, "", "retry-3", now, nil)
 	require.NoError(t, err)
 	require.Equal(t, chat.MessageImage, image.Type())
-	require.NotNil(t, image.MediaID())
+	require.Len(t, image.MediaIDs(), 1)
 	require.Equal(t, "", image.Content())
+}
+
+func TestNewImageMessageSupportsMultipleMedia(t *testing.T) {
+	now := time.Now()
+	conversationID := shared.NewID()
+	senderID := shared.NewID()
+	mediaA := shared.NewID()
+	mediaB := shared.NewID()
+
+	message, err := chat.NewImageMessage(conversationID, senderID, []shared.ID{mediaA, mediaB}, "", "retry-multi-1", now, nil)
+	require.NoError(t, err)
+	require.Equal(t, []shared.ID{mediaA, mediaB}, message.MediaIDs())
+
+	// 重复媒体按首次出现去重，关联表主键 (message_id, media_id) 不允许重复行。
+	deduped, err := chat.NewImageMessage(conversationID, senderID, []shared.ID{mediaA, mediaB, mediaA}, "", "retry-multi-2", now, nil)
+	require.NoError(t, err)
+	require.Equal(t, []shared.ID{mediaA, mediaB}, deduped.MediaIDs())
+
+	_, err = chat.NewImageMessage(conversationID, senderID, nil, "", "retry-multi-3", now, nil)
+	require.Error(t, err)
 }
 
 func TestNewImageMessageAllowsOptionalCaption(t *testing.T) {
@@ -55,13 +75,12 @@ func TestNewImageMessageAllowsOptionalCaption(t *testing.T) {
 	senderID := shared.NewID()
 	mediaID := shared.NewID()
 
-	captioned, err := chat.NewImageMessage(conversationID, senderID, mediaID, "  快来看  ", "retry-caption-1", now, nil)
+	captioned, err := chat.NewImageMessage(conversationID, senderID, []shared.ID{mediaID}, "  快来看  ", "retry-caption-1", now, nil)
 	require.NoError(t, err)
 	require.Equal(t, "快来看", captioned.Content())
-	require.NotNil(t, captioned.MediaID())
-	require.Equal(t, mediaID, *captioned.MediaID())
+	require.Equal(t, []shared.ID{mediaID}, captioned.MediaIDs())
 
-	withoutCaption, err := chat.NewImageMessage(conversationID, senderID, mediaID, "   ", "retry-caption-2", now, nil)
+	withoutCaption, err := chat.NewImageMessage(conversationID, senderID, []shared.ID{mediaID}, "   ", "retry-caption-2", now, nil)
 	require.NoError(t, err)
 	require.Equal(t, "", withoutCaption.Content())
 
@@ -69,10 +88,10 @@ func TestNewImageMessageAllowsOptionalCaption(t *testing.T) {
 	for i := range overLong {
 		overLong[i] = 'a'
 	}
-	_, err = chat.NewImageMessage(conversationID, senderID, mediaID, string(overLong), "retry-caption-3", now, nil)
+	_, err = chat.NewImageMessage(conversationID, senderID, []shared.ID{mediaID}, string(overLong), "retry-caption-3", now, nil)
 	require.Error(t, err)
 
-	_, err = chat.NewImageMessage(conversationID, senderID, shared.ID{}, "caption", "retry-caption-4", now, nil)
+	_, err = chat.NewImageMessage(conversationID, senderID, []shared.ID{shared.ID{}}, "caption", "retry-caption-4", now, nil)
 	require.Error(t, err)
 
 }
@@ -88,7 +107,7 @@ func TestSystemMessageFactory(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, chat.MessageSystem, message.Type())
 	require.Equal(t, "Alice 加入了群聊", message.Content())
-	require.Nil(t, message.MediaID())
+	require.Empty(t, message.MediaIDs())
 }
 
 func TestMessageDeleteIsOneWay(t *testing.T) {
@@ -132,7 +151,7 @@ func TestNewTweetShareMessageValidatesPayload(t *testing.T) {
 	require.Equal(t, "快来看", share.Content())
 	require.NotNil(t, share.SharedTweetID())
 	require.Equal(t, tweetID, *share.SharedTweetID())
-	require.Nil(t, share.MediaID())
+	require.Empty(t, share.MediaIDs())
 
 	withoutCaption, err := chat.NewTweetShareMessage(conversationID, senderID, tweetID, "   ", "retry-share-2", now, nil)
 	require.NoError(t, err)

@@ -232,7 +232,11 @@ func (r *ChatRepository) FindMessageByIdempotency(ctx context.Context, conversat
 	if err != nil {
 		return nil, err
 	}
-	return messageToDomain(po), nil
+	media, err := r.listMessageMedia(ctx, []uuid.UUID{po.ID})
+	if err != nil {
+		return nil, err
+	}
+	return messageToDomain(po, media[po.ID]), nil
 }
 
 // SaveMessage 保存消息、更新会话时间并写入每个成员的事件流。
@@ -241,6 +245,11 @@ func (r *ChatRepository) SaveMessage(ctx context.Context, message *domainchat.Me
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(messageToPO(message)).Error; err != nil {
 			return err
+		}
+		if media := messageMediaToPOs(message); len(media) > 0 {
+			if err := tx.Create(&media).Error; err != nil {
+				return err
+			}
 		}
 		if err := tx.Model(&model.ChatConversation{}).
 			Where("id = ?", message.ConversationID().UUID()).
@@ -309,9 +318,17 @@ func (r *ChatRepository) ListMessages(ctx context.Context, conversationID domain
 	if err := q.Find(&rows).Error; err != nil {
 		return nil, err
 	}
+	messageIDs := make([]uuid.UUID, 0, len(rows))
+	for _, row := range rows {
+		messageIDs = append(messageIDs, row.ID)
+	}
+	mediaByMessage, err := r.listMessageMedia(ctx, messageIDs)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]*domainchat.Message, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, messageToDomain(row))
+		out = append(out, messageToDomain(row, mediaByMessage[row.ID]))
 	}
 	return out, nil
 }
@@ -326,7 +343,11 @@ func (r *ChatRepository) FindMessage(ctx context.Context, conversationID, messag
 	if err != nil {
 		return nil, err
 	}
-	return messageToDomain(po), nil
+	media, err := r.listMessageMedia(ctx, []uuid.UUID{po.ID})
+	if err != nil {
+		return nil, err
+	}
+	return messageToDomain(po, media[po.ID]), nil
 }
 
 // DeleteMessage 保存管理员删除状态。
@@ -460,11 +481,7 @@ func memberToDomain(po model.ChatConversationMember) *domainchat.Member {
 }
 
 func messageToPO(m *domainchat.Message) *model.ChatMessage {
-	var mediaID, sharedTweetID, replyToID, deletedBy *uuid.UUID
-	if m.MediaID() != nil {
-		u := m.MediaID().UUID()
-		mediaID = &u
-	}
+	var sharedTweetID, replyToID, deletedBy *uuid.UUID
 	if m.SharedTweetID() != nil {
 		u := m.SharedTweetID().UUID()
 		sharedTweetID = &u
@@ -479,17 +496,23 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 	}
 	return &model.ChatMessage{
 		ID: m.ID().UUID(), ConversationID: m.ConversationID().UUID(), SenderID: m.SenderID().UUID(),
-		MessageType: string(m.Type()), Content: m.Content(), MediaID: mediaID, SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
+		MessageType: string(m.Type()), Content: m.Content(), SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
 		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
 	}
 }
 
-func messageToDomain(po model.ChatMessage) *domainchat.Message {
-	var mediaID, sharedTweetID, replyToID, deletedBy *domainshared.ID
-	if po.MediaID != nil {
-		id := domainshared.IDFromUUID(*po.MediaID)
-		mediaID = &id
+// messageMediaToPOs 把消息的图片媒体引用展开为关联表行，position 与 MediaIDs 顺序一致。
+func messageMediaToPOs(m *domainchat.Message) []model.ChatMessageMedia {
+	ids := m.MediaIDs()
+	rows := make([]model.ChatMessageMedia, 0, len(ids))
+	for i, id := range ids {
+		rows = append(rows, model.ChatMessageMedia{MessageID: m.ID().UUID(), MediaID: id.UUID(), Position: int16(i)})
 	}
+	return rows
+}
+
+func messageToDomain(po model.ChatMessage, mediaIDs []domainshared.ID) *domainchat.Message {
+	var sharedTweetID, replyToID, deletedBy *domainshared.ID
 	if po.SharedTweetID != nil {
 		id := domainshared.IDFromUUID(*po.SharedTweetID)
 		sharedTweetID = &id
@@ -502,7 +525,23 @@ func messageToDomain(po model.ChatMessage) *domainchat.Message {
 		id := domainshared.IDFromUUID(*po.DeletedBy)
 		deletedBy = &id
 	}
-	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaID, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.CreatedAt, po.UpdatedAt)
+	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.CreatedAt, po.UpdatedAt)
+}
+
+// listMessageMedia 批量加载消息的图片媒体引用，按 position 升序。
+func (r *ChatRepository) listMessageMedia(ctx context.Context, messageIDs []uuid.UUID) (map[uuid.UUID][]domainshared.ID, error) {
+	out := make(map[uuid.UUID][]domainshared.ID, len(messageIDs))
+	if len(messageIDs) == 0 {
+		return out, nil
+	}
+	var rows []model.ChatMessageMedia
+	if err := r.db.WithContext(ctx).Where("message_id IN ?", messageIDs).Order("position ASC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.MessageID] = append(out[row.MessageID], domainshared.IDFromUUID(row.MediaID))
+	}
+	return out, nil
 }
 
 func readPositionToPO(p *domainchat.ReadPosition) *model.ChatReadPosition {

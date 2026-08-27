@@ -48,7 +48,7 @@ func registerChatPaths(t *openapi3.T) {
 		"type":            reqStr("text、image、system 或 tweet_share"),
 		"content":         optStr("文本内容或分享推文的配文"),
 		"custom_emote":    &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
-		"media":           &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"},
+		"media":           &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeArray}, Items: &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"}}},
 		"shared_tweet":    &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
 		"reply_to":        &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
 		"is_deleted":      optBool("是否已被管理员删除"),
@@ -85,7 +85,7 @@ func registerChatPaths(t *openapi3.T) {
 	registerSchema(t, "ChatSendMessageRequest", openapi3.Schemas{
 		"type":            reqStr("text、image 或 tweet_share"),
 		"content":         optStr("文本消息内容或分享推文的配文"),
-		"media_id":        optStr("图片媒体 ID"),
+		"media_ids":       strArray("图片媒体 ID，按输入流顺序"),
 		"shared_tweet_id": optStr("分享的推文 ID"),
 		"reply_to_id":     optStr("被引用消息 ID"),
 	}, "type")
