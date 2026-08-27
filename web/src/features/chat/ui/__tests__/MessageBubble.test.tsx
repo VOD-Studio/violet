@@ -1,8 +1,8 @@
 /**
  * MessageBubble 组件测试
  *
- * 回归：图片消息正文保留 ![img:id] 占位符（composer 按图切分发送），气泡渲染端
- * 把占位符还原为内联图片，实现与输入框一致的图文环绕；旧格式纯文字说明兼容前置渲染。
+ * 回归：图片消息正文保留 ![img:id] 占位符，气泡渲染端把占位符还原为内联图片，
+ * 实现与输入框一致的图文环绕；旧格式纯文字说明兼容前置渲染。
  */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -67,7 +67,7 @@ function imageMessage(content?: string): ChatMessage {
 		sender,
 		type: "image",
 		content,
-		media,
+		media: [media],
 		reactions: [],
 		is_deleted: false,
 		created_at: "2026-08-25T08:00:00Z",
@@ -104,6 +104,23 @@ describe("MessageBubble", () => {
 		expect(p?.childNodes[2]?.textContent).toBe("456");
 		fireEvent.click(img);
 		expect(onImage).toHaveBeenCalledWith(media);
+	});
+
+	it("一条消息多图：全部占位符各自还原为对应媒体", () => {
+		const onImage = vi.fn();
+		const mediaB = { ...media, id: "media-2", url: "https://cdn.example.com/b.png" };
+		const message = {
+			...imageMessage("123![img:media-1]456![img:media-2]789"),
+			media: [media, mediaB],
+		};
+		const { container } = renderBubble(message, onImage);
+
+		const imgs = container.querySelectorAll("img[alt='聊天图片']");
+		expect(imgs.length).toBe(2);
+		expect(imgs[0]?.getAttribute("src")).toBe("https://cdn.example.com/a.png");
+		expect(imgs[1]?.getAttribute("src")).toBe("https://cdn.example.com/b.png");
+		const p = container.querySelector("p");
+		expect(p?.textContent).toBe("123456789");
 	});
 
 	it("旧格式纯文字说明前置占位符内联渲染", () => {

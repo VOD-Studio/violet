@@ -152,8 +152,8 @@ export interface ChatMessageContentProps {
 	/** 表情映射表，key 为 "[name]" */
 	emote?: Record<string, CommentEmoteRef>;
 	className?: string;
-	/** 消息自带的上传媒体：`![img:id]` 占位符命中其 id 时还原为内联图片 */
-	inlineMedia?: ChatMedia;
+	/** 消息自带的上传媒体列表：`![img:id]` 占位符命中任一 id 时还原为内联图片 */
+	inlineMedia?: ChatMedia[];
 	/** 内联图片点击回调（打开原图预览） */
 	onImage?: (media: ChatMedia) => void;
 }
@@ -167,18 +167,21 @@ export function ChatMessageContent({
 }: ChatMessageContentProps) {
 	const rehypePlugins = useMemo(() => [rehypeChatEmoji(emote), rehypeChatInlineImage()], [emote]);
 	const components = useMemo<Components>(() => {
-		if (!inlineMedia) return chatMarkdownComponents;
+		if (!inlineMedia?.length) return chatMarkdownComponents;
+		const mediaByID: Record<string, ChatMedia> = {};
+		for (const media of inlineMedia) mediaByID[media.id] = media;
 		return {
 			...chatMarkdownComponents,
 			img: ({ src, alt, ...rest }) => {
 				const props = rest as Record<string, unknown>;
 				const imageID = props["data-image"];
-				if (typeof imageID !== "string" || imageID !== inlineMedia.id) {
+				const media = typeof imageID === "string" ? mediaByID[imageID] : undefined;
+				if (!media) {
 					return chatImg({ src, alt, ...rest });
 				}
 				const img = (
 					<img
-						src={inlineMedia.thumbnail || inlineMedia.url}
+						src={media.thumbnail || media.url}
 						alt={alt ?? "聊天图片"}
 						className={props.className as string | undefined}
 						loading="lazy"
@@ -190,7 +193,7 @@ export function ChatMessageContent({
 					<button
 						aria-label="查看图片"
 						className="inline-block align-text-bottom"
-						onClick={() => onImage(inlineMedia)}
+						onClick={() => onImage(media)}
 						type="button"
 					>
 						{img}

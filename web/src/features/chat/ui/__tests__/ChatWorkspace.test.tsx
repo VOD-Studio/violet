@@ -414,12 +414,12 @@ describe("ChatWorkspace", () => {
 		expect(mockSendMutateAsync).toHaveBeenCalledWith(
 			expect.objectContaining({
 				id: "c_1",
-				input: { type: "image", media_id: "media-1", content: "![img:media-1]配图文字" },
+				input: { type: "image", media_ids: ["media-1"], content: "![img:media-1]配图文字" },
 			}),
 		);
 	});
 
-	it("多图 + 文字发送：只有最后一张图片的请求携带说明文字", async () => {
+	it("多图 + 文字发送：合并为一条多图消息", async () => {
 		mockUploadFile.mockImplementation(async (file: File) =>
 			file.name === "a.png"
 				? { file_id: "media-a", url: "https://cdn.example.com/a.png", width: 1, height: 1 }
@@ -442,16 +442,16 @@ describe("ChatWorkspace", () => {
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
 
 		await waitFor(() => {
-			expect(mockSendMutateAsync).toHaveBeenCalledTimes(2);
+			expect(mockSendMutateAsync).toHaveBeenCalledTimes(1);
 		});
-		expect(mockSendMutateAsync).toHaveBeenNthCalledWith(
-			1,
-			expect.objectContaining({ input: { type: "image", media_id: "media-a" } }),
-		);
-		expect(mockSendMutateAsync).toHaveBeenNthCalledWith(
-			2,
+		expect(mockSendMutateAsync).toHaveBeenCalledWith(
 			expect.objectContaining({
-				input: { type: "image", media_id: "media-b", content: "![img:media-b]两张图" },
+				id: "c_1",
+				input: {
+					type: "image",
+					media_ids: ["media-a", "media-b"],
+					content: "![img:media-a]![img:media-b]两张图",
+				},
 			}),
 		);
 	});

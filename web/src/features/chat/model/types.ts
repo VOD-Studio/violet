@@ -64,7 +64,8 @@ export interface ChatMessage {
 	content?: string;
 	/** 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符（含方括号） */
 	custom_emote?: Record<string, CommentEmoteRef>;
-	media?: ChatMedia;
+	/** 图片消息的媒体列表，按输入流中的占位符顺序；非图片消息缺省 */
+	media?: ChatMedia[];
 	shared_tweet?: SharedTweet;
 	reply_to?: ChatMessageReference;
 	reactions: ChatMessageReaction[];
@@ -94,7 +95,7 @@ export interface CreateConversationInput {
 export interface SendMessageInput {
 	type: Exclude<MessageType, "system">;
 	content?: string;
-	media_id?: string;
+	media_ids?: string[];
 	shared_tweet_id?: string;
 	reply_to_id?: string;
 }

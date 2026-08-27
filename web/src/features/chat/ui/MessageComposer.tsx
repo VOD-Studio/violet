@@ -2,7 +2,7 @@
  * 消息输入区：回复/推文分享 banner 与富文本 composer，Enter 发送。
  */
 import {
-	splitRichTextByImages,
+	extractImageIds,
 	stripImagePlaceholders,
 	stripPlaceholdersForPreview,
 } from "@features/comments/hooks/use-rich-text-input";
@@ -11,7 +11,7 @@ import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-twe
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { LoaderCircle, MessageSquareQuote, Reply, Send, X } from "lucide-react";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSendChatMessage } from "../api/queries";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
@@ -49,9 +49,6 @@ export function MessageComposer({
 	}, [content, notifyTyping, notifyStopped]);
 
 	const send = useSendChatMessage();
-	const sentImageIDsRef = useRef(new Set<string>());
-	const replyAttachedRef = useRef(false);
-	const replyTargetIDRef = useRef<string | undefined>(replyTarget?.id);
 
 	const sendMessage = async () => {
 		if (uploading || send.isPending) return;
@@ -80,62 +77,43 @@ export function MessageComposer({
 		if (!content.trim() && images.length === 0) return;
 
 		const replyToID = replyTarget?.id;
-		if (replyTargetIDRef.current !== replyToID) {
-			replyTargetIDRef.current = replyToID;
-			replyAttachedRef.current = false;
-		}
-		// 尚未发送成功的图片（排除重试时已成功发送过的）。
-		const pendingImages = images.filter(
-			(img): img is PictureInput & { id: string } =>
-				!!img.id && !sentImageIDsRef.current.has(img.id),
+		// 输入流中已完成上传的图片 id（按占位符首次出现顺序）；占位符已从正文移除的
+		// 图片不随消息发送。全部图片与环绕文字合为一条图片消息，渲染端把 ![img:id]
+		// 占位符还原为内联图片，发出即与输入框一致的图文环绕。
+		const uploadedIDs = new Set(
+			images.filter((img) => !!img.id).map((img) => img.id as string),
 		);
-		const pendingByID = new Map(pendingImages.map((img) => [img.id, img]));
-		// 保留 ![img:id] 占位符位置按图切分：每条图片消息携带输入流中环绕自身的文字，
-		// 渲染端把占位符还原为内联图片，发出消息即与输入框一致的图文环绕。
-		const imageSegments = splitRichTextByImages(content).filter(
-			(segment): segment is { imageId: string; text: string } =>
-				segment.imageId !== null && pendingByID.has(segment.imageId),
+		const mediaIDs = extractImageIds(content).filter(
+			(id, index, ids) => uploadedIDs.has(id) && ids.indexOf(id) === index,
 		);
 		try {
-			// 当前消息模型按单条消息保存图片；引用只附着到本轮首条实际发送的消息。
-			for (const segment of imageSegments) {
-				const img = pendingByID.get(segment.imageId) as PictureInput & { id: string };
-				const attachReply = Boolean(replyToID && !replyAttachedRef.current);
-				const segmentText = segment.text.trim();
-				const hasText = stripImagePlaceholders(segmentText).length > 0;
+			if (mediaIDs.length > 0) {
+				const hasText = stripImagePlaceholders(content).trim().length > 0;
 				await send.mutateAsync({
 					id: conversationID,
 					input: {
 						type: "image",
-						media_id: img.id,
-						...(hasText ? { content: segmentText } : {}),
-						...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
+						media_ids: mediaIDs,
+						...(hasText ? { content: content.trim() } : {}),
+						...(replyToID ? { reply_to_id: replyToID } : {}),
 					},
 					idempotencyKey: crypto.randomUUID(),
 				});
-				sentImageIDsRef.current.add(img.id);
-				if (attachReply) replyAttachedRef.current = true;
-			}
-
-			if (imageSegments.length === 0) {
+			} else {
 				const trimmedContent = stripImagePlaceholders(content).trim();
 				if (trimmedContent) {
-					const attachReply = Boolean(replyToID && !replyAttachedRef.current);
 					await send.mutateAsync({
 						id: conversationID,
 						input: {
 							type: "text",
 							content: trimmedContent,
-							...(attachReply && replyToID ? { reply_to_id: replyToID } : {}),
+							...(replyToID ? { reply_to_id: replyToID } : {}),
 						},
 						idempotencyKey: crypto.randomUUID(),
 					});
-					if (attachReply) replyAttachedRef.current = true;
 				}
 			}
 
-			sentImageIDsRef.current.clear();
-			replyAttachedRef.current = false;
 			setContent("");
 			setImages([]);
 			setResetNonce((n) => n + 1);

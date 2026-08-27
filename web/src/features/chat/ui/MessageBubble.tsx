@@ -177,7 +177,7 @@ export function MessageBubble({
 							<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
 							消息已被管理员删除
 						</div>
-					) : message.type === "image" && message.media ? (
+					) : message.type === "image" && message.media?.length ? (
 						<BubbleShell mine={mine}>
 							<ChatMessageContent
 								content={imageBubbleContent(message)}
@@ -337,10 +337,13 @@ function ReplyPreview({
 	);
 }
 
-/** 图片消息可渲染正文：新格式 content 自带 ![img:id] 携带环绕位置；旧格式纯文字说明前置占位符内联渲染。 */
+/**
+ * 图片消息可渲染正文：content 自带 ![img:id] 携带环绕位置；缺失占位符的媒体
+ * （旧格式单图纯文字说明）按顺序前置，保证每张图都能内联渲染。
+ */
 function imageBubbleContent(message: ChatMessage): string {
-	const media = message.media as ChatMedia;
-	const placeholder = `![img:${media.id}]`;
-	if (!message.content) return placeholder;
-	return message.content.includes(placeholder) ? message.content : placeholder + message.content;
+	const content = message.content ?? "";
+	const missing = (message.media ?? []).filter((m) => !content.includes(`![img:${m.id}]`));
+	const prefix = missing.map((m) => `![img:${m.id}]`).join("");
+	return content ? prefix + content : prefix;
 }

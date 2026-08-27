@@ -28,7 +28,6 @@ vi.mock("@features/emojis/api/queries", () => ({
 
 import {
 	extractImageIds,
-	splitRichTextByImages,
 	stripPlaceholdersForPreview,
 	type UseRichTextInputReturn,
 	useRichTextInput,
@@ -71,19 +70,6 @@ describe("extractImageIds", () => {
 
 	it("只有 emoji 占位符时返回空数组", () => {
 		expect(extractImageIds("[smile][doge]")).toEqual([]);
-	});
-});
-
-describe("splitRichTextByImages", () => {
-	it("无图返回单个纯文本片段", () => {
-		expect(splitRichTextByImages("纯文字")).toEqual([{ imageId: null, text: "纯文字" }]);
-	});
-
-	it("每图一段携带环绕文字，尾图并入尾部文字", () => {
-		expect(splitRichTextByImages("123![img:a]456![img:b]789")).toEqual([
-			{ imageId: "a", text: "123![img:a]" },
-			{ imageId: "b", text: "456![img:b]789" },
-		]);
 	});
 });
 

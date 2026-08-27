@@ -12,12 +12,14 @@ function imageMessage(content?: string): ChatMessage {
 		sender: { id: "u_1", username: "alice", display_name: "Alice", avatar_url: "" },
 		type: "image",
 		content,
-		media: {
-			id: "media-1",
-			url: "https://cdn.example.com/a.png",
-			mime_type: "image/png",
-			size: 1,
-		},
+		media: [
+			{
+				id: "media-1",
+				url: "https://cdn.example.com/a.png",
+				mime_type: "image/png",
+				size: 1,
+			},
+		],
 		reactions: [],
 		is_deleted: false,
 		created_at: "2026-08-25T08:00:00Z",

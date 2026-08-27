@@ -125,7 +125,7 @@ describe("ChatMessageContent", () => {
 		const { container } = render(
 			<ChatMessageContent
 				content="123![img:media-1]456"
-				inlineMedia={media}
+				inlineMedia={[media]}
 				onImage={onImage}
 			/>,
 		);
@@ -136,6 +136,31 @@ describe("ChatMessageContent", () => {
 		expect(p?.childNodes[2]?.textContent).toBe("456");
 		fireEvent.click(img as Element);
 		expect(onImage).toHaveBeenCalledWith(media);
+	});
+
+	it("多个占位符各自命中 inlineMedia 中对应媒体", () => {
+		const mediaA = {
+			id: "media-a",
+			url: "https://cdn.example.com/a.png",
+			mime_type: "image/png",
+			size: 1,
+		};
+		const mediaB = {
+			id: "media-b",
+			url: "https://cdn.example.com/b.png",
+			mime_type: "image/png",
+			size: 1,
+		};
+		const { container } = render(
+			<ChatMessageContent
+				content="123![img:media-a]456![img:media-b]789"
+				inlineMedia={[mediaA, mediaB]}
+			/>,
+		);
+		const imgs = container.querySelectorAll("img");
+		expect(imgs.length).toBe(2);
+		expect(imgs[0]?.getAttribute("src")).toBe("https://cdn.example.com/a.png");
+		expect(imgs[1]?.getAttribute("src")).toBe("https://cdn.example.com/b.png");
 	});
 
 	it("![img:id] 未提供 inlineMedia 时不渲染图片也不泄漏占位符", () => {

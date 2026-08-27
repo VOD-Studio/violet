@@ -89,34 +89,6 @@ export function stripPlaceholdersForPreview(markdown: string): string {
 	return stripImagePlaceholders(markdown).replace(EMOJI_PLACEHOLDER_PATTERN, "");
 }
 
-/** 按图片占位符切分出的富文本片段；imageId 为 null 表示无图纯文本。 */
-export interface RichTextSegment {
-	imageId: string | null;
-	text: string;
-}
-
-/**
- * 按 `![img:<id>]` 出现顺序把 markdown 切成每图一段：片段含上一图片（或开头）到
- * 自身占位符的文字，末图并入尾部文字。聊天图文发送按片段各发一条图片消息，
- * 使每条消息携带输入流中环绕自身的文字（渲染端占位符还原为内联图片即图文环绕）。
- */
-export function splitRichTextByImages(markdown: string): RichTextSegment[] {
-	const segments: RichTextSegment[] = [];
-	let cursor = 0;
-	let pendingText = "";
-	for (const match of markdown.matchAll(IMAGE_TOKEN_PATTERN)) {
-		const index = match.index ?? 0;
-		pendingText += markdown.slice(cursor, index);
-		segments.push({ imageId: match[1] ?? null, text: pendingText + match[0] });
-		pendingText = "";
-		cursor = index + match[0].length;
-	}
-	pendingText += markdown.slice(cursor);
-	if (segments.length === 0) return [{ imageId: null, text: markdown }];
-	segments[segments.length - 1].text += pendingText;
-	return segments;
-}
-
 function escapeHtml(text: string): string {
 	return text
 		.replace(/&/g, "&amp;")
