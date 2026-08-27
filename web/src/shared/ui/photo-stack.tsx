@@ -235,7 +235,7 @@ export function PhotoStack({
 				<motion.div
 					layout
 					className={cn(
-						"relative isolate mx-auto w-[92%] overflow-y-auto rounded-xl",
+						"relative isolate mx-auto w-[72%] overflow-y-auto rounded-xl",
 						"[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
 						aspectClass,
 					)}
