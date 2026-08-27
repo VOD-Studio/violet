@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 
@@ -198,6 +199,8 @@ func persistOAuthDotenv(c *OAuthCredentials) bool {
 	return true
 }
 
+var dotenvKeyOrder = [...]string{"GOOGLE_CLIENT_ID", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"}
+
 // upsertDotenvKeys 在 .env 行数组里替换或追加键值（保留注释与顺序）
 func upsertDotenvKeys(lines []string, kvs map[string]string) []string {
 	done := make(map[string]bool, len(kvs))
@@ -213,10 +216,21 @@ func upsertDotenvKeys(lines []string, kvs map[string]string) []string {
 		}
 		out = append(out, replaced)
 	}
-	for k, v := range kvs {
-		if !done[k] {
-			out = append(out, fmt.Sprintf("%s=%s", k, v))
+	for _, key := range dotenvKeyOrder {
+		if value, ok := kvs[key]; ok && !done[key] {
+			out = append(out, fmt.Sprintf("%s=%s", key, value))
+			done[key] = true
 		}
+	}
+	extraKeys := make([]string, 0, len(kvs))
+	for key := range kvs {
+		if !done[key] {
+			extraKeys = append(extraKeys, key)
+		}
+	}
+	sort.Strings(extraKeys)
+	for _, key := range extraKeys {
+		out = append(out, fmt.Sprintf("%s=%s", key, kvs[key]))
 	}
 	return out
 }
