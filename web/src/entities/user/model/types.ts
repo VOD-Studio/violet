@@ -57,13 +57,15 @@ export interface SessionClaims {
 /**
  * UserProfile - 公开用户资料卡
  *
- * 对接后端 GET /api/v1/users/{username}。只包含公开字段（头像/用户名/简介/注册时间）。
+ * 对接后端 GET /api/v1/users/{username}。只包含公开字段（头像/显示名/用户名/简介/注册时间）。
  */
 export interface UserProfile {
 	/** 用户 ID */
 	id: string;
 	/** 用户名 */
 	username: string;
+	/** 显示名，空值时前端回退到用户名 */
+	display_name: string;
 	/** 头像 URL */
 	avatar_url: string;
 	/** 个人简介 */

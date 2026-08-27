@@ -2,7 +2,8 @@
  * NotificationBell - 通知铃铛 + 未读 Badge + 下拉面板
  *
  * 登录用户可见。点击展开下拉通知列表。
- * SSE 实时推送新通知 → Badge 更新；点击通知标记已读。
+ * SSE 实时推送新通知 → Badge 更新；点击通知标记已读，
+ * 聊天类通知同时跳转到对应会话。
  */
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
@@ -25,6 +26,7 @@ import {
 	Link2,
 	MessageCircle,
 	MessageCircleX,
+	MessagesSquare,
 	Rss,
 	ShieldCheck,
 	UserPlus,
@@ -51,6 +53,7 @@ const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	comment_rejected: MessageCircleX,
 	user_registered: UserPlus,
 	account_security: ShieldCheck,
+	chat_room_invited: MessagesSquare,
 };
 
 /** source_type → 颜色映射 */
@@ -65,6 +68,18 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	comment_rejected: "text-red-500",
 	user_registered: "text-blue-500",
 	account_security: "text-purple-500",
+	chat_room_invited: "text-neon-cyan",
+};
+
+/**
+ * 跳转到聊天工作区并打开指定会话。
+ *
+ * 聊天页以 `?c=` 管理选中会话并监听 popstate（useChatSelection）；
+ * 直接改 URL 再派发 popstate：已在 /chat 时切换选中，其他页面触发路由匹配挂载。
+ */
+const openChatConversation = (conversationID: string) => {
+	window.history.pushState({}, "", `/chat?c=${encodeURIComponent(conversationID)}`);
+	window.dispatchEvent(new PopStateEvent("popstate"));
 };
 
 const NotificationBell = () => {
@@ -77,6 +92,16 @@ const NotificationBell = () => {
 
 	const unread = unreadData?.unread_count ?? 0;
 	const items = notifPage?.data ?? [];
+
+	const handleSelect = (item: NotificationItem) => {
+		if (!item.is_read) markRead.mutate(item.id);
+		if (item.source_type === "chat_room_invited") {
+			const conversationID = item.payload?.conversation_id;
+			if (typeof conversationID === "string" && conversationID) {
+				openChatConversation(conversationID);
+			}
+		}
+	};
 
 	return (
 		<DropdownMenu open={open} onOpenChange={setOpen}>
@@ -125,9 +150,7 @@ const NotificationBell = () => {
 							<NotificationRow
 								key={item.id}
 								item={item}
-								onRead={() => {
-									if (!item.is_read) markRead.mutate(item.id);
-								}}
+								onSelect={() => handleSelect(item)}
 							/>
 						))}
 					</div>
@@ -138,14 +161,14 @@ const NotificationBell = () => {
 };
 
 /** 单条通知行 */
-const NotificationRow = ({ item, onRead }: { item: NotificationItem; onRead: () => void }) => {
+const NotificationRow = ({ item, onSelect }: { item: NotificationItem; onSelect: () => void }) => {
 	const Icon = sourceIcon[item.source_type] ?? Bell;
 	const color = sourceColor[item.source_type] ?? "text-muted-foreground";
 
 	return (
 		<DropdownMenuItem
 			className="flex cursor-pointer items-start gap-3 px-4 py-3 focus:bg-accent/40"
-			onSelect={onRead}
+			onSelect={onSelect}
 		>
 			<Icon className={cn("mt-0.5 size-4 shrink-0", color)} />
 			<div className="min-w-0 flex-1">

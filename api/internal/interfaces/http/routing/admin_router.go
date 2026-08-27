@@ -5,6 +5,7 @@ package routing
 import (
 	"github.com/go-chi/chi/v5"
 
+	"blog-api/internal/domain/permission"
 	"blog-api/internal/middleware"
 )
 
@@ -231,6 +232,9 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.With(middleware.RequirePermission(perm, "emoji:refetch")).Post("/bilibili/refetch", mediaH.RefetchBilibiliEmojis)
 		r.With(middleware.RequirePermission(perm, "emoji:refetch")).Get("/bilibili/refetch/status", mediaH.GetRefetchStatus)
 		r.With(middleware.RequirePermission(perm, "emoji:refetch")).Get("/bilibili/cookie", mediaH.GetBilibiliCookie)
+		// 用户自定义表情（customemoji:manage；下架走公开 DELETE /custom-emojis/{id}，应用层双轨鉴权）
+		r.With(middleware.RequirePermission(perm, permission.CustomEmojiManage.String())).
+			Get("/custom", d.CustomEmoji.ListAll)
 	})
 
 	// 项目管理

@@ -169,10 +169,10 @@ importers:
         version: 6.0.0
       axios:
         specifier: ^1.18.0
-        version: 1.18.1
+        version: 1.18.1(debug@4.4.3)
       axios-retry:
         specifier: ^4.5.0
-        version: 4.5.0(axios@1.18.1)
+        version: 4.5.0(axios@1.18.1(debug@4.4.3))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -221,9 +221,21 @@ importers:
       marked-highlight:
         specifier: ^2.2.4
         version: 2.2.4(marked@18.0.5)
+      mdast-util-gfm-autolink-literal:
+        specifier: ^2.0.1
+        version: 2.0.1
+      mdast-util-gfm-strikethrough:
+        specifier: ^2.0.0
+        version: 2.0.0
       mermaid:
         specifier: ^11.16.0
         version: 11.16.0
+      micromark-extension-gfm-autolink-literal:
+        specifier: ^2.1.0
+        version: 2.1.0
+      micromark-extension-gfm-strikethrough:
+        specifier: ^2.1.0
+        version: 2.1.0
       motion:
         specifier: ^12.42.2
         version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -257,6 +269,9 @@ importers:
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      remark-breaks:
+        specifier: ^4.0.0
+        version: 4.0.0
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -281,6 +296,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.3.2)
+      unist-util-visit:
+        specifier: ^5.1.0
+        version: 5.1.0
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -4401,6 +4419,9 @@ packages:
   mdast-util-mdxjs-esm@2.0.1:
     resolution: {integrity: sha512-EcmOpxsZ96CvlP03NghtH1EsLtr0n9Tm4lPUJUBccV9RwUOneqSycg19n5HGzCf+10LozMRSObtVr3ee1WoHtg==}
 
+  mdast-util-newline-to-break@2.0.0:
+    resolution: {integrity: sha512-MbgeFca0hLYIEx/2zGsszCSEJJ1JSCdiY5xQxRcLDDGa8EPvlLPupJ4DSajbMPAnC0je8jfb9TiUATnxxrHUog==}
+
   mdast-util-phrasing@4.1.0:
     resolution: {integrity: sha512-TqICwyvJJpBwvGAMZjj4J2n0X8QWp21b9l0o7eXyVJ25YNWYbJDVIyD1bZXE6WtV6RmKJVYmQAKWa0zWOABz2w==}
 
@@ -5011,6 +5032,9 @@ packages:
 
   regex@6.1.0:
     resolution: {integrity: sha512-6VwtthbV4o/7+OaAF9I5L5V3llLEsoPyq9P1JVXkedTP33c7MfCG0/5NOPcSJn0TzXcG9YUrR0gQSWioew3LDg==}
+
+  remark-breaks@4.0.0:
+    resolution: {integrity: sha512-IjEjJOkH4FuJvHZVIW0QCDWxcG96kCq7An/KVH2NfJe6rKZU2AsHeB3OEjPNRxi4QC34Xdx7I2KGYn6IpT7gxQ==}
 
   remark-gfm@4.0.1:
     resolution: {integrity: sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==}
@@ -8502,14 +8526,14 @@ snapshots:
 
   atomically@1.7.0: {}
 
-  axios-retry@4.5.0(axios@1.18.1):
+  axios-retry@4.5.0(axios@1.18.1(debug@4.4.3)):
     dependencies:
-      axios: 1.18.1
+      axios: 1.18.1(debug@4.4.3)
       is-retry-allowed: 2.2.0
 
-  axios@1.18.1:
+  axios@1.18.1(debug@4.4.3):
     dependencies:
-      follow-redirects: 1.16.0
+      follow-redirects: 1.16.0(debug@4.4.3)
       form-data: 4.0.6
       https-proxy-agent: 5.0.1
       proxy-from-env: 2.1.0
@@ -9231,7 +9255,9 @@ snapshots:
     dependencies:
       locate-path: 3.0.0
 
-  follow-redirects@1.16.0: {}
+  follow-redirects@1.16.0(debug@4.4.3):
+    optionalDependencies:
+      debug: 4.4.3
 
   form-data@4.0.6:
     dependencies:
@@ -9915,6 +9941,11 @@ snapshots:
       mdast-util-to-markdown: 2.1.2
     transitivePeerDependencies:
       - supports-color
+
+  mdast-util-newline-to-break@2.0.0:
+    dependencies:
+      '@types/mdast': 4.0.4
+      mdast-util-find-and-replace: 3.0.2
 
   mdast-util-phrasing@4.1.0:
     dependencies:
@@ -10779,6 +10810,12 @@ snapshots:
   regex@6.1.0:
     dependencies:
       regex-utilities: 2.3.0
+
+  remark-breaks@4.0.0:
+    dependencies:
+      '@types/mdast': 4.0.4
+      mdast-util-newline-to-break: 2.0.0
+      unified: 11.0.5
 
   remark-gfm@4.0.1:
     dependencies:

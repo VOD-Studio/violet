@@ -111,6 +111,22 @@ describe("TweetComposer", () => {
 
 		expect(textarea.value).toBe("(^_^)");
 	});
+	it("选择自定义表情插入 [name:uuid] 占位符", () => {
+		render(<TweetComposer />);
+		const textarea = screen.getByPlaceholderText("有什么新鲜事？") as HTMLTextAreaElement;
+
+		act(() => {
+			emojiPickerOnSelect?.({
+				id: -1,
+				name: "mycat",
+				url: "https://emoji/mycat.png",
+				custom_emoji_id: "00000000-0000-0000-0000-000000000001",
+				relation: "owned",
+			});
+		});
+
+		expect(textarea.value).toBe("[mycat:00000000-0000-0000-0000-000000000001]");
+	});
 	it("提交推文调用 mutate", () => {
 		render(<TweetComposer />);
 		const textarea = screen.getByPlaceholderText("有什么新鲜事？");

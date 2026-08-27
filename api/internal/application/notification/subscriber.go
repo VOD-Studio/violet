@@ -8,6 +8,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	domainapitoken "blog-api/internal/domain/api_token"
+	domainchat "blog-api/internal/domain/chat"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainnotification "blog-api/internal/domain/notification"
@@ -53,13 +54,13 @@ type FriendLinkApplicantLookup interface {
 // 镜像审计 subscriber 结构（通配订阅 + 按事件类型分发）。
 // 写通知失败记降级日志（fail-safe），不阻断其他订阅者（EventBus 容错隔离）。
 type Subscriber struct {
-	store             domainnotification.NotificationRepository
-	subLookup         SubscriptionOwnerLookup
-	commentLookup     CommentAuthorLookup
-	adminLookup       AdminUserLookup
-	friendlinkLookup  FriendLinkApplicantLookup
-	postAuthorLookup  CommentPostAuthorLookup
-	log               zerolog.Logger
+	store            domainnotification.NotificationRepository
+	subLookup        SubscriptionOwnerLookup
+	commentLookup    CommentAuthorLookup
+	adminLookup      AdminUserLookup
+	friendlinkLookup FriendLinkApplicantLookup
+	postAuthorLookup CommentPostAuthorLookup
+	log              zerolog.Logger
 }
 
 // NewSubscriber 构造通知订阅者。
@@ -73,13 +74,13 @@ func NewSubscriber(
 	log zerolog.Logger,
 ) *Subscriber {
 	return &Subscriber{
-		store:             store,
-		subLookup:         subLookup,
-		commentLookup:     commentLookup,
-		adminLookup:       adminLookup,
-		friendlinkLookup:  friendlinkLookup,
-		postAuthorLookup:  postAuthorLookup,
-		log:               log,
+		store:            store,
+		subLookup:        subLookup,
+		commentLookup:    commentLookup,
+		adminLookup:      adminLookup,
+		friendlinkLookup: friendlinkLookup,
+		postAuthorLookup: postAuthorLookup,
+		log:              log,
 	}
 }
 
@@ -164,9 +165,20 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 
 	case domainuser.UserStatusChanged:
 		return s.handleStatusChanged(e), true
-
 	case domainuser.UserRegistered:
 		return s.handleUserRegistered(ctx, e)
+
+	case domainchat.RoomInvited:
+		return []notifyAction{{
+			userID:     e.InviteeID,
+			sourceType: domainnotification.SourceChatRoomInvited,
+			sourceID:   e.AggregateID(),
+			title:      "新的聊天邀请",
+			body:       fmt.Sprintf("你被邀请加入「%s」", e.Title),
+			payload: map[string]any{
+				"conversation_id": e.AggregateID().String(),
+			},
+		}}, true
 
 	default:
 		return nil, false

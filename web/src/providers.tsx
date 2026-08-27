@@ -1,3 +1,4 @@
+import { CustomEmojiContextMenu } from "@features/customemoji/ui/CustomEmojiContextMenu";
 import { useSettings } from "@features/settings/api/queries";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { clientQueryClient } from "@shared/api/query-client";
@@ -44,7 +45,7 @@ const AppProvider = ({ children }: AppProviderProps) => {
 		<QueryClientProvider client={clientQueryClient}>
 			<GoogleOAuthGate>
 				<ThemeProvider attribute="class" defaultTheme="system">
-					{children}
+					<CustomEmojiContextMenu>{children}</CustomEmojiContextMenu>
 					<Toaster />
 				</ThemeProvider>
 			</GoogleOAuthGate>

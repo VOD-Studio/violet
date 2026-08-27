@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/application/mocks"
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
+	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/shared"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 )
 
 // noopEmojiLookup 是 EmojiLookup 的空实现，测试中评论 body 不含表情占位符时使用。
@@ -21,6 +21,28 @@ type noopEmojiLookup struct{}
 
 func (noopEmojiLookup) FindByNames(_ context.Context, _ []string) (map[string]EmojiRef, error) {
 	return nil, nil
+}
+
+type customEmojiLookup struct {
+	refs map[string]EmojiRef
+}
+
+func (f customEmojiLookup) FindByNames(context.Context, []string) (map[string]EmojiRef, error) {
+	return f.refs, nil
+}
+
+func TestEnrichEmotes_ResolvesCustomAndSystemTokens(t *testing.T) {
+	svc := &Service{emojiLookup: customEmojiLookup{refs: map[string]EmojiRef{
+		"[doge]":         {URL: "/doge.png"},
+		"[mycat:uuid-1]": {URL: "/mycat.png", CustomEmojiID: "uuid-1", Relation: "owned"},
+	}}}
+	dtos := []CommentDTO{{Body: "A [doge] B [mycat:uuid-1]"}}
+
+	err := svc.enrichEmotes(context.Background(), dtos)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "owned", dtos[0].Emote["[mycat:uuid-1]"].Relation)
+	assert.Equal(t, "/doge.png", dtos[0].Emote["[doge]"].URL)
 }
 
 // fakeSitePolicy 可配置的站点评论策略 stub
@@ -76,7 +98,7 @@ func TestCreate_Anon_ValidCode_NoQuota_Succeeds(t *testing.T) {
 	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
 
 	_, err := svc.Create(context.Background(), CreateInput{
-		PostID: postID.String(),
+		PostID:     postID.String(),
 		AuthorName: "alice", AuthorEmail: "ALICE@X.COM", // 故意大写测试归一化
 		Body: "hi", Code: "123456", IPHash: "iphash1",
 	})
@@ -95,7 +117,7 @@ func TestCreate_Anon_InvalidCode_ReturnsErrInvalidCode(t *testing.T) {
 	repo.AssertNotCalled(t, "Save")
 
 	_, err := svc.Create(context.Background(), CreateInput{
-		PostID: shared.NewID().String(),
+		PostID:     shared.NewID().String(),
 		AuthorName: "alice", AuthorEmail: "alice@x.com",
 		Body: "hi", Code: "wrong", IPHash: "iphash1",
 	})
@@ -115,7 +137,7 @@ func TestCreate_Anon_QuotaExceeded_ReturnsErrAnonQuotaExceeded(t *testing.T) {
 	repo.AssertNotCalled(t, "Save")
 
 	_, err := svc.Create(context.Background(), CreateInput{
-		PostID: postID.String(),
+		PostID:     postID.String(),
 		AuthorName: "alice", AuthorEmail: "alice@x.com",
 		Body: "hi", Code: "123456", IPHash: "iphash1",
 	})
@@ -132,7 +154,7 @@ func TestCreate_AnchorWithoutLogin_Rejected(t *testing.T) {
 	// 「即使过了验证码，anchor+匿名仍被 domain 拒绝」——所以先让验证码通过
 	// 改为直接测 domain 层行为更干净，这里用 service 层验证错误链。
 	_, err := svc.Create(context.Background(), CreateInput{
-		PostID: shared.NewID().String(),
+		PostID:     shared.NewID().String(),
 		AuthorName: "alice", AuthorEmail: "alice@x.com",
 		Body: "hi", Code: "", Anchor: anchor, IPHash: "iphash1",
 	})

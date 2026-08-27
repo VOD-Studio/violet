@@ -14,6 +14,7 @@ import type { Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
+import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
@@ -22,7 +23,7 @@ import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { AlertCircle, Heart, MessageCircle, Repeat2, Trash2 } from "lucide-react";
+import { AlertCircle, Heart, MessageCircle, Repeat2, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import TweetComposer from "./TweetComposer";
@@ -46,6 +47,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 	const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 	const deleteTweet = useDeleteTweet(tweet.id);
 	const toggleLike = useToggleLikeTweet(tweet);
+	const openShareTweet = useShareTweetStore((s) => s.open);
 
 	const handleLikeClick = (e: React.MouseEvent) => {
 		e.stopPropagation();
@@ -65,6 +67,21 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 			return;
 		}
 		setQuoteModalOpen(true);
+	};
+
+	const handleShareClick = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (!me.data) {
+			toast.info("请先登录后再分享到聊天");
+			navigate({ to: "/login" });
+			return;
+		}
+		openShareTweet({
+			id: tweet.id,
+			authorUsername: tweet.author.username,
+			content: tweet.content,
+			imageUrl: tweet.images[0],
+		});
 	};
 	// 正文非空才渲染（纯图推文 content 为空串）
 	const hasContent = tweet.content.length > 0;
@@ -354,6 +371,15 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 								}`}
 							/>
 							<span>{tweet.like_count}</span>
+						</button>
+						<button
+							type="button"
+							data-testid="share-button"
+							aria-label="分享到聊天"
+							onClick={handleShareClick}
+							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-cyan/10 hover:text-neon-cyan"
+						>
+							<Share2 className="size-4 transition-transform group-hover:scale-110" />
 						</button>
 					</div>
 				</div>

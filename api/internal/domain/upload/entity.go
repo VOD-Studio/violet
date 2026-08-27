@@ -18,6 +18,7 @@ const (
 	PurposeEmoji    = "emoji"
 	PurposeMaterial = "material"
 	PurposeTweet    = "tweet"
+	PurposeChat     = "chat"
 )
 
 // 文件状态
@@ -37,7 +38,7 @@ const (
 	SessionExpired   = "expired"
 )
 
-var purposePattern = regexp.MustCompile(`^(avatar|post|emoji|material|comment|tweet)$`)
+var purposePattern = regexp.MustCompile(`^(avatar|post|emoji|material|comment|tweet|chat)$`)
 
 // IsValidPurpose 校验用途合法性
 func IsValidPurpose(p string) bool { return purposePattern.MatchString(p) }

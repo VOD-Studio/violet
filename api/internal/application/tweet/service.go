@@ -77,10 +77,11 @@ type AuthorDTO struct {
 
 // UserProfileDTO 用户公开资料卡（公开，仅包含不敏感的非私域字段）。
 type UserProfileDTO struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	AvatarURL string `json:"avatar_url"`
-	Bio       string `json:"bio"`
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+	Bio         string `json:"bio"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
 }
@@ -121,6 +122,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 	authorID, err := shared.ParseID(in.AuthorID)
 	if err != nil {
 		return TweetDTO{}, shared.BadRequest("非法的作者 ID")
+	}
+	if validator, ok := s.emojiLookup.(appshared.CustomEmojiContentValidator); ok {
+		if err := validator.ValidateContent(ctx, in.Content, authorID); err != nil {
+			return TweetDTO{}, err
+		}
 	}
 
 	var quoteOf *shared.ID
@@ -229,6 +235,7 @@ func (s *Service) ListTimeline(ctx context.Context, cursorStr string, limit int)
 	dtos, nextCursor := s.buildPage(ctx, tweets, limit)
 	return dtos, nextCursor, nil
 }
+
 // ListByTopic 话题时间线（公开）：按话题标签倒序 cursor 分页。
 func (s *Service) ListByTopic(ctx context.Context, tag, cursorStr string, limit int) ([]TweetDTO, string, error) {
 	tag = strings.TrimSpace(tag)
@@ -282,11 +289,12 @@ func (s *Service) GetUserProfile(ctx context.Context, username string) (UserProf
 		return UserProfileDTO{}, err
 	}
 	return UserProfileDTO{
-		ID:        u.GetID().String(),
-		Username:  u.Username().String(),
-		AvatarURL: u.AvatarURL(),
-		Bio:       u.Bio(),
-		CreatedAt: u.CreatedAt().Format(time.RFC3339),
+		ID:          u.GetID().String(),
+		Username:    u.Username().String(),
+		DisplayName: u.DisplayName().String(),
+		AvatarURL:   u.AvatarURL(),
+		Bio:         u.Bio(),
+		CreatedAt:   u.CreatedAt().Format(time.RFC3339),
 	}, nil
 }
 
@@ -514,10 +522,13 @@ func (s *Service) publishEvents(ctx context.Context, events []shared.DomainEvent
 // EmojiRef 表情映射值（emote map 的 value）。
 // 前端渲染 body 中的 [name] 占位符时查此表，优先使用 GifURL。
 // Size 携带表情尺寸（1=小 2=大），供前端按尺寸渲染内联表情。
+// CustomEmojiID/Relation 仅自定义表情 token 非空，供前端挂右键菜单。
 type EmojiRef struct {
-	URL    string `json:"url"`
-	GifURL string `json:"gif_url,omitempty"`
-	Size   int    `json:"size,omitempty"`
+	URL           string `json:"url"`
+	GifURL        string `json:"gif_url,omitempty"`
+	Size          int    `json:"size,omitempty"`
+	CustomEmojiID string `json:"custom_emoji_id,omitempty"`
+	Relation      string `json:"relation,omitempty"`
 }
 
 // EmojiLookup 表情批量查找端口（application 层端口）。
@@ -529,27 +540,27 @@ type EmojiLookup interface {
 
 // CommentDTO 推文评论读模型。
 type CommentDTO struct {
-	ID        string    `json:"id"`
-	TweetID   string    `json:"tweet_id"`
-	Author    AuthorDTO `json:"author"`
-	Body      string    `json:"body"`
+	ID      string    `json:"id"`
+	TweetID string    `json:"tweet_id"`
+	Author  AuthorDTO `json:"author"`
+	Body    string    `json:"body"`
 	// Pictures 评论附图（Bilibili 式，url/width/height/size）；无图恒为空数组
 	Pictures []domaintweet.Picture `json:"pictures"`
 	// Emote 表情映射表。key 为 [name]（含方括号），value 为表情图片 URL。
 	// toDTO 后由 enrichEmotes 批量填充。body 中没有 [name] 时为 nil（JSON 省略）。
 	Emote map[string]EmojiRef `json:"emote,omitempty"`
 	// ParentID 被回复的评论 id；顶层评论省略（omitempty）
-	ParentID  string    `json:"parent_id,omitempty"`
-	Depth     int16     `json:"depth"`
+	ParentID string `json:"parent_id,omitempty"`
+	Depth    int16  `json:"depth"`
 	// RepliesCount 该评论的回复数；顶层评论列表批量统计，回复恒 0
-	RepliesCount int64  `json:"replies_count"`
+	RepliesCount int64 `json:"replies_count"`
 	// CreatedAt RFC3339 格式
-	CreatedAt string    `json:"created_at"`
+	CreatedAt string `json:"created_at"`
 }
 
 // CreateCommentInput 创建评论入参。
 type CreateCommentInput struct {
-	TweetID  string
+	TweetID string
 	// AuthorID 当前登录用户 ID（handler 从 session ctx 提取）
 	AuthorID string
 	Body     string

@@ -22,6 +22,8 @@ import { create } from "zustand";
 interface SessionState {
 	/** 当前客户端是否处于"已登录且未登出"状态 */
 	sessionActive: boolean;
+	/** 账号会话版本；登录态切换时递增，用于隔离用户私有查询缓存 */
+	sessionVersion: number;
 	/** 标记已登录（登录成功时调用） */
 	markSessionActive: () => void;
 	/** 标记已登出（登出/取消重登时调用） */
@@ -32,8 +34,19 @@ export const useSessionStore = create<SessionState>((set) => ({
 	// SSR 阶段默认 false；客户端 hydrate 后若已登录，__root.beforeLoad 会读到 SSR 的
 	// context.auth.isAuthenticated 并在客户端 mount 时通过 markSessionActive 校正（见 __root.tsx）。
 	sessionActive: false,
-	markSessionActive: () => set({ sessionActive: true }),
-	clearSessionActive: () => set({ sessionActive: false }),
+	sessionVersion: 0,
+	markSessionActive: () =>
+		set((state) =>
+			state.sessionActive
+				? state
+				: { sessionActive: true, sessionVersion: state.sessionVersion + 1 },
+		),
+	clearSessionActive: () =>
+		set((state) =>
+			state.sessionActive
+				? { sessionActive: false, sessionVersion: state.sessionVersion + 1 }
+				: state,
+		),
 }));
 
 /**

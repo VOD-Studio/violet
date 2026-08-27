@@ -66,6 +66,7 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
 						align="start"
 						selectedIds={selfReactionIds}
 						onSelect={handleAdd}
+						showMyEmojis={false}
 						trigger={
 							<Button
 								type="button"
