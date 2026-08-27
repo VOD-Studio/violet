@@ -74,8 +74,9 @@ func TestUpsertDotenvKeys_PreservesCommentsAndOrder(t *testing.T) {
 		"",
 		"GITHUB_CLIENT_ID=new-id", // 缩进键也命中替换（ TrimLeft 后匹配）
 		"# OAuth",
-		"GOOGLE_CLIENT_ID=g-id",
+		// 新键按键名字典序追加（map 遍历序随机，排序保证输出稳定）
 		"GITHUB_CLIENT_SECRET=gh-secret",
+		"GOOGLE_CLIENT_ID=g-id",
 	}
 	if len(out) != len(want) {
 		t.Fatalf("行数 = %d, want %d: %v", len(out), len(want), out)

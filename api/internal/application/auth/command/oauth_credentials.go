@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
+ 	"fmt"
+	"sort"
+ 	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -213,10 +214,16 @@ func upsertDotenvKeys(lines []string, kvs map[string]string) []string {
 		}
 		out = append(out, replaced)
 	}
-	for k, v := range kvs {
+	// map 遍历序随机：新键按键名排序追加，保证输出稳定（CI 曾因顺序漂移失败）
+	pending := make([]string, 0, len(kvs))
+	for k := range kvs {
 		if !done[k] {
-			out = append(out, fmt.Sprintf("%s=%s", k, v))
+			pending = append(pending, k)
 		}
+	}
+	sort.Strings(pending)
+	for _, k := range pending {
+		out = append(out, fmt.Sprintf("%s=%s", k, kvs[k]))
 	}
 	return out
 }
