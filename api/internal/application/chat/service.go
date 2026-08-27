@@ -346,7 +346,8 @@ func (s *Service) CreateConversation(ctx context.Context, in CreateConversationI
 	participants := uniqueIDs(in.ParticipantIDs)
 	participants = withoutID(participants, in.UserID)
 	now := s.now()
-	if in.Kind == domainchat.ConversationDirect {
+	switch in.Kind {
+	case domainchat.ConversationDirect:
 		if len(participants) != 1 {
 			return ConversationDTO{}, domainshared.BadRequest("私聊必须指定一个其他用户")
 		}
@@ -360,11 +361,11 @@ func (s *Service) CreateConversation(ctx context.Context, in CreateConversationI
 		} else if !errors.Is(err, domainchat.ErrConversationNotFound) {
 			return ConversationDTO{}, err
 		}
-	} else if in.Kind == domainchat.ConversationRoom {
+	case domainchat.ConversationRoom:
 		if len(participants) == 0 {
 			return ConversationDTO{}, domainshared.BadRequest("房间至少需要一名其他成员")
 		}
-	} else {
+	default:
 		return ConversationDTO{}, domainshared.BadRequest("非法会话类型")
 	}
 	participantUsers := make([]*domainuser.User, 0, len(participants))
@@ -1397,6 +1398,9 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 			continue
 		}
 		subs, err := s.repo.ListPushSubscriptions(ctx, event.UserID)
+		if err != nil {
+			continue
+		}
 		payload := PushPayload{Title: "Violet 聊天", Body: "收到一条新消息", URL: "/chat", Tag: "violet-chat"}
 		if event.Type == domainchat.EventRoomInvited {
 			payload.Title = "新的聊天邀请"
