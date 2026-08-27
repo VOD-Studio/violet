@@ -51,6 +51,8 @@ export interface RichCommentInputProps {
 	submitOnEnter?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
+	/** 编辑场景预填的已上传图片：以 done 态播种进内部图片状态，参与 onImagesChange 上报与占位符还原 */
+	initialImages?: PictureInput[];
 	placeholder?: string;
 	resetNonce?: number;
 	onImagesChange?: (images: PictureInput[]) => void;
@@ -81,6 +83,7 @@ export function RichCommentInput({
 	submitOnEnter = false,
 	compact = false,
 	disabled = false,
+	initialImages,
 	placeholder = "写下你的评论…",
 	resetNonce = 0,
 	onImagesChange,
@@ -91,7 +94,17 @@ export function RichCommentInput({
 }: RichCommentInputProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { uploadFile } = useChunkedUpload({ purpose: uploadPurpose });
-	const [imageItems, setImageItems] = useState<ImageItem[]>([]);
+	const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
+		(initialImages ?? [])
+			.filter((img): img is PictureInput & { id: string } => !!img.id)
+			.map((img) => ({
+				id: img.id,
+				previewUrl: img.url,
+				progress: 100,
+				status: "done" as const,
+				data: img,
+			})),
+	);
 	const imageItemsRef = useRef<ImageItem[]>(imageItems);
 	imageItemsRef.current = imageItems;
 

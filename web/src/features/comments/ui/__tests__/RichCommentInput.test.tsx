@@ -220,4 +220,32 @@ describe("inlineImages", () => {
 			]);
 		});
 	});
+
+	it("initialImages 以完成态播种，按正文占位符顺序随 onImagesChange 上报", async () => {
+		const onImagesChange = vi.fn();
+		render(
+			<RichCommentInput
+				value="![img:media-1]说明"
+				onChange={() => {}}
+				enableImage
+				inlineImages
+				initialImages={[
+					{
+						id: "media-1",
+						url: "https://cdn.example.com/a.png",
+						width: 1,
+						height: 1,
+						size: 1,
+					},
+				]}
+				onImagesChange={onImagesChange}
+			/>,
+		);
+
+		await waitFor(() => {
+			expect(onImagesChange).toHaveBeenLastCalledWith([
+				expect.objectContaining({ id: "media-1" }),
+			]);
+		});
+	});
 });
