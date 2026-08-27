@@ -54,7 +54,7 @@ func (c *OpenAIClient) GenerateImage(ctx context.Context, req GenerateImageReque
 	resp, err := c.client.Images.Generate(ctx, openai.ImageGenerateParams{
 		Prompt:         req.Prompt,
 		N:              openai.Int(n),
-		Model:          openai.ImageModel(model), // ImageModel 是 string 别名，空值由端点定默认
+		Model:          model, // ImageModel 是 string 别名，空值由端点定默认
 		ResponseFormat: openai.ImageGenerateParamsResponseFormatB64JSON,
 	})
 	if err != nil {
