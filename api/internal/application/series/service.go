@@ -59,17 +59,26 @@ func (s *Service) ListPublished(ctx context.Context, page, limit int) ([]SeriesD
 	if err != nil {
 		return nil, 0, err
 	}
+	stats, err := s.repo.ChapterStatsBySeries(ctx, seriesIDsOf(result.Items))
+	if err != nil {
+		return nil, 0, err
+	}
 	dtos := make([]SeriesDTO, 0, len(result.Items))
 	for _, item := range result.Items {
-		chapters, err := s.repo.FindChapters(ctx, item.ID())
-		if err != nil {
-			return nil, 0, err
-		}
 		dto := toSeriesDTO(item)
-		fillChapterCounts(&dto, chapters)
+		fillChapterStats(&dto, stats[item.ID()])
 		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil
+}
+
+// seriesIDsOf 提取页内书的 ID 列表（批量统计入参）。
+func seriesIDsOf(items []*domain.Series) []shared.ID {
+	ids := make([]shared.ID, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID())
+	}
+	return ids
 }
 
 // GetBySlug 公开书籍详情（仅 published 章节；draft 书 → 404）。
@@ -147,15 +156,15 @@ func (s *Service) ListAdmin(ctx context.Context, page, limit int) ([]SeriesAdmin
 	if err != nil {
 		return nil, 0, err
 	}
+	stats, err := s.repo.ChapterStatsBySeries(ctx, seriesIDsOf(result.Items))
+	if err != nil {
+		return nil, 0, err
+	}
 	dtos := make([]SeriesAdminDTO, 0, len(result.Items))
 	for _, item := range result.Items {
-		chapters, err := s.repo.FindChapters(ctx, item.ID())
-		if err != nil {
-			return nil, 0, err
-		}
 		dto := toAdminDTO(item)
-		dto.TotalChapterCount = int64(len(chapters))
-		fillChapterCounts(&dto.SeriesDTO, chapters)
+		dto.TotalChapterCount = stats[item.ID()].Total
+		fillChapterStats(&dto.SeriesDTO, stats[item.ID()])
 		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil
@@ -692,15 +701,15 @@ func (s *Service) ListForOwner(ctx context.Context, userID string, page, limit i
 	if err != nil {
 		return nil, 0, err
 	}
+	stats, err := s.repo.ChapterStatsBySeries(ctx, seriesIDsOf(result.Items))
+	if err != nil {
+		return nil, 0, err
+	}
 	dtos := make([]SeriesAdminDTO, 0, len(result.Items))
 	for _, item := range result.Items {
-		chapters, err := s.repo.FindChapters(ctx, item.ID())
-		if err != nil {
-			return nil, 0, err
-		}
 		dto := toAdminDTO(item)
-		dto.TotalChapterCount = int64(len(chapters))
-		fillChapterCounts(&dto.SeriesDTO, chapters)
+		dto.TotalChapterCount = stats[item.ID()].Total
+		fillChapterStats(&dto.SeriesDTO, stats[item.ID()])
 		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil
@@ -749,6 +758,24 @@ func (s *Service) FindPostConflicts(ctx context.Context, userID string, postIDs 
 	for _, m := range metas {
 		metaByPost[m.PostID] = m
 	}
+	// 冲突占用书的 slug 一次批量取回（去重），避免逐 post 查书
+	holderIDs := make(map[shared.ID]struct{})
+	for _, meta := range metaByPost {
+		if meta.SeriesID != nil {
+			holderIDs[*meta.SeriesID] = struct{}{}
+		}
+	}
+	holderSlugs := make(map[shared.ID]string, len(holderIDs))
+	if len(holderIDs) > 0 {
+		ids := make([]shared.ID, 0, len(holderIDs))
+		for id := range holderIDs {
+			ids = append(ids, id)
+		}
+		holderSlugs, err = s.repo.FindSlugsByIDs(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
+	}
 	var out []PostConflict
 	for _, pid := range pids {
 		meta, ok := metaByPost[pid]
@@ -756,11 +783,11 @@ func (s *Service) FindPostConflicts(ctx context.Context, userID string, postIDs 
 			continue // 归属问题留给主校验链整体拒绝
 		}
 		if meta.SeriesID != nil {
-			holder, err := s.repo.FindByID(ctx, *meta.SeriesID)
-			if err != nil {
-				return nil, err
+			// 占用书查不到 = 预检窗口内被并发解散（posts.series_id 尚未同步
+			// 置空的极小竞态）：跳过冲突报告，由主校验链重新裁决
+			if slug, ok := holderSlugs[*meta.SeriesID]; ok {
+				out = append(out, PostConflict{PostID: pid.String(), Title: meta.Title, HeldBy: slug})
 			}
-			out = append(out, PostConflict{PostID: pid.String(), Title: meta.Title, HeldBy: holder.Slug()})
 		}
 	}
 	return out, nil

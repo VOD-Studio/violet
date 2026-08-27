@@ -4,10 +4,7 @@
     "zai-mcp-server": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@z_ai/mcp-server"
-      ],
+      "args": ["-y", "@z_ai/mcp-server"],
       "env": {
         "Z_AI_API_KEY": "${Z_AI_MCP_PAT}",
         "Z_AI_MODE": "ZHIPU"
@@ -34,30 +31,11 @@
         "Authorization": "Bearer ${Z_AI_MCP_PAT}"
       }
     },
-    "violet-posts": {
-      "type": "http",
-      "url": "https://xunrua.top/api/v1/mcp",
-      "headers": {
-        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
-      }
-    },
-    "violet-scraper": {
-      "type": "http",
-      "url": "https://xunrua.top/api/v1/mcp/scraper",
-      "headers": {
-        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
-      }
-    },
-    "violet-reader": {
-      "type": "http",
-      "url": "https://xunrua.top/api/v1/mcp/reader"
-    },
-    "violet-comments": {
-      "type": "http",
-      "url": "https://xunrua.top/api/v1/mcp/comments",
-      "headers": {
-        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
-      }
+    "shadcn": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"],
+      "cwd": "web"
     }
   }
 }

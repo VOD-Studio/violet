@@ -74,6 +74,9 @@ type UpdateInput = domainsettings.UpdateInput
 
 // Update 更新站点配置（部分更新）
 func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.SiteSettings, error) {
+	if in.CustomEmojiMaxPerUser != nil && *in.CustomEmojiMaxPerUser < 0 {
+		return domainsettings.SiteSettings{}, shared.BadRequest("自定义表情份额上限不能为负数")
+	}
 	updates := map[string]string{}
 	if in.SiteName != nil {
 		updates["site_name"] = *in.SiteName
@@ -116,20 +119,20 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	// 关于博主（A 线）内容字段：均为字符串，统一批量写入
 	for k, p := range map[string]*string{
-		"avatar_url":      in.AvatarURL,
-		"tagline":         in.Tagline,
-		"profile_role":    in.ProfileRole,
+		"avatar_url":       in.AvatarURL,
+		"tagline":          in.Tagline,
+		"profile_role":     in.ProfileRole,
 		"profile_location": in.ProfileLocation,
-		"available_for":   in.AvailableFor,
-		"skills_strong":   in.SkillsStrong,
-		"skills_learning": in.SkillsLearning,
+		"available_for":    in.AvailableFor,
+		"skills_strong":    in.SkillsStrong,
+		"skills_learning":  in.SkillsLearning,
 		"skills_interests": in.SkillsInterests,
-		"social_twitter":  in.SocialTwitter,
-		"social_mastodon": in.SocialMastodon,
-		"social_email":    in.SocialEmail,
-		"social_rss":      in.SocialRss,
-		"social_bilibili": in.SocialBilibili,
-		"releases_repo":  in.ReleasesRepo,
+		"social_twitter":   in.SocialTwitter,
+		"social_mastodon":  in.SocialMastodon,
+		"social_email":     in.SocialEmail,
+		"social_rss":       in.SocialRss,
+		"social_bilibili":  in.SocialBilibili,
+		"releases_repo":    in.ReleasesRepo,
 	} {
 		if p != nil {
 			updates[k] = *p
@@ -171,6 +174,9 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.CodeRunnerLanguages != nil {
 		updates["code_runner_languages"] = *in.CodeRunnerLanguages
+	}
+	if in.CustomEmojiMaxPerUser != nil {
+		updates["custom_emoji_max_per_user"] = strconv.Itoa(*in.CustomEmojiMaxPerUser)
 	}
 	if len(updates) > 0 {
 		// 批量原子更新，避免逐键 Upsert 中途失败导致部分更新
@@ -230,9 +236,10 @@ func (s *Service) GetGeneral(ctx context.Context) (GeneralView, error) {
 func (s *Service) UpdateGeneral(ctx context.Context, in GeneralUpdate) (GeneralView, error) {
 	all, err := s.Update(ctx, domainsettings.UpdateInput{
 		SiteName: in.SiteName,
-		SiteURL: in.SiteURL, FooterText: in.FooterText,
+		SiteURL:  in.SiteURL, FooterText: in.FooterText,
 		PostsPerPage: in.PostsPerPage, CommentsEnabled: in.CommentsEnabled,
 		CommentsModeration: in.CommentsModeration, TechStack: in.TechStack,
+		CustomEmojiMaxPerUser: in.CustomEmojiMaxPerUser,
 	})
 	if err != nil {
 		return GeneralView{}, err
@@ -293,7 +300,7 @@ func (s *Service) GetProfile(ctx context.Context) (ProfileView, error) {
 // UpdateProfile 更新关于博主组
 func (s *Service) UpdateProfile(ctx context.Context, in ProfileUpdate) (ProfileView, error) {
 	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		Bio: in.Bio,
+		Bio:       in.Bio,
 		AvatarURL: in.AvatarURL, Tagline: in.Tagline,
 		ProfileRole: in.ProfileRole, ProfileLocation: in.ProfileLocation,
 		AvailableFor: in.AvailableFor, SkillsStrong: in.SkillsStrong,

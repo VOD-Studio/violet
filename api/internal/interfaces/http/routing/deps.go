@@ -19,10 +19,12 @@ import (
 	apitokenhttp "blog-api/internal/interfaces/http/handler/api_token"
 	audithttp "blog-api/internal/interfaces/http/handler/audit"
 	authhttp "blog-api/internal/interfaces/http/handler/auth"
+	chathttp "blog-api/internal/interfaces/http/handler/chat"
 	codehttp "blog-api/internal/interfaces/http/handler/coderunner"
 	commenthttp "blog-api/internal/interfaces/http/handler/comment"
 	crhttp "blog-api/internal/interfaces/http/handler/commentreaction"
 	contenthttp "blog-api/internal/interfaces/http/handler/content"
+	customemojihttp "blog-api/internal/interfaces/http/handler/customemoji"
 	friendlinkhttp "blog-api/internal/interfaces/http/handler/friendlink"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
@@ -90,6 +92,8 @@ type Deps struct {
 	Series             *serieshttp.Handler
 	Notification       *notificationhttp.Handler
 	NotificationStream *notificationhttp.StreamHandler
-
-	MCP MCPHandlers
+	Chat               *chathttp.Handler
+	ChatStream         *chathttp.StreamHandler
+	CustomEmoji        *customemojihttp.Handler
+	MCP                MCPHandlers
 }

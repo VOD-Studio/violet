@@ -39,3 +39,11 @@ Object.defineProperty(globalThis, "IntersectionObserver", {
 	configurable: true,
 	value: IntersectionObserverMock,
 });
+
+if (typeof Element !== "undefined") {
+	Object.defineProperty(Element.prototype, "scrollIntoView", {
+		writable: true,
+		configurable: true,
+		value: vi.fn(),
+	});
+}

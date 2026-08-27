@@ -1,3 +1,4 @@
+import { cn } from "@shared/lib/utils";
 import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
 import { SystemThemeTransition } from "@shared/ui/theme-transition";
@@ -16,6 +17,7 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
+import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
 import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
@@ -126,7 +128,9 @@ function RootComponent() {
 	const { auth } = Route.useRouteContext();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const isAdminRoute = pathname.startsWith("/admin");
-
+	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
+	const isUsersRoute = pathname.startsWith("/users/");
+	const isFullscreenRoute = isChatRoute || isUsersRoute;
 	return (
 		<AppProvider>
 			<SystemThemeTransition />
@@ -134,19 +138,30 @@ function RootComponent() {
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
 			) : (
-				// 前台路由：包含 Header/Footer 的标准布局
-				<div className="flex min-h-screen flex-col">
+				// 前台路由：包含 Header/Footer 的标准布局（/chat 和 /users 隐藏 Footer 并锁定视口高度）
+				<div
+					className={cn(
+						"flex min-h-screen flex-col",
+						isFullscreenRoute && "h-dvh overflow-hidden",
+					)}
+				>
 					<AnnouncementBar />
 					<Header isAuthenticated={auth.isAuthenticated} />
-					<main className="flex-1 flex-col">
+					<main
+						className={cn(
+							"flex-1 flex-col",
+							isFullscreenRoute && "flex min-h-0 overflow-hidden",
+						)}
+					>
 						<Outlet />
 					</main>
-					<Footer />
+					{!isFullscreenRoute && <Footer />}
 				</div>
 			)}
 			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
+			<ShareTweetDialog />
 			<CustomCursor />
 			<TanStackDevtools
 				config={{ position: "bottom-left" }}

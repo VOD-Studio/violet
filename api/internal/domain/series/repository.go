@@ -2,6 +2,7 @@ package series
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -38,6 +39,16 @@ type ReorderPlan struct {
 	OrderedIDs []shared.ID
 }
 
+// ChapterStats 书的章节统计（列表页批量填充口径）。
+type ChapterStats struct {
+	// Total 全部状态章节数（含 draft/archived）
+	Total int64
+	// PublishedCount 已发布章节数
+	PublishedCount int64
+	// LatestPublishedAt 最近一个已发布章节的发布时间；无已发布章节时为零值
+	LatestPublishedAt time.Time
+}
+
 // SeriesRepository 系列书仓储。
 //
 // 聚合部分（书 + 卷）与章节归属部分（posts 三列）分两组：
@@ -61,6 +72,9 @@ type SeriesRepository interface {
 	FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*Series], error)
 	// ExistsBySlug slug 占用检查；excludeID 非零时排除自身
 	ExistsBySlug(ctx context.Context, slug string, excludeID shared.ID) (bool, error)
+	// FindSlugsByIDs 批量取书 slug（挂章冲突预检转述占用书；
+	// 不带卷——避免按聚合重建引入每书一次的卷查询）；不存在的 ID 不出现在结果中
+	FindSlugsByIDs(ctx context.Context, ids []shared.ID) (map[shared.ID]string, error)
 	// Delete 物理删除书（级联删卷由 FK 承担；章节解绑由 posts FK ON DELETE SET NULL 承担）
 	Delete(ctx context.Context, id shared.ID) error
 
@@ -83,6 +97,7 @@ type SeriesRepository interface {
 	// CountChaptersInSection 卷内章节数（「非空卷拒绝删除」依据；含全部状态——
 	// draft/archived 章节同样占位，避免删卷后归属悬空）
 	CountChaptersInSection(ctx context.Context, sectionID shared.ID) (int64, error)
-	// CountChaptersBySeries 批量书章节计数（书架列表展示）
-	CountChaptersBySeries(ctx context.Context, seriesIDs []shared.ID) (map[shared.ID]int64, error)
+	// ChapterStatsBySeries 批量书章节统计（列表页填充：总数/已发布数/
+	// 最近发布时间，一条聚合查询——避免分页循环内 per-book 查询）
+	ChapterStatsBySeries(ctx context.Context, seriesIDs []shared.ID) (map[shared.ID]ChapterStats, error)
 }

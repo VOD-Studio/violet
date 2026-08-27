@@ -43,7 +43,7 @@ func TestSaveGeneratedCover_PersistsMaterialFile(t *testing.T) {
 	owner := domainshared.NewID()
 	png := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}
 
-	url, err := svc.SaveGeneratedCover(context.Background(), owner, png, "png")
+	url, err := svc.SaveGeneratedCover(context.Background(), owner, png)
 	if err != nil {
 		t.Fatalf("SaveGeneratedCover() error = %v", err)
 	}
@@ -61,11 +61,43 @@ func TestSaveGeneratedCover_PersistsMaterialFile(t *testing.T) {
 	}
 }
 
-func TestSaveGeneratedCover_RejectsNonImageExt(t *testing.T) {
+// TestSaveGeneratedCover_RejectsNonImageBytes 嗅探自治：processor 未注入
+// 时 magic bytes 校验依然生效，任意字节不得落盘（评审修复）。
+func TestSaveGeneratedCover_RejectsNonImageBytes(t *testing.T) {
 	tmp := t.TempDir()
-	repo := &fakeFileRepo{ownerID: domainshared.NewID()}
+	repo := &recordingFileRepo{fakeFileRepo: fakeFileRepo{ownerID: domainshared.NewID()}}
 	svc := NewUploadService(repo, nil, storage.NewLocalStorage(tmp, "/uploads/"), nil, filepath.Join(tmp, "chunks"), tmp, "/uploads/")
-	if _, err := svc.SaveGeneratedCover(context.Background(), domainshared.NewID(), []byte("x"), "exe"); err == nil {
-		t.Fatal("非图片扩展名应拒绝")
+	if _, err := svc.SaveGeneratedCover(context.Background(), domainshared.NewID(), []byte("x")); err == nil {
+		t.Fatal("非图片字节应拒绝")
+	}
+	if len(repo.saved) != 0 {
+		t.Fatal("拒绝路径不应落库")
+	}
+}
+
+// TestSniffImageExt 格式矩阵：png/jpg/webp 识别与未知字节拒绝。
+func TestSniffImageExt(t *testing.T) {
+	cases := []struct {
+		name string
+		data []byte
+		ext  string
+	}{
+		{"png", []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}, "png"},
+		{"jpeg", []byte{0xff, 0xd8, 0xff, 0xe0}, "jpg"},
+		{"webp", []byte{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '}, "webp"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ext, ok := SniffImageExt(c.data)
+			if !ok || ext != c.ext {
+				t.Errorf("SniffImageExt() = %q, %v; want %q, true", ext, ok, c.ext)
+			}
+		})
+	}
+	if _, ok := SniffImageExt([]byte("not-an-image")); ok {
+		t.Error("未知字节应 ok=false")
+	}
+	if _, ok := SniffImageExt(nil); ok {
+		t.Error("空字节应 ok=false")
 	}
 }

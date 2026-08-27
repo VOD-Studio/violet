@@ -1,4 +1,5 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
+import { CustomEmojiAdminSection } from "@features/admin-customemojis/ui/CustomEmojiAdminSection";
 import {
 	useBatchUpdateGroupStatus,
 	useDeleteEmojiGroup,
@@ -16,6 +17,7 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Card, CardContent } from "@shared/ui/base/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import Empty from "@shared/ui/empty";
 import { createFileRoute } from "@tanstack/react-router";
@@ -27,8 +29,9 @@ import { SearchInput } from "@/shared/ui/search-input";
 /**
  * /admin/emojis - 表情管理
  *
- * 统计卡片 + 工具栏 + 分组卡片网格，支持分组 CRUD 与批量启停，
- * 管理分组内表情走弹窗。排版对齐 main，组件与数据层沿用当前架构。
+ * 「表情分组」tab：统计卡片 + 工具栏 + 分组卡片网格，支持分组 CRUD 与批量启停，
+ * 管理分组内表情走弹窗。「用户表情」tab（需 customemoji:manage）：全站用户
+ * 自定义表情的分页列表与下架。排版对齐 main，组件与数据层沿用当前架构。
  */
 export const Route = createFileRoute("/admin/emojis")({
 	component: EmojisPage,
@@ -54,6 +57,10 @@ function EmojisPage() {
 	const canManageGroup = useHasPermission("emoji:manage-group");
 	const canCreateEmoji = useHasPermission("emoji:create");
 	const canRefetch = useHasPermission("emoji:refetch");
+	const canManageCustom = useHasPermission("customemoji:manage");
+	// 无 customemoji:manage 权限时不出现「用户表情」tab，页面维持原分组管理形态
+	const [tab, setTab] = useState<"groups" | "custom">("groups");
+	const activeTab = canManageCustom ? tab : "groups";
 
 	const stats = useMemo(() => {
 		if (!groups) return { total: 0, enabled: 0, disabled: 0 };
@@ -145,74 +152,8 @@ function EmojisPage() {
 		!isLoading && !error && filteredGroups.length === 0 && !!groups && groups.length > 0;
 	const batchPending = batchUpdateStatus.isPending;
 
-	return (
-		<PageShell
-			title="表情管理"
-			description="管理表情分组和表情"
-			action={
-				<div className="flex items-center gap-2">
-					{canRefetch ? <RefetchBilibiliButton /> : null}
-					{canManageGroup && !isEmpty ? (
-						<Button size="sm" onClick={handleCreateGroup}>
-							<Plus className="size-3.5" />
-							创建分组
-						</Button>
-					) : null}
-				</div>
-			}
-			sticky={
-				!isEmpty && (
-					<div className="flex flex-wrap items-center gap-3 pt-1">
-						<div className="min-w-50 max-w-100 flex-1">
-							<SearchInput
-								placeholder="搜索分组名称..."
-								value={searchQuery}
-								onValueChange={setSearchQuery}
-							/>
-						</div>
-
-						<div className="flex items-center gap-2">
-							{canManageGroup ? (
-								<>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleBatchEnable}
-										disabled={batchPending || isLoading || stats.disabled === 0}
-									>
-										{batchPending ? (
-											<Loader2 className="mr-1 size-3.5 animate-spin" />
-										) : (
-											<Power className="mr-1 size-3.5" />
-										)}
-										批量启用
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleBatchDisable}
-										disabled={batchPending || isLoading || stats.enabled === 0}
-									>
-										{batchPending ? (
-											<Loader2 className="mr-1 size-3.5 animate-spin" />
-										) : (
-											<PowerOff className="mr-1 size-3.5" />
-										)}
-										批量禁用
-									</Button>
-								</>
-							) : null}
-						</div>
-
-						{searchQuery && (
-							<Badge variant="secondary" className="ml-auto">
-								显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
-							</Badge>
-						)}
-					</div>
-				)
-			}
-		>
+	const groupsContent = (
+		<>
 			{/* 统计卡片 */}
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{isLoading ? (
@@ -302,6 +243,100 @@ function EmojisPage() {
 						/>
 					))}
 				</div>
+			)}
+		</>
+	);
+
+	return (
+		<PageShell
+			title="表情管理"
+			description="管理表情分组与用户自定义表情"
+			action={
+				activeTab === "groups" ? (
+					<div className="flex items-center gap-2">
+						{canRefetch ? <RefetchBilibiliButton /> : null}
+						{canManageGroup && !isEmpty ? (
+							<Button size="sm" onClick={handleCreateGroup}>
+								<Plus className="size-3.5" />
+								创建分组
+							</Button>
+						) : null}
+					</div>
+				) : undefined
+			}
+			sticky={
+				activeTab === "groups" &&
+				!isEmpty && (
+					<div className="flex flex-wrap items-center gap-3 pt-1">
+						<div className="min-w-50 max-w-100 flex-1">
+							<SearchInput
+								placeholder="搜索分组名称..."
+								value={searchQuery}
+								onValueChange={setSearchQuery}
+							/>
+						</div>
+
+						<div className="flex items-center gap-2">
+							{canManageGroup ? (
+								<>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={handleBatchEnable}
+										disabled={batchPending || isLoading || stats.disabled === 0}
+									>
+										{batchPending ? (
+											<Loader2 className="mr-1 size-3.5 animate-spin" />
+										) : (
+											<Power className="mr-1 size-3.5" />
+										)}
+										批量启用
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={handleBatchDisable}
+										disabled={batchPending || isLoading || stats.enabled === 0}
+									>
+										{batchPending ? (
+											<Loader2 className="mr-1 size-3.5 animate-spin" />
+										) : (
+											<PowerOff className="mr-1 size-3.5" />
+										)}
+										批量禁用
+									</Button>
+								</>
+							) : null}
+						</div>
+
+						{searchQuery && (
+							<Badge variant="secondary" className="ml-auto">
+								显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
+							</Badge>
+						)}
+					</div>
+				)
+			}
+		>
+			{canManageCustom ? (
+				<Tabs
+					value={activeTab}
+					onValueChange={(v) => setTab(v as "groups" | "custom")}
+					className="min-h-0 flex-1"
+				>
+					<TabsList>
+						<TabsTrigger value="groups">表情分组</TabsTrigger>
+						<TabsTrigger value="custom">用户表情</TabsTrigger>
+					</TabsList>
+					<TabsContent value="groups" className="flex min-h-0 flex-1 flex-col gap-6">
+						{groupsContent}
+					</TabsContent>
+					<TabsContent value="custom" className="flex min-h-0 flex-1 flex-col">
+						<CustomEmojiAdminSection />
+					</TabsContent>
+				</Tabs>
+			) : (
+				groupsContent
 			)}
 
 			{/* 创建/编辑分组弹窗 */}

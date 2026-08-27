@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
- 	"fmt"
-	"sort"
- 	"net/http"
+	"fmt"
+	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 
@@ -66,8 +66,8 @@ func (c *OAuthCredentials) GithubClientSecret() string {
 
 // OAuthCredentialUpdate OAuth 凭据写入入参（指针表部分更新，nil 不更新）
 type OAuthCredentialUpdate struct {
-	GoogleClientID    *string
-	GithubClientID    *string
+	GoogleClientID     *string
+	GithubClientID     *string
 	GithubClientSecret *string
 }
 
@@ -102,8 +102,8 @@ type ProviderStatus struct {
 
 // OAuthStatusOutput 凭据状态查询输出
 type OAuthStatusOutput struct {
-	Google    ProviderStatus `json:"google"`
-	Github    ProviderStatus `json:"github"`
+	Google ProviderStatus `json:"google"`
+	Github ProviderStatus `json:"github"`
 	// Persisted 最近一次写入是否成功落盘 .env（false=重启后失效）
 	Persisted bool `json:"persisted"`
 }
@@ -199,6 +199,8 @@ func persistOAuthDotenv(c *OAuthCredentials) bool {
 	return true
 }
 
+var dotenvKeyOrder = [...]string{"GOOGLE_CLIENT_ID", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"}
+
 // upsertDotenvKeys 在 .env 行数组里替换或追加键值（保留注释与顺序）
 func upsertDotenvKeys(lines []string, kvs map[string]string) []string {
 	done := make(map[string]bool, len(kvs))
@@ -214,16 +216,21 @@ func upsertDotenvKeys(lines []string, kvs map[string]string) []string {
 		}
 		out = append(out, replaced)
 	}
-	// map 遍历序随机：新键按键名排序追加，保证输出稳定（CI 曾因顺序漂移失败）
-	pending := make([]string, 0, len(kvs))
-	for k := range kvs {
-		if !done[k] {
-			pending = append(pending, k)
+	for _, key := range dotenvKeyOrder {
+		if value, ok := kvs[key]; ok && !done[key] {
+			out = append(out, fmt.Sprintf("%s=%s", key, value))
+			done[key] = true
 		}
 	}
-	sort.Strings(pending)
-	for _, k := range pending {
-		out = append(out, fmt.Sprintf("%s=%s", k, kvs[k]))
+	extraKeys := make([]string, 0, len(kvs))
+	for key := range kvs {
+		if !done[key] {
+			extraKeys = append(extraKeys, key)
+		}
+	}
+	sort.Strings(extraKeys)
+	for _, key := range extraKeys {
+		out = append(out, fmt.Sprintf("%s=%s", key, kvs[key]))
 	}
 	return out
 }
@@ -245,9 +252,10 @@ const verifyProbeCode = "violet-oauth-verify-probe"
 // 高频探测会被 provider 限流）。
 //
 // 判读矩阵（token 端点对假 code 的响应）：
-//   GitHub: 404 → App 已删；incorrect_client_credentials → secret 错；
-//           bad_verification_code → 凭据有效
-//   Google: invalid_client → client 已删；其余（invalid_request 等）→ 存在
+//
+//	GitHub: 404 → App 已删；incorrect_client_credentials → secret 错；
+//	        bad_verification_code → 凭据有效
+//	Google: invalid_client → client 已删；其余（invalid_request 等）→ 存在
 func (c *OAuthCredentials) VerifyProvider(ctx context.Context, provider string) (VerifyResult, error) {
 	switch provider {
 	case "google":

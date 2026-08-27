@@ -1,4 +1,3 @@
-import type { EmojiUploadResult } from "@entities/emoji/model/types";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
@@ -70,21 +69,6 @@ export const useCreateEmoji = () => {
 		},
 	});
 };
-
-/**
- * useUploadEmoji - 上传表情图片，POST /uploads/emoji
- *
- * multipart/form-data，服务端嗅探真实 MIME 防伪造，返回相对 URL。
- * 文件不落库，仅返回 URL，故无需 invalidate。
- */
-export const useUploadEmoji = () =>
-	useMutation({
-		mutationFn: async (file: File) => {
-			const form = new FormData();
-			form.append("file", file);
-			return apiPost<EmojiUploadResult>("/uploads/emoji", form);
-		},
-	});
 
 /** useUpdateEmoji - 更新表情，PATCH /admin/emojis/{id} */
 export const useUpdateEmoji = () => {

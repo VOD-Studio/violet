@@ -72,6 +72,50 @@ func TestAuthPaths(t *testing.T) {
 	require.NotEmpty(t, spec.Paths.Find("/auth/session").Get.Security)
 }
 
+func TestChatPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, path := range []string{
+		"/chat/conversations",
+		"/chat/conversations/{conversationId}",
+		"/chat/conversations/{conversationId}/members",
+		"/chat/conversations/{conversationId}/messages",
+		"/chat/conversations/{conversationId}/read",
+		"/chat/conversations/{conversationId}/typing",
+		"/chat/events",
+		"/chat/unread-count",
+		"/chat/push/subscription",
+	} {
+		require.NotNil(t, spec.Paths.Find(path), "missing chat path %s", path)
+	}
+	require.Contains(t, spec.Components.Schemas, "ChatEventDTO")
+	require.Contains(t, spec.Components.Schemas, "ChatMessageDTO")
+	require.Contains(t, spec.Components.Schemas, "ChatMessageReferenceDTO")
+	require.Contains(t, spec.Components.Schemas, "ChatSharedTweetDTO")
+	require.Contains(t, spec.Components.Schemas["ChatMessageDTO"].Value.Properties, "reply_to")
+	require.Contains(t, spec.Components.Schemas["ChatMessageDTO"].Value.Properties, "shared_tweet")
+	require.Contains(t, spec.Components.Schemas["ChatSendMessageRequest"].Value.Properties, "reply_to_id")
+	require.Contains(t, spec.Components.Schemas["ChatSendMessageRequest"].Value.Properties, "shared_tweet_id")
+	send := spec.Paths.Find("/chat/conversations/{conversationId}/messages").Post
+	require.NotNil(t, send)
+	require.True(t, hasParam(send.Parameters, "Idempotency-Key"))
+}
+func TestCustomEmojiPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, path := range []string{
+		"/custom-emojis",
+		"/custom-emojis/mine",
+		"/custom-emojis/{id}",
+		"/custom-emojis/{id}/favorite",
+	} {
+		require.NotNil(t, spec.Paths.Find(path), "missing custom emoji path %s", path)
+	}
+	for _, schema := range []string{"CustomEmojiDTO", "CustomEmojiMineDTO", "CustomEmojiCreateRequest", "CustomEmojiRefMap"} {
+		require.Contains(t, spec.Components.Schemas, schema, "missing schema %s", schema)
+	}
+	require.NotNil(t, spec.Paths.Find("/custom-emojis").Post)
+	require.True(t, hasParam(spec.Paths.Find("/custom-emojis").Post.Parameters, "X-CSRF-Token"))
+}
+
 // hasParam 检查参数列表是否包含指定名称
 func hasParam(params openapi3.Parameters, name string) bool {
 	for _, p := range params {

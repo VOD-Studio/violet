@@ -74,6 +74,6 @@ func (g *LLMCoverGenerator) GenerateImages(ctx context.Context, prompt string, n
 // 落 purpose=material 复用素材库缩略图与去重机制。
 type MediaGeneratedCoverStore struct{ uploadSvc *appmedia.UploadService }
 
-func (s *MediaGeneratedCoverStore) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte, ext string) (string, error) {
-	return s.uploadSvc.SaveGeneratedCover(ctx, ownerID, data, ext)
+func (s *MediaGeneratedCoverStore) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte) (string, error) {
+	return s.uploadSvc.SaveGeneratedCover(ctx, ownerID, data)
 }

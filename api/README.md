@@ -110,12 +110,14 @@ api/
 | **commentreaction** | commentreaction | commentreaction | 评论表情反应（IP 哈希匿名） |
 | **friendlink** | friendlink | friendlink | 友链申请、审核、上下架管理 |
 | **notification** | notification | notification | 站内通知（SSE 实时推送、未读中心、事件订阅写通知） |
+| **chat** | chat | chat | 私聊/私有房间、文本与图片消息、cursor 历史、SSE 事件流、Web Push 订阅 |
+| **chatreaction** | chatreaction | chat | 聊天消息表情反应（成员鉴权、聚合计数、SSE 变化事件） |
 | **api_token** | api_token | api_token | 个人访问令牌 PAT（MCP 授权凭证） |
 | **project** | project | project | 项目展示 CRUD |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
+| **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
-| **media** | upload, music | media | 文件详情/批量删除/缩略图、音乐解析 |
 | **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文/动态发布 |
@@ -287,8 +289,8 @@ make help         # 查看所有命令
 | `cors_allowed_origins` | CORS 允许来源 |
 | `trusted_proxies` | 受信代理 CIDR（为空时忽略 X-Forwarded-For） |
 | `resend_api_key` | Resend 邮件 API Key |
+| `web_push.*` | 浏览器 Web Push 的 VAPID 公钥、私钥与 subject；私钥仅从环境变量读取 |
 | `superadmin.*` | 初始超级管理员账户 |
-| `bilibili_*` | B站表情导入 Cookie |
 
 > 各键上方的行内注释标注对应的 env 覆盖名；敏感值一律走环境变量，不写入 `config.yaml`。
 

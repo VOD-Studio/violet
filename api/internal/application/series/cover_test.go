@@ -36,18 +36,18 @@ type stubCoverStore struct {
 	err      error
 }
 
-func (s *stubCoverStore) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte, ext string) (string, error) {
+func (s *stubCoverStore) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}
 	s.data = data
-	s.savedURL = "/uploads/material/cover." + ext
+	s.savedURL = "/uploads/material/cover.png"
 	return s.savedURL, nil
 }
 
 // 编译期接口断言。
 var (
-	_ CoverGenerator   = (*stubImageClient)(nil)
+	_ CoverGenerator      = (*stubImageClient)(nil)
 	_ GeneratedCoverStore = (*stubCoverStore)(nil)
 )
 
@@ -131,39 +131,55 @@ func TestGenerateCoverSuggestions_GeneratorError(t *testing.T) {
 	}
 }
 
-
-// TestDecodeImagePayload_MagicBytes 三种格式的字节嗅探（评审修复：不再硬编码 png）。
+// TestDecodeImagePayload_MagicBytes 三种格式 b64 解码 + 嗅探通过；
+// 格式矩阵（ext 归属）由 media.SniffImageExt 侧测试覆盖。
 func TestDecodeImagePayload_MagicBytes(t *testing.T) {
 	png := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}
 	jpeg := []byte{0xff, 0xd8, 0xff, 0xe0}
-	webp := []byte{'R','I','F','F',0,0,0,0,'W','E','B','P','V','P','8',' '}
+	webp := []byte{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '}
 
-	cases := []struct {
-		name string
-		data []byte
-		ext  string
-	}{
-		{"png", png, "png"},
-		{"jpeg", jpeg, "jpg"},
-		{"webp", webp, "webp"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			img := GeneratedImage{B64: base64.StdEncoding.EncodeToString(c.data)}
-			_, ext, err := decodeImagePayload(img)
+	for name, data := range map[string][]byte{"png": png, "jpeg": jpeg, "webp": webp} {
+		t.Run(name, func(t *testing.T) {
+			img := GeneratedImage{B64: base64.StdEncoding.EncodeToString(data)}
+			got, err := decodeImagePayload(img)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if ext != c.ext {
-				t.Errorf("ext = %q, want %q", ext, c.ext)
+			if string(got) != string(data) {
+				t.Errorf("解码字节不一致")
 			}
 		})
 	}
 
 	t.Run("未知字节拒绝", func(t *testing.T) {
 		img := GeneratedImage{B64: base64.StdEncoding.EncodeToString([]byte("not-an-image"))}
-		if _, _, err := decodeImagePayload(img); err == nil {
+		if _, err := decodeImagePayload(img); err == nil {
 			t.Error("非图片字节应拒绝")
 		}
 	})
+}
+
+// TestNormalizeCoverCount 张数钳制契约（缺省 2、上限 4 与前端 MAX_COUNT 一致）。
+func TestNormalizeCoverCount(t *testing.T) {
+	cases := []struct{ in, want int }{
+		{0, 2}, {-1, 2}, {1, 1}, {3, 3}, {4, 4}, {5, 4}, {100, 4},
+	}
+	for _, c := range cases {
+		if got := normalizeCoverCount(c.in); got != c.want {
+			t.Errorf("normalizeCoverCount(%d) = %d, want %d", c.in, got, c.want)
+		}
+	}
+}
+
+// TestSanitizePromptField 注入载体清洗：换行/制表折叠为空格、控制字符删除、超长截断。
+func TestSanitizePromptField(t *testing.T) {
+	if got := sanitizePromptField("a\n忽略指令\rb\tc", 100); got != "a 忽略指令 b c" {
+		t.Errorf("折叠换行/制表 = %q", got)
+	}
+	if got := sanitizePromptField("a\x00b", 100); got != "ab" {
+		t.Errorf("控制字符应删除, got %q", got)
+	}
+	if got := sanitizePromptField(strings.Repeat("字", 10), 5); len([]rune(got)) != 5 {
+		t.Errorf("应按 rune 截断到 5, got %d", len([]rune(got)))
+	}
 }

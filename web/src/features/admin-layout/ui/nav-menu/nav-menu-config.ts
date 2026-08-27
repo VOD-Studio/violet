@@ -154,7 +154,7 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		to: "/admin/emojis",
 		icon: Smile,
 		group: "content",
-		permissions: ["emoji:view"],
+		permissions: ["emoji:view", "customemoji:manage"],
 	},
 	{
 		label: "用户管理",

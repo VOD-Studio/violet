@@ -229,7 +229,6 @@ func (f *fakeCommentRepo) FindPage(_ context.Context, filter domaintweet.ListFil
 	return shared.NewPageResult(q, tops, int64(len(tops))), nil
 }
 
-
 func (f *fakeCommentRepo) CountByTweet(_ context.Context, tweetID shared.ID) (int64, error) {
 	return f.countByID[tweetID.String()], nil
 }
@@ -626,6 +625,9 @@ func TestService_ListByUser(t *testing.T) {
 }
 func TestService_GetUserProfile(t *testing.T) {
 	author := newTestUser(t, "alice")
+	displayName, err := domainuser.ParseDisplayName("Alice")
+	require.NoError(t, err)
+	author.UpdateDisplayName(displayName)
 	users := &fakeUserRepo{
 		byUsername: map[string]*domainuser.User{"alice": author},
 		byIDs:      map[string]*domainuser.User{author.GetID().String(): author},
@@ -636,6 +638,7 @@ func TestService_GetUserProfile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, author.GetID().String(), profile.ID)
 	assert.Equal(t, "alice", profile.Username)
+	assert.Equal(t, "Alice", profile.DisplayName)
 	assert.NotEmpty(t, profile.CreatedAt)
 
 	_, err = svc.GetUserProfile(context.Background(), "ghost_user")
@@ -1157,8 +1160,9 @@ func TestTweet_EmoteEnriched(t *testing.T) {
 	author := newTestUser(t, "author")
 	authorID := author.GetID()
 	lookup := &fakeEmojiLookup{refs: map[string]EmojiRef{
-		"[doge]": {URL: "https://emoji/doge.png", GifURL: "https://emoji/doge.gif", Size: 2},
-		"[cat]":  {URL: "https://emoji/cat.png", Size: 1},
+		"[doge]":         {URL: "https://emoji/doge.png", GifURL: "https://emoji/doge.gif", Size: 2},
+		"[cat]":          {URL: "https://emoji/cat.png", Size: 1},
+		"[mycat:uuid-1]": {URL: "https://emoji/mycat.png", CustomEmojiID: "uuid-1", Relation: "owned"},
 	}}
 	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{authorID.String(): author}}
 
@@ -1166,7 +1170,7 @@ func TestTweet_EmoteEnriched(t *testing.T) {
 	quoted := domaintweet.ReconstructTweet(quotedID, authorID, "原推 [cat]", []string{}, nil, 0, time.Now(), time.Now())
 
 	mainID := shared.NewID()
-	mainTw := domaintweet.ReconstructTweet(mainID, authorID, "转推 [doge]", []string{}, &quotedID, 0, time.Now(), time.Now())
+	mainTw := domaintweet.ReconstructTweet(mainID, authorID, "转推 [doge] [mycat:uuid-1]", []string{}, &quotedID, 0, time.Now(), time.Now())
 
 	repo := &fakeTweetRepo{
 		findByIDData: map[string]*domaintweet.Tweet{
@@ -1183,6 +1187,8 @@ func TestTweet_EmoteEnriched(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, dto.Emote, "[doge]")
 	assert.Equal(t, "https://emoji/doge.png", dto.Emote["[doge]"].URL)
+	require.Contains(t, dto.Emote, "[mycat:uuid-1]")
+	assert.Equal(t, "owned", dto.Emote["[mycat:uuid-1]"].Relation)
 	assert.NotContains(t, dto.Emote, "[cat]", "主推文不包含未引用的 [cat]")
 	require.NotNil(t, dto.QuotedTweet)
 	require.Contains(t, dto.QuotedTweet.Emote, "[cat]")
