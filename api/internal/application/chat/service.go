@@ -95,6 +95,20 @@ type SendMessageInput struct {
 	IdempotencyKey string
 }
 
+// EditMessageInput 编辑消息入参。
+type EditMessageInput struct {
+	// UserID 当前用户 ID，必须是消息发送者。
+	UserID domainshared.ID
+	// ConversationID 所属会话 ID。
+	ConversationID domainshared.ID
+	// MessageID 目标消息 ID。
+	MessageID domainshared.ID
+	// Content 修订后的文本内容。
+	Content string
+	// MediaIDs 修订后的图片媒体 ID 列表（仅图片消息），整体替换原有列表。
+	MediaIDs []domainshared.ID
+}
+
 // AddMessageReactionInput 添加聊天消息反应入参。
 type AddMessageReactionInput struct {
 	// UserID 当前用户 ID。
@@ -223,6 +237,8 @@ type MessageDTO struct {
 	IsDeleted bool `json:"is_deleted"`
 	// DeletedAt 删除时间。
 	DeletedAt *string `json:"deleted_at,omitempty"`
+	// EditedAt 最后编辑时间；空值表示从未编辑。
+	EditedAt *string `json:"edited_at,omitempty"`
 	// CreatedAt 消息创建时间。
 	CreatedAt string `json:"created_at"`
 }
@@ -881,6 +897,83 @@ func (s *Service) DeleteMessage(ctx context.Context, adminID, conversationID, me
 	return nil
 }
 
+// EditMessage 编辑发送者自己的消息（规则见 CONTEXT.md「消息编辑」词条）。
+//
+// 图片消息的媒体引用整体替换：新增媒体先抬引用计数、落库成功后再释放被移除的，
+// 与删除消息共享「引用计数只为清理服务、不为展示服务」的口径。
+func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (MessageDTO, error) {
+	if _, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID); err != nil {
+		return MessageDTO{}, err
+	}
+	message, err := s.repo.FindMessage(ctx, in.ConversationID, in.MessageID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	if message.SenderID() != in.UserID {
+		return MessageDTO{}, domainshared.Forbidden("只能编辑自己的消息")
+	}
+	if s.customEmojis != nil && in.Content != "" {
+		if err := s.customEmojis.ValidateContent(ctx, in.Content, in.UserID); err != nil {
+			return MessageDTO{}, err
+		}
+	}
+	if message.Type() == domainchat.MessageImage {
+		if _, err := s.chatImages(ctx, in.MediaIDs, in.UserID); err != nil {
+			return MessageDTO{}, err
+		}
+	}
+	previousMedia := message.MediaIDs()
+	if err := message.Edit(in.Content, in.MediaIDs, s.now()); err != nil {
+		return MessageDTO{}, err
+	}
+	if message.EditedAt() == nil {
+		return s.messageDTO(ctx, message, in.UserID)
+	}
+	added := diffMediaIDs(message.MediaIDs(), previousMedia)
+	for i, mediaID := range added {
+		if err := s.files.UpdateRefCount(ctx, mediaID, 1); err != nil {
+			for _, previous := range added[:i] {
+				_ = s.files.UpdateRefCount(ctx, previous, -1)
+			}
+			return MessageDTO{}, err
+		}
+	}
+	if err := s.repo.UpdateMessage(ctx, message); err != nil {
+		for _, mediaID := range added {
+			_ = s.files.UpdateRefCount(ctx, mediaID, -1)
+		}
+		return MessageDTO{}, err
+	}
+	for _, mediaID := range diffMediaIDs(previousMedia, message.MediaIDs()) {
+		_ = s.files.UpdateRefCount(ctx, mediaID, -1)
+	}
+	members, err := s.repo.ListMembers(ctx, in.ConversationID, false)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	events, err := s.repo.SaveEvent(ctx, memberIDs(members), domainchat.EventMessageUpdated, map[string]any{"conversation_id": in.ConversationID.String(), "message_id": in.MessageID.String()})
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	s.notifyEvents(ctx, events)
+	return s.messageDTO(ctx, message, in.UserID)
+}
+
+// diffMediaIDs 返回在 next 中出现但不在 previous 中的媒体 ID。
+func diffMediaIDs(next, previous []domainshared.ID) []domainshared.ID {
+	kept := make(map[domainshared.ID]struct{}, len(previous))
+	for _, id := range previous {
+		kept[id] = struct{}{}
+	}
+	var out []domainshared.ID
+	for _, id := range next {
+		if _, ok := kept[id]; !ok {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
 // FindUserByUsername 按用户名精确查询可聊天用户。
 func (s *Service) FindUserByUsername(ctx context.Context, username string) (UserDTO, error) {
 	name, err := domainuser.ParseUsername(strings.TrimSpace(username))
@@ -1065,6 +1158,10 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		dto.DeletedAt = &deletedAt
 		dto.Reactions = []MessageReactionDTO{}
 		return dto, nil
+	}
+	if message.EditedAt() != nil {
+		editedAt := message.EditedAt().Format(time.RFC3339Nano)
+		dto.EditedAt = &editedAt
 	}
 	if message.HasTextContent() {
 		dto.Content = message.Content()

@@ -170,3 +170,85 @@ func TestNewTweetShareMessageValidatesPayload(t *testing.T) {
 	_, err = chat.NewTweetShareMessage(conversationID, senderID, tweetID, "caption", "", now, nil)
 	require.Error(t, err)
 }
+
+func TestMessageEditRevisesContentAndStampsEditedAt(t *testing.T) {
+	now := time.Date(2026, 8, 27, 10, 0, 0, 0, time.UTC)
+	conversationID := shared.NewID()
+	senderID := shared.NewID()
+
+	text, err := chat.NewTextMessage(conversationID, senderID, "原始内容", "edit-1", now, nil)
+	require.NoError(t, err)
+	require.Nil(t, text.EditedAt())
+
+	later := now.Add(time.Hour)
+	require.NoError(t, text.Edit(" 修订内容 ", nil, later))
+	require.Equal(t, "修订内容", text.Content())
+	require.NotNil(t, text.EditedAt())
+	require.Equal(t, later, *text.EditedAt())
+	require.Equal(t, later, text.UpdatedAt)
+
+	require.Error(t, text.Edit("", nil, later.Add(time.Minute)))
+	require.Error(t, text.Edit("x", []shared.ID{shared.NewID()}, later.Add(time.Minute)))
+}
+
+func TestMessageEditImageKeepsAtLeastOneMedia(t *testing.T) {
+	now := time.Now()
+	mediaA := shared.NewID()
+	mediaB := shared.NewID()
+	mediaC := shared.NewID()
+
+	image, err := chat.NewImageMessage(shared.NewID(), shared.NewID(), []shared.ID{mediaA, mediaB}, "旧说明", "edit-img-1", now, nil)
+	require.NoError(t, err)
+
+	// 移除 mediaB、追加 mediaC，重复 ID 按首次出现去重。
+	require.NoError(t, image.Edit("新说明", []shared.ID{mediaA, mediaC, mediaC}, now.Add(time.Hour)))
+	require.Equal(t, "新说明", image.Content())
+	require.Equal(t, []shared.ID{mediaA, mediaC}, image.MediaIDs())
+	require.NotNil(t, image.EditedAt())
+
+	require.Error(t, image.Edit("新说明", nil, now.Add(2*time.Hour)))
+}
+
+func TestMessageEditTweetShareCaptionOnly(t *testing.T) {
+	now := time.Now()
+	share, err := chat.NewTweetShareMessage(shared.NewID(), shared.NewID(), shared.NewID(), "旧配文", "edit-ts-1", now, nil)
+	require.NoError(t, err)
+
+	require.NoError(t, share.Edit("新配文", nil, now.Add(time.Hour)))
+	require.Equal(t, "新配文", share.Content())
+	require.NotNil(t, share.EditedAt())
+
+	// 配文可清空，与发送时 caption 可选一致。
+	require.NoError(t, share.Edit("", nil, now.Add(2*time.Hour)))
+	require.Equal(t, "", share.Content())
+
+	require.Error(t, share.Edit("x", []shared.ID{shared.NewID()}, now.Add(3*time.Hour)))
+}
+
+func TestMessageEditRejectsSystemAndDeleted(t *testing.T) {
+	now := time.Now()
+	system, err := chat.NewSystemMessage(shared.NewID(), shared.NewID(), "成员加入", "edit-sys-1", now)
+	require.NoError(t, err)
+	require.Error(t, system.Edit("篡改系统消息", nil, now.Add(time.Hour)))
+
+	text, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "内容", "edit-del-1", now, nil)
+	require.NoError(t, err)
+	require.NoError(t, text.Delete(shared.NewID(), now.Add(time.Minute)))
+	require.Error(t, text.Edit("编辑已删除消息", nil, now.Add(time.Hour)))
+}
+
+func TestMessageEditNoopSkipsEditedMarker(t *testing.T) {
+	now := time.Now()
+	mediaA := shared.NewID()
+	image, err := chat.NewImageMessage(shared.NewID(), shared.NewID(), []shared.ID{mediaA}, "说明", "edit-noop-1", now, nil)
+	require.NoError(t, err)
+
+	// 内容与媒体均未变化时不产生编辑标记。
+	require.NoError(t, image.Edit("说明", []shared.ID{mediaA}, now.Add(time.Hour)))
+	require.Nil(t, image.EditedAt())
+
+	text, err := chat.NewTextMessage(shared.NewID(), shared.NewID(), "内容", "edit-noop-2", now, nil)
+	require.NoError(t, err)
+	require.NoError(t, text.Edit("内容", nil, now.Add(time.Hour)))
+	require.Nil(t, text.EditedAt())
+}

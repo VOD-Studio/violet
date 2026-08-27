@@ -483,6 +483,48 @@ func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 	response.RespondNoContent(w)
 }
 
+// EditMessage 编辑当前用户自己的消息。
+func (h *Handler) EditMessage(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	messageID, err := parsePathID(chi.URLParam(r, "messageId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Content  string   `json:"content"`
+		MediaIDs []string `json:"media_ids"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	mediaIDs := make([]domainshared.ID, 0, len(req.MediaIDs))
+	for _, raw := range req.MediaIDs {
+		mediaID, parseErr := parsePathID(raw)
+		if parseErr != nil {
+			response.RespondError(w, r, parseErr)
+			return
+		}
+		mediaIDs = append(mediaIDs, mediaID)
+	}
+	dto, err := h.svc.EditMessage(r.Context(), appchat.EditMessageInput{UserID: userID, ConversationID: conversationID, MessageID: messageID, Content: req.Content, MediaIDs: mediaIDs})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 // FindUserByUsername 精确查询可聊天用户。
 func (h *Handler) FindUserByUsername(w http.ResponseWriter, r *http.Request) {
 	dto, err := h.svc.FindUserByUsername(r.Context(), chi.URLParam(r, "username"))

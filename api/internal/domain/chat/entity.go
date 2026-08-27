@@ -61,6 +61,8 @@ const (
 	EventMessageDeleted ChatEventType = "message.deleted"
 	// EventMessageReactionUpdated 消息反应发生变化事件。
 	EventMessageReactionUpdated ChatEventType = "message.reaction.updated"
+	// EventMessageUpdated 消息被发送者编辑事件。
+	EventMessageUpdated ChatEventType = "message.updated"
 	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发——
 	// 是聊天域内唯一纯内存实时推送的事件类型（见 CONTEXT.md「输入状态」词条）。
 	EventTypingUpdated ChatEventType = "typing.updated"
@@ -282,6 +284,8 @@ type Message struct {
 	deletedAt *time.Time
 	// deletedBy 执行删除的管理员 ID。
 	deletedBy *shared.ID
+	// editedAt 最后编辑时间；非空表示发送者修订过内容，界面展示「已编辑」标识。
+	editedAt *time.Time
 	// timestamps 消息创建与更新时间。
 	shared.Timestamps
 }
@@ -326,20 +330,12 @@ func NewSystemMessage(conversationID, senderID shared.ID, content, idempotencyKe
 // 图文合一发送场景下与 mediaIDs 共存（见 CONTEXT.md「图片消息」词条）。
 func NewImageMessage(conversationID, senderID shared.ID, mediaIDs []shared.ID, content, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
 	content = strings.TrimSpace(content)
-	if conversationID.IsZero() || senderID.IsZero() || len(mediaIDs) == 0 {
+	if conversationID.IsZero() || senderID.IsZero() {
 		return nil, shared.BadRequest("图片消息参数不完整")
 	}
-	seen := make(map[shared.ID]struct{}, len(mediaIDs))
-	unique := make([]shared.ID, 0, len(mediaIDs))
-	for _, mediaID := range mediaIDs {
-		if mediaID.IsZero() {
-			return nil, shared.BadRequest("图片消息参数不完整")
-		}
-		if _, ok := seen[mediaID]; ok {
-			continue
-		}
-		seen[mediaID] = struct{}{}
-		unique = append(unique, mediaID)
+	unique, err := normalizeMediaIDs(mediaIDs)
+	if err != nil {
+		return nil, err
 	}
 	if len([]rune(content)) > MaxMessageContentLength {
 		return nil, shared.BadRequest("图片消息说明文字过长")
@@ -398,12 +394,32 @@ func validateReplyToID(replyToID *shared.ID) error {
 	return nil
 }
 
+// normalizeMediaIDs 校验并去重图片媒体 ID 列表；至少一张、不含零值，重复 ID 按首次出现保留。
+func normalizeMediaIDs(mediaIDs []shared.ID) ([]shared.ID, error) {
+	if len(mediaIDs) == 0 {
+		return nil, shared.BadRequest("图片消息参数不完整")
+	}
+	seen := make(map[shared.ID]struct{}, len(mediaIDs))
+	unique := make([]shared.ID, 0, len(mediaIDs))
+	for _, mediaID := range mediaIDs {
+		if mediaID.IsZero() {
+			return nil, shared.BadRequest("图片消息参数不完整")
+		}
+		if _, ok := seen[mediaID]; ok {
+			continue
+		}
+		seen[mediaID] = struct{}{}
+		unique = append(unique, mediaID)
+	}
+	return unique, nil
+}
+
 // ReconstructMessage 从持久化数据重建消息。
-func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, createdAt, updatedAt time.Time) *Message {
+func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, editedAt *time.Time, createdAt, updatedAt time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
 		content: content, mediaIDs: mediaIDs, sharedTweetID: sharedTweetID, replyToID: replyToID, idempotencyKey: idempotencyKey,
-		deletedAt: deletedAt, deletedBy: deletedBy,
+		deletedAt: deletedAt, deletedBy: deletedBy, editedAt: editedAt,
 		Timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 	m.SetID(id)
@@ -422,6 +438,62 @@ func (m *Message) Delete(adminID shared.ID, now time.Time) error {
 	m.deletedBy = &adminID
 	m.UpdatedAt = now
 	return nil
+}
+
+// Edit 修订消息内容：文本消息改正文，图片消息改说明文字并增删媒体（至少保留一张），
+// 分享消息只改配文；系统消息与已删除消息不可编辑。内容与媒体均无变化时不产生编辑标记。
+func (m *Message) Edit(content string, mediaIDs []shared.ID, now time.Time) error {
+	if m.deletedAt != nil {
+		return shared.Conflict("消息已删除")
+	}
+	content = strings.TrimSpace(content)
+	switch m.messageType {
+	case MessageText:
+		if content == "" || len([]rune(content)) > MaxMessageContentLength {
+			return shared.BadRequest("文本消息无效")
+		}
+		if len(mediaIDs) > 0 {
+			return shared.BadRequest("文本消息不能携带图片")
+		}
+	case MessageImage:
+		if len([]rune(content)) > MaxMessageContentLength {
+			return shared.BadRequest("图片消息说明文字过长")
+		}
+		unique, err := normalizeMediaIDs(mediaIDs)
+		if err != nil {
+			return err
+		}
+		mediaIDs = unique
+	case MessageTweetShare:
+		if len([]rune(content)) > MaxMessageContentLength {
+			return shared.BadRequest("分享消息配文过长")
+		}
+		if len(mediaIDs) > 0 {
+			return shared.BadRequest("分享消息不能携带图片")
+		}
+	default:
+		return shared.BadRequest("系统消息不可编辑")
+	}
+	if m.content == content && equalIDs(m.mediaIDs, mediaIDs) {
+		return nil
+	}
+	m.content = content
+	m.mediaIDs = mediaIDs
+	m.editedAt = &now
+	m.UpdatedAt = now
+	return nil
+}
+
+func equalIDs(a, b []shared.ID) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // ID 返回消息 ID。
@@ -462,6 +534,9 @@ func (m *Message) DeletedAt() *time.Time { return m.deletedAt }
 
 // DeletedBy 返回删除者 ID。
 func (m *Message) DeletedBy() *shared.ID { return m.deletedBy }
+
+// EditedAt 返回最后编辑时间；nil 表示从未编辑。
+func (m *Message) EditedAt() *time.Time { return m.editedAt }
 
 // CreatedAt 返回创建时间。
 func (m *Message) CreatedAt() time.Time { return m.Timestamps.CreatedAt }

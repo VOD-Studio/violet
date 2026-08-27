@@ -56,6 +56,7 @@ type ChatMessage struct {
 	IdempotencyKey string     `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
 	DeletedAt      *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	DeletedBy      *uuid.UUID `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
+	EditedAt       *time.Time `gorm:"column:edited_at" json:"edited_at,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }

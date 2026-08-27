@@ -361,6 +361,24 @@ func (r *ChatRepository) DeleteMessage(ctx context.Context, message *domainchat.
 		Updates(map[string]any{"deleted_at": message.DeletedAt(), "deleted_by": deletedBy, "updated_at": message.UpdatedAt}).Error
 }
 
+// UpdateMessage 保存消息编辑结果：更新正文与编辑时间，并按新媒体列表整体重建关联行。
+func (r *ChatRepository) UpdateMessage(ctx context.Context, message *domainchat.Message) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.ChatMessage{}).
+			Where("id = ? AND conversation_id = ?", message.ID().UUID(), message.ConversationID().UUID()).
+			Updates(map[string]any{"content": message.Content(), "edited_at": message.EditedAt(), "updated_at": message.UpdatedAt}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("message_id = ?", message.ID().UUID()).Delete(&model.ChatMessageMedia{}).Error; err != nil {
+			return err
+		}
+		if media := messageMediaToPOs(message); len(media) > 0 {
+			return tx.Create(&media).Error
+		}
+		return nil
+	})
+}
+
 // SaveReadPosition 保存用户阅读位置。
 func (r *ChatRepository) SaveReadPosition(ctx context.Context, position *domainchat.ReadPosition) error {
 	po := readPositionToPO(position)
@@ -497,7 +515,7 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 	return &model.ChatMessage{
 		ID: m.ID().UUID(), ConversationID: m.ConversationID().UUID(), SenderID: m.SenderID().UUID(),
 		MessageType: string(m.Type()), Content: m.Content(), SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
-		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
+		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, EditedAt: m.EditedAt(), CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
 	}
 }
 
@@ -525,7 +543,7 @@ func messageToDomain(po model.ChatMessage, mediaIDs []domainshared.ID) *domainch
 		id := domainshared.IDFromUUID(*po.DeletedBy)
 		deletedBy = &id
 	}
-	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.CreatedAt, po.UpdatedAt)
+	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, po.CreatedAt, po.UpdatedAt)
 }
 
 // listMessageMedia 批量加载消息的图片媒体引用，按 position 升序。

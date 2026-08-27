@@ -63,6 +63,8 @@ type ConversationRepository interface {
 	FindMessage(ctx context.Context, conversationID, messageID shared.ID) (*Message, error)
 	// DeleteMessage 标记管理员删除消息。
 	DeleteMessage(ctx context.Context, message *Message) error
+	// UpdateMessage 保存发送者的消息编辑结果（正文、编辑时间与媒体关联）。
+	UpdateMessage(ctx context.Context, message *Message) error
 
 	// SaveReadPosition 保存用户在会话中的阅读位置。
 	SaveReadPosition(ctx context.Context, position *ReadPosition) error
