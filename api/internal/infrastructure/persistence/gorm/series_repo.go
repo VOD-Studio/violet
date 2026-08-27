@@ -417,9 +417,10 @@ func (r *SeriesRepository) CountChaptersInSection(ctx context.Context, sectionID
 	return count, nil
 }
 
-// CountChaptersBySeries 批量书章节计数。
-func (r *SeriesRepository) CountChaptersBySeries(ctx context.Context, seriesIDs []domainshared.ID) (map[domainshared.ID]int64, error) {
-	result := make(map[domainshared.ID]int64, len(seriesIDs))
+// ChapterStatsBySeries 批量书章节统计（一条聚合查询；软删由 GORM
+// DeletedAt 条件自动过滤，与 FindChapters 口径一致）。
+func (r *SeriesRepository) ChapterStatsBySeries(ctx context.Context, seriesIDs []domainshared.ID) (map[domainshared.ID]domainseries.ChapterStats, error) {
+	result := make(map[domainshared.ID]domainseries.ChapterStats, len(seriesIDs))
 	if len(seriesIDs) == 0 {
 		return result, nil
 	}
@@ -428,19 +429,28 @@ func (r *SeriesRepository) CountChaptersBySeries(ctx context.Context, seriesIDs 
 		uuids = append(uuids, id.UUID())
 	}
 	var rows []struct {
-		SeriesID uuid.UUID `gorm:"column:series_id"`
-		Count    int64     `gorm:"column:cnt"`
+		SeriesID  uuid.UUID  `gorm:"column:series_id"`
+		Total     int64      `gorm:"column:total"`
+		Published int64      `gorm:"column:published"`
+		Latest    *time.Time `gorm:"column:latest"`
 	}
 	err := r.db.WithContext(ctx).Model(&model.Post{}).
-		Select("series_id, COUNT(*) AS cnt").
+		Select(`series_id,
+			COUNT(*) AS total,
+			COUNT(*) FILTER (WHERE status = 'published') AS published,
+			MAX(published_at) FILTER (WHERE status = 'published') AS latest`).
 		Where("series_id IN ?", uuids).
 		Group("series_id").
 		Find(&rows).Error
 	if err != nil {
-		return nil, domainshared.Internal("统计书章节数失败", err)
+		return nil, domainshared.Internal("统计书章节失败", err)
 	}
 	for _, row := range rows {
-		result[domainshared.IDFromUUID(row.SeriesID)] = row.Count
+		stats := domainseries.ChapterStats{Total: row.Total, PublishedCount: row.Published}
+		if row.Latest != nil {
+			stats.LatestPublishedAt = *row.Latest
+		}
+		result[domainshared.IDFromUUID(row.SeriesID)] = stats
 	}
 	return result, nil
 }

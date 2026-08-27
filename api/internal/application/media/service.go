@@ -40,14 +40,14 @@ type EmojiGroupDTO struct {
 
 // EmojiDTO 表情读模型
 type EmojiDTO struct {
-	ID          int32        `json:"id"`
-	GroupID     int32        `json:"group_id,omitempty"`
-	Name        string       `json:"name"`
-	URL         string       `json:"url"`
-	SourceURL   string       `json:"source_url,omitempty"`
-	GifURL      string       `json:"gif_url,omitempty"`
-	TextContent string       `json:"text_content,omitempty"`
-	SortOrder   int          `json:"sort_order,omitempty"`
+	ID          int32         `json:"id"`
+	GroupID     int32         `json:"group_id,omitempty"`
+	Name        string        `json:"name"`
+	URL         string        `json:"url"`
+	SourceURL   string        `json:"source_url,omitempty"`
+	GifURL      string        `json:"gif_url,omitempty"`
+	TextContent string        `json:"text_content,omitempty"`
+	SortOrder   int           `json:"sort_order,omitempty"`
 	Meta        *EmojiMetaDTO `json:"meta,omitempty"`
 }
 
@@ -1505,29 +1505,35 @@ func fileToDTO(f *domainupload.File) FileDTO {
 	}
 }
 
-
-// SaveGeneratedCoverInput AI 生成封面的落库入参。
-type SaveGeneratedCoverInput struct {
-	OwnerID string
-	Data    []byte
-	Ext     string // png/jpeg/webp
+// SniffImageExt 按首部 magic bytes 识别图片格式（png/jpg/webp）；
+// 未知格式 ok=false。
+func SniffImageExt(data []byte) (string, bool) {
+	switch {
+	case len(data) >= 8 && data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G':
+		return "png", true
+	case len(data) >= 3 && data[0] == 0xff && data[1] == 0xd8 && data[2] == 0xff:
+		return "jpg", true
+	case len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP":
+		return "webp", true
+	default:
+		return "", false
+	}
 }
 
 // SaveGeneratedCover 把 AI 生成的封面字节落素材库（purpose=material）。
 //
-// 流程：ext 白名单校验 → 写临时文件做 magic bytes 校验 → BuildPath/Move
-// → SHA-256 去重 hash → NewFile + processor 缩略图/尺寸 → fileRepo.Save。
+// 流程：字节 magic bytes 嗅探定扩展名（自治校验，不信任调用方传入）→
+// 写临时文件做 Validate 深度解码 → BuildPath → SHA-256 去重 hash →
+// NewFile + processor 缩略图/尺寸 → fileRepo.Save。
 // 返回站内 URL；引用计数从 0 开始（挂书封面时不加引用，删素材自然拒绝被引用文件）。
-func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte, ext string) (string, error) {
-	ext = strings.ToLower(strings.TrimPrefix(ext, "."))
-	switch ext {
-	case "png", "jpg", "jpeg", "webp":
-	default:
+func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte) (string, error) {
+	ext, ok := SniffImageExt(data)
+	if !ok {
 		return "", shared.BadRequest("AI 封面仅支持 png/jpg/webp")
 	}
-	mimeType := map[string]string{"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}[ext]
+	mimeType := map[string]string{"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[ext]
 
-	// 写临时文件走 Validate 的 magic bytes 检查（防伪造扩展名）
+	// 写临时文件走 Validate 的完整解码校验（格式损坏/截断字节在此拦截）
 	tmpFile, err := os.CreateTemp("", "cover-*."+ext)
 	if err != nil {
 		return "", shared.Internal("创建临时文件失败", err)

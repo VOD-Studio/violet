@@ -209,6 +209,13 @@ func formatPublishedAt(t time.Time) string {
 }
 
 // fillChapterCounts 补齐书架项的章节计数与最近章节时间（仅计 published）。
+// fillChapterStats 批量统计填充列表页章节计数与最近章节时间
+// （fillChapterCounts 的批量版——列表路径不做 per-book 章节查询）。
+func fillChapterStats(dto *SeriesDTO, stats domain.ChapterStats) {
+	dto.ChapterCount = stats.PublishedCount
+	dto.LatestChapterAt = formatPublishedAt(stats.LatestPublishedAt)
+}
+
 func fillChapterCounts(dto *SeriesDTO, chapters []domain.Chapter) {
 	dto.ChapterCount = 0
 	var latest time.Time

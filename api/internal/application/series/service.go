@@ -59,17 +59,26 @@ func (s *Service) ListPublished(ctx context.Context, page, limit int) ([]SeriesD
 	if err != nil {
 		return nil, 0, err
 	}
+	stats, err := s.repo.ChapterStatsBySeries(ctx, seriesIDsOf(result.Items))
+	if err != nil {
+		return nil, 0, err
+	}
 	dtos := make([]SeriesDTO, 0, len(result.Items))
 	for _, item := range result.Items {
-		chapters, err := s.repo.FindChapters(ctx, item.ID())
-		if err != nil {
-			return nil, 0, err
-		}
 		dto := toSeriesDTO(item)
-		fillChapterCounts(&dto, chapters)
+		fillChapterStats(&dto, stats[item.ID()])
 		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil
+}
+
+// seriesIDsOf 提取页内书的 ID 列表（批量统计入参）。
+func seriesIDsOf(items []*domain.Series) []shared.ID {
+	ids := make([]shared.ID, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID())
+	}
+	return ids
 }
 
 // GetBySlug 公开书籍详情（仅 published 章节；draft 书 → 404）。
@@ -147,15 +156,15 @@ func (s *Service) ListAdmin(ctx context.Context, page, limit int) ([]SeriesAdmin
 	if err != nil {
 		return nil, 0, err
 	}
+	stats, err := s.repo.ChapterStatsBySeries(ctx, seriesIDsOf(result.Items))
+	if err != nil {
+		return nil, 0, err
+	}
 	dtos := make([]SeriesAdminDTO, 0, len(result.Items))
 	for _, item := range result.Items {
-		chapters, err := s.repo.FindChapters(ctx, item.ID())
-		if err != nil {
-			return nil, 0, err
-		}
 		dto := toAdminDTO(item)
-		dto.TotalChapterCount = int64(len(chapters))
-		fillChapterCounts(&dto.SeriesDTO, chapters)
+		dto.TotalChapterCount = stats[item.ID()].Total
+		fillChapterStats(&dto.SeriesDTO, stats[item.ID()])
 		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil
@@ -692,15 +701,15 @@ func (s *Service) ListForOwner(ctx context.Context, userID string, page, limit i
 	if err != nil {
 		return nil, 0, err
 	}
+	stats, err := s.repo.ChapterStatsBySeries(ctx, seriesIDsOf(result.Items))
+	if err != nil {
+		return nil, 0, err
+	}
 	dtos := make([]SeriesAdminDTO, 0, len(result.Items))
 	for _, item := range result.Items {
-		chapters, err := s.repo.FindChapters(ctx, item.ID())
-		if err != nil {
-			return nil, 0, err
-		}
 		dto := toAdminDTO(item)
-		dto.TotalChapterCount = int64(len(chapters))
-		fillChapterCounts(&dto.SeriesDTO, chapters)
+		dto.TotalChapterCount = stats[item.ID()].Total
+		fillChapterStats(&dto.SeriesDTO, stats[item.ID()])
 		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil

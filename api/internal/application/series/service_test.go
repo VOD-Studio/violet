@@ -174,10 +174,20 @@ func (s *stubRepo) CountChaptersInSection(ctx context.Context, sectionID shared.
 	return s.sectionChapterCount[sectionID], nil
 }
 
-func (s *stubRepo) CountChaptersBySeries(ctx context.Context, seriesIDs []shared.ID) (map[shared.ID]int64, error) {
-	out := make(map[shared.ID]int64, len(seriesIDs))
+func (s *stubRepo) ChapterStatsBySeries(ctx context.Context, seriesIDs []shared.ID) (map[shared.ID]domain.ChapterStats, error) {
+	out := make(map[shared.ID]domain.ChapterStats, len(seriesIDs))
 	for _, id := range seriesIDs {
-		out[id] = int64(len(s.chapters[id]))
+		var st domain.ChapterStats
+		for _, ch := range s.chapters[id] {
+			st.Total++
+			if ch.IsPublished() {
+				st.PublishedCount++
+				if ch.PublishedAt.After(st.LatestPublishedAt) {
+					st.LatestPublishedAt = ch.PublishedAt
+				}
+			}
+		}
+		out[id] = st
 	}
 	return out, nil
 }

@@ -2,6 +2,7 @@ package series
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -36,6 +37,16 @@ type ReorderPlan struct {
 	SectionID *shared.ID
 	// OrderedIDs 该范围内按新顺序排列的章节 ID 全集
 	OrderedIDs []shared.ID
+}
+
+// ChapterStats 书的章节统计（列表页批量填充口径）。
+type ChapterStats struct {
+	// Total 全部状态章节数（含 draft/archived）
+	Total int64
+	// PublishedCount 已发布章节数
+	PublishedCount int64
+	// LatestPublishedAt 最近一个已发布章节的发布时间；无已发布章节时为零值
+	LatestPublishedAt time.Time
 }
 
 // SeriesRepository 系列书仓储。
@@ -83,6 +94,7 @@ type SeriesRepository interface {
 	// CountChaptersInSection 卷内章节数（「非空卷拒绝删除」依据；含全部状态——
 	// draft/archived 章节同样占位，避免删卷后归属悬空）
 	CountChaptersInSection(ctx context.Context, sectionID shared.ID) (int64, error)
-	// CountChaptersBySeries 批量书章节计数（书架列表展示）
-	CountChaptersBySeries(ctx context.Context, seriesIDs []shared.ID) (map[shared.ID]int64, error)
+	// ChapterStatsBySeries 批量书章节统计（列表页填充：总数/已发布数/
+	// 最近发布时间，一条聚合查询——避免分页循环内 per-book 查询）
+	ChapterStatsBySeries(ctx context.Context, seriesIDs []shared.ID) (map[shared.ID]ChapterStats, error)
 }

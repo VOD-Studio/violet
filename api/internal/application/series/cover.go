@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	appmedia "blog-api/internal/application/media"
 	"blog-api/internal/domain/shared"
 )
 
@@ -23,7 +24,7 @@ type GeneratedImage struct {
 // GeneratedCoverStore 生成封面的素材库落库端口：由 media 域适配，
 // 落 purpose=material 并复用引用计数/缩略图机制。
 type GeneratedCoverStore interface {
-	SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte, ext string) (string, error)
+	SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte) (string, error)
 }
 
 const defaultCoverCount = 2
@@ -67,59 +68,41 @@ func (s *Service) GenerateCoverSuggestions(ctx context.Context, id, userID, cust
 	}
 	urls := make([]string, 0, len(images))
 	for _, img := range images {
-		data, ext, decodeErr := decodeImagePayload(img)
+		data, decodeErr := decodeImagePayload(img)
 		if decodeErr != nil {
 			continue
 		}
 		uid, _ := shared.ParseID(userID)
-		url, saveErr := s.coverStore.SaveGeneratedCover(ctx, uid, data, ext)
+		url, saveErr := s.coverStore.SaveGeneratedCover(ctx, uid, data)
 		if saveErr != nil {
 			return nil, fmt.Errorf("落素材库失败: %w", saveErr)
 		}
 		urls = append(urls, url)
 	}
 	if len(urls) == 0 {
-		return nil, fmt.Errorf("端点未返回可用图像")
+		return nil, shared.BadRequest("端点未返回可用图像")
 	}
 	return urls, nil
 }
 
-// decodeImagePayload 提取图像字节与扩展名；b64 优先。URL 形态（临时外链）
+// decodeImagePayload 提取并校验图像字节；b64 优先。URL 形态（临时外链）
 // 当前不落库，仅兼容保留字段——统一 b64 端点不受影响。
 //
-// 扩展名按字节 magic bytes 嗅探（PNG/JPEG/WebP）：LLM 端点（gpt-image-1
-// 等）可能返回 jpeg/webp，硬编码 png 会导致落库扩展名与 MIME 同实际字节
-// 不符（评审修复）。
-func decodeImagePayload(img GeneratedImage) ([]byte, string, error) {
+// 格式按字节 magic bytes 嗅探（media.SniffImageExt，落库侧会再嗅探一次）：
+// LLM 端点（gpt-image-1 等）可能返回 jpeg/webp，嗅探失败视为不可用图跳过。
+func decodeImagePayload(img GeneratedImage) ([]byte, error) {
 	if img.B64 == "" {
-		return nil, "", fmt.Errorf("端点未返回 b64 图像数据")
+		return nil, fmt.Errorf("端点未返回 b64 图像数据")
 	}
 	data, err := base64.StdEncoding.DecodeString(img.B64)
 	if err != nil {
-		return nil, "", fmt.Errorf("b64 解码失败: %w", err)
+		return nil, fmt.Errorf("b64 解码失败: %w", err)
 	}
-	ext, ok := sniffImageExt(data)
-	if !ok {
-		return nil, "", fmt.Errorf("生成结果不是支持的图片格式（png/jpg/webp）")
+	if _, ok := appmedia.SniffImageExt(data); !ok {
+		return nil, fmt.Errorf("生成结果不是支持的图片格式（png/jpg/webp）")
 	}
-	return data, ext, nil
+	return data, nil
 }
-
-// sniffImageExt 按首部 magic bytes 识别图片格式。
-func sniffImageExt(data []byte) (string, bool) {
-	switch {
-	case len(data) >= 8 && data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G':
-		return "png", true
-	case len(data) >= 3 && data[0] == 0xff && data[1] == 0xd8 && data[2] == 0xff:
-		return "jpg", true
-	case len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP":
-		return "webp", true
-	default:
-		return "", false
-	}
-}
-
-
 
 // GenerateCoverStandalone 独立生图（建书流程的创建态）：书尚未落库，
 // prompt 由调用方直接传入（前端用表单当前书名/简介构造）。
@@ -144,11 +127,11 @@ func (s *Service) GenerateCoverStandalone(ctx context.Context, userID, prompt st
 	}
 	urls := make([]string, 0, len(images))
 	for _, img := range images {
-		data, ext, decodeErr := decodeImagePayload(img)
+		data, decodeErr := decodeImagePayload(img)
 		if decodeErr != nil {
 			continue
 		}
-		url, saveErr := s.coverStore.SaveGeneratedCover(ctx, uid, data, ext)
+		url, saveErr := s.coverStore.SaveGeneratedCover(ctx, uid, data)
 		if saveErr != nil {
 			return nil, fmt.Errorf("落素材库失败: %w", saveErr)
 		}
