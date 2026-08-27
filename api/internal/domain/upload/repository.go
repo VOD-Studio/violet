@@ -15,6 +15,9 @@ type FileRepository interface {
 	// FindByURLs 按访问 URL 批量查找就绪（status=ready）文件。
 	// 推文发布归属校验用（TweetImageChecker）：命中数少于传入数即有 URL 不存在/未就绪。
 	FindByURLs(ctx context.Context, urls []string) ([]*File, error)
+	// FindByIDs 按 ID 批量查找文件（不限状态，软删文件也返回——详情渲染兜底展示）。
+	// 图集详情/列表组装用（GalleryMediaChecker）：一次 IN 查询，量级 ≤50。
+	FindByIDs(ctx context.Context, ids []shared.ID) ([]*File, error)
 	// FindPage 分页列出文件（统一入口，筛选维度由 FileListFilter 正交组合）。
 	// 排序 created_at DESC + id DESC tiebreaker（id 为 UUID），防 offset 翻页漂移。
 	FindPage(ctx context.Context, filter FileListFilter, q shared.PageQuery) (shared.PageResult[*File], error)
