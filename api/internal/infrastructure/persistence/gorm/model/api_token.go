@@ -18,7 +18,9 @@ type APIToken struct {
 	Scopes     datatypes.JSONSlice[string] `gorm:"type:jsonb;not null" json:"scopes"`
 	ExpiresAt  *time.Time                  `gorm:"column:expires_at" json:"expires_at,omitempty"`
 	LastUsedAt *time.Time                  `gorm:"column:last_used_at" json:"last_used_at,omitempty"`
-	CreatedAt  time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	// Interactive MCP 写 tool 交互偏好（默认 true）；领域语义见 api_token.PAT
+	Interactive *bool                       `gorm:"column:interactive;default:true" json:"interactive"`
+	CreatedAt   time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
 // TableName 显式指定表名

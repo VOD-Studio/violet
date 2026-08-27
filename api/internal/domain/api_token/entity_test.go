@@ -76,7 +76,7 @@ func TestReconstruct_PreservesAllFields(t *testing.T) {
 	expires := created.Add(365 * 24 * time.Hour)
 	lastUsed := created.Add(24 * time.Hour)
 	p := Reconstruct("tok-id", "u-1", "名字", "thehash",
-		[]string{ScopePostsWrite}, expires, lastUsed, created)
+		[]string{ScopePostsWrite}, expires, lastUsed, created, true)
 	assert.Equal(t, "tok-id", p.ID())
 	assert.Equal(t, "u-1", p.UserID())
 	assert.Equal(t, "名字", p.Name())
