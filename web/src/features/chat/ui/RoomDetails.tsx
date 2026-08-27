@@ -20,6 +20,12 @@ import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import type { ChatConversation, ChatMember } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 
+// xl 起抽屉在文档流内，改用宽度弹簧驱动 flex 重排，聊天区同帧伸缩；沿用 x 位移
+// 会让退出动画期间抽屉仍占 320px 布局，聊天区只能等动画结束后突变撑宽。
+// DETAILS_WIDTH 与 sm:w-80 同值；动画期间子元素靠 min-w-80 + overflow-hidden 防挤压。
+const DETAILS_TRANSITION = { type: "spring", stiffness: 350, damping: 32 } as const;
+const DETAILS_WIDTH = 320;
+
 export interface RoomDetailsProps {
 	/** 当前会话。 */
 	conversation: ChatConversation;
@@ -34,6 +40,11 @@ export interface RoomDetailsProps {
 export function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDetailsProps) {
 	const [title, setTitle] = useState(conversation.title);
 	const [inviteUsername, setInviteUsername] = useState("");
+	const [isXl, setIsXl] = useState(
+		() =>
+			typeof window !== "undefined" &&
+			(window.matchMedia?.("(min-width: 1280px)")?.matches ?? false),
+	);
 	const rename = useRenameChatConversation();
 	const invite = useInviteChatMember();
 	const remove = useRemoveChatMember();
@@ -44,6 +55,14 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 	useEffect(() => {
 		setTitle(conversation.title);
 	}, [conversation.title]);
+
+	useEffect(() => {
+		if (typeof window === "undefined" || !window.matchMedia) return;
+		const mq = window.matchMedia("(min-width: 1280px)");
+		const update = (event: MediaQueryListEvent) => setIsXl(event.matches);
+		mq.addEventListener("change", update);
+		return () => mq.removeEventListener("change", update);
+	}, []);
 
 	const saveTitle = async () => {
 		if (conversation.kind !== "room" || !title.trim() || title === conversation.title) return;
@@ -64,19 +83,19 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 
 	return (
 		<motion.aside
-			initial={{ x: "100%", opacity: 0 }}
-			animate={{ x: 0, opacity: 1 }}
-			exit={{ x: "100%", opacity: 0 }}
-			transition={{ type: "spring", stiffness: 350, damping: 32 }}
-			className="absolute inset-y-0 right-0 z-20 flex w-full flex-col border-l border-border bg-card/95 backdrop-blur-xl sm:w-80 xl:static xl:z-auto xl:shadow-none"
+			initial={isXl ? { width: 0, opacity: 0 } : { x: "100%", opacity: 0 }}
+			animate={isXl ? { width: DETAILS_WIDTH, opacity: 1 } : { x: 0, opacity: 1 }}
+			exit={isXl ? { width: 0, opacity: 0 } : { x: "100%", opacity: 0 }}
+			transition={DETAILS_TRANSITION}
+			className="absolute inset-y-0 right-0 z-20 flex w-full shrink-0 flex-col overflow-hidden border-l border-border bg-card/95 backdrop-blur-xl sm:w-80 xl:static xl:z-auto xl:shadow-none"
 		>
-			<header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
+			<header className="flex h-16 min-w-80 shrink-0 items-center justify-between border-b border-border px-5">
 				<h3 className="text-sm font-semibold text-foreground">会话详情</h3>
 				<Button aria-label="关闭详情" onClick={onClose} size="icon-sm" variant="ghost">
 					<X className="size-4" />
 				</Button>
 			</header>
-			<div className="flex-1 space-y-5 overflow-y-auto p-4">
+			<div className="min-w-80 flex-1 space-y-5 overflow-y-auto p-4">
 				<div className="rounded-2xl border border-border bg-secondary/40 p-4">
 					<div className="mb-2.5 flex items-center gap-3">
 						<ChatAvatar
