@@ -1558,6 +1558,13 @@ func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.I
 	if err := os.WriteFile(finalPath, data, 0o644); err != nil {
 		return "", shared.Internal("写入封面失败", err)
 	}
+	// 落盘成功后任一步失败都移除 finalPath，避免 DB 无记录的孤儿文件（评审修复）
+	persisted := false
+	defer func() {
+		if !persisted {
+			_ = os.Remove(finalPath)
+		}
+	}()
 
 	sum := sha256.Sum256(data)
 	f, err := domainupload.NewFile(fileUUID, ownerID, domainupload.PurposeMaterial, "ai-cover."+ext, finalPath, fileURL, int64(len(data)), mimeType, hex.EncodeToString(sum[:]))
@@ -1575,5 +1582,6 @@ func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.I
 	if err := s.fileRepo.Save(ctx, f); err != nil {
 		return "", shared.Internal("保存文件记录失败", err)
 	}
+	persisted = true
 	return fileURL, nil
 }

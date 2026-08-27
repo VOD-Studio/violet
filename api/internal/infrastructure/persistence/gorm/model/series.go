@@ -19,7 +19,6 @@ type Series struct {
 	UpdatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-// TableName 显式指定表名
 func (Series) TableName() string { return "series" }
 
 // SeriesSection 书内卷/部持久化模型（对应 series_sections 表，migration 101）。
@@ -34,5 +33,4 @@ type SeriesSection struct {
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
-// TableName 显式指定表名
 func (SeriesSection) TableName() string { return "series_sections" }

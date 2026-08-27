@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -99,7 +100,11 @@ func (t *SeriesTools) CreateSeries(ctx context.Context, req *mcp.CallToolRequest
 		Description: args.Description,
 	})
 	if err != nil {
-		return errResult(err), createSeriesConflictPayload(args.Slug, err), nil
+		// 仅 slug 冲突返回候选；其他错误（校验/DB）普通呈现，不误导 agent（评审修复）
+		if errors.Is(err, appseries.ErrSlugTaken) {
+			return errResult(err), createSeriesConflictPayload(args.Slug), nil
+		}
+		return errResult(err), nil, nil
 	}
 	return okResult(created), nil, nil
 }
@@ -198,9 +203,8 @@ func attachConflictPayload(all []string, conflicts []appseries.PostConflict) map
 }
 
 // createSeriesConflictPayload slug 冲突时的结构化 options。
-func createSeriesConflictPayload(slug string, err error) map[string]any {
+func createSeriesConflictPayload(slug string) map[string]any {
 	return map[string]any{
-		"error":   err.Error(),
 		"options": []map[string]any{
 			{"value": "rename", "label": fmt.Sprintf("slug %s 已被占用，换一个重试（如追加 -book/-notes 后缀）", slug), "recommended": true},
 			{"value": "abort", "label": "放弃创建"},

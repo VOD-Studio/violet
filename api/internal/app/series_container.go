@@ -53,7 +53,7 @@ func (g *LLMCoverGenerator) GenerateImages(ctx context.Context, prompt string, n
 	}
 	client, err := infrallm.NewClientFromSettings(m)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("构造 LLM 客户端失败: %w", err)
 	}
 	oai, ok := client.(*infrallm.OpenAIClient)
 	if !ok {
@@ -61,7 +61,7 @@ func (g *LLMCoverGenerator) GenerateImages(ctx context.Context, prompt string, n
 	}
 	imgs, err := oai.GenerateImage(ctx, infrallm.GenerateImageRequest{Prompt: prompt, N: n})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("生成封面失败: %w", err)
 	}
 	out := make([]appseries.GeneratedImage, 0, len(imgs))
 	for _, img := range imgs {

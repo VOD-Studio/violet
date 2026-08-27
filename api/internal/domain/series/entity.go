@@ -465,7 +465,6 @@ func (s *Series) HasSection(id shared.ID) bool {
 	return false
 }
 
-// 访问器
 func (s *Series) ID() shared.ID        { return s.id }
 func (s *Series) AuthorID() shared.ID  { return s.authorID }
 func (s *Series) Title() string        { return s.title }

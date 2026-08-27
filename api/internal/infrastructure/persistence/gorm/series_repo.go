@@ -247,11 +247,12 @@ func (r *SeriesRepository) FindPostMeta(ctx context.Context, postIDs []domainsha
 	var rows []struct {
 		ID       uuid.UUID  `gorm:"column:id"`
 		AuthorID uuid.UUID  `gorm:"column:author_id"`
+		Title    string     `gorm:"column:title"`
 		Status   string     `gorm:"column:status"`
 		SeriesID *uuid.UUID `gorm:"column:series_id"`
 	}
 	err := r.db.WithContext(ctx).Model(&model.Post{}).
-		Select("id, author_id, status, series_id").
+		Select("id, author_id, title, status, series_id").
 		Where("id IN ?", uuids).
 		Find(&rows).Error
 	if err != nil {
@@ -262,6 +263,7 @@ func (r *SeriesRepository) FindPostMeta(ctx context.Context, postIDs []domainsha
 		meta := domainseries.PostMeta{
 			PostID:   domainshared.IDFromUUID(row.ID),
 			AuthorID: domainshared.IDFromUUID(row.AuthorID),
+			Title:    row.Title,
 			Status:   row.Status,
 		}
 		if row.SeriesID != nil {

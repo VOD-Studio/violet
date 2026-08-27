@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -136,7 +137,12 @@ func (t *PublicTools) ReadSeries(ctx context.Context, req *mcp.ReadResourceReque
 	}
 	dto, err := t.series.GetBySlug(ctx, slug)
 	if err != nil {
-		return nil, mcp.ResourceNotFoundError(req.Params.URI)
+		// 不存在 → 资源 404；其余（DB/内部）原样透传，agent 可区分两种失败（评审修复）
+		var notFound *domainshared.DomainError
+		if errors.As(err, &notFound) && notFound.Code == domainshared.CodeNotFound {
+			return nil, mcp.ResourceNotFoundError(req.Params.URI)
+		}
+		return nil, fmt.Errorf("读取系列书失败: %w", err)
 	}
 
 	var sb strings.Builder

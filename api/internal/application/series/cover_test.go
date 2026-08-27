@@ -2,6 +2,7 @@ package series
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"strings"
 	"testing"
@@ -54,7 +55,7 @@ func newCoverTestService(t *testing.T) (*Service, *stubRepo, *stubBus, *stubImag
 	t.Helper()
 	repo := newStubRepo()
 	bus := &stubBus{}
-	img := &stubImageClient{images: []GeneratedImage{{B64: "AAAA"}, {B64: "BBBB"}}}
+	img := &stubImageClient{images: []GeneratedImage{{B64: base64.StdEncoding.EncodeToString([]byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a})}, {B64: base64.StdEncoding.EncodeToString([]byte{0xff, 0xd8, 0xff, 0xe0})}}}
 	store := &stubCoverStore{}
 	svc := NewService(repo, bus)
 	svc.coverGenerator = img
@@ -128,4 +129,41 @@ func TestGenerateCoverSuggestions_GeneratorError(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "404") {
 		t.Fatalf("应透传端点错误给前端展示，实际 = %v", err)
 	}
+}
+
+
+// TestDecodeImagePayload_MagicBytes 三种格式的字节嗅探（评审修复：不再硬编码 png）。
+func TestDecodeImagePayload_MagicBytes(t *testing.T) {
+	png := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}
+	jpeg := []byte{0xff, 0xd8, 0xff, 0xe0}
+	webp := []byte{'R','I','F','F',0,0,0,0,'W','E','B','P','V','P','8',' '}
+
+	cases := []struct {
+		name string
+		data []byte
+		ext  string
+	}{
+		{"png", png, "png"},
+		{"jpeg", jpeg, "jpg"},
+		{"webp", webp, "webp"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			img := GeneratedImage{B64: base64.StdEncoding.EncodeToString(c.data)}
+			_, ext, err := decodeImagePayload(img)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if ext != c.ext {
+				t.Errorf("ext = %q, want %q", ext, c.ext)
+			}
+		})
+	}
+
+	t.Run("未知字节拒绝", func(t *testing.T) {
+		img := GeneratedImage{B64: base64.StdEncoding.EncodeToString([]byte("not-an-image"))}
+		if _, _, err := decodeImagePayload(img); err == nil {
+			t.Error("非图片字节应拒绝")
+		}
+	})
 }

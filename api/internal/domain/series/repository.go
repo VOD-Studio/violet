@@ -12,6 +12,8 @@ type PostMeta struct {
 	PostID shared.ID
 	// AuthorID 文章作者
 	AuthorID shared.ID
+	// Title 文章标题（冲突转述用）
+	Title string
 	// Status 文章状态
 	Status string
 	// SeriesID 当前挂入的书；nil=未挂任何书

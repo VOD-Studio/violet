@@ -181,10 +181,6 @@ func (s *Service) buildDetail(ctx context.Context, series *domain.Series, public
 		return SeriesDetailDTO{}, err
 	}
 	dto := buildDetailDTO(series, chapters, publicView)
-	dto.ChapterCount = int64(len(dto.RootChapters))
-	for _, sec := range dto.Sections {
-		dto.ChapterCount += int64(len(sec.Chapters))
-	}
 	fillChapterCounts(&dto.SeriesDTO, chapters)
 	return dto, nil
 }
@@ -764,7 +760,7 @@ func (s *Service) FindPostConflicts(ctx context.Context, userID string, postIDs 
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, PostConflict{PostID: pid.String(), HeldBy: holder.Slug()})
+			out = append(out, PostConflict{PostID: pid.String(), Title: meta.Title, HeldBy: holder.Slug()})
 		}
 	}
 	return out, nil
