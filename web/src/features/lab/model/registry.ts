@@ -57,4 +57,11 @@ export const LABS = [
 		description: "不是给文章列表套书封——三套完整书籍体验，从书架、目录一直走到连续阅读。",
 		meta: "体验 ×3 · 表面 ×3",
 	},
+	{
+		to: "/lab/gallery",
+		en: "Gallery",
+		title: "图集原型实验室",
+		description: "浏览流、详情网格与灯箱的候选方向并排开着——图集长什么样，比着选。",
+		meta: "浏览 ×3 · 网格 ×3 · 灯箱 ×3",
+	},
 ] as const;

@@ -31,6 +31,7 @@ import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabSeriesRouteImport } from './routes/lab.series'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
 import { Route as LabMascotRouteImport } from './routes/lab.mascot'
+import { Route as LabGalleryRouteImport } from './routes/lab.gallery'
 import { Route as LabFriendsRouteImport } from './routes/lab.friends'
 import { Route as LabBlogRouteImport } from './routes/lab.blog'
 import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
@@ -177,6 +178,11 @@ const LabNavRoute = LabNavRouteImport.update({
 const LabMascotRoute = LabMascotRouteImport.update({
   id: '/lab/mascot',
   path: '/lab/mascot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabGalleryRoute = LabGalleryRouteImport.update({
+  id: '/lab/gallery',
+  path: '/lab/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabFriendsRoute = LabFriendsRouteImport.update({
@@ -396,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
+  '/lab/gallery': typeof LabGalleryRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
@@ -454,6 +461,7 @@ export interface FileRoutesByTo {
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
+  '/lab/gallery': typeof LabGalleryRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
@@ -516,6 +524,7 @@ export interface FileRoutesById {
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
+  '/lab/gallery': typeof LabGalleryRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
@@ -579,6 +588,7 @@ export interface FileRouteTypes {
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
+    | '/lab/gallery'
     | '/lab/mascot'
     | '/lab/nav'
     | '/lab/series'
@@ -637,6 +647,7 @@ export interface FileRouteTypes {
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
+    | '/lab/gallery'
     | '/lab/mascot'
     | '/lab/nav'
     | '/lab/series'
@@ -698,6 +709,7 @@ export interface FileRouteTypes {
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
+    | '/lab/gallery'
     | '/lab/mascot'
     | '/lab/nav'
     | '/lab/series'
@@ -743,6 +755,7 @@ export interface RootRouteChildren {
   LabAnnouncementRoute: typeof LabAnnouncementRoute
   LabBlogRoute: typeof LabBlogRoute
   LabFriendsRoute: typeof LabFriendsRoute
+  LabGalleryRoute: typeof LabGalleryRoute
   LabMascotRoute: typeof LabMascotRoute
   LabNavRoute: typeof LabNavRoute
   LabSeriesRoute: typeof LabSeriesRoute
@@ -915,6 +928,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/mascot'
       fullPath: '/lab/mascot'
       preLoaderRoute: typeof LabMascotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/gallery': {
+      id: '/lab/gallery'
+      path: '/lab/gallery'
+      fullPath: '/lab/gallery'
+      preLoaderRoute: typeof LabGalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/friends': {
@@ -1291,6 +1311,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabAnnouncementRoute: LabAnnouncementRoute,
   LabBlogRoute: LabBlogRoute,
   LabFriendsRoute: LabFriendsRoute,
+  LabGalleryRoute: LabGalleryRoute,
   LabMascotRoute: LabMascotRoute,
   LabNavRoute: LabNavRoute,
   LabSeriesRoute: LabSeriesRoute,
@@ -1311,12 +1332,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
