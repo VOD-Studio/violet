@@ -20,6 +20,7 @@ import (
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
+	domaingallery "blog-api/internal/domain/gallery"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
@@ -334,6 +335,65 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Resource:   domainaudit.ResourceRef{Type: "tweet", ID: e.AggregateID().String(), Name: e.Excerpt},
 			Summary:    "删除推文",
 			Metadata:   map[string]any{"author_id": e.AuthorID.String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("创建图集「%s」（%d 项）", e.Title, e.ItemCount),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryUpdated:
+		changes := make([]domainaudit.FieldChange, 0, len(e.Changes))
+		for _, c := range e.Changes {
+			changes = append(changes, domainaudit.FieldChange{Field: c.Field, From: c.From, To: c.To})
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("更新图集「%s」", e.Title),
+			Changes:    changes,
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryRemoved:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("下架图集「%s」", e.Title),
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: "published", To: "removed"}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryRestored:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("恢复图集「%s」", e.Title),
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: "removed", To: "published"}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryDeleted:
+		// Metadata 记原作者：管理员删他人图集时与操作者（Actor）不同，审计可追溯
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    "删除图集",
+			Metadata:   map[string]any{"owner_id": e.OwnerID.String()},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

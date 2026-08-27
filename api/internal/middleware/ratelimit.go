@@ -127,6 +127,14 @@ func TweetRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimitByUser("tweet", redisClient, time.Hour, 10)
 }
 
+// GalleryRateLimit 图集发布限流（每用户每小时 5 个，PRD-0022）。
+//
+// 即发即出模式的防刷屏兜底；图集内容比推文重（多图），配额收得更紧。
+// 按用户维度计数（须挂在 SessionAuth 之后），与 TweetRateLimit 同构。
+func GalleryRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimitByUser("gallery", redisClient, time.Hour, 5)
+}
+
 // ChatTypingRateLimit 输入状态上报限流（每用户每分钟 60 次）。
 //
 // 客户端节流发送间隔为 3s（稳态约 20 次/分），但显式停止（is_typing:false）

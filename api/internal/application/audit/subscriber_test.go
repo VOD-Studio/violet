@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,7 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
+	domaingallery "blog-api/internal/domain/gallery"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
@@ -621,6 +623,54 @@ func TestSubscriber_SubscriptionResumed_RecordsResumeFeed(t *testing.T) {
 	e := store.appended[0]
 	assert.Equal(t, domainaudit.ActionResumeFeed, e.Action)
 	assert.Equal(t, "恢复订阅", e.Summary)
+}
+
+func TestSubscriber_GalleryCreated_RecordsCreate(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "alice@blog.com", "1.2.3.4", "ua")
+
+	gid := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryCreated(gid, "濑户内海", 3)))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionCreate, e.Action)
+	assert.Equal(t, "gallery", e.Resource.Type)
+	assert.Equal(t, gid.String(), e.Resource.ID)
+	assert.Contains(t, e.Summary, "创建图集")
+}
+
+func TestSubscriber_GalleryRemovedRestored_RecordsStatus(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	gid := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryRemoved(gid, "濑户内海")))
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryRestored(gid, "濑户内海")))
+	require.Len(t, store.appended, 2)
+	assert.Equal(t, domainaudit.ActionUpdateStatus, store.appended[0].Action)
+	assert.Contains(t, store.appended[0].Summary, "下架图集")
+	assert.Contains(t, store.appended[1].Summary, "恢复图集")
+}
+
+func TestSubscriber_GalleryDeleted_RecordsOwner(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	owner := shared.NewID()
+	g := domaingallery.ReconstructGallery(
+		shared.NewID(), owner, "濑户内海", "", nil, domaingallery.StatusPublished,
+		[]domaingallery.GalleryItem{domaingallery.ReconstructGalleryItem(shared.NewID(), "")},
+		time.Now(), time.Now(),
+	)
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryDeleted(g)))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionDelete, e.Action)
+	assert.Equal(t, "gallery", e.Resource.Type)
+	assert.Equal(t, owner.String(), e.Metadata["owner_id"])
 }
 
 // recordingBus 仅记录 Subscribe 参数。
