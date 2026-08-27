@@ -81,3 +81,13 @@ export function generateCovers(id: string, prompt?: string, count?: number) {
 		count: count ?? undefined,
 	});
 }
+
+/**
+ * 建书流程创建态生图（书未落库，无 id）：prompt 由表单当前书名/简介构造后整体传入。
+ */
+export function generateCoversStandalone(prompt: string, count?: number) {
+	return apiPost<{ urls: string[] }>(`${BASE}/cover/generate`, {
+		prompt,
+		count: count ?? undefined,
+	});
+}

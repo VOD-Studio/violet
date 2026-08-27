@@ -99,3 +99,43 @@ func decodeImagePayload(img GeneratedImage) ([]byte, string, error) {
 }
 
 var _ domain.SeriesRepository // 接口归属说明：Service 依赖见 service.go
+
+
+// GenerateCoverStandalone 独立生图（建书流程的创建态）：书尚未落库，
+// prompt 由调用方直接传入（前端用表单当前书名/简介构造）。
+// 与 GenerateCoverSuggestions 共享落库与降级语义；不涉及书归属校验。
+func (s *Service) GenerateCoverStandalone(ctx context.Context, userID, prompt string, n int) ([]string, error) {
+	if s.coverGenerator == nil || s.coverStore == nil {
+		return nil, shared.BadRequest("AI 生图未配置：请先在站点设置填写 llm_api_key 与 llm_image_model")
+	}
+	if strings.TrimSpace(prompt) == "" {
+		return nil, shared.BadRequest("生图 prompt 不能为空")
+	}
+	if n <= 0 {
+		n = defaultCoverCount
+	}
+	uid, err := shared.ParseID(userID)
+	if err != nil {
+		return nil, err
+	}
+	images, err := s.coverGenerator.GenerateImages(ctx, strings.TrimSpace(prompt), n)
+	if err != nil {
+		return nil, err
+	}
+	urls := make([]string, 0, len(images))
+	for _, img := range images {
+		data, ext, decodeErr := decodeImagePayload(img)
+		if decodeErr != nil {
+			continue
+		}
+		url, saveErr := s.coverStore.SaveGeneratedCover(ctx, uid, data, ext)
+		if saveErr != nil {
+			return nil, fmt.Errorf("落素材库失败: %w", saveErr)
+		}
+		urls = append(urls, url)
+	}
+	if len(urls) == 0 {
+		return nil, shared.BadRequest("端点未返回可用图像")
+	}
+	return urls, nil
+}

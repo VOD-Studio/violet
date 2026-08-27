@@ -37,6 +37,7 @@ type seriesService interface {
 	ReorderChapters(ctx context.Context, seriesID string, in appseries.ReorderChaptersInput) error
 
 	GenerateCoverSuggestions(ctx context.Context, id, userID, customPrompt string, n int) ([]string, error)
+	GenerateCoverStandalone(ctx context.Context, userID, prompt string, n int) ([]string, error)
 }
 
 // Handler 系列书 HTTP 处理器。
@@ -370,6 +371,22 @@ func (h *Handler) GenerateCovers(w http.ResponseWriter, r *http.Request) {
 	}
 	urls, err := h.svc.GenerateCoverSuggestions(
 		r.Context(), r.PathValue("id"), ifmw.GetUserIDFromContext(r), req.Prompt, req.Count)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{"urls": urls})
+}
+
+// GenerateCoversStandalone POST /admin/series/cover/generate（无书 id）：
+// 建书流程创建态生图——书未落库，prompt 由前端用表单当前书名/简介构造。
+func (h *Handler) GenerateCoversStandalone(w http.ResponseWriter, r *http.Request) {
+	var req generateCoversReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		response.RespondError(w, r, err)
+		return
+	}
+	urls, err := h.svc.GenerateCoverStandalone(r.Context(), ifmw.GetUserIDFromContext(r), req.Prompt, req.Count)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

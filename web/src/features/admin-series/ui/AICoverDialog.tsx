@@ -1,11 +1,18 @@
 /**
  * AICoverDialog - AI 生成书籍封面弹窗
  *
- * 输入提示词（默认由书名+简介预填，可改）与张数，调生图端点；
- * 候选以竖版书封比例网格呈现，点选即回填封面 URL。生成结果已落
- * 素材库（purpose=material），选定后仍走保存写入封面字段。
+ * 两种形态共用一套交互：编辑态传 seriesId（走书的生图端点，prompt 默认由
+ * 书名+简介构造）；创建态不传（standalone 端点，书未落库，prompt 由表单
+ * 当前输入构造）。候选已落素材库（purpose=material），点选回填封面 URL；
+ * 创建态选定后随 create_series 一起提交。
+ *
+ * 长耗时体验：生成中可关弹窗继续填表单——mutation 挂在弹窗外的调用方，
+ * 结果存组件 state，重开弹窗仍在（本步同步形态；异步任务化见 issue）。
  */
-import { useGenerateCovers } from "@features/admin-series/api/mutations";
+import {
+	useGenerateCovers,
+	useGenerateCoversStandalone,
+} from "@features/admin-series/api/mutations";
 import { Button } from "@shared/ui/base/button";
 import {
 	Dialog,
@@ -24,11 +31,11 @@ import { useState } from "react";
 interface AICoverDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	/** 书 id（生图端点路径参数） */
-	seriesId: string;
-	/** 默认提示词素材：书名 */
+	/** 书 id；不传 = 创建态（standalone 生图，书未落库） */
+	seriesId?: string;
+	/** 默认提示词素材：书名（创建态为表单当前输入） */
 	title: string;
-	/** 默认提示词素材：简介 */
+	/** 默认提示词素材：简介（创建态为表单当前输入） */
 	description: string;
 	/** 点选候选后的回填回调 */
 	onSelect: (url: string) => void;
@@ -47,7 +54,9 @@ export function AICoverDialog({
 	const [prompt, setPrompt] = useState("");
 	const [count, setCount] = useState(2);
 	const [urls, setUrls] = useState<string[]>([]);
-	const generate = useGenerateCovers(seriesId);
+	const bound = useGenerateCovers(seriesId ?? "");
+	const standalone = useGenerateCoversStandalone();
+	const generate = seriesId ? bound : standalone;
 
 	const defaultPrompt = `为技术书籍《${title}》设计一张简洁的竖版封面${
 		description ? `，主题：${description}` : ""
@@ -55,12 +64,12 @@ export function AICoverDialog({
 	const effectivePrompt = prompt.trim() || defaultPrompt;
 
 	const handleGenerate = () => {
-		generate.mutate(
-			{ prompt: effectivePrompt, count },
-			{
-				onSuccess: (res) => setUrls(res.urls ?? []),
-			},
-		);
+		const input = { prompt: effectivePrompt, count };
+		if (seriesId) {
+			bound.mutate(input, { onSuccess: (res) => setUrls(res.urls ?? []) });
+		} else {
+			standalone.mutate(input, { onSuccess: (res) => setUrls(res.urls ?? []) });
+		}
 	};
 
 	const handlePick = (url: string) => {
@@ -76,7 +85,9 @@ export function AICoverDialog({
 				<DialogHeader>
 					<DialogTitle>AI 生成封面</DialogTitle>
 					<DialogDescription>
-						候选会存入素材库；点选一张后回填到封面字段，点「保存」才生效。
+						{seriesId
+							? "候选会存入素材库；点选一张后回填到封面字段，点「保存」才生效。"
+							: "候选会存入素材库；点选一张先回填表单，随「创建」一起提交。"}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-4">
@@ -125,7 +136,7 @@ export function AICoverDialog({
 					{generate.isError && generate.error ? (
 						<InlineError
 							message={generate.error.message}
-							onRetry={() => generate.mutate({ prompt: effectivePrompt, count })}
+							onRetry={() => handleGenerate()}
 							retrying={generate.isPending}
 						/>
 					) : null}

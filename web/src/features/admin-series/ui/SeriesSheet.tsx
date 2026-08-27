@@ -168,18 +168,16 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 					<div className="space-y-2">
 						<div className="flex items-center justify-between">
 							<Label>封面图</Label>
-							{editing ? (
-								<Button
-									type="button"
-									size="xs"
-									variant="outline"
-									disabled={isSubmitting}
-									onClick={() => setAiCoverOpen(true)}
-								>
-									<WandSparkles className="size-3.5" />
-									AI 生成
-								</Button>
-							) : null}
+							<Button
+								type="button"
+								size="xs"
+								variant="outline"
+								disabled={isSubmitting}
+								onClick={() => setAiCoverOpen(true)}
+							>
+								<WandSparkles className="size-3.5" />
+								AI 生成
+							</Button>
 						</div>
 						<Cover
 							value={watch("cover_image") || undefined}
@@ -196,16 +194,14 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 						{isSubmitting ? "保存中…" : "保存"}
 					</Button>
 				</SheetFooter>
-				{editing ? (
-					<AICoverDialog
-						open={aiCoverOpen}
-						onOpenChange={setAiCoverOpen}
-						seriesId={editing.id}
-						title={editing.title}
-						description={editing.description ?? ""}
-						onSelect={(url) => reset({ ...watch(), cover_image: url })}
-					/>
-				) : null}
+				<AICoverDialog
+					open={aiCoverOpen}
+					onOpenChange={setAiCoverOpen}
+					seriesId={editing?.id}
+					title={watch("title") || editing?.title || ""}
+					description={watch("description") || editing?.description || ""}
+					onSelect={(url) => reset({ ...watch(), cover_image: url })}
+				/>
 			</SheetContent>
 		</Sheet>
 	);
