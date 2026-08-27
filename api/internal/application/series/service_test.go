@@ -46,6 +46,16 @@ func (s *stubRepo) FindByID(ctx context.Context, id shared.ID) (*domain.Series, 
 	return ser, nil
 }
 
+func (s *stubRepo) FindSlugsByIDs(ctx context.Context, ids []shared.ID) (map[shared.ID]string, error) {
+	out := make(map[shared.ID]string, len(ids))
+	for _, id := range ids {
+		if ser, ok := s.series[id]; ok {
+			out[id] = ser.Slug()
+		}
+	}
+	return out, nil
+}
+
 func (s *stubRepo) FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*domain.Series], error) {
 	items := make([]*domain.Series, 0)
 	for _, ser := range s.series {

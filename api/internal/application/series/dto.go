@@ -9,13 +9,9 @@ import (
 
 // SeriesDTO 公开书架项（GET /series）。
 type SeriesDTO struct {
-	// ID 书 ID
-	ID string `json:"id"`
-	// Slug 书 slug
-	Slug string `json:"slug"`
-	// Title 书名
-	Title string `json:"title"`
-	// Description 简介
+	ID          string `json:"id"`
+	Slug        string `json:"slug"`
+	Title       string `json:"title"`
 	Description string `json:"description"`
 	// CoverImage 封面图 URL；空串=无封面（前端用无图书封规则）
 	CoverImage string `json:"cover_image"`
@@ -40,22 +36,16 @@ type SeriesAdminDTO struct {
 
 // SectionDTO 卷/部。
 type SectionDTO struct {
-	// ID 卷 ID
-	ID string `json:"id"`
-	// Title 卷名
-	Title string `json:"title"`
-	// SortOrder 卷顺序
-	SortOrder int `json:"sort_order"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	SortOrder int    `json:"sort_order"`
 }
 
 // ChapterDTO 目录章节项。
 type ChapterDTO struct {
-	// PostID 章节（文章）ID
 	PostID string `json:"post_id"`
-	// Slug 文章 slug（跳转用）
-	Slug string `json:"slug"`
-	// Title 章节标题
-	Title string `json:"title"`
+	Slug   string `json:"slug"`
+	Title  string `json:"title"`
 	// ChapterNo 全书展示序号（1 起；公开视角按可见章节连续编号）
 	ChapterNo int `json:"chapter_no"`
 	// Status 文章状态；仅管理视角返回，公开视角恒 published（省略）
@@ -87,7 +77,6 @@ type SeriesDetailDTO struct {
 
 // ChapterContextDTO 文章的书籍上下文（阅读器壳与文章页归属标注）。
 type ChapterContextDTO struct {
-	// Series 归属书
 	Series SeriesRefDTO `json:"series"`
 	// ChapterNo 当前章在可见序列中的序号（1 起）
 	ChapterNo int `json:"chapter_no"`
@@ -101,17 +90,14 @@ type ChapterContextDTO struct {
 
 // SeriesRefDTO 归属书引用。
 type SeriesRefDTO struct {
-	// Slug 书 slug
-	Slug string `json:"slug"`
-	// Title 书名
+	Slug  string `json:"slug"`
 	Title string `json:"title"`
 }
 
 // ChapterNavDTO 相邻章导航。
 type ChapterNavDTO struct {
 	// Slug 文章 slug
-	Slug string `json:"slug"`
-	// Title 章节标题
+	Slug  string `json:"slug"`
 	Title string `json:"title"`
 }
 

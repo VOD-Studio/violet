@@ -72,6 +72,9 @@ type SeriesRepository interface {
 	FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*Series], error)
 	// ExistsBySlug slug 占用检查；excludeID 非零时排除自身
 	ExistsBySlug(ctx context.Context, slug string, excludeID shared.ID) (bool, error)
+	// FindSlugsByIDs 批量取书 slug（挂章冲突预检转述占用书；
+	// 不带卷——避免按聚合重建引入每书一次的卷查询）；不存在的 ID 不出现在结果中
+	FindSlugsByIDs(ctx context.Context, ids []shared.ID) (map[shared.ID]string, error)
 	// Delete 物理删除书（级联删卷由 FK 承担；章节解绑由 posts FK ON DELETE SET NULL 承担）
 	Delete(ctx context.Context, id shared.ID) error
 

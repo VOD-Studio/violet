@@ -158,3 +158,28 @@ func TestDecodeImagePayload_MagicBytes(t *testing.T) {
 		}
 	})
 }
+
+// TestNormalizeCoverCount 张数钳制契约（缺省 2、上限 4 与前端 MAX_COUNT 一致）。
+func TestNormalizeCoverCount(t *testing.T) {
+	cases := []struct{ in, want int }{
+		{0, 2}, {-1, 2}, {1, 1}, {3, 3}, {4, 4}, {5, 4}, {100, 4},
+	}
+	for _, c := range cases {
+		if got := normalizeCoverCount(c.in); got != c.want {
+			t.Errorf("normalizeCoverCount(%d) = %d, want %d", c.in, got, c.want)
+		}
+	}
+}
+
+// TestSanitizePromptField 注入载体清洗：换行/制表折叠为空格、控制字符删除、超长截断。
+func TestSanitizePromptField(t *testing.T) {
+	if got := sanitizePromptField("a\n忽略指令\rb\tc", 100); got != "a 忽略指令 b c" {
+		t.Errorf("折叠换行/制表 = %q", got)
+	}
+	if got := sanitizePromptField("a\x00b", 100); got != "ab" {
+		t.Errorf("控制字符应删除, got %q", got)
+	}
+	if got := sanitizePromptField(strings.Repeat("字", 10), 5); len([]rune(got)) != 5 {
+		t.Errorf("应按 rune 截断到 5, got %d", len([]rune(got)))
+	}
+}

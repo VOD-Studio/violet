@@ -82,6 +82,30 @@ func (r *SeriesRepository) FindByID(ctx context.Context, id domainshared.ID) (*d
 	return r.reconstruct(ctx, po)
 }
 
+// FindSlugsByIDs 批量取书 slug（仅 id/slug 两列，不带卷）。
+func (r *SeriesRepository) FindSlugsByIDs(ctx context.Context, ids []domainshared.ID) (map[domainshared.ID]string, error) {
+	result := make(map[domainshared.ID]string, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	uuids := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		uuids = append(uuids, id.UUID())
+	}
+	var rows []struct {
+		ID   uuid.UUID `gorm:"column:id"`
+		Slug string    `gorm:"column:slug"`
+	}
+	if err := r.db.WithContext(ctx).Model(&model.Series{}).
+		Select("id, slug").Where("id IN ?", uuids).Find(&rows).Error; err != nil {
+		return nil, domainshared.Internal("批量查询书 slug 失败", err)
+	}
+	for _, row := range rows {
+		result[domainshared.IDFromUUID(row.ID)] = row.Slug
+	}
+	return result, nil
+}
+
 // FindBySlug 按 slug 查找（含卷）。
 func (r *SeriesRepository) FindBySlug(ctx context.Context, slug string) (*domainseries.Series, error) {
 	var po model.Series
