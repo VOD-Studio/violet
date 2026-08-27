@@ -307,5 +307,13 @@ func NewAdminRouter(d *Deps) chi.Router {
 		})
 	})
 
+	// 图集管理（PRD-0022）：读 gallery:view。下架/恢复在公开路由区
+	// （PATCH /galleries/{id}/status，gallery:delete-any），作者也可删自己的图集，
+	// 治理删除复用 DELETE /galleries/{id}（application 层双判定）。
+	r.Route("/galleries", func(r chi.Router) {
+		r.Use(middleware.RequirePermission(perm, "gallery:view"))
+		r.Get("/", d.Gallery.ListAdmin)
+	})
+
 	return r
 }

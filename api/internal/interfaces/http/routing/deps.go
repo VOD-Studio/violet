@@ -26,6 +26,7 @@ import (
 	contenthttp "blog-api/internal/interfaces/http/handler/content"
 	customemojihttp "blog-api/internal/interfaces/http/handler/customemoji"
 	friendlinkhttp "blog-api/internal/interfaces/http/handler/friendlink"
+	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
@@ -95,5 +96,6 @@ type Deps struct {
 	Chat               *chathttp.Handler
 	ChatStream         *chathttp.StreamHandler
 	CustomEmoji        *customemojihttp.Handler
+	Gallery            *galleryhttp.Handler
 	MCP                MCPHandlers
 }

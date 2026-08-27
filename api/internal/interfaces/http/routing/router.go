@@ -90,6 +90,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 系列书（前台公开：书架 + 详情 + 章节上下文）
 		registerSeriesRoutes(v1, d)
 
+		// 图集（公开浏览流/详情/用户列表 + 登录建编删 + 治理下架）
+		registerGalleryRoutes(v1, d)
+
 		// 代码运行器（登录可执行，SSE 用 GET 绕过 CSRF）
 		registerCodeRunnerRoutes(v1, d)
 
@@ -167,6 +170,27 @@ func registerSeriesRoutes(v1 chi.Router, d *Deps) {
 		r.Get("/context/{postSlug}", seriesH.GetChapterContext)
 		r.Get("/{slug}", seriesH.GetBySlug)
 	})
+}
+
+// registerGalleryRoutes 注册图集路由（PRD-0022）。
+// 浏览流/详情/用户列表公开；创建登录 + 发布限流；
+// 编辑/删除登录（作者或 gallery:delete-any 的双重判定在 application 层，路由仅卡登录）；
+// 下架/恢复叠加 gallery:delete-any 权限码。
+func registerGalleryRoutes(v1 chi.Router, d *Deps) {
+	galleryH := d.Gallery
+
+	v1.Route("/galleries", func(r chi.Router) {
+		r.With(d.OptionalAuth).Get("/", galleryH.List)
+		r.With(d.OptionalAuth).Get("/{id}", galleryH.Get)
+		r.With(d.SessionAuth, middleware.GalleryRateLimit(d.Redis)).Post("/", galleryH.Create)
+		r.With(d.SessionAuth).Patch("/{id}", galleryH.Update)
+		r.With(d.SessionAuth).Delete("/{id}", galleryH.Delete)
+		r.With(d.SessionAuth, middleware.RequirePermission(d.PermissionChecker, "gallery:delete-any")).
+			Patch("/{id}/status", galleryH.SetStatus)
+	})
+
+	// 用户主页图集列表（公开）
+	v1.With(d.OptionalAuth).Get("/users/{username}/galleries", galleryH.ListByUser)
 }
 
 // registerTagRoutes 注册 /tags 路由（公开 List + 登录管理员写操作）。
