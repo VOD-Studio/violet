@@ -1504,3 +1504,76 @@ func fileToDTO(f *domainupload.File) FileDTO {
 		UpdatedAt: f.UpdatedAt().Format(time.RFC3339),
 	}
 }
+
+
+// SaveGeneratedCoverInput AI 生成封面的落库入参。
+type SaveGeneratedCoverInput struct {
+	OwnerID string
+	Data    []byte
+	Ext     string // png/jpeg/webp
+}
+
+// SaveGeneratedCover 把 AI 生成的封面字节落素材库（purpose=material）。
+//
+// 流程：ext 白名单校验 → 写临时文件做 magic bytes 校验 → BuildPath/Move
+// → SHA-256 去重 hash → NewFile + processor 缩略图/尺寸 → fileRepo.Save。
+// 返回站内 URL；引用计数从 0 开始（挂书封面时不加引用，删素材自然拒绝被引用文件）。
+func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte, ext string) (string, error) {
+	ext = strings.ToLower(strings.TrimPrefix(ext, "."))
+	switch ext {
+	case "png", "jpg", "jpeg", "webp":
+	default:
+		return "", shared.BadRequest("AI 封面仅支持 png/jpg/webp")
+	}
+	mimeType := map[string]string{"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}[ext]
+
+	// 写临时文件走 Validate 的 magic bytes 检查（防伪造扩展名）
+	tmpFile, err := os.CreateTemp("", "cover-*."+ext)
+	if err != nil {
+		return "", shared.Internal("创建临时文件失败", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
+		return "", shared.Internal("写临时文件失败", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return "", shared.Internal("关闭临时文件失败", err)
+	}
+	if s.processor != nil {
+		if _, err := s.processor.Validate(tmpPath); err != nil {
+			return "", shared.BadRequest("生成结果不是有效图片: " + err.Error())
+		}
+	}
+
+	fileUUID := shared.NewID()
+	finalPath, fileURL, err := s.storage.BuildPath(domainupload.PurposeMaterial, time.Now(), fileUUID.String(), "."+ext)
+	if err != nil {
+		return "", shared.BadRequest("非法的存储路径: " + err.Error())
+	}
+	if err := s.storage.EnsureDir(filepath.Dir(finalPath)); err != nil {
+		return "", shared.Internal("创建目录失败", err)
+	}
+	if err := os.WriteFile(finalPath, data, 0o644); err != nil {
+		return "", shared.Internal("写入封面失败", err)
+	}
+
+	sum := sha256.Sum256(data)
+	f, err := domainupload.NewFile(fileUUID, ownerID, domainupload.PurposeMaterial, "ai-cover."+ext, finalPath, fileURL, int64(len(data)), mimeType, hex.EncodeToString(sum[:]))
+	if err != nil {
+		return "", shared.Internal("创建文件记录失败", err)
+	}
+	if s.processor != nil {
+		if w, h := s.processor.Dimensions(finalPath); w > 0 {
+			f.SetDimensions(w, h)
+		}
+		if thumb := s.processor.Thumbnail(finalPath, fileUUID.String(), filepath.Join(domainupload.PurposeMaterial, mimeToCategory(mimeType)), mimeType); thumb != "" {
+			f.SetThumbnail(thumb)
+		}
+	}
+	if err := s.fileRepo.Save(ctx, f); err != nil {
+		return "", shared.Internal("保存文件记录失败", err)
+	}
+	return fileURL, nil
+}

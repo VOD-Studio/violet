@@ -294,6 +294,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 			r.Post("/{id}/chapters", seriesH.AttachChapters)
 			r.Delete("/{id}/chapters/{postId}", seriesH.DetachChapter)
 			r.Put("/{id}/chapters/order", seriesH.ReorderChapters)
+			r.Post("/{id}/cover/generate", seriesH.GenerateCovers)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(perm, "series:delete"))

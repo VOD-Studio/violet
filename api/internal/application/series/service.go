@@ -32,11 +32,20 @@ var (
 type Service struct {
 	repo domain.SeriesRepository
 	bus  appshared.EventBus
+	// coverGenerator/coverStore AI 封面生成依赖，nil = 站点 LLM 未配置（GenerateCoverSuggestions 降级）。
+	coverGenerator CoverGenerator
+	coverStore     GeneratedCoverStore
 }
 
 // NewService 构造系列书用例服务。bus 发布 series.* 事件（审计订阅者消费）。
 func NewService(repo domain.SeriesRepository, bus appshared.EventBus) *Service {
 	return &Service{repo: repo, bus: bus}
+}
+
+// SetCoverDeps 注入 AI 封面生成依赖（容器装配期调用一次）。
+func (s *Service) SetCoverDeps(gen CoverGenerator, store GeneratedCoverStore) {
+	s.coverGenerator = gen
+	s.coverStore = store
 }
 
 // ============================================================

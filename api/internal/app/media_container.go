@@ -20,6 +20,8 @@ import (
 type MediaContainer struct {
 	MediaHandler     *mediahttp.Handler
 	EmojiSeedService *infraemoji.EmojiSeedService
+	// UploadService 供其他模块（series AI 封面）复用上传落盘管线。
+	UploadService *appmedia.UploadService
 }
 
 // NewMediaContainer 装配 emoji/music/upload DDD 模块。
@@ -51,5 +53,6 @@ func NewMediaContainer(db *gorm.DB, redisClient *redis.Client, cfg *config.Confi
 	return &MediaContainer{
 		MediaHandler:     mediahttp.NewHandler(emojiSvc, musicSvc, uploadSvc),
 		EmojiSeedService: emojiSeedService,
+		UploadService:    uploadSvc,
 	}
 }

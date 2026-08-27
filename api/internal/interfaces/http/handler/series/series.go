@@ -4,6 +4,7 @@ package series
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -34,6 +35,8 @@ type seriesService interface {
 	AttachChapters(ctx context.Context, seriesID string, in appseries.AttachInput) (appseries.SeriesDetailDTO, error)
 	DetachChapter(ctx context.Context, seriesID, postID, userID string) error
 	ReorderChapters(ctx context.Context, seriesID string, in appseries.ReorderChaptersInput) error
+
+	GenerateCoverSuggestions(ctx context.Context, id, userID, customPrompt string, n int) ([]string, error)
 }
 
 // Handler 系列书 HTTP 处理器。
@@ -346,4 +349,30 @@ func (h *Handler) ReorderChapters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondMessage(w, http.StatusOK, "章节顺序已更新")
+}
+
+
+// generateCoversReq AI 封面生成入参。
+type generateCoversReq struct {
+	// Prompt 自定义提示词；空则用书名+简介构造
+	Prompt string `json:"prompt,omitempty"`
+	// Count 生成张数 1-10；空默认 2
+	Count int `json:"count,omitempty"`
+}
+
+// GenerateCovers POST /admin/series/{id}/cover/generate：
+// 生成 AI 封面候选并落素材库，返回 URL 列表供挑选（不直接改书封面）。
+func (h *Handler) GenerateCovers(w http.ResponseWriter, r *http.Request) {
+	var req generateCoversReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		response.RespondError(w, r, err)
+		return
+	}
+	urls, err := h.svc.GenerateCoverSuggestions(
+		r.Context(), r.PathValue("id"), ifmw.GetUserIDFromContext(r), req.Prompt, req.Count)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{"urls": urls})
 }
