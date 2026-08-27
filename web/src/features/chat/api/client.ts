@@ -7,6 +7,7 @@ import type {
 	ChatUnreadCount,
 	ChatUser,
 	CreateConversationInput,
+	EditChatMessageInput,
 	PushConfig,
 	PushSubscriptionInput,
 	SendMessageInput,
@@ -61,6 +62,11 @@ export const setChatMuted = (id: string, muted: boolean) =>
 
 export const deleteChatMessage = (conversationID: string, messageID: string) =>
 	apiDelete<null>(`/chat/conversations/${conversationID}/messages/${messageID}`);
+export const editChatMessage = (
+	conversationID: string,
+	messageID: string,
+	input: EditChatMessageInput,
+) => apiPatch<ChatMessage>(`/chat/conversations/${conversationID}/messages/${messageID}`, input);
 
 export const leaveChatConversation = (id: string) =>
 	apiDelete<null>(`/chat/conversations/${id}/members/me`);

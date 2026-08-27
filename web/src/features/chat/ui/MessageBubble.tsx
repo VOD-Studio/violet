@@ -5,17 +5,19 @@ import type { Emoji } from "@entities/emoji/model/types";
 import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { cn } from "@shared/lib/utils";
-import { AlertTriangle, Check, Copy, Reply, Smile, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Copy, Pencil, Reply, Smile, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAddChatMessageReaction, useRemoveChatMessageReaction } from "../api/queries";
+import { imageBubbleContent } from "../lib/conversation";
 import type { ChatMedia, ChatMessage, ChatMessageReference } from "../model/types";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatReactionBar } from "./ChatReactionBar";
+import { MessageEditComposer } from "./MessageEditComposer";
 import { TweetShareCard } from "./TweetShareCard";
 
 interface MessageBubbleProps {
@@ -50,6 +52,7 @@ export function MessageBubble({
 	onReplyTo,
 }: MessageBubbleProps) {
 	const mine = message.sender.id === currentUserID;
+	const [editing, setEditing] = useState(false);
 	const reactions = message.reactions ?? [];
 	const selfReactionIds = useMemo(
 		() =>
@@ -172,7 +175,9 @@ export function MessageBubble({
 					{message.reply_to && (
 						<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
 					)}
-					{message.is_deleted ? (
+					{editing && !message.is_deleted ? (
+						<MessageEditComposer message={message} onClose={() => setEditing(false)} />
+					) : message.is_deleted ? (
 						<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
 							<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
 							消息已被管理员删除
@@ -186,7 +191,12 @@ export function MessageBubble({
 								onImage={onImage}
 								className="wrap-break-word"
 							/>
-							<BubbleTimestamp inline mine={mine} time={message.created_at} />
+							<BubbleTimestamp
+								inline
+								mine={mine}
+								time={message.created_at}
+								editedAt={message.edited_at}
+							/>
 						</BubbleShell>
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
@@ -197,7 +207,12 @@ export function MessageBubble({
 										emote={mergedEmote}
 										className="wrap-break-word"
 									/>
-									<BubbleTimestamp inline mine={mine} time={message.created_at} />
+									<BubbleTimestamp
+										inline
+										mine={mine}
+										time={message.created_at}
+										editedAt={message.edited_at}
+									/>
 								</BubbleShell>
 							)}
 							<TweetShareCard
@@ -211,12 +226,17 @@ export function MessageBubble({
 								emote={mergedEmote}
 								className="wrap-break-word"
 							/>
-							<BubbleTimestamp inline mine={mine} time={message.created_at} />
+							<BubbleTimestamp
+								inline
+								mine={mine}
+								time={message.created_at}
+								editedAt={message.edited_at}
+							/>
 						</BubbleShell>
 					)}
 
 					{/* Hover 浮动微操作条 */}
-					{!message.is_deleted && (
+					{!message.is_deleted && !editing && (
 						<div
 							className={cn(
 								"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
@@ -244,6 +264,16 @@ export function MessageBubble({
 									</button>
 								}
 							/>
+							{mine && (
+								<button
+									aria-label="编辑消息"
+									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+									onClick={() => setEditing(true)}
+									type="button"
+								>
+									<Pencil className="size-3.5" />
+								</button>
+							)}
 							{onReply && (
 								<button
 									aria-label="回复消息"
@@ -335,15 +365,4 @@ function ReplyPreview({
 			{body}
 		</button>
 	);
-}
-
-/**
- * 图片消息可渲染正文：content 自带 ![img:id] 携带环绕位置；缺失占位符的媒体
- * （旧格式单图纯文字说明）按顺序前置，保证每张图都能内联渲染。
- */
-function imageBubbleContent(message: ChatMessage): string {
-	const content = message.content ?? "";
-	const missing = (message.media ?? []).filter((m) => !content.includes(`![img:${m.id}]`));
-	const prefix = missing.map((m) => `![img:${m.id}]`).join("");
-	return content ? prefix + content : prefix;
 }

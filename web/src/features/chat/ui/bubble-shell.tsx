@@ -3,7 +3,7 @@
  */
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
-import { formatTime } from "../lib/conversation";
+import { formatDateTime, formatTime } from "../lib/conversation";
 
 /** 消息气泡容器：mine 为实色主色，other 为浅底。 */
 export function BubbleShell({ mine, children }: { mine: boolean; children: ReactNode }) {
@@ -21,15 +21,17 @@ export function BubbleShell({ mine, children }: { mine: boolean; children: React
 	);
 }
 
-/** 气泡内时间戳：随正文行尾流动，mine 半透明白、other 弱化灰。 */
+/** 气泡内时间戳：随正文行尾流动，mine 半透明白、other 弱化灰。editedAt 非空时前置「已编辑」标识，悬停可见最后编辑时间。 */
 export function BubbleTimestamp({
 	mine,
 	time,
+	editedAt,
 	inline = false,
 	className,
 }: {
 	mine: boolean;
 	time: string;
+	editedAt?: string;
 	inline?: boolean;
 	className?: string;
 }) {
@@ -42,6 +44,7 @@ export function BubbleTimestamp({
 				className,
 			)}
 		>
+			{editedAt && <span title={`编辑于 ${formatDateTime(editedAt)}`}>已编辑 · </span>}
 			{formatTime(time)}
 		</span>
 	);

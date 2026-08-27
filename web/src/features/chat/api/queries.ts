@@ -13,6 +13,7 @@ import type {
 	ChatMessage,
 	ChatMessageReaction,
 	CreateConversationInput,
+	EditChatMessageInput,
 	PushSubscriptionInput,
 	SendMessageInput,
 } from "../model/types";
@@ -21,6 +22,7 @@ import {
 	createChatConversation,
 	deleteChatMessage,
 	deleteChatPushSubscription,
+	editChatMessage,
 	fetchChatContacts,
 	fetchChatConversation,
 	fetchChatConversations,
@@ -167,6 +169,25 @@ export const useDeleteChatMessage = () => {
 			conversationID: string;
 			messageID: string;
 		}) => deleteChatMessage(conversationID, messageID),
+		onSuccess: (_, variables) => {
+			qc.invalidateQueries({ queryKey: chatKeys.messages(variables.conversationID) });
+			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
+		},
+	});
+};
+
+export const useEditChatMessage = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			conversationID,
+			messageID,
+			input,
+		}: {
+			conversationID: string;
+			messageID: string;
+			input: EditChatMessageInput;
+		}) => editChatMessage(conversationID, messageID, input),
 		onSuccess: (_, variables) => {
 			qc.invalidateQueries({ queryKey: chatKeys.messages(variables.conversationID) });
 			qc.invalidateQueries({ queryKey: chatKeys.conversations() });

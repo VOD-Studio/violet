@@ -71,6 +71,8 @@ export interface ChatMessage {
 	reactions: ChatMessageReaction[];
 	is_deleted: boolean;
 	deleted_at?: string;
+	/** 最后编辑时间；缺省表示从未编辑 */
+	edited_at?: string;
 	created_at: string;
 }
 
@@ -98,6 +100,12 @@ export interface SendMessageInput {
 	media_ids?: string[];
 	shared_tweet_id?: string;
 	reply_to_id?: string;
+}
+
+export interface EditChatMessageInput {
+	content: string;
+	/** 图片消息修订后的媒体 ID 列表（整体替换，至少一张）；非图片消息省略 */
+	media_ids?: string[];
 }
 
 export interface ChatEvent {

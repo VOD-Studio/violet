@@ -32,6 +32,10 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("../../api/queries", () => ({
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useEditChatMessage: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
+	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
 }));
 
 vi.mock("@features/emojis/api/queries", () => ({
@@ -153,5 +157,60 @@ describe("MessageBubble", () => {
 
 		expect(screen.getByText("你好世界")).toBeTruthy();
 		expect(screen.queryByText(/\[1:/)).toBeNull();
+	});
+});
+
+describe("MessageBubble 消息编辑", () => {
+	function textMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
+		return {
+			id: "m_txt",
+			conversation_id: "c_1",
+			sender,
+			type: "text",
+			content: "原始内容",
+			reactions: [],
+			is_deleted: false,
+			created_at: "2026-08-25T08:00:00Z",
+			...overrides,
+		};
+	}
+
+	it("edited_at 存在时时间戳前展示「已编辑」标识，悬停可见编辑时间", () => {
+		renderBubble(textMessage({ edited_at: "2026-08-25T09:30:00Z" }));
+
+		const badge = screen.getByText(/已编辑/);
+		expect(badge.getAttribute("title")).toContain("编辑于");
+	});
+
+	it("未编辑的消息不展示「已编辑」标识", () => {
+		renderBubble(textMessage());
+
+		expect(screen.queryByText(/已编辑/)).toBeNull();
+	});
+
+	it("自己的消息有编辑入口，他人消息没有", () => {
+		renderBubble(textMessage());
+		expect(screen.getByLabelText("编辑消息")).toBeTruthy();
+		cleanup();
+
+		renderBubble(
+			textMessage({
+				sender: { id: "u_2", username: "bob", display_name: "Bob", avatar_url: "" },
+			}),
+		);
+		expect(screen.queryByLabelText("编辑消息")).toBeNull();
+	});
+
+	it("点击编辑进入内联编辑模式，Esc 退出还原气泡", () => {
+		const { container } = renderBubble(textMessage());
+
+		fireEvent.click(screen.getByLabelText("编辑消息"));
+		const editor = container.querySelector('[contenteditable="true"]');
+		expect(editor).toBeTruthy();
+		expect(screen.getByLabelText("保存编辑")).toBeTruthy();
+
+		fireEvent.keyDown(editor as HTMLElement, { key: "Escape" });
+		expect(container.querySelector('[contenteditable="true"]')).toBeNull();
+		expect(screen.getByText("原始内容")).toBeTruthy();
 	});
 });

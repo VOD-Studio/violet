@@ -41,6 +41,17 @@ export function messagePreview(message: ChatMessage) {
 	return stripPlaceholdersForPreview(message.content ?? "").trim() || "文本消息";
 }
 
+/**
+ * 图片消息可渲染正文：content 自带 ![img:id] 携带环绕位置；缺失占位符的媒体
+ * （旧格式单图纯文字说明）按顺序前置，保证每张图都能内联渲染。
+ */
+export function imageBubbleContent(message: ChatMessage): string {
+	const content = message.content ?? "";
+	const missing = (message.media ?? []).filter((m) => !content.includes(`![img:${m.id}]`));
+	const prefix = missing.map((m) => `![img:${m.id}]`).join("");
+	return content ? prefix + content : prefix;
+}
+
 export function formatTime(value: string) {
 	return new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit" }).format(
 		new Date(value),
@@ -51,6 +62,16 @@ export function formatDate(value: string) {
 	return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric" }).format(
 		new Date(value),
 	);
+}
+
+export function formatDateTime(value: string) {
+	return new Intl.DateTimeFormat("zh-CN", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(new Date(value));
 }
 
 export function formatRelativeTime(value: string) {
