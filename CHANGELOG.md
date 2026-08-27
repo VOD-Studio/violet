@@ -7,6 +7,84 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.18](https://github.com/VOD-Studio/violet/compare/v2.8.17...v2.8.18) (2026-08-27)
+
+
+### 新增
+
+* **admin-emojis:** 用户自定义表情接入表情管理页 ([2fc9b3b](https://github.com/VOD-Studio/violet/commit/2fc9b3b8bfd89d6d2d872cb8e4783d06c341bffd))
+* **admin-series:** 系列书管理端（T3） ([80ec7ed](https://github.com/VOD-Studio/violet/commit/80ec7ed2c53e3b70e856d0d3f6b952fdf7471575)), closes [#262](https://github.com/VOD-Studio/violet/issues/262)
+* **apitoken:** PAT 支持 MCP 交互偏好 interactive ([be17b94](https://github.com/VOD-Studio/violet/commit/be17b94bb3d312b94161f4766f7d4114dbaa3d27))
+* **chat:** 发出的图片消息按输入流图文环绕渲染 ([ea4010c](https://github.com/VOD-Studio/violet/commit/ea4010caf78801fd3646343aef8dbb745efc08e1))
+* **chat:** 图片消息支持单条多图 ([8731404](https://github.com/VOD-Studio/violet/commit/87314042b2f512073030b7b34a5d9daae2084e39))
+* **chat:** 完善聊天消息与表情交互 ([#274](https://github.com/VOD-Studio/violet/issues/274)) ([e0d3e1d](https://github.com/VOD-Studio/violet/commit/e0d3e1da4e7677bb9c91af408df54b97f6050920))
+* **chat:** 引用预览剥离内联图片占位符 ([e559a5f](https://github.com/VOD-Studio/violet/commit/e559a5f7b282dc7884357ff325fe6dc399e42ae7))
+* **chat:** 支持发送者重新编辑消息 ([b8d8a24](https://github.com/VOD-Studio/violet/commit/b8d8a241ff846d7eaf140d0e4a80636121198e81))
+* **chat:** 新消息接入站内通知中心 ([74598b6](https://github.com/VOD-Studio/violet/commit/74598b6da77e6df428684f0d92a6d130e4182fb8))
+* **chat:** 消息内联编辑与已编辑标识 ([6f28032](https://github.com/VOD-Studio/violet/commit/6f2803282313e5d53e0d627a793eaed256a10039))
+* **chat:** 消息内自定义表情按大表情档渲染 ([78e87b7](https://github.com/VOD-Studio/violet/commit/78e87b78c2237a1462616857e3134906ad2f9f54))
+* **chat:** 消息列表支持滚动加载历史记录 ([fc2e5a8](https://github.com/VOD-Studio/violet/commit/fc2e5a8abeab822d196fe2d9cf34b900c67aea46))
+* **chat:** 消息界面按即时通讯排版重构 ([d2638ab](https://github.com/VOD-Studio/violet/commit/d2638ab519c14d610664e3d8596d62595ddd7aeb))
+* **chat:** 聊天事件流挂载到站点头部 ([f8d646d](https://github.com/VOD-Studio/violet/commit/f8d646df8bb810308d960a46c8ea8e7c8612d7a1))
+* **chat:** 输入框多图合并为单条消息发送 ([10b0440](https://github.com/VOD-Studio/violet/commit/10b0440a2417b26f6cceaad9751ad5b915d23c01))
+* **comments:** RichCommentInput 支持预填已上传图片 ([045e01f](https://github.com/VOD-Studio/violet/commit/045e01fac41fdf22c3157b72d468e61e6c9f0503))
+* **comments:** 扩展富文本输入组件支持 inline 药丸布局 ([7af2706](https://github.com/VOD-Studio/violet/commit/7af2706613f418cb5862adde44bf51e13f8514b4))
+* **customemoji:** 后台自定义表情分页列表接口 ([396efbc](https://github.com/VOD-Studio/violet/commit/396efbc54abf71435f47b4aa21a9c47a8e84ddd0))
+* **emojis:** 放大「我的表情」网格为 6 列 ([92b380c](https://github.com/VOD-Studio/violet/commit/92b380c1aa05af549c292bb00586b7f9c582b173))
+* **emojis:** 表情选择器打开时默认选中「我的」 ([e972dd5](https://github.com/VOD-Studio/violet/commit/e972dd5e44ff59a109a5e58df082831f26d5381e))
+* **llm:** 支持 OpenAI images 协议文生图 ([6ae15cd](https://github.com/VOD-Studio/violet/commit/6ae15cda01fa6a188ca334495c282a0eb6c8e412))
+* **notifications:** 铃铛支持聊天消息通知 ([b623fd0](https://github.com/VOD-Studio/violet/commit/b623fd069bbab0b6bd7ca70eddfeb63f1927509c))
+* **series:** AI 生图支持建书创建态 ([789342d](https://github.com/VOD-Studio/violet/commit/789342d0aeee47a87848e8867331571ab4c34a44))
+* **series:** AI 生成书籍封面（T5） ([ebc1867](https://github.com/VOD-Studio/violet/commit/ebc1867c5bf9172b0462f81bdc2092f3346e1c01))
+* **series:** MCP 接入 violet-posts 与 violet-reader（T6） ([11fd426](https://github.com/VOD-Studio/violet/commit/11fd426a940e9b95e15ce5856fbcffeaae26a6a6))
+* **series:** 书籍聚合分卷与目录 API（T1） ([92848ff](https://github.com/VOD-Studio/violet/commit/92848ff595177725757b29fd2dda903006ba5b73)), closes [#260](https://github.com/VOD-Studio/violet/issues/260)
+* **series:** 前台书架与阅读器导航（T2/T4） ([e20b1c3](https://github.com/VOD-Studio/violet/commit/e20b1c3494863c0c787c0b9c3074f0c91ca1027d))
+* **series:** 接入 AI 封面生成前端并修正错误呈现 ([4c6f64a](https://github.com/VOD-Studio/violet/commit/4c6f64a29934841f2100189933673d41ad03f70f))
+* **series:** 文章合订成书（PRD-0021 T1-T4） ([7a2a868](https://github.com/VOD-Studio/violet/commit/7a2a868938353406f07da66975a3262956115833))
+* **series:** 重做在线书籍体验原型 ([97aad3d](https://github.com/VOD-Studio/violet/commit/97aad3d7458ee950074cc292bc8ee7385970fcbc))
+* **shared-ui:** Segmented 支持胶囊圆角形态 ([085b488](https://github.com/VOD-Studio/violet/commit/085b4886c2fbfecc047c11aa4ac5aea938f1b0c0))
+* **shared-ui:** 新增内容区统一错误状态组件 InlineError ([e912c2a](https://github.com/VOD-Studio/violet/commit/e912c2ab0a29c4dad5d8a6e2b530929f48988952))
+
+
+### 修复
+
+* **auth:** .env 新键追加顺序不稳定 ([994c6cd](https://github.com/VOD-Studio/violet/commit/994c6cdf7939569782a4ec9bcf6f0f72255c28f8))
+* **auth:** 401 拦截器不再提前清除 sessionActive ([acd436f](https://github.com/VOD-Studio/violet/commit/acd436f1015dd13966556e4a480a419c295be2b5))
+* **auth:** 修复 OAuth 配置写入顺序 ([c1f1c51](https://github.com/VOD-Studio/violet/commit/c1f1c519f2c3abc4bd09f57782b9b891984f4a20))
+* **chat:** 修复服务 lint 检查失败 ([f81d3fd](https://github.com/VOD-Studio/violet/commit/f81d3fd3efd20f542c0b5fd34ec95d3c1fec42d7))
+* **chat:** 内联图片占位符不再误判为自定义表情 token ([028c50b](https://github.com/VOD-Studio/violet/commit/028c50b7f1dde19bfd6daa5c718ca58c698e7cb6))
+* **chat:** 前端事件类型补充 conversation.created ([366b2e8](https://github.com/VOD-Studio/violet/commit/366b2e8cb041fcdc9db5c495584021f5125e9d9b))
+* **chat:** 回复预览与会话列表摘要剥离表情占位符 ([8f8be69](https://github.com/VOD-Studio/violet/commit/8f8be69642fc32ba1c98540c32c8193125dd565b))
+* **chat:** 图片消息渲染说明文字 ([f0cf032](https://github.com/VOD-Studio/violet/commit/f0cf0324b6b866588126414dfc8b5d27598a0ca0))
+* **chat:** 引用预览剥离表情占位符，避免裸吐 token 文本 ([fc642aa](https://github.com/VOD-Studio/violet/commit/fc642aa94c86f3cc544d406ddeac7840f310d875))
+* **chat:** 私聊创建实时通知对端 ([6e7cb3c](https://github.com/VOD-Studio/violet/commit/6e7cb3c47b1dfc7ab2c9ad6cd66c15542550766a))
+* **chat:** 窄气泡消息溢出导致横向滚动条 ([3a233f7](https://github.com/VOD-Studio/violet/commit/3a233f7b050b4f6d0a3c2cdaf6ca2209f01360e9))
+* **chat:** 详情抽屉与聊天区开关动画同步 ([44c821b](https://github.com/VOD-Studio/violet/commit/44c821ba689d8949c5f995e768fb15cc548f9bd2))
+* **comments:** 修复图片上传完成替换后光标跳到图片左侧 ([fa37f55](https://github.com/VOD-Studio/violet/commit/fa37f55387a6cab29feb16f4159ee15ea48b6580))
+* **customemoji:** 表情名称禁用 markdown 语法字符 ([9e99697](https://github.com/VOD-Studio/violet/commit/9e99697f398b2fd579e5c361cfef1e5d49d9f300))
+* **emojis:** 上传表情时拦截含 markdown 语法字符的名称 ([19f9a35](https://github.com/VOD-Studio/violet/commit/19f9a35e227b4ee1bfda744b5a134b5c93e5d6ea))
+* **migrations:** 修复聊天迁移版本号 092 冲突 ([29112b7](https://github.com/VOD-Studio/violet/commit/29112b797054afa33c8e6717365fc02bd2a6aad2))
+* **series:** 书籍详情补最近章节时间 ([d00750b](https://github.com/VOD-Studio/violet/commit/d00750baf57cf0a9a7e6e10cbb44f4289e9a8f8b))
+* **series:** 优化无图书籍封面 ([a1583c5](https://github.com/VOD-Studio/violet/commit/a1583c561c723cd032bbbfebe646516a3a664d59))
+* **series:** 优化无图书籍封面 ([c403aa9](https://github.com/VOD-Studio/violet/commit/c403aa93cd6ffd6b027975c0fbadae8a7454dc0d))
+* **series:** 优化立体书籍样式 ([85c0917](https://github.com/VOD-Studio/violet/commit/85c0917956d04b8ed2dceffddebedf35f8344eda))
+* **series:** 修复 PR [#271](https://github.com/VOD-Studio/violet/issues/271) 第三轮评审缺陷 ([18655df](https://github.com/VOD-Studio/violet/commit/18655df49277c17b1f671b051490a42380a97f05))
+* **series:** 修复 PR [#271](https://github.com/VOD-Studio/violet/issues/271) 第二轮评审缺陷 ([2798d87](https://github.com/VOD-Studio/violet/commit/2798d872b61d7a2c24dd8b514e585f79f662274b))
+* **series:** 修复 PR [#271](https://github.com/VOD-Studio/violet/issues/271) 评审指出的正确性问题 ([566df78](https://github.com/VOD-Studio/violet/commit/566df78c9443095767b8e9ba36d134f6cadde5c0))
+* **series:** 增强书籍封面质感 ([75e6918](https://github.com/VOD-Studio/violet/commit/75e691843b690747f38edc68954c9bbe21801371))
+* **series:** 封面校验放行站内相对路径 ([900d60a](https://github.com/VOD-Studio/violet/commit/900d60a56361b224d3fb412561f7dbdbfb1ae214))
+* **series:** 收敛书籍封面底边 ([f30b3b7](https://github.com/VOD-Studio/violet/commit/f30b3b788736fddfdce0644faf80f43d656b8145))
+* **series:** 统一原型主题配色 ([a7fd498](https://github.com/VOD-Studio/violet/commit/a7fd498bf1dd3e19e4c5daaa58c4baba4767a737))
+* **series:** 重构实体书封视觉 ([9cf6061](https://github.com/VOD-Studio/violet/commit/9cf60610fb5d927bee6e1c32d2081a89c6cc3aae))
+
+
+### 重构
+
+* **chat:** ChatWorkspace 按职责拆分为独立组件文件 ([fcad1ce](https://github.com/VOD-Studio/violet/commit/fcad1cec98d7c91e3dd46b3c037767de60f0c347))
+* **chat:** 聊天消息移出站内通知中心 ([f5baf5b](https://github.com/VOD-Studio/violet/commit/f5baf5b3a5237470f82719dea699bc9b685cb323))
+* **notifications:** 铃铛移除聊天消息条目 ([598a6e6](https://github.com/VOD-Studio/violet/commit/598a6e6ffb30a84e96f9d7b903de4e0f259b6d4d))
+* **series:** 书籍原型表面切换复用 Segmented ([71a8d55](https://github.com/VOD-Studio/violet/commit/71a8d55f7318eca50d3ffa8907b26bd288a54e8f))
+
 ## [2.8.17](https://github.com/VOD-Studio/violet/compare/v2.8.16...v2.8.17) (2026-08-24)
 
 
