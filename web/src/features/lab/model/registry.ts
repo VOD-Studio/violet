@@ -61,7 +61,8 @@ export const LABS = [
 		to: "/lab/gallery",
 		en: "Gallery",
 		title: "图集原型实验室",
-		description: "浏览流、详情网格与灯箱的候选方向并排开着——图集长什么样，比着选。",
-		meta: "浏览 ×3 · 网格 ×3 · 灯箱 ×3",
+		description:
+			"浏览流与详情网格的候选方向并排开着，灯箱复用生产 ImagePreview——图集长什么样，比着选。",
+		meta: "浏览 ×4 · 网格 ×3 · 灯箱=生产",
 	},
 ] as const;
