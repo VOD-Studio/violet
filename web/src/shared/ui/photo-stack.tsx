@@ -1,8 +1,9 @@
 /**
  * PhotoStack - 照片堆叠
  *
- * 「一沓照片」交互单元：竖图居中、底图左右各露一条窄边暗示多张；
- * 横向拖拽把顶图拨到栈底翻下一张；点行尾展开键切平铺网格一览全部。
+ * 「一沓照片」交互单元：竖图居中、底图左右各露窄边并带微倾斜，像随意摞起的一沓；
+ * 横向拖拽顶图时以底缘为轴倾斜，拖够远或松手过阈值就把顶图甩出画面外、即时让位给下一张，
+ * 飞出的卡从画面外被弹簧拉回栈底（视觉上从背面回到栈后）；点行尾展开键切紧凑网格一览全部。
  * 图集浏览流与任何「一组图」场景共用此件。
  *
  * @example
@@ -13,9 +14,9 @@
  */
 import { cn } from "@shared/lib/utils";
 import { GripHorizontal, Maximize2 } from "lucide-react";
-import { motion } from "motion/react";
+import { animate, type MotionValue, motion, motionValue } from "motion/react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 export interface PhotoStackImage {
 	src: string;
@@ -32,11 +33,36 @@ export interface PhotoStackProps {
 	className?: string;
 }
 
-/** 翻页阈值：顶图位移超过栈面宽度的比例即拨到底。 */
+/** 松手翻页阈值：顶图位移超过栈面宽度的比例即拨到底。 */
 const FLIP_RATIO = 0.22;
+/** 活提交阈值：拖拽中超过该比例立即翻页并把顶图甩到画面外，避免拖到一半卡住。 */
+const LIVE_FLIP_RATIO = 0.45;
 /** 底图露出宽度占栈面宽度比例（左右窄边的视觉参照）。 */
 const PEEK_RATIO = 0.035;
-const EXPAND_SPRING = { type: "spring", stiffness: 320, damping: 34 } as const;
+/** 拖拽倾角系数：rotate = dragX × 系数；配合底缘转轴模拟从桌面捻起照片的手感。 */
+const TILT_PER_PX = 0.1;
+/** 拖拽倾角上限（度），大幅横扫时卡片不翻倒。 */
+const TILT_MAX = 28;
+/** 顶图甩出距离（栈宽倍数）：先甩到画面外，再被槽位弹簧拉回栈底。 */
+const FLY_OFF_MULT = 1.6;
+const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
+const FLY_TWEEN = { duration: 0.2, ease: [0.2, 0.8, 0.4, 1] as [number, number, number, number] };
+
+/**
+ * 静止槽位（depth 0 = 顶图）：x 单位是栈宽 × PEEK_RATIO，rotate 单位度。
+ * 交替左右露边 + 微倾斜营造「随意一沓」；更深层压在最深槽位后被遮住。
+ */
+const SLOTS = [
+	{ x: 0, rotate: 0 },
+	{ x: -1, rotate: -2.5 },
+	{ x: 1, rotate: 2 },
+	{ x: -1.6, rotate: -3.5 },
+] as const;
+
+interface CardMotion {
+	x: MotionValue<number>;
+	rotate: MotionValue<number>;
+}
 
 export function PhotoStack({
 	images,
@@ -46,57 +72,143 @@ export function PhotoStack({
 }: PhotoStackProps) {
 	const [order, setOrder] = useState(images);
 	const [expanded, setExpanded] = useState(false);
-	const [dragX, setDragX] = useState(0);
-	// 拖拽路径全部走 ref（同步读写，避免 state 异步导致翻页判断读到旧值）
-	const dragXRef = useRef(0);
-	const dragging = useRef<number | null>(null);
+	// 仅驱动 cursor/阴影；拖拽位移走 MotionValue，pointermove 不触发重渲染
+	const [dragging, setDragging] = useState(false);
+	const dragStartX = useRef<number | null>(null);
 	const stackRef = useRef<HTMLDivElement>(null);
 	// 栈面宽度：挂载后量一次（ref 在 render 后才有值），底图露边靠它
 	const [stackWidth, setStackWidth] = useState(0);
+	// 展开/收起共享形变的 layoutId 需全页唯一（一页可能挂多个栈）
+	const layoutPrefix = useId();
+
+	// 每卡一组 MotionValue（按 src 持久）：拖拽 .set() 即时跟随，槽位变化 animate 弹簧补位
+	const cardMotions = useRef(new Map<string, CardMotion>());
+	const motionOf = (src: string, initX = 0, initRotation = 0): CardMotion => {
+		let mv = cardMotions.current.get(src);
+		if (!mv) {
+			mv = { x: motionValue(initX), rotate: motionValue(initRotation) };
+			cardMotions.current.set(src, mv);
+		}
+		return mv;
+	};
+	const slotOf = (depth: number) => {
+		const s = SLOTS[Math.min(depth, SLOTS.length - 1)];
+		return { x: s.x * stackWidth * PEEK_RATIO, rotate: s.rotate };
+	};
+
+	// 供挂载期 effect 闭包读到最新栈顶（挂载 effect 只跑一次，凭 ref 取现值）
+	const orderRef = useRef(order);
+	orderRef.current = order;
+
+	// 槽位重排（翻页/挂载/栈宽变化）：各卡从当前位姿弹簧到各自槽位。
+	// 被甩出的卡 zIndex 已即时降，从画面外被弹簧拉回栈底槽位——视觉上"绕到栈后"。
+	useEffect(() => {
+		order.forEach((img, i) => {
+			const mv = cardMotions.current.get(img.src);
+			if (!mv) return;
+			const s = SLOTS[Math.min(i, SLOTS.length - 1)];
+			mv.x.stop();
+			mv.rotate.stop();
+			animate(mv.x, s.x * stackWidth * PEEK_RATIO, SLOT_SPRING);
+			animate(mv.rotate, s.rotate, SLOT_SPRING);
+		});
+	}, [order, stackWidth]);
 
 	useEffect(() => {
 		const stack = stackRef.current;
 		if (!stack) return;
 		setStackWidth(stack.offsetWidth);
 		const cancel = () => {
-			if (dragging.current === null) return;
-			dragging.current = null;
-			dragXRef.current = 0;
-			setDragX(0);
+			if (dragStartX.current === null) return;
+			dragStartX.current = null;
+			setDragging(false);
+			const src = orderRef.current[0]?.src;
+			const mv = src ? cardMotions.current.get(src) : undefined;
+			if (!mv) return;
+			animate(mv.x, 0, SLOT_SPRING);
+			animate(mv.rotate, 0, SLOT_SPRING);
 		};
 		stack.addEventListener("lostpointercapture", cancel);
 		return () => stack.removeEventListener("lostpointercapture", cancel);
 	}, []);
 
+	/**
+	 * 立即把顶图甩到画面外并换栈顶：新顶图接管手指移动，甩出的卡由槽位 effect 弹簧拉回栈底。
+	 * clientX 是触发甩出那一刻的指针位置，换栈后作为新顶图 dx 的原点，避免被旧卡累计距离影响。
+	 */
+	const flingTopAndFlip = (mv: CardMotion, dx: number, width: number, clientX: number) => {
+		const sign = Math.sign(dx) || 1;
+		animate(mv.x, sign * width * FLY_OFF_MULT, FLY_TWEEN);
+		animate(mv.rotate, sign * TILT_MAX, FLY_TWEEN);
+		setOrder((prev) => [...prev.slice(1), prev[0]]);
+		dragStartX.current = clientX;
+	};
+
 	const onPointerDown = (e: ReactPointerEvent) => {
-		dragging.current = e.clientX;
-		stackRef.current?.setPointerCapture(e.pointerId);
+		if (e.button !== 0) return;
+		dragStartX.current = e.clientX;
+		setDragging(true);
+		// 指针已释放等边缘场景 setPointerCapture 会抛 NotFoundError；无捕获时 pointermove 只在栈面内触发，拖拽降级可用
+		try {
+			stackRef.current?.setPointerCapture(e.pointerId);
+		} catch {
+			// 捕获失败属可接受降级
+		}
+		// 打断进行中的补位弹簧，避免与拖拽 .set() 互相拉扯
+		const src = orderRef.current[0]?.src;
+		const mv = src ? cardMotions.current.get(src) : undefined;
+		mv?.x.stop();
+		mv?.rotate.stop();
 	};
 	const onPointerMove = (e: ReactPointerEvent) => {
-		if (dragging.current === null) return;
-		dragXRef.current = e.clientX - dragging.current;
-		setDragX(dragXRef.current);
+		if (dragStartX.current === null) return;
+		const src = orderRef.current[0]?.src;
+		if (!src) return;
+		const mv = cardMotions.current.get(src);
+		if (!mv) return;
+		const dx = e.clientX - dragStartX.current;
+		mv.x.set(dx);
+		mv.rotate.set(Math.max(-TILT_MAX, Math.min(TILT_MAX, dx * TILT_PER_PX)));
+		const width = stackRef.current?.offsetWidth ?? 0;
+		if (Math.abs(dx) >= width * LIVE_FLIP_RATIO) {
+			// 拖得够远：直接换栈顶，让下一张接管手指移动（无限循环翻页手感）
+			flingTopAndFlip(mv, dx, width, e.clientX);
+		}
 	};
 	const onPointerUp = () => {
-		if (dragging.current === null) return;
+		if (dragStartX.current === null) return;
+		dragStartX.current = null;
+		setDragging(false);
+		const src = orderRef.current[0]?.src;
+		if (!src) return;
+		const mv = cardMotions.current.get(src);
+		if (!mv) return;
 		const width = stackRef.current?.offsetWidth ?? 0;
-		if (Math.abs(dragXRef.current) > width * FLIP_RATIO) {
-			setOrder((prev) => [...prev.slice(1), prev[0]]);
+		const dx = mv.x.get() ?? 0;
+		if (Math.abs(dx) > width * FLIP_RATIO) {
+			// 小幅拖到阈值松手：同活提交路径，飞出去再换栈顶
+			flingTopAndFlip(mv, dx, width, (mv.x.get() ?? 0) + (mv.x.get() ? 0 : 0));
+			// 用当前指针位置（无 clientX 可得）做拖拽原点；交给 onPointerDown 之后的 cancel 兜底为 0
+			dragStartX.current = null;
+			return;
 		}
-		dragXRef.current = 0;
-		setDragX(0);
-		dragging.current = null;
+		animate(mv.x, 0, SLOT_SPRING);
+		animate(mv.rotate, 0, SLOT_SPRING);
 	};
 
 	if (expanded) {
 		return (
 			<article className={cn("group", className)}>
-				<motion.div layout className="grid grid-cols-2 gap-1.5 overflow-hidden rounded-xl">
+				{/* 紧凑网格一览全部：layoutId 让卡从堆叠位形变到网格位，不走视频的竖向分页 */}
+				<motion.div
+					layout
+					className="grid grid-cols-2 gap-1.5 overflow-hidden rounded-xl sm:grid-cols-3"
+				>
 					{order.map((img, i) => (
 						<motion.div
 							key={img.src}
-							layout
-							transition={EXPAND_SPRING}
+							layoutId={`${layoutPrefix}-${img.src}`}
+							transition={SLOT_SPRING}
 							className="relative overflow-hidden rounded-md"
 						>
 							<img
@@ -116,9 +228,6 @@ export function PhotoStack({
 		);
 	}
 
-	const isDragging = dragging.current !== null;
-	const peek = stackWidth * PEEK_RATIO;
-
 	return (
 		<article className={cn("group", className)}>
 			{/* isolate + overflow-hidden：拖出栈面时不被相邻卡片盖住 */}
@@ -128,7 +237,7 @@ export function PhotoStack({
 				className={cn(
 					"relative isolate touch-pan-y select-none",
 					"mx-auto w-[92%]", // 四周留白，栈更收束
-					isDragging && "cursor-grabbing",
+					dragging ? "cursor-grabbing" : "cursor-grab",
 					aspectClass,
 				)}
 				onPointerDown={onPointerDown}
@@ -137,28 +246,26 @@ export function PhotoStack({
 				onPointerCancel={onPointerUp}
 			>
 				{order.map((img, i) => {
-					const depth = Math.min(i, 2);
 					const isTop = i === 0;
-					// 底图只露窄边：横向偏移 + 微缩（窄边有厚度感），不旋转不摆拍
-					const peekX = depth === 0 ? 0 : depth === 1 ? -peek : peek;
+					const slot = slotOf(i);
+					const mv = motionOf(img.src, slot.x, slot.rotate);
 					return (
 						<motion.div
 							key={img.src}
-							layout={false}
-							transition={isTop && isDragging ? { duration: 0 } : EXPAND_SPRING}
+							layoutId={`${layoutPrefix}-${img.src}`}
+							transition={SLOT_SPRING}
 							className="absolute inset-0 overflow-hidden rounded-lg border border-edge-hairline bg-background shadow-md"
 							style={{
 								// 顶图收窄 6% 居中；底图全宽并向左/右探出窄条
 								width: isTop ? "92%" : "100%",
 								insetInlineStart: isTop ? "4%" : 0,
-								transform: isTop
-									? `translateX(${dragX}px) rotate(${dragX / 14}deg)`
-									: `translateX(${peekX}px)`,
-								zIndex: 10 - depth,
+								// 转轴压在底缘下方：拖拽倾斜像从桌面捻起一张照片
+								transformOrigin: "50% 120%",
+								x: mv.x,
+								rotate: mv.rotate,
+								zIndex: order.length - i,
 								boxShadow:
-									isTop && isDragging
-										? "0 12px 32px rgb(0 0 0 / 0.28)"
-										: undefined,
+									isTop && dragging ? "0 12px 32px rgb(0 0 0 / 0.28)" : undefined,
 							}}
 						>
 							<img
@@ -195,8 +302,11 @@ function ExpandToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () 
 	return (
 		<button
 			type="button"
-			onClick={onToggle}
-			aria-label={expanded ? "收起为堆叠" : "展开为网格"}
+			onClick={(onClick) => {
+				onClick.preventDefault?.();
+				onToggle();
+			}}
+			aria-label={expanded ? "收起为堆叠" : "展开全部照片"}
 			className="mt-0.5 shrink-0 rounded-md border border-edge-hairline p-1.5 text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<Maximize2 className={cn("size-3.5 transition-transform", expanded && "rotate-45")} />
