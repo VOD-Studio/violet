@@ -30,6 +30,8 @@ type createTokenRequest struct {
 	Scopes    []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish posts:scrape subscriptions:read subscriptions:write comments:read"`
 	// ExpiresAt：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串默认 90 天。
 	ExpiresAt string `json:"expires_at" validate:"omitempty"`
+	// Interactive MCP 交互偏好：省略/true=冲突返回候选；false=一路到底（#272）
+	Interactive *bool `json:"interactive"`
 }
 
 // Create 创建 PAT（后台 admin）。返回明文 token，仅此一次。
@@ -50,10 +52,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := h.svc.Create(r.Context(), appapitoken.CreateInput{
-		UserID:    userID,
-		Name:      req.Name,
-		Scopes:    req.Scopes,
-		ExpiresAt: expiresAt,
+		UserID:      userID,
+		Name:        req.Name,
+		Scopes:      req.Scopes,
+		ExpiresAt:   expiresAt,
+		Interactive: req.Interactive,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

@@ -40,6 +40,7 @@ type Container struct {
 	Image           *ImageContainer
 	Tweet           *TweetContainer
 	FriendLink      *FriendLinkContainer
+	Series          *SeriesContainer
 	Notification    *NotificationContainer
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
@@ -95,17 +96,18 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
-	commentReaction := NewCommentReactionContainer(db)
 	apiToken := NewAPITokenContainer(db, bus)
 	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
-	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService)
+	commentReaction := NewCommentReactionContainer(db)
+	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
+	notification := NewNotificationContainer(db, bus)
 	system := NewSystemContainer(db, rdb, ctx)
 	media := NewMediaContainer(db, rdb, cfg)
+	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
+	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, customEmoji.Service, bus)
-	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
-	notification := NewNotificationContainer(db, bus)
 	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
 
 	c := &Container{
@@ -114,7 +116,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Notification: notification, Chat: chat, CustomEmoji: customEmoji,
+		Series: series, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 	}
 	return c, roleCleanup, nil
 }

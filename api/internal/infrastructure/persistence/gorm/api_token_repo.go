@@ -122,6 +122,8 @@ func tokenToPO(p *domainapitoken.PAT) *model.APIToken {
 		lu := p.LastUsedAt()
 		po.LastUsedAt = &lu
 	}
+	interactive := p.Interactive()
+	po.Interactive = &interactive
 	return po
 }
 
@@ -135,9 +137,13 @@ func tokenToDomain(po model.APIToken) (*domainapitoken.PAT, error) {
 		lastUsed = *po.LastUsedAt
 	}
 	scopes := []string(po.Scopes)
+	interactive := true
+	if po.Interactive != nil {
+		interactive = *po.Interactive
+	}
 	return domainapitoken.Reconstruct(
 		po.ID, po.UserID, po.Name, po.TokenHash,
-		scopes, expires, lastUsed, po.CreatedAt,
+		scopes, expires, lastUsed, po.CreatedAt, interactive,
 	), nil
 }
 

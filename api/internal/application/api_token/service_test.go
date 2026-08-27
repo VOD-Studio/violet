@@ -123,9 +123,9 @@ func TestService_List_NeverExposesPlaintext(t *testing.T) {
 	exp := now.Add(24 * time.Hour)
 	pats := []*domainapitoken.PAT{
 		domainapitoken.Reconstruct("id-1", "user-1", "alpha", "hash-1",
-			[]string{domainapitoken.ScopePostsRead}, exp, time.Time{}, now),
+			[]string{domainapitoken.ScopePostsRead}, exp, time.Time{}, now, true),
 		domainapitoken.Reconstruct("id-2", "user-1", "beta", "hash-2",
-			[]string{domainapitoken.ScopeCommentsRead}, time.Time{}, now, now),
+			[]string{domainapitoken.ScopeCommentsRead}, time.Time{}, now, now, true),
 	}
 	repo := &fakeRepo{findByUser: pats}
 	svc := NewService(repo, infraeventbus.NewInMemory())

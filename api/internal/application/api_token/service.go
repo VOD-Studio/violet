@@ -29,6 +29,10 @@ type CreateInput struct {
 	Name       string
 	Scopes     []string
 	ExpiresAt  time.Time // 零值表示永不过期
+	// Interactive MCP 写 tool 交互偏好（#272）：true=冲突返回候选由 agent 转述；
+	// false=一路到底按推荐项自动决策。Go 零值 false 与默认 true 冲突，故用
+	// 三态指针：nil=默认 true；显式 false 才关闭。
+	Interactive *bool
 }
 
 // CreateResult 创建结果。Token 为明文，仅此一次返回。
@@ -38,7 +42,11 @@ type CreateResult struct {
 
 // Create 创建 PAT，返回明文 token（仅此一次）。
 func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, error) {
-	p, plaintext, err := domainapitoken.NewPAT(in.UserID, in.Name, in.Scopes, in.ExpiresAt, time.Now())
+	var opts []domainapitoken.PATOption
+	if in.Interactive != nil {
+		opts = append(opts, domainapitoken.WithInteractive(*in.Interactive))
+	}
+	p, plaintext, err := domainapitoken.NewPAT(in.UserID, in.Name, in.Scopes, in.ExpiresAt, time.Now(), opts...)
 	if err != nil {
 		return CreateResult{}, err
 	}
@@ -114,11 +122,15 @@ type PATDTO struct {
 	LastUsedAt     string   `json:"last_used_at,omitempty"`   // 空表示从未使用
 	CreatedAt      string   `json:"created_at"`
 	PlaintextToken string   `json:"token,omitempty"`          // 明文 token（一次性，仅创建响应非空）；列表及其他场景恒为空
+	// Interactive MCP 写 tool 交互偏好；nil/true=冲突返回候选，false=一路到底
+	Interactive *bool `json:"interactive,omitempty"`
 }
 
 func toDTO(p *domainapitoken.PAT, plaintext string) PATDTO {
+	interactive := p.Interactive()
 	dto := PATDTO{
-		ID:   p.ID(),
+		Interactive: &interactive,
+		ID:          p.ID(),
 		Name: p.Name(),
 		Scopes: p.Scopes(),
 		CreatedAt: p.CreatedAt().Format(time.RFC3339),

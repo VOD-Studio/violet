@@ -91,15 +91,27 @@ type PAT struct {
 	expiresAt time.Time
 	// lastUsedAt 最近一次使用时间（零值表示从未使用，每次鉴权成功后更新）
 	lastUsedAt time.Time
+	// interactive MCP 写 tool 交互偏好：true（默认）= 冲突/命名场景返回候选
+	// 让 agent 转述用户；false = 一路到底，可安全推荐的分叉按推荐项自动决策。
+	// 是体验偏好不是权限：scope 门禁与 owner 校验不受影响。
+	interactive bool
 	// createdAt 创建时间
 	createdAt time.Time
+}
+
+// PATOption NewPAT 的可选配置。
+type PATOption func(*PAT)
+
+// WithInteractive 声明交互偏好（默认 true）。
+func WithInteractive(v bool) PATOption {
+	return func(p *PAT) { p.interactive = v }
 }
 
 // NewPAT 创建新 PAT。返回聚合根与 token 哈希（明文由调用方保留并一次性返回）。
 //
 // expiresAt 零值表示永不过期；非零值时与 now 比较判过期。
 // 随机源失败返回错误，调用方映射为 500。
-func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time) (*PAT, string, error) {
+func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time, opts ...PATOption) (*PAT, string, error) {
 	if len(scopes) == 0 {
 		return nil, "", domainshared.BadRequest("至少选择一个权限范围")
 	}
@@ -113,22 +125,27 @@ func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time) (*PA
 		return nil, "", domainshared.Internal("生成 token 失败", err)
 	}
 	p := &PAT{
-		id:        domainshared.NewID().String(),
-		userID:    userID,
-		name:      name,
-		tokenHash: HashToken(raw),
-		scopes:    scopes,
-		expiresAt: expiresAt,
-		createdAt: now,
+		id:          domainshared.NewID().String(),
+		userID:      userID,
+		name:        name,
+		tokenHash:   HashToken(raw),
+		scopes:      scopes,
+		expiresAt:   expiresAt,
+		interactive: true,
+		createdAt:   now,
+	}
+	for _, opt := range opts {
+		opt(p)
 	}
 	return p, raw, nil
 }
 
 // Reconstruct 从持久化数据重建 PAT 聚合（不触发事件、不设默认值）。
-func Reconstruct(id, userID, name, tokenHash string, scopes []string, expiresAt, lastUsedAt, createdAt time.Time) *PAT {
+func Reconstruct(id, userID, name, tokenHash string, scopes []string, expiresAt, lastUsedAt, createdAt time.Time, interactive bool) *PAT {
 	return &PAT{
 		id: id, userID: userID, name: name, tokenHash: tokenHash,
 		scopes: scopes, expiresAt: expiresAt, lastUsedAt: lastUsedAt, createdAt: createdAt,
+		interactive: interactive,
 	}
 }
 
@@ -140,6 +157,7 @@ func (p *PAT) Scopes() []string      { return p.scopes }
 func (p *PAT) ExpiresAt() time.Time  { return p.expiresAt }
 func (p *PAT) LastUsedAt() time.Time { return p.lastUsedAt }
 func (p *PAT) CreatedAt() time.Time  { return p.createdAt }
+func (p *PAT) Interactive() bool     { return p.interactive }
 
 // HasScope 判断该 PAT 是否拥有指定 scope（子集判定）。
 func (p *PAT) HasScope(scope string) bool {

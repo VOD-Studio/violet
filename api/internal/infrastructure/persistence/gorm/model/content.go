@@ -26,6 +26,12 @@ type Post struct {
 	SEODescription string     `gorm:"type:text;column:seo_description" json:"seo_description"`
 	PublishedAt    *time.Time `gorm:"column:published_at" json:"published_at,omitempty"`
 	CanonicalURL   *string    `gorm:"type:text;column:canonical_url" json:"canonical_url,omitempty"`
+	// 章节归属三列（migration 102，PRD-0021）：series_id 单值即一章只属一书。
+	// post 域聚合不感知书——Save 时 Omit 三列防全量覆盖（见 post_repo.Save）；
+	// 归属写路径在 series 仓储（map Updates 直写）。
+	SeriesID        *uuid.UUID `gorm:"type:uuid;column:series_id" json:"series_id,omitempty"`
+	SeriesSectionID *uuid.UUID `gorm:"type:uuid;column:series_section_id" json:"series_section_id,omitempty"`
+	ChapterOrder    *int       `gorm:"column:chapter_order" json:"chapter_order,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	// 软删除：GORM 识别 gorm.DeletedAt 后 Delete 自动改 UPDATE，查询自动过滤 deleted_at IS NULL。

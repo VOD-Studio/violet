@@ -88,4 +88,6 @@ export interface CreatePATRequest {
 	name: string;
 	scopes: PATScope[];
 	expires_at: string;
+	/** MCP 交互偏好：true/省略=冲突返回候选由 agent 转述；false=一路到底按推荐项自动决策 */
+	interactive?: boolean;
 }

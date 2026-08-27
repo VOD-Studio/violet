@@ -38,7 +38,7 @@ func TestPATVerifier_NeverExpiring_ReturnsNonZeroExpiration(t *testing.T) {
 		"hash-1", []string{domainapitoken.ScopePostsRead},
 		time.Time{}, // 零值 = 永不过期
 		time.Time{}, now,
-	)
+		true)
 	v := NewPATVerifier(&fakeLookup{pat: p})
 
 	info, err := v.Verify(context.Background(), "raw-token", nil)
@@ -60,7 +60,7 @@ func TestPATVerifier_WithExplicitExpiry_PassesThrough(t *testing.T) {
 		"tok-2", "u-2", "ci",
 		"hash-2", []string{domainapitoken.ScopePostsWrite},
 		exp, time.Time{}, time.Now(),
-	)
+		true)
 	v := NewPATVerifier(&fakeLookup{pat: p})
 
 	info, err := v.Verify(context.Background(), "raw", nil)
@@ -89,7 +89,7 @@ func TestPATVerifier_Expired_ReturnsInvalidToken(t *testing.T) {
 		"tok-3", "u-3", "old",
 		"hash-3", []string{domainapitoken.ScopePostsRead},
 		past, time.Time{}, time.Now().Add(-2*time.Hour),
-	)
+		true)
 	v := NewPATVerifier(&fakeLookup{pat: p})
 
 	_, err := v.Verify(context.Background(), "raw", nil)
@@ -105,7 +105,7 @@ func TestPATVerifier_TouchesLastUsedAsync(t *testing.T) {
 		"tok-touch", "u-1", "agent",
 		"hash-touch", []string{domainapitoken.ScopePostsRead},
 		time.Now().Add(time.Hour), time.Time{}, time.Now(),
-	)
+		true)
 	fl := &fakeLookup{pat: p}
 	v := NewPATVerifier(fl)
 

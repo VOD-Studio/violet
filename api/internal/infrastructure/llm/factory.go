@@ -17,7 +17,9 @@ type Config struct {
 	APIKey   string
 	APIURL   string
 	Model    string
-}
+	// ImageModel 生图模型（对应 llm_image_model）；空时 GenerateImage 走默认。
+	ImageModel string
+ }
 
 // NewClientFromConfig 按 Protocol 返回对应协议的客户端实现。
 //
@@ -33,7 +35,7 @@ func NewClientFromConfig(cfg Config) (Client, error) {
 	}
 	switch protocol {
 	case "openai":
-		return NewOpenAIClient(cfg.APIKey, cfg.APIURL, cfg.Model), nil
+		return NewOpenAIClientWithImageModel(cfg.APIKey, cfg.APIURL, cfg.Model, cfg.ImageModel), nil
 	default:
 		return nil, fmt.Errorf("不支持的 LLM 协议: %s", protocol)
 	}
@@ -41,13 +43,14 @@ func NewClientFromConfig(cfg Config) (Client, error) {
 
 // NewClientFromSettings 从 site_settings 的 map 形态构造客户端。
 //
-// key 命名契约：llm_protocol / llm_api_key / llm_api_url / llm_model。
+// key 命名契约：llm_protocol / llm_api_key / llm_api_url / llm_model / llm_image_model。
 // 业务方读取 site_settings 后直接传入即可，无需手工拼 Config。
 func NewClientFromSettings(m map[string]string) (Client, error) {
 	return NewClientFromConfig(Config{
-		Protocol: m["llm_protocol"],
-		APIKey:   m["llm_api_key"],
-		APIURL:   m["llm_api_url"],
-		Model:    m["llm_model"],
+		Protocol:   m["llm_protocol"],
+		APIKey:     m["llm_api_key"],
+		APIURL:     m["llm_api_url"],
+		Model:      m["llm_model"],
+		ImageModel: m["llm_image_model"],
 	})
 }

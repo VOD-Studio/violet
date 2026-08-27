@@ -19,13 +19,20 @@ type OpenAIClient struct {
 	apiKey       string
 	baseURL      string // 不以 / 结尾；空串走 SDK 默认（OpenAI 官方）
 	defaultModel string
-	client       openai.Client
-}
-
+	// defaultImageModel GenerateImage 未显式传 Model 时的兜底。
+	defaultImageModel string
+	client            openai.Client
+ }
+ 
 // NewOpenAIClient 构造 OpenAI 协议客户端。
 //
 // baseURL 为空时由 SDK 走 OpenAI 官方端点。defaultModel 为 CompleteRequest.Model 留空时的兜底。
-func NewOpenAIClient(apiKey, baseURL, defaultModel string) *OpenAIClient {
+ func NewOpenAIClient(apiKey, baseURL, defaultModel string) *OpenAIClient {
+	return NewOpenAIClientWithImageModel(apiKey, baseURL, defaultModel, "")
+}
+
+// NewOpenAIClientWithImageModel 同上，额外接收生图模型兜底（llm_image_model）。
+func NewOpenAIClientWithImageModel(apiKey, baseURL, defaultModel, defaultImageModel string) *OpenAIClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	opts := []option.RequestOption{option.WithAPIKey(apiKey)}
 	if baseURL != "" {
@@ -35,9 +42,11 @@ func NewOpenAIClient(apiKey, baseURL, defaultModel string) *OpenAIClient {
 		apiKey:       apiKey,
 		baseURL:      baseURL,
 		defaultModel: defaultModel,
+		defaultImageModel: defaultImageModel,
 		client:       openai.NewClient(opts...),
 	}
-}
+ }
+
 
 // Complete 发起一次非流式 chat completion 请求。
 //

@@ -66,8 +66,8 @@ func (c *OAuthCredentials) GithubClientSecret() string {
 
 // OAuthCredentialUpdate OAuth 凭据写入入参（指针表部分更新，nil 不更新）
 type OAuthCredentialUpdate struct {
-	GoogleClientID    *string
-	GithubClientID    *string
+	GoogleClientID     *string
+	GithubClientID     *string
 	GithubClientSecret *string
 }
 
@@ -102,8 +102,8 @@ type ProviderStatus struct {
 
 // OAuthStatusOutput 凭据状态查询输出
 type OAuthStatusOutput struct {
-	Google    ProviderStatus `json:"google"`
-	Github    ProviderStatus `json:"github"`
+	Google ProviderStatus `json:"google"`
+	Github ProviderStatus `json:"github"`
 	// Persisted 最近一次写入是否成功落盘 .env（false=重启后失效）
 	Persisted bool `json:"persisted"`
 }
@@ -252,9 +252,10 @@ const verifyProbeCode = "violet-oauth-verify-probe"
 // 高频探测会被 provider 限流）。
 //
 // 判读矩阵（token 端点对假 code 的响应）：
-//   GitHub: 404 → App 已删；incorrect_client_credentials → secret 错；
-//           bad_verification_code → 凭据有效
-//   Google: invalid_client → client 已删；其余（invalid_request 等）→ 存在
+//
+//	GitHub: 404 → App 已删；incorrect_client_credentials → secret 错；
+//	        bad_verification_code → 凭据有效
+//	Google: invalid_client → client 已删；其余（invalid_request 等）→ 存在
 func (c *OAuthCredentials) VerifyProvider(ctx context.Context, provider string) (VerifyResult, error) {
 	switch provider {
 	case "google":

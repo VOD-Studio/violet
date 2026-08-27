@@ -276,5 +276,36 @@ func NewAdminRouter(d *Deps) chi.Router {
 		})
 	})
 
+	// 系列书管理（PRD-0021）：读 series:view；建书 series:create；
+	// 编辑/卷/挂章/调序 series:update；解散 series:delete。写操作叠加 owner 校验（application 层）。
+	seriesH := d.Series
+	r.Route("/series", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "series:view"))
+			r.Get("/", seriesH.ListAdmin)
+			r.Get("/{id}", seriesH.GetAdmin)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "series:create"))
+			r.Post("/", seriesH.Create)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "series:update"))
+			r.Patch("/{id}", seriesH.Update)
+			r.Post("/{id}/sections", seriesH.AddSection)
+			r.Delete("/{id}/sections/{sectionId}", seriesH.RemoveSection)
+			r.Put("/{id}/sections/order", seriesH.ReorderSections)
+			r.Post("/{id}/chapters", seriesH.AttachChapters)
+			r.Delete("/{id}/chapters/{postId}", seriesH.DetachChapter)
+			r.Put("/{id}/chapters/order", seriesH.ReorderChapters)
+			r.Post("/{id}/cover/generate", seriesH.GenerateCovers)
+			r.Post("/cover/generate", seriesH.GenerateCoversStandalone)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "series:delete"))
+			r.Delete("/{id}", seriesH.Delete)
+		})
+	})
+
 	return r
 }

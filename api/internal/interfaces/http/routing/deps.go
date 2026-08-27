@@ -33,6 +33,7 @@ import (
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
+	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	statshttp "blog-api/internal/interfaces/http/handler/stats"
 	subscriptionhttp "blog-api/internal/interfaces/http/handler/subscription"
@@ -40,6 +41,7 @@ import (
 	taghttp "blog-api/internal/interfaces/http/handler/tag"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
+
 	"blog-api/internal/middleware"
 )
 
@@ -87,6 +89,7 @@ type Deps struct {
 	Image              *imagehttp.Handler
 	Tweet              *tweethttp.Handler
 	FriendLink         *friendlinkhttp.Handler
+	Series             *serieshttp.Handler
 	Notification       *notificationhttp.Handler
 	NotificationStream *notificationhttp.StreamHandler
 	Chat               *chathttp.Handler

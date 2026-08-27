@@ -50,4 +50,11 @@ export const LABS = [
 		description: "选状态、做动作、测反应，38 套表情与完整导演控制都围在角色身边。",
 		meta: "表情 ×38",
 	},
+	{
+		to: "/lab/series",
+		en: "Series",
+		title: "在线书籍原型实验室",
+		description: "不是给文章列表套书封——三套完整书籍体验，从书架、目录一直走到连续阅读。",
+		meta: "体验 ×3 · 表面 ×3",
+	},
 ] as const;

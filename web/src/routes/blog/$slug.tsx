@@ -7,6 +7,9 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
+import { useChapterContext, useSeriesDetail } from "@features/series/api";
+import { ChapterNav, SeriesBelonging } from "@features/series/ui/ChapterNav";
+import { MobileSeriesTocFab, SeriesToc } from "@features/series/ui/SeriesToc";
 import { useSettings } from "@features/settings/api/queries";
 import { apiPost } from "@shared/api/request";
 import { SITE_URL } from "@shared/config/env";
@@ -67,12 +70,37 @@ function BlogDetailPage() {
 	const { data: summary } = useAnnotationSummary(post?.id ?? "");
 	const me = useMe();
 	const isLoggedIn = !!me.data;
-	// 站点评论总开关：关闭时整页隐藏评论互动（底部评论区 + 批注层 + 划线工具条），
+	// 书籍上下文：归属标注 + 上下章导航（未挂书为 null，组件自渲染 null）
+	const { data: chapterCtx } = useChapterContext(slug);
+	// 全书目录（阅读器壳左层导航）：按归属书 slug 拉详情
+	const { data: seriesDetail } = useSeriesDetail(chapterCtx?.series.slug ?? "");
 	// 后端 Create 同样拒绝，此处只管 UI 呈现
 	const { data: siteSettings } = useSettings();
 	const commentsEnabled = siteSettings?.comments_enabled ?? true;
 
 	// 进入页面增加浏览量（仅一次，失败静默不影响阅读）
+
+	// ←/→ 键盘章节导航：目标章节存在且焦点不在输入域时跳转
+	useEffect(() => {
+		if (!chapterCtx) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+			const el = e.target as HTMLElement | null;
+			if (
+				el &&
+				(el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)
+			) {
+				return;
+			}
+			const target =
+				e.key === "ArrowLeft" ? chapterCtx.prev_chapter : chapterCtx.next_chapter;
+			if (target) {
+				window.location.assign(`/blog/${target.slug}`);
+			}
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [chapterCtx]);
 	useEffect(() => {
 		if (!post?.id) return;
 		apiPost(`/posts/${post.id}/view`).catch(() => {
@@ -154,6 +182,8 @@ function BlogDetailPage() {
 							))}
 						</div>
 					) : null}
+					{/* 系列书归属标注 */}
+					<SeriesBelonging context={chapterCtx ?? null} />
 
 					<h1 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
 						{post.title}
@@ -237,7 +267,30 @@ function BlogDetailPage() {
 					>
 						<ArticleContent content={body} />
 					</main>
+					{/* 右侧全书目录（挂书文章大屏显示；左层=章内 TOC，右层=全书目录） */}
+					{seriesDetail ? (
+						<aside className="hidden w-48 shrink-0 lg:block">
+							<div className="sticky top-24">
+								<p className="text-muted-foreground mb-2 px-2 font-mono text-[10px] tracking-wider uppercase">
+									《{seriesDetail.title}》
+								</p>
+								<SeriesToc detail={seriesDetail} currentSlug={slug} />
+							</div>
+						</aside>
+					) : null}
 				</div>
+
+				{/* 上一章/下一章导航（挂书文章显示；对齐正文宽含 TOC 偏移） */}
+				{chapterCtx ? (
+					<div className="relative mx-auto mt-12 flex max-w-6xl justify-center gap-8">
+						{toc.length > 1 ? (
+							<aside className="hidden w-56 shrink-0 2xl:block" />
+						) : null}
+						<div className="min-w-0 max-w-3xl flex-1">
+							<ChapterNav context={chapterCtx} />
+						</div>
+					</div>
+				) : null}
 
 				{/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
 				{commentsEnabled && (
@@ -280,20 +333,25 @@ function BlogDetailPage() {
 				)}
 			</article>
 
-			{/* 评论区已上移到 article 内部，与正文对齐 */}
-
-			{articleImages.preview}
 			{/*
 			 * 右下角浮动操作区（flex-col 竖列）：目录按钮（仅小屏，大屏用左侧 TOC）+ 返回顶部。
 			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
 			 */}
 			<FloatingBack to="/blog" label="返回博客" />
-			{toc.length > 1 ? (
+			{toc.length > 1 || seriesDetail ? (
 				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
-					{/* 目录：2xl 及以上用左侧固定栏，小屏用浮动按钮 */}
-					<div className="2xl:hidden">
-						<MobileTocFab items={toc} contentRef={contentRef} />
-					</div>
+					{/* 章内目录：2xl 及以上用左侧固定栏，小屏用浮动按钮 */}
+					{toc.length > 1 ? (
+						<div className="2xl:hidden">
+							<MobileTocFab items={toc} contentRef={contentRef} />
+						</div>
+					) : null}
+					{/* 全书目录：lg 及以上用右侧固定栏，小屏用浮动按钮（两套导航独立入口） */}
+					{seriesDetail ? (
+						<div className="lg:hidden">
+							<MobileSeriesTocFab detail={seriesDetail} currentSlug={slug} />
+						</div>
+					) : null}
 					<BackToTop className="relative" />
 				</div>
 			) : (

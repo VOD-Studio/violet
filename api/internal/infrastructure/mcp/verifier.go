@@ -62,5 +62,22 @@ func (v *PATVerifier) Verify(ctx context.Context, token string, _ *http.Request)
 		UserID:     p.UserID(),
 		Scopes:     p.Scopes(),
 		Expiration: exp,
+		Extra: map[string]any{
+			// PAT 级 MCP 交互偏好（#272）：tool handler 经 tokenInfo 读取，
+			// false = 写操作一路到底，可安全推荐的分叉按推荐项自动决策
+			"interactive": p.Interactive(),
+		},
 	}, nil
+}
+
+// Interactive 从 TokenInfo.Extra 读取 PAT 交互偏好；缺失时保守默认 true。
+// tool handler 用它决定冲突分叉是返回候选（agent 转述用户）还是自动决策。
+func Interactive(ti *auth.TokenInfo) bool {
+	if ti == nil || ti.Extra == nil {
+		return true
+	}
+	if v, ok := ti.Extra["interactive"].(bool); ok {
+		return v
+	}
+	return true
 }
