@@ -15,6 +15,7 @@ interface GeneralForm {
 	posts_per_page: number;
 	comments_enabled: boolean;
 	comments_moderation: boolean;
+	custom_emoji_max_per_user: number;
 }
 
 function GeneralSettingsPage() {
@@ -28,6 +29,7 @@ function GeneralSettingsPage() {
 		posts_per_page: data.posts_per_page,
 		comments_enabled: data.comments_enabled,
 		comments_moderation: data.comments_moderation,
+		custom_emoji_max_per_user: data.custom_emoji_max_per_user,
 	}));
 
 	return (
@@ -87,6 +89,20 @@ function GeneralSettingsPage() {
 						/>
 					)}
 				/>
+			</section>
+
+			<section className="space-y-4">
+				<h3 className="text-sm font-semibold">表情</h3>
+				<Field label="单用户自定义表情上限（自传 + 收藏合计，0=使用部署默认值）">
+					<Input
+						type="number"
+						min={0}
+						{...register("custom_emoji_max_per_user", {
+							valueAsNumber: true,
+							min: { value: 0, message: "不能为负数" },
+						})}
+					/>
+				</Field>
 			</section>
 		</SettingsSubPage>
 	);

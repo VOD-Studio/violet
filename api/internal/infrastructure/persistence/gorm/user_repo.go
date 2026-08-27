@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,7 +47,7 @@ func toPO(u *user.User) model.User {
 		Role:                string(u.Role()),
 		GoogleID:            u.GoogleID(),
 		GithubID:            u.GithubID(),
-		IsRoot:             u.IsRoot(),
+		IsRoot:              u.IsRoot(),
 		EmailVerified:       u.EmailVerified(),
 		IsActive:            u.IsActive(),
 	}
@@ -162,6 +163,35 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username user.Usern
 		return nil, domainshared.Internal("查询用户失败", err)
 	}
 	return toDomain(po)
+}
+
+// ListContacts 按用户名或展示名列出可聊天用户。
+func (r *UserRepository) ListContacts(ctx context.Context, query string, excludeID domainshared.ID, afterUsername string, afterID domainshared.ID, limit int) ([]*user.User, error) {
+	query = strings.TrimSpace(query)
+	db := r.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("is_active = ?", true).
+		Where("id <> ?", excludeID.UUID())
+	if query != "" {
+		like := "%" + query + "%"
+		db = db.Where("(LOWER(username) LIKE LOWER(?) OR LOWER(display_name) LIKE LOWER(?))", like, like)
+	}
+	if afterUsername != "" && !afterID.IsZero() {
+		db = db.Where("(username > ? OR (username = ? AND id > ?))", afterUsername, afterUsername, afterID.UUID())
+	}
+	var pos []model.User
+	if err := db.Order("username ASC, id ASC").Limit(limit).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询联系人失败", err)
+	}
+	users := make([]*user.User, 0, len(pos))
+	for _, po := range pos {
+		u, err := toDomain(po)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
 }
 
 // ExistsByEmail 邮箱是否已存在

@@ -15,7 +15,7 @@ import {
 describe("session store", () => {
 	beforeEach(() => {
 		// 重置为初始状态，避免用例间串扰
-		useSessionStore.setState({ sessionActive: false });
+		useSessionStore.setState({ sessionActive: false, sessionVersion: 0 });
 	});
 
 	it("初始状态为非活跃", () => {
@@ -25,6 +25,13 @@ describe("session store", () => {
 	it("markSessionActive() 后状态变为活跃", () => {
 		markSessionActive();
 		expect(useSessionStore.getState().sessionActive).toBe(true);
+	});
+	it("登录态切换递增会话版本", () => {
+		markSessionActive();
+		const loggedInVersion = useSessionStore.getState().sessionVersion;
+		clearSessionActive();
+
+		expect(useSessionStore.getState().sessionVersion).toBe(loggedInVersion + 1);
 	});
 
 	it("clearSessionActive() 后状态变为非活跃", () => {

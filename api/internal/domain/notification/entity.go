@@ -35,10 +35,12 @@ const (
 	SourceCommentPending SourceType = "comment_pending"
 	// SourceCommentRejected 评论未通过审核（通知评论作者）
 	SourceCommentRejected SourceType = "comment_rejected"
-	// SourceUserRegistered 新用户注册（通知管理员）
+	// SourceUserRegistered 新用户注册通知管理员
 	SourceUserRegistered SourceType = "user_registered"
 	// SourceAccountSecurity 账号安全提醒：改密 / API token 增删 / 角色与状态变更（通知本人）
 	SourceAccountSecurity SourceType = "account_security"
+	// SourceChatRoomInvited 私有房间邀请。
+	SourceChatRoomInvited SourceType = "chat_room_invited"
 )
 
 // validSourceTypes 合法来源类型集合，供校验与 DB CHECK 同步参照。
@@ -53,6 +55,7 @@ var validSourceTypes = map[SourceType]bool{
 	SourceCommentRejected:       true,
 	SourceUserRegistered:        true,
 	SourceAccountSecurity:       true,
+	SourceChatRoomInvited:       true,
 }
 
 // IsValidSourceType 判断来源类型是否合法。
@@ -169,15 +172,15 @@ func (n *Notification) IsRead() bool { return n.readAt != nil }
 
 // --- 访问器 ---
 
-func (n *Notification) UserID() domainshared.ID     { return n.userID }
-func (n *Notification) EventID() domainshared.ID    { return n.eventID }
-func (n *Notification) SourceType() SourceType      { return n.sourceType }
-func (n *Notification) SourceID() domainshared.ID   { return n.sourceID }
-func (n *Notification) Title() string               { return n.title }
-func (n *Notification) Body() string                { return n.body }
-func (n *Notification) Payload() map[string]any     { return n.payload }
-func (n *Notification) ReadAt() *time.Time          { return n.readAt }
-func (n *Notification) CreatedAt() time.Time        { return n.Timestamps.CreatedAt }
+func (n *Notification) UserID() domainshared.ID   { return n.userID }
+func (n *Notification) EventID() domainshared.ID  { return n.eventID }
+func (n *Notification) SourceType() SourceType    { return n.sourceType }
+func (n *Notification) SourceID() domainshared.ID { return n.sourceID }
+func (n *Notification) Title() string             { return n.title }
+func (n *Notification) Body() string              { return n.body }
+func (n *Notification) Payload() map[string]any   { return n.payload }
+func (n *Notification) ReadAt() *time.Time        { return n.readAt }
+func (n *Notification) CreatedAt() time.Time      { return n.Timestamps.CreatedAt }
 
 // String 仅供调试用
 func (n *Notification) String() string {

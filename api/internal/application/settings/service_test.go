@@ -93,8 +93,8 @@ func TestService_GetAll_Defaults(t *testing.T) {
 
 	got, err := svc.GetAll(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, 10, got.PostsPerPage)        // 默认 10
-	assert.True(t, got.GithubLoginEnabled)        // parseBoolDefaultTrue
+	assert.Equal(t, 10, got.PostsPerPage)  // 默认 10
+	assert.True(t, got.GithubLoginEnabled) // parseBoolDefaultTrue
 	store.AssertExpectations(t)
 }
 
@@ -119,4 +119,13 @@ func TestService_Update_PropagatesStoreError(t *testing.T) {
 	_, err := svc.Update(context.Background(), domainsettings.UpdateInput{SiteName: &name})
 	assert.Error(t, err)
 	store.AssertExpectations(t)
+}
+func TestService_Update_RejectsNegativeCustomEmojiQuota(t *testing.T) {
+	svc, store := newSvc()
+	quota := -1
+
+	_, err := svc.Update(context.Background(), domainsettings.UpdateInput{CustomEmojiMaxPerUser: &quota})
+
+	assert.Error(t, err)
+	store.AssertNotCalled(t, "UpsertMany", mock.Anything, mock.Anything)
 }

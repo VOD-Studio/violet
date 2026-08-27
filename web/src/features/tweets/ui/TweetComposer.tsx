@@ -1,5 +1,6 @@
 /** TweetComposer - 推文发布框（登录态：文本 ≤500 rune + ≤4 图，前端拦截边界） */
 
+import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
 import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
@@ -122,8 +123,9 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 
 	const handleEmojiSelect = (emoji: Emoji) => {
 		const imageUrl = emoji.gif_url || emoji.url;
+		const token = toEmojiToken(emoji);
 		const emojiText =
-			imageUrl && isImageURL(imageUrl) ? `[${emoji.name}]` : emoji.text_content || emoji.name;
+			imageUrl && isImageURL(imageUrl) ? token : emoji.text_content || emoji.name;
 
 		const textarea = textareaRef.current;
 		if (!textarea) {

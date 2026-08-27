@@ -10,8 +10,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"blog-api/config"
-	authcmd "blog-api/internal/application/auth/command"
 	appaudit "blog-api/internal/application/audit"
+	authcmd "blog-api/internal/application/auth/command"
 	infraemail "blog-api/internal/infrastructure/email"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -40,7 +40,9 @@ type Container struct {
 	Image           *ImageContainer
 	Tweet           *TweetContainer
 	FriendLink      *FriendLinkContainer
-	Notification     *NotificationContainer
+	Notification    *NotificationContainer
+	Chat            *ChatContainer
+	CustomEmoji     *CustomEmojiContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -76,6 +78,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	oauthCreds := authcmd.NewOAuthCredentials(cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret)
 
 	settings := NewSettingsContainer(db, bus, oauthCreds)
+	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.CustomEmojiMaxPerUser, cfg.UploadPathPrefix)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
 	if err != nil {
@@ -84,7 +87,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	}
 
 	content := NewContentContainer(db, bus)
-	comment := NewCommentContainer(db, rdb, emailSender, settings.Service, bus)
+	comment := NewCommentContainer(db, rdb, emailSender, settings.Service, customEmoji.Service, bus)
 	post := NewPostContainer(db, permissionChecker, settings.Store, bus)
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
@@ -100,9 +103,10 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	media := NewMediaContainer(db, rdb, cfg)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
-	tweet := NewTweetContainer(db, permissionChecker, bus)
+	tweet := NewTweetContainer(db, permissionChecker, customEmoji.Service, bus)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
 	notification := NewNotificationContainer(db, bus)
+	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
@@ -110,7 +114,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Notification: notification,
+		Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 	}
 	return c, roleCleanup, nil
 }

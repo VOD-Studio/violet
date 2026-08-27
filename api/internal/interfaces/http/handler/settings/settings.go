@@ -62,13 +62,14 @@ func (h *Handler) GetGeneral(w http.ResponseWriter, r *http.Request) {
 // UpdateGeneral 更新基础信息组
 func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		SiteName           *string `json:"site_name"`
-		SiteURL            *string `json:"site_url"`
-		FooterText         *string `json:"footer_text"`
-		PostsPerPage       *int    `json:"posts_per_page"`
-		CommentsEnabled    *bool   `json:"comments_enabled"`
-		CommentsModeration *bool   `json:"comments_moderation"`
-		TechStack          *string `json:"tech_stack"`
+		SiteName              *string `json:"site_name"`
+		SiteURL               *string `json:"site_url"`
+		FooterText            *string `json:"footer_text"`
+		PostsPerPage          *int    `json:"posts_per_page"`
+		CommentsEnabled       *bool   `json:"comments_enabled"`
+		CommentsModeration    *bool   `json:"comments_moderation"`
+		TechStack             *string `json:"tech_stack"`
+		CustomEmojiMaxPerUser *int    `json:"custom_emoji_max_per_user"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -76,9 +77,10 @@ func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := h.svc.UpdateGeneral(r.Context(), appsettings.GeneralUpdate{
 		SiteName: req.SiteName,
-		SiteURL: req.SiteURL, FooterText: req.FooterText,
+		SiteURL:  req.SiteURL, FooterText: req.FooterText,
 		PostsPerPage: req.PostsPerPage, CommentsEnabled: req.CommentsEnabled,
 		CommentsModeration: req.CommentsModeration, TechStack: req.TechStack,
+		CustomEmojiMaxPerUser: req.CustomEmojiMaxPerUser,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -182,7 +184,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := h.svc.UpdateProfile(r.Context(), appsettings.ProfileUpdate{
-		Bio: req.Bio,
+		Bio:       req.Bio,
 		AvatarURL: req.AvatarURL, Tagline: req.Tagline,
 		ProfileRole: req.ProfileRole, ProfileLocation: req.ProfileLocation,
 		AvailableFor: req.AvailableFor, SkillsStrong: req.SkillsStrong,

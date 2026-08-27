@@ -25,8 +25,8 @@ type SettingsUpdated struct {
 // NewSettingsUpdated 构造配置更新事件
 func NewSettingsUpdated(changedKeys []string) SettingsUpdated {
 	return SettingsUpdated{
-		BaseEvent:    shared.NewBaseEvent("settings.updated", shared.ID{}),
-		ChangedKeys:  changedKeys,
+		BaseEvent:   shared.NewBaseEvent("settings.updated", shared.ID{}),
+		ChangedKeys: changedKeys,
 	}
 }
 
@@ -118,6 +118,9 @@ type SiteSettings struct {
 	CodeRunnerAllowNetwork bool `json:"code_runner_allow_network"`
 	// CodeRunnerLanguages 允许运行的语言列表（逗号分隔的 canonical key：python/node/go/rust/bun）
 	CodeRunnerLanguages string `json:"code_runner_languages"`
+	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计，0 表示未配置，
+	// 消费方 fallback 到 env config）
+	CustomEmojiMaxPerUser int `json:"custom_emoji_max_per_user"`
 }
 
 // UpdateInput 更新入参（指针字段表部分更新，nil 不更新）
@@ -206,6 +209,8 @@ type UpdateInput struct {
 	CodeRunnerAllowNetwork *bool
 	// CodeRunnerLanguages 允许运行的语言列表（nil 不更新）
 	CodeRunnerLanguages *string
+	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（nil 不更新）
+	CustomEmojiMaxPerUser *int
 }
 
 // SettingsStore 站点配置存储端口（infrastructure 层实现）
@@ -272,6 +277,11 @@ func fromMap(m map[string]string) SiteSettings {
 	s.CodeRunnerMaxSourceBytes = parseUint64(m["code_runner_max_source_bytes"])
 	s.CodeRunnerAllowNetwork = m["code_runner_allow_network"] == "true"
 	s.CodeRunnerLanguages = m["code_runner_languages"]
+	// CustomEmojiMaxPerUser 为 0 表示未配置，消费方 fallback 到 env config
+	// （见 application/customemoji.Service 的份额校验）。
+	if v, ok := parseInt(m["custom_emoji_max_per_user"]); ok {
+		s.CustomEmojiMaxPerUser = v
+	}
 	return s
 }
 

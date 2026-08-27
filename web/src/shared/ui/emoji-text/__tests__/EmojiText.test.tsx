@@ -37,6 +37,22 @@ describe("EmojiText", () => {
 		expect(img?.getAttribute("src")).toBe("/uploads/emojis/doge.png");
 		expect(img?.getAttribute("alt")).toBe("[doge]");
 	});
+	it("自定义表情图片带 ID 与关系属性，系统表情不带自定义属性", () => {
+		const emote = {
+			"[mycat:emoji-1]": {
+				url: "/uploads/emojis/mycat.png",
+				custom_emoji_id: "emoji-1",
+				relation: "favorited" as const,
+			},
+			"[doge]": { url: "/uploads/emojis/doge.png" },
+		};
+		const { container } = render(<EmojiText text="[mycat:emoji-1][doge]" emote={emote} />);
+		const [custom, system] = container.querySelectorAll("img");
+		expect(custom?.dataset.customEmojiId).toBe("emoji-1");
+		expect(custom?.dataset.relation).toBe("favorited");
+		expect(system?.dataset.customEmojiId).toBeUndefined();
+		expect(system?.dataset.relation).toBeUndefined();
+	});
 
 	it("优先使用 gif_url", () => {
 		const emote = {

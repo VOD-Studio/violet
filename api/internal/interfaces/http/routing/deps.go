@@ -19,14 +19,17 @@ import (
 	apitokenhttp "blog-api/internal/interfaces/http/handler/api_token"
 	audithttp "blog-api/internal/interfaces/http/handler/audit"
 	authhttp "blog-api/internal/interfaces/http/handler/auth"
+	chathttp "blog-api/internal/interfaces/http/handler/chat"
 	codehttp "blog-api/internal/interfaces/http/handler/coderunner"
 	commenthttp "blog-api/internal/interfaces/http/handler/comment"
 	crhttp "blog-api/internal/interfaces/http/handler/commentreaction"
 	contenthttp "blog-api/internal/interfaces/http/handler/content"
+	customemojihttp "blog-api/internal/interfaces/http/handler/customemoji"
 	friendlinkhttp "blog-api/internal/interfaces/http/handler/friendlink"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
+	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
@@ -35,7 +38,6 @@ import (
 	subscriptionhttp "blog-api/internal/interfaces/http/handler/subscription"
 	systemhttp "blog-api/internal/interfaces/http/handler/system"
 	taghttp "blog-api/internal/interfaces/http/handler/tag"
-	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
 	"blog-api/internal/middleware"
@@ -64,29 +66,31 @@ type Deps struct {
 	OptionalAuth          func(http.Handler) http.Handler
 	SessionAuthReadOnlyMW func(http.Handler) http.Handler
 
-	Role            *rolehttp.Handler
-	Settings        *settingshttp.Handler
-	Stats           *statshttp.Handler
-	GitHub          *githubhttp.Handler
-	Releases        *releaseshttp.Handler
-	Auth            *authhttp.Handler
-	Content         *contenthttp.Handler
-	Comment         *commenthttp.Handler
-	CommentReaction *crhttp.Handler
-	Media           *mediahttp.Handler
-	Post            *posthttp.Handler
-	Tag             *taghttp.Handler
-	Audit           *audithttp.Handler
-	UserAdmin       *useradminhttp.Handler
-	APIToken        *apitokenhttp.Handler
-	Subscription    *subscriptionhttp.Handler
-	CodeRunner      *codehttp.Handler
-	System          *systemhttp.Handler
-	Image           *imagehttp.Handler
-	Tweet           *tweethttp.Handler
-	FriendLink      *friendlinkhttp.Handler
-	Notification    *notificationhttp.Handler
+	Role               *rolehttp.Handler
+	Settings           *settingshttp.Handler
+	Stats              *statshttp.Handler
+	GitHub             *githubhttp.Handler
+	Releases           *releaseshttp.Handler
+	Auth               *authhttp.Handler
+	Content            *contenthttp.Handler
+	Comment            *commenthttp.Handler
+	CommentReaction    *crhttp.Handler
+	Media              *mediahttp.Handler
+	Post               *posthttp.Handler
+	Tag                *taghttp.Handler
+	Audit              *audithttp.Handler
+	UserAdmin          *useradminhttp.Handler
+	APIToken           *apitokenhttp.Handler
+	Subscription       *subscriptionhttp.Handler
+	CodeRunner         *codehttp.Handler
+	System             *systemhttp.Handler
+	Image              *imagehttp.Handler
+	Tweet              *tweethttp.Handler
+	FriendLink         *friendlinkhttp.Handler
+	Notification       *notificationhttp.Handler
 	NotificationStream *notificationhttp.StreamHandler
-
-	MCP MCPHandlers
+	Chat               *chathttp.Handler
+	ChatStream         *chathttp.StreamHandler
+	CustomEmoji        *customemojihttp.Handler
+	MCP                MCPHandlers
 }

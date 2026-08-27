@@ -63,10 +63,13 @@ type BlockCountDTO struct {
 // EmojiRef 表情映射值（emote map 的 value）。
 // 前端渲染 body 中的 [name] 占位符时查此表，优先使用 GifURL。
 // Size 携带表情尺寸（1=小 2=大），供前端按尺寸渲染内联表情。
+// CustomEmojiID/Relation 仅自定义表情 token 非空，供前端挂右键菜单。
 type EmojiRef struct {
-	URL    string `json:"url"`
-	GifURL string `json:"gif_url,omitempty"`
-	Size   int    `json:"size,omitempty"`
+	URL           string `json:"url"`
+	GifURL        string `json:"gif_url,omitempty"`
+	Size          int    `json:"size,omitempty"`
+	CustomEmojiID string `json:"custom_emoji_id,omitempty"`
+	Relation      string `json:"relation,omitempty"`
 }
 
 // EmojiLookup 表情批量查找端口（application 层端口）。
@@ -78,27 +81,27 @@ type EmojiLookup interface {
 
 // CommentDTO 评论读模型
 type CommentDTO struct {
-	ID         string           `json:"id"`
-	PostID     string           `json:"post_id"`
-	ParentID   string           `json:"parent_id,omitempty"`
+	ID       string `json:"id"`
+	PostID   string `json:"post_id"`
+	ParentID string `json:"parent_id,omitempty"`
 	// ReplyToName 被回复者的昵称。只有回复节点有，前端显示「回复 @yyy」用。
 	// toDTO 时查 parent 的 author_name 填进来，前端直接读不自己转换。顶层评论省略。
-	ReplyToName string          `json:"reply_to_name,omitempty"`
-	Depth       int16           `json:"depth"`
+	ReplyToName string           `json:"reply_to_name,omitempty"`
+	Depth       int16            `json:"depth"`
 	AuthorName  string           `json:"author_name"`
 	AvatarURL   string           `json:"avatar_url"`
 	Body        string           `json:"body"`
 	Pictures    []domain.Picture `json:"pictures"`
 	// Emote 表情映射表。key 为 [name]（含方括号），value 为表情图片 URL。
 	// toDTO 后由 enrichEmotes 批量填充。body 中没有 [name] 时为 nil（JSON 省略）。
-	Emote       map[string]EmojiRef `json:"emote,omitempty"`
+	Emote map[string]EmojiRef `json:"emote,omitempty"`
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
-	IsAuthor   bool             `json:"is_author"`
+	IsAuthor bool `json:"is_author"`
 	// Anchor 选区批注锚点；自由评论为 nil（JSON 省略），批注非 nil。
-	Anchor     *AnchorDTO       `json:"anchor,omitempty"`
-	Status     string           `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
-	CreatedAt  string           `json:"created_at"`
+	Anchor    *AnchorDTO `json:"anchor,omitempty"`
+	Status    string     `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
+	CreatedAt string     `json:"created_at"`
 	// Replies 顶层评论下的回复预览（前 N 条）。仅顶层 DTO 带，回复节点省略。
 	// 配合「按需拉回复」分页策略：首屏列表每条顶层带前几条回复预览，
 	// 「查看全部」再走 GET /comments/{id}/replies 独立分页。
@@ -416,7 +419,7 @@ func (s *Service) ListPending(ctx context.Context, anchorFilter domain.AnchorFil
 
 // CreateInput 创建评论入参（handler 层组装，application 层消费）。
 type CreateInput struct {
-	PostID string // 所属文章 id
+	PostID   string // 所属文章 id
 	ParentID string // 父评论 id（顶级评论为空）；非空时为嵌套回复
 
 	// UserID 登录用户 id；空字符串表示匿名（双轨认证）。
@@ -438,7 +441,7 @@ type CreateInput struct {
 
 	// IPHash 评论者 IP 的 SHA256（handler 用 middleware.GetClientIP + SHA256 算）。
 	// 匿名评论的 per-post 配额依赖此字段；登录评论也填（反垃圾元数据统一）。
-	IPHash string
+	IPHash    string
 	UserAgent string
 }
 
@@ -476,6 +479,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 			return CommentDTO{}, err
 		}
 		userIDPtr = &uid
+		if validator, ok := s.emojiLookup.(appshared.CustomEmojiContentValidator); ok {
+			if err := validator.ValidateContent(ctx, in.Body, *userIDPtr); err != nil {
+				return CommentDTO{}, err
+			}
+		}
 	}
 
 	// 匿名路径：校验验证码 + 配额。
@@ -594,11 +602,11 @@ func normalizeEmail(s string) string {
 // 字段语义与 domain.Anchor 一一对应，仅 JSON tag 不同（snake_case 外部契约 vs 驼峰内部）。
 // 之所以独立一层 DTO：domain 层不感知 HTTP/JSON，转换逻辑集中在 application 层。
 type AnchorInput struct {
-	BlockID       string `json:"block_id"`         // 块标识符（块纯文本 SHA1 前 8 位）
-	StartOffset   int    `json:"start_offset"`     // 选区起始偏移（块内字符位）
-	EndOffset     int    `json:"end_offset"`       // 选区结束偏移（exclusive）
-	SelectedText  string `json:"selected_text"`    // 选中原文（fuzzy 重定位锚）
-	BlockHashSync string `json:"block_text_hash"`  // 块内容快照（漂移检测）
+	BlockID       string `json:"block_id"`        // 块标识符（块纯文本 SHA1 前 8 位）
+	StartOffset   int    `json:"start_offset"`    // 选区起始偏移（块内字符位）
+	EndOffset     int    `json:"end_offset"`      // 选区结束偏移（exclusive）
+	SelectedText  string `json:"selected_text"`   // 选中原文（fuzzy 重定位锚）
+	BlockHashSync string `json:"block_text_hash"` // 块内容快照（漂移检测）
 }
 
 // ToDomain 转成领域 Anchor。nil 接收者返回 nil（表示这是一条自由评论，非批注）。
@@ -735,7 +743,7 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) Comme
 	dto := CommentDTO{
 		ID: c.ID().String(), PostID: c.PostID().String(),
 		ReplyToName: replyToName,
-		Depth: c.Depth(), AuthorName: c.AuthorName(),
+		Depth:       c.Depth(), AuthorName: c.AuthorName(),
 		AvatarURL: c.AvatarURL(), Body: c.Body(),
 		Pictures: c.Pictures(), Status: c.Status(),
 		CreatedAt: c.CreatedAt().Format(time.RFC3339),
