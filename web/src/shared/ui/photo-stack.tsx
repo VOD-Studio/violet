@@ -2,8 +2,9 @@
  * PhotoStack - 照片堆叠
  *
  * 「一沓照片」交互单元：竖图居中、底图左右各露窄边并带微倾斜，像随意摞起的一沓；
- * 横向拖拽顶图时以底缘为轴倾斜，拖够远或松手过阈值就把顶图甩出画面外、即时让位给下一张，
- * 飞出的卡从画面外被弹簧拉回栈底（视觉上从背面回到栈后）；点行尾展开键切紧凑网格一览全部。
+ * 横向拖拽顶图时以底缘为轴倾斜，拖够远或松手过阈值就把顶图甩出、即时让位给下一张，
+ * 甩出的卡随后被槽位弹簧拉回栈底（视觉上绕到栈后）；点行尾展开键切紧凑网格一览全部，
+ * 展开容器与栈面同高同宽，底部元信息不位移。
  * 图集浏览流与任何「一组图」场景共用此件。
  *
  * @example
@@ -35,7 +36,7 @@ export interface PhotoStackProps {
 
 /** 松手翻页阈值：顶图位移超过栈面宽度的比例即拨到底。 */
 const FLIP_RATIO = 0.22;
-/** 活提交阈值：拖拽中超过该比例立即翻页并把顶图甩到画面外，避免拖到一半卡住。 */
+/** 活提交阈值：拖拽中超过该比例立即翻页并把顶图甩出，避免拖到一半卡住。 */
 const LIVE_FLIP_RATIO = 0.45;
 /** 底图露出宽度占栈面宽度比例（左右窄边的视觉参照）。 */
 const PEEK_RATIO = 0.035;
@@ -43,10 +44,10 @@ const PEEK_RATIO = 0.035;
 const TILT_PER_PX = 0.1;
 /** 拖拽倾角上限（度），大幅横扫时卡片不翻倒。 */
 const TILT_MAX = 28;
-/** 顶图甩出距离（栈宽倍数）：先甩到画面外，再被槽位弹簧拉回栈底。 */
-const FLY_OFF_MULT = 1.6;
+/** 甩出距离（栈宽倍数）与耗时：先向外甩一小段，再换栈顶让槽位弹簧拉回栈底。 */
+const FLY_OFF_RATIO = 0.85;
+const FLY_MS = 150;
 const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
-const FLY_TWEEN = { duration: 0.2, ease: [0.2, 0.8, 0.4, 1] as [number, number, number, number] };
 
 /**
  * 静止槽位（depth 0 = 顶图）：x 单位是栈宽 × PEEK_RATIO，rotate 单位度。
@@ -99,18 +100,31 @@ export function PhotoStack({
 	// 供挂载期 effect 闭包读到最新栈顶（挂载 effect 只跑一次，凭 ref 取现值）
 	const orderRef = useRef(order);
 	orderRef.current = order;
+	// 甩出中、等待落到栈底的卡：拖拽/松手在此期间都不接管它
+	const flungSrc = useRef<string | null>(null);
+	const flingTimer = useRef(0);
+	// 首次量宽前槽位目标全是 0，量宽那一帧直接落位，不播入场扇开动画
+	const widthMeasured = useRef(false);
 
 	// 槽位重排（翻页/挂载/栈宽变化）：各卡从当前位姿弹簧到各自槽位。
-	// 被甩出的卡 zIndex 已即时降，从画面外被弹簧拉回栈底槽位——视觉上"绕到栈后"。
+	// 被甩出的卡 zIndex 已即时降，从甩出位滑向栈底槽位时自然绕到栈后。
 	useEffect(() => {
+		const instant = !widthMeasured.current;
+		if (stackWidth > 0) widthMeasured.current = true;
 		order.forEach((img, i) => {
 			const mv = cardMotions.current.get(img.src);
 			if (!mv) return;
 			const s = SLOTS[Math.min(i, SLOTS.length - 1)];
+			const targetX = s.x * stackWidth * PEEK_RATIO;
 			mv.x.stop();
 			mv.rotate.stop();
-			animate(mv.x, s.x * stackWidth * PEEK_RATIO, SLOT_SPRING);
-			animate(mv.rotate, s.rotate, SLOT_SPRING);
+			if (instant) {
+				mv.x.set(targetX);
+				mv.rotate.set(s.rotate);
+			} else {
+				animate(mv.x, targetX, SLOT_SPRING);
+				animate(mv.rotate, s.rotate, SLOT_SPRING);
+			}
 		});
 	}, [order, stackWidth]);
 
@@ -123,25 +137,36 @@ export function PhotoStack({
 			dragStartX.current = null;
 			setDragging(false);
 			const src = orderRef.current[0]?.src;
-			const mv = src ? cardMotions.current.get(src) : undefined;
+			if (!src || src === flungSrc.current) return;
+			const mv = cardMotions.current.get(src);
 			if (!mv) return;
 			animate(mv.x, 0, SLOT_SPRING);
 			animate(mv.rotate, 0, SLOT_SPRING);
 		};
 		stack.addEventListener("lostpointercapture", cancel);
-		return () => stack.removeEventListener("lostpointercapture", cancel);
+		return () => {
+			stack.removeEventListener("lostpointercapture", cancel);
+			window.clearTimeout(flingTimer.current);
+		};
 	}, []);
 
 	/**
-	 * 立即把顶图甩到画面外并换栈顶：新顶图接管手指移动，甩出的卡由槽位 effect 弹簧拉回栈底。
-	 * clientX 是触发甩出那一刻的指针位置，换栈后作为新顶图 dx 的原点，避免被旧卡累计距离影响。
+	 * 甩出顶图：先向外甩 FLY_MS 毫秒（延续拖拽动势），再换栈顶——
+	 * 槽位 effect 会把它从甩出位弹簧拉回栈底，视觉上绕到栈后。
 	 */
-	const flingTopAndFlip = (mv: CardMotion, dx: number, width: number, clientX: number) => {
+	const flingTop = (mv: CardMotion, dx: number, width: number) => {
+		const src = orderRef.current[0]?.src;
+		if (!src) return;
+		flungSrc.current = src;
 		const sign = Math.sign(dx) || 1;
-		animate(mv.x, sign * width * FLY_OFF_MULT, FLY_TWEEN);
-		animate(mv.rotate, sign * TILT_MAX, FLY_TWEEN);
-		setOrder((prev) => [...prev.slice(1), prev[0]]);
-		dragStartX.current = clientX;
+		const fly = { duration: FLY_MS / 1000, ease: "easeOut" as const };
+		animate(mv.x, sign * width * FLY_OFF_RATIO, fly);
+		animate(mv.rotate, sign * TILT_MAX, fly);
+		window.clearTimeout(flingTimer.current);
+		flingTimer.current = window.setTimeout(() => {
+			flungSrc.current = null;
+			setOrder((prev) => [...prev.slice(1), prev[0]]);
+		}, FLY_MS);
 	};
 
 	const onPointerDown = (e: ReactPointerEvent) => {
@@ -154,6 +179,12 @@ export function PhotoStack({
 		} catch {
 			// 捕获失败属可接受降级
 		}
+		// 上一次甩出还没落定时又按下：立即结算翻页，避免定时器在拖拽中途换栈顶
+		if (flungSrc.current) {
+			window.clearTimeout(flingTimer.current);
+			flungSrc.current = null;
+			setOrder((prev) => [...prev.slice(1), prev[0]]);
+		}
 		// 打断进行中的补位弹簧，避免与拖拽 .set() 互相拉扯
 		const src = orderRef.current[0]?.src;
 		const mv = src ? cardMotions.current.get(src) : undefined;
@@ -163,16 +194,20 @@ export function PhotoStack({
 	const onPointerMove = (e: ReactPointerEvent) => {
 		if (dragStartX.current === null) return;
 		const src = orderRef.current[0]?.src;
-		if (!src) return;
+		if (!src || src === flungSrc.current) return;
 		const mv = cardMotions.current.get(src);
 		if (!mv) return;
 		const dx = e.clientX - dragStartX.current;
+		// 先停掉补位弹簧再跟随手指：弹簧和 .set() 抢同一个 MotionValue 会抖
+		mv.x.stop();
+		mv.rotate.stop();
 		mv.x.set(dx);
 		mv.rotate.set(Math.max(-TILT_MAX, Math.min(TILT_MAX, dx * TILT_PER_PX)));
 		const width = stackRef.current?.offsetWidth ?? 0;
 		if (Math.abs(dx) >= width * LIVE_FLIP_RATIO) {
-			// 拖得够远：直接换栈顶，让下一张接管手指移动（无限循环翻页手感）
-			flingTopAndFlip(mv, dx, width, e.clientX);
+			flingTop(mv, dx, width);
+			// 拖拽原点重置到翻页瞬间的位置：新顶图从 0 位移开始跟随，旧卡累计距离不带入
+			dragStartX.current = e.clientX;
 		}
 	};
 	const onPointerUp = () => {
@@ -180,16 +215,13 @@ export function PhotoStack({
 		dragStartX.current = null;
 		setDragging(false);
 		const src = orderRef.current[0]?.src;
-		if (!src) return;
+		if (!src || src === flungSrc.current) return;
 		const mv = cardMotions.current.get(src);
 		if (!mv) return;
 		const width = stackRef.current?.offsetWidth ?? 0;
 		const dx = mv.x.get() ?? 0;
 		if (Math.abs(dx) > width * FLIP_RATIO) {
-			// 小幅拖到阈值松手：同活提交路径，飞出去再换栈顶
-			flingTopAndFlip(mv, dx, width, (mv.x.get() ?? 0) + (mv.x.get() ? 0 : 0));
-			// 用当前指针位置（无 clientX 可得）做拖拽原点；交给 onPointerDown 之后的 cancel 兜底为 0
-			dragStartX.current = null;
+			flingTop(mv, dx, width);
 			return;
 		}
 		animate(mv.x, 0, SLOT_SPRING);
@@ -199,26 +231,32 @@ export function PhotoStack({
 	if (expanded) {
 		return (
 			<article className={cn("group", className)}>
-				{/* 紧凑网格一览全部：layoutId 让卡从堆叠位形变到网格位，不走视频的竖向分页 */}
+				{/* 与栈面同宽同高：footer 不随展开/收起位移；图多时在固定框内滚动 */}
 				<motion.div
 					layout
-					className="grid grid-cols-2 gap-1.5 overflow-hidden rounded-xl sm:grid-cols-3"
+					className={cn(
+						"relative isolate mx-auto w-[92%] overflow-y-auto rounded-xl",
+						"[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+						aspectClass,
+					)}
 				>
-					{order.map((img, i) => (
-						<motion.div
-							key={img.src}
-							layoutId={`${layoutPrefix}-${img.src}`}
-							transition={SLOT_SPRING}
-							className="relative overflow-hidden rounded-md"
-						>
-							<img
-								src={img.src}
-								alt={img.alt ?? `照片 ${i + 1}`}
-								loading="lazy"
-								className="aspect-3/4 w-full object-cover"
-							/>
-						</motion.div>
-					))}
+					<div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
+						{order.map((img, i) => (
+							<motion.div
+								key={img.src}
+								layoutId={`${layoutPrefix}-${img.src}`}
+								transition={SLOT_SPRING}
+								className="relative overflow-hidden rounded-md"
+							>
+								<img
+									src={img.src}
+									alt={img.alt ?? `照片 ${i + 1}`}
+									loading="lazy"
+									className="aspect-3/4 w-full object-cover"
+								/>
+							</motion.div>
+						))}
+					</div>
 				</motion.div>
 				<div className="mt-3 flex items-start justify-between gap-3">
 					<div className="min-w-0 flex-1">{footer}</div>
@@ -236,7 +274,7 @@ export function PhotoStack({
 				ref={stackRef}
 				className={cn(
 					"relative isolate touch-pan-y select-none",
-					"mx-auto w-[92%]", // 四周留白，栈更收束
+					"mx-auto w-[72%]", // 大屏收窄，与展开网格 4 列节奏一致
 					dragging ? "cursor-grabbing" : "cursor-grab",
 					aspectClass,
 				)}
@@ -302,10 +340,7 @@ function ExpandToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () 
 	return (
 		<button
 			type="button"
-			onClick={(onClick) => {
-				onClick.preventDefault?.();
-				onToggle();
-			}}
+			onClick={onToggle}
 			aria-label={expanded ? "收起为堆叠" : "展开全部照片"}
 			className="mt-0.5 shrink-0 rounded-md border border-edge-hairline p-1.5 text-muted-foreground transition-colors hover:text-foreground"
 		>
