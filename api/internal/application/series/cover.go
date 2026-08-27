@@ -37,7 +37,8 @@ const defaultCoverCount = 2
 // 返回「未配置」错误供 UI 置灰降级；端点错误原样透传展示。
 func (s *Service) GenerateCoverSuggestions(ctx context.Context, id, userID, customPrompt string, n int) ([]string, error) {
 	if s.coverGenerator == nil || s.coverStore == nil {
-		return nil, fmt.Errorf("AI 生图未配置：请先在站点设置填写 llm_api_key 与 llm_image_model")
+		// 领域错误映射 400：前端据此展示「未配置」而非 500
+		return nil, shared.BadRequest("AI 生图未配置：请先在站点设置填写 llm_api_key 与 llm_image_model")
 	}
 	sid, err := shared.ParseID(id)
 	if err != nil {

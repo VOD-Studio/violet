@@ -8,6 +8,7 @@ import {
 	createSeries,
 	deleteSeries,
 	detachChapter,
+	generateCovers,
 	removeSection,
 	reorderChapters,
 	reorderSections,
@@ -135,3 +136,18 @@ export const useReorderChapters = (id: string) => {
 		onError: (err) => toast.error(err.message),
 	});
 };
+
+/**
+ * AI 生成封面候选并落素材库。返回站内 URL 列表，调用方挑选后
+ * 走 updateSeries 回填 cover_image；不直接改书。
+ */
+export function useGenerateCovers(id: string) {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (input: { prompt?: string; count?: number }) =>
+			generateCovers(id, input.prompt, input.count),
+		onSuccess: () => {
+			void qc.invalidateQueries({ queryKey: ["media", "list"] });
+		},
+	});
+}

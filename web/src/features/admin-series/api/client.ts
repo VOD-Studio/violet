@@ -72,3 +72,12 @@ export function detachChapter(id: string, postId: string) {
 export function reorderChapters(id: string, plans: ReorderScope[]) {
 	return apiPut(`${BASE}/${id}/chapters/order`, { plans });
 }
+
+// ---- AI 封面生成 ----
+
+export function generateCovers(id: string, prompt?: string, count?: number) {
+	return apiPost<{ urls: string[] }>(`${BASE}/${id}/cover/generate`, {
+		prompt: prompt || undefined,
+		count: count ?? undefined,
+	});
+}

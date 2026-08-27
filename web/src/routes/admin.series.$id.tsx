@@ -203,7 +203,7 @@ function AdminSeriesEditPage() {
 	return (
 		<PageShell
 			title={series.title}
-			description={`slug: ${series.slug} · 章节 ${series.chapter_count} 已发布 / ${series.total_chapter_count} 总计`}
+			description={`《${series.title}》 · 章节 ${series.chapter_count} 已发布 / ${series.total_chapter_count} 总计`}
 			action={
 				<>
 					<Button size="sm" variant="outline" asChild>

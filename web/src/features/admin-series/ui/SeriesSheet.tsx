@@ -17,8 +17,10 @@ import {
 	SheetTitle,
 } from "@shared/ui/base/sheet";
 import { Textarea } from "@shared/ui/base/textarea";
-import { useEffect, useRef } from "react";
+import { WandSparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { AICoverDialog } from "./AICoverDialog";
 
 const BASE_DEFAULTS: SeriesForm = {
 	title: "",
@@ -40,6 +42,7 @@ interface SeriesSheetProps {
 export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSheetProps) {
 	const create = useCreateSeries();
 	const update = useUpdateSeries(editing?.id ?? "");
+	const [aiCoverOpen, setAiCoverOpen] = useState(false);
 	// 建书态：标题输入后 debounce 调后端 slugify 预填 slug（中文走无声调全拼，
 	// 复用文章的 /admin/posts/slugify 端点，契约一致）。用户手改 slug 后不再跟随。
 	const slugTouched = useRef(false);
@@ -163,7 +166,21 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 						)}
 					</div>
 					<div className="space-y-2">
-						<Label>封面图</Label>
+						<div className="flex items-center justify-between">
+							<Label>封面图</Label>
+							{editing ? (
+								<Button
+									type="button"
+									size="xs"
+									variant="outline"
+									disabled={isSubmitting}
+									onClick={() => setAiCoverOpen(true)}
+								>
+									<WandSparkles className="size-3.5" />
+									AI 生成
+								</Button>
+							) : null}
+						</div>
 						<Cover
 							value={watch("cover_image") || undefined}
 							onChange={(url) => {
@@ -179,6 +196,16 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 						{isSubmitting ? "保存中…" : "保存"}
 					</Button>
 				</SheetFooter>
+				{editing ? (
+					<AICoverDialog
+						open={aiCoverOpen}
+						onOpenChange={setAiCoverOpen}
+						seriesId={editing.id}
+						title={editing.title}
+						description={editing.description ?? ""}
+						onSelect={(url) => reset({ ...watch(), cover_image: url })}
+					/>
+				) : null}
 			</SheetContent>
 		</Sheet>
 	);
