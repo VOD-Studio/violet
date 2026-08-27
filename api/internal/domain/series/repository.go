@@ -55,6 +55,8 @@ type SeriesRepository interface {
 	FindPublishedPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Series], error)
 	// FindPage 管理列表分页：全部状态，created_at DESC
 	FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Series], error)
+	// FindPageByAuthor owner 视角分页（MCP agent=PAT 持有人）：全部状态，created_at DESC
+	FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*Series], error)
 	// ExistsBySlug slug 占用检查；excludeID 非零时排除自身
 	ExistsBySlug(ctx context.Context, slug string, excludeID shared.ID) (bool, error)
 	// Delete 物理删除书（级联删卷由 FK 承担；章节解绑由 posts FK ON DELETE SET NULL 承担）

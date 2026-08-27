@@ -126,6 +126,22 @@ func (r *SeriesRepository) FindPage(ctx context.Context, q domainshared.PageQuer
 	return domainshared.NewPageResult(q, items, total), nil
 }
 
+// FindPageByAuthor owner 视角分页（MCP agent=PAT 持有人）：全部状态，created_at DESC。
+func (r *SeriesRepository) FindPageByAuthor(ctx context.Context, authorID domainshared.ID, q domainshared.PageQuery) (domainshared.PageResult[*domainseries.Series], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Series{}).Where("author_id = ?", authorID.UUID())
+	var pos []model.Series
+	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "系列书")
+	if err != nil {
+		return domainshared.PageResult[*domainseries.Series]{}, err
+	}
+	items, err := r.reconstructList(ctx, pos)
+	if err != nil {
+		return domainshared.PageResult[*domainseries.Series]{}, err
+	}
+	return domainshared.NewPageResult(q, items, total), nil
+}
+
 // ExistsBySlug slug 占用检查；excludeID 非零时排除自身。
 func (r *SeriesRepository) ExistsBySlug(ctx context.Context, slug string, excludeID domainshared.ID) (bool, error) {
 	query := r.db.WithContext(ctx).Model(&model.Series{}).Where("slug = ?", slug)

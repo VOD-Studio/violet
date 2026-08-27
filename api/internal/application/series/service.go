@@ -670,3 +670,102 @@ func (s *Service) publish(ctx context.Context, event shared.DomainEvent) {
 		log.Warn().Err(err).Msg("发布 series 领域事件失败")
 	}
 }
+
+// ============================================================
+// MCP owner 视角（#272）：agent=PAT 持有人，owner-only
+// ============================================================
+
+// PostConflict 挂章预检冲突项：文章已挂其他书。
+type PostConflict struct {
+	// PostID 文章 ID
+	PostID string
+	// Title 文章标题
+	Title string
+	// HeldBy 占用书的 slug（转述给用户时可定位）
+	HeldBy string
+}
+
+// ListForOwner PAT 持有人视角列书（含 draft；只返回自己的）。
+func (s *Service) ListForOwner(ctx context.Context, userID string, page, limit int) ([]SeriesAdminDTO, int64, error) {
+	uid, err := shared.ParseID(userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	q := shared.PageQuery{Page: page, Limit: limit}.Normalize()
+	result, err := s.repo.FindPageByAuthor(ctx, uid, q)
+	if err != nil {
+		return nil, 0, err
+	}
+	dtos := make([]SeriesAdminDTO, 0, len(result.Items))
+	for _, item := range result.Items {
+		chapters, err := s.repo.FindChapters(ctx, item.ID())
+		if err != nil {
+			return nil, 0, err
+		}
+		dto := toAdminDTO(item)
+		dto.TotalChapterCount = int64(len(chapters))
+		fillChapterCounts(&dto.SeriesDTO, chapters)
+		dtos = append(dtos, dto)
+	}
+	return dtos, result.Total, nil
+}
+
+// GetForOwner PAT 持有人按 slug 读自己的书；非自己的书按不存在处理
+// （不泄露他人书的存在性，与 post tools 的所有权语义一致）。
+func (s *Service) GetForOwner(ctx context.Context, userID, slug string) (SeriesDetailDTO, error) {
+	uid, err := shared.ParseID(userID)
+	if err != nil {
+		return SeriesDetailDTO{}, err
+	}
+	series, err := s.repo.FindBySlug(ctx, slug)
+	if err != nil {
+		return SeriesDetailDTO{}, err
+	}
+	if !series.AuthorID().Equal(uid) {
+		return SeriesDetailDTO{}, domain.ErrNotFound
+	}
+	return s.buildDetail(ctx, series, false)
+}
+
+// FindPostConflicts 挂章预检：返回 postIDs 中已挂其他书的文章。
+// 非本人文章不在此报（AttachChapters 主校验链会拒绝）。
+func (s *Service) FindPostConflicts(ctx context.Context, userID string, postIDs []string) ([]PostConflict, error) {
+	if len(postIDs) == 0 {
+		return nil, nil
+	}
+	uid, err := shared.ParseID(userID)
+	if err != nil {
+		return nil, err
+	}
+	pids := make([]shared.ID, 0, len(postIDs))
+	for _, raw := range postIDs {
+		pid, err := shared.ParseID(raw)
+		if err != nil {
+			return nil, err
+		}
+		pids = append(pids, pid)
+	}
+	metas, err := s.repo.FindPostMeta(ctx, pids)
+	if err != nil {
+		return nil, err
+	}
+	metaByPost := make(map[shared.ID]domain.PostMeta, len(metas))
+	for _, m := range metas {
+		metaByPost[m.PostID] = m
+	}
+	var out []PostConflict
+	for _, pid := range pids {
+		meta, ok := metaByPost[pid]
+		if !ok || meta.AuthorID != uid {
+			continue // 归属问题留给主校验链整体拒绝
+		}
+		if meta.SeriesID != nil {
+			holder, err := s.repo.FindByID(ctx, *meta.SeriesID)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, PostConflict{PostID: pid.String(), HeldBy: holder.Slug()})
+		}
+	}
+	return out, nil
+}

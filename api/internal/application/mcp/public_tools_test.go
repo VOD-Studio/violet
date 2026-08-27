@@ -43,7 +43,7 @@ func TestPublicTools_ReadPost_Published(t *testing.T) {
 	svc := &fakePublicPostService{bySlug: map[string]apppost.PostDTO{
 		"quantum": {Slug: "quantum", Title: "量子计算", ContentMD: "# 量子\n$\\ket{0}$ 正文"},
 	}}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	res, err := tools.ReadPost(context.Background(), readReq("blog://posts/quantum"))
 	require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestPublicTools_ReadPost_DraftNotFound(t *testing.T) {
 	// fakePublicPostService 不含该 slug 即模拟 GetPublishedBySlug 的 NotFound
 	// （draft/archived/不存在在 Service 层统一返回 ErrNotFound）。
 	svc := &fakePublicPostService{bySlug: map[string]apppost.PostDTO{}}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	_, err := tools.ReadPost(context.Background(), readReq("blog://posts/wip"))
 	require.Error(t, err)
@@ -67,7 +67,7 @@ func TestPublicTools_ReadPost_DraftNotFound(t *testing.T) {
 
 func TestPublicTools_ReadPost_ArchivedNotFound(t *testing.T) {
 	svc := &fakePublicPostService{bySlug: map[string]apppost.PostDTO{}}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	_, err := tools.ReadPost(context.Background(), readReq("blog://posts/old"))
 	require.Error(t, err)
@@ -76,7 +76,7 @@ func TestPublicTools_ReadPost_ArchivedNotFound(t *testing.T) {
 
 func TestPublicTools_ReadPost_NotExistNotFound(t *testing.T) {
 	svc := &fakePublicPostService{bySlug: map[string]apppost.PostDTO{}}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	_, err := tools.ReadPost(context.Background(), readReq("blog://posts/no-such"))
 	require.Error(t, err)
@@ -85,7 +85,7 @@ func TestPublicTools_ReadPost_NotExistNotFound(t *testing.T) {
 
 func TestPublicTools_ReadPost_InvalidURI(t *testing.T) {
 	svc := &fakePublicPostService{}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	_, err := tools.ReadPost(context.Background(), readReq("blog://drafts/x"))
 	require.Error(t, err)
@@ -101,7 +101,7 @@ func TestPublicTools_ListPosts(t *testing.T) {
 		},
 		listTotal: 2,
 	}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	res, err := tools.ListPosts(context.Background(), readReq("blog://posts"))
 	require.NoError(t, err)
@@ -120,7 +120,7 @@ func TestPublicTools_ListPosts(t *testing.T) {
 
 func TestPublicTools_ListPosts_Empty(t *testing.T) {
 	svc := &fakePublicPostService{listItems: nil, listTotal: 0}
-	tools := NewPublicTools(svc)
+	tools := NewPublicTools(svc, nil)
 
 	res, err := tools.ListPosts(context.Background(), readReq("blog://posts"))
 	require.NoError(t, err)

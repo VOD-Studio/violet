@@ -7,6 +7,7 @@ import (
 
 	appmcp "blog-api/internal/application/mcp"
 	apppost "blog-api/internal/application/post"
+	appseries "blog-api/internal/application/series"
 	appcomment "blog-api/internal/application/comment"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
@@ -32,7 +33,7 @@ type MCPContainer struct {
 //
 // tokenLookup 来自 PAT 模块（apiTokenContainer.TokenLookup），
 // postSvc/tagSvc/subSvc/commentSvc 来自各域模块。
-func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, tagSvc *apptag.Service, subSvc *appsub.Service, commentSvc *appcomment.Service) *MCPContainer {
+func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, tagSvc *apptag.Service, subSvc *appsub.Service, commentSvc *appcomment.Service, seriesSvc *appseries.Service) *MCPContainer {
 	verifier := inframcp.NewPATVerifier(tokenLookup)
 	robots := inframcp.NewRobotsChecker()
 
@@ -41,12 +42,13 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 	searchTools := appmcp.NewSearchTools(postSvc)
 	promptTools := appmcp.NewPromptTools(postSvc)
 	tagTools := appmcp.NewTagTools(tagSvc)
-	postServer := appmcp.NewPostServer(postTools, searchTools, promptTools, tagTools)
+	seriesTools := appmcp.NewSeriesTools(seriesSvc)
+	postServer := appmcp.NewPostServer(postTools, searchTools, promptTools, tagTools, seriesTools)
 	// 抓取 server（scrape_url + 7 个 subscription tool）
 	scraperTools := appmcp.NewScraperTools(postSvc, robots, subSvc)
 	scraperServer := appmcp.NewScraperServer(scraperTools)
 	// 公开只读 server（2 个 Resource + 1 个匿名 prompt，仅已发布文章）
-	publicTools := appmcp.NewPublicTools(postSvc)
+	publicTools := appmcp.NewPublicTools(postSvc, seriesSvc)
 	publicServer := appmcp.NewPublicServer(publicTools, promptTools)
 	// 评论检索 server（3 个 tool，评论独立 bounded context）
 	commentTools := appmcp.NewCommentTools(commentSvc)

@@ -45,7 +45,7 @@ const commentsInstructions = `本 server 检索读者评论/批注反馈，仅�
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
 // prompts 提供 polish_draft 编排 prompt（PAT posts:read）。
-func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, tagTools *TagTools) *mcp.Server {
+func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, tagTools *TagTools, seriesTools *SeriesTools) *mcp.Server {
 	s := mcp.NewServer(ServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -100,6 +100,29 @@ func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, 
 		Description: "按语言/内容检索自己文章中的代码块，可只看可运行块（runnable）。" +
 			"写作时复用旧代码使用。需 posts:read 权限。",
 	}, search.SearchCodeBlocks)
+
+	// 书籍管理（#272）：书是文章的组织形态，挂本 server；owner=PAT 持有人
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "list_series",
+		Description: "列出自己的系列书（含草稿）。需 posts:read 权限。",
+	}, seriesTools.ListSeries)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "get_series",
+		Description: "按 slug 读取自己的一本书：两层目录（卷/部/章），各章含文章 ID 与 slug——" +
+			"attach_chapters 的协作入口。需 posts:read 权限。",
+	}, seriesTools.GetSeries)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "create_series",
+		Description: "创建一本书（draft 起步）。需 posts:write 权限。连载文章发完后把同主题系列挂成书。",
+	}, seriesTools.CreateSeries)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "attach_chapters",
+		Description: "把文章批量挂入自己的书。post_ids 来自 list_drafts / search_posts 的结果；" +
+			"已挂其他书的文章按 PAT 交互偏好处理（默认返回候选由你转述用户决策）。需 posts:write 权限。",
+	}, seriesTools.AttachChapters)
 
 	// polish_draft 编排 prompt：读草稿 + 注入风格 + 触发润色（PAT posts:read）
 	s.AddPrompt(&mcp.Prompt{
@@ -193,6 +216,23 @@ func NewPublicServer(tools *PublicTools, prompts *PromptTools) *mcp.Server {
 		Description: "已发布文章目录（slug + 标题列表），用于发现可读文章。无需令牌。",
 		MIMEType:    "text/markdown",
 	}, tools.ListPosts)
+
+	// 单本已发布书：blog://series/{slug}（完整目录树，各章链向 posts Resource）
+	s.AddResourceTemplate(&mcp.ResourceTemplate{
+		Name:        "series",
+		Title:       "已发布系列书",
+		Description: "按 slug 读取书的完整目录树（卷/部/章），各章带 slug 可经 blog://posts/{slug} 读正文。仅已发布的书。",
+		MIMEType:    "text/markdown",
+		URITemplate: "blog://series/{slug}",
+	}, tools.ReadSeries)
+
+	// 已发布书目录：blog://series（与 posts-index 同构，供发现）
+	s.AddResource(&mcp.Resource{
+		Name:        "series-index",
+		Title:       "已发布系列书目录",
+		Description: "已发布系列书目录（slug + 书名 + 章数），用于发现可读的书。无需令牌。",
+		MIMEType:    "text/markdown",
+	}, tools.ListSeries)
 
 	return s
 }

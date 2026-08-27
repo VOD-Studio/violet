@@ -3,10 +3,12 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	apppost "blog-api/internal/application/post"
+	appseries "blog-api/internal/application/series"
 	domainshared "blog-api/internal/domain/shared"
 )
 
@@ -18,15 +20,22 @@ type PublicPostService interface {
 	ListPublished(ctx context.Context, tag string, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error)
 }
 
+// PublicSeriesService 公开只读通道依赖的系列书服务端口（仅已发布视角）。
+type PublicSeriesService interface {
+	ListPublished(ctx context.Context, page, limit int) ([]appseries.SeriesDTO, int64, error)
+	GetBySlug(ctx context.Context, slug string) (appseries.SeriesDetailDTO, error)
+}
+
 // PublicTools 公开只读 server（violet-reader）的 Resource 集合。
 // 匿名访问，仅暴露已发布文章；草稿/公告/评论均不在此域（见 PRD-0007）。
 type PublicTools struct {
-	posts PublicPostService
+	posts  PublicPostService
+	series PublicSeriesService
 }
 
-// NewPublicTools 构造公开只读 Resource 集合。
-func NewPublicTools(posts PublicPostService) *PublicTools {
-	return &PublicTools{posts: posts}
+// NewPublicTools 构造公开只读 Resource 集合。series 传 *appseries.Service。
+func NewPublicTools(posts PublicPostService, series PublicSeriesService) *PublicTools {
+	return &PublicTools{posts: posts, series: series}
 }
 
 // readPostArgs 单篇 Resource 的 URI 模板参数（blog://posts/{slug}）。
@@ -102,6 +111,101 @@ func slugFromURI(uri string) (string, error) {
 	slug := uri[len(prefix):]
 	if slug == "" {
 		return "", fmt.Errorf("文章 slug 为空: %s", uri)
+	}
+	return slug, nil
+}
+
+
+// ============================================================
+// 系列书 Resource（#272）：blog://series/{slug} + blog://series
+// ============================================================
+
+// readSeriesArgs 单本书 Resource 的 URI 模板参数（blog://series/{slug}）。
+type readSeriesArgs struct {
+	Slug string `json:"slug"`
+}
+
+// ReadSeries 处理 blog://series/{slug}：返回书的完整目录树（卷/部/章），
+// 各章带 slug 指向 blog://posts/{slug}，agent 可逐章跳转读正文。
+// draft 书 → NotFound（GetBySlug 公开视角已过滤）。
+// 刻意不做 blog://series/{slug}/{chapter}：章节就是文章，内容读取走 posts Resource。
+func (t *PublicTools) ReadSeries(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	slug, err := seriesSlugFromURI(req.Params.URI)
+	if err != nil {
+		return nil, err
+	}
+	dto, err := t.series.GetBySlug(ctx, slug)
+	if err != nil {
+		return nil, mcp.ResourceNotFoundError(req.Params.URI)
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "# %s\n\n", dto.Title)
+	if dto.Description != "" {
+		fmt.Fprintf(&sb, "> %s\n\n", dto.Description)
+	}
+	if len(dto.RootChapters) > 0 {
+		sb.WriteString("## 章节\n\n")
+		for _, ch := range dto.RootChapters {
+			fmt.Fprintf(&sb, "%d. [%s](blog://posts/%s)\n", ch.ChapterNo, ch.Title, ch.Slug)
+		}
+		sb.WriteString("\n")
+	}
+	for _, sec := range dto.Sections {
+		fmt.Fprintf(&sb, "## %s\n\n", sec.Section.Title)
+		for _, ch := range sec.Chapters {
+			fmt.Fprintf(&sb, "%d. [%s](blog://posts/%s)\n", ch.ChapterNo, ch.Title, ch.Slug)
+		}
+		sb.WriteString("\n")
+	}
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{{
+			URI:      req.Params.URI,
+			MIMEType: "text/markdown",
+			Text:     sb.String(),
+		}},
+	}, nil
+}
+
+// ListSeries 处理 blog://series：书目录（slug + 书名 + 章数），与 posts-index 同构。
+func (t *PublicTools) ListSeries(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	var items []appseries.SeriesDTO
+	for page := 1; len(items) < publicListLimit; page++ {
+		result, _, err := t.series.ListPublished(ctx, page, domainshared.MaxPageLimit)
+		if err != nil {
+			return nil, fmt.Errorf("读取系列书目录失败: %w", err)
+		}
+		items = append(items, result...)
+		if len(result) == 0 {
+			break
+		}
+	}
+	if len(items) > publicListLimit {
+		items = items[:publicListLimit]
+	}
+	var sb strings.Builder
+	sb.WriteString("# 已发布系列书目录\n\n")
+	for _, it := range items {
+		fmt.Fprintf(&sb, "- %s\t%s（%d 章）\n", it.Slug, it.Title, it.ChapterCount)
+	}
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{{
+			URI:      req.Params.URI,
+			MIMEType: "text/markdown",
+			Text:     sb.String(),
+		}},
+	}, nil
+}
+
+// seriesSlugFromURI 从 blog://series/{slug} 提取 slug。
+func seriesSlugFromURI(uri string) (string, error) {
+	const prefix = "blog://series/"
+	if len(uri) <= len(prefix) || uri[:len(prefix)] != prefix {
+		return "", fmt.Errorf("无法解析系列书 URI: %s", uri)
+	}
+	slug := uri[len(prefix):]
+	if slug == "" {
+		return "", fmt.Errorf("系列书 slug 为空: %s", uri)
 	}
 	return slug, nil
 }

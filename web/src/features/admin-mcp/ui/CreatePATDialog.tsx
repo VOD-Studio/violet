@@ -28,6 +28,8 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 	const [name, setName] = React.useState("");
 	const [scopes, setScopes] = React.useState<Set<PATScope>>(new Set(["posts:read"]));
 	const [expiresAt, setExpiresAt] = React.useState("");
+	// MCP 交互偏好（#272）：默认开（与既有 token 行为一致）；自动化脚本用 token 可关
+	const [interactive, setInteractive] = React.useState(true);
 
 	const { today, expiryPresets } = React.useMemo(() => {
 		const fmt = (d: Date) => d.toISOString().slice(0, 10);
@@ -48,6 +50,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 	}, []);
 
 	React.useEffect(() => {
+		if (open) setInteractive(true);
 		if (open) {
 			setName("");
 			setScopes(new Set(["posts:read"]));
@@ -80,6 +83,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 			name: name.trim(),
 			scopes: [...scopes],
 			expires_at: expiresAt,
+			interactive,
 		};
 		create.mutate(body, {
 			onSuccess: (dto) => {
@@ -180,6 +184,24 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 						clearable
 						presets={expiryPresets}
 					/>
+				</div>
+				<div className="flex items-start gap-2.5 rounded-lg border border-edge-hairline p-3">
+					<Checkbox
+						id="pat-interactive"
+						checked={interactive}
+						onCheckedChange={(v) => setInteractive(v === true)}
+						disabled={create.isPending}
+						className="mt-0.5"
+					/>
+					<div className="space-y-1">
+						<Label htmlFor="pat-interactive" className="cursor-pointer">
+							agent 遇到冲突时询问我
+						</Label>
+						<p className="text-muted-foreground text-xs leading-relaxed">
+							开启：操作冲突（如文章已挂其他书）时 agent 会给出候选方案让你选择。
+							关闭：一路到底，可安全推荐的分叉按推荐项自动执行——适合无人值守的自动化脚本。
+						</p>
+					</div>
 				</div>
 			</div>
 		</Modal>
