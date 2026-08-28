@@ -2,6 +2,7 @@ import type { Tweet } from "@entities/tweet/model/types";
 import { getDisplayName } from "@entities/user/model/display-name";
 import { useMe } from "@features/auth/api/queries";
 import { useCreateChatConversation } from "@features/chat/api/queries";
+import { UserGalleryGrid } from "@features/galleries/ui/UserGalleryGrid";
 import { tweetKeys } from "@features/tweets/api/keys";
 import {
 	fetchUserProfile,
@@ -32,6 +33,7 @@ import {
 	Copy,
 	Feather,
 	Image as ImageIcon,
+	Images,
 	Layers,
 	Loader2,
 	MessageCircle,
@@ -140,7 +142,7 @@ function UserPublicProfilePage() {
 	const [isChatStarting, setIsChatStarting] = useState(false);
 	const [hasCopiedHandle, setHasCopiedHandle] = useState(false);
 	const [hasCopiedLink, setHasCopiedLink] = useState(false);
-	const [feedTab, setFeedTab] = useState<"all" | "media">("all");
+	const [feedTab, setFeedTab] = useState<"all" | "media" | "galleries">("all");
 
 	const {
 		data: profileData,
@@ -568,12 +570,28 @@ function UserPublicProfilePage() {
 								<ImageIcon className="size-3.5" />
 								图文 ({mediaCount})
 							</button>
+
+							<button
+								type="button"
+								onClick={() => setFeedTab("galleries")}
+								className={cn(
+									"flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-xs font-medium transition",
+									feedTab === "galleries"
+										? "bg-primary text-primary-foreground shadow-sm"
+										: "text-muted-foreground hover:text-foreground",
+								)}
+							>
+								<Images className="size-3.5" />
+								图集
+							</button>
 						</div>
 					</header>
 
 					{/* 动态内容区（桌面端内部独立滚动） */}
 					<div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2">
-						{isTimelineLoading ? (
+						{feedTab === "galleries" ? (
+							<UserGalleryGrid username={username} />
+						) : isTimelineLoading ? (
 							<div className="space-y-4">
 								{Array.from({ length: 3 }).map((_, index) => (
 									<ShimmerSkeleton

@@ -32,3 +32,25 @@ export const useGalleries = (query: PageQuery) =>
 		queryFn: () => fetchGalleries(query),
 		placeholderData: keepPreviousData,
 	});
+
+/** 用户主页图集列表（公开，仅 published）。 */
+export const fetchUserGalleries = async (username: string, query: PageQuery) =>
+	apiGetPaged<GallerySummary>(`/users/${username}/galleries`, { params: query });
+
+export const useUserGalleries = (username: string, query: PageQuery) =>
+	useQuery({
+		queryKey: galleryKeys.userList(username, query),
+		queryFn: () => fetchUserGalleries(username, query),
+		enabled: !!username,
+	});
+
+/** 管理列表（全部状态，需 gallery:view）。 */
+export const fetchAdminGalleries = async (query: PageQuery) =>
+	apiGetPaged<GallerySummary>("/admin/galleries", { params: query });
+
+export const useAdminGalleries = (query: PageQuery) =>
+	useQuery({
+		queryKey: galleryKeys.adminList(query),
+		queryFn: () => fetchAdminGalleries(query),
+		placeholderData: keepPreviousData,
+	});
