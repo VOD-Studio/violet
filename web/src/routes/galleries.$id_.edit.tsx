@@ -13,7 +13,7 @@ import { PageShell } from "@/shared/ui/page-shell";
  * 详情公开可读，非 owner 也能打开本页，但保存时后端 403；
  * 页面比对 me.id 提前给出无权限提示，减少无效编辑。
  */
-export const Route = createFileRoute("/galleries/$id/edit")({
+export const Route = createFileRoute("/galleries/$id_/edit")({
 	ssr: false,
 	beforeLoad: ({ location }) => requireGalleryAuth(location),
 	component: EditGalleryPage,
@@ -42,7 +42,9 @@ function EditGalleryPage() {
 				<h1 className="font-mono text-4xl font-bold">编辑图集</h1>
 			</header>
 
-			{isLoading || meLoading ? (
+			{/* !me 归入加载：守卫已确保登录 cookie，me 空是暂态；fall-through 渲染
+			    编辑器会把 owner 判定漏成可编辑（等后端 403 兜底前已暴露表单） */}
+			{isLoading || meLoading || !me ? (
 				<div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
 					加载中…
 				</div>

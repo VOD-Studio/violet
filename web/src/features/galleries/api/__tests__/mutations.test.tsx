@@ -32,6 +32,7 @@ function makeDetail(): GalleryDetail {
 		title: "t",
 		description: "",
 		cover_url: "",
+		preview_urls: [],
 		item_count: 1,
 		status: "published",
 		author: { id: "u1", username: "alice", avatar_url: "" },

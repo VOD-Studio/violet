@@ -22,6 +22,7 @@ import { Route as SeriesIndexRouteImport } from './routes/series.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as LabIndexRouteImport } from './routes/lab.index'
+import { Route as GalleriesIndexRouteImport } from './routes/galleries.index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
@@ -37,6 +38,7 @@ import { Route as LabFriendsRouteImport } from './routes/lab.friends'
 import { Route as LabBlogRouteImport } from './routes/lab.blog'
 import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
 import { Route as GalleriesNewRouteImport } from './routes/galleries.new'
+import { Route as GalleriesIdRouteImport } from './routes/galleries.$id'
 import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
@@ -60,7 +62,7 @@ import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcem
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
-import { Route as GalleriesIdEditRouteImport } from './routes/galleries.$id.edit'
+import { Route as GalleriesIdEditRouteImport } from './routes/galleries.$id_.edit'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
@@ -138,6 +140,11 @@ const LabIndexRoute = LabIndexRouteImport.update({
   path: '/lab/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GalleriesIndexRoute = GalleriesIndexRouteImport.update({
+  id: '/galleries/',
+  path: '/galleries/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -211,6 +218,11 @@ const LabAnnouncementRoute = LabAnnouncementRouteImport.update({
 const GalleriesNewRoute = GalleriesNewRouteImport.update({
   id: '/galleries/new',
   path: '/galleries/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleriesIdRoute = GalleriesIdRouteImport.update({
+  id: '/galleries/$id',
+  path: '/galleries/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogArchiveRoute = BlogArchiveRouteImport.update({
@@ -329,7 +341,7 @@ const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleriesIdEditRoute = GalleriesIdEditRouteImport.update({
-  id: '/galleries/$id/edit',
+  id: '/galleries/$id_/edit',
   path: '/galleries/$id/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -418,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/galleries/$id': typeof GalleriesIdRoute
   '/galleries/new': typeof GalleriesNewRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -433,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -480,6 +494,7 @@ export interface FileRoutesByTo {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/galleries/$id': typeof GalleriesIdRoute
   '/galleries/new': typeof GalleriesNewRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -495,6 +510,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
+  '/galleries': typeof GalleriesIndexRoute
   '/lab': typeof LabIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -546,6 +562,7 @@ export interface FileRoutesById {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/galleries/$id': typeof GalleriesIdRoute
   '/galleries/new': typeof GalleriesNewRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -561,6 +578,7 @@ export interface FileRoutesById {
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -577,7 +595,7 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
-  '/galleries/$id/edit': typeof GalleriesIdEditRoute
+  '/galleries/$id_/edit': typeof GalleriesIdEditRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
@@ -613,6 +631,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/galleries/$id'
     | '/galleries/new'
     | '/lab/announcement'
     | '/lab/blog'
@@ -628,6 +647,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/galleries/'
     | '/lab/'
     | '/profile/'
     | '/projects/'
@@ -675,6 +695,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/galleries/$id'
     | '/galleries/new'
     | '/lab/announcement'
     | '/lab/blog'
@@ -690,6 +711,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/blog'
+    | '/galleries'
     | '/lab'
     | '/profile'
     | '/projects'
@@ -740,6 +762,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/galleries/$id'
     | '/galleries/new'
     | '/lab/announcement'
     | '/lab/blog'
@@ -755,6 +778,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/galleries/'
     | '/lab/'
     | '/profile/'
     | '/projects/'
@@ -771,7 +795,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
-    | '/galleries/$id/edit'
+    | '/galleries/$id_/edit'
     | '/tweets/topics/$tag'
     | '/admin/posts/'
     | '/admin/series/'
@@ -789,6 +813,7 @@ export interface RootRouteChildren {
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogArchiveRoute: typeof BlogArchiveRoute
+  GalleriesIdRoute: typeof GalleriesIdRoute
   GalleriesNewRoute: typeof GalleriesNewRoute
   LabAnnouncementRoute: typeof LabAnnouncementRoute
   LabBlogRoute: typeof LabBlogRoute
@@ -803,6 +828,7 @@ export interface RootRouteChildren {
   UsersUsernameRoute: typeof UsersUsernameRoute
   AboutIndexRoute: typeof AboutIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  GalleriesIndexRoute: typeof GalleriesIndexRoute
   LabIndexRoute: typeof LabIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -904,6 +930,13 @@ declare module '@tanstack/react-router' {
       path: '/lab'
       fullPath: '/lab/'
       preLoaderRoute: typeof LabIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/': {
+      id: '/galleries/'
+      path: '/galleries'
+      fullPath: '/galleries/'
+      preLoaderRoute: typeof GalleriesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/': {
@@ -1009,6 +1042,13 @@ declare module '@tanstack/react-router' {
       path: '/galleries/new'
       fullPath: '/galleries/new'
       preLoaderRoute: typeof GalleriesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/$id': {
+      id: '/galleries/$id'
+      path: '/galleries/$id'
+      fullPath: '/galleries/$id'
+      preLoaderRoute: typeof GalleriesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/archive': {
@@ -1172,8 +1212,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TweetsTopicsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/galleries/$id/edit': {
-      id: '/galleries/$id/edit'
+    '/galleries/$id_/edit': {
+      id: '/galleries/$id_/edit'
       path: '/galleries/$id/edit'
       fullPath: '/galleries/$id/edit'
       preLoaderRoute: typeof GalleriesIdEditRouteImport
@@ -1369,6 +1409,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsIdRoute: AnnouncementsIdRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogArchiveRoute: BlogArchiveRoute,
+  GalleriesIdRoute: GalleriesIdRoute,
   GalleriesNewRoute: GalleriesNewRoute,
   LabAnnouncementRoute: LabAnnouncementRoute,
   LabBlogRoute: LabBlogRoute,
@@ -1383,6 +1424,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersUsernameRoute: UsersUsernameRoute,
   AboutIndexRoute: AboutIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
+  GalleriesIndexRoute: GalleriesIndexRoute,
   LabIndexRoute: LabIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
