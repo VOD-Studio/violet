@@ -488,3 +488,43 @@ func TestListPublished_OnlyPublished(t *testing.T) {
 		t.Fatalf("admin list should include removed, got %d %v", adminTotal, err)
 	}
 }
+
+func TestListPublished_PreviewURLs(t *testing.T) {
+	f := newFixture(t)
+	// 视频放第 2 位（前 3 预览范围内）：无首帧应被跳过，预览只含 3 张图
+	videoID := shared.NewID()
+	f.media.addFile(videoID, f.owner.GetID(), "video/mp4")
+	extraID := shared.NewID()
+	f.media.addFile(extraID, f.owner.GetID(), "image/png")
+	if _, err := f.svc.Create(ctxAs(f.owner.GetID()), CreateInput{
+		OwnerID: f.owner.GetID().String(),
+		Title:   "五项图集",
+		Items: []ItemInput{
+			{FileID: f.files[0].String()},
+			{FileID: videoID.String()},
+			{FileID: f.files[1].String()},
+			{FileID: f.files[2].String()},
+			{FileID: extraID.String()},
+		},
+	}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	dtos, _, err := f.svc.ListPublished(context.Background(), shared.PageQuery{Page: 1, Limit: 20})
+	if err != nil {
+		t.Fatalf("ListPublished: %v", err)
+	}
+	if len(dtos) != 1 {
+		t.Fatalf("want 1 gallery, got %d", len(dtos))
+	}
+	got := dtos[0].PreviewURLs
+	// 前 3 项 = [图, 视频, 图]：视频无首帧跳过 → 2 张（位置截断不补位）
+	if len(got) != 2 {
+		t.Fatalf("want 2 preview urls, got %d: %v", len(got), got)
+	}
+	for _, u := range got {
+		if u != "/uploads/a.jpg" {
+			t.Fatalf("unexpected preview url %q", u)
+		}
+	}
+}

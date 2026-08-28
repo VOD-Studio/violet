@@ -64,14 +64,17 @@ type GalleryDTO struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	// CoverURL 封面访问地址（指定封面或首项媒体；文件缺失时为空串）
-	CoverURL   string    `json:"cover_url"`
-	ItemCount  int       `json:"item_count"`
-	Status     string    `json:"status"`
+	CoverURL   string `json:"cover_url"`
+	ItemCount  int    `json:"item_count"`
+	Status     string `json:"status"`
 	Author     AuthorDTO `json:"author"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
 	// UpdatedAt RFC3339 格式
 	UpdatedAt string `json:"updated_at"`
+	// PreviewURLs 浏览流照片堆叠预览：前 N 项媒体地址（优先缩略图/视频首帧），
+	// 文件缺失或视频无首帧时跳过该项；不足 N 张则返回实际数量
+	PreviewURLs []string `json:"preview_urls"`
 }
 
 // GalleryDetailDTO 图集详情（含全部媒体项）。

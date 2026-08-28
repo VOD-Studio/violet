@@ -11,6 +11,7 @@ package gallery
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -406,6 +407,27 @@ func (s *Service) toDTOs(ctx context.Context, galleries []*domaingallery.Gallery
 		return nil, err
 	}
 
+	// 浏览流照片堆叠预览：收集各集前 previewLimit 项文件 ID，一次批量查
+	previewLimit := 3
+	previewSeen := make(map[shared.ID]struct{}, len(galleries)*previewLimit)
+	previewIDs := make([]shared.ID, 0, len(galleries)*previewLimit)
+	for _, g := range galleries {
+		for i, it := range g.Items() {
+			if i >= previewLimit {
+				break
+			}
+			if _, ok := previewSeen[it.FileID()]; ok {
+				continue
+			}
+			previewSeen[it.FileID()] = struct{}{}
+			previewIDs = append(previewIDs, it.FileID())
+		}
+	}
+	previewFiles, err := s.media.FindByIDs(ctx, previewIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	dtos := make([]GalleryDTO, 0, len(galleries))
 	for _, g := range galleries {
 		author := AuthorDTO{}
@@ -414,7 +436,11 @@ func (s *Service) toDTOs(ctx context.Context, galleries []*domaingallery.Gallery
 		}
 		coverURL := ""
 		if f := files[coverFileIDOf(g)]; f != nil {
-			coverURL = f.URL()
+			// 视频封面给首帧缩略图：源文件 URL 无法当封面渲染（前端 <img> 会破图）
+			coverURL = f.Thumbnail()
+			if coverURL == "" && !strings.HasPrefix(f.MimeType(), "video/") {
+				coverURL = f.URL()
+			}
 		}
 		dtos = append(dtos, GalleryDTO{
 			ID:          g.ID().String(),
@@ -426,9 +452,32 @@ func (s *Service) toDTOs(ctx context.Context, galleries []*domaingallery.Gallery
 			Author:      author,
 			CreatedAt:   g.CreatedAt().Format(time.RFC3339),
 			UpdatedAt:   g.UpdatedAt().Format(time.RFC3339),
+			PreviewURLs: previewURLsOf(g, previewFiles, previewLimit),
 		})
 	}
 	return dtos, nil
+}
+
+// previewURLsOf 前 limit 项中可展示媒体的地址（位置截断，不跨位补位）：
+// 优先缩略图（图片缩略档/视频首帧），图片回退源 URL；视频无首帧跳过
+// （源文件无法当预览渲染），文件缺失跳过——返回数可少于 limit。
+func previewURLsOf(g *domaingallery.Gallery, files map[shared.ID]*domainupload.File, limit int) []string {
+	urls := make([]string, 0, limit)
+	for i, it := range g.Items() {
+		if i >= limit {
+			break;
+		}
+		f := files[it.FileID()]
+		if f == nil {
+			continue
+		}
+		if f.Thumbnail() != "" {
+			urls = append(urls, f.Thumbnail())
+		} else if !strings.HasPrefix(f.MimeType(), "video/") {
+			urls = append(urls, f.URL())
+		}
+	}
+	return urls
 }
 
 // toItemDTO 组装媒体项（文件缺失时保留占位，URL 为空串——文件被软删后详情不崩）。
