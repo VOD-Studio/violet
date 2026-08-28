@@ -1,3 +1,8 @@
+/**
+ * 建/编图集编辑器：标题/描述融入画布 + 有序媒体网格（素材池选取、现场上传、
+ * 整页拖放、拖拽排序、caption 行内编辑、设为封面）。提交即 items 全量替换，URL 不变。
+ */
+
 import {
 	closestCenter,
 	DndContext,
@@ -69,6 +74,7 @@ interface ComposerItem {
 	/** 0-100，仅 uploading 态有意义 */
 	progress: number;
 }
+
 /** 建/编图集编辑器入参：mode 决定提交走 POST /galleries 还是 PATCH items 全量替换。 */
 export interface GalleryComposerProps {
 	mode: "create" | "edit";
@@ -82,9 +88,11 @@ const runeCount = (s: string) => [...s].length;
 /** 媒体卡展示地址：图片优先缩略图回退本地预览；视频只有首帧缩略图可渲染，缺失交给占位 */
 const displaySrc = (item: ComposerItem) =>
 	item.isVideo ? item.thumbnail : item.thumbnail || item.previewUrl;
+
 /**
- * 建/编图集编辑器：标题/描述 + 有序媒体网格（素材池选取、现场上传、
- * 拖拽排序、caption 行内编辑、设为封面）。提交即 items 全量替换，URL 不变。
+ * 建/编图集编辑器：标题/描述融入画布（PostEditor 画布式语言），有序媒体网格
+ * 支持素材池选取、现场上传、整页拖放、拖拽排序、caption 行内编辑、设为封面。
+ * 提交即 items 全量替换（增删改排序一次落库），URL 不变。
  */
 export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 	const navigate = useNavigate();
@@ -105,6 +113,9 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 	// 本会话设置的封面项；null = 不提交 cover 字段（后端维持原状，未设封面时取首项）
 	const [coverFileId, setCoverFileId] = useState<string | null>(null);
 	const [pickerOpen, setPickerOpen] = useState(false);
+	// 文件拖进画布时高亮（dragleave 在子元素间穿梭会误报，用计数器守恒）
+	const [dragActive, setDragActive] = useState(false);
+	const dragDepth = useRef(0);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const uploadKeyRef = useRef(0);
 
@@ -218,6 +229,26 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 		setItems((prev) => prev.filter((i) => i.key !== key));
 	};
 
+	/** 画布拖放：dragenter/leave 计数器守恒判定悬停，drop 交给 handleFiles */
+	const onCanvasDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+	};
+	const onCanvasDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		setDragActive(false);
+		dragDepth.current = 0;
+		handleFiles(e.dataTransfer.files);
+	};
+	const onCanvasDragEnter = (e: React.DragEvent) => {
+		e.preventDefault();
+		dragDepth.current += 1;
+		if (dragDepth.current === 1) setDragActive(true);
+	};
+	const onCanvasDragLeave = () => {
+		dragDepth.current = Math.max(0, dragDepth.current - 1);
+		if (dragDepth.current === 0) setDragActive(false);
+	};
+
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -281,8 +312,8 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 				{
 					onSuccess: (detail) => {
 						toast.success("图集已发布");
-						// T3 详情页落地前先落在编辑页，URL 稳定且可继续补充
-						navigate({ to: "/galleries/$id/edit", params: { id: detail.id } });
+						// T3 详情页落地后直接跳详情
+						navigate({ to: "/galleries/$id", params: { id: detail.id } });
 					},
 					onError: (err) =>
 						toast.error(err instanceof ApiError ? err.message : "发布失败"),
@@ -303,64 +334,59 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 	const isPending = mode === "create" ? createGallery.isPending : updateGallery.isPending;
 
 	return (
-		<form onSubmit={handleSubmit} aria-label={mode === "create" ? "创建图集" : "编辑图集"}>
-			{/* 标题 + 描述 */}
-			<div className="space-y-4">
-				<div>
+		<form
+			onSubmit={handleSubmit}
+			aria-label={mode === "create" ? "创建图集" : "编辑图集"}
+			className="rounded-3xl border border-edge-hairline bg-surface/30 p-6 sm:p-8"
+			onDragOver={onCanvasDragOver}
+			onDragEnter={onCanvasDragEnter}
+			onDragLeave={onCanvasDragLeave}
+			onDrop={onCanvasDrop}
+		>
+			{/* 顶栏：标题融入画布 + 发布按钮 */}
+			<div className="flex items-end justify-between gap-4">
+				<div className="min-w-0 flex-1">
 					<Input
 						value={title}
 						onChange={(e) => setTitle(e.target.value)}
-						placeholder="图集标题（必填）"
+						placeholder="给这组照片起个名字…"
 						maxLength={GALLERY_TITLE_MAX * 2}
 						aria-label="图集标题"
+						className="h-11 border-none bg-transparent px-0 text-2xl font-bold shadow-none focus-visible:ring-0"
 					/>
-					<div className="mt-1 flex justify-end">
-						<span
-							className={cn(
-								"text-xs",
-								titleCount > GALLERY_TITLE_MAX
-									? "font-medium text-destructive"
-									: "text-muted-foreground",
-							)}
-						>
-							{titleCount}/{GALLERY_TITLE_MAX}
-						</span>
-					</div>
+					<span
+						className={cn(
+							"font-mono text-xs",
+							titleCount > GALLERY_TITLE_MAX
+								? "font-medium text-destructive"
+								: "text-muted-foreground",
+						)}
+					>
+						{titleCount}/{GALLERY_TITLE_MAX}
+					</span>
 				</div>
-				<div>
-					<Textarea
-						value={description}
-						onChange={(e) => setDescription(e.target.value)}
-						placeholder="图集描述（可选）"
-						rows={3}
-						aria-label="图集描述"
-					/>
-					<div className="mt-1 flex justify-end">
-						<span
-							className={cn(
-								"text-xs",
-								descriptionOver
-									? "font-medium text-destructive"
-									: "text-muted-foreground",
-							)}
-						>
-							{runeCount(description)}/{GALLERY_DESCRIPTION_MAX}
-						</span>
-					</div>
-				</div>
+				<Button type="submit" size="lg" disabled={!canSubmit} className="shrink-0">
+					{isPending ? (
+						<Loader2 className="size-4 animate-spin" />
+					) : (
+						<Save className="size-4" />
+					)}
+					{mode === "create" ? "发布" : "保存"}
+				</Button>
 			</div>
 
-			{/* 进图通道 */}
-			<div className="mt-6 flex flex-wrap items-center gap-2 border-t border-edge-hairline pt-4">
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					onClick={() => setPickerOpen(true)}
-				>
-					<ImagePlus className="size-4" />
-					从素材库选择
-				</Button>
+			{/* 描述：无边框融入画布 */}
+			<Textarea
+				value={description}
+				onChange={(e) => setDescription(e.target.value)}
+				placeholder="补一段介绍（可选）…"
+				rows={2}
+				aria-label="图集描述"
+				className="resize-none border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
+			/>
+
+			{/* 工具条：进图通道 + 项数 */}
+			<div className="mt-4 flex flex-wrap items-center gap-2 border-y border-edge-hairline py-3">
 				<input
 					ref={inputRef}
 					type="file"
@@ -377,19 +403,42 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 					disabled={uploading || items.length >= GALLERY_ITEMS_MAX}
 				>
 					<Upload className="size-4" />
-					上传媒体
+					上传
 				</Button>
-				<span className="ml-auto text-xs text-muted-foreground">
-					{items.length}/{GALLERY_ITEMS_MAX} 项 · 拖动卡片调整顺序
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					onClick={() => setPickerOpen(true)}
+				>
+					<ImagePlus className="size-4" />
+					素材库
+				</Button>
+				<span
+					className={cn(
+						"ml-auto font-mono text-xs text-muted-foreground",
+						items.length >= GALLERY_ITEMS_MAX && "font-medium text-destructive",
+					)}
+				>
+					{items.length}/{GALLERY_ITEMS_MAX} 项 · 拖动卡片排序 · 文件可直接拖进画布
 				</span>
 			</div>
 
-			{/* 媒体网格 */}
-			<div className="mt-4">
+			{/* 媒体画布：空态即拖放区 */}
+			<div
+				className={cn(
+					"mt-5 rounded-2xl border-2 border-dashed p-4 transition-colors sm:p-6",
+					dragActive ? "border-primary bg-primary/5" : "border-transparent",
+					items.length === 0 && !dragActive && "border-edge-hairline",
+				)}
+			>
 				{items.length === 0 ? (
-					<div className="flex h-40 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-edge-hairline text-sm text-muted-foreground">
-						<p>还没有媒体</p>
-						<p className="text-xs">从素材库选择，或直接上传图片 / mp4 / webm</p>
+					<div className="flex h-52 flex-col items-center justify-center gap-2 text-muted-foreground">
+						<ImagePlus className="size-10" />
+						<p className="text-sm font-medium">
+							{dragActive ? "松手即可开始上传" : "把照片拖到这里"}
+						</p>
+						<p className="text-xs">支持图片和 mp4 / webm 视频 · 也可点上方按钮选取</p>
 					</div>
 				) : (
 					<DndContext
@@ -401,7 +450,7 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 							items={items.map((i) => i.key)}
 							strategy={rectSortingStrategy}
 						>
-							<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+							<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 								{items.map((item) => (
 									<SortableMediaCard
 										key={item.key}
@@ -422,18 +471,6 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 						</SortableContext>
 					</DndContext>
 				)}
-			</div>
-
-			{/* 提交 */}
-			<div className="mt-6 flex items-center justify-end border-t border-edge-hairline pt-4">
-				<Button type="submit" disabled={!canSubmit}>
-					{isPending ? (
-						<Loader2 className="size-4 animate-spin" />
-					) : (
-						<Save className="size-4" />
-					)}
-					{mode === "create" ? "发布图集" : "保存修改"}
-				</Button>
 			</div>
 
 			<MediaPoolPicker
