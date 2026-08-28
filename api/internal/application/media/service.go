@@ -981,6 +981,7 @@ type MergeResult struct {
 	Thumbnail string `json:"thumbnail,omitempty"`
 	Width     int    `json:"width,omitempty"`
 	Height    int    `json:"height,omitempty"`
+	MimeType  string `json:"mime_type"`
 }
 
 // CompleteUpload 合并所有分片为完整文件
@@ -1101,6 +1102,7 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	return &MergeResult{
 		FileID: fileUUID.String(), URL: fileURL,
 		Thumbnail: thumbnail, Width: width, Height: height,
+		MimeType: finalMime,
 	}, nil
 }
 

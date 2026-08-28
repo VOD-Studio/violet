@@ -70,6 +70,8 @@ export interface CompleteUploadResult {
 	width?: number;
 	/** 图片高度，非图片为 0 */
 	height?: number;
+	/** MIME 类型（视频项判定用） */
+	mime_type?: string;
 }
 
 /**

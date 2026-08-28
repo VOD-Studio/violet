@@ -21,20 +21,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { MediaFile } from "@entities/media/model/types";
-import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
+import type { CompleteUploadResult } from "@features/upload/model/types";
+import { Uploader } from "@features/upload/ui/Uploader";
 import { ApiError } from "@shared/api/error";
 import { useNavigate } from "@tanstack/react-router";
-import {
-	AlertCircle,
-	Film,
-	GripVertical,
-	ImagePlus,
-	Loader2,
-	Save,
-	Star,
-	Upload,
-	X,
-} from "lucide-react";
+import { AlertCircle, Film, GripVertical, ImagePlus, Loader2, Save, Star, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
@@ -53,9 +44,8 @@ import {
 } from "../model/types";
 import { MediaPoolPicker } from "./MediaPoolPicker";
 
-/** 图片 10MB（对齐通用 Uploader 默认）；视频分片上传放宽到 200MB */
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
+/** 上传单文件上限：图片 10MB（对齐通用 Uploader 默认）、视频 200MB（分片上传放宽） */
+const MAX_MEDIA_BYTES = 200 * 1024 * 1024;
 
 type ItemStatus = "ready" | "uploading" | "error";
 
@@ -113,15 +103,10 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 	// 本会话设置的封面项；null = 不提交 cover 字段（后端维持原状，未设封面时取首项）
 	const [coverFileId, setCoverFileId] = useState<string | null>(null);
 	const [pickerOpen, setPickerOpen] = useState(false);
-	// 文件拖进画布时高亮（dragleave 在子元素间穿梭会误报，用计数器守恒）
-	const [dragActive, setDragActive] = useState(false);
-	const dragDepth = useRef(0);
-	const inputRef = useRef<HTMLInputElement>(null);
 	const uploadKeyRef = useRef(0);
 
 	const createGallery = useCreateGallery();
 	const updateGallery = useUpdateGallery(gallery?.id ?? "");
-	const { uploadFile } = useChunkedUpload({ purpose: "material" });
 
 	const titleCount = runeCount(title);
 	const titleOver = title.trim().length === 0 || titleCount > GALLERY_TITLE_MAX;
@@ -169,84 +154,11 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 		});
 	};
 
-	/** 选择文件 → 逐个上传（顺序，避免并发挤占分片通道；对齐 TweetComposer 模式） */
-	const handleFiles = async (files: FileList | null) => {
-		if (!files || files.length === 0) return;
-		const slots = GALLERY_ITEMS_MAX - items.length;
-		if (slots <= 0) {
-			toast.error(`图集最多 ${GALLERY_ITEMS_MAX} 项`);
-			return;
-		}
-		if (files.length > slots) {
-			toast.error(`最多还能添加 ${slots} 项，已添加前 ${slots} 个`);
-		}
-		const picked = Array.from(files).slice(0, slots);
-		for (const file of picked) {
-			if (!isGalleryMediaType(file.type)) {
-				toast.error(`${file.name} 不是图片或 mp4/webm 视频`);
-				continue;
-			}
-			const maxBytes = file.type.startsWith("video/") ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
-			if (file.size > maxBytes) {
-				toast.error(`${file.name} 超过 ${maxBytes / 1024 / 1024}MB`);
-				continue;
-			}
-			const key = `u-${++uploadKeyRef.current}`;
-			setItems((prev) => [
-				...prev,
-				{
-					key,
-					fileId: "",
-					caption: "",
-					// 视频的本地 blob 无法当图片渲染，预览留空交给占位
-					previewUrl: file.type.startsWith("video/") ? "" : URL.createObjectURL(file),
-					thumbnail: "",
-					isVideo: file.type.startsWith("video/"),
-					status: "uploading",
-					progress: 0,
-				},
-			]);
-			try {
-				const res = await uploadFile(file, (p) => patchItem(key, { progress: p.percent }));
-				patchItem(key, {
-					status: "ready",
-					fileId: res.file_id,
-					thumbnail: res.thumbnail ?? "",
-				});
-			} catch (err) {
-				patchItem(key, { status: "error" });
-				toast.error(err instanceof ApiError ? err.message : `${file.name} 上传失败`);
-			}
-		}
-		// 清空 input value 以便重复选择同一文件
-		if (inputRef.current) inputRef.current.value = "";
-	};
-
 	/** 删除项若正被设为封面，同步清空封面指向，避免提交指向不存在媒体项的 cover_file_id */
 	const removeItem = (key: string) => {
 		const target = items.find((i) => i.key === key);
 		if (target?.fileId && target.fileId === coverFileId) setCoverFileId(null);
 		setItems((prev) => prev.filter((i) => i.key !== key));
-	};
-
-	/** 画布拖放：dragenter/leave 计数器守恒判定悬停，drop 交给 handleFiles */
-	const onCanvasDragOver = (e: React.DragEvent) => {
-		e.preventDefault();
-	};
-	const onCanvasDrop = (e: React.DragEvent) => {
-		e.preventDefault();
-		setDragActive(false);
-		dragDepth.current = 0;
-		handleFiles(e.dataTransfer.files);
-	};
-	const onCanvasDragEnter = (e: React.DragEvent) => {
-		e.preventDefault();
-		dragDepth.current += 1;
-		if (dragDepth.current === 1) setDragActive(true);
-	};
-	const onCanvasDragLeave = () => {
-		dragDepth.current = Math.max(0, dragDepth.current - 1);
-		if (dragDepth.current === 0) setDragActive(false);
 	};
 
 	const sensors = useSensors(
@@ -338,10 +250,6 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 			onSubmit={handleSubmit}
 			aria-label={mode === "create" ? "创建图集" : "编辑图集"}
 			className="rounded-3xl border border-edge-hairline bg-surface/30 p-6 sm:p-8"
-			onDragOver={onCanvasDragOver}
-			onDragEnter={onCanvasDragEnter}
-			onDragLeave={onCanvasDragLeave}
-			onDrop={onCanvasDrop}
 		>
 			{/* 顶栏：标题融入画布 + 发布按钮 */}
 			<div className="flex items-end justify-between gap-4">
@@ -352,7 +260,7 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 						placeholder="给这组照片起个名字…"
 						maxLength={GALLERY_TITLE_MAX * 2}
 						aria-label="图集标题"
-						className="h-11 border-none bg-transparent px-0 text-2xl font-bold shadow-none focus-visible:ring-0"
+						className="h-11 rounded-none border-0 border-b border-edge-hairline bg-transparent px-0 text-2xl font-bold shadow-none focus-visible:border-primary focus-visible:ring-0"
 					/>
 					<span
 						className={cn(
@@ -385,26 +293,8 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 				className="resize-none border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
 			/>
 
-			{/* 工具条：进图通道 + 项数 */}
+			{/* 工具条：素材库入口 + 项数 */}
 			<div className="mt-4 flex flex-wrap items-center gap-2 border-y border-edge-hairline py-3">
-				<input
-					ref={inputRef}
-					type="file"
-					accept={GALLERY_MEDIA_ACCEPT}
-					multiple
-					className="hidden"
-					onChange={(e) => handleFiles(e.target.files)}
-				/>
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					onClick={() => inputRef.current?.click()}
-					disabled={uploading || items.length >= GALLERY_ITEMS_MAX}
-				>
-					<Upload className="size-4" />
-					上传
-				</Button>
 				<Button
 					type="button"
 					variant="outline"
@@ -420,27 +310,38 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 						items.length >= GALLERY_ITEMS_MAX && "font-medium text-destructive",
 					)}
 				>
-					{items.length}/{GALLERY_ITEMS_MAX} 项 · 拖动卡片排序 · 文件可直接拖进画布
+					{items.length}/{GALLERY_ITEMS_MAX} 项 · 拖动卡片排序
 				</span>
 			</div>
 
-			{/* 媒体画布：空态即拖放区 */}
-			<div
-				className={cn(
-					"mt-5 rounded-2xl border-2 border-dashed p-4 transition-colors sm:p-6",
-					dragActive ? "border-primary bg-primary/5" : "border-transparent",
-					items.length === 0 && !dragActive && "border-edge-hairline",
-				)}
-			>
-				{items.length === 0 ? (
-					<div className="flex h-52 flex-col items-center justify-center gap-2 text-muted-foreground">
-						<ImagePlus className="size-10" />
-						<p className="text-sm font-medium">
-							{dragActive ? "松手即可开始上传" : "把照片拖到这里"}
-						</p>
-						<p className="text-xs">支持图片和 mp4 / webm 视频 · 也可点上方按钮选取</p>
-					</div>
-				) : (
+			{/* 上传通道：复用通用 Uploader（拖放/点击/进度/文件行），完成即转网格卡片 */}
+			<Uploader<CompleteUploadResult>
+				purpose="material"
+				accept={GALLERY_MEDIA_ACCEPT}
+				maxSize={MAX_MEDIA_BYTES}
+				maxFiles={GALLERY_ITEMS_MAX}
+				label="上传图片或视频"
+				hint="图片 ≤10MB · 视频（mp4/webm）≤200MB"
+				onUploaded={(res) => {
+					setItems((prev) => [
+						...prev,
+						{
+							key: `u-${++uploadKeyRef.current}`,
+							fileId: res.file_id,
+							caption: "",
+							previewUrl: "",
+							thumbnail: res.thumbnail ?? "",
+							isVideo: (res.mime_type ?? "").startsWith("video/"),
+							status: "ready",
+							progress: 100,
+						},
+					]);
+				}}
+			/>
+
+			{/* 媒体网格 */}
+			{items.length > 0 ? (
+				<div className="mt-5">
 					<DndContext
 						sensors={sensors}
 						collisionDetection={closestCenter}
@@ -470,8 +371,8 @@ export function GalleryComposer({ mode, gallery }: GalleryComposerProps) {
 							</div>
 						</SortableContext>
 					</DndContext>
-				)}
-			</div>
+				</div>
+			) : null}
 
 			<MediaPoolPicker
 				open={pickerOpen}
