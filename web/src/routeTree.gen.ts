@@ -36,6 +36,7 @@ import { Route as LabGalleryRouteImport } from './routes/lab.gallery'
 import { Route as LabFriendsRouteImport } from './routes/lab.friends'
 import { Route as LabBlogRouteImport } from './routes/lab.blog'
 import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
+import { Route as GalleriesNewRouteImport } from './routes/galleries.new'
 import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
@@ -59,6 +60,7 @@ import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcem
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
+import { Route as GalleriesIdEditRouteImport } from './routes/galleries.$id.edit'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
@@ -206,6 +208,11 @@ const LabAnnouncementRoute = LabAnnouncementRouteImport.update({
   path: '/lab/announcement',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GalleriesNewRoute = GalleriesNewRouteImport.update({
+  id: '/galleries/new',
+  path: '/galleries/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogArchiveRoute = BlogArchiveRouteImport.update({
   id: '/blog/archive',
   path: '/blog/archive',
@@ -321,6 +328,11 @@ const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
   path: '/tweets/topics/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GalleriesIdEditRoute = GalleriesIdEditRouteImport.update({
+  id: '/galleries/$id/edit',
+  path: '/galleries/$id/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
   id: '/auth/github/callback',
   path: '/auth/github/callback',
@@ -406,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/galleries/new': typeof GalleriesNewRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
@@ -436,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/galleries/$id/edit': typeof GalleriesIdEditRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
@@ -466,6 +480,7 @@ export interface FileRoutesByTo {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/galleries/new': typeof GalleriesNewRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
@@ -496,6 +511,7 @@ export interface FileRoutesByTo {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/galleries/$id/edit': typeof GalleriesIdEditRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/series': typeof AdminSeriesIndexRoute
@@ -530,6 +546,7 @@ export interface FileRoutesById {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/galleries/new': typeof GalleriesNewRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
   '/lab/friends': typeof LabFriendsRoute
@@ -560,6 +577,7 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/galleries/$id/edit': typeof GalleriesIdEditRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
@@ -595,6 +613,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/galleries/new'
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
@@ -625,6 +644,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/galleries/$id/edit'
     | '/tweets/topics/$tag'
     | '/admin/posts/'
     | '/admin/series/'
@@ -655,6 +675,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/galleries/new'
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
@@ -685,6 +706,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/galleries/$id/edit'
     | '/tweets/topics/$tag'
     | '/admin/posts'
     | '/admin/series'
@@ -718,6 +740,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/galleries/new'
     | '/lab/announcement'
     | '/lab/blog'
     | '/lab/friends'
@@ -748,6 +771,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/galleries/$id/edit'
     | '/tweets/topics/$tag'
     | '/admin/posts/'
     | '/admin/series/'
@@ -765,6 +789,7 @@ export interface RootRouteChildren {
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogArchiveRoute: typeof BlogArchiveRoute
+  GalleriesNewRoute: typeof GalleriesNewRoute
   LabAnnouncementRoute: typeof LabAnnouncementRoute
   LabBlogRoute: typeof LabBlogRoute
   LabFriendsRoute: typeof LabFriendsRoute
@@ -784,6 +809,7 @@ export interface RootRouteChildren {
   SeriesIndexRoute: typeof SeriesIndexRoute
   TweetsIndexRoute: typeof TweetsIndexRoute
   AuthGithubCallbackRoute: typeof AuthGithubCallbackRoute
+  GalleriesIdEditRoute: typeof GalleriesIdEditRoute
   TweetsTopicsTagRoute: typeof TweetsTopicsTagRoute
 }
 
@@ -978,6 +1004,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LabAnnouncementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/galleries/new': {
+      id: '/galleries/new'
+      path: '/galleries/new'
+      fullPath: '/galleries/new'
+      preLoaderRoute: typeof GalleriesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/archive': {
       id: '/blog/archive'
       path: '/blog/archive'
@@ -1137,6 +1170,13 @@ declare module '@tanstack/react-router' {
       path: '/tweets/topics/$tag'
       fullPath: '/tweets/topics/$tag'
       preLoaderRoute: typeof TweetsTopicsTagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/$id/edit': {
+      id: '/galleries/$id/edit'
+      path: '/galleries/$id/edit'
+      fullPath: '/galleries/$id/edit'
+      preLoaderRoute: typeof GalleriesIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/github/callback': {
@@ -1329,6 +1369,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsIdRoute: AnnouncementsIdRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogArchiveRoute: BlogArchiveRoute,
+  GalleriesNewRoute: GalleriesNewRoute,
   LabAnnouncementRoute: LabAnnouncementRoute,
   LabBlogRoute: LabBlogRoute,
   LabFriendsRoute: LabFriendsRoute,
@@ -1348,17 +1389,9 @@ const rootRouteChildren: RootRouteChildren = {
   SeriesIndexRoute: SeriesIndexRoute,
   TweetsIndexRoute: TweetsIndexRoute,
   AuthGithubCallbackRoute: AuthGithubCallbackRoute,
+  GalleriesIdEditRoute: GalleriesIdEditRoute,
   TweetsTopicsTagRoute: TweetsTopicsTagRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
