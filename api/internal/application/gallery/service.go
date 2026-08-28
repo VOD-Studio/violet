@@ -370,6 +370,8 @@ func (s *Service) publishEvents(ctx context.Context, events []shared.DomainEvent
 // ============================================================
 
 // buildDetail 组装详情（解析全部媒体项元数据 + 作者资料）。
+// cover 走 toDTOs 内部批量查、items 这里单独一次 IN——两次主键 IN 量级可控，
+// 不为省一次查询把列表路径的 toDTOs 签名参数化。
 func (s *Service) buildDetail(ctx context.Context, g *domaingallery.Gallery) (GalleryDetailDTO, error) {
 	dtos, err := s.toDTOs(ctx, []*domaingallery.Gallery{g})
 	if err != nil {
@@ -506,14 +508,21 @@ func coverFileIDOf(g *domaingallery.Gallery) shared.ID {
 	return items[0].FileID()
 }
 
-// parseItems 入参 → 领域媒体项。
+// parseItems 入参 → 领域媒体项；重复 fileID 直接拒绝而非去重——
+// gallery_items 主键是 (gallery_id, file_id)，重复会让 Save 撞唯一约束，
+// 也会让引用计数对同一文件重复 +1，静默去重会掩盖调用方的数据错误。
 func parseItems(in []ItemInput) ([]domaingallery.GalleryItem, error) {
 	items := make([]domaingallery.GalleryItem, 0, len(in))
+	seen := make(map[shared.ID]struct{}, len(in))
 	for _, it := range in {
 		fid, err := shared.ParseID(it.FileID)
 		if err != nil {
 			return nil, shared.BadRequest("非法的文件 ID")
 		}
+		if _, ok := seen[fid]; ok {
+			return nil, shared.BadRequest("图集媒体项包含重复文件")
+		}
+		seen[fid] = struct{}{}
 		items = append(items, domaingallery.NewGalleryItem(fid, it.Caption))
 	}
 	return items, nil

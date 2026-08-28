@@ -181,14 +181,23 @@ func (i GalleryItem) Caption() string { return i.caption }
 //   - status 只能是 published / removed；removed 态不可编辑字段（先恢复再改）
 type Gallery struct {
 	shared.AggregateRoot
-	id          shared.ID
-	ownerID     shared.ID
-	title       string
+	// id 图集 UUID 主键
+	id shared.ID
+	// ownerID 创建者，固定不可变（编辑/治理都不换主）
+	ownerID shared.ID
+	// title 标题（trim 后非空，≤100 rune）
+	title string
+	// description 描述（≤2000 rune，可空）
 	description string
-	coverFileID *shared.ID // nil = 取首项媒体当封面
-	status      string
-	items       []GalleryItem
-	timestamps  shared.Timestamps
+	// coverFileID 封面文件 ID；nil = 取首项媒体当封面，必须在 items 内
+	//（复用项的引用计数，不单独 +1）
+	coverFileID *shared.ID
+	// status published / removed（管理员下架；removed 态只读）
+	status string
+	// items 有序媒体项（位置即展示顺序，落库写 position 列）
+	items []GalleryItem
+	// timestamps 创建/更新时间
+	timestamps shared.Timestamps
 }
 
 // NewGallery 创建新图集（初始态 published，即发即出）。

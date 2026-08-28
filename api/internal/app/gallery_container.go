@@ -82,7 +82,6 @@ func (a *galleryMediaCheckerAdapter) CheckFilesUsable(ctx context.Context, fileI
 	return nil
 }
 
-// UpdateRefCount 维护文件引用计数。
 func (a *galleryMediaCheckerAdapter) UpdateRefCount(ctx context.Context, fileID shared.ID, delta int) error {
 	return a.repo.UpdateRefCount(ctx, fileID, delta)
 }

@@ -528,3 +528,12 @@ func TestListPublished_PreviewURLs(t *testing.T) {
 		}
 	}
 }
+
+func TestCreate_DuplicateItems(t *testing.T) {
+	f := newFixture(t)
+	in := f.createInput(t)
+	in.Items = append(in.Items, ItemInput{FileID: f.files[0].String()})
+	if _, err := f.svc.Create(ctxAs(f.owner.GetID()), in); err == nil {
+		t.Fatal("duplicate file in items should be rejected")
+	}
+}
