@@ -28,7 +28,6 @@ export interface PhotoStackStageProps {
 const FLIP_RATIO = 0.14;
 const TILT_PER_PX = 0.08;
 const TILT_MAX = 25;
-const DRAG_LIMIT_RATIO = 0.75;
 
 /** 有限 PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
 export function PhotoStackStage({
@@ -142,11 +141,7 @@ export function PhotoStackStage({
 		const canFlip =
 			(rawDelta < 0 && safeIndex < images.length - 1) || (rawDelta > 0 && safeIndex > 0);
 		const width = stackWidth || 280;
-		const limitedDelta = Math.max(
-			-width * DRAG_LIMIT_RATIO,
-			Math.min(width * DRAG_LIMIT_RATIO, rawDelta),
-		);
-		const delta = canFlip ? limitedDelta : limitedDelta * 0.24;
+		const delta = canFlip ? rawDelta : rawDelta * 0.24;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		setDragDirection(direction);
 		setStackSlot(value, {
