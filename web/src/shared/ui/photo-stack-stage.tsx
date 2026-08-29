@@ -166,15 +166,7 @@ export function PhotoStackStage({
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
-			const from =
-				card.axis === direction && card.depth === 1
-					? {
-							x: Math.sign(rawDelta) * width,
-							y: 0,
-							rotate: Math.sign(rawDelta) * TILT_MAX,
-							scale: 1,
-						}
-					: getStackSlot(card.axis, card.depth, width);
+			const from = getStackSlot(card.axis, card.depth, width);
 			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), width);
 			const slot = card.axis === direction ? interpolateSlot(from, to, progress) : from;
 			setStackSlot(cardValue, slot);

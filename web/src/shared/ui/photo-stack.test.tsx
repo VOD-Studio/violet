@@ -124,4 +124,12 @@ describe("PhotoStack", () => {
 		expect(stack.getAttribute("data-incoming-progress")).toBe("1");
 	});
 
+	it("相邻卡从原后置槽位连续插入，不从屏外跳入", () => {
+		render(<PhotoStack {...stackProps()} />);
+		const stack = screen.getByRole("group");
+		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
+		fireEvent.pointerMove(stack, { clientX: 190, pointerId: 1 });
+		expect(Number(stack.getAttribute("data-incoming-progress"))).toBeCloseTo(10 / 238);
+	});
+
 });
