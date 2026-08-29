@@ -251,7 +251,6 @@ export function PhotoStackStage({
 		<div
 			ref={stackRef}
 			role="group"
-			// biome-ignore lint/a11y/noNoninteractiveTabindex: 照片堆叠需要焦点来响应方向键
 			tabIndex={0}
 			aria-label={`第 ${safeIndex + 1} 项，共 ${images.length} 项`}
 			data-stack-state={state}
