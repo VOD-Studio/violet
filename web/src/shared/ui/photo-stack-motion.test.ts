@@ -4,6 +4,8 @@ import {
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
+	recentVelocity,
+	shouldFlip,
 } from "./photo-stack-motion";
 
 describe("PhotoStack motion decisions", () => {
@@ -31,5 +33,45 @@ describe("PhotoStack motion decisions", () => {
 		expect(slot.y).toBe(-24);
 		expect(slot.scale).toBe(0.88);
 		expect(slot.rotate).toBe(4.5);
+	});
+
+	it("快速轻扫达到速度阈值即翻页，慢拖不足距离则回弹", () => {
+		expect(shouldFlip(30, 0.8, 39.2, true)).toBe(true);
+		expect(shouldFlip(60, 0, 39.2, true)).toBe(true);
+		expect(shouldFlip(30, 0.2, 39.2, true)).toBe(false);
+		expect(shouldFlip(10, 5, 39.2, true)).toBe(false);
+	});
+
+	it("轻扫速度方向与位移相反时不翻页", () => {
+		expect(shouldFlip(-30, 0.8, 39.2, true)).toBe(false);
+		expect(shouldFlip(-30, -0.8, 39.2, true)).toBe(true);
+		expect(shouldFlip(30, 0.8, 39.2, false)).toBe(false);
+	});
+
+	it("速度取窗口期样本，时间戳无进展时为零", () => {
+		expect(
+			recentVelocity([
+				{ t: 0, x: 0 },
+				{ t: 100, x: 50 },
+			]),
+		).toBe(0.5);
+		expect(
+			recentVelocity(
+				[
+					{ t: 0, x: 0 },
+					{ t: 500, x: 0 },
+					{ t: 520, x: -20 },
+					{ t: 540, x: -40 },
+				],
+				100,
+			),
+		).toBe(-1);
+		expect(recentVelocity([{ t: 5, x: 30 }])).toBe(0);
+		expect(
+			recentVelocity([
+				{ t: 5, x: 30 },
+				{ t: 5, x: 40 },
+			]),
+		).toBe(0);
 	});
 });

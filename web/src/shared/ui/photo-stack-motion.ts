@@ -1,3 +1,5 @@
+import type { MotionValue } from "motion/react";
+
 export type StackDirection = "left" | "right";
 
 export interface PhotoStackSlot {
@@ -43,4 +45,60 @@ export function getStackSlot(axis: StackDirection, depth: number, width: number)
 		rotate: sign * 1.5 * depth,
 		scale: 1 - 0.04 * depth,
 	};
+}
+
+export interface MotionBundle {
+	x: MotionValue<number>;
+	y: MotionValue<number>;
+	rotate: MotionValue<number>;
+	scale: MotionValue<number>;
+}
+
+/** 立即落位一组 MotionValue；先停掉在跑的弹簧，避免 set 被动画逐帧覆盖。 */
+export function setStackSlot(value: MotionBundle, slot: PhotoStackSlot) {
+	value.x.stop();
+	value.y.stop();
+	value.rotate.stop();
+	value.scale.stop();
+	value.x.set(slot.x);
+	value.y.set(slot.y);
+	value.rotate.set(slot.rotate);
+	value.scale.set(slot.scale);
+}
+
+export interface DragSample {
+	t: number;
+	x: number;
+}
+
+/** 保留最近的拖动采样，供松手时计算轻扫速度。 */
+export function recordSample(samples: DragSample[], t: number, x: number, limit = 6) {
+	samples.push({ t, x });
+	if (samples.length > limit) samples.shift();
+}
+
+/** 窗口期内的平均速度，单位 px/ms；窗口内样本不足或时间戳无进展时返回 0。 */
+export function recentVelocity(samples: DragSample[], windowMs = 100) {
+	if (samples.length < 2) return 0;
+	const last = samples[samples.length - 1];
+	let first: DragSample | null = null;
+	for (let i = samples.length - 2; i >= 0; i -= 1) {
+		if (last.t - samples[i].t <= windowMs) first = samples[i];
+		else break;
+	}
+	if (!first) return 0;
+	const dt = last.t - first.t;
+	return dt > 0 ? (last.x - first.x) / dt : 0;
+}
+
+/** 轻扫翻页的最小位移与速度；速度方向需与位移一致，防止反向急停误判。 */
+const FLICK_MIN_DISTANCE = 24;
+const FLICK_VELOCITY = 0.45;
+
+/** 距离达标即翻页；位移不足但快速轻扫同样翻页。 */
+export function shouldFlip(delta: number, velocity: number, threshold: number, canFlip: boolean) {
+	if (!canFlip || delta === 0) return false;
+	if (Math.abs(delta) >= threshold) return true;
+	if (Math.abs(delta) < FLICK_MIN_DISTANCE) return false;
+	return Math.abs(velocity) >= FLICK_VELOCITY && Math.sign(velocity) === Math.sign(delta);
 }

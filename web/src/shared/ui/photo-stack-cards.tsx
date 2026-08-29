@@ -1,14 +1,13 @@
-import type { MotionValue } from "motion/react";
 import type { PhotoStackImage } from "./photo-stack";
 import { PhotoStackCard } from "./photo-stack-card";
-import { getDirectionalZ } from "./photo-stack-motion";
+import {
+	getDirectionalZ,
+	getStackSlot,
+	type MotionBundle,
+	type PhotoStackSlot,
+} from "./photo-stack-motion";
 
-export interface PhotoStackCardMotion {
-	x: MotionValue<number>;
-	y: MotionValue<number>;
-	rotate: MotionValue<number>;
-	scale: MotionValue<number>;
-}
+export type PhotoStackCardMotion = MotionBundle;
 
 export interface PhotoStackVisibleCard {
 	image: PhotoStackImage;
@@ -24,10 +23,16 @@ export interface PhotoStackCardsProps {
 	current: PhotoStackImage;
 	/** 当前顶图在原始列表中的索引。 */
 	currentIndex: number;
+	/** 舞台像素宽度，用于给新挂载的卡计算初始槽位。 */
+	stackWidth: number;
 	/** 用于区分同页多个 PhotoStack 的稳定前缀。 */
 	layoutPrefix: string;
 	/** 为媒体索引提供持久 MotionValue。 */
-	motionOf: (image: PhotoStackImage, index: number) => PhotoStackCardMotion;
+	motionOf: (
+		image: PhotoStackImage,
+		index: number,
+		init?: PhotoStackSlot,
+	) => PhotoStackCardMotion;
 	/** 当前顶图点击回调。 */
 	onCurrentClick: () => void;
 	/** 拖拽目标侧，用于覆盖层级。 */
@@ -39,15 +44,22 @@ export function PhotoStackCards({
 	visibleCards,
 	current,
 	currentIndex,
+	stackWidth,
 	layoutPrefix,
 	motionOf,
 	onCurrentClick,
 	dragDirection,
 }: PhotoStackCardsProps) {
+	const currentMotion = motionOf(current, currentIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
+
 	return (
 		<>
 			{visibleCards.map((card) => {
-				const value = motionOf(card.image, card.index);
+				const value = motionOf(
+					card.image,
+					card.index,
+					getStackSlot(card.axis, card.depth, stackWidth),
+				);
 				return (
 					<PhotoStackCard
 						key={`${layoutPrefix}-${card.index}`}
@@ -63,12 +75,12 @@ export function PhotoStackCards({
 				);
 			})}
 			<PhotoStackCard
-				key={`${layoutPrefix}-current-${currentIndex}`}
+				key={`${layoutPrefix}-${currentIndex}`}
 				image={current}
-				x={motionOf(current, currentIndex).x}
-				y={motionOf(current, currentIndex).y}
-				rotate={motionOf(current, currentIndex).rotate}
-				scale={motionOf(current, currentIndex).scale}
+				x={currentMotion.x}
+				y={currentMotion.y}
+				rotate={currentMotion.rotate}
+				scale={currentMotion.scale}
 				zIndex={100}
 				state="current"
 				depth={0}

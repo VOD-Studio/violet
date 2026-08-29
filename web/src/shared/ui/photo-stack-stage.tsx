@@ -6,10 +6,15 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { PhotoStackImage } from "./photo-stack";
 import { type PhotoStackCardMotion, PhotoStackCards } from "./photo-stack-cards";
 import {
+	type DragSample,
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
+	recentVelocity,
+	recordSample,
 	type StackDirection,
+	setStackSlot,
+	shouldFlip,
 } from "./photo-stack-motion";
 import { usePhotoStackSlots } from "./use-photo-stack-slots";
 
@@ -21,7 +26,7 @@ export interface PhotoStackStageProps {
 	onImageOpen?: (index: number) => void;
 }
 
-const FLIP_RATIO = 0.22;
+const FLIP_RATIO = 0.14;
 const FLY_OFF_RATIO = 1.1;
 const FLY_MS = 180;
 const TILT_PER_PX = 0.08;
@@ -50,6 +55,7 @@ export function PhotoStackStage({
 	const suppressClickTimer = useRef(0);
 	const flinging = useRef(false);
 	const flingTimer = useRef(0);
+	const dragSamples = useRef<DragSample[]>([]);
 	const [stackWidth, setStackWidth] = useState(0);
 	const [dragging, setDragging] = useState(false);
 	const [dragDirection, setDragDirection] = useState<StackDirection | null>(null);
@@ -121,6 +127,7 @@ export function PhotoStackStage({
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (event.button !== 0 || flinging.current) return;
 		pointerStartX.current = event.clientX;
+		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		setDragDirection(null);
 		setDragging(true);
 		try {
@@ -159,20 +166,20 @@ export function PhotoStackStage({
 		const delta = canFlip ? rawDelta : rawDelta * 0.24;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		setDragDirection(direction);
-		value.x.set(delta);
-		value.y.set(0);
-		value.rotate.set(Math.max(-TILT_MAX, Math.min(TILT_MAX, delta * TILT_PER_PX)));
-		value.scale.set(1);
+		setStackSlot(value, {
+			x: delta,
+			y: 0,
+			rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, delta * TILT_PER_PX)),
+			scale: 1,
+		});
+		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		const progress = getDragProgress(rawDelta, (stackWidth || 280) * FLIP_RATIO);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
 			const from = getStackSlot(card.axis, card.depth, stackWidth || 280);
 			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), stackWidth || 280);
 			const slot = card.axis === direction ? interpolateSlot(from, to, progress) : from;
-			cardValue.x.set(slot.x);
-			cardValue.y.set(slot.y);
-			cardValue.rotate.set(slot.rotate);
-			cardValue.scale.set(slot.scale);
+			setStackSlot(cardValue, slot);
 		});
 	};
 
@@ -184,12 +191,17 @@ export function PhotoStackStage({
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
 		const delta = value.x.get();
-		const direction = delta < 0 ? 1 : -1;
-		const threshold = (stackWidth || 280) * FLIP_RATIO;
+		const direction: -1 | 1 = delta < 0 ? 1 : -1;
+		const canFlip =
+			(direction === 1 && safeIndex < images.length - 1) ||
+			(direction === -1 && safeIndex > 0);
 		if (
-			Math.abs(delta) >= threshold &&
-			((direction === 1 && safeIndex < images.length - 1) ||
-				(direction === -1 && safeIndex > 0))
+			shouldFlip(
+				delta,
+				recentVelocity(dragSamples.current),
+				(stackWidth || 280) * FLIP_RATIO,
+				canFlip,
+			)
 		) {
 			fling(direction, value);
 		} else {
@@ -201,7 +213,7 @@ export function PhotoStackStage({
 			if (stackRef.current?.hasPointerCapture(event.pointerId))
 				stackRef.current.releasePointerCapture(event.pointerId);
 		} catch {
-			resetTop();
+			// 捕获已失效时无需处理；此处重置会打断甩出动画。
 		}
 	};
 
@@ -253,6 +265,7 @@ export function PhotoStackStage({
 				visibleCards={visibleCards}
 				current={images[safeIndex]}
 				currentIndex={safeIndex}
+				stackWidth={stackWidth}
 				layoutPrefix={layoutPrefix}
 				motionOf={motionOf}
 				onCurrentClick={() => {

@@ -2,7 +2,7 @@ import { animate, motionValue } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PhotoStackImage } from "./photo-stack";
 import type { PhotoStackCardMotion, PhotoStackVisibleCard } from "./photo-stack-cards";
-import { getStackSlot } from "./photo-stack-motion";
+import { getStackSlot, type PhotoStackSlot } from "./photo-stack-motion";
 
 const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
 
@@ -18,20 +18,23 @@ export interface UsePhotoStackSlotsOptions {
 /** 管理有限堆叠的卡片 MotionValue、可见槽位和回弹动作。 */
 export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoStackSlotsOptions) {
 	const cardMotions = useRef(new Map<string, PhotoStackCardMotion>());
-	const motionOf = useCallback((image: PhotoStackImage, index: number): PhotoStackCardMotion => {
-		const key = `${image.src}-${index}`;
-		let value = cardMotions.current.get(key);
-		if (!value) {
-			value = {
-				x: motionValue(0),
-				y: motionValue(0),
-				rotate: motionValue(0),
-				scale: motionValue(1),
-			};
-			cardMotions.current.set(key, value);
-		}
-		return value;
-	}, []);
+	const motionOf = useCallback(
+		(image: PhotoStackImage, index: number, init?: PhotoStackSlot): PhotoStackCardMotion => {
+			const key = `${image.src}-${index}`;
+			let value = cardMotions.current.get(key);
+			if (!value) {
+				value = {
+					x: motionValue(init?.x ?? 0),
+					y: motionValue(init?.y ?? 0),
+					rotate: motionValue(init?.rotate ?? 0),
+					scale: motionValue(init?.scale ?? 1),
+				};
+				cardMotions.current.set(key, value);
+			}
+			return value;
+		},
+		[],
+	);
 
 	const visibleCards = useMemo<PhotoStackVisibleCard[]>(() => {
 		const cards: PhotoStackVisibleCard[] = [];
