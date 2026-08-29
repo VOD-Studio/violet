@@ -41,22 +41,22 @@ describe("PhotoStack motion decisions", () => {
 		expect(peak.topSlot.scale).toBeCloseTo(0.95, 2);
 		expect(peak.isPastThreshold).toBe(false);
 
-		// 3. 继续向左拖动 (200px) -> 正在向左后槽位 (-22px, -4px) 滑入
+		// 3. 继续向左拖动 (200px) -> 正在向左后槽位 (-16px, 0px) 滑入
 		const inserting = getDraggedTopSlot(-200, width, true);
 		expect(inserting.isPastThreshold).toBe(true);
 		expect(inserting.insertProgress).toBeCloseTo(0.5, 1);
-		expect(inserting.topSlot.x).toBeCloseTo(-91, 1);
-		expect(inserting.topSlot.y).toBeCloseTo(-2, 1);
+		expect(inserting.topSlot.x).toBeCloseTo(-88, 1);
+		expect(inserting.topSlot.y).toBe(0);
 		expect(inserting.topSlot.scale).toBeCloseTo(0.95, 2);
 
 		// 4. 充分拖动 (240px = 120% 栈宽) -> 完全进入左侧后置槽位
 		const inserted = getDraggedTopSlot(-240, width, true);
 		expect(inserted.isPastThreshold).toBe(true);
 		expect(inserted.insertProgress).toBe(1);
-		expect(inserted.topSlot.x).toBeCloseTo(-22, 1);
-		expect(inserted.topSlot.y).toBe(-4);
+		expect(inserted.topSlot.x).toBeCloseTo(-16, 1);
+		expect(inserted.topSlot.y).toBe(0);
 		expect(inserted.topSlot.scale).toBe(0.95);
-		expect(inserted.topSlot.rotate).toBeCloseTo(-0.75, 2);
+		expect(inserted.topSlot.rotate).toBe(0);
 	});
 
 	it("只把目标方向的后卡向前插槽联动", () => {
@@ -70,11 +70,11 @@ describe("PhotoStack motion decisions", () => {
 		});
 	});
 
-	it("后层槽位小约 10% 且向外露出约 10% 露边", () => {
+	it("后层槽位小约 10% 且垂直平行露出", () => {
 		const slot = getStackSlot("right", 2, 280);
-		expect(slot.y).toBe(-8);
+		expect(slot.y).toBe(0);
 		expect(slot.scale).toBeCloseTo(0.9, 2);
-		expect(slot.rotate).toBeCloseTo(1.5, 1);
+		expect(slot.rotate).toBe(0);
 	});
 
 	it("卡片身份不随顶卡与后置卡角色改变", () => {

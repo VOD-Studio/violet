@@ -123,13 +123,13 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：后层小约 10%（每层 5%），并保证向外露出约 10% 栈宽的清晰边缘，不被顶卡遮挡。 */
+/** 静止槽位：对齐微信原版，顶部平齐不凸出，垂直平行直立（无歪斜），底部随 scale 自然向上阶梯收进。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
-		x: sign * width * 0.11 * depth,
-		y: -4 * depth,
-		rotate: sign * 0.75 * depth,
+		x: sign * width * 0.08 * depth,
+		y: 0,
+		rotate: 0,
 		scale: 1 - 0.05 * depth,
 	};
 }
