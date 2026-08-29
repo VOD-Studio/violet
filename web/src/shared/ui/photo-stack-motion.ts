@@ -57,13 +57,15 @@ export function getDraggedTopSlot(
 	const pullThreshold = width * PULL_THRESHOLD_RATIO;
 	const insertThreshold = width * INSERT_THRESHOLD_RATIO;
 
+	const globalProgress = Math.min(1, distance / Math.max(1, insertThreshold));
+	const currentScale = 1 - 0.104 * globalProgress;
+
 	if (distance <= pullThreshold) {
 		const pullProgress = distance / pullThreshold;
 		const x = Math.sign(rawDelta) * distance;
 		const rotate = Math.max(-TILT_MAX, Math.min(TILT_MAX, x * TILT_PER_PX));
-		const scale = 1 - 0.05 * pullProgress;
 		return {
-			topSlot: { x, y: 0, rotate, scale },
+			topSlot: { x, y: 0, rotate, scale: currentScale },
 			isPastThreshold: false,
 			pullProgress,
 			insertProgress: 0,
@@ -75,11 +77,12 @@ export function getDraggedTopSlot(
 		(distance - pullThreshold) / Math.max(1, insertThreshold - pullThreshold),
 	);
 	const peakX = Math.sign(rawDelta) * pullThreshold;
+	const peakScale = 1 - 0.104 * (pullThreshold / Math.max(1, insertThreshold));
 	const peakSlot: PhotoStackSlot = {
 		x: peakX,
 		y: 0,
 		rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, peakX * TILT_PER_PX)),
-		scale: 0.95,
+		scale: peakScale,
 	};
 	const rearAxis: StackDirection = rawDelta < 0 ? "left" : "right";
 	const rearSlot = getStackSlot(rearAxis, 1, width);

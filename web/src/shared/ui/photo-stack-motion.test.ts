@@ -23,40 +23,23 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDirectionalZ(null, "right", 1, false)).toBe(29);
 	});
 
-	it("两阶段拖拽：拉出至 80%（剩 1/5）前 1:1 跟手置顶，过阈值后继续拖动平滑插回后置槽位并置顶", () => {
+	it("拖拽全行程顶卡渐渐缩小（从 1.0 连续缩至 0.896）", () => {
 		const width = 200;
-		// 1. 大行程拉出 (100px <= 160px) -> 1:1 跟手，未达 4/5 (剩 1/5) 阈值
-		const pull = getDraggedTopSlot(-100, width, true);
-		expect(pull.topSlot.x).toBe(-100);
-		expect(pull.topSlot.y).toBe(0);
-		expect(pull.isPastThreshold).toBe(false);
-		expect(pull.pullProgress).toBeCloseTo(100 / 160, 2);
-		expect(pull.topSlot.scale).toBeCloseTo(0.969, 2);
-		expect(pull.insertProgress).toBe(0);
+		// 1. 小拉出 (40px) -> 顶卡明显渐渐变小 (1.0 -> 0.983)
+		const p1 = getDraggedTopSlot(-40, width, true);
+		expect(p1.topSlot.scale).toBeCloseTo(1 - 0.104 * (40 / 240), 3);
 
-		// 2. 刚好拉出至只剩 1/5 (160px = 80% 栈宽)
-		const peak = getDraggedTopSlot(-160, width, true);
-		expect(peak.topSlot.x).toBe(-160);
-		expect(peak.topSlot.y).toBe(0);
-		expect(peak.topSlot.scale).toBeCloseTo(0.95, 2);
-		expect(peak.isPastThreshold).toBe(false);
+		// 2. 中程拉出 (120px) -> 进一步渐渐变小 (0.948)
+		const p2 = getDraggedTopSlot(-120, width, true);
+		expect(p2.topSlot.scale).toBeCloseTo(1 - 0.104 * (120 / 240), 3);
 
-		// 3. 继续向左拖动 (200px) -> 正在向左后槽位 (-21.2px, 4px) 滑入
-		const inserting = getDraggedTopSlot(-200, width, true);
-		expect(inserting.isPastThreshold).toBe(true);
-		expect(inserting.insertProgress).toBeCloseTo(0.5, 1);
-		expect(inserting.topSlot.x).toBeCloseTo(-90.6, 1);
-		expect(inserting.topSlot.y).toBeCloseTo(2.0, 1);
-		expect(inserting.topSlot.scale).toBeCloseTo(0.923, 2);
+		// 3. 拉出峰值 (160px) -> 持续变小 (0.931)
+		const p3 = getDraggedTopSlot(-160, width, true);
+		expect(p3.topSlot.scale).toBeCloseTo(1 - 0.104 * (160 / 240), 3);
 
-		// 4. 充分拖动 (240px = 120% 栈宽) -> 完全进入左侧后置槽位
-		const inserted = getDraggedTopSlot(-240, width, true);
-		expect(inserted.isPastThreshold).toBe(true);
-		expect(inserted.insertProgress).toBe(1);
-		expect(inserted.topSlot.x).toBeCloseTo(-21.2, 1);
-		expect(inserted.topSlot.y).toBe(4.0);
-		expect(inserted.topSlot.scale).toBeCloseTo(0.896, 3);
-		expect(inserted.topSlot.rotate).toBeCloseTo(-1.0, 1);
+		// 4. 充分拖拽完成插槽 (240px) -> 完全缩小到后槽尺寸 0.896
+		const p4 = getDraggedTopSlot(-240, width, true);
+		expect(p4.topSlot.scale).toBeCloseTo(0.896, 3);
 	});
 
 	it("只把目标方向的后卡向前插槽联动", () => {

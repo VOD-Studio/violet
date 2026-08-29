@@ -98,6 +98,8 @@ export function PhotoStackStage({
 			const rearSide: StackDirection = direction === 1 ? "left" : "right";
 			const targetSlot = getStackSlot(rearSide, 1, width);
 			settling.current = true;
+
+			// 1. 旧顶卡在 220ms 内动画滑入后置槽位
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
@@ -112,6 +114,69 @@ export function PhotoStackStage({
 				duration: INSERT_MS / 1000,
 				ease: "easeOut" as const,
 			});
+
+			// 2. 新顶卡在同一个 220ms 内同步动画到达中心
+			const nextTop = images[nextIndex];
+			if (nextTop) {
+				const nextTopMotion = motionOf(nextTop, nextIndex);
+				nextTopMotion.x.stop();
+				nextTopMotion.y.stop();
+				nextTopMotion.rotate.stop();
+				nextTopMotion.scale.stop();
+				animate(nextTopMotion.x, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+				animate(nextTopMotion.y, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+				animate(nextTopMotion.rotate, 0, {
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				});
+				animate(nextTopMotion.scale, 1, {
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				});
+			}
+
+			// 3. 所有在新索引下需要就位的后置卡片（包括最后一张图）全部在同一个 220ms 内同步平滑动画落位，绝无后延
+			for (let depth = 3; depth >= 1; depth -= 1) {
+				const prevIdx = nextIndex - depth;
+				if (prevIdx >= 0 && prevIdx !== safeIndex) {
+					const cardMotion = motionOf(images[prevIdx], prevIdx);
+					const slot = getStackSlot("left", depth, width);
+					cardMotion.x.stop();
+					cardMotion.y.stop();
+					cardMotion.rotate.stop();
+					cardMotion.scale.stop();
+					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+					animate(cardMotion.rotate, slot.rotate, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+					animate(cardMotion.scale, slot.scale, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+				}
+				const nextIdx = nextIndex + depth;
+				if (nextIdx < images.length) {
+					const cardMotion = motionOf(images[nextIdx], nextIdx);
+					const slot = getStackSlot("right", depth, width);
+					cardMotion.x.stop();
+					cardMotion.y.stop();
+					cardMotion.rotate.stop();
+					cardMotion.scale.stop();
+					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+					animate(cardMotion.rotate, slot.rotate, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+					animate(cardMotion.scale, slot.scale, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+				}
+			}
+
 			window.clearTimeout(settleTimer.current);
 			settleTimer.current = window.setTimeout(() => {
 				onIndexChange(nextIndex);
@@ -122,7 +187,7 @@ export function PhotoStackStage({
 				settling.current = false;
 			}, INSERT_MS);
 		},
-		[images.length, onIndexChange, resetCards, resetTop, safeIndex, stackWidth],
+		[images, motionOf, onIndexChange, resetCards, resetTop, safeIndex, stackWidth],
 	);
 	const suppressClick = () => {
 		suppressClickUntil.current = Date.now() + 320;
