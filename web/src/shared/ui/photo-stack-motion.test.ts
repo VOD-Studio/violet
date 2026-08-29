@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	cardMotionKey,
 	getDirectionalZ,
+	getDragOffset,
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
@@ -14,6 +15,13 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDragProgress(20, 80)).toBe(0.25);
 		expect(getDragProgress(-200, 80)).toBe(1);
 		expect(getDragProgress(10, 0)).toBe(1);
+	});
+
+	it("顶图随拖动持续移动且平滑渐近卡宽", () => {
+		expect(getDragOffset(40, 200)).toBeCloseTo(32.63, 1);
+		expect(getDragOffset(100, 200)).toBeCloseTo(70.82, 1);
+		expect(getDragOffset(200, 200)).toBeCloseTo(113.78, 1);
+		expect(getDragOffset(400, 200)).toBeCloseTo(155.64, 1);
 	});
 
 

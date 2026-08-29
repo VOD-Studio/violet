@@ -6,6 +6,7 @@ import type { PhotoStackImage } from "./photo-stack";
 import { PhotoStackCards } from "./photo-stack-cards";
 import {
 	type DragSample,
+	getDragOffset,
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
@@ -152,9 +153,8 @@ export function PhotoStackStage({
 		const width = stackWidth || 280;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		const progress = getDragProgress(rawDelta, width * 0.85);
-		const maxTravel = width * 0.28;
 		const delta = canFlip
-			? Math.sign(rawDelta) * Math.min(Math.abs(rawDelta), maxTravel)
+			? getDragOffset(rawDelta, width)
 			: Math.sign(rawDelta) *
 				width *
 				0.08 *
