@@ -1,0 +1,59 @@
+import { type MotionValue, motion } from "motion/react";
+import type { MouseEventHandler } from "react";
+import type { PhotoStackImage } from "./photo-stack";
+
+export interface PhotoStackCardProps {
+	/** 媒体资源。 */
+	image: PhotoStackImage;
+	/** 卡片水平位移。 */
+	x: MotionValue<number>;
+	/** 卡片垂直位移。 */
+	y: MotionValue<number>;
+	/** 卡片旋转角度。 */
+	rotate: MotionValue<number>;
+	/** 卡片缩放比例。 */
+	scale: MotionValue<number>;
+	/** 堆叠层级。 */
+	zIndex: number;
+	/** 当前卡或左右后置卡。 */
+	state: "current" | "left" | "right";
+	/** 后置深度，顶卡为 0。 */
+	depth: number;
+	/** 仅顶卡提供点击回调，后置卡保持不可交互。 */
+	onClick?: MouseEventHandler<HTMLButtonElement>;
+}
+
+/** 堆叠中的单张媒体卡；自身不裁切，拖出由外层舞台自然呈现。 */
+export function PhotoStackCard({
+	image,
+	x,
+	y,
+	rotate,
+	scale,
+	zIndex,
+	state,
+	depth,
+	onClick,
+}: PhotoStackCardProps) {
+	return (
+		<motion.button
+			type="button"
+			className="absolute left-[4%] top-0 h-full w-[92%] rounded-lg border border-edge-hairline bg-background shadow-md"
+			style={{ x, y, rotate, scale, zIndex, transformOrigin: "50% 120%" }}
+			disabled={!onClick}
+			data-card-state={state}
+			data-card-depth={depth}
+			data-card-z={zIndex}
+			onClick={onClick}
+			aria-label={image.alt ?? `打开第 ${depth + 1} 张照片`}
+		>
+			<img
+				src={image.src}
+				alt={image.alt ?? ""}
+				loading={state === "current" ? "eager" : "lazy"}
+				draggable={false}
+				className="size-full rounded-lg object-cover"
+			/>
+		</motion.button>
+	);
+}
