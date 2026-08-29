@@ -15,8 +15,12 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDragProgress(-200, 80)).toBe(1);
 		expect(getDragProgress(10, 0)).toBe(1);
 	});
-
-
+	it("拖拽时目标侧深度 1 的卡片升至顶层以接纳当前卡插入", () => {
+		expect(getDirectionalZ("right", "right", 1)).toBe(100);
+		expect(getDirectionalZ("right", "right", 2)).toBe(68);
+		expect(getDirectionalZ("right", "left", 1)).toBe(29);
+		expect(getDirectionalZ(null, "right", 1)).toBe(29);
+	});
 
 	it("只把目标方向的后卡向前插槽联动", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };
@@ -27,10 +31,7 @@ describe("PhotoStack motion decisions", () => {
 			rotate: 1.5,
 			scale: 0.96,
 		});
-		expect(getDirectionalZ("right", "right", 1)).toBe(69);
-		expect(getDirectionalZ("right", "left", 1)).toBe(29);
 	});
-
 	it("后层槽位向上缩进，底边不超过顶卡", () => {
 		const slot = getStackSlot("right", 3, 280);
 		expect(slot.y).toBe(-24);

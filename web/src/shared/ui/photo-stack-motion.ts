@@ -27,12 +27,15 @@ export function interpolateSlot(from: PhotoStackSlot, to: PhotoStackSlot, progre
 	};
 }
 
-/** 目标方向后层压在非目标方向之上，但始终低于拖动中的顶卡。 */
+/** 拖拽时目标侧首张后卡置于最顶层，使被拖出的当前卡能够平滑插进其下方图层。 */
 export function getDirectionalZ(
 	direction: StackDirection | null,
 	axis: StackDirection,
 	depth: number,
 ) {
+	if (direction !== null && direction === axis && depth === 1) {
+		return 100;
+	}
 	const target = direction !== null && direction === axis;
 	return (target ? 70 : 30) - depth;
 }

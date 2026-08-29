@@ -84,7 +84,7 @@ export function PhotoStackCards({
 				rotate={currentMotion.rotate}
 				scale={currentMotion.scale}
 				opacity={currentMotion.opacity}
-				zIndex={100}
+				zIndex={dragDirection !== null ? 90 : 100}
 				state="current"
 				depth={0}
 				onClick={onCurrentClick}
