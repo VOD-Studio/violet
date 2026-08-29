@@ -42,7 +42,7 @@ export function PhotoStackCard({
 		<motion.button
 			type="button"
 			className="absolute left-[4%] top-0 h-full w-[92%] rounded-lg border border-edge-hairline bg-background shadow-md"
-			style={{ x, y, rotate, scale, opacity, zIndex, transformOrigin: "50% 0%" }}
+			style={{ x, y, rotate, scale, opacity, zIndex, transformOrigin: "50% 50%" }}
 			disabled={!onClick}
 			data-card-state={state}
 			data-card-depth={depth}
