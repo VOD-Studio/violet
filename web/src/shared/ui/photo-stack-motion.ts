@@ -123,14 +123,14 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：后层按透视关系缩小（深度 2 比顶层小约 20%），并保持自然微倾角与露边。 */
+/** 静止槽位：后层小约 10%（每层 5%），并保证向外露出约 10% 栈宽的清晰边缘，不被顶卡遮挡。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
-		x: sign * width * 0.038 * depth,
-		y: -6 * depth,
-		rotate: sign * 0.85 * depth,
-		scale: 1 - 0.11 * depth,
+		x: sign * width * 0.11 * depth,
+		y: -4 * depth,
+		rotate: sign * 0.75 * depth,
+		scale: 1 - 0.05 * depth,
 	};
 }
 
