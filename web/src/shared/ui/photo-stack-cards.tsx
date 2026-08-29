@@ -38,8 +38,8 @@ export interface PhotoStackCardsProps {
 	onCurrentClick: () => void;
 	/** 拖拽目标侧，用于覆盖层级。 */
 	dragDirection: "left" | "right" | null;
-	/** 拖拽进位进度，用于决定翻转层级时机。 */
-	dragProgress?: number;
+	/** 是否已达到或超过拉出阈值，用于决定顶卡与目标卡层级反转。 */
+	isPastThreshold?: boolean;
 }
 
 /** 舞台中的后置卡与顶卡，保持拖拽逻辑和媒体标记分离。 */
@@ -52,7 +52,7 @@ export function PhotoStackCards({
 	motionOf,
 	onCurrentClick,
 	dragDirection,
-	dragProgress = 0,
+	isPastThreshold = false,
 }: PhotoStackCardsProps) {
 	const currentMotion = motionOf(current, currentIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
 
@@ -73,7 +73,7 @@ export function PhotoStackCards({
 						rotate={value.rotate}
 						scale={value.scale}
 						opacity={value.opacity}
-						zIndex={getDirectionalZ(dragDirection, card.axis, card.depth, dragProgress)}
+						zIndex={getDirectionalZ(dragDirection, card.axis, card.depth, isPastThreshold)}
 						state={card.axis}
 						depth={card.depth}
 					/>
@@ -87,7 +87,7 @@ export function PhotoStackCards({
 				rotate={currentMotion.rotate}
 				scale={currentMotion.scale}
 				opacity={currentMotion.opacity}
-				zIndex={dragDirection !== null && dragProgress >= 1 ? 90 : 100}
+				zIndex={isPastThreshold ? 90 : 100}
 				state="current"
 				depth={0}
 				onClick={onCurrentClick}

@@ -9,6 +9,88 @@ export interface PhotoStackSlot {
 	scale: number;
 }
 
+export const PULL_THRESHOLD_RATIO = 0.32;
+export const INSERT_THRESHOLD_RATIO = 0.7;
+export const TILT_PER_PX = 0.08;
+export const TILT_MAX = 25;
+
+export interface DraggedTopSlotResult {
+	topSlot: PhotoStackSlot;
+	isPastThreshold: boolean;
+	pullProgress: number;
+	insertProgress: number;
+}
+
+/** 计算顶卡在两阶段拖拽下的槽位：前半程 1:1 跟手拉开，到达阈值后继续拖拽则平滑滑入后置槽位。 */
+export function getDraggedTopSlot(
+	rawDelta: number,
+	width: number,
+	canFlip: boolean,
+): DraggedTopSlotResult {
+	if (width <= 0) {
+		return {
+			topSlot: { x: 0, y: 0, rotate: 0, scale: 1 },
+			isPastThreshold: false,
+			pullProgress: 0,
+			insertProgress: 0,
+		};
+	}
+	if (!canFlip) {
+		const rubberX =
+			Math.sign(rawDelta) *
+			width *
+			0.08 *
+			(1 - Math.exp(-Math.abs(rawDelta) / (width * 0.08)));
+		return {
+			topSlot: {
+				x: rubberX,
+				y: 0,
+				rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, rubberX * TILT_PER_PX)),
+				scale: 1,
+			},
+			isPastThreshold: false,
+			pullProgress: 0,
+			insertProgress: 0,
+		};
+	}
+	const distance = Math.abs(rawDelta);
+	const pullThreshold = width * PULL_THRESHOLD_RATIO;
+	const insertThreshold = width * INSERT_THRESHOLD_RATIO;
+
+	if (distance <= pullThreshold) {
+		const pullProgress = distance / pullThreshold;
+		const x = Math.sign(rawDelta) * distance;
+		const rotate = Math.max(-TILT_MAX, Math.min(TILT_MAX, x * TILT_PER_PX));
+		return {
+			topSlot: { x, y: 0, rotate, scale: 1 },
+			isPastThreshold: false,
+			pullProgress,
+			insertProgress: 0,
+		};
+	}
+
+	const insertProgress = Math.min(
+		1,
+		(distance - pullThreshold) / Math.max(1, insertThreshold - pullThreshold),
+	);
+	const peakX = Math.sign(rawDelta) * pullThreshold;
+	const peakSlot: PhotoStackSlot = {
+		x: peakX,
+		y: 0,
+		rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, peakX * TILT_PER_PX)),
+		scale: 1,
+	};
+	const rearAxis: StackDirection = rawDelta < 0 ? "left" : "right";
+	const rearSlot = getStackSlot(rearAxis, 1, width);
+	const topSlot = interpolateSlot(peakSlot, rearSlot, insertProgress);
+
+	return {
+		topSlot,
+		isPastThreshold: true,
+		pullProgress: 1,
+		insertProgress,
+	};
+}
 /** 将拖动距离归一化到 0~1，超过阈值后保持目标槽位不再继续移动。 */
 export function getDragProgress(distance: number, threshold: number) {
 	if (threshold <= 0) return 1;
@@ -27,14 +109,14 @@ export function interpolateSlot(from: PhotoStackSlot, to: PhotoStackSlot, progre
 	};
 }
 
-/** 只有在拖拽超出翻页阈值（progress >= 1）时，目标侧首张后卡才升至最顶层（置顶）；未达阈值前当前卡始终保持最顶层。 */
+/** 拖拽超过拉出阈值（isPastThreshold 为 true）时，目标侧首张后卡才升至最顶层（置顶）；未达阈值前当前卡始终保持最顶层。 */
 export function getDirectionalZ(
 	direction: StackDirection | null,
 	axis: StackDirection,
 	depth: number,
-	progress = 0,
+	isPastThreshold = false,
 ) {
-	if (direction !== null && direction === axis && depth === 1 && progress >= 1) {
+	if (direction !== null && direction === axis && depth === 1 && isPastThreshold) {
 		return 100;
 	}
 	const target = direction !== null && direction === axis;

@@ -87,7 +87,7 @@ describe("PhotoStack", () => {
 		expect(incoming.getAttribute("data-card-state")).toBe("right");
 		fireEvent.pointerUp(stack, { clientX: 70, pointerId: 1 });
 		expect(stack.getAttribute("data-current-index")).toBe("0");
-		act(() => vi.advanceTimersByTime(200));
+		act(() => vi.advanceTimersByTime(220));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
 			"current",
@@ -100,43 +100,35 @@ describe("PhotoStack", () => {
 		expect(screen.getByRole("group")).toBeTruthy();
 	});
 
-	it("未超阈值当前卡始终在顶层，只有超出阈值时目标卡才置顶", () => {
+	it("两阶段拖拽：未超阈值当前卡 1:1 跟手置顶，超阈值后继续拖动平滑插回后置槽位且目标卡置顶", () => {
+		vi.useFakeTimers();
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
 		const current = screen.getByRole("button", { name: "第一张" });
 		const incoming = screen.getByRole("button", { name: "第二张" });
-		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
-		// 拖动 30px (未超阈值 39.2px, progress = 30 / 39.2 = 0.765 < 1)
-		fireEvent.pointerMove(stack, { clientX: 170, pointerId: 1 });
+
+		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
+
+		// 1. 小拉出 (40px < 89.6px) -> 1:1 跟手，当前卡在顶层 (100)，后卡在底层 (69)
+		fireEvent.pointerMove(stack, { clientX: 260, pointerId: 1 });
 		expect(Number(current.getAttribute("data-card-z"))).toBe(100);
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(69);
-		// 拖动 60px (超出阈值 39.2px, progress = 1 >= 1)
-		fireEvent.pointerMove(stack, { clientX: 140, pointerId: 1 });
+		expect(Number(stack.getAttribute("data-current-offset"))).toBe(-40);
+
+		// 2. 超出阈值继续向左拉 (142.8px) -> 目标卡置顶 (100)，当前卡钻入底层 (90) 并平滑向左槽位 (-15.4px) 插回
+		fireEvent.pointerMove(stack, { clientX: 157.2, pointerId: 1 });
 		expect(Number(current.getAttribute("data-card-z"))).toBe(90);
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(100);
-		fireEvent.pointerCancel(stack, { pointerId: 1 });
-	});
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-52.5, 1);
 
-	it("拖动时顶图自由跟手，松手后平滑插入后置槽位", () => {
-		vi.useFakeTimers();
-		render(<PhotoStack {...stackProps()} />);
-		const stack = screen.getByRole("group");
-		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
+		// 3. 充分拖动 (200px >= 196px) -> 完全进入左侧后置槽位 (-15.4px)
 		fireEvent.pointerMove(stack, { clientX: 100, pointerId: 1 });
-		// 拖动 200px (向左)，顶图自由跟手 -200px
-		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-200, 1);
-		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
-		expect(stack.getAttribute("data-current-index")).toBe("0");
-		act(() => vi.advanceTimersByTime(200));
-		expect(stack.getAttribute("data-current-index")).toBe("1");
-	});
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-15.4, 1);
 
-	it("相邻卡从原后置槽位连续插入，不从屏外跳入", () => {
-		render(<PhotoStack {...stackProps()} />);
-		const stack = screen.getByRole("group");
-		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
-		fireEvent.pointerMove(stack, { clientX: 190, pointerId: 1 });
-		expect(Number(stack.getAttribute("data-incoming-progress"))).toBeCloseTo(10 / (280 * 0.14));
+		// 4. 松手 -> 结算为第 2 张
+		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
+		act(() => vi.advanceTimersByTime(220));
+		expect(stack.getAttribute("data-current-index")).toBe("1");
 	});
 
 });

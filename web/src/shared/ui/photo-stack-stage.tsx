@@ -7,9 +7,10 @@ import type { PhotoStackImage } from "./photo-stack";
 import { type PhotoStackCardMotion, PhotoStackCards } from "./photo-stack-cards";
 import {
 	type DragSample,
-	getDragProgress,
+	getDraggedTopSlot,
 	getStackSlot,
 	interpolateSlot,
+	PULL_THRESHOLD_RATIO,
 	recentVelocity,
 	recordSample,
 	type StackDirection,
@@ -25,12 +26,7 @@ export interface PhotoStackStageProps {
 	onIndexChange: (index: number) => void;
 	onImageOpen?: (index: number) => void;
 }
-
-const FLIP_RATIO = 0.14;
-const TILT_PER_PX = 0.08;
-const TILT_MAX = 25;
-const DRAG_LIMIT_RATIO = 0.75;
-const INSERT_MS = 200;
+const INSERT_MS = 220;
 /** 有限 PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
 export function PhotoStackStage({
 	images,
@@ -61,6 +57,7 @@ export function PhotoStackStage({
 	const [dragDirection, setDragDirection] = useState<StackDirection | null>(null);
 	const [currentOffset, setCurrentOffset] = useState(0);
 	const [incomingProgress, setIncomingProgress] = useState(0);
+	const [isPastThreshold, setIsPastThreshold] = useState(false);
 	const layoutPrefix = useId();
 
 	useEffect(() => {
@@ -121,6 +118,7 @@ export function PhotoStackStage({
 				setDragDirection(null);
 				setCurrentOffset(0);
 				setIncomingProgress(0);
+				setIsPastThreshold(false);
 				settling.current = false;
 			}, INSERT_MS);
 		},
@@ -139,9 +137,9 @@ export function PhotoStackStage({
 		pointerStartX.current = event.clientX;
 		dragDelta.current = 0;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
-		setDragDirection(null);
 		setCurrentOffset(0);
 		setIncomingProgress(0);
+		setIsPastThreshold(false);
 		setDragging(true);
 		try {
 			stackRef.current?.setPointerCapture(event.pointerId);
@@ -181,32 +179,22 @@ export function PhotoStackStage({
 			(rawDelta < 0 && safeIndex < images.length - 1) || (rawDelta > 0 && safeIndex > 0);
 		const width = stackWidth || 280;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
-		const progress = getDragProgress(rawDelta, width * FLIP_RATIO);
-		const limitedDelta = Math.max(
-			-width * DRAG_LIMIT_RATIO,
-			Math.min(width * DRAG_LIMIT_RATIO, rawDelta),
+		const { topSlot, isPastThreshold: past, pullProgress } = getDraggedTopSlot(
+			rawDelta,
+			width,
+			canFlip,
 		);
-		const delta = canFlip
-			? limitedDelta
-			: Math.sign(rawDelta) *
-				width *
-				0.08 *
-				(1 - Math.exp(-Math.abs(rawDelta) / (width * 0.08)));
-		setCurrentOffset(delta);
-		setIncomingProgress(canFlip ? progress : 0);
+		setCurrentOffset(topSlot.x);
+		setIncomingProgress(canFlip ? pullProgress : 0);
+		setIsPastThreshold(canFlip && past);
 		setDragDirection(direction);
-		setStackSlot(value, {
-			x: delta,
-			y: 0,
-			rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, delta * TILT_PER_PX)),
-			scale: 1,
-		});
+		setStackSlot(value, topSlot);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
 			const from = getStackSlot(card.axis, card.depth, width);
 			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), width);
-			const slot = card.axis === direction ? interpolateSlot(from, to, progress) : from;
+			const slot = card.axis === direction ? interpolateSlot(from, to, pullProgress) : from;
 			setStackSlot(cardValue, slot);
 		});
 	};
@@ -223,13 +211,10 @@ export function PhotoStackStage({
 		const canFlip =
 			(direction === 1 && safeIndex < images.length - 1) ||
 			(direction === -1 && safeIndex > 0);
+		const flipThreshold = (stackWidth || 280) * PULL_THRESHOLD_RATIO;
 		if (
-			shouldFlip(
-				delta,
-				recentVelocity(dragSamples.current),
-				(stackWidth || 280) * FLIP_RATIO,
-				canFlip,
-			)
+			isPastThreshold ||
+			shouldFlip(delta, recentVelocity(dragSamples.current), flipThreshold, canFlip)
 		) {
 			insertToSlot(direction, value);
 		} else {
@@ -237,6 +222,7 @@ export function PhotoStackStage({
 			resetCards();
 			setCurrentOffset(0);
 			setIncomingProgress(0);
+			setIsPastThreshold(false);
 		}
 		if (!settling.current) setDragDirection(null);
 		try {
@@ -254,6 +240,7 @@ export function PhotoStackStage({
 		setDragDirection(null);
 		setCurrentOffset(0);
 		setIncomingProgress(0);
+		setIsPastThreshold(false);
 		suppressClick();
 		resetTop();
 		resetCards();
@@ -307,7 +294,7 @@ export function PhotoStackStage({
 					if (Date.now() >= suppressClickUntil.current) onImageOpen?.(safeIndex);
 				}}
 				dragDirection={dragDirection}
-				dragProgress={incomingProgress}
+				isPastThreshold={isPastThreshold}
 			/>
 			<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
 				<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
