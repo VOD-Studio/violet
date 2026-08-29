@@ -18,7 +18,6 @@ export interface UsePhotoStackSlotsOptions {
 /** 管理有限堆叠的卡片 MotionValue、可见槽位和回弹动作。 */
 export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoStackSlotsOptions) {
 	const cardMotions = useRef(new Map<string, PhotoStackCardMotion>());
-	const skipKeys = useRef(new Set<string>());
 	const motionOf = useCallback(
 		(image: PhotoStackImage, index: number, init?: PhotoStackSlot): PhotoStackCardMotion => {
 			const key = cardMotionKey(image.src, index);
@@ -58,7 +57,6 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 
 	const animateCard = useCallback(
 		(card: PhotoStackVisibleCard, immediate = false) => {
-			if (skipKeys.current.has(cardMotionKey(card.image.src, card.index))) return;
 			const value = motionOf(
 				card.image,
 				card.index,
@@ -94,7 +92,6 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 		});
 		const top = images[safeIndex];
 		if (top) {
-			if (skipKeys.current.has(cardMotionKey(top.src, safeIndex))) return;
 			const value = motionOf(top, safeIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
 			value.x.stop();
 			value.y.stop();
@@ -112,7 +109,6 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 	const resetTop = useCallback(() => {
 		const top = images[safeIndex];
 		if (!top) return;
-		if (skipKeys.current.has(cardMotionKey(top.src, safeIndex))) return;
 		const value = motionOf(top, safeIndex);
 		animate(value.x, 0, SLOT_SPRING);
 		animate(value.y, 0, SLOT_SPRING);
@@ -126,11 +122,6 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 		});
 	}, [animateCard, visibleCards]);
 
-	const setFlinging = useCallback((image: PhotoStackImage, index: number, active: boolean) => {
-		const key = cardMotionKey(image.src, index);
-		if (active) skipKeys.current.add(key);
-		else skipKeys.current.delete(key);
-	}, []);
 
-	return { animateCard, motionOf, resetTop, resetCards, setFlinging, visibleCards };
+	return { animateCard, motionOf, resetTop, resetCards, visibleCards };
 }

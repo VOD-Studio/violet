@@ -76,21 +76,20 @@ describe("PhotoStack", () => {
 		expect(stack.getAttribute("data-current-index")).toBe("0");
 	});
 
-	it("拖过阈值后先甩出并淡出，再更新索引与原位淡入", () => {
+	it("拖过阈值后相邻卡插入顶层并立即提交索引", () => {
 		vi.useFakeTimers();
 		const onImageOpen = vi.fn();
 		render(<PhotoStack {...stackProps(onImageOpen)} />);
 		const stack = screen.getByRole("group");
-		const firstCard = screen.getByRole("button", { name: "第一张" });
+		const incoming = screen.getByRole("button", { name: "第二张" });
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
 		fireEvent.pointerMove(stack, { clientX: 70, pointerId: 1 });
+		expect(incoming.getAttribute("data-card-state")).toBe("right");
 		fireEvent.pointerUp(stack, { clientX: 70, pointerId: 1 });
-		expect(stack.getAttribute("data-current-index")).toBe("0");
-		expect(firstCard).toBeTruthy();
-		act(() => vi.advanceTimersByTime(199));
-		expect(stack.getAttribute("data-current-index")).toBe("0");
-		act(() => vi.advanceTimersByTime(1));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
+		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
+			"current",
+		);
 
 		fireEvent.click(screen.getByRole("button", { name: /展开全部照片，共 4 张/ }));
 		expect(screen.getByRole("button", { name: "收起为堆叠" })).toBeTruthy();
