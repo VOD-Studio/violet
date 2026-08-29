@@ -123,11 +123,11 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：根据微信真机原图像素实测量化（深度 1/2 分别小 10.4%/20.4%、顶低 7.0%/13.5%、底高 3.5%/7.0%、微倾 0.45°/0.9°、露边 5.2%/10.4%）。 */
+/** 静止槽位：根据微信原图实测量化，水平平移量（0.125w）充分补偿 10.4% 的缩放向内缩进，使右侧呈现清晰可见的 ~13.3px 露边带。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
-		x: sign * width * 0.052 * depth,
+		x: sign * width * 0.125 * depth,
 		y: 4 * depth,
 		rotate: sign * 0.45 * depth,
 		scale: 1 - 0.104 * depth,
