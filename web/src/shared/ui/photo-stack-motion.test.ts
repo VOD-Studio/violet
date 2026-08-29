@@ -31,30 +31,32 @@ describe("PhotoStack motion decisions", () => {
 		expect(pull.topSlot.y).toBe(0);
 		expect(pull.isPastThreshold).toBe(false);
 		expect(pull.pullProgress).toBeCloseTo(100 / 160, 2);
+		expect(pull.topSlot.scale).toBeCloseTo(0.969, 2);
 		expect(pull.insertProgress).toBe(0);
 
 		// 2. 刚好拉出至只剩 1/5 (160px = 80% 栈宽)
 		const peak = getDraggedTopSlot(-160, width, true);
 		expect(peak.topSlot.x).toBe(-160);
 		expect(peak.topSlot.y).toBe(0);
+		expect(peak.topSlot.scale).toBeCloseTo(0.95, 2);
 		expect(peak.isPastThreshold).toBe(false);
 
-		// 3. 继续向左拖动 (200px) -> 正在向左后槽位 (-7px, -4px) 滑入
+		// 3. 继续向左拖动 (200px) -> 正在向左后槽位 (-7.6px, -6px) 滑入
 		const inserting = getDraggedTopSlot(-200, width, true);
 		expect(inserting.isPastThreshold).toBe(true);
 		expect(inserting.insertProgress).toBeCloseTo(0.5, 1);
-		expect(inserting.topSlot.x).toBeCloseTo(-83.5, 1);
-		expect(inserting.topSlot.y).toBeCloseTo(-2, 1);
-		expect(inserting.topSlot.scale).toBeCloseTo(0.9875, 2);
+		expect(inserting.topSlot.x).toBeCloseTo(-83.8, 1);
+		expect(inserting.topSlot.y).toBeCloseTo(-3, 1);
+		expect(inserting.topSlot.scale).toBeCloseTo(0.92, 2);
 
 		// 4. 充分拖动 (240px = 120% 栈宽) -> 完全进入左侧后置槽位
 		const inserted = getDraggedTopSlot(-240, width, true);
 		expect(inserted.isPastThreshold).toBe(true);
 		expect(inserted.insertProgress).toBe(1);
-		expect(inserted.topSlot.x).toBeCloseTo(-7, 1);
-		expect(inserted.topSlot.y).toBe(-4);
-		expect(inserted.topSlot.scale).toBe(0.975);
-		expect(inserted.topSlot.rotate).toBe(-0.75);
+		expect(inserted.topSlot.x).toBeCloseTo(-7.6, 1);
+		expect(inserted.topSlot.y).toBe(-6);
+		expect(inserted.topSlot.scale).toBeCloseTo(0.89, 2);
+		expect(inserted.topSlot.rotate).toBeCloseTo(-0.85, 2);
 	});
 
 	it("只把目标方向的后卡向前插槽联动", () => {
@@ -68,11 +70,11 @@ describe("PhotoStack motion decisions", () => {
 		});
 	});
 
-	it("后层槽位向上缩进，底边不超过顶卡", () => {
-		const slot = getStackSlot("right", 3, 280);
+	it("后层槽位按透视比例缩小，呈现强烈纵深感", () => {
+		const slot = getStackSlot("right", 2, 280);
 		expect(slot.y).toBe(-12);
-		expect(slot.scale).toBe(0.925);
-		expect(slot.rotate).toBe(2.25);
+		expect(slot.scale).toBeCloseTo(0.78, 2);
+		expect(slot.rotate).toBeCloseTo(1.7, 1);
 	});
 
 	it("卡片身份不随顶卡与后置卡角色改变", () => {

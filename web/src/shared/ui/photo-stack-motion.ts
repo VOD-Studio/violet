@@ -61,8 +61,9 @@ export function getDraggedTopSlot(
 		const pullProgress = distance / pullThreshold;
 		const x = Math.sign(rawDelta) * distance;
 		const rotate = Math.max(-TILT_MAX, Math.min(TILT_MAX, x * TILT_PER_PX));
+		const scale = 1 - 0.05 * pullProgress;
 		return {
-			topSlot: { x, y: 0, rotate, scale: 1 },
+			topSlot: { x, y: 0, rotate, scale },
 			isPastThreshold: false,
 			pullProgress,
 			insertProgress: 0,
@@ -78,12 +79,11 @@ export function getDraggedTopSlot(
 		x: peakX,
 		y: 0,
 		rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, peakX * TILT_PER_PX)),
-		scale: 1,
+		scale: 0.95,
 	};
 	const rearAxis: StackDirection = rawDelta < 0 ? "left" : "right";
 	const rearSlot = getStackSlot(rearAxis, 1, width);
 	const topSlot = interpolateSlot(peakSlot, rearSlot, insertProgress);
-
 	return {
 		topSlot,
 		isPastThreshold: true,
@@ -123,14 +123,14 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：后层向上收进，保持克制紧凑的露边与微倾角。 */
+/** 静止槽位：后层按透视关系缩小（深度 2 比顶层小约 20%），并保持自然微倾角与露边。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
-		x: sign * width * 0.035 * depth,
-		y: -4 * depth,
-		rotate: sign * 0.75 * depth,
-		scale: 1 - 0.025 * depth,
+		x: sign * width * 0.038 * depth,
+		y: -6 * depth,
+		rotate: sign * 0.85 * depth,
+		scale: 1 - 0.11 * depth,
 	};
 }
 
