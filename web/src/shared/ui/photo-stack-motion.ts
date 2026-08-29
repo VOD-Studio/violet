@@ -123,14 +123,14 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：对齐微信原版，中心等比缩小（上下对称内收双阶梯圆角），右侧垂直平行等宽露出。 */
+/** 静止槽位：对齐微信原版，向右上角纯等距对角线阶梯平移（右上抬升 + 右侧展开），顶部/底部/右侧均呈现等距三阶。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
-		x: sign * width * 0.1 * depth,
-		y: 0,
+		x: sign * width * 0.08 * depth,
+		y: -14 * depth,
 		rotate: 0,
-		scale: 1 - 0.13 * depth,
+		scale: 1 - 0.015 * depth,
 	};
 }
 
