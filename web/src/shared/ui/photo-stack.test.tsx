@@ -76,7 +76,7 @@ describe("PhotoStack", () => {
 		expect(stack.getAttribute("data-current-index")).toBe("0");
 	});
 
-	it("拖过阈值后相邻卡插入顶层并立即提交索引", () => {
+	it("拖过阈值后旧卡平滑插入后置槽位并提交索引", () => {
 		vi.useFakeTimers();
 		const onImageOpen = vi.fn();
 		render(<PhotoStack {...stackProps(onImageOpen)} />);
@@ -86,6 +86,8 @@ describe("PhotoStack", () => {
 		fireEvent.pointerMove(stack, { clientX: 70, pointerId: 1 });
 		expect(incoming.getAttribute("data-card-state")).toBe("right");
 		fireEvent.pointerUp(stack, { clientX: 70, pointerId: 1 });
+		expect(stack.getAttribute("data-current-index")).toBe("0");
+		act(() => vi.advanceTimersByTime(200));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
 			"current",
@@ -115,14 +117,17 @@ describe("PhotoStack", () => {
 		act(() => vi.runAllTimers());
 	});
 
-	it("继续拖动完成预览时仍等待真实松手提交", () => {
+	it("拖动时顶图自由跟手，松手后平滑插入后置槽位", () => {
+		vi.useFakeTimers();
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
 		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
-		fireEvent.pointerMove(stack, { clientX: -100, pointerId: 1 });
+		fireEvent.pointerMove(stack, { clientX: 100, pointerId: 1 });
+		// 拖动 200px (向左)，顶图自由跟手 -200px
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-200, 1);
+		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
 		expect(stack.getAttribute("data-current-index")).toBe("0");
-		expect(stack.getAttribute("data-incoming-progress")).toBe("1");
-		fireEvent.pointerUp(stack, { clientX: -100, pointerId: 1 });
+		act(() => vi.advanceTimersByTime(200));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 	});
 
@@ -131,7 +136,7 @@ describe("PhotoStack", () => {
 		const stack = screen.getByRole("group");
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
 		fireEvent.pointerMove(stack, { clientX: 190, pointerId: 1 });
-		expect(Number(stack.getAttribute("data-incoming-progress"))).toBeCloseTo(10 / 238);
+		expect(Number(stack.getAttribute("data-incoming-progress"))).toBeCloseTo(10 / (280 * 0.14));
 	});
 
 });

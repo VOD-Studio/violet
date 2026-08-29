@@ -1,12 +1,12 @@
 import { cn } from "@shared/lib/utils";
 import { GripHorizontal } from "lucide-react";
+import { animate } from "motion/react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { PhotoStackImage } from "./photo-stack";
-import { PhotoStackCards } from "./photo-stack-cards";
+import { type PhotoStackCardMotion, PhotoStackCards } from "./photo-stack-cards";
 import {
 	type DragSample,
-	getDragOffset,
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
@@ -29,7 +29,8 @@ export interface PhotoStackStageProps {
 const FLIP_RATIO = 0.14;
 const TILT_PER_PX = 0.08;
 const TILT_MAX = 25;
-
+const DRAG_LIMIT_RATIO = 0.75;
+const INSERT_MS = 200;
 /** 有限 PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
 export function PhotoStackStage({
 	images,
@@ -51,6 +52,8 @@ export function PhotoStackStage({
 	const pointerStartX = useRef<number | null>(null);
 	const suppressClickUntil = useRef(0);
 	const suppressClickTimer = useRef(0);
+	const settling = useRef(false);
+	const settleTimer = useRef(0);
 	const dragSamples = useRef<DragSample[]>([]);
 	const dragDelta = useRef(0);
 	const [stackWidth, setStackWidth] = useState(0);
@@ -79,24 +82,50 @@ export function PhotoStackStage({
 
 	useEffect(
 		() => () => {
+			window.clearTimeout(settleTimer.current);
 			window.clearTimeout(suppressClickTimer.current);
 		},
 		[],
 	);
 
-	const insert = (direction: -1 | 1) => {
-		const nextIndex = safeIndex + direction;
-		if (nextIndex < 0 || nextIndex >= images.length) {
-			resetTop();
-			resetCards();
-			return;
-		}
-		onIndexChange(nextIndex);
-		setDragDirection(null);
-		setCurrentOffset(0);
-		setIncomingProgress(0);
-	};
-
+	const insertToSlot = useCallback(
+		(direction: -1 | 1, value: PhotoStackCardMotion) => {
+			const nextIndex = safeIndex + direction;
+			if (settling.current) return;
+			if (nextIndex < 0 || nextIndex >= images.length) {
+				resetTop();
+				resetCards();
+				return;
+			}
+			const width = stackWidth || 280;
+			const rearSide: StackDirection = direction === 1 ? "left" : "right";
+			const targetSlot = getStackSlot(rearSide, 1, width);
+			settling.current = true;
+			value.x.stop();
+			value.y.stop();
+			value.rotate.stop();
+			value.scale.stop();
+			animate(value.x, targetSlot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+			animate(value.y, targetSlot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+			animate(value.rotate, targetSlot.rotate, {
+				duration: INSERT_MS / 1000,
+				ease: "easeOut" as const,
+			});
+			animate(value.scale, targetSlot.scale, {
+				duration: INSERT_MS / 1000,
+				ease: "easeOut" as const,
+			});
+			window.clearTimeout(settleTimer.current);
+			settleTimer.current = window.setTimeout(() => {
+				onIndexChange(nextIndex);
+				setDragDirection(null);
+				setCurrentOffset(0);
+				setIncomingProgress(0);
+				settling.current = false;
+			}, INSERT_MS);
+		},
+		[images.length, onIndexChange, resetCards, resetTop, safeIndex, stackWidth],
+	);
 	const suppressClick = () => {
 		suppressClickUntil.current = Date.now() + 320;
 		window.clearTimeout(suppressClickTimer.current);
@@ -106,7 +135,7 @@ export function PhotoStackStage({
 	};
 
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-		if (event.button !== 0) return;
+		if (event.button !== 0 || settling.current) return;
 		pointerStartX.current = event.clientX;
 		dragDelta.current = 0;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
@@ -139,7 +168,7 @@ export function PhotoStackStage({
 	};
 
 	const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-		if (pointerStartX.current === null) return;
+		if (pointerStartX.current === null || settling.current) return;
 		const top = images[safeIndex];
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
@@ -152,9 +181,13 @@ export function PhotoStackStage({
 			(rawDelta < 0 && safeIndex < images.length - 1) || (rawDelta > 0 && safeIndex > 0);
 		const width = stackWidth || 280;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
-		const progress = getDragProgress(rawDelta, width * 0.85);
+		const progress = getDragProgress(rawDelta, width * FLIP_RATIO);
+		const limitedDelta = Math.max(
+			-width * DRAG_LIMIT_RATIO,
+			Math.min(width * DRAG_LIMIT_RATIO, rawDelta),
+		);
 		const delta = canFlip
-			? getDragOffset(rawDelta, width)
+			? limitedDelta
 			: Math.sign(rawDelta) *
 				width *
 				0.08 *
@@ -184,7 +217,8 @@ export function PhotoStackStage({
 		setDragging(false);
 		const top = images[safeIndex];
 		if (!top) return;
-		const delta = dragDelta.current;
+		const value = motionOf(top, safeIndex);
+		const delta = value.x.get();
 		const direction: -1 | 1 = delta < 0 ? 1 : -1;
 		const canFlip =
 			(direction === 1 && safeIndex < images.length - 1) ||
@@ -197,14 +231,14 @@ export function PhotoStackStage({
 				canFlip,
 			)
 		) {
-			insert(direction);
+			insertToSlot(direction, value);
 		} else {
 			resetTop();
 			resetCards();
+			setCurrentOffset(0);
+			setIncomingProgress(0);
 		}
-		setCurrentOffset(0);
-		setIncomingProgress(0);
-		setDragDirection(null);
+		if (!settling.current) setDragDirection(null);
 		try {
 			if (stackRef.current?.hasPointerCapture(event.pointerId))
 				stackRef.current.releasePointerCapture(event.pointerId);
@@ -247,11 +281,13 @@ export function PhotoStackStage({
 			onKeyDown={(event) => {
 				if (event.key === "ArrowLeft" && safeIndex > 0) {
 					event.preventDefault();
-					insert(-1);
+					const top = images[safeIndex];
+					if (top) insertToSlot(-1, motionOf(top, safeIndex));
 				}
 				if (event.key === "ArrowRight" && safeIndex < images.length - 1) {
 					event.preventDefault();
-					insert(1);
+					const top = images[safeIndex];
+					if (top) insertToSlot(1, motionOf(top, safeIndex));
 				}
 			}}
 			onPointerDown={onPointerDown}
