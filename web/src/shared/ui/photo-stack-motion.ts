@@ -123,14 +123,14 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：后层向上收进，避免旋转角与底缘越过顶卡。 */
+/** 静止槽位：后层向上收进，保持克制紧凑的露边与微倾角。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
-		x: sign * width * 0.055 * depth,
-		y: -8 * depth,
-		rotate: sign * 1.5 * depth,
-		scale: 1 - 0.04 * depth,
+		x: sign * width * 0.035 * depth,
+		y: -4 * depth,
+		rotate: sign * 0.75 * depth,
+		scale: 1 - 0.025 * depth,
 	};
 }
 

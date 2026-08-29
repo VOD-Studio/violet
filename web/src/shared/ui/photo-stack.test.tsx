@@ -115,16 +115,15 @@ describe("PhotoStack", () => {
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(69);
 		expect(Number(stack.getAttribute("data-current-offset"))).toBe(-120);
 
-		// 2. 超出 4/5 阈值继续向左拉 (280px > 224px) -> 目标卡置顶 (100)，当前卡钻入底层 (90) 并平滑向左槽位 (-15.4px) 插回
+		// 2. 超出 4/5 阈值继续向左拉 (280px > 224px) -> 目标卡置顶 (100)，当前卡钻入底层 (90) 并平滑向左槽位 (-9.8px) 插回
 		fireEvent.pointerMove(stack, { clientX: 20, pointerId: 1 });
 		expect(Number(current.getAttribute("data-card-z"))).toBe(90);
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(100);
-		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-119.7, 1);
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-116.9, 1);
 
-		// 3. 充分拖动 (336px = 280*1.2) -> 完全进入左侧后置槽位 (-15.4px)
+		// 3. 充分拖动 (336px = 280*1.2) -> 完全进入左侧后置槽位 (-9.8px)
 		fireEvent.pointerMove(stack, { clientX: -36, pointerId: 1 });
-		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-15.4, 1);
-
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-9.8, 1);
 		// 4. 松手 -> 结算为第 2 张
 		fireEvent.pointerUp(stack, { clientX: -36, pointerId: 1 });
 		act(() => vi.advanceTimersByTime(220));
