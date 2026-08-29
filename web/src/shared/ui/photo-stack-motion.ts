@@ -9,8 +9,8 @@ export interface PhotoStackSlot {
 	scale: number;
 }
 
-export const PULL_THRESHOLD_RATIO = 0.32;
-export const INSERT_THRESHOLD_RATIO = 0.7;
+export const PULL_THRESHOLD_RATIO = 0.8;
+export const INSERT_THRESHOLD_RATIO = 1.2;
 export const TILT_PER_PX = 0.08;
 export const TILT_MAX = 25;
 

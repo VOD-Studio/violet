@@ -23,33 +23,32 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDirectionalZ(null, "right", 1, false)).toBe(29);
 	});
 
-	it("两阶段拖拽：前半程 1:1 拉出且不置顶，过阈值后平滑插回后置槽位并置顶", () => {
+	it("两阶段拖拽：拉出至 80%（剩 1/5）前 1:1 跟手置顶，过阈值后继续拖动平滑插回后置槽位并置顶", () => {
 		const width = 200;
-		// 1. 小拉出 (30px <= 64px) -> 1:1 跟手，未超阈值
-		const pull = getDraggedTopSlot(-30, width, true);
-		expect(pull.topSlot.x).toBe(-30);
+		// 1. 大行程拉出 (100px <= 160px) -> 1:1 跟手，未达 4/5 (剩 1/5) 阈值
+		const pull = getDraggedTopSlot(-100, width, true);
+		expect(pull.topSlot.x).toBe(-100);
 		expect(pull.topSlot.y).toBe(0);
-		expect(pull.topSlot.rotate).toBeCloseTo(-2.4, 1);
 		expect(pull.isPastThreshold).toBe(false);
-		expect(pull.pullProgress).toBeCloseTo(30 / 64, 2);
+		expect(pull.pullProgress).toBeCloseTo(100 / 160, 2);
 		expect(pull.insertProgress).toBe(0);
 
-		// 2. 刚好达拉出阈值 (64px)
-		const peak = getDraggedTopSlot(-64, width, true);
-		expect(peak.topSlot.x).toBe(-64);
+		// 2. 刚好拉出至只剩 1/5 (160px = 80% 栈宽)
+		const peak = getDraggedTopSlot(-160, width, true);
+		expect(peak.topSlot.x).toBe(-160);
 		expect(peak.topSlot.y).toBe(0);
 		expect(peak.isPastThreshold).toBe(false);
 
-		// 3. 继续向左拖动 (102px，过半插入) -> 正在向左后槽位 (-11px, -8px) 滑入
-		const inserting = getDraggedTopSlot(-102, width, true);
+		// 3. 继续向左拖动 (200px) -> 正在向左后槽位 (-11px, -8px) 滑入
+		const inserting = getDraggedTopSlot(-200, width, true);
 		expect(inserting.isPastThreshold).toBe(true);
 		expect(inserting.insertProgress).toBeCloseTo(0.5, 1);
-		expect(inserting.topSlot.x).toBeCloseTo(-37.5, 1);
+		expect(inserting.topSlot.x).toBeCloseTo(-85.5, 1);
 		expect(inserting.topSlot.y).toBeCloseTo(-4, 1);
 		expect(inserting.topSlot.scale).toBeCloseTo(0.98, 2);
 
-		// 4. 充分拖动 (140px) -> 完全进入左侧后置槽位
-		const inserted = getDraggedTopSlot(-140, width, true);
+		// 4. 充分拖动 (240px = 120% 栈宽) -> 完全进入左侧后置槽位
+		const inserted = getDraggedTopSlot(-240, width, true);
 		expect(inserted.isPastThreshold).toBe(true);
 		expect(inserted.insertProgress).toBe(1);
 		expect(inserted.topSlot.x).toBeCloseTo(-11, 1);

@@ -27,8 +27,8 @@ describe("PhotoStack", () => {
 		expect(stack.querySelectorAll('[data-card-state="left"]').length).toBe(0);
 
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
-		fireEvent.pointerMove(stack, { clientX: 100, pointerId: 1 });
-		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
+		fireEvent.pointerMove(stack, { clientX: -30, pointerId: 1 });
+		fireEvent.pointerUp(stack, { clientX: -30, pointerId: 1 });
 		act(() => vi.runAllTimers());
 		expect(stack.getAttribute("data-stack-state")).toBe("middle");
 		expect(stack.querySelectorAll('[data-card-state="left"]').length).toBe(1);
@@ -46,12 +46,12 @@ describe("PhotoStack", () => {
 		fireEvent.pointerCancel(stack, { pointerId: 9 });
 
 		fireEvent.pointerDown(stack, { button: 0, clientX: 100, pointerId: 2 });
-		fireEvent.pointerMove(stack, { clientX: 0, pointerId: 2 });
-		fireEvent.pointerUp(stack, { clientX: 0, pointerId: 2 });
+		fireEvent.pointerMove(stack, { clientX: -140, pointerId: 2 });
+		fireEvent.pointerUp(stack, { clientX: -140, pointerId: 2 });
 		act(() => vi.runAllTimers());
 		fireEvent.pointerDown(stack, { button: 0, clientX: 100, pointerId: 3 });
-		fireEvent.pointerMove(stack, { clientX: 0, pointerId: 3 });
-		fireEvent.pointerUp(stack, { clientX: 0, pointerId: 3 });
+		fireEvent.pointerMove(stack, { clientX: -140, pointerId: 3 });
+		fireEvent.pointerUp(stack, { clientX: -140, pointerId: 3 });
 		act(() => vi.runAllTimers());
 		expect(stack.getAttribute("data-stack-state")).toBe("last");
 		expect(stack.querySelectorAll('[data-card-state="left"]').length).toBe(3);
@@ -83,9 +83,9 @@ describe("PhotoStack", () => {
 		const stack = screen.getByRole("group");
 		const incoming = screen.getByRole("button", { name: "第二张" });
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
-		fireEvent.pointerMove(stack, { clientX: 70, pointerId: 1 });
+		fireEvent.pointerMove(stack, { clientX: -30, pointerId: 1 });
 		expect(incoming.getAttribute("data-card-state")).toBe("right");
-		fireEvent.pointerUp(stack, { clientX: 70, pointerId: 1 });
+		fireEvent.pointerUp(stack, { clientX: -30, pointerId: 1 });
 		expect(stack.getAttribute("data-current-index")).toBe("0");
 		act(() => vi.advanceTimersByTime(220));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
@@ -100,7 +100,7 @@ describe("PhotoStack", () => {
 		expect(screen.getByRole("group")).toBeTruthy();
 	});
 
-	it("两阶段拖拽：未超阈值当前卡 1:1 跟手置顶，超阈值后继续拖动平滑插回后置槽位且目标卡置顶", () => {
+	it("两阶段拖拽：拉出至只剩 1/5 前 1:1 跟手置顶，过阈值后继续拖动平滑插回后置槽位且目标卡置顶", () => {
 		vi.useFakeTimers();
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
@@ -109,24 +109,24 @@ describe("PhotoStack", () => {
 
 		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
 
-		// 1. 小拉出 (40px < 89.6px) -> 1:1 跟手，当前卡在顶层 (100)，后卡在底层 (69)
-		fireEvent.pointerMove(stack, { clientX: 260, pointerId: 1 });
+		// 1. 中大行程拉出 (120px < 280*0.8=224px) -> 1:1 跟手，当前卡在顶层 (100)，后卡在底层 (69)
+		fireEvent.pointerMove(stack, { clientX: 180, pointerId: 1 });
 		expect(Number(current.getAttribute("data-card-z"))).toBe(100);
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(69);
-		expect(Number(stack.getAttribute("data-current-offset"))).toBe(-40);
+		expect(Number(stack.getAttribute("data-current-offset"))).toBe(-120);
 
-		// 2. 超出阈值继续向左拉 (142.8px) -> 目标卡置顶 (100)，当前卡钻入底层 (90) 并平滑向左槽位 (-15.4px) 插回
-		fireEvent.pointerMove(stack, { clientX: 157.2, pointerId: 1 });
+		// 2. 超出 4/5 阈值继续向左拉 (280px > 224px) -> 目标卡置顶 (100)，当前卡钻入底层 (90) 并平滑向左槽位 (-15.4px) 插回
+		fireEvent.pointerMove(stack, { clientX: 20, pointerId: 1 });
 		expect(Number(current.getAttribute("data-card-z"))).toBe(90);
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(100);
-		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-52.5, 1);
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-119.7, 1);
 
-		// 3. 充分拖动 (200px >= 196px) -> 完全进入左侧后置槽位 (-15.4px)
-		fireEvent.pointerMove(stack, { clientX: 100, pointerId: 1 });
+		// 3. 充分拖动 (336px = 280*1.2) -> 完全进入左侧后置槽位 (-15.4px)
+		fireEvent.pointerMove(stack, { clientX: -36, pointerId: 1 });
 		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-15.4, 1);
 
 		// 4. 松手 -> 结算为第 2 张
-		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
+		fireEvent.pointerUp(stack, { clientX: -36, pointerId: 1 });
 		act(() => vi.advanceTimersByTime(220));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 	});
