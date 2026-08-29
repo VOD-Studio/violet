@@ -27,10 +27,11 @@ export interface PhotoStackStageProps {
 }
 
 const FLIP_RATIO = 0.14;
-const FLY_OFF_RATIO = 1.1;
-const FLY_MS = 180;
+const FLY_OFF_RATIO = 1.3;
+const FLY_MS = 200;
 const TILT_PER_PX = 0.08;
-const TILT_MAX = 22;
+const TILT_MAX = 25;
+const DRAG_LIMIT_RATIO = 0.75;
 
 /** 有限 PhotoStack 舞台：负责槽位、拖拽、覆盖甩出与键盘翻页。 */
 export function PhotoStackStage({
@@ -53,7 +54,7 @@ export function PhotoStackStage({
 	const pointerStartX = useRef<number | null>(null);
 	const suppressClickUntil = useRef(0);
 	const suppressClickTimer = useRef(0);
-	const flinging = useRef(false);
+	const flungCard = useRef<PhotoStackImage | null>(null);
 	const flingTimer = useRef(0);
 	const dragSamples = useRef<DragSample[]>([]);
 	const [stackWidth, setStackWidth] = useState(0);
@@ -72,6 +73,13 @@ export function PhotoStackStage({
 		return () => observer.disconnect();
 	}, []);
 
+
+	const { motionOf, resetTop, resetCards, setFlinging, visibleCards } = usePhotoStackSlots({
+		images,
+		safeIndex,
+		stackWidth,
+	});
+
 	useEffect(
 		() => () => {
 			window.clearTimeout(flingTimer.current);
@@ -80,23 +88,22 @@ export function PhotoStackStage({
 		[],
 	);
 
-	const { motionOf, resetTop, resetCards, visibleCards } = usePhotoStackSlots({
-		images,
-		safeIndex,
-		stackWidth,
-	});
 
 	const fling = useCallback(
 		(direction: -1 | 1, value: PhotoStackCardMotion) => {
 			const nextIndex = safeIndex + direction;
-			if (flinging.current) return;
+			const image = images[safeIndex];
+			if (flungCard.current || !image) return;
 			if (nextIndex < 0 || nextIndex >= images.length) {
 				resetTop();
 				return;
 			}
-			flinging.current = true;
 			const sign = direction === 1 ? -1 : 1;
-			animate(value.x, sign * (stackWidth || 280) * FLY_OFF_RATIO, {
+			const width = stackWidth || 280;
+			flungCard.current = image;
+			setFlinging(image, safeIndex, true);
+			value.opacity.stop();
+			animate(value.x, sign * width * FLY_OFF_RATIO, {
 				duration: FLY_MS / 1000,
 				ease: "easeIn" as const,
 			});
@@ -104,16 +111,20 @@ export function PhotoStackStage({
 				duration: FLY_MS / 1000,
 				ease: "easeIn" as const,
 			});
-			animate(value.y, 0, { duration: FLY_MS / 1000, ease: "easeIn" as const });
-			animate(value.scale, 1, { duration: FLY_MS / 1000, ease: "easeIn" as const });
+			animate(value.opacity, 0, { duration: FLY_MS / 1000, ease: "easeIn" as const });
 			window.clearTimeout(flingTimer.current);
 			flingTimer.current = window.setTimeout(() => {
 				onIndexChange(nextIndex);
 				setDragDirection(null);
-				flinging.current = false;
+				// 回槽前保持透明，避免旧卡横穿舞台。
+				const side = sign < 0 ? "left" : "right";
+				setStackSlot(value, getStackSlot(side, 1, width), 0);
+				setFlinging(image, safeIndex, false);
+				animate(value.opacity, 1, { duration: FLY_MS / 1000, ease: "easeOut" as const });
+				flungCard.current = null;
 			}, FLY_MS);
 		},
-		[images.length, onIndexChange, resetTop, safeIndex, stackWidth],
+		[images, onIndexChange, resetTop, safeIndex, setFlinging, stackWidth],
 	);
 
 	const suppressClick = () => {
@@ -125,7 +136,7 @@ export function PhotoStackStage({
 	};
 
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-		if (event.button !== 0 || flinging.current) return;
+		if (event.button !== 0 || flungCard.current) return;
 		pointerStartX.current = event.clientX;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		setDragDirection(null);
@@ -142,6 +153,7 @@ export function PhotoStackStage({
 			value.y.stop();
 			value.rotate.stop();
 			value.scale.stop();
+			value.opacity.stop();
 		}
 		visibleCards.forEach((card) => {
 			const value = motionOf(card.image, card.index);
@@ -149,11 +161,12 @@ export function PhotoStackStage({
 			value.y.stop();
 			value.rotate.stop();
 			value.scale.stop();
+			value.opacity.stop();
 		});
 	};
 
 	const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-		if (pointerStartX.current === null || flinging.current) return;
+		if (pointerStartX.current === null || flungCard.current) return;
 		const top = images[safeIndex];
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
@@ -163,7 +176,12 @@ export function PhotoStackStage({
 		}
 		const canFlip =
 			(rawDelta < 0 && safeIndex < images.length - 1) || (rawDelta > 0 && safeIndex > 0);
-		const delta = canFlip ? rawDelta : rawDelta * 0.24;
+		const width = stackWidth || 280;
+		const limitedDelta = Math.max(
+			-width * DRAG_LIMIT_RATIO,
+			Math.min(width * DRAG_LIMIT_RATIO, rawDelta),
+		);
+		const delta = canFlip ? limitedDelta : limitedDelta * 0.24;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		setDragDirection(direction);
 		setStackSlot(value, {
@@ -173,11 +191,11 @@ export function PhotoStackStage({
 			scale: 1,
 		});
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
-		const progress = getDragProgress(rawDelta, (stackWidth || 280) * FLIP_RATIO);
+		const progress = getDragProgress(rawDelta, width * FLIP_RATIO);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
-			const from = getStackSlot(card.axis, card.depth, stackWidth || 280);
-			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), stackWidth || 280);
+			const from = getStackSlot(card.axis, card.depth, width);
+			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), width);
 			const slot = card.axis === direction ? interpolateSlot(from, to, progress) : from;
 			setStackSlot(cardValue, slot);
 		});
@@ -208,7 +226,7 @@ export function PhotoStackStage({
 			resetTop();
 			resetCards();
 		}
-		if (!flinging.current) setDragDirection(null);
+		if (!flungCard.current) setDragDirection(null);
 		try {
 			if (stackRef.current?.hasPointerCapture(event.pointerId))
 				stackRef.current.releasePointerCapture(event.pointerId);

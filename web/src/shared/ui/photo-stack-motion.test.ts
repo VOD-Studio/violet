@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	cardMotionKey,
 	getDirectionalZ,
 	getDragProgress,
 	getStackSlot,
@@ -33,6 +34,12 @@ describe("PhotoStack motion decisions", () => {
 		expect(slot.y).toBe(-24);
 		expect(slot.scale).toBe(0.88);
 		expect(slot.rotate).toBe(4.5);
+	});
+
+	it("卡片身份不随顶卡与后置卡角色改变", () => {
+		expect(cardMotionKey("/one.jpg", 0)).toBe("/one.jpg-0");
+		expect(cardMotionKey("/one.jpg", 0)).toBe(cardMotionKey("/one.jpg", 0));
+		expect(cardMotionKey("/one.jpg", 0)).not.toBe(cardMotionKey("/one.jpg", 1));
 	});
 
 	it("快速轻扫达到速度阈值即翻页，慢拖不足距离则回弹", () => {

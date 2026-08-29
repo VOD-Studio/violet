@@ -1,6 +1,7 @@
 import type { PhotoStackImage } from "./photo-stack";
 import { PhotoStackCard } from "./photo-stack-card";
 import {
+	cardMotionKey,
 	getDirectionalZ,
 	getStackSlot,
 	type MotionBundle,
@@ -62,12 +63,13 @@ export function PhotoStackCards({
 				);
 				return (
 					<PhotoStackCard
-						key={`${layoutPrefix}-${card.index}`}
+						key={`${layoutPrefix}-${cardMotionKey(card.image.src, card.index)}`}
 						image={card.image}
 						x={value.x}
 						y={value.y}
 						rotate={value.rotate}
 						scale={value.scale}
+						opacity={value.opacity}
 						zIndex={getDirectionalZ(dragDirection, card.axis, card.depth)}
 						state={card.axis}
 						depth={card.depth}
@@ -75,12 +77,13 @@ export function PhotoStackCards({
 				);
 			})}
 			<PhotoStackCard
-				key={`${layoutPrefix}-${currentIndex}`}
+				key={`${layoutPrefix}-${cardMotionKey(current.src, currentIndex)}`}
 				image={current}
 				x={currentMotion.x}
 				y={currentMotion.y}
 				rotate={currentMotion.rotate}
 				scale={currentMotion.scale}
+				opacity={currentMotion.opacity}
 				zIndex={100}
 				state="current"
 				depth={0}

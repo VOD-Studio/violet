@@ -52,18 +52,26 @@ export interface MotionBundle {
 	y: MotionValue<number>;
 	rotate: MotionValue<number>;
 	scale: MotionValue<number>;
+	opacity: MotionValue<number>;
 }
 
-/** 立即落位一组 MotionValue；先停掉在跑的弹簧，避免 set 被动画逐帧覆盖。 */
-export function setStackSlot(value: MotionBundle, slot: PhotoStackSlot) {
+/** 立即落位一组 MotionValue；先停掉在跑的动画，避免 set 被逐帧覆盖。 */
+export function setStackSlot(value: MotionBundle, slot: PhotoStackSlot, opacity = 1) {
 	value.x.stop();
 	value.y.stop();
 	value.rotate.stop();
 	value.scale.stop();
+	value.opacity.stop();
 	value.x.set(slot.x);
 	value.y.set(slot.y);
 	value.rotate.set(slot.rotate);
 	value.scale.set(slot.scale);
+	value.opacity.set(opacity);
+}
+
+/** MotionValue 缓存与 React key 共用同一身份，换层时不会重挂载。 */
+export function cardMotionKey(imageSrc: string, index: number) {
+	return `${imageSrc}-${index}`;
 }
 
 export interface DragSample {

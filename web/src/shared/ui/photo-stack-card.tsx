@@ -13,6 +13,8 @@ export interface PhotoStackCardProps {
 	rotate: MotionValue<number>;
 	/** 卡片缩放比例。 */
 	scale: MotionValue<number>;
+	/** 卡片透明度。 */
+	opacity: MotionValue<number>;
 	/** 堆叠层级。 */
 	zIndex: number;
 	/** 当前卡或左右后置卡。 */
@@ -30,6 +32,7 @@ export function PhotoStackCard({
 	y,
 	rotate,
 	scale,
+	opacity,
 	zIndex,
 	state,
 	depth,
@@ -39,7 +42,7 @@ export function PhotoStackCard({
 		<motion.button
 			type="button"
 			className="absolute left-[4%] top-0 h-full w-[92%] rounded-lg border border-edge-hairline bg-background shadow-md"
-			style={{ x, y, rotate, scale, zIndex, transformOrigin: "50% 120%" }}
+			style={{ x, y, rotate, scale, opacity, zIndex, transformOrigin: "50% 120%" }}
 			disabled={!onClick}
 			data-card-state={state}
 			data-card-depth={depth}

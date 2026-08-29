@@ -76,16 +76,20 @@ describe("PhotoStack", () => {
 		expect(stack.getAttribute("data-current-index")).toBe("0");
 	});
 
-	it("拖过阈值后先甩出再更新索引，展开可收起并回调图片", () => {
+	it("拖过阈值后先甩出并淡出，再更新索引与原位淡入", () => {
 		vi.useFakeTimers();
 		const onImageOpen = vi.fn();
 		render(<PhotoStack {...stackProps(onImageOpen)} />);
 		const stack = screen.getByRole("group");
+		const firstCard = screen.getByRole("button", { name: "第一张" });
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
 		fireEvent.pointerMove(stack, { clientX: 70, pointerId: 1 });
 		fireEvent.pointerUp(stack, { clientX: 70, pointerId: 1 });
 		expect(stack.getAttribute("data-current-index")).toBe("0");
-		act(() => vi.advanceTimersByTime(180));
+		expect(firstCard).toBeTruthy();
+		act(() => vi.advanceTimersByTime(199));
+		expect(stack.getAttribute("data-current-index")).toBe("0");
+		act(() => vi.advanceTimersByTime(1));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 
 		fireEvent.click(screen.getByRole("button", { name: /展开全部照片，共 4 张/ }));
