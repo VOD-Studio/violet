@@ -15,13 +15,13 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDragProgress(-200, 80)).toBe(1);
 		expect(getDragProgress(10, 0)).toBe(1);
 	});
-	it("拖拽时目标侧深度 1 的卡片升至顶层以接纳当前卡插入", () => {
-		expect(getDirectionalZ("right", "right", 1)).toBe(100);
-		expect(getDirectionalZ("right", "right", 2)).toBe(68);
-		expect(getDirectionalZ("right", "left", 1)).toBe(29);
-		expect(getDirectionalZ(null, "right", 1)).toBe(29);
+	it("只有拖拽超出阈值时目标卡才升至顶层，未达阈值前当前卡保持置顶", () => {
+		expect(getDirectionalZ("right", "right", 1, 0.2)).toBe(69);
+		expect(getDirectionalZ("right", "right", 1, 0.99)).toBe(69);
+		expect(getDirectionalZ("right", "right", 1, 1)).toBe(100);
+		expect(getDirectionalZ("right", "left", 1, 1)).toBe(29);
+		expect(getDirectionalZ(null, "right", 1, 0)).toBe(29);
 	});
-
 	it("只把目标方向的后卡向前插槽联动", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };
 		const to = { x: 0, y: 0, rotate: 0, scale: 1 };

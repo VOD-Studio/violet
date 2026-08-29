@@ -100,21 +100,21 @@ describe("PhotoStack", () => {
 		expect(screen.getByRole("group")).toBeTruthy();
 	});
 
-	it("拖动只预览目标方向卡栈，松手前不提交索引", () => {
-		vi.useFakeTimers();
+	it("未超阈值当前卡始终在顶层，只有超出阈值时目标卡才置顶", () => {
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
+		const current = screen.getByRole("button", { name: "第一张" });
+		const incoming = screen.getByRole("button", { name: "第二张" });
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
-		fireEvent.pointerMove(stack, { clientX: 100, pointerId: 1 });
-		expect(stack.getAttribute("data-current-index")).toBe("0");
-		expect(stack.getAttribute("data-drag-direction")).toBe("right");
-		const incoming = stack.querySelector('[data-card-state="right"][data-card-depth="1"]');
-		const outgoing = stack.querySelector('[data-card-state="right"][data-card-depth="2"]');
-		expect(Number(incoming?.getAttribute("data-card-z"))).toBeGreaterThan(
-			Number(outgoing?.getAttribute("data-card-z")),
-		);
-		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
-		act(() => vi.runAllTimers());
+		// 拖动 30px (未超阈值 39.2px, progress = 30 / 39.2 = 0.765 < 1)
+		fireEvent.pointerMove(stack, { clientX: 170, pointerId: 1 });
+		expect(Number(current.getAttribute("data-card-z"))).toBe(100);
+		expect(Number(incoming.getAttribute("data-card-z"))).toBe(69);
+		// 拖动 60px (超出阈值 39.2px, progress = 1 >= 1)
+		fireEvent.pointerMove(stack, { clientX: 140, pointerId: 1 });
+		expect(Number(current.getAttribute("data-card-z"))).toBe(90);
+		expect(Number(incoming.getAttribute("data-card-z"))).toBe(100);
+		fireEvent.pointerCancel(stack, { pointerId: 1 });
 	});
 
 	it("拖动时顶图自由跟手，松手后平滑插入后置槽位", () => {

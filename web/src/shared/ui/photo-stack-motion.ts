@@ -27,13 +27,14 @@ export function interpolateSlot(from: PhotoStackSlot, to: PhotoStackSlot, progre
 	};
 }
 
-/** 拖拽时目标侧首张后卡置于最顶层，使被拖出的当前卡能够平滑插进其下方图层。 */
+/** 只有在拖拽超出翻页阈值（progress >= 1）时，目标侧首张后卡才升至最顶层（置顶）；未达阈值前当前卡始终保持最顶层。 */
 export function getDirectionalZ(
 	direction: StackDirection | null,
 	axis: StackDirection,
 	depth: number,
+	progress = 0,
 ) {
-	if (direction !== null && direction === axis && depth === 1) {
+	if (direction !== null && direction === axis && depth === 1 && progress >= 1) {
 		return 100;
 	}
 	const target = direction !== null && direction === axis;

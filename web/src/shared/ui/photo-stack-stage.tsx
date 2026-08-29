@@ -307,6 +307,7 @@ export function PhotoStackStage({
 					if (Date.now() >= suppressClickUntil.current) onImageOpen?.(safeIndex);
 				}}
 				dragDirection={dragDirection}
+				dragProgress={incomingProgress}
 			/>
 			<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
 				<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
