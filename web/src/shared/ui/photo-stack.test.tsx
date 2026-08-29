@@ -114,4 +114,14 @@ describe("PhotoStack", () => {
 		fireEvent.pointerUp(stack, { clientX: 100, pointerId: 1 });
 		act(() => vi.runAllTimers());
 	});
+
+	it("长距离拖动时当前卡留在栈内，由相邻卡完成插入", () => {
+		render(<PhotoStack {...stackProps()} />);
+		const stack = screen.getByRole("group");
+		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
+		fireEvent.pointerMove(stack, { clientX: -100, pointerId: 1 });
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-22.4);
+		expect(stack.getAttribute("data-incoming-progress")).toBe("1");
+	});
+
 });

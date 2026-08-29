@@ -51,9 +51,12 @@ export function PhotoStackStage({
 	const suppressClickUntil = useRef(0);
 	const suppressClickTimer = useRef(0);
 	const dragSamples = useRef<DragSample[]>([]);
+	const dragDelta = useRef(0);
 	const [stackWidth, setStackWidth] = useState(0);
 	const [dragging, setDragging] = useState(false);
 	const [dragDirection, setDragDirection] = useState<StackDirection | null>(null);
+	const [currentOffset, setCurrentOffset] = useState(0);
+	const [incomingProgress, setIncomingProgress] = useState(0);
 	const layoutPrefix = useId();
 
 	useEffect(() => {
@@ -89,6 +92,8 @@ export function PhotoStackStage({
 		}
 		onIndexChange(nextIndex);
 		setDragDirection(null);
+		setCurrentOffset(0);
+		setIncomingProgress(0);
 	};
 
 	const suppressClick = () => {
@@ -102,8 +107,11 @@ export function PhotoStackStage({
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (event.button !== 0) return;
 		pointerStartX.current = event.clientX;
+		dragDelta.current = 0;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		setDragDirection(null);
+		setCurrentOffset(0);
+		setIncomingProgress(0);
 		setDragging(true);
 		try {
 			stackRef.current?.setPointerCapture(event.pointerId);
@@ -135,14 +143,19 @@ export function PhotoStackStage({
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
 		const rawDelta = event.clientX - pointerStartX.current;
+		dragDelta.current = rawDelta;
 		if (Math.abs(rawDelta) > 8) {
 			suppressClick();
 		}
 		const canFlip =
 			(rawDelta < 0 && safeIndex < images.length - 1) || (rawDelta > 0 && safeIndex > 0);
 		const width = stackWidth || 280;
-		const delta = canFlip ? rawDelta : rawDelta * 0.24;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
+		const progress = getDragProgress(rawDelta, width * 0.85);
+		const maxPress = width * 0.08;
+		const delta = canFlip ? Math.sign(rawDelta) * maxPress * progress : rawDelta * 0.24;
+		setCurrentOffset(delta);
+		setIncomingProgress(canFlip ? progress : 0);
 		setDragDirection(direction);
 		setStackSlot(value, {
 			x: delta,
@@ -151,10 +164,17 @@ export function PhotoStackStage({
 			scale: 1,
 		});
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
-		const progress = getDragProgress(rawDelta, width * FLIP_RATIO);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
-			const from = getStackSlot(card.axis, card.depth, width);
+			const from =
+				card.axis === direction && card.depth === 1
+					? {
+							x: Math.sign(rawDelta) * width,
+							y: 0,
+							rotate: Math.sign(rawDelta) * TILT_MAX,
+							scale: 1,
+						}
+					: getStackSlot(card.axis, card.depth, width);
 			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), width);
 			const slot = card.axis === direction ? interpolateSlot(from, to, progress) : from;
 			setStackSlot(cardValue, slot);
@@ -167,8 +187,7 @@ export function PhotoStackStage({
 		setDragging(false);
 		const top = images[safeIndex];
 		if (!top) return;
-		const value = motionOf(top, safeIndex);
-		const delta = value.x.get();
+		const delta = dragDelta.current;
 		const direction: -1 | 1 = delta < 0 ? 1 : -1;
 		const canFlip =
 			(direction === 1 && safeIndex < images.length - 1) ||
@@ -186,6 +205,8 @@ export function PhotoStackStage({
 			resetTop();
 			resetCards();
 		}
+		setCurrentOffset(0);
+		setIncomingProgress(0);
 		setDragDirection(null);
 		try {
 			if (stackRef.current?.hasPointerCapture(event.pointerId))
@@ -200,11 +221,12 @@ export function PhotoStackStage({
 		pointerStartX.current = null;
 		setDragging(false);
 		setDragDirection(null);
+		setCurrentOffset(0);
+		setIncomingProgress(0);
 		suppressClick();
 		resetTop();
 		resetCards();
 	};
-
 	if (images.length === 0) return null;
 
 	return (
@@ -223,6 +245,8 @@ export function PhotoStackStage({
 				dragging ? "cursor-grabbing" : "cursor-grab",
 				aspectClass,
 			)}
+			data-current-offset={currentOffset}
+			data-incoming-progress={incomingProgress}
 			onKeyDown={(event) => {
 				if (event.key === "ArrowLeft" && safeIndex > 0) {
 					event.preventDefault();
