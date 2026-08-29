@@ -115,13 +115,15 @@ describe("PhotoStack", () => {
 		act(() => vi.runAllTimers());
 	});
 
-	it("长距离拖动时当前卡留在栈内，由相邻卡完成插入", () => {
+	it("继续拖动完成插入时立即显示目标图", () => {
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
 		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
 		fireEvent.pointerMove(stack, { clientX: -100, pointerId: 1 });
-		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(-22.4);
-		expect(stack.getAttribute("data-incoming-progress")).toBe("1");
+		expect(stack.getAttribute("data-current-index")).toBe("1");
+		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
+			"current",
+		);
 	});
 
 	it("相邻卡从原后置槽位连续插入，不从屏外跳入", () => {
@@ -129,7 +131,7 @@ describe("PhotoStack", () => {
 		const stack = screen.getByRole("group");
 		fireEvent.pointerDown(stack, { button: 0, clientX: 200, pointerId: 1 });
 		fireEvent.pointerMove(stack, { clientX: 190, pointerId: 1 });
-		expect(Number(stack.getAttribute("data-incoming-progress"))).toBeCloseTo(10 / 238);
+		expect(stack.getAttribute("data-incoming-progress")).toBe("0");
 	});
 
 });

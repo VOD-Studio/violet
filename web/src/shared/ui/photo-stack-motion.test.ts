@@ -16,6 +16,7 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDragProgress(10, 0)).toBe(1);
 	});
 
+
 	it("只把目标方向的后卡向前插槽联动", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };
 		const to = { x: 0, y: 0, rotate: 0, scale: 1 };

@@ -15,6 +15,7 @@ export function getDragProgress(distance: number, threshold: number) {
 	return Math.min(1, Math.max(0, Math.abs(distance) / threshold));
 }
 
+
 /** 在两个槽位之间插值，后层以负 y 和缩放收进顶卡底边。 */
 export function interpolateSlot(from: PhotoStackSlot, to: PhotoStackSlot, progress: number) {
 	const t = Math.min(1, Math.max(0, progress));

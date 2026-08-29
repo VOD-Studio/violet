@@ -52,6 +52,7 @@ export function PhotoStackStage({
 	const suppressClickTimer = useRef(0);
 	const dragSamples = useRef<DragSample[]>([]);
 	const dragDelta = useRef(0);
+	const inserted = useRef(false);
 	const [stackWidth, setStackWidth] = useState(0);
 	const [dragging, setDragging] = useState(false);
 	const [dragDirection, setDragDirection] = useState<StackDirection | null>(null);
@@ -108,6 +109,7 @@ export function PhotoStackStage({
 		if (event.button !== 0) return;
 		pointerStartX.current = event.clientX;
 		dragDelta.current = 0;
+		inserted.current = false;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		setDragDirection(null);
 		setCurrentOffset(0);
@@ -152,17 +154,39 @@ export function PhotoStackStage({
 		const width = stackWidth || 280;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		const progress = getDragProgress(rawDelta, width * 0.85);
-		const maxPress = width * 0.08;
-		const delta = canFlip ? Math.sign(rawDelta) * maxPress * progress : rawDelta * 0.24;
+		const travelProgress = getDragProgress(rawDelta, width * 0.35);
+		const insertProgress = Math.min(
+			1,
+			Math.max(0, (Math.abs(rawDelta) - width * 0.35) / (width * 0.5)),
+		);
+		const travelX = Math.sign(rawDelta) * width * 0.28 * travelProgress;
+		const rearAxis: StackDirection = rawDelta < 0 ? "left" : "right";
+		const rearSlot = getStackSlot(rearAxis, 1, width);
+		const insertedSlot = interpolateSlot(
+			{ x: travelX, y: 0, rotate: travelX * TILT_PER_PX, scale: 1 },
+			rearSlot,
+			insertProgress,
+		);
+		const boundaryOffset =
+			Math.sign(rawDelta) *
+			width *
+			0.08 *
+			(1 - Math.exp(-Math.abs(rawDelta) / (width * 0.08)));
+		const delta = canFlip ? insertedSlot.x : boundaryOffset;
 		setCurrentOffset(delta);
-		setIncomingProgress(canFlip ? progress : 0);
+		setIncomingProgress(canFlip ? insertProgress : 0);
 		setDragDirection(direction);
-		setStackSlot(value, {
-			x: delta,
-			y: 0,
-			rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, delta * TILT_PER_PX)),
-			scale: 1,
-		});
+		setStackSlot(
+			value,
+			canFlip
+				? insertedSlot
+				: {
+						x: delta,
+						y: 0,
+						rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, delta * TILT_PER_PX)),
+						scale: 1,
+					},
+		);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
@@ -171,12 +195,20 @@ export function PhotoStackStage({
 			const slot = card.axis === direction ? interpolateSlot(from, to, progress) : from;
 			setStackSlot(cardValue, slot);
 		});
+		if (canFlip && insertProgress === 1 && !inserted.current) {
+			inserted.current = true;
+			insert(rawDelta < 0 ? 1 : -1);
+		}
 	};
 
 	const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (pointerStartX.current === null) return;
 		pointerStartX.current = null;
 		setDragging(false);
+		if (inserted.current) {
+			inserted.current = false;
+			return;
+		}
 		const top = images[safeIndex];
 		if (!top) return;
 		const delta = dragDelta.current;
