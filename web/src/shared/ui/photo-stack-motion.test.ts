@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-	getDraggedTopSlot,
 	cardMotionKey,
 	getDirectionalZ,
+	getDraggedTopSlot,
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
@@ -66,9 +66,28 @@ describe("PhotoStack motion decisions", () => {
 		expect(wide.rotateY).toBe(2);
 	});
 
-	it("边界不可翻页方向仍保留相同 Y/Z 双轴旋转与缩小", () => {
+	it("有效方向保留既有两阶段插槽轨迹", () => {
+		const peak = getDraggedTopSlot(-224, 280, true);
+		const inserting = getDraggedTopSlot(-280, 280, true);
+		const rear = getDraggedTopSlot(-336, 280, true);
+
+		expect(peak.topSlot.x).toBe(-224);
+		expect(peak.isPastThreshold).toBe(true);
+		expect(inserting.topSlot.x).toBeCloseTo(-126.85848, 5);
+		expect(rear.topSlot.x).toBeCloseTo(-29.71696, 5);
+	});
+
+	it("边界越界拖动使用无死滞的非线性橡皮筋阻尼", () => {
+		const width = 257;
+		const largeBoundary = getDraggedTopSlot(-650, width, false);
+		const smallBoundary = getDraggedTopSlot(-12, width, false);
 		const rightBoundary = getDraggedTopSlot(160, 200, false);
 		const leftBoundary = getDraggedTopSlot(-160, 200, false);
+
+		expect(largeBoundary.topSlot.x).toBeLessThan(0);
+		expect(Math.abs(largeBoundary.topSlot.x)).toBeLessThan(width);
+		expect(smallBoundary.topSlot.x).toBeLessThan(-1);
+		expect(Math.abs(smallBoundary.topSlot.x)).toBeLessThan(12);
 		expect(rightBoundary.topSlot.scale).toBeCloseTo(0.896, 3);
 		expect(leftBoundary.topSlot.scale).toBeCloseTo(0.896, 3);
 		expect(rightBoundary.topSlot.rotate).toBeCloseTo(11, 3);
@@ -138,5 +157,14 @@ describe("PhotoStack motion decisions", () => {
 				{ t: 5, x: 40 },
 			]),
 		).toBe(0);
+	});
+
+	it("同位置短暂停后仍取最近有效速度，长停后速度归零", () => {
+		const samples = [
+			{ t: 300, x: 170 },
+			{ t: 360, x: 140 },
+		];
+		expect(recentVelocity(samples, 100, 430)).toBe(-0.5);
+		expect(recentVelocity(samples, 100, 461)).toBe(0);
 	});
 });

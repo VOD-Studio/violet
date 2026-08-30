@@ -11,8 +11,10 @@ export interface PhotoStackSlot {
 
 export const PULL_THRESHOLD_RATIO = 0.8;
 export const INSERT_THRESHOLD_RATIO = 1.2;
+export const FLIP_THRESHOLD_RATIO = 0.22;
 export const DRAG_ROTATE_MAX = 11;
 export const DRAG_ROTATE_Y_MAX = 2;
+const RUBBER_BAND_CONSTANT = 0.55;
 
 export interface DraggedTopSlotResult {
 	topSlot: PhotoStackSlot;
@@ -46,20 +48,17 @@ export function getDraggedTopSlot(
 	const rotate = direction * DRAG_ROTATE_MAX * pullProgress;
 	const rotateY = direction * DRAG_ROTATE_Y_MAX * pullProgress;
 	if (!canFlip) {
-		const rubberX =
-			Math.sign(rawDelta) *
-			width *
-			0.08 *
-			(1 - Math.exp(-distance / (width * 0.08)));
+		const dampedDistance =
+			(distance * width * RUBBER_BAND_CONSTANT) / (width + RUBBER_BAND_CONSTANT * distance);
 		return {
-			topSlot: { x: rubberX, y: 0, rotate, scale },
+			topSlot: { x: direction * dampedDistance, y: 0, rotate, scale },
 			rotateY,
 			isPastThreshold: false,
 			pullProgress: 0,
 			insertProgress: 0,
 		};
 	}
-	if (distance <= pullThreshold) {
+	if (distance < pullThreshold) {
 		return {
 			topSlot: { x: rawDelta, y: 0, rotate, scale },
 			rotateY,
@@ -162,10 +161,11 @@ export function recordSample(samples: DragSample[], t: number, x: number, limit 
 	if (samples.length > limit) samples.shift();
 }
 
-/** 窗口期内的平均速度，单位 px/ms；窗口内样本不足或时间戳无进展时返回 0。 */
-export function recentVelocity(samples: DragSample[], windowMs = 100) {
+/** 窗口期内的平均速度，单位 px/ms；窗口内样本不足、已过期或时间戳无进展时返回 0。 */
+export function recentVelocity(samples: DragSample[], windowMs = 100, referenceTime?: number) {
 	if (samples.length < 2) return 0;
 	const last = samples[samples.length - 1];
+	if (referenceTime !== undefined && referenceTime - last.t > windowMs) return 0;
 	let first: DragSample | null = null;
 	for (let i = samples.length - 2; i >= 0; i -= 1) {
 		if (last.t - samples[i].t <= windowMs) first = samples[i];

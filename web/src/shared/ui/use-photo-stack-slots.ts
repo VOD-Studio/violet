@@ -5,6 +5,7 @@ import type { PhotoStackCardMotion, PhotoStackVisibleCard } from "./photo-stack-
 import { cardMotionKey, getStackSlot, type PhotoStackSlot } from "./photo-stack-motion";
 
 const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
+const RESET_TWEEN = { duration: 0.22, ease: "easeOut" as const };
 
 export interface UsePhotoStackSlotsOptions {
 	/** 媒体资源列表。 */
@@ -116,19 +117,27 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 		const top = images[safeIndex];
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
-		animate(value.x, 0, SLOT_SPRING);
-		animate(value.y, 0, SLOT_SPRING);
-		animate(value.rotate, 0, SLOT_SPRING);
-		animate(value.rotateY, 0, SLOT_SPRING);
-		animate(value.scale, 1, SLOT_SPRING);
-		animate(value.opacity, 1, SLOT_SPRING);
+		value.x.stop();
+		value.y.stop();
+		value.rotate.stop();
+		value.rotateY.stop();
+		value.scale.stop();
+		value.opacity.stop();
+		animate(value.x, 0, RESET_TWEEN);
+		animate(value.y, 0, RESET_TWEEN);
+		animate(value.rotate, 0, RESET_TWEEN);
+		animate(value.rotateY, 0, RESET_TWEEN);
+		animate(value.scale, 1, RESET_TWEEN);
+		animate(value.opacity, 1, RESET_TWEEN);
 	}, [images, motionOf, safeIndex]);
-	const resetCards = useCallback(() => {
-		visibleCards.forEach((card) => {
-			animateCard(card);
-		});
-	}, [animateCard, visibleCards]);
-
+	const resetCards = useCallback(
+		(immediate = false) => {
+			visibleCards.forEach((card) => {
+				animateCard(card, immediate);
+			});
+		},
+		[animateCard, visibleCards],
+	);
 
 	return { animateCard, motionOf, resetTop, resetCards, visibleCards };
 }

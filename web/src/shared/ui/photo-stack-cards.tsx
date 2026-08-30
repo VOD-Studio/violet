@@ -74,7 +74,12 @@ export function PhotoStackCards({
 						rotateY={value.rotateY}
 						scale={value.scale}
 						opacity={value.opacity}
-						zIndex={getDirectionalZ(dragDirection, card.axis, card.depth, isPastThreshold)}
+						zIndex={getDirectionalZ(
+							dragDirection,
+							card.axis,
+							card.depth,
+							isPastThreshold,
+						)}
 						state={card.axis}
 						depth={card.depth}
 					/>

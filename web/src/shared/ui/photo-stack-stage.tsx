@@ -7,6 +7,7 @@ import type { PhotoStackImage } from "./photo-stack";
 import { type PhotoStackCardMotion, PhotoStackCards } from "./photo-stack-cards";
 import {
 	type DragSample,
+	FLIP_THRESHOLD_RATIO,
 	getDraggedTopSlot,
 	getStackSlot,
 	interpolateSlot,
@@ -50,8 +51,8 @@ export function PhotoStackStage({
 	const suppressClickTimer = useRef(0);
 	const settling = useRef(false);
 	const settleTimer = useRef(0);
+	const thresholdTimer = useRef(0);
 	const dragSamples = useRef<DragSample[]>([]);
-	const dragDelta = useRef(0);
 	const [stackWidth, setStackWidth] = useState(0);
 	const [dragging, setDragging] = useState(false);
 	const [dragDirection, setDragDirection] = useState<StackDirection | null>(null);
@@ -80,13 +81,14 @@ export function PhotoStackStage({
 	useEffect(
 		() => () => {
 			window.clearTimeout(settleTimer.current);
+			window.clearTimeout(thresholdTimer.current);
 			window.clearTimeout(suppressClickTimer.current);
 		},
 		[],
 	);
 
 	const insertToSlot = useCallback(
-		(direction: -1 | 1, value: PhotoStackCardMotion) => {
+		(direction: -1 | 1, value: PhotoStackCardMotion, completePullPhase = false) => {
 			const nextIndex = safeIndex + direction;
 			if (settling.current) return;
 			if (nextIndex < 0 || nextIndex >= images.length) {
@@ -97,26 +99,61 @@ export function PhotoStackStage({
 			const width = stackWidth || 280;
 			const rearSide: StackDirection = direction === 1 ? "left" : "right";
 			const targetSlot = getStackSlot(rearSide, 1, width);
+			const peak = getDraggedTopSlot(
+				(direction === 1 ? -1 : 1) * width * PULL_THRESHOLD_RATIO,
+				width,
+				true,
+			);
 			settling.current = true;
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
 			value.rotateY.stop();
 			value.scale.stop();
-			animate(value.x, targetSlot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
-			animate(value.y, targetSlot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
-			animate(value.rotate, targetSlot.rotate, {
+			animate(
+				value.x,
+				completePullPhase ? [null, peak.topSlot.x, targetSlot.x] : targetSlot.x,
+				{
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				},
+			);
+			animate(
+				value.y,
+				completePullPhase ? [null, peak.topSlot.y, targetSlot.y] : targetSlot.y,
+				{
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				},
+			);
+			animate(
+				value.rotate,
+				completePullPhase
+					? [null, peak.topSlot.rotate, targetSlot.rotate]
+					: targetSlot.rotate,
+				{
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				},
+			);
+			animate(value.rotateY, completePullPhase ? [null, peak.rotateY, 0] : 0, {
 				duration: INSERT_MS / 1000,
 				ease: "easeOut" as const,
 			});
-			animate(value.rotateY, 0, {
-				duration: INSERT_MS / 1000,
-				ease: "easeOut" as const,
-			});
-			animate(value.scale, targetSlot.scale, {
-				duration: INSERT_MS / 1000,
-				ease: "easeOut" as const,
-			});
+			animate(
+				value.scale,
+				completePullPhase ? [null, peak.topSlot.scale, targetSlot.scale] : targetSlot.scale,
+				{
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				},
+			);
+			window.clearTimeout(thresholdTimer.current);
+			if (completePullPhase) {
+				thresholdTimer.current = window.setTimeout(() => {
+					setIsPastThreshold(true);
+				}, INSERT_MS / 2);
+			}
 			// 2. 新顶卡在同一个 220ms 内同步动画到达中心
 			const nextTop = images[nextIndex];
 			if (nextTop) {
@@ -125,8 +162,14 @@ export function PhotoStackStage({
 				nextTopMotion.y.stop();
 				nextTopMotion.rotate.stop();
 				nextTopMotion.rotateY.stop();
-				animate(nextTopMotion.x, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
-				animate(nextTopMotion.y, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+				animate(nextTopMotion.x, 0, {
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				});
+				animate(nextTopMotion.y, 0, {
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				});
 				animate(nextTopMotion.rotate, 0, {
 					duration: INSERT_MS / 1000,
 					ease: "easeOut" as const,
@@ -152,8 +195,14 @@ export function PhotoStackStage({
 					cardMotion.rotate.stop();
 					cardMotion.rotateY.stop();
 					cardMotion.scale.stop();
-					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
-					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+					animate(cardMotion.x, slot.x, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+					animate(cardMotion.y, slot.y, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
 					animate(cardMotion.rotate, slot.rotate, {
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
@@ -176,8 +225,14 @@ export function PhotoStackStage({
 					cardMotion.rotate.stop();
 					cardMotion.rotateY.stop();
 					cardMotion.scale.stop();
-					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
-					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
+					animate(cardMotion.x, slot.x, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+					animate(cardMotion.y, slot.y, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
 					animate(cardMotion.rotate, slot.rotate, {
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
@@ -195,6 +250,7 @@ export function PhotoStackStage({
 
 			window.clearTimeout(settleTimer.current);
 			settleTimer.current = window.setTimeout(() => {
+				window.clearTimeout(thresholdTimer.current);
 				onIndexChange(nextIndex);
 				setDragDirection(null);
 				setCurrentOffset(0);
@@ -216,7 +272,6 @@ export function PhotoStackStage({
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (event.button !== 0 || settling.current) return;
 		pointerStartX.current = event.clientX;
-		dragDelta.current = 0;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		setCurrentOffset(0);
 		setIncomingProgress(0);
@@ -253,7 +308,6 @@ export function PhotoStackStage({
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
 		const rawDelta = event.clientX - pointerStartX.current;
-		dragDelta.current = rawDelta;
 		if (Math.abs(rawDelta) > 8) {
 			suppressClick();
 		}
@@ -281,25 +335,37 @@ export function PhotoStackStage({
 
 	const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (pointerStartX.current === null) return;
+		const rawDelta = event.clientX - pointerStartX.current;
 		pointerStartX.current = null;
 		setDragging(false);
 		const top = images[safeIndex];
 		if (!top) return;
 		const value = motionOf(top, safeIndex);
-		const delta = value.x.get();
-		const direction: -1 | 1 = delta < 0 ? 1 : -1;
+		const lastSample = dragSamples.current.at(-1);
+		if (!lastSample || lastSample.x !== event.clientX) {
+			recordSample(dragSamples.current, event.timeStamp, event.clientX);
+		}
+		const direction: -1 | 1 = rawDelta < 0 ? 1 : -1;
 		const canFlip =
 			(direction === 1 && safeIndex < images.length - 1) ||
 			(direction === -1 && safeIndex > 0);
-		const flipThreshold = (stackWidth || 280) * PULL_THRESHOLD_RATIO;
+		const flipThreshold = (stackWidth || 280) * FLIP_THRESHOLD_RATIO;
 		if (
-			isPastThreshold ||
-			shouldFlip(delta, recentVelocity(dragSamples.current), flipThreshold, canFlip)
+			canFlip &&
+			shouldFlip(
+				rawDelta,
+				recentVelocity(dragSamples.current, 100, event.timeStamp),
+				flipThreshold,
+				canFlip,
+			)
 		) {
-			insertToSlot(direction, value);
+			const completePullPhase =
+				Math.abs(rawDelta) < (stackWidth || 280) * PULL_THRESHOLD_RATIO;
+			if (!completePullPhase) setIsPastThreshold(true);
+			insertToSlot(direction, value, completePullPhase);
 		} else {
 			resetTop();
-			resetCards();
+			resetCards(!canFlip);
 			setCurrentOffset(0);
 			setIncomingProgress(0);
 			setIsPastThreshold(false);
@@ -331,6 +397,7 @@ export function PhotoStackStage({
 		<div
 			ref={stackRef}
 			role="group"
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: 方向键翻页需要让舞台自身可被键盘聚焦。
 			tabIndex={0}
 			aria-label={`第 ${safeIndex + 1} 项，共 ${images.length} 项`}
 			data-stack-state={state}
