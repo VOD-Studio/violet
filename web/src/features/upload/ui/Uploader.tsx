@@ -4,6 +4,7 @@ import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-r
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "../hooks/use-chunked-upload";
+import { matchesAcceptedFile } from "../lib/matches-accepted-file";
 
 /** 上传结果至少含可访问 url,列表缩略图据此预览;可选 thumbnail 为后端生成的缩略图 */
 export interface UploadResult {
@@ -30,7 +31,7 @@ interface UploaderProps<T extends UploadResult> {
 	 */
 	upload?: (file: File, onProgress?: (percent: number) => void) => Promise<T>;
 	/** 单文件成功回调，调用方据此落库 */
-	onUploaded?: (result: T) => void;
+	onUploaded?: (result: T, file: File) => void;
 	/** 用途分类（仅默认分片上传模式生效），默认 material */
 	purpose?: string;
 	/** 接受的 MIME，逗号分隔 */
@@ -94,7 +95,7 @@ export function Uploader<T extends UploadResult>({
 
 			run.then((result) => {
 				updateItem(item.id, { status: "done", result, progress: 100 });
-				onUploaded?.(result);
+				onUploaded?.(result, item.file);
 				toast.success(`「${item.file.name}」上传成功`);
 			}).catch((err: unknown) => {
 				updateItem(item.id, {
@@ -111,8 +112,12 @@ export function Uploader<T extends UploadResult>({
 	const acceptFiles = useCallback(
 		(files: FileList | File[]) => {
 			const all = Array.from(files);
-			const valid = all.filter((f) => f.size <= maxSize);
-			if (valid.length < all.length) {
+			const accepted = all.filter((file) => matchesAcceptedFile(file, accept));
+			if (accepted.length < all.length) {
+				toast.warning("部分文件类型不受支持，已自动过滤");
+			}
+			const valid = accepted.filter((file) => file.size <= maxSize);
+			if (valid.length < accepted.length) {
 				toast.warning("部分文件超过大小限制，已自动过滤");
 			}
 			const slice = valid.slice(0, maxFiles);
@@ -125,7 +130,7 @@ export function Uploader<T extends UploadResult>({
 			setItems((prev) => [...prev, ...newItems]);
 			for (const it of newItems) uploadOne(it);
 		},
-		[maxSize, maxFiles, uploadOne],
+		[accept, maxSize, maxFiles, uploadOne],
 	);
 
 	const handleDrop = (e: React.DragEvent) => {
