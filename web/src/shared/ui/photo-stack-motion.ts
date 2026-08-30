@@ -192,6 +192,13 @@ export function getStackSlot(axis: StackDirection, depth: number, width: number)
 	};
 }
 
+/** 计算某张卡在指定当前索引下的中心或左右后置槽。 */
+export function getIndexedStackSlot(index: number, currentIndex: number, width: number) {
+	const delta = index - currentIndex;
+	if (delta === 0) return { x: 0, y: 0, rotate: 0, scale: 1 };
+	return getStackSlot(delta < 0 ? "left" : "right", Math.abs(delta), width);
+}
+
 /** 静止时整个堆栈只显示顶卡与距离它最近的两张后卡。 */
 export function getStackCardOpacity(index: number, currentIndex: number, imageCount: number) {
 	if (index === currentIndex) return 1;

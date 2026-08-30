@@ -10,6 +10,7 @@ import {
 	FLIP_THRESHOLD_RATIO,
 	getBoundaryFollowerSlot,
 	getDraggedTopSlot,
+	getIndexedStackSlot,
 	getReleasePeakSlot,
 	getStackCardOpacity,
 	getStackSlot,
@@ -34,7 +35,7 @@ export interface PhotoStackStageProps {
 const INSERT_MS = 220;
 const RELEASE_PEAK_MS = 56;
 const FADE_IN_MS = 260;
-const TRANSITION_MS = RELEASE_PEAK_MS + FADE_IN_MS;
+const TRANSITION_MS = Math.max(INSERT_MS, FADE_IN_MS);
 type DragCardOrigin = PhotoStackSlot & { opacity: number; rotateY: number };
 /** PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
 export function PhotoStackStage({
@@ -136,6 +137,11 @@ export function PhotoStackStage({
 			const rearSide: StackDirection = direction === 1 ? "left" : "right";
 			const targetSlot = getStackSlot(rearSide, 1, width);
 			const peak = getReleasePeakSlot(releaseDelta, releaseVelocity, width);
+			const releaseProgress = Math.min(
+				1,
+				Math.abs(releaseDelta) / Math.max(1, width * PULL_THRESHOLD_RATIO),
+			);
+			const fadeDurationMs = Math.max(1, FADE_IN_MS * (1 - releaseProgress));
 			const releaseTransition = {
 				duration: INSERT_MS / 1000,
 				ease: "easeOut" as const,
@@ -146,8 +152,7 @@ export function PhotoStackStage({
 				ease: "easeOut" as const,
 			};
 			const opacityTransition = {
-				duration: FADE_IN_MS / 1000,
-				delay: completePullPhase ? RELEASE_PEAK_MS / 1000 : 0,
+				duration: fadeDurationMs / 1000,
 				ease: "linear" as const,
 			};
 			images.forEach((_, index) => {
@@ -397,7 +402,6 @@ export function PhotoStackStage({
 		value.rotateY.set(origin.rotateY + rotateY);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
-			if (canFlip && card.axis !== direction) return;
 			const cardValue = motionOf(card.image, card.index);
 			let cardOrigin = cardDragOrigins.current.get(card.index);
 			if (!cardOrigin) {
@@ -418,12 +422,17 @@ export function PhotoStackStage({
 				};
 				cardDragOrigins.current.set(card.index, cardOrigin);
 			}
-			const nextDepth = Math.max(card.depth - 1, 0);
-			const to = getStackSlot(card.axis, nextDepth, width);
+			const nextIndex = safeIndex + (rawDelta < 0 ? 1 : -1);
+			const targetSlot = getIndexedStackSlot(card.index, nextIndex, width);
 			const slot = canFlip
-				? interpolateSlot(cardOrigin, to, pullProgress)
+				? interpolateSlot(cardOrigin, targetSlot, pullProgress)
 				: getBoundaryFollowerSlot(cardOrigin, topSlot.x, card.depth);
-			setStackSlot(cardValue, slot, cardOrigin.opacity);
+			const targetOpacity = canFlip
+				? getStackCardOpacity(card.index, nextIndex, images.length)
+				: cardOrigin.opacity;
+			const opacity =
+				cardOrigin.opacity + (targetOpacity - cardOrigin.opacity) * pullProgress;
+			setStackSlot(cardValue, slot, opacity);
 			cardValue.rotateY.set(
 				canFlip ? cardOrigin.rotateY * (1 - pullProgress) : cardOrigin.rotateY,
 			);

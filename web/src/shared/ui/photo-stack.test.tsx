@@ -134,27 +134,53 @@ describe("PhotoStack", () => {
 		).toHaveLength(3);
 	});
 
-	it("后续卡进入最近两张后卡时才淡入", async () => {
+	it("正反向拖拽阶段同步换槽并交叉淡入淡出后卡", async () => {
 		render(<PhotoStack {...stackProps()} images={sixImages} />);
 		const stack = screen.getByRole("group");
-		const hiddenRear = stack.querySelector<HTMLElement>('[data-card-depth="3"]');
+		let hiddenRear = stack.querySelector<HTMLElement>('[data-card-depth="3"]');
 
 		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
 		fireEvent.pointerMove(stack, { clientX: 180, pointerId: 1 });
 		expect(hiddenRear?.style.opacity).toBe("0");
 		fireEvent.pointerUp(stack, { clientX: 180, pointerId: 1 });
 		await waitFor(() => expect(stack.getAttribute("data-current-index")).toBe("1"));
+		hiddenRear = screen.getByRole("button", { name: "第四张" });
 		expect(hiddenRear?.style.opacity).toBe("0");
+		const fadingPrevious = screen.getByRole("button", { name: "第一张" });
+		const previousTransform = fadingPrevious.style.transform;
 
 		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 2 });
 		fireEvent.pointerMove(stack, { clientX: 180, pointerId: 2 });
-		expect(hiddenRear?.style.opacity).toBe("0");
+		await waitFor(() => {
+			expect(Number(hiddenRear?.style.opacity)).toBeGreaterThan(0);
+			expect(Number(hiddenRear?.style.opacity)).toBeLessThan(1);
+			expect(Number(fadingPrevious.style.opacity)).toBeGreaterThan(0);
+			expect(Number(fadingPrevious.style.opacity)).toBeLessThan(1);
+			expect(fadingPrevious.style.transform).not.toBe(previousTransform);
+		});
 		fireEvent.pointerUp(stack, { clientX: 180, pointerId: 2 });
 
 		await waitFor(() => {
-			const opacity = Number(hiddenRear?.style.opacity);
-			expect(opacity).toBeGreaterThan(0);
-			expect(opacity).toBeLessThan(1);
+			expect(Number(hiddenRear?.style.opacity)).toBeGreaterThan(0.99);
+			expect(Number(fadingPrevious.style.opacity)).toBeLessThan(0.01);
+		});
+
+		const returningTransform = fadingPrevious.style.transform;
+		fireEvent.pointerDown(stack, { button: 0, clientX: 100, pointerId: 3 });
+		fireEvent.pointerMove(stack, { clientX: 220, pointerId: 3 });
+		await waitFor(() => {
+			expect(Number(fadingPrevious.style.opacity)).toBeGreaterThan(0);
+			expect(Number(fadingPrevious.style.opacity)).toBeLessThan(1);
+			expect(Number(hiddenRear?.style.opacity)).toBeGreaterThan(0);
+			expect(Number(hiddenRear?.style.opacity)).toBeLessThan(1);
+			expect(fadingPrevious.style.transform).not.toBe(returningTransform);
+		});
+		fireEvent.pointerUp(stack, { clientX: 220, pointerId: 3 });
+
+		await waitFor(() => {
+			expect(stack.getAttribute("data-current-index")).toBe("1");
+			expect(Number(fadingPrevious.style.opacity)).toBeGreaterThan(0.99);
+			expect(Number(hiddenRear?.style.opacity)).toBeLessThan(0.01);
 		});
 	});
 
