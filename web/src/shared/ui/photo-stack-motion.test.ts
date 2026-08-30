@@ -26,8 +26,8 @@ describe("PhotoStack motion decisions", () => {
 	it("左右拖拽产生镜像的 rotateY、rotateZ，并保留行程缩放", () => {
 		const left = getDraggedTopSlot(-120, 200, true);
 		const right = getDraggedTopSlot(120, 200, true);
-		expect(left.topSlot.scale).toBeCloseTo(0.948, 3);
-		expect(right.topSlot.scale).toBeCloseTo(0.948, 3);
+		expect(left.topSlot.scale).toBeCloseTo(0.922, 3);
+		expect(right.topSlot.scale).toBeCloseTo(0.922, 3);
 		expect(left.rotateY).toBeLessThan(0);
 		expect(right.rotateY).toBeGreaterThan(0);
 		expect(left.rotateY).toBeCloseTo(-right.rotateY, 3);
@@ -42,7 +42,7 @@ describe("PhotoStack motion decisions", () => {
 		expect(Math.abs(near.rotateY)).toBeLessThan(Math.abs(far.rotateY));
 		expect(far.rotateY).toBe(12);
 		expect(getDraggedTopSlot(0, 200, true).rotateY).toBe(0);
-		expect(boundary.topSlot.scale).toBeCloseTo(0.948, 3);
+		expect(boundary.topSlot.scale).toBeCloseTo(0.922, 3);
 		expect(boundary.topSlot.rotate).toBeGreaterThan(0);
 		expect(boundary.rotateY).toBeGreaterThan(0);
 	});

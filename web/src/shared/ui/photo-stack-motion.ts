@@ -42,8 +42,8 @@ export function getDraggedTopSlot(
 	const distance = Math.abs(rawDelta);
 	const pullThreshold = width * PULL_THRESHOLD_RATIO;
 	const insertThreshold = width * INSERT_THRESHOLD_RATIO;
-	const progress = Math.min(1, distance / Math.max(1, insertThreshold));
-	const scale = 1 - 0.104 * progress;
+	const pullProgress = Math.min(1, distance / Math.max(1, pullThreshold));
+	const scale = 1 - 0.104 * pullProgress;
 	const rotate = Math.max(
 		-DRAG_ROTATE_MAX,
 		Math.min(DRAG_ROTATE_MAX, rawDelta * DRAG_ROTATE_PER_PX),
