@@ -9,8 +9,10 @@ export interface PhotoStackCardProps {
 	x: MotionValue<number>;
 	/** 卡片垂直位移。 */
 	y: MotionValue<number>;
-	/** 卡片旋转角度。 */
+	/** 卡片平面旋转角度。 */
 	rotate: MotionValue<number>;
+	/** 卡片绕垂直轴的透视旋转角度，仅拖动中的当前卡使用。 */
+	rotateY: MotionValue<number>;
 	/** 卡片缩放比例。 */
 	scale: MotionValue<number>;
 	/** 卡片透明度。 */
@@ -24,13 +26,12 @@ export interface PhotoStackCardProps {
 	/** 仅顶卡提供点击回调，后置卡保持不可交互。 */
 	onClick?: MouseEventHandler<HTMLButtonElement>;
 }
-
-/** 堆叠中的单张媒体卡；自身不裁切，拖出由外层舞台自然呈现。 */
 export function PhotoStackCard({
 	image,
 	x,
 	y,
 	rotate,
+	rotateY,
 	scale,
 	opacity,
 	zIndex,
@@ -42,13 +43,22 @@ export function PhotoStackCard({
 		<motion.button
 			type="button"
 			className="absolute left-[4%] top-0 h-full w-[92%] rounded-lg border border-edge-hairline bg-background shadow-md"
-			style={{ x, y, rotate, scale, opacity, zIndex, transformOrigin: "50% 50%" }}
+			style={{
+				x,
+				y,
+				rotate,
+				rotateY,
+				scale,
+				opacity,
+				zIndex,
+				transformPerspective: 900,
+				transformOrigin: "50% 50%",
+			}}
 			disabled={!onClick}
 			data-card-state={state}
 			data-card-depth={depth}
 			data-card-z={zIndex}
 			onClick={onClick}
-			aria-label={image.alt ?? `打开第 ${depth + 1} 张照片`}
 		>
 			<img
 				src={image.src}

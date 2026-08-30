@@ -23,26 +23,27 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDirectionalZ(null, "right", 1, false)).toBe(29);
 	});
 
-	it("拖拽全行程顶卡渐渐缩小（从 1.0 连续缩至 0.896）", () => {
-		const width = 200;
-		// 1. 小拉出 (40px) -> 顶卡明显渐渐变小 (1.0 -> 0.983)
-		const p1 = getDraggedTopSlot(-40, width, true);
-		expect(p1.topSlot.scale).toBeCloseTo(1 - 0.104 * (40 / 240), 3);
-
-		// 2. 中程拉出 (120px) -> 进一步渐渐变小 (0.948)
-		const p2 = getDraggedTopSlot(-120, width, true);
-		expect(p2.topSlot.scale).toBeCloseTo(1 - 0.104 * (120 / 240), 3);
-
-		// 3. 拉出峰值 (160px) -> 持续变小 (0.931)
-		const p3 = getDraggedTopSlot(-160, width, true);
-		expect(p3.topSlot.scale).toBeCloseTo(1 - 0.104 * (160 / 240), 3);
-
-		// 4. 充分拖拽完成插槽 (240px) -> 完全缩小到后槽尺寸 0.896
-		const p4 = getDraggedTopSlot(-240, width, true);
-		expect(p4.topSlot.scale).toBeCloseTo(0.896, 3);
+	it("左右拖拽产生镜像的 rotateY、rotateZ，并保留行程缩放", () => {
+		const left = getDraggedTopSlot(-120, 200, true);
+		const right = getDraggedTopSlot(120, 200, true);
+		expect(left.topSlot.scale).toBeCloseTo(0.948, 3);
+		expect(right.topSlot.scale).toBeCloseTo(0.948, 3);
+		expect(left.rotateY).toBeLessThan(0);
+		expect(right.rotateY).toBeGreaterThan(0);
+		expect(left.rotateY).toBeCloseTo(-right.rotateY, 3);
+		expect(left.topSlot.rotate).toBeLessThan(0);
+		expect(right.topSlot.rotate).toBeGreaterThan(0);
+		expect(left.topSlot.rotate).toBeCloseTo(-right.topSlot.rotate, 3);
 	});
-
-	it("只把目标方向的后卡向前插槽联动", () => {
+	it("rotateY 随拖动距离增长并封顶，稳定态为零", () => {
+		const near = getDraggedTopSlot(40, 200, true);
+		const far = getDraggedTopSlot(400, 200, true);
+		expect(Math.abs(near.rotateY)).toBeLessThan(Math.abs(far.rotateY));
+		expect(far.rotateY).toBe(12);
+		expect(getDraggedTopSlot(0, 200, true).rotateY).toBe(0);
+		expect(getDraggedTopSlot(120, 200, false).rotateY).toBe(0);
+	});
+	it("插值时保留现有几何", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };
 		const to = { x: 0, y: 0, rotate: 0, scale: 1 };
 		expect(interpolateSlot(from, to, 0.5)).toEqual({
@@ -53,12 +54,11 @@ describe("PhotoStack motion decisions", () => {
 		});
 	});
 
-	it("后层槽位严格基于实测数据：X 偏移 0.106132w、Y 偏移 4px、scale 0.896、rotate 1.0°", () => {
+	it("后层槽位按宽度缩放并保留静态旋转", () => {
 		const slot = getStackSlot("right", 2, 280);
 		expect(slot.x).toBeCloseTo(59.43, 1);
 		expect(slot.y).toBe(8);
 		expect(slot.scale).toBeCloseTo(0.792, 3);
-		expect(slot.rotate).toBeCloseTo(2.0, 1);
 	});
 
 	it("卡片身份不随顶卡与后置卡角色改变", () => {

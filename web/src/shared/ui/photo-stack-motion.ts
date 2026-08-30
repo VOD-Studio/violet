@@ -11,17 +11,20 @@ export interface PhotoStackSlot {
 
 export const PULL_THRESHOLD_RATIO = 0.8;
 export const INSERT_THRESHOLD_RATIO = 1.2;
-export const TILT_PER_PX = 0.08;
-export const TILT_MAX = 25;
+export const DRAG_ROTATE_PER_PX = 0.008;
+export const DRAG_ROTATE_MAX = 2.5;
+export const ROTATE_Y_PER_PX = 0.06;
+export const ROTATE_Y_MAX = 12;
 
 export interface DraggedTopSlotResult {
 	topSlot: PhotoStackSlot;
+	rotateY: number;
 	isPastThreshold: boolean;
 	pullProgress: number;
 	insertProgress: number;
 }
 
-/** 计算顶卡在两阶段拖拽下的槽位：前半程 1:1 跟手拉开，到达阈值后继续拖拽则平滑滑入后置槽位。 */
+/** 计算顶卡拖动过程中的位置、缩放和透视旋转。 */
 export function getDraggedTopSlot(
 	rawDelta: number,
 	width: number,
@@ -30,24 +33,7 @@ export function getDraggedTopSlot(
 	if (width <= 0) {
 		return {
 			topSlot: { x: 0, y: 0, rotate: 0, scale: 1 },
-			isPastThreshold: false,
-			pullProgress: 0,
-			insertProgress: 0,
-		};
-	}
-	if (!canFlip) {
-		const rubberX =
-			Math.sign(rawDelta) *
-			width *
-			0.08 *
-			(1 - Math.exp(-Math.abs(rawDelta) / (width * 0.08)));
-		return {
-			topSlot: {
-				x: rubberX,
-				y: 0,
-				rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, rubberX * TILT_PER_PX)),
-				scale: 1,
-			},
+			rotateY: 0,
 			isPastThreshold: false,
 			pullProgress: 0,
 			insertProgress: 0,
@@ -56,39 +42,48 @@ export function getDraggedTopSlot(
 	const distance = Math.abs(rawDelta);
 	const pullThreshold = width * PULL_THRESHOLD_RATIO;
 	const insertThreshold = width * INSERT_THRESHOLD_RATIO;
-
-	const globalProgress = Math.min(1, distance / Math.max(1, insertThreshold));
-	const currentScale = 1 - 0.104 * globalProgress;
-
-	if (distance <= pullThreshold) {
-		const pullProgress = distance / pullThreshold;
-		const x = Math.sign(rawDelta) * distance;
-		const rotate = Math.max(-TILT_MAX, Math.min(TILT_MAX, x * TILT_PER_PX));
+	if (!canFlip) {
+		const rubberX =
+			Math.sign(rawDelta) *
+			width *
+			0.08 *
+			(1 - Math.exp(-distance / (width * 0.08)));
 		return {
-			topSlot: { x, y: 0, rotate, scale: currentScale },
+			topSlot: { x: rubberX, y: 0, rotate: 0, scale: 1 },
+			rotateY: 0,
 			isPastThreshold: false,
-			pullProgress,
+			pullProgress: 0,
 			insertProgress: 0,
 		};
 	}
-
+	const progress = Math.min(1, distance / Math.max(1, insertThreshold));
+	const scale = 1 - 0.104 * progress;
+	const rotate = Math.max(
+		-DRAG_ROTATE_MAX,
+		Math.min(DRAG_ROTATE_MAX, rawDelta * DRAG_ROTATE_PER_PX),
+	);
+	const rotateY =
+		rawDelta === 0
+			? 0
+			: Math.max(-ROTATE_Y_MAX, Math.min(ROTATE_Y_MAX, rawDelta * ROTATE_Y_PER_PX));
+	if (distance <= pullThreshold) {
+		return {
+			topSlot: { x: rawDelta, y: 0, rotate, scale },
+			rotateY,
+			isPastThreshold: false,
+			pullProgress: distance / pullThreshold,
+			insertProgress: 0,
+		};
+	}
 	const insertProgress = Math.min(
 		1,
 		(distance - pullThreshold) / Math.max(1, insertThreshold - pullThreshold),
 	);
-	const peakX = Math.sign(rawDelta) * pullThreshold;
-	const peakScale = 1 - 0.104 * (pullThreshold / Math.max(1, insertThreshold));
-	const peakSlot: PhotoStackSlot = {
-		x: peakX,
-		y: 0,
-		rotate: Math.max(-TILT_MAX, Math.min(TILT_MAX, peakX * TILT_PER_PX)),
-		scale: peakScale,
-	};
-	const rearAxis: StackDirection = rawDelta < 0 ? "left" : "right";
-	const rearSlot = getStackSlot(rearAxis, 1, width);
-	const topSlot = interpolateSlot(peakSlot, rearSlot, insertProgress);
+	const peakSlot = { x: Math.sign(rawDelta) * pullThreshold, y: 0, rotate, scale };
+	const rearSlot = getStackSlot(rawDelta < 0 ? "left" : "right", 1, width);
 	return {
-		topSlot,
+		topSlot: interpolateSlot(peakSlot, rearSlot, insertProgress),
+		rotateY,
 		isPastThreshold: true,
 		pullProgress: 1,
 		insertProgress,
@@ -99,7 +94,6 @@ export function getDragProgress(distance: number, threshold: number) {
 	if (threshold <= 0) return 1;
 	return Math.min(1, Math.max(0, Math.abs(distance) / threshold));
 }
-
 
 /** 在两个槽位之间插值，后层以负 y 和缩放收进顶卡底边。 */
 export function interpolateSlot(from: PhotoStackSlot, to: PhotoStackSlot, progress: number) {
@@ -126,7 +120,7 @@ export function getDirectionalZ(
 	return (target ? 70 : 30) - depth;
 }
 
-/** 静止槽位：严格对齐真机实测参数（X 偏移 0.106132w、Y 偏移 4px、scale 0.896、rotate 1.0°）。 */
+/** 静止槽位：后置卡保持既有偏移、旋转与缩放几何。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
 	return {
@@ -136,25 +130,25 @@ export function getStackSlot(axis: StackDirection, depth: number, width: number)
 		scale: 1 - 0.104 * depth,
 	};
 }
-
 export interface MotionBundle {
 	x: MotionValue<number>;
 	y: MotionValue<number>;
 	rotate: MotionValue<number>;
+	rotateY: MotionValue<number>;
 	scale: MotionValue<number>;
 	opacity: MotionValue<number>;
 }
-
-/** 立即落位一组 MotionValue；先停掉在跑的动画，避免 set 被逐帧覆盖。 */
 export function setStackSlot(value: MotionBundle, slot: PhotoStackSlot, opacity = 1) {
 	value.x.stop();
 	value.y.stop();
 	value.rotate.stop();
+	value.rotateY.stop();
 	value.scale.stop();
 	value.opacity.stop();
 	value.x.set(slot.x);
 	value.y.set(slot.y);
 	value.rotate.set(slot.rotate);
+	value.rotateY.set(0);
 	value.scale.set(slot.scale);
 	value.opacity.set(opacity);
 }

@@ -27,6 +27,7 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 					x: motionValue(init?.x ?? 0),
 					y: motionValue(init?.y ?? 0),
 					rotate: motionValue(init?.rotate ?? 0),
+					rotateY: motionValue(0),
 					scale: motionValue(init?.scale ?? 1),
 					opacity: motionValue(1),
 				};
@@ -57,15 +58,12 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 
 	const animateCard = useCallback(
 		(card: PhotoStackVisibleCard, immediate = false) => {
-			const value = motionOf(
-				card.image,
-				card.index,
-				getStackSlot(card.axis, card.depth, stackWidth),
-			);
 			const slot = getStackSlot(card.axis, card.depth, stackWidth);
+			const value = motionOf(card.image, card.index, slot);
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
+			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
 			const alreadyThere =
@@ -76,12 +74,14 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 				value.x.set(slot.x);
 				value.y.set(slot.y);
 				value.rotate.set(slot.rotate);
+				value.rotateY.set(0);
 				value.scale.set(slot.scale);
 				value.opacity.set(1);
 			} else {
 				animate(value.x, slot.x, SLOT_SPRING);
 				animate(value.y, slot.y, SLOT_SPRING);
 				animate(value.rotate, slot.rotate, SLOT_SPRING);
+				animate(value.rotateY, 0, SLOT_SPRING);
 				animate(value.scale, slot.scale, SLOT_SPRING);
 				animate(value.opacity, 1, SLOT_SPRING);
 			}
@@ -100,16 +100,17 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
+			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
 			animate(value.x, 0, SLOT_SPRING);
 			animate(value.y, 0, SLOT_SPRING);
 			animate(value.rotate, 0, SLOT_SPRING);
+			animate(value.rotateY, 0, SLOT_SPRING);
 			animate(value.scale, 1, SLOT_SPRING);
 			animate(value.opacity, 1, SLOT_SPRING);
 		}
 	}, [animateCard, images, motionOf, safeIndex, stackWidth, visibleCards]);
-
 	const resetTop = useCallback(() => {
 		const top = images[safeIndex];
 		if (!top) return;
@@ -117,6 +118,7 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 		animate(value.x, 0, SLOT_SPRING);
 		animate(value.y, 0, SLOT_SPRING);
 		animate(value.rotate, 0, SLOT_SPRING);
+		animate(value.rotateY, 0, SLOT_SPRING);
 		animate(value.scale, 1, SLOT_SPRING);
 		animate(value.opacity, 1, SLOT_SPRING);
 	}, [images, motionOf, safeIndex]);

@@ -98,11 +98,10 @@ export function PhotoStackStage({
 			const rearSide: StackDirection = direction === 1 ? "left" : "right";
 			const targetSlot = getStackSlot(rearSide, 1, width);
 			settling.current = true;
-
-			// 1. 旧顶卡在 220ms 内动画滑入后置槽位
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
+			value.rotateY.stop();
 			value.scale.stop();
 			animate(value.x, targetSlot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 			animate(value.y, targetSlot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
@@ -110,11 +109,14 @@ export function PhotoStackStage({
 				duration: INSERT_MS / 1000,
 				ease: "easeOut" as const,
 			});
+			animate(value.rotateY, 0, {
+				duration: INSERT_MS / 1000,
+				ease: "easeOut" as const,
+			});
 			animate(value.scale, targetSlot.scale, {
 				duration: INSERT_MS / 1000,
 				ease: "easeOut" as const,
 			});
-
 			// 2. 新顶卡在同一个 220ms 内同步动画到达中心
 			const nextTop = images[nextIndex];
 			if (nextTop) {
@@ -122,7 +124,9 @@ export function PhotoStackStage({
 				nextTopMotion.x.stop();
 				nextTopMotion.y.stop();
 				nextTopMotion.rotate.stop();
+				nextTopMotion.rotateY.stop();
 				nextTopMotion.scale.stop();
+				nextTopMotion.rotateY.set(0);
 				animate(nextTopMotion.x, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 				animate(nextTopMotion.y, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 				animate(nextTopMotion.rotate, 0, {
@@ -143,7 +147,8 @@ export function PhotoStackStage({
 					const slot = getStackSlot("left", depth, width);
 					cardMotion.x.stop();
 					cardMotion.y.stop();
-					cardMotion.rotate.stop();
+					cardMotion.rotateY.stop();
+					cardMotion.rotateY.set(0);
 					cardMotion.scale.stop();
 					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
@@ -162,7 +167,8 @@ export function PhotoStackStage({
 					const slot = getStackSlot("right", depth, width);
 					cardMotion.x.stop();
 					cardMotion.y.stop();
-					cardMotion.rotate.stop();
+					cardMotion.rotateY.stop();
+					cardMotion.rotateY.set(0);
 					cardMotion.scale.stop();
 					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
@@ -217,6 +223,7 @@ export function PhotoStackStage({
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
+			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
 		}
@@ -225,11 +232,11 @@ export function PhotoStackStage({
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
+			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
 		});
 	};
-
 	const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (pointerStartX.current === null || settling.current) return;
 		const top = images[safeIndex];
@@ -244,16 +251,14 @@ export function PhotoStackStage({
 			(rawDelta < 0 && safeIndex < images.length - 1) || (rawDelta > 0 && safeIndex > 0);
 		const width = stackWidth || 280;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
-		const { topSlot, isPastThreshold: past, pullProgress } = getDraggedTopSlot(
-			rawDelta,
-			width,
-			canFlip,
-		);
+		const result = getDraggedTopSlot(rawDelta, width, canFlip);
+		const { topSlot, isPastThreshold: past, pullProgress } = result;
 		setCurrentOffset(topSlot.x);
 		setIncomingProgress(canFlip ? pullProgress : 0);
 		setIsPastThreshold(canFlip && past);
 		setDragDirection(direction);
 		setStackSlot(value, topSlot);
+		value.rotateY.set(result.rotateY);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);

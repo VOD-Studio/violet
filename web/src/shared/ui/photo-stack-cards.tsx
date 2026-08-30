@@ -71,6 +71,7 @@ export function PhotoStackCards({
 						x={value.x}
 						y={value.y}
 						rotate={value.rotate}
+						rotateY={value.rotateY}
 						scale={value.scale}
 						opacity={value.opacity}
 						zIndex={getDirectionalZ(dragDirection, card.axis, card.depth, isPastThreshold)}
@@ -85,6 +86,7 @@ export function PhotoStackCards({
 				x={currentMotion.x}
 				y={currentMotion.y}
 				rotate={currentMotion.rotate}
+				rotateY={currentMotion.rotateY}
 				scale={currentMotion.scale}
 				opacity={currentMotion.opacity}
 				zIndex={isPastThreshold ? 90 : 100}
