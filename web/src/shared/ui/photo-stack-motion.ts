@@ -7,6 +7,7 @@ export interface PhotoStackSlot {
 	y: number;
 	rotate: number;
 	scale: number;
+	opacity?: number;
 }
 
 export const PULL_THRESHOLD_RATIO = 0.8;
@@ -19,6 +20,10 @@ const BOUNDARY_OFFSET_RATIO = 0.08;
 const BOUNDARY_ROTATE_MAX = 3.2;
 const BOUNDARY_SCALE_DELTA = 0.0103;
 const BOUNDARY_FOLLOW_FACTORS = [0, 0.66, 0.37, 0.08] as const;
+const RELEASE_PEAK_MIN_RATIO = 0.52;
+const RELEASE_PEAK_MAX_RATIO = 0.68;
+const RELEASE_MOMENTUM_MS = 100;
+const RELEASE_VELOCITY_LIMIT_PER_MS = 0.003;
 
 export interface DraggedTopSlotResult {
 	topSlot: PhotoStackSlot;
@@ -26,6 +31,11 @@ export interface DraggedTopSlotResult {
 	isPastThreshold: boolean;
 	pullProgress: number;
 	insertProgress: number;
+}
+
+export interface ReleasePeakSlotResult {
+	topSlot: PhotoStackSlot;
+	rotateY: number;
 }
 
 /** 计算顶卡拖动过程中的位置、缩放、平面旋转与透视旋转。 */
@@ -96,8 +106,43 @@ export function getBoundaryFollowerSlot(
 	topX: number,
 	depth: number,
 ): PhotoStackSlot {
-	const factor = BOUNDARY_FOLLOW_FACTORS[depth] ?? 0;
+	const factor = BOUNDARY_FOLLOW_FACTORS[Math.min(Math.max(depth, 0), 3)] ?? 0;
 	return { ...base, x: base.x + topX * factor };
+}
+
+/** 按释放位置与速度计算轻扫续冲峰值，避免固定远点造成突然加速。 */
+export function getReleasePeakSlot(
+	releaseX: number,
+	releaseVelocity: number,
+	width: number,
+): ReleasePeakSlotResult {
+	if (width <= 0) {
+		return { topSlot: { x: 0, y: 0, rotate: 0, scale: 1 }, rotateY: 0 };
+	}
+	const direction = Math.sign(releaseX) || Math.sign(releaseVelocity) || 1;
+	const forwardVelocity = Math.min(
+		Math.max(releaseVelocity * direction, 0),
+		width * RELEASE_VELOCITY_LIMIT_PER_MS,
+	);
+	const distance = Math.min(
+		width * RELEASE_PEAK_MAX_RATIO,
+		Math.max(
+			width * RELEASE_PEAK_MIN_RATIO,
+			Math.abs(releaseX) + forwardVelocity * RELEASE_MOMENTUM_MS,
+		),
+	);
+	const peakProgress =
+		(distance / width - RELEASE_PEAK_MIN_RATIO) /
+		(RELEASE_PEAK_MAX_RATIO - RELEASE_PEAK_MIN_RATIO);
+	return {
+		topSlot: {
+			x: direction * distance,
+			y: 0,
+			rotate: direction * (8 + 2.6 * peakProgress),
+			scale: 0.85 - 0.09 * peakProgress,
+		},
+		rotateY: direction * 2,
+	};
 }
 
 /** 保持当前位置并清除拖动速度，避免回弹继承松手惯性。 */
@@ -132,18 +177,35 @@ export function getDirectionalZ(
 		return 100;
 	}
 	const target = direction !== null && direction === axis;
-	return (target ? 70 : 30) - depth;
+	return Math.max(1, (target ? 70 : 30) - depth);
 }
 
 /** 静止槽位：后置卡保持既有偏移、旋转与缩放几何。 */
 export function getStackSlot(axis: StackDirection, depth: number, width: number): PhotoStackSlot {
 	const sign = axis === "left" ? -1 : 1;
+	const visualDepth = Math.min(Math.max(depth, 0), 2);
 	return {
-		x: sign * width * 0.106132 * depth,
-		y: 4 * depth,
-		rotate: sign * 1.0 * depth,
-		scale: 1 - 0.104 * depth,
+		x: sign * width * 0.106132 * visualDepth,
+		y: 4 * visualDepth,
+		rotate: sign * 1.0 * visualDepth,
+		scale: 1 - 0.104 * visualDepth,
 	};
+}
+
+/** 静止时整个堆栈只显示顶卡与距离它最近的两张后卡。 */
+export function getStackCardOpacity(index: number, currentIndex: number, imageCount: number) {
+	if (index === currentIndex) return 1;
+	let selected = 0;
+	for (let distance = 1; selected < 2 && distance < imageCount; distance += 1) {
+		const candidates = [currentIndex - distance, currentIndex + distance];
+		for (const candidate of candidates) {
+			if (candidate < 0 || candidate >= imageCount) continue;
+			selected += 1;
+			if (candidate === index) return 1;
+			if (selected === 2) break;
+		}
+	}
+	return 0;
 }
 export interface MotionBundle {
 	x: MotionValue<number>;

@@ -13,17 +13,7 @@ export function FeedPhotoStack({ galleries }: { galleries: MockGallery[] }) {
 			{galleries.map((g) => (
 				<PhotoStack
 					key={g.id}
-					images={[
-						{ src: g.cover, alt: g.title },
-						{
-							src: `https://picsum.photos/seed/${g.id}-p2/600/800`,
-							alt: `${g.title} 之二`,
-						},
-						{
-							src: `https://picsum.photos/seed/${g.id}-p3/600/800`,
-							alt: `${g.title} 之三`,
-						},
-					]}
+					images={stackImages(g)}
 					footer={
 						<>
 							<h3 className="line-clamp-1 font-semibold group-hover:text-primary">
@@ -38,4 +28,20 @@ export function FeedPhotoStack({ galleries }: { galleries: MockGallery[] }) {
 			))}
 		</div>
 	);
+}
+
+function stackImages(gallery: MockGallery) {
+	if (gallery.items.length > 0) {
+		return gallery.items.map((item, index) => ({
+			src: item.url,
+			alt: index === 0 ? gallery.title : `${gallery.title} 之${index + 1}`,
+		}));
+	}
+	return Array.from({ length: Math.max(gallery.itemCount, 1) }, (_, index) => ({
+		src:
+			index === 0
+				? gallery.cover
+				: `https://picsum.photos/seed/${gallery.id}-p${index + 1}/600/800`,
+		alt: index === 0 ? gallery.title : `${gallery.title} 之${index + 1}`,
+	}));
 }

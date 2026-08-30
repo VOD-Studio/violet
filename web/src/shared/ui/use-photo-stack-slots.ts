@@ -4,6 +4,7 @@ import type { PhotoStackImage } from "./photo-stack";
 import type { PhotoStackCardMotion, PhotoStackVisibleCard } from "./photo-stack-cards";
 import {
 	cardMotionKey,
+	getStackCardOpacity,
 	getStackSlot,
 	type PhotoStackSlot,
 	resetMotionValueVelocity,
@@ -20,10 +21,17 @@ export interface UsePhotoStackSlotsOptions {
 	safeIndex: number;
 	/** 舞台像素宽度。 */
 	stackWidth: number;
+	/** 判断某张卡是否仍在独立完成上一段换位动画。 */
+	isTransitioning?: (index: number) => boolean;
 }
 
-/** 管理有限堆叠的卡片 MotionValue、可见槽位和回弹动作。 */
-export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoStackSlotsOptions) {
+/** 管理照片堆叠的卡片 MotionValue、可见槽位和回弹动作。 */
+export function usePhotoStackSlots({
+	images,
+	safeIndex,
+	stackWidth,
+	isTransitioning = () => false,
+}: UsePhotoStackSlotsOptions) {
 	const cardMotions = useRef(new Map<string, PhotoStackCardMotion>());
 	const motionOf = useCallback(
 		(image: PhotoStackImage, index: number, init?: PhotoStackSlot): PhotoStackCardMotion => {
@@ -36,7 +44,7 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 					rotate: motionValue(init?.rotate ?? 0),
 					rotateY: motionValue(0),
 					scale: motionValue(init?.scale ?? 1),
-					opacity: motionValue(1),
+					opacity: motionValue(init?.opacity ?? 1),
 				};
 				cardMotions.current.set(key, value);
 			}
@@ -47,7 +55,8 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 
 	const visibleCards = useMemo<PhotoStackVisibleCard[]>(() => {
 		const cards: PhotoStackVisibleCard[] = [];
-		for (let depth = 3; depth >= 1; depth -= 1) {
+		const maxDepth = Math.max(safeIndex, images.length - safeIndex - 1);
+		for (let depth = maxDepth; depth >= 1; depth -= 1) {
 			const previousIndex = safeIndex - depth;
 			if (previousIndex >= 0)
 				cards.push({
@@ -66,7 +75,8 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 	const animateCard = useCallback(
 		(card: PhotoStackVisibleCard, immediate = false) => {
 			const slot = getStackSlot(card.axis, card.depth, stackWidth);
-			const value = motionOf(card.image, card.index, slot);
+			const targetOpacity = getStackCardOpacity(card.index, safeIndex, images.length);
+			const value = motionOf(card.image, card.index, { ...slot, opacity: targetOpacity });
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
@@ -77,33 +87,34 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 				Math.abs(value.x.get() - slot.x) < 0.5 &&
 				Math.abs(value.y.get() - slot.y) < 0.5 &&
 				Math.abs(value.rotateY.get()) < 0.01 &&
-				Math.abs(value.scale.get() - slot.scale) < 0.01;
+				Math.abs(value.scale.get() - slot.scale) < 0.01 &&
+				Math.abs(value.opacity.get() - targetOpacity) < 0.01;
 			if (immediate || alreadyThere) {
 				value.x.set(slot.x);
 				value.y.set(slot.y);
 				value.rotate.set(slot.rotate);
 				value.rotateY.set(0);
 				value.scale.set(slot.scale);
-				value.opacity.set(1);
+				value.opacity.set(targetOpacity);
 			} else {
 				animate(value.x, slot.x, SLOT_SPRING);
 				animate(value.y, slot.y, SLOT_SPRING);
 				animate(value.rotate, slot.rotate, SLOT_SPRING);
 				animate(value.rotateY, 0, SLOT_SPRING);
 				animate(value.scale, slot.scale, SLOT_SPRING);
-				animate(value.opacity, 1, SLOT_SPRING);
+				animate(value.opacity, targetOpacity, SLOT_SPRING);
 			}
 		},
-		[motionOf, stackWidth],
+		[images.length, motionOf, safeIndex, stackWidth],
 	);
 
 	useEffect(() => {
 		if (!stackWidth) return;
 		visibleCards.forEach((card) => {
-			animateCard(card);
+			if (!isTransitioning(card.index)) animateCard(card);
 		});
 		const top = images[safeIndex];
-		if (top) {
+		if (top && !isTransitioning(safeIndex)) {
 			const value = motionOf(top, safeIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
 			value.x.stop();
 			value.y.stop();
@@ -118,7 +129,7 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 			animate(value.scale, 1, SLOT_SPRING);
 			animate(value.opacity, 1, SLOT_SPRING);
 		}
-	}, [animateCard, images, motionOf, safeIndex, stackWidth, visibleCards]);
+	}, [animateCard, images, isTransitioning, motionOf, safeIndex, stackWidth, visibleCards]);
 	const resetTop = useCallback(() => {
 		const top = images[safeIndex];
 		if (!top) return;
@@ -139,13 +150,17 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 	const resetCards = useCallback(
 		(immediate = false) => {
 			visibleCards.forEach((card) => {
-				animateCard(card, immediate);
+				if (!isTransitioning(card.index)) animateCard(card, immediate);
 			});
 		},
-		[animateCard, visibleCards],
+		[animateCard, isTransitioning, visibleCards],
 	);
 	const resetBoundary = useCallback(() => {
-		const animateTo = (value: PhotoStackCardMotion, slot: PhotoStackSlot) => {
+		const animateTo = (
+			value: PhotoStackCardMotion,
+			slot: PhotoStackSlot,
+			targetOpacity = 1,
+		) => {
 			resetMotionValueVelocity(value.x);
 			resetMotionValueVelocity(value.y);
 			resetMotionValueVelocity(value.rotate);
@@ -157,7 +172,7 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 			animate(value.rotate, slot.rotate, BOUNDARY_SPRING);
 			animate(value.rotateY, 0, BOUNDARY_SPRING);
 			animate(value.scale, slot.scale, BOUNDARY_SPRING);
-			animate(value.opacity, 1, BOUNDARY_SPRING);
+			animate(value.opacity, targetOpacity, BOUNDARY_SPRING);
 		};
 		const top = images[safeIndex];
 		if (top) {
@@ -165,7 +180,11 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 		}
 		const width = stackWidth || 280;
 		visibleCards.forEach((card) => {
-			animateTo(motionOf(card.image, card.index), getStackSlot(card.axis, card.depth, width));
+			animateTo(
+				motionOf(card.image, card.index),
+				getStackSlot(card.axis, card.depth, width),
+				getStackCardOpacity(card.index, safeIndex, images.length),
+			);
 		});
 	}, [images, motionOf, safeIndex, stackWidth, visibleCards]);
 

@@ -39,7 +39,7 @@ export interface GallerySummary {
 	description: string;
 	/** 封面访问地址（指定封面或首项媒体；文件缺失为空串） */
 	cover_url: string;
-	/** 浏览流照片堆叠预览：前 3 项媒体地址（缩略图/视频首帧优先） */
+	/** 浏览流照片堆叠预览的全部媒体地址（缩略图/视频首帧优先） */
 	preview_urls: string[];
 	item_count: number;
 	status: "published" | "removed" | (string & {});

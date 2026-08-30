@@ -1,4 +1,4 @@
-import { act, createEvent, fireEvent, render, screen } from "@testing-library/react";
+import { act, createEvent, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { animate } from "motion/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhotoStack, type PhotoStackImage } from "./photo-stack";
@@ -14,8 +14,16 @@ const images: PhotoStackImage[] = [
 	{ src: "/three.jpg", alt: "第三张" },
 	{ src: "/four.jpg", alt: "第四张" },
 ];
+const sixImages: PhotoStackImage[] = [
+	...images,
+	{ src: "/five.jpg", alt: "第五张" },
+	{ src: "/six.jpg", alt: "第六张" },
+];
+let restoreOffsetWidth: (() => void) | undefined;
 
 afterEach(() => {
+	restoreOffsetWidth?.();
+	restoreOffsetWidth = undefined;
 	vi.useRealTimers();
 });
 
@@ -74,6 +82,11 @@ describe("PhotoStack", () => {
 		expect(stack.getAttribute("data-stack-state")).toBe("middle");
 		expect(stack.querySelectorAll('[data-card-state="left"]').length).toBe(1);
 		expect(stack.querySelectorAll('[data-card-state="right"]').length).toBe(2);
+		expect(
+			[...stack.querySelectorAll<HTMLElement>("[data-card-depth]")].filter(
+				(card) => Number(card.style.opacity) > 0.01,
+			),
+		).toHaveLength(3);
 		fireEvent.pointerDown(stack, { button: 0, clientX: 100, pointerId: 9 });
 		fireEvent.pointerMove(stack, { clientX: 180, pointerId: 9 });
 		expect(stack.getAttribute("data-drag-direction")).toBe("left");
@@ -98,6 +111,51 @@ describe("PhotoStack", () => {
 		expect(stack.querySelectorAll('[data-card-state="left"]').length).toBe(3);
 		expect(stack.querySelectorAll('[data-card-state="right"]').length).toBe(0);
 		rerender(<PhotoStack {...stackProps()} />);
+	});
+
+	it("折叠态保留全部真实卡片并显示完整数量", () => {
+		render(<PhotoStack {...stackProps()} images={sixImages} />);
+		const stack = screen.getByRole("group");
+
+		expect(stack.getAttribute("aria-label")).toBe("第 1 项，共 6 项");
+		expect(screen.getByRole("button", { name: "展开全部照片，共 6 张" })).toBeTruthy();
+		expect(stack.querySelectorAll('[data-card-state="current"]')).toHaveLength(1);
+		expect(
+			stack.querySelectorAll('[data-card-state="left"], [data-card-state="right"]'),
+		).toHaveLength(5);
+		const secondRear = stack.querySelector<HTMLElement>('[data-card-depth="2"]');
+		const hiddenRear = stack.querySelector<HTMLElement>('[data-card-depth="3"]');
+		expect(secondRear?.style.opacity).toBe("1");
+		expect(hiddenRear?.style.opacity).toBe("0");
+		expect(
+			[...stack.querySelectorAll<HTMLElement>("[data-card-depth]")].filter(
+				(card) => Number(card.style.opacity) > 0.01,
+			),
+		).toHaveLength(3);
+	});
+
+	it("后续卡进入最近两张后卡时才淡入", async () => {
+		render(<PhotoStack {...stackProps()} images={sixImages} />);
+		const stack = screen.getByRole("group");
+		const hiddenRear = stack.querySelector<HTMLElement>('[data-card-depth="3"]');
+
+		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 1 });
+		fireEvent.pointerMove(stack, { clientX: 180, pointerId: 1 });
+		expect(hiddenRear?.style.opacity).toBe("0");
+		fireEvent.pointerUp(stack, { clientX: 180, pointerId: 1 });
+		await waitFor(() => expect(stack.getAttribute("data-current-index")).toBe("1"));
+		expect(hiddenRear?.style.opacity).toBe("0");
+
+		fireEvent.pointerDown(stack, { button: 0, clientX: 300, pointerId: 2 });
+		fireEvent.pointerMove(stack, { clientX: 180, pointerId: 2 });
+		expect(hiddenRear?.style.opacity).toBe("0");
+		fireEvent.pointerUp(stack, { clientX: 180, pointerId: 2 });
+
+		await waitFor(() => {
+			const opacity = Number(hiddenRear?.style.opacity);
+			expect(opacity).toBeGreaterThan(0);
+			expect(opacity).toBeLessThan(1);
+		});
 	});
 
 	it("首尾不循环，边界拖动回弹且未误触打开", () => {
@@ -144,7 +202,7 @@ describe("PhotoStack", () => {
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 	});
 
-	it("视觉阈值前释放会先补完拉出轨迹再插入后置槽", () => {
+	it("视觉阈值前释放按当前位置小幅续冲后进入后置槽", () => {
 		vi.useFakeTimers();
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
@@ -164,10 +222,15 @@ describe("PhotoStack", () => {
 			throw new TypeError("缺少旧顶卡横向插槽动画");
 		}
 		expect(value.get()).toBeCloseTo(-90);
-		expect(target).toEqual([null, -224, expect.closeTo(-29.71696, 5)]);
+		expect(target).toEqual([null, expect.closeTo(-145.6, 5), expect.closeTo(-29.71696, 5)]);
+		const transition = vi.mocked(animate).mock.calls[0]?.[2];
+		expect(transition).toMatchObject({
+			duration: 0.22,
+			times: [0, expect.closeTo(56 / 220, 5), 1],
+		});
 	});
 
-	it("自动补完拉出阶段时到达峰值才切换卡片层级", () => {
+	it("轻扫续冲到峰值时迅速切换卡片层级", () => {
 		vi.useFakeTimers();
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
@@ -180,14 +243,18 @@ describe("PhotoStack", () => {
 		expect(Number(current.getAttribute("data-card-z"))).toBe(100);
 		expect(Number(incoming.getAttribute("data-card-z"))).toBe(69);
 
-		act(() => vi.advanceTimersByTime(109));
+		act(() => vi.advanceTimersByTime(55));
 		expect(Number(current.getAttribute("data-card-z"))).toBe(100);
-		expect(Number(incoming.getAttribute("data-card-z"))).toBe(69);
 		act(() => vi.advanceTimersByTime(1));
-		expect(Number(current.getAttribute("data-card-z"))).toBe(90);
-		expect(Number(incoming.getAttribute("data-card-z"))).toBe(100);
+		expect(stack.getAttribute("data-current-index")).toBe("1");
+		expect(screen.getByRole("button", { name: "第一张" }).getAttribute("data-card-state")).toBe(
+			"left",
+		);
+		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
+			"current",
+		);
 
-		act(() => vi.advanceTimersByTime(110));
+		act(() => vi.advanceTimersByTime(164));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 	});
 
@@ -224,8 +291,13 @@ describe("PhotoStack", () => {
 
 		vi.mocked(animate).mockClear();
 		fireTimedPointerEvent(stack, "up", { clientX: 76, pointerId: 1 }, 350);
-		expect(Number(current.getAttribute("data-card-z"))).toBe(90);
-		expect(Number(incoming.getAttribute("data-card-z"))).toBe(100);
+		expect(stack.getAttribute("data-current-index")).toBe("1");
+		expect(screen.getByRole("button", { name: "第一张" }).getAttribute("data-card-state")).toBe(
+			"left",
+		);
+		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
+			"current",
+		);
 		const target = vi.mocked(animate).mock.calls[0]?.[1];
 		if (typeof target !== "number") throw new TypeError("峰值释放重复补拉");
 		expect(target).toBeCloseTo(-29.71696, 5);
@@ -251,8 +323,13 @@ describe("PhotoStack", () => {
 
 	it("首尾越界拖动保留阻尼轨迹并在松手后回弹", () => {
 		vi.useFakeTimers();
+		const offsetWidthSpy = vi
+			.spyOn(HTMLElement.prototype, "offsetWidth", "get")
+			.mockReturnValue(280);
+		restoreOffsetWidth = () => offsetWidthSpy.mockRestore();
 		render(<PhotoStack {...stackProps()} />);
 		const stack = screen.getByRole("group");
+		act(() => vi.advanceTimersByTime(500));
 		const setPointerCapture = vi.fn();
 		const hasPointerCapture = vi.fn(() => true);
 		const releasePointerCapture = vi.fn();
@@ -283,7 +360,7 @@ describe("PhotoStack", () => {
 		) {
 			throw new TypeError("边界后卡未同步回弹");
 		}
-		expect(followerValue.get()).toBeGreaterThan(29.71696);
+		expect(followerValue.get()).not.toBeCloseTo(29.71696);
 		expect(hasPointerCapture).toHaveBeenCalledWith(1);
 		expect(releasePointerCapture).toHaveBeenCalledWith(1);
 		act(() => vi.runAllTimers());
@@ -328,7 +405,7 @@ describe("PhotoStack", () => {
 		fireEvent.pointerMove(stack, { clientX: -30, pointerId: 1 });
 		expect(incoming.getAttribute("data-card-state")).toBe("right");
 		fireEvent.pointerUp(stack, { clientX: -30, pointerId: 1 });
-		expect(stack.getAttribute("data-current-index")).toBe("0");
+		expect(stack.getAttribute("data-current-index")).toBe("1");
 		act(() => vi.advanceTimersByTime(220));
 		expect(stack.getAttribute("data-current-index")).toBe("1");
 		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
@@ -340,6 +417,80 @@ describe("PhotoStack", () => {
 		fireEvent.click(screen.getByRole("button", { name: "第三张" }));
 		expect(onImageOpen.mock.calls).toEqual([[2]]);
 		expect(screen.getByRole("group")).toBeTruthy();
+	});
+
+	it("前一张仍在回槽时新顶卡即可接管下一次拖拽", () => {
+		vi.useFakeTimers();
+		const offsetWidthSpy = vi
+			.spyOn(HTMLElement.prototype, "offsetWidth", "get")
+			.mockReturnValue(280);
+		restoreOffsetWidth = () => offsetWidthSpy.mockRestore();
+		render(<PhotoStack {...stackProps()} />);
+		const stack = screen.getByRole("group");
+		act(() => vi.advanceTimersByTime(500));
+		vi.mocked(animate).mockClear();
+
+		fireTimedPointerEvent(stack, "down", { button: 0, clientX: 200, pointerId: 1 }, 100);
+		fireTimedPointerEvent(stack, "move", { clientX: 110, pointerId: 1 }, 140);
+		fireTimedPointerEvent(stack, "up", { clientX: 110, pointerId: 1 }, 160);
+		const incomingXAnimation = vi.mocked(animate).mock.calls.find(([value, target]) => {
+			if (
+				target !== 0 ||
+				typeof value !== "object" ||
+				value === null ||
+				!("get" in value) ||
+				typeof value.get !== "function"
+			)
+				return false;
+			return true;
+		});
+		const rearXAnimation = vi.mocked(animate).mock.calls.find(([value, target]) => {
+			if (
+				typeof target !== "number" ||
+				Math.abs(target - 29.71696) > 0.001 ||
+				typeof value !== "object" ||
+				value === null ||
+				!("get" in value) ||
+				typeof value.get !== "function"
+			)
+				return false;
+			return true;
+		});
+		const incomingX = incomingXAnimation?.[0];
+		const rearX = rearXAnimation?.[0];
+		if (
+			typeof incomingX !== "object" ||
+			incomingX === null ||
+			!("get" in incomingX) ||
+			typeof incomingX.get !== "function" ||
+			!("set" in incomingX) ||
+			typeof incomingX.set !== "function"
+		)
+			throw new TypeError("缺少新顶卡横向回中动画");
+		if (
+			typeof rearX !== "object" ||
+			rearX === null ||
+			!("get" in rearX) ||
+			typeof rearX.get !== "function" ||
+			!("set" in rearX) ||
+			typeof rearX.set !== "function"
+		)
+			throw new TypeError("缺少后置卡换位动画");
+		act(() => vi.advanceTimersByTime(56));
+		expect(stack.getAttribute("data-current-index")).toBe("1");
+		incomingX.set(18);
+		rearX.set(45);
+
+		fireTimedPointerEvent(stack, "down", { button: 0, clientX: 200, pointerId: 2 }, 260);
+		const dragOrigin = incomingX.get();
+		const rearOrigin = rearX.get();
+		fireTimedPointerEvent(stack, "move", { clientX: 199, pointerId: 2 }, 290);
+		expect(incomingX.get()).toBeCloseTo(dragOrigin - 1);
+		expect(rearX.get()).toBeCloseTo(rearOrigin + (0 - rearOrigin) * (1 / 224));
+		expect(Number(stack.getAttribute("data-current-offset"))).toBeCloseTo(dragOrigin - 1);
+		expect(screen.getByRole("button", { name: "第二张" }).getAttribute("data-card-state")).toBe(
+			"current",
+		);
 	});
 
 	it("两阶段拖拽：拉出至只剩 1/5 前 1:1 跟手置顶，过阈值后继续拖动平滑插回后置槽位且目标卡置顶", () => {

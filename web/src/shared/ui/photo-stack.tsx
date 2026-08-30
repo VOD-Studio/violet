@@ -1,5 +1,5 @@
 /**
- * PhotoStack - 有限照片堆叠。
+ * PhotoStack - 照片堆叠。
  *
  * 顶图按原始顺序翻页，不循环；展开后使用同尺寸媒体墙。
  */
@@ -27,7 +27,7 @@ export interface PhotoStackProps {
 }
 
 /**
- * 有限照片堆叠：拖拽越过阈值后将当前卡甩出，再让下一卡弹到顶层。
+ * 照片堆叠：拖拽越过阈值后将当前卡插入后槽，并让下一卡切到顶层。
  *
  * @param images 图片序列
  * @param footer 卡片元信息

@@ -3,6 +3,7 @@ import { PhotoStackCard } from "./photo-stack-card";
 import {
 	cardMotionKey,
 	getDirectionalZ,
+	getStackCardOpacity,
 	getStackSlot,
 	type MotionBundle,
 	type PhotoStackSlot,
@@ -18,7 +19,7 @@ export interface PhotoStackVisibleCard {
 }
 
 export interface PhotoStackCardsProps {
-	/** 当前索引两侧最多三层后置卡。 */
+	/** 当前索引两侧的全部后置卡。 */
 	visibleCards: PhotoStackVisibleCard[];
 	/** 当前顶图。 */
 	current: PhotoStackImage;
@@ -59,11 +60,11 @@ export function PhotoStackCards({
 	return (
 		<>
 			{visibleCards.map((card) => {
-				const value = motionOf(
-					card.image,
-					card.index,
-					getStackSlot(card.axis, card.depth, stackWidth),
-				);
+				const slot = getStackSlot(card.axis, card.depth, stackWidth);
+				const value = motionOf(card.image, card.index, {
+					...slot,
+					opacity: getStackCardOpacity(card.index, currentIndex, visibleCards.length + 1),
+				});
 				return (
 					<PhotoStackCard
 						key={`${layoutPrefix}-${cardMotionKey(card.image.src, card.index)}`}

@@ -6,6 +6,8 @@ import {
 	getDirectionalZ,
 	getDraggedTopSlot,
 	getDragProgress,
+	getReleasePeakSlot,
+	getStackCardOpacity,
 	getStackSlot,
 	interpolateSlot,
 	recentVelocity,
@@ -24,6 +26,7 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDirectionalZ("right", "right", 1, true)).toBe(100);
 		expect(getDirectionalZ("right", "left", 1, true)).toBe(29);
 		expect(getDirectionalZ(null, "right", 1, false)).toBe(29);
+		expect(getDirectionalZ(null, "right", 80, false)).toBe(1);
 	});
 
 	it("0、半阈值与完整阈值的缩放及 Y/Z 双轴旋转连续单调", () => {
@@ -147,6 +150,36 @@ describe("PhotoStack motion decisions", () => {
 		expect(slot.x).toBeCloseTo(59.43, 1);
 		expect(slot.y).toBe(8);
 		expect(slot.scale).toBeCloseTo(0.792, 3);
+	});
+
+	it("第三层起复用第二层饱和槽位但保留真实深度", () => {
+		const depth2 = getStackSlot("right", 2, 280);
+		expect(getStackSlot("right", 3, 280)).toEqual(depth2);
+		expect(getStackSlot("right", 8, 280)).toEqual(depth2);
+	});
+
+	it("静止时整个堆栈仅顶卡与最近两张后卡可见", () => {
+		expect(getStackCardOpacity(1, 0, 6)).toBe(1);
+		expect(getStackCardOpacity(2, 0, 6)).toBe(1);
+		expect(getStackCardOpacity(3, 0, 6)).toBe(0);
+		expect(getStackCardOpacity(1, 2, 6)).toBe(1);
+		expect(getStackCardOpacity(3, 2, 6)).toBe(1);
+		expect(getStackCardOpacity(0, 2, 6)).toBe(0);
+		expect(getStackCardOpacity(4, 2, 6)).toBe(0);
+		expect(getStackCardOpacity(3, 5, 6)).toBe(1);
+		expect(getStackCardOpacity(2, 5, 6)).toBe(0);
+	});
+
+	it("释放峰值由当前位置与同向速度决定并钳制在实测范围", () => {
+		const minimum = getReleasePeakSlot(-90, 0, 280);
+		const projected = getReleasePeakSlot(-90, -0.8, 280);
+		const capped = getReleasePeakSlot(-150, -20, 280);
+
+		expect(minimum.topSlot.x).toBeCloseTo(-145.6, 5);
+		expect(projected.topSlot.x).toBeCloseTo(-170, 5);
+		expect(capped.topSlot.x).toBeCloseTo(-190.4, 5);
+		expect(capped.topSlot.rotate).toBeCloseTo(-10.6, 5);
+		expect(capped.topSlot.scale).toBeCloseTo(0.76, 5);
 	});
 
 	it("卡片身份不随顶卡与后置卡角色改变", () => {

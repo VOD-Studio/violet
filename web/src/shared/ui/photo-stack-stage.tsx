@@ -10,8 +10,11 @@ import {
 	FLIP_THRESHOLD_RATIO,
 	getBoundaryFollowerSlot,
 	getDraggedTopSlot,
+	getReleasePeakSlot,
+	getStackCardOpacity,
 	getStackSlot,
 	interpolateSlot,
+	type PhotoStackSlot,
 	PULL_THRESHOLD_RATIO,
 	recentVelocity,
 	recordSample,
@@ -29,7 +32,11 @@ export interface PhotoStackStageProps {
 	onImageOpen?: (index: number) => void;
 }
 const INSERT_MS = 220;
-/** 有限 PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
+const RELEASE_PEAK_MS = 56;
+const FADE_IN_MS = 260;
+const TRANSITION_MS = RELEASE_PEAK_MS + FADE_IN_MS;
+type DragCardOrigin = PhotoStackSlot & { opacity: number; rotateY: number };
+/** PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
 export function PhotoStackStage({
 	images,
 	currentIndex,
@@ -51,9 +58,11 @@ export function PhotoStackStage({
 	const suppressClickUntil = useRef(0);
 	const suppressClickTimer = useRef(0);
 	const settling = useRef(false);
-	const settleTimer = useRef(0);
 	const thresholdTimer = useRef(0);
+	const transitionTimers = useRef(new Map<number, number>());
 	const dragSamples = useRef<DragSample[]>([]);
+	const dragOrigin = useRef({ x: 0, y: 0, rotate: 0, rotateY: 0, scale: 1 });
+	const cardDragOrigins = useRef(new Map<number, DragCardOrigin>());
 	const [stackWidth, setStackWidth] = useState(0);
 	const [dragging, setDragging] = useState(false);
 	const [dragDirection, setDragDirection] = useState<StackDirection | null>(null);
@@ -73,23 +82,49 @@ export function PhotoStackStage({
 		return () => observer.disconnect();
 	}, []);
 
+	const isTransitioning = useCallback((index: number) => transitionTimers.current.has(index), []);
+	const releaseTransition = useCallback((index: number) => {
+		const timer = transitionTimers.current.get(index);
+		if (timer !== undefined) window.clearTimeout(timer);
+		transitionTimers.current.delete(index);
+	}, []);
+	const markTransitioning = useCallback(
+		(index: number) => {
+			releaseTransition(index);
+			const timer = window.setTimeout(() => {
+				transitionTimers.current.delete(index);
+			}, TRANSITION_MS);
+			transitionTimers.current.set(index, timer);
+		},
+		[releaseTransition],
+	);
 	const { motionOf, resetTop, resetCards, resetBoundary, visibleCards } = usePhotoStackSlots({
 		images,
 		safeIndex,
 		stackWidth,
+		isTransitioning,
 	});
 
 	useEffect(
 		() => () => {
-			window.clearTimeout(settleTimer.current);
 			window.clearTimeout(thresholdTimer.current);
 			window.clearTimeout(suppressClickTimer.current);
+			transitionTimers.current.forEach((timer) => {
+				window.clearTimeout(timer);
+			});
+			transitionTimers.current.clear();
 		},
 		[],
 	);
 
 	const insertToSlot = useCallback(
-		(direction: -1 | 1, value: PhotoStackCardMotion, completePullPhase = false) => {
+		(
+			direction: -1 | 1,
+			value: PhotoStackCardMotion,
+			releaseVelocity = 0,
+			completePullPhase = false,
+			releaseDelta = value.x.get(),
+		) => {
 			const nextIndex = safeIndex + direction;
 			if (settling.current) return;
 			if (nextIndex < 0 || nextIndex >= images.length) {
@@ -100,62 +135,76 @@ export function PhotoStackStage({
 			const width = stackWidth || 280;
 			const rearSide: StackDirection = direction === 1 ? "left" : "right";
 			const targetSlot = getStackSlot(rearSide, 1, width);
-			const peak = getDraggedTopSlot(
-				(direction === 1 ? -1 : 1) * width * PULL_THRESHOLD_RATIO,
-				width,
-				true,
-			);
+			const peak = getReleasePeakSlot(releaseDelta, releaseVelocity, width);
+			const releaseTransition = {
+				duration: INSERT_MS / 1000,
+				ease: "easeOut" as const,
+				times: [0, RELEASE_PEAK_MS / INSERT_MS, 1],
+			};
+			const settleTransition = {
+				duration: INSERT_MS / 1000,
+				ease: "easeOut" as const,
+			};
+			const opacityTransition = {
+				duration: FADE_IN_MS / 1000,
+				delay: completePullPhase ? RELEASE_PEAK_MS / 1000 : 0,
+				ease: "linear" as const,
+			};
+			images.forEach((_, index) => {
+				markTransitioning(index);
+			});
 			settling.current = true;
 			value.x.stop();
 			value.y.stop();
 			value.rotate.stop();
 			value.rotateY.stop();
 			value.scale.stop();
+			value.opacity.stop();
 			animate(
 				value.x,
 				completePullPhase ? [null, peak.topSlot.x, targetSlot.x] : targetSlot.x,
-				{
-					duration: INSERT_MS / 1000,
-					ease: "easeOut" as const,
-				},
+				completePullPhase ? releaseTransition : settleTransition,
 			);
 			animate(
 				value.y,
 				completePullPhase ? [null, peak.topSlot.y, targetSlot.y] : targetSlot.y,
-				{
-					duration: INSERT_MS / 1000,
-					ease: "easeOut" as const,
-				},
+				completePullPhase ? releaseTransition : settleTransition,
 			);
 			animate(
 				value.rotate,
 				completePullPhase
 					? [null, peak.topSlot.rotate, targetSlot.rotate]
 					: targetSlot.rotate,
-				{
-					duration: INSERT_MS / 1000,
-					ease: "easeOut" as const,
-				},
+				completePullPhase ? releaseTransition : settleTransition,
 			);
-			animate(value.rotateY, completePullPhase ? [null, peak.rotateY, 0] : 0, {
-				duration: INSERT_MS / 1000,
-				ease: "easeOut" as const,
-			});
+			animate(
+				value.rotateY,
+				completePullPhase ? [null, peak.rotateY, 0] : 0,
+				completePullPhase ? releaseTransition : settleTransition,
+			);
 			animate(
 				value.scale,
 				completePullPhase ? [null, peak.topSlot.scale, targetSlot.scale] : targetSlot.scale,
-				{
-					duration: INSERT_MS / 1000,
-					ease: "easeOut" as const,
-				},
+				completePullPhase ? releaseTransition : settleTransition,
 			);
+			animate(value.opacity, 1, opacityTransition);
 			window.clearTimeout(thresholdTimer.current);
+			const commitIndex = () => {
+				onIndexChange(nextIndex);
+				setDragDirection(null);
+				setCurrentOffset(0);
+				setIncomingProgress(0);
+				setIsPastThreshold(false);
+				settling.current = false;
+			};
 			if (completePullPhase) {
 				thresholdTimer.current = window.setTimeout(() => {
-					setIsPastThreshold(true);
-				}, INSERT_MS / 2);
+					commitIndex();
+				}, RELEASE_PEAK_MS);
+			} else {
+				commitIndex();
 			}
-			// 2. 新顶卡在同一个 220ms 内同步动画到达中心
+			// 新顶卡的几何动画在 220ms 内到达中心。
 			const nextTop = images[nextIndex];
 			if (nextTop) {
 				const nextTopMotion = motionOf(nextTop, nextIndex);
@@ -163,6 +212,8 @@ export function PhotoStackStage({
 				nextTopMotion.y.stop();
 				nextTopMotion.rotate.stop();
 				nextTopMotion.rotateY.stop();
+				nextTopMotion.scale.stop();
+				nextTopMotion.opacity.stop();
 				animate(nextTopMotion.x, 0, {
 					duration: INSERT_MS / 1000,
 					ease: "easeOut" as const,
@@ -183,10 +234,12 @@ export function PhotoStackStage({
 					duration: INSERT_MS / 1000,
 					ease: "easeOut" as const,
 				});
+				animate(nextTopMotion.opacity, 1, opacityTransition);
 			}
 
-			// 3. 所有在新索引下需要就位的后置卡片（包括最后一张图）全部在同一个 220ms 内同步平滑动画落位，绝无后延
-			for (let depth = 3; depth >= 1; depth -= 1) {
+			// 后置卡片的几何动画在 220ms 内落位；进入可见集合的卡片单独淡入。
+			const maxDepth = images.length - 1;
+			for (let depth = maxDepth; depth >= 1; depth -= 1) {
 				const prevIdx = nextIndex - depth;
 				if (prevIdx >= 0 && prevIdx !== safeIndex) {
 					const cardMotion = motionOf(images[prevIdx], prevIdx);
@@ -196,6 +249,7 @@ export function PhotoStackStage({
 					cardMotion.rotate.stop();
 					cardMotion.rotateY.stop();
 					cardMotion.scale.stop();
+					cardMotion.opacity.stop();
 					animate(cardMotion.x, slot.x, {
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
@@ -216,6 +270,11 @@ export function PhotoStackStage({
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
 					});
+					animate(
+						cardMotion.opacity,
+						getStackCardOpacity(prevIdx, nextIndex, images.length),
+						opacityTransition,
+					);
 				}
 				const nextIdx = nextIndex + depth;
 				if (nextIdx < images.length) {
@@ -226,6 +285,7 @@ export function PhotoStackStage({
 					cardMotion.rotate.stop();
 					cardMotion.rotateY.stop();
 					cardMotion.scale.stop();
+					cardMotion.opacity.stop();
 					animate(cardMotion.x, slot.x, {
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
@@ -246,21 +306,24 @@ export function PhotoStackStage({
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
 					});
+					animate(
+						cardMotion.opacity,
+						getStackCardOpacity(nextIdx, nextIndex, images.length),
+						opacityTransition,
+					);
 				}
 			}
-
-			window.clearTimeout(settleTimer.current);
-			settleTimer.current = window.setTimeout(() => {
-				window.clearTimeout(thresholdTimer.current);
-				onIndexChange(nextIndex);
-				setDragDirection(null);
-				setCurrentOffset(0);
-				setIncomingProgress(0);
-				setIsPastThreshold(false);
-				settling.current = false;
-			}, INSERT_MS);
 		},
-		[images, motionOf, onIndexChange, resetCards, resetTop, safeIndex, stackWidth],
+		[
+			images,
+			markTransitioning,
+			motionOf,
+			onIndexChange,
+			resetCards,
+			resetTop,
+			safeIndex,
+			stackWidth,
+		],
 	);
 	const suppressClick = () => {
 		suppressClickUntil.current = Date.now() + 320;
@@ -274,6 +337,7 @@ export function PhotoStackStage({
 		if (event.button !== 0 || settling.current) return;
 		pointerStartX.current = event.clientX;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
+		cardDragOrigins.current.clear();
 		setCurrentOffset(0);
 		setIncomingProgress(0);
 		setIsPastThreshold(false);
@@ -285,6 +349,7 @@ export function PhotoStackStage({
 		}
 		const top = images[safeIndex];
 		if (top) {
+			releaseTransition(safeIndex);
 			const value = motionOf(top, safeIndex);
 			value.x.stop();
 			value.y.stop();
@@ -292,16 +357,14 @@ export function PhotoStackStage({
 			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
+			dragOrigin.current = {
+				x: value.x.get(),
+				y: value.y.get(),
+				rotate: value.rotate.get(),
+				rotateY: value.rotateY.get(),
+				scale: value.scale.get(),
+			};
 		}
-		visibleCards.forEach((card) => {
-			const value = motionOf(card.image, card.index);
-			value.x.stop();
-			value.y.stop();
-			value.rotate.stop();
-			value.rotateY.stop();
-			value.scale.stop();
-			value.opacity.stop();
-		});
 	};
 	const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (pointerStartX.current === null || settling.current) return;
@@ -318,23 +381,52 @@ export function PhotoStackStage({
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		const result = getDraggedTopSlot(rawDelta, width, canFlip);
 		const { topSlot, rotateY, isPastThreshold: past, pullProgress } = result;
-		setCurrentOffset(topSlot.x);
+		const origin = dragOrigin.current;
+		const continuedTopSlot = {
+			...topSlot,
+			x: origin.x + topSlot.x,
+			y: origin.y + topSlot.y,
+			rotate: origin.rotate + topSlot.rotate,
+			scale: origin.scale + topSlot.scale - 1,
+		};
+		setCurrentOffset(continuedTopSlot.x);
 		setIncomingProgress(canFlip ? pullProgress : 0);
 		setIsPastThreshold(canFlip && past);
 		setDragDirection(direction);
-		setStackSlot(value, topSlot);
-		value.rotateY.set(rotateY);
+		setStackSlot(value, continuedTopSlot);
+		value.rotateY.set(origin.rotateY + rotateY);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
+			if (canFlip && card.axis !== direction) return;
 			const cardValue = motionOf(card.image, card.index);
-			const from = getStackSlot(card.axis, card.depth, width);
-			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), width);
+			let cardOrigin = cardDragOrigins.current.get(card.index);
+			if (!cardOrigin) {
+				releaseTransition(card.index);
+				cardValue.x.stop();
+				cardValue.y.stop();
+				cardValue.rotate.stop();
+				cardValue.rotateY.stop();
+				cardValue.scale.stop();
+				cardValue.opacity.stop();
+				cardOrigin = {
+					x: cardValue.x.get(),
+					y: cardValue.y.get(),
+					rotate: cardValue.rotate.get(),
+					rotateY: cardValue.rotateY.get(),
+					scale: cardValue.scale.get(),
+					opacity: cardValue.opacity.get(),
+				};
+				cardDragOrigins.current.set(card.index, cardOrigin);
+			}
+			const nextDepth = Math.max(card.depth - 1, 0);
+			const to = getStackSlot(card.axis, nextDepth, width);
 			const slot = canFlip
-				? card.axis === direction
-					? interpolateSlot(from, to, pullProgress)
-					: from
-				: getBoundaryFollowerSlot(from, topSlot.x, card.depth);
-			setStackSlot(cardValue, slot);
+				? interpolateSlot(cardOrigin, to, pullProgress)
+				: getBoundaryFollowerSlot(cardOrigin, topSlot.x, card.depth);
+			setStackSlot(cardValue, slot, cardOrigin.opacity);
+			cardValue.rotateY.set(
+				canFlip ? cardOrigin.rotateY * (1 - pullProgress) : cardOrigin.rotateY,
+			);
 		});
 	};
 
@@ -364,10 +456,11 @@ export function PhotoStackStage({
 				canFlip,
 			)
 		) {
+			const releaseVelocity = recentVelocity(dragSamples.current, 100, event.timeStamp);
 			const completePullPhase =
 				Math.abs(rawDelta) < (stackWidth || 280) * PULL_THRESHOLD_RATIO;
 			if (!completePullPhase) setIsPastThreshold(true);
-			insertToSlot(direction, value, completePullPhase);
+			insertToSlot(direction, value, releaseVelocity, completePullPhase, rawDelta);
 		} else {
 			if (canFlip) {
 				resetTop();
@@ -386,6 +479,7 @@ export function PhotoStackStage({
 		} catch {
 			// 捕获已经失效时无需处理。
 		}
+		cardDragOrigins.current.clear();
 	};
 
 	const onPointerCancel = () => {
@@ -396,6 +490,7 @@ export function PhotoStackStage({
 		setCurrentOffset(0);
 		setIncomingProgress(0);
 		setIsPastThreshold(false);
+		cardDragOrigins.current.clear();
 		suppressClick();
 		resetTop();
 		resetCards();
