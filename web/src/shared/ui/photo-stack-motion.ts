@@ -11,10 +11,8 @@ export interface PhotoStackSlot {
 
 export const PULL_THRESHOLD_RATIO = 0.8;
 export const INSERT_THRESHOLD_RATIO = 1.2;
-export const DRAG_ROTATE_PER_PX = 0.015;
-export const DRAG_ROTATE_MAX = 4;
-export const DRAG_ROTATE_Y_PER_PX = 0.06;
-export const DRAG_ROTATE_Y_MAX = 12;
+export const DRAG_ROTATE_MAX = 11;
+export const DRAG_ROTATE_Y_MAX = 2;
 
 export interface DraggedTopSlotResult {
 	topSlot: PhotoStackSlot;
@@ -44,14 +42,9 @@ export function getDraggedTopSlot(
 	const insertThreshold = width * INSERT_THRESHOLD_RATIO;
 	const pullProgress = Math.min(1, distance / Math.max(1, pullThreshold));
 	const scale = 1 - 0.104 * pullProgress;
-	const rotate = Math.max(
-		-DRAG_ROTATE_MAX,
-		Math.min(DRAG_ROTATE_MAX, rawDelta * DRAG_ROTATE_PER_PX),
-	);
-	const rotateY = Math.max(
-		-DRAG_ROTATE_Y_MAX,
-		Math.min(DRAG_ROTATE_Y_MAX, rawDelta * DRAG_ROTATE_Y_PER_PX),
-	);
+	const direction = Math.sign(rawDelta);
+	const rotate = direction * DRAG_ROTATE_MAX * pullProgress;
+	const rotateY = direction * DRAG_ROTATE_Y_MAX * pullProgress;
 	if (!canFlip) {
 		const rubberX =
 			Math.sign(rawDelta) *

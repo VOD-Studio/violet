@@ -23,38 +23,58 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDirectionalZ(null, "right", 1, false)).toBe(29);
 	});
 
-	it("左右拖拽产生同号镜像的 Y/Z 双轴旋转，并保留行程缩放", () => {
-		const left = getDraggedTopSlot(-120, 200, true);
-		const right = getDraggedTopSlot(120, 200, true);
-		expect(left.topSlot.scale).toBeCloseTo(0.922, 3);
-		expect(right.topSlot.scale).toBeCloseTo(0.922, 3);
-		expect(left.topSlot.rotate).toBeLessThan(0);
-		expect(left.rotateY).toBeLessThan(0);
-		expect(right.topSlot.rotate).toBeGreaterThan(0);
-		expect(right.rotateY).toBeGreaterThan(0);
+	it("0、半阈值与完整阈值的缩放及 Y/Z 双轴旋转连续单调", () => {
+		const start = getDraggedTopSlot(0, 200, true);
+		const halfway = getDraggedTopSlot(80, 200, true);
+		const threshold = getDraggedTopSlot(160, 200, true);
+
+		expect(start.topSlot.scale).toBe(1);
+		expect(halfway.topSlot.scale).toBeCloseTo(0.948, 3);
+		expect(threshold.topSlot.scale).toBeCloseTo(0.896, 3);
+		expect(start.topSlot.scale).toBeGreaterThan(halfway.topSlot.scale);
+		expect(halfway.topSlot.scale).toBeGreaterThan(threshold.topSlot.scale);
+
+		expect(start.topSlot.rotate).toBe(0);
+		expect(halfway.topSlot.rotate).toBeCloseTo(5.5, 3);
+		expect(threshold.topSlot.rotate).toBeCloseTo(11, 3);
+		expect(start.topSlot.rotate).toBeLessThan(halfway.topSlot.rotate);
+		expect(halfway.topSlot.rotate).toBeLessThan(threshold.topSlot.rotate);
+
+		expect(start.rotateY).toBe(0);
+		expect(halfway.rotateY).toBeCloseTo(1, 3);
+		expect(threshold.rotateY).toBeCloseTo(2, 3);
+		expect(start.rotateY).toBeLessThan(halfway.rotateY);
+		expect(halfway.rotateY).toBeLessThan(threshold.rotateY);
+		expect(threshold.rotateY).toBeLessThan(threshold.topSlot.rotate);
+	});
+
+	it("左右拖拽产生同号镜像的 Y/Z 双轴旋转", () => {
+		const left = getDraggedTopSlot(-160, 200, true);
+		const right = getDraggedTopSlot(160, 200, true);
+		expect(left.topSlot.scale).toBeCloseTo(right.topSlot.scale, 3);
+		expect(left.topSlot.rotate).toBeCloseTo(-11, 3);
+		expect(right.topSlot.rotate).toBeCloseTo(11, 3);
+		expect(left.rotateY).toBeCloseTo(-2, 3);
+		expect(right.rotateY).toBeCloseTo(2, 3);
 		expect(left.topSlot.rotate).toBeCloseTo(-right.topSlot.rotate, 3);
 		expect(left.rotateY).toBeCloseTo(-right.rotateY, 3);
 	});
-	it("Y/Z 双轴旋转随拖动距离连续增长并分别封顶", () => {
-		const near = getDraggedTopSlot(40, 500, true);
-		const far = getDraggedTopSlot(160, 500, true);
-		const capped = getDraggedTopSlot(400, 500, true);
-		expect(Math.abs(near.topSlot.rotate)).toBeLessThan(Math.abs(far.topSlot.rotate));
-		expect(Math.abs(near.rotateY)).toBeLessThan(Math.abs(far.rotateY));
-		expect(capped.topSlot.rotate).toBe(4);
-		expect(capped.rotateY).toBe(12);
-		expect(getDraggedTopSlot(0, 200, true).topSlot.rotate).toBe(0);
-		expect(getDraggedTopSlot(0, 200, true).rotateY).toBe(0);
+
+	it("不同宽度均在各自拉出阈值封顶", () => {
+		const wide = getDraggedTopSlot(400, 500, true);
+		expect(wide.topSlot.rotate).toBe(11);
+		expect(wide.rotateY).toBe(2);
 	});
-	it("边界不可翻页方向仍保留 Y/Z 双轴旋转与缩小", () => {
-		const rightBoundary = getDraggedTopSlot(120, 200, false);
-		const leftBoundary = getDraggedTopSlot(-120, 200, false);
-		expect(rightBoundary.topSlot.scale).toBeCloseTo(0.922, 3);
-		expect(leftBoundary.topSlot.scale).toBeCloseTo(0.922, 3);
-		expect(rightBoundary.topSlot.rotate).toBeGreaterThan(0);
-		expect(rightBoundary.rotateY).toBeGreaterThan(0);
-		expect(leftBoundary.topSlot.rotate).toBeLessThan(0);
-		expect(leftBoundary.rotateY).toBeLessThan(0);
+
+	it("边界不可翻页方向仍保留相同 Y/Z 双轴旋转与缩小", () => {
+		const rightBoundary = getDraggedTopSlot(160, 200, false);
+		const leftBoundary = getDraggedTopSlot(-160, 200, false);
+		expect(rightBoundary.topSlot.scale).toBeCloseTo(0.896, 3);
+		expect(leftBoundary.topSlot.scale).toBeCloseTo(0.896, 3);
+		expect(rightBoundary.topSlot.rotate).toBeCloseTo(11, 3);
+		expect(rightBoundary.rotateY).toBeCloseTo(2, 3);
+		expect(leftBoundary.topSlot.rotate).toBeCloseTo(-11, 3);
+		expect(leftBoundary.rotateY).toBeCloseTo(-2, 3);
 	});
 	it("插值时保留现有几何", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };
