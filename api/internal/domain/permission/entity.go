@@ -129,6 +129,9 @@ var (
 	AdminAccess = MustParse("admin:access")
 	// customemoji
 	CustomEmojiManage = MustParse("customemoji:manage") // 管理自定义表情（强制下架任意用户的违规表情）
+	// gallery
+	GalleryView   = MustParse("gallery:view")
+	GalleryManage = MustParse("gallery:manage")
 )
 
 // ============================================================

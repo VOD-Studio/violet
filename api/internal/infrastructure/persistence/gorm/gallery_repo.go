@@ -1,0 +1,214 @@
+package gorm
+
+import (
+	"context"
+	"errors"
+	"sort"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	domaingallery "blog-api/internal/domain/gallery"
+	"blog-api/internal/domain/shared"
+	"blog-api/internal/infrastructure/persistence/gorm/model"
+)
+
+type GalleryRepository struct {
+	db *gorm.DB
+}
+
+func NewGalleryRepository(db *gorm.DB) *GalleryRepository { return &GalleryRepository{db: db} }
+
+func (r *GalleryRepository) Create(ctx context.Context, gallery *domaingallery.Gallery) error {
+	root := galleryToPO(gallery)
+	if err := r.db.WithContext(ctx).Create(&root).Error; err != nil {
+		return shared.Internal("创建图集失败", err)
+	}
+	revision := revisionToPO(gallery.WorkingRevision())
+	if err := r.db.WithContext(ctx).Create(&revision).Error; err != nil {
+		return shared.Internal("创建图集工作稿失败", err)
+	}
+	return nil
+}
+
+func (r *GalleryRepository) FindByID(ctx context.Context, id shared.ID) (*domaingallery.Gallery, error) {
+	return r.findByID(ctx, id, false)
+}
+
+func (r *GalleryRepository) FindByIDForUpdate(ctx context.Context, id shared.ID) (*domaingallery.Gallery, error) {
+	return r.findByID(ctx, id, true)
+}
+
+func (r *GalleryRepository) findByID(ctx context.Context, id shared.ID, lock bool) (*domaingallery.Gallery, error) {
+	query := r.db.WithContext(ctx)
+	if lock {
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
+	}
+	var root model.Gallery
+	if err := query.First(&root, "id = ?", id.UUID()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domaingallery.ErrNotFound
+		}
+		return nil, shared.Internal("查询图集失败", err)
+	}
+	return r.reconstruct(ctx, root)
+}
+
+func (r *GalleryRepository) FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*domaingallery.Gallery], error) {
+	q = q.Normalize()
+	query := r.db.WithContext(ctx).Model(&model.Gallery{}).Where("author_id = ?", authorID.UUID())
+	var roots []model.Gallery
+	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &roots, "图集")
+	if err != nil {
+		return shared.PageResult[*domaingallery.Gallery]{}, err
+	}
+	items, err := r.reconstructList(ctx, roots)
+	if err != nil {
+		return shared.PageResult[*domaingallery.Gallery]{}, err
+	}
+	return shared.NewPageResult(q, items, total), nil
+}
+
+func (r *GalleryRepository) SaveWorking(ctx context.Context, gallery *domaingallery.Gallery, expectedVersion int64) error {
+	revision := gallery.WorkingRevision()
+	result := r.db.WithContext(ctx).Model(&model.GalleryRevision{}).
+		Where("id = ? AND gallery_id = ?", revision.ID().UUID(), gallery.ID().UUID()).
+		Updates(map[string]any{"title": revision.Title(), "summary": revision.Summary(), "updated_at": revision.UpdatedAt()})
+	if result.Error != nil {
+		return shared.Internal("保存图集工作稿失败", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return domaingallery.ErrNotFound
+	}
+	if err := r.db.WithContext(ctx).Where("revision_id = ?", revision.ID().UUID()).Delete(&model.GalleryRevisionItem{}).Error; err != nil {
+		return shared.Internal("替换图集图片失败", err)
+	}
+	items := make([]model.GalleryRevisionItem, 0, len(revision.Items()))
+	for _, item := range revision.Items() {
+		items = append(items, itemToPO(revision.ID(), item))
+	}
+	if len(items) > 0 {
+		if err := r.db.WithContext(ctx).Create(&items).Error; err != nil {
+			return shared.Internal("保存图集图片失败", err)
+		}
+	}
+	result = r.db.WithContext(ctx).Model(&model.Gallery{}).
+		Where("id = ? AND version = ?", gallery.ID().UUID(), expectedVersion).
+		Updates(map[string]any{"version": gallery.Version(), "updated_at": gallery.UpdatedAt()})
+	if result.Error != nil {
+		return shared.Internal("推进图集版本失败", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return domaingallery.ErrVersionConflict
+	}
+	return nil
+}
+
+func (r *GalleryRepository) reconstruct(ctx context.Context, root model.Gallery) (*domaingallery.Gallery, error) {
+	var revision model.GalleryRevision
+	if err := r.db.WithContext(ctx).First(&revision, "id = ? AND gallery_id = ?", root.WorkingRevisionID, root.ID).Error; err != nil {
+		return nil, shared.Internal("查询图集工作稿失败", err)
+	}
+	var items []model.GalleryRevisionItem
+	if err := r.db.WithContext(ctx).Where("revision_id = ?", revision.ID).Order("position ASC").Find(&items).Error; err != nil {
+		return nil, shared.Internal("查询图集图片失败", err)
+	}
+	return galleryFromPO(root, revision, items), nil
+}
+
+func (r *GalleryRepository) reconstructList(ctx context.Context, roots []model.Gallery) ([]*domaingallery.Gallery, error) {
+	if len(roots) == 0 {
+		return make([]*domaingallery.Gallery, 0), nil
+	}
+	revisionIDs := make([]uuid.UUID, 0, len(roots))
+	for _, root := range roots {
+		revisionIDs = append(revisionIDs, root.WorkingRevisionID)
+	}
+	var revisions []model.GalleryRevision
+	if err := r.db.WithContext(ctx).Where("id IN ?", revisionIDs).Find(&revisions).Error; err != nil {
+		return nil, shared.Internal("批量查询图集工作稿失败", err)
+	}
+	var items []model.GalleryRevisionItem
+	if err := r.db.WithContext(ctx).Where("revision_id IN ?", revisionIDs).Order("position ASC").Find(&items).Error; err != nil {
+		return nil, shared.Internal("批量查询图集图片失败", err)
+	}
+	revisionByID := make(map[uuid.UUID]model.GalleryRevision, len(revisions))
+	itemsByRevision := make(map[uuid.UUID][]model.GalleryRevisionItem, len(revisions))
+	for _, revision := range revisions {
+		revisionByID[revision.ID] = revision
+	}
+	for _, item := range items {
+		itemsByRevision[item.RevisionID] = append(itemsByRevision[item.RevisionID], item)
+	}
+	result := make([]*domaingallery.Gallery, 0, len(roots))
+	for _, root := range roots {
+		revision, ok := revisionByID[root.WorkingRevisionID]
+		if !ok {
+			return nil, shared.Internal("图集缺少工作稿", nil)
+		}
+		rows := itemsByRevision[revision.ID]
+		sort.Slice(rows, func(i, j int) bool { return rows[i].Position < rows[j].Position })
+		result = append(result, galleryFromPO(root, revision, rows))
+	}
+	return result, nil
+}
+
+func galleryToPO(gallery *domaingallery.Gallery) model.Gallery {
+	workingID := gallery.WorkingRevision().ID().UUID()
+	var slug *string
+	if gallery.Slug() != "" {
+		value := gallery.Slug()
+		slug = &value
+	}
+	var publishedID *uuid.UUID
+	if gallery.PublishedRevisionID() != nil {
+		value := gallery.PublishedRevisionID().UUID()
+		publishedID = &value
+	}
+	return model.Gallery{
+		ID: gallery.ID().UUID(), AuthorID: gallery.AuthorID().UUID(), Slug: slug,
+		WorkingRevisionID: workingID, PublishedRevisionID: publishedID, Version: gallery.Version(),
+		PublishedAt: gallery.PublishedAt(), CreatedAt: gallery.CreatedAt(), UpdatedAt: gallery.UpdatedAt(),
+	}
+}
+
+func revisionToPO(revision *domaingallery.Revision) model.GalleryRevision {
+	return model.GalleryRevision{
+		ID: revision.ID().UUID(), GalleryID: revision.GalleryID().UUID(), Title: revision.Title(), Summary: revision.Summary(),
+		CreatedAt: revision.CreatedAt(), UpdatedAt: revision.UpdatedAt(),
+	}
+}
+
+func itemToPO(revisionID shared.ID, item *domaingallery.RevisionItem) model.GalleryRevisionItem {
+	return model.GalleryRevisionItem{
+		RevisionID: revisionID.UUID(), FileID: item.FileID().UUID(), Position: item.Position(),
+		Caption: item.Caption(), AltTextOverride: item.AltTextOverride(),
+	}
+}
+
+func galleryFromPO(root model.Gallery, revision model.GalleryRevision, rows []model.GalleryRevisionItem) *domaingallery.Gallery {
+	items := make([]*domaingallery.RevisionItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, domaingallery.ReconstructItem(shared.IDFromUUID(row.FileID), row.Position, row.Caption, row.AltTextOverride))
+	}
+	working := domaingallery.ReconstructRevision(
+		shared.IDFromUUID(revision.ID), shared.IDFromUUID(revision.GalleryID), revision.Title, revision.Summary,
+		items, revision.CreatedAt, revision.UpdatedAt,
+	)
+	var publishedID *shared.ID
+	if root.PublishedRevisionID != nil {
+		value := shared.IDFromUUID(*root.PublishedRevisionID)
+		publishedID = &value
+	}
+	slug := ""
+	if root.Slug != nil {
+		slug = *root.Slug
+	}
+	return domaingallery.Reconstruct(
+		shared.IDFromUUID(root.ID), shared.IDFromUUID(root.AuthorID), slug, working, publishedID,
+		root.Version, root.PublishedAt, root.CreatedAt, root.UpdatedAt,
+	)
+}
+
+var _ domaingallery.Repository = (*GalleryRepository)(nil)

@@ -181,12 +181,12 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts", postH.Create)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/import-url", postH.ImportURL)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/slugify", postH.Slugify)
-	r.Put("/posts/{id}", postH.Update)                 // 应用层鉴权
-	r.Patch("/posts/{id}/status", postH.UpdateStatus)  // 应用层鉴权
-	r.Patch("/posts/{id}/featured", postH.SetFeatured) // 应用层鉴权
-	r.Delete("/posts/{id}", postH.Delete)              // 应用层鉴权
-	r.Post("/posts/{id}/restore", postH.Restore)       // 应用层鉴权
-	r.Delete("/posts/{id}/hard", postH.HardDelete)     // 应用层鉴权
+	r.Put("/posts/{id}", postH.Update)                                                                // 应用层鉴权
+	r.Patch("/posts/{id}/status", postH.UpdateStatus)                                                 // 应用层鉴权
+	r.Patch("/posts/{id}/featured", postH.SetFeatured)                                                // 应用层鉴权
+	r.Delete("/posts/{id}", postH.Delete)                                                             // 应用层鉴权
+	r.Post("/posts/{id}/restore", postH.Restore)                                                      // 应用层鉴权
+	r.Delete("/posts/{id}/hard", postH.HardDelete)                                                    // 应用层鉴权
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/batch", postH.BatchAction) // 鉴权下放应用层逐条
 
 	// 文章版本管理
@@ -304,6 +304,21 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(perm, "series:delete"))
 			r.Delete("/{id}", seriesH.Delete)
+		})
+	})
+
+	// 图集工作稿：读 gallery:view；创建与完整保存 gallery:manage。
+	galleryH := d.Gallery
+	r.Route("/galleries", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, permission.GalleryView.String()))
+			r.Get("/", galleryH.ListForEditor)
+			r.Get("/{id}", galleryH.GetForEditor)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, permission.GalleryManage.String()))
+			r.Post("/", galleryH.CreateDraft)
+			r.Put("/{id}", galleryH.Save)
 		})
 	})
 
