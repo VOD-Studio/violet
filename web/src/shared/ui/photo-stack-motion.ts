@@ -14,7 +14,11 @@ export const INSERT_THRESHOLD_RATIO = 1.2;
 export const FLIP_THRESHOLD_RATIO = 0.22;
 export const DRAG_ROTATE_MAX = 11;
 export const DRAG_ROTATE_Y_MAX = 2;
-const RUBBER_BAND_CONSTANT = 0.55;
+const BOUNDARY_DRAG_LIMIT_RATIO = 0.36;
+const BOUNDARY_OFFSET_RATIO = 0.08;
+const BOUNDARY_ROTATE_MAX = 3.2;
+const BOUNDARY_SCALE_DELTA = 0.0103;
+const BOUNDARY_FOLLOW_FACTORS = [0, 0.66, 0.37, 0.08] as const;
 
 export interface DraggedTopSlotResult {
 	topSlot: PhotoStackSlot;
@@ -48,13 +52,17 @@ export function getDraggedTopSlot(
 	const rotate = direction * DRAG_ROTATE_MAX * pullProgress;
 	const rotateY = direction * DRAG_ROTATE_Y_MAX * pullProgress;
 	if (!canFlip) {
-		const dampedDistance =
-			(distance * width * RUBBER_BAND_CONSTANT) / (width + RUBBER_BAND_CONSTANT * distance);
+		const boundaryProgress = Math.min(1, distance / (width * BOUNDARY_DRAG_LIMIT_RATIO));
 		return {
-			topSlot: { x: direction * dampedDistance, y: 0, rotate, scale },
-			rotateY,
+			topSlot: {
+				x: direction * width * BOUNDARY_OFFSET_RATIO * boundaryProgress,
+				y: 0,
+				rotate: direction * BOUNDARY_ROTATE_MAX * boundaryProgress,
+				scale: 1 + BOUNDARY_SCALE_DELTA * boundaryProgress,
+			},
+			rotateY: 0,
 			isPastThreshold: false,
-			pullProgress: 0,
+			pullProgress: boundaryProgress,
 			insertProgress: 0,
 		};
 	}
@@ -80,6 +88,21 @@ export function getDraggedTopSlot(
 		pullProgress: 1,
 		insertProgress,
 	};
+}
+
+/** 边界拖动时后卡仅沿横轴跟随，保留自身槽位的其他几何。 */
+export function getBoundaryFollowerSlot(
+	base: PhotoStackSlot,
+	topX: number,
+	depth: number,
+): PhotoStackSlot {
+	const factor = BOUNDARY_FOLLOW_FACTORS[depth] ?? 0;
+	return { ...base, x: base.x + topX * factor };
+}
+
+/** 保持当前位置并清除拖动速度，避免回弹继承松手惯性。 */
+export function resetMotionValueVelocity(value: MotionValue<number>) {
+	value.jump(value.get());
 }
 /** 将拖动距离归一化到 0~1，超过阈值后保持目标槽位不再继续移动。 */
 export function getDragProgress(distance: number, threshold: number) {

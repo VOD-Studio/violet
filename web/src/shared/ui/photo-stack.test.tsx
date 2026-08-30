@@ -266,15 +266,29 @@ describe("PhotoStack", () => {
 		expect(firstBoundaryOffset).toBeLessThan(260);
 		vi.mocked(animate).mockClear();
 		fireEvent.pointerUp(stack, { clientX: 360, pointerId: 1 });
-		expectXReset(vi.mocked(animate).mock.calls[0], firstBoundaryOffset);
-		expect(vi.mocked(animate).mock.calls[0]?.[2]).toMatchObject({
-			duration: expect.any(Number),
-			ease: "easeOut",
-		});
+		const boundaryCalls = vi.mocked(animate).mock.calls;
+		expectXReset(boundaryCalls[0], firstBoundaryOffset);
+		const boundarySpring = { type: "spring", stiffness: 320, damping: 36 };
+		expect(boundaryCalls[0]?.[2]).toMatchObject(boundarySpring);
+		const followerCall = boundaryCalls.find(
+			(call) => typeof call[1] === "number" && Math.abs(call[1] - 29.71696) < 0.001,
+		);
+		expect(followerCall?.[2]).toMatchObject(boundarySpring);
+		const followerValue = followerCall?.[0];
+		if (
+			typeof followerValue !== "object" ||
+			followerValue === null ||
+			!("get" in followerValue) ||
+			typeof followerValue.get !== "function"
+		) {
+			throw new TypeError("边界后卡未同步回弹");
+		}
+		expect(followerValue.get()).toBeGreaterThan(29.71696);
 		expect(hasPointerCapture).toHaveBeenCalledWith(1);
 		expect(releasePointerCapture).toHaveBeenCalledWith(1);
 		act(() => vi.runAllTimers());
 		expect(stack.getAttribute("data-current-index")).toBe("0");
+		expect(stack.querySelectorAll('[data-card-state="right"]')).toHaveLength(3);
 		expect(Number(stack.getAttribute("data-current-offset"))).toBe(0);
 
 		for (let pointerId = 2; pointerId <= 4; pointerId += 1) {

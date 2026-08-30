@@ -1,12 +1,15 @@
+import { motionValue } from "motion/react";
 import { describe, expect, it } from "vitest";
 import {
 	cardMotionKey,
+	getBoundaryFollowerSlot,
 	getDirectionalZ,
 	getDraggedTopSlot,
 	getDragProgress,
 	getStackSlot,
 	interpolateSlot,
 	recentVelocity,
+	resetMotionValueVelocity,
 	shouldFlip,
 } from "./photo-stack-motion";
 
@@ -77,23 +80,56 @@ describe("PhotoStack motion decisions", () => {
 		expect(rear.topSlot.x).toBeCloseTo(-29.71696, 5);
 	});
 
-	it("边界越界拖动使用无死滞的非线性橡皮筋阻尼", () => {
-		const width = 257;
-		const largeBoundary = getDraggedTopSlot(-650, width, false);
-		const smallBoundary = getDraggedTopSlot(-12, width, false);
-		const rightBoundary = getDraggedTopSlot(160, 200, false);
-		const leftBoundary = getDraggedTopSlot(-160, 200, false);
+	it("边界顶卡按受限位移进度旋转和轻微放大", () => {
+		const halfway = getDraggedTopSlot(72, 400, false);
+		const capped = getDraggedTopSlot(144, 400, false);
+		const large = getDraggedTopSlot(320, 400, false);
+		const mirrored = getDraggedTopSlot(-320, 400, false);
 
-		expect(largeBoundary.topSlot.x).toBeLessThan(0);
-		expect(Math.abs(largeBoundary.topSlot.x)).toBeLessThan(width);
-		expect(smallBoundary.topSlot.x).toBeLessThan(-1);
-		expect(Math.abs(smallBoundary.topSlot.x)).toBeLessThan(12);
-		expect(rightBoundary.topSlot.scale).toBeCloseTo(0.896, 3);
-		expect(leftBoundary.topSlot.scale).toBeCloseTo(0.896, 3);
-		expect(rightBoundary.topSlot.rotate).toBeCloseTo(11, 3);
-		expect(rightBoundary.rotateY).toBeCloseTo(2, 3);
-		expect(leftBoundary.topSlot.rotate).toBeCloseTo(-11, 3);
-		expect(leftBoundary.rotateY).toBeCloseTo(-2, 3);
+		expect.soft(halfway.topSlot.x).toBeCloseTo(16, 5);
+		expect.soft(halfway.topSlot.y).toBe(0);
+		expect.soft(halfway.topSlot.rotate).toBeCloseTo(1.6, 5);
+		expect.soft(halfway.topSlot.scale).toBeCloseTo(1.00515, 5);
+		expect.soft(halfway.rotateY).toBe(0);
+
+		expect.soft(large.topSlot.x).toBeCloseTo(32, 5);
+		expect.soft(large.topSlot.y).toBe(0);
+		expect.soft(large.topSlot.rotate).toBeCloseTo(3.2, 5);
+		expect.soft(large.topSlot.scale).toBeCloseTo(1.0103, 5);
+		expect.soft(large.rotateY).toBe(0);
+		expect.soft(capped.topSlot.x).toBeCloseTo(large.topSlot.x, 0);
+		expect.soft(capped.topSlot.rotate).toBeCloseTo(large.topSlot.rotate, 1);
+		expect.soft(capped.topSlot.scale).toBeCloseTo(large.topSlot.scale, 3);
+
+		expect.soft(mirrored.topSlot.x).toBeCloseTo(-large.topSlot.x, 5);
+		expect.soft(mirrored.topSlot.rotate).toBeCloseTo(-large.topSlot.rotate, 5);
+		expect.soft(mirrored.topSlot.y).toBe(large.topSlot.y);
+		expect.soft(mirrored.topSlot.scale).toBeCloseTo(large.topSlot.scale, 5);
+		expect.soft(mirrored.rotateY).toBe(0);
+	});
+
+	it("边界后卡按深度跟随顶卡且保留自身槽位几何", () => {
+		const base = { x: 30, y: 4, rotate: 1, scale: 0.896 };
+		const depth1 = getBoundaryFollowerSlot(base, 32, 1);
+		const depth2 = getBoundaryFollowerSlot(base, 32, 2);
+		const depth3 = getBoundaryFollowerSlot(base, 32, 3);
+		expect(depth1.x - base.x).toBeCloseTo(32 * 0.66, 5);
+		expect(depth2.x - base.x).toBeCloseTo(32 * 0.37, 5);
+		expect(depth3.x - base.x).toBeCloseTo(32 * 0.08, 5);
+		expect(depth1).toMatchObject({ y: base.y, rotate: base.rotate, scale: base.scale });
+		expect(depth2).toMatchObject({ y: base.y, rotate: base.rotate, scale: base.scale });
+		expect(depth3).toMatchObject({ y: base.y, rotate: base.rotate, scale: base.scale });
+	});
+
+	it("边界回弹前保持当前位置并清零拖动速度", () => {
+		const value = motionValue(0);
+		value.setWithVelocity(0, -25.46, 16);
+		expect(value.getVelocity()).toBeLessThan(0);
+
+		resetMotionValueVelocity(value);
+
+		expect(value.get()).toBe(-25.46);
+		expect(value.getVelocity()).toBe(0);
 	});
 	it("插值时保留现有几何", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };

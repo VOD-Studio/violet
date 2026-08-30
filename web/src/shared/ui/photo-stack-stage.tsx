@@ -8,6 +8,7 @@ import { type PhotoStackCardMotion, PhotoStackCards } from "./photo-stack-cards"
 import {
 	type DragSample,
 	FLIP_THRESHOLD_RATIO,
+	getBoundaryFollowerSlot,
 	getDraggedTopSlot,
 	getStackSlot,
 	interpolateSlot,
@@ -72,7 +73,7 @@ export function PhotoStackStage({
 		return () => observer.disconnect();
 	}, []);
 
-	const { motionOf, resetTop, resetCards, visibleCards } = usePhotoStackSlots({
+	const { motionOf, resetTop, resetCards, resetBoundary, visibleCards } = usePhotoStackSlots({
 		images,
 		safeIndex,
 		stackWidth,
@@ -328,7 +329,11 @@ export function PhotoStackStage({
 			const cardValue = motionOf(card.image, card.index);
 			const from = getStackSlot(card.axis, card.depth, width);
 			const to = getStackSlot(card.axis, Math.max(card.depth - 1, 0), width);
-			const slot = card.axis === direction ? interpolateSlot(from, to, pullProgress) : from;
+			const slot = canFlip
+				? card.axis === direction
+					? interpolateSlot(from, to, pullProgress)
+					: from
+				: getBoundaryFollowerSlot(from, topSlot.x, card.depth);
 			setStackSlot(cardValue, slot);
 		});
 	};
@@ -364,8 +369,12 @@ export function PhotoStackStage({
 			if (!completePullPhase) setIsPastThreshold(true);
 			insertToSlot(direction, value, completePullPhase);
 		} else {
-			resetTop();
-			resetCards(!canFlip);
+			if (canFlip) {
+				resetTop();
+				resetCards();
+			} else {
+				resetBoundary();
+			}
 			setCurrentOffset(0);
 			setIncomingProgress(0);
 			setIsPastThreshold(false);

@@ -2,9 +2,15 @@ import { animate, motionValue } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PhotoStackImage } from "./photo-stack";
 import type { PhotoStackCardMotion, PhotoStackVisibleCard } from "./photo-stack-cards";
-import { cardMotionKey, getStackSlot, type PhotoStackSlot } from "./photo-stack-motion";
+import {
+	cardMotionKey,
+	getStackSlot,
+	type PhotoStackSlot,
+	resetMotionValueVelocity,
+} from "./photo-stack-motion";
 
 const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
+const BOUNDARY_SPRING = { type: "spring", stiffness: 320, damping: 36 } as const;
 const RESET_TWEEN = { duration: 0.22, ease: "easeOut" as const };
 
 export interface UsePhotoStackSlotsOptions {
@@ -138,6 +144,30 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 		},
 		[animateCard, visibleCards],
 	);
+	const resetBoundary = useCallback(() => {
+		const animateTo = (value: PhotoStackCardMotion, slot: PhotoStackSlot) => {
+			resetMotionValueVelocity(value.x);
+			resetMotionValueVelocity(value.y);
+			resetMotionValueVelocity(value.rotate);
+			resetMotionValueVelocity(value.rotateY);
+			resetMotionValueVelocity(value.scale);
+			resetMotionValueVelocity(value.opacity);
+			animate(value.x, slot.x, BOUNDARY_SPRING);
+			animate(value.y, slot.y, BOUNDARY_SPRING);
+			animate(value.rotate, slot.rotate, BOUNDARY_SPRING);
+			animate(value.rotateY, 0, BOUNDARY_SPRING);
+			animate(value.scale, slot.scale, BOUNDARY_SPRING);
+			animate(value.opacity, 1, BOUNDARY_SPRING);
+		};
+		const top = images[safeIndex];
+		if (top) {
+			animateTo(motionOf(top, safeIndex), { x: 0, y: 0, rotate: 0, scale: 1 });
+		}
+		const width = stackWidth || 280;
+		visibleCards.forEach((card) => {
+			animateTo(motionOf(card.image, card.index), getStackSlot(card.axis, card.depth, width));
+		});
+	}, [images, motionOf, safeIndex, stackWidth, visibleCards]);
 
-	return { animateCard, motionOf, resetTop, resetCards, visibleCards };
+	return { animateCard, motionOf, resetTop, resetCards, resetBoundary, visibleCards };
 }
