@@ -44,7 +44,6 @@ type Container struct {
 	Notification    *NotificationContainer
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
-	Gallery         *GalleryContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -110,7 +109,6 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, customEmoji.Service, bus)
 	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
-	gallery := NewGalleryContainer(db, permissionChecker, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
@@ -119,7 +117,6 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 		Series: series, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
-		Gallery: gallery,
 	}
 	return c, roleCleanup, nil
 }

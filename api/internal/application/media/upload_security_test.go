@@ -156,9 +156,6 @@ func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error  { 
 func (f *fakeFileRepo) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error {
 	return nil
 }
-func (f *fakeFileRepo) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domainupload.File, error) {
-	return nil, nil
-}
 
 // TestUploadThumbnail_RejectsNonOwner 非 file owner 调用 UploadThumbnail 应返回 Forbidden
 func TestUploadThumbnail_RejectsNonOwner(t *testing.T) {

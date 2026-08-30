@@ -538,34 +538,6 @@ func (r *FileRepository) FindByURLs(ctx context.Context, urls []string) ([]*uplo
 	return result, nil
 }
 
-// FindByIDs 按 ID 批量查找文件（图集详情/列表组装用）。
-// 不限状态：文件被软删后图集详情仍能拿到元数据兜底展示。
-// 空输入直接返回空切片，不触库。
-func (r *FileRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*upload.File, error) {
-	if len(ids) == 0 {
-		return []*upload.File{}, nil
-	}
-	uuids := make([]string, 0, len(ids))
-	for _, id := range ids {
-		uuids = append(uuids, id.UUID().String())
-	}
-	var pos []model.File
-	if err := r.db.WithContext(ctx).
-		Where("id IN ?", uuids).
-		Find(&pos).Error; err != nil {
-		return nil, domainshared.Internal("按 ID 批量查询文件失败", err)
-	}
-	result := make([]*upload.File, 0, len(pos))
-	for _, po := range pos {
-		f, err := fileToDomain(po)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, f)
-	}
-	return result, nil
-}
-
 // FindPage 分页列出文件（统一入口，created_at DESC + id DESC tiebreaker 防翻页漂移）。
 //
 // filter 字段语义见 domain FileListFilter 注释：OwnerID/Purpose 供用户素材

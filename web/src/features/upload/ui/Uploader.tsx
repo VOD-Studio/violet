@@ -31,8 +31,6 @@ interface UploaderProps<T extends UploadResult> {
 	upload?: (file: File, onProgress?: (percent: number) => void) => Promise<T>;
 	/** 单文件成功回调，调用方据此落库 */
 	onUploaded?: (result: T) => void;
-	/** 任一文件上传失败回调（含失败文件名），调用方展示错误 */
-	onUploadError?: (message: string, file: File) => void;
 	/** 用途分类（仅默认分片上传模式生效），默认 material */
 	purpose?: string;
 	/** 接受的 MIME，逗号分隔 */
@@ -62,7 +60,6 @@ const DEFAULT_MAX_SIZE = 10 * 1024 * 1024;
 export function Uploader<T extends UploadResult>({
 	upload: customUpload,
 	onUploaded,
-	onUploadError,
 	purpose = "material",
 	accept = "image/*",
 	maxSize = DEFAULT_MAX_SIZE,
@@ -100,17 +97,15 @@ export function Uploader<T extends UploadResult>({
 				onUploaded?.(result);
 				toast.success(`「${item.file.name}」上传成功`);
 			}).catch((err: unknown) => {
-				const message = err instanceof Error ? err.message : "上传失败";
 				updateItem(item.id, {
 					status: "error",
 					progress: 0,
-					error: message,
+					error: err instanceof Error ? err.message : "上传失败",
 				});
 				toast.error("上传失败，请重试");
-				onUploadError?.(message, item.file);
 			});
 		},
-		[customUpload, chunkedUpload, updateItem, onUploaded, onUploadError],
+		[customUpload, chunkedUpload, updateItem, onUploaded],
 	);
 
 	const acceptFiles = useCallback(

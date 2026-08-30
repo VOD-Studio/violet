@@ -43,7 +43,6 @@ export const NAV_ITEMS: NavItem[] = [
 	{ type: "route", label: "归档", to: "/blog/archive" },
 	{ type: "route", label: "系列", to: "/series" },
 	{ type: "route", label: "推文", to: "/tweets", exact: true },
-	{ type: "route", label: "图集", to: "/galleries", exact: true },
 	{ type: "route", label: "聊天", to: "/chat", exact: true },
 	{ type: "route", label: "项目", to: "/projects" },
 	{ type: "route", label: "友链", to: "/friends" },

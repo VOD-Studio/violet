@@ -59,11 +59,10 @@ const GRID_DIRECTIONS: { value: GridDir; label: string; intent: string }[] = [
 ];
 
 /**
- * /lab/gallery - 图集原型实验室（issue #270）
+ * /lab/gallery - 图集原型实验室。
  *
- * 静态 mock、不接 API：浏览流 ×3、详情网格 ×3、灯箱 ×3 独立选型，
- * 点击网格任意项打开当前灯箱方向。三态含数据/空。选定组合回填
- * PRD-0022 后 T3（#266）按选型落地生产页。
+ * 静态 mock、不接 API：浏览流、详情网格与灯箱分别独立选型，
+ * 点击网格任意项打开当前灯箱方向，并覆盖数据态与空态。
  */
 function GalleryLab() {
 	const [feed, setFeed] = useState<FeedDir>("cards");
