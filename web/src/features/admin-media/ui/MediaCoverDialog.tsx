@@ -1,5 +1,5 @@
+import { mediaCatalogKeys } from "@entities/media/api/keys";
 import type { MediaFile } from "@entities/media/model/types";
-import { adminMediaKeys } from "@features/admin-media/api/keys";
 import { useUploadThumbnail } from "@features/upload/api/mutations";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ export function MediaCoverDialog({ open, onOpenChange, file }: MediaCoverDialogP
 			{ id: file.id, file: coverFile },
 			{
 				onSuccess: () => {
-					qc.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+					qc.invalidateQueries({ queryKey: mediaCatalogKeys.lists() });
 					toast.success("封面已更新");
 					onOpenChange(false);
 				},

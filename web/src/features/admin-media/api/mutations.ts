@@ -1,8 +1,8 @@
+import { mediaCatalogKeys } from "@entities/media/api/keys";
 import type { MediaFile } from "@entities/media/model/types";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { UpdateMediaRequest } from "../model/types";
-import { adminMediaKeys } from "./keys";
 
 /**
  * useAdminDeleteFile - admin 删除素材 mutation
@@ -15,7 +15,7 @@ export const useAdminDeleteFile = () => {
 	return useMutation({
 		mutationFn: (id: string) => apiDelete<null>(`/admin/media/${id}`),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: mediaCatalogKeys.lists() });
 		},
 	});
 };
@@ -32,7 +32,7 @@ export const useBatchDeleteMedia = () => {
 		mutationFn: (ids: string[]) =>
 			apiPost<{ deleted: number }>("/admin/media/batch-delete", { ids }),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: mediaCatalogKeys.lists() });
 		},
 	});
 };
@@ -49,7 +49,7 @@ export const useUpdateMediaMetadata = () => {
 		mutationFn: ({ id, data }: { id: string; data: UpdateMediaRequest }) =>
 			apiPatch<MediaFile>(`/admin/media/${id}`, data),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: mediaCatalogKeys.lists() });
 		},
 	});
 };

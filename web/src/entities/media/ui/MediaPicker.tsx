@@ -1,21 +1,12 @@
-/**
- * MediaPicker - 素材库选择器
- *
- * 弹窗式素材选择：网格浏览、用途/类型筛选、搜索、分页。
- * 支持单选（封面/图片插入）与多选（多图插入）。
- * 底部确认按钮回传选中 MediaFile[]。
- *
- * 通过 mediaType 限定可选素材类型（如封面图只选 image）。
- */
-
+import { useMediaCatalog } from "@entities/media/api/queries";
 import {
 	isImageOnlyPurpose,
 	MEDIA_PURPOSE_OPTIONS,
 	MEDIA_TYPE_OPTIONS,
 } from "@entities/media/model/constants";
-import type { MediaFile, MediaType } from "@entities/media/model/types";
-import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import type { MediaCatalogQuery, MediaFile, MediaType } from "@entities/media/model/types";
 import { imageUrl } from "@shared/lib/image-url";
+import { Pagination } from "@shared/ui/pagination";
 import { Check, FileText, Film, Music } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -29,11 +20,12 @@ import {
 } from "@/shared/ui/base/select";
 import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
-import { useAdminMedia } from "../api/queries";
-import type { AdminMediaListQuery } from "../model/types";
 
+/** 素材库选择器参数。 */
 export interface MediaPickerProps {
+	/** 是否显示选择器。 */
 	open: boolean;
+	/** 显隐状态变化回调。 */
 	onOpenChange: (open: boolean) => void;
 	/** 选择确认回调 */
 	onConfirm: (files: MediaFile[]) => void;
@@ -47,6 +39,7 @@ export interface MediaPickerProps {
 
 const PAGE_SIZE = 40;
 
+/** 支持筛选、搜索、分页及单选/多选的素材库选择器。 */
 export function MediaPicker({
 	open,
 	onOpenChange,
@@ -71,7 +64,7 @@ export function MediaPicker({
 		}
 	}, [open, mediaType]);
 
-	const query: AdminMediaListQuery = useMemo(
+	const query: MediaCatalogQuery = useMemo(
 		() => ({
 			page,
 			limit: PAGE_SIZE,
@@ -82,7 +75,7 @@ export function MediaPicker({
 		[page, purpose, fileType, keyword],
 	);
 
-	const { data, isLoading } = useAdminMedia(query);
+	const { data, isLoading } = useMediaCatalog(query);
 	const files = data?.data ?? [];
 	const total = data?.pagination?.total ?? 0;
 	const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

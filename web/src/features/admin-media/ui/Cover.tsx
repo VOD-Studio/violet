@@ -8,7 +8,7 @@
  */
 
 import type { MediaFile, MediaType } from "@entities/media/model/types";
-import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { CropSelectDialog } from "@features/upload/ui/CropSelectDialog";
 import { Button } from "@shared/ui/base/button";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";

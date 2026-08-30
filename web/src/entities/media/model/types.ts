@@ -1,3 +1,5 @@
+import type { PageQuery } from "@shared/api/types";
+
 /**
  * MediaFile 与 MediaType - 媒体领域实体类型定义（纯类型）
  */
@@ -16,6 +18,14 @@ export type MediaPurpose = "material" | "avatar" | "post" | "emoji" | "comment" 
 
 /** 素材类型，按 MIME 大类划分（对齐后端 application/media/service.go MimeCategory） */
 export type MediaType = "image" | "video" | "audio" | "file";
+
+/** 全站素材目录的分页与筛选参数。 */
+export interface MediaCatalogQuery extends PageQuery {
+	purpose?: string;
+	type?: MediaType | string;
+	category?: string;
+	keyword?: string;
+}
 
 /**
  * MediaFile - 媒体文件读模型

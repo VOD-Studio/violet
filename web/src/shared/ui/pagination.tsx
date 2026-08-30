@@ -4,21 +4,20 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 /** 分页序列项：页码或省略号（left/right 区分两侧） */
 type PageItem = number | { ellipsis: "left" | "right" };
 
-interface PaginationProps {
+/** 数字分页组件参数。 */
+export interface PaginationProps {
+	/** 当前页，从 1 开始。 */
 	page: number;
+	/** 总页数。 */
 	totalPages: number;
+	/** 页码变化回调。 */
 	onPageChange: (page: number) => void;
 }
 
 /** 单侧最多展示的相邻页码数 */
 const SIBLING_COUNT = 1;
 
-/**
- * Pagination - 简单数字分页
- *
- * 首尾页 + 当前页前后各 SIBLING_COUNT 页，超距用省略号收拢，
- * 边界自动禁用上一页/下一页。
- */
+/** 首尾页与当前页相邻页码组成的数字分页。 */
 export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 	if (totalPages <= 1) return null;
 

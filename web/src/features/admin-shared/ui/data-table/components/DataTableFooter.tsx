@@ -1,3 +1,4 @@
+import { Pagination } from "@shared/ui/pagination";
 import {
 	Select,
 	SelectContent,
@@ -5,7 +6,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/ui/base/select";
-import { Pagination } from "./Pagination";
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50];
 

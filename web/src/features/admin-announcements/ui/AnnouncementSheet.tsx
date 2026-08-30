@@ -1,6 +1,6 @@
 import type { MediaFile } from "@entities/media/model/types";
+import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { Cover } from "@features/admin-media/ui/Cover";
-import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/base/button";
