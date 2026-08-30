@@ -1,4 +1,4 @@
-import { useMediaCatalog } from "@entities/media/api/queries";
+import { type MediaCatalogSource, useMediaCatalog } from "@entities/media/api/queries";
 import {
 	isImageOnlyPurpose,
 	MEDIA_PURPOSE_OPTIONS,
@@ -35,6 +35,8 @@ export interface MediaPickerProps {
 	title?: string;
 	/** 限定可选素材类型；如封面图传 "image" 则只显示图片且隐藏类型筛选 */
 	mediaType?: MediaType;
+	/** 素材来源；owned 只读取当前登录用户自己的素材。 */
+	source?: MediaCatalogSource;
 }
 
 const PAGE_SIZE = 40;
@@ -47,6 +49,7 @@ export function MediaPicker({
 	multiple = false,
 	title = "选择素材",
 	mediaType,
+	source = "all",
 }: MediaPickerProps) {
 	// 用 "all" 作为「全部」占位值（Radix Select 不支持空字符串 value）
 	const [purpose, setPurpose] = useState("all");
@@ -75,7 +78,7 @@ export function MediaPicker({
 		[page, purpose, fileType, keyword],
 	);
 
-	const { data, isLoading } = useMediaCatalog(query);
+	const { data, isLoading } = useMediaCatalog(query, source);
 	const files = data?.data ?? [];
 	const total = data?.pagination?.total ?? 0;
 	const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
