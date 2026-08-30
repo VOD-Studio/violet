@@ -84,6 +84,12 @@ func TestUpdateCoverURL_NotFound(t *testing.T) {
 	assert.ErrorIs(t, err, emoji.ErrNotFound)
 }
 
+func TestRefCountExpr_NegativeDeltaUsesAdditionOperator(t *testing.T) {
+	expr := refCountExpr(-2)
+	assert.Equal(t, "GREATEST(ref_count + ?, 0)", expr.SQL)
+	assert.Equal(t, []any{-2}, expr.Vars)
+}
+
 func TestUpsertByName_CreateNew(t *testing.T) {
 	repo := setupEmojiTestDB(t)
 	g, _ := emoji.NewEmojiGroup(0, "new-pkg", emoji.SourceBilibili)
@@ -148,5 +154,3 @@ func TestUpsertEmojiByName_Upsert(t *testing.T) {
 	assert.Equal(t, "/uploads/e2.png", loaded.URL())
 	assert.Equal(t, "/uploads/e2.gif", loaded.GifURL())
 }
-
-

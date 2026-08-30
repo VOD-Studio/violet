@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"blog-api/internal/domain/emoji"
 	"blog-api/internal/domain/music"
@@ -595,10 +596,13 @@ func (r *FileRepository) Delete(ctx context.Context, id domainshared.ID) error {
 	return nil
 }
 
+func refCountExpr(delta int) clause.Expr {
+	return gorm.Expr("GREATEST(ref_count + ?, 0)", delta)
+}
+
 func (r *FileRepository) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error {
-	// 统一用 + 号，delta 为负时靠参数负值实现减法（此前 op="" 拼出缺操作符的 SQL）
 	result := r.db.WithContext(ctx).Model(&model.File{}).Where("id = ?", id.UUID()).
-		Update("ref_count", gorm.Expr("GREATEST(ref_count + ?, 0)", delta))
+		Update("ref_count", refCountExpr(delta))
 	if result.Error != nil {
 		return domainshared.Internal("更新引用计数失败", result.Error)
 	}
