@@ -13,8 +13,8 @@ export const PULL_THRESHOLD_RATIO = 0.8;
 export const INSERT_THRESHOLD_RATIO = 1.2;
 export const DRAG_ROTATE_PER_PX = 0.008;
 export const DRAG_ROTATE_MAX = 2.5;
-export const ROTATE_Y_PER_PX = 0.06;
-export const ROTATE_Y_MAX = 12;
+export const DRAG_ROTATE_Y_PER_PX = 0.06;
+export const DRAG_ROTATE_Y_MAX = 12;
 
 export interface DraggedTopSlotResult {
 	topSlot: PhotoStackSlot;
@@ -24,7 +24,7 @@ export interface DraggedTopSlotResult {
 	insertProgress: number;
 }
 
-/** 计算顶卡拖动过程中的位置、缩放和透视旋转。 */
+/** 计算顶卡拖动过程中的位置、缩放、平面旋转与透视旋转。 */
 export function getDraggedTopSlot(
 	rawDelta: number,
 	width: number,
@@ -48,10 +48,10 @@ export function getDraggedTopSlot(
 		-DRAG_ROTATE_MAX,
 		Math.min(DRAG_ROTATE_MAX, rawDelta * DRAG_ROTATE_PER_PX),
 	);
-	const rotateY =
-		rawDelta === 0
-			? 0
-			: Math.max(-ROTATE_Y_MAX, Math.min(ROTATE_Y_MAX, rawDelta * ROTATE_Y_PER_PX));
+	const rotateY = Math.max(
+		-DRAG_ROTATE_Y_MAX,
+		Math.min(DRAG_ROTATE_Y_MAX, rawDelta * DRAG_ROTATE_Y_PER_PX),
+	);
 	if (!canFlip) {
 		const rubberX =
 			Math.sign(rawDelta) *
@@ -83,7 +83,7 @@ export function getDraggedTopSlot(
 	const rearSlot = getStackSlot(rawDelta < 0 ? "left" : "right", 1, width);
 	return {
 		topSlot: interpolateSlot(peakSlot, rearSlot, insertProgress),
-		rotateY,
+		rotateY: rotateY * (1 - insertProgress),
 		isPastThreshold: true,
 		pullProgress: 1,
 		insertProgress,

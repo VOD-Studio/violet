@@ -69,6 +69,7 @@ export function usePhotoStackSlots({ images, safeIndex, stackWidth }: UsePhotoSt
 			const alreadyThere =
 				Math.abs(value.x.get() - slot.x) < 0.5 &&
 				Math.abs(value.y.get() - slot.y) < 0.5 &&
+				Math.abs(value.rotateY.get()) < 0.01 &&
 				Math.abs(value.scale.get() - slot.scale) < 0.01;
 			if (immediate || alreadyThere) {
 				value.x.set(slot.x);

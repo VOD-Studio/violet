@@ -11,7 +11,7 @@ export interface PhotoStackCardProps {
 	y: MotionValue<number>;
 	/** 卡片平面旋转角度。 */
 	rotate: MotionValue<number>;
-	/** 卡片绕垂直轴的透视旋转角度，仅拖动中的当前卡使用。 */
+	/** 卡片 Y 轴透视旋转角度。 */
 	rotateY: MotionValue<number>;
 	/** 卡片缩放比例。 */
 	scale: MotionValue<number>;
@@ -51,8 +51,8 @@ export function PhotoStackCard({
 				scale,
 				opacity,
 				zIndex,
-				transformPerspective: 900,
 				transformOrigin: "50% 50%",
+				transformPerspective: 900,
 			}}
 			disabled={!onClick}
 			data-card-state={state}

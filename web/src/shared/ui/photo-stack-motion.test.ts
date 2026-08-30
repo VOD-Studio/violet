@@ -23,28 +23,38 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDirectionalZ(null, "right", 1, false)).toBe(29);
 	});
 
-	it("左右拖拽产生镜像的 rotateY、rotateZ，并保留行程缩放", () => {
+	it("左右拖拽产生同号镜像的 Y/Z 双轴旋转，并保留行程缩放", () => {
 		const left = getDraggedTopSlot(-120, 200, true);
 		const right = getDraggedTopSlot(120, 200, true);
 		expect(left.topSlot.scale).toBeCloseTo(0.922, 3);
 		expect(right.topSlot.scale).toBeCloseTo(0.922, 3);
-		expect(left.rotateY).toBeLessThan(0);
-		expect(right.rotateY).toBeGreaterThan(0);
-		expect(left.rotateY).toBeCloseTo(-right.rotateY, 3);
 		expect(left.topSlot.rotate).toBeLessThan(0);
+		expect(left.rotateY).toBeLessThan(0);
 		expect(right.topSlot.rotate).toBeGreaterThan(0);
+		expect(right.rotateY).toBeGreaterThan(0);
 		expect(left.topSlot.rotate).toBeCloseTo(-right.topSlot.rotate, 3);
+		expect(left.rotateY).toBeCloseTo(-right.rotateY, 3);
 	});
-	it("rotateY 随拖动距离增长并封顶，边界阻尼时仍保留缩小与倾斜", () => {
-		const near = getDraggedTopSlot(40, 200, true);
-		const far = getDraggedTopSlot(400, 200, true);
-		const boundary = getDraggedTopSlot(120, 200, false);
+	it("Y/Z 双轴旋转随拖动距离连续增长并分别封顶", () => {
+		const near = getDraggedTopSlot(40, 500, true);
+		const far = getDraggedTopSlot(160, 500, true);
+		const capped = getDraggedTopSlot(400, 500, true);
+		expect(Math.abs(near.topSlot.rotate)).toBeLessThan(Math.abs(far.topSlot.rotate));
 		expect(Math.abs(near.rotateY)).toBeLessThan(Math.abs(far.rotateY));
-		expect(far.rotateY).toBe(12);
+		expect(capped.topSlot.rotate).toBe(2.5);
+		expect(capped.rotateY).toBe(12);
+		expect(getDraggedTopSlot(0, 200, true).topSlot.rotate).toBe(0);
 		expect(getDraggedTopSlot(0, 200, true).rotateY).toBe(0);
-		expect(boundary.topSlot.scale).toBeCloseTo(0.922, 3);
-		expect(boundary.topSlot.rotate).toBeGreaterThan(0);
-		expect(boundary.rotateY).toBeGreaterThan(0);
+	});
+	it("边界不可翻页方向仍保留 Y/Z 双轴旋转与缩小", () => {
+		const rightBoundary = getDraggedTopSlot(120, 200, false);
+		const leftBoundary = getDraggedTopSlot(-120, 200, false);
+		expect(rightBoundary.topSlot.scale).toBeCloseTo(0.922, 3);
+		expect(leftBoundary.topSlot.scale).toBeCloseTo(0.922, 3);
+		expect(rightBoundary.topSlot.rotate).toBeGreaterThan(0);
+		expect(rightBoundary.rotateY).toBeGreaterThan(0);
+		expect(leftBoundary.topSlot.rotate).toBeLessThan(0);
+		expect(leftBoundary.rotateY).toBeLessThan(0);
 	});
 	it("插值时保留现有几何", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };

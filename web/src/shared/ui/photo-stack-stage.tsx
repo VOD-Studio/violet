@@ -125,11 +125,13 @@ export function PhotoStackStage({
 				nextTopMotion.y.stop();
 				nextTopMotion.rotate.stop();
 				nextTopMotion.rotateY.stop();
-				nextTopMotion.scale.stop();
-				nextTopMotion.rotateY.set(0);
 				animate(nextTopMotion.x, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 				animate(nextTopMotion.y, 0, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 				animate(nextTopMotion.rotate, 0, {
+					duration: INSERT_MS / 1000,
+					ease: "easeOut" as const,
+				});
+				animate(nextTopMotion.rotateY, 0, {
 					duration: INSERT_MS / 1000,
 					ease: "easeOut" as const,
 				});
@@ -147,12 +149,16 @@ export function PhotoStackStage({
 					const slot = getStackSlot("left", depth, width);
 					cardMotion.x.stop();
 					cardMotion.y.stop();
+					cardMotion.rotate.stop();
 					cardMotion.rotateY.stop();
-					cardMotion.rotateY.set(0);
 					cardMotion.scale.stop();
 					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 					animate(cardMotion.rotate, slot.rotate, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+					animate(cardMotion.rotateY, 0, {
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
 					});
@@ -167,12 +173,16 @@ export function PhotoStackStage({
 					const slot = getStackSlot("right", depth, width);
 					cardMotion.x.stop();
 					cardMotion.y.stop();
+					cardMotion.rotate.stop();
 					cardMotion.rotateY.stop();
-					cardMotion.rotateY.set(0);
 					cardMotion.scale.stop();
 					animate(cardMotion.x, slot.x, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 					animate(cardMotion.y, slot.y, { duration: INSERT_MS / 1000, ease: "easeOut" as const });
 					animate(cardMotion.rotate, slot.rotate, {
+						duration: INSERT_MS / 1000,
+						ease: "easeOut" as const,
+					});
+					animate(cardMotion.rotateY, 0, {
 						duration: INSERT_MS / 1000,
 						ease: "easeOut" as const,
 					});
@@ -252,13 +262,13 @@ export function PhotoStackStage({
 		const width = stackWidth || 280;
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		const result = getDraggedTopSlot(rawDelta, width, canFlip);
-		const { topSlot, isPastThreshold: past, pullProgress } = result;
+		const { topSlot, rotateY, isPastThreshold: past, pullProgress } = result;
 		setCurrentOffset(topSlot.x);
 		setIncomingProgress(canFlip ? pullProgress : 0);
 		setIsPastThreshold(canFlip && past);
 		setDragDirection(direction);
 		setStackSlot(value, topSlot);
-		value.rotateY.set(result.rotateY);
+		value.rotateY.set(rotateY);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
