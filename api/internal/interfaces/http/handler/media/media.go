@@ -193,12 +193,12 @@ func (h *Handler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name        string             `json:"name" validate:"required"`
-		URL         string             `json:"url"`
-		TextContent string             `json:"text_content"`
-		GifURL      string             `json:"gif_url"`
-		SourceURL   string             `json:"source_url"`
-		SortOrder   int                `json:"sort_order"`
+		Name        string                 `json:"name" validate:"required"`
+		URL         string                 `json:"url"`
+		TextContent string                 `json:"text_content"`
+		GifURL      string                 `json:"gif_url"`
+		SourceURL   string                 `json:"source_url"`
+		SortOrder   int                    `json:"sort_order"`
 		Meta        *appmedia.EmojiMetaDTO `json:"meta"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -229,12 +229,12 @@ func (h *Handler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name        string             `json:"name"`
-		URL         string             `json:"url"`
-		TextContent string             `json:"text_content"`
-		GifURL      string             `json:"gif_url"`
-		SourceURL   string             `json:"source_url"`
-		SortOrder   int                `json:"sort_order"`
+		Name        string                 `json:"name"`
+		URL         string                 `json:"url"`
+		TextContent string                 `json:"text_content"`
+		GifURL      string                 `json:"gif_url"`
+		SourceURL   string                 `json:"source_url"`
+		SortOrder   int                    `json:"sort_order"`
 		Meta        *appmedia.EmojiMetaDTO `json:"meta"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -682,8 +682,7 @@ func (h *Handler) CheckInstantUpload(w http.ResponseWriter, r *http.Request) {
 // ListFiles 列出文件（后台）
 func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
-	purpose := r.URL.Query().Get("purpose")
-	result, err := h.uploadSvc.ListByOwner(r.Context(), userID, purpose, response.ParsePageQuery(r))
+	result, err := h.uploadSvc.ListByOwner(r.Context(), userID, listFilesInput(r), response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -714,19 +713,23 @@ func (h *Handler) GetMedia(w http.ResponseWriter, r *http.Request) {
 
 // ListAllFiles 全局文件列表（后台素材管理，不限 owner）
 func (h *Handler) ListAllFiles(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	in := appmedia.ListAllFilesInput{
-		Purpose:      q.Get("purpose"),
-		MimeCategory: q.Get("type"),
-		Category:     q.Get("category"),
-		Keyword:      q.Get("keyword"),
-	}
+	in := listFilesInput(r)
 	result, err := h.uploadSvc.ListAllFiles(r.Context(), in, response.ParsePageQuery(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
+}
+
+func listFilesInput(r *http.Request) appmedia.ListFilesInput {
+	q := r.URL.Query()
+	return appmedia.ListFilesInput{
+		Purpose:      q.Get("purpose"),
+		MimeCategory: q.Get("type"),
+		Category:     q.Get("category"),
+		Keyword:      q.Get("keyword"),
+	}
 }
 
 // UpdateFileMetadata 更新素材元数据（描述/分类/文件名）

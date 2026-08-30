@@ -558,6 +558,9 @@ func (r *FileRepository) FindPage(ctx context.Context, filter upload.FileListFil
 	if filter.MimePrefix != "" {
 		query = query.Where("mime_type LIKE ?", filter.MimePrefix+"%")
 	}
+	for _, prefix := range filter.ExcludeMimePrefixes {
+		query = query.Where("mime_type NOT LIKE ?", prefix+"%")
+	}
 	if filter.Keyword != "" {
 		query = query.Where("original_name ILIKE ?", "%"+filter.Keyword+"%")
 	}

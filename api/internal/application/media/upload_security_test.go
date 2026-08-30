@@ -136,7 +136,10 @@ func TestCancelUpload_AllowsOwner(t *testing.T) {
 }
 
 // fakeFileRepo 假的 fileRepo,FindByID 返回固定 owner 的 File
-type fakeFileRepo struct{ ownerID domainshared.ID }
+type fakeFileRepo struct {
+	ownerID    domainshared.ID
+	lastFilter domainupload.FileListFilter
+}
 
 func (f *fakeFileRepo) FindByID(ctx context.Context, id domainshared.ID) (*domainupload.File, error) {
 	fl, _ := domainupload.NewFile(id, f.ownerID, "avatar", "f.jpg", "/uploads/f.jpg", "/uploads/f.jpg", 10, "image/jpeg", "")
@@ -149,6 +152,7 @@ func (f *fakeFileRepo) FindByURLs(ctx context.Context, urls []string) ([]*domain
 	return nil, nil
 }
 func (f *fakeFileRepo) FindPage(ctx context.Context, filter domainupload.FileListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainupload.File], error) {
+	f.lastFilter = filter
 	return domainshared.PageResult[*domainupload.File]{}, nil
 }
 func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error { return nil }

@@ -36,6 +36,8 @@ type FileListFilter struct {
 	Category string
 	// MIME 类型前缀筛选（如 image/、video/），空则全部
 	MimePrefix string
+	// ExcludeMimePrefixes 排除的 MIME 类型前缀；用于筛选非图片、视频、音频的普通文件。
+	ExcludeMimePrefixes []string
 	// 关键词搜索（匹配 original_name），空则不搜索
 	Keyword string
 	// 是否包含已软删除的文件，默认 false
