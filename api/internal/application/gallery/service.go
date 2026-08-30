@@ -409,15 +409,11 @@ func (s *Service) toDTOs(ctx context.Context, galleries []*domaingallery.Gallery
 		return nil, err
 	}
 
-	// 浏览流照片堆叠预览：收集各集前 previewLimit 项文件 ID，一次批量查
-	previewLimit := 3
-	previewSeen := make(map[shared.ID]struct{}, len(galleries)*previewLimit)
-	previewIDs := make([]shared.ID, 0, len(galleries)*previewLimit)
+	// 浏览流照片堆叠预览：收集各集全部媒体项文件 ID，一次批量查
+	previewSeen := make(map[shared.ID]struct{})
+	previewIDs := make([]shared.ID, 0)
 	for _, g := range galleries {
-		for i, it := range g.Items() {
-			if i >= previewLimit {
-				break
-			}
+		for _, it := range g.Items() {
 			if _, ok := previewSeen[it.FileID()]; ok {
 				continue
 			}
@@ -454,21 +450,18 @@ func (s *Service) toDTOs(ctx context.Context, galleries []*domaingallery.Gallery
 			Author:      author,
 			CreatedAt:   g.CreatedAt().Format(time.RFC3339),
 			UpdatedAt:   g.UpdatedAt().Format(time.RFC3339),
-			PreviewURLs: previewURLsOf(g, previewFiles, previewLimit),
+			PreviewURLs: previewURLsOf(g, previewFiles),
 		})
 	}
 	return dtos, nil
 }
 
-// previewURLsOf 前 limit 项中可展示媒体的地址（位置截断，不跨位补位）：
+// previewURLsOf 返回全部可展示媒体的地址：
 // 优先缩略图（图片缩略档/视频首帧），图片回退源 URL；视频无首帧跳过
-// （源文件无法当预览渲染），文件缺失跳过——返回数可少于 limit。
-func previewURLsOf(g *domaingallery.Gallery, files map[shared.ID]*domainupload.File, limit int) []string {
-	urls := make([]string, 0, limit)
-	for i, it := range g.Items() {
-		if i >= limit {
-			break;
-		}
+// （源文件无法当预览渲染），文件缺失时跳过。
+func previewURLsOf(g *domaingallery.Gallery, files map[shared.ID]*domainupload.File) []string {
+	urls := make([]string, 0, len(g.Items()))
+	for _, it := range g.Items() {
 		f := files[it.FileID()]
 		if f == nil {
 			continue

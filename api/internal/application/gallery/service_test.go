@@ -2,6 +2,7 @@ package gallery
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -89,8 +90,12 @@ func newStubMedia() *stubMedia {
 }
 
 func (m *stubMedia) addFile(id, ownerID shared.ID, mime string) {
+	m.addFileWithURL(id, ownerID, mime, "/uploads/a.jpg")
+}
+
+func (m *stubMedia) addFileWithURL(id, ownerID shared.ID, mime, url string) {
 	m.files[id] = domainupload.ReconstructFile(
-		id, ownerID, "material", "a.jpg", "/x/a.jpg", "/uploads/a.jpg",
+		id, ownerID, "material", "a.jpg", "/x/a.jpg", url,
 		1024, mime, "hash", nil, nil, "", domainupload.StatusReady, 0, "", "", nil,
 		time.Now(), time.Now(),
 	)
@@ -169,13 +174,15 @@ func (f *fakeUserRepo) FindByUsername(_ context.Context, username domainuser.Use
 	return nil, domainuser.ErrNotFound
 }
 
-func (f *fakeUserRepo) ExistsByEmail(context.Context, domainuser.Email) (bool, error)     { return false, nil }
+func (f *fakeUserRepo) ExistsByEmail(context.Context, domainuser.Email) (bool, error) {
+	return false, nil
+}
 func (f *fakeUserRepo) ExistsByUsername(context.Context, domainuser.Username) (bool, error) {
 	return false, nil
 }
-func (f *fakeUserRepo) Save(context.Context, *domainuser.User) error    { return nil }
-func (f *fakeUserRepo) Delete(context.Context, shared.ID) error         { return nil }
-func (f *fakeUserRepo) Count(context.Context) (int64, error)            { return 0, nil }
+func (f *fakeUserRepo) Save(context.Context, *domainuser.User) error { return nil }
+func (f *fakeUserRepo) Delete(context.Context, shared.ID) error      { return nil }
+func (f *fakeUserRepo) Count(context.Context) (int64, error)         { return 0, nil }
 
 // stubPerm 权限端口 stub。
 type stubPerm struct{ allow bool }
@@ -338,8 +345,8 @@ func TestUpdate_ByOwner(t *testing.T) {
 	f.media.refLog = nil
 
 	newItems := []ItemInput{
-		{FileID: f.files[1].String()},                     // 保留
-		{FileID: f.files[2].String(), Caption: "晚霞"},     // 新增
+		{FileID: f.files[1].String()},                // 保留
+		{FileID: f.files[2].String(), Caption: "晚霞"}, // 新增
 	}
 	updated, err := f.svc.Update(ctxAs(f.owner.GetID()), dto.ID, UpdateInput{
 		Title:       "新标题",
@@ -491,7 +498,7 @@ func TestListPublished_OnlyPublished(t *testing.T) {
 
 func TestListPublished_PreviewURLs(t *testing.T) {
 	f := newFixture(t)
-	// 视频放第 2 位（前 3 预览范围内）：无首帧应被跳过，预览只含 3 张图
+	// 视频放第 2 位：无首帧应被跳过，其余图片仍全部返回
 	videoID := shared.NewID()
 	f.media.addFile(videoID, f.owner.GetID(), "video/mp4")
 	extraID := shared.NewID()
@@ -518,15 +525,50 @@ func TestListPublished_PreviewURLs(t *testing.T) {
 		t.Fatalf("want 1 gallery, got %d", len(dtos))
 	}
 	got := dtos[0].PreviewURLs
-	// 前 3 项 = [图, 视频, 图]：视频无首帧跳过 → 2 张（位置截断不补位）
-	if len(got) != 2 {
-		t.Fatalf("want 2 preview urls, got %d: %v", len(got), got)
+	if len(got) != 4 {
+		t.Fatalf("want 4 preview urls, got %d: %v", len(got), got)
 	}
 	for _, u := range got {
 		if u != "/uploads/a.jpg" {
 			t.Fatalf("unexpected preview url %q", u)
 		}
 	}
+
+	t.Run("返回全部可预览项", func(t *testing.T) {
+		f := newFixture(t)
+		want := []string{
+			"/uploads/1.jpg",
+			"/uploads/2.jpg",
+			"/uploads/3.jpg",
+			"/uploads/4.jpg",
+			"/uploads/5.jpg",
+			"/uploads/6.jpg",
+		}
+		items := make([]ItemInput, 0, len(want))
+		for _, url := range want {
+			fileID := shared.NewID()
+			f.media.addFileWithURL(fileID, f.owner.GetID(), "image/jpeg", url)
+			items = append(items, ItemInput{FileID: fileID.String()})
+		}
+		if _, err := f.svc.Create(ctxAs(f.owner.GetID()), CreateInput{
+			OwnerID: f.owner.GetID().String(),
+			Title:   "六项图集",
+			Items:   items,
+		}); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+
+		dtos, _, err := f.svc.ListPublished(context.Background(), shared.PageQuery{Page: 1, Limit: 20})
+		if err != nil {
+			t.Fatalf("ListPublished: %v", err)
+		}
+		if len(dtos) != 1 {
+			t.Fatalf("want 1 gallery, got %d", len(dtos))
+		}
+		if got := dtos[0].PreviewURLs; !slices.Equal(got, want) {
+			t.Fatalf("preview urls mismatch: got %v, want %v", got, want)
+		}
+	})
 }
 
 func TestCreate_DuplicateItems(t *testing.T) {
