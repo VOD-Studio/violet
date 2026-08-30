@@ -11,8 +11,8 @@ export interface PhotoStackSlot {
 
 export const PULL_THRESHOLD_RATIO = 0.8;
 export const INSERT_THRESHOLD_RATIO = 1.2;
-export const DRAG_ROTATE_PER_PX = 0.008;
-export const DRAG_ROTATE_MAX = 2.5;
+export const DRAG_ROTATE_PER_PX = 0.015;
+export const DRAG_ROTATE_MAX = 4;
 export const DRAG_ROTATE_Y_PER_PX = 0.06;
 export const DRAG_ROTATE_Y_MAX = 12;
 

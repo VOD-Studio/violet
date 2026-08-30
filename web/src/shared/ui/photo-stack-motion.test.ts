@@ -41,7 +41,7 @@ describe("PhotoStack motion decisions", () => {
 		const capped = getDraggedTopSlot(400, 500, true);
 		expect(Math.abs(near.topSlot.rotate)).toBeLessThan(Math.abs(far.topSlot.rotate));
 		expect(Math.abs(near.rotateY)).toBeLessThan(Math.abs(far.rotateY));
-		expect(capped.topSlot.rotate).toBe(2.5);
+		expect(capped.topSlot.rotate).toBe(4);
 		expect(capped.rotateY).toBe(12);
 		expect(getDraggedTopSlot(0, 200, true).topSlot.rotate).toBe(0);
 		expect(getDraggedTopSlot(0, 200, true).rotateY).toBe(0);
