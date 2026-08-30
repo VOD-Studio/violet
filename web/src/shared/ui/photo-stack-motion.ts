@@ -42,20 +42,6 @@ export function getDraggedTopSlot(
 	const distance = Math.abs(rawDelta);
 	const pullThreshold = width * PULL_THRESHOLD_RATIO;
 	const insertThreshold = width * INSERT_THRESHOLD_RATIO;
-	if (!canFlip) {
-		const rubberX =
-			Math.sign(rawDelta) *
-			width *
-			0.08 *
-			(1 - Math.exp(-distance / (width * 0.08)));
-		return {
-			topSlot: { x: rubberX, y: 0, rotate: 0, scale: 1 },
-			rotateY: 0,
-			isPastThreshold: false,
-			pullProgress: 0,
-			insertProgress: 0,
-		};
-	}
 	const progress = Math.min(1, distance / Math.max(1, insertThreshold));
 	const scale = 1 - 0.104 * progress;
 	const rotate = Math.max(
@@ -66,6 +52,20 @@ export function getDraggedTopSlot(
 		rawDelta === 0
 			? 0
 			: Math.max(-ROTATE_Y_MAX, Math.min(ROTATE_Y_MAX, rawDelta * ROTATE_Y_PER_PX));
+	if (!canFlip) {
+		const rubberX =
+			Math.sign(rawDelta) *
+			width *
+			0.08 *
+			(1 - Math.exp(-distance / (width * 0.08)));
+		return {
+			topSlot: { x: rubberX, y: 0, rotate, scale },
+			rotateY,
+			isPastThreshold: false,
+			pullProgress: 0,
+			insertProgress: 0,
+		};
+	}
 	if (distance <= pullThreshold) {
 		return {
 			topSlot: { x: rawDelta, y: 0, rotate, scale },

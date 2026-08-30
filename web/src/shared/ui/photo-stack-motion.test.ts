@@ -35,13 +35,16 @@ describe("PhotoStack motion decisions", () => {
 		expect(right.topSlot.rotate).toBeGreaterThan(0);
 		expect(left.topSlot.rotate).toBeCloseTo(-right.topSlot.rotate, 3);
 	});
-	it("rotateY 随拖动距离增长并封顶，稳定态为零", () => {
+	it("rotateY 随拖动距离增长并封顶，边界阻尼时仍保留缩小与倾斜", () => {
 		const near = getDraggedTopSlot(40, 200, true);
 		const far = getDraggedTopSlot(400, 200, true);
+		const boundary = getDraggedTopSlot(120, 200, false);
 		expect(Math.abs(near.rotateY)).toBeLessThan(Math.abs(far.rotateY));
 		expect(far.rotateY).toBe(12);
 		expect(getDraggedTopSlot(0, 200, true).rotateY).toBe(0);
-		expect(getDraggedTopSlot(120, 200, false).rotateY).toBe(0);
+		expect(boundary.topSlot.scale).toBeCloseTo(0.948, 3);
+		expect(boundary.topSlot.rotate).toBeGreaterThan(0);
+		expect(boundary.rotateY).toBeGreaterThan(0);
 	});
 	it("插值时保留现有几何", () => {
 		const from = { x: 20, y: -8, rotate: 3, scale: 0.92 };
