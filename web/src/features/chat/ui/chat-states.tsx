@@ -4,8 +4,7 @@
 
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
-import { Image as ImageIcon, MessageCircle, Plus, X } from "lucide-react";
-import type { ChatMedia } from "../model/types";
+import { Image as ImageIcon, MessageCircle, Plus } from "lucide-react";
 
 export function EmptyConversation({ onCreate }: { onCreate: () => void }) {
 	return (
@@ -25,37 +24,6 @@ export function EmptyConversation({ onCreate }: { onCreate: () => void }) {
 					</Button>
 				</div>
 			</div>
-		</div>
-	);
-}
-
-export function ImageLightbox({ media, onClose }: { media: ChatMedia; onClose: () => void }) {
-	return (
-		<div
-			aria-label="图片预览"
-			aria-modal="true"
-			className="fixed inset-0 z-50 flex items-center justify-center p-4"
-			role="dialog"
-		>
-			<button
-				aria-label="关闭图片预览"
-				className="absolute inset-0 cursor-default bg-black/85 backdrop-blur-md"
-				onClick={onClose}
-				type="button"
-			/>
-			<button
-				aria-label="关闭图片预览"
-				className="absolute right-5 top-5 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-				onClick={onClose}
-				type="button"
-			>
-				<X className="size-5" />
-			</button>
-			<img
-				alt="聊天图片原图"
-				className="relative z-10 max-h-[88dvh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
-				src={media.url}
-			/>
 		</div>
 	);
 }
