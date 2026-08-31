@@ -47,12 +47,46 @@ type GalleryPublished struct {
 	Slug string
 }
 
+// GalleryUnpublished 公开版本已撤回事件。
+type GalleryUnpublished struct {
+	shared.BaseEvent
+	// AuthorID 图集作者 ID;与操作者(审计 Actor)不同时审计记为 moderated。
+	AuthorID shared.ID
+	// Title 撤回时的工作稿标题,用于审计快照。
+	Title string
+}
+
+// GalleryDeleted 图集已删除事件。聚合已不存在,由应用层在删除成功后手动构造发布。
+type GalleryDeleted struct {
+	shared.BaseEvent
+	// AuthorID 图集作者 ID;与操作者(审计 Actor)不同时审计记为 moderated。
+	AuthorID shared.ID
+	// Title 删除时的工作稿标题,用于审计快照。
+	Title string
+}
+
 func NewGalleryCreated(id, authorID shared.ID) GalleryCreated {
 	return GalleryCreated{BaseEvent: shared.NewBaseEvent("gallery.created", id), AuthorID: authorID}
 }
 
 func NewGalleryPublished(id shared.ID, slug string) GalleryPublished {
 	return GalleryPublished{BaseEvent: shared.NewBaseEvent("gallery.published", id), Slug: slug}
+}
+
+func NewGalleryUnpublished(id, authorID shared.ID, title string) GalleryUnpublished {
+	return GalleryUnpublished{
+		BaseEvent: shared.NewBaseEvent("gallery.unpublished", id),
+		AuthorID:  authorID,
+		Title:     title,
+	}
+}
+
+func NewGalleryDeleted(id, authorID shared.ID, title string) GalleryDeleted {
+	return GalleryDeleted{
+		BaseEvent: shared.NewBaseEvent("gallery.deleted", id),
+		AuthorID:  authorID,
+		Title:     title,
+	}
 }
 
 // RevisionItem 图集工作稿中的有序图片项。
@@ -284,6 +318,7 @@ func (g *Gallery) Unpublish(expected int64, unpublishedAt time.Time) error {
 	g.publishedRevision = nil
 	g.version++
 	g.timestamps.UpdatedAt = unpublishedAt
+	g.RecordEvent(NewGalleryUnpublished(g.id, g.authorID, g.workingRevision.title))
 	return nil
 }
 

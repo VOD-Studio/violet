@@ -32,6 +32,8 @@ var (
 	ErrNotFound = shared.NotFound("图集")
 	// ErrNotOwner 操作者不是图集作者。
 	ErrNotOwner = shared.Forbidden("只能访问自己创建的图集")
+	// ErrCannotMaintain 操作者既不是图集作者，也不具备 gallery:moderate 权限。
+	ErrCannotMaintain = shared.Forbidden("只能维护自己创建的图集，或需要 gallery:moderate 权限")
 	// ErrVersionConflict 工作稿已被其他编辑窗口更新。
 	ErrVersionConflict = shared.Conflict("图集工作稿已更新，请重新载入后再保存")
 	// ErrAlreadyPublished 表示工作稿已经是当前公开版本。
@@ -39,6 +41,14 @@ var (
 	// ErrNotPublished 表示图集当前没有可撤回的公开版本。
 	ErrNotPublished = shared.Conflict("图集当前没有公开版本")
 )
+
+// ListFilter 管理列表筛选条件；零值表示不过滤。
+type ListFilter struct {
+	// AuthorID 只读该作者的图集；nil 表示全部作者。
+	AuthorID *shared.ID
+	// Status 取 StatusDraft、StatusPublished、StatusModified 或 StatusUnpublished；空串表示全部状态。
+	Status string
+}
 
 // Repository 图集聚合持久化接口。
 type Repository interface {
@@ -48,8 +58,8 @@ type Repository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Gallery, error)
 	// FindByIDForUpdate 加行锁查询，供完整保存事务使用。
 	FindByIDForUpdate(ctx context.Context, id shared.ID) (*Gallery, error)
-	// FindPageByAuthor 分页读取作者自己的工作稿。
-	FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*Gallery], error)
+	// FindPage 按筛选条件分页读取管理列表，created_at、id 倒序。
+	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*Gallery], error)
 	// SaveWorking 保存完整 working revision，并以 expectedVersion 原子推进版本。
 	SaveWorking(ctx context.Context, gallery *Gallery, expectedVersion int64) error
 	// SavePublishingState 原子保存公开指针并删除已失效的旧公开快照。

@@ -130,8 +130,9 @@ var (
 	// customemoji
 	CustomEmojiManage = MustParse("customemoji:manage") // 管理自定义表情（强制下架任意用户的违规表情）
 	// gallery
-	GalleryView   = MustParse("gallery:view")
-	GalleryManage = MustParse("gallery:manage")
+	GalleryView     = MustParse("gallery:view")     // 图集管理入口、管理列表与工作稿详情
+	GalleryManage   = MustParse("gallery:manage")   // 创建并保存自己的图集工作稿
+	GalleryModerate = MustParse("gallery:moderate") // 撤回或删除他人图集
 )
 
 // ============================================================

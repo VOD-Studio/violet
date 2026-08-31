@@ -17,6 +17,7 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
+	domaingallery "blog-api/internal/domain/gallery"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
@@ -524,9 +525,9 @@ func TestSubscriber_SubscriptionFetched_EmptyTitleFallback(t *testing.T) {
 
 func TestSubscriber_SubscriptionFetched_FeedErrorKindMapping(t *testing.T) {
 	tests := []struct {
-		name     string
-		kind     string
-		want     string
+		name string
+		kind string
+		want string
 	}{
 		{"transient 映射网络失败", "transient", "源站连接失败"},
 		{"permanent 映射源站不可用", "permanent", "源站不可用"},
@@ -631,4 +632,53 @@ type recordingBus struct {
 func (b *recordingBus) Publish(context.Context, []shared.DomainEvent) error { return nil }
 func (b *recordingBus) Subscribe(eventName string, _ appshared.EventHandler) {
 	b.subscribedName = eventName
+}
+
+func TestSubscriber_GalleryLifecycle_RecordsOwnerActions(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	author := shared.NewID()
+	ctx := auditCtx(t, author.String(), "author@blog.com", "1.2.3.4", "ua")
+	id := shared.NewID()
+
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryCreated(id, author)))
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryPublished(id, "gallery-abc")))
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryUnpublished(id, author, "夏日微光")))
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryDeleted(id, author, "夏日微光")))
+
+	require.Len(t, store.appended, 4)
+	assert.Equal(t, domainaudit.ActionCreate, store.appended[0].Action)
+	assert.Equal(t, "gallery", store.appended[0].Resource.Type)
+
+	assert.Equal(t, domainaudit.ActionPublish, store.appended[1].Action)
+	assert.Equal(t, "gallery-abc", store.appended[1].Resource.Name)
+
+	// 作者本人撤回/删除 → 普通 unpublish/delete,不带 moderated 语义
+	assert.Equal(t, domainaudit.ActionUnpublish, store.appended[2].Action)
+	assert.Empty(t, store.appended[2].Metadata)
+	assert.Equal(t, domainaudit.ActionDelete, store.appended[3].Action)
+	assert.Empty(t, store.appended[3].Metadata)
+}
+
+func TestSubscriber_GalleryModerated_RecordsModerateWithAuthor(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	author := shared.NewID()
+	moderator := shared.NewID()
+	ctx := auditCtx(t, moderator.String(), "moderator@blog.com", "1.2.3.4", "ua")
+	id := shared.NewID()
+
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryUnpublished(id, author, "他人作品")))
+	require.NoError(t, sub.Handle(ctx, domaingallery.NewGalleryDeleted(id, author, "他人作品")))
+
+	require.Len(t, store.appended, 2)
+	for i, operation := range []string{"unpublish", "delete"} {
+		e := store.appended[i]
+		// 操作者与作者不同 → 审核处置,记 moderated 并保留原作者
+		assert.Equal(t, domainaudit.ActionModerate, e.Action)
+		assert.Equal(t, author.String(), e.Metadata["author_id"])
+		assert.Equal(t, operation, e.Metadata["operation"])
+		assert.Equal(t, "gallery", e.Resource.Type)
+		assert.Equal(t, "他人作品", e.Resource.Name)
+	}
 }
