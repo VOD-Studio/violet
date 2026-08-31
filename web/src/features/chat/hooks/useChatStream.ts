@@ -63,6 +63,17 @@ export const useChatStream = () => {
 					}
 					return;
 				}
+				if (payload.type === "read.advanced") {
+					// 已读回执只影响对应会话的消息列表（read_state 随消息 DTO 返回）；
+					// 别人的阅读进度不改变我的会话列表与未读角标，不做全量失效。
+					const conversationID = payload.data.conversation_id;
+					if (typeof conversationID === "string") {
+						queryClient.invalidateQueries({
+							queryKey: chatKeys.messages(conversationID),
+						});
+					}
+					return;
+				}
 				const conversationID = payload.data.conversation_id;
 				const messageID = payload.data.message_id;
 				if (

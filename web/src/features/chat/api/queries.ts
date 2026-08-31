@@ -27,6 +27,7 @@ import {
 	fetchChatConversation,
 	fetchChatConversations,
 	fetchChatMembers,
+	fetchChatMessageReaders,
 	fetchChatMessages,
 	fetchChatPushConfig,
 	fetchChatUnreadCount,
@@ -78,6 +79,18 @@ export const useChatMessages = (id: string | null) =>
 		getNextPageParam: (lastPage) => lastPage.pagination.next_cursor ?? undefined,
 		enabled: Boolean(id),
 	});
+/**
+ * 消息已读成员名单（仅发送者可用）。
+ *
+ * @default 房间回执弹层打开时加载
+ */
+export const useChatMessageReaders = (conversationID: string, messageID: string, enabled = false) =>
+	useQuery({
+		queryKey: chatKeys.messageReaders(conversationID, messageID),
+		queryFn: () => fetchChatMessageReaders(conversationID, messageID),
+		enabled,
+	});
+
 export const useChatUnreadCount = (enabled = true) =>
 	useQuery({
 		queryKey: chatKeys.unreadCount(),

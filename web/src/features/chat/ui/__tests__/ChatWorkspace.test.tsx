@@ -183,6 +183,7 @@ vi.mock("@features/chat/api/queries", () => ({
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useChatMessageReaders: () => ({ data: [], isLoading: false, isError: false }),
 }));
 vi.mock("../api/queries", () => ({
 	useChatConversations: () => ({
@@ -224,6 +225,7 @@ vi.mock("../api/queries", () => ({
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useChatMessageReaders: () => ({ data: [], isLoading: false, isError: false }),
 }));
 
 vi.mock("../hooks/useChatStream", () => ({
@@ -282,6 +284,7 @@ vi.mock("../api/queries", () => ({
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
+	useChatMessageReaders: () => ({ data: [], isLoading: false, isError: false }),
 }));
 
 import { ChatWorkspace } from "../ChatWorkspace";

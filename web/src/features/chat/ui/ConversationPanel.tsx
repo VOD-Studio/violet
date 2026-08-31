@@ -302,6 +302,7 @@ export function ConversationPanel({
 									<MessageBubble
 										layout={justBackfilled ? false : "position"}
 										animateIn={animateInIds.has(message.id)}
+										conversationKind={conversation.kind}
 										currentUserID={currentUserID}
 										emoteMap={emoteMap}
 										highlighted={highlightedID === message.id}

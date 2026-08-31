@@ -69,11 +69,27 @@ export interface ChatMessage {
 	shared_tweet?: SharedTweet;
 	reply_to?: ChatMessageReference;
 	reactions: ChatMessageReaction[];
+	/** 已读回执；仅自己发送的非系统消息附带（见 CONTEXT.md「已读回执」词条） */
+	read_state?: ChatMessageReadState;
 	is_deleted: boolean;
 	deleted_at?: string;
 	/** 最后编辑时间；缺省表示从未编辑 */
 	edited_at?: string;
 	created_at: string;
+}
+/** 消息已读回执。 */
+export interface ChatMessageReadState {
+	/** 已读到该消息的其他有效成员数 */
+	read_count: number;
+	/** 会话中除自己外的当前有效成员数 */
+	member_count: number;
+}
+
+/** 消息已读成员名单项。 */
+export interface ChatMessageReader {
+	user: ChatUser;
+	/** 该成员最近一次标记阅读的时间 */
+	read_at: string;
 }
 
 export interface ChatConversation {
@@ -117,6 +133,7 @@ export interface ChatEvent {
 		| "member.changed"
 		| "message.deleted"
 		| "message.reaction.updated"
+		| "read.advanced"
 		| "typing.updated";
 	version: number;
 	occurred_at: string;
