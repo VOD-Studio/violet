@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -241,6 +242,23 @@ type MessageDTO struct {
 	EditedAt *string `json:"edited_at,omitempty"`
 	// CreatedAt 消息创建时间。
 	CreatedAt string `json:"created_at"`
+	// ReadState 已读回执；仅查看者本人发送的非系统消息附带（见 CONTEXT.md「已读回执」词条）。
+	ReadState *MessageReadStateDTO `json:"read_state,omitempty"`
+}
+
+// MessageReadStateDTO 消息已读回执读模型。
+type MessageReadStateDTO struct {
+	// ReadCount 已读到该消息的其他有效成员数。
+	ReadCount int `json:"read_count"`
+	// MemberCount 会话中除发送者外的当前有效成员数。
+	MemberCount int `json:"member_count"`
+}
+
+// MessageReaderDTO 已读成员名单项。
+type MessageReaderDTO struct {
+	User UserDTO `json:"user"`
+	// ReadAt 该成员最近一次标记阅读的时间（RFC3339）。
+	ReadAt string `json:"read_at"`
 }
 
 // MessageReferenceDTO 引用消息的紧凑读模型。
@@ -731,11 +749,16 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 	if err != nil {
 		return ListResult[MessageDTO]{}, err
 	}
+	states, err := s.repo.ListMemberReadStates(ctx, conversationID)
+	if err != nil {
+		return ListResult[MessageDTO]{}, err
+	}
 	for _, row := range rows {
 		dto, err := s.messageDTOWithReactions(ctx, row, reactions[row.ID().String()], userID)
 		if err != nil {
 			return ListResult[MessageDTO]{}, err
 		}
+		dto.ReadState = readStateFor(row, states, userID)
 		result.Items = append(result.Items, dto)
 	}
 	if result.HasMore && len(rows) > 0 {
@@ -824,12 +847,19 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
-	return s.messageDTO(ctx, message, in.UserID)
+	return s.messageDTOWithReadState(ctx, message, in.UserID)
 }
 
 // MarkRead 更新用户在会话中的阅读位置。
+//
+// 水位推进时向其他有效成员广播 read.advanced 事件（已读回执的实时通道）；
+// 重复标记同一位置不推进水位、不广播。
 func (s *Service) MarkRead(ctx context.Context, userID, conversationID, messageID domainshared.ID) (int64, error) {
 	if _, err := s.repo.FindByIDForMember(ctx, conversationID, userID); err != nil {
+		return 0, err
+	}
+	previous, err := s.repo.FindReadPosition(ctx, conversationID, userID)
+	if err != nil {
 		return 0, err
 	}
 	var last *domainshared.ID
@@ -858,12 +888,149 @@ func (s *Service) MarkRead(ctx context.Context, userID, conversationID, messageI
 	if err := s.repo.SaveReadPosition(ctx, position); err != nil {
 		return 0, err
 	}
+	if err := s.broadcastReadAdvanced(ctx, conversationID, userID, previous, position); err != nil {
+		return 0, err
+	}
 	return s.repo.CountUnread(ctx, conversationID, userID)
+}
+
+// broadcastReadAdvanced 在水位推进时向其他有效成员广播 read.advanced 事件。
+func (s *Service) broadcastReadAdvanced(ctx context.Context, conversationID, userID domainshared.ID, previous, current *domainchat.ReadPosition) error {
+	last := current.LastMessageID()
+	if last == nil {
+		return nil
+	}
+	if previous != nil && previous.LastMessageID() != nil && previous.LastMessageID().Equal(*last) {
+		return nil
+	}
+	members, err := s.repo.ListMembers(ctx, conversationID, false)
+	if err != nil {
+		return err
+	}
+	payload := map[string]any{
+		"conversation_id": conversationID.String(),
+		"user_id":         userID.String(),
+		"last_message_id": last.String(),
+	}
+	if current.ReadAt() != nil {
+		payload["read_at"] = current.ReadAt().Format(time.RFC3339Nano)
+	}
+	events, err := s.repo.SaveEvent(ctx, withoutID(memberIDs(members), userID), domainchat.EventReadPositionAdvanced, payload)
+	if err != nil {
+		return err
+	}
+	s.notifyEvents(ctx, events)
+	return nil
 }
 
 // UnreadCount 返回当前用户全部未读数。
 func (s *Service) UnreadCount(ctx context.Context, userID domainshared.ID) (int64, error) {
 	return s.repo.CountAllUnread(ctx, userID)
+}
+
+// ListMessageReaders 列出发送者本人消息的已读成员名单，按标记阅读时间倒序。
+func (s *Service) ListMessageReaders(ctx context.Context, userID, conversationID, messageID domainshared.ID) ([]MessageReaderDTO, error) {
+	if _, err := s.repo.FindByIDForMember(ctx, conversationID, userID); err != nil {
+		return nil, err
+	}
+	message, err := s.repo.FindMessage(ctx, conversationID, messageID)
+	if err != nil {
+		return nil, err
+	}
+	if !message.SenderID().Equal(userID) {
+		return nil, domainshared.Forbidden("仅发送者可查看已读名单")
+	}
+	states, err := s.repo.ListMemberReadStates(ctx, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	var readerIDs []domainshared.ID
+	readAtByUser := make(map[domainshared.ID]*time.Time)
+	for _, state := range states {
+		if state.UserID.Equal(userID) || !state.Covers(message) {
+			continue
+		}
+		readerIDs = append(readerIDs, state.UserID)
+		readAtByUser[state.UserID] = state.ReadAt
+	}
+	if len(readerIDs) == 0 {
+		return []MessageReaderDTO{}, nil
+	}
+	users, err := s.users.FindByIDs(ctx, readerIDs)
+	if err != nil {
+		return nil, err
+	}
+	type entry struct {
+		user   *domainuser.User
+		readAt *time.Time
+	}
+	entries := make([]entry, 0, len(users))
+	for _, user := range users {
+		entries = append(entries, entry{user: user, readAt: readAtByUser[user.GetID()]})
+	}
+	// 按时间类型排序：RFC3339Nano 零纳秒省略小数部分，字符串比较会在同秒内反转。
+	sort.Slice(entries, func(i, j int) bool {
+		a, b := entries[i].readAt, entries[j].readAt
+		if a == nil {
+			return false
+		}
+		if b == nil {
+			return true
+		}
+		return a.After(*b)
+	})
+	readers := make([]MessageReaderDTO, 0, len(entries))
+	for _, item := range entries {
+		reader := MessageReaderDTO{User: userToDTO(item.user)}
+		if item.readAt != nil {
+			reader.ReadAt = item.readAt.Format(time.RFC3339Nano)
+		}
+		readers = append(readers, reader)
+	}
+	return readers, nil
+}
+
+// readStateFor 推导查看者本人消息的已读回执；非本人或系统消息返回 nil。
+func readStateFor(message *domainchat.Message, states []domainchat.MemberReadState, viewerID domainshared.ID) *MessageReadStateDTO {
+	if message.Type() == domainchat.MessageSystem || !message.SenderID().Equal(viewerID) {
+		return nil
+	}
+	state := &MessageReadStateDTO{}
+	for _, member := range states {
+		if member.UserID.Equal(viewerID) {
+			continue
+		}
+		state.MemberCount++
+		if member.Covers(message) {
+			state.ReadCount++
+		}
+	}
+	return state
+}
+
+// messageDTOWithReadState 构造消息 DTO 并挂载发送者本人的已读回执。
+func (s *Service) messageDTOWithReadState(ctx context.Context, message *domainchat.Message, viewerID domainshared.ID) (MessageDTO, error) {
+	dto, err := s.messageDTO(ctx, message, viewerID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	if err := s.attachReadState(ctx, &dto, message, viewerID); err != nil {
+		return MessageDTO{}, err
+	}
+	return dto, nil
+}
+
+// attachReadState 为单条消息 DTO 挂载发送者本人的已读回执。
+func (s *Service) attachReadState(ctx context.Context, dto *MessageDTO, message *domainchat.Message, viewerID domainshared.ID) error {
+	if message.Type() == domainchat.MessageSystem || !message.SenderID().Equal(viewerID) {
+		return nil
+	}
+	states, err := s.repo.ListMemberReadStates(ctx, message.ConversationID())
+	if err != nil {
+		return err
+	}
+	dto.ReadState = readStateFor(message, states, viewerID)
+	return nil
 }
 
 // DeleteMessage 管理员删除违规消息。
@@ -928,7 +1095,7 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	if message.EditedAt() == nil {
-		return s.messageDTO(ctx, message, in.UserID)
+		return s.messageDTOWithReadState(ctx, message, in.UserID)
 	}
 	added := diffMediaIDs(message.MediaIDs(), previousMedia)
 	for i, mediaID := range added {
@@ -957,7 +1124,7 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
-	return s.messageDTO(ctx, message, in.UserID)
+	return s.messageDTOWithReadState(ctx, message, in.UserID)
 }
 
 // diffMediaIDs 返回在 next 中出现但不在 previous 中的媒体 ID。

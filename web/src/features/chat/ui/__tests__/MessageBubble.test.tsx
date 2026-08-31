@@ -7,7 +7,12 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ChatMedia, ChatMessage } from "../../model/types";
+import type {
+	ChatMedia,
+	ChatMessage,
+	ChatMessageReader,
+	ConversationKind,
+} from "../../model/types";
 import { MessageBubble } from "../MessageBubble";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -29,10 +34,15 @@ vi.mock("@tanstack/react-router", () => ({
 	),
 }));
 
+const receiptMocks = vi.hoisted(() => ({
+	readers: { data: [] as ChatMessageReader[], isLoading: false, isError: false },
+}));
+
 vi.mock("../../api/queries", () => ({
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useEditChatMessage: () => ({ mutate: vi.fn(), isPending: false }),
+	useChatMessageReaders: () => receiptMocks.readers,
 }));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
@@ -78,10 +88,15 @@ function imageMessage(content?: string): ChatMessage {
 	};
 }
 
-function renderBubble(message: ChatMessage, onImage: (media: ChatMedia) => void = () => {}) {
+function renderBubble(
+	message: ChatMessage,
+	onImage: (media: ChatMedia) => void = () => {},
+	conversationKind: ConversationKind = "direct",
+) {
 	return render(
 		<MessageBubble
 			animateIn={false}
+			conversationKind={conversationKind}
 			currentUserID="u_1"
 			emoteMap={{}}
 			highlighted={false}
@@ -212,5 +227,59 @@ describe("MessageBubble 消息编辑", () => {
 		fireEvent.keyDown(editor as HTMLElement, { key: "Escape" });
 		expect(container.querySelector('[contenteditable="true"]')).toBeNull();
 		expect(screen.getByText("原始内容")).toBeTruthy();
+	});
+});
+describe("MessageBubble 已读回执", () => {
+	const bob = { id: "u_2", username: "bob", display_name: "Bob", avatar_url: "" };
+
+	function receiptMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
+		return {
+			id: "m_rr",
+			conversation_id: "c_1",
+			sender,
+			type: "text",
+			content: "内容",
+			reactions: [],
+			is_deleted: false,
+			created_at: "2026-08-25T08:00:00Z",
+			...overrides,
+		};
+	}
+
+	it("私聊：按对方阅读状态显示「已读/未读」", () => {
+		renderBubble(receiptMessage({ read_state: { read_count: 1, member_count: 1 } }));
+		expect(screen.getByText("已读")).toBeTruthy();
+
+		cleanup();
+		renderBubble(receiptMessage({ read_state: { read_count: 0, member_count: 1 } }));
+		expect(screen.getByText("未读")).toBeTruthy();
+	});
+
+	it("他人消息与缺省 read_state 不渲染回执", () => {
+		renderBubble(
+			receiptMessage({ sender: bob, read_state: { read_count: 1, member_count: 1 } }),
+		);
+		expect(screen.queryByText("已读")).toBeNull();
+
+		cleanup();
+		renderBubble(receiptMessage());
+		expect(screen.queryByText("已读")).toBeNull();
+		expect(screen.queryByText("未读")).toBeNull();
+	});
+
+	it("房间：显示聚合计数，点击弹出已读成员名单", async () => {
+		receiptMocks.readers = {
+			data: [{ user: bob, read_at: "2026-08-25T09:00:00Z" }],
+			isLoading: false,
+			isError: false,
+		};
+		renderBubble(
+			receiptMessage({ read_state: { read_count: 2, member_count: 3 } }),
+			() => {},
+			"room",
+		);
+
+		fireEvent.click(screen.getByText("2 人已读"));
+		expect(await screen.findByText("Bob")).toBeTruthy();
 	});
 });

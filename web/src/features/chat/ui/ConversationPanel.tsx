@@ -4,6 +4,7 @@
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import type { PendingChatShare } from "@shared/api/share-tweet-store";
 import { Button } from "@shared/ui/base/button";
+import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { ArrowDown, ArrowLeft, LoaderCircle, MoreVertical } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -16,9 +17,9 @@ import {
 } from "../api/queries";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
 import { conversationLabel, conversationTargetUser, formatDate } from "../lib/conversation";
-import type { ChatConversation, ChatMedia, ChatMessage } from "../model/types";
+import type { ChatConversation, ChatMessage } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
-import { ImageLightbox, MessageEmpty, MessageSkeleton } from "./chat-states";
+import { MessageEmpty, MessageSkeleton } from "./chat-states";
 import { MessageBubble } from "./MessageBubble";
 import { MessageComposer } from "./MessageComposer";
 import { RoomDetails } from "./RoomDetails";
@@ -59,7 +60,7 @@ export function ConversationPanel({
 	const canManage = useHasPermission("chat:manage");
 	const deleteMessage = useDeleteChatMessage();
 	const read = useMarkChatRead();
-	const [lightbox, setLightbox] = useState<ChatMedia | null>(null);
+	const imagePreview = useImagePreview();
 	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
 	const [highlightedID, setHighlightedID] = useState<string | null>(null);
@@ -301,6 +302,7 @@ export function ConversationPanel({
 									<MessageBubble
 										layout={justBackfilled ? false : "position"}
 										animateIn={animateInIds.has(message.id)}
+										conversationKind={conversation.kind}
 										currentUserID={currentUserID}
 										emoteMap={emoteMap}
 										highlighted={highlightedID === message.id}
@@ -324,7 +326,7 @@ export function ConversationPanel({
 														})
 												: undefined
 										}
-										onImage={setLightbox}
+										onImage={(media) => imagePreview.openPreview([media.url])}
 										onReply={
 											message.type !== "system" && !message.is_deleted
 												? () => setReplyTarget(message)
@@ -389,7 +391,13 @@ export function ConversationPanel({
 					)}
 				</AnimatePresence>
 			</div>
-			{lightbox && <ImageLightbox media={lightbox} onClose={() => setLightbox(null)} />}
+			<ImagePreview
+				open={imagePreview.open}
+				images={imagePreview.images}
+				currentIndex={imagePreview.currentIndex}
+				onClose={imagePreview.closePreview}
+				onIndexChange={imagePreview.setCurrentIndex}
+			/>
 		</motion.div>
 	);
 }

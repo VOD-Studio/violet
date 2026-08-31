@@ -73,6 +73,11 @@ type ConversationRepository interface {
 	// CountAllUnread 统计用户全部会话的未读消息数。
 	CountAllUnread(ctx context.Context, userID shared.ID) (int64, error)
 
+	// FindReadPosition 查找用户在会话中的阅读位置；从未标记过时返回 (nil, nil)。
+	FindReadPosition(ctx context.Context, conversationID, userID shared.ID) (*ReadPosition, error)
+	// ListMemberReadStates 列出会话当前有效成员的已读水位（含从未标记的成员）。
+	ListMemberReadStates(ctx context.Context, conversationID shared.ID) ([]MemberReadState, error)
+
 	// FindEventsAfter 查找用户事件流中指定序号之后的事件。
 	FindEventsAfter(ctx context.Context, userID shared.ID, afterSequence int64, limit int) ([]Event, error)
 	// SavePushSubscription 保存或更新浏览器推送订阅。

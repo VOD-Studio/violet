@@ -2,6 +2,7 @@
 package chat
 
 import (
+	"bytes"
 	"strings"
 	"time"
 
@@ -66,6 +67,9 @@ const (
 	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发——
 	// 是聊天域内唯一纯内存实时推送的事件类型（见 CONTEXT.md「输入状态」词条）。
 	EventTypingUpdated ChatEventType = "typing.updated"
+	// EventReadPositionAdvanced 成员阅读位置推进事件，是已读回执的实时通道
+	//（见 CONTEXT.md「已读回执」词条）。
+	EventReadPositionAdvanced ChatEventType = "read.advanced"
 )
 
 // RoomInvited 私有房间成员邀请事实。
@@ -569,6 +573,35 @@ func (p *ReadPosition) LastMessageID() *shared.ID { return p.lastMessageID }
 
 // ReadAt 返回阅读时间。
 func (p *ReadPosition) ReadAt() *time.Time { return p.readAt }
+
+// MemberReadState 会话成员已读水位读模型，供已读回执推导。
+type MemberReadState struct {
+	// UserID 成员用户 ID。
+	UserID shared.ID
+	// LastMessageID 最后读到的消息 ID；从未读过为 nil。
+	LastMessageID *shared.ID
+	// LastReadAt 最后读到的消息创建时间；从未读过为 nil。
+	LastReadAt *time.Time
+	// ReadAt 最近一次标记阅读的时间；从未读过为 nil。
+	ReadAt *time.Time
+}
+
+// Covers 判断水位是否已读到指定消息，与未读计数同一比较口径：
+// 消息创建时间早于水位消息，或同时刻但消息 ID 不大于水位 ID。
+func (s MemberReadState) Covers(message *Message) bool {
+	if s.LastReadAt == nil || s.LastMessageID == nil {
+		return false
+	}
+	if s.LastReadAt.After(message.CreatedAt()) {
+		return true
+	}
+	if !s.LastReadAt.Equal(message.CreatedAt()) {
+		return false
+	}
+	messageID := message.ID().UUID()
+	watermarkID := s.LastMessageID.UUID()
+	return bytes.Compare(messageID[:], watermarkID[:]) <= 0
+}
 
 // Event 持久化的用户聊天事件，用于 SSE 补发。
 type Event struct {

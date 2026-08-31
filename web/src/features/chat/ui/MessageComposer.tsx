@@ -11,7 +11,7 @@ import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-twe
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { LoaderCircle, MessageSquareQuote, Reply, Send, X } from "lucide-react";
-import { type KeyboardEvent, useEffect, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSendChatMessage } from "../api/queries";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
@@ -39,6 +39,7 @@ export function MessageComposer({
 	const [resetNonce, setResetNonce] = useState(0);
 	const clearPendingShare = useShareTweetStore((s) => s.clearPending);
 	const { notifyTyping, notifyStopped } = useChatTypingBroadcaster(conversationID);
+	const composerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (content.trim()) {
@@ -47,6 +48,11 @@ export function MessageComposer({
 			notifyStopped();
 		}
 	}, [content, notifyTyping, notifyStopped]);
+
+	useEffect(() => {
+		if (!replyTarget) return;
+		composerRef.current?.querySelector<HTMLElement>('[role="textbox"]')?.focus();
+	}, [replyTarget]);
 
 	const send = useSendChatMessage();
 
@@ -130,6 +136,7 @@ export function MessageComposer({
 
 	return (
 		<div
+			ref={composerRef}
 			onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
 				if (event.key === "Escape" && pendingShare) {
 					event.preventDefault();
@@ -192,6 +199,7 @@ export function MessageComposer({
 					)
 				)}
 				<RichCommentInput
+					autoFocus
 					value={content}
 					onChange={setContent}
 					onSubmit={sendMessage}

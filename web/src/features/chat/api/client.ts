@@ -4,6 +4,7 @@ import type {
 	ChatMember,
 	ChatMessage,
 	ChatMessageReaction,
+	ChatMessageReader,
 	ChatUnreadCount,
 	ChatUser,
 	CreateConversationInput,
@@ -37,6 +38,10 @@ export const fetchChatMessages = (id: string, cursor?: string, limit = 50) =>
 export const fetchChatMessageReactions = (conversationID: string, messageID: string) =>
 	apiGet<ChatMessageReaction[]>(
 		`/chat/conversations/${conversationID}/messages/${messageID}/reactions`,
+	);
+export const fetchChatMessageReaders = (conversationID: string, messageID: string) =>
+	apiGet<ChatMessageReader[]>(
+		`/chat/conversations/${conversationID}/messages/${messageID}/readers`,
 	);
 
 export const fetchChatUser = (username: string) =>

@@ -58,6 +58,9 @@ type reactionChatRepo struct {
 func (r *reactionChatRepo) FindByIDForMember(context.Context, domainshared.ID, domainshared.ID) (*domainchat.Conversation, error) {
 	return r.conversation, nil
 }
+func (r *reactionChatRepo) ListMemberReadStates(context.Context, domainshared.ID) ([]domainchat.MemberReadState, error) {
+	return nil, nil
+}
 
 func (r *reactionChatRepo) FindMessage(_ context.Context, conversationID, messageID domainshared.ID) (*domainchat.Message, error) {
 	if r.message != nil && r.message.ConversationID().Equal(conversationID) && r.message.ID().Equal(messageID) {

@@ -22,6 +22,9 @@ type editChatRepo struct {
 func (r *editChatRepo) FindByIDForMember(context.Context, domainshared.ID, domainshared.ID) (*domainchat.Conversation, error) {
 	return r.conversation, nil
 }
+func (r *editChatRepo) ListMemberReadStates(context.Context, domainshared.ID) ([]domainchat.MemberReadState, error) {
+	return nil, nil
+}
 
 func (r *editChatRepo) FindMessage(context.Context, domainshared.ID, domainshared.ID) (*domainchat.Message, error) {
 	return r.message, nil

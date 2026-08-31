@@ -12,17 +12,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAddChatMessageReaction, useRemoveChatMessageReaction } from "../api/queries";
 import { imageBubbleContent } from "../lib/conversation";
-import type { ChatMedia, ChatMessage, ChatMessageReference } from "../model/types";
+import type {
+	ChatMedia,
+	ChatMessage,
+	ChatMessageReference,
+	ConversationKind,
+} from "../model/types";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatReactionBar } from "./ChatReactionBar";
 import { MessageEditComposer } from "./MessageEditComposer";
+import { MessageReadReceipt } from "./MessageReadReceipt";
 import { TweetShareCard } from "./TweetShareCard";
 
 interface MessageBubbleProps {
 	message: ChatMessage;
 	currentUserID: string;
+	/** 会话形态：决定自己消息已读回执的展示形态。 */
+	conversationKind: ConversationKind;
 	highlighted: boolean;
 	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
 	showSender: boolean;
@@ -41,6 +49,7 @@ export function MessageBubble({
 	layout,
 	message,
 	currentUserID,
+	conversationKind,
 	emoteMap,
 	highlighted,
 	showSender,
@@ -316,6 +325,9 @@ export function MessageBubble({
 					onToggle={handleToggleReaction}
 					reactions={reactions}
 				/>
+				{mine && !message.is_deleted && (
+					<MessageReadReceipt conversationKind={conversationKind} message={message} />
+				)}
 			</div>
 		</motion.article>
 	);
