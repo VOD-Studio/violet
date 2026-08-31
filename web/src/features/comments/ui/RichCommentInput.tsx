@@ -51,6 +51,7 @@ export interface RichCommentInputProps {
 	submitOnEnter?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
+	autoFocus?: boolean;
 	/** 编辑场景预填的已上传图片：以 done 态播种进内部图片状态，参与 onImagesChange 上报与占位符还原 */
 	initialImages?: PictureInput[];
 	placeholder?: string;
@@ -83,6 +84,7 @@ export function RichCommentInput({
 	submitOnEnter = false,
 	compact = false,
 	disabled = false,
+	autoFocus = false,
 	initialImages,
 	placeholder = "写下你的评论…",
 	resetNonce = 0,
@@ -200,7 +202,7 @@ export function RichCommentInput({
 		[],
 	);
 
-	const { contentRef, insertEmoji, insertImage, handleInput, handlePaste, handleKeyDown } =
+	const { contentRef, focus, insertEmoji, insertImage, handleInput, handlePaste, handleKeyDown } =
 		useRichTextInput({
 			value,
 			onChange,
@@ -212,6 +214,10 @@ export function RichCommentInput({
 			onImageRemove: inlineImages ? handleRemoveImage : undefined,
 		});
 	insertImageRef.current = insertImage;
+
+	useEffect(() => {
+		if (autoFocus && !disabled) focus();
+	}, [autoFocus, disabled, focus]);
 
 	useEffect(() => {
 		if (!inlineImages) {
