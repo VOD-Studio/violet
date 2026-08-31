@@ -107,7 +107,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/changelog` | 更新日志 |
 | `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、未读、Web Push 设置）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
 | `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
-| `/admin/galleries` | 图集工作稿管理与编辑（选图、上传、拖拽排序、逐项文字、自动保存、发布） |
+| `/admin/galleries` | 图集工作稿管理与编辑（四态展示、自动保存、更新发布、撤回与永久删除） |
 | `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。

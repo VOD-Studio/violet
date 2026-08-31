@@ -1,7 +1,7 @@
 import type { PageQuery } from "@shared/api/types";
 
 /** 图集状态。 */
-export type GalleryStatus = "draft" | "published";
+export type GalleryStatus = "draft" | "published" | "modified" | "unpublished";
 
 /** 管理端图集列表投影。 */
 export interface GallerySummary {

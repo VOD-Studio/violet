@@ -8,6 +8,7 @@ import {
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreateGalleryDraft } from "@features/gallery-editor/api/mutations";
 import { useAdminGalleries } from "@features/gallery-editor/api/queries";
+import { GALLERY_STATUS_LABELS } from "@features/gallery-editor/model/status";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { useNavigate } from "@tanstack/react-router";
@@ -58,8 +59,16 @@ export function GalleryDraftListPage() {
 			header: "状态",
 			width: "100px",
 			cell: (row) => (
-				<Badge variant={row.status === "published" ? "default" : "secondary"}>
-					{row.status === "published" ? "已发布" : "工作稿"}
+				<Badge
+					variant={
+						row.status === "published"
+							? "default"
+							: row.status === "modified"
+								? "outline"
+								: "secondary"
+					}
+				>
+					{GALLERY_STATUS_LABELS[row.status]}
 				</Badge>
 			),
 		},

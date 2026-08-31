@@ -5,22 +5,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
 	blocker,
+	deleteMutateAsync,
 	detail,
 	mediaPickerProps,
+	navigate,
 	permission,
 	publishMutateAsync,
 	publishResult,
 	refetch,
 	saveMutateAsync,
+	unpublishMutateAsync,
+	unpublishResult,
 } = vi.hoisted(() => {
 	const gallery = {
 		id: "gallery-1",
 		author_id: "author-1",
 		title: "原始标题",
 		summary: "原始摘要",
-		status: "draft",
-		slug: null,
-		published_at: null,
+		status: "draft" as "draft" | "published" | "modified" | "unpublished",
+		slug: null as string | null,
+		published_at: null as string | null,
 		version: 4,
 		item_count: 1,
 		created_at: "2026-08-30T00:00:00Z",
@@ -42,15 +46,33 @@ const {
 	};
 	return {
 		blocker: vi.fn(),
+		deleteMutateAsync: vi.fn(),
 		detail: gallery,
 		mediaPickerProps: vi.fn(),
+		navigate: vi.fn(),
 		permission: { canManage: true },
 		publishMutateAsync: vi.fn(),
 		publishResult: {
-			data: undefined as { slug: string | null; status: "draft" | "published" } | undefined,
+			data: undefined as
+				| {
+						slug: string | null;
+						status: "draft" | "published" | "modified" | "unpublished";
+						version: number;
+				  }
+				| undefined,
 		},
 		refetch: vi.fn(),
 		saveMutateAsync: vi.fn(),
+		unpublishMutateAsync: vi.fn(),
+		unpublishResult: {
+			data: undefined as
+				| {
+						slug: string | null;
+						status: "draft" | "published" | "modified" | "unpublished";
+						version: number;
+				  }
+				| undefined,
+		},
 	};
 });
 
@@ -59,6 +81,7 @@ vi.mock("@tanstack/react-router", () => ({
 		<a href={`/galleries/${params.slug}`}>{children}</a>
 	),
 	useBlocker: blocker,
+	useNavigate: () => navigate,
 }));
 
 vi.mock("@features/gallery-editor/api/queries", () => ({
@@ -71,7 +94,30 @@ vi.mock("@features/gallery-editor/api/mutations", () => ({
 		isPending: false,
 		data: publishResult.data,
 	}),
+	useUnpublishGallery: () => ({
+		mutateAsync: unpublishMutateAsync,
+		isPending: false,
+		data: unpublishResult.data,
+	}),
+	useDeleteGallery: () => ({ mutateAsync: deleteMutateAsync, isPending: false }),
 	useSaveGalleryDraft: () => ({ mutateAsync: saveMutateAsync }),
+}));
+
+vi.mock("@shared/ui/confirm-dialog", () => ({
+	ConfirmDialog: ({
+		open,
+		confirmLabel,
+		onConfirm,
+	}: {
+		open: boolean;
+		confirmLabel: string;
+		onConfirm: () => void;
+	}) =>
+		open ? (
+			<button type="button" onClick={onConfirm}>
+				确认{confirmLabel}
+			</button>
+		) : null,
 }));
 
 vi.mock("@features/auth/hooks/usePermissions", () => ({
@@ -152,11 +198,19 @@ describe("GalleryDraftEditor", () => {
 	beforeEach(() => {
 		vi.useRealTimers();
 		blocker.mockReset();
+		deleteMutateAsync.mockReset();
+		navigate.mockReset();
 		mediaPickerProps.mockReset();
 		publishMutateAsync.mockReset();
 		publishResult.data = undefined;
+		unpublishMutateAsync.mockReset();
+		unpublishResult.data = undefined;
 		saveMutateAsync.mockReset();
 		permission.canManage = true;
+		detail.status = "draft";
+		detail.slug = null;
+		detail.published_at = null;
+		detail.version = 4;
 		refetch.mockReset();
 		refetch.mockResolvedValue({ data: detail, isSuccess: true });
 		saveMutateAsync.mockImplementation(async (input) => ({
@@ -337,6 +391,7 @@ describe("GalleryDraftEditor", () => {
 				version: 5,
 			};
 			publishResult.data = published;
+			Object.assign(detail, published);
 			return published;
 		});
 		const view = render(<GalleryDraftEditor id="gallery-1" />);
@@ -373,5 +428,114 @@ describe("GalleryDraftEditor", () => {
 		if (status === 409) {
 			expect(screen.getByRole("button", { name: "重新载入" })).toBeTruthy();
 		}
+	});
+
+	it("修改态保留旧公开入口并允许更新发布", async () => {
+		detail.status = "modified";
+		detail.slug = "summer-light";
+		detail.published_at = "2026-08-31T00:00:00Z";
+		render(<GalleryDraftEditor id="gallery-1" />);
+
+		expect(screen.getByRole("link", { name: "查看公开页面" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "撤回公开" })).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "更新发布" }));
+
+		await waitFor(() =>
+			expect(publishMutateAsync).toHaveBeenCalledWith({ expected_version: 4 }),
+		);
+	});
+
+	it("撤回后保留 slug 并切换为重新发布", async () => {
+		detail.status = "published";
+		detail.slug = "summer-light";
+		detail.published_at = "2026-08-31T00:00:00Z";
+		unpublishMutateAsync.mockImplementationOnce(async () => {
+			const result = { slug: "summer-light", status: "unpublished" as const, version: 5 };
+			unpublishResult.data = result;
+			Object.assign(detail, result);
+			return result;
+		});
+		const view = render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.click(screen.getByRole("button", { name: "撤回公开" }));
+		fireEvent.click(screen.getByRole("button", { name: "确认撤回公开" }));
+
+		await waitFor(() =>
+			expect(unpublishMutateAsync).toHaveBeenCalledWith({ expected_version: 4 }),
+		);
+		view.rerender(<GalleryDraftEditor id="gallery-1" />);
+		expect(screen.getByRole("button", { name: "重新发布" })).toBeTruthy();
+		expect(screen.queryByRole("link", { name: "查看公开页面" })).toBeNull();
+	});
+
+	it("永久删除携带版本并返回管理列表", async () => {
+		deleteMutateAsync.mockResolvedValueOnce(null);
+		render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.click(screen.getByRole("button", { name: "永久删除" }));
+		fireEvent.click(screen.getByRole("button", { name: "确认永久删除" }));
+
+		await waitFor(() =>
+			expect(deleteMutateAsync).toHaveBeenCalledWith({ expected_version: 4 }),
+		);
+		expect(navigate).toHaveBeenCalledWith({ to: "/admin/galleries" });
+	});
+
+	it("撤回发生 409 时要求重新载入", async () => {
+		detail.status = "published";
+		detail.slug = "summer-light";
+		unpublishMutateAsync.mockRejectedValueOnce(
+			new ApiError({ error: "CONFLICT", message: "version conflict", status: 409 }),
+		);
+		render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.click(screen.getByRole("button", { name: "撤回公开" }));
+		fireEvent.click(screen.getByRole("button", { name: "确认撤回公开" }));
+
+		expect(await screen.findByText("图集已在其他窗口更新，请重新载入后再操作。")).toBeTruthy();
+		expect(screen.getByRole("button", { name: "重新载入" })).toBeTruthy();
+	});
+
+	it("首次发布后继续保存会显示更新发布而不受旧 mutation 结果影响", async () => {
+		detail.status = "published";
+		detail.slug = "summer-light";
+		detail.published_at = "2026-08-31T00:00:00Z";
+		publishResult.data = { slug: "summer-light", status: "published", version: 4 };
+		saveMutateAsync.mockImplementationOnce(async (input) => {
+			const saved = {
+				...detail,
+				...input,
+				status: "modified" as const,
+				version: 5,
+				item_count: input.items.length,
+			};
+			Object.assign(detail, saved);
+			return saved;
+		});
+		render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.change(screen.getByLabelText("标题"), { target: { value: "发布后修改" } });
+		fireEvent.click(screen.getByRole("button", { name: "保存工作稿" }));
+
+		expect(await screen.findByRole("button", { name: "更新发布" })).toBeTruthy();
+		expect(screen.getByRole("link", { name: "查看公开页面" })).toBeTruthy();
+	});
+
+	it("撤回后重新发布会清除旧撤回结果", async () => {
+		detail.status = "unpublished";
+		detail.slug = "summer-light";
+		detail.version = 5;
+		detail.published_at = "2026-08-31T00:00:00Z";
+		unpublishResult.data = { slug: "summer-light", status: "unpublished", version: 5 };
+		publishMutateAsync.mockImplementationOnce(async () => {
+			const republished = { slug: "summer-light", status: "published" as const, version: 6 };
+			Object.assign(detail, republished);
+			return republished;
+		});
+		const view = render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.click(screen.getByRole("button", { name: "重新发布" }));
+		await waitFor(() =>
+			expect(publishMutateAsync).toHaveBeenCalledWith({ expected_version: 5 }),
+		);
+		view.rerender(<GalleryDraftEditor id="gallery-1" />);
+
+		expect(screen.queryByRole("button", { name: "重新发布" })).toBeNull();
+		expect(screen.getByRole("link", { name: "查看公开页面" })).toBeTruthy();
 	});
 });

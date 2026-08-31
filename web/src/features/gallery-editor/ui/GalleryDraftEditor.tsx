@@ -16,7 +16,11 @@ import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { usePublishGallery } from "@features/gallery-editor/api/mutations";
+import {
+	useDeleteGallery,
+	usePublishGallery,
+	useUnpublishGallery,
+} from "@features/gallery-editor/api/mutations";
 import { useGalleryDraftDocument } from "@features/gallery-editor/hooks/useGalleryDraftDocument";
 import {
 	appendMediaFiles,
@@ -33,18 +37,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import { Textarea } from "@shared/ui/base/textarea";
-import { Link } from "@tanstack/react-router";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
 	AlertTriangle,
 	ExternalLink,
+	EyeOff,
 	ImagePlus,
 	Loader2,
 	RefreshCw,
 	Save,
 	Send,
+	Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { GALLERY_STATUS_LABELS } from "../model/status";
 import { GalleryDraftPreview } from "./GalleryDraftPreview";
 import { GalleryItemEditor } from "./GalleryItemEditor";
 import { GallerySaveIndicator } from "./GallerySaveIndicator";
@@ -55,12 +63,16 @@ interface GalleryDraftEditorProps {
 
 /** 图集工作稿编辑器：本地即时编辑，防抖与显式保存共用完整 PUT。 */
 export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
+	const navigate = useNavigate();
 	const canManage = useHasPermission("gallery:manage");
 	const { draft, detail, version, isLoading, error, saveState, updateDraft, save, reload } =
 		useGalleryDraftDocument({ id, canManage });
 	const publish = usePublishGallery(id);
+	const unpublish = useUnpublishGallery(id);
+	const remove = useDeleteGallery(id, detail?.slug ?? null);
 	const [pickerOpen, setPickerOpen] = useState(false);
-	const [publishError, setPublishError] = useState<{
+	const [confirmAction, setConfirmAction] = useState<"unpublish" | "delete" | null>(null);
+	const [operationError, setOperationError] = useState<{
 		kind: "validation" | "conflict";
 		message: string;
 	} | null>(null);
@@ -91,20 +103,20 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	};
 
 	const handlePublish = async () => {
-		setPublishError(null);
+		setOperationError(null);
 		try {
-			await publish.mutateAsync({ expected_version: version });
-			toast.success("图集已发布");
+			await publish.mutateAsync({ expected_version: actionVersion });
+			toast.success(status === "modified" ? "公开版本已更新" : "图集已发布");
 		} catch (publishFailure) {
 			if (publishFailure instanceof ApiError && publishFailure.status === 409) {
-				setPublishError({
+				setOperationError({
 					kind: "conflict",
 					message: "工作稿已在其他窗口更新，请重新载入后再发布。",
 				});
 				return;
 			}
 			if (publishFailure instanceof ApiError && publishFailure.status === 400) {
-				setPublishError({
+				setOperationError({
 					kind: "validation",
 					message:
 						publishFailure.message ||
@@ -114,6 +126,42 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 			}
 			toast.error(publishFailure instanceof Error ? publishFailure.message : "发布失败");
 		}
+	};
+
+	const handleUnpublish = async () => {
+		setOperationError(null);
+		try {
+			await unpublish.mutateAsync({ expected_version: actionVersion });
+			setConfirmAction(null);
+			toast.success("图集已撤回，工作稿已保留");
+		} catch (failure) {
+			setConfirmAction(null);
+			handleMaintenanceFailure(failure, "撤回失败");
+		}
+	};
+
+	const handleDelete = async () => {
+		setOperationError(null);
+		try {
+			await remove.mutateAsync({ expected_version: actionVersion });
+			setConfirmAction(null);
+			toast.success("图集已永久删除");
+			await navigate({ to: "/admin/galleries" });
+		} catch (failure) {
+			setConfirmAction(null);
+			handleMaintenanceFailure(failure, "删除失败");
+		}
+	};
+
+	const handleMaintenanceFailure = (failure: unknown, fallback: string) => {
+		if (failure instanceof ApiError && failure.status === 409) {
+			setOperationError({
+				kind: "conflict",
+				message: "图集已在其他窗口更新，请重新载入后再操作。",
+			});
+			return;
+		}
+		toast.error(failure instanceof Error ? failure.message : fallback);
 	};
 
 	if (error && !draft) {
@@ -137,29 +185,37 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 		);
 	}
 
-	const disabled = !canManage || saveState === "conflict" || publish.isPending;
-	const publicSlug = publish.data?.slug ?? detail?.slug;
-	const published = detail?.status === "published" || publish.data?.status === "published";
+	const status = detail?.status ?? "draft";
+	const publicSlug = detail?.slug;
+	const actionVersion = Math.max(version, detail?.version ?? 0);
+	const maintenancePending = publish.isPending || unpublish.isPending || remove.isPending;
+	const disabled = !canManage || saveState === "conflict" || maintenancePending;
+	const maintenanceDisabled = disabled || saveState !== "saved";
+	const hasPublicVersion = status === "published" || status === "modified";
+	const canPublish = status === "draft" || status === "modified" || status === "unpublished";
+	const publishLabel =
+		status === "modified" ? "更新发布" : status === "unpublished" ? "重新发布" : "发布图集";
 
 	return (
 		<PageShell
 			title="图集工作稿"
-			description={`工作稿 · ${draft.items.length}/${MAX_GALLERY_ITEMS} 张图片`}
+			description={`${GALLERY_STATUS_LABELS[status]} · ${draft.items.length}/${MAX_GALLERY_ITEMS} 张图片`}
 			action={
 				<>
 					<GallerySaveIndicator state={saveState} />
-					{published && publicSlug ? (
+					{hasPublicVersion && publicSlug ? (
 						<Button size="sm" variant="outline" asChild>
 							<Link to="/galleries/$slug" params={{ slug: publicSlug }}>
 								<ExternalLink className="size-4" />
 								查看公开页面
 							</Link>
 						</Button>
-					) : (
+					) : null}
+					{canPublish ? (
 						<Button
 							size="sm"
 							variant="outline"
-							disabled={disabled || saveState !== "saved" || publish.isPending}
+							disabled={maintenanceDisabled}
 							onClick={() => void handlePublish()}
 						>
 							{publish.isPending ? (
@@ -167,9 +223,29 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 							) : (
 								<Send className="size-4" />
 							)}
-							发布图集
+							{publishLabel}
 						</Button>
-					)}
+					) : null}
+					{hasPublicVersion ? (
+						<Button
+							size="sm"
+							variant="outline"
+							disabled={maintenanceDisabled}
+							onClick={() => setConfirmAction("unpublish")}
+						>
+							<EyeOff className="size-4" />
+							撤回公开
+						</Button>
+					) : null}
+					<Button
+						size="sm"
+						variant="outline"
+						disabled={maintenanceDisabled}
+						onClick={() => setConfirmAction("delete")}
+					>
+						<Trash2 className="size-4" />
+						永久删除
+					</Button>
 					<Button
 						size="sm"
 						disabled={disabled || saveState === "saving"}
@@ -185,19 +261,19 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 				</>
 			}
 		>
-			{publishError ? (
+			{operationError ? (
 				<div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-2 text-sm">
 						<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-						<p>{publishError.message}</p>
+						<p>{operationError.message}</p>
 					</div>
-					{publishError.kind === "conflict" ? (
+					{operationError.kind === "conflict" ? (
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={() =>
 								void reload().then((reloaded) => {
-									if (reloaded) setPublishError(null);
+									if (reloaded) setOperationError(null);
 								})
 							}
 						>
@@ -379,6 +455,25 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 				mediaType="image"
 				source="owned"
 				title="选择图集图片"
+			/>
+
+			<ConfirmDialog
+				open={confirmAction === "unpublish"}
+				onOpenChange={(open) => setConfirmAction(open ? "unpublish" : null)}
+				onConfirm={() => void handleUnpublish()}
+				title="确认撤回公开版本"
+				description="撤回后公开地址会返回 404，工作稿、稳定地址和首次发布时间都会保留。"
+				confirmLabel="撤回公开"
+				loading={unpublish.isPending}
+			/>
+			<ConfirmDialog
+				open={confirmAction === "delete"}
+				onOpenChange={(open) => setConfirmAction(open ? "delete" : null)}
+				onConfirm={() => void handleDelete()}
+				title="确认永久删除图集"
+				description="工作稿、公开版本和图片引用都会永久清理，此操作无法撤销。"
+				confirmLabel="永久删除"
+				loading={remove.isPending}
 			/>
 		</PageShell>
 	);

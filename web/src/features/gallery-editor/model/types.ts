@@ -13,7 +13,10 @@ export interface SaveGalleryInput {
 	items: SaveGalleryItemInput[];
 }
 
-/** 发布图集时的乐观版本输入。 */
-export interface PublishGalleryInput {
+/** 图集发布维护动作共用的乐观版本输入。 */
+export interface GalleryVersionInput {
 	expected_version: number;
 }
+
+/** 发布图集时的乐观版本输入。 */
+export type PublishGalleryInput = GalleryVersionInput;

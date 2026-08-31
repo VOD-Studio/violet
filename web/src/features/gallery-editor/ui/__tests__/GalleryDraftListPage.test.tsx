@@ -30,6 +30,32 @@ const rows: GallerySummary[] = [
 		created_at: "2026-08-31T00:00:00Z",
 		updated_at: "2026-08-31T01:00:00Z",
 	},
+	{
+		id: "modified-1",
+		author_id: "author-1",
+		title: "修改中的图集",
+		summary: "",
+		status: "modified",
+		slug: "modified-gallery",
+		published_at: "2026-08-31T01:00:00Z",
+		version: 3,
+		item_count: 3,
+		created_at: "2026-08-31T00:00:00Z",
+		updated_at: "2026-08-31T02:00:00Z",
+	},
+	{
+		id: "unpublished-1",
+		author_id: "author-1",
+		title: "已撤回图集",
+		summary: "",
+		status: "unpublished",
+		slug: "unpublished-gallery",
+		published_at: "2026-08-31T01:00:00Z",
+		version: 4,
+		item_count: 3,
+		created_at: "2026-08-31T00:00:00Z",
+		updated_at: "2026-08-31T03:00:00Z",
+	},
 ];
 
 vi.mock("@features/admin-shared/ui/data-table", () => ({
@@ -82,10 +108,12 @@ vi.mock("@tanstack/react-router", () => ({
 import { GalleryDraftListPage } from "../GalleryDraftListPage";
 
 describe("GalleryDraftListPage", () => {
-	it("按服务端状态区分已发布图集和工作稿", () => {
+	it("按服务端状态显示四种维护状态", () => {
 		render(<GalleryDraftListPage />);
 
 		expect(screen.getByText("工作稿")).toBeTruthy();
 		expect(screen.getByText("已发布")).toBeTruthy();
+		expect(screen.getByText("有未发布修改")).toBeTruthy();
+		expect(screen.getByText("已撤回")).toBeTruthy();
 	});
 });
