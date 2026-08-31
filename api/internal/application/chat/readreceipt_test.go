@@ -231,8 +231,10 @@ func TestListMessageReaders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	readEarly := now.Add(-8 * time.Minute)
-	readLate := now.Add(-2 * time.Minute)
+	// 同秒对决：readLate 仅晚 500ms。RFC3339Nano 在零纳秒时省略小数部分，
+	// 若按格式化字符串排序，"…00Z" 会错误排在 "…00.5Z" 之前（回归守卫）。
+	readEarly := now.Add(-2 * time.Minute)
+	readLate := readEarly.Add(500 * time.Millisecond)
 	watermark := now.Add(-5 * time.Minute)
 	repo := &receiptChatRepo{
 		conversation: domainchat.ReconstructConversation(conversationID, viewer, domainchat.ConversationRoom, "房间", nil, now.Add(-time.Hour), now.Add(-time.Hour)),

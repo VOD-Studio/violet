@@ -968,15 +968,33 @@ func (s *Service) ListMessageReaders(ctx context.Context, userID, conversationID
 	if err != nil {
 		return nil, err
 	}
-	readers := make([]MessageReaderDTO, 0, len(users))
+	type entry struct {
+		user   *domainuser.User
+		readAt *time.Time
+	}
+	entries := make([]entry, 0, len(users))
 	for _, user := range users {
-		reader := MessageReaderDTO{User: userToDTO(user)}
-		if readAt := readAtByUser[user.GetID()]; readAt != nil {
-			reader.ReadAt = readAt.Format(time.RFC3339Nano)
+		entries = append(entries, entry{user: user, readAt: readAtByUser[user.GetID()]})
+	}
+	// 按时间类型排序：RFC3339Nano 零纳秒省略小数部分，字符串比较会在同秒内反转。
+	sort.Slice(entries, func(i, j int) bool {
+		a, b := entries[i].readAt, entries[j].readAt
+		if a == nil {
+			return false
+		}
+		if b == nil {
+			return true
+		}
+		return a.After(*b)
+	})
+	readers := make([]MessageReaderDTO, 0, len(entries))
+	for _, item := range entries {
+		reader := MessageReaderDTO{User: userToDTO(item.user)}
+		if item.readAt != nil {
+			reader.ReadAt = item.readAt.Format(time.RFC3339Nano)
 		}
 		readers = append(readers, reader)
 	}
-	sort.Slice(readers, func(i, j int) bool { return readers[i].ReadAt > readers[j].ReadAt })
 	return readers, nil
 }
 
