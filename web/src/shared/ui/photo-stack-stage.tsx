@@ -29,6 +29,7 @@ export interface PhotoStackStageProps {
 	images: PhotoStackImage[];
 	currentIndex: number;
 	aspectClass: string;
+	loading?: "eager" | "lazy";
 	onIndexChange: (index: number) => void;
 	onImageOpen?: (index: number) => void;
 }
@@ -42,6 +43,7 @@ export function PhotoStackStage({
 	images,
 	currentIndex,
 	aspectClass,
+	loading,
 	onIndexChange,
 	onImageOpen,
 }: PhotoStackStageProps) {
@@ -554,6 +556,7 @@ export function PhotoStackStage({
 				}}
 				dragDirection={dragDirection}
 				isPastThreshold={isPastThreshold}
+				currentLoading={loading}
 			/>
 			<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
 				<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">

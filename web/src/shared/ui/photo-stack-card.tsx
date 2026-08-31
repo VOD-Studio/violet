@@ -25,6 +25,8 @@ export interface PhotoStackCardProps {
 	depth: number;
 	/** 仅顶卡提供点击回调，后置卡保持不可交互。 */
 	onClick?: MouseEventHandler<HTMLButtonElement>;
+	/** 覆盖图片的原生加载策略。 */
+	loading?: "eager" | "lazy";
 }
 export function PhotoStackCard({
 	image,
@@ -38,6 +40,7 @@ export function PhotoStackCard({
 	state,
 	depth,
 	onClick,
+	loading,
 }: PhotoStackCardProps) {
 	return (
 		<motion.button
@@ -63,7 +66,7 @@ export function PhotoStackCard({
 			<img
 				src={image.src}
 				alt={image.alt ?? ""}
-				loading={state === "current" ? "eager" : "lazy"}
+				loading={loading ?? (state === "current" ? "eager" : "lazy")}
 				draggable={false}
 				className="size-full rounded-lg object-cover"
 			/>

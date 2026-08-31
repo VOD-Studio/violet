@@ -41,6 +41,8 @@ export interface PhotoStackCardsProps {
 	dragDirection: "left" | "right" | null;
 	/** 是否已达到或超过拉出阈值，用于决定顶卡与目标卡层级反转。 */
 	isPastThreshold?: boolean;
+	/** 当前顶图的原生加载策略。 */
+	currentLoading?: "eager" | "lazy";
 }
 
 /** 舞台中的后置卡与顶卡，保持拖拽逻辑和媒体标记分离。 */
@@ -54,6 +56,7 @@ export function PhotoStackCards({
 	onCurrentClick,
 	dragDirection,
 	isPastThreshold = false,
+	currentLoading,
 }: PhotoStackCardsProps) {
 	const currentMotion = motionOf(current, currentIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
 
@@ -99,6 +102,7 @@ export function PhotoStackCards({
 				state="current"
 				depth={0}
 				onClick={onCurrentClick}
+				loading={currentLoading}
 			/>
 		</>
 	);

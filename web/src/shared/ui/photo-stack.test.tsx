@@ -67,6 +67,14 @@ function expectXReset(call: readonly unknown[] | undefined, expectedX: number) {
 }
 
 describe("PhotoStack", () => {
+	it("默认急切加载顶图且允许调用方改为懒加载", () => {
+		const { rerender } = render(<PhotoStack {...stackProps()} />);
+		expect(screen.getByRole("img", { name: "第一张" }).getAttribute("loading")).toBe("eager");
+
+		rerender(<PhotoStack {...stackProps()} loading="lazy" />);
+		expect(screen.getByRole("img", { name: "第一张" }).getAttribute("loading")).toBe("lazy");
+	});
+
 	it("首张、中间、末张使用不同真实槽位状态", () => {
 		vi.useFakeTimers();
 		const { rerender } = render(<PhotoStack {...stackProps()} />);

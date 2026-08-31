@@ -21,6 +21,8 @@ export interface PhotoStackProps {
 	footer?: React.ReactNode;
 	/** 栈面比例，默认竖向 3:4。 */
 	aspectClass?: string;
+	/** 折叠态顶图的原生加载策略，默认 eager。 */
+	loading?: "eager" | "lazy";
 	className?: string;
 	/** 点击顶图或展开媒体墙中的图片时返回原始下标。 */
 	onImageOpen?: (index: number) => void;
@@ -32,6 +34,7 @@ export interface PhotoStackProps {
  * @param images 图片序列
  * @param footer 卡片元信息
  * @param aspectClass 舞台比例
+ * @param loading 折叠态顶图加载策略
  * @param className 外层样式
  * @param onImageOpen 媒体点击回调
  */
@@ -39,6 +42,7 @@ export function PhotoStack({
 	images,
 	footer,
 	aspectClass = "aspect-3/4",
+	loading,
 	className,
 	onImageOpen,
 }: PhotoStackProps) {
@@ -69,6 +73,7 @@ export function PhotoStack({
 					images={images}
 					currentIndex={currentIndex}
 					aspectClass={aspectClass}
+					loading={loading}
 					onIndexChange={setCurrentIndex}
 					onImageOpen={onImageOpen}
 				/>
