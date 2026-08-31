@@ -1,9 +1,3 @@
-/**
- * MessageComposer 回复 banner 测试
- *
- * 回归：回复 banner 展示 replyTarget 的正文预览，没有 custom_emote 解析结果可查，
- * 自定义/系统表情占位符必须剥离，否则裸吐 `[name:uuid]` 形状的 token 文本。
- */
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage } from "../../model/types";
@@ -45,7 +39,7 @@ function textMessage(content?: string): ChatMessage {
 
 afterEach(() => cleanup());
 
-describe("MessageComposer 回复 banner", () => {
+describe("MessageComposer", () => {
 	it("剥离表情占位符，不泄漏裸 token 文本", () => {
 		render(
 			<MessageComposer
@@ -58,5 +52,47 @@ describe("MessageComposer 回复 banner", () => {
 
 		expect(screen.getByText("你好世界")).toBeTruthy();
 		expect(screen.queryByText(/\[1:/)).toBeNull();
+	});
+
+	it("挂载后聚焦消息输入框", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+
+		expect(screen.getByRole("textbox")).toBe(document.activeElement);
+	});
+
+	it("选择回复目标后重新聚焦消息输入框", () => {
+		const { rerender } = render(
+			<>
+				<button type="button">回复</button>
+				<MessageComposer
+					conversationID="c_1"
+					onCancelReply={() => {}}
+					pendingShare={null}
+					replyTarget={null}
+				/>
+			</>,
+		);
+		screen.getByRole("button", { name: "回复" }).focus();
+
+		rerender(
+			<>
+				<button type="button">回复</button>
+				<MessageComposer
+					conversationID="c_1"
+					onCancelReply={() => {}}
+					pendingShare={null}
+					replyTarget={textMessage("原消息")}
+				/>
+			</>,
+		);
+
+		expect(screen.getByRole("textbox")).toBe(document.activeElement);
 	});
 });
