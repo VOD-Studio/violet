@@ -55,9 +55,27 @@ func (r *GalleryRepository) findByID(ctx context.Context, id shared.ID, lock boo
 	return r.reconstruct(ctx, root)
 }
 
-func (r *GalleryRepository) FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*domaingallery.Gallery], error) {
+// statusExpr 从公开指针与发布时间推导管理列表状态,与聚合 Status() 的语义一致:
+// 从未发布(draft)、已撤回(unpublished,发布过但公开指针为空)、工作稿即公开版本(published)、
+// 有未公开修改(modified)。存储层过滤避免全表重建聚合后再过滤。
+// 聚合以 slug != "" 判「发布过」——等价性依赖领域不变量:首次发布原子设置 slug 与
+// published_at,撤回二者均保留,不存在只置其一的状态。
+const statusExpr = `CASE
+	WHEN published_revision_id IS NULL AND published_at IS NULL THEN 'draft'
+	WHEN published_revision_id IS NULL THEN 'unpublished'
+	WHEN working_revision_id = published_revision_id THEN 'published'
+	ELSE 'modified'
+END`
+
+func (r *GalleryRepository) FindPage(ctx context.Context, filter domaingallery.ListFilter, q shared.PageQuery) (shared.PageResult[*domaingallery.Gallery], error) {
 	q = q.Normalize()
-	query := r.db.WithContext(ctx).Model(&model.Gallery{}).Where("author_id = ?", authorID.UUID())
+	query := r.db.WithContext(ctx).Model(&model.Gallery{})
+	if filter.AuthorID != nil {
+		query = query.Where("author_id = ?", filter.AuthorID.UUID())
+	}
+	if filter.Status != "" {
+		query = query.Where("? = ?", gorm.Expr(statusExpr), filter.Status)
+	}
 	var roots []model.Gallery
 	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &roots, "图集")
 	if err != nil {

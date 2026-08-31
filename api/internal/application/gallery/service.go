@@ -10,8 +10,10 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	domaingallery "blog-api/internal/domain/gallery"
+	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
+	"blog-api/internal/middleware"
 )
 
 // Service 编排图集工作稿的创建、读取与完整保存。
@@ -20,10 +22,41 @@ type Service struct {
 	assets AssetStore
 	uow    UnitOfWork
 	bus    appshared.EventBus
+	// perm 供「作者或 gallery:moderate」维护判定的权限码分支（与 tweet.PermDeleteAny 同构）。
+	perm  PermissionChecker
+	users UserDirectory
 }
 
-func NewService(repo domaingallery.Repository, assets AssetStore, uow UnitOfWork, bus appshared.EventBus) *Service {
-	return &Service{repo: repo, assets: assets, uow: uow, bus: bus}
+func NewService(
+	repo domaingallery.Repository,
+	assets AssetStore,
+	uow UnitOfWork,
+	bus appshared.EventBus,
+	perm PermissionChecker,
+	users UserDirectory,
+) *Service {
+	return &Service{repo: repo, assets: assets, uow: uow, bus: bus, perm: perm, users: users}
+}
+
+// canMaintain 判断操作者可否对该图集执行撤回或删除。
+//
+// 放行规则（任一满足）：
+//   - 内置超管（通配短路）
+//   - 操作者是图集作者且持有 gallery:manage（作者对自己的作品负责）
+//   - 操作者拥有 gallery:moderate 权限码（审核员处置他人作品）
+func (s *Service) canMaintain(ctx context.Context, gallery *domaingallery.Gallery) bool {
+	isRoot := middleware.GetUserIsRoot(ctx)
+	if isRoot {
+		return true
+	}
+	role := middleware.GetUserRole(ctx)
+	if s.perm != nil && s.perm.HasPermission(role, isRoot, permission.GalleryModerate.String()) {
+		return true
+	}
+	if opID := middleware.GetUserID(ctx); opID == "" || opID != gallery.AuthorID().String() {
+		return false
+	}
+	return s.perm != nil && s.perm.HasPermission(role, isRoot, permission.GalleryManage.String())
 }
 
 func (s *Service) CreateDraft(ctx context.Context, userID string) (GalleryDetailDTO, error) {
@@ -46,27 +79,43 @@ func (s *Service) CreateDraft(ctx context.Context, userID string) (GalleryDetail
 	return toDetailDTO(gallery, nil)
 }
 
-// ListForEditor 分页读取当前作者自己的图集工作稿。
-func (s *Service) ListForEditor(ctx context.Context, userID string, page, limit int) ([]GallerySummaryDTO, int64, error) {
-	authorID, err := shared.ParseID(userID)
+// ListForEditor 按作者与状态筛选分页读取管理列表；入口权限由路由层 gallery:view 把守。
+func (s *Service) ListForEditor(ctx context.Context, query ListQuery) ([]GallerySummaryDTO, int64, error) {
+	filter := domaingallery.ListFilter{Status: strings.TrimSpace(query.Status)}
+	if filter.Status != "" && !validStatus(filter.Status) {
+		return nil, 0, shared.BadRequest("非法的图集状态筛选")
+	}
+	if username := strings.TrimSpace(query.Author); username != "" {
+		authorID, found, err := s.users.FindIDByUsername(ctx, username)
+		if err != nil {
+			return nil, 0, err
+		}
+		if !found {
+			return []GallerySummaryDTO{}, 0, nil
+		}
+		filter.AuthorID = &authorID
+	}
+	q := shared.PageQuery{Page: query.Page, Limit: query.Limit}.Normalize()
+	result, err := s.repo.FindPage(ctx, filter, q)
 	if err != nil {
 		return nil, 0, err
 	}
-	q := shared.PageQuery{Page: page, Limit: limit}.Normalize()
-	result, err := s.repo.FindPageByAuthor(ctx, authorID, q)
+	names, err := s.users.DisplayNamesByIDs(ctx, authorIDs(result.Items))
 	if err != nil {
 		return nil, 0, err
 	}
 	dtos := make([]GallerySummaryDTO, 0, len(result.Items))
 	for _, gallery := range result.Items {
-		dtos = append(dtos, toSummaryDTO(gallery))
+		dto := toSummaryDTO(gallery)
+		dto.AuthorName = names[gallery.AuthorID()]
+		dtos = append(dtos, dto)
 	}
 	return dtos, result.Total, nil
 }
 
-// GetForEditor 读取当前作者自己的工作稿详情。
-func (s *Service) GetForEditor(ctx context.Context, userID, galleryID string) (GalleryDetailDTO, error) {
-	authorID, id, err := parseActorAndGallery(userID, galleryID)
+// GetForEditor 读取工作稿详情；入口权限由路由层 gallery:view 把守，作者信息随详情返回。
+func (s *Service) GetForEditor(ctx context.Context, galleryID string) (GalleryDetailDTO, error) {
+	id, err := shared.ParseID(galleryID)
 	if err != nil {
 		return GalleryDetailDTO{}, err
 	}
@@ -74,14 +123,20 @@ func (s *Service) GetForEditor(ctx context.Context, userID, galleryID string) (G
 	if err != nil {
 		return GalleryDetailDTO{}, err
 	}
-	if !gallery.AuthorID().Equal(authorID) {
-		return GalleryDetailDTO{}, domaingallery.ErrNotOwner
-	}
 	assets, err := s.assets.FindByIDs(ctx, fileIDs(gallery.WorkingRevision().Items()))
 	if err != nil {
 		return GalleryDetailDTO{}, err
 	}
-	return toDetailDTO(gallery, assets)
+	names, err := s.users.DisplayNamesByIDs(ctx, []shared.ID{gallery.AuthorID()})
+	if err != nil {
+		return GalleryDetailDTO{}, err
+	}
+	dto, err := toDetailDTO(gallery, assets)
+	if err != nil {
+		return GalleryDetailDTO{}, err
+	}
+	dto.AuthorName = names[gallery.AuthorID()]
+	return dto, nil
 }
 
 // Save 完整替换工作稿，并在同一事务内更新素材引用计数。
@@ -207,7 +262,7 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (GalleryDetailDT
 
 // Unpublish 撤回当前公开版本，并保留工作稿、slug 与首次发布时间。
 func (s *Service) Unpublish(ctx context.Context, in VersionInput) (GalleryDetailDTO, error) {
-	authorID, galleryID, err := parseActorAndGallery(in.UserID, in.GalleryID)
+	galleryID, err := shared.ParseID(in.GalleryID)
 	if err != nil {
 		return GalleryDetailDTO{}, err
 	}
@@ -218,8 +273,8 @@ func (s *Service) Unpublish(ctx context.Context, in VersionInput) (GalleryDetail
 		if err != nil {
 			return err
 		}
-		if !gallery.AuthorID().Equal(authorID) {
-			return domaingallery.ErrNotOwner
+		if !s.canMaintain(ctx, gallery) {
+			return domaingallery.ErrCannotMaintain
 		}
 		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
 			return err
@@ -247,22 +302,26 @@ func (s *Service) Unpublish(ctx context.Context, in VersionInput) (GalleryDetail
 	if err != nil {
 		return GalleryDetailDTO{}, err
 	}
+	if err := s.bus.Publish(ctx, unpublished.PullEvents()); err != nil {
+		log.Error().Err(err).Str("gallery_id", unpublished.ID().String()).Msg("发布图集撤回事件失败")
+	}
 	return toDetailDTO(unpublished, assets)
 }
 
 // Delete 永久删除图集及其有效快照，并释放全部素材引用。
 func (s *Service) Delete(ctx context.Context, in VersionInput) error {
-	authorID, galleryID, err := parseActorAndGallery(in.UserID, in.GalleryID)
+	galleryID, err := shared.ParseID(in.GalleryID)
 	if err != nil {
 		return err
 	}
-	return s.uow.Do(ctx, func(tx Transaction) error {
+	var deleted *domaingallery.Gallery
+	err = s.uow.Do(ctx, func(tx Transaction) error {
 		gallery, err := tx.Galleries().FindByIDForUpdate(ctx, galleryID)
 		if err != nil {
 			return err
 		}
-		if !gallery.AuthorID().Equal(authorID) {
-			return domaingallery.ErrNotOwner
+		if !s.canMaintain(ctx, gallery) {
+			return domaingallery.ErrCannotMaintain
 		}
 		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
 			return err
@@ -280,8 +339,22 @@ func (s *Service) Delete(ctx context.Context, in VersionInput) error {
 				return err
 			}
 		}
-		return tx.Galleries().Delete(ctx, gallery.ID(), in.ExpectedVersion)
+		if err := tx.Galleries().Delete(ctx, gallery.ID(), in.ExpectedVersion); err != nil {
+			return err
+		}
+		deleted = gallery
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+	// 聚合已删除,事件不再挂在聚合上,按删除成功时的快照手动构造发布。
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{
+		domaingallery.NewGalleryDeleted(deleted.ID(), deleted.AuthorID(), deleted.WorkingRevision().Title()),
+	}); err != nil {
+		log.Error().Err(err).Str("gallery_id", deleted.ID().String()).Msg("发布图集删除事件失败")
+	}
+	return nil
 }
 
 // BrowsePublished 按稳定复合游标读取公开图集。
@@ -347,6 +420,29 @@ func normalizePublicLimit(limit int) int {
 		return 50
 	}
 	return limit
+}
+
+func validStatus(status string) bool {
+	switch status {
+	case domaingallery.StatusDraft, domaingallery.StatusPublished,
+		domaingallery.StatusModified, domaingallery.StatusUnpublished:
+		return true
+	default:
+		return false
+	}
+}
+
+func authorIDs(galleries []*domaingallery.Gallery) []shared.ID {
+	seen := make(map[shared.ID]struct{}, len(galleries))
+	ids := make([]shared.ID, 0, len(galleries))
+	for _, gallery := range galleries {
+		if _, ok := seen[gallery.AuthorID()]; ok {
+			continue
+		}
+		seen[gallery.AuthorID()] = struct{}{}
+		ids = append(ids, gallery.AuthorID())
+	}
+	return ids
 }
 
 func parseActorAndGallery(userID, galleryID string) (shared.ID, shared.ID, error) {

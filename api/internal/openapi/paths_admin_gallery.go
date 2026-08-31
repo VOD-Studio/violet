@@ -33,6 +33,7 @@ func registerGalleryPaths(t *openapi3.T) {
 	summaryFields := openapi3.Schemas{
 		"id":           reqStr("图集 UUID"),
 		"author_id":    reqStr("作者 UUID"),
+		"author_name":  reqStr("作者可读名（display_name 优先，缺省 username）"),
 		"slug":         nullableStr("首次发布后生成的稳定公开 slug；从未发布为 null，撤回后保留"),
 		"title":        reqStr("工作稿标题"),
 		"summary":      reqStr("工作稿摘要"),
@@ -43,14 +44,14 @@ func registerGalleryPaths(t *openapi3.T) {
 		"created_at":   reqStr("创建时间，RFC3339"),
 		"updated_at":   reqStr("最近保存时间，RFC3339"),
 	}
-	requiredSummary := []string{"id", "author_id", "slug", "title", "summary", "status", "version", "item_count", "published_at", "created_at", "updated_at"}
+	requiredSummary := []string{"id", "author_id", "author_name", "slug", "title", "summary", "status", "version", "item_count", "published_at", "created_at", "updated_at"}
 	registerSchema(t, "GallerySummaryDTO", summaryFields, requiredSummary...)
 	detailFields := make(openapi3.Schemas, len(summaryFields)+1)
 	for key, value := range summaryFields {
 		detailFields[key] = value
 	}
 	detailFields["items"] = refArray("完整有序图片列表", "GalleryItemDTO")
-	detailRequired := []string{"id", "author_id", "slug", "title", "summary", "status", "version", "item_count", "published_at", "created_at", "updated_at", "items"}
+	detailRequired := []string{"id", "author_id", "author_name", "slug", "title", "summary", "status", "version", "item_count", "published_at", "created_at", "updated_at", "items"}
 	registerSchema(t, "GalleryDetailDTO", detailFields, detailRequired...)
 	registerSchema(t, "PublicGalleryItemDTO", openapi3.Schemas{
 		"file_id":   reqStr("素材文件 UUID"),
@@ -74,8 +75,12 @@ func registerGalleryPaths(t *openapi3.T) {
 	secure := securityAdmin()
 	get(t, "/admin/galleries", &openapi3.Operation{
 		Tags: []string{"图集管理"}, Summary: "图集工作稿列表",
-		Description: "分页读取当前作者自己的图集工作稿。需 gallery:view 权限。",
-		Security:    secure, Parameters: openapi3.Parameters{pageParam(), limitParam(100)},
+		Description: "分页读取图集管理列表，支持按作者用户名与发布状态筛选。需 gallery:view 权限。",
+		Security:    secure, Parameters: openapi3.Parameters{
+			pageParam(), limitParam(100),
+			queryStrParam("author", "精确匹配作者用户名，缺省返回全部作者"),
+			queryStrParam("status", "发布状态筛选：draft、published、modified 或 unpublished，缺省返回全部状态"),
+		},
 		Responses: responses(200, dataArrayResponse("GallerySummaryDTO", "图集工作稿列表", 200, true), 401, errorResponse("未认证"), 403, errorResponse("缺少 gallery:view 权限")),
 	})
 	post(t, "/admin/galleries", &openapi3.Operation{
@@ -86,9 +91,9 @@ func registerGalleryPaths(t *openapi3.T) {
 	})
 	get(t, "/admin/galleries/{id}", &openapi3.Operation{
 		Tags: []string{"图集管理"}, Summary: "图集工作稿详情",
-		Description: "读取当前作者自己的工作稿和完整图片投影。需 gallery:view 权限。",
+		Description: "读取任意图集的工作稿和完整图片投影（只读运营人员可查看）。需 gallery:view 权限。",
 		Security:    secure, Parameters: openapi3.Parameters{pathStrParam("id", "图集 UUID")},
-		Responses: responses(200, dataResponse("GalleryDetailDTO", "图集工作稿详情", 200), 401, errorResponse("未认证"), 403, errorResponse("不是图集作者或缺少 gallery:view 权限"), 404, errorResponse("图集不存在")),
+		Responses: responses(200, dataResponse("GalleryDetailDTO", "图集工作稿详情", 200), 401, errorResponse("未认证"), 403, errorResponse("缺少 gallery:view 权限"), 404, errorResponse("图集不存在")),
 	})
 	put(t, "/admin/galleries/{id}", &openapi3.Operation{
 		Tags: []string{"图集管理"}, Summary: "完整保存图集工作稿",
@@ -106,17 +111,17 @@ func registerGalleryPaths(t *openapi3.T) {
 	})
 	post(t, "/admin/galleries/{id}/unpublish", &openapi3.Operation{
 		Tags: []string{"图集管理"}, Summary: "撤回图集公开版本",
-		Description: "清空公开指针并保留工作稿、稳定 slug 与首次发布时间；失效快照和素材引用在同一事务清理。需 gallery:manage 权限。",
+		Description: "清空公开指针并保留工作稿、稳定 slug 与首次发布时间；失效快照和素材引用在同一事务清理。作者需 gallery:manage，审核员可用 gallery:moderate 撤回他人作品。",
 		Security:    secure, Parameters: openapi3.Parameters{pathStrParam("id", "图集 UUID"), csrfHeaderParam()},
 		RequestBody: jsonBody("GalleryVersionRequest", true, "撤回时的乐观锁版本"),
-		Responses:   responses(200, dataResponse("GalleryDetailDTO", "撤回后的图集管理详情", 200), 401, errorResponse("未认证"), 403, errorResponse("不是图集作者或缺少 gallery:manage 权限"), 404, errorResponse("图集不存在"), 409, errorResponse("expected_version 已过期或当前没有公开版本")),
+		Responses:   responses(200, dataResponse("GalleryDetailDTO", "撤回后的图集管理详情", 200), 401, errorResponse("未认证"), 403, errorResponse("不是图集作者且缺少 gallery:moderate 权限"), 404, errorResponse("图集不存在"), 409, errorResponse("expected_version 已过期或当前没有公开版本")),
 	})
 	del(t, "/admin/galleries/{id}", &openapi3.Operation{
 		Tags: []string{"图集管理"}, Summary: "永久删除图集",
-		Description: "永久删除工作稿与公开版本，并在同一事务释放全部素材引用。需 gallery:manage 权限。",
+		Description: "永久删除工作稿与公开版本，并在同一事务释放全部素材引用。作者需 gallery:manage，审核员可用 gallery:moderate 删除他人作品。",
 		Security:    secure, Parameters: openapi3.Parameters{pathStrParam("id", "图集 UUID"), csrfHeaderParam()},
 		RequestBody: jsonBody("GalleryVersionRequest", true, "删除时的乐观锁版本"),
-		Responses:   responses(204, noContentResponse("图集已删除"), 401, errorResponse("未认证"), 403, errorResponse("不是图集作者或缺少 gallery:manage 权限"), 404, errorResponse("图集不存在"), 409, errorResponse("expected_version 已过期")),
+		Responses:   responses(204, noContentResponse("图集已删除"), 401, errorResponse("未认证"), 403, errorResponse("不是图集作者且缺少 gallery:moderate 权限"), 404, errorResponse("图集不存在"), 409, errorResponse("expected_version 已过期")),
 	})
 	get(t, "/galleries", &openapi3.Operation{
 		Tags: []string{"图集"}, Summary: "公开图集浏览流",

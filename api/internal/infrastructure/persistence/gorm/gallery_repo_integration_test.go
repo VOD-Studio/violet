@@ -50,7 +50,7 @@ func TestGallerySaveIntegrationCommitsAndRollsBackWithReferences(t *testing.T) {
 
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
 
 	draft, err := service.CreateDraft(context.Background(), ownerID.String())
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestGalleryPublishAndCopyOnWriteKeepPublicSnapshotStable(t *testing.T) {
 
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
 	draft, err := service.CreateDraft(context.Background(), ownerID.String())
 	require.NoError(t, err)
 	saved, err := service.Save(context.Background(), appgallery.SaveInput{
@@ -187,7 +187,7 @@ func TestGalleryPublishRollbackLeavesDraftAndReferencesUnchanged(t *testing.T) {
 	})
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
 	draft, err := service.CreateDraft(context.Background(), ownerID.String())
 	require.NoError(t, err)
 	saved, err := service.Save(context.Background(), appgallery.SaveInput{
@@ -241,7 +241,7 @@ func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *tes
 
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
 	draft, err := service.CreateDraft(context.Background(), ownerID.String())
 	require.NoError(t, err)
 	saved, err := service.Save(context.Background(), appgallery.SaveInput{
@@ -337,7 +337,7 @@ func TestGalleryMaintenanceFailuresRollBackPointersSnapshotsAndReferences(t *tes
 
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
 	draft, err := service.CreateDraft(context.Background(), ownerID.String())
 	require.NoError(t, err)
 	saved, err := service.Save(context.Background(), appgallery.SaveInput{
@@ -402,7 +402,7 @@ func TestGalleryPublishedCursorUsesTimestampAndIDWithoutDuplicates(t *testing.T)
 	})
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
 	publishedAt := time.Date(2026, time.August, 31, 12, 0, 0, 0, time.UTC)
 	for i := 0; i < 3; i++ {
 		first := preseedGalleryFile(t, db, ownerID, fmt.Sprintf("cursor-%d-a.jpg", i))

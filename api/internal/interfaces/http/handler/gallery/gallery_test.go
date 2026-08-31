@@ -19,6 +19,7 @@ import (
 )
 
 type stubGalleryService struct {
+	listQuery       appgallery.ListQuery
 	saveInput       appgallery.SaveInput
 	saveDTO         appgallery.GalleryDetailDTO
 	saveErr         error
@@ -49,10 +50,11 @@ type stubGalleryService struct {
 func (s *stubGalleryService) CreateDraft(context.Context, string) (appgallery.GalleryDetailDTO, error) {
 	return appgallery.GalleryDetailDTO{}, nil
 }
-func (s *stubGalleryService) ListForEditor(context.Context, string, int, int) ([]appgallery.GallerySummaryDTO, int64, error) {
+func (s *stubGalleryService) ListForEditor(_ context.Context, query appgallery.ListQuery) ([]appgallery.GallerySummaryDTO, int64, error) {
+	s.listQuery = query
 	return []appgallery.GallerySummaryDTO{}, 0, nil
 }
-func (s *stubGalleryService) GetForEditor(context.Context, string, string) (appgallery.GalleryDetailDTO, error) {
+func (s *stubGalleryService) GetForEditor(context.Context, string) (appgallery.GalleryDetailDTO, error) {
 	return appgallery.GalleryDetailDTO{}, s.getErr
 }
 func (s *stubGalleryService) Save(_ context.Context, input appgallery.SaveInput) (appgallery.GalleryDetailDTO, error) {
@@ -469,4 +471,19 @@ func TestGetPublishedIsAnonymousAndMapsMissingTo404(t *testing.T) {
 
 		assert.Equal(t, http.StatusNotFound, recorder.Code)
 	})
+}
+
+func TestListForEditorPassesAuthorAndStatusFilters(t *testing.T) {
+	stub := &stubGalleryService{}
+	handler := &Handler{service: stub}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/galleries?author=sun&status=published&page=2&limit=10", nil)
+	recorder := httptest.NewRecorder()
+
+	handler.ListForEditor(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, "sun", stub.listQuery.Author)
+	assert.Equal(t, "published", stub.listQuery.Status)
+	assert.Equal(t, 2, stub.listQuery.Page)
+	assert.Equal(t, 10, stub.listQuery.Limit)
 }

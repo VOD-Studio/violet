@@ -12,6 +12,8 @@ import (
 type GallerySummaryDTO struct {
 	ID       string `json:"id"`
 	AuthorID string `json:"author_id"`
+	// AuthorName 作者可读名（display_name 优先，缺省 username）；用户不存在时为空串。
+	AuthorName string `json:"author_name"`
 	// Slug nil 表示从未发布；撤回后仍保留原值。
 	Slug    *string `json:"slug"`
 	Title   string  `json:"title"`
@@ -19,14 +21,27 @@ type GallerySummaryDTO struct {
 	// Status 为 draft、published、modified 或 unpublished。
 	Status string `json:"status"`
 	// Version 从 1 开始，每次保存或发布递增。
-	Version   int64 `json:"version"`
-	ItemCount int   `json:"item_count"`
+	Version int64 `json:"version"`
+	// ItemCount 工作稿当前图片数量。
+	ItemCount int `json:"item_count"`
 	// PublishedAt nil 表示从未发布；非 nil 值为 RFC3339，撤回后仍保留。
 	PublishedAt *string `json:"published_at"`
 	// CreatedAt RFC3339 格式的创建时间。
 	CreatedAt string `json:"created_at"`
 	// UpdatedAt RFC3339 格式的最近修改时间。
 	UpdatedAt string `json:"updated_at"`
+}
+
+// ListQuery 管理列表查询；零值表示不过滤。
+type ListQuery struct {
+	// Author 精确匹配作者用户名；空串表示全部作者。
+	Author string
+	// Status 取 draft、published、modified 或 unpublished；空串表示全部状态。
+	Status string
+	// Page 从 1 开始。
+	Page int
+	// Limit 每页数量。
+	Limit int
 }
 
 // GalleryItemDTO 编辑器所需的有序图片投影。

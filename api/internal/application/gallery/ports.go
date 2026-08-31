@@ -53,3 +53,17 @@ type Transaction interface {
 type UnitOfWork interface {
 	Do(ctx context.Context, fn func(Transaction) error) error
 }
+
+// PermissionChecker 权限检查端口（避免直接依赖 permission application 包）。
+type PermissionChecker interface {
+	HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool
+}
+
+// UserDirectory 是 Gallery 与用户域之间的最小读取 seam。
+type UserDirectory interface {
+	// FindIDByUsername 精确匹配用户名；未命中返回 found=false，不视为错误。
+	FindIDByUsername(ctx context.Context, username string) (id shared.ID, found bool, err error)
+	// DisplayNamesByIDs 批量读取用户可读名（display_name 优先，缺省 username）；
+	// 不存在的 ID 不出现在结果里。
+	DisplayNamesByIDs(ctx context.Context, ids []shared.ID) (map[shared.ID]string, error)
+}

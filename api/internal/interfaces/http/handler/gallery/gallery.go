@@ -15,8 +15,8 @@ import (
 
 type galleryService interface {
 	CreateDraft(ctx context.Context, userID string) (appgallery.GalleryDetailDTO, error)
-	ListForEditor(ctx context.Context, userID string, page, limit int) ([]appgallery.GallerySummaryDTO, int64, error)
-	GetForEditor(ctx context.Context, userID, galleryID string) (appgallery.GalleryDetailDTO, error)
+	ListForEditor(ctx context.Context, query appgallery.ListQuery) ([]appgallery.GallerySummaryDTO, int64, error)
+	GetForEditor(ctx context.Context, galleryID string) (appgallery.GalleryDetailDTO, error)
 	Save(ctx context.Context, input appgallery.SaveInput) (appgallery.GalleryDetailDTO, error)
 	Publish(ctx context.Context, input appgallery.PublishInput) (appgallery.GalleryDetailDTO, error)
 	Unpublish(ctx context.Context, input appgallery.VersionInput) (appgallery.GalleryDetailDTO, error)
@@ -42,7 +42,12 @@ func (h *Handler) CreateDraft(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ListForEditor(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
-	items, total, err := h.service.ListForEditor(r.Context(), ifmw.GetUserIDFromContext(r), page, limit)
+	items, total, err := h.service.ListForEditor(r.Context(), appgallery.ListQuery{
+		Author: r.URL.Query().Get("author"),
+		Status: r.URL.Query().Get("status"),
+		Page:   page,
+		Limit:  limit,
+	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -51,7 +56,7 @@ func (h *Handler) ListForEditor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetForEditor(w http.ResponseWriter, r *http.Request) {
-	dto, err := h.service.GetForEditor(r.Context(), ifmw.GetUserIDFromContext(r), r.PathValue("id"))
+	dto, err := h.service.GetForEditor(r.Context(), r.PathValue("id"))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

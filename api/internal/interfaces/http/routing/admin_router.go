@@ -326,8 +326,10 @@ func registerAdminGalleryRoutes(r chi.Router, galleryH *galleryhttp.Handler, per
 			r.Post("/", galleryH.CreateDraft)
 			r.Put("/{id}", galleryH.Save)
 			r.Post("/{id}/publish", galleryH.Publish)
-			r.Post("/{id}/unpublish", galleryH.Unpublish)
-			r.Delete("/{id}", galleryH.Delete)
 		})
+		// 撤回与删除没有单一权限码可表达「作者或审核员」,权限中间件是 AND 语义,
+		// 因此路由只保留 SessionAuth+AdminRequired 模块入口,own-or-moderator 判定在应用层完成。
+		r.Post("/{id}/unpublish", galleryH.Unpublish)
+		r.Delete("/{id}", galleryH.Delete)
 	})
 }

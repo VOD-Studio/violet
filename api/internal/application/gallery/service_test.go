@@ -11,8 +11,10 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	domaingallery "blog-api/internal/domain/gallery"
+	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/upload"
+	"blog-api/internal/middleware"
 )
 
 type fakeGalleryRepo struct {
@@ -26,6 +28,7 @@ type fakeGalleryRepo struct {
 	publishedOne  domaingallery.PublishedGallery
 	lastCursor    *domaingallery.PublishedCursor
 	lastLimit     int
+	lastFilter    *domaingallery.ListFilter
 }
 
 func (r *fakeGalleryRepo) Create(_ context.Context, gallery *domaingallery.Gallery) error {
@@ -41,9 +44,11 @@ func (r *fakeGalleryRepo) FindByID(_ context.Context, _ shared.ID) (*domaingalle
 func (r *fakeGalleryRepo) FindByIDForUpdate(ctx context.Context, id shared.ID) (*domaingallery.Gallery, error) {
 	return r.FindByID(ctx, id)
 }
-func (r *fakeGalleryRepo) FindPageByAuthor(_ context.Context, _ shared.ID, q shared.PageQuery) (shared.PageResult[*domaingallery.Gallery], error) {
+func (r *fakeGalleryRepo) FindPage(_ context.Context, filter domaingallery.ListFilter, q shared.PageQuery) (shared.PageResult[*domaingallery.Gallery], error) {
+	captured := filter
+	r.lastFilter = &captured
 	items := make([]*domaingallery.Gallery, 0)
-	if r.gallery != nil {
+	if r.gallery != nil && (filter.AuthorID == nil || filter.AuthorID.Equal(r.gallery.AuthorID())) {
 		items = append(items, r.gallery)
 	}
 	return shared.NewPageResult(q, items, int64(len(items))), nil
@@ -123,7 +128,55 @@ type fakeUnitOfWork struct{ tx Transaction }
 
 func (u fakeUnitOfWork) Do(_ context.Context, fn func(Transaction) error) error { return fn(u.tx) }
 
-func newServiceFixture(t *testing.T, owner shared.ID, initial []shared.ID) (*Service, *fakeGalleryRepo, *fakeAssetStore, *domaingallery.Gallery) {
+// fakePermChecker 按授权表判定权限码,AND 语义同 production checker;
+// 不复刻 root/superadmin 通配短路(canMaintain 的 root 分支由此独立短路)。
+type fakePermChecker struct{ granted map[string]bool }
+
+func (c fakePermChecker) HasPermission(_ string, _ bool, codes ...string) bool {
+	for _, code := range codes {
+		if !c.granted[code] {
+			return false
+		}
+	}
+	return true
+}
+
+type fakeUserDirectory struct {
+	idsByName map[string]shared.ID
+	namesByID map[shared.ID]string
+}
+
+func (d fakeUserDirectory) FindIDByUsername(_ context.Context, username string) (shared.ID, bool, error) {
+	id, ok := d.idsByName[username]
+	return id, ok, nil
+}
+
+func (d fakeUserDirectory) DisplayNamesByIDs(_ context.Context, ids []shared.ID) (map[shared.ID]string, error) {
+	names := make(map[shared.ID]string, len(ids))
+	for _, id := range ids {
+		if name, ok := d.namesByID[id]; ok {
+			names[id] = name
+		}
+	}
+	return names, nil
+}
+
+// recordingBus 捕获发布的领域事件,供审计噪音与事件断言使用。
+type recordingBus struct{ events []shared.DomainEvent }
+
+func (b *recordingBus) Publish(_ context.Context, events []shared.DomainEvent) error {
+	b.events = append(b.events, events...)
+	return nil
+}
+func (b *recordingBus) Subscribe(string, appshared.EventHandler) {}
+
+// actorCtx 构造带会话身份的 ctx,模拟 session 中间件注入。
+func actorCtx(userID string) context.Context {
+	ctx := context.WithValue(context.Background(), middleware.UserIDKey, userID)
+	return context.WithValue(ctx, middleware.UserRoleKey, "admin")
+}
+
+func newServiceFixture(t *testing.T, owner shared.ID, initial []shared.ID) (*Service, *fakeGalleryRepo, *fakeAssetStore, *domaingallery.Gallery, *recordingBus) {
 	t.Helper()
 	gallery, err := domaingallery.NewGallery(shared.NewID(), owner, shared.NewID())
 	require.NoError(t, err)
@@ -140,7 +193,14 @@ func newServiceFixture(t *testing.T, owner shared.ID, initial []shared.ID) (*Ser
 		assets.assets[id] = readyImage(id, owner)
 	}
 	uow := fakeUnitOfWork{tx: fakeTransaction{repo: repo, assets: assets}}
-	return NewService(repo, assets, uow, appshared.NoopEventBus{}), repo, assets, gallery
+	bus := &recordingBus{}
+	perm := fakePermChecker{granted: map[string]bool{permission.GalleryManage.String(): true}}
+	users := fakeUserDirectory{
+		idsByName: map[string]shared.ID{"sun": owner},
+		namesByID: map[shared.ID]string{owner: "作者"},
+	}
+	service := NewService(repo, assets, uow, bus, perm, users)
+	return service, repo, assets, gallery, bus
 }
 
 func readyImage(id, owner shared.ID) Asset {
@@ -149,7 +209,7 @@ func readyImage(id, owner shared.ID) Asset {
 
 func TestSaveRejectsStaleVersionBeforeTouchingAssets(t *testing.T) {
 	owner := shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, nil)
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
 	_, err := service.Save(context.Background(), SaveInput{
 		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 2,
 		Title: "标题", Summary: "", Items: []SaveItemInput{},
@@ -162,7 +222,7 @@ func TestSaveRejectsStaleVersionBeforeTouchingAssets(t *testing.T) {
 
 func TestSaveRejectsNonOwner(t *testing.T) {
 	owner := shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, nil)
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
 	_, err := service.Save(context.Background(), SaveInput{
 		UserID: shared.NewID().String(), GalleryID: gallery.ID().String(), ExpectedVersion: 1,
 		Title: "", Summary: "", Items: []SaveItemInput{},
@@ -175,7 +235,7 @@ func TestSaveRejectsNonOwner(t *testing.T) {
 
 func TestSaveRejectsDuplicateBeforeTouchingAssets(t *testing.T) {
 	owner, fileID := shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, nil)
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
 	_, err := service.Save(context.Background(), SaveInput{
 		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 1,
 		Title: "", Summary: "", Items: []SaveItemInput{{FileID: fileID.String()}, {FileID: fileID.String()}},
@@ -204,7 +264,7 @@ func TestSaveRejectsUnavailableOrNonImageAssets(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			owner, fileID := shared.NewID(), shared.NewID()
-			service, repo, assets, gallery := newServiceFixture(t, owner, nil)
+			service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
 			assets.assets[fileID] = tt.asset(fileID, owner)
 			_, err := service.Save(context.Background(), SaveInput{
 				UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 1,
@@ -220,7 +280,7 @@ func TestSaveRejectsUnavailableOrNonImageAssets(t *testing.T) {
 func TestSaveUpdatesOnlyReferenceSetDifference(t *testing.T) {
 	owner := shared.NewID()
 	oldA, retainedB, addedC := shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{oldA, retainedB})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{oldA, retainedB})
 	assets.assets[retainedB] = readyImage(retainedB, owner)
 	assets.assets[addedC] = readyImage(addedC, owner)
 
@@ -245,7 +305,7 @@ func TestSaveUpdatesOnlyReferenceSetDifference(t *testing.T) {
 func TestSaveCanRemoveAllExistingAssets(t *testing.T) {
 	owner := shared.NewID()
 	oldA, oldB := shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{oldA, oldB})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{oldA, oldB})
 
 	dto, err := service.Save(context.Background(), SaveInput{
 		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 2,
@@ -262,7 +322,7 @@ func TestSaveCanRemoveAllExistingAssets(t *testing.T) {
 
 func TestPublishValidatesAssetsAndAdvancesVersion(t *testing.T) {
 	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{first, second})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, second})
 	assets.assets[first] = readyImage(first, owner)
 	assets.assets[second] = readyImage(second, owner)
 
@@ -282,7 +342,7 @@ func TestPublishValidatesAssetsAndAdvancesVersion(t *testing.T) {
 
 func TestPublishRejectsUnavailableAssetWithoutPersisting(t *testing.T) {
 	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{first, second})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, second})
 	assets.assets[first] = readyImage(first, owner)
 	assets.assets[second] = Asset{ID: second, OwnerID: owner, MimeType: "image/jpeg", Status: upload.StatusProcessing}
 
@@ -307,7 +367,7 @@ func TestPublishRejectsNonOwnerAndStaleVersionBeforeAssetLocks(t *testing.T) {
 		{name: "stale version", userID: owner, expectedVersion: 1, code: shared.CodeConflict},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{first, second})
+			service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, second})
 			_, err := service.Publish(context.Background(), PublishInput{
 				UserID: tt.userID.String(), GalleryID: gallery.ID().String(), ExpectedVersion: tt.expectedVersion,
 			})
@@ -321,7 +381,7 @@ func TestPublishRejectsNonOwnerAndStaleVersionBeforeAssetLocks(t *testing.T) {
 
 func TestSavePublishedGalleryUsesCopyOnWriteAndCountsNewRevisionReferences(t *testing.T) {
 	owner, first, removed, added := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
-	service, _, assets, gallery := newServiceFixture(t, owner, []shared.ID{first, removed})
+	service, _, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, removed})
 	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
 	publishedRevisionID := *gallery.PublishedRevisionID()
 	assets.assets[first] = readyImage(first, owner)
@@ -345,7 +405,7 @@ func TestSavePublishedGalleryUsesCopyOnWriteAndCountsNewRevisionReferences(t *te
 
 func TestPublishModifiedGalleryReleasesOldSnapshotReferences(t *testing.T) {
 	owner, retained, removed, added := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{retained, removed})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{retained, removed})
 	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
 	oldPublishedID := *gallery.PublishedRevisionID()
 	assets.assets[retained] = readyImage(retained, owner)
@@ -381,12 +441,12 @@ func TestPublishModifiedGalleryReleasesOldSnapshotReferences(t *testing.T) {
 
 func TestUnpublishKeepsWorkingRevisionAndOnlyReleasesDistinctPublicSnapshot(t *testing.T) {
 	owner, retained, removed, added := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{retained, removed})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{retained, removed})
 	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
 	assets.assets[retained] = readyImage(retained, owner)
 	assets.assets[added] = readyImage(added, owner)
 
-	publishedDTO, err := service.Unpublish(context.Background(), VersionInput{
+	publishedDTO, err := service.Unpublish(actorCtx(owner.String()), VersionInput{
 		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 3,
 	})
 	require.NoError(t, err)
@@ -405,7 +465,7 @@ func TestUnpublishKeepsWorkingRevisionAndOnlyReleasesDistinctPublicSnapshot(t *t
 	oldPublishedID := *gallery.PublishedRevisionID()
 	assets.deltas = make(map[shared.ID]int)
 
-	modifiedDTO, err := service.Unpublish(context.Background(), VersionInput{
+	modifiedDTO, err := service.Unpublish(actorCtx(owner.String()), VersionInput{
 		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: maintained.Version,
 	})
 	require.NoError(t, err)
@@ -419,7 +479,7 @@ func TestUnpublishKeepsWorkingRevisionAndOnlyReleasesDistinctPublicSnapshot(t *t
 
 func TestDeleteReleasesEachEffectiveRevisionReference(t *testing.T) {
 	owner, retained, removed, added := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{retained, removed})
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{retained, removed})
 	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
 	assets.assets[retained] = readyImage(retained, owner)
 	assets.assets[added] = readyImage(added, owner)
@@ -430,7 +490,7 @@ func TestDeleteReleasesEachEffectiveRevisionReference(t *testing.T) {
 	require.NoError(t, err)
 	assets.deltas = make(map[shared.ID]int)
 
-	err = service.Delete(context.Background(), VersionInput{
+	err = service.Delete(actorCtx(owner.String()), VersionInput{
 		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: maintained.Version,
 	})
 
@@ -448,15 +508,15 @@ func TestMaintenanceRejectsStaleVersionBeforeAssetLocks(t *testing.T) {
 		call func(*Service, VersionInput) error
 	}{
 		{name: "unpublish", call: func(service *Service, input VersionInput) error {
-			_, err := service.Unpublish(context.Background(), input)
+			_, err := service.Unpublish(actorCtx(owner.String()), input)
 			return err
 		}},
 		{name: "delete", call: func(service *Service, input VersionInput) error {
-			return service.Delete(context.Background(), input)
+			return service.Delete(actorCtx(owner.String()), input)
 		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			service, repo, assets, gallery := newServiceFixture(t, owner, []shared.ID{first, second})
+			service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, second})
 			require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
 			err := tt.call(service, VersionInput{
 				UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 2,
@@ -472,7 +532,7 @@ func TestMaintenanceRejectsStaleVersionBeforeAssetLocks(t *testing.T) {
 
 func TestBrowsePublishedReturnsCompleteItemsAndStableCursor(t *testing.T) {
 	owner := shared.NewID()
-	service, repo, assets, _ := newServiceFixture(t, owner, nil)
+	service, repo, assets, _, _ := newServiceFixture(t, owner, nil)
 	publishedAt := time.Date(2026, time.August, 31, 10, 0, 0, 0, time.UTC)
 	rows := make([]domaingallery.PublishedGallery, 0, 3)
 	for i := 0; i < 3; i++ {
@@ -503,7 +563,7 @@ func TestBrowsePublishedReturnsCompleteItemsAndStableCursor(t *testing.T) {
 
 func TestGetPublishedFallsBackToTitleAndPositionForAltText(t *testing.T) {
 	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
-	service, repo, assets, gallery := newServiceFixture(t, owner, nil)
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
 	require.NoError(t, gallery.ReplaceWorkingDocument(1, "远山", "", []domaingallery.DocumentItem{{FileID: first}, {FileID: second}}))
 	repo.publishedOne = domaingallery.PublishedGallery{ID: gallery.ID(), Slug: "far-mountain", PublishedAt: time.Now(), Revision: gallery.WorkingRevision()}
 	assets.assets[first] = Asset{ID: first, URL: "/a", Thumbnail: "/ta"}
@@ -513,4 +573,164 @@ func TestGetPublishedFallsBackToTitleAndPositionForAltText(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "远山 第 1 张", dto.Items[0].AltText)
 	assert.Equal(t, "远山 第 2 张", dto.Items[1].AltText)
+}
+
+// newMaintainFixture 构造可自定义权限的维护场景夹具:gallery 已发布,moderator 持不同权限组合。
+func newMaintainFixture(t *testing.T, granted map[string]bool) (*Service, *fakeGalleryRepo, *recordingBus, *domaingallery.Gallery, shared.ID) {
+	t.Helper()
+	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
+	gallery, err := domaingallery.NewGallery(shared.NewID(), owner, shared.NewID())
+	require.NoError(t, err)
+	require.NoError(t, gallery.ReplaceWorkingDocument(1, "他人作品", "", []domaingallery.DocumentItem{{FileID: first}, {FileID: second}}))
+	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
+	gallery.PullEvents() // 夹具直连聚合产生的事件不计入断言,排空为空基线
+	repo := &fakeGalleryRepo{gallery: gallery}
+	assets := &fakeAssetStore{assets: map[shared.ID]Asset{
+		first:  readyImage(first, owner),
+		second: readyImage(second, owner),
+	}, deltas: make(map[shared.ID]int)}
+	bus := &recordingBus{}
+	service := NewService(repo, assets, fakeUnitOfWork{tx: fakeTransaction{repo: repo, assets: assets}}, bus,
+		fakePermChecker{granted: granted}, fakeUserDirectory{})
+	return service, repo, bus, gallery, owner
+}
+
+func TestModeratorCanUnpublishAndDeleteOthersGallery(t *testing.T) {
+	granted := map[string]bool{permission.GalleryModerate.String(): true}
+	service, repo, bus, gallery, owner := newMaintainFixture(t, granted)
+	moderator := shared.NewID()
+	version := gallery.Version()
+
+	_, err := service.Unpublish(actorCtx(moderator.String()), VersionInput{
+		UserID: moderator.String(), GalleryID: gallery.ID().String(), ExpectedVersion: version,
+	})
+	require.NoError(t, err)
+	assert.True(t, repo.unpublished)
+
+	err = service.Delete(actorCtx(moderator.String()), VersionInput{
+		UserID: moderator.String(), GalleryID: gallery.ID().String(), ExpectedVersion: version + 1,
+	})
+	require.NoError(t, err)
+	assert.True(t, repo.deleted)
+
+	// 两个维护动作各自发出领域事件,供审计订阅者区分 owner 与 moderated
+	require.Len(t, bus.events, 2)
+	unpublishedEvent, ok := bus.events[0].(domaingallery.GalleryUnpublished)
+	require.True(t, ok)
+	assert.True(t, unpublishedEvent.AuthorID.Equal(owner))
+	deletedEvent, ok := bus.events[1].(domaingallery.GalleryDeleted)
+	require.True(t, ok)
+	assert.Equal(t, "他人作品", deletedEvent.Title)
+}
+
+func TestMaintainRejectsActorWithoutOwnershipOrModerate(t *testing.T) {
+	service, repo, _, gallery, _ := newMaintainFixture(t, map[string]bool{})
+	stranger := shared.NewID()
+
+	_, err := service.Unpublish(actorCtx(stranger.String()), VersionInput{
+		UserID: stranger.String(), GalleryID: gallery.ID().String(), ExpectedVersion: gallery.Version(),
+	})
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeForbidden))
+	assert.False(t, repo.unpublished)
+}
+
+func TestMaintainRejectsOwnerWithoutManage(t *testing.T) {
+	// 失去 gallery:manage 的作者不能再维护自己的作品
+	service, repo, _, gallery, owner := newMaintainFixture(t, map[string]bool{})
+
+	_, err := service.Unpublish(actorCtx(owner.String()), VersionInput{
+		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: gallery.Version(),
+	})
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeForbidden))
+	assert.False(t, repo.unpublished)
+}
+
+func TestModeratorCannotSaveOrPublishOthersGallery(t *testing.T) {
+	granted := map[string]bool{permission.GalleryModerate.String(): true}
+	service, _, _, gallery, _ := newMaintainFixture(t, granted)
+	moderator := shared.NewID()
+
+	_, err := service.Save(actorCtx(moderator.String()), SaveInput{
+		UserID: moderator.String(), GalleryID: gallery.ID().String(), ExpectedVersion: gallery.Version(),
+		Title: "越权改稿", Items: []SaveItemInput{},
+	})
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeForbidden))
+
+	_, err = service.Publish(actorCtx(moderator.String()), PublishInput{
+		UserID: moderator.String(), GalleryID: gallery.ID().String(), ExpectedVersion: gallery.Version(),
+	})
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeForbidden))
+}
+
+func TestOwnerUnpublishEmitsEventAndSaveEmitsNone(t *testing.T) {
+	granted := map[string]bool{permission.GalleryManage.String(): true}
+	service, _, bus, gallery, owner := newMaintainFixture(t, granted)
+
+	saved, err := service.Save(actorCtx(owner.String()), SaveInput{
+		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: gallery.Version(),
+		Title: "继续编辑", Items: []SaveItemInput{},
+	})
+	require.NoError(t, err)
+	assert.Empty(t, bus.events, "普通保存不应发出任何领域事件(避免自动保存产生审计噪音)")
+
+	_, err = service.Unpublish(actorCtx(owner.String()), VersionInput{
+		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: saved.Version,
+	})
+	require.NoError(t, err)
+	require.Len(t, bus.events, 1)
+	_, ok := bus.events[0].(domaingallery.GalleryUnpublished)
+	assert.True(t, ok)
+}
+
+func TestListForEditorFiltersByAuthorUsernameAndStatus(t *testing.T) {
+	owner := shared.NewID()
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
+	_ = assets
+
+	dtos, total, err := service.ListForEditor(context.Background(), ListQuery{
+		Author: "sun", Status: domaingallery.StatusDraft, Page: 1, Limit: 20,
+	})
+	require.NoError(t, err)
+	require.Len(t, dtos, 1)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, "作者", dtos[0].AuthorName)
+	require.NotNil(t, repo.lastFilter)
+	require.NotNil(t, repo.lastFilter.AuthorID)
+	assert.True(t, repo.lastFilter.AuthorID.Equal(gallery.AuthorID()))
+	assert.Equal(t, domaingallery.StatusDraft, repo.lastFilter.Status)
+}
+
+func TestListForEditorUnknownAuthorReturnsEmpty(t *testing.T) {
+	owner := shared.NewID()
+	service, _, _, _, _ := newServiceFixture(t, owner, nil)
+
+	dtos, total, err := service.ListForEditor(context.Background(), ListQuery{Author: "nobody", Page: 1, Limit: 20})
+	require.NoError(t, err)
+	assert.Empty(t, dtos)
+	assert.Zero(t, total)
+}
+
+func TestListForEditorRejectsUnknownStatus(t *testing.T) {
+	owner := shared.NewID()
+	service, _, _, _, _ := newServiceFixture(t, owner, nil)
+
+	_, _, err := service.ListForEditor(context.Background(), ListQuery{Status: "unknown", Page: 1, Limit: 20})
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeBadRequest))
+}
+
+func TestGetForEditorReadableWithoutOwnership(t *testing.T) {
+	owner, first := shared.NewID(), shared.NewID()
+	service, _, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first})
+	assets.assets[first] = readyImage(first, owner)
+	viewer := shared.NewID()
+
+	dto, err := service.GetForEditor(actorCtx(viewer.String()), gallery.ID().String())
+	require.NoError(t, err)
+	assert.Equal(t, "作者", dto.AuthorName)
+	assert.Equal(t, gallery.ID().String(), dto.ID)
 }
