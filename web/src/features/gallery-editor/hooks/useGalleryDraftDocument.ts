@@ -18,11 +18,15 @@ export type GalleryDraftSaveState = "saved" | "dirty" | "saving" | "error" | "co
 interface UseGalleryDraftDocumentOptions {
 	id: string;
 	canManage: boolean;
+	/** 当前登录用户 ID；与工作稿作者不一致时视为只读（他人图集不自动保存）。 */
+	viewerId?: string;
 }
 
 interface UseGalleryDraftDocumentResult {
 	draft: GalleryDraftDocument | null;
 	detail: GalleryDetail | null;
+	/** 当前会话是否可改稿：canManage 且是工作稿作者（detail 未就绪时乐观放行）。 */
+	editable: boolean;
 	version: number;
 	isLoading: boolean;
 	error: Error | null;
@@ -47,8 +51,11 @@ function toDraftDocument(detail: GalleryDetail): GalleryDraftDocument {
 export function useGalleryDraftDocument({
 	id,
 	canManage,
+	viewerId,
 }: UseGalleryDraftDocumentOptions): UseGalleryDraftDocumentResult {
 	const { data, isLoading, error, refetch } = useGalleryDraft(id);
+	// detail 加载前乐观放行，加载后立即收敛；自动保存有 1s 防抖，只读会话不会误发请求
+	const editable = canManage && (!data || !viewerId || data.author_id === viewerId);
 	const { mutateAsync } = useSaveGalleryDraft(id);
 	const [draft, setDraft] = useState<GalleryDraftDocument | null>(null);
 	const [serverVersion, setServerVersion] = useState(0);
@@ -88,7 +95,7 @@ export function useGalleryDraftDocument({
 
 	const save = useCallback(
 		async (explicit: boolean) => {
-			if (!draft || !canManage || saveState === "conflict" || saveInFlightRef.current) return;
+			if (!draft || !editable || saveState === "conflict" || saveInFlightRef.current) return;
 			if (saveState === "saved" && !explicit) return;
 
 			const sequence = changeSequenceRef.current;
@@ -120,14 +127,14 @@ export function useGalleryDraftDocument({
 				saveInFlightRef.current = false;
 			}
 		},
-		[canManage, draft, mutateAsync, saveState, serverVersion],
+		[editable, draft, mutateAsync, saveState, serverVersion],
 	);
 
 	useEffect(() => {
-		if (saveState !== "dirty" || !canManage) return;
+		if (saveState !== "dirty" || !editable) return;
 		const timer = window.setTimeout(() => void save(false), AUTO_SAVE_DELAY);
 		return () => window.clearTimeout(timer);
-	}, [canManage, save, saveState]);
+	}, [editable, save, saveState]);
 
 	const hasPendingChanges = saveState !== "saved";
 	useBlocker({
@@ -149,6 +156,7 @@ export function useGalleryDraftDocument({
 	return {
 		draft,
 		detail: data ?? null,
+		editable,
 		version: serverVersion,
 		isLoading,
 		error,

@@ -8,6 +8,7 @@ const {
 	deleteMutateAsync,
 	detail,
 	mediaPickerProps,
+	me,
 	navigate,
 	permission,
 	publishMutateAsync,
@@ -50,7 +51,8 @@ const {
 		detail: gallery,
 		mediaPickerProps: vi.fn(),
 		navigate: vi.fn(),
-		permission: { canManage: true },
+		permission: { canManage: true, canModerate: false },
+		me: { id: "author-1" },
 		publishMutateAsync: vi.fn(),
 		publishResult: {
 			data: undefined as
@@ -121,7 +123,12 @@ vi.mock("@shared/ui/confirm-dialog", () => ({
 }));
 
 vi.mock("@features/auth/hooks/usePermissions", () => ({
-	useHasPermission: () => permission.canManage,
+	useHasPermission: (code: string) =>
+		code === "gallery:moderate" ? permission.canModerate : permission.canManage,
+}));
+
+vi.mock("@features/auth/api/queries", () => ({
+	useMe: () => ({ data: me }),
 }));
 
 vi.mock("@entities/media/ui/MediaPicker", () => ({
@@ -207,6 +214,8 @@ describe("GalleryDraftEditor", () => {
 		unpublishResult.data = undefined;
 		saveMutateAsync.mockReset();
 		permission.canManage = true;
+		permission.canModerate = false;
+		me.id = "author-1";
 		detail.status = "draft";
 		detail.slug = null;
 		detail.published_at = null;
@@ -364,7 +373,7 @@ describe("GalleryDraftEditor", () => {
 		);
 	});
 
-	it("只有查看权限时编辑动作全部只读", () => {
+	it("只有查看权限时编辑动作全部只读且写按钮不渲染", () => {
 		permission.canManage = false;
 		render(<GalleryDraftEditor id="gallery-1" />);
 
@@ -372,13 +381,32 @@ describe("GalleryDraftEditor", () => {
 		expect(
 			(screen.getByRole("button", { name: "从素材库选择" }) as HTMLButtonElement).disabled,
 		).toBe(true);
-		expect(
-			(screen.getByRole("button", { name: "保存工作稿" }) as HTMLButtonElement).disabled,
-		).toBe(true);
-		expect(
-			(screen.getByRole("button", { name: "发布图集" }) as HTMLButtonElement).disabled,
-		).toBe(true);
+		expect(screen.queryByRole("button", { name: "保存工作稿" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "发布图集" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "永久删除" })).toBeNull();
 		expect(screen.queryByRole("button", { name: "上传测试图片" })).toBeNull();
+	});
+
+	it("审核员对他人图集只读但可撤回与删除", () => {
+		permission.canManage = false;
+		permission.canModerate = true;
+		me.id = "moderator-1";
+		detail.status = "published";
+		detail.slug = "others-work";
+		render(<GalleryDraftEditor id="gallery-1" />);
+
+		// 他人工作稿只读:改稿入口全部关闭
+		expect((screen.getByLabelText("标题") as HTMLInputElement).disabled).toBe(true);
+		expect(screen.queryByRole("button", { name: "保存工作稿" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "更新发布" })).toBeNull();
+
+		// 审核处置入口可用
+		expect(
+			(screen.getByRole("button", { name: "撤回公开" }) as HTMLButtonElement).disabled,
+		).toBe(false);
+		expect(
+			(screen.getByRole("button", { name: "永久删除" }) as HTMLButtonElement).disabled,
+		).toBe(false);
 	});
 
 	it("用当前已保存版本发布并提供公开详情入口", async () => {

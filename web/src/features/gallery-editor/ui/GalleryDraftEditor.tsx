@@ -15,6 +15,7 @@ import {
 import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
+import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import {
 	useDeleteGallery,
@@ -65,8 +66,20 @@ interface GalleryDraftEditorProps {
 export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	const navigate = useNavigate();
 	const canManage = useHasPermission("gallery:manage");
-	const { draft, detail, version, isLoading, error, saveState, updateDraft, save, reload } =
-		useGalleryDraftDocument({ id, canManage });
+	const canModerate = useHasPermission("gallery:moderate");
+	const { data: me } = useMe();
+	const {
+		draft,
+		detail,
+		editable,
+		version,
+		isLoading,
+		error,
+		saveState,
+		updateDraft,
+		save,
+		reload,
+	} = useGalleryDraftDocument({ id, canManage, viewerId: me?.id });
 	const publish = usePublishGallery(id);
 	const unpublish = useUnpublishGallery(id);
 	const remove = useDeleteGallery(id, detail?.slug ?? null);
@@ -188,18 +201,24 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	const status = detail?.status ?? "draft";
 	const publicSlug = detail?.slug;
 	const actionVersion = Math.max(version, detail?.version ?? 0);
+	// 所有权与权限双轨:改稿(保存/发布)只有持有 gallery:manage 的作者本人可用;
+	// 撤回/删除还开放给 gallery:moderate 审核员处置他人作品
+	const canEdit = editable;
+	const canMaintain = canEdit || canModerate;
 	const maintenancePending = publish.isPending || unpublish.isPending || remove.isPending;
-	const disabled = !canManage || saveState === "conflict" || maintenancePending;
-	const maintenanceDisabled = disabled || saveState !== "saved";
+	const disabled = !canEdit || saveState === "conflict" || maintenancePending;
+	const maintenanceDisabled =
+		!canMaintain || saveState === "conflict" || maintenancePending || saveState !== "saved";
 	const hasPublicVersion = status === "published" || status === "modified";
-	const canPublish = status === "draft" || status === "modified" || status === "unpublished";
+	const canPublish =
+		canEdit && (status === "draft" || status === "modified" || status === "unpublished");
 	const publishLabel =
 		status === "modified" ? "更新发布" : status === "unpublished" ? "重新发布" : "发布图集";
 
 	return (
 		<PageShell
 			title="图集工作稿"
-			description={`${GALLERY_STATUS_LABELS[status]} · ${draft.items.length}/${MAX_GALLERY_ITEMS} 张图片`}
+			description={`${detail?.author_name || "未知作者"} · ${GALLERY_STATUS_LABELS[status]} · ${draft.items.length}/${MAX_GALLERY_ITEMS} 张图片`}
 			action={
 				<>
 					<GallerySaveIndicator state={saveState} />
@@ -226,7 +245,7 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 							{publishLabel}
 						</Button>
 					) : null}
-					{hasPublicVersion ? (
+					{hasPublicVersion && canMaintain ? (
 						<Button
 							size="sm"
 							variant="outline"
@@ -237,27 +256,31 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 							撤回公开
 						</Button>
 					) : null}
-					<Button
-						size="sm"
-						variant="outline"
-						disabled={maintenanceDisabled}
-						onClick={() => setConfirmAction("delete")}
-					>
-						<Trash2 className="size-4" />
-						永久删除
-					</Button>
-					<Button
-						size="sm"
-						disabled={disabled || saveState === "saving"}
-						onClick={() => void save(true)}
-					>
-						{saveState === "saving" ? (
-							<Loader2 className="size-4 animate-spin" />
-						) : (
-							<Save className="size-4" />
-						)}
-						保存工作稿
-					</Button>
+					{canMaintain ? (
+						<Button
+							size="sm"
+							variant="outline"
+							disabled={maintenanceDisabled}
+							onClick={() => setConfirmAction("delete")}
+						>
+							<Trash2 className="size-4" />
+							永久删除
+						</Button>
+					) : null}
+					{canEdit ? (
+						<Button
+							size="sm"
+							disabled={disabled || saveState === "saving"}
+							onClick={() => void save(true)}
+						>
+							{saveState === "saving" ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : (
+								<Save className="size-4" />
+							)}
+							保存工作稿
+						</Button>
+					) : null}
 				</>
 			}
 		>
