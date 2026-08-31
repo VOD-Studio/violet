@@ -144,10 +144,21 @@ func TestGalleryPublishingAndPublicPaths(t *testing.T) {
 	require.Contains(t, publish.Post.Responses.Map(), "404")
 	require.Contains(t, publish.Post.Responses.Map(), "409")
 
-	for _, schema := range []string{"GalleryPublishRequest", "PublicGalleryDTO", "PublicGalleryItemDTO"} {
+	unpublish := spec.Paths.Find("/admin/galleries/{id}/unpublish")
+	require.NotNil(t, unpublish)
+	require.NotNil(t, unpublish.Post)
+	require.Contains(t, unpublish.Post.Responses.Map(), "409")
+
+	remove := spec.Paths.Find("/admin/galleries/{id}")
+	require.NotNil(t, remove)
+	require.NotNil(t, remove.Delete)
+	require.Contains(t, remove.Delete.Responses.Map(), "204")
+	require.Contains(t, remove.Delete.Responses.Map(), "409")
+
+	for _, schema := range []string{"GalleryVersionRequest", "PublicGalleryDTO", "PublicGalleryItemDTO"} {
 		require.Contains(t, spec.Components.Schemas, schema)
 	}
-	request := spec.Components.Schemas["GalleryPublishRequest"].Value
+	request := spec.Components.Schemas["GalleryVersionRequest"].Value
 	require.Equal(t, []string{"expected_version"}, request.Required)
 	publicFields := spec.Components.Schemas["PublicGalleryDTO"].Value.Properties
 	for _, field := range []string{"id", "slug", "title", "summary", "published_at", "items"} {
@@ -160,7 +171,7 @@ func TestGalleryPublishingAndPublicPaths(t *testing.T) {
 	adminFields := spec.Components.Schemas["GallerySummaryDTO"].Value.Properties
 	require.Contains(t, adminFields, "slug")
 	require.Contains(t, adminFields, "published_at")
-	require.ElementsMatch(t, []any{"draft", "published"}, adminFields["status"].Value.Enum)
+	require.ElementsMatch(t, []any{"draft", "published", "modified", "unpublished"}, adminFields["status"].Value.Enum)
 }
 
 // hasParam 检查参数列表是否包含指定名称

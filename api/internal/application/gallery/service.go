@@ -151,7 +151,7 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 	return toDetailDTO(saved, savedAssets)
 }
 
-// Publish 首次把当前工作稿设为公开版本。
+// Publish 把当前工作稿设为公开版本，并清理被替换的旧公开快照。
 func (s *Service) Publish(ctx context.Context, in PublishInput) (GalleryDetailDTO, error) {
 	authorID, galleryID, err := parseActorAndGallery(in.UserID, in.GalleryID)
 	if err != nil {
@@ -167,19 +167,30 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (GalleryDetailDT
 		if !gallery.AuthorID().Equal(authorID) {
 			return domaingallery.ErrNotOwner
 		}
-		ids := fileIDs(gallery.WorkingRevision().Items())
+		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
+			return err
+		}
+		workingIDs := fileIDs(gallery.WorkingRevision().Items())
+		obsoleteRevisionID, oldPublishedIDs := obsoletePublishedRevision(gallery)
 		slug := "gallery-" + gallery.ID().String()
 		if err := gallery.Publish(in.ExpectedVersion, slug, time.Now().UTC()); err != nil {
 			return err
 		}
-		assets, err = tx.Assets().FindByIDsForUpdate(ctx, sortedIDUnion(ids))
+		assets, err = tx.Assets().FindByIDsForUpdate(ctx, sortedIDUnion(workingIDs, oldPublishedIDs))
 		if err != nil {
 			return err
 		}
-		if err := validateAssets(authorID, ids, assets); err != nil {
+		if err := validateAssets(authorID, workingIDs, assets); err != nil {
 			return err
 		}
-		if err := tx.Galleries().SavePublished(ctx, gallery, in.ExpectedVersion); err != nil {
+		if obsoleteRevisionID != nil {
+			for _, fileID := range oldPublishedIDs {
+				if err := tx.Assets().UpdateRefCount(ctx, fileID, -1); err != nil {
+					return err
+				}
+			}
+		}
+		if err := tx.Galleries().SavePublishingState(ctx, gallery, obsoleteRevisionID, in.ExpectedVersion); err != nil {
 			return err
 		}
 		published = gallery
@@ -192,6 +203,85 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (GalleryDetailDT
 		log.Error().Err(err).Str("gallery_id", published.ID().String()).Msg("发布图集公开事件失败")
 	}
 	return toDetailDTO(published, assets)
+}
+
+// Unpublish 撤回当前公开版本，并保留工作稿、slug 与首次发布时间。
+func (s *Service) Unpublish(ctx context.Context, in VersionInput) (GalleryDetailDTO, error) {
+	authorID, galleryID, err := parseActorAndGallery(in.UserID, in.GalleryID)
+	if err != nil {
+		return GalleryDetailDTO{}, err
+	}
+	var unpublished *domaingallery.Gallery
+	var assets []Asset
+	err = s.uow.Do(ctx, func(tx Transaction) error {
+		gallery, err := tx.Galleries().FindByIDForUpdate(ctx, galleryID)
+		if err != nil {
+			return err
+		}
+		if !gallery.AuthorID().Equal(authorID) {
+			return domaingallery.ErrNotOwner
+		}
+		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
+			return err
+		}
+		obsoleteRevisionID, obsoleteIDs := obsoletePublishedRevision(gallery)
+		if err := gallery.Unpublish(in.ExpectedVersion, time.Now().UTC()); err != nil {
+			return err
+		}
+		workingIDs := fileIDs(gallery.WorkingRevision().Items())
+		assets, err = tx.Assets().FindByIDsForUpdate(ctx, sortedIDUnion(workingIDs, obsoleteIDs))
+		if err != nil {
+			return err
+		}
+		for _, fileID := range obsoleteIDs {
+			if err := tx.Assets().UpdateRefCount(ctx, fileID, -1); err != nil {
+				return err
+			}
+		}
+		if err := tx.Galleries().SavePublishingState(ctx, gallery, obsoleteRevisionID, in.ExpectedVersion); err != nil {
+			return err
+		}
+		unpublished = gallery
+		return nil
+	})
+	if err != nil {
+		return GalleryDetailDTO{}, err
+	}
+	return toDetailDTO(unpublished, assets)
+}
+
+// Delete 永久删除图集及其有效快照，并释放全部素材引用。
+func (s *Service) Delete(ctx context.Context, in VersionInput) error {
+	authorID, galleryID, err := parseActorAndGallery(in.UserID, in.GalleryID)
+	if err != nil {
+		return err
+	}
+	return s.uow.Do(ctx, func(tx Transaction) error {
+		gallery, err := tx.Galleries().FindByIDForUpdate(ctx, galleryID)
+		if err != nil {
+			return err
+		}
+		if !gallery.AuthorID().Equal(authorID) {
+			return domaingallery.ErrNotOwner
+		}
+		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
+			return err
+		}
+		counts := gallery.FileReferenceCounts()
+		ids := make([]shared.ID, 0, len(counts))
+		for id := range counts {
+			ids = append(ids, id)
+		}
+		if _, err := tx.Assets().FindByIDsForUpdate(ctx, sortedIDUnion(ids)); err != nil {
+			return err
+		}
+		for id, count := range counts {
+			if err := tx.Assets().UpdateRefCount(ctx, id, -count); err != nil {
+				return err
+			}
+		}
+		return tx.Galleries().Delete(ctx, gallery.ID(), in.ExpectedVersion)
+	})
 }
 
 // BrowsePublished 按稳定复合游标读取公开图集。
@@ -351,4 +441,13 @@ func sortedIDUnion(groups ...[]shared.ID) []shared.ID {
 		return result[i].String() < result[j].String()
 	})
 	return result
+}
+
+func obsoletePublishedRevision(gallery *domaingallery.Gallery) (*shared.ID, []shared.ID) {
+	published := gallery.PublishedRevision()
+	if published == nil || published.ID().Equal(gallery.WorkingRevision().ID()) {
+		return nil, nil
+	}
+	id := published.ID()
+	return &id, fileIDs(published.Items())
 }

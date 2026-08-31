@@ -23,10 +23,14 @@ const (
 )
 
 const (
-	// StatusDraft 表示图集尚无公开版本。
+	// StatusDraft 表示图集从未发布。
 	StatusDraft = "draft"
-	// StatusPublished 表示图集已有公开版本。
+	// StatusPublished 表示工作稿就是当前公开版本。
 	StatusPublished = "published"
+	// StatusModified 表示工作稿包含尚未公开的修改。
+	StatusModified = "modified"
+	// StatusUnpublished 表示图集已撤回但保留工作稿和稳定 slug。
+	StatusUnpublished = "unpublished"
 )
 
 // GalleryCreated 图集工作稿已创建事件。
@@ -36,7 +40,7 @@ type GalleryCreated struct {
 	AuthorID shared.ID
 }
 
-// GalleryPublished 携带首次公开后生成的稳定地址。
+// GalleryPublished 携带公开版本切换后的稳定地址。
 type GalleryPublished struct {
 	shared.BaseEvent
 	// Slug 图集稳定公开标识。
@@ -93,11 +97,11 @@ type Gallery struct {
 	slug string
 	// workingRevision 当前编辑中的工作稿快照。
 	workingRevision *Revision
-	// publishedRevisionID 当前公开快照；nil 表示未发布。
-	publishedRevisionID *shared.ID
-	// version 工作稿乐观锁版本，从 1 开始，每次完整保存加 1。
+	// publishedRevision 当前公开快照；nil 表示未发布。
+	publishedRevision *Revision
+	// version 聚合乐观锁版本，从 1 开始，每次保存或发布维护加 1。
 	version int64
-	// publishedAt 首次发布时间；未发布为 nil，后续维护不改变。
+	// publishedAt 首次发布时间；从未发布为 nil，后续维护不改变。
 	publishedAt *time.Time
 	// timestamps 图集创建与最近保存时间。
 	timestamps shared.Timestamps
@@ -133,10 +137,10 @@ func NewGallery(id, authorID, revisionID shared.ID) (*Gallery, error) {
 }
 
 // Reconstruct 从持久化数据重建图集，不触发校验和领域事件。
-func Reconstruct(id, authorID shared.ID, slug string, working *Revision, publishedRevisionID *shared.ID, version int64, publishedAt *time.Time, createdAt, updatedAt time.Time) *Gallery {
+func Reconstruct(id, authorID shared.ID, slug string, working, published *Revision, version int64, publishedAt *time.Time, createdAt, updatedAt time.Time) *Gallery {
 	return &Gallery{
 		id: id, authorID: authorID, slug: slug, workingRevision: working,
-		publishedRevisionID: publishedRevisionID, version: version, publishedAt: publishedAt,
+		publishedRevision: published, version: version, publishedAt: publishedAt,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
@@ -232,12 +236,12 @@ func (g *Gallery) CloneWorkingRevision(id shared.ID) error {
 	return nil
 }
 
-// Publish 首次把完整工作稿设为公开快照。
-func (g *Gallery) Publish(expected int64, slug string, publishedAt time.Time) error {
+// Publish 把完整工作稿设为公开快照；首次发布后 slug 与发布时间保持不变。
+func (g *Gallery) Publish(expected int64, slug string, occurredAt time.Time) error {
 	if err := g.EnsureVersion(expected); err != nil {
 		return err
 	}
-	if g.publishedRevisionID != nil {
+	if g.WorkingRevisionIsPublished() {
 		return ErrAlreadyPublished
 	}
 	if strings.TrimSpace(g.workingRevision.title) == "" {
@@ -246,41 +250,89 @@ func (g *Gallery) Publish(expected int64, slug string, publishedAt time.Time) er
 	if len(g.workingRevision.items) < 2 {
 		return shared.BadRequest("发布图集至少需要 2 张图片")
 	}
-	slug = strings.TrimSpace(slug)
-	if slug == "" {
-		return shared.BadRequest("图集公开标识不能为空")
-	}
-	if publishedAt.IsZero() {
+	if occurredAt.IsZero() {
 		return shared.BadRequest("图集发布时间不能为空")
 	}
-	publishedID := g.workingRevision.id
-	g.slug = slug
-	g.publishedRevisionID = &publishedID
-	g.publishedAt = &publishedAt
+	if g.slug == "" {
+		slug = strings.TrimSpace(slug)
+		if slug == "" {
+			return shared.BadRequest("图集公开标识不能为空")
+		}
+		g.slug = slug
+	}
+	g.publishedRevision = g.workingRevision
+	if g.publishedAt == nil {
+		g.publishedAt = &occurredAt
+	}
 	g.version++
-	g.timestamps.UpdatedAt = publishedAt
-	g.RecordEvent(NewGalleryPublished(g.id, slug))
+	g.timestamps.UpdatedAt = occurredAt
+	g.RecordEvent(NewGalleryPublished(g.id, g.slug))
 	return nil
 }
 
-func (g *Gallery) ID() shared.ID                   { return g.id }
-func (g *Gallery) AuthorID() shared.ID             { return g.authorID }
-func (g *Gallery) Slug() string                    { return g.slug }
-func (g *Gallery) WorkingRevision() *Revision      { return g.workingRevision }
-func (g *Gallery) PublishedRevisionID() *shared.ID { return g.publishedRevisionID }
-func (g *Gallery) Version() int64                  { return g.version }
-func (g *Gallery) PublishedAt() *time.Time         { return g.publishedAt }
-func (g *Gallery) CreatedAt() time.Time            { return g.timestamps.CreatedAt }
-func (g *Gallery) UpdatedAt() time.Time            { return g.timestamps.UpdatedAt }
+// Unpublish 清空公开指针，但保留工作稿、slug 与首次发布时间。
+func (g *Gallery) Unpublish(expected int64, unpublishedAt time.Time) error {
+	if err := g.EnsureVersion(expected); err != nil {
+		return err
+	}
+	if g.publishedRevision == nil {
+		return ErrNotPublished
+	}
+	if unpublishedAt.IsZero() {
+		return shared.BadRequest("图集撤回时间不能为空")
+	}
+	g.publishedRevision = nil
+	g.version++
+	g.timestamps.UpdatedAt = unpublishedAt
+	return nil
+}
+
+func (g *Gallery) ID() shared.ID                { return g.id }
+func (g *Gallery) AuthorID() shared.ID          { return g.authorID }
+func (g *Gallery) Slug() string                 { return g.slug }
+func (g *Gallery) WorkingRevision() *Revision   { return g.workingRevision }
+func (g *Gallery) PublishedRevision() *Revision { return g.publishedRevision }
+func (g *Gallery) PublishedRevisionID() *shared.ID {
+	if g.publishedRevision == nil {
+		return nil
+	}
+	id := g.publishedRevision.id
+	return &id
+}
+func (g *Gallery) Version() int64          { return g.version }
+func (g *Gallery) PublishedAt() *time.Time { return g.publishedAt }
+func (g *Gallery) CreatedAt() time.Time    { return g.timestamps.CreatedAt }
+func (g *Gallery) UpdatedAt() time.Time    { return g.timestamps.UpdatedAt }
 func (g *Gallery) Status() string {
-	if g.publishedRevisionID != nil {
+	if g.publishedRevision == nil {
+		if g.slug != "" {
+			return StatusUnpublished
+		}
+		return StatusDraft
+	}
+	if g.WorkingRevisionIsPublished() {
 		return StatusPublished
 	}
-	return StatusDraft
+	return StatusModified
 }
 func (g *Gallery) WorkingRevisionIsPublished() bool {
-	return g.publishedRevisionID != nil && g.workingRevision.id.Equal(*g.publishedRevisionID)
+	return g.publishedRevision != nil && g.workingRevision.id.Equal(g.publishedRevision.id)
 }
+
+// FileReferenceCounts 返回所有有效快照按素材汇总的引用次数。
+func (g *Gallery) FileReferenceCounts() map[shared.ID]int {
+	counts := make(map[shared.ID]int)
+	for _, item := range g.workingRevision.items {
+		counts[item.fileID]++
+	}
+	if g.publishedRevision != nil && !g.publishedRevision.id.Equal(g.workingRevision.id) {
+		for _, item := range g.publishedRevision.items {
+			counts[item.fileID]++
+		}
+	}
+	return counts
+}
+
 func (r *Revision) ID() shared.ID               { return r.id }
 func (r *Revision) GalleryID() shared.ID        { return r.galleryID }
 func (r *Revision) Title() string               { return r.title }

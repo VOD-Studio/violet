@@ -12,16 +12,16 @@ import (
 type GallerySummaryDTO struct {
 	ID       string `json:"id"`
 	AuthorID string `json:"author_id"`
-	// Slug nil 表示尚未发布。
+	// Slug nil 表示从未发布；撤回后仍保留原值。
 	Slug    *string `json:"slug"`
 	Title   string  `json:"title"`
 	Summary string  `json:"summary"`
-	// Status 仅为 draft 或 published。
+	// Status 为 draft、published、modified 或 unpublished。
 	Status string `json:"status"`
 	// Version 从 1 开始，每次保存或发布递增。
 	Version   int64 `json:"version"`
 	ItemCount int   `json:"item_count"`
-	// PublishedAt nil 表示尚未发布；非 nil 值为 RFC3339。
+	// PublishedAt nil 表示从未发布；非 nil 值为 RFC3339，撤回后仍保留。
 	PublishedAt *string `json:"published_at"`
 	// CreatedAt RFC3339 格式的创建时间。
 	CreatedAt string `json:"created_at"`
@@ -70,13 +70,16 @@ type SaveInput struct {
 	Items           []SaveItemInput
 }
 
-// PublishInput 首次发布的乐观写输入。
-type PublishInput struct {
+// VersionInput 是图集维护动作共用的乐观写输入。
+type VersionInput struct {
 	UserID    string
 	GalleryID string
 	// ExpectedVersion 必须大于 0，且与当前工作稿版本一致。
 	ExpectedVersion int64
 }
+
+// PublishInput 发布或更新发布的乐观写输入。
+type PublishInput = VersionInput
 
 // PublicGalleryItemDTO 是公开版本中的有序图片投影。
 type PublicGalleryItemDTO struct {

@@ -19,6 +19,8 @@ type galleryService interface {
 	GetForEditor(ctx context.Context, userID, galleryID string) (appgallery.GalleryDetailDTO, error)
 	Save(ctx context.Context, input appgallery.SaveInput) (appgallery.GalleryDetailDTO, error)
 	Publish(ctx context.Context, input appgallery.PublishInput) (appgallery.GalleryDetailDTO, error)
+	Unpublish(ctx context.Context, input appgallery.VersionInput) (appgallery.GalleryDetailDTO, error)
+	Delete(ctx context.Context, input appgallery.VersionInput) error
 	BrowsePublished(ctx context.Context, cursor string, limit int) ([]appgallery.PublicGalleryDTO, string, error)
 	GetPublished(ctx context.Context, slug string) (appgallery.PublicGalleryDTO, error)
 }
@@ -107,30 +109,71 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
-type publishRequest struct {
+type versionRequest struct {
 	ExpectedVersion *int64 `json:"expected_version"`
 }
 
 func (h *Handler) Publish(w http.ResponseWriter, r *http.Request) {
-	var req publishRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	if req.ExpectedVersion == nil || *req.ExpectedVersion < 1 {
-		response.RespondError(w, r, shared.BadRequest("expected_version 必须大于 0"))
+	expectedVersion, ok := decodeVersionRequest(w, r)
+	if !ok {
 		return
 	}
 	dto, err := h.service.Publish(r.Context(), appgallery.PublishInput{
 		UserID:          ifmw.GetUserIDFromContext(r),
 		GalleryID:       r.PathValue("id"),
-		ExpectedVersion: *req.ExpectedVersion,
+		ExpectedVersion: expectedVersion,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondOK(w, dto)
+}
+
+func (h *Handler) Unpublish(w http.ResponseWriter, r *http.Request) {
+	expectedVersion, ok := decodeVersionRequest(w, r)
+	if !ok {
+		return
+	}
+	dto, err := h.service.Unpublish(r.Context(), appgallery.VersionInput{
+		UserID:          ifmw.GetUserIDFromContext(r),
+		GalleryID:       r.PathValue("id"),
+		ExpectedVersion: expectedVersion,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	expectedVersion, ok := decodeVersionRequest(w, r)
+	if !ok {
+		return
+	}
+	if err := h.service.Delete(r.Context(), appgallery.VersionInput{
+		UserID:          ifmw.GetUserIDFromContext(r),
+		GalleryID:       r.PathValue("id"),
+		ExpectedVersion: expectedVersion,
+	}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondNoContent(w)
+}
+
+func decodeVersionRequest(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	var req versionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return 0, false
+	}
+	if req.ExpectedVersion == nil || *req.ExpectedVersion < 1 {
+		response.RespondError(w, r, shared.BadRequest("expected_version 必须大于 0"))
+		return 0, false
+	}
+	return *req.ExpectedVersion, true
 }
 
 func (h *Handler) BrowsePublished(w http.ResponseWriter, r *http.Request) {

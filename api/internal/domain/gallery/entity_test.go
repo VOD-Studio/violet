@@ -121,3 +121,66 @@ func TestCloneWorkingRevisionPreservesPublishedSnapshot(t *testing.T) {
 	assert.Equal(t, "公开说明", gallery.WorkingRevision().Items()[0].Caption())
 	assert.Equal(t, int64(3), gallery.Version())
 }
+
+func TestGalleryStatusDerivesPublishedMaintenanceStates(t *testing.T) {
+	gallery, err := NewGallery(shared.NewID(), shared.NewID(), shared.NewID())
+	require.NoError(t, err)
+	first, second := shared.NewID(), shared.NewID()
+	require.NoError(t, gallery.ReplaceWorkingDocument(1, "公开标题", "", []DocumentItem{{FileID: first}, {FileID: second}}))
+	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
+	assert.Equal(t, StatusPublished, gallery.Status())
+
+	require.NoError(t, gallery.CloneWorkingRevision(shared.NewID()))
+	require.NoError(t, gallery.ReplaceWorkingDocument(3, "维护中标题", "", []DocumentItem{{FileID: first}, {FileID: second}}))
+	assert.Equal(t, StatusModified, gallery.Status())
+
+	require.NoError(t, gallery.Unpublish(4, time.Now()))
+	assert.Equal(t, StatusUnpublished, gallery.Status())
+	assert.Equal(t, "stable-slug", gallery.Slug())
+	require.NotNil(t, gallery.PublishedAt())
+
+	require.NoError(t, gallery.Publish(5, "ignored-new-slug", time.Now()))
+	assert.Equal(t, StatusPublished, gallery.Status())
+	assert.Equal(t, "stable-slug", gallery.Slug())
+}
+
+func TestPublishReplacesModifiedRevisionButRejectsUnchangedPublishedRevision(t *testing.T) {
+	gallery, err := NewGallery(shared.NewID(), shared.NewID(), shared.NewID())
+	require.NoError(t, err)
+	first, second := shared.NewID(), shared.NewID()
+	require.NoError(t, gallery.ReplaceWorkingDocument(1, "公开标题", "", []DocumentItem{{FileID: first}, {FileID: second}}))
+	publishedAt := time.Date(2026, time.August, 31, 8, 0, 0, 0, time.UTC)
+	require.NoError(t, gallery.Publish(2, "stable-slug", publishedAt))
+
+	err = gallery.Publish(3, "another-slug", publishedAt.Add(time.Hour))
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeConflict))
+	assert.Equal(t, int64(3), gallery.Version())
+
+	require.NoError(t, gallery.CloneWorkingRevision(shared.NewID()))
+	require.NoError(t, gallery.ReplaceWorkingDocument(3, "更新标题", "", []DocumentItem{{FileID: second}, {FileID: first}}))
+	workingID := gallery.WorkingRevision().ID()
+	require.NoError(t, gallery.Publish(4, "another-slug", publishedAt.Add(time.Hour)))
+	require.NotNil(t, gallery.PublishedRevisionID())
+	assert.True(t, gallery.PublishedRevisionID().Equal(workingID))
+	assert.Equal(t, "stable-slug", gallery.Slug())
+	assert.Equal(t, publishedAt, *gallery.PublishedAt())
+	assert.Equal(t, int64(5), gallery.Version())
+}
+
+func TestUnpublishRequiresCurrentPublishedRevisionAndExpectedVersion(t *testing.T) {
+	gallery, err := NewGallery(shared.NewID(), shared.NewID(), shared.NewID())
+	require.NoError(t, err)
+
+	err = gallery.Unpublish(1, time.Now())
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeConflict))
+
+	first, second := shared.NewID(), shared.NewID()
+	require.NoError(t, gallery.ReplaceWorkingDocument(1, "公开标题", "", []DocumentItem{{FileID: first}, {FileID: second}}))
+	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
+	err = gallery.Unpublish(2, time.Now())
+	require.Error(t, err)
+	assert.True(t, shared.IsDomainError(err, shared.CodeConflict))
+	assert.Equal(t, int64(3), gallery.Version())
+}

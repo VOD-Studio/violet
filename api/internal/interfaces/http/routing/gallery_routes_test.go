@@ -14,7 +14,7 @@ type galleryRoutePermissionChecker struct{}
 
 func (galleryRoutePermissionChecker) HasPermission(string, bool, ...string) bool { return true }
 
-func TestGalleryRoutesExposeAnonymousReadsAndManagedPublish(t *testing.T) {
+func TestGalleryRoutesExposeAnonymousReadsAndManagedMaintenance(t *testing.T) {
 	public := chi.NewRouter()
 	registerGalleryPublicRoutes(public, &Deps{})
 	publicRoutes := routeMethods(t, public)
@@ -25,6 +25,8 @@ func TestGalleryRoutesExposeAnonymousReadsAndManagedPublish(t *testing.T) {
 	registerAdminGalleryRoutes(admin, nil, galleryRoutePermissionChecker{})
 	adminRoutes := routeMethods(t, admin)
 	require.Contains(t, adminRoutes, "POST /galleries/{id}/publish")
+	require.Contains(t, adminRoutes, "POST /galleries/{id}/unpublish")
+	require.Contains(t, adminRoutes, "DELETE /galleries/{id}")
 }
 
 func routeMethods(t *testing.T, router chi.Routes) []string {

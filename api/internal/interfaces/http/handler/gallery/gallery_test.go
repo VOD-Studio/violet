@@ -26,6 +26,11 @@ type stubGalleryService struct {
 	publishInput    appgallery.PublishInput
 	publishDTO      appgallery.GalleryDetailDTO
 	publishErr      error
+	unpublishInput  appgallery.VersionInput
+	unpublishDTO    appgallery.GalleryDetailDTO
+	unpublishErr    error
+	deleteInput     appgallery.VersionInput
+	deleteErr       error
 	browseCursor    string
 	browseLimit     int
 	browseDTOs      []appgallery.PublicGalleryDTO
@@ -35,6 +40,8 @@ type stubGalleryService struct {
 	getPublishedErr error
 	saveCalls       int
 	publishCalls    int
+	unpublishCalls  int
+	deleteCalls     int
 	browseCalls     int
 	getPublicCalls  int
 }
@@ -57,6 +64,16 @@ func (s *stubGalleryService) Publish(_ context.Context, input appgallery.Publish
 	s.publishCalls++
 	s.publishInput = input
 	return s.publishDTO, s.publishErr
+}
+func (s *stubGalleryService) Unpublish(_ context.Context, input appgallery.VersionInput) (appgallery.GalleryDetailDTO, error) {
+	s.unpublishCalls++
+	s.unpublishInput = input
+	return s.unpublishDTO, s.unpublishErr
+}
+func (s *stubGalleryService) Delete(_ context.Context, input appgallery.VersionInput) error {
+	s.deleteCalls++
+	s.deleteInput = input
+	return s.deleteErr
 }
 func (s *stubGalleryService) BrowsePublished(_ context.Context, cursor string, limit int) ([]appgallery.PublicGalleryDTO, string, error) {
 	s.browseCalls++
@@ -327,6 +344,64 @@ func TestAdminPublishRouteRejectsMissingSessionOrPermission(t *testing.T) {
 
 			assert.Equal(t, tt.want, recorder.Code)
 			assert.Zero(t, stub.publishCalls)
+		})
+	}
+}
+
+func TestUnpublishAcceptsExpectedVersionAndReturnsUnpublishedDetail(t *testing.T) {
+	userID, galleryID := shared.NewID().String(), shared.NewID().String()
+	slug := "summer-light"
+	stub := &stubGalleryService{unpublishDTO: appgallery.GalleryDetailDTO{
+		GallerySummaryDTO: appgallery.GallerySummaryDTO{ID: galleryID, Slug: &slug, Version: 5, Status: "unpublished"},
+		Items:             []appgallery.GalleryItemDTO{},
+	}}
+	handler := &Handler{service: stub}
+	req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/admin/galleries/"+galleryID+"/unpublish", bytes.NewReader([]byte(`{"expected_version":4}`))), userID)
+	req.SetPathValue("id", galleryID)
+	recorder := httptest.NewRecorder()
+
+	handler.Unpublish(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, appgallery.VersionInput{UserID: userID, GalleryID: galleryID, ExpectedVersion: 4}, stub.unpublishInput)
+	assert.Contains(t, recorder.Body.String(), `"status":"unpublished"`)
+	assert.Contains(t, recorder.Body.String(), `"slug":"summer-light"`)
+}
+
+func TestDeleteAcceptsExpectedVersionAndReturnsNoContent(t *testing.T) {
+	userID, galleryID := shared.NewID().String(), shared.NewID().String()
+	stub := &stubGalleryService{}
+	handler := &Handler{service: stub}
+	req := requestWithUser(httptest.NewRequest(http.MethodDelete, "/api/v1/admin/galleries/"+galleryID, bytes.NewReader([]byte(`{"expected_version":7}`))), userID)
+	req.SetPathValue("id", galleryID)
+	recorder := httptest.NewRecorder()
+
+	handler.Delete(recorder, req)
+
+	assert.Equal(t, http.StatusNoContent, recorder.Code)
+	assert.Equal(t, appgallery.VersionInput{UserID: userID, GalleryID: galleryID, ExpectedVersion: 7}, stub.deleteInput)
+	assert.Empty(t, recorder.Body.String())
+}
+
+func TestMaintenanceActionsMapVersionConflictTo409(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		call func(*Handler, http.ResponseWriter, *http.Request)
+		stub *stubGalleryService
+	}{
+		{name: "unpublish", call: (*Handler).Unpublish, stub: &stubGalleryService{unpublishErr: domaingallery.ErrVersionConflict}},
+		{name: "delete", call: (*Handler).Delete, stub: &stubGalleryService{deleteErr: domaingallery.ErrVersionConflict}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := &Handler{service: tt.stub}
+			req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/admin/galleries/id", bytes.NewReader([]byte(`{"expected_version":1}`))), shared.NewID().String())
+			req.SetPathValue("id", shared.NewID().String())
+			recorder := httptest.NewRecorder()
+
+			tt.call(handler, recorder, req)
+
+			assert.Equal(t, http.StatusConflict, recorder.Code)
+			assert.Contains(t, recorder.Body.String(), `"error":"CONFLICT"`)
 		})
 	}
 }

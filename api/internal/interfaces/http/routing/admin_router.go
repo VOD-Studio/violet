@@ -308,7 +308,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 		})
 	})
 
-	// 图集工作稿：读 gallery:view；创建、保存与发布 gallery:manage。
+	// 图集工作稿：读 gallery:view；创建、保存与发布维护 gallery:manage。
 	registerAdminGalleryRoutes(r, d.Gallery, perm)
 
 	return r
@@ -326,6 +326,8 @@ func registerAdminGalleryRoutes(r chi.Router, galleryH *galleryhttp.Handler, per
 			r.Post("/", galleryH.CreateDraft)
 			r.Put("/{id}", galleryH.Save)
 			r.Post("/{id}/publish", galleryH.Publish)
+			r.Post("/{id}/unpublish", galleryH.Unpublish)
+			r.Delete("/{id}", galleryH.Delete)
 		})
 	})
 }

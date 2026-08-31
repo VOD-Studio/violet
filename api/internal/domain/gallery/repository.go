@@ -34,8 +34,10 @@ var (
 	ErrNotOwner = shared.Forbidden("只能访问自己创建的图集")
 	// ErrVersionConflict 工作稿已被其他编辑窗口更新。
 	ErrVersionConflict = shared.Conflict("图集工作稿已更新，请重新载入后再保存")
-	// ErrAlreadyPublished 表示首次发布端点不能替代公开版本。
-	ErrAlreadyPublished = shared.Conflict("图集已经发布，请使用更新发布")
+	// ErrAlreadyPublished 表示工作稿已经是当前公开版本。
+	ErrAlreadyPublished = shared.Conflict("图集工作稿已经是当前公开版本")
+	// ErrNotPublished 表示图集当前没有可撤回的公开版本。
+	ErrNotPublished = shared.Conflict("图集当前没有公开版本")
 )
 
 // Repository 图集聚合持久化接口。
@@ -50,8 +52,10 @@ type Repository interface {
 	FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*Gallery], error)
 	// SaveWorking 保存完整 working revision，并以 expectedVersion 原子推进版本。
 	SaveWorking(ctx context.Context, gallery *Gallery, expectedVersion int64) error
-	// SavePublished 原子写入首次公开指针、slug 和递增后的版本。
-	SavePublished(ctx context.Context, gallery *Gallery, expectedVersion int64) error
+	// SavePublishingState 原子保存公开指针并删除已失效的旧公开快照。
+	SavePublishingState(ctx context.Context, gallery *Gallery, obsoleteRevisionID *shared.ID, expectedVersion int64) error
+	// Delete 按聚合版本永久删除图集。
+	Delete(ctx context.Context, id shared.ID, expectedVersion int64) error
 	// FindPublishedPage 按 published_at、id 倒序读取公开快照。
 	FindPublishedPage(ctx context.Context, cursor *PublishedCursor, limit int) ([]PublishedGallery, error)
 	// FindPublishedBySlug 只返回该 slug 的公开快照。
