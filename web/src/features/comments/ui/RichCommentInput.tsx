@@ -406,7 +406,7 @@ export function RichCommentInput({
 			>
 				{fileInput}
 				{thumbnails}
-				<div className="flex items-end gap-1">
+				<div className="flex items-center gap-1">
 					<div className="flex shrink-0 items-center gap-0.5">
 						{emojiButton}
 						{imageButton}
