@@ -1,7 +1,7 @@
 import type { PageQuery } from "@shared/api/types";
 
-/** 图集工作稿状态。 */
-export type GalleryStatus = "draft";
+/** 图集状态。 */
+export type GalleryStatus = "draft" | "published";
 
 /** 管理端图集列表投影。 */
 export interface GallerySummary {
@@ -10,6 +10,8 @@ export interface GallerySummary {
 	title: string;
 	summary: string;
 	status: GalleryStatus;
+	slug: string | null;
+	published_at: string | null;
 	version: number;
 	item_count: number;
 	created_at: string;
@@ -38,3 +40,31 @@ export interface GalleryDetail extends GallerySummary {
 
 /** 管理端列表分页参数。 */
 export interface GalleryListQuery extends PageQuery {}
+
+/** 公开图集中的单张图片。 */
+export interface PublishedGalleryItem {
+	file_id: string;
+	position: number;
+	thumbnail: string;
+	url: string;
+	width: number;
+	height: number;
+	alt_text: string;
+	caption: string;
+}
+
+/** 公开图集投影。 */
+export interface PublishedGallery {
+	id: string;
+	slug: string;
+	title: string;
+	summary: string;
+	published_at: string;
+	items: PublishedGalleryItem[];
+}
+
+/** 公开图集游标分页参数。 */
+export interface PublishedGalleryListQuery {
+	cursor?: string;
+	limit?: number;
+}

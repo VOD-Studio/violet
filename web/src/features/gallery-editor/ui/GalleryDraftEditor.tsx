@@ -16,6 +16,7 @@ import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { usePublishGallery } from "@features/gallery-editor/api/mutations";
 import { useGalleryDraftDocument } from "@features/gallery-editor/hooks/useGalleryDraftDocument";
 import {
 	appendMediaFiles,
@@ -26,13 +27,24 @@ import {
 } from "@features/gallery-editor/model/draft";
 import type { CompleteUploadResult } from "@features/upload/model/types";
 import { Uploader } from "@features/upload/ui/Uploader";
+import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import { Textarea } from "@shared/ui/base/textarea";
-import { AlertTriangle, ImagePlus, Loader2, RefreshCw, Save } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+	AlertTriangle,
+	ExternalLink,
+	ImagePlus,
+	Loader2,
+	RefreshCw,
+	Save,
+	Send,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { GalleryDraftPreview } from "./GalleryDraftPreview";
 import { GalleryItemEditor } from "./GalleryItemEditor";
 import { GallerySaveIndicator } from "./GallerySaveIndicator";
@@ -44,9 +56,14 @@ interface GalleryDraftEditorProps {
 /** 图集工作稿编辑器：本地即时编辑，防抖与显式保存共用完整 PUT。 */
 export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	const canManage = useHasPermission("gallery:manage");
-	const { draft, isLoading, error, saveState, updateDraft, save, reload } =
+	const { draft, detail, version, isLoading, error, saveState, updateDraft, save, reload } =
 		useGalleryDraftDocument({ id, canManage });
+	const publish = usePublishGallery(id);
 	const [pickerOpen, setPickerOpen] = useState(false);
+	const [publishError, setPublishError] = useState<{
+		kind: "validation" | "conflict";
+		message: string;
+	} | null>(null);
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -73,6 +90,32 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 		}));
 	};
 
+	const handlePublish = async () => {
+		setPublishError(null);
+		try {
+			await publish.mutateAsync({ expected_version: version });
+			toast.success("图集已发布");
+		} catch (publishFailure) {
+			if (publishFailure instanceof ApiError && publishFailure.status === 409) {
+				setPublishError({
+					kind: "conflict",
+					message: "工作稿已在其他窗口更新，请重新载入后再发布。",
+				});
+				return;
+			}
+			if (publishFailure instanceof ApiError && publishFailure.status === 400) {
+				setPublishError({
+					kind: "validation",
+					message:
+						publishFailure.message ||
+						"图集尚不符合发布要求，请确认标题和图片内容完整后重试。",
+				});
+				return;
+			}
+			toast.error(publishFailure instanceof Error ? publishFailure.message : "发布失败");
+		}
+	};
+
 	if (error && !draft) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-3">
@@ -94,7 +137,9 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 		);
 	}
 
-	const disabled = !canManage || saveState === "conflict";
+	const disabled = !canManage || saveState === "conflict" || publish.isPending;
+	const publicSlug = publish.data?.slug ?? detail?.slug;
+	const published = detail?.status === "published" || publish.data?.status === "published";
 
 	return (
 		<PageShell
@@ -103,6 +148,28 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 			action={
 				<>
 					<GallerySaveIndicator state={saveState} />
+					{published && publicSlug ? (
+						<Button size="sm" variant="outline" asChild>
+							<Link to="/galleries/$slug" params={{ slug: publicSlug }}>
+								<ExternalLink className="size-4" />
+								查看公开页面
+							</Link>
+						</Button>
+					) : (
+						<Button
+							size="sm"
+							variant="outline"
+							disabled={disabled || saveState !== "saved" || publish.isPending}
+							onClick={() => void handlePublish()}
+						>
+							{publish.isPending ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : (
+								<Send className="size-4" />
+							)}
+							发布图集
+						</Button>
+					)}
 					<Button
 						size="sm"
 						disabled={disabled || saveState === "saving"}
@@ -118,6 +185,29 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 				</>
 			}
 		>
+			{publishError ? (
+				<div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-start gap-2 text-sm">
+						<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+						<p>{publishError.message}</p>
+					</div>
+					{publishError.kind === "conflict" ? (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() =>
+								void reload().then((reloaded) => {
+									if (reloaded) setPublishError(null);
+								})
+							}
+						>
+							<RefreshCw className="size-4" />
+							重新载入
+						</Button>
+					) : null}
+				</div>
+			) : null}
+
 			{saveState === "conflict" ? (
 				<div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-2 text-sm">

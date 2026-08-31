@@ -57,7 +57,11 @@ export function GalleryDraftListPage() {
 			key: "status",
 			header: "状态",
 			width: "100px",
-			cell: () => <Badge variant="secondary">工作稿</Badge>,
+			cell: (row) => (
+				<Badge variant={row.status === "published" ? "default" : "secondary"}>
+					{row.status === "published" ? "已发布" : "工作稿"}
+				</Badge>
+			),
 		},
 		{
 			key: "item_count",

@@ -22,12 +22,14 @@ interface UseGalleryDraftDocumentOptions {
 
 interface UseGalleryDraftDocumentResult {
 	draft: GalleryDraftDocument | null;
+	detail: GalleryDetail | null;
+	version: number;
 	isLoading: boolean;
 	error: Error | null;
 	saveState: GalleryDraftSaveState;
 	updateDraft: (updater: (current: GalleryDraftDocument) => GalleryDraftDocument) => void;
 	save: (explicit: boolean) => Promise<void>;
-	reload: () => Promise<void>;
+	reload: () => Promise<boolean>;
 }
 
 const AUTO_SAVE_DELAY = 1000;
@@ -138,10 +140,21 @@ export function useGalleryDraftDocument({
 		const result = await refetch();
 		if (result.isSuccess && result.data) {
 			hydrate(result.data);
-			return;
+			return true;
 		}
 		toast.error("重新载入失败，本地修改仍然保留");
+		return false;
 	}, [hydrate, refetch]);
 
-	return { draft, isLoading, error, saveState, updateDraft, save, reload };
+	return {
+		draft,
+		detail: data ?? null,
+		version: serverVersion,
+		isLoading,
+		error,
+		saveState,
+		updateDraft,
+		save,
+		reload,
+	};
 }

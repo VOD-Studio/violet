@@ -1,14 +1,26 @@
 import { ApiError } from "@shared/api/error";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { blocker, detail, mediaPickerProps, mutateAsync, permission, refetch } = vi.hoisted(() => {
+const {
+	blocker,
+	detail,
+	mediaPickerProps,
+	permission,
+	publishMutateAsync,
+	publishResult,
+	refetch,
+	saveMutateAsync,
+} = vi.hoisted(() => {
 	const gallery = {
 		id: "gallery-1",
 		author_id: "author-1",
 		title: "原始标题",
 		summary: "原始摘要",
 		status: "draft",
+		slug: null,
+		published_at: null,
 		version: 4,
 		item_count: 1,
 		created_at: "2026-08-30T00:00:00Z",
@@ -32,20 +44,34 @@ const { blocker, detail, mediaPickerProps, mutateAsync, permission, refetch } = 
 		blocker: vi.fn(),
 		detail: gallery,
 		mediaPickerProps: vi.fn(),
-		mutateAsync: vi.fn(),
 		permission: { canManage: true },
+		publishMutateAsync: vi.fn(),
+		publishResult: {
+			data: undefined as { slug: string | null; status: "draft" | "published" } | undefined,
+		},
 		refetch: vi.fn(),
+		saveMutateAsync: vi.fn(),
 	};
 });
 
-vi.mock("@tanstack/react-router", () => ({ useBlocker: blocker }));
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({ children, params }: { children: ReactNode; params: { slug: string } }) => (
+		<a href={`/galleries/${params.slug}`}>{children}</a>
+	),
+	useBlocker: blocker,
+}));
 
 vi.mock("@features/gallery-editor/api/queries", () => ({
 	useGalleryDraft: () => ({ data: detail, isLoading: false, error: null, refetch }),
 }));
 
 vi.mock("@features/gallery-editor/api/mutations", () => ({
-	useSaveGalleryDraft: () => ({ mutateAsync }),
+	usePublishGallery: () => ({
+		mutateAsync: publishMutateAsync,
+		isPending: false,
+		data: publishResult.data,
+	}),
+	useSaveGalleryDraft: () => ({ mutateAsync: saveMutateAsync }),
 }));
 
 vi.mock("@features/auth/hooks/usePermissions", () => ({
@@ -127,11 +153,13 @@ describe("GalleryDraftEditor", () => {
 		vi.useRealTimers();
 		blocker.mockReset();
 		mediaPickerProps.mockReset();
-		mutateAsync.mockReset();
+		publishMutateAsync.mockReset();
+		publishResult.data = undefined;
+		saveMutateAsync.mockReset();
 		permission.canManage = true;
 		refetch.mockReset();
 		refetch.mockResolvedValue({ data: detail, isSuccess: true });
-		mutateAsync.mockImplementation(async (input) => ({
+		saveMutateAsync.mockImplementation(async (input) => ({
 			...detail,
 			...input,
 			version: input.expected_version + 1,
@@ -148,8 +176,8 @@ describe("GalleryDraftEditor", () => {
 		fireEvent.click(screen.getByRole("button", { name: "将第 3 张图片前移" }));
 		fireEvent.click(screen.getByRole("button", { name: "保存工作稿" }));
 
-		await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-		expect(mutateAsync).toHaveBeenCalledWith({
+		await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+		expect(saveMutateAsync).toHaveBeenCalledWith({
 			expected_version: 4,
 			title: "新标题",
 			summary: "原始摘要",
@@ -175,8 +203,8 @@ describe("GalleryDraftEditor", () => {
 		});
 		fireEvent.click(screen.getByRole("button", { name: "保存工作稿" }));
 
-		await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-		expect(mutateAsync).toHaveBeenCalledWith(
+		await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+		expect(saveMutateAsync).toHaveBeenCalledWith(
 			expect.objectContaining({
 				items: [
 					{ file_id: "a", caption: "", alt_text_override: "" },
@@ -200,7 +228,7 @@ describe("GalleryDraftEditor", () => {
 			await Promise.resolve();
 		});
 
-		expect(mutateAsync).toHaveBeenCalledWith(
+		expect(saveMutateAsync).toHaveBeenCalledWith(
 			expect.objectContaining({
 				expected_version: 4,
 				summary: "自动保存摘要",
@@ -211,7 +239,7 @@ describe("GalleryDraftEditor", () => {
 	it("保存进行中继续编辑会用新版本接力保存", async () => {
 		vi.useFakeTimers();
 		let resolveFirst: (value: typeof detail) => void = () => undefined;
-		mutateAsync.mockImplementationOnce(
+		saveMutateAsync.mockImplementationOnce(
 			() =>
 				new Promise<typeof detail>((resolve) => {
 					resolveFirst = resolve;
@@ -231,7 +259,7 @@ describe("GalleryDraftEditor", () => {
 			await Promise.resolve();
 		});
 
-		expect(mutateAsync).toHaveBeenNthCalledWith(
+		expect(saveMutateAsync).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
 				expected_version: 5,
@@ -242,7 +270,7 @@ describe("GalleryDraftEditor", () => {
 	});
 
 	it("409 时停止覆盖并显示重新载入入口", async () => {
-		mutateAsync.mockRejectedValueOnce(
+		saveMutateAsync.mockRejectedValueOnce(
 			new ApiError({ error: "CONFLICT", message: "version conflict", status: 409 }),
 		);
 		render(<GalleryDraftEditor id="gallery-1" />);
@@ -256,7 +284,7 @@ describe("GalleryDraftEditor", () => {
 	});
 
 	it("409 重载失败时保留本地修改与冲突状态", async () => {
-		mutateAsync.mockRejectedValueOnce(
+		saveMutateAsync.mockRejectedValueOnce(
 			new ApiError({ error: "CONFLICT", message: "version conflict", status: 409 }),
 		);
 		refetch.mockResolvedValueOnce({ data: detail, isSuccess: false });
@@ -293,6 +321,57 @@ describe("GalleryDraftEditor", () => {
 		expect(
 			(screen.getByRole("button", { name: "保存工作稿" }) as HTMLButtonElement).disabled,
 		).toBe(true);
+		expect(
+			(screen.getByRole("button", { name: "发布图集" }) as HTMLButtonElement).disabled,
+		).toBe(true);
 		expect(screen.queryByRole("button", { name: "上传测试图片" })).toBeNull();
+	});
+
+	it("用当前已保存版本发布并提供公开详情入口", async () => {
+		publishMutateAsync.mockImplementationOnce(async () => {
+			const published = {
+				...detail,
+				status: "published" as const,
+				slug: "summer-light",
+				published_at: "2026-08-31T00:00:00Z",
+				version: 5,
+			};
+			publishResult.data = published;
+			return published;
+		});
+		const view = render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.click(screen.getByRole("button", { name: "发布图集" }));
+
+		await waitFor(() =>
+			expect(publishMutateAsync).toHaveBeenCalledWith({ expected_version: 4 }),
+		);
+		view.rerender(<GalleryDraftEditor id="gallery-1" />);
+		expect(screen.getByRole("link", { name: "查看公开页面" }).getAttribute("href")).toBe(
+			"/galleries/summer-light",
+		);
+	});
+
+	it.each([
+		{
+			status: 400,
+			apiMessage: "素材 file-pdf 的 MIME 类型不是图片",
+			message: "素材 file-pdf 的 MIME 类型不是图片",
+		},
+		{
+			status: 409,
+			apiMessage: "version conflict",
+			message: "工作稿已在其他窗口更新，请重新载入后再发布。",
+		},
+	])("发布 $status 时显示可操作反馈", async ({ status, apiMessage, message }) => {
+		publishMutateAsync.mockRejectedValueOnce(
+			new ApiError({ error: "PUBLISH_FAILED", message: apiMessage, status }),
+		);
+		render(<GalleryDraftEditor id="gallery-1" />);
+		fireEvent.click(screen.getByRole("button", { name: "发布图集" }));
+
+		expect(await screen.findByText(message)).toBeTruthy();
+		if (status === 409) {
+			expect(screen.getByRole("button", { name: "重新载入" })).toBeTruthy();
+		}
 	});
 });
