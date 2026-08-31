@@ -19,11 +19,24 @@ import (
 )
 
 type stubGalleryService struct {
-	saveInput appgallery.SaveInput
-	saveDTO   appgallery.GalleryDetailDTO
-	saveErr   error
-	getErr    error
-	saveCalls int
+	saveInput       appgallery.SaveInput
+	saveDTO         appgallery.GalleryDetailDTO
+	saveErr         error
+	getErr          error
+	publishInput    appgallery.PublishInput
+	publishDTO      appgallery.GalleryDetailDTO
+	publishErr      error
+	browseCursor    string
+	browseLimit     int
+	browseDTOs      []appgallery.PublicGalleryDTO
+	browseNext      string
+	browseErr       error
+	getPublishedDTO appgallery.PublicGalleryDTO
+	getPublishedErr error
+	saveCalls       int
+	publishCalls    int
+	browseCalls     int
+	getPublicCalls  int
 }
 
 func (s *stubGalleryService) CreateDraft(context.Context, string) (appgallery.GalleryDetailDTO, error) {
@@ -39,6 +52,21 @@ func (s *stubGalleryService) Save(_ context.Context, input appgallery.SaveInput)
 	s.saveCalls++
 	s.saveInput = input
 	return s.saveDTO, s.saveErr
+}
+func (s *stubGalleryService) Publish(_ context.Context, input appgallery.PublishInput) (appgallery.GalleryDetailDTO, error) {
+	s.publishCalls++
+	s.publishInput = input
+	return s.publishDTO, s.publishErr
+}
+func (s *stubGalleryService) BrowsePublished(_ context.Context, cursor string, limit int) ([]appgallery.PublicGalleryDTO, string, error) {
+	s.browseCalls++
+	s.browseCursor = cursor
+	s.browseLimit = limit
+	return s.browseDTOs, s.browseNext, s.browseErr
+}
+func (s *stubGalleryService) GetPublished(_ context.Context, _ string) (appgallery.PublicGalleryDTO, error) {
+	s.getPublicCalls++
+	return s.getPublishedDTO, s.getPublishedErr
 }
 
 type permissionChecker struct{ allow map[string]bool }
@@ -204,4 +232,166 @@ func TestAdminSaveRouteRejectsMissingSessionOrPermission(t *testing.T) {
 			assert.Zero(t, stub.saveCalls)
 		})
 	}
+}
+
+func TestPublishAcceptsExpectedVersionAndReturnsPublishedDetail(t *testing.T) {
+	userID, galleryID := shared.NewID().String(), shared.NewID().String()
+	slug, publishedAt := "summer-light", "2026-08-31T06:30:00Z"
+	stub := &stubGalleryService{publishDTO: appgallery.GalleryDetailDTO{
+		GallerySummaryDTO: appgallery.GallerySummaryDTO{
+			ID: galleryID, Slug: &slug, PublishedAt: &publishedAt,
+			Version: 2, Status: "published",
+		},
+		Items: []appgallery.GalleryItemDTO{},
+	}}
+	handler := &Handler{service: stub}
+	req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/admin/galleries/"+galleryID+"/publish", bytes.NewReader([]byte(`{"expected_version":1}`))), userID)
+	req.SetPathValue("id", galleryID)
+	recorder := httptest.NewRecorder()
+
+	handler.Publish(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, appgallery.PublishInput{UserID: userID, GalleryID: galleryID, ExpectedVersion: 1}, stub.publishInput)
+	assert.Contains(t, recorder.Body.String(), `"slug":"summer-light"`)
+	assert.Contains(t, recorder.Body.String(), `"published_at":"2026-08-31T06:30:00Z"`)
+	assert.Contains(t, recorder.Body.String(), `"status":"published"`)
+}
+
+func TestPublishRejectsMissingOrInvalidExpectedVersion(t *testing.T) {
+	for _, body := range []string{`{}`, `{"expected_version":0}`} {
+		stub := &stubGalleryService{}
+		handler := &Handler{service: stub}
+		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/admin/galleries/id/publish", bytes.NewReader([]byte(body))), shared.NewID().String())
+		req.SetPathValue("id", shared.NewID().String())
+		recorder := httptest.NewRecorder()
+
+		handler.Publish(recorder, req)
+
+		assert.Equal(t, http.StatusBadRequest, recorder.Code)
+		assert.Zero(t, stub.publishCalls)
+	}
+}
+
+func TestPublishMapsApplicationErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "validation", err: shared.BadRequest("标题不能为空"), want: http.StatusBadRequest},
+		{name: "not owner", err: domaingallery.ErrNotOwner, want: http.StatusForbidden},
+		{name: "missing", err: domaingallery.ErrNotFound, want: http.StatusNotFound},
+		{name: "stale version", err: shared.Conflict("图集工作稿已更新"), want: http.StatusConflict},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := &Handler{service: &stubGalleryService{publishErr: tt.err}}
+			req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/admin/galleries/id/publish", bytes.NewReader([]byte(`{"expected_version":1}`))), shared.NewID().String())
+			req.SetPathValue("id", shared.NewID().String())
+			recorder := httptest.NewRecorder()
+
+			handler.Publish(recorder, req)
+
+			assert.Equal(t, tt.want, recorder.Code)
+		})
+	}
+}
+
+func TestAdminPublishRouteRejectsMissingSessionOrPermission(t *testing.T) {
+	userID := shared.NewID().String()
+	tests := []struct {
+		name          string
+		authenticated bool
+		permissions   map[string]bool
+		want          int
+	}{
+		{name: "no session", authenticated: false, permissions: map[string]bool{}, want: http.StatusUnauthorized},
+		{name: "no gallery permission", authenticated: true, permissions: map[string]bool{"admin:access": true}, want: http.StatusForbidden},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stub := &stubGalleryService{}
+			handler := &Handler{service: stub}
+			checker := permissionChecker{allow: tt.permissions}
+			chain := fakeSessionAuth(tt.authenticated, userID)(
+				middleware.AdminRequired(checker)(
+					middleware.RequirePermission(checker, permission.GalleryManage.String())(http.HandlerFunc(handler.Publish)),
+				),
+			)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/galleries/id/publish", bytes.NewReader([]byte(`{"expected_version":1}`)))
+			req.SetPathValue("id", shared.NewID().String())
+			recorder := httptest.NewRecorder()
+
+			chain.ServeHTTP(recorder, req)
+
+			assert.Equal(t, tt.want, recorder.Code)
+			assert.Zero(t, stub.publishCalls)
+		})
+	}
+}
+
+func TestBrowsePublishedIsAnonymousAndUsesCursorPagination(t *testing.T) {
+	stub := &stubGalleryService{
+		browseDTOs: []appgallery.PublicGalleryDTO{{
+			ID: "gallery-id", Slug: "summer-light", Title: "夏日光影", Summary: "摘要",
+			PublishedAt: "2026-08-31T06:30:00Z",
+			Items: []appgallery.PublicGalleryItemDTO{{
+				FileID: "file-id", Position: 0, Thumbnail: "/thumb.webp", URL: "/image.webp",
+				Width: 1200, Height: 800, AltText: "树影", Caption: "午后",
+			}},
+		}},
+		browseNext: "next-token",
+	}
+	handler := &Handler{service: stub}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/galleries?cursor=cursor-token&limit=8", nil)
+	recorder := httptest.NewRecorder()
+
+	handler.BrowsePublished(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, "cursor-token", stub.browseCursor)
+	assert.Equal(t, 8, stub.browseLimit)
+	assert.Contains(t, recorder.Body.String(), `"file_id":"file-id"`)
+	assert.Contains(t, recorder.Body.String(), `"published_at":"2026-08-31T06:30:00Z"`)
+	assert.Contains(t, recorder.Body.String(), `"next_cursor":"next-token"`)
+}
+
+func TestBrowsePublishedClampsLimitToFifty(t *testing.T) {
+	stub := &stubGalleryService{browseDTOs: []appgallery.PublicGalleryDTO{}}
+	handler := &Handler{service: stub}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/galleries?limit=100", nil)
+	recorder := httptest.NewRecorder()
+
+	handler.BrowsePublished(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, 50, stub.browseLimit)
+	assert.Contains(t, recorder.Body.String(), `"limit":50`)
+}
+
+func TestGetPublishedIsAnonymousAndMapsMissingTo404(t *testing.T) {
+	t.Run("published detail", func(t *testing.T) {
+		stub := &stubGalleryService{getPublishedDTO: appgallery.PublicGalleryDTO{ID: "gallery-id", Slug: "summer-light", Items: []appgallery.PublicGalleryItemDTO{}}}
+		handler := &Handler{service: stub}
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/galleries/summer-light", nil)
+		req.SetPathValue("slug", "summer-light")
+		recorder := httptest.NewRecorder()
+
+		handler.GetPublished(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Code)
+		assert.Contains(t, recorder.Body.String(), `"slug":"summer-light"`)
+	})
+
+	t.Run("missing published edition", func(t *testing.T) {
+		handler := &Handler{service: &stubGalleryService{getPublishedErr: domaingallery.ErrNotFound}}
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/galleries/draft-only", nil)
+		req.SetPathValue("slug", "draft-only")
+		recorder := httptest.NewRecorder()
+
+		handler.GetPublished(recorder, req)
+
+		assert.Equal(t, http.StatusNotFound, recorder.Code)
+	})
 }

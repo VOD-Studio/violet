@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -105,6 +106,15 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 			return domaingallery.ErrNotOwner
 		}
 		oldIDs := fileIDs(gallery.WorkingRevision().Items())
+		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
+			return err
+		}
+		copyOnWrite := gallery.WorkingRevisionIsPublished()
+		if copyOnWrite {
+			if err := gallery.CloneWorkingRevision(shared.NewID()); err != nil {
+				return err
+			}
+		}
 		if err := gallery.ReplaceWorkingDocument(in.ExpectedVersion, in.Title, in.Summary, document); err != nil {
 			return err
 		}
@@ -116,6 +126,9 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 			return err
 		}
 		added, removed := diffIDs(oldIDs, ids)
+		if copyOnWrite {
+			added, removed = ids, nil
+		}
 		for _, id := range added {
 			if err := tx.Assets().UpdateRefCount(ctx, id, 1); err != nil {
 				return err
@@ -136,6 +149,114 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 		return GalleryDetailDTO{}, err
 	}
 	return toDetailDTO(saved, savedAssets)
+}
+
+// Publish 首次把当前工作稿设为公开版本。
+func (s *Service) Publish(ctx context.Context, in PublishInput) (GalleryDetailDTO, error) {
+	authorID, galleryID, err := parseActorAndGallery(in.UserID, in.GalleryID)
+	if err != nil {
+		return GalleryDetailDTO{}, err
+	}
+	var published *domaingallery.Gallery
+	var assets []Asset
+	err = s.uow.Do(ctx, func(tx Transaction) error {
+		gallery, err := tx.Galleries().FindByIDForUpdate(ctx, galleryID)
+		if err != nil {
+			return err
+		}
+		if !gallery.AuthorID().Equal(authorID) {
+			return domaingallery.ErrNotOwner
+		}
+		ids := fileIDs(gallery.WorkingRevision().Items())
+		slug := "gallery-" + gallery.ID().String()
+		if err := gallery.Publish(in.ExpectedVersion, slug, time.Now().UTC()); err != nil {
+			return err
+		}
+		assets, err = tx.Assets().FindByIDsForUpdate(ctx, sortedIDUnion(ids))
+		if err != nil {
+			return err
+		}
+		if err := validateAssets(authorID, ids, assets); err != nil {
+			return err
+		}
+		if err := tx.Galleries().SavePublished(ctx, gallery, in.ExpectedVersion); err != nil {
+			return err
+		}
+		published = gallery
+		return nil
+	})
+	if err != nil {
+		return GalleryDetailDTO{}, err
+	}
+	if err := s.bus.Publish(ctx, published.PullEvents()); err != nil {
+		log.Error().Err(err).Str("gallery_id", published.ID().String()).Msg("发布图集公开事件失败")
+	}
+	return toDetailDTO(published, assets)
+}
+
+// BrowsePublished 按稳定复合游标读取公开图集。
+func (s *Service) BrowsePublished(ctx context.Context, encodedCursor string, limit int) ([]PublicGalleryDTO, string, error) {
+	cursor, err := decodePublishedCursor(encodedCursor)
+	if err != nil {
+		return nil, "", err
+	}
+	limit = normalizePublicLimit(limit)
+	rows, err := s.repo.FindPublishedPage(ctx, cursor, limit+1)
+	if err != nil {
+		return nil, "", err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	ids := make([]shared.ID, 0)
+	for _, row := range rows {
+		ids = append(ids, fileIDs(row.Revision.Items())...)
+	}
+	assets, err := s.assets.FindByIDs(ctx, sortedIDUnion(ids))
+	if err != nil {
+		return nil, "", err
+	}
+	items := make([]PublicGalleryDTO, 0, len(rows))
+	for _, row := range rows {
+		dto, err := toPublicDTO(row, assets)
+		if err != nil {
+			return nil, "", err
+		}
+		items = append(items, dto)
+	}
+	next := ""
+	if hasMore && len(rows) > 0 {
+		next = encodePublishedCursor(domaingallery.PublishedCursor{PublishedAt: rows[len(rows)-1].PublishedAt, ID: rows[len(rows)-1].ID})
+	}
+	return items, next, nil
+}
+
+// GetPublished 只读取 slug 当前指向的公开快照。
+func (s *Service) GetPublished(ctx context.Context, slug string) (PublicGalleryDTO, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return PublicGalleryDTO{}, domaingallery.ErrNotFound
+	}
+	gallery, err := s.repo.FindPublishedBySlug(ctx, slug)
+	if err != nil {
+		return PublicGalleryDTO{}, err
+	}
+	assets, err := s.assets.FindByIDs(ctx, fileIDs(gallery.Revision.Items()))
+	if err != nil {
+		return PublicGalleryDTO{}, err
+	}
+	return toPublicDTO(gallery, assets)
+}
+
+func normalizePublicLimit(limit int) int {
+	if limit < 1 {
+		return 20
+	}
+	if limit > 50 {
+		return 50
+	}
+	return limit
 }
 
 func parseActorAndGallery(userID, galleryID string) (shared.ID, shared.ID, error) {

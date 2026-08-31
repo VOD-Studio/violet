@@ -132,7 +132,7 @@ api/
 | **stats** | stats | stats | 仪表盘统计聚合 |
 | **useradmin** | useradmin | useradmin | 用户管理（CRUD/角色/状态/批量操作） |
 | **releases** | releases | releases | 版本发布（release-please 集成） |
-| **gallery** | gallery | gallery | 图集视觉作品工作稿：空稿创建、完整文档保存与素材引用保护 |
+| **gallery** | gallery | gallery | 图集视觉作品：工作稿保存、公开版本发布、浏览流与稳定地址读取 |
 
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
 

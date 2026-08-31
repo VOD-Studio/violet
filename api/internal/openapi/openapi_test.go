@@ -116,6 +116,53 @@ func TestCustomEmojiPaths(t *testing.T) {
 	require.True(t, hasParam(spec.Paths.Find("/custom-emojis").Post.Parameters, "X-CSRF-Token"))
 }
 
+func TestGalleryPublishingAndPublicPaths(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+
+	list := spec.Paths.Find("/galleries")
+	require.NotNil(t, list)
+	require.NotNil(t, list.Get)
+	require.Empty(t, list.Get.Security)
+	require.True(t, hasParam(list.Get.Parameters, "cursor"))
+	require.True(t, hasParam(list.Get.Parameters, "limit"))
+
+	detail := spec.Paths.Find("/galleries/{slug}")
+	require.NotNil(t, detail)
+	require.NotNil(t, detail.Get)
+	require.Empty(t, detail.Get.Security)
+	require.True(t, hasParam(detail.Get.Parameters, "slug"))
+
+	publish := spec.Paths.Find("/admin/galleries/{id}/publish")
+	require.NotNil(t, publish)
+	require.NotNil(t, publish.Post)
+	require.NotEmpty(t, publish.Post.Security)
+	require.True(t, hasParam(publish.Post.Parameters, "X-CSRF-Token"))
+	require.Contains(t, publish.Post.Responses.Map(), "400")
+	require.Contains(t, publish.Post.Responses.Map(), "401")
+	require.Contains(t, publish.Post.Responses.Map(), "403")
+	require.Contains(t, publish.Post.Responses.Map(), "404")
+	require.Contains(t, publish.Post.Responses.Map(), "409")
+
+	for _, schema := range []string{"GalleryPublishRequest", "PublicGalleryDTO", "PublicGalleryItemDTO"} {
+		require.Contains(t, spec.Components.Schemas, schema)
+	}
+	request := spec.Components.Schemas["GalleryPublishRequest"].Value
+	require.Equal(t, []string{"expected_version"}, request.Required)
+	publicFields := spec.Components.Schemas["PublicGalleryDTO"].Value.Properties
+	for _, field := range []string{"id", "slug", "title", "summary", "published_at", "items"} {
+		require.Contains(t, publicFields, field)
+	}
+	itemFields := spec.Components.Schemas["PublicGalleryItemDTO"].Value.Properties
+	for _, field := range []string{"file_id", "position", "thumbnail", "url", "width", "height", "alt_text", "caption"} {
+		require.Contains(t, itemFields, field)
+	}
+	adminFields := spec.Components.Schemas["GallerySummaryDTO"].Value.Properties
+	require.Contains(t, adminFields, "slug")
+	require.Contains(t, adminFields, "published_at")
+	require.ElementsMatch(t, []any{"draft", "published"}, adminFields["status"].Value.Enum)
+}
+
 // hasParam 检查参数列表是否包含指定名称
 func hasParam(params openapi3.Parameters, name string) bool {
 	for _, p := range params {

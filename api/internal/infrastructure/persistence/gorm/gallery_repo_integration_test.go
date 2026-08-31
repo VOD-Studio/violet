@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,7 @@ import (
 	appgallery "blog-api/internal/application/gallery"
 	appshared "blog-api/internal/application/shared"
 	domainshared "blog-api/internal/domain/shared"
+	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
 func preseedGalleryFile(t *testing.T, db *gorm.DB, ownerID domainshared.ID, name string) domainshared.ID {
@@ -105,4 +107,164 @@ func TestGallerySaveIntegrationCommitsAndRollsBackWithReferences(t *testing.T) {
 	).Scan(&persistedFileID).Error)
 	assert.Equal(t, int64(2), version)
 	assert.Equal(t, oldFileID.String(), persistedFileID)
+}
+
+func TestGalleryPublishAndCopyOnWriteKeepPublicSnapshotStable(t *testing.T) {
+	db := setupIntegrationDB(t)
+	ownerID := preseedAuthor(t, db)
+	firstID := preseedGalleryFile(t, db, ownerID, "first.jpg")
+	secondID := preseedGalleryFile(t, db, ownerID, "second.jpg")
+	thirdID := preseedGalleryFile(t, db, ownerID, "third.jpg")
+	t.Cleanup(func() {
+		_ = db.Exec("DELETE FROM galleries WHERE author_id = ?", ownerID.UUID()).Error
+		_ = db.Exec("DELETE FROM files WHERE id IN ?", []any{firstID.UUID(), secondID.UUID(), thirdID.UUID()}).Error
+		_ = db.Exec("DELETE FROM users WHERE id = ?", ownerID.UUID()).Error
+	})
+
+	repo := NewGalleryRepository(db)
+	assets := NewGalleryAssetStore(db)
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	draft, err := service.CreateDraft(context.Background(), ownerID.String())
+	require.NoError(t, err)
+	saved, err := service.Save(context.Background(), appgallery.SaveInput{
+		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: draft.Version,
+		Title: "公开标题", Summary: "公开摘要",
+		Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: secondID.String(), Caption: "第二张"}},
+	})
+	require.NoError(t, err)
+
+	published, err := service.Publish(context.Background(), appgallery.PublishInput{
+		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: saved.Version,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), published.Version)
+	assert.Equal(t, "published", published.Status)
+	require.NotNil(t, published.Slug)
+	require.NotNil(t, published.PublishedAt)
+	assert.Equal(t, 1, galleryRefCount(t, db, firstID))
+	assert.Equal(t, 1, galleryRefCount(t, db, secondID))
+
+	maintained, err := service.Save(context.Background(), appgallery.SaveInput{
+		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: published.Version,
+		Title: "维护中标题", Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: thirdID.String()}},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(4), maintained.Version)
+	assert.Equal(t, 2, galleryRefCount(t, db, firstID))
+	assert.Equal(t, 1, galleryRefCount(t, db, secondID))
+	assert.Equal(t, 1, galleryRefCount(t, db, thirdID))
+
+	public, err := service.GetPublished(context.Background(), *published.Slug)
+	require.NoError(t, err)
+	assert.Equal(t, "公开标题", public.Title)
+	require.Len(t, public.Items, 2)
+	assert.Equal(t, firstID.String(), public.Items[0].FileID)
+	assert.Equal(t, secondID.String(), public.Items[1].FileID)
+	assert.Equal(t, "第二张", public.Items[1].Caption)
+
+	var workingID, publishedID string
+	var revisionCount int64
+	require.NoError(t, db.Raw(
+		"SELECT working_revision_id::text, published_revision_id::text FROM galleries WHERE id = ?", draft.ID,
+	).Row().Scan(&workingID, &publishedID))
+	require.NoError(t, db.Model(&model.GalleryRevision{}).Where("gallery_id = ?", draft.ID).Count(&revisionCount).Error)
+	assert.NotEqual(t, workingID, publishedID)
+	assert.Equal(t, int64(2), revisionCount)
+}
+
+func TestGalleryPublishRollbackLeavesDraftAndReferencesUnchanged(t *testing.T) {
+	db := setupIntegrationDB(t)
+	ownerID := preseedAuthor(t, db)
+	firstID := preseedGalleryFile(t, db, ownerID, "rollback-first.jpg")
+	secondID := preseedGalleryFile(t, db, ownerID, "rollback-second.jpg")
+	t.Cleanup(func() {
+		_ = db.Exec("DROP TRIGGER IF EXISTS gallery_test_reject_publish ON galleries").Error
+		_ = db.Exec("DROP FUNCTION IF EXISTS gallery_test_reject_publish()").Error
+		_ = db.Exec("DELETE FROM galleries WHERE author_id = ?", ownerID.UUID()).Error
+		_ = db.Exec("DELETE FROM files WHERE id IN ?", []any{firstID.UUID(), secondID.UUID()}).Error
+		_ = db.Exec("DELETE FROM users WHERE id = ?", ownerID.UUID()).Error
+	})
+	repo := NewGalleryRepository(db)
+	assets := NewGalleryAssetStore(db)
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	draft, err := service.CreateDraft(context.Background(), ownerID.String())
+	require.NoError(t, err)
+	saved, err := service.Save(context.Background(), appgallery.SaveInput{
+		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: draft.Version,
+		Title: "待发布作品", Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: secondID.String()}},
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.Exec(`
+		CREATE FUNCTION gallery_test_reject_publish() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN
+			RAISE EXCEPTION 'forced gallery publish failure';
+		END;
+		$$`).Error)
+	require.NoError(t, db.Exec(`
+		CREATE TRIGGER gallery_test_reject_publish
+		BEFORE UPDATE ON galleries
+		FOR EACH ROW EXECUTE FUNCTION gallery_test_reject_publish()`).Error)
+
+	_, err = service.Publish(context.Background(), appgallery.PublishInput{
+		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: saved.Version,
+	})
+	require.Error(t, err)
+	assert.True(t, domainshared.IsDomainError(err, domainshared.CodeInternal))
+	assert.Contains(t, err.Error(), "forced gallery publish failure")
+
+	var version int64
+	var slug, publishedRevisionID, publishedAt *string
+	require.NoError(t, db.Raw(`
+		SELECT version, slug, published_revision_id::text, published_at::text
+		FROM galleries WHERE id = ?`, draft.ID,
+	).Row().Scan(&version, &slug, &publishedRevisionID, &publishedAt))
+	assert.Equal(t, int64(2), version)
+	assert.Nil(t, slug)
+	assert.Nil(t, publishedRevisionID)
+	assert.Nil(t, publishedAt)
+	assert.Equal(t, 1, galleryRefCount(t, db, firstID))
+	assert.Equal(t, 1, galleryRefCount(t, db, secondID))
+}
+
+func TestGalleryPublishedCursorUsesTimestampAndIDWithoutDuplicates(t *testing.T) {
+	db := setupIntegrationDB(t)
+	ownerID := preseedAuthor(t, db)
+	t.Cleanup(func() {
+		_ = db.Exec("DELETE FROM galleries WHERE author_id = ?", ownerID.UUID()).Error
+		_ = db.Exec("DELETE FROM files WHERE owner_id = ?", ownerID.UUID()).Error
+		_ = db.Exec("DELETE FROM users WHERE id = ?", ownerID.UUID()).Error
+	})
+	repo := NewGalleryRepository(db)
+	assets := NewGalleryAssetStore(db)
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{})
+	publishedAt := time.Date(2026, time.August, 31, 12, 0, 0, 0, time.UTC)
+	for i := 0; i < 3; i++ {
+		first := preseedGalleryFile(t, db, ownerID, fmt.Sprintf("cursor-%d-a.jpg", i))
+		second := preseedGalleryFile(t, db, ownerID, fmt.Sprintf("cursor-%d-b.jpg", i))
+		draft, err := service.CreateDraft(context.Background(), ownerID.String())
+		require.NoError(t, err)
+		saved, err := service.Save(context.Background(), appgallery.SaveInput{
+			UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: draft.Version,
+			Title: fmt.Sprintf("作品 %d", i), Items: []appgallery.SaveItemInput{{FileID: first.String()}, {FileID: second.String()}},
+		})
+		require.NoError(t, err)
+		_, err = service.Publish(context.Background(), appgallery.PublishInput{UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: saved.Version})
+		require.NoError(t, err)
+		require.NoError(t, db.Exec("UPDATE galleries SET published_at = ? WHERE id = ?", publishedAt, draft.ID).Error)
+	}
+
+	firstPage, cursor, err := service.BrowsePublished(context.Background(), "", 2)
+	require.NoError(t, err)
+	require.Len(t, firstPage, 2)
+	assert.NotEmpty(t, cursor)
+	secondPage, next, err := service.BrowsePublished(context.Background(), cursor, 2)
+	require.NoError(t, err)
+	require.Len(t, secondPage, 1)
+	assert.Empty(t, next)
+	seen := map[string]struct{}{}
+	for _, gallery := range append(firstPage, secondPage...) {
+		_, duplicate := seen[gallery.ID]
+		assert.False(t, duplicate)
+		seen[gallery.ID] = struct{}{}
+	}
 }

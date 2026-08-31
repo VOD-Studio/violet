@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"blog-api/internal/domain/permission"
+	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
 	"blog-api/internal/middleware"
 )
 
@@ -307,8 +308,13 @@ func NewAdminRouter(d *Deps) chi.Router {
 		})
 	})
 
-	// 图集工作稿：读 gallery:view；创建与完整保存 gallery:manage。
-	galleryH := d.Gallery
+	// 图集工作稿：读 gallery:view；创建、保存与发布 gallery:manage。
+	registerAdminGalleryRoutes(r, d.Gallery, perm)
+
+	return r
+}
+
+func registerAdminGalleryRoutes(r chi.Router, galleryH *galleryhttp.Handler, perm middleware.PermissionChecker) {
 	r.Route("/galleries", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(perm, permission.GalleryView.String()))
@@ -319,8 +325,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 			r.Use(middleware.RequirePermission(perm, permission.GalleryManage.String()))
 			r.Post("/", galleryH.CreateDraft)
 			r.Put("/{id}", galleryH.Save)
+			r.Post("/{id}/publish", galleryH.Publish)
 		})
 	})
-
-	return r
 }

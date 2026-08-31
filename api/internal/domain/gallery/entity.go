@@ -22,8 +22,12 @@ const (
 	MaxAltOverrideRunes = 300
 )
 
-// StatusDraft 表示图集尚无公开版本。
-const StatusDraft = "draft"
+const (
+	// StatusDraft 表示图集尚无公开版本。
+	StatusDraft = "draft"
+	// StatusPublished 表示图集已有公开版本。
+	StatusPublished = "published"
+)
 
 // GalleryCreated 图集工作稿已创建事件。
 type GalleryCreated struct {
@@ -32,8 +36,19 @@ type GalleryCreated struct {
 	AuthorID shared.ID
 }
 
+// GalleryPublished 携带首次公开后生成的稳定地址。
+type GalleryPublished struct {
+	shared.BaseEvent
+	// Slug 图集稳定公开标识。
+	Slug string
+}
+
 func NewGalleryCreated(id, authorID shared.ID) GalleryCreated {
 	return GalleryCreated{BaseEvent: shared.NewBaseEvent("gallery.created", id), AuthorID: authorID}
+}
+
+func NewGalleryPublished(id shared.ID, slug string) GalleryPublished {
+	return GalleryPublished{BaseEvent: shared.NewBaseEvent("gallery.published", id), Slug: slug}
 }
 
 // RevisionItem 图集工作稿中的有序图片项。
@@ -82,7 +97,7 @@ type Gallery struct {
 	publishedRevisionID *shared.ID
 	// version 工作稿乐观锁版本，从 1 开始，每次完整保存加 1。
 	version int64
-	// publishedAt 当前公开版本发布时间；未发布为 nil。
+	// publishedAt 首次发布时间；未发布为 nil，后续维护不改变。
 	publishedAt *time.Time
 	// timestamps 图集创建与最近保存时间。
 	timestamps shared.Timestamps
@@ -194,6 +209,60 @@ func (g *Gallery) ReplaceWorkingDocument(expected int64, title, summary string, 
 	return nil
 }
 
+// CloneWorkingRevision 在工作稿仍指向公开快照时创建独立副本。
+func (g *Gallery) CloneWorkingRevision(id shared.ID) error {
+	if id.IsZero() {
+		return shared.BadRequest("新工作稿 ID 不能为空")
+	}
+	if !g.WorkingRevisionIsPublished() {
+		return nil
+	}
+	items := make([]*RevisionItem, 0, len(g.workingRevision.items))
+	for _, item := range g.workingRevision.items {
+		items = append(items, &RevisionItem{
+			fileID: item.fileID, position: item.position,
+			caption: item.caption, altTextOverride: item.altTextOverride,
+		})
+	}
+	now := time.Now()
+	g.workingRevision = &Revision{
+		id: id, galleryID: g.id, title: g.workingRevision.title, summary: g.workingRevision.summary,
+		items: items, createdAt: now, updatedAt: now,
+	}
+	return nil
+}
+
+// Publish 首次把完整工作稿设为公开快照。
+func (g *Gallery) Publish(expected int64, slug string, publishedAt time.Time) error {
+	if err := g.EnsureVersion(expected); err != nil {
+		return err
+	}
+	if g.publishedRevisionID != nil {
+		return ErrAlreadyPublished
+	}
+	if strings.TrimSpace(g.workingRevision.title) == "" {
+		return shared.BadRequest("发布图集前必须填写标题")
+	}
+	if len(g.workingRevision.items) < 2 {
+		return shared.BadRequest("发布图集至少需要 2 张图片")
+	}
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return shared.BadRequest("图集公开标识不能为空")
+	}
+	if publishedAt.IsZero() {
+		return shared.BadRequest("图集发布时间不能为空")
+	}
+	publishedID := g.workingRevision.id
+	g.slug = slug
+	g.publishedRevisionID = &publishedID
+	g.publishedAt = &publishedAt
+	g.version++
+	g.timestamps.UpdatedAt = publishedAt
+	g.RecordEvent(NewGalleryPublished(g.id, slug))
+	return nil
+}
+
 func (g *Gallery) ID() shared.ID                   { return g.id }
 func (g *Gallery) AuthorID() shared.ID             { return g.authorID }
 func (g *Gallery) Slug() string                    { return g.slug }
@@ -203,17 +272,25 @@ func (g *Gallery) Version() int64                  { return g.version }
 func (g *Gallery) PublishedAt() *time.Time         { return g.publishedAt }
 func (g *Gallery) CreatedAt() time.Time            { return g.timestamps.CreatedAt }
 func (g *Gallery) UpdatedAt() time.Time            { return g.timestamps.UpdatedAt }
-func (g *Gallery) Status() string                  { return StatusDraft }
-func (r *Revision) ID() shared.ID                  { return r.id }
-func (r *Revision) GalleryID() shared.ID           { return r.galleryID }
-func (r *Revision) Title() string                  { return r.title }
-func (r *Revision) Summary() string                { return r.summary }
-func (r *Revision) CreatedAt() time.Time           { return r.createdAt }
-func (r *Revision) UpdatedAt() time.Time           { return r.updatedAt }
-func (i *RevisionItem) FileID() shared.ID          { return i.fileID }
-func (i *RevisionItem) Position() int              { return i.position }
-func (i *RevisionItem) Caption() string            { return i.caption }
-func (i *RevisionItem) AltTextOverride() string    { return i.altTextOverride }
+func (g *Gallery) Status() string {
+	if g.publishedRevisionID != nil {
+		return StatusPublished
+	}
+	return StatusDraft
+}
+func (g *Gallery) WorkingRevisionIsPublished() bool {
+	return g.publishedRevisionID != nil && g.workingRevision.id.Equal(*g.publishedRevisionID)
+}
+func (r *Revision) ID() shared.ID               { return r.id }
+func (r *Revision) GalleryID() shared.ID        { return r.galleryID }
+func (r *Revision) Title() string               { return r.title }
+func (r *Revision) Summary() string             { return r.summary }
+func (r *Revision) CreatedAt() time.Time        { return r.createdAt }
+func (r *Revision) UpdatedAt() time.Time        { return r.updatedAt }
+func (i *RevisionItem) FileID() shared.ID       { return i.fileID }
+func (i *RevisionItem) Position() int           { return i.position }
+func (i *RevisionItem) Caption() string         { return i.caption }
+func (i *RevisionItem) AltTextOverride() string { return i.altTextOverride }
 
 // Items 返回工作稿项切片副本。
 func (r *Revision) Items() []*RevisionItem {

@@ -18,6 +18,9 @@ type galleryService interface {
 	ListForEditor(ctx context.Context, userID string, page, limit int) ([]appgallery.GallerySummaryDTO, int64, error)
 	GetForEditor(ctx context.Context, userID, galleryID string) (appgallery.GalleryDetailDTO, error)
 	Save(ctx context.Context, input appgallery.SaveInput) (appgallery.GalleryDetailDTO, error)
+	Publish(ctx context.Context, input appgallery.PublishInput) (appgallery.GalleryDetailDTO, error)
+	BrowsePublished(ctx context.Context, cursor string, limit int) ([]appgallery.PublicGalleryDTO, string, error)
+	GetPublished(ctx context.Context, slug string) (appgallery.PublicGalleryDTO, error)
 }
 
 type Handler struct {
@@ -97,6 +100,54 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		UserID: ifmw.GetUserIDFromContext(r), GalleryID: r.PathValue("id"),
 		ExpectedVersion: *req.ExpectedVersion, Title: *req.Title, Summary: *req.Summary, Items: items,
 	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+type publishRequest struct {
+	ExpectedVersion *int64 `json:"expected_version"`
+}
+
+func (h *Handler) Publish(w http.ResponseWriter, r *http.Request) {
+	var req publishRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.ExpectedVersion == nil || *req.ExpectedVersion < 1 {
+		response.RespondError(w, r, shared.BadRequest("expected_version 必须大于 0"))
+		return
+	}
+	dto, err := h.service.Publish(r.Context(), appgallery.PublishInput{
+		UserID:          ifmw.GetUserIDFromContext(r),
+		GalleryID:       r.PathValue("id"),
+		ExpectedVersion: *req.ExpectedVersion,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+func (h *Handler) BrowsePublished(w http.ResponseWriter, r *http.Request) {
+	cursor, limit := response.ParseCursor(r)
+	if limit > 50 {
+		limit = 50
+	}
+	items, nextCursor, err := h.service.BrowsePublished(r.Context(), cursor, limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondCursor(w, items, limit, nextCursor != "", nextCursor)
+}
+
+func (h *Handler) GetPublished(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.service.GetPublished(r.Context(), r.PathValue("slug"))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

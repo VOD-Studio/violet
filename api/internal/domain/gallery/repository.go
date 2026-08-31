@@ -2,9 +2,30 @@ package gallery
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
+
+// PublishedCursor 是公开流稳定排序键。
+type PublishedCursor struct {
+	// PublishedAt 首次发布时间。
+	PublishedAt time.Time
+	// ID 同一发布时间下的唯一排序键。
+	ID shared.ID
+}
+
+// PublishedGallery 是只读公开快照，不暴露工作稿。
+type PublishedGallery struct {
+	// ID 图集唯一标识。
+	ID shared.ID
+	// Slug 稳定公开标识。
+	Slug string
+	// PublishedAt 首次发布时间。
+	PublishedAt time.Time
+	// Revision 当前公开快照。
+	Revision *Revision
+}
 
 var (
 	// ErrNotFound 图集不存在。
@@ -13,6 +34,8 @@ var (
 	ErrNotOwner = shared.Forbidden("只能访问自己创建的图集")
 	// ErrVersionConflict 工作稿已被其他编辑窗口更新。
 	ErrVersionConflict = shared.Conflict("图集工作稿已更新，请重新载入后再保存")
+	// ErrAlreadyPublished 表示首次发布端点不能替代公开版本。
+	ErrAlreadyPublished = shared.Conflict("图集已经发布，请使用更新发布")
 )
 
 // Repository 图集聚合持久化接口。
@@ -27,4 +50,10 @@ type Repository interface {
 	FindPageByAuthor(ctx context.Context, authorID shared.ID, q shared.PageQuery) (shared.PageResult[*Gallery], error)
 	// SaveWorking 保存完整 working revision，并以 expectedVersion 原子推进版本。
 	SaveWorking(ctx context.Context, gallery *Gallery, expectedVersion int64) error
+	// SavePublished 原子写入首次公开指针、slug 和递增后的版本。
+	SavePublished(ctx context.Context, gallery *Gallery, expectedVersion int64) error
+	// FindPublishedPage 按 published_at、id 倒序读取公开快照。
+	FindPublishedPage(ctx context.Context, cursor *PublishedCursor, limit int) ([]PublishedGallery, error)
+	// FindPublishedBySlug 只返回该 slug 的公开快照。
+	FindPublishedBySlug(ctx context.Context, slug string) (PublishedGallery, error)
 }
