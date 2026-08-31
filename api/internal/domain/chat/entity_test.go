@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"blog-api/internal/domain/chat"
@@ -251,4 +252,32 @@ func TestMessageEditNoopSkipsEditedMarker(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, text.Edit("内容", nil, now.Add(time.Hour)))
 	require.Nil(t, text.EditedAt())
+}
+
+func TestMemberReadStateCovers(t *testing.T) {
+	conversationID := shared.NewID()
+	senderID := shared.NewID()
+	base := time.Date(2026, 8, 31, 12, 0, 0, 0, time.UTC)
+	u1 := shared.IDFromUUID(uuid.UUID{0x01})
+	u2 := shared.IDFromUUID(uuid.UUID{0x02})
+	u3 := shared.IDFromUUID(uuid.UUID{0x03})
+	u4 := shared.IDFromUUID(uuid.UUID{0x04})
+	messageAt := func(id shared.ID, at time.Time) *chat.Message {
+		return chat.ReconstructMessage(id, conversationID, senderID, chat.MessageText, "内容", nil, nil, nil, "k-"+id.String(), nil, nil, nil, at, at)
+	}
+
+	older := messageAt(u1, base.Add(-time.Hour))
+	sameLow := messageAt(u1, base)
+	sameHigh := messageAt(u3, base)
+	newer := messageAt(u4, base.Add(time.Hour))
+
+	watermark := base
+	state := chat.MemberReadState{UserID: shared.NewID(), LastMessageID: &u2, LastReadAt: &watermark, ReadAt: &watermark}
+	require.True(t, state.Covers(older))
+	require.True(t, state.Covers(sameLow))
+	require.False(t, state.Covers(sameHigh))
+	require.False(t, state.Covers(newer))
+
+	empty := chat.MemberReadState{UserID: shared.NewID()}
+	require.False(t, empty.Covers(older))
 }

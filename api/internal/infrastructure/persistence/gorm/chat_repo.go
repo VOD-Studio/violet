@@ -429,6 +429,56 @@ WHERE m.sender_id <> ?
 	return count, err
 }
 
+// FindReadPosition 查找用户阅读位置；从未标记过时返回 (nil, nil)。
+func (r *ChatRepository) FindReadPosition(ctx context.Context, conversationID, userID domainshared.ID) (*domainchat.ReadPosition, error) {
+	var po model.ChatReadPosition
+	err := r.db.WithContext(ctx).
+		Where("conversation_id = ? AND user_id = ?", conversationID.UUID(), userID.UUID()).
+		First(&po).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return readPositionToDomain(po), nil
+}
+
+// ListMemberReadStates 列出会话当前有效成员的已读水位。
+//
+// 比较口径与 CountUnread 一致：水位时间取自水位消息的 created_at，
+// 同时刻消息按 ID 决胜（见 domainchat.MemberReadState.Covers）。
+func (r *ChatRepository) ListMemberReadStates(ctx context.Context, conversationID domainshared.ID) ([]domainchat.MemberReadState, error) {
+	var rows []struct {
+		UserID        uuid.UUID  `gorm:"column:user_id"`
+		LastMessageID *uuid.UUID `gorm:"column:last_message_id"`
+		LastReadAt    *time.Time `gorm:"column:last_read_at"`
+		ReadAt        *time.Time `gorm:"column:read_at"`
+	}
+	err := r.db.WithContext(ctx).Raw(`
+SELECT cm.user_id, rp.last_message_id, lm.created_at AS last_read_at, rp.read_at
+FROM chat_conversation_members cm
+LEFT JOIN chat_read_positions rp
+  ON rp.conversation_id = cm.conversation_id AND rp.user_id = cm.user_id
+LEFT JOIN chat_messages lm ON lm.id = rp.last_message_id
+WHERE cm.conversation_id = ?
+  AND cm.left_at IS NULL
+`, conversationID.UUID()).Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domainchat.MemberReadState, 0, len(rows))
+	for _, row := range rows {
+		var lastID *domainshared.ID
+		if row.LastMessageID != nil {
+			id := domainshared.IDFromUUID(*row.LastMessageID)
+			lastID = &id
+		}
+		out = append(out, domainchat.MemberReadState{UserID: domainshared.IDFromUUID(row.UserID), LastMessageID: lastID, LastReadAt: row.LastReadAt, ReadAt: row.ReadAt})
+	}
+	return out, nil
+}
+
 // FindEventsAfter 查找指定序号之后的用户事件。
 func (r *ChatRepository) FindEventsAfter(ctx context.Context, userID domainshared.ID, afterSequence int64, limit int) ([]domainchat.Event, error) {
 	var rows []model.ChatEvent
@@ -569,6 +619,15 @@ func readPositionToPO(p *domainchat.ReadPosition) *model.ChatReadPosition {
 		lastID = &u
 	}
 	return &model.ChatReadPosition{ConversationID: p.ConversationID().UUID(), UserID: p.UserID().UUID(), LastMessageID: lastID, ReadAt: p.ReadAt()}
+}
+
+func readPositionToDomain(po model.ChatReadPosition) *domainchat.ReadPosition {
+	var lastID *domainshared.ID
+	if po.LastMessageID != nil {
+		id := domainshared.IDFromUUID(*po.LastMessageID)
+		lastID = &id
+	}
+	return domainchat.ReconstructReadPosition(domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.UserID), lastID, po.ReadAt)
 }
 
 func eventToDomain(po model.ChatEvent) domainchat.Event {

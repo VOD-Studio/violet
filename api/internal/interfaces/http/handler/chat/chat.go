@@ -407,6 +407,31 @@ func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{"conversation_id": conversationID.String(), "unread_count": unread})
 }
 
+// MessageReaders 列出发送者本人消息的已读成员名单。
+func (h *Handler) MessageReaders(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	messageID, err := parsePathID(chi.URLParam(r, "messageId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	readers, err := h.svc.ListMessageReaders(r.Context(), userID, conversationID, messageID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, readers)
+}
+
 // SetMuted 更新当前用户的会话通知静音状态。
 func (h *Handler) SetMuted(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)

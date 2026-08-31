@@ -27,6 +27,9 @@ type customEmoteChatRepo struct {
 func (r *customEmoteChatRepo) FindByIDForMember(context.Context, domainshared.ID, domainshared.ID) (*domainchat.Conversation, error) {
 	return r.conversation, nil
 }
+func (r *customEmoteChatRepo) ListMemberReadStates(context.Context, domainshared.ID) ([]domainchat.MemberReadState, error) {
+	return nil, nil
+}
 
 func (r *customEmoteChatRepo) FindMessageByIdempotency(context.Context, domainshared.ID, domainshared.ID, string) (*domainchat.Message, error) {
 	return nil, domainchat.ErrMessageNotFound
