@@ -7,6 +7,8 @@ export type GalleryStatus = "draft" | "published" | "modified" | "unpublished";
 export interface GallerySummary {
 	id: string;
 	author_id: string;
+	/** 作者可读名（display_name 优先，缺省 username）；用户不存在时为空串。 */
+	author_name: string;
 	title: string;
 	summary: string;
 	status: GalleryStatus;
@@ -38,8 +40,11 @@ export interface GalleryDetail extends GallerySummary {
 	items: GalleryItem[];
 }
 
-/** 管理端列表分页参数。 */
-export interface GalleryListQuery extends PageQuery {}
+/** 管理端列表分页参数。author 精确匹配用户名，status 取图集状态。 */
+export interface GalleryListQuery extends PageQuery {
+	author?: string;
+	status?: GalleryStatus;
+}
 
 /** 公开图集中的单张图片。 */
 export interface PublishedGalleryItem {

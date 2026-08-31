@@ -1,18 +1,28 @@
-import type { GallerySummary } from "@entities/gallery/model/types";
+import type { GalleryStatus, GallerySummary } from "@entities/gallery/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	DataTable,
 	type DataTableColumn,
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
+import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreateGalleryDraft } from "@features/gallery-editor/api/mutations";
 import { useAdminGalleries } from "@features/gallery-editor/api/queries";
 import { GALLERY_STATUS_LABELS } from "@features/gallery-editor/model/status";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@shared/ui/base/select";
+import { SearchInput } from "@shared/ui/search-input";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Plus } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -23,17 +33,32 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
 	minute: "2-digit",
 });
 
-/** 当前作者的工作稿列表与创建入口。 */
+const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
+	{ value: "all", label: "全部状态" },
+	...Object.entries(GALLERY_STATUS_LABELS).map(([value, label]) => ({
+		value,
+		label,
+	})),
+];
+
+/** 图集管理列表与创建入口，支持按作者用户名与发布状态筛选。 */
 export function GalleryDraftListPage() {
 	const navigate = useNavigate();
 	const canManage = useHasPermission("gallery:manage");
+	const { data: me } = useMe();
+	const [author, setAuthor] = useState("");
+	const [status, setStatus] = useState("all");
 	const createDraft = useCreateGalleryDraft();
-	const { data, isLoading, error, refetch, pagination } = usePagedQuery(
+	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
 		useAdminGalleries,
-		{},
+		{
+			author: author || undefined,
+			status: status === "all" ? undefined : (status as GalleryStatus),
+		},
 		{ initialPageSize: 20 },
 	);
 
+	const resetPage = () => setPage(1);
 	const openDraft = (id: string) => {
 		void navigate({ to: "/admin/galleries/$id", params: { id } });
 	};
@@ -52,6 +77,17 @@ export function GalleryDraftListPage() {
 				>
 					{row.title || "未命名图集"}
 				</button>
+			),
+		},
+		{
+			key: "author",
+			header: "作者",
+			width: "120px",
+			ellipsis: true,
+			cell: (row) => (
+				<span className={row.author_id === me?.id ? "font-medium" : undefined}>
+					{row.author_name || "未知作者"}
+				</span>
 			),
 		},
 		{
@@ -138,6 +174,38 @@ export function GalleryDraftListPage() {
 					</Button>
 				) : null
 			}
+			sticky={
+				<div className="flex flex-wrap items-center gap-3 pt-1">
+					<div className="min-w-50 max-w-80 flex-1">
+						<SearchInput
+							defaultValue=""
+							placeholder="按作者用户名筛选..."
+							onSearch={(value) => {
+								setAuthor(value.trim());
+								resetPage();
+							}}
+						/>
+					</div>
+					<Select
+						value={status}
+						onValueChange={(value) => {
+							setStatus(value);
+							resetPage();
+						}}
+					>
+						<SelectTrigger className="h-9 w-36" aria-label="状态筛选">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{STATUS_FILTER_OPTIONS.map((option) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+			}
 		>
 			<DataTable<GallerySummary>
 				data={data?.data ?? []}
@@ -149,8 +217,8 @@ export function GalleryDraftListPage() {
 				onRetry={() => void refetch()}
 				storageKey="admin-galleries"
 				caption="图集工作稿列表"
-				emptyTitle="还没有图集工作稿"
-				emptyDescription="创建空工作稿后，再添加图片和文字。"
+				emptyTitle="没有匹配的图集工作稿"
+				emptyDescription="调整筛选条件，或创建新的空工作稿。"
 			/>
 		</PageShell>
 	);

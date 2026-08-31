@@ -1,12 +1,13 @@
 import type { GallerySummary } from "@entities/gallery/model/types";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rows: GallerySummary[] = [
 	{
 		id: "draft-1",
 		author_id: "author-1",
+		author_name: "我本人",
 		title: "未发布图集",
 		summary: "",
 		status: "draft",
@@ -20,6 +21,7 @@ const rows: GallerySummary[] = [
 	{
 		id: "published-1",
 		author_id: "author-1",
+		author_name: "我本人",
 		title: "公开图集",
 		summary: "",
 		status: "published",
@@ -32,7 +34,8 @@ const rows: GallerySummary[] = [
 	},
 	{
 		id: "modified-1",
-		author_id: "author-1",
+		author_id: "author-2",
+		author_name: "另一位作者",
 		title: "修改中的图集",
 		summary: "",
 		status: "modified",
@@ -46,6 +49,7 @@ const rows: GallerySummary[] = [
 	{
 		id: "unpublished-1",
 		author_id: "author-1",
+		author_name: "我本人",
 		title: "已撤回图集",
 		summary: "",
 		status: "unpublished",
@@ -76,29 +80,50 @@ vi.mock("@features/admin-shared/ui/data-table", () => ({
 			))}
 		</div>
 	),
-	usePagedQuery: () => ({
-		data: { data: rows },
-		isLoading: false,
-		error: null,
-		refetch: vi.fn(),
-		pagination: {},
-	}),
+	usePagedQuery: (
+		useList: (query: Record<string, unknown>) => unknown,
+		baseQuery: Record<string, unknown>,
+	) => {
+		// 复刻真实行为:把筛选合并进查询并交给列表 hook,供断言
+		useList({ ...baseQuery, page: 1, limit: 20 });
+		return {
+			data: { data: rows },
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+			pagination: {},
+			setPage: vi.fn(),
+		};
+	},
 }));
 
 vi.mock("@features/admin-layout/ui/PageShell", () => ({
-	PageShell: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+	PageShell: ({ children, sticky }: { children: ReactNode; sticky?: ReactNode }) => (
+		<div>
+			{sticky}
+			{children}
+		</div>
+	),
 }));
 
 vi.mock("@features/auth/hooks/usePermissions", () => ({
 	useHasPermission: () => true,
 }));
 
+vi.mock("@features/auth/api/queries", () => ({
+	useMe: () => ({ data: { id: "author-1" } }),
+}));
+
 vi.mock("@features/gallery-editor/api/mutations", () => ({
 	useCreateGalleryDraft: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+const useAdminGalleries = vi.fn((_query?: Record<string, unknown>) => ({
+	data: { data: rows },
+}));
+
 vi.mock("@features/gallery-editor/api/queries", () => ({
-	useAdminGalleries: vi.fn(),
+	useAdminGalleries: (query: Record<string, unknown>) => useAdminGalleries(query ?? {}),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -108,12 +133,39 @@ vi.mock("@tanstack/react-router", () => ({
 import { GalleryDraftListPage } from "../GalleryDraftListPage";
 
 describe("GalleryDraftListPage", () => {
-	it("按服务端状态显示四种维护状态", () => {
+	beforeEach(() => {
+		useAdminGalleries.mockClear();
+	});
+
+	it("按服务端状态显示四种维护状态与作者名", () => {
 		render(<GalleryDraftListPage />);
 
 		expect(screen.getByText("工作稿")).toBeTruthy();
 		expect(screen.getByText("已发布")).toBeTruthy();
 		expect(screen.getByText("有未发布修改")).toBeTruthy();
 		expect(screen.getByText("已撤回")).toBeTruthy();
+		expect(screen.getByText("另一位作者")).toBeTruthy();
+	});
+
+	it("初始查询不带筛选参数", () => {
+		render(<GalleryDraftListPage />);
+
+		expect(useAdminGalleries).toHaveBeenCalledWith(
+			expect.objectContaining({ author: undefined, status: undefined }),
+		);
+	});
+
+	it("作者筛选回车后进入查询参数", async () => {
+		render(<GalleryDraftListPage />);
+
+		const input = screen.getByPlaceholderText("按作者用户名筛选...");
+		fireEvent.change(input, { target: { value: "sun" } });
+		fireEvent.keyDown(input, { key: "Enter" });
+
+		await waitFor(() => {
+			expect(useAdminGalleries).toHaveBeenLastCalledWith(
+				expect.objectContaining({ author: "sun" }),
+			);
+		});
 	});
 });
