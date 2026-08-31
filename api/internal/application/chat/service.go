@@ -256,7 +256,6 @@ type MessageReadStateDTO struct {
 
 // MessageReaderDTO 已读成员名单项。
 type MessageReaderDTO struct {
-	// User 已读成员资料。
 	User UserDTO `json:"user"`
 	// ReadAt 该成员最近一次标记阅读的时间（RFC3339）。
 	ReadAt string `json:"read_at"`
@@ -848,14 +847,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
-	dto, err := s.messageDTO(ctx, message, in.UserID)
-	if err != nil {
-		return MessageDTO{}, err
-	}
-	if err := s.attachReadState(ctx, &dto, message, in.UserID); err != nil {
-		return MessageDTO{}, err
-	}
-	return dto, nil
+	return s.messageDTOWithReadState(ctx, message, in.UserID)
 }
 
 // MarkRead 更新用户在会话中的阅读位置。
@@ -1016,6 +1008,18 @@ func readStateFor(message *domainchat.Message, states []domainchat.MemberReadSta
 	return state
 }
 
+// messageDTOWithReadState 构造消息 DTO 并挂载发送者本人的已读回执。
+func (s *Service) messageDTOWithReadState(ctx context.Context, message *domainchat.Message, viewerID domainshared.ID) (MessageDTO, error) {
+	dto, err := s.messageDTO(ctx, message, viewerID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	if err := s.attachReadState(ctx, &dto, message, viewerID); err != nil {
+		return MessageDTO{}, err
+	}
+	return dto, nil
+}
+
 // attachReadState 为单条消息 DTO 挂载发送者本人的已读回执。
 func (s *Service) attachReadState(ctx context.Context, dto *MessageDTO, message *domainchat.Message, viewerID domainshared.ID) error {
 	if message.Type() == domainchat.MessageSystem || !message.SenderID().Equal(viewerID) {
@@ -1091,14 +1095,7 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	if message.EditedAt() == nil {
-		dto, err := s.messageDTO(ctx, message, in.UserID)
-		if err != nil {
-			return MessageDTO{}, err
-		}
-		if err := s.attachReadState(ctx, &dto, message, in.UserID); err != nil {
-			return MessageDTO{}, err
-		}
-		return dto, nil
+		return s.messageDTOWithReadState(ctx, message, in.UserID)
 	}
 	added := diffMediaIDs(message.MediaIDs(), previousMedia)
 	for i, mediaID := range added {
@@ -1127,14 +1124,7 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
-	dto, err := s.messageDTO(ctx, message, in.UserID)
-	if err != nil {
-		return MessageDTO{}, err
-	}
-	if err := s.attachReadState(ctx, &dto, message, in.UserID); err != nil {
-		return MessageDTO{}, err
-	}
-	return dto, nil
+	return s.messageDTOWithReadState(ctx, message, in.UserID)
 }
 
 // diffMediaIDs 返回在 next 中出现但不在 previous 中的媒体 ID。
