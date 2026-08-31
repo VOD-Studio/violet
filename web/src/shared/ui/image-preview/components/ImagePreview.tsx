@@ -5,7 +5,7 @@
  */
 
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useImagePreviewControls } from "../hooks/useImagePreviewControls";
 import type { ImagePreviewProps } from "../types/image-preview-types";
@@ -115,6 +115,7 @@ export function ImagePreview({
 	open,
 	onClose,
 	images,
+	alts,
 	thumbnails,
 	currentIndex = 0,
 	onIndexChange,
@@ -250,6 +251,54 @@ export function ImagePreview({
 		return () => window.removeEventListener("resize", onResize);
 	}, []);
 
+	// 焦点管理：打开时把焦点移入对话框容器（按钮上的 focus-visible 环由此可达），
+	// 关闭时归还触发元素。triggerElement 只在打开瞬间取样——open 期间调用方
+	// 换引用不应造成焦点反复跳转。
+	const overlayRef = useRef<HTMLDivElement>(null);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: triggerElement 需按 open 边界取样，加入依赖会让焦点随引用变化跳转
+	useEffect(() => {
+		if (!open) return;
+		const restore = triggerElement ?? (document.activeElement as HTMLElement | null);
+		overlayRef.current?.focus();
+		return () => {
+			restore?.focus();
+		};
+	}, [open]);
+
+	// Tab 圈定：焦点不逃出遮罩层（否则会落进被遮罩挡住的背景内容）。
+	// 首尾循环；焦点不在层内（如点击后焦点丢失）时拉回首/尾元素。
+	useEffect(() => {
+		if (!open) return;
+		const handleTab = (e: KeyboardEvent) => {
+			if (e.key !== "Tab") return;
+			const overlay = overlayRef.current;
+			if (!overlay) return;
+			const focusables = Array.from(
+				overlay.querySelectorAll<HTMLElement>(
+					"button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
+				),
+			);
+			if (focusables.length === 0) {
+				e.preventDefault();
+				overlay.focus();
+				return;
+			}
+			const first = focusables[0];
+			const last = focusables[focusables.length - 1];
+			const active = document.activeElement;
+			const outside = active === overlay || !overlay.contains(active);
+			if (e.shiftKey && (active === first || outside)) {
+				e.preventDefault();
+				last.focus();
+			} else if (!e.shiftKey && (active === last || outside)) {
+				e.preventDefault();
+				first.focus();
+			}
+		};
+		window.addEventListener("keydown", handleTab);
+		return () => window.removeEventListener("keydown", handleTab);
+	}, [open]);
+
 	// 重新打开时重置飞入门控与加载态——上次会话的残留会让 shouldLoad
 	// 门控失效(原图与动画并发争抢解码)且占位层不再显示。
 	// useLayoutEffect 在 paint 前同步执行,无闪烁;open 保持 true 期间
@@ -276,13 +325,18 @@ export function ImagePreview({
 		<AnimatePresence onExitComplete={onExitComplete}>
 			{open ? (
 				<motion.div
+					ref={overlayRef}
+					role="dialog"
+					aria-modal="true"
+					aria-label="图片预览"
+					tabIndex={-1}
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
 					// 与图片的 transform 动画时长一致（0.3s），避免遮罩先于图片完成
 					// 造成"先黑后飞"的割裂闪烁感
 					transition={{ duration: 0.3 }}
-					className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70"
+					className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70 outline-none"
 					// Radix modal Dialog 打开时会把 body 置为 pointer-events:none
 					// （disableOutsidePointerEvents），本组件 portal 在 body 下会被连带
 					// 禁点；显式恢复 auto 保证全屏层可交互（无 Dialog 时等于默认值，无副作用）。
@@ -384,7 +438,7 @@ export function ImagePreview({
 							<div className="absolute inset-0">
 								<ImagePreviewImage
 									src={images[index]}
-									alt={`预览图片 ${index + 1}`}
+									alt={alts?.[index] ?? `预览图片 ${index + 1}`}
 									shouldLoad={!useThumb || flyInSettled}
 									showSpinner={!useThumb}
 									scale={scale}
