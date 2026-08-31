@@ -10,11 +10,14 @@
  */
 
 import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useSpreadsheet } from "../hooks/useSpreadsheet";
 import type { CellValue, SpreadsheetPreviewProps } from "../types/spreadsheet-preview-types";
 
 export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewProps) {
+	const viewer = useFilePreviewVariant() === "viewer";
 	const { sheets, activeSheet, activeIndex, loadStatus, setActiveIndex, retry } = useSpreadsheet({
 		url,
 	});
@@ -30,23 +33,23 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 		<div
 			className={`flex flex-col overflow-hidden rounded-lg border bg-background ${className ?? ""}`}
 		>
-			{/* 顶部操作条 */}
-			<div className="flex items-center justify-between border-b px-3 py-1.5">
-				<span className="truncate text-xs text-muted-foreground">
-					{name ?? "Excel 表格"}
-				</span>
-				<Button
-					type="button"
-					size="icon-sm"
-					variant="ghost"
-					onClick={handleDownload}
-					title="下载"
-				>
-					<Download className="size-3.5" />
-				</Button>
-			</div>
+			{!viewer ? (
+				<div className="flex items-center justify-between border-b px-3 py-1.5">
+					<span className="truncate text-xs text-muted-foreground">
+						{name ?? "Excel 表格"}
+					</span>
+					<Button
+						type="button"
+						size="icon-sm"
+						variant="ghost"
+						onClick={handleDownload}
+						title="下载"
+					>
+						<Download className="size-3.5" />
+					</Button>
+				</div>
+			) : null}
 
-			{/* sheet 标签页（多个时显示） */}
 			{loadStatus === "ready" && sheets.length > 1 ? (
 				<div className="flex gap-1 overflow-x-auto border-b bg-muted/30 px-2 py-1.5">
 					{sheets.map((sheet, i) => (
@@ -62,8 +65,7 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 				</div>
 			) : null}
 
-			{/* 表格区 */}
-			<div className="max-h-[70vh] overflow-auto">
+			<div className={cn("max-h-[70vh] overflow-auto", viewer && "max-h-none flex-1")}>
 				{loadStatus === "loading" ? (
 					<div className="flex h-40 items-center justify-center">
 						<div className="size-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
@@ -89,7 +91,6 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 											: "hover:bg-muted/30"
 									}
 								>
-									{/* 行号 */}
 									<td className="border-border px-2 py-1 text-right text-muted-foreground/60 tabular-nums">
 										{rowIdx + 1}
 									</td>
@@ -116,7 +117,6 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 	);
 }
 
-/** 渲染单元格值 */
 function renderCell(cell: CellValue) {
 	if (cell === null || cell === undefined || cell === "") return "—";
 	if (cell instanceof Date) return cell.toLocaleString("zh-CN");

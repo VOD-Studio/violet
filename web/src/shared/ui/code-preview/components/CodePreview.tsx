@@ -12,7 +12,9 @@
 import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/shared/lib/clipboard";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useCodeHighlight } from "../hooks/useCodeHighlight";
 import type { CodePreviewProps } from "../types/code-preview-types";
 import { inferLanguage } from "../utils/language";
@@ -27,6 +29,7 @@ export function CodePreview({
 	const lang = language || inferLanguage(name);
 	const { html, loadStatus, retry } = useCodeHighlight({ url, language: lang });
 	const [copied, setCopied] = useState(false);
+	const viewer = useFilePreviewVariant() === "viewer";
 
 	async function handleCopy() {
 		try {
@@ -46,9 +49,15 @@ export function CodePreview({
 		<div
 			className={`flex flex-col overflow-hidden rounded-lg border bg-[#24292e] ${className ?? ""}`}
 		>
-			{/* 顶部操作条 */}
-			<div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-				<span className="truncate font-mono text-xs text-white/70">{name ?? lang}</span>
+			<div
+				className={cn(
+					"flex items-center border-white/10 border-b px-3 py-1.5",
+					viewer ? "justify-end" : "justify-between",
+				)}
+			>
+				{!viewer ? (
+					<span className="truncate font-mono text-xs text-white/70">{name ?? lang}</span>
+				) : null}
 				<Button
 					type="button"
 					size="icon-sm"
@@ -65,8 +74,7 @@ export function CodePreview({
 				</Button>
 			</div>
 
-			{/* 代码区 */}
-			<div className="max-h-[70vh] overflow-auto">
+			<div className={cn("max-h-[70vh] overflow-auto", viewer && "max-h-none flex-1")}>
 				{loadStatus === "loading" ? (
 					<div className="flex h-32 items-center justify-center">
 						<div className="size-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />

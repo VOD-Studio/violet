@@ -18,6 +18,7 @@ interface PdfToolbarProps {
 	onZoomOut: () => void;
 	onResetZoom: () => void;
 	onDownload: () => void;
+	showDownload?: boolean;
 }
 
 export function PdfToolbar({
@@ -31,10 +32,10 @@ export function PdfToolbar({
 	onZoomOut,
 	onResetZoom,
 	onDownload,
+	showDownload = true,
 }: PdfToolbarProps) {
 	return (
 		<div className="flex items-center gap-1 border-b px-2 py-1.5">
-			{/* 页码导航 */}
 			<Button
 				type="button"
 				size="icon-sm"
@@ -70,7 +71,6 @@ export function PdfToolbar({
 
 			<div className="mx-1 h-4 w-px bg-border" />
 
-			{/* 缩放 */}
 			<Button
 				type="button"
 				size="icon-sm"
@@ -111,16 +111,17 @@ export function PdfToolbar({
 
 			<div className="flex-1" />
 
-			{/* 下载 */}
-			<Button
-				type="button"
-				size="icon-sm"
-				variant="ghost"
-				onClick={onDownload}
-				title="下载 PDF"
-			>
-				<Download className="size-4" />
-			</Button>
+			{showDownload ? (
+				<Button
+					type="button"
+					size="icon-sm"
+					variant="ghost"
+					onClick={onDownload}
+					title="下载 PDF"
+				>
+					<Download className="size-4" />
+				</Button>
+			) : null}
 		</div>
 	);
 }

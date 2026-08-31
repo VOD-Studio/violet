@@ -6,6 +6,7 @@
  */
 
 import { Disc3 } from "lucide-react";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import type { AudioPreviewProps } from "../types/audio-preview-types";
 import { AudioControls } from "./AudioControls";
@@ -13,6 +14,7 @@ import { AudioOverlay } from "./AudioOverlay";
 
 export function AudioPreview({ url, name, className, autoPlay = false }: AudioPreviewProps) {
 	const player = useAudioPlayer({ url, autoPlay });
+	const viewer = useFilePreviewVariant() === "viewer";
 	const { state, loadStatus, audioRef } = player;
 
 	return (
@@ -22,25 +24,21 @@ export function AudioPreview({ url, name, className, autoPlay = false }: AudioPr
 			role="region"
 			aria-label={name ?? "音频预览"}
 		>
-			{/* 隐藏的 audio 元素 */}
 			{/* biome-ignore lint/a11y/useMediaCaption: 内部素材预览，无字幕需求 */}
 			<audio ref={audioRef} src={url} preload="metadata" className="hidden" />
 
-			{/* 封面图标（带旋转动画） */}
 			<div
 				className={`flex size-32 items-center justify-center rounded-full bg-primary/10 shadow-inner ${state.isPlaying ? "animate-spin [animation-duration:6s]" : ""}`}
 			>
 				<Disc3 className="size-16 text-primary" />
 			</div>
 
-			{/* 歌曲名 */}
-			{name ? (
+			{name && !viewer ? (
 				<p className="max-w-full truncate text-center text-base font-medium" title={name}>
 					{name}
 				</p>
 			) : null}
 
-			{/* 加载/错误态 */}
 			{loadStatus !== "ready" ? (
 				<AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
 			) : (

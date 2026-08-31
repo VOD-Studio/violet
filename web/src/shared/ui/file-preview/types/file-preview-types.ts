@@ -1,4 +1,5 @@
 import type * as React from "react";
+import type { FilePreviewVariant } from "../file-preview-context";
 
 /** 文件预览主组件属性 */
 export interface FilePreviewProps {
@@ -14,6 +15,8 @@ export interface FilePreviewProps {
 	size?: number;
 	/** 是否显示文件信息 */
 	showInfo?: boolean;
+	/** 展示形态：inline 保留独立卡片 chrome，viewer 嵌入统一媒体查看器。 */
+	variant?: FilePreviewVariant;
 	/** 自定义类名 */
 	className?: string;
 	/** 延迟渲染时间（毫秒），用于等待父容器动画完成 */

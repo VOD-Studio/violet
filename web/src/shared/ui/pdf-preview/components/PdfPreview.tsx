@@ -13,6 +13,7 @@
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { Document, Page } from "react-pdf";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { usePdfDocument } from "../hooks/usePdfDocument";
 import { PdfOverlay } from "./PdfOverlay";
 import { PdfToolbar } from "./PdfToolbar";
@@ -21,6 +22,7 @@ import type { PdfPreviewProps } from "../types/pdf-preview-types";
 
 export function PdfPreview({ url, name, className, initialPage, initialScale }: PdfPreviewProps) {
 	const pdf = usePdfDocument({ initialPage, initialScale });
+	const viewer = useFilePreviewVariant() === "viewer";
 
 	function handleDownload() {
 		const a = document.createElement("a");
@@ -33,7 +35,6 @@ export function PdfPreview({ url, name, className, initialPage, initialScale }: 
 		<div
 			className={`flex flex-col overflow-hidden rounded-lg border bg-background ${className ?? ""}`}
 		>
-			{/* 工具栏（就绪后显示） */}
 			{pdf.loadStatus === "ready" ? (
 				<PdfToolbar
 					currentPage={pdf.currentPage}
@@ -46,10 +47,11 @@ export function PdfPreview({ url, name, className, initialPage, initialScale }: 
 					onZoomOut={pdf.zoomOut}
 					onResetZoom={pdf.resetZoom}
 					onDownload={handleDownload}
+					showDownload={!viewer}
 				/>
 			) : null}
 
-			{/* 文档区（Document 必须始终渲染，否则 onLoadSuccess 永不触发 → 死锁 loading） */}
+			{/* Document 必须始终渲染，否则 onLoadSuccess 不会触发，加载态无法结束。 */}
 			<div className="flex-1 overflow-auto bg-muted/30 p-4">
 				<Document
 					file={url}

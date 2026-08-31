@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useVideoPlayer } from "../hooks/useVideoPlayer";
 import type { VideoPreviewProps } from "../types/video-preview-types";
 import { VideoControls } from "./VideoControls";
@@ -27,6 +28,7 @@ export function VideoPreview({
 	poster,
 }: VideoPreviewProps) {
 	const player = useVideoPlayer({ autoPlay });
+	const viewer = useFilePreviewVariant() === "viewer";
 	const { state, loadStatus, videoRef, containerRef, bindEvents } = player;
 
 	const [isFullscreen, setIsFullscreen] = useState(false);
@@ -69,8 +71,9 @@ export function VideoPreview({
 			role="region"
 			aria-label={name ?? "视频预览"}
 		>
-			{/* 视频区域 */}
-			<div className="group relative flex aspect-video w-full items-center justify-center">
+			<div
+				className={`group relative flex w-full items-center justify-center ${viewer ? "h-full" : "aspect-video"}`}
+			>
 				{/* biome-ignore lint/a11y/useMediaCaption: 内部素材预览，无字幕需求 */}
 				<video
 					ref={videoRef}
@@ -85,7 +88,6 @@ export function VideoPreview({
 					{mimeType ? <source src={url} type={mimeType} /> : null}
 				</video>
 
-				{/* 中央遮罩 */}
 				<VideoOverlay
 					loadStatus={loadStatus}
 					isPlaying={state.isPlaying}
@@ -94,7 +96,6 @@ export function VideoPreview({
 					onRetry={player.retry}
 				/>
 
-				{/* 控制栏（ready 且可见时） */}
 				{loadStatus === "ready" && controlsVisible ? (
 					<VideoControls
 						state={state}
@@ -110,8 +111,7 @@ export function VideoPreview({
 					/>
 				) : null}
 
-				{/* 标题（可选） */}
-				{name ? (
+				{name && !viewer ? (
 					<div
 						className={`absolute top-0 right-0 left-0 bg-linear-to-b from-black/60 to-transparent px-3 py-2 text-sm text-white transition-opacity ${controlsVisible ? "opacity-100" : "opacity-0"}`}
 					>
@@ -120,7 +120,6 @@ export function VideoPreview({
 				) : null}
 			</div>
 
-			{/* 元信息 */}
 			<VideoInfo metadata={metadata} duration={state.duration} />
 		</div>
 	);
