@@ -1,4 +1,5 @@
 import { usePublishedGalleryFeed } from "@entities/gallery/api/queries";
+import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGallery } from "@entities/gallery/model/types";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
@@ -17,7 +18,7 @@ function formatPublishedDate(value: string): string {
 
 function GalleryCard({ gallery }: { gallery: PublishedGallery }) {
 	const date = formatPublishedDate(gallery.published_at);
-	const items = [...gallery.items].sort((left, right) => left.position - right.position);
+	const items = sortedByPosition(gallery.items);
 
 	return (
 		<PhotoStack
