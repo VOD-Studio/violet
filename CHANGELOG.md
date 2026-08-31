@@ -7,6 +7,28 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.19](https://github.com/VOD-Studio/violet/compare/v2.8.18...v2.8.19) (2026-08-31)
+
+
+### 新增
+
+* **chat:** 新增消息已读回执 ([c0b5400](https://github.com/VOD-Studio/violet/commit/c0b540006c436ecea8aa0ac19766bbea6301ad69))
+* **chat:** 新增消息已读回执 ([#287](https://github.com/VOD-Studio/violet/issues/287)) ([ea01598](https://github.com/VOD-Studio/violet/commit/ea015986cc9fea0ff32d708dbd98a8fd9ce032e8))
+* **chat:** 消息气泡已读状态展示 ([e286061](https://github.com/VOD-Studio/violet/commit/e28606160a366e28bc1ec907cb3dfb7eb4711072))
+
+
+### 修复
+
+* **chat:** 已读名单排序改用时间比较 ([28728c2](https://github.com/VOD-Studio/violet/commit/28728c235c361d79b3b40a7cb6f1bf3d308cf400))
+* **chat:** 自动聚焦消息输入框 ([84d2b81](https://github.com/VOD-Studio/violet/commit/84d2b813d508f26d53b1f2c4ac8b57dae226ceb7))
+* **comments:** 修复聊天输入框大表情与工具栏错位 ([c461366](https://github.com/VOD-Studio/violet/commit/c4613660c1d22dbfecdc7c8408d53dd9ea990eb5))
+
+
+### 重构
+
+* **chat:** 复用统一图片灯箱 ([1d0e93c](https://github.com/VOD-Studio/violet/commit/1d0e93c2700eeeb2a161731ced83ccb3adf93016))
+* **chat:** 提取 messageDTOWithReadState 消除三处重复 ([ed2bf48](https://github.com/VOD-Studio/violet/commit/ed2bf4899dd663efb3ee3a00ae301bfccf6c7f5e))
+
 ## [2.8.18](https://github.com/VOD-Studio/violet/compare/v2.8.17...v2.8.18) (2026-08-27)
 
 
