@@ -23,7 +23,10 @@ func NewStatsStore(db *gorm.DB) *StatsStore {
 }
 
 func (s *StatsStore) GetDashboard(ctx context.Context) (domainstats.DashboardStats, error) {
-	var stats domainstats.DashboardStats
+	stats := domainstats.DashboardStats{
+		RecentPosts:  make([]domainstats.PostSummary, 0),
+		PopularPosts: make([]domainstats.PostSummary, 0),
+	}
 	if err := s.db.WithContext(ctx).Model(&newmodel.Post{}).Count(&stats.TotalPosts).Error; err != nil {
 		return stats, domainshared.Internal("统计文章数失败", err)
 	}
