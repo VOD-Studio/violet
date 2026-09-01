@@ -51,7 +51,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 		<header
 			style={{ viewTransitionName: "site-header" }}
 			className={cn(
-				"sticky top-0 z-50 w-full border-b border-edge-hairline bg-background/70 backdrop-blur-md",
+				"sticky top-0 z-40 w-full border-b border-edge-hairline bg-background/70 backdrop-blur-md",
 				scrolled ? "border-b" : "border-transparent",
 				mounted && "transition-colors duration-300",
 			)}

@@ -47,6 +47,7 @@ const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
 							item={item}
 							detailed
 							className="flex w-full min-w-0 items-center gap-3 px-3 py-2.5"
+							onNavigate={() => setOpen(false)}
 							onAction={(action) => {
 								onAction?.(action);
 								setOpen(false);

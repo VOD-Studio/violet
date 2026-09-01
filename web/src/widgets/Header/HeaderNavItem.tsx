@@ -1,10 +1,12 @@
 import type { NavItem, NavRouteItem } from "@shared/config/nav";
 import { cn } from "@shared/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { motion } from "motion/react";
 
 export interface HeaderNavItemProps {
 	item: NavItem;
 	onAction?: (action: string) => void;
+	onNavigate?: () => void;
 	className?: string;
 	detailed?: boolean;
 }
@@ -18,9 +20,22 @@ const BASE =
  * 根据 item.type 渲染为 Link（route）或 button（action）。
  * route 项激活态用显式 pathname 判定（见 NavLinkActive）。
  */
-const HeaderNavItem = ({ item, onAction, className, detailed = false }: HeaderNavItemProps) => {
+const HeaderNavItem = ({
+	item,
+	onAction,
+	onNavigate,
+	className,
+	detailed = false,
+}: HeaderNavItemProps) => {
 	if (item.type === "route") {
-		return <NavLinkActive item={item} className={className} detailed={detailed} />;
+		return (
+			<NavLinkActive
+				item={item}
+				className={className}
+				detailed={detailed}
+				onNavigate={onNavigate}
+			/>
+		);
 	}
 	const Icon = item.icon;
 	return (
@@ -39,10 +54,12 @@ const NavLinkActive = ({
 	item,
 	className,
 	detailed,
+	onNavigate,
 }: {
 	item: NavRouteItem;
 	className?: string;
 	detailed: boolean;
+	onNavigate?: () => void;
 }) => {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const exact = item.exact ?? false;
@@ -54,38 +71,50 @@ const NavLinkActive = ({
 	return (
 		<Link
 			to={item.to}
+			onClick={onNavigate}
 			aria-current={isActive ? "page" : undefined}
 			className={cn(
 				BASE,
-				"group",
-				isActive &&
+				"group isolate",
+				detailed &&
+					isActive &&
 					"bg-foreground text-background hover:bg-foreground hover:text-background",
 				className,
 			)}
 		>
-			{detailed && (
-				<span
-					className={cn(
-						"flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground",
-						isActive && "border-background/20 bg-background/10 text-background",
-					)}
-				>
-					<Icon className="size-4" />
-				</span>
+			{isActive && !detailed && (
+				<motion.span
+					layoutId="header-nav-active"
+					transition={{ type: "spring", stiffness: 420, damping: 34 }}
+					className="absolute inset-0 -z-10 rounded-lg bg-foreground"
+				/>
 			)}
-			<span className={cn(detailed && "min-w-0 text-left")}>
-				<span className={cn(detailed && "block text-sm font-semibold")}>{item.label}</span>
-				{detailed && (
+			{!detailed && (
+				<span className={cn("relative", isActive && "text-background")}>{item.label}</span>
+			)}
+			{detailed && (
+				<>
 					<span
 						className={cn(
-							"mt-0.5 block truncate text-xs font-normal text-muted-foreground",
-							isActive && "text-background/70",
+							"flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground",
+							isActive && "border-background/20 bg-background/10 text-background",
 						)}
 					>
-						{item.description}
+						<Icon className="size-4" />
 					</span>
-				)}
-			</span>
+					<span className="min-w-0 text-left">
+						<span className="block text-sm font-semibold">{item.label}</span>
+						<span
+							className={cn(
+								"mt-0.5 block truncate text-xs font-normal text-muted-foreground",
+								isActive && "text-background/70",
+							)}
+						>
+							{item.description}
+						</span>
+					</span>
+				</>
+			)}
 		</Link>
 	);
 };
