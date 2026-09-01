@@ -1,7 +1,7 @@
 import type { NavItem, NavRouteItem } from "@shared/config/nav";
 import { cn } from "@shared/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 export interface HeaderNavItemProps {
 	item: NavItem;
@@ -61,6 +61,7 @@ const NavLinkActive = ({
 	detailed: boolean;
 	onNavigate?: () => void;
 }) => {
+	const reduceMotion = useReducedMotion();
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const exact = item.exact ?? false;
 	const isActive = exact
@@ -85,7 +86,11 @@ const NavLinkActive = ({
 			{isActive && !detailed && (
 				<motion.span
 					layoutId="header-nav-active"
-					transition={{ type: "spring", stiffness: 420, damping: 34 }}
+					transition={
+						reduceMotion
+							? { duration: 0 }
+							: { type: "tween", duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+					}
 					className="absolute inset-0 -z-10 rounded-lg bg-foreground"
 				/>
 			)}

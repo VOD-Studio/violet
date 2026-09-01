@@ -51,9 +51,14 @@ export const getRouter = () => {
 					useViewTransitionStore.getState().setSharedCoverSlug(null);
 				}
 
-				// 后台段不做 View Transition：侧边栏/顶栏等静态区域会随整页
-				// root 快照一起淡入淡出，表现为布局闪烁；后台导航无需转场。
-				if (isAdminRoute(to) || (from && isAdminRoute(from))) {
+				// 后台和「浏览」次级入口不做页面 View Transition：这些入口共享
+				// 同一个 Header 选中形态，内容切换不应把导航一起带入页面动画。
+				if (
+					isAdminRoute(to) ||
+					(from && isAdminRoute(from)) ||
+					isSecondaryNavRoute(to) ||
+					(from && isSecondaryNavRoute(from))
+				) {
 					return false;
 				}
 				const dir = getNavDirection(from, to);
@@ -70,6 +75,12 @@ export const getRouter = () => {
 	return router;
 };
 
+const SECONDARY_NAV_PREFIXES = ["/blog/archive", "/chat", "/projects", "/friends", "/about"];
+
+const isSecondaryNavRoute = (pathname: string) =>
+	SECONDARY_NAV_PREFIXES.some(
+		(prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+	);
 declare module "@tanstack/react-router" {
 	interface Register {
 		router: ReturnType<typeof getRouter>;

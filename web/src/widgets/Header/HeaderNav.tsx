@@ -1,9 +1,12 @@
+import type { NavRouteItem } from "@shared/config/nav";
 import { NAV_ITEMS } from "@shared/config/nav";
+import { cn } from "@shared/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
+import { useRouterState } from "@tanstack/react-router";
 import { LayoutGrid } from "lucide-react";
 
 import HeaderNavItem from "./HeaderNavItem";
@@ -14,6 +17,10 @@ export interface HeaderNavProps {
 const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const primaryItems = NAV_ITEMS.filter((item) => item.type === "route" && item.primary);
 	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
+	const pathname = useRouterState({ select: (state) => state.location.pathname });
+	const secondaryActive = secondaryItems.some(
+		(item) => item.type === "route" && matchesRoute(pathname, item),
+	);
 
 	return (
 		<nav
@@ -28,7 +35,12 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
-							className="group ml-1 flex items-center gap-1.5 rounded-lg border-l border-border/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-foreground data-[state=open]:text-background"
+							aria-current={secondaryActive ? "page" : undefined}
+							className={cn(
+								"group ml-1 flex items-center gap-1.5 rounded-lg border-l border-border/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-foreground data-[state=open]:text-background",
+								secondaryActive &&
+									"bg-foreground text-background hover:bg-foreground hover:text-background",
+							)}
 						>
 							<LayoutGrid className="size-3.5" />
 							浏览
@@ -61,5 +73,8 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 		</nav>
 	);
 };
+
+const matchesRoute = (pathname: string, item: NavRouteItem) =>
+	item.exact ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
 
 export default HeaderNav;
