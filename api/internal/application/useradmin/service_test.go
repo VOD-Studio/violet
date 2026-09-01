@@ -111,6 +111,28 @@ func newTestService(store *fakeStore) *Service {
 	return NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil)
 }
 
+func TestService_Create_VerifiesEmailForAdminCreatedUser(t *testing.T) {
+	store := &fakeStore{}
+	svc := newTestService(store)
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		Username: "managed-user",
+		Email:    "managed@example.com",
+		Password: "Password123!",
+		Role:     string(domainuser.RoleUser),
+		IsActive: true,
+	}, "root-1", string(domainuser.RoleSuperAdmin), true)
+	if err != nil {
+		t.Fatalf("Create 返回错误: %v", err)
+	}
+	if !dto.EmailVerified {
+		t.Fatal("后台创建用户的邮箱应直接标记为已验证")
+	}
+	if len(store.saveCalls) != 1 || !store.saveCalls[0].EmailVerified() {
+		t.Fatal("持久化聚合的邮箱应为已验证状态")
+	}
+}
+
 // fakeSessionStore SessionStore 的测试 stub，仅记录 DeleteByUser 调用。
 type fakeSessionStore struct {
 	revoked []string
