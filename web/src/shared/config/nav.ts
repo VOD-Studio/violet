@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Archive,
 	BookOpen,
+	FlaskConical,
 	FolderKanban,
 	House,
 	Images,
@@ -29,9 +30,7 @@ export interface NavActionItem {
 	icon: LucideIcon;
 	description: string;
 }
-/**
- * NavItem - nav 项联合类型
- */
+
 export type NavItem = NavRouteItem | NavActionItem;
 
 export const NAV_ITEMS: NavItem[] = [
@@ -67,7 +66,7 @@ export const NAV_ITEMS: NavItem[] = [
 		to: "/galleries",
 		primary: true,
 		icon: Images,
-		description: "浏览视觉作品",
+		description: "浏览已经发布的视觉作品",
 	},
 	{
 		type: "route",
@@ -113,5 +112,12 @@ export const NAV_ITEMS: NavItem[] = [
 		to: "/about",
 		icon: BookOpen,
 		description: "了解作者与本站",
+	},
+	{
+		type: "route",
+		label: "实验室",
+		to: "/lab",
+		icon: FlaskConical,
+		description: "探索原型与交互实验",
 	},
 ];

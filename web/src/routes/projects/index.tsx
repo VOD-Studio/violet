@@ -2,6 +2,7 @@ import { projectKeys } from "@features/projects/api/keys";
 import { fetchProjects, useProjects } from "@features/projects/api/queries";
 import { ProjectCard } from "@features/projects/ui/ProjectCard";
 import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
+import Empty from "@shared/ui/empty";
 import { PageShell } from "@shared/ui/page-shell";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
@@ -25,7 +26,12 @@ const ProjectsPage = () => {
 			{isLoading ? (
 				<ProjectsSkeleton />
 			) : projects.length === 0 ? (
-				<div className="text-muted-foreground">暂无项目</div>
+				<Empty
+					title="暂无项目"
+					description="还没有发布任何项目"
+					className="py-20"
+					size="lg"
+				/>
 			) : (
 				<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 					{projects.map((p) => (

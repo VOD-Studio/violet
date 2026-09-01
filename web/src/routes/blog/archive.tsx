@@ -5,6 +5,7 @@ import type { ArchiveItem } from "@features/archive/model/types";
 import ArchiveSkeleton from "@features/archive/ui/ArchiveSkeleton";
 import ArchiveYearSkeleton from "@features/archive/ui/ArchiveYearSkeleton";
 import { Badge } from "@shared/ui/base/badge";
+import Empty from "@shared/ui/empty";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
@@ -155,7 +156,12 @@ function ArchivePage() {
 			{isLoading ? (
 				<ArchiveSkeleton />
 			) : years.length === 0 ? (
-				<div className="text-muted-foreground">暂无文章</div>
+				<Empty
+					title="暂无文章"
+					description="还没有发布任何内容"
+					className="py-20"
+					size="lg"
+				/>
 			) : (
 				<div className="space-y-12">
 					{years.map((y) => (
