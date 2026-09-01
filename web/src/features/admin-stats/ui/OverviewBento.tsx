@@ -43,10 +43,10 @@ export function OverviewBento() {
 					<ViewTrendTile />
 				</div>
 				<div className="lg:col-span-4">
-					<PopularPostsTile posts={data.popular_posts} />
+					<PopularPostsTile posts={data.popular_posts ?? []} />
 				</div>
 				<div className="lg:col-span-7">
-					<RecentPostsTile posts={data.recent_posts} />
+					<RecentPostsTile posts={data.recent_posts ?? []} />
 				</div>
 				<div className="lg:col-span-5">
 					<MilestoneTile totalViews={data.total_views} />
