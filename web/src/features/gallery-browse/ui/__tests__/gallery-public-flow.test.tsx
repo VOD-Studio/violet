@@ -60,6 +60,10 @@ vi.mock("@tanstack/react-router", () => ({
 			{children}
 		</a>
 	),
+	useRouter: () => ({
+		history: { back: vi.fn() },
+		navigate: vi.fn(),
+	}),
 }));
 
 vi.mock("@shared/ui/photo-stack", () => ({
@@ -169,7 +173,7 @@ describe("公开图集用户流", () => {
 		detailQuery.data = gallery;
 		render(<GalleryDetailPage slug="summer-light" />);
 
-		const triggers = screen.getAllByRole("button");
+		const triggers = screen.getAllByRole("button", { name: /替代文本/ });
 		expect(triggers).toHaveLength(6);
 		fireEvent.click(triggers[2]);
 
@@ -189,7 +193,7 @@ describe("公开图集用户流", () => {
 		detailQuery.data = gallery;
 		render(<GalleryDetailPage slug="summer-light" />);
 
-		fireEvent.click(screen.getAllByRole("button")[0]);
+		fireEvent.click(screen.getAllByRole("button", { name: /替代文本/ })[0]);
 		const lastCall = imagePreviewProps.mock.calls.at(-1)?.[0] as {
 			onIndexChange: (index: number) => void;
 		};
