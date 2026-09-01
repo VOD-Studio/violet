@@ -83,7 +83,10 @@ const NavLinkActive = ({
 				detailed &&
 					isActive &&
 					"bg-foreground text-background hover:bg-foreground hover:text-background",
-				!detailed && activeStyle === "text" && isActive && "text-background",
+				!detailed &&
+					activeStyle === "text" &&
+					isActive &&
+					"bg-transparent text-background hover:bg-transparent hover:text-background",
 				className,
 			)}
 		>
