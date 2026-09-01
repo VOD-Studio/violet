@@ -605,14 +605,14 @@ jobs:
 
       - name: 创建 GitHub Release(CHANGELOG 段落)
         if: steps.notes.outputs.source == 'changelog'
-        uses: softprops/action-gh-release@v3.0.2
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
         if: steps.notes.outputs.source == 'generated'
-        uses: softprops/action-gh-release@v3.0.2
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
