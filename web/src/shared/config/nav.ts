@@ -1,6 +1,3 @@
-/**
- * NavRouteItem - 路由类型 nav 项
- */
 export interface NavRouteItem {
 	/** 类型标识：路由跳转 */
 	type: "route";
@@ -10,6 +7,8 @@ export interface NavRouteItem {
 	to: string;
 	/** 是否精确匹配当前路由以激活高亮，默认 false */
 	exact?: boolean;
+	/** 是否固定显示在桌面主导航 */
+	primary?: boolean;
 }
 
 /**
@@ -38,12 +37,12 @@ export type NavItem = NavRouteItem | NavActionItem;
  * - action：触发全局事件（如打开音乐播放器，不导航）
  */
 export const NAV_ITEMS: NavItem[] = [
-	{ type: "route", label: "首页", to: "/", exact: true },
-	{ type: "route", label: "博客", to: "/blog", exact: true },
+	{ type: "route", label: "首页", to: "/", exact: true, primary: true },
+	{ type: "route", label: "博客", to: "/blog", exact: true, primary: true },
+	{ type: "route", label: "系列", to: "/series", primary: true },
+	{ type: "route", label: "图集", to: "/galleries", primary: true },
+	{ type: "route", label: "推文", to: "/tweets", exact: true, primary: true },
 	{ type: "route", label: "归档", to: "/blog/archive" },
-	{ type: "route", label: "系列", to: "/series" },
-	{ type: "route", label: "图集", to: "/galleries" },
-	{ type: "route", label: "推文", to: "/tweets", exact: true },
 	{ type: "route", label: "聊天", to: "/chat", exact: true },
 	{ type: "route", label: "项目", to: "/projects" },
 	{ type: "route", label: "友链", to: "/friends" },

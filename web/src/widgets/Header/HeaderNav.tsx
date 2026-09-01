@@ -1,31 +1,50 @@
-import type { NavItem } from "@shared/config/nav";
 import { NAV_ITEMS } from "@shared/config/nav";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@shared/ui/base/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 import HeaderNavItem from "./HeaderNavItem";
 
-/**
- * HeaderNavProps - HeaderNav 组件属性
- */
 export interface HeaderNavProps {
-	/**
-	 * 点击 action 项时的回调
-	 */
 	onAction?: (action: string) => void;
 }
-
-/**
- * HeaderNav - 桌面端 nav 列表
- *
- * md 以上显示，遍历 NAV_ITEMS 渲染 HeaderNavItem。
- * 移动端用 HeaderMobile（Sheet 抽屉）。
- */
 const HeaderNav = ({ onAction }: HeaderNavProps) => {
-	const items: NavItem[] = NAV_ITEMS;
+	const primaryItems = NAV_ITEMS.filter((item) => item.type === "route" && item.primary);
+	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
+
 	return (
-		<nav className="hidden md:flex items-center gap-1">
-			{items.map((item) => (
+		<nav aria-label="主导航" className="hidden items-center gap-1 lg:flex">
+			{primaryItems.map((item) => (
 				<HeaderNavItem key={item.label} item={item} onAction={onAction} />
 			))}
+			{secondaryItems.length > 0 && (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<button
+							type="button"
+							className="group flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
+						>
+							更多
+							<ChevronDown className="size-3.5 transition-transform group-data-[state=open]:rotate-180" />
+						</button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="center" sideOffset={8} className="w-40">
+						{secondaryItems.map((item) => (
+							<DropdownMenuItem key={item.label} asChild>
+								<HeaderNavItem
+									item={item}
+									onAction={onAction}
+									className="w-full cursor-pointer justify-start rounded-sm px-2 py-1.5"
+								/>
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			)}
 		</nav>
 	);
 };
