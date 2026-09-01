@@ -198,6 +198,24 @@ func (g *Gallery) EnsureVersion(expected int64) error {
 	}
 	return nil
 }
+// WorkingDocumentEquals 判断输入规范化后是否与当前完整工作稿一致。
+func (g *Gallery) WorkingDocumentEquals(title, summary string, input []DocumentItem) bool {
+	title = strings.TrimSpace(title)
+	summary = strings.TrimSpace(summary)
+	if title != g.workingRevision.title || summary != g.workingRevision.summary || len(input) != len(g.workingRevision.items) {
+		return false
+	}
+	for position, item := range input {
+		current := g.workingRevision.items[position]
+		if !item.FileID.Equal(current.fileID) ||
+			strings.TrimSpace(item.Caption) != current.caption ||
+			strings.TrimSpace(item.AltTextOverride) != current.altTextOverride {
+			return false
+		}
+	}
+	return true
+}
+
 
 // ReplaceWorkingDocument 用完整文档替换工作稿，数组顺序是唯一排序权威。
 func (g *Gallery) ReplaceWorkingDocument(expected int64, title, summary string, input []DocumentItem) error {
