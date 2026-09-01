@@ -2,10 +2,9 @@ import { NAV_ITEMS } from "@shared/config/nav";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
-	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 
 import HeaderNavItem from "./HeaderNavItem";
 
@@ -17,7 +16,10 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
 
 	return (
-		<nav aria-label="主导航" className="hidden items-center gap-1 lg:flex">
+		<nav
+			aria-label="主导航"
+			className="hidden items-center rounded-xl border border-border/60 bg-background/60 p-1 shadow-sm shadow-black/5 lg:flex dark:shadow-black/20"
+		>
 			{primaryItems.map((item) => (
 				<HeaderNavItem key={item.label} item={item} onAction={onAction} />
 			))}
@@ -26,22 +28,33 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
-							className="group flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
+							className="group ml-1 flex items-center gap-1.5 rounded-lg border-l border-border/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-foreground data-[state=open]:text-background"
 						>
-							更多
-							<ChevronDown className="size-3.5 transition-transform group-data-[state=open]:rotate-180" />
+							<LayoutGrid className="size-3.5" />
+							浏览
 						</button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="center" sideOffset={8} className="w-40">
-						{secondaryItems.map((item) => (
-							<DropdownMenuItem key={item.label} asChild>
+					<DropdownMenuContent
+						align="center"
+						sideOffset={10}
+						className="w-88 rounded-2xl border-border/60 p-2 shadow-xl shadow-black/10"
+					>
+						<div className="px-2 pb-2 pt-1">
+							<p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
+								更多内容
+							</p>
+						</div>
+						<div className="grid grid-cols-2 gap-1">
+							{secondaryItems.map((item) => (
 								<HeaderNavItem
+									key={item.label}
 									item={item}
 									onAction={onAction}
-									className="w-full cursor-pointer justify-start rounded-sm px-2 py-1.5"
+									detailed
+									className="flex min-w-0 items-center gap-3 px-2.5 py-2.5"
 								/>
-							</DropdownMenuItem>
-						))}
+							))}
+						</div>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			)}
