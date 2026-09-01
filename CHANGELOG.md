@@ -7,6 +7,18 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.20](https://github.com/VOD-Studio/violet/compare/v2.8.19...v2.8.20) (2026-09-01)
+
+
+### 新增
+
+* **gallery:** 图集视觉作品全栈实现 ([#279](https://github.com/VOD-Studio/violet/issues/279)) ([92587cb](https://github.com/VOD-Studio/violet/commit/92587cbda71d706853642299dddbdecda67f26fc))
+
+
+### 修复
+
+* **chat:** 修复 B 站表情发送后无法显示 ([#290](https://github.com/VOD-Studio/violet/issues/290)) ([9c6d839](https://github.com/VOD-Studio/violet/commit/9c6d839d962cf1acc42435e49607d186f129bc1f))
+
 ## [2.8.19](https://github.com/VOD-Studio/violet/compare/v2.8.18...v2.8.19) (2026-08-31)
 
 
