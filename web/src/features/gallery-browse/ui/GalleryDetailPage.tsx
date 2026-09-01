@@ -2,23 +2,27 @@ import { usePublishedGallery } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGalleryItem } from "@entities/gallery/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
-import { rememberScrollPosition } from "@shared/lib/navigation-history";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
+import { HistoryBack } from "@shared/ui/history-back";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { PageShell } from "@shared/ui/page-shell";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 interface GalleryDetailPageProps {
 	slug: string;
 }
 
+/** 网格展示图宽度档：桌面视觉列上限 max-w-5xl=1024px，2048 覆盖 2x DPR；后端只缩不放，小图原图直出。 */
+
 const GRID_IMAGE_WIDTH = 2048;
+
+/** srcset 候选宽度：移动端按视口取小档，避免 2048 单档对窄屏浪费带宽。 */
 const GRID_SRCSET_WIDTHS = [640, 1024, 1600, 2048];
 
+/** 灯箱会话：当前索引与触发按钮（关闭后焦点归还）。 */
 interface LightboxState {
 	open: boolean;
 	index: number;
@@ -33,9 +37,12 @@ function formatPublishedDate(value: string): string {
 }
 
 function itemAlt(item: PublishedGalleryItem, index: number, title: string): string {
+	// 服务端已按 override → 素材 alt → 「标题 第 n 张」回退保证非空；
+	// 客户端兜底只在后端异常返回空串时生效，空串=缺失（|| 而非 ??）
 	return item.alt_text || `${title} · 第 ${index + 1} 张`;
 }
 
+/** GIF 不参与 srcset：各档 URL 相同，浏览器无法按宽度区分，反而多下载占位。 */
 function gridSrcSet(url: string): string | undefined {
 	if (url.split("?")[0].toLowerCase().endsWith(".gif")) return undefined;
 	return GRID_SRCSET_WIDTHS.map((width) => `${contentImageUrl(url, { width })} ${width}w`).join(
@@ -84,12 +91,12 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 	return (
 		<PageShell>
 			<article className="mx-auto max-w-5xl">
-				<Button variant="ghost" size="sm" asChild className="mb-8 -ml-3">
-					<Link to="/galleries" onClick={() => rememberScrollPosition("/galleries")}>
-						<ArrowLeft className="size-4" />
-						返回图集
-					</Link>
-				</Button>
+				<HistoryBack
+					fallbackTo="/galleries"
+					className="mb-8 -ml-3 gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent"
+				>
+					返回图集
+				</HistoryBack>
 
 				<header className="mx-auto mb-12 max-w-3xl text-center">
 					<h1 className="font-mono font-bold text-4xl leading-tight md:text-5xl">

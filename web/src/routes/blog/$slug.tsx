@@ -145,7 +145,7 @@ function BlogDetailPage() {
 			</div>
 
 			<article className="container mx-auto px-6 py-16">
-				<BackLink to="/blog" label="博客" className="mb-8" />
+				<BackLink to="/blog" label="博客" className="mb-8" history />
 
 				{/* 文章头 */}
 				<header className="mx-auto mb-12 max-w-3xl">
@@ -317,7 +317,7 @@ function BlogDetailPage() {
 			 * 右下角浮动操作区（flex-col 竖列）：目录按钮（仅小屏，大屏用左侧 TOC）+ 返回顶部。
 			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
 			 */}
-			<FloatingBack to="/blog" label="返回博客" />
+			<FloatingBack to="/blog" label="返回博客" history />
 			{toc.length > 1 || seriesDetail ? (
 				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
 					{/* 章内目录：2xl 及以上用左侧固定栏，小屏用浮动按钮 */}

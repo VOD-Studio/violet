@@ -1,5 +1,4 @@
 import { getDisplayName } from "@entities/user/model/display-name";
-import { rememberScrollPosition } from "@shared/lib/navigation-history";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { Badge } from "@shared/ui/base/badge";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
@@ -47,10 +46,9 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					<Link
 						to="/blog/$slug"
 						params={{ slug: post.slug }}
-						onClick={() => {
-							rememberScrollPosition("/blog");
-							useViewTransitionStore.getState().setSharedCoverSlug(post.slug);
-						}}
+						onClick={() =>
+							useViewTransitionStore.getState().setSharedCoverSlug(post.slug)
+						}
 						className="block overflow-hidden"
 					>
 						<div
@@ -109,7 +107,6 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					<Link
 						to="/blog/$slug"
 						params={{ slug: post.slug }}
-						onClick={() => rememberScrollPosition("/blog")}
 						className="transition-colors hover:text-neon-blue"
 					>
 						{post.title}

@@ -1,11 +1,9 @@
+import { HistoryBack } from "@shared/ui/history-back";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { ComponentProps } from "react";
 import { useEffect, useState } from "react";
 import { cn } from "@/shared/lib/utils";
-
-type LinkTo = ComponentProps<typeof Link>["to"];
 
 /**
  * FloatingBack - 浮动返回钮(nav-lab 方向②落生产)
@@ -18,10 +16,12 @@ export function FloatingBack({
 	to,
 	label,
 	className,
+	history = false,
 }: {
-	to: LinkTo;
+	to: string;
 	label: string;
 	className?: string;
+	history?: boolean;
 }) {
 	const [past, setPast] = useState(false);
 	const reduce = useReducedMotion();
@@ -44,16 +44,28 @@ export function FloatingBack({
 					transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
 					className="fixed bottom-8 left-8 z-40"
 				>
-					<Link
-						to={to}
-						aria-label={label}
-						className={cn(
-							"flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:border-foreground/40",
-							className,
-						)}
-					>
-						<ArrowLeft className="size-4" />
-					</Link>
+					{history ? (
+						<HistoryBack
+							fallbackTo={to}
+							className={cn(
+								"flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/90 p-0 text-foreground shadow-sm backdrop-blur transition-colors hover:border-foreground/40",
+								className,
+							)}
+						>
+							<span className="sr-only">{label}</span>
+						</HistoryBack>
+					) : (
+						<Link
+							to={to}
+							aria-label={label}
+							className={cn(
+								"flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:border-foreground/40",
+								className,
+							)}
+						>
+							<ArrowLeft className="size-4" />
+						</Link>
+					)}
 				</motion.div>
 			)}
 		</AnimatePresence>

@@ -1,7 +1,6 @@
 import { usePublishedGalleryFeed } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGallery } from "@entities/gallery/model/types";
-import { restoreScrollPosition } from "@shared/lib/navigation-history";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { PageShell } from "@shared/ui/page-shell";
@@ -9,7 +8,6 @@ import { PhotoStack } from "@shared/ui/photo-stack";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;
 
@@ -73,7 +71,6 @@ function GalleryBrowseSkeleton() {
 
 /** 已发布图集的游标分页浏览流。 */
 export function GalleryBrowsePage() {
-	useEffect(() => restoreScrollPosition("/galleries"), []);
 	const feed = usePublishedGalleryFeed(PUBLISHED_GALLERY_PAGE_LIMIT);
 	if (feed.isLoading) {
 		return (

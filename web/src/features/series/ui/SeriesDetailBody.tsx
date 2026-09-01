@@ -1,7 +1,6 @@
 import { BackLink } from "@features/lab/nav/ui/BackLink";
 import type { SeriesChapter, SeriesDetail } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
-import { rememberScrollPosition } from "@shared/lib/navigation-history";
 import { Link } from "@tanstack/react-router";
 import { BookOpen } from "lucide-react";
 
@@ -39,12 +38,7 @@ export function SeriesDetailBody({ detail }: { detail: SeriesDetail }) {
 
 	return (
 		<div>
-			<BackLink
-				to="/series"
-				label="系列书"
-				className="mb-8"
-				onClick={() => rememberScrollPosition("/series")}
-			/>
+			<BackLink to="/series" label="系列书" className="mb-8" history />
 			<header className="grid gap-10 md:grid-cols-[220px_minmax(0,1fr)]">
 				<div className="mx-auto w-52 md:mx-0 md:w-full">
 					<BookCover book={detail} size="lg" className="w-full" subtitle="Online Book" />

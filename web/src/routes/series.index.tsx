@@ -1,14 +1,8 @@
 import { SeriesShelf } from "@features/series/ui/SeriesShelf";
-import { restoreScrollPosition } from "@shared/lib/navigation-history";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
 
 function SeriesIndexPage() {
-	useEffect(() => {
-		restoreScrollPosition("/series");
-	}, []);
-
 	return (
 		<PageShell>
 			<header className="mb-10">
