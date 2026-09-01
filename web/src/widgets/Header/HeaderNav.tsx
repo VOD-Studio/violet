@@ -15,9 +15,12 @@ export interface HeaderNavProps {
 	onAction?: (action: string) => void;
 }
 const HeaderNav = ({ onAction }: HeaderNavProps) => {
-	const primaryItems = NAV_ITEMS.filter((item) => item.type === "route" && item.primary);
+	const primaryItems = NAV_ITEMS.filter(
+		(item): item is NavRouteItem => item.type === "route" && Boolean(item.primary),
+	);
 	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
+	const activePrimaryIndex = primaryItems.findIndex((item) => matchesRoute(pathname, item));
 	const secondaryActive = secondaryItems.some(
 		(item) => item.type === "route" && matchesRoute(pathname, item),
 	);
@@ -25,10 +28,22 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	return (
 		<nav
 			aria-label="主导航"
-			className="hidden items-center rounded-xl border border-border/60 bg-background/60 p-1 shadow-sm shadow-black/5 lg:flex dark:shadow-black/20"
+			className="relative hidden items-center rounded-xl border border-border/60 bg-background/60 p-1 shadow-sm shadow-black/5 lg:flex dark:shadow-black/20"
 		>
+			{activePrimaryIndex >= 0 && (
+				<span
+					aria-hidden
+					className="absolute bottom-1 top-1 rounded-lg bg-foreground transition-[left,width] duration-200 ease-out motion-reduce:transition-none"
+					style={sliderStyle(activePrimaryIndex, primaryItems)}
+				/>
+			)}
 			{primaryItems.map((item) => (
-				<HeaderNavItem key={item.label} item={item} onAction={onAction} />
+				<HeaderNavItem
+					key={item.label}
+					item={item}
+					onAction={onAction}
+					activeStyle="text"
+				/>
 			))}
 			{secondaryItems.length > 0 && (
 				<DropdownMenu>
@@ -76,5 +91,11 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 
 const matchesRoute = (pathname: string, item: NavRouteItem) =>
 	item.exact ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
+
+const sliderStyle = (index: number, items: NavRouteItem[]) => {
+	const widths = items.map((item) => item.label.length * 14 + 24);
+	const left = 4 + widths.slice(0, index).reduce((sum, width) => sum + width, 0);
+	return { left, width: widths[index] };
+};
 
 export default HeaderNav;

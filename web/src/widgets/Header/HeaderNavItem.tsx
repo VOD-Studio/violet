@@ -1,7 +1,6 @@
 import type { NavItem, NavRouteItem } from "@shared/config/nav";
 import { cn } from "@shared/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { motion, useReducedMotion } from "motion/react";
 
 export interface HeaderNavItemProps {
 	item: NavItem;
@@ -9,6 +8,7 @@ export interface HeaderNavItemProps {
 	onNavigate?: () => void;
 	className?: string;
 	detailed?: boolean;
+	activeStyle?: "background" | "text";
 }
 
 const BASE =
@@ -26,6 +26,7 @@ const HeaderNavItem = ({
 	onNavigate,
 	className,
 	detailed = false,
+	activeStyle = "background",
 }: HeaderNavItemProps) => {
 	if (item.type === "route") {
 		return (
@@ -34,6 +35,7 @@ const HeaderNavItem = ({
 				className={className}
 				detailed={detailed}
 				onNavigate={onNavigate}
+				activeStyle={activeStyle}
 			/>
 		);
 	}
@@ -55,13 +57,14 @@ const NavLinkActive = ({
 	className,
 	detailed,
 	onNavigate,
+	activeStyle,
 }: {
 	item: NavRouteItem;
 	className?: string;
 	detailed: boolean;
 	onNavigate?: () => void;
+	activeStyle: "background" | "text";
 }) => {
-	const reduceMotion = useReducedMotion();
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const exact = item.exact ?? false;
 	const isActive = exact
@@ -76,27 +79,15 @@ const NavLinkActive = ({
 			aria-current={isActive ? "page" : undefined}
 			className={cn(
 				BASE,
-				"group isolate",
+				"group",
 				detailed &&
 					isActive &&
 					"bg-foreground text-background hover:bg-foreground hover:text-background",
+				!detailed && activeStyle === "text" && isActive && "text-background",
 				className,
 			)}
 		>
-			{isActive && !detailed && (
-				<motion.span
-					layoutId="header-nav-active"
-					transition={
-						reduceMotion
-							? { duration: 0 }
-							: { type: "tween", duration: 0.22, ease: [0.22, 1, 0.36, 1] }
-					}
-					className="absolute inset-0 -z-10 rounded-lg bg-foreground"
-				/>
-			)}
-			{!detailed && (
-				<span className={cn("relative", isActive && "text-background")}>{item.label}</span>
-			)}
+			{!detailed && <span className="relative">{item.label}</span>}
 			{detailed && (
 				<>
 					<span
