@@ -65,17 +65,14 @@ export interface NavMenuItem {
 }
 
 /** 菜单分组标识 */
-export type NavMenuGroup = "content" | "member" | "system";
+export type NavMenuGroup = "publishing" | "community" | "assets" | "access" | "platform";
 
-/**
- * NAV_MENU_GROUPS - 分组展示顺序与标题
- *
- * 仅定义顺序与文案；组内成员由 NAV_MENU_ITEMS 的 group 字段归属。
- */
 export const NAV_MENU_GROUPS: { key: NavMenuGroup; label: string }[] = [
-	{ key: "content", label: "内容" },
-	{ key: "member", label: "用户与权限" },
-	{ key: "system", label: "系统" },
+	{ key: "publishing", label: "发布" },
+	{ key: "community", label: "互动" },
+	{ key: "assets", label: "资源" },
+	{ key: "access", label: "成员与权限" },
+	{ key: "platform", label: "平台" },
 ];
 
 /**
@@ -90,49 +87,49 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		label: "文章管理",
 		to: "/admin/posts",
 		icon: FileText,
-		group: "content",
+		group: "publishing",
 		permissions: ["post:view"],
 	},
 	{
 		label: "系列书管理",
 		to: "/admin/series",
 		icon: Library,
-		group: "content",
+		group: "publishing",
 		permissions: ["series:view"],
 	},
 	{
 		label: "图集管理",
 		to: "/admin/galleries",
 		icon: GalleryHorizontalEnd,
-		group: "content",
+		group: "publishing",
 		permissions: ["gallery:view"],
 	},
 	{
 		label: "标签管理",
 		to: "/admin/tags",
 		icon: Tag,
-		group: "content",
+		group: "publishing",
 		permissions: ["tag:view"],
 	},
 	{
 		label: "公告管理",
 		to: "/admin/announcements",
 		icon: Megaphone,
-		group: "content",
+		group: "publishing",
 		permissions: ["announcement:view"],
 	},
 	{
 		label: "评论审核",
 		to: "/admin/comments",
 		icon: MessageSquare,
-		group: "content",
+		group: "community",
 		permissions: ["comment:view"],
 	},
 	{
 		label: "友链管理",
 		to: "/admin/friend-links",
 		icon: Link2,
-		group: "content",
+		group: "community",
 		permissions: ["friendlink:view"],
 		badge: FriendLinkNavBadge,
 	},
@@ -140,56 +137,56 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		label: "订阅管理",
 		to: "/admin/subscriptions",
 		icon: Rss,
-		group: "content",
+		group: "community",
 		permissions: ["subscription:manage"],
 	},
 	{
 		label: "项目管理",
 		to: "/admin/projects",
 		icon: FolderKanban,
-		group: "content",
+		group: "publishing",
 		permissions: ["project:view"],
 	},
 	{
 		label: "素材管理",
 		to: "/admin/media",
 		icon: Images,
-		group: "content",
+		group: "assets",
 		permissions: ["media:view"],
 	},
 	{
 		label: "表情管理",
 		to: "/admin/emojis",
 		icon: Smile,
-		group: "content",
+		group: "assets",
 		permissions: ["emoji:view", "customemoji:manage"],
 	},
 	{
 		label: "用户管理",
 		to: "/admin/users",
 		icon: Users,
-		group: "member",
+		group: "access",
 		permissions: ["user:view"],
 	},
 	{
 		label: "角色管理",
 		to: "/admin/roles",
 		icon: UserCog,
-		group: "member",
+		group: "access",
 		permissions: ["role:view"],
 	},
 	{
 		label: "权限管理",
 		to: "/admin/permissions",
 		icon: Shield,
-		group: "member",
+		group: "access",
 		permissions: ["role:view"],
 	},
 	{
 		label: "站点设置",
 		to: "/admin/settings",
 		icon: Settings,
-		group: "system",
+		group: "platform",
 		permissions: ["settings:view"],
 		children: [
 			{
@@ -240,21 +237,21 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		label: "MCP 接入",
 		to: "/admin/mcp",
 		icon: KeyRound,
-		group: "system",
+		group: "platform",
 		permissions: ["mcp:manage-tokens"],
 	},
 	{
 		label: "系统监控",
 		to: "/admin/system",
 		icon: Activity,
-		group: "system",
+		group: "platform",
 		permissions: ["system:view"],
 	},
 	{
 		label: "操作日志",
 		to: "/admin/logs",
 		icon: ScrollText,
-		group: "system",
+		group: "platform",
 		permissions: ["log:view"],
 	},
 ];
