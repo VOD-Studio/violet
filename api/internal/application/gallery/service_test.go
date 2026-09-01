@@ -301,6 +301,26 @@ func TestSaveUpdatesOnlyReferenceSetDifference(t *testing.T) {
 	assert.Equal(t, int64(3), dto.Version)
 	assert.Len(t, dto.Items, 2)
 }
+func TestSavePublishedGalleryWithoutChangesIsIdempotent(t *testing.T) {
+	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, second})
+	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
+	publishedRevisionID := *gallery.PublishedRevisionID()
+
+	dto, err := service.Save(context.Background(), SaveInput{
+		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: 3,
+		Title: " 旧标题 ", Items: []SaveItemInput{{FileID: first.String()}, {FileID: second.String()}},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), dto.Version)
+	assert.Equal(t, domaingallery.StatusPublished, dto.Status)
+	assert.True(t, gallery.WorkingRevision().ID().Equal(publishedRevisionID))
+	assert.False(t, repo.saved)
+	assert.Empty(t, assets.deltas)
+	assert.Empty(t, assets.lockedIDs)
+}
+
 
 func TestSaveCanRemoveAllExistingAssets(t *testing.T) {
 	owner := shared.NewID()
