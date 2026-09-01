@@ -7,7 +7,7 @@
  */
 
 import type { MediaFile } from "@entities/media/model/types";
-import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { adminPostKeys } from "@features/admin-posts/api/keys";
 import {
 	importPostUrl,

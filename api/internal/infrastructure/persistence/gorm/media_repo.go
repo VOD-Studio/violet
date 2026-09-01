@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"blog-api/internal/domain/emoji"
 	"blog-api/internal/domain/music"
@@ -557,6 +558,9 @@ func (r *FileRepository) FindPage(ctx context.Context, filter upload.FileListFil
 	if filter.MimePrefix != "" {
 		query = query.Where("mime_type LIKE ?", filter.MimePrefix+"%")
 	}
+	for _, prefix := range filter.ExcludeMimePrefixes {
+		query = query.Where("mime_type NOT LIKE ?", prefix+"%")
+	}
 	if filter.Keyword != "" {
 		query = query.Where("original_name ILIKE ?", "%"+filter.Keyword+"%")
 	}
@@ -595,13 +599,13 @@ func (r *FileRepository) Delete(ctx context.Context, id domainshared.ID) error {
 	return nil
 }
 
+func refCountExpr(delta int) clause.Expr {
+	return gorm.Expr("GREATEST(ref_count + ?, 0)", delta)
+}
+
 func (r *FileRepository) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error {
-	op := "+"
-	if delta < 0 {
-		op = ""
-	}
 	result := r.db.WithContext(ctx).Model(&model.File{}).Where("id = ?", id.UUID()).
-		Update("ref_count", gorm.Expr("GREATEST(ref_count "+op+" ?, 0)", delta))
+		Update("ref_count", refCountExpr(delta))
 	if result.Error != nil {
 		return domainshared.Internal("更新引用计数失败", result.Error)
 	}

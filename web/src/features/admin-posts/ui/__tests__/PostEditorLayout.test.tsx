@@ -57,7 +57,7 @@ vi.mock("@features/admin-posts/ui/PostEditorToolbar", () => ({
 vi.mock("@features/admin-posts/ui/PostVersionsSheet", () => ({
 	PostVersionsSheet: () => null,
 }));
-vi.mock("@features/admin-media/ui/MediaPicker", () => ({
+vi.mock("@entities/media/ui/MediaPicker", () => ({
 	MediaPicker: () => null,
 }));
 

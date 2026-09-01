@@ -65,7 +65,7 @@ vi.mock("@tanstack/react-query", () => ({
 // 切断子组件依赖链；不 mock Toolbar / ConfirmDialog（需测真实交互）
 vi.mock("@features/admin-posts/ui/PostEditorSidebar", () => ({ PostEditorSidebar: () => null }));
 vi.mock("@features/admin-posts/ui/PostVersionsSheet", () => ({ PostVersionsSheet: () => null }));
-vi.mock("@features/admin-media/ui/MediaPicker", () => ({ MediaPicker: () => null }));
+vi.mock("@entities/media/ui/MediaPicker", () => ({ MediaPicker: () => null }));
 
 import { PostEditor } from "@features/admin-posts/ui/PostEditor";
 

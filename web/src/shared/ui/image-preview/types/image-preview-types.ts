@@ -6,6 +6,11 @@ export interface ImagePreviewProps {
 	/** 图片列表 */
 	images: string[];
 	/**
+	 * 逐图替代文本（与 images 一一对应）。缺省回退「预览图片 n」。
+	 * 图片本身有语义 alt（如画廊最终 alt text）时传入，读屏器才能读到真实描述。
+	 */
+	alts?: string[];
+	/**
 	 * 缩略图地址列表（与 images 一一对应；飞入动画用缩略图，原图加载完成后替换）。
 	 * 后端缩略图为等比缩放（最大宽 300px），宽高比与原图一致，
 	 * 用与原图相同的 contain 约束渲染即可自然重合，替换时无尺寸跳变。

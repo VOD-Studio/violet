@@ -78,10 +78,15 @@ func registerMediaPaths(t *openapi3.T) {
 		Description: "获取当前用户的媒体文件列表。需登录。",
 		Security:    securityCookie(),
 		Parameters: openapi3.Parameters{
-			queryStrParam("purpose", "按用途筛选"), pageParam(), limitParam(100),
+			queryStrParam("purpose", "按用途筛选"),
+			queryStrParam("type", "按 MIME 大类筛选：image、video、audio、file"),
+			queryStrParam("category", "按自定义分类筛选"),
+			queryStrParam("keyword", "按原始文件名搜索"),
+			pageParam(), limitParam(100),
 		},
 		Responses: responses(
 			200, dataArrayResponse("FileDTO", "媒体列表", 200, true),
+			401, errorResponse("未认证"),
 		),
 	})
 

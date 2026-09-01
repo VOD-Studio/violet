@@ -22,6 +22,14 @@ func optStr(desc string) *openapi3.SchemaRef {
 	return reqStr(desc)
 }
 
+func nullableStr(desc string) *openapi3.SchemaRef {
+	return &openapi3.SchemaRef{Value: &openapi3.Schema{
+		Type:        &openapi3.Types{openapi3.TypeString},
+		Description: desc,
+		Nullable:    true,
+	}}
+}
+
 // strEnum 字符串枚举字段
 func strEnum(desc string, vals ...string) *openapi3.SchemaRef {
 	enums := make([]any, len(vals))
@@ -100,8 +108,8 @@ func refArray(desc, schemaName string) *openapi3.SchemaRef {
 // optRef 引用命名 schema 的可选对象字段（指向 #/components/schemas/<name>）。
 func optRef(desc, schemaName string) *openapi3.SchemaRef {
 	return &openapi3.SchemaRef{
-		Ref:         "#/components/schemas/" + schemaName,
-		Value:       &openapi3.Schema{Description: desc},
+		Ref:   "#/components/schemas/" + schemaName,
+		Value: &openapi3.Schema{Description: desc},
 	}
 }
 

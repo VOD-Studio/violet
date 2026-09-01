@@ -104,8 +104,9 @@ var (
 	ActionLoginFailed = MustParse("login_failed") // 登录失败
 
 	// --- 审核 ---
-	ActionApprove = MustParse("approve") // 审核通过
-	ActionReject  = MustParse("reject")  // 标记垃圾/拒绝
+	ActionApprove  = MustParse("approve")  // 审核通过
+	ActionReject   = MustParse("reject")   // 标记垃圾/拒绝
+	ActionModerate = MustParse("moderate") // 审核处置他人资源（撤回/删除他人作品）
 
 	// --- 订阅 ---
 	ActionFetchFeed  = MustParse("fetch_feed")  // 拉取订阅源

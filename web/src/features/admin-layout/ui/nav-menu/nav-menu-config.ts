@@ -6,6 +6,7 @@ import {
 	Cpu,
 	FileText,
 	FolderKanban,
+	GalleryHorizontalEnd,
 	GitBranch,
 	Images,
 	KeyRound,
@@ -98,6 +99,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: Library,
 		group: "content",
 		permissions: ["series:view"],
+	},
+	{
+		label: "图集管理",
+		to: "/admin/galleries",
+		icon: GalleryHorizontalEnd,
+		group: "content",
+		permissions: ["gallery:view"],
 	},
 	{
 		label: "标签管理",

@@ -1186,13 +1186,15 @@ func (s *UploadService) CheckInstantUpload(ctx context.Context, hash, callerID s
 	return &dto, true, nil
 }
 
-// ListByOwner 分页列出某用户上传的文件（可选 purpose 过滤，空串 = 不过滤）。
-func (s *UploadService) ListByOwner(ctx context.Context, ownerID, purpose string, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
+// ListByOwner 分页列出某用户上传的文件。
+func (s *UploadService) ListByOwner(ctx context.Context, ownerID string, in ListFilesInput, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
 	oid, err := shared.ParseID(ownerID)
 	if err != nil {
 		return shared.PageResult[FileDTO]{}, err
 	}
-	return s.listPage(ctx, domainupload.FileListFilter{OwnerID: &oid, Purpose: purpose}, q)
+	filter := in.toFilter()
+	filter.OwnerID = &oid
+	return s.listPage(ctx, filter, q)
 }
 
 // DeleteFile 删除文件（需引用计数为 0）
@@ -1250,8 +1252,8 @@ func (s *UploadService) BatchDeleteFiles(ctx context.Context, ids []string) (int
 	return deleted, nil
 }
 
-// ListAllFilesInput 全局文件列表查询入参（后台素材管理用，分页参数走 PageQuery）
-type ListAllFilesInput struct {
+// ListFilesInput 文件列表筛选条件；Owner 由具体用例决定。
+type ListFilesInput struct {
 	Purpose string // 用途筛选
 	// MIME 类型筛选：image / video / audio / file，后端转成前缀查询
 	MimeCategory string
@@ -1260,7 +1262,11 @@ type ListAllFilesInput struct {
 }
 
 // ListAllFiles 全局分页查询文件列表（后台素材管理，不限 owner）
-func (s *UploadService) ListAllFiles(ctx context.Context, in ListAllFilesInput, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
+func (s *UploadService) ListAllFiles(ctx context.Context, in ListFilesInput, q shared.PageQuery) (shared.PageResult[FileDTO], error) {
+	return s.listPage(ctx, in.toFilter(), q)
+}
+
+func (in ListFilesInput) toFilter() domainupload.FileListFilter {
 	// mimeCategory → mimePrefix 转换
 	mimePrefix := ""
 	switch in.MimeCategory {
@@ -1270,16 +1276,17 @@ func (s *UploadService) ListAllFiles(ctx context.Context, in ListAllFilesInput, 
 		mimePrefix = "video/"
 	case "audio":
 		mimePrefix = "audio/"
-	case "file":
-		// 「文件」指非媒体类型，用 NOT IN 排除图片/视频/音频（这里简化为不过滤，
-		// 由前端在结果中按需展示；精确排除需仓储支持 NOT LIKE，暂不做）
 	}
-	return s.listPage(ctx, domainupload.FileListFilter{
+	filter := domainupload.FileListFilter{
 		Purpose:    in.Purpose,
 		Category:   in.Category,
 		MimePrefix: mimePrefix,
 		Keyword:    in.Keyword,
-	}, q)
+	}
+	if in.MimeCategory == "file" {
+		filter.ExcludeMimePrefixes = []string{"image/", "video/", "audio/"}
+	}
+	return filter
 }
 
 // listPage 两者的共享实现：仓储 FindPage → DTO 映射，页码/条数取钳制后的回显值。

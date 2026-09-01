@@ -11,7 +11,9 @@
 
 import { AlertCircle, Download, FileArchive, RotateCcw } from "lucide-react";
 import { useMemo } from "react";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useArchive } from "../hooks/useArchive";
 import type { ArchivePreviewProps } from "../types/archive-preview-types";
 import { formatSize } from "../utils/format";
@@ -19,6 +21,7 @@ import { ArchiveTree } from "./ArchiveTree";
 
 export function ArchivePreview({ url, name, mimeType, className }: ArchivePreviewProps) {
 	const { entries, loadStatus, unsupported, retry } = useArchive({ url, name, mimeType });
+	const viewer = useFilePreviewVariant() === "viewer";
 
 	const stats = useMemo(() => {
 		const files = entries.filter((e) => !e.isDirectory);
@@ -37,25 +40,25 @@ export function ArchivePreview({ url, name, mimeType, className }: ArchivePrevie
 		<div
 			className={`flex flex-col overflow-hidden rounded-lg border bg-background ${className ?? ""}`}
 		>
-			{/* 顶部操作条 */}
-			<div className="flex items-center justify-between border-b px-3 py-1.5">
-				<span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-					<FileArchive className="size-3.5 shrink-0" />
-					{name ?? "压缩包"}
-				</span>
-				<Button
-					type="button"
-					size="icon-sm"
-					variant="ghost"
-					onClick={handleDownload}
-					title="下载"
-				>
-					<Download className="size-3.5" />
-				</Button>
-			</div>
+			{!viewer ? (
+				<div className="flex items-center justify-between border-b px-3 py-1.5">
+					<span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+						<FileArchive className="size-3.5 shrink-0" />
+						{name ?? "压缩包"}
+					</span>
+					<Button
+						type="button"
+						size="icon-sm"
+						variant="ghost"
+						onClick={handleDownload}
+						title="下载"
+					>
+						<Download className="size-3.5" />
+					</Button>
+				</div>
+			) : null}
 
-			{/* 内容区 */}
-			<div className="max-h-[70vh] overflow-auto">
+			<div className={cn("max-h-[70vh] overflow-auto", viewer && "max-h-none flex-1")}>
 				{loadStatus === "loading" ? (
 					<div className="flex h-32 items-center justify-center">
 						<div className="size-6 animate-spin rounded-full border-2 border-muted border-t-primary" />

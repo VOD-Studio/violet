@@ -1,5 +1,6 @@
 import { Download } from "lucide-react";
 import { Button } from "@/shared/ui/base/button";
+import { useFilePreviewVariant } from "../file-preview-context";
 import { getFileInfo } from "../utils/mime-utils";
 
 interface FilePlaceholderProps {
@@ -21,6 +22,7 @@ interface FilePlaceholderProps {
  */
 export function FilePlaceholder({ url, name, mimeType, hint, className }: FilePlaceholderProps) {
 	const { icon: Icon, label } = getFileInfo(mimeType, name);
+	const viewer = useFilePreviewVariant() === "viewer";
 
 	function handleDownload() {
 		const a = document.createElement("a");
@@ -36,15 +38,17 @@ export function FilePlaceholder({ url, name, mimeType, hint, className }: FilePl
 			</div>
 			<div className="text-center">
 				<p className="text-sm font-medium">{label}</p>
-				{name ? (
+				{name && !viewer ? (
 					<p className="mt-1 max-w-70 truncate text-xs text-muted-foreground">{name}</p>
 				) : null}
 				{hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
 			</div>
-			<Button variant="outline" size="sm" onClick={handleDownload}>
-				<Download className="mr-1.5 size-3.5" />
-				下载文件
-			</Button>
+			{!viewer ? (
+				<Button variant="outline" size="sm" onClick={handleDownload}>
+					<Download className="mr-1.5 size-3.5" />
+					下载文件
+				</Button>
+			) : null}
 		</div>
 	);
 }

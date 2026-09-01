@@ -1,5 +1,5 @@
 import type { MediaFile } from "@entities/media/model/types";
-import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { useProfileSettings, useUpdateProfile } from "@features/admin-settings/api/queries";
 import type { ProfileSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";

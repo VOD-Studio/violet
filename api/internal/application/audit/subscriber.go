@@ -20,6 +20,7 @@ import (
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
+	domaingallery "blog-api/internal/domain/gallery"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
@@ -601,6 +602,70 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 				"imported": e.Imported, "failed": e.Failed, "success": e.Success,
 				"error": e.Error,
 			},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String()},
+			Summary:    "创建图集工作稿",
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryPublished:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionPublish,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Slug},
+			Summary:    fmt.Sprintf("发布图集「%s」", e.Slug),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryUnpublished:
+		// 操作者与作者不同 → 审核员撤回他人作品，记 moderated 并保留原作者
+		if actor.UserID != "" && actor.UserID != e.AuthorID.String() {
+			return domainaudit.AuditEvent{
+				EventID:    e.EventID(),
+				Action:     domainaudit.ActionModerate,
+				Actor:      actor,
+				Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+				Summary:    fmt.Sprintf("审核撤回他人图集「%s」", e.Title),
+				Metadata:   map[string]any{"author_id": e.AuthorID.String(), "operation": "unpublish"},
+				OccurredAt: e.OccurredAt(),
+			}, true
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUnpublish,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("撤回公开图集「%s」", e.Title),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaingallery.GalleryDeleted:
+		// 操作者与作者不同 → 审核员删除他人作品，记 moderated 并保留原作者
+		if actor.UserID != "" && actor.UserID != e.AuthorID.String() {
+			return domainaudit.AuditEvent{
+				EventID:    e.EventID(),
+				Action:     domainaudit.ActionModerate,
+				Actor:      actor,
+				Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+				Summary:    fmt.Sprintf("审核删除他人图集「%s」", e.Title),
+				Metadata:   map[string]any{"author_id": e.AuthorID.String(), "operation": "delete"},
+				OccurredAt: e.OccurredAt(),
+			}, true
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "gallery", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("删除图集「%s」", e.Title),
 			OccurredAt: e.OccurredAt(),
 		}, true
 

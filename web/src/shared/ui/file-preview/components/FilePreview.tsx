@@ -21,8 +21,10 @@
 
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
+import { cn } from "@/shared/lib/utils";
+import { FilePreviewVariantContext } from "../file-preview-context";
 import type { FilePreviewComponentProps } from "../types/file-preview-types";
-import { getFileKind } from "../utils/mime-utils";
+import { type FileKind, getFileKind } from "../utils/mime-utils";
 import { ContentImage } from "./ContentImage";
 import { FilePlaceholder } from "./FilePlaceholder";
 
@@ -61,6 +63,28 @@ function PreviewFallback() {
 	);
 }
 
+function getViewerRendererClass(kind: FileKind): string {
+	switch (kind) {
+		case "image":
+			return "h-full min-h-0 bg-transparent [&_button]:flex [&_button]:items-center [&_button]:justify-center [&_img]:h-auto [&_img]:max-h-[calc(100dvh-9rem)] [&_img]:w-auto [&_img]:max-w-full";
+		case "video":
+			return "aspect-video h-auto max-h-full w-full rounded-none border-0";
+		case "audio":
+			return "h-full justify-center rounded-none border-0 bg-transparent";
+		case "pdf":
+			return "h-full max-h-full rounded-none border-0";
+		case "docx":
+		case "spreadsheet":
+		case "archive":
+		case "markdown":
+			return "h-full max-h-full rounded-none border-0";
+		case "code":
+			return "h-full max-h-full rounded-none border-0";
+		default:
+			return "h-full";
+	}
+}
+
 export function FilePreview({
 	url,
 	thumbnailUrl,
@@ -68,6 +92,7 @@ export function FilePreview({
 	name,
 	size,
 	showInfo = true,
+	variant = "inline",
 	className,
 	delay = 0,
 	unframed = false,
@@ -75,6 +100,8 @@ export function FilePreview({
 	ref,
 }: FilePreviewComponentProps) {
 	const kind = getFileKind(mimeType, name);
+	const viewer = variant === "viewer";
+	const rendererClassName = viewer ? getViewerRendererClass(kind) : undefined;
 
 	function renderPreview() {
 		switch (kind) {
@@ -85,6 +112,7 @@ export function FilePreview({
 						thumbnailUrl={thumbnailUrl}
 						name={name}
 						delay={delay}
+						className={rendererClassName}
 						onImageClick={onImageClick}
 					/>
 				);
@@ -94,23 +122,38 @@ export function FilePreview({
 						url={url}
 						mimeType={mimeType}
 						name={name}
-						metadata={size !== undefined ? { size } : undefined}
+						metadata={!viewer && size !== undefined ? { size } : undefined}
+						className={rendererClassName}
 					/>
 				);
 			case "audio":
-				return <AudioPreview url={url} mimeType={mimeType} name={name} />;
+				return (
+					<AudioPreview
+						url={url}
+						mimeType={mimeType}
+						name={name}
+						className={rendererClassName}
+					/>
+				);
 			case "pdf":
-				return <PdfPreview url={url} name={name} />;
+				return <PdfPreview url={url} name={name} className={rendererClassName} />;
 			case "docx":
-				return <DocxPreview url={url} name={name} />;
+				return <DocxPreview url={url} name={name} className={rendererClassName} />;
 			case "spreadsheet":
-				return <SpreadsheetPreview url={url} name={name} />;
+				return <SpreadsheetPreview url={url} name={name} className={rendererClassName} />;
 			case "archive":
-				return <ArchivePreview url={url} name={name} mimeType={mimeType} />;
+				return (
+					<ArchivePreview
+						url={url}
+						name={name}
+						mimeType={mimeType}
+						className={rendererClassName}
+					/>
+				);
 			case "markdown":
-				return <MarkdownPreview url={url} name={name} />;
+				return <MarkdownPreview url={url} name={name} className={rendererClassName} />;
 			case "code":
-				return <CodePreview url={url} name={name} />;
+				return <CodePreview url={url} name={name} className={rendererClassName} />;
 			// presentation(PPTX 演示文稿)：纯前端无法高保真预览，走占位
 			case "presentation":
 				return (
@@ -119,6 +162,7 @@ export function FilePreview({
 						name={name}
 						mimeType={mimeType}
 						hint="演示文稿暂不支持在线预览，请下载查看"
+						className={rendererClassName}
 					/>
 				);
 			// 老式 .doc/text/other → 占位下载
@@ -129,30 +173,39 @@ export function FilePreview({
 						name={name}
 						mimeType={mimeType}
 						hint="此格式暂不支持在线预览"
+						className={rendererClassName}
 					/>
 				);
 		}
 	}
 
 	return (
-		<div className={`space-y-3 ${className ?? ""}`} ref={ref}>
+		<FilePreviewVariantContext.Provider value={variant}>
 			<div
-				className={
-					unframed ? "overflow-hidden" : "overflow-hidden rounded-lg border bg-background"
-				}
+				data-file-preview-variant={variant}
+				className={cn(viewer ? "h-full min-h-0 w-full" : "space-y-3", className)}
+				ref={ref}
 			>
-				<Suspense fallback={<PreviewFallback />}>{renderPreview()}</Suspense>
-			</div>
-
-			{showInfo && name ? (
-				<div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
-					<span className="truncate">{name}</span>
-					{size !== undefined ? (
-						<span className="ml-2 shrink-0">{formatSizeInline(size)}</span>
-					) : null}
+				<div
+					className={cn(
+						"overflow-hidden",
+						viewer && "h-full min-h-0",
+						!viewer && !unframed && "rounded-lg border bg-background",
+					)}
+				>
+					<Suspense fallback={<PreviewFallback />}>{renderPreview()}</Suspense>
 				</div>
-			) : null}
-		</div>
+
+				{!viewer && showInfo && name ? (
+					<div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
+						<span className="truncate">{name}</span>
+						{size !== undefined ? (
+							<span className="ml-2 shrink-0">{formatSizeInline(size)}</span>
+						) : null}
+					</div>
+				) : null}
+			</div>
+		</FilePreviewVariantContext.Provider>
 	);
 }
 

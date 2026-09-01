@@ -1,26 +1,8 @@
 /**
  * admin-media 模块类型定义
  *
- * 后台媒体管理的查询参数与写操作请求体。领域读模型 MediaFile、MediaType 见 entities/media。
+ * 后台媒体管理写操作请求体。领域读模型与目录查询见 entities/media。
  */
-import type { MediaType } from "@entities/media/model/types";
-import type { PageQuery } from "@shared/api/types";
-
-/**
- * AdminMediaListQuery - 管理端素材列表查询参数
- *
- * 对接 GET /admin/media，支持多维筛选。
- */
-export interface AdminMediaListQuery extends PageQuery {
-	/** 用途筛选 */
-	purpose?: string;
-	/** MIME 类型筛选，image/video/audio/file */
-	type?: MediaType | string;
-	/** 自定义分类筛选 */
-	category?: string;
-	/** 关键词搜索，文件名 */
-	keyword?: string;
-}
 
 /**
  * UpdateMediaRequest - 更新素材元数据请求体

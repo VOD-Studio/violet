@@ -62,7 +62,7 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@features/admin-posts/ui/PostEditorSidebar", () => ({ PostEditorSidebar: () => null }));
 vi.mock("@features/admin-posts/ui/PostEditorToolbar", () => ({ PostEditorToolbar: () => null }));
 vi.mock("@features/admin-posts/ui/PostVersionsSheet", () => ({ PostVersionsSheet: () => null }));
-vi.mock("@features/admin-media/ui/MediaPicker", () => ({ MediaPicker: () => null }));
+vi.mock("@entities/media/ui/MediaPicker", () => ({ MediaPicker: () => null }));
 
 import { PostEditor } from "@features/admin-posts/ui/PostEditor";
 

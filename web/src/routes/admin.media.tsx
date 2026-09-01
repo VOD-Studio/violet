@@ -1,3 +1,5 @@
+import { mediaCatalogKeys } from "@entities/media/api/keys";
+import { useInfiniteMediaCatalog, useMediaCatalog } from "@entities/media/api/queries";
 import {
 	isImageOnlyPurpose,
 	MEDIA_PURPOSE_LABELS,
@@ -6,9 +8,7 @@ import {
 } from "@entities/media/model/constants";
 import type { MediaFile, MediaPurpose } from "@entities/media/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { adminMediaKeys } from "@features/admin-media/api/keys";
 import { useAdminDeleteFile, useBatchDeleteMedia } from "@features/admin-media/api/mutations";
-import { useAdminInfiniteMedia, useAdminMedia } from "@features/admin-media/api/queries";
 import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
@@ -105,7 +105,7 @@ function AdminMediaPage() {
 		isLoading: isTableLoading,
 		pagination,
 		setPage,
-	} = usePagedQuery(useAdminMedia, filterParams);
+	} = usePagedQuery(useMediaCatalog, filterParams);
 	const tableFiles = tableData?.data ?? [];
 
 	const {
@@ -114,7 +114,7 @@ function AdminMediaPage() {
 		fetchNextPage,
 		hasNextPage,
 		isFetchingNextPage,
-	} = useAdminInfiniteMedia({
+	} = useInfiniteMediaCatalog({
 		...filterParams,
 		limit: pageSize,
 	});
@@ -209,7 +209,7 @@ function AdminMediaPage() {
 				await uploadFile(file);
 				toast.success("已上传裁剪后的新素材");
 			}
-			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: mediaCatalogKeys.lists() });
 			setCropOpen(false);
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : "裁剪失败");
@@ -392,7 +392,7 @@ function AdminMediaPage() {
 					onUploaded={() => {
 						// 上传成功后刷新素材列表
 						queryClient.invalidateQueries({
-							queryKey: adminMediaKeys.lists(),
+							queryKey: mediaCatalogKeys.lists(),
 						});
 					}}
 				/>

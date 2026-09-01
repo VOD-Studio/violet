@@ -41,6 +41,7 @@ type Container struct {
 	Tweet           *TweetContainer
 	FriendLink      *FriendLinkContainer
 	Series          *SeriesContainer
+	Gallery         *GalleryContainer
 	Notification    *NotificationContainer
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
@@ -104,6 +105,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	system := NewSystemContainer(db, rdb, ctx)
 	media := NewMediaContainer(db, rdb, cfg)
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
+	gallery := NewGalleryContainer(db, bus, permissionChecker)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
@@ -116,7 +118,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Series: series, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
+		Series: series, Gallery: gallery, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 	}
 	return c, roleCleanup, nil
 }

@@ -13,7 +13,9 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { copyText } from "@/shared/lib/clipboard";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
+import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useMarkdown } from "../hooks/useMarkdown";
 import type { MarkdownPreviewProps } from "../types/markdown-preview-types";
 import { markdownComponents } from "./markdown-components";
@@ -21,6 +23,7 @@ import { markdownComponents } from "./markdown-components";
 export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) {
 	const { source, loadStatus, retry } = useMarkdown({ url });
 	const [copied, setCopied] = useState(false);
+	const viewer = useFilePreviewVariant() === "viewer";
 
 	async function handleCopy() {
 		const ok = await copyText(source);
@@ -34,11 +37,17 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 		<div
 			className={`flex flex-col overflow-hidden rounded-lg border bg-background ${className ?? ""}`}
 		>
-			{/* 顶部操作条 */}
-			<div className="flex items-center justify-between border-b px-3 py-1.5">
-				<span className="truncate text-xs text-muted-foreground">
-					{name ?? "Markdown 文档"}
-				</span>
+			<div
+				className={cn(
+					"flex items-center border-b px-3 py-1.5",
+					viewer ? "justify-end" : "justify-between",
+				)}
+			>
+				{!viewer ? (
+					<span className="truncate text-xs text-muted-foreground">
+						{name ?? "Markdown 文档"}
+					</span>
+				) : null}
 				<Button
 					type="button"
 					size="icon-sm"
@@ -55,8 +64,12 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 				</Button>
 			</div>
 
-			{/* 内容区 */}
-			<div className="max-h-[70vh] overflow-auto px-5 py-4">
+			<div
+				className={cn(
+					"max-h-[70vh] overflow-auto px-5 py-4",
+					viewer && "max-h-none flex-1",
+				)}
+			>
 				{loadStatus === "loading" ? (
 					<div className="flex h-32 items-center justify-center">
 						<div className="size-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
