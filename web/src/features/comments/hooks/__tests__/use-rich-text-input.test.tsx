@@ -18,7 +18,10 @@ const mockGroups = [
 		id: 1,
 		name: "默认",
 		source: "custom",
-		emojis: [{ id: 1, group_id: 1, name: "[smile]", url: "https://example.com/smile.png" }],
+		emojis: [
+			{ id: 1, group_id: 1, name: "[smile]", url: "https://example.com/smile.png" },
+			{ id: 2, group_id: 1, name: "doge", url: "https://example.com/doge.png" },
+		],
 	},
 ];
 
@@ -227,6 +230,18 @@ describe("useRichTextInput 图片行内节点", () => {
 		});
 
 		expect(onChange).toHaveBeenLastCalledWith("[mycat:00000000-0000-0000-0000-000000000001]");
+	});
+
+	it("外部 value 回灌时还原普通与已带方括号的系统表情", () => {
+		const { container } = render(
+			<Host value="[smile][doge]" onChange={vi.fn()} onReady={onReady} />,
+		);
+
+		const emojis = container.querySelectorAll("img[data-emoji]");
+		expect([...emojis].map((node) => node.getAttribute("data-emoji"))).toEqual([
+			"[smile]",
+			"[doge]",
+		]);
 	});
 
 	it("markdownToHtml 借助 resolveImage 从占位符还原图片节点（外部 value 注入）", () => {

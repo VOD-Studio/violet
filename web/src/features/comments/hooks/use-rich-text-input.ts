@@ -9,13 +9,14 @@
  * - Cmd/Ctrl+Enter 触发提交
  * - 受控同步：外部 value 变化时同步 DOM，用户输入时不重置光标
  *
- * emoji 查表使用 useAllEmojis 构建 name→Emoji 映射。
+ * emoji 查表使用 useAllEmojis 构建 token→Emoji 映射。
  * 图片表情用 <img data-emoji>，颜文字用 <span data-emoji>。
  * 内嵌图片（仅 inlineImages 消费方使用）用 data-image 标记：上传中/失败态是
  * contentEditable=false 的 <span>（叠加进度/失败态，可能有覆盖层子节点，需禁用
  * 编辑保证退格整体删除）；完成态是纯 <img>（与 emoji 图片节点同构，无子节点天然原子）。
  */
 
+import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
@@ -132,7 +133,7 @@ export function useRichTextInput({
 		const map = new Map<string, Emoji>();
 		for (const group of groups) {
 			for (const emoji of group.emojis) {
-				map.set(emoji.name, emoji);
+				map.set(toEmojiToken(emoji), emoji);
 			}
 		}
 		return map;
