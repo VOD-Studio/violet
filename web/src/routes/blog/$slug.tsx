@@ -7,6 +7,7 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
+import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
 import { useChapterContext, useSeriesDetail } from "@features/series/api";
 import { ChapterNav, SeriesBelonging } from "@features/series/ui/ChapterNav";
 import { MobileSeriesTocFab, SeriesToc } from "@features/series/ui/SeriesToc";
@@ -59,8 +60,7 @@ const CommentSection = lazy(() =>
  */
 function BlogDetailPage() {
 	const { slug } = Route.useParams();
-	const initialPost = Route.useLoaderData() as PostDetail | undefined;
-	const { data: post = initialPost, isLoading, error } = usePost(slug);
+	const { data: post, isLoading, error } = usePost(slug);
 	const contentRef = useRef<HTMLElement>(null);
 	const progress = useScrollProgress();
 	const articleImages = useArticleImagePreview();
@@ -109,25 +109,8 @@ function BlogDetailPage() {
 	}, [post?.id]);
 
 	if (isLoading && !post) {
-		return (
-			<div className="container mx-auto px-6 py-32">
-				<div className="mx-auto max-w-3xl animate-pulse">
-					<div className="mb-6 h-10 w-3/4 rounded bg-muted" />
-					<div className="mb-8 h-4 w-1/2 rounded bg-muted" />
-					<div className="space-y-3">
-						{[85, 70, 90, 60, 80, 55, 75, 65].map((w) => (
-							<div
-								key={w}
-								className="h-4 rounded bg-muted"
-								style={{ width: `${w}%` }}
-							/>
-						))}
-					</div>
-				</div>
-			</div>
-		);
+		return <PostDetailSkeleton />;
 	}
-
 	if (error || !post) {
 		return (
 			<div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
@@ -380,16 +363,16 @@ function sourceHostname(canonicalUrl: string): string {
 }
 
 export const Route = createFileRoute("/blog/$slug")({
+	pendingComponent: PostDetailSkeleton,
+	pendingMs: 0,
+	pendingMinMs: 200,
 	loader: async ({ context, params }) => {
 		const post = await context.queryClient.ensureQueryData({
 			queryKey: postKeys.detail(params.slug),
 			queryFn: () => fetchPostBySlug(params.slug),
 		});
-		// 预取批注聚合计数（轻量，不含正文），首屏 SSR 友好无闪烁。
-		// 完整批注按 block_id 在点击角标时懒加载。
-		// 自由评论列表由 CommentSection 挂载时拉取（Suspense 兜底）。
 		if (post?.id) {
-			await context.queryClient.ensureQueryData({
+			void context.queryClient.prefetchQuery({
 				queryKey: commentKeys.annotationSummary(post.id),
 				queryFn: () => fetchAnnotationSummary(post.id),
 			});
