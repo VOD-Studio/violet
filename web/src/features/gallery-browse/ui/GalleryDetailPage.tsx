@@ -137,8 +137,8 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 										srcSet={gridSrcSet(item.url)}
 										sizes="(min-width: 1024px) 1024px, 100vw"
 										alt={itemAlt(item, index, gallery.title)}
-										width={item.width}
-										height={item.height}
+										width={item.width > 0 ? item.width : undefined}
+										height={item.height > 0 ? item.height : undefined}
 										loading={index === 0 ? "eager" : "lazy"}
 										fetchPriority={index === 0 ? "high" : "auto"}
 										className="mx-auto h-auto max-h-[85dvh] max-w-full rounded-xl object-contain"
@@ -158,7 +158,7 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 					open={lightbox.open}
 					onClose={() => setLightbox((state) => ({ ...state, open: false }))}
 					images={items.map((item) => item.url)}
-					thumbnails={items.map((item) => item.thumbnail)}
+					thumbnails={items.map((item) => item.thumbnail || item.url)}
 					alts={items.map((item, index) => itemAlt(item, index, gallery.title))}
 					currentIndex={lightbox.index}
 					onIndexChange={(index) => setLightbox((state) => ({ ...state, index }))}

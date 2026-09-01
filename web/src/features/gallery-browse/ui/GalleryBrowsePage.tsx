@@ -24,7 +24,7 @@ function GalleryCard({ gallery }: { gallery: PublishedGallery }) {
 		<PhotoStack
 			loading="lazy"
 			images={items.map((item, index) => ({
-				src: item.thumbnail,
+				src: item.thumbnail || item.url,
 				alt: item.alt_text || `${gallery.title} · 第 ${index + 1} 张`,
 			}))}
 			footer={
