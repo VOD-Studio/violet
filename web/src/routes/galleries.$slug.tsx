@@ -3,18 +3,21 @@ import { fetchPublishedGallery } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGallery } from "@entities/gallery/model/types";
 import { GalleryDetailPage } from "@features/gallery-browse/ui/GalleryDetailPage";
+import { ApiError } from "@shared/api/error";
 import { SITE_URL } from "@shared/config/env";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/galleries/$slug")({
 	loader: async ({ context, params }) => {
-		const gallery = await context.queryClient
-			.ensureQueryData({
+		try {
+			return await context.queryClient.ensureQueryData({
 				queryKey: publishedGalleryKeys.detail(params.slug),
 				queryFn: () => fetchPublishedGallery(params.slug),
-			})
-			.catch(() => null);
-		return gallery;
+			});
+		} catch (error) {
+			if (error instanceof ApiError && error.status === 404) throw notFound();
+			throw error;
+		}
 	},
 	// 动态 SEO：标题/摘要映射 meta，首图（position 最小项）作 og:image，slug 地址稳定不变
 	head: ({ loaderData }) => {
