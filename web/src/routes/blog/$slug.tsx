@@ -74,11 +74,8 @@ function BlogDetailPage() {
 	const { data: chapterCtx } = useChapterContext(slug);
 	// 全书目录（阅读器壳左层导航）：按归属书 slug 拉详情
 	const { data: seriesDetail } = useSeriesDetail(chapterCtx?.series.slug ?? "");
-	// 后端 Create 同样拒绝，此处只管 UI 呈现
 	const { data: siteSettings } = useSettings();
 	const commentsEnabled = siteSettings?.comments_enabled ?? true;
-
-	// 进入页面增加浏览量（仅一次，失败静默不影响阅读）
 
 	// ←/→ 键盘章节导航：目标章节存在且焦点不在输入域时跳转
 	useEffect(() => {

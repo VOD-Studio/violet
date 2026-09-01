@@ -29,6 +29,7 @@ import { PostPickerDialog } from "@features/admin-series/ui/PostPickerDialog";
 import { SeriesSheet } from "@features/admin-series/ui/SeriesSheet";
 import { SortableChapterRow } from "@features/admin-series/ui/SortableChapterRow";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { rememberScrollPosition } from "@shared/lib/navigation-history";
 import { Button } from "@shared/ui/base/button";
 import {
 	Dialog,
@@ -207,7 +208,10 @@ function AdminSeriesEditPage() {
 			action={
 				<>
 					<Button size="sm" variant="outline" asChild>
-						<Link to="/admin/series">
+						<Link
+							to="/admin/series"
+							onClick={() => rememberScrollPosition("/admin/series")}
+						>
 							<ArrowLeft className="size-3.5" />
 							返回书架
 						</Link>

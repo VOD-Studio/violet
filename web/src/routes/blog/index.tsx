@@ -4,8 +4,10 @@ import BlogCascade from "@features/posts/ui/BlogCascade";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
+import { restoreScrollPosition } from "@shared/lib/navigation-history";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 /** 默认每页条数：站点设置未加载/未配置时的兜底 */
 const DEFAULT_PAGE_SIZE = 12;
@@ -18,9 +20,7 @@ const DEFAULT_PAGE_SIZE = 12;
  * loader SSR 预取第一页，dehydrate 到 HTML。
  */
 function BlogPage() {
-	// limit 由 loader 解析（settings 已就绪）经 loaderData 传入：
-	// 组件若自行从 useSettings 推导，hydration 首帧 settings 缓存为空
-	// 会先用兜底值发一次请求、设置到达再发一次（双请求根因）
+	useEffect(() => restoreScrollPosition("/blog"), []);
 	const { limit } = Route.useLoaderData();
 	return (
 		<PageShell>

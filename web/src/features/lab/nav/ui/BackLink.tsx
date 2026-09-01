@@ -1,7 +1,7 @@
 import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import type { ComponentProps } from "react";
+import type { ComponentProps, MouseEventHandler } from "react";
 
 type LinkTo = ComponentProps<typeof Link>["to"];
 
@@ -22,14 +22,16 @@ export function BackLink({
 	label,
 	to,
 	className,
+	onClick,
 }: {
 	label: string;
 	to?: LinkTo;
 	className?: string;
+	onClick?: MouseEventHandler<HTMLAnchorElement>;
 }) {
 	if (to) {
 		return (
-			<Link to={to} className={cn(entryClass, className)}>
+			<Link to={to} className={cn(entryClass, className)} onClick={onClick}>
 				<ArrowLeft className={arrowClass} />
 				{label}
 			</Link>
