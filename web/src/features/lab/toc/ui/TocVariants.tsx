@@ -224,9 +224,9 @@ function LiquidRail({
 								<motion.div
 									layoutId="liquid-pill-active"
 									transition={reduced ? instantTransition : springTransition}
-									className="absolute inset-0 -inset-x-2 z-0 rounded-lg border border-foreground/[0.08] bg-foreground/[0.04] shadow-xs backdrop-blur-xs dark:border-foreground/[0.12] dark:bg-foreground/[0.07]"
+									className="absolute inset-0 -inset-x-1 z-0 rounded-md bg-foreground/[0.045] dark:bg-foreground/[0.07]"
 								>
-									<span className="absolute top-1.5 bottom-1.5 left-1 w-0.5 rounded-full bg-foreground" />
+									<span className="absolute top-2 bottom-2 left-1 w-px rounded-full bg-foreground/80" />
 								</motion.div>
 							)}
 
@@ -235,12 +235,12 @@ function LiquidRail({
 								onClick={() => onNavigate(node.id)}
 								className={cn(
 									"group relative z-10 flex w-full cursor-pointer items-baseline text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-									depth === 0 && "text-[13.5px]",
+									depth === 0 && "text-[13px] font-medium",
 									depth === 1 && "pl-3 text-[12.5px]",
 									depth === 2 && "pl-6 text-[11.5px]",
 									isActive
-										? "font-medium text-foreground"
-										: "text-muted-foreground/80 hover:translate-x-0.5 hover:text-foreground",
+										? "font-semibold text-foreground"
+										: "text-muted-foreground/80 hover:text-foreground",
 								)}
 							>
 								<span
@@ -268,6 +268,7 @@ function LiquidRail({
  * 方案 2: Monograph Index (典藏索表 - 1:1 原位几何对齐)
  * ========================================================================= */
 function MonographIndex({ nodes, activeId, onNavigate, compact = false }: TocVariantProps) {
+	const reduced = useReducedMotion();
 	const flatItems = useMemo(() => flattenTree(nodes, ARTICLE), [nodes]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -288,6 +289,13 @@ function MonographIndex({ nodes, activeId, onNavigate, compact = false }: TocVar
 								onMouseEnter={() => setHoveredId(item.node.id)}
 								onMouseLeave={() => setHoveredId(null)}
 							>
+								{isActive && (
+									<motion.span
+										layoutId="monograph-compact-active"
+										transition={reduced ? instantTransition : springTransition}
+										className="pointer-events-none absolute inset-0.5 rounded-md bg-foreground/[0.06]"
+									/>
+								)}
 								<button
 									type="button"
 									onClick={() => onNavigate(item.node.id)}
@@ -413,26 +421,8 @@ function BranchNode({
 				<button
 					type="button"
 					onClick={() => onNavigate(node.id)}
-					className="relative flex size-4.5 shrink-0 cursor-pointer items-center justify-center focus-visible:outline-none"
-					aria-label={`定位到 ${node.title}`}
-				>
-					<span
-						className={cn(
-							"size-2 rounded-full border transition-all duration-300",
-							isActive
-								? "border-foreground bg-foreground shadow-[0_0_8px_rgba(0,0,0,0.2)] dark:shadow-[0_0_8px_rgba(255,255,255,0.4)]"
-								: isInActiveChain
-									? "border-foreground/60 bg-background"
-									: "border-border/80 bg-muted/40 group-hover:border-foreground/50",
-						)}
-					/>
-				</button>
-
-				<button
-					type="button"
-					onClick={() => onNavigate(node.id)}
 					className={cn(
-						"min-w-0 flex-1 cursor-pointer truncate text-left text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+						"relative flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 						depth === 0 ? "font-medium" : "text-[12px]",
 						isActive
 							? "font-semibold text-foreground"
@@ -440,8 +430,21 @@ function BranchNode({
 								? "text-foreground/90"
 								: "text-muted-foreground hover:text-foreground",
 					)}
+					aria-label={`定位到 ${node.title}`}
 				>
-					{node.title}
+					<span className="flex size-4.5 shrink-0 items-center justify-center">
+						<span
+							className={cn(
+								"size-2 rounded-full border transition-all duration-300",
+								isActive
+									? "border-foreground bg-foreground shadow-[0_0_8px_rgba(0,0,0,0.2)] dark:shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+									: isInActiveChain
+										? "border-foreground/60 bg-background"
+										: "border-border/80 bg-muted/40 group-hover:border-foreground/50",
+							)}
+						/>
+					</span>
+					<span className="min-w-0 flex-1 truncate text-[13px]">{node.title}</span>
 				</button>
 
 				{hasChildren && (
@@ -494,6 +497,7 @@ function BranchNode({
 }
 
 function KineticBranch(props: TocVariantProps) {
+	const reduced = useReducedMotion();
 	const activeChain = useMemo(
 		() => getActiveAncestorIds(props.nodes, props.activeId),
 		[props.nodes, props.activeId],
@@ -526,6 +530,13 @@ function KineticBranch(props: TocVariantProps) {
 								onMouseEnter={() => setHoveredId(item.node.id)}
 								onMouseLeave={() => setHoveredId(null)}
 							>
+								{isActive && (
+									<motion.span
+										layoutId="kinetic-compact-active"
+										transition={reduced ? instantTransition : springTransition}
+										className="pointer-events-none absolute inset-0.5 rounded-md border border-foreground/10 bg-foreground/[0.05]"
+									/>
+								)}
 								<button
 									type="button"
 									onClick={() => props.onNavigate(item.node.id)}
@@ -649,12 +660,19 @@ function CapsulePillars({
 						<div
 							key={topNode.id}
 							className={cn(
-								"relative flex flex-col items-center justify-between rounded-lg border p-1 transition-all",
+								"relative flex flex-col items-center justify-between rounded-lg border p-1 transition-colors",
 								isSectionActive
-									? "border-foreground/30 bg-foreground/[0.04] shadow-xs"
+									? "border-transparent"
 									: "border-border/60 bg-muted/20",
 							)}
 						>
+							{isSectionActive && (
+								<motion.span
+									layoutId="capsule-compact-active"
+									transition={reduced ? instantTransition : springTransition}
+									className="pointer-events-none absolute inset-0 rounded-lg border border-foreground/30 bg-foreground/[0.04] shadow-xs"
+								/>
+							)}
 							<div className="flex flex-col items-center gap-1.5 py-1">
 								{allInGroup.map((item) => {
 									const isItemActive = item.node.id === activeId;
@@ -745,15 +763,22 @@ function CapsulePillars({
 								: "border-border/50 hover:border-border/80",
 						)}
 					>
-						<div className="relative z-10 flex items-center justify-between gap-2 p-3">
-							<button
-								type="button"
-								onClick={() => {
-									setCollapsedOverride(null);
-									onNavigate(topNode.id);
-								}}
-								className="relative z-10 flex min-w-0 flex-1 cursor-pointer items-baseline gap-2 text-left focus-visible:outline-none"
-							>
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() => {
+								setCollapsedOverride(null);
+								onNavigate(topNode.id);
+							}}
+							onKeyDown={(event) => {
+								if (event.key !== "Enter" && event.key !== " ") return;
+								event.preventDefault();
+								setCollapsedOverride(null);
+								onNavigate(topNode.id);
+							}}
+							className="relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-t-xl p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						>
+							<div className="relative z-10 flex min-w-0 flex-1 items-baseline gap-2 text-left">
 								<span className="font-mono text-[11px] font-semibold text-muted-foreground/60">
 									{String(index + 1).padStart(2, "0")}
 								</span>
@@ -767,7 +792,7 @@ function CapsulePillars({
 								>
 									{topNode.title}
 								</span>
-							</button>
+							</div>
 
 							<div className="relative z-10 flex items-center gap-1.5">
 								{childCount > 0 && (
@@ -784,9 +809,10 @@ function CapsulePillars({
 												? `收起 ${topNode.title}`
 												: `展开 ${topNode.title}`
 										}
-										onClick={() =>
-											setCollapsedOverride(isExpanded ? topNode.id : null)
-										}
+										onClick={(event) => {
+											event.stopPropagation();
+											setCollapsedOverride(isExpanded ? topNode.id : null);
+										}}
 										className="grid size-6 cursor-pointer place-items-center rounded-md text-muted-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
 									>
 										<ChevronDown
@@ -869,82 +895,84 @@ function SpatialMinimap({ nodes, activeId, onNavigate, compact = false }: TocVar
 	const reduced = useReducedMotion();
 	const flatItems = useMemo(() => flattenTree(nodes, ARTICLE), [nodes]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
-
 	const activeIndex = flatItems.findIndex((item) => item.node.id === activeId);
-	const activeTopFraction = activeIndex >= 0 ? activeIndex / flatItems.length : 0;
-	// 透镜高度（百分比），透镜 top 在 [0, 100-lensHeight] 区间滑动，去魔法数
 	const lensHeight = Math.max(100 / flatItems.length, 12);
-	const lensTop = activeTopFraction * (100 - lensHeight);
+	const lensTop = (activeIndex >= 0 ? activeIndex / flatItems.length : 0) * (100 - lensHeight);
+
+	const mapItems = (
+		<div
+			role="group"
+			aria-label="全文位置缩略轨"
+			className={cn(
+				"relative flex flex-col justify-between border border-border/50 bg-muted/20",
+				compact ? "rounded-lg p-1" : "rounded-full px-1 py-2",
+			)}
+		>
+			<motion.div
+				className="pointer-events-none absolute inset-x-0.5 z-10 rounded-full border border-foreground/30 bg-foreground/[0.06]"
+				style={{ height: `${lensHeight}%` }}
+				animate={{ top: `${lensTop}%` }}
+				transition={reduced ? instantTransition : springTransition}
+			/>
+			{flatItems.map(({ node, depth }) => {
+				const isActive = node.id === activeId;
+				return (
+					<button
+						key={`bar-${node.id}`}
+						type="button"
+						onClick={() => onNavigate(node.id)}
+						onMouseEnter={() => setHoveredId(node.id)}
+						onMouseLeave={() => setHoveredId(null)}
+						aria-label={`跳转到 ${node.title}`}
+						className={cn(
+							"group relative z-20 flex w-full cursor-pointer items-center justify-center focus-visible:outline-none",
+							compact ? "h-8" : "h-3",
+						)}
+					>
+						<span
+							className={cn(
+								"block rounded-full transition-all",
+								depth === 0
+									? "h-1 w-3.5"
+									: depth === 1
+										? "h-0.5 w-2.5"
+										: "h-0.5 w-1.5",
+								isActive
+									? "bg-foreground shadow-xs"
+									: depth === 0
+										? "bg-foreground/40 group-hover:bg-foreground/70"
+										: "bg-muted-foreground/30 group-hover:bg-foreground/50",
+							)}
+						/>
+					</button>
+				);
+			})}
+		</div>
+	);
+
 	if (compact) {
 		return (
 			<nav aria-label="全景空间微地图收起雷达" className="relative flex flex-col py-1">
-				<div className="relative flex w-full flex-col justify-between rounded-lg border border-border/50 bg-muted/25 p-1">
-					<motion.div
-						className="pointer-events-none absolute left-0.5 right-0.5 z-10 rounded-sm border border-foreground/40 bg-foreground/10 shadow-2xs backdrop-blur-xs"
-						style={{ height: `${lensHeight}%` }}
-						animate={{ top: `${lensTop}%` }}
-						transition={reduced ? instantTransition : springTransition}
-					/>
-
-					<ul className="space-y-1">
-						{flatItems.map(({ node, depth, sectionData }) => {
-							const isActive = node.id === activeId;
-							const pCount = sectionData?.paragraphs.length ?? 1;
-							const isHovered = node.id === hoveredId;
-							const flatItem = flatItems.find((i) => i.node.id === node.id) ?? {
-								node,
-								depth,
-								indexStr: "",
-							};
-
-							return (
-								<li
-									key={`bar-compact-${node.id}`}
-									className="relative flex h-8 items-center"
-									onMouseEnter={() => setHoveredId(node.id)}
-									onMouseLeave={() => setHoveredId(null)}
-								>
-									<button
-										type="button"
-										onClick={() => onNavigate(node.id)}
-										aria-label={`跳转到 ${node.title}`}
-										className="flex w-full cursor-pointer flex-col gap-0.5 p-0.5 focus-visible:outline-none"
-									>
-										<span
-											className={cn(
-												"block h-1.5 rounded-xs transition-all",
-												isActive
-													? "bg-foreground shadow-xs"
-													: depth === 0
-														? "bg-foreground/40 hover:bg-foreground/70"
-														: "bg-muted-foreground/30 hover:bg-foreground/50",
-											)}
-										/>
-										{pCount > 1 && (
-											<span className="block h-0.5 w-3/4 rounded-xs bg-muted-foreground/20" />
-										)}
-									</button>
-
-									<AnimatePresence>
-										{isHovered && <RailHoverTooltip item={flatItem} />}
-									</AnimatePresence>
-								</li>
-							);
-						})}
-					</ul>
-				</div>
+				{mapItems}
+				<AnimatePresence>
+					{hoveredId && (
+						<RailHoverTooltip
+							item={
+								flatItems.find((item) => item.node.id === hoveredId) ?? flatItems[0]
+							}
+						/>
+					)}
+				</AnimatePresence>
 			</nav>
 		);
 	}
 
 	return (
 		<nav aria-label="全景空间微地图文章目录" className="relative select-none py-1">
-			<div className="grid grid-cols-[1fr_2rem] gap-3">
+			<div className="grid grid-cols-[1fr_1.5rem] gap-3">
 				<ul className="space-y-1">
 					{flatItems.map(({ node, depth, indexStr }) => {
 						const isActive = node.id === activeId;
-						const isHovered = node.id === hoveredId;
-
 						return (
 							<li key={node.id} className="flex h-8 items-center">
 								<button
@@ -953,15 +981,13 @@ function SpatialMinimap({ nodes, activeId, onNavigate, compact = false }: TocVar
 									onMouseEnter={() => setHoveredId(node.id)}
 									onMouseLeave={() => setHoveredId(null)}
 									className={cn(
-										"group flex w-full cursor-pointer items-baseline truncate rounded-md px-1.5 py-1 text-left transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-										depth === 0 && "font-medium text-[13px]",
+										"group flex w-full cursor-pointer items-baseline truncate rounded-md px-1.5 py-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+										depth === 0 && "text-[13px] font-medium",
 										depth === 1 && "pl-3 text-[12px]",
 										depth === 2 && "pl-5 text-[11px]",
 										isActive
 											? "bg-foreground/[0.06] font-semibold text-foreground dark:bg-foreground/[0.1]"
-											: isHovered
-												? "text-foreground"
-												: "text-muted-foreground hover:text-foreground",
+											: "text-muted-foreground hover:text-foreground",
 									)}
 								>
 									<span className="mr-1.5 font-mono text-[9px] text-muted-foreground/50">
@@ -973,55 +999,16 @@ function SpatialMinimap({ nodes, activeId, onNavigate, compact = false }: TocVar
 						);
 					})}
 				</ul>
-
-				<div className="relative flex flex-col justify-between rounded-lg border border-border/50 bg-muted/25 p-1">
-					<motion.div
-						className="pointer-events-none absolute left-0.5 right-0.5 z-10 rounded-sm border border-foreground/40 bg-foreground/10 shadow-2xs backdrop-blur-xs"
-						style={{ height: `${Math.max(100 / flatItems.length, 14)}%` }}
-						animate={{ top: `${lensTop}%` }}
-						transition={reduced ? instantTransition : springTransition}
-					/>
-
-					{flatItems.map(({ node, depth, sectionData }) => {
-						const isActive = node.id === activeId;
-						const pCount = sectionData?.paragraphs.length ?? 1;
-
-						return (
-							<button
-								key={`bar-${node.id}`}
-								type="button"
-								onClick={() => onNavigate(node.id)}
-								onMouseEnter={() => setHoveredId(node.id)}
-								onMouseLeave={() => setHoveredId(null)}
-								aria-label={`跳转到 ${node.title}`}
-								className="group relative my-0.5 flex w-full cursor-pointer flex-col gap-0.5 p-0.5 focus-visible:outline-none"
-							>
-								<span
-									className={cn(
-										"block h-1.5 rounded-xs transition-all",
-										isActive
-											? "bg-foreground"
-											: depth === 0
-												? "bg-foreground/40 group-hover:bg-foreground/70"
-												: "bg-muted-foreground/30 group-hover:bg-foreground/50",
-									)}
-								/>
-								{pCount > 1 && (
-									<span className="block h-0.5 w-3/4 rounded-xs bg-muted-foreground/20" />
-								)}
-							</button>
-						);
-					})}
-				</div>
+				{mapItems}
 			</div>
 
 			{hoveredId && (
 				<div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 rounded-md border border-border/80 bg-popover/95 p-2 text-[11px] text-popover-foreground shadow-md backdrop-blur-xs">
 					<p className="font-medium">
-						{flatItems.find((i) => i.node.id === hoveredId)?.node.title}
+						{flatItems.find((item) => item.node.id === hoveredId)?.node.title}
 					</p>
 					<p className="line-clamp-1 text-[10px] text-muted-foreground">
-						{flatItems.find((i) => i.node.id === hoveredId)?.sectionData?.lead}
+						{flatItems.find((item) => item.node.id === hoveredId)?.sectionData?.lead}
 					</p>
 				</div>
 			)}
