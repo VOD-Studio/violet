@@ -62,6 +62,15 @@ function TocTreeLab() {
 	const asideRef = useRef<HTMLElement>(null);
 	const activeItemRef = useRef<HTMLLIElement | null>(null);
 	const [expandedHeight, setExpandedHeight] = useState<number | null>(null);
+	const programmaticScroll = useRef(false);
+
+	useEffect(() => {
+		const onProgrammaticScroll = (event: Event) => {
+			programmaticScroll.current = (event as CustomEvent<boolean>).detail;
+		};
+		window.addEventListener("toc-programmatic-scroll", onProgrammaticScroll);
+		return () => window.removeEventListener("toc-programmatic-scroll", onProgrammaticScroll);
+	}, []);
 
 	// 展开态高度用 ResizeObserver 持续捕获：方案切换/折叠树变化引起的高度改变
 	// 都会被观察到，无需把它们列进依赖（依赖只留真正在体内使用的 effectiveCompact）
@@ -83,8 +92,22 @@ function TocTreeLab() {
 		const structure = `${variant}:${effectiveCompact}`;
 		const structureChanged = structure !== lastStructure.current;
 		lastStructure.current = structure;
-		if (!activeId && !structureChanged) return;
-		activeItemRef.current?.scrollIntoView({ block: "nearest" });
+		if (programmaticScroll.current || (!activeId && !structureChanged)) return;
+		const item = activeItemRef.current;
+		const scrollContainer = item?.closest<HTMLElement>("aside");
+		if (
+			!item ||
+			!scrollContainer ||
+			scrollContainer.scrollHeight <= scrollContainer.clientHeight
+		)
+			return;
+		const itemTop = item.offsetTop;
+		const itemBottom = itemTop + item.offsetHeight;
+		const viewportTop = scrollContainer.scrollTop;
+		const viewportBottom = viewportTop + scrollContainer.clientHeight;
+		if (itemTop < viewportTop) scrollContainer.scrollTop = itemTop;
+		else if (itemBottom > viewportBottom)
+			scrollContainer.scrollTop = itemBottom - scrollContainer.clientHeight;
 	}, [activeId, variant, effectiveCompact]);
 
 	const onNavigate = useCallback(

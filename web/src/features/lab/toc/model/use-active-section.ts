@@ -59,22 +59,38 @@ export function useActiveSection() {
 	const navigate = useCallback((id: string, reducedMotion: boolean) => {
 		programmaticScroll.current = true;
 		window.clearTimeout(settleTimer.current);
-		document.getElementById(id)?.scrollIntoView({
-			behavior: reducedMotion ? "auto" : "smooth",
-			block: "start",
-		});
+		window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: true }));
 		setActiveId(id);
-		// 落定判定以目标位置为准：目标节顶越过基线才解冻——
-		// 平滑滚动时长不可知（长距离可达秒级），静默/固定超时都会中途误判被途经章抢占
+
+		const scrollToTarget = () => {
+			const el = document.getElementById(id);
+			if (!el) {
+				programmaticScroll.current = false;
+				window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: false }));
+				return;
+			}
+			window.scrollTo({
+				top: el.getBoundingClientRect().top + window.scrollY - READING_BASELINE_OFFSET,
+				behavior: reducedMotion ? "auto" : "smooth",
+			});
+		};
+
+		// activeId 会同步重排手风琴；等两次布局完成后再取正文坐标并发起滚动，
+		// 避免目录展开/收起与浏览器滚动锚定共同改写 scrollIntoView 的终点。
+		if (reducedMotion) {
+			scrollToTarget();
+		} else {
+			requestAnimationFrame(() => requestAnimationFrame(scrollToTarget));
+		}
+
 		const startedAt = Date.now();
 		const checkSettled = () => {
 			const el = document.getElementById(id);
 			if (!el) {
 				programmaticScroll.current = false;
+				window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: false }));
 				return;
 			}
-			// 双向接近判定：scrollIntoView 让目标 top 单调逼近 96，途中不会落进容差带。
-			// 单向 ≤ 判定在向上跳时目标 top 为负会立即成立，150ms 即误判解冻被抢占
 			const atTarget =
 				Math.abs(el.getBoundingClientRect().top - READING_BASELINE_OFFSET) <=
 				SETTLE_TOLERANCE;
@@ -83,16 +99,8 @@ export function useActiveSection() {
 			const timedOut = Date.now() - startedAt > SETTLE_MAX_MS;
 			if (atTarget || atBottom || timedOut) {
 				programmaticScroll.current = false;
-				const baseline = window.scrollY + READING_BASELINE_OFFSET;
-				let current = ALL_SECTION_IDS[0];
-				for (const sid of ALL_SECTION_IDS) {
-					const node = document.getElementById(sid);
-					if (!node) continue;
-					if (node.getBoundingClientRect().top + window.scrollY <= baseline)
-						current = sid;
-				}
-				if (atBottom) current = ALL_SECTION_IDS[ALL_SECTION_IDS.length - 1];
-				setActiveId(current);
+				window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: false }));
+				setActiveId(id);
 				return;
 			}
 			settleTimer.current = window.setTimeout(checkSettled, SETTLE_POLL_MS);

@@ -2,7 +2,7 @@ import { cn } from "@shared/lib/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { RefObject } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ARTICLE, type ArticleSection, type TocNode, type TocVariant } from "../model/article";
 
 export interface TocVariantProps {
@@ -592,6 +592,8 @@ function CapsulePillars({
 	const flatItems = useMemo(() => flattenTree(nodes, ARTICLE), [nodes]);
 	const activeChain = useMemo(() => getActiveAncestorIds(nodes, activeId), [nodes, activeId]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
+	const cardsRef = useRef<HTMLElement>(null);
+	const [activeBox, setActiveBox] = useState({ top: 0, height: 0 });
 
 	const activeTopId = activeChain[0] ?? nodes[0]?.id;
 	// 跟随阅读自动展开：滚动进入新章即展开该组（chevron 收起为章内临时视图，
@@ -604,6 +606,24 @@ function CapsulePillars({
 		if (collapsedOverride === null || collapsedOverride === activeTopId) return;
 		setCollapsedOverride(null);
 	}, [activeTopId, collapsedOverride]);
+
+	useLayoutEffect(() => {
+		const root = cardsRef.current;
+		if (!root || compact || !activeTopId) return;
+		const card = root.querySelector<HTMLElement>(`[data-toc-card="${activeTopId}"]`);
+		if (!card) return;
+		const measure = () => {
+			setActiveBox({
+				top: card.offsetTop,
+				height: card.offsetHeight,
+			});
+		};
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(root);
+		observer.observe(card);
+		return () => observer.disconnect();
+	}, [activeTopId, compact]);
 
 	if (compact) {
 		return (
@@ -693,7 +713,16 @@ function CapsulePillars({
 	}
 
 	return (
-		<nav aria-label="晶体段落手风琴文章目录" className="flex flex-col space-y-2 py-1">
+		<nav
+			ref={cardsRef}
+			aria-label="晶体段落手风琴文章目录"
+			className="relative flex flex-col space-y-2 py-1"
+		>
+			<motion.div
+				className="pointer-events-none absolute inset-x-0 z-0 rounded-xl border border-foreground/20 bg-foreground/[0.02] shadow-xs dark:border-foreground/25 dark:bg-foreground/[0.04]"
+				animate={{ y: activeBox.top, height: activeBox.height }}
+				transition={reduced ? instantTransition : springTransition}
+			/>
 			{nodes.map((topNode, index) => {
 				const isExpanded = topNode.id === expandedId;
 				const isSectionActive = activeChain.includes(topNode.id);
@@ -708,19 +737,9 @@ function CapsulePillars({
 				return (
 					<div
 						key={topNode.id}
-						className="relative rounded-xl border border-border/50 bg-background/50 transition-colors hover:border-border/80"
+						data-toc-card={topNode.id}
+						className="relative z-10 rounded-xl border border-border/50 bg-background/50 transition-colors hover:border-border/80"
 					>
-						{/* 激活高亮框覆盖整卡（含展开区）。配合下方内容区的策略：
-						    展开不做 height 0→auto（会带动框先放大再缩小），改为
-						    popLayout 全高淡入——框的起点/终点都是完整卡尺寸，
-						    layoutId 飞行近似纯位移，与流体轨道药丸同款丝滑。 */}
-						{isSectionActive && (
-							<motion.div
-								layoutId="capsule-active-card"
-								transition={reduced ? instantTransition : springTransition}
-								className="absolute inset-0 z-0 rounded-xl border border-foreground/20 bg-foreground/[0.02] shadow-xs dark:border-foreground/25 dark:bg-foreground/[0.04]"
-							/>
-						)}
 						<div className="relative z-10 flex items-center justify-between gap-2 p-3">
 							<button
 								type="button"
