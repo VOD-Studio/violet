@@ -59,14 +59,12 @@ export function useActiveSection() {
 	const navigate = useCallback((id: string, reducedMotion: boolean) => {
 		programmaticScroll.current = true;
 		window.clearTimeout(settleTimer.current);
-		window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: true }));
 		setActiveId(id);
 
 		const scrollToTarget = () => {
 			const el = document.getElementById(id);
 			if (!el) {
 				programmaticScroll.current = false;
-				window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: false }));
 				return;
 			}
 			window.scrollTo({
@@ -88,7 +86,6 @@ export function useActiveSection() {
 			const el = document.getElementById(id);
 			if (!el) {
 				programmaticScroll.current = false;
-				window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: false }));
 				return;
 			}
 			const atTarget =
@@ -99,7 +96,6 @@ export function useActiveSection() {
 			const timedOut = Date.now() - startedAt > SETTLE_MAX_MS;
 			if (atTarget || atBottom || timedOut) {
 				programmaticScroll.current = false;
-				window.dispatchEvent(new CustomEvent("toc-programmatic-scroll", { detail: false }));
 				setActiveId(id);
 				return;
 			}

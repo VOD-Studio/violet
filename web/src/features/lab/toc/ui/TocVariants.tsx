@@ -614,7 +614,7 @@ function CapsulePillars({
 		if (!card) return;
 		const measure = () => {
 			setActiveBox({
-				top: card.offsetTop,
+				top: card.offsetTop - root.clientTop,
 				height: card.offsetHeight,
 			});
 		};
@@ -719,7 +719,7 @@ function CapsulePillars({
 			className="relative flex flex-col space-y-2 py-1"
 		>
 			<motion.div
-				className="pointer-events-none absolute inset-x-0 z-0 rounded-xl border border-foreground/20 bg-foreground/[0.02] shadow-xs dark:border-foreground/25 dark:bg-foreground/[0.04]"
+				className="pointer-events-none absolute inset-x-0 top-0 z-0 rounded-xl border border-foreground/20 bg-foreground/[0.02] shadow-xs dark:border-foreground/25 dark:bg-foreground/[0.04]"
 				animate={{ y: activeBox.top, height: activeBox.height }}
 				transition={reduced ? instantTransition : springTransition}
 			/>
@@ -738,7 +738,12 @@ function CapsulePillars({
 					<div
 						key={topNode.id}
 						data-toc-card={topNode.id}
-						className="relative z-10 rounded-xl border border-border/50 bg-background/50 transition-colors hover:border-border/80"
+						className={cn(
+							"relative z-10 rounded-xl border bg-background/50 transition-colors",
+							isSectionActive
+								? "border-transparent"
+								: "border-border/50 hover:border-border/80",
+						)}
 					>
 						<div className="relative z-10 flex items-center justify-between gap-2 p-3">
 							<button
