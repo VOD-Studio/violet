@@ -594,9 +594,16 @@ function CapsulePillars({
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 
 	const activeTopId = activeChain[0] ?? nodes[0]?.id;
-	// 手动展开优先：用户点开的组保持展开；仅当从未手动操作时跟随阅读进度展开
-	const [manualExpandedId, setManualExpandedId] = useState<string | null>(null);
-	const expandedId = manualExpandedId ?? activeTopId ?? "";
+	// 跟随阅读自动展开：滚动进入新章即展开该组（chevron 收起为章内临时视图，
+	// activeTopId 变化或组头跳转即恢复跟随）
+	const [collapsedOverride, setCollapsedOverride] = useState<string | null>(null);
+	const expandedId = collapsedOverride === (activeTopId ?? "") ? null : (activeTopId ?? "");
+
+	// 临时收起只属于收起时的章：激活章已切换（override 不再匹配）即恢复跟随展开
+	useEffect(() => {
+		if (collapsedOverride === null || collapsedOverride === activeTopId) return;
+		setCollapsedOverride(null);
+	}, [activeTopId, collapsedOverride]);
 
 	if (compact) {
 		return (
@@ -643,8 +650,8 @@ function CapsulePillars({
 											<button
 												type="button"
 												onClick={() => {
+													setCollapsedOverride(null);
 													onNavigate(item.node.id);
-													setManualExpandedId(topNode.id);
 												}}
 												aria-label={`跳转至 ${item.node.title}`}
 												className={cn(
@@ -712,8 +719,8 @@ function CapsulePillars({
 							<button
 								type="button"
 								onClick={() => {
+									setCollapsedOverride(null);
 									onNavigate(topNode.id);
-									setManualExpandedId(topNode.id);
 								}}
 								className="flex min-w-0 flex-1 cursor-pointer items-baseline gap-2 text-left focus-visible:outline-none"
 							>
@@ -748,7 +755,7 @@ function CapsulePillars({
 												: `展开 ${topNode.title}`
 										}
 										onClick={() =>
-											setManualExpandedId(isExpanded ? null : topNode.id)
+											setCollapsedOverride(isExpanded ? topNode.id : null)
 										}
 										className="grid size-6 cursor-pointer place-items-center rounded-md text-muted-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
 									>

@@ -63,20 +63,27 @@ function TocTreeLab() {
 	const activeItemRef = useRef<HTMLLIElement | null>(null);
 	const [expandedHeight, setExpandedHeight] = useState<number | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 切换方案或折叠状态时需重新捕获当前方案的自然展开高度
+	// 展开态高度用 ResizeObserver 持续捕获：方案切换/折叠树变化引起的高度改变
+	// 都会被观察到，无需把它们列进依赖（依赖只留真正在体内使用的 effectiveCompact）
 	useLayoutEffect(() => {
-		if (!effectiveCompact && asideRef.current) {
-			const rect = asideRef.current.getBoundingClientRect();
-			if (rect.height > 0) {
-				setExpandedHeight(Math.round(rect.height));
-			}
-		}
-	}, [effectiveCompact, variant, collapsedIds]);
+		const el = asideRef.current;
+		if (!el || effectiveCompact) return;
+		const ro = new ResizeObserver(() => {
+			const h = el.getBoundingClientRect().height;
+			if (h > 0) setExpandedHeight(Math.round(h));
+		});
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, [effectiveCompact]);
 
-	// 激活项滚入目录自身视口：树比容器高时高亮不被留在滚动区外（Focus TOC 契约）。
-	// variant/effectiveCompact 变化时 ref 重挂到新节点，需重跑；lint 无法识别 ref 语义，显式豁免。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: ref 重挂依赖渲染结构变化
+	// 激活项滚入目录自身视口（Focus TOC 契约）；结构键（方案:形态）参与体内
+	// 变化检测——它变化意味着激活项 DOM 重建，需要重滚
+	const lastStructure = useRef("");
 	useEffect(() => {
+		const structure = `${variant}:${effectiveCompact}`;
+		const structureChanged = structure !== lastStructure.current;
+		lastStructure.current = structure;
+		if (!activeId && !structureChanged) return;
 		activeItemRef.current?.scrollIntoView({ block: "nearest" });
 	}, [activeId, variant, effectiveCompact]);
 
