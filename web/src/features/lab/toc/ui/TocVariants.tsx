@@ -225,9 +225,7 @@ function LiquidRail({
 									layoutId="liquid-pill-active"
 									transition={reduced ? instantTransition : springTransition}
 									className="absolute inset-0 -inset-x-1 z-0 rounded-md bg-foreground/[0.045] dark:bg-foreground/[0.07]"
-								>
-									<span className="absolute top-2 bottom-2 left-1 w-px rounded-full bg-foreground/80" />
-								</motion.div>
+								/>
 							)}
 
 							<button
