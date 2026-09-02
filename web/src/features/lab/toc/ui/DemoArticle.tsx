@@ -1,6 +1,13 @@
+import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import type { ArticleSection } from "../model/article";
 import { ARTICLE } from "../model/article";
 import { READING_BASELINE_OFFSET } from "../model/use-active-section";
+
+/** 单节正文 markdown：导语作引用块，段落空行分隔，交生产 ArticleContent 渲染。 */
+function sectionMarkdown(section: ArticleSection): string {
+	const lead = section.lead ? `> ${section.lead}\n\n` : "";
+	return `${lead}${section.paragraphs.join("\n\n")}`;
+}
 
 function Section({
 	section,
@@ -14,6 +21,8 @@ function Section({
 	const Heading = depth === 1 ? "h2" : depth === 2 ? "h3" : "h4";
 
 	return (
+		// 标题手动渲染而非交给 ArticleContent：锚点 id 是目录契约（ALL_SECTION_IDS），
+		// rehype-slug 的标题 slug 化无法产出这些稳定 id；正文排版则完全走生产组件。
 		<section
 			id={section.id}
 			style={{ scrollMarginTop: READING_BASELINE_OFFSET }}
@@ -38,22 +47,11 @@ function Section({
 				</Heading>
 			</div>
 
-			{/* 导语引用框 */}
-			<div className="mb-6 rounded-r-xl border-l-2 border-foreground/20 bg-muted/20 py-2.5 pl-4 pr-3 text-[15px] font-medium leading-relaxed text-foreground/80 md:text-base">
-				{section.lead}
+			{/* 对齐生产正文页的 prose 容器形态（blog/$slug 同款段落字号与行高走生产样式） */}
+			<div className="prose prose-neutral dark:prose-invert max-w-none">
+				<ArticleContent content={sectionMarkdown(section)} />
 			</div>
 
-			{/* 正文段落 */}
-			{section.paragraphs.map((paragraph) => (
-				<p
-					key={paragraph}
-					className="mb-5 text-[15.5px] leading-relaxed text-muted-foreground md:text-base md:leading-8"
-				>
-					{paragraph}
-				</p>
-			))}
-
-			{/* 递归渲染子章节 */}
 			{section.children?.map((child, idx) => (
 				<Section
 					key={child.id}

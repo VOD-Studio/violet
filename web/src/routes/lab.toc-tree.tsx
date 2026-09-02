@@ -1,12 +1,11 @@
 import { ALL_SECTION_IDS, TOC_TREE, type TocVariant } from "@features/lab/toc/model/article";
 import { useActiveSection } from "@features/lab/toc/model/use-active-section";
 import { DemoArticle } from "@features/lab/toc/ui/DemoArticle";
+import { TocFloatingSwitcher } from "@features/lab/toc/ui/TocFloatingSwitcher";
 import { TocVariantView } from "@features/lab/toc/ui/TocVariants";
 import { LabHeader } from "@features/lab/ui/LabHeader";
 import { cn } from "@shared/lib/utils";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
-import { PanelLeft, PanelLeftClose } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -102,92 +101,75 @@ function TocTreeLab() {
 		<div className="container mx-auto px-4 py-4 sm:px-6">
 			<LabHeader to="/lab/toc-tree" />
 
-			{/* 顶部控制栏：方案选择 Tab + 展开/收起切换 */}
-			<div className="sticky top-2 z-40 mb-6 flex flex-wrap items-center justify-between gap-3 overflow-x-auto rounded-xl border border-edge-hairline bg-background/90 p-1.5 shadow-xs backdrop-blur-md md:top-4">
-				<Segmented
-					value={variant}
-					onValueChange={setVariant}
-					segments={VARIANTS.map((v) => ({ value: v.value, label: v.label }))}
-					className="min-w-max"
-				/>
-
-				{/* 展开/窄轨收起切换：lg 以下目录恒为窄轨侧挂，切换仅在桌面提供 */}
-				<button
-					type="button"
-					onClick={() => setIsCompact((v) => !v)}
-					className="hidden cursor-pointer items-center gap-1.5 rounded-lg border border-edge-hairline bg-muted/40 px-2.5 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring lg:flex"
-				>
-					{isCompact ? (
-						<PanelLeft className="size-3.5" />
-					) : (
-						<PanelLeftClose className="size-3.5" />
-					)}
-					<span className="text-[11px]">{isCompact ? "展开目录" : "收起为窄轨"}</span>
-				</button>
-			</div>
-
-			{/* 方案设计理念说明 */}
-			<p className="mb-8 font-mono text-xs text-muted-foreground">
+			{/* 方案设计理念说明；切换入口统一在右下角悬浮器 */}
+			<p className="mt-6 mb-8 font-mono text-xs text-muted-foreground">
 				<span className="mr-2 tracking-[0.3em] text-muted-foreground/60 uppercase">
 					Intent
 				</span>
 				{VARIANTS.find((v) => v.value === variant)?.intent}
 			</p>
 
-			{/* 主展示区域：目录始终在左侧；lg 以下恒为窄轨（effectiveCompact），lg 起可为全宽侧栏 */}
+			{/* 主展示区域：目录始终在左侧；lg 以下恒为窄轨（effectiveCompact），lg 起可为全宽侧栏。
+			    aside 直接作 grid 子项（不套包裹 div）——包裹层高度会收缩为 aside 自身高度，
+			    sticky 在其中没有滚动空间，目录会随页面滚走。 */}
 			<div className="grid items-start gap-4 grid-cols-[auto_minmax(0,1fr)] md:gap-6 lg:grid-cols-[18.5rem_minmax(0,1fr)] lg:gap-14">
-				{/* 侧栏插槽：lg 全宽 18.5rem 占位，避免收起导致正文文字宽度跳动 */}
-				<div className="relative flex justify-end">
-					<aside
-						ref={asideRef}
-						style={{
-							height:
-								effectiveCompact && isDesktop && expandedHeight
-									? `${expandedHeight}px`
-									: undefined,
-						}}
+				<aside
+					ref={asideRef}
+					style={{
+						height:
+							effectiveCompact && isDesktop && expandedHeight
+								? `${expandedHeight}px`
+								: undefined,
+					}}
+					className={cn(
+						"sticky top-20 z-30 flex shrink-0 flex-col justify-between rounded-2xl border border-edge-hairline/80 bg-background/60 shadow-xs backdrop-blur-xs transition-all duration-300 ease-out",
+						effectiveCompact
+							? "max-h-[calc(100vh-6rem)] w-14 overflow-visible px-2 py-4"
+							: "max-h-[calc(100vh-6rem)] w-full overflow-y-auto p-4",
+					)}
+				>
+					<div className="flex-1 overflow-visible">
+						<TocVariantView
+							variant={variant}
+							nodes={TOC_TREE}
+							activeId={activeId}
+							collapsedIds={collapsedIds}
+							onNavigate={onNavigate}
+							onToggle={onToggle}
+							compact={effectiveCompact}
+							activeItemRef={activeItemRef}
+						/>
+					</div>
+
+					{/* 底部阅读锚点指示：展开态与收起态高度等高对应 */}
+					<div
 						className={cn(
-							"flex shrink-0 flex-col justify-between rounded-2xl border border-edge-hairline/80 bg-background/60 shadow-xs backdrop-blur-xs transition-all duration-300 ease-out lg:sticky lg:top-20",
-							effectiveCompact
-								? "w-14 overflow-visible px-2 py-4"
-								: "w-full overflow-y-auto p-4 lg:max-h-[calc(100vh-6rem)]",
+							"mt-3 flex items-center border-t border-border/40 pt-2.5 font-mono text-[10px] text-muted-foreground",
+							effectiveCompact ? "justify-center" : "justify-between",
 						)}
 					>
-						<div className="flex-1 overflow-visible">
-							<TocVariantView
-								variant={variant}
-								nodes={TOC_TREE}
-								activeId={activeId}
-								collapsedIds={collapsedIds}
-								onNavigate={onNavigate}
-								onToggle={onToggle}
-								compact={effectiveCompact}
-								activeItemRef={activeItemRef}
-							/>
-						</div>
-
-						{/* 底部阅读锚点指示：展开态与收起态高度等高对应 */}
-						<div
-							className={cn(
-								"mt-3 flex items-center border-t border-border/40 pt-2.5 font-mono text-[10px] text-muted-foreground",
-								effectiveCompact ? "justify-center" : "justify-between",
-							)}
-						>
-							{!effectiveCompact && <span>READING ANCHOR</span>}
-							<span className="font-semibold text-foreground/80">
-								{effectiveCompact
-									? activeNumStr
-									: `${activeNumStr} / ${String(ALL_SECTION_IDS.length).padStart(2, "0")}`}
-							</span>
-						</div>
-					</aside>
-				</div>
+						{!effectiveCompact && <span>READING ANCHOR</span>}
+						<span className="font-semibold text-foreground/80">
+							{effectiveCompact
+								? activeNumStr
+								: `${activeNumStr} / ${String(ALL_SECTION_IDS.length).padStart(2, "0")}`}
+						</span>
+					</div>
+				</aside>
 
 				{/* 正文区域稳定固定，阅读排版绝对不动 */}
 				<main className="min-w-0">
 					<DemoArticle />
 				</main>
 			</div>
+
+			<TocFloatingSwitcher
+				variant={variant}
+				variants={VARIANTS}
+				onVariantChange={setVariant}
+				isCompact={isCompact}
+				onToggleCompact={() => setIsCompact((v) => !v)}
+			/>
 		</div>
 	);
 }
