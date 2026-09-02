@@ -11,8 +11,8 @@ const SETTLE_POLL_MS = 150;
 /** 冻结最长等待（防页底受限等极端情况死锁） */
 const SETTLE_MAX_MS = 3000;
 
-/** 目标节顶已越过基线（容差 2px）即视为落定 */
-const SETTLE_TOLERANCE = 2;
+/** 目标节顶与阅读基线的接近容差（双向） */
+const SETTLE_TOLERANCE = 8;
 
 /**
  * 激活判定：最近越过阅读基线的标题。
@@ -73,8 +73,11 @@ export function useActiveSection() {
 				programmaticScroll.current = false;
 				return;
 			}
+			// 双向接近判定：scrollIntoView 让目标 top 单调逼近 96，途中不会落进容差带。
+			// 单向 ≤ 判定在向上跳时目标 top 为负会立即成立，150ms 即误判解冻被抢占
 			const atTarget =
-				el.getBoundingClientRect().top <= READING_BASELINE_OFFSET + SETTLE_TOLERANCE;
+				Math.abs(el.getBoundingClientRect().top - READING_BASELINE_OFFSET) <=
+				SETTLE_TOLERANCE;
 			const atBottom =
 				window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
 			const timedOut = Date.now() - startedAt > SETTLE_MAX_MS;
