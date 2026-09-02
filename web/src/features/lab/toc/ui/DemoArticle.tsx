@@ -1,5 +1,6 @@
 import type { ArticleSection } from "../model/article";
 import { ARTICLE } from "../model/article";
+import { READING_BASELINE_OFFSET } from "../model/use-active-section";
 
 function Section({
 	section,
@@ -13,7 +14,11 @@ function Section({
 	const Heading = depth === 1 ? "h2" : depth === 2 ? "h3" : "h4";
 
 	return (
-		<section id={section.id} className="scroll-mt-24 pt-4">
+		<section
+			id={section.id}
+			style={{ scrollMarginTop: READING_BASELINE_OFFSET }}
+			className="pt-4"
+		>
 			<div className="mb-3 flex items-baseline gap-2.5">
 				{depth === 1 && (
 					<span className="font-mono text-xs font-semibold tracking-wider text-muted-foreground/60">

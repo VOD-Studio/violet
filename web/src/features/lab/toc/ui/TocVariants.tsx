@@ -1,6 +1,7 @@
 import { cn } from "@shared/lib/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import type { RefObject } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { ARTICLE, type ArticleSection, type TocNode, type TocVariant } from "../model/article";
 
@@ -11,8 +12,9 @@ export interface TocVariantProps {
 	onNavigate: (id: string) => void;
 	onToggle: (id: string) => void;
 	compact?: boolean;
+	/** 激活项挂载点：由页面层实现激活项滚入目录自身视口 */
+	activeItemRef?: RefObject<HTMLLIElement | null>;
 }
-
 interface FlatItem {
 	node: TocNode;
 	depth: number;
@@ -111,7 +113,13 @@ function RailHoverTooltip({ item }: { item: FlatItem }) {
 /* =========================================================================
  * 方案 1: Liquid Rail (流体轨道 - 1:1 原位几何对齐)
  * ========================================================================= */
-function LiquidRail({ nodes, activeId, onNavigate, compact = false }: TocVariantProps) {
+function LiquidRail({
+	nodes,
+	activeId,
+	onNavigate,
+	compact = false,
+	activeItemRef,
+}: TocVariantProps) {
 	const reduced = useReducedMotion();
 	const flatItems = useMemo(() => flattenTree(nodes, ARTICLE), [nodes]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -189,15 +197,17 @@ function LiquidRail({ nodes, activeId, onNavigate, compact = false }: TocVariant
 			<div className="pointer-events-none absolute bottom-4 left-[11px] top-4 w-px bg-border/40">
 				{flatItems
 					.filter((item) => item.depth === 0)
-					.map((item) => (
-						<span
-							key={`tick-${item.node.id}`}
-							className="absolute -left-1 h-px w-2 bg-border/80 transition-colors"
-							style={{
-								top: `${(flatItems.findIndex((i) => i.node.id === item.node.id) / (flatItems.length - 1)) * 100}%`,
-							}}
-						/>
-					))}
+					.map((item) => {
+						// 刻度按 depth0 章节在拍平序列中的真实索引定位，与列表位置一一对应
+						const tickIndex = flatItems.findIndex((i) => i.node.id === item.node.id);
+						return (
+							<span
+								key={`tick-${item.node.id}`}
+								className="absolute -left-1 h-px w-2 bg-border/80 transition-colors"
+								style={{ top: `${(tickIndex / (flatItems.length - 1)) * 100}%` }}
+							/>
+						);
+					})}
 			</div>
 
 			<ul className="space-y-1 pl-6">
@@ -205,7 +215,11 @@ function LiquidRail({ nodes, activeId, onNavigate, compact = false }: TocVariant
 					const isActive = node.id === activeId;
 
 					return (
-						<li key={node.id} className="relative flex h-9 items-center">
+						<li
+							key={node.id}
+							ref={isActive ? activeItemRef : undefined}
+							className="relative flex h-9 items-center"
+						>
 							{isActive && (
 								<motion.div
 									layoutId="liquid-pill-active"
@@ -374,6 +388,7 @@ interface BranchNodeProps {
 	collapsedIds: Set<string>;
 	onNavigate: (id: string) => void;
 	onToggle: (id: string) => void;
+	activeItemRef?: RefObject<HTMLLIElement | null>;
 }
 
 function BranchNode({
@@ -384,6 +399,7 @@ function BranchNode({
 	collapsedIds,
 	onNavigate,
 	onToggle,
+	activeItemRef,
 }: BranchNodeProps) {
 	const reduced = useReducedMotion();
 	const hasChildren = Boolean(node.children?.length);
@@ -392,7 +408,7 @@ function BranchNode({
 	const isInActiveChain = activeChain.includes(node.id);
 
 	return (
-		<li className="relative">
+		<li ref={isActive ? activeItemRef : undefined} className="relative">
 			<div className="group relative flex h-8 items-center gap-1.5">
 				<button
 					type="button"
@@ -466,6 +482,7 @@ function BranchNode({
 									collapsedIds={collapsedIds}
 									onNavigate={onNavigate}
 									onToggle={onToggle}
+									activeItemRef={activeItemRef}
 								/>
 							))}
 						</ul>
@@ -483,6 +500,13 @@ function KineticBranch(props: TocVariantProps) {
 	);
 	const flatItems = useMemo(() => flattenTree(props.nodes, ARTICLE), [props.nodes]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+	// 激活链上的折叠节点自动展开：折叠是视图选择，追踪链不能断在折叠子树里
+	useEffect(() => {
+		const collapsedOnChain = [...props.collapsedIds].filter((id) => activeChain.includes(id));
+		if (collapsedOnChain.length === 0) return;
+		for (const id of collapsedOnChain) props.onToggle(id);
+	}, [activeChain, props.collapsedIds, props.onToggle]);
 
 	if (props.compact) {
 		return (
@@ -546,6 +570,7 @@ function KineticBranch(props: TocVariantProps) {
 						collapsedIds={props.collapsedIds}
 						onNavigate={props.onNavigate}
 						onToggle={props.onToggle}
+						activeItemRef={props.activeItemRef}
 					/>
 				))}
 			</ul>
@@ -556,18 +581,22 @@ function KineticBranch(props: TocVariantProps) {
 /* =========================================================================
  * 方案 4: Segmented Pillars (晶体段落手风琴 - 1:1 原位几何对齐)
  * ========================================================================= */
-function CapsulePillars({ nodes, activeId, onNavigate, compact = false }: TocVariantProps) {
+function CapsulePillars({
+	nodes,
+	activeId,
+	onNavigate,
+	compact = false,
+	activeItemRef,
+}: TocVariantProps) {
 	const reduced = useReducedMotion();
 	const flatItems = useMemo(() => flattenTree(nodes, ARTICLE), [nodes]);
 	const activeChain = useMemo(() => getActiveAncestorIds(nodes, activeId), [nodes, activeId]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 
 	const activeTopId = activeChain[0] ?? nodes[0]?.id;
-	const [expandedId, setExpandedId] = useState<string>(activeTopId);
-
-	useEffect(() => {
-		if (activeTopId) setExpandedId(activeTopId);
-	}, [activeTopId]);
+	// 手动展开优先：用户点开的组保持展开；仅当从未手动操作时跟随阅读进度展开
+	const [manualExpandedId, setManualExpandedId] = useState<string | null>(null);
+	const expandedId = manualExpandedId ?? activeTopId ?? "";
 
 	if (compact) {
 		return (
@@ -615,7 +644,7 @@ function CapsulePillars({ nodes, activeId, onNavigate, compact = false }: TocVar
 												type="button"
 												onClick={() => {
 													onNavigate(item.node.id);
-													setExpandedId(topNode.id);
+													setManualExpandedId(topNode.id);
 												}}
 												aria-label={`跳转至 ${item.node.title}`}
 												className={cn(
@@ -684,7 +713,7 @@ function CapsulePillars({ nodes, activeId, onNavigate, compact = false }: TocVar
 								type="button"
 								onClick={() => {
 									onNavigate(topNode.id);
-									setExpandedId(topNode.id);
+									setManualExpandedId(topNode.id);
 								}}
 								className="flex min-w-0 flex-1 cursor-pointer items-baseline gap-2 text-left focus-visible:outline-none"
 							>
@@ -718,7 +747,9 @@ function CapsulePillars({ nodes, activeId, onNavigate, compact = false }: TocVar
 												? `收起 ${topNode.title}`
 												: `展开 ${topNode.title}`
 										}
-										onClick={() => setExpandedId(isExpanded ? "" : topNode.id)}
+										onClick={() =>
+											setManualExpandedId(isExpanded ? null : topNode.id)
+										}
 										className="grid size-6 cursor-pointer place-items-center rounded-md text-muted-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
 									>
 										<ChevronDown
@@ -742,10 +773,13 @@ function CapsulePillars({ nodes, activeId, onNavigate, compact = false }: TocVar
 									className="overflow-hidden border-t border-border/40 bg-muted/15 px-3 py-2"
 								>
 									<ul className="space-y-1">
-										{childrenFlat.map(({ node, depth }) => {
+										{childrenFlat.map(({ node, depth, indexStr }) => {
 											const isItemActive = node.id === activeId;
 											return (
-												<li key={node.id}>
+												<li
+													key={node.id}
+													ref={isItemActive ? activeItemRef : undefined}
+												>
 													<button
 														type="button"
 														onClick={() => onNavigate(node.id)}
@@ -760,12 +794,13 @@ function CapsulePillars({ nodes, activeId, onNavigate, compact = false }: TocVar
 													>
 														<span
 															className={cn(
-																"mr-2 size-1 rounded-full",
-																isItemActive
-																	? "bg-foreground"
-																	: "bg-muted-foreground/40",
+																"mr-2 font-mono text-[9px] text-muted-foreground/50",
+																isItemActive &&
+																	"text-foreground/70",
 															)}
-														/>
+														>
+															{indexStr}
+														</span>
 														<span className="truncate">
 															{node.title}
 														</span>
@@ -794,15 +829,17 @@ function SpatialMinimap({ nodes, activeId, onNavigate, compact = false }: TocVar
 
 	const activeIndex = flatItems.findIndex((item) => item.node.id === activeId);
 	const activeTopFraction = activeIndex >= 0 ? activeIndex / flatItems.length : 0;
-
+	// 透镜高度（百分比），透镜 top 在 [0, 100-lensHeight] 区间滑动，去魔法数
+	const lensHeight = Math.max(100 / flatItems.length, 12);
+	const lensTop = activeTopFraction * (100 - lensHeight);
 	if (compact) {
 		return (
 			<nav aria-label="全景空间微地图收起雷达" className="relative flex flex-col py-1">
 				<div className="relative flex w-full flex-col justify-between rounded-lg border border-border/50 bg-muted/25 p-1">
 					<motion.div
 						className="pointer-events-none absolute left-0.5 right-0.5 z-10 rounded-sm border border-foreground/40 bg-foreground/10 shadow-2xs backdrop-blur-xs"
-						style={{ height: `${Math.max(100 / flatItems.length, 12)}%` }}
-						animate={{ top: `${activeTopFraction * 84 + 1}%` }}
+						style={{ height: `${lensHeight}%` }}
+						animate={{ top: `${lensTop}%` }}
 						transition={reduced ? instantTransition : springTransition}
 					/>
 
@@ -898,7 +935,7 @@ function SpatialMinimap({ nodes, activeId, onNavigate, compact = false }: TocVar
 					<motion.div
 						className="pointer-events-none absolute left-0.5 right-0.5 z-10 rounded-sm border border-foreground/40 bg-foreground/10 shadow-2xs backdrop-blur-xs"
 						style={{ height: `${Math.max(100 / flatItems.length, 14)}%` }}
-						animate={{ top: `${activeTopFraction * 82 + 2}%` }}
+						animate={{ top: `${lensTop}%` }}
 						transition={reduced ? instantTransition : springTransition}
 					/>
 
