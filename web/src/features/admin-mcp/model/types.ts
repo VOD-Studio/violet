@@ -7,6 +7,9 @@ export const PAT_SCOPES = [
 	"subscriptions:read",
 	"subscriptions:write",
 	"comments:read",
+	"notes:read",
+	"notes:write",
+	"notes:publish",
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
@@ -58,6 +61,13 @@ export const MCP_SERVERS: MCPServerSpec[] = [
 		endpoint: "/api/v1/mcp/comments",
 		description: "评论/批注检索 tool，读读者反馈改进文章",
 		scopes: ["comments:read"],
+	},
+	{
+		key: "violet-notes",
+		label: "笔记",
+		endpoint: "/api/v1/mcp/notes",
+		description: "AI 会话沉淀笔记写入 tool（create/update/list/get/delete）",
+		scopes: ["notes:read", "notes:write", "notes:publish"],
 	},
 ];
 
