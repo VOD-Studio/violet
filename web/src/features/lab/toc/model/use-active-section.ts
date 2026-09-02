@@ -5,6 +5,9 @@ import { ALL_SECTION_IDS } from "./article";
  *  标题贴住这条线即视为"正在读"。 */
 export const READING_BASELINE_OFFSET = 96;
 
+/** 滚动事件静默多久视为落定（平滑滚动结束的判定窗口） */
+const SCROLL_SETTLE_MS = 150;
+
 /**
  * 激活判定：最近越过阅读基线的标题。
  *
@@ -15,7 +18,7 @@ export const READING_BASELINE_OFFSET = 96;
 export function useActiveSection() {
 	const [activeId, setActiveId] = useState(ALL_SECTION_IDS[0]);
 	const programmaticScroll = useRef(false);
-	const scrollTimer = useRef(0);
+	const settleTimer = useRef(0);
 
 	useEffect(() => {
 		const compute = () => {
@@ -34,29 +37,39 @@ export function useActiveSection() {
 		};
 		// scroll 自身即为节流信号，直接计算（rAF 在无绘制帧环境不回调）
 		const onScroll = () => {
-			if (programmaticScroll.current) return;
-			compute();
+			if (!programmaticScroll.current) {
+				compute();
+				return;
+			}
+			// 冻结期：滚动仍在进行，重置落定计时——途经章节永不抢高亮，
+			// 无论平滑滚动持续多久（固定超时会在长距离滚动中途解冻被途经章抢占）
+			window.clearTimeout(settleTimer.current);
+			settleTimer.current = window.setTimeout(() => {
+				programmaticScroll.current = false;
+				compute();
+			}, SCROLL_SETTLE_MS);
 		};
 		compute();
 		window.addEventListener("scroll", onScroll, { passive: true });
-		return () => window.removeEventListener("scroll", onScroll);
+		return () => {
+			window.removeEventListener("scroll", onScroll);
+			window.clearTimeout(settleTimer.current);
+		};
 	}, []);
 
 	const navigate = useCallback((id: string, reducedMotion: boolean) => {
 		programmaticScroll.current = true;
-		window.clearTimeout(scrollTimer.current);
+		window.clearTimeout(settleTimer.current);
 		document.getElementById(id)?.scrollIntoView({
 			behavior: reducedMotion ? "auto" : "smooth",
 			block: "start",
 		});
 		setActiveId(id);
-		// 平滑滚动期间冻结基线计算，落定后解冻，防止途经章节抢占高亮
-		scrollTimer.current = window.setTimeout(
-			() => {
-				programmaticScroll.current = false;
-			},
-			reducedMotion ? 50 : 700,
-		);
+		// 静默解冻：滚动事件停止 SCROLL_SETTLE_MS 后解冻并按落定点校正，
+		// 平滑滚动无论多长都在途中保持冻结
+		settleTimer.current = window.setTimeout(() => {
+			programmaticScroll.current = false;
+		}, SCROLL_SETTLE_MS);
 	}, []);
 
 	return { activeId, navigate };
