@@ -1,6 +1,6 @@
 import { type TocItem, useActiveHeading } from "@shared/hooks/use-toc";
 import { ScrollArea } from "@shared/ui/scroll-area";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
 import {
 	type RefObject,
 	useCallback,
@@ -338,7 +338,7 @@ const ArticleToc = ({
 				</p>
 			)}
 			<ScrollArea ref={viewportRef} className="flex-1">
-				<ul className="space-y-0.5">
+				<ul className="space-y-2">
 					{rootTruncation?.head ? (
 						<TruncationAnchor
 							targetId={rootTruncation.head}
@@ -386,6 +386,10 @@ interface TreeNodeProps {
 	onToggle: (id: string) => void;
 	onNavigate: (id: string) => void;
 }
+function branchContains(node: TocNode, active: string | null): boolean {
+	if (!active) return false;
+	return node.id === active || node.children.some((child) => branchContains(child, active));
+}
 
 function TreeNode({
 	node,
@@ -403,76 +407,106 @@ function TreeNode({
 
 	const isActive = active === node.id;
 	const isCollapsed = collapsed.has(node.id);
-	const cfg = LEVEL_CONFIG[node.level];
 	const hasChildren = node.children.length > 0;
 	const nodeIndex = flatIndexMap.get(node.id) ?? -1;
 	const isRead = activeIndex >= 0 && nodeIndex >= 0 && nodeIndex < activeIndex;
 	const nodeTruncation = truncation.get(node.id);
+	const activeInBranch = isActive || node.children.some((child) => branchContains(child, active));
 
 	return (
-		<li ref={isActive ? isActiveItemRef : undefined}>
+		<li
+			ref={isActive ? isActiveItemRef : undefined}
+			className={
+				node.level === 2
+					? "relative rounded-xl border border-border/60 bg-background/50"
+					: undefined
+			}
+		>
 			<div
 				className={
-					"group relative flex w-full items-center gap-1.5 rounded-md py-1.5 pr-2 transition-colors " +
-					`${cfg.indent} ${cfg.text} ` +
-					(isActive
-						? "bg-accent/60 font-medium text-foreground"
-						: "text-muted-foreground hover:bg-accent/40 hover:text-foreground")
+					node.level === 2
+						? "relative flex cursor-pointer items-center justify-between gap-2 rounded-xl p-3 transition-colors hover:bg-accent/30"
+						: "group relative flex w-full items-center gap-1.5 rounded-md py-1.5 pr-2 transition-colors"
 				}
+				onClick={() => onNavigate(node.id)}
+				onKeyDown={(event) => {
+					if (event.key !== "Enter" && event.key !== " ") return;
+					event.preventDefault();
+					onNavigate(node.id);
+				}}
+				role={node.level === 2 ? "button" : undefined}
+				tabIndex={node.level === 2 ? 0 : undefined}
 			>
-				{isActive ? (
-					<span
-						aria-hidden
-						className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-full bg-neon-blue"
-					/>
+				{activeInBranch && node.level === 2 ? (
+					<span className="pointer-events-none absolute inset-0 rounded-xl border border-foreground/20 bg-foreground/[0.03] shadow-xs" />
 				) : null}
+
+				<button
+					type="button"
+					onClick={(event) => {
+						event.stopPropagation();
+						onNavigate(node.id);
+					}}
+					className={
+						"relative z-10 flex min-w-0 flex-1 items-center gap-2 text-left " +
+						(node.level === 2
+							? activeInBranch
+								? "font-semibold text-foreground"
+								: "text-muted-foreground"
+							: `${LEVEL_CONFIG[node.level].indent} ${LEVEL_CONFIG[node.level].text} ` +
+								(isActive
+									? "font-medium text-foreground"
+									: isRead
+										? "text-muted-foreground/70"
+										: "text-muted-foreground hover:text-foreground"))
+					}
+				>
+					{node.level === 2 ? (
+						<span className="shrink-0 font-mono text-[10px] font-semibold text-muted-foreground/50">
+							{String(nodeIndex + 1).padStart(2, "0")}
+						</span>
+					) : (
+						<span
+							className={
+								"size-1.5 shrink-0 rounded-full " +
+								(isActive
+									? "bg-foreground"
+									: isRead
+										? "bg-muted-foreground/60"
+										: "bg-muted-foreground/30")
+							}
+						/>
+					)}
+					<span className="truncate">{node.text}</span>
+				</button>
 
 				{hasChildren ? (
 					<button
 						type="button"
-						onClick={() => onToggle(node.id)}
+						onClick={(event) => {
+							event.stopPropagation();
+							onToggle(node.id);
+						}}
 						aria-label={isCollapsed ? "展开" : "折叠"}
 						aria-expanded={!isCollapsed}
-						className="flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-accent"
+						className="relative z-10 grid size-6 shrink-0 cursor-pointer place-items-center rounded-md text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
 					>
-						<ChevronRight
+						<ChevronDown
 							aria-hidden
-							className={
-								"size-3 shrink-0 transition-transform " +
-								(node.level === 3 ? "opacity-60 " : "") +
-								(isActive
-									? "text-neon-blue"
-									: "text-muted-foreground/60 group-hover:text-muted-foreground") +
-								(isCollapsed ? "" : " rotate-90")
-							}
+							className={`size-3.5 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
 						/>
 					</button>
-				) : (
-					<span aria-hidden className="flex size-4 shrink-0 items-center justify-center">
-						<span
-							className={
-								"size-1.5 rounded-full transition-colors " +
-								(isActive
-									? "bg-neon-blue"
-									: isRead
-										? "bg-primary/70"
-										: "bg-muted-foreground/40 group-hover:bg-muted-foreground/70")
-							}
-						/>
-					</span>
-				)}
-
-				<button
-					type="button"
-					onClick={() => onNavigate(node.id)}
-					className="flex-1 truncate text-left"
-				>
-					{node.text}
-				</button>
+				) : null}
 			</div>
 
 			{hasChildren && !isCollapsed ? (
-				<ul className="space-y-0.5">
+				<ul
+					className={
+						node.level === 2
+							? "relative border-t border-border/40 bg-muted/15 px-3 py-2"
+							: "space-y-0.5"
+					}
+				>
 					{nodeTruncation?.head ? (
 						<TruncationAnchor
 							targetId={nodeTruncation.head}
