@@ -763,13 +763,19 @@ function CapsulePillars({
 							</div>
 						</div>
 
-						<AnimatePresence initial={false}>
+						{/* popLayout：退出组脱离布局流淡出，不再边收缩边占位（切换顿挫根源） */}
+						<AnimatePresence initial={false} mode="popLayout">
 							{isExpanded && childCount > 0 && (
 								<motion.div
+									key={topNode.id}
 									initial={reduced ? false : { height: 0, opacity: 0 }}
 									animate={{ height: "auto", opacity: 1 }}
-									exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-									transition={reduced ? instantTransition : springTransition}
+									exit={{ opacity: 0 }}
+									transition={
+										reduced
+											? instantTransition
+											: { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+									}
 									className="overflow-hidden border-t border-border/40 bg-muted/15 px-3 py-2"
 								>
 									<ul className="space-y-1">
