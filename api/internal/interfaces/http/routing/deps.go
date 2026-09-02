@@ -30,6 +30,7 @@ import (
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
+	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
@@ -92,6 +93,7 @@ type Deps struct {
 	FriendLink         *friendlinkhttp.Handler
 	Series             *serieshttp.Handler
 	Gallery            *galleryhttp.Handler
+	Note               *notehttp.Handler
 	Notification       *notificationhttp.Handler
 	NotificationStream *notificationhttp.StreamHandler
 	Chat               *chathttp.Handler

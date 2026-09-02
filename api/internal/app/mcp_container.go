@@ -5,10 +5,10 @@ import (
 
 	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 
+	appcomment "blog-api/internal/application/comment"
 	appmcp "blog-api/internal/application/mcp"
 	apppost "blog-api/internal/application/post"
 	appseries "blog-api/internal/application/series"
-	appcomment "blog-api/internal/application/comment"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
 	domainapitoken "blog-api/internal/domain/api_token"
@@ -56,8 +56,8 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 
 	auth := mcpauth.RequireBearerToken(verifier.Verify, nil)
 	return &MCPContainer{
-		PostHandler:     auth(appmcp.StreamableHandler(postServer)),
-		ScraperHandler:  auth(appmcp.StreamableHandler(scraperServer)),
+		PostHandler:    auth(appmcp.StreamableHandler(postServer)),
+		ScraperHandler: auth(appmcp.StreamableHandler(scraperServer)),
 		// PublicHandler 不套 auth：匿名端点就是匿名，不伪装（PRD-0007 鉴权装配）。
 		PublicHandler:   appmcp.StreamableHandler(publicServer),
 		CommentsHandler: auth(appmcp.StreamableHandler(commentsServer)),

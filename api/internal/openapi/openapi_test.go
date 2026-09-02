@@ -401,3 +401,16 @@ func TestPostPaths(t *testing.T) {
 	// 后台接口需鉴权
 	require.NotEmpty(t, spec.Paths.Find("/admin/posts").Get.Security)
 }
+
+func TestNotePaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/notes", "/notes/{id}",
+		"/admin/notes", "/admin/notes/{id}", "/admin/notes/{id}/publish",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing note path %s", p)
+	}
+	for _, s := range []string{"NoteSaveRequest", "NoteSummaryDTO", "NoteDTO", "PublicNoteDTO"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+}

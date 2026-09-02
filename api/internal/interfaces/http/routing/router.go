@@ -93,6 +93,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 图集（前台公开浏览流与详情）
 		registerGalleryPublicRoutes(v1, d)
 
+		// 笔记（前台公开：知识笔记流 + 详情）
+		registerNotePublicRoutes(v1, d)
+
 		// 代码运行器（登录可执行，SSE 用 GET 绕过 CSRF）
 		registerCodeRunnerRoutes(v1, d)
 
@@ -169,6 +172,14 @@ func registerSeriesRoutes(v1 chi.Router, d *Deps) {
 		r.Get("/", seriesH.ListPublished)
 		r.Get("/context/{postSlug}", seriesH.GetChapterContext)
 		r.Get("/{slug}", seriesH.GetBySlug)
+	})
+}
+
+func registerNotePublicRoutes(v1 chi.Router, d *Deps) {
+	noteH := d.Note
+	v1.Route("/notes", func(r chi.Router) {
+		r.Get("/", noteH.BrowsePublished)
+		r.Get("/{id}", noteH.GetPublished)
 	})
 }
 
