@@ -2,7 +2,6 @@ import { cn } from "@shared/lib/utils";
 import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
 import { SystemThemeTransition } from "@shared/ui/theme-transition";
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -10,7 +9,6 @@ import {
 	Scripts,
 	useRouterState,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
@@ -163,15 +161,6 @@ function RootComponent() {
 			<LoginDialog />
 			<ShareTweetDialog />
 			<CustomCursor />
-			<TanStackDevtools
-				config={{ position: "bottom-left" }}
-				plugins={[
-					{
-						name: "Tanstack Router",
-						render: <TanStackRouterDevtoolsPanel />,
-					},
-				]}
-			/>
 		</AppProvider>
 	);
 }
