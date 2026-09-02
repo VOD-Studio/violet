@@ -29,6 +29,7 @@ import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as UsersUsernameRouteImport } from './routes/users/$username'
 import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
 import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
+import { Route as LabTocTreeRouteImport } from './routes/lab.toc-tree'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabSeriesRouteImport } from './routes/lab.series'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
@@ -174,6 +175,11 @@ const TweetsIdRoute = TweetsIdRouteImport.update({
 const SeriesSlugRoute = SeriesSlugRouteImport.update({
   id: '/series/$slug',
   path: '/series/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabTocTreeRoute = LabTocTreeRouteImport.update({
+  id: '/lab/toc-tree',
+  path: '/lab/toc-tree',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabThemeRoute = LabThemeRouteImport.update({
@@ -446,6 +452,7 @@ export interface FileRoutesByFullPath {
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
+  '/lab/toc-tree': typeof LabTocTreeRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -510,6 +517,7 @@ export interface FileRoutesByTo {
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
+  '/lab/toc-tree': typeof LabTocTreeRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -579,6 +587,7 @@ export interface FileRoutesById {
   '/lab/nav': typeof LabNavRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
+  '/lab/toc-tree': typeof LabTocTreeRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -649,6 +658,7 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/series'
     | '/lab/theme'
+    | '/lab/toc-tree'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -713,6 +723,7 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/series'
     | '/lab/theme'
+    | '/lab/toc-tree'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -781,6 +792,7 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/series'
     | '/lab/theme'
+    | '/lab/toc-tree'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -832,6 +844,7 @@ export interface RootRouteChildren {
   LabNavRoute: typeof LabNavRoute
   LabSeriesRoute: typeof LabSeriesRoute
   LabThemeRoute: typeof LabThemeRoute
+  LabTocTreeRoute: typeof LabTocTreeRoute
   SeriesSlugRoute: typeof SeriesSlugRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
@@ -987,6 +1000,13 @@ declare module '@tanstack/react-router' {
       path: '/series/$slug'
       fullPath: '/series/$slug'
       preLoaderRoute: typeof SeriesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/toc-tree': {
+      id: '/lab/toc-tree'
+      path: '/lab/toc-tree'
+      fullPath: '/lab/toc-tree'
+      preLoaderRoute: typeof LabTocTreeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/theme': {
@@ -1449,6 +1469,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabNavRoute: LabNavRoute,
   LabSeriesRoute: LabSeriesRoute,
   LabThemeRoute: LabThemeRoute,
+  LabTocTreeRoute: LabTocTreeRoute,
   SeriesSlugRoute: SeriesSlugRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,

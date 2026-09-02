@@ -65,4 +65,12 @@ export const LABS = [
 			"浏览流与详情网格的候选方向并排开着，灯箱复用生产 ImagePreview——图集长什么样，比着选。",
 		meta: "浏览 ×4 · 网格 ×3 · 灯箱=生产",
 	},
+	{
+		to: "/lab/toc-tree",
+		en: "TOC Tree",
+		title: "文章目录树实验室",
+		description:
+			"流体轨道、典藏索表、贝塞尔树、晶体风琴与全景微地图——五种顶级目录树交互语言实测。",
+		meta: "方案 ×5 · 流体/索表/树/风琴/微地图",
+	},
 ] as const;
