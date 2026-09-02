@@ -50,8 +50,8 @@ describe("MCP_CLIENTS 配置生成", () => {
 		if (view.kind !== "commands") {
 			throw new Error("expect commands");
 		}
-		// 4 个 server（violet-posts / scraper / reader / comments）各一条命令
-		expect(view.commands).toHaveLength(4);
+		// 5 个 server（violet-posts / scraper / reader / comments / notes）各一条命令
+		expect(view.commands).toHaveLength(5);
 		expect(view.commands[0]).toContain(
 			"claude mcp add --transport http violet-posts https://blog.example.com/api/v1/mcp",
 		);
@@ -139,8 +139,8 @@ describe("MCP_CLIENTS 配置生成", () => {
 		if (view.kind !== "deeplinks") {
 			throw new Error("expect deeplinks");
 		}
-		// 4 个 server 各一个 deeplink
-		expect(view.links).toHaveLength(4);
+		// 5 个 server 各一个 deeplink
+		expect(view.links).toHaveLength(5);
 		const url = new URL(view.links[0].href.replace("cursor://", "https://deeplink/"));
 		const config = JSON.parse(atob(url.searchParams.get("config") ?? ""));
 		expect(config.url).toBe("https://blog.example.com/api/v1/mcp");
