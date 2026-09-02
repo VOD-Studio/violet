@@ -10,7 +10,7 @@ import { Link } from "@tanstack/react-router";
 const HeaderLogo = () => {
 	const { data } = useSettings();
 	return (
-		<Link to="/" className="font-mono text-xl font-bold tracking-tight">
+		<Link to="/" className="block truncate font-mono text-xl font-bold tracking-tight">
 			{data?.site_name ?? "Blog"}
 		</Link>
 	);

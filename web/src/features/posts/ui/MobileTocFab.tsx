@@ -38,7 +38,7 @@ const MobileTocFab = ({ items, contentRef }: MobileTocFabProps) => {
 						目录
 					</SheetTitle>
 				</SheetHeader>
-				<div className="max-h-[60vh] overflow-hidden px-4 py-4">
+				<div className="max-h-[60vh] overflow-y-auto overflow-x-hidden px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 					<ArticleToc
 						items={items}
 						contentRef={contentRef}

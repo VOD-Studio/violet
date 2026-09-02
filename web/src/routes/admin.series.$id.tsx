@@ -41,8 +41,9 @@ import {
 import { Input } from "@shared/ui/base/input";
 import { Skeleton } from "@shared/ui/base/skeleton";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BookPlus, Globe, Plus, Trash2 } from "lucide-react";
+import { HistoryBack } from "@shared/ui/history-back";
+import { createFileRoute } from "@tanstack/react-router";
+import { BookPlus, Globe, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/series/$id")({
@@ -206,12 +207,12 @@ function AdminSeriesEditPage() {
 			description={`《${series.title}》 · 章节 ${series.chapter_count} 已发布 / ${series.total_chapter_count} 总计`}
 			action={
 				<>
-					<Button size="sm" variant="outline" asChild>
-						<Link to="/admin/series">
-							<ArrowLeft className="size-3.5" />
-							返回书架
-						</Link>
-					</Button>
+					<HistoryBack
+						fallbackTo="/admin/series"
+						className="h-8 gap-2 rounded-md border border-input bg-background px-3 text-sm shadow-xs hover:bg-accent hover:text-accent-foreground"
+					>
+						返回书架
+					</HistoryBack>
 					<PermissionGuard permission="series:update">
 						<Button size="sm" variant="outline" onClick={() => setMetaOpen(true)}>
 							编辑信息

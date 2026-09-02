@@ -195,9 +195,8 @@ const (
 // 用户聚合的核心不变量（Invariants）：
 //   - Email 全局唯一（由 repository 保证）
 //   - Username 全局唯一（由 repository 保证）
-//   - EmailVerified 仅能通过验证码流程置为 true（VerifyEmail 方法）
+//   - EmailVerified 由可信创建入口或验证码流程置为 true
 //   - 禁用用户不能登录（IsActive=false）
-//
 // 聚合根方法只做纯领域逻辑，不访问 DB；
 // 持久化由应用层通过 UserRepository 完成。
 type User struct {

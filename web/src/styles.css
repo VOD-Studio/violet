@@ -2,7 +2,6 @@
 @import "tailwindcss";
 @import "@fontsource/maple-mono/400.css";
 @import "@fontsource/maple-mono/700.css";
-@import "@xterm/xterm/css/xterm.css";
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
@@ -323,11 +322,14 @@ body {
 	}
 }
 
-/* Header 与顶部公告条保持静止，不跟随内容滑动（公告条全站同数据，
- * 导航转场时 old/new 快照一致，静止即无缝） */
+/* Header 与顶部公告条保持静止，不跟随内容滑动。Header 内部导航滑块仍需
+ * 在新快照中完成 Motion 布局动画，因此只隐藏旧快照，避免旧当前态残留。 */
 ::view-transition-group(site-header),
 ::view-transition-group(announcement-bar) {
 	animation: none;
+}
+::view-transition-old(site-header) {
+	opacity: 0;
 }
 
 /* —— forward：旧页左移退出，新页右侧滑入 —— */

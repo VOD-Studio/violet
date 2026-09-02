@@ -4,11 +4,11 @@ import type { PublishedGalleryItem } from "@entities/gallery/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
+import { HistoryBack } from "@shared/ui/history-back";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { PageShell } from "@shared/ui/page-shell";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 interface GalleryDetailPageProps {
@@ -16,6 +16,7 @@ interface GalleryDetailPageProps {
 }
 
 /** 网格展示图宽度档：桌面视觉列上限 max-w-5xl=1024px，2048 覆盖 2x DPR；后端只缩不放，小图原图直出。 */
+
 const GRID_IMAGE_WIDTH = 2048;
 
 /** srcset 候选宽度：移动端按视口取小档，避免 2048 单档对窄屏浪费带宽。 */
@@ -90,12 +91,12 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 	return (
 		<PageShell>
 			<article className="mx-auto max-w-5xl">
-				<Button variant="ghost" size="sm" asChild className="mb-8 -ml-3">
-					<Link to="/galleries">
-						<ArrowLeft className="size-4" />
-						返回图集
-					</Link>
-				</Button>
+				<HistoryBack
+					fallbackTo="/galleries"
+					className="mb-8 -ml-3 gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent"
+				>
+					返回图集
+				</HistoryBack>
 
 				<header className="mx-auto mb-12 max-w-3xl text-center">
 					<h1 className="font-mono font-bold text-4xl leading-tight md:text-5xl">
@@ -129,7 +130,6 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 											trigger: event.currentTarget,
 										})
 									}
-									// img alt 即按钮的可访问名称，无需重复 aria-label
 									className="mx-auto block w-full cursor-zoom-in rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 								>
 									<img
@@ -137,8 +137,8 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 										srcSet={gridSrcSet(item.url)}
 										sizes="(min-width: 1024px) 1024px, 100vw"
 										alt={itemAlt(item, index, gallery.title)}
-										width={item.width}
-										height={item.height}
+										width={item.width > 0 ? item.width : undefined}
+										height={item.height > 0 ? item.height : undefined}
 										loading={index === 0 ? "eager" : "lazy"}
 										fetchPriority={index === 0 ? "high" : "auto"}
 										className="mx-auto h-auto max-h-[85dvh] max-w-full rounded-xl object-contain"
@@ -158,7 +158,7 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 					open={lightbox.open}
 					onClose={() => setLightbox((state) => ({ ...state, open: false }))}
 					images={items.map((item) => item.url)}
-					thumbnails={items.map((item) => item.thumbnail)}
+					thumbnails={items.map((item) => item.thumbnail || item.url)}
 					alts={items.map((item, index) => itemAlt(item, index, gallery.title))}
 					currentIndex={lightbox.index}
 					onIndexChange={(index) => setLightbox((state) => ({ ...state, index }))}

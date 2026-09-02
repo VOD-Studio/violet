@@ -317,18 +317,15 @@ ssh xunrua.top 'cd /root/docker/nginx-proxy && cp docker-compose.yml docker-comp
 
 ### vhost.d 加静态资源 location（幂等）
 
-追加到 `/root/docker/nginx-proxy/vhost.d/xunrua.top`：
+`deploy/nginx/xunrua.top` 是该 vhost 的版本化真相源。发版流水线会把它同步到
+`/root/docker/nginx-proxy/vhost.d/xunrua.top`，随后校验并 reload Nginx。配置包含：
 
-```nginx
-# 静态资源由 nginx 直接服务，不走 SSR
-# 扩展名列表必须覆盖 web 产物里所有根目录文件类型，否则会落回 SSR 返回 HTML 兜底（404）
-location ~* \.(css|js|mjs|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|wasm|map|json|txt|xml|webmanifest)$ {
-    root /var/www/blog-client;
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    try_files $uri =404;
-}
-```
+- 静态资源 `try_files` 与一年 immutable 缓存。
+- HTML、CSS、JavaScript、JSON、SVG、Wasm 等文本资源的 gzip 压缩。
+- `/api/` 与 `/uploads/` 到 `blog-api:9090` 的反向代理。
+
+首次接入时只需确保 nginx-proxy compose 已挂载 `vhost.d/` 和 `blog-client/`；
+不要再直接修改容器内 `/etc/nginx/vhost.d/xunrua.top`，避免下次部署覆盖。
 
 reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-proxy nginx -s reload'`
 

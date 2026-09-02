@@ -18,9 +18,6 @@ const DEFAULT_PAGE_SIZE = 12;
  * loader SSR 预取第一页，dehydrate 到 HTML。
  */
 function BlogPage() {
-	// limit 由 loader 解析（settings 已就绪）经 loaderData 传入：
-	// 组件若自行从 useSettings 推导，hydration 首帧 settings 缓存为空
-	// 会先用兜底值发一次请求、设置到达再发一次（双请求根因）
 	const { limit } = Route.useLoaderData();
 	return (
 		<PageShell>

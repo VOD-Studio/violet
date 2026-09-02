@@ -7,6 +7,7 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
+import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
 import { useChapterContext, useSeriesDetail } from "@features/series/api";
 import { ChapterNav, SeriesBelonging } from "@features/series/ui/ChapterNav";
 import { MobileSeriesTocFab, SeriesToc } from "@features/series/ui/SeriesToc";
@@ -59,8 +60,7 @@ const CommentSection = lazy(() =>
  */
 function BlogDetailPage() {
 	const { slug } = Route.useParams();
-	const initialPost = Route.useLoaderData() as PostDetail | undefined;
-	const { data: post = initialPost, isLoading, error } = usePost(slug);
+	const { data: post, isLoading, error } = usePost(slug);
 	const contentRef = useRef<HTMLElement>(null);
 	const progress = useScrollProgress();
 	const articleImages = useArticleImagePreview();
@@ -74,11 +74,8 @@ function BlogDetailPage() {
 	const { data: chapterCtx } = useChapterContext(slug);
 	// 全书目录（阅读器壳左层导航）：按归属书 slug 拉详情
 	const { data: seriesDetail } = useSeriesDetail(chapterCtx?.series.slug ?? "");
-	// 后端 Create 同样拒绝，此处只管 UI 呈现
 	const { data: siteSettings } = useSettings();
 	const commentsEnabled = siteSettings?.comments_enabled ?? true;
-
-	// 进入页面增加浏览量（仅一次，失败静默不影响阅读）
 
 	// ←/→ 键盘章节导航：目标章节存在且焦点不在输入域时跳转
 	useEffect(() => {
@@ -109,25 +106,8 @@ function BlogDetailPage() {
 	}, [post?.id]);
 
 	if (isLoading && !post) {
-		return (
-			<div className="container mx-auto px-6 py-32">
-				<div className="mx-auto max-w-3xl animate-pulse">
-					<div className="mb-6 h-10 w-3/4 rounded bg-muted" />
-					<div className="mb-8 h-4 w-1/2 rounded bg-muted" />
-					<div className="space-y-3">
-						{[85, 70, 90, 60, 80, 55, 75, 65].map((w) => (
-							<div
-								key={w}
-								className="h-4 rounded bg-muted"
-								style={{ width: `${w}%` }}
-							/>
-						))}
-					</div>
-				</div>
-			</div>
-		);
+		return <PostDetailSkeleton />;
 	}
-
 	if (error || !post) {
 		return (
 			<div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
@@ -165,7 +145,7 @@ function BlogDetailPage() {
 			</div>
 
 			<article className="container mx-auto px-6 py-16">
-				<BackLink to="/blog" label="博客" className="mb-8" />
+				<BackLink to="/blog" label="博客" className="mb-8" history />
 
 				{/* 文章头 */}
 				<header className="mx-auto mb-12 max-w-3xl">
@@ -337,7 +317,7 @@ function BlogDetailPage() {
 			 * 右下角浮动操作区（flex-col 竖列）：目录按钮（仅小屏，大屏用左侧 TOC）+ 返回顶部。
 			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
 			 */}
-			<FloatingBack to="/blog" label="返回博客" />
+			<FloatingBack to="/blog" label="返回博客" history />
 			{toc.length > 1 || seriesDetail ? (
 				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
 					{/* 章内目录：2xl 及以上用左侧固定栏，小屏用浮动按钮 */}
@@ -380,16 +360,16 @@ function sourceHostname(canonicalUrl: string): string {
 }
 
 export const Route = createFileRoute("/blog/$slug")({
+	pendingComponent: PostDetailSkeleton,
+	pendingMs: 0,
+	pendingMinMs: 200,
 	loader: async ({ context, params }) => {
 		const post = await context.queryClient.ensureQueryData({
 			queryKey: postKeys.detail(params.slug),
 			queryFn: () => fetchPostBySlug(params.slug),
 		});
-		// 预取批注聚合计数（轻量，不含正文），首屏 SSR 友好无闪烁。
-		// 完整批注按 block_id 在点击角标时懒加载。
-		// 自由评论列表由 CommentSection 挂载时拉取（Suspense 兜底）。
 		if (post?.id) {
-			await context.queryClient.ensureQueryData({
+			void context.queryClient.prefetchQuery({
 				queryKey: commentKeys.annotationSummary(post.id),
 				queryFn: () => fetchAnnotationSummary(post.id),
 			});

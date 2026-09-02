@@ -58,9 +58,7 @@ export function NavMenu({
 				const items = visibleItems.filter((item) => item.group === group.key);
 				if (items.length === 0) return null;
 				return (
-					<div key={group.key} className="mt-4 flex flex-col gap-1">
-						{/* 组标题 grid-rows 收展 + 分隔线渐显：条件互换会瞬跳，
-						    两元素恒渲染（同卡片显隐先例），motion-reduce 禁过渡 */}
+					<div key={group.key} className="mt-3 flex flex-col gap-1">
 						<div
 							className={cn(
 								"grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none",
@@ -70,9 +68,12 @@ export function NavMenu({
 							)}
 						>
 							<div className="min-h-0 overflow-hidden">
-								<p className="text-muted-foreground/60 px-3 pb-1 text-xs font-medium tracking-wider">
-									{group.label}
-								</p>
+								<div className="flex items-center gap-2 px-3 pb-1.5">
+									<p className="shrink-0 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/70 uppercase">
+										{group.label}
+									</p>
+									<span className="h-px flex-1 bg-border/60" />
+								</div>
 							</div>
 						</div>
 						<div

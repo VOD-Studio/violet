@@ -3,10 +3,10 @@ import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
 import Empty from "@shared/ui/empty";
+import { HistoryBack } from "@shared/ui/history-back";
 import { PageShell } from "@shared/ui/page-shell";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 
 /**
  * /tweets/$id - 单条推文详情页（公开）
@@ -51,14 +51,12 @@ function TweetDetailPage() {
 	return (
 		<PageShell>
 			<div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-				<button
-					type="button"
-					onClick={() => navigate({ to: "/tweets" })}
-					className="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+				<HistoryBack
+					fallbackTo="/tweets"
+					className="w-fit gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
-					<ArrowLeft className="size-3.5" />
 					返回时间线
-				</button>
+				</HistoryBack>
 
 				<TweetCard
 					tweet={current}

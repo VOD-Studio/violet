@@ -24,7 +24,7 @@ function GalleryCard({ gallery }: { gallery: PublishedGallery }) {
 		<PhotoStack
 			loading="lazy"
 			images={items.map((item, index) => ({
-				src: item.thumbnail,
+				src: item.thumbnail || item.url,
 				alt: item.alt_text || `${gallery.title} · 第 ${index + 1} 张`,
 			}))}
 			footer={
@@ -72,7 +72,6 @@ function GalleryBrowseSkeleton() {
 /** 已发布图集的游标分页浏览流。 */
 export function GalleryBrowsePage() {
 	const feed = usePublishedGalleryFeed(PUBLISHED_GALLERY_PAGE_LIMIT);
-
 	if (feed.isLoading) {
 		return (
 			<PageShell>
@@ -105,9 +104,7 @@ export function GalleryBrowsePage() {
 					Photo Stories
 				</p>
 				<h1 className="font-mono font-bold text-4xl">图集</h1>
-				<p className="text-muted-foreground leading-relaxed">
-					按图片顺序浏览已经发布的视觉作品。
-				</p>
+				<p className="text-muted-foreground leading-relaxed">已经发布的视觉作品。</p>
 			</header>
 
 			{feed.galleries.length === 0 ? (

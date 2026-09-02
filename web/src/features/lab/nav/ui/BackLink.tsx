@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/utils";
+import { HistoryBack } from "@shared/ui/history-back";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import type { ComponentProps } from "react";
@@ -22,11 +23,20 @@ export function BackLink({
 	label,
 	to,
 	className,
+	history = false,
 }: {
 	label: string;
 	to?: LinkTo;
 	className?: string;
+	history?: boolean;
 }) {
+	if (to && history) {
+		return (
+			<HistoryBack fallbackTo={String(to)} className={cn(entryClass, className)}>
+				{label}
+			</HistoryBack>
+		);
+	}
 	if (to) {
 		return (
 			<Link to={to} className={cn(entryClass, className)}>

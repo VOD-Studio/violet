@@ -114,6 +114,8 @@ func TestStatsStore_GetDashboard_Empty(t *testing.T) {
 	assert.Equal(t, int64(0), stats.TotalViews)
 	assert.Empty(t, stats.RecentPosts)
 	assert.Empty(t, stats.PopularPosts)
+	assert.NotNil(t, stats.RecentPosts)
+	assert.NotNil(t, stats.PopularPosts)
 }
 
 func TestStatsStore_GetDashboard_WithData(t *testing.T) {

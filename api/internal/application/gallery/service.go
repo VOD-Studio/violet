@@ -164,6 +164,14 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
 			return err
 		}
+		if gallery.WorkingDocumentEquals(in.Title, in.Summary, document) {
+			assets, err := tx.Assets().FindByIDs(ctx, ids)
+			if err != nil {
+				return err
+			}
+			saved, savedAssets = gallery, assets
+			return nil
+		}
 		copyOnWrite := gallery.WorkingRevisionIsPublished()
 		if copyOnWrite {
 			if err := gallery.CloneWorkingRevision(shared.NewID()); err != nil {

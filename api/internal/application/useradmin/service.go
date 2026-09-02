@@ -129,6 +129,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 		return UserDTO{}, shared.Internal("密码哈希失败", err)
 	}
 	u := domainuser.NewUser(shared.NewID(), email, username, hash)
+	u.VerifyEmail()
 	// 显示名（可选，空则回退 username）
 	displayName, err := domainuser.ParseDisplayName(in.DisplayName)
 	if err != nil {
