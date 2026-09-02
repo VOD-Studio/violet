@@ -710,8 +710,10 @@ function CapsulePillars({
 						key={topNode.id}
 						className="relative rounded-xl border border-border/50 bg-background/50 transition-colors hover:border-border/80"
 					>
-						{/* 激活高亮框用 layoutId 共享布局滑动（流体轨道药丸同款技术），
-						    滚动换章时框平滑移到新组而不是旧框消失新框闪现 */}
+						{/* 激活高亮框覆盖整卡（含展开区）。配合下方内容区的策略：
+						    展开不做 height 0→auto（会带动框先放大再缩小），改为
+						    popLayout 全高淡入——框的起点/终点都是完整卡尺寸，
+						    layoutId 飞行近似纯位移，与流体轨道药丸同款丝滑。 */}
 						{isSectionActive && (
 							<motion.div
 								layoutId="capsule-active-card"
@@ -726,7 +728,7 @@ function CapsulePillars({
 									setCollapsedOverride(null);
 									onNavigate(topNode.id);
 								}}
-								className="flex min-w-0 flex-1 cursor-pointer items-baseline gap-2 text-left focus-visible:outline-none"
+								className="relative z-10 flex min-w-0 flex-1 cursor-pointer items-baseline gap-2 text-left focus-visible:outline-none"
 							>
 								<span className="font-mono text-[11px] font-semibold text-muted-foreground/60">
 									{String(index + 1).padStart(2, "0")}
@@ -743,7 +745,7 @@ function CapsulePillars({
 								</span>
 							</button>
 
-							<div className="flex items-center gap-1.5">
+							<div className="relative z-10 flex items-center gap-1.5">
 								{childCount > 0 && (
 									<span className="rounded-full bg-muted/70 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">
 										{childCount}
@@ -779,13 +781,13 @@ function CapsulePillars({
 							{isExpanded && childCount > 0 && (
 								<motion.div
 									key={topNode.id}
-									initial={reduced ? false : { height: 0, opacity: 0 }}
-									animate={{ height: "auto", opacity: 1 }}
+									initial={reduced ? false : { opacity: 0 }}
+									animate={{ opacity: 1 }}
 									exit={{ opacity: 0 }}
 									transition={
 										reduced
 											? instantTransition
-											: { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+											: { duration: 0.18, ease: "easeOut" }
 									}
 									className="relative z-10 overflow-hidden border-t border-border/40 bg-muted/15 px-3 py-2"
 								>
