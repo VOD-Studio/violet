@@ -61,10 +61,10 @@ python3 .agents/skills/session-notes/scripts/scan-sensitive.py <file>
 
 - 单条笔记且可公开：`直接发布 / 存草稿 / 不发`。
 - 单条笔记且已降级：`存草稿 / 不发`。
-- 单篇文章：`直接发布 / 存草稿 / 不发`；仅当用户选择“直接发布”且敏感扫描通过时，先创建草稿，再调用 `publish_post`。
+- 单篇文章：`存草稿 / 不发`。文章毛坯永远只进草稿——发布权不在 AI 的 PAT scope 内（物理隔离），发布由作者在后台人工完成。
 - 多条且全部可公开：`全部直接发布 / 全部存草稿 / 逐条裁定 / 全部不发`。
 - 多条含降级项：`全部存草稿 / 逐条裁定 / 全部不发`。
-- 选择“逐条裁定”时，在同一次提问中为每项提供选项；降级项不得出现“直接发布”。
+- 选择“逐条裁定”时，在同一次提问中为每项提供选项；降级项与文章不得出现“直接发布”。
 - 用户无应答、会话中断或提问失败时，全部按“存草稿”执行，不再次提问。
 
 ## 6. MCP 入库
@@ -73,14 +73,13 @@ python3 .agents/skills/session-notes/scripts/scan-sensitive.py <file>
 
 - 新建调用 `create_note`：`{ title?, content_md, tags?, status }`。
 - 默认 `status: "draft"`；仅当用户选择“直接发布”且敏感扫描通过时传 `status: "published"`。
-- 更新调用 `update_note`：`{ note_id, title?, content_md?, tags? }`。
+- 更新调用 `update_note`：`{ id, title?, content_md, tags }`（content_md 必填，全量替换）。
 - 查重使用 `list_notes` / `get_note`；“不发”时不调用 MCP。仅在用户明确要求撤回时使用 `delete_note`。
 
 ### 文章：`violet-posts`
 
-- 调用 `create_post`：`{ title, content_md, excerpt?, tags? }`，先创建草稿。
-- 仅当用户选择“直接发布”且敏感扫描通过时，再调用 `publish_post`；发布失败时按第 7 节报告，已创建的草稿保留。
-- 未选择“直接发布”时不得调用 `publish_post`。
+- 调用 `create_post`：`{ title, content_md, excerpt?, tags? }`，只建草稿。
+- 永远不调用 `publish_post`：捕获 PAT 从不授予 `posts:publish`，文章发布由作者在后台人工完成。
 
 ## 7. 失败与收尾
 

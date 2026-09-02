@@ -80,6 +80,10 @@ GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdow
 
 五个 canonical triage 角色(needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix),label 字符串与角色名一致,wontfix 复用 GitHub 自带。详见 `docs/agents/triage-labels.md`。
 
+### Session notes
+
+会话收尾自动沉淀知识笔记(`.agents/skills/session-notes/`):重量分诊→拆条成文(敏感信息双层门禁)→一键裁定→经 violet-notes MCP 入库。术语见 CONTEXT.md「笔记(Notes)」节,部署见 `docs/guides/mcp-servers.md`。
+
 ### Domain docs
 
 Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`docs/adr/` 放 auth 系列 ADR。详见 `docs/agents/domain.md`。
