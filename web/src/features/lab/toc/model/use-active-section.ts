@@ -5,6 +5,8 @@ import { ALL_SECTION_IDS } from "./article";
  *  标题贴住这条线即视为"正在读"。 */
 export const READING_BASELINE_OFFSET = 96;
 
+const NAVIGATION_SETTLE_DELAY_MS = 80;
+
 /** 滚动事件静默多久复查一次落定 */
 const SETTLE_POLL_MS = 150;
 
@@ -25,6 +27,9 @@ export function useActiveSection() {
 	const [activeId, setActiveId] = useState(ALL_SECTION_IDS[0]);
 	const programmaticScroll = useRef(false);
 	const settleTimer = useRef(0);
+	const navigationVersion = useRef(0);
+	const layoutFrame = useRef(0);
+	const scrollFrame = useRef(0);
 
 	useEffect(() => {
 		const compute = () => {
@@ -53,15 +58,22 @@ export function useActiveSection() {
 		return () => {
 			window.removeEventListener("scroll", onScroll);
 			window.clearTimeout(settleTimer.current);
+			window.cancelAnimationFrame(layoutFrame.current);
+			window.cancelAnimationFrame(scrollFrame.current);
 		};
 	}, []);
 
 	const navigate = useCallback((id: string, reducedMotion: boolean) => {
+		const version = navigationVersion.current + 1;
+		navigationVersion.current = version;
 		programmaticScroll.current = true;
 		window.clearTimeout(settleTimer.current);
+		window.cancelAnimationFrame(layoutFrame.current);
+		window.cancelAnimationFrame(scrollFrame.current);
 		setActiveId(id);
 
 		const scrollToTarget = () => {
+			if (version !== navigationVersion.current) return;
 			const el = document.getElementById(id);
 			if (!el) {
 				programmaticScroll.current = false;
@@ -78,11 +90,15 @@ export function useActiveSection() {
 		if (reducedMotion) {
 			scrollToTarget();
 		} else {
-			requestAnimationFrame(() => requestAnimationFrame(scrollToTarget));
+			layoutFrame.current = window.requestAnimationFrame(() => {
+				if (version !== navigationVersion.current) return;
+				scrollFrame.current = window.requestAnimationFrame(scrollToTarget);
+			});
 		}
 
 		const startedAt = Date.now();
 		const checkSettled = () => {
+			if (version !== navigationVersion.current) return;
 			const el = document.getElementById(id);
 			if (!el) {
 				programmaticScroll.current = false;
@@ -95,10 +111,14 @@ export function useActiveSection() {
 				window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
 			const timedOut = Date.now() - startedAt > SETTLE_MAX_MS;
 			if (atTarget || atBottom || timedOut) {
-				programmaticScroll.current = false;
-				setActiveId(id);
+				settleTimer.current = window.setTimeout(() => {
+					if (version !== navigationVersion.current) return;
+					programmaticScroll.current = false;
+					setActiveId(id);
+				}, NAVIGATION_SETTLE_DELAY_MS);
 				return;
 			}
+			if (version !== navigationVersion.current) return;
 			settleTimer.current = window.setTimeout(checkSettled, SETTLE_POLL_MS);
 		};
 		settleTimer.current = window.setTimeout(checkSettled, SETTLE_POLL_MS);
