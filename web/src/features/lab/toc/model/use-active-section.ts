@@ -41,18 +41,12 @@ export function useActiveSection() {
 			if (atBottom) current = ALL_SECTION_IDS[ALL_SECTION_IDS.length - 1];
 			setActiveId(current);
 		};
-		// scroll 自身即为节流信号，直接计算（rAF 在无绘制帧环境不回调）
+		// scroll 自身即为节流信号，直接计算（rAF 在无绘制帧环境不回调）。
+		// 冻结期直接忽略：落定判定由 navigate 启动的目标位置轮询链独立完成，
+		// 此处再做静默解冻会顶掉轮询链，短距离滚动事件稀疏时误判解冻被途经章抢占
 		const onScroll = () => {
-			if (!programmaticScroll.current) {
-				compute();
-				return;
-			}
-			// 冻结期滚动仍在进行：静默计数归零（滚动事件间隔即为活跃信号）
-			window.clearTimeout(settleTimer.current);
-			settleTimer.current = window.setTimeout(() => {
-				programmaticScroll.current = false;
-				compute();
-			}, SETTLE_POLL_MS);
+			if (programmaticScroll.current) return;
+			compute();
 		};
 		compute();
 		window.addEventListener("scroll", onScroll, { passive: true });
