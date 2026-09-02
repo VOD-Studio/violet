@@ -5,8 +5,14 @@ import { ALL_SECTION_IDS } from "./article";
  *  标题贴住这条线即视为"正在读"。 */
 export const READING_BASELINE_OFFSET = 96;
 
-/** 滚动事件静默多久视为落定（平滑滚动结束的判定窗口） */
-const SCROLL_SETTLE_MS = 150;
+/** 滚动事件静默多久复查一次落定 */
+const SETTLE_POLL_MS = 150;
+
+/** 冻结最长等待（防页底受限等极端情况死锁） */
+const SETTLE_MAX_MS = 3000;
+
+/** 目标节顶已越过基线（容差 2px）即视为落定 */
+const SETTLE_TOLERANCE = 2;
 
 /**
  * 激活判定：最近越过阅读基线的标题。
@@ -41,13 +47,12 @@ export function useActiveSection() {
 				compute();
 				return;
 			}
-			// 冻结期：滚动仍在进行，重置落定计时——途经章节永不抢高亮，
-			// 无论平滑滚动持续多久（固定超时会在长距离滚动中途解冻被途经章抢占）
+			// 冻结期滚动仍在进行：静默计数归零（滚动事件间隔即为活跃信号）
 			window.clearTimeout(settleTimer.current);
 			settleTimer.current = window.setTimeout(() => {
 				programmaticScroll.current = false;
 				compute();
-			}, SCROLL_SETTLE_MS);
+			}, SETTLE_POLL_MS);
 		};
 		compute();
 		window.addEventListener("scroll", onScroll, { passive: true });
@@ -65,11 +70,37 @@ export function useActiveSection() {
 			block: "start",
 		});
 		setActiveId(id);
-		// 静默解冻：滚动事件停止 SCROLL_SETTLE_MS 后解冻并按落定点校正，
-		// 平滑滚动无论多长都在途中保持冻结
-		settleTimer.current = window.setTimeout(() => {
-			programmaticScroll.current = false;
-		}, SCROLL_SETTLE_MS);
+		// 落定判定以目标位置为准：目标节顶越过基线才解冻——
+		// 平滑滚动时长不可知（长距离可达秒级），静默/固定超时都会中途误判被途经章抢占
+		const startedAt = Date.now();
+		const checkSettled = () => {
+			const el = document.getElementById(id);
+			if (!el) {
+				programmaticScroll.current = false;
+				return;
+			}
+			const atTarget =
+				el.getBoundingClientRect().top <= READING_BASELINE_OFFSET + SETTLE_TOLERANCE;
+			const atBottom =
+				window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+			const timedOut = Date.now() - startedAt > SETTLE_MAX_MS;
+			if (atTarget || atBottom || timedOut) {
+				programmaticScroll.current = false;
+				const baseline = window.scrollY + READING_BASELINE_OFFSET;
+				let current = ALL_SECTION_IDS[0];
+				for (const sid of ALL_SECTION_IDS) {
+					const node = document.getElementById(sid);
+					if (!node) continue;
+					if (node.getBoundingClientRect().top + window.scrollY <= baseline)
+						current = sid;
+				}
+				if (atBottom) current = ALL_SECTION_IDS[ALL_SECTION_IDS.length - 1];
+				setActiveId(current);
+				return;
+			}
+			settleTimer.current = window.setTimeout(checkSettled, SETTLE_POLL_MS);
+		};
+		settleTimer.current = window.setTimeout(checkSettled, SETTLE_POLL_MS);
 	}, []);
 
 	return { activeId, navigate };
