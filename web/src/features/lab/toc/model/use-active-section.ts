@@ -33,12 +33,12 @@ export function useActiveSection() {
 
 	useEffect(() => {
 		const compute = () => {
-			const baseline = window.scrollY + READING_BASELINE_OFFSET;
 			let current = ALL_SECTION_IDS[0];
 			for (const id of ALL_SECTION_IDS) {
 				const el = document.getElementById(id);
 				if (!el) continue;
-				if (el.getBoundingClientRect().top + window.scrollY <= baseline) current = id;
+				if (el.getBoundingClientRect().top <= READING_BASELINE_OFFSET + SETTLE_TOLERANCE)
+					current = id;
 			}
 			// 页底兜底：末节太短推不过基线时，滚到底强制激活
 			const atBottom =
@@ -47,8 +47,7 @@ export function useActiveSection() {
 			setActiveId(current);
 		};
 		// scroll 自身即为节流信号，直接计算（rAF 在无绘制帧环境不回调）。
-		// 冻结期直接忽略：落定判定由 navigate 启动的目标位置轮询链独立完成，
-		// 此处再做静默解冻会顶掉轮询链，短距离滚动事件稀疏时误判解冻被途经章抢占
+		// 冻结期直接忽略：落定判定由 navigate 启动的目标位置轮询链独立完成
 		const onScroll = () => {
 			if (programmaticScroll.current) return;
 			compute();
