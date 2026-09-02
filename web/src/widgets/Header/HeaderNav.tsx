@@ -8,6 +8,7 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { useRouterState } from "@tanstack/react-router";
 import { LayoutGrid } from "lucide-react";
+import { useState } from "react";
 
 import HeaderNavItem from "./HeaderNavItem";
 
@@ -19,6 +20,7 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 		(item): item is NavRouteItem => item.type === "route" && Boolean(item.primary),
 	);
 	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
+	const [browseOpen, setBrowseOpen] = useState(false);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const activePrimaryIndex = primaryItems.findIndex((item) => matchesRoute(pathname, item));
 	const secondaryActive = secondaryItems.some(
@@ -46,7 +48,7 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 				/>
 			))}
 			{secondaryItems.length > 0 && (
-				<DropdownMenu>
+				<DropdownMenu open={browseOpen} onOpenChange={setBrowseOpen}>
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
@@ -77,6 +79,7 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 									key={item.label}
 									item={item}
 									onAction={onAction}
+									onNavigate={() => setBrowseOpen(false)}
 									detailed
 									className="flex min-w-0 items-center gap-3 px-2.5 py-2.5"
 								/>
