@@ -167,7 +167,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 				/>
 				<Input
 					{...register("tagsText")}
-					placeholder="标签，逗号分隔（可选，至多 8 个）"
+					placeholder="标签，逗号分隔（需已在标签管理创建，至多 8 个）"
 					aria-label="标签"
 				/>
 			</div>
