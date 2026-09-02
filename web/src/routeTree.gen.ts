@@ -21,6 +21,7 @@ import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
 import { Route as SeriesIndexRouteImport } from './routes/series.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as NotesIndexRouteImport } from './routes/notes.index'
 import { Route as LabIndexRouteImport } from './routes/lab.index'
 import { Route as GalleriesIndexRouteImport } from './routes/galleries.index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
@@ -29,6 +30,7 @@ import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as UsersUsernameRouteImport } from './routes/users/$username'
 import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
 import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
+import { Route as NotesIdRouteImport } from './routes/notes.$id'
 import { Route as LabTocTreeRouteImport } from './routes/lab.toc-tree'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabSeriesRouteImport } from './routes/lab.series'
@@ -137,6 +139,11 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotesIndexRoute = NotesIndexRouteImport.update({
+  id: '/notes/',
+  path: '/notes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LabIndexRoute = LabIndexRouteImport.update({
   id: '/lab/',
   path: '/lab/',
@@ -175,6 +182,11 @@ const TweetsIdRoute = TweetsIdRouteImport.update({
 const SeriesSlugRoute = SeriesSlugRouteImport.update({
   id: '/series/$slug',
   path: '/series/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesIdRoute = NotesIdRouteImport.update({
+  id: '/notes/$id',
+  path: '/notes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabTocTreeRoute = LabTocTreeRouteImport.update({
@@ -453,6 +465,7 @@ export interface FileRoutesByFullPath {
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
+  '/notes/$id': typeof NotesIdRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -461,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/blog/': typeof BlogIndexRoute
   '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
+  '/notes/': typeof NotesIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/series/': typeof SeriesIndexRoute
@@ -518,6 +532,7 @@ export interface FileRoutesByTo {
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
+  '/notes/$id': typeof NotesIdRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -526,6 +541,7 @@ export interface FileRoutesByTo {
   '/blog': typeof BlogIndexRoute
   '/galleries': typeof GalleriesIndexRoute
   '/lab': typeof LabIndexRoute
+  '/notes': typeof NotesIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/series': typeof SeriesIndexRoute
@@ -588,6 +604,7 @@ export interface FileRoutesById {
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
+  '/notes/$id': typeof NotesIdRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -596,6 +613,7 @@ export interface FileRoutesById {
   '/blog/': typeof BlogIndexRoute
   '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
+  '/notes/': typeof NotesIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/series/': typeof SeriesIndexRoute
@@ -659,6 +677,7 @@ export interface FileRouteTypes {
     | '/lab/series'
     | '/lab/theme'
     | '/lab/toc-tree'
+    | '/notes/$id'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -667,6 +686,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/galleries/'
     | '/lab/'
+    | '/notes/'
     | '/profile/'
     | '/projects/'
     | '/series/'
@@ -724,6 +744,7 @@ export interface FileRouteTypes {
     | '/lab/series'
     | '/lab/theme'
     | '/lab/toc-tree'
+    | '/notes/$id'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -732,6 +753,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/galleries'
     | '/lab'
+    | '/notes'
     | '/profile'
     | '/projects'
     | '/series'
@@ -793,6 +815,7 @@ export interface FileRouteTypes {
     | '/lab/series'
     | '/lab/theme'
     | '/lab/toc-tree'
+    | '/notes/$id'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -801,6 +824,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/galleries/'
     | '/lab/'
+    | '/notes/'
     | '/profile/'
     | '/projects/'
     | '/series/'
@@ -845,6 +869,7 @@ export interface RootRouteChildren {
   LabSeriesRoute: typeof LabSeriesRoute
   LabThemeRoute: typeof LabThemeRoute
   LabTocTreeRoute: typeof LabTocTreeRoute
+  NotesIdRoute: typeof NotesIdRoute
   SeriesSlugRoute: typeof SeriesSlugRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
@@ -852,6 +877,7 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   GalleriesIndexRoute: typeof GalleriesIndexRoute
   LabIndexRoute: typeof LabIndexRoute
+  NotesIndexRoute: typeof NotesIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   SeriesIndexRoute: typeof SeriesIndexRoute
@@ -946,6 +972,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notes/': {
+      id: '/notes/'
+      path: '/notes'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof NotesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lab/': {
       id: '/lab/'
       path: '/lab'
@@ -1000,6 +1033,13 @@ declare module '@tanstack/react-router' {
       path: '/series/$slug'
       fullPath: '/series/$slug'
       preLoaderRoute: typeof SeriesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes/$id': {
+      id: '/notes/$id'
+      path: '/notes/$id'
+      fullPath: '/notes/$id'
+      preLoaderRoute: typeof NotesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/toc-tree': {
@@ -1470,6 +1510,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabSeriesRoute: LabSeriesRoute,
   LabThemeRoute: LabThemeRoute,
   LabTocTreeRoute: LabTocTreeRoute,
+  NotesIdRoute: NotesIdRoute,
   SeriesSlugRoute: SeriesSlugRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,
@@ -1477,6 +1518,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   GalleriesIndexRoute: GalleriesIndexRoute,
   LabIndexRoute: LabIndexRoute,
+  NotesIndexRoute: NotesIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   SeriesIndexRoute: SeriesIndexRoute,

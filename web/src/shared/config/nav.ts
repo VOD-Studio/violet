@@ -8,6 +8,7 @@ import {
 	Images,
 	Library,
 	MessageCircle,
+	NotebookText,
 	Rss,
 	Sparkles,
 	Users,
@@ -76,6 +77,13 @@ export const NAV_ITEMS: NavItem[] = [
 		primary: true,
 		icon: Sparkles,
 		description: "查看短内容动态",
+	},
+	{
+		type: "route",
+		label: "笔记",
+		to: "/notes",
+		icon: NotebookText,
+		description: "浏览知识笔记与踩坑记录",
 	},
 	{
 		type: "route",
