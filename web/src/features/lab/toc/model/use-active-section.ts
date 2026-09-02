@@ -5,35 +5,41 @@ import { ALL_SECTION_IDS } from "./article";
  *  标题贴住这条线即视为"正在读"。 */
 export const READING_BASELINE_OFFSET = 96;
 
+/**
+ * 激活判定：最近越过阅读基线的标题。
+ *
+ * 逐帧取各 section 文档坐标，activeId = offsetTop ≤ 基线文档位置中最大者。
+ * 嵌套结构下父级恒先于子级越过基线，此模型自然选中当前所在的最深小节——
+ * IntersectionObserver"可见集中取 top 最小"在嵌套 DOM 里会永远偏向外层父级。
+ */
 export function useActiveSection() {
 	const [activeId, setActiveId] = useState(ALL_SECTION_IDS[0]);
 	const programmaticScroll = useRef(false);
 	const scrollTimer = useRef(0);
 
 	useEffect(() => {
-		const visible = new Map<string, number>();
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (programmaticScroll.current) return;
-				for (const entry of entries) {
-					if (entry.isIntersecting)
-						visible.set(entry.target.id, entry.boundingClientRect.top);
-					else visible.delete(entry.target.id);
-				}
-				const next = [...visible].sort((a, b) => a[1] - b[1])[0]?.[0];
-				if (next) setActiveId(next);
-			},
-			{
-				rootMargin: `-${READING_BASELINE_OFFSET}px 0px -66% 0px`,
-				threshold: [0, 1],
-			},
-		);
-
-		for (const id of ALL_SECTION_IDS) {
-			const element = document.getElementById(id);
-			if (element) observer.observe(element);
-		}
-		return () => observer.disconnect();
+		const compute = () => {
+			const baseline = window.scrollY + READING_BASELINE_OFFSET;
+			let current = ALL_SECTION_IDS[0];
+			for (const id of ALL_SECTION_IDS) {
+				const el = document.getElementById(id);
+				if (!el) continue;
+				if (el.getBoundingClientRect().top + window.scrollY <= baseline) current = id;
+			}
+			// 页底兜底：末节太短推不过基线时，滚到底强制激活
+			const atBottom =
+				window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+			if (atBottom) current = ALL_SECTION_IDS[ALL_SECTION_IDS.length - 1];
+			setActiveId(current);
+		};
+		// scroll 自身即为节流信号，直接计算（rAF 在无绘制帧环境不回调）
+		const onScroll = () => {
+			if (programmaticScroll.current) return;
+			compute();
+		};
+		compute();
+		window.addEventListener("scroll", onScroll, { passive: true });
+		return () => window.removeEventListener("scroll", onScroll);
 	}, []);
 
 	const navigate = useCallback((id: string, reducedMotion: boolean) => {
@@ -44,7 +50,7 @@ export function useActiveSection() {
 			block: "start",
 		});
 		setActiveId(id);
-		// 平滑滚动期间冻结观察器，落定后解冻，防止途经章节抢占高亮
+		// 平滑滚动期间冻结基线计算，落定后解冻，防止途经章节抢占高亮
 		scrollTimer.current = window.setTimeout(
 			() => {
 				programmaticScroll.current = false;

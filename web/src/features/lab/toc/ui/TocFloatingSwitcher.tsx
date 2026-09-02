@@ -56,18 +56,12 @@ export function TocFloatingSwitcher<V extends string>({
 	useEffect(() => {
 		if (!open) return;
 		openScrollY.current = window.scrollY;
-		let raf = 0;
+		// scroll 自身即为节流信号，直接判定（rAF 在无绘制帧环境不回调）
 		const onScroll = () => {
-			cancelAnimationFrame(raf);
-			raf = requestAnimationFrame(() => {
-				if (Math.abs(window.scrollY - openScrollY.current) > 60) setOpen(false);
-			});
+			if (Math.abs(window.scrollY - openScrollY.current) > 60) setOpen(false);
 		};
 		window.addEventListener("scroll", onScroll, { passive: true });
-		return () => {
-			window.removeEventListener("scroll", onScroll);
-			cancelAnimationFrame(raf);
-		};
+		return () => window.removeEventListener("scroll", onScroll);
 	}, [open]);
 
 	// 点击外部 / Esc 收起
