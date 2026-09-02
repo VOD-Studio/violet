@@ -220,7 +220,7 @@ export function SegmentedArticleToc({
 								</div>
 							) : null}
 						</div>
-						<AnimatePresence initial={false} mode="popLayout">
+						<AnimatePresence initial={false}>
 							{isExpanded && branchItems.length ? (
 								<motion.div
 									key={node.id}
