@@ -351,7 +351,7 @@ func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
 	})
 }
 
-// registerMCPRoutes 注册 4 个 MCP 端点（顶层 r，独立限流维度）。
+// registerMCPRoutes 注册 5 个 MCP 端点（顶层 r，独立限流维度）。
 // 绕过 v1 的 CSRF（MCP 是 JSON-RPC、无 X-CSRF-Token）与 SessionAuth（用 PAT）。
 // PAT 鉴权在 handler 内（auth.RequireBearerToken），此处仅叠加独立限流。
 func registerMCPRoutes(r chi.Router, d *Deps) {
@@ -362,6 +362,8 @@ func registerMCPRoutes(r chi.Router, d *Deps) {
 		Handle("/api/v1/mcp", mcp.Post)
 	r.With(middleware.RateLimit("mcp-scraper", redisClient, time.Minute, 30)).
 		Handle("/api/v1/mcp/scraper", mcp.Scraper)
+	r.With(middleware.RateLimit("mcp-notes", redisClient, time.Minute, 60)).
+		Handle("/api/v1/mcp/notes", mcp.Notes)
 	r.With(middleware.RateLimit("mcp-reader", redisClient, time.Minute, 120)).
 		Handle("/api/v1/mcp/reader", mcp.Public)
 	r.With(middleware.RateLimit("mcp-comments", redisClient, time.Minute, 60)).

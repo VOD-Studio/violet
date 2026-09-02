@@ -144,10 +144,10 @@ func (t *SeriesTools) AttachChapters(ctx context.Context, req *mcp.CallToolReque
 		return errResult(err), nil, nil
 	}
 	report := map[string]any{
-		"attached":   len(attachIDs),
-		"series_id":  args.SeriesID,
-		"chapters":   detail.RootChapters,
-		"sections":   detail.Sections,
+		"attached":  len(attachIDs),
+		"series_id": args.SeriesID,
+		"chapters":  detail.RootChapters,
+		"sections":  detail.Sections,
 	}
 	if len(conflicts) > 0 {
 		report["skipped_conflicts"] = len(conflicts)

@@ -108,7 +108,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
 	gallery := NewGalleryContainer(db, bus, permissionChecker)
 	note := NewNoteContainer(db)
-	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService)
+	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, customEmoji.Service, bus)

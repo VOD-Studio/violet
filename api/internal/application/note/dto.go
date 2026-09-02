@@ -70,6 +70,8 @@ type UpdateInput struct {
 
 // ListQuery 管理列表查询；零值表示不过滤。
 type ListQuery struct {
+	// Author 只列该用户 ID 的笔记（MCP 作者视角）；空串表示全部作者。
+	Author string
 	// Status 取 draft 或 published；空串表示全部状态。
 	Status string
 	Page   int

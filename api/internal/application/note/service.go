@@ -79,10 +79,14 @@ func (s *Service) Get(ctx context.Context, noteID string) (NoteDTO, error) {
 	return toDTO(n), nil
 }
 
-// List 按状态筛选分页读取管理列表，created_at 倒序。
+// List 按作者与状态筛选分页读取管理列表，created_at 倒序。
 func (s *Service) List(ctx context.Context, query ListQuery) ([]NoteSummaryDTO, int64, error) {
 	q := shared.PageQuery{Page: query.Page, Limit: query.Limit}.Normalize()
-	page, err := s.repo.FindPage(ctx, domainnote.ListFilter{Status: query.Status}, q)
+	filter := domainnote.ListFilter{Status: query.Status}
+	if id, err := shared.ParseID(strings.TrimSpace(query.Author)); err == nil {
+		filter.AuthorID = &id
+	}
+	page, err := s.repo.FindPage(ctx, filter, q)
 	if err != nil {
 		return nil, 0, err
 	}

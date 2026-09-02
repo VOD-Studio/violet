@@ -14,6 +14,8 @@ type BrowseFilter struct {
 
 // ListFilter 管理列表筛选条件；零值表示不过滤。
 type ListFilter struct {
+	// AuthorID 只读该作者的笔记；nil 表示全部作者。
+	AuthorID *shared.ID
 	// Status 取 StatusDraft 或 StatusPublished；空串表示全部状态。
 	Status string
 }

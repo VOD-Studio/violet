@@ -13,12 +13,13 @@ import (
 	domain "blog-api/internal/domain/post"
 	shared "blog-api/internal/domain/shared"
 )
+
 // fakePublicPostService 内存版公开文章服务，按 slug 预设返回。
 type fakePublicPostService struct {
-	bySlug     map[string]apppost.PostDTO
-	listItems  []apppost.PostListItemDTO
-	listTotal  int64
-	gotListPQ  shared.PageQuery
+	bySlug    map[string]apppost.PostDTO
+	listItems []apppost.PostListItemDTO
+	listTotal int64
+	gotListPQ shared.PageQuery
 }
 
 func (f *fakePublicPostService) GetPublishedBySlug(_ context.Context, slug string) (apppost.PostDTO, error) {
@@ -33,6 +34,7 @@ func (f *fakePublicPostService) ListPublished(_ context.Context, _ string, q sha
 	f.gotListPQ = q
 	return shared.NewPageResult(q, f.listItems, f.listTotal), nil
 }
+
 // readReq 构造 ReadResourceRequest（Params 为指针字段）。
 func readReq(uri string) *mcp.ReadResourceRequest {
 	params := mcp.ReadResourceParams{URI: uri}
@@ -131,8 +133,8 @@ func TestPublicTools_ListPosts_Empty(t *testing.T) {
 
 func TestSlugFromURI(t *testing.T) {
 	cases := []struct {
-		uri   string
-		slug  string
+		uri    string
+		slug   string
 		hasErr bool
 	}{
 		{"blog://posts/quantum", "quantum", false},

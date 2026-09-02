@@ -27,7 +27,7 @@ func NewHandler(svc *appapitoken.Service) *Handler {
 
 type createTokenRequest struct {
 	Name      string   `json:"name" validate:"required,max=100"`
-	Scopes    []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish posts:scrape subscriptions:read subscriptions:write comments:read"`
+	Scopes    []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish posts:scrape subscriptions:read subscriptions:write comments:read notes:read notes:write notes:publish"`
 	// ExpiresAt：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串默认 90 天。
 	ExpiresAt string `json:"expires_at" validate:"omitempty"`
 	// Interactive MCP 交互偏好：省略/true=冲突返回候选；false=一路到底（#272）

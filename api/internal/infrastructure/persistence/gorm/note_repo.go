@@ -67,6 +67,9 @@ func (r *NoteRepository) Delete(ctx context.Context, id shared.ID) error {
 
 func (r *NoteRepository) FindPage(ctx context.Context, filter domainnote.ListFilter, q shared.PageQuery) (shared.PageResult[*domainnote.Note], error) {
 	query := r.db.WithContext(ctx).Model(&model.Note{})
+	if filter.AuthorID != nil {
+		query = query.Where("author_id = ?", filter.AuthorID.UUID())
+	}
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
 	}
