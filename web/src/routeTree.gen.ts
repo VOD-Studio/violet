@@ -54,6 +54,7 @@ import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
+import { Route as AdminNotesRouteImport } from './routes/admin.notes'
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminMcpRouteImport } from './routes/admin.mcp'
 import { Route as AdminLogsRouteImport } from './routes/admin.logs'
@@ -64,6 +65,7 @@ import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
+import { Route as AdminNotesIndexRouteImport } from './routes/admin.notes.index'
 import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.galleries.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
@@ -77,6 +79,7 @@ import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.
 import { Route as AdminSeriesIdRouteImport } from './routes/admin.series.$id'
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
+import { Route as AdminNotesIdRouteImport } from './routes/admin.notes.$id'
 import { Route as AdminGalleriesIdRouteImport } from './routes/admin.galleries.$id'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -304,6 +307,11 @@ const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
   path: '/permissions',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNotesRoute = AdminNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMediaRoute = AdminMediaRouteImport.update({
   id: '/media',
   path: '/media',
@@ -353,6 +361,11 @@ const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminPostsRoute,
+} as any)
+const AdminNotesIndexRoute = AdminNotesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminNotesRoute,
 } as any)
 const AdminGalleriesIndexRoute = AdminGalleriesIndexRouteImport.update({
   id: '/',
@@ -419,6 +432,11 @@ const AdminPostsIdRoute = AdminPostsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminPostsRoute,
 } as any)
+const AdminNotesIdRoute = AdminNotesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminNotesRoute,
+} as any)
 const AdminGalleriesIdRoute = AdminGalleriesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -442,6 +460,7 @@ export interface FileRoutesByFullPath {
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
+  '/admin/notes': typeof AdminNotesRouteWithChildren
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
@@ -480,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/series/': typeof SeriesIndexRoute
   '/tweets/': typeof TweetsIndexRoute
   '/admin/galleries/$id': typeof AdminGalleriesIdRoute
+  '/admin/notes/$id': typeof AdminNotesIdRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
@@ -493,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
+  '/admin/notes/': typeof AdminNotesIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
 }
@@ -547,6 +568,7 @@ export interface FileRoutesByTo {
   '/series': typeof SeriesIndexRoute
   '/tweets': typeof TweetsIndexRoute
   '/admin/galleries/$id': typeof AdminGalleriesIdRoute
+  '/admin/notes/$id': typeof AdminNotesIdRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
@@ -560,6 +582,7 @@ export interface FileRoutesByTo {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
+  '/admin/notes': typeof AdminNotesIndexRoute
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/series': typeof AdminSeriesIndexRoute
 }
@@ -581,6 +604,7 @@ export interface FileRoutesById {
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
+  '/admin/notes': typeof AdminNotesRouteWithChildren
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
@@ -619,6 +643,7 @@ export interface FileRoutesById {
   '/series/': typeof SeriesIndexRoute
   '/tweets/': typeof TweetsIndexRoute
   '/admin/galleries/$id': typeof AdminGalleriesIdRoute
+  '/admin/notes/$id': typeof AdminNotesIdRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
@@ -632,6 +657,7 @@ export interface FileRoutesById {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
+  '/admin/notes/': typeof AdminNotesIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
 }
@@ -654,6 +680,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
+    | '/admin/notes'
     | '/admin/permissions'
     | '/admin/posts'
     | '/admin/projects'
@@ -692,6 +719,7 @@ export interface FileRouteTypes {
     | '/series/'
     | '/tweets/'
     | '/admin/galleries/$id'
+    | '/admin/notes/$id'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/series/$id'
@@ -705,6 +733,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
+    | '/admin/notes/'
     | '/admin/posts/'
     | '/admin/series/'
   fileRoutesByTo: FileRoutesByTo
@@ -759,6 +788,7 @@ export interface FileRouteTypes {
     | '/series'
     | '/tweets'
     | '/admin/galleries/$id'
+    | '/admin/notes/$id'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/series/$id'
@@ -772,6 +802,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
     | '/admin/galleries'
+    | '/admin/notes'
     | '/admin/posts'
     | '/admin/series'
   id:
@@ -792,6 +823,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
+    | '/admin/notes'
     | '/admin/permissions'
     | '/admin/posts'
     | '/admin/projects'
@@ -830,6 +862,7 @@ export interface FileRouteTypes {
     | '/series/'
     | '/tweets/'
     | '/admin/galleries/$id'
+    | '/admin/notes/$id'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/series/$id'
@@ -843,6 +876,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
+    | '/admin/notes/'
     | '/admin/posts/'
     | '/admin/series/'
   fileRoutesById: FileRoutesById
@@ -1203,6 +1237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPermissionsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/notes': {
+      id: '/admin/notes'
+      path: '/notes'
+      fullPath: '/admin/notes'
+      preLoaderRoute: typeof AdminNotesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/media': {
       id: '/admin/media'
       path: '/media'
@@ -1272,6 +1313,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/posts/'
       preLoaderRoute: typeof AdminPostsIndexRouteImport
       parentRoute: typeof AdminPostsRoute
+    }
+    '/admin/notes/': {
+      id: '/admin/notes/'
+      path: '/'
+      fullPath: '/admin/notes/'
+      preLoaderRoute: typeof AdminNotesIndexRouteImport
+      parentRoute: typeof AdminNotesRoute
     }
     '/admin/galleries/': {
       id: '/admin/galleries/'
@@ -1364,6 +1412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPostsIdRouteImport
       parentRoute: typeof AdminPostsRoute
     }
+    '/admin/notes/$id': {
+      id: '/admin/notes/$id'
+      path: '/$id'
+      fullPath: '/admin/notes/$id'
+      preLoaderRoute: typeof AdminNotesIdRouteImport
+      parentRoute: typeof AdminNotesRoute
+    }
     '/admin/galleries/$id': {
       id: '/admin/galleries/$id'
       path: '/$id'
@@ -1386,6 +1441,20 @@ const AdminGalleriesRouteChildren: AdminGalleriesRouteChildren = {
 
 const AdminGalleriesRouteWithChildren = AdminGalleriesRoute._addFileChildren(
   AdminGalleriesRouteChildren,
+)
+
+interface AdminNotesRouteChildren {
+  AdminNotesIdRoute: typeof AdminNotesIdRoute
+  AdminNotesIndexRoute: typeof AdminNotesIndexRoute
+}
+
+const AdminNotesRouteChildren: AdminNotesRouteChildren = {
+  AdminNotesIdRoute: AdminNotesIdRoute,
+  AdminNotesIndexRoute: AdminNotesIndexRoute,
+}
+
+const AdminNotesRouteWithChildren = AdminNotesRoute._addFileChildren(
+  AdminNotesRouteChildren,
 )
 
 interface AdminPostsRouteChildren {
@@ -1451,6 +1520,7 @@ interface AdminRouteChildren {
   AdminLogsRoute: typeof AdminLogsRoute
   AdminMcpRoute: typeof AdminMcpRoute
   AdminMediaRoute: typeof AdminMediaRoute
+  AdminNotesRoute: typeof AdminNotesRouteWithChildren
   AdminPermissionsRoute: typeof AdminPermissionsRoute
   AdminPostsRoute: typeof AdminPostsRouteWithChildren
   AdminProjectsRoute: typeof AdminProjectsRoute
@@ -1473,6 +1543,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLogsRoute: AdminLogsRoute,
   AdminMcpRoute: AdminMcpRoute,
   AdminMediaRoute: AdminMediaRoute,
+  AdminNotesRoute: AdminNotesRouteWithChildren,
   AdminPermissionsRoute: AdminPermissionsRoute,
   AdminPostsRoute: AdminPostsRouteWithChildren,
   AdminProjectsRoute: AdminProjectsRoute,

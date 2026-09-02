@@ -69,6 +69,7 @@ function useAdminTitle(): string {
 	if (pathname.startsWith("/admin/posts")) return "文章管理";
 	if (pathname.startsWith("/admin/series")) return "系列书管理";
 	if (pathname.startsWith("/admin/galleries")) return "图集管理";
+	if (pathname.startsWith("/admin/notes")) return "笔记管理";
 	return "后台管理";
 }
 
