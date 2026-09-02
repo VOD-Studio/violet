@@ -2,7 +2,6 @@
 @import "tailwindcss";
 @import "@fontsource/maple-mono/400.css";
 @import "@fontsource/maple-mono/700.css";
-@import "@xterm/xterm/css/xterm.css";
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
