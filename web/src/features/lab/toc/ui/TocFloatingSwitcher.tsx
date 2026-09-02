@@ -25,7 +25,7 @@ function BarChip({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"h-8 shrink-0 cursor-pointer rounded-full px-3 font-mono text-xs whitespace-nowrap transition-colors duration-150",
+				"h-8 shrink-0 cursor-pointer rounded-full px-2.5 font-mono text-[11px] whitespace-nowrap transition-colors duration-150",
 				active
 					? "bg-foreground font-semibold text-background"
 					: "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
@@ -37,9 +37,8 @@ function BarChip({
 }
 
 /**
- * 悬浮风格切换长条：右下角常驻，收起态只显示当前方案胶囊；
- * 点击展开完整长条（定宽 max-content + transform/opacity 过渡——
- * width 类动画在实测环境中被渲染层冻结，故不依赖宽度生长）。
+ * 悬浮风格切换长条：右下角常驻浮钮（Layers 图标 + 当前方案名），
+ * 点击后长条自右下原点滑入替位；滚动/选择/点外部即收起。
  */
 export function TocFloatingSwitcher<V extends string>({
 	variant,
@@ -50,7 +49,26 @@ export function TocFloatingSwitcher<V extends string>({
 }: TocFloatingSwitcherProps<V>) {
 	const [open, setOpen] = useState(false);
 	const rootRef = useRef<HTMLDivElement>(null);
+	const openScrollY = useRef(0);
 	const current = variants.find((v) => v.value === variant);
+
+	// 展开后滚动即收起：长条是临时浮层，不应在阅读区常驻遮挡
+	useEffect(() => {
+		if (!open) return;
+		openScrollY.current = window.scrollY;
+		let raf = 0;
+		const onScroll = () => {
+			cancelAnimationFrame(raf);
+			raf = requestAnimationFrame(() => {
+				if (Math.abs(window.scrollY - openScrollY.current) > 60) setOpen(false);
+			});
+		};
+		window.addEventListener("scroll", onScroll, { passive: true });
+		return () => {
+			window.removeEventListener("scroll", onScroll);
+			cancelAnimationFrame(raf);
+		};
+	}, [open]);
 
 	// 点击外部 / Esc 收起
 	useEffect(() => {
@@ -81,7 +99,8 @@ export function TocFloatingSwitcher<V extends string>({
 			<div
 				className={cn(
 					"absolute right-0 bottom-0 flex items-center rounded-full border border-edge-hairline bg-background/95 p-1 shadow-lg backdrop-blur-md",
-					"origin-bottom-right transition-[transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)]",
+					// Tailwind v4 的 translate-*/scale-* 走独立属性，过渡列表必须点名 translate,scale
+					"origin-bottom-right transition-[translate,scale,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)]",
 					open
 						? "pointer-events-auto translate-x-0 scale-100 opacity-100"
 						: "pointer-events-none translate-x-3 scale-95 opacity-0",
