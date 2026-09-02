@@ -708,14 +708,18 @@ function CapsulePillars({
 				return (
 					<div
 						key={topNode.id}
-						className={cn(
-							"overflow-hidden rounded-xl border transition-all duration-300",
-							isSectionActive
-								? "border-foreground/20 bg-foreground/[0.02] shadow-xs dark:border-foreground/25 dark:bg-foreground/[0.04]"
-								: "border-border/50 bg-background/50 hover:border-border/80",
-						)}
+						className="relative rounded-xl border border-border/50 bg-background/50 transition-colors hover:border-border/80"
 					>
-						<div className="flex items-center justify-between gap-2 p-3">
+						{/* 激活高亮框用 layoutId 共享布局滑动（流体轨道药丸同款技术），
+						    滚动换章时框平滑移到新组而不是旧框消失新框闪现 */}
+						{isSectionActive && (
+							<motion.div
+								layoutId="capsule-active-card"
+								transition={reduced ? instantTransition : springTransition}
+								className="absolute inset-0 z-0 rounded-xl border border-foreground/20 bg-foreground/[0.02] shadow-xs dark:border-foreground/25 dark:bg-foreground/[0.04]"
+							/>
+						)}
+						<div className="relative z-10 flex items-center justify-between gap-2 p-3">
 							<button
 								type="button"
 								onClick={() => {
@@ -783,7 +787,7 @@ function CapsulePillars({
 											? instantTransition
 											: { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
 									}
-									className="overflow-hidden border-t border-border/40 bg-muted/15 px-3 py-2"
+									className="relative z-10 overflow-hidden border-t border-border/40 bg-muted/15 px-3 py-2"
 								>
 									<ul className="space-y-1">
 										{childrenFlat.map(({ node, depth, indexStr }) => {
