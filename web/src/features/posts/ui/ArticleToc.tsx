@@ -1,6 +1,5 @@
 import { SegmentedArticleToc, type SegmentedTocNode } from "@entities/post/ui/SegmentedArticleToc";
 import { type TocItem, useActiveHeading } from "@shared/hooks/use-toc";
-import { ScrollArea } from "@shared/ui/scroll-area";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export interface ArticleTocProps {
@@ -77,13 +76,7 @@ const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProp
 					目录
 				</p>
 			)}
-			<ScrollArea className="flex-1">
-				<SegmentedArticleToc
-					nodes={nodes}
-					activeId={activeId}
-					onNavigate={handleNavigate}
-				/>
-			</ScrollArea>
+			<SegmentedArticleToc nodes={nodes} activeId={activeId} onNavigate={handleNavigate} />
 		</nav>
 	);
 };
