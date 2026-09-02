@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
+
+	"blog-api/internal/application/markdown"
 )
 
 // 数学公式还原相关常量。
@@ -35,7 +37,7 @@ func preserveMathJaxScripts(doc *html.Node) {
 	for _, script := range scriptNodes {
 		latex := strings.TrimSpace(textContent(script))
 		// 块级由 type="math/tex; mode=display" 标识（注意是 type 属性，不是 script.Data）
-		isBlock := strings.Contains(strings.ToLower(getAttr(script, "type")), "mode=display")
+		isBlock := strings.Contains(strings.ToLower(markdown.GetAttr(script, "type")), "mode=display")
 		placeholder := &html.Node{
 			Type: html.ElementNode,
 			Data: "span",
@@ -84,7 +86,7 @@ func markInlineKaTeX(doc *html.Node) {
 	for _, katex := range findAllByClass(doc, "span", "katex") {
 		// 跳过已被 markBlockKaTeX 包在占位里的（占位已替换原 wrapper，理论上不会再遇到）
 		// 防御性检查：父节点是 mathjax-legacy 占位的跳过
-		if katex.Parent != nil && hasClass(getAttr(katex.Parent, "class"), "mathjax-legacy") {
+		if katex.Parent != nil && hasClass(markdown.GetAttr(katex.Parent, "class"), "mathjax-legacy") {
 			continue
 		}
 		replaceKaTeXWithPlaceholder(katex, false)
@@ -130,7 +132,7 @@ func extractKaTeXText(node *html.Node) string {
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "span" {
 			// 跳过 .katex-html 标签本身（它的文本在子节点里）和 .katex-mathml（无障碍层，文本重复）
-			class := getAttr(n, "class")
+			class := markdown.GetAttr(n, "class")
 			if hasClass(class, "katex-mathml") {
 				return
 			}
@@ -151,7 +153,7 @@ func findAllByClass(root *html.Node, tag, class string) []*html.Node {
 	var result []*html.Node
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == tag && hasClass(getAttr(n, "class"), class) {
+		if n.Type == html.ElementNode && n.Data == tag && hasClass(markdown.GetAttr(n, "class"), class) {
 			result = append(result, n)
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -162,24 +164,13 @@ func findAllByClass(root *html.Node, tag, class string) []*html.Node {
 	return result
 }
 
-// setAttr 设置元素的属性（已有则更新，没有则追加）。
-func setAttr(n *html.Node, key, val string) {
-	for i, a := range n.Attr {
-		if a.Key == key {
-			n.Attr[i].Val = val
-			return
-		}
-	}
-	n.Attr = append(n.Attr, html.Attribute{Key: key, Val: val})
-}
-
 // findMathJaxScripts 递归查找所有 <script type="math/tex"> 和 <script type="math/tex; mode=display">。
 func findMathJaxScripts(n *html.Node) []*html.Node {
 	var result []*html.Node
 	var walk func(*html.Node)
 	walk = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "script" {
-			if isMathJaxScript(getAttr(node, "type")) {
+			if isMathJaxScript(markdown.GetAttr(node, "type")) {
 				result = append(result, node)
 			}
 		}
@@ -216,13 +207,13 @@ func collectPlaceholders(root *html.Node) []Placeholder {
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "span" {
-			class := getAttr(n, "class")
+			class := markdown.GetAttr(n, "class")
 			if hasClass(class, "mathjax-legacy") {
 				result = append(result, Placeholder{
 					Node:        n,
-					IsBlock:     getAttr(n, mathJaxBlockAttr) == "1",
-					Latex:       getAttr(n, mathJaxLatexAttr),
-					FormulaText: getAttr(n, mathJaxFormulaTextAttr),
+					IsBlock:     markdown.GetAttr(n, mathJaxBlockAttr) == "1",
+					Latex:       markdown.GetAttr(n, mathJaxLatexAttr),
+					FormulaText: markdown.GetAttr(n, mathJaxFormulaTextAttr),
 				})
 			}
 		}
@@ -250,7 +241,7 @@ func finalizePlaceholders(placeholders []Placeholder) {
 // 供 LLM 阶段注入反推结果。
 func SetPlaceholderLatex(p *Placeholder, latex string) {
 	p.Latex = latex
-	setAttr(p.Node, mathJaxLatexAttr, latex)
+	markdown.SetAttr(p.Node, mathJaxLatexAttr, latex)
 }
 
 // restoreMathNodes 遍历 article.Node，把所有公式占位（mathjax-legacy）与漏网的
@@ -266,7 +257,7 @@ func restoreMathNodes(root *html.Node) {
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "span" {
-			class := getAttr(n, "class")
+			class := markdown.GetAttr(n, "class")
 			if hasClass(class, "katex-display") {
 				extraReplacements = append(extraReplacements, mathReplacementFromKaTeX(n, true))
 				return
@@ -309,7 +300,7 @@ func findKatexAnnotation(katexSpan *html.Node) string {
 			return
 		}
 		if n.Type == html.ElementNode && n.Data == "annotation" {
-			if strings.EqualFold(getAttr(n, "encoding"), "application/x-tex") {
+			if strings.EqualFold(markdown.GetAttr(n, "encoding"), "application/x-tex") {
 				found = strings.TrimSpace(textContent(n))
 				return
 			}
@@ -343,16 +334,6 @@ func insertTextNode(target *html.Node, text string) {
 	}
 	target.Parent.InsertBefore(textNode, target)
 	target.Parent.RemoveChild(target)
-}
-
-// getAttr 读元素的属性值，不存在返回空串。
-func getAttr(n *html.Node, key string) string {
-	for _, a := range n.Attr {
-		if a.Key == key {
-			return a.Val
-		}
-	}
-	return ""
 }
 
 // hasClass 判断 class 属性里是否包含指定类名（空格分隔）。

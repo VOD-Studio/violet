@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
+
+	"blog-api/internal/application/markdown"
 )
 
 // 文章元信息提取。
@@ -107,12 +109,12 @@ func findAllNodes(doc *html.Node, match nodeMatchFn) []*html.Node {
 // 同时兼容 attr 在 property/name 两种位置的容错由调用方通过 key 指定。
 func metaContent(doc *html.Node, attr, key string) string {
 	n := findFirstNode(doc, func(n *html.Node) bool {
-		return n.Data == "meta" && getAttr(n, attr) == key
+		return n.Data == "meta" && markdown.GetAttr(n, attr) == key
 	})
 	if n == nil {
 		return ""
 	}
-	return strings.TrimSpace(getAttr(n, "content"))
+	return strings.TrimSpace(markdown.GetAttr(n, "content"))
 }
 
 // jsonLDString 从 <script type="application/ld+json"> 里取指定字段（取第一个非空）。
@@ -158,7 +160,7 @@ func pickString(obj map[string]any, keys []string) string {
 // findScriptsByType 查找所有 <script type="..."> 节点。
 func findScriptsByType(doc *html.Node, targetType string) []*html.Node {
 	return findAllNodes(doc, func(n *html.Node) bool {
-		return n.Data == "script" && strings.EqualFold(getAttr(n, "type"), targetType)
+		return n.Data == "script" && strings.EqualFold(markdown.GetAttr(n, "type"), targetType)
 	})
 }
 
@@ -180,12 +182,12 @@ func extractCanonicalURL(doc *html.Node) string {
 		return v
 	}
 	n := findFirstNode(doc, func(n *html.Node) bool {
-		return n.Data == "link" && strings.EqualFold(getAttr(n, "rel"), "canonical")
+		return n.Data == "link" && strings.EqualFold(markdown.GetAttr(n, "rel"), "canonical")
 	})
 	if n == nil {
 		return ""
 	}
-	return strings.TrimSpace(getAttr(n, "href"))
+	return strings.TrimSpace(markdown.GetAttr(n, "href"))
 }
 
 // extractCoverImage 取封面图 URL：优先 og:image → 次 twitter:image。

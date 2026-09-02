@@ -1,4 +1,4 @@
-package post
+package markdown
 
 import (
 	"testing"
@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// markdownToHTML 是 MCP create_post 缺 content_html 时的应用层兜底。
+// ToHTML 是 MCP create_post 缺 content_html 时的应用层兜底。
 // 这些测试锁定 violet 编辑器 schema 的四类 carrier 必须正确产出，否则
 // 编辑页加载后无数据、阅读端降级渲染格式全无（线上 markdown-full-features-test 复现）。
 
 func TestMarkdownToHTML_Empty(t *testing.T) {
-	out, err := markdownToHTML("")
+	out, err := ToHTML("")
 	require.NoError(t, err)
 	assert.Equal(t, "", out)
 }
 
 func TestMarkdownToHTML_Headings(t *testing.T) {
-	out, err := markdownToHTML("## 标题\n\n正文段落")
+	out, err := ToHTML("## 标题\n\n正文段落")
 	require.NoError(t, err)
 	assert.Contains(t, out, "<h2")
 	assert.Contains(t, out, "标题")
@@ -26,14 +26,14 @@ func TestMarkdownToHTML_Headings(t *testing.T) {
 }
 
 func TestMarkdownToHTML_Strikethrough(t *testing.T) {
-	out, err := markdownToHTML("~~删除~~")
+	out, err := ToHTML("~~删除~~")
 	require.NoError(t, err)
 	assert.Contains(t, out, "<del>删除</del>")
 }
 
 func TestMarkdownToHTML_Table(t *testing.T) {
 	md := "| a | b |\n| --- | --- |\n| 1 | 2 |\n"
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	assert.Contains(t, out, "<table>")
 	assert.Contains(t, out, "<th>a</th>")
@@ -42,14 +42,14 @@ func TestMarkdownToHTML_Table(t *testing.T) {
 
 func TestMarkdownToHTML_FencedCodeWithLanguage(t *testing.T) {
 	md := "```rust\nfn main() {}\n```\n"
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	assert.Contains(t, out, `<code class="language-rust">`)
 	assert.Contains(t, out, "fn main() {}")
 }
 
 func TestMarkdownToHTML_InlineMathCarrier(t *testing.T) {
-	out, err := markdownToHTML("质能方程 $E = mc^2$ 成立")
+	out, err := ToHTML("质能方程 $E = mc^2$ 成立")
 	require.NoError(t, err)
 	assert.Contains(t, out, `<span data-type="inline-math" data-latex="E = mc^2">`,
 		"行内公式须产出 inline-math carrier，供编辑器/阅读端识别")
@@ -59,7 +59,7 @@ func TestMarkdownToHTML_InlineMathCarrier(t *testing.T) {
 
 func TestMarkdownToHTML_BlockMathCarrier(t *testing.T) {
 	md := "$$\\int_{0}^{1} x\\,dx$$\n"
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	assert.Contains(t, out, `<div data-type="block-math" data-latex="\int_{0}^{1} x\,dx">`,
 		"块级公式须产出 block-math div carrier（而非嵌入 <p>）")
@@ -68,7 +68,7 @@ func TestMarkdownToHTML_BlockMathCarrier(t *testing.T) {
 
 func TestMarkdownToHTML_MermaidDiagramBlockCarrier(t *testing.T) {
 	md := "```mermaid\ngraph TD\nA --> B\n```\n"
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	assert.Contains(t, out, `<div data-type="diagram-block" data-format="mermaid"`,
 		"mermaid 围栏须产出 diagram-block carrier，而非普通代码块")
@@ -78,7 +78,7 @@ func TestMarkdownToHTML_MermaidDiagramBlockCarrier(t *testing.T) {
 
 func TestMarkdownToHTML_TaskListCarrier(t *testing.T) {
 	md := "- [x] 已完成\n- [ ] 未完成\n"
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	assert.Contains(t, out, `<ul data-type="taskList">`,
 		"任务列表须产出 taskList ul carrier")
@@ -91,7 +91,7 @@ func TestMarkdownToHTML_TaskListCarrier(t *testing.T) {
 func TestMarkdownToHTML_PlainListUntouched(t *testing.T) {
 	// 普通列表不应被误标为 taskList
 	md := "- 第一项\n- 第二项\n"
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	assert.Contains(t, out, "<ul>")
 	assert.NotContains(t, out, "data-type=\"taskList\"")
@@ -99,7 +99,7 @@ func TestMarkdownToHTML_PlainListUntouched(t *testing.T) {
 
 func TestMarkdownToHTML_DollarAmountNotMath(t *testing.T) {
 	// 美元金额不应被误判为公式
-	out, err := markdownToHTML("售价 $5 的商品")
+	out, err := ToHTML("售价 $5 的商品")
 	require.NoError(t, err)
 	// $5 不满足 looksLikeLatex，原样保留
 	assert.Contains(t, out, "$5")
@@ -126,7 +126,7 @@ A --> B
 | --- | --- |
 | Go | go |
 `
-	out, err := markdownToHTML(md)
+	out, err := ToHTML(md)
 	require.NoError(t, err)
 	for _, c := range []string{
 		"<h2",                            // 标题
@@ -141,11 +141,11 @@ A --> B
 	}
 }
 
-// ensureContentHTML 是 service.Create/Update 的兜底入口。下面覆盖四类边界：
+// EnsureHTML 是 service.Create/Update 的兜底入口。下面覆盖四类边界：
 func TestEnsureContentHTML_GeneratesWhenHTMLMissing(t *testing.T) {
 	// MCP 路径：只传 md，html 空 → 生成
 	html := ""
-	ensureContentHTML(&html, "## 标题")
+	EnsureHTML(&html, "## 标题")
 	assert.NotEmpty(t, html, "html 缺失且有 md 时应兜底生成")
 	assert.Contains(t, html, "<h2")
 }
@@ -153,24 +153,24 @@ func TestEnsureContentHTML_GeneratesWhenHTMLMissing(t *testing.T) {
 func TestEnsureContentHTML_NoopWhenHTMLPresent(t *testing.T) {
 	// admin REST 路径：html 已有 → 不覆盖
 	html := "<p>已有</p>"
-	ensureContentHTML(&html, "## 别的")
+	EnsureHTML(&html, "## 别的")
 	assert.Equal(t, "<p>已有</p>", html, "html 非空时不应被覆盖")
 }
 
 func TestEnsureContentHTML_NoopWhenBothEmpty(t *testing.T) {
 	// 仅改 title/tags 的更新：md 与 html 都空 → 不动（避免误清空已有正文）
 	html := ""
-	ensureContentHTML(&html, "")
+	EnsureHTML(&html, "")
 	assert.Equal(t, "", html, "md 与 html 都空时不应生成")
 }
 
 func TestEnsureContentHTML_NoopWhenMDWhitespaceOnly(t *testing.T) {
 	html := ""
-	ensureContentHTML(&html, "   \n\t  ")
+	EnsureHTML(&html, "   \n\t  ")
 	assert.Equal(t, "", html, "md 仅空白时不应生成")
 }
 
 func TestEnsureContentHTML_NilPointerSafe(t *testing.T) {
 	// nil 指针不应 panic
-	assert.NotPanics(t, func() { ensureContentHTML(nil, "## x") })
+	assert.NotPanics(t, func() { EnsureHTML(nil, "## x") })
 }
