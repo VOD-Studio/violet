@@ -1,9 +1,9 @@
 import { statusOf } from "@features/lab/announcement/model/event";
-import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { useAnnouncement } from "@features/settings/api/queries";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { BackLink } from "@shared/ui/back-link";
 import { Button } from "@shared/ui/base/button";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";

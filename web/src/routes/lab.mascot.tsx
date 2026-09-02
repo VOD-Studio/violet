@@ -1,5 +1,5 @@
 import { MascotLab } from "@features/lab/mascot/ui/MascotLab";
-import { BackLink } from "@features/lab/nav/ui/BackLink";
+import { BackLink } from "@shared/ui/back-link";
 import { createFileRoute } from "@tanstack/react-router";
 import { EMOTIONS } from "@violet/mascot";
 

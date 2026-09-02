@@ -1,6 +1,6 @@
-import { BackLink } from "@features/lab/nav/ui/BackLink";
 import type { SeriesChapter, SeriesDetail } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
+import { BackLink } from "@shared/ui/back-link";
 import { Link } from "@tanstack/react-router";
 import { BookOpen } from "lucide-react";
 
