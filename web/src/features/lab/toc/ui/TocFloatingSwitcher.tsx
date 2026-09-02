@@ -95,15 +95,14 @@ export function TocFloatingSwitcher<V extends string>({
 
 	return (
 		<div ref={rootRef} className="fixed right-6 bottom-6 z-40">
-			{/* 完整长条：与浮钮同一右下锚点，origin-bottom-right 滑入替位（不挤布局） */}
+			{/* 完整长条：与浮钮同一右下锚点，错峰滑入替位（浮钮先退，长条后进，避免交叠穿帮） */}
 			<div
 				className={cn(
-					"absolute right-0 bottom-0 flex items-center rounded-full border border-edge-hairline bg-background/95 p-1 shadow-lg backdrop-blur-md",
-					// Tailwind v4 的 translate-*/scale-* 走独立属性，过渡列表必须点名 translate,scale
+					"absolute right-0 bottom-0 flex w-max items-center gap-0.5 rounded-full border border-edge-hairline bg-background/95 p-1.5 shadow-lg backdrop-blur-md",
 					"origin-bottom-right transition-[translate,scale,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)]",
 					open
-						? "pointer-events-auto translate-x-0 scale-100 opacity-100"
-						: "pointer-events-none translate-x-3 scale-95 opacity-0",
+						? "pointer-events-auto translate-x-0 scale-100 opacity-100 delay-100"
+						: "pointer-events-none translate-x-3 scale-95 opacity-0 delay-0",
 				)}
 			>
 				{variants.map((v) => (
@@ -121,34 +120,36 @@ export function TocFloatingSwitcher<V extends string>({
 						onToggleCompact();
 						setOpen(false);
 					}}
-					className="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2.5 font-mono text-xs text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground"
+					className="mx-0.5 flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-muted/50 px-2.5 font-mono text-[11px] text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
 				>
 					{isCompact ? (
 						<PanelLeft className="size-3.5" />
 					) : (
 						<PanelLeftClose className="size-3.5" />
 					)}
-					<span className="text-[11px]">{isCompact ? "展开目录" : "收起为窄轨"}</span>
+					{isCompact ? "展开目录" : "收起为窄轨"}
 				</button>
 				<button
 					type="button"
 					onClick={() => setOpen(false)}
 					aria-label="收起长条"
-					className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+					className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
 				>
 					<ChevronLeft className="size-4" />
 				</button>
 			</div>
 
-			{/* 收起态浮钮：Layers 图标 + 当前方案名；展开时向长条优雅交棒（淡出缩退） */}
+			{/* 收起态浮钮：先退（无延迟），长条收走后再回归，错峰交棒 */}
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
 				aria-expanded={open}
 				aria-label="展开目录方案长条"
 				className={cn(
-					"flex h-10 cursor-pointer items-center gap-2 rounded-full border border-edge-hairline bg-background/95 px-4 font-mono text-xs font-semibold text-foreground shadow-lg backdrop-blur-md transition-[transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)]",
-					open ? "pointer-events-none scale-95 opacity-0" : "scale-100 opacity-100",
+					"flex h-10 cursor-pointer items-center gap-2 rounded-full border border-edge-hairline bg-background/95 px-4 font-mono text-xs font-semibold text-foreground shadow-lg backdrop-blur-md transition-[translate,scale,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+					open
+						? "pointer-events-none scale-95 opacity-0 delay-0"
+						: "scale-100 translate-x-0 opacity-100 delay-150",
 				)}
 			>
 				<Layers className="size-4" />
