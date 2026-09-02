@@ -60,7 +60,7 @@ PATTERNS: tuple[SensitivePattern, ...] = (
     ),
     SensitivePattern(
         "ssh_endpoint",
-        re.compile(r"\bssh\s+(?:-p\s+\d+|[^\s]+@[^\s]+)"),
+        re.compile(r"\bssh\b[^\r\n]*?\b[^\s@]+@[^\s]+"),
     ),
     SensitivePattern(
         "dsn",

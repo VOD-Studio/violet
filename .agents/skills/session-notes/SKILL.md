@@ -59,8 +59,9 @@ python3 .agents/skills/session-notes/scripts/scan-sensitive.py <file>
 
 仅发起一次 AskUserQuestion 风格的选项式提问。只展示类型、标题、tags、一句摘要和扫描状态，不展示正文。
 
-- 单条且可公开：`直接发布 / 存草稿 / 不发`。
-- 单条且已降级：`存草稿 / 不发`。
+- 单条笔记且可公开：`直接发布 / 存草稿 / 不发`。
+- 单条笔记且已降级：`存草稿 / 不发`。
+- 单篇文章：`直接发布 / 存草稿 / 不发`；仅当用户选择“直接发布”且敏感扫描通过时，先创建草稿，再调用 `publish_post`。
 - 多条且全部可公开：`全部直接发布 / 全部存草稿 / 逐条裁定 / 全部不发`。
 - 多条含降级项：`全部存草稿 / 逐条裁定 / 全部不发`。
 - 选择“逐条裁定”时，在同一次提问中为每项提供选项；降级项不得出现“直接发布”。
@@ -77,9 +78,9 @@ python3 .agents/skills/session-notes/scripts/scan-sensitive.py <file>
 
 ### 文章：`violet-posts`
 
-- 调用 `create_post`：`{ title, content_md, excerpt?, tags? }`。
-- 永远只创建草稿，绝不调用 `publish_post`；该 PAT 没有发布权限。
-- 即使用户对文章选择“直接发布”，仍创建草稿并明确报告此规则。
+- 调用 `create_post`：`{ title, content_md, excerpt?, tags? }`，先创建草稿。
+- 仅当用户选择“直接发布”且敏感扫描通过时，再调用 `publish_post`；发布失败时按第 7 节报告，已创建的草稿保留。
+- 未选择“直接发布”时不得调用 `publish_post`。
 
 ## 7. 失败与收尾
 

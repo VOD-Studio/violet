@@ -84,6 +84,10 @@ GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdow
 
 Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`docs/adr/` 放 auth 系列 ADR。详见 `docs/agents/domain.md`。
 
+### Session notes
+
+任务完成并验证后，若会话产出完整功能或可复用工程经验，使用 `.agents/skills/session-notes/` 分诊并沉淀；支持 `/session-notes` 补录，琐碎、重复或未完成会话不触发。
+
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
 
 ## 提交流程规范
