@@ -74,7 +74,7 @@ func (r *NoteRepository) FindPage(ctx context.Context, filter domainnote.ListFil
 		query = query.Where("status = ?", filter.Status)
 	}
 	var rows []model.Note
-	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &rows, "笔记")
+	total, err := countAndFind(query.Order("created_at DESC, id DESC").Preload("Tags"), q, &rows, "笔记")
 	if err != nil {
 		return shared.PageResult[*domainnote.Note]{}, err
 	}
