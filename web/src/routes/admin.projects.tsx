@@ -19,6 +19,7 @@ import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
@@ -140,30 +141,43 @@ function AdminProjectsPage() {
 		{
 			key: "_actions",
 			header: "操作",
-			sticky: "right",
-			width: "120px",
+			width: "96px",
 			cell: (row) => (
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-2">
 					{canUpdate ? (
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							title="编辑"
-							onClick={() => openEdit(row)}
-						>
-							<Pencil className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										onClick={() => openEdit(row)}
+										aria-label={`编辑项目 ${row.title}`}
+									>
+										<Pencil className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>编辑</TooltipContent>
+						</Tooltip>
 					) : null}
 					{canDelete ? (
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							title="删除"
-							className="hover:bg-destructive/10 hover:text-destructive"
-							onClick={() => setDeleteId(row.id)}
-						>
-							<Trash2 className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+										onClick={() => setDeleteId(row.id)}
+										aria-label={`删除项目 ${row.title}`}
+									>
+										<Trash2 className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>删除</TooltipContent>
+						</Tooltip>
 					) : null}
 				</div>
 			),
@@ -171,47 +185,49 @@ function AdminProjectsPage() {
 	];
 
 	return (
-		<PageShell
-			title="项目管理"
-			description="管理展示在「项目」页的项目"
-			action={
-				canCreate ? (
-					<Button size="sm" onClick={openCreate}>
-						<Plus className="size-3.5" /> 创建项目
-					</Button>
-				) : null
-			}
-		>
-			<DataTable<Project>
-				data={sortedProjects}
-				columns={columns}
-				pagination={pagination}
-				keyExtractor={(row) => row.id}
-				selectable={false}
-				loading={isLoading}
-				error={error ? new Error(error.message) : null}
-				onRetry={() => refetch()}
-				sort={sort}
-				onSortChange={setSort}
-				storageKey="admin-projects-columns"
-				caption="项目列表"
-				emptyTitle="暂无项目"
-				emptyDescription="还没有创建任何项目"
-			/>
-
-			{dialogOpen && (
-				<ProjectDialog
-					open={dialogOpen}
-					onOpenChange={setDialogOpen}
-					editingId={editingId}
+		<TooltipProvider>
+			<PageShell
+				title="项目管理"
+				description="管理展示在「项目」页的项目"
+				action={
+					canCreate ? (
+						<Button size="sm" onClick={openCreate}>
+							<Plus className="size-3.5" /> 创建项目
+						</Button>
+					) : null
+				}
+			>
+				<DataTable<Project>
+					data={sortedProjects}
+					columns={columns}
+					pagination={pagination}
+					keyExtractor={(row) => row.id}
+					selectable={false}
+					loading={isLoading}
+					error={error ? new Error(error.message) : null}
+					onRetry={() => refetch()}
+					sort={sort}
+					onSortChange={setSort}
+					storageKey="admin-projects-columns"
+					caption="项目列表"
+					emptyTitle="暂无项目"
+					emptyDescription="还没有创建任何项目"
 				/>
-			)}
 
-			<DeleteProjectDialog
-				deleteId={deleteId}
-				onOpenChange={(open) => !open && setDeleteId(null)}
-			/>
-		</PageShell>
+				{dialogOpen && (
+					<ProjectDialog
+						open={dialogOpen}
+						onOpenChange={setDialogOpen}
+						editingId={editingId}
+					/>
+				)}
+
+				<DeleteProjectDialog
+					deleteId={deleteId}
+					onOpenChange={(open) => !open && setDeleteId(null)}
+				/>
+			</PageShell>
+		</TooltipProvider>
 	);
 }
 

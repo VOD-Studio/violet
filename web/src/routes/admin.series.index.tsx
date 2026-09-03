@@ -8,6 +8,7 @@ import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
@@ -119,39 +120,63 @@ function AdminSeriesPage() {
 		{
 			key: "actions_col",
 			header: "操作",
-			sticky: "right",
-			width: "160px",
+			width: "110px",
 			cell: (row) => (
-				<div className="flex items-center gap-1">
-					<Button
-						size="icon-sm"
-						variant="ghost"
-						onClick={() =>
-							void navigate({ to: "/admin/series/$id", params: { id: row.id } })
-						}
-						title="目录管理"
-					>
-						<BookOpen className="size-3.5" />
-					</Button>
+				<div className="flex items-center gap-1.5">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span>
+								<Button
+									size="icon-sm"
+									variant="ghost"
+									onClick={() =>
+										void navigate({
+											to: "/admin/series/$id",
+											params: { id: row.id },
+										})
+									}
+									aria-label={`目录管理《${row.title}》`}
+								>
+									<BookOpen className="size-3.5" />
+								</Button>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent>目录管理</TooltipContent>
+					</Tooltip>
 					<PermissionGuard permission="series:update">
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							onClick={() => handleEditMeta(row)}
-							title="编辑信息"
-						>
-							<Pencil className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										onClick={() => handleEditMeta(row)}
+										aria-label={`编辑《${row.title}》信息`}
+									>
+										<Pencil className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>编辑信息</TooltipContent>
+						</Tooltip>
 					</PermissionGuard>
 					<PermissionGuard permission="series:delete">
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							onClick={() => handleDelete(row)}
-							title="解散书"
-						>
-							<Trash2 className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+										onClick={() => handleDelete(row)}
+										aria-label={`解散《${row.title}》`}
+									>
+										<Trash2 className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>解散书</TooltipContent>
+						</Tooltip>
 					</PermissionGuard>
 				</div>
 			),
@@ -159,48 +184,50 @@ function AdminSeriesPage() {
 	];
 
 	return (
-		<PageShell
-			title="系列书管理"
-			description="把同主题渐进式文章组织成有章节顺序的书"
-			action={
-				<PermissionGuard permission="series:create">
-					<Button size="sm" onClick={handleCreate}>
-						<Plus className="size-3.5" />
-						建书
-					</Button>
-				</PermissionGuard>
-			}
-		>
-			<DataTable<AdminSeriesListItem>
-				data={items}
-				columns={columns}
-				pagination={pagination}
-				keyExtractor={(row) => row.id}
-				selectable={false}
-				loading={isLoading}
-				error={error ? new Error(error.message) : null}
-				onRetry={() => refetch()}
-				storageKey="admin-series-columns"
-				resizable
-				caption="书列表"
-				emptyTitle="还没有书"
-				emptyDescription="建一本书，把已有文章挂成章节"
-			/>
-			<SeriesSheet
-				open={sheetOpen}
-				onOpenChange={setSheetOpen}
-				editing={editing}
-				onCreated={(id) => void navigate({ to: "/admin/series/$id", params: { id } })}
-			/>
-			<ConfirmDialog
-				open={deleteOpen}
-				onOpenChange={setDeleteOpen}
-				onConfirm={confirmDelete}
-				title="确认解散书"
-				description={`解散《${deleting?.title}》将解绑全部章节，文章本身不受影响。确定解散吗？`}
-				confirmLabel="解散"
-				loading={del.isPending}
-			/>
-		</PageShell>
+		<TooltipProvider>
+			<PageShell
+				title="系列书管理"
+				description="把同主题渐进式文章组织成有章节顺序的书"
+				action={
+					<PermissionGuard permission="series:create">
+						<Button size="sm" onClick={handleCreate}>
+							<Plus className="size-3.5" />
+							建书
+						</Button>
+					</PermissionGuard>
+				}
+			>
+				<DataTable<AdminSeriesListItem>
+					data={items}
+					columns={columns}
+					pagination={pagination}
+					keyExtractor={(row) => row.id}
+					selectable={false}
+					loading={isLoading}
+					error={error ? new Error(error.message) : null}
+					onRetry={() => refetch()}
+					storageKey="admin-series-columns"
+					resizable
+					caption="书列表"
+					emptyTitle="还没有书"
+					emptyDescription="建一本书，把已有文章挂成章节"
+				/>
+				<SeriesSheet
+					open={sheetOpen}
+					onOpenChange={setSheetOpen}
+					editing={editing}
+					onCreated={(id) => void navigate({ to: "/admin/series/$id", params: { id } })}
+				/>
+				<ConfirmDialog
+					open={deleteOpen}
+					onOpenChange={setDeleteOpen}
+					onConfirm={confirmDelete}
+					title="确认解散书"
+					description={`解散《${deleting?.title}》将解绑全部章节，文章本身不受影响。确定解散吗？`}
+					confirmLabel="解散"
+					loading={del.isPending}
+				/>
+			</PageShell>
+		</TooltipProvider>
 	);
 }
