@@ -17,9 +17,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@shared/ui/base/select";
-import { useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { NoteSheet } from "./NoteSheet";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
 	year: "numeric",
@@ -41,20 +41,21 @@ function formatTime(iso: string | null): string {
 	return iso ? dateFormatter.format(new Date(iso)) : "—";
 }
 
-/** 笔记管理列表：状态筛选 + 新建入口，编辑先行（正文必填，无空稿概念）。 */
+/** 笔记管理列表：状态筛选 + 新建/编辑侧滑抽屉。 */
 export function NotesAdminListPage() {
-	const navigate = useNavigate();
 	const canManage = useHasPermission("note:manage");
 	const [status, setStatus] = useState("all");
+	// undefined: 抽屉关闭; null: 新建笔记; string: 编辑指定笔记
+	const [activeNoteId, setActiveNoteId] = useState<string | null | undefined>(undefined);
+
 	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
 		useAdminNotesQuery,
 		{ status: status === "all" ? undefined : (status as NoteStatus) },
 		{ initialPageSize: 20 },
 	);
 
-	const openEditor = (id: string) => {
-		void navigate({ to: "/admin/notes/$id", params: { id } });
-	};
+	const openCreate = () => setActiveNoteId(null);
+	const openEdit = (id: string) => setActiveNoteId(id);
 
 	const columns: DataTableColumn<AdminNoteSummary>[] = [
 		{
@@ -67,7 +68,7 @@ export function NotesAdminListPage() {
 					<button
 						type="button"
 						className="text-left font-medium hover:text-primary hover:underline"
-						onClick={() => openEditor(row.id)}
+						onClick={() => openEdit(row.id)}
 					>
 						{row.title || `（无标题）${row.id.slice(0, 8)}`}
 					</button>
@@ -117,7 +118,7 @@ export function NotesAdminListPage() {
 			width: "80px",
 			sticky: "right",
 			cell: (row) => (
-				<Button variant="ghost" size="sm" onClick={() => openEditor(row.id)}>
+				<Button variant="ghost" size="sm" onClick={() => openEdit(row.id)}>
 					编辑
 				</Button>
 			),
@@ -130,7 +131,7 @@ export function NotesAdminListPage() {
 			description="创建、编辑与发布知识笔记"
 			action={
 				canManage ? (
-					<Button size="sm" onClick={() => openEditor("new")}>
+					<Button size="sm" onClick={openCreate}>
 						<Plus className="size-4" />
 						新建笔记
 					</Button>
@@ -171,6 +172,15 @@ export function NotesAdminListPage() {
 				caption="笔记管理列表"
 				emptyTitle="还没有笔记"
 				emptyDescription="新建一条笔记，或等 AI 会话沉淀进来"
+			/>
+
+			{/* 新建与快速编辑侧滑抽屉 */}
+			<NoteSheet
+				open={activeNoteId !== undefined}
+				onOpenChange={(open) => {
+					if (!open) setActiveNoteId(undefined);
+				}}
+				noteId={activeNoteId}
 			/>
 		</PageShell>
 	);

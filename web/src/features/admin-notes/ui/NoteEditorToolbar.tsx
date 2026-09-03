@@ -3,19 +3,8 @@ import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import {
-	ArrowLeft,
-	Columns2,
-	ExternalLink,
-	Eye,
-	Loader2,
-	PenLine,
-	SlidersHorizontal,
-	Trash2,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
-
-export type EditorViewMode = "split" | "edit" | "preview";
 
 interface NoteEditorToolbarProps {
 	isEdit: boolean;
@@ -23,8 +12,6 @@ interface NoteEditorToolbarProps {
 	isDirty: boolean;
 	canManage: boolean;
 	note?: AdminNote;
-	viewMode: EditorViewMode;
-	onViewModeChange: (mode: EditorViewMode) => void;
 	onBack: () => void;
 	onSave: () => void;
 	onPublish?: () => void;
@@ -40,8 +27,6 @@ export function NoteEditorToolbar({
 	isDirty,
 	canManage,
 	note,
-	viewMode,
-	onViewModeChange,
 	onBack,
 	onSave,
 	onPublish,
@@ -81,42 +66,8 @@ export function NoteEditorToolbar({
 				) : null}
 			</div>
 
-			{/* 右侧：视图切换 + 操作区 */}
+			{/* 右侧：操作区 */}
 			<div className="flex flex-wrap items-center justify-end gap-2">
-				{/* 视图模式切换 */}
-				<div className="bg-muted/50 hidden items-center rounded-lg p-0.5 md:flex">
-					<Button
-						variant={viewMode === "split" ? "secondary" : "ghost"}
-						size="sm"
-						className="h-7 px-2.5 text-xs"
-						onClick={() => onViewModeChange("split")}
-						title="双栏实时对照"
-					>
-						<Columns2 className="mr-1.5 size-3.5" />
-						双栏
-					</Button>
-					<Button
-						variant={viewMode === "edit" ? "secondary" : "ghost"}
-						size="sm"
-						className="h-7 px-2.5 text-xs"
-						onClick={() => onViewModeChange("edit")}
-						title="纯编辑模式"
-					>
-						<PenLine className="mr-1.5 size-3.5" />
-						编辑
-					</Button>
-					<Button
-						variant={viewMode === "preview" ? "secondary" : "ghost"}
-						size="sm"
-						className="h-7 px-2.5 text-xs"
-						onClick={() => onViewModeChange("preview")}
-						title="纯预览模式"
-					>
-						<Eye className="mr-1.5 size-3.5" />
-						预览
-					</Button>
-				</div>
-
 				{/* 移动端侧边抽屉开关 */}
 				{onOpenSettings && (
 					<Button
@@ -151,7 +102,7 @@ export function NoteEditorToolbar({
 						<Button
 							variant="ghost"
 							size="sm"
-							className="text-destructive hover:text-destructive hover:bg-destructive/10"
+							className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 							disabled={deleting || saving}
 							onClick={() => setDeleteOpen(true)}
 						>

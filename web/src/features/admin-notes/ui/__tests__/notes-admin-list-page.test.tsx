@@ -1,5 +1,5 @@
 import type { AdminNoteSummary } from "@features/admin-notes/model/types";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { NotesAdminListPage } from "../NotesAdminListPage";
@@ -9,21 +9,11 @@ vi.mock("@features/admin-shared/ui/data-table", () => ({
 	DataTable: (props: { data: unknown[]; columns: unknown[] }) => (
 		<div>
 			<div data-testid="row-count">{props.data.length}</div>
-			{/* 平铺渲染第一列 cell 以断言列定义行为 */}
 			{props.data.map((row, i) => {
 				const col = props.columns[0] as {
-					cell: (row: unknown) => { props: { children: unknown } };
+					cell: (row: unknown) => ReactNode;
 				};
-				const rendered = col.cell(row as AdminNoteSummary);
-				if (!rendered) return null;
-				const button = rendered as {
-					props: { onClick?: () => void; children?: ReactNode };
-				};
-				return (
-					<button key={i} type="button" onClick={button.props.onClick}>
-						{button.props.children ?? null}
-					</button>
-				);
+				return <div key={i}>{col.cell(row as AdminNoteSummary)}</div>;
 			})}
 		</div>
 	),
@@ -31,20 +21,35 @@ vi.mock("@features/admin-shared/ui/data-table", () => ({
 
 vi.mock("@features/admin-notes/api/queries", () => ({
 	useAdminNotes: vi.fn(),
+	useAdminNote: vi.fn(() => ({ data: undefined, isLoading: false })),
+}));
+
+vi.mock("@features/admin-notes/api/mutations", () => ({
+	useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+	useSaveNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+	usePublishNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+	useDeleteNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock("@features/tags/api/queries", () => ({
+	useTags: () => ({ data: [] }),
 }));
 
 vi.mock("@features/admin-layout/ui/PageShell", () => ({
 	PageShell: ({
 		title,
 		children,
+		action,
 		sticky,
 	}: {
 		title: string;
 		children: ReactNode;
+		action?: ReactNode;
 		sticky?: ReactNode;
 	}) => (
 		<div>
 			<h1>{title}</h1>
+			{action}
 			{sticky}
 			{children}
 		</div>
@@ -65,14 +70,14 @@ const mockPaged = vi.mocked(usePagedQuery);
 
 function summary(overrides: Partial<AdminNoteSummary>): AdminNoteSummary {
 	return {
-		id: "n1",
-		author_id: "u1",
-		title: "",
-		status: "draft",
+		id: "n-1",
+		author_id: "u-1",
+		title: "测试笔记",
+		status: "published",
 		tags: [],
-		created_at: "2026-09-03T00:00:00Z",
-		updated_at: "2026-09-03T00:00:00Z",
-		published_at: null,
+		created_at: "2026-09-02T00:00:00Z",
+		updated_at: "2026-09-02T00:00:00Z",
+		published_at: "2026-09-02T00:00:00Z",
 		...overrides,
 	};
 }
@@ -104,5 +109,14 @@ describe("NotesAdminListPage", () => {
 		render(<NotesAdminListPage />);
 		expect(screen.getByText("（无标题）abc12345")).toBeTruthy();
 		expect(screen.getByText("有标题")).toBeTruthy();
+	});
+
+	it("点击新建笔记能够唤起抽屉", () => {
+		setPaged([]);
+		render(<NotesAdminListPage />);
+		const createButton = screen.getByRole("button", { name: "新建笔记" });
+		fireEvent.click(createButton);
+		expect(screen.getByRole("dialog")).toBeTruthy();
+		expect(screen.getByText("新建笔记", { selector: "h2" })).toBeTruthy();
 	});
 });

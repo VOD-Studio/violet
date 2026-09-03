@@ -5,6 +5,7 @@ import {
 	useSaveNote,
 } from "@features/admin-notes/api/mutations";
 import { useAdminNote } from "@features/admin-notes/api/queries";
+import { NOTE_EDITOR_DISABLED } from "@features/admin-notes/model/editor";
 import {
 	NOTE_FORM_DEFAULTS,
 	type NoteForm,
@@ -12,18 +13,18 @@ import {
 	parseTagsText,
 } from "@features/admin-notes/model/schema";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { RichTextEditor } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@shared/lib/utils";
 import { Input } from "@shared/ui/base/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
-import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { NoteEditorSidebar } from "./NoteEditorSidebar";
-import { type EditorViewMode, NoteEditorToolbar } from "./NoteEditorToolbar";
+import { NoteEditorToolbar } from "./NoteEditorToolbar";
 
 interface NoteEditorProps {
 	/** 路由参数；"new" 表示创建模式。 */
@@ -32,7 +33,7 @@ interface NoteEditorProps {
 
 /**
  * 笔记全屏工作台编辑器：
- * 顶栏工具条 + 左侧沉浸式写作/双栏对照区 + 右侧元信息与标签侧栏。
+ * 顶栏工具条 + 左侧沉浸式所见即所得写作区（基于 RichTextEditor，Markdown 原生支持）+ 右侧元信息与标签侧栏。
  */
 export function NoteEditor({ id }: NoteEditorProps) {
 	const navigate = useNavigate();
@@ -45,7 +46,6 @@ export function NoteEditor({ id }: NoteEditorProps) {
 	const publishNote = usePublishNote(id);
 	const deleteNote = useDeleteNote(id);
 
-	const [viewMode, setViewMode] = useState<EditorViewMode>("split");
 	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	const {
@@ -54,6 +54,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 		reset,
 		getValues,
 		setValue,
+		control,
 		formState: { errors, isDirty },
 	} = useForm<NoteForm>({
 		resolver: zodResolver(noteSchema),
@@ -173,8 +174,6 @@ export function NoteEditor({ id }: NoteEditorProps) {
 				isDirty={isDirty}
 				canManage={canManage}
 				note={note}
-				viewMode={viewMode}
-				onViewModeChange={setViewMode}
 				onBack={() => void navigate({ to: "/admin/notes" })}
 				onSave={() => void handleSave()}
 				onPublish={() => void handlePublish()}
@@ -202,66 +201,24 @@ export function NoteEditor({ id }: NoteEditorProps) {
 						<p className="px-2 text-xs text-destructive">{errors.title.message}</p>
 					) : null}
 
-					{/* 编辑器主卡片容器 */}
-					<div className="border-edge-hairline bg-background flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-2xs">
-						{/* 视图模式 1：左右双栏实时对照 */}
-						{viewMode === "split" && (
-							<div className="grid h-full min-h-0 grid-cols-1 md:grid-cols-2">
-								{/* 左：Markdown 源码 */}
-								<div className="flex h-full min-h-0 flex-col">
-									<textarea
-										{...register("contentMD")}
-										placeholder="# 现象&#10;&#10;记录踩坑过程…&#10;&#10;# 根因&#10;&#10;分析问题原因…&#10;&#10;# 修法&#10;&#10;沉淀解决方案…"
-										aria-label="正文 markdown"
-										spellCheck={false}
-										className={cn(
-											"size-full resize-none border-0 bg-transparent p-4 font-mono text-sm leading-relaxed outline-none placeholder:text-muted-foreground/40",
-											errors.contentMD && "text-destructive",
-										)}
-									/>
-								</div>
-
-								{/* 右：实时预览 */}
-								<div className="border-edge-hairline bg-muted/5 flex h-full min-h-0 flex-col overflow-y-auto border-t p-5 md:border-t-0 md:border-l">
-									{contentMD.trim() ? (
-										<MarkdownContent content={contentMD} />
-									) : (
-										<p className="text-muted-foreground/40 font-mono text-sm">
-											预览区域（左侧输入实时渲染）…
-										</p>
-									)}
-								</div>
-							</div>
-						)}
-
-						{/* 视图模式 2：纯编辑专注模式 */}
-						{viewMode === "edit" && (
-							<div className="h-full min-h-0">
-								<textarea
-									{...register("contentMD")}
-									placeholder="# 现象&#10;&#10;记录踩坑过程…"
-									aria-label="正文 markdown"
-									spellCheck={false}
-									className={cn(
-										"size-full resize-none border-0 bg-transparent p-5 font-mono text-sm leading-relaxed outline-none placeholder:text-muted-foreground/40",
-										errors.contentMD && "text-destructive",
-									)}
+					{/* 编辑器主卡片容器：RichTextEditor 所见即所得 Markdown */}
+					<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg shadow-2xs">
+						<Controller
+							control={control}
+							name="contentMD"
+							render={({ field }) => (
+								<RichTextEditor
+									key={id}
+									value={field.value}
+									onChange={field.onChange}
+									contentType="markdown"
+									disabledFeatures={NOTE_EDITOR_DISABLED}
+									placeholder="开始书写笔记，支持 Markdown、代码块、公式与图表，输入 / 呼出命令菜单…"
+									className="h-full"
+									minHeight={400}
 								/>
-							</div>
-						)}
-
-						{/* 视图模式 3：纯预览模式 */}
-						{viewMode === "preview" && (
-							<div className="bg-muted/5 h-full min-h-0 overflow-y-auto p-6">
-								{contentMD.trim() ? (
-									<MarkdownContent content={contentMD} />
-								) : (
-									<p className="text-muted-foreground/40 font-mono text-sm">
-										正文内容为空
-									</p>
-								)}
-							</div>
-						)}
+							)}
+						/>
 					</div>
 
 					{errors.contentMD ? (
