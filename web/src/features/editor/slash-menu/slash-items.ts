@@ -24,6 +24,7 @@ import {
 	Text,
 	Workflow,
 } from "lucide-react";
+import type { ResolvedFeatures } from "../lib/features";
 
 export interface SlashMenuItem {
 	/** 唯一标识 */
@@ -60,8 +61,11 @@ function selectInsertedMath(editor: Editor, type: "inlineMath" | "blockMath", fr
 	}
 }
 
-export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
-	return [
+export function buildSlashItems(
+	onPickImage: () => void,
+	features?: ResolvedFeatures,
+): SlashMenuItem[] {
+	const all: SlashMenuItem[] = [
 		{
 			id: "text",
 			title: "正文",
@@ -240,4 +244,5 @@ export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
 			command: () => onPickImage(),
 		},
 	];
+	return features?.table === false ? all.filter((item) => item.id !== "table") : all;
 }

@@ -204,6 +204,17 @@ export const MarkdownSourceEditor = forwardRef<MarkdownSourceHandle, MarkdownSou
 			};
 		}, []);
 
+		// 外部 value 发生实质变化时（如异步数据回填、表单重置），同步更新 CM 文档
+		useEffect(() => {
+			const view = viewRef.current;
+			if (!view) return;
+			const currentText = view.state.doc.toString();
+			if (currentText !== value) {
+				view.dispatch({
+					changes: { from: 0, to: currentText.length, insert: value },
+				});
+			}
+		}, [value]);
 		// biome-ignore lint/correctness/useExhaustiveDependencies: handle 刻意只创建一次：applyScrollToLine 是无组件依赖的纯函数，随其重建无意义（与上方 mount-once useEffect 同理）
 		useImperativeHandle(
 			ref,

@@ -4,6 +4,8 @@
  * 固定在编辑区上方，按分组渲染按钮：历史 / 标题 / 文本格式 / 列表与块。
  * 图片按钮单独处理（需触发上传/素材选择，故由父组件注入回调）。
  * 按钮基于编辑器命令的 active 态高亮、disabled 态置灰。
+ * 能力裁剪由父级传入 ResolvedFeatures：color/align/underline/imageLibrary
+ * 关闭时对应色板、分组、按钮与图片下拉随扩展 schema 同步收窄。
  */
 import type { Editor } from "@tiptap/react";
 import { ChevronDown, ImagePlus, Upload } from "lucide-react";
@@ -18,10 +20,13 @@ import {
 	DropdownMenuTrigger,
 } from "@/shared/ui/base/dropdown-menu";
 import { ColorSwatch } from "@/shared/ui/color-picker";
+import type { ResolvedFeatures } from "../lib/features";
 import { buildToolbarItems, TOOLBAR_DIVIDER, type ToolbarItem } from "./toolbar-items";
 
 interface EditorToolbarProps {
 	editor: Editor | null;
+	/** 能力集：color/align/underline/imageLibrary 关闭项对应的 UI 一并隐藏 */
+	features?: ResolvedFeatures;
 	/** 从素材库选择图片 */
 	onPickImage: () => void;
 	/** 上传本地图片到编辑器 */
@@ -41,11 +46,15 @@ function keepFocus(e: MouseEvent) {
 
 export function EditorToolbar({
 	editor,
+	features,
 	onPickImage,
 	onUploadImage,
 	onInsertLink,
 }: EditorToolbarProps) {
-	const items = useMemo(() => buildToolbarItems(onInsertLink), [onInsertLink]);
+	const items = useMemo(
+		() => buildToolbarItems(onInsertLink, features),
+		[onInsertLink, features],
+	);
 	if (!editor) return null;
 
 	const renderItem = (item: ToolbarItem | typeof TOOLBAR_DIVIDER, idx: number) => {
@@ -85,39 +94,55 @@ export function EditorToolbar({
 			onMouseDown={keepFocus}
 		>
 			{items.map(renderItem)}
+			{features?.color !== false && (
+				<>
+					<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
+					{/* 文字颜色色板（color 能力关闭时隐藏） */}
+					<ColorSwatch
+						value={editor.getAttributes("textStyle").color}
+						onChange={(c) => editor.chain().focus().setColor(c).run()}
+						onClear={() => editor.chain().focus().unsetColor().run()}
+					/>
+				</>
+			)}
 			<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
-			{/* 文字颜色色板 */}
-			<ColorSwatch
-				value={editor.getAttributes("textStyle").color}
-				onChange={(c) => editor.chain().focus().setColor(c).run()}
-				onClear={() => editor.chain().focus().unsetColor().run()}
-			/>
-			<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
-			{/* 图片：素材库选择 / 本地上传 二选一 */}
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						title="插入图片"
-						className="w-auto min-w-8 px-1.5"
-					>
-						<ImagePlus />
-						<ChevronDown className="size-3 opacity-50" />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
-					<DropdownMenuItem onClick={onPickImage}>
-						<ImagePlus className="size-3.5" />
-						从素材库选择
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={onUploadImage}>
-						<Upload className="size-3.5" />
-						上传本地图片
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
+			{/* 图片插入：imageLibrary 关闭时退化为单按钮本地上传 */}
+			{features?.imageLibrary === false ? (
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					title="上传图片"
+					onClick={onUploadImage}
+				>
+					<ImagePlus />
+				</Button>
+			) : (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon-sm"
+							title="插入图片"
+							className="w-auto min-w-8 px-1.5"
+						>
+							<ImagePlus />
+							<ChevronDown className="size-3 opacity-50" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<DropdownMenuItem onClick={onPickImage}>
+							<ImagePlus className="size-3.5" />
+							从素材库选择
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={onUploadImage}>
+							<Upload className="size-3.5" />
+							上传本地图片
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			)}
 		</div>
 	);
 }

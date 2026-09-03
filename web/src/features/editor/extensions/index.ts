@@ -6,7 +6,10 @@
  * 改用独立扩展以获得更高定制性（代码高亮 / 任务列表 / 颜色等）。
  *
  * Markdown 双向序列化由官方 @tiptap/markdown 扩展负责（v3 已开源），
- * 注册后 editor.getMarkdown() 取 MD，setContent(md, {contentType:'markdown'}) 写 MD。
+ * 历史版本依赖 tiptap-markdown 补丁包的注记已过时删除。
+ *
+ * 能力裁剪：underline/color/align/table 经 ResolvedFeatures 条件注册，
+ * 保证「禁用即不存在」——工具栏、斜杠菜单与扩展 schema 同步收窄。
  */
 
 import Color from "@tiptap/extension-color";
@@ -24,6 +27,7 @@ import Underline from "@tiptap/extension-underline";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
+import type { ResolvedFeatures } from "../lib/features";
 import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { createCodeBlockExtension } from "../ui/CodeBlockView";
@@ -75,12 +79,10 @@ export async function ensureLanguageRegistered(id: string): Promise<void> {
 	return p;
 }
 
-/**
- * buildEditorExtensions - 构建编辑器扩展数组
- *
- * @param placeholder 占位符文案
- */
-export function buildEditorExtensions(placeholder = "开始书写，或输入 / 唤起命令菜单…") {
+export function buildEditorExtensions(
+	placeholder = "开始书写，或输入 / 唤起命令菜单…",
+	features?: ResolvedFeatures,
+) {
 	return [
 		StarterKit.configure({
 			// 关闭 StarterKit 内置项，改用下方独立扩展以获得更高定制性
@@ -92,13 +94,15 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
 			// 保留：文档/段落/文本/标题/粗斜/删除线/行内代码/引用/分割线/
 			//       有序无序列表/列表项/历史/拖放/粘贴等
 		}),
-		// —— 文本样式 ——
+		// —— 文本样式（underline/color 可裁剪：Markdown 无原生语法，存回丢语义）——
 		TextStyle,
-		Underline,
-		Color,
+		...(features?.underline === false ? [] : [Underline]),
+		...(features?.color === false ? [] : [Color]),
 		Highlight.configure({ multicolor: true }),
-		// —— 文本对齐 ——
-		TextAlign.configure({ types: ["heading", "paragraph"] }),
+		// —— 文本对齐（可裁剪）——
+		...(features?.align === false
+			? []
+			: [TextAlign.configure({ types: ["heading", "paragraph"] })]),
 		// —— 链接与图片 ——
 		Link.configure({
 			openOnClick: false,
@@ -118,11 +122,10 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
 		// —— 列表 ——
 		TaskList,
 		CustomTaskItem,
-		// —— 表格 ——
-		Table.configure({ resizable: false }),
-		TableRow,
-		TableHeader,
-		TableCell,
+		// —— 表格（可裁剪）——
+		...(features?.table === false
+			? []
+			: [Table.configure({ resizable: false }), TableRow, TableHeader, TableCell]),
 		// —— 代码块（高亮 + 语言下拉 nodeView）——
 		createCodeBlockExtension(lowlight),
 		// —— 数学公式（KaTeX 双态编辑，宏表与阅读端同源）——
@@ -143,16 +146,18 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
  *
  * @param onPickImage 斜杠菜单「图片」项的回调
  * @param placeholder 占位符文案
+ * @param features 能力集（透传给 buildEditorExtensions 与斜杠菜单）
  */
 export function buildEditorExtensionsWithSlash(
 	onPickImage: () => void,
 	placeholder = "开始书写，或输入 / 唤起命令菜单…",
+	features?: ResolvedFeatures,
 ) {
 	return [
-		...buildEditorExtensions(placeholder).filter((e) => e.name !== "slashCommand"),
+		...buildEditorExtensions(placeholder, features).filter((e) => e.name !== "slashCommand"),
 		SlashCommand.configure({
 			onPickImage,
-			items: (cb) => buildSlashItems(cb),
+			items: (cb) => buildSlashItems(cb, features),
 		}),
 	];
 }
