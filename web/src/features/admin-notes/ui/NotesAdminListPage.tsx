@@ -1,4 +1,5 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
+import { useDeleteNote } from "@features/admin-notes/api/mutations";
 import { useAdminNotes as useAdminNotesQuery } from "@features/admin-notes/api/queries";
 import type { AdminNoteSummary, NoteStatus } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
@@ -17,8 +18,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@shared/ui/base/select";
-import { Plus } from "lucide-react";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { NoteSheet } from "./NoteSheet";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -41,12 +44,14 @@ function formatTime(iso: string | null): string {
 	return iso ? dateFormatter.format(new Date(iso)) : "—";
 }
 
-/** 笔记管理列表：状态筛选 + 新建/编辑侧滑抽屉。 */
+/** 笔记管理列表：状态筛选 + 新建/编辑侧滑抽屉 + 列表直接删除。 */
 export function NotesAdminListPage() {
 	const canManage = useHasPermission("note:manage");
 	const [status, setStatus] = useState("all");
 	// undefined: 抽屉关闭; null: 新建笔记; string: 编辑指定笔记
 	const [activeNoteId, setActiveNoteId] = useState<string | null | undefined>(undefined);
+	// 当前行级待删除笔记对象
+	const [deleting, setDeleting] = useState<AdminNoteSummary | null>(null);
 
 	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
 		useAdminNotesQuery,
@@ -54,8 +59,21 @@ export function NotesAdminListPage() {
 		{ initialPageSize: 20 },
 	);
 
+	const deleteNote = useDeleteNote(deleting?.id ?? "");
+
 	const openCreate = () => setActiveNoteId(null);
 	const openEdit = (id: string) => setActiveNoteId(id);
+
+	const handleConfirmDelete = async () => {
+		if (!deleting) return;
+		try {
+			await deleteNote.mutateAsync();
+			toast.success("笔记已删除");
+			setDeleting(null);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "删除失败");
+		}
+	};
 
 	const columns: DataTableColumn<AdminNoteSummary>[] = [
 		{
@@ -115,12 +133,26 @@ export function NotesAdminListPage() {
 		{
 			key: "actions",
 			header: "操作",
-			width: "80px",
+			width: "120px",
 			sticky: "right",
 			cell: (row) => (
-				<Button variant="ghost" size="sm" onClick={() => openEdit(row.id)}>
-					编辑
-				</Button>
+				<div className="flex items-center gap-1">
+					<Button variant="ghost" size="sm" onClick={() => openEdit(row.id)}>
+						编辑
+					</Button>
+					{canManage && (
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+							onClick={() => setDeleting(row)}
+							title="删除笔记"
+							aria-label={`删除笔记 ${row.title || row.id.slice(0, 8)}`}
+						>
+							<Trash2 className="size-3.5" />
+						</Button>
+					)}
+				</div>
 			),
 		},
 	];
@@ -181,6 +213,19 @@ export function NotesAdminListPage() {
 					if (!open) setActiveNoteId(undefined);
 				}}
 				noteId={activeNoteId}
+			/>
+
+			{/* 列表行级直接删除二次确认 */}
+			<ConfirmDialog
+				open={Boolean(deleting)}
+				onOpenChange={(open) => {
+					if (!open) setDeleting(null);
+				}}
+				onConfirm={() => void handleConfirmDelete()}
+				title="删除笔记"
+				description={`确定要删除笔记「${deleting?.title || deleting?.id.slice(0, 8) || ""}」吗？此操作物理删除且不可恢复。`}
+				confirmLabel="删除"
+				loading={deleteNote.isPending}
 			/>
 		</PageShell>
 	);
