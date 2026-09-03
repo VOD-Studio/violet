@@ -420,7 +420,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				) : (
 					<div
 						ref={setScrollContainer}
-						className="relative flex-1 overflow-y-auto px-4 py-3"
+						className="relative flex-1 overflow-y-auto px-5 pt-4 pb-10"
 					>
 						{editor ? (
 							<EditorBubbleMenu
@@ -463,6 +463,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 								variant="ghost"
 								size="xs"
 								title="导入远程链接文档"
+
 								onClick={() => {
 									setUrlInput("https://");
 									setAiRestoreFormula(false);
