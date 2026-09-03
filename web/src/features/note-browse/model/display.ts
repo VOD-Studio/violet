@@ -13,6 +13,14 @@ export function noteExcerpt(html: string, max: number): string {
 	return `${text.slice(0, max)}…`;
 }
 
+/** content_html 去标签后的字数，用于详情 meta。 */
+export function notePlainLength(html: string): number {
+	return html
+		.replace(/<[^>]+>/g, " ")
+		.replace(/\s+/g, " ")
+		.trim().length;
+}
+
 /** 笔记展示标题：无标题时以正文开头兜底，列表与详情共用同一口径。 */
 export function noteTitle(note: Pick<PublicNote, "title" | "content_html">): string {
 	return note.title || noteExcerpt(note.content_html, TITLE_FALLBACK_MAX);
@@ -21,4 +29,15 @@ export function noteTitle(note: Pick<PublicNote, "title" | "content_html">): str
 /** 列表行日期：yyyy-mm-dd 等宽呈现。 */
 export function noteDate(iso: string): string {
 	return iso.slice(0, 10);
+}
+
+/** 按月归档分组键：yyyy-mm。 */
+export function noteMonthKey(iso: string): string {
+	return iso.slice(0, 7);
+}
+
+/** 分组键转中文月份标签：2026-09 → 2026 年 9 月。 */
+export function noteMonthLabel(key: string): string {
+	const [year, month] = key.split("-");
+	return `${year} 年 ${Number(month)} 月`;
 }
