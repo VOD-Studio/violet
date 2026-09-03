@@ -424,10 +424,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				) : (
 					<div
 						ref={setScrollContainer}
-						className={cn(
-							"relative px-4 py-3",
-							!autoGrow && "flex-1 overflow-y-auto",
-						)}
+						className={cn("relative px-4 py-3", !autoGrow && "flex-1 overflow-y-auto")}
 					>
 						{editor ? (
 							<EditorBubbleMenu
