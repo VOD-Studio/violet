@@ -366,9 +366,10 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 										onChange={field.onChange}
 										contentType="markdown"
 										disabledFeatures={NOTE_EDITOR_DISABLED}
+										autoGrow
 										placeholder="开始书写笔记，支持 Markdown、代码块、公式与图表，输入 / 呼出命令菜单…"
 										minHeight={340}
-										className="flex-1 overflow-hidden rounded-lg shadow-2xs"
+										className="overflow-hidden rounded-lg shadow-2xs"
 									/>
 								)}
 							/>

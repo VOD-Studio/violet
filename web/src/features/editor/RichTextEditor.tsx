@@ -91,6 +91,8 @@ export interface RichTextEditorProps {
 	className?: string;
 	/** 最小高度，默认 420 */
 	minHeight?: number;
+	/** 文档流自增高：内容撑开高度、无内部滚动，由外层容器统一滚动（抽屉场景） */
+	autoGrow?: boolean;
 }
 
 /** ImportUrlOpts - 远程链接导入的可选行为开关 */
@@ -132,6 +134,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			onImportUrlWarnings,
 			className,
 			minHeight = 420,
+			autoGrow,
 		},
 		ref,
 	) {
@@ -397,7 +400,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		return (
 			<div
 				className={cn(
-					"flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
+					"flex flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
+					!autoGrow && "h-full",
 					className,
 				)}
 			>
@@ -420,7 +424,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				) : (
 					<div
 						ref={setScrollContainer}
-						className="relative flex-1 overflow-y-auto px-4 py-3"
+						className={cn(
+							"relative px-4 py-3",
+							!autoGrow && "flex-1 overflow-y-auto",
+						)}
 					>
 						{editor ? (
 							<EditorBubbleMenu
