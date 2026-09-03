@@ -63,53 +63,52 @@ export function NotesAdminListPage() {
 			hideable: false,
 			ellipsis: true,
 			cell: (row) => (
-				<button
-					type="button"
-					className="text-left font-medium hover:text-primary hover:underline"
-					onClick={() => openEditor(row.id)}
-				>
-					{row.title || `（无标题）${row.id.slice(0, 8)}`}
-				</button>
+				<div className="min-w-0">
+					<button
+						type="button"
+						className="text-left font-medium hover:text-primary hover:underline"
+						onClick={() => openEditor(row.id)}
+					>
+						{row.title || `（无标题）${row.id.slice(0, 8)}`}
+					</button>
+					{row.tags.length > 0 ? (
+						<p className="text-muted-foreground/70 mt-0.5 truncate font-mono text-[11px]">
+							{row.tags.join(" / ")}
+						</p>
+					) : null}
+				</div>
 			),
 		},
 		{
 			key: "status",
 			header: "状态",
-			width: "90px",
+			width: "96px",
 			cell: (row) => (
-				<Badge variant={row.status === "published" ? "default" : "secondary"}>
+				<Badge variant="outline" className="gap-1.5">
+					<span
+						className={
+							row.status === "published"
+								? "size-1.5 rounded-full bg-emerald-500"
+								: "size-1.5 rounded-full bg-muted-foreground/40"
+						}
+					/>
 					{NOTE_STATUS_LABELS[row.status]}
 				</Badge>
 			),
 		},
 		{
-			key: "tags",
-			header: "标签",
-			width: "200px",
-			ellipsis: true,
-			cell: (row) =>
-				row.tags.length > 0 ? (
-					<span className="text-muted-foreground text-xs">{row.tags.join(" / ")}</span>
-				) : (
-					<span className="text-muted-foreground/50 text-xs">—</span>
-				),
-		},
-		{
-			key: "created_at",
-			header: "创建时间",
-			width: "160px",
+			key: "time",
+			header: "时间",
+			width: "170px",
 			cell: (row) => (
-				<span className="text-muted-foreground text-xs">{formatTime(row.created_at)}</span>
-			),
-		},
-		{
-			key: "published_at",
-			header: "发布时间",
-			width: "160px",
-			cell: (row) => (
-				<span className="text-muted-foreground text-xs">
-					{formatTime(row.published_at)}
-				</span>
+				<div>
+					<p className="text-muted-foreground tabular-nums text-xs">
+						{formatTime(row.published_at ?? row.created_at)}
+					</p>
+					<p className="text-muted-foreground/50 mt-0.5 font-mono text-[10px]">
+						{row.published_at ? "published" : "created"}
+					</p>
+				</div>
 			),
 		},
 		{
