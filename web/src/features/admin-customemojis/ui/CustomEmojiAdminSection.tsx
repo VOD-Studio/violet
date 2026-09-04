@@ -7,6 +7,7 @@ import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { AvatarGroup } from "@shared/ui/avatar-group/AvatarGroup";
 import { Button } from "@shared/ui/base/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { SearchInput } from "@shared/ui/search-input";
 import { Trash2 } from "lucide-react";
@@ -78,21 +79,28 @@ export function CustomEmojiAdminSection() {
 			width: "72px",
 			align: "center",
 			cell: (row) => (
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					title="下架"
-					className="hover:bg-destructive/10 hover:text-destructive"
-					onClick={() => setDeleting(row)}
-				>
-					<Trash2 className="size-3.5" />
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span>
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+								onClick={() => setDeleting(row)}
+								aria-label={`下架表情 ${row.name}`}
+							>
+								<Trash2 className="size-3.5" />
+							</Button>
+						</span>
+					</TooltipTrigger>
+					<TooltipContent>下架表情</TooltipContent>
+				</Tooltip>
 			),
 		},
 	];
 
 	return (
-		<>
+		<TooltipProvider>
 			<DataTable
 				columns={columns}
 				data={data?.data ?? []}
@@ -131,6 +139,6 @@ export function CustomEmojiAdminSection() {
 					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
 				}}
 			/>
-		</>
+		</TooltipProvider>
 	);
 }

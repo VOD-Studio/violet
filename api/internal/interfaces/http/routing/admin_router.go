@@ -7,6 +7,7 @@ import (
 
 	"blog-api/internal/domain/permission"
 	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
+	notehttp "blog-api/internal/interfaces/http/handler/note"
 	"blog-api/internal/middleware"
 )
 
@@ -311,7 +312,27 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// 图集工作稿：读 gallery:view；创建、保存与发布维护 gallery:manage。
 	registerAdminGalleryRoutes(r, d.Gallery, perm)
 
+	// 笔记：读 note:view；创建、保存、发布与删除维护 note:manage。
+	registerAdminNoteRoutes(r, d.Note, perm)
+
 	return r
+}
+
+func registerAdminNoteRoutes(r chi.Router, noteH *notehttp.Handler, perm middleware.PermissionChecker) {
+	r.Route("/notes", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, permission.NoteView.String()))
+			r.Get("/", noteH.List)
+			r.Get("/{id}", noteH.Get)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, permission.NoteManage.String()))
+			r.Post("/", noteH.Create)
+			r.Put("/{id}", noteH.Update)
+			r.Post("/{id}/publish", noteH.Publish)
+			r.Delete("/{id}", noteH.Delete)
+		})
+	})
 }
 
 func registerAdminGalleryRoutes(r chi.Router, galleryH *galleryhttp.Handler, perm middleware.PermissionChecker) {

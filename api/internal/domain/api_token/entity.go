@@ -6,7 +6,7 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// PAT scope 枚举。固定七分：文章读/写/发布、抓取、订阅读/写、评论读，创建时多选。
+// PAT scope 枚举。固定十分：文章读/写/发布、抓取、订阅读/写、评论读、笔记读/写/发布，创建时多选。
 const (
 	ScopePostsRead          = "posts:read"
 	ScopePostsWrite         = "posts:write"
@@ -15,6 +15,9 @@ const (
 	ScopeSubscriptionsRead  = "subscriptions:read"  // 列/查订阅源
 	ScopeSubscriptionsWrite = "subscriptions:write" // 增删改订阅源、暂停/恢复
 	ScopeCommentsRead       = "comments:read"       // 评论/批注检索（MCP violet-comments server）
+	ScopeNotesRead          = "notes:read"          // 列/查自己的笔记含草稿（MCP violet-notes server）
+	ScopeNotesWrite         = "notes:write"         // 创建/编辑/删除自己的笔记
+	ScopeNotesPublish       = "notes:publish"       // 以 published 状态建笔记（直发；draft 不需要）
 )
 
 // validScopes 合法 scope 集合，校验与新增 scope 时同步此处 + 前端 PAT_SCOPES 常量
@@ -27,6 +30,9 @@ var validScopes = map[string]struct{}{
 	ScopeSubscriptionsRead:  {},
 	ScopeSubscriptionsWrite: {},
 	ScopeCommentsRead:       {},
+	ScopeNotesRead:          {},
+	ScopeNotesWrite:         {},
+	ScopeNotesPublish:       {},
 }
 
 // IsValidScope 判断 scope 是否在预定义枚举内。

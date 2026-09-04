@@ -21,10 +21,10 @@ type fakeSeriesToolsService struct {
 	attachInput appseries.AttachInput
 	conflicts   []appseries.PostConflict
 	// 返回值控制
-	listItems  []appseries.SeriesAdminDTO
-	detail     appseries.SeriesDetailDTO
-	createErr  error
-	attachErr  error
+	listItems []appseries.SeriesAdminDTO
+	detail    appseries.SeriesDetailDTO
+	createErr error
+	attachErr error
 }
 
 func (f *fakeSeriesToolsService) ListForOwner(ctx context.Context, userID string, page, limit int) ([]appseries.SeriesAdminDTO, int64, error) {
@@ -57,9 +57,9 @@ func authedReq(t *testing.T, interactive bool, scopes ...string) *mcp.CallToolRe
 	return &mcp.CallToolRequest{
 		Extra: &mcp.RequestExtra{
 			TokenInfo: &auth.TokenInfo{
-				UserID:  "u-1",
-				Scopes:  scopes,
-				Extra:   map[string]any{"interactive": interactive},
+				UserID: "u-1",
+				Scopes: scopes,
+				Extra:  map[string]any{"interactive": interactive},
 			},
 		},
 	}

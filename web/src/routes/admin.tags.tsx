@@ -7,6 +7,7 @@ import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { useDeleteTag } from "@features/tags/api/mutations";
 import { useTagsPaged } from "@features/tags/api/queries";
 import { Button } from "@shared/ui/base/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -91,24 +92,39 @@ function AdminTagsPage() {
 			cell: (row) => (
 				<div className="flex items-center gap-2">
 					<PermissionGuard permission="tag:update">
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							onClick={() => handleEdit(row)}
-							title="编辑"
-						>
-							<Pencil className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										onClick={() => handleEdit(row)}
+										aria-label={`编辑标签 ${row.name}`}
+									>
+										<Pencil className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>编辑</TooltipContent>
+						</Tooltip>
 					</PermissionGuard>
 					<PermissionGuard permission="tag:delete">
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							onClick={() => handleDelete(row)}
-							title="删除"
-						>
-							<Trash2 className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+										onClick={() => handleDelete(row)}
+										aria-label={`删除标签 ${row.name}`}
+									>
+										<Trash2 className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>删除</TooltipContent>
+						</Tooltip>
 					</PermissionGuard>
 				</div>
 			),
@@ -116,44 +132,46 @@ function AdminTagsPage() {
 	];
 
 	return (
-		<PageShell
-			title="标签管理"
-			description="管理文章标签"
-			action={
-				<PermissionGuard permission="tag:create">
-					<Button size="sm" onClick={handleCreate}>
-						<Plus className="size-3.5" />
-						创建标签
-					</Button>
-				</PermissionGuard>
-			}
-		>
-			<DataTable<Tag>
-				data={sortedTags}
-				columns={columns}
-				pagination={pagination}
-				keyExtractor={(row) => String(row.id)}
-				selectable={false}
-				loading={isLoading}
-				error={error ? new Error(error.message) : null}
-				onRetry={() => refetch()}
-				sort={sort}
-				onSortChange={setSort}
-				storageKey="admin-tags-columns"
-				caption="标签列表"
-				emptyTitle="暂无标签"
-				emptyDescription="还没有创建任何标签"
-			/>
-			<TagDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
-			<ConfirmDialog
-				open={deleteOpen}
-				onOpenChange={setDeleteOpen}
-				onConfirm={confirmDelete}
-				title="确认删除标签"
-				description={`确定要删除标签 ${deleting?.name} 吗？`}
-				confirmLabel="删除"
-				loading={deleteTag.isPending}
-			/>
-		</PageShell>
+		<TooltipProvider>
+			<PageShell
+				title="标签管理"
+				description="管理文章标签"
+				action={
+					<PermissionGuard permission="tag:create">
+						<Button size="sm" onClick={handleCreate}>
+							<Plus className="size-3.5" />
+							创建标签
+						</Button>
+					</PermissionGuard>
+				}
+			>
+				<DataTable<Tag>
+					data={sortedTags}
+					columns={columns}
+					pagination={pagination}
+					keyExtractor={(row) => String(row.id)}
+					selectable={false}
+					loading={isLoading}
+					error={error ? new Error(error.message) : null}
+					onRetry={() => refetch()}
+					sort={sort}
+					onSortChange={setSort}
+					storageKey="admin-tags-columns"
+					caption="标签列表"
+					emptyTitle="暂无标签"
+					emptyDescription="还没有创建任何标签"
+				/>
+				<TagDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
+				<ConfirmDialog
+					open={deleteOpen}
+					onOpenChange={setDeleteOpen}
+					onConfirm={confirmDelete}
+					title="确认删除标签"
+					description={`确定要删除标签 ${deleting?.name} 吗？`}
+					confirmLabel="删除"
+					loading={deleteTag.isPending}
+				/>
+			</PageShell>
+		</TooltipProvider>
 	);
 }

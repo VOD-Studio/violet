@@ -16,6 +16,7 @@ import {
 	Link2,
 	Megaphone,
 	MessageSquare,
+	NotebookText,
 	Rss,
 	ScrollText,
 	Settings,
@@ -103,6 +104,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: GalleryHorizontalEnd,
 		group: "publishing",
 		permissions: ["gallery:view"],
+	},
+	{
+		label: "笔记管理",
+		to: "/admin/notes",
+		icon: NotebookText,
+		group: "publishing",
+		permissions: ["note:view"],
 	},
 	{
 		label: "标签管理",

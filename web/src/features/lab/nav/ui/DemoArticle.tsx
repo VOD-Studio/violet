@@ -1,7 +1,7 @@
+import { BackLink } from "@shared/ui/back-link";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { Calendar, Eye } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
-import { BackLink } from "./BackLink";
 
 const DEMO_MARKDOWN = [
 	"返回入口的传统位置在文章头之上，阅读到中段后完全离场——退路应该跟着读者走，还是留在原地等读者回来。",

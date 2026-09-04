@@ -15,6 +15,7 @@ import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
@@ -250,36 +251,54 @@ function AdminUsers() {
 					(!isOperatorRoot && row.role === "superadmin") ||
 					row.id === currentUserId;
 				return (
-					<div className="flex justify-center gap-1">
+					<div className="flex justify-center gap-2">
 						<PermissionGuard permission="user:list">
-							<Button
-								variant="ghost"
-								size="icon-sm"
-								title={isProtected ? "不可编辑此用户" : "编辑"}
-								disabled={isProtected}
-								onClick={(e) => {
-									e.stopPropagation();
-									setEditingUser(row);
-									setEditDialogOpen(true);
-								}}
-							>
-								<Pencil className="size-3.5" />
-							</Button>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											disabled={isProtected}
+											onClick={(e) => {
+												e.stopPropagation();
+												setEditingUser(row);
+												setEditDialogOpen(true);
+											}}
+											aria-label={`编辑用户 ${row.username}`}
+										>
+											<Pencil className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>
+									{isProtected ? "不可编辑此用户" : "编辑"}
+								</TooltipContent>
+							</Tooltip>
 						</PermissionGuard>
 						<PermissionGuard permission="user:ban">
-							<Button
-								variant="ghost"
-								size="icon-sm"
-								title={isProtected ? "不可删除此用户" : "删除"}
-								className="hover:bg-destructive/10 hover:text-destructive"
-								disabled={isProtected}
-								onClick={(e) => {
-									e.stopPropagation();
-									handleDelete(row);
-								}}
-							>
-								<Trash2 className="size-3.5" />
-							</Button>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+											disabled={isProtected}
+											onClick={(e) => {
+												e.stopPropagation();
+												handleDelete(row);
+											}}
+											aria-label={`删除用户 ${row.username}`}
+										>
+											<Trash2 className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>
+									{isProtected ? "不可删除此用户" : "删除"}
+								</TooltipContent>
+							</Tooltip>
 						</PermissionGuard>
 					</div>
 				);
@@ -288,7 +307,7 @@ function AdminUsers() {
 	];
 
 	return (
-		<>
+		<TooltipProvider>
 			<PageShell
 				title="用户管理"
 				description="管理系统用户、角色和权限"
@@ -507,6 +526,6 @@ function AdminUsers() {
 				onConfirm={handleConfirmDelete}
 				loading={deleteUser.isPending}
 			/>
-		</>
+		</TooltipProvider>
 	);
 }

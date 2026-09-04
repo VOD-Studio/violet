@@ -1,4 +1,6 @@
-package post
+// Package markdown 提供 Markdown → violet 编辑器 carrier HTML 的渲染管线，
+// 以及 carrier 重写共用的 net/html DOM 助手。
+package markdown
 
 import (
 	"bytes"
@@ -13,7 +15,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-// markdownToHTML 把 Markdown 转为 violet 编辑器 schema 兼容的 HTML。
+// ToHTML 把 Markdown 转为 violet 编辑器 schema 兼容的 HTML。
 //
 // 用途：当上游（如 MCP create_post）只提供 content_md、缺少 content_html 时，
 // 在应用层 service.Create/Update 兜底生成 content_html。编辑器与阅读端都以
@@ -37,7 +39,7 @@ import (
 //
 // 不做的事：代码高亮交给阅读端 CodeBlock（lowlight），这里只产
 // <pre><code class="language-x">；不做 chroma 服务端高亮。
-func markdownToHTML(mdStr string) (string, error) {
+func ToHTML(mdStr string) (string, error) {
 	if strings.TrimSpace(mdStr) == "" {
 		return "", nil
 	}
@@ -285,19 +287,19 @@ func carrierNode(kind string, idx int, phs []placeholder) *html.Node {
 	switch kind {
 	case "inline-math":
 		n := elNode("span")
-		setAttr(n, "data-type", "inline-math")
-		setAttr(n, "data-latex", body)
+		SetAttr(n, "data-type", "inline-math")
+		SetAttr(n, "data-latex", body)
 		return n
 	case "block-math":
 		n := elNode("div")
-		setAttr(n, "data-type", "block-math")
-		setAttr(n, "data-latex", body)
+		SetAttr(n, "data-type", "block-math")
+		SetAttr(n, "data-latex", body)
 		return n
 	case "mermaid":
 		n := elNode("div")
-		setAttr(n, "data-type", "diagram-block")
-		setAttr(n, "data-format", "mermaid")
-		setAttr(n, "data-source", body)
+		SetAttr(n, "data-type", "diagram-block")
+		SetAttr(n, "data-format", "mermaid")
+		SetAttr(n, "data-source", body)
 		return n
 	}
 	return nil
@@ -322,14 +324,14 @@ func rewriteTaskLists(root *html.Node) {
 	visit(root)
 
 	for _, ul := range targets {
-		setAttr(ul, "data-type", "taskList")
+		SetAttr(ul, "data-type", "taskList")
 		for li := ul.FirstChild; li != nil; li = li.NextSibling {
 			if li.Type != html.ElementNode || li.Data != "li" {
 				continue
 			}
 			checked, input := liCheckboxState(li)
-			setAttr(li, "data-type", "taskItem")
-			setAttr(li, "data-checked", checked)
+			SetAttr(li, "data-type", "taskItem")
+			SetAttr(li, "data-checked", checked)
 			if input != nil {
 				li.RemoveChild(input) // 语义已进 data-checked，移除冗余 checkbox
 			}
@@ -357,7 +359,7 @@ func liCheckboxState(li *html.Node) (string, *html.Node) {
 		if c.Type != html.ElementNode {
 			continue
 		}
-		if c.Data == "input" && getAttr(c, "type") == "checkbox" {
+		if c.Data == "input" && GetAttr(c, "type") == "checkbox" {
 			checked := "false"
 			if hasAttr(c, "checked") {
 				checked = "true"
@@ -379,6 +381,32 @@ func hasAttr(n *html.Node, key string) bool {
 	return false
 }
 
+// GetAttr 读元素的属性值，不存在返回空串。
+//
+// 与 SetAttr 同理：markdown→html 与 html→md 两个方向的 carrier 重写共用。
+func GetAttr(n *html.Node, key string) string {
+	for _, a := range n.Attr {
+		if a.Key == key {
+			return a.Val
+		}
+	}
+	return ""
+}
+
+// SetAttr 设置元素的属性（已有则更新，没有则追加）。
+//
+// 从 post 包迁出后导出：violet 的 HTML carrier 重写（markdown→html 与
+// html→md 两个方向）共用同一 DOM 助手，单一真相。
+func SetAttr(n *html.Node, key, val string) {
+	for i, a := range n.Attr {
+		if a.Key == key {
+			n.Attr[i].Val = val
+			return
+		}
+	}
+	n.Attr = append(n.Attr, html.Attribute{Key: key, Val: val})
+}
+
 // --- net/html 节点构造小工具 ---
 
 func elNode(tag string) *html.Node {
@@ -395,7 +423,7 @@ func phIdx(s string) int {
 	return idx
 }
 
-// ensureContentHTML 在 content_html 缺失而 content_md 有值时，兜底用 md 生成
+// EnsureHTML 在 content_html 缺失而 content_md 有值时，兜底用 md 生成
 // 编辑器兼容的 HTML 写回 *html（原地更新）。
 //
 // 触发条件：contentHTML == "" && contentMD != ""。这精准命中 MCP 路径（只传 md）
@@ -406,11 +434,11 @@ func phIdx(s string) int {
 //
 // 生成失败不阻塞主流程：兜底是尽力而为，失败时 content_html 留空，阅读端会降级
 // 用 content_md 渲染（比抛错让创建失败更友好）。
-func ensureContentHTML(contentHTML *string, contentMD string) {
+func EnsureHTML(contentHTML *string, contentMD string) {
 	if contentHTML == nil || *contentHTML != "" || strings.TrimSpace(contentMD) == "" {
 		return
 	}
-	generated, err := markdownToHTML(contentMD)
+	generated, err := ToHTML(contentMD)
 	if err != nil || generated == "" {
 		return
 	}

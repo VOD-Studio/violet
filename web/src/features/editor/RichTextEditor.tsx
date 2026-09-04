@@ -1,15 +1,18 @@
 /**
  * RichTextEditor - 受控富文本编辑器
  *
- * 受控 value/onChange（值为 Markdown 字符串）。内部用 Tiptap useEditor 管理
- * ProseMirror 状态，每次 update 调 onChange 回吐最新 Markdown。
+ * 受控 value/onChange（值为 HTML 或 Markdown 字符串，由 contentType 决定）。
+ * 内部用 Tiptap useEditor 管理 ProseMirror 状态，每次 update 调 onChange 回吐最新内容。
  *
  * 能力：
  * - 顶部固定工具栏（历史/标题/格式/列表块/图片）
  * - 选中文本浮出迷你工具栏
  * - 输入 / 唤起斜杠命令菜单
  * - 拖拽/粘贴图片自动上传（purpose=post）并插入
- * - 底部状态栏：字数统计 + 导入/导出 MD 按钮 + MD 源码切换查看
+ * - 底部状态栏：字数统计 + 源码切换 + 按能力裁剪的导入/导出按钮
+ *
+ * 能力裁剪：disabledFeatures（黑名单）经 resolveFeatures 派生为能力集，
+ * 扩展注册、工具栏、斜杠菜单与底栏按钮从同一份能力集收窄。
  *
  * 图片插入（工具栏 + 斜杠菜单）通过 onPickImage 回调交由调用方决定如何选图，
  * 默认行为是打开本地上传文件选择器。
@@ -18,7 +21,15 @@
 import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Code2, Download, FileUp, Globe } from "lucide-react";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { urlErrorMessage, validateUrl } from "@/shared/lib/url";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
@@ -27,10 +38,11 @@ import { Input } from "@/shared/ui/base/input";
 import { Modal } from "@/shared/ui/modal/components/Modal";
 import { PromptDialog } from "@/shared/ui/prompt-dialog";
 import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
-import "./styles.css";
-import { buildEditorExtensions } from "./extensions";
 import { useEditorUpload } from "./hooks/useEditorUpload";
 import { useWordCount } from "./hooks/useWordCount";
+import "./styles.css";
+import { buildEditorExtensions } from "./extensions";
+import { type EditorFeature, resolveFeatures } from "./lib/features";
 import {
 	type BlockLineEntry,
 	buildBlockLineMap,
@@ -55,10 +67,14 @@ export interface RichTextEditorHandle {
 }
 
 export interface RichTextEditorProps {
-	/** 受控值（HTML 字符串，保留颜色/对齐等样式） */
+	/** 受控值（HTML 或 Markdown 字符串） */
 	value: string;
-	/** 值变更回调（HTML 字符串） */
-	onChange: (html: string) => void;
+	/** 值变更回调 */
+	onChange: (content: string) => void;
+	/** 内容格式，默认 "html"，笔记等 Markdown 场景传 "markdown" */
+	contentType?: "html" | "markdown";
+	/** 禁用的能力（黑名单语义）：缺省全量启用；粒度约定见 lib/features.ts */
+	disabledFeatures?: readonly EditorFeature[];
 	/** 占位符 */
 	placeholder?: string;
 	/** 导出 .md 时的文件名（不含扩展名） */
@@ -75,6 +91,8 @@ export interface RichTextEditorProps {
 	className?: string;
 	/** 最小高度，默认 420 */
 	minHeight?: number;
+	/** 文档流自增高：内容撑开高度、无内部滚动，由外层容器统一滚动（抽屉场景） */
+	autoGrow?: boolean;
 }
 
 /** ImportUrlOpts - 远程链接导入的可选行为开关 */
@@ -106,6 +124,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		{
 			value,
 			onChange,
+			contentType = "html",
+			disabledFeatures,
 			placeholder,
 			exportName = "article",
 			onPickImage,
@@ -114,6 +134,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			onImportUrlWarnings,
 			className,
 			minHeight = 420,
+			autoGrow,
 		},
 		ref,
 	) {
@@ -125,6 +146,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		// 编辑器内部滚动容器，传给 BubbleMenu 作为 scrollTarget，
 		// 使其在自定义 overflow 容器滚动时也能跟随选区更新位置
 		const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
+		const features = useMemo(() => resolveFeatures(disabledFeatures), [disabledFeatures]);
 
 		const handlePickImage = useCallback(() => {
 			if (onPickImageRef.current) {
@@ -137,14 +159,16 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
 		const editor = useEditor({
 			extensions: [
-				...buildEditorExtensions(placeholder).filter((e) => e.name !== "slashCommand"),
+				...buildEditorExtensions(placeholder, features).filter(
+					(e) => e.name !== "slashCommand",
+				),
 				SlashCommand.configure({
 					onPickImage: handlePickImage,
-					items: (cb) => buildSlashItems(cb),
+					items: (cb) => buildSlashItems(cb, features),
 				}),
 			],
 			content: value,
-			contentType: "html" as const,
+			contentType,
 			editorProps: {
 				attributes: {
 					class: cn(
@@ -158,8 +182,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			onUpdate: ({ editor }) => {
 				// 重连/重挂载竞态下 schema 可能为 null，isDestroyed 兜底已销毁实例
 				if (editor.isDestroyed || !editor.schema) return;
-				// 用 HTML 序列化（保留颜色/对齐等 inline 样式，Markdown 会丢失这些）
-				onChangeRef.current(editor.getHTML());
+				onChangeRef.current(
+					contentType === "markdown" ? editor.getMarkdown() : editor.getHTML(),
+				);
 			},
 		});
 
@@ -191,23 +216,23 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
 		// 外部 value 变更时同步进编辑器（仅在差异时，避免光标跳动）
 		// emitUpdate 必须为 true：setContent 后触发 update 事件，useWordCount 才能刷新字数；
-		// 回吐的 HTML 与父级 value 收敛后即停止，不会循环。
+		// 回吐的内容与父级 value 收敛后即停止，不会循环。
 		// setTimeout 推迟到 React 提交完成后执行，避免 Tiptap 的 ReactNodeView
 		// 在生命周期内 mount 时调用 flushSync 触发 React 警告。
 		useEffect(() => {
 			if (!editor) return;
 			if (editor.isDestroyed || !editor.schema) return;
-			const current = editor.getHTML();
+			const current = contentType === "markdown" ? editor.getMarkdown() : editor.getHTML();
 			if (value === current) return;
 			const timer = setTimeout(() => {
 				if (editor.isDestroyed || !editor.schema) return;
 				editor.commands.setContent(value || "", {
-					contentType: "html",
+					contentType,
 					emitUpdate: true,
 				});
 			}, 0);
 			return () => clearTimeout(timer);
-		}, [value, editor]);
+		}, [value, editor, contentType]);
 
 		const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0];
@@ -236,7 +261,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				editor.chain().focus().extendMarkRange("link").unsetLink().run();
 				return;
 			}
-			editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
+			editor.chain().focus().setLink({ href: url.trim() }).run();
 		};
 
 		// —— Markdown 源码/编辑器内联切换 ——
@@ -316,6 +341,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				setSourceMode(false);
 			}
 		};
+
 		// 退出源码后富文本容器 + 新内容渲染完 → 滚到目标块。
 		// 不用 scrollIntoView:它会把块顶贴到窗口顶部,目标接近文档末尾时
 		// 编辑器被强行上推,下方留一大片空白。手动设 scrollContainer.scrollTop
@@ -355,13 +381,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			}
 			setUrlError(null);
 			setUrlDialogOpen(false);
-			// 校验通过：解析异步进行；成功由 onImportUrl 调用方 toast
 			void onImportUrl(trimmed, { aiRestoreFormula }).then((result) => {
 				if (!result) return;
-				if (result.html) {
-					editor.commands.setContent(result.html, { contentType: "html" });
-				}
-				// 元信息透传给父级回填表单（标题/摘要/SEO）
+				editor.commands.setContent(result.html, {
+					contentType: "html",
+					emitUpdate: true,
+				});
 				if (result.meta && onImportUrlMeta) {
 					onImportUrlMeta(result.meta);
 				}
@@ -375,17 +400,19 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		return (
 			<div
 				className={cn(
-					"flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
+					"flex flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
+					!autoGrow && "h-full",
 					className,
 				)}
 			>
 				<EditorToolbar
 					editor={editor}
+					features={features}
 					onPickImage={handlePickImage}
 					onUploadImage={() => pickLocalFileRef.current?.()}
 					onInsertLink={openLinkDialog}
 				/>
-				{editor ? <TableToolbar editor={editor} /> : null}
+				{features.table && editor ? <TableToolbar editor={editor} /> : null}
 				{sourceMode ? (
 					<MarkdownSourceEditor
 						ref={sourceEditorRef}
@@ -397,7 +424,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				) : (
 					<div
 						ref={setScrollContainer}
-						className="relative flex-1 overflow-y-auto px-4 py-3"
+						className={cn("relative px-4 py-3", !autoGrow && "flex-1 overflow-y-auto")}
 					>
 						{editor ? (
 							<EditorBubbleMenu
@@ -421,17 +448,19 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 						>
 							<Code2 /> 源码
 						</Button>
-						<Button asChild size="xs" variant="ghost" title="导入 .md 文件">
-							<label className="cursor-pointer">
-								<input
-									type="file"
-									accept=".md,.markdown,.txt"
-									className="hidden"
-									onChange={handleImport}
-								/>
-								<FileUp /> 导入
-							</label>
-						</Button>
+						{features.importFile ? (
+							<Button asChild size="xs" variant="ghost" title="导入 .md 文件">
+								<label className="cursor-pointer">
+									<input
+										type="file"
+										accept=".md,.markdown,.txt"
+										className="hidden"
+										onChange={handleImport}
+									/>
+									<FileUp /> 导入
+								</label>
+							</Button>
+						) : null}
 						{onImportUrl ? (
 							<Button
 								type="button"
@@ -448,15 +477,17 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 								<Globe /> 链接
 							</Button>
 						) : null}
-						<Button
-							type="button"
-							variant="ghost"
-							size="xs"
-							title="导出为 .md"
-							onClick={handleExport}
-						>
-							<Download /> 导出
-						</Button>
+						{features.exportFile ? (
+							<Button
+								type="button"
+								variant="ghost"
+								size="xs"
+								title="导出为 .md"
+								onClick={handleExport}
+							>
+								<Download /> 导出
+							</Button>
+						) : null}
 					</div>
 				</div>
 				{/* 链接输入弹窗 */}

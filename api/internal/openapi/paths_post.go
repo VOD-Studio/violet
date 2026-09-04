@@ -63,8 +63,8 @@ func registerPostPaths(t *openapi3.T) {
 	}, "is_featured")
 
 	registerSchema(t, "ImportURLRequest", openapi3.Schemas{
-		"url":                 reqStr("远程网页 URL，仅限 http/https"),
-		"ai_restore_formula":  optBool("是否用 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*）"),
+		"url":                reqStr("远程网页 URL，仅限 http/https"),
+		"ai_restore_formula": optBool("是否用 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*）"),
 	}, "url", "ai_restore_formula")
 
 	registerSchema(t, "ImportResultDTO", openapi3.Schemas{

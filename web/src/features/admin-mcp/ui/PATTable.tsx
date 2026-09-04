@@ -7,6 +7,7 @@ import {
 } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { format } from "date-fns";
 import { Cable, Trash2 } from "lucide-react";
 
@@ -68,39 +69,55 @@ export function PATTable({ tokens, pagination, loading, onConnect }: PATTablePro
 			width: "96px",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						title="接入配置"
-						onClick={() => onConnect(row.scopes)}
-					>
-						<Cable className="size-3.5" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						title="吊销"
-						className="hover:bg-destructive/10 hover:text-destructive"
-						onClick={() => del.mutate(row.id)}
-						disabled={del.isPending}
-					>
-						<Trash2 className="size-3.5" />
-					</Button>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									onClick={() => onConnect(row.scopes)}
+									aria-label={`查看令牌 ${row.name} 接入配置`}
+								>
+									<Cable className="size-3.5" />
+								</Button>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent>接入配置</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+									onClick={() => del.mutate(row.id)}
+									disabled={del.isPending}
+									aria-label={`吊销令牌 ${row.name}`}
+								>
+									<Trash2 className="size-3.5" />
+								</Button>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent>吊销令牌</TooltipContent>
+					</Tooltip>
 				</div>
 			),
 		},
 	];
 
 	return (
-		<DataTable<PATDTO>
-			columns={columns}
-			data={tokens}
-			pagination={pagination}
-			keyExtractor={(row) => row.id}
-			loading={loading}
-			storageKey="admin-mcp-pat-columns"
-			emptyTitle="还没有令牌"
-			emptyDescription="创建一个令牌来接入 MCP"
-		/>
+		<TooltipProvider>
+			<DataTable<PATDTO>
+				columns={columns}
+				data={tokens}
+				pagination={pagination}
+				keyExtractor={(row) => row.id}
+				loading={loading}
+				storageKey="admin-mcp-pat-columns"
+				emptyTitle="还没有令牌"
+				emptyDescription="创建一个令牌来接入 MCP"
+			/>
+		</TooltipProvider>
 	);
 }

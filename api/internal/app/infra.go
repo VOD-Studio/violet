@@ -12,9 +12,9 @@ import (
 	"gorm.io/gorm"
 
 	"blog-api/config"
+	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
-	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 
 	"github.com/rs/zerolog/log"
 )

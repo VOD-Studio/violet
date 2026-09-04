@@ -64,6 +64,7 @@ func (t *PublicTools) ReadPost(ctx context.Context, req *mcp.ReadResourceRequest
 		}},
 	}, nil
 }
+
 // publicListLimit 文章目录的取数上限：目录无分页参数入口（Resource read 不带
 // query），取足够大的上限覆盖个人博客量级。未来文章量增长时升级为带游标的
 // template 形态。
@@ -115,7 +116,6 @@ func slugFromURI(uri string) (string, error) {
 	}
 	return slug, nil
 }
-
 
 // ============================================================
 // 系列书 Resource（#272）：blog://series/{slug} + blog://series

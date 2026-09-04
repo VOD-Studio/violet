@@ -4,6 +4,7 @@
  * 每个 ToolbarItem 描述一个工具按钮：图标 / 标题 / 执行命令 / 判断激活态 / 判断可用态。
  * 由 EditorToolbar 遍历渲染，统一样式与交互（active 高亮、disabled 置灰）。
  */
+
 import type { Editor } from "@tiptap/react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -32,6 +33,7 @@ import {
 	Underline,
 	Undo2,
 } from "lucide-react";
+import type { ResolvedFeatures } from "../lib/features";
 
 export interface ToolbarItem {
 	/** 唯一标识 */
@@ -255,12 +257,14 @@ export const blockItems: ToolbarItem[] = [
 ];
 
 /**
- * buildToolbarItems - 构造工具栏项（注入链接插入回调）
+ * buildToolbarItems - 构造工具栏项（注入链接插入回调，按能力集过滤）
  *
  * @param onInsertLink 点击「插入链接」时的回调（由父组件打开输入弹窗）
+ * @param features 能力集：underline/align/table 关闭时对应按钮与分组不渲染
  */
 export function buildToolbarItems(
 	onInsertLink: () => void,
+	features?: ResolvedFeatures,
 ): Array<ToolbarItem | typeof TOOLBAR_DIVIDER> {
 	const linkItem: ToolbarItem = {
 		id: "link",
@@ -269,16 +273,25 @@ export function buildToolbarItems(
 		run: () => onInsertLink(),
 		isActive: (e) => e.isActive("link"),
 	};
-	return [
-		...historyItems,
-		TOOLBAR_DIVIDER,
-		...headingItems,
-		TOOLBAR_DIVIDER,
-		...formatItems,
-		TOOLBAR_DIVIDER,
-		...alignItems,
-		TOOLBAR_DIVIDER,
-		...blockItems,
-		linkItem,
+
+	const formats =
+		features?.underline === false
+			? formatItems.filter((item) => item.id !== "underline")
+			: formatItems;
+	const blocks =
+		features?.table === false ? blockItems.filter((item) => item.id !== "table") : blockItems;
+
+	const groups: Array<ToolbarItem[]> = [
+		historyItems,
+		headingItems,
+		formats,
+		...(features?.align === false ? [] : [alignItems]),
+		blocks,
 	];
+	return groups
+		.flatMap(
+			(group, i): Array<ToolbarItem | typeof TOOLBAR_DIVIDER> =>
+				i === 0 ? group : [TOOLBAR_DIVIDER, ...group],
+		)
+		.concat(linkItem);
 }

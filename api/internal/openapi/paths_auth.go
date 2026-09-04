@@ -45,17 +45,17 @@ func registerAuthPaths(t *openapi3.T) {
 	// ---- 响应 schema ----
 	// UserDTO：当前用户信息（auth/me）
 	registerSchema(t, "UserDTO", openapi3.Schemas{
-		"id":             reqStr("用户 ID（UUID）"),
-		"username":       reqStr("用户名"),
-		"email":          reqStr("邮箱"),
-		"avatar_url":     optStr("头像 URL"),
-		"bio":            optStr("个人简介"),
-		"role":              reqStr("角色"),
+		"id":               reqStr("用户 ID（UUID）"),
+		"username":         reqStr("用户名"),
+		"email":            reqStr("邮箱"),
+		"avatar_url":       optStr("头像 URL"),
+		"bio":              optStr("个人简介"),
+		"role":             reqStr("角色"),
 		"role_description": optStr("角色描述（来自 roles 表）"),
 		"email_verified":   optBool("邮箱是否已验证"),
-		"is_active":      optBool("是否启用"),
-		"created_at":     optStr("创建时间（RFC3339）"),
-		"permissions":    strArray("权限代码列表"),
+		"is_active":        optBool("是否启用"),
+		"created_at":       optStr("创建时间（RFC3339）"),
+		"permissions":      strArray("权限代码列表"),
 	})
 
 	// LoginResponse：login/google/github 响应的 data（session id 与 csrf 走 cookie，不在 body）
@@ -65,9 +65,9 @@ func registerAuthPaths(t *openapi3.T) {
 
 	// SessionResponse：/auth/session 响应的 data（SSR 探活，只读不续期）
 	registerSchema(t, "SessionResponse", openapi3.Schemas{
-		"user_id":                reqStr("用户 ID（UUID）"),
-		"role":                   strEnum("角色", "user", "admin", "superadmin"),
-		"email":                  reqStr("邮箱"),
+		"user_id": reqStr("用户 ID（UUID）"),
+		"role":    strEnum("角色", "user", "admin", "superadmin"),
+		"email":   reqStr("邮箱"),
 		"is_root": optBool("是否 root 用户"),
 	})
 

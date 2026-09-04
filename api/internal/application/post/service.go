@@ -16,6 +16,7 @@ import (
 
 	"blog-api/internal/brand"
 	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/application/markdown"
 	domain "blog-api/internal/domain/post"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
@@ -282,7 +283,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	if err != nil {
 		return PostDTO{}, err
 	}
-	ensureContentHTML(&in.ContentHTML, in.ContentMD)
+	markdown.EnsureHTML(&in.ContentHTML, in.ContentMD)
 	if err := p.UpdateContent(in.Title, in.ContentMD, in.ContentHTML, in.Excerpt, in.CoverImage); err != nil {
 		return PostDTO{}, err
 	}
@@ -372,7 +373,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 	oldContent := p.ContentMD()
 	oldTitle := p.Title()
 
-	ensureContentHTML(&in.ContentHTML, in.ContentMD)
+	markdown.EnsureHTML(&in.ContentHTML, in.ContentMD)
 	if err := p.UpdateContent(in.Title, in.ContentMD, in.ContentHTML, in.Excerpt, in.CoverImage); err != nil {
 		return err
 	}

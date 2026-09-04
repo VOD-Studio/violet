@@ -11,35 +11,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
+	domainapitoken "blog-api/internal/domain/api_token"
 	domainshared "blog-api/internal/domain/shared"
 )
 
 // fakePostService 内存版文章服务，记录被调参数。seam #2：不依赖 DB。
 type fakePostService struct {
-	createInput  *apppost.CreateInput
-	updateInput  *apppost.UpdateInput
-	updateOpID   string
-	statusID     string
-	statusValue  string
-	getID        string
-	listStatus   string
-	listPage     int
-	listLimit    int
+	createInput *apppost.CreateInput
+	updateInput *apppost.UpdateInput
+	updateOpID  string
+	statusID    string
+	statusValue string
+	getID       string
+	listStatus  string
+	listPage    int
+	listLimit   int
 
 	importURL    string
 	importOpts   apppost.ImportURLOpts
 	importResult apppost.ImportResult
 	importErr    error
 
-	createErr    error
-	updateErr    error
-	statusErr    error
-	getErr       error
-	listErr      error
+	createErr error
+	updateErr error
+	statusErr error
+	getErr    error
+	listErr   error
 }
 
 func (f *fakePostService) Create(ctx context.Context, in apppost.CreateInput) (apppost.PostDTO, error) {
@@ -109,12 +109,12 @@ type fakeSubService struct {
 	updateInput *appsub.UpdateInput
 	updateErr   error
 
-	pauseID    string
-	pauseErr   error
-	resumeID   string
-	resumeErr  error
-	deleteID   string
-	deleteErr  error
+	pauseID   string
+	pauseErr  error
+	resumeID  string
+	resumeErr error
+	deleteID  string
+	deleteErr error
 }
 
 func (f *fakeSubService) Create(ctx context.Context, in appsub.CreateInput) (appsub.SubscriptionDTO, error) {

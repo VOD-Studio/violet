@@ -116,8 +116,8 @@ vi.mock("@features/auth/api/queries", () => ({
 
 vi.mock("@features/gallery-editor/api/mutations", () => ({
 	useCreateGalleryDraft: () => ({ mutateAsync: vi.fn(), isPending: false }),
+	useDeleteGallery: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
-
 const useAdminGalleries = vi.fn((_query?: Record<string, unknown>) => ({
 	data: { data: rows },
 }));
@@ -167,5 +167,12 @@ describe("GalleryDraftListPage", () => {
 				expect.objectContaining({ author: "sun" }),
 			);
 		});
+	});
+	it("操作列渲染删除按钮，点击弹出确认弹窗", () => {
+		render(<GalleryDraftListPage />);
+		const deleteButtons = screen.getAllByLabelText(/删除图集/);
+		expect(deleteButtons.length).toBe(rows.length);
+		fireEvent.click(deleteButtons[0]);
+		expect(screen.getByText("确认删除图集")).toBeTruthy();
 	});
 });

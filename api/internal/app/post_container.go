@@ -6,15 +6,15 @@ import (
 	apppost "blog-api/internal/application/post"
 	appshared "blog-api/internal/application/shared"
 	domainsettings "blog-api/internal/domain/settings"
-	"blog-api/internal/middleware"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
+	"blog-api/internal/middleware"
 )
 
 // PostContainer 文章模块容器
 type PostContainer struct {
-	PostHandler  *posthttp.Handler
-	PostService  *apppost.Service // 供 MCP 模块复用（tool handler 委托文章写操作）
+	PostHandler *posthttp.Handler
+	PostService *apppost.Service // 供 MCP 模块复用（tool handler 委托文章写操作）
 }
 
 // NewPostContainer 装配文章模块。

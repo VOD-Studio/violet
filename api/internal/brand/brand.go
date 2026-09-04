@@ -32,4 +32,6 @@ const (
 	MCPReaderServerName = "violet-reader"
 	// MCPCommentsServerName 评论检索 MCP server 标识（PAT，评论独立 bounded context）。
 	MCPCommentsServerName = "violet-comments"
+	// MCPNotesServerName 笔记域 MCP server 标识（PAT，AI 会话沉淀运输层）。
+	MCPNotesServerName = "violet-notes"
 )

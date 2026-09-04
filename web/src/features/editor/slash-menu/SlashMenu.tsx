@@ -56,12 +56,15 @@ export function SlashMenuView({ items, command }: SlashMenuProps) {
 		return () => window.removeEventListener("keydown", handler, true);
 	}, [items, selected, command]);
 
-	// 滚动选中项到可视区
+	// 滚动选中项到可视区（设置 scroll-py 保证 nearest 计算时上下均保留呼吸内边距）
 	useEffect(() => {
+		if (selected === 0 && listRef.current) {
+			listRef.current.scrollTop = 0;
+			return;
+		}
 		const el = listRef.current?.querySelector(`[data-idx="${selected}"]`);
 		el?.scrollIntoView({ block: "nearest" });
 	}, [selected]);
-
 	const groups = useMemo(() => {
 		const m = new Map<string, SlashMenuItem[]>();
 		for (const it of items) {
@@ -89,11 +92,11 @@ export function SlashMenuView({ items, command }: SlashMenuProps) {
 			onMouseMove={() => {
 				allowHover.current = true;
 			}}
-			className="max-h-72 w-72 overflow-y-auto rounded-lg border border-edge-hairline bg-popover p-1.5 shadow-xl"
+			className="max-h-80 w-72 overflow-y-auto rounded-lg border border-edge-hairline bg-popover p-2 scroll-py-2 shadow-xl"
 		>
 			{groups.map(([group, list]) => (
-				<div key={group} className="mb-1">
-					<p className="px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+				<div key={group} className="mb-2 last:mb-0">
+					<p className="px-2 py-1 font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
 						{group}
 					</p>
 					{list.map((item) => {

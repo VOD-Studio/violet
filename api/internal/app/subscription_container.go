@@ -18,7 +18,7 @@ import (
 // SubscriptionRepository 供 T8 调度器（FindDue + Save 状态回写）复用；
 // SubscriptionHandler 供 T9 后台订阅管理页复用。
 type SubscriptionContainer struct {
-	SubscriptionService   *appsub.Service
+	SubscriptionService    *appsub.Service
 	SubscriptionRepository domainsubscription.SubscriptionRepository
 	SubscriptionHandler    *subscriptionhttp.Handler
 }
@@ -34,7 +34,7 @@ func NewSubscriptionContainer(db *gorm.DB, postSvc *apppost.Service, bus appshar
 		svc.SetFetchDeps(entryRepo, postSvc, infrafeed.NewGoFeedParser(feedProxyURL))
 	}
 	return &SubscriptionContainer{
-		SubscriptionService:   svc,
+		SubscriptionService:    svc,
 		SubscriptionRepository: subRepo,
 		SubscriptionHandler:    subscriptionhttp.NewHandler(svc),
 	}

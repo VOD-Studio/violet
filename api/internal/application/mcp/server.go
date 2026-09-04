@@ -41,6 +41,17 @@ var CommentsServerMeta = &mcp.Implementation{
 // server 选型层告知评论检索定位，与文章域区分。
 const commentsInstructions = `本 server 检索读者评论/批注反馈，仅已审核通过（approved）；用于「读者批注→写作改进」闭环。文章本身（读全文/写文章）用 violet-posts server。批注带 anchor.selected_text 标注读者划中的原文。`
 
+// NotesServerMeta 笔记域 MCP server 元信息（PAT，AI 会话沉淀运输层）。
+var NotesServerMeta = &mcp.Implementation{
+	Name:    brand.MCPNotesServerName,
+	Title:   "Violet 笔记",
+	Version: "1.0.0",
+}
+
+// notesInstructions 进 initialize 响应、入 agent context。
+// 告知本 server 只管笔记；文章毛坯走 violet-posts 的 create_post（只建草稿）。
+const notesInstructions = `本 server 是知识笔记的写入通道（AI 会话沉淀与手工记录共用）。安全约束：status=published 需要额外的 notes:publish scope——仅在用户明确选择直接发布时使用，默认一律 draft。文章级内容（完整功能毛坯）请用 violet-posts 的 create_post（只建草稿）。沉淀前先 list_notes 查重，同主题用 update_note 补充。`
+
 // NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 2 个标签 tool + 1 个编排 prompt。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。

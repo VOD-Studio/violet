@@ -11,10 +11,10 @@ import (
 	appperm "blog-api/internal/application/permission"
 	permcmd "blog-api/internal/application/permission/command"
 	permquery "blog-api/internal/application/permission/query"
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	rolecmd "blog-api/internal/application/role/command"
 	rolequery "blog-api/internal/application/role/query"
 	role2 "blog-api/internal/domain/role"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
 )

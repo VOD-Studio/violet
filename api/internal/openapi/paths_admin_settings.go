@@ -107,8 +107,8 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 
 	// AuditEvent：操作日志事件（append-only 审计存储的读模型）
 	registerSchema(t, "AuditEvent", openapi3.Schemas{
-		"EventID":    optStr("事件 UUID（幂等去重）"),
-		"Action":     reqStr("操作类型（受控枚举：create/update/delete/publish/login 等）"),
+		"EventID": optStr("事件 UUID（幂等去重）"),
+		"Action":  reqStr("操作类型（受控枚举：create/update/delete/publish/login 等）"),
 		"Actor": {Value: &openapi3.Schema{
 			Type: &openapi3.Types{openapi3.TypeObject},
 			Properties: openapi3.Schemas{

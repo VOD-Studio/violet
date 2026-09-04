@@ -13,6 +13,7 @@ import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -101,7 +102,6 @@ function AdminAnnouncementsPage() {
 			header: "标题",
 			hideable: false,
 			sortable: true,
-			width: "32%",
 			ellipsis: true,
 			cell: (row) => <span className="font-medium">{row.title}</span>,
 		},
@@ -145,28 +145,43 @@ function AdminAnnouncementsPage() {
 			key: "actions_col",
 			header: "操作",
 			sticky: "right",
-			width: "100px",
+			width: "96px",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
 					<PermissionGuard permission="announcement:manage">
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							onClick={() => handleEdit(row)}
-							title="编辑"
-						>
-							<Pencil className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										onClick={() => handleEdit(row)}
+										aria-label={`编辑公告 ${row.title}`}
+									>
+										<Pencil className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>编辑</TooltipContent>
+						</Tooltip>
 					</PermissionGuard>
 					<PermissionGuard permission="announcement:manage">
-						<Button
-							size="icon-sm"
-							variant="ghost"
-							onClick={() => handleDelete(row)}
-							title="删除"
-						>
-							<Trash2 className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+										onClick={() => handleDelete(row)}
+										aria-label={`删除公告 ${row.title}`}
+									>
+										<Trash2 className="size-3.5" />
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>删除</TooltipContent>
+						</Tooltip>
 					</PermissionGuard>
 				</div>
 			),
@@ -174,45 +189,51 @@ function AdminAnnouncementsPage() {
 	];
 
 	return (
-		<PageShell
-			title="公告管理"
-			description="管理站点公告"
-			action={
-				<PermissionGuard permission="announcement:manage">
-					<Button size="sm" onClick={handleCreate}>
-						<Plus className="size-3.5" />
-						创建公告
-					</Button>
-				</PermissionGuard>
-			}
-		>
-			<DataTable<AnnouncementDTO>
-				data={sortedAnnouncements}
-				columns={columns}
-				pagination={pagination}
-				keyExtractor={(row) => String(row.id)}
-				selectable={false}
-				loading={isLoading}
-				error={error ? new Error(error.message) : null}
-				onRetry={() => refetch()}
-				sort={sort}
-				onSortChange={setSort}
-				storageKey="admin-announcements-columns"
-				resizable
-				caption="公告列表"
-				emptyTitle="暂无公告"
-				emptyDescription="还没有创建任何公告"
-			/>
-			<AnnouncementSheet open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
-			<ConfirmDialog
-				open={deleteOpen}
-				onOpenChange={setDeleteOpen}
-				onConfirm={confirmDelete}
-				title="确认删除公告"
-				description={`确定要删除公告 ${deleting?.title} 吗？`}
-				confirmLabel="删除"
-				loading={deleteAnn.isPending}
-			/>
-		</PageShell>
+		<TooltipProvider>
+			<PageShell
+				title="公告管理"
+				description="管理站点公告"
+				action={
+					<PermissionGuard permission="announcement:manage">
+						<Button size="sm" onClick={handleCreate}>
+							<Plus className="size-3.5" />
+							创建公告
+						</Button>
+					</PermissionGuard>
+				}
+			>
+				<DataTable<AnnouncementDTO>
+					data={sortedAnnouncements}
+					columns={columns}
+					pagination={pagination}
+					keyExtractor={(row) => String(row.id)}
+					selectable={false}
+					loading={isLoading}
+					error={error ? new Error(error.message) : null}
+					onRetry={() => refetch()}
+					sort={sort}
+					onSortChange={setSort}
+					storageKey="admin-announcements-columns"
+					resizable
+					caption="公告列表"
+					emptyTitle="暂无公告"
+					emptyDescription="还没有创建任何公告"
+				/>
+				<AnnouncementSheet
+					open={dialogOpen}
+					onOpenChange={setDialogOpen}
+					editing={editing}
+				/>
+				<ConfirmDialog
+					open={deleteOpen}
+					onOpenChange={setDeleteOpen}
+					onConfirm={confirmDelete}
+					title="确认删除公告"
+					description={`确定要删除公告 ${deleting?.title} 吗？`}
+					confirmLabel="删除"
+					loading={deleteAnn.isPending}
+				/>
+			</PageShell>
+		</TooltipProvider>
 	);
 }

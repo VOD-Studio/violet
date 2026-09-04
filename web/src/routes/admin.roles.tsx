@@ -9,6 +9,7 @@ import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Settings, Trash2, Users } from "lucide-react";
@@ -142,35 +143,59 @@ function AdminRolesPage() {
 				return (
 					<div className="flex items-center gap-2">
 						<PermissionGuard permission="role:manage">
-							<Button
-								size="icon-sm"
-								variant="ghost"
-								onClick={() => handleConfigurePermissions(row)}
-								title="配置权限"
-							>
-								<Settings className="size-3.5" />
-							</Button>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											size="icon-sm"
+											variant="ghost"
+											onClick={() => handleConfigurePermissions(row)}
+											aria-label={`配置权限 ${row.name}`}
+										>
+											<Settings className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>配置权限</TooltipContent>
+							</Tooltip>
 						</PermissionGuard>
 						<PermissionGuard permission="role:manage">
-							<Button
-								size="icon-sm"
-								variant="ghost"
-								onClick={() => handleEdit(row)}
-								title="编辑角色"
-							>
-								<Pencil className="size-3.5" />
-							</Button>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											size="icon-sm"
+											variant="ghost"
+											onClick={() => handleEdit(row)}
+											aria-label={`编辑角色 ${row.name}`}
+										>
+											<Pencil className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>编辑角色</TooltipContent>
+							</Tooltip>
 						</PermissionGuard>
 						<PermissionGuard permission="role:manage">
-							<Button
-								size="icon-sm"
-								variant="ghost"
-								onClick={() => handleDelete(row)}
-								disabled={isBuiltin || deleteRole.isPending}
-								title={isBuiltin ? "内置角色不可删除" : "删除角色"}
-							>
-								<Trash2 className="size-3.5" />
-							</Button>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											size="icon-sm"
+											variant="ghost"
+											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+											onClick={() => handleDelete(row)}
+											disabled={isBuiltin || deleteRole.isPending}
+											aria-label={`删除角色 ${row.name}`}
+										>
+											<Trash2 className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>
+									{isBuiltin ? "内置角色不可删除" : "删除角色"}
+								</TooltipContent>
+							</Tooltip>
 						</PermissionGuard>
 					</div>
 				);
@@ -179,72 +204,74 @@ function AdminRolesPage() {
 	];
 
 	return (
-		<PageShell
-			title="角色管理"
-			description="管理系统角色和权限配置"
-			action={
-				<PermissionGuard permission="role:manage">
-					<Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-						<Plus className="size-3.5" />
-						创建角色
-					</Button>
-				</PermissionGuard>
-			}
-		>
-			<DataTable<RoleDTO>
-				data={sortedRoles}
-				columns={columns}
-				pagination={pagination}
-				keyExtractor={(row) => String(row.id)}
-				selectable={false}
-				loading={isLoading}
-				error={error ? new Error(error.message) : null}
-				onRetry={() => refetch()}
-				sort={sort}
-				onSortChange={setSort}
-				storageKey="admin-roles-columns"
-				caption="角色列表"
-				emptyTitle="暂无角色"
-				emptyDescription="还没有创建任何角色"
-			/>
-
-			{/* 创建角色对话框 */}
-			<CreateRoleDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
-
-			{/* 编辑角色对话框 */}
-			{editingRole && (
-				<EditRoleDialog
-					open={editDialogOpen}
-					onOpenChange={setEditDialogOpen}
-					role={editingRole}
-				/>
-			)}
-
-			{/* 角色权限配置对话框 */}
-			{configuringRole?.id && (
-				<RolePermissionsDialog
-					open={permissionsDialogOpen}
-					onOpenChange={setPermissionsDialogOpen}
-					roleId={configuringRole.id}
-					roleName={configuringRole.name}
-				/>
-			)}
-
-			{/* 删除确认对话框 */}
-			<ConfirmDialog
-				open={deleteConfirmOpen}
-				onOpenChange={setDeleteConfirmOpen}
-				onConfirm={handleConfirmDelete}
-				title="确认删除角色"
-				description={
-					`确定要删除角色 ${deletingRole?.name} 吗？` +
-					((deletingRole?.user_count || 0) > 0
-						? `\n警告：该角色下有 ${deletingRole?.user_count} 个用户，删除后这些用户将失去此角色。`
-						: "")
+		<TooltipProvider>
+			<PageShell
+				title="角色管理"
+				description="管理系统角色和权限配置"
+				action={
+					<PermissionGuard permission="role:manage">
+						<Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+							<Plus className="size-3.5" />
+							创建角色
+						</Button>
+					</PermissionGuard>
 				}
-				confirmLabel="删除"
-				loading={deleteRole.isPending}
-			/>
-		</PageShell>
+			>
+				<DataTable<RoleDTO>
+					data={sortedRoles}
+					columns={columns}
+					pagination={pagination}
+					keyExtractor={(row) => String(row.id)}
+					selectable={false}
+					loading={isLoading}
+					error={error ? new Error(error.message) : null}
+					onRetry={() => refetch()}
+					sort={sort}
+					onSortChange={setSort}
+					storageKey="admin-roles-columns"
+					caption="角色列表"
+					emptyTitle="暂无角色"
+					emptyDescription="还没有创建任何角色"
+				/>
+
+				{/* 创建角色对话框 */}
+				<CreateRoleDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+
+				{/* 编辑角色对话框 */}
+				{editingRole && (
+					<EditRoleDialog
+						open={editDialogOpen}
+						onOpenChange={setEditDialogOpen}
+						role={editingRole}
+					/>
+				)}
+
+				{/* 角色权限配置对话框 */}
+				{configuringRole?.id && (
+					<RolePermissionsDialog
+						open={permissionsDialogOpen}
+						onOpenChange={setPermissionsDialogOpen}
+						roleId={configuringRole.id}
+						roleName={configuringRole.name}
+					/>
+				)}
+
+				{/* 删除确认对话框 */}
+				<ConfirmDialog
+					open={deleteConfirmOpen}
+					onOpenChange={setDeleteConfirmOpen}
+					onConfirm={handleConfirmDelete}
+					title="确认删除角色"
+					description={
+						`确定要删除角色 ${deletingRole?.name} 吗？` +
+						((deletingRole?.user_count || 0) > 0
+							? `\n警告：该角色下有 ${deletingRole?.user_count} 个用户，删除后这些用户将失去此角色。`
+							: "")
+					}
+					confirmLabel="删除"
+					loading={deleteRole.isPending}
+				/>
+			</PageShell>
+		</TooltipProvider>
 	);
 }

@@ -30,6 +30,7 @@ import (
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
+	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
@@ -46,12 +47,13 @@ import (
 	"blog-api/internal/middleware"
 )
 
-// MCPHandlers 聚合 4 个 MCP JSON-RPC 端点 handler（顶层挂载，PAT 鉴权在内层完成）。
+// MCPHandlers 聚合 5 个 MCP JSON-RPC 端点 handler（顶层挂载，PAT 鉴权在内层完成）。
 type MCPHandlers struct {
 	Post     http.Handler // /api/v1/mcp（文章 CRUD + 检索）
 	Scraper  http.Handler // /api/v1/mcp/scraper（抓取 + 订阅）
 	Public   http.Handler // /api/v1/mcp/reader（匿名只读）
 	Comments http.Handler // /api/v1/mcp/comments（评论检索）
+	Notes    http.Handler // /api/v1/mcp/notes（笔记写入，AI 会话沉淀）
 }
 
 // Deps 聚合路由注册所需的全部依赖：配置、基础设施中间件依赖与各模块 handler。
@@ -92,6 +94,7 @@ type Deps struct {
 	FriendLink         *friendlinkhttp.Handler
 	Series             *serieshttp.Handler
 	Gallery            *galleryhttp.Handler
+	Note               *notehttp.Handler
 	Notification       *notificationhttp.Handler
 	NotificationStream *notificationhttp.StreamHandler
 	Chat               *chathttp.Handler
