@@ -7,6 +7,45 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.21](https://github.com/VOD-Studio/violet/compare/v2.8.20...v2.8.21) (2026-09-04)
+
+
+### 新增
+
+* **admin-mcp:** 登记笔记 PAT scope 与 violet-notes server ([cbdbbe1](https://github.com/VOD-Studio/violet/commit/cbdbbe1e23c6be852d11a618c28252386c4c46d2))
+* **admin-notes:** 后台笔记管理页 ([90a7fca](https://github.com/VOD-Studio/violet/commit/90a7fca796c7d61ed9cef740012c62ad84f3face))
+* **admin-notes:** 笔记列表操作列支持行级直接删除与二次确认 ([b4177aa](https://github.com/VOD-Studio/violet/commit/b4177aad823feceb37bdb2797ca6500d6745b370))
+* **admin-notes:** 笔记新建与编辑改为侧滑抽屉并接入富文本编辑器 ([811f525](https://github.com/VOD-Studio/violet/commit/811f525d3621b478ac189370507fb8e6040a264b))
+* **admin-notes:** 重构笔记管理列表与全屏双栏工作台编辑器 ([63d358c](https://github.com/VOD-Studio/violet/commit/63d358c9526c1ea82e53b771ba2d0103eeb138a7))
+* **editor:** 富文本编辑器支持内容格式与可裁剪能力开关 ([74ec6f3](https://github.com/VOD-Studio/violet/commit/74ec6f33e02260d731f9834fc527a882a380ad80))
+* **mcp:** violet-notes 笔记 MCP server ([d8ccfeb](https://github.com/VOD-Studio/violet/commit/d8ccfebc8846aa7336648d2f19ca1950a570b92d))
+* **note-browse:** 独创战地工程工单与案卷系统重构前台笔记与详情 ([d7f6a06](https://github.com/VOD-Studio/violet/commit/d7f6a064442d9d52f1e7fa1af26a54c5a0c35483))
+* **note-browse:** 笔记前台页面重构为典藏索表与强化元信息排版 ([d7c613b](https://github.com/VOD-Studio/violet/commit/d7c613b679d02bac43fecac164c9cf5f1644b364))
+* **note:** GORM 仓储与持久化模型 ([986e945](https://github.com/VOD-Studio/violet/commit/986e945592651d73005e8bccd2f057a835b0185a))
+* **note:** HTTP 端点、路由装配与 OpenAPI 文档 ([a2c4acc](https://github.com/VOD-Studio/violet/commit/a2c4acc8af054032a59bd3ee3a0695022bfdbe5b))
+* **notes:** AI 会话沉淀与笔记域 ([#301](https://github.com/VOD-Studio/violet/issues/301)) ([14f5a0e](https://github.com/VOD-Studio/violet/commit/14f5a0ea3e09149548eff41ec6cc6ee310af1656))
+* **notes:** 前台笔记流与详情页 ([dfed95f](https://github.com/VOD-Studio/violet/commit/dfed95fe4269f3cb795986a4f1afba5488b86c23))
+* **note:** 笔记应用服务与 DTO ([804293f](https://github.com/VOD-Studio/violet/commit/804293f6b56688c69918b0392a54bbb32103f004))
+* **note:** 笔记聚合、仓储接口与数据迁移 ([5a2f723](https://github.com/VOD-Studio/violet/commit/5a2f7230da569e12444a094cfc0e30c2a68f1b70))
+* **session-notes:** 添加 AI 会话沉淀技能 ([52a0f6c](https://github.com/VOD-Studio/violet/commit/52a0f6c72464613d4771a29aa7e91e7e1e66f55c))
+
+
+### 修复
+
+* **admin-notes:** 标签输入提示需已存在 ([9380086](https://github.com/VOD-Studio/violet/commit/9380086e0800373f61a930982c1f0c88ef94941e))
+* **editor:** 修复斜杠菜单上下滚动贴边问题 ([0fae35e](https://github.com/VOD-Studio/violet/commit/0fae35e6121527dc1e7b74a671b04e883183d80a))
+* **editor:** 抽屉场景编辑器改为文档流自增高消除双层滚动 ([4ed09a5](https://github.com/VOD-Studio/violet/commit/4ed09a570544a19f0573a53838133e93eaacd071))
+* **note:** 修复笔记管理列表查询缺失标签预载 ([dea76e3](https://github.com/VOD-Studio/violet/commit/dea76e336138cc171242fd4cb527b10f587e8094))
+* **session-notes:** 支持文章直接发布 ([ff66a87](https://github.com/VOD-Studio/violet/commit/ff66a87e4791db9653f4310dff8500ba5e179c66))
+
+
+### 重构
+
+* **admin-notes:** 对齐权限管理规范重构列表操作列 ([6004fd5](https://github.com/VOD-Studio/violet/commit/6004fd576d018c70c0efd4b616372377320bdde4))
+* **admin:** 全局后台管理表格操作列对齐统一设计规范 ([be75380](https://github.com/VOD-Studio/violet/commit/be753806ffe0eabbd1eae5f6b42d205dd281d0a0))
+* **post:** 将 markdown 渲染管线抽为独立包 ([d6bcba9](https://github.com/VOD-Studio/violet/commit/d6bcba969fc6db74993a23a42f12d47a14ad6b86))
+* **shared-ui:** 将 BackLink 上提到 shared ([29b3c07](https://github.com/VOD-Studio/violet/commit/29b3c071f911cab98c0828d75099941b9a525115))
+
 ## [2.8.20](https://github.com/VOD-Studio/violet/compare/v2.8.19...v2.8.20) (2026-09-01)
 
 
