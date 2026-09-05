@@ -8,7 +8,7 @@ import { type FriendLinkDTO, hostOf } from "../model/mock";
  *
  * 设计意图：友链即 `$ ls ~/friends` 的输出——终端窗口里的 mono 目录学，
  * 每行一条记录，hover 行内展开详情（站长 / 描述），末尾是闪烁光标。
- * 与全站终端 DNA（LandingHero / TerminalCard / DecryptedText）同源，最极客的一版。
+ * 与 TerminalCard / DecryptedText 使用同一终端语汇。
  */
 export function TerminalList({ links }: { links: FriendLinkDTO[] }) {
 	const [openId, setOpenId] = useState<string | null>(null);

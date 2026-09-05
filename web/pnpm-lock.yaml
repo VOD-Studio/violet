@@ -50,6 +50,9 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.8.0
         version: 1.8.0
+      '@fontsource-variable/manrope':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/maple-mono':
         specifier: ^5.2.6
         version: 5.3.0
@@ -887,6 +890,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource-variable/manrope@5.3.0':
+    resolution: {integrity: sha512-6D5dgokHsWDDMtmXHznKa0hK229NN+1a4BLPmUCLqcO1Pw5EEhWY5RFt0AcXnVRAljFFPfRtLkJePQj6LSsV6g==}
 
   '@fontsource/maple-mono@5.3.0':
     resolution: {integrity: sha512-8N3FVDWphO/971tZIig9D558j9jf09fWYIXFjgv7DKJEvDjtgfATx1ScWHdTCsf+tufFS5M1bAa4AumVBKPhSQ==}
@@ -6336,6 +6342,8 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource-variable/manrope@5.3.0': {}
 
   '@fontsource/maple-mono@5.3.0': {}
 

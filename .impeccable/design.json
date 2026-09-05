@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-06T02:12:49Z",
+  "title": "Design System: Violet 公开前台新视觉世界",
+  "extensions": {
+    "colorMeta": {
+      "coral-light": { "role": "primary", "displayName": "浅色暖珊瑚", "canonical": "oklch(0.625 0.19 25)", "tonalRamp": ["oklch(0.15 0.19 25)", "oklch(0.25 0.19 25)", "oklch(0.35 0.19 25)", "oklch(0.45 0.19 25)", "oklch(0.55 0.19 25)", "oklch(0.65 0.19 25)", "oklch(0.8 0.19 25)", "oklch(0.95 0.19 25)"] },
+      "on-coral-light": { "role": "neutral", "displayName": "浅色珊瑚前景", "canonical": "oklch(0.99 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "coral-dark": { "role": "primary", "displayName": "深色暖珊瑚", "canonical": "oklch(0.72 0.15 22)", "tonalRamp": ["oklch(0.15 0.15 22)", "oklch(0.25 0.15 22)", "oklch(0.35 0.15 22)", "oklch(0.45 0.15 22)", "oklch(0.55 0.15 22)", "oklch(0.65 0.15 22)", "oklch(0.8 0.15 22)", "oklch(0.95 0.15 22)"] },
+      "coral-wash-light": { "role": "primary", "displayName": "浅色珊瑚薄雾", "canonical": "oklch(0.95 0.025 25)", "tonalRamp": ["oklch(0.15 0.025 25)", "oklch(0.25 0.025 25)", "oklch(0.35 0.025 25)", "oklch(0.45 0.025 25)", "oklch(0.55 0.025 25)", "oklch(0.65 0.025 25)", "oklch(0.8 0.025 25)", "oklch(0.95 0.025 25)"] },
+      "coral-wash-dark": { "role": "primary", "displayName": "深色珊瑚薄雾", "canonical": "oklch(0.25 0.025 22)", "tonalRamp": ["oklch(0.15 0.025 22)", "oklch(0.25 0.025 22)", "oklch(0.35 0.025 22)", "oklch(0.45 0.025 22)", "oklch(0.55 0.025 22)", "oklch(0.65 0.025 22)", "oklch(0.8 0.025 22)", "oklch(0.95 0.025 22)"] },
+      "canvas-light": { "role": "neutral", "displayName": "近白画布", "canonical": "oklch(0.985 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "ink-light": { "role": "neutral", "displayName": "浅色主题主墨色", "canonical": "oklch(0.235 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "paper-light": { "role": "neutral", "displayName": "白色纸面", "canonical": "oklch(1 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "muted-surface-light": { "role": "neutral", "displayName": "浅色静音表面", "canonical": "oklch(0.96 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "muted-ink-light": { "role": "neutral", "displayName": "浅色静音文字", "canonical": "oklch(0.5 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "hairline-light": { "role": "neutral", "displayName": "浅色发丝边界", "canonical": "oklch(0.895 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "canvas-dark": { "role": "neutral", "displayName": "柔和炭黑画布", "canonical": "oklch(0.17 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "ink-dark": { "role": "neutral", "displayName": "深色主题主墨色", "canonical": "oklch(0.92 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "panel-dark": { "role": "neutral", "displayName": "深色面板", "canonical": "oklch(0.205 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "muted-surface-dark": { "role": "neutral", "displayName": "深色静音表面", "canonical": "oklch(0.235 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "muted-ink-dark": { "role": "neutral", "displayName": "深色静音文字", "canonical": "oklch(0.7 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "hairline-dark": { "role": "neutral", "displayName": "深色发丝边界", "canonical": "oklch(0.92 0 0 / 12%)", "tonalRamp": ["oklch(0.15 0 0 / 12%)", "oklch(0.25 0 0 / 12%)", "oklch(0.35 0 0 / 12%)", "oklch(0.45 0 0 / 12%)", "oklch(0.55 0 0 / 12%)", "oklch(0.65 0 0 / 12%)", "oklch(0.8 0 0 / 12%)", "oklch(0.95 0 0 / 12%)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Identity Display", "purpose": "首页身份句；基础字号在 sm 与 lg 断点递增。" },
+      "headline": { "displayName": "Section Headline", "purpose": "最近内容、发布足迹与发现区的标题。" },
+      "title": { "displayName": "Publication Title", "purpose": "发布目录与动态中的短标题。" },
+      "body": { "displayName": "Reading Body", "purpose": "身份简介与解释性文字。" },
+      "label": { "displayName": "Date and Meta", "purpose": "日期、内容类型与年份；搭配等宽数字。" }
+    },
+    "shadows": [
+      {
+        "name": "touch-low",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "purpose": "社交胶囊与 RSS 动作的静止触感。"
+      },
+      {
+        "name": "touch-hover",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "RSS 动作悬停时短暂增强。"
+      },
+      {
+        "name": "portrait-light",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)",
+        "purpose": "浅色主题真实灰度头像的宽环境阴影。"
+      },
+      {
+        "name": "portrait-dark",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2)",
+        "purpose": "深色主题真实灰度头像的宽环境阴影。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "footer-color",
+        "value": "color 180ms ease",
+        "purpose": "页脚链接的低调颜色响应。"
+      },
+      {
+        "name": "control-response",
+        "value": "200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "社交胶囊、主动作、目录行与发现链接的颜色、位移或阴影响应。"
+      },
+      {
+        "name": "section-spring",
+        "value": "spring(stiffness: 130, damping: 22, mass: 0.9)",
+        "purpose": "发布足迹与发现区的进入响应；最近内容使用 damping 21。"
+      },
+      {
+        "name": "portrait-spring",
+        "value": "spring(stiffness: 220, damping: 20, mass: 0.8)",
+        "purpose": "头像 hover 上移 6px 并旋转 -1deg；减弱动效时禁用。"
+      },
+      {
+        "name": "footprint-spring",
+        "value": "spring(stiffness: 150, damping: 18, delay: monthIndex × 25ms + itemIndex × 35ms)",
+        "purpose": "发布足迹按月份与条目轻量错峰。"
+      },
+      {
+        "name": "discovery-spring",
+        "value": "spring(stiffness: 160, damping: 18, delay: index × 45ms)",
+        "purpose": "发现路径按真实顺序轻量错峰。"
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary RSS Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "仅在站点配置 RSS 时出现的暖珊瑚胶囊主动作。",
+      "html": "<a class=\"ds-rss-action\" href=\"#rss\">订阅 RSS</a>",
+      "css": ".ds-rss-action { display: inline-flex; align-items: center; justify-content: center; padding: 0.625rem 1.25rem; border: 0; border-radius: 9999px; background: oklch(0.625 0.19 25); color: oklch(0.99 0 0); font: 500 0.875rem/1.25rem -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; text-decoration: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-rss-action:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); } .ds-rss-action:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 4px; } .ds-rss-action:active { transform: translateY(0); } @media (prefers-reduced-motion: reduce) { .ds-rss-action { transition: none; } }"
+    },
+    {
+      "name": "Social Pill Link",
+      "kind": "chip",
+      "refersTo": "social-pill",
+      "description": "真实社交配置生成的纸面胶囊入口。",
+      "html": "<a class=\"ds-social-pill\" href=\"#github\"><svg class=\"ds-social-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"6\" cy=\"5\" r=\"2\"></circle><circle cx=\"18\" cy=\"6\" r=\"2\"></circle><circle cx=\"6\" cy=\"19\" r=\"2\"></circle><path d=\"M6 7v10M8 7c4 0 4-1 8-1\"></path></svg><span class=\"ds-social-label\">GitHub</span></a>",
+      "css": ".ds-social-pill { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.875rem; border: 1px solid oklch(0.895 0 0); border-radius: 9999px; background: oklch(1 0 0); color: oklch(0.5 0 0); font: 400 0.875rem/1.25rem -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; text-decoration: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), color 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-social-icon { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-social-pill:hover { color: oklch(0.625 0.19 25); border-color: color-mix(in oklch, oklch(0.625 0.19 25), transparent 60%); transform: translateY(-2px); } .ds-social-pill:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 4px; } .ds-social-pill:active { transform: translateY(0); } @media (prefers-reduced-motion: reduce) { .ds-social-pill { transition: none; } }"
+    },
+    {
+      "name": "Publication Index Row",
+      "kind": "card",
+      "refersTo": "publication-row",
+      "description": "不套卡片外壳的发布标题与日期目录行。",
+      "html": "<a class=\"ds-publication-row\" href=\"#publication\"><span class=\"ds-publication-title\">Cookie 安全三属性分别防什么？</span><time class=\"ds-publication-date\">2026.08.13</time></a>",
+      "css": ".ds-publication-row { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.75rem; border-radius: 0.625rem; background: transparent; color: oklch(0.235 0 0); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; text-decoration: none; transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-publication-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; font-weight: 500; transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-publication-date { flex: none; color: oklch(0.5 0 0); font-size: 0.75rem; font-variant-numeric: tabular-nums; } .ds-publication-row:hover { background: oklch(0.95 0.025 25); } .ds-publication-row:hover .ds-publication-title { color: oklch(0.625 0.19 25); } .ds-publication-row:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 0; }"
+    },
+    {
+      "name": "Publication Activity Row",
+      "kind": "custom",
+      "refersTo": "activity-node",
+      "description": "用发丝线、珊瑚节点和真实日期组成的发布动态。",
+      "html": "<article class=\"ds-activity-row\"><span class=\"ds-activity-node\" aria-hidden=\"true\"><span class=\"ds-activity-dot\"></span></span><div class=\"ds-activity-copy\"><p class=\"ds-activity-meta\">发布了文章 · 2026.08.13</p><a class=\"ds-activity-link\" href=\"#activity\">本周看什么｜最近值得一看的 10 部作品</a></div></article>",
+      "css": ".ds-activity-row { position: relative; display: flex; gap: 1rem; padding-left: 2.25rem; color: oklch(0.235 0 0); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; } .ds-activity-row::before { content: \"\"; position: absolute; top: -0.75rem; bottom: -0.75rem; left: 0.75rem; width: 1px; background: oklch(0.895 0 0); } .ds-activity-node { position: absolute; left: 0; z-index: 1; display: flex; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; border: 1px solid color-mix(in oklch, oklch(0.625 0.19 25), transparent 70%); border-radius: 9999px; background: oklch(0.985 0 0); } .ds-activity-dot { width: 0.375rem; height: 0.375rem; border-radius: 9999px; background: oklch(0.625 0.19 25); } .ds-activity-copy { min-width: 0; padding-bottom: 0.25rem; } .ds-activity-meta { margin: 0; color: oklch(0.5 0 0); font-size: 0.75rem; font-variant-numeric: tabular-nums; } .ds-activity-link { display: block; margin-top: 0.25rem; overflow: hidden; color: oklch(0.235 0 0); font-size: 0.875rem; font-weight: 500; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-activity-link:hover { color: oklch(0.625 0.19 25); } .ds-activity-link:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tweet Activity Bubble",
+      "kind": "card",
+      "refersTo": "tweet-bubble",
+      "description": "时间轴中承载短推文的低对比静音气泡。",
+      "html": "<article class=\"ds-tweet-row\"><span class=\"ds-tweet-node\" aria-hidden=\"true\">○</span><div class=\"ds-tweet-copy\"><p class=\"ds-tweet-meta\">@xunrua · 2026.08.20</p><a class=\"ds-tweet-bubble\" href=\"#tweet\">今天把首页的时间线重新整理了一遍。</a></div></article>",
+      "css": ".ds-tweet-row { display: flex; gap: 1rem; color: oklch(0.235 0 0); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; } .ds-tweet-node { display: flex; flex: none; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; border: 1px solid color-mix(in oklch, oklch(0.625 0.19 25), transparent 70%); border-radius: 9999px; background: oklch(0.985 0 0); color: oklch(0.625 0.19 25); font-size: 0.75rem; } .ds-tweet-copy { min-width: 0; } .ds-tweet-meta { margin: 0; color: oklch(0.5 0 0); font-size: 0.75rem; font-variant-numeric: tabular-nums; } .ds-tweet-bubble { display: block; margin-top: 0.5rem; padding: 0.625rem 0.75rem; border-radius: 0.75rem; border-top-left-radius: 0.125rem; background: color-mix(in oklch, oklch(0.96 0 0), transparent 30%); color: oklch(0.235 0 0); font-size: 0.875rem; line-height: 1.5rem; text-decoration: none; transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-tweet-bubble:hover { background: oklch(0.95 0.025 25); } .ds-tweet-bubble:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 0; }"
+    },
+    {
+      "name": "Release Footprint Month",
+      "kind": "custom",
+      "refersTo": "footprint-node",
+      "description": "把同月真实发布堆叠在发丝基线上的可聚焦圆点列。",
+      "html": "<div class=\"ds-footprint-month\"><div class=\"ds-footprint-stack\"><a class=\"ds-footprint-item\" href=\"#first\" aria-label=\"第一篇发布\"></a><a class=\"ds-footprint-item\" href=\"#second\" aria-label=\"第二篇发布\"></a><a class=\"ds-footprint-item\" href=\"#third\" aria-label=\"第三篇发布\"></a></div><span class=\"ds-footprint-anchor\" aria-hidden=\"true\"></span><span class=\"ds-footprint-label\">8月</span></div>",
+      "css": ".ds-footprint-month { position: relative; display: flex; min-height: 8rem; width: 5rem; flex-direction: column; align-items: center; justify-content: flex-end; color: oklch(0.5 0 0); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; } .ds-footprint-month::before { content: \"\"; position: absolute; right: -2.5rem; bottom: 1.75rem; left: -2.5rem; height: 1px; background: color-mix(in oklch, oklch(0.625 0.19 25), transparent 45%); } .ds-footprint-stack { z-index: 1; display: flex; min-height: 5rem; flex-direction: column-reverse; align-items: center; justify-content: flex-start; gap: 0.375rem; margin-bottom: 0.75rem; } .ds-footprint-item { display: block; width: 0.625rem; height: 0.625rem; border-radius: 9999px; background: color-mix(in oklch, oklch(0.625 0.19 25), transparent 30%); box-shadow: 0 0 0 4px oklch(0.985 0 0); transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-footprint-item:hover, .ds-footprint-item:focus-visible { background: oklch(0.625 0.19 25); transform: scale(1.5); } .ds-footprint-item:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 4px; } .ds-footprint-anchor { z-index: 1; width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: oklch(0.625 0.19 25); } .ds-footprint-label { margin-top: 0.75rem; font-size: 0.75rem; font-variant-numeric: tabular-nums; } @media (prefers-reduced-motion: reduce) { .ds-footprint-item { transition: none; } }"
+    },
+    {
+      "name": "Discovery Link",
+      "kind": "nav",
+      "refersTo": "discovery-link",
+      "description": "发现区中可换行平铺的图标与中文路径。",
+      "html": "<a class=\"ds-discovery-link\" href=\"#notes\"><svg class=\"ds-discovery-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 4h10a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4Z\"></path><path d=\"M9 8h5M9 12h5M9 16h3\"></path></svg><span class=\"ds-discovery-label\">笔记</span></a>",
+      "css": ".ds-discovery-link { display: inline-flex; align-items: center; gap: 0.75rem; color: oklch(0.5 0 0); font: 400 0.875rem/1.25rem -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; text-decoration: none; transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-discovery-icon { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-discovery-link:hover { color: oklch(0.625 0.19 25); transform: translateY(-4px); } .ds-discovery-link:hover .ds-discovery-icon { transform: scale(1.1); } .ds-discovery-link:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 4px; } .ds-discovery-link:active { transform: translateY(0); } @media (prefers-reduced-motion: reduce) { .ds-discovery-link, .ds-discovery-icon { transition: none; } }"
+    },
+    {
+      "name": "Footer Brand Link",
+      "kind": "nav",
+      "refersTo": "footer-mark",
+      "description": "由紧凑 V 方块与真实站名组成的页脚归首页入口。",
+      "html": "<a class=\"ds-footer-brand\" href=\"#home\"><span class=\"ds-footer-mark\" aria-hidden=\"true\">V</span><span class=\"ds-footer-name\">Violet</span></a>",
+      "css": ".ds-footer-brand { display: inline-flex; align-items: center; gap: 0.625rem; border-radius: 0.625rem; color: oklch(0.235 0 0); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif; text-decoration: none; } .ds-footer-mark { display: flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border-radius: 0.625rem; background: oklch(0.235 0 0); color: oklch(0.985 0 0); font-size: 0.875rem; font-weight: 600; } .ds-footer-name { font-size: 0.875rem; font-weight: 600; } .ds-footer-brand:hover .ds-footer-name { color: oklch(0.625 0.19 25); } .ds-footer-brand:focus-visible { outline: 2px solid oklch(0.625 0.19 25); outline-offset: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "安静生长的创作索引",
+    "overview": "“安静生长的创作索引”把 Violet 的公开前台视为一处由真实作者、真实内容和真实时间共同形成的个人空间。它不追求营销转化，也不借巨型刊头、杂志编排或仪表盘式卡片制造声量；身份介绍是序章，文章、笔记、推文、图集与系列按各自意图继续展开。\n\n这个世界以浅色近白或深色柔和炭黑为底，只让暖珊瑚承担少量强调。层级主要来自字体重量、充足留白、轻边界、灰度头像和克制的表面明度差；小幅 spring 与悬停位移提供生命力，但不抢夺内容注意力。所有身份与发布信息来自站点配置或公开数据，缺失时收拢结构，不伪造头像、文案、指标或大块占位。\n\n本规范适用于未来采用这套视觉世界的公开前台页面；当前首页是已经完成终审的首个验证表达。管理后台、实验室和尚未迁移的既存公开页面不在“已经采用”范围内。现有 Header 是兼容边界，本轮没有重写，也不把它定义为这套首页实现的新组件。",
+    "keyCharacteristics": [
+      "中性浅／深底色与低占比暖珊瑚强调",
+      "真实配置与公开内容驱动，缺失数据时收拢而非填充",
+      "排版、留白、细线和小尺度 spring 形成层级",
+      "灰度圆形头像、轻量目录、时间轴与发布足迹构成首页已验证表达"
+    ],
+    "rules": [
+      {
+        "name": "The One Coral Voice Rule",
+        "body": "在这套新公开前台视觉世界里，暖珊瑚是唯一彩色强调；不以紫色呼应 Violet 名称，也不把这条限制外推到尚未迁移的既存实验页或后台。",
+        "section": "colors"
+      },
+      {
+        "name": "The Personal Scale Rule",
+        "body": "展示字体只服务作者身份锚点；内容区标题保持中等尺度，不用巨型刊头、编号或全大写标签模拟杂志与简报。",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat at Rest Rule",
+        "body": "内容表面默认平放；只有明确可交互的胶囊、主动作和身份头像可以获得阴影，列表与区段不得被包成等权悬浮卡片。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 让真实作者配置、公开内容和发布时间决定版面，并在数据缺失时收拢对应区域。",
+      "Do 用暖珊瑚只标记身份、动作、焦点和时间节点，用中性色与留白承担其余层级。",
+      "Do 保持浅色与深色主题、键盘焦点、触摸布局和 `prefers-reduced-motion` 的完整表达。",
+      "Do 把首页视为已验证表达，并将同一视觉原则逐页迁移到未来公开前台，而不是宣称全仓库已经完成换装。"
+    ],
+    "donts": [
+      "Don't 在这套新公开前台世界中加入紫色、霓虹色或多强调色竞争。",
+      "Don't 使用巨型刊头、杂志／简报式编号、Swiss-editorial 排版、终端面板或仪表盘卡片网格。",
+      "Don't 伪造头像、作者故事、发布指标、推荐语、占位内容或与真实创作无关的大幅图片。",
+      "Don't 在设计文档中记录未由 Violet 当前实现验证的组件、代码或品牌资产。",
+      "Don't 把未修改的 Header 描述为本轮新设计产物，或借本规范承诺重写它。"
+    ]
+  }
+}
