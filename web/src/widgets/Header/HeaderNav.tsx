@@ -34,8 +34,9 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 
 	const activePrimary = primaryItems.find((item) => matchesRoute(pathname, item));
-	const secondaryActive = secondaryItems.some(
-		(item) => item.type === "route" && matchesRoute(pathname, item),
+	// 当前激活的二级项（若当前路由落在次级导航，「更多」按钮改显示该项名称）
+	const activeSecondary = secondaryItems.find(
+		(item): item is NavRouteItem => item.type === "route" && matchesRoute(pathname, item),
 	);
 
 	// 当前激活的主分段值
@@ -67,10 +68,9 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 				segments={segments}
 				rounded="full"
 				size="sm"
-				className="bg-transparent p-0"
 				indicatorClassName="bg-foreground shadow-xs"
 				activeItemClassName="text-background font-semibold"
-				itemClassName="h-8 rounded-full px-3 text-xs transition-colors duration-150"
+				itemClassName="rounded-full px-3 text-xs transition-colors duration-150"
 			/>
 
 			{/* 次级导航下拉网格 */}
@@ -79,17 +79,28 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
-							aria-label="更多页面"
-							aria-current={secondaryActive ? "page" : undefined}
+							aria-label={
+								activeSecondary ? `${activeSecondary.label} 等更多页面` : "更多页面"
+							}
+							aria-current={activeSecondary ? "page" : undefined}
 							className={cn(
 								"group flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors",
-								secondaryActive || browseOpen
+								activeSecondary || browseOpen
 									? "bg-foreground text-background shadow-xs"
 									: "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
 							)}
 						>
-							<LayoutGrid className="size-3.5 shrink-0" />
-							<span>更多</span>
+							{activeSecondary ? (
+								<>
+									<activeSecondary.icon className="size-3.5 shrink-0" />
+									<span>{activeSecondary.label}</span>
+								</>
+							) : (
+								<>
+									<LayoutGrid className="size-3.5 shrink-0" />
+									<span>更多</span>
+								</>
+							)}
 							<ChevronDown
 								className={cn(
 									"size-3 shrink-0 transition-transform duration-200",

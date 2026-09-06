@@ -1,4 +1,3 @@
-import { useMusicUIStore } from "@features/music/model/ui-store";
 import { useSessionStore } from "@shared/api/session";
 import { useMe } from "@/features/auth/api/queries";
 
@@ -25,31 +24,27 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 	const sessionActive = useSessionStore((s) => s.sessionActive);
 	const enabled = isAuthenticated || sessionActive;
 	const { data: user } = useMe({ enabled });
-	const openMusic = useMusicUIStore((s) => s.open);
-	const handleAction = (action: string) => {
-		if (action === "open-music") openMusic();
-	};
 
 	return (
 		<header
 			style={{ viewTransitionName: "site-header" }}
 			className="pointer-events-none sticky top-0 z-40 w-full pt-2.5 pb-1"
 		>
-			<div className="container mx-auto flex h-10 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
+			<div className="container relative mx-auto flex h-10 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
 				{/* 左段：Logo 胶囊 */}
 				<div className="flex shrink-0 items-center">
 					<HeaderLogo />
 				</div>
 
-				{/* 中段：主导航船坞胶囊（桌面端居中，移动端自动隐藏） */}
-				<div className="hidden items-center justify-center lg:flex">
-					<HeaderNav onAction={handleAction} />
+				{/* 中段：主导航船坞胶囊（相对页面绝对居中，不受左右胶囊宽度影响） */}
+				<div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
+					<HeaderNav />
 				</div>
 
 				{/* 右段：工具与鉴权操作胶囊（内嵌移动端抽屉触发器） */}
 				<div className="flex shrink-0 items-center justify-end">
-					<HeaderActions user={user} onAction={handleAction}>
-						<HeaderMobile onAction={handleAction} />
+					<HeaderActions user={user}>
+						<HeaderMobile />
 					</HeaderActions>
 				</div>
 			</div>
