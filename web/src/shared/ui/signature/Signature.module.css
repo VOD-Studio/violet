@@ -1,0 +1,107 @@
+.root {
+	position: relative;
+	display: inline-flex;
+	align-items: baseline;
+	user-select: none;
+	font-family: var(--font-signature, "Alex Brush", cursive);
+	line-height: 1;
+	vertical-align: middle;
+}
+
+/* 尺寸档位 */
+.sizeSm {
+	font-size: 1.625rem;
+}
+
+.sizeMd {
+	font-size: 2.375rem;
+}
+
+.sizeLg {
+	font-size: 3.25rem;
+}
+
+/* 墨水颜色变体 */
+.variantDefault {
+	color: var(--color-foreground);
+}
+
+.variantPrimary {
+	color: var(--color-primary);
+}
+
+.variantMuted {
+	color: var(--color-muted-foreground);
+}
+
+/* 手写文字本体层 */
+.text {
+	display: inline-block;
+	white-space: nowrap;
+	font-style: italic;
+	font-weight: 400;
+	letter-spacing: 0.02em;
+	transform-origin: left center;
+}
+
+/* 动态书写状态：文字由左至右如流水般揭示展开 */
+.drawing .text {
+	animation: signature-text-reveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes signature-text-reveal {
+	0% {
+		clip-path: inset(0 100% 0 0);
+		opacity: 0.2;
+	}
+	20% {
+		opacity: 1;
+	}
+	100% {
+		clip-path: inset(0 0 0 0);
+		opacity: 1;
+	}
+}
+
+/* 手写甩笔波浪尾线 */
+.swashWrapper {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	pointer-events: none;
+	overflow: visible;
+}
+
+.swashPath {
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.8;
+	opacity: 0.85;
+}
+
+.drawing .swashPath {
+	stroke-dasharray: 120;
+	stroke-dashoffset: 120;
+	animation: signature-swash-draw 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.52s forwards;
+}
+
+@keyframes signature-swash-draw {
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+/* 减弱动态无障碍降级 */
+@media (prefers-reduced-motion: reduce) {
+	.drawing .text {
+		animation: none;
+		clip-path: none;
+		opacity: 1;
+	}
+	.drawing .swashPath {
+		animation: none;
+		stroke-dashoffset: 0;
+	}
+}

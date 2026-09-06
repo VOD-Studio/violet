@@ -2,6 +2,7 @@ import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
+import { Signature } from "@shared/ui/signature";
 import { ArrowDown, ArrowRight, Mail, Rss, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
@@ -141,6 +142,9 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 										{secondaryBio}
 									</p>
 								) : null}
+								<div className="flex justify-end pt-0.5 pr-2">
+									<Signature name={owner} size="sm" variant="muted" />
+								</div>
 							</div>
 						</blockquote>
 
