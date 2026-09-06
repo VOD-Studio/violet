@@ -13,7 +13,7 @@ import { fetchTimeline } from "@features/tweets/api/queries";
 import { SITE_URL } from "@shared/config/env";
 import { createFileRoute } from "@tanstack/react-router";
 import type { HomeSnapshot } from "@widgets/HomeExperience";
-import HomeExperience from "@widgets/HomeExperience";
+import HomeExperience, { HomeExperienceSkeleton } from "@widgets/HomeExperience";
 
 const HOME_POST_LIMIT = 6;
 const HOME_NOTE_LIMIT = 3;
@@ -25,8 +25,10 @@ function HomePage() {
 	const { snapshot } = Route.useLoaderData();
 	return <HomeExperience snapshot={snapshot} />;
 }
-
 export const Route = createFileRoute("/")({
+	pendingComponent: HomeExperienceSkeleton,
+	pendingMs: 0,
+	pendingMinMs: 200,
 	loader: async ({ context }) => {
 		const queryClient = context.queryClient;
 		const settings = await queryClient
