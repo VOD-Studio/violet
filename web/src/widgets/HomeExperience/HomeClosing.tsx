@@ -40,7 +40,7 @@ export function HomeClosing({ settings }: HomeClosingProps) {
 			>
 				{/* 诗意寄语大字 */}
 				<div className="space-y-2">
-					<p className="font-serif text-2xl font-normal tracking-[0.1em] text-foreground/90 sm:text-3xl">
+					<p className="font-serif text-2xl font-normal tracking-widest text-foreground/90 sm:text-3xl">
 						{greeting.title}
 					</p>
 					<h2 className="font-serif text-2xl font-normal tracking-[0.08em] text-foreground/90 sm:text-3xl">
