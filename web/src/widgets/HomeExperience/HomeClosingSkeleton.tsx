@@ -3,10 +3,7 @@ import { Skeleton } from "@shared/ui/base/skeleton";
 /** 首页探索导航专属骨架屏（对齐诗意双核与底部自然消融层）。 */
 export function HomeClosingSkeleton() {
 	return (
-		<section
-			aria-label="正在加载站点导航"
-			className="relative overflow-hidden pt-28 sm:pt-32 lg:pt-36"
-		>
+		<section className="relative overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">
 			<div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
 				{/* 诗意大字骨架 */}
 				<div className="space-y-2.5 flex flex-col items-center">
@@ -38,16 +35,6 @@ export function HomeClosingSkeleton() {
 					<Skeleton className="h-4 w-14 rounded" />
 				</div>
 			</div>
-
-			{/* 底部消融交接带占位 */}
-			<div
-				aria-hidden
-				className="relative z-1 mt-20 -mb-px h-12 w-full md:h-16"
-				style={{
-					background:
-						"linear-gradient(to bottom, transparent, color-mix(in oklab, var(--primary) 4%, var(--background)))",
-				}}
-			/>
 		</section>
 	);
 }

@@ -23,7 +23,8 @@ interface SocialLink {
 
 /** 首页首屏围绕个人介绍与头像关系组织，不改变站点 Header。 */
 export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
-	const siteName = settings?.site_name?.trim() || "Violet";
+	const rawName = settings?.site_name?.trim();
+	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
 	const domain =
 		settings?.site_url?.replace(/^https?:\/\//, "").replace(/\/$/, "") || "xunrua.top";
 	const owner = settings?.github_username?.trim() || domain.split(".")[0] || siteName;

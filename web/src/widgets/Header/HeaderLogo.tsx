@@ -9,9 +9,11 @@ import { Link } from "@tanstack/react-router";
  */
 const HeaderLogo = () => {
 	const { data } = useSettings();
+	const rawName = data?.site_name?.trim();
+	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
 	return (
 		<Link to="/" className="block truncate font-mono text-xl font-bold tracking-tight">
-			{data?.site_name ?? "Blog"}
+			{siteName}
 		</Link>
 	);
 };

@@ -5,21 +5,20 @@ import { ArrowUpRight } from "lucide-react";
 const Footer = () => {
 	const { data } = useSettings();
 	const year = new Date().getFullYear();
-	const siteName = data?.site_name?.trim() || "Violet";
+	const rawName = data?.site_name?.trim();
+	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
 	const bio = data?.tagline?.trim() || "Stay hungry. Stay foolish.";
 	const rawDomain = data?.site_url?.replace(/^https?:\/\//, "").replace(/\/$/, "");
 	const displayDomain =
 		rawDomain && !rawDomain.includes("localhost") && !rawDomain.includes("127.0.0.1")
 			? rawDomain
 			: "";
+	const footerText =
+		data?.footer_text?.trim()?.replace(/My Blog/g, "Violet") ||
+		`© ${year} ${siteName}. All rights reserved.`;
 
 	return (
-		<footer
-			className="relative z-1 pb-12 pt-4 text-foreground"
-			style={{
-				background: "color-mix(in oklab, var(--primary) 4%, var(--background))",
-			}}
-		>
+		<footer className="relative z-1 pb-12 pt-8 bg-background text-foreground">
 			<div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
 				{/* 主内容双栏：左侧品牌与格言，右侧三列导航 */}
 				<div className="flex flex-col justify-between gap-12 md:flex-row md:gap-16">
@@ -178,9 +177,7 @@ const Footer = () => {
 							</>
 						) : null}
 					</div>
-					<p className="tabular-nums">
-						{data?.footer_text?.trim() || `© ${year} ${siteName}. All rights reserved.`}
-					</p>
+					<p className="tabular-nums">{footerText}</p>
 				</div>
 			</div>
 		</footer>

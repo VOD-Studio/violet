@@ -31,7 +31,7 @@ export function HomeClosing({ settings }: HomeClosingProps) {
 	};
 
 	return (
-		<section className="relative overflow-hidden pt-28 sm:pt-32 lg:pt-36">
+		<section className="relative overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">
 			<motion.div
 				initial={false}
 				whileInView={{ opacity: 1, y: 0 }}
@@ -139,16 +139,6 @@ export function HomeClosing({ settings }: HomeClosingProps) {
 					</ul>
 				</nav>
 			</motion.div>
-
-			{/* 底部自然渐变消融交接带（无 box-shadow，纯净渐变过渡入页脚） */}
-			<div
-				aria-hidden
-				className="relative z-1 mt-20 -mb-px h-12 w-full md:h-16"
-				style={{
-					background:
-						"linear-gradient(to bottom, transparent, color-mix(in oklab, var(--primary) 4%, var(--background)))",
-				}}
-			/>
 		</section>
 	);
 }
