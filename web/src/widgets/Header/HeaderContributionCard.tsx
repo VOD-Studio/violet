@@ -11,6 +11,7 @@ import { GithubIcon } from "@shared/ui/icons";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Mail, Sparkles } from "lucide-react";
 import { useMemo } from "react";
+import { HeaderContributionModules } from "./HeaderContributionModules";
 
 interface HeaderContributionCardProps {
 	onNavigate?: () => void;
@@ -64,7 +65,7 @@ interface DayCell {
  *
  * 借鉴参考站设计：
  * - 左侧：头像身份、社交矩阵与最近 3 个月（13 周 × 7 天）日粒度开源贡献热力图；
- * - 右侧：时光倒计时（距周末/月底/年底）与年度历程进度条。
+ * - 右侧：时光倒计时（距周末/月底/年底）、可跳转模块入口网格（人设等）与年度历程进度条。
  */
 export function HeaderContributionCard({ onNavigate }: HeaderContributionCardProps) {
 	const { data: settings } = useSettings();
@@ -86,8 +87,6 @@ export function HeaderContributionCard({ onNavigate }: HeaderContributionCardPro
 		: "";
 	const avatar = configuredAvatar ? avatarUrl(configuredAvatar, ownerName) : githubAvatar;
 	const email = settings?.social_email?.trim() || "";
-
-	// 近 13 周 × 7 天的日粒度热力矩阵：窗口右端对齐今天（最后一格即今天，无未来空位）
 	const { weeks, monthTicks, todayKey } = useMemo(() => {
 		const countMap = new Map<string, number>();
 		for (const c of githubData?.contributions ?? []) {
@@ -132,7 +131,7 @@ export function HeaderContributionCard({ onNavigate }: HeaderContributionCardPro
 	};
 
 	return (
-		<div className="w-[450px] max-w-[calc(100vw-2rem)] p-1 text-foreground">
+		<div className="w-112.5 max-w-[calc(100vw-2rem)] p-1 text-foreground">
 			<div className="grid grid-cols-1 gap-5 sm:grid-cols-[1.25fr_1fr]">
 				{/* 左侧：站长身份、社交与开源热力图 */}
 				<div className="space-y-4">
@@ -272,14 +271,14 @@ export function HeaderContributionCard({ onNavigate }: HeaderContributionCardPro
 
 						<TooltipProvider>
 							<div
-								className="flex gap-[3px]"
+								className="flex gap-0.75"
 								role="img"
 								aria-label="近 3 个月开源贡献热力图"
 							>
 								{weeks.map((week, wIndex) => (
 									<div
 										key={week[0]?.key ?? wIndex}
-										className="flex min-w-0 flex-1 flex-col gap-[3px]"
+										className="flex min-w-0 flex-1 flex-col gap-0.75"
 									>
 										{week.map((day) => {
 											const isToday = day.key === todayKey;
@@ -309,7 +308,7 @@ export function HeaderContributionCard({ onNavigate }: HeaderContributionCardPro
 						</TooltipProvider>
 
 						{/* 月份刻度行：与热力图列严格等宽对齐 */}
-						<div className="mt-1.5 flex gap-[3px]" aria-hidden="true">
+						<div className="mt-1.5 flex gap-0.75" aria-hidden="true">
 							{monthTicks.map((tick, i) => (
 								<span
 									key={i}
@@ -324,28 +323,33 @@ export function HeaderContributionCard({ onNavigate }: HeaderContributionCardPro
 
 				{/* 右侧：时光倒计时与里程碑进度 */}
 				<div className="flex flex-col justify-between border-t border-border/40 pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
-					{/* 倒计时列表 */}
-					<div className="space-y-3 font-mono">
-						<div className="flex items-center justify-between">
-							<span className="text-xs text-muted-foreground">距周末</span>
-							<span className="text-sm font-bold text-foreground tabular-nums">
-								{daysToWeekend}天
-							</span>
+					{/* 上半区：倒计时与独立模块顺排 */}
+					<div className="space-y-3.5">
+						{/* 倒计时列表 */}
+						<div className="space-y-2.5 font-mono">
+							<div className="flex items-center justify-between">
+								<span className="text-xs text-muted-foreground">距周末</span>
+								<span className="text-sm font-bold text-foreground tabular-nums">
+									{daysToWeekend}天
+								</span>
+							</div>
+							<div className="flex items-center justify-between">
+								<span className="text-xs text-muted-foreground">距月底</span>
+								<span className="text-sm font-bold text-foreground tabular-nums">
+									{daysToEndOfMonth}天
+								</span>
+							</div>
+							<div className="flex items-center justify-between">
+								<span className="text-xs text-muted-foreground">距年底</span>
+								<span className="text-sm font-bold text-foreground tabular-nums">
+									{daysToEndOfYear}天
+								</span>
+							</div>
 						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-xs text-muted-foreground">距月底</span>
-							<span className="text-sm font-bold text-foreground tabular-nums">
-								{daysToEndOfMonth}天
-							</span>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-xs text-muted-foreground">距年底</span>
-							<span className="text-sm font-bold text-foreground tabular-nums">
-								{daysToEndOfYear}天
-							</span>
-						</div>
-					</div>
 
+						{/* 独立模块区：抽取为独立组件，支持后续多模块统一配置与渲染 */}
+						<HeaderContributionModules onNavigate={onNavigate} />
+					</div>
 					{/* 进度里程碑 */}
 					<div className="mt-4 space-y-3 border-t border-border/40 pt-3">
 						<div>
