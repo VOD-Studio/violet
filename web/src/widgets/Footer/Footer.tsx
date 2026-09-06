@@ -80,16 +80,16 @@ const Footer = () => {
 							</ul>
 						</div>
 
-						{/* 专栏 2：创作 */}
+						{/* 专栏 2：著述 */}
 						<div className="space-y-3">
-							<p className="font-medium text-foreground/90">创作</p>
+							<p className="font-medium text-foreground/90">著述</p>
 							<ul className="space-y-2 text-muted-foreground/75">
 								<li>
 									<Link
 										to="/blog"
 										className="transition-colors hover:text-foreground"
 									>
-										深度文章
+										文心长墨
 									</Link>
 								</li>
 								<li>
@@ -97,7 +97,7 @@ const Footer = () => {
 										to="/notes"
 										className="transition-colors hover:text-foreground"
 									>
-										战地笔记
+										求索札记
 									</Link>
 								</li>
 								<li>
@@ -105,7 +105,7 @@ const Footer = () => {
 										to="/series"
 										className="transition-colors hover:text-foreground"
 									>
-										专栏系列
+										长卷连载
 									</Link>
 								</li>
 								<li>
@@ -113,7 +113,7 @@ const Footer = () => {
 										to="/galleries"
 										className="transition-colors hover:text-foreground"
 									>
-										视觉图集
+										光影撷影
 									</Link>
 								</li>
 							</ul>
