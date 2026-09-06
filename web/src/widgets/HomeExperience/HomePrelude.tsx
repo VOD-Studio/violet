@@ -31,6 +31,12 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 	const owner = settings?.github_username?.trim() || domain.split(".")[0] || siteName;
 	const defaultBio = `这里是 ${siteName}，记录构建、拆解问题与生活思考。收录长文深度思考、技术速查笔记、摄影图集与日常随笔。`;
 	const description = settings?.tagline?.trim() || settings?.bio?.trim() || defaultBio;
+	const bioSentences = description
+		.split(/(?<=[。！？\n])/)
+		.map((s) => s.trim())
+		.filter(Boolean);
+	const leadBio = bioSentences[0] || description;
+	const secondaryBio = bioSentences.slice(1).join(" ");
 	const socials = buildSocialLinks(settings);
 	const avatarCandidates = buildAvatarCandidates(settings, owner);
 	const [failedAvatars, setFailedAvatars] = useState<string[]>([]);
@@ -118,10 +124,25 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 							.
 						</h1>
 
-						{/* 真实自白 */}
-						<p className="text-base leading-relaxed text-muted-foreground/90 font-serif sm:text-lg">
-							{description}
-						</p>
+						{/* Editorial 典雅引言 */}
+						<blockquote className="relative">
+							<span
+								aria-hidden="true"
+								className="pointer-events-none select-none font-serif text-4xl leading-none text-primary/25 sm:text-5xl -mb-2.5 block"
+							>
+								“
+							</span>
+							<div className="space-y-2">
+								<p className="font-serif text-base leading-relaxed text-foreground/90 sm:text-lg">
+									{leadBio}
+								</p>
+								{secondaryBio ? (
+									<p className="font-serif text-sm leading-relaxed text-muted-foreground/75 sm:text-base">
+										{secondaryBio}
+									</p>
+								) : null}
+							</div>
+						</blockquote>
 
 						{/* 创作足迹微指标 */}
 						<div
