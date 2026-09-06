@@ -84,6 +84,10 @@ export function Segmented<V extends string = string>({
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [sliderStyle, setSliderStyle] = useState<CSSProperties>({});
+	// 滑块是否已完成首次测量。SSR/水合前无法读取 DOM 尺寸，
+	// 此期间滑块保持隐形，激活项退化为自含底色药丸（见下方 itemClasses），
+	// 避免未测量时出现 0 宽竖线与激活文字反色隐形。
+	const [measured, setMeasured] = useState(false);
 
 	const updateSlider = useCallback(() => {
 		const container = containerRef.current;
@@ -99,6 +103,7 @@ export function Segmented<V extends string = string>({
 			width: activeItem.offsetWidth,
 			opacity: 1,
 		});
+		setMeasured(true);
 	}, [activeIndex]);
 
 	// 激活项变化或容器/按钮尺寸变化时重新计算滑块位置
@@ -112,6 +117,8 @@ export function Segmented<V extends string = string>({
 		for (const item of container.querySelectorAll("[data-segment-item]")) {
 			resizeObserver.observe(item);
 		}
+		// 字体就绪后字形宽度可能变化，强制重算一次滑块位置
+		document.fonts?.ready.then(updateSlider).catch(() => {});
 		return () => resizeObserver.disconnect();
 	}, [updateSlider]);
 
@@ -134,7 +141,7 @@ export function Segmented<V extends string = string>({
 					rounded === "full" ? "rounded-full" : "rounded-[calc(var(--radius-lg)-2px)]",
 					indicatorClassName,
 				)}
-				style={sliderStyle}
+				style={measured ? sliderStyle : { opacity: 0 }}
 			/>
 			{segments.map((seg, i) => {
 				const isActive = i === activeIndex;
@@ -143,7 +150,9 @@ export function Segmented<V extends string = string>({
 					rounded === "full" ? "rounded-full" : "rounded-md",
 					block && "flex-1",
 					isActive
-						? (activeItemClassName ?? "text-foreground")
+						? measured
+							? (activeItemClassName ?? "text-foreground")
+							: "bg-foreground text-background"
 						: "text-muted-foreground hover:text-foreground",
 					seg.disabled && !isActive && "hover:text-muted-foreground",
 					itemClassName,
