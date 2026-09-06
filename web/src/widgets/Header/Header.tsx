@@ -1,7 +1,5 @@
 import { useMusicUIStore } from "@features/music/model/ui-store";
 import { useSessionStore } from "@shared/api/session";
-import { cn } from "@shared/lib/utils";
-import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
@@ -32,23 +30,10 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 		if (action === "open-music") openMusic();
 	};
 
-	// scrolled 控制悬浮胶囊的垂直微缩内边距，随滚动平滑过渡
-	const [scrolled, setScrolled] = useState(false);
-
-	useEffect(() => {
-		const handleScroll = () => setScrolled(window.scrollY > 40);
-		handleScroll();
-		window.addEventListener("scroll", handleScroll, { passive: true });
-		return () => window.removeEventListener("scroll", handleScroll);
-	}, []);
-
 	return (
 		<header
 			style={{ viewTransitionName: "site-header" }}
-			className={cn(
-				"pointer-events-none sticky top-0 z-40 w-full transition-all duration-300",
-				scrolled ? "pt-2 pb-1" : "pt-3.5 pb-1",
-			)}
+			className="pointer-events-none sticky top-0 z-40 w-full pt-2.5 pb-1"
 		>
 			<div className="container mx-auto flex h-10 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
 				{/* 左段：Logo 胶囊 */}
