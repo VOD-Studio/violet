@@ -1,0 +1,68 @@
+.host {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+}
+
+.content {
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+}
+
+.contentVisible {
+	opacity: 1;
+}
+
+.image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.probe {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	opacity: 0;
+}
+
+.tiles {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.tile {
+	position: absolute;
+	overflow: hidden;
+	background-repeat: no-repeat;
+	transform: scale(0.32);
+	opacity: 0;
+	animation-name: pixel-reveal-in;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	animation-fill-mode: both;
+	will-change: transform, opacity;
+}
+
+@keyframes pixel-reveal-in {
+	0% {
+		opacity: 0;
+		transform: scale(0.32);
+	}
+
+	40%,
+	100% {
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1);
+	}
+}

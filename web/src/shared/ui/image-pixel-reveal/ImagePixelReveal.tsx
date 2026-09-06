@@ -1,7 +1,12 @@
+import { cn } from "@shared/lib/utils";
 import { useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
+import styles from "./ImagePixelReveal.module.css";
+
 export type PixelRevealVariant = "random" | "ripple" | "diagonal" | "curtain";
+
+type RevealStatus = "loading" | "revealing" | "handoff" | "revealed";
 
 export interface ImagePixelRevealProps {
 	src: string;
@@ -38,17 +43,16 @@ interface TileData {
 	delayMs: number;
 }
 
-/** 伪随机哈希散列函数（保证离散随机分布且确定性可复现） */
+/** 返回可复现的离散随机值。 */
 function hashRandom(index: number, total: number): number {
 	const val = Math.sin((index + 1) * 127.1 + total * 311.7) * 43758.5453;
 	return val - Math.floor(val);
 }
 
 /**
- * ImagePixelReveal: 像素切片矩阵解构展开动效组件
+ * 将图片切成自适应网格，按指定次序展开后无缝交回原图。
  *
- * 将图片在加载完成后切分成自适应的网格切片，按指定变体（random / ripple / diagonal / curtain）
- * 错落缩放淡入，随后无缝交接给原图。支持自定义子组件、多变体与 Reduced Motion 降级。
+ * 支持自定义子组件、多种延迟分布与 Reduced Motion 降级。
  */
 export function ImagePixelReveal({
 	src,
@@ -69,11 +73,41 @@ export function ImagePixelReveal({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const reduceMotion = useReducedMotion();
-	const [status, setStatus] = useState<"loading" | "revealing" | "revealed">("loading");
+	const [status, setStatus] = useState<RevealStatus>("loading");
 	const [tiles, setTiles] = useState<TileData[]>([]);
 	const revealTokenRef = useRef(0);
+	const completionTimerRef = useRef<number | null>(null);
+	const handoffFrameRef = useRef<number | null>(null);
 
-	// 根据变体计算单个瓦片的延迟毫秒数
+	const cancelScheduledCompletion = useCallback(() => {
+		if (completionTimerRef.current !== null) {
+			window.clearTimeout(completionTimerRef.current);
+			completionTimerRef.current = null;
+		}
+		if (handoffFrameRef.current !== null) {
+			window.cancelAnimationFrame(handoffFrameRef.current);
+			handoffFrameRef.current = null;
+		}
+	}, []);
+
+	const completeReveal = useCallback(
+		(currentToken: number) => {
+			if (revealTokenRef.current !== currentToken) return;
+
+			setStatus("handoff");
+			handoffFrameRef.current = window.requestAnimationFrame(() => {
+				handoffFrameRef.current = window.requestAnimationFrame(() => {
+					handoffFrameRef.current = null;
+					if (revealTokenRef.current !== currentToken) return;
+
+					setStatus("revealed");
+					onRevealed?.();
+				});
+			});
+		},
+		[onRevealed],
+	);
+
 	const computeDelay = useCallback(
 		(col: number, row: number, cols: number, rows: number, index: number, total: number) => {
 			switch (variant) {
@@ -100,8 +134,10 @@ export function ImagePixelReveal({
 		[variant, spreadMs],
 	);
 
-	// 触发生成瓦片切片并执行展开动画
 	const triggerReveal = useCallback(() => {
+		cancelScheduledCompletion();
+		const currentToken = ++revealTokenRef.current;
+
 		if (reduceMotion) {
 			setStatus("revealed");
 			onRevealed?.();
@@ -118,7 +154,6 @@ export function ImagePixelReveal({
 			return;
 		}
 
-		// 计算行列数并钳制在 maxTiles 以内
 		let effectiveTileSize = tileSize;
 		let cols = Math.max(1, Math.ceil(width / effectiveTileSize));
 		let rows = Math.max(1, Math.ceil(height / effectiveTileSize));
@@ -138,7 +173,7 @@ export function ImagePixelReveal({
 		const rowHeight = height / rows;
 		const total = cols * rows;
 
-		// 计算背景居中等比覆盖尺寸与偏移
+		// 瓦片背景需复现 object-cover 的缩放与居中裁切。
 		const img = imgRef.current;
 		const natW = img?.naturalWidth || width;
 		const natH = img?.naturalHeight || height;
@@ -171,49 +206,61 @@ export function ImagePixelReveal({
 			}
 		}
 
-		const currentToken = ++revealTokenRef.current;
 		setTiles(nextTiles);
 		setStatus("revealing");
 
-		// 监听最大动画时间完成后落定
+		// 先在完整瓦片层后放入原图，跨过一次实际绘制后再移除瓦片。
 		const totalDurationMs = spreadMs + duration * 1000 + 60;
-		window.setTimeout(() => {
-			if (revealTokenRef.current === currentToken) {
-				setStatus("revealed");
-				onRevealed?.();
-			}
+		completionTimerRef.current = window.setTimeout(() => {
+			completionTimerRef.current = null;
+			completeReveal(currentToken);
 		}, totalDurationMs);
-	}, [reduceMotion, tileSize, maxTiles, spreadMs, duration, computeDelay, onRevealed]);
+	}, [
+		cancelScheduledCompletion,
+		completeReveal,
+		computeDelay,
+		duration,
+		maxTiles,
+		onRevealed,
+		reduceMotion,
+		spreadMs,
+		tileSize,
+	]);
 
-	// 监听 src 切换重置状态
 	useEffect(() => {
+		revealTokenRef.current += 1;
+		cancelScheduledCompletion();
 		setStatus("loading");
 		setTiles([]);
 		const img = imgRef.current;
 		if (img?.complete && img.naturalWidth > 0) {
 			triggerReveal();
 		}
-	}, [triggerReveal]);
+	}, [cancelScheduledCompletion, triggerReveal]);
 
-	// Hover 重播支持
+	useEffect(
+		() => () => {
+			revealTokenRef.current += 1;
+			cancelScheduledCompletion();
+		},
+		[cancelScheduledCompletion],
+	);
 	const handleMouseEnter = () => {
 		if (replayOnHover && status === "revealed") {
 			triggerReveal();
 		}
 	};
 
+	const isContentVisible = status === "handoff" || status === "revealed";
+	const isTileLayerVisible = (status === "revealing" || status === "handoff") && tiles.length > 0;
+
 	return (
 		<div
 			ref={containerRef}
 			onMouseEnter={handleMouseEnter}
-			className={`image-pixel-reveal-host relative isolate overflow-hidden ${className}`}
+			className={cn(styles.host, className)}
 		>
-			{/* 底层真实原图或子组件 */}
-			<div
-				className={`size-full transition-opacity duration-300 ${
-					status === "revealed" ? "opacity-100" : "opacity-0"
-				}`}
-			>
+			<div className={cn(styles.content, isContentVisible && styles.contentVisible)}>
 				{children ? (
 					children
 				) : (
@@ -224,12 +271,12 @@ export function ImagePixelReveal({
 						loading={loading}
 						onLoad={triggerReveal}
 						onError={onError}
-						className={`size-full object-cover ${imgClassName}`}
+						className={cn(styles.image, imgClassName)}
 					/>
 				)}
 			</div>
 
-			{/* 隐藏的探测图片（用于测量 naturalWidth/Height 与 onLoad 事件） */}
+			{/* children 模式仍需真实图片提供尺寸与加载状态。 */}
 			{children ? (
 				<img
 					ref={imgRef}
@@ -239,20 +286,16 @@ export function ImagePixelReveal({
 					loading="eager"
 					onLoad={triggerReveal}
 					onError={onError}
-					className="pointer-events-none absolute inset-0 -z-10 size-full opacity-0"
+					className={styles.probe}
 				/>
 			) : null}
 
-			{/* 瓦片切片动画层 */}
-			{status === "revealing" && tiles.length > 0 ? (
-				<div
-					aria-hidden="true"
-					className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
-				>
+			{isTileLayerVisible ? (
+				<div aria-hidden="true" className={styles.tiles}>
 					{tiles.map((tile) => (
 						<span
 							key={tile.index}
-							className="image-pixel-reveal__tile"
+							className={styles.tile}
 							style={{
 								left: `${tile.x}px`,
 								top: `${tile.y}px`,

@@ -922,30 +922,3 @@ html.theme-vt-freeze *::after {
 		animation: none !important;
 	}
 }
-
-/* 图片像素矩阵解构展开动画（ImagePixelReveal） */
-@keyframes image-pixel-reveal-in {
-	0% {
-		opacity: 0;
-		transform: scale(0.32);
-	}
-	40% {
-		opacity: 1;
-	}
-	100% {
-		opacity: 1;
-		transform: scale(1);
-	}
-}
-
-.image-pixel-reveal__tile {
-	position: absolute;
-	overflow: hidden;
-	background-repeat: no-repeat;
-	transform: scale(0.32);
-	opacity: 0;
-	animation-name: image-pixel-reveal-in;
-	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	animation-fill-mode: both;
-	will-change: transform, opacity;
-}
