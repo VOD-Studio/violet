@@ -62,14 +62,16 @@ func (h *Handler) GetGeneral(w http.ResponseWriter, r *http.Request) {
 // UpdateGeneral 更新基础信息组
 func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		SiteName              *string `json:"site_name"`
-		SiteURL               *string `json:"site_url"`
-		FooterText            *string `json:"footer_text"`
-		PostsPerPage          *int    `json:"posts_per_page"`
-		CommentsEnabled       *bool   `json:"comments_enabled"`
-		CommentsModeration    *bool   `json:"comments_moderation"`
-		TechStack             *string `json:"tech_stack"`
-		CustomEmojiMaxPerUser *int    `json:"custom_emoji_max_per_user"`
+		SiteName                     *string `json:"site_name"`
+		SiteURL                      *string `json:"site_url"`
+		FooterText                   *string `json:"footer_text"`
+		PostsPerPage                 *int    `json:"posts_per_page"`
+		HomeFootprintEnabled         *bool   `json:"home_footprint_enabled"`
+		HomeFootprintAggregationDays *int    `json:"home_footprint_aggregation_days"`
+		CommentsEnabled              *bool   `json:"comments_enabled"`
+		CommentsModeration           *bool   `json:"comments_moderation"`
+		TechStack                    *string `json:"tech_stack"`
+		CustomEmojiMaxPerUser        *int    `json:"custom_emoji_max_per_user"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -80,7 +82,9 @@ func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 		SiteURL:  req.SiteURL, FooterText: req.FooterText,
 		PostsPerPage: req.PostsPerPage, CommentsEnabled: req.CommentsEnabled,
 		CommentsModeration: req.CommentsModeration, TechStack: req.TechStack,
-		CustomEmojiMaxPerUser: req.CustomEmojiMaxPerUser,
+		CustomEmojiMaxPerUser:        req.CustomEmojiMaxPerUser,
+		HomeFootprintEnabled:         req.HomeFootprintEnabled,
+		HomeFootprintAggregationDays: req.HomeFootprintAggregationDays,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

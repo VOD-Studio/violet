@@ -26,13 +26,16 @@ import (
 
 // GeneralView 基础信息组：站点名称/URL/页脚文案/分页/评论开关/技术栈
 type GeneralView struct {
-	SiteName           string `json:"site_name"`
-	SiteURL            string `json:"site_url"`
-	FooterText         string `json:"footer_text"`
-	PostsPerPage       int    `json:"posts_per_page"`
-	CommentsEnabled    bool   `json:"comments_enabled"`
-	CommentsModeration bool   `json:"comments_moderation"`
-	TechStack          string `json:"tech_stack"`
+	SiteName             string `json:"site_name"`
+	SiteURL              string `json:"site_url"`
+	FooterText           string `json:"footer_text"`
+	PostsPerPage         int    `json:"posts_per_page"`
+	HomeFootprintEnabled bool   `json:"home_footprint_enabled"`
+	// HomeFootprintAggregationDays 单个节点聚合天数，合法范围 1–31
+	HomeFootprintAggregationDays int    `json:"home_footprint_aggregation_days"`
+	CommentsEnabled              bool   `json:"comments_enabled"`
+	CommentsModeration           bool   `json:"comments_moderation"`
+	TechStack                    string `json:"tech_stack"`
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（0 表示未配置，前端显示时按 env 默认兜底）
 	CustomEmojiMaxPerUser int `json:"custom_emoji_max_per_user"`
 }
@@ -97,14 +100,16 @@ type CodeRunnerView struct {
 
 func generalView(s domainsettings.SiteSettings) GeneralView {
 	return GeneralView{
-		SiteName:              s.SiteName,
-		SiteURL:               s.SiteURL,
-		FooterText:            s.FooterText,
-		PostsPerPage:          s.PostsPerPage,
-		CommentsEnabled:       s.CommentsEnabled,
-		CommentsModeration:    s.CommentsModeration,
-		TechStack:             s.TechStack,
-		CustomEmojiMaxPerUser: s.CustomEmojiMaxPerUser,
+		SiteName:                     s.SiteName,
+		SiteURL:                      s.SiteURL,
+		FooterText:                   s.FooterText,
+		PostsPerPage:                 s.PostsPerPage,
+		HomeFootprintEnabled:         s.HomeFootprintEnabled,
+		HomeFootprintAggregationDays: s.HomeFootprintAggregationDays,
+		CommentsEnabled:              s.CommentsEnabled,
+		CommentsModeration:           s.CommentsModeration,
+		TechStack:                    s.TechStack,
+		CustomEmojiMaxPerUser:        s.CustomEmojiMaxPerUser,
 	}
 }
 
@@ -174,14 +179,16 @@ func codeRunnerView(s domainsettings.SiteSettings) CodeRunnerView {
 
 // GeneralUpdate 基础信息组更新入参
 type GeneralUpdate struct {
-	SiteName              *string
-	SiteURL               *string
-	FooterText            *string
-	PostsPerPage          *int
-	CommentsEnabled       *bool
-	CommentsModeration    *bool
-	TechStack             *string
-	CustomEmojiMaxPerUser *int
+	SiteName                     *string
+	SiteURL                      *string
+	FooterText                   *string
+	PostsPerPage                 *int
+	HomeFootprintEnabled         *bool
+	HomeFootprintAggregationDays *int
+	CommentsEnabled              *bool
+	CommentsModeration           *bool
+	TechStack                    *string
+	CustomEmojiMaxPerUser        *int
 }
 
 // AuthUpdate 认证组更新入参

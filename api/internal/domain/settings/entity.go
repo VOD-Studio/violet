@@ -12,6 +12,12 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
+const (
+	DefaultHomeFootprintAggregationDays = 7
+	MinHomeFootprintAggregationDays     = 1
+	MaxHomeFootprintAggregationDays     = 31
+)
+
 // SettingsUpdated 站点配置已更新事件
 //
 // 配置以 key-value 存储无聚合根，事件由应用层在批量写入后构造发布。
@@ -38,6 +44,10 @@ type SiteSettings struct {
 	SiteURL string `json:"site_url"`
 	// PostsPerPage 列表页每页文章数（fromMap 默认 10）
 	PostsPerPage int `json:"posts_per_page"`
+	// HomeFootprintEnabled 是否在公开首页显示发布足迹（未配置默认启用）
+	HomeFootprintEnabled bool `json:"home_footprint_enabled"`
+	// HomeFootprintAggregationDays 单个足迹节点聚合的连续天数，范围 1–31（未配置默认 7）
+	HomeFootprintAggregationDays int `json:"home_footprint_aggregation_days"`
 	// CommentsEnabled 是否全局开启评论
 	CommentsEnabled bool `json:"comments_enabled"`
 	// CommentsModeration 评论是否需人工审核后才公开
@@ -131,6 +141,10 @@ type UpdateInput struct {
 	SiteURL *string
 	// PostsPerPage 列表页每页文章数（nil 不更新）
 	PostsPerPage *int
+	// HomeFootprintEnabled 是否显示首页发布足迹（nil 不更新）
+	HomeFootprintEnabled *bool
+	// HomeFootprintAggregationDays 单个足迹节点聚合的连续天数（nil 不更新）
+	HomeFootprintAggregationDays *int
 	// CommentsEnabled 是否开启评论（nil 不更新）
 	CommentsEnabled *bool
 	// CommentsModeration 评论是否需审核（nil 不更新）
@@ -230,11 +244,20 @@ func (s SiteSettings) MergeFrom(m map[string]string) SiteSettings {
 
 // 从 map 还原配置读模型
 func fromMap(m map[string]string) SiteSettings {
-	s := SiteSettings{PostsPerPage: 10}
+	s := SiteSettings{
+		PostsPerPage:                 10,
+		HomeFootprintEnabled:         true,
+		HomeFootprintAggregationDays: DefaultHomeFootprintAggregationDays,
+	}
 	s.SiteName = m["site_name"]
 	s.SiteURL = m["site_url"]
 	if v, ok := parseInt(m["posts_per_page"]); ok {
 		s.PostsPerPage = v
+	}
+	s.HomeFootprintEnabled = parseBoolDefaultTrue(m["home_footprint_enabled"])
+	if v, ok := parseInt(m["home_footprint_aggregation_days"]); ok &&
+		v >= MinHomeFootprintAggregationDays && v <= MaxHomeFootprintAggregationDays {
+		s.HomeFootprintAggregationDays = v
 	}
 	s.CommentsEnabled = m["comments_enabled"] == "true"
 	s.CommentsModeration = m["comments_moderation"] == "true"
