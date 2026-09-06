@@ -18,7 +18,12 @@ const Footer = () => {
 		`© ${year} ${siteName}. All rights reserved.`;
 
 	return (
-		<footer className="relative z-1 pb-12 pt-8 bg-background text-foreground">
+		<footer className="relative z-1 bg-muted/40 pb-14 pt-8 text-foreground transition-colors dark:bg-muted/20">
+			{/* 顶部自然消融渐变带：无任何生硬边框切线，内容区如晨雾般自然晕染过渡 */}
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-gradient-to-b from-transparent to-muted/40 dark:to-muted/20"
+			/>
 			<div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
 				{/* 主内容双栏：左侧品牌与格言，右侧三列导航 */}
 				<div className="flex flex-col justify-between gap-12 md:flex-row md:gap-16">
@@ -32,13 +37,13 @@ const Footer = () => {
 								{siteName}
 							</Link>
 						</div>
-						<p className="text-xs italic leading-relaxed text-muted-foreground/80 font-serif">
+						<p className="font-serif text-xs italic leading-relaxed text-foreground/85">
 							{bio}
 						</p>
-						<p className="text-[11px] leading-normal text-muted-foreground/60 tabular-nums">
+						<p className="text-xs leading-normal text-muted-foreground tabular-nums">
 							© {year} Powered by Violet.
 						</p>
-						<div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground/75">
+						<div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground">
 							<span className="relative flex size-2 items-center justify-center">
 								<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/50 opacity-75" />
 								<span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
@@ -48,11 +53,13 @@ const Footer = () => {
 					</div>
 
 					{/* 右侧三列分组导航 */}
-					<div className="grid grid-cols-3 gap-8 sm:gap-12 md:gap-16 text-xs">
+					<div className="grid grid-cols-3 gap-8 text-xs sm:gap-12 md:gap-16">
 						{/* 专栏 1：关于 */}
 						<div className="space-y-3">
-							<p className="font-medium text-foreground/90">关于</p>
-							<ul className="space-y-2 text-muted-foreground/75">
+							<p className="text-xs font-semibold tracking-wider text-foreground uppercase">
+								关于
+							</p>
+							<ul className="space-y-2.5 text-xs text-foreground/75">
 								<li>
 									<Link
 										to="/about"
@@ -82,8 +89,10 @@ const Footer = () => {
 
 						{/* 专栏 2：著述 */}
 						<div className="space-y-3">
-							<p className="font-medium text-foreground/90">著述</p>
-							<ul className="space-y-2 text-muted-foreground/75">
+							<p className="text-xs font-semibold tracking-wider text-foreground uppercase">
+								著述
+							</p>
+							<ul className="space-y-2.5 text-xs text-foreground/75">
 								<li>
 									<Link
 										to="/blog"
@@ -121,8 +130,10 @@ const Footer = () => {
 
 						{/* 专栏 3：连接 */}
 						<div className="space-y-3">
-							<p className="font-medium text-foreground/90">连接</p>
-							<ul className="space-y-2 text-muted-foreground/75">
+							<p className="text-xs font-semibold tracking-wider text-foreground uppercase">
+								连接
+							</p>
+							<ul className="space-y-2.5 text-xs text-foreground/75">
 								<li>
 									<Link
 										to="/tweets"
@@ -150,7 +161,7 @@ const Footer = () => {
 											className="inline-flex items-center gap-0.5 transition-colors hover:text-foreground"
 										>
 											GitHub
-											<ArrowUpRight className="size-3 text-muted-foreground/40" />
+											<ArrowUpRight className="size-3 text-muted-foreground/60" />
 										</a>
 									</li>
 								) : null}
@@ -160,7 +171,7 @@ const Footer = () => {
 				</div>
 
 				{/* 底部极细行 */}
-				<div className="mt-12 flex flex-col justify-between gap-3 border-t border-border/20 pt-6 text-[11px] text-muted-foreground/60 sm:flex-row sm:items-center">
+				<div className="mt-12 flex flex-col justify-between gap-3 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center">
 					<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
 						{data?.social_rss ? (
 							<a
