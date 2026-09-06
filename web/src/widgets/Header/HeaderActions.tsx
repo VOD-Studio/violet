@@ -5,11 +5,11 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
 import ThemeToggle from "@features/lab/theme/ui";
+import { useMusicUIStore } from "@features/music/model/ui-store";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
-import { Button } from "@shared/ui/base/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -19,13 +19,22 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
-import { CheckCircle2, LayoutDashboard, LogOut, MessageCircle, Search, User } from "lucide-react";
-
+import {
+	CheckCircle2,
+	LayoutDashboard,
+	LogOut,
+	MessageCircle,
+	Music,
+	Search,
+	User,
+} from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface HeaderActionsProps {
 	user?: UserDTO | null;
+	onAction?: (action: string) => void;
+	children?: React.ReactNode;
 }
 
 /**
@@ -41,16 +50,16 @@ interface HeaderActionsProps {
  * 注意：LoginDialog 是**被动**的——仅在受保护请求收到 401 时由 http 拦截器自动
  * 弹出。主动登录走 /login 页面（完整表单 + redirect 回跳）。
  */
-const HeaderActions = ({ user }: HeaderActionsProps) => {
-	const openCommand = useCommandUIStore((s) => s.open);
+const HeaderActions = ({ user, onAction, children }: HeaderActionsProps) => {
 	const logout = useLogout();
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const openCommand = useCommandUIStore((s) => s.open);
 	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
 	// 聊天事件流全局挂载：任意页面收到新消息，聊天图标未读角标即时刷新
 	useChatStream();
-
-	// Cmd/Ctrl + L 直达登录页（仅未登录时生效，已登录无需鉴权）
+	const openMusic = useMusicUIStore((s) => s.open);
+	const isMusicOpen = useMusicUIStore((s) => s.isOpen);
 	useEffect(() => {
 		if (user) return; // 已登录不注册快捷键
 		const handler = (e: KeyboardEvent) => {
@@ -86,15 +95,37 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 	const isAdmin = useHasPermission("admin:access");
 
 	return (
-		<div className="flex items-center gap-2">
-			<Button variant="ghost" size="icon-sm" aria-label="搜索" onClick={openCommand}>
+		<div className="pointer-events-auto flex h-10 items-center gap-1 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 shadow-xs backdrop-blur-md dark:bg-card/85">
+			{/* 搜索命令面板按钮 */}
+			<button
+				type="button"
+				aria-label="搜索 (⌘K)"
+				onClick={openCommand}
+				className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+			>
 				<Search className="size-4" />
-			</Button>
+			</button>
+
+			{/* 音乐播放器触发入口 */}
+			<button
+				type="button"
+				aria-label="音乐播放器"
+				onClick={() => (onAction ? onAction("open-music") : openMusic())}
+				className={cn(
+					"flex size-8 items-center justify-center rounded-full transition-colors",
+					isMusicOpen
+						? "bg-foreground text-background shadow-xs"
+						: "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+				)}
+			>
+				<Music className="size-4" />
+			</button>
+
 			{user && <NotificationBell />}
 			{user && (
 				<Link
 					aria-label="聊天"
-					className="relative inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
+					className="relative inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
 					to="/chat"
 				>
 					<MessageCircle className="size-4" />
@@ -105,10 +136,12 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 					)}
 				</Link>
 			)}
-			<ThemeToggle />
+
+			{/* 主题切换开关 */}
+			<ThemeToggle size="sm" />
 
 			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}
-			<div className="flex w-8 justify-end">
+			<div className="flex size-8 items-center justify-center">
 				{user ? (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
@@ -222,7 +255,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 						aria-label="登录"
 						className={cn(
 							"group flex items-center justify-center rounded-full border border-transparent bg-muted/60 size-8",
-							"transition-all duration-200 hover:border-border/60 hover:bg-accent",
+							"transition-all duration-200 hover:border-border/60 hover:bg-muted",
 							"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-1",
 						)}
 					>
@@ -230,6 +263,9 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 					</Link>
 				)}
 			</div>
+
+			{/* 移动端菜单触发槽位（lg:hidden） */}
+			{children}
 		</div>
 	);
 };
