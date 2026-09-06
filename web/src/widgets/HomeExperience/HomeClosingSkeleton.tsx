@@ -23,17 +23,6 @@ export function HomeClosingSkeleton() {
 						<Skeleton className="h-3.5 w-24 rounded" />
 					</div>
 				</div>
-
-				{/* 下段平铺漫游导航骨架 */}
-				<div className="mt-12 flex justify-center gap-4 text-xs">
-					<Skeleton className="h-4 w-12 rounded" />
-					<span className="text-border/80">·</span>
-					<Skeleton className="h-4 w-10 rounded" />
-					<span className="text-border/80">·</span>
-					<Skeleton className="h-4 w-10 rounded" />
-					<span className="text-border/80">·</span>
-					<Skeleton className="h-4 w-14 rounded" />
-				</div>
 			</div>
 		</section>
 	);

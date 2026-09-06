@@ -1,5 +1,4 @@
 import type { SiteSettings } from "@features/settings/model/types";
-import { Link } from "@tanstack/react-router";
 import { Heart, Rss } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -91,53 +90,6 @@ export function HomeClosing({ settings }: HomeClosingProps) {
 						</span>
 					</a>
 				</div>
-
-				{/* 下段：平铺轻量漫游导航 */}
-				<nav aria-label="全站漫游" className="mt-12">
-					<ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground/75 sm:gap-x-6 sm:text-sm">
-						<li>
-							<Link
-								to="/friends"
-								className="transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
-							>
-								朋友们
-							</Link>
-						</li>
-						<span aria-hidden className="text-border/80">
-							·
-						</span>
-						<li>
-							<Link
-								to="/projects"
-								className="transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
-							>
-								项目
-							</Link>
-						</li>
-						<span aria-hidden className="text-border/80">
-							·
-						</span>
-						<li>
-							<Link
-								to="/galleries"
-								className="transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
-							>
-								图集
-							</Link>
-						</li>
-						<span aria-hidden className="text-border/80">
-							·
-						</span>
-						<li>
-							<Link
-								to="/blog/archive"
-								className="transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
-							>
-								时间归档
-							</Link>
-						</li>
-					</ul>
-				</nav>
 			</motion.div>
 		</section>
 	);
