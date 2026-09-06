@@ -40,7 +40,14 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 							.join("；")}
 					</p>
 
-					<div className="relative h-24">
+					<div className="mb-2 flex items-center justify-end">
+						<span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+							<span className="size-1.5 rounded-full bg-primary" />
+							<span className="font-medium tracking-wide text-primary">今天</span>
+						</span>
+					</div>
+
+					<div className="relative h-20">
 						<div className="absolute inset-x-0 top-8 h-px">
 							<div aria-hidden className="absolute inset-0 bg-border/70" />
 							<motion.div
@@ -69,17 +76,11 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 								key={season.key}
 								aria-hidden
 								style={{ left: `${season.position}%` }}
-								className="absolute top-16 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground"
+								className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground"
 							>
 								{season.label}
 							</span>
 						))}
-						<span
-							aria-hidden
-							className="absolute top-16 right-0 text-[10px] font-medium text-primary"
-						>
-							今
-						</span>
 					</div>
 				</figure>
 			</div>

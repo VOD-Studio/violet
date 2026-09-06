@@ -1,5 +1,6 @@
 import { cn } from "@shared/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
+import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -34,7 +35,7 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 		closeTimer.current = window.setTimeout(() => {
 			closeTimer.current = null;
 			setOpen(false);
-		}, 120);
+		}, 180);
 	};
 
 	useEffect(
@@ -96,7 +97,7 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 				<PopoverContent
 					asChild
 					side="top"
-					sideOffset={8}
+					sideOffset={10}
 					collisionPadding={12}
 					onOpenAutoFocus={(event) => event.preventDefault()}
 					onCloseAutoFocus={(event) => event.preventDefault()}
@@ -104,39 +105,57 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 					onPointerLeave={scheduleClose}
 					onFocusCapture={showPoint}
 					onBlurCapture={scheduleClose}
-					className="w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border-border/60 bg-popover p-3.5 shadow-[0_12px_32px_-18px_rgb(15_23_42/0.3)] data-[state=closed]:duration-150! data-[state=closed]:zoom-out-[0.99]! data-[state=open]:animate-none!"
+					className="w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border/70 bg-popover/95 p-3.5 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] backdrop-blur-xl dark:border-border/50 dark:shadow-[0_24px_50px_-16px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)] data-[state=closed]:duration-150! data-[state=closed]:zoom-out-95! data-[state=open]:animate-none!"
 				>
 					<motion.div
-						initial={reduceMotion ? false : { opacity: 0, y: 6, scale: 0.985 }}
-						animate={{ opacity: 1, y: 0, scale: 1 }}
-						transition={{ duration: reduceMotion ? 0 : 0.22, ease: EASE_OUT }}
-						style={{ transformOrigin: "50% 100%" }}
+						initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 8 }}
+						animate={{ opacity: 1, scale: 1, y: 0 }}
+						transition={{
+							duration: reduceMotion ? 0 : 0.22,
+							ease: [0.16, 1, 0.3, 1],
+						}}
+						style={{
+							transformOrigin:
+								"var(--radix-popover-content-transform-origin, 50% 100%)",
+						}}
 					>
-						<div className="flex items-center justify-between gap-4 text-[10px] text-muted-foreground">
-							<span className="tabular-nums">{periodLabel}</span>
-							<span>{point.items.length} 项</span>
+						<div className="flex items-center justify-between pb-2.5">
+							<span className="inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] font-medium tracking-tight text-foreground/85">
+								<span className="size-1 rounded-full bg-primary/75" />
+								<span className="tabular-nums">{periodLabel}</span>
+							</span>
+							<span className="text-[11px] font-medium text-muted-foreground tabular-nums">
+								{point.items.length} 篇内容
+							</span>
 						</div>
-						<div className="mt-2 max-h-40 overflow-x-hidden overflow-y-auto overscroll-contain scroll-py-1 pr-1 [scrollbar-gutter:stable]">
+						<div className="max-h-48 space-y-0.5 overflow-x-hidden overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent]">
 							{point.items.map((item) => (
 								<HomeContentLink
 									key={item.key}
 									item={item}
-									className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-md border-b border-border/50 px-2 py-2 transition-colors last:border-b-0 hover:bg-accent/60 focus-visible:bg-accent/60 focus-visible:outline-2 focus-visible:outline-primary"
+									className="group flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all duration-150 hover:bg-muted/70 active:scale-[0.985] focus-visible:bg-muted/70 focus-visible:outline-2 focus-visible:outline-primary"
 								>
-									<span className="min-w-0">
-										<span className="block truncate text-xs font-medium text-popover-foreground">
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-xs font-medium text-foreground transition-colors group-hover:text-primary">
 											{item.title}
-										</span>
-										<span className="mt-0.5 block text-[10px] text-muted-foreground">
-											{HOME_KIND_LABEL[item.kind]}
-										</span>
-									</span>
-									<time
-										dateTime={item.publishedAt}
-										className="text-[10px] text-muted-foreground tabular-nums"
-									>
-										{formatHomeDate(item.publishedAt)}
-									</time>
+										</p>
+										<div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+											<span className="font-normal text-muted-foreground/90">
+												{HOME_KIND_LABEL[item.kind]}
+											</span>
+											<span
+												aria-hidden
+												className="size-0.5 rounded-full bg-border"
+											/>
+											<time
+												dateTime={item.publishedAt}
+												className="tabular-nums"
+											>
+												{formatHomeDate(item.publishedAt)}
+											</time>
+										</div>
+									</div>
+									<ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/30 transition-all duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
 								</HomeContentLink>
 							))}
 						</div>
