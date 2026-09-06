@@ -18,11 +18,11 @@ const Footer = () => {
 		`© ${year} ${siteName}. All rights reserved.`;
 
 	return (
-		<footer className="relative z-1 bg-violet-50/60 pb-14 pt-8 text-foreground transition-colors dark:bg-violet-950/20">
-			{/* 顶部自然消融渐变带：淡紫色自然晕染过渡，无生硬边框切线 */}
+		<footer className="relative z-1 bg-[color-mix(in_oklab,rgb(139_92_246)_8%,var(--background))] pb-14 pt-8 text-foreground transition-colors">
+			{/* 顶部自然消融渐变带：淡紫罗兰随主题变量自适应晕染，无生硬边框切线 */}
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-gradient-to-b from-transparent to-violet-50/60 dark:to-violet-950/20"
+				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-[linear-gradient(to_bottom,transparent,color-mix(in_oklab,rgb(139_92_246)_8%,var(--background)))]"
 			/>
 			<div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
 				{/* 主内容双栏：左侧品牌与格言，右侧三列导航 */}
