@@ -46,6 +46,8 @@ export interface SegmentedProps<V extends string = string> {
 	indicatorClassName?: string;
 	/** 单项自定义类名 */
 	itemClassName?: string;
+	/** 激活项自定义类名（如反色高亮 "text-background font-semibold"） */
+	activeItemClassName?: string;
 }
 
 const sizeMap = {
@@ -76,6 +78,7 @@ export function Segmented<V extends string = string>({
 	className,
 	indicatorClassName,
 	itemClassName,
+	activeItemClassName,
 }: SegmentedProps<V>) {
 	const activeIndex = segments.findIndex((s) => s.value === value);
 
@@ -139,7 +142,9 @@ export function Segmented<V extends string = string>({
 					"relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
 					rounded === "full" ? "rounded-full" : "rounded-md",
 					block && "flex-1",
-					isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+					isActive
+						? (activeItemClassName ?? "text-foreground")
+						: "text-muted-foreground hover:text-foreground",
 					seg.disabled && !isActive && "hover:text-muted-foreground",
 					itemClassName,
 				);

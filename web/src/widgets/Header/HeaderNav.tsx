@@ -68,8 +68,9 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 				rounded="full"
 				size="sm"
 				className="bg-transparent p-0"
-				indicatorClassName="bg-background dark:bg-muted/90 shadow-xs border border-border/50"
-				itemClassName="h-8 rounded-full px-3 text-xs font-medium transition-colors duration-150"
+				indicatorClassName="bg-foreground shadow-xs"
+				activeItemClassName="text-background font-semibold"
+				itemClassName="h-8 rounded-full px-3 text-xs transition-colors duration-150"
 			/>
 
 			{/* 次级导航下拉网格 */}
