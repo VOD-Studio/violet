@@ -61,10 +61,10 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 				>
 					<div className="mb-7">
 						<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-							FRESH INK
+							WORKS
 						</p>
 						<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
-							新墨
+							创作
 						</h2>
 					</div>
 

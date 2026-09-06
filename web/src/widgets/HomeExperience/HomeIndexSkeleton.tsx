@@ -1,14 +1,14 @@
 import { Skeleton } from "@shared/ui/base/skeleton";
 
-/** 首页新墨与偶得尺素专属骨架屏。 */
+/** 首页创作与偶得尺素专属骨架屏。 */
 export function HomeIndexSkeleton() {
 	return (
 		<section
-			aria-label="正在加载新墨与动态"
+			aria-label="正在加载创作与动态"
 			className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 lg:px-12 lg:pt-28"
 		>
 			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-16">
-				{/* 左栏：新墨骨架 */}
+				{/* 左栏：创作骨架 */}
 				<div className="min-w-0">
 					<div className="mb-7">
 						<Skeleton className="h-2.5 w-24 rounded" />
