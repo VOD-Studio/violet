@@ -1,10 +1,9 @@
 import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
-import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
+import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
 import type { LucideIcon } from "lucide-react";
 import { ArrowDown, ArrowRight, GitBranch, Mail, Rss, Tv } from "lucide-react";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
 import { formatHomeDate, HOME_KIND_LABEL } from "./home-content";
@@ -22,37 +21,21 @@ interface SocialLink {
 	Icon: LucideIcon;
 }
 
-/** 首页沉浸式首屏：占满视口，支持自定义背景图与景深视差滚动。 */
+/** 首页序章：保持满屏视口空间，以像素解构动效呈现作者形象，突出保留经典的波浪线问候。 */
 export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 	const rawName = settings?.site_name?.trim();
 	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
 	const domain =
 		settings?.site_url?.replace(/^https?:\/\//, "").replace(/\/$/, "") || "xunrua.top";
 	const owner = settings?.github_username?.trim() || domain.split(".")[0] || siteName;
-	const description =
-		settings?.tagline?.trim() ||
-		settings?.bio?.trim() ||
-		`这里是 ${siteName}，收录文章、笔记、图集与推文${postTotal > 0 ? `，目前有 ${postTotal} 篇文章` : ""}。`;
+	const defaultBio = `这里是 ${siteName}，记录构建、拆解问题与生活思考。收录长文深度思考、技术速查笔记、摄影图集与日常随笔。`;
+	const description = settings?.tagline?.trim() || settings?.bio?.trim() || defaultBio;
 	const socials = buildSocialLinks(settings);
 	const avatarCandidates = buildAvatarCandidates(settings, owner);
 	const [failedAvatars, setFailedAvatars] = useState<string[]>([]);
 	const avatar = avatarCandidates.find((source) => !failedAvatars.includes(source)) || "";
-	const reduceMotion = useReducedMotion();
 
-	// 视差滚动容器与位移映射
-	const sectionRef = useRef<HTMLElement>(null);
-	const { scrollYProgress } = useScroll({
-		target: sectionRef,
-		offset: ["start start", "end start"],
-	});
-
-	// 背景层视差：随滚动轻微下移并微放，营造真实纵深景深
-	const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-	const backgroundScale = useTransform(scrollYProgress, [0, 1], [1, 1.06]);
-	// 立体头像轻微反向浮动位移
-	const avatarY = useTransform(scrollYProgress, [0, 1], [0, -32]);
-
-	// 背景大图支持（支持未来配置的 hero_banner_url 或 hero_image）
+	// 背景大图支持（支持后台配置的 hero_banner_url 或 hero_image）
 	const customBanner =
 		(settings as Record<string, unknown> | null)?.hero_banner_url ||
 		(settings as Record<string, unknown> | null)?.hero_image;
@@ -60,88 +43,108 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 
 	return (
 		<section
-			ref={sectionRef}
 			aria-label="首页序章"
 			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden bg-background text-foreground"
 		>
-			{/* 1. 视差背景层（支持自定义大图，无图时展示纯净通透的环境微光） */}
-			<motion.div
+			{/* 1. 细腻环境背景层（纯净原生微光，随主题自适应） */}
+			<div
 				aria-hidden
-				style={reduceMotion ? undefined : { y: backgroundY, scale: backgroundScale }}
-				className="pointer-events-none absolute inset-0 -top-8 z-0 overflow-hidden"
+				className="pointer-events-none absolute inset-0 -top-12 z-0 overflow-hidden"
 			>
 				{hasCustomBanner ? (
 					<img
 						src={customBanner as string}
 						alt=""
-						className="size-full object-cover object-center opacity-40 filter dark:opacity-25"
+						className="size-full object-cover object-center opacity-35 filter dark:opacity-20"
 					/>
 				) : (
-					/* 纯净 Violet 原生微光几何氛围层（无外部脏混色，通透呼吸） */
 					<div className="relative size-full">
-						<div className="absolute top-1/4 left-1/2 h-[480px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/4 blur-[120px] dark:bg-primary/8" />
-						<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_20%,var(--color-background)_80%)]" />
+						<div className="absolute top-1/3 left-1/2 h-[460px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/4 blur-[130px] dark:bg-primary/8" />
+						<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,var(--color-background)_80%)]" />
 					</div>
 				)}
+			</div>
 
-				{/* 底部超宽羽化渐变遮罩：无论背景为何，均与下方主内容平滑消融 */}
-				<div className="absolute inset-x-0 bottom-0 h-44 bg-linear-to-b from-transparent via-background/60 to-background" />
-			</motion.div>
-
-			{/* 2. 首屏核心内容区（垂直居中舒展排布） */}
-			<div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 py-12 sm:px-8 lg:px-12">
+			{/* 2. 首屏核心展台：满屏视野垂直居中，有机融合头像与个人问候 */}
+			<div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-8 sm:px-8 lg:px-12">
 				<div
 					className={
 						avatar
-							? "grid w-full items-center gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:gap-16"
-							: "mx-auto flex max-w-2xl flex-col items-center py-12 text-center"
+							? "grid w-full items-center gap-10 md:grid-cols-[auto_1fr] md:gap-14 lg:gap-16"
+							: "mx-auto flex max-w-2xl flex-col items-center text-center"
 					}
 				>
-					{/* 左侧：舒展个人宣言 */}
+					{/* 头像展示：采用像素矩阵解构展开动效（支持 hover 重播微像素交互） */}
+					{avatar ? (
+						<div className="flex justify-center md:justify-start">
+							<figure className="group relative">
+								{/* 像素解构容器：利落方正的圆角与纯净边框，杜绝浮夸阴影 */}
+								<div className="relative size-48 overflow-hidden rounded-xl border border-border bg-card transition-colors duration-300 group-hover:border-primary/40 sm:size-56 lg:size-60">
+									<ImagePixelReveal
+										src={avatar}
+										alt={`${owner} 的头像`}
+										variant="random"
+										tileSize={40}
+										duration={0.32}
+										spreadMs={380}
+										replayOnHover
+										className="size-full"
+										imgClassName="size-full object-cover transition-transform duration-300 group-hover:scale-102"
+										onError={() =>
+											setFailedAvatars((current) =>
+												current.includes(avatar)
+													? current
+													: [...current, avatar],
+											)
+										}
+									/>
+								</div>
+							</figure>
+						</div>
+					) : null}
+
+					{/* 核心问候与自白区域 */}
 					<div
 						className={
-							avatar ? "max-w-2xl space-y-6" : "max-w-2xl space-y-6 text-center"
+							avatar
+								? "max-w-xl space-y-6 text-left"
+								: "max-w-2xl space-y-6 text-center"
 						}
 					>
-						{/* 角色与状态微标 */}
-						<div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3.5 py-1 text-xs text-muted-foreground/90 backdrop-blur-md">
-							<span className="relative flex size-2 items-center justify-center">
-								<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/50 opacity-75" />
-								<span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-							</span>
-							<span>{settings?.profile_role || "全栈开发 · 自由创作"}</span>
-						</div>
-
-						{/* 问候主标题 */}
-						<h1 className="text-4xl font-normal leading-[1.12] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-[3.5rem]">
+						{/* 问候主标题：严格保留 Hi, I'm xunrua. 标志性红色波浪线 */}
+						<h1 className="text-4xl font-normal leading-[1.12] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-6xl">
 							Hi, I&apos;m{" "}
-							<span className="font-medium text-primary underline decoration-primary/20 decoration-wavy underline-offset-8">
+							<span className="font-medium text-primary underline decoration-primary/35 decoration-wavy underline-offset-8 sm:underline-offset-10">
 								{owner}
 							</span>
 							.
 						</h1>
 
 						{/* 真实自白 */}
-						<p className="max-w-xl text-base leading-relaxed text-muted-foreground/85 font-serif sm:text-lg">
+						<p className="text-base leading-relaxed text-muted-foreground/90 font-serif sm:text-lg">
 							{description}
 						</p>
 
 						{/* 创作足迹微指标 */}
 						<div
-							className={`flex flex-wrap items-center gap-4 pt-1 font-mono text-xs text-muted-foreground/75 ${
+							className={`flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground/80 ${
 								avatar ? "" : "justify-center"
 							}`}
 						>
-							<div className="inline-flex items-baseline gap-1.5">
-								<span className="text-sm font-semibold text-foreground tabular-nums">
-									{postTotal}
+							{postTotal > 0 ? (
+								<div className="inline-flex items-baseline gap-1.5">
+									<span className="text-sm font-semibold tabular-nums text-foreground">
+										{postTotal}
+									</span>
+									<span>篇深度笔墨</span>
+								</div>
+							) : null}
+							{postTotal > 0 ? (
+								<span aria-hidden className="text-border">
+									/
 								</span>
-								<span>篇深度创作</span>
-							</div>
-							<span aria-hidden className="text-border">
-								/
-							</span>
-							<span>开源爱好者</span>
+							) : null}
+							<span>开源探索</span>
 							{settings?.profile_location ? (
 								<>
 									<span aria-hidden className="text-border">
@@ -155,7 +158,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 						{/* 社交矩阵 */}
 						{socials.length > 0 ? (
 							<ul
-								className={`flex flex-wrap gap-2.5 pt-2 ${avatar ? "" : "justify-center"}`}
+								className={`flex flex-wrap gap-2.5 pt-1 ${avatar ? "" : "justify-center"}`}
 								aria-label="社交主页链接"
 							>
 								{socials.map(({ href, label, Icon }) => (
@@ -164,7 +167,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 											href={href}
 											target={href.startsWith("http") ? "_blank" : undefined}
 											rel={href.startsWith("http") ? "noreferrer" : undefined}
-											className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+											className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:text-primary active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 										>
 											<Icon className="size-3.5" />
 											{label}
@@ -174,48 +177,11 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 							</ul>
 						) : null}
 					</div>
-
-					{/* 右侧：立体悬浮形象（大圆角框体与呼吸光圈） */}
-					{avatar ? (
-						<div className="flex justify-center lg:justify-end">
-							<motion.figure
-								style={reduceMotion ? undefined : { y: avatarY }}
-								whileHover={
-									reduceMotion ? undefined : { scale: 1.02, rotate: -0.5 }
-								}
-								transition={{ type: "spring", stiffness: 220, damping: 20 }}
-								className="group relative"
-							>
-								{/* 微光底晕 */}
-								<div className="absolute -inset-4 rounded-[2rem] bg-linear-to-tr from-primary/10 via-transparent to-primary/5 blur-xl opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
-
-								{/* 立体大圆角框体 */}
-								<div className="relative size-56 overflow-hidden rounded-[2rem] border border-border/70 bg-card/80 shadow-[0_24px_50px_-15px_rgba(0,0,0,0.08)] backdrop-blur-md sm:size-64 lg:size-72 dark:shadow-[0_24px_50px_-15px_rgba(0,0,0,0.5)]">
-									<CroppedImage
-										src={avatar}
-										width={400}
-										fillContainer
-										alt={`${owner} 的头像`}
-										loading="eager"
-										onError={() =>
-											setFailedAvatars((current) =>
-												current.includes(avatar)
-													? current
-													: [...current, avatar],
-											)
-										}
-										className="absolute inset-0"
-										imgClassName="object-cover grayscale transition-transform duration-500 group-hover:scale-105"
-									/>
-								</div>
-							</motion.figure>
-						</div>
-					) : null}
 				</div>
 			</div>
 
-			{/* 3. 首屏底部锚定条（最新发布 + 向下漫游平滑导流） */}
-			<div className="relative z-10 border-t border-border/35 bg-background/60 backdrop-blur-md">
+			{/* 3. 首屏底部锚定条：随满屏视口底部舒展，提供清晰的最新动态与向下阅读线索 */}
+			<div className="relative z-10 border-t border-border/40 bg-background/50 backdrop-blur-md">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 text-xs text-muted-foreground sm:px-8 lg:px-12">
 					{lead ? (
 						<HomeContentLink
@@ -243,7 +209,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 						href="#recent"
 						className="group inline-flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
-						<span>浏览内容</span>
+						<span>浏览笔墨</span>
 						<ArrowDown className="size-3.5 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" />
 					</a>
 				</div>
