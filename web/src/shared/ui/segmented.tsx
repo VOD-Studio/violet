@@ -1,5 +1,6 @@
 "use client";
 
+import { Link } from "@tanstack/react-router";
 import { LayoutGrid, Table } from "lucide-react";
 import type * as React from "react";
 import {
@@ -20,6 +21,8 @@ export interface SegmentedItem<V extends string = string> {
 	value: V;
 	/** 显示内容（文本或图标） */
 	label: React.ReactNode;
+	/** 路由跳转目标（提供时渲染为链接） */
+	to?: string;
 	/** 是否禁用该段 */
 	disabled?: boolean;
 }
@@ -39,6 +42,10 @@ export interface SegmentedProps<V extends string = string> {
 	rounded?: "default" | "full";
 	/** 自定义类名 */
 	className?: string;
+	/** 滑块指示器自定义类名 */
+	indicatorClassName?: string;
+	/** 单项自定义类名 */
+	itemClassName?: string;
 }
 
 const sizeMap = {
@@ -56,17 +63,8 @@ const sizeMap = {
  * 滑块尺寸与位置根据当前激活按钮的实际 DOM 尺寸动态计算，
  * 因此各段文字长度不同时仍能精确包裹当前选中项。
  *
- * 常用于「网格/表格」视图切换、「列表/卡片」布局切换等二选一/多选一场景。
- *
- * @example
- * <Segmented
- *   value={view}
- *   onValueChange={setView}
- *   segments={[
- *     { value: "grid", label: <><LayoutGrid className="size-3.5" />网格</> },
- *     { value: "table", label: <><Table className="size-3.5" />表格</> },
- *   ]}
- * />
+ * 常用于「网格/表格」视图切换、「列表/卡片」布局切换等二选一/多选一场景，
+ * 亦可作为 Header/页面级带有滑块平移动画的导航控制器。
  */
 export function Segmented<V extends string = string>({
 	value,
@@ -76,11 +74,10 @@ export function Segmented<V extends string = string>({
 	block = false,
 	rounded = "default",
 	className,
+	indicatorClassName,
+	itemClassName,
 }: SegmentedProps<V>) {
-	const activeIndex = Math.max(
-		0,
-		segments.findIndex((s) => s.value === value),
-	);
+	const activeIndex = segments.findIndex((s) => s.value === value);
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [sliderStyle, setSliderStyle] = useState<CSSProperties>({});
@@ -88,12 +85,16 @@ export function Segmented<V extends string = string>({
 	const updateSlider = useCallback(() => {
 		const container = containerRef.current;
 		if (!container) return;
-		const buttons = Array.from(container.querySelectorAll("button"));
-		const activeBtn = buttons[activeIndex];
-		if (!activeBtn) return;
+		const items = Array.from(container.querySelectorAll<HTMLElement>("[data-segment-item]"));
+		const activeItem = activeIndex >= 0 ? items[activeIndex] : null;
+		if (!activeItem) {
+			setSliderStyle((prev) => (prev.opacity === 0 ? prev : { ...prev, opacity: 0 }));
+			return;
+		}
 		setSliderStyle({
-			left: activeBtn.offsetLeft,
-			width: activeBtn.offsetWidth,
+			left: activeItem.offsetLeft,
+			width: activeItem.offsetWidth,
+			opacity: 1,
 		});
 	}, [activeIndex]);
 
@@ -105,8 +106,8 @@ export function Segmented<V extends string = string>({
 
 		const resizeObserver = new ResizeObserver(updateSlider);
 		resizeObserver.observe(container);
-		for (const btn of container.querySelectorAll("button")) {
-			resizeObserver.observe(btn);
+		for (const item of container.querySelectorAll("[data-segment-item]")) {
+			resizeObserver.observe(item);
 		}
 		return () => resizeObserver.disconnect();
 	}, [updateSlider]);
@@ -128,27 +129,45 @@ export function Segmented<V extends string = string>({
 				className={cn(
 					"absolute top-0.5 bottom-0.5 bg-background shadow-sm ring-1 ring-black/5 transition-[left,width] duration-200 ease-out dark:ring-white/10",
 					rounded === "full" ? "rounded-full" : "rounded-[calc(var(--radius-lg)-2px)]",
+					indicatorClassName,
 				)}
 				style={sliderStyle}
 			/>
 			{segments.map((seg, i) => {
 				const isActive = i === activeIndex;
+				const itemClasses = cn(
+					"relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+					rounded === "full" ? "rounded-full" : "rounded-md",
+					block && "flex-1",
+					isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+					seg.disabled && !isActive && "hover:text-muted-foreground",
+					itemClassName,
+				);
+
+				if (seg.to) {
+					return (
+						<Link
+							key={seg.value}
+							to={seg.to}
+							data-segment-item=""
+							aria-current={isActive ? "page" : undefined}
+							onClick={() => onValueChange(seg.value)}
+							className={itemClasses}
+						>
+							{seg.label}
+						</Link>
+					);
+				}
+
 				return (
 					<button
 						key={seg.value}
 						type="button"
+						data-segment-item=""
 						aria-pressed={isActive}
 						disabled={seg.disabled}
 						onClick={() => onValueChange(seg.value)}
-						className={cn(
-							"relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-							rounded === "full" ? "rounded-full" : "rounded-md",
-							block && "flex-1",
-							isActive
-								? "text-foreground"
-								: "text-muted-foreground hover:text-foreground",
-							seg.disabled && !isActive && "hover:text-muted-foreground",
-						)}
+						className={itemClasses}
 					>
 						{seg.label}
 					</button>

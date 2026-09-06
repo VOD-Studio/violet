@@ -6,6 +6,8 @@ import {
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
+import type { SegmentedItem } from "@shared/ui/segmented";
+import { Segmented } from "@shared/ui/segmented";
 import { useRouterState } from "@tanstack/react-router";
 import { ChevronDown, LayoutGrid } from "lucide-react";
 import { useState } from "react";
@@ -19,8 +21,9 @@ export interface HeaderNavProps {
 /**
  * HeaderNav - 悬浮主导航船坞（Nav Dock Capsule）
  *
- * 对齐三段式悬浮胶囊设计，主导航横排，次级导航收纳至"更多"下拉网格。
- * 严禁 scale 变形，纯色/高斯模糊过渡。
+ * 基于项目公共组件 @shared/ui/segmented（Segmented 分段器），
+ * 驱动主导航项与滑块物理平移动画，次级导航收纳至"更多"下拉网格。
+ * 严禁 scale 变形，零重排抖动。
  */
 const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const primaryItems = NAV_ITEMS.filter(
@@ -29,19 +32,47 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
 	const [browseOpen, setBrowseOpen] = useState(false);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+	const activePrimary = primaryItems.find((item) => matchesRoute(pathname, item));
 	const secondaryActive = secondaryItems.some(
 		(item) => item.type === "route" && matchesRoute(pathname, item),
 	);
+
+	// 当前激活的主分段值
+	const activeValue = activePrimary ? activePrimary.to : "";
+
+	const segments: SegmentedItem[] = primaryItems.map((item) => {
+		const Icon = item.icon;
+		return {
+			value: item.to,
+			to: item.to,
+			label: (
+				<span className="flex items-center gap-1.5">
+					<Icon className="size-3.5 shrink-0" />
+					<span>{item.label}</span>
+				</span>
+			),
+		};
+	});
 
 	return (
 		<nav
 			aria-label="主导航"
 			className="pointer-events-auto relative hidden h-10 items-center gap-1 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 shadow-xs backdrop-blur-md lg:flex dark:bg-card/85"
 		>
-			{primaryItems.map((item) => (
-				<HeaderNavItem key={item.label} item={item} onAction={onAction} />
-			))}
+			{/* 使用项目统一的 Segmented 分段控制器组件驱动滑块平移动画 */}
+			<Segmented
+				value={activeValue}
+				onValueChange={() => {}}
+				segments={segments}
+				rounded="full"
+				size="sm"
+				className="bg-transparent p-0"
+				indicatorClassName="bg-background dark:bg-muted/90 shadow-xs border border-border/50"
+				itemClassName="h-8 rounded-full px-3 text-xs font-medium transition-colors duration-150"
+			/>
 
+			{/* 次级导航下拉网格 */}
 			{secondaryItems.length > 0 && (
 				<DropdownMenu open={browseOpen} onOpenChange={setBrowseOpen}>
 					<DropdownMenuTrigger asChild>
