@@ -47,7 +47,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 				}
 			>
 				<div className={avatar ? "max-w-xl" : "max-w-2xl"}>
-					<h1 className="home-display text-4xl leading-tight font-semibold tracking-[-0.035em] text-foreground sm:text-5xl lg:text-6xl">
+					<h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] text-foreground sm:text-5xl lg:text-6xl">
 						Hi, I&apos;m <span className="text-primary">{owner}</span>.
 					</h1>
 					{settings?.profile_role ? (

@@ -1,8 +1,9 @@
 /* web/src/styles.css */
 @import "tailwindcss";
 @import "@fontsource/maple-mono/400.css";
+@import "@fontsource/maple-mono/500.css";
+@import "@fontsource/maple-mono/600.css";
 @import "@fontsource/maple-mono/700.css";
-@import "@fontsource-variable/manrope";
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
@@ -10,7 +11,11 @@
 	--animate-blob: blob 7s infinite;
 	--animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
 	--animate-caret-blink: caret-blink 1s ease infinite;
-	--font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	--font-sans:
+		"Maple Mono", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-monospace, sans-serif;
+	--font-mono:
+		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
 	--animate-diagram-enter: diagram-enter 0.25s ease-out;
 	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
 	--animate-marquee: marquee 40s linear infinite;
@@ -294,21 +299,12 @@
 body {
 	background-color: var(--color-background);
 	color: var(--color-foreground);
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-		"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+	font-family: var(--font-sans);
 }
 
 .home-surface {
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC",
-		"Microsoft YaHei", sans-serif;
 	caret-color: var(--primary);
 	scrollbar-color: color-mix(in oklch, var(--primary), transparent 55%) transparent;
-}
-
-.home-surface .home-display {
-	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
 }
 
 .home-surface ::selection {
