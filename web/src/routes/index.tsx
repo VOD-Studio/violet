@@ -27,7 +27,7 @@ function HomePage() {
 }
 export const Route = createFileRoute("/")({
 	pendingComponent: HomeExperienceSkeleton,
-	pendingMs: 0,
+	pendingMs: 150,
 	pendingMinMs: 200,
 	loader: async ({ context }) => {
 		const queryClient = context.queryClient;
