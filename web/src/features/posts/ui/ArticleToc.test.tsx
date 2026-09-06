@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import ArticleToc, { buildTree } from "./ArticleToc";
 
 beforeAll(() => {
@@ -17,6 +17,10 @@ beforeAll(() => {
 			dispatchEvent: vi.fn(),
 		})),
 	});
+});
+
+beforeEach(() => {
+	window.history.replaceState(null, "", "/");
 });
 
 const items = [
@@ -46,21 +50,19 @@ describe("ArticleToc", () => {
 		expect(flatten(tree)).not.toContain("更多");
 	});
 
-	it("点击完整一级卡头触发导航", () => {
+	it("点击完整一级标题链接触发导航", () => {
 		const contentRef = createRef<HTMLElement>();
 		const onNavigate = vi.fn();
 		render(<ArticleToc items={items} contentRef={contentRef} onNavigate={onNavigate} />);
-		const cardHeader = screen.getByText("第一章").closest('[role="button"]');
-		expect(cardHeader).toBeTruthy();
-		if (cardHeader) fireEvent.click(cardHeader);
+		fireEvent.click(screen.getByRole("link", { name: "第一章" }));
 		expect(onNavigate).toHaveBeenCalledTimes(1);
 	});
 
-	it("点击子标题触发导航", () => {
+	it("点击子标题链接触发导航", () => {
 		const contentRef = createRef<HTMLElement>();
 		const onNavigate = vi.fn();
 		render(<ArticleToc items={items} contentRef={contentRef} onNavigate={onNavigate} />);
-		fireEvent.click(screen.getByRole("button", { name: /1\.2 小节/ }));
+		fireEvent.click(screen.getByRole("link", { name: "1.2 小节" }));
 		expect(onNavigate).toHaveBeenCalledTimes(1);
 	});
 
@@ -73,5 +75,40 @@ describe("ArticleToc", () => {
 		expect(screen.getByRole("button", { name: "展开 第一章" })).toBeTruthy();
 		await waitFor(() => expect(screen.queryByText("1.1 小节")).toBeNull());
 		expect(onNavigate).not.toHaveBeenCalled();
+	});
+
+	it("可以手动展开非当前一级菜单", async () => {
+		const contentRef = createRef<HTMLElement>();
+		render(<ArticleToc items={items} contentRef={contentRef} />);
+
+		expect(screen.queryByText("2.1 小节")).toBeNull();
+		fireEvent.click(screen.getByRole("button", { name: "展开 第二章" }));
+
+		await waitFor(() => expect(screen.queryByText("2.1 小节")).not.toBeNull());
+		expect(screen.getByRole("button", { name: "收起 第二章" })).toBeTruthy();
+		await waitFor(() => expect(screen.queryByText("1.1 小节")).toBeNull());
+	});
+
+	it("点击标题链接保留文章路径并写入标题哈希", () => {
+		const contentRef = createRef<HTMLElement>();
+		const onNavigate = vi.fn();
+		const anchorItems = [
+			{
+				level: 2 as const,
+				id: "为什么我决定放弃-tailwind",
+				text: "为什么我决定放弃 Tailwind",
+			},
+			{ level: 2 as const, id: "迁移实践", text: "迁移实践" },
+		];
+		window.history.replaceState(null, "", "/blog/css-to-stylex-migration");
+		render(<ArticleToc items={anchorItems} contentRef={contentRef} onNavigate={onNavigate} />);
+
+		const link = screen.getByRole("link", { name: "为什么我决定放弃 Tailwind" });
+		expect(link.getAttribute("href")).toBe("#为什么我决定放弃-tailwind");
+		fireEvent.click(link);
+
+		expect(window.location.pathname).toBe("/blog/css-to-stylex-migration");
+		expect(decodeURIComponent(window.location.hash)).toBe("#为什么我决定放弃-tailwind");
+		expect(onNavigate).toHaveBeenCalledTimes(1);
 	});
 });
