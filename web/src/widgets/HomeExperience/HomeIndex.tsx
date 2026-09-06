@@ -31,7 +31,7 @@ function formatRelativeOrDate(dateString: string): string {
 	return `${year}.${month}.${day}`;
 }
 
-/** 首页新墨与偶得尺素双栏布局。 */
+/** 首页近稿与偶得尺素双栏布局。 */
 export function HomeIndex({ items, tweets }: HomeIndexProps) {
 	// 取最新创作（文章、笔记、图集、系列混合，按时间降序），前 5 项无重复展示
 	const writings = items.slice(0, 5);
@@ -51,7 +51,7 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 			className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 lg:px-12 lg:pt-28"
 		>
 			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-16">
-				{/* 左栏：新墨 */}
+				{/* 左栏：近稿 */}
 				<motion.div
 					className="min-w-0"
 					initial={false}
@@ -61,10 +61,10 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 				>
 					<div className="mb-7">
 						<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-							WORKS
+							FRESH INK
 						</p>
 						<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
-							创作
+							近稿
 						</h2>
 					</div>
 

@@ -4,10 +4,10 @@ import { noteTitle } from "@features/note-browse/model/display";
 import type { HomePublicationItem, HomePublicationKind, HomeSnapshot } from "./types";
 
 export const HOME_KIND_LABEL: Record<HomePublicationKind, string> = {
-	article: "深度文章",
-	note: "战地笔记",
-	gallery: "视觉图集",
-	series: "专栏系列",
+	article: "文心",
+	note: "札记",
+	gallery: "撷影",
+	series: "长卷",
 };
 
 /** 将公开内容按发布时间组织成首页目录，精选文章只影响首屏选择，不改变时间顺序。 */

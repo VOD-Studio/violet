@@ -86,30 +86,53 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 								{season.label}
 							</span>
 						))}
+
+						{/* 星尘点缀：时间线四周散落的不对称微星与短线，衬托「今」刻度的方向感 */}
+						<div aria-hidden className="pointer-events-none absolute inset-0">
+							<svg
+								aria-hidden="true"
+								className="absolute top-2 left-[12%] size-2 text-primary/30"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
+							</svg>
+							<span className="absolute top-16 left-[38%] size-1.5 rotate-45 bg-primary/20" />
+							<span className="absolute top-1 right-[22%] h-px w-4 bg-primary/25" />
+							<svg
+								aria-hidden="true"
+								className="absolute top-4 right-[6%] size-2.5 text-primary/25"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
+							</svg>
+							<span className="absolute top-15 left-[58%] size-1 rotate-45 bg-primary/30" />
+						</div>
 					</div>
 
-					{/* 时间线下方居中引导：近作与完整时间线 */}
-					<div className="mt-8 space-y-2 text-center">
-						<div className="flex min-w-0 items-baseline justify-center gap-2 text-sm text-foreground/80">
-							<span className="shrink-0 text-muted-foreground">近作 ·</span>
+					{/* 时间线下方居中引导：新篇与年表入口 */}
+					<div className="mt-7 space-y-1.5 text-center">
+						<div className="flex min-w-0 items-baseline justify-center gap-2 text-sm">
+							<span className="shrink-0 text-xs text-muted-foreground/80">
+								新篇 ·
+							</span>
 							<HomeContentLink
 								item={latest}
-								className="min-w-0 truncate font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								className="min-w-0 truncate font-medium text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 							>
 								{latest.title}
 							</HomeContentLink>
 						</div>
-						<div className="flex items-center justify-center gap-1.5 text-xs">
-							<span className="text-muted-foreground/70 italic">
-								本年 {yearCount} 篇 ·
-							</span>
+						<p className="text-xs text-muted-foreground/75">
+							今年落笔 {yearCount} 篇 ·{" "}
 							<Link
 								to="/blog/archive"
-								className="inline-flex items-center gap-1 font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								className="font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 							>
-								翻阅完整时间线 →
+								尽览年表 →
 							</Link>
-						</div>
+						</p>
 					</div>
 				</figure>
 			</div>
