@@ -1,9 +1,10 @@
 import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
+import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
-import type { LucideIcon } from "lucide-react";
-import { ArrowDown, ArrowRight, GitBranch, Mail, Rss, Tv } from "lucide-react";
-import { useState } from "react";
+import { ArrowDown, ArrowRight, Mail, Rss, Tv } from "lucide-react";
+import { Tooltip as TooltipPrimitive } from "radix-ui";
+import { type ComponentType, type SVGProps, useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
 import { formatHomeDate, HOME_KIND_LABEL } from "./home-content";
@@ -18,7 +19,7 @@ interface HomePreludeProps {
 interface SocialLink {
 	href: string;
 	label: string;
-	Icon: LucideIcon;
+	Icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 /** 首页序章：保持满屏视口空间，以像素解构动效呈现作者形象，突出保留经典的波浪线问候。 */
@@ -124,7 +125,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 
 						{/* 创作足迹微指标 */}
 						<div
-							className={`flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground/80 ${
+							className={`flex flex-wrap items-center gap-2.5 font-mono text-xs text-muted-foreground/80 ${
 								avatar ? "" : "justify-center"
 							}`}
 						>
@@ -137,41 +138,62 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 								</div>
 							) : null}
 							{postTotal > 0 ? (
-								<span aria-hidden className="text-border">
-									/
+								<span aria-hidden className="text-muted-foreground/40">
+									·
 								</span>
 							) : null}
 							<span>开源探索</span>
 							{settings?.profile_location ? (
 								<>
-									<span aria-hidden className="text-border">
-										/
+									<span aria-hidden className="text-muted-foreground/40">
+										·
 									</span>
 									<span>{settings.profile_location}</span>
 								</>
 							) : null}
 						</div>
 
-						{/* 社交矩阵 */}
+						{/* 社交矩阵：纯图标轻量导航条 + 悬停圆底与下方纯净卡片气泡 */}
 						{socials.length > 0 ? (
-							<ul
-								className={`flex flex-wrap gap-2.5 pt-1 ${avatar ? "" : "justify-center"}`}
-								aria-label="社交主页链接"
-							>
-								{socials.map(({ href, label, Icon }) => (
-									<li key={label}>
-										<a
-											href={href}
-											target={href.startsWith("http") ? "_blank" : undefined}
-											rel={href.startsWith("http") ? "noreferrer" : undefined}
-											className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:text-primary active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-										>
-											<Icon className="size-3.5" />
-											{label}
-										</a>
-									</li>
-								))}
-							</ul>
+							<TooltipPrimitive.Provider delayDuration={100}>
+								<nav
+									className={`flex items-center gap-2 pt-2 ${avatar ? "" : "justify-center"}`}
+									aria-label="社交主页链接"
+								>
+									{socials.map(({ href, label, Icon }) => (
+										<TooltipPrimitive.Root key={label}>
+											<TooltipPrimitive.Trigger asChild>
+												<a
+													href={href}
+													target={
+														href.startsWith("http")
+															? "_blank"
+															: undefined
+													}
+													rel={
+														href.startsWith("http")
+															? "noreferrer"
+															: undefined
+													}
+													aria-label={label}
+													className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground/75 transition-colors duration-200 outline-none hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+												>
+													<Icon className="size-5 transition-colors duration-200" />
+												</a>
+											</TooltipPrimitive.Trigger>
+											<TooltipPrimitive.Portal>
+												<TooltipPrimitive.Content
+													side="bottom"
+													sideOffset={8}
+													className="z-50 rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-sm animate-in fade-in-0 data-[side=bottom]:slide-in-from-top-1"
+												>
+													{label}
+												</TooltipPrimitive.Content>
+											</TooltipPrimitive.Portal>
+										</TooltipPrimitive.Root>
+									))}
+								</nav>
+							</TooltipPrimitive.Provider>
 						) : null}
 					</div>
 				</div>
@@ -225,15 +247,31 @@ function buildAvatarCandidates(settings: SiteSettings | null, owner: string): st
 	].filter(Boolean);
 }
 
+function XIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+			<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+		</svg>
+	);
+}
+
 function buildSocialLinks(settings: SiteSettings | null): SocialLink[] {
 	const links: SocialLink[] = [];
-	if (settings?.github_username) {
+	if (settings?.social_twitter) {
 		links.push({
-			href: `https://github.com/${settings.github_username}`,
-			label: "GitHub",
-			Icon: GitBranch,
+			href: settings.social_twitter.startsWith("http")
+				? settings.social_twitter
+				: `https://x.com/${settings.social_twitter.replace(/^@/, "")}`,
+			label: "X",
+			Icon: XIcon,
 		});
 	}
+	const rssUrl = settings?.social_rss?.trim() || "/feed.xml";
+	links.push({
+		href: rssUrl,
+		label: "RSS",
+		Icon: Rss,
+	});
 	if (settings?.social_email) {
 		links.push({
 			href: settings.social_email.startsWith("mailto:")
@@ -243,9 +281,19 @@ function buildSocialLinks(settings: SiteSettings | null): SocialLink[] {
 			Icon: Mail,
 		});
 	}
-	if (settings?.social_rss) links.push({ href: settings.social_rss, label: "RSS", Icon: Rss });
+	if (settings?.github_username) {
+		links.push({
+			href: `https://github.com/${settings.github_username}`,
+			label: "GitHub",
+			Icon: GithubIcon,
+		});
+	}
 	if (settings?.social_bilibili) {
-		links.push({ href: settings.social_bilibili, label: "哔哩哔哩", Icon: Tv });
+		links.push({
+			href: settings.social_bilibili,
+			label: "哔哩哔哩",
+			Icon: Tv,
+		});
 	}
 	return links;
 }
