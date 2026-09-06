@@ -1,8 +1,8 @@
 import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
+import { Epigraph } from "@shared/ui/epigraph";
 import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
-import { Signature } from "@shared/ui/signature";
 import { ArrowDown, ArrowRight, Mail, Rss, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
@@ -30,7 +30,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 	const domain =
 		settings?.site_url?.replace(/^https?:\/\//, "").replace(/\/$/, "") || "xunrua.top";
 	const owner = settings?.github_username?.trim() || domain.split(".")[0] || siteName;
-	const defaultBio = `这里是 ${siteName}，记录构建、拆解问题与生活思考。收录长文深度思考、技术速查笔记、摄影图集与日常随笔。`;
+	const defaultBio = `这里是 ${siteName}，记录构建、拆解问题与生活思考。`;
 	const description = settings?.tagline?.trim() || settings?.bio?.trim() || defaultBio;
 	const defaultEpigraphOriginal =
 		"We can only see a short distance ahead, but we can see plenty there that needs to be done.";
@@ -117,8 +117,8 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 					<div
 						className={
 							avatar
-								? "max-w-xl space-y-6 text-left"
-								: "max-w-2xl space-y-6 text-center"
+								? "max-w-xl space-y-5 text-left"
+								: "max-w-2xl space-y-5 text-center"
 						}
 					>
 						{/* 问候主标题：严格保留 Hi, I'm xunrua. 标志性红色波浪线 */}
@@ -132,25 +132,13 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 
 						{/* 典雅中英双语卷首引言与站点自白 */}
 						<div className="space-y-4 text-left">
-							{/* 图灵真实论文结语双语引言：左侧 2px 淡雅主色竖线，与主标题波浪线呼应 */}
-							<figure className="relative space-y-2 border-l-2 border-primary/40 py-0.5 pl-4">
-								<blockquote className="space-y-1.5">
-									<p className="font-serif text-base leading-relaxed text-foreground/95 italic sm:text-lg">
-										“{epigraphOriginal}”
-									</p>
-									{epigraphTranslation ? (
-										<p className="font-serif text-sm leading-relaxed text-muted-foreground/80 sm:text-base">
-											{epigraphTranslation}
-										</p>
-									) : null}
-								</blockquote>
-								<figcaption className="flex items-center gap-1.5 pt-0.5">
-									<span className="font-mono text-xs select-none text-muted-foreground/60">
-										—
-									</span>
-									<Signature name="Alan Turing" size="sm" variant="muted" />
-								</figcaption>
-							</figure>
+							<Epigraph
+								quote={epigraphOriginal}
+								translation={epigraphTranslation}
+								author="Alan Turing"
+								variant="accent-line"
+								captionAlign="end"
+							/>
 
 							{/* 站点自白与导读 */}
 							<p className="font-serif text-sm leading-relaxed text-muted-foreground/85 sm:text-base">
