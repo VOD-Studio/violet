@@ -157,7 +157,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 									<span className="text-sm font-semibold tabular-nums text-foreground">
 										{postTotal}
 									</span>
-									<span>篇深度笔墨</span>
+									<span>篇沉心之作</span>
 								</div>
 							) : null}
 							{postTotal > 0 ? (
@@ -251,7 +251,7 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 						href="#recent"
 						className="group inline-flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
-						<span>浏览笔墨</span>
+						<span>开卷漫游</span>
 						<ArrowDown className="size-3.5 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" />
 					</a>
 				</div>

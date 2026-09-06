@@ -37,7 +37,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 					id="home-accumulation-title"
 					className="text-center text-2xl font-normal tracking-[0.08em] text-foreground/90 sm:text-3xl"
 				>
-					笔耕不辍
+					积微成著
 				</h2>
 				<figure className="mt-6">
 					<p className="sr-only">

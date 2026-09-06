@@ -31,17 +31,18 @@ function formatRelativeOrDate(dateString: string): string {
 	return `${year}.${month}.${day}`;
 }
 
-/** 首页近期创作与生活动态双栏布局。 */
+/** 首页新墨与偶得尺素双栏布局。 */
 export function HomeIndex({ items, tweets }: HomeIndexProps) {
 	// 取最新创作（文章、笔记、图集、系列混合，按时间降序），前 5 项无重复展示
 	const writings = items.slice(0, 5);
 	const leadItem = writings[0];
 	const subsequentItems = writings.slice(1);
 
-	// 碎念推文（前 2~3 条）
+	// 偶得推文（前 2~3 条）
 	const musings = tweets.slice(0, 2);
 
 	if (writings.length === 0 && musings.length === 0) return null;
+
 	const transition = { type: "spring" as const, stiffness: 130, damping: 21, mass: 0.9 };
 
 	return (
@@ -50,7 +51,7 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 			className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 lg:px-12 lg:pt-28"
 		>
 			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-16">
-				{/* 左栏：近期笔墨 */}
+				{/* 左栏：新墨 */}
 				<motion.div
 					className="min-w-0"
 					initial={false}
@@ -60,10 +61,10 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 				>
 					<div className="mb-7">
 						<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-							RECENT WRITING
+							FRESH INK
 						</p>
 						<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
-							近期笔墨
+							新墨
 						</h2>
 					</div>
 
@@ -131,13 +132,13 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 							to="/blog"
 							className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 						>
-							翻阅更多笔墨
+							尽览新篇
 							<ArrowRight className="size-3.5" />
 						</Link>
 					</div>
 				</motion.div>
 
-				{/* 右栏：碎念 + 来信 */}
+				{/* 右栏：偶得 + 尺素 */}
 				<motion.div
 					className="min-w-0 lg:border-l lg:border-border/40 lg:pl-10"
 					initial={false}
@@ -145,14 +146,14 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 					viewport={{ once: true, amount: 0.2 }}
 					transition={{ ...transition, delay: 0.08 }}
 				>
-					{/* 碎念区块 */}
+					{/* 偶得区块 */}
 					<div>
 						<div className="mb-5">
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-								MUSINGS
+								GLEANINGS
 							</p>
 							<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
-								碎念
+								偶得
 							</h2>
 						</div>
 
@@ -184,7 +185,7 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 							</div>
 						) : (
 							<article className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground">
-								<p>近日无新随思，一切在平稳节奏中构建。</p>
+								<p>近日未有新得，静待文思泉涌。</p>
 							</article>
 						)}
 
@@ -193,7 +194,7 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 								to="/tweets"
 								className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 							>
-								查看推文时间线
+								回看全部偶得
 								<ArrowUpRight className="size-3.5" />
 							</Link>
 						</div>
@@ -202,14 +203,14 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 					{/* 分隔线 */}
 					<hr className="my-8 border-0 border-t border-border/40" />
 
-					{/* 来信区块 */}
+					{/* 尺素区块 */}
 					<div>
 						<div className="mb-5">
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-								LETTERS
+								MISSIVES
 							</p>
 							<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
-								来信
+								尺素
 							</h2>
 						</div>
 
@@ -225,7 +226,7 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 									文字间流转的不仅是技术细节，更是对创造与自由的感知。在繁杂的工程体系里，保有一份对美好界面的执着，非常难得。
 								</p>
 								<p className="mt-2 text-right text-[11px] text-muted-foreground/75">
-									— 读者来信
+									— 读者手书
 								</p>
 							</article>
 
@@ -237,10 +238,10 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 									“
 								</span>
 								<p className="text-xs leading-relaxed text-foreground/80">
-									字句流转，见信如晤。欢迎通过邮件或在文章与推文下方留言交流。
+									一纸相闻，落笔为记。欢迎通过邮件，或在文章与推文下方留言。
 								</p>
 								<p className="mt-2 text-right text-[11px] text-muted-foreground/75">
-									— 站长笔墨
+									— 站长回笺
 								</p>
 							</article>
 						</div>

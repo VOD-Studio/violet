@@ -1,6 +1,6 @@
 import { Skeleton } from "@shared/ui/base/skeleton";
 
-/** 首页笔耕不辍时间线专属骨架屏。 */
+/** 首页积微成著时间线专属骨架屏。 */
 export function HomeAccumulationSkeleton() {
 	return (
 		<section

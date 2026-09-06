@@ -11,10 +11,10 @@ interface HomeClosingProps {
 /** 依月份生成温润应季寄语。 */
 function getSeasonalGreeting(): { title: string; subtitle: string } {
 	const month = new Date().getMonth() + 1;
-	if (month >= 3 && month <= 5) return { title: "春和景明", subtitle: "见信如晤" };
-	if (month >= 6 && month <= 8) return { title: "夏木阴阴", subtitle: "万物生长" };
-	if (month >= 9 && month <= 11) return { title: "仲秋月明", subtitle: "欢迎来信" };
-	return { title: "岁暮天寒", subtitle: "温炉待友" };
+	if (month >= 3 && month <= 5) return { title: "花朝如约", subtitle: "春山可望" };
+	if (month >= 6 && month <= 8) return { title: "熏风入弦", subtitle: "荷风送香" };
+	if (month >= 9 && month <= 11) return { title: "桂月流光", subtitle: "掬光以待" };
+	return { title: "梅信岁寒", subtitle: "围炉夜话" };
 }
 
 /** 首页收尾诗意落幕与自然过渡层。 */
