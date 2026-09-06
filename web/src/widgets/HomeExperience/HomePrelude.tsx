@@ -2,7 +2,6 @@ import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
-import { Signature } from "@shared/ui/signature";
 import { ArrowDown, ArrowRight, Mail, Rss, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
@@ -125,28 +124,17 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 							.
 						</h1>
 
-						{/* Editorial 典雅引言 */}
-						<blockquote className="relative">
-							<span
-								aria-hidden="true"
-								className="pointer-events-none select-none font-serif text-4xl leading-none text-primary/25 sm:text-5xl -mb-2.5 block"
-							>
-								“
-							</span>
-							<div className="space-y-2">
-								<p className="font-serif text-base leading-relaxed text-foreground/90 sm:text-lg">
-									{leadBio}
+						{/* 真实自白 */}
+						<div className="space-y-2">
+							<p className="text-base leading-relaxed text-foreground/90 font-serif sm:text-lg">
+								{leadBio}
+							</p>
+							{secondaryBio ? (
+								<p className="text-sm leading-relaxed text-muted-foreground/75 font-serif sm:text-base">
+									{secondaryBio}
 								</p>
-								{secondaryBio ? (
-									<p className="font-serif text-sm leading-relaxed text-muted-foreground/75 sm:text-base">
-										{secondaryBio}
-									</p>
-								) : null}
-								<div className="flex justify-end pt-0.5 pr-2">
-									<Signature name={owner} size="sm" variant="muted" />
-								</div>
-							</div>
-						</blockquote>
+							) : null}
+						</div>
 
 						{/* 创作足迹微指标 */}
 						<div
