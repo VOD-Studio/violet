@@ -7,7 +7,7 @@ const Footer = () => {
 	const year = new Date().getFullYear();
 	const rawName = data?.site_name?.trim();
 	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
-	const bio = data?.tagline?.trim() || "Stay hungry. Stay foolish.";
+	const bio = data?.tagline?.trim() || "一花一叶，皆成文章。";
 	const rawDomain = data?.site_url?.replace(/^https?:\/\//, "").replace(/\/$/, "");
 	const displayDomain =
 		rawDomain && !rawDomain.includes("localhost") && !rawDomain.includes("127.0.0.1")
