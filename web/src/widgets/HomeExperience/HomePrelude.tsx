@@ -2,6 +2,7 @@ import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
+import { Signature } from "@shared/ui/signature";
 import { ArrowDown, ArrowRight, Mail, Rss, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
@@ -31,12 +32,17 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 	const owner = settings?.github_username?.trim() || domain.split(".")[0] || siteName;
 	const defaultBio = `这里是 ${siteName}，记录构建、拆解问题与生活思考。收录长文深度思考、技术速查笔记、摄影图集与日常随笔。`;
 	const description = settings?.tagline?.trim() || settings?.bio?.trim() || defaultBio;
-	const bioSentences = description
-		.split(/(?<=[。！？\n])/)
-		.map((s) => s.trim())
-		.filter(Boolean);
-	const leadBio = bioSentences[0] || description;
-	const secondaryBio = bioSentences.slice(1).join(" ");
+	const defaultEpigraphOriginal =
+		"We can only see a short distance ahead, but we can see plenty there that needs to be done.";
+	const defaultEpigraphTranslation =
+		"「我们只能看清眼前的一小段路，但已足以看清有无数的事亟待完成。」";
+	const epigraphOriginal =
+		((settings as Record<string, unknown> | null)?.hero_quote as string | undefined) ||
+		defaultEpigraphOriginal;
+	const epigraphTranslation =
+		((settings as Record<string, unknown> | null)?.hero_quote_translation as
+			| string
+			| undefined) || defaultEpigraphTranslation;
 	const socials = buildSocialLinks(settings);
 	const avatarCandidates = buildAvatarCandidates(settings, owner);
 	const [failedAvatars, setFailedAvatars] = useState<string[]>([]);
@@ -124,16 +130,32 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 							.
 						</h1>
 
-						{/* 真实自白 */}
-						<div className="space-y-2">
-							<p className="text-base leading-relaxed text-foreground/90 font-serif sm:text-lg">
-								{leadBio}
+						{/* 典雅中英双语卷首引言与站点自白 */}
+						<div className="space-y-4 text-left">
+							{/* 图灵真实论文结语双语引言：左侧 2px 淡雅主色竖线，与主标题波浪线呼应 */}
+							<figure className="relative space-y-2 border-l-2 border-primary/40 py-0.5 pl-4">
+								<blockquote className="space-y-1.5">
+									<p className="font-serif text-base leading-relaxed text-foreground/95 italic sm:text-lg">
+										“{epigraphOriginal}”
+									</p>
+									{epigraphTranslation ? (
+										<p className="font-serif text-sm leading-relaxed text-muted-foreground/80 sm:text-base">
+											{epigraphTranslation}
+										</p>
+									) : null}
+								</blockquote>
+								<figcaption className="flex items-center gap-1.5 pt-0.5">
+									<span className="font-mono text-xs select-none text-muted-foreground/60">
+										—
+									</span>
+									<Signature name="Alan Turing" size="sm" variant="muted" />
+								</figcaption>
+							</figure>
+
+							{/* 站点自白与导读 */}
+							<p className="font-serif text-sm leading-relaxed text-muted-foreground/85 sm:text-base">
+								{description}
 							</p>
-							{secondaryBio ? (
-								<p className="text-sm leading-relaxed text-muted-foreground/75 font-serif sm:text-base">
-									{secondaryBio}
-								</p>
-							) : null}
 						</div>
 
 						{/* 创作足迹微指标 */}

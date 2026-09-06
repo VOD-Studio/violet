@@ -145,6 +145,78 @@ export const SIGNATURE_PRESETS: Record<string, SignaturePreset> = {
 			},
 		],
 	},
+	"alan turing": {
+		name: "Alan Turing",
+		viewBox: "0 0 460 110",
+		width: 460,
+		height: 110,
+		strokes: [
+			// 0: A 左上冲与大斜切
+			{ d: "M 28 72 C 34 50, 42 28, 46 24 C 50 28, 56 54, 60 72", duration: 0.32, delay: 0 },
+			// 1: A 腰部环绕连线进入 l
+			{ d: "M 36 54 C 44 50, 56 50, 62 52", duration: 0.18, delay: 0.28 },
+			// 2: l 修长回旋高环
+			{
+				d: "M 62 52 C 68 36, 76 22, 80 20 C 82 22, 80 34, 78 52 C 77 62, 78 70, 82 72",
+				duration: 0.35,
+				delay: 0.44,
+			},
+			// 3: a 闭环与直落
+			{
+				d: "M 96 54 C 90 48, 82 54, 82 62 C 82 69, 90 72, 96 70 C 99 64, 99 56, 99 72",
+				duration: 0.28,
+				delay: 0.74,
+			},
+			// 4: n 双拱起伏
+			{
+				d: "M 102 54 C 106 48, 112 48, 114 54 C 116 62, 116 72, 122 54 C 126 48, 132 48, 134 54 C 136 62, 136 72, 140 70",
+				duration: 0.32,
+				delay: 0.98,
+			},
+			// 5: T 顶部飞白横杠
+			{ d: "M 152 34 C 165 30, 182 30, 196 32", duration: 0.2, delay: 1.25 },
+			// 6: T 主干下落回挑带入 u
+			{
+				d: "M 172 32 C 172 48, 170 64, 176 72 C 180 74, 185 68, 188 54",
+				duration: 0.28,
+				delay: 1.42,
+			},
+			// 7: u 双垂兜
+			{
+				d: "M 188 54 C 190 62, 192 70, 198 72 C 204 72, 208 66, 210 54 C 211 62, 212 70, 216 72",
+				duration: 0.26,
+				delay: 1.66,
+			},
+			// 8: r 挑折肩
+			{
+				d: "M 218 54 C 222 48, 226 48, 228 52 C 230 58, 230 66, 234 72",
+				duration: 0.2,
+				delay: 1.88,
+			},
+			// 9: i 垂笔
+			{ d: "M 238 54 C 240 60, 241 68, 244 72", duration: 0.16, delay: 2.04 },
+			// 10: n 双拱
+			{
+				d: "M 246 54 C 250 48, 256 48, 258 54 C 260 62, 260 72, 266 54 C 270 48, 276 48, 278 54 C 280 62, 280 72, 284 70",
+				duration: 0.3,
+				delay: 2.16,
+			},
+			// 11: g 闭环与下坠大回环
+			{
+				d: "M 296 54 C 290 48, 284 54, 284 62 C 284 69, 292 72, 298 70 C 300 58, 300 54, 300 86 C 300 98, 290 106, 282 102 C 276 96, 280 84, 294 78",
+				duration: 0.42,
+				delay: 2.42,
+			},
+			// 12: 贯穿全签名的艺术甩尾长波浪 (Swash Tail)
+			{
+				d: "M 294 78 C 325 84, 370 82, 410 74 C 430 70, 445 68, 452 70",
+				duration: 0.45,
+				delay: 2.78,
+			},
+			// 13: i 上的落笔点
+			{ d: "M 241 42 C 242 41, 243 41, 243 42", duration: 0.1, delay: 3.18, width: 4.2 },
+		],
+	},
 };
 
 /**
@@ -153,5 +225,6 @@ export const SIGNATURE_PRESETS: Record<string, SignaturePreset> = {
 export function getSignaturePreset(name?: string): SignaturePreset {
 	if (!name) return SIGNATURE_PRESETS[DEFAULT_SIGNATURE_NAME];
 	const key = name.trim().toLowerCase();
+	if (key === "alan turing" || key === "turing") return SIGNATURE_PRESETS["alan turing"];
 	return SIGNATURE_PRESETS[key] || SIGNATURE_PRESETS[DEFAULT_SIGNATURE_NAME];
 }
