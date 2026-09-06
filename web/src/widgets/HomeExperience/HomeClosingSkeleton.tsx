@@ -1,40 +1,53 @@
 import { Skeleton } from "@shared/ui/base/skeleton";
 
-/** 首页探索导航专属骨架屏（对齐 8 卡片网格与底部消融层）。 */
+/** 首页探索导航专属骨架屏（对齐诗意双核与底部自然消融层）。 */
 export function HomeClosingSkeleton() {
 	return (
 		<section
 			aria-label="正在加载站点导航"
-			className="relative overflow-hidden pt-24 sm:pt-28 lg:pt-32"
+			className="relative overflow-hidden pt-28 sm:pt-32 lg:pt-36"
 		>
-			<div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-				<div className="flex flex-col items-center text-center">
-					<Skeleton className="h-2.5 w-24 rounded" />
-					<Skeleton className="mt-2.5 h-7 w-32 rounded-lg sm:h-8" />
-					<Skeleton className="mt-3.5 h-4 w-72 rounded max-w-lg" />
+			<div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
+				{/* 诗意大字骨架 */}
+				<div className="space-y-2.5 flex flex-col items-center">
+					<Skeleton className="h-7 w-32 rounded-lg sm:h-8 sm:w-40" />
+					<Skeleton className="h-7 w-28 rounded-lg sm:h-8 sm:w-36" />
+				</div>
 
-					{/* 8 卡片网格骨架 */}
-					<div className="mt-12 grid w-full max-w-3xl grid-cols-2 gap-3.5 sm:grid-cols-4 sm:gap-4">
-						{Array.from({ length: 8 }).map((_, i) => (
-							<div
-								key={i}
-								className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/30 p-3.5"
-							>
-								<Skeleton className="size-9 shrink-0 rounded-xl" />
-								<div className="min-w-0 flex-1 space-y-1.5">
-									<Skeleton className="h-4 w-12 rounded" />
-									<Skeleton className="h-2.5 w-16 rounded" />
-								</div>
-							</div>
-						))}
+				{/* 中段留下印记与订阅通信双核骨架 */}
+				<div className="mt-14 flex items-center justify-center gap-8 sm:gap-14">
+					<div className="flex flex-col items-center gap-1.5">
+						<Skeleton className="h-3.5 w-14 rounded" />
+						<Skeleton className="h-3.5 w-16 rounded" />
 					</div>
+					<div aria-hidden className="h-8 w-px bg-border/40" />
+					<div className="flex flex-col items-center gap-1.5">
+						<Skeleton className="h-3.5 w-14 rounded" />
+						<Skeleton className="h-3.5 w-24 rounded" />
+					</div>
+				</div>
+
+				{/* 下段平铺漫游导航骨架 */}
+				<div className="mt-12 flex justify-center gap-4 text-xs">
+					<Skeleton className="h-4 w-12 rounded" />
+					<span className="text-border/80">·</span>
+					<Skeleton className="h-4 w-10 rounded" />
+					<span className="text-border/80">·</span>
+					<Skeleton className="h-4 w-10 rounded" />
+					<span className="text-border/80">·</span>
+					<Skeleton className="h-4 w-14 rounded" />
 				</div>
 			</div>
 
 			{/* 底部消融交接带占位 */}
-			<div className="relative mt-16 h-36 w-full sm:h-44 lg:h-52">
-				<div className="absolute inset-0 bg-linear-to-b from-transparent to-background/60" />
-			</div>
+			<div
+				aria-hidden
+				className="relative z-1 mt-20 -mb-px h-12 w-full md:h-16"
+				style={{
+					background:
+						"linear-gradient(to bottom, transparent, color-mix(in oklab, var(--primary) 4%, var(--background)))",
+				}}
+			/>
 		</section>
 	);
 }
