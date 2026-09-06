@@ -74,12 +74,10 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 							: "mx-auto flex max-w-2xl flex-col items-center text-center"
 					}
 				>
-					{/* 头像展示：采用像素矩阵解构展开动效（支持 hover 重播微像素交互） */}
 					{avatar ? (
 						<div className="flex justify-center md:justify-start">
-							<figure className="group relative">
-								{/* 像素解构容器：利落方正的圆角与纯净边框，杜绝浮夸阴影 */}
-								<div className="relative size-48 overflow-hidden rounded-xl border border-border bg-card transition-colors duration-300 group-hover:border-primary/40 sm:size-56 lg:size-60">
+							<figure>
+								<div className="size-48 overflow-hidden rounded-xl bg-card sm:size-56 lg:size-60">
 									<ImagePixelReveal
 										src={avatar}
 										alt={`${owner} 的头像`}
@@ -89,7 +87,6 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 										spreadMs={380}
 										replayOnHover
 										className="size-full"
-										imgClassName="size-full object-cover transition-transform duration-300 group-hover:scale-102"
 										onError={() =>
 											setFailedAvatars((current) =>
 												current.includes(avatar)
