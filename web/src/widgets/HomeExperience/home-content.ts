@@ -1,3 +1,4 @@
+import type { ArchiveItem } from "@features/archive/model/types";
 import { noteTitle } from "@features/note-browse/model/display";
 
 import type { HomePublicationItem, HomePublicationKind, HomeSnapshot } from "./types";
@@ -46,6 +47,29 @@ export function buildHomePublications(snapshot: HomeSnapshot): HomePublicationIt
 
 	return [...articles, ...notes, ...galleries, ...series].sort(
 		(a, b) => timestamp(b.publishedAt) - timestamp(a.publishedAt),
+	);
+}
+
+/** 用轻量归档文章补全足迹历史，同时保留其他公开内容类型。 */
+export function buildHomeAccumulationPublications(
+	publications: HomePublicationItem[],
+	archiveArticles: ArchiveItem[],
+): HomePublicationItem[] {
+	const articles =
+		archiveArticles.length > 0
+			? archiveArticles.map<HomePublicationItem>((article) => ({
+					key: `article-${article.id}`,
+					kind: "article",
+					routeKey: article.slug,
+					title: article.title,
+					publishedAt: article.published_at,
+					isFeatured: false,
+				}))
+			: publications.filter((item) => item.kind === "article");
+	const nonArticles = publications.filter((item) => item.kind !== "article");
+
+	return [...articles, ...nonArticles].sort(
+		(left, right) => timestamp(right.publishedAt) - timestamp(left.publishedAt),
 	);
 }
 

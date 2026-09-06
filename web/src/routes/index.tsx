@@ -2,6 +2,8 @@ import { publishedGalleryKeys } from "@entities/gallery/api/keys";
 import { fetchPublishedGalleries } from "@entities/gallery/api/queries";
 import { publishedNoteKeys } from "@entities/note/api/keys";
 import { fetchPublishedNotes } from "@entities/note/api/queries";
+import { fetchArchiveYear, fetchArchiveYears } from "@features/archive/api/client";
+import { archiveKeys } from "@features/archive/api/keys";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import { fetchSeries, seriesKeys } from "@features/series/api";
@@ -38,8 +40,30 @@ export const Route = createFileRoute("/")({
 		const notesQuery = { limit: HOME_NOTE_LIMIT };
 		const galleriesQuery = { limit: HOME_GALLERY_LIMIT };
 		const seriesQuery = { page: 1, limit: HOME_SERIES_LIMIT };
+		const archiveArticlesPromise =
+			settings?.home_footprint_enabled === false
+				? Promise.resolve([])
+				: queryClient
+						.ensureQueryData({
+							queryKey: archiveKeys.years(),
+							queryFn: fetchArchiveYears,
+						})
+						.then(async ({ years }) => {
+							const archives = await Promise.all(
+								years.slice(0, 2).map((year) =>
+									queryClient
+										.ensureQueryData({
+											queryKey: archiveKeys.year(year),
+											queryFn: () => fetchArchiveYear(year),
+										})
+										.catch(() => null),
+								),
+							);
+							return archives.flatMap((archive) => archive?.items ?? []);
+						})
+						.catch(() => []);
 
-		const [posts, notes, galleries, series, tweets] = await Promise.all([
+		const [posts, notes, galleries, series, tweets, , archiveArticles] = await Promise.all([
 			queryClient
 				.ensureQueryData({
 					queryKey: postKeys.list(postsQuery),
@@ -71,11 +95,13 @@ export const Route = createFileRoute("/")({
 					queryFn: fetchAnnouncements,
 				})
 				.catch(() => null),
+			archiveArticlesPromise,
 		]);
 
 		const snapshot: HomeSnapshot = {
 			settings,
 			posts: posts?.data ?? [],
+			archiveArticles,
 			postTotal: posts?.pagination.total ?? posts?.data.length ?? 0,
 			notes: notes?.data ?? [],
 			galleries: galleries?.data ?? [],

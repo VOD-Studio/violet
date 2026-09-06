@@ -2,6 +2,7 @@ import type { PublishedGallery } from "@entities/gallery/model/types";
 import type { PublicNote } from "@entities/note/model/types";
 import type { Post } from "@entities/post/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
+import type { ArchiveItem } from "@features/archive/model/types";
 import type { SeriesSummary } from "@features/series/model/types";
 import type { SiteSettings } from "@features/settings/model/types";
 
@@ -9,6 +10,7 @@ import type { SiteSettings } from "@features/settings/model/types";
 export interface HomeSnapshot {
 	settings: SiteSettings | null;
 	posts: Post[];
+	archiveArticles: ArchiveItem[];
 	postTotal: number;
 	notes: PublicNote[];
 	galleries: PublishedGallery[];

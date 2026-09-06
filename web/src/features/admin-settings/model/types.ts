@@ -7,6 +7,9 @@ export interface GeneralSettingsDTO {
 	site_url: string;
 	footer_text: string;
 	posts_per_page: number;
+	home_footprint_enabled: boolean;
+	/** 节点聚合天数，范围 1–31 */
+	home_footprint_aggregation_days: number;
 	comments_enabled: boolean;
 	comments_moderation: boolean;
 	tech_stack: string;
