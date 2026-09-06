@@ -87,45 +87,57 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 							</span>
 						))}
 
-						{/* 星尘点缀：时间线四周散落的不对称微星与短线，衬托「今」刻度的方向感 */}
+						{/* 星尘微尘：浅金琥珀色微晶粒，散落于时间线四周衬托诗意 */}
 						<div aria-hidden className="pointer-events-none absolute inset-0">
 							<svg
 								aria-hidden="true"
-								className="absolute top-2 left-[12%] size-2 text-primary/30"
+								className="absolute -top-3 left-[15%] size-3 text-amber-500/40 dark:text-amber-300/35"
 								viewBox="0 0 24 24"
 								fill="currentColor"
 							>
 								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
 							</svg>
-							<span className="absolute top-16 left-[38%] size-1.5 rotate-45 bg-primary/20" />
-							<span className="absolute top-1 right-[22%] h-px w-4 bg-primary/25" />
+							<span className="absolute top-12 left-[32%] size-1.5 rotate-45 bg-amber-500/25 dark:bg-amber-300/20" />
+							<span className="absolute -top-1 right-[26%] h-px w-5 bg-amber-500/30 dark:bg-amber-300/25" />
 							<svg
 								aria-hidden="true"
-								className="absolute top-4 right-[6%] size-2.5 text-primary/25"
+								className="absolute top-2 right-[10%] size-2.5 text-amber-500/35 dark:text-amber-300/30"
 								viewBox="0 0 24 24"
 								fill="currentColor"
 							>
 								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
 							</svg>
-							<span className="absolute top-15 left-[58%] size-1 rotate-45 bg-primary/30" />
+							<span className="absolute top-14 left-[64%] size-1 rotate-45 bg-amber-500/35 dark:bg-amber-300/30" />
+							<svg
+								aria-hidden="true"
+								className="absolute bottom-2 left-[5%] size-2 text-amber-500/30 dark:text-amber-300/25"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
+							</svg>
+							<span className="absolute -bottom-1 right-[18%] size-1.5 rotate-45 bg-amber-500/25 dark:bg-amber-300/20" />
 						</div>
 					</div>
 
-					{/* 时间线下方居中引导：新篇与年表入口 */}
-					<div className="mt-7 space-y-1.5 text-center">
-						<div className="flex min-w-0 items-baseline justify-center gap-2 text-sm">
-							<span className="shrink-0 text-xs text-muted-foreground/80">
-								新篇 ·
-							</span>
+					{/* 时间线下方居中引导：新篇与年表入口（采用自然比例无衬线字体与优雅衬线斜体） */}
+					<div className="mt-7 space-y-1.5 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
+						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">
+							<span className="shrink-0 text-muted-foreground/75">新篇 ·</span>
 							<HomeContentLink
 								item={latest}
-								className="min-w-0 truncate font-medium text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								className="min-w-0 truncate font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 							>
 								{latest.title}
 							</HomeContentLink>
 						</div>
-						<p className="text-xs text-muted-foreground/75">
-							今年落笔 {yearCount} 篇 ·{" "}
+						<p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
+							<span className="font-serif text-[13px] italic text-muted-foreground/80">
+								今年落笔 {yearCount} 篇
+							</span>
+							<span aria-hidden className="text-muted-foreground/40">
+								·
+							</span>
 							<Link
 								to="/blog/archive"
 								className="font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
