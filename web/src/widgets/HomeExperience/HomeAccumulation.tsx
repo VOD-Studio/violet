@@ -39,7 +39,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 				>
 					积微成著
 				</h2>
-				<figure className="mt-6">
+				<figure className="mt-10 sm:mt-12">
 					<p className="sr-only">
 						{months
 							.map((month) => `${month.year}年${month.month}月 ${month.count} 项`)
@@ -121,7 +121,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 					</div>
 
 					{/* 时间线下方居中引导：新篇与年表入口（采用自然比例无衬线字体与优雅衬线斜体） */}
-					<div className="mt-7 space-y-1.5 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
+					<div className="mt-12 sm:mt-14 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
 						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">
 							<span className="shrink-0 text-muted-foreground/75">新篇 ·</span>
 							<HomeContentLink
@@ -131,7 +131,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 								{latest.title}
 							</HomeContentLink>
 						</div>
-						<p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
+						<p className="mt-3 sm:mt-3.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
 							<span className="font-serif text-[13px] italic text-muted-foreground/80">
 								今年落笔 {yearCount} 篇
 							</span>
