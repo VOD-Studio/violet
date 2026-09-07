@@ -111,13 +111,14 @@ describe("PersonaPage", () => {
 		const images = screen.getAllByRole("img");
 		expect(images.map((image) => image.getAttribute("alt"))).toEqual([
 			"若菫瑠爱头像",
+			"若菫瑠爱头像",
 			"角色三视图",
 		]);
 		expect(images[0]?.getAttribute("loading")).toBe("eager");
 		expect(images[1]?.getAttribute("loading")).toBe("lazy");
-		expect(images[0]?.getAttribute("srcset")).toContain("640w");
-		expect(images[0]?.getAttribute("srcset")).toContain("2048w");
-		expect(images[0]?.getAttribute("sizes")).toContain("44rem");
+		expect(images[0]?.getAttribute("srcset")).toContain("320w");
+		expect(images[0]?.getAttribute("srcset")).toContain("960w");
+		expect(images[0]?.getAttribute("sizes")).toContain("24rem");
 		expect(screen.getByText("角色主设定")).toBeTruthy();
 	});
 
@@ -140,10 +141,10 @@ describe("PersonaPage", () => {
 		expect(imagePreviewProps).toHaveBeenLastCalledWith(
 			expect.objectContaining({
 				open: true,
-				currentIndex: 1,
-				images: ["/hero.png", "/reference.png"],
-				thumbnails: ["/hero-thumb.png", "/reference-thumb.png"],
-				alts: ["若菫瑠爱头像", "角色三视图"],
+				currentIndex: 2,
+				images: ["/avatar.png", "/hero.png", "/reference.png"],
+				thumbnails: ["/avatar-thumb.png", "/hero-thumb.png", "/reference-thumb.png"],
+				alts: ["若菫瑠爱头像", "若菫瑠爱头像", "角色三视图"],
 			}),
 		);
 	});
