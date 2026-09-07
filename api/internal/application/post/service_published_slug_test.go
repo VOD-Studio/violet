@@ -9,6 +9,7 @@ import (
 
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
+	userdomain "blog-api/internal/domain/user"
 )
 
 // fakePublishedSlugRepo 覆盖 FindBySlug，按 slug 返回预设文章（或 ErrNotFound）。
@@ -24,6 +25,19 @@ func (f *fakePublishedSlugRepo) FindBySlug(_ context.Context, slug string) (*dom
 		return nil, domain.ErrNotFound
 	}
 	return p, nil
+}
+
+func (f *fakePublishedSlugRepo) FindCollaboratorIDsByPostID(context.Context, shared.ID) ([]shared.ID, error) {
+	return nil, nil
+}
+
+type authorLookupStub struct {
+	userdomain.UserRepository
+	users []*userdomain.User
+}
+
+func (s *authorLookupStub) FindByIDs(context.Context, []shared.ID) ([]*userdomain.User, error) {
+	return s.users, nil
 }
 
 func newPublishedSlugTestService(posts ...*domain.Post) *Service {
@@ -43,6 +57,22 @@ func TestService_GetPublishedBySlug_Published(t *testing.T) {
 	assert.Equal(t, "quantum-intro", dto.Slug)
 	assert.Equal(t, domain.StatusPublished, dto.Status)
 	assert.Equal(t, "量子计算入门", dto.Title)
+}
+
+func TestService_GetPublishedBySlug_PopulatesAuthor(t *testing.T) {
+	p := mustReconstructPost(t, "with-author", "有作者", "正文", "摘要")
+	email, err := userdomain.ParseEmail("writer@example.com")
+	require.NoError(t, err)
+	username, err := userdomain.ParseUsername("writer")
+	require.NoError(t, err)
+	author := userdomain.NewUser(p.AuthorID(), email, username, userdomain.NewPasswordHash("hash"))
+	svc := newPublishedSlugTestService(p)
+	svc.userRepo = &authorLookupStub{users: []*userdomain.User{author}}
+
+	dto, err := svc.GetPublishedBySlug(context.Background(), p.Slug())
+	require.NoError(t, err)
+	require.NotNil(t, dto.Author)
+	assert.Equal(t, "writer", dto.Author.Username)
 }
 
 func TestService_GetPublishedBySlug_DraftReturnsNotFound(t *testing.T) {
@@ -100,7 +130,7 @@ func reconstructPostWithStatus(t *testing.T, slug, title, status string) *domain
 	return domain.ReconstructPost(
 		shared.NewID(), shared.NewID(), title, slug,
 		"正文", "<p>html</p>", "摘要", "",
-		status, 0, false, "", "",
+		status, 0, false, false, "", "",
 		nil, nil, nil, testTime, testTime,
 	)
 }

@@ -22,6 +22,7 @@ type Post struct {
 	AuthorID       uuid.UUID  `gorm:"type:uuid;column:author_id" json:"author_id"`
 	ViewCount      int        `gorm:"default:0" json:"view_count"`
 	IsFeatured     bool       `gorm:"default:false" json:"is_featured"`
+	ShowSignature  bool       `gorm:"default:false;column:show_signature" json:"show_signature"`
 	SEOTitle       string     `gorm:"type:varchar(255);column:seo_title" json:"seo_title"`
 	SEODescription string     `gorm:"type:text;column:seo_description" json:"seo_description"`
 	PublishedAt    *time.Time `gorm:"column:published_at" json:"published_at,omitempty"`
@@ -32,8 +33,8 @@ type Post struct {
 	SeriesID        *uuid.UUID `gorm:"type:uuid;column:series_id" json:"series_id,omitempty"`
 	SeriesSectionID *uuid.UUID `gorm:"type:uuid;column:series_section_id" json:"series_section_id,omitempty"`
 	ChapterOrder    *int       `gorm:"column:chapter_order" json:"chapter_order,omitempty"`
-	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	CreatedAt       time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt       time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	// 软删除：GORM 识别 gorm.DeletedAt 后 Delete 自动改 UPDATE，查询自动过滤 deleted_at IS NULL。
 	// 不加 index tag，索引由 migration 038 以部分索引建立，避免 AutoMigrate 建全表索引覆盖。
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
@@ -53,7 +54,7 @@ type PostVersion struct {
 	ContentHTML string    `gorm:"type:text;column:content_html" json:"content_html"`
 	Excerpt     string    `gorm:"type:text" json:"excerpt"`
 	CoverImage  string    `gorm:"type:text;column:cover_image" json:"cover_image"`
-	Tags        string    `gorm:"type:jsonb" json:"tags"` // JSON array of tag names
+	Tags        string    `gorm:"type:jsonb" json:"tags"`                               // JSON array of tag names
 	EditorID    uuid.UUID `gorm:"type:uuid;column:editor_id;not null" json:"editor_id"` // 编辑这一版的操作人，与 Post.AuthorID（所有者）区分
 	Summary     string    `gorm:"type:varchar(255)" json:"summary"`
 	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
@@ -84,11 +85,11 @@ func (PostView) TableName() string { return "post_views" }
 
 // Comment 评论表持久化模型
 type Comment struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	PostID      uuid.UUID  `gorm:"type:uuid;column:post_id" json:"post_id"`
-	ParentID    *uuid.UUID `gorm:"type:uuid;column:parent_id" json:"parent_id,omitempty"`
-	Path        string     `gorm:"type:text" json:"path"`
-	Depth       int16      `gorm:"type:smallint" json:"depth"`
+	ID       uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	PostID   uuid.UUID  `gorm:"type:uuid;column:post_id" json:"post_id"`
+	ParentID *uuid.UUID `gorm:"type:uuid;column:parent_id" json:"parent_id,omitempty"`
+	Path     string     `gorm:"type:text" json:"path"`
+	Depth    int16      `gorm:"type:smallint" json:"depth"`
 	// CreatedBy 登录评论者的 user id（双轨认证，PRD-0001）。
 	// 匿名为 nil；非空表示登录评论（批注强制非空）。对应 comments.created_by 列。
 	CreatedBy   *uuid.UUID `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
@@ -107,11 +108,11 @@ type Comment struct {
 	AnchorSelectedText  *string `gorm:"type:text;column:anchor_selected_text" json:"anchor_selected_text,omitempty"`
 	AnchorBlockTextHash *string `gorm:"type:varchar(16);column:anchor_block_text_hash" json:"anchor_block_text_hash,omitempty"`
 
-	Status      string     `gorm:"type:varchar(20);default:pending" json:"status"`
-	IPHash      string     `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
-	UserAgent   string     `gorm:"type:text;column:user_agent" json:"user_agent"`
-	CreatedAt   time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt   time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	Status    string    `gorm:"type:varchar(20);default:pending" json:"status"`
+	IPHash    string    `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
+	UserAgent string    `gorm:"type:text;column:user_agent" json:"user_agent"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (Comment) TableName() string { return "comments" }
@@ -130,23 +131,23 @@ func (CommentReaction) TableName() string { return "comment_reactions" }
 
 // Announcement 公告表
 type Announcement struct {
-	ID          int32                 `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title       string                `gorm:"type:varchar(255);not null" json:"title"`
-	Content     string                `gorm:"type:text;not null" json:"content"`
-	Type        string                `gorm:"type:varchar(20);default:info" json:"type"`
-	Display     string                `gorm:"type:varchar(20);default:banner" json:"display"`
-	IsActive    bool                  `gorm:"default:true" json:"is_active"`
-	StartTime   *time.Time            `gorm:"column:start_time" json:"start_time,omitempty"`
-	EndTime     *time.Time            `gorm:"column:end_time" json:"end_time,omitempty"`
-	SortOrder   int                   `gorm:"default:0" json:"sort_order"`
+	ID          int32                       `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title       string                      `gorm:"type:varchar(255);not null" json:"title"`
+	Content     string                      `gorm:"type:text;not null" json:"content"`
+	Type        string                      `gorm:"type:varchar(20);default:info" json:"type"`
+	Display     string                      `gorm:"type:varchar(20);default:banner" json:"display"`
+	IsActive    bool                        `gorm:"default:true" json:"is_active"`
+	StartTime   *time.Time                  `gorm:"column:start_time" json:"start_time,omitempty"`
+	EndTime     *time.Time                  `gorm:"column:end_time" json:"end_time,omitempty"`
+	SortOrder   int                         `gorm:"default:0" json:"sort_order"`
 	Affects     datatypes.JSONSlice[string] `gorm:"type:jsonb" json:"affects,omitempty"`
-	ContentMD   string                `gorm:"type:text;column:content_md" json:"content_md,omitempty"`
-	ContentHTML string                `gorm:"type:text;column:content_html" json:"content_html,omitempty"`
-	CoverImage  string                `gorm:"type:text;column:cover_image" json:"cover_image,omitempty"`
-	Excerpt     string                `gorm:"type:text" json:"excerpt,omitempty"`
-	CreatedBy   *uuid.UUID            `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
-	CreatedAt   time.Time             `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt   time.Time             `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ContentMD   string                      `gorm:"type:text;column:content_md" json:"content_md,omitempty"`
+	ContentHTML string                      `gorm:"type:text;column:content_html" json:"content_html,omitempty"`
+	CoverImage  string                      `gorm:"type:text;column:cover_image" json:"cover_image,omitempty"`
+	Excerpt     string                      `gorm:"type:text" json:"excerpt,omitempty"`
+	CreatedBy   *uuid.UUID                  `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
+	CreatedAt   time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt   time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (Announcement) TableName() string { return "announcements" }

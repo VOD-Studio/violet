@@ -106,7 +106,7 @@ api/
 |------|--------|-------------|------|
 | **auth** | user, session | auth/command + auth/query | 注册/登录/登出/探活/邮箱验证/密码重置 |
 | **role** | role, permission | role + permission | 角色 CRUD、权限 CRUD、角色-权限分配 |
-| **post** | post | post | 文章 CRUD、发布/归档/草稿状态机、浏览计数、版本管理 |
+| **post** | post | post | 文章 CRUD、发布/归档/草稿状态机、可选作者落款、浏览计数、版本管理 |
 | **comment** | comment | comment | 评论 CRUD、回复、批注、审核（通过/垃圾/删除）、批量操作 |
 | **commentreaction** | commentreaction | commentreaction | 评论表情反应（IP 哈希匿名） |
 | **friendlink** | friendlink | friendlink | 友链申请、审核、上下架管理 |

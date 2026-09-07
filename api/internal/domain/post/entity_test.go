@@ -18,7 +18,7 @@ func TestReconstructPost_PreservesCanonicalURL(t *testing.T) {
 
 	t.Run("nil 表示原创", func(t *testing.T) {
 		p := ReconstructPost(id, authorID, "原创", "original",
-			"", "", "", "", StatusDraft, 0, false, "", "",
+			"", "", "", "", StatusDraft, 0, false, false, "", "",
 			nil, nil, tags, now, now)
 		assert.Nil(t, p.CanonicalURL(), "原创文章 canonical_url 应为 nil")
 	})
@@ -26,7 +26,7 @@ func TestReconstructPost_PreservesCanonicalURL(t *testing.T) {
 	t.Run("非 nil 表示转载", func(t *testing.T) {
 		origin := "https://example.com/origin"
 		p := ReconstructPost(id, authorID, "转载", "repost",
-			"", "", "", "", StatusDraft, 0, false, "", "",
+			"", "", "", "", StatusDraft, 0, false, false, "", "",
 			nil, &origin, tags, now, now)
 		got := p.CanonicalURL()
 		assert.NotNil(t, got, "转载文章 canonical_url 应非 nil")

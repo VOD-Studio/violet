@@ -39,7 +39,7 @@ func mustReconstructPost(t *testing.T, slug, title, contentMD, excerpt string) *
 	p := domain.ReconstructPost(
 		shared.NewID(), shared.NewID(), title, slug,
 		contentMD, "<p>html</p>", excerpt, "",
-		domain.StatusPublished, 0, false, "", "",
+		domain.StatusPublished, 0, false, false, "", "",
 		nil, nil, nil, testTime, testTime,
 	)
 	return p

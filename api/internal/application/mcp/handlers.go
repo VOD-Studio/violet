@@ -42,6 +42,7 @@ func (t *PostTools) CreatePost(ctx context.Context, req *mcp.CallToolRequest, ar
 		Title:    args.Title, Slug: args.Slug,
 		ContentHTML: args.ContentHTML, ContentMD: args.ContentMD, Excerpt: args.Excerpt,
 		CoverImage: args.CoverImage, CanonicalURL: args.CanonicalURL, Tags: args.Tags,
+		ShowSignature: args.ShowSignature,
 	})
 	if err != nil {
 		return errResult(err), nil, nil
@@ -58,6 +59,7 @@ func (t *PostTools) UpdatePost(ctx context.Context, req *mcp.CallToolRequest, ar
 		ID: args.ID, Title: args.Title, Slug: args.Slug,
 		ContentHTML: args.ContentHTML, ContentMD: args.ContentMD, Excerpt: args.Excerpt,
 		CoverImage: args.CoverImage, CanonicalURL: args.CanonicalURL, Tags: args.Tags,
+		ShowSignature: args.ShowSignature,
 	}, operatorUserID(req))
 	if err != nil {
 		return errResult(err), nil, nil
