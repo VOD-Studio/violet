@@ -286,6 +286,117 @@
 	}
 }
 
+/* 瑠爱加载叙事：低头写字 → 眨眼 → 举起纸页 → 星芒收笔。 */
+.rua-writing-sprite {
+	background-image: url("/persona/rua-writing-sprite.webp");
+	background-position: 0 0;
+	background-repeat: no-repeat;
+	background-size: 600% 100%;
+	filter: drop-shadow(0 12px 14px color-mix(in oklab, var(--persona-violet) 13%, transparent));
+	animation: rua-writing-story 3.6s step-end infinite;
+}
+
+.rua-ink-track {
+	position: relative;
+	height: 1px;
+	overflow: visible;
+	background: color-mix(in oklab, var(--persona-violet) 14%, transparent);
+}
+
+.rua-ink-stroke {
+	position: absolute;
+	inset: 0;
+	transform-origin: left;
+	background: linear-gradient(90deg, var(--persona-violet), var(--persona-gold));
+	animation: rua-ink-write 3.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.rua-ink-glint {
+	position: absolute;
+	top: -4px;
+	left: 0;
+	width: 9px;
+	height: 9px;
+	clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+	background: var(--persona-gold);
+	filter: drop-shadow(0 0 5px color-mix(in oklab, var(--persona-gold) 64%, transparent));
+	animation: rua-ink-glint 3.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes rua-writing-story {
+	0%,
+	17% {
+		background-position: 0 0;
+	}
+	18%,
+	35% {
+		background-position: 20% 0;
+	}
+	36%,
+	45% {
+		background-position: 40% 0;
+	}
+	46%,
+	62% {
+		background-position: 60% 0;
+	}
+	63%,
+	80% {
+		background-position: 80% 0;
+	}
+	81%,
+	100% {
+		background-position: 100% 0;
+	}
+}
+
+@keyframes rua-ink-write {
+	0% {
+		opacity: 0.38;
+		transform: scaleX(0.06);
+	}
+	58% {
+		opacity: 1;
+		transform: scaleX(0.84);
+	}
+	82%,
+	92% {
+		opacity: 1;
+		transform: scaleX(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scaleX(1);
+	}
+}
+
+@keyframes rua-ink-glint {
+	0% {
+		left: 0;
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	8% {
+		opacity: 0.62;
+	}
+	76% {
+		left: 86%;
+		opacity: 0.72;
+		transform: scale(0.72);
+	}
+	84%,
+	92% {
+		left: calc(100% - 4px);
+		opacity: 1;
+		transform: scale(1.12);
+	}
+	100% {
+		left: calc(100% - 4px);
+		opacity: 0;
+		transform: scale(0.4);
+	}
+}
+
 body {
 	background-color: var(--color-background);
 	color: var(--color-foreground);
@@ -908,6 +1019,21 @@ html.theme-vt-freeze *::after {
 
 /* ———— prefers-reduced-motion：禁用方向性页面过渡 ———— */
 @media (prefers-reduced-motion: reduce) {
+	.rua-writing-sprite {
+		animation: none;
+		background-position: 100% 0;
+	}
+
+	.rua-ink-stroke,
+	.rua-ink-glint {
+		animation: none;
+	}
+
+	.rua-ink-glint {
+		left: auto;
+		right: -4px;
+	}
+
 	:active-view-transition-type(forward)::view-transition-old(root),
 	:active-view-transition-type(forward)::view-transition-new(root),
 	:active-view-transition-type(back)::view-transition-old(root),

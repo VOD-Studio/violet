@@ -1,5 +1,4 @@
 import { cn } from "@shared/lib/utils";
-import { motion, useReducedMotion } from "motion/react";
 
 export interface RuaLoadingProps {
 	/** 页面级等待、浮层等待或行内等待。 */
@@ -12,18 +11,15 @@ export interface RuaLoadingProps {
 	className?: string;
 }
 
-const STAR_PATH = "polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%)";
-
 /**
- * 瑠爱主题加载状态，保留 Violet 的留白与细线视觉。
+ * 瑠爱主题的叙事式加载状态：写字、眨眼，再举起刚整理好的纸页。
  */
 const RuaLoading = ({
 	variant = "page",
-	label = "正在把话整理好…",
-	detail = "稍等，新的一页正在展开",
+	label = "瑠爱还在措辞…",
+	detail = "写好这一页，就来见你",
 	className,
 }: RuaLoadingProps) => {
-	const reduceMotion = useReducedMotion();
 	const isInline = variant === "inline";
 
 	return (
@@ -36,93 +32,38 @@ const RuaLoading = ({
 				variant === "page" && "grid min-h-[48vh] place-items-center px-6 py-20",
 				variant === "overlay" &&
 					"fixed inset-0 z-50 grid place-items-center bg-background/86 px-6 backdrop-blur-sm",
-				variant === "inline" && "inline-flex items-center gap-2.5",
+				variant === "inline" && "inline-flex items-center",
 				className,
 			)}
 		>
 			<div
 				className={cn(
 					"flex items-center",
-					isInline ? "gap-2.5" : "flex-col gap-5 text-center",
+					isInline ? "gap-2.5" : "flex-col gap-1 text-center",
 				)}
 			>
-				<motion.div
+				<span
+					aria-hidden
 					className={cn(
-						"relative shrink-0 rounded-full border border-edge-hairline bg-background p-0.5 shadow-sm",
-						isInline ? "size-8" : "size-18",
+						"rua-writing-sprite block shrink-0",
+						isInline ? "size-12" : "size-[min(14rem,48vw)]",
 					)}
-					animate={reduceMotion ? undefined : { y: [0, -3, 0] }}
-					transition={{
-						duration: 2.4,
-						ease: "easeInOut",
-						repeat: Number.POSITIVE_INFINITY,
-					}}
-				>
-					<img
-						src="/persona/rua-loader.webp"
-						alt=""
-						width={512}
-						height={512}
-						decoding="async"
-						fetchPriority="high"
-						className="size-full rounded-full object-cover"
-					/>
-					<motion.span
-						aria-hidden
-						className={cn(
-							"absolute bg-(--persona-gold) shadow-[0_0_14px_color-mix(in_oklab,var(--persona-gold)_52%,transparent)]",
-							isInline ? "-top-0.5 -right-0.5 size-2" : "top-0 right-0 size-3",
-						)}
-						style={{ clipPath: STAR_PATH }}
-						animate={
-							reduceMotion
-								? undefined
-								: { opacity: [0.52, 1, 0.52], scale: [0.82, 1.12, 0.82] }
-						}
-						transition={{
-							duration: 1.8,
-							ease: "easeInOut",
-							repeat: Number.POSITIVE_INFINITY,
-						}}
-					/>
-				</motion.div>
+				/>
 
-				<div className={cn("min-w-0", isInline ? "flex items-center gap-2" : "space-y-2")}>
-					<div
+				<div className={cn("min-w-0", isInline ? "w-34" : "w-52 -translate-y-1")}>
+					<p
 						className={cn(
-							"flex items-center",
-							isInline ? "gap-2" : "justify-center gap-2.5",
+							"truncate font-mono text-muted-foreground",
+							isInline ? "text-xs" : "text-sm",
 						)}
 					>
-						<span
-							className={cn(
-								"font-mono text-muted-foreground",
-								isInline ? "text-xs" : "text-sm",
-							)}
-						>
-							{label}
-						</span>
-						<span aria-hidden className="inline-flex items-center gap-1">
-							{[0, 1, 2].map((index) => (
-								<motion.span
-									key={index}
-									className="size-1 rounded-full bg-(--persona-violet)"
-									animate={
-										reduceMotion
-											? undefined
-											: { opacity: [0.24, 0.9, 0.24], y: [0, -2, 0] }
-									}
-									transition={{
-										delay: index * 0.16,
-										duration: 1.2,
-										ease: "easeInOut",
-										repeat: Number.POSITIVE_INFINITY,
-									}}
-								/>
-							))}
-						</span>
+						{label}
+					</p>
+					<div aria-hidden className="rua-ink-track mt-2">
+						<span className="rua-ink-stroke" />
+						<span className="rua-ink-glint" />
 					</div>
-					{!isInline && <p className="text-xs text-muted-foreground/70">{detail}</p>}
+					{!isInline && <p className="mt-2 text-xs text-muted-foreground/65">{detail}</p>}
 				</div>
 			</div>
 		</section>
