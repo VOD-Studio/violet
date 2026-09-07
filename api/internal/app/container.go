@@ -46,6 +46,7 @@ type Container struct {
 	Gallery         *GalleryContainer
 	Note            *NoteContainer
 	Publication     *PublicationContainer
+	Persona         *PersonaContainer
 	Notification    *NotificationContainer
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
@@ -114,6 +115,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	gallery := NewGalleryContainer(db, bus, permissionChecker)
 	note := NewNoteContainer(db)
 	publication := NewPublicationContainer(db, []byte(cfg.ResourceSigningKey))
+	persona := NewPersonaContainer(db)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
@@ -126,7 +128,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Series: series, Gallery: gallery, Note: note, Publication: publication, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
+		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 	}
 	return c, roleCleanup, nil
 }

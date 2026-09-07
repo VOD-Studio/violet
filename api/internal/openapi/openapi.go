@@ -102,6 +102,7 @@ func build() (*openapi3.T, error) {
 	registerGalleryPaths(t)
 	registerNotePaths(t)
 	registerPublicationPaths(t)
+	registerPersonaPaths(t)
 	registerChatPaths(t)
 	registerCustomEmojiPaths(t)
 	return t, nil
