@@ -1,3 +1,4 @@
+import { formatDate } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { ArrowUpRight } from "lucide-react";
@@ -6,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
 import type { AccumulationPoint } from "./home-accumulation-model";
-import { formatHomeDate, HOME_KIND_LABEL } from "./home-content";
+import { HOME_KIND_LABEL } from "./home-content";
 
 interface HomeAccumulationPointProps {
 	point: AccumulationPoint;
@@ -63,14 +64,6 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 					<motion.button
 						type="button"
 						aria-label={label}
-						initial={reduceMotion ? false : { opacity: 0 }}
-						whileInView={{ opacity: 1 }}
-						viewport={{ once: true, amount: 0.5 }}
-						transition={{
-							duration: reduceMotion ? 0 : 0.24,
-							ease: EASE_OUT,
-							delay: reduceMotion ? 0 : 0.16 + Math.min(point.order * 0.006, 0.3),
-						}}
 						onPointerEnter={(event) => {
 							if (event.pointerType === "mouse") showPoint();
 						}}
@@ -131,7 +124,7 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 						<div className="max-h-48 space-y-0.5 overflow-x-hidden overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent]">
 							{point.items.map((item) => (
 								<HomeContentLink
-									key={item.key}
+									key={item.id}
 									item={item}
 									className="group flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all duration-150 hover:bg-muted/70 active:scale-[0.985] focus-visible:bg-muted/70 focus-visible:outline-2 focus-visible:outline-primary"
 								>
@@ -148,10 +141,10 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 												className="size-0.5 rounded-full bg-border"
 											/>
 											<time
-												dateTime={item.publishedAt}
+												dateTime={item.published_at}
 												className="tabular-nums"
 											>
-												{formatHomeDate(item.publishedAt)}
+												{formatDate(item.published_at, "dotted-date")}
 											</time>
 										</div>
 									</div>
