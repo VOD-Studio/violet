@@ -1,0 +1,280 @@
+.page {
+	--persona-canvas: var(--background);
+	--persona-ink: var(--foreground);
+	--persona-muted: color-mix(in oklab, var(--persona-ink) 62%, var(--persona-canvas));
+	--persona-surface: color-mix(in oklab, var(--persona-ink) 4%, var(--persona-canvas));
+	--persona-hairline: color-mix(in oklab, var(--persona-ink) 12%, transparent);
+	--persona-coral: color-mix(in oklab, oklch(0.65 0.18 23) 88%, var(--persona-ink));
+	min-height: calc(100dvh - 4rem);
+	background: var(--persona-canvas);
+	color: var(--persona-ink);
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC",
+		"Microsoft YaHei", sans-serif;
+}
+
+.page ::selection {
+	background: color-mix(in oklab, var(--persona-coral) 28%, transparent);
+	color: var(--persona-ink);
+}
+
+.hero {
+	display: grid;
+	max-width: 80rem;
+	margin: 0 auto;
+	padding: 3.5rem 1.25rem 5rem;
+	gap: 3.5rem;
+	align-items: center;
+}
+
+.visualButton {
+	display: block;
+	width: 100%;
+	overflow: hidden;
+	border: 1px solid var(--persona-hairline);
+	border-radius: 0.75rem;
+	background: var(--persona-surface);
+	cursor: zoom-in;
+	transition:
+		border-color 180ms ease-out,
+		transform 180ms ease-out;
+}
+
+.visualButton:hover {
+	border-color: color-mix(in oklab, var(--persona-coral) 58%, var(--persona-hairline));
+	transform: translateY(-2px);
+}
+
+.visualButton:focus-visible,
+.referenceButton:focus-visible {
+	outline: 2px solid var(--persona-coral);
+	outline-offset: 4px;
+}
+
+.heroImage {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 44rem;
+	object-fit: contain;
+}
+
+.identity {
+	max-width: 35rem;
+}
+
+.title {
+	margin: 0;
+	color: var(--persona-coral);
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-size: clamp(2.75rem, 4.2vw, 3.75rem);
+	font-weight: 600;
+	line-height: 1.05;
+	letter-spacing: -0.035em;
+	text-wrap: balance;
+}
+
+.subtitle {
+	max-width: 32rem;
+	margin-top: 1rem;
+	font-size: clamp(1.05rem, 2vw, 1.25rem);
+	font-weight: 500;
+	line-height: 1.65;
+	text-wrap: pretty;
+}
+
+.summary {
+	max-width: 65ch;
+	margin-top: 2rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--persona-hairline);
+	color: var(--persona-muted);
+	font-size: 1rem;
+	line-height: 1.8;
+	text-wrap: pretty;
+}
+
+.facts {
+	display: grid;
+	margin-top: 2.5rem;
+	border-top: 1px solid var(--persona-hairline);
+}
+
+.fact {
+	display: grid;
+	grid-template-columns: minmax(5.5rem, 0.36fr) minmax(0, 1fr);
+	gap: 1rem;
+	padding: 0.8rem 0;
+	border-bottom: 1px solid var(--persona-hairline);
+}
+
+.fact dt {
+	color: var(--persona-muted);
+	font-size: 0.75rem;
+	line-height: 1.65;
+}
+
+.fact dd {
+	margin: 0;
+	font-size: 0.9rem;
+	font-weight: 500;
+	line-height: 1.65;
+}
+
+.contentSection,
+.referenceSection {
+	padding: 5rem 1.25rem;
+	border-top: 1px solid var(--persona-hairline);
+}
+
+.contentInner {
+	max-width: 72ch;
+	margin: 0 auto;
+}
+
+.sectionTitle {
+	margin: 0 0 2.25rem;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-size: clamp(1.6rem, 3vw, 2.15rem);
+	font-weight: 600;
+	line-height: 1.3;
+	letter-spacing: -0.025em;
+}
+
+.article {
+	max-width: none;
+	color: var(--persona-ink);
+	font-family: inherit;
+	font-size: 1rem;
+	line-height: 1.8;
+}
+
+.article h2,
+.article h3,
+.article h4 {
+	font-family: inherit;
+	letter-spacing: -0.02em;
+}
+
+.article a {
+	color: var(--persona-coral);
+	text-decoration-color: color-mix(in oklab, var(--persona-coral) 45%, transparent);
+	text-underline-offset: 0.22em;
+}
+
+.article img {
+	border-radius: 0.75rem;
+	cursor: zoom-in;
+}
+
+.referenceInner {
+	max-width: 80rem;
+	margin: 0 auto;
+}
+
+.referenceList {
+	display: grid;
+	gap: 4rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.referenceItem {
+	width: min(100%, 68rem);
+}
+
+.referenceItem:nth-child(even) {
+	justify-self: end;
+	width: min(100%, 58rem);
+}
+
+.referenceButton {
+	display: block;
+	width: 100%;
+	border: 0;
+	padding: 0;
+	background: transparent;
+	cursor: zoom-in;
+}
+
+.referenceImage {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 85dvh;
+	border-radius: 0.75rem;
+	object-fit: contain;
+	background: var(--persona-surface);
+}
+
+.caption {
+	max-width: 65ch;
+	margin: 0.9rem auto 0;
+	color: var(--persona-muted);
+	font-size: 0.875rem;
+	line-height: 1.7;
+	text-align: center;
+}
+
+.empty,
+.loading {
+	display: flex;
+	min-height: calc(100dvh - 4rem);
+	align-items: center;
+	justify-content: center;
+	padding: 4rem 1.25rem;
+	text-align: center;
+}
+
+.empty h1 {
+	margin: 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-size: 1.75rem;
+	font-weight: 600;
+	letter-spacing: -0.025em;
+}
+
+.empty p,
+.loading {
+	color: var(--persona-muted);
+	font-size: 0.9rem;
+	line-height: 1.7;
+}
+
+.empty p {
+	margin: 0.75rem 0 0;
+}
+
+@media (min-width: 40rem) {
+	.hero,
+	.contentSection,
+	.referenceSection {
+		padding-right: 2rem;
+		padding-left: 2rem;
+	}
+}
+
+@media (min-width: 64rem) {
+	.hero {
+		grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.72fr);
+		min-height: 42rem;
+		padding: 4.5rem 3rem 7rem;
+		gap: 6rem;
+	}
+
+	.contentSection,
+	.referenceSection {
+		padding: 7rem 3rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.visualButton {
+		transition: none;
+	}
+
+	.visualButton:hover {
+		transform: none;
+	}
+}

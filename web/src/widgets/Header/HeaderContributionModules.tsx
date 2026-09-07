@@ -19,7 +19,7 @@ const DEFAULT_QUICK_MODULES: QuickModuleItem[] = [
 		id: "persona",
 		name: "人设",
 		icon: UserRound,
-		to: "/about",
+		to: "/persona",
 	},
 ];
 

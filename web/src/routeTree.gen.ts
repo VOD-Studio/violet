@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as PersonaRouteImport } from './routes/persona'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -54,6 +55,7 @@ import { Route as AdminSeriesRouteImport } from './routes/admin.series'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
+import { Route as AdminPersonasRouteImport } from './routes/admin.personas'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
 import { Route as AdminNotesRouteImport } from './routes/admin.notes'
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
@@ -66,6 +68,7 @@ import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
+import { Route as AdminPersonasIndexRouteImport } from './routes/admin.personas.index'
 import { Route as AdminNotesIndexRouteImport } from './routes/admin.notes.index'
 import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.galleries.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
@@ -80,12 +83,18 @@ import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.
 import { Route as AdminSeriesIdRouteImport } from './routes/admin.series.$id'
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
+import { Route as AdminPersonasIdRouteImport } from './routes/admin.personas.$id'
 import { Route as AdminNotesIdRouteImport } from './routes/admin.notes.$id'
 import { Route as AdminGalleriesIdRouteImport } from './routes/admin.galleries.$id'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonaRoute = PersonaRouteImport.update({
+  id: '/persona',
+  path: '/persona',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -308,6 +317,11 @@ const AdminPostsRoute = AdminPostsRouteImport.update({
   path: '/posts',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPersonasRoute = AdminPersonasRouteImport.update({
+  id: '/personas',
+  path: '/personas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
   id: '/permissions',
   path: '/permissions',
@@ -367,6 +381,11 @@ const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminPostsRoute,
+} as any)
+const AdminPersonasIndexRoute = AdminPersonasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPersonasRoute,
 } as any)
 const AdminNotesIndexRoute = AdminNotesIndexRouteImport.update({
   id: '/',
@@ -438,6 +457,11 @@ const AdminPostsIdRoute = AdminPostsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminPostsRoute,
 } as any)
+const AdminPersonasIdRoute = AdminPersonasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminPersonasRoute,
+} as any)
 const AdminNotesIdRoute = AdminNotesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -458,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
+  '/persona': typeof PersonaRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
@@ -469,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/admin/media': typeof AdminMediaRoute
   '/admin/notes': typeof AdminNotesRouteWithChildren
   '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/personas': typeof AdminPersonasRouteWithChildren
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -507,6 +533,7 @@ export interface FileRoutesByFullPath {
   '/tweets/': typeof TweetsIndexRoute
   '/admin/galleries/$id': typeof AdminGalleriesIdRoute
   '/admin/notes/$id': typeof AdminNotesIdRoute
+  '/admin/personas/$id': typeof AdminPersonasIdRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
@@ -521,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
+  '/admin/personas/': typeof AdminPersonasIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
 }
@@ -532,6 +560,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
+  '/persona': typeof PersonaRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
@@ -577,6 +606,7 @@ export interface FileRoutesByTo {
   '/tweets': typeof TweetsIndexRoute
   '/admin/galleries/$id': typeof AdminGalleriesIdRoute
   '/admin/notes/$id': typeof AdminNotesIdRoute
+  '/admin/personas/$id': typeof AdminPersonasIdRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
@@ -591,6 +621,7 @@ export interface FileRoutesByTo {
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
   '/admin/notes': typeof AdminNotesIndexRoute
+  '/admin/personas': typeof AdminPersonasIndexRoute
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/series': typeof AdminSeriesIndexRoute
 }
@@ -604,6 +635,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
+  '/persona': typeof PersonaRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
@@ -615,6 +647,7 @@ export interface FileRoutesById {
   '/admin/media': typeof AdminMediaRoute
   '/admin/notes': typeof AdminNotesRouteWithChildren
   '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/personas': typeof AdminPersonasRouteWithChildren
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -653,6 +686,7 @@ export interface FileRoutesById {
   '/tweets/': typeof TweetsIndexRoute
   '/admin/galleries/$id': typeof AdminGalleriesIdRoute
   '/admin/notes/$id': typeof AdminNotesIdRoute
+  '/admin/personas/$id': typeof AdminPersonasIdRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
@@ -667,6 +701,7 @@ export interface FileRoutesById {
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
+  '/admin/personas/': typeof AdminPersonasIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/series/': typeof AdminSeriesIndexRoute
 }
@@ -681,6 +716,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/friends'
     | '/login'
+    | '/persona'
     | '/register'
     | '/admin/announcements'
     | '/admin/comments'
@@ -692,6 +728,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/notes'
     | '/admin/permissions'
+    | '/admin/personas'
     | '/admin/posts'
     | '/admin/projects'
     | '/admin/roles'
@@ -730,6 +767,7 @@ export interface FileRouteTypes {
     | '/tweets/'
     | '/admin/galleries/$id'
     | '/admin/notes/$id'
+    | '/admin/personas/$id'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/series/$id'
@@ -744,6 +782,7 @@ export interface FileRouteTypes {
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
+    | '/admin/personas/'
     | '/admin/posts/'
     | '/admin/series/'
   fileRoutesByTo: FileRoutesByTo
@@ -755,6 +794,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/friends'
     | '/login'
+    | '/persona'
     | '/register'
     | '/admin/announcements'
     | '/admin/comments'
@@ -800,6 +840,7 @@ export interface FileRouteTypes {
     | '/tweets'
     | '/admin/galleries/$id'
     | '/admin/notes/$id'
+    | '/admin/personas/$id'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/series/$id'
@@ -814,6 +855,7 @@ export interface FileRouteTypes {
     | '/tweets/topics/$tag'
     | '/admin/galleries'
     | '/admin/notes'
+    | '/admin/personas'
     | '/admin/posts'
     | '/admin/series'
   id:
@@ -826,6 +868,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/friends'
     | '/login'
+    | '/persona'
     | '/register'
     | '/admin/announcements'
     | '/admin/comments'
@@ -837,6 +880,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/notes'
     | '/admin/permissions'
+    | '/admin/personas'
     | '/admin/posts'
     | '/admin/projects'
     | '/admin/roles'
@@ -875,6 +919,7 @@ export interface FileRouteTypes {
     | '/tweets/'
     | '/admin/galleries/$id'
     | '/admin/notes/$id'
+    | '/admin/personas/$id'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/series/$id'
@@ -889,6 +934,7 @@ export interface FileRouteTypes {
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
+    | '/admin/personas/'
     | '/admin/posts/'
     | '/admin/series/'
   fileRoutesById: FileRoutesById
@@ -902,6 +948,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
   LoginRoute: typeof LoginRoute
+  PersonaRoute: typeof PersonaRoute
   RegisterRoute: typeof RegisterRoute
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
@@ -940,6 +987,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persona': {
+      id: '/persona'
+      path: '/persona'
+      fullPath: '/persona'
+      preLoaderRoute: typeof PersonaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1250,6 +1304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPostsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/personas': {
+      id: '/admin/personas'
+      path: '/personas'
+      fullPath: '/admin/personas'
+      preLoaderRoute: typeof AdminPersonasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/permissions': {
       id: '/admin/permissions'
       path: '/permissions'
@@ -1333,6 +1394,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/posts/'
       preLoaderRoute: typeof AdminPostsIndexRouteImport
       parentRoute: typeof AdminPostsRoute
+    }
+    '/admin/personas/': {
+      id: '/admin/personas/'
+      path: '/'
+      fullPath: '/admin/personas/'
+      preLoaderRoute: typeof AdminPersonasIndexRouteImport
+      parentRoute: typeof AdminPersonasRoute
     }
     '/admin/notes/': {
       id: '/admin/notes/'
@@ -1432,6 +1500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPostsIdRouteImport
       parentRoute: typeof AdminPostsRoute
     }
+    '/admin/personas/$id': {
+      id: '/admin/personas/$id'
+      path: '/$id'
+      fullPath: '/admin/personas/$id'
+      preLoaderRoute: typeof AdminPersonasIdRouteImport
+      parentRoute: typeof AdminPersonasRoute
+    }
     '/admin/notes/$id': {
       id: '/admin/notes/$id'
       path: '/$id'
@@ -1475,6 +1550,20 @@ const AdminNotesRouteChildren: AdminNotesRouteChildren = {
 
 const AdminNotesRouteWithChildren = AdminNotesRoute._addFileChildren(
   AdminNotesRouteChildren,
+)
+
+interface AdminPersonasRouteChildren {
+  AdminPersonasIdRoute: typeof AdminPersonasIdRoute
+  AdminPersonasIndexRoute: typeof AdminPersonasIndexRoute
+}
+
+const AdminPersonasRouteChildren: AdminPersonasRouteChildren = {
+  AdminPersonasIdRoute: AdminPersonasIdRoute,
+  AdminPersonasIndexRoute: AdminPersonasIndexRoute,
+}
+
+const AdminPersonasRouteWithChildren = AdminPersonasRoute._addFileChildren(
+  AdminPersonasRouteChildren,
 )
 
 interface AdminPostsRouteChildren {
@@ -1542,6 +1631,7 @@ interface AdminRouteChildren {
   AdminMediaRoute: typeof AdminMediaRoute
   AdminNotesRoute: typeof AdminNotesRouteWithChildren
   AdminPermissionsRoute: typeof AdminPermissionsRoute
+  AdminPersonasRoute: typeof AdminPersonasRouteWithChildren
   AdminPostsRoute: typeof AdminPostsRouteWithChildren
   AdminProjectsRoute: typeof AdminProjectsRoute
   AdminRolesRoute: typeof AdminRolesRoute
@@ -1565,6 +1655,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMediaRoute: AdminMediaRoute,
   AdminNotesRoute: AdminNotesRouteWithChildren,
   AdminPermissionsRoute: AdminPermissionsRoute,
+  AdminPersonasRoute: AdminPersonasRouteWithChildren,
   AdminPostsRoute: AdminPostsRouteWithChildren,
   AdminProjectsRoute: AdminProjectsRoute,
   AdminRolesRoute: AdminRolesRoute,
@@ -1588,6 +1679,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
   LoginRoute: LoginRoute,
+  PersonaRoute: PersonaRoute,
   RegisterRoute: RegisterRoute,
   AnnouncementsIdRoute: AnnouncementsIdRoute,
   BlogSlugRoute: BlogSlugRoute,
