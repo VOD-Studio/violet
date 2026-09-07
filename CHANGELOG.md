@@ -7,6 +7,59 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.22](https://github.com/VOD-Studio/violet/compare/v2.8.21...v2.8.22) (2026-09-07)
+
+
+### 新增
+
+* **header:** Logo 胶囊接入站长开源档案与贡献卡片 ([75a4882](https://github.com/VOD-Studio/violet/commit/75a4882d482cd1ed3d81c4fac5a5d80e93d7d6ba))
+* **header:** 中段导航绝对居中与右侧胶囊收起展开重构 ([e90bdfc](https://github.com/VOD-Studio/violet/commit/e90bdfcebe73c8f14e6e5aa58d3009646ce5e4d4))
+* **header:** 站长档案卡片新增独立模块入口区并支持人设跳转 ([7ecc42e](https://github.com/VOD-Studio/violet/commit/7ecc42e9b103a88f25c70b9c7cab86e3155a6c84))
+* **header:** 重构为三段式悬浮胶囊导航栏 ([bc8a73f](https://github.com/VOD-Studio/violet/commit/bc8a73f7e976a18613a6565e41a624abe44c11b1))
+* **home:** 创作板块与四类内容命名落位 ([554cd70](https://github.com/VOD-Studio/violet/commit/554cd7029109fd1393652ae6ade564df1bd912ad))
+* **home:** 增加首页全景 1:1 骨架屏 ([d6a2a3c](https://github.com/VOD-Studio/violet/commit/d6a2a3cd8c3defa1f2ba39174652ded5015d390b))
+* **home:** 接入图灵论文双语引语与手写签名署名 ([befd55a](https://github.com/VOD-Studio/violet/commit/befd55ab1d2922671575423bc6ace5b309ebfed4))
+* **home:** 重做首页发布足迹 ([5f506de](https://github.com/VOD-Studio/violet/commit/5f506dee934da956c93a8d6b1c06ac209668061e))
+* **home:** 重构个人创作首页体验 ([c33f800](https://github.com/VOD-Studio/violet/commit/c33f800dab5c523a927bf8999f1784c56cc97576))
+* **posts:** 重做文章目录阅读轨迹 ([83d8085](https://github.com/VOD-Studio/violet/commit/83d8085e426b0c71f16a736672eedde4bf79dcb1))
+* **settings:** 增加首页足迹配置 ([9b9b18c](https://github.com/VOD-Studio/violet/commit/9b9b18c56efaa5ef27f580f2383c8a47634a64c4))
+* **shared-ui:** 实现纯动态连笔手写签名组件 ([d0a7064](https://github.com/VOD-Studio/violet/commit/d0a7064fb4f187f2b78877faae39ac5aa2188f6e))
+* **shared-ui:** 抽象 Epigraph 卷首引言公共组件并优化序章排版 ([dc50bc2](https://github.com/VOD-Studio/violet/commit/dc50bc228094309f1d74c3921054b180e908c7f0))
+* **shared-ui:** 新增图片像素矩阵解构展开动效组件 ([623d17f](https://github.com/VOD-Studio/violet/commit/623d17f78c6f14ea8ae9f66e0545ef6ae02c5210))
+
+
+### 修复
+
+* **footer:** 将 tagline 默认值换为原创寄语 ([71e281b](https://github.com/VOD-Studio/violet/commit/71e281b39f57d2b75e9f00451c5d2efd4a830d3d))
+* **header:** 优化 Segmented 选中项高对比反色药丸样式 ([0ad81be](https://github.com/VOD-Studio/violet/commit/0ad81be1f6e7bd973e9075c1c755b558905fd621))
+* **header:** 消除滚动抖动并固定导航栏恒定几何尺寸 ([200e527](https://github.com/VOD-Studio/violet/commit/200e5273fd20f1f227ac2fa06d6e734bccadaaf7))
+* **home:** 优化首页自白引言排版层次 ([9aa4ee2](https://github.com/VOD-Studio/violet/commit/9aa4ee206dae7d03682b182d318c96ae54f73bd7))
+* **home:** 消除滚动位置刷新时的页面抖动 ([f31fa14](https://github.com/VOD-Studio/violet/commit/f31fa14722c006ffd61b687cf148f07498955163))
+* **home:** 简化首页头像展示样式 ([b75d257](https://github.com/VOD-Studio/violet/commit/b75d25715396699cdab3754e5ba7afc44a2caf7c))
+* **home:** 重构社交图标栏与浮动标签 ([3886302](https://github.com/VOD-Studio/violet/commit/3886302a12fab4fa01a67fe3d2a1ec3cd2f059e8))
+* **settings:** 将默认站点名称由 My Blog 改为 Violet ([0991941](https://github.com/VOD-Studio/violet/commit/09919417c230f28e39e027fd68cca774428d5658))
+* **shared-ui:** 修复 Segmented 滑块未测量态竖线与激活文字隐形 ([0489ec4](https://github.com/VOD-Studio/violet/commit/0489ec467d3f9f010ff4cc342dd4790748a2c349))
+* **shared-ui:** 修复像素揭示动画交接 ([c4c5369](https://github.com/VOD-Studio/violet/commit/c4c53693928fbc07305147e973452d81e65b0b02))
+* **web:** 修复按钮全局样式污染并重构首屏为满屏视差空间 ([51fd374](https://github.com/VOD-Studio/violet/commit/51fd374ec5e2c3047571596e91eaf3fce971fd49))
+* **web:** 统一全站底色消除分层并将名称全量修正为 Violet ([762a54f](https://github.com/VOD-Studio/violet/commit/762a54f7125da6c65d20bbdad863af6cc74df718))
+
+
+### 重构
+
+* **footer:** 更名页脚专栏与四类链接为著述文雅体系 ([f4a78f9](https://github.com/VOD-Studio/violet/commit/f4a78f92907b18baf2b84186a7a635c9b8838725))
+* **github:** 贡献分档逻辑上提至 model 层供复用 ([84b5b3f](https://github.com/VOD-Studio/violet/commit/84b5b3f1625d67c9515dae1aa5eca1e200a22dab))
+* **header:** 拆分站长档案卡片为独立子组件 ([daf21df](https://github.com/VOD-Studio/violet/commit/daf21df1a49a874538e02f72024ce1039f066768))
+* **header:** 接入 shared Segmented 分段滑块驱动主导航动画 ([119346a](https://github.com/VOD-Studio/violet/commit/119346a453185546aba183446ad2e6d3111743f8))
+* **home:** 删除结语区冗余的全站漫游导航 ([1b2b3a8](https://github.com/VOD-Studio/violet/commit/1b2b3a8cb7fa80946b8eaa49c4757c86878ff745))
+* **home:** 将首页骨架屏按业务区块模块化拆分 ([b9debd8](https://github.com/VOD-Studio/violet/commit/b9debd8941a0f67f4b2ef1590ec34604af0270b6))
+* **home:** 更换首页板块命名为自有文雅文案 ([ad94c77](https://github.com/VOD-Studio/violet/commit/ad94c77ed430c739a2a36d0e9ee03288abec728a))
+* **home:** 重构发布足迹与近期笔墨双栏展台 ([349aae2](https://github.com/VOD-Studio/violet/commit/349aae283f77ece8779d4fcf68f36d74715246ff))
+* **home:** 重构发布足迹今天指示器与悬停浮层 ([1876a53](https://github.com/VOD-Studio/violet/commit/1876a5342cb2d864ac8ea0819d403d01e141e8f2))
+* **home:** 重构探索导航与页脚自然消融过渡层 ([4561b68](https://github.com/VOD-Studio/violet/commit/4561b68080289170811f3371551016f22fb159de))
+* **home:** 重构诗意落幕与原生渐变消融页脚 ([c8eea11](https://github.com/VOD-Studio/violet/commit/c8eea114b5e7e7366f83d9bc9c323f1755db7aa9))
+* **home:** 重构首屏序章并接入像素展开头像动效 ([223eb34](https://github.com/VOD-Studio/violet/commit/223eb3469d16e64f3c0eda08503137725cd72e38))
+* **shared-ui:** 签名预置配置抽离与真手写引擎重构 ([9078659](https://github.com/VOD-Studio/violet/commit/90786595e860de50f43442a7d2792ba89887b008))
+
 ## [2.8.21](https://github.com/VOD-Studio/violet/compare/v2.8.20...v2.8.21) (2026-09-04)
 
 
