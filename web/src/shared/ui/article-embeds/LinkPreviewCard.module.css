@@ -17,10 +17,14 @@
 		transform 180ms ease-out;
 }
 
-.card:hover {
+.card:is(:hover, :focus-visible) {
 	border-color: color-mix(in oklab, var(--primary) 42%, transparent);
 	box-shadow: 0 0.9rem 2.6rem color-mix(in oklab, var(--foreground) 7%, transparent);
 	transform: translateY(-0.1rem);
+}
+
+.card:active {
+	transform: translateY(0) scale(0.992);
 }
 
 .card:focus-visible {
@@ -37,6 +41,14 @@
 	border-radius: 0.68rem;
 	background: var(--muted);
 	object-fit: cover;
+}
+
+.image {
+	transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card:is(:hover, :focus-visible) .image {
+	transform: scale(1.015);
 }
 
 .imageFallback svg {
@@ -93,7 +105,7 @@
 	transition: transform 180ms ease-out;
 }
 
-.card:hover .arrow {
+.card:is(:hover, :focus-visible) .arrow {
 	transform: translate(0.12rem, -0.12rem);
 }
 
@@ -120,12 +132,15 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.card,
-	.arrow {
+	.arrow,
+	.image {
 		transition: none;
 	}
 
-	.card:hover,
-	.card:hover .arrow {
+	.card:is(:hover, :focus-visible),
+	.card:active,
+	.card:is(:hover, :focus-visible) .arrow,
+	.card:is(:hover, :focus-visible) .image {
 		transform: none;
 	}
 }

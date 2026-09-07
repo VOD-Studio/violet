@@ -73,6 +73,9 @@ describe("ArticleContent rich nodes", () => {
 		).toBeTruthy();
 		expect(screen.getByRole("link", { name: "打开链接：关于这座花园" })).toBeTruthy();
 		expect(screen.getByRole("article", { name: "Rua 发布的动态" })).toBeTruthy();
+		expect(
+			screen.getByRole("link", { name: "在 X 上查看 Rua 的动态" }).getAttribute("href"),
+		).toBe("https://x.com/example/status/1");
 		expect(screen.getByRole("navigation", { name: "社交链接" })).toBeTruthy();
 	});
 

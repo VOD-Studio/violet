@@ -1,12 +1,37 @@
+.shell {
+	margin: 2rem 0;
+}
+
 .card {
+	display: block;
 	width: min(100%, 38rem);
-	margin: 2rem auto;
+	margin: 0 auto;
 	border: 1px solid color-mix(in oklab, var(--foreground) 13%, transparent);
 	border-radius: 1rem;
 	padding: 1.1rem;
 	background: var(--card);
 	box-shadow: 0 0.8rem 2.5rem color-mix(in oklab, var(--foreground) 5%, transparent);
 	color: var(--foreground);
+	text-decoration: none;
+	transition:
+		border-color 180ms ease-out,
+		box-shadow 180ms ease-out,
+		transform 180ms ease-out;
+}
+
+.card:is(:hover, :focus-visible) {
+	border-color: color-mix(in oklab, var(--primary) 42%, transparent);
+	box-shadow: 0 1rem 2.8rem color-mix(in oklab, var(--foreground) 8%, transparent);
+	transform: translateY(-0.1rem);
+}
+
+.card:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline-offset: 3px;
+}
+
+.card:active {
+	transform: translateY(0) scale(0.992);
 }
 
 .header {
@@ -74,18 +99,14 @@
 	place-items: center;
 	border-radius: 999px;
 	color: var(--foreground);
-	transition: background 160ms ease-out;
+	transition:
+		background 160ms ease-out,
+		transform 180ms ease-out;
 }
 
-.platform:hover {
+.card:is(:hover, :focus-visible) .platform {
 	background: var(--muted);
-}
-
-.platform:focus-visible,
-.mediaLink:focus-visible,
-.card footer a:focus-visible {
-	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
-	outline-offset: 3px;
+	transform: rotate(-3deg) scale(1.035);
 }
 
 .platform svg {
@@ -123,7 +144,7 @@
 	transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.mediaLink:hover .media {
+.card:is(:hover, :focus-visible) .media {
 	transform: scale(1.008);
 }
 
@@ -134,7 +155,7 @@
 	border-top: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
 }
 
-.card footer a {
+.card footer span {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.35rem;
@@ -142,11 +163,10 @@
 	color: var(--muted-foreground);
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	font-size: 0.66rem;
-	text-decoration: none;
 	transition: color 160ms ease-out;
 }
 
-.card footer a:hover {
+.card:is(:hover, :focus-visible) footer span {
 	color: var(--primary);
 }
 
@@ -156,12 +176,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.card,
 	.platform,
-	.media {
+	.media,
+	.card footer span {
 		transition: none;
 	}
 
-	.mediaLink:hover .media {
+	.card:is(:hover, :focus-visible),
+	.card:active,
+	.card:is(:hover, :focus-visible) .platform,
+	.card:is(:hover, :focus-visible) .media {
 		transform: none;
 	}
 }

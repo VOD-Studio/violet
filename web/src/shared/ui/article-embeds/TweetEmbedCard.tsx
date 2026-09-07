@@ -13,60 +13,57 @@ export function TweetEmbedCard({ config }: TweetEmbedCardProps) {
 	const handle = config.handle.startsWith("@") ? config.handle : `@${config.handle}`;
 
 	return (
-		<article className={styles.card} aria-label={`${config.author} 发布的动态`}>
-			<header className={styles.header}>
-				{config.avatar ? (
-					<img
-						src={articleEmbedImageUrl(config.avatar, 160)}
-						alt=""
-						className={styles.avatar}
-						loading="lazy"
-					/>
-				) : (
-					<span className={styles.avatarFallback} aria-hidden>
-						{config.author.slice(0, 1)}
+		<article className={styles.shell} aria-label={`${config.author} 发布的动态`}>
+			<a
+				href={config.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				className={styles.card}
+				aria-label={`在 X 上查看 ${config.author} 的动态`}
+			>
+				<header className={styles.header}>
+					{config.avatar ? (
+						<img
+							src={articleEmbedImageUrl(config.avatar, 160)}
+							alt=""
+							className={styles.avatar}
+							loading="lazy"
+						/>
+					) : (
+						<span className={styles.avatarFallback} aria-hidden>
+							{config.author.slice(0, 1)}
+						</span>
+					)}
+					<div className={styles.identity}>
+						<p>
+							<strong>{config.author}</strong>
+							{config.verified ? <BadgeCheck aria-label="已认证" /> : null}
+						</p>
+						<span>{handle}</span>
+					</div>
+					<span className={styles.platform} aria-hidden>
+						<XIcon />
 					</span>
-				)}
-				<div className={styles.identity}>
-					<p>
-						<strong>{config.author}</strong>
-						{config.verified ? <BadgeCheck aria-label="已认证" /> : null}
-					</p>
-					<span>{handle}</span>
-				</div>
-				<a
-					href={config.url}
-					target="_blank"
-					rel="noopener noreferrer"
-					className={styles.platform}
-					aria-label="在 X 上查看原动态"
-				>
-					<XIcon />
-				</a>
-			</header>
+				</header>
 
-			<p className={styles.text}>{config.text}</p>
-			{config.image ? (
-				<a
-					href={config.url}
-					target="_blank"
-					rel="noopener noreferrer"
-					className={styles.mediaLink}
-				>
-					<img
-						src={articleEmbedImageUrl(config.image, 1200)}
-						alt={config.imageAlt || "动态配图"}
-						className={styles.media}
-						loading="lazy"
-					/>
-				</a>
-			) : null}
-			<footer>
-				<a href={config.url} target="_blank" rel="noopener noreferrer">
-					{config.date || "查看原动态"}
-					<ExternalLink aria-hidden />
-				</a>
-			</footer>
+				<p className={styles.text}>{config.text}</p>
+				{config.image ? (
+					<span className={styles.mediaLink}>
+						<img
+							src={articleEmbedImageUrl(config.image, 1200)}
+							alt={config.imageAlt || "动态配图"}
+							className={styles.media}
+							loading="lazy"
+						/>
+					</span>
+				) : null}
+				<footer>
+					<span>
+						{config.date || "查看原动态"}
+						<ExternalLink aria-hidden />
+					</span>
+				</footer>
+			</a>
 		</article>
 	);
 }

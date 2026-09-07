@@ -19,7 +19,12 @@ export function ArticleSignature({ name }: ArticleSignatureProps) {
 	const hasVectorSignature = vectorSignatureNames.has(normalizedName);
 
 	return (
-		<footer ref={rootRef} data-article-signature className={styles.root}>
+		<footer
+			ref={rootRef}
+			data-article-signature
+			data-visible={isInView}
+			className={styles.root}
+		>
 			<div className={styles.divider} aria-hidden="true">
 				<span className={cn(styles.rule, isInView && styles.ruleVisible)} />
 				<span className={styles.kicker}>FINIS</span>

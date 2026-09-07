@@ -29,7 +29,7 @@
 	height: 2.5rem;
 	align-items: center;
 	justify-content: center;
-	border-radius: 0.72rem;
+	border-radius: 999px;
 	background: var(--muted);
 	object-fit: cover;
 }

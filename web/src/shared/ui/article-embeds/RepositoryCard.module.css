@@ -14,10 +14,14 @@
 		transform 180ms ease-out;
 }
 
-.card:hover {
+.card:is(:hover, :focus-visible) {
 	border-color: color-mix(in oklab, var(--primary) 44%, transparent);
 	box-shadow: 0 1rem 2.8rem color-mix(in oklab, var(--foreground) 8%, transparent);
 	transform: translateY(-0.12rem);
+}
+
+.card:active {
+	transform: translateY(0) scale(0.992);
 }
 
 .card:focus-visible {
@@ -62,7 +66,7 @@
 	transition: transform 180ms ease-out;
 }
 
-.card:hover .arrow {
+.card:is(:hover, :focus-visible) .arrow {
 	transform: translate(0.12rem, -0.12rem);
 }
 
@@ -129,8 +133,9 @@
 		transition: none;
 	}
 
-	.card:hover,
-	.card:hover .arrow {
+	.card:is(:hover, :focus-visible),
+	.card:active,
+	.card:is(:hover, :focus-visible) .arrow {
 		transform: none;
 	}
 }

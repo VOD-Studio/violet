@@ -22,10 +22,14 @@
 		transform 180ms ease-out;
 }
 
-.item:hover {
+.item:is(:hover, :focus-visible) {
 	border-color: color-mix(in oklab, var(--primary) 38%, transparent);
 	background: color-mix(in oklab, var(--primary) 5%, var(--card));
 	transform: translateY(-0.1rem);
+}
+
+.item:active {
+	transform: translateY(0) scale(0.992);
 }
 
 .item:focus-visible {
@@ -41,6 +45,10 @@
 	border-radius: 0.65rem;
 	background: var(--muted);
 	color: var(--foreground);
+	transition:
+		background-color 180ms ease-out,
+		color 180ms ease-out,
+		transform 180ms ease-out;
 }
 
 .icon svg {
@@ -81,7 +89,13 @@
 	transition: transform 180ms ease-out;
 }
 
-.item:hover .arrow {
+.item:is(:hover, :focus-visible) .icon {
+	background: color-mix(in oklab, var(--primary) 10%, var(--muted));
+	color: var(--primary);
+	transform: rotate(-2deg) scale(1.035);
+}
+
+.item:is(:hover, :focus-visible) .arrow {
 	transform: translate(0.1rem, -0.1rem);
 }
 
@@ -99,12 +113,15 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.item,
+	.icon,
 	.arrow {
 		transition: none;
 	}
 
-	.item:hover,
-	.item:hover .arrow {
+	.item:is(:hover, :focus-visible),
+	.item:active,
+	.item:is(:hover, :focus-visible) .icon,
+	.item:is(:hover, :focus-visible) .arrow {
 		transform: none;
 	}
 }
