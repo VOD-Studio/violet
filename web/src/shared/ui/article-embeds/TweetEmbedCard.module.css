@@ -1,0 +1,167 @@
+.card {
+	width: min(100%, 38rem);
+	margin: 2rem auto;
+	border: 1px solid color-mix(in oklab, var(--foreground) 13%, transparent);
+	border-radius: 1rem;
+	padding: 1.1rem;
+	background: var(--card);
+	box-shadow: 0 0.8rem 2.5rem color-mix(in oklab, var(--foreground) 5%, transparent);
+	color: var(--foreground);
+}
+
+.header {
+	display: grid;
+	grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+	gap: 0.75rem;
+	align-items: center;
+}
+
+.avatar,
+.avatarFallback {
+	display: flex;
+	width: 2.75rem;
+	height: 2.75rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: var(--muted);
+	object-fit: cover;
+}
+
+.avatarFallback {
+	color: var(--muted-foreground);
+	font-family: Georgia, "Times New Roman", serif;
+	font-style: italic;
+}
+
+.identity {
+	min-width: 0;
+}
+
+.identity p,
+.identity span,
+.text {
+	margin: 0;
+}
+
+.identity p {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+}
+
+.identity strong {
+	overflow: hidden;
+	font-size: 0.9rem;
+	font-weight: 680;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.identity > span {
+	display: block;
+	overflow: hidden;
+	color: var(--muted-foreground);
+	font-size: 0.72rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.platform {
+	display: grid;
+	width: 2rem;
+	height: 2rem;
+	place-items: center;
+	border-radius: 999px;
+	color: var(--foreground);
+	transition: background 160ms ease-out;
+}
+
+.platform:hover {
+	background: var(--muted);
+}
+
+.platform:focus-visible,
+.mediaLink:focus-visible,
+.card footer a:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline-offset: 3px;
+}
+
+.platform svg {
+	width: 1.05rem;
+	height: 1.05rem;
+}
+.identity p svg {
+	width: 0.95rem;
+	height: 0.95rem;
+	flex: none;
+	color: oklch(0.64 0.18 245);
+}
+
+.text {
+	margin-top: 1rem;
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+	font-size: 0.94rem;
+	line-height: 1.75;
+	white-space: pre-wrap;
+}
+
+.mediaLink {
+	display: block;
+	margin-top: 1rem;
+	overflow: hidden;
+	border-radius: 0.75rem;
+}
+
+.media {
+	display: block;
+	width: 100%;
+	max-height: 30rem;
+	object-fit: cover;
+	transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mediaLink:hover .media {
+	transform: scale(1.008);
+}
+
+.card footer {
+	display: flex;
+	margin-top: 0.9rem;
+	padding-top: 0.8rem;
+	border-top: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+
+.card footer a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	border-radius: 0.25rem;
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.66rem;
+	text-decoration: none;
+	transition: color 160ms ease-out;
+}
+
+.card footer a:hover {
+	color: var(--primary);
+}
+
+.card footer svg {
+	width: 0.72rem;
+	height: 0.72rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.platform,
+	.media {
+		transition: none;
+	}
+
+	.mediaLink:hover .media {
+		transform: none;
+	}
+}

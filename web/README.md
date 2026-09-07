@@ -96,7 +96,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | 路由 | 说明 |
 |------|------|
 | `/` | 首页/文章列表 |
-| `/blog/:slug` | 文章详情 |
+| `/blog/:slug` | 文章详情（目录、批注、人物提及与语义内容卡片） |
 | `/blog/archive` | 文章归档 |
 | `/announcements/:id` | 公告详情 |
 | `/projects` | 项目展示 |
@@ -108,8 +108,8 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、未读、Web Push 设置）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
 | `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
 | `/notes`, `/notes/:id` | 公开笔记流（游标分页 + 标签筛选）与详情，复用文章渲染管线 |
-| `/persona` | 当前人设的公开档案、完整设定正文与有序设定图 |
-| `/admin/personas` | 多份人设档案管理、完整文档编辑与当前人设切换 |
+| `/persona` | 当前人设的多语言公开档案、完整设定正文与有序设定图 |
+| `/admin/personas` | 多份人设档案及语言版本管理、完整文档编辑与当前人设切换 |
 | `/admin/galleries` | 图集管理（作者与状态筛选、自动保存、更新发布、撤回与永久删除、他人作品审核处置） |
 | `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 

@@ -17,7 +17,8 @@ import type { Element, Nodes, Root } from "hast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import { markdownComponents } from "./components/markdown-components";
+import type { ArticleContentContext } from "../article-embeds/types";
+import { createMarkdownComponents } from "./components/markdown-components";
 
 /** 提取 hast 节点的纯文本（递归拼接子节点的 text） */
 function hastText(node: Nodes): string {
@@ -64,15 +65,17 @@ export interface MarkdownContentProps {
 	/** Markdown 源文本 */
 	content: string;
 	className?: string;
+	/** 文章级人物等可选上下文，仅传给语义化内容节点。 */
+	context?: ArticleContentContext;
 }
 
-export function MarkdownContent({ content, className }: MarkdownContentProps) {
+export function MarkdownContent({ content, className, context }: MarkdownContentProps) {
 	return (
 		<div className={className}>
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm, remarkMath]}
 				rehypePlugins={[rehypeSlugHeadings]}
-				components={markdownComponents}
+				components={createMarkdownComponents(context)}
 			>
 				{content}
 			</ReactMarkdown>

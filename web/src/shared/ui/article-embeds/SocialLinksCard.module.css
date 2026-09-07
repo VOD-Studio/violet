@@ -1,0 +1,110 @@
+.grid {
+	display: grid;
+	margin: 2rem 0;
+	gap: 0.7rem;
+}
+
+.item {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+	gap: 0.7rem;
+	align-items: center;
+	border: 1px solid color-mix(in oklab, var(--foreground) 11%, transparent);
+	border-radius: 0.78rem;
+	padding: 0.78rem;
+	background: color-mix(in oklab, var(--card) 96%, transparent);
+	color: var(--foreground);
+	text-decoration: none;
+	transition:
+		border-color 180ms ease-out,
+		background 180ms ease-out,
+		transform 180ms ease-out;
+}
+
+.item:hover {
+	border-color: color-mix(in oklab, var(--primary) 38%, transparent);
+	background: color-mix(in oklab, var(--primary) 5%, var(--card));
+	transform: translateY(-0.1rem);
+}
+
+.item:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline-offset: 3px;
+}
+
+.icon {
+	display: grid;
+	width: 2.25rem;
+	height: 2.25rem;
+	place-items: center;
+	border-radius: 0.65rem;
+	background: var(--muted);
+	color: var(--foreground);
+}
+
+.icon svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.copy {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+}
+
+.copy strong {
+	overflow: hidden;
+	font-size: 0.82rem;
+	font-weight: 650;
+	line-height: 1.35;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.copy small {
+	overflow: hidden;
+	margin-top: 0.12rem;
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.63rem;
+	line-height: 1.35;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.arrow {
+	width: 0.85rem;
+	height: 0.85rem;
+	color: var(--muted-foreground);
+	transition: transform 180ms ease-out;
+}
+
+.item:hover .arrow {
+	transform: translate(0.1rem, -0.1rem);
+}
+
+@media (min-width: 36rem) {
+	.grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 52rem) {
+	.grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.item,
+	.arrow {
+		transition: none;
+	}
+
+	.item:hover,
+	.item:hover .arrow {
+		transform: none;
+	}
+}
