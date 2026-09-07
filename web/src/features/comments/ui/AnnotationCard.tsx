@@ -10,13 +10,12 @@
  * 复用：BorderGlow 外壳 + severity 配色（lib/severity.ts）+ PendingBadge。
  */
 import type { Comment } from "@entities/comment/model/types";
+import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { type CommentToneCfg, getCommentToneCfg } from "@shared/ui/comment-section/tone";
 import { EmojiText } from "@shared/ui/emoji-text";
 import PendingBadge from "@shared/ui/pending-badge";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
@@ -213,5 +212,5 @@ function formatTimeAgo(createdAt: string): string {
 	if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) {
 		return "刚刚";
 	}
-	return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+	return formatRelativeTime(date);
 }

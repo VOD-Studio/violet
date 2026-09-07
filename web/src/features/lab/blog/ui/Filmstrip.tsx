@@ -1,10 +1,9 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatRelativeTime } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -111,10 +110,7 @@ function Frame({ post: p, index }: { post: Post; index: number }) {
 				)}
 				<p className="truncate font-mono text-[10px] text-white/70">
 					{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
-					{formatDistanceToNow(new Date(p.published_at), {
-						addSuffix: true,
-						locale: zhCN,
-					})}
+					{formatRelativeTime(new Date(p.published_at))}
 				</p>
 			</div>
 		</Link>

@@ -20,6 +20,8 @@ import (
 type Container struct {
 	Role            *RoleContainer
 	Settings        *SettingsContainer
+	SiteIdentity    *SiteIdentityContainer
+	SiteImpression  *SiteImpressionContainer
 	Auth            *AuthContainer
 	Content         *ContentContainer
 	Comment         *CommentContainer
@@ -43,6 +45,7 @@ type Container struct {
 	Series          *SeriesContainer
 	Gallery         *GalleryContainer
 	Note            *NoteContainer
+	Publication     *PublicationContainer
 	Notification    *NotificationContainer
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
@@ -81,6 +84,8 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	oauthCreds := authcmd.NewOAuthCredentials(cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret)
 
 	settings := NewSettingsContainer(db, bus, oauthCreds)
+	siteIdentity := NewSiteIdentityContainer(settings.Store)
+	siteImpression := NewSiteImpressionContainer(db, rdb, []byte(cfg.ResourceSigningKey), cfg.Cookie)
 	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.CustomEmojiMaxPerUser, cfg.UploadPathPrefix)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
@@ -108,6 +113,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
 	gallery := NewGalleryContainer(db, bus, permissionChecker)
 	note := NewNoteContainer(db)
+	publication := NewPublicationContainer(db, []byte(cfg.ResourceSigningKey))
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
@@ -115,12 +121,12 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
 
 	c := &Container{
-		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
+		Role: role, Settings: settings, SiteIdentity: siteIdentity, SiteImpression: siteImpression, Auth: auth, Content: content, Comment: comment,
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Series: series, Gallery: gallery, Note: note, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
+		Series: series, Gallery: gallery, Note: note, Publication: publication, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 	}
 	return c, roleCleanup, nil
 }

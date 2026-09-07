@@ -1,9 +1,9 @@
 /**
  * 消息气泡外壳与内嵌时间戳。
  */
+import { formatDateTime, formatTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
-import { formatDateTime, formatTime } from "../lib/conversation";
 
 /** 消息气泡容器：mine 为实色主色，other 为浅底。 */
 export function BubbleShell({ mine, children }: { mine: boolean; children: ReactNode }) {
@@ -44,7 +44,9 @@ export function BubbleTimestamp({
 				className,
 			)}
 		>
-			{editedAt && <span title={`编辑于 ${formatDateTime(editedAt)}`}>已编辑 · </span>}
+			{editedAt && (
+				<span title={`编辑于 ${formatDateTime(editedAt, "long-minute")}`}>已编辑 · </span>
+			)}
 			{formatTime(time)}
 		</span>
 	);

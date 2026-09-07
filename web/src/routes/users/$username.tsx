@@ -11,6 +11,7 @@ import {
 } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import type { PagedResponse } from "@shared/api/types";
+import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/ui/base/badge";
@@ -23,8 +24,7 @@ import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { ProfileCard } from "@shared/vendor/react-bits/ProfileCard";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { differenceInDays, format } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { differenceInDays } from "date-fns";
 import {
 	Calendar,
 	Check,
@@ -280,9 +280,7 @@ function UserPublicProfilePage() {
 		feedTab === "media" ? allTweets.filter((t) => t.images && t.images.length > 0) : allTweets;
 
 	const displayName = getDisplayName(profile);
-	const joinedDate = profile.created_at
-		? format(new Date(profile.created_at), "yyyy年M月", { locale: zhCN })
-		: "";
+	const joinedDate = profile.created_at ? formatDate(profile.created_at, "year-month") : "";
 	const daysJoined = getDaysJoined(profile.created_at);
 	const isSelf = currentUser?.id === profile.id;
 	const tweetCount = hasNextPage ? `${allTweets.length}+` : String(allTweets.length);

@@ -9,35 +9,40 @@ import (
 
 	appgallery "blog-api/internal/application/gallery"
 	domaingallery "blog-api/internal/domain/gallery"
+	domainpublication "blog-api/internal/domain/publication"
 	"blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
-// GalleryUnitOfWork 为图集和素材引用提供同一个 PostgreSQL 事务。
+// GalleryUnitOfWork 为图集、素材引用和发布物投影提供同一个 PostgreSQL 事务。
 type GalleryUnitOfWork struct {
 	db *gorm.DB
 }
 
+// NewGalleryUnitOfWork 绑定数据库句柄并在每次 Do 中创建事务内 adapter。
 func NewGalleryUnitOfWork(db *gorm.DB) *GalleryUnitOfWork { return &GalleryUnitOfWork{db: db} }
 
-// Do 在同一事务中提供图集仓储与素材 adapter。
+// Do 在同一事务中提供图集、素材与发布物 adapter。
 func (u *GalleryUnitOfWork) Do(ctx context.Context, fn func(appgallery.Transaction) error) error {
 	return u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return fn(&galleryTransaction{
-			galleries: NewGalleryRepository(tx),
-			assets:    NewGalleryAssetStore(tx),
+			galleries:    NewGalleryRepository(tx),
+			assets:       NewGalleryAssetStore(tx),
+			publications: NewPublicationRepository(tx),
 		})
 	})
 }
 
 type galleryTransaction struct {
-	galleries domaingallery.Repository
-	assets    appgallery.AssetStore
+	galleries    domaingallery.Repository
+	assets       appgallery.AssetStore
+	publications domainpublication.Writer
 }
 
-func (t *galleryTransaction) Galleries() domaingallery.Repository { return t.galleries }
-func (t *galleryTransaction) Assets() appgallery.AssetStore       { return t.assets }
+func (t *galleryTransaction) Galleries() domaingallery.Repository    { return t.galleries }
+func (t *galleryTransaction) Assets() appgallery.AssetStore          { return t.assets }
+func (t *galleryTransaction) Publications() domainpublication.Writer { return t.publications }
 
 // GalleryAssetStore 把现有 files 表适配为 Gallery application 的素材端口。
 type GalleryAssetStore struct {

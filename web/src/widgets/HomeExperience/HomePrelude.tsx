@@ -1,20 +1,19 @@
-import type { SiteSettings } from "@features/settings/model/types";
+import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
 import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
-import { ArrowDown, ArrowRight, Mail, Rss, Tv } from "lucide-react";
+import { ArrowDown, ArrowRight, ExternalLink, Mail, Rss, Share2, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
-import { formatHomeDate, HOME_KIND_LABEL } from "./home-content";
-import type { HomePublicationItem } from "./types";
+import { HOME_KIND_LABEL } from "./home-content";
+import type { HomePublicationItem, SiteIdentity } from "./types";
 
 interface HomePreludeProps {
-	settings: SiteSettings | null;
+	identity: SiteIdentity;
 	lead: HomePublicationItem | null;
-	postTotal: number;
 }
 
 interface SocialLink {
@@ -23,52 +22,45 @@ interface SocialLink {
 	Icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
-/** 首页序章：保持满屏视口空间，以像素解构动效呈现作者形象，突出保留经典的波浪线问候。 */
-export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
-	const rawName = settings?.site_name?.trim();
-	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
-	const domain =
-		settings?.site_url?.replace(/^https?:\/\//, "").replace(/\/$/, "") || "xunrua.top";
-	const owner = settings?.github_username?.trim() || domain.split(".")[0] || siteName;
-	const defaultBio = `这里是 ${siteName}，记录构建、拆解问题与生活思考。`;
-	const description = settings?.tagline?.trim() || settings?.bio?.trim() || defaultBio;
-	const defaultEpigraphOriginal =
-		"We can only see a short distance ahead, but we can see plenty there that needs to be done.";
-	const defaultEpigraphTranslation =
-		"「我们只能看清眼前的一小段路，但已足以看清有无数的事亟待完成。」";
-	const epigraphOriginal =
-		((settings as Record<string, unknown> | null)?.hero_quote as string | undefined) ||
-		defaultEpigraphOriginal;
-	const epigraphTranslation =
-		((settings as Record<string, unknown> | null)?.hero_quote_translation as
-			| string
-			| undefined) || defaultEpigraphTranslation;
-	const socials = buildSocialLinks(settings);
-	const avatarCandidates = buildAvatarCandidates(settings, owner);
-	const [failedAvatars, setFailedAvatars] = useState<string[]>([]);
-	const avatar = avatarCandidates.find((source) => !failedAvatars.includes(source)) || "";
+const SOCIAL_ICON_BY_KIND: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+	github: GithubIcon,
+	twitter: XIcon,
+	mastodon: Share2,
+	email: Mail,
+	bilibili: Tv,
+	rss: Rss,
+};
 
-	// 背景大图支持（支持后台配置的 hero_banner_url 或 hero_image）
-	const customBanner =
-		(settings as Record<string, unknown> | null)?.hero_banner_url ||
-		(settings as Record<string, unknown> | null)?.hero_image;
-	const hasCustomBanner = typeof customBanner === "string" && customBanner.trim().length > 0;
+/** 首页序章：展示服务端归一后的站点身份与最新发布。 */
+export function HomePrelude({ identity, lead }: HomePreludeProps) {
+	const siteName = identity.site_name;
+	const owner = identity.owner_name;
+	const socialLinks = identity.social_links.map<SocialLink>((link) => ({
+		href: link.href,
+		label: link.label,
+		Icon: SOCIAL_ICON_BY_KIND[link.kind] ?? ExternalLink,
+	}));
+	const avatarSource = identity.avatar_url.trim();
+	const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
+	const avatar =
+		avatarSource && avatarSource !== failedAvatar ? avatarUrl(avatarSource, owner) : "";
+	const customBanner = identity.hero.banner_url?.trim() ?? "";
+	const hasCustomBanner = customBanner.length > 0;
 
 	return (
 		<section
 			aria-label="首页序章"
 			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden bg-background text-foreground"
 		>
-			{/* 1. 细腻环境背景层（纯净原生微光，随主题自适应） */}
 			<div
 				aria-hidden
 				className="pointer-events-none absolute inset-0 -top-12 z-0 overflow-hidden"
 			>
 				{hasCustomBanner ? (
 					<img
-						src={customBanner as string}
+						src={customBanner}
 						alt=""
-						className="size-full object-cover object-center opacity-35 filter dark:opacity-20"
+						className="size-full object-cover object-center opacity-35 dark:opacity-20"
 					/>
 				) : (
 					<div className="relative size-full">
@@ -78,7 +70,6 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 				)}
 			</div>
 
-			{/* 2. 首屏核心展台：满屏视野垂直居中，有机融合头像与个人问候 */}
 			<div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-8 sm:px-8 lg:px-12">
 				<div
 					className={
@@ -93,27 +84,20 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 								<div className="size-48 overflow-hidden rounded-xl bg-card sm:size-56 lg:size-60">
 									<ImagePixelReveal
 										src={avatar}
-										alt={`${owner} 的头像`}
+										alt={`${owner || siteName} 的头像`}
 										variant="random"
 										tileSize={40}
 										duration={0.32}
 										spreadMs={380}
 										replayOnHover
 										className="size-full"
-										onError={() =>
-											setFailedAvatars((current) =>
-												current.includes(avatar)
-													? current
-													: [...current, avatar],
-											)
-										}
+										onError={() => setFailedAvatar(avatarSource)}
 									/>
 								</div>
 							</figure>
 						</div>
 					) : null}
 
-					{/* 核心问候与自白区域 */}
 					<div
 						className={
 							avatar
@@ -121,7 +105,6 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 								: "max-w-2xl space-y-5 text-center"
 						}
 					>
-						{/* 问候主标题：严格保留 Hi, I'm xunrua. 标志性红色波浪线 */}
 						<h1 className="text-4xl font-normal leading-[1.12] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-6xl">
 							Hi, I&apos;m{" "}
 							<span className="font-medium text-primary underline decoration-primary/35 decoration-wavy underline-offset-8 sm:underline-offset-10">
@@ -130,60 +113,41 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 							.
 						</h1>
 
-						{/* 典雅中英双语卷首引言与站点自白 */}
 						<div className="space-y-4 text-left">
 							<Epigraph
-								quote={epigraphOriginal}
-								translation={epigraphTranslation}
-								author="Alan Turing"
+								quote={identity.hero.quote}
+								translation={identity.hero.quote_translation}
+								author={identity.hero.quote_author}
 								variant="accent-line"
 								captionAlign="end"
 							/>
 
-							{/* 站点自白与导读 */}
 							<p className="font-serif text-sm leading-relaxed text-muted-foreground/85 sm:text-base">
-								{description}
+								{identity.bio}
 							</p>
 						</div>
 
-						{/* 创作足迹微指标 */}
 						<div
-							className={`flex flex-wrap items-center gap-2.5 font-mono text-xs text-muted-foreground/80 ${
-								avatar ? "" : "justify-center"
-							}`}
+							className={`flex flex-wrap items-center gap-2.5 font-mono text-xs text-muted-foreground/80 ${avatar ? "" : "justify-center"}`}
 						>
-							{postTotal > 0 ? (
-								<div className="inline-flex items-baseline gap-1.5">
-									<span className="text-sm font-semibold tabular-nums text-foreground">
-										{postTotal}
-									</span>
-									<span>篇沉心之作</span>
-								</div>
-							) : null}
-							{postTotal > 0 ? (
-								<span aria-hidden className="text-muted-foreground/40">
-									·
-								</span>
-							) : null}
 							<span>开源探索</span>
-							{settings?.profile_location ? (
+							{identity.location ? (
 								<>
 									<span aria-hidden className="text-muted-foreground/40">
 										·
 									</span>
-									<span>{settings.profile_location}</span>
+									<span>{identity.location}</span>
 								</>
 							) : null}
 						</div>
 
-						{/* 社交矩阵：纯图标轻量导航条 + 悬停圆底与下方纯净卡片气泡 */}
-						{socials.length > 0 ? (
+						{socialLinks.length > 0 ? (
 							<TooltipPrimitive.Provider delayDuration={100}>
 								<nav
 									className={`flex items-center gap-2 pt-2 ${avatar ? "" : "justify-center"}`}
 									aria-label="社交主页链接"
 								>
-									{socials.map(({ href, label, Icon }) => (
+									{socialLinks.map(({ href, label, Icon }) => (
 										<TooltipPrimitive.Root key={label}>
 											<TooltipPrimitive.Trigger asChild>
 												<a
@@ -222,7 +186,6 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 				</div>
 			</div>
 
-			{/* 3. 首屏底部锚定条：随满屏视口底部舒展，提供清晰的最新动态与向下阅读线索 */}
 			<div className="relative z-10 border-t border-border/40 bg-background/50 backdrop-blur-md">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 text-xs text-muted-foreground sm:px-8 lg:px-12">
 					{lead ? (
@@ -239,7 +202,8 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 								{lead.title}
 							</span>
 							<span className="hidden shrink-0 tabular-nums text-muted-foreground/70 md:inline">
-								{HOME_KIND_LABEL[lead.kind]} · {formatHomeDate(lead.publishedAt)}
+								{HOME_KIND_LABEL[lead.kind]} ·{" "}
+								{formatDate(lead.published_at, "dotted-date")}
 							</span>
 							<ArrowRight className="size-3.5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
 						</HomeContentLink>
@@ -260,63 +224,10 @@ export function HomePrelude({ settings, lead, postTotal }: HomePreludeProps) {
 	);
 }
 
-function buildAvatarCandidates(settings: SiteSettings | null, owner: string): string[] {
-	const configuredAvatar = settings?.avatar_url?.trim();
-	const githubAvatar = settings?.github_username
-		? `https://github.com/${encodeURIComponent(settings.github_username)}.png?size=400`
-		: "";
-	return [
-		...new Set([configuredAvatar ? avatarUrl(configuredAvatar, owner) : "", githubAvatar]),
-	].filter(Boolean);
-}
-
 function XIcon(props: SVGProps<SVGSVGElement>) {
 	return (
 		<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
 			<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
 		</svg>
 	);
-}
-
-function buildSocialLinks(settings: SiteSettings | null): SocialLink[] {
-	const links: SocialLink[] = [];
-	if (settings?.social_twitter) {
-		links.push({
-			href: settings.social_twitter.startsWith("http")
-				? settings.social_twitter
-				: `https://x.com/${settings.social_twitter.replace(/^@/, "")}`,
-			label: "X",
-			Icon: XIcon,
-		});
-	}
-	const rssUrl = settings?.social_rss?.trim() || "/feed.xml";
-	links.push({
-		href: rssUrl,
-		label: "RSS",
-		Icon: Rss,
-	});
-	if (settings?.social_email) {
-		links.push({
-			href: settings.social_email.startsWith("mailto:")
-				? settings.social_email
-				: `mailto:${settings.social_email}`,
-			label: "邮件",
-			Icon: Mail,
-		});
-	}
-	if (settings?.github_username) {
-		links.push({
-			href: `https://github.com/${settings.github_username}`,
-			label: "GitHub",
-			Icon: GithubIcon,
-		});
-	}
-	if (settings?.social_bilibili) {
-		links.push({
-			href: settings.social_bilibili,
-			label: "哔哩哔哩",
-			Icon: Tv,
-		});
-	}
-	return links;
 }

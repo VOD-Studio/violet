@@ -5,7 +5,6 @@ import { DateTimePicker } from "../components/DateTimePicker";
 import {
 	combineDateTime,
 	formatPickerValue,
-	formatTime,
 	isDateDisabled,
 	parsePickerValue,
 	splitDateTime,
@@ -71,10 +70,6 @@ describe("date-time-utils", () => {
 		const disabledDate = (d: Date) => d.getDay() === 0;
 		expect(isDateDisabled(new Date(2026, 6, 5), { disabledDate })).toBe(true); // 周日
 		expect(isDateDisabled(new Date(2026, 6, 6), { disabledDate })).toBe(false); // 周一
-	});
-
-	it("formatTime 格式化为 HH:mm", () => {
-		expect(formatTime(new Date(2026, 6, 4, 9, 5))).toBe("09:05");
 	});
 });
 

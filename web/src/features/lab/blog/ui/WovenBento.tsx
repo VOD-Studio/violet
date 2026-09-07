@@ -1,10 +1,9 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatRelativeTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
@@ -97,10 +96,7 @@ function BentoCell({ post, shape }: { post: Post; shape: BentoShape }) {
 						</h3>
 						<p className="mt-1 truncate font-mono text-[10px] text-white/70">
 							{post.author ? getDisplayName(post.author) : "佚名"} ·{" "}
-							{formatDistanceToNow(new Date(post.published_at), {
-								addSuffix: true,
-								locale: zhCN,
-							})}
+							{formatRelativeTime(new Date(post.published_at))}
 						</p>
 					</div>
 				</>
@@ -155,10 +151,7 @@ function TypeTile({ post, shape }: { post: Post; shape: BentoShape }) {
 				)}
 				<p className="mt-auto truncate pt-3 font-mono text-[10px] text-muted-foreground">
 					{post.author ? getDisplayName(post.author) : "佚名"} ·{" "}
-					{formatDistanceToNow(new Date(post.published_at), {
-						addSuffix: true,
-						locale: zhCN,
-					})}
+					{formatRelativeTime(new Date(post.published_at))}
 				</p>
 			</div>
 		</div>

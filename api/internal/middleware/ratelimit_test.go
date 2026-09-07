@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"context"
+	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -150,4 +152,41 @@ func TestRateLimitByUser_FallsBackToIP(t *testing.T) {
 		assert.Equal(t, want, rr.Code, "第 %d 个请求状态码不符", i+1)
 	}
 	assert.Equal(t, 1, served)
+}
+
+func TestRateLimitByHashedIPCapsRequestsWithoutPersistingRawIP(t *testing.T) {
+	ipExtractor = newIPExtractor(nil)
+	client := newTestRedis(t)
+	ctx := context.Background()
+	require.NoError(t, client.Ping(ctx).Err())
+
+	limiter := RateLimitByHashedIP("site-impressions", client, []byte("independent-rate-limit-key"), time.Minute, 10)
+	served := 0
+	handler := limiter(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		served++
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	const clientIP = "198.51.100.42"
+	for requestNumber := 1; requestNumber <= 11; requestNumber++ {
+		request := httptest.NewRequest(http.MethodPost, "/api/v1/site-impressions", nil)
+		request.RemoteAddr = clientIP + ":4321"
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if requestNumber <= 10 {
+			assert.Equal(t, http.StatusOK, response.Code)
+		} else {
+			assert.Equal(t, http.StatusTooManyRequests, response.Code)
+		}
+	}
+	assert.Equal(t, 10, served)
+
+	keys, err := client.Keys(ctx, "ratelimit:site-impressions:*").Result()
+	require.NoError(t, err)
+	require.Len(t, keys, 1)
+	assert.NotContains(t, keys[0], clientIP)
+	dimension := strings.TrimPrefix(keys[0], "ratelimit:site-impressions:")
+	decoded, err := hex.DecodeString(dimension)
+	require.NoError(t, err)
+	assert.Len(t, decoded, 32)
 }

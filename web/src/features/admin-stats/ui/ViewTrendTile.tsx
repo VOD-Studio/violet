@@ -1,3 +1,4 @@
+import { formatDate } from "@shared/lib/date";
 import {
 	type ChartConfig,
 	ChartContainer,
@@ -5,7 +6,6 @@ import {
 	ChartTooltipContent,
 } from "@shared/ui/base/chart";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
-import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useViewTrends } from "../api/queries";
@@ -103,7 +103,7 @@ export function ViewTrendTile() {
 										indicator="line"
 										labelFormatter={(label) =>
 											label.length > 7
-												? format(new Date(`${label}T00:00:00`), "M月d日")
+												? formatDate(`${label}T00:00:00`, "long-month-day")
 												: label
 										}
 									/>

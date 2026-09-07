@@ -7,11 +7,11 @@
  * 整卡可点击跳转 `/tweets/$id`；头像/用户名单独可跳 `/users/$username`
  * （stopPropagation，避免触发整卡的详情页跳转）。
  */
+
+import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { AlertCircle, MessageSquareQuote } from "lucide-react";
 import type { SharedTweet } from "../model/types";
 
@@ -86,14 +86,9 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 						{tweet.created_at && (
 							<time
 								className="shrink-0 text-[11px] text-muted-foreground"
-								title={format(new Date(tweet.created_at), "PPPpp", {
-									locale: zhCN,
-								})}
+								title={formatDateTime(tweet.created_at, "long")}
 							>
-								{formatDistanceToNow(new Date(tweet.created_at), {
-									addSuffix: true,
-									locale: zhCN,
-								})}
+								{formatRelativeTime(new Date(tweet.created_at))}
 							</time>
 						)}
 					</div>

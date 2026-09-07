@@ -5,10 +5,10 @@ import {
 	type DataTableColumn,
 	type DataTablePagination,
 } from "@features/admin-shared/ui/data-table";
+import { formatDate, formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { format } from "date-fns";
 import { Cable, Trash2 } from "lucide-react";
 
 interface PATTableProps {
@@ -45,21 +45,19 @@ export function PATTable({ tokens, pagination, loading, onConnect }: PATTablePro
 			key: "created_at",
 			header: "创建时间",
 			width: "160px",
-			cell: (row) => format(new Date(row.created_at), "yyyy-MM-dd HH:mm"),
+			cell: (row) => formatDateTime(row.created_at),
 		},
 		{
 			key: "expires_at",
 			header: "过期",
 			width: "120px",
-			cell: (row) =>
-				row.expires_at ? format(new Date(row.expires_at), "yyyy-MM-dd") : "永不过期",
+			cell: (row) => (row.expires_at ? formatDate(row.expires_at) : "永不过期"),
 		},
 		{
 			key: "last_used_at",
 			header: "最后使用",
 			width: "120px",
-			cell: (row) =>
-				row.last_used_at ? format(new Date(row.last_used_at), "yyyy-MM-dd") : "从未使用",
+			cell: (row) => (row.last_used_at ? formatDate(row.last_used_at) : "从未使用"),
 		},
 		{
 			key: "_actions",

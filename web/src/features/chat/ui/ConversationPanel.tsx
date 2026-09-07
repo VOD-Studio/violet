@@ -3,6 +3,7 @@
  */
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import type { PendingChatShare } from "@shared/api/share-tweet-store";
+import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { ArrowDown, ArrowLeft, LoaderCircle, MoreVertical } from "lucide-react";
@@ -16,7 +17,7 @@ import {
 	useMarkChatRead,
 } from "../api/queries";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
-import { conversationLabel, conversationTargetUser, formatDate } from "../lib/conversation";
+import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import type { ChatConversation, ChatMessage } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
@@ -288,7 +289,7 @@ export function ConversationPanel({
 										data-testid="chat-history-start"
 									>
 										<span className="rounded-full bg-secondary px-3 py-0.5 text-[11px] text-muted-foreground">
-											{formatDate(conversation.created_at)}
+											{formatDate(conversation.created_at, "long-month-day")}
 										</span>
 									</div>
 								))}

@@ -4,11 +4,11 @@
  * 文章评论与推文评论共用：头像空时首字母兜底；authorHref 存在时昵称渲染为链接
  * （推文 /users/$username；文章匿名评论无主页）。
  */
+
+import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import PendingBadge from "@shared/ui/pending-badge";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { getCommentToneCfg } from "./tone";
 import type { CommentDisplayItem, CommentRaw } from "./types";
 
@@ -71,5 +71,5 @@ function formatTimeAgo(createdAt: string): string {
 	if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) {
 		return "刚刚";
 	}
-	return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+	return formatRelativeTime(date);
 }

@@ -1,5 +1,6 @@
 import type { SeriesChapter, SeriesDetail } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
+import { formatDate } from "@shared/lib/date";
 import { BackLink } from "@shared/ui/back-link";
 import { Link } from "@tanstack/react-router";
 import { BookOpen } from "lucide-react";
@@ -19,12 +20,6 @@ function ChapterRow({ chapter }: { chapter: SeriesChapter }) {
 			</Link>
 		</li>
 	);
-}
-
-function formatDate(s: string): string {
-	if (!s) return "";
-	const d = new Date(s);
-	return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("zh-CN");
 }
 
 /**
@@ -48,7 +43,7 @@ export function SeriesDetailBody({ detail }: { detail: SeriesDetail }) {
 						{sectionCount > 0 ? `${sectionCount} 卷 · ` : ""}
 						{detail.chapter_count} 章
 						{detail.latest_chapter_at
-							? ` · 最近更新 ${formatDate(detail.latest_chapter_at)}`
+							? ` · 最近更新 ${formatDate(detail.latest_chapter_at, "slash-date", "")}`
 							: ""}
 					</p>
 					<h1 className="text-4xl font-semibold tracking-tight md:text-5xl">

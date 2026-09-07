@@ -6,6 +6,7 @@ import {
 	type DataTableColumn,
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -18,8 +19,6 @@ import {
 } from "@shared/ui/base/select";
 import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { useState } from "react";
 
@@ -86,10 +85,7 @@ function AdminLogsPage() {
 			header: "时间",
 			hideable: false,
 			sortable: true,
-			cell: (row) =>
-				format(new Date(row.occurred_at), "MM-dd HH:mm:ss", {
-					locale: zhCN,
-				}),
+			cell: (row) => formatDateTime(row.occurred_at, "short-second"),
 		},
 		{
 			key: "actor",
@@ -238,10 +234,7 @@ function AuditEventDetail({ event }: { event: AuditEventDTO }) {
 			{/* 基础信息：两列网格，短字段 */}
 			<div className="grid grid-cols-2 gap-x-6 gap-y-4">
 				<DetailItem label="动作" value={event.action} />
-				<DetailItem
-					label="时间"
-					value={format(new Date(event.occurred_at), "yyyy-MM-dd HH:mm:ss")}
-				/>
+				<DetailItem label="时间" value={formatDateTime(event.occurred_at, "second")} />
 				<DetailItem
 					label="操作人"
 					value={event.actor.user_name || event.actor.user_id || "匿名"}

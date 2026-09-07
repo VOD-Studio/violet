@@ -8,16 +8,30 @@ import (
 
 	"blog-api/internal/application/markdown"
 	domainnote "blog-api/internal/domain/note"
+	domainpublication "blog-api/internal/domain/publication"
 	"blog-api/internal/domain/shared"
 )
 
-// Service 编排笔记的创建、编辑、发布与公开浏览。
-type Service struct {
-	repo domainnote.Repository
+// PublicationTransaction 暴露同一事务中的笔记与发布物 adapter。
+type PublicationTransaction interface {
+	Notes() domainnote.Repository
+	Publications() domainpublication.Writer
 }
 
-func NewService(repo domainnote.Repository) *Service {
-	return &Service{repo: repo}
+// PublicationUnitOfWork 保证笔记状态与发布物投影原子提交。
+type PublicationUnitOfWork interface {
+	Do(ctx context.Context, fn func(PublicationTransaction) error) error
+}
+
+// Service 编排笔记的创建、编辑、发布与公开浏览。
+type Service struct {
+	repo           domainnote.Repository
+	publicationUOW PublicationUnitOfWork
+}
+
+// NewService 创建笔记用例服务；publicationUOW 负责公开状态与投影的原子写入。
+func NewService(repo domainnote.Repository, publicationUOW PublicationUnitOfWork) *Service {
+	return &Service{repo: repo, publicationUOW: publicationUOW}
 }
 
 // Create 创建草稿笔记；content_html 由 markdown 管线在保存前生成。
@@ -60,7 +74,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (NoteDTO, error) {
 	if err := n.Edit(in.Title, in.ContentMD, html, in.Tags); err != nil {
 		return NoteDTO{}, err
 	}
-	if err := s.repo.Save(ctx, n); err != nil {
+	if err := s.saveWithPublication(ctx, n); err != nil {
 		return NoteDTO{}, err
 	}
 	return toDTO(n), nil
@@ -108,7 +122,7 @@ func (s *Service) Publish(ctx context.Context, noteID string) (NoteDTO, error) {
 		return NoteDTO{}, err
 	}
 	n.Publish(time.Now().UTC())
-	if err := s.repo.Save(ctx, n); err != nil {
+	if err := s.saveWithPublication(ctx, n); err != nil {
 		return NoteDTO{}, err
 	}
 	return toDTO(n), nil
@@ -120,7 +134,27 @@ func (s *Service) Delete(ctx context.Context, noteID string) error {
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, id)
+	return s.publicationUOW.Do(ctx, func(tx PublicationTransaction) error {
+		if err := tx.Notes().Delete(ctx, id); err != nil {
+			return err
+		}
+		return tx.Publications().Delete(ctx, domainpublication.KindNote, id)
+	})
+}
+
+func (s *Service) saveWithPublication(ctx context.Context, n *domainnote.Note) error {
+	return s.publicationUOW.Do(ctx, func(tx PublicationTransaction) error {
+		if err := tx.Notes().Save(ctx, n); err != nil {
+			return err
+		}
+		if !n.IsPublished() || n.PublishedAt() == nil {
+			return tx.Publications().Delete(ctx, domainpublication.KindNote, n.ID())
+		}
+		return tx.Publications().Upsert(ctx, domainpublication.Entry{
+			Kind: domainpublication.KindNote, SourceID: n.ID(), RouteKey: n.ID().String(),
+			Title: domainpublication.DeriveNoteTitle(n.Title(), n.ContentHTML()), PublishedAt: *n.PublishedAt(),
+		})
+	})
 }
 
 // BrowsePublished 按稳定复合游标读取公开笔记流，可按标签 slug 筛选。

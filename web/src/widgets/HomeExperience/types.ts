@@ -1,32 +1,70 @@
-import type { PublishedGallery } from "@entities/gallery/model/types";
-import type { PublicNote } from "@entities/note/model/types";
-import type { Post } from "@entities/post/model/types";
-import type { Tweet } from "@entities/tweet/model/types";
-import type { ArchiveItem } from "@features/archive/model/types";
-import type { SeriesSummary } from "@features/series/model/types";
-import type { SiteSettings } from "@features/settings/model/types";
+export type HomePublicationKind = "article" | "note" | "gallery";
 
-/** 首页首屏与后续编排消费的公开数据快照。 */
-export interface HomeSnapshot {
-	settings: SiteSettings | null;
-	posts: Post[];
-	archiveArticles: ArchiveItem[];
-	postTotal: number;
-	notes: PublicNote[];
-	galleries: PublishedGallery[];
-	series: SeriesSummary[];
-	tweets: Tweet[];
+/** 首页直接消费的轻量发布物资源。 */
+export interface HomePublicationItem {
+	/** 类型与来源 UUID 组成的稳定标识。 */
+	id: string;
+	kind: HomePublicationKind;
+	/** 文章和图集为 slug，笔记为 UUID。 */
+	route_key: string;
+	title: string;
+	/** RFC3339 发布时间。 */
+	published_at: string;
+	/** 仅文章可能为 true。 */
+	featured: boolean;
 }
 
-export type HomePublicationKind = "article" | "note" | "gallery" | "series";
+export interface PublicationQuery {
+	cursor?: string;
+	limit?: number;
+	from?: string;
+	to?: string;
+	featured?: boolean;
+}
 
-/** 首页把不同发布模型投影成同一目录节奏，但保留原始类型与路由。 */
-export interface HomePublicationItem {
-	key: string;
-	kind: HomePublicationKind;
-	/** 文章、图集与系列使用 slug，笔记使用 ID。 */
-	routeKey: string;
-	title: string;
-	publishedAt: string;
-	isFeatured: boolean;
+/** 最近十二个自然月的 RFC3339 半开区间。 */
+export interface PublicationWindow {
+	from: string;
+	to: string;
+}
+
+export interface SiteIdentityLink {
+	kind: string;
+	label: string;
+	href: string;
+}
+
+export interface SiteIdentityHero {
+	/** null 表示使用前端内置背景。 */
+	banner_url: string | null;
+	quote: string;
+	quote_translation: string;
+	quote_author: string;
+}
+
+export interface SiteIdentityHome {
+	footprint_enabled: boolean;
+	/** 合法范围 1–31，服务端非法值回退为 7。 */
+	footprint_aggregation_days: number;
+}
+
+/** 首页公开站点身份；字段已经服务端归一且不含管理设置。 */
+export interface SiteIdentity {
+	site_name: string;
+	site_url: string;
+	owner_name: string;
+	bio: string;
+	avatar_url: string;
+	location: string;
+	hero: SiteIdentityHero;
+	social_links: SiteIdentityLink[];
+	subscription_channels: SiteIdentityLink[];
+	home: SiteIdentityHome;
+}
+
+export interface SiteImpressionState {
+	/** 主动留下印记的去重匿名设备数，不是浏览量或可信 UV。 */
+	count: number;
+	/** 当前 violet_impression Cookie 是否已登记。 */
+	impressed: boolean;
 }

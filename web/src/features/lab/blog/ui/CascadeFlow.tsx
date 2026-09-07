@@ -1,9 +1,8 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatRelativeTime } from "@shared/lib/date";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Waterfall } from "./Waterfall";
@@ -45,10 +44,7 @@ export function CascadeFlow({ posts }: { posts: Post[] }) {
 					</p>
 					<p className="mt-3 font-mono text-xs text-white/60">
 						{hero.author ? getDisplayName(hero.author) : "佚名"} ·{" "}
-						{formatDistanceToNow(new Date(hero.published_at), {
-							addSuffix: true,
-							locale: zhCN,
-						})}
+						{formatRelativeTime(new Date(hero.published_at))}
 					</p>
 				</Link>
 			</motion.div>

@@ -1,17 +1,22 @@
 import type { Tweet } from "@entities/tweet/model/types";
+import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
 import { HomeContentLink } from "./HomeContentLink";
 import { HOME_KIND_LABEL } from "./home-content";
 import type { HomePublicationItem } from "./types";
 
-interface HomeIndexProps {
+/** 首页近稿与偶得区块的资源状态。 */
+export interface HomeIndexProps {
 	items: HomePublicationItem[];
 	tweets: Tweet[];
+	publicationError: boolean;
+	publicationRetrying: boolean;
+	/** 仅重试关键发布物资源，不刷新整页。 */
+	onRetryPublications: () => void;
+	tweetsLoading: boolean;
 }
 
 /**
@@ -23,25 +28,25 @@ function formatRelativeOrDate(dateString: string): string {
 	const diffMs = Date.now() - date.getTime();
 	const diffDays = Math.floor(diffMs / 86_400_000);
 	if (diffDays < 30 && diffDays >= 0) {
-		return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+		return formatRelativeTime(date);
 	}
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}.${month}.${day}`;
+	return formatDate(date, "dotted-date");
 }
 
 /** 首页近稿与偶得尺素双栏布局。 */
-export function HomeIndex({ items, tweets }: HomeIndexProps) {
-	// 取最新创作（文章、笔记、图集、系列混合，按时间降序），前 5 项无重复展示
+export function HomeIndex({
+	items,
+	tweets,
+	publicationError,
+	publicationRetrying,
+	onRetryPublications,
+	tweetsLoading,
+}: HomeIndexProps) {
 	const writings = items.slice(0, 5);
 	const leadItem = writings[0];
 	const subsequentItems = writings.slice(1);
 
-	// 偶得推文（前 2~3 条）
 	const musings = tweets.slice(0, 2);
-
-	if (writings.length === 0 && musings.length === 0) return null;
 
 	const transition = { type: "spring" as const, stiffness: 130, damping: 21, mass: 0.9 };
 
@@ -51,7 +56,6 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 			className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 lg:px-12 lg:pt-28"
 		>
 			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-16">
-				{/* 左栏：近稿 */}
 				<motion.div
 					className="min-w-0"
 					initial={false}
@@ -68,7 +72,25 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 						</h2>
 					</div>
 
-					{leadItem ? (
+					{publicationError ? (
+						<div
+							role="alert"
+							className="mb-7 border-l-2 border-destructive/70 py-1 pl-4 text-sm text-muted-foreground"
+						>
+							<p className="font-medium text-foreground">近稿暂时未能抵达。</p>
+							<button
+								type="button"
+								disabled={publicationRetrying}
+								onClick={onRetryPublications}
+								className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary transition-colors hover:text-primary/80 disabled:cursor-wait disabled:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+							>
+								<RefreshCw
+									className={`size-3.5 ${publicationRetrying ? "animate-spin" : ""}`}
+								/>
+								{publicationRetrying ? "正在重试" : "重新获取近稿"}
+							</button>
+						</div>
+					) : leadItem ? (
 						<article className="relative mb-7 border-l-2 border-primary pl-4">
 							<span className="font-mono text-xs font-semibold tracking-wider text-primary">
 								01
@@ -78,8 +100,8 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 									{HOME_KIND_LABEL[leadItem.kind]}
 								</span>
 								<span aria-hidden>·</span>
-								<time dateTime={leadItem.publishedAt}>
-									{formatRelativeOrDate(leadItem.publishedAt)}
+								<time dateTime={leadItem.published_at}>
+									{formatRelativeOrDate(leadItem.published_at)}
 								</time>
 							</div>
 							<h3 className="mt-2 text-lg font-medium leading-snug text-foreground sm:text-xl">
@@ -91,14 +113,18 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 								</HomeContentLink>
 							</h3>
 						</article>
-					) : null}
+					) : (
+						<p className="mb-7 border-l border-border/80 pl-4 text-sm text-muted-foreground">
+							尚无公开作品。
+						</p>
+					)}
 
 					{subsequentItems.length > 0 ? (
 						<ul className="divide-y divide-border/30">
 							{subsequentItems.map((item, index) => {
 								const order = String(index + 2).padStart(2, "0");
 								return (
-									<li key={item.key} className="py-3.5 first:pt-0 last:pb-0">
+									<li key={item.id} className="py-3.5 first:pt-0 last:pb-0">
 										<div className="grid grid-cols-[24px_minmax(0,1fr)_auto] items-baseline gap-3">
 											<span className="font-mono text-xs text-muted-foreground/50 tabular-nums">
 												{order}
@@ -115,10 +141,10 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 												</span>
 											</div>
 											<time
-												dateTime={item.publishedAt}
+												dateTime={item.published_at}
 												className="shrink-0 text-xs text-muted-foreground/70 tabular-nums"
 											>
-												{formatRelativeOrDate(item.publishedAt)}
+												{formatRelativeOrDate(item.published_at)}
 											</time>
 										</div>
 									</li>
@@ -138,7 +164,6 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 					</div>
 				</motion.div>
 
-				{/* 右栏：偶得 + 尺素 */}
 				<motion.div
 					className="min-w-0 lg:border-l lg:border-border/40 lg:pl-10"
 					initial={false}
@@ -146,7 +171,6 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 					viewport={{ once: true, amount: 0.2 }}
 					transition={{ ...transition, delay: 0.08 }}
 				>
-					{/* 偶得区块 */}
 					<div>
 						<div className="mb-5">
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -157,7 +181,14 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 							</h2>
 						</div>
 
-						{musings.length > 0 ? (
+						{tweetsLoading ? (
+							<article
+								aria-live="polite"
+								className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground"
+							>
+								<p>正在收拢偶得…</p>
+							</article>
+						) : musings.length > 0 ? (
 							<div className="space-y-4">
 								{musings.map((tweet) => (
 									<article
@@ -200,10 +231,8 @@ export function HomeIndex({ items, tweets }: HomeIndexProps) {
 						</div>
 					</div>
 
-					{/* 分隔线 */}
 					<hr className="my-8 border-0 border-t border-border/40" />
 
-					{/* 尺素区块 */}
 					<div>
 						<div className="mb-5">
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">

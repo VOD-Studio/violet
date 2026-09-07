@@ -4,12 +4,11 @@ import { useArchiveYear, useArchiveYears } from "@features/archive/api/queries";
 import type { ArchiveItem } from "@features/archive/model/types";
 import ArchiveSkeleton from "@features/archive/ui/ArchiveSkeleton";
 import ArchiveYearSkeleton from "@features/archive/ui/ArchiveYearSkeleton";
+import { formatDate } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import Empty from "@shared/ui/empty";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { useEffect, useRef, useState } from "react";
 
 /** 按月分组：{ [month]: items[] }，月份倒序（items 已倒序，仅 key 排序） */
@@ -78,13 +77,13 @@ function YearSection({
 					{[...groupByMonth(data.items).entries()].map(([month, items]) => (
 						<div key={month}>
 							<h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-								{format(new Date(2020, month - 1, 1), "MMMM", { locale: zhCN })}
+								{formatDate(new Date(2020, month - 1, 1), "month-name")}
 							</h3>
 							<ul className="space-y-2 border-l-2 border-border pl-4">
 								{items.map((item) => (
 									<li key={item.id} className="flex items-start gap-3">
 										<span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-											{format(new Date(item.published_at), "MM-dd")}
+											{formatDate(item.published_at, "month-day")}
 										</span>
 										<div>
 											<a

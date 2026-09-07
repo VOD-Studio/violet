@@ -1,9 +1,8 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatRelativeTime } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
@@ -45,10 +44,7 @@ export function AlternatingSpread({ posts }: { posts: Post[] }) {
 							<p className="mt-4 line-clamp-3 text-muted-foreground">{p.excerpt}</p>
 							<p className="mt-4 font-mono text-xs text-muted-foreground">
 								{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
-								{formatDistanceToNow(new Date(p.published_at), {
-									addSuffix: true,
-									locale: zhCN,
-								})}
+								{formatRelativeTime(new Date(p.published_at))}
 							</p>
 						</div>
 					</Link>

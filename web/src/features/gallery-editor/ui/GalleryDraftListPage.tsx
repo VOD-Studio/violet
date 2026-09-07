@@ -10,6 +10,7 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreateGalleryDraft, useDeleteGallery } from "@features/gallery-editor/api/mutations";
 import { useAdminGalleries } from "@features/gallery-editor/api/queries";
 import { GALLERY_STATUS_LABELS } from "@features/gallery-editor/model/status";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -26,14 +27,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
-	year: "numeric",
-	month: "2-digit",
-	day: "2-digit",
-	hour: "2-digit",
-	minute: "2-digit",
-});
 
 const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 	{ value: "all", label: "全部状态" },
@@ -152,7 +145,7 @@ export function GalleryDraftListPage() {
 			width: "180px",
 			cell: (row) => (
 				<span className="text-xs text-muted-foreground">
-					{dateFormatter.format(new Date(row.updated_at))}
+					{formatDateTime(row.updated_at)}
 				</span>
 			),
 		},

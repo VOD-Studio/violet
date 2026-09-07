@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	domainnote "blog-api/internal/domain/note"
+	domainpublication "blog-api/internal/domain/publication"
 	"blog-api/internal/domain/shared"
 )
 
@@ -46,6 +47,26 @@ func (f *fakeNoteRepo) Save(_ context.Context, n *domainnote.Note) error {
 func (f *fakeNoteRepo) Delete(_ context.Context, id shared.ID) error {
 	delete(f.notes, id)
 	return nil
+}
+
+type fakePublicationWriter struct{}
+
+func (fakePublicationWriter) Upsert(context.Context, domainpublication.Entry) error { return nil }
+func (fakePublicationWriter) Delete(context.Context, domainpublication.Kind, shared.ID) error {
+	return nil
+}
+
+type fakePublicationTransaction struct{ repo domainnote.Repository }
+
+func (t fakePublicationTransaction) Notes() domainnote.Repository { return t.repo }
+func (fakePublicationTransaction) Publications() domainpublication.Writer {
+	return fakePublicationWriter{}
+}
+
+type fakePublicationUnitOfWork struct{ repo domainnote.Repository }
+
+func (u fakePublicationUnitOfWork) Do(ctx context.Context, fn func(PublicationTransaction) error) error {
+	return fn(fakePublicationTransaction(u))
 }
 
 func (f *fakeNoteRepo) FindPage(_ context.Context, filter domainnote.ListFilter, q shared.PageQuery) (shared.PageResult[*domainnote.Note], error) {
@@ -137,7 +158,7 @@ func hasTagSlug(tags []string, slug string) bool {
 func newService(t *testing.T) (*Service, *fakeNoteRepo) {
 	t.Helper()
 	repo := newFakeRepo()
-	return NewService(repo), repo
+	return NewService(repo, fakePublicationUnitOfWork{repo: repo}), repo
 }
 
 func seedAuthor(t *testing.T) string {

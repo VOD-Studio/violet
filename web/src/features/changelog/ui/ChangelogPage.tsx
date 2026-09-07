@@ -1,8 +1,8 @@
-import { formatDate } from "@features/about/model/format";
 import { useScrollSpy } from "@features/changelog/hooks/use-scroll-spy";
 import { cleanItem, groupItems } from "@features/changelog/model/clean-item";
 import { VersionNav, versionAnchorId } from "@features/changelog/ui/VersionNav";
 import { useReleases } from "@shared/api/releases";
+import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { RefreshCw, TriangleAlert } from "lucide-react";

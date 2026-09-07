@@ -1,6 +1,6 @@
-import { formatDate } from "@features/about/model/format";
 import { cleanItem } from "@features/changelog/model/clean-item";
 import { useReleases } from "@shared/api/releases";
+import { formatDate } from "@shared/lib/date";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";

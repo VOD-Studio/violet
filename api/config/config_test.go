@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -51,6 +52,7 @@ func TestMaskValue(t *testing.T) {
 		{"github_client_secret", "abc", "***"},
 		{"bilibili_cookies", "SESSDATA=x", "***"},
 		{"resend_api_key", "re_123", "***"},
+		{"resource_signing_key", "cursor-signing-secret", "***"},
 		{"cookie.csrf_name", "violet_csrf", "violet_csrf"},
 		{"cookie.session_name", "violet_session", "violet_session"},
 		{"cookie.secure", false, "false"},
@@ -61,5 +63,33 @@ func TestMaskValue(t *testing.T) {
 		if got := maskValue(c.key, c.value); got != c.want {
 			t.Errorf("maskValue(%q, %v) = %q, want %q", c.key, c.value, got, c.want)
 		}
+	}
+}
+
+func TestValidateRequiresStrongResourceSigningKeyInProduction(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Environment = "production"
+	cfg.Cookie.Secure = true
+	cfg.CORSAllowedOrigins = []string{"https://example.com"}
+	cfg.ResourceSigningKey = "short"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("生产环境短签名密钥应校验失败")
+	}
+	cfg.ResourceSigningKey = "0123456789abcdef0123456789abcdef"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("32 字节签名密钥应通过校验: %v", err)
+	}
+}
+
+func validTestConfig() Config {
+	return Config{
+		Database: DatabaseConfig{
+			Host: "localhost", Port: 5432, Name: "blog", User: "blog",
+			Password: "password", SSLMode: "disable", MaxOpenConns: 5,
+			MaxIdleConns: 1, ConnMaxLifetime: time.Minute,
+		},
+		Redis:   RedisConfig{Host: "localhost", Port: 6379},
+		Cookie:  CookieConfig{SessionName: "session", CSRFName: "csrf", SameSite: "lax"},
+		Session: SessionConfig{IdleTTL: time.Hour},
 	}
 }

@@ -1,9 +1,8 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
-import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 
 /**
@@ -38,7 +37,7 @@ export function TerminalFeed({ posts }: { posts: Post[] }) {
 							className="-mx-2 flex items-baseline gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-accent/40"
 						>
 							<time className="shrink-0 text-xs text-muted-foreground tabular-nums">
-								{format(new Date(p.published_at), "yyyy-MM-dd")}
+								{formatDate(p.published_at)}
 							</time>
 							<span className="min-w-0 flex-1 truncate transition-colors group-hover:text-neon-blue">
 								{p.title}
@@ -72,10 +71,7 @@ export function TerminalFeed({ posts }: { posts: Post[] }) {
 										</p>
 										<p className="mt-1.5 text-[11px] text-muted-foreground">
 											{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
-											{formatDistanceToNow(new Date(p.published_at), {
-												addSuffix: true,
-												locale: zhCN,
-											})}
+											{formatRelativeTime(new Date(p.published_at))}
 										</p>
 									</div>
 								</div>

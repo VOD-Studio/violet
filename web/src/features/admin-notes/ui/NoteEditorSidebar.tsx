@@ -1,5 +1,6 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { useTags } from "@features/tags/api/queries";
+import { formatDate } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
@@ -154,14 +155,14 @@ export function NoteEditorSidebar({
 							<div className="flex items-center justify-between">
 								<span className="text-muted-foreground">创建时间</span>
 								<span className="font-mono text-muted-foreground/80">
-									{note.created_at.slice(0, 10)}
+									{formatDate(note.created_at)}
 								</span>
 							</div>
 							{note.published_at ? (
 								<div className="flex items-center justify-between">
 									<span className="text-muted-foreground">发布时间</span>
 									<span className="font-mono text-muted-foreground/80">
-										{note.published_at.slice(0, 10)}
+										{formatDate(note.published_at)}
 									</span>
 								</div>
 							) : null}

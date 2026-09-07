@@ -414,3 +414,41 @@ func TestNotePaths(t *testing.T) {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
 }
+
+func TestPublicationPaths(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/publications")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Get)
+	require.Empty(t, path.Get.Security)
+	require.Contains(t, spec.Components.Schemas, "PublicationItemDTO")
+}
+
+func TestSiteIdentityPath(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/site-identity")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Get)
+	require.Empty(t, path.Get.Security)
+	for _, schema := range []string{"SiteIdentityDTO", "SiteIdentityHeroDTO", "SiteIdentityHomeDTO", "SiteIdentityLinkDTO"} {
+		require.Contains(t, spec.Components.Schemas, schema)
+	}
+	require.Contains(t, path.Get.Responses.Map(), "304")
+}
+
+func TestSiteImpressionPath(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/site-impressions")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Get)
+	require.NotNil(t, path.Post)
+	require.Empty(t, path.Get.Security)
+	require.Empty(t, path.Post.Security)
+	require.Contains(t, spec.Components.Schemas, "SiteImpressionStateDTO")
+	require.True(t, hasParam(path.Post.Parameters, "X-CSRF-Token"))
+	require.Contains(t, path.Post.Responses.Map(), "403")
+	require.Contains(t, path.Post.Responses.Map(), "429")
+}

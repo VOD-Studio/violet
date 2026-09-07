@@ -10,6 +10,7 @@
  */
 
 import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
+import { formatDateTime } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
@@ -119,6 +120,6 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 
 function renderCell(cell: CellValue) {
 	if (cell === null || cell === undefined || cell === "") return "—";
-	if (cell instanceof Date) return cell.toLocaleString("zh-CN");
+	if (cell instanceof Date) return formatDateTime(cell, "second");
 	return String(cell);
 }

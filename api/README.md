@@ -47,6 +47,7 @@ api/
 ├── cmd/
 │   ├── server/            # 应用入口（路由注册 + 依赖装配 + 启动）
 │   ├── migrate/           # 数据库迁移 CLI
+│   ├── check-publications/ # 发布物投影一致性校验 CLI
 │   └── export-openapi/    # OpenAPI 导出 CLI
 ├── config/                # 配置加载（Viper）
 ├── migrations/            # 数据库迁移脚本（golang-migrate）
@@ -134,6 +135,9 @@ api/
 | **releases** | releases | releases | 版本发布（release-please 集成） |
 | **gallery** | gallery | gallery | 图集视觉作品：双快照工作稿、更新发布、撤回删除、own-or-moderator 审核、生命周期审计与稳定地址读取 |
 | **note** | note | note | 知识笔记：markdown+标签轻量条目、draft→published 单向发布、公开流 keyset 分页与标签筛选 |
+| **publication** | publication | publication | 首页统一发布物投影：文章、知识笔记与图集的轻量 cursor 时间流（`GET /publications`） |
+| **siteidentity** | settings | siteidentity | 首页站点身份：默认值、公开链接和可用订阅渠道归一（`GET /site-identity`） |
+| **siteimpression** | siteimpression | siteimpression | 首页匿名设备印记：HMAC 令牌去重、私有状态查询与限流写入（`GET/POST /site-impressions`） |
 
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
 
@@ -267,6 +271,7 @@ make api-test     # 运行测试
 make api-lint     # golangci-lint 检查（或回退 go vet）
 make migrate      # 执行数据库迁移
 make migrate-down n=1  # 回滚最近一次迁移
+make check-publications # 校验公开来源与发布物投影一致性
 make reset-db     # 重置数据库
 make apifox       # 导出 OpenAPI 并导入 Apifox
 make help         # 查看所有命令

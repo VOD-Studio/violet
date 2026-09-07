@@ -1,6 +1,7 @@
 import { fetchSeries, seriesKeys, useSeries } from "@features/series/api";
 import type { SeriesSummary } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
+import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
@@ -9,12 +10,6 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
 const PAGE_LIMIT = 24;
-
-function formatDate(s: string): string {
-	if (!s) return "";
-	const d = new Date(s);
-	return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("zh-CN");
-}
 
 function ShelfCard({ book }: { book: SeriesSummary }) {
 	return (
@@ -27,7 +22,9 @@ function ShelfCard({ book }: { book: SeriesSummary }) {
 			<h3 className="mt-4 line-clamp-1 font-semibold">{book.title}</h3>
 			<p className="text-muted-foreground mt-1 line-clamp-1 text-sm">
 				{book.chapter_count > 0 ? `${book.chapter_count} 章` : "尚未挂章"}
-				{book.latest_chapter_at ? ` · ${formatDate(book.latest_chapter_at)}` : ""}
+				{book.latest_chapter_at
+					? ` · ${formatDate(book.latest_chapter_at, "slash-date", "")}`
+					: ""}
 			</p>
 		</Link>
 	);

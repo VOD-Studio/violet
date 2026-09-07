@@ -12,6 +12,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	domaingallery "blog-api/internal/domain/gallery"
 	"blog-api/internal/domain/permission"
+	domainpublication "blog-api/internal/domain/publication"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/upload"
 	"blog-api/internal/middleware"
@@ -117,12 +118,26 @@ func (s *fakeAssetStore) UpdateRefCount(_ context.Context, id shared.ID, delta i
 }
 
 type fakeTransaction struct {
-	repo   domaingallery.Repository
-	assets AssetStore
+	repo         domaingallery.Repository
+	assets       AssetStore
+	publications domainpublication.Writer
 }
 
 func (t fakeTransaction) Galleries() domaingallery.Repository { return t.repo }
 func (t fakeTransaction) Assets() AssetStore                  { return t.assets }
+func (t fakeTransaction) Publications() domainpublication.Writer {
+	if t.publications == nil {
+		return noopPublicationWriter{}
+	}
+	return t.publications
+}
+
+type noopPublicationWriter struct{}
+
+func (noopPublicationWriter) Upsert(context.Context, domainpublication.Entry) error { return nil }
+func (noopPublicationWriter) Delete(context.Context, domainpublication.Kind, shared.ID) error {
+	return nil
+}
 
 type fakeUnitOfWork struct{ tx Transaction }
 
@@ -320,7 +335,6 @@ func TestSavePublishedGalleryWithoutChangesIsIdempotent(t *testing.T) {
 	assert.Empty(t, assets.deltas)
 	assert.Empty(t, assets.lockedIDs)
 }
-
 
 func TestSaveCanRemoveAllExistingAssets(t *testing.T) {
 	owner := shared.NewID()

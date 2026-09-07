@@ -3,6 +3,7 @@
  */
 
 import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
+import { formatTime as formatClockTime } from "@shared/lib/date";
 import type { ChatConversation, ChatMessage } from "../model/types";
 
 export function conversationLabel(conversation: ChatConversation, currentUserID?: string) {
@@ -52,28 +53,6 @@ export function imageBubbleContent(message: ChatMessage): string {
 	return content ? prefix + content : prefix;
 }
 
-export function formatTime(value: string) {
-	return new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit" }).format(
-		new Date(value),
-	);
-}
-
-export function formatDate(value: string) {
-	return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric" }).format(
-		new Date(value),
-	);
-}
-
-export function formatDateTime(value: string) {
-	return new Intl.DateTimeFormat("zh-CN", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	}).format(new Date(value));
-}
-
 export function formatRelativeTime(value: string) {
 	const date = new Date(value);
 	const now = new Date();
@@ -81,7 +60,7 @@ export function formatRelativeTime(value: string) {
 	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
 	if (diffDays === 0) {
-		return formatTime(value);
+		return formatClockTime(value);
 	}
 	if (diffDays === 1) {
 		return "昨天";

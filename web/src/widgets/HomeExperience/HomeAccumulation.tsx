@@ -22,10 +22,10 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 	);
 	if (!latest || points.length === 0) return null;
 
-	const latestYear = new Date(latest.publishedAt).getFullYear();
-	const yearCount = publications.filter((p) => {
-		const d = new Date(p.publishedAt);
-		return !Number.isNaN(d.getTime()) && d.getFullYear() === latestYear;
+	const currentYear = new Date().getFullYear();
+	const yearCount = publications.filter((publication) => {
+		const publishedAt = new Date(publication.published_at);
+		return !Number.isNaN(publishedAt.getTime()) && publishedAt.getFullYear() === currentYear;
 	}).length;
 	return (
 		<section
@@ -64,7 +64,6 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 									reduceMotion={reduceMotion}
 								/>
 							))}
-							{/* 右侧终点红色刻度线与上方的“今” */}
 							<div className="absolute top-1/2 right-0 z-10 -translate-y-1/2">
 								<span
 									aria-hidden
@@ -87,7 +86,6 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 							</span>
 						))}
 
-						{/* 星尘微尘：浅金琥珀色微晶粒，散落于时间线四周衬托诗意 */}
 						<div aria-hidden className="pointer-events-none absolute inset-0">
 							<svg
 								aria-hidden="true"
@@ -120,7 +118,6 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 						</div>
 					</div>
 
-					{/* 时间线下方居中引导：新篇与年表入口（采用自然比例无衬线字体与优雅衬线斜体） */}
 					<div className="mt-12 sm:mt-14 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
 						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">
 							<span className="shrink-0 text-muted-foreground/75">新篇 ·</span>

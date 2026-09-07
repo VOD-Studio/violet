@@ -19,14 +19,13 @@ import {
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { formatDateTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { Ban, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -174,10 +173,7 @@ function AdminCommentsPage() {
 		{
 			key: "created_at",
 			header: "时间",
-			cell: (row) =>
-				format(new Date(row.created_at), "MM-dd HH:mm", {
-					locale: zhCN,
-				}),
+			cell: (row) => formatDateTime(row.created_at, "short-minute"),
 		},
 		{
 			key: "_actions",

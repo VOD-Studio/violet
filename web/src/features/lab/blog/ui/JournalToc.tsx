@@ -1,6 +1,6 @@
 import type { Post } from "@features/posts/model/types";
+import { formatDate } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
-import { format } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
 import { useMemo } from "react";
 
@@ -68,7 +68,7 @@ export function JournalToc({ posts }: { posts: Post[] }) {
 										className="mx-1 min-w-6 flex-1 border-b border-dotted border-edge-hairline"
 									/>
 									<span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
-										{format(new Date(p.published_at), "MM-dd")}
+										{formatDate(p.published_at, "month-day")}
 									</span>
 								</Link>
 							</li>

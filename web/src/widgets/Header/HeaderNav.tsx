@@ -14,17 +14,13 @@ import { useState } from "react";
 
 import HeaderNavItem from "./HeaderNavItem";
 
+/** 配置主导航非路由项的行为。 */
 export interface HeaderNavProps {
+	/** 触发非路由项时接收其动作标识。 */
 	onAction?: (action: string) => void;
 }
 
-/**
- * HeaderNav - 悬浮主导航船坞（Nav Dock Capsule）
- *
- * 基于项目公共组件 @shared/ui/segmented（Segmented 分段器），
- * 驱动主导航项与滑块物理平移动画，次级导航收纳至"更多"下拉网格。
- * 严禁 scale 变形，零重排抖动。
- */
+/** 渲染主导航分段与次级页面菜单。 */
 const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const primaryItems = NAV_ITEMS.filter(
 		(item): item is NavRouteItem => item.type === "route" && Boolean(item.primary),
@@ -34,12 +30,10 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 
 	const activePrimary = primaryItems.find((item) => matchesRoute(pathname, item));
-	// 当前激活的二级项（若当前路由落在次级导航，「更多」按钮改显示该项名称）
 	const activeSecondary = secondaryItems.find(
 		(item): item is NavRouteItem => item.type === "route" && matchesRoute(pathname, item),
 	);
 
-	// 当前激活的主分段值
 	const activeValue = activePrimary ? activePrimary.to : "";
 
 	const segments: SegmentedItem[] = primaryItems.map((item) => {
@@ -59,9 +53,8 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	return (
 		<nav
 			aria-label="主导航"
-			className="pointer-events-auto relative hidden h-10 items-center gap-1 rounded-full border border-border/60 bg-background/80 px-1.5 py-1 shadow-xs backdrop-blur-md lg:flex dark:bg-card/85"
+			className="pointer-events-auto relative hidden h-10 items-center gap-1 rounded-full border border-border/60 bg-background/80 px-0.75 py-1 shadow-xs backdrop-blur-md lg:flex dark:bg-card/85"
 		>
-			{/* 使用项目统一的 Segmented 分段控制器组件驱动滑块平移动画 */}
 			<Segmented
 				value={activeValue}
 				onValueChange={() => {}}
@@ -73,7 +66,6 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 				itemClassName="rounded-full px-3 text-xs transition-colors duration-150"
 			/>
 
-			{/* 次级导航下拉网格 */}
 			{secondaryItems.length > 0 && (
 				<DropdownMenu open={browseOpen} onOpenChange={setBrowseOpen}>
 					<DropdownMenuTrigger asChild>

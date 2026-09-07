@@ -1,6 +1,7 @@
 import { statusOf } from "@features/lab/announcement/model/event";
 import { useAnnouncement } from "@features/settings/api/queries";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
+import { formatDate, formatDateTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { BackLink } from "@shared/ui/back-link";
@@ -77,7 +78,7 @@ function AnnouncementDetailPage() {
 
 	const cfg = getAnnouncementSev(a.severity);
 	const status = statusOf(a);
-	const stamp = a.created_at.slice(0, 16).replace("T", " ");
+	const stamp = formatDateTime(a.created_at);
 	const body = a.content_html?.trim() ? a.content_html : a.content_md || a.content;
 
 	const handleCopyId = async () => {
@@ -117,7 +118,7 @@ function AnnouncementDetailPage() {
 					<span>{stamp}</span>
 					{a.start_time && a.end_time ? (
 						<span>
-							生效 {a.start_time.slice(0, 10)} → {a.end_time.slice(0, 10)}
+							生效 {formatDate(a.start_time)} → {formatDate(a.end_time)}
 						</span>
 					) : null}
 					{a.affects?.length ? <span>影响 {a.affects.join(" / ")}</span> : null}

@@ -16,6 +16,7 @@ import { SITE_URL } from "@shared/config/env";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/hooks/use-scroll-progress";
 import { extractToc } from "@shared/hooks/use-toc";
+import { formatDate } from "@shared/lib/date";
 import { extractMarkdownToc } from "@shared/lib/markdown/toc";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { BackLink } from "@shared/ui/back-link";
@@ -198,7 +199,7 @@ function BlogDetailPage() {
 						{post.published_at ? (
 							<span className="inline-flex items-center gap-1.5">
 								<Calendar className="size-3.5" />
-								{formatDate(post.published_at)}
+								{formatDate(post.published_at, "long-date")}
 							</span>
 						) : null}
 						<span className="inline-flex items-center gap-1.5">
@@ -343,13 +344,6 @@ function BlogDetailPage() {
 			)}
 		</>
 	);
-}
-
-/** 日期格式化：2026-01-15 → "2026 年 1 月 15 日" */
-function formatDate(s: string): string {
-	const d = new Date(s);
-	if (Number.isNaN(d.getTime())) return s;
-	return d.toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" });
 }
 
 // sourceHostname 从 canonical URL 提取 hostname 用于转载来源显示。

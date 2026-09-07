@@ -11,6 +11,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
@@ -36,12 +37,6 @@ const DISPLAY_LABEL: Record<AnnouncementDisplay, string> = {
 	card: "卡片",
 	article: "文章",
 };
-
-function formatTime(s?: string): string {
-	if (!s) return "—";
-	const d = new Date(s);
-	return Number.isNaN(d.getTime()) ? s : d.toLocaleString("zh-CN");
-}
 
 function AdminAnnouncementsPage() {
 	const {
@@ -126,7 +121,8 @@ function AdminAnnouncementsPage() {
 			ellipsis: true,
 			cell: (row) => (
 				<span className="text-muted-foreground text-sm">
-					{formatTime(row.start_time)} ~ {formatTime(row.end_time)}
+					{formatDateTime(row.start_time, "second", "—")} ~{" "}
+					{formatDateTime(row.end_time, "second", "—")}
 				</span>
 			),
 		},

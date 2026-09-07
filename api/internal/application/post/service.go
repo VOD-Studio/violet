@@ -14,10 +14,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/html"
 
-	"blog-api/internal/brand"
-	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/application/markdown"
+	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/brand"
 	domain "blog-api/internal/domain/post"
+	domainpublication "blog-api/internal/domain/publication"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	userdomain "blog-api/internal/domain/user"
@@ -28,6 +29,17 @@ import (
 // PostPermissionChecker 权限检查端口（避免直接依赖 service 包）
 type PostPermissionChecker interface {
 	HasPermission(role string, isRoot bool, codes ...string) bool
+}
+
+// PublicationTransaction 暴露同一事务中的文章与发布物 adapter。
+type PublicationTransaction interface {
+	Posts() domain.PostRepository
+	Publications() domainpublication.Writer
+}
+
+// PublicationUnitOfWork 保证文章状态与发布物投影原子提交。
+type PublicationUnitOfWork interface {
+	Do(ctx context.Context, fn func(PublicationTransaction) error) error
 }
 
 // PostDTO 文章读模型
@@ -41,13 +53,13 @@ type PostDTO struct {
 	CoverImage     string       `json:"cover_image"`
 	Status         string       `json:"status"` // 状态机：draft（草稿）/published（已发布）/archived（已归档）
 	AuthorID       string       `json:"author_id"`
-	Author         *AuthorDTO   `json:"author,omitempty"`               // 文章所有者（Owner）
-	Collaborators  []*AuthorDTO `json:"collaborators,omitempty"`        // 协同者列表（编辑过但非所有者），按首次编辑时间排序
+	Author         *AuthorDTO   `json:"author,omitempty"`        // 文章所有者（Owner）
+	Collaborators  []*AuthorDTO `json:"collaborators,omitempty"` // 协同者列表（编辑过但非所有者），按首次编辑时间排序
 	ViewCount      int          `json:"view_count"`
 	IsFeatured     bool         `json:"is_featured"`
 	SEOTitle       string       `json:"seo_title"`
 	SEODescription string       `json:"seo_description"`
-	PublishedAt    string       `json:"published_at,omitempty"` // 发布时间（RFC3339）；空串=未发布（草稿或归档）
+	PublishedAt    string       `json:"published_at,omitempty"`  // 发布时间（RFC3339）；空串=未发布（草稿或归档）
 	CanonicalURL   *string      `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
 	Tags           []string     `json:"tags"`
 	CreatedAt      string       `json:"created_at"`
@@ -61,8 +73,8 @@ type PostVersionDTO struct {
 	Title     string     `json:"title"`
 	ContentMD string     `json:"content_md,omitempty"` // 列表时不返回长文本
 	Tags      []string   `json:"tags"`
-	EditorID  string     `json:"editor_id"`            // 编辑这一版的操作人 ID
-	Editor    *AuthorDTO `json:"editor,omitempty"`     // 编辑者信息（用户名+头像），按 editor_id 批量填充
+	EditorID  string     `json:"editor_id"`        // 编辑这一版的操作人 ID
+	Editor    *AuthorDTO `json:"editor,omitempty"` // 编辑者信息（用户名+头像），按 editor_id 批量填充
 	Summary   string     `json:"summary"`
 	CreatedAt string     `json:"created_at"`
 }
@@ -113,11 +125,12 @@ type ArchiveYearDTO struct {
 
 // Service 文章用例服务
 type Service struct {
-	repo          domain.PostRepository
-	userRepo      userdomain.UserRepository
-	perm          PostPermissionChecker
-	settingsStore domainsettings.SettingsStore
-	bus           appshared.EventBus
+	repo           domain.PostRepository
+	userRepo       userdomain.UserRepository
+	perm           PostPermissionChecker
+	settingsStore  domainsettings.SettingsStore
+	bus            appshared.EventBus
+	publicationUOW PublicationUnitOfWork
 }
 
 // NewService 构造文章用例服务
@@ -125,8 +138,12 @@ type Service struct {
 // userRepo 用于按 author_id 填充 PostDTO.Author，nil 时跳过填充。
 // perm 用于所有权鉴权：操作他人文章需对应权限码，操作自己的靠所有权放行。
 // settingsStore 用于 import-url 的「AI 还原公式」读取 llm_* 配置，nil 时禁用 AI 还原。
-func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker, settingsStore domainsettings.SettingsStore, bus appshared.EventBus) *Service {
-	return &Service{repo: repo, userRepo: userRepo, perm: perm, settingsStore: settingsStore, bus: bus}
+// publicationUOW 负责文章公开状态与发布物投影的原子写入。
+func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker, settingsStore domainsettings.SettingsStore, bus appshared.EventBus, publicationUOW PublicationUnitOfWork) *Service {
+	return &Service{
+		repo: repo, userRepo: userRepo, perm: perm, settingsStore: settingsStore,
+		bus: bus, publicationUOW: publicationUOW,
+	}
 }
 
 // canModify 判断操作者是否有权修改指定文章
@@ -382,10 +399,10 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
 
-	if err := s.repo.Save(ctx, p); err != nil {
+	if err := s.saveWithPublication(ctx, p); err != nil {
 		return err
 	}
-	
+
 	// 如果内容或标题发生实质性变化，则自动保存快照
 	if oldContent != in.ContentMD || oldTitle != in.Title {
 		v := domain.NewPostVersion(p, opID, "自动保存")
@@ -411,7 +428,7 @@ func (s *Service) SetFeatured(ctx context.Context, id string, featured bool) (Po
 		return PostDTO{}, shared.Forbidden("无权设置精选")
 	}
 	p.SetFeatured(featured)
-	if err := s.repo.Save(ctx, p); err != nil {
+	if err := s.saveWithPublication(ctx, p); err != nil {
 		return PostDTO{}, err
 	}
 	return toDTO(p), nil
@@ -432,7 +449,7 @@ func (s *Service) Publish(ctx context.Context, id string) error {
 		return shared.Forbidden("无权发布他人文章")
 	}
 	p.Publish()
-	if err := s.repo.Save(ctx, p); err != nil {
+	if err := s.saveWithPublication(ctx, p); err != nil {
 		return err
 	}
 	s.publishEvents(ctx, p)
@@ -466,7 +483,7 @@ func (s *Service) UpdateStatus(ctx context.Context, id, status string) (PostDTO,
 	case domain.StatusDraft:
 		p.RevertToDraft()
 	}
-	if err := s.repo.Save(ctx, p); err != nil {
+	if err := s.saveWithPublication(ctx, p); err != nil {
 		return PostDTO{}, err
 	}
 	s.publishEvents(ctx, p)
@@ -497,7 +514,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	if !s.canModify(ctx, p, "post:delete") {
 		return shared.Forbidden("无权删除他人文章")
 	}
-	return s.repo.Delete(ctx, pid)
+	return s.deleteWithPublication(ctx, pid, false)
 }
 
 // Restore 恢复已删除的文章
@@ -514,7 +531,7 @@ func (s *Service) Restore(ctx context.Context, id string) error {
 	if !s.canModify(ctx, p, "post:delete") {
 		return shared.Forbidden("无权恢复他人文章")
 	}
-	return s.repo.Restore(ctx, pid)
+	return s.restoreWithPublication(ctx, p)
 }
 
 // HardDelete 彻底删除文章
@@ -533,7 +550,7 @@ func (s *Service) HardDelete(ctx context.Context, id string) error {
 	if !isRoot && (s.perm == nil || !s.perm.HasPermission(role, isRoot, "post:delete")) {
 		return shared.Forbidden("无权彻底删除文章")
 	}
-	return s.repo.HardDelete(ctx, pid)
+	return s.deleteWithPublication(ctx, pid, true)
 }
 
 // BatchActionInput 批量操作入参。
@@ -604,31 +621,73 @@ func (s *Service) BatchAction(ctx context.Context, in BatchActionInput) (int, er
 func (s *Service) applyBatchAction(ctx context.Context, p *domain.Post, id shared.ID, action string) bool {
 	switch action {
 	case "delete":
-		return s.repo.Delete(ctx, id) == nil
+		return s.deleteWithPublication(ctx, id, false) == nil
 	case "hard_delete":
-		return s.repo.HardDelete(ctx, id) == nil
+		return s.deleteWithPublication(ctx, id, true) == nil
 	case "restore":
-		return s.repo.Restore(ctx, id) == nil
+		return s.restoreWithPublication(ctx, p) == nil
 	case "publish":
 		p.Publish()
-		if err := s.repo.Save(ctx, p); err != nil {
+		if err := s.saveWithPublication(ctx, p); err != nil {
 			return false
 		}
 		s.publishEvents(ctx, p)
 		return true
 	case "archive":
 		p.Archive()
-		return s.repo.Save(ctx, p) == nil
+		return s.saveWithPublication(ctx, p) == nil
 	case "feature":
 		p.SetFeatured(true)
-		return s.repo.Save(ctx, p) == nil
+		return s.saveWithPublication(ctx, p) == nil
 	case "unfeature":
 		p.SetFeatured(false)
-		return s.repo.Save(ctx, p) == nil
+		return s.saveWithPublication(ctx, p) == nil
 	}
 	return false
 }
 
+func (s *Service) saveWithPublication(ctx context.Context, p *domain.Post) error {
+	return s.publicationUOW.Do(ctx, func(tx PublicationTransaction) error {
+		if err := tx.Posts().Save(ctx, p); err != nil {
+			return err
+		}
+		return syncPostPublication(ctx, tx.Publications(), p)
+	})
+}
+
+func (s *Service) deleteWithPublication(ctx context.Context, id shared.ID, hard bool) error {
+	return s.publicationUOW.Do(ctx, func(tx PublicationTransaction) error {
+		var err error
+		if hard {
+			err = tx.Posts().HardDelete(ctx, id)
+		} else {
+			err = tx.Posts().Delete(ctx, id)
+		}
+		if err != nil {
+			return err
+		}
+		return tx.Publications().Delete(ctx, domainpublication.KindArticle, id)
+	})
+}
+
+func (s *Service) restoreWithPublication(ctx context.Context, p *domain.Post) error {
+	return s.publicationUOW.Do(ctx, func(tx PublicationTransaction) error {
+		if err := tx.Posts().Restore(ctx, p.ID()); err != nil {
+			return err
+		}
+		return syncPostPublication(ctx, tx.Publications(), p)
+	})
+}
+
+func syncPostPublication(ctx context.Context, publications domainpublication.Writer, p *domain.Post) error {
+	if p.Status() != domain.StatusPublished || p.PublishedAt() == nil {
+		return publications.Delete(ctx, domainpublication.KindArticle, p.ID())
+	}
+	return publications.Upsert(ctx, domainpublication.Entry{
+		Kind: domainpublication.KindArticle, SourceID: p.ID(), RouteKey: p.Slug(),
+		Title: p.Title(), PublishedAt: *p.PublishedAt(), Featured: p.IsFeatured(),
+	})
+}
 
 // ListVersions 列出文章的历史版本（不含正文）
 func (s *Service) ListVersions(ctx context.Context, postID string) ([]PostVersionDTO, error) {
@@ -702,7 +761,7 @@ func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operato
 	}
 	p.SetTags(v.Tags())
 
-	if err := s.repo.Save(ctx, p); err != nil {
+	if err := s.saveWithPublication(ctx, p); err != nil {
 		return err
 	}
 

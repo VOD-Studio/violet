@@ -11,6 +11,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	domaingallery "blog-api/internal/domain/gallery"
 	"blog-api/internal/domain/permission"
+	domainpublication "blog-api/internal/domain/publication"
 	"blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
 	"blog-api/internal/middleware"
@@ -256,6 +257,12 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (GalleryDetailDT
 		if err := tx.Galleries().SavePublishingState(ctx, gallery, obsoleteRevisionID, in.ExpectedVersion); err != nil {
 			return err
 		}
+		if err := tx.Publications().Upsert(ctx, domainpublication.Entry{
+			Kind: domainpublication.KindGallery, SourceID: gallery.ID(), RouteKey: gallery.Slug(),
+			Title: gallery.PublishedRevision().Title(), PublishedAt: *gallery.PublishedAt(),
+		}); err != nil {
+			return err
+		}
 		published = gallery
 		return nil
 	})
@@ -304,6 +311,9 @@ func (s *Service) Unpublish(ctx context.Context, in VersionInput) (GalleryDetail
 		if err := tx.Galleries().SavePublishingState(ctx, gallery, obsoleteRevisionID, in.ExpectedVersion); err != nil {
 			return err
 		}
+		if err := tx.Publications().Delete(ctx, domainpublication.KindGallery, gallery.ID()); err != nil {
+			return err
+		}
 		unpublished = gallery
 		return nil
 	})
@@ -348,6 +358,9 @@ func (s *Service) Delete(ctx context.Context, in VersionInput) error {
 			}
 		}
 		if err := tx.Galleries().Delete(ctx, gallery.ID(), in.ExpectedVersion); err != nil {
+			return err
+		}
+		if err := tx.Publications().Delete(ctx, domainpublication.KindGallery, gallery.ID()); err != nil {
 			return err
 		}
 		deleted = gallery

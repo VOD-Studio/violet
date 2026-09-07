@@ -14,6 +14,7 @@ import { CreateUserDialog } from "@features/admin-users/ui/CreateUserDialog";
 import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
@@ -235,7 +236,7 @@ function AdminUsers() {
 			header: "创建时间",
 			accessorKey: "created_at",
 			sortable: true,
-			cell: (row) => new Date(row.created_at).toLocaleString("zh-CN"),
+			cell: (row) => formatDateTime(row.created_at, "second"),
 		},
 		{
 			key: "actions",
@@ -472,7 +473,7 @@ function AdminUsers() {
 							<p>状态：{row.is_active ? "正常" : "已禁用"}</p>
 							<p>邮箱验证：{row.email_verified ? "已验证" : "未验证"}</p>
 							<p>个人简介：{row.bio || "无"}</p>
-							<p>创建时间：{new Date(row.created_at).toLocaleString("zh-CN")}</p>
+							<p>创建时间：{formatDateTime(row.created_at, "second")}</p>
 						</div>
 					)}
 					onRowClick={(row) => {

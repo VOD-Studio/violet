@@ -1,5 +1,6 @@
 import { usePublishedNote } from "@entities/note/api/queries";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
+import { formatDate } from "@shared/lib/date";
 import Empty from "@shared/ui/empty";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
@@ -9,7 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, CheckCircle2, Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { noteDate, notePlainLength, noteTitle } from "../model/display";
+import { notePlainLength, noteTitle } from "../model/display";
 
 interface NoteDetailPageProps {
 	noteId: string;
@@ -123,7 +124,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 									<div className="flex items-center gap-3 tabular-nums">
 										<span className="flex items-center gap-1">
 											<Calendar className="size-3" />
-											{noteDate(note.published_at)}
+											{formatDate(note.published_at)}
 										</span>
 										<span>•</span>
 										<span>{notePlainLength(note.content_html)} CHARS</span>

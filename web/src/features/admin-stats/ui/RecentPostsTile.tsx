@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatDateTime } from "@shared/lib/date";
 import type { PostSummaryDTO } from "../model/types";
 import { TermPane } from "./TermPane";
 
@@ -30,7 +30,7 @@ export function RecentPostsTile({ posts }: { posts: PostSummaryDTO[] }) {
 							</div>
 							<span className="text-muted-foreground shrink-0 font-mono text-xs tabular-nums">
 								{post.published_at
-									? format(new Date(post.published_at), "MM-dd HH:mm")
+									? formatDateTime(post.published_at, "short-minute")
 									: "—"}
 							</span>
 						</li>

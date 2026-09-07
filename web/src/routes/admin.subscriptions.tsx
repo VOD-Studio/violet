@@ -20,6 +20,7 @@ import {
 } from "@features/admin-subscriptions/model/types";
 import { SubscriptionFormDialog } from "@features/admin-subscriptions/ui/SubscriptionFormDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -109,9 +110,7 @@ function AdminSubscriptionsPage() {
 			header: "最近抓取",
 			width: "160px",
 			cell: (row) =>
-				row.last_fetched_at
-					? new Date(row.last_fetched_at).toLocaleString("zh-CN")
-					: "从未",
+				row.last_fetched_at ? formatDateTime(row.last_fetched_at, "second") : "从未",
 		},
 		{
 			key: "last_error",

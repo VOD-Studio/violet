@@ -5,6 +5,7 @@ import {
 import type { AdminCustomEmoji } from "@features/admin-customemojis/model/types";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { formatDateTime } from "@shared/lib/date";
 import { AvatarGroup } from "@shared/ui/avatar-group/AvatarGroup";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
@@ -69,7 +70,7 @@ export function CustomEmojiAdminSection() {
 			key: "created_at",
 			header: "上传时间",
 			width: "160px",
-			cell: (row) => new Date(row.created_at).toLocaleString("zh-CN"),
+			cell: (row) => formatDateTime(row.created_at, "second"),
 		},
 		{
 			key: "actions",

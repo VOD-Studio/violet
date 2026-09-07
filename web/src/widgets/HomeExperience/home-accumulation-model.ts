@@ -1,10 +1,4 @@
-import {
-	HOME_FOOTPRINT_AGGREGATION_DEFAULT_DAYS,
-	HOME_FOOTPRINT_AGGREGATION_MAX_DAYS,
-	HOME_FOOTPRINT_AGGREGATION_MIN_DAYS,
-} from "@features/settings/model/types";
-
-import type { HomePublicationItem } from "./types";
+import type { HomePublicationItem, PublicationWindow } from "./types";
 
 export type AccumulationSeasonName = "spring" | "summer" | "autumn" | "winter";
 
@@ -46,6 +40,9 @@ export const PUBLICATION_MARKER_MAX_SIZE = 10;
 
 const DAY_IN_MILLISECONDS = 86_400_000;
 const TIMELINE_MONTH_COUNT = 12;
+const AGGREGATION_DEFAULT_DAYS = 7;
+const AGGREGATION_MIN_DAYS = 1;
+const AGGREGATION_MAX_DAYS = 31;
 const SEASON_LABELS: Record<AccumulationSeasonName, string> = {
 	spring: "春",
 	summer: "夏",
@@ -72,20 +69,26 @@ interface SeasonSegment {
 	endsAt: number;
 }
 
-/** 将最近十二个月的内容按可配置天数聚合到一条连续时间线上。 */
+/**
+ * 将当前自然月及其之前十一个自然月的内容聚合到连续时间线。
+ *
+ * @param publications 公开发布物，顺序不影响月份、季节与节点计算。
+ * @param aggregationDays 每个节点覆盖的自然日数，非法值回退为 7。
+ * @param referenceDate 决定十二个月窗口的当前日期，默认浏览时刻。
+ * @returns 月份、季节、聚合节点与窗口内最新发布物。
+ */
 export function buildAccumulationTimeline(
 	publications: HomePublicationItem[],
-	aggregationDays = HOME_FOOTPRINT_AGGREGATION_DEFAULT_DAYS,
+	aggregationDays = AGGREGATION_DEFAULT_DAYS,
+	referenceDate = new Date(),
 ): AccumulationTimeline {
 	const datedPublications = publications.flatMap((item) => {
-		const day = parsePublicationDay(item.publishedAt);
+		const day = parsePublicationDay(item.published_at);
 		return day === null ? [] : [{ item, day }];
 	});
 	if (datedPublications.length === 0) return emptyTimeline();
 
-	const anchorDay = Math.max(...datedPublications.map((entry) => entry.day));
-	const anchorDate = new Date(anchorDay);
-	const months = buildMonths(anchorDate);
+	const months = buildMonths(referenceDate);
 	const firstMonth = months[0];
 	const lastMonth = months.at(-1);
 	if (!firstMonth || !lastMonth) return emptyTimeline();
@@ -94,9 +97,9 @@ export function buildAccumulationTimeline(
 	const rangeEnd = monthAfter(lastMonth);
 	const timelineDuration = Math.max(rangeEnd - rangeStart, 1);
 	const safeAggregationDays = clamp(
-		Math.trunc(aggregationDays) || HOME_FOOTPRINT_AGGREGATION_DEFAULT_DAYS,
-		HOME_FOOTPRINT_AGGREGATION_MIN_DAYS,
-		HOME_FOOTPRINT_AGGREGATION_MAX_DAYS,
+		Math.trunc(aggregationDays) || AGGREGATION_DEFAULT_DAYS,
+		AGGREGATION_MIN_DAYS,
+		AGGREGATION_MAX_DAYS,
 	);
 	const windowDuration = safeAggregationDays * DAY_IN_MILLISECONDS;
 	const monthByKey = new Map(months.map((month) => [month.key, month]));
@@ -139,7 +142,7 @@ export function buildAccumulationTimeline(
 				startsAt: bucket.startsAt,
 				endsAt: bucket.endsAt - DAY_IN_MILLISECONDS,
 				markerSize: markerSizeForCount(items.length),
-				isLatest: items.some((item) => item.key === latestEntry?.item.key),
+				isLatest: items.some((item) => item.id === latestEntry?.item.id),
 				order,
 			};
 		});
@@ -149,6 +152,21 @@ export function buildAccumulationTimeline(
 		points,
 		seasonLabels: buildSeasonLabels(months, rangeStart, timelineDuration),
 		latest: latestEntry?.item ?? null,
+	};
+}
+
+/**
+ * 生成当前自然月向前十二个月的 UTC 半开查询区间。
+ *
+ * @param referenceDate 决定当前自然月的日期，默认浏览时刻。
+ * @returns `from` 含首月首日，`to` 不含下月首日。
+ */
+export function recentTwelveMonthWindow(referenceDate = new Date()): PublicationWindow {
+	const year = referenceDate.getUTCFullYear();
+	const month = referenceDate.getUTCMonth();
+	return {
+		from: new Date(Date.UTC(year, month - (TIMELINE_MONTH_COUNT - 1), 1)).toISOString(),
+		to: new Date(Date.UTC(year, month + 1, 1)).toISOString(),
 	};
 }
 
