@@ -64,7 +64,6 @@ func (r *PersonaRepository) FindPage(ctx context.Context, filter domainpersona.L
 	q = q.Normalize()
 	query := r.db.WithContext(ctx).
 		Model(&model.Persona{}).
-		Select("personas.*").
 		Joins("LEFT JOIN persona_selection ON persona_selection.persona_id = personas.id")
 	if search := strings.TrimSpace(filter.Search); search != "" {
 		query = query.Where("LOWER(personas.name) LIKE ?", "%"+strings.ToLower(search)+"%")
