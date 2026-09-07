@@ -111,6 +111,8 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Role:                  c.Role.RoleHandler,
 		Settings:              c.Settings.SettingsHandler,
 		SiteIdentity:          c.SiteIdentity.Handler,
+		SiteImpression:        c.SiteImpression.Handler,
+		SiteImpressionLimit:   c.SiteImpression.RateLimit,
 		Stats:                 c.Stats.StatsHandler,
 		GitHub:                c.GitHub.GitHubHandler,
 		Releases:              c.Releases.ReleasesHandler,

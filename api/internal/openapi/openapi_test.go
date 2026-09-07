@@ -437,3 +437,18 @@ func TestSiteIdentityPath(t *testing.T) {
 	}
 	require.Contains(t, path.Get.Responses.Map(), "304")
 }
+
+func TestSiteImpressionPath(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/site-impressions")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Get)
+	require.NotNil(t, path.Post)
+	require.Empty(t, path.Get.Security)
+	require.Empty(t, path.Post.Security)
+	require.Contains(t, spec.Components.Schemas, "SiteImpressionStateDTO")
+	require.True(t, hasParam(path.Post.Parameters, "X-CSRF-Token"))
+	require.Contains(t, path.Post.Responses.Map(), "403")
+	require.Contains(t, path.Post.Responses.Map(), "429")
+}

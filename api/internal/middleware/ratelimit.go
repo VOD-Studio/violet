@@ -2,6 +2,9 @@
 package middleware
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,6 +21,18 @@ import (
 // max    窗口内最大请求数（达到即拒绝）
 func RateLimit(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
 	return rateLimitByDimension(key, client, window, max, getClientIP)
+}
+
+// RateLimitByHashedIP 使用 HMAC 后的 IP 作为 Redis 维度，避免原始 IP 进入 key 与日志。
+//
+// hmacKey 应由调用方为当前业务独立派生，不能与持久化令牌摘要共用。
+func RateLimitByHashedIP(key string, client *redis.Client, hmacKey []byte, window time.Duration, max int64) func(http.Handler) http.Handler {
+	keyCopy := append([]byte(nil), hmacKey...)
+	return rateLimitByDimension(key, client, window, max, func(r *http.Request) string {
+		mac := hmac.New(sha256.New, keyCopy)
+		_, _ = mac.Write([]byte(getClientIP(r)))
+		return hex.EncodeToString(mac.Sum(nil))
+	})
 }
 
 // RateLimitByUser 基于登录用户 ID 的滑动窗口限流（须挂在 SessionAuth 之后）。

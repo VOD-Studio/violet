@@ -37,6 +37,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 公开站点设置、站点身份与只读统计
 		v1.Get("/settings", d.Settings.GetPublicSettings)
 		registerSiteIdentityRoutes(v1, d)
+		registerSiteImpressionRoutes(v1, d)
 		v1.Get("/stats", d.Stats.GetPublicStats)
 
 		// GitHub 数据（公开，Token 在后端管理）
@@ -207,6 +208,14 @@ func registerSiteIdentityRoutes(v1 chi.Router, d *Deps) {
 		return
 	}
 	v1.Get("/site-identity", d.SiteIdentity.Get)
+}
+
+func registerSiteImpressionRoutes(v1 chi.Router, d *Deps) {
+	if d.SiteImpression == nil || d.SiteImpressionLimit == nil {
+		return
+	}
+	v1.Get("/site-impressions", d.SiteImpression.Get)
+	v1.With(d.SiteImpressionLimit).Post("/site-impressions", d.SiteImpression.Post)
 }
 
 // registerTagRoutes 注册 /tags 路由（公开 List + 登录管理员写操作）。

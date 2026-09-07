@@ -21,6 +21,7 @@ type Container struct {
 	Role            *RoleContainer
 	Settings        *SettingsContainer
 	SiteIdentity    *SiteIdentityContainer
+	SiteImpression  *SiteImpressionContainer
 	Auth            *AuthContainer
 	Content         *ContentContainer
 	Comment         *CommentContainer
@@ -84,6 +85,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	settings := NewSettingsContainer(db, bus, oauthCreds)
 	siteIdentity := NewSiteIdentityContainer(settings.Store)
+	siteImpression := NewSiteImpressionContainer(db, rdb, []byte(cfg.ResourceSigningKey), cfg.Cookie.Domain)
 	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.CustomEmojiMaxPerUser, cfg.UploadPathPrefix)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
@@ -119,7 +121,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
 
 	c := &Container{
-		Role: role, Settings: settings, SiteIdentity: siteIdentity, Auth: auth, Content: content, Comment: comment,
+		Role: role, Settings: settings, SiteIdentity: siteIdentity, SiteImpression: siteImpression, Auth: auth, Content: content, Comment: comment,
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,

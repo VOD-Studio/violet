@@ -39,6 +39,7 @@ import (
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
+	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
 	statshttp "blog-api/internal/interfaces/http/handler/stats"
 	subscriptionhttp "blog-api/internal/interfaces/http/handler/subscription"
 	systemhttp "blog-api/internal/interfaces/http/handler/system"
@@ -73,36 +74,38 @@ type Deps struct {
 	OptionalAuth          func(http.Handler) http.Handler
 	SessionAuthReadOnlyMW func(http.Handler) http.Handler
 
-	Role               *rolehttp.Handler
-	Settings           *settingshttp.Handler
-	SiteIdentity       *siteidentityhttp.Handler
-	Stats              *statshttp.Handler
-	GitHub             *githubhttp.Handler
-	Releases           *releaseshttp.Handler
-	Auth               *authhttp.Handler
-	Content            *contenthttp.Handler
-	Comment            *commenthttp.Handler
-	CommentReaction    *crhttp.Handler
-	Media              *mediahttp.Handler
-	Post               *posthttp.Handler
-	Tag                *taghttp.Handler
-	Audit              *audithttp.Handler
-	UserAdmin          *useradminhttp.Handler
-	APIToken           *apitokenhttp.Handler
-	Subscription       *subscriptionhttp.Handler
-	CodeRunner         *codehttp.Handler
-	System             *systemhttp.Handler
-	Image              *imagehttp.Handler
-	Tweet              *tweethttp.Handler
-	FriendLink         *friendlinkhttp.Handler
-	Series             *serieshttp.Handler
-	Gallery            *galleryhttp.Handler
-	Note               *notehttp.Handler
-	Publication        *publicationhttp.Handler
-	Notification       *notificationhttp.Handler
-	NotificationStream *notificationhttp.StreamHandler
-	Chat               *chathttp.Handler
-	ChatStream         *chathttp.StreamHandler
-	CustomEmoji        *customemojihttp.Handler
-	MCP                MCPHandlers
+	Role                *rolehttp.Handler
+	Settings            *settingshttp.Handler
+	SiteIdentity        *siteidentityhttp.Handler
+	SiteImpression      *siteimpressionhttp.Handler
+	SiteImpressionLimit func(http.Handler) http.Handler
+	Stats               *statshttp.Handler
+	GitHub              *githubhttp.Handler
+	Releases            *releaseshttp.Handler
+	Auth                *authhttp.Handler
+	Content             *contenthttp.Handler
+	Comment             *commenthttp.Handler
+	CommentReaction     *crhttp.Handler
+	Media               *mediahttp.Handler
+	Post                *posthttp.Handler
+	Tag                 *taghttp.Handler
+	Audit               *audithttp.Handler
+	UserAdmin           *useradminhttp.Handler
+	APIToken            *apitokenhttp.Handler
+	Subscription        *subscriptionhttp.Handler
+	CodeRunner          *codehttp.Handler
+	System              *systemhttp.Handler
+	Image               *imagehttp.Handler
+	Tweet               *tweethttp.Handler
+	FriendLink          *friendlinkhttp.Handler
+	Series              *serieshttp.Handler
+	Gallery             *galleryhttp.Handler
+	Note                *notehttp.Handler
+	Publication         *publicationhttp.Handler
+	Notification        *notificationhttp.Handler
+	NotificationStream  *notificationhttp.StreamHandler
+	Chat                *chathttp.Handler
+	ChatStream          *chathttp.StreamHandler
+	CustomEmoji         *customemojihttp.Handler
+	MCP                 MCPHandlers
 }
