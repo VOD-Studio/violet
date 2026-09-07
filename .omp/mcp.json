@@ -36,6 +36,38 @@
       "command": "npx",
       "args": ["shadcn@latest", "mcp"],
       "cwd": "web"
+    },
+    "violet-posts": {
+      "type": "http",
+      "url": "https://xunrua.top/api/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
+      }
+    },
+    "violet-scraper": {
+      "type": "http",
+      "url": "https://xunrua.top/api/v1/mcp/scraper",
+      "headers": {
+        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
+      }
+    },
+    "violet-reader": {
+      "type": "http",
+      "url": "https://xunrua.top/api/v1/mcp/reader"
+    },
+    "violet-comments": {
+      "type": "http",
+      "url": "https://xunrua.top/api/v1/mcp/comments",
+      "headers": {
+        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
+      }
+    },
+    "violet-notes": {
+      "type": "http",
+      "url": "https://xunrua.top/api/v1/mcp/notes",
+      "headers": {
+        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
+      }
     }
   }
 }
