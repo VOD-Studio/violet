@@ -135,10 +135,10 @@ api/
 | **releases** | releases | releases | 版本发布（release-please 集成） |
 | **gallery** | gallery | gallery | 图集视觉作品：双快照工作稿、更新发布、撤回删除、own-or-moderator 审核、生命周期审计与稳定地址读取 |
 | **note** | note | note | 知识笔记：markdown+标签轻量条目、draft→published 单向发布、公开流 keyset 分页与标签筛选 |
+| **persona** | persona | persona | 多语言人设档案：默认语言、共享头像、完整文档保存、单一当前人设选择、素材引用计数与公开语言协商（`GET /persona?locale=`） |
 | **publication** | publication | publication | 首页统一发布物投影：文章、知识笔记与图集的轻量 cursor 时间流（`GET /publications`） |
 | **siteidentity** | settings | siteidentity | 首页站点身份：默认值、公开链接和可用订阅渠道归一（`GET /site-identity`） |
 | **siteimpression** | siteimpression | siteimpression | 首页匿名设备印记：HMAC 令牌去重、私有状态查询与限流写入（`GET/POST /site-impressions`） |
-| **persona** | persona | persona | 人设档案：完整文档保存、单一当前人设选择、素材引用计数与公开读取 |
 
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
 

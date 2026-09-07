@@ -12,6 +12,17 @@ type FactDTO struct {
 	Value string `json:"value"`
 }
 
+// AdminAssetDTO 是后台可继续编辑的头像素材投影。
+type AdminAssetDTO struct {
+	FileID    string `json:"file_id"`
+	URL       string `json:"url"`
+	Thumbnail string `json:"thumbnail"`
+	MimeType  string `json:"mime_type"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
+	AltText   string `json:"alt_text"`
+}
+
 // AdminImageDTO 是后台设定图投影。
 type AdminImageDTO struct {
 	FileID          string `json:"file_id"`
@@ -25,7 +36,16 @@ type AdminImageDTO struct {
 	AltTextOverride string `json:"alt_text_override"`
 }
 
-// PublicImageDTO 是公开页需要的设定图投影，不暴露素材 ID。
+// PublicAssetDTO 是公开头像投影，不暴露素材 ID。
+type PublicAssetDTO struct {
+	URL       string `json:"url"`
+	Thumbnail string `json:"thumbnail"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
+	AltText   string `json:"alt_text"`
+}
+
+// PublicImageDTO 是公开设定图投影，不暴露素材 ID。
 type PublicImageDTO struct {
 	URL       string `json:"url"`
 	Thumbnail string `json:"thumbnail"`
@@ -35,10 +55,9 @@ type PublicImageDTO struct {
 	AltText   string `json:"alt_text"`
 }
 
-// DetailDTO 是后台完整人设档案。
-type DetailDTO struct {
-	ID          string          `json:"id"`
-	CreatedBy   string          `json:"created_by"`
+// LocalizationDTO 是后台可编辑的一个完整语言版本。
+type LocalizationDTO struct {
+	Locale      string          `json:"locale"`
 	Name        string          `json:"name"`
 	Subtitle    string          `json:"subtitle"`
 	Summary     string          `json:"summary"`
@@ -46,38 +65,53 @@ type DetailDTO struct {
 	ContentHTML string          `json:"content_html"`
 	Facts       []FactDTO       `json:"facts"`
 	Images      []AdminImageDTO `json:"images"`
-	IsActive    bool            `json:"is_active"`
 	IsComplete  bool            `json:"is_complete"`
-	Version     int64           `json:"version"`
+}
+
+// DetailDTO 是后台完整人设档案。
+type DetailDTO struct {
+	ID            string            `json:"id"`
+	CreatedBy     string            `json:"created_by"`
+	DefaultLocale string            `json:"default_locale"`
+	Avatar        *AdminAssetDTO    `json:"avatar"`
+	Localizations []LocalizationDTO `json:"localizations"`
+	IsActive      bool              `json:"is_active"`
+	IsComplete    bool              `json:"is_complete"`
+	Version       int64             `json:"version"`
 	// CreatedAt / UpdatedAt 为 RFC3339。
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
-// SummaryDTO 是后台列表项，不含正文与图片详情。
+// SummaryDTO 是后台列表项，名称与计数取默认语言版本。
 type SummaryDTO struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Subtitle   string `json:"subtitle"`
-	Summary    string `json:"summary"`
-	FactCount  int    `json:"fact_count"`
-	ImageCount int    `json:"image_count"`
-	IsActive   bool   `json:"is_active"`
-	IsComplete bool   `json:"is_complete"`
-	Version    int64  `json:"version"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Subtitle   string   `json:"subtitle"`
+	Summary    string   `json:"summary"`
+	Locales    []string `json:"locales"`
+	FactCount  int      `json:"fact_count"`
+	ImageCount int      `json:"image_count"`
+	IsActive   bool     `json:"is_active"`
+	IsComplete bool     `json:"is_complete"`
+	Version    int64    `json:"version"`
 	// CreatedAt / UpdatedAt 为 RFC3339。
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
-// PublicPersonaDTO 是 `/persona` 的唯一公开人设投影。
+// PublicPersonaDTO 是 `/persona` 的当前语言公开投影。
 type PublicPersonaDTO struct {
-	Name        string           `json:"name"`
-	Subtitle    string           `json:"subtitle"`
-	Summary     string           `json:"summary"`
-	ContentHTML string           `json:"content_html"`
-	Facts       []FactDTO        `json:"facts"`
-	Images      []PublicImageDTO `json:"images"`
+	Locale           string           `json:"locale"`
+	DefaultLocale    string           `json:"default_locale"`
+	AvailableLocales []string         `json:"available_locales"`
+	Avatar           PublicAssetDTO   `json:"avatar"`
+	Name             string           `json:"name"`
+	Subtitle         string           `json:"subtitle"`
+	Summary          string           `json:"summary"`
+	ContentHTML      string           `json:"content_html"`
+	Facts            []FactDTO        `json:"facts"`
+	Images           []PublicImageDTO `json:"images"`
 }
 
 // ListQuery 是后台档案列表查询。
@@ -100,16 +134,25 @@ type ImageInput struct {
 	AltTextOverride string
 }
 
+// LocalizationInput 是完整保存中的一个语言版本。
+type LocalizationInput struct {
+	Locale    string
+	Name      string
+	Subtitle  string
+	Summary   string
+	ContentMD string
+	Facts     []FactInput
+	Images    []ImageInput
+}
+
 // SaveInput 是人设完整文档保存输入。
 type SaveInput struct {
 	PersonaID       string
 	ExpectedVersion int64
-	Name            string
-	Subtitle        string
-	Summary         string
-	ContentMD       string
-	Facts           []FactInput
-	Images          []ImageInput
+	DefaultLocale   string
+	// AvatarFileID 空串表示清除草稿头像。
+	AvatarFileID  string
+	Localizations []LocalizationInput
 }
 
 // VersionInput 是激活与删除动作的乐观版本输入。
@@ -119,16 +162,29 @@ type VersionInput struct {
 }
 
 func toSummaryDTO(persona *domainpersona.Persona, isActive bool) SummaryDTO {
+	localization := persona.DefaultLocalization()
+	name, subtitle, summary, factCount, imageCount := "", "", "", 0, 0
+	if localization != nil {
+		name = localization.Name()
+		subtitle = localization.Subtitle()
+		summary = localization.Summary()
+		factCount = len(localization.Facts())
+		imageCount = len(localization.Images())
+	}
+	locales := make([]string, 0, len(persona.Localizations()))
+	for _, item := range persona.Localizations() {
+		locales = append(locales, item.Locale())
+	}
 	return SummaryDTO{
-		ID: persona.ID().String(), Name: persona.Name(), Subtitle: persona.Subtitle(), Summary: persona.Summary(),
-		FactCount: len(persona.Facts()), ImageCount: len(persona.Images()), IsActive: isActive,
+		ID: persona.ID().String(), Name: name, Subtitle: subtitle, Summary: summary,
+		Locales: locales, FactCount: factCount, ImageCount: imageCount, IsActive: isActive,
 		IsComplete: persona.ValidateForActivation() == nil, Version: persona.Version(),
 		CreatedAt: formatTime(persona.CreatedAt()), UpdatedAt: formatTime(persona.UpdatedAt()),
 	}
 }
 
-func factsToDTO(persona *domainpersona.Persona) []FactDTO {
-	facts := persona.Facts()
+func factsToDTO(localization *domainpersona.Localization) []FactDTO {
+	facts := localization.Facts()
 	result := make([]FactDTO, 0, len(facts))
 	for _, fact := range facts {
 		result = append(result, FactDTO{Label: fact.Label(), Value: fact.Value()})

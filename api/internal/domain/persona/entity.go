@@ -2,93 +2,16 @@
 package persona
 
 import (
+	"sort"
 	"strings"
 	"time"
-	"unicode/utf8"
+
+	"golang.org/x/text/language"
 
 	"blog-api/internal/domain/shared"
 )
 
-const (
-	// MaxNameRunes 人设名称字符上限。
-	MaxNameRunes = 120
-	// MaxSubtitleRunes 人设副标题字符上限。
-	MaxSubtitleRunes = 240
-	// MaxSummaryRunes 人设简介字符上限。
-	MaxSummaryRunes = 500
-	// MaxFacts 人设资料项数量上限。
-	MaxFacts = 24
-	// MaxFactLabelRunes 资料项名称字符上限。
-	MaxFactLabelRunes = 40
-	// MaxFactValueRunes 资料项内容字符上限。
-	MaxFactValueRunes = 300
-	// MaxImages 设定图数量上限。
-	MaxImages = 30
-	// MaxCaptionRunes 单张设定图说明字符上限。
-	MaxCaptionRunes = 500
-	// MaxAltOverrideRunes 单张设定图无障碍文本覆盖字符上限。
-	MaxAltOverrideRunes = 300
-)
-
-// Fact 是人设档案中的有序资料项。
-type Fact struct {
-	// position 在档案中的连续位置，从 0 开始。
-	position int
-	// label 资料项名称。
-	label string
-	// value 资料项内容。
-	value string
-}
-
-// Image 是人设档案中的有序设定图引用。
-type Image struct {
-	// fileID 素材库文件 ID。
-	fileID shared.ID
-	// position 在档案中的连续位置，从 0 开始。
-	position int
-	// caption 当前人设语境下的图片说明。
-	caption string
-	// altTextOverride 当前人设语境下的无障碍文本覆盖；空串表示使用素材描述。
-	altTextOverride string
-}
-
-// Document 是完整档案保存输入，数组顺序是唯一排序权威。
-type Document struct {
-	// Name 人设名称；非当前档案允许为空。
-	Name string
-	// Subtitle 一句话角色定位；允许为空。
-	Subtitle string
-	// Summary 主视觉旁的角色简介；非当前档案允许为空。
-	Summary string
-	// ContentMD 完整设定文档 Markdown 源；非当前档案允许为空。
-	ContentMD string
-	// ContentHTML 服务端从 ContentMD 生成的安全阅读载体。
-	ContentHTML string
-	// Facts 有序资料项。
-	Facts []FactInput
-	// Images 有序设定图。
-	Images []ImageInput
-}
-
-// FactInput 是完整档案保存中的资料项输入。
-type FactInput struct {
-	// Label 资料项名称。
-	Label string
-	// Value 资料项内容。
-	Value string
-}
-
-// ImageInput 是完整档案保存中的设定图输入。
-type ImageInput struct {
-	// FileID 素材库文件 ID。
-	FileID shared.ID
-	// Caption 当前人设语境下的图片说明。
-	Caption string
-	// AltTextOverride 当前人设语境下的无障碍文本覆盖。
-	AltTextOverride string
-}
-
-// Persona 是一份可长期编辑的人设档案。
+// Persona 是一份可长期编辑、包含多个语言版本的人设档案。
 type Persona struct {
 	shared.AggregateRoot
 
@@ -96,69 +19,49 @@ type Persona struct {
 	id shared.ID
 	// createdBy 创建档案的管理员 ID，创建后不可变。
 	createdBy shared.ID
-	// name 人设名称；非当前档案允许为空。
-	name string
-	// subtitle 一句话角色定位；允许为空。
-	subtitle string
-	// summary 主视觉旁的角色简介；非当前档案允许为空。
-	summary string
-	// contentMD 完整设定文档 Markdown 源；非当前档案允许为空。
-	contentMD string
-	// contentHTML 服务端生成的安全阅读载体。
-	contentHTML string
-	// facts 按 position 升序保存的资料项。
-	facts []*Fact
-	// images 按 position 升序保存的设定图；第一项是公开主视觉。
-	images []*Image
+	// defaultLocale 未指定语言或匹配失败时使用的语言版本。
+	defaultLocale string
+	// avatarFileID 跨语言共用的角色头像素材；零值表示草稿尚未配置。
+	avatarFileID shared.ID
+	// localizations 按默认语言优先、其余语言代码升序保存的本地化文档。
+	localizations []*Localization
 	// version 乐观锁版本，从 1 开始，每次保存加 1。
 	version int64
 	// timestamps 档案创建与最近保存时间。
 	timestamps shared.Timestamps
 }
 
-// NewPersona 创建空的人设档案。
+// NewPersona 创建带一个空默认语言版本的人设档案。
 func NewPersona(id, createdBy shared.ID) (*Persona, error) {
 	if id.IsZero() || createdBy.IsZero() {
 		return nil, shared.BadRequest("人设档案与创建者 ID 不能为空")
 	}
 	now := time.Now()
 	return &Persona{
-		id: id, createdBy: createdBy,
-		facts: make([]*Fact, 0), images: make([]*Image, 0), version: 1,
+		id: id, createdBy: createdBy, defaultLocale: DefaultLocale,
+		localizations: []*Localization{emptyLocalization(DefaultLocale)}, version: 1,
 		timestamps: shared.Timestamps{CreatedAt: now, UpdatedAt: now},
 	}, nil
 }
 
-// Reconstruct 从持久化数据重建人设档案，不触发校验。
+// Reconstruct 从持久化数据重建人设档案，不触发业务校验。
 func Reconstruct(
 	id, createdBy shared.ID,
-	name, subtitle, summary, contentMD, contentHTML string,
-	facts []*Fact,
-	images []*Image,
+	defaultLocale string,
+	avatarFileID shared.ID,
+	localizations []*Localization,
 	version int64,
 	createdAt, updatedAt time.Time,
 ) *Persona {
-	if facts == nil {
-		facts = make([]*Fact, 0)
+	if localizations == nil {
+		localizations = make([]*Localization, 0)
 	}
-	if images == nil {
-		images = make([]*Image, 0)
-	}
+	sortLocalizations(localizations, defaultLocale)
 	return &Persona{
-		id: id, createdBy: createdBy, name: name, subtitle: subtitle, summary: summary,
-		contentMD: contentMD, contentHTML: contentHTML, facts: facts, images: images,
-		version: version, timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
+		id: id, createdBy: createdBy, defaultLocale: defaultLocale,
+		avatarFileID: avatarFileID, localizations: localizations, version: version,
+		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
-}
-
-// ReconstructFact 从持久化数据重建资料项。
-func ReconstructFact(position int, label, value string) *Fact {
-	return &Fact{position: position, label: label, value: value}
-}
-
-// ReconstructImage 从持久化数据重建设定图。
-func ReconstructImage(fileID shared.ID, position int, caption, altTextOverride string) *Image {
-	return &Image{fileID: fileID, position: position, caption: caption, altTextOverride: altTextOverride}
 }
 
 // EnsureVersion 校验乐观锁版本。
@@ -169,173 +72,153 @@ func (p *Persona) EnsureVersion(expected int64) error {
 	return nil
 }
 
-// ReplaceDocument 用完整文档替换档案；当前档案必须继续满足公开完整性。
+// ReplaceDocument 全量替换头像、默认语言与所有语言版本；当前档案必须继续可公开。
 func (p *Persona) ReplaceDocument(expected int64, document Document, requireComplete bool) error {
 	if err := p.EnsureVersion(expected); err != nil {
 		return err
 	}
-
 	normalized, err := normalizeDocument(document)
 	if err != nil {
 		return err
 	}
 	if requireComplete {
-		if err := validateComplete(normalized); err != nil {
+		defaultLocalization := findLocalization(normalized.localizations, normalized.DefaultLocale)
+		if err := validateComplete(defaultLocalization, normalized.AvatarFileID); err != nil {
 			return err
 		}
 	}
 
-	p.name = normalized.Name
-	p.subtitle = normalized.Subtitle
-	p.summary = normalized.Summary
-	p.contentMD = normalized.ContentMD
-	p.contentHTML = normalized.ContentHTML
-	p.facts = normalized.facts
-	p.images = normalized.images
+	p.defaultLocale = normalized.DefaultLocale
+	p.avatarFileID = normalized.AvatarFileID
+	p.localizations = normalized.localizations
 	p.version++
 	p.timestamps.UpdatedAt = time.Now()
 	return nil
 }
 
-// ValidateForActivation 校验档案能否成为当前人设。
+// ValidateForActivation 校验默认语言版本与头像能否公开。
 func (p *Persona) ValidateForActivation() error {
-	return validateComplete(normalizedDocument{
-		Name: p.name, Summary: p.summary, ContentMD: p.contentMD, images: p.images,
-	})
+	return validateComplete(p.DefaultLocalization(), p.avatarFileID)
 }
 
-type normalizedDocument struct {
-	Name        string
-	Subtitle    string
-	Summary     string
-	ContentMD   string
-	ContentHTML string
-	facts       []*Fact
-	images      []*Image
+// ResolveLocalization 按 BCP 47 语言代码选择完整版本；无匹配时回退默认语言。
+func (p *Persona) ResolveLocalization(requested string) (*Localization, error) {
+	fallback := p.DefaultLocalization()
+	if fallback == nil {
+		return nil, shared.BadRequest("人设档案缺少默认语言版本")
+	}
+	if strings.TrimSpace(requested) == "" {
+		return fallback, nil
+	}
+	requestedTag, canonical, err := parseLocale(requested)
+	if err != nil {
+		return nil, err
+	}
+
+	complete := p.completeLocalizations()
+	for _, localization := range complete {
+		if localization.locale == canonical {
+			return localization, nil
+		}
+	}
+	if len(complete) == 0 {
+		return fallback, nil
+	}
+	tags := make([]language.Tag, 0, len(complete))
+	for _, localization := range complete {
+		tag, _, parseErr := parseLocale(localization.locale)
+		if parseErr != nil {
+			continue
+		}
+		tags = append(tags, tag)
+	}
+	if len(tags) != len(complete) {
+		return fallback, nil
+	}
+	_, index, confidence := language.NewMatcher(tags).Match(requestedTag)
+	if confidence >= language.High {
+		return complete[index], nil
+	}
+	return fallback, nil
 }
 
-func normalizeDocument(document Document) (normalizedDocument, error) {
-	result := normalizedDocument{
-		Name: strings.TrimSpace(document.Name), Subtitle: strings.TrimSpace(document.Subtitle),
-		Summary: strings.TrimSpace(document.Summary), ContentMD: strings.TrimSpace(document.ContentMD),
-		ContentHTML: strings.TrimSpace(document.ContentHTML),
+// AvailableLocales 返回公开可切换的完整语言版本，默认语言始终排第一。
+func (p *Persona) AvailableLocales() []string {
+	complete := p.completeLocalizations()
+	locales := make([]string, 0, len(complete))
+	for _, localization := range complete {
+		locales = append(locales, localization.locale)
 	}
-	if utf8.RuneCountInString(result.Name) > MaxNameRunes {
-		return normalizedDocument{}, shared.BadRequest("人设名称不能超过 120 个字符")
-	}
-	if utf8.RuneCountInString(result.Subtitle) > MaxSubtitleRunes {
-		return normalizedDocument{}, shared.BadRequest("人设副标题不能超过 240 个字符")
-	}
-	if utf8.RuneCountInString(result.Summary) > MaxSummaryRunes {
-		return normalizedDocument{}, shared.BadRequest("人设简介不能超过 500 个字符")
-	}
-	if len(document.Facts) > MaxFacts {
-		return normalizedDocument{}, shared.BadRequest("人设资料项最多包含 24 项")
-	}
-	if len(document.Images) > MaxImages {
-		return normalizedDocument{}, shared.BadRequest("人设最多包含 30 张设定图")
-	}
-
-	result.facts = make([]*Fact, 0, len(document.Facts))
-	seenLabels := make(map[string]struct{}, len(document.Facts))
-	for position, input := range document.Facts {
-		label := strings.TrimSpace(input.Label)
-		value := strings.TrimSpace(input.Value)
-		if label == "" || value == "" {
-			return normalizedDocument{}, shared.BadRequest("人设资料项名称与内容不能为空")
-		}
-		if utf8.RuneCountInString(label) > MaxFactLabelRunes {
-			return normalizedDocument{}, shared.BadRequest("人设资料项名称不能超过 40 个字符")
-		}
-		if utf8.RuneCountInString(value) > MaxFactValueRunes {
-			return normalizedDocument{}, shared.BadRequest("人设资料项内容不能超过 300 个字符")
-		}
-		if _, exists := seenLabels[label]; exists {
-			return normalizedDocument{}, shared.BadRequest("同一人设不能包含重复的资料项名称")
-		}
-		seenLabels[label] = struct{}{}
-		result.facts = append(result.facts, &Fact{position: position, label: label, value: value})
-	}
-
-	result.images = make([]*Image, 0, len(document.Images))
-	seenFiles := make(map[shared.ID]struct{}, len(document.Images))
-	for position, input := range document.Images {
-		if input.FileID.IsZero() {
-			return normalizedDocument{}, shared.BadRequest("人设设定图 ID 不能为空")
-		}
-		if _, exists := seenFiles[input.FileID]; exists {
-			return normalizedDocument{}, shared.BadRequest("同一素材不能在人设档案中重复出现")
-		}
-		seenFiles[input.FileID] = struct{}{}
-		caption := strings.TrimSpace(input.Caption)
-		alt := strings.TrimSpace(input.AltTextOverride)
-		if utf8.RuneCountInString(caption) > MaxCaptionRunes {
-			return normalizedDocument{}, shared.BadRequest("单张设定图说明不能超过 500 个字符")
-		}
-		if utf8.RuneCountInString(alt) > MaxAltOverrideRunes {
-			return normalizedDocument{}, shared.BadRequest("单张设定图无障碍文本不能超过 300 个字符")
-		}
-		result.images = append(result.images, &Image{
-			fileID: input.FileID, position: position, caption: caption, altTextOverride: alt,
-		})
-	}
-	return result, nil
+	return locales
 }
 
-func validateComplete(document normalizedDocument) error {
-	if document.Name == "" {
-		return shared.BadRequest("激活人设前必须填写名称")
+func (p *Persona) completeLocalizations() []*Localization {
+	result := make([]*Localization, 0, len(p.localizations))
+	for _, localization := range p.localizations {
+		if validateComplete(localization, p.avatarFileID) == nil {
+			result = append(result, localization)
+		}
 	}
-	if document.Summary == "" {
-		return shared.BadRequest("激活人设前必须填写简介")
-	}
-	if document.ContentMD == "" {
-		return shared.BadRequest("激活人设前必须填写设定正文")
-	}
-	if len(document.images) == 0 {
-		return shared.BadRequest("激活人设前至少需要一张设定图")
+	sortLocalizations(result, p.defaultLocale)
+	return result
+}
+
+// DefaultLocalization 返回默认语言版本；持久化数据损坏时返回 nil。
+func (p *Persona) DefaultLocalization() *Localization {
+	return findLocalization(p.localizations, p.defaultLocale)
+}
+
+// IsLocalizationComplete 返回指定语言版本是否具备全部公开资料。
+func (p *Persona) IsLocalizationComplete(locale string) bool {
+	return validateComplete(findLocalization(p.localizations, locale), p.avatarFileID) == nil
+}
+
+func findLocalization(localizations []*Localization, locale string) *Localization {
+	for _, localization := range localizations {
+		if localization.locale == locale {
+			return localization
+		}
 	}
 	return nil
 }
 
-func (p *Persona) ID() shared.ID        { return p.id }
-func (p *Persona) CreatedBy() shared.ID { return p.createdBy }
-func (p *Persona) Name() string         { return p.name }
-func (p *Persona) Subtitle() string     { return p.subtitle }
-func (p *Persona) Summary() string      { return p.summary }
-func (p *Persona) ContentMD() string    { return p.contentMD }
-func (p *Persona) ContentHTML() string  { return p.contentHTML }
-func (p *Persona) Version() int64       { return p.version }
-func (p *Persona) CreatedAt() time.Time { return p.timestamps.CreatedAt }
-func (p *Persona) UpdatedAt() time.Time { return p.timestamps.UpdatedAt }
+func sortLocalizations(localizations []*Localization, defaultLocale string) {
+	sort.Slice(localizations, func(i, j int) bool {
+		if localizations[i].locale == defaultLocale {
+			return true
+		}
+		if localizations[j].locale == defaultLocale {
+			return false
+		}
+		return localizations[i].locale < localizations[j].locale
+	})
+}
 
-// Facts 返回资料项切片副本。
-func (p *Persona) Facts() []*Fact {
-	result := make([]*Fact, len(p.facts))
-	copy(result, p.facts)
+func (p *Persona) ID() shared.ID           { return p.id }
+func (p *Persona) CreatedBy() shared.ID    { return p.createdBy }
+func (p *Persona) DefaultLocale() string   { return p.defaultLocale }
+func (p *Persona) AvatarFileID() shared.ID { return p.avatarFileID }
+func (p *Persona) Version() int64          { return p.version }
+func (p *Persona) CreatedAt() time.Time    { return p.timestamps.CreatedAt }
+func (p *Persona) UpdatedAt() time.Time    { return p.timestamps.UpdatedAt }
+
+// Localizations 返回语言版本切片副本。
+func (p *Persona) Localizations() []*Localization {
+	result := make([]*Localization, len(p.localizations))
+	copy(result, p.localizations)
 	return result
 }
 
-// Images 返回设定图切片副本。
-func (p *Persona) Images() []*Image {
-	result := make([]*Image, len(p.images))
-	copy(result, p.images)
-	return result
-}
-
-// FileReferenceCounts 返回档案按素材汇总的引用次数。
+// FileReferenceCounts 返回头像与所有语言设定图按素材汇总的引用次数。
 func (p *Persona) FileReferenceCounts() map[shared.ID]int {
-	counts := make(map[shared.ID]int, len(p.images))
-	for _, image := range p.images {
-		counts[image.fileID]++
+	counts := make(map[shared.ID]int)
+	if !p.avatarFileID.IsZero() {
+		counts[p.avatarFileID] = 1
+	}
+	for _, localization := range p.localizations {
+		for _, image := range localization.images {
+			counts[image.fileID]++
+		}
 	}
 	return counts
 }
-
-func (f *Fact) Position() int            { return f.position }
-func (f *Fact) Label() string            { return f.label }
-func (f *Fact) Value() string            { return f.value }
-func (i *Image) FileID() shared.ID       { return i.fileID }
-func (i *Image) Position() int           { return i.position }
-func (i *Image) Caption() string         { return i.caption }
-func (i *Image) AltTextOverride() string { return i.altTextOverride }

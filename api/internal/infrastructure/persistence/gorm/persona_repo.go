@@ -3,7 +3,6 @@ package gorm
 import (
 	"context"
 	"errors"
-	"sort"
 	"strings"
 	"time"
 
@@ -16,7 +15,7 @@ import (
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
-// PersonaRepository 持久化人设档案及站点当前选择关系。
+// PersonaRepository 持久化多语言人设档案及站点当前选择关系。
 type PersonaRepository struct {
 	db *gorm.DB
 }
@@ -26,11 +25,16 @@ func NewPersonaRepository(db *gorm.DB) *PersonaRepository {
 }
 
 func (r *PersonaRepository) Create(ctx context.Context, persona *domainpersona.Persona) error {
-	row := personaToPO(persona)
-	if err := r.db.WithContext(ctx).Create(&row).Error; err != nil {
-		return shared.Internal("创建人设档案失败", err)
-	}
-	return nil
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		row := personaToPO(persona)
+		if err := tx.Create(&row).Error; err != nil {
+			return shared.Internal("创建人设档案失败", err)
+		}
+		if err := persistPersonaLocalizations(tx, persona); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (r *PersonaRepository) FindByID(ctx context.Context, id shared.ID) (*domainpersona.Persona, error) {
@@ -66,7 +70,10 @@ func (r *PersonaRepository) FindPage(ctx context.Context, filter domainpersona.L
 		Model(&model.Persona{}).
 		Joins("LEFT JOIN persona_selection ON persona_selection.persona_id = personas.id")
 	if search := strings.TrimSpace(filter.Search); search != "" {
-		query = query.Where("LOWER(personas.name) LIKE ?", "%"+strings.ToLower(search)+"%")
+		query = query.Where(
+			"EXISTS (SELECT 1 FROM persona_localizations pl WHERE pl.persona_id = personas.id AND LOWER(pl.name) LIKE ?)",
+			"%"+strings.ToLower(search)+"%",
+		)
 	}
 
 	var rows []model.Persona
@@ -87,49 +94,70 @@ func (r *PersonaRepository) FindPage(ctx context.Context, filter domainpersona.L
 }
 
 func (r *PersonaRepository) Save(ctx context.Context, persona *domainpersona.Persona, expectedVersion int64) error {
-	if err := r.db.WithContext(ctx).Where("persona_id = ?", persona.ID().UUID()).Delete(&model.PersonaFact{}).Error; err != nil {
-		return shared.Internal("替换人设资料项失败", err)
+	if err := r.db.WithContext(ctx).
+		Where("persona_id = ?", persona.ID().UUID()).
+		Delete(&model.PersonaLocalization{}).Error; err != nil {
+		return shared.Internal("替换人设语言版本失败", err)
 	}
-	factRows := make([]model.PersonaFact, 0, len(persona.Facts()))
-	for _, fact := range persona.Facts() {
-		factRows = append(factRows, model.PersonaFact{
-			PersonaID: persona.ID().UUID(), Position: fact.Position(), Label: fact.Label(), Value: fact.Value(),
-		})
-	}
-	if len(factRows) > 0 {
-		if err := r.db.WithContext(ctx).Create(&factRows).Error; err != nil {
-			return shared.Internal("保存人设资料项失败", err)
-		}
-	}
-
-	if err := r.db.WithContext(ctx).Where("persona_id = ?", persona.ID().UUID()).Delete(&model.PersonaImage{}).Error; err != nil {
-		return shared.Internal("替换人设设定图失败", err)
-	}
-	imageRows := make([]model.PersonaImage, 0, len(persona.Images()))
-	for _, image := range persona.Images() {
-		imageRows = append(imageRows, model.PersonaImage{
-			PersonaID: persona.ID().UUID(), Position: image.Position(), FileID: image.FileID().UUID(),
-			Caption: image.Caption(), AltTextOverride: image.AltTextOverride(),
-		})
-	}
-	if len(imageRows) > 0 {
-		if err := r.db.WithContext(ctx).Create(&imageRows).Error; err != nil {
-			return shared.Internal("保存人设设定图失败", err)
-		}
+	if err := persistPersonaLocalizations(r.db.WithContext(ctx), persona); err != nil {
+		return err
 	}
 
 	result := r.db.WithContext(ctx).Model(&model.Persona{}).
 		Where("id = ? AND version = ?", persona.ID().UUID(), expectedVersion).
 		Updates(map[string]any{
-			"name": persona.Name(), "subtitle": persona.Subtitle(), "summary": persona.Summary(),
-			"content_md": persona.ContentMD(), "content_html": persona.ContentHTML(),
-			"version": persona.Version(), "updated_at": persona.UpdatedAt(),
+			"default_locale": persona.DefaultLocale(),
+			"avatar_file_id": nullableUUID(persona.AvatarFileID()),
+			"version":        persona.Version(),
+			"updated_at":     persona.UpdatedAt(),
 		})
 	if result.Error != nil {
 		return shared.Internal("保存人设档案失败", result.Error)
 	}
 	if result.RowsAffected != 1 {
 		return domainpersona.ErrVersionConflict
+	}
+	return nil
+}
+
+func persistPersonaLocalizations(db *gorm.DB, persona *domainpersona.Persona) error {
+	localizations := persona.Localizations()
+	localizationRows := make([]model.PersonaLocalization, 0, len(localizations))
+	factRows := make([]model.PersonaFact, 0)
+	imageRows := make([]model.PersonaImage, 0)
+	for _, localization := range localizations {
+		localizationRows = append(localizationRows, model.PersonaLocalization{
+			PersonaID: persona.ID().UUID(), Locale: localization.Locale(),
+			Name: localization.Name(), Subtitle: localization.Subtitle(), Summary: localization.Summary(),
+			ContentMD: localization.ContentMD(), ContentHTML: localization.ContentHTML(),
+		})
+		for _, fact := range localization.Facts() {
+			factRows = append(factRows, model.PersonaFact{
+				PersonaID: persona.ID().UUID(), Locale: localization.Locale(),
+				Position: fact.Position(), Label: fact.Label(), Value: fact.Value(),
+			})
+		}
+		for _, image := range localization.Images() {
+			imageRows = append(imageRows, model.PersonaImage{
+				PersonaID: persona.ID().UUID(), Locale: localization.Locale(), Position: image.Position(),
+				FileID: image.FileID().UUID(), Caption: image.Caption(), AltTextOverride: image.AltTextOverride(),
+			})
+		}
+	}
+	if len(localizationRows) > 0 {
+		if err := db.Create(&localizationRows).Error; err != nil {
+			return shared.Internal("保存人设语言版本失败", err)
+		}
+	}
+	if len(factRows) > 0 {
+		if err := db.Create(&factRows).Error; err != nil {
+			return shared.Internal("保存人设资料项失败", err)
+		}
+	}
+	if len(imageRows) > 0 {
+		if err := db.Create(&imageRows).Error; err != nil {
+			return shared.Internal("保存人设设定图失败", err)
+		}
 	}
 	return nil
 }
@@ -172,6 +200,11 @@ func (r *PersonaRepository) SetActive(ctx context.Context, id shared.ID, activat
 	return nil
 }
 
+type personaLocalizationKey struct {
+	personaID uuid.UUID
+	locale    string
+}
+
 func (r *PersonaRepository) reconstructList(ctx context.Context, rows []model.Persona) ([]*domainpersona.Persona, error) {
 	if len(rows) == 0 {
 		return make([]*domainpersona.Persona, 0), nil
@@ -181,42 +214,59 @@ func (r *PersonaRepository) reconstructList(ctx context.Context, rows []model.Pe
 		ids = append(ids, row.ID)
 	}
 
+	var localizationRows []model.PersonaLocalization
+	if err := r.db.WithContext(ctx).
+		Where("persona_id IN ?", ids).
+		Order("persona_id ASC, locale ASC").
+		Find(&localizationRows).Error; err != nil {
+		return nil, shared.Internal("查询人设语言版本失败", err)
+	}
 	var factRows []model.PersonaFact
 	if err := r.db.WithContext(ctx).
 		Where("persona_id IN ?", ids).
-		Order("persona_id ASC, position ASC").
+		Order("persona_id ASC, locale ASC, position ASC").
 		Find(&factRows).Error; err != nil {
 		return nil, shared.Internal("查询人设资料项失败", err)
 	}
 	var imageRows []model.PersonaImage
 	if err := r.db.WithContext(ctx).
 		Where("persona_id IN ?", ids).
-		Order("persona_id ASC, position ASC").
+		Order("persona_id ASC, locale ASC, position ASC").
 		Find(&imageRows).Error; err != nil {
 		return nil, shared.Internal("查询人设设定图失败", err)
 	}
 
-	factsByPersona := make(map[uuid.UUID][]*domainpersona.Fact, len(rows))
+	factsByLocalization := make(map[personaLocalizationKey][]*domainpersona.Fact)
 	for _, fact := range factRows {
-		factsByPersona[fact.PersonaID] = append(factsByPersona[fact.PersonaID], domainpersona.ReconstructFact(fact.Position, fact.Label, fact.Value))
+		key := personaLocalizationKey{personaID: fact.PersonaID, locale: fact.Locale}
+		factsByLocalization[key] = append(factsByLocalization[key], domainpersona.ReconstructFact(fact.Position, fact.Label, fact.Value))
 	}
-	imagesByPersona := make(map[uuid.UUID][]*domainpersona.Image, len(rows))
+	imagesByLocalization := make(map[personaLocalizationKey][]*domainpersona.Image)
 	for _, image := range imageRows {
-		imagesByPersona[image.PersonaID] = append(imagesByPersona[image.PersonaID], domainpersona.ReconstructImage(
+		key := personaLocalizationKey{personaID: image.PersonaID, locale: image.Locale}
+		imagesByLocalization[key] = append(imagesByLocalization[key], domainpersona.ReconstructImage(
 			shared.IDFromUUID(image.FileID), image.Position, image.Caption, image.AltTextOverride,
 		))
+	}
+	localizationsByPersona := make(map[uuid.UUID][]*domainpersona.Localization, len(rows))
+	for _, localization := range localizationRows {
+		key := personaLocalizationKey{personaID: localization.PersonaID, locale: localization.Locale}
+		localizationsByPersona[localization.PersonaID] = append(
+			localizationsByPersona[localization.PersonaID],
+			domainpersona.ReconstructLocalization(
+				localization.Locale, localization.Name, localization.Subtitle, localization.Summary,
+				localization.ContentMD, localization.ContentHTML,
+				factsByLocalization[key], imagesByLocalization[key],
+			),
+		)
 	}
 
 	result := make([]*domainpersona.Persona, 0, len(rows))
 	for _, row := range rows {
-		facts := factsByPersona[row.ID]
-		images := imagesByPersona[row.ID]
-		sort.Slice(facts, func(i, j int) bool { return facts[i].Position() < facts[j].Position() })
-		sort.Slice(images, func(i, j int) bool { return images[i].Position() < images[j].Position() })
 		result = append(result, domainpersona.Reconstruct(
 			shared.IDFromUUID(row.ID), shared.IDFromUUID(row.CreatedBy),
-			row.Name, row.Subtitle, row.Summary, row.ContentMD, row.ContentHTML,
-			facts, images, row.Version, row.CreatedAt, row.UpdatedAt,
+			row.DefaultLocale, idFromNullableUUID(row.AvatarFileID), localizationsByPersona[row.ID],
+			row.Version, row.CreatedAt, row.UpdatedAt,
 		))
 	}
 	return result, nil
@@ -225,10 +275,24 @@ func (r *PersonaRepository) reconstructList(ctx context.Context, rows []model.Pe
 func personaToPO(persona *domainpersona.Persona) model.Persona {
 	return model.Persona{
 		ID: persona.ID().UUID(), CreatedBy: persona.CreatedBy().UUID(),
-		Name: persona.Name(), Subtitle: persona.Subtitle(), Summary: persona.Summary(),
-		ContentMD: persona.ContentMD(), ContentHTML: persona.ContentHTML(), Version: persona.Version(),
-		CreatedAt: persona.CreatedAt(), UpdatedAt: persona.UpdatedAt(),
+		DefaultLocale: persona.DefaultLocale(), AvatarFileID: nullableUUID(persona.AvatarFileID()),
+		Version: persona.Version(), CreatedAt: persona.CreatedAt(), UpdatedAt: persona.UpdatedAt(),
 	}
+}
+
+func nullableUUID(id shared.ID) *uuid.UUID {
+	if id.IsZero() {
+		return nil
+	}
+	value := id.UUID()
+	return &value
+}
+
+func idFromNullableUUID(id *uuid.UUID) shared.ID {
+	if id == nil {
+		return shared.ID{}
+	}
+	return shared.IDFromUUID(*id)
 }
 
 var _ domainpersona.Repository = (*PersonaRepository)(nil)

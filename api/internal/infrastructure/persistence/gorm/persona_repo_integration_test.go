@@ -20,8 +20,11 @@ func TestPersonaRepositoryIntegration_FindPageCountsJoinedSelection(t *testing.T
 	name := "persona-count-" + personaID.String()
 	now := time.Now().UTC()
 	require.NoError(t, db.Create(&model.Persona{
-		ID: personaID.UUID(), CreatedBy: authorID.UUID(), Name: name,
+		ID: personaID.UUID(), CreatedBy: authorID.UUID(), DefaultLocale: domainpersona.DefaultLocale,
 		Version: 1, CreatedAt: now, UpdatedAt: now,
+	}).Error)
+	require.NoError(t, db.Create(&model.PersonaLocalization{
+		PersonaID: personaID.UUID(), Locale: domainpersona.DefaultLocale, Name: name,
 	}).Error)
 	t.Cleanup(func() {
 		_ = db.Exec("DELETE FROM persona_selection WHERE persona_id = ?", personaID.UUID()).Error
