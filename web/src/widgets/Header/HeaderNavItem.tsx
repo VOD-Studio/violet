@@ -11,14 +11,11 @@ export interface HeaderNavItemProps {
 	activeStyle?: "background" | "text";
 }
 
-const BASE =
-	"relative rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
-
 /**
- * HeaderNavItem - 单个 nav 项
+ * HeaderNavItem - 单个导航项
  *
- * 根据 item.type 渲染为 Link（route）或 button（action）。
- * route 项激活态用显式 pathname 判定（见 NavLinkActive）。
+ * 支持胶囊模式（桌面端微岛导航，带图标与标签）与详情模式（下拉菜单/移动抽屉）。
+ * 严禁 scale 变形。
  */
 const HeaderNavItem = ({
 	item,
@@ -26,7 +23,6 @@ const HeaderNavItem = ({
 	onNavigate,
 	className,
 	detailed = false,
-	activeStyle = "background",
 }: HeaderNavItemProps) => {
 	if (item.type === "route") {
 		return (
@@ -35,7 +31,6 @@ const HeaderNavItem = ({
 				className={className}
 				detailed={detailed}
 				onNavigate={onNavigate}
-				activeStyle={activeStyle}
 			/>
 		);
 	}
@@ -44,9 +39,14 @@ const HeaderNavItem = ({
 		<button
 			type="button"
 			onClick={() => onAction?.(item.action)}
-			className={cn(BASE, className)}
+			className={cn(
+				detailed
+					? "group flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted/70 text-foreground"
+					: "flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground",
+				className,
+			)}
 		>
-			{detailed && <Icon className="size-4 shrink-0" />}
+			<Icon className={cn(detailed ? "size-4 shrink-0" : "size-3.5 shrink-0")} />
 			<span>{item.label}</span>
 		</button>
 	);
@@ -57,13 +57,11 @@ const NavLinkActive = ({
 	className,
 	detailed,
 	onNavigate,
-	activeStyle,
 }: {
 	item: NavRouteItem;
 	className?: string;
 	detailed: boolean;
 	onNavigate?: () => void;
-	activeStyle: "background" | "text";
 }) => {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const exact = item.exact ?? false;
@@ -72,48 +70,58 @@ const NavLinkActive = ({
 		: pathname === item.to || pathname.startsWith(`${item.to}/`);
 	const Icon = item.icon;
 
+	if (!detailed) {
+		return (
+			<Link
+				to={item.to}
+				onClick={onNavigate}
+				aria-current={isActive ? "page" : undefined}
+				className={cn(
+					"group flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+					isActive
+						? "bg-foreground text-background shadow-xs"
+						: "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+					className,
+				)}
+			>
+				<Icon className="size-3.5 shrink-0" />
+				<span>{item.label}</span>
+			</Link>
+		);
+	}
+
 	return (
 		<Link
 			to={item.to}
 			onClick={onNavigate}
 			aria-current={isActive ? "page" : undefined}
 			className={cn(
-				BASE,
-				"group",
-				detailed &&
-					isActive &&
-					"bg-foreground text-background hover:bg-foreground hover:text-background",
-				!detailed &&
-					activeStyle === "text" &&
-					isActive &&
-					"bg-transparent text-background hover:bg-transparent hover:text-background",
+				"group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors",
+				isActive
+					? "bg-foreground text-background hover:bg-foreground hover:text-background"
+					: "hover:bg-muted/70 text-foreground",
 				className,
 			)}
 		>
-			{!detailed && <span className="relative">{item.label}</span>}
-			{detailed && (
-				<>
-					<span
-						className={cn(
-							"flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground",
-							isActive && "border-background/20 bg-background/10 text-background",
-						)}
-					>
-						<Icon className="size-4" />
-					</span>
-					<span className="min-w-0 text-left">
-						<span className="block text-sm font-semibold">{item.label}</span>
-						<span
-							className={cn(
-								"mt-0.5 block truncate text-xs font-normal text-muted-foreground",
-								isActive && "text-background/70",
-							)}
-						>
-							{item.description}
-						</span>
-					</span>
-				</>
-			)}
+			<span
+				className={cn(
+					"flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground transition-colors",
+					isActive && "border-background/20 bg-background/10 text-background",
+				)}
+			>
+				<Icon className="size-4" />
+			</span>
+			<span className="min-w-0 text-left">
+				<span className="block text-xs font-semibold leading-none">{item.label}</span>
+				<span
+					className={cn(
+						"mt-1 block truncate text-[11px] font-normal text-muted-foreground",
+						isActive && "text-background/75",
+					)}
+				>
+					{item.description}
+				</span>
+			</span>
 		</Link>
 	);
 };

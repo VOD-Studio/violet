@@ -1,7 +1,10 @@
 /* web/src/styles.css */
 @import "tailwindcss";
 @import "@fontsource/maple-mono/400.css";
+@import "@fontsource/maple-mono/500.css";
+@import "@fontsource/maple-mono/600.css";
 @import "@fontsource/maple-mono/700.css";
+@import "@fontsource/alex-brush/400.css";
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
@@ -9,11 +12,15 @@
 	--animate-blob: blob 7s infinite;
 	--animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
 	--animate-caret-blink: caret-blink 1s ease infinite;
-	--font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	--font-sans:
+		"Maple Mono", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-monospace, sans-serif;
+	--font-mono:
+		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	--font-signature: "Alex Brush", cursive;
 	--animate-diagram-enter: diagram-enter 0.25s ease-out;
 	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
 	--animate-marquee: marquee 40s linear infinite;
-	--animate-banner-progress: banner-progress 5s linear infinite;
 
 	/* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
 	/* bg-background / text-foreground / bg-primary / border-border 等 */
@@ -170,6 +177,66 @@
 	--neon-cyan: oklch(0.82 0.2 200);
 }
 
+.home-surface {
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.235 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: var(--foreground);
+	--popover: oklch(1 0 0);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.625 0.19 25);
+	--primary-foreground: oklch(0.99 0 0);
+	--secondary: oklch(0.955 0 0);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.96 0 0);
+	--muted-foreground: oklch(0.5 0 0);
+	--accent: oklch(0.95 0.025 25);
+	--accent-foreground: oklch(0.36 0.11 25);
+	--border: oklch(0.895 0 0);
+	--input: oklch(0.87 0 0);
+	--ring: var(--primary);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+
+	background: var(--background);
+	color: var(--foreground);
+}
+
+.dark .home-surface {
+	--background: oklch(0.145 0 0);
+	--foreground: oklch(0.92 0 0);
+	--card: oklch(0.205 0 0);
+	--card-foreground: var(--foreground);
+	--popover: oklch(0.205 0 0);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.72 0.15 22);
+	--primary-foreground: oklch(0.17 0 0);
+	--secondary: oklch(0.24 0 0);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.235 0 0);
+	--muted-foreground: oklch(0.7 0 0);
+	--accent: oklch(0.25 0.025 22);
+	--accent-foreground: oklch(0.88 0.065 22);
+	--border: oklch(0.92 0 0 / 12%);
+	--input: oklch(0.92 0 0 / 18%);
+	--ring: var(--primary);
+}
+
 @keyframes blob {
 	0% {
 		transform: translate(0px, 0px) scale(1);
@@ -211,10 +278,6 @@
 	}
 }
 
-/* —— LandingHero 入场动画（纯 CSS，合成线程驱动，零 JS 开销） —— */
-
-/* 左栏：模糊聚焦 — 从模糊缩小渐变到清晰，"对焦"隐喻 */
-/* 右栏：终端开机 — clip-path 从上往下揭开，模拟终端窗口启动 */
 @keyframes caret-blink {
 	0%,
 	100% {
@@ -235,32 +298,51 @@
 	}
 }
 
-/* 概览活动流无缝竖滚：内容渲染两遍，整体位移 -50% 循环 */
-@keyframes ticker-scroll {
-	from {
-		transform: translateY(0);
-	}
-	to {
-		transform: translateY(-50%);
-	}
-}
-
-/* 横幅驻留进度线：scaleX 拉满一轮 = 一条公告的驻留时长 */
-@keyframes banner-progress {
-	from {
-		transform: scaleX(0);
-	}
-	to {
-		transform: scaleX(1);
-	}
-}
-
 body {
 	background-color: var(--color-background);
 	color: var(--color-foreground);
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-		"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+html,
+body,
+input,
+textarea,
+select,
+button {
+	font-family: var(--font-sans);
+}
+
+.home-surface {
+	caret-color: var(--primary);
+	scrollbar-color: color-mix(in oklch, var(--primary), transparent 55%) transparent;
+}
+
+.home-surface ::selection {
+	background: var(--primary);
+	color: var(--primary-foreground);
+}
+
+.home-surface :focus-visible {
+	outline-color: var(--primary);
+}
+
+.footer-link {
+	display: inline-flex;
+	width: fit-content;
+	align-items: center;
+	gap: 0.375rem;
+	color: var(--muted-foreground);
+	text-underline-offset: 0.3em;
+	transition: color 180ms ease;
+}
+
+.footer-link:hover {
+	color: var(--primary);
+}
+
+.footer-link:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 4px;
 }
 
 /* Maple Mono 连字：所有 font-mono 元素启用标准连字 + 上下文替代 */

@@ -1,0 +1,88 @@
+.root {
+	position: relative;
+	display: block;
+}
+
+/* 风格变体：淡雅主色细竖线（默认，温润书卷） */
+.accentLine {
+	border-left: 2px solid color-mix(in oklab, var(--color-primary) 40%, transparent);
+	padding-left: 1rem;
+	padding-top: 0.125rem;
+	padding-bottom: 0.125rem;
+}
+
+/* 风格变体：无边框纯净流 */
+.borderless {
+	padding: 0;
+}
+
+/* 风格变体：轻量卡片底色 */
+.card {
+	border-radius: 0.75rem;
+	background: color-mix(in oklab, var(--color-card) 60%, transparent);
+	padding: 1rem 1.25rem;
+	border: 1px solid var(--color-border);
+}
+
+/* 引语主体内容 */
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+}
+
+/* 英文/外文原文 */
+.quote {
+	font-family: var(--font-serif);
+	font-size: 1rem;
+	line-height: 1.625;
+	font-style: italic;
+	color: var(--color-foreground);
+	opacity: 0.95;
+}
+
+@media (min-width: 640px) {
+	.quote {
+		font-size: 1.125rem;
+	}
+}
+
+/* 中文译文 */
+.translation {
+	font-family: var(--font-serif);
+	font-size: 0.875rem;
+	line-height: 1.5;
+	color: var(--color-muted-foreground);
+	opacity: 0.85;
+}
+
+@media (min-width: 640px) {
+	.translation {
+		font-size: 0.9375rem;
+	}
+}
+
+/* 署名与落款 */
+.caption {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.375rem;
+	padding-top: 0.25rem;
+}
+
+.dash {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--color-muted-foreground);
+	opacity: 0.6;
+	user-select: none;
+}
+
+.authorText {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+	color: var(--color-muted-foreground);
+	opacity: 0.75;
+}

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,51 +14,55 @@ func strPtr(v string) *string { return &v }
 // TestMergeFrom_FullMap 验证从完整键值对还原时所有字段正确映射。
 func TestMergeFrom_FullMap(t *testing.T) {
 	m := map[string]string{
-		"site_name":                  "紫罗兰",
-		"site_url":                   "https://violet.dev",
-		"posts_per_page":             "15",
-		"comments_enabled":           "true",
-		"comments_moderation":        "true",
-		"google_login_enabled":       "true",
-		"github_login_enabled":       "false",
-		"github_username":            "sun",
-		"github_token":               "secret-token",
-		"tech_stack":                 "Go+React",
-		"bio":                        "后端工程师",
-		"footer_text":                "© 2026",
-		"about_config":               `{"sections":[]}`,
-		"avatar_url":                 "https://cdn/avatar.png",
-		"tagline":                    "写代码的人",
-		"profile_role":               "工程师",
-		"profile_location":           "杭州",
-		"available_for":              "开放工作机会",
-		"skills_strong":              "Go,PostgreSQL",
-		"skills_learning":            "Rust",
-		"skills_interests":           "分布式系统",
-		"social_twitter":             "@sun",
-		"social_mastodon":            "@sun@mas.to",
-		"social_email":               "me@violet.dev",
-		"social_rss":                 "/feed.xml",
-		"social_bilibili":            "https://bilibili.com/sun",
-		"releases_repo":              "sun/violet",
-		"llm_api_key":                "sk-xxx",
-		"llm_api_url":                "https://api.openai.com/v1",
-		"llm_model":                  "gpt-4o",
-		"llm_protocol":               "openai",
-		"code_runner_enabled":        "false",
-		"code_runner_max_cpu_cores":  "2.5",
-		"code_runner_max_memory_mb":  "512",
-		"code_runner_max_timeout_secs": "30",
-		"code_runner_max_output_bytes": "1048576",
-		"code_runner_max_source_bytes": "65536",
-		"code_runner_allow_network":   "true",
-		"code_runner_languages":       "python,node,go",
+		"site_name":                       "紫罗兰",
+		"site_url":                        "https://violet.dev",
+		"posts_per_page":                  "15",
+		"home_footprint_enabled":          "false",
+		"home_footprint_aggregation_days": "14",
+		"comments_enabled":                "true",
+		"comments_moderation":             "true",
+		"google_login_enabled":            "true",
+		"github_login_enabled":            "false",
+		"github_username":                 "sun",
+		"github_token":                    "secret-token",
+		"tech_stack":                      "Go+React",
+		"bio":                             "后端工程师",
+		"footer_text":                     "© 2026",
+		"about_config":                    `{"sections":[]}`,
+		"avatar_url":                      "https://cdn/avatar.png",
+		"tagline":                         "写代码的人",
+		"profile_role":                    "工程师",
+		"profile_location":                "杭州",
+		"available_for":                   "开放工作机会",
+		"skills_strong":                   "Go,PostgreSQL",
+		"skills_learning":                 "Rust",
+		"skills_interests":                "分布式系统",
+		"social_twitter":                  "@sun",
+		"social_mastodon":                 "@sun@mas.to",
+		"social_email":                    "me@violet.dev",
+		"social_rss":                      "/feed.xml",
+		"social_bilibili":                 "https://bilibili.com/sun",
+		"releases_repo":                   "sun/violet",
+		"llm_api_key":                     "sk-xxx",
+		"llm_api_url":                     "https://api.openai.com/v1",
+		"llm_model":                       "gpt-4o",
+		"llm_protocol":                    "openai",
+		"code_runner_enabled":             "false",
+		"code_runner_max_cpu_cores":       "2.5",
+		"code_runner_max_memory_mb":       "512",
+		"code_runner_max_timeout_secs":    "30",
+		"code_runner_max_output_bytes":    "1048576",
+		"code_runner_max_source_bytes":    "65536",
+		"code_runner_allow_network":       "true",
+		"code_runner_languages":           "python,node,go",
 	}
 	s := SiteSettings{}.MergeFrom(m)
 
 	assert.Equal(t, "紫罗兰", s.SiteName)
 	assert.Equal(t, "https://violet.dev", s.SiteURL)
 	assert.Equal(t, 15, s.PostsPerPage)
+	assert.False(t, s.HomeFootprintEnabled)
+	assert.Equal(t, 14, s.HomeFootprintAggregationDays)
 	assert.True(t, s.CommentsEnabled)
 	assert.True(t, s.CommentsModeration)
 	assert.True(t, s.GoogleLoginEnabled)
@@ -98,6 +103,7 @@ func TestMergeFrom_FullMap(t *testing.T) {
 
 // TestMergeFrom_EmptyMapDefaults 验证空 map 时各字段的默认值。
 // - PostsPerPage 默认 10
+// - 首页发布足迹默认显示，聚合天数默认 7
 // - parseBoolDefaultTrue 字段（google/github/code_runner enabled）默认 true（升级无感）
 // - 其余布尔字段（comments_enabled/moderation/allow_network）默认 false（按 == "true"）
 // - AboutConfig 为 nil
@@ -106,6 +112,8 @@ func TestMergeFrom_EmptyMapDefaults(t *testing.T) {
 	s := SiteSettings{}.MergeFrom(map[string]string{})
 
 	assert.Equal(t, 10, s.PostsPerPage, "PostsPerPage 缺省 10")
+	assert.True(t, s.HomeFootprintEnabled, "未配置时默认显示首页发布足迹")
+	assert.Equal(t, 7, s.HomeFootprintAggregationDays, "未配置时默认按 7 日聚合")
 	assert.True(t, s.GoogleLoginEnabled, "未配置时默认启用 Google 登录")
 	assert.True(t, s.GithubLoginEnabled, "未配置时默认启用 GitHub 登录")
 	assert.True(t, s.CodeRunnerEnabled, "未配置时默认启用代码运行器")
@@ -162,6 +170,17 @@ func TestMergeFrom_PostsPerPageParsing(t *testing.T) {
 		s := SiteSettings{}.MergeFrom(map[string]string{"posts_per_page": "0"})
 		assert.Equal(t, 0, s.PostsPerPage)
 	})
+}
+
+func TestMergeFrom_HomeFootprintAggregationDaysBounds(t *testing.T) {
+	for _, value := range []string{"1", "7", "31"} {
+		s := SiteSettings{}.MergeFrom(map[string]string{"home_footprint_aggregation_days": value})
+		assert.Equal(t, value, strconv.Itoa(s.HomeFootprintAggregationDays))
+	}
+	for _, value := range []string{"0", "32", "invalid"} {
+		s := SiteSettings{}.MergeFrom(map[string]string{"home_footprint_aggregation_days": value})
+		assert.Equal(t, DefaultHomeFootprintAggregationDays, s.HomeFootprintAggregationDays)
+	}
 }
 
 // TestMergeFrom_Uint64Parsing 验证 uint64 字段解析：合法→值，空/非法→0。
@@ -231,8 +250,8 @@ func TestMergeFrom_AboutConfig(t *testing.T) {
 // 接收者既有字段不影响结果（返回 fromMap(m) 的全新实例）。
 func TestMergeFrom_IgnoresReceiverState(t *testing.T) {
 	preexisting := SiteSettings{
-		SiteName:        "不应泄漏",
-		PostsPerPage:    999,
+		SiteName:           "不应泄漏",
+		PostsPerPage:       999,
 		GithubLoginEnabled: true,
 	}
 	got := preexisting.MergeFrom(map[string]string{"site_url": "https://x"})
@@ -265,10 +284,10 @@ func TestUpdateInput_PointerFieldSemantics(t *testing.T) {
 		enabled := false
 		raw := json.RawMessage(`{"sections":[]}`)
 		in := UpdateInput{
-			SiteName:              strPtr("新名称"),
-			PostsPerPage:          &perPage,
-			CommentsEnabled:       &enabled,
-			AboutConfig:           &raw,
+			SiteName:        strPtr("新名称"),
+			PostsPerPage:    &perPage,
+			CommentsEnabled: &enabled,
+			AboutConfig:     &raw,
 		}
 		assert.Equal(t, "新名称", *in.SiteName)
 		assert.Equal(t, 20, *in.PostsPerPage)

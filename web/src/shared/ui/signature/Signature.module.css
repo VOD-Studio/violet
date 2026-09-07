@@ -1,0 +1,60 @@
+.root {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	user-select: none;
+	line-height: 1;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+/* 尺寸档位（通过高度驱动自适应矢量宽高比） */
+.sizeSm {
+	height: 38px;
+}
+
+.sizeMd {
+	height: 52px;
+}
+
+.sizeLg {
+	height: 68px;
+}
+
+/* 墨水颜色变体 */
+.variantDefault {
+	color: var(--color-foreground);
+}
+
+.variantPrimary {
+	color: var(--color-primary);
+}
+
+.variantMuted {
+	color: var(--color-muted-foreground);
+}
+
+/* 矢量容器 */
+.svg {
+	height: 100%;
+	width: auto;
+	display: block;
+	overflow: visible;
+}
+
+/* 真实手写笔画 */
+.stroke {
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	will-change: stroke-dashoffset;
+}
+
+/* 减弱动态无障碍降级 */
+@media (prefers-reduced-motion: reduce) {
+	.stroke {
+		transition: none;
+		stroke-dashoffset: 0;
+	}
+}

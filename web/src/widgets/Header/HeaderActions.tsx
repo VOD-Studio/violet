@@ -9,7 +9,6 @@ import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
-import { Button } from "@shared/ui/base/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,37 +19,33 @@ import {
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import { CheckCircle2, LayoutDashboard, LogOut, MessageCircle, Search, User } from "lucide-react";
-
 import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface HeaderActionsProps {
 	user?: UserDTO | null;
+	children?: React.ReactNode;
 }
 
 /**
- * HeaderActions - 右侧操作区
+ * HeaderActions - 右侧操作胶囊
  *
- * - 命令面板触发按钮（调 useCommandUIStore.open，与 Cmd+K 同源）
- * - ThemeToggle（机械轴体）
- * - 用户槽位（size-8 圆形，B 站式统一占位）：
- *   未登录 → 用户剪影图标，点击跳 /login（登录页内含注册/找回密码入口）
- *   已登录 → 真实头像，点击展开下拉菜单（用户信息卡 + 账户/后台/登出）
- *   + Cmd+L 快捷键直达登录页（仅未登录）
+ * - 桌面端默认只呈现用户槽位（未登录为登录入口，已登录为头像下拉），
+ *   hover/聚焦时向左展开搜索、通知、聊天与主题工具区；移动端仅保留槽位与抽屉触发器。
+ * - 用户槽位（size-8 圆形，宽度恒定）：
+ *   未登录 → 用户剪影图标，点击跳 /login；已登录 → 真实头像下拉菜单。
  *
  * 注意：LoginDialog 是**被动**的——仅在受保护请求收到 401 时由 http 拦截器自动
  * 弹出。主动登录走 /login 页面（完整表单 + redirect 回跳）。
  */
-const HeaderActions = ({ user }: HeaderActionsProps) => {
-	const openCommand = useCommandUIStore((s) => s.open);
+const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	const logout = useLogout();
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const openCommand = useCommandUIStore((s) => s.open);
 	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
 	// 聊天事件流全局挂载：任意页面收到新消息，聊天图标未读角标即时刷新
 	useChatStream();
-
-	// Cmd/Ctrl + L 直达登录页（仅未登录时生效，已登录无需鉴权）
 	useEffect(() => {
 		if (user) return; // 已登录不注册快捷键
 		const handler = (e: KeyboardEvent) => {
@@ -86,29 +81,40 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 	const isAdmin = useHasPermission("admin:access");
 
 	return (
-		<div className="flex items-center gap-2">
-			<Button variant="ghost" size="icon-sm" aria-label="搜索" onClick={openCommand}>
-				<Search className="size-4" />
-			</Button>
-			{user && <NotificationBell />}
-			{user && (
-				<Link
-					aria-label="聊天"
-					className="relative inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
-					to="/chat"
+		<div className="group pointer-events-auto flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85">
+			{/* 工具区：桌面端默认收起只显用户槽位，hover/聚焦时向左平滑展开；移动端隐藏（抽屉可达） */}
+			<div className="pointer-events-none hidden max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-hover:pointer-events-auto lg:group-hover:max-w-52 lg:group-hover:opacity-100 lg:group-focus-within:pointer-events-auto lg:group-focus-within:max-w-52 lg:group-focus-within:opacity-100">
+				{/* 搜索命令面板按钮 */}
+				<button
+					type="button"
+					aria-label="搜索 (⌘K)"
+					onClick={openCommand}
+					className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
 				>
-					<MessageCircle className="size-4" />
-					{chatUnread && chatUnread.unread_count > 0 && (
-						<span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-neon-blue px-1 text-center font-mono text-[10px] leading-4 text-white">
-							{chatUnread.unread_count > 99 ? "99+" : chatUnread.unread_count}
-						</span>
-					)}
-				</Link>
-			)}
-			<ThemeToggle />
+					<Search className="size-4" />
+				</button>
 
+				{user && <NotificationBell />}
+				{user && (
+					<Link
+						aria-label="聊天"
+						className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+						to="/chat"
+					>
+						<MessageCircle className="size-4" />
+						{chatUnread && chatUnread.unread_count > 0 && (
+							<span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-neon-blue px-1 text-center font-mono text-[10px] leading-4 text-white">
+								{chatUnread.unread_count > 99 ? "99+" : chatUnread.unread_count}
+							</span>
+						)}
+					</Link>
+				)}
+
+				{/* 主题切换开关 */}
+				<ThemeToggle size="sm" />
+			</div>
 			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}
-			<div className="flex w-8 justify-end">
+			<div className="flex size-8 items-center justify-center">
 				{user ? (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
@@ -222,7 +228,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 						aria-label="登录"
 						className={cn(
 							"group flex items-center justify-center rounded-full border border-transparent bg-muted/60 size-8",
-							"transition-all duration-200 hover:border-border/60 hover:bg-accent",
+							"transition-all duration-200 hover:border-border/60 hover:bg-muted",
 							"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-1",
 						)}
 					>
@@ -230,6 +236,9 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 					</Link>
 				)}
 			</div>
+
+			{/* 移动端菜单触发槽位（lg:hidden） */}
+			{children}
 		</div>
 	);
 };

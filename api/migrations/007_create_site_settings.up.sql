@@ -1,7 +1,7 @@
 -- 插入默认站点设置项
 -- site_settings 表已在 004 迁移中创建
 INSERT INTO site_settings (key, value) VALUES
-    ('site_name', 'My Blog'),
+    ('site_name', 'Violet'),
     ('site_description', 'A personal blog built with Go and Next.js'),
     ('site_url', 'http://localhost:3000'),
     ('admin_email', 'admin@gmail.com'),
@@ -9,7 +9,7 @@ INSERT INTO site_settings (key, value) VALUES
     ('comments_enabled', 'true'),
     ('comments_moderation', 'true'),
     ('github_username', ''),
-    ('footer_text', '© 2026 My Blog. All rights reserved.')
+    ('footer_text', '© 2026 Violet. All rights reserved.')
 ON CONFLICT (key) DO NOTHING;
 
 -- 图片管理表

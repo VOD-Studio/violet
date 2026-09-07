@@ -57,8 +57,8 @@ func newJSONRequest(method, target, body string) *http.Request {
 
 func TestGetPublicSettings_OK_ReturnsPublicFields(t *testing.T) {
 	store := &stubSettingsStore{all: map[string]string{
-		"site_name":        "Violet Blog",
-		"site_url":         "https://violet.dev",
+		"site_name": "Violet Blog",
+		"site_url":  "https://violet.dev",
 	}}
 	h := newSettingsHandler(store)
 
@@ -73,6 +73,8 @@ func TestGetPublicSettings_OK_ReturnsPublicFields(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &got))
 	assert.Equal(t, "Violet Blog", got.Data["site_name"])
 	assert.Equal(t, "https://violet.dev", got.Data["site_url"])
+	assert.Equal(t, true, got.Data["home_footprint_enabled"])
+	assert.Equal(t, float64(7), got.Data["home_footprint_aggregation_days"])
 }
 
 // TestGetPublicSettings_OmitsSensitiveFields 公开配置不得泄露敏感字段（如 github_token / llm_api_key）。

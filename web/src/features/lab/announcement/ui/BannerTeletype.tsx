@@ -15,9 +15,8 @@ type Phase = "typing" | "holding" | "clearing";
  * 横幅方向 D · 电传打字
  *
  * 公告像电传机逐字打在横幅上：打出 → 驻留（光标闪烁）→ 快速
- * 退格清屏 → 打下一条。节拍由文本长度自然决定，与全站终端
- * DNA（LandingHero / DecryptedText）同源。暂停冻结在当前
- * 字符；reduced-motion 下跳过打字直接整条显示。
+ * 退格清屏 → 打下一条。节拍由文本长度自然决定；暂停冻结在当前
+ * 字符，reduced-motion 下跳过打字直接整条显示。
  */
 export function BannerTeletype({ items }: { items: Announcement[] }) {
 	const [index, setIndex] = useState(0);

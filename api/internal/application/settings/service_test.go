@@ -40,11 +40,13 @@ func newSvc() (*Service, *mockSettingsStore) {
 func TestService_GetPublic(t *testing.T) {
 	svc, store := newSvc()
 	store.On("GetAll", mock.Anything).Return(map[string]string{
-		"site_name":        "Violet",
-		"github_username":  "sun",
-		"github_token":     "super-secret",
-		"tech_stack":       "Go,React",
-		"comments_enabled": "true",
+		"site_name":                       "Violet",
+		"github_username":                 "sun",
+		"github_token":                    "super-secret",
+		"tech_stack":                      "Go,React",
+		"comments_enabled":                "true",
+		"home_footprint_enabled":          "false",
+		"home_footprint_aggregation_days": "14",
 	}, nil).Once()
 
 	pub, err := svc.GetPublic(context.Background())
@@ -54,6 +56,8 @@ func TestService_GetPublic(t *testing.T) {
 	assert.Equal(t, "sun", pub["github_username"])
 	assert.Equal(t, "Go,React", pub["tech_stack"])
 	assert.Equal(t, true, pub["comments_enabled"])
+	assert.Equal(t, false, pub["home_footprint_enabled"])
+	assert.Equal(t, 14, pub["home_footprint_aggregation_days"])
 	// 敏感字段被过滤：公开配置不得包含 github_token
 	_, hasToken := pub["github_token"]
 	assert.False(t, hasToken, "github_token 不应出现在公开配置")
@@ -95,6 +99,8 @@ func TestService_GetAll_Defaults(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 10, got.PostsPerPage)  // 默认 10
 	assert.True(t, got.GithubLoginEnabled) // parseBoolDefaultTrue
+	assert.True(t, got.HomeFootprintEnabled)
+	assert.Equal(t, 7, got.HomeFootprintAggregationDays)
 	store.AssertExpectations(t)
 }
 
@@ -102,12 +108,28 @@ func TestService_GetAll_Defaults(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	svc, store := newSvc()
 	name := "New Name"
-	store.On("UpsertMany", mock.Anything, map[string]string{"site_name": "New Name"}).Return(nil).Once()
-	store.On("GetAll", mock.Anything).Return(map[string]string{"site_name": "New Name"}, nil).Once()
+	enabled := false
+	aggregationDays := 14
+	store.On("UpsertMany", mock.Anything, map[string]string{
+		"site_name":                       "New Name",
+		"home_footprint_enabled":          "false",
+		"home_footprint_aggregation_days": "14",
+	}).Return(nil).Once()
+	store.On("GetAll", mock.Anything).Return(map[string]string{
+		"site_name":                       "New Name",
+		"home_footprint_enabled":          "false",
+		"home_footprint_aggregation_days": "14",
+	}, nil).Once()
 
-	got, err := svc.Update(context.Background(), domainsettings.UpdateInput{SiteName: &name})
+	got, err := svc.Update(context.Background(), domainsettings.UpdateInput{
+		SiteName:                     &name,
+		HomeFootprintEnabled:         &enabled,
+		HomeFootprintAggregationDays: &aggregationDays,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, "New Name", got.SiteName)
+	assert.False(t, got.HomeFootprintEnabled)
+	assert.Equal(t, 14, got.HomeFootprintAggregationDays)
 	store.AssertExpectations(t)
 }
 
@@ -128,4 +150,15 @@ func TestService_Update_RejectsNegativeCustomEmojiQuota(t *testing.T) {
 
 	assert.Error(t, err)
 	store.AssertNotCalled(t, "UpsertMany", mock.Anything, mock.Anything)
+}
+
+func TestService_Update_RejectsInvalidHomeFootprintAggregationDays(t *testing.T) {
+	for _, aggregationDays := range []int{0, 32} {
+		svc, store := newSvc()
+		_, err := svc.Update(context.Background(), domainsettings.UpdateInput{
+			HomeFootprintAggregationDays: &aggregationDays,
+		})
+		assert.Error(t, err)
+		store.AssertNotCalled(t, "UpsertMany", mock.Anything, mock.Anything)
+	}
 }

@@ -29,6 +29,12 @@ Thumbs.db
 .omc/
 **/.omc/
 
+# Impeccable local evidence and developer overrides
+**/.impeccable/review/
+**/.impeccable/config.local.json
+**/.impeccable/hook.cache.json
+**/.impeccable/hook.pending.json
+
 # Qwen state
 .qwen/
 

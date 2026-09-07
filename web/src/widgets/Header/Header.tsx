@@ -1,7 +1,4 @@
-import { useMusicUIStore } from "@features/music/model/ui-store";
 import { useSessionStore } from "@shared/api/session";
-import { cn } from "@shared/lib/utils";
-import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
@@ -14,12 +11,11 @@ interface HeaderProps {
 }
 
 /**
- * Header - 页面顶部容器（非首页通用栏）
+ * Header - 页面顶部容器（三段式悬浮胶囊设计）
  *
- * 首页有自己的 20% 底座（routes/index.tsx），
- * 其他页（blog/about/...）仍用此 sticky header。
- *
- * sticky + backdrop-blur + 1px 极细边框（dark 发光 / light 灰）。
+ * 参考现代顶级个人博客（如 tblog.mmzhiku.xyz），采用左(Logo)、中(Nav)、右(Actions)
+ * 三段独立悬浮胶囊岛。外层 pointer-events-none 避免阻挡页面内容，各胶囊 pointer-events-auto。
+ * 严禁 scale 变形，纯色/磨砂玻璃过渡。
  */
 const Header = ({ isAuthenticated }: HeaderProps) => {
 	// 登录态来源合并：SSR 静态快照（首屏）OR 客户端响应式 sessionActive（登录/登出瞬间）。
@@ -28,42 +24,28 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 	const sessionActive = useSessionStore((s) => s.sessionActive);
 	const enabled = isAuthenticated || sessionActive;
 	const { data: user } = useMe({ enabled });
-	const openMusic = useMusicUIStore((s) => s.open);
-	const handleAction = (action: string) => {
-		if (action === "open-music") openMusic();
-	};
-
-	// scrolled 只控制底边框显隐；背景常驻（bg-background/70 + backdrop-blur），
-	// 不随滚动切换，从而避开 scroll restoration 与 hydrate 的时序竞态。
-	// mounted 让首帧底边框不经过 transition（与首屏静默对齐），之后滚动切换才过渡。
-	const [scrolled, setScrolled] = useState(false);
-	const [mounted, setMounted] = useState(false);
-
-	useEffect(() => {
-		setMounted(true);
-		const handleScroll = () => setScrolled(window.scrollY > 50);
-		handleScroll();
-		window.addEventListener("scroll", handleScroll, { passive: true });
-		return () => window.removeEventListener("scroll", handleScroll);
-	}, []);
 
 	return (
 		<header
 			style={{ viewTransitionName: "site-header" }}
-			className={cn(
-				"sticky top-0 z-40 w-full border-b border-edge-hairline bg-background/70 backdrop-blur-md",
-				scrolled ? "border-b" : "border-transparent",
-				mounted && "transition-colors duration-300",
-			)}
+			className="pointer-events-none sticky top-0 z-40 w-full pt-2.5 pb-1"
 		>
-			<div className="container relative mx-auto grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-				<div className="min-w-0">
+			<div className="container relative mx-auto flex h-10 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
+				{/* 左段：Logo 胶囊 */}
+				<div className="flex shrink-0 items-center">
 					<HeaderLogo />
 				</div>
-				<HeaderNav onAction={handleAction} />
-				<div className="flex items-center justify-end gap-2">
-					<HeaderActions user={user} />
-					<HeaderMobile onAction={handleAction} />
+
+				{/* 中段：主导航船坞胶囊（相对页面绝对居中，不受左右胶囊宽度影响） */}
+				<div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
+					<HeaderNav />
+				</div>
+
+				{/* 右段：工具与鉴权操作胶囊（内嵌移动端抽屉触发器） */}
+				<div className="flex shrink-0 items-center justify-end">
+					<HeaderActions user={user}>
+						<HeaderMobile />
+					</HeaderActions>
 				</div>
 			</div>
 		</header>

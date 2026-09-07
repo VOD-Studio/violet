@@ -1,5 +1,5 @@
+import type { NavRouteItem } from "@shared/config/nav";
 import { NAV_ITEMS } from "@shared/config/nav";
-import { Button } from "@shared/ui/base/button";
 import {
 	Sheet,
 	SheetContent,
@@ -16,44 +16,115 @@ import HeaderNavItem from "./HeaderNavItem";
 export interface HeaderMobileProps {
 	onAction?: (action: string) => void;
 }
+
+/**
+ * HeaderMobile - 移动端抽屉导航
+ *
+ * 触发器对齐胶囊右侧圆形按钮，抽屉内分为主导航与更多探索两列。
+ * 严禁 scale 变形。
+ */
 const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
 	const [open, setOpen] = useState(false);
+
+	const primaryItems = NAV_ITEMS.filter(
+		(item): item is NavRouteItem => item.type === "route" && Boolean(item.primary),
+	);
+	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
 			<SheetTrigger asChild>
-				<Button variant="ghost" size="icon" className="lg:hidden" aria-label="打开菜单">
-					<Menu className="size-5" />
-				</Button>
+				<button
+					type="button"
+					aria-label="打开导航菜单"
+					className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground lg:hidden"
+				>
+					<Menu className="size-4" />
+				</button>
 			</SheetTrigger>
 			<SheetContent
 				side="right"
-				className="flex w-96 max-w-full flex-col overflow-hidden p-0"
+				className="flex w-88 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 border-l border-border/60 bg-background/95 backdrop-blur-xl"
 			>
-				<SheetHeader className="border-b bg-muted/30 px-6 py-5 text-left">
-					<p className="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase">
-						Navigation
-					</p>
-					<SheetTitle className="text-xl">浏览本站</SheetTitle>
-					<SheetDescription>文章、作品与社区内容都在这里。</SheetDescription>
+				<SheetHeader className="border-b border-border/40 bg-muted/20 px-5 py-4 text-left">
+					<div className="flex items-center gap-2">
+						<span
+							aria-hidden="true"
+							className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+						>
+							<svg
+								aria-hidden="true"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="size-3"
+							>
+								<circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+								<path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+							</svg>
+						</span>
+						<span className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-foreground">
+							Violet
+						</span>
+					</div>
+					<SheetTitle className="text-base font-semibold text-foreground pt-1">
+						浏览本站
+					</SheetTitle>
+					<SheetDescription className="text-xs text-muted-foreground">
+						文章、系列、图集与社区空间
+					</SheetDescription>
 				</SheetHeader>
+
 				<nav
-					aria-label="移动端主导航"
-					className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"
+					aria-label="移动端导航菜单"
+					className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4"
 				>
-					{NAV_ITEMS.map((item) => (
-						<HeaderNavItem
-							key={item.label}
-							item={item}
-							detailed
-							className="flex w-full min-w-0 items-center gap-3 px-3 py-2.5"
-							onNavigate={() => setOpen(false)}
-							onAction={(action) => {
-								onAction?.(action);
-								setOpen(false);
-							}}
-						/>
-					))}
+					{/* 核心主导航 */}
+					<div>
+						<p className="px-2 pb-1.5 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+							Navigation / 主导航
+						</p>
+						<div className="flex flex-col gap-1">
+							{primaryItems.map((item) => (
+								<HeaderNavItem
+									key={item.label}
+									item={item}
+									detailed
+									onNavigate={() => setOpen(false)}
+									onAction={(action) => {
+										onAction?.(action);
+										setOpen(false);
+									}}
+								/>
+							))}
+						</div>
+					</div>
+
+					{/* 更多探索 */}
+					{secondaryItems.length > 0 && (
+						<div>
+							<p className="px-2 pb-1.5 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+								Explore / 更多探索
+							</p>
+							<div className="flex flex-col gap-1">
+								{secondaryItems.map((item) => (
+									<HeaderNavItem
+										key={item.label}
+										item={item}
+										detailed
+										onNavigate={() => setOpen(false)}
+										onAction={(action) => {
+											onAction?.(action);
+											setOpen(false);
+										}}
+									/>
+								))}
+							</div>
+						</div>
+					)}
 				</nav>
 			</SheetContent>
 		</Sheet>

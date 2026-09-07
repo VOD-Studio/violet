@@ -229,7 +229,11 @@ function BlogDetailPage() {
 					{toc.length > 1 ? (
 						<aside className="hidden w-56 shrink-0 2xl:block">
 							<div className="sticky top-24">
-								<ArticleToc items={toc} contentRef={contentRef} />
+								<ArticleToc
+									items={toc}
+									contentRef={contentRef}
+									isRailCollapsedAtRest
+								/>
 							</div>
 						</aside>
 					) : null}

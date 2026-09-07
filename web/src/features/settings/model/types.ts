@@ -23,6 +23,13 @@ export interface AboutConfig {
 	sections: AboutSection[];
 }
 
+/** 首页发布足迹默认聚合天数 */
+export const HOME_FOOTPRINT_AGGREGATION_DEFAULT_DAYS = 7;
+/** 首页发布足迹最小聚合天数 */
+export const HOME_FOOTPRINT_AGGREGATION_MIN_DAYS = 1;
+/** 首页发布足迹最大聚合天数 */
+export const HOME_FOOTPRINT_AGGREGATION_MAX_DAYS = 31;
+
 export interface SiteSettings {
 	/** 站点名称 */
 	site_name: string;
@@ -30,6 +37,10 @@ export interface SiteSettings {
 	site_url: string;
 	/** 每页文章数 */
 	posts_per_page: number;
+	/** 首页是否显示发布足迹 */
+	home_footprint_enabled: boolean;
+	/** 发布足迹节点聚合天数（1–31） */
+	home_footprint_aggregation_days: number;
 	/** 是否启用评论 */
 	comments_enabled: boolean;
 	/** 评论是否需审核 */

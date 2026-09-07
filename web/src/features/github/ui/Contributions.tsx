@@ -3,6 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@share
 import Empty from "@shared/ui/empty";
 
 import { useContributions } from "../api/queries";
+import { CONTRIBUTION_LEVEL_CLASS, getContributionLevel } from "../model/contribution-level";
 import type { Contribution } from "../model/types";
 import ContributionsSkeleton from "./ContributionsSkeleton";
 
@@ -23,37 +24,12 @@ const MONTH_LABELS = [
 	"12月",
 ];
 
-/**
- * getLevel - 根据提交数返回热度等级
- *
- * 0 -> 无贡献
- * 1-2 -> 轻度
- * 3-5 -> 中度
- * 6-9 -> 较高度
- * 10+ -> 最高
- */
-const getLevel = (count: number): number => {
-	if (count === 0) return 0;
-	if (count <= 2) return 1;
-	if (count <= 5) return 2;
-	if (count <= 9) return 3;
-	return 4;
-};
-
-const LEVEL_CLASS: Record<number, string> = {
-	0: "bg-muted",
-	1: "bg-primary/30",
-	2: "bg-primary/50",
-	3: "bg-primary/75",
-	4: "bg-primary",
-};
-
 interface ContributionCellProps {
 	contribution: Contribution;
 }
 
 const ContributionCell = ({ contribution }: ContributionCellProps) => {
-	const level = getLevel(contribution.count);
+	const level = getContributionLevel(contribution.count);
 
 	return (
 		<Tooltip>
@@ -62,7 +38,7 @@ const ContributionCell = ({ contribution }: ContributionCellProps) => {
 					role="img"
 					className={cn(
 						"w-full aspect-square rounded-sm transition-colors hover:ring-1 hover:ring-ring",
-						LEVEL_CLASS[level],
+						CONTRIBUTION_LEVEL_CLASS[level],
 					)}
 					aria-label={`${contribution.date}: ${contribution.count} 次贡献`}
 				/>
@@ -172,7 +148,10 @@ const ContributionsLegend = () => (
 		{[0, 1, 2, 3, 4].map((level) => (
 			<div
 				key={level}
-				className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm", LEVEL_CLASS[level])}
+				className={cn(
+					"w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm",
+					CONTRIBUTION_LEVEL_CLASS[level],
+				)}
 			/>
 		))}
 		<span>多</span>

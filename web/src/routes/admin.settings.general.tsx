@@ -3,6 +3,12 @@ import type { GeneralSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field, SwitchField } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
+import {
+	HOME_FOOTPRINT_AGGREGATION_DEFAULT_DAYS,
+	HOME_FOOTPRINT_AGGREGATION_MAX_DAYS,
+	HOME_FOOTPRINT_AGGREGATION_MIN_DAYS,
+} from "@features/settings/model/types";
+
 import { Input } from "@shared/ui/base/input";
 import { createFileRoute } from "@tanstack/react-router";
 import { Controller } from "react-hook-form";
@@ -13,6 +19,8 @@ interface GeneralForm {
 	site_url: string;
 	footer_text: string;
 	posts_per_page: number;
+	home_footprint_enabled: boolean;
+	home_footprint_aggregation_days: number;
 	comments_enabled: boolean;
 	comments_moderation: boolean;
 	custom_emoji_max_per_user: number;
@@ -27,6 +35,9 @@ function GeneralSettingsPage() {
 		site_url: data.site_url,
 		footer_text: data.footer_text,
 		posts_per_page: data.posts_per_page,
+		home_footprint_enabled: data.home_footprint_enabled ?? true,
+		home_footprint_aggregation_days:
+			data.home_footprint_aggregation_days ?? HOME_FOOTPRINT_AGGREGATION_DEFAULT_DAYS,
 		comments_enabled: data.comments_enabled,
 		comments_moderation: data.comments_moderation,
 		custom_emoji_max_per_user: data.custom_emoji_max_per_user,
@@ -60,6 +71,39 @@ function GeneralSettingsPage() {
 						type="number"
 						{...register("posts_per_page", {
 							valueAsNumber: true,
+						})}
+					/>
+				</Field>
+			</section>
+
+			<section className="space-y-4">
+				<h3 className="text-sm font-semibold">首页发布足迹</h3>
+				<Controller
+					control={control}
+					name="home_footprint_enabled"
+					render={({ field }) => (
+						<SwitchField
+							label="显示发布足迹"
+							checked={field.value}
+							onCheckedChange={field.onChange}
+						/>
+					)}
+				/>
+				<Field label="节点聚合天数">
+					<Input
+						type="number"
+						min={HOME_FOOTPRINT_AGGREGATION_MIN_DAYS}
+						max={HOME_FOOTPRINT_AGGREGATION_MAX_DAYS}
+						{...register("home_footprint_aggregation_days", {
+							valueAsNumber: true,
+							min: {
+								value: HOME_FOOTPRINT_AGGREGATION_MIN_DAYS,
+								message: `不能小于 ${HOME_FOOTPRINT_AGGREGATION_MIN_DAYS} 天`,
+							},
+							max: {
+								value: HOME_FOOTPRINT_AGGREGATION_MAX_DAYS,
+								message: `不能大于 ${HOME_FOOTPRINT_AGGREGATION_MAX_DAYS} 天`,
+							},
 						})}
 					/>
 				</Field>

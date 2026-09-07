@@ -40,32 +40,34 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		return nil, err
 	}
 	return map[string]any{
-		"site_name":            settings.SiteName,
-		"site_url":             settings.SiteURL,
-		"posts_per_page":       settings.PostsPerPage,
-		"comments_enabled":     settings.CommentsEnabled,
-		"comments_moderation":  settings.CommentsModeration,
-		"google_login_enabled": settings.GoogleLoginEnabled,
-		"github_login_enabled": settings.GithubLoginEnabled,
-		"github_username":      settings.GitHubUsername,
-		"tech_stack":           settings.TechStack,
-		"bio":                  settings.Bio,
-		"footer_text":          settings.FooterText,
-		"about_config":         settings.AboutConfig,
-		"avatar_url":           settings.AvatarURL,
-		"tagline":              settings.Tagline,
-		"profile_role":         settings.ProfileRole,
-		"profile_location":     settings.ProfileLocation,
-		"available_for":        settings.AvailableFor,
-		"skills_strong":        settings.SkillsStrong,
-		"skills_learning":      settings.SkillsLearning,
-		"skills_interests":     settings.SkillsInterests,
-		"social_twitter":       settings.SocialTwitter,
-		"social_mastodon":      settings.SocialMastodon,
-		"social_email":         settings.SocialEmail,
-		"social_rss":           settings.SocialRss,
-		"social_bilibili":      settings.SocialBilibili,
-		"code_runner_enabled":  settings.CodeRunnerEnabled,
+		"site_name":                       settings.SiteName,
+		"site_url":                        settings.SiteURL,
+		"posts_per_page":                  settings.PostsPerPage,
+		"home_footprint_enabled":          settings.HomeFootprintEnabled,
+		"home_footprint_aggregation_days": settings.HomeFootprintAggregationDays,
+		"comments_enabled":                settings.CommentsEnabled,
+		"comments_moderation":             settings.CommentsModeration,
+		"google_login_enabled":            settings.GoogleLoginEnabled,
+		"github_login_enabled":            settings.GithubLoginEnabled,
+		"github_username":                 settings.GitHubUsername,
+		"tech_stack":                      settings.TechStack,
+		"bio":                             settings.Bio,
+		"footer_text":                     settings.FooterText,
+		"about_config":                    settings.AboutConfig,
+		"avatar_url":                      settings.AvatarURL,
+		"tagline":                         settings.Tagline,
+		"profile_role":                    settings.ProfileRole,
+		"profile_location":                settings.ProfileLocation,
+		"available_for":                   settings.AvailableFor,
+		"skills_strong":                   settings.SkillsStrong,
+		"skills_learning":                 settings.SkillsLearning,
+		"skills_interests":                settings.SkillsInterests,
+		"social_twitter":                  settings.SocialTwitter,
+		"social_mastodon":                 settings.SocialMastodon,
+		"social_email":                    settings.SocialEmail,
+		"social_rss":                      settings.SocialRss,
+		"social_bilibili":                 settings.SocialBilibili,
+		"code_runner_enabled":             settings.CodeRunnerEnabled,
 	}, nil
 }
 
@@ -77,6 +79,11 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	if in.CustomEmojiMaxPerUser != nil && *in.CustomEmojiMaxPerUser < 0 {
 		return domainsettings.SiteSettings{}, shared.BadRequest("自定义表情份额上限不能为负数")
 	}
+	if in.HomeFootprintAggregationDays != nil &&
+		(*in.HomeFootprintAggregationDays < domainsettings.MinHomeFootprintAggregationDays ||
+			*in.HomeFootprintAggregationDays > domainsettings.MaxHomeFootprintAggregationDays) {
+		return domainsettings.SiteSettings{}, shared.BadRequest("发布足迹聚合天数必须在 1 到 31 之间")
+	}
 	updates := map[string]string{}
 	if in.SiteName != nil {
 		updates["site_name"] = *in.SiteName
@@ -86,6 +93,12 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.PostsPerPage != nil {
 		updates["posts_per_page"] = strconv.Itoa(*in.PostsPerPage)
+	}
+	if in.HomeFootprintEnabled != nil {
+		updates["home_footprint_enabled"] = boolStr(*in.HomeFootprintEnabled)
+	}
+	if in.HomeFootprintAggregationDays != nil {
+		updates["home_footprint_aggregation_days"] = strconv.Itoa(*in.HomeFootprintAggregationDays)
 	}
 	if in.CommentsEnabled != nil {
 		updates["comments_enabled"] = boolStr(*in.CommentsEnabled)
@@ -239,7 +252,9 @@ func (s *Service) UpdateGeneral(ctx context.Context, in GeneralUpdate) (GeneralV
 		SiteURL:  in.SiteURL, FooterText: in.FooterText,
 		PostsPerPage: in.PostsPerPage, CommentsEnabled: in.CommentsEnabled,
 		CommentsModeration: in.CommentsModeration, TechStack: in.TechStack,
-		CustomEmojiMaxPerUser: in.CustomEmojiMaxPerUser,
+		CustomEmojiMaxPerUser:        in.CustomEmojiMaxPerUser,
+		HomeFootprintEnabled:         in.HomeFootprintEnabled,
+		HomeFootprintAggregationDays: in.HomeFootprintAggregationDays,
 	})
 	if err != nil {
 		return GeneralView{}, err
