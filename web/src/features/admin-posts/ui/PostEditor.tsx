@@ -114,6 +114,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 			seo_description: "",
 			tags: initialData?.tags ?? [],
 			is_featured: initialData?.is_featured ?? false,
+			show_signature: false,
 		},
 	});
 	const {
@@ -160,6 +161,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 				seo_description: existing.seo_description,
 				tags: existing.tags,
 				is_featured: existing.is_featured,
+				show_signature: existing.show_signature ?? false,
 			});
 			initialized.current = true;
 		}
@@ -182,6 +184,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 						seo_description: d.seo_description ?? "",
 						tags: d.tags ?? [],
 						is_featured: false,
+						show_signature: d.show_signature ?? false,
 					});
 				} catch {
 					/* 忽略损坏的草稿 */
@@ -208,6 +211,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 					seo_title: values.seo_title,
 					seo_description: values.seo_description,
 					tags: values.tags,
+					show_signature: values.show_signature,
 				}),
 			);
 		}, 3000);
@@ -225,6 +229,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 		seo_description: data.seo_description.trim() || undefined,
 		tags: data.tags.length > 0 ? data.tags : undefined,
 		is_featured: data.is_featured,
+		show_signature: data.show_signature,
 	});
 
 	const handleSave = (data: PostForm, publish: boolean) => {
@@ -354,6 +359,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 			seo_description: freshData.seo_description,
 			tags: freshData.tags,
 			is_featured: freshData.is_featured,
+			show_signature: freshData.show_signature ?? false,
 		});
 	};
 
@@ -373,6 +379,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 				seo_description: existing?.seo_description ?? "",
 				tags: existing?.tags ?? [],
 				is_featured: existing?.is_featured ?? false,
+				show_signature: existing?.show_signature ?? false,
 			});
 		} else {
 			reset({
@@ -385,6 +392,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 				seo_description: "",
 				tags: [],
 				is_featured: false,
+				show_signature: false,
 			});
 			localStorage.removeItem(draftKey);
 		}

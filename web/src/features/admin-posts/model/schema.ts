@@ -24,6 +24,8 @@ export const postSchema = z.object({
 	tags: z.array(z.string()),
 	/** 是否精选 */
 	is_featured: z.boolean(),
+	/** 是否在正文末尾显示作者签名 */
+	show_signature: z.boolean(),
 });
 
 /** PostForm - 文章表单类型，由 schema 推导 */

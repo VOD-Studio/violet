@@ -70,6 +70,8 @@ export interface PostDetail {
 	view_count: number;
 	/** 是否精选 */
 	is_featured: boolean;
+	/** 是否在正文末尾显示作者签名 */
+	show_signature: boolean;
 	/** SEO 标题 */
 	seo_title: string;
 	/** SEO 描述 */

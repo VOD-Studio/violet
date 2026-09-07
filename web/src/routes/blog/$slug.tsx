@@ -5,6 +5,7 @@ import { commentKeys } from "@features/comments/api/keys";
 import { fetchAnnotationSummary, useAnnotationSummary } from "@features/comments/api/queries";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
+import { ArticleSignature } from "@features/posts/ui/ArticleSignature";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
 import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
@@ -251,6 +252,9 @@ function BlogDetailPage() {
 						className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
 					>
 						<ArticleRichContent content={body} />
+						{post.show_signature && post.author ? (
+							<ArticleSignature name={post.author.username} />
+						) : null}
 					</main>
 					{/* 右侧全书目录（挂书文章大屏显示；左层=章内 TOC，右层=全书目录） */}
 					{seriesDetail ? (

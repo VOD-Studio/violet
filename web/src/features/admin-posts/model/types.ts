@@ -58,6 +58,8 @@ export interface CreatePost {
 	tags?: string[];
 	/** 是否精选 */
 	is_featured?: boolean;
+	/** 是否在正文末尾显示作者签名 */
+	show_signature?: boolean;
 }
 
 /**

@@ -96,7 +96,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | 路由 | 说明 |
 |------|------|
 | `/` | 首页/文章列表 |
-| `/blog/:slug` | 文章详情（目录、批注、人物提及与语义内容卡片） |
+| `/blog/:slug` | 文章详情（目录、批注、人物提及、语义内容卡片与可选作者落款） |
 | `/blog/archive` | 文章归档 |
 | `/announcements/:id` | 公告详情 |
 | `/projects` | 项目展示 |
