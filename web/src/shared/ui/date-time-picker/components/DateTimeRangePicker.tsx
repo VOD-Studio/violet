@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatDateTime } from "@shared/lib/date";
 import { CalendarIcon, Clock } from "lucide-react";
 import * as React from "react";
 
@@ -57,8 +57,8 @@ export function DateTimeRangePicker({
 
 	const displayText = React.useMemo(() => {
 		if (!startDate && !endDate) return placeholder ?? "选择日期时间区间";
-		const startText = startDate ? format(startDate, "yyyy-MM-dd HH:mm") : "";
-		const endText = endDate ? format(endDate, "yyyy-MM-dd HH:mm") : "";
+		const startText = startDate ? formatDateTime(startDate) : "";
+		const endText = endDate ? formatDateTime(endDate) : "";
 		if (startText && endText) return `${startText} 至 ${endText}`;
 		return startText || endText;
 	}, [startDate, endDate, placeholder]);

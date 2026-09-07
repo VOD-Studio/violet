@@ -1,10 +1,10 @@
 /**
  * 已读回执：自己发送消息的阅读状态。私聊显示「已读/未读」；房间显示聚合计数，点击弹出已读成员名单。
  */
+import { formatDateTime } from "@shared/lib/date";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { useState } from "react";
 import { useChatMessageReaders } from "../api/queries";
-import { formatDateTime } from "../lib/conversation";
 import type { ChatMessage, ConversationKind } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 
@@ -70,7 +70,7 @@ export function MessageReadReceipt({ message, conversationKind }: MessageReadRec
 									{reader.user.display_name}
 								</span>
 								<span className="shrink-0 text-[11px] text-muted-foreground">
-									{formatDateTime(reader.read_at)}
+									{formatDateTime(reader.read_at, "long-minute")}
 								</span>
 							</li>
 						))}

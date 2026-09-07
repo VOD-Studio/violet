@@ -1,10 +1,10 @@
+import { formatDateTime, formatTime } from "@shared/lib/date";
 import {
 	type ChartConfig,
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@shared/ui/base/chart";
-import { format } from "date-fns";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import type { SystemHistoryDTO, SystemSamplePointDTO, SystemSnapshotDTO } from "../model/types";
 import { formatPercent, formatRate } from "./format";
@@ -32,7 +32,7 @@ export function StreamView({ snapshot, history }: StreamViewProps) {
 			<div className="border-border bg-card flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-2.5">
 				<DependencyStatus dependencies={snapshot.dependencies} compact />
 				<span className="text-muted-foreground text-xs">
-					更新于 {format(new Date(snapshot.timestamp), "HH:mm:ss")}
+					更新于 {formatTime(snapshot.timestamp, "second")}
 				</span>
 			</div>
 
@@ -136,7 +136,7 @@ function MetricChart({ title, points, color, accessor, formatValue, domain }: Me
 						tickLine={false}
 						axisLine={false}
 						tick={{ fontSize: 10 }}
-						tickFormatter={(v: string) => format(new Date(v), "HH:mm")}
+						tickFormatter={(value: string) => formatTime(value)}
 						minTickGap={40}
 					/>
 					{domain && <YAxis hide domain={domain} />}
@@ -145,7 +145,7 @@ function MetricChart({ title, points, color, accessor, formatValue, domain }: Me
 							<ChartTooltipContent
 								labelFormatter={(_, payload) => {
 									const ts = payload?.[0]?.payload?.ts as string | undefined;
-									return ts ? format(new Date(ts), "MM-dd HH:mm:ss") : "";
+									return ts ? formatDateTime(ts, "short-second") : "";
 								}}
 								formatter={(value) => (
 									<span className="text-foreground font-mono">

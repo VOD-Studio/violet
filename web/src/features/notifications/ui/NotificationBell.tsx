@@ -7,6 +7,7 @@
  */
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
+import { formatRelativeTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -16,8 +17,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import {
 	Bell,
 	BellRing,
@@ -177,10 +176,7 @@ const NotificationRow = ({ item, onSelect }: { item: NotificationItem; onSelect:
 					<p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{item.body}</p>
 				)}
 				<p className="mt-1 text-[10px] text-muted-foreground/70">
-					{formatDistanceToNow(new Date(item.created_at), {
-						addSuffix: true,
-						locale: zhCN,
-					})}
+					{formatRelativeTime(new Date(item.created_at))}
 				</p>
 			</div>
 			{!item.is_read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-blue-500" />}

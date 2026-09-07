@@ -17,6 +17,7 @@ import {
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
@@ -281,7 +282,7 @@ function AdminPostsPage() {
 					return <span className="text-xs text-muted-foreground">未发布</span>;
 				return (
 					<span className="text-xs text-muted-foreground">
-						{formatTime(row.published_at)}
+						{row.published_at ? formatDateTime(row.published_at) : "—"}
 					</span>
 				);
 			},
@@ -724,11 +725,4 @@ function TagFilter({
 			</PopoverContent>
 		</Popover>
 	);
-}
-
-function formatTime(s?: string): string {
-	if (!s) return "—";
-	const d = new Date(s);
-	if (Number.isNaN(d.getTime())) return s;
-	return d.toLocaleString("zh-CN", { dateStyle: "short", timeStyle: "short" });
 }

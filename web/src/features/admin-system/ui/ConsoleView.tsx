@@ -1,10 +1,10 @@
+import { formatDateTime, formatTime } from "@shared/lib/date";
 import {
 	type ChartConfig,
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@shared/ui/base/chart";
-import { format } from "date-fns";
 import { Activity, Cpu, Gauge as GaugeIcon, MemoryStick } from "lucide-react";
 import { useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -204,7 +204,7 @@ function DetailChart({ history, metric }: DetailChartProps) {
 					tickLine={false}
 					axisLine={false}
 					tick={{ fontSize: 10 }}
-					tickFormatter={(v: string) => format(new Date(v), "HH:mm")}
+					tickFormatter={(value: string) => formatTime(value)}
 					minTickGap={40}
 				/>
 				<YAxis
@@ -219,7 +219,7 @@ function DetailChart({ history, metric }: DetailChartProps) {
 						<ChartTooltipContent
 							labelFormatter={(_, payload) => {
 								const ts = payload?.[0]?.payload?.ts as string | undefined;
-								return ts ? format(new Date(ts), "MM-dd HH:mm:ss") : "";
+								return ts ? formatDateTime(ts, "short-second") : "";
 							}}
 							formatter={(value) => (
 								<span className="text-foreground font-mono">

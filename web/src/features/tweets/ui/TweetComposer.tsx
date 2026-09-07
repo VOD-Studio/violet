@@ -7,11 +7,10 @@ import { useMe } from "@features/auth/api/queries";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { ApiError } from "@shared/api/error";
+import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { isImageURL } from "@shared/lib/url";
 import { Button } from "@shared/ui/base/button";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { AlertCircle, ImagePlus, Loader2, Send, Smile, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -240,11 +239,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 							<div className="flex items-center gap-1.5 font-medium text-foreground">
 								<span>{quotedTweet.author.username}</span>
 								<span className="text-muted-foreground font-normal">
-									·{" "}
-									{formatDistanceToNow(new Date(quotedTweet.created_at), {
-										addSuffix: true,
-										locale: zhCN,
-									})}
+									· {formatRelativeTime(new Date(quotedTweet.created_at))}
 								</span>
 							</div>
 							{onCancelQuote && (

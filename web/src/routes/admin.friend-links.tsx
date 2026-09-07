@@ -22,13 +22,12 @@ import {
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
@@ -148,10 +147,7 @@ function AdminFriendLinksPage() {
 			key: "created_at",
 			header: "创建时间",
 			width: "110px",
-			cell: (row) =>
-				format(new Date(row.created_at), "MM-dd HH:mm", {
-					locale: zhCN,
-				}),
+			cell: (row) => formatDateTime(row.created_at, "short-minute"),
 		},
 		{
 			key: "_actions",

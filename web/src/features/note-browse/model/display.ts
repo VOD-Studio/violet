@@ -26,11 +26,6 @@ export function noteTitle(note: Pick<PublicNote, "title" | "content_html">): str
 	return note.title || noteExcerpt(note.content_html, TITLE_FALLBACK_MAX);
 }
 
-/** 列表行日期：yyyy-mm-dd 等宽呈现。 */
-export function noteDate(iso: string): string {
-	return iso.slice(0, 10);
-}
-
 /** 按月归档分组键：yyyy-mm。 */
 export function noteMonthKey(iso: string): string {
 	return iso.slice(0, 7);

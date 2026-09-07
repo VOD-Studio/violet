@@ -1,12 +1,11 @@
-import { format } from "date-fns";
+import { formatDate, formatDateTime, formatTime as formatDisplayTime } from "@shared/lib/date";
 import { CalendarIcon, Clock } from "lucide-react";
 import * as React from "react";
-
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
 import type { DateTimePickerMode, DateTimePickerProps } from "../types/date-time-picker-types";
-import { formatPickerValue, formatTime, parsePickerValue } from "../utils/date-time-utils";
+import { formatPickerValue, parsePickerValue } from "../utils/date-time-utils";
 import { Calendar } from "./Calendar";
 import { TimePicker } from "./TimePicker";
 
@@ -49,11 +48,11 @@ export function DateTimePicker({
 		}
 		switch (mode) {
 			case "date":
-				return format(date, "yyyy-MM-dd");
+				return formatDate(date);
 			case "time":
-				return format(date, "HH:mm");
+				return formatDisplayTime(date);
 			default:
-				return format(date, "yyyy-MM-dd HH:mm");
+				return formatDateTime(date);
 		}
 	}, [date, mode, placeholder, presets, value]);
 
@@ -90,7 +89,7 @@ export function DateTimePicker({
 		onChange?.(formatPickerValue(updated, mode));
 	};
 
-	const currentTime = date ? formatTime(date) : "00:00";
+	const currentTime = date ? formatDisplayTime(date) : "00:00";
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>

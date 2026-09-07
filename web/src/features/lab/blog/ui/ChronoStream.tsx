@@ -1,9 +1,8 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
-import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
@@ -53,11 +52,8 @@ function TimelineItem({ post: p, reduce }: { post: Post; reduce: boolean | null 
 				className="absolute top-1 -left-[44.5px] size-2.5 rounded-full border-2 border-background bg-primary shadow-[0_0_12px] shadow-primary/60"
 			/>
 			<p className="font-mono text-xs text-muted-foreground">
-				{format(new Date(p.published_at), "MM·dd")} ·{" "}
-				{formatDistanceToNow(new Date(p.published_at), {
-					addSuffix: true,
-					locale: zhCN,
-				})}
+				{formatDate(p.published_at, "dotted-month-day")} ·{" "}
+				{formatRelativeTime(new Date(p.published_at))}
 			</p>
 			<h3 className="mt-1.5 text-xl font-semibold tracking-tight">
 				<Link

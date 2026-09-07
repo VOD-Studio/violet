@@ -15,14 +15,13 @@ import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
 import { useShareTweetStore } from "@shared/api/share-tweet-store";
+import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
 import { Modal } from "@shared/ui/modal/components/Modal";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { AlertCircle, Heart, MessageCircle, Repeat2, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -189,14 +188,9 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 										</span>
 										<time
 											className="shrink-0 text-xs text-muted-foreground hover:underline"
-											title={format(new Date(tweet.created_at), "PPPpp", {
-												locale: zhCN,
-											})}
+											title={formatDateTime(tweet.created_at, "long")}
 										>
-											{formatDistanceToNow(new Date(tweet.created_at), {
-												addSuffix: true,
-												locale: zhCN,
-											})}
+											{formatRelativeTime(new Date(tweet.created_at))}
 										</time>
 									</>
 								)}
@@ -281,11 +275,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 									{tweet.quoted_tweet.author.username}
 								</span>
 								<span className="text-muted-foreground text-[11px]">
-									·{" "}
-									{formatDistanceToNow(new Date(tweet.quoted_tweet.created_at), {
-										addSuffix: true,
-										locale: zhCN,
-									})}
+									· {formatRelativeTime(new Date(tweet.quoted_tweet.created_at))}
 								</span>
 							</div>
 							{tweet.quoted_tweet.content && (
@@ -323,11 +313,9 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					{isDetail && (
 						<time
 							className="block text-xs text-muted-foreground py-2 border-y border-edge-hairline my-1"
-							title={format(new Date(tweet.created_at), "PPPpp", { locale: zhCN })}
+							title={formatDateTime(tweet.created_at, "long")}
 						>
-							{format(new Date(tweet.created_at), "yyyy-MM-dd HH:mm", {
-								locale: zhCN,
-							})}
+							{formatDateTime(tweet.created_at)}
 						</time>
 					)}
 

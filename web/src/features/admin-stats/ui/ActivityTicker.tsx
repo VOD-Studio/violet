@@ -1,5 +1,5 @@
 import { useAdminAuditLogs } from "@features/admin-audit-logs/api/queries";
-import { format } from "date-fns";
+import { formatDateTime } from "@shared/lib/date";
 import { useEffect, useRef, useState } from "react";
 import { TermPane } from "./TermPane";
 
@@ -132,7 +132,7 @@ export function ActivityTicker() {
 					className="flex items-baseline gap-2.5 px-4 py-1.5 font-mono text-xs"
 				>
 					<span className="text-muted-foreground shrink-0">
-						{format(new Date(event.occurred_at), "MM-dd HH:mm")}
+						{formatDateTime(event.occurred_at, "short-minute")}
 					</span>
 					<span className="text-muted-foreground shrink-0 select-none">›</span>
 					<span className="truncate">

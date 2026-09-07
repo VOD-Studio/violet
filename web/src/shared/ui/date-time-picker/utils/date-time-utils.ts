@@ -89,11 +89,3 @@ export function isDateDisabled(
 	if (disabledDate?.(date)) return true;
 	return false;
 }
-
-/**
- * 将 Date 对象时间部分格式化为 HH:mm
- * @param date 日期对象
- */
-export function formatTime(date: Date): string {
-	return format(date, "HH:mm");
-}

@@ -1,11 +1,10 @@
 import { getDisplayName } from "@entities/user/model/display-name";
+import { formatRelativeTime } from "@shared/lib/date";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { Badge } from "@shared/ui/base/badge";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { ImageOff, Star } from "lucide-react";
 import { useViewTransitionStore } from "@/shared/lib/view-transition-store";
 
@@ -125,12 +124,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 						) : null}
 						{post.author ? getDisplayName(post.author) : null}
 					</div>
-					<time>
-						{formatDistanceToNow(new Date(post.published_at), {
-							addSuffix: true,
-							locale: zhCN,
-						})}
-					</time>
+					<time>{formatRelativeTime(new Date(post.published_at))}</time>
 				</div>
 			</div>
 		</SpotlightCard>

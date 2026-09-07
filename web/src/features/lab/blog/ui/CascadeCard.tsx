@@ -1,11 +1,10 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatRelativeTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
@@ -83,10 +82,7 @@ export function CascadeCard({ post, index }: { post: Post; index: number }) {
 								{post.author ? getDisplayName(post.author) : "佚名"}
 							</span>
 							<time className="shrink-0">
-								{formatDistanceToNow(new Date(post.published_at), {
-									addSuffix: true,
-									locale: zhCN,
-								})}
+								{formatRelativeTime(new Date(post.published_at))}
 							</time>
 						</p>
 					</div>

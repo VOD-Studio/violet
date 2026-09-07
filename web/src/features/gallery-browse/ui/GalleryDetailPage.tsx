@@ -1,6 +1,7 @@
 import { usePublishedGallery } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGalleryItem } from "@entities/gallery/model/types";
+import { formatDate } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
@@ -30,11 +31,6 @@ interface LightboxState {
 }
 
 const LIGHTBOX_CLOSED: LightboxState = { open: false, index: 0, trigger: null };
-
-function formatPublishedDate(value: string): string {
-	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("zh-CN");
-}
 
 function itemAlt(item: PublishedGalleryItem, index: number, title: string): string {
 	// 服务端已按 override → 素材 alt → 「标题 第 n 张」回退保证非空；
@@ -85,7 +81,7 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 		);
 	}
 
-	const date = formatPublishedDate(gallery.published_at);
+	const date = formatDate(gallery.published_at, "slash-date", "");
 	const items = sortedByPosition(gallery.items);
 
 	return (

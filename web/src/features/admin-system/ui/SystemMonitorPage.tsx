@@ -1,10 +1,10 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
+import { formatDateTime } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import { Skeleton } from "@shared/ui/base/skeleton";
 import { Switch } from "@shared/ui/base/switch";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { Activity, Pause, Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { systemKeys } from "../api/keys";
@@ -92,7 +92,7 @@ export function SystemMonitorPage() {
 			{/* 上次更新时间 */}
 			{snapshotQ.data && (
 				<p className="text-muted-foreground mb-4 text-xs">
-					上次更新：{format(new Date(snapshotQ.data.timestamp), "yyyy-MM-dd HH:mm:ss")}
+					上次更新：{formatDateTime(snapshotQ.data.timestamp, "second")}
 				</p>
 			)}
 

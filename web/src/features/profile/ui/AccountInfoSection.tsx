@@ -1,4 +1,5 @@
 import type { UserDTO } from "@entities/user/model/types";
+import { formatDate } from "@shared/lib/date";
 import {
 	AlertTriangle,
 	CalendarDays,
@@ -48,13 +49,7 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 					<code className="text-xs text-muted-foreground">{user.id}</code>
 				</Row>
 				<Row icon={<CalendarDays className="size-4" />} label="注册时间">
-					<time>
-						{new Date(user.created_at).toLocaleDateString("zh-CN", {
-							year: "numeric",
-							month: "long",
-							day: "numeric",
-						})}
-					</time>
+					<time>{formatDate(user.created_at, "long-date")}</time>
 				</Row>
 			</dl>
 		</SectionCard>

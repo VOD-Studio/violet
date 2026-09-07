@@ -1,3 +1,4 @@
+import { formatDateTime } from "@shared/lib/date";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -80,7 +81,7 @@ export function PostVersionsSheet({
 										<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 											<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
 												<Clock className="size-3.5" />
-												{new Date(v.created_at).toLocaleString()}
+												{formatDateTime(v.created_at, "second")}
 											</div>
 											{v.editor ? (
 												<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">

@@ -1,6 +1,7 @@
 import { usePublishedGalleryFeed } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGallery } from "@entities/gallery/model/types";
+import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { PageShell } from "@shared/ui/page-shell";
@@ -11,13 +12,8 @@ import { Loader2 } from "lucide-react";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;
 
-function formatPublishedDate(value: string): string {
-	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("zh-CN");
-}
-
 function GalleryCard({ gallery }: { gallery: PublishedGallery }) {
-	const date = formatPublishedDate(gallery.published_at);
+	const date = formatDate(gallery.published_at, "slash-date", "");
 	const items = sortedByPosition(gallery.items);
 
 	return (

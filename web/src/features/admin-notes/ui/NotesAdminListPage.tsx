@@ -9,6 +9,7 @@ import {
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -25,14 +26,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { NoteSheet } from "./NoteSheet";
 
-const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
-	year: "numeric",
-	month: "2-digit",
-	day: "2-digit",
-	hour: "2-digit",
-	minute: "2-digit",
-});
-
 const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 	{ value: "all", label: "全部状态" },
 	...Object.entries(NOTE_STATUS_LABELS).map(([value, label]) => ({
@@ -40,10 +33,6 @@ const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 		label,
 	})),
 ];
-
-function formatTime(iso: string | null): string {
-	return iso ? dateFormatter.format(new Date(iso)) : "—";
-}
 
 /** 笔记管理列表：状态筛选 + 新建/编辑侧滑抽屉 + 权限管理对齐规范的操作列。 */
 export function NotesAdminListPage() {
@@ -123,7 +112,7 @@ export function NotesAdminListPage() {
 			cell: (row) => (
 				<div>
 					<p className="text-muted-foreground tabular-nums text-xs">
-						{formatTime(row.published_at ?? row.created_at)}
+						{formatDateTime(row.published_at ?? row.created_at)}
 					</p>
 					<p className="text-muted-foreground/50 mt-0.5 font-mono text-[10px]">
 						{row.published_at ? "published" : "created"}

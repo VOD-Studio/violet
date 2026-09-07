@@ -29,7 +29,6 @@ export type {
 export {
 	combineDateTime,
 	formatPickerValue,
-	formatTime,
 	isDateDisabled,
 	parsePickerValue,
 	splitDateTime,

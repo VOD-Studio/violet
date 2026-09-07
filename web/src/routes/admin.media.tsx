@@ -28,6 +28,7 @@ import type { CropRect } from "@features/upload/lib/crop-image";
 import { cropImageToBlob } from "@features/upload/lib/crop-image";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { withCrop } from "@shared/lib/crop-url";
+import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
@@ -619,7 +620,7 @@ function MediaTable({
 			width: "120px",
 			cell: (file) => (
 				<span className="text-xs text-muted-foreground">
-					{new Date(file.created_at).toLocaleDateString()}
+					{formatDate(file.created_at, "slash-date")}
 				</span>
 			),
 		},

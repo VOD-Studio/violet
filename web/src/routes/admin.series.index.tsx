@@ -6,6 +6,7 @@ import { SeriesSheet } from "@features/admin-series/ui/SeriesSheet";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { formatDate } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
@@ -17,12 +18,6 @@ import { useState } from "react";
 export const Route = createFileRoute("/admin/series/")({
 	component: AdminSeriesPage,
 });
-
-function formatTime(s?: string): string {
-	if (!s) return "—";
-	const d = new Date(s);
-	return Number.isNaN(d.getTime()) ? s : d.toLocaleDateString("zh-CN");
-}
 
 function AdminSeriesPage() {
 	const { data: paged, isLoading, error, refetch, pagination } = usePagedQuery(useAdminSeries);
@@ -104,7 +99,7 @@ function AdminSeriesPage() {
 			width: "110px",
 			cell: (row) => (
 				<span className="text-muted-foreground text-sm">
-					{formatTime(row.latest_chapter_at)}
+					{row.latest_chapter_at ? formatDate(row.latest_chapter_at, "slash-date") : "—"}
 				</span>
 			),
 		},
@@ -114,7 +109,9 @@ function AdminSeriesPage() {
 			sortable: true,
 			width: "110px",
 			cell: (row) => (
-				<span className="text-muted-foreground text-sm">{formatTime(row.created_at)}</span>
+				<span className="text-muted-foreground text-sm">
+					{formatDate(row.created_at, "slash-date", "—")}
+				</span>
 			),
 		},
 		{

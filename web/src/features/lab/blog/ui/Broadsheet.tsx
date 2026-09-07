@@ -1,9 +1,8 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
+import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
-import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 
@@ -31,13 +30,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 			<div className="flex items-center justify-between border-b border-edge-hairline pb-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
 				<span>共 {posts.length} 篇</span>
 				{headline && (
-					<span>
-						最近更新{" "}
-						{formatDistanceToNow(new Date(headline.published_at), {
-							addSuffix: true,
-							locale: zhCN,
-						})}
-					</span>
+					<span>最近更新 {formatRelativeTime(new Date(headline.published_at))}</span>
 				)}
 			</div>
 
@@ -60,7 +53,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				className="border-t-[3px] border-foreground"
 			/>
 			<div className="flex items-center justify-between border-b border-foreground py-2 font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
-				<span>{format(Date.now(), "yyyy年MM月dd日 EEEE", { locale: zhCN })}</span>
+				<span>{formatDate(Date.now(), "weekday-date")}</span>
 				<span>第 {issue} 期</span>
 			</div>
 
@@ -81,10 +74,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 					</p>
 					<p className="mt-5 text-center font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
 						{headline.author ? getDisplayName(headline.author) : "佚名"} ·{" "}
-						{formatDistanceToNow(new Date(headline.published_at), {
-							addSuffix: true,
-							locale: zhCN,
-						})}
+						{formatRelativeTime(new Date(headline.published_at))}
 					</p>
 				</Link>
 			)}
@@ -124,7 +114,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 								{photoBriefs[0].author
 									? getDisplayName(photoBriefs[0].author)
 									: "佚名"}{" "}
-								· {format(new Date(photoBriefs[0].published_at), "MM-dd")}
+								· {formatDate(photoBriefs[0].published_at, "month-day")}
 							</p>
 						</div>
 					</Link>
@@ -165,7 +155,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 									</p>
 									<p className="mt-auto pt-3 font-mono text-[11px] text-muted-foreground">
 										{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
-										{format(new Date(p.published_at), "MM-dd")}
+										{formatDate(p.published_at, "month-day")}
 									</p>
 								</Link>
 							</article>
@@ -203,7 +193,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 										{p.excerpt}
 									</p>
 									<p className="mt-2.5 font-mono text-[10px] text-muted-foreground/70 tabular-nums">
-										{format(new Date(p.published_at), "MM-dd")}
+										{formatDate(p.published_at, "month-day")}
 									</p>
 								</Link>
 							))}

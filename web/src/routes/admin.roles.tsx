@@ -7,6 +7,7 @@ import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsD
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { formatDate } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
@@ -128,8 +129,7 @@ function AdminRolesPage() {
 			key: "created_at",
 			header: "创建时间",
 			sortable: true,
-			cell: (row) =>
-				row.created_at ? new Date(row.created_at).toLocaleDateString("zh-CN") : "-",
+			cell: (row) => (row.created_at ? formatDate(row.created_at, "slash-date") : "-"),
 		},
 		{
 			key: "actions",

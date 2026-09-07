@@ -1,6 +1,6 @@
+import { formatDate } from "@shared/lib/date";
 import {
 	addMonths,
-	format,
 	getDay,
 	getDaysInMonth,
 	isSameDay,
@@ -11,7 +11,6 @@ import {
 	startOfToday,
 	subMonths,
 } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
 
@@ -216,7 +215,7 @@ export function Calendar({
 								disabled={disabled}
 								className="text-sm font-medium"
 							>
-								{format(month, "yyyy年", { locale: zhCN })}
+								{formatDate(month, "year")}
 							</Button>
 							<Button
 								type="button"
@@ -226,7 +225,7 @@ export function Calendar({
 								disabled={disabled}
 								className="text-sm font-medium"
 							>
-								{format(month, "M月", { locale: zhCN })}
+								{formatDate(month, "month")}
 							</Button>
 						</>
 					) : view === "months" ? (
