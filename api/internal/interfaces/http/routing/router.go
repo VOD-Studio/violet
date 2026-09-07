@@ -34,8 +34,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// OpenAPI 文档端点（无需 CSRF/鉴权，仅返回结构描述，供 Apifox 导入）
 		v1.Get("/openapi.json", openapi.Handler())
 
-		// 公开站点设置 / 只读统计
+		// 公开站点设置、站点身份与只读统计
 		v1.Get("/settings", d.Settings.GetPublicSettings)
+		registerSiteIdentityRoutes(v1, d)
 		v1.Get("/stats", d.Stats.GetPublicStats)
 
 		// GitHub 数据（公开，Token 在后端管理）
@@ -199,6 +200,13 @@ func registerPublicationRoutes(v1 chi.Router, d *Deps) {
 		return
 	}
 	v1.Get("/publications", d.Publication.List)
+}
+
+func registerSiteIdentityRoutes(v1 chi.Router, d *Deps) {
+	if d.SiteIdentity == nil {
+		return
+	}
+	v1.Get("/site-identity", d.SiteIdentity.Get)
 }
 
 // registerTagRoutes 注册 /tags 路由（公开 List + 登录管理员写操作）。

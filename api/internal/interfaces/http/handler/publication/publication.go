@@ -2,9 +2,6 @@
 package publication
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"net/http"
 
 	apppublication "blog-api/internal/application/publication"
@@ -44,18 +41,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			Limit: page.Limit, HasMore: page.HasMore, NextCursor: page.NextCursor,
 		}},
 	}
-	payload, err := json.Marshal(body)
-	if err != nil {
+	if err := response.WriteCacheableJSON(w, r, cacheControl, body); err != nil {
 		response.RespondError(w, r, err)
-		return
 	}
-	digest := sha256.Sum256(payload)
-	etag := `W/"` + hex.EncodeToString(digest[:16]) + `"`
-	w.Header().Set("Cache-Control", cacheControl)
-	w.Header().Set("ETag", etag)
-	if r.Header.Get("If-None-Match") == etag {
-		w.WriteHeader(http.StatusNotModified)
-		return
-	}
-	response.WriteJSON(w, http.StatusOK, body)
 }

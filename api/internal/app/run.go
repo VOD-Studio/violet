@@ -110,6 +110,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		SessionAuthReadOnlyMW: middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		Role:                  c.Role.RoleHandler,
 		Settings:              c.Settings.SettingsHandler,
+		SiteIdentity:          c.SiteIdentity.Handler,
 		Stats:                 c.Stats.StatsHandler,
 		GitHub:                c.GitHub.GitHubHandler,
 		Releases:              c.Releases.ReleasesHandler,

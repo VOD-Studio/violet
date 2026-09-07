@@ -424,3 +424,16 @@ func TestPublicationPaths(t *testing.T) {
 	require.Empty(t, path.Get.Security)
 	require.Contains(t, spec.Components.Schemas, "PublicationItemDTO")
 }
+
+func TestSiteIdentityPath(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/site-identity")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Get)
+	require.Empty(t, path.Get.Security)
+	for _, schema := range []string{"SiteIdentityDTO", "SiteIdentityHeroDTO", "SiteIdentityHomeDTO", "SiteIdentityLinkDTO"} {
+		require.Contains(t, spec.Components.Schemas, schema)
+	}
+	require.Contains(t, path.Get.Responses.Map(), "304")
+}

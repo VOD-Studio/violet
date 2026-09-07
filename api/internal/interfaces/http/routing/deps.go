@@ -32,12 +32,13 @@ import (
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
-	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
+	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
+	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
 	statshttp "blog-api/internal/interfaces/http/handler/stats"
 	subscriptionhttp "blog-api/internal/interfaces/http/handler/subscription"
 	systemhttp "blog-api/internal/interfaces/http/handler/system"
@@ -74,6 +75,7 @@ type Deps struct {
 
 	Role               *rolehttp.Handler
 	Settings           *settingshttp.Handler
+	SiteIdentity       *siteidentityhttp.Handler
 	Stats              *statshttp.Handler
 	GitHub             *githubhttp.Handler
 	Releases           *releaseshttp.Handler
