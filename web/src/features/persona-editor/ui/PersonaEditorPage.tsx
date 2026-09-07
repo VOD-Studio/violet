@@ -15,12 +15,12 @@ import { Button } from "@shared/ui/base/button";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PersonaEditorDialogs } from "./PersonaEditorDialogs";
 import { toast } from "sonner";
 import { PersonaAvatarField } from "./PersonaAvatarField";
-import { PersonaLocalizationEditor } from "./PersonaLocalizationEditor";
+import { PersonaEditorDialogs } from "./PersonaEditorDialogs";
 import { PersonaEditorToolbar } from "./PersonaEditorToolbar";
 import { PersonaLocaleBar } from "./PersonaLocaleBar";
+import { PersonaLocalizationEditor } from "./PersonaLocalizationEditor";
 import { PersonaOperationError } from "./PersonaOperationError";
 import { PersonaStatusPanel } from "./PersonaStatusPanel";
 
