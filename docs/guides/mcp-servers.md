@@ -101,7 +101,7 @@ MCP server 在 `.omp/mcp.json` 声明：
 
 ### violet-notes — 知识笔记写入（AI 会话沉淀）
 
-AI 会话收尾时按仓库 skill `.agents/skills/session-notes` 的流程调用：分诊（功能级→文章毛坯 / 经验级→笔记 / 琐碎→沉默）→ 拆条成文（敏感信息扫描脚本 + 模型语义自查双层门禁）→ 一键裁定（直接发布 / 存草稿 / 不发）→ 入库。
+AI 会话收尾时按仓库 skill `.agents/skills/session-notes` 的流程调用：分诊（功能级→源码驱动的工程文章毛坯 / 经验级→笔记 / 琐碎→沉默）→ 拆条成文（敏感信息扫描脚本 + 模型语义自查双层门禁）→ 一键裁定（直接发布 / 存草稿 / 不发）→ 入库。功能级文章围绕产品与工程边界、数据模型、关键链路、失败场景和恢复语义展开，并明确区分运行验证、源码确认与尚未复现的风险。
 
 | 工具 | 用途 |
 |------|------|
@@ -118,6 +118,8 @@ AI 会话收尾时按仓库 skill `.agents/skills/session-notes` 的流程调用
 2. 在 agent 客户端（如 ZCode）的 MCP 配置里注册 `violet-notes` 与 `violet-posts` 两个 server，PAT 经环境变量注入（见上方配置示例）。
 3. skill 已随仓库分发（`.agents/skills/session-notes/`），在该仓库内工作的 agent 会话自动可用；验证：开一场有产出的会话，收尾时观察分诊→裁定→入库全链。
 
+MCP 工具缺失、连接失败、鉴权失败或调用失败时，skill 会询问是否把失败项保存到项目级 `.agents/session-notes/pending/`。恢复稿包含目标 operation、目标状态、扫描结果和正文，不含凭据；MCP 恢复后由后续 `/session-notes` 或自动触发继续入库，成功后删除。文章恢复稿仍然只创建草稿，不自动发布。
+
 ## 使用决策
 
 - 读公开已发布内容 → **reader**（resources）或 posts 的 `search_posts`
@@ -131,3 +133,4 @@ AI 会话收尾时按仓库 skill `.agents/skills/session-notes` 的流程调用
 - 2026-07-30: 初始版本，记录 reader/comments/posts/scraper 四个 server 的定位与工具清单
 - 2026-08-07: 新增 `create_tag` / `list_tags`（violet-posts），补全标签创建能力——此前 `create_post` 带未创建的标签会失败
 - 2026-09-03: 新增 `violet-notes`（PRD-0024 AI 会话沉淀）：5 个笔记工具、`notes:read/write/publish` scope、会话捕获 skill 部署步骤
+- 2026-09-07: 功能级文章调整为源码驱动的工程长文；新增 MCP 不可用时经用户确认保存项目恢复稿，并在连接恢复后继续入库
