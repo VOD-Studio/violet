@@ -38,6 +38,8 @@ type Config struct {
 	// UploadDir 上传文件存储根目录（相对进程工作目录），如 "uploads"。
 	// 派生 emojiDir/chunkDir 等子目录，不持久化绝对路径，搬家可移植。
 	UploadDir string
+	// ResourceSigningKey 为公开资源游标与匿名令牌提供 HMAC 密钥。
+	ResourceSigningKey string
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
@@ -266,6 +268,7 @@ func Load() *Config {
 	v.SetDefault("port", "9090")
 	v.SetDefault("upload_path_prefix", "/uploads/")
 	v.SetDefault("upload_dir", "uploads")
+	v.SetDefault("resource_signing_key", "")
 	v.SetDefault("bilibili_cookies", "")
 	v.SetDefault("bilibili_api_type", "user")
 	v.SetDefault("kite_url", "http://localhost:3721")
@@ -359,6 +362,7 @@ func Load() *Config {
 		Port:               v.GetString("port"),
 		UploadPathPrefix:   v.GetString("upload_path_prefix"),
 		UploadDir:          v.GetString("upload_dir"),
+		ResourceSigningKey: v.GetString("resource_signing_key"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
 		KiteURL:            v.GetString("kite_url"),
@@ -437,6 +441,9 @@ func (c *Config) Validate() error {
 		}
 		if c.Database.SSLMode != "disable" && c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
 			return fmt.Errorf("生产环境 DATABASE_SSLMODE 必须为 disable、require、verify-ca 或 verify-full")
+		}
+		if len(c.ResourceSigningKey) < 32 {
+			return fmt.Errorf("生产环境 RESOURCE_SIGNING_KEY 至少需要 32 字节")
 		}
 	}
 
@@ -571,7 +578,7 @@ func readDotenvKeys() map[string]bool {
 
 // sensitiveKeyParts 键名中出现这些片段时,打印值一律脱敏
 // 注意用复数 cookies:单数 cookie 会误伤 cookie.csrf_name 等非敏感键
-var sensitiveKeyParts = []string{"password", "secret", "cookies", "token", "api_key"}
+var sensitiveKeyParts = []string{"password", "secret", "signing_key", "cookies", "token", "api_key"}
 
 // printConfigSources 打印全部配置项的最终值(脱敏)与来源。
 //

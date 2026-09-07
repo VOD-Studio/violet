@@ -22,6 +22,8 @@ port: 9090
 upload_path_prefix: /uploads/
 # env: UPLOAD_DIR（相对进程工作目录）
 upload_dir: uploads
+# env: RESOURCE_SIGNING_KEY（密钥，生产必填；游标与匿名令牌 HMAC）
+resource_signing_key: ""
 
 # ── 数据库 ──────────────────────────────────
 database:

@@ -32,6 +32,7 @@ import (
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
+	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
@@ -95,6 +96,7 @@ type Deps struct {
 	Series             *serieshttp.Handler
 	Gallery            *galleryhttp.Handler
 	Note               *notehttp.Handler
+	Publication        *publicationhttp.Handler
 	Notification       *notificationhttp.Handler
 	NotificationStream *notificationhttp.StreamHandler
 	Chat               *chathttp.Handler

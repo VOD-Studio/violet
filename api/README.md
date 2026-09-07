@@ -134,6 +134,7 @@ api/
 | **releases** | releases | releases | 版本发布（release-please 集成） |
 | **gallery** | gallery | gallery | 图集视觉作品：双快照工作稿、更新发布、撤回删除、own-or-moderator 审核、生命周期审计与稳定地址读取 |
 | **note** | note | note | 知识笔记：markdown+标签轻量条目、draft→published 单向发布、公开流 keyset 分页与标签筛选 |
+| **publication** | publication | publication | 首页统一发布物投影：文章、知识笔记与图集的轻量 cursor 时间流（`GET /publications`） |
 
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
 

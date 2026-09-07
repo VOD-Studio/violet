@@ -414,3 +414,13 @@ func TestNotePaths(t *testing.T) {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
 }
+
+func TestPublicationPaths(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/publications")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Get)
+	require.Empty(t, path.Get.Security)
+	require.Contains(t, spec.Components.Schemas, "PublicationItemDTO")
+}
