@@ -93,7 +93,7 @@
 		"mermaid": "^11.16.0",
 		"micromark-extension-gfm-autolink-literal": "^2.1.0",
 		"micromark-extension-gfm-strikethrough": "^2.1.0",
-		"motion": "^12.42.2",
+		"motion": "^13.1.1",
 		"next-themes": "^0.4.6",
 		"ogl": "^1.0.11",
 		"radix-ui": "^1.6.0",
