@@ -5,11 +5,22 @@ import { PersonaPage } from "@features/persona-browse/ui/PersonaPage";
 import { SITE_URL } from "@shared/config/env";
 import { createFileRoute } from "@tanstack/react-router";
 
+interface PersonaSearch {
+	lang?: string;
+}
+
+function parsePersonaSearch(search: Record<string, unknown>): PersonaSearch {
+	const lang = typeof search.lang === "string" ? search.lang.trim() : "";
+	return { lang: lang && lang.length <= 35 ? lang : undefined };
+}
+
 export const Route = createFileRoute("/persona")({
-	loader: ({ context }) =>
+	validateSearch: parsePersonaSearch,
+	loaderDeps: ({ search }) => ({ locale: search.lang ?? "" }),
+	loader: ({ context, deps }) =>
 		context.queryClient.ensureQueryData({
-			queryKey: activePersonaKeys.current(),
-			queryFn: fetchActivePersona,
+			queryKey: activePersonaKeys.current(deps.locale),
+			queryFn: () => fetchActivePersona(deps.locale),
 		}),
 	head: ({ loaderData }) => {
 		const persona = loaderData as PublicPersona | null;
@@ -26,6 +37,11 @@ export const Route = createFileRoute("/persona")({
 				? firstImage
 				: `${siteUrl}${firstImage}`
 			: null;
+		const localeSearch =
+			persona.locale === persona.default_locale
+				? ""
+				: `?lang=${encodeURIComponent(persona.locale)}`;
+		const canonicalUrl = `${siteUrl}/persona${localeSearch}`;
 		return {
 			meta: [
 				{ title: `${persona.name} · 人设` },
@@ -34,10 +50,27 @@ export const Route = createFileRoute("/persona")({
 				{ property: "og:description", content: persona.summary },
 				...(imageUrl ? [{ property: "og:image", content: imageUrl }] : []),
 				{ property: "og:type", content: "profile" },
-				{ property: "og:url", content: `${siteUrl}/persona` },
+				{ property: "og:url", content: canonicalUrl },
 			],
-			links: [{ rel: "canonical", href: `${siteUrl}/persona` }],
+			links: [{ rel: "canonical", href: canonicalUrl }],
 		};
 	},
-	component: PersonaPage,
+	component: PersonaRoute,
 });
+
+function PersonaRoute() {
+	const { lang } = Route.useSearch();
+	const navigate = Route.useNavigate();
+	return (
+		<PersonaPage
+			locale={lang ?? ""}
+			onLocaleChange={(locale, defaultLocale) =>
+				void navigate({
+					search: locale === defaultLocale ? {} : { lang: locale },
+					replace: true,
+					resetScroll: false,
+				})
+			}
+		/>
+	);
+}

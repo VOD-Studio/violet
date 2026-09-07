@@ -1,13 +1,13 @@
-import type { PersonaDocument } from "@features/persona-editor/model/types";
+import type { PersonaDraftLocalization } from "@features/persona-editor/model/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import { Textarea } from "@shared/ui/base/textarea";
 
 interface PersonaIdentitySectionProps {
-	document: PersonaDocument;
+	localization: PersonaDraftLocalization;
 	disabled: boolean;
-	onChange: (patch: Pick<PersonaDocument, "name" | "subtitle" | "summary">) => void;
+	onChange: (patch: Pick<PersonaDraftLocalization, "name" | "subtitle" | "summary">) => void;
 }
 
 interface CharacterCountProps {
@@ -32,7 +32,7 @@ function CharacterCount({ value, max }: CharacterCountProps) {
 
 /** 角色名称、定位与公开简介编辑区。 */
 export function PersonaIdentitySection({
-	document,
+	localization,
 	disabled,
 	onChange,
 }: PersonaIdentitySectionProps) {
@@ -45,19 +45,19 @@ export function PersonaIdentitySection({
 				<div className="space-y-2">
 					<div className="flex items-center justify-between gap-4">
 						<Label htmlFor="persona-name">角色名称</Label>
-						<CharacterCount value={document.name} max={120} />
+						<CharacterCount value={localization.name} max={120} />
 					</div>
 					<Input
 						id="persona-name"
-						value={document.name}
+						value={localization.name}
 						disabled={disabled}
-						aria-invalid={Array.from(document.name).length > 120}
+						aria-invalid={Array.from(localization.name).length > 120}
 						placeholder="例如：若菫瑠爱｜RUA"
 						onChange={(event) =>
 							onChange({
 								name: event.target.value,
-								subtitle: document.subtitle,
-								summary: document.summary,
+								subtitle: localization.subtitle,
+								summary: localization.summary,
 							})
 						}
 					/>
@@ -66,19 +66,19 @@ export function PersonaIdentitySection({
 				<div className="space-y-2">
 					<div className="flex items-center justify-between gap-4">
 						<Label htmlFor="persona-subtitle">角色定位</Label>
-						<CharacterCount value={document.subtitle} max={240} />
+						<CharacterCount value={localization.subtitle} max={240} />
 					</div>
 					<Input
 						id="persona-subtitle"
-						value={document.subtitle}
+						value={localization.subtitle}
 						disabled={disabled}
-						aria-invalid={Array.from(document.subtitle).length > 240}
+						aria-invalid={Array.from(localization.subtitle).length > 240}
 						placeholder="一句话说明角色身份或气质"
 						onChange={(event) =>
 							onChange({
-								name: document.name,
+								name: localization.name,
 								subtitle: event.target.value,
-								summary: document.summary,
+								summary: localization.summary,
 							})
 						}
 					/>
@@ -87,19 +87,19 @@ export function PersonaIdentitySection({
 				<div className="space-y-2">
 					<div className="flex items-center justify-between gap-4">
 						<Label htmlFor="persona-summary">身份简介</Label>
-						<CharacterCount value={document.summary} max={500} />
+						<CharacterCount value={localization.summary} max={500} />
 					</div>
 					<Textarea
 						id="persona-summary"
-						value={document.summary}
+						value={localization.summary}
 						disabled={disabled}
-						aria-invalid={Array.from(document.summary).length > 500}
+						aria-invalid={Array.from(localization.summary).length > 500}
 						rows={5}
 						placeholder="公开页首屏使用的简短人物介绍"
 						onChange={(event) =>
 							onChange({
-								name: document.name,
-								subtitle: document.subtitle,
+								name: localization.name,
+								subtitle: localization.subtitle,
 								summary: event.target.value,
 							})
 						}

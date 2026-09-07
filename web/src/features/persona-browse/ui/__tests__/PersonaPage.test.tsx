@@ -2,13 +2,14 @@ import type { PublicPersona } from "@entities/persona/model/types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { activePersonaQuery, imagePreviewProps } = vi.hoisted(() => ({
+const { activePersonaQuery, imagePreviewProps, localeChange } = vi.hoisted(() => ({
 	activePersonaQuery: {
 		data: null as PublicPersona | null,
 		isLoading: false,
 		isError: false,
 	},
 	imagePreviewProps: vi.fn(),
+	localeChange: vi.fn(),
 }));
 
 vi.mock("@entities/persona/api/queries", () => ({
@@ -42,6 +43,16 @@ vi.mock("@shared/ui/image-preview", () => ({
 import { PersonaPage } from "../PersonaPage";
 
 const persona: PublicPersona = {
+	locale: "zh-CN",
+	default_locale: "zh-CN",
+	available_locales: ["zh-CN", "ja-JP"],
+	avatar: {
+		url: "/avatar.png",
+		thumbnail: "/avatar-thumb.png",
+		width: 640,
+		height: 640,
+		alt_text: "若菫瑠爱头像",
+	},
 	name: "若菫瑠爱｜RUA",
 	subtitle: "20 岁 · 信息设计专业",
 	summary: "她习惯在表达之前先认真想清楚。",
@@ -76,10 +87,11 @@ describe("PersonaPage", () => {
 		activePersonaQuery.isLoading = false;
 		activePersonaQuery.isError = false;
 		imagePreviewProps.mockReset();
+		localeChange.mockReset();
 	});
 
 	it("没有当前人设时诚实展示未公开状态", () => {
-		render(<PersonaPage />);
+		render(<PersonaPage locale="" onLocaleChange={localeChange} />);
 
 		expect(screen.getByRole("heading", { name: "人设档案尚未公开" })).toBeTruthy();
 		expect(screen.getByText("当前没有已激活的角色资料。")).toBeTruthy();
@@ -87,7 +99,7 @@ describe("PersonaPage", () => {
 
 	it("按服务端顺序展示主视觉、资料、正文与设定图", () => {
 		activePersonaQuery.data = persona;
-		render(<PersonaPage />);
+		render(<PersonaPage locale="" onLocaleChange={localeChange} />);
 
 		expect(screen.getByRole("heading", { name: persona.name })).toBeTruthy();
 		expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual([
@@ -109,9 +121,18 @@ describe("PersonaPage", () => {
 		expect(screen.getByText("角色主设定")).toBeTruthy();
 	});
 
+	it("直接展示已配置语言并提交语言切换", () => {
+		activePersonaQuery.data = persona;
+		render(<PersonaPage locale="" onLocaleChange={localeChange} />);
+
+		fireEvent.click(screen.getByRole("button", { name: "日本語" }));
+
+		expect(localeChange).toHaveBeenCalledWith("ja-JP", "zh-CN");
+	});
+
 	it("从任意设定图打开完整有序灯箱", () => {
 		activePersonaQuery.data = persona;
-		render(<PersonaPage />);
+		render(<PersonaPage locale="" onLocaleChange={localeChange} />);
 
 		fireEvent.click(screen.getByRole("button", { name: "预览 角色三视图" }));
 

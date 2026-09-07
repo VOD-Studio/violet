@@ -5,9 +5,11 @@ import { apiGet } from "@shared/api/request";
 import { useQuery } from "@tanstack/react-query";
 
 /** 读取当前公开人设；尚未激活时返回 null。 */
-export async function fetchActivePersona(): Promise<PublicPersona | null> {
+export async function fetchActivePersona(locale = ""): Promise<PublicPersona | null> {
 	try {
-		return await apiGet<PublicPersona>("/persona");
+		return await apiGet<PublicPersona>("/persona", {
+			params: locale ? { locale } : undefined,
+		});
 	} catch (error) {
 		if (error instanceof ApiError && error.status === 404) return null;
 		throw error;
@@ -15,9 +17,9 @@ export async function fetchActivePersona(): Promise<PublicPersona | null> {
 }
 
 /** 当前公开人设查询。 */
-export function useActivePersona() {
+export function useActivePersona(locale = "") {
 	return useQuery({
-		queryKey: activePersonaKeys.current(),
-		queryFn: fetchActivePersona,
+		queryKey: activePersonaKeys.current(locale),
+		queryFn: () => fetchActivePersona(locale),
 	});
 }

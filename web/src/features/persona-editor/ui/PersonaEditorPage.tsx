@@ -1,25 +1,26 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { RichTextEditor } from "@features/editor";
 import { useActivatePersona, useDeletePersona } from "@features/persona-editor/api/mutations";
 import { usePersonaDocument } from "@features/persona-editor/hooks/usePersonaDocument";
+import { usePersonaSaveShortcut } from "@features/persona-editor/hooks/usePersonaSaveShortcut";
 import {
+	createPersonaLocalization,
+	findPersonaLocalization,
 	getPersonaCompleteness,
+	updatePersonaLocalization,
 	validatePersonaDocument,
 } from "@features/persona-editor/model/document";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { PersonaEditorDialogs } from "./PersonaEditorDialogs";
 import { toast } from "sonner";
+import { PersonaAvatarField } from "./PersonaAvatarField";
+import { PersonaLocalizationEditor } from "./PersonaLocalizationEditor";
 import { PersonaEditorToolbar } from "./PersonaEditorToolbar";
-import { PersonaFactsSection } from "./PersonaFactsSection";
-import { PersonaIdentitySection } from "./PersonaIdentitySection";
-import { PersonaImagesSection } from "./PersonaImagesSection";
+import { PersonaLocaleBar } from "./PersonaLocaleBar";
 import { PersonaOperationError } from "./PersonaOperationError";
 import { PersonaStatusPanel } from "./PersonaStatusPanel";
 
@@ -32,7 +33,7 @@ interface OperationError {
 	message: string;
 }
 
-/** 人设完整文档编辑、激活、冲突恢复与删除工作台。 */
+/** 人设多语言完整文档编辑、激活、冲突恢复与删除工作台。 */
 export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 	const navigate = useNavigate();
 	const canManage = useHasPermission("persona:manage");
@@ -40,22 +41,40 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 		usePersonaDocument({ id, canManage });
 	const activate = useActivatePersona(id);
 	const remove = useDeletePersona(id);
+	const [activeLocale, setActiveLocale] = useState("");
 	const [operationError, setOperationError] = useState<OperationError | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [localeToRemove, setLocaleToRemove] = useState("");
+
+	const editingLocale =
+		document && findPersonaLocalization(document, activeLocale)
+			? activeLocale
+			: (document?.default_locale ?? "");
+	const localization = document ? findPersonaLocalization(document, editingLocale) : undefined;
+	const defaultLocalization = document
+		? findPersonaLocalization(document, document.default_locale)
+		: undefined;
+
+	useEffect(() => {
+		if (!document) return;
+		if (!findPersonaLocalization(document, activeLocale)) {
+			setActiveLocale(document.default_locale);
+		}
+	}, [activeLocale, document]);
 
 	const handleSave = async () => {
-		if (!document || !canManage) return;
+		if (!document || !defaultLocalization || !canManage) return;
 		setOperationError(null);
 		const validationError = validatePersonaDocument(document);
 		if (validationError) {
 			setOperationError({ kind: "validation", message: validationError });
 			return;
 		}
-		const completeness = getPersonaCompleteness(document);
+		const completeness = getPersonaCompleteness(defaultLocalization, document.avatar);
 		if (detail?.is_active && completeness.some((item) => !item.complete)) {
 			setOperationError({
 				kind: "validation",
-				message: "当前人设必须保留角色名称、身份简介、设定正文和至少一张设定图。",
+				message: "当前人设必须保留角色头像，以及默认语言的名称、简介、正文和设定图。",
 			});
 			return;
 		}
@@ -76,36 +95,27 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 			toast.error(saveError instanceof Error ? saveError.message : "保存失败");
 		}
 	};
-	const saveRef = useRef(handleSave);
-	useEffect(() => {
-		saveRef.current = handleSave;
-	});
-	useEffect(() => {
-		const onKeyDown = (event: KeyboardEvent) => {
-			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-				event.preventDefault();
-				void saveRef.current();
-			}
-		};
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, []);
+	usePersonaSaveShortcut(() => void handleSave());
 
 	const reloadLatest = async () => {
 		if (await reload()) setOperationError(null);
 	};
 
 	const handleActivate = async () => {
-		if (!document || !detail || !canManage) return;
+		if (!document || !detail || !defaultLocalization || !canManage) return;
 		setOperationError(null);
 		if (saveState !== "saved") {
 			toast.error("有未保存的修改，请先保存再激活");
 			return;
 		}
-		if (getPersonaCompleteness(document).some((item) => !item.complete)) {
+		if (
+			getPersonaCompleteness(defaultLocalization, document.avatar).some(
+				(item) => !item.complete,
+			)
+		) {
 			setOperationError({
 				kind: "validation",
-				message: "激活前需要补全角色名称、身份简介、设定正文和至少一张设定图。",
+				message: "激活前需要配置角色头像，并补全默认语言的名称、简介、正文和设定图。",
 			});
 			return;
 		}
@@ -161,7 +171,7 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 		);
 	}
 
-	if (isLoading || !document || !detail) {
+	if (isLoading || !document || !detail || !localization || !defaultLocalization) {
 		return (
 			<div className="flex h-full items-center justify-center text-muted-foreground">
 				<Loader2 className="mr-2 size-5 animate-spin" />
@@ -170,8 +180,11 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 		);
 	}
 
-	const completeness = getPersonaCompleteness(document);
-	const complete = completeness.every((item) => item.complete);
+	const defaultCompleteness = getPersonaCompleteness(defaultLocalization, document.avatar);
+	const defaultComplete = defaultCompleteness.every((item) => item.complete);
+	const localeComplete = getPersonaCompleteness(localization, document.avatar).every(
+		(item) => item.complete,
+	);
 	const pending = activate.isPending || remove.isPending || saveState === "saving";
 	const editorDisabled = !canManage || saveState === "conflict" || pending;
 	const visibleError =
@@ -181,16 +194,21 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 					message: "服务器上的档案已更新。请重新载入最新版本，再继续编辑。",
 				}
 			: operationError;
+	const defaultName = defaultLocalization.name || "未命名档案";
+
+	const updateLocalization = (updater: Parameters<typeof updatePersonaLocalization>[2]) => {
+		updateDocument((current) => updatePersonaLocalization(current, editingLocale, updater));
+	};
 
 	return (
 		<PageShell
 			title="人设档案"
-			description={`${document.name || "未命名档案"} · ${detail.is_active ? "当前人设" : "工作稿"}`}
+			description={`${defaultName} · ${detail.is_active ? "当前人设" : "工作稿"}`}
 			action={
 				<PersonaEditorToolbar
 					canManage={canManage}
 					isActive={detail.is_active}
-					isComplete={complete}
+					isComplete={defaultComplete}
 					saveState={saveState}
 					busy={pending}
 					activating={activate.isPending}
@@ -202,86 +220,72 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 		>
 			<PersonaOperationError error={visibleError} onReload={() => void reloadLatest()} />
 
+			<PersonaLocaleBar
+				locales={document.localizations.map(({ locale }) => locale)}
+				value={editingLocale}
+				defaultLocale={document.default_locale}
+				complete={localeComplete}
+				disabled={editorDisabled}
+				onValueChange={setActiveLocale}
+				onAdd={(locale) => {
+					updateDocument((current) => ({
+						...current,
+						localizations: [
+							...current.localizations,
+							createPersonaLocalization(locale),
+						],
+					}));
+					setActiveLocale(locale);
+				}}
+				onSetDefault={(locale) =>
+					updateDocument((current) => ({ ...current, default_locale: locale }))
+				}
+				onRemove={setLocaleToRemove}
+			/>
+
 			<div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
 				<div className="min-w-0 space-y-6">
-					<PersonaIdentitySection
-						document={document}
+					<PersonaAvatarField
+						avatar={document.avatar}
 						disabled={editorDisabled}
-						onChange={(patch) =>
-							updateDocument((current) => ({ ...current, ...patch }))
-						}
+						onChange={(avatar) => updateDocument((current) => ({ ...current, avatar }))}
 					/>
-					<PersonaFactsSection
-						facts={document.facts}
+					<PersonaLocalizationEditor
+						personaId={id}
+						localization={localization}
+						canManage={canManage}
 						disabled={editorDisabled}
-						onChange={(facts) => updateDocument((current) => ({ ...current, facts }))}
-					/>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>设定正文</CardTitle>
-							<p className="text-xs leading-relaxed text-muted-foreground">
-								使用 Markdown 编写完整人物设定；编辑器底栏可直接导入 .md 文件。
-							</p>
-						</CardHeader>
-						<CardContent>
-							{canManage ? (
-								<div
-									className={
-										editorDisabled
-											? "pointer-events-none opacity-70"
-											: undefined
-									}
-								>
-									<RichTextEditor
-										key={id}
-										value={document.content_md}
-										onChange={(content_md) =>
-											updateDocument((current) => ({
-												...current,
-												content_md,
-											}))
-										}
-										contentType="markdown"
-										placeholder="导入设定文档，或从人物锚点开始书写…"
-										exportName={document.name || "persona"}
-										minHeight={520}
-										autoGrow
-									/>
-								</div>
-							) : detail.content_html ? (
-								<ArticleContent
-									content={detail.content_html}
-									className="prose prose-neutral max-w-none dark:prose-invert"
-								/>
-							) : (
-								<p className="py-8 text-center text-sm text-muted-foreground">
-									正文尚未填写
-								</p>
-							)}
-						</CardContent>
-					</Card>
-
-					<PersonaImagesSection
-						images={document.images}
-						disabled={editorDisabled}
-						onChange={(images) => updateDocument((current) => ({ ...current, images }))}
+						onChange={updateLocalization}
 					/>
 				</div>
 
 				<aside className="min-w-0 xl:sticky xl:top-4">
-					<PersonaStatusPanel detail={detail} completeness={completeness} />
+					<PersonaStatusPanel detail={detail} completeness={defaultCompleteness} />
 				</aside>
 			</div>
 
-			<ConfirmDialog
-				open={deleteOpen}
-				onOpenChange={setDeleteOpen}
-				onConfirm={() => void handleDelete()}
-				title="确认删除人设档案"
-				description={`确定要永久删除「${document.name || detail.id.slice(0, 8)}」吗？设定正文、资料项和图片引用都会一并清理。`}
-				confirmLabel="永久删除"
-				loading={remove.isPending}
+			<PersonaEditorDialogs
+				deleteOpen={deleteOpen}
+				defaultName={defaultName}
+				personaId={detail.id}
+				deleting={remove.isPending}
+				localeToRemove={localeToRemove}
+				onDeleteOpenChange={setDeleteOpen}
+				onConfirmDelete={() => void handleDelete()}
+				onLocaleRemoveOpenChange={(open) => {
+					if (!open) setLocaleToRemove("");
+				}}
+				onConfirmLocaleRemove={() => {
+					if (!localeToRemove) return;
+					updateDocument((current) => ({
+						...current,
+						localizations: current.localizations.filter(
+							(candidate) => candidate.locale !== localeToRemove,
+						),
+					}));
+					setActiveLocale(document.default_locale);
+					setLocaleToRemove("");
+				}}
 			/>
 		</PageShell>
 	);

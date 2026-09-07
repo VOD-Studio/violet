@@ -3,6 +3,7 @@ import type { PersonaCompletenessItem } from "@features/persona-editor/model/doc
 import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
+import { localeLabel } from "@shared/ui/locale-switcher";
 import { Check, Circle } from "lucide-react";
 
 interface PersonaStatusPanelProps {
@@ -41,6 +42,14 @@ export function PersonaStatusPanel({ detail, completeness }: PersonaStatusPanelP
 				</ul>
 
 				<div className="space-y-2 border-t pt-4 text-xs text-muted-foreground">
+					<div className="flex justify-between gap-4">
+						<span>默认语言</span>
+						<span>{localeLabel(detail.default_locale)}</span>
+					</div>
+					<div className="flex justify-between gap-4">
+						<span>语言版本</span>
+						<span className="tabular-nums">{detail.localizations.length}</span>
+					</div>
 					<div className="flex justify-between gap-4">
 						<span>版本</span>
 						<span className="font-mono tabular-nums">v{detail.version}</span>

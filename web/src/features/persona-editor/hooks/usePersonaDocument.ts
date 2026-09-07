@@ -30,12 +30,9 @@ const blockNavigation = () => true;
 function isSamePersonaDocument(current: PersonaDocument, next: PersonaDocument) {
 	return (
 		current === next ||
-		(current.name === next.name &&
-			current.subtitle === next.subtitle &&
-			current.summary === next.summary &&
-			current.content_md === next.content_md &&
-			current.facts === next.facts &&
-			current.images === next.images)
+		(current.default_locale === next.default_locale &&
+			current.avatar?.file_id === next.avatar?.file_id &&
+			current.localizations === next.localizations)
 	);
 }
 

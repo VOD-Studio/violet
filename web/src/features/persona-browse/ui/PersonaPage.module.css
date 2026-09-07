@@ -63,6 +63,10 @@
 	max-width: 35rem;
 }
 
+.localeSwitcher {
+	margin-bottom: 1.5rem;
+}
+
 .title {
 	margin: 0;
 	color: var(--persona-coral);

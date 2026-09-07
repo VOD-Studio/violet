@@ -3,6 +3,7 @@ import type { PersonaPublicImage } from "@entities/persona/model/types";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
 import { ImagePreview } from "@shared/ui/image-preview";
+import { LocaleSwitcher } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { useState } from "react";
 import styles from "./PersonaPage.module.css";
@@ -17,13 +18,18 @@ const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
 const DISPLAY_IMAGE_WIDTH = 2048;
 const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
 
+interface PersonaPageProps {
+	locale: string;
+	onLocaleChange: (locale: string, defaultLocale: string) => void;
+}
+
 function imageAlt(image: PersonaPublicImage, index: number, name: string): string {
 	return image.alt_text || `${name} · 第 ${index + 1} 张设定图`;
 }
 
 /** 当前公开人设的艺术图开场、长文档与有序设定图。 */
-export function PersonaPage() {
-	const { data: persona, isLoading, isError } = useActivePersona();
+export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
+	const { data: persona, isLoading, isError } = useActivePersona(locale);
 	const articleImages = useArticleImagePreview();
 	const [lightbox, setLightbox] = useState<LightboxState>(CLOSED_LIGHTBOX);
 
@@ -96,6 +102,18 @@ export function PersonaPage() {
 				) : null}
 
 				<div className={styles.identity}>
+					{persona.available_locales.length > 1 ? (
+						<LocaleSwitcher
+							locales={persona.available_locales}
+							value={persona.locale}
+							onValueChange={(nextLocale) => {
+								setLightbox(CLOSED_LIGHTBOX);
+								onLocaleChange(nextLocale, persona.default_locale);
+							}}
+							ariaLabel="切换人设语言"
+							className={styles.localeSwitcher}
+						/>
+					) : null}
 					<h1 id="persona-name" className={styles.title}>
 						{persona.name}
 					</h1>

@@ -14,6 +14,7 @@ import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { localeLabel } from "@shared/ui/locale-switcher";
 import { SearchInput } from "@shared/ui/search-input";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
@@ -70,13 +71,18 @@ export function PersonaListPage() {
 			hideable: false,
 			ellipsis: true,
 			cell: (row) => (
-				<button
-					type="button"
-					className="text-left font-medium hover:text-primary hover:underline"
-					onClick={() => openPersona(row.id)}
-				>
-					{row.name || `（未命名档案）${row.id.slice(0, 8)}`}
-				</button>
+				<div className="min-w-0">
+					<button
+						type="button"
+						className="block max-w-full truncate text-left font-medium hover:text-primary hover:underline"
+						onClick={() => openPersona(row.id)}
+					>
+						{row.name || `（未命名档案）${row.id.slice(0, 8)}`}
+					</button>
+					<p className="mt-1 truncate text-xs text-muted-foreground">
+						{row.locales.map(localeLabel).join(" · ")}
+					</p>
+				</div>
 			),
 		},
 		{
