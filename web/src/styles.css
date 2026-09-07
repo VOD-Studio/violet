@@ -114,6 +114,9 @@
 	--edge-hairline: rgba(0, 0, 0, 0.05);
 	--surface-glass: rgba(255, 255, 255, 0.5);
 	--glow-soft: 220 90% 60%;
+	--persona-violet: oklch(0.54 0.07 303);
+	--persona-gold: oklch(0.72 0.09 78);
+	--persona-ivory: oklch(0.985 0.012 84);
 
 	/* shadcn charts 调色板（5 色） */
 	--chart-1: oklch(0.646 0.222 41.116);
@@ -161,6 +164,9 @@
 	--edge-hairline: rgba(255, 255, 255, 0.1);
 	--surface-glass: rgba(0, 0, 0, 0.5);
 	--glow-soft: 210 100% 70%;
+	--persona-violet: oklch(0.74 0.09 303);
+	--persona-gold: oklch(0.78 0.09 78);
+	--persona-ivory: oklch(0.24 0.018 84);
 
 	/* shadcn charts 调色板（暗色 5 色） */
 	--chart-1: oklch(0.488 0.243 264.376);
@@ -396,20 +402,22 @@ button {
 	opacity: 0;
 }
 
-/* —— forward：旧页左移退出，新页右侧滑入 —— */
+/* —— forward：像纸页向左翻开，保留一条轻微页脊阴影 —— */
 :active-view-transition-type(forward)::view-transition-old(root) {
-	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
+	animation: 300ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
 }
 :active-view-transition-type(forward)::view-transition-new(root) {
-	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
+	animation: 340ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
+	box-shadow: -18px 0 36px -28px color-mix(in oklab, var(--persona-violet) 42%, transparent);
 }
 
-/* —— back：旧页右移退出，新页左侧滑入 —— */
+/* —— back：反向收回纸页 —— */
 :active-view-transition-type(back)::view-transition-old(root) {
-	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
+	animation: 300ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
 }
 :active-view-transition-type(back)::view-transition-new(root) {
-	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
+	animation: 340ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
+	box-shadow: 18px 0 36px -28px color-mix(in oklab, var(--persona-violet) 42%, transparent);
 }
 
 /* —— fade：同段导航交叉淡入 —— */
@@ -423,21 +431,25 @@ button {
 @keyframes page-enter-right {
 	from {
 		opacity: 0;
-		transform: translateX(20px);
+		transform: translate3d(16px, 0, 0) scale(0.996);
+		clip-path: inset(0 0 0 2.5%);
 	}
 	to {
 		opacity: 1;
-		transform: translateX(0);
+		transform: translate3d(0, 0, 0) scale(1);
+		clip-path: inset(0);
 	}
 }
 @keyframes page-enter-left {
 	from {
 		opacity: 0;
-		transform: translateX(-20px);
+		transform: translate3d(-16px, 0, 0) scale(0.996);
+		clip-path: inset(0 2.5% 0 0);
 	}
 	to {
 		opacity: 1;
-		transform: translateX(0);
+		transform: translate3d(0, 0, 0) scale(1);
+		clip-path: inset(0);
 	}
 }
 @keyframes page-exit-left {
@@ -446,8 +458,8 @@ button {
 		transform: translateX(0);
 	}
 	to {
-		opacity: 0;
-		transform: translateX(-14px);
+		opacity: 0.52;
+		transform: translate3d(-10px, 0, 0) scale(0.998);
 	}
 }
 @keyframes page-exit-right {
@@ -456,8 +468,8 @@ button {
 		transform: translateX(0);
 	}
 	to {
-		opacity: 0;
-		transform: translateX(14px);
+		opacity: 0.52;
+		transform: translate3d(10px, 0, 0) scale(0.998);
 	}
 }
 @keyframes page-fade-in {
