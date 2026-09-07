@@ -66,7 +66,7 @@ func (fakePublicationTransaction) Publications() domainpublication.Writer {
 type fakePublicationUnitOfWork struct{ repo domainnote.Repository }
 
 func (u fakePublicationUnitOfWork) Do(ctx context.Context, fn func(PublicationTransaction) error) error {
-	return fn(fakePublicationTransaction{repo: u.repo})
+	return fn(fakePublicationTransaction(u))
 }
 
 func (f *fakeNoteRepo) FindPage(_ context.Context, filter domainnote.ListFilter, q shared.PageQuery) (shared.PageResult[*domainnote.Note], error) {
