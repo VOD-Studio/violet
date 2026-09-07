@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"blog-api/config"
 	appsiteimpression "blog-api/internal/application/siteimpression"
 	domainsiteimpression "blog-api/internal/domain/siteimpression"
 
@@ -39,7 +40,7 @@ func (r *handlerMemoryRepository) Contains(_ context.Context, hash domainsiteimp
 func TestHandlerLifecycleUsesPrivateStatusAndSecureCookie(t *testing.T) {
 	handler := NewHandler(
 		appsiteimpression.NewService(newHandlerMemoryRepository(), []byte("site-impression-token-key")),
-		"example.com",
+		config.CookieConfig{Domain: "example.com", Secure: true},
 	)
 
 	initialResponse := httptest.NewRecorder()
@@ -85,4 +86,18 @@ func TestHandlerLifecycleUsesPrivateStatusAndSecureCookie(t *testing.T) {
 	require.Equal(t, http.StatusOK, knownResponse.Code)
 	assert.Contains(t, knownResponse.Body.String(), `"count":1`)
 	assert.Contains(t, knownResponse.Body.String(), `"impressed":true`)
+}
+
+func TestHandlerUsesConfiguredCookieSecurity(t *testing.T) {
+	handler := NewHandler(
+		appsiteimpression.NewService(newHandlerMemoryRepository(), []byte("site-impression-token-key")),
+		config.CookieConfig{Secure: false},
+	)
+	response := httptest.NewRecorder()
+	handler.Post(response, httptest.NewRequest(http.MethodPost, "/api/v1/site-impressions", nil))
+
+	require.Equal(t, http.StatusOK, response.Code)
+	cookies := response.Result().Cookies()
+	require.Len(t, cookies, 1)
+	assert.False(t, cookies[0].Secure)
 }

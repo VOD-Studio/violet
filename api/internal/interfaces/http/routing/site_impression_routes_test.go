@@ -52,7 +52,7 @@ func TestSiteImpressionRouteSupportsAnonymousCSRFFlow(t *testing.T) {
 			&routeSiteImpressionRepository{hashes: make(map[domainsiteimpression.TokenHash]struct{})},
 			[]byte("site-impression-token-key"),
 		),
-		"",
+		cookieConfig,
 	)
 	passThrough := func(next http.Handler) http.Handler { return next }
 

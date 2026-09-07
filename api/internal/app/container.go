@@ -85,7 +85,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	settings := NewSettingsContainer(db, bus, oauthCreds)
 	siteIdentity := NewSiteIdentityContainer(settings.Store)
-	siteImpression := NewSiteImpressionContainer(db, rdb, []byte(cfg.ResourceSigningKey), cfg.Cookie.Domain)
+	siteImpression := NewSiteImpressionContainer(db, rdb, []byte(cfg.ResourceSigningKey), cfg.Cookie)
 	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.CustomEmojiMaxPerUser, cfg.UploadPathPrefix)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)

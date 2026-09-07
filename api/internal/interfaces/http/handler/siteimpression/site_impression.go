@@ -4,6 +4,7 @@ package siteimpression
 import (
 	"net/http"
 
+	"blog-api/config"
 	appsiteimpression "blog-api/internal/application/siteimpression"
 	"blog-api/internal/interfaces/http/response"
 )
@@ -16,13 +17,13 @@ const (
 
 // Handler 在 HttpOnly Cookie 与应用用例之间转换设备身份。
 type Handler struct {
-	service      *appsiteimpression.Service
-	cookieDomain string
+	service   *appsiteimpression.Service
+	cookieCfg config.CookieConfig
 }
 
-// NewHandler 绑定应用服务与可选 Cookie 域名。
-func NewHandler(service *appsiteimpression.Service, cookieDomain string) *Handler {
-	return &Handler{service: service, cookieDomain: cookieDomain}
+// NewHandler 绑定应用服务与 Cookie 属性。
+func NewHandler(service *appsiteimpression.Service, cookieCfg config.CookieConfig) *Handler {
+	return &Handler{service: service, cookieCfg: cookieCfg}
 }
 
 // Get 返回去重设备总数与当前设备状态，不允许共享缓存复用其他设备的结果。
@@ -49,10 +50,10 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 			Name:     impressionCookieName,
 			Value:    issuedToken,
 			Path:     "/",
-			Domain:   h.cookieDomain,
+			Domain:   h.cookieCfg.Domain,
 			MaxAge:   impressionCookieMaxAge,
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   h.cookieCfg.Secure,
 			SameSite: http.SameSiteLaxMode,
 		})
 	}

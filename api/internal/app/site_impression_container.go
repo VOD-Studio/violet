@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"blog-api/config"
 	appsiteimpression "blog-api/internal/application/siteimpression"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
@@ -27,12 +28,12 @@ type SiteImpressionContainer struct {
 }
 
 // NewSiteImpressionContainer 派生后的密钥只进入各自的运行时边界。
-func NewSiteImpressionContainer(db *gorm.DB, redisClient *redis.Client, rootKey []byte, cookieDomain string) *SiteImpressionContainer {
+func NewSiteImpressionContainer(db *gorm.DB, redisClient *redis.Client, rootKey []byte, cookieCfg config.CookieConfig) *SiteImpressionContainer {
 	tokenKey := deriveSiteImpressionKey(rootKey, siteImpressionTokenPurpose)
 	rateLimitKey := deriveSiteImpressionKey(rootKey, siteImpressionRateLimitPurpose)
 	service := appsiteimpression.NewService(gormrepo.NewSiteImpressionRepository(db), tokenKey)
 	return &SiteImpressionContainer{
-		Handler:   siteimpressionhttp.NewHandler(service, cookieDomain),
+		Handler:   siteimpressionhttp.NewHandler(service, cookieCfg),
 		RateLimit: middleware.RateLimitByHashedIP("site-impressions", redisClient, rateLimitKey, time.Minute, 10),
 	}
 }
