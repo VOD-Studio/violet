@@ -186,19 +186,20 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 		<PageShell
 			title="人设档案"
 			description={`${document.name || "未命名档案"} · ${detail.is_active ? "当前人设" : "工作稿"}`}
+			action={
+				<PersonaEditorToolbar
+					canManage={canManage}
+					isActive={detail.is_active}
+					isComplete={complete}
+					saveState={saveState}
+					busy={pending}
+					activating={activate.isPending}
+					onActivate={() => void handleActivate()}
+					onDelete={() => setDeleteOpen(true)}
+					onSave={() => void handleSave()}
+				/>
+			}
 		>
-			<PersonaEditorToolbar
-				canManage={canManage}
-				isActive={detail.is_active}
-				isComplete={complete}
-				saveState={saveState}
-				busy={pending}
-				activating={activate.isPending}
-				onActivate={() => void handleActivate()}
-				onDelete={() => setDeleteOpen(true)}
-				onSave={() => void handleSave()}
-			/>
-
 			<PersonaOperationError error={visibleError} onReload={() => void reloadLatest()} />
 
 			<div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">

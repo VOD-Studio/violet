@@ -32,8 +32,8 @@ export function PersonaEditorToolbar({
 	const maintenanceDisabled = busy || saveState !== "saved";
 	const saveDisabled = busy || saveState === "conflict" || saveState === "saved";
 	return (
-		<div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-			<div className="flex flex-wrap items-center gap-3">
+		<div className="flex flex-wrap items-center justify-end gap-2">
+			<div className="flex flex-wrap items-center gap-2">
 				<Button variant="ghost" size="sm" asChild>
 					<Link to="/admin/personas">
 						<ArrowLeft className="size-4" />
