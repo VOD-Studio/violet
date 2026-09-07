@@ -68,6 +68,7 @@ violet/
 │   ├── cmd/
 │   │   ├── server/         API 服务入口
 │   │   ├── migrate/        数据库迁移 CLI
+│   │   ├── check-publications/ 发布物投影一致性校验 CLI
 │   │   └── export-openapi/ OpenAPI 导出 CLI
 │   ├── internal/
 │   │   ├── domain/         领域层（聚合根、值对象、仓储端口、领域事件）
@@ -163,6 +164,7 @@ make check          # 检查环境依赖（Go/Node/Docker）
 make migrate        # 执行迁移
 make migrate-down n=1  # 回滚一次迁移
 make migrate-version   # 查看当前版本
+make check-publications # 校验发布物投影一致性
 make db-shell       # 进入 psql
 
 # 代码检查与测试

@@ -2,7 +2,7 @@
 # 使用: make help
 
 .PHONY: help dev dev-dind dev-mixed docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
-        migrate migrate-down migrate-version reset-db db-shell redis-shell \
+        migrate migrate-down migrate-version check-publications reset-db db-shell redis-shell \
         api api-build api-test api-lint \
         web web-build web-preview web-lint web-format web-typecheck \
         build docker-build docker-up \
@@ -102,6 +102,9 @@ migrate-down: ## 回滚最近一次迁移 (make migrate-down n=3 回滚多次)
 
 migrate-version: ## 查看当前迁移版本
 	cd api && go run ./cmd/migrate version
+
+check-publications: ## 校验公开来源与发布物投影一致性
+	cd api && go run ./cmd/check-publications
 
 reset-db: ## 重置数据库 (回滚全部后重新迁移，⚠️ 清空数据)
 	@echo "⚠️  即将清空所有数据，3 秒后开始 (Ctrl+C 取消)..."

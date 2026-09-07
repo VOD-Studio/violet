@@ -6,6 +6,7 @@ import (
 	"time"
 
 	domaingallery "blog-api/internal/domain/gallery"
+	domainpublication "blog-api/internal/domain/publication"
 	"blog-api/internal/domain/shared"
 )
 
@@ -43,13 +44,14 @@ type AssetStore interface {
 	UpdateRefCount(ctx context.Context, id shared.ID, delta int) error
 }
 
-// Transaction 暴露同一个数据库事务中的图集与素材 adapter。
+// Transaction 暴露同一个数据库事务中的图集、素材与发布物 adapter。
 type Transaction interface {
 	Galleries() domaingallery.Repository
 	Assets() AssetStore
+	Publications() domainpublication.Writer
 }
 
-// UnitOfWork 保证工作稿、revision items 与素材引用计数同事务提交。
+// UnitOfWork 保证工作稿、revision items、素材引用与发布物投影同事务提交。
 type UnitOfWork interface {
 	Do(ctx context.Context, fn func(Transaction) error) error
 }

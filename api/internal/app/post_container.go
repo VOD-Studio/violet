@@ -22,6 +22,6 @@ type PostContainer struct {
 func NewPostContainer(db *gorm.DB, perm middleware.PermissionChecker, settingsStore domainsettings.SettingsStore, bus appshared.EventBus) *PostContainer {
 	repo := gormrepo.NewPostRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
-	svc := apppost.NewService(repo, userRepo, perm, settingsStore, bus)
+	svc := apppost.NewService(repo, userRepo, perm, settingsStore, bus, gormrepo.NewPostPublicationUnitOfWork(db))
 	return &PostContainer{PostHandler: posthttp.NewHandler(svc), PostService: svc}
 }

@@ -26,6 +26,9 @@ func setupPublicationIntegrationDB(t *testing.T) *gorm.DB {
 		_ = db.Exec("DELETE FROM galleries").Error
 		_ = db.Exec("DELETE FROM gallery_revisions").Error
 		_ = db.Exec("DELETE FROM notes").Error
+		_ = db.Exec("DELETE FROM files WHERE original_name LIKE 'publication-%'").Error
+		_ = db.Exec("DELETE FROM posts WHERE author_id IN (SELECT id FROM users WHERE username LIKE 'publication-%')").Error
+		_ = db.Exec("DELETE FROM users WHERE username LIKE 'publication-%'").Error
 	})
 	return db
 }

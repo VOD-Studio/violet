@@ -8,19 +8,57 @@ import (
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-// PublicationRepository 是发布物投影的 GORM 读取适配器。
+// PublicationRepository 读写普通发布物投影表。
 type PublicationRepository struct {
 	db *gorm.DB
 }
 
-// NewPublicationRepository 创建发布物投影仓储。
+// NewPublicationRepository 绑定数据库句柄；传入事务句柄时读写不会脱离该事务。
 func NewPublicationRepository(db *gorm.DB) *PublicationRepository {
 	return &PublicationRepository{db: db}
 }
 
-var _ domainpublication.Repository = (*PublicationRepository)(nil)
+var _ domainpublication.Reader = (*PublicationRepository)(nil)
+var _ domainpublication.Writer = (*PublicationRepository)(nil)
+
+// Upsert 创建或更新发布物投影。
+func (r *PublicationRepository) Upsert(ctx context.Context, entry domainpublication.Entry) error {
+	row := model.PublicationEntry{
+		Kind:        string(entry.Kind),
+		SourceID:    entry.SourceID.UUID(),
+		RouteKey:    entry.RouteKey,
+		Title:       entry.Title,
+		PublishedAt: entry.PublishedAt,
+		Featured:    entry.Featured,
+	}
+	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "kind"}, {Name: "source_id"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"route_key":    entry.RouteKey,
+			"title":        entry.Title,
+			"published_at": entry.PublishedAt,
+			"featured":     entry.Featured,
+			"updated_at":   gorm.Expr("CURRENT_TIMESTAMP"),
+		}),
+	}).Create(&row).Error
+	if err != nil {
+		return shared.Internal("保存发布物投影失败", err)
+	}
+	return nil
+}
+
+// Delete 删除指定来源发布物投影。
+func (r *PublicationRepository) Delete(ctx context.Context, kind domainpublication.Kind, sourceID shared.ID) error {
+	if err := r.db.WithContext(ctx).
+		Where("kind = ? AND source_id = ?", kind, sourceID.UUID()).
+		Delete(&model.PublicationEntry{}).Error; err != nil {
+		return shared.Internal("删除发布物投影失败", err)
+	}
+	return nil
+}
 
 // FindPage 按稳定复合游标读取发布物投影。
 func (r *PublicationRepository) FindPage(ctx context.Context, query domainpublication.Query) ([]domainpublication.Entry, error) {

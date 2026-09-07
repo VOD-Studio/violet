@@ -47,6 +47,7 @@ api/
 ├── cmd/
 │   ├── server/            # 应用入口（路由注册 + 依赖装配 + 启动）
 │   ├── migrate/           # 数据库迁移 CLI
+│   ├── check-publications/ # 发布物投影一致性校验 CLI
 │   └── export-openapi/    # OpenAPI 导出 CLI
 ├── config/                # 配置加载（Viper）
 ├── migrations/            # 数据库迁移脚本（golang-migrate）
@@ -268,6 +269,7 @@ make api-test     # 运行测试
 make api-lint     # golangci-lint 检查（或回退 go vet）
 make migrate      # 执行数据库迁移
 make migrate-down n=1  # 回滚最近一次迁移
+make check-publications # 校验公开来源与发布物投影一致性
 make reset-db     # 重置数据库
 make apifox       # 导出 OpenAPI 并导入 Apifox
 make help         # 查看所有命令

@@ -14,6 +14,6 @@ type NoteContainer struct {
 }
 
 func NewNoteContainer(db *gorm.DB) *NoteContainer {
-	service := appnote.NewService(gormrepo.NewNoteRepository(db))
+	service := appnote.NewService(gormrepo.NewNoteRepository(db), gormrepo.NewNotePublicationUnitOfWork(db))
 	return &NoteContainer{Handler: notehttp.NewHandler(service), Service: service}
 }

@@ -51,12 +51,12 @@ type Page struct {
 
 // Service 编排发布物投影查询与签名游标。
 type Service struct {
-	repo      domainpublication.Repository
+	repo      domainpublication.Reader
 	cursorKey []byte
 }
 
 // NewService 创建发布物读取服务。
-func NewService(repo domainpublication.Repository, cursorKey []byte) *Service {
+func NewService(repo domainpublication.Reader, cursorKey []byte) *Service {
 	return &Service{repo: repo, cursorKey: append([]byte(nil), cursorKey...)}
 }
 
