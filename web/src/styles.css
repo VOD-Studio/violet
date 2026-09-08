@@ -183,6 +183,7 @@
 	--neon-cyan: oklch(0.82 0.2 200);
 }
 
+.public-surface,
 .home-surface {
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.235 0 0);
@@ -205,6 +206,7 @@
 	color: var(--foreground);
 }
 
+.dark .public-surface,
 .dark .home-surface {
 	--background: oklch(0.145 0 0);
 	--foreground: oklch(0.92 0 0);
@@ -300,16 +302,19 @@ button {
 	font-family: var(--font-sans);
 }
 
+.public-surface,
 .home-surface {
 	caret-color: var(--primary);
 	scrollbar-color: color-mix(in oklch, var(--primary), transparent 55%) transparent;
 }
 
+.public-surface ::selection,
 .home-surface ::selection {
 	background: var(--primary);
 	color: var(--primary-foreground);
 }
 
+.public-surface :focus-visible,
 .home-surface :focus-visible {
 	outline-color: var(--primary);
 }
