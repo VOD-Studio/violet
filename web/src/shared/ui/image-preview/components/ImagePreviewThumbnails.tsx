@@ -40,10 +40,9 @@ export function ImagePreviewThumbnails({
 							onSelect(index);
 						}}
 						className={cn(
-							"size-10 shrink-0 overflow-hidden rounded border-2 transition-all sm:size-12",
-							index === currentIndex
-								? "scale-110 border-white"
-								: "border-white/30 hover:border-white/60",
+							"relative size-10 shrink-0 overflow-hidden rounded-md border border-white/20 bg-black/40 opacity-65 outline-none transition-[border-color,box-shadow,opacity] hover:border-white/50 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-white/80 sm:size-12",
+							index === currentIndex &&
+								"border-white opacity-100 shadow-[0_0_0_2px_rgba(0,0,0,0.65),0_0_0_4px_rgba(255,255,255,0.9)]",
 						)}
 					>
 						<img

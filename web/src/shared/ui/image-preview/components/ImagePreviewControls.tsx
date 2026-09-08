@@ -11,6 +11,7 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 
 /** 图片查看器工具栏与循环导航的操作契约。 */
@@ -175,7 +176,11 @@ export function ImagePreviewControls({
 								aria-label={listVisible ? "收起图片列表" : "显示图片列表"}
 								aria-expanded={listVisible}
 								aria-controls="image-preview-list"
-								className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
+								className={cn(
+									"text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9",
+									listVisible &&
+										"bg-white! text-black! hover:bg-white/90! hover:text-black!",
+								)}
 							>
 								<List className="h-4 w-4 sm:h-5 sm:w-5" />
 							</Button>
