@@ -1,6 +1,6 @@
 /*
  * 人设档案页 —— 公开内容方言（public-surface 提供暖珊瑚 token 与柔和墨色）。
- * 构图：头像 / 横排信息 / 竖排大名三列；动画只保留头像淡入与竖排名逐字浮现。
+ * 排版：头像与横排大字错落两列；章节通栏顶栏；滚动揭示由 CSS scroll-driven 渐进增强。
  */
 
 .page {
@@ -29,7 +29,7 @@
 	color: var(--persona-ink);
 }
 
-/* --- Hero --- */
+/* --- Hero：头像与大字错落两列 --- */
 
 .hero {
 	position: relative;
@@ -42,8 +42,8 @@
 
 .heroGlow {
 	position: absolute;
-	top: 38%;
-	left: 24%;
+	top: 36%;
+	left: 26%;
 	width: min(44rem, 78vw);
 	aspect-ratio: 1.5;
 	transform: translate(-50%, -50%);
@@ -57,14 +57,14 @@
 	position: relative;
 	display: grid;
 	width: 100%;
-	max-width: 68rem;
+	max-width: 66rem;
 	margin: 0 auto;
 	gap: 3rem;
 }
 
 .portraitFigure {
 	width: min(100%, 21rem);
-	margin: 0 auto;
+	margin: 0;
 }
 
 .visualButton {
@@ -90,17 +90,19 @@
 }
 
 .visualButton:focus-visible,
-.referenceButton:focus-visible,
-.continueLink:focus-visible,
-.localeTab:focus-visible {
+.localeTab:focus-visible,
+.continueLink:focus-visible {
 	outline: 2px solid var(--persona-accent);
 	outline-offset: 4px;
 }
 
 .heroImage {
-	display: block;
+	position: relative;
 	width: 100%;
 	height: 100%;
+}
+
+.heroImageImg {
 	object-fit: cover;
 }
 
@@ -114,32 +116,10 @@
 	letter-spacing: 0.12em;
 }
 
-/* --- 竖排大名 --- */
-
-.title {
-	margin: 0;
-	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
-	font-weight: 500;
-}
-
-.titleVertical {
-	display: block;
-	color: var(--persona-accent);
-	font-size: clamp(3.4rem, 12vw, 3.8rem);
-	line-height: 1.05;
-	letter-spacing: 0.02em;
-	text-wrap: nowrap;
-}
-
-.titleVertical span {
-	display: inline-block;
-}
-
 /* --- 横排信息区 --- */
 
 .identity {
 	min-width: 0;
-	max-width: 34rem;
 }
 
 .identityTopline {
@@ -148,6 +128,7 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 0.9rem 1.5rem;
+	margin-bottom: 1.6rem;
 }
 
 .eyebrow {
@@ -195,11 +176,32 @@
 	user-select: none;
 }
 
+/* --- 大名：主题色大字，逐字浮现 --- */
+
+.title {
+	margin: 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
+	font-weight: 500;
+}
+
+.titleName {
+	display: block;
+	color: var(--persona-accent);
+	font-size: clamp(3.4rem, 9vw, 6rem);
+	line-height: 1.06;
+	letter-spacing: 0.01em;
+	text-wrap: nowrap;
+}
+
+.titleName span {
+	display: inline-block;
+}
+
 .titleAlias {
 	display: flex;
 	align-items: center;
 	gap: 0.95rem;
-	margin: 1.5rem 0 0;
+	margin: 1.4rem 0 0;
 	color: var(--persona-accent);
 	font-family: var(--font-mono);
 	font-size: 0.88rem;
@@ -269,7 +271,7 @@
 	transform: translateY(0.18rem);
 }
 
-/* --- 章节骨架 --- */
+/* --- 章节通栏顶栏 --- */
 
 .profileSection,
 .contentSection,
@@ -278,33 +280,28 @@
 	border-top: 1px solid var(--persona-hairline);
 }
 
-.profileSection,
-.contentSection {
-	display: grid;
-	max-width: 72rem;
-	margin: 0 auto;
-	gap: 2.5rem;
-}
-
-.profileSection {
-	scroll-margin-top: 5rem;
-}
-
 .sectionHeader {
 	min-width: 0;
+	margin: 0 auto 3rem;
+	max-width: 72rem;
+}
+
+.sectionTopline {
+	display: flex;
+	align-items: baseline;
+	gap: 1.1rem;
 }
 
 .sectionIndex {
-	display: block;
-	color: color-mix(in oklab, var(--persona-accent) 62%, transparent);
+	color: color-mix(in oklab, var(--persona-accent) 66%, transparent);
 	font-family: Georgia, "Times New Roman", serif;
-	font-size: 2.9rem;
+	font-size: 2.4rem;
 	font-style: italic;
 	line-height: 1;
 }
 
 .sectionKicker {
-	margin: 0.8rem 0 0;
+	margin: 0;
 	color: var(--persona-muted);
 	font-family: var(--font-mono);
 	font-size: 0.68rem;
@@ -312,10 +309,17 @@
 	letter-spacing: 0.16em;
 }
 
+.sectionRule {
+	flex: 1;
+	align-self: center;
+	height: 1px;
+	background: var(--persona-hairline);
+}
+
 .sectionHeader h2 {
-	margin: 0.55rem 0 0;
+	margin: 1.1rem 0 0;
 	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
-	font-size: clamp(1.5rem, 2.8vw, 2.05rem);
+	font-size: clamp(1.6rem, 3vw, 2.2rem);
 	font-weight: 540;
 	line-height: 1.2;
 	letter-spacing: -0.03em;
@@ -326,8 +330,13 @@
 
 .facts {
 	display: grid;
-	margin: 0;
+	max-width: 72rem;
+	margin: 0 auto;
 	align-content: start;
+}
+
+.profileSection {
+	scroll-margin-top: 5rem;
 }
 
 .fact {
@@ -350,6 +359,38 @@
 	text-wrap: pretty;
 }
 
+/* --- 设定图集：照片堆叠 --- */
+
+.referenceSection {
+	background: var(--persona-faint);
+}
+
+.referenceStage {
+	max-width: 46rem;
+	margin: 0 auto;
+}
+
+.photoStack {
+	color: var(--persona-ink);
+}
+
+.stackFooter {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.75rem;
+	color: var(--persona-muted);
+	font-size: 0.82rem;
+	line-height: 1.7;
+}
+
+.stackFooter span {
+	color: var(--persona-accent);
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	letter-spacing: 0.08em;
+}
+
 /* --- 长文设定 --- */
 
 .contentSection {
@@ -360,6 +401,7 @@
 .contentInner {
 	width: 100%;
 	max-width: 72ch;
+	margin: 0 auto;
 }
 
 .article {
@@ -404,94 +446,6 @@
 	cursor: zoom-in;
 }
 
-/* --- 设定图集 --- */
-
-.referenceSection {
-	background: var(--persona-faint);
-	padding-top: 7rem;
-	padding-bottom: 8rem;
-}
-
-.referenceSection > .sectionHeader,
-.referenceList {
-	width: 100%;
-	max-width: 80rem;
-	margin-right: auto;
-	margin-left: auto;
-}
-
-.referenceSection > .sectionHeader {
-	margin-bottom: 3.5rem;
-}
-
-.referenceList {
-	display: grid;
-	gap: 4.5rem;
-	padding: 0;
-	list-style: none;
-}
-
-.referenceItem {
-	width: min(100%, 64rem);
-}
-
-.referenceItem:nth-child(even) {
-	justify-self: end;
-	width: min(100%, 50rem);
-}
-
-.referenceButton {
-	display: block;
-	width: 100%;
-	overflow: hidden;
-	border: 0;
-	border-radius: 0.9rem;
-	padding: 0;
-	background: color-mix(in oklab, var(--persona-ink) 4%, var(--persona-canvas));
-	cursor: zoom-in;
-}
-
-.referenceImage {
-	display: block;
-	width: 100%;
-	height: auto;
-	max-height: 85dvh;
-	border-radius: inherit;
-	object-fit: contain;
-	transition: filter 220ms ease-out;
-}
-
-.referenceButton:hover .referenceImage {
-	filter: saturate(1.04);
-}
-
-.referenceButton:focus-visible .referenceImage {
-	filter: saturate(1.04);
-}
-
-.caption {
-	display: flex;
-	align-items: baseline;
-	gap: 0.8rem;
-	margin-top: 1.1rem;
-	color: var(--persona-muted);
-	font-size: 0.85rem;
-	line-height: 1.7;
-}
-
-.caption > span {
-	flex-shrink: 0;
-	color: var(--persona-accent);
-	font-family: var(--font-mono);
-	font-size: 0.72rem;
-	letter-spacing: 0.08em;
-}
-
-.caption p {
-	margin: 0;
-	text-wrap: pretty;
-}
-
 /* --- 空态 --- */
 
 .empty {
@@ -518,18 +472,7 @@
 	line-height: 1.7;
 }
 
-/* --- 入场编排：仅头像淡入与竖排名逐字，其余内容直接呈现 --- */
-
-@keyframes personaPortraitIn {
-	from {
-		opacity: 0;
-		transform: translateY(1.2rem);
-	}
-	to {
-		opacity: 1;
-		transform: none;
-	}
-}
+/* --- 入场：大名逐字浮现，头像交给像素揭示组件 --- */
 
 @keyframes personaGlyphIn {
 	from {
@@ -540,13 +483,49 @@
 	}
 }
 
-.portraitFigure {
-	animation: personaPortraitIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-
-.titleVertical span {
+.titleName span {
 	animation: personaGlyphIn 0.6s ease-out backwards;
 	animation-delay: calc(0.18s + var(--glyph-i, 0) * 0.07s);
+}
+
+/* --- 滚动揭示：scroll-driven 渐进增强，不支持的环境直接可见 --- */
+
+@keyframes personaScrollIn {
+	from {
+		opacity: 0;
+		transform: translateY(1.4rem);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@supports (animation-timeline: view()) {
+	@media (prefers-reduced-motion: no-preference) {
+		.sectionHeader,
+		.referenceStage,
+		.contentInner {
+			animation: personaScrollIn linear both;
+			animation-timeline: view();
+			animation-range: entry 0% entry 38%;
+		}
+
+		/* 资料栏三列错峰：同排条目先后入场，形成轻微的波浪 */
+		.fact {
+			animation: personaScrollIn linear both;
+			animation-timeline: view();
+			animation-range: entry var(--fact-entry, 0%) entry 42%;
+		}
+
+		.fact:nth-child(3n + 2) {
+			--fact-entry: 6%;
+		}
+
+		.fact:nth-child(3n) {
+			--fact-entry: 12%;
+		}
+	}
 }
 
 /* --- 响应式 --- */
@@ -572,51 +551,18 @@
 	}
 
 	.heroInner {
-		grid-template-areas: "portrait identity title";
-		grid-template-columns: minmax(19rem, 21rem) minmax(0, 1fr) auto;
+		grid-template-columns: minmax(19rem, 21rem) minmax(0, 1fr);
 		gap: clamp(3.5rem, 6vw, 5.5rem);
-		align-items: center;
+		align-items: start;
 	}
 
 	.portraitFigure {
-		grid-area: portrait;
 		width: min(100%, 21rem);
 	}
 
-	.identity {
-		grid-area: identity;
-	}
-
-	.title {
-		grid-area: title;
-	}
-
-	/* 桌面竖排大名：日式书脊式排印，作为整页的视觉锚点 */
-	.titleVertical {
-		writing-mode: vertical-rl;
-		text-orientation: upright;
-		font-size: clamp(3.6rem, 5.2vw, 4.9rem);
-		line-height: 1;
-		letter-spacing: 0.12em;
-	}
-
-	.profileSection,
-	.contentSection {
-		grid-template-columns: 14rem minmax(0, 1fr);
-		gap: 3.5rem;
-		padding-right: 3rem;
-		padding-left: 3rem;
-	}
-
-	.referenceSection {
-		padding-right: 3rem;
-		padding-left: 3rem;
-	}
-
-	.sectionHeader {
-		position: sticky;
-		top: 7rem;
-		align-self: start;
+	.facts {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		column-gap: 3rem;
 	}
 }
 
@@ -627,13 +573,11 @@
 		transition: none;
 	}
 
-	.portraitFigure,
-	.titleVertical span {
+	.titleName span {
 		animation: none;
 	}
 
 	.visualButton,
-	.referenceImage,
 	.continueLink,
 	.continueLink svg,
 	.localeTab {
@@ -642,9 +586,5 @@
 
 	.continueLink:hover svg {
 		transform: none;
-	}
-
-	.referenceButton:hover .referenceImage {
-		filter: none;
 	}
 }

@@ -6,10 +6,13 @@ import {
 	splitPersonaDisplayName,
 } from "@features/persona-browse/model/presentation";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
-import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
+import { contentImageUrl } from "@shared/lib/image-url";
+import { BackToTop } from "@shared/ui/back-to-top";
+import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { PhotoStack } from "@shared/ui/photo-stack";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
@@ -22,17 +25,14 @@ interface LightboxState {
 	trigger: HTMLButtonElement | null;
 }
 
+const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
+
 interface PersonaPageProps {
 	locale: string;
 	onLocaleChange: (locale: string, defaultLocale: string) => void;
 }
 
-const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
-const DISPLAY_IMAGE_WIDTH = 2048;
-const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
-const AVATAR_SRCSET_WIDTHS = [320, 480, 640, 960] as const;
-
-/** 当前公开人设的阅读型档案、有序图集与长文设定。 */
+/** 当前公开人设的阅读型档案、可翻阅设定图集与长文设定。 */
 export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const { data: persona, isPending, isError, isPlaceholderData } = useActivePersona(locale);
 	const articleImages = useArticleImagePreview();
@@ -67,7 +67,6 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 			</main>
 		);
 	}
-
 	const labels = personaPageLabels(persona.locale);
 	const name = splitPersonaDisplayName(persona.name);
 	const heroAsset = persona.avatar ?? persona.images[0] ?? null;
@@ -108,16 +107,17 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 								}
 								aria-label={`预览 ${heroAlt}`}
 							>
-								<img
-									srcSet={contentImageSrcSet(heroAsset.url, AVATAR_SRCSET_WIDTHS)}
-									sizes="(min-width: 1024px) 24rem, (min-width: 640px) 21rem, calc(100vw - 5rem)"
+								<ImagePixelReveal
 									src={contentImageUrl(heroAsset.url, { width: 960 })}
 									alt={heroAlt}
-									width={heroAsset.width > 0 ? heroAsset.width : undefined}
-									height={heroAsset.height > 0 ? heroAsset.height : undefined}
+									variant="random"
+									tileSize={40}
+									duration={0.32}
+									spreadMs={380}
+									replayOnHover
 									className={styles.heroImage}
+									imgClassName={styles.heroImageImg}
 									loading="eager"
-									fetchPriority="high"
 								/>
 							</button>
 							<figcaption>
@@ -126,19 +126,6 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							</figcaption>
 						</figure>
 					) : null}
-
-					<h1 id="persona-name" className={styles.title} aria-label={persona.name}>
-						<span className={styles.titleVertical} aria-hidden="true">
-							{[...name.primary].map((glyph, index) => (
-								<span
-									key={`${glyph}-${index}`}
-									style={{ "--glyph-i": index } as React.CSSProperties}
-								>
-									{glyph}
-								</span>
-							))}
-						</span>
-					</h1>
 
 					<div className={styles.identity}>
 						<div className={styles.identityTopline}>
@@ -155,6 +142,18 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							) : null}
 						</div>
 
+						<h1 id="persona-name" className={styles.title} aria-label={persona.name}>
+							<span className={styles.titleName} aria-hidden="true">
+								{[...name.primary].map((glyph, index) => (
+									<span
+										key={`${glyph}-${index}`}
+										style={{ "--glyph-i": index } as React.CSSProperties}
+									>
+										{glyph}
+									</span>
+								))}
+							</span>
+						</h1>
 						{name.alias ? (
 							<p className={styles.titleAlias}>
 								<span className={styles.titleAliasDash} aria-hidden />
@@ -184,10 +183,13 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 					aria-labelledby="profile-title"
 				>
 					<header className={styles.sectionHeader}>
-						<span className={styles.sectionIndex} aria-hidden="true">
-							01
-						</span>
-						<p className={styles.sectionKicker}>PROFILE</p>
+						<div className={styles.sectionTopline}>
+							<span className={styles.sectionIndex} aria-hidden="true">
+								01
+							</span>
+							<p className={styles.sectionKicker}>PROFILE</p>
+							<span className={styles.sectionRule} aria-hidden />
+						</div>
 						<h2 id="profile-title">{labels.profile}</h2>
 					</header>
 					<dl className={styles.facts}>
@@ -207,65 +209,50 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 					aria-labelledby="persona-gallery-title"
 				>
 					<header className={styles.sectionHeader}>
-						<span className={styles.sectionIndex} aria-hidden="true">
-							02
-						</span>
-						<p className={styles.sectionKicker}>VISUALS</p>
+						<div className={styles.sectionTopline}>
+							<span className={styles.sectionIndex} aria-hidden="true">
+								02
+							</span>
+							<p className={styles.sectionKicker}>VISUALS</p>
+							<span className={styles.sectionRule} aria-hidden />
+						</div>
 						<h2 id="persona-gallery-title">{labels.gallery}</h2>
 					</header>
-					<ol className={styles.referenceList}>
-						{galleryImages.map((image, index) => {
-							const previewIndex = index + 1;
-							return (
-								<li className={styles.referenceItem} key={image.url}>
-									<figure>
-										<button
-											type="button"
-											className={styles.referenceButton}
-											onClick={(event) =>
-												setLightbox({
-													open: true,
-													index: previewIndex,
-													trigger: event.currentTarget,
-												})
-											}
-											aria-label={`预览 ${galleryAlts[index]}`}
-										>
-											<img
-												srcSet={contentImageSrcSet(
-													image.url,
-													DISPLAY_SRCSET_WIDTHS,
-												)}
-												sizes="(min-width: 1280px) 64rem, calc(100vw - 2.5rem)"
-												src={contentImageUrl(image.url, {
-													width: DISPLAY_IMAGE_WIDTH,
-												})}
-												alt={galleryAlts[index]}
-												width={image.width > 0 ? image.width : undefined}
-												height={image.height > 0 ? image.height : undefined}
-												className={styles.referenceImage}
-												loading="lazy"
-											/>
-										</button>
-										<figcaption className={styles.caption}>
-											<span>FIG. {String(index + 1).padStart(2, "0")}</span>
-											{image.caption ? <p>{image.caption}</p> : null}
-										</figcaption>
-									</figure>
-								</li>
-							);
-						})}
-					</ol>
+					<div className={styles.referenceStage}>
+						<PhotoStack
+							loading="lazy"
+							aspectClass="aspect-4/3"
+							className={styles.photoStack}
+							images={galleryImages.map((image, index) => ({
+								src: image.thumbnail || image.url,
+								alt: galleryAlts[index],
+							}))}
+							footer={
+								<p className={styles.stackFooter}>
+									<span>
+										FIG. 01–{String(galleryImages.length).padStart(2, "0")}
+									</span>
+									拖动卡片翻阅设定资料，点击放大原图
+								</p>
+							}
+							onImageOpen={(index) =>
+								setLightbox({ open: true, index: index + 1, trigger: null })
+							}
+						/>
+					</div>
 				</section>
 			) : null}
 
 			{persona.content_html ? (
 				<section className={styles.contentSection} aria-labelledby="persona-story-title">
 					<header className={styles.sectionHeader}>
-						<span className={styles.sectionIndex} aria-hidden="true">
-							03
-						</span>
-						<p className={styles.sectionKicker}>NOTES</p>
+						<div className={styles.sectionTopline}>
+							<span className={styles.sectionIndex} aria-hidden="true">
+								03
+							</span>
+							<p className={styles.sectionKicker}>NOTES</p>
+							<span className={styles.sectionRule} aria-hidden />
+						</div>
 						<h2 id="persona-story-title">{labels.story}</h2>
 					</header>
 					<div
@@ -293,6 +280,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 				onIndexChange={(index) => setLightbox((state) => ({ ...state, index }))}
 				triggerElement={lightbox.trigger}
 			/>
+			<BackToTop />
 		</main>
 	);
 }
