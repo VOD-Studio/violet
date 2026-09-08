@@ -8,11 +8,12 @@ import {
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
 import { ImagePreview } from "@shared/ui/image-preview";
-import { LocaleSwitcher } from "@shared/ui/locale-switcher";
+import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
+import { PersonaLocaleTabs } from "./PersonaLocaleTabs";
 import styles from "./PersonaPage.module.css";
 
 interface LightboxState {
@@ -31,15 +32,15 @@ const DISPLAY_IMAGE_WIDTH = 2048;
 const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
 const AVATAR_SRCSET_WIDTHS = [320, 480, 640, 960] as const;
 
-/** 当前公开人设的阅读型档案、长文设定与有序图集。 */
+/** 当前公开人设的阅读型档案、有序图集与长文设定。 */
 export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
-	const { data: persona, isLoading, isError } = useActivePersona(locale);
+	const { data: persona, isPending, isError, isPlaceholderData } = useActivePersona(locale);
 	const articleImages = useArticleImagePreview();
 	const [lightbox, setLightbox] = useState<LightboxState>(CLOSED_LIGHTBOX);
 
-	if (isLoading) {
+	if (isPending) {
 		return (
-			<main className={styles.page}>
+			<main className={`public-surface ${styles.page}`}>
 				<RuaLoading label="正在整理人设档案…" />
 			</main>
 		);
@@ -47,7 +48,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (isError) {
 		return (
-			<main className={`${styles.page} ${styles.empty}`}>
+			<main className={`public-surface ${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案暂时无法抵达</h1>
 					<p>请稍后再试。</p>
@@ -58,7 +59,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (!persona) {
 		return (
-			<main className={`${styles.page} ${styles.empty}`}>
+			<main className={`public-surface ${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案尚未公开</h1>
 					<p>当前没有已激活的角色资料。</p>
@@ -85,10 +86,14 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const allAlts = heroAsset ? [heroAlt, ...galleryAlts] : [];
 
 	return (
-		<main className={styles.page}>
+		<main
+			className={`public-surface ${styles.page}`}
+			data-stale={isPlaceholderData || undefined}
+		>
 			<section className={styles.hero} aria-labelledby="persona-name">
 				<div className={styles.heroGlow} aria-hidden />
-				<div className={styles.heroInner}>
+				{/* key=档案语言：新语言数据到达时整段重挂载，入场编排随之重演一遍 */}
+				<div className={styles.heroInner} key={persona.locale}>
 					{heroAsset ? (
 						<figure className={styles.portraitFigure}>
 							<button
@@ -117,33 +122,45 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							</button>
 							<figcaption>
 								<span>PORTRAIT</span>
-								<span>{persona.locale}</span>
+								<span>{localeLabel(persona.locale)}</span>
 							</figcaption>
 						</figure>
 					) : null}
 
+					<h1 id="persona-name" className={styles.title} aria-label={persona.name}>
+						<span className={styles.titleVertical} aria-hidden="true">
+							{[...name.primary].map((glyph, index) => (
+								<span
+									key={`${glyph}-${index}`}
+									style={{ "--glyph-i": index } as React.CSSProperties}
+								>
+									{glyph}
+								</span>
+							))}
+						</span>
+					</h1>
+
 					<div className={styles.identity}>
 						<div className={styles.identityTopline}>
-							<p className={styles.eyebrow}>PERSONA / 00</p>
+							<p className={styles.eyebrow}>PERSONA FILE</p>
 							{persona.available_locales.length > 1 ? (
-								<LocaleSwitcher
+								<PersonaLocaleTabs
 									locales={persona.available_locales}
 									value={persona.locale}
 									onValueChange={(nextLocale) => {
 										setLightbox(CLOSED_LIGHTBOX);
 										onLocaleChange(nextLocale, persona.default_locale);
 									}}
-									ariaLabel="切换人设语言"
-									className={styles.localeSwitcher}
 								/>
 							) : null}
 						</div>
 
-						<h1 id="persona-name" className={styles.title} aria-label={persona.name}>
-							<span>{name.primary}</span>
-							{name.alias ? <em>{name.alias}</em> : null}
-							<i aria-hidden>.</i>
-						</h1>
+						{name.alias ? (
+							<p className={styles.titleAlias}>
+								<span className={styles.titleAliasDash} aria-hidden />
+								{name.alias}
+							</p>
+						) : null}
 						{persona.subtitle ? (
 							<p className={styles.subtitle}>{persona.subtitle}</p>
 						) : null}
@@ -167,7 +184,10 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 					aria-labelledby="profile-title"
 				>
 					<header className={styles.sectionHeader}>
-						<p>01 / PROFILE</p>
+						<span className={styles.sectionIndex} aria-hidden="true">
+							01
+						</span>
+						<p className={styles.sectionKicker}>PROFILE</p>
 						<h2 id="profile-title">{labels.profile}</h2>
 					</header>
 					<dl className={styles.facts}>
@@ -181,34 +201,16 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 				</section>
 			) : null}
 
-			{persona.content_html ? (
-				<section className={styles.contentSection} aria-labelledby="persona-story-title">
-					<header className={styles.sectionHeader}>
-						<p>02 / NOTES</p>
-						<h2 id="persona-story-title">{labels.story}</h2>
-					</header>
-					<div
-						className={styles.contentInner}
-						data-article-content
-						onClick={articleImages.bind.onClick}
-						onKeyDown={articleImages.bind.onKeyDown}
-					>
-						<ArticleContent
-							content={persona.content_html}
-							className={`${styles.article} prose prose-neutral max-w-none dark:prose-invert`}
-						/>
-					</div>
-					{articleImages.preview}
-				</section>
-			) : null}
-
 			{galleryImages.length > 0 ? (
 				<section
 					className={styles.referenceSection}
 					aria-labelledby="persona-gallery-title"
 				>
 					<header className={styles.sectionHeader}>
-						<p>03 / VISUALS</p>
+						<span className={styles.sectionIndex} aria-hidden="true">
+							02
+						</span>
+						<p className={styles.sectionKicker}>VISUALS</p>
 						<h2 id="persona-gallery-title">{labels.gallery}</h2>
 					</header>
 					<ol className={styles.referenceList}>
@@ -234,7 +236,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 													image.url,
 													DISPLAY_SRCSET_WIDTHS,
 												)}
-												sizes="(min-width: 1280px) 68rem, calc(100vw - 2.5rem)"
+												sizes="(min-width: 1280px) 64rem, calc(100vw - 2.5rem)"
 												src={contentImageUrl(image.url, {
 													width: DISPLAY_IMAGE_WIDTH,
 												})}
@@ -246,7 +248,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 											/>
 										</button>
 										<figcaption className={styles.caption}>
-											<span>{String(index + 1).padStart(2, "0")}</span>
+											<span>FIG. {String(index + 1).padStart(2, "0")}</span>
 											{image.caption ? <p>{image.caption}</p> : null}
 										</figcaption>
 									</figure>
@@ -254,6 +256,30 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							);
 						})}
 					</ol>
+				</section>
+			) : null}
+
+			{persona.content_html ? (
+				<section className={styles.contentSection} aria-labelledby="persona-story-title">
+					<header className={styles.sectionHeader}>
+						<span className={styles.sectionIndex} aria-hidden="true">
+							03
+						</span>
+						<p className={styles.sectionKicker}>NOTES</p>
+						<h2 id="persona-story-title">{labels.story}</h2>
+					</header>
+					<div
+						className={styles.contentInner}
+						data-article-content
+						onClick={articleImages.bind.onClick}
+						onKeyDown={articleImages.bind.onKeyDown}
+					>
+						<ArticleContent
+							content={persona.content_html}
+							className={`${styles.article} prose prose-neutral max-w-none dark:prose-invert`}
+						/>
+					</div>
+					{articleImages.preview}
 				</section>
 			) : null}
 

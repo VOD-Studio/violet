@@ -2,7 +2,7 @@ import { activePersonaKeys } from "@entities/persona/api/keys";
 import type { PublicPersona } from "@entities/persona/model/types";
 import { ApiError } from "@shared/api/error";
 import { apiGet } from "@shared/api/request";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 /** 读取当前公开人设；尚未激活时返回 null。 */
 export async function fetchActivePersona(locale = ""): Promise<PublicPersona | null> {
@@ -16,10 +16,11 @@ export async function fetchActivePersona(locale = ""): Promise<PublicPersona | n
 	}
 }
 
-/** 当前公开人设查询。 */
+/** 当前公开人设查询；语言切换时保留旧档案避免整页重挂。 */
 export function useActivePersona(locale = "") {
 	return useQuery({
 		queryKey: activePersonaKeys.current(locale),
 		queryFn: () => fetchActivePersona(locale),
+		placeholderData: keepPreviousData,
 	});
 }

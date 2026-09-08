@@ -1,22 +1,35 @@
+/*
+ * 人设档案页 —— 公开内容方言（public-surface 提供暖珊瑚 token 与柔和墨色）。
+ * 构图：头像 / 横排信息 / 竖排大名三列；动画只保留头像淡入与竖排名逐字浮现。
+ */
+
 .page {
 	--persona-canvas: var(--background);
 	--persona-ink: var(--foreground);
-	--persona-muted: color-mix(in oklab, var(--persona-ink) 60%, var(--persona-canvas));
-	--persona-faint: color-mix(in oklab, var(--persona-ink) 5%, var(--persona-canvas));
-	--persona-hairline: color-mix(in oklab, var(--persona-ink) 12%, transparent);
+	--persona-muted: color-mix(in oklab, var(--persona-ink) 58%, var(--persona-canvas));
+	--persona-faint: color-mix(in oklab, var(--persona-ink) 4%, var(--persona-canvas));
+	--persona-hairline: color-mix(in oklab, var(--persona-ink) 11%, transparent);
 	--persona-accent: var(--primary);
+	--persona-accent-soft: color-mix(in oklab, var(--primary) 38%, transparent);
 	min-height: calc(100dvh - 4rem);
 	background: var(--persona-canvas);
 	color: var(--persona-ink);
 	font-family:
 		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC",
 		"Microsoft YaHei", sans-serif;
+	transition: opacity 220ms ease-out;
+}
+
+.page[data-stale] {
+	opacity: 0.55;
 }
 
 .page ::selection {
-	background: color-mix(in oklab, var(--persona-accent) 28%, transparent);
+	background: color-mix(in oklab, var(--persona-accent) 26%, transparent);
 	color: var(--persona-ink);
 }
+
+/* --- Hero --- */
 
 .hero {
 	position: relative;
@@ -29,13 +42,13 @@
 
 .heroGlow {
 	position: absolute;
-	top: 42%;
-	left: 34%;
-	width: min(46rem, 80vw);
-	aspect-ratio: 1.45;
+	top: 38%;
+	left: 24%;
+	width: min(44rem, 78vw);
+	aspect-ratio: 1.5;
 	transform: translate(-50%, -50%);
 	border-radius: 50%;
-	background: color-mix(in oklab, var(--persona-accent) 5%, transparent);
+	background: color-mix(in oklab, var(--persona-accent) 6%, transparent);
 	filter: blur(7rem);
 	pointer-events: none;
 }
@@ -44,10 +57,9 @@
 	position: relative;
 	display: grid;
 	width: 100%;
-	max-width: 64rem;
+	max-width: 68rem;
 	margin: 0 auto;
-	gap: 3.75rem;
-	align-items: center;
+	gap: 3rem;
 }
 
 .portraitFigure {
@@ -61,25 +73,26 @@
 	aspect-ratio: 1;
 	overflow: hidden;
 	border: 1px solid var(--persona-hairline);
-	border-radius: 1rem;
+	border-radius: 1.25rem;
 	background: var(--persona-faint);
-	box-shadow: 0 1.5rem 4rem color-mix(in oklab, var(--persona-ink) 8%, transparent);
+	box-shadow: 0 1.5rem 4rem color-mix(in oklab, var(--persona-ink) 9%, transparent);
 	cursor: zoom-in;
 	transition:
-		border-color 220ms ease-out,
-		box-shadow 220ms ease-out,
-		transform 220ms ease-out;
+		border-color 260ms ease-out,
+		box-shadow 260ms ease-out;
 }
 
 .visualButton:hover {
-	border-color: color-mix(in oklab, var(--persona-accent) 46%, var(--persona-hairline));
-	box-shadow: 0 1.75rem 4.5rem color-mix(in oklab, var(--persona-ink) 11%, transparent);
-	transform: translateY(-0.2rem);
+	border-color: color-mix(in oklab, var(--persona-accent) 44%, var(--persona-hairline));
+	box-shadow:
+		0 1.75rem 4.5rem color-mix(in oklab, var(--persona-ink) 11%, transparent),
+		0 0 4rem color-mix(in oklab, var(--persona-accent) 12%, transparent);
 }
 
 .visualButton:focus-visible,
 .referenceButton:focus-visible,
-.continueLink:focus-visible {
+.continueLink:focus-visible,
+.localeTab:focus-visible {
 	outline: 2px solid var(--persona-accent);
 	outline-offset: 4px;
 }
@@ -94,16 +107,39 @@
 .portraitFigure figcaption {
 	display: flex;
 	justify-content: space-between;
-	margin-top: 0.85rem;
+	margin-top: 0.9rem;
 	color: var(--persona-muted);
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-family: var(--font-mono);
 	font-size: 0.65rem;
 	letter-spacing: 0.12em;
 }
 
+/* --- 竖排大名 --- */
+
+.title {
+	margin: 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
+	font-weight: 500;
+}
+
+.titleVertical {
+	display: block;
+	color: var(--persona-accent);
+	font-size: clamp(3.4rem, 12vw, 3.8rem);
+	line-height: 1.05;
+	letter-spacing: 0.02em;
+	text-wrap: nowrap;
+}
+
+.titleVertical span {
+	display: inline-block;
+}
+
+/* --- 横排信息区 --- */
+
 .identity {
 	min-width: 0;
-	max-width: 37rem;
+	max-width: 34rem;
 }
 
 .identityTopline {
@@ -111,91 +147,97 @@
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 1rem;
-	margin-bottom: 1.75rem;
+	gap: 0.9rem 1.5rem;
 }
 
-.eyebrow,
-.sectionHeader p {
+.eyebrow {
 	margin: 0;
 	color: var(--persona-accent);
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-family: var(--font-mono);
 	font-size: 0.7rem;
 	font-weight: 600;
-	letter-spacing: 0.12em;
+	letter-spacing: 0.14em;
 }
 
-.localeSwitcher {
-	max-width: 100%;
+/* 档案语言标注：语言版本是并列关系，当前项以主色独立强调，不做滑动指示 */
+
+.localeTabs {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.55rem;
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
 }
 
-.title {
-	margin: 0;
-	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
-	font-size: clamp(3.1rem, 7vw, 5.4rem);
-	font-weight: 450;
-	line-height: 0.98;
-	letter-spacing: -0.055em;
-	text-wrap: balance;
+.localeTab {
+	padding: 0.15rem 0;
+	border: 0;
+	background: none;
+	color: var(--persona-muted);
+	font: inherit;
+	letter-spacing: 0.05em;
+	cursor: pointer;
+	transition: color 180ms ease-out;
 }
 
-.title span {
-	display: block;
+.localeTab:hover {
+	color: var(--persona-ink);
 }
 
-.title em {
-	display: inline-block;
-	margin-top: 0.08em;
+.localeTab[data-active] {
 	color: var(--persona-accent);
-	font-family: Georgia, "Times New Roman", serif;
-	font-size: 0.8em;
-	font-weight: 400;
-	font-style: italic;
-	letter-spacing: -0.035em;
+	font-weight: 600;
 }
 
-.title i {
+.localeDivider {
+	color: color-mix(in oklab, var(--persona-ink) 22%, transparent);
+	user-select: none;
+}
+
+.titleAlias {
+	display: flex;
+	align-items: center;
+	gap: 0.95rem;
+	margin: 1.5rem 0 0;
 	color: var(--persona-accent);
-	font-family: Georgia, "Times New Roman", serif;
-	font-style: italic;
+	font-family: var(--font-mono);
+	font-size: 0.88rem;
+	font-weight: 600;
+	letter-spacing: 0.42em;
+	text-transform: uppercase;
+}
+
+.titleAliasDash {
+	flex-shrink: 0;
+	width: 2.4rem;
+	height: 1px;
+	background: var(--persona-accent-soft);
 }
 
 .subtitle {
-	max-width: 34rem;
-	margin: 1.35rem 0 0;
+	max-width: 32rem;
+	margin: 1.5rem 0 0;
 	color: var(--persona-muted);
-	font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+	font-size: clamp(1rem, 2vw, 1.1rem);
 	font-weight: 500;
-	line-height: 1.7;
+	line-height: 1.75;
 	text-wrap: pretty;
 }
 
 .summary {
-	position: relative;
-	max-width: 35rem;
-	margin: 2.25rem 0 0;
-	padding: 0.1rem 0 0.1rem 2rem;
-	border-left: 1px solid color-mix(in oklab, var(--persona-accent) 48%, transparent);
-	color: color-mix(in oklab, var(--persona-ink) 73%, var(--persona-canvas));
-	quotes: "“" "”";
-}
-
-.summary::before {
-	position: absolute;
-	top: -0.45rem;
-	left: 0.45rem;
-	color: color-mix(in oklab, var(--persona-accent) 72%, transparent);
-	font-family: Georgia, "Times New Roman", serif;
-	font-size: 2.3rem;
-	line-height: 1;
-	content: open-quote;
+	max-width: 32rem;
+	margin: 1.9rem 0 0;
+	padding: 0.1rem 0 0.1rem 1.25rem;
+	border-left: 2px solid var(--persona-accent-soft);
 }
 
 .summary p {
 	margin: 0;
-	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
-	font-size: 1rem;
-	line-height: 1.9;
+	font-family: var(--font-serif);
+	font-size: 0.98rem;
+	line-height: 1.95;
+	color: color-mix(in oklab, var(--persona-ink) 76%, var(--persona-canvas));
 	text-wrap: pretty;
 }
 
@@ -203,12 +245,12 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 0.55rem;
-	margin-top: 2rem;
+	margin-top: 2.3rem;
 	border-radius: 0.35rem;
 	color: var(--persona-muted);
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-family: var(--font-mono);
 	font-size: 0.72rem;
-	letter-spacing: 0.06em;
+	letter-spacing: 0.08em;
 	text-decoration: none;
 	transition: color 180ms ease-out;
 }
@@ -226,6 +268,8 @@
 .continueLink:hover svg {
 	transform: translateY(0.18rem);
 }
+
+/* --- 章节骨架 --- */
 
 .profileSection,
 .contentSection,
@@ -250,44 +294,63 @@
 	min-width: 0;
 }
 
+.sectionIndex {
+	display: block;
+	color: color-mix(in oklab, var(--persona-accent) 62%, transparent);
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 2.9rem;
+	font-style: italic;
+	line-height: 1;
+}
+
+.sectionKicker {
+	margin: 0.8rem 0 0;
+	color: var(--persona-muted);
+	font-family: var(--font-mono);
+	font-size: 0.68rem;
+	font-weight: 600;
+	letter-spacing: 0.16em;
+}
+
 .sectionHeader h2 {
-	margin: 0.7rem 0 0;
-	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
-	font-size: clamp(1.45rem, 2.8vw, 2rem);
-	font-weight: 520;
+	margin: 0.55rem 0 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
+	font-size: clamp(1.5rem, 2.8vw, 2.05rem);
+	font-weight: 540;
 	line-height: 1.2;
-	letter-spacing: -0.035em;
+	letter-spacing: -0.03em;
 	text-wrap: balance;
 }
+
+/* --- 档案资料栏 --- */
 
 .facts {
 	display: grid;
 	margin: 0;
-	border-bottom: 1px solid var(--persona-hairline);
+	align-content: start;
 }
 
 .fact {
-	display: grid;
-	grid-template-columns: minmax(5.25rem, 0.32fr) minmax(0, 1fr);
-	gap: 1rem;
-	align-content: start;
-	padding: 1.05rem 0;
+	padding: 1.1rem 0 1.4rem;
 	border-top: 1px solid var(--persona-hairline);
 }
 
 .fact dt {
-	color: var(--persona-muted);
-	font-size: 0.72rem;
-	line-height: 1.7;
+	color: var(--persona-accent);
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	letter-spacing: 0.1em;
 }
 
 .fact dd {
-	margin: 0;
-	font-size: 0.9rem;
+	margin: 0.55rem 0 0;
+	font-size: 1.05rem;
 	font-weight: 520;
 	line-height: 1.7;
 	text-wrap: pretty;
 }
+
+/* --- 长文设定 --- */
 
 .contentSection {
 	padding-top: 7rem;
@@ -310,7 +373,7 @@
 .article h2,
 .article h3,
 .article h4 {
-	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
 	font-weight: 560;
 	letter-spacing: -0.025em;
 }
@@ -324,9 +387,9 @@
 }
 
 .article blockquote {
-	border-left-color: color-mix(in oklab, var(--persona-accent) 55%, transparent);
-	color: color-mix(in oklab, var(--persona-ink) 76%, var(--persona-canvas));
-	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	border-left-color: var(--persona-accent-soft);
+	color: color-mix(in oklab, var(--persona-ink) 78%, var(--persona-canvas));
+	font-family: var(--font-serif);
 	font-style: normal;
 }
 
@@ -340,6 +403,8 @@
 	border-radius: 0.85rem;
 	cursor: zoom-in;
 }
+
+/* --- 设定图集 --- */
 
 .referenceSection {
 	background: var(--persona-faint);
@@ -361,18 +426,18 @@
 
 .referenceList {
 	display: grid;
-	gap: 5rem;
+	gap: 4.5rem;
 	padding: 0;
 	list-style: none;
 }
 
 .referenceItem {
-	width: min(100%, 68rem);
+	width: min(100%, 64rem);
 }
 
 .referenceItem:nth-child(even) {
 	justify-self: end;
-	width: min(100%, 59rem);
+	width: min(100%, 50rem);
 }
 
 .referenceButton {
@@ -393,38 +458,41 @@
 	max-height: 85dvh;
 	border-radius: inherit;
 	object-fit: contain;
-	transition:
-		filter 220ms ease-out,
-		transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+	transition: filter 220ms ease-out;
 }
 
 .referenceButton:hover .referenceImage {
-	filter: saturate(1.03);
-	transform: scale(1.006);
+	filter: saturate(1.04);
+}
+
+.referenceButton:focus-visible .referenceImage {
+	filter: saturate(1.04);
 }
 
 .caption {
-	display: grid;
-	grid-template-columns: 2rem minmax(0, 1fr);
-	max-width: 65ch;
-	margin: 1rem auto 0;
-	gap: 0.75rem;
+	display: flex;
 	align-items: baseline;
+	gap: 0.8rem;
+	margin-top: 1.1rem;
 	color: var(--persona-muted);
-	font-size: 0.82rem;
+	font-size: 0.85rem;
 	line-height: 1.7;
 }
 
 .caption > span {
+	flex-shrink: 0;
 	color: var(--persona-accent);
-	font-family: Georgia, "Times New Roman", serif;
-	font-style: italic;
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	letter-spacing: 0.08em;
 }
 
 .caption p {
 	margin: 0;
 	text-wrap: pretty;
 }
+
+/* --- 空态 --- */
 
 .empty {
 	display: flex;
@@ -437,21 +505,51 @@
 
 .empty h1 {
 	margin: 0;
-	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
 	font-size: 1.75rem;
 	font-weight: 540;
 	letter-spacing: -0.025em;
 }
 
 .empty p {
+	margin: 0.75rem 0 0;
 	color: var(--persona-muted);
 	font-size: 0.9rem;
 	line-height: 1.7;
 }
 
-.empty p {
-	margin: 0.75rem 0 0;
+/* --- 入场编排：仅头像淡入与竖排名逐字，其余内容直接呈现 --- */
+
+@keyframes personaPortraitIn {
+	from {
+		opacity: 0;
+		transform: translateY(1.2rem);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
 }
+
+@keyframes personaGlyphIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.portraitFigure {
+	animation: personaPortraitIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.titleVertical span {
+	animation: personaGlyphIn 0.6s ease-out backwards;
+	animation-delay: calc(0.18s + var(--glyph-i, 0) * 0.07s);
+}
+
+/* --- 响应式 --- */
 
 @media (min-width: 40rem) {
 	.hero,
@@ -464,7 +562,7 @@
 
 	.facts {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		column-gap: 2.5rem;
+		column-gap: 3rem;
 	}
 }
 
@@ -474,12 +572,32 @@
 	}
 
 	.heroInner {
-		grid-template-columns: minmax(19rem, 0.8fr) minmax(0, 1.2fr);
-		gap: clamp(4rem, 8vw, 7rem);
+		grid-template-areas: "portrait identity title";
+		grid-template-columns: minmax(19rem, 21rem) minmax(0, 1fr) auto;
+		gap: clamp(3.5rem, 6vw, 5.5rem);
+		align-items: center;
 	}
 
 	.portraitFigure {
-		width: min(100%, 24rem);
+		grid-area: portrait;
+		width: min(100%, 21rem);
+	}
+
+	.identity {
+		grid-area: identity;
+	}
+
+	.title {
+		grid-area: title;
+	}
+
+	/* 桌面竖排大名：日式书脊式排印，作为整页的视觉锚点 */
+	.titleVertical {
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+		font-size: clamp(3.6rem, 5.2vw, 4.9rem);
+		line-height: 1;
+		letter-spacing: 0.12em;
 	}
 
 	.profileSection,
@@ -494,19 +612,39 @@
 		padding-right: 3rem;
 		padding-left: 3rem;
 	}
+
+	.sectionHeader {
+		position: sticky;
+		top: 7rem;
+		align-self: start;
+	}
 }
 
+/* --- 动效偏好 --- */
+
 @media (prefers-reduced-motion: reduce) {
-	.visualButton,
-	.referenceImage,
-	.continueLink,
-	.continueLink svg {
+	.page {
 		transition: none;
 	}
 
-	.visualButton:hover,
-	.referenceButton:hover .referenceImage,
+	.portraitFigure,
+	.titleVertical span {
+		animation: none;
+	}
+
+	.visualButton,
+	.referenceImage,
+	.continueLink,
+	.continueLink svg,
+	.localeTab {
+		transition: none;
+	}
+
 	.continueLink:hover svg {
 		transform: none;
+	}
+
+	.referenceButton:hover .referenceImage {
+		filter: none;
 	}
 }
