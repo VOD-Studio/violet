@@ -1,33 +1,20 @@
-/**
- * 图片预览控制逻辑 Hook
- * 管理图片索引、缩放、键盘操作等交互逻辑
- */
+import { useMotionValue } from "motion/react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { useCallback, useEffect, useState } from "react";
-
-/** useImagePreviewControls Hook 的参数 */
 interface UseImagePreviewControlsProps {
-	/** 是否打开预览 */
 	open: boolean;
-	/** 图片列表 */
 	images: string[];
-	/** 当前图片索引 */
 	currentIndex: number;
-	/** 索引变化回调 */
 	onIndexChange?: (index: number) => void;
-	/** 关闭回调 */
 	onClose: () => void;
 }
 
+const CLOSE_WHEEL_DISTANCE = 600; // 留出多次滚动的行程，避免一格滚轮直接关闭。
+const CLOSE_WHEEL_SMOOTHING = 0.32;
 /**
- * 图片预览控制 Hook
+ * 管理循环导航、图像变换与预览期间的键盘操作。
  *
- * 功能：
- * - 管理当前图片索引和缩放比例
- * - 处理上一张/下一张切换
- * - 处理缩放操作（放大/缩小）
- * - 监听键盘事件（ESC、方向键、+/-）
- * - 阻止背景滚动
+ * @returns 当前图像状态与统一的导航、变换操作。
  */
 export function useImagePreviewControls({
 	open,
@@ -37,47 +24,87 @@ export function useImagePreviewControls({
 	onClose,
 }: UseImagePreviewControlsProps) {
 	const [index, setIndex] = useState(currentIndex);
+	const indexRef = useRef(currentIndex);
+	const [direction, setDirection] = useState(0);
 	const [scale, setScale] = useState(1);
+	const scaleRef = useRef(1);
+	const closeProgress = useMotionValue(0);
+	const closeTarget = useRef(0);
+	const closeAnimationFrame = useRef<number | null>(null);
+	const wheelDirection = useRef(0);
+	const cancelCloseAnimation = useCallback(() => {
+		if (closeAnimationFrame.current !== null) {
+			cancelAnimationFrame(closeAnimationFrame.current);
+			closeAnimationFrame.current = null;
+		}
+	}, []);
+	const setCloseProgress = useCallback(
+		(progress: number) => {
+			cancelCloseAnimation();
+			closeTarget.current = progress;
+			closeProgress.set(progress);
+		},
+		[cancelCloseAnimation, closeProgress],
+	);
+	const updateScale = useCallback((next: number) => {
+		scaleRef.current = next;
+		setScale(next);
+	}, []);
 	const [rotate, setRotate] = useState(0);
 	const [flipX, setFlipX] = useState(false);
 	const [flipY, setFlipY] = useState(false);
+	// 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
+	const handleReset = useCallback(() => {
+		setCloseProgress(0);
+		wheelDirection.current = 0;
+		updateScale(1);
+		setRotate(0);
+		setFlipX(false);
+		setFlipY(false);
+	}, [setCloseProgress, updateScale]);
 
-	useEffect(() => {
+	const wasOpen = useRef(false);
+	useLayoutEffect(() => {
+		const opening = open && !wasOpen.current;
+		wasOpen.current = open;
+		if (!opening && currentIndex === indexRef.current) return;
+		setDirection(opening ? 0 : Math.sign(currentIndex - indexRef.current));
+		indexRef.current = currentIndex;
 		setIndex(currentIndex);
-	}, [currentIndex]);
+		handleReset();
+	}, [open, currentIndex, handleReset]);
 
-	// 打开或切换图片时重置状态
-	// biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器，函数体内未直接使用
-	useEffect(() => {
-		if (open) {
-			setScale(1);
-			setRotate(0);
-			setFlipX(false);
-			setFlipY(false);
-		}
-	}, [open, index]);
+	const handleSelect = useCallback(
+		(nextIndex: number, nextDirection = Math.sign(nextIndex - indexRef.current)) => {
+			if (nextIndex === indexRef.current) return;
+			indexRef.current = nextIndex;
+			setDirection(nextDirection);
+			setIndex(nextIndex);
+			handleReset();
+			onIndexChange?.(nextIndex);
+		},
+		[onIndexChange, handleReset],
+	);
 
 	const handlePrevious = useCallback(() => {
 		if (images.length <= 1) return;
-		const newIndex = index > 0 ? index - 1 : images.length - 1;
-		setIndex(newIndex);
-		onIndexChange?.(newIndex);
-	}, [index, images.length, onIndexChange]);
+		handleSelect((indexRef.current + images.length - 1) % images.length, -1);
+	}, [images.length, handleSelect]);
 
 	const handleNext = useCallback(() => {
 		if (images.length <= 1) return;
-		const newIndex = index < images.length - 1 ? index + 1 : 0;
-		setIndex(newIndex);
-		onIndexChange?.(newIndex);
-	}, [index, images.length, onIndexChange]);
+		handleSelect((indexRef.current + 1) % images.length, 1);
+	}, [images.length, handleSelect]);
 
 	const handleZoomIn = useCallback(() => {
-		setScale((prev) => Math.min(prev + 0.5, 3));
-	}, []);
+		setCloseProgress(0);
+		updateScale(Math.min(scaleRef.current + 0.5, 3));
+	}, [setCloseProgress, updateScale]);
 
 	const handleZoomOut = useCallback(() => {
-		setScale((prev) => Math.max(prev - 0.5, 0.5));
-	}, []);
+		setCloseProgress(0);
+		updateScale(Math.max(scaleRef.current - 0.5, 0.5));
+	}, [setCloseProgress, updateScale]);
 
 	const handleRotateLeft = useCallback(() => {
 		setRotate((prev) => prev - 90);
@@ -95,20 +122,41 @@ export function useImagePreviewControls({
 		setFlipY((prev) => !prev);
 	}, []);
 
-	// 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
-	const handleReset = useCallback(() => {
-		setScale(1);
-		setRotate(0);
-		setFlipX(false);
-		setFlipY(false);
-	}, []);
+	const finishWheelClose = useCallback(() => {
+		closeAnimationFrame.current = null;
+		const current = closeProgress.get();
+		const next = current + (closeTarget.current - current) * CLOSE_WHEEL_SMOOTHING;
+		if (Math.abs(closeTarget.current - next) < 0.002) {
+			closeProgress.set(closeTarget.current);
+			return;
+		}
+		closeProgress.set(next);
+		closeAnimationFrame.current = requestAnimationFrame(finishWheelClose);
+	}, [closeProgress]);
+	const handleWheel = useCallback(
+		(delta: number) => {
+			if (delta === 0) return;
+			const direction = Math.sign(delta);
+			if (wheelDirection.current === 0) wheelDirection.current = direction;
+			const signedDelta = delta * wheelDirection.current;
+			closeTarget.current = Math.max(
+				0,
+				Math.min(1, closeTarget.current + signedDelta / CLOSE_WHEEL_DISTANCE),
+			);
+			if (closeTarget.current >= 1) {
+				cancelCloseAnimation();
+				closeProgress.set(1);
+				onClose();
+				return;
+			}
+			if (closeAnimationFrame.current === null) {
+				closeAnimationFrame.current = requestAnimationFrame(finishWheelClose);
+			}
+		},
+		[cancelCloseAnimation, closeProgress, finishWheelClose, onClose],
+	);
 
-	const handleWheel = useCallback((delta: number) => {
-		setScale((prev) => {
-			const newScale = prev - delta * 0.001;
-			return Math.max(0.5, Math.min(3, newScale));
-		});
-	}, []);
+	useEffect(() => cancelCloseAnimation, [cancelCloseAnimation]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -117,11 +165,14 @@ export function useImagePreviewControls({
 			switch (e.key) {
 				case "Escape":
 					onClose();
+					e.preventDefault();
 					break;
 				case "ArrowLeft":
+					e.preventDefault();
 					handlePrevious();
 					break;
 				case "ArrowRight":
+					e.preventDefault();
 					handleNext();
 					break;
 				case "+":
@@ -134,47 +185,26 @@ export function useImagePreviewControls({
 			}
 		};
 
-		const handleWheelEvent = (e: WheelEvent) => {
-			e.preventDefault();
-			handleWheel(e.deltaY);
-		};
-
 		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("wheel", handleWheelEvent, { passive: false });
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("wheel", handleWheelEvent);
 		};
-	}, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut, handleWheel]);
-
-	useEffect(() => {
-		if (open) {
-			if (typeof document === "undefined") return;
-			const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-			const originalOverflow = document.body.style.overflow;
-			const originalPaddingRight = document.body.style.paddingRight;
-			document.body.style.overflow = "hidden";
-			if (scrollbarWidth > 0) {
-				document.body.style.paddingRight = `${scrollbarWidth}px`;
-			}
-			return () => {
-				document.body.style.overflow = originalOverflow;
-				document.body.style.paddingRight = originalPaddingRight;
-			};
-		}
-	}, [open]);
+	}, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut]);
 
 	return {
 		index,
 		scale,
+		closeProgress,
 		rotate,
 		flipX,
 		flipY,
-		setIndex,
+		direction,
+		handleSelect,
 		handlePrevious,
 		handleNext,
 		handleZoomIn,
 		handleZoomOut,
+		handleWheel,
 		handleRotateLeft,
 		handleRotateRight,
 		handleFlipX,

@@ -1,3 +1,4 @@
+import type { PublicPersona } from "@entities/persona/model/types";
 import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { GithubIcon } from "@shared/ui/icons";
@@ -6,6 +7,7 @@ import { ArrowUpRight, Mail, Sparkles } from "lucide-react";
 
 interface HeaderContributionIdentityProps {
 	settings?: SiteSettings;
+	persona?: PublicPersona;
 	onNavigate?: () => void;
 }
 
@@ -16,6 +18,7 @@ interface HeaderContributionIdentityProps {
  */
 export function HeaderContributionIdentity({
 	settings,
+	persona,
 	onNavigate,
 }: HeaderContributionIdentityProps) {
 	const siteName = settings?.site_name?.trim() || "Violet";
@@ -26,7 +29,10 @@ export function HeaderContributionIdentity({
 	const githubAvatar = githubUsername
 		? `https://github.com/${encodeURIComponent(githubUsername)}.png?size=96`
 		: "";
-	const avatar = configuredAvatar ? avatarUrl(configuredAvatar, ownerName) : githubAvatar;
+	const personaAvatar = persona?.avatar.thumbnail || persona?.avatar.url;
+	const avatar =
+		personaAvatar || (configuredAvatar ? avatarUrl(configuredAvatar, ownerName) : githubAvatar);
+	const avatarAlt = personaAvatar ? `${persona?.name} 的人设头像` : ownerName;
 	const email = settings?.social_email?.trim() || "";
 
 	return (
@@ -36,7 +42,7 @@ export function HeaderContributionIdentity({
 				{avatar ? (
 					<img
 						src={avatar}
-						alt={ownerName}
+						alt={avatarAlt}
 						className="size-11 rounded-full object-cover ring-1 ring-border/50"
 					/>
 				) : (

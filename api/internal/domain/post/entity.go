@@ -108,6 +108,8 @@ type Post struct {
 	viewCount int
 	// isFeatured 是否精选文章（前端首页 / 精选位展示）
 	isFeatured bool
+	// showSignature 是否在文章正文末尾展示作者签名
+	showSignature bool
 	// seoTitle SEO 专用标题，为空时回退到 title
 	seoTitle string
 	// seoDescription SEO 专用描述，为空时回退到 excerpt
@@ -137,7 +139,7 @@ func NewPost(id, authorID shared.ID, title, slug string) (*Post, error) {
 }
 
 // ReconstructPost 从持久化数据重建
-func ReconstructPost(id, authorID shared.ID, title, slug, contentMD, contentHTML, excerpt, coverImage, status string, viewCount int, isFeatured bool, seoTitle, seoDescription string, publishedAt *time.Time, canonicalURL *string, tags []string, createdAt, updatedAt time.Time) *Post {
+func ReconstructPost(id, authorID shared.ID, title, slug, contentMD, contentHTML, excerpt, coverImage, status string, viewCount int, isFeatured, showSignature bool, seoTitle, seoDescription string, publishedAt *time.Time, canonicalURL *string, tags []string, createdAt, updatedAt time.Time) *Post {
 	if tags == nil {
 		tags = []string{}
 	}
@@ -145,7 +147,8 @@ func ReconstructPost(id, authorID shared.ID, title, slug, contentMD, contentHTML
 		id: id, authorID: authorID, title: title, slug: slug,
 		contentMD: contentMD, contentHTML: contentHTML, excerpt: excerpt,
 		coverImage: coverImage, status: status, viewCount: viewCount,
-		isFeatured: isFeatured, seoTitle: seoTitle, seoDescription: seoDescription,
+		isFeatured: isFeatured, showSignature: showSignature,
+		seoTitle: seoTitle, seoDescription: seoDescription,
 		publishedAt: publishedAt, canonicalURL: canonicalURL, tags: tags,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
@@ -185,6 +188,9 @@ func (p *Post) IncrementView() { p.viewCount++ }
 
 // SetFeatured 设置精选
 func (p *Post) SetFeatured(featured bool) { p.isFeatured = featured }
+
+// SetShowSignature 设置文章末尾作者签名的展示偏好。
+func (p *Post) SetShowSignature(show bool) { p.showSignature = show }
 
 // UpdateContent 更新内容
 func (p *Post) UpdateContent(title, contentMD, contentHTML, excerpt, coverImage string) error {
@@ -242,6 +248,7 @@ func (p *Post) Status() string          { return p.status }
 func (p *Post) AuthorID() shared.ID     { return p.authorID }
 func (p *Post) ViewCount() int          { return p.viewCount }
 func (p *Post) IsFeatured() bool        { return p.isFeatured }
+func (p *Post) ShowSignature() bool     { return p.showSignature }
 func (p *Post) SEOTitle() string        { return p.seoTitle }
 func (p *Post) SEODescription() string  { return p.seoDescription }
 func (p *Post) PublishedAt() *time.Time { return p.publishedAt }

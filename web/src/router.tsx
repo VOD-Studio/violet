@@ -1,6 +1,7 @@
 import type { SessionClaims } from "@entities/user/model/types";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { RuaLoading } from "@widgets/PersonaMotion";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
 import { getNavDirection, isAdminRoute } from "./shared/lib/nav-direction";
@@ -39,6 +40,9 @@ export const getRouter = () => {
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 30_000,
+		defaultPendingComponent: RuaLoading,
+		defaultPendingMs: 180,
+		defaultPendingMinMs: 360,
 		defaultViewTransition: {
 			types: ({ fromLocation, toLocation, pathChanged }) => {
 				if (!pathChanged) return false;

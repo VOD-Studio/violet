@@ -31,7 +31,8 @@ func postToPO(p *post.Post) model.Post {
 		Excerpt: p.Excerpt(), CoverImage: p.CoverImage(),
 		Status: p.Status(), AuthorID: p.AuthorID().UUID(),
 		ViewCount: p.ViewCount(), IsFeatured: p.IsFeatured(),
-		SEOTitle: p.SEOTitle(), SEODescription: p.SEODescription(),
+		ShowSignature: p.ShowSignature(),
+		SEOTitle:      p.SEOTitle(), SEODescription: p.SEODescription(),
 		CanonicalURL: p.CanonicalURL(),
 	}
 	if t := p.PublishedAt(); t != nil {
@@ -57,7 +58,7 @@ func postToDomain(po model.Post) (*post.Post, error) {
 		domainshared.MustParseID(po.AuthorID.String()),
 		po.Title, po.Slug, po.ContentMD, po.ContentHTML,
 		po.Excerpt, po.CoverImage, po.Status, po.ViewCount,
-		po.IsFeatured, po.SEOTitle, po.SEODescription,
+		po.IsFeatured, po.ShowSignature, po.SEOTitle, po.SEODescription,
 		po.PublishedAt, po.CanonicalURL, tags, po.CreatedAt, po.UpdatedAt,
 	), nil
 }
@@ -173,7 +174,8 @@ func (r *PostRepository) BatchGetByIDs(ctx context.Context, ids []domainshared.I
 // likeEscaper 转义 LIKE 模式中的特殊字符，配合 ESCAPE '\' 使用。
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
-func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, error) {	var count int64
+func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, error) {
+	var count int64
 	if err := r.db.WithContext(ctx).Model(&model.Post{}).Where("slug = ?", slug).Count(&count).Error; err != nil {
 		return false, domainshared.Internal("查询 slug 存在性失败", err)
 	}
@@ -243,32 +245,32 @@ func (r *PostRepository) Restore(ctx context.Context, id domainshared.ID) error 
 func (r *PostRepository) HardDelete(ctx context.Context, id domainshared.ID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		uuid := id.UUID()
-		
+
 		// 1. Delete comment reactions for comments belonging to this post
 		if err := tx.Unscoped().Where("comment_id IN (SELECT id FROM comments WHERE post_id = ?)", uuid).Delete(&model.CommentReaction{}).Error; err != nil {
 			return domainshared.Internal("删除评论反应失败", err)
 		}
-		
+
 		// 2. Delete comments
 		if err := tx.Unscoped().Where("post_id = ?", uuid).Delete(&model.Comment{}).Error; err != nil {
 			return domainshared.Internal("删除评论失败", err)
 		}
-		
+
 		// 3. Delete post versions
 		if err := tx.Unscoped().Where("post_id = ?", uuid).Delete(&model.PostVersion{}).Error; err != nil {
 			return domainshared.Internal("删除历史版本失败", err)
 		}
-		
+
 		// 4. Delete post views
 		if err := tx.Unscoped().Where("post_id = ?", uuid).Delete(&model.PostView{}).Error; err != nil {
 			return domainshared.Internal("删除浏览记录失败", err)
 		}
-		
+
 		// 5. Delete post_tags mappings
 		if err := tx.Exec("DELETE FROM post_tags WHERE post_id = ?", uuid).Error; err != nil {
 			return domainshared.Internal("删除标签关联失败", err)
 		}
-		
+
 		// 6. Delete post itself
 		result := tx.Unscoped().Where("id = ?", uuid).Delete(&model.Post{})
 		if result.Error != nil {
@@ -277,7 +279,7 @@ func (r *PostRepository) HardDelete(ctx context.Context, id domainshared.ID) err
 		if result.RowsAffected == 0 {
 			return post.ErrNotFound
 		}
-		
+
 		return nil
 	})
 }

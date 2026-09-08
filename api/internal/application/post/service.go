@@ -57,6 +57,7 @@ type PostDTO struct {
 	Collaborators  []*AuthorDTO `json:"collaborators,omitempty"` // 协同者列表（编辑过但非所有者），按首次编辑时间排序
 	ViewCount      int          `json:"view_count"`
 	IsFeatured     bool         `json:"is_featured"`
+	ShowSignature  bool         `json:"show_signature"`
 	SEOTitle       string       `json:"seo_title"`
 	SEODescription string       `json:"seo_description"`
 	PublishedAt    string       `json:"published_at,omitempty"`  // 发布时间（RFC3339）；空串=未发布（草稿或归档）
@@ -174,10 +175,7 @@ func (s *Service) GetBySlug(ctx context.Context, slug string) (PostDTO, error) {
 	if err != nil {
 		return PostDTO{}, err
 	}
-	dto := toDTO(p)
-	s.fillAuthor(ctx, []PostDTO{dto})
-	s.fillCollaborators(ctx, &dto)
-	return dto, nil
+	return s.detailDTO(ctx, p), nil
 }
 
 // GetPublishedBySlug 按 slug 获取已发布文章（公开只读通道用，见 PRD-0007）。
@@ -193,10 +191,7 @@ func (s *Service) GetPublishedBySlug(ctx context.Context, slug string) (PostDTO,
 	if !p.IsPublished() {
 		return PostDTO{}, domain.ErrNotFound
 	}
-	dto := toDTO(p)
-	s.fillAuthor(ctx, []PostDTO{dto})
-	s.fillCollaborators(ctx, &dto)
-	return dto, nil
+	return s.detailDTO(ctx, p), nil
 }
 
 // GetBySlugForAuthor 按 slug 获取当前操作者（PAT 持有人）自己的文章（任意状态）。
@@ -211,10 +206,7 @@ func (s *Service) GetBySlugForAuthor(ctx context.Context, slug string) (PostDTO,
 	if !s.canModify(ctx, p, "") {
 		return PostDTO{}, domain.ErrNotFound
 	}
-	dto := toDTO(p)
-	s.fillAuthor(ctx, []PostDTO{dto})
-	s.fillCollaborators(ctx, &dto)
-	return dto, nil
+	return s.detailDTO(ctx, p), nil
 }
 func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	pid, err := shared.ParseID(id)
@@ -225,10 +217,14 @@ func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	if err != nil {
 		return PostDTO{}, err
 	}
-	dto := toDTO(p)
-	s.fillAuthor(ctx, []PostDTO{dto})
-	s.fillCollaborators(ctx, &dto)
-	return dto, nil
+	return s.detailDTO(ctx, p), nil
+}
+
+func (s *Service) detailDTO(ctx context.Context, p *domain.Post) PostDTO {
+	dtos := []PostDTO{toDTO(p)}
+	s.fillAuthor(ctx, dtos)
+	s.fillCollaborators(ctx, &dtos[0])
+	return dtos[0]
 }
 
 // ListPublished 分页列出已发布文章（前台），返回不含正文的列表项，避免响应过大。
@@ -277,6 +273,7 @@ type CreateInput struct {
 	CanonicalURL   *string // 转载源 URL；nil = 原创，非 nil = 转载
 	Tags           []string
 	IsFeatured     bool
+	ShowSignature  bool
 }
 
 // Create 创建文章
@@ -308,6 +305,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	p.SetCanonicalURL(in.CanonicalURL)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
+	p.SetShowSignature(in.ShowSignature)
 	if err := s.repo.Save(ctx, p); err != nil {
 		return PostDTO{}, err
 	}
@@ -357,6 +355,7 @@ type UpdateInput struct {
 	CanonicalURL   *string // 转载源 URL；nil = 原创，非 nil = 转载
 	Tags           []string
 	IsFeatured     bool
+	ShowSignature  bool
 }
 
 // Update 更新文章
@@ -398,6 +397,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 	p.SetCanonicalURL(in.CanonicalURL)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
+	p.SetShowSignature(in.ShowSignature)
 
 	if err := s.saveWithPublication(ctx, p); err != nil {
 		return err
@@ -1078,7 +1078,8 @@ func toDTO(p *domain.Post) PostDTO {
 		Excerpt: p.Excerpt(), CoverImage: p.CoverImage(),
 		Status: p.Status(), AuthorID: p.AuthorID().String(),
 		ViewCount: p.ViewCount(), IsFeatured: p.IsFeatured(),
-		SEOTitle: p.SEOTitle(), SEODescription: p.SEODescription(),
+		ShowSignature: p.ShowSignature(),
+		SEOTitle:      p.SEOTitle(), SEODescription: p.SEODescription(),
 		CanonicalURL: p.CanonicalURL(),
 		Tags:         p.Tags(),
 		CreatedAt:    p.CreatedAt().Format(time.RFC3339),

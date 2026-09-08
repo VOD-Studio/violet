@@ -1,0 +1,512 @@
+.page {
+	--persona-canvas: var(--background);
+	--persona-ink: var(--foreground);
+	--persona-muted: color-mix(in oklab, var(--persona-ink) 60%, var(--persona-canvas));
+	--persona-faint: color-mix(in oklab, var(--persona-ink) 5%, var(--persona-canvas));
+	--persona-hairline: color-mix(in oklab, var(--persona-ink) 12%, transparent);
+	--persona-accent: var(--primary);
+	min-height: calc(100dvh - 4rem);
+	background: var(--persona-canvas);
+	color: var(--persona-ink);
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC",
+		"Microsoft YaHei", sans-serif;
+}
+
+.page ::selection {
+	background: color-mix(in oklab, var(--persona-accent) 28%, transparent);
+	color: var(--persona-ink);
+}
+
+.hero {
+	position: relative;
+	display: flex;
+	min-height: calc(100svh - 4rem);
+	align-items: center;
+	overflow: hidden;
+	padding: 5rem 1.25rem 6rem;
+}
+
+.heroGlow {
+	position: absolute;
+	top: 42%;
+	left: 34%;
+	width: min(46rem, 80vw);
+	aspect-ratio: 1.45;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	background: color-mix(in oklab, var(--persona-accent) 5%, transparent);
+	filter: blur(7rem);
+	pointer-events: none;
+}
+
+.heroInner {
+	position: relative;
+	display: grid;
+	width: 100%;
+	max-width: 64rem;
+	margin: 0 auto;
+	gap: 3.75rem;
+	align-items: center;
+}
+
+.portraitFigure {
+	width: min(100%, 21rem);
+	margin: 0 auto;
+}
+
+.visualButton {
+	display: block;
+	width: 100%;
+	aspect-ratio: 1;
+	overflow: hidden;
+	border: 1px solid var(--persona-hairline);
+	border-radius: 1rem;
+	background: var(--persona-faint);
+	box-shadow: 0 1.5rem 4rem color-mix(in oklab, var(--persona-ink) 8%, transparent);
+	cursor: zoom-in;
+	transition:
+		border-color 220ms ease-out,
+		box-shadow 220ms ease-out,
+		transform 220ms ease-out;
+}
+
+.visualButton:hover {
+	border-color: color-mix(in oklab, var(--persona-accent) 46%, var(--persona-hairline));
+	box-shadow: 0 1.75rem 4.5rem color-mix(in oklab, var(--persona-ink) 11%, transparent);
+	transform: translateY(-0.2rem);
+}
+
+.visualButton:focus-visible,
+.referenceButton:focus-visible,
+.continueLink:focus-visible {
+	outline: 2px solid var(--persona-accent);
+	outline-offset: 4px;
+}
+
+.heroImage {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.portraitFigure figcaption {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 0.85rem;
+	color: var(--persona-muted);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.65rem;
+	letter-spacing: 0.12em;
+}
+
+.identity {
+	min-width: 0;
+	max-width: 37rem;
+}
+
+.identityTopline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1.75rem;
+}
+
+.eyebrow,
+.sectionHeader p {
+	margin: 0;
+	color: var(--persona-accent);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+}
+
+.localeSwitcher {
+	max-width: 100%;
+}
+
+.title {
+	margin: 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-size: clamp(3.1rem, 7vw, 5.4rem);
+	font-weight: 450;
+	line-height: 0.98;
+	letter-spacing: -0.055em;
+	text-wrap: balance;
+}
+
+.title span {
+	display: block;
+}
+
+.title em {
+	display: inline-block;
+	margin-top: 0.08em;
+	color: var(--persona-accent);
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 0.8em;
+	font-weight: 400;
+	font-style: italic;
+	letter-spacing: -0.035em;
+}
+
+.title i {
+	color: var(--persona-accent);
+	font-family: Georgia, "Times New Roman", serif;
+	font-style: italic;
+}
+
+.subtitle {
+	max-width: 34rem;
+	margin: 1.35rem 0 0;
+	color: var(--persona-muted);
+	font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+	font-weight: 500;
+	line-height: 1.7;
+	text-wrap: pretty;
+}
+
+.summary {
+	position: relative;
+	max-width: 35rem;
+	margin: 2.25rem 0 0;
+	padding: 0.1rem 0 0.1rem 2rem;
+	border-left: 1px solid color-mix(in oklab, var(--persona-accent) 48%, transparent);
+	color: color-mix(in oklab, var(--persona-ink) 73%, var(--persona-canvas));
+	quotes: "“" "”";
+}
+
+.summary::before {
+	position: absolute;
+	top: -0.45rem;
+	left: 0.45rem;
+	color: color-mix(in oklab, var(--persona-accent) 72%, transparent);
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 2.3rem;
+	line-height: 1;
+	content: open-quote;
+}
+
+.summary p {
+	margin: 0;
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: 1rem;
+	line-height: 1.9;
+	text-wrap: pretty;
+}
+
+.continueLink {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+	margin-top: 2rem;
+	border-radius: 0.35rem;
+	color: var(--persona-muted);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.72rem;
+	letter-spacing: 0.06em;
+	text-decoration: none;
+	transition: color 180ms ease-out;
+}
+
+.continueLink svg {
+	width: 0.9rem;
+	height: 0.9rem;
+	transition: transform 180ms ease-out;
+}
+
+.continueLink:hover {
+	color: var(--persona-accent);
+}
+
+.continueLink:hover svg {
+	transform: translateY(0.18rem);
+}
+
+.profileSection,
+.contentSection,
+.referenceSection {
+	padding: 5.5rem 1.25rem;
+	border-top: 1px solid var(--persona-hairline);
+}
+
+.profileSection,
+.contentSection {
+	display: grid;
+	max-width: 72rem;
+	margin: 0 auto;
+	gap: 2.5rem;
+}
+
+.profileSection {
+	scroll-margin-top: 5rem;
+}
+
+.sectionHeader {
+	min-width: 0;
+}
+
+.sectionHeader h2 {
+	margin: 0.7rem 0 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-size: clamp(1.45rem, 2.8vw, 2rem);
+	font-weight: 520;
+	line-height: 1.2;
+	letter-spacing: -0.035em;
+	text-wrap: balance;
+}
+
+.facts {
+	display: grid;
+	margin: 0;
+	border-bottom: 1px solid var(--persona-hairline);
+}
+
+.fact {
+	display: grid;
+	grid-template-columns: minmax(5.25rem, 0.32fr) minmax(0, 1fr);
+	gap: 1rem;
+	align-content: start;
+	padding: 1.05rem 0;
+	border-top: 1px solid var(--persona-hairline);
+}
+
+.fact dt {
+	color: var(--persona-muted);
+	font-size: 0.72rem;
+	line-height: 1.7;
+}
+
+.fact dd {
+	margin: 0;
+	font-size: 0.9rem;
+	font-weight: 520;
+	line-height: 1.7;
+	text-wrap: pretty;
+}
+
+.contentSection {
+	padding-top: 7rem;
+	padding-bottom: 8rem;
+}
+
+.contentInner {
+	width: 100%;
+	max-width: 72ch;
+}
+
+.article {
+	max-width: none;
+	color: var(--persona-ink);
+	font-family: inherit;
+	font-size: 1rem;
+	line-height: 1.9;
+}
+
+.article h2,
+.article h3,
+.article h4 {
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-weight: 560;
+	letter-spacing: -0.025em;
+}
+
+.article h2 {
+	margin-top: 3.75rem;
+}
+
+.article h2:first-child {
+	margin-top: 0;
+}
+
+.article blockquote {
+	border-left-color: color-mix(in oklab, var(--persona-accent) 55%, transparent);
+	color: color-mix(in oklab, var(--persona-ink) 76%, var(--persona-canvas));
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-style: normal;
+}
+
+.article a {
+	color: var(--persona-accent);
+	text-decoration-color: color-mix(in oklab, var(--persona-accent) 45%, transparent);
+	text-underline-offset: 0.22em;
+}
+
+.article img {
+	border-radius: 0.85rem;
+	cursor: zoom-in;
+}
+
+.referenceSection {
+	background: var(--persona-faint);
+	padding-top: 7rem;
+	padding-bottom: 8rem;
+}
+
+.referenceSection > .sectionHeader,
+.referenceList {
+	width: 100%;
+	max-width: 80rem;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.referenceSection > .sectionHeader {
+	margin-bottom: 3.5rem;
+}
+
+.referenceList {
+	display: grid;
+	gap: 5rem;
+	padding: 0;
+	list-style: none;
+}
+
+.referenceItem {
+	width: min(100%, 68rem);
+}
+
+.referenceItem:nth-child(even) {
+	justify-self: end;
+	width: min(100%, 59rem);
+}
+
+.referenceButton {
+	display: block;
+	width: 100%;
+	overflow: hidden;
+	border: 0;
+	border-radius: 0.9rem;
+	padding: 0;
+	background: color-mix(in oklab, var(--persona-ink) 4%, var(--persona-canvas));
+	cursor: zoom-in;
+}
+
+.referenceImage {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 85dvh;
+	border-radius: inherit;
+	object-fit: contain;
+	transition:
+		filter 220ms ease-out,
+		transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.referenceButton:hover .referenceImage {
+	filter: saturate(1.03);
+	transform: scale(1.006);
+}
+
+.caption {
+	display: grid;
+	grid-template-columns: 2rem minmax(0, 1fr);
+	max-width: 65ch;
+	margin: 1rem auto 0;
+	gap: 0.75rem;
+	align-items: baseline;
+	color: var(--persona-muted);
+	font-size: 0.82rem;
+	line-height: 1.7;
+}
+
+.caption > span {
+	color: var(--persona-accent);
+	font-family: Georgia, "Times New Roman", serif;
+	font-style: italic;
+}
+
+.caption p {
+	margin: 0;
+	text-wrap: pretty;
+}
+
+.empty {
+	display: flex;
+	min-height: calc(100dvh - 4rem);
+	align-items: center;
+	justify-content: center;
+	padding: 4rem 1.25rem;
+	text-align: center;
+}
+
+.empty h1 {
+	margin: 0;
+	font-family: "Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif;
+	font-size: 1.75rem;
+	font-weight: 540;
+	letter-spacing: -0.025em;
+}
+
+.empty p {
+	color: var(--persona-muted);
+	font-size: 0.9rem;
+	line-height: 1.7;
+}
+
+.empty p {
+	margin: 0.75rem 0 0;
+}
+
+@media (min-width: 40rem) {
+	.hero,
+	.profileSection,
+	.contentSection,
+	.referenceSection {
+		padding-right: 2rem;
+		padding-left: 2rem;
+	}
+
+	.facts {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		column-gap: 2.5rem;
+	}
+}
+
+@media (min-width: 64rem) {
+	.hero {
+		padding: 4.5rem 3rem 6rem;
+	}
+
+	.heroInner {
+		grid-template-columns: minmax(19rem, 0.8fr) minmax(0, 1.2fr);
+		gap: clamp(4rem, 8vw, 7rem);
+	}
+
+	.portraitFigure {
+		width: min(100%, 24rem);
+	}
+
+	.profileSection,
+	.contentSection {
+		grid-template-columns: 14rem minmax(0, 1fr);
+		gap: 3.5rem;
+		padding-right: 3rem;
+		padding-left: 3rem;
+	}
+
+	.referenceSection {
+		padding-right: 3rem;
+		padding-left: 3rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.visualButton,
+	.referenceImage,
+	.continueLink,
+	.continueLink svg {
+		transition: none;
+	}
+
+	.visualButton:hover,
+	.referenceButton:hover .referenceImage,
+	.continueLink:hover svg {
+		transform: none;
+	}
+}

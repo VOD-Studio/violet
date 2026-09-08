@@ -15,7 +15,8 @@ import { defaultSchema, sanitize } from "hast-util-sanitize";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { Slugger } from "@/shared/lib/slug";
-import { markdownComponents } from "./components/markdown-components";
+import type { ArticleContentContext } from "../article-embeds/types";
+import { createMarkdownComponents } from "./components/markdown-components";
 
 // raw 节点（{ type: "raw"; value: html }）由 mdast-util-to-hast 全局扩展进 hast 的
 // RootContentMap，hast-util-raw 据此把 HTML 字符串解析为正式 hast 节点。
@@ -128,9 +129,11 @@ export interface HtmlContentProps {
 	html: string;
 	/** 外层 className（通常含 prose 排版类） */
 	className?: string;
+	/** 文章级人物等可选上下文，仅传给语义化内容节点。 */
+	context?: ArticleContentContext;
 }
 
-export function HtmlContent({ html, className }: HtmlContentProps) {
+export function HtmlContent({ html, className, context }: HtmlContentProps) {
 	const cleaned = ensureHeadingIds(sanitize(htmlToHast(html), schema));
 	return (
 		<div className={className}>
@@ -138,7 +141,7 @@ export function HtmlContent({ html, className }: HtmlContentProps) {
 				Fragment,
 				jsx,
 				jsxs,
-				components: markdownComponents,
+				components: createMarkdownComponents(context),
 			})}
 		</div>
 	);

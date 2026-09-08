@@ -51,6 +51,12 @@ export function contentImageUrl(path: string, opts: { width: number }): string {
 	return imageUrl(path, { w: opts.width, format: "webp" });
 }
 
+/** 为内容图生成响应式宽度候选。GIF 保持原图 URL，不生成 srcset。 */
+export function contentImageSrcSet(path: string, widths: readonly number[]): string | undefined {
+	if (!path || widths.length === 0 || isGifPath(path)) return undefined;
+	return widths.map((width) => `${contentImageUrl(path, { width })} ${width}w`).join(", ");
+}
+
 /**
  * 剥离后端动态处理参数(w/h/thumb/format/quality/rotate),还原原图 URL。
  * 保留 crop 等纯前端参数。预览层从已缩略的 DOM src 还原原图用

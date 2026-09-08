@@ -70,7 +70,9 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 						{description && (
 							<p className="text-muted-foreground text-sm">{description}</p>
 						)}
-						<div className="flex h-8 items-center gap-2 empty:hidden">{action}</div>
+						<div className="flex min-h-8 flex-wrap items-center justify-end gap-2 empty:hidden">
+							{action}
+						</div>
 					</div>
 				)}
 				{/* sticky 额外内容：表格工具栏、筛选器等 */}

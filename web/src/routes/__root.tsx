@@ -14,6 +14,7 @@ import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
+import { RuaRouteTransition } from "@widgets/PersonaMotion";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
@@ -132,6 +133,7 @@ function RootComponent() {
 	return (
 		<AppProvider>
 			<SystemThemeTransition />
+			<RuaRouteTransition />
 			{isAdminRoute ? (
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />

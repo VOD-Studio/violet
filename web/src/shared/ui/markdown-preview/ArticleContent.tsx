@@ -14,6 +14,7 @@
  * 不应静态进入正文主包。
  */
 import { lazy, memo, Suspense } from "react";
+import type { ArticleContentContext } from "../article-embeds/types";
 import { HtmlContent } from "./HtmlContent";
 
 /** react-markdown 管线懒加载，避免其依赖进入正文主 chunk */
@@ -25,6 +26,8 @@ export interface ArticleContentProps {
 	/** 文章内容（Markdown 或 HTML 字符串） */
 	content: string;
 	className?: string;
+	/** 文章富内容节点可读取的当前页面上下文。 */
+	context?: ArticleContentContext;
 }
 
 /** 检测内容是否为 HTML（含开闭标签，排除纯文本里的 < > 比较） */
@@ -35,13 +38,13 @@ function isHTML(content: string): boolean {
 	);
 }
 
-function ArticleContent({ content, className }: ArticleContentProps) {
+function ArticleContent({ content, className, context }: ArticleContentProps) {
 	if (isHTML(content)) {
-		return <HtmlContent html={content} className={className} />;
+		return <HtmlContent html={content} className={className} context={context} />;
 	}
 	return (
 		<Suspense fallback={<div className={className} />}>
-			<MarkdownContent content={content} className={className} />
+			<MarkdownContent content={content} className={className} context={context} />
 		</Suspense>
 	);
 }

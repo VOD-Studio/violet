@@ -1,0 +1,146 @@
+.card {
+	display: grid;
+	margin: 2rem 0;
+	overflow: hidden;
+	grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+	gap: 1.05rem;
+	align-items: center;
+	border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	border-radius: 0.95rem;
+	padding: 0.7rem 0.9rem 0.7rem 0.7rem;
+	background: var(--card);
+	color: var(--foreground);
+	text-decoration: none;
+	transition:
+		border-color 180ms ease-out,
+		box-shadow 180ms ease-out,
+		transform 180ms ease-out;
+}
+
+.card:is(:hover, :focus-visible) {
+	border-color: color-mix(in oklab, var(--primary) 42%, transparent);
+	box-shadow: 0 0.9rem 2.6rem color-mix(in oklab, var(--foreground) 7%, transparent);
+	transform: translateY(-0.1rem);
+}
+
+.card:active {
+	transform: translateY(0) scale(0.992);
+}
+
+.card:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline-offset: 3px;
+}
+
+.image,
+.imageFallback {
+	display: grid;
+	width: 7.5rem;
+	height: 6.4rem;
+	place-items: center;
+	border-radius: 0.68rem;
+	background: var(--muted);
+	object-fit: cover;
+}
+
+.image {
+	transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card:is(:hover, :focus-visible) .image {
+	transform: scale(1.015);
+}
+
+.imageFallback svg {
+	width: 1.35rem;
+	height: 1.35rem;
+	color: var(--muted-foreground);
+}
+
+.copy {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+}
+
+.source {
+	overflow: hidden;
+	color: var(--primary);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.62rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.copy strong {
+	display: -webkit-box;
+	margin-top: 0.4rem;
+	overflow: hidden;
+	font-family: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+	font-size: 1rem;
+	font-weight: 650;
+	line-height: 1.4;
+	letter-spacing: -0.015em;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.description {
+	display: -webkit-box;
+	margin-top: 0.35rem;
+	overflow: hidden;
+	color: var(--muted-foreground);
+	font-size: 0.76rem;
+	line-height: 1.55;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.arrow {
+	width: 1rem;
+	height: 1rem;
+	color: var(--muted-foreground);
+	transition: transform 180ms ease-out;
+}
+
+.card:is(:hover, :focus-visible) .arrow {
+	transform: translate(0.12rem, -0.12rem);
+}
+
+@media (max-width: 36rem) {
+	.card {
+		grid-template-columns: 5rem minmax(0, 1fr);
+		gap: 0.8rem;
+	}
+
+	.image,
+	.imageFallback {
+		width: 5rem;
+		height: 5rem;
+	}
+
+	.arrow {
+		display: none;
+	}
+
+	.description {
+		-webkit-line-clamp: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card,
+	.arrow,
+	.image {
+		transition: none;
+	}
+
+	.card:is(:hover, :focus-visible),
+	.card:active,
+	.card:is(:hover, :focus-visible) .arrow,
+	.card:is(:hover, :focus-visible) .image {
+		transform: none;
+	}
+}

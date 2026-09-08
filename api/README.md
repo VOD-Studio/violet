@@ -106,7 +106,7 @@ api/
 |------|--------|-------------|------|
 | **auth** | user, session | auth/command + auth/query | 注册/登录/登出/探活/邮箱验证/密码重置 |
 | **role** | role, permission | role + permission | 角色 CRUD、权限 CRUD、角色-权限分配 |
-| **post** | post | post | 文章 CRUD、发布/归档/草稿状态机、浏览计数、版本管理 |
+| **post** | post | post | 文章 CRUD、发布/归档/草稿状态机、可选作者落款、浏览计数、版本管理 |
 | **comment** | comment | comment | 评论 CRUD、回复、批注、审核（通过/垃圾/删除）、批量操作 |
 | **commentreaction** | commentreaction | commentreaction | 评论表情反应（IP 哈希匿名） |
 | **friendlink** | friendlink | friendlink | 友链申请、审核、上下架管理 |
@@ -135,6 +135,7 @@ api/
 | **releases** | releases | releases | 版本发布（release-please 集成） |
 | **gallery** | gallery | gallery | 图集视觉作品：双快照工作稿、更新发布、撤回删除、own-or-moderator 审核、生命周期审计与稳定地址读取 |
 | **note** | note | note | 知识笔记：markdown+标签轻量条目、draft→published 单向发布、公开流 keyset 分页与标签筛选 |
+| **persona** | persona | persona | 多语言人设档案：默认语言、共享头像、完整文档保存、单一当前人设选择、素材引用计数与公开语言协商（`GET /persona?locale=`） |
 | **publication** | publication | publication | 首页统一发布物投影：文章、知识笔记与图集的轻量 cursor 时间流（`GET /publications`） |
 | **siteidentity** | settings | siteidentity | 首页站点身份：默认值、公开链接和可用订阅渠道归一（`GET /site-identity`） |
 | **siteimpression** | siteimpression | siteimpression | 首页匿名设备印记：HMAC 令牌去重、私有状态查询与限流写入（`GET/POST /site-impressions`） |

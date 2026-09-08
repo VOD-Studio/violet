@@ -1,0 +1,162 @@
+.trigger,
+.unavailable {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.28em;
+	border-radius: 0.25rem;
+	font: inherit;
+	font-weight: 620;
+	line-height: inherit;
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--primary) 40%, transparent);
+	text-decoration-style: wavy;
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.22em;
+}
+
+.trigger {
+	color: var(--foreground);
+	cursor: pointer;
+	transition:
+		color 160ms ease-out,
+		text-decoration-color 160ms ease-out;
+}
+
+.trigger > span {
+	width: 0.28rem;
+	height: 0.28rem;
+	border-radius: 999px;
+	background: var(--primary);
+	transform: translateY(-0.08em);
+}
+
+.trigger:hover {
+	color: var(--primary);
+	text-decoration-color: var(--primary);
+}
+
+.trigger:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline-offset: 3px;
+}
+
+.unavailable {
+	color: var(--muted-foreground);
+	text-decoration-style: dotted;
+}
+
+.card {
+	z-index: 70;
+	width: min(22rem, calc(100vw - 2rem));
+	border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	border-radius: 0.85rem;
+	padding: 1rem;
+	background: color-mix(in oklab, var(--popover) 96%, transparent);
+	box-shadow: 0 1rem 3rem color-mix(in oklab, var(--foreground) 14%, transparent);
+	color: var(--popover-foreground);
+	backdrop-filter: blur(1rem);
+	transform-origin: var(--radix-hover-card-content-transform-origin);
+	animation: profile-card-enter 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes profile-card-enter {
+	from {
+		transform: translateY(0.25rem) scale(0.985);
+	}
+
+	to {
+		transform: translateY(0) scale(1);
+	}
+}
+
+.identity {
+	display: grid;
+	grid-template-columns: 3rem minmax(0, 1fr);
+	gap: 0.8rem;
+	align-items: center;
+}
+
+.avatar,
+.avatarFallback {
+	display: flex;
+	width: 3rem;
+	height: 3rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: var(--muted);
+	object-fit: cover;
+}
+
+.avatarFallback {
+	color: var(--muted-foreground);
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 1.15rem;
+	font-style: italic;
+}
+
+.name,
+.subtitle,
+.description,
+.openHint {
+	margin: 0;
+}
+
+.name {
+	font-size: 0.92rem;
+	font-weight: 650;
+	line-height: 1.35;
+}
+
+.subtitle {
+	margin-top: 0.18rem;
+	overflow: hidden;
+	color: var(--muted-foreground);
+	font-size: 0.72rem;
+	line-height: 1.45;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.description {
+	display: -webkit-box;
+	margin-top: 0.85rem;
+	overflow: hidden;
+	color: color-mix(in oklab, var(--foreground) 72%, var(--background));
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: 0.78rem;
+	line-height: 1.7;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+}
+
+.openHint {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.3rem;
+	margin-top: 0.8rem;
+	color: var(--primary);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.65rem;
+	letter-spacing: 0.04em;
+}
+
+.openHint svg {
+	width: 0.78rem;
+	height: 0.78rem;
+}
+
+.arrow {
+	fill: var(--popover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.trigger {
+		transition: none;
+	}
+
+	.card {
+		animation: none;
+	}
+}

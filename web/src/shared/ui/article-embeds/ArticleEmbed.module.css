@@ -1,0 +1,35 @@
+.invalid {
+	margin: 2rem 0;
+	border: 1px solid color-mix(in oklab, var(--destructive) 30%, transparent);
+	border-radius: 0.8rem;
+	padding: 0.9rem;
+	background: color-mix(in oklab, var(--destructive) 5%, var(--background));
+	color: var(--foreground);
+}
+
+.invalid p {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	margin: 0;
+	color: var(--destructive);
+	font-size: 0.78rem;
+	font-weight: 650;
+}
+
+.invalid p svg {
+	width: 0.9rem;
+	height: 0.9rem;
+}
+
+.invalid pre {
+	max-height: 12rem;
+	margin: 0.7rem 0 0;
+	overflow: auto;
+	border-radius: 0.5rem;
+	padding: 0.65rem;
+	background: color-mix(in oklab, var(--foreground) 5%, transparent);
+	font-size: 0.7rem;
+	line-height: 1.55;
+	white-space: pre-wrap;
+}

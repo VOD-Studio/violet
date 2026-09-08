@@ -136,6 +136,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Gallery:               c.Gallery.Handler,
 		Note:                  c.Note.Handler,
 		Publication:           c.Publication.Handler,
+		Persona:               c.Persona.Handler,
 		Notification:          c.Notification.NotificationHandler,
 		NotificationStream:    c.Notification.StreamHandler,
 		Chat:                  c.Chat.ChatHandler,

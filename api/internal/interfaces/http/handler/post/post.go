@@ -134,6 +134,7 @@ type createPostRequest struct {
 	SEODescription string   `json:"seo_description"`
 	Tags           []string `json:"tags"`
 	IsFeatured     bool     `json:"is_featured"`
+	ShowSignature  bool     `json:"show_signature"`
 }
 
 // Create 创建文章（后台）
@@ -154,6 +155,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Excerpt: req.Excerpt, CoverImage: req.CoverImage,
 		SEOTitle: req.SEOTitle, SEODescription: req.SEODescription,
 		Tags: req.Tags, IsFeatured: req.IsFeatured,
+		ShowSignature: req.ShowSignature,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -177,6 +179,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Excerpt: req.Excerpt, CoverImage: req.CoverImage,
 		SEOTitle: req.SEOTitle, SEODescription: req.SEODescription,
 		Tags: req.Tags, IsFeatured: req.IsFeatured,
+		ShowSignature: req.ShowSignature,
 	}, userID); err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -309,7 +312,6 @@ func (h *Handler) BatchAction(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, map[string]int{"affected": affected})
 }
-
 
 // ImportURL 导入远程链接文档：解析网页正文为 HTML，供编辑器插入
 func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {

@@ -1,9 +1,11 @@
 import type { PostDetail } from "@entities/post/model/types";
+import { ArticleRichContent } from "@features/article-rich-content";
 import { useMe } from "@features/auth/api/queries";
 import { commentKeys } from "@features/comments/api/keys";
 import { fetchAnnotationSummary, useAnnotationSummary } from "@features/comments/api/queries";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
+import { ArticleSignature } from "@features/posts/ui/ArticleSignature";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
 import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
@@ -23,7 +25,6 @@ import { BackLink } from "@shared/ui/back-link";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { FloatingBack } from "@shared/ui/floating-back";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
-import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, ExternalLink, Eye } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef } from "react";
@@ -53,9 +54,9 @@ const CommentSection = lazy(() =>
  *
  * loader SSR 预取文章（按 slug），组件读缓存。
  *
- * 正文统一用 react-markdown 渲染 content_md（复用 markdownComponents 手写样式映射），
- * 不再用 content_html 直出（避免样式不受控）。
- * TOC 从 content_md 提取（github-slugger id 与 rehype-slug 一致，锚点可跳转）。
+ * 正文按 content_html 优先、content_md 降级，复用统一安全渲染器；
+ * 特殊围栏代码渲染为文章卡片，persona 行内标记按需接入当前人物档案。
+ * TOC 分别从 HTML 或 Markdown 提取，并沿用项目统一 slug 规则。
  * 进入页面时调用 POST /posts/{id}/view 增加浏览量。
  * 路由 head 映射 SEO 字段（title/description/og:image）。
  */
@@ -250,7 +251,10 @@ function BlogDetailPage() {
 						onKeyDown={articleImages.bind.onKeyDown}
 						className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
 					>
-						<ArticleContent content={body} />
+						<ArticleRichContent content={body} />
+						{post.show_signature && post.author ? (
+							<ArticleSignature name={post.author.username} />
+						) : null}
 					</main>
 					{/* 右侧全书目录（挂书文章大屏显示；左层=章内 TOC，右层=全书目录） */}
 					{seriesDetail ? (

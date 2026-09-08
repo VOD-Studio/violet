@@ -5,22 +5,8 @@ import { ImagePreview } from "../components/ImagePreview";
 // @vitest-environment node
 
 describe("ImagePreview SSR 安全", () => {
-	it("open=false 时不应访问 document", () => {
-		expect(() =>
-			renderToString(
-				<ImagePreview
-					open={false}
-					onClose={() => {}}
-					images={[]}
-					thumbnails={[]}
-					currentIndex={0}
-				/>,
-			),
-		).not.toThrow();
-	});
-
-	it("open=true 且含图片时不应访问 document", () => {
-		expect(() =>
+	it("服务端不输出依赖浏览器尺寸的预览层", () => {
+		expect(
 			renderToString(
 				<ImagePreview
 					open
@@ -30,6 +16,6 @@ describe("ImagePreview SSR 安全", () => {
 					currentIndex={0}
 				/>,
 			),
-		).not.toThrow();
+		).toBe("");
 	});
 });

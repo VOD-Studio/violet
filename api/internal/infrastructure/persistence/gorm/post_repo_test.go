@@ -130,3 +130,24 @@ func TestPostRepository_SaveRejectsUnknownTag(t *testing.T) {
 	_, err = repo.FindByID(context.Background(), pid)
 	assert.Error(t, err, "事务回滚后文章不应存在")
 }
+
+func TestPostRepository_SavePersistsSignaturePreference(t *testing.T) {
+	db := setupPostTestDB(t)
+	repo := NewPostRepository(db)
+	pid := domainshared.NewID()
+
+	p, err := post.NewPost(pid, domainshared.NewID(), "Signed", "signed-post")
+	require.NoError(t, err)
+	p.SetShowSignature(true)
+	require.NoError(t, repo.Save(context.Background(), p))
+
+	loaded, err := repo.FindByID(context.Background(), pid)
+	require.NoError(t, err)
+	assert.True(t, loaded.ShowSignature())
+
+	loaded.SetShowSignature(false)
+	require.NoError(t, repo.Save(context.Background(), loaded))
+	reloaded, err := repo.FindByID(context.Background(), pid)
+	require.NoError(t, err)
+	assert.False(t, reloaded.ShowSignature())
+}

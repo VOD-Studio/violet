@@ -1,0 +1,141 @@
+.card {
+	display: block;
+	margin: 2rem 0;
+	border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	border-radius: 0.9rem;
+	padding: 1.1rem 1.2rem;
+	background: color-mix(in oklab, var(--card) 96%, transparent);
+	box-shadow: 0 0.8rem 2.4rem color-mix(in oklab, var(--foreground) 5%, transparent);
+	color: var(--foreground);
+	text-decoration: none;
+	transition:
+		border-color 180ms ease-out,
+		box-shadow 180ms ease-out,
+		transform 180ms ease-out;
+}
+
+.card:is(:hover, :focus-visible) {
+	border-color: color-mix(in oklab, var(--primary) 44%, transparent);
+	box-shadow: 0 1rem 2.8rem color-mix(in oklab, var(--foreground) 8%, transparent);
+	transform: translateY(-0.12rem);
+}
+
+.card:active {
+	transform: translateY(0) scale(0.992);
+}
+
+.card:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline-offset: 3px;
+}
+
+.topline {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+}
+
+.iconWrap {
+	display: grid;
+	width: 1.8rem;
+	height: 1.8rem;
+	place-items: center;
+	border-radius: 0.55rem;
+	background: var(--foreground);
+	color: var(--background);
+}
+
+.iconWrap svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.kind {
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.62rem;
+	font-weight: 600;
+	letter-spacing: 0.11em;
+}
+
+.arrow {
+	width: 0.95rem;
+	height: 0.95rem;
+	margin-left: auto;
+	color: var(--muted-foreground);
+	transition: transform 180ms ease-out;
+}
+
+.card:is(:hover, :focus-visible) .arrow {
+	transform: translate(0.12rem, -0.12rem);
+}
+
+.repo {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.28rem;
+	margin: 1rem 0 0;
+	font-family: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+	font-size: clamp(1.05rem, 2vw, 1.3rem);
+	line-height: 1.35;
+	letter-spacing: -0.02em;
+}
+
+.repo span {
+	color: var(--muted-foreground);
+	font-weight: 450;
+}
+
+.repo strong {
+	font-weight: 680;
+}
+
+.description {
+	max-width: 62ch;
+	margin: 0.7rem 0 0;
+	color: color-mix(in oklab, var(--foreground) 70%, var(--background));
+	font-size: 0.84rem;
+	line-height: 1.7;
+	text-wrap: pretty;
+}
+
+.meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	margin-top: 1rem;
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.68rem;
+}
+
+.meta span {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.meta svg {
+	width: 0.78rem;
+	height: 0.78rem;
+}
+
+.meta i {
+	width: 0.48rem;
+	height: 0.48rem;
+	border-radius: 999px;
+	background: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card,
+	.arrow {
+		transition: none;
+	}
+
+	.card:is(:hover, :focus-visible),
+	.card:active,
+	.card:is(:hover, :focus-visible) .arrow {
+		transform: none;
+	}
+}

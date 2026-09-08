@@ -140,6 +140,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 	) {
 		const onChangeRef = useRef(onChange);
 		onChangeRef.current = onChange;
+		const syncingValueRef = useRef(false);
 		// onPickImageRef 让 handlePickImage 始终引用最新回调，避免循环依赖
 		const onPickImageRef = useRef(onPickImage);
 		onPickImageRef.current = onPickImage;
@@ -181,7 +182,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			},
 			onUpdate: ({ editor }) => {
 				// 重连/重挂载竞态下 schema 可能为 null，isDestroyed 兜底已销毁实例
-				if (editor.isDestroyed || !editor.schema) return;
+				if (editor.isDestroyed || !editor.schema || syncingValueRef.current) return;
 				onChangeRef.current(
 					contentType === "markdown" ? editor.getMarkdown() : editor.getHTML(),
 				);
@@ -214,10 +215,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			[editor],
 		);
 
-		// 外部 value 变更时同步进编辑器（仅在差异时，避免光标跳动）
-		// emitUpdate 必须为 true：setContent 后触发 update 事件，useWordCount 才能刷新字数；
-		// 回吐的内容与父级 value 收敛后即停止，不会循环。
-		// setTimeout 推迟到 React 提交完成后执行，避免 Tiptap 的 ReactNodeView
+		// 外部 value 变更时同步进编辑器（仅在差异时，避免光标跳动）。
+		// update 事件仍会刷新编辑器内部订阅者；prop 驱动的同步不应反向触发
+		// onChange，否则 Markdown 规范化会把刚载入的表单误判为用户修改。
+		// setTimeout 推迟到 React 提交完成后执行，避免 Tiptap ReactNodeView
 		// 在生命周期内 mount 时调用 flushSync 触发 React 警告。
 		useEffect(() => {
 			if (!editor) return;
@@ -226,10 +227,15 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 			if (value === current) return;
 			const timer = setTimeout(() => {
 				if (editor.isDestroyed || !editor.schema) return;
-				editor.commands.setContent(value || "", {
-					contentType,
-					emitUpdate: true,
-				});
+				syncingValueRef.current = true;
+				try {
+					editor.commands.setContent(value || "", {
+						contentType,
+						emitUpdate: true,
+					});
+				} finally {
+					syncingValueRef.current = false;
+				}
 			}, 0);
 			return () => clearTimeout(timer);
 		}, [value, editor, contentType]);

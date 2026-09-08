@@ -2,7 +2,7 @@ import { usePublishedGallery } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGalleryItem } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
-import { contentImageUrl } from "@shared/lib/image-url";
+import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { HistoryBack } from "@shared/ui/history-back";
@@ -36,14 +36,6 @@ function itemAlt(item: PublishedGalleryItem, index: number, title: string): stri
 	// 服务端已按 override → 素材 alt → 「标题 第 n 张」回退保证非空；
 	// 客户端兜底只在后端异常返回空串时生效，空串=缺失（|| 而非 ??）
 	return item.alt_text || `${title} · 第 ${index + 1} 张`;
-}
-
-/** GIF 不参与 srcset：各档 URL 相同，浏览器无法按宽度区分，反而多下载占位。 */
-function gridSrcSet(url: string): string | undefined {
-	if (url.split("?")[0].toLowerCase().endsWith(".gif")) return undefined;
-	return GRID_SRCSET_WIDTHS.map((width) => `${contentImageUrl(url, { width })} ${width}w`).join(
-		", ",
-	);
 }
 
 /** 公开图集详情，按服务端 position 顺序展示完整内容，点击进入灯箱。 */
@@ -129,9 +121,9 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 									className="mx-auto block w-full cursor-zoom-in rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 								>
 									<img
-										src={contentImageUrl(item.url, { width: GRID_IMAGE_WIDTH })}
-										srcSet={gridSrcSet(item.url)}
+										srcSet={contentImageSrcSet(item.url, GRID_SRCSET_WIDTHS)}
 										sizes="(min-width: 1024px) 1024px, 100vw"
+										src={contentImageUrl(item.url, { width: GRID_IMAGE_WIDTH })}
 										alt={itemAlt(item, index, gallery.title)}
 										width={item.width > 0 ? item.width : undefined}
 										height={item.height > 0 ? item.height : undefined}

@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
 	Bot,
+	ContactRound,
 	Cpu,
 	FileText,
 	FolderKanban,
@@ -104,6 +105,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: GalleryHorizontalEnd,
 		group: "publishing",
 		permissions: ["gallery:view"],
+	},
+	{
+		label: "人设档案",
+		to: "/admin/personas",
+		icon: ContactRound,
+		group: "publishing",
+		permissions: ["persona:view"],
 	},
 	{
 		label: "笔记管理",

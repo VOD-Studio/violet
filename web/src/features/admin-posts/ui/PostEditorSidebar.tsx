@@ -1,7 +1,7 @@
 /**
  * PostEditorSidebar - 文章编辑器侧边栏
  *
- * 封面图 + 摘要 + 标签 + 精选 + SEO，接收主表单的 react-hook-form 句柄。
+ * 封面图 + 摘要 + 标签 + 阅读展示 + SEO，接收主表单的 react-hook-form 句柄。
  * 标签列表与封面选择器封装在内部。
  */
 
@@ -26,7 +26,6 @@ export function PostEditorSidebar({ control, register }: PostEditorSidebarProps)
 
 	return (
 		<aside className="flex flex-col gap-4 overflow-y-auto rounded-lg border border-edge-hairline bg-background p-4">
-			{/* 封面图 */}
 			<Controller
 				control={control}
 				name="cover_image"
@@ -43,7 +42,6 @@ export function PostEditorSidebar({ control, register }: PostEditorSidebarProps)
 				)}
 			/>
 
-			{/* 摘要 */}
 			<section className="space-y-2">
 				<Label htmlFor="excerpt">摘要</Label>
 				<Textarea
@@ -55,7 +53,6 @@ export function PostEditorSidebar({ control, register }: PostEditorSidebarProps)
 				/>
 			</section>
 
-			{/* 标签 */}
 			<Controller
 				control={control}
 				name="tags"
@@ -110,12 +107,33 @@ export function PostEditorSidebar({ control, register }: PostEditorSidebarProps)
 							id="is_featured"
 							checked={field.value}
 							onCheckedChange={field.onChange}
+							aria-label="精选文章"
 						/>
 					</section>
 				)}
 			/>
 
-			{/* SEO */}
+			<Controller
+				control={control}
+				name="show_signature"
+				render={({ field }) => (
+					<section className="flex items-start justify-between gap-4 border-t border-edge-hairline pt-4">
+						<div className="space-y-1">
+							<Label htmlFor="show_signature">作者签名</Label>
+							<p className="max-w-48 text-xs leading-relaxed text-muted-foreground">
+								在正文末尾写下文章作者的署名
+							</p>
+						</div>
+						<Switch
+							id="show_signature"
+							checked={field.value}
+							onCheckedChange={field.onChange}
+							aria-label="作者签名"
+						/>
+					</section>
+				)}
+			/>
+
 			<section className="space-y-3">
 				<p className="text-sm font-medium">SEO 设置</p>
 				<div className="space-y-1.5">

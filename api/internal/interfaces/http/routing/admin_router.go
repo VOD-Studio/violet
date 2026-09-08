@@ -8,6 +8,7 @@ import (
 	"blog-api/internal/domain/permission"
 	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
+	personahttp "blog-api/internal/interfaces/http/handler/persona"
 	"blog-api/internal/middleware"
 )
 
@@ -315,7 +316,27 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// 笔记：读 note:view；创建、保存、发布与删除维护 note:manage。
 	registerAdminNoteRoutes(r, d.Note, perm)
 
+	// 人设档案：读 persona:view；创建、保存、激活与删除 persona:manage。
+	registerAdminPersonaRoutes(r, d.Persona, perm)
+
 	return r
+}
+
+func registerAdminPersonaRoutes(r chi.Router, personaH *personahttp.Handler, perm middleware.PermissionChecker) {
+	r.Route("/personas", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, permission.PersonaView.String()))
+			r.Get("/", personaH.List)
+			r.Get("/{id}", personaH.GetForAdmin)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, permission.PersonaManage.String()))
+			r.Post("/", personaH.Create)
+			r.Put("/{id}", personaH.Save)
+			r.Post("/{id}/activate", personaH.Activate)
+			r.Delete("/{id}", personaH.Delete)
+		})
+	})
 }
 
 func registerAdminNoteRoutes(r chi.Router, noteH *notehttp.Handler, perm middleware.PermissionChecker) {

@@ -11,19 +11,13 @@ import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";
+import type { ArticleContentContext } from "../../article-embeds/types";
 import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // 直连 renderers.ts（不经 diagram/index barrel）：barrel 会静态 re-export
 // DiagramBlock/renderMermaid，把 mermaid 依赖树拉进文章正文主 chunk；直连仅注册
 // 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
 import { diagramRenderers } from "../../diagram/renderers";
-
-/**
- * CodeCard 懒加载：避免 shiki 高亮链（CodeCard → useShikiHighlight →
- * shiki core 单例）进入文章正文主 chunk。只有文章真有围栏代码块时才拉取。
- */
-const LazyCodeCard = lazy(() =>
-	import("../../code-preview/components/CodeCard").then((m) => ({ default: m.CodeCard })),
-);
+import { createRichCodeRenderer } from "./rich-code-renderer";
 
 /** 公式组件懒加载：KaTeX + 字体只在含公式的文章页拉取 */
 const LazyInlineMathFormula = lazy(() =>
@@ -253,48 +247,7 @@ export const markdownComponents: Components = {
 		}
 		return <div>{children}</div>;
 	},
-	// 代码：围栏块走 CodeCard（shiki 高亮 + 语言标签 + 复制），行内走纯样式。
-	// 围栏块懒加载，loading 时 Suspense fallback 显示纯文本占位。
-	code: ({ className, children }) => {
-		const cls = className || "";
-		const code = nodeToText(children).replace(/\n$/, "");
-		// Markdown 降级路径：remark-math 产出的 math-inline / math-display
-		if (/\bmath-inline\b/.test(cls)) {
-			return (
-				<Suspense fallback={<span>{code}</span>}>
-					<LazyInlineMathFormula latex={code} />
-				</Suspense>
-			);
-		}
-		if (/\bmath-display\b/.test(cls)) {
-			return (
-				<Suspense fallback={<div>{code}</div>}>
-					<LazyBlockMathFormula latex={code} />
-				</Suspense>
-			);
-		}
-		const match = /language-(\S+)/.exec(cls);
-		const language = match?.[1] ?? "";
-		const isFenced = !!match || code.includes("\n");
-		if (!isFenced) {
-			return (
-				<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
-					{children}
-				</code>
-			);
-		}
-		return (
-			<Suspense
-				fallback={
-					<pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
-						<code>{code}</code>
-					</pre>
-				}
-			>
-				<LazyCodeCard code={code} language={language} className="my-6" />
-			</Suspense>
-		);
-	},
+	code: createRichCodeRenderer(),
 	// pre：可运行代码块（data-runnable="true"）渲染 CodeRunner，其余透传给 code 分支。
 	// 可运行块的 data-source 携带 HTML 转义后的原始源码（避免反解高亮 HTML）。
 	pre: ({ children, ...props }) => {
@@ -341,3 +294,9 @@ export const markdownComponents: Components = {
 		/>
 	),
 };
+
+/** 为单篇内容注入可选人物档案，同时复用其余稳定节点映射。 */
+export function createMarkdownComponents(context?: ArticleContentContext): Components {
+	if (!context) return markdownComponents;
+	return { ...markdownComponents, code: createRichCodeRenderer(context) };
+}

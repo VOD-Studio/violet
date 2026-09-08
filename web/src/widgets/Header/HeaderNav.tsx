@@ -61,8 +61,8 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 				segments={segments}
 				rounded="full"
 				size="sm"
-				indicatorClassName="bg-foreground shadow-xs"
-				activeItemClassName="text-background font-semibold"
+				indicatorClassName="bg-foreground shadow-none ring-0"
+				activeItemClassName="font-semibold text-background"
 				itemClassName="rounded-full px-3 text-xs transition-colors duration-150"
 			/>
 

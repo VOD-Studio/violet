@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { avatarUrl, contentImageUrl, imageUrl, originalImageUrl } from "../image-url";
+import {
+	avatarUrl,
+	contentImageSrcSet,
+	contentImageUrl,
+	imageUrl,
+	originalImageUrl,
+} from "../image-url";
 
 describe("avatarUrl", () => {
 	it("空 path 返回默认头像", () => {
@@ -77,6 +83,18 @@ describe("contentImageUrl", () => {
 		expect(u.indexOf("?")).toBe(u.lastIndexOf("?"));
 		expect(u).toContain("w=800");
 		expect(decodeURIComponent(u)).toContain("crop=0.1,0.2,0.5,0.5");
+	});
+});
+
+describe("contentImageSrcSet", () => {
+	it("静态图按候选宽度生成可选档位", () => {
+		expect(contentImageSrcSet("/uploads/a.jpg", [640, 1024])).toBe(
+			"/uploads/a.jpg?w=640&format=webp 640w, /uploads/a.jpg?w=1024&format=webp 1024w",
+		);
+	});
+
+	it("GIF 不生成无法区分的重复候选", () => {
+		expect(contentImageSrcSet("/uploads/a.gif", [640, 1024])).toBeUndefined();
 	});
 });
 

@@ -97,6 +97,8 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 
 		// 笔记（前台公开：知识笔记流 + 详情）
 		registerNotePublicRoutes(v1, d)
+		// 人设档案（前台公开：唯一当前人设）
+		registerPersonaPublicRoute(v1, d)
 
 		// 发布物（首页统一文章、笔记与图集时间流）
 		registerPublicationRoutes(v1, d)
@@ -186,6 +188,9 @@ func registerNotePublicRoutes(v1 chi.Router, d *Deps) {
 		r.Get("/", noteH.BrowsePublished)
 		r.Get("/{id}", noteH.GetPublished)
 	})
+}
+func registerPersonaPublicRoute(v1 chi.Router, d *Deps) {
+	v1.Get("/persona", d.Persona.GetActive)
 }
 
 func registerGalleryPublicRoutes(v1 chi.Router, d *Deps) {

@@ -19,6 +19,7 @@ const existing = {
 	seo_description: "",
 	tags: [] as string[],
 	is_featured: false,
+	show_signature: false,
 };
 
 vi.mock("@features/editor", async () => {

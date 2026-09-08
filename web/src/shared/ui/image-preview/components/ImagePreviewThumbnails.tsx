@@ -1,65 +1,59 @@
-/**
- * 缩略图导航组件
- * 显示在底部，用于快速切换图片
- */
-
+import { motion } from "motion/react";
 import { cn } from "@/shared/lib/utils";
 
-/** ImagePreviewThumbnails 组件的属性 */
 interface ImagePreviewThumbnailsProps {
-	/** 图片地址列表 */
 	images: string[];
-	/** 当前选中索引 */
 	currentIndex: number;
-	/** 选择图片回调 */
 	onSelect: (index: number) => void;
 }
 
-/**
- * 缩略图导航组件
- *
- * 功能：
- * - 显示所有图片的缩略图（2-10 张时显示）
- * - 高亮当前选中的图片
- * - 点击切换到对应图片
- */
+/** 提供 2 至 10 张图片的缩略图导航。 */
 export function ImagePreviewThumbnails({
 	images,
 	currentIndex,
 	onSelect,
 }: ImagePreviewThumbnailsProps) {
-	// 只在图片数量在 2-10 之间时显示
-	if (images.length <= 1 || images.length > 10) {
-		return null;
-	}
+	if (images.length <= 1 || images.length > 10) return null;
 
 	return (
-		<div className="absolute bottom-2 left-1/2 z-50 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto rounded-lg bg-black/50 p-1.5 backdrop-blur-sm sm:bottom-4 sm:p-2">
+		<motion.div
+			id="image-preview-list"
+			role="listbox"
+			aria-label="图片列表"
+			aria-activedescendant={`image-preview-thumbnail-${currentIndex}`}
+			initial={{ opacity: 0, y: 12 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: 12 }}
+			transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
+			className="absolute bottom-2 left-1/2 z-50 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto rounded-lg bg-black/50 p-1.5 backdrop-blur-sm sm:bottom-4 sm:p-2"
+		>
 			<div className="flex gap-1.5 sm:gap-2">
-				{images.map((img, i) => (
+				{images.map((img, index) => (
 					<button
+						id={`image-preview-thumbnail-${index}`}
 						type="button"
-						key={i}
-						onClick={(e) => {
-							e.stopPropagation();
-							onSelect(i);
+						role="option"
+						aria-selected={index === currentIndex}
+						key={img}
+						onClick={(event) => {
+							event.stopPropagation();
+							onSelect(index);
 						}}
 						className={cn(
-							"size-10 shrink-0 overflow-hidden rounded border-2 transition-all sm:size-12",
-							i === currentIndex
-								? "scale-110 border-white"
-								: "border-white/30 hover:border-white/60",
+							"relative size-10 shrink-0 overflow-hidden rounded-md border border-white/20 bg-black/40 opacity-65 outline-none transition-[border-color,box-shadow,opacity] hover:border-white/50 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-white/80 sm:size-12",
+							index === currentIndex &&
+								"border-white opacity-100 shadow-[0_0_0_2px_rgba(0,0,0,0.65),0_0_0_4px_rgba(255,255,255,0.9)]",
 						)}
 					>
 						<img
 							src={img}
-							alt={`缩略图 ${i + 1}`}
+							alt={`缩略图 ${index + 1}`}
 							className="h-full w-full object-cover"
 							loading="lazy"
 						/>
 					</button>
 				))}
 			</div>
-		</div>
+		</motion.div>
 	);
 }

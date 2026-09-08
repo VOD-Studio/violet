@@ -1,6 +1,6 @@
 # 文章编辑器全功能特性手册
 
-面向作者的完整功能参考。编辑器为 Tiptap 富文本（WYSIWYG），保存时双写：`content_html`（展示权威源，保留下划线/颜色/高亮/对齐等样式）与 `content_md`（Markdown 源，降级展示/导出用，有损——见第 11 节）。
+面向作者的完整功能参考。编辑器为 Tiptap 富文本（WYSIWYG），保存时双写：`content_html`（展示权威源，保留下划线/颜色/高亮/对齐等样式）与 `content_md`（Markdown 源，降级展示/导出用，有损——见第 13 节）。
 
 **用法**：本文档本身就是一份「可直接粘贴的演示」。新建文章 → 全选复制本文档原文（含 `$`、`$$`、代码块、表格等）→ 粘贴保存 → 在前台逐项比对渲染效果。文档中的所有公式均为真实可渲染的 LaTeX，不是「源码↔预期」两列对照。
 
@@ -758,9 +758,65 @@ xychart-beta
 - **无 JS 环境**：显示 mermaid 源码文本（源码本身可读，与公式降级一致）。
 - **未知 format**：注册表查不到对应渲染器时，降级显示 source 文本。
 
+## 10. 人物与语义内容卡片
+
+人物提及和内容卡片从 Markdown 源码模式输入。它们沿用行内代码或围栏代码块载体，保存后在文章页转换为可交互组件；普通代码块仍按原样高亮。
+
+### 10.1 行内人物提及
+
+- `` `persona` ``：显示当前公开人设的名字。
+- `` `persona:瑠爱` ``：用冒号后的文字作为行内称呼，资料卡仍取当前公开人设。
+- 鼠标悬停或键盘聚焦时显示头像、角色定位和简介；点击资料卡进入 `/persona`。
+- 当前没有公开人设时降级为普通文字，不发起无意义的资料请求。
+
+### 10.2 对话与仓库
+
+````markdown
+```dialogue
+{"profile":"active","side":"left","text":"那个……要一起看球吗？"}
+```
+
+```dialogue
+{"speaker":"访客","avatar":"/uploads/example.webp","side":"right","text":"当然。"}
+```
+
+```github
+{"repo":"VOD-Studio/violet","description":"个人创作和读者社区。","language":"TypeScript","stars":128,"forks":18}
+```
+````
+
+- `dialogue.profile` 取值 `active` 时复用当前公开人设；也可用 `speaker` 和 `avatar` 写独立角色。
+- `side` 只接受 `left` 或 `right`。
+- 仓库卡片是作者保存的展示快照；`description`、`language`、`stars`、`forks` 可省略，`href` 可覆盖默认 GitHub 地址。
+
+### 10.3 链接、社交动态与链接组
+
+````markdown
+```link-preview
+{"url":"https://example.com/story","title":"文章标题","description":"一段简短摘要。","image":"/uploads/cover.webp","site":"Example"}
+```
+
+```tweet
+{"url":"https://x.com/example/status/1","author":"瑠爱","handle":"@wakasumi_rua","text":"月光刚好落在书页上。","avatar":"/uploads/avatar.webp","date":"2026 年 9 月 7 日","verified":true}
+```
+
+```social-links
+{"links":[{"label":"GitHub","href":"https://github.com/VOD-Studio","handle":"VOD-Studio","icon":"github"},{"label":"来信","href":"mailto:hello@example.com","handle":"hello@example.com","icon":"email"}]}
+```
+````
+
+- `link-preview` 和 `tweet` 都是静态快照，不加载第三方脚本，也不会在读者访问时请求外站接口。
+- 社交链接组支持 1–8 项；`icon` 可选 `github`、`x`、`email`、`website`、`rss` 或 `video`，省略时按链接推断。
+- 链接只接受站内路径、`http(s)`；社交链接额外接受 `mailto:`。图片只接受站内上传路径或 `http(s)`。
+- JSON 无效或字段不合规时，文章其余内容照常渲染，错误位置显示可读的配置提示。
+
+### 10.4 文章末尾签名
+
+文章设置侧栏打开「作者签名」后，公开文章会在正文末尾以文章作者的用户名落款。内置矢量笔迹在落款进入视口时书写；其他用户名显示为文字签名。系统的「减少动态效果」设置会关闭书写过渡。
+
 ---
 
-## 10. Markdown 快捷输入（输入规则）
+## 11. Markdown 快捷输入（输入规则）
 
 输入即转换，无需菜单：
 
@@ -778,7 +834,7 @@ xychart-beta
 
 > 单 `$公式$` 在键入时不会即时转换，但粘贴/MD 导入时有效；手动插入走 Slash 菜单最稳。
 
-## 11. Slash 菜单
+## 12. Slash 菜单
 
 任意位置输入 `/` 唤起，支持关键词/中文模糊搜索。共 15 项，按组：
 
@@ -789,13 +845,13 @@ xychart-beta
 
 > H4–H6、对齐、颜色、链接、行内样式、撤销重做等不在 Slash 菜单——只在工具栏/气泡菜单。
 
-## 12. 存储与有损说明（重要）
+## 13. 存储与有损说明（重要）
 
 - **content_html 是展示权威源**：下划线、文字颜色、高亮颜色、对齐这些 Markdown 表达不了的样式只存在这里，文章页始终正确。
-- **content_md 是有损的**：上述样式在 Markdown 导出/降级展示时会丢失（加粗/斜体/删除线/高亮标记保留）。公式、代码块、表格、任务列表、图片、图块（mermaid 围栏）在两条路径间无损往返（round-trip 测试保障）。
+- **content_md 是有损的**：上述样式在 Markdown 导出/降级展示时会丢失（加粗/斜体/删除线/高亮标记保留）。公式、代码块、表格、任务列表、图片、图块和语义内容卡片的源码在两条路径间保留。
 - 旧 Markdown 文章走降级渲染路径（react-markdown + remark-math），公式渲染与主路径同一套 KaTeX 组件，视觉一致。
 
-## 13. 暂不支持
+## 14. 暂不支持
 
 - 脚注、上标下标（正文文本）、Wiki 链接、HTML 混排（降级路径不解析原始 HTML）。
 

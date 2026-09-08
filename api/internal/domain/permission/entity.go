@@ -136,6 +136,9 @@ var (
 	// note
 	NoteView   = MustParse("note:view")   // 笔记管理入口、笔记列表与详情
 	NoteManage = MustParse("note:manage") // 创建、编辑、发布与删除笔记
+	// persona
+	PersonaView   = MustParse("persona:view")   // 人设管理入口、档案列表与详情
+	PersonaManage = MustParse("persona:manage") // 创建、保存、激活与删除人设档案
 )
 
 // ============================================================

@@ -1,3 +1,4 @@
+import type { PublicPersona } from "@entities/persona/model/types";
 import { useContributions } from "@features/github/api/queries";
 import { useSettings } from "@features/settings/api/queries";
 import { HeaderContributionHeatmap } from "./HeaderContributionHeatmap";
@@ -8,6 +9,7 @@ import { HeaderYearProgress } from "./HeaderYearProgress";
 
 interface HeaderContributionCardProps {
 	onNavigate?: () => void;
+	persona?: PublicPersona;
 }
 
 /**
@@ -15,7 +17,7 @@ interface HeaderContributionCardProps {
  *
  * 聚合左栏（身份档案、社交矩阵、近 3 个月日粒度热力图）与右栏（时光倒计时、独立模块入口、年度历程进度）。
  */
-export function HeaderContributionCard({ onNavigate }: HeaderContributionCardProps) {
+export function HeaderContributionCard({ persona, onNavigate }: HeaderContributionCardProps) {
 	const { data: settings } = useSettings();
 	const { data: githubData } = useContributions();
 
@@ -24,7 +26,11 @@ export function HeaderContributionCard({ onNavigate }: HeaderContributionCardPro
 			<div className="grid grid-cols-1 gap-5 sm:grid-cols-[1.25fr_1fr]">
 				{/* 左侧：站长身份、社交与开源热力图 */}
 				<div className="space-y-4">
-					<HeaderContributionIdentity settings={settings} onNavigate={onNavigate} />
+					<HeaderContributionIdentity
+						settings={settings}
+						persona={persona}
+						onNavigate={onNavigate}
+					/>
 					<HeaderContributionHeatmap
 						githubUsername={settings?.github_username}
 						contributions={githubData?.contributions}

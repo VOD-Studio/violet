@@ -27,6 +27,7 @@ const { capturedValues, existing } = vi.hoisted(() => ({
 		seo_description: "",
 		tags: ["t1"] as string[],
 		is_featured: false,
+		show_signature: false,
 	},
 }));
 
