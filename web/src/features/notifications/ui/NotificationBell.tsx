@@ -81,7 +81,11 @@ const openChatConversation = (conversationID: string) => {
 	window.dispatchEvent(new PopStateEvent("popstate"));
 };
 
-const NotificationBell = () => {
+interface NotificationBellProps {
+	onOpenChange?: (open: boolean) => void;
+}
+
+const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 	useNotificationStream();
 	const [open, setOpen] = useState(false);
 	const { data: unreadData } = useUnreadCount();
@@ -103,7 +107,13 @@ const NotificationBell = () => {
 	};
 
 	return (
-		<DropdownMenu open={open} onOpenChange={setOpen}>
+		<DropdownMenu
+			open={open}
+			onOpenChange={(nextOpen) => {
+				setOpen(nextOpen);
+				onOpenChange?.(nextOpen);
+			}}
+		>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="icon-sm" aria-label="通知" className="relative">
 					{unread > 0 ? <BellRing className="size-4" /> : <Bell className="size-4" />}
