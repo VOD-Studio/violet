@@ -1,33 +1,17 @@
-/**
- * 图片预览控制逻辑 Hook
- * 管理图片索引、缩放、键盘操作等交互逻辑
- */
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { useCallback, useEffect, useState } from "react";
-
-/** useImagePreviewControls Hook 的参数 */
 interface UseImagePreviewControlsProps {
-	/** 是否打开预览 */
 	open: boolean;
-	/** 图片列表 */
 	images: string[];
-	/** 当前图片索引 */
 	currentIndex: number;
-	/** 索引变化回调 */
 	onIndexChange?: (index: number) => void;
-	/** 关闭回调 */
 	onClose: () => void;
 }
 
 /**
- * 图片预览控制 Hook
+ * 管理循环导航、图像变换与预览期间的键盘和滚动锁。
  *
- * 功能：
- * - 管理当前图片索引和缩放比例
- * - 处理上一张/下一张切换
- * - 处理缩放操作（放大/缩小）
- * - 监听键盘事件（ESC、方向键、+/-）
- * - 阻止背景滚动
+ * @returns 当前图像状态与统一的导航、变换操作。
  */
 export function useImagePreviewControls({
 	open,
@@ -37,39 +21,52 @@ export function useImagePreviewControls({
 	onClose,
 }: UseImagePreviewControlsProps) {
 	const [index, setIndex] = useState(currentIndex);
+	const indexRef = useRef(currentIndex);
+	const [direction, setDirection] = useState(0);
 	const [scale, setScale] = useState(1);
 	const [rotate, setRotate] = useState(0);
 	const [flipX, setFlipX] = useState(false);
 	const [flipY, setFlipY] = useState(false);
+	// 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
+	const handleReset = useCallback(() => {
+		setScale(1);
+		setRotate(0);
+		setFlipX(false);
+		setFlipY(false);
+	}, []);
 
-	useEffect(() => {
+	const wasOpen = useRef(false);
+	useLayoutEffect(() => {
+		const opening = open && !wasOpen.current;
+		wasOpen.current = open;
+		if (!opening && currentIndex === indexRef.current) return;
+		setDirection(opening ? 0 : Math.sign(currentIndex - indexRef.current));
+		indexRef.current = currentIndex;
 		setIndex(currentIndex);
-	}, [currentIndex]);
+		handleReset();
+	}, [open, currentIndex, handleReset]);
 
-	// 打开或切换图片时重置状态
-	// biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器，函数体内未直接使用
-	useEffect(() => {
-		if (open) {
-			setScale(1);
-			setRotate(0);
-			setFlipX(false);
-			setFlipY(false);
-		}
-	}, [open, index]);
+	const handleSelect = useCallback(
+		(nextIndex: number, nextDirection = Math.sign(nextIndex - indexRef.current)) => {
+			if (nextIndex === indexRef.current) return;
+			indexRef.current = nextIndex;
+			setDirection(nextDirection);
+			setIndex(nextIndex);
+			handleReset();
+			onIndexChange?.(nextIndex);
+		},
+		[onIndexChange, handleReset],
+	);
 
 	const handlePrevious = useCallback(() => {
 		if (images.length <= 1) return;
-		const newIndex = index > 0 ? index - 1 : images.length - 1;
-		setIndex(newIndex);
-		onIndexChange?.(newIndex);
-	}, [index, images.length, onIndexChange]);
+		handleSelect((indexRef.current + images.length - 1) % images.length, -1);
+	}, [images.length, handleSelect]);
 
 	const handleNext = useCallback(() => {
 		if (images.length <= 1) return;
-		const newIndex = index < images.length - 1 ? index + 1 : 0;
-		setIndex(newIndex);
-		onIndexChange?.(newIndex);
-	}, [index, images.length, onIndexChange]);
+		handleSelect((indexRef.current + 1) % images.length, 1);
+	}, [images.length, handleSelect]);
 
 	const handleZoomIn = useCallback(() => {
 		setScale((prev) => Math.min(prev + 0.5, 3));
@@ -95,14 +92,6 @@ export function useImagePreviewControls({
 		setFlipY((prev) => !prev);
 	}, []);
 
-	// 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
-	const handleReset = useCallback(() => {
-		setScale(1);
-		setRotate(0);
-		setFlipX(false);
-		setFlipY(false);
-	}, []);
-
 	const handleWheel = useCallback((delta: number) => {
 		setScale((prev) => {
 			const newScale = prev - delta * 0.001;
@@ -117,11 +106,14 @@ export function useImagePreviewControls({
 			switch (e.key) {
 				case "Escape":
 					onClose();
+					e.preventDefault();
 					break;
 				case "ArrowLeft":
+					e.preventDefault();
 					handlePrevious();
 					break;
 				case "ArrowRight":
+					e.preventDefault();
 					handleNext();
 					break;
 				case "+":
@@ -134,18 +126,11 @@ export function useImagePreviewControls({
 			}
 		};
 
-		const handleWheelEvent = (e: WheelEvent) => {
-			e.preventDefault();
-			handleWheel(e.deltaY);
-		};
-
 		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("wheel", handleWheelEvent, { passive: false });
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("wheel", handleWheelEvent);
 		};
-	}, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut, handleWheel]);
+	}, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut]);
 
 	useEffect(() => {
 		if (open) {
@@ -170,11 +155,13 @@ export function useImagePreviewControls({
 		rotate,
 		flipX,
 		flipY,
-		setIndex,
+		direction,
+		handleSelect,
 		handlePrevious,
 		handleNext,
 		handleZoomIn,
 		handleZoomOut,
+		handleWheel,
 		handleRotateLeft,
 		handleRotateRight,
 		handleFlipX,

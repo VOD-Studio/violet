@@ -1,283 +1,391 @@
-/**
- * 图片显示组件
- * 负责图片的加载、缩放、拖拽和动画效果
- */
+import {
+	AnimatePresence,
+	animate,
+	motion,
+	useIsPresent,
+	useMotionValue,
+	useReducedMotion,
+} from "motion/react";
+import {
+	type PointerEvent,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-
-/** ImagePreviewImage 组件的属性 */
-interface ImagePreviewImageProps {
-	/** 图片地址 */
+/** 单张图片的加载、独立尺寸与手势契约。 */
+export interface ImagePreviewImageProps {
 	src: string;
-	/** 是否开始加载（false 时不设置 src，不发起请求；用于飞入动画稳定后再加载原图） */
-	shouldLoad?: boolean;
-	/** 图片描述 */
 	alt: string;
-	/** 缩放比例 */
+	thumbnail?: string;
+	/** -1 向前、1 向后，0 为打开预览。 */
+	direction: number;
+	triggerRect?: DOMRect | null;
+	initialNaturalSize?: { w: number; h: number } | null;
 	scale: number;
-	/** 旋转角度 */
-	rotate?: number;
-	/** 水平翻转 */
-	flipX?: boolean;
-	/** 垂直翻转 */
-	flipY?: boolean;
-	/** 加载完成回调（decode 就绪后触发，携带原图 natural 尺寸；读不到时为 0） */
-	onLoad: (size: { w: number; h: number }) => void;
-	/** 是否显示加载指示器（默认 true；当外层已有缩略图占位时传 false，避免双重加载指示） */
-	showSpinner?: boolean;
-	/** 双击图片重置（缩放/旋转/翻转恢复初始）回调 */
-	onReset?: () => void;
-	/** 水平轻扫切换图片的回调 */
+	rotate: number;
+	flipX: boolean;
+	flipY: boolean;
+	/** 原图解码完成后触发。 */
+	onLoad: () => void;
+	onReset: () => void;
+	/** deltaY 使用 WheelEvent 的滚动增量。 */
+	onWheelZoom: (deltaY: number) => void;
 	onSwipeLeft?: () => void;
-	/** 水平轻扫切换图片的回调 */
 	onSwipeRight?: () => void;
-	/** 轻扫触发阈值（像素，默认 50） */
-	swipeThreshold?: number;
-	/** 重置信号：变化时强制将拖拽位置恢复到中心 */
-	resetKey?: number;
+	resetKey: number;
 }
 
-/**
- * 图片显示组件
- *
- * 功能：
- * - 图片加载状态管理
- * - 缩放动画效果
- * - 拖拽移动
- * - 加载指示器
- * - 切换时的淡入淡出动画
- */
+interface Gesture {
+	pointerId: number;
+	startX: number;
+	startY: number;
+	originX: number;
+	originY: number;
+	mode: "pending" | "swipe" | "pan" | "vertical";
+}
+
+const slideVariants = {
+	enter: (direction: number) => ({ x: `${direction * 100}%` }),
+	center: { x: "0%" },
+	exit: (direction: number) => ({ x: `${-direction * 100}%` }),
+};
+
+/** 每张图独立持有加载状态和显示盒，退场期间不接收下一张的尺寸。 */
 export function ImagePreviewImage({
 	src,
-	shouldLoad = true,
 	alt,
+	thumbnail,
+	direction,
+	triggerRect,
+	initialNaturalSize,
 	scale,
-	rotate = 0,
-	flipX = false,
-	flipY = false,
+	rotate,
+	flipX,
+	flipY,
 	onLoad,
-	showSpinner = true,
 	onReset,
+	onWheelZoom,
 	onSwipeLeft,
 	onSwipeRight,
-	swipeThreshold = 50,
 	resetKey,
 }: ImagePreviewImageProps) {
-	const [isLoading, setIsLoading] = useState(true);
-	const [isMoving, setIsMoving] = useState(false);
-	const [position, setPosition] = useState({ x: 0, y: 0 });
-	const startPositionRef = useRef({ x: 0, y: 0, mouseX: 0, mouseY: 0 });
+	const isPresent = useIsPresent();
+	const reducedMotion = useReducedMotion();
+	const [probedSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+	const naturalSize = initialNaturalSize ?? probedSize;
+	const [ready, setReady] = useState(false);
+	const [failed, setFailed] = useState(false);
+	const [viewport, setViewport] = useState(() => ({
+		width: window.innerWidth,
+		height: window.innerHeight,
+	}));
 	const imgRef = useRef<HTMLImageElement>(null);
+	const decodingImage = useRef<HTMLImageElement | null>(null);
+	const active = useRef(true);
+	const gesture = useRef<Gesture | null>(null);
+	const dragged = useRef(false);
+	const imagePressed = useRef(false);
+	const offsetX = useMotionValue(0);
+	const offsetY = useMotionValue(0);
 
-	// 切换图片时重置位置
-	// biome-ignore lint/correctness/useExhaustiveDependencies: src 是重置触发器，函数体内未直接使用
-	useEffect(() => {
-		setPosition({ x: 0, y: 0 });
-		if (!shouldLoad) return;
-		setIsLoading(true);
-		// 兜底：图片命中缓存时会在事件绑定前完成加载，导致 onLoad 丢失、永久 loading。
-		// 若新 <img> 已解码完成，同步置为完成态。
-		const img = imgRef.current;
-		if (img?.complete && img.naturalWidth !== 0) {
-			handleLoad();
+	useLayoutEffect(() => {
+		active.current = isPresent;
+		if (isPresent) {
+			gesture.current = null;
+			offsetX.stop();
+			offsetY.stop();
+			offsetX.set(0);
+			offsetY.set(0);
 		}
-	}, [src, shouldLoad]);
+		return () => {
+			active.current = false;
+		};
+	}, [isPresent, offsetX, offsetY]);
 
-	// 外部触发重置（缩放/旋转/翻转恢复初始）时，同步清空拖拽偏移，让图片回到中心。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: resetKey 是父组件传入的重置信号，必须作为依赖
 	useEffect(() => {
-		setPosition({ x: 0, y: 0 });
-	}, [resetKey]);
+		if (initialNaturalSize) return;
+		const image = new Image();
+		image.decoding = "async";
+		const handleSize = () => {
+			if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+				setNaturalSize({ w: image.naturalWidth, h: image.naturalHeight });
+			}
+		};
+		image.onload = handleSize;
+		image.onerror = () => setFailed(true);
+		image.src = src;
+		if (image.complete) handleSize();
+		return () => {
+			image.onload = null;
+			image.onerror = null;
+		};
+	}, [src, initialNaturalSize]);
 
-	const handleLoad = () => {
-		// load 只代表下载完成,图片可能尚未解码上屏;此刻上报会让外层淡出
-		// 缩略图占位,原图区域透明,透出遮罩与后方页面排版。等 decode 确保
-		// 像素就绪再上报;decode 不可用/失败也要上报,避免永久卡在占位层。
-		const img = imgRef.current;
+	useEffect(() => {
+		const image = naturalSize ? imgRef.current : null;
+		if (!image || !isPresent) return;
+		const zoom = (event: WheelEvent) => {
+			event.preventDefault();
+			onWheelZoom(event.deltaY);
+		};
+		image.addEventListener("wheel", zoom, { passive: false });
+		return () => image.removeEventListener("wheel", zoom);
+	}, [naturalSize, isPresent, onWheelZoom]);
+
+	useEffect(() => {
+		const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+		window.addEventListener("resize", resize);
+		return () => window.removeEventListener("resize", resize);
+	}, []);
+
+	const fit = naturalSize
+		? Math.min(
+				1,
+				(viewport.width * 0.9) / naturalSize.w,
+				(viewport.height * 0.9) / naturalSize.h,
+			)
+		: 1;
+	const box = naturalSize ? { width: naturalSize.w * fit, height: naturalSize.h * fit } : null;
+
+	const handleLoad = useCallback(() => {
+		const image = imgRef.current;
+		if (!image || decodingImage.current === image) return;
+		decodingImage.current = image;
 		const report = () => {
-			setIsLoading(false);
-			// 回报原图 natural 尺寸,外层据此把显示盒修正为原图大小
-			onLoad({ w: img?.naturalWidth ?? 0, h: img?.naturalHeight ?? 0 });
+			if (imgRef.current !== image) return;
+			setReady(true);
+			if (active.current) onLoad();
 		};
-		if (img?.decode) {
-			img.decode().then(report, report);
-		} else {
-			report();
-		}
+		// 下载完成不等于像素已就绪，占位层必须等 decode 后才能退场。
+		if (image.decode) image.decode().then(report, report);
+		else report();
+	}, [onLoad]);
+
+	useEffect(() => {
+		const image = imgRef.current;
+		if (!ready && image?.complete && image.naturalWidth > 0) handleLoad();
+	}, [ready, handleLoad]);
+
+	const settle = useCallback(() => {
+		const radians = (rotate * Math.PI) / 180;
+		const width = (box?.width ?? 0) * scale;
+		const height = (box?.height ?? 0) * scale;
+		const rotatedWidth =
+			Math.abs(width * Math.cos(radians)) + Math.abs(height * Math.sin(radians));
+		const rotatedHeight =
+			Math.abs(width * Math.sin(radians)) + Math.abs(height * Math.cos(radians));
+		const maxX = Math.max(0, (rotatedWidth - viewport.width) / 2);
+		const maxY = Math.max(0, (rotatedHeight - viewport.height) / 2);
+		const duration = reducedMotion ? 0 : 0.2;
+		animate(offsetX, Math.max(-maxX, Math.min(maxX, offsetX.get())), { duration });
+		animate(offsetY, Math.max(-maxY, Math.min(maxY, offsetY.get())), { duration });
+	}, [box?.width, box?.height, scale, rotate, viewport, reducedMotion, offsetX, offsetY]);
+
+	const previousReset = useRef(resetKey);
+	useLayoutEffect(() => {
+		if (previousReset.current === resetKey) return;
+		previousReset.current = resetKey;
+		gesture.current = null;
+		offsetX.stop();
+		offsetY.stop();
+		offsetX.set(0);
+		offsetY.set(0);
+	}, [resetKey, offsetX, offsetY]);
+
+	const cancelGesture = () => {
+		if (!gesture.current) return;
+		gesture.current = null;
+		settle();
 	};
 
-	// 鼠标按下开始拖拽
-	const handleMouseDown = (e: React.MouseEvent<HTMLImageElement>) => {
-		if (e.button !== 0) return; // 只响应左键
-		e.preventDefault();
-		startDrag(e.clientX, e.clientY);
-	};
-
-	// 触摸开始拖拽
-	const handleTouchStart = (e: React.TouchEvent<HTMLImageElement>) => {
-		if (e.touches.length !== 1) return;
-		startDrag(e.touches[0].clientX, e.touches[0].clientY);
-	};
-
-	const startDrag = (clientX: number, clientY: number) => {
-		startPositionRef.current = {
-			x: position.x,
-			y: position.y,
-			mouseX: clientX,
-			mouseY: clientY,
-		};
-		setIsMoving(true);
-	};
-
-	// 拖拽结束后的边界吸附
-	const snapToBounds = () => {
-		if (!imgRef.current) return;
-
-		const imgWidth = imgRef.current.offsetWidth * scale;
-		const imgHeight = imgRef.current.offsetHeight * scale;
-		const clientWidth = window.innerWidth;
-		const clientHeight = window.innerHeight;
-
-		// 图片小于视口时，回到中心
-		if (imgWidth <= clientWidth && imgHeight <= clientHeight) {
-			setPosition({ x: 0, y: 0 });
+	const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+		if (event.button !== 0 || !isPresent) return;
+		if (!event.isPrimary) {
+			dragged.current = true;
+			cancelGesture();
 			return;
 		}
-
-		// 图片大于视口时，做边界检查
-		const offsetX = (imgWidth - clientWidth) / 2;
-		const offsetY = (imgHeight - clientHeight) / 2;
-
-		let fixX = position.x;
-		let fixY = position.y;
-
-		if (imgWidth > clientWidth) {
-			if (fixX > offsetX) fixX = offsetX;
-			else if (fixX < -offsetX) fixX = -offsetX;
-		} else {
-			fixX = 0;
-		}
-
-		if (imgHeight > clientHeight) {
-			if (fixY > offsetY) fixY = offsetY;
-			else if (fixY < -offsetY) fixY = -offsetY;
-		} else {
-			fixY = 0;
-		}
-
-		setPosition({ x: fixX, y: fixY });
+		offsetX.stop();
+		offsetY.stop();
+		dragged.current = false;
+		imagePressed.current =
+			event.target instanceof Element && !!event.target.closest("[data-preview-frame]");
+		gesture.current = {
+			pointerId: event.pointerId,
+			startX: event.clientX,
+			startY: event.clientY,
+			originX: offsetX.get(),
+			originY: offsetY.get(),
+			mode: scale > 1 ? "pan" : "pending",
+		};
+		event.currentTarget.setPointerCapture?.(event.pointerId);
 	};
 
-	// 全局鼠标/触摸移动
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 事件订阅与拖拽状态同步，依赖项由调用方保证稳定
-	useEffect(() => {
-		if (!isMoving) return;
+	const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+		const current = gesture.current;
+		if (!current || current.pointerId !== event.pointerId) return;
+		const x = event.clientX - current.startX;
+		const y = event.clientY - current.startY;
+		if (Math.max(Math.abs(x), Math.abs(y)) < 8 && !dragged.current) return;
+		dragged.current = true;
+		if (current.mode === "pending") {
+			current.mode = Math.abs(x) > Math.abs(y) * 1.2 ? "swipe" : "vertical";
+		}
+		if (current.mode === "pan") {
+			offsetX.set(current.originX + x);
+			offsetY.set(current.originY + y);
+		} else if (current.mode === "swipe" && (onSwipeLeft || onSwipeRight)) {
+			offsetX.set(x);
+		}
+	};
 
-		const handleMouseMove = (e: MouseEvent) => {
-			const deltaX = e.clientX - startPositionRef.current.mouseX;
-			const deltaY = e.clientY - startPositionRef.current.mouseY;
-
-			setPosition({
-				x: startPositionRef.current.x + deltaX,
-				y: startPositionRef.current.y + deltaY,
-			});
-		};
-
-		const handleTouchMove = (e: TouchEvent) => {
-			if (e.touches.length !== 1) return;
-			e.preventDefault();
-			const touch = e.touches[0];
-			const deltaX = touch.clientX - startPositionRef.current.mouseX;
-			const deltaY = touch.clientY - startPositionRef.current.mouseY;
-
-			setPosition({
-				x: startPositionRef.current.x + deltaX,
-				y: startPositionRef.current.y + deltaY,
-			});
-		};
-
-		const handleMouseUp = () => {
-			setIsMoving(false);
-			snapToBounds();
-		};
-
-		const handleTouchEnd = (e: TouchEvent) => {
-			setIsMoving(false);
-
-			// 未缩放时识别水平轻扫切换图片
-			const touch = e.changedTouches[0];
-			if (touch && scale <= 1) {
-				const deltaX = touch.clientX - startPositionRef.current.mouseX;
-				const deltaY = touch.clientY - startPositionRef.current.mouseY;
-				if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-					if (deltaX > 0) {
-						onSwipeRight?.();
-					} else {
-						onSwipeLeft?.();
-					}
-					// 轻扫触发切换后不再执行边界吸附
-					return;
-				}
+	const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+		const current = gesture.current;
+		if (!current || current.pointerId !== event.pointerId) return;
+		gesture.current = null;
+		if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+			event.currentTarget.releasePointerCapture(event.pointerId);
+		}
+		const deltaX = event.clientX - current.startX;
+		const threshold = Math.min(80, viewport.width * 0.15);
+		if (current.mode === "swipe" && Math.abs(deltaX) >= threshold) {
+			const navigate = deltaX < 0 ? onSwipeLeft : onSwipeRight;
+			if (navigate) {
+				navigate();
+				return;
 			}
+		}
+		settle();
+	};
 
-			snapToBounds();
-		};
-
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
-		window.addEventListener("touchmove", handleTouchMove, { passive: false });
-		window.addEventListener("touchend", handleTouchEnd);
-
-		return () => {
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
-			window.removeEventListener("touchmove", handleTouchMove);
-			window.removeEventListener("touchend", handleTouchEnd);
-		};
-	}, [isMoving, scale, position.x, position.y]);
+	const origin =
+		box && triggerRect && direction === 0
+			? {
+					x: triggerRect.left + triggerRect.width / 2 - viewport.width / 2,
+					y: triggerRect.top + triggerRect.height / 2 - viewport.height / 2,
+					scale: Math.min(
+						1,
+						triggerRect.width / box.width,
+						triggerRect.height / box.height,
+					),
+				}
+			: { x: 0, y: 0, scale: 1 };
 
 	return (
-		<div className="relative h-full w-full">
-			<AnimatePresence mode="wait">
-				{shouldLoad && (
-					<motion.img
-						ref={imgRef}
-						key={src}
-						src={shouldLoad ? src : undefined}
-						alt={alt}
-						// 无占位层时(showSpinner)图片带 opacity 0→1 淡入，避免硬切。
-						// 有缩略图占位覆盖时必须直接不透明挂载：视觉连续由占位层负责，
-						// 原图淡入没有意义——缓存命中时 onLoad 同步触发，占位层淡出
-						// 会与此淡入重叠，两层叠加透明度 <1，透出遮罩与后方排版。
-						// 加载态由下方的 spinner 覆盖层指示，不靠图片透明度。
-						initial={{ opacity: showSpinner ? 0 : 1 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						transition={{ duration: 0.2 }}
-						onLoad={handleLoad}
-						className="absolute inset-0 h-full w-full select-none object-contain"
-						style={{
-							transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${flipX ? "-" : ""}${scale}, ${flipY ? "-" : ""}${scale}) rotate(${rotate}deg)`,
-							transition: isMoving ? "none" : "transform 0.3s ease-out",
-							cursor: "grab",
-							touchAction: "none",
-						}}
-						onMouseDown={handleMouseDown}
-						onTouchStart={handleTouchStart}
-						onDoubleClick={onReset}
-						whileDrag={{ cursor: "grabbing" }}
+		<motion.div
+			custom={direction}
+			variants={slideVariants}
+			initial="enter"
+			animate="center"
+			exit="exit"
+			transition={{ duration: reducedMotion ? 0 : 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+			className="absolute inset-0 touch-none"
+			style={{ pointerEvents: isPresent ? "auto" : "none" }}
+			aria-hidden={!isPresent}
+			inert={!isPresent}
+			onPointerDown={handlePointerDown}
+			onPointerMove={handlePointerMove}
+			onPointerUp={handlePointerUp}
+			onPointerCancel={cancelGesture}
+			onLostPointerCapture={cancelGesture}
+			onClick={(event) => {
+				if (
+					dragged.current ||
+					imagePressed.current ||
+					(event.target instanceof Element &&
+						event.target.closest("[data-preview-frame]"))
+				) {
+					event.stopPropagation();
+				}
+				dragged.current = false;
+			}}
+			onDoubleClick={(event) => {
+				if (
+					imagePressed.current ||
+					(event.target instanceof Element &&
+						event.target.closest("[data-preview-frame]"))
+				)
+					onReset();
+			}}
+		>
+			<motion.div
+				className="absolute inset-0 flex items-center justify-center"
+				style={{ x: offsetX, y: offsetY }}
+			>
+				{box ? (
+					<motion.div
+						data-preview-frame
+						initial={reducedMotion || direction !== 0 ? false : origin}
+						animate={{ x: 0, y: 0, scale: 1 }}
+						transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+						className="relative shrink-0"
+						style={{ width: box.width, height: box.height }}
+					>
+						<img
+							ref={imgRef}
+							src={src}
+							alt={alt}
+							onLoad={handleLoad}
+							onError={() => setFailed(true)}
+							decoding="async"
+							draggable={false}
+							className="absolute inset-0 h-full w-full select-none object-contain"
+							style={{
+								opacity: ready ? 1 : 0,
+								transform: `scale(${flipX ? -scale : scale}, ${flipY ? -scale : scale}) rotate(${rotate}deg)`,
+								transition: reducedMotion ? "none" : "transform 0.2s ease-out",
+								cursor: "grab",
+							}}
+						/>
+						<AnimatePresence>
+							{thumbnail && !ready ? (
+								<motion.div
+									className="pointer-events-none absolute inset-0"
+									initial={{ opacity: 1 }}
+									exit={{ opacity: 0 }}
+									transition={{ duration: reducedMotion ? 0 : 0.15 }}
+								>
+									<img
+										src={thumbnail}
+										alt=""
+										aria-hidden
+										draggable={false}
+										className="h-full w-full select-none object-cover"
+									/>
+								</motion.div>
+							) : null}
+						</AnimatePresence>
+					</motion.div>
+				) : thumbnail ? (
+					<img
+						src={thumbnail}
+						alt=""
+						aria-hidden
 						draggable={false}
+						data-preview-frame
+						className="max-h-[90vh] max-w-[90vw] select-none object-contain"
 					/>
-				)}
-			</AnimatePresence>
-
-			{/* 加载指示器（外层有缩略图占位时关闭，避免双重加载指示） */}
-			{showSpinner && isLoading ? (
-				<div className="absolute inset-0 flex items-center justify-center">
+				) : null}
+			</motion.div>
+			{failed ? (
+				<div
+					role="alert"
+					className="pointer-events-none absolute inset-0 flex items-center justify-center text-white"
+				>
+					图片加载失败
+				</div>
+			) : !ready && !thumbnail ? (
+				<div
+					role="status"
+					aria-label="正在加载图片"
+					className="pointer-events-none absolute inset-0 flex items-center justify-center"
+				>
 					<div className="size-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
 				</div>
 			) : null}
-		</div>
+		</motion.div>
 	);
 }
