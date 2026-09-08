@@ -62,51 +62,55 @@ export function PhotoStack({
 
 	if (images.length === 0) return null;
 
-	const swap = reduceMotion
-		? { duration: 0 }
-		: { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const };
+	const swap = reduceMotion ? { duration: 0 } : { duration: 0.18 };
 
 	return (
 		<article className={cn("group", className)} data-photo-stack={layoutPrefix}>
-			<AnimatePresence initial={false} mode="wait">
-				{expanded ? (
-					<motion.div
-						key="grid"
-						initial={{ opacity: 0, scale: 0.985 }}
-						animate={{ opacity: 1, scale: 1 }}
-						exit={{ opacity: 0, scale: 0.985 }}
-						transition={swap}
-					>
-						<PhotoStackGrid
-							images={images}
-							aspectClass={aspectClass}
-							onSelect={(index) => {
-								setCurrentIndex(index);
-								setExpanded(false);
-								onImageOpen?.(index);
-							}}
-						/>
-					</motion.div>
-				) : (
-					<motion.div
-						key="stage"
-						initial={{ opacity: 0, scale: 0.985 }}
-						animate={{ opacity: 1, scale: 1 }}
-						exit={{ opacity: 0, scale: 0.985 }}
-						transition={swap}
-					>
-						<PhotoStackStage
-							images={images}
-							currentIndex={currentIndex}
-							aspectClass={aspectClass}
-							loading={loading}
-							overlay={overlay}
-							onIndexChange={setCurrentIndex}
-							onImageOpen={onImageOpen}
-						/>
-					</motion.div>
-				)}
-			</AnimatePresence>
+			{/* 容器 layout：展开/收起时高度平滑生长或收拢，popLayout 交叉避免空窗 */}
+			<motion.div
+				layout
+				transition={
+					reduceMotion ? { duration: 0 } : { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+				}
+			>
+				<AnimatePresence initial={false} mode="popLayout">
+					{expanded ? (
+						<motion.div
+							key="grid"
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={swap}
+						>
+							<PhotoStackGrid
+								images={images}
+								onSelect={(index) => {
+									setCurrentIndex(index);
+									onImageOpen?.(index);
+								}}
+							/>
+						</motion.div>
+					) : (
+						<motion.div
+							key="stage"
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={swap}
+						>
+							<PhotoStackStage
+								images={images}
+								currentIndex={currentIndex}
+								aspectClass={aspectClass}
+								loading={loading}
+								overlay={overlay}
+								onIndexChange={setCurrentIndex}
+								onImageOpen={onImageOpen}
+							/>
+						</motion.div>
+					)}
+				</AnimatePresence>
+			</motion.div>
 			<div className="mt-3 flex items-start justify-between gap-3">
 				<div className="min-w-0 flex-1">{footer}</div>
 				<button
