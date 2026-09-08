@@ -179,7 +179,7 @@ export function ImagePreviewControls({
 								className={cn(
 									"text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9",
 									listVisible &&
-										"bg-white! text-black! hover:bg-white/90! hover:text-black!",
+										"bg-white/20! text-white! ring-1 ring-white/35 ring-inset hover:bg-white/25! hover:text-white!",
 								)}
 							>
 								<List className="h-4 w-4 sm:h-5 sm:w-5" />
