@@ -7,6 +7,65 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.23](https://github.com/VOD-Studio/violet/compare/v2.8.22...v2.8.23) (2026-09-08)
+
+
+### 新增
+
+* **header:** 显示当前人设头像 ([fdaab63](https://github.com/VOD-Studio/violet/commit/fdaab63806eb41f6adc6da5f9e378fb3bd5f3a4e))
+* **home:** 接入统一首页资源读模型 ([9da6c21](https://github.com/VOD-Studio/violet/commit/9da6c2123a233cee4f76f59e4110e1f61b16ddc7))
+* **home:** 接入首页资源接口 ([9315a54](https://github.com/VOD-Studio/violet/commit/9315a54c6fee4e26fbb9b1ed1ed3cbd2676b27ea))
+* **image-preview:** 添加图片列表显隐控制 ([ec663cd](https://github.com/VOD-Studio/violet/commit/ec663cd99e0a146c1c1d6d04a081e999cae4ff09))
+* **markdown:** 打磨语义卡片交互 ([2d6d2ff](https://github.com/VOD-Studio/violet/commit/2d6d2ff7911c14a32d021ea681b420e8becca449))
+* **markdown:** 支持文章语义内容卡片 ([f3b1816](https://github.com/VOD-Studio/violet/commit/f3b1816ace827bb8da585b3221acd114938e345e))
+* **persona-motion:** 添加人设加载与纸页转场 ([c76d020](https://github.com/VOD-Studio/violet/commit/c76d02066a8e20171e8eece32cfbbf55ea1a94c1))
+* **persona:** 人设档案多语言管理与前台阅读体验 ([#318](https://github.com/VOD-Studio/violet/issues/318)) ([2448b9d](https://github.com/VOD-Studio/violet/commit/2448b9d0c395b2cbc2d32bb3a0848e45a3d9bb0c))
+* **persona:** 人设页等待态接入瑠爱加载动画 ([efe1ab7](https://github.com/VOD-Studio/violet/commit/efe1ab77cf5162b9866f34c08f80689a670b7dfd))
+* **persona:** 实现人设档案管理与公开页面 ([531ab57](https://github.com/VOD-Studio/violet/commit/531ab5792a90f9455f3011e94093b235d8daaf3a))
+* **persona:** 建立多档案单激活模型 ([1a88b79](https://github.com/VOD-Studio/violet/commit/1a88b796e7ad1409ec09fbfc17e7bb1d16d1d9c8))
+* **persona:** 接通公开与管理接口 ([8a3bcb9](https://github.com/VOD-Studio/violet/commit/8a3bcb98614ae1eba35e24057f10988647e986f1))
+* **persona:** 支持多语言档案 ([153d72f](https://github.com/VOD-Studio/violet/commit/153d72f567b3e094ee21081cfe16f9671a450551))
+* **persona:** 支持多语言档案编辑与切换 ([fd7d3a8](https://github.com/VOD-Studio/violet/commit/fd7d3a8faddc994baa8a508b61561d14520dd3ef))
+* **persona:** 重塑公开档案阅读体验 ([789ac92](https://github.com/VOD-Studio/violet/commit/789ac9282400ff06f74a9afad68b0c9d8337cc66))
+* **posts:** 增加文章作者落款 ([8662c79](https://github.com/VOD-Studio/violet/commit/8662c79583529473e7b1320d8d8347daed75e9b5))
+* **post:** 支持可选作者落款 ([475c483](https://github.com/VOD-Studio/violet/commit/475c48378c5bd3c15245239b65190ee43684d8a1))
+* **publication:** 同步维护发布物投影 ([031da14](https://github.com/VOD-Studio/violet/commit/031da14a810f9e28305f374bfb5d36ca532d9f0c))
+* **publication:** 建立统一发布物读模型 ([6fec567](https://github.com/VOD-Studio/violet/commit/6fec56743777e645e7f6ccff51ae2c0c2c2ea643))
+* **rss:** 提供动态发布物订阅源 ([a646f74](https://github.com/VOD-Studio/violet/commit/a646f74093a20555ab4c1dbdc3b13770599d0ea5))
+* **site-identity:** 提供公开站点身份资源 ([e165e8b](https://github.com/VOD-Studio/violet/commit/e165e8b87ea187465f81792ccf8eacd8aaa2b706))
+* **site-impression:** 实现匿名设备印记 ([695844a](https://github.com/VOD-Studio/violet/commit/695844a05ab73297fac8dddcb5f9221f07f686ce))
+
+
+### 修复
+
+* **editor:** 修复受控内容同步误报变更 ([b5209c8](https://github.com/VOD-Studio/violet/commit/b5209c858a2b3b5381f626815b9c4b27a7f231f3))
+* **header:** 保持活动工具区展开 ([44ca4ae](https://github.com/VOD-Studio/violet/commit/44ca4ae97b0649c751ad987c658650e19851cb26))
+* **header:** 取消聊天路由固定展开 ([75c1091](https://github.com/VOD-Studio/violet/commit/75c109137c10ef2e431766d41af63af8752ce19b))
+* **header:** 对齐导航胶囊圆角 ([a3da2a0](https://github.com/VOD-Studio/violet/commit/a3da2a0643373164f4cbb3a081b54f08548b9b09))
+* **header:** 激活结束后收起工具区 ([47d3a93](https://github.com/VOD-Studio/violet/commit/47d3a931ae3db1fa2826df657eb6618069f9eb57))
+* **header:** 贡献热力图列对齐自然周 ([b889846](https://github.com/VOD-Studio/violet/commit/b8898464ea1c09980ee44ec888c8821fd84de4ae))
+* **header:** 贡献热力图列对齐自然周 ([#319](https://github.com/VOD-Studio/violet/issues/319)) ([52d9222](https://github.com/VOD-Studio/violet/commit/52d9222e4b7461ba046d4f668a151f47ad85795b))
+* **header:** 避免按钮焦点误固定工具区 ([bddb25c](https://github.com/VOD-Studio/violet/commit/bddb25c0a86242c126cceef7fd25360d38c3e69d))
+* **image-preview:** 优化滚轮关闭跟随 ([2aca0c2](https://github.com/VOD-Studio/violet/commit/2aca0c21e19644f94f8e0c1eef4575f03fd1c564))
+* **image-preview:** 修复灯箱切图交互 ([8091f72](https://github.com/VOD-Studio/violet/commit/8091f7216c8fcf37f317637bd60c4ed2803c314d))
+* **persona-motion:** 将加载动画提升至 24 FPS ([4f8fda6](https://github.com/VOD-Studio/violet/commit/4f8fda632f5638a501468e74a4316080ee95b7cc))
+* **persona-motion:** 重做叙事式加载动画 ([f4c2c24](https://github.com/VOD-Studio/violet/commit/f4c2c24cf63acae581f792e24a7c455202dea67a))
+* **persona:** 固定后台编辑操作栏 ([064be0c](https://github.com/VOD-Studio/violet/commit/064be0c5facad32f79276f320665f4fc4202ba69))
+* **repository:** 修复人设列表分页计数 ([08bb891](https://github.com/VOD-Studio/violet/commit/08bb89153594c90f796e94dac0b0d83a9c80bfa6))
+* **site-impression:** 遵循 Cookie 安全配置 ([88360b9](https://github.com/VOD-Studio/violet/commit/88360b9fa5623e8afdca6b291c987d9f9a10f44a))
+* **theme:** 隔离首页品牌色与后台交互色 ([c8819dd](https://github.com/VOD-Studio/violet/commit/c8819dd09014e2b76725ea67e8a148222a1f55ce))
+
+
+### 性能优化
+
+* **media:** 复用内容图响应式候选 ([bf71d93](https://github.com/VOD-Studio/violet/commit/bf71d93ebc339969d6fb99870ab9e1988806efb0))
+
+
+### 重构
+
+* **session-notes:** 完善工程文章成文流程 ([42911b2](https://github.com/VOD-Studio/violet/commit/42911b2fd66fa4b35cebf6a256661553aba8f3ad))
+* **shared:** 统一日期展示格式 ([8d4633f](https://github.com/VOD-Studio/violet/commit/8d4633fa52bcae15ee1c90a304b3464f2827101c))
+
 ## [2.8.22](https://github.com/VOD-Studio/violet/compare/v2.8.21...v2.8.22) (2026-09-07)
 
 
