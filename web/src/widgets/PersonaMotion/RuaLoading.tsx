@@ -43,12 +43,34 @@ const RuaLoading = ({
 				)}
 			>
 				<span
-					aria-hidden
+					aria-hidden="true"
 					className={cn(
-						"rua-writing-sprite block shrink-0",
+						"rua-writing-motion block shrink-0",
 						isInline ? "size-12" : "size-[min(14rem,48vw)]",
 					)}
-				/>
+				>
+					<video
+						autoPlay
+						loop
+						muted
+						playsInline
+						preload="auto"
+						poster="/persona/rua-writing-poster.webp"
+						className="size-full object-contain"
+					>
+						<source
+							src="/persona/rua-writing-animation.webm"
+							type="video/webm"
+							media="(prefers-reduced-motion: no-preference)"
+						/>
+						<img
+							src="/persona/rua-writing-poster.webp"
+							alt=""
+							width={256}
+							height={256}
+						/>
+					</video>
+				</span>
 
 				<div className={cn("min-w-0", isInline ? "w-34" : "w-52 -translate-y-1")}>
 					<p
