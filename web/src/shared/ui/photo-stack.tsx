@@ -2,13 +2,15 @@
  * PhotoStack - 照片堆叠。
  *
  * 顶图按原始顺序翻页，不循环；展开后使用同尺寸媒体墙。
+ * 展开前先让堆叠逐张飞离（scatter），收起后从散开位逐层归位（assemble），
+ * 收拢期间视口跟随舞台平滑回滚。
  */
 import { cn } from "@shared/lib/utils";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { PhotoStackGrid } from "./photo-stack-grid";
-import { PhotoStackStage } from "./photo-stack-stage";
+import { type PhotoStackFormation, PhotoStackStage } from "./photo-stack-stage";
 
 export interface PhotoStackImage {
 	src: string;
@@ -37,16 +39,22 @@ export interface PhotoStackProps {
 	onImageOpen?: (index: number) => void;
 }
 
+/** 收拢期间持续跟随的时长，需覆盖展板退场、容器收拢与卡片归位。 */
+const SCROLL_FOLLOW_MS = 750;
+
+/** 找到承载舞台的最近滚动容器，默认回退 window。 */
+function scrollAncestorOf(node: Element): Element | null {
+	let current = node.parentElement;
+	while (current) {
+		const { overflowY } = window.getComputedStyle(current);
+		if (overflowY === "auto" || overflowY === "scroll") return current;
+		current = current.parentElement;
+	}
+	return null;
+}
+
 /**
  * 照片堆叠：拖拽越过阈值后将当前卡插入后槽，并让下一卡切到顶层。
- *
- * @param images 图片序列
- * @param footer 卡片元信息
- * @param aspectClass 舞台比例
- * @param loading 折叠态顶图加载策略
- * @param overlay 是否渲染舞台浮动覆盖层
- * @param className 外层样式
- * @param onImageOpen 媒体点击回调
  */
 export function PhotoStack({
 	images,
@@ -60,21 +68,83 @@ export function PhotoStack({
 }: PhotoStackProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [expanded, setExpanded] = useState(false);
+	const [formation, setFormation] = useState<PhotoStackFormation>("idle");
 	const layoutPrefix = useId();
 	const reduceMotion = useReducedMotion();
+	const frameRef = useRef<HTMLDivElement>(null);
+	const followHandle = useRef(0);
 
 	useEffect(() => {
 		setCurrentIndex((index) => Math.min(index, Math.max(images.length - 1, 0)));
 	}, [images.length]);
 
+	useEffect(() => () => window.cancelAnimationFrame(followHandle.current), []);
+
+	const stopScrollFollow = useCallback(() => {
+		window.cancelAnimationFrame(followHandle.current);
+	}, []);
+
+	// 把舞台视觉中心逐帧锚回滚动视口中心：高度收缩时视口被平滑带回，而非跳变。
+	const startScrollFollow = useCallback(() => {
+		window.cancelAnimationFrame(followHandle.current);
+		const startedAt = performance.now();
+		const tick = () => {
+			const node = frameRef.current;
+			if (node) {
+				const rect = node.getBoundingClientRect();
+				const scroller = scrollAncestorOf(node);
+				if (scroller) {
+					const bounds = scroller.getBoundingClientRect();
+					scroller.scrollTop +=
+						rect.top + rect.height / 2 - (bounds.top + bounds.height / 2);
+				} else {
+					window.scrollTo(
+						0,
+						window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2,
+					);
+				}
+			}
+			if (performance.now() - startedAt < SCROLL_FOLLOW_MS) {
+				followHandle.current = window.requestAnimationFrame(tick);
+			}
+		};
+		followHandle.current = window.requestAnimationFrame(tick);
+	}, []);
+
 	if (images.length === 0) return null;
 
 	const swap = reduceMotion ? { duration: 0 } : { duration: 0.18 };
+
+	const toggleExpanded = () => {
+		if (formation !== "idle") return;
+		if (expanded) {
+			setExpanded(false);
+			if (reduceMotion) {
+				frameRef.current?.scrollIntoView({ block: "center" });
+				return;
+			}
+			setFormation("assemble");
+			startScrollFollow();
+			return;
+		}
+		if (reduceMotion) {
+			setExpanded(true);
+			return;
+		}
+		stopScrollFollow();
+		setFormation("scatter");
+	};
+
+	const handleFormationSettled = () => {
+		if (formation === "scatter") setExpanded(true);
+		setFormation("idle");
+	};
 
 	return (
 		<article className={cn("group", className)} data-photo-stack={layoutPrefix}>
 			{/* 容器 layout：展开/收起时高度平滑生长或收拢，popLayout 交叉避免空窗 */}
 			<motion.div
+				ref={frameRef}
 				layout
 				transition={
 					reduceMotion ? { duration: 0 } : { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
@@ -93,7 +163,9 @@ export function PhotoStack({
 								renderExpanded({
 									images,
 									currentIndex,
-									collapse: () => setExpanded(false),
+									collapse: () => {
+										if (formation === "idle") toggleExpanded();
+									},
 								})
 							) : (
 								<PhotoStackGrid
@@ -119,6 +191,8 @@ export function PhotoStack({
 								aspectClass={aspectClass}
 								loading={loading}
 								overlay={overlay}
+								formation={formation}
+								onFormationSettled={handleFormationSettled}
 								onIndexChange={setCurrentIndex}
 								onImageOpen={onImageOpen}
 							/>
@@ -130,10 +204,11 @@ export function PhotoStack({
 				<div className="min-w-0 flex-1">{footer}</div>
 				<button
 					type="button"
-					onClick={() => setExpanded((value) => !value)}
+					onClick={toggleExpanded}
+					disabled={formation !== "idle"}
 					aria-expanded={expanded}
 					aria-label={expanded ? "收起为堆叠" : `展开全部照片，共 ${images.length} 张`}
-					className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground/80 transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+					className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground/80 transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:opacity-60"
 				>
 					{expanded ? (
 						<Minimize2 className="size-3.5" />

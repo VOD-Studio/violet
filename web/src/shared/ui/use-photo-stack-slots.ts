@@ -10,7 +10,7 @@ import {
 	resetMotionValueVelocity,
 } from "./photo-stack-motion";
 
-const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
+export const SLOT_SPRING = { type: "spring", stiffness: 320, damping: 30 } as const;
 const BOUNDARY_SPRING = { type: "spring", stiffness: 320, damping: 36 } as const;
 const RESET_TWEEN = { duration: 0.22, ease: "easeOut" as const };
 

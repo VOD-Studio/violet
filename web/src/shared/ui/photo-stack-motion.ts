@@ -192,6 +192,22 @@ export function getStackSlot(axis: StackDirection, depth: number, width: number)
 	};
 }
 
+/** 解散槽位：后置卡按堆叠侧向外上抛离场，顶卡垂直上浮；目标透明度恒为 0。 */
+export function getScatterSlot(
+	axis: StackDirection | "top",
+	depth: number,
+	width: number,
+): PhotoStackSlot {
+	if (axis === "top") return { x: 0, y: -30, rotate: 0, scale: 1 };
+	const sign = axis === "left" ? -1 : 1;
+	return {
+		x: sign * (width * 0.55 + depth * 12),
+		y: -(12 + depth * 8),
+		rotate: sign * (9 + depth * 2.5),
+		scale: 1,
+	};
+}
+
 /** 计算某张卡在指定当前索引下的中心或左右后置槽。 */
 export function getIndexedStackSlot(index: number, currentIndex: number, width: number) {
 	const delta = index - currentIndex;
