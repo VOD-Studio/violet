@@ -23,6 +23,8 @@ const toDateKey = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${p
 interface DayCell {
 	key: string;
 	count: number;
+	/** 今日之后的格位：仅占位保持网格形状，不渲染数据与交互。 */
+	future: boolean;
 }
 
 /**
@@ -37,16 +39,17 @@ export function HeaderContributionHeatmap({
 }: HeaderContributionHeatmapProps) {
 	const now = useMemo(() => new Date(), []);
 
-	// 近 13 周 × 7 天的日粒度热力矩阵：窗口右端对齐今天（最后一格即今天，无未来空位）
+	// 近 13 个自然周的日粒度热力矩阵：列对齐周日（与 GitHub 贡献图一致），
+	// 最后一列是本周，今天落在真实星期位置，之后的格位留空占位
 	const { weeks, monthTicks, todayKey } = useMemo(() => {
 		const countMap = new Map<string, number>();
 		for (const c of contributions ?? []) {
 			countMap.set(c.date, c.count);
 		}
 
-		// 起点 = 今天向前回推 13×7-1 天，逐日填充，末格恰好落在今天
-		const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-		start.setDate(start.getDate() - (WEEKS_SHOWN * DAYS_PER_WEEK - 1));
+		// 起点 = 本周日再回推 12 周；每列因此都是一个完整的自然周（日→六）
+		const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+		start.setDate(start.getDate() - (WEEKS_SHOWN - 1) * DAYS_PER_WEEK);
 
 		const cols: DayCell[][] = [];
 		const ticks: (string | null)[] = [];
@@ -57,7 +60,7 @@ export function HeaderContributionHeatmap({
 				const day = new Date(start);
 				day.setDate(day.getDate() + w * DAYS_PER_WEEK + d);
 				const key = toDateKey(day);
-				col.push({ key, count: countMap.get(key) ?? 0 });
+				col.push({ key, count: countMap.get(key) ?? 0, future: key > today });
 			}
 			cols.push(col);
 			// 该列若包含某月 1 日，则在该列下方标注月份（对齐原版贡献图刻度行）
@@ -115,6 +118,15 @@ export function HeaderContributionHeatmap({
 						>
 							{week.map((day) => {
 								const isToday = day.key === todayKey;
+								if (day.future) {
+									return (
+										<span
+											key={day.key}
+											aria-hidden="true"
+											className="aspect-square w-full rounded-[2px]"
+										/>
+									);
+								}
 								return (
 									<Tooltip key={day.key}>
 										<TooltipTrigger asChild>
