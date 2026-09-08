@@ -222,6 +222,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 						<PhotoStack
 							loading="lazy"
 							aspectClass="aspect-4/3"
+							overlay={false}
 							className={styles.photoStack}
 							images={galleryImages.map((image, index) => ({
 								src: image.thumbnail || image.url,

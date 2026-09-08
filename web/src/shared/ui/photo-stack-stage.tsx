@@ -30,6 +30,8 @@ export interface PhotoStackStageProps {
 	currentIndex: number;
 	aspectClass: string;
 	loading?: "eager" | "lazy";
+	/** 是否渲染舞台浮动覆盖层（页码胶囊与拖动把手），默认 true。 */
+	overlay?: boolean;
 	onIndexChange: (index: number) => void;
 	onImageOpen?: (index: number) => void;
 }
@@ -44,6 +46,7 @@ export function PhotoStackStage({
 	currentIndex,
 	aspectClass,
 	loading,
+	overlay = true,
 	onIndexChange,
 	onImageOpen,
 }: PhotoStackStageProps) {
@@ -558,14 +561,18 @@ export function PhotoStackStage({
 				isPastThreshold={isPastThreshold}
 				currentLoading={loading}
 			/>
-			<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
-				<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
-					<GripHorizontal className="size-4 text-white/90" />
-				</span>
-			</div>
-			<div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded-full bg-black/45 px-2 py-0.5 font-mono text-[10px] text-white/90 backdrop-blur-sm">
-				{safeIndex + 1} / {images.length}
-			</div>
+			{overlay ? (
+				<>
+					<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
+						<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
+							<GripHorizontal className="size-4 text-white/90" />
+						</span>
+					</div>
+					<div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded-full bg-black/45 px-2 py-0.5 font-mono text-[10px] text-white/90 backdrop-blur-sm">
+						{safeIndex + 1} / {images.length}
+					</div>
+				</>
+			) : null}
 		</div>
 	);
 }

@@ -5,7 +5,7 @@ import type { PhotoStackImage } from "./photo-stack";
 export interface PhotoStackGridProps {
 	/** 媒体资源列表。 */
 	images: PhotoStackImage[];
-	/** 与折叠舞台一致的比例类。 */
+	/** 与折叠舞台一致的比例类，媒体墙单元沿用同一比例。 */
 	aspectClass: string;
 	/** 选择媒体后返回原始索引。 */
 	onSelect: (index: number) => void;
@@ -24,7 +24,7 @@ export function PhotoStackGrid({ images, aspectClass, onSelect }: PhotoStackGrid
 					<button
 						type="button"
 						key={`${layoutPrefix}-${image.src}-${index}`}
-						className="relative overflow-hidden rounded-md"
+						className="group relative overflow-hidden rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
 						onClick={() => onSelect(index)}
 						aria-label={image.alt ?? `打开第 ${index + 1} 张照片`}
 					>
@@ -33,7 +33,7 @@ export function PhotoStackGrid({ images, aspectClass, onSelect }: PhotoStackGrid
 							alt={image.alt ?? `照片 ${index + 1}`}
 							loading="lazy"
 							draggable={false}
-							className="aspect-3/4 w-full object-cover"
+							className={`${aspectClass} w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100`}
 						/>
 					</button>
 				))}

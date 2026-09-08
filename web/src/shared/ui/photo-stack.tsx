@@ -5,6 +5,7 @@
  */
 import { cn } from "@shared/lib/utils";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useState } from "react";
 import { PhotoStackGrid } from "./photo-stack-grid";
 import { PhotoStackStage } from "./photo-stack-stage";
@@ -24,6 +25,8 @@ export interface PhotoStackProps {
 	/** 折叠态顶图的原生加载策略，默认 eager。 */
 	loading?: "eager" | "lazy";
 	className?: string;
+	/** 是否渲染舞台浮动覆盖层（左下页码胶囊与底部拖动把手），默认 true。 */
+	overlay?: boolean;
 	/** 点击顶图或展开媒体墙中的图片时返回原始下标。 */
 	onImageOpen?: (index: number) => void;
 }
@@ -35,6 +38,7 @@ export interface PhotoStackProps {
  * @param footer 卡片元信息
  * @param aspectClass 舞台比例
  * @param loading 折叠态顶图加载策略
+ * @param overlay 是否渲染舞台浮动覆盖层
  * @param className 外层样式
  * @param onImageOpen 媒体点击回调
  */
@@ -44,11 +48,13 @@ export function PhotoStack({
 	aspectClass = "aspect-3/4",
 	loading,
 	className,
+	overlay = true,
 	onImageOpen,
 }: PhotoStackProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [expanded, setExpanded] = useState(false);
 	const layoutPrefix = useId();
+	const reduceMotion = useReducedMotion();
 
 	useEffect(() => {
 		setCurrentIndex((index) => Math.min(index, Math.max(images.length - 1, 0)));
@@ -56,28 +62,51 @@ export function PhotoStack({
 
 	if (images.length === 0) return null;
 
+	const swap = reduceMotion
+		? { duration: 0 }
+		: { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const };
+
 	return (
 		<article className={cn("group", className)} data-photo-stack={layoutPrefix}>
-			{expanded ? (
-				<PhotoStackGrid
-					images={images}
-					aspectClass={aspectClass}
-					onSelect={(index) => {
-						setCurrentIndex(index);
-						setExpanded(false);
-						onImageOpen?.(index);
-					}}
-				/>
-			) : (
-				<PhotoStackStage
-					images={images}
-					currentIndex={currentIndex}
-					aspectClass={aspectClass}
-					loading={loading}
-					onIndexChange={setCurrentIndex}
-					onImageOpen={onImageOpen}
-				/>
-			)}
+			<AnimatePresence initial={false} mode="wait">
+				{expanded ? (
+					<motion.div
+						key="grid"
+						initial={{ opacity: 0, scale: 0.985 }}
+						animate={{ opacity: 1, scale: 1 }}
+						exit={{ opacity: 0, scale: 0.985 }}
+						transition={swap}
+					>
+						<PhotoStackGrid
+							images={images}
+							aspectClass={aspectClass}
+							onSelect={(index) => {
+								setCurrentIndex(index);
+								setExpanded(false);
+								onImageOpen?.(index);
+							}}
+						/>
+					</motion.div>
+				) : (
+					<motion.div
+						key="stage"
+						initial={{ opacity: 0, scale: 0.985 }}
+						animate={{ opacity: 1, scale: 1 }}
+						exit={{ opacity: 0, scale: 0.985 }}
+						transition={swap}
+					>
+						<PhotoStackStage
+							images={images}
+							currentIndex={currentIndex}
+							aspectClass={aspectClass}
+							loading={loading}
+							overlay={overlay}
+							onIndexChange={setCurrentIndex}
+							onImageOpen={onImageOpen}
+						/>
+					</motion.div>
+				)}
+			</AnimatePresence>
 			<div className="mt-3 flex items-start justify-between gap-3">
 				<div className="min-w-0 flex-1">{footer}</div>
 				<button
@@ -85,7 +114,7 @@ export function PhotoStack({
 					onClick={() => setExpanded((value) => !value)}
 					aria-expanded={expanded}
 					aria-label={expanded ? "收起为堆叠" : `展开全部照片，共 ${images.length} 张`}
-					className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md border border-edge-hairline px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+					className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground/80 transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
 				>
 					{expanded ? (
 						<Minimize2 className="size-3.5" />
