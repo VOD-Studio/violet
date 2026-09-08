@@ -12,6 +12,7 @@ import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { PhotoStack } from "@shared/ui/photo-stack";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
@@ -229,60 +230,96 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 						<h2 id="persona-gallery-title">{labels.gallery}</h2>
 					</header>
 
-					<ol className={styles.plateList}>
-						{galleryImages.map((image, index) => {
-							const previewIndex = index + 1;
-							const isEven = index % 2 === 1;
-							return (
-								<li
-									className={`${styles.plateItem} ${isEven ? styles.plateEven : styles.plateOdd}`}
-									key={image.url}
-								>
-									<article className={styles.plateFrame}>
-										<div className={styles.plateHeader}>
-											<span className={styles.plateIndex}>
-												PLATE // {String(previewIndex).padStart(2, "0")}
-											</span>
-											{image.caption ? (
-												<span className={styles.plateCaptionLabel}>
-													{image.caption}
-												</span>
-											) : null}
-										</div>
+					<div className={styles.galleryStage}>
+						<PhotoStack
+							loading="lazy"
+							aspectClass="aspect-4/3"
+							overlay={false}
+							className={styles.photoStack}
+							images={galleryImages.map((image, index) => ({
+								src: image.thumbnail || image.url,
+								alt: galleryAlts[index],
+							}))}
+							footer={
+								<div className={styles.stackFooter}>
+									<span className={styles.stackIndex}>
+										FIG. 01–{String(galleryImages.length).padStart(2, "0")}
+									</span>
+									<p>拖动卡片翻阅设定资料，展开画廊查看完整展板</p>
+								</div>
+							}
+							onImageOpen={(index) =>
+								setLightbox({ open: true, index: index + 1, trigger: null })
+							}
+							renderExpanded={() => (
+								<ol className={styles.plateList}>
+									{galleryImages.map((image, index) => {
+										const previewIndex = index + 1;
+										const isEven = index % 2 === 1;
+										return (
+											<li
+												className={`${styles.plateItem} ${isEven ? styles.plateEven : styles.plateOdd}`}
+												key={image.url}
+											>
+												<article className={styles.plateFrame}>
+													<div className={styles.plateHeader}>
+														<span className={styles.plateIndex}>
+															PLATE //{" "}
+															{String(previewIndex).padStart(2, "0")}
+														</span>
+														{image.caption ? (
+															<span
+																className={styles.plateCaptionLabel}
+															>
+																{image.caption}
+															</span>
+														) : null}
+													</div>
 
-										<button
-											type="button"
-											className={styles.plateButton}
-											onClick={(event) =>
-												setLightbox({
-													open: true,
-													index: previewIndex,
-													trigger: event.currentTarget,
-												})
-											}
-											aria-label={`预览 ${galleryAlts[index]}`}
-										>
-											<img
-												srcSet={contentImageSrcSet(
-													image.url,
-													DISPLAY_SRCSET_WIDTHS,
-												)}
-												sizes="(min-width: 1280px) 68rem, calc(100vw - 2.5rem)"
-												src={contentImageUrl(image.url, {
-													width: DISPLAY_IMAGE_WIDTH,
-												})}
-												alt={galleryAlts[index]}
-												width={image.width > 0 ? image.width : undefined}
-												height={image.height > 0 ? image.height : undefined}
-												className={styles.plateImage}
-												loading="lazy"
-											/>
-										</button>
-									</article>
-								</li>
-							);
-						})}
-					</ol>
+													<button
+														type="button"
+														className={styles.plateButton}
+														onClick={(event) =>
+															setLightbox({
+																open: true,
+																index: previewIndex,
+																trigger: event.currentTarget,
+															})
+														}
+														aria-label={`预览 ${galleryAlts[index]}`}
+													>
+														<img
+															srcSet={contentImageSrcSet(
+																image.url,
+																DISPLAY_SRCSET_WIDTHS,
+															)}
+															sizes="(min-width: 1280px) 68rem, calc(100vw - 2.5rem)"
+															src={contentImageUrl(image.url, {
+																width: DISPLAY_IMAGE_WIDTH,
+															})}
+															alt={galleryAlts[index]}
+															width={
+																image.width > 0
+																	? image.width
+																	: undefined
+															}
+															height={
+																image.height > 0
+																	? image.height
+																	: undefined
+															}
+															className={styles.plateImage}
+															loading="lazy"
+														/>
+													</button>
+												</article>
+											</li>
+										);
+									})}
+								</ol>
+							)}
+						/>
+					</div>
 				</section>
 			) : null}
 

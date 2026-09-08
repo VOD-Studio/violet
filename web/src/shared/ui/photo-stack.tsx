@@ -27,6 +27,12 @@ export interface PhotoStackProps {
 	className?: string;
 	/** 是否渲染舞台浮动覆盖层（左下页码胶囊与底部拖动把手），默认 true。 */
 	overlay?: boolean;
+	/** 自定义展开态渲染。未提供时默认使用媒体墙。 */
+	renderExpanded?: (props: {
+		images: PhotoStackImage[];
+		currentIndex: number;
+		collapse: () => void;
+	}) => React.ReactNode;
 	/** 点击顶图或展开媒体墙中的图片时返回原始下标。 */
 	onImageOpen?: (index: number) => void;
 }
@@ -49,6 +55,7 @@ export function PhotoStack({
 	loading,
 	className,
 	overlay = true,
+	renderExpanded,
 	onImageOpen,
 }: PhotoStackProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -76,19 +83,27 @@ export function PhotoStack({
 				<AnimatePresence initial={false} mode="popLayout">
 					{expanded ? (
 						<motion.div
-							key="grid"
+							key="expanded"
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							transition={swap}
 						>
-							<PhotoStackGrid
-								images={images}
-								onSelect={(index) => {
-									setCurrentIndex(index);
-									onImageOpen?.(index);
-								}}
-							/>
+							{renderExpanded ? (
+								renderExpanded({
+									images,
+									currentIndex,
+									collapse: () => setExpanded(false),
+								})
+							) : (
+								<PhotoStackGrid
+									images={images}
+									onSelect={(index) => {
+										setCurrentIndex(index);
+										onImageOpen?.(index);
+									}}
+								/>
+							)}
 						</motion.div>
 					) : (
 						<motion.div

@@ -415,6 +415,32 @@
 	background: var(--persona-faint);
 }
 
+.galleryStage {
+	max-width: 76rem;
+	margin: 0 auto;
+}
+
+.photoStack {
+	color: var(--persona-ink);
+}
+
+.stackFooter {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.75rem;
+	color: var(--persona-muted);
+	font-size: 0.82rem;
+	line-height: 1.7;
+}
+
+.stackIndex {
+	color: var(--persona-accent);
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+}
 .plateList {
 	display: grid;
 	gap: 5.5rem;
