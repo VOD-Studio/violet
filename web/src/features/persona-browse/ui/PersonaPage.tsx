@@ -10,6 +10,7 @@ import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { LocaleSwitcher } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
 import styles from "./PersonaPage.module.css";
@@ -38,8 +39,8 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (isLoading) {
 		return (
-			<main className={`${styles.page} ${styles.loading}`}>
-				<p>正在整理人设档案…</p>
+			<main className={styles.page}>
+				<RuaLoading label="正在整理人设档案…" />
 			</main>
 		);
 	}
