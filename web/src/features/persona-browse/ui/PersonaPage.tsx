@@ -6,13 +6,12 @@ import {
 	splitPersonaDisplayName,
 } from "@features/persona-browse/model/presentation";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
-import { contentImageUrl } from "@shared/lib/image-url";
+import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import { PhotoStack } from "@shared/ui/photo-stack";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
@@ -25,14 +24,20 @@ interface LightboxState {
 	trigger: HTMLButtonElement | null;
 }
 
-const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
-
 interface PersonaPageProps {
 	locale: string;
 	onLocaleChange: (locale: string, defaultLocale: string) => void;
 }
 
-/** 当前公开人设的阅读型档案、可翻阅设定图集与长文设定。 */
+const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
+const DISPLAY_IMAGE_WIDTH = 2048;
+const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
+
+/**
+ * 人设公开档案页：
+ *
+ * 融合日系高级画报与艺术展册排版，提供肖像立绘、基本指标、左右交错设定展板与深度长文。
+ */
 export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const { data: persona, isPending, isError, isPlaceholderData } = useActivePersona(locale);
 	const articleImages = useArticleImagePreview();
@@ -67,6 +72,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 			</main>
 		);
 	}
+
 	const labels = personaPageLabels(persona.locale);
 	const name = splitPersonaDisplayName(persona.name);
 	const heroAsset = persona.avatar ?? persona.images[0] ?? null;
@@ -89,10 +95,12 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 			className={`public-surface ${styles.page}`}
 			data-stale={isPlaceholderData || undefined}
 		>
+			{/* --- Hero: 画报封面非对称构图 --- */}
 			<section className={styles.hero} aria-labelledby="persona-name">
 				<div className={styles.heroGlow} aria-hidden />
-				{/* key=档案语言：新语言数据到达时整段重挂载，入场编排随之重演一遍 */}
+
 				<div className={styles.heroInner} key={persona.locale}>
+					{/* 左侧：肖像立绘卡片 */}
 					{heroAsset ? (
 						<figure className={styles.portraitFigure}>
 							<button
@@ -115,22 +123,24 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 									duration={0.32}
 									spreadMs={380}
 									replayOnHover
-									className={styles.heroImage}
-									imgClassName={styles.heroImageImg}
+									className={styles.heroImageContainer}
+									imgClassName={styles.heroImage}
 									loading="eager"
 								/>
 							</button>
-							<figcaption>
-								<span>PORTRAIT</span>
-								<span>{localeLabel(persona.locale)}</span>
+							<figcaption className={styles.portraitCaption}>
+								<span className={styles.portraitIndex}>PORTRAIT</span>
+								<span className={styles.portraitLocale}>
+									{localeLabel(persona.locale)}
+								</span>
 							</figcaption>
 						</figure>
 					) : null}
 
+					{/* 右侧：标题排印、自白书与元信息 */}
 					<div className={styles.identity}>
-						<div className={styles.identityTopline}>
-							<p className={styles.eyebrow}>PERSONA FILE</p>
-							{persona.available_locales.length > 1 ? (
+						{persona.available_locales.length > 1 ? (
+							<div className={styles.identityTopline}>
 								<PersonaLocaleTabs
 									locales={persona.available_locales}
 									value={persona.locale}
@@ -139,43 +149,40 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 										onLocaleChange(nextLocale, persona.default_locale);
 									}}
 								/>
-							) : null}
-						</div>
+							</div>
+						) : null}
 
 						<h1 id="persona-name" className={styles.title} aria-label={persona.name}>
-							<span className={styles.titleName} aria-hidden="true">
-								{[...name.primary].map((glyph, index) => (
-									<span
-										key={`${glyph}-${index}`}
-										style={{ "--glyph-i": index } as React.CSSProperties}
-									>
-										{glyph}
-									</span>
-								))}
-							</span>
+							<span className={styles.titlePrimary}>{name.primary}</span>
+							{name.alias ? (
+								<span className={styles.titleAlias}>{name.alias}</span>
+							) : null}
 						</h1>
-						{name.alias ? (
-							<p className={styles.titleAlias}>
-								<span className={styles.titleAliasDash} aria-hidden />
-								{name.alias}
-							</p>
-						) : null}
+
 						{persona.subtitle ? (
-							<p className={styles.subtitle}>{persona.subtitle}</p>
+							<div className={styles.subtitleRow}>
+								<span className={styles.subtitleBullet} aria-hidden />
+								<p className={styles.subtitle}>{persona.subtitle}</p>
+							</div>
 						) : null}
+
 						{persona.summary ? (
-							<blockquote className={styles.summary}>
+							<blockquote className={styles.summaryBlock}>
 								<p>{persona.summary}</p>
 							</blockquote>
 						) : null}
-						<a className={styles.continueLink} href="#persona-profile">
-							{labels.continueReading}
-							<ArrowDown aria-hidden />
-						</a>
+
+						<div className={styles.heroActions}>
+							<a className={styles.continueLink} href="#persona-profile">
+								<span>{labels.continueReading}</span>
+								<ArrowDown className={styles.continueIcon} aria-hidden />
+							</a>
+						</div>
 					</div>
 				</div>
 			</section>
 
+			{/* --- 01 / PROFILE: 角色档案与核心指标 --- */}
 			{persona.facts.length > 0 ? (
 				<section
 					className={styles.profileSection}
@@ -184,78 +191,115 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 				>
 					<header className={styles.sectionHeader}>
 						<div className={styles.sectionTopline}>
-							<span className={styles.sectionIndex} aria-hidden="true">
+							<span className={styles.sectionIndex} aria-hidden>
 								01
 							</span>
-							<p className={styles.sectionKicker}>PROFILE</p>
-							<span className={styles.sectionRule} aria-hidden />
+							<p className={styles.sectionKicker}>PROFILE // 档案指标</p>
+							<div className={styles.sectionRule} aria-hidden />
 						</div>
 						<h2 id="profile-title">{labels.profile}</h2>
 					</header>
-					<dl className={styles.facts}>
+
+					<dl className={styles.specLedger}>
 						{persona.facts.map((fact) => (
-							<div className={styles.fact} key={fact.label}>
-								<dt>{fact.label}</dt>
-								<dd>{fact.value}</dd>
+							<div className={styles.specRow} key={fact.label}>
+								<dt className={styles.specKey}>{fact.label}</dt>
+								<dd className={styles.specValue}>{fact.value}</dd>
 							</div>
 						))}
 					</dl>
 				</section>
 			) : null}
 
+			{/* --- 02 / VISUALS: 左右交错艺术设定展板 --- */}
 			{galleryImages.length > 0 ? (
 				<section
-					className={styles.referenceSection}
+					className={styles.gallerySection}
+					id="persona-gallery"
 					aria-labelledby="persona-gallery-title"
 				>
 					<header className={styles.sectionHeader}>
 						<div className={styles.sectionTopline}>
-							<span className={styles.sectionIndex} aria-hidden="true">
+							<span className={styles.sectionIndex} aria-hidden>
 								02
 							</span>
-							<p className={styles.sectionKicker}>VISUALS</p>
-							<span className={styles.sectionRule} aria-hidden />
+							<p className={styles.sectionKicker}>VISUAL SPEC // 设定资料</p>
+							<div className={styles.sectionRule} aria-hidden />
 						</div>
 						<h2 id="persona-gallery-title">{labels.gallery}</h2>
 					</header>
-					<div className={styles.referenceStage}>
-						<PhotoStack
-							loading="lazy"
-							aspectClass="aspect-4/3"
-							overlay={false}
-							className={styles.photoStack}
-							images={galleryImages.map((image, index) => ({
-								src: image.thumbnail || image.url,
-								alt: galleryAlts[index],
-							}))}
-							footer={
-								<p className={styles.stackFooter}>
-									<span>
-										FIG. 01–{String(galleryImages.length).padStart(2, "0")}
-									</span>
-									拖动卡片翻阅设定资料，点击放大原图
-								</p>
-							}
-							onImageOpen={(index) =>
-								setLightbox({ open: true, index: index + 1, trigger: null })
-							}
-						/>
-					</div>
+
+					<ol className={styles.plateList}>
+						{galleryImages.map((image, index) => {
+							const previewIndex = index + 1;
+							const isEven = index % 2 === 1;
+							return (
+								<li
+									className={`${styles.plateItem} ${isEven ? styles.plateEven : styles.plateOdd}`}
+									key={image.url}
+								>
+									<article className={styles.plateFrame}>
+										<div className={styles.plateHeader}>
+											<span className={styles.plateIndex}>
+												PLATE // {String(previewIndex).padStart(2, "0")}
+											</span>
+											{image.caption ? (
+												<span className={styles.plateCaptionLabel}>
+													{image.caption}
+												</span>
+											) : null}
+										</div>
+
+										<button
+											type="button"
+											className={styles.plateButton}
+											onClick={(event) =>
+												setLightbox({
+													open: true,
+													index: previewIndex,
+													trigger: event.currentTarget,
+												})
+											}
+											aria-label={`预览 ${galleryAlts[index]}`}
+										>
+											<img
+												srcSet={contentImageSrcSet(
+													image.url,
+													DISPLAY_SRCSET_WIDTHS,
+												)}
+												sizes="(min-width: 1280px) 68rem, calc(100vw - 2.5rem)"
+												src={contentImageUrl(image.url, {
+													width: DISPLAY_IMAGE_WIDTH,
+												})}
+												alt={galleryAlts[index]}
+												width={image.width > 0 ? image.width : undefined}
+												height={image.height > 0 ? image.height : undefined}
+												className={styles.plateImage}
+												loading="lazy"
+											/>
+										</button>
+									</article>
+								</li>
+							);
+						})}
+					</ol>
 				</section>
 			) : null}
 
+			{/* --- 03 / NOTES: 长文设定与世界观物语 --- */}
 			{persona.content_html ? (
 				<section className={styles.contentSection} aria-labelledby="persona-story-title">
 					<header className={styles.sectionHeader}>
 						<div className={styles.sectionTopline}>
-							<span className={styles.sectionIndex} aria-hidden="true">
+							<span className={styles.sectionIndex} aria-hidden>
 								03
 							</span>
-							<p className={styles.sectionKicker}>NOTES</p>
-							<span className={styles.sectionRule} aria-hidden />
+							<p className={styles.sectionKicker}>CHRONICLE // 人物设定</p>
+							<div className={styles.sectionRule} aria-hidden />
 						</div>
 						<h2 id="persona-story-title">{labels.story}</h2>
 					</header>
+
 					<div
 						className={styles.contentInner}
 						data-article-content
@@ -271,6 +315,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 				</section>
 			) : null}
 
+			{/* 全屏大图灯箱预览 */}
 			<ImagePreview
 				open={lightbox.open}
 				onClose={() => setLightbox((state) => ({ ...state, open: false }))}
@@ -281,6 +326,8 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 				onIndexChange={(index) => setLightbox((state) => ({ ...state, index }))}
 				triggerElement={lightbox.trigger}
 			/>
+
+			{/* 悬浮返回顶部按钮 */}
 			<BackToTop />
 		</main>
 	);
