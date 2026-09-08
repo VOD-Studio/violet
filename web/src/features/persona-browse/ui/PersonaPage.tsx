@@ -233,11 +233,11 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 					<div className={styles.galleryStage}>
 						<PhotoStack
 							loading="lazy"
-							aspectClass="aspect-4/3"
+							aspectClass="aspect-5/3"
 							overlay={false}
 							className={styles.photoStack}
 							images={galleryImages.map((image, index) => ({
-								src: image.thumbnail || image.url,
+								src: image.url,
 								alt: galleryAlts[index],
 							}))}
 							footer={

@@ -12,7 +12,7 @@ export interface PhotoStackSlot {
 
 export const PULL_THRESHOLD_RATIO = 0.8;
 export const INSERT_THRESHOLD_RATIO = 1.2;
-export const FLIP_THRESHOLD_RATIO = 0.22;
+export const FLIP_THRESHOLD_RATIO = 0.16;
 export const DRAG_ROTATE_MAX = 11;
 export const DRAG_ROTATE_Y_MAX = 2;
 const BOUNDARY_DRAG_LIMIT_RATIO = 0.36;
@@ -248,30 +248,31 @@ export interface DragSample {
 }
 
 /** 保留最近的拖动采样，供松手时计算轻扫速度。 */
-export function recordSample(samples: DragSample[], t: number, x: number, limit = 6) {
+export function recordSample(samples: DragSample[], t: number, x: number, limit = 10) {
 	samples.push({ t, x });
 	if (samples.length > limit) samples.shift();
 }
 
-/** 窗口期内的平均速度，单位 px/ms；窗口内样本不足、已过期或时间戳无进展时返回 0。 */
-export function recentVelocity(samples: DragSample[], windowMs = 100, referenceTime?: number) {
+/** 窗口期内的平均速度，单位 px/ms；窗口内样本不足、停顿超时时返回 0。 */
+export function recentVelocity(samples: DragSample[], windowMs = 160, referenceTime?: number) {
 	if (samples.length < 2) return 0;
 	const last = samples[samples.length - 1];
-	if (referenceTime !== undefined && referenceTime - last.t > windowMs) return 0;
+	if (referenceTime !== undefined && referenceTime - last.t > 180) return 0;
 	let first: DragSample | null = null;
 	for (let i = samples.length - 2; i >= 0; i -= 1) {
 		if (last.t - samples[i].t <= windowMs) first = samples[i];
 		else break;
 	}
-	if (!first) return 0;
+	if (!first) {
+		first = samples[samples.length - 2];
+	}
 	const dt = last.t - first.t;
 	return dt > 0 ? (last.x - first.x) / dt : 0;
 }
 
 /** 轻扫翻页的最小位移与速度；速度方向需与位移一致，防止反向急停误判。 */
-const FLICK_MIN_DISTANCE = 24;
-const FLICK_VELOCITY = 0.45;
-
+const FLICK_MIN_DISTANCE = 16;
+const FLICK_VELOCITY = 0.22;
 /** 距离达标即翻页；位移不足但快速轻扫同样翻页。 */
 export function shouldFlip(delta: number, velocity: number, threshold: number, canFlip: boolean) {
 	if (!canFlip || delta === 0) return false;

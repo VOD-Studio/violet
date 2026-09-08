@@ -65,6 +65,7 @@ export function PhotoStackStage({
 	const suppressClickTimer = useRef(0);
 	const settling = useRef(false);
 	const thresholdTimer = useRef(0);
+	const pendingCommit = useRef<(() => void) | null>(null);
 	const transitionTimers = useRef(new Map<number, number>());
 	const dragSamples = useRef<DragSample[]>([]);
 	const dragOrigin = useRef({ x: 0, y: 0, rotate: 0, rotateY: 0, scale: 1 });
@@ -200,6 +201,7 @@ export function PhotoStackStage({
 			animate(value.opacity, 1, opacityTransition);
 			window.clearTimeout(thresholdTimer.current);
 			const commitIndex = () => {
+				pendingCommit.current = null;
 				onIndexChange(nextIndex);
 				setDragDirection(null);
 				setCurrentOffset(0);
@@ -207,6 +209,7 @@ export function PhotoStackStage({
 				setIsPastThreshold(false);
 				settling.current = false;
 			};
+			pendingCommit.current = commitIndex;
 			if (completePullPhase) {
 				thresholdTimer.current = window.setTimeout(() => {
 					commitIndex();
@@ -344,7 +347,13 @@ export function PhotoStackStage({
 	};
 
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-		if (event.button !== 0 || settling.current) return;
+		if (event.button !== 0) return;
+		if (pendingCommit.current) {
+			window.clearTimeout(thresholdTimer.current);
+			const commit = pendingCommit.current;
+			commit();
+		}
+		settling.current = false;
 		pointerStartX.current = event.clientX;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		cardDragOrigins.current.clear();
@@ -367,13 +376,13 @@ export function PhotoStackStage({
 			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
-			dragOrigin.current = {
-				x: value.x.get(),
-				y: value.y.get(),
-				rotate: value.rotate.get(),
-				rotateY: value.rotateY.get(),
-				scale: value.scale.get(),
-			};
+			value.x.set(0);
+			value.y.set(0);
+			value.rotate.set(0);
+			value.rotateY.set(0);
+			value.scale.set(1);
+			value.opacity.set(1);
+			dragOrigin.current = { x: 0, y: 0, rotate: 0, rotateY: 0, scale: 1 };
 		}
 	};
 	const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -391,20 +400,12 @@ export function PhotoStackStage({
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		const result = getDraggedTopSlot(rawDelta, width, canFlip);
 		const { topSlot, rotateY, isPastThreshold: past, pullProgress } = result;
-		const origin = dragOrigin.current;
-		const continuedTopSlot = {
-			...topSlot,
-			x: origin.x + topSlot.x,
-			y: origin.y + topSlot.y,
-			rotate: origin.rotate + topSlot.rotate,
-			scale: origin.scale + topSlot.scale - 1,
-		};
-		setCurrentOffset(continuedTopSlot.x);
+		setCurrentOffset(topSlot.x);
 		setIncomingProgress(canFlip ? pullProgress : 0);
 		setIsPastThreshold(canFlip && past);
 		setDragDirection(direction);
-		setStackSlot(value, continuedTopSlot);
-		value.rotateY.set(origin.rotateY + rotateY);
+		setStackSlot(value, topSlot);
+		value.rotateY.set(rotateY);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
@@ -417,13 +418,15 @@ export function PhotoStackStage({
 				cardValue.rotateY.stop();
 				cardValue.scale.stop();
 				cardValue.opacity.stop();
+				const staticSlot = getIndexedStackSlot(card.index, safeIndex, width);
+				const staticOpacity = getStackCardOpacity(card.index, safeIndex, images.length);
 				cardOrigin = {
-					x: cardValue.x.get(),
-					y: cardValue.y.get(),
-					rotate: cardValue.rotate.get(),
-					rotateY: cardValue.rotateY.get(),
-					scale: cardValue.scale.get(),
-					opacity: cardValue.opacity.get(),
+					x: staticSlot.x,
+					y: staticSlot.y,
+					rotate: staticSlot.rotate,
+					rotateY: 0,
+					scale: staticSlot.scale,
+					opacity: staticOpacity,
 				};
 				cardDragOrigins.current.set(card.index, cardOrigin);
 			}
@@ -460,17 +463,10 @@ export function PhotoStackStage({
 		const canFlip =
 			(direction === 1 && safeIndex < images.length - 1) ||
 			(direction === -1 && safeIndex > 0);
-		const flipThreshold = (stackWidth || 280) * FLIP_THRESHOLD_RATIO;
-		if (
-			canFlip &&
-			shouldFlip(
-				rawDelta,
-				recentVelocity(dragSamples.current, 100, event.timeStamp),
-				flipThreshold,
-				canFlip,
-			)
-		) {
-			const releaseVelocity = recentVelocity(dragSamples.current, 100, event.timeStamp);
+		const flipThreshold = Math.min((stackWidth || 280) * FLIP_THRESHOLD_RATIO, 80);
+		const vel = recentVelocity(dragSamples.current, 160, event.timeStamp);
+		if (canFlip && shouldFlip(rawDelta, vel, flipThreshold, canFlip)) {
+			const releaseVelocity = vel;
 			const completePullPhase =
 				Math.abs(rawDelta) < (stackWidth || 280) * PULL_THRESHOLD_RATIO;
 			if (!completePullPhase) setIsPastThreshold(true);
