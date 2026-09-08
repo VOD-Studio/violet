@@ -12,7 +12,7 @@ export interface ImagePreviewProps {
 	alts?: string[];
 	/**
 	 * 与 images 一一对应的加载占位和底部导航图。
-	 * 原图尺寸未知时不放大占位图；原图解码完成后替换。不传则显示加载指示器。
+	 * 原图尺寸未知时按触发图比例预留视口显示盒，解码完成后在同一几何盒内替换。
 	 */
 	thumbnails?: string[];
 	currentIndex?: number;

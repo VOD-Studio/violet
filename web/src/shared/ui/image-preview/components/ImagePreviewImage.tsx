@@ -27,6 +27,8 @@ export interface ImagePreviewImageProps {
 	triggerRect?: DOMRect | null;
 	closeProgress: MotionValue<number>;
 	initialNaturalSize?: { w: number; h: number } | null;
+	/** 原图尺寸未知时用于预留显示盒，避免缩略图先小后大。 */
+	placeholderAspectRatio?: number;
 	scale: number;
 	rotate: number;
 	flipX: boolean;
@@ -65,6 +67,7 @@ export function ImagePreviewImage({
 	triggerRect,
 	closeProgress,
 	initialNaturalSize,
+	placeholderAspectRatio,
 	scale,
 	rotate,
 	flipX,
@@ -131,9 +134,8 @@ export function ImagePreviewImage({
 	}, [src, initialNaturalSize]);
 
 	useEffect(() => {
-		const image = naturalSize ? imgRef.current : null;
 		const stage = stageRef.current;
-		if (!image || !stage || !isPresent) return;
+		if (!stage || !isPresent) return;
 		const followWheel = (event: WheelEvent) => {
 			event.preventDefault();
 			wheelActive.current = true;
@@ -144,7 +146,7 @@ export function ImagePreviewImage({
 		};
 		stage.addEventListener("wheel", followWheel, { passive: false });
 		return () => stage.removeEventListener("wheel", followWheel);
-	}, [naturalSize, isPresent, onWheelFollow]);
+	}, [isPresent, onWheelFollow]);
 
 	useEffect(() => {
 		const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
@@ -152,14 +154,24 @@ export function ImagePreviewImage({
 		return () => window.removeEventListener("resize", resize);
 	}, []);
 
-	const fit = naturalSize
+	const fallbackAspectRatio =
+		placeholderAspectRatio ??
+		(triggerRect && triggerRect.width > 0 && triggerRect.height > 0
+			? triggerRect.width / triggerRect.height
+			: null);
+	const sizingBasis =
+		naturalSize ??
+		(fallbackAspectRatio && Number.isFinite(fallbackAspectRatio)
+			? { w: fallbackAspectRatio, h: 1 }
+			: null);
+	const fit = sizingBasis
 		? Math.min(
-				1,
-				(viewport.width * 0.9) / naturalSize.w,
-				(viewport.height * 0.9) / naturalSize.h,
+				naturalSize ? 1 : Number.POSITIVE_INFINITY,
+				(viewport.width * 0.9) / sizingBasis.w,
+				(viewport.height * 0.9) / sizingBasis.h,
 			)
 		: 1;
-	const box = naturalSize ? { width: naturalSize.w * fit, height: naturalSize.h * fit } : null;
+	const box = sizingBasis ? { width: sizingBasis.w * fit, height: sizingBasis.h * fit } : null;
 
 	const handleLoad = useCallback(() => {
 		const image = imgRef.current;
@@ -390,7 +402,7 @@ export function ImagePreviewImage({
 											alt=""
 											aria-hidden
 											draggable={false}
-											className="h-full w-full select-none object-cover"
+											className="h-full w-full select-none object-contain"
 										/>
 									</motion.div>
 								) : null}

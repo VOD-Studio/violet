@@ -147,6 +147,45 @@ describe("ImagePreview 尺寸与加载", () => {
 		expect(next.parentElement?.style.height).toBe("720px");
 	});
 
+	it("慢原图期间按触发图片比例预留最终显示盒", async () => {
+		sizes.delete(images[2]);
+		render(
+			<button type="button">
+				<img src={thumbnails[2]} alt="海岸入口" />
+			</button>,
+		);
+		const trigger = screen.getByRole("button", { name: "海岸入口" });
+		const triggerImage = screen.getByAltText("海岸入口") as HTMLImageElement;
+		Object.defineProperties(triggerImage, {
+			naturalWidth: { configurable: true, value: 1600 },
+			naturalHeight: { configurable: true, value: 900 },
+		});
+		triggerImage.getBoundingClientRect = () => new DOMRect(100, 100, 320, 180);
+
+		render(
+			<ImagePreview
+				open
+				images={[images[2]]}
+				alts={["海岸"]}
+				thumbnails={[thumbnails[2]]}
+				triggerElement={trigger}
+				onClose={() => {}}
+			/>,
+		);
+
+		const loadingFrame = document.querySelector<HTMLElement>("[data-preview-frame]");
+		expect(loadingFrame?.style.width).toBe("900px");
+		expect(loadingFrame?.style.height).toBe("506.25px");
+
+		await act(async () => {
+			for (const request of requests.get(images[2]) ?? []) request.resolve(1600, 900);
+		});
+		const original = await image("海岸");
+		expect(original.parentElement).toBe(loadingFrame);
+		expect(loadingFrame?.style.width).toBe("900px");
+		expect(loadingFrame?.style.height).toBe("506.25px");
+	});
+
 	it("原图解码前保留占位，解码完成后再展示原图", async () => {
 		render(<Harness />);
 		const original = await image("湖畔");
