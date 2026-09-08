@@ -120,6 +120,7 @@ function ImagePreviewDialog({
 	}, [isPresent, closeProgress, reducedMotion, safeToRemove]);
 
 	const [resetKey, setResetKey] = useState(0);
+	const [listVisible, setListVisible] = useState(false);
 	const handleResetAll = useCallback(() => {
 		handleReset();
 		setResetKey((prev) => prev + 1);
@@ -272,6 +273,7 @@ function ImagePreviewDialog({
 					scale={scale}
 					currentIndex={index}
 					totalImages={images.length}
+					listVisible={listVisible}
 					onClose={onClose}
 					onZoomIn={handleZoomIn}
 					onZoomOut={handleZoomOut}
@@ -281,6 +283,7 @@ function ImagePreviewDialog({
 					onRotateRight={handleRotateRight}
 					onFlipX={handleFlipX}
 					onFlipY={handleFlipY}
+					onToggleList={() => setListVisible((visible) => !visible)}
 					onReset={handleResetAll}
 				/>
 			</motion.div>
@@ -310,16 +313,20 @@ function ImagePreviewDialog({
 				) : null}
 			</AnimatePresence>
 
-			<motion.div
-				className="pointer-events-none absolute inset-0 z-50 [&>*]:pointer-events-auto"
-				style={{ opacity: chromeOpacity }}
-			>
-				<ImagePreviewThumbnails
-					images={thumbnails ?? images}
-					currentIndex={index}
-					onSelect={handleSelect}
-				/>
-			</motion.div>
+			<AnimatePresence>
+				{listVisible ? (
+					<motion.div
+						className="pointer-events-none absolute inset-0 z-50 [&>*]:pointer-events-auto"
+						style={{ opacity: chromeOpacity }}
+					>
+						<ImagePreviewThumbnails
+							images={thumbnails ?? images}
+							currentIndex={index}
+							onSelect={handleSelect}
+						/>
+					</motion.div>
+				) : null}
+			</AnimatePresence>
 		</motion.div>
 	);
 }

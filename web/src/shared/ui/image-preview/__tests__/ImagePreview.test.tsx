@@ -226,6 +226,21 @@ describe("ImagePreview 导航与手势", () => {
 		await waitFor(() => expect(stage().querySelector("img[alt='海岸']")).not.toBeNull());
 	});
 
+	it("多图列表默认收起，可从工具栏显示并再次收起", async () => {
+		render(<Harness />);
+		await image("湖畔");
+		const toggle = screen.getByRole("button", { name: "显示图片列表" });
+		expect(toggle.getAttribute("aria-expanded")).toBe("false");
+		expect(screen.queryByRole("listbox", { name: "图片列表" })).toBeNull();
+
+		fireEvent.click(toggle);
+		expect(screen.getByRole("listbox", { name: "图片列表" })).not.toBeNull();
+		const collapse = screen.getByRole("button", { name: "收起图片列表" });
+		expect(collapse.getAttribute("aria-expanded")).toBe("true");
+		fireEvent.click(collapse);
+		await waitFor(() => expect(screen.queryByRole("listbox", { name: "图片列表" })).toBeNull());
+	});
+
 	it("切图退出后重新打开，仅挂载本次点击的图片", async () => {
 		const props = { images, alts, thumbnails, onClose: () => {} };
 		const view = render(<ImagePreview open {...props} currentIndex={0} />);
@@ -276,6 +291,7 @@ describe("ImagePreview 导航与手势", () => {
 		);
 		await image("湖畔");
 		fireEvent.wheel(screen.getByTitle("左旋转"), { deltaY: 600 });
+		fireEvent.click(screen.getByRole("button", { name: "显示图片列表" }));
 		fireEvent.wheel(screen.getByAltText("缩略图 1"), { deltaY: 600 });
 		expect(onClose).not.toHaveBeenCalled();
 		fireEvent.wheel(stage(), { deltaY: -400 });

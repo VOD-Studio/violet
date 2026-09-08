@@ -3,6 +3,7 @@ import {
 	ChevronRight,
 	FlipHorizontal,
 	FlipVertical,
+	List,
 	RefreshCcw,
 	RotateCcw,
 	RotateCw,
@@ -19,6 +20,8 @@ export interface ImagePreviewControlsProps {
 	/** 从 0 开始。 */
 	currentIndex: number;
 	totalImages: number;
+	/** 是否显示缩略图列表。 */
+	listVisible: boolean;
 	onClose: () => void;
 	onZoomIn: () => void;
 	onZoomOut: () => void;
@@ -28,6 +31,8 @@ export interface ImagePreviewControlsProps {
 	onRotateRight?: () => void;
 	onFlipX?: () => void;
 	onFlipY?: () => void;
+	/** 切换缩略图列表显示状态。 */
+	onToggleList: () => void;
 	/** 重置（缩放/旋转/翻转恢复初始）回调 */
 	onReset?: () => void;
 }
@@ -37,6 +42,7 @@ export function ImagePreviewControls({
 	scale,
 	currentIndex,
 	totalImages,
+	listVisible,
 	onClose,
 	onZoomIn,
 	onZoomOut,
@@ -46,6 +52,7 @@ export function ImagePreviewControls({
 	onRotateRight,
 	onFlipX,
 	onFlipY,
+	onToggleList,
 	onReset,
 }: ImagePreviewControlsProps) {
 	const handleClick = (callback: () => void) => (e: React.MouseEvent) => {
@@ -160,9 +167,22 @@ export function ImagePreviewControls({
 				{/* 右侧：图片计数、关闭 */}
 				<div className="flex shrink-0 items-center gap-1 sm:gap-2">
 					{totalImages > 1 ? (
-						<span className="text-xs text-white sm:text-sm">
-							{currentIndex + 1} / {totalImages}
-						</span>
+						<>
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								onClick={handleClick(onToggleList)}
+								aria-label={listVisible ? "收起图片列表" : "显示图片列表"}
+								aria-expanded={listVisible}
+								aria-controls="image-preview-list"
+								className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
+							>
+								<List className="h-4 w-4 sm:h-5 sm:w-5" />
+							</Button>
+							<span className="text-xs text-white sm:text-sm">
+								{currentIndex + 1} / {totalImages}
+							</span>
+						</>
 					) : null}
 					<Button
 						variant="ghost"
