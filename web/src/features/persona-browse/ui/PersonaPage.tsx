@@ -15,6 +15,7 @@ import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { PhotoStack } from "@shared/ui/photo-stack";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { PersonaLocaleTabs } from "./PersonaLocaleTabs";
 import styles from "./PersonaPage.module.css";
@@ -33,6 +34,7 @@ interface PersonaPageProps {
 const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
 const DISPLAY_IMAGE_WIDTH = 2048;
 const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
+const PLATE_EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * 人设公开档案页：
@@ -43,7 +45,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const { data: persona, isPending, isError, isPlaceholderData } = useActivePersona(locale);
 	const articleImages = useArticleImagePreview();
 	const [lightbox, setLightbox] = useState<LightboxState>(CLOSED_LIGHTBOX);
-
+	const reduceMotion = useReducedMotion();
 	if (isPending) {
 		return (
 			<main className={`public-surface ${styles.page}`}>
@@ -245,7 +247,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 									<span className={styles.stackIndex}>
 										FIG. 01–{String(galleryImages.length).padStart(2, "0")}
 									</span>
-									<p>拖动卡片翻阅设定资料，展开画廊查看完整展板</p>
+									<p>叠起成册，铺开成墙</p>
 								</div>
 							}
 							onImageOpen={(index) =>
@@ -257,9 +259,27 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 										const previewIndex = index + 1;
 										const isEven = index % 2 === 1;
 										return (
-											<li
+											<motion.li
 												className={`${styles.plateItem} ${isEven ? styles.plateEven : styles.plateOdd}`}
 												key={image.url}
+												initial={{ opacity: 0, y: 28 }}
+												animate={{ opacity: 1, y: 0 }}
+												exit={{
+													opacity: 0,
+													y: -18,
+													transition: reduceMotion
+														? { duration: 0 }
+														: { duration: 0.3, ease: PLATE_EASE },
+												}}
+												transition={
+													reduceMotion
+														? { duration: 0 }
+														: {
+																duration: 0.45,
+																ease: PLATE_EASE,
+																delay: index * 0.05,
+															}
+												}
 											>
 												<article className={styles.plateFrame}>
 													<div className={styles.plateHeader}>
@@ -313,7 +333,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 														/>
 													</button>
 												</article>
-											</li>
+											</motion.li>
 										);
 									})}
 								</ol>

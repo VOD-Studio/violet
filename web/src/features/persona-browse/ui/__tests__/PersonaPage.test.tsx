@@ -101,7 +101,7 @@ describe("PersonaPage", () => {
 		expect(screen.getByText("当前没有已激活的角色资料。")).toBeTruthy();
 	});
 
-	it("按画报排版展示肖像、档案资料、交错设定展板与长文", () => {
+	it("按画报排版展示肖像、档案资料、交错设定展板与长文", async () => {
 		activePersonaQuery.data = persona;
 		render(<PersonaPage locale="" onLocaleChange={localeChange} />);
 
@@ -124,7 +124,7 @@ describe("PersonaPage", () => {
 
 		// 默认折叠为堆叠，点击展开后呈现交错大展板
 		fireEvent.click(screen.getByRole("button", { name: /展开全部/ }));
-		expect(screen.getByRole("button", { name: "预览 角色三视图" })).toBeTruthy();
+		expect(await screen.findByRole("button", { name: "预览 角色三视图" })).toBeTruthy();
 		expect(screen.getByText("角色主设定")).toBeTruthy();
 	});
 
@@ -137,12 +137,12 @@ describe("PersonaPage", () => {
 		expect(localeChange).toHaveBeenCalledWith("ja-JP", "zh-CN");
 	});
 
-	it("展开画廊展板后点击打开完整有序灯箱", () => {
+	it("展开画廊展板后点击打开完整有序灯箱", async () => {
 		activePersonaQuery.data = persona;
 		render(<PersonaPage locale="" onLocaleChange={localeChange} />);
 
 		fireEvent.click(screen.getByRole("button", { name: /展开全部/ }));
-		fireEvent.click(screen.getByRole("button", { name: "预览 角色三视图" }));
+		fireEvent.click(await screen.findByRole("button", { name: "预览 角色三视图" }));
 		expect(screen.getByTestId("persona-lightbox")).toBeTruthy();
 		expect(imagePreviewProps).toHaveBeenLastCalledWith(
 			expect.objectContaining({
