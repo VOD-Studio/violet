@@ -89,8 +89,8 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 			data-pinned={actionsPinned || undefined}
 			className="group pointer-events-auto flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
 		>
-			{/* 搜索与主题随 hover/聚焦展开；通知、聊天或用户菜单激活时保持展开。 */}
-			<div className="pointer-events-none hidden max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-hover:pointer-events-auto lg:group-hover:max-w-52 lg:group-hover:opacity-100 lg:group-focus-within:pointer-events-auto lg:group-focus-within:max-w-52 lg:group-focus-within:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-52 lg:group-data-[pinned]:opacity-100">
+			{/* 工具区随 hover 展开；通知、聊天或用户菜单激活时保持展开。 */}
+			<div className="pointer-events-none hidden max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-hover:pointer-events-auto lg:group-hover:max-w-52 lg:group-hover:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-52 lg:group-data-[pinned]:opacity-100">
 				{/* 搜索命令面板按钮 */}
 				<button
 					type="button"
