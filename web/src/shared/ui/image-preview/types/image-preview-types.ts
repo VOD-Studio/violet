@@ -1,7 +1,8 @@
 /**
  * 全屏查看图片组。
  *
- * @remarks 鼠标拖动与触摸轻扫可循环切图，放大后拖动平移；滚轮缩放仅在图片区域响应。
+ * @remarks 鼠标拖动与触摸轻扫可循环切图，放大后拖动平移。
+ * 滚轮手势从图片区域开始，仅控制逐渐收回与反向恢复；图片缩放使用工具栏或快捷键。
  */
 export interface ImagePreviewProps {
 	open: boolean;
@@ -16,11 +17,11 @@ export interface ImagePreviewProps {
 	thumbnails?: string[];
 	currentIndex?: number;
 	onIndexChange?: (index: number) => void;
-	/** 触发预览的原始图片元素（用于计算动画起点） */
+	/** 触发预览的原始图片元素，用于计算入场与收回位置。 */
 	triggerElement?: HTMLElement | null;
 	/**
 	 * 触发元素的位置快照，触发元素可能卸载时可传入。
-	 * 仅用于本次打开的入场动画，不随切图复用。
+	 * 用于首图入场；切图后优先收回到当前图片对应的页面元素。
 	 */
 	triggerRect?: DOMRect | null;
 	/** 退出动画播放完成回调（关闭动画结束后触发，调用方可据此清理数据） */

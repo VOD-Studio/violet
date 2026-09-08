@@ -263,29 +263,25 @@ describe("ImagePreview 导航与手势", () => {
 		expect(onClose).not.toHaveBeenCalled();
 	});
 
-	it("快速滑回尚在退场的图片时清除拖动偏移", async () => {
-		render(<Harness />);
-		const original = await image("湖畔");
-		const pan = original.parentElement?.parentElement;
-		swipe(-200);
-		await waitFor(() => expect(pan?.style.transform).toContain("-200px"));
-		fireEvent.keyDown(window, { key: "ArrowLeft" });
-		await waitFor(() => expect(stage().querySelector("img[alt='湖畔']")).toBe(original));
-		await waitFor(() => expect(pan?.style.transform).toBe("none"));
-	});
-
-	it("仅图片接收滚轮缩放，背景、工具栏与缩略图不缩放", async () => {
-		render(<Harness />);
-		const original = await image("湖畔");
-		fireEvent.load(original);
-		fireEvent.wheel(stage(), { deltaY: -200 });
-		fireEvent.wheel(screen.getByTitle("左旋转"), { deltaY: -200 });
-		fireEvent.wheel(screen.getByAltText("缩略图 1"), { deltaY: -200 });
+	it("滚轮可从图片周围开始收回，但工具栏与缩略图保留自身滚动", async () => {
+		const onClose = vi.fn();
+		render(
+			<ImagePreview
+				open
+				images={images}
+				alts={alts}
+				thumbnails={thumbnails}
+				onClose={onClose}
+			/>,
+		);
+		await image("湖畔");
+		fireEvent.wheel(screen.getByTitle("左旋转"), { deltaY: 600 });
+		fireEvent.wheel(screen.getByAltText("缩略图 1"), { deltaY: 600 });
+		expect(onClose).not.toHaveBeenCalled();
+		fireEvent.wheel(stage(), { deltaY: -400 });
+		fireEvent.wheel(stage(), { deltaY: -400 });
 		expect(screen.getByText("100%")).not.toBeNull();
-		fireEvent.wheel(original, { deltaY: -200 });
-		expect(screen.getByText("120%")).not.toBeNull();
-		fireEvent.wheel(stage(), { deltaY: -200 });
-		expect(screen.getByText("120%")).not.toBeNull();
+		expect(onClose).toHaveBeenCalledTimes(1);
 	});
 
 	it("短拖动、纵向拖动与取消手势都不切图", async () => {
@@ -343,5 +339,150 @@ describe("ImagePreview 导航与手势", () => {
 		fireEvent.doubleClick(original);
 		swipe(-200);
 		expect(await image("山峰")).not.toBeNull();
+	});
+});
+
+describe("ImagePreview 收回关闭", () => {
+	const triggerRect = new DOMRect(100, 120, 200, 150);
+
+	it("退出动画结束前保持滚动锁，结束后恢复页面滚动", async () => {
+		const props = { images, alts, triggerRect, onClose: () => {} };
+		const view = render(<ImagePreview open {...props} />);
+		await image("湖畔");
+		view.rerender(<ImagePreview open={false} {...props} />);
+		expect(document.querySelector('[aria-label="图片预览"]')).not.toBeNull();
+		expect(document.body.style.overflow).toBe("hidden");
+		await waitFor(() => expect(document.querySelector('[aria-label="图片预览"]')).toBeNull());
+		expect(document.body.style.overflow).toBe("");
+	});
+
+	it("退出期间重开不会被旧会话提前解除滚动锁", async () => {
+		const props = { images, alts, triggerRect, onClose: () => {} };
+		const view = render(<ImagePreview open {...props} />);
+		await image("湖畔");
+		const previous = screen.getByRole("dialog");
+		view.rerender(<ImagePreview open={false} {...props} />);
+		view.rerender(<ImagePreview open {...props} currentIndex={1} />);
+		await image("山峰");
+		await waitFor(() => expect(previous.isConnected).toBe(false));
+		expect(document.body.style.overflow).toBe("hidden");
+		view.rerender(<ImagePreview open={false} {...props} />);
+		await waitFor(() => expect(document.querySelector('[aria-label="图片预览"]')).toBeNull());
+		expect(document.body.style.overflow).toBe("");
+	});
+
+	it("从最后一张切到第一张关闭后，返回当前图片的入口", async () => {
+		function Gallery() {
+			const [preview, setPreview] = useState<{
+				open: boolean;
+				index: number;
+				trigger: HTMLElement | null;
+			}>({ open: false, index: 0, trigger: null });
+			return (
+				<article>
+					{images.map((src, index) => (
+						<button
+							key={src}
+							type="button"
+							onClick={(event) =>
+								setPreview({ open: true, index, trigger: event.currentTarget })
+							}
+						>
+							<img
+								src={src}
+								alt={`浏览图 ${index + 1}`}
+								ref={(element) => {
+									if (element)
+										element.getBoundingClientRect = () =>
+											new DOMRect(100, 100 + index * 200, 200, 150);
+								}}
+							/>
+						</button>
+					))}
+					<ImagePreview
+						open={preview.open}
+						images={images}
+						alts={alts}
+						currentIndex={preview.index}
+						triggerElement={preview.trigger}
+						onClose={() => setPreview((current) => ({ ...current, open: false }))}
+						onIndexChange={(index) => setPreview((current) => ({ ...current, index }))}
+					/>
+				</article>
+			);
+		}
+		render(<Gallery />);
+		const first = screen.getByRole("button", { name: "浏览图 1" });
+		fireEvent.click(screen.getByRole("button", { name: "浏览图 3" }));
+		await image("海岸");
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		await image("湖畔");
+		fireEvent.keyDown(window, { key: "Escape" });
+		await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+		expect(document.activeElement).toBe(first);
+	});
+
+	it("周围区域可沿首次滚动方向收回，并用反向滚动恢复", async () => {
+		const onClose = vi.fn();
+		render(
+			<ImagePreview
+				open
+				images={images}
+				alts={alts}
+				triggerRect={triggerRect}
+				onClose={onClose}
+			/>,
+		);
+		await image("湖畔");
+		const background = stage();
+		fireEvent.wheel(background, { deltaY: -300 });
+		expect(onClose).not.toHaveBeenCalled();
+		fireEvent.wheel(background, { deltaY: 300 });
+		expect(onClose).not.toHaveBeenCalled();
+		fireEvent.wheel(background, { deltaY: -600 });
+		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it("图片放大后，滚轮仍只控制收回而不改变缩放倍率", async () => {
+		const onClose = vi.fn();
+		render(
+			<ImagePreview
+				open
+				images={images}
+				alts={alts}
+				triggerRect={triggerRect}
+				onClose={onClose}
+			/>,
+		);
+		const original = await image("湖畔");
+		fireEvent.keyDown(window, { key: "+" });
+		expect(screen.getByText("150%")).not.toBeNull();
+		fireEvent.wheel(original, { deltaY: -200 });
+		expect(screen.getByText("150%")).not.toBeNull();
+		fireEvent.wheel(original, { deltaY: 150 });
+		expect(screen.getByText("150%")).not.toBeNull();
+		expect(onClose).not.toHaveBeenCalled();
+		fireEvent.wheel(original, { deltaY: -550 });
+		expect(screen.getByText("150%")).not.toBeNull();
+		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it("周围区域在图片离开指针后仍接管当前滚轮手势", async () => {
+		const onClose = vi.fn();
+		render(
+			<ImagePreview
+				open
+				images={images}
+				alts={alts}
+				triggerRect={triggerRect}
+				onClose={onClose}
+			/>,
+		);
+		await image("湖畔");
+		const background = stage();
+		fireEvent.wheel(background, { deltaY: 300, clientX: 300, clientY: 300 });
+		fireEvent.pointerMove(background, { clientX: 800, clientY: 600 });
+		fireEvent.wheel(background, { deltaY: 300, clientX: 800, clientY: 600 });
+		await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
 	});
 });

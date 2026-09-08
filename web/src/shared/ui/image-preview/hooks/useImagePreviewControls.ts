@@ -1,3 +1,4 @@
+import { useMotionValue } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface UseImagePreviewControlsProps {
@@ -8,8 +9,10 @@ interface UseImagePreviewControlsProps {
 	onClose: () => void;
 }
 
+const CLOSE_WHEEL_DISTANCE = 600; // 留出多次滚动的行程，避免一格滚轮直接关闭。
+const CLOSE_WHEEL_SMOOTHING = 0.32;
 /**
- * 管理循环导航、图像变换与预览期间的键盘和滚动锁。
+ * 管理循环导航、图像变换与预览期间的键盘操作。
  *
  * @returns 当前图像状态与统一的导航、变换操作。
  */
@@ -24,16 +27,41 @@ export function useImagePreviewControls({
 	const indexRef = useRef(currentIndex);
 	const [direction, setDirection] = useState(0);
 	const [scale, setScale] = useState(1);
+	const scaleRef = useRef(1);
+	const closeProgress = useMotionValue(0);
+	const closeTarget = useRef(0);
+	const closeAnimationFrame = useRef<number | null>(null);
+	const wheelDirection = useRef(0);
+	const cancelCloseAnimation = useCallback(() => {
+		if (closeAnimationFrame.current !== null) {
+			cancelAnimationFrame(closeAnimationFrame.current);
+			closeAnimationFrame.current = null;
+		}
+	}, []);
+	const setCloseProgress = useCallback(
+		(progress: number) => {
+			cancelCloseAnimation();
+			closeTarget.current = progress;
+			closeProgress.set(progress);
+		},
+		[cancelCloseAnimation, closeProgress],
+	);
+	const updateScale = useCallback((next: number) => {
+		scaleRef.current = next;
+		setScale(next);
+	}, []);
 	const [rotate, setRotate] = useState(0);
 	const [flipX, setFlipX] = useState(false);
 	const [flipY, setFlipY] = useState(false);
 	// 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
 	const handleReset = useCallback(() => {
-		setScale(1);
+		setCloseProgress(0);
+		wheelDirection.current = 0;
+		updateScale(1);
 		setRotate(0);
 		setFlipX(false);
 		setFlipY(false);
-	}, []);
+	}, [setCloseProgress, updateScale]);
 
 	const wasOpen = useRef(false);
 	useLayoutEffect(() => {
@@ -69,12 +97,14 @@ export function useImagePreviewControls({
 	}, [images.length, handleSelect]);
 
 	const handleZoomIn = useCallback(() => {
-		setScale((prev) => Math.min(prev + 0.5, 3));
-	}, []);
+		setCloseProgress(0);
+		updateScale(Math.min(scaleRef.current + 0.5, 3));
+	}, [setCloseProgress, updateScale]);
 
 	const handleZoomOut = useCallback(() => {
-		setScale((prev) => Math.max(prev - 0.5, 0.5));
-	}, []);
+		setCloseProgress(0);
+		updateScale(Math.max(scaleRef.current - 0.5, 0.5));
+	}, [setCloseProgress, updateScale]);
 
 	const handleRotateLeft = useCallback(() => {
 		setRotate((prev) => prev - 90);
@@ -92,12 +122,41 @@ export function useImagePreviewControls({
 		setFlipY((prev) => !prev);
 	}, []);
 
-	const handleWheel = useCallback((delta: number) => {
-		setScale((prev) => {
-			const newScale = prev - delta * 0.001;
-			return Math.max(0.5, Math.min(3, newScale));
-		});
-	}, []);
+	const finishWheelClose = useCallback(() => {
+		closeAnimationFrame.current = null;
+		const current = closeProgress.get();
+		const next = current + (closeTarget.current - current) * CLOSE_WHEEL_SMOOTHING;
+		if (Math.abs(closeTarget.current - next) < 0.002) {
+			closeProgress.set(closeTarget.current);
+			return;
+		}
+		closeProgress.set(next);
+		closeAnimationFrame.current = requestAnimationFrame(finishWheelClose);
+	}, [closeProgress]);
+	const handleWheel = useCallback(
+		(delta: number) => {
+			if (delta === 0) return;
+			const direction = Math.sign(delta);
+			if (wheelDirection.current === 0) wheelDirection.current = direction;
+			const signedDelta = delta * wheelDirection.current;
+			closeTarget.current = Math.max(
+				0,
+				Math.min(1, closeTarget.current + signedDelta / CLOSE_WHEEL_DISTANCE),
+			);
+			if (closeTarget.current >= 1) {
+				cancelCloseAnimation();
+				closeProgress.set(1);
+				onClose();
+				return;
+			}
+			if (closeAnimationFrame.current === null) {
+				closeAnimationFrame.current = requestAnimationFrame(finishWheelClose);
+			}
+		},
+		[cancelCloseAnimation, closeProgress, finishWheelClose, onClose],
+	);
+
+	useEffect(() => cancelCloseAnimation, [cancelCloseAnimation]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -132,26 +191,10 @@ export function useImagePreviewControls({
 		};
 	}, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut]);
 
-	useEffect(() => {
-		if (open) {
-			if (typeof document === "undefined") return;
-			const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-			const originalOverflow = document.body.style.overflow;
-			const originalPaddingRight = document.body.style.paddingRight;
-			document.body.style.overflow = "hidden";
-			if (scrollbarWidth > 0) {
-				document.body.style.paddingRight = `${scrollbarWidth}px`;
-			}
-			return () => {
-				document.body.style.overflow = originalOverflow;
-				document.body.style.paddingRight = originalPaddingRight;
-			};
-		}
-	}, [open]);
-
 	return {
 		index,
 		scale,
+		closeProgress,
 		rotate,
 		flipX,
 		flipY,

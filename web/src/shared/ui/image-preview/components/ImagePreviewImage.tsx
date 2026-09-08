@@ -1,10 +1,12 @@
 import {
 	AnimatePresence,
 	animate,
+	type MotionValue,
 	motion,
 	useIsPresent,
 	useMotionValue,
 	useReducedMotion,
+	useTransform,
 } from "motion/react";
 import {
 	type PointerEvent,
@@ -23,6 +25,7 @@ export interface ImagePreviewImageProps {
 	/** -1 向前、1 向后，0 为打开预览。 */
 	direction: number;
 	triggerRect?: DOMRect | null;
+	closeProgress: MotionValue<number>;
 	initialNaturalSize?: { w: number; h: number } | null;
 	scale: number;
 	rotate: number;
@@ -31,8 +34,8 @@ export interface ImagePreviewImageProps {
 	/** 原图解码完成后触发。 */
 	onLoad: () => void;
 	onReset: () => void;
-	/** deltaY 使用 WheelEvent 的滚动增量。 */
-	onWheelZoom: (deltaY: number) => void;
+	/** 已换算为像素的垂直滚动增量；首次方向用于收回，反向用于恢复。 */
+	onWheelFollow: (deltaY: number) => void;
 	onSwipeLeft?: () => void;
 	onSwipeRight?: () => void;
 	resetKey: number;
@@ -60,6 +63,7 @@ export function ImagePreviewImage({
 	thumbnail,
 	direction,
 	triggerRect,
+	closeProgress,
 	initialNaturalSize,
 	scale,
 	rotate,
@@ -67,7 +71,7 @@ export function ImagePreviewImage({
 	flipY,
 	onLoad,
 	onReset,
-	onWheelZoom,
+	onWheelFollow,
 	onSwipeLeft,
 	onSwipeRight,
 	resetKey,
@@ -83,6 +87,8 @@ export function ImagePreviewImage({
 		height: window.innerHeight,
 	}));
 	const imgRef = useRef<HTMLImageElement>(null);
+	const stageRef = useRef<HTMLDivElement>(null);
+	const wheelActive = useRef(false);
 	const decodingImage = useRef<HTMLImageElement | null>(null);
 	const active = useRef(true);
 	const gesture = useRef<Gesture | null>(null);
@@ -126,14 +132,19 @@ export function ImagePreviewImage({
 
 	useEffect(() => {
 		const image = naturalSize ? imgRef.current : null;
-		if (!image || !isPresent) return;
-		const zoom = (event: WheelEvent) => {
+		const stage = stageRef.current;
+		if (!image || !stage || !isPresent) return;
+		const followWheel = (event: WheelEvent) => {
 			event.preventDefault();
-			onWheelZoom(event.deltaY);
+			wheelActive.current = true;
+			onWheelFollow(
+				event.deltaY *
+					(event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1),
+			);
 		};
-		image.addEventListener("wheel", zoom, { passive: false });
-		return () => image.removeEventListener("wheel", zoom);
-	}, [naturalSize, isPresent, onWheelZoom]);
+		stage.addEventListener("wheel", followWheel, { passive: false });
+		return () => stage.removeEventListener("wheel", followWheel);
+	}, [naturalSize, isPresent, onWheelFollow]);
 
 	useEffect(() => {
 		const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
@@ -225,6 +236,7 @@ export function ImagePreviewImage({
 	};
 
 	const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+		if (wheelActive.current) wheelActive.current = false;
 		const current = gesture.current;
 		if (!current || current.pointerId !== event.pointerId) return;
 		const x = event.clientX - current.startX;
@@ -262,20 +274,44 @@ export function ImagePreviewImage({
 	};
 
 	const origin =
-		box && triggerRect && direction === 0
+		box && triggerRect && triggerRect.width > 0 && triggerRect.height > 0
 			? {
 					x: triggerRect.left + triggerRect.width / 2 - viewport.width / 2,
 					y: triggerRect.top + triggerRect.height / 2 - viewport.height / 2,
-					scale: Math.min(
-						1,
-						triggerRect.width / box.width,
-						triggerRect.height / box.height,
-					),
+					scale: Math.min(triggerRect.width / box.width, triggerRect.height / box.height),
 				}
 			: { x: 0, y: 0, scale: 1 };
 
+	const imageCloseProgress = useTransform(closeProgress, (progress) =>
+		isPresent ? progress : 0,
+	);
+	const returnX = useTransform(() => {
+		const progress = imageCloseProgress.get();
+		return offsetX.get() * (1 - progress) + origin.x * progress;
+	});
+	const returnY = useTransform(() => {
+		const progress = imageCloseProgress.get();
+		return offsetY.get() * (1 - progress) + origin.y * progress;
+	});
+	const returnScale = useTransform(
+		imageCloseProgress,
+		(progress) => 1 + ((triggerRect ? origin.scale : 0.85) - 1) * progress,
+	);
+	const returnOpacity = useTransform(imageCloseProgress, (progress) =>
+		triggerRect ? 1 : 1 - progress,
+	);
+	const imageTransform = useTransform(imageCloseProgress, (progress) => {
+		const x = (flipX ? -scale : scale) * (1 - progress) + progress;
+		const y = (flipY ? -scale : scale) * (1 - progress) + progress;
+		return `scale(${x}, ${y}) rotate(${rotate * (1 - progress)}deg)`;
+	});
+	const imageTransition = useTransform(imageCloseProgress, (progress) =>
+		reducedMotion || progress > 0 ? "none" : "transform 0.2s ease-out",
+	);
+
 	return (
 		<motion.div
+			ref={stageRef}
 			custom={direction}
 			variants={slideVariants}
 			initial="enter"
@@ -313,62 +349,64 @@ export function ImagePreviewImage({
 		>
 			<motion.div
 				className="absolute inset-0 flex items-center justify-center"
-				style={{ x: offsetX, y: offsetY }}
+				style={{ x: returnX, y: returnY }}
 			>
-				{box ? (
-					<motion.div
-						data-preview-frame
-						initial={reducedMotion || direction !== 0 ? false : origin}
-						animate={{ x: 0, y: 0, scale: 1 }}
-						transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
-						className="relative shrink-0"
-						style={{ width: box.width, height: box.height }}
-					>
+				<motion.div style={{ scale: returnScale, opacity: returnOpacity }}>
+					{box ? (
+						<motion.div
+							data-preview-frame
+							initial={reducedMotion || direction !== 0 ? false : origin}
+							animate={{ x: 0, y: 0, scale: 1 }}
+							transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+							className="relative shrink-0"
+							style={{ width: box.width, height: box.height }}
+						>
+							<motion.img
+								ref={imgRef}
+								src={src}
+								alt={alt}
+								onLoad={handleLoad}
+								onError={() => setFailed(true)}
+								decoding="async"
+								draggable={false}
+								className="absolute inset-0 h-full w-full select-none object-contain"
+								style={{
+									opacity: ready ? 1 : 0,
+									transform: imageTransform,
+									transition: imageTransition,
+									cursor: "grab",
+								}}
+							/>
+							<AnimatePresence>
+								{thumbnail && !ready ? (
+									<motion.div
+										className="pointer-events-none absolute inset-0"
+										initial={{ opacity: 1 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: reducedMotion ? 0 : 0.15 }}
+									>
+										<img
+											src={thumbnail}
+											alt=""
+											aria-hidden
+											draggable={false}
+											className="h-full w-full select-none object-cover"
+										/>
+									</motion.div>
+								) : null}
+							</AnimatePresence>
+						</motion.div>
+					) : thumbnail ? (
 						<img
-							ref={imgRef}
-							src={src}
-							alt={alt}
-							onLoad={handleLoad}
-							onError={() => setFailed(true)}
-							decoding="async"
+							src={thumbnail}
+							alt=""
+							aria-hidden
 							draggable={false}
-							className="absolute inset-0 h-full w-full select-none object-contain"
-							style={{
-								opacity: ready ? 1 : 0,
-								transform: `scale(${flipX ? -scale : scale}, ${flipY ? -scale : scale}) rotate(${rotate}deg)`,
-								transition: reducedMotion ? "none" : "transform 0.2s ease-out",
-								cursor: "grab",
-							}}
+							data-preview-frame
+							className="max-h-[90vh] max-w-[90vw] select-none object-contain"
 						/>
-						<AnimatePresence>
-							{thumbnail && !ready ? (
-								<motion.div
-									className="pointer-events-none absolute inset-0"
-									initial={{ opacity: 1 }}
-									exit={{ opacity: 0 }}
-									transition={{ duration: reducedMotion ? 0 : 0.15 }}
-								>
-									<img
-										src={thumbnail}
-										alt=""
-										aria-hidden
-										draggable={false}
-										className="h-full w-full select-none object-cover"
-									/>
-								</motion.div>
-							) : null}
-						</AnimatePresence>
-					</motion.div>
-				) : thumbnail ? (
-					<img
-						src={thumbnail}
-						alt=""
-						aria-hidden
-						draggable={false}
-						data-preview-frame
-						className="max-h-[90vh] max-w-[90vw] select-none object-contain"
-					/>
-				) : null}
+					) : null}
+				</motion.div>
 			</motion.div>
 			{failed ? (
 				<div
