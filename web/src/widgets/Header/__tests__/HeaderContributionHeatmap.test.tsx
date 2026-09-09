@@ -43,7 +43,7 @@ describe("HeaderContributionHeatmap", () => {
 		expect(columns.at(-1)?.[0].className).toContain("bg-primary");
 	});
 
-	it("今天落在末列真实星期位置，之后的格位为空占位", () => {
+	it("今天落在末列真实星期位置，之后的格位保留空贡献底色", () => {
 		vi.setSystemTime(new Date(2026, 8, 8, 12)); // 周二 → 末列第 3 格
 		const { container } = renderHeatmap();
 		const columns = getColumns(container);
@@ -51,10 +51,12 @@ describe("HeaderContributionHeatmap", () => {
 		expect(ringed).toHaveLength(1);
 		expect(columns.at(-1)?.indexOf(ringed[0])).toBe(2);
 
-		// 周三~周六共 4 格空占位：无热力色、无 hover 交互
-		const placeholder = (cell: HTMLElement) => !cell.className.includes("hover:ring");
-		expect(columns.at(-1)?.filter(placeholder)).toHaveLength(4);
-		expect(columns.slice(0, -1).flat().filter(placeholder)).toHaveLength(0);
+		const futureCells = columns.at(-1)?.slice(3) ?? [];
+		expect(futureCells).toHaveLength(4);
+		for (const cell of futureCells) {
+			expect(cell.className).toContain("bg-muted");
+			expect(cell.className).not.toContain("hover:ring");
+		}
 	});
 
 	it("月份刻度按自然周边界落位", () => {

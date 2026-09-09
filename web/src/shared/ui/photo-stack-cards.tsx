@@ -3,6 +3,7 @@ import { PhotoStackCard } from "./photo-stack-card";
 import {
 	cardMotionKey,
 	getDirectionalZ,
+	getScatterSlot,
 	getStackCardOpacity,
 	getStackSlot,
 	type MotionBundle,
@@ -43,6 +44,8 @@ export interface PhotoStackCardsProps {
 	isPastThreshold?: boolean;
 	/** 当前顶图的原生加载策略。 */
 	currentLoading?: "eager" | "lazy";
+	/** 以散开槽位与零透明度创建卡片（收拢入场：从离场位逐层归位）。 */
+	scattered?: boolean;
 }
 
 /** 舞台中的后置卡与顶卡，保持拖拽逻辑和媒体标记分离。 */
@@ -57,17 +60,29 @@ export function PhotoStackCards({
 	dragDirection,
 	isPastThreshold = false,
 	currentLoading,
+	scattered = false,
 }: PhotoStackCardsProps) {
-	const currentMotion = motionOf(current, currentIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
+	const currentMotion = scattered
+		? motionOf(current, currentIndex, { ...getScatterSlot("top", 0, stackWidth), opacity: 0 })
+		: motionOf(current, currentIndex, { x: 0, y: 0, rotate: 0, scale: 1 });
 
 	return (
 		<>
 			{visibleCards.map((card) => {
 				const slot = getStackSlot(card.axis, card.depth, stackWidth);
-				const value = motionOf(card.image, card.index, {
-					...slot,
-					opacity: getStackCardOpacity(card.index, currentIndex, visibleCards.length + 1),
-				});
+				const value = scattered
+					? motionOf(card.image, card.index, {
+							...getScatterSlot(card.axis, card.depth, stackWidth),
+							opacity: 0,
+						})
+					: motionOf(card.image, card.index, {
+							...slot,
+							opacity: getStackCardOpacity(
+								card.index,
+								currentIndex,
+								visibleCards.length + 1,
+							),
+						});
 				return (
 					<PhotoStackCard
 						key={`${layoutPrefix}-${cardMotionKey(card.image.src, card.index)}`}

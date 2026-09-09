@@ -12,6 +12,7 @@ import {
 	getDraggedTopSlot,
 	getIndexedStackSlot,
 	getReleasePeakSlot,
+	getScatterSlot,
 	getStackCardOpacity,
 	getStackSlot,
 	interpolateSlot,
@@ -23,13 +24,21 @@ import {
 	setStackSlot,
 	shouldFlip,
 } from "./photo-stack-motion";
-import { usePhotoStackSlots } from "./use-photo-stack-slots";
+import { SLOT_SPRING, usePhotoStackSlots } from "./use-photo-stack-slots";
+
+export type PhotoStackFormation = "idle" | "scatter" | "assemble";
 
 export interface PhotoStackStageProps {
 	images: PhotoStackImage[];
 	currentIndex: number;
 	aspectClass: string;
 	loading?: "eager" | "lazy";
+	/** 是否渲染舞台浮动覆盖层（页码胶囊与拖动把手），默认 true。 */
+	overlay?: boolean;
+	/** 队形编排：scatter 逐张飞离（展开前），assemble 从散开位收拢（收起后挂载）。 */
+	formation?: PhotoStackFormation;
+	/** scatter 或 assemble 编排完成后触发。 */
+	onFormationSettled?: () => void;
 	onIndexChange: (index: number) => void;
 	onImageOpen?: (index: number) => void;
 }
@@ -37,13 +46,20 @@ const INSERT_MS = 220;
 const RELEASE_PEAK_MS = 56;
 const FADE_IN_MS = 260;
 const TRANSITION_MS = Math.max(INSERT_MS, FADE_IN_MS);
+const SCATTER_MS = 340;
+const SCATTER_STAGGER_MS = 45;
+const ASSEMBLE_STAGGLE_MS = 40;
+const FORMATION_EASE = [0.22, 1, 0.36, 1] as const;
 type DragCardOrigin = PhotoStackSlot & { opacity: number; rotateY: number };
-/** PhotoStack 舞台：负责槽位、插入式拖拽与键盘翻页。 */
+/** PhotoStack 舞台：负责槽位、插入式拖拽、键盘翻页与队形编排。 */
 export function PhotoStackStage({
 	images,
 	currentIndex,
 	aspectClass,
 	loading,
+	overlay = true,
+	formation = "idle",
+	onFormationSettled,
 	onIndexChange,
 	onImageOpen,
 }: PhotoStackStageProps) {
@@ -62,6 +78,7 @@ export function PhotoStackStage({
 	const suppressClickTimer = useRef(0);
 	const settling = useRef(false);
 	const thresholdTimer = useRef(0);
+	const pendingCommit = useRef<(() => void) | null>(null);
 	const transitionTimers = useRef(new Map<number, number>());
 	const dragSamples = useRef<DragSample[]>([]);
 	const dragOrigin = useRef({ x: 0, y: 0, rotate: 0, rotateY: 0, scale: 1 });
@@ -108,10 +125,140 @@ export function PhotoStackStage({
 		isTransitioning,
 	});
 
+	const formationTimer = useRef(0);
+
+	// 队形编排：scatter 逐张飞离（底卡先动、顶卡殿后），assemble 从散开位逐层归位（顶卡先落）。
+	useEffect(() => {
+		if (formation === "idle") return;
+		const width = stackWidth || 280;
+		if (formation === "scatter") {
+			images.forEach((_, index) => {
+				markTransitioning(index);
+			});
+			settling.current = true;
+			let lastEndMs = 0;
+			visibleCards.forEach((card, order) => {
+				const slot = getScatterSlot(card.axis, card.depth, width);
+				const transition = {
+					duration: SCATTER_MS / 1000,
+					delay: (order * SCATTER_STAGGER_MS) / 1000,
+					ease: FORMATION_EASE,
+				};
+				const value = motionOf(card.image, card.index);
+				value.x.stop();
+				value.y.stop();
+				value.rotate.stop();
+				value.rotateY.stop();
+				value.scale.stop();
+				value.opacity.stop();
+				animate(value.x, slot.x, transition);
+				animate(value.y, slot.y, transition);
+				animate(value.rotate, slot.rotate, transition);
+				animate(value.rotateY, 0, transition);
+				animate(value.scale, slot.scale, transition);
+				animate(value.opacity, 0, transition);
+				lastEndMs = order * SCATTER_STAGGER_MS + SCATTER_MS;
+			});
+			const top = images[safeIndex];
+			if (top) {
+				const slot = getScatterSlot("top", 0, width);
+				const transition = {
+					duration: SCATTER_MS / 1000,
+					delay: (visibleCards.length * SCATTER_STAGGER_MS) / 1000,
+					ease: FORMATION_EASE,
+				};
+				const value = motionOf(top, safeIndex);
+				value.x.stop();
+				value.y.stop();
+				value.rotate.stop();
+				value.rotateY.stop();
+				value.scale.stop();
+				value.opacity.stop();
+				animate(value.x, slot.x, transition);
+				animate(value.y, slot.y, transition);
+				animate(value.rotate, slot.rotate, transition);
+				animate(value.rotateY, 0, transition);
+				animate(value.scale, slot.scale, transition);
+				animate(value.opacity, 0, transition);
+				lastEndMs = visibleCards.length * SCATTER_STAGGER_MS + SCATTER_MS;
+			}
+			formationTimer.current = window.setTimeout(() => {
+				settling.current = false;
+				onFormationSettled?.();
+			}, lastEndMs + 40);
+			return () => window.clearTimeout(formationTimer.current);
+		}
+		// assemble：等舞台量宽就绪后，把卡片从散开位逐层收拢回静止槽位。
+		if (!stackWidth) return;
+		images.forEach((_, index) => {
+			markTransitioning(index);
+		});
+		const assembleCard = (
+			value: PhotoStackCardMotion,
+			start: PhotoStackSlot,
+			slot: PhotoStackSlot,
+			opacity: number,
+			depth: number,
+		) => {
+			value.x.jump(start.x);
+			value.y.jump(start.y);
+			value.rotate.jump(start.rotate);
+			value.rotateY.jump(0);
+			value.scale.jump(start.scale);
+			value.opacity.jump(0);
+			const transition = {
+				...SLOT_SPRING,
+				delay: (Math.min(depth, 2) * ASSEMBLE_STAGGLE_MS) / 1000,
+			};
+			animate(value.x, slot.x, transition);
+			animate(value.y, slot.y, transition);
+			animate(value.rotate, slot.rotate, transition);
+			animate(value.rotateY, 0, transition);
+			animate(value.scale, slot.scale, transition);
+			animate(value.opacity, opacity, transition);
+		};
+		const top = images[safeIndex];
+		if (top) {
+			assembleCard(
+				motionOf(top, safeIndex),
+				getScatterSlot("top", 0, width),
+				{ x: 0, y: 0, rotate: 0, scale: 1 },
+				1,
+				0,
+			);
+		}
+		visibleCards.forEach((card) => {
+			assembleCard(
+				motionOf(card.image, card.index),
+				getScatterSlot(card.axis, card.depth, width),
+				getStackSlot(card.axis, card.depth, width),
+				getStackCardOpacity(card.index, safeIndex, images.length),
+				card.depth,
+			);
+		});
+		formationTimer.current = window.setTimeout(
+			() => {
+				onFormationSettled?.();
+			},
+			2 * ASSEMBLE_STAGGLE_MS + 560,
+		);
+		return () => window.clearTimeout(formationTimer.current);
+	}, [
+		formation,
+		images,
+		markTransitioning,
+		motionOf,
+		onFormationSettled,
+		safeIndex,
+		stackWidth,
+		visibleCards,
+	]);
+
 	useEffect(
 		() => () => {
 			window.clearTimeout(thresholdTimer.current);
 			window.clearTimeout(suppressClickTimer.current);
+			window.clearTimeout(formationTimer.current);
 			transitionTimers.current.forEach((timer) => {
 				window.clearTimeout(timer);
 			});
@@ -197,6 +344,7 @@ export function PhotoStackStage({
 			animate(value.opacity, 1, opacityTransition);
 			window.clearTimeout(thresholdTimer.current);
 			const commitIndex = () => {
+				pendingCommit.current = null;
 				onIndexChange(nextIndex);
 				setDragDirection(null);
 				setCurrentOffset(0);
@@ -204,6 +352,7 @@ export function PhotoStackStage({
 				setIsPastThreshold(false);
 				settling.current = false;
 			};
+			pendingCommit.current = commitIndex;
 			if (completePullPhase) {
 				thresholdTimer.current = window.setTimeout(() => {
 					commitIndex();
@@ -341,7 +490,13 @@ export function PhotoStackStage({
 	};
 
 	const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-		if (event.button !== 0 || settling.current) return;
+		if (event.button !== 0) return;
+		if (pendingCommit.current) {
+			window.clearTimeout(thresholdTimer.current);
+			const commit = pendingCommit.current;
+			commit();
+		}
+		settling.current = false;
 		pointerStartX.current = event.clientX;
 		dragSamples.current = [{ t: event.timeStamp, x: event.clientX }];
 		cardDragOrigins.current.clear();
@@ -364,13 +519,13 @@ export function PhotoStackStage({
 			value.rotateY.stop();
 			value.scale.stop();
 			value.opacity.stop();
-			dragOrigin.current = {
-				x: value.x.get(),
-				y: value.y.get(),
-				rotate: value.rotate.get(),
-				rotateY: value.rotateY.get(),
-				scale: value.scale.get(),
-			};
+			value.x.set(0);
+			value.y.set(0);
+			value.rotate.set(0);
+			value.rotateY.set(0);
+			value.scale.set(1);
+			value.opacity.set(1);
+			dragOrigin.current = { x: 0, y: 0, rotate: 0, rotateY: 0, scale: 1 };
 		}
 	};
 	const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -388,20 +543,12 @@ export function PhotoStackStage({
 		const direction: StackDirection = rawDelta < 0 ? "right" : "left";
 		const result = getDraggedTopSlot(rawDelta, width, canFlip);
 		const { topSlot, rotateY, isPastThreshold: past, pullProgress } = result;
-		const origin = dragOrigin.current;
-		const continuedTopSlot = {
-			...topSlot,
-			x: origin.x + topSlot.x,
-			y: origin.y + topSlot.y,
-			rotate: origin.rotate + topSlot.rotate,
-			scale: origin.scale + topSlot.scale - 1,
-		};
-		setCurrentOffset(continuedTopSlot.x);
+		setCurrentOffset(topSlot.x);
 		setIncomingProgress(canFlip ? pullProgress : 0);
 		setIsPastThreshold(canFlip && past);
 		setDragDirection(direction);
-		setStackSlot(value, continuedTopSlot);
-		value.rotateY.set(origin.rotateY + rotateY);
+		setStackSlot(value, topSlot);
+		value.rotateY.set(rotateY);
 		recordSample(dragSamples.current, event.timeStamp, event.clientX);
 		visibleCards.forEach((card) => {
 			const cardValue = motionOf(card.image, card.index);
@@ -414,6 +561,7 @@ export function PhotoStackStage({
 				cardValue.rotateY.stop();
 				cardValue.scale.stop();
 				cardValue.opacity.stop();
+				// 回槽动画尚未完成时以活值为起点，接管拖拽不发生位置跳变。
 				cardOrigin = {
 					x: cardValue.x.get(),
 					y: cardValue.y.get(),
@@ -457,17 +605,10 @@ export function PhotoStackStage({
 		const canFlip =
 			(direction === 1 && safeIndex < images.length - 1) ||
 			(direction === -1 && safeIndex > 0);
-		const flipThreshold = (stackWidth || 280) * FLIP_THRESHOLD_RATIO;
-		if (
-			canFlip &&
-			shouldFlip(
-				rawDelta,
-				recentVelocity(dragSamples.current, 100, event.timeStamp),
-				flipThreshold,
-				canFlip,
-			)
-		) {
-			const releaseVelocity = recentVelocity(dragSamples.current, 100, event.timeStamp);
+		const flipThreshold = Math.min((stackWidth || 280) * FLIP_THRESHOLD_RATIO, 80);
+		const vel = recentVelocity(dragSamples.current, 160, event.timeStamp);
+		if (canFlip && shouldFlip(rawDelta, vel, flipThreshold, canFlip)) {
+			const releaseVelocity = vel;
 			const completePullPhase =
 				Math.abs(rawDelta) < (stackWidth || 280) * PULL_THRESHOLD_RATIO;
 			if (!completePullPhase) setIsPastThreshold(true);
@@ -522,11 +663,13 @@ export function PhotoStackStage({
 			className={cn(
 				"relative isolate mx-auto w-[72%] touch-pan-y select-none",
 				dragging ? "cursor-grabbing" : "cursor-grab",
+				formation !== "idle" && "pointer-events-none",
 				aspectClass,
 			)}
 			data-current-offset={currentOffset}
 			data-incoming-progress={incomingProgress}
 			onKeyDown={(event) => {
+				if (formation !== "idle") return;
 				if (event.key === "ArrowLeft" && safeIndex > 0) {
 					event.preventDefault();
 					const top = images[safeIndex];
@@ -557,15 +700,20 @@ export function PhotoStackStage({
 				dragDirection={dragDirection}
 				isPastThreshold={isPastThreshold}
 				currentLoading={loading}
+				scattered={formation === "assemble"}
 			/>
-			<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
-				<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
-					<GripHorizontal className="size-4 text-white/90" />
-				</span>
-			</div>
-			<div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded-full bg-black/45 px-2 py-0.5 font-mono text-[10px] text-white/90 backdrop-blur-sm">
-				{safeIndex + 1} / {images.length}
-			</div>
+			{overlay ? (
+				<>
+					<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
+						<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
+							<GripHorizontal className="size-4 text-white/90" />
+						</span>
+					</div>
+					<div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded-full bg-black/45 px-2 py-0.5 font-mono text-[10px] text-white/90 backdrop-blur-sm">
+						{safeIndex + 1} / {images.length}
+					</div>
+				</>
+			) : null}
 		</div>
 	);
 }

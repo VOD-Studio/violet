@@ -23,7 +23,7 @@ const toDateKey = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${p
 interface DayCell {
 	key: string;
 	count: number;
-	/** 今日之后的格位：仅占位保持网格形状，不渲染数据与交互。 */
+	/** 今日之后的格位：保留空贡献底色，不渲染数据与交互。 */
 	future: boolean;
 }
 
@@ -40,7 +40,7 @@ export function HeaderContributionHeatmap({
 	const now = useMemo(() => new Date(), []);
 
 	// 近 13 个自然周的日粒度热力矩阵：列对齐周日（与 GitHub 贡献图一致），
-	// 最后一列是本周，今天落在真实星期位置，之后的格位留空占位
+	// 最后一列是本周，今天之后仍保留空贡献格位
 	const { weeks, monthTicks, todayKey } = useMemo(() => {
 		const countMap = new Map<string, number>();
 		for (const c of contributions ?? []) {
@@ -123,7 +123,7 @@ export function HeaderContributionHeatmap({
 										<span
 											key={day.key}
 											aria-hidden="true"
-											className="aspect-square w-full rounded-[2px]"
+											className="aspect-square w-full rounded-[2px] bg-muted"
 										/>
 									);
 								}

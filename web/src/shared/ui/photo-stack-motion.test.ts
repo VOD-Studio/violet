@@ -7,6 +7,7 @@ import {
 	getDraggedTopSlot,
 	getDragProgress,
 	getReleasePeakSlot,
+	getScatterSlot,
 	getStackCardOpacity,
 	getStackSlot,
 	interpolateSlot,
@@ -21,6 +22,25 @@ describe("PhotoStack motion decisions", () => {
 		expect(getDragProgress(-200, 80)).toBe(1);
 		expect(getDragProgress(10, 0)).toBe(1);
 	});
+	it("解散槽位按堆叠侧镜像外抛上飘，顶卡垂直上浮", () => {
+		const left = getScatterSlot("left", 2, 300);
+		const right = getScatterSlot("right", 2, 300);
+		expect(left.x).toBeLessThan(0);
+		expect(right.x).toBe(-left.x);
+		expect(left.rotate).toBeLessThan(0);
+		expect(right.rotate).toBe(-left.rotate);
+		expect(left.y).toBeLessThan(0);
+		expect(getScatterSlot("top", 0, 300)).toEqual({ x: 0, y: -30, rotate: 0, scale: 1 });
+	});
+
+	it("解散距离与倾角随深度递增", () => {
+		const shallow = getScatterSlot("right", 1, 300);
+		const deep = getScatterSlot("right", 3, 300);
+		expect(deep.x).toBeGreaterThan(shallow.x);
+		expect(deep.y).toBeLessThan(shallow.y);
+		expect(Math.abs(deep.rotate)).toBeGreaterThan(Math.abs(shallow.rotate));
+	});
+
 	it("只有拖拽超出阈值时目标卡才升至顶层，未达阈值前当前卡保持置顶", () => {
 		expect(getDirectionalZ("right", "right", 1, false)).toBe(69);
 		expect(getDirectionalZ("right", "right", 1, true)).toBe(100);
@@ -234,6 +254,7 @@ describe("PhotoStack motion decisions", () => {
 			{ t: 360, x: 140 },
 		];
 		expect(recentVelocity(samples, 100, 430)).toBe(-0.5);
-		expect(recentVelocity(samples, 100, 461)).toBe(0);
+		// 停顿超过 180ms 才视为长停归零，短暂停顿保留最近有效速度。
+		expect(recentVelocity(samples, 100, 541)).toBe(0);
 	});
 });

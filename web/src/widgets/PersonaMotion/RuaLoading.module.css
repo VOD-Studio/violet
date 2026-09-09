@@ -1,0 +1,150 @@
+.sprite {
+	background-image: url("/persona/rua-writing-sprite.webp");
+	background-repeat: no-repeat;
+	background-position: 0 0;
+	background-size: 400% 400%;
+	animation: writingFrames 2.4s steps(1, end) infinite;
+}
+
+.inkTrack {
+	position: relative;
+	height: 1px;
+	overflow: visible;
+	background: color-mix(in oklab, var(--persona-violet) 14%, transparent);
+}
+
+.inkStroke {
+	position: absolute;
+	inset: 0;
+	transform-origin: left;
+	background: linear-gradient(90deg, var(--persona-violet), var(--persona-gold));
+	animation: inkWrite 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.inkGlint {
+	position: absolute;
+	top: -4px;
+	left: 0;
+	width: 9px;
+	height: 9px;
+	clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+	background: var(--persona-gold);
+	filter: drop-shadow(0 0 5px color-mix(in oklab, var(--persona-gold) 64%, transparent));
+	animation: inkGlint 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes writingFrames {
+	0% {
+		background-position: 0 0;
+	}
+	6.25% {
+		background-position: 33.333333% 0;
+	}
+	12.5% {
+		background-position: 66.666667% 0;
+	}
+	18.75% {
+		background-position: 100% 0;
+	}
+	25% {
+		background-position: 0 33.333333%;
+	}
+	31.25% {
+		background-position: 33.333333% 33.333333%;
+	}
+	37.5% {
+		background-position: 66.666667% 33.333333%;
+	}
+	43.75% {
+		background-position: 100% 33.333333%;
+	}
+	50% {
+		background-position: 0 66.666667%;
+	}
+	56.25% {
+		background-position: 33.333333% 66.666667%;
+	}
+	62.5% {
+		background-position: 66.666667% 66.666667%;
+	}
+	68.75% {
+		background-position: 100% 66.666667%;
+	}
+	75% {
+		background-position: 0 100%;
+	}
+	81.25% {
+		background-position: 33.333333% 100%;
+	}
+	87.5% {
+		background-position: 66.666667% 100%;
+	}
+	93.75%,
+	100% {
+		background-position: 100% 100%;
+	}
+}
+
+@keyframes inkWrite {
+	0% {
+		opacity: 0.38;
+		transform: scaleX(0.06);
+	}
+	58% {
+		opacity: 1;
+		transform: scaleX(0.84);
+	}
+	82%,
+	92% {
+		opacity: 1;
+		transform: scaleX(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scaleX(1);
+	}
+}
+
+@keyframes inkGlint {
+	0% {
+		left: 0;
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	8% {
+		opacity: 0.62;
+	}
+	76% {
+		left: 86%;
+		opacity: 0.72;
+		transform: scale(0.72);
+	}
+	84%,
+	92% {
+		left: calc(100% - 4px);
+		opacity: 1;
+		transform: scale(1.12);
+	}
+	100% {
+		left: calc(100% - 4px);
+		opacity: 0;
+		transform: scale(0.4);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sprite,
+	.inkStroke,
+	.inkGlint {
+		animation: none;
+	}
+
+	.sprite {
+		background-position: 100% 100%;
+	}
+
+	.inkGlint {
+		left: auto;
+		right: -4px;
+	}
+}

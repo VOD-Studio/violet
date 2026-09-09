@@ -23,7 +23,7 @@ export function HeaderContributionCard({ persona, onNavigate }: HeaderContributi
 
 	return (
 		<div className="w-112.5 max-w-[calc(100vw-2rem)] p-1 text-foreground">
-			<div className="grid grid-cols-1 gap-5 sm:grid-cols-[1.25fr_1fr]">
+			<div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
 				{/* 左侧：站长身份、社交与开源热力图 */}
 				<div className="space-y-4">
 					<HeaderContributionIdentity

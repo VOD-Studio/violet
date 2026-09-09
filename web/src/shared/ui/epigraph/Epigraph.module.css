@@ -5,7 +5,7 @@
 
 /* 风格变体：淡雅主色细竖线（默认，温润书卷） */
 .accentLine {
-	border-left: 2px solid color-mix(in oklab, var(--color-primary) 40%, transparent);
+	border-left: 2px solid color-mix(in oklab, var(--primary) 40%, transparent);
 	padding-left: 1rem;
 	padding-top: 0.125rem;
 	padding-bottom: 0.125rem;

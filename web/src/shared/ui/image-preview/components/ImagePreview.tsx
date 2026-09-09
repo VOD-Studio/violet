@@ -15,6 +15,13 @@ import { ImagePreviewControls } from "./ImagePreviewControls";
 import { ImagePreviewImage } from "./ImagePreviewImage";
 import { ImagePreviewThumbnails } from "./ImagePreviewThumbnails";
 
+function imageAspectRatio(image: HTMLImageElement | undefined): number | undefined {
+	if (!image) return undefined;
+	const width = image.naturalWidth || Number.parseFloat(image.getAttribute("width") ?? "");
+	const height = image.naturalHeight || Number.parseFloat(image.getAttribute("height") ?? "");
+	return width > 0 && height > 0 ? width / height : undefined;
+}
+
 /** 全屏图片查看器，每次打开独立初始化索引、入场方向与图像变换。 */
 export function ImagePreview(props: ImagePreviewProps) {
 	const [mounted, setMounted] = useState(false);
@@ -156,6 +163,7 @@ function ImagePreviewDialog({
 				null,
 			size: initialNaturalSize,
 			sources,
+			aspectRatios: sources.map(imageAspectRatio),
 			restore:
 				triggerElement ??
 				(document.activeElement instanceof HTMLElement ? document.activeElement : null),
@@ -297,6 +305,7 @@ function ImagePreviewDialog({
 						alt={alts?.[index] ?? `预览图片 ${index + 1}`}
 						direction={direction}
 						triggerRect={returnRect}
+						placeholderAspectRatio={opening.aspectRatios[index]}
 						closeProgress={closeProgress}
 						initialNaturalSize={opening.index === index ? opening.size : undefined}
 						scale={scale}
