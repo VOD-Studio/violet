@@ -44,6 +44,12 @@
 	--color-input: var(--input);
 	--color-ring: var(--ring);
 
+	/* 纸面（API 文档纸弹窗与文档页）：暖米纸 + 纸上墨字 */
+	--color-paper: var(--paper);
+	--color-paper-foreground: var(--paper-foreground);
+	--color-paper-muted: var(--paper-muted);
+	--color-paper-border: var(--paper-border);
+
 	/* 前台遗留语义色（向后兼容） */
 	--color-edge-hairline: var(--edge-hairline);
 	--color-surface-glass: var(--surface-glass);
@@ -94,6 +100,11 @@
 	--card-foreground: oklch(0.145 0 0);
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.145 0 0);
+	/* 纸面：暖米纸（hue 84≈米黄），深色模式换成深褐纸 */
+	--paper: oklch(0.973 0.014 84);
+	--paper-foreground: oklch(0.24 0.014 60);
+	--paper-muted: oklch(0.46 0.016 60);
+	--paper-border: oklch(0.878 0.02 80);
 	--primary: oklch(0.205 0 0);
 	--primary-foreground: oklch(0.985 0 0);
 	--secondary: oklch(0.97 0 0);
@@ -144,6 +155,11 @@
 	--card-foreground: oklch(0.985 0 0);
 	--popover: oklch(0.205 0 0);
 	--popover-foreground: oklch(0.985 0 0);
+	/* 深色纸面：深褐纸 + 米白墨 */
+	--paper: oklch(0.245 0.01 70);
+	--paper-foreground: oklch(0.92 0.012 80);
+	--paper-muted: oklch(0.68 0.012 75);
+	--paper-border: oklch(0.33 0.012 70);
 	--primary: oklch(0.922 0 0);
 	--primary-foreground: oklch(0.205 0 0);
 	--secondary: oklch(0.269 0 0);
