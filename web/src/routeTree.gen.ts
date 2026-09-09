@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -115,6 +116,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const FeedDotxmlRoute = FeedDotxmlRouteImport.update({
   id: '/feed.xml',
   path: '/feed.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -478,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/chat': typeof ChatRoute
+  '/docs': typeof DocsRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
@@ -556,6 +563,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
   '/chat': typeof ChatRoute
+  '/docs': typeof DocsRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
@@ -631,6 +639,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/chat': typeof ChatRoute
+  '/docs': typeof DocsRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
@@ -712,6 +721,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/changelog'
     | '/chat'
+    | '/docs'
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
@@ -790,6 +800,7 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/chat'
+    | '/docs'
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
@@ -864,6 +875,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/changelog'
     | '/chat'
+    | '/docs'
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
@@ -944,6 +956,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   ChangelogRoute: typeof ChangelogRoute
   ChatRoute: typeof ChatRoute
+  DocsRoute: typeof DocsRoute
   FeedDotxmlRoute: typeof FeedDotxmlRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
@@ -1022,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/feed.xml'
       fullPath: '/feed.xml'
       preLoaderRoute: typeof FeedDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -1675,6 +1695,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   ChangelogRoute: ChangelogRoute,
   ChatRoute: ChatRoute,
+  DocsRoute: DocsRoute,
   FeedDotxmlRoute: FeedDotxmlRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
