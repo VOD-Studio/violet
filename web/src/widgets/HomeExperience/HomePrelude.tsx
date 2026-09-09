@@ -3,9 +3,10 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
 import { GithubIcon } from "@shared/ui/icons";
 import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
-import { ArrowDown, ArrowRight, ExternalLink, Mail, Rss, Share2, Tv } from "lucide-react";
+import { ArrowDown, ArrowRight, BookText, ExternalLink, Mail, Rss, Share2, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
+import { useApiDocsDialogStore } from "@/features/api-docs";
 
 import { HomeContentLink } from "./HomeContentLink";
 import { HOME_KIND_LABEL } from "./home-content";
@@ -46,6 +47,7 @@ export function HomePrelude({ identity, lead }: HomePreludeProps) {
 		avatarSource && avatarSource !== failedAvatar ? avatarUrl(avatarSource, owner) : "";
 	const customBanner = identity.hero.banner_url?.trim() ?? "";
 	const hasCustomBanner = customBanner.length > 0;
+	const openApiDocs = useApiDocsDialogStore((s) => s.open);
 
 	return (
 		<section
@@ -141,47 +143,64 @@ export function HomePrelude({ identity, lead }: HomePreludeProps) {
 							) : null}
 						</div>
 
-						{socialLinks.length > 0 ? (
-							<TooltipPrimitive.Provider delayDuration={100}>
-								<nav
-									className={`flex items-center gap-2 pt-2 ${avatar ? "" : "justify-center"}`}
-									aria-label="社交主页链接"
-								>
-									{socialLinks.map(({ href, label, Icon }) => (
-										<TooltipPrimitive.Root key={label}>
-											<TooltipPrimitive.Trigger asChild>
-												<a
-													href={href}
-													target={
-														href.startsWith("http")
-															? "_blank"
-															: undefined
-													}
-													rel={
-														href.startsWith("http")
-															? "noreferrer"
-															: undefined
-													}
-													aria-label={label}
-													className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground/75 transition-colors duration-200 outline-none hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-												>
-													<Icon className="size-5 transition-colors duration-200" />
-												</a>
-											</TooltipPrimitive.Trigger>
-											<TooltipPrimitive.Portal>
-												<TooltipPrimitive.Content
-													side="bottom"
-													sideOffset={8}
-													className="z-50 rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-sm animate-in fade-in-0 data-[side=bottom]:slide-in-from-top-1"
-												>
-													{label}
-												</TooltipPrimitive.Content>
-											</TooltipPrimitive.Portal>
-										</TooltipPrimitive.Root>
-									))}
-								</nav>
-							</TooltipPrimitive.Provider>
-						) : null}
+						<TooltipPrimitive.Provider delayDuration={100}>
+							<nav
+								className={`flex items-center gap-2 pt-2 ${avatar ? "" : "justify-center"}`}
+								aria-label="社交主页链接"
+							>
+								{socialLinks.map(({ href, label, Icon }) => (
+									<TooltipPrimitive.Root key={label}>
+										<TooltipPrimitive.Trigger asChild>
+											<a
+												href={href}
+												target={
+													href.startsWith("http") ? "_blank" : undefined
+												}
+												rel={
+													href.startsWith("http")
+														? "noreferrer"
+														: undefined
+												}
+												aria-label={label}
+												className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground/75 transition-colors duration-200 outline-none hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+											>
+												<Icon className="size-5 transition-colors duration-200" />
+											</a>
+										</TooltipPrimitive.Trigger>
+										<TooltipPrimitive.Portal>
+											<TooltipPrimitive.Content
+												side="bottom"
+												sideOffset={8}
+												className="z-50 rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-sm animate-in fade-in-0 data-[side=bottom]:slide-in-from-top-1"
+											>
+												{label}
+											</TooltipPrimitive.Content>
+										</TooltipPrimitive.Portal>
+									</TooltipPrimitive.Root>
+								))}
+								<TooltipPrimitive.Root>
+									<TooltipPrimitive.Trigger asChild>
+										<button
+											type="button"
+											onClick={openApiDocs}
+											aria-label="API 文档"
+											className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground/75 transition-colors duration-200 outline-none hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+										>
+											<BookText className="size-5 transition-colors duration-200" />
+										</button>
+									</TooltipPrimitive.Trigger>
+									<TooltipPrimitive.Portal>
+										<TooltipPrimitive.Content
+											side="bottom"
+											sideOffset={8}
+											className="z-50 rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-sm animate-in fade-in-0 data-[side=bottom]:slide-in-from-top-1"
+										>
+											API 文档
+										</TooltipPrimitive.Content>
+									</TooltipPrimitive.Portal>
+								</TooltipPrimitive.Root>
+							</nav>
+						</TooltipPrimitive.Provider>
 					</div>
 				</div>
 			</div>

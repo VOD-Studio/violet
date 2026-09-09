@@ -15,6 +15,7 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { RuaRouteTransition } from "@widgets/PersonaMotion";
+import { ApiDocsDialog } from "@/features/api-docs";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
@@ -161,6 +162,7 @@ function RootComponent() {
 			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
+			<ApiDocsDialog />
 			<ShareTweetDialog />
 			<CustomCursor />
 		</AppProvider>
