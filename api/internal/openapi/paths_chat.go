@@ -147,12 +147,73 @@ func registerChatPaths(t *openapi3.T) {
 	})
 	get(t, "/chat/conversations/{conversationId}/members", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "会话成员", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID")}, Responses: responses(200, dataArrayResponse("ChatMemberDTO", "成员列表", 200, false))})
 	post(t, "/chat/conversations/{conversationId}/members", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "邀请成员", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatMemberRequest", true, "成员参数"), Responses: responses(201, messageResponse("成员已加入房间"))})
+	del(t, "/chat/conversations/{conversationId}/members/{userId}", &openapi3.Operation{
+		Tags: []string{"聊天管理"}, Summary: "移除会话成员", Description: "需 chat:manage 权限。", Security: secure,
+		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("userId", "成员用户 ID"), csrfHeaderParam()},
+		Responses:  responses(200, messageResponse("成员已移除")),
+	})
 	del(t, "/chat/conversations/{conversationId}/members/me", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "离开会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("已离开会话"))})
 	patch(t, "/chat/conversations/{conversationId}/mute", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "静音会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatMuteRequest", true, "通知静音设置"), Responses: responses(200, dataResponse("ChatMuteResponse", "静音状态", 200))})
 	post(t, "/chat/conversations/{conversationId}/read", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "标记会话已读", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatReadRequest", true, "阅读位置"), Responses: responses(200, dataResponse("ChatUnreadCount", "会话未读数", 200))})
 	post(t, "/chat/conversations/{conversationId}/typing", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "上报输入状态", Description: "瞬态事件，不参与断线补发。", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatTypingRequest", true, "输入状态"), Responses: responses(204, noContentResponse("输入状态已上报"))})
 	del(t, "/chat/conversations/{conversationId}/messages/{messageId}", &openapi3.Operation{Tags: []string{"聊天管理"}, Summary: "删除违规消息", Description: "需 chat:manage 权限。", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("消息已删除"))})
 	del(t, "/chat/push/subscription", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "关闭浏览器通知", Security: secure, Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatPushUnsubscribeRequest", true, "推送订阅"), Responses: responses(204, noContentResponse("浏览器通知已关闭"))})
+
+	// ---- 消息反应 / 已读回执 / 编辑 ----
+
+	registerSchema(t, "ChatMessageReactionDTO", openapi3.Schemas{
+		"emoji_id":   optInt32("表情 ID"),
+		"emoji_name": reqStr("表情名称"),
+		"emoji_url":  reqStr("表情静态图 URL"),
+		"gif_url":    optStr("GIF 动图 URL（无动图时为空）"),
+		"count":      optInt64("该表情的反应数量"),
+		"self":       optBool("当前用户是否已添加该表情"),
+	})
+
+	registerSchema(t, "ChatAddReactionRequest", openapi3.Schemas{
+		"emoji_id": optInt32("表情 ID"),
+	}, "emoji_id")
+
+	registerSchema(t, "ChatMessageReaderDTO", openapi3.Schemas{
+		"user_id":     reqStr("读者用户 ID"),
+		"username":    reqStr("用户名"),
+		"display_name": reqStr("展示名"),
+		"avatar_url":  reqStr("头像 URL"),
+		"read_at":     reqStr("读到该消息的时间（RFC3339）"),
+	})
+
+	registerSchema(t, "ChatEditMessageRequest", openapi3.Schemas{
+		"content":   optStr("新正文"),
+		"media_ids": strArray("新附件媒体 ID 列表（全量替换）"),
+	})
+
+	get(t, "/chat/conversations/{conversationId}/messages/{messageId}/reactions", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "消息反应列表", Security: secure,
+		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID")},
+		Responses: responses(200, dataArrayResponse("ChatMessageReactionDTO", "按表情聚合的反应列表", 200, false)),
+	})
+	post(t, "/chat/conversations/{conversationId}/messages/{messageId}/reactions", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "添加消息反应", Security: secure,
+		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()},
+		RequestBody: jsonBody("ChatAddReactionRequest", true, "表情 ID"),
+		Responses:   responses(200, messageResponse("反应已添加")),
+	})
+	del(t, "/chat/conversations/{conversationId}/messages/{messageId}/reactions/{emojiId}", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "移除消息反应", Security: secure,
+		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), pathIntParam("emojiId", "表情 ID"), csrfHeaderParam()},
+		Responses:  responses(200, messageResponse("反应已移除")),
+	})
+	get(t, "/chat/conversations/{conversationId}/messages/{messageId}/readers", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "消息已读回执", Security: secure,
+		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID")},
+		Responses: responses(200, dataArrayResponse("ChatMessageReaderDTO", "读过该消息的成员列表", 200, false)),
+	})
+	patch(t, "/chat/conversations/{conversationId}/messages/{messageId}", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "编辑已发消息", Description: "仅作者本人可编辑。", Security: secure,
+		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()},
+		RequestBody: jsonBody("ChatEditMessageRequest", true, "新消息内容"),
+		Responses:   responses(200, dataResponse("ChatMessageDTO", "编辑后的消息", 200)),
+	})
 }
 
 func idempotencyHeaderParam() *openapi3.ParameterRef {

@@ -84,6 +84,11 @@ func registerCommentPaths(t *openapi3.T) {
 		"reactions":  refArray("该评论的聚合反应列表", "AggregatedReaction"),
 	})
 
+	// 匿名评论验证码请求
+	registerSchema(t, "CommentCodeRequest", openapi3.Schemas{
+		"email": reqStr("接收验证码的邮箱"),
+	}, "email")
+
 	// ============ 前台评论 ============
 
 	get(t, "/posts/{postId}/comments", &openapi3.Operation{
@@ -109,6 +114,33 @@ func registerCommentPaths(t *openapi3.T) {
 		Responses: responses(
 			201, dataResponse("CommentDTO", "新建评论（pending 状态）", 201),
 			400, errorResponse("请求参数错误"),
+		),
+	})
+
+	post(t, "/posts/{postId}/comments/code", &openapi3.Operation{
+		Tags:        []string{"评论"},
+		Summary:     "发送匿名评论验证码",
+		Description: "匿名评论第一步：向邮箱发送验证码。独立限流。",
+		Parameters: openapi3.Parameters{
+			pathStrParam("postId", "文章 ID（UUID）"), csrfHeaderParam(),
+		},
+		RequestBody: jsonBody("CommentCodeRequest", true, "邮箱"),
+		Responses: responses(
+			200, messageResponse("验证码已发送"),
+			429, errorResponse("发送过于频繁"),
+		),
+	})
+
+	get(t, "/comments/{commentId}/replies", &openapi3.Operation{
+		Tags:        []string{"评论"},
+		Summary:     "顶层评论的回复列表",
+		Description: "扁平回复（offset 分页）。sort=asc|desc，默认 asc（最早在前）。",
+		Parameters: append(
+			openapi3.Parameters{pathStrParam("commentId", "顶层评论 ID（UUID）"), queryStrParam("sort", "排序方向（asc|desc，默认 asc）")},
+			pageParam(), limitParam(100),
+		),
+		Responses: responses(
+			200, dataArrayResponse("CommentDTO", "回复列表", 200, true),
 		),
 	})
 

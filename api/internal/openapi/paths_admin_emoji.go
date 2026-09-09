@@ -251,4 +251,57 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 			200, dataArrayResponse("AdminCustomEmojiDTO", "用户自定义表情列表", 200, true),
 		),
 	})
+
+	// ---- B站表情种子抓取 ----
+
+	registerSchema(t, "BilibiliCookieResponse", openapi3.Schemas{
+		"cookie": reqStr("当前生效的 B站 Cookie（启动期 env 配置，供弹窗预填）"),
+	})
+
+	registerSchema(t, "BilibiliRefetchRequest", openapi3.Schemas{
+		"cookie": optStr("覆盖 env 配置的 B站 Cookie（缺省=用 env）"),
+	})
+
+	registerSchema(t, "BilibiliRefetchStatus", openapi3.Schemas{
+		"state":        strEnum("任务状态", "running", "done", "failed", "idle"),
+		"started_at":   optStr("开始时间（RFC3339）"),
+		"finished_at":  optStr("结束时间（RFC3339）"),
+		"groups_done":  optInt("已完成分组数"),
+		"groups_total": optInt("总分组数"),
+		"error":        optStr("失败原因（成功时缺省）"),
+	})
+
+	get(t, "/admin/emojis/bilibili/cookie", &openapi3.Operation{
+		Tags:        []string{"表情管理"},
+		Summary:     "读取 B站种子 Cookie",
+		Description: "需 emoji:refetch 权限。",
+		Security:    securityAdmin(),
+		Responses: responses(
+			200, dataResponse("BilibiliCookieResponse", "当前 Cookie", 200),
+		),
+	})
+
+	post(t, "/admin/emojis/bilibili/refetch", &openapi3.Operation{
+		Tags:        []string{"表情管理"},
+		Summary:     "触发 B站表情重抓",
+		Description: "需 emoji:refetch 权限。异步执行；已在运行时 409。响应 202，" +
+			"data 为 RefetchStatus 形态（进度经 /refetch/status 轮询）。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("BilibiliRefetchRequest", true, "Cookie 覆盖"),
+		Responses: responses(
+			202, dataResponse("BilibiliRefetchStatus", "任务受理（含初始进度）", 202),
+			409, errorResponse("已有任务在运行"),
+		),
+	})
+
+	get(t, "/admin/emojis/bilibili/refetch/status", &openapi3.Operation{
+		Tags:        []string{"表情管理"},
+		Summary:     "B站重抓进度",
+		Description: "需 emoji:refetch 权限。无任务时 state=idle。",
+		Security:    securityAdmin(),
+		Responses: responses(
+			200, dataResponse("BilibiliRefetchStatus", "任务进度", 200),
+		),
+	})
 }

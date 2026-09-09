@@ -216,4 +216,101 @@ func registerPublicPaths(t *openapi3.T) {
 			),
 		},
 	})
+
+	// ---- GET /stats ----
+	registerSchema(t, "PublicStats", openapi3.Schemas{
+		"total_posts":           optInt64("文章总数"),
+		"total_comments":        optInt64("评论总数"),
+		"pending_comments":      optInt64("待审评论数"),
+		"pending_friend_links":  optInt64("待审友链数"),
+		"failing_subscriptions": optInt64("失败中的订阅数"),
+		"total_views":           optInt64("总浏览量"),
+		"today_views":           optInt64("今日浏览量"),
+		"yesterday_views":       optInt64("昨日浏览量"),
+		"week_comments":         optInt64("本周评论数"),
+		"last_week_comments":    optInt64("上周评论数"),
+	})
+	get(t, "/stats", &openapi3.Operation{
+		Tags:    []string{"统计"},
+		Summary: "站点公开统计",
+		Responses: responses(
+			200, dataResponse("PublicStats", "站点公开统计", 200),
+		),
+	})
+
+	// ---- GET /releases ----
+	registerSchema(t, "ReleaseCategory", openapi3.Schemas{
+		"label": reqStr("分类标题（如「新功能」「Bug 修复」）"),
+		"items": strArray("该分类下的条目"),
+	})
+	registerSchema(t, "ReleaseDTO", openapi3.Schemas{
+		"tag":          reqStr("版本号（如 v2.8.9）"),
+		"name":         reqStr("发布标题"),
+		"published_at": reqStr("发布时间（ISO8601）"),
+		"body":         optStr("release notes 原始 Markdown"),
+		"categories":   refArray("按标题解析出的分类条目", "ReleaseCategory"),
+		"breaking":     optBool("是否含 breaking change"),
+		"html_url":     optStr("GitHub Release 页链接"),
+	})
+	registerSchema(t, "ReleasesResponse", openapi3.Schemas{
+		"current_version": reqStr("最新版本号"),
+		"releases":        refArray("全部发布版本（时间倒序）", "ReleaseDTO"),
+	})
+	get(t, "/releases", &openapi3.Operation{
+		Tags:    []string{"更新日志"},
+		Summary: "版本更新日志",
+		Description: "代理 GitHub Releases 并解析 body 为分类条目；Redis 缓存约 1 小时，" +
+			"上游失败时回退缓存。",
+		Responses: responses(
+			200, dataResponse("ReleasesResponse", "版本列表", 200),
+		),
+	})
+
+	// ---- admin 项目 CRUD ----
+	registerSchema(t, "ProjectRequest", openapi3.Schemas{
+		"title":       reqStr("项目标题"),
+		"description": optStr("项目描述"),
+		"url":         optStr("项目链接"),
+		"github_url":  optStr("GitHub 仓库链接"),
+		"image_url":   optStr("封面图链接"),
+		"tech_stack":  strArray("技术栈"),
+		"sort_order":  optInt("排序权重"),
+	}, "title")
+
+	post(t, "/admin/projects", &openapi3.Operation{
+		Tags:        []string{"项目"},
+		Summary:     "创建项目",
+		Description: "需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("ProjectRequest", true, "项目信息"),
+		Responses: responses(
+			201, dataResponse("ProjectDTO", "新建项目", 201),
+		),
+	})
+
+	put(t, "/admin/projects/{id}", &openapi3.Operation{
+		Tags:        []string{"项目"},
+		Summary:     "更新项目",
+		Description: "需管理员权限。全量替换语义。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "项目 ID"), csrfHeaderParam()},
+		RequestBody: jsonBody("ProjectRequest", true, "项目信息"),
+		Responses: responses(
+			200, dataResponse("ProjectDTO", "更新后的项目", 200),
+			404, errorResponse("项目不存在"),
+		),
+	})
+
+	del(t, "/admin/projects/{id}", &openapi3.Operation{
+		Tags:        []string{"项目"},
+		Summary:     "删除项目",
+		Description: "需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "项目 ID"), csrfHeaderParam()},
+		Responses: responses(
+			200, messageResponse("项目已删除"),
+			404, errorResponse("项目不存在"),
+		),
+	})
 }

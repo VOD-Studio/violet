@@ -126,6 +126,34 @@ func registerPostPaths(t *openapi3.T) {
 		"created_at": reqStr("生成时间（RFC3339）"),
 	})
 
+	// 搜索结果项
+	registerSchema(t, "SearchPostItemDTO", openapi3.Schemas{
+		"id":         reqStr("文章 ID（UUID）"),
+		"slug":       reqStr("URL slug"),
+		"title":      reqStr("标题"),
+		"status":     strEnum("文章状态", "draft", "published", "archived"),
+		"tags":       strArray("标签列表"),
+		"snippet":    optStr("命中片段摘要"),
+		"updated_at": reqStr("更新时间（RFC3339）"),
+	})
+
+	// 批注块计数（/posts/{postId}/annotations/summary）
+	registerSchema(t, "AnnotationBlockCountDTO", openapi3.Schemas{
+		"block_id": reqStr("块 ID（对应正文的锚点块）"),
+		"count":    optInt64("该块批注数"),
+	})
+
+	// 批量操作请求
+	registerSchema(t, "PostBatchRequest", openapi3.Schemas{
+		"ids": strArray("文章 ID 列表（至少 1 篇）"),
+		"action": strEnum("批量动作",
+			"delete", "hard_delete", "publish", "archive", "restore", "feature", "unfeature"),
+	}, "ids", "action")
+
+	registerSchema(t, "PostBatchResponse", openapi3.Schemas{
+		"affected": optInt("受影响文章数"),
+	})
+
 	// ============ 前台公开 ============
 
 	get(t, "/posts", &openapi3.Operation{
@@ -182,6 +210,30 @@ func registerPostPaths(t *openapi3.T) {
 		},
 		Responses: responses(
 			204, noContentResponse("浏览次数已记录"),
+		),
+	})
+
+	get(t, "/posts/search", &openapi3.Operation{
+		Tags:        []string{"文章"},
+		Summary:     "搜索已发布文章",
+		Description: "按关键词检索标题与正文（offset 分页，limit 上限 50）。q 为空时返回空列表。",
+		Parameters: append(
+			openapi3.Parameters{queryStrParam("q", "搜索关键词")},
+			pageParam(), limitParam(50),
+		),
+		Responses: responses(
+			200, dataArrayResponse("SearchPostItemDTO", "搜索结果（含片段摘要）", 200, true),
+		),
+	})
+
+	get(t, "/posts/{postId}/annotations/summary", &openapi3.Operation{
+		Tags:        []string{"评论"},
+		Summary:     "批注块计数",
+		Description: "按块聚合的锚点批注计数（OptionalAuth：匿名返回空列表，" +
+			"登录返回带 viewer 视角的数据）。",
+		Parameters: openapi3.Parameters{pathStrParam("postId", "文章 ID（UUID）")},
+		Responses: responses(
+			200, dataArrayResponse("AnnotationBlockCountDTO", "各块批注数", 200, false),
 		),
 	})
 
@@ -382,6 +434,19 @@ func registerPostPaths(t *openapi3.T) {
 			200, messageResponse("已回滚到指定版本"),
 			404, errorResponse("文章或版本不存在"),
 			400, errorResponse("请求参数错误或历史版本不属于该文章"),
+		),
+	})
+
+	post(t, "/admin/posts/batch", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "批量操作文章",
+		Description: "路由级卡 post:create，逐条的权限与状态校验在应用层完成。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("PostBatchRequest", true, "批量操作"),
+		Responses: responses(
+			200, dataResponse("PostBatchResponse", "受影响数量", 200),
+			400, errorResponse("ids 为空或 action 非法"),
 		),
 	})
 }
