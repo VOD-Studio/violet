@@ -7,6 +7,34 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.24](https://github.com/VOD-Studio/violet/compare/v2.8.23...v2.8.24) (2026-09-09)
+
+
+### 新增
+
+* **persona:** 人设图集展板接入错峰进出场并改写画册文案 ([9565095](https://github.com/VOD-Studio/violet/commit/9565095563150c98753e7ea98d09eca330b8701d))
+* **persona:** 升级人设档案为日系画报排版与规格名录 ([b5910a2](https://github.com/VOD-Studio/violet/commit/b5910a269504c1387ea7387768ae22eed3daf424))
+* **persona:** 设定图集接入 PhotoStack 并在展开态呈现交错大展板 ([1aeec9b](https://github.com/VOD-Studio/violet/commit/1aeec9b7b1185766647c04278fb528f5e7555108))
+* **persona:** 重排人设页并接入照片堆叠与返回顶部 ([f5dd610](https://github.com/VOD-Studio/violet/commit/f5dd6103548118783b4ef98288a66ad8e3fa1a86))
+* **persona:** 重设计人设公开页排版与动效 ([6560336](https://github.com/VOD-Studio/violet/commit/656033616205dff90d6df9901a20c22216d49448))
+* **photo-stack:** 展开收起改为解散收拢队形编排 ([acd2210](https://github.com/VOD-Studio/violet/commit/acd22104f9983c2a46d12e50c71c87a6eb8e9859))
+* **theme:** 泛化公开内容方言作用域 ([5514e7c](https://github.com/VOD-Studio/violet/commit/5514e7c90b9e746e6de45331fdec262e041db658))
+
+
+### 修复
+
+* **epigraph:** 恢复首页引言强调色 ([3a00908](https://github.com/VOD-Studio/violet/commit/3a00908930b7e228499468d3cf71a1da35bf9670))
+* **header:** 修复贡献卡片热力图异常放大 ([3d75a95](https://github.com/VOD-Studio/violet/commit/3d75a95e7396c9f413e54732d8702156f598cdc3))
+* **header:** 补全本周贡献格位 ([89efffe](https://github.com/VOD-Studio/violet/commit/89efffe149729b800ac92f1333e4824cf8b1ede5))
+* **image-preview:** 平滑慢速原图加载过渡 ([1bfeb34](https://github.com/VOD-Studio/violet/commit/1bfeb34f01716018af07933e411bb2b90c58e998))
+* **persona:** 使用精灵图恢复加载动画 ([553effa](https://github.com/VOD-Studio/violet/commit/553effadbe651134605f8d76c928fe473b3c2c1a))
+* **persona:** 装饰分隔符包字符串表达式通过 Biome 校验 ([f3971c9](https://github.com/VOD-Studio/violet/commit/f3971c90f6240e750102de9f99fdad01c57452d5))
+* **photo-stack:** 修复覆盖层遮挡并为展开加动画 ([be60a0a](https://github.com/VOD-Studio/violet/commit/be60a0a674e293daaccfdb9b6a887e04a2dc4264))
+* **photo-stack:** 展开改为大图资料册并保持展开态 ([3f8395b](https://github.com/VOD-Studio/violet/commit/3f8395be8ac3e95331185bec345b5a4309f5de28))
+* **photo-stack:** 恢复后置卡拖拽起点的活值捕获 ([7153d5e](https://github.com/VOD-Studio/violet/commit/7153d5e515d0501f24b7b60a539a5576f3bd6714))
+* **photo-stack:** 设定图集默认原图并根治快速切图不灵敏问题 ([066793f](https://github.com/VOD-Studio/violet/commit/066793ff85812802935fb3bceb23ff97f08e3ed5))
+* **theme:** 恢复首页暖珊瑚作用域 ([65da12f](https://github.com/VOD-Studio/violet/commit/65da12f34000a5e5a2744659fa1c86cb35172515))
+
 ## [2.8.23](https://github.com/VOD-Studio/violet/compare/v2.8.22...v2.8.23) (2026-09-08)
 
 
