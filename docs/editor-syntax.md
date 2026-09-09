@@ -791,6 +791,14 @@ xychart-beta
 
 ### 10.3 链接、社交动态与链接组
 
+将 X / Twitter 动态链接单独放在一个段落中，即可自动解析：
+
+```markdown
+<https://x.com/example/status/123456789>
+```
+
+也可用完整配置保存一份不依赖外站的静态快照：
+
 ````markdown
 ```link-preview
 {"url":"https://example.com/story","title":"文章标题","description":"一段简短摘要。","image":"/uploads/cover.webp","site":"Example"}
@@ -805,7 +813,9 @@ xychart-beta
 ```
 ````
 
-- `link-preview` 和 `tweet` 都是静态快照，不加载第三方脚本，也不会在读者访问时请求外站接口。
+- 独立成段且显示文字就是原地址的 `x.com` / `twitter.com` 动态链接会自动解析；带自定义文案的普通链接不转换。
+- 自动解析使用 `react-tweet` 的无 iframe 渲染，只在阅读时请求动态数据；外部接口不可用或动态已删除时保留「前往 X 查看原动态」链接。
+- `link-preview` 和显式 `tweet` 围栏是作者保存的静态快照，不会在读者访问时请求外站接口。
 - 社交链接组支持 1–8 项；`icon` 可选 `github`、`x`、`email`、`website`、`rss` 或 `video`，省略时按链接推断。
 - 链接只接受站内路径、`http(s)`；社交链接额外接受 `mailto:`。图片只接受站内上传路径或 `http(s)`。
 - JSON 无效或字段不合规时，文章其余内容照常渲染，错误位置显示可读的配置提示。

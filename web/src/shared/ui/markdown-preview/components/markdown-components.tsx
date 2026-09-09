@@ -18,6 +18,7 @@ import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
 import { diagramRenderers } from "../../diagram/renderers";
 import { createRichCodeRenderer } from "./rich-code-renderer";
+import { createRichParagraphRenderer } from "./rich-paragraph-renderer";
 
 /** 公式组件懒加载：KaTeX + 字体只在含公式的文章页拉取 */
 const LazyInlineMathFormula = lazy(() =>
@@ -121,11 +122,7 @@ export const markdownComponents: Components = {
 			{children}
 		</h4>
 	),
-	p: ({ children, style, className }) => (
-		<p style={style} className={cn("my-5 text-foreground/90", className)}>
-			{children}
-		</p>
-	),
+	p: createRichParagraphRenderer(),
 	ul: ({ children, ...props }) => {
 		const p = props as Record<string, unknown>;
 		// hast-util-to-jsx-runtime 对 data-* 属性传 HTML 属性名(连字符)

@@ -1,6 +1,16 @@
+import { parseXPostUrl } from "@shared/ui/article-embeds/x-post-url";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("react-tweet", () => ({
+	EmbeddedTweet: () => <article aria-label="已解析 X 动态" />,
+	useTweet: () => ({
+		data: null,
+		error: new Error("offline"),
+		isLoading: false,
+	}),
+}));
 
 const profile = {
 	name: "若菫瑠爱｜RUA",
@@ -106,5 +116,45 @@ describe("ArticleContent rich nodes", () => {
 
 		expect(await screen.findByText("无法解析 link-preview 卡片配置")).toBeTruthy();
 		expect(screen.queryByRole("link", { name: /危险链接/u })).toBeNull();
+	});
+
+	it("从 HTML 与 Markdown 主路径解析独立 X 动态链接并保留失败回退", async () => {
+		const url = "https://twitter.com/__oQuery/status/2027424056291774541?s=20";
+		const { unmount } = render(
+			<ArticleContent content={`<p><a href="${url}">${url}</a></p>`} />,
+		);
+
+		const htmlFallback = await screen.findByRole("link", {
+			name: /这条 X 动态暂时无法解析/u,
+		});
+		expect(htmlFallback.getAttribute("href")).toBe(
+			"https://x.com/__oQuery/status/2027424056291774541",
+		);
+		unmount();
+
+		render(<ArticleContent content={`<${url}>`} />);
+		expect(await screen.findByRole("link", { name: /这条 X 动态暂时无法解析/u })).toBeTruthy();
+	});
+
+	it("保留带自定义文案的普通 X 链接", async () => {
+		render(<ArticleContent content="[查看原动态](https://x.com/example/status/123456789)" />);
+
+		expect(await screen.findByRole("link", { name: "查看原动态" })).toBeTruthy();
+		expect(screen.queryByText("这条 X 动态暂时无法解析")).toBeNull();
+	});
+});
+
+describe("parseXPostUrl", () => {
+	it("兼容 X 与旧 Twitter 动态地址并拒绝非动态页面", () => {
+		expect(parseXPostUrl("https://x.com/example/status/123456789?ref=home")).toEqual({
+			id: "123456789",
+			href: "https://x.com/example/status/123456789",
+		});
+		expect(parseXPostUrl("https://mobile.twitter.com/i/web/status/42")).toEqual({
+			id: "42",
+			href: "https://x.com/i/web/status/42",
+		});
+		expect(parseXPostUrl("https://x.com/example")).toBeNull();
+		expect(parseXPostUrl("https://x.com.evil.test/example/status/42")).toBeNull();
 	});
 });
