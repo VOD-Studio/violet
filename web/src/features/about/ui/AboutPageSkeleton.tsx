@@ -1,21 +1,22 @@
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import styles from "./AboutPage.module.css";
 
-/**
- * AboutPageSkeleton - 关于页整页骨架屏
- *
- * settings 未就绪时的页面级占位（settings 是绝大多数区块的前置）。
- * 通用区块骨架：区块标题条 + 几行内容条，重复 3 段模拟区块流。
- * 独立数据源区块（life stats / changelog）各自有区块级骨架，渐进替换。
- */
+/** 关于页数据尚未就绪时保留长卷版式的稳定占位。 */
 export function AboutPageSkeleton() {
 	return (
-		<div className="mx-auto w-full max-w-5xl space-y-16 px-6 py-14">
-			{Array.from({ length: 3 }, (_, i) => (
-				<section key={i}>
-					<ShimmerSkeleton className="mb-6 h-3 w-20" />
-					<ShimmerSkeleton className="h-5 w-2/3" />
-					<ShimmerSkeleton className="mt-3 h-5 w-1/2" />
-					<ShimmerSkeleton className="mt-2 h-5 w-3/4" />
+		<div className={styles.skeletonPage} aria-hidden="true">
+			<div className={styles.skeletonHero}>
+				<ShimmerSkeleton className={styles.skeletonKicker} />
+				<ShimmerSkeleton className={styles.skeletonTitle} />
+				<ShimmerSkeleton className={styles.skeletonQuote} />
+			</div>
+			{Array.from({ length: 3 }, (_, index) => (
+				<section key={index} className={styles.skeletonSection}>
+					<ShimmerSkeleton className={styles.skeletonHeading} />
+					<ShimmerSkeleton className={styles.skeletonLine} />
+					<ShimmerSkeleton
+						className={`${styles.skeletonLine} ${styles.skeletonLineShort}`}
+					/>
 				</section>
 			))}
 		</div>

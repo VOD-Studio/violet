@@ -1,41 +1,40 @@
 import { resolveSectionOrder } from "@features/about/model/about-config";
+import styles from "@features/about/ui/AboutPage.module.css";
 import { AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
 import { ABOUT_SECTION_IDS, resolveSectionComponent } from "@features/about/ui/section-registry";
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 
-/**
- * /about - 关于页
- *
- * 数据来自 useSettings（已全局预取）。
- *
- * 渲染模式（单套逻辑，无「默认/配置」双轨）：
- * - about_config 为空 → 全部区块默认 enabled，按注册表顺序渲染（出厂全显）。
- * - about_config 非空 → 解析 sections，按 order 排序、enabled 过滤，用区块注册表渲染。
- *
- * 所有区块均为真实组件；未知 id（历史配置残留）不渲染，避免占位框。
- */
 function AboutPage() {
 	const { data: settings, isLoading } = useSettings();
 
 	if (isLoading) {
-		return <AboutPageSkeleton />;
+		return (
+			<main className={styles.page} data-about-page>
+				<AboutPageSkeleton />
+			</main>
+		);
 	}
+
 	if (!settings) {
-		return null;
+		return <main className={styles.page} data-about-page />;
 	}
+
 	const orderedIds = resolveSectionOrder(settings.about_config);
-	// 配置为空 → 默认全部区块 enabled，按注册表顺序渲染
 	const ids = orderedIds.length > 0 ? orderedIds : [...ABOUT_SECTION_IDS];
 
 	return (
-		<div className="flex flex-col">
-			{ids.map((id) => {
-				const Component = resolveSectionComponent(id);
-				if (!Component) return null;
-				return <Component key={id} section={{ id, enabled: true }} settings={settings} />;
-			})}
-		</div>
+		<main className={styles.page} data-about-page>
+			<div className={styles.document}>
+				{ids.map((id) => {
+					const Component = resolveSectionComponent(id);
+					if (!Component) return null;
+					return (
+						<Component key={id} section={{ id, enabled: true }} settings={settings} />
+					);
+				})}
+			</div>
+		</main>
 	);
 }
 

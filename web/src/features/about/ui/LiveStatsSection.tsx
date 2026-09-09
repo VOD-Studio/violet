@@ -1,28 +1,29 @@
 import { usePublicStats } from "@features/about/api/queries";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
-import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import styles from "./AboutPage.module.css";
+import { AboutSectionIntro } from "./AboutSectionIntro";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/**
- * LiveStatsSection - B2 站点生命体征
- *
- * 展示文章数 / 总字数 / 评论数 / 运行天数的跳动大字。
- * 用 motion 的数字插值动画驱动从 0 滚到目标值。
- * 接口失败时空数据降级（不渲染）。
- */
+const STAT_LABELS = ["文章", "总字数", "评论", "运行天数"] as const;
+
+/** 展示站点持续积累的公开统计。 */
 export function LiveStatsSection(_: AboutSectionProps) {
 	const { data, isPending } = usePublicStats();
 
-	// 加载中：区块级骨架（四格数字占位，避免数字从 0 跳变闪烁）
 	if (isPending) {
 		return (
-			<section className="mx-auto w-full max-w-5xl px-6 py-14">
-				<div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-					{Array.from({ length: 4 }, (_, i) => (
-						<div key={i} className="text-center">
-							<ShimmerSkeleton className="mx-auto h-12 w-20" />
-							<ShimmerSkeleton className="mx-auto mt-2 h-3 w-14" />
+			<section className={styles.section} aria-labelledby="about-stats-title">
+				<AboutSectionIntro
+					id="about-stats-title"
+					eyebrow="Vitals / 06"
+					title="这座站点仍在生长。"
+				/>
+				<div className={styles.statsGrid}>
+					{STAT_LABELS.map((label) => (
+						<div key={label} className={styles.stat}>
+							<ShimmerSkeleton className={styles.statSkeletonValue} />
+							<span className={styles.statLabel}>{label}</span>
 						</div>
 					))}
 				</div>
@@ -40,56 +41,49 @@ export function LiveStatsSection(_: AboutSectionProps) {
 	];
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="grid grid-cols-2 gap-8 md:grid-cols-4"
-			>
+		<section className={styles.section} aria-labelledby="about-stats-title">
+			<AboutSectionIntro
+				id="about-stats-title"
+				eyebrow="Vitals / 06"
+				title="这座站点仍在生长。"
+			/>
+			<div className={styles.statsGrid}>
 				{items.map((item) => (
-					<div key={item.label} className="text-center">
-						<CountUp
-							to={item.value}
-							className="block text-4xl font-black tracking-tighter md:text-5xl"
-						/>
-						<span className="mt-2 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-							{item.label}
-						</span>
+					<div key={item.label} className={styles.stat}>
+						<CountUp to={item.value} />
+						<span className={styles.statLabel}>{item.label}</span>
 					</div>
 				))}
-			</motion.div>
+			</div>
 		</section>
 	);
 }
 
-/**
- * CountUp - 从 0 滚动到目标值的数字（requestAnimationFrame 驱动 easeOut 缓动）
- *
- * 用 rAF 自实现插值，避免依赖 motion 的命令式 animate API（签名不稳）。
- */
-function CountUp({ to, className }: { to: number; className?: string }) {
+function CountUp({ to }: { to: number }) {
 	const [value, setValue] = useState(0);
 	const rafRef = useRef<number | undefined>(undefined);
 
 	useEffect(() => {
-		const duration = 1200;
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			setValue(to);
+			return;
+		}
+
+		const duration = 900;
 		const start = performance.now();
 		const tick = (now: number) => {
-			const t = Math.min((now - start) / duration, 1);
-			// easeOutCubic
-			const eased = 1 - (1 - t) ** 3;
+			const progress = Math.min((now - start) / duration, 1);
+			const eased = 1 - (1 - progress) ** 3;
 			setValue(Math.round(eased * to));
-			if (t < 1) {
+			if (progress < 1) {
 				rafRef.current = requestAnimationFrame(tick);
 			}
 		};
 		rafRef.current = requestAnimationFrame(tick);
 		return () => {
-			if (rafRef.current) cancelAnimationFrame(rafRef.current);
+			if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
 		};
 	}, [to]);
 
-	return <span className={className}>{value.toLocaleString()}</span>;
+	return <span className={styles.statValue}>{value.toLocaleString("zh-CN")}</span>;
 }

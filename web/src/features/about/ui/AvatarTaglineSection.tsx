@@ -1,37 +1,38 @@
-import { motion } from "motion/react";
+import { DEFAULT_ABOUT_COPY } from "@features/about/model/default-copy";
+import styles from "./AboutPage.module.css";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/**
- * AvatarTaglineSection - A1 头像 + 标语
- *
- * 圆形头像（avatar_url）+ 大字 tagline。avatar_url 为空时隐藏头像只显示 tagline。
- * 消费 settings.avatar_url / settings.tagline。
- */
+/** 以头像和一句话主张建立作者身份。 */
 export function AvatarTaglineSection({ settings }: AboutSectionProps) {
-	if (!settings.tagline && !settings.avatar_url) return null;
+	const siteName = settings.site_name.trim() || DEFAULT_ABOUT_COPY.siteName;
+	const tagline = settings.tagline.trim() || DEFAULT_ABOUT_COPY.tagline;
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="flex flex-col items-center gap-6 text-center"
-			>
-				{settings.avatar_url ? (
-					<img
-						src={settings.avatar_url}
-						alt="头像"
-						className="size-28 rounded-full border border-edge-hairline object-cover shadow-sm"
-					/>
-				) : null}
-				{settings.tagline ? (
-					<p className="text-2xl font-bold tracking-tight md:text-3xl">
-						{settings.tagline}
-					</p>
-				) : null}
-			</motion.div>
+		<section className={styles.section} aria-labelledby="about-identity-title">
+			<div className={styles.identity}>
+				<div className={styles.avatarRail}>
+					{settings.avatar_url ? (
+						<img
+							src={settings.avatar_url}
+							alt={`${siteName} 站长头像`}
+							width={176}
+							height={176}
+							className={styles.avatar}
+						/>
+					) : (
+						<span className={styles.avatarFallback} aria-hidden="true">
+							{siteName.slice(0, 1)}
+						</span>
+					)}
+				</div>
+				<div className={styles.identityCopy}>
+					<span className={styles.identityLabel}>About me / 01</span>
+					<h2 id="about-identity-title" className={styles.identityTitle}>
+						{tagline}
+					</h2>
+					<p className={styles.identitySite}>{siteName} · Digital garden</p>
+				</div>
+			</div>
 		</section>
 	);
 }

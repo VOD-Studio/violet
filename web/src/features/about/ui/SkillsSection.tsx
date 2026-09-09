@@ -1,74 +1,66 @@
-import { motion } from "motion/react";
+import { DEFAULT_ABOUT_COPY } from "@features/about/model/default-copy";
+import { ChevronDown } from "lucide-react";
+import styles from "./AboutPage.module.css";
+import { AboutSectionIntro } from "./AboutSectionIntro";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/**
- * SkillsSection - A3 技能/兴趣标签云（升级版三组）
- *
- * 把 skills_strong / skills_learning / skills_interests 三组字符串（逗号/顿号分隔）
- * 解析成标签，分组渲染，各组配不同色相。空组不渲染。
- */
+function parseItems(raw: string, fallback: readonly string[]): string[] {
+	if (!raw.trim()) return [...fallback];
+	return raw
+		.split(/[,，、\n]+/u)
+		.map((item) => item.trim())
+		.filter(Boolean);
+}
+
+/** 将技能与兴趣收进可展开的工作台索引。 */
 export function SkillsSection({ settings }: AboutSectionProps) {
 	const groups = [
 		{
-			title: "擅长",
-			raw: settings.skills_strong,
-			color: "hover:border-blue-500/50 hover:bg-blue-500/10",
+			title: "正在使用",
+			items: parseItems(settings.skills_strong, DEFAULT_ABOUT_COPY.skills.strong),
 		},
 		{
-			title: "在学",
-			raw: settings.skills_learning,
-			color: "hover:border-amber-500/50 hover:bg-amber-500/10",
+			title: "正在学习",
+			items: parseItems(settings.skills_learning, DEFAULT_ABOUT_COPY.skills.learning),
 		},
 		{
-			title: "兴趣",
-			raw: settings.skills_interests,
-			color: "hover:border-purple-500/50 hover:bg-purple-500/10",
+			title: "持续好奇",
+			items: parseItems(settings.skills_interests, DEFAULT_ABOUT_COPY.skills.interests),
 		},
-	]
-		.map((g) => ({
-			...g,
-			tags: g.raw
-				? g.raw
-						.split(/[,，、\s]+/)
-						.map((s) => s.trim())
-						.filter(Boolean)
-				: [],
-		}))
-		.filter((g) => g.tags.length > 0);
-
-	if (groups.length === 0) return null;
+	].filter((group) => group.items.length > 0);
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="space-y-8"
-			>
-				{groups.map((group) => (
-					<div key={group.title}>
-						<h2 className="mb-4 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-							{group.title}
-						</h2>
-						<div className="flex flex-wrap gap-2">
-							{group.tags.map((tag, i) => (
-								<motion.span
-									key={tag}
-									initial={{ opacity: 0, scale: 0.8 }}
-									whileInView={{ opacity: 1, scale: 1 }}
-									viewport={{ once: true }}
-									transition={{ duration: 0.3, delay: i * 0.03 }}
-									className={`rounded-lg border border-edge-hairline bg-muted/30 px-3 py-1.5 font-mono text-sm transition-colors ${group.color}`}
-								>
-									{tag}
-								</motion.span>
-							))}
+		<section className={styles.section} aria-labelledby="about-skills-title">
+			<AboutSectionIntro
+				id="about-skills-title"
+				eyebrow="Workbench / 04"
+				title="我用什么，也在学什么。"
+			/>
+			<div className={styles.accordion}>
+				{groups.map((group, index) => (
+					<details key={group.title} className={styles.accordionItem} open={index === 0}>
+						<summary className={styles.accordionSummary}>
+							<span className={styles.accordionNumber}>
+								{String(index + 1).padStart(2, "0")}
+							</span>
+							<span className={styles.accordionTitle}>{group.title}</span>
+							<span className={styles.accordionCount}>
+								{group.items.length} items
+							</span>
+							<ChevronDown className={styles.accordionChevron} aria-hidden="true" />
+						</summary>
+						<div className={styles.accordionBody}>
+							<ul className={styles.skillList}>
+								{group.items.map((item) => (
+									<li key={item} className={styles.skillItem}>
+										{item}
+									</li>
+								))}
+							</ul>
 						</div>
-					</div>
+					</details>
 				))}
-			</motion.div>
+			</div>
 		</section>
 	);
 }

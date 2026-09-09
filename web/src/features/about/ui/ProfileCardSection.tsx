@@ -1,39 +1,50 @@
+import { DEFAULT_ABOUT_COPY } from "@features/about/model/default-copy";
 import { Briefcase, Hand, Mail, MapPin } from "lucide-react";
-import { motion } from "motion/react";
+import styles from "./AboutPage.module.css";
+import { AboutSectionIntro } from "./AboutSectionIntro";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/**
- * ProfileCardSection - A2 名片卡
- *
- * 展示 role / location / available_for / email。空字段不显示对应行。
- * 横向 flex-wrap 布局，与内容流宽度一致（不再孤立窄卡片）。
- */
+/** 以出版物式索引展示身份、位置与联系状态。 */
 export function ProfileCardSection({ settings }: AboutSectionProps) {
 	const rows = [
-		settings.profile_role ? { icon: Briefcase, label: settings.profile_role } : null,
-		settings.profile_location ? { icon: MapPin, label: settings.profile_location } : null,
-		settings.available_for ? { icon: Hand, label: settings.available_for } : null,
-		settings.social_email ? { icon: Mail, label: settings.social_email } : null,
-	].filter((r): r is { icon: typeof Briefcase; label: string } => r !== null);
-
-	if (rows.length === 0) return null;
+		{
+			icon: Briefcase,
+			key: "身份",
+			value: settings.profile_role.trim() || DEFAULT_ABOUT_COPY.role,
+		},
+		{
+			icon: MapPin,
+			key: "坐标",
+			value: settings.profile_location.trim() || DEFAULT_ABOUT_COPY.location,
+		},
+		{
+			icon: Hand,
+			key: "近况",
+			value: settings.available_for.trim() || DEFAULT_ABOUT_COPY.availableFor,
+		},
+		settings.social_email
+			? { icon: Mail, key: "来信", value: settings.social_email.trim() }
+			: null,
+	].filter((row): row is NonNullable<typeof row> => row !== null);
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="flex flex-wrap gap-x-8 gap-y-3"
-			>
-				{rows.map(({ icon: Icon, label }) => (
-					<div key={label} className="flex items-center gap-2 text-sm text-foreground/80">
-						<Icon className="size-4 shrink-0 text-muted-foreground" />
-						<span>{label}</span>
+		<section className={styles.section} aria-labelledby="about-profile-title">
+			<AboutSectionIntro
+				id="about-profile-title"
+				eyebrow="Coordinates / 03"
+				title="此刻，我在哪里。"
+			/>
+			<dl className={styles.ledger}>
+				{rows.map(({ icon: Icon, key, value }) => (
+					<div key={key} className={styles.ledgerRow}>
+						<dt className={styles.ledgerKey}>
+							<Icon className={styles.ledgerIcon} aria-hidden="true" />
+							{key}
+						</dt>
+						<dd className={styles.ledgerValue}>{value}</dd>
 					</div>
 				))}
-			</motion.div>
+			</dl>
 		</section>
 	);
 }

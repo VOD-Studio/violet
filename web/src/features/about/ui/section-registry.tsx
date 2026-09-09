@@ -9,34 +9,30 @@ import { ProfileCardSection } from "./ProfileCardSection";
 import { SkillsSection } from "./SkillsSection";
 import { SocialMatrixSection } from "./SocialMatrixSection";
 
-/**
- * ABOUT_SECTION_IDS - 关于页区块标识常量
- *
- * 后台配置页与前台注册表共用，保证 id 一致。
- */
+/** 关于页后台排序与前台注册表共用的稳定区块标识。 */
 export const ABOUT_SECTION_IDS = [
-	"hero", // Hero 区（站点名/描述）
-	"avatar_tagline", // 头像 + 标语
-	"bio", // 个人简介
-	"profile_card", // 名片卡
-	"skills", // 技能/兴趣标签云（三组）
-	"social_matrix", // 社交矩阵
-	"live_stats", // 站点生命体征
-	"changelog", // 更新日志
+	"hero",
+	"avatar_tagline",
+	"bio",
+	"profile_card",
+	"skills",
+	"social_matrix",
+	"live_stats",
+	"changelog",
 ] as const;
 
 export type AboutSectionId = (typeof ABOUT_SECTION_IDS)[number];
 
-/** 区块 id → 中文显示名（后台配置页用） */
+/** 区块 id 对应的后台显示名。 */
 export const ABOUT_SECTION_LABELS: Record<string, string> = {
-	hero: "Hero 区（站点名/描述）",
-	avatar_tagline: "头像 + 标语",
-	bio: "个人简介",
-	profile_card: "名片卡",
-	skills: "技能/兴趣标签云（三组）",
-	social_matrix: "社交矩阵",
-	live_stats: "站点生命体征",
-	changelog: "更新日志",
+	hero: "编辑式封面",
+	avatar_tagline: "作者头像与标语",
+	bio: "作者自述",
+	profile_card: "身份索引",
+	skills: "技能与兴趣折叠册",
+	social_matrix: "站外链接",
+	live_stats: "站点统计",
+	changelog: "最近更新",
 };
 
 /**
