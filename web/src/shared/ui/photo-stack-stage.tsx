@@ -561,15 +561,14 @@ export function PhotoStackStage({
 				cardValue.rotateY.stop();
 				cardValue.scale.stop();
 				cardValue.opacity.stop();
-				const staticSlot = getIndexedStackSlot(card.index, safeIndex, width);
-				const staticOpacity = getStackCardOpacity(card.index, safeIndex, images.length);
+				// 回槽动画尚未完成时以活值为起点，接管拖拽不发生位置跳变。
 				cardOrigin = {
-					x: staticSlot.x,
-					y: staticSlot.y,
-					rotate: staticSlot.rotate,
-					rotateY: 0,
-					scale: staticSlot.scale,
-					opacity: staticOpacity,
+					x: cardValue.x.get(),
+					y: cardValue.y.get(),
+					rotate: cardValue.rotate.get(),
+					rotateY: cardValue.rotateY.get(),
+					scale: cardValue.scale.get(),
+					opacity: cardValue.opacity.get(),
 				};
 				cardDragOrigins.current.set(card.index, cardOrigin);
 			}
