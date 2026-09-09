@@ -10,6 +10,8 @@ import (
 	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
+
+	"blog-api/internal/version"
 )
 
 var (
@@ -66,7 +68,7 @@ func build() (*openapi3.T, error) {
 		Info: &openapi3.Info{
 			Title:       "Violet API",
 			Description: "全栈博客平台后端接口文档。鉴权采用 Cookie + CSRF Token（X-CSRF-Token 头），所有非 GET 写操作需携带有效的 CSRF Token。",
-			Version:     "2.0.0",
+			Version:     version.Version,
 		},
 		Servers: openapi3.Servers{
 			{URL: "/api/v1", Description: "API v1 前缀"},
@@ -105,5 +107,13 @@ func build() (*openapi3.T, error) {
 	registerPersonaPaths(t)
 	registerChatPaths(t)
 	registerCustomEmojiPaths(t)
+	registerTweetPaths(t)
+	registerSeriesPaths(t)
+	registerFriendLinkPaths(t)
+	registerNotificationPaths(t)
+	registerCodeRunnerPaths(t)
+	registerAdminAPITokenPaths(t)
+	registerAdminSubscriptionPaths(t)
+	registerAdminSystemPaths(t)
 	return t, nil
 }

@@ -259,6 +259,9 @@ jobs:
           tags: |
             ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
             ghcr.io/vod-studio/violet-api:latest
+          # 注入发版 tag 进二进制，openapi spec 的 info.version 与镜像版本对齐
+          build-args: |
+            API_VERSION=${{ needs.prepare.outputs.tag }}
           # 与 ci.yml 镜像构建验证共用 scope:同 commit 在 CI 已构建的层直接命中
           cache-from: type=gha,scope=violet-api
           cache-to: type=gha,mode=max,scope=violet-api

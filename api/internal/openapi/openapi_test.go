@@ -6,6 +6,8 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
+
+	"blog-api/internal/version"
 )
 
 func TestSpec_BuildsWithoutError(t *testing.T) {
@@ -14,7 +16,7 @@ func TestSpec_BuildsWithoutError(t *testing.T) {
 	require.NotNil(t, spec)
 	require.Equal(t, "3.0.3", spec.OpenAPI)
 	require.Equal(t, "Violet API", spec.Info.Title)
-	require.Equal(t, "2.0.0", spec.Info.Version)
+	require.Equal(t, version.Version, spec.Info.Version)
 	require.Equal(t, "/api/v1", spec.Servers[0].URL)
 }
 
