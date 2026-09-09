@@ -254,6 +254,7 @@ describe("PhotoStack motion decisions", () => {
 			{ t: 360, x: 140 },
 		];
 		expect(recentVelocity(samples, 100, 430)).toBe(-0.5);
-		expect(recentVelocity(samples, 100, 461)).toBe(0);
+		// 停顿超过 180ms 才视为长停归零，短暂停顿保留最近有效速度。
+		expect(recentVelocity(samples, 100, 541)).toBe(0);
 	});
 });

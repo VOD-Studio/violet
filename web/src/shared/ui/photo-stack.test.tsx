@@ -348,7 +348,8 @@ describe("PhotoStack", () => {
 		fireTimedPointerEvent(stack, "down", { button: 0, clientX: 300, pointerId: 1 }, 100);
 		fireTimedPointerEvent(stack, "move", { clientX: 20, pointerId: 1 }, 300);
 		expect(stack.getAttribute("data-current-index")).toBe("0");
-		fireTimedPointerEvent(stack, "up", { clientX: 250, pointerId: 1 }, 350);
+		// 释放阈值 = min(width * 0.16, 80) = 44.8，-40 在阈值内且与回拖速度方向相反，不构成轻扫。
+		fireTimedPointerEvent(stack, "up", { clientX: 260, pointerId: 1 }, 350);
 		act(() => vi.runAllTimers());
 
 		expect(stack.getAttribute("data-current-index")).toBe("0");
@@ -447,10 +448,17 @@ describe("PhotoStack", () => {
 		);
 
 		fireEvent.click(screen.getByRole("button", { name: /展开全部照片，共 4 张/ }));
+		// 展开先走 scatter 队形（3 张后卡错峰 45ms + 340ms + 收尾 40ms = 515ms），走完才切展开态。
+		act(() => vi.advanceTimersByTime(600));
 		expect(screen.getByRole("button", { name: "收起为堆叠" })).toBeTruthy();
-		fireEvent.click(screen.getByRole("button", { name: "第三张" }));
+		// 舞台退场依赖 rAF，fake timers 下不会卸载，同名卡片按钮与媒体墙按钮并存。
+		const gridThird = screen
+			.getAllByRole("button", { name: "第三张" })
+			.find((button) => button.dataset.cardState === undefined);
+		fireEvent.click(gridThird as HTMLElement);
 		expect(onImageOpen.mock.calls).toEqual([[2]]);
-		expect(screen.getByRole("group")).toBeTruthy();
+		// 展开态点击图片仅上报索引，是否收起由调用方决定，保持展开。
+		expect(screen.getByRole("button", { name: "收起为堆叠" })).toBeTruthy();
 	});
 
 	it("前一张仍在回槽时新顶卡即可接管下一次拖拽", () => {
