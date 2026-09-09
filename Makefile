@@ -144,11 +144,6 @@ api-lint: ## 后端代码检查 (golangci-lint 优先，不可用则回退 go ve
 		go vet ./...; \
 	fi
 
-apifox: ## 生成 OpenAPI 文档并导入到 Apifox
-	@echo "生成并上传 OpenAPI 文档到 Apifox..."
-	cd api && go run ./cmd/export-openapi/main.go && apifox import --project 8484856 --format openapi --file ./openapi.json
-	@echo "Apifox 更新完成"
-
 # ==================== 前端 ====================
 
 web: ## 启动前端开发服务器
