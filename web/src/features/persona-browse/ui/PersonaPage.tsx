@@ -197,7 +197,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							<span className={styles.sectionIndex} aria-hidden>
 								01
 							</span>
-							<p className={styles.sectionKicker}>PROFILE // 档案指标</p>
+							<p className={styles.sectionKicker}>PROFILE {"//"} 档案指标</p>
 							<div className={styles.sectionRule} aria-hidden />
 						</div>
 						<h2 id="profile-title">{labels.profile}</h2>
@@ -226,7 +226,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							<span className={styles.sectionIndex} aria-hidden>
 								02
 							</span>
-							<p className={styles.sectionKicker}>VISUAL SPEC // 设定资料</p>
+							<p className={styles.sectionKicker}>VISUAL SPEC {"//"} 设定资料</p>
 							<div className={styles.sectionRule} aria-hidden />
 						</div>
 						<h2 id="persona-gallery-title">{labels.gallery}</h2>
@@ -284,7 +284,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 												<article className={styles.plateFrame}>
 													<div className={styles.plateHeader}>
 														<span className={styles.plateIndex}>
-															PLATE //{" "}
+															PLATE {"//"}{" "}
 															{String(previewIndex).padStart(2, "0")}
 														</span>
 														{image.caption ? (
@@ -351,7 +351,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 							<span className={styles.sectionIndex} aria-hidden>
 								03
 							</span>
-							<p className={styles.sectionKicker}>CHRONICLE // 人物设定</p>
+							<p className={styles.sectionKicker}>CHRONICLE {"//"} 人物设定</p>
 							<div className={styles.sectionRule} aria-hidden />
 						</div>
 						<h2 id="persona-story-title">{labels.story}</h2>
