@@ -48,7 +48,7 @@ const RuaLoading = ({
 					className={cn(
 						styles.sprite,
 						"block shrink-0",
-						isInline ? "size-12" : "size-[min(14rem,48vw)]",
+						isInline ? "w-12" : "w-[min(14rem,48vw)]",
 					)}
 				/>
 

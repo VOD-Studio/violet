@@ -1,9 +1,16 @@
+/*
+ * 原始联络图为 10 列 × 8 行；发布资源将每帧垂直对齐为 154 × 112，
+ * 并在重新排版时排除底部编号，避免人物抖动或被拉伸。
+ */
 .sprite {
+	aspect-ratio: 11 / 8;
 	background-image: url("/persona/rua-writing-sprite.webp");
 	background-repeat: no-repeat;
 	background-position: 0 0;
-	background-size: 400% 400%;
-	animation: writingFrames 2.4s steps(1, end) infinite;
+	background-size: 1000% 800%;
+	animation:
+		writingColumns 800ms steps(10, end) infinite,
+		writingRows 6.4s steps(8, end) infinite;
 }
 
 .inkTrack {
@@ -18,7 +25,7 @@
 	inset: 0;
 	transform-origin: left;
 	background: linear-gradient(90deg, var(--persona-violet), var(--persona-gold));
-	animation: inkWrite 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+	animation: inkWrite 6.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .inkGlint {
@@ -30,58 +37,18 @@
 	clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
 	background: var(--persona-gold);
 	filter: drop-shadow(0 0 5px color-mix(in oklab, var(--persona-gold) 64%, transparent));
-	animation: inkGlint 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+	animation: inkGlint 6.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
-@keyframes writingFrames {
-	0% {
-		background-position: 0 0;
+@keyframes writingColumns {
+	to {
+		background-position-x: 111.111111%;
 	}
-	6.25% {
-		background-position: 33.333333% 0;
-	}
-	12.5% {
-		background-position: 66.666667% 0;
-	}
-	18.75% {
-		background-position: 100% 0;
-	}
-	25% {
-		background-position: 0 33.333333%;
-	}
-	31.25% {
-		background-position: 33.333333% 33.333333%;
-	}
-	37.5% {
-		background-position: 66.666667% 33.333333%;
-	}
-	43.75% {
-		background-position: 100% 33.333333%;
-	}
-	50% {
-		background-position: 0 66.666667%;
-	}
-	56.25% {
-		background-position: 33.333333% 66.666667%;
-	}
-	62.5% {
-		background-position: 66.666667% 66.666667%;
-	}
-	68.75% {
-		background-position: 100% 66.666667%;
-	}
-	75% {
-		background-position: 0 100%;
-	}
-	81.25% {
-		background-position: 33.333333% 100%;
-	}
-	87.5% {
-		background-position: 66.666667% 100%;
-	}
-	93.75%,
-	100% {
-		background-position: 100% 100%;
+}
+
+@keyframes writingRows {
+	to {
+		background-position-y: 114.285714%;
 	}
 }
 
