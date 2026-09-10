@@ -1,17 +1,4 @@
-/*
- * 原始联络图为 10 列 × 8 行；发布资源将每帧垂直对齐为 154 × 112，
- * 并在重新排版时排除底部编号，避免人物抖动或被拉伸。
- */
-.sprite {
-	aspect-ratio: 11 / 8;
-	background-image: url("/persona/rua-writing-sprite.webp");
-	background-repeat: no-repeat;
-	background-position: 0 0;
-	background-size: 1000% 800%;
-	animation:
-		writingColumns 800ms steps(10, end) infinite,
-		writingRows 6.4s steps(8, end) infinite;
-}
+/* 墨迹进度线与星芒特效，周期由父级 --duration CSS 变量控制。 */
 
 .inkTrack {
 	position: relative;
@@ -25,7 +12,7 @@
 	inset: 0;
 	transform-origin: left;
 	background: linear-gradient(90deg, var(--persona-violet), var(--persona-gold));
-	animation: inkWrite 6.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+	animation: inkWrite var(--duration, 3s) cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .inkGlint {
@@ -37,19 +24,7 @@
 	clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
 	background: var(--persona-gold);
 	filter: drop-shadow(0 0 5px color-mix(in oklab, var(--persona-gold) 64%, transparent));
-	animation: inkGlint 6.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-@keyframes writingColumns {
-	to {
-		background-position-x: 111.111111%;
-	}
-}
-
-@keyframes writingRows {
-	to {
-		background-position-y: 114.285714%;
-	}
+	animation: inkGlint var(--duration, 3s) cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 @keyframes inkWrite {
@@ -100,14 +75,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.sprite,
 	.inkStroke,
 	.inkGlint {
 		animation: none;
-	}
-
-	.sprite {
-		background-position: 100% 100%;
 	}
 
 	.inkGlint {
