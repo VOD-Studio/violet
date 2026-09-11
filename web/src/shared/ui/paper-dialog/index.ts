@@ -1,6 +1,5 @@
 export {
-	PAPER_MOTION_VARIANTS,
+	PAPER_MOTION_SPREAD,
 	PaperDialog,
 	type PaperDialogProps,
-	type PaperMotionVariant,
 } from "./PaperDialog";
