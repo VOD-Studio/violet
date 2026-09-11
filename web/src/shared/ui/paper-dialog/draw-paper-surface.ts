@@ -40,7 +40,7 @@ export function drawPaperSurface(
 	// 含画布四周 32px 外扩，主纸保持原视觉位置；外扩供底层纸旋转错位不裁剪。
 	const inset = Math.min(38, width / 4, height / 4);
 
-	const paintSheet = (edgeInset: number, seed: number, darken: number) => {
+	const paintSheet = (edgeInset: number, seed: number, darken: number, dimBands: number) => {
 		const edges: Edge[] = [
 			{ length: width - 2 * edgeInset, x: edgeInset, y: edgeInset, tx: 1, ty: 0 },
 			{ length: height - 2 * edgeInset, x: width - edgeInset, y: edgeInset, tx: 0, ty: 1 },
@@ -134,11 +134,11 @@ export function drawPaperSurface(
 		};
 
 		context.fillStyle = color;
-		context.globalAlpha = 0.38;
+		context.globalAlpha = 0.38 * dimBands;
 		for (let index = 0; index < edges.length; index++) {
 			context.fill(bandPath(index, 1, 0.55));
 		}
-		context.globalAlpha = 0.55;
+		context.globalAlpha = 0.55 * dimBands;
 		for (let index = 0; index < edges.length; index++) {
 			context.fill(bandPath(index, 0.45, 0.3));
 		}
@@ -203,10 +203,10 @@ export function drawPaperSurface(
 
 	// 底层纸：向右下明显错位并带一点角度，从主纸边缘露出。
 	context.save();
-	context.translate(width / 2 + 5, height / 2 + 7);
-	context.rotate(0.012);
+	context.translate(width / 2 + 4, height / 2 + 6);
+	context.rotate(0.005);
 	context.translate(-width / 2, -height / 2);
-	paintSheet(inset, 4549, 0.12);
+	paintSheet(inset, 4549, 0.1, 0.5);
 	context.restore();
-	paintSheet(inset, 0, 0);
+	paintSheet(inset, 0, 0, 1);
 }
