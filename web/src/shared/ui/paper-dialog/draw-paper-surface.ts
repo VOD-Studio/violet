@@ -6,8 +6,10 @@ interface Edge {
 	ty: number;
 }
 
-const edgeOpacity = [0.12, 0.25, 0.42, 0.61, 0.78, 0.9, 0.97, 1] as const;
-const cornerTrim = [1.2, 0.8, 1.6, 1] as const;
+interface Profile {
+	depths: Float32Array;
+	bands: Float32Array;
+}
 
 function randomSequence(seed: number) {
 	return () => {
@@ -16,17 +18,18 @@ function randomSequence(seed: number) {
 	};
 }
 
-function smoothField(length: number, spacing: number, random: () => number) {
-	const values = Array.from({ length: Math.ceil(length / spacing) + 2 }, random);
+function noiseField(length: number, wavelength: number, random: () => number) {
+	const values = Array.from({ length: Math.ceil(length / wavelength) + 2 }, random);
 	return (position: number) => {
-		const index = Math.floor(position / spacing);
-		const fraction = position / spacing - index;
+		const scaled = position / wavelength;
+		const index = Math.floor(scaled);
+		const fraction = scaled - index;
 		const blend = fraction * fraction * (3 - 2 * fraction);
 		return values[index] * (1 - blend) + values[index + 1] * blend;
 	};
 }
 
-/** 静态绘制纸面及断口纤维；尺寸和线宽均为 CSS 像素。 */
+/** 静态绘制纸面、撕芯反光带与断口纤维；尺寸与线宽均为 CSS 像素。 */
 export function drawPaperSurface(
 	context: CanvasRenderingContext2D,
 	width: number,
@@ -40,159 +43,145 @@ export function drawPaperSurface(
 		{ length: width - 2 * inset, x: width - inset, y: height - inset, tx: -1, ty: 0 },
 		{ length: height - 2 * inset, x: inset, y: height - inset, tx: 0, ty: -1 },
 	];
-	const profiles = edges.map((edge, index) => {
+	const step = 0.6;
+	const profiles: Profile[] = edges.map((edge, index) => {
 		const random = randomSequence(7183 + index * 193);
-		const contour = smoothField(edge.length, 51, random);
-		const fine = smoothField(edge.length, 1.7, random);
-		const density = smoothField(edge.length, 23, random);
+		const coarse = noiseField(edge.length, 46, random);
+		const mid = noiseField(edge.length, 11, random);
+		const fine = noiseField(edge.length, 3.2, random);
+		const density = noiseField(edge.length, 17, random);
 		const pockets: { center: number; left: number; right: number; depth: number }[] = [];
-		for (let position = 25; position < edge.length - 20; position += 38 + random() * 70) {
+		for (let position = 30; position < edge.length - 24; position += 42 + random() * 88) {
 			pockets.push({
 				center: position,
-				left: 5 + random() * 15,
-				right: 3 + random() * 9,
-				depth: 0.3 + random() * 1.2,
+				left: 6 + random() * 14,
+				right: 4 + random() * 9,
+				depth: 0.6 + random() * 1.4,
 			});
 		}
+		const cornerFade = (position: number) =>
+			Math.min(1, position / 14, (edge.length - position) / 14);
 		const boundary = (position: number) => {
-			const fade = Math.min(1, position / 12, (edge.length - position) / 12);
-			let depth = (contour(position) - 0.5) * 0.9 + (fine(position) - 0.5) * 0.18;
+			let depth =
+				(coarse(position) - 0.5) * 2.6 +
+				(mid(position) - 0.5) * 1.1 +
+				(fine(position) - 0.5) * 0.4;
 			for (const pocket of pockets) {
 				const distance =
 					Math.abs(position - pocket.center) /
 					(position < pocket.center ? pocket.left : pocket.right);
 				if (distance < 1) depth += pocket.depth * (1 - distance * distance) ** 2;
 			}
-			return depth * fade;
+			return depth * cornerFade(position);
 		};
-		const thickness = (position: number) => {
-			const fade = Math.min(1, position / 12, (edge.length - position) / 12);
-			return (0.25 + density(position) ** 2 * 2.4) * fade;
-		};
-		const start = Math.min(cornerTrim[index], edge.length / 4);
-		const end = edge.length - Math.min(cornerTrim[(index + 1) % 4], edge.length / 4);
-		const steps = Math.ceil((end - start) * 2);
-		const positions = new Float32Array(steps + 1);
+		const steps = Math.ceil(edge.length / step);
 		const depths = new Float32Array(steps + 1);
-		const widths = new Float32Array(steps + 1);
-		for (let step = 0; step <= steps; step++) {
-			const position = start + ((end - start) * step) / steps;
-			positions[step] = position;
-			depths[step] = boundary(position);
-			widths[step] = thickness(position);
+		const bands = new Float32Array(steps + 1);
+		for (let i = 0; i <= steps; i++) {
+			const position = i * step;
+			depths[i] = boundary(position);
+			// 撕芯宽度随纤维疏密起伏，代替逐段透明度拼接。
+			bands[i] = (0.9 + density(position) * 2.1) * cornerFade(position);
 		}
-		return { boundary, thickness, positions, depths, widths };
+		return { depths, bands };
 	});
+	const pointAt = (edge: Edge, t: number, depth: number) => ({
+		x: edge.x + edge.tx * t - edge.ty * depth,
+		y: edge.y + edge.ty * t + edge.tx * depth,
+	});
+	const outlinePath = (inward: number) => {
+		const path = new Path2D();
+		edges.forEach((edge, index) => {
+			const profile = profiles[index];
+			for (let i = 0; i < profile.depths.length; i++) {
+				const { x, y } = pointAt(edge, i * step, profile.depths[i] + inward);
+				if (index === 0 && i === 0) path.moveTo(x, y);
+				else path.lineTo(x, y);
+			}
+		});
+		path.closePath();
+		return path;
+	};
+	const bandPath = (index: number, outerScale: number, innerOffset: number) => {
+		const edge = edges[index];
+		const profile = profiles[index];
+		const path = new Path2D();
+		for (let i = 0; i < profile.depths.length; i++) {
+			const { x, y } = pointAt(
+				edge,
+				i * step,
+				profile.depths[i] - profile.bands[i] * outerScale,
+			);
+			if (i === 0) path.moveTo(x, y);
+			else path.lineTo(x, y);
+		}
+		for (let i = profile.depths.length - 1; i >= 0; i--) {
+			const { x, y } = pointAt(edge, i * step, profile.depths[i] + innerOffset);
+			path.lineTo(x, y);
+		}
+		path.closePath();
+		return path;
+	};
 
 	context.clearRect(0, 0, width, height);
 	context.fillStyle = color;
-	// 每层使用增量覆盖率，避免 source-over 将薄边累积成不透明描边。
-	let previousOpacity = 0;
-	for (let layer = 0; layer < edgeOpacity.length; layer++) {
-		const amount = layer / (edgeOpacity.length - 1);
-		const opacity = edgeOpacity[layer];
-		context.globalAlpha = (opacity - previousOpacity) / (1 - previousOpacity);
-		previousOpacity = opacity;
-		context.beginPath();
-		edges.forEach((edge, index) => {
-			const profile = profiles[index];
-			for (let step = 0; step < profile.positions.length; step++) {
-				const position = profile.positions[step];
-				const depth = profile.depths[step] + profile.widths[step] * amount;
-				const x = edge.x + edge.tx * position - edge.ty * depth;
-				const y = edge.y + edge.ty * position + edge.tx * depth;
-				if (step === 0) {
-					if (index === 0) context.moveTo(x, y);
-					else context.quadraticCurveTo(edge.x, edge.y, x, y);
-				} else context.lineTo(x, y);
-			}
-		});
-		const first = profiles[0];
-		context.quadraticCurveTo(
-			inset,
-			inset,
-			inset + first.positions[0],
-			inset + first.depths[0] + first.widths[0] * amount,
-		);
-		context.closePath();
-		context.fill();
+	context.globalAlpha = 0.38;
+	for (let index = 0; index < edges.length; index++) {
+		context.fill(bandPath(index, 1, 0.55));
 	}
+	context.globalAlpha = 0.55;
+	for (let index = 0; index < edges.length; index++) {
+		context.fill(bandPath(index, 0.45, 0.3));
+	}
+	context.globalAlpha = 1;
+	context.fill(outlinePath(0.3));
+	// 内侧一线极淡阴影交代纸厚。
+	context.strokeStyle = "rgba(0,0,0,0.04)";
+	context.lineWidth = 0.7;
+	context.stroke(outlinePath(0.55));
 
 	edges.forEach((edge, index) => {
-		context.save();
-		context.transform(edge.tx, edge.ty, -edge.ty, edge.tx, edge.x, edge.y);
-		const random = randomSequence(2197 + index * 317);
 		const profile = profiles[index];
-		for (let cluster = 10; cluster < edge.length - 10; cluster += 8 + random() * 22) {
-			const direction = (random() - 0.5) * 2;
-			const count = 3 + Math.floor(random() * 6);
-			const spread = 3 + random() * 9;
+		const fiberRandom = randomSequence(2197 + index * 317);
+		for (let cluster = 12; cluster < edge.length - 12; cluster += 8 + fiberRandom() * 20) {
+			const bias = (fiberRandom() - 0.5) * 2;
+			const count = 2 + Math.floor(fiberRandom() * 4);
 			for (let fiber = 0; fiber < count; fiber++) {
-				const position = Math.min(edge.length - 6, cluster + random() * spread);
-				const root = profile.boundary(position) + profile.thickness(position) + 0.4;
-				const reach = 0.35 + random() ** 3 * 3.2;
-				const lean = direction * (1 + random() * 5);
-				const tip = profile.boundary(position) - reach;
-				const radius = 0.055 + random() ** 2 * 0.12;
-				context.globalAlpha = 0.3 + random() * 0.4;
+				const position = Math.min(
+					edge.length - 8,
+					Math.max(8, cluster + (fiberRandom() - 0.5) * 9),
+				);
+				const reach = 0.5 + fiberRandom() ** 1.5 * 2.8 + (fiberRandom() < 0.06 ? 2 : 0);
+				const sample = Math.min(profile.depths.length - 1, Math.round(position / step));
+				const rootDepth = profile.depths[sample] + 0.2;
+				const lean = bias * (0.8 + fiberRandom() * 2.4) + (fiberRandom() - 0.5) * 1.4;
+				const radius = 0.05 + fiberRandom() ** 2 * 0.09;
+				const root = pointAt(edge, position, rootDepth);
+				const tip = pointAt(edge, position + lean, rootDepth - reach);
+				context.globalAlpha = 0.35 + fiberRandom() * 0.4;
 				context.beginPath();
-				context.moveTo(position - radius, root);
+				// 细丝根部沿边缘法向展开，两条三次曲线夹出末端渐细的月牙。
+				context.moveTo(root.x - radius * edge.ty, root.y + radius * edge.tx);
 				context.bezierCurveTo(
-					position + lean * 0.12 - radius,
-					root - (root - tip) * 0.42,
-					position + lean * 0.6,
-					tip + reach * 0.2,
-					position + lean,
-					tip,
+					root.x - radius * edge.ty + (tip.x - root.x) * 0.3,
+					root.y + radius * edge.tx + (tip.y - root.y) * 0.3,
+					tip.x - lean * 0.35,
+					tip.y + reach * 0.22,
+					tip.x,
+					tip.y,
 				);
 				context.bezierCurveTo(
-					position + lean * 0.6 + radius * 0.3,
-					tip + reach * 0.2,
-					position + lean * 0.12 + radius,
-					root - (root - tip) * 0.42,
-					position + radius,
-					root,
+					tip.x + lean * 0.35,
+					tip.y + reach * 0.22,
+					root.x + radius * edge.ty + (tip.x - root.x) * 0.3,
+					root.y - radius * edge.tx + (tip.y - root.y) * 0.3,
+					root.x + radius * edge.ty,
+					root.y - radius * edge.tx,
 				);
 				context.closePath();
 				context.fill();
-				if (random() < 0.14) {
-					context.strokeStyle = color;
-					context.lineWidth = radius * 0.7;
-					context.globalAlpha *= 0.55;
-					context.beginPath();
-					context.moveTo(position + lean * 0.3, root - (root - tip) * 0.5);
-					context.quadraticCurveTo(
-						position + lean * 0.5 - 0.5,
-						tip + reach * 0.5,
-						position + lean * 0.6 - 0.8,
-						tip + reach * 0.12,
-					);
-					context.stroke();
-				}
 			}
 		}
-		context.globalCompositeOperation = "source-atop";
-		for (let position = 8; position < edge.length - 8; position += 1.5 + random() * 4) {
-			const depth = profile.boundary(position);
-			const thickness = profile.thickness(position);
-			const length = 1.5 + random() * 5;
-			const shaded = random() > 0.65;
-			context.strokeStyle = shaded ? "#000" : color;
-			context.lineWidth = 0.1 + random() * 0.16;
-			context.globalAlpha = shaded ? 0.045 : 0.24;
-			context.beginPath();
-			context.moveTo(position, depth + thickness + 0.25);
-			context.bezierCurveTo(
-				position + length * 0.2,
-				depth + thickness * 0.65,
-				position + length * 0.65,
-				depth + thickness * 0.25,
-				position + length,
-				depth + 0.15,
-			);
-			context.stroke();
-		}
-		context.restore();
 	});
 	context.globalAlpha = 1;
 }
