@@ -1,8 +1,10 @@
 import { X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { type ReactNode, useId } from "react";
+import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
+
+import paperEdgeMask from "./paper-edge-mask.png";
 
 /** 可滚动纸面弹窗的受控状态与内容插槽。 */
 export interface PaperDialogProps {
@@ -26,7 +28,7 @@ export interface PaperDialogProps {
 	children?: ReactNode;
 }
 
-/** 四边手撕毛边纸面弹窗；装饰滤镜不影响正文与交互层。 */
+/** 四边手撕毛边纸面弹窗；纸面遮罩不裁切正文与交互层。 */
 export function PaperDialog({
 	open,
 	onOpenChange,
@@ -37,8 +39,6 @@ export function PaperDialog({
 	children,
 }: PaperDialogProps) {
 	const reduceMotion = useReducedMotion();
-	const filterId = useId().replace(/:/g, "-");
-	const fullFilterId = `paper-deckle-${filterId}`;
 
 	return (
 		<DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -96,59 +96,20 @@ export function PaperDialog({
 										{titleSrOnly}
 									</DialogPrimitive.Title>
 
-									{/* 不设 viewBox，让撕口始终以 CSS 像素计量，不随纸面尺寸拉伸。 */}
-									<svg
+									<div
 										aria-hidden="true"
-										focusable="false"
-										className="pointer-events-none absolute inset-0 z-0 size-full overflow-visible text-card drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
+										className="pointer-events-none absolute inset-0 z-0 drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
 									>
-										<defs>
-											<filter
-												id={fullFilterId}
-												x="-10%"
-												y="-10%"
-												width="120%"
-												height="120%"
-												colorInterpolationFilters="sRGB"
-											>
-												<feTurbulence
-													type="fractalNoise"
-													baseFrequency="0.025 0.04"
-													numOctaves="2"
-													seed="5"
-													result="tear"
-												/>
-												<feDisplacementMap
-													in="SourceGraphic"
-													in2="tear"
-													scale="8"
-													xChannelSelector="R"
-													yChannelSelector="G"
-													result="tornPaper"
-												/>
-												<feTurbulence
-													type="fractalNoise"
-													baseFrequency="0.65"
-													numOctaves="3"
-													seed="17"
-													result="fibers"
-												/>
-												<feDisplacementMap
-													in="tornPaper"
-													in2="fibers"
-													scale="3"
-													xChannelSelector="R"
-													yChannelSelector="G"
-												/>
-											</filter>
-										</defs>
-										<rect
-											width="100%"
-											height="100%"
-											fill="currentColor"
-											filter={`url(#${fullFilterId})`}
+										{/* 遮罩取自纸张参考原图，保留原始缺口，仅对边界做亚像素抗锯齿。 */}
+										<div
+											className="size-full bg-card"
+											style={{
+												maskImage: `url(${paperEdgeMask})`,
+												maskSize: "100% 100%",
+												maskRepeat: "no-repeat",
+											}}
 										/>
-									</svg>
+									</div>
 
 									<div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden text-foreground">
 										{showCloseButton && (
