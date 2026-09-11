@@ -4,14 +4,19 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { type ReactNode, useId } from "react";
 import { cn } from "@/shared/lib/utils";
 
+/** 可滚动纸面弹窗的受控状态与内容插槽。 */
 export interface PaperDialogProps {
-	/** 受控打开状态 */
 	open: boolean;
-	/** 开关状态变更回调 */
 	onOpenChange: (open: boolean) => void;
-	/** 辅助功能标题（仅供屏幕阅读器），默认 "纸面便笺" */
+	/**
+	 * 仅供屏幕阅读器的标题。
+	 * @default "纸面便笺"
+	 */
 	titleSrOnly?: string;
-	/** 是否显示右上角关闭按钮，默认 true */
+	/**
+	 * 是否显示右上角关闭按钮。
+	 * @default true
+	 */
 	showCloseButton?: boolean;
 	/** 弹窗外层容器类名（可覆盖宽度与自适应尺寸） */
 	className?: string;
@@ -21,16 +26,7 @@ export interface PaperDialogProps {
 	children?: ReactNode;
 }
 
-/**
- * PaperDialog: 纯粹的手撕毛边纸张外壳容器
- *
- * 独立基于 Radix Dialog 与 motion 构建，与共享 Modal 零耦合：
- * 原版 Modal 的居中 transform 会与动效属性冲突、且强加宽度/圆角/裁切，
- * 故此处用视口 Flex 层居中，纸张样式完全自治。
- *
- * 动效为宽版报纸对折摊开：展开自中缝向两翼减速铺平（300ms），
- * 收拢顺势加速向内折合并利落淡出（200ms）。
- */
+/** 四边手撕毛边纸面弹窗；装饰滤镜不影响正文与交互层。 */
 export function PaperDialog({
 	open,
 	onOpenChange,
@@ -49,7 +45,6 @@ export function PaperDialog({
 			<AnimatePresence>
 				{open && (
 					<DialogPrimitive.Portal forceMount>
-						{/* 遮罩：渐入渐出 */}
 						<DialogPrimitive.Overlay asChild forceMount>
 							<motion.div
 								className="fixed inset-0 z-50 bg-black/50"
@@ -60,7 +55,6 @@ export function PaperDialog({
 							/>
 						</DialogPrimitive.Overlay>
 
-						{/* 全屏视口 Flex 居中层：零 transform 冲突 */}
 						<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
 							<DialogPrimitive.Content asChild forceMount>
 								<motion.div
@@ -98,55 +92,64 @@ export function PaperDialog({
 												}
 									}
 								>
-									{/* 屏幕阅读器可访问标题 */}
 									<DialogPrimitive.Title className="sr-only">
 										{titleSrOnly}
 									</DialogPrimitive.Title>
 
-									{/* 细微手撕纸毛边滤镜（实例唯一 ID 隔离） */}
+									{/* 不设 viewBox，让撕口始终以 CSS 像素计量，不随纸面尺寸拉伸。 */}
 									<svg
 										aria-hidden="true"
-										className="pointer-events-none absolute size-0"
+										focusable="false"
+										className="pointer-events-none absolute inset-0 z-0 size-full overflow-visible text-card drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
 									>
-										<filter
-											id={fullFilterId}
-											x="-5%"
-											y="-5%"
-											width="110%"
-											height="110%"
-										>
-											<feTurbulence
-												type="fractalNoise"
-												baseFrequency="0.04"
-												numOctaves="4"
-												seed="5"
-												result="noise"
-											/>
-											<feDisplacementMap
-												in="SourceGraphic"
-												in2="noise"
-												scale="4.5"
-												xChannelSelector="R"
-												yChannelSelector="G"
-											/>
-										</filter>
+										<defs>
+											<filter
+												id={fullFilterId}
+												x="-10%"
+												y="-10%"
+												width="120%"
+												height="120%"
+												colorInterpolationFilters="sRGB"
+											>
+												<feTurbulence
+													type="fractalNoise"
+													baseFrequency="0.025 0.04"
+													numOctaves="2"
+													seed="5"
+													result="tear"
+												/>
+												<feDisplacementMap
+													in="SourceGraphic"
+													in2="tear"
+													scale="8"
+													xChannelSelector="R"
+													yChannelSelector="G"
+													result="tornPaper"
+												/>
+												<feTurbulence
+													type="fractalNoise"
+													baseFrequency="0.65"
+													numOctaves="3"
+													seed="17"
+													result="fibers"
+												/>
+												<feDisplacementMap
+													in="tornPaper"
+													in2="fibers"
+													scale="3"
+													xChannelSelector="R"
+													yChannelSelector="G"
+												/>
+											</filter>
+										</defs>
+										<rect
+											width="100%"
+											height="100%"
+											fill="currentColor"
+											filter={`url(#${fullFilterId})`}
+										/>
 									</svg>
 
-									{/* 底层微错位纸影：营造实体纸张叠放厚度 */}
-									<div
-										aria-hidden="true"
-										className="pointer-events-none absolute inset-0 z-0 -rotate-[0.6deg] bg-black/10 dark:bg-white/10"
-										style={{ filter: `url(#${fullFilterId})` }}
-									/>
-
-									{/* 表层主手撕纸：纯白底色无黑描边，立体漫反射软影 */}
-									<div
-										aria-hidden="true"
-										className="pointer-events-none absolute inset-0 z-0 bg-card shadow-[0_20px_50px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
-										style={{ filter: `url(#${fullFilterId})` }}
-									/>
-
-									{/* 纸面内容区：不受任何滤镜影响，调用方独享整页空间 */}
 									<div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden text-foreground">
 										{showCloseButton && (
 											<DialogPrimitive.Close
