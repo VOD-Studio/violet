@@ -2,10 +2,17 @@ import { AnimatePresence, motion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/shared/lib/utils";
-import { MODAL_SIZES, type ModalProps } from "../types/modal-types";
+import { MODAL_SIZES, type ModalContentMotion, type ModalProps } from "../types/modal-types";
 import { ModalBody } from "./ModalBody";
 import { ModalFooter } from "./ModalFooter";
 import { ModalHeader } from "./ModalHeader";
+
+const DEFAULT_CONTENT_MOTION: ModalContentMotion = {
+	initial: { opacity: 0, scale: 0.95 },
+	animate: { opacity: 1, scale: 1 },
+	exit: { opacity: 0, scale: 0.95 },
+	transition: { duration: 0.2, ease: "easeOut" },
+};
 
 /**
  * 判断事件目标是否落在 Radix 浮层（Select/Popover/Tooltip 等独立 Portal）内。
@@ -59,13 +66,15 @@ export function Modal({
 	onEscapeKeyDown,
 	onInteractOutside,
 	className,
+	contentMotion,
 }: ModalProps) {
+	const resolvedContentMotion = contentMotion ?? DEFAULT_CONTENT_MOTION;
+
 	return (
 		<DialogPrimitive.Root open={open} onOpenChange={onOpenChange} modal={modal}>
 			<AnimatePresence>
 				{open && (
 					<DialogPrimitive.Portal forceMount>
-						{/* 遮罩：渐入渐出 */}
 						<DialogPrimitive.Overlay asChild forceMount>
 							<motion.div
 								className="fixed inset-0 z-50 bg-black/50"
@@ -76,7 +85,6 @@ export function Modal({
 							/>
 						</DialogPrimitive.Overlay>
 
-						{/* 内容：缩放 + 渐入 */}
 						<DialogPrimitive.Content
 							forceMount
 							onEscapeKeyDown={onEscapeKeyDown}
@@ -101,13 +109,13 @@ export function Modal({
 								className={cn(
 									"fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg bg-background shadow-lg outline-none",
 									!unstyled && "border",
-									MODAL_SIZES[size],
+									!unstyled && MODAL_SIZES[size],
 									className,
 								)}
-								initial={{ opacity: 0, scale: 0.95 }}
-								animate={{ opacity: 1, scale: 1 }}
-								exit={{ opacity: 0, scale: 0.95 }}
-								transition={{ duration: 0.2, ease: "easeOut" }}
+								initial={resolvedContentMotion.initial}
+								animate={resolvedContentMotion.animate}
+								exit={resolvedContentMotion.exit}
+								transition={resolvedContentMotion.transition}
 							>
 								<ModalHeader
 									title={title}

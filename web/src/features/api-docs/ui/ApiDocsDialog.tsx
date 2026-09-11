@@ -1,6 +1,7 @@
-import { Modal } from "@shared/ui/modal";
+import { Modal, type ModalContentMotion } from "@shared/ui/modal";
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, X } from "lucide-react";
+import { ArrowUpRight, X } from "lucide-react";
+import { useReducedMotion } from "motion/react";
 import { useEffect } from "react";
 
 import { useApiDocsDialogStore } from "../model/store";
@@ -8,16 +9,41 @@ import { ApiReference } from "./ApiReference";
 
 /** 键入序列彩蛋：非输入态下连敲 a-p-i 唤出纸弹窗 */
 const EASTER_EGG_SEQUENCE = "api";
+const PAPER_DIALOG_MOTION: ModalContentMotion = {
+	initial: {
+		opacity: 0,
+		y: -16,
+		scale: 0.96,
+	},
+	animate: {
+		opacity: 1,
+		y: 0,
+		scale: 1,
+	},
+	exit: {
+		opacity: 0,
+		y: 12,
+		scale: 0.97,
+		transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+	},
+	transition: {
+		duration: 0.36,
+		ease: [0.16, 1, 0.3, 1],
+	},
+};
 
-/**
- * API 文档纸弹窗：常驻 __root，一张纸面文档浮于页面之上。
- * 内容即 ApiReference 渲染器（与 /docs 全页同源），纸感由
- * 纸面 token（bg-paper 族）+ 衬线题头 + 双细线边框构成。
- */
+const REDUCED_DIALOG_MOTION: ModalContentMotion = {
+	initial: { opacity: 0 },
+	animate: { opacity: 1 },
+	exit: { opacity: 0 },
+	transition: { duration: 0.12 },
+};
+/** 在前台以手撕粗糙炭墨毛边纸呈现实时 API 参考文档。 */
 export function ApiDocsDialog() {
 	const isOpen = useApiDocsDialogStore((s) => s.isOpen);
 	const close = useApiDocsDialogStore((s) => s.close);
 	const open = useApiDocsDialogStore((s) => s.open);
+	const reduceMotion = useReducedMotion();
 
 	useEasterEgg(open);
 
@@ -29,64 +55,95 @@ export function ApiDocsDialog() {
 			scrollable={false}
 			titleSrOnly
 			title="API 文档"
-			className="flex w-[calc(100vw-2rem)] flex-col sm:max-w-175"
+			showCloseButton={false}
+			contentMotion={reduceMotion ? REDUCED_DIALOG_MOTION : PAPER_DIALOG_MOTION}
+			className="isolate h-[min(56rem,calc(100dvh-2.5rem))] max-h-[calc(100dvh-2.5rem)] w-[calc(100vw-1.5rem)] max-w-6xl overflow-visible bg-transparent shadow-none sm:w-[calc(100vw-3rem)] xl:max-w-7xl"
 		>
-			{/* 毛边滤镜：分形噪声位移纸层轮廓；seed 固定保证每次开合同一张纸。
-			    octaves 控制在 3——层数再多会把噪声压回中值、撕纸感变弱 */}
+			{/* 粗糙手撕炭墨毛边滤镜：细频噪点微位移，完美还原木刻素描手撕残边 */}
 			<svg aria-hidden="true" className="pointer-events-none absolute size-0">
-				<filter id="api-paper-rough" x="-4%" y="-4%" width="108%" height="108%">
+				<filter id="violet-rough-paper-edge" x="-5%" y="-5%" width="110%" height="110%">
 					<feTurbulence
 						type="fractalNoise"
-						baseFrequency="0.012"
-						numOctaves="3"
-						seed="7"
+						baseFrequency="0.04"
+						numOctaves="4"
+						seed="5"
 						result="noise"
 					/>
 					<feDisplacementMap
 						in="SourceGraphic"
 						in2="noise"
-						scale="40"
+						scale="4.5"
 						xChannelSelector="R"
 						yChannelSelector="G"
 					/>
 				</filter>
 			</svg>
-			{/* 纸张本体层：单独成层承受滤镜位移，内容层不受形变。
-			    根容器不能 overflow-hidden——毛边要伸出矩形边界；
-			    filter 走 inline style：Tailwind arbitrary 属性类可能不生成 */}
+
+			{/* 底层错位撕纸衬纸：无黑框，微偏 0.6deg，营造实体纸张多层叠放厚度 */}
 			<div
-				aria-hidden
-				className="absolute inset-0 border-2 border-paper-foreground/60 bg-paper shadow-[0_2px_4px_rgb(0_0_0/0.1),0_24px_56px_-16px_rgb(0_0_0/0.45)]"
-				style={{ filter: "url(#api-paper-rough)" }}
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-0 z-0 -rotate-[0.6deg] bg-muted/40 dark:bg-card/40"
+				style={{ filter: "url(#violet-rough-paper-edge)" }}
 			/>
-			<header className="relative flex items-center gap-3 px-6 pt-5 pb-4">
-				<div className="min-w-0 flex-1">
-					<p className="font-mono text-[10px] tracking-[0.25em] text-paper-muted uppercase">
-						Appendix · API Reference
-					</p>
-					<h2 className="mt-1 font-serif text-lg leading-tight font-semibold tracking-wide text-paper-foreground">
-						接口文档
-					</h2>
+
+			{/* 表层主手撕白纸：纯白无黑描边（绝无土黄、绝无黑框），纯纸张纤维手撕毛边与立体漫反射阴影 */}
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-0 z-0 bg-card shadow-[0_4px_16px_rgba(0,0,0,0.06),0_24px_64px_-16px_rgba(0,0,0,0.35)] dark:shadow-[0_24px_64px_-16px_rgba(0,0,0,0.7)]"
+				style={{ filter: "url(#violet-rough-paper-edge)" }}
+			/>
+			{/* 纸面内容区：不受任何滤镜影响，文字清晰，交互灵敏 */}
+			<div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden text-foreground">
+				{/* 信头报耳与关闭操作 */}
+				<header className="relative flex min-h-16 items-center border-b border-border/80 px-6 sm:px-10">
+					<div className="flex min-w-0 flex-1 items-center gap-4">
+						{/* 朱砂红墨印章 */}
+						<div
+							aria-hidden="true"
+							className="select-none -rotate-2 rounded-[2px] border border-red-600/80 px-2 py-0.5 font-mono text-[9px] font-bold tracking-widest text-red-600 uppercase shadow-[0_0_0_1px_rgba(220,38,38,0.12)] dark:border-red-400/80 dark:text-red-400"
+						>
+							SPEC · 准
+						</div>
+
+						<div className="min-w-0">
+							<div className="flex items-center gap-2 font-mono text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+								<span>VIOLET CODEX</span>
+								<span className="text-muted-foreground/40">·</span>
+								<span className="font-bold text-foreground">
+									FOLIO 01 / 接口手卷
+								</span>
+							</div>
+							<p className="mt-0.5 truncate font-serif text-xs text-muted-foreground">
+								全栈实时接口契约便笺 · 与线上代码版本同步
+							</p>
+						</div>
+					</div>
+
+					<div className="flex items-center gap-3">
+						<Link
+							to="/docs"
+							onClick={close}
+							className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-border/80 bg-background/60 px-3 font-mono text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+						>
+							<span>独立大页</span>
+							<ArrowUpRight className="size-3.5" />
+						</Link>
+
+						<button
+							type="button"
+							onClick={close}
+							aria-label="关闭"
+							className="inline-flex size-8 items-center justify-center rounded-sm border border-border/80 bg-background/60 text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+						>
+							<X className="size-4" />
+						</button>
+					</div>
+				</header>
+
+				{/* 纸面正文区：舒展大开本 */}
+				<div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-8 sm:px-10 sm:py-10">
+					<ApiReference variant="dialog" />
 				</div>
-				<Link
-					to="/docs"
-					onClick={close}
-					className="inline-flex items-center gap-1.5 rounded-sm px-2 py-1 font-mono text-[11px] text-paper-muted transition-colors hover:text-paper-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-				>
-					独立页
-					<ExternalLink className="size-3" />
-				</Link>
-				<button
-					type="button"
-					onClick={close}
-					aria-label="关闭"
-					className="rounded-sm p-1.5 text-paper-muted transition-colors hover:bg-paper-foreground/5 hover:text-paper-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-				>
-					<X className="size-4" />
-				</button>
-			</header>
-			<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-5 pb-10">
-				<ApiReference variant="dialog" />
 			</div>
 		</Modal>
 	);
