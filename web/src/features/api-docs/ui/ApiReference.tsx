@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -42,7 +43,9 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 
 	return (
 		<div className={cn("text-paper-foreground", variant === "page" && "pb-20")}>
-			<header className={cn("space-y-4", variant === "page" ? "pb-8" : "pb-5")}>
+			<header
+				className={cn("space-y-4", variant === "page" ? "pb-8" : "pb-5 pr-10 sm:pr-12")}
+			>
 				<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
 					<h2 className="font-serif text-2xl font-semibold tracking-tight">
 						{model.title}
@@ -50,6 +53,14 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 					<span className="font-mono text-xs text-paper-muted">
 						{model.version ? `v${model.version.replace(/^v/, "")}` : ""}
 					</span>
+					{variant === "dialog" && (
+						<Link
+							to="/docs"
+							className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[11px] text-paper-muted/80 transition-colors hover:text-paper-foreground"
+						>
+							<span>独立页 ↗</span>
+						</Link>
+					)}
 					<span className="ml-auto font-mono text-[11px] text-paper-muted/80">
 						{model.chapters.reduce((n, c) => n + c.operations.length, 0)} 公开 ·{" "}
 						{model.appendix.reduce((n, c) => n + c.operations.length, 0)} 管理 ·{" "}
