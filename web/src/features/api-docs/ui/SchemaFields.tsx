@@ -10,44 +10,48 @@ interface SchemaFieldsProps {
 	depth?: number;
 }
 
-/**
- * schema 属性表：字段名 / 类型 / 必填 / 说明。
- * 嵌套引用在深度内展开为缩进子表，超出后只显示组件名。
- */
+/** schema 属性表：字段名 / 类型 / 必填 / 说明；嵌套引用以竖线缩进展开。 */
 export function SchemaFields({ schema, schemas, depth = 1 }: SchemaFieldsProps) {
 	const resolved = resolveSchema(schema, schemas);
 	const properties = resolved?.properties;
 	if (!properties) {
-		return <p className="font-mono text-xs text-paper-muted">{schemaTypeName(schema)}</p>;
+		return (
+			<p className="font-mono text-[10px] text-muted-foreground/70">
+				{schemaTypeName(schema)}
+			</p>
+		);
 	}
-	const required = new Set(resolved?.required ?? []);
+
+	const required = new Set(resolved.required ?? []);
 	return (
-		<dl className="divide-y divide-paper-border/60">
+		<dl className="divide-y divide-border/30">
 			{Object.entries(properties).map(([name, field]) => (
 				<div
 					key={name}
-					className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-1 py-1.5"
+					className="grid gap-x-4 gap-y-0.5 py-2 sm:grid-cols-[minmax(7rem,auto)_1fr]"
 				>
-					<dt className="min-w-0 break-all font-mono text-xs leading-relaxed text-paper-foreground">
+					<dt className="min-w-0 font-mono text-xs leading-5 font-medium break-all">
 						{name}
 						{required.has(name) ? (
-							<span className="ml-0.5 text-red-700 dark:text-red-400" title="必填">
+							<span className="ml-0.5 font-semibold text-red-500" title="必填">
 								*
 							</span>
 						) : null}
 					</dt>
-					<dd className="min-w-0 text-xs leading-relaxed">
-						<span className="font-mono text-[11px] text-paper-muted">
+					<dd className="min-w-0 text-xs leading-5">
+						<span className="font-mono text-[10px] text-muted-foreground/70">
 							{schemaTypeName(field)}
 							{field?.enum?.length ? ` · ${field.enum.join(" | ")}` : ""}
 						</span>
 						{field?.description ? (
-							<p className="mt-0.5 text-paper-muted">{field.description}</p>
+							<p className="mt-0.5 text-muted-foreground">{field.description}</p>
 						) : null}
 						{depth > 0 &&
 						field &&
 						(field.$ref || field.type === "object" || field.type === "array") ? (
-							<SchemaFields schema={field} schemas={schemas} depth={depth - 1} />
+							<div className="mt-1.5 border-l border-border/50 pl-3">
+								<SchemaFields schema={field} schemas={schemas} depth={depth - 1} />
+							</div>
 						) : null}
 					</dd>
 				</div>

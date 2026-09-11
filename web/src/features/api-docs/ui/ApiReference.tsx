@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Search } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -25,78 +25,109 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 
 	if (isLoading) {
 		return (
-			<div className="space-y-6 py-16 text-center">
-				<p className="font-serif text-sm text-paper-muted">正在铺开文档……</p>
-				<div className="mx-auto h-px w-24 animate-pulse bg-paper-border" />
+			<div className="py-16 text-center">
+				<p className="font-mono text-xs tracking-[0.2em] text-muted-foreground/60 uppercase">
+					正在载入运行时规范
+				</p>
+				<div className="mx-auto mt-4 h-px w-16 animate-pulse bg-primary/40" />
 			</div>
 		);
 	}
 	if (isError || !model) {
 		return (
-			<div className="py-16 text-center">
-				<p className="font-serif text-sm text-paper-muted">文档暂不可用，稍后再试。</p>
+			<div className="border-l-2 border-destructive/60 py-2 pl-4">
+				<p className="text-sm font-medium text-foreground">规范暂时不可用</p>
+				<p className="mt-1 text-xs text-muted-foreground">
+					未能读取运行时 OpenAPI，请稍后重试。
+				</p>
 			</div>
 		);
 	}
 
 	const filtering = query.trim().length > 0;
+	const isPage = variant === "page";
+	const publicCount = model.chapters.reduce((sum, c) => sum + c.operations.length, 0);
+	const adminCount = model.appendix.reduce((sum, c) => sum + c.operations.length, 0);
 
 	return (
-		<div className={cn("text-paper-foreground", variant === "page" && "pb-20")}>
-			<header
-				className={cn("space-y-4", variant === "page" ? "pb-8" : "pb-5 pr-10 sm:pr-12")}
-			>
-				<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-					<h2 className="font-serif text-2xl font-semibold tracking-tight">
-						{model.title}
-					</h2>
-					<span className="font-mono text-xs text-paper-muted">
-						{model.version ? `v${model.version.replace(/^v/, "")}` : ""}
+		<div className="text-foreground">
+			<header className={cn(isPage ? "pb-8" : "pr-10 pb-4 sm:pr-14")}>
+				{/* 标题单行：衬线正体 + 版本 + 编目统计；弹窗追加独立页入口 */}
+				<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+					{isPage ? (
+						<h1 className="font-serif text-4xl leading-[1.12] font-normal tracking-[-0.03em] sm:text-5xl">
+							{model.title}
+						</h1>
+					) : (
+						<h2 className="font-serif text-xl leading-tight font-normal tracking-[-0.01em] sm:text-2xl">
+							{model.title}
+						</h2>
+					)}
+					{model.version ? (
+						<span className="font-mono text-xs text-muted-foreground/60">
+							v{model.version.replace(/^v/, "")}
+						</span>
+					) : null}
+					<span className="ml-auto font-mono text-[11px] text-muted-foreground/70 tabular-nums">
+						{publicCount} 公开 · {adminCount} 管理 · {Object.keys(model.schemas).length}{" "}
+						模型
 					</span>
 					{variant === "dialog" && (
 						<Link
 							to="/docs"
-							className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[11px] text-paper-muted/80 transition-colors hover:text-paper-foreground"
+							className="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 						>
-							<span>独立页 ↗</span>
+							独立页
+							<ArrowUpRight className="size-3.5" />
 						</Link>
 					)}
-					<span className="ml-auto font-mono text-[11px] text-paper-muted/80">
-						{model.chapters.reduce((n, c) => n + c.operations.length, 0)} 公开 ·{" "}
-						{model.appendix.reduce((n, c) => n + c.operations.length, 0)} 管理 ·{" "}
-						{Object.keys(model.schemas).length} 模型
-					</span>
 				</div>
-				{model.description ? (
-					<p className="max-w-prose font-serif text-xs leading-relaxed text-paper-muted">
+
+				{/* 描述仅独立页保留：弹窗空间留给正文 */}
+				{isPage && model.description ? (
+					<p className="mt-4 max-w-2xl font-serif text-sm leading-relaxed text-muted-foreground sm:text-base">
 						{model.description}
 					</p>
 				) : null}
-				<label className="flex items-center gap-2.5 border-b border-paper-border pb-2.5">
-					<Search className="size-4 shrink-0 text-paper-muted/70" />
+			</header>
+
+			{/* 弹窗内检索条 sticky 常驻：长列表滚动中随时可过滤 */}
+			<div
+				className={cn(
+					variant === "dialog" &&
+						"sticky top-0 z-10 -mx-6 border-b border-border/40 bg-card px-6 py-2.5 sm:-mx-10 sm:px-10 lg:-mx-12 lg:px-12",
+				)}
+			>
+				<label
+					className={cn(
+						"flex items-center gap-3 border-b border-border/70 pb-2.5 transition-colors focus-within:border-primary/60",
+						variant === "dialog" && "pr-10 sm:pr-12",
+					)}
+				>
+					<Search className="size-4 shrink-0 text-muted-foreground/50" />
 					<input
 						type="search"
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder="过滤端点、摘要或标签……"
-						className="w-full bg-transparent font-mono text-sm text-paper-foreground outline-none placeholder:text-paper-muted/60"
+						className="w-full bg-transparent font-mono text-sm outline-none placeholder:text-muted-foreground/45"
 					/>
 					{filtering ? (
-						<span className="shrink-0 font-mono text-[11px] text-paper-muted">
+						<span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums">
 							{countMatches(model, query)}
 						</span>
 					) : null}
 				</label>
-			</header>
+			</div>
 
-			<main className="space-y-10">
-				{model.chapters.map((chapter) => (
+			<main className={cn("mt-7 space-y-9", isPage && "sm:space-y-10")}>
+				{model.chapters.map((chapter, index) => (
 					<ChapterSection
 						key={chapter.tag}
 						chapter={chapter}
 						query={query}
-						forceOpen={filtering}
 						model={model}
+						marker={String(index + 1).padStart(2, "0")}
 					/>
 				))}
 
@@ -109,25 +140,28 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 function ChapterSection({
 	chapter,
 	query,
-	forceOpen,
+	marker,
 	model,
 }: {
 	chapter: DocChapter;
 	query: string;
-	forceOpen: boolean;
+	marker: string;
 	model: DocsModel;
 }) {
 	const operations = chapter.operations.filter((op) => operationMatches(op, chapter.tag, query));
 	if (operations.length === 0) return null;
 	return (
 		<section aria-label={chapter.tag}>
-			<header className="flex items-baseline gap-3 border-b border-paper-border pb-2">
-				<h3 className="font-serif text-base font-semibold tracking-wide">{chapter.tag}</h3>
-				<span className="font-mono text-[11px] text-paper-muted/80">
+			<header className="flex items-baseline gap-3 border-b border-border/60 pb-2">
+				<span className="font-mono text-xs font-semibold tracking-wider text-primary tabular-nums">
+					{marker}
+				</span>
+				<h3 className="font-serif text-lg font-medium tracking-tight">{chapter.tag}</h3>
+				<span className="ml-auto font-mono text-[11px] text-muted-foreground/60 tabular-nums">
 					{operations.length} 端点
 				</span>
 			</header>
-			<div className={cn(forceOpen && "mt-1")}>
+			<div className="divide-y divide-border/30">
 				{operations.map((op) => (
 					<OperationRow key={op.id} op={op} schemas={model.schemas} />
 				))}
@@ -151,7 +185,7 @@ function AppendixSection({
 	if (total === 0) return null;
 	return (
 		<section aria-label="附录">
-			<header className="border-b border-paper-border pb-2">
+			<header className="border-b border-border/60 pb-2">
 				<button
 					type="button"
 					onClick={() => setOpen((v) => !v)}
@@ -160,28 +194,30 @@ function AppendixSection({
 				>
 					<ChevronRight
 						className={cn(
-							"size-4 self-center text-paper-muted/70 transition-transform duration-200",
+							"size-4 self-center text-muted-foreground/50 transition-transform duration-200",
 							visible && "rotate-90",
 						)}
 					/>
-					<h3 className="font-serif text-base font-semibold tracking-wide">
+					<span className="font-mono text-xs font-semibold tracking-wider text-primary">
+						A
+					</span>
+					<h3 className="font-serif text-lg font-medium tracking-tight">
 						附录 · 管理端点
 					</h3>
-					<span className="font-mono text-[11px] text-paper-muted/80">{total} 端点</span>
-					<span className="ml-auto hidden font-serif text-xs text-paper-muted/70 sm:inline">
-						{visible ? "面向站长" : "默认折叠"}
+					<span className="ml-auto font-mono text-[11px] text-muted-foreground/60 tabular-nums">
+						{total} 端点 · {visible ? "点击收起" : "默认折叠"}
 					</span>
 				</button>
 			</header>
 			{visible ? (
-				<div className="mt-4 space-y-8">
-					{model.appendix.map((chapter) => (
+				<div className="mt-6 space-y-9 sm:space-y-10">
+					{model.appendix.map((chapter, index) => (
 						<ChapterSection
 							key={chapter.tag}
 							chapter={chapter}
 							query={query}
-							forceOpen={filtering}
 							model={model}
+							marker={`A${index + 1}`}
 						/>
 					))}
 				</div>

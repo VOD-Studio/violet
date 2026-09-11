@@ -13,41 +13,39 @@ interface OperationRowProps {
 	schemas: Record<string, OpenApiSchema>;
 }
 
-/**
- * 端点条目：方法徽章 + 路径 + 摘要一行，点击展开参数/请求体/响应详情。
- */
+/** 可展开的端点条目：方法着色 + 路径 + 摘要，展开区沿 primary 竖线缩进。 */
 export function OperationRow({ op, schemas }: OperationRowProps) {
 	const [open, setOpen] = useState(false);
 	return (
-		<div className="border-t border-paper-border/50 first:border-t-0">
+		<div>
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
 				aria-expanded={open}
-				className="group flex w-full items-baseline gap-3 px-4 py-2.5 text-left transition-colors hover:bg-paper-foreground/[0.03] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+				className="group grid w-full grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-3 py-3 text-left"
 			>
-				<MethodBadge method={op.method} className="translate-y-0.5 self-center" />
-				<span className="min-w-0 flex-1 basis-full sm:basis-auto">
-					<code className="block break-all font-mono text-[13px] leading-relaxed text-paper-foreground">
+				<MethodBadge method={op.method} />
+				<span className="min-w-0">
+					<code className="block font-mono text-[13px] leading-snug font-medium break-all text-foreground/90 transition-colors group-hover:text-primary">
 						{op.path}
 					</code>
 					{op.summary ? (
-						<span className="mt-0.5 block text-xs leading-relaxed text-paper-muted">
+						<span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
 							{op.summary}
 						</span>
 					) : null}
 				</span>
 				<ChevronDown
 					className={cn(
-						"size-4 shrink-0 self-center text-paper-muted/70 transition-transform duration-200 group-hover:text-paper-muted",
+						"size-4 shrink-0 text-muted-foreground/40 transition-all duration-200 group-hover:text-muted-foreground",
 						open && "rotate-180",
 					)}
 				/>
 			</button>
 			{open ? (
-				<div className="space-y-5 px-4 pt-1 pb-5 sm:pl-[5.25rem]">
+				<div className="mb-4 ml-1 border-l-2 border-primary/25 pt-1 pr-2 pb-2 pl-4 sm:pl-5">
 					{op.description ? (
-						<p className="max-w-prose text-xs leading-relaxed text-paper-muted">
+						<p className="mb-5 max-w-2xl text-xs leading-relaxed text-muted-foreground">
 							{op.description}
 						</p>
 					) : null}
@@ -73,27 +71,25 @@ function OperationDetail({
 	);
 
 	return (
-		<div className="space-y-5 font-sans">
+		<div className="space-y-5">
 			{params.length > 0 ? (
 				<DetailSection label="参数">
-					<dl className="divide-y divide-paper-border/60">
-						{params.map((p) => (
+					<dl className="divide-y divide-border/30">
+						{params.map((parameter) => (
 							<div
-								key={`${p.in}-${p.name}`}
-								className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 py-1.5"
+								key={`${parameter.in}-${parameter.name}`}
+								className="grid gap-x-4 gap-y-0.5 py-2 sm:grid-cols-[minmax(7rem,auto)_1fr]"
 							>
-								<dt className="min-w-0 break-all font-mono text-xs text-paper-foreground">
-									{p.name}
-									<span className="ml-1 text-[10px] text-paper-muted">
-										({p.in})
+								<dt className="min-w-0 font-mono text-xs font-medium break-all">
+									{parameter.name}
+									<span className="ml-1 text-[10px] text-muted-foreground/60">
+										({parameter.in})
 									</span>
 								</dt>
-								<dd className="min-w-0 text-xs text-paper-muted">
-									{p.description ?? ""}
-									{p.required ? (
-										<span className="ml-1 text-red-700 dark:text-red-400">
-											*
-										</span>
+								<dd className="min-w-0 text-xs leading-5 text-muted-foreground">
+									{parameter.description ?? ""}
+									{parameter.required ? (
+										<span className="ml-0.5 font-semibold text-red-500">*</span>
 									) : null}
 								</dd>
 							</div>
@@ -113,15 +109,15 @@ function OperationDetail({
 			{responses.length > 0 ? (
 				<DetailSection label="响应">
 					<div className="space-y-3">
-						{responses.map(([status, res]) => {
-							const schema = res.content?.["application/json"]?.schema;
+						{responses.map(([status, response]) => {
+							const schema = response.content?.["application/json"]?.schema;
 							return (
 								<div key={status}>
-									<p className="font-mono text-xs text-paper-foreground">
+									<p className="font-mono text-xs font-semibold">
 										{status}
-										{res.description ? (
-											<span className="ml-2 font-sans text-paper-muted">
-												{res.description}
+										{response.description ? (
+											<span className="ml-2 font-sans font-normal text-muted-foreground">
+												{response.description}
 											</span>
 										) : null}
 									</p>
@@ -143,7 +139,7 @@ function OperationDetail({
 function DetailSection({ label, children }: { label: string; children: ReactNode }) {
 	return (
 		<section>
-			<h4 className="mb-1.5 font-serif text-xs font-semibold tracking-wide text-paper-foreground/80">
+			<h4 className="mb-2 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground/70 uppercase">
 				{label}
 			</h4>
 			{children}

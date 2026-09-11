@@ -1,20 +1,21 @@
 import { cn } from "@/shared/lib/utils";
 
-const METHOD_STYLES: Record<string, string> = {
-	GET: "bg-emerald-600/10 text-emerald-800 dark:text-emerald-300",
-	POST: "bg-sky-600/10 text-sky-800 dark:text-sky-300",
-	PUT: "bg-amber-600/12 text-amber-800 dark:text-amber-300",
-	PATCH: "bg-orange-600/12 text-orange-800 dark:text-orange-300",
-	DELETE: "bg-red-600/10 text-red-800 dark:text-red-300",
+/** 方法语义色：纯文字着色，配合固定字宽在白纸面上作扫描锚点 */
+const METHOD_TEXT: Record<string, string> = {
+	GET: "text-emerald-600 dark:text-emerald-400",
+	POST: "text-sky-600 dark:text-sky-400",
+	PUT: "text-amber-600 dark:text-amber-400",
+	PATCH: "text-orange-600 dark:text-orange-400",
+	DELETE: "text-red-600 dark:text-red-400",
 };
 
-/** HTTP 方法徽章：等宽小字号，纸面上的墨色系区分 */
+/** HTTP 方法标注：等宽纯色文字，固定宽度保证路径列对齐 */
 export function MethodBadge({ method, className }: { method: string; className?: string }) {
 	return (
 		<span
 			className={cn(
-				"inline-flex shrink-0 items-center justify-center rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider",
-				METHOD_STYLES[method] ?? "bg-muted text-muted-foreground",
+				"shrink-0 text-center font-mono text-[10px] font-bold tracking-[0.14em]",
+				METHOD_TEXT[method] ?? "text-muted-foreground",
 				className,
 			)}
 		>
