@@ -37,8 +37,8 @@ export function drawPaperSurface(
 	color: string,
 ) {
 	context.clearRect(0, 0, width, height);
-	// 含画布四周 16px 外扩，主纸保持原视觉位置；外扩供底层纸旋转错位不裁剪。
-	const inset = Math.min(22, width / 4, height / 4);
+	// 含画布四周 32px 外扩，主纸保持原视觉位置；外扩供底层纸旋转错位不裁剪。
+	const inset = Math.min(38, width / 4, height / 4);
 
 	const paintSheet = (edgeInset: number, seed: number, darken: number) => {
 		const edges: Edge[] = [
@@ -201,12 +201,12 @@ export function drawPaperSurface(
 		context.globalAlpha = 1;
 	};
 
-	// 底层纸：微错位微旋转，只从主纸边缘露出。
+	// 底层纸：向右下明显错位并带一点角度，从主纸边缘露出。
 	context.save();
-	context.translate(width / 2 + 2, height / 2 + 2.5);
-	context.rotate(0.007);
+	context.translate(width / 2 + 5, height / 2 + 7);
+	context.rotate(0.012);
 	context.translate(-width / 2, -height / 2);
-	paintSheet(inset + 5, 4549, 0.07);
+	paintSheet(inset, 4549, 0.12);
 	context.restore();
 	paintSheet(inset, 0, 0);
 }
