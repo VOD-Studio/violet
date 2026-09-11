@@ -105,34 +105,36 @@ export function Modal({
 							}}
 							asChild
 						>
-							<motion.div
-								className={cn(
-									"fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg bg-background shadow-lg outline-none",
-									!unstyled && "border",
-									!unstyled && MODAL_SIZES[size],
-									className,
-								)}
-								initial={resolvedContentMotion.initial}
-								animate={resolvedContentMotion.animate}
-								exit={resolvedContentMotion.exit}
-								transition={resolvedContentMotion.transition}
-							>
-								<ModalHeader
-									title={title}
-									description={description}
-									titleSrOnly={titleSrOnly}
-									showCloseButton={showCloseButton}
-									unstyled={unstyled}
-								/>
+							<div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 pointer-events-none">
+								<motion.div
+									className={cn(
+										"pointer-events-auto relative flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-lg bg-background shadow-lg outline-none",
+										!unstyled && "border",
+										!unstyled && MODAL_SIZES[size],
+										className,
+									)}
+									initial={resolvedContentMotion.initial}
+									animate={resolvedContentMotion.animate}
+									exit={resolvedContentMotion.exit}
+									transition={resolvedContentMotion.transition}
+								>
+									<ModalHeader
+										title={title}
+										description={description}
+										titleSrOnly={titleSrOnly}
+										showCloseButton={showCloseButton}
+										unstyled={unstyled}
+									/>
 
-								{unstyled ? (
-									children
-								) : (
-									<ModalBody scrollable={scrollable}>{children}</ModalBody>
-								)}
+									{unstyled ? (
+										children
+									) : (
+										<ModalBody scrollable={scrollable}>{children}</ModalBody>
+									)}
 
-								{footer && <ModalFooter>{footer}</ModalFooter>}
-							</motion.div>
+									{footer && <ModalFooter>{footer}</ModalFooter>}
+								</motion.div>
+							</div>
 						</DialogPrimitive.Content>
 					</DialogPrimitive.Portal>
 				)}
