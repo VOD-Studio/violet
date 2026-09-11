@@ -63,7 +63,7 @@ export function PaperSurface() {
 	return (
 		<div
 			aria-hidden="true"
-			className="pointer-events-none absolute inset-0 z-0 drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
+			className="pointer-events-none absolute inset-0 z-0 drop-shadow-[0_8px_14px_rgba(0,0,0,0.16)] dark:drop-shadow-[0_8px_18px_rgba(0,0,0,0.4)]"
 		>
 			<div className="absolute inset-3 bg-card" />
 			<canvas ref={canvasRef} className="absolute inset-0 size-full text-card" />
