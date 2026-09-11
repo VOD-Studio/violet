@@ -1,4 +1,3 @@
-import type { MotionProps } from "motion/react";
 import type { ReactNode } from "react";
 
 /**
@@ -20,10 +19,6 @@ export const MODAL_SIZES = {
 
 /** 尺寸档位类型 */
 export type ModalSize = keyof typeof MODAL_SIZES;
-/** 内容层可覆盖的进出场动画。 */
-export type ModalContentMotion = Required<
-	Pick<MotionProps, "initial" | "animate" | "exit" | "transition">
->;
 
 /**
  * ModalProps - 统一 Modal 组件 props
@@ -73,6 +68,4 @@ export interface ModalProps {
 	onInteractOutside?: (e: Event) => void;
 	/** 透传到内容容器的额外 className（lightbox 自定义 max-w/背景等） */
 	className?: string;
-	/** 内容层进出场动画；省略时使用统一缩放淡入。 */
-	contentMotion?: ModalContentMotion;
 }
