@@ -4,7 +4,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 
-import paperEdgeMask from "./paper-edge-mask.png";
+import { PaperSurface } from "./PaperSurface";
 
 /** 可滚动纸面弹窗的受控状态与内容插槽。 */
 export interface PaperDialogProps {
@@ -28,7 +28,7 @@ export interface PaperDialogProps {
 	children?: ReactNode;
 }
 
-/** 四边手撕毛边纸面弹窗；纸面遮罩不裁切正文与交互层。 */
+/** 四边手撕毛边纸面弹窗；装饰纸面不裁切正文与交互层。 */
 export function PaperDialog({
 	open,
 	onOpenChange,
@@ -96,22 +96,9 @@ export function PaperDialog({
 										{titleSrOnly}
 									</DialogPrimitive.Title>
 
-									<div
-										aria-hidden="true"
-										className="pointer-events-none absolute inset-0 z-0 drop-shadow-[0_12px_20px_rgba(0,0,0,0.22)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]"
-									>
-										{/* 遮罩取自纸张参考原图，保留原始缺口，仅对边界做亚像素抗锯齿。 */}
-										<div
-											className="size-full bg-card"
-											style={{
-												maskImage: `url(${paperEdgeMask})`,
-												maskSize: "100% 100%",
-												maskRepeat: "no-repeat",
-											}}
-										/>
-									</div>
+									<PaperSurface />
 
-									<div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden text-foreground">
+									<div className="relative z-10 m-3 flex min-h-0 flex-1 flex-col overflow-hidden text-foreground">
 										{showCloseButton && (
 											<DialogPrimitive.Close
 												aria-label="关闭"
