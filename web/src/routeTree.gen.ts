@@ -52,6 +52,7 @@ import { Route as AdminSystemRouteImport } from './routes/admin.system'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSeriesRouteImport } from './routes/admin.series'
+import { Route as AdminRuntimeLogsRouteImport } from './routes/admin.runtime-logs'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
@@ -303,6 +304,11 @@ const AdminSeriesRoute = AdminSeriesRouteImport.update({
   path: '/series',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRuntimeLogsRoute = AdminRuntimeLogsRouteImport.update({
+  id: '/runtime-logs',
+  path: '/runtime-logs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -504,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/runtime-logs': typeof AdminRuntimeLogsRoute
   '/admin/series': typeof AdminSeriesRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -579,6 +586,7 @@ export interface FileRoutesByTo {
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/runtime-logs': typeof AdminRuntimeLogsRoute
   '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/system': typeof AdminSystemRoute
@@ -659,6 +667,7 @@ export interface FileRoutesById {
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/runtime-logs': typeof AdminRuntimeLogsRoute
   '/admin/series': typeof AdminSeriesRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -741,6 +750,7 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/admin/projects'
     | '/admin/roles'
+    | '/admin/runtime-logs'
     | '/admin/series'
     | '/admin/settings'
     | '/admin/subscriptions'
@@ -816,6 +826,7 @@ export interface FileRouteTypes {
     | '/admin/permissions'
     | '/admin/projects'
     | '/admin/roles'
+    | '/admin/runtime-logs'
     | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/system'
@@ -895,6 +906,7 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/admin/projects'
     | '/admin/roles'
+    | '/admin/runtime-logs'
     | '/admin/series'
     | '/admin/settings'
     | '/admin/subscriptions'
@@ -1295,6 +1307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSeriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/runtime-logs': {
+      id: '/admin/runtime-logs'
+      path: '/runtime-logs'
+      fullPath: '/admin/runtime-logs'
+      preLoaderRoute: typeof AdminRuntimeLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/roles': {
       id: '/admin/roles'
       path: '/roles'
@@ -1656,6 +1675,7 @@ interface AdminRouteChildren {
   AdminPostsRoute: typeof AdminPostsRouteWithChildren
   AdminProjectsRoute: typeof AdminProjectsRoute
   AdminRolesRoute: typeof AdminRolesRoute
+  AdminRuntimeLogsRoute: typeof AdminRuntimeLogsRoute
   AdminSeriesRoute: typeof AdminSeriesRouteWithChildren
   AdminSettingsRoute: typeof AdminSettingsRouteWithChildren
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
@@ -1680,6 +1700,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPostsRoute: AdminPostsRouteWithChildren,
   AdminProjectsRoute: AdminProjectsRoute,
   AdminRolesRoute: AdminRolesRoute,
+  AdminRuntimeLogsRoute: AdminRuntimeLogsRoute,
   AdminSeriesRoute: AdminSeriesRouteWithChildren,
   AdminSettingsRoute: AdminSettingsRouteWithChildren,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,

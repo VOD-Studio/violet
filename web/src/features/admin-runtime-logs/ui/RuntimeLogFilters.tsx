@@ -1,0 +1,173 @@
+import { Button } from "@shared/ui/base/button";
+import { Checkbox } from "@shared/ui/base/checkbox";
+import { Input } from "@shared/ui/base/input";
+import { InlineError } from "@shared/ui/inline-error";
+import { type FormEvent, useState } from "react";
+import type { RuntimeLogFilter, RuntimeLogLevel } from "../model/types";
+
+const LEVELS: RuntimeLogLevel[] = ["trace", "debug", "info", "warn", "error", "fatal", "panic"];
+const TEXT_FIELDS = [
+	{ name: "source", label: "来源", placeholder: "精确匹配来源" },
+	{ name: "keyword", label: "消息关键词", placeholder: "搜索消息内容" },
+	{ name: "request_id", label: "Request ID", placeholder: "已有请求标识" },
+	{ name: "trace_id", label: "Trace ID", placeholder: "已有追踪标识" },
+] as const;
+const EMPTY_DRAFT = {
+	levels: [] as RuntimeLogLevel[],
+	source: "",
+	keyword: "",
+	request_id: "",
+	trace_id: "",
+	from: "",
+	until: "",
+};
+
+/** 提交后应用筛选；编辑中的条件不触发历史请求。 */
+export interface RuntimeLogFiltersProps {
+	filters: RuntimeLogFilter;
+	onApply: (filters: RuntimeLogFilter) => void;
+}
+
+export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) {
+	const [draft, setDraft] = useState(EMPTY_DRAFT);
+	const [error, setError] = useState("");
+	const activeCount = Object.values(filters).filter((value) =>
+		Array.isArray(value) ? value.length > 0 : Boolean(value),
+	).length;
+
+	function handleSubmit(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const from = draft.from ? new Date(draft.from) : undefined;
+		const until = draft.until ? new Date(draft.until) : undefined;
+		if ((from && Number.isNaN(from.getTime())) || (until && Number.isNaN(until.getTime()))) {
+			setError("请输入有效的开始和结束时间。");
+			return;
+		}
+		if (from && until && from >= until) {
+			setError("结束时间必须晚于开始时间；结束时刻本身不包含在结果中。");
+			return;
+		}
+		setError("");
+		onApply({
+			levels: draft.levels.length ? draft.levels : undefined,
+			source: draft.source.trim() || undefined,
+			keyword: draft.keyword.trim() || undefined,
+			request_id: draft.request_id.trim() || undefined,
+			trace_id: draft.trace_id.trim() || undefined,
+			from: from?.toISOString(),
+			until: until?.toISOString(),
+		});
+	}
+
+	function handleReset() {
+		setDraft(EMPTY_DRAFT);
+		setError("");
+		onApply({});
+	}
+
+	return (
+		<details className="min-w-0 border-b border-edge-hairline">
+			<summary className="cursor-pointer rounded-sm py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring">
+				筛选日志
+				<span className="ml-2 font-normal text-muted-foreground">
+					{activeCount ? `已应用 ${activeCount} 项条件` : "全部已采集级别 · 不限时间"}
+				</span>
+			</summary>
+			<form onSubmit={handleSubmit} className="space-y-4 pb-4">
+				<fieldset className="space-y-2">
+					<legend className="text-sm">级别（可多选，不选表示全部）</legend>
+					<div className="flex flex-wrap gap-x-4 gap-y-2">
+						{LEVELS.map((level) => (
+							<label
+								htmlFor={`runtime-log-level-${level}`}
+								key={level}
+								className="flex cursor-pointer items-center gap-2 py-1 text-xs"
+							>
+								<Checkbox
+									id={`runtime-log-level-${level}`}
+									checked={draft.levels.includes(level)}
+									onCheckedChange={(checked) =>
+										setDraft((current) => ({
+											...current,
+											levels:
+												checked === true
+													? LEVELS.filter(
+															(item) =>
+																item === level ||
+																current.levels.includes(item),
+														)
+													: current.levels.filter(
+															(item) => item !== level,
+														),
+										}))
+									}
+								/>
+								{level.toUpperCase()}
+							</label>
+						))}
+					</div>
+				</fieldset>
+				<div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+					{TEXT_FIELDS.map((field) => (
+						<label
+							htmlFor={`runtime-log-${field.name}`}
+							key={field.name}
+							className="min-w-0 space-y-1.5 text-xs"
+						>
+							<span>{field.label}</span>
+							<Input
+								id={`runtime-log-${field.name}`}
+								name={field.name}
+								value={draft[field.name]}
+								onChange={(event) =>
+									setDraft({ ...draft, [field.name]: event.target.value })
+								}
+								placeholder={field.placeholder}
+								autoComplete="off"
+							/>
+						</label>
+					))}
+					{(["from", "until"] as const).map((field) => (
+						<label
+							htmlFor={`runtime-log-${field}`}
+							key={field}
+							className="min-w-0 space-y-1.5 text-xs"
+						>
+							<span>
+								{field === "from" ? "开始时间（包含）" : "结束时间（不包含）"}
+							</span>
+							<Input
+								id={`runtime-log-${field}`}
+								type="datetime-local"
+								name={field}
+								step="1"
+								value={draft[field]}
+								onChange={(event) =>
+									setDraft({ ...draft, [field]: event.target.value })
+								}
+								aria-describedby="runtime-log-time-hint"
+								aria-invalid={Boolean(error)}
+							/>
+						</label>
+					))}
+				</div>
+				<p
+					id="runtime-log-time-hint"
+					className="text-xs leading-relaxed text-muted-foreground"
+				>
+					时间按当前设备时区输入，筛选日志的发生时间。筛选不能补采源端已丢弃的
+					TRACE；仅展示日志中已有的请求与追踪标识。
+				</p>
+				{error && <InlineError message={error} inline />}
+				<div className="flex flex-wrap gap-2">
+					<Button type="submit" size="sm">
+						应用筛选
+					</Button>
+					<Button type="button" variant="outline" size="sm" onClick={handleReset}>
+						重置筛选
+					</Button>
+				</div>
+			</form>
+		</details>
+	);
+}

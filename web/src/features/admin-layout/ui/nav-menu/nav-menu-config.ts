@@ -270,6 +270,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		permissions: ["system:view"],
 	},
 	{
+		label: "运行日志",
+		to: "/admin/runtime-logs",
+		icon: ScrollText,
+		group: "platform",
+		permissions: ["runtimelog:view"],
+	},
+	{
 		label: "操作日志",
 		to: "/admin/logs",
 		icon: ScrollText,
