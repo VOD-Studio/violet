@@ -139,6 +139,14 @@ func NewAdminRouter(d *Deps) chi.Router {
 		sub.Use(middleware.RequirePermission(perm, permission.RuntimeLogView.String()))
 		sub.Get("/runtime-logs", d.RuntimeLog.List)
 		sub.Get("/runtime-logs/status", d.RuntimeLog.Status)
+		sub.Get("/runtime-logs/stream", d.RuntimeLog.Stream)
+		sub.Get("/runtime-logs/export", d.RuntimeLog.Export)
+		sub.Get("/runtime-logs/policy", d.RuntimeLog.GetPolicy)
+	})
+	r.Group(func(sub chi.Router) {
+		sub.Use(middleware.RequirePermission(perm, permission.RuntimeLogManage.String()))
+		sub.Put("/runtime-logs/policy", d.RuntimeLog.UpdatePolicy)
+		sub.Post("/runtime-logs/rotate", d.RuntimeLog.Rotate)
 	})
 
 	// 公告管理（读 announcement:view；写 announcement:manage）

@@ -38,7 +38,60 @@ func (s *Store) Append(ctx context.Context, entries []domainlog.Entry) error {
 
 var likeEscape = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
-func (s *Store) Read(ctx context.Context, filter domainlog.Filter) ([]domainlog.Entry, error) {
+func (s *Store) ReadPage(ctx context.Context, filter domainlog.Filter) (domainlog.Bounds, []domainlog.Entry, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err != nil {
+		return domainlog.Bounds{}, nil, fmt.Errorf("begin runtime log page snapshot: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	bounds, err := readBounds(ctx, tx)
+	if err != nil {
+		return domainlog.Bounds{}, nil, err
+	}
+	filter.Through = bounds.Newest
+	entries := make([]domainlog.Entry, 0, filter.Limit)
+	if err := walk(ctx, tx, filter, func(entry domainlog.Entry) error {
+		entries = append(entries, entry)
+		return nil
+	}); err != nil {
+		return domainlog.Bounds{}, nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return domainlog.Bounds{}, nil, fmt.Errorf("commit runtime log page snapshot: %w", err)
+	}
+	return bounds, entries, nil
+}
+
+func (s *Store) Walk(ctx context.Context, filter domainlog.Filter, visit func(domainlog.Entry) error) error {
+	return walk(ctx, s.db, filter, visit)
+}
+
+type queryer interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func walk(ctx context.Context, db queryer, filter domainlog.Filter, visit func(domainlog.Entry) error) error {
+	query, args := buildReadQuery(filter)
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("read runtime logs: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var entry domainlog.Entry
+		if err := rows.Scan(&entry.ID, &entry.OccurredAt, &entry.ReceivedAt, &entry.Level, &entry.Source, &entry.Message, &entry.RequestID, &entry.TraceID); err != nil {
+			return err
+		}
+		if err := visit(entry); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func buildReadQuery(filter domainlog.Filter) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id,occurred_at,received_at,level,source,message,request_id,trace_id FROM runtime_logs WHERE true")
 	args := make([]any, 0, 12)
@@ -91,24 +144,28 @@ func (s *Store) Read(ctx context.Context, filter domainlog.Filter) ([]domainlog.
 	}
 	args = append(args, filter.Limit)
 	query.WriteString(" LIMIT $" + strconv.Itoa(len(args)))
-	rows, err := s.db.QueryContext(ctx, query.String(), args...)
-	if err != nil {
-		return nil, fmt.Errorf("read runtime logs: %w", err)
-	}
-	defer rows.Close()
-	entries := make([]domainlog.Entry, 0, filter.Limit)
-	for rows.Next() {
-		var entry domainlog.Entry
-		if err := rows.Scan(&entry.ID, &entry.OccurredAt, &entry.ReceivedAt, &entry.Level, &entry.Source, &entry.Message, &entry.RequestID, &entry.TraceID); err != nil {
-			return nil, err
-		}
-		entries = append(entries, entry)
-	}
-	return entries, rows.Err()
+	return query.String(), args
 }
 
 func (s *Store) Bounds(ctx context.Context) (domainlog.Bounds, error) {
+	return readBounds(ctx, s.db)
+}
+
+func readBounds(ctx context.Context, db queryer) (domainlog.Bounds, error) {
 	var bounds domainlog.Bounds
-	err := s.db.QueryRowContext(ctx, "SELECT COALESCE(MIN(id),0),COALESCE(MAX(id),0) FROM runtime_logs").Scan(&bounds.Oldest, &bounds.Newest)
-	return bounds, err
+	err := db.QueryRowContext(ctx, `
+		SELECT COALESCE(oldest.id, 0), usage.high_watermark
+		FROM runtime_log_usage AS usage
+		LEFT JOIN LATERAL (
+			SELECT id
+			FROM runtime_logs
+			ORDER BY id ASC
+			LIMIT 1
+		) AS oldest ON TRUE
+		WHERE usage.singleton = TRUE
+	`).Scan(&bounds.Oldest, &bounds.Newest)
+	if err != nil {
+		return domainlog.Bounds{}, fmt.Errorf("read runtime log bounds: %w", err)
+	}
+	return bounds, nil
 }

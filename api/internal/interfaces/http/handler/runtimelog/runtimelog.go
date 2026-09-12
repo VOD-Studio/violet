@@ -15,11 +15,23 @@ import (
 type Handler struct {
 	service      *applog.Service
 	status       applog.StatusProvider
+	maintenance  *applog.MaintenanceService
+	access       applog.AccessValidator
+	delivery     *deliveryMonitor
 	minimumLevel func() string
 }
 
-func NewHandler(service *applog.Service, status applog.StatusProvider, minimumLevel func() string) *Handler {
-	return &Handler{service: service, status: status, minimumLevel: minimumLevel}
+func NewHandler(
+	service *applog.Service,
+	status applog.StatusProvider,
+	maintenance *applog.MaintenanceService,
+	access applog.AccessValidator,
+	minimumLevel func() string,
+) *Handler {
+	return &Handler{
+		service: service, status: status, maintenance: maintenance, access: access,
+		delivery: &deliveryMonitor{}, minimumLevel: minimumLevel,
+	}
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -41,9 +53,15 @@ func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	response.RespondOK(w, struct {
 		applog.CollectionStatus
-		MinimumLevel string    `json:"minimum_level"`
-		ObservedAt   time.Time `json:"observed_at"`
-	}{h.status.Stats(), h.minimumLevel(), time.Now().UTC()})
+		MinimumLevel string         `json:"minimum_level"`
+		ObservedAt   time.Time      `json:"observed_at"`
+		Delivery     DeliveryStatus `json:"delivery"`
+	}{
+		CollectionStatus: h.status.Stats(),
+		MinimumLevel:     h.minimumLevel(),
+		ObservedAt:       time.Now().UTC(),
+		Delivery:         h.delivery.snapshot(),
+	})
 }
 
 func parseFilter(r *http.Request) (domainlog.Filter, error) {
@@ -55,17 +73,18 @@ func parseFilter(r *http.Request) (domainlog.Filter, error) {
 	for key, target := range map[string]*int64{"before": &filter.Before, "after": &filter.After} {
 		if value := query.Get(key); value != "" {
 			id, err := strconv.ParseInt(value, 10, 64)
-			if err != nil || id <= 0 {
+			if err != nil || id < 0 {
 				return filter, shared.BadRequest("日志游标格式错误")
 			}
 			*target = id
 		}
 	}
+	filter.AfterSet = query.Has("after")
 	direction := query.Get("direction")
 	if direction != "" && direction != "forward" && direction != "backward" {
 		return filter, shared.BadRequest("未知日志读取方向")
 	}
-	filter.Ascending = filter.After > 0 || direction == "forward"
+	filter.Ascending = filter.AfterSet || direction == "forward"
 	if value := query.Get("limit"); value != "" {
 		limit, err := strconv.Atoi(value)
 		if err != nil || limit < 1 {

@@ -43,6 +43,8 @@ type Filter struct {
 	Before int64
 	// After 接收顺序下界，不包含端点；用于实时续读。
 	After int64
+	// AfterSet 区分未请求续读与显式从零游标续读。
+	AfterSet bool
 	// Through 本次已观察到的接收顺序上界，包含端点；零值表示不限。
 	Through int64
 	// Ascending 按接收顺序正向读取；历史页默认倒序。
@@ -54,7 +56,7 @@ type Filter struct {
 type Bounds struct {
 	// Oldest 当前仍可读取的最早接收序号；空库为零。
 	Oldest int64
-	// Newest 当前已持久化的最晚接收序号；空库为零。
+	// Newest 已分配给持久化日志的最高接收序号；日志全部轮转后仍保留检查点。
 	Newest int64
 }
 
@@ -64,6 +66,7 @@ type Sink interface {
 
 type Store interface {
 	Sink
-	Read(context.Context, Filter) ([]Entry, error)
+	ReadPage(context.Context, Filter) (Bounds, []Entry, error)
+	Walk(context.Context, Filter, func(Entry) error) error
 	Bounds(context.Context) (Bounds, error)
 }

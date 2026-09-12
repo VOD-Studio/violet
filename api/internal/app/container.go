@@ -9,6 +9,8 @@ import (
 	"blog-api/config"
 	appaudit "blog-api/internal/application/audit"
 	authcmd "blog-api/internal/application/auth/command"
+	applog "blog-api/internal/application/runtimelog"
+	infraauth "blog-api/internal/infrastructure/auth"
 	infraemail "blog-api/internal/infrastructure/email"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -54,28 +56,30 @@ type Container struct {
 func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config, logOutput io.Writer) (*Container, func(), error) {
 	db := infra.Gorm
 	rdb := infra.Redis
-	runtimeLog, logCleanup := NewRuntimeLogContainer(infra, cfg, logOutput)
 
 	// 事件总线：进程内 InMemory 同步实现，全部模块共享单一实例，
 	// 保证跨模块事件（role 创建 → 审计订阅者）在同一总线上可达。
 	bus := infraeventbus.NewInMemory()
 
-	// 审计订阅者：消费全部领域事件 → 写 audit_events（append-only）
-	auditSub := appaudit.NewSubscriber(gormrepo.NewEventStore(db), log.Logger)
-	auditSub.Subscribe(bus)
-
 	role, roleCleanup, err := InitializeRoleContainer(db, bus)
 	if err != nil {
-		logCleanup()
 		return nil, nil, err
 	}
+	permissionChecker := role.PermissionChecker
+	streamAccess := applog.NewSessionAccess(
+		infraauth.NewRedisSessionStore(rdb), permissionChecker, cfg.Session.IdleTTL,
+	)
+	runtimeLog, logCleanup := NewRuntimeLogContainer(infra, cfg, logOutput, streamAccess)
 	cleanup := func() {
 		roleCleanup()
 		logCleanup()
 	}
 
+	// 审计订阅者：消费全部领域事件 → 写 audit_events（append-only）
+	auditSub := appaudit.NewSubscriber(gormrepo.NewEventStore(db), log.Logger)
+	auditSub.Subscribe(bus)
+
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
-	permissionChecker := role.PermissionChecker
 
 	// OAuth 凭据运行时存储：初始值来自 env；auth（登录链路）与 settings
 	// （公开 client_id 下发）共享同一实例，后台写入即刻全局生效。

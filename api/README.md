@@ -123,7 +123,7 @@ api/
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文/动态发布 |
 | **settings** | settings | settings | 分组版本化配置、不可变运行快照与只读启动配置 |
-| **runtimelog** | runtimelog | runtimelog | 独立运行日志采集、稳定游标历史查询、脱敏与丢弃状态 |
+| **runtimelog** | runtimelog | runtimelog | 独立运行日志采集、历史与实时读取、筛选导出、版本化保留轮转 |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
@@ -154,7 +154,7 @@ api/
 | `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit / notification 订阅者消费事件） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
 | `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
-| `runtimelog/` | `Sink`, `Store` | Capture / Store / GormLogger | 有界异步采集、PostgreSQL 历史与标准/GORM 日志适配 |
+| `runtimelog/` | `Sink`, `Store`, `MaintenanceStore` | Capture / Store / GormLogger | 有界异步采集、PostgreSQL 流式读取与容量轮转、标准/GORM 日志适配 |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
 | `persistence/gorm/` | 各 `*Repository` | GORM 实现 | 所有数据库访问 |
 
@@ -304,7 +304,12 @@ make help         # 查看所有命令
 | 方法与路径（前缀 `/api/v1`） | 契约 |
 |---|---|
 | `GET /admin/runtime-logs` | 需要 `runtimelog:view`；按稳定接收游标读取，可组合筛选级别、来源、时间、关键词及已有 request/trace 标识 |
-| `GET /admin/runtime-logs/status` | 返回当前进程采集下限、队列占用及按原因统计的丢弃数量；不返回日志内容 |
+| `GET /admin/runtime-logs/status` | 需要 `runtimelog:view`；返回当前进程采集下限、队列占用及采集、实时连接、导出资源计数 |
+| `GET /admin/runtime-logs/stream` | 需要 `runtimelog:view`；从历史或 `Last-Event-ID` 游标实时续读，保留轮转造成缺口时显式通知 |
+| `GET /admin/runtime-logs/export` | 需要 `runtimelog:view`；按相同筛选流式导出有记录数与字节上限的 NDJSON 快照 |
+| `GET /admin/runtime-logs/policy` | 需要 `runtimelog:view`；返回运行日志专属保留策略、容量用量与轮转状态 |
+| `PUT /admin/runtime-logs/policy` | 需要 `runtimelog:manage`；按 `expected_version` 更新保留天数、最大记录数与估算容量 |
+| `POST /admin/runtime-logs/rotate` | 需要 `runtimelog:manage`；立即按当前策略分批轮转，仅处理运行日志 |
 
 更新时省略字段表示保留，显式 `false`、`0`、空串按字段语义处理，`null` 不代替 reset。自定义表情额度 `0` 禁止新增；页脚 `footer_github_url` 空串隐藏链接，与贡献账号 `github_username` 独立。数据库池参数应用于 GORM 与系统监控共用的真实 `sql.DB`，启动快照中的池统计来自该实例。
 

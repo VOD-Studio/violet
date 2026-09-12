@@ -7,6 +7,8 @@ import (
 	"io"
 	stdlog "log"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -22,43 +24,81 @@ type RuntimeLogContainer struct {
 	Handler *loghttp.Handler
 }
 
-func NewRuntimeLogContainer(infra *Infra, cfg *config.Config, logOutput io.Writer) (*RuntimeLogContainer, func()) {
+func NewRuntimeLogContainer(
+	infra *Infra,
+	cfg *config.Config,
+	logOutput io.Writer,
+	access applog.AccessValidator,
+) (*RuntimeLogContainer, func()) {
+	operationsDB, operationsCleanup := openRuntimeLogDB(cfg, 4)
+	if operationsDB == nil {
+		_, _ = fmt.Fprintln(os.Stderr, "运行日志读取连接池初始化失败；降级到业务连接池")
+		operationsDB = infra.DB
+		operationsCleanup = func() {}
+	}
+	store := infralog.NewStore(operationsDB)
+	service := applog.NewService(store)
+	maintenance := applog.NewMaintenanceService(store, 5*time.Minute)
+
 	var writeDB *sql.DB
-	var sink domainlog.Store
+	var sink domainlog.Sink
 	if cfg.RuntimeLogEnabled {
-		var err error
-		writeDB, err = sql.Open("pgx", cfg.Database.DSN())
-		if err != nil {
+		writeDB, _ = openRuntimeLogDB(cfg, 1)
+		if writeDB == nil {
 			_, _ = fmt.Fprintln(os.Stderr, "运行日志写入连接池初始化失败；仅保留 stderr")
 		} else {
-			// 写日志不能占住唯一业务连接，使日志表故障阻塞普通请求。
-			writeDB.SetMaxOpenConns(1)
-			writeDB.SetMaxIdleConns(1)
-			writeDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 			sink = infralog.NewStore(writeDB)
 		}
 	}
 	capture := infralog.NewCapture(sink, os.Stderr, cfg.RuntimeLogEnabled)
-	service := applog.NewService(infralog.NewStore(infra.DB))
-	container := &RuntimeLogContainer{Handler: loghttp.NewHandler(service, capture, func() string { return zerolog.GlobalLevel().String() })}
+	container := &RuntimeLogContainer{Handler: loghttp.NewHandler(
+		service, capture, maintenance, access, func() string { return zerolog.GlobalLevel().String() },
+	)}
 	infra.Gorm.Logger = infralog.NewGormLogger()
-	if sink == nil {
-		return container, func() {}
+
+	previousLogger := log.Logger
+	standardOutput := stdlog.Writer()
+	if sink != nil {
+		log.Logger = previousLogger.Output(zerolog.MultiLevelWriter(capture, logOutput))
+		stdlog.SetOutput(io.MultiWriter(capture.StandardWriter(), standardOutput))
 	}
 
-	log.Logger = log.Logger.Output(zerolog.MultiLevelWriter(capture, logOutput))
-	standardOutput := stdlog.Writer()
-	stdlog.SetOutput(io.MultiWriter(capture.StandardWriter(), standardOutput))
 	ctx, cancel := context.WithCancel(context.Background())
-	stopped := make(chan struct{})
+	var workers sync.WaitGroup
+	workers.Add(1)
 	go func() {
-		defer close(stopped)
-		capture.Run(ctx)
+		defer workers.Done()
+		maintenance.Run(ctx)
 	}()
-	return container, func() {
-		stdlog.SetOutput(standardOutput)
-		cancel()
-		<-stopped
-		_ = writeDB.Close()
+	if sink != nil {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			capture.Run(ctx)
+		}()
 	}
+
+	return container, func() {
+		if sink != nil {
+			log.Logger = previousLogger
+			stdlog.SetOutput(standardOutput)
+		}
+		cancel()
+		workers.Wait()
+		if writeDB != nil {
+			_ = writeDB.Close()
+		}
+		operationsCleanup()
+	}
+}
+
+func openRuntimeLogDB(cfg *config.Config, maxConnections int) (*sql.DB, func()) {
+	db, err := sql.Open("pgx", cfg.Database.DSN())
+	if err != nil {
+		return nil, func() {}
+	}
+	db.SetMaxOpenConns(maxConnections)
+	db.SetMaxIdleConns(maxConnections)
+	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
+	return db, func() { _ = db.Close() }
 }
