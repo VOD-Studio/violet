@@ -6,7 +6,9 @@ package releases
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -43,10 +45,10 @@ func cleanCommitRef(item string) string {
 	return strings.TrimSpace(item)
 }
 
-// cacheKey Redis 缓存键，cacheTTL 缓存有效期
+// Redis 缓存按有效配置隔离，TTL 控制旧配置键的回收。
 const (
-	cacheKey = "releases:cache"
-	cacheTTL = 1 * time.Hour
+	cachePrefix = "releases:cache:"
+	cacheTTL    = 1 * time.Hour
 )
 
 // Service 更新日志用例服务
@@ -84,18 +86,20 @@ func (s *Service) Get(ctx context.Context) (*domainreleases.ReleasesData, error)
 		owner = parts[0]
 		repo = parts[1]
 	}
+	// Key by the effective credentials/source so late requests cannot repopulate another configuration's cache.
+	key := fmt.Sprintf("%s%x", cachePrefix, sha256.Sum256([]byte(owner+"\x00"+repo+"\x00"+token)))
 
 	// 尝试调 GitHub API
 	rawReleases, err := s.provider.ListReleases(ctx, owner, repo, token)
 	if err == nil && len(rawReleases) > 0 {
 		// 成功：解析 body 成分类 + 组装 + 写缓存
 		data := buildData(rawReleases)
-		s.cacheAsync(data)
+		s.cacheAsync(key, data)
 		return data, nil
 	}
 
 	// 失败或空：回退读缓存（即使过期）
-	if cached, ok := s.readCache(ctx); ok {
+	if cached, ok := s.readCache(ctx, key); ok {
 		return cached, nil
 	}
 	return emptyData(), nil
@@ -226,11 +230,11 @@ func isBreaking(text string) bool {
 }
 
 // readCache 读 Redis 缓存（命中返回数据 + true）
-func (s *Service) readCache(ctx context.Context) (*domainreleases.ReleasesData, bool) {
+func (s *Service) readCache(ctx context.Context, key string) (*domainreleases.ReleasesData, bool) {
 	if s.rdb == nil {
 		return nil, false
 	}
-	raw, err := s.rdb.Get(ctx, cacheKey).Bytes()
+	raw, err := s.rdb.Get(ctx, key).Bytes()
 	if err != nil || len(raw) == 0 {
 		return nil, false
 	}
@@ -241,7 +245,7 @@ func (s *Service) readCache(ctx context.Context) (*domainreleases.ReleasesData, 
 	return &data, true
 }
 
-func (s *Service) cacheAsync(data *domainreleases.ReleasesData) {
+func (s *Service) cacheAsync(key string, data *domainreleases.ReleasesData) {
 	if s.rdb == nil {
 		return
 	}
@@ -249,7 +253,7 @@ func (s *Service) cacheAsync(data *domainreleases.ReleasesData) {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if raw, err := json.Marshal(data); err == nil {
-			_ = s.rdb.Set(bgCtx, cacheKey, raw, cacheTTL).Err()
+			_ = s.rdb.Set(bgCtx, key, raw, cacheTTL).Err()
 		}
 	}()
 }

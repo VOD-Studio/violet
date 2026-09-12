@@ -6,11 +6,10 @@ package coderunner
 
 import (
 	"math"
-	"strconv"
-	"strings"
 
 	"blog-api/config"
 	domaincoderunner "blog-api/internal/domain/coderunner"
+	domainsettings "blog-api/internal/domain/settings"
 )
 
 // maxLimitsSnapshot 全局上限快照（从 config.CodeRunnerConfig 读取）。
@@ -39,9 +38,8 @@ var (
 )
 
 // InitMaxLimits 从 config.CodeRunnerConfig 初始化全局上限与白名单。
-// 在应用启动时调用一次（T5 container 初始化）。同时保存 env fallback 供 ReloadMaxLimitsFromMap 兜底。
+// 仅在应用启动时调用；运行任务使用显式传入的快照。
 func InitMaxLimits(cfg config.CodeRunnerConfig) {
-	envFallback = cfg
 	globalMaxLimits = maxLimitsSnapshot{
 		MaxCPUCores:    cfg.MaxCPUCores,
 		MaxMemoryMB:    cfg.MaxMemoryMB,
@@ -60,84 +58,6 @@ func InitMaxLimits(cfg config.CodeRunnerConfig) {
 	}
 }
 
-// envFallback 启动时从 env config 读一次，作为 site_settings 未配时的兜底。
-// InitMaxLimits 同步设置它。
-var envFallback config.CodeRunnerConfig
-
-// ReloadMaxLimitsFromMap 从 site_settings 的 key-value map 刷新全局上限与白名单。
-//
-// 每次执行前由 application/coderunner/service.go 的 validate 调用（经 SetReloadLimitsFn 注入），
-// 实现运行时可配：admin 后台改完，下一次执行即生效（无需重启 api）。
-//
-// site_settings 值为空/0 表示「未配置」，用 envFallback（启动时 env config）兜底。
-// 这样新部署（site_settings 还没值）自动用 env 默认，admin 改过则以 site_settings 为准。
-func ReloadMaxLimitsFromMap(m map[string]string) {
-	globalMaxLimits = maxLimitsSnapshot{
-		MaxCPUCores:    firstFloat(m["code_runner_max_cpu_cores"], envFallback.MaxCPUCores),
-		MaxMemoryMB:    firstUint64(m["code_runner_max_memory_mb"], envFallback.MaxMemoryMB),
-		MaxTimeoutSecs: firstUint64(m["code_runner_max_timeout_secs"], envFallback.MaxTimeoutSecs),
-		MaxOutputBytes: firstUint64(m["code_runner_max_output_bytes"], envFallback.MaxOutputBytes),
-		AllowNetwork:   firstBool(m["code_runner_allow_network"], envFallback.AllowNetwork),
-	}
-	langStr := m["code_runner_languages"]
-	if langStr == "" {
-		// site_settings 未配语言白名单 → 用 envFallback
-		if len(envFallback.Languages) > 0 {
-			canonical := make([]string, 0, len(envFallback.Languages))
-			for _, l := range envFallback.Languages {
-				canonical = append(canonical, NormalizeLang(l))
-			}
-			globalAllowedLanguages = canonical
-		} else {
-			globalAllowedLanguages = nil
-		}
-	} else {
-		parts := strings.Split(langStr, ",")
-		canonical := make([]string, 0, len(parts))
-		for _, p := range parts {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				canonical = append(canonical, NormalizeLang(p))
-			}
-		}
-		if len(canonical) > 0 {
-			globalAllowedLanguages = canonical
-		} else {
-			globalAllowedLanguages = nil
-		}
-	}
-}
-
-// firstFloat site_settings 非空且合法则用，否则 fallback。
-func firstFloat(s string, fallback float64) float64 {
-	if s == "" {
-		return fallback
-	}
-	v, err := parseFloatStr(s)
-	if err != nil {
-		return fallback
-	}
-	return v
-}
-
-func firstUint64(s string, fallback uint64) uint64 {
-	if s == "" {
-		return fallback
-	}
-	v, err := parseUint64Str(s)
-	if err != nil {
-		return fallback
-	}
-	return v
-}
-
-func firstBool(s string, fallback bool) bool {
-	if s == "" {
-		return fallback
-	}
-	return s == "true"
-}
-
 // ClampLimits 把作者声明的 overrides 钳制到全局上限内。
 //
 // 对齐 yggdrasil runner_config.rs::clamp_limits：
@@ -147,7 +67,21 @@ func firstBool(s string, fallback bool) bool {
 //
 // langAllowsNetwork 为该语言是否本身允许网络（LanguageDef.AllowNetwork）。
 func ClampLimits(merged domaincoderunner.ResourceLimits, langAllowsNetwork bool) domaincoderunner.ResourceLimits {
-	cfg := globalMaxLimits
+	return clampWithLimits(merged, langAllowsNetwork, globalMaxLimits)
+}
+
+// ClampSettings computes resource limits from the immutable settings captured for one task.
+func ClampSettings(merged domaincoderunner.ResourceLimits, langAllowsNetwork bool, settings domainsettings.SiteSettings) domaincoderunner.ResourceLimits {
+	return clampWithLimits(merged, langAllowsNetwork, maxLimitsSnapshot{
+		MaxCPUCores:    settings.CodeRunnerMaxCPUCores,
+		MaxMemoryMB:    settings.CodeRunnerMaxMemoryMB,
+		MaxTimeoutSecs: settings.CodeRunnerMaxTimeoutSecs,
+		MaxOutputBytes: settings.CodeRunnerMaxOutputBytes,
+		AllowNetwork:   settings.CodeRunnerAllowNetwork,
+	})
+}
+
+func clampWithLimits(merged domaincoderunner.ResourceLimits, langAllowsNetwork bool, cfg maxLimitsSnapshot) domaincoderunner.ResourceLimits {
 
 	// CPU：min 下限防 max 设过低；NaN 防御（JSON 解析异常）
 	maxCPU := cfg.MaxCPUCores
@@ -208,14 +142,4 @@ func minUint64(a, b uint64) uint64 {
 		return a
 	}
 	return b
-}
-
-// parseFloatStr 字符串转 float64（ReloadMaxLimitsFromMap 用）。
-func parseFloatStr(s string) (float64, error) {
-	return strconv.ParseFloat(s, 64)
-}
-
-// parseUint64Str 字符串转 uint64（ReloadMaxLimitsFromMap 用）。
-func parseUint64Str(s string) (uint64, error) {
-	return strconv.ParseUint(s, 10, 64)
 }

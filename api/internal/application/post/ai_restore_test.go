@@ -21,16 +21,6 @@ type fakeSettingsStore struct {
 func (f *fakeSettingsStore) GetAll(ctx context.Context) (map[string]string, error) {
 	return f.m, nil
 }
-func (f *fakeSettingsStore) Upsert(ctx context.Context, key, value string) error {
-	f.m[key] = value
-	return nil
-}
-func (f *fakeSettingsStore) UpsertMany(ctx context.Context, kvs map[string]string) error {
-	for k, v := range kvs {
-		f.m[k] = v
-	}
-	return nil
-}
 
 var _ domainsettings.SettingsStore = (*fakeSettingsStore)(nil)
 

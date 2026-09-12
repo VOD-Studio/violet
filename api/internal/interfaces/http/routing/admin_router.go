@@ -39,6 +39,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Route("/settings", func(sub chi.Router) {
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:view"))
+			sub.Get("/startup", settingsH.GetStartup)
 			sub.Get("/general", settingsH.GetGeneral)
 			sub.Get("/auth", settingsH.GetAuth)
 			sub.Get("/github", settingsH.GetGithub)
@@ -56,6 +57,13 @@ func NewAdminRouter(d *Deps) chi.Router {
 			sub.Put("/about", settingsH.UpdateAbout)
 			sub.Put("/llm", settingsH.UpdateLlm)
 			sub.Put("/code-runner", settingsH.UpdateCodeRunner)
+			sub.Post("/general/reset", settingsH.ResetGeneral)
+			sub.Post("/auth/reset", settingsH.ResetAuth)
+			sub.Post("/github/reset", settingsH.ResetGithub)
+			sub.Post("/profile/reset", settingsH.ResetProfile)
+			sub.Post("/about/reset", settingsH.ResetAbout)
+			sub.Post("/llm/reset", settingsH.ResetLlm)
+			sub.Post("/code-runner/reset", settingsH.ResetCodeRunner)
 		})
 	})
 

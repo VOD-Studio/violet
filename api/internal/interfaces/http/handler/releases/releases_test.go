@@ -46,8 +46,6 @@ type stubSettingsStore struct {
 func (s *stubSettingsStore) GetAll(_ context.Context) (map[string]string, error) {
 	return s.values, s.err
 }
-func (s *stubSettingsStore) Upsert(context.Context, string, string) error        { return nil }
-func (s *stubSettingsStore) UpsertMany(context.Context, map[string]string) error { return nil }
 
 // 编译期断言：确保 stub 满足 domain 端口。
 var (

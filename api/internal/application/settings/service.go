@@ -1,39 +1,255 @@
-// Package settings 提供站点配置的应用用例。
+// Package settings provides versioned settings and immutable runtime snapshots.
 package settings
 
 import (
 	"context"
-	"strconv"
-
-	"github.com/rs/zerolog/log"
+	"encoding/json"
+	"maps"
+	"sync"
+	"sync/atomic"
 
 	appshared "blog-api/internal/application/shared"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	"github.com/rs/zerolog/log"
 )
 
-// Service 站点配置用例服务
+// GroupMeta reports persisted versus this process's effective version.
+type GroupMeta struct {
+	SavedVersion   int64             `json:"saved_version"`
+	AppliedVersion int64             `json:"applied_version"`
+	Effect         string            `json:"effect"` // new_request | new_task | restart
+	Status         string            `json:"status"` // applied | pending_restart | failed
+	Sources        map[string]string `json:"sources"`
+	Error          string            `json:"error,omitempty"`
+}
+
+type GroupSnapshot struct {
+	Values any       `json:"values"` // One of the seven typed group views.
+	Meta   GroupMeta `json:"meta"`
+}
+
+type runtimeSnapshot struct {
+	values   domainsettings.SiteSettings
+	raw      map[string]string
+	versions map[domainsettings.Group]int64
+}
+
 type Service struct {
-	store domainsettings.SettingsStore
-	bus   appshared.EventBus
+	store     domainsettings.VersionedStore
+	bus       appshared.EventBus
+	defaults  map[string]string
+	mu        sync.Mutex
+	effective atomic.Pointer[runtimeSnapshot]
+	failures  map[domainsettings.Group]string
 }
 
-// NewService 构造配置服务
-func NewService(store domainsettings.SettingsStore, bus appshared.EventBus) *Service {
-	return &Service{store: store, bus: bus}
+func NewService(store domainsettings.VersionedStore, bus appshared.EventBus, defaults domainsettings.SiteSettings) *Service {
+	return &Service{store: store, bus: bus, defaults: settingsMap(defaults), failures: make(map[domainsettings.Group]string)}
 }
 
-// GetAll 获取全部站点配置
-func (s *Service) GetAll(ctx context.Context) (domainsettings.SiteSettings, error) {
-	m, err := s.store.GetAll(ctx)
+// Initialize rereads persisted overrides before any runtime consumers are exposed.
+func (s *Service) Initialize(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.initializeLocked(ctx)
+}
+
+func (s *Service) initializeLocked(ctx context.Context) error {
+	raw := maps.Clone(s.defaults)
+	persisted, err := s.store.LoadValues(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("查询站点设置失败")
-		return domainsettings.SiteSettings{}, err
+		return err
 	}
-	return domainsettings.SiteSettings{}.MergeFrom(m), nil
+	maps.Copy(raw, persisted)
+	versions := make(map[domainsettings.Group]int64)
+	for _, group := range domainsettings.Groups() {
+		record, err := s.store.ReadGroup(ctx, group)
+		if err != nil {
+			return err
+		}
+		values := s.resolve(group, record.Values)
+		if err := validateGroup(group, values); err != nil {
+			return err
+		}
+		maps.Copy(raw, values)
+		versions[group] = record.Version
+	}
+	s.effective.Store(&runtimeSnapshot{values: domainsettings.SiteSettings{}.MergeFrom(raw), raw: raw, versions: versions})
+	clear(s.failures)
+	return nil
 }
 
-// GetPublic 获取公开站点配置（不含敏感字段如 github_token）
+// GetAll returns a detached typed effective snapshot; callers cannot mutate shared state.
+func (s *Service) GetAll(ctx context.Context) (domainsettings.SiteSettings, error) {
+	current := s.effective.Load()
+	if current == nil {
+		s.mu.Lock()
+		if s.effective.Load() == nil {
+			if err := s.initializeLocked(ctx); err != nil {
+				s.mu.Unlock()
+				return domainsettings.SiteSettings{}, err
+			}
+		}
+		current = s.effective.Load()
+		s.mu.Unlock()
+	}
+	values := current.values
+	values.AboutConfig = append(json.RawMessage(nil), values.AboutConfig...)
+	return values, nil
+}
+
+// RuntimeReader adapts existing key-based readers to the same effective snapshot, never the database.
+func (s *Service) RuntimeReader() domainsettings.SettingsStore { return runtimeReader{s} }
+
+type runtimeReader struct{ service *Service }
+
+func (r runtimeReader) GetAll(ctx context.Context) (map[string]string, error) {
+	if _, err := r.service.GetAll(ctx); err != nil {
+		return nil, err
+	}
+	return maps.Clone(r.service.effective.Load().raw), nil
+}
+
+func (s *Service) GetGroup(ctx context.Context, group domainsettings.Group) (GroupSnapshot, error) {
+	if _, err := s.GetAll(ctx); err != nil {
+		return GroupSnapshot{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	record, err := s.store.ReadGroup(ctx, group)
+	if err != nil {
+		return GroupSnapshot{}, err
+	}
+	return s.groupSnapshot(group, record), nil
+}
+
+// UpdateGroup rejects unknown/null fields before entering the transaction; full validation occurs under the version lock.
+func (s *Service) UpdateGroup(ctx context.Context, group domainsettings.Group, expected int64, patch map[string]json.RawMessage) (GroupSnapshot, error) {
+	updates, err := decodePatch(group, patch)
+	if err != nil {
+		return GroupSnapshot{}, err
+	}
+	return s.changeGroup(ctx, group, expected, updates, false)
+}
+
+func (s *Service) ResetGroup(ctx context.Context, group domainsettings.Group, expected int64) (GroupSnapshot, error) {
+	return s.changeGroup(ctx, group, expected, nil, true)
+}
+
+func (s *Service) changeGroup(ctx context.Context, group domainsettings.Group, expected int64, updates map[string]string, reset bool) (GroupSnapshot, error) {
+	if _, err := s.GetAll(ctx); err != nil {
+		return GroupSnapshot{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	changedKeys := make([]string, 0)
+	record, err := s.store.ChangeGroup(ctx, group, expected, func(previous map[string]string) (map[string]string, error) {
+		next := maps.Clone(previous)
+		if reset {
+			next = make(map[string]string)
+		} else {
+			maps.Copy(next, updates)
+		}
+		if err := validateGroup(group, s.resolve(group, next)); err != nil {
+			return nil, err
+		}
+		for _, key := range group.Keys() {
+			before, hadBefore := previous[key]
+			after, hasAfter := next[key]
+			if hadBefore != hasAfter || before != after {
+				changedKeys = append(changedKeys, key)
+			}
+		}
+		return next, nil
+	})
+	if err != nil {
+		return GroupSnapshot{}, err
+	}
+	// Reconstruct before publication. Any application failure retains the previous pointer and version.
+	values := s.resolve(group, record.Values)
+	if err := validateGroup(group, values); err != nil {
+		s.failures[group] = "配置已保存但应用失败，请修正后重新保存"
+		log.Error().Err(err).Str("group", string(group)).Msg("应用配置失败")
+	} else {
+		current := s.effective.Load()
+		raw := maps.Clone(current.raw)
+		maps.Copy(raw, values)
+		versions := maps.Clone(current.versions)
+		versions[group] = record.Version
+		s.effective.Store(&runtimeSnapshot{values: domainsettings.SiteSettings{}.MergeFrom(raw), raw: raw, versions: versions})
+		delete(s.failures, group)
+	}
+	if s.bus != nil && len(changedKeys) > 0 {
+		keys := make([]string, 0)
+		for _, key := range changedKeys {
+			if key != "github_token" && key != "llm_api_key" {
+				keys = append(keys, key)
+			}
+		}
+		if err := s.bus.Publish(ctx, []shared.DomainEvent{domainsettings.NewSettingsUpdated(keys)}); err != nil {
+			log.Warn().Err(err).Msg("发布配置更新事件失败")
+		}
+	}
+	return s.groupSnapshot(group, record), nil
+}
+
+func (s *Service) resolve(group domainsettings.Group, overrides map[string]string) map[string]string {
+	values := make(map[string]string, len(group.Keys()))
+	for _, key := range group.Keys() {
+		value, ok := overrides[key]
+		if !ok {
+			value = s.defaults[key]
+		}
+		values[key] = value
+	}
+	return values
+}
+
+func (s *Service) groupSnapshot(group domainsettings.Group, record domainsettings.GroupRecord) GroupSnapshot {
+	saved := domainsettings.SiteSettings{}.MergeFrom(s.resolve(group, record.Values))
+	meta := GroupMeta{SavedVersion: record.Version, AppliedVersion: s.effective.Load().versions[group], Effect: "new_request", Status: "applied", Sources: make(map[string]string)}
+	if group == domainsettings.CodeRunner || group == domainsettings.LLM {
+		meta.Effect = "new_task"
+	}
+	for _, key := range group.Keys() {
+		source := "deployment_default"
+		if _, ok := record.Values[key]; ok {
+			source = "database"
+		}
+		if key == "github_token" || key == "llm_api_key" {
+			key += "_set"
+		}
+		meta.Sources[key] = source
+	}
+	if meta.AppliedVersion != meta.SavedVersion {
+		meta.Status = "failed"
+		meta.Error = "已保存版本尚未应用到当前进程"
+	}
+	if failure := s.failures[group]; failure != "" {
+		meta.Status = "failed"
+		meta.Error = failure
+	}
+	var view any
+	switch group {
+	case domainsettings.General:
+		view = generalView(saved)
+	case domainsettings.Auth:
+		view = authView(saved)
+	case domainsettings.Github:
+		view = githubView(saved)
+	case domainsettings.Profile:
+		view = profileView(saved)
+	case domainsettings.About:
+		view = aboutView(saved)
+	case domainsettings.LLM:
+		view = llmView(saved)
+	case domainsettings.CodeRunner:
+		view = codeRunnerView(saved)
+	}
+	return GroupSnapshot{Values: view, Meta: meta}
+}
+
 func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 	settings, err := s.GetAll(ctx)
 	if err != nil {
@@ -53,6 +269,7 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"tech_stack":                      settings.TechStack,
 		"bio":                             settings.Bio,
 		"footer_text":                     settings.FooterText,
+		"footer_github_url":               settings.FooterGitHubURL,
 		"about_config":                    settings.AboutConfig,
 		"avatar_url":                      settings.AvatarURL,
 		"tagline":                         settings.Tagline,
@@ -69,330 +286,4 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"social_bilibili":                 settings.SocialBilibili,
 		"code_runner_enabled":             settings.CodeRunnerEnabled,
 	}, nil
-}
-
-// UpdateInput 更新入参（别名 domain 类型，供 handler 引用）
-type UpdateInput = domainsettings.UpdateInput
-
-// Update 更新站点配置（部分更新）
-func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.SiteSettings, error) {
-	if in.CustomEmojiMaxPerUser != nil && *in.CustomEmojiMaxPerUser < 0 {
-		return domainsettings.SiteSettings{}, shared.BadRequest("自定义表情份额上限不能为负数")
-	}
-	if in.HomeFootprintAggregationDays != nil &&
-		(*in.HomeFootprintAggregationDays < domainsettings.MinHomeFootprintAggregationDays ||
-			*in.HomeFootprintAggregationDays > domainsettings.MaxHomeFootprintAggregationDays) {
-		return domainsettings.SiteSettings{}, shared.BadRequest("发布足迹聚合天数必须在 1 到 31 之间")
-	}
-	updates := map[string]string{}
-	if in.SiteName != nil {
-		updates["site_name"] = *in.SiteName
-	}
-	if in.SiteURL != nil {
-		updates["site_url"] = *in.SiteURL
-	}
-	if in.PostsPerPage != nil {
-		updates["posts_per_page"] = strconv.Itoa(*in.PostsPerPage)
-	}
-	if in.HomeFootprintEnabled != nil {
-		updates["home_footprint_enabled"] = boolStr(*in.HomeFootprintEnabled)
-	}
-	if in.HomeFootprintAggregationDays != nil {
-		updates["home_footprint_aggregation_days"] = strconv.Itoa(*in.HomeFootprintAggregationDays)
-	}
-	if in.CommentsEnabled != nil {
-		updates["comments_enabled"] = boolStr(*in.CommentsEnabled)
-	}
-	if in.CommentsModeration != nil {
-		updates["comments_moderation"] = boolStr(*in.CommentsModeration)
-	}
-	if in.GoogleLoginEnabled != nil {
-		updates["google_login_enabled"] = boolStr(*in.GoogleLoginEnabled)
-	}
-	if in.GithubLoginEnabled != nil {
-		updates["github_login_enabled"] = boolStr(*in.GithubLoginEnabled)
-	}
-	if in.GitHubUsername != nil {
-		updates["github_username"] = *in.GitHubUsername
-	}
-	if in.GitHubToken != nil {
-		updates["github_token"] = *in.GitHubToken
-	}
-	if in.TechStack != nil {
-		updates["tech_stack"] = *in.TechStack
-	}
-	if in.Bio != nil {
-		updates["bio"] = *in.Bio
-	}
-	if in.FooterText != nil {
-		updates["footer_text"] = *in.FooterText
-	}
-	if in.AboutConfig != nil {
-		updates["about_config"] = string(*in.AboutConfig)
-	}
-	// 关于博主（A 线）内容字段：均为字符串，统一批量写入
-	for k, p := range map[string]*string{
-		"avatar_url":       in.AvatarURL,
-		"tagline":          in.Tagline,
-		"profile_role":     in.ProfileRole,
-		"profile_location": in.ProfileLocation,
-		"available_for":    in.AvailableFor,
-		"skills_strong":    in.SkillsStrong,
-		"skills_learning":  in.SkillsLearning,
-		"skills_interests": in.SkillsInterests,
-		"social_twitter":   in.SocialTwitter,
-		"social_mastodon":  in.SocialMastodon,
-		"social_email":     in.SocialEmail,
-		"social_rss":       in.SocialRss,
-		"social_bilibili":  in.SocialBilibili,
-		"releases_repo":    in.ReleasesRepo,
-	} {
-		if p != nil {
-			updates[k] = *p
-		}
-	}
-	if in.LLMAPIKey != nil {
-		updates["llm_api_key"] = *in.LLMAPIKey
-	}
-	if in.LLMAPIURL != nil {
-		updates["llm_api_url"] = *in.LLMAPIURL
-	}
-	if in.LLMModel != nil {
-		updates["llm_model"] = *in.LLMModel
-	}
-	if in.LLMProtocol != nil {
-		updates["llm_protocol"] = *in.LLMProtocol
-	}
-	// 代码运行器配置（运行时可改）
-	if in.CodeRunnerEnabled != nil {
-		updates["code_runner_enabled"] = boolStr(*in.CodeRunnerEnabled)
-	}
-	if in.CodeRunnerMaxCPUCores != nil {
-		updates["code_runner_max_cpu_cores"] = strconv.FormatFloat(*in.CodeRunnerMaxCPUCores, 'f', -1, 64)
-	}
-	if in.CodeRunnerMaxMemoryMB != nil {
-		updates["code_runner_max_memory_mb"] = strconv.FormatUint(*in.CodeRunnerMaxMemoryMB, 10)
-	}
-	if in.CodeRunnerMaxTimeoutSecs != nil {
-		updates["code_runner_max_timeout_secs"] = strconv.FormatUint(*in.CodeRunnerMaxTimeoutSecs, 10)
-	}
-	if in.CodeRunnerMaxOutputBytes != nil {
-		updates["code_runner_max_output_bytes"] = strconv.FormatUint(*in.CodeRunnerMaxOutputBytes, 10)
-	}
-	if in.CodeRunnerMaxSourceBytes != nil {
-		updates["code_runner_max_source_bytes"] = strconv.FormatUint(*in.CodeRunnerMaxSourceBytes, 10)
-	}
-	if in.CodeRunnerAllowNetwork != nil {
-		updates["code_runner_allow_network"] = boolStr(*in.CodeRunnerAllowNetwork)
-	}
-	if in.CodeRunnerLanguages != nil {
-		updates["code_runner_languages"] = *in.CodeRunnerLanguages
-	}
-	if in.CustomEmojiMaxPerUser != nil {
-		updates["custom_emoji_max_per_user"] = strconv.Itoa(*in.CustomEmojiMaxPerUser)
-	}
-	if len(updates) > 0 {
-		// 批量原子更新，避免逐键 Upsert 中途失败导致部分更新
-		if err := s.store.UpsertMany(ctx, updates); err != nil {
-			log.Error().Err(err).Msg("批量更新配置失败")
-			return domainsettings.SiteSettings{}, err
-		}
-	}
-	// 配置变更审计（不含敏感值，只记变更键名）
-	if len(updates) > 0 {
-		keys := make([]string, 0, len(updates))
-		for k := range updates {
-			if isSensitiveSettingKey(k) {
-				continue
-			}
-			keys = append(keys, k)
-		}
-		if err := s.bus.Publish(ctx, []shared.DomainEvent{domainsettings.NewSettingsUpdated(keys)}); err != nil {
-			log.Warn().Err(err).Msg("发布配置更新事件失败")
-		}
-	}
-	return s.GetAll(ctx)
-}
-
-// isSensitiveSettingKey 敏感配置键不记审计（凭据值不入审计日志）
-func isSensitiveSettingKey(k string) bool {
-	switch k {
-	case "github_token", "llm_api_key", "resend_api_key", "email_from":
-		return true
-	}
-	return false
-}
-
-func boolStr(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
-}
-
-// ---- 分组用例（admin 各菜单子页独立读写）----
-//
-// 每组 Get 调聚合 GetAll 构造该组视图；Update 把分组入参映射成
-// domain.UpdateInput 子集后复用 s.Update（部分更新），其余字段保持不变。
-// 这样 admin 按菜单隔离读写，既消除回填竞态，又复用底层聚合与存储逻辑。
-
-// GetGeneral 读取基础信息组
-func (s *Service) GetGeneral(ctx context.Context) (GeneralView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return GeneralView{}, err
-	}
-	return generalView(all), nil
-}
-
-// UpdateGeneral 更新基础信息组
-func (s *Service) UpdateGeneral(ctx context.Context, in GeneralUpdate) (GeneralView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		SiteName: in.SiteName,
-		SiteURL:  in.SiteURL, FooterText: in.FooterText,
-		PostsPerPage: in.PostsPerPage, CommentsEnabled: in.CommentsEnabled,
-		CommentsModeration: in.CommentsModeration, TechStack: in.TechStack,
-		CustomEmojiMaxPerUser:        in.CustomEmojiMaxPerUser,
-		HomeFootprintEnabled:         in.HomeFootprintEnabled,
-		HomeFootprintAggregationDays: in.HomeFootprintAggregationDays,
-	})
-	if err != nil {
-		return GeneralView{}, err
-	}
-	return generalView(all), nil
-}
-
-// GetAuth 读取认证组
-func (s *Service) GetAuth(ctx context.Context) (AuthView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return AuthView{}, err
-	}
-	return authView(all), nil
-}
-
-// UpdateAuth 更新认证组
-func (s *Service) UpdateAuth(ctx context.Context, in AuthUpdate) (AuthView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		GoogleLoginEnabled: in.GoogleLoginEnabled, GithubLoginEnabled: in.GithubLoginEnabled,
-	})
-	if err != nil {
-		return AuthView{}, err
-	}
-	return authView(all), nil
-}
-
-// GetGithub 读取 GitHub 组
-func (s *Service) GetGithub(ctx context.Context) (GithubView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return GithubView{}, err
-	}
-	return githubView(all), nil
-}
-
-// UpdateGithub 更新 GitHub 组
-func (s *Service) UpdateGithub(ctx context.Context, in GithubUpdate) (GithubView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		GitHubUsername: in.GitHubUsername, GitHubToken: in.GitHubToken,
-		ReleasesRepo: in.ReleasesRepo,
-	})
-	if err != nil {
-		return GithubView{}, err
-	}
-	return githubView(all), nil
-}
-
-// GetProfile 读取关于博主组
-func (s *Service) GetProfile(ctx context.Context) (ProfileView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return ProfileView{}, err
-	}
-	return profileView(all), nil
-}
-
-// UpdateProfile 更新关于博主组
-func (s *Service) UpdateProfile(ctx context.Context, in ProfileUpdate) (ProfileView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		Bio:       in.Bio,
-		AvatarURL: in.AvatarURL, Tagline: in.Tagline,
-		ProfileRole: in.ProfileRole, ProfileLocation: in.ProfileLocation,
-		AvailableFor: in.AvailableFor, SkillsStrong: in.SkillsStrong,
-		SkillsLearning: in.SkillsLearning, SkillsInterests: in.SkillsInterests,
-		SocialTwitter: in.SocialTwitter, SocialMastodon: in.SocialMastodon,
-		SocialEmail: in.SocialEmail, SocialRss: in.SocialRss, SocialBilibili: in.SocialBilibili,
-	})
-	if err != nil {
-		return ProfileView{}, err
-	}
-	return profileView(all), nil
-}
-
-// GetAbout 读取关于页区块配置组
-func (s *Service) GetAbout(ctx context.Context) (AboutView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return AboutView{}, err
-	}
-	return aboutView(all), nil
-}
-
-// UpdateAbout 更新关于页区块配置组
-func (s *Service) UpdateAbout(ctx context.Context, in AboutUpdate) (AboutView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		AboutConfig: in.AboutConfig,
-	})
-	if err != nil {
-		return AboutView{}, err
-	}
-	return aboutView(all), nil
-}
-
-// GetLlm 读取 LLM 组
-func (s *Service) GetLlm(ctx context.Context) (LlmView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return LlmView{}, err
-	}
-	return llmView(all), nil
-}
-
-// UpdateLlm 更新 LLM 组
-func (s *Service) UpdateLlm(ctx context.Context, in LlmUpdate) (LlmView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		LLMAPIKey: in.LLMAPIKey, LLMAPIURL: in.LLMAPIURL,
-		LLMModel: in.LLMModel, LLMProtocol: in.LLMProtocol,
-	})
-	if err != nil {
-		return LlmView{}, err
-	}
-	return llmView(all), nil
-}
-
-// GetCodeRunner 读取代码运行器组
-func (s *Service) GetCodeRunner(ctx context.Context) (CodeRunnerView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return CodeRunnerView{}, err
-	}
-	return codeRunnerView(all), nil
-}
-
-// UpdateCodeRunner 更新代码运行器组
-func (s *Service) UpdateCodeRunner(ctx context.Context, in CodeRunnerUpdate) (CodeRunnerView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		CodeRunnerEnabled:        in.CodeRunnerEnabled,
-		CodeRunnerMaxCPUCores:    in.CodeRunnerMaxCPUCores,
-		CodeRunnerMaxMemoryMB:    in.CodeRunnerMaxMemoryMB,
-		CodeRunnerMaxTimeoutSecs: in.CodeRunnerMaxTimeoutSecs,
-		CodeRunnerMaxOutputBytes: in.CodeRunnerMaxOutputBytes,
-		CodeRunnerMaxSourceBytes: in.CodeRunnerMaxSourceBytes,
-		CodeRunnerAllowNetwork:   in.CodeRunnerAllowNetwork,
-		CodeRunnerLanguages:      in.CodeRunnerLanguages,
-	})
-	if err != nil {
-		return CodeRunnerView{}, err
-	}
-	return codeRunnerView(all), nil
 }

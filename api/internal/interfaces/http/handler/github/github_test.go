@@ -51,8 +51,6 @@ type stubSettingsStore struct {
 func (s *stubSettingsStore) GetAll(_ context.Context) (map[string]string, error) {
 	return s.values, nil
 }
-func (s *stubSettingsStore) Upsert(context.Context, string, string) error        { return nil }
-func (s *stubSettingsStore) UpsertMany(context.Context, map[string]string) error { return nil }
 
 // 编译期断言。
 var (

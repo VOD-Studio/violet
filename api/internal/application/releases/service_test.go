@@ -194,10 +194,6 @@ func (s stubSettings) GetAll(_ context.Context) (map[string]string, error) {
 	return s.m, s.err
 }
 
-func (s stubSettings) Upsert(_ context.Context, _, _ string) error { return nil }
-
-func (s stubSettings) UpsertMany(_ context.Context, _ map[string]string) error { return nil }
-
 var _ domainsettings.SettingsStore = (*stubSettings)(nil)
 
 func newSvc(prov *stubProvider, m map[string]string) *Service {

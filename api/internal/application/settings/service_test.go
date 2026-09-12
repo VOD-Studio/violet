@@ -2,163 +2,200 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
+	"maps"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
-
 	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// mockSettingsStore 手写 SettingsStore 桩（application/mocks 包未提供该接口）。
-type mockSettingsStore struct{ mock.Mock }
+type memorySettings struct {
+	values        map[string]string
+	versions      map[domainsettings.Group]int64
+	failLoad      error
+	corruptCommit bool
+}
 
-func (m *mockSettingsStore) GetAll(ctx context.Context) (map[string]string, error) {
-	args := m.Called(ctx)
-	if v := args.Get(0); v != nil {
-		return v.(map[string]string), args.Error(1)
+func (m *memorySettings) LoadValues(context.Context) (map[string]string, error) {
+	return maps.Clone(m.values), m.failLoad
+}
+func (m *memorySettings) ReadGroup(_ context.Context, group domainsettings.Group) (domainsettings.GroupRecord, error) {
+	values := make(map[string]string)
+	for _, key := range group.Keys() {
+		if value, ok := m.values[key]; ok {
+			values[key] = value
+		}
 	}
-	return nil, args.Error(1)
+	return domainsettings.GroupRecord{Version: m.versions[group], Values: values}, m.failLoad
+}
+func (m *memorySettings) ChangeGroup(ctx context.Context, group domainsettings.Group, expected int64, change func(map[string]string) (map[string]string, error)) (domainsettings.GroupRecord, error) {
+	if m.versions[group] != expected {
+		return domainsettings.GroupRecord{}, domainsettings.ErrVersionConflict
+	}
+	previous, err := m.ReadGroup(ctx, group)
+	if err != nil {
+		return previous, err
+	}
+	values, err := change(previous.Values)
+	if err != nil {
+		return previous, err
+	}
+	for _, key := range group.Keys() {
+		delete(m.values, key)
+	}
+	maps.Copy(m.values, values)
+	m.versions[group]++
+	if m.corruptCommit {
+		values["posts_per_page"] = "invalid"
+	}
+	return domainsettings.GroupRecord{Version: m.versions[group], Values: values}, nil
 }
 
-func (m *mockSettingsStore) Upsert(ctx context.Context, key, value string) error {
-	return m.Called(ctx, key, value).Error(0)
+func testDefaults() domainsettings.SiteSettings {
+	return domainsettings.SiteSettings{SiteName: "Deployment", SiteURL: "https://deployment.example", PostsPerPage: 10,
+		HomeFootprintEnabled: true, HomeFootprintAggregationDays: 7, GoogleLoginEnabled: true, GithubLoginEnabled: true,
+		CustomEmojiMaxPerUser: 125, CodeRunnerEnabled: true, CodeRunnerMaxCPUCores: 2,
+		CodeRunnerMaxMemoryMB: 1024, CodeRunnerMaxTimeoutSecs: 30, CodeRunnerMaxOutputBytes: 1048576, CodeRunnerMaxSourceBytes: 65536}
+}
+func newSvc() (*Service, *memorySettings) {
+	store := &memorySettings{values: make(map[string]string), versions: make(map[domainsettings.Group]int64)}
+	return NewService(store, infraeventbus.NewInMemory(), testDefaults()), store
+}
+func patch(raw string) map[string]json.RawMessage {
+	var values map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &values); err != nil {
+		panic(err)
+	}
+	return values
 }
 
-func (m *mockSettingsStore) UpsertMany(ctx context.Context, kvs map[string]string) error {
-	return m.Called(ctx, kvs).Error(0)
-}
-
-func newSvc() (*Service, *mockSettingsStore) {
-	store := new(mockSettingsStore)
-	return NewService(store, infraeventbus.NewInMemory()), store
-}
-
-// GetPublic 必须返回公开配置 map，且过滤 github_token 等敏感字段。
-func TestService_GetPublic(t *testing.T) {
+func TestUpdateGroupPreservesOmissionsAndSeparatesSavedVersion(t *testing.T) {
 	svc, store := newSvc()
-	store.On("GetAll", mock.Anything).Return(map[string]string{
-		"site_name":                       "Violet",
-		"github_username":                 "sun",
-		"github_token":                    "super-secret",
-		"tech_stack":                      "Go,React",
-		"comments_enabled":                "true",
-		"home_footprint_enabled":          "false",
-		"home_footprint_aggregation_days": "14",
-	}, nil).Once()
-
-	pub, err := svc.GetPublic(context.Background())
-	assert.NoError(t, err)
-	// 安全字段正确映射到公开 DTO
-	assert.Equal(t, "Violet", pub["site_name"])
-	assert.Equal(t, "sun", pub["github_username"])
-	assert.Equal(t, "Go,React", pub["tech_stack"])
-	assert.Equal(t, true, pub["comments_enabled"])
-	assert.Equal(t, false, pub["home_footprint_enabled"])
-	assert.Equal(t, 14, pub["home_footprint_aggregation_days"])
-	// 敏感字段被过滤：公开配置不得包含 github_token
-	_, hasToken := pub["github_token"]
-	assert.False(t, hasToken, "github_token 不应出现在公开配置")
-	store.AssertExpectations(t)
+	store.values["github_username"] = "contributions-owner"
+	store.values["github_token"] = "private-token"
+	ctx := context.Background()
+	got, err := svc.UpdateGroup(ctx, domainsettings.General, 0, patch(`{"site_name":"New","footer_github_url":"https://user:password@GitHub.com//VOD-Studio/violet/?q=private#readme","comments_enabled":false,"custom_emoji_max_per_user":0}`))
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), got.Meta.SavedVersion)
+	assert.Equal(t, got.Meta.SavedVersion, got.Meta.AppliedVersion)
+	public, err := svc.GetPublic(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "https://github.com/VOD-Studio/violet", public["footer_github_url"])
+	assert.Equal(t, "contributions-owner", public["github_username"])
+	assert.Equal(t, false, public["comments_enabled"])
+	assert.NotContains(t, public, "github_token")
+	settings, err := svc.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Zero(t, settings.CustomEmojiMaxPerUser)
+	assert.Equal(t, "private-token", settings.GitHubToken)
+	_, err = svc.UpdateGroup(ctx, domainsettings.General, 0, patch(`{"site_name":"Stale"}`))
+	require.ErrorIs(t, err, domainsettings.ErrVersionConflict)
+	settings, err = svc.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "New", settings.SiteName)
 }
 
-func TestService_GetPublic_StoreError(t *testing.T) {
-	svc, store := newSvc()
-	store.On("GetAll", mock.Anything).Return(nil, assert.AnError).Once()
-
-	pub, err := svc.GetPublic(context.Background())
-	assert.Error(t, err)
-	assert.Nil(t, pub)
-	store.AssertExpectations(t)
-}
-
-// GetAll 把 key-value map 还原成聚合读模型（覆盖类型解析）。
-func TestService_GetAll(t *testing.T) {
-	svc, store := newSvc()
-	store.On("GetAll", mock.Anything).Return(map[string]string{
-		"site_name":        "Violet",
-		"posts_per_page":   "20",
-		"comments_enabled": "false",
-	}, nil).Once()
-
-	got, err := svc.GetAll(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, "Violet", got.SiteName)
-	assert.Equal(t, 20, got.PostsPerPage) // parseInt 覆盖默认值
-	assert.False(t, got.CommentsEnabled)
-	store.AssertExpectations(t)
-}
-
-func TestService_GetAll_Defaults(t *testing.T) {
-	svc, store := newSvc()
-	store.On("GetAll", mock.Anything).Return(map[string]string{}, nil).Once()
-
-	got, err := svc.GetAll(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, 10, got.PostsPerPage)  // 默认 10
-	assert.True(t, got.GithubLoginEnabled) // parseBoolDefaultTrue
-	assert.True(t, got.HomeFootprintEnabled)
-	assert.Equal(t, 7, got.HomeFootprintAggregationDays)
-	store.AssertExpectations(t)
-}
-
-// Update 部分更新：只把非 nil 字段写入 store，再回读聚合。
-func TestService_Update(t *testing.T) {
-	svc, store := newSvc()
-	name := "New Name"
-	enabled := false
-	aggregationDays := 14
-	store.On("UpsertMany", mock.Anything, map[string]string{
-		"site_name":                       "New Name",
-		"home_footprint_enabled":          "false",
-		"home_footprint_aggregation_days": "14",
-	}).Return(nil).Once()
-	store.On("GetAll", mock.Anything).Return(map[string]string{
-		"site_name":                       "New Name",
-		"home_footprint_enabled":          "false",
-		"home_footprint_aggregation_days": "14",
-	}, nil).Once()
-
-	got, err := svc.Update(context.Background(), domainsettings.UpdateInput{
-		SiteName:                     &name,
-		HomeFootprintEnabled:         &enabled,
-		HomeFootprintAggregationDays: &aggregationDays,
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, "New Name", got.SiteName)
-	assert.False(t, got.HomeFootprintEnabled)
-	assert.Equal(t, 14, got.HomeFootprintAggregationDays)
-	store.AssertExpectations(t)
-}
-
-func TestService_Update_PropagatesStoreError(t *testing.T) {
-	svc, store := newSvc()
-	name := "Boom"
-	store.On("UpsertMany", mock.Anything, map[string]string{"site_name": "Boom"}).Return(assert.AnError).Once()
-
-	_, err := svc.Update(context.Background(), domainsettings.UpdateInput{SiteName: &name})
-	assert.Error(t, err)
-	store.AssertExpectations(t)
-}
-func TestService_Update_RejectsNegativeCustomEmojiQuota(t *testing.T) {
-	svc, store := newSvc()
-	quota := -1
-
-	_, err := svc.Update(context.Background(), domainsettings.UpdateInput{CustomEmojiMaxPerUser: &quota})
-
-	assert.Error(t, err)
-	store.AssertNotCalled(t, "UpsertMany", mock.Anything, mock.Anything)
-}
-
-func TestService_Update_RejectsInvalidHomeFootprintAggregationDays(t *testing.T) {
-	for _, aggregationDays := range []int{0, 32} {
-		svc, store := newSvc()
-		_, err := svc.Update(context.Background(), domainsettings.UpdateInput{
-			HomeFootprintAggregationDays: &aggregationDays,
+func TestInvalidGroupUpdateIsAtomic(t *testing.T) {
+	for _, raw := range []string{
+		`{"site_name":"Should not save","posts_per_page":0}`,
+		`{"site_name":"Should not save","home_footprint_aggregation_days":32}`,
+		`{"site_name":"Should not save","footer_github_url":"javascript:alert(1)"}`,
+		`{"site_name":"Should not save","github_token":"cross-group"}`,
+		`{"site_name":"Should not save","footer_text":null}`,
+		`{"site_name":"Should not save","comments_enabled":"false"}`,
+	} {
+		t.Run(raw, func(t *testing.T) {
+			svc, _ := newSvc()
+			_, err := svc.UpdateGroup(context.Background(), domainsettings.General, 0, patch(raw))
+			require.Error(t, err)
+			got, err := svc.GetGroup(context.Background(), domainsettings.General)
+			require.NoError(t, err)
+			assert.Equal(t, "Deployment", got.Values.(GeneralView).SiteName)
+			assert.Zero(t, got.Meta.SavedVersion)
 		})
-		assert.Error(t, err)
-		store.AssertNotCalled(t, "UpsertMany", mock.Anything, mock.Anything)
 	}
+}
+
+func TestAboutStringCannotResetSavedObject(t *testing.T) {
+	svc, _ := newSvc()
+	ctx := context.Background()
+	saved, err := svc.UpdateGroup(ctx, domainsettings.About, 0, patch(`{"about_config":{"sections":[{"id":"bio","enabled":true}]}}`))
+	require.NoError(t, err)
+	_, err = svc.UpdateGroup(ctx, domainsettings.About, saved.Meta.SavedVersion, patch(`{"about_config":"null"}`))
+	require.Error(t, err)
+	current, err := svc.GetGroup(ctx, domainsettings.About)
+	require.NoError(t, err)
+	assert.Equal(t, saved, current)
+}
+
+func TestSecretsAreWriteOnlyAndResetRestoresDeploymentValues(t *testing.T) {
+	svc, _ := newSvc()
+	ctx := context.Background()
+	first, err := svc.UpdateGroup(ctx, domainsettings.Github, 0, patch(`{"github_token":"private-token","github_username":"owner"}`))
+	require.NoError(t, err)
+	encoded, err := json.Marshal(first)
+	require.NoError(t, err)
+	assert.NotContains(t, string(encoded), "private-token")
+	assert.True(t, first.Values.(GithubView).GitHubTokenSet)
+	second, err := svc.UpdateGroup(ctx, domainsettings.Github, 1, patch(`{"releases_repo":"violet"}`))
+	require.NoError(t, err)
+	assert.True(t, second.Values.(GithubView).GitHubTokenSet)
+	third, err := svc.UpdateGroup(ctx, domainsettings.Github, 2, patch(`{"github_token":""}`))
+	require.NoError(t, err)
+	assert.False(t, third.Values.(GithubView).GitHubTokenSet)
+	_, err = svc.UpdateGroup(ctx, domainsettings.General, 0, patch(`{"custom_emoji_max_per_user":0}`))
+	require.NoError(t, err)
+	reset, err := svc.ResetGroup(ctx, domainsettings.General, 1)
+	require.NoError(t, err)
+	assert.Equal(t, 125, reset.Values.(GeneralView).CustomEmojiMaxPerUser)
+	assert.Equal(t, "deployment_default", reset.Meta.Sources["custom_emoji_max_per_user"])
+	github, err := svc.GetGroup(ctx, domainsettings.Github)
+	require.NoError(t, err)
+	assert.Equal(t, "owner", github.Values.(GithubView).GitHubUsername)
+	assert.Equal(t, int64(3), github.Meta.SavedVersion)
+}
+
+func TestInitializationReloadAndSnapshotsCannotMutateEffectiveValues(t *testing.T) {
+	svc, store := newSvc()
+	store.values["about_config"] = `{"sections":[]}`
+	ctx := context.Background()
+	require.NoError(t, svc.Initialize(ctx))
+	got, err := svc.GetAll(ctx)
+	require.NoError(t, err)
+	got.AboutConfig[0] = '['
+	raw, err := svc.RuntimeReader().GetAll(ctx)
+	require.NoError(t, err)
+	raw["site_name"] = "mutated"
+	unchanged, err := svc.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "Deployment", unchanged.SiteName)
+	assert.JSONEq(t, `{"sections":[]}`, string(unchanged.AboutConfig))
+	store.values["site_name"] = "Reloaded"
+	require.NoError(t, svc.Initialize(ctx))
+	loaded, err := svc.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "Reloaded", loaded.SiteName)
+	store.failLoad = shared.Internal("database offline", nil)
+	require.Error(t, svc.Initialize(ctx))
+	retained, err := svc.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "Reloaded", retained.SiteName)
+}
+
+func TestApplyFailureRetainsOldEffectiveVersion(t *testing.T) {
+	svc, store := newSvc()
+	require.NoError(t, svc.Initialize(context.Background()))
+	store.corruptCommit = true
+	saved, err := svc.UpdateGroup(context.Background(), domainsettings.General, 0, patch(`{"site_name":"Saved"}`))
+	require.NoError(t, err)
+	assert.Equal(t, "failed", saved.Meta.Status)
+	assert.Equal(t, int64(1), saved.Meta.SavedVersion)
+	assert.Zero(t, saved.Meta.AppliedVersion)
+	effective, err := svc.GetAll(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "Deployment", effective.SiteName)
 }

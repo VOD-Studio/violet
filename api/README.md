@@ -122,7 +122,7 @@ api/
 | **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文/动态发布 |
-| **settings** | settings | settings | 站点配置（key-value） |
+| **settings** | settings | settings | 分组版本化配置、不可变运行快照与只读启动配置 |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
@@ -287,6 +287,17 @@ make help         # 查看所有命令
 - **优先级**：进程环境变量 > 根 `.env` > `config.yaml` > 代码默认值
 
 启动时 API 会打印每个键的生效值与来源（env / config.yaml / default）。
+
+后台动态配置的数据库覆盖优先于部署默认。七组为 `general`、`auth`、`github`、`profile`、`about`、`llm`、`code-runner`；读取返回 `data.values` 与 `data.meta`，后者区分已保存版本、当前应用版本、生效时机和字段来源。
+
+| 方法与路径（前缀 `/api/v1`） | 契约 |
+|---|---|
+| `GET /admin/settings/{group}` | 需要 `settings:view`；GitHub/LLM 凭据仅返回 `*_set` 状态 |
+| `PUT /admin/settings/{group}` | 需要 `settings:update`；提交 `{ "expected_version": 读到的版本, "values": { 修改字段 } }`，过期版本返回 409，非法字段整组回滚 |
+| `POST /admin/settings/{group}/reset` | 提交 `{ "expected_version": 读到的版本 }`，删除本组数据库覆盖并恢复部署默认 |
+| `GET /admin/settings/startup` | 只读白名单；来源区分环境变量、部署默认和运行时观测，敏感值仅表示是否配置 |
+
+更新时省略字段表示保留，显式 `false`、`0`、空串按字段语义处理，`null` 不代替 reset。自定义表情额度 `0` 禁止新增；页脚 `footer_github_url` 空串隐藏链接，与贡献账号 `github_username` 独立。数据库池参数应用于 GORM 与系统监控共用的真实 `sql.DB`，启动快照中的池统计来自该实例。
 
 | 配置项 | 说明 |
 |--------|------|

@@ -22,11 +22,10 @@ func NewCustomEmojiContainer(
 	db *gorm.DB,
 	perm appcustomemoji.PermissionChecker,
 	settingsSvc *appsettings.Service,
-	envDefault int,
 	emojiURLPrefix string,
 ) *CustomEmojiContainer {
 	repo := gormrepo.NewCustomEmojiRepository(db)
-	quota := &customEmojiQuotaPolicy{settingsSvc: settingsSvc, envDefault: envDefault}
+	quota := &customEmojiQuotaPolicy{settingsSvc: settingsSvc}
 	svc := appcustomemoji.NewService(repo, quota, perm, emojiURLPrefix)
 	return &CustomEmojiContainer{
 		Handler: customemojihttp.NewHandler(svc),
@@ -35,12 +34,8 @@ func NewCustomEmojiContainer(
 }
 
 // customEmojiQuotaPolicy 将 settings 模块适配为 customemoji.QuotaPolicy 端口。
-//
-// site_settings.custom_emoji_max_per_user 为 0（未配置）时 fallback envDefault
-// （CUSTOM_EMOJI_MAX_PER_USER，默认 100），读取时机与 CodeRunnerMaxCPUCores 消费方同构。
 type customEmojiQuotaPolicy struct {
 	settingsSvc *appsettings.Service
-	envDefault  int
 }
 
 func (a *customEmojiQuotaPolicy) MaxPerUser(ctx context.Context) (int, error) {
@@ -48,11 +43,5 @@ func (a *customEmojiQuotaPolicy) MaxPerUser(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if s.CustomEmojiMaxPerUser > 0 {
-		return s.CustomEmojiMaxPerUser, nil
-	}
-	if a.envDefault > 0 {
-		return a.envDefault, nil
-	}
-	return 100, nil
+	return s.CustomEmojiMaxPerUser, nil
 }

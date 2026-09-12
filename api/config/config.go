@@ -71,6 +71,8 @@ type Config struct {
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计）的 env 兜底默认值，
 	// 仅当 site_settings 未配置（值为 0）时生效，见 docs/adr/0013。
 	CustomEmojiMaxPerUser int
+	// sources 记录加载时真实采用的来源；environment 包含进程环境及 .env，default 包含部署 YAML 与代码默认。
+	sources map[string]string
 }
 
 // WebPushConfig 浏览器 Web Push VAPID 配置。
@@ -407,6 +409,14 @@ func Load() *Config {
 		FeedProxyURL:          v.GetString("feed_proxy_url"),
 		CustomEmojiMaxPerUser: v.GetInt("custom_emoji_max_per_user"),
 	}
+	cfg.sources = make(map[string]string)
+	for _, key := range v.AllKeys() {
+		source := "default"
+		if value, ok := os.LookupEnv(strings.ToUpper(strings.ReplaceAll(key, ".", "_"))); ok && value != "" {
+			source = "environment"
+		}
+		cfg.sources[key] = source
+	}
 
 	// 验证必需配置
 	if err := cfg.Validate(); err != nil {
@@ -416,6 +426,14 @@ func Load() *Config {
 	printConfigSources(v, preEnvKeys, dotenvKeys)
 
 	return cfg
+}
+
+// Source returns the source captured at startup, not the current process environment.
+func (c *Config) Source(key string) string {
+	if source := c.sources[key]; source != "" {
+		return source
+	}
+	return "default"
 }
 
 // Validate 验证配置的有效性

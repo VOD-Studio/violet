@@ -84,10 +84,14 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	// （公开 client_id 下发）共享同一实例，后台写入即刻全局生效。
 	oauthCreds := authcmd.NewOAuthCredentials(cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret)
 
-	settings := NewSettingsContainer(db, bus, oauthCreds)
+	settings, err := NewSettingsContainer(ctx, infra, cfg, bus, oauthCreds)
+	if err != nil {
+		roleCleanup()
+		return nil, nil, err
+	}
 	siteIdentity := NewSiteIdentityContainer(settings.Store)
 	siteImpression := NewSiteImpressionContainer(db, rdb, []byte(cfg.ResourceSigningKey), cfg.Cookie)
-	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.CustomEmojiMaxPerUser, cfg.UploadPathPrefix)
+	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.UploadPathPrefix)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
 	if err != nil {

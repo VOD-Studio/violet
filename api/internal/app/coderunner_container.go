@@ -23,17 +23,17 @@ type CodeRunnerContainer struct {
 
 // NewCodeRunnerContainer 装配 code-runner 模块。
 //
-// enabled 开关与资源阈值走 site_settings（运行时可改），由 service.validate 每次实时读取。
+// enabled 与资源阈值读取已应用快照，接收任务时固定资源限制。
 // Docker client 始终初始化（启动就连 socket，失败降级记日志）——enabled 纯业务开关，
 // 关闭时 validate 拒绝执行，但 client 连接状态与之解耦。
 //
-// settingsStore 注入 service 供运行时读取配置；env cfg 作为 site_settings 未配时的 fallback。
+// settingsStore 由 settings 服务提供不可变有效配置，不直接读取数据库。
 func NewCodeRunnerContainer(redisClient *redis.Client, settingsStore domainsettings.SettingsStore, cfg config.CodeRunnerConfig) *CodeRunnerContainer {
-	// 初始化全局上限与语言白名单（infrastructure 包级状态）+ 保存 env fallback
+	// 公开语言注册表的启动配置；任务执行使用独立有效快照。
 	infracoderunner.InitMaxLimits(cfg)
-	// 注入资源钳制函数 + 资源上限刷新函数（application service 调用）
+	// 两种钳制路径均为纯计算，不再在请求期间修改全局资源上限。
 	appcoderunner.SetClampLimits(infracoderunner.ClampLimits)
-	appcoderunner.SetReloadLimitsFn(infracoderunner.ReloadMaxLimitsFromMap)
+	appcoderunner.SetClampSettings(infracoderunner.ClampSettings)
 	// 始终初始化 Docker client（socket 缺失时降级记日志，不 panic）
 	infracoderunner.InitDockerClient(cfg.DockerSocketPath)
 

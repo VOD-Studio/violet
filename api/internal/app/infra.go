@@ -27,7 +27,7 @@ type Infra struct {
 }
 
 // InitInfra 初始化全部基础设施：数据库连接 + 迁移、Redis 连接、受信代理、GORM + AutoMigrate。
-// 返回 cleanup 关闭 DB 连接；Redis 由 GC 回收，无需显式关闭。
+// 返回 cleanup 显式关闭业务共用连接池及 Redis。
 // 任一步骤失败则 log.Fatal（与原 main 行为一致）。
 func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	// --- 数据库 ---
@@ -35,6 +35,9 @@ func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
+	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
@@ -56,7 +59,7 @@ func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	middleware.SetTrustedProxies(cfg.TrustedProxies)
 
 	// --- GORM ---
-	gormDB, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}
@@ -79,6 +82,9 @@ func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	}
 
 	infra := &Infra{DB: db, Gorm: gormDB, Redis: redisClient}
-	cleanup := func() { db.Close() }
+	cleanup := func() {
+		_ = redisClient.Close()
+		_ = db.Close()
+	}
 	return infra, cleanup
 }

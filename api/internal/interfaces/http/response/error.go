@@ -49,6 +49,7 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.As(err, &de) {
 		resp.Error = string(de.Code)
 		resp.Message = de.Message
+		resp.Details = de.Details
 		status := httpStatusForCode(de.Code)
 		WriteJSON(w, status, resp)
 		return

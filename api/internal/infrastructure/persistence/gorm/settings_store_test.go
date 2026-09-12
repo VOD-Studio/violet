@@ -2,8 +2,10 @@ package gorm
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	domainsettings "blog-api/internal/domain/settings"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
@@ -11,70 +13,83 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// setupSettingsTestDB 初始化 SQLite 临时文件库并迁移 site_settings 表。
 func setupSettingsTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	tmpDir := t.TempDir()
-	tmpFile := tmpDir + "/test.db"
-	db, err := gorm.Open(sqlite.Open(tmpFile), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+	db, err := gorm.Open(sqlite.Open(t.TempDir()+"/settings.db"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&SiteSetting{}))
-	t.Cleanup(func() {
-		if sqlDB, err := db.DB(); err == nil {
-			_ = sqlDB.Close()
-		}
-	})
+	require.NoError(t, db.AutoMigrate(&SiteSetting{}, &settingsGroupVersion{}))
+	for _, group := range domainsettings.Groups() {
+		require.NoError(t, db.Create(&settingsGroupVersion{Group: string(group)}).Error)
+	}
+	pool, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = pool.Close() })
 	return db
 }
 
-func TestSettingsStore_UpsertAndGetAll(t *testing.T) {
-	store := NewSettingsStore(setupSettingsTestDB(t))
+func TestSettingsGroupCASAndRollback(t *testing.T) {
+	db := setupSettingsTestDB(t)
+	store := NewSettingsStore(db)
+	other := NewSettingsStore(db)
 	ctx := context.Background()
-
-	require.NoError(t, store.Upsert(ctx, "site_title", "Violet"))
-
-	all, err := store.GetAll(ctx)
+	saved, err := store.ChangeGroup(ctx, domainsettings.General, 0, func(values map[string]string) (map[string]string, error) {
+		values["site_name"] = "Original"
+		return values, nil
+	})
 	require.NoError(t, err)
-	assert.Equal(t, "Violet", all["site_title"])
+	require.Equal(t, int64(1), saved.Version)
+	_, err = other.ChangeGroup(ctx, domainsettings.General, 0, func(values map[string]string) (map[string]string, error) {
+		values["site_name"] = "Stale overwrite"
+		return values, nil
+	})
+	require.ErrorIs(t, err, domainsettings.ErrVersionConflict)
+	rejected := errors.New("whole-group validation rejected")
+	_, err = store.ChangeGroup(ctx, domainsettings.General, 1, func(values map[string]string) (map[string]string, error) {
+		values["site_name"] = "Invalid partial write"
+		return values, rejected
+	})
+	require.ErrorIs(t, err, rejected)
+	current, err := other.ReadGroup(ctx, domainsettings.General)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), current.Version)
+	assert.Equal(t, "Original", current.Values["site_name"])
 }
 
-func TestSettingsStore_Upsert_Overwrite(t *testing.T) {
+func TestSettingsGroupIsolationAndReset(t *testing.T) {
 	store := NewSettingsStore(setupSettingsTestDB(t))
 	ctx := context.Background()
-
-	require.NoError(t, store.Upsert(ctx, "lang", "en"))
-	require.NoError(t, store.Upsert(ctx, "lang", "zh")) // 覆盖
-
-	all, err := store.GetAll(ctx)
+	_, err := store.ChangeGroup(ctx, domainsettings.Github, 0, func(values map[string]string) (map[string]string, error) {
+		values["github_token"] = "protected"
+		return values, nil
+	})
 	require.NoError(t, err)
-	assert.Equal(t, "zh", all["lang"])
-	assert.Len(t, all, 1)
-}
-
-func TestSettingsStore_UpsertMany(t *testing.T) {
-	store := NewSettingsStore(setupSettingsTestDB(t))
-	ctx := context.Background()
-
-	require.NoError(t, store.UpsertMany(ctx, map[string]string{
-		"a": "1",
-		"b": "2",
-		"c": "3",
-	}))
-
-	all, err := store.GetAll(ctx)
+	_, err = store.ChangeGroup(ctx, domainsettings.General, 0, func(values map[string]string) (map[string]string, error) {
+		values["site_name"] = "Should rollback"
+		values["github_token"] = "cross-group overwrite"
+		return values, nil
+	})
+	require.Error(t, err)
+	general, err := store.ReadGroup(ctx, domainsettings.General)
 	require.NoError(t, err)
-	require.Len(t, all, 3)
-	assert.Equal(t, "1", all["a"])
-	assert.Equal(t, "2", all["b"])
-	assert.Equal(t, "3", all["c"])
-}
-
-func TestSettingsStore_GetAll_Empty(t *testing.T) {
-	store := NewSettingsStore(setupSettingsTestDB(t))
-
-	all, err := store.GetAll(context.Background())
+	assert.Zero(t, general.Version)
+	assert.NotContains(t, general.Values, "site_name")
+	_, err = store.ChangeGroup(ctx, domainsettings.General, 0, func(values map[string]string) (map[string]string, error) {
+		values["footer_text"] = ""
+		values["comments_enabled"] = "false"
+		values["custom_emoji_max_per_user"] = "0"
+		return values, nil
+	})
 	require.NoError(t, err)
-	assert.Empty(t, all)
+	saved, err := store.ReadGroup(ctx, domainsettings.General)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"footer_text": "", "comments_enabled": "false", "custom_emoji_max_per_user": "0"}, saved.Values)
+	_, err = store.ChangeGroup(ctx, domainsettings.General, 1, func(map[string]string) (map[string]string, error) { return map[string]string{}, nil })
+	require.NoError(t, err)
+	github, err := store.ReadGroup(ctx, domainsettings.Github)
+	require.NoError(t, err)
+	assert.Equal(t, "protected", github.Values["github_token"])
+	general, err = store.ReadGroup(ctx, domainsettings.General)
+	require.NoError(t, err)
+	assert.Empty(t, general.Values)
+	assert.Equal(t, int64(2), general.Version)
 }

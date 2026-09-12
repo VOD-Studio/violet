@@ -8,7 +8,7 @@ import (
 	"blog-api/internal/interfaces/http/response"
 )
 
-const cacheControl = "public, max-age=60, stale-while-revalidate=300"
+const cacheControl = "no-cache"
 
 // Handler 处理站点身份公开读取请求。
 type Handler struct {

@@ -6,8 +6,7 @@ import "context"
 
 // QuotaPolicy 表情份额上限查询端口。
 //
-// 由 wiring 适配 settings 模块（site_settings.custom_emoji_max_per_user）+
-// env 变量兜底（CUSTOM_EMOJI_MAX_PER_USER，默认 100），实现方在 app 容器层。
+// 读取 settings 服务已合并部署默认的有效快照；0 禁止新增，恢复默认使用组级 reset。
 type QuotaPolicy interface {
 	MaxPerUser(ctx context.Context) (int, error)
 }

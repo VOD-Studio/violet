@@ -37,7 +37,7 @@ func TestGetReturnsEnvelopeCacheHeadersAndConditional304(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, response.Code)
 	assert.Equal(t, "application/json; charset=utf-8", response.Header().Get("Content-Type"))
-	assert.Equal(t, "public, max-age=60, stale-while-revalidate=300", response.Header().Get("Cache-Control"))
+	assert.Equal(t, "no-cache", response.Header().Get("Cache-Control"))
 	etag := response.Header().Get("ETag")
 	assert.True(t, strings.HasPrefix(etag, `W/"`))
 	assert.NotContains(t, response.Body.String(), "github_token")
@@ -66,7 +66,7 @@ func TestGetReturnsEnvelopeCacheHeadersAndConditional304(t *testing.T) {
 	assert.Equal(t, http.StatusNotModified, conditionalResponse.Code)
 	assert.Empty(t, conditionalResponse.Body.String())
 	assert.Equal(t, etag, conditionalResponse.Header().Get("ETag"))
-	assert.Equal(t, "public, max-age=60, stale-while-revalidate=300", conditionalResponse.Header().Get("Cache-Control"))
+	assert.Equal(t, "no-cache", conditionalResponse.Header().Get("Cache-Control"))
 }
 
 func TestGetReturnsUnifiedError(t *testing.T) {

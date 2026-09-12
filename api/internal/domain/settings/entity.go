@@ -1,7 +1,7 @@
 // Package settings 提供站点设置的领域模型。
 //
-// 站点设置以 key-value 表存储，本包定义配置读模型与更新入参，
-// 并通过 SettingsStore 端口解耦基础设施实现。
+// 站点设置以 key-value 表存储，写入通过 VersionedStore 的组级版本事务，
+// 运行时读模型由应用层合并部署默认后发布。
 package settings
 
 import (
@@ -66,6 +66,8 @@ type SiteSettings struct {
 	Bio string `json:"bio"`
 	// FooterText 页脚文案
 	FooterText string `json:"footer_text"`
+	// FooterGitHubURL 页脚独立 GitHub 账号或仓库链接；空串隐藏。
+	FooterGitHubURL string `json:"footer_github_url"`
 	// AboutConfig 关于页区块版面配置（{sections:[{id,enabled,order,params}]}）。
 	// 存储层为 JSON 字符串（site_settings key-value 表）；API 边界用 json.RawMessage
 	// 使其序列化为原生 JSON 对象（空配置序列化为 null），前端无需二次 parse。
@@ -114,127 +116,27 @@ type SiteSettings struct {
 
 	// CodeRunnerEnabled 是否启用代码运行器（parseBoolDefaultTrue，未配置默认启用）
 	CodeRunnerEnabled bool `json:"code_runner_enabled"`
-	// CodeRunnerMaxCPUCores 单次执行最大 CPU 核数（0 表示未配置，消费方 fallback 到 env config）
+	// CodeRunnerMaxCPUCores 单次执行最大 CPU 核数，必须为正。
 	CodeRunnerMaxCPUCores float64 `json:"code_runner_max_cpu_cores"`
-	// CodeRunnerMaxMemoryMB 单次执行内存上限（MB）（0 表示未配置，消费方 fallback 到 env config）
+	// CodeRunnerMaxMemoryMB 单次执行内存上限（MB），必须为正。
 	CodeRunnerMaxMemoryMB uint64 `json:"code_runner_max_memory_mb"`
-	// CodeRunnerMaxTimeoutSecs 单次执行最大墙钟时长（秒）（0 表示未配置，消费方 fallback 到 env config）
+	// CodeRunnerMaxTimeoutSecs 单次执行最大墙钟时长（秒），必须为正。
 	CodeRunnerMaxTimeoutSecs uint64 `json:"code_runner_max_timeout_secs"`
-	// CodeRunnerMaxOutputBytes 单次执行 stdout/stderr 合计最大输出字节（0 表示未配置，消费方 fallback 到 env config）
+	// CodeRunnerMaxOutputBytes 单次执行 stdout/stderr 合计最大输出字节，0 表示不保留输出。
 	CodeRunnerMaxOutputBytes uint64 `json:"code_runner_max_output_bytes"`
-	// CodeRunnerMaxSourceBytes 单次提交最大源码字节（0 表示未配置，消费方 fallback 到 env config）
+	// CodeRunnerMaxSourceBytes 单次提交最大源码字节，必须为正。
 	CodeRunnerMaxSourceBytes uint64 `json:"code_runner_max_source_bytes"`
 	// CodeRunnerAllowNetwork 是否允许运行容器联网（最终生效需作者声明 + 语言允许 + 全局开关三者同时为真）
 	CodeRunnerAllowNetwork bool `json:"code_runner_allow_network"`
 	// CodeRunnerLanguages 允许运行的语言列表（逗号分隔的 canonical key：python/node/go/rust/bun）
 	CodeRunnerLanguages string `json:"code_runner_languages"`
-	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计，0 表示未配置，
-	// 消费方 fallback 到 env config）
+	// CustomEmojiMaxPerUser 单用户自传及收藏总份额上限；0 禁止新增。
 	CustomEmojiMaxPerUser int `json:"custom_emoji_max_per_user"`
 }
 
-// UpdateInput 更新入参（指针字段表部分更新，nil 不更新）
-type UpdateInput struct {
-	// SiteName 站点名称（nil 不更新）
-	SiteName *string
-	// SiteURL 站点公开访问根 URL（nil 不更新）
-	SiteURL *string
-	// PostsPerPage 列表页每页文章数（nil 不更新）
-	PostsPerPage *int
-	// HomeFootprintEnabled 是否显示首页发布足迹（nil 不更新）
-	HomeFootprintEnabled *bool
-	// HomeFootprintAggregationDays 单个足迹节点聚合的连续天数（nil 不更新）
-	HomeFootprintAggregationDays *int
-	// CommentsEnabled 是否开启评论（nil 不更新）
-	CommentsEnabled *bool
-	// CommentsModeration 评论是否需审核（nil 不更新）
-	CommentsModeration *bool
-	// GoogleLoginEnabled 是否启用 Google 登录（nil 不更新）
-	GoogleLoginEnabled *bool
-	// GithubLoginEnabled 是否启用 GitHub 登录（nil 不更新）
-	GithubLoginEnabled *bool
-	// GitHubUsername 站长 GitHub 用户名（nil 不更新）
-	GitHubUsername *string
-	// GitHubToken GitHub 访问令牌（nil 不更新）
-	GitHubToken *string
-	// TechStack 技术栈描述（nil 不更新）
-	TechStack *string
-	// Bio 站长简介（nil 不更新）
-	Bio *string
-	// FooterText 页脚文案（nil 不更新）
-	FooterText *string
-	// AboutConfig 关于页区块版面配置（nil 不更新；空 RawMessage 清空配置）
-	AboutConfig *json.RawMessage
-	// 关于博主（A 线）内容字段（nil 不更新）
-
-	// AvatarURL 博主头像 URL（nil 不更新）
-	AvatarURL *string
-	// Tagline 博主标语（nil 不更新）
-	Tagline *string
-	// ProfileRole 博主职业角色（nil 不更新）
-	ProfileRole *string
-	// ProfileLocation 博主所在地（nil 不更新）
-	ProfileLocation *string
-	// AvailableFor 求职/合作意向文案（nil 不更新）
-	AvailableFor *string
-	// SkillsStrong 精通技能列表（nil 不更新）
-	SkillsStrong *string
-	// SkillsLearning 正在学习技能列表（nil 不更新）
-	SkillsLearning *string
-	// SkillsInterests 兴趣方向列表（nil 不更新）
-	SkillsInterests *string
-	// SocialTwitter Twitter 链接（nil 不更新）
-	SocialTwitter *string
-	// SocialMastodon Mastodon 链接（nil 不更新）
-	SocialMastodon *string
-	// SocialEmail 公开联系邮箱（nil 不更新）
-	SocialEmail *string
-	// SocialRss RSS 订阅地址（nil 不更新）
-	SocialRss *string
-	// SocialBilibili Bilibili 主页链接（nil 不更新）
-	SocialBilibili *string
-	// ReleasesRepo 更新日志区块的 GitHub 仓库名（nil 不更新）
-	ReleasesRepo *string
-	// LLM 配置（OpenAI 协议兼容端点，nil 不更新）
-
-	// LLMAPIKey LLM API 密钥（nil 不更新）
-	LLMAPIKey *string
-	// LLMAPIURL LLM API 端点 URL（nil 不更新）
-	LLMAPIURL *string
-	// LLMModel 默认模型名（nil 不更新）
-	LLMModel *string
-	// LLMProtocol LLM 协议标识（nil 不更新）
-	LLMProtocol *string
-	// 代码运行器配置（见 ADR-0006，nil 不更新）
-
-	// CodeRunnerEnabled 是否启用代码运行器（nil 不更新）
-	CodeRunnerEnabled *bool
-	// CodeRunnerMaxCPUCores 单次执行最大 CPU 核数（nil 不更新）
-	CodeRunnerMaxCPUCores *float64
-	// CodeRunnerMaxMemoryMB 单次执行内存上限 MB（nil 不更新）
-	CodeRunnerMaxMemoryMB *uint64
-	// CodeRunnerMaxTimeoutSecs 单次执行最大超时秒（nil 不更新）
-	CodeRunnerMaxTimeoutSecs *uint64
-	// CodeRunnerMaxOutputBytes 单次执行最大输出字节（nil 不更新）
-	CodeRunnerMaxOutputBytes *uint64
-	// CodeRunnerMaxSourceBytes 单次提交最大源码字节（nil 不更新）
-	CodeRunnerMaxSourceBytes *uint64
-	// CodeRunnerAllowNetwork 是否允许运行容器联网（nil 不更新）
-	CodeRunnerAllowNetwork *bool
-	// CodeRunnerLanguages 允许运行的语言列表（nil 不更新）
-	CodeRunnerLanguages *string
-	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（nil 不更新）
-	CustomEmojiMaxPerUser *int
-}
-
-// SettingsStore 站点配置存储端口（infrastructure 层实现）
+// SettingsStore 是运行时只读设置端口；写入必须经过组级版本事务。
 type SettingsStore interface {
-	// GetAll 读取全部配置键值对
 	GetAll(ctx context.Context) (map[string]string, error)
-	// Upsert 写入或更新单个配置
-	Upsert(ctx context.Context, key, value string) error
-	// UpsertMany 批量写入或更新多个配置（单事务，原子）
-	UpsertMany(ctx context.Context, kvs map[string]string) error
 }
 
 // MergeFrom 从键值对还原配置读模型
@@ -268,6 +170,7 @@ func fromMap(m map[string]string) SiteSettings {
 	s.TechStack = m["tech_stack"]
 	s.Bio = m["bio"]
 	s.FooterText = m["footer_text"]
+	s.FooterGitHubURL = m["footer_github_url"]
 	if raw := m["about_config"]; raw != "" {
 		s.AboutConfig = json.RawMessage(raw)
 	}
@@ -290,8 +193,7 @@ func fromMap(m map[string]string) SiteSettings {
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]
 	s.LLMProtocol = m["llm_protocol"]
-	// 代码运行器：enabled 默认 true（parseBoolDefaultTrue，老站点升级无感）；
-	// 资源阈值为 0 表示未配置，消费方 fallback 到 env config（见 application/coderunner/service.go）。
+	// 应用层在解析前为缺失键合并部署默认；零值不是恢复默认操作。
 	s.CodeRunnerEnabled = parseBoolDefaultTrue(m["code_runner_enabled"])
 	s.CodeRunnerMaxCPUCores = parseFloat(m["code_runner_max_cpu_cores"])
 	s.CodeRunnerMaxMemoryMB = parseUint64(m["code_runner_max_memory_mb"])
@@ -300,8 +202,6 @@ func fromMap(m map[string]string) SiteSettings {
 	s.CodeRunnerMaxSourceBytes = parseUint64(m["code_runner_max_source_bytes"])
 	s.CodeRunnerAllowNetwork = m["code_runner_allow_network"] == "true"
 	s.CodeRunnerLanguages = m["code_runner_languages"]
-	// CustomEmojiMaxPerUser 为 0 表示未配置，消费方 fallback 到 env config
-	// （见 application/customemoji.Service 的份额校验）。
 	if v, ok := parseInt(m["custom_emoji_max_per_user"]); ok {
 		s.CustomEmojiMaxPerUser = v
 	}
@@ -328,7 +228,7 @@ func parseInt(s string) (int, bool) {
 	return n, true
 }
 
-// parseUint64 解析无符号整数，空串/非法返回 0（消费方据此 fallback 默认值）。
+// parseUint64 解析无符号整数，空串/非法返回 0。
 func parseUint64(s string) uint64 {
 	if s == "" {
 		return 0
@@ -343,7 +243,7 @@ func parseUint64(s string) uint64 {
 	return n
 }
 
-// parseFloat 解析浮点数，空串/非法返回 0（消费方据此 fallback 默认值）。
+// parseFloat 解析浮点数，空串/非法返回 0。
 // 支持小数（如 "2.5"），用 strconv 保证精度。
 func parseFloat(s string) float64 {
 	if s == "" {

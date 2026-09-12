@@ -42,6 +42,8 @@ type DomainError struct {
 	Message string
 	// Err 包装的底层错误，用于日志与错误链追踪（通过 Unwrap 暴露给 errors.Is/As）
 	Err error
+	// Details 可供表单定位的字段校验错误；不包含提交的敏感值。
+	Details map[string][]string
 }
 
 // Error 实现 error 接口
@@ -113,6 +115,13 @@ func Conflict(message string) *DomainError {
 // Validation 参数校验失败
 func Validation(message string) *DomainError {
 	return NewError(string(CodeValidation), message)
+}
+
+// FieldValidation associates a validation failure with a public request field.
+func FieldValidation(field, message string) *DomainError {
+	err := Validation(message)
+	err.Details = map[string][]string{field: {message}}
+	return err
 }
 
 // Internal 内部错误，通常包装基础设施异常
