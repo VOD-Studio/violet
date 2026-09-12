@@ -1,6 +1,12 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RuntimeLogFilter } from "../model/types";
-import { fetchRuntimeLogStatus, fetchRuntimeLogs } from "./client";
+import {
+	fetchRuntimeLogPolicy,
+	fetchRuntimeLogStatus,
+	fetchRuntimeLogs,
+	rotateRuntimeLogs,
+	updateRuntimeLogPolicy,
+} from "./client";
 import { runtimeLogKeys } from "./keys";
 
 export const RUNTIME_LOG_PAGE_SIZE = 100;
@@ -31,3 +37,38 @@ export const useRuntimeLogStatus = (enabled = true) =>
 		refetchInterval: 15_000,
 		refetchIntervalInBackground: false,
 	});
+
+export const useRuntimeLogPolicy = (enabled = true) =>
+	useQuery({
+		queryKey: runtimeLogKeys.policy(),
+		queryFn: ({ signal }) => fetchRuntimeLogPolicy(signal),
+		enabled,
+		staleTime: 5_000,
+		gcTime: 60_000,
+		refetchInterval: 15_000,
+		refetchIntervalInBackground: false,
+	});
+
+export const useUpdateRuntimeLogPolicy = () => {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: updateRuntimeLogPolicy,
+		onSuccess: () =>
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: runtimeLogKeys.policy() }),
+				queryClient.invalidateQueries({ queryKey: runtimeLogKeys.status() }),
+			]),
+	});
+};
+
+export const useRotateRuntimeLogs = () => {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: rotateRuntimeLogs,
+		onSuccess: () =>
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: runtimeLogKeys.policy() }),
+				queryClient.invalidateQueries({ queryKey: runtimeLogKeys.lists() }),
+			]),
+	});
+};

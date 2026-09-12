@@ -42,6 +42,23 @@ export function RuntimeLogStatusPanel() {
 		["格式无效丢弃", status.malformed],
 		["超限丢弃", status.oversized],
 	] as const;
+	const stream = status.delivery.stream;
+	const exportStatus = status.delivery.export;
+	const deliveryCounters = [
+		["实时连接", `${stream.active.toLocaleString()} / ${stream.capacity.toLocaleString()}`],
+		["连接拒绝", stream.capacity_rejected.toLocaleString()],
+		["实时读取失败", stream.read_failures.toLocaleString()],
+		["实时写入失败", stream.write_failures.toLocaleString()],
+		["权限失效断开", stream.access_revocations.toLocaleString()],
+		[
+			"导出任务",
+			`${exportStatus.active.toLocaleString()} / ${exportStatus.capacity.toLocaleString()}`,
+		],
+		["导出完成", exportStatus.completed.toLocaleString()],
+		["导出失败", exportStatus.failed.toLocaleString()],
+		["导出取消", exportStatus.cancelled.toLocaleString()],
+		["导出拒绝", exportStatus.capacity_rejected.toLocaleString()],
+	] as const;
 
 	return (
 		<div className="min-w-0">
@@ -75,6 +92,24 @@ export function RuntimeLogStatusPanel() {
 							</div>
 						))}
 					</dl>
+					<div className="space-y-2">
+						<h3 className="font-medium">实时读取与导出</h3>
+						<dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5">
+							{deliveryCounters.map(([label, value]) => (
+								<div key={label} className="min-w-0 space-y-1">
+									<dt className="text-muted-foreground">{label}</dt>
+									<dd className="font-mono tabular-nums">{value}</dd>
+								</div>
+							))}
+						</dl>
+						<p className="leading-relaxed text-muted-foreground">
+							实时批次最多 {stream.batch_limit.toLocaleString()} 条，每{" "}
+							{stream.poll_interval_ms.toLocaleString()} ms
+							读取；写入超时会断开慢客户端，由浏览器从上次游标重连。单次导出最多{" "}
+							{exportStatus.record_limit.toLocaleString()} 条 /{" "}
+							{(exportStatus.byte_limit / 1024 / 1024).toLocaleString()} MiB。
+						</p>
+					</div>
 					<p className="text-muted-foreground">
 						观测时间：
 						<time dateTime={status.observed_at} title={status.observed_at}>
