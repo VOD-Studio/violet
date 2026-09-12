@@ -4,25 +4,7 @@
  * 不依赖 React，便于单元测试。所有函数对边界值（NaN/负数/0）有确定性输出。
  */
 
-/**
- * formatBytes - 字节数转人类可读容量（二进制 KB/MB/GB，1KB=1024B）
- *
- * @param bytes 字节数
- * @param fractionDigits 小数位数，默认 1
- * @returns 形如 "1.5 GB"、"512 MB"；bytes<1024 时回退到 "N B"
- */
-export function formatBytes(bytes: number, fractionDigits = 1): string {
-	if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
-	if (bytes < 1024) return `${bytes} B`;
-	const units = ["KB", "MB", "GB", "TB", "PB"];
-	let value = bytes / 1024;
-	let unitIndex = 0;
-	while (value >= 1024 && unitIndex < units.length - 1) {
-		value /= 1024;
-		unitIndex++;
-	}
-	return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
-}
+import { formatBytes } from "@shared/lib/formatBytes";
 
 /**
  * formatRate - 字节/秒速率转人类可读（用 KB/s、MB/s）

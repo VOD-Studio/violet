@@ -1,3 +1,4 @@
+import { formatBytes } from "@shared/lib/formatBytes";
 import {
 	type ChartConfig,
 	ChartContainer,
@@ -7,7 +8,7 @@ import {
 import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import type { SystemDiskInfoDTO, SystemHistoryDTO, SystemSamplePointDTO } from "../model/types";
-import { formatBytes, formatPercent, thresholdColor } from "./format";
+import { formatPercent, thresholdColor } from "./format";
 import { useFirstRender } from "./useFirstRender";
 
 /** DiskIOWaveProps - 磁盘 IO 心跳波 props */

@@ -4,9 +4,10 @@
  * 在播放器下方展示分辨率、时长、体积、编码等信息（传入 metadata 时显示）。
  */
 
+import { formatBytes } from "@shared/lib/formatBytes";
 import { Clock, HardDrive, Hash, Monitor } from "lucide-react";
 import type { VideoMetadata } from "../types/video-preview-types";
-import { formatBytes, formatTime } from "../utils/format";
+import { formatTime } from "../utils/format";
 
 interface VideoInfoProps {
 	metadata?: VideoMetadata;

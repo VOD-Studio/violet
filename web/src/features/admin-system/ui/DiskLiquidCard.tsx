@@ -1,6 +1,7 @@
+import { formatBytes } from "@shared/lib/formatBytes";
 import { useEffect, useState } from "react";
 import type { SystemDiskInfoDTO } from "../model/types";
-import { formatBytes, formatPercent, thresholdColor } from "./format";
+import { formatPercent, thresholdColor } from "./format";
 
 /** DiskLiquidCardProps - 磁盘液位容器 props */
 interface DiskLiquidCardProps {

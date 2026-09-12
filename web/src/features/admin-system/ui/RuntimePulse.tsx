@@ -1,8 +1,9 @@
+import { formatBytes } from "@shared/lib/formatBytes";
 import { type ChartConfig, ChartContainer } from "@shared/ui/base/chart";
 import { useMemo } from "react";
 import { Line, LineChart } from "recharts";
 import type { SystemHistoryDTO, SystemRuntimeInfoDTO, SystemSamplePointDTO } from "../model/types";
-import { formatBytes, formatUptime } from "./format";
+import { formatUptime } from "./format";
 import { useFirstRender } from "./useFirstRender";
 
 /** RuntimePulseProps - 运行时脉搏面板 props */
