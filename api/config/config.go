@@ -51,6 +51,8 @@ type Config struct {
 	Cookie CookieConfig
 	// Session opaque session 生命周期配置（IdleTTL 滑动续期 + MaxTTL 绝对寿命）
 	Session SessionConfig
+	// RuntimeLogEnabled 控制运行日志持久化采集；关闭后仍保留 stderr 和历史查询。
+	RuntimeLogEnabled bool
 	// WebPush 浏览器 Web Push 的 VAPID 配置；私钥仅从环境变量读取。
 	WebPush WebPushConfig
 	// CORSAllowedOrigins 允许的前端来源列表（用于跨域 Cookie 与 CSRF 防护）
@@ -69,7 +71,7 @@ type Config struct {
 	// 空串 = 直连 + SSRF 防护（生产默认）；非空 = 走代理，SSRF 防护交给代理（本地开发穿 GFW）。
 	FeedProxyURL string
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计）的 env 兜底默认值，
-	// 仅当 site_settings 未配置（值为 0）时生效，见 docs/adr/0013。
+	// 仅当 site_settings 中缺失该字段时生效；显式 0 表示禁止新增。
 	CustomEmojiMaxPerUser int
 	// sources 记录加载时真实采用的来源；environment 包含进程环境及 .env，default 包含部署 YAML 与代码默认。
 	sources map[string]string
@@ -284,6 +286,7 @@ func Load() *Config {
 	// session 滑动续期默认 7 天，绝对寿命默认 0（无上限）
 	v.SetDefault("session.idle_ttl", "168h")
 	v.SetDefault("session.max_ttl", "0s")
+	v.SetDefault("runtime_log_enabled", true)
 	v.SetDefault("web_push.vapid_public_key", "")
 	v.SetDefault("web_push.vapid_private_key", "")
 	v.SetDefault("web_push.vapid_subject", "mailto:admin@example.com")
@@ -379,6 +382,7 @@ func Load() *Config {
 			IdleTTL: sessionIdleTTL,
 			MaxTTL:  sessionMaxTTL,
 		},
+		RuntimeLogEnabled: v.GetBool("runtime_log_enabled"),
 		WebPush: WebPushConfig{
 			VAPIDPublicKey:  v.GetString("web_push.vapid_public_key"),
 			VAPIDPrivateKey: v.GetString("web_push.vapid_private_key"),

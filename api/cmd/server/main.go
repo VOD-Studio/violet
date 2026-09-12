@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,22 +21,24 @@ func main() {
 	defer stop()
 
 	cfg := config.Load()
-	initLogger(cfg)
+	logOutput := initLogger(cfg)
 
-	if err := app.Run(ctx, cfg); err != nil {
+	if err := app.Run(ctx, cfg, logOutput); err != nil {
 		log.Fatal().Err(err).Msg("服务退出")
 	}
 }
 
-// initLogger 配置 zerolog 输出格式与级别（dev 用 console + debug，其余 info）。
-// config.Load 内部完成根 .env 加载与来源打印，启动日志可见每个配置项的来源。
-func initLogger(cfg *config.Config) {
+// 返回 stderr 编码器，采集侧收到格式化前的 JSON。
+func initLogger(cfg *config.Config) io.Writer {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	var output io.Writer = os.Stderr
 	if cfg.Environment == "development" {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+		output = zerolog.ConsoleWriter{Out: os.Stderr}
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	log.Logger = log.With().Str("service", "blog-api").Logger()
+	log.Logger = log.Output(output).With().Str("service", "blog-api").Logger()
+	zerolog.DefaultContextLogger = &log.Logger
+	return output
 }

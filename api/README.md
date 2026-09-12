@@ -123,6 +123,7 @@ api/
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文/动态发布 |
 | **settings** | settings | settings | 分组版本化配置、不可变运行快照与只读启动配置 |
+| **runtimelog** | runtimelog | runtimelog | 独立运行日志采集、稳定游标历史查询、脱敏与丢弃状态 |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
@@ -153,6 +154,7 @@ api/
 | `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit / notification 订阅者消费事件） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
 | `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
+| `runtimelog/` | `Sink`, `Store` | Capture / Store / GormLogger | 有界异步采集、PostgreSQL 历史与标准/GORM 日志适配 |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
 | `persistence/gorm/` | 各 `*Repository` | GORM 实现 | 所有数据库访问 |
 
@@ -297,6 +299,13 @@ make help         # 查看所有命令
 | `POST /admin/settings/{group}/reset` | 提交 `{ "expected_version": 读到的版本 }`，删除本组数据库覆盖并恢复部署默认 |
 | `GET /admin/settings/startup` | 只读白名单；来源区分环境变量、部署默认和运行时观测，敏感值仅表示是否配置 |
 
+运行日志使用独立权限和端点，不复用 `/admin/logs` 操作审计：
+
+| 方法与路径（前缀 `/api/v1`） | 契约 |
+|---|---|
+| `GET /admin/runtime-logs` | 需要 `runtimelog:view`；按稳定接收游标读取，可组合筛选级别、来源、时间、关键词及已有 request/trace 标识 |
+| `GET /admin/runtime-logs/status` | 返回当前进程采集下限、队列占用及按原因统计的丢弃数量；不返回日志内容 |
+
 更新时省略字段表示保留，显式 `false`、`0`、空串按字段语义处理，`null` 不代替 reset。自定义表情额度 `0` 禁止新增；页脚 `footer_github_url` 空串隐藏链接，与贡献账号 `github_username` 独立。数据库池参数应用于 GORM 与系统监控共用的真实 `sql.DB`，启动快照中的池统计来自该实例。
 
 | 配置项 | 说明 |
@@ -310,6 +319,7 @@ make help         # 查看所有命令
 | `resend_api_key` | Resend 邮件 API Key |
 | `web_push.*` | 浏览器 Web Push 的 VAPID 公钥、私钥与 subject；私钥仅从环境变量读取 |
 | `superadmin.*` | 初始超级管理员账户 |
+| `runtime_log_enabled` | 是否持久化新运行日志；关闭不影响 stderr 与已有历史读取 |
 
 > 各键上方的行内注释标注对应的 env 覆盖名；敏感值一律走环境变量，不写入 `config.yaml`。
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -19,11 +20,11 @@ import (
 	"blog-api/internal/middleware"
 )
 
-func Run(ctx context.Context, cfg *config.Config) error {
+func Run(ctx context.Context, cfg *config.Config, logOutput io.Writer) error {
 	infra, infraCleanup := InitInfra(ctx, cfg)
 	defer infraCleanup()
 
-	container, containerCleanup, err := NewContainer(ctx, infra, cfg)
+	container, containerCleanup, err := NewContainer(ctx, infra, cfg, logOutput)
 	if err != nil {
 		return fmt.Errorf("模块容器初始化失败: %w", err)
 	}
@@ -63,9 +64,9 @@ func startJobs(ctx context.Context, c *Container, gormDB *gorm.DB, uploadRoot st
 
 func serveHTTP(ctx context.Context, cfg *config.Config, redisClient *redis.Client, c *Container) error {
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 	r.Use(middleware.NewCORS(cfg.CORSAllowedOrigins, middleware.WithCSRFHeader("X-CSRF-Token")))
 	r.Use(middleware.SecurityHeaders)
 
@@ -124,6 +125,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Post:                  c.Post.PostHandler,
 		Tag:                   c.Tag.TagHandler,
 		Audit:                 c.Audit.AuditHandler,
+		RuntimeLog:            c.RuntimeLog.Handler,
 		UserAdmin:             c.UserAdmin.UserAdminHandler,
 		APIToken:              c.APIToken.APITokenHandler,
 		Subscription:          c.Subscription.SubscriptionHandler,

@@ -1,11 +1,8 @@
-// Package app 根容器：聚合全部 DDD 模块容器，封装跨模块依赖的装配顺序。
-//
-// 各模块独立 container 仍在同包下（xxx_container.go）。NewContainer 仅按
-// 依赖序串联装配，集中 main 的命令式 new 调用，使 main 回归编排角色。
 package app
 
 import (
 	"context"
+	"io"
 
 	"github.com/rs/zerolog/log"
 
@@ -30,6 +27,7 @@ type Container struct {
 	GitHub          *GitHubContainer
 	Releases        *ReleasesContainer
 	Audit           *AuditContainer
+	RuntimeLog      *RuntimeLogContainer
 	Stats           *StatsContainer
 	UserAdmin       *UserAdminContainer
 	CommentReaction *CommentReactionContainer
@@ -52,17 +50,11 @@ type Container struct {
 	CustomEmoji     *CustomEmojiContainer
 }
 
-// 跨模块依赖（装配顺序即依赖序）：
-//   - role 无依赖但持有 cleanup
-//   - emailSender 从 cfg 派生，被 auth + comment + friendlink 复用
-//   - post.PostService 被 subscription + mcp 依赖
-//   - apiToken.TokenLookup + comment.CommentService 被 mcp 依赖
-//
-// 返回的 cleanup 仅释放 role 容器资源；infra（DB/Redis）的释放仍由 main 管理。
-// ctx 用于 system 容器的后台采样 goroutine 生命周期。
-func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Container, func(), error) {
+// cleanup 在 HTTP 停止接收请求后调用，运行日志会在连接池关闭前排空。
+func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config, logOutput io.Writer) (*Container, func(), error) {
 	db := infra.Gorm
 	rdb := infra.Redis
+	runtimeLog, logCleanup := NewRuntimeLogContainer(infra, cfg, logOutput)
 
 	// 事件总线：进程内 InMemory 同步实现，全部模块共享单一实例，
 	// 保证跨模块事件（role 创建 → 审计订阅者）在同一总线上可达。
@@ -74,7 +66,12 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	role, roleCleanup, err := InitializeRoleContainer(db, bus)
 	if err != nil {
+		logCleanup()
 		return nil, nil, err
+	}
+	cleanup := func() {
+		roleCleanup()
+		logCleanup()
 	}
 
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
@@ -86,7 +83,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	settings, err := NewSettingsContainer(ctx, infra, cfg, bus, oauthCreds)
 	if err != nil {
-		roleCleanup()
+		cleanup()
 		return nil, nil, err
 	}
 	siteIdentity := NewSiteIdentityContainer(settings.Store)
@@ -95,7 +92,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
 	if err != nil {
-		roleCleanup()
+		cleanup()
 		return nil, nil, err
 	}
 
@@ -129,10 +126,11 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	c := &Container{
 		Role: role, Settings: settings, SiteIdentity: siteIdentity, SiteImpression: siteImpression, Auth: auth, Content: content, Comment: comment,
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
-		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
+		RuntimeLog: runtimeLog,
+		Stats:      stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 	}
-	return c, roleCleanup, nil
+	return c, cleanup, nil
 }

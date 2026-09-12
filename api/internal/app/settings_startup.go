@@ -34,6 +34,7 @@ func (s startupSettings) Snapshot() appsettings.StartupSnapshot {
 			field("upload_dir", "上传目录", c.UploadDir), field("upload_path_prefix", "上传 URL 前缀", c.UploadPathPrefix),
 			field("trusted_proxies", "受信代理", strings.Join(c.TrustedProxies, ", ")),
 			field("cors_allowed_origins", "允许来源", strings.Join(c.CORSAllowedOrigins, ", ")),
+			field("runtime_log_enabled", "运行日志持久化采集", c.RuntimeLogEnabled),
 		}},
 		{ID: "database", Label: "数据库（业务共用连接池）", Fields: []appsettings.StartupField{
 			field("database.host", "主机", c.Database.Host), field("database.port", "端口", c.Database.Port),

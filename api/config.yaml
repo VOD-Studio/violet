@@ -87,6 +87,10 @@ session:
   # env: SESSION_MAX_TTL
   max_ttl: 0s
 
+# ── 运行日志 ─────────────────────────────────
+# env: RUNTIME_LOG_ENABLED；关闭后保留 stderr 与已有历史读取
+runtime_log_enabled: true
+
 # ── 浏览器 Web Push ───────────────────────────
 # VAPID 公钥/私钥由 Web Push 服务生成；私钥禁止写入本文件。
 web_push:

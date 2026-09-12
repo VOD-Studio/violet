@@ -37,6 +37,7 @@ import (
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
+	runtimeloghttp "blog-api/internal/interfaces/http/handler/runtimelog"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -91,6 +92,7 @@ type Deps struct {
 	Post                *posthttp.Handler
 	Tag                 *taghttp.Handler
 	Audit               *audithttp.Handler
+	RuntimeLog          *runtimeloghttp.Handler
 	UserAdmin           *useradminhttp.Handler
 	APIToken            *apitokenhttp.Handler
 	Subscription        *subscriptionhttp.Handler

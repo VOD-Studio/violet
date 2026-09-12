@@ -1,5 +1,3 @@
-// Package routing admin_router 提供管理后台独立 sub-router（chi 官方 adminRouter 模式）。
-// 统一套 SessionAuth + AdminRequired 基线，内部按模块/权限码细分。
 package routing
 
 import (
@@ -136,6 +134,12 @@ func NewAdminRouter(d *Deps) chi.Router {
 		Get("/logs", d.Audit.ListEvents)
 	r.With(middleware.RequirePermission(perm, "log:view")).
 		Get("/logs/user/{id}", d.Audit.ListEventsByActor)
+
+	r.Group(func(sub chi.Router) {
+		sub.Use(middleware.RequirePermission(perm, permission.RuntimeLogView.String()))
+		sub.Get("/runtime-logs", d.RuntimeLog.List)
+		sub.Get("/runtime-logs/status", d.RuntimeLog.Status)
+	})
 
 	// 公告管理（读 announcement:view；写 announcement:manage）
 	r.Route("/announcements", func(r chi.Router) {

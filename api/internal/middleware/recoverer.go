@@ -1,30 +1,27 @@
-// Package middleware 提供 HTTP 中间件，处理认证、日志、限流等横切关注点
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/rs/zerolog/log"
 )
 
-// Recoverer panic 恢复中间件
-// 捕获处理器中的 panic，返回 500 错误而非崩溃
 func Recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				// 记录 panic 信息和堆栈（携带 request_id 用于跨层链路追踪）
 				log.Error().
+					Str("source", "http").
 					Str("request_id", GetRequestID(r)).
 					Str("method", r.Method).
 					Str("path", r.URL.Path).
 					Str("ip", getClientIP(r)).
-					Interface("panic", err).
+					Str("error", fmt.Sprint(err)).
 					Str("stack", string(debug.Stack())).
 					Msg("捕获 panic")
 
-				// 返回 500 错误响应
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(`{"error":"服务器内部错误"}`))

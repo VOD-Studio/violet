@@ -91,6 +91,7 @@ services:
       SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-}
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+      RUNTIME_LOG_ENABLED: ${RUNTIME_LOG_ENABLED:-true}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:

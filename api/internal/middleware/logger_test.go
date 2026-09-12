@@ -1,81 +1,85 @@
 package middleware
 
 import (
+	"bufio"
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/stretchr/testify/require"
 )
 
-// TestLogger_PreservesFlusher 防回归：Logger 中间件包装的 ResponseWriter
-// 必须仍满足 http.Flusher，否则下游 SSE 端点（如 code-runner/stream）的
-// w.(http.Flusher) 断言会失败并返回 500。
-func TestLogger_PreservesFlusher(t *testing.T) {
-	var sawFlusher bool
-	h := Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, ok := w.(http.Flusher)
-		sawFlusher = ok
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.True(t, sawFlusher, "经过 Logger 包装后 ResponseWriter 仍应满足 http.Flusher")
+func TestLoggerStreamsBeforeHandlerCompletes(t *testing.T) {
+	release := make(chan struct{})
+	server := httptest.NewServer(Logger(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: first\n\n")
+		w.(http.Flusher).Flush()
+		<-release
+		_, _ = io.WriteString(w, "data: last\n\n")
+	})))
+	defer server.Close()
+	defer close(release)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	response, err := server.Client().Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+	line, err := bufio.NewReader(response.Body).ReadString('\n')
+	require.NoError(t, err)
+	require.Equal(t, "data: first\n", line)
 }
 
-// TestLogger_CapturesStatusCode 校验 Logger 仍正确捕获下游写入的状态码。
-func TestLogger_CapturesStatusCode(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		code int
-	}{
-		{"200", http.StatusOK},
-		{"404", http.StatusNotFound},
-		{"500", http.StatusInternalServerError},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			h := Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(tc.code)
-			}))
+func TestLoggerKeepsCommittedStatusAndRequestCorrelationAfterPanic(t *testing.T) {
+	var output bytes.Buffer
+	previous := log.Logger
+	log.Logger = zerolog.New(&output)
+	t.Cleanup(func() { log.Logger = previous })
+	handler := RequestID(Logger(Recoverer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Ctx(r.Context()).Info().Msg("business-probe")
+		w.WriteHeader(http.StatusAccepted)
+		panic("panic-probe")
+	}))))
+	request := httptest.NewRequest(http.MethodGet, "/probe", nil)
+	request.Header.Set(RequestIDHeader, "correlation-probe")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	require.Equal(t, http.StatusAccepted, response.Code)
+	require.Equal(t, "correlation-probe", response.Header().Get(RequestIDHeader))
 
-			req := httptest.NewRequest(http.MethodGet, "/", nil)
-			rec := httptest.NewRecorder()
-			h.ServeHTTP(rec, req)
-
-			assert.Equal(t, tc.code, rec.Code)
-		})
+	decoder := json.NewDecoder(&output)
+	var sawRequest, sawBusiness, sawPanic bool
+	for {
+		var entry map[string]any
+		err := decoder.Decode(&entry)
+		if err != nil {
+			require.ErrorIs(t, err, io.EOF)
+			break
+		}
+		require.Equal(t, "correlation-probe", entry["request_id"])
+		if status, ok := entry["status"]; ok {
+			sawRequest = true
+			require.Equal(t, float64(http.StatusAccepted), status)
+			require.Equal(t, "info", entry["level"])
+		}
+		if entry["message"] == "business-probe" {
+			sawBusiness = true
+		}
+		if entry["error"] == "panic-probe" {
+			sawPanic = true
+			require.Equal(t, "error", entry["level"])
+		}
 	}
+	require.True(t, sawRequest, "missing request outcome")
+	require.True(t, sawBusiness, "missing context-bound business log")
+	require.True(t, sawPanic, "missing correlated panic")
 }
-
-// TestResponseWriter_Flush_DelegatesToUnderlying 校验 Flush 转发到底层 Flusher；
-// 底层不实现 Flusher 时不 panic（静默跳过）。
-func TestResponseWriter_Flush_DelegatesToUnderlying(t *testing.T) {
-	t.Run("底层实现 Flusher 时转发", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		var w http.ResponseWriter = &responseWriter{ResponseWriter: rec}
-		f, ok := w.(http.Flusher)
-		assert.True(t, ok)
-
-		// 不应 panic，且底层 recorder 的 Flushed 被置位
-		assert.NotPanics(t, func() { f.Flush() })
-		assert.True(t, rec.Flushed)
-	})
-
-	t.Run("底层不实现 Flusher 时不 panic", func(t *testing.T) {
-		var w http.ResponseWriter = &responseWriter{ResponseWriter: nilFlusherlessWriter{}}
-		f, ok := w.(http.Flusher)
-		assert.True(t, ok)
-		assert.NotPanics(t, func() { f.Flush() })
-	})
-}
-
-// nilFlusherlessWriter 一个既不是 Flusher、也不写任何东西的最小 ResponseWriter，
-// 仅用于覆盖 Flush 转发的「底层不支持」分支。
-type nilFlusherlessWriter struct{}
-
-func (nilFlusherlessWriter) Header() http.Header              { return http.Header{} }
-func (nilFlusherlessWriter) Write([]byte) (int, error)         { return 0, nil }
-func (nilFlusherlessWriter) WriteHeader(int)                   {}

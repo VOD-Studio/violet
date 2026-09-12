@@ -1,71 +1,41 @@
-// Package middleware 提供 HTTP 中间件，处理认证、日志、限流等横切关注点
 package middleware
 
 import (
 	"net/http"
 	"time"
 
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog/log"
 )
 
-// responseWriter 包装 http.ResponseWriter 以捕获状态码
-type responseWriter struct {
-	http.ResponseWriter
-	// statusCode HTTP 响应状态码
-	statusCode int
-}
-
-// WriteHeader 重写 WriteHeader 方法，记录状态码
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-// Flush 转发到底层 ResponseWriter，使包装后的 writer 满足 http.Flusher 接口。
-//
-// 必要性：SSE 端点（如 code-runner/stream）会对 ResponseWriter 做
-// w.(http.Flusher) 类型断言。若不经此转发，logger 中间件包装后下游拿到的是
-// *responseWriter，未实现 Flusher，断言失败导致 SSE 端点返回 500。
-func (rw *responseWriter) Flush() {
-	if f, ok := rw.ResponseWriter.(http.Flusher); ok {
-		f.Flush()
-	}
-}
-
-// Logger 请求日志中间件
-// 记录每个请求的 HTTP 方法、路径、状态码和处理耗时
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 记录请求开始时间
 		start := time.Now()
 
-		// 包装 ResponseWriter 以捕获状态码
-		wrapped := &responseWriter{
-			ResponseWriter: w,
-			statusCode:     http.StatusOK,
-		}
+		wrapped := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-		// 将请求传递给下一个处理器
 		next.ServeHTTP(wrapped, r)
 
-		// 计算请求处理耗时
 		duration := time.Since(start)
+		status := wrapped.Status()
+		if status == 0 {
+			status = http.StatusOK
+		}
 
-		// 根据状态码调整日志级别
 		logger := log.Info()
-		if wrapped.statusCode >= 500 {
+		if status >= 500 {
 			logger = log.Error()
-		} else if wrapped.statusCode >= 400 {
+		} else if status >= 400 {
 			logger = log.Warn()
 		}
 
-		// 输出请求日志（携带 request_id 用于跨层链路追踪）
 		logger.
+			Str("source", "http").
 			Str("request_id", GetRequestID(r)).
 			Str("method", r.Method).
 			Str("path", r.URL.Path).
 			Str("ip", getClientIP(r)).
-			Int("status", wrapped.statusCode).
+			Int("status", status).
 			Dur("duration", duration).
 			Msg("HTTP 请求")
 	})
