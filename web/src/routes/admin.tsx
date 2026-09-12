@@ -1,6 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { AdminSidebar } from "@features/admin-layout/ui/AdminSidebar";
 import { AdminTopBar } from "@features/admin-layout/ui/AdminTopBar";
+import { NAV_MENU_ITEMS } from "@features/admin-layout/ui/nav-menu/nav-menu-config";
 import { authKeys } from "@features/auth/api/keys";
 import { fetchMe } from "@features/auth/api/queries";
 import { isSessionActive } from "@shared/api/session";
@@ -59,17 +60,15 @@ export const Route = createFileRoute("/admin")({
 	component: AdminLayout,
 });
 
-/** 根据当前路由路径解析 TopBar 标题 */
 function useAdminTitle(): string {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	if (pathname === "/admin") return "概览";
-	if (pathname.startsWith("/admin/users")) return "用户管理";
-	if (pathname.startsWith("/admin/emojis")) return "表情管理";
-	if (pathname.startsWith("/admin/system")) return "系统监控";
-	if (pathname.startsWith("/admin/posts")) return "文章管理";
-	if (pathname.startsWith("/admin/series")) return "系列书管理";
-	if (pathname.startsWith("/admin/galleries")) return "图集管理";
-	if (pathname.startsWith("/admin/notes")) return "笔记管理";
+	for (const item of NAV_MENU_ITEMS) {
+		const child = item.children?.find((candidate) => candidate.to === pathname);
+		if (child) return child.label;
+		if (item.to === pathname || (!item.exact && pathname.startsWith(`${item.to}/`))) {
+			return item.label;
+		}
+	}
 	return "后台管理";
 }
 
