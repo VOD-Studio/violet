@@ -27,13 +27,9 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
 };
 
 /**
- * LoginDialog - 全局登录弹窗
+ * 用户主动登录或已登录会话收到 401 时打开。
  *
- * 触发路径：
- * 1. 用户主动点击 Header 的「登录」按钮
- * 2. http 拦截器收到非主动认证请求的 401 时自动弹窗
- *
- * 取消时：清会话状态并移除 me 缓存；若当前在受保护页则回首页。
+ * 取消时清理认证缓存和会话状态；若当前在受保护页则回首页。
  */
 export function LoginDialog() {
 	const isOpen = useLoginDialogStore((s) => s.isOpen);
@@ -48,8 +44,6 @@ export function LoginDialog() {
 	const googleLogin = useGoogleLoginMutation(csrfToken);
 	const { showGoogle, showGithub, showOAuth, githubClientId } = useOAuthVisibility();
 
-	// 弹窗打开时如果用户已手动登录（Header 按钮触发时 sessionActive 可能为 true），
-	// 保持原有语义：登录成功后仅 close。
 	const handleGoogleLogin = useGoogleLogin({
 		flow: "implicit",
 		onSuccess: (tokenResponse) => {

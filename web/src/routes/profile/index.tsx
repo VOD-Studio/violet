@@ -39,22 +39,12 @@ const ProfilePage = () => {
 	);
 };
 
-/**
- * /profile - 个人中心（需登录）
- *
- * beforeLoad 在 SSR 期间即可根据 context.auth 重定向到 /login，
- * 不必等客户端 hydrate 才发现未登录（避免闪烁/二次跳转）。
- */
+/** 未登录时跳转登录页，并携带原页面作为回跳地址。 */
 export const Route = createFileRoute("/profile/")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
-		// 页面刷新后所有内存状态清空（me 缓存、sessionActive 全失），唯一持久的
-		// 登录态信号是 cookie。violet_csrf 非 HttpOnly，前端可读——有它说明后端
-		// 下发过 session cookie，按已登录处理，真实过期交给 401 拦截器 + 组件处理。
-		const hasAuthCookie =
-			typeof window !== "undefined" && document.cookie.includes("violet_csrf=");
 		const me = context.queryClient.getQueryData<UserDTO | null>(authKeys.me());
-		if (!context.auth.isAuthenticated && !isSessionActive() && !me && !hasAuthCookie) {
+		if (!context.auth.isAuthenticated && !isSessionActive() && !me) {
 			throw redirect({
 				to: "/login",
 				search: { redirect: location.href },

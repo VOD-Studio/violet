@@ -1,17 +1,9 @@
-/**
- * http 401 拦截器测试
- *
- * 401 时应清 auth 缓存（onSessionExpired）并弹登录框，但不动 sessionActive：
- * 该标志只随登录成功/登出/取消重登翻转（见 session.ts），一次瞬态 401
- * （会话实际仍有效）不应把客户端打成持久登出态；真过期时用户在弹窗里
- * 取消重登，由 LoginDialog 调 clearSessionActive。
- */
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../error";
 import { createHttpClient } from "../http";
 import { useLoginDialogStore } from "../login-dialog-store";
-import { markSessionActive, useSessionStore } from "../session";
+import { clearSessionActive, markSessionActive, useSessionStore } from "../session";
 import { registerSessionExpiredHandler } from "../session-expired";
 
 function rejectWith401(config: InternalAxiosRequestConfig) {
@@ -39,7 +31,19 @@ describe("http 401 拦截器", () => {
 		registerSessionExpiredHandler(() => {});
 	});
 
-	it("401 弹登录框并触发 onSessionExpired，但保持 sessionActive", async () => {
+	it("游客收到 401 时保留错误，但不弹窗或触发会话过期", async () => {
+		const onExpired = vi.fn();
+		registerSessionExpiredHandler(onExpired);
+		const client = createHttpClient();
+		client.defaults.adapter = rejectWith401;
+
+		await expect(client.get("/chat/conversations")).rejects.toMatchObject({ status: 401 });
+
+		expect(useLoginDialogStore.getState().isOpen).toBe(false);
+		expect(onExpired).not.toHaveBeenCalled();
+	});
+
+	it("已登录会话收到 401 时弹窗并清缓存，但保持 sessionActive 供原地重登", async () => {
 		markSessionActive();
 		const onExpired = vi.fn();
 		registerSessionExpiredHandler(onExpired);
@@ -53,7 +57,38 @@ describe("http 401 拦截器", () => {
 		expect(useSessionStore.getState().sessionActive).toBe(true);
 	});
 
+	it("请求未返回时退出登录，迟到的 401 不重新打开弹窗", async () => {
+		markSessionActive();
+		const onExpired = vi.fn();
+		registerSessionExpiredHandler(onExpired);
+		const client = createHttpClient();
+		let notifyStarted!: () => void;
+		let respond!: () => void;
+		const started = new Promise<void>((resolve) => {
+			notifyStarted = resolve;
+		});
+		const response = new Promise<void>((resolve) => {
+			respond = resolve;
+		});
+		client.defaults.adapter = async (config) => {
+			notifyStarted();
+			await response;
+			return rejectWith401(config);
+		};
+
+		const request = client.get("/chat/conversations");
+		const rejection = expect(request).rejects.toMatchObject({ status: 401 });
+		await started;
+		clearSessionActive();
+		respond();
+		await rejection;
+
+		expect(useLoginDialogStore.getState().isOpen).toBe(false);
+		expect(onExpired).not.toHaveBeenCalled();
+	});
+
 	it("__skipAuthDialog 的 401 不弹窗不触发 onSessionExpired", async () => {
+		markSessionActive();
 		const onExpired = vi.fn();
 		registerSessionExpiredHandler(onExpired);
 		const client = createHttpClient();

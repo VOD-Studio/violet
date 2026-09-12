@@ -10,9 +10,7 @@ function ChatPage() {
 export const Route = createFileRoute("/chat")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
-		const hasAuthCookie =
-			typeof window !== "undefined" && document.cookie.includes("violet_csrf=");
-		if (!context.auth.isAuthenticated && !isSessionActive() && !hasAuthCookie) {
+		if (!context.auth.isAuthenticated && !isSessionActive()) {
 			throw redirect({ to: "/login", search: { redirect: location.href }, replace: true });
 		}
 	},
