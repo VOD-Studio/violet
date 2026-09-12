@@ -30,38 +30,38 @@ interface ProfileForm {
 }
 
 function ProfileSettingsPage() {
-	const { register, watch, setValue, isLoading, isPending, onSubmit } = useSettingsForm<
-		ProfileForm,
-		ProfileSettingsDTO
-	>(useProfileSettings(), useUpdateProfile(), (data) => ({
-		bio: data.bio,
-		avatar_url: data.avatar_url,
-		tagline: data.tagline,
-		profile_role: data.profile_role,
-		profile_location: data.profile_location,
-		available_for: data.available_for,
-		skills_strong: data.skills_strong,
-		skills_learning: data.skills_learning,
-		skills_interests: data.skills_interests,
-		social_twitter: data.social_twitter,
-		social_mastodon: data.social_mastodon,
-		social_email: data.social_email,
-		social_rss: data.social_rss,
-		social_bilibili: data.social_bilibili,
-	}));
+	const { register, watch, setValue, page } = useSettingsForm<ProfileForm, ProfileSettingsDTO>(
+		useProfileSettings(),
+		useUpdateProfile(),
+		(data) => ({
+			bio: data.bio,
+			avatar_url: data.avatar_url,
+			tagline: data.tagline,
+			profile_role: data.profile_role,
+			profile_location: data.profile_location,
+			available_for: data.available_for,
+			skills_strong: data.skills_strong,
+			skills_learning: data.skills_learning,
+			skills_interests: data.skills_interests,
+			social_twitter: data.social_twitter,
+			social_mastodon: data.social_mastodon,
+			social_email: data.social_email,
+			social_rss: data.social_rss,
+			social_bilibili: data.social_bilibili,
+		}),
+		{ group: "profile" },
+	);
 
 	return (
 		<SettingsSubPage
 			title="关于"
 			description="关于博主内容（头像/标语/名片/技能/社交）"
-			isLoading={isLoading}
-			isPending={isPending}
-			onSubmit={onSubmit}
+			state={page}
 		>
 			{/* 博主身份：左栏头像 + 右栏字段 */}
 			<section className="rounded-lg border border-edge-hairline p-5">
 				<h3 className="mb-3 text-base font-semibold">博主身份</h3>
-				<div className="flex items-start gap-6">
+				<div className="flex flex-col items-start gap-6 sm:flex-row">
 					{/* 左栏：头像 */}
 					<div className="flex shrink-0 flex-col items-center gap-1.5">
 						<AvatarPicker
@@ -71,7 +71,7 @@ function ProfileSettingsPage() {
 						<span className="text-sm font-medium">头像</span>
 					</div>
 					{/* 右栏：字段（标语 + 简介） */}
-					<div className="grid flex-1 grid-cols-1 gap-3">
+					<div className="grid min-w-0 w-full flex-1 grid-cols-1 gap-3">
 						<Field label="一句话标语">
 							<Input
 								{...register("tagline")}
@@ -152,42 +152,41 @@ function AvatarPicker({ value, onChange }: { value: string; onChange: (url: stri
 
 	return (
 		<>
-			<button
-				type="button"
-				onClick={() => setPickerOpen(true)}
-				className="group relative size-16 shrink-0 overflow-visible rounded-full border border-edge-hairline transition-colors hover:border-primary/50"
-				aria-label={value ? "更换头像" : "选择头像"}
-			>
-				<span className="block size-full overflow-hidden rounded-full">
-					{value ? (
-						<img src={value} alt="头像" className="size-full object-cover" />
-					) : (
-						<span className="flex size-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
-							<ImagePlus className="size-4" />
-						</span>
-					)}
-					{/* 悬浮遮罩（有头像时） */}
-					{value ? (
-						<span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-							更换
-						</span>
-					) : null}
-				</span>
+			<div className="group relative">
+				<button
+					type="button"
+					onClick={() => setPickerOpen(true)}
+					className="group relative size-16 shrink-0 overflow-visible rounded-full border border-edge-hairline transition-colors hover:border-primary/50"
+					aria-label={value ? "更换头像" : "选择头像"}
+				>
+					<span className="block size-full overflow-hidden rounded-full">
+						{value ? (
+							<img src={value} alt="头像" className="size-full object-cover" />
+						) : (
+							<span className="flex size-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+								<ImagePlus className="size-4" />
+							</span>
+						)}
+						{/* 悬浮遮罩（有头像时） */}
+						{value ? (
+							<span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+								更换
+							</span>
+						) : null}
+					</span>
+				</button>
 				{/* 删除按钮：absolute 在容器内右上角，不占布局 */}
 				{value ? (
 					<button
 						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							onChange("");
-						}}
-						className="absolute -right-1 -top-1 z-10 flex size-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 shadow-sm transition-opacity hover:opacity-100 group-hover:opacity-100"
+						onClick={() => onChange("")}
+						className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100"
 						aria-label="移除头像"
 					>
 						<X className="size-3" />
 					</button>
 				) : null}
-			</button>
+			</div>
 			<MediaPicker
 				open={pickerOpen}
 				onOpenChange={setPickerOpen}

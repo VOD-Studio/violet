@@ -1,133 +1,57 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { notifySettingsChanged } from "@features/settings/api/cache-events";
+import { type QueryKey, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type {
-	AboutSettingsDTO,
-	AuthSettingsDTO,
-	CodeRunnerSettingsDTO,
-	GeneralSettingsDTO,
-	GithubSettingsDTO,
-	LlmSettingsDTO,
-	OAuthCredentialsInput,
-	ProfileSettingsDTO,
-} from "../model/types";
+import type { OAuthCredentialsInput, SettingsSnapshot } from "../model/types";
 import * as api from "./client";
 import { settingsKeys } from "./keys";
 
-/**
- * admin-settings 分组 hooks —— 7 组独立 query/mutation。
- *
- * 每组 useXxx 读 GET /admin/settings/{group}，useUpdateXxx 调 PUT 同路径。
- * mutation 成功用返回的最新配置直接覆盖本组缓存（setQueryData），避免二次请求；
- * 因 queryKey 各组独立，不会互相覆盖，消除回填竞态。
- */
+function useSettingsQuery<T>(queryKey: QueryKey, queryFn: () => Promise<T>) {
+	const canView = useHasPermission("settings:view");
+	return useQuery({ queryKey, queryFn, enabled: canView });
+}
 
-// ---- 基础信息组 ----
-export const useGeneralSettings = () =>
-	useQuery({ queryKey: settingsKeys.general(), queryFn: api.getGeneral });
-export const useUpdateGeneral = () => {
+function useSettingsUpdate<T, TInput>(
+	queryKey: QueryKey,
+	mutationFn: (input: TInput) => Promise<SettingsSnapshot<T>>,
+) {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: Partial<GeneralSettingsDTO>) => api.updateGeneral(body),
+		mutationFn,
 		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.general(), data);
-			toast.success("站点设置已保存");
+			qc.setQueryData(queryKey, data);
+			notifySettingsChanged(qc);
+			if (data.meta.status === "failed") {
+				toast.error("设置已保存，但应用失败；当前仍使用原有效版本");
+			} else if (data.meta.status === "pending_restart") {
+				toast.success("设置已保存，重启后生效");
+			} else {
+				toast.success("设置已保存并应用");
+			}
 		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
 	});
-};
+}
 
-// ---- 认证组 ----
-export const useAuthSettings = () =>
-	useQuery({ queryKey: settingsKeys.auth(), queryFn: api.getAuth });
-export const useUpdateAuth = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<AuthSettingsDTO>) => api.updateAuth(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.auth(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
-
-// ---- GitHub 组 ----
-export const useGithubSettings = () =>
-	useQuery({ queryKey: settingsKeys.github(), queryFn: api.getGithub });
-export const useUpdateGithub = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<GithubSettingsDTO>) => api.updateGithub(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.github(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
-
-// ---- 关于博主组 ----
-export const useProfileSettings = () =>
-	useQuery({ queryKey: settingsKeys.profile(), queryFn: api.getProfile });
-export const useUpdateProfile = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<ProfileSettingsDTO>) => api.updateProfile(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.profile(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
-
-// ---- 关于页区块配置组 ----
-export const useAboutSettings = () =>
-	useQuery({ queryKey: settingsKeys.about(), queryFn: api.getAbout });
-export const useUpdateAbout = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<AboutSettingsDTO>) => api.updateAbout(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.about(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
-
-// ---- LLM 组 ----
-export const useLlmSettings = () => useQuery({ queryKey: settingsKeys.llm(), queryFn: api.getLlm });
-export const useUpdateLlm = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<LlmSettingsDTO>) => api.updateLlm(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.llm(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
-
-// ---- 代码运行器组 ----
+export const useGeneralSettings = () => useSettingsQuery(settingsKeys.general(), api.getGeneral);
+export const useUpdateGeneral = () => useSettingsUpdate(settingsKeys.general(), api.updateGeneral);
+export const useAuthSettings = () => useSettingsQuery(settingsKeys.auth(), api.getAuth);
+export const useUpdateAuth = () => useSettingsUpdate(settingsKeys.auth(), api.updateAuth);
+export const useGithubSettings = () => useSettingsQuery(settingsKeys.github(), api.getGithub);
+export const useUpdateGithub = () => useSettingsUpdate(settingsKeys.github(), api.updateGithub);
+export const useProfileSettings = () => useSettingsQuery(settingsKeys.profile(), api.getProfile);
+export const useUpdateProfile = () => useSettingsUpdate(settingsKeys.profile(), api.updateProfile);
+export const useAboutSettings = () => useSettingsQuery(settingsKeys.about(), api.getAbout);
+export const useUpdateAbout = () => useSettingsUpdate(settingsKeys.about(), api.updateAbout);
+export const useLlmSettings = () => useSettingsQuery(settingsKeys.llm(), api.getLlm);
+export const useUpdateLlm = () => useSettingsUpdate(settingsKeys.llm(), api.updateLlm);
 export const useCodeRunnerSettings = () =>
-	useQuery({ queryKey: settingsKeys.codeRunner(), queryFn: api.getCodeRunner });
-export const useUpdateCodeRunner = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<CodeRunnerSettingsDTO>) => api.updateCodeRunner(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.codeRunner(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
+	useSettingsQuery(settingsKeys.codeRunner(), api.getCodeRunner);
+export const useUpdateCodeRunner = () =>
+	useSettingsUpdate(settingsKeys.codeRunner(), api.updateCodeRunner);
+export const useStartupSettings = () => useSettingsQuery(settingsKeys.startup(), api.getStartup);
 
 // ---- OAuth 凭据（env 域，独立端点） ----
-export const useOAuthStatus = () =>
-	useQuery({ queryKey: settingsKeys.oauth(), queryFn: api.getOAuthStatus });
+export const useOAuthStatus = () => useSettingsQuery(settingsKeys.oauth(), api.getOAuthStatus);
 export const useUpdateOAuthCredentials = () => {
 	const qc = useQueryClient();
 	return useMutation({
@@ -141,6 +65,7 @@ export const useUpdateOAuthCredentials = () => {
 					persisted: boolean;
 				}>
 			>(settingsKeys.oauth(), (prev) => ({ ...(prev ?? {}), ...data }));
+			notifySettingsChanged(qc);
 			toast.success(
 				data.persisted ? "OAuth 凭据已保存" : "OAuth 凭据已保存（未落盘，重启后失效）",
 			);

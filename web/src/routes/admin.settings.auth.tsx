@@ -4,13 +4,16 @@ import {
 	useUpdateAuth,
 	useUpdateOAuthCredentials,
 } from "@features/admin-settings/api/queries";
+import type { AuthSettingsDTO, OAuthCredentialsInput } from "@features/admin-settings/model/types";
 import { OAuthProviderCard } from "@features/admin-settings/ui/OAuthProviderCard";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
+import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
+import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
+import { Controller } from "react-hook-form";
 
 /** 认证子页表单值（仅本页字段） */
 interface AuthForm {
@@ -18,65 +21,61 @@ interface AuthForm {
 	github_login_enabled: boolean;
 }
 
-/**
- * 认证设置页：第三方登录开关与 OAuth 凭据同卡同存。
- *
- * 开关控制同卡凭据输入区的显隐（表单实时值，改即预览）；已配置且生效时
- * 输入区折叠，只留脱敏预览与「修改」入口。一个保存按钮先落开关
- * （site_settings 域），凭据输入了再落凭据（env 域，留空=保持原值），
- * 成功后递增 revision（作卡片 key）重置编辑态与检测结果。
- */
+/** 登录开关使用组版本；OAuth 凭据保持独立端点与保留空白语义。 */
 function AuthSettingsPage() {
-	const { data: authData, isLoading } = useAuthSettings();
-	const { data: oauthStatus } = useOAuthStatus();
-	const updateAuth = useUpdateAuth();
+	const oauthQuery = useOAuthStatus();
+	const oauthStatus = oauthQuery.data;
 	const updateCreds = useUpdateOAuthCredentials();
-
-	const { control, handleSubmit, reset } = useForm<AuthForm>();
-	useEffect(() => {
-		if (authData) {
-			reset({
-				google_login_enabled: authData.google_login_enabled,
-				github_login_enabled: authData.github_login_enabled,
-			});
-		}
-	}, [authData, reset]);
-
 	const [googleId, setGoogleId] = useState("");
 	const [githubId, setGithubId] = useState("");
 	const [githubSecret, setGithubSecret] = useState("");
 	const [credRevision, setCredRevision] = useState(0);
-
-	const onSubmit = handleSubmit(async (values) => {
-		await updateAuth.mutateAsync(values);
-		// 凭据留空=保持原值，只有填了才提交
-		const body: Record<string, string> = {};
-		if (values.google_login_enabled && googleId.trim()) {
-			body.google_client_id = googleId.trim();
-		}
-		if (values.github_login_enabled) {
-			if (githubId.trim()) body.github_client_id = githubId.trim();
-			if (githubSecret.trim()) body.github_client_secret = githubSecret.trim();
-		}
-		if (Object.keys(body).length > 0) {
-			await updateCreds.mutateAsync(body);
-			setGoogleId("");
-			setGithubId("");
-			setGithubSecret("");
-		}
-		setCredRevision((r) => r + 1);
-	});
+	const clearCredentials = () => {
+		setGoogleId("");
+		setGithubId("");
+		setGithubSecret("");
+		setCredRevision((revision) => revision + 1);
+	};
+	const { control, page } = useSettingsForm<AuthForm, AuthSettingsDTO>(
+		useAuthSettings(),
+		useUpdateAuth(),
+		(data) => ({ ...data }),
+		{
+			group: "auth",
+			extraDirty: !!(googleId || githubId || githubSecret),
+			extraPending: updateCreds.isPending,
+			onDiscardExtra: clearCredentials,
+			onSaveExtra: async () => {
+				const body: OAuthCredentialsInput = {};
+				if (googleId.trim()) body.google_client_id = googleId.trim();
+				if (githubId.trim()) body.github_client_id = githubId.trim();
+				if (githubSecret.trim()) body.github_client_secret = githubSecret.trim();
+				if (Object.keys(body).length > 0) await updateCreds.mutateAsync(body);
+				clearCredentials();
+			},
+		},
+	);
+	const origin = typeof window === "undefined" ? "" : window.location.origin;
 
 	return (
-		<SettingsSubPage
-			title="认证"
-			description="第三方登录开关与 OAuth 凭据"
-			isLoading={isLoading}
-			isPending={updateAuth.isPending || updateCreds.isPending}
-			onSubmit={onSubmit}
-		>
+		<SettingsSubPage title="认证" description="第三方登录开关与 OAuth 凭据" state={page}>
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">第三方登录</h3>
+				{oauthQuery.isError && (
+					<div role="alert" className="flex flex-col items-start gap-2">
+						<p className="text-sm text-destructive">
+							OAuth 状态加载失败：{oauthQuery.error.message}
+						</p>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => oauthQuery.refetch()}
+						>
+							重试凭据状态
+						</Button>
+					</div>
+				)}
 				{oauthStatus && !oauthStatus.persisted && (
 					<p className="text-xs text-amber-600">
 						上次保存的 OAuth 凭据未能写入 .env，API 重启后将失效
@@ -95,7 +94,7 @@ function AuthSettingsPage() {
 							docsUrl="https://console.cloud.google.com/apis/credentials"
 							callbackHint={{
 								label: "Authorized JavaScript origins",
-								value: window.location.origin,
+								value: origin,
 							}}
 							key={`google-${credRevision}`}
 						>
@@ -120,10 +119,10 @@ function AuthSettingsPage() {
 							enabled={field.value ?? false}
 							onEnabledChange={field.onChange}
 							status={oauthStatus?.github}
-							docsUrl={`https://github.com/settings/applications/new?redirect_uri=${encodeURIComponent(`${window.location.origin}/auth/github/callback`)}`}
+							docsUrl={`https://github.com/settings/applications/new?redirect_uri=${encodeURIComponent(`${origin}/auth/github/callback`)}`}
 							callbackHint={{
 								label: "Authorization callback URL",
-								value: `${window.location.origin}/auth/github/callback`,
+								value: `${origin}/auth/github/callback`,
 							}}
 							key={`github-${credRevision}`}
 						>

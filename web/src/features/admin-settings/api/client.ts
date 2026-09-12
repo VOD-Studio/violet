@@ -1,61 +1,59 @@
 import { apiGet, apiPost, apiPut } from "@shared/api/request";
 import type {
 	AboutSettingsDTO,
+	AboutSettingsWrite,
 	AuthSettingsDTO,
 	CodeRunnerSettingsDTO,
 	GeneralSettingsDTO,
 	GithubSettingsDTO,
+	GithubSettingsWrite,
 	LlmSettingsDTO,
+	LlmSettingsWrite,
 	OAuthCredentialsInput,
 	OAuthProviderStatus,
 	ProfileSettingsDTO,
+	SettingsGroup,
+	SettingsSnapshot,
+	SettingsUpdate,
+	StartupSnapshot,
 } from "../model/types";
 
 const BASE = "/admin/settings";
 const OAUTH_BASE = "/admin/oauth";
 
-/**
- * 站点设置分组 client —— 对齐后端 7 组子接口。
- *
- * 每组 get 调 GET /admin/settings/{group}，update 调 PUT 同路径。
- * update 入参为 Partial（后端按指针语义部分更新），调用方可只提交改动字段。
- * 返回更新后的该组全量配置。
- */
+export const getGeneral = () => apiGet<SettingsSnapshot<GeneralSettingsDTO>>(`${BASE}/general`);
+export const updateGeneral = (body: SettingsUpdate<GeneralSettingsDTO>) =>
+	apiPut<SettingsSnapshot<GeneralSettingsDTO>>(`${BASE}/general`, body);
 
-/** getGeneral / updateGeneral —— 基础信息组 */
-export const getGeneral = () => apiGet<GeneralSettingsDTO>(`${BASE}/general`);
-export const updateGeneral = (body: Partial<GeneralSettingsDTO>) =>
-	apiPut<GeneralSettingsDTO>(`${BASE}/general`, body);
+export const getAuth = () => apiGet<SettingsSnapshot<AuthSettingsDTO>>(`${BASE}/auth`);
+export const updateAuth = (body: SettingsUpdate<AuthSettingsDTO>) =>
+	apiPut<SettingsSnapshot<AuthSettingsDTO>>(`${BASE}/auth`, body);
 
-/** getAuth / updateAuth —— 认证组 */
-export const getAuth = () => apiGet<AuthSettingsDTO>(`${BASE}/auth`);
-export const updateAuth = (body: Partial<AuthSettingsDTO>) =>
-	apiPut<AuthSettingsDTO>(`${BASE}/auth`, body);
+export const getGithub = () => apiGet<SettingsSnapshot<GithubSettingsDTO>>(`${BASE}/github`);
+export const updateGithub = (body: SettingsUpdate<GithubSettingsWrite>) =>
+	apiPut<SettingsSnapshot<GithubSettingsDTO>>(`${BASE}/github`, body);
 
-/** getGithub / updateGithub —— GitHub 组 */
-export const getGithub = () => apiGet<GithubSettingsDTO>(`${BASE}/github`);
-export const updateGithub = (body: Partial<GithubSettingsDTO>) =>
-	apiPut<GithubSettingsDTO>(`${BASE}/github`, body);
+export const getProfile = () => apiGet<SettingsSnapshot<ProfileSettingsDTO>>(`${BASE}/profile`);
+export const updateProfile = (body: SettingsUpdate<ProfileSettingsDTO>) =>
+	apiPut<SettingsSnapshot<ProfileSettingsDTO>>(`${BASE}/profile`, body);
 
-/** getProfile / updateProfile —— 关于博主组 */
-export const getProfile = () => apiGet<ProfileSettingsDTO>(`${BASE}/profile`);
-export const updateProfile = (body: Partial<ProfileSettingsDTO>) =>
-	apiPut<ProfileSettingsDTO>(`${BASE}/profile`, body);
+export const getAbout = () => apiGet<SettingsSnapshot<AboutSettingsDTO>>(`${BASE}/about`);
+export const updateAbout = (body: SettingsUpdate<AboutSettingsWrite>) =>
+	apiPut<SettingsSnapshot<AboutSettingsDTO>>(`${BASE}/about`, body);
 
-/** getAbout / updateAbout —— 关于页区块配置组 */
-export const getAbout = () => apiGet<AboutSettingsDTO>(`${BASE}/about`);
-export const updateAbout = (body: Partial<AboutSettingsDTO>) =>
-	apiPut<AboutSettingsDTO>(`${BASE}/about`, body);
+export const getLlm = () => apiGet<SettingsSnapshot<LlmSettingsDTO>>(`${BASE}/llm`);
+export const updateLlm = (body: SettingsUpdate<LlmSettingsWrite>) =>
+	apiPut<SettingsSnapshot<LlmSettingsDTO>>(`${BASE}/llm`, body);
 
-/** getLlm / updateLlm —— LLM 组 */
-export const getLlm = () => apiGet<LlmSettingsDTO>(`${BASE}/llm`);
-export const updateLlm = (body: Partial<LlmSettingsDTO>) =>
-	apiPut<LlmSettingsDTO>(`${BASE}/llm`, body);
+export const getCodeRunner = () =>
+	apiGet<SettingsSnapshot<CodeRunnerSettingsDTO>>(`${BASE}/code-runner`);
+export const updateCodeRunner = (body: SettingsUpdate<CodeRunnerSettingsDTO>) =>
+	apiPut<SettingsSnapshot<CodeRunnerSettingsDTO>>(`${BASE}/code-runner`, body);
 
-/** getCodeRunner / updateCodeRunner —— 代码运行器组 */
-export const getCodeRunner = () => apiGet<CodeRunnerSettingsDTO>(`${BASE}/code-runner`);
-export const updateCodeRunner = (body: Partial<CodeRunnerSettingsDTO>) =>
-	apiPut<CodeRunnerSettingsDTO>(`${BASE}/code-runner`, body);
+export const resetSettings = <T>(group: SettingsGroup, expected_version: number) =>
+	apiPost<SettingsSnapshot<T>>(`${BASE}/${group}/reset`, { expected_version });
+
+export const getStartup = () => apiGet<StartupSnapshot>(`${BASE}/startup`);
 
 /** OAuth 凭据状态与写入（env 域，独立于 settings 分组，不落库） */
 export const getOAuthStatus = () =>

@@ -152,10 +152,10 @@ const Footer = () => {
 										</a>
 									</li>
 								) : null}
-								{data?.github_username ? (
+								{data?.footer_github_url ? (
 									<li>
 										<a
-											href={`https://github.com/${data.github_username}`}
+											href={data.footer_github_url}
 											target="_blank"
 											rel="noreferrer"
 											className="inline-flex items-center gap-0.5 transition-colors hover:text-foreground"

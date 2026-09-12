@@ -124,7 +124,11 @@ export function OAuthProviderCard({
 							</Button>
 						</div>
 					</div>
-					<Switch checked={enabled} onCheckedChange={onEnabledChange} />
+					<Switch
+						aria-label={`启用 ${name} 登录`}
+						checked={enabled}
+						onCheckedChange={onEnabledChange}
+					/>
 				</div>
 			</div>
 			{/* 检测结果：垂直 0fr↔1fr；间距走 margin-top 过渡，收起不残留空隙 */}

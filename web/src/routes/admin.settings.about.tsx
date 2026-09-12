@@ -35,19 +35,21 @@ import { GripVertical } from "lucide-react";
  * 内部用 AboutSection[] 编辑（开关 + 拖拽排序），提交时直接提交对象（后端 json.RawMessage 接收）。
  */
 interface AboutSettingsForm {
-	about_config: AboutConfig | null;
+	about_config: AboutConfig;
 }
 
 function AboutConfigPage() {
-	const { watch, setValue, isLoading, isPending, onSubmit } = useSettingsForm<
-		AboutSettingsForm,
-		AboutSettingsDTO
-	>(useAboutSettings(), useUpdateAbout(), (data) => ({
-		about_config: data.about_config ?? null,
-	}));
+	const { watch, setValue, page } = useSettingsForm<AboutSettingsForm, AboutSettingsDTO>(
+		useAboutSettings(),
+		useUpdateAbout(),
+		(data) => ({
+			about_config: data.about_config ?? { sections: [] },
+		}),
+		{ group: "about" },
+	);
 	// 读 github 组配置判断 releases_repo 是否已配置（更新日志区块依赖它，属跨组只读）
 	const { data: githubSettings } = useGithubSettings();
-	const releasesRepoConfigured = !!githubSettings?.releases_repo;
+	const releasesRepoConfigured = !!githubSettings?.values.releases_repo;
 
 	// watch about_config 对象，派生可编辑的 sections 列表。
 	// setValue 改对象后 watch 触发重渲染，保持单向数据流：编辑 sections → 同步回对象。
@@ -98,13 +100,7 @@ function AboutConfigPage() {
 	};
 
 	return (
-		<SettingsSubPage
-			title="关于页配置"
-			description="控制关于页各区块的显示与顺序"
-			isLoading={isLoading}
-			isPending={isPending}
-			onSubmit={onSubmit}
-		>
+		<SettingsSubPage title="关于页配置" description="控制关于页各区块的显示与顺序" state={page}>
 			<section className="space-y-3">
 				<h3 className="text-sm font-semibold">区块列表</h3>
 				<p className="text-xs text-muted-foreground">
@@ -185,7 +181,11 @@ function SortableSectionItem({
 					)}
 				</div>
 			</div>
-			<Switch checked={section.enabled} onCheckedChange={(v) => onToggle(section.id, v)} />
+			<Switch
+				aria-label={`${ABOUT_SECTION_LABELS[section.id] ?? section.id}区块`}
+				checked={section.enabled}
+				onCheckedChange={(v) => onToggle(section.id, v)}
+			/>
 		</div>
 	);
 }

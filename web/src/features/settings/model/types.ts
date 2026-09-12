@@ -59,6 +59,8 @@ export interface SiteSettings {
 	bio: string;
 	/** 页脚文案 */
 	footer_text: string;
+	/** 页脚 GitHub 账号或仓库 URL，空字符串隐藏。 */
+	footer_github_url: string;
 	/**
 	 * 关于页区块版面配置（原生 JSON 对象，后端 json.RawMessage 序列化）。
 	 * 结构 { sections: [{ id, enabled, order, params }] }，前台按 order 排序、enabled 过滤渲染。

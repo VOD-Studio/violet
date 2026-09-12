@@ -20,38 +20,29 @@ interface CodeRunnerForm {
 }
 
 function CodeRunnerSettingsPage() {
-	const { register, control, isLoading, isPending, onSubmit } = useSettingsForm<
-		CodeRunnerForm,
-		CodeRunnerSettingsDTO
-	>(
+	const { register, control, page } = useSettingsForm<CodeRunnerForm, CodeRunnerSettingsDTO>(
 		useCodeRunnerSettings(),
 		useUpdateCodeRunner(),
-		// 数值字段后端返回 0 表示未配置，前端显示默认值
 		(data) => ({
-			code_runner_enabled: data.code_runner_enabled ?? true,
-			code_runner_max_cpu_cores: data.code_runner_max_cpu_cores || 2,
-			code_runner_max_memory_mb: data.code_runner_max_memory_mb || 1024,
-			code_runner_max_timeout_secs: data.code_runner_max_timeout_secs || 30,
-			code_runner_max_output_bytes: data.code_runner_max_output_bytes || 1048576,
-			code_runner_max_source_bytes: data.code_runner_max_source_bytes || 65536,
-			code_runner_allow_network: data.code_runner_allow_network ?? false,
-			code_runner_languages: data.code_runner_languages ?? "",
+			code_runner_enabled: data.code_runner_enabled,
+			code_runner_max_cpu_cores: data.code_runner_max_cpu_cores,
+			code_runner_max_memory_mb: data.code_runner_max_memory_mb,
+			code_runner_max_timeout_secs: data.code_runner_max_timeout_secs,
+			code_runner_max_output_bytes: data.code_runner_max_output_bytes,
+			code_runner_max_source_bytes: data.code_runner_max_source_bytes,
+			code_runner_allow_network: data.code_runner_allow_network,
+			code_runner_languages: data.code_runner_languages,
 		}),
+		{ group: "code-runner" },
 	);
 
 	return (
-		<SettingsSubPage
-			title="代码运行器"
-			description="可运行代码块沙箱执行配置"
-			isLoading={isLoading}
-			isPending={isPending}
-			onSubmit={onSubmit}
-		>
+		<SettingsSubPage title="代码运行器" description="可运行代码块沙箱执行配置" state={page}>
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">代码运行器</h3>
 				<p className="text-xs text-muted-foreground">
 					配置可运行代码块的沙箱执行。需 api 容器挂载 docker.sock 且 yggdrasil-runner-*
-					镜像已 load。改动立即生效，无需重启。详见 ADR-0006。
+					镜像已 load。保存后的生效时机与应用结果见上方状态。
 				</p>
 				<Controller
 					control={control}

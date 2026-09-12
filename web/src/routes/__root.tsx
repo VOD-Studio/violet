@@ -1,7 +1,9 @@
+import { subscribeSettingsChanges } from "@features/settings/api/cache-events";
 import { cn } from "@shared/lib/utils";
 import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
 import { SystemThemeTransition } from "@shared/ui/theme-transition";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -13,8 +15,10 @@ import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
+import { homeResourceKeys } from "@widgets/HomeExperience/api/keys";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { RuaRouteTransition } from "@widgets/PersonaMotion";
+import { useEffect } from "react";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
@@ -132,6 +136,7 @@ function RootComponent() {
 	const isFullscreenRoute = isChatRoute || isUsersRoute;
 	return (
 		<AppProvider>
+			<SettingsCacheSync />
 			<SystemThemeTransition />
 			<RuaRouteTransition />
 			{isAdminRoute ? (
@@ -165,6 +170,20 @@ function RootComponent() {
 			<CustomCursor />
 		</AppProvider>
 	);
+}
+
+function SettingsCacheSync() {
+	const queryClient = useQueryClient();
+	useEffect(
+		() =>
+			subscribeSettingsChanges(queryClient, async () => {
+				const filter = { queryKey: homeResourceKeys.siteIdentity() };
+				await queryClient.cancelQueries(filter);
+				await queryClient.invalidateQueries(filter);
+			}),
+		[queryClient],
+	);
+	return null;
 }
 
 /**

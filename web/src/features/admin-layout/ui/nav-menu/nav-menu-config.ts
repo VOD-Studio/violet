@@ -247,6 +247,12 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				icon: Cpu,
 				permissions: ["settings:view"],
 			},
+			{
+				label: "启动配置",
+				to: "/admin/settings/startup",
+				icon: Activity,
+				permissions: ["settings:view"],
+			},
 		],
 	},
 	{

@@ -43,6 +43,8 @@ web/src/
 └── styles.css        # 全局样式与 Tailwind 入口
 ```
 
+后台设置位于 `/admin/settings`：七组表单展示保存与应用版本，冲突保留未保存输入，重新加载和恢复默认需要确认；保存后同步刷新已打开页面的公开配置。`/admin/settings/startup` 只读展示当前进程配置及真实连接池状态，不提供在线保存。接口契约见 [API 配置说明](../api/README.md#配置)。
+
 ## 开发环境
 
 项目使用 **pnpm** 作为包管理器，请勿使用 npm 或 yarn。

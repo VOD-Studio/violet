@@ -6,6 +6,7 @@ export interface GeneralSettingsDTO {
 	site_name: string;
 	site_url: string;
 	footer_text: string;
+	footer_github_url: string;
 	posts_per_page: number;
 	home_footprint_enabled: boolean;
 	/** 节点聚合天数，范围 1–31 */
@@ -13,7 +14,7 @@ export interface GeneralSettingsDTO {
 	comments_enabled: boolean;
 	comments_moderation: boolean;
 	tech_stack: string;
-	/** 单用户自定义表情份额上限（自传+收藏合计），0=未配置，前端显示时按 env 默认兜底 */
+	/** 单用户自定义表情份额上限（自传与收藏合计）。 */
 	custom_emoji_max_per_user: number;
 }
 
@@ -53,7 +54,7 @@ export interface OAuthCredentialsInput {
 /** GitHub 组（用户名/Token/更新日志仓库名） */
 export interface GithubSettingsDTO {
 	github_username: string;
-	github_token: string;
+	github_token_set: boolean;
 	releases_repo: string;
 }
 
@@ -80,9 +81,14 @@ export interface AboutSettingsDTO {
 	about_config: AboutConfig | null;
 }
 
+/** 未配置的读取值可为 null；写入清空区块使用空 sections，恢复默认使用 reset。 */
+export interface AboutSettingsWrite {
+	about_config: AboutConfig;
+}
+
 /** LLM 组（OpenAI 协议兼容端点） */
 export interface LlmSettingsDTO {
-	llm_api_key: string;
+	llm_api_key_set: boolean;
 	llm_api_url: string;
 	llm_model: string;
 	llm_protocol: string;
@@ -98,4 +104,59 @@ export interface CodeRunnerSettingsDTO {
 	code_runner_max_source_bytes: number;
 	code_runner_allow_network: boolean;
 	code_runner_languages: string;
+}
+
+/** 写入秘密时：省略保留，空字符串明确清除。 */
+export interface GithubSettingsWrite extends Omit<GithubSettingsDTO, "github_token_set"> {
+	github_token: string;
+}
+
+/** 写入秘密时：省略保留，空字符串明确清除。 */
+export interface LlmSettingsWrite extends Omit<LlmSettingsDTO, "llm_api_key_set"> {
+	llm_api_key: string;
+}
+
+export interface SettingsMeta {
+	saved_version: number;
+	applied_version: number;
+	effect: "new_request" | "new_task" | "restart";
+	status: "applied" | "pending_restart" | "failed";
+	sources: Record<string, "database" | "deployment_default">;
+	error?: string;
+}
+
+/** 管理端返回保存快照与实际应用状态，公开端仍返回扁平设置。 */
+export interface SettingsSnapshot<T> {
+	values: T;
+	meta: SettingsMeta;
+}
+
+/** expected_version 始终来自开始编辑时的保存快照。 */
+export interface SettingsUpdate<T> {
+	expected_version: number;
+	values: Partial<T>;
+}
+
+export type SettingsGroup =
+	| "general"
+	| "auth"
+	| "github"
+	| "profile"
+	| "about"
+	| "llm"
+	| "code-runner";
+
+export interface StartupSnapshot {
+	observed_at: string;
+	sections: {
+		id: string;
+		label: string;
+		fields: {
+			key: string;
+			label: string;
+			value: string | number | boolean | null;
+			source: "environment" | "default" | "runtime";
+			sensitive: boolean;
+		}[];
+	}[];
 }
