@@ -28,6 +28,15 @@ type Claims struct {
 	CSRFToken string
 }
 
+// ClientContext session 创建/续期时观察到的客户端信息，供设备列表展示。
+// IP 来自受信代理感知解析；UserAgent 截断后存储，不参与鉴权决策。
+type ClientContext struct {
+	// IP 客户端 IP（GetClientIP 语义）
+	IP string
+	// UserAgent 原始 User-Agent，截断至 256 字节
+	UserAgent string
+}
+
 // Session opaque session 聚合根。
 //
 // 不变量（Invariant）：
@@ -58,6 +67,8 @@ type Session struct {
 	lastSeenAt time.Time
 	// absoluteDeadline 绝对寿命截止时间；零值表示无绝对上限（max<=0）
 	absoluteDeadline time.Time
+	// client 最近一次请求的客户端信息（登录创建、Touch 续期时刷新）
+	client ClientContext
 }
 
 // NewSession 创建新 session。
@@ -65,7 +76,7 @@ type Session struct {
 // now 为当前时间（由调用方注入，便于测试）；absoluteTTL<=0 表示无绝对寿命上限
 // （absoluteDeadline 保持零值）。生成唯一 id 与独立 csrf token。
 // 随机源失败时返回错误，调用方应映射为 500。
-func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*Session, error) {
+func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration, client ClientContext) (*Session, error) {
 	id, err := NewID()
 	if err != nil {
 		return nil, err
@@ -79,10 +90,11 @@ func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*S
 		userID:              snap.UserID.String(),
 		email:               snap.Email,
 		role:                snap.Role,
-		isRoot:             snap.IsRoot,
+		isRoot:              snap.IsRoot,
 		csrf:                csrf,
 		createdAt:           now,
 		lastSeenAt:          now,
+		client:              truncateClient(client),
 	}
 	if absoluteTTL > 0 {
 		s.absoluteDeadline = now.Add(absoluteTTL)
@@ -96,18 +108,19 @@ func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*S
 // 存储的数据恢复。供 SessionStore.Get 反序列化时使用。
 func Reconstruct(
 	id ID, userID, email, role string, isRoot bool,
-	csrf CSRFToken, createdAt, lastSeenAt, absoluteDeadline time.Time,
+	csrf CSRFToken, createdAt, lastSeenAt, absoluteDeadline time.Time, client ClientContext,
 ) *Session {
 	return &Session{
 		id:                  id,
 		userID:              userID,
 		email:               email,
 		role:                role,
-		isRoot:             isRoot,
+		isRoot:              isRoot,
 		csrf:                csrf,
 		createdAt:           createdAt,
 		lastSeenAt:          lastSeenAt,
 		absoluteDeadline:    absoluteDeadline,
+		client:              client,
 	}
 }
 
@@ -129,6 +142,9 @@ func (s *Session) LastSeenAt() time.Time { return s.lastSeenAt }
 // AbsoluteDeadline 返回绝对寿命截止时间，零值表示无上限。
 func (s *Session) AbsoluteDeadline() time.Time { return s.absoluteDeadline }
 
+// Client 返回最近一次观察到的客户端信息（登录创建、Touch 续期时刷新）。
+func (s *Session) Client() ClientContext { return s.client }
+
 // Claims 返回鉴权所需的身份字段快照。
 //
 // 供鉴权中间件注入 context、/auth/session 端点返回给 SSR。
@@ -142,12 +158,21 @@ func (s *Session) Claims() Claims {
 	}
 }
 
-// Touch 滑动续期：更新最近活跃时间为 now。
+// Touch 滑动续期：更新最近活跃时间为 now，并刷新客户端信息。
 //
 // 命门不变量②：只更新 lastSeenAt，**不轮换 id、不产生 cookie**。
 // SessionStore.Touch 会在调用本方法后把新 lastSeenAt 持久化并重置 Redis TTL。
-func (s *Session) Touch(now time.Time) {
+func (s *Session) Touch(now time.Time, client ClientContext) {
 	s.lastSeenAt = now
+	s.client = truncateClient(client)
+}
+
+// truncateClient 截断 UserAgent，防止异常超长的请求头撑爆 Redis payload。
+func truncateClient(client ClientContext) ClientContext {
+	if len(client.UserAgent) > 256 {
+		client.UserAgent = client.UserAgent[:256]
+	}
+	return client
 }
 
 // IsExpired 判断 session 是否已过期。

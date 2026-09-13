@@ -60,7 +60,7 @@ func newSettingsHandler(values map[string]string) *Handler {
 		HomeFootprintEnabled: true, HomeFootprintAggregationDays: 7, GoogleLoginEnabled: true, GithubLoginEnabled: true,
 		CustomEmojiMaxPerUser: 100, CodeRunnerEnabled: true, CodeRunnerMaxCPUCores: 2, CodeRunnerMaxMemoryMB: 1024,
 		CodeRunnerMaxTimeoutSecs: 30, CodeRunnerMaxSourceBytes: 65536, CodeRunnerMaxOutputBytes: 1048576}
-	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory(), defaults), authcmd.NewOAuthCredentials("", "", ""), nil)
+	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory(), defaults), authcmd.NewOAuthCredentials("", "", ""), nil, nil)
 }
 func newJSONRequest(method, target, body string) *http.Request {
 	req := httptest.NewRequest(method, target, bytes.NewBufferString(body))

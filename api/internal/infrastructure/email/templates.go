@@ -71,3 +71,36 @@ func buildPasswordResetEmail(code string) string {
 </body>
 </html>`, safe)
 }
+
+// buildOpsGrantEmail 构建短时运维授权验证码 HTML 邮件
+func buildOpsGrantEmail(code string) string {
+	safe := html.EscapeString(code)
+	return fmt.Sprintf(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>高危操作确认</title></head>
+<body style="margin:0; padding:0; background-color:#f4f4f7; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:40px 0;">
+        <tr><td align="center">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
+                <tr><td style="background:linear-gradient(135deg,#2c3e50 0%%,#4a69bd 100%%); padding:32px 40px; text-align:center;">
+                    <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600;">高危操作确认</h1>
+                </td></tr>
+                <tr><td style="padding:40px;">
+                    <p style="margin:0 0 20px; color:#333333; font-size:16px; line-height:1.6;">您好，</p>
+                    <p style="margin:0 0 20px; color:#333333; font-size:16px; line-height:1.6;">我们收到了您账号的短时运维授权请求。请使用以下验证码完成确认：</p>
+                    <div style="background-color:#f8f9fa; border:2px dashed #4a69bd; border-radius:8px; padding:24px; text-align:center; margin:24px 0;">
+                        <p style="margin:0 0 8px; color:#666666; font-size:14px;">您的验证码</p>
+                        <p style="margin:0; color:#333333; font-size:36px; font-weight:700; letter-spacing:8px; font-family:monospace;">%s</p>
+                    </div>
+                    <p style="margin:0 0 12px; color:#666666; font-size:14px;">验证码有效期为 <strong>10 分钟</strong>，请尽快完成操作。</p>
+                    <p style="margin:0; color:#999999; font-size:13px;">如果这不是您的操作，请立即检查账号安全并修改密码。</p>
+                </td></tr>
+                <tr><td style="background-color:#f8f9fa; padding:20px 40px; text-align:center; border-top:1px solid #eeeeee;">
+                    <p style="margin:0; color:#999999; font-size:13px;">此邮件由系统自动发送，请勿直接回复。</p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body>
+</html>`, safe)
+}

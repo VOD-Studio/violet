@@ -29,6 +29,21 @@ type AuthView struct {
 	GithubLoginEnabled bool `json:"github_login_enabled"`
 }
 
+// SecurityView 安全策略组：可信来源/可信代理/Cookie 约束/并发会话上限。
+// 变更经限时确认（pending → confirm）才落库生效，见 Service。
+type SecurityView struct {
+	// TrustedOrigins 可信来源列表（逗号或换行分隔）；空串沿用部署默认
+	TrustedOrigins string `json:"trusted_origins"`
+	// TrustedProxies 可信代理 CIDR/IP 列表；空串沿用部署默认
+	TrustedProxies string `json:"trusted_proxies"`
+	// CookieSecure Cookie 是否强制 Secure（生产部署底线不可关闭时只读 true）
+	CookieSecure bool `json:"cookie_secure"`
+	// CookieSameSite lax|strict|none
+	CookieSameSite string `json:"cookie_same_site"`
+	// SessionMaxDevices 并发登录会话上限，0 不限制
+	SessionMaxDevices int `json:"session_max_devices"`
+}
+
 // GithubView GitHub 组：用户名/Token/更新日志仓库名
 type GithubView struct {
 	GitHubUsername string `json:"github_username"`
@@ -101,6 +116,16 @@ func authView(s domainsettings.SiteSettings) AuthView {
 	return AuthView{
 		GoogleLoginEnabled: s.GoogleLoginEnabled,
 		GithubLoginEnabled: s.GithubLoginEnabled,
+	}
+}
+
+func securityView(s domainsettings.SiteSettings) SecurityView {
+	return SecurityView{
+		TrustedOrigins:    s.TrustedOrigins,
+		TrustedProxies:    s.TrustedProxies,
+		CookieSecure:      s.CookieSecure,
+		CookieSameSite:    s.CookieSameSite,
+		SessionMaxDevices: s.SessionMaxDevices,
 	}
 }
 

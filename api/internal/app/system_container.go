@@ -19,9 +19,9 @@ type SystemContainer struct {
 
 // NewSystemContainer 装配监控模块并启动采样 goroutine。
 // ctx 用于优雅退出（随 HTTP server shutdown 取消）。
-func NewSystemContainer(db *gorm.DB, rdb *redis.Client, ctx context.Context) *SystemContainer {
+func NewSystemContainer(db *gorm.DB, rdb *redis.Client, ctx context.Context, sessions appsystem.SessionCounter) *SystemContainer {
 	collector := infrasystem.NewCollector()
-	svc := appsystem.NewService(db, rdb, collector)
+	svc := appsystem.NewService(db, rdb, collector, sessions)
 	sampler := appsystem.NewSampler(ctx, collector, svc)
 	go sampler.Run()
 	return &SystemContainer{

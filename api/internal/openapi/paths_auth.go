@@ -86,6 +86,30 @@ func registerAuthPaths(t *openapi3.T) {
 		"csrf_token": reqStr("CSRF Token（64 字符 hex）"),
 	})
 
+	// SessionDevice：/auth/sessions 响应条目
+	registerSchema(t, "SessionDevice", openapi3.Schemas{
+		"public_id":   reqStr("会话公开标识（SHA-256 派生，非凭据）"),
+		"created_at":  reqStr("创建时间（RFC3339）"),
+		"last_seen_at": reqStr("最近活跃时间（RFC3339）"),
+		"client_ip":   optStr("最近一次请求的客户端 IP"),
+		"user_agent":  optStr("最近一次请求的 User-Agent"),
+		"current":     optBool("是否当前请求所在会话"),
+	})
+
+	// OpsGrantRequest：/auth/ops-grant 请求体
+	registerSchema(t, "OpsGrantRequest", openapi3.Schemas{
+		"category": strEnum("授权类别", "security"),
+		"method":   strEnum("验证方式", "password", "email_code"),
+		"password": optStr("method=password 时的当前密码"),
+		"code":     optStr("method=email_code 时的邮箱验证码"),
+	})
+
+	// OpsGrantResponse：/auth/ops-grant 响应的 data
+	registerSchema(t, "OpsGrantResponse", openapi3.Schemas{
+		"category":   reqStr("授权类别"),
+		"expires_at": reqStr("授权截止时间（RFC3339）"),
+	})
+
 	// ---- GET /auth/csrf-token ----
 	t.Paths.Set("/auth/csrf-token", &openapi3.PathItem{
 		Get: &openapi3.Operation{
@@ -241,6 +265,61 @@ func registerAuthPaths(t *openapi3.T) {
 			Responses: responses(
 				200, messageResponse("密码已修改，请重新登录"),
 				401, errorResponse("原密码错误"),
+			),
+		},
+	})
+
+	// ---- GET /auth/sessions（登录）----
+	t.Paths.Set("/auth/sessions", &openapi3.PathItem{
+		Get: &openapi3.Operation{
+			Tags:        []string{"认证"},
+			Summary:     "列出当前用户登录会话",
+			Description: "设备/会话列表，按创建时间升序。条目只含 SHA-256 派生公开标识，不下发会话凭据。",
+			Security:    securityCookie(),
+			Responses: responses(
+				200, dataArrayResponse("SessionDevice", "会话列表", 200, false),
+				401, errorResponse("未登录"),
+			),
+		},
+	})
+
+	// ---- DELETE /auth/sessions/{publicID}（登录）----
+	t.Paths.Set("/auth/sessions/{publicID}", &openapi3.PathItem{
+		Delete: &openapi3.Operation{
+			Tags:        []string{"认证"},
+			Summary:     "吊销指定登录会话",
+			Description: "吊销当前用户的指定会话（属主校验在服务端完成），吊销后该会话请求立即失效；吊销当前会话等同该设备登出。",
+			Security:    securityCookie(),
+			Parameters:  openapi3.Parameters{csrfHeaderParam(), pathStrParam("publicID", "会话公开标识（SHA-256 派生）")},
+			Responses: responses(
+				200, messageResponse("会话已吊销"),
+				404, errorResponse("会话不存在"),
+			),
+		},
+	})
+
+	// ---- POST/DELETE /auth/ops-grant（登录）----
+	t.Paths.Set("/auth/ops-grant", &openapi3.PathItem{
+		Post: &openapi3.Operation{
+			Tags:        []string{"认证"},
+			Summary:     "签发短时运维授权",
+			Description: "通过当前密码或账号绑定邮箱验证码换取绑定当前会话的短时运维授权（默认 10 分钟）。退出/改密/吊销/超时立即失效。受认证限流保护。",
+			Security:    securityCookie(),
+			Parameters:  openapi3.Parameters{csrfHeaderParam()},
+			RequestBody: jsonBody("OpsGrantRequest", true, "授权类别、验证方式与凭证"),
+			Responses: responses(
+				200, dataResponse("OpsGrantResponse", "授权截止时间", 200),
+				401, errorResponse("二次验证失败"),
+			),
+		},
+		Delete: &openapi3.Operation{
+			Tags:        []string{"认证"},
+			Summary:     "吊销当前会话运维授权",
+			Description: "主动放弃当前会话的全部短时运维授权。",
+			Security:    securityCookie(),
+			Parameters:  openapi3.Parameters{csrfHeaderParam()},
+			Responses: responses(
+				200, messageResponse("运维授权已吊销"),
 			),
 		},
 	})

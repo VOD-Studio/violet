@@ -43,6 +43,7 @@ func TestSessionAccessRequiresAdminEntryAndRuntimeLogPermission(t *testing.T) {
 		now,
 		now,
 		time.Time{},
+		domainsession.ClientContext{},
 	)
 	reader := sessionReaderStub{session: session}
 	viewOnly := NewSessionAccess(reader, permissionCheckerStub{granted: map[string]bool{

@@ -7,36 +7,46 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
 	authquery "blog-api/internal/application/auth/query"
 	appsettings "blog-api/internal/application/settings"
+	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/domain/opsgrant"
 	domainsettings "blog-api/internal/domain/settings"
+	domainsession "blog-api/internal/domain/session"
+	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
 	"blog-api/internal/middleware"
 )
-
 // Handler auth HTTP 处理器（DDD 版）
 type Handler struct {
-	register      *authcmd.RegisterUserHandler  // 注册用例
-	login         *authcmd.LoginHandler         // 账号密码登录用例
-	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
-	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
-	logout        *authcmd.LogoutHandler        // 登出用例
-	createSession *authcmd.CreateSessionHandler // session 创建用例，登录后下发 cookie
-	verify        *authcmd.VerifyEmailHandler   // 邮箱验证用例
-	forgot        *authcmd.ForgotPasswordHandler // 忘记密码用例，发送重置码
-	reset         *authcmd.ResetPasswordHandler  // 重置密码用例
-	updatePf      *authcmd.UpdateProfileHandler   // 更新个人资料用例
-	changePwd     *authcmd.ChangePasswordHandler  // 修改密码用例
-	getMe         *authquery.GetMeHandler          // 获取当前用户信息用例
-	settings      *appsettings.Service             // 站点设置服务，OAuth 启用判断
-	oauthCreds    *authcmd.OAuthCredentials        // OAuth 凭据运行时存储（后台可写）
+	register      *authcmd.RegisterUserHandler
+	login         *authcmd.LoginHandler
+	google        *authcmd.GoogleLoginHandler
+	github        *authcmd.GithubLoginHandler
+	logout        *authcmd.LogoutHandler
+	createSession *authcmd.CreateSessionHandler
+	verify        *authcmd.VerifyEmailHandler
+	forgot        *authcmd.ForgotPasswordHandler
+	reset         *authcmd.ResetPasswordHandler
+	updatePf      *authcmd.UpdateProfileHandler
+	changePwd     *authcmd.ChangePasswordHandler
+	getMe         *authquery.GetMeHandler
+	settings          *appsettings.Service                // OAuth 开关与安全组运行时读取
+	oauthCreds        *authcmd.OAuthCredentials           // OAuth 凭据运行时存储（后台可写）
+	listSessions      *authcmd.ListUserSessionsHandler    // 设备/会话列表
+	revokeSession     *authcmd.RevokeUserSessionHandler   // 会话吊销
+	issueGrant        *authcmd.IssueOpsGrantHandler       // 短时运维授权签发
+	revokeGrant       *authcmd.RevokeOpsGrantHandler      // 运维授权主动吊销
+	requestGrantCode  *authcmd.RequestOpsGrantCodeHandler // 授权邮箱验证码
 
 	validate  *validator.Validate  // 请求体校验器
 	cookieCfg config.CookieConfig  // session cookie 配置（名/域/Secure/SameSite）
@@ -64,6 +74,12 @@ func NewHandler(
 	oauthCreds *authcmd.OAuthCredentials,
 	cookieCfg config.CookieConfig,
 	session config.SessionConfig,
+	listSessions *authcmd.ListUserSessionsHandler,
+	revokeSession *authcmd.RevokeUserSessionHandler,
+	issueGrant *authcmd.IssueOpsGrantHandler,
+	revokeGrant *authcmd.RevokeOpsGrantHandler,
+	requestGrantCode *authcmd.RequestOpsGrantCodeHandler,
+	opsGrants appshared.OpsGrantStore,
 ) *Handler {
 	return &Handler{
 		register: register, login: login, google: google, github: github, logout: logout,
@@ -71,7 +87,9 @@ func NewHandler(
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
 		oauthCreds: oauthCreds,
-		validate:   validator.New(),
+		listSessions: listSessions, revokeSession: revokeSession,
+		issueGrant: issueGrant, revokeGrant: revokeGrant, requestGrantCode: requestGrantCode,
+		validate:  validator.New(),
 		cookieCfg: cookieCfg,
 		session:   session,
 	}
@@ -255,17 +273,36 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	// 创建 opaque session 并下发 violet_session + violet_csrf + violet_uid Cookie。
 	// csrf 由 session 自带（CreateSession 生成），不再单独 generateCSRFToken。
-	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
-		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
-	})
-	if err != nil {
-		response.RespondError(w, r, err)
+	if !h.establishSession(w, r, out.UserID) {
 		return
 	}
-	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
 	response.RespondOK(w, map[string]any{
 		"user_id": out.UserID,
 	})
+}
+
+// establishSession 统一的登录会话落地：读取安全组并发上限、记录客户端
+// IP/UserAgent、创建 session 并下发 Cookie。三种登录方式共用。
+func (h *Handler) establishSession(w http.ResponseWriter, r *http.Request, userID string) bool {
+	maxDevices := 0
+	if h.settings != nil {
+		if settings, err := h.settings.GetAll(r.Context()); err == nil {
+			maxDevices = settings.SessionMaxDevices
+		}
+	}
+	sess, err := h.createSession.Handle(ctxWithAuditInfo(r), authcmd.CreateSessionInput{
+		UserID: userID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
+		MaxDevices: maxDevices,
+		Client: domainsession.ClientContext{
+			IP: middleware.GetClientIP(r), UserAgent: r.UserAgent(),
+		},
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return false
+	}
+	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, userID, h.cookieCfg, h.session.IdleTTL)
+	return true
 }
 
 // GoogleLogin POST /auth/google
@@ -291,14 +328,9 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
-		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
-	})
-	if err != nil {
-		response.RespondError(w, r, err)
+	if !h.establishSession(w, r, out.UserID) {
 		return
 	}
-	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
 	response.RespondOK(w, map[string]any{
 		"user_id": out.UserID,
 	})
@@ -327,14 +359,9 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
-		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
-	})
-	if err != nil {
-		response.RespondError(w, r, err)
+	if !h.establishSession(w, r, out.UserID) {
 		return
 	}
-	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
 	response.RespondOK(w, map[string]any{
 		"user_id": out.UserID,
 	})
@@ -382,16 +409,17 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // 响应体同时返回 token 字符串（非敏感，攻击者拿不到 cookie 也无法伪造 header）。
 func (h *Handler) GetCSRFToken(w http.ResponseWriter, r *http.Request) {
 	token := generateCSRFToken()
+	cfg := response.EffectiveCookieConfig(h.cookieCfg)
 	// 仅刷新 CSRF cookie，不动 access/refresh token cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:     h.cookieCfg.CSRFName,
+		Name:     cfg.CSRFName,
 		Value:    token,
 		Path:     "/",
-		Domain:   h.cookieCfg.Domain,
+		Domain:   cfg.Domain,
 		MaxAge:   response.CSRFCookieMaxAge,
-		Secure:   h.cookieCfg.Secure,
+		Secure:   cfg.Secure,
 		HttpOnly: false, // 必须 JS 可读
-		SameSite: h.cookieCfg.SameSiteMode(),
+		SameSite: cfg.SameSiteMode(),
 	})
 	response.RespondOK(w, map[string]any{
 		"csrf_token": token,
@@ -520,4 +548,100 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondMessage(w, http.StatusOK, "密码已修改，请重新登录")
+}
+
+// ListSessions GET /auth/sessions（需认证）
+//
+// 返回当前用户全部有效登录会话（设备列表）。条目只含派生公开标识，
+// 不下发 session id 等凭据。
+func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	sessionID := interfacesmw.GetSessionIDFromContext(r)
+	sessions, err := h.listSessions.Handle(r.Context(), userID, sessionID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, sessions)
+}
+
+// RevokeSession DELETE /auth/sessions/{publicID}（需认证）
+//
+// 吊销当前用户的指定会话。publicID 是 SHA-256 派生标识，属主校验在用例内
+// 完成（仅遍历本人会话做哈希匹配），不提供跨用户吊销。吊销当前会话等同
+// 该设备登出（客户端应清理本地状态）。
+func (h *Handler) RevokeSession(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	publicID := chi.URLParam(r, "publicID")
+	if publicID == "" {
+		response.RespondError(w, r, authcmd.ErrSessionNotOwned)
+		return
+	}
+	if err := h.revokeSession.Handle(ctxWithAuditInfo(r), authcmd.RevokeUserSessionInput{
+		OperatorID: userID, TargetUserID: userID, PublicID: publicID,
+	}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "会话已吊销")
+}
+
+// RequestOpsGrantCode POST /auth/ops-grant/code（需认证）
+//
+// 向账号绑定邮箱发送短时运维授权验证码（OAuth 无密码用户的二次验证通道）。
+func (h *Handler) RequestOpsGrantCode(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	if err := h.requestGrantCode.Handle(r.Context(), authcmd.RequestOpsGrantCodeInput{UserID: userID}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "验证码已发送到账号绑定邮箱")
+}
+
+// IssueOpsGrant POST /auth/ops-grant（需认证）
+//
+// 通过当前密码或邮箱验证码换取绑定当前会话的短时运维授权。
+// 授权绑定用户+会话+类别+有效期，退出/改密/吊销/超时即失效。
+func (h *Handler) IssueOpsGrant(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	sessionID := interfacesmw.GetSessionIDFromContext(r)
+	var req struct {
+		Category string `json:"category" validate:"required"`
+		Method   string `json:"method" validate:"required,oneof=password email_code"`
+		Password string `json:"password"`
+		Code     string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, shared.BadRequest("无效的请求体"))
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	out, err := h.issueGrant.Handle(ctxWithAuditInfo(r), authcmd.IssueOpsGrantInput{
+		UserID: userID, SessionID: sessionID,
+		Category: opsgrant.Category(req.Category), Method: req.Method,
+		Password: req.Password, Code: req.Code,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{
+		"category":   req.Category,
+		"expires_at": out.ExpiresAt.UTC().Format(time.RFC3339),
+	})
+}
+// RevokeOpsGrant DELETE /auth/ops-grant（需认证）
+//
+// 主动放弃当前会话的全部短时运维授权（完成后主动收权），结果入审计。
+func (h *Handler) RevokeOpsGrant(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	sessionID := interfacesmw.GetSessionIDFromContext(r)
+	if err := h.revokeGrant.Handle(ctxWithAuditInfo(r), userID, sessionID); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "运维授权已吊销")
 }

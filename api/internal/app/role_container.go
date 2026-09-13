@@ -13,6 +13,7 @@ import (
 	permquery "blog-api/internal/application/permission/query"
 	rolecmd "blog-api/internal/application/role/command"
 	rolequery "blog-api/internal/application/role/query"
+	appshared "blog-api/internal/application/shared"
 	role2 "blog-api/internal/domain/role"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -27,7 +28,7 @@ type RoleContainer struct {
 
 // InitializeRoleContainer 手工装配 role/permission 模块依赖图。
 // 返回 cleanup（当前无资源需释放，返回 no-op）以保持与旧 wire 签名兼容。
-func InitializeRoleContainer(db *gorm.DB, bus *infraeventbus.InMemory) (*RoleContainer, func(), error) {
+func InitializeRoleContainer(db *gorm.DB, bus *infraeventbus.InMemory, grants appshared.OpsGrantStore) (*RoleContainer, func(), error) {
 	roleRepo := gormrepo.NewRoleRepository(db)
 	permRepo := gormrepo.NewPermissionRepository(db)
 
@@ -51,7 +52,7 @@ func InitializeRoleContainer(db *gorm.DB, bus *infraeventbus.InMemory) (*RoleCon
 	)
 
 	// 权限检查器：构造 + 订阅角色权限变更事件（与 replaceRolePerms 共享同一 bus 实例）
-	checker := NewPermissionCheckerWithSubscription(roleRepo, bus)
+	checker := NewPermissionCheckerWithSubscription(roleRepo, bus, grants)
 
 	return &RoleContainer{RoleHandler: handler, PermissionChecker: checker}, func() {}, nil
 }

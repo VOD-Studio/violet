@@ -35,7 +35,7 @@ func TestCreateAndGet_RoundTrip(t *testing.T) {
 	store, mr := newTestStore(t)
 	defer mr.Close()
 
-	s, _ := domainsession.NewSession(testSnap("00000000-0000-0000-0000-000000000001"), time.Now(), 0)
+	s, _ := domainsession.NewSession(testSnap("00000000-0000-0000-0000-000000000001"), time.Now(), 0, domainsession.ClientContext{})
 	require.NoError(t, store.Create(context.Background(), s, time.Hour))
 
 	got, err := store.Get(context.Background(), s.ID())
@@ -59,11 +59,11 @@ func TestTouch_ExtendsTTL(t *testing.T) {
 	defer mr.Close()
 	ctx := context.Background()
 
-	s, _ := domainsession.NewSession(testSnap("00000000-0000-0000-0000-000000000001"), time.Now(), 0)
+	s, _ := domainsession.NewSession(testSnap("00000000-0000-0000-0000-000000000001"), time.Now(), 0, domainsession.ClientContext{})
 	require.NoError(t, store.Create(ctx, s, time.Second))
 
 	// 续期：把 TTL 重置为 1s
-	require.NoError(t, store.Touch(ctx, s, time.Second))
+	require.NoError(t, store.Touch(ctx, s, time.Second, domainsession.ClientContext{}))
 	// 推进 500ms：Touch 后 TTL 还剩 500ms，session 仍有效
 	mr.FastForward(500 * time.Millisecond)
 	_, err := store.Get(ctx, s.ID())
@@ -82,8 +82,8 @@ func TestDeleteForUser_RemovesSingleSession(t *testing.T) {
 	ctx := context.Background()
 	uid := "00000000-0000-0000-0000-000000000001"
 
-	s1, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0)
-	s2, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0)
+	s1, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0, domainsession.ClientContext{})
+	s2, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0, domainsession.ClientContext{})
 	require.NoError(t, store.Create(ctx, s1, time.Hour))
 	require.NoError(t, store.Create(ctx, s2, time.Hour))
 
@@ -101,8 +101,8 @@ func TestDeleteByUser_RemovesAllSessions(t *testing.T) {
 	ctx := context.Background()
 	uid := "00000000-0000-0000-0000-000000000001"
 
-	s1, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0)
-	s2, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0)
+	s1, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0, domainsession.ClientContext{})
+	s2, _ := domainsession.NewSession(testSnap(uid), time.Now(), 0, domainsession.ClientContext{})
 	require.NoError(t, store.Create(ctx, s1, time.Hour))
 	require.NoError(t, store.Create(ctx, s2, time.Hour))
 

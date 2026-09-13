@@ -40,6 +40,12 @@ func (s *Sender) SendPasswordResetCode(ctx context.Context, email, code string) 
 	return s.send(ctx, email, "重置您的密码", buildPasswordResetEmail(code))
 }
 
+// SendOpsGrantCode 发送短时运维授权验证码
+func (s *Sender) SendOpsGrantCode(ctx context.Context, email, code string) error {
+	s.logDevCode("运维授权验证码", email, code)
+	return s.send(ctx, email, "确认高危操作", buildOpsGrantEmail(code))
+}
+
 // logDevCode 开发模式打印验证码明文，方便联调（生产环境 no-op）
 func (s *Sender) logDevCode(label, email, code string) {
 	if !s.devMode {

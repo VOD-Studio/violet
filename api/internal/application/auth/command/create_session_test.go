@@ -17,10 +17,10 @@ import (
 func TestCreateSession_PersistsAndReturnsID(t *testing.T) {
 	repo := new(mocks.MockUserRepository)
 	store := new(mocks.MockSessionStore)
-	h := NewCreateSessionHandler(repo, store)
+	h := NewCreateSessionHandler(repo, store, nil)
 
 	repo.On("FindByID", mock.Anything, mock.Anything).Return(testUser(), nil)
-	store.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	store.On("CreateBounded", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]string{}, nil)
 
 	out, err := h.Handle(context.Background(), CreateSessionInput{
 		UserID:  testUserID,
@@ -37,7 +37,7 @@ func TestCreateSession_PersistsAndReturnsID(t *testing.T) {
 func TestCreateSession_UserNotFoundReturns401(t *testing.T) {
 	repo := new(mocks.MockUserRepository)
 	store := new(mocks.MockSessionStore)
-	h := NewCreateSessionHandler(repo, store)
+	h := NewCreateSessionHandler(repo, store, nil)
 
 	repo.On("FindByID", mock.Anything, mock.Anything).Return((*domainuser.User)(nil), domainuser.ErrNotFound)
 

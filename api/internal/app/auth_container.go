@@ -38,6 +38,7 @@ func NewAuthContainer(
 
 	sessionStore := infraauth.NewRedisSessionStore(redisClient)
 	codeStore := infraauth.NewRedisCodeStore(redisClient)
+	opsGrants := infraauth.NewRedisOpsGrantStore(redisClient)
 
 	hasher := authcmd.NewBcryptHasher()
 
@@ -45,22 +46,32 @@ func NewAuthContainer(
 	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
 	google := authcmd.NewGoogleLoginHandler(userRepo, cfg.GoogleClientID, hasher, bus)
 	github := authcmd.NewGithubLoginHandler(userRepo, oauthCreds, hasher, bus)
-	logout := authcmd.NewLogoutHandler(sessionStore, bus)
-	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
+	logout := authcmd.NewLogoutHandler(sessionStore, opsGrants, bus)
+	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore, bus)
 	verify := authcmd.NewVerifyEmailHandler(userRepo, codeStore, bus)
 	forgot := authcmd.NewForgotPasswordHandler(userRepo, codeStore, emailSender, hasher)
-	reset := authcmd.NewResetPasswordHandler(userRepo, codeStore, hasher, sessionStore)
+	reset := authcmd.NewResetPasswordHandler(userRepo, codeStore, hasher, sessionStore, opsGrants)
 	updatePf := authcmd.NewUpdateProfileHandler(userRepo)
-	changePwd := authcmd.NewChangePasswordHandler(userRepo, hasher, sessionStore)
+	changePwd := authcmd.NewChangePasswordHandler(userRepo, hasher, sessionStore, opsGrants)
 
+	listSessions := authcmd.NewListUserSessionsHandler(sessionStore)
+	revokeSession := authcmd.NewRevokeUserSessionHandler(sessionStore, opsGrants, bus)
+	issueGrant := authcmd.NewIssueOpsGrantHandler(userRepo, hasher, codeStore, emailSender, opsGrants, bus)
+	requestGrantCode := authcmd.NewRequestOpsGrantCodeHandler(userRepo, codeStore, emailSender)
+	revokeGrant := authcmd.NewRevokeOpsGrantHandler(opsGrants, bus)
 	getMe := authquery.NewGetMeHandler(userRepo, roleRepo)
-
 	ensureSuperAdmin := authcmd.NewEnsureSuperAdminHandler(userRepo, hasher)
 
 	authHandler := authhttp.NewHandler(
 		register, login, google, github, logout, createSession, verify, forgot, reset,
 		updatePf, changePwd, getMe, settingsSvc, oauthCreds, cfg.Cookie, cfg.Session,
+		listSessions, revokeSession, issueGrant, revokeGrant, requestGrantCode, opsGrants,
 	)
+
+	// 旧版 SET 会话索引升级为 ZSET（并发上限/设备列表依赖），幂等。
+	if err := sessionStore.MigrateLegacyIndexes(context.Background(), cfg.Session.IdleTTL); err != nil {
+		return nil, err
+	}
 
 	return &AuthContainer{AuthHandler: authHandler, ensureSuperAdmin: ensureSuperAdmin, SessionStore: sessionStore}, nil
 }

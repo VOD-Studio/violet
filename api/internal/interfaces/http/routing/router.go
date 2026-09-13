@@ -154,6 +154,12 @@ func registerAuthRoutes(v1 chi.Router, d *Deps) {
 			r.Get("/me", authH.GetMe)
 			r.Patch("/profile", authH.UpdateProfile)
 			r.Patch("/password", authH.ChangePassword)
+			// 设备/会话管理与短时运维授权：绑定当前登录会话，无需 admin 权限
+			r.Get("/sessions", authH.ListSessions)
+			r.Delete("/sessions/{publicID}", authH.RevokeSession)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/ops-grant", authH.IssueOpsGrant)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/ops-grant/code", authH.RequestOpsGrantCode)
+			r.Delete("/ops-grant", authH.RevokeOpsGrant)
 		})
 	})
 }

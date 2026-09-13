@@ -96,8 +96,14 @@ var (
 	ActionUpdatePerms = MustParse("update_perms") // 角色权限变更
 
 	// --- 配置 ---
-	ActionUpdateConfig = MustParse("update_config") // 更新配置（站点设置等）
-
+	ActionUpdateConfig   = MustParse("update_config")    // 更新配置（站点设置等）
+	ActionConfirmConfig  = MustParse("confirm_config")   // 高危配置经限时确认生效
+	ActionDiscardConfig  = MustParse("discard_config")   // 放弃待确认的配置变更
+	ActionRevokeSession  = MustParse("revoke_session")   // 吊销登录会话
+	ActionEvictSession   = MustParse("evict_session")    // 并发上限淘汰登录会话
+	ActionIssueOpsGrant  = MustParse("issue_ops_grant")  // 签发短时运维授权
+	ActionDenyOpsGrant   = MustParse("deny_ops_grant")   // 拒绝短时运维授权（验证失败）
+	ActionRevokeOpsGrant = MustParse("revoke_ops_grant") // 吊销短时运维授权
 	// --- 认证 ---
 	ActionLogin       = MustParse("login")        // 登录成功
 	ActionLogout      = MustParse("logout")       // 登出

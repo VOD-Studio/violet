@@ -18,13 +18,13 @@ func TestChangePassword_RevokesAllSessions(t *testing.T) {
 	repo := new(mocks.MockUserRepository)
 	store := new(mocks.MockSessionStore)
 	hasher := NewBcryptHasher()
-	h := NewChangePasswordHandler(repo, hasher, store)
+	h := NewChangePasswordHandler(repo, hasher, store, nil)
 
 	uid, _ := domainshared.ParseID(testUserID)
 	// 预先用真实 bcrypt 哈希旧密码，使 Compare 通过
 	oldHash, err := hasher.Hash("old-pass-123")
 	require.NoError(t, err)
-	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, false, true, true, zeroTime, zeroTime,)
+	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, false, true, true, zeroTime, zeroTime)
 
 	repo.On("FindByID", mock.Anything, uid).Return(u, nil)
 	repo.On("Save", mock.Anything, mock.Anything).Return(nil)
@@ -45,12 +45,12 @@ func TestChangePassword_WrongOldPasswordSkipsRevoke(t *testing.T) {
 	repo := new(mocks.MockUserRepository)
 	store := new(mocks.MockSessionStore)
 	hasher := NewBcryptHasher()
-	h := NewChangePasswordHandler(repo, hasher, store)
+	h := NewChangePasswordHandler(repo, hasher, store, nil)
 
 	uid, _ := domainshared.ParseID(testUserID)
 	oldHash, err := hasher.Hash("correct-old")
 	require.NoError(t, err)
-	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, false, true, true, zeroTime, zeroTime,)
+	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, false, true, true, zeroTime, zeroTime)
 	repo.On("FindByID", mock.Anything, uid).Return(u, nil)
 
 	err = h.Handle(context.Background(), ChangePasswordInput{
@@ -69,12 +69,12 @@ func TestResetPassword_RevokesAllSessions(t *testing.T) {
 	codeStore := new(mocks.MockCommentCodeStore)
 	store := new(mocks.MockSessionStore)
 	hasher := NewBcryptHasher()
-	h := NewResetPasswordHandler(repo, codeStore, hasher, store)
+	h := NewResetPasswordHandler(repo, codeStore, hasher, store, nil)
 
 	uid, _ := domainshared.ParseID(testUserID)
 	oldHash, err := hasher.Hash("irrelevant")
 	require.NoError(t, err)
-	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, false, true, true, zeroTime, zeroTime,)
+	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, false, true, true, zeroTime, zeroTime)
 
 	// 重置码校验通过
 	codeStore.On("Verify", mock.Anything, "reset", "u@example.com", mock.Anything).Return(true, nil)

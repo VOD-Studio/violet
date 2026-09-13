@@ -18,7 +18,7 @@ const SessionIDKey contextKey = "sessionID"
 // 中间件只依赖端口，不直接依赖 Redis，便于测试用 fake 替换。
 type SessionLookup interface {
 	Get(ctx context.Context, id domainsession.ID) (*domainsession.Session, error)
-	Touch(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration) error
+	Touch(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration, client domainsession.ClientContext) error
 }
 
 // SessionAuth 强制 session 鉴权中间件。无 cookie 或 session 失效 → 401。
@@ -91,7 +91,8 @@ func authenticateSession(w http.ResponseWriter, r *http.Request, lookup SessionL
 		return nil, false
 	}
 	if touch {
-		if err := lookup.Touch(r.Context(), sess, idleTTL); err != nil {
+		client := domainsession.ClientContext{IP: GetClientIP(r), UserAgent: r.UserAgent()}
+		if err := lookup.Touch(r.Context(), sess, idleTTL, client); err != nil {
 			log.Warn().Err(err).Msg("session 续期失败，不影响本次鉴权")
 		}
 	}

@@ -174,8 +174,8 @@ func (m *MockSessionStore) Get(ctx context.Context, id domainsession.ID) (*domai
 	return args.Get(0).(*domainsession.Session), args.Error(1)
 }
 
-func (m *MockSessionStore) Touch(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration) error {
-	return m.Called(ctx, sess, idleTTL).Error(0)
+func (m *MockSessionStore) Touch(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration, client domainsession.ClientContext) error {
+	return m.Called(ctx, sess, idleTTL, client).Error(0)
 }
 
 func (m *MockSessionStore) DeleteForUser(ctx context.Context, userID string, id domainsession.ID) error {
@@ -184,6 +184,26 @@ func (m *MockSessionStore) DeleteForUser(ctx context.Context, userID string, id 
 
 func (m *MockSessionStore) DeleteByUser(ctx context.Context, userID string) error {
 	return m.Called(ctx, userID).Error(0)
+}
+
+func (m *MockSessionStore) CreateBounded(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration, maxDevices int) ([]string, error) {
+	args := m.Called(ctx, sess, idleTTL, maxDevices)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *MockSessionStore) ListByUser(ctx context.Context, userID string) ([]*domainsession.Session, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domainsession.Session), args.Error(1)
+}
+
+func (m *MockSessionStore) MigrateLegacyIndexes(ctx context.Context, idleTTL time.Duration) error {
+	return m.Called(ctx, idleTTL).Error(0)
 }
 
 // ============================================================

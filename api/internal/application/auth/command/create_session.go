@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/session"
 	"blog-api/internal/domain/shared"
@@ -20,6 +22,10 @@ type CreateSessionInput struct {
 	IdleTTL time.Duration
 	// MaxTTL 绝对寿命上限，<=0 表示无上限
 	MaxTTL time.Duration
+	// MaxDevices 单用户并发会话上限，<=0 不限制；超限按创建时间淘汰最旧
+	MaxDevices int
+	// Client 登录时观察到的客户端信息（IP/UserAgent），供设备列表展示
+	Client session.ClientContext
 }
 
 // CreateSessionOutput 新建的 session 凭证，由 HTTP 层写入 cookie。
@@ -38,11 +44,12 @@ type CreateSessionOutput struct {
 type CreateSessionHandler struct {
 	userRepo user.UserRepository
 	store    appshared.SessionStore
+	bus      appshared.EventBus
 }
 
 // NewCreateSessionHandler 构造 CreateSessionHandler。
-func NewCreateSessionHandler(repo user.UserRepository, store appshared.SessionStore) *CreateSessionHandler {
-	return &CreateSessionHandler{userRepo: repo, store: store}
+func NewCreateSessionHandler(repo user.UserRepository, store appshared.SessionStore, bus appshared.EventBus) *CreateSessionHandler {
+	return &CreateSessionHandler{userRepo: repo, store: store, bus: bus}
 }
 
 // Handle 执行 session 创建，返回 session id 与 csrf token。
@@ -62,12 +69,18 @@ func (h *CreateSessionHandler) Handle(ctx context.Context, in CreateSessionInput
 		Email:               u.Email().String(),
 		Role:                string(u.Role()),
 		IsRoot:              u.IsRoot(),
-	}, time.Now(), in.MaxTTL)
+	}, time.Now(), in.MaxTTL, in.Client)
 	if err != nil {
 		return CreateSessionOutput{}, shared.Internal("创建 session 失败", err)
 	}
-	if err := h.store.Create(ctx, sess, in.IdleTTL); err != nil {
+	evicted, err := h.store.CreateBounded(ctx, sess, in.IdleTTL, in.MaxDevices)
+	if err != nil {
 		return CreateSessionOutput{}, shared.Internal("持久化 session 失败", err)
+	}
+	if len(evicted) > 0 && h.bus != nil {
+		if err := h.bus.Publish(ctx, []shared.DomainEvent{NewSessionEvicted(u.GetID(), len(evicted))}); err != nil {
+			log.Warn().Err(err).Msg("发布会话淘汰事件失败")
+		}
 	}
 	return CreateSessionOutput{SessionID: string(sess.ID()), CSRFToken: string(sess.CSRF())}, nil
 }

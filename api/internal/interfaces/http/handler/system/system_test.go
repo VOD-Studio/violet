@@ -41,7 +41,7 @@ func TestGetSnapshot_Success(t *testing.T) {
 		CPU:  appsystem.CPUInfo{UsagePercent: 12.3, Cores: 4},
 	}}
 	// db=nil, rdb=nil → checkDependencies 走 disconnected 分支不报错
-	h := NewHandler(appsystem.NewService(nil, nil, collector))
+	h := NewHandler(appsystem.NewService(nil, nil, collector, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/system/snapshot", nil)
 	rec := httptest.NewRecorder()
@@ -64,7 +64,7 @@ func TestGetSnapshot_Success(t *testing.T) {
 // 领域 INTERNAL 错误 → RespondError 映射为 500。
 func TestGetSnapshot_CollectError_Returns500(t *testing.T) {
 	collector := &stubMetricCollector{err: assertNotReached("采集失败")}
-	h := NewHandler(appsystem.NewService(nil, nil, collector))
+	h := NewHandler(appsystem.NewService(nil, nil, collector, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/system/snapshot", nil)
 	rec := httptest.NewRecorder()
@@ -77,7 +77,7 @@ func TestGetSnapshot_CollectError_Returns500(t *testing.T) {
 // TestGetHistory_EmptyWithNilRedis rdb=nil → 返回空采样点数组，仍 200。
 func TestGetHistory_EmptyWithNilRedis(t *testing.T) {
 	collector := &stubMetricCollector{}
-	h := NewHandler(appsystem.NewService(nil, nil, collector))
+	h := NewHandler(appsystem.NewService(nil, nil, collector, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/system/history", nil)
 	rec := httptest.NewRecorder()

@@ -24,26 +24,54 @@ type MetricCollector interface {
 	Collect() (*Snapshot, error)
 }
 
+// SessionCounter 登录会话统计端口（由 session store 实现）。
+// 采集失败降级为 Available=false，不阻塞系统快照。
+type SessionCounter interface {
+	CountActiveSessions(ctx context.Context) (int64, error)
+	CountActiveUsers(ctx context.Context) (int64, error)
+}
+
 // Service 服务器监控用例服务
 type Service struct {
 	collector MetricCollector
 	rdb       *redis.Client
 	db        *gorm.DB
+	sessions  SessionCounter
 }
 
 // NewService 构造监控服务
-func NewService(db *gorm.DB, rdb *redis.Client, collector MetricCollector) *Service {
-	return &Service{db: db, rdb: rdb, collector: collector}
+func NewService(db *gorm.DB, rdb *redis.Client, collector MetricCollector, sessions SessionCounter) *Service {
+	return &Service{db: db, rdb: rdb, collector: collector, sessions: sessions}
 }
 
-// GetSnapshot 实时采集一次完整快照（含依赖探活）
+// GetSnapshot 实时采集一次完整快照（含依赖探活与会话统计）
 func (s *Service) GetSnapshot(ctx context.Context) (*Snapshot, error) {
 	snap, err := s.collector.Collect()
 	if err != nil {
 		return nil, domainshared.NewError(string(domainshared.CodeInternal), "采集系统指标失败").WithErr(err)
 	}
 	s.checkDependencies(ctx, snap)
+	s.collectSessionStats(ctx, snap)
 	return snap, nil
+}
+
+// collectSessionStats 填充登录会话聚合统计；失败降级不阻塞快照。
+func (s *Service) collectSessionStats(ctx context.Context, snap *Snapshot) {
+	if s.sessions == nil {
+		snap.Sessions = SessionStats{Available: false, Error: "session stats not configured"}
+		return
+	}
+	total, err := s.sessions.CountActiveSessions(ctx)
+	if err != nil {
+		snap.Sessions = SessionStats{Available: false, Error: err.Error()}
+		return
+	}
+	users, err := s.sessions.CountActiveUsers(ctx)
+	if err != nil {
+		snap.Sessions = SessionStats{Available: false, Error: err.Error()}
+		return
+	}
+	snap.Sessions = SessionStats{Available: true, ActiveSessions: total, ActiveUsers: users}
 }
 
 // checkDependencies 探活 PostgreSQL 与 Redis，填充依赖状态

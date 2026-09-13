@@ -26,7 +26,7 @@ func (f *fakeLookup) Get(_ context.Context, id domainsession.ID) (*domainsession
 	}
 	return nil, domainsession.ErrSessionNotFound
 }
-func (f *fakeLookup) Touch(_ context.Context, _ *domainsession.Session, _ time.Duration) error {
+func (f *fakeLookup) Touch(_ context.Context, _ *domainsession.Session, _ time.Duration, _ domainsession.ClientContext) error {
 	f.touched = true
 	return nil
 }
@@ -53,7 +53,7 @@ func reqWithCookie(name, val string) *http.Request {
 
 // TestSessionAuth_ValidCookieAuthorizes 有效 cookie → 注入 ctx + 下游被调用 + Touch 续期。
 func TestSessionAuth_ValidCookieAuthorizes(t *testing.T) {
-	s, _ := domainsession.NewSession(testSnapMW(), time.Now(), 0)
+	s, _ := domainsession.NewSession(testSnapMW(), time.Now(), 0, domainsession.ClientContext{})
 	lookup := &fakeLookup{sess: s}
 	h := SessionAuth(lookup, testCookieCfg(), time.Hour)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, s.UserID(), GetUserID(r.Context()))
@@ -102,7 +102,7 @@ func TestOptionalSessionAuth_NoCookiePassesThrough(t *testing.T) {
 
 // TestSessionAuthReadOnly_DoesNotTouch 只读模式不调 Touch（命门不变量①）。
 func TestSessionAuthReadOnly_DoesNotTouch(t *testing.T) {
-	s, _ := domainsession.NewSession(testSnapMW(), time.Now(), 0)
+	s, _ := domainsession.NewSession(testSnapMW(), time.Now(), 0, domainsession.ClientContext{})
 	lookup := &fakeLookup{sess: s}
 	h := SessionAuthReadOnly(lookup, testCookieCfg(), time.Hour)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -31,6 +31,7 @@ const UIDCookieName = "violet_uid"
 // violet_uid 供前端轻量组件直接读 user_id。必须在 WriteHeader 前调用。
 // MaxAge 取 idleTTL，与 session 滑动续期窗口对齐，活跃用户 cookie 随 session 一起续命。
 func SetSessionCookie(w http.ResponseWriter, sessionID, csrfToken, userID string, cfg config.CookieConfig, idleTTL time.Duration) {
+	cfg = EffectiveCookieConfig(cfg)
 	http.SetCookie(w, &http.Cookie{
 		Name: cfg.SessionName, Value: sessionID, Path: "/",
 		Domain: cfg.Domain, MaxAge: int(idleTTL.Seconds()),
@@ -56,6 +57,7 @@ func SetSessionCookie(w http.ResponseWriter, sessionID, csrfToken, userID string
 // MaxAge=-1 让浏览器立即删除；logout 与 session 失效时调用。
 // 三个 Cookie 的 Path 必须与 SetSessionCookie 一致，否则浏览器不会删除。
 func ClearSessionCookies(w http.ResponseWriter, cfg config.CookieConfig) {
+	cfg = EffectiveCookieConfig(cfg)
 	for _, name := range []string{cfg.SessionName, cfg.CSRFName, UIDCookieName} {
 		http.SetCookie(w, &http.Cookie{
 			Name: name, Value: "", Path: "/",

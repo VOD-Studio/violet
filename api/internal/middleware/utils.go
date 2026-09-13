@@ -17,7 +17,8 @@ var (
 	ipExtractorMu sync.RWMutex
 )
 
-// SetTrustedProxies 配置受信代理列表，必须在 HTTP 服务启动前调用一次。
+// SetTrustedProxies 更新受信代理列表。启动时由部署配置注入一次；
+// 后台保存安全策略后经 settings 回调热刷新。
 func SetTrustedProxies(cidrs []string) {
 	ipExtractorMu.Lock()
 	defer ipExtractorMu.Unlock()
@@ -38,7 +39,13 @@ func newIPExtractor(cidrs []string) *ipExtr {
 		}
 		// 不带掩码的单 IP 视为 /32（v4）或 /128（v6）
 		if !strings.Contains(c, "/") {
-			c += "/32"
+			if ip := net.ParseIP(c); ip != nil {
+				if ip.To4() != nil {
+					c += "/32"
+				} else {
+					c += "/128"
+				}
+			}
 		}
 		if _, ipnet, err := net.ParseCIDR(c); err == nil {
 			e.nets = append(e.nets, ipnet)
@@ -47,66 +54,96 @@ func newIPExtractor(cidrs []string) *ipExtr {
 	return e
 }
 
-// isTrusted 判断 ip 是否来自受信代理
+// isTrusted 判断 remoteAddr（host:port 或裸 IP）是否命中受信代理网段
 func (e *ipExtr) isTrusted(remoteAddr string) bool {
-	host, _, err := net.SplitHostPort(remoteAddr)
-	if err != nil {
-		host = remoteAddr // 没有端口
-	}
-	ip := net.ParseIP(host)
-	if ip == nil {
+	return e.isTrustedIP(hostOnly(remoteAddr))
+}
+
+// isTrustedIP 判断已解析 IP 字符串是否命中受信代理网段
+func (e *ipExtr) isTrustedIP(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
 		return false
 	}
 	for _, n := range e.nets {
-		if n.Contains(ip) {
+		if n.Contains(parsed) {
 			return true
 		}
 	}
 	return false
 }
 
+// hostOnly 去掉 RemoteAddr 的临时端口；无法拆分时原样返回。
+func hostOnly(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		return remoteAddr
+	}
+	return host
+}
+
+// parseValidIP 校验并返回合法 IP 字符串，非法输入返回空串。
+func parseValidIP(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if ip := net.ParseIP(raw); ip != nil {
+		return raw
+	}
+	return ""
+}
+
+
 // getClientIP 获取客户端真实 IP 地址。
-//
-// 仅当 RemoteAddr 命中受信代理列表时，才信任 X-Forwarded-For / X-Real-IP；
-// 否则一律使用 RemoteAddr，避免客户端伪造转发头绕过限流。
 func getClientIP(r *http.Request) string {
 	return GetClientIP(r)
 }
 
 // GetClientIP 导出版本，供 handler 层复用同一套受信代理感知逻辑。
+//
+// 仅当 RemoteAddr 命中受信代理列表时才采信转发头，否则一律使用 RemoteAddr，
+// 避免客户端伪造转发头绕过限流。XFF 按标准从右往左剥离可信代理链：
+// 最右侧不可信地址才是真实来访者，直接取最左一项会被客户端注入的伪造前缀欺骗。
 func GetClientIP(r *http.Request) string {
 	ipExtractorMu.RLock()
 	extr := ipExtractor
 	ipExtractorMu.RUnlock()
 
-	if extr.isTrusted(r.RemoteAddr) {
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			if ip := extractFirstIP(xff); ip != "" {
-				return ip
-			}
-		}
-		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-			return realIP
+	host := hostOnly(r.RemoteAddr)
+	if !extr.isTrustedIP(host) {
+		return host
+	}
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if ip := extr.rightmostUntrusted(xff); ip != "" {
+			return ip
 		}
 	}
-	// RemoteAddr 带临时端口（"127.0.0.1:52341"），直连部署下每次连接端口都变。
-	// 配额/反应去重/审计都按 IP 识别身份，必须只取主机部分。
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+	if realIP := parseValidIP(r.Header.Get("X-Real-IP")); realIP != "" {
+		return realIP
 	}
 	return host
 }
 
-// extractFirstIP 从 X-Forwarded-For 头部提取第一个 IP
-// 格式通常为 "client, proxy1, proxy2"
-func extractFirstIP(forwarded string) string {
-	for i := 0; i < len(forwarded); i++ {
-		if forwarded[i] == ',' {
-			return strings.TrimSpace(forwarded[:i])
+// rightmostUntrusted 从 XFF 中从右往左剥离可信代理，返回最右侧不可信地址；
+// 全部可信时返回最左一项（如内网健康检查）。任一段不是合法 IP 则整体放弃该头，
+// 防止畸形注入被部分采信。
+func (e *ipExtr) rightmostUntrusted(forwarded string) string {
+	parts := strings.Split(forwarded, ",")
+	ips := make([]string, 0, len(parts))
+	for _, part := range parts {
+		ip := parseValidIP(part)
+		if ip == "" {
+			return ""
+		}
+		ips = append(ips, ip)
+	}
+	if len(ips) == 0 {
+		return ""
+	}
+	for i := len(ips) - 1; i >= 0; i-- {
+		if !e.isTrustedIP(ips[i]) {
+			return ips[i]
 		}
 	}
-	return strings.TrimSpace(forwarded)
+	return ips[0]
 }
 
 // getTokenPrefix 获取 token 前缀用于日志记录（不记录完整 token）

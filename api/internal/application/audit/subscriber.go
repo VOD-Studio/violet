@@ -482,6 +482,86 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case domainsettings.SecurityPolicyConfirmed:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionConfirmConfig,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "settings", ID: "security"},
+			Summary:    fmt.Sprintf("安全策略经限时确认生效（%s）", strings.Join(e.ChangedKeys, ", ")),
+			Metadata:   map[string]any{"changed_keys": e.ChangedKeys},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsettings.SecurityPolicyCancelled:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDiscardConfig,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "settings", ID: "security"},
+			Summary:    fmt.Sprintf("待确认安全策略变更被放弃（%s）", e.Reason),
+			Metadata:   map[string]any{"changed_keys": e.ChangedKeys, "reason": e.Reason},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.OpsGrantIssued:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionIssueOpsGrant,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "ops_grant", ID: e.AggregateID().String(), Name: e.Category.String()},
+			Summary:    fmt.Sprintf("签发短时运维授权（类别 %s，通道 %s）", e.Category, e.Method),
+			Metadata:   map[string]any{"category": e.Category.String(), "method": e.Method},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.OpsGrantDenied:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDenyOpsGrant,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "ops_grant", ID: e.AggregateID().String(), Name: e.Category.String()},
+			Summary:    fmt.Sprintf("短时运维授权验证失败（类别 %s）", e.Category),
+			Metadata:   map[string]any{"category": e.Category.String(), "reason": e.Reason},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.SessionRevoked:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionRevokeSession,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "session", ID: e.PublicID},
+			Summary:    "吊销登录会话",
+			Metadata:   map[string]any{"public_id": e.PublicID, "self": e.Self},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.SessionEvicted:
+		// 淘汰发生在登录请求中，ctx 无用户身份——从事件聚合 ID 补 actor，
+		// 保证 /admin/logs/user/{id} 能按操作人查到会话安全事件。
+		actor.UserID = e.AggregateID().String()
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionEvictSession,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "session", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("并发上限淘汰最旧会话（%d 个）", e.Count),
+			Metadata:   map[string]any{"count": e.Count},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.OpsGrantRevoked:
+		actor.UserID = e.AggregateID().String()
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionRevokeOpsGrant,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "ops_grant", ID: e.AggregateID().String()},
+			Summary:    "主动吊销当前会话的运维授权",
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case authcmd.UserLoggedIn:
 		// 登录发布发生在 session 创建前，ctx 无 UserID——Actor 从事件 payload 取，
 		// 保证 /admin/logs/user/{id} 能按操作人查到登录记录（与 logout 行为一致）

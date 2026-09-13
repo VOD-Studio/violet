@@ -46,6 +46,7 @@ func TestSiteImpressionRouteSupportsAnonymousCSRFFlow(t *testing.T) {
 		appauth.NewOAuthCredentials("", "", ""),
 		cookieConfig,
 		config.SessionConfig{},
+		nil, nil, nil, nil, nil, nil,
 	)
 	impressionHandler := siteimpressionhttp.NewHandler(
 		appsiteimpression.NewService(

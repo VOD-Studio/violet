@@ -23,7 +23,7 @@ func TestGetSnapshot_ReturnsSnapshot(t *testing.T) {
 		CPU: CPUInfo{UsagePercent: 42.5, Cores: 4},
 	}}
 	// db/redis 传 nil：GetSnapshot 不应 panic，依赖探活会记录失败但返回
-	svc := NewService(nil, nil, collector)
+	svc := NewService(nil, nil, collector, nil)
 
 	snap, err := svc.GetSnapshot(context.Background())
 	if err != nil {
@@ -38,7 +38,7 @@ func TestGetSnapshot_ReturnsSnapshot(t *testing.T) {
 }
 
 func TestGetHistory_RedisNil_ReturnsEmpty(t *testing.T) {
-	svc := NewService(nil, nil, &fakeCollector{snap: &Snapshot{}})
+	svc := NewService(nil, nil, &fakeCollector{snap: &Snapshot{}}, nil)
 	resp, err := svc.GetHistory(context.Background())
 	if err != nil {
 		t.Fatalf("GetHistory 返回错误: %v", err)

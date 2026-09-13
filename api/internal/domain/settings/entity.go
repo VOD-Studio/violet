@@ -36,6 +36,42 @@ func NewSettingsUpdated(changedKeys []string) SettingsUpdated {
 	}
 }
 
+// SecurityPolicyConfirmed 安全策略经限时确认后生效（应用层事实）。
+//
+// 订阅者：审计服务。与 SettingsUpdated 分开记录：确认动作本身证明操作者
+// 完成了短时运维授权，是高危变更的责任凭证。
+type SecurityPolicyConfirmed struct {
+	shared.BaseEvent
+	// ChangedKeys 本次确认生效的配置键
+	ChangedKeys []string
+}
+
+// NewSecurityPolicyConfirmed 构造安全策略确认生效事件
+func NewSecurityPolicyConfirmed(changedKeys []string) SecurityPolicyConfirmed {
+	return SecurityPolicyConfirmed{
+		BaseEvent:   shared.NewBaseEvent("settings.security_confirmed", shared.ID{}),
+		ChangedKeys: changedKeys,
+	}
+}
+
+// SecurityPolicyCancelled 安全策略待确认变更被主动取消或因超时失效。
+type SecurityPolicyCancelled struct {
+	shared.BaseEvent
+	// ChangedKeys 被放弃的变更键
+	ChangedKeys []string
+	// Reason 取消原因：cancelled | expired
+	Reason string
+}
+
+// NewSecurityPolicyCancelled 构造安全策略变更取消事件
+func NewSecurityPolicyCancelled(changedKeys []string, reason string) SecurityPolicyCancelled {
+	return SecurityPolicyCancelled{
+		BaseEvent:   shared.NewBaseEvent("settings.security_cancelled", shared.ID{}),
+		ChangedKeys: changedKeys,
+		Reason:      reason,
+	}
+}
+
 // SiteSettings 站点配置读模型（聚合全部配置项）
 type SiteSettings struct {
 	// SiteName 站点名称
@@ -56,6 +92,22 @@ type SiteSettings struct {
 	GoogleLoginEnabled bool `json:"google_login_enabled"`
 	// GithubLoginEnabled 是否启用 GitHub OAuth 登录（parseBoolDefaultTrue，未配置默认启用）
 	GithubLoginEnabled bool `json:"github_login_enabled"`
+	// 安全策略组：可信来源/可信代理/Cookie 约束/并发会话上限。
+	// 可信来源与代理独立于展示用 site_url；生效值经部署底线合并（见应用层）。
+
+	// TrustedOrigins 可信来源列表（逗号或换行分隔的 HTTPS origin），供 CORS
+	// 动态允许；空串沿用部署 CORS_ALLOWED_ORIGINS 默认。
+	TrustedOrigins string `json:"trusted_origins"`
+	// TrustedProxies 可信代理 CIDR/IP 列表（逗号或换行分隔）；仅命中列表的
+	// 直连方采信 X-Forwarded-For。空串沿用部署 TRUSTED_PROXIES 默认。
+	TrustedProxies string `json:"trusted_proxies"`
+	// CookieSecure 会话/CSRF Cookie 是否强制 Secure；生产部署底线为 true 时
+	// 数据库不可关闭。
+	CookieSecure bool `json:"cookie_secure"`
+	// CookieSameSite 会话/CSRF Cookie SameSite 策略：lax|strict|none；none 必须配合 Secure。
+	CookieSameSite string `json:"cookie_same_site"`
+	// SessionMaxDevices 单用户并发登录会话上限；0 不限制，缩小后自下一次登录起淘汰最旧。
+	SessionMaxDevices int `json:"session_max_devices"`
 	// GitHubUsername 站长 GitHub 用户名（releases 区块默认 owner、社交展示）
 	GitHubUsername string `json:"github_username"`
 	// GitHubToken GitHub 访问令牌（拉取 releases / OAuth 用，属敏感配置）
@@ -161,10 +213,19 @@ func fromMap(m map[string]string) SiteSettings {
 		v >= MinHomeFootprintAggregationDays && v <= MaxHomeFootprintAggregationDays {
 		s.HomeFootprintAggregationDays = v
 	}
-	s.CommentsEnabled = m["comments_enabled"] == "true"
-	s.CommentsModeration = m["comments_moderation"] == "true"
 	s.GoogleLoginEnabled = parseBoolDefaultTrue(m["google_login_enabled"])
 	s.GithubLoginEnabled = parseBoolDefaultTrue(m["github_login_enabled"])
+	// 安全组：cookie_secure 显式 false 才是关闭（部署底线合并在应用层 resolve），
+	// 其余字段缺省即空串/零值。
+	s.TrustedOrigins = m["trusted_origins"]
+	s.TrustedProxies = m["trusted_proxies"]
+	s.CookieSecure = m["cookie_secure"] == "true"
+	s.CookieSameSite = m["cookie_same_site"]
+	if v, ok := parseInt(m["session_max_devices"]); ok {
+		s.SessionMaxDevices = v
+	}
+	s.CommentsEnabled = m["comments_enabled"] == "true"
+	s.CommentsModeration = m["comments_moderation"] == "true"
 	s.GitHubUsername = m["github_username"]
 	s.GitHubToken = m["github_token"]
 	s.TechStack = m["tech_stack"]

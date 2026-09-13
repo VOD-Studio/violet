@@ -14,6 +14,21 @@ type Snapshot struct {
 	Load         LoadInfo    `json:"load"`
 	Runtime      RuntimeInfo `json:"runtime"`
 	Dependencies DepStatus   `json:"dependencies"`
+	// Sessions 登录会话统计（采集失败时 Available=false 并给出原因）
+	Sessions SessionStats `json:"sessions"`
+}
+
+// SessionStats 登录会话聚合统计，供系统监控观察会话规模。
+// 不包含任何用户级明细——普通角色不应看到其他用户的会话。
+type SessionStats struct {
+	// Available 是否成功采集
+	Available bool `json:"available"`
+	// Error 采集失败原因
+	Error string `json:"error,omitempty"`
+	// ActiveSessions 当前存活 session 总数
+	ActiveSessions int64 `json:"active_sessions"`
+	// ActiveUsers 至少持有一个存活 session 的用户数
+	ActiveUsers int64 `json:"active_users"`
 }
 
 // HostInfo 主机信息

@@ -17,9 +17,9 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	"blog-api/internal/application/mocks"
 	domainsession "blog-api/internal/domain/session"
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	domainshared "blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	"blog-api/internal/middleware"
 )
 
@@ -44,7 +44,7 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 	email, _ := domainuser.ParseEmail("u@example.com")
 	username, _ := domainuser.ParseUsername("alice")
 	return domainuser.ReconstructUser(uid, email, username, domainuser.DisplayName{}, hash, "", "", domainuser.RoleUser,
-		nil, nil, false, true, true, time.Time{}, time.Time{},)
+		nil, nil, false, true, true, time.Time{}, time.Time{})
 }
 
 // TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 violet_session + violet_csrf cookie，body 含 user_id。
@@ -59,19 +59,20 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 
 	bus := infraeventbus.NewInMemory()
 	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
-	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
+	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore, nil)
 
 	// login 走 FindByEmail；createSession 走 FindByID
 	email, _ := domainuser.ParseEmail("u@example.com")
 	userRepo.On("FindByEmail", mock.Anything, email).Return(u, nil)
 	userRepo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
-	sessionStore.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	sessionStore.On("CreateBounded", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]string{}, nil)
 
 	h := NewHandler(
 		nil, login, nil, nil, nil, createSession,
 		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	body := `{"identifier":"u@example.com","password":"` + plainPwd + `"}`
@@ -106,7 +107,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	assert.True(t, hasSession, "响应应下发 violet_session cookie")
 	assert.True(t, hasCSRF, "响应应下发 violet_csrf cookie")
 
-	sessionStore.AssertNumberOfCalls(t, "Create", 1)
+	sessionStore.AssertNumberOfCalls(t, "CreateBounded", 1)
 }
 
 // TestLogin_ByUsername 验证用用户名（不含 @）登录走 FindByUsername 路径。
@@ -120,19 +121,20 @@ func TestLogin_ByUsername(t *testing.T) {
 
 	bus := infraeventbus.NewInMemory()
 	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
-	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
+	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore, nil)
 
 	// 用户名登录走 FindByUsername；createSession 走 FindByID
 	username, _ := domainuser.ParseUsername("alice")
 	userRepo.On("FindByUsername", mock.Anything, username).Return(u, nil)
 	userRepo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
-	sessionStore.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	sessionStore.On("CreateBounded", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]string{}, nil)
 
 	h := NewHandler(
 		nil, login, nil, nil, nil, createSession,
 		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	body := `{"identifier":"alice","password":"` + plainPwd + `"}`
@@ -153,6 +155,7 @@ func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	// 模拟 SessionAuthReadOnly 注入的 context（中间件层已测 Touch 不被调用）
@@ -185,6 +188,7 @@ func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	req := httptest.NewRequest(http.MethodGet, "/auth/session", nil)
@@ -198,7 +202,7 @@ func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 // 对应 Issue-0003：Logout handler 从 ctx 取 sessionID 调 logout → ClearSessionCookies。
 func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 	sessionStore := new(mocks.MockSessionStore)
-	logout := authcmd.NewLogoutHandler(sessionStore, infraeventbus.NewInMemory())
+	logout := authcmd.NewLogoutHandler(sessionStore, nil, infraeventbus.NewInMemory())
 
 	// 断言 DeleteForUser 收到 ctx 注入的 sessionID（而非空串）
 	sessionStore.On("DeleteForUser", mock.Anything, "user-1", domainsession.ID("sess-abc")).Return(nil)
@@ -209,6 +213,7 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	ctx := context.WithValue(context.Background(), middleware.UserIDKey, "user-1")

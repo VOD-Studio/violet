@@ -15,6 +15,7 @@ type Group string
 const (
 	General    Group = "general"
 	Auth       Group = "auth"
+	Security   Group = "security"
 	Github     Group = "github"
 	Profile    Group = "profile"
 	About      Group = "about"
@@ -22,7 +23,7 @@ const (
 	CodeRunner Group = "code-runner"
 )
 
-func Groups() []Group { return []Group{General, Auth, Github, Profile, About, LLM, CodeRunner} }
+func Groups() []Group { return []Group{General, Auth, Security, Github, Profile, About, LLM, CodeRunner} }
 
 func (g Group) Keys() []string {
 	switch g {
@@ -30,6 +31,8 @@ func (g Group) Keys() []string {
 		return []string{"site_name", "site_url", "footer_text", "footer_github_url", "posts_per_page", "home_footprint_enabled", "home_footprint_aggregation_days", "comments_enabled", "comments_moderation", "tech_stack", "custom_emoji_max_per_user"}
 	case Auth:
 		return []string{"google_login_enabled", "github_login_enabled"}
+	case Security:
+		return []string{"trusted_origins", "trusted_proxies", "cookie_secure", "cookie_same_site", "session_max_devices"}
 	case Github:
 		return []string{"github_username", "github_token", "releases_repo"}
 	case Profile:

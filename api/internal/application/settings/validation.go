@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/url"
 	"slices"
 	"strconv"
@@ -74,7 +75,15 @@ func decodePatch(group domainsettings.Group, patch map[string]json.RawMessage) (
 	return result, nil
 }
 
-func validateGroup(group domainsettings.Group, values map[string]string) error {
+// SecurityFloor 部署侧安全底线：数据库覆盖不可降低的下界。
+type SecurityFloor struct {
+	// CookieSecureForced 部署强制 Cookie Secure（生产或 COOKIE_SECURE=true）
+	CookieSecureForced bool
+	// Production 生产环境：可信来源必须 HTTPS 且禁止 localhost
+	Production bool
+}
+
+func validateGroup(group domainsettings.Group, values map[string]string, floor SecurityFloor) error {
 	invalid := func(key, reason string) error { return shared.FieldValidation(key, reason) }
 	switch group {
 	case domainsettings.General:
@@ -92,6 +101,10 @@ func validateGroup(group domainsettings.Group, values map[string]string) error {
 			if err != nil || n < bounds[0] || n > bounds[1] {
 				return invalid(key, fmt.Sprintf("必须在 %d 到 %d 之间", bounds[0], bounds[1]))
 			}
+		}
+	case domainsettings.Security:
+		if err := validateSecurityValues(values, floor); err != nil {
+			return err
 		}
 	case domainsettings.About:
 		raw := values["about_config"]
@@ -154,6 +167,79 @@ func validateGroup(group domainsettings.Group, values map[string]string) error {
 				return invalid(key, "必须是布尔值")
 			}
 		}
+	}
+	return nil
+}
+
+// splitList 拆分逗号/换行分隔的列表项并去空白。
+func splitList(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	fields := strings.FieldsFunc(raw, func(r rune) bool { return r == ',' || r == '\n' || r == '\r' })
+	items := make([]string, 0, len(fields))
+	for _, f := range fields {
+		if trimmed := strings.TrimSpace(f); trimmed != "" {
+			items = append(items, trimmed)
+		}
+	}
+	return items
+}
+
+// validateSecurityValues 校验安全组整组值并执行部署底线：
+//   - trusted_origins：每项合法 origin（scheme://host[:port]）；生产必须 HTTPS 且
+//     禁止 localhost/127.0.0.1（对齐 config.Validate 的生产规则）
+//   - trusted_proxies：每项合法 CIDR 或 IP（v4/v6）
+//   - cookie_same_site：lax|strict|none；none 必须配合 cookie_secure
+//   - cookie_secure：部署强制 Secure 时数据库不可关闭
+//   - session_max_devices：0-50
+func validateSecurityValues(values map[string]string, floor SecurityFloor) error {
+	invalid := func(key, reason string) error { return shared.FieldValidation(key, reason) }
+	for _, origin := range splitList(values["trusted_origins"]) {
+		u, err := url.Parse(origin)
+		if err != nil || u.Hostname() == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+			return invalid("trusted_origins", "每项必须是 scheme://host[:port] 形式的来源")
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return invalid("trusted_origins", "来源协议仅支持 http/https")
+		}
+		// 通配来源（如 https://*）在 CORS 消费端匹配任意主机，配合
+		// AllowCredentials 会让任意站点携带 Cookie，必须整条拒绝。
+		if strings.Contains(u.Host, "*") {
+			return invalid("trusted_origins", "不允许通配符来源，请逐个列出可信域名")
+		}
+		if floor.Production && u.Scheme != "https" {
+			return invalid("trusted_origins", "生产环境可信来源必须使用 HTTPS")
+		}
+		if floor.Production && (u.Hostname() == "localhost" || strings.HasPrefix(u.Hostname(), "127.")) {
+			return invalid("trusted_origins", "生产环境可信来源不能是 localhost")
+		}
+	}
+	for _, cidr := range splitList(values["trusted_proxies"]) {
+		if strings.Contains(cidr, "/") {
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
+				return invalid("trusted_proxies", "包含非法 CIDR")
+			}
+		} else if net.ParseIP(cidr) == nil {
+			return invalid("trusted_proxies", "包含非法 IP 地址")
+		}
+	}
+	sameSite := values["cookie_same_site"]
+	if sameSite == "" {
+		sameSite = "lax"
+	}
+	if sameSite != "lax" && sameSite != "strict" && sameSite != "none" {
+		return invalid("cookie_same_site", "仅支持 lax/strict/none")
+	}
+	secure := values["cookie_secure"] == "true"
+	if sameSite == "none" && !secure {
+		return invalid("cookie_same_site", "SameSite=None 必须配合 Secure Cookie")
+	}
+	if floor.CookieSecureForced && !secure {
+		return invalid("cookie_secure", "部署环境已强制 Secure Cookie，不能通过后台关闭")
+	}
+	if devices, err := strconv.Atoi(values["session_max_devices"]); err != nil || devices < 0 || devices > 50 {
+		return invalid("session_max_devices", "必须在 0 到 50 之间（0 表示不限制）")
 	}
 	return nil
 }

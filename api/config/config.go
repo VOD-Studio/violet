@@ -64,6 +64,14 @@ type Config struct {
 	// 非空时，仅当 RemoteAddr 命中此列表才信任 X-Forwarded-For/X-Real-IP；
 	// 为空时一律使用 RemoteAddr，拒绝任何客户端自报的转发头（防 IP 欺骗绕过限流）。
 	TrustedProxies []string
+	// SecurityOverrideMode 安全组数据库覆盖的运行模式：
+	//   database（默认）— 数据库显式覆盖优先于部署默认
+	//   deployment       — 忽略数据库安全覆盖，强制使用部署默认值
+	// 后者是部署侧恢复入口：管理员确认了错误的安全组合把自己锁在后台外时，
+	// 设置 SECURITY_OVERRIDE_MODE=deployment 并重启即可绕过数据库值恢复访问；
+	// 恢复后再改回 database 并在后台重新确认正确配置。
+	// env: SECURITY_OVERRIDE_MODE
+	SecurityOverrideMode string
 	// CodeRunner 代码运行器配置（可运行代码块的沙箱执行）。
 	// 见 docs/adr/0006-code-runner-architecture.md。为空（Enabled=false）时功能关闭。
 	CodeRunner CodeRunnerConfig
@@ -388,6 +396,7 @@ func Load() *Config {
 			VAPIDPrivateKey: v.GetString("web_push.vapid_private_key"),
 			VAPIDSubject:    v.GetString("web_push.vapid_subject"),
 		},
+		SecurityOverrideMode: v.GetString("security_override_mode"),
 		CORSAllowedOrigins: getStringSlice(v, "cors_allowed_origins"),
 		SuperAdmin: SuperAdminConfig{
 			Enabled:  v.GetBool("superadmin.enabled"),
@@ -442,6 +451,9 @@ func (c *Config) Source(key string) string {
 
 // Validate 验证配置的有效性
 func (c *Config) Validate() error {
+	if mode := c.SecurityOverrideMode; mode != "" && mode != "database" && mode != "deployment" {
+		return fmt.Errorf("SECURITY_OVERRIDE_MODE 仅支持 database 或 deployment，当前为 %q", mode)
+	}
 	// 数据库配置必须完整
 	if c.Database.Host == "" {
 		return fmt.Errorf("DATABASE_HOST 未配置")

@@ -26,14 +26,16 @@ type Service struct {
 	hasher   PasswordHasher
 	bus      appshared.EventBus
 	sessions appshared.SessionStore
+	grants   appshared.OpsGrantStore
 }
 
-func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore) *Service {
-	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions}
+func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore, grants appshared.OpsGrantStore) *Service {
+	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions, grants: grants}
 }
 
-// revokeSessions 吊销指定用户的全部 session（角色/状态变更后强制重登）。
-// 吊销失败仅记录日志不阻断主流程：DB 已更新成功，session 吊销为尽力而为的安全增强。
+// revokeSessions 吊销指定用户的全部 session 与短时运维授权（角色/状态/密码
+// 变更后强制重登）。吊销失败仅记录日志不阻断主流程：DB 已更新成功，吊销为
+// 尽力而为的安全增强。
 func (s *Service) revokeSessions(ctx context.Context, userIDs ...string) {
 	if s.sessions == nil {
 		return
@@ -41,6 +43,11 @@ func (s *Service) revokeSessions(ctx context.Context, userIDs ...string) {
 	for _, uid := range userIDs {
 		if err := s.sessions.DeleteByUser(ctx, uid); err != nil {
 			log.Warn().Err(err).Str("user_id", uid).Msg("吊销用户 session 失败")
+		}
+		if s.grants != nil {
+			if err := s.grants.RevokeUser(ctx, uid); err != nil {
+				log.Warn().Err(err).Str("user_id", uid).Msg("吊销用户运维授权失败")
+			}
 		}
 	}
 }
@@ -56,17 +63,17 @@ func idStrings(ids []shared.ID) []string {
 
 // UserDTO 用户读模型（管理后台）
 type UserDTO struct {
-	ID                  string `json:"id"`
-	Username            string `json:"username"`
-	DisplayName         string `json:"display_name"`
-	Email               string `json:"email"`
-	Role                string `json:"role"`
-	IsRoot              bool   `json:"is_root"`
-	EmailVerified       bool   `json:"email_verified"`
-	IsActive            bool   `json:"is_active"`
-	Bio                 string `json:"bio"`
-	AvatarURL           string `json:"avatar_url"`
-	CreatedAt           string `json:"created_at"`
+	ID            string `json:"id"`
+	Username      string `json:"username"`
+	DisplayName   string `json:"display_name"`
+	Email         string `json:"email"`
+	Role          string `json:"role"`
+	IsRoot        bool   `json:"is_root"`
+	EmailVerified bool   `json:"email_verified"`
+	IsActive      bool   `json:"is_active"`
+	Bio           string `json:"bio"`
+	AvatarURL     string `json:"avatar_url"`
+	CreatedAt     string `json:"created_at"`
 }
 
 // List 用户列表（分页 + 筛选）
@@ -99,12 +106,12 @@ func (s *Service) GetDetail(ctx context.Context, id string) (UserDTO, error) {
 type CreateInput struct {
 	Username    string
 	DisplayName string
-	Email     string
-	Password  string
-	Role      string
-	IsActive  bool
-	IPAddress string
-	UserAgent string
+	Email       string
+	Password    string
+	Role        string
+	IsActive    bool
+	IPAddress   string
+	UserAgent   string
 }
 
 // Create 创建用户
@@ -255,6 +262,11 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
 	}
+	// 改密/改角色/禁用属于安全敏感变更：立即吊销该用户全部会话与运维授权，
+	// 强制重新登录；其他字段（用户名/显示名）变更不打断现有会话。
+	if in.Password != nil && *in.Password != "" || in.Role != nil || in.IsActive != nil && !*in.IsActive {
+		s.revokeSessions(ctx, u.GetID().String())
+	}
 	s.publishEvents(ctx, u)
 	return toDTO(u), nil
 }
@@ -285,6 +297,8 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 	if err := s.store.Delete(ctx, uid); err != nil {
 		return err
 	}
+	// 删除用户后吊销其全部会话与运维授权，防止残留凭据继续访问。
+	s.revokeSessions(ctx, u.GetID().String())
 	// 删除是破坏性操作，手动构造事件发布（聚合根不可继续存在）
 	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewUserDeleted(uid, u.Username().String())}); err != nil {
 		log.Warn().Err(err).Msg("发布用户删除事件失败")

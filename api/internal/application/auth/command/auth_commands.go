@@ -30,6 +30,7 @@ type PasswordHasher interface {
 type EmailSender interface {
 	SendVerificationCode(ctx context.Context, email, code string) error
 	SendPasswordResetCode(ctx context.Context, email, code string) error
+	SendOpsGrantCode(ctx context.Context, email, code string) error
 }
 
 // ============================================================
@@ -300,13 +301,14 @@ type LogoutInput struct {
 
 // LogoutHandler 登出用例：删除当前 session（登出当前设备），不影响该用户其他设备。
 type LogoutHandler struct {
-	store appshared.SessionStore
-	bus   appshared.EventBus
+	store  appshared.SessionStore
+	grants appshared.OpsGrantStore
+	bus    appshared.EventBus
 }
 
 // NewLogoutHandler 构造登出用例。
-func NewLogoutHandler(store appshared.SessionStore, bus appshared.EventBus) *LogoutHandler {
-	return &LogoutHandler{store: store, bus: bus}
+func NewLogoutHandler(store appshared.SessionStore, grants appshared.OpsGrantStore, bus appshared.EventBus) *LogoutHandler {
+	return &LogoutHandler{store: store, grants: grants, bus: bus}
 }
 
 // Handle 执行登出。
@@ -315,6 +317,8 @@ func (h *LogoutHandler) Handle(ctx context.Context, in LogoutInput) error {
 	if err := h.store.DeleteForUser(ctx, in.UserID, session.ID(in.SessionID)); err != nil {
 		return err
 	}
+	// 退出立即吊销当前会话的短时运维授权。
+	RevokeOpsGrantForSession(ctx, h.grants, in.UserID, in.SessionID)
 	// 发布登出事件（审计）。userID 解析失败时降级为不记（登出已成功）。
 	uid, err := shared.ParseID(in.UserID)
 	if err != nil {

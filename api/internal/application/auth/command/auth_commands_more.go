@@ -93,6 +93,7 @@ type ResetPasswordHandler struct {
 	codeStore    appshared.CodeStore
 	hasher       PasswordHasher
 	sessionStore appshared.SessionStore
+	grants       appshared.OpsGrantStore
 }
 
 // NewResetPasswordHandler 构造重置密码用例。
@@ -102,10 +103,11 @@ func NewResetPasswordHandler(
 	codeStore appshared.CodeStore,
 	hasher PasswordHasher,
 	sessionStore appshared.SessionStore,
+	grants appshared.OpsGrantStore,
 ) *ResetPasswordHandler {
 	return &ResetPasswordHandler{
 		userRepo: repo, codeStore: codeStore,
-		hasher: hasher, sessionStore: sessionStore,
+		hasher: hasher, sessionStore: sessionStore, grants: grants,
 	}
 }
 
@@ -150,7 +152,8 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 	if err := h.sessionStore.DeleteByUser(ctx, u.GetID().String()); err != nil {
 		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("改密后吊销 session 失败")
 	}
-
+	// 重置密码立即吊销该用户全部短时运维授权。
+	RevokeOpsGrantsForUser(ctx, h.grants, u.GetID().String())
 	return nil
 }
 
@@ -162,11 +165,11 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 //
 // 所有字段为指针，nil 表示不更新该字段，空字符串表示清空。
 type UpdateProfileInput struct {
-	UserID     string
-	Username   *string
+	UserID      string
+	Username    *string
 	DisplayName *string
-	Bio        *string
-	AvatarURL  *string
+	Bio         *string
+	AvatarURL   *string
 }
 
 // UpdateProfileHandler 更新个人资料用例
@@ -246,6 +249,7 @@ type ChangePasswordHandler struct {
 	userRepo     user.UserRepository
 	hasher       PasswordHasher
 	sessionStore appshared.SessionStore
+	grants       appshared.OpsGrantStore
 }
 
 // NewChangePasswordHandler 构造修改密码用例。
@@ -254,8 +258,9 @@ func NewChangePasswordHandler(
 	repo user.UserRepository,
 	hasher PasswordHasher,
 	sessionStore appshared.SessionStore,
+	grants appshared.OpsGrantStore,
 ) *ChangePasswordHandler {
-	return &ChangePasswordHandler{userRepo: repo, hasher: hasher, sessionStore: sessionStore}
+	return &ChangePasswordHandler{userRepo: repo, hasher: hasher, sessionStore: sessionStore, grants: grants}
 }
 
 // Handle 执行修改密码
@@ -292,6 +297,8 @@ func (h *ChangePasswordHandler) Handle(ctx context.Context, in ChangePasswordInp
 	if err := h.sessionStore.DeleteByUser(ctx, u.GetID().String()); err != nil {
 		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("改密后吊销 session 失败")
 	}
+	// 改密立即吊销该用户全部短时运维授权。
+	RevokeOpsGrantsForUser(ctx, h.grants, u.GetID().String())
 
 	return nil
 }

@@ -108,7 +108,7 @@ func mustUser(t *testing.T, username, email string, role domainuser.Role, active
 }
 
 func newTestService(store *fakeStore) *Service {
-	return NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil)
+	return NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
 }
 
 func TestService_Create_VerifiesEmailForAdminCreatedUser(t *testing.T) {
@@ -141,10 +141,22 @@ type fakeSessionStore struct {
 func (f *fakeSessionStore) Create(context.Context, *domainsession.Session, time.Duration) error {
 	return nil
 }
+
+func (f *fakeSessionStore) CreateBounded(context.Context, *domainsession.Session, time.Duration, int) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeSessionStore) ListByUser(context.Context, string) ([]*domainsession.Session, error) {
+	return nil, nil
+}
+
+func (f *fakeSessionStore) MigrateLegacyIndexes(context.Context, time.Duration) error {
+	return nil
+}
 func (f *fakeSessionStore) Get(context.Context, domainsession.ID) (*domainsession.Session, error) {
 	return nil, nil
 }
-func (f *fakeSessionStore) Touch(context.Context, *domainsession.Session, time.Duration) error {
+func (f *fakeSessionStore) Touch(context.Context, *domainsession.Session, time.Duration, domainsession.ClientContext) error {
 	return nil
 }
 func (f *fakeSessionStore) DeleteForUser(context.Context, string, domainsession.ID) error {
@@ -159,7 +171,7 @@ func TestService_UpdateUserRole_RevokesSession(t *testing.T) {
 	target := mustUser(t, "u1", "u1@example.com", domainuser.RoleUser, true)
 	store := &fakeStore{findByIDUser: &target}
 	sessions := &fakeSessionStore{}
-	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions)
+	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions, nil)
 
 	err := svc.UpdateUserRole(context.Background(),
 		target.GetID().String(), string(domainuser.RoleAdmin),

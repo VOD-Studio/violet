@@ -61,7 +61,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config, logOutp
 	// 保证跨模块事件（role 创建 → 审计订阅者）在同一总线上可达。
 	bus := infraeventbus.NewInMemory()
 
-	role, roleCleanup, err := InitializeRoleContainer(db, bus)
+	role, roleCleanup, err := InitializeRoleContainer(db, bus, infraauth.NewRedisOpsGrantStore(rdb))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -108,13 +108,13 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config, logOutp
 	releases := NewReleasesContainer(settings.Store, rdb)
 	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
-	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
+	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore, infraauth.NewRedisOpsGrantStore(rdb))
 	apiToken := NewAPITokenContainer(db, bus)
 	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
 	commentReaction := NewCommentReactionContainer(db)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
 	notification := NewNotificationContainer(db, bus)
-	system := NewSystemContainer(db, rdb, ctx)
+	system := NewSystemContainer(db, rdb, ctx, auth.SessionStore)
 	media := NewMediaContainer(db, rdb, cfg)
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
 	gallery := NewGalleryContainer(db, bus, permissionChecker)

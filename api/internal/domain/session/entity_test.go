@@ -26,9 +26,9 @@ func newSnap() UserSnapshot {
 // 每次登录的 id 必须唯一、csrf 必须独立随机，否则可预测即鉴权崩塌。
 func TestNewSession_GeneratesIDAndCSRF(t *testing.T) {
 	now := time.Now()
-	s1, err := NewSession(newSnap(), now, 0)
+	s1, err := NewSession(newSnap(), now, 0, ClientContext{})
 	require.NoError(t, err)
-	s2, err := NewSession(newSnap(), now, 0)
+	s2, err := NewSession(newSnap(), now, 0, ClientContext{})
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, s1.ID())
@@ -41,7 +41,7 @@ func TestNewSession_GeneratesIDAndCSRF(t *testing.T) {
 // TestIsExpired_NoAbsoluteLimit 验证 max<=0 时只受 idle 滑动窗口约束。
 func TestIsExpired_NoAbsoluteLimit(t *testing.T) {
 	now := time.Now()
-	s, _ := NewSession(newSnap(), now, 0)
+	s, _ := NewSession(newSnap(), now, 0, ClientContext{})
 
 	// idle 窗口内（6 天 < 7 天）不过期
 	assert.False(t, s.IsExpired(now.Add(6*24*time.Hour), 7*24*time.Hour))
@@ -52,7 +52,7 @@ func TestIsExpired_NoAbsoluteLimit(t *testing.T) {
 // TestIsExpired_AbsoluteDeadline 验证 max>0 时绝对寿命到点强制过期，无论活跃。
 func TestIsExpired_AbsoluteDeadline(t *testing.T) {
 	now := time.Now()
-	s, _ := NewSession(newSnap(), now, 30*24*time.Hour)
+	s, _ := NewSession(newSnap(), now, 30*24*time.Hour, ClientContext{})
 
 	// 活跃且未到绝对寿命 → 不过期
 	assert.False(t, s.IsExpired(now.Add(1*time.Hour), 7*24*time.Hour))
@@ -64,10 +64,10 @@ func TestIsExpired_AbsoluteDeadline(t *testing.T) {
 // 一旦轮换 id 就要在 SSR 写 Set-Cookie，重新撞 TanStack Start 透传卡点。
 func TestTouch_DoesNotRotateID(t *testing.T) {
 	now := time.Now()
-	s, _ := NewSession(newSnap(), now, 0)
+	s, _ := NewSession(newSnap(), now, 0, ClientContext{})
 	id := s.ID()
 
-	s.Touch(now.Add(1 * time.Hour))
+	s.Touch(now.Add(1*time.Hour), ClientContext{})
 
 	assert.Equal(t, id, s.ID(), "续期不轮换 id（命门不变量②）")
 	assert.Equal(t, now.Add(1*time.Hour), s.LastSeenAt(), "Touch 更新最近活跃时间")

@@ -8,6 +8,7 @@ import (
 
 	authcmd "blog-api/internal/application/auth/command"
 	appsettings "blog-api/internal/application/settings"
+	appshared "blog-api/internal/application/shared"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/interfaces/http/response"
@@ -17,10 +18,12 @@ type Handler struct {
 	svc     *appsettings.Service
 	creds   *authcmd.OAuthCredentials
 	startup appsettings.StartupReader
+	// grants 短时运维授权存储：security 组确认时刻重新校验（fail-closed）
+	grants appshared.OpsGrantStore
 }
 
-func NewHandler(svc *appsettings.Service, creds *authcmd.OAuthCredentials, startup appsettings.StartupReader) *Handler {
-	return &Handler{svc: svc, creds: creds, startup: startup}
+func NewHandler(svc *appsettings.Service, creds *authcmd.OAuthCredentials, startup appsettings.StartupReader, grants appshared.OpsGrantStore) *Handler {
+	return &Handler{svc: svc, creds: creds, startup: startup, grants: grants}
 }
 
 func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
