@@ -321,6 +321,7 @@ make help         # 查看所有命令
 | `session.*` | idle_ttl（滑动续期窗口）、max_ttl（绝对寿命上限） |
 | `cors_allowed_origins` | CORS 允许来源 |
 | `trusted_proxies` | 受信代理 CIDR（为空时忽略 X-Forwarded-For） |
+| `security_override_mode` | 安全组数据库覆盖运行模式：`database`（默认）数据库覆盖优先；`deployment` 忽略数据库安全覆盖、强制部署默认——管理员被错误安全组合锁出后台时的部署侧恢复入口（env `SECURITY_OVERRIDE_MODE`） |
 | `resend_api_key` | Resend 邮件 API Key |
 | `web_push.*` | 浏览器 Web Push 的 VAPID 公钥、私钥与 subject；私钥仅从环境变量读取 |
 | `superadmin.*` | 初始超级管理员账户 |
