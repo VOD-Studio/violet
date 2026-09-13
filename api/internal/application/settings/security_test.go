@@ -88,13 +88,15 @@ func TestSecurityChangeVersionConflictDiscardsPending(t *testing.T) {
 
 	_, err := svc.RequestSecurityChange(ctx, 0, patch(`{"session_max_devices":2}`), "admin-1")
 	require.NoError(t, err)
+	view, ok := svc.PendingSecurityChange()
+	require.True(t, ok)
 	// 另一路径推进版本，制造 CAS 冲突
 	store.versions[domainsettings.Security] = 7
 
-	_, err = svc.ConfirmSecurityChange(ctx, "any")
+	_, err = svc.ConfirmSecurityChange(ctx, view.ID)
 	assert.ErrorIs(t, err, domainsettings.ErrVersionConflict, "确认提交受版本 CAS 约束")
 
-	_, ok := svc.PendingSecurityChange()
+	_, ok = svc.PendingSecurityChange()
 	assert.False(t, ok, "冲突后 pending 被丢弃，需重新发起")
 }
 

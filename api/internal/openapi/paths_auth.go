@@ -323,4 +323,18 @@ func registerAuthPaths(t *openapi3.T) {
 			),
 		},
 	})
+
+	// ---- POST /auth/ops-grant/code（登录）----
+	t.Paths.Set("/auth/ops-grant/code", &openapi3.PathItem{
+		Post: &openapi3.Operation{
+			Tags:        []string{"认证"},
+			Summary:     "发送运维授权邮箱验证码",
+			Description: "向账号绑定邮箱发送验证码，供 OAuth 无密码用户完成二次验证。受认证限流保护。",
+			Security:    securityCookie(),
+			Parameters:  openapi3.Parameters{csrfHeaderParam()},
+			Responses: responses(
+				200, messageResponse("验证码已发送到账号绑定邮箱"),
+			),
+		},
+	})
 }

@@ -12,8 +12,8 @@ import {
 	type RevokeTarget,
 	SecuritySessionsSection,
 } from "@features/admin-settings/ui/security/SecuritySessionsSection";
-import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useRevokeSession } from "@features/auth/api/sessions";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -61,6 +61,9 @@ function SecuritySettingsPage() {
 	const revokeSessionMut = useRevokeSession();
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	// 打开弹窗时快照待确认标识：弹窗等待验证码期间 refetch 可能替换 pending，
+	// 确认必须绑定操作者实际核对的那份变更（后端 ID 校验兜底）。
+	const [confirmPendingId, setConfirmPendingId] = useState<string | null>(null);
 	const [revokeTarget, setRevokeTarget] = useState<RevokeTarget | null>(null);
 
 	const { register, control, reset, watch, formState } = useForm<SecurityForm>({
@@ -197,7 +200,10 @@ function SecuritySettingsPage() {
 						<SecurityPendingCard
 							pending={pending}
 							disabled={!canWrite || confirmChange.isPending}
-							onConfirm={() => setConfirmOpen(true)}
+							onConfirm={() => {
+								setConfirmPendingId(pending.id);
+								setConfirmOpen(true);
+							}}
 							onCancel={() => cancelChange.mutate()}
 						/>
 					)}
@@ -335,7 +341,7 @@ function SecuritySettingsPage() {
 				</>
 			)}
 
-			{confirmOpen && pending && (
+			{confirmOpen && pending && confirmPendingId && (
 				<OpsGrantDialog
 					onOpenChange={setConfirmOpen}
 					confirming={confirmChange.isPending}

@@ -350,20 +350,25 @@ func (s *RedisSessionStore) migrateLegacyIndex(ctx context.Context, idx string, 
 				}
 				score = payload.CreatedMS
 				if updated, err := json.Marshal(payload); err == nil {
-					ttl, err := s.rdb.TTL(ctx, key).Result()
+					// PTTL 毫秒精度：<=0 表示 key 已删除（-2）或亚毫秒到期——
+					// 重写会复活/延长它，跳过；-1（无过期）收紧为 idleTTL。
+					pttl, err := s.rdb.PTTL(ctx, key).Result()
 					if err != nil {
 						return err
 					}
-					if ttl == -1 || ttl > idleTTL {
-						ttl = idleTTL
-					}
-					if payload.AbsDeadlineMS > 0 {
-						if remain := time.Until(time.UnixMilli(payload.AbsDeadlineMS)); remain > 0 && remain < ttl {
-							ttl = remain
+					if pttl > 0 {
+						ttl := idleTTL
+						if remain := pttl + time.Second; remain < ttl {
+							ttl = remain // 向上取整 1s，绝不短于剩余寿命
 						}
-					}
-					if err := s.rdb.Set(ctx, key, updated, ttl).Err(); err != nil {
-						return err
+						if payload.AbsDeadlineMS > 0 {
+							if remain := time.Until(time.UnixMilli(payload.AbsDeadlineMS)); remain > 0 && remain < ttl {
+								ttl = remain
+							}
+						}
+						if err := s.rdb.Set(ctx, key, updated, ttl).Err(); err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -404,19 +409,36 @@ func (s *RedisSessionStore) CountActiveSessions(ctx context.Context) (int64, err
 	}
 }
 
-// CountActiveUsers 统计至少持有一个存活会话的用户数（SCAN 渐进）。
-// 索引键存在即视为该用户仍有会话记录；过期索引残留只会高估，不会漏计。
+// CountActiveUsers 统计至少持有一个存活会话的用户数。
+// 以 session:* payload 的 user_id 去重为准：索引键 TTL 按滑动窗口刷新，
+// 会话本体可能因绝对寿命提前消失，按索引键计数会长期高估。
 func (s *RedisSessionStore) CountActiveUsers(ctx context.Context) (int64, error) {
+	users := make(map[string]struct{})
 	var cursor uint64
-	var total int64
 	for {
-		keys, next, err := s.rdb.Scan(ctx, cursor, "user:*:sessions", 100).Result()
+		keys, next, err := s.rdb.Scan(ctx, cursor, "session:*", 100).Result()
 		if err != nil {
-			return 0, fmt.Errorf("scan user indexes: %w", err)
+			return 0, fmt.Errorf("scan sessions for users: %w", err)
 		}
-		total += int64(len(keys))
+		for i := 0; i < len(keys); i += 50 {
+			batch := keys[i:min(i+50, len(keys))]
+			payloads, err := s.rdb.MGet(ctx, batch...).Result()
+			if err != nil {
+				return 0, fmt.Errorf("mget sessions for users: %w", err)
+			}
+			for _, raw := range payloads {
+				data, ok := raw.(string)
+				if !ok {
+					continue
+				}
+				var payload sessionPayload
+				if json.Unmarshal([]byte(data), &payload) == nil && payload.UserID != "" {
+					users[payload.UserID] = struct{}{}
+				}
+			}
+		}
 		if next == 0 {
-			return total, nil
+			return int64(len(users)), nil
 		}
 		cursor = next
 	}
