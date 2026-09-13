@@ -14,9 +14,9 @@ import type { NavMenuItem } from "./nav-menu-config";
  *
  * 子路由命中（如 /admin/settings/general）时父项显示激活态，但仅当子项
  * 不可见时（侧边栏收起 / 分组未展开）——子项可见时激活态由子项自身承担，
- * 避免父子两行重复高亮。前缀判定用 `to + "/"`，防止 /admin/settings 误命中
- * /admin/settings-x 这类同前缀路由；子项与父项 `to` 无公共前缀时（如「日志」
- * 收 /admin/runtime-logs 与 /admin/logs），命中任一子项即激活。
+ * 避免父子两行重复高亮。激活只看子项命中：同分组前缀下并列多个父项
+ * （站点设置/关于页/集成的子路由都挂在 /admin/settings*），父项自身前缀
+ * 匹配会跨父项误高亮；父项 `to` 恒取自某个子项路径，仅作 key 与展开态标识。
  *
  * collapsed（侧边栏收起）时：子项无法内联渲染（撑破窄栏），点按图标改为
  * 右侧 Popover 飞出子菜单，子项导航后自动关闭；图标在子路由命中时保持激活态。
@@ -65,11 +65,10 @@ export function NavMenuGroupItem({
 		el.addEventListener("transitionend", onEnd);
 		return () => el.removeEventListener("transitionend", onEnd);
 	}, [expanded, collapsed]);
-	// 前缀判定用 `to + "/"`，防止误命中同前缀路由；子项与父项无公共前缀时
-	// 靠遍历子项命中（「日志」父项本身不是路由落点）。
+	// 激活只由子项命中决定（父项 to 恒取自子项路径，自身前缀会跨父项误高亮）；
+	// 前缀判定用 `to + "/"`，防止 /admin/settings 误命中 /admin/settings-x。
 	const pathMatches = (base: string) => pathname === base || pathname.startsWith(`${base}/`);
-	const childActive =
-		pathMatches(item.to) || (item.children?.some((child) => pathMatches(child.to)) ?? false);
+	const childActive = item.children?.some((child) => pathMatches(child.to)) ?? false;
 	const showActive = childActive && (collapsed || !expanded);
 
 	const Icon: LucideIcon = item.icon;

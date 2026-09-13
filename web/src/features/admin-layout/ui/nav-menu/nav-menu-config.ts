@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
 	Bot,
+	CircleUserRound,
 	CodeXml,
 	ContactRound,
 	FileText,
@@ -21,6 +22,7 @@ import {
 	Megaphone,
 	MessageSquare,
 	NotebookText,
+	Plug,
 	Power,
 	Rss,
 	ScrollText,
@@ -67,8 +69,8 @@ export interface NavMenuItem {
 	/**
 	 * 子菜单项。存在时该项渲染为可折叠父项（点按切换展开/收起，不直接导航），
 	 * 父项本身只作分组容器。父项可见性 = 任一子项可见（权限逻辑同上）。
-	 * 父项的 `to` 仍需提供，作为展开状态与 key 的唯一标识；
-	 * 激活态判定同时覆盖自身路由与任一子项路由（见 NavMenuGroupItem）。
+	 * 父项的 `to` 仍需提供，取某个子项的路由路径，作为展开状态与 key 的唯一标识；
+	 * 激活态只由子项命中决定（见 NavMenuGroupItem）。
 	 */
 	children?: NavMenuItem[];
 }
@@ -210,7 +212,6 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		to: "/admin/settings",
 		icon: Settings,
 		group: "platform",
-		permissions: ["settings:view"],
 		children: [
 			{
 				label: "基础信息",
@@ -231,11 +232,19 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				permissions: ["settings:view"],
 			},
 			{
-				label: "GitHub",
-				to: "/admin/settings/github",
-				icon: GitBranch,
+				label: "代码运行器",
+				to: "/admin/settings/code-runner",
+				icon: CodeXml,
 				permissions: ["settings:view"],
 			},
+		],
+	},
+	{
+		label: "关于页",
+		to: "/admin/settings/profile",
+		icon: CircleUserRound,
+		group: "platform",
+		children: [
 			{
 				label: "关于",
 				to: "/admin/settings/profile",
@@ -248,32 +257,33 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				icon: LayoutPanelLeft,
 				permissions: ["settings:view"],
 			},
+		],
+	},
+	{
+		label: "集成",
+		to: "/admin/mcp",
+		icon: Plug,
+		group: "platform",
+		children: [
+			{
+				label: "MCP 接入",
+				to: "/admin/mcp",
+				icon: KeyRound,
+				permissions: ["mcp:manage-tokens"],
+			},
+			{
+				label: "GitHub",
+				to: "/admin/settings/github",
+				icon: GitBranch,
+				permissions: ["settings:view"],
+			},
 			{
 				label: "LLM 配置",
 				to: "/admin/settings/llm",
 				icon: Bot,
 				permissions: ["settings:view"],
 			},
-			{
-				label: "代码运行器",
-				to: "/admin/settings/code-runner",
-				icon: CodeXml,
-				permissions: ["settings:view"],
-			},
-			{
-				label: "启动配置",
-				to: "/admin/settings/startup",
-				icon: Power,
-				permissions: ["settings:view"],
-			},
 		],
-	},
-	{
-		label: "MCP 接入",
-		to: "/admin/mcp",
-		icon: KeyRound,
-		group: "platform",
-		permissions: ["mcp:manage-tokens"],
 	},
 	{
 		label: "系统监控",
@@ -281,6 +291,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: Activity,
 		group: "platform",
 		permissions: ["system:view"],
+	},
+	{
+		label: "启动配置",
+		to: "/admin/settings/startup",
+		icon: Power,
+		group: "platform",
+		permissions: ["settings:view"],
 	},
 	{
 		label: "日志",

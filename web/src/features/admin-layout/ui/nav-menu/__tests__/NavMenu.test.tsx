@@ -81,12 +81,16 @@ const getSettingsParent = () =>
 const getLogParent = () =>
 	screen.getAllByRole("button", { name: /日志/ }).find((b) => b.hasAttribute("aria-expanded"));
 
+/** 取「关于页」父项按钮（「关于页配置」子项是链接不是按钮，不会误匹配） */
+const getAboutParent = () =>
+	screen.getAllByRole("button", { name: /关于页/ }).find((b) => b.hasAttribute("aria-expanded"));
+
 /** 取「站点设置」子菜单容器（data-state 标识展开态） */
 const getSettingsSubmenu = () => document.querySelector('[data-state][class*="grid-rows"]');
 
 describe("NavMenu 子菜单渲染", () => {
 	it("默认折叠，子项不可见", () => {
-		setPath("/admin/settings/github");
+		setPath("/admin/settings/security");
 		render(<NavMenu />);
 
 		// 即使命中子项路由，父项仍默认折叠
@@ -97,7 +101,7 @@ describe("NavMenu 子菜单渲染", () => {
 	});
 
 	it("手动点击父项后展开子项", () => {
-		setPath("/admin/settings/github");
+		setPath("/admin/settings/security");
 		render(<NavMenu />);
 
 		const parent = getSettingsParent();
@@ -106,7 +110,7 @@ describe("NavMenu 子菜单渲染", () => {
 		// 手动展开
 		fireEvent.click(parent as HTMLElement);
 		expect(parent?.getAttribute("aria-expanded")).toBe("true");
-		expect(screen.queryAllByTestId("link-/admin/settings/github").length).toBeGreaterThan(0);
+		expect(screen.queryAllByTestId("link-/admin/settings/security").length).toBeGreaterThan(0);
 		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBeGreaterThan(0);
 	});
 
@@ -154,6 +158,15 @@ describe("NavMenu 子菜单渲染", () => {
 		setPath("/admin/settings-x");
 		render(<NavMenu />);
 
+		expect(getSettingsParent()?.className).not.toContain("before:bg-primary");
+	});
+
+	it("同前缀并列父项不跨高亮（关于页子路由不激活站点设置）", () => {
+		// /admin/settings/about 与 /admin/settings 同前缀，激活只归命中子项的「关于页」
+		setPath("/admin/settings/about");
+		render(<NavMenu />);
+
+		expect(getAboutParent()?.className).toContain("before:bg-primary");
 		expect(getSettingsParent()?.className).not.toContain("before:bg-primary");
 	});
 
