@@ -38,16 +38,17 @@ graph LR
 2. push 到 `release/2.0` 后,release-please 自动开一个「release PR」,标题形如 `chore(release): v2.0.2`,body 含从 commit log 生成的 CHANGELOG 段落。
 3. review release PR 的 CHANGELOG 内容，并按「Release notes 改写规范」把新段落改写为功能聚合风格后**squash merge 合并该 PR**(release PR 固定用 squash 合并,合并 commit 即 `chore(release): vX.Y.Z` 单提交,release-please 据此识别不发新版本;功能/修复 PR 用 merge commit 保留原子提交,见 AGENTS.md「PR 与 issue 规范」)。
 4. 合并即触发:release-please 自动打 `vX.Y.Z` tag → 触发 `Deploy` workflow。
-5. `Deploy` 自动执行(14 job 流水线):verify-ci CI 门禁 → detect 按侧变更检测 → prepare 解析版本 → build-api / build-web 构建镜像 → prepare-server 服务器准备 → 迁移门禁 → 部署 api(含跨组件冒烟) → 部署 web → publish-apidocs(API 文档随发版推送) → release(reload + 建 Release + 回写锚点) → github-release;失败时 rollback 按侧自动回滚,notify-failure 建告警 issue。
+5. `Deploy` 自动执行(13 job 流水线):verify-ci CI 门禁 → detect 按侧变更检测 → prepare 解析版本 → build-api / build-web 构建镜像 → prepare-server 服务器准备 → 迁移门禁 → 部署 api(含跨组件冒烟) → 部署 web → release(reload + 建 Release + 回写锚点) → github-release;失败时 rollback 按侧自动回滚,notify-failure 建告警 issue。
    - **单侧部署**:只部署实际变更侧(api/ 或 web/ 变更分别触发),未改动侧不重建容器;`docker-compose*.yml` 与 `scripts/**` 变更视为双侧。变更基线 = 各侧锚点(线上实际版本)。
 6. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果;成功后各侧版本分别写入 `/root/docker/violet/.current-version-api` 与 `.current-version-web`。
 
-### API 文档自动推送(publish-apidocs)
+### API 文档自动推送(publish-apidocs.yml)
 
-- api 侧部署成功后,拉生产活 spec(`GET https://xunrua.top/api/v1/openapi.json`,与线上代码永远同版本)经 Apifox 开放 API 推入项目 8484856,apidoc.xunrua.top 随发版自动更新,不再手动导入。
-- **前置配置一次**:Apifox「账号设置 → API 访问令牌」生成 token,加入仓库 Actions secret `APIFOX_ACCESS_TOKEN`;未配置时该 job 跳过并告警,不阻断发版。
+- **独立旁路 workflow**,与 Deploy 分文件:Deploy 成功完成后由 workflow_run 触发,它的失败与部署流水线完全隔离(不触发 rollback/部署告警)。文件版本取默认分支(与 auto-retry 一致),修复合并到 release/2.0 即生效。
+- 触发后拉生产活 spec(`GET https://xunrua.top/api/v1/openapi.json`,与线上代码永远同版本)经 Apifox 开放 API 推入项目 8484856,apidoc.xunrua.top 随发版自动更新,不再手动导入;`workflow_dispatch` 支持手动补推。
+- **前置配置一次**:Apifox「账号设置 → API 访问令牌」生成 token(**账号须为项目 8484856 的管理员**,否则导入返回 403 No project maintainer privilege),加入仓库 Actions secret `APIFOX_ACCESS_TOKEN`;未配置时该 job 跳过并告警。
 - `deleteUnmatchedResources=true`:文档与代码单一真相,线上已删除的接口/模型在 Apifox 同步移除——手工在 Apifox 项目里新建的接口会被清掉。
-- 推送失败不回滚部署,只进 notify-failure 告警。
+- 坑:GitHub workflow 解析期 `if` 表达式里 `secrets` 上下文不可用(Unrecognized named-value),token 判断必须经 job env 中转——曾因此让整个 Deploy 0s 失败、v2.8.25 发布未上线。
 
 ### 部署失败的自愈与告警
 
