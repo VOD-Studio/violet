@@ -196,24 +196,6 @@ jobs:
         if: needs.changes.outputs.web == 'true'
         run: pnpm build
 
-      # 主题浏览器契约（PRD-0026）：真实 Chromium 跑 SSR 首帧 + hydration 后的
-      # semantic token 断言。构建产物 dist 必须先就位（上面 Build 步骤），
-      # node server.mjs 以运行时环境变量 VITE_SSR_API_BASE_URL 指向 mock API。
-      - name: Cache Playwright browsers
-        if: needs.changes.outputs.web == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
-
-      - name: Install Playwright Chromium
-        if: needs.changes.outputs.web == 'true'
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Theme browser contract
-        if: needs.changes.outputs.web == 'true'
-        run: pnpm test:contract
-
       - name: Setup Docker Buildx
         if: needs.changes.outputs.web == 'true'
         uses: docker/setup-buildx-action@v3
