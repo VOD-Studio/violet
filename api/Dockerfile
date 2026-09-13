@@ -13,10 +13,14 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 
+# 发版镜像经 build-args 注入 API_VERSION（tag），本地/CI 构建缺省 dev；
+# ${API_VERSION#v} 去掉 tag 前导 v，让 openapi spec 版本读作 2.8.9 而非 v2.8.9
+ARG API_VERSION=dev
+
 # 构建 server 与 migrate 两个二进制，ldflags 去除调试信息减小体积
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X blog-api/internal/version.Version=${API_VERSION#v}" -o /server ./cmd/server && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /migrate ./cmd/migrate
 
 # 阶段2: 运行时，保留 shell 与 wget 以便健康检查和调试

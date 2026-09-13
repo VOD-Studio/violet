@@ -44,8 +44,12 @@ import {
 } from "./client";
 import { chatKeys } from "./keys";
 
-export const useChatConversations = () =>
-	useQuery({ queryKey: chatKeys.conversations(), queryFn: () => fetchChatConversations() });
+export const useChatConversations = (enabled = true) =>
+	useQuery({
+		queryKey: chatKeys.conversations(),
+		queryFn: () => fetchChatConversations(),
+		enabled,
+	});
 
 export const useChatContacts = (query: string, enabled = true) =>
 	useInfiniteQuery({

@@ -28,13 +28,19 @@ export function ShareTweetDialog() {
 	const close = useShareTweetStore((s) => s.close);
 	const commit = useShareTweetStore((s) => s.commit);
 	const navigate = useNavigate();
-	const { data: me } = useMe();
+	const isOpen = tweet !== null;
+	const { data: me } = useMe({ enabled: isOpen });
 	const [search, setSearch] = useState("");
 	const [creatingUserID, setCreatingUserID] = useState<string | null>(null);
 	const deferredSearch = useDeferredValue(search.trim());
 
-	const { data: conversationsPage, isLoading: conversationsLoading } = useChatConversations();
-	const contactsQuery = useChatContacts(deferredSearch, deferredSearch.length > 0);
+	const queriesEnabled = isOpen && !!me;
+	const { data: conversationsPage, isLoading: conversationsLoading } =
+		useChatConversations(queriesEnabled);
+	const contactsQuery = useChatContacts(
+		deferredSearch,
+		queriesEnabled && deferredSearch.length > 0,
+	);
 	const createConversation = useCreateChatConversation();
 
 	const conversations = conversationsPage?.data ?? [];
@@ -75,7 +81,7 @@ export function ShareTweetDialog() {
 
 	return (
 		<Modal
-			open={!!tweet}
+			open={isOpen}
 			onOpenChange={(open) => !open && close()}
 			title="分享推文到聊天"
 			size="sm"

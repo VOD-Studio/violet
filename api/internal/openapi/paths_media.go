@@ -295,4 +295,74 @@ func registerMediaPaths(t *openapi3.T) {
 			404, errorResponse("上传会话不存在"),
 		),
 	})
+
+	// ============ admin 媒体管理 ============
+
+	registerSchema(t, "AdminMediaQuery", openapi3.Schemas{})
+	registerSchema(t, "AdminUpdateMediaRequest", openapi3.Schemas{
+		"alt_text":      optStr("替代文本（缺省=不改）"),
+		"category":      optStr("分类（缺省=不改）"),
+		"original_name": optStr("原始文件名（缺省=不改）"),
+	})
+
+	registerSchema(t, "BatchDeleteResponse", openapi3.Schemas{
+		"deleted": optInt("已删除数量"),
+	})
+
+	get(t, "/admin/media", &openapi3.Operation{
+		Tags:        []string{"媒体管理"},
+		Summary:     "全站媒体列表",
+		Description: "需 media:view 权限。不限 owner，可按 purpose/type/category/keyword 过滤（offset 分页）。",
+		Security:    securityAdmin(),
+		Parameters: append(
+			openapi3.Parameters{
+				queryStrParam("purpose", "用途过滤"),
+				queryStrParam("type", "MIME 大类过滤"),
+				queryStrParam("category", "分类过滤"),
+				queryStrParam("keyword", "关键词过滤"),
+			},
+			pageParam(), limitParam(100),
+		),
+		Responses: responses(
+			200, dataArrayResponse("FileDTO", "全站媒体列表", 200, true),
+		),
+	})
+
+	patch(t, "/admin/media/{id}", &openapi3.Operation{
+		Tags:        []string{"媒体管理"},
+		Summary:     "更新媒体元信息",
+		Description: "需 media:upload 权限。PATCH 语义：缺省字段不改。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "文件 ID"), csrfHeaderParam()},
+		RequestBody: jsonBody("AdminUpdateMediaRequest", true, "可更新字段"),
+		Responses: responses(
+			200, dataResponse("FileDTO", "更新后的媒体", 200),
+			404, errorResponse("文件不存在"),
+		),
+	})
+
+	del(t, "/admin/media/{id}", &openapi3.Operation{
+		Tags:        []string{"媒体管理"},
+		Summary:     "删除媒体",
+		Description: "需 media:delete 权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "文件 ID"), csrfHeaderParam()},
+		Responses: responses(
+			200, messageResponse("文件已删除"),
+			404, errorResponse("文件不存在"),
+		),
+	})
+
+	post(t, "/admin/media/batch-delete", &openapi3.Operation{
+		Tags:        []string{"媒体管理"},
+		Summary:     "批量删除媒体",
+		Description: "需 media:delete 权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("BatchDeleteMediaRequest", true, "文件 ID 列表"),
+		Responses: responses(
+			200, dataResponse("BatchDeleteResponse", "已删除数量", 200),
+			400, errorResponse("ids 为空"),
+		),
+	})
 }

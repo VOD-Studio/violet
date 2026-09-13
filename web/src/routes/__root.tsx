@@ -15,6 +15,8 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { RuaRouteTransition } from "@widgets/PersonaMotion";
+import { useEffect } from "react";
+import { ApiDocsDialog } from "@/features/api-docs";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
@@ -50,17 +52,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		if (typeof window === "undefined" || cachedClaims === undefined) {
 			const claims = await getAuthSession();
 			cachedClaims = claims ?? null;
+			// CSRF cookie 也会发给游客，只有有效会话 claims 才能建立登录态。
 			if (claims && typeof window !== "undefined") {
 				markSessionActive();
-			} else if (!claims && typeof window !== "undefined") {
-				// 客户端 hydrate 时 getAuthSession 返回 null：可能是 server function RPC
-				// 链路问题（SSR 地址配错/cookie 转发失败），不是 session 真过期。
-				// 用非 HttpOnly 的 violet_csrf cookie 兜底：浏览器有它说明后端下发了
-				// session 相关 cookie，按已登录处理，等浏览器直连的 /auth/me 确认。
-				// 不能用 violet_session——它是 HttpOnly，document.cookie 读不到。
-				if (document.cookie.includes("violet_csrf=")) {
-					markSessionActive();
-				}
 			}
 			return {
 				theme,
@@ -130,6 +124,12 @@ function RootComponent() {
 	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
 	const isUsersRoute = pathname.startsWith("/users/");
 	const isFullscreenRoute = isChatRoute || isUsersRoute;
+
+	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
+	useEffect(() => {
+		if (auth.claims) markSessionActive();
+	}, [auth.claims]);
+
 	return (
 		<AppProvider>
 			<SystemThemeTransition />
@@ -161,6 +161,7 @@ function RootComponent() {
 			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
+			<ApiDocsDialog />
 			<ShareTweetDialog />
 			<CustomCursor />
 		</AppProvider>

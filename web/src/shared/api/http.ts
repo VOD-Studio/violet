@@ -3,6 +3,7 @@ import axiosRetry from "axios-retry";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
 import { useLoginDialogStore } from "./login-dialog-store";
+import { isSessionActive } from "./session";
 import { onSessionExpired } from "./session-expired";
 import type { Envelope, Pagination } from "./types";
 
@@ -71,7 +72,7 @@ const getBaseUrl = (): string => {
  * 2. axiosRetry：仅 ERR_NETWORK/ETIMEDOUT/5xx 重试 2 次，业务 4xx 不重试
  * 3. request interceptor：写请求自动注入 X-CSRF-Token header
  * 4. response success interceptor：拆 envelope 成 UnpackedResponse
- * 5. response error interceptor：401 清 auth 缓存 + 弹登录框（sessionActive 不动，见下）
+ * 5. response error interceptor：已登录会话收到 401 时清 auth 缓存并弹窗重登
  *
  * @param opts SSR 时传 forwardedCookie；客户端默认不传
  * @returns 配好的 axios 实例
@@ -124,17 +125,11 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 		async (err: AxiosError) => {
 			const status = err.response?.status ?? 0;
 
-			// 401 处理：opaque session 疑似过期，清 auth 缓存 + 弹登录框原地恢复。
-			// 不动 sessionActive：它只随登录/登出/取消重登翻转（见 session.ts），
-			// 一次瞬态 401（会话实际仍有效）不应把客户端打成持久登出态——否则依赖
-			// sessionActive 的入口（如表情面板「我的」tab）会持续失效到下次登录。
-			// 真过期时用户在弹窗取消重登，LoginDialog 会调 clearSessionActive。
-			// __skipAuthDialog 用于主动认证请求，避免登录失败还弹登录窗。
-			if (status === 401 && err.config && !err.config.__skipAuthDialog) {
+			// 游客和 SSR 的 401 只返回错误，不触发客户端会话过期。
+			// 保留 sessionActive 供原地重登；登出或取消重登后，迟到的 401 不再弹窗。
+			if (status === 401 && err.config && !err.config.__skipAuthDialog && isSessionActive()) {
 				onSessionExpired();
-				if (typeof window !== "undefined") {
-					useLoginDialogStore.getState().open();
-				}
+				useLoginDialogStore.getState().open();
 			}
 
 			// 归一化错误：把后端错误结构转成 ApiError 抛出

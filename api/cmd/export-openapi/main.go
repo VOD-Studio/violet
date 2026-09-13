@@ -1,4 +1,6 @@
-// 临时导出工具：把 openapi spec 序列化到 openapi.json，供 Apifox 导入。
+// 本地调试工具：把 openapi spec 序列化到 openapi.json，便于 jq 检查或导入外部工具。
+// 线上文档由 GET /api/v1/openapi.json 实时提供，防漂移由路由对账测试把关
+// （internal/interfaces/http/routing/parity_test.go）。
 // 用法：go run ./cmd/export-openapi
 package main
 

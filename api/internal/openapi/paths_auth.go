@@ -244,4 +244,93 @@ func registerAuthPaths(t *openapi3.T) {
 			),
 		},
 	})
+
+	// ---- POST /auth/google、/auth/github（OAuth 登录，公开 + 限流）----
+	registerSchema(t, "OAuthLoginRequest", openapi3.Schemas{
+		"credential": reqStr("OAuth ID Token（前端 SDK 拿到的 credential）"),
+	}, "credential")
+
+	oauthLogin := func(provider string) *openapi3.Operation {
+		return &openapi3.Operation{
+			Tags:    []string{"认证"},
+			Summary: provider + " OAuth 登录",
+			Description: "校验 " + provider + " ID Token 后创建 opaque session：" +
+				"violet_session（HttpOnly）+ violet_csrf cookie 由响应 Set-Cookie 下发，" +
+				"body 只含 user_id。受认证类限流保护；provider 未启用返回 403。",
+			Parameters:  openapi3.Parameters{csrfHeaderParam()},
+			RequestBody: jsonBody("OAuthLoginRequest", true, "OAuth 凭证"),
+			Responses: responses(
+				200, dataResponse("LoginResponse", "登录成功（session 走 cookie）", 200),
+				401, errorResponse("ID Token 校验失败"),
+				403, errorResponse("该 OAuth 登录方式未启用"),
+			),
+		}
+	}
+	post(t, "/auth/google", oauthLogin("Google"))
+	post(t, "/auth/github", oauthLogin("GitHub"))
+
+	// ---- admin OAuth 凭据管理 ----
+	registerSchema(t, "OAuthProviderStatus", openapi3.Schemas{
+		"configured":        optBool("凭据是否已配置"),
+		"client_id_preview": optStr("client id 脱敏预览"),
+		"issue":             optStr("异常说明（空=正常）"),
+		"persisted":         optBool("是否已落盘（false=重启失效）"),
+	})
+
+	registerSchema(t, "OAuthStatusResponse", openapi3.Schemas{
+		"google_login_enabled": optBool("Google 登录是否启用"),
+		"github_login_enabled": optBool("GitHub 登录是否启用"),
+		"google":               optRef("Google 凭据状态", "OAuthProviderStatus"),
+		"github":               optRef("GitHub 凭据状态", "OAuthProviderStatus"),
+	})
+
+	registerSchema(t, "OAuthVerifyRequest", openapi3.Schemas{
+		"provider": strEnum("provider", "google", "github"),
+	}, "provider")
+
+	registerSchema(t, "OAuthVerifyResponse", openapi3.Schemas{
+		"valid":  optBool("凭据是否有效"),
+		"detail": optStr("探测详情"),
+	})
+
+	registerSchema(t, "OAuthCredentialsRequest", openapi3.Schemas{
+		"google_client_id":    optStr("Google client ID（缺省=不更新）"),
+		"github_client_id":    optStr("GitHub client ID（缺省=不更新）"),
+		"github_client_secret": optStr("GitHub client secret（缺省=不更新）"),
+	})
+
+	get(t, "/admin/oauth/status", &openapi3.Operation{
+		Tags:        []string{"站点设置"},
+		Summary:     "OAuth 凭据状态",
+		Description: "需 settings:view 权限。两个 provider 的配置/健康/落盘状态。",
+		Security:    securityAdmin(),
+		Responses: responses(
+			200, dataResponse("OAuthStatusResponse", "凭据状态", 200),
+		),
+	})
+
+	post(t, "/admin/oauth/verify", &openapi3.Operation{
+		Tags:        []string{"站点设置"},
+		Summary:     "探测 OAuth 凭据",
+		Description: "需 settings:update 权限。外呼 provider 校验（读操作但与写入同权限域）。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("OAuthVerifyRequest", true, "要探测的 provider"),
+		Responses: responses(
+			200, dataResponse("OAuthVerifyResponse", "探测结果", 200),
+		),
+	})
+
+	put(t, "/admin/oauth/credentials", &openapi3.Operation{
+		Tags:        []string{"站点设置"},
+		Summary:     "更新 OAuth 凭据",
+		Description: "需 settings:update 权限。PATCH 语义：缺省字段不改，三者全缺省 400。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("OAuthCredentialsRequest", true, "凭据"),
+		Responses: responses(
+			200, dataResponse("OAuthStatusResponse", "更新后的凭据状态", 200),
+			400, errorResponse("三个字段全为空"),
+		),
+	})
 }

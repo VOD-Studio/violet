@@ -102,6 +102,15 @@ func queryStrParam(name, desc string) *openapi3.ParameterRef {
 	}}
 }
 
+// cursorParam cursor 模式分页游标参数（空=第一页）
+func cursorParam() *openapi3.ParameterRef {
+	return &openapi3.ParameterRef{Value: &openapi3.Parameter{
+		Name: "cursor", In: openapi3.ParameterInQuery,
+		Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
+		Description: "分页游标（取上一页 meta.pagination.next_cursor，空=第一页）",
+	}}
+}
+
 // pathStrParam 字符串 path 参数（required 自动为 true）
 func pathStrParam(name, desc string) *openapi3.ParameterRef {
 	return &openapi3.ParameterRef{Value: &openapi3.Parameter{
