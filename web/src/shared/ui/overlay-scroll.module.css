@@ -1,0 +1,9 @@
+/* OverlayScroll 组件私有样式：隐藏原生滚动条，由组件自绘 thumb 替代 */
+.host {
+	scrollbar-width: none;
+}
+
+.host::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+}

@@ -26,6 +26,7 @@ import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { Highlighter, Loader2, LogIn, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import "./annotations.css";
 import { RichCommentInput } from "./RichCommentInput";
 
 /** 草稿批注临时高亮 class（展开输入区时标记选中块，区别于已提交批注的 .annotation-highlight）。 */

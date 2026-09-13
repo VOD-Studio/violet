@@ -26,6 +26,7 @@ import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { lazy, Suspense, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import {
 	rehypeChatEmoji,
 	rehypeChatInlineImage,
@@ -183,7 +184,12 @@ const chatMarkdownComponents: Components = {
 		return (
 			<Suspense
 				fallback={
-					<pre className="code-block-scrollbar my-1.5 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-3 py-2 text-xs leading-relaxed text-white/90">
+					<pre
+						className={cn(
+							codeScrollbar.scrollbar,
+							"my-1.5 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-3 py-2 text-xs leading-relaxed text-white/90",
+						)}
+					>
 						<code>{code}</code>
 					</pre>
 				}

@@ -1,0 +1,133 @@
+/*
+ * Tailwind v4 theme 映射：Tailwind 工具类（bg-background、text-primary 等）
+ * 到运行时 CSS 变量的绑定层。只写映射，不定义 token 值。
+ *
+ * 必须用 @theme inline：工具类在使用点直接引用 var(--xxx)，实际值由元素所在
+ * 作用域（:root 或方言作用域）求值。去掉 inline 会把映射固定在 :root 提前求值，
+ * 方言作用域覆盖失效（首页黑白回归的根因）。
+ */
+@theme inline {
+	--animate-blob: blob 7s infinite;
+	--animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
+	--animate-caret-blink: caret-blink 1s ease infinite;
+	--font-sans:
+		"Maple Mono", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-monospace, sans-serif;
+	--font-mono:
+		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	--font-signature: "Alex Brush", cursive;
+	--animate-diagram-enter: diagram-enter 0.25s ease-out;
+	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
+	--animate-marquee: marquee 40s linear infinite;
+
+	/* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
+	/* bg-background / text-foreground / bg-primary / border-border 等 */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+
+	/* 纸面（API 文档纸弹窗与文档页）：暖米纸 + 纸上墨字 */
+	--color-paper: var(--paper);
+	--color-paper-foreground: var(--paper-foreground);
+	--color-paper-muted: var(--paper-muted);
+	--color-paper-border: var(--paper-border);
+
+	/* 前台遗留语义色（向后兼容） */
+	--color-edge-hairline: var(--edge-hairline);
+	--color-surface-glass: var(--surface-glass);
+
+	/* Neon 强调色板（bg-neon-purple / text-neon-blue 等工具类由此映射） */
+	--color-neon-purple: var(--neon-purple);
+	--color-neon-blue: var(--neon-blue);
+	--color-neon-green: var(--neon-green);
+	--color-neon-pink: var(--neon-pink);
+	--color-neon-cyan: var(--neon-cyan);
+
+	--radius-lg: var(--radius);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 4px);
+
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+}
+
+/* —— 主题动画 token 引用的 keyframes（全局注册，随映射层一起维护）—— */
+@keyframes blob {
+	0% {
+		transform: translate(0px, 0px) scale(1);
+	}
+	33% {
+		transform: translate(30px, -50px) scale(1.1);
+	}
+	66% {
+		transform: translate(-20px, 20px) scale(0.9);
+	}
+	100% {
+		transform: translate(0px, 0px) scale(1);
+	}
+}
+
+@keyframes nexus-shimmer {
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+@keyframes tab-panel-in {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes diagram-enter {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes caret-blink {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
+}
+
+/* 速览带无缝横滚：内容渲染两遍，整体位移 -50% 循环 */
+@keyframes marquee {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}

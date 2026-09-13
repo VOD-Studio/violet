@@ -1,6 +1,7 @@
 import { Database, Wifi } from "lucide-react";
 import type { ReactNode } from "react";
 import type { SystemSnapshotDTO } from "../model/types";
+import animations from "./animations.module.css";
 
 /** DependencyPanelProps - 依赖状态面板 props */
 interface DependencyPanelProps {
@@ -54,7 +55,9 @@ function DepCard({ name, icon, dep }: DepCardProps) {
 						已连接
 					</span>
 				) : (
-					<span className="bg-destructive/20 text-destructive animate-shake rounded-full px-2 py-0.5 text-xs font-medium">
+					<span
+						className={`${animations.shake} bg-destructive/20 text-destructive rounded-full px-2 py-0.5 text-xs font-medium`}
+					>
 						断开
 					</span>
 				)}

@@ -1,0 +1,184 @@
+/*
+ * 页面转场 View Transitions 与主题切换扩散动画。
+ *
+ * 动画作用于 root（视口尺寸快照），而非命名元素。
+ * 这保证了无论页面内容多长，快照始终是视口大小，不会因长文章卡顿。
+ * Header 单独命名（site-header）保持静止，不参与滑动。
+ *
+ * 三种 VT type（由 router.tsx 的 defaultViewTransition.types 回调设置）：
+ * - forward  导航序号增大：旧页左移退出、新页从右侧滑入
+ * - back     导航序号减小：旧页右移退出、新页从左侧滑入
+ * - fade     同段导航（如 /blog → /blog/$slug）：交叉淡入淡出
+ *
+ * 注意：基础规则 ::view-transition-old(root) { animation: none } 服务于
+ * 主题切换 VT（无 type）。下方 :active-view-transition-type() 选择器
+ * 特异性更高，在页面导航时覆盖为基础规则。
+ */
+
+/* 让整个页面参与 View Transition 的圆圈扩散动画 */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+/* —— theme：主题切换圆形扩散（对齐 yggdrasil 基准）——
+ * 纯 CSS 声明式：动画挂在伪元素上，ready 后即刻开播，无 WAAPI 注册竞态；
+ * new 帧压顶层且带不透明背景（防快照透明透叠）；0.4s ease-out 的
+ * 快起长收读作「顺滑」。坐标/半径由 JS 注入 CSS 变量。 */
+:active-view-transition-type(theme)::view-transition-old(root),
+:active-view-transition-type(theme)::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+:active-view-transition-type(theme)::view-transition-old(root) {
+	z-index: 1;
+}
+:active-view-transition-type(theme)::view-transition-new(root) {
+	z-index: 2;
+	animation: theme-ripple 0.4s ease-out forwards;
+	background: var(--background);
+}
+@keyframes theme-ripple {
+	from {
+		clip-path: circle(0px at var(--theme-ripple-x, 50%) var(--theme-ripple-y, 50%));
+	}
+	to {
+		clip-path: circle(
+			var(--theme-ripple-r, 100vmax) at var(--theme-ripple-x, 50%) var(--theme-ripple-y, 50%)
+		);
+	}
+}
+
+/* Header 与顶部公告条保持静止，不跟随内容滑动。Header 内部导航滑块仍需
+ * 在新快照中完成 Motion 布局动画，因此只隐藏旧快照，避免旧当前态残留。 */
+::view-transition-group(site-header),
+::view-transition-group(announcement-bar) {
+	animation: none;
+}
+::view-transition-old(site-header) {
+	opacity: 0;
+}
+
+/* —— forward：像纸页向左翻开，保留一条轻微页脊阴影 —— */
+:active-view-transition-type(forward)::view-transition-old(root) {
+	animation: 300ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
+}
+:active-view-transition-type(forward)::view-transition-new(root) {
+	animation: 340ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
+	box-shadow: -18px 0 36px -28px color-mix(in oklab, var(--persona-violet) 42%, transparent);
+}
+
+/* —— back：反向收回纸页 —— */
+:active-view-transition-type(back)::view-transition-old(root) {
+	animation: 300ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
+}
+:active-view-transition-type(back)::view-transition-new(root) {
+	animation: 340ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
+	box-shadow: 18px 0 36px -28px color-mix(in oklab, var(--persona-violet) 42%, transparent);
+}
+
+/* —— fade：同段导航交叉淡入 —— */
+:active-view-transition-type(fade)::view-transition-old(root) {
+	animation: 220ms ease-out both page-fade-out;
+}
+:active-view-transition-type(fade)::view-transition-new(root) {
+	animation: 220ms ease-out both page-fade-in;
+}
+
+@keyframes page-enter-right {
+	from {
+		opacity: 0;
+		transform: translate3d(16px, 0, 0) scale(0.996);
+		clip-path: inset(0 0 0 2.5%);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0) scale(1);
+		clip-path: inset(0);
+	}
+}
+@keyframes page-enter-left {
+	from {
+		opacity: 0;
+		transform: translate3d(-16px, 0, 0) scale(0.996);
+		clip-path: inset(0 2.5% 0 0);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0) scale(1);
+		clip-path: inset(0);
+	}
+}
+@keyframes page-exit-left {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0.52;
+		transform: translate3d(-10px, 0, 0) scale(0.998);
+	}
+}
+@keyframes page-exit-right {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0.52;
+		transform: translate3d(10px, 0, 0) scale(0.998);
+	}
+}
+@keyframes page-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@keyframes page-fade-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+/* —— 共享元素 morph：博客封面 —— */
+::view-transition-group(post-cover) {
+	animation-duration: 420ms;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* —— 主题切换 VT：抑制所有命名组，让圆形扩散只作用于 root —— */
+html.theme-vt * {
+	/* biome-ignore lint/complexity/noImportantStyles: 必须覆盖内联 view-transition-name */
+	view-transition-name: none !important;
+}
+
+/* 主题切换 VT 抓帧瞬间禁用 CSS transition：替代 next-themes disableTransitionOnChange
+   的 JS 实现。theme-vt-freeze 在 transition.ready 后即移除（帧已捕获），
+   之后新 transition 与主题切换无关应正常播放——避免 VT 窗口内元素加载/淡入被压制。 */
+html.theme-vt-freeze,
+html.theme-vt-freeze *,
+html.theme-vt-freeze *::before,
+html.theme-vt-freeze *::after {
+	/* biome-ignore lint/complexity/noImportantStyles: VT 抓帧瞬间必须禁用 transition，纯 CSS 替代 next-themes disableTransitionOnChange 的 JS 注入 */
+	transition: none !important;
+}
+
+/* ———— prefers-reduced-motion：禁用方向性页面过渡 ———— */
+@media (prefers-reduced-motion: reduce) {
+	:active-view-transition-type(forward)::view-transition-old(root),
+	:active-view-transition-type(forward)::view-transition-new(root),
+	:active-view-transition-type(back)::view-transition-old(root),
+	:active-view-transition-type(back)::view-transition-new(root),
+	:active-view-transition-type(fade)::view-transition-old(root),
+	:active-view-transition-type(fade)::view-transition-new(root) {
+		/* biome-ignore lint/complexity/noImportantStyles: 无障碍要求强制禁用所有动画 */
+		animation: none !important;
+	}
+}

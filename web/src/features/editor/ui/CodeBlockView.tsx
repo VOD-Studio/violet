@@ -23,6 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/ui/base/select";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { ensureLanguageRegistered } from "../extensions";
 
 /**
@@ -334,7 +335,9 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 			/>
 			{/* 运行结果区（仅 runnable 且有结果时显示） */}
 			{isRunnable && resultText && (
-				<pre className="code-block-scrollbar max-h-48 overflow-auto border-t border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white/90">
+				<pre
+					className={`${codeScrollbar.scrollbar} max-h-48 overflow-auto border-t border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white/90`}
+				>
 					<code>{resultText}</code>
 				</pre>
 			)}

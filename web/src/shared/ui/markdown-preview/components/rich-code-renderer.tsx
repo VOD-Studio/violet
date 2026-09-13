@@ -3,6 +3,7 @@ import type { ArticleContentContext } from "@shared/ui/article-embeds/types";
 import type { ReactElement, ReactNode } from "react";
 import { lazy, Suspense } from "react";
 import type { Components } from "react-markdown";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 
 const LazyCodeCard = lazy(() =>
 	import("../../code-preview/components/CodeCard").then((module) => ({
@@ -106,7 +107,9 @@ export function createRichCodeRenderer(
 		return (
 			<Suspense
 				fallback={
-					<pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
+					<pre
+						className={`${codeScrollbar.scrollbar} my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90`}
+					>
 						<code>{code}</code>
 					</pre>
 				}

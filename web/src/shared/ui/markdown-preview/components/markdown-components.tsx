@@ -11,6 +11,7 @@ import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import type { ArticleContentContext } from "../../article-embeds/types";
 import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // 直连 renderers.ts（不经 diagram/index barrel）：barrel 会静态 re-export
@@ -55,7 +56,12 @@ function nodeToText(node: React.ReactNode): string {
  */
 function DiagramSourceFallback({ source }: { source: string }) {
 	return (
-		<pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
+		<pre
+			className={cn(
+				codeScrollbar.scrollbar,
+				"my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90",
+			)}
+		>
 			<code>{source}</code>
 		</pre>
 	);
@@ -74,7 +80,7 @@ function DiagramLoadingFallback({ source }: { source: string }) {
 		<div className="my-6">
 			<DiagramPlaceholder />
 			<noscript>
-				<pre className="code-block-scrollbar overflow-x-auto px-4 py-3">
+				<pre className={cn(codeScrollbar.scrollbar, "overflow-x-auto px-4 py-3")}>
 					<code>{source}</code>
 				</pre>
 			</noscript>
@@ -269,7 +275,12 @@ export const markdownComponents: Components = {
 			return (
 				<Suspense
 					fallback={
-						<pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
+						<pre
+							className={cn(
+								codeScrollbar.scrollbar,
+								"my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90",
+							)}
+						>
 							<code>{source}</code>
 						</pre>
 					}

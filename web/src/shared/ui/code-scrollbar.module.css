@@ -1,0 +1,26 @@
+/*
+ * 代码容器滚动条：细窄圆角暗色，供各代码渲染组件（CodeCard、markdown 代码块、
+ * 编辑器代码块、图块视口、CodeRunner）统一引用。
+ */
+.scrollbar {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.scrollbar::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.15);
+	border-radius: 9999px;
+}
+
+.scrollbar:hover::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.25);
+}

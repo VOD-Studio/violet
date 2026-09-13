@@ -6,10 +6,12 @@
  *
  * @remarks 走懒加载消费时与 shiki 高亮链同 chunk 拉取，不进宿主主包。
  */
+
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/shared/lib/clipboard";
 import { cn } from "@/shared/lib/utils";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { useShikiHighlight } from "../use-shiki-highlight";
 
 export interface CodeCardProps {
@@ -71,13 +73,22 @@ export function CodeCard({ code, language, title, className }: CodeCardProps) {
 				</div>
 			) : html ? (
 				<div
-					className="shiki-code code-block-scrollbar overflow-x-auto px-4 py-3 text-sm leading-relaxed [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
+					className={cn(
+						"shiki-code",
+						codeScrollbar.scrollbar,
+						"overflow-x-auto px-4 py-3 text-sm leading-relaxed [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!",
+					)}
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义（<script> 渲染为 &#x3C;script&#x3E; 纯文本，实测无裸标签），输出属性仅 class/style/tabindex 受控集合，无 href/src/on*；代码块内容不可能注入可执行 HTML
 					dangerouslySetInnerHTML={{ __html: html }}
 				/>
 			) : (
 				// 高亮失败降级：纯文本
-				<pre className="code-block-scrollbar overflow-x-auto px-4 py-3 text-sm leading-relaxed text-white/90">
+				<pre
+					className={cn(
+						codeScrollbar.scrollbar,
+						"overflow-x-auto px-4 py-3 text-sm leading-relaxed text-white/90",
+					)}
+				>
 					<code>{code}</code>
 				</pre>
 			)}
