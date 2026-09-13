@@ -140,7 +140,7 @@ export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) 
 						<label
 							htmlFor={`runtime-log-${field.name}`}
 							key={field.name}
-							className="min-w-0 space-y-1.5 text-xs"
+							className="flex min-w-0 flex-col gap-1.5 text-xs"
 						>
 							<span>{field.label}</span>
 							<Input
