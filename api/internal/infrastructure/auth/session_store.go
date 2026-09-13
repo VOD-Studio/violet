@@ -142,6 +142,43 @@ redis.call('EXPIRE', KEYS[2], tonumber(ARGV[2]))
 return 1
 `)
 
+// rewriteIfAliveScript 迁移期原子重写旧会话 payload：
+//   - key 不存在或亚毫秒到期 → 返回 0（跳过，不复活/不延长）
+//   - 绝对寿命已到但 idle TTL 尚存（旧版数据常见）→ DEL 并返回 -1
+//   - 存活 → SET XX + PX=min(idle, PTTL+1s, 绝对剩余) 并返回 1
+//
+// ARGV: 1=payload JSON、2=idle TTL 毫秒、3=绝对截止毫秒（0 无）、4=当前毫秒。
+var rewriteIfAliveScript = redis.NewScript(`
+if redis.call('EXISTS', KEYS[1]) == 0 then
+	return 0
+end
+local absms = tonumber(ARGV[3]) or 0
+local now = tonumber(ARGV[4])
+if absms > 0 and absms <= now then
+	redis.call('DEL', KEYS[1])
+	return -1
+end
+local pttl = redis.call('PTTL', KEYS[1])
+if pttl <= 0 then
+	return 0
+end
+local ttl = tonumber(ARGV[2])
+if pttl + 1000 < ttl then
+	ttl = pttl + 1000
+end
+if absms > 0 then
+	local remain = absms - now
+	if remain < ttl then
+		ttl = remain
+	end
+end
+if ttl < 1 then
+	ttl = 1
+end
+redis.call('SET', KEYS[1], ARGV[1], 'XX', 'PX', ttl)
+return 1
+`)
+
 // RedisSessionStore 基于 go-redis 的 SessionStore 实现。
 //
 // 维护两类 key：
@@ -331,8 +368,9 @@ func (s *RedisSessionStore) migrateLegacyIndex(ctx context.Context, idx string, 
 	if err != nil {
 		return err
 	}
-	// 逐成员补写数值字段并按 min(idle, 绝对剩余) 校正 TTL；
-	// 同时收集 member→score（created_ms）供类型切换。
+	// 逐成员补写数值字段；TTL 校验与重写全部收进 rewriteIfAliveScript
+	// （存在/绝对寿命/PTTL 原子判定，不复活已删 key、不延长将到期 key），
+	// 同时收集 member→score（created_ms）供 SET→ZSET 类型切换。
 	args := make([]any, 0, len(members)*2+1)
 	args = append(args, int(idleTTL.Seconds()))
 	for _, member := range members {
@@ -350,25 +388,16 @@ func (s *RedisSessionStore) migrateLegacyIndex(ctx context.Context, idx string, 
 				}
 				score = payload.CreatedMS
 				if updated, err := json.Marshal(payload); err == nil {
-					// PTTL 毫秒精度：<=0 表示 key 已删除（-2）或亚毫秒到期——
-					// 重写会复活/延长它，跳过；-1（无过期）收紧为 idleTTL。
-					pttl, err := s.rdb.PTTL(ctx, key).Result()
+					// 返回 1=已重写、0=key 已不存在/将到期（跳过）、-1=绝对寿命
+					// 已到（脚本内 DEL）。-1 的成员不再进入 ZSET 索引。
+					outcome, err := rewriteIfAliveScript.Run(ctx, s.rdb,
+						[]string{key}, updated, idleTTL.Milliseconds(), payload.AbsDeadlineMS, time.Now().UnixMilli(),
+					).Int64()
 					if err != nil {
 						return err
 					}
-					if pttl > 0 {
-						ttl := idleTTL
-						if remain := pttl + time.Second; remain < ttl {
-							ttl = remain // 向上取整 1s，绝不短于剩余寿命
-						}
-						if payload.AbsDeadlineMS > 0 {
-							if remain := time.Until(time.UnixMilli(payload.AbsDeadlineMS)); remain > 0 && remain < ttl {
-								ttl = remain
-							}
-						}
-						if err := s.rdb.Set(ctx, key, updated, ttl).Err(); err != nil {
-							return err
-						}
+					if outcome < 0 {
+						continue
 					}
 				}
 			}

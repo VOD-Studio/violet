@@ -121,21 +121,19 @@ func (s *Service) RequestSecurityChange(ctx context.Context, expected int64, pat
 // pendingID 必须匹配当前槽位：槽位被后续保存替换时拒绝，防止确认到
 // 操作者没有核对过的变更。调用方必须先完成短时运维授权校验。
 func (s *Service) ConfirmSecurityChange(ctx context.Context, pendingID string) (GroupSnapshot, error) {
-	// 存在性、过期与 ID 匹配比较、以及匹配时的消费（清空槽位）必须在同一锁区
-	// 完成：否则解锁间隙里 RequestSecurityChange 写入的新 pending 会被 mismatch
-	// 分支的回填覆盖。ID 不匹配时不改动槽位。
+	// 存在性、过期与 ID 匹配比较、以及消费（清空槽位）必须在同一锁区完成：
+	// 锁内置 nil 不会误清新 pending（新写入也要拿同一把锁）；过期同样消费，
+	// 避免同一次过期被反复发布 expired 审计。ID 不匹配时不改动槽位。
 	s.mu.Lock()
 	pending := s.securityPendingChange
 	expired := pending == nil || time.Now().After(pending.ExpiresAt)
 	matched := !expired && pending.ID == pendingID
-	if matched {
+	if matched || expired {
 		s.securityPendingChange = nil
 	}
 	floor := s.floor
 	s.mu.Unlock()
 	if expired {
-		// 过期 pending 不在此处清槽：解锁间隙可能有新 pending 写入，
-		// 读路径（PendingSecurityChange/Confirm）本就按过期过滤。
 		s.publishSecurityCancelled(ctx, pending, "expired")
 		return GroupSnapshot{}, ErrNoSecurityPending
 	}

@@ -346,7 +346,7 @@ function SecuritySettingsPage() {
 					onOpenChange={setConfirmOpen}
 					confirming={confirmChange.isPending}
 					onGranted={async () => {
-						const result = await confirmChange.mutateAsync(pending.id);
+						const result = await confirmChange.mutateAsync(confirmPendingId);
 						acceptSnapshot(result.values);
 						setConfirmOpen(false);
 					}}
