@@ -45,8 +45,8 @@ graph LR
 ### API 文档自动推送(publish-apidocs.yml)
 
 - **独立旁路 workflow**,与 Deploy 分文件:Deploy 成功完成后由 workflow_run 触发,它的失败与部署流水线完全隔离(不触发 rollback/部署告警)。文件版本取默认分支(与 auto-retry 一致),修复合并到 release/2.0 即生效。
-- 触发后拉生产活 spec(`GET https://xunrua.top/api/v1/openapi.json`,与线上代码永远同版本)经 Apifox 开放 API 推入项目 8484856,apidoc.xunrua.top 随发版自动更新,不再手动导入;`workflow_dispatch` 支持手动补推。
-- **前置配置一次**:Apifox「账号设置 → API 访问令牌」生成 token(**账号须为项目 8484856 的管理员**,否则导入返回 403 No project maintainer privilege),加入仓库 Actions secret `APIFOX_ACCESS_TOKEN`;未配置时该 job 跳过并告警。
+- 触发后拉生产活 spec(`GET https://xunrua.top/api/v1/openapi.json`,与线上代码永远同版本)经 Apifox 开放 API 推入项目 8832265,文档站 api.xunrua.top 随发版自动更新,不再手动导入;`workflow_dispatch` 支持手动补推。站点以 Apifox「自有服务器中转」方式发布:xunrua.top 上的 `api-docs-nginx` 容器反代 Apifox 源站(`{docsSiteId}.n3.apifox.cn`,docsSiteId=5520405),配置在 `/root/docker/api-docs-nginx/`;旧 apidoc.xunrua.top(项目 8484856)系他人项目,已弃用。
+- **前置配置一次**:Apifox「账号设置 → API 访问令牌」生成 token(**账号须为项目 8832265 的管理员**,否则导入返回 403 No project maintainer privilege),加入仓库 Actions secret `APIFOX_ACCESS_TOKEN`;未配置时该 job 跳过并告警。
 - `deleteUnmatchedResources=true`:文档与代码单一真相,线上已删除的接口/模型在 Apifox 同步移除——手工在 Apifox 项目里新建的接口会被清掉。
 - 坑:GitHub workflow 解析期 `if` 表达式里 `secrets` 上下文不可用(Unrecognized named-value),token 判断必须经 job env 中转——曾因此让整个 Deploy 0s 失败、v2.8.25 发布未上线。
 
