@@ -47,13 +47,18 @@ export function OperationRow({ op, schemas }: OperationRowProps) {
 						</span>
 					) : null}
 				</span>
-				<ArrowRight
+				{/* 旋转到 45° 时箭头包围盒膨胀到 ~20px 会撑出横向滚动条，定尺寸裁切就地消化 */}
+				<span
 					aria-hidden
-					className={cn(
-						"size-3.5 shrink-0 text-muted-foreground/40 transition-all duration-200 group-hover:text-muted-foreground",
-						open && "rotate-90",
-					)}
-				/>
+					className="flex size-3.5 shrink-0 items-center justify-center overflow-clip"
+				>
+					<ArrowRight
+						className={cn(
+							"size-3.5 text-muted-foreground/40 transition-all duration-200 group-hover:text-muted-foreground",
+							open && "rotate-90",
+						)}
+					/>
+				</span>
 			</button>
 			<div
 				className="grid"
