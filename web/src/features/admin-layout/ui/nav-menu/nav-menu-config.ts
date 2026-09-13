@@ -320,3 +320,25 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		],
 	},
 ];
+
+/**
+ * 按当前路径解析顶栏标题。
+ *
+ * 先精确匹配子项与顶级项，再做前缀匹配：父项 `to` 恒取自某个子项路径，
+ * 前缀先行会把子页标题吞成父项名（如 /admin/settings/profile 被站点设置吃掉）。
+ *
+ * @param pathname 当前路由路径
+ * @param items 菜单项，默认全量导航配置
+ * @returns 命中的菜单文案；无命中时返回「后台管理」
+ */
+export function resolveNavTitle(pathname: string, items: NavMenuItem[] = NAV_MENU_ITEMS): string {
+	for (const item of items) {
+		const child = item.children?.find((candidate) => candidate.to === pathname);
+		if (child) return child.label;
+		if (item.to === pathname) return item.label;
+	}
+	for (const item of items) {
+		if (!item.exact && pathname.startsWith(`${item.to}/`)) return item.label;
+	}
+	return "后台管理";
+}

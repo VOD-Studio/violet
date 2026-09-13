@@ -1,7 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { AdminSidebar } from "@features/admin-layout/ui/AdminSidebar";
 import { AdminTopBar } from "@features/admin-layout/ui/AdminTopBar";
-import { NAV_MENU_ITEMS } from "@features/admin-layout/ui/nav-menu/nav-menu-config";
+import { resolveNavTitle } from "@features/admin-layout/ui/nav-menu/nav-menu-config";
 import { authKeys } from "@features/auth/api/keys";
 import { fetchMe } from "@features/auth/api/queries";
 import { isSessionActive } from "@shared/api/session";
@@ -54,14 +54,7 @@ export const Route = createFileRoute("/admin")({
 
 function useAdminTitle(): string {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	for (const item of NAV_MENU_ITEMS) {
-		const child = item.children?.find((candidate) => candidate.to === pathname);
-		if (child) return child.label;
-		if (item.to === pathname || (!item.exact && pathname.startsWith(`${item.to}/`))) {
-			return item.label;
-		}
-	}
-	return "后台管理";
+	return resolveNavTitle(pathname);
 }
 
 /**
