@@ -1,8 +1,10 @@
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
+import { DateTimeRangePickerField, type DateTimeRangePreset } from "@shared/ui/date-time-picker";
 import { Disclosure } from "@shared/ui/disclosure";
 import { InlineError } from "@shared/ui/inline-error";
+import { addDays, addHours, format } from "date-fns";
 import { type FormEvent, useState } from "react";
 import type { RuntimeLogFilter, RuntimeLogLevel } from "../model/types";
 
@@ -23,6 +25,31 @@ const EMPTY_DRAFT = {
 	until: "",
 };
 
+const toPickerValue = (date: Date) => format(date, "yyyy-MM-dd'T'HH:mm");
+
+/** 相对时间快捷区间，起点已含、终点不含，与应用筛选的语义一致。 */
+function buildTimePresets(): DateTimeRangePreset[] {
+	const now = new Date();
+	return [
+		{
+			label: "最近 1 小时",
+			value: { start: toPickerValue(addHours(now, -1)), end: toPickerValue(now) },
+		},
+		{
+			label: "最近 24 小时",
+			value: { start: toPickerValue(addHours(now, -24)), end: toPickerValue(now) },
+		},
+		{
+			label: "最近 7 天",
+			value: { start: toPickerValue(addDays(now, -7)), end: toPickerValue(now) },
+		},
+		{
+			label: "最近 30 天",
+			value: { start: toPickerValue(addDays(now, -30)), end: toPickerValue(now) },
+		},
+	];
+}
+
 /** 提交后应用筛选；编辑中的条件不触发历史请求。 */
 export interface RuntimeLogFiltersProps {
 	filters: RuntimeLogFilter;
@@ -35,6 +62,7 @@ export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) 
 	const activeCount = Object.values(filters).filter((value) =>
 		Array.isArray(value) ? value.length > 0 : Boolean(value),
 	).length;
+	const timePresets = buildTimePresets();
 
 	function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -127,34 +155,21 @@ export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) 
 							/>
 						</label>
 					))}
-					{(["from", "until"] as const).map((field) => (
-						<label
-							htmlFor={`runtime-log-${field}`}
-							key={field}
-							className="min-w-0 space-y-1.5 text-xs"
-						>
-							<span>
-								{field === "from" ? "开始时间（包含）" : "结束时间（不包含）"}
-							</span>
-							<Input
-								id={`runtime-log-${field}`}
-								type="datetime-local"
-								name={field}
-								step="1"
-								value={draft[field]}
-								onChange={(event) =>
-									setDraft({ ...draft, [field]: event.target.value })
-								}
-								aria-describedby="runtime-log-time-hint"
-								aria-invalid={Boolean(error)}
-							/>
-						</label>
-					))}
+					<DateTimeRangePickerField
+						label="时间范围（开始包含，结束不含）"
+						value={{ start: draft.from || undefined, end: draft.until || undefined }}
+						onChange={(range) =>
+							setDraft((current) => ({
+								...current,
+								from: range.start ?? "",
+								until: range.end ?? "",
+							}))
+						}
+						presets={timePresets}
+						placeholder="选择起止时间"
+					/>
 				</div>
-				<p
-					id="runtime-log-time-hint"
-					className="text-xs leading-relaxed text-muted-foreground"
-				>
+				<p className="text-xs leading-relaxed text-muted-foreground">
 					时间按当前设备时区输入，筛选日志的发生时间。筛选不能补采源端已丢弃的
 					TRACE；仅展示日志中已有的请求与追踪标识。
 				</p>
