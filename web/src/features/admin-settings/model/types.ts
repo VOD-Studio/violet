@@ -24,6 +24,41 @@ export interface AuthSettingsDTO {
 	github_login_enabled: boolean;
 }
 
+/** 安全策略组（可信来源/可信代理/Cookie 约束/并发会话上限；变更需限时确认） */
+export interface SecuritySettingsDTO {
+	/** 可信来源列表（逗号/换行分隔 HTTPS origin）；空串沿用部署默认 */
+	trusted_origins: string;
+	/** 可信代理 CIDR/IP 列表；空串沿用部署默认 */
+	trusted_proxies: string;
+	/** Cookie 是否强制 Secure（部署底线强制时只读 true） */
+	cookie_secure: boolean;
+	/** Cookie SameSite 策略：lax | strict | none */
+	cookie_same_site: string;
+	/** 并发登录会话上限；0 不限制 */
+	session_max_devices: number;
+}
+
+/** 待确认的安全策略变更 */
+export interface SecurityPendingDTO {
+	/** 待确认变更标识；确认时回传，被替换的旧标识确认会被拒绝 */
+	id: string;
+	/** 发起时的组版本 */
+	expected_version: number;
+	/** 待生效的覆盖值 */
+	values: Record<string, unknown>;
+	/** 发起者用户 ID */
+	requested_by: string;
+	/** 发起时间（RFC3339） */
+	requested_at: string;
+	/** 确认截止时间（RFC3339） */
+	expires_at: string;
+}
+
+/** 安全组响应：组视图 + 可选 pending */
+export interface SecuritySnapshot extends SettingsSnapshot<SecuritySettingsDTO> {
+	pending?: SecurityPendingDTO;
+}
+
 /** 单个 OAuth provider 的凭据状态（/admin/oauth/status） */
 export interface OAuthProviderStatus {
 	/** 凭据齐全，登录链路可用 */
@@ -140,6 +175,7 @@ export interface SettingsUpdate<T> {
 export type SettingsGroup =
 	| "general"
 	| "auth"
+	| "security"
 	| "github"
 	| "profile"
 	| "about"

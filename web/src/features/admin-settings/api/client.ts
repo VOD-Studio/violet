@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "@shared/api/request";
+import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
 import type {
 	AboutSettingsDTO,
 	AboutSettingsWrite,
@@ -12,6 +12,9 @@ import type {
 	OAuthCredentialsInput,
 	OAuthProviderStatus,
 	ProfileSettingsDTO,
+	SecurityPendingDTO,
+	SecuritySettingsDTO,
+	SecuritySnapshot,
 	SettingsGroup,
 	SettingsSnapshot,
 	SettingsUpdate,
@@ -28,6 +31,16 @@ export const updateGeneral = (body: SettingsUpdate<GeneralSettingsDTO>) =>
 export const getAuth = () => apiGet<SettingsSnapshot<AuthSettingsDTO>>(`${BASE}/auth`);
 export const updateAuth = (body: SettingsUpdate<AuthSettingsDTO>) =>
 	apiPut<SettingsSnapshot<AuthSettingsDTO>>(`${BASE}/auth`, body);
+
+/** 安全组走两阶段：PUT 暂存待确认，confirm 需短时运维授权 */
+export const getSecurity = () => apiGet<SecuritySnapshot>(`${BASE}/security`);
+export const requestSecurityChange = (body: SettingsUpdate<SecuritySettingsDTO>) =>
+	apiPut<{ pending: SecurityPendingDTO }>(`${BASE}/security`, body);
+export const confirmSecurityChange = (pendingId: string) =>
+	apiPost<SettingsSnapshot<SecuritySettingsDTO>>(`${BASE}/security/confirm`, {
+		pending_id: pendingId,
+	});
+export const cancelSecurityChange = () => apiDelete<null>(`${BASE}/security/pending`);
 
 export const getGithub = () => apiGet<SettingsSnapshot<GithubSettingsDTO>>(`${BASE}/github`);
 export const updateGithub = (body: SettingsUpdate<GithubSettingsWrite>) =>

@@ -18,16 +18,8 @@ export const Route = createFileRoute("/admin")({
 	beforeLoad: async ({ context }) => {
 		const { auth, queryClient } = context;
 
-		// 页面刷新后内存状态全失，violet_csrf cookie 是唯一持久的登录态信号。
-		const hasAuthCookie =
-			typeof window !== "undefined" && document.cookie.includes("violet_csrf=");
 		const meCache = queryClient.getQueryData<UserDTO | null>(authKeys.me());
-		if (
-			(!auth.isAuthenticated || !auth.claims) &&
-			!isSessionActive() &&
-			!meCache &&
-			!hasAuthCookie
-		) {
+		if (!auth.isAuthenticated && !auth.claims && !isSessionActive() && !meCache) {
 			throw redirect({
 				to: "/",
 				replace: true,

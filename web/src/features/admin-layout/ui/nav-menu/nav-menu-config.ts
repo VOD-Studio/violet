@@ -218,6 +218,12 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				permissions: ["settings:view"],
 			},
 			{
+				label: "安全策略",
+				to: "/admin/settings/security",
+				icon: Shield,
+				permissions: ["settings:view"],
+			},
+			{
 				label: "GitHub",
 				to: "/admin/settings/github",
 				icon: GitBranch,

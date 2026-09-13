@@ -138,4 +138,49 @@ export interface ChangePasswordRequest {
  */
 export type MessageResponse = null;
 
+/**
+ * SessionDevice - GET /auth/sessions 条目
+ *
+ * public_id 是 SHA-256 派生公开标识（非凭据），用于定位与吊销；
+ * 不含 session id 或 CSRF 等任何可用凭据。
+ */
+export interface SessionDevice {
+	/** 会话公开标识 */
+	public_id: string;
+	/** 创建时间（RFC3339） */
+	created_at: string;
+	/** 最近活跃时间（RFC3339） */
+	last_seen_at: string;
+	/** 最近一次请求的客户端 IP */
+	client_ip: string;
+	/** 最近一次请求的 User-Agent */
+	user_agent: string;
+	/** 是否当前请求所在会话 */
+	current: boolean;
+}
+
+/**
+ * IssueOpsGrantRequest - POST /auth/ops-grant 请求体
+ */
+export interface IssueOpsGrantRequest {
+	/** 授权类别（当前仅 security） */
+	category: "security";
+	/** 验证方式：password | email_code */
+	method: "password" | "email_code";
+	/** method=password 时的当前密码 */
+	password?: string;
+	/** method=email_code 时的邮箱验证码 */
+	code?: string;
+}
+
+/**
+ * OpsGrantResponse - POST /auth/ops-grant 返回
+ */
+export interface OpsGrantResponse {
+	/** 授权类别 */
+	category: string;
+	/** 授权截止时间（RFC3339） */
+	expires_at: string;
+}
+
 export type { UserRole };

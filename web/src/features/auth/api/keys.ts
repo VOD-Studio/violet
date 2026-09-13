@@ -11,4 +11,6 @@ export const authKeys = {
 	me: () => [...authKeys.all, "me"] as const,
 	/** CSRF token 维度，useCsrfToken 使用，登出时清除避免陈旧 token */
 	csrfToken: () => [...authKeys.all, "csrf-token"] as const,
+	/** 当前用户登录会话（设备列表）维度；带 sessionVersion 隔离登录身份切换 */
+	sessions: (version: number) => [...authKeys.all, "sessions", version] as const,
 };

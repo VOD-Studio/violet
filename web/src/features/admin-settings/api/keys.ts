@@ -10,6 +10,8 @@ export const settingsKeys = {
 	general: () => [...settingsKeys.all, "general"] as const,
 	/** 认证组 */
 	auth: () => [...settingsKeys.all, "auth"] as const,
+	/** 安全策略组 */
+	security: () => [...settingsKeys.all, "security"] as const,
 	/** GitHub 组 */
 	github: () => [...settingsKeys.all, "github"] as const,
 	/** 关于博主组 */

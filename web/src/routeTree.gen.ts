@@ -75,6 +75,7 @@ import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.gallerie
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as AdminSettingsStartupRouteImport } from './routes/admin.settings.startup'
+import { Route as AdminSettingsSecurityRouteImport } from './routes/admin.settings.security'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
 import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings.github'
@@ -419,6 +420,11 @@ const AdminSettingsStartupRoute = AdminSettingsStartupRouteImport.update({
   path: '/startup',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
+const AdminSettingsSecurityRoute = AdminSettingsSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
 const AdminSettingsProfileRoute = AdminSettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -557,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/github': typeof AdminSettingsGithubRoute
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
+  '/admin/settings/security': typeof AdminSettingsSecurityRoute
   '/admin/settings/startup': typeof AdminSettingsStartupRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
@@ -632,6 +639,7 @@ export interface FileRoutesByTo {
   '/admin/settings/github': typeof AdminSettingsGithubRoute
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
+  '/admin/settings/security': typeof AdminSettingsSecurityRoute
   '/admin/settings/startup': typeof AdminSettingsStartupRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
@@ -714,6 +722,7 @@ export interface FileRoutesById {
   '/admin/settings/github': typeof AdminSettingsGithubRoute
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
+  '/admin/settings/security': typeof AdminSettingsSecurityRoute
   '/admin/settings/startup': typeof AdminSettingsStartupRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
@@ -797,6 +806,7 @@ export interface FileRouteTypes {
     | '/admin/settings/github'
     | '/admin/settings/llm'
     | '/admin/settings/profile'
+    | '/admin/settings/security'
     | '/admin/settings/startup'
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
@@ -872,6 +882,7 @@ export interface FileRouteTypes {
     | '/admin/settings/github'
     | '/admin/settings/llm'
     | '/admin/settings/profile'
+    | '/admin/settings/security'
     | '/admin/settings/startup'
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
@@ -953,6 +964,7 @@ export interface FileRouteTypes {
     | '/admin/settings/github'
     | '/admin/settings/llm'
     | '/admin/settings/profile'
+    | '/admin/settings/security'
     | '/admin/settings/startup'
     | '/auth/github/callback'
     | '/tweets/topics/$tag'
@@ -1468,6 +1480,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsStartupRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
+    '/admin/settings/security': {
+      id: '/admin/settings/security'
+      path: '/security'
+      fullPath: '/admin/settings/security'
+      preLoaderRoute: typeof AdminSettingsSecurityRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
     '/admin/settings/profile': {
       id: '/admin/settings/profile'
       path: '/profile'
@@ -1642,6 +1661,7 @@ interface AdminSettingsRouteChildren {
   AdminSettingsGithubRoute: typeof AdminSettingsGithubRoute
   AdminSettingsLlmRoute: typeof AdminSettingsLlmRoute
   AdminSettingsProfileRoute: typeof AdminSettingsProfileRoute
+  AdminSettingsSecurityRoute: typeof AdminSettingsSecurityRoute
   AdminSettingsStartupRoute: typeof AdminSettingsStartupRoute
 }
 
@@ -1653,6 +1673,7 @@ const AdminSettingsRouteChildren: AdminSettingsRouteChildren = {
   AdminSettingsGithubRoute: AdminSettingsGithubRoute,
   AdminSettingsLlmRoute: AdminSettingsLlmRoute,
   AdminSettingsProfileRoute: AdminSettingsProfileRoute,
+  AdminSettingsSecurityRoute: AdminSettingsSecurityRoute,
   AdminSettingsStartupRoute: AdminSettingsStartupRoute,
 }
 

@@ -36,6 +36,40 @@ export const useGeneralSettings = () => useSettingsQuery(settingsKeys.general(),
 export const useUpdateGeneral = () => useSettingsUpdate(settingsKeys.general(), api.updateGeneral);
 export const useAuthSettings = () => useSettingsQuery(settingsKeys.auth(), api.getAuth);
 export const useUpdateAuth = () => useSettingsUpdate(settingsKeys.auth(), api.updateAuth);
+export const useSecuritySettings = () => useSettingsQuery(settingsKeys.security(), api.getSecurity);
+export const useRequestSecurityChange = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: api.requestSecurityChange,
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: settingsKeys.security() });
+			toast.success("变更已暂存，请在 10 分钟内完成二次验证并确认生效");
+		},
+		onError: (e: Error) => toast.error(`暂存失败：${e.message}`),
+	});
+};
+export const useConfirmSecurityChange = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (pendingId: string) => api.confirmSecurityChange(pendingId),
+		onSuccess: (data) => {
+			qc.setQueryData(settingsKeys.security(), data);
+			notifySettingsChanged(qc);
+			toast.success("安全策略已确认并生效");
+		},
+		onError: (e: Error) => toast.error(`确认失败：${e.message}`),
+	});
+};
+export const useCancelSecurityChange = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: api.cancelSecurityChange,
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: settingsKeys.security() });
+			toast.success("已取消待确认的安全策略变更");
+		},
+	});
+};
 export const useGithubSettings = () => useSettingsQuery(settingsKeys.github(), api.getGithub);
 export const useUpdateGithub = () => useSettingsUpdate(settingsKeys.github(), api.updateGithub);
 export const useProfileSettings = () => useSettingsQuery(settingsKeys.profile(), api.getProfile);
