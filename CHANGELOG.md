@@ -7,6 +7,53 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.25](https://github.com/VOD-Studio/violet/compare/v2.8.24...v2.8.25) (2026-09-13)
+
+
+### 新增
+
+* **api-docs:** 弹窗重设计为书卷总目双栏排版 ([489812f](https://github.com/VOD-Studio/violet/commit/489812fcf020d53acb6dcbc6307112d669584fd3))
+* **api-docs:** 毛边纸弹窗与首页入口、键入彩蛋 ([d271d50](https://github.com/VOD-Studio/violet/commit/d271d50b09906c061ab7e1899603084dc332d2c0))
+* **api-docs:** 站内文档弹窗与 Apifox 发版自动同步 ([#357](https://github.com/VOD-Studio/violet/issues/357)) ([f50206d](https://github.com/VOD-Studio/violet/commit/f50206d2f9807934dc7826d839ac5c4a96f08bc2))
+* **api-docs:** 编辑风 API 文档渲染器与 /docs 全页 ([c5f394b](https://github.com/VOD-Studio/violet/commit/c5f394b437ae74eab320b1afd38a67ac3ad5ad54))
+* **api-docs:** 重设计弹窗内容版面并对齐首页设计语言 ([29ed6a1](https://github.com/VOD-Studio/violet/commit/29ed6a1eba4506f7f6b1f4fe3258ce876cf2bdf2))
+* **home:** 首页序章头像优先使用公开人设头像 ([7619fcc](https://github.com/VOD-Studio/violet/commit/7619fcc75cbc58381f57a808bc38519adf4b0eb1))
+* **openapi:** spec 版本号改为构建期 ldflags 注入 ([f5e4927](https://github.com/VOD-Studio/violet/commit/f5e49276ca3486d27e60048237f729bb68f14dc1))
+* **openapi:** 补齐 94 个未入册端点的 spec 条目 ([820c65d](https://github.com/VOD-Studio/violet/commit/820c65db673e136964b957f2212a4b847af47bb9))
+* **paper-dialog:** 增加错位底层纸叠层 ([8742020](https://github.com/VOD-Studio/violet/commit/8742020db99f04bd035d7cf805492d506dab8635))
+* **persona-motion:** RuaLoading 改用 SpriteSheet 播放胶卷雪碧图 ([f0d3d6f](https://github.com/VOD-Studio/violet/commit/f0d3d6f5fb0fb6c7a0ab853634536a0bbd4acf02))
+* **shared-ui:** 为 PaperDialog 引入四种纸张动效预设与即时演练器 ([a956942](https://github.com/VOD-Studio/violet/commit/a956942b305d1e5ccd988f7871f25cc300c90f97))
+* **shared-ui:** 新增 PaperDialog 手撕毛边纸弹窗组件 ([4efffe7](https://github.com/VOD-Studio/violet/commit/4efffe7fdd2eb48877514b3f51c81d1f857f15c7))
+* **shared-ui:** 新增 SpriteSheet 雪碧图逐帧动画组件 ([a4c7185](https://github.com/VOD-Studio/violet/commit/a4c718527022c017e1d2ec49671b8d57fc73f3c9))
+
+
+### 修复
+
+* **api-docs:** 目录发起跳转期间不再被途经章节拖动 ([1ef49a3](https://github.com/VOD-Studio/violet/commit/1ef49a395ca37354b8f4815f87f1924415880055))
+* **api-docs:** 端点行箭头旋转不再撑出横向滚动条 ([9b97bb8](https://github.com/VOD-Studio/violet/commit/9b97bb84ec9a1130dfccb453c0c3795e6feebc4d))
+* **api-docs:** 过滤态结果列表恢复滚动 ([4f3a163](https://github.com/VOD-Studio/violet/commit/4f3a163bb4844559fb235255f19c1497c64549c0))
+* **api-docs:** 重新设计纯白手撕毛边纸弹窗并回退独立页改动 ([4db96fd](https://github.com/VOD-Studio/violet/commit/4db96fd2a35a7a59522aab3bfa38b546c697ee29))
+* **auth:** 修正登录弹窗的会话触发边界 ([a01c16c](https://github.com/VOD-Studio/violet/commit/a01c16c5c8132021a24a9adf8c32bc15616be55e))
+* **chat:** 按需加载分享弹窗的私有数据 ([f2e90db](https://github.com/VOD-Studio/violet/commit/f2e90db2ef1e46b09f9b802cecbc8ba78485c655))
+* **paper-dialog:** 以分层纤维表现手撕纸边 ([efcdc62](https://github.com/VOD-Studio/violet/commit/efcdc62493ab80ba7489d0477794604b31981e94))
+* **paper-dialog:** 使用参考原图还原撕纸轮廓 ([a416e6e](https://github.com/VOD-Studio/violet/commit/a416e6e790408f8fb6da329758cd24055d404e28))
+* **paper-dialog:** 加大底层纸叠层可见度 ([b37734b](https://github.com/VOD-Studio/violet/commit/b37734b46c7261ff5fee6aa15d66c3a696aa8efd))
+* **paper-dialog:** 实现四边细碎手撕毛边 ([aeafcf3](https://github.com/VOD-Studio/violet/commit/aeafcf37cca11513560caf438f7f8b4128cf5ebb))
+* **paper-dialog:** 收敛底层纸叠层避免脏边感 ([b7f8ab2](https://github.com/VOD-Studio/violet/commit/b7f8ab22af642770b827d93047ba5c494e877a47))
+* **paper-dialog:** 精修纸边层次与纤维细节 ([1719529](https://github.com/VOD-Studio/violet/commit/171952946a9e1510047c9ba1e7e3a9ead0cc5a4b))
+* **paper-dialog:** 重写纸边绘制呈现撕纸质感 ([b4ea11b](https://github.com/VOD-Studio/violet/commit/b4ea11bd0586fd64f6dba74acfc91beb18eccb80))
+* **persona-motion:** 修正写字精灵播放 ([f40d9e3](https://github.com/VOD-Studio/violet/commit/f40d9e370cdb0c801cd3f0225f7cb1ac3e9a5b50))
+* **shared-ui:** PaperDialog 独立解耦实现并还原共享 Modal ([6db181b](https://github.com/VOD-Studio/violet/commit/6db181b4de563364f0ffe4190a83f577a15a0c9e))
+* **shared-ui:** 定稿报纸对折摊开动效并精调退出节奏 ([bbc4246](https://github.com/VOD-Studio/violet/commit/bbc4246dc7e8e0ec8b4b647a19ed9d99a554b6b8))
+* **shared-ui:** 简化 PaperDialog 外壳与优化居中纸张动效 ([ca87d59](https://github.com/VOD-Studio/violet/commit/ca87d59d001651f06a1d4f33c2d1bc3201122289))
+
+
+### 重构
+
+* **api-docs:** 接入 PaperDialog 公共手撕纸弹窗 ([2d811c1](https://github.com/VOD-Studio/violet/commit/2d811c1edcc2a2b99ecd10bd664b59a16e7a2fa1))
+* **api-docs:** 移除 /docs 独立页,弹窗尾链改指站外完整文档 ([8e44dc9](https://github.com/VOD-Studio/violet/commit/8e44dc90a2d8c7e6b14542c16689ae01e47640a5))
+* **api-docs:** 移除冗余头部并接入简化版 PaperDialog ([8adcac0](https://github.com/VOD-Studio/violet/commit/8adcac0b04c80a2a38501b1429554e8ada187d6b))
+
 ## [2.8.24](https://github.com/VOD-Studio/violet/compare/v2.8.23...v2.8.24) (2026-09-09)
 
 
