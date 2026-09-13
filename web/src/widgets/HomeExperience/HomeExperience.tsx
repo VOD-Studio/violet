@@ -1,3 +1,4 @@
+import { useActivePersona } from "@entities/persona/api/queries";
 import { useTimeline } from "@features/tweets/api/queries";
 
 import { useFootprintPublications, useRecentPublications, useSiteIdentity } from "./api/queries";
@@ -38,6 +39,7 @@ const FALLBACK_SITE_IDENTITY: SiteIdentity = {
 export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperienceProps) {
 	const identityQuery = useSiteIdentity();
 	const identity = identityQuery.data ?? FALLBACK_SITE_IDENTITY;
+	const persona = useActivePersona().data ?? null;
 	const recentPublicationsQuery = useRecentPublications();
 	const recentPublications = recentPublicationsQuery.data?.data ?? [];
 	const footprintQuery = useFootprintPublications(identity.home.footprint_enabled);
@@ -50,7 +52,7 @@ export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperien
 
 	return (
 		<div className="home-surface overflow-clip bg-background text-foreground">
-			<HomePrelude identity={identity} lead={lead} />
+			<HomePrelude identity={identity} lead={lead} persona={persona} />
 			<HomeIndex
 				items={recentPublications}
 				tweets={tweets}

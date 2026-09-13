@@ -1,3 +1,4 @@
+import type { PublicPersona } from "@entities/persona/model/types";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
@@ -15,6 +16,8 @@ import type { HomePublicationItem, SiteIdentity } from "./types";
 interface HomePreludeProps {
 	identity: SiteIdentity;
 	lead: HomePublicationItem | null;
+	/** 当前公开人设；null（未配置或未加载）时左侧回落站点头像。 */
+	persona: PublicPersona | null;
 }
 
 interface SocialLink {
@@ -33,7 +36,7 @@ const SOCIAL_ICON_BY_KIND: Record<string, ComponentType<SVGProps<SVGSVGElement>>
 };
 
 /** 首页序章：展示服务端归一后的站点身份与最新发布。 */
-export function HomePrelude({ identity, lead }: HomePreludeProps) {
+export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 	const siteName = identity.site_name;
 	const owner = identity.owner_name;
 	const socialLinks = identity.social_links.map<SocialLink>((link) => ({
@@ -41,10 +44,19 @@ export function HomePrelude({ identity, lead }: HomePreludeProps) {
 		label: link.label,
 		Icon: SOCIAL_ICON_BY_KIND[link.kind] ?? ExternalLink,
 	}));
-	const avatarSource = identity.avatar_url.trim();
 	const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
+	// 头像级联：公开人设头像优先，未配置人设或其图加载失败时回落站点头像
+	const personaAvatar = persona?.avatar.url.trim() ?? "";
+	const avatarSource =
+		personaAvatar && personaAvatar !== failedAvatar
+			? personaAvatar
+			: identity.avatar_url.trim();
 	const avatar =
 		avatarSource && avatarSource !== failedAvatar ? avatarUrl(avatarSource, owner) : "";
+	const avatarAlt =
+		avatarSource !== "" && avatarSource === personaAvatar
+			? persona?.avatar.alt_text || `${persona?.name ?? owner} 的角色头像`
+			: `${owner || siteName} 的头像`;
 	const customBanner = identity.hero.banner_url?.trim() ?? "";
 	const hasCustomBanner = customBanner.length > 0;
 	const openApiDocs = useApiDocsDialogStore((s) => s.open);
@@ -86,7 +98,7 @@ export function HomePrelude({ identity, lead }: HomePreludeProps) {
 								<div className="size-48 overflow-hidden rounded-xl bg-card sm:size-56 lg:size-60">
 									<ImagePixelReveal
 										src={avatar}
-										alt={`${owner || siteName} 的头像`}
+										alt={avatarAlt}
 										variant="random"
 										tileSize={40}
 										duration={0.32}
