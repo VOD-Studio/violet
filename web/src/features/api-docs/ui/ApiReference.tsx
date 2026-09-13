@@ -79,24 +79,16 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 			: chapters;
 	const chapters = withMatches(model.chapters);
 	const appendix = withMatches(model.appendix);
-	const publicCount = model.chapters.reduce((sum, c) => sum + c.operations.length, 0);
-	const adminCount = model.appendix.reduce((sum, c) => sum + c.operations.length, 0);
 	const showToc = variant === "dialog" && !filtering;
 
-	/* 检索条 sticky 常驻：只属于右栏内容列，滚动中随时可过滤。
-		右端常驻计数：空闲显总端点数，过滤显「命中 / 总数」。
-		不用负边距外扩——会撑出 os-host 的横向滚动条 */
+	/* 检索条置于头部之下、双栏之上，常驻可见（不在滚动容器内，无需 sticky）。
+		右端常驻计数：空闲显总端点数，过滤显「命中 / 总数」 */
 	const totalEndpoints =
 		model.chapters.reduce((sum, c) => sum + c.operations.length, 0) +
 		model.appendix.reduce((sum, c) => sum + c.operations.length, 0);
 	const searchBlock = (
-		<div className={cn(variant === "dialog" && "sticky top-0 z-10 bg-card py-2")}>
-			<label
-				className={cn(
-					"flex items-center gap-3 border-b border-border/70 pb-2.5 transition-colors focus-within:border-primary/60",
-					variant === "dialog" && "pr-9 sm:pr-11",
-				)}
-			>
+		<div className="py-2">
+			<label className="flex items-center gap-3 border-b border-border/70 pb-2.5 transition-colors focus-within:border-primary/60">
 				<Search className="size-4 shrink-0 text-muted-foreground/50" />
 				<input
 					type="search"
@@ -115,35 +107,28 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 	);
 
 	const endpointBody = (
-		<>
-			{searchBlock}
-			<main
-				className={cn(
-					"min-w-0 space-y-14",
-					isPage && "sm:space-y-16",
-					!isPage && "mt-4 pb-6",
-				)}
-			>
-				{chapters.map((chapter, index) => (
-					<ChapterSection
-						key={chapter.tag}
-						chapter={chapter}
-						query={query}
-						model={model}
-						anchor={chapterAnchor("chapter", String(index + 1).padStart(2, "0"))}
-						marker={String(index + 1).padStart(2, "0")}
-					/>
-				))}
-				<AppendixSection
-					model={model}
+		<main
+			className={cn("min-w-0 space-y-14", isPage && "sm:space-y-16", !isPage && "mt-5 pb-6")}
+		>
+			{chapters.map((chapter, index) => (
+				<ChapterSection
+					key={chapter.tag}
+					chapter={chapter}
 					query={query}
-					chapters={appendix}
-					filtering={filtering}
-					open={appendixOpen}
-					onToggle={() => setAppendixOpen((v) => !v)}
+					model={model}
+					anchor={chapterAnchor("chapter", String(index + 1).padStart(2, "0"))}
+					marker={String(index + 1).padStart(2, "0")}
 				/>
-			</main>
-		</>
+			))}
+			<AppendixSection
+				model={model}
+				query={query}
+				chapters={appendix}
+				filtering={filtering}
+				open={appendixOpen}
+				onToggle={() => setAppendixOpen((v) => !v)}
+			/>
+		</main>
 	);
 
 	return (
@@ -172,27 +157,11 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 						</Link>
 					) : null}
 				</div>
-				<div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/80">
-					{model.version ? (
-						<>
-							<span className="font-mono text-muted-foreground/60">
-								v{model.version.replace(/^v/, "")}
-							</span>
-							<span aria-hidden className="text-muted-foreground/40">
-								·
-							</span>
-						</>
-					) : null}
-					<span className="tabular-nums">{publicCount} 公开</span>
-					<span aria-hidden className="text-muted-foreground/40">
-						·
-					</span>
-					<span className="tabular-nums">{adminCount} 管理</span>
-					<span aria-hidden className="text-muted-foreground/40">
-						·
-					</span>
-					<span className="tabular-nums">{Object.keys(model.schemas).length} 模型</span>
-				</div>
+				{model.version ? (
+					<p className="mt-3 font-mono text-xs text-muted-foreground/60">
+						v{model.version.replace(/^v/, "")}
+					</p>
+				) : null}
 
 				{/* 描述仅独立页保留：弹窗空间留给正文 */}
 				{isPage && model.description ? (
@@ -201,6 +170,8 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 					</p>
 				) : null}
 			</header>
+
+			{searchBlock}
 
 			<div
 				className={cn(
