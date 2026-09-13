@@ -98,10 +98,8 @@ export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) 
 		<Disclosure
 			label="筛选日志"
 			hint={activeCount ? `已应用 ${activeCount} 项条件` : "全部已采集级别 · 不限时间"}
-			className="border-b border-edge-hairline"
-			contentClassName="pb-4"
 		>
-			<form onSubmit={handleSubmit} className="space-y-4">
+			<form onSubmit={handleSubmit} className="space-y-4 pb-4">
 				<fieldset className="space-y-2">
 					<legend className="text-sm">级别（可多选，不选表示全部）</legend>
 					<div className="flex flex-wrap gap-x-4 gap-y-2">

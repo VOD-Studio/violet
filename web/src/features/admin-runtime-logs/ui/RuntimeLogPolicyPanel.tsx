@@ -129,7 +129,7 @@ export function RuntimeLogPolicyPanel({ canManage }: { canManage: boolean }) {
 	}
 
 	return (
-		<div className="min-w-0 border-t border-edge-hairline">
+		<div className="min-w-0">
 			<Disclosure
 				label={
 					<span
