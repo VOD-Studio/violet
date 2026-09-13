@@ -3,12 +3,15 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
 	Bot,
+	CodeXml,
 	ContactRound,
-	Cpu,
 	FileText,
+	Fingerprint,
 	FolderKanban,
 	GalleryHorizontalEnd,
 	GitBranch,
+	Globe,
+	History,
 	Images,
 	KeyRound,
 	LayoutDashboard,
@@ -18,12 +21,15 @@ import {
 	Megaphone,
 	MessageSquare,
 	NotebookText,
+	Power,
 	Rss,
 	ScrollText,
 	Settings,
 	Shield,
+	ShieldCheck,
 	Smile,
 	Tag,
+	Terminal,
 	User,
 	UserCog,
 	Users,
@@ -61,7 +67,8 @@ export interface NavMenuItem {
 	/**
 	 * 子菜单项。存在时该项渲染为可折叠父项（点按切换展开/收起，不直接导航），
 	 * 父项本身只作分组容器。父项可见性 = 任一子项可见（权限逻辑同上）。
-	 * 父项的 `to` 仍需提供，用于当前路由命中任一子项时的激活态判定（前缀匹配）。
+	 * 父项的 `to` 仍需提供，作为展开状态与 key 的唯一标识；
+	 * 激活态判定同时覆盖自身路由与任一子项路由（见 NavMenuGroupItem）。
 	 */
 	children?: NavMenuItem[];
 }
@@ -194,7 +201,7 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 	{
 		label: "权限管理",
 		to: "/admin/permissions",
-		icon: Shield,
+		icon: ShieldCheck,
 		group: "access",
 		permissions: ["role:view"],
 	},
@@ -208,13 +215,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 			{
 				label: "基础信息",
 				to: "/admin/settings/general",
-				icon: Settings,
+				icon: Globe,
 				permissions: ["settings:view"],
 			},
 			{
 				label: "认证",
 				to: "/admin/settings/auth",
-				icon: Shield,
+				icon: Fingerprint,
 				permissions: ["settings:view"],
 			},
 			{
@@ -250,13 +257,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 			{
 				label: "代码运行器",
 				to: "/admin/settings/code-runner",
-				icon: Cpu,
+				icon: CodeXml,
 				permissions: ["settings:view"],
 			},
 			{
 				label: "启动配置",
 				to: "/admin/settings/startup",
-				icon: Activity,
+				icon: Power,
 				permissions: ["settings:view"],
 			},
 		],
@@ -276,17 +283,23 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		permissions: ["system:view"],
 	},
 	{
-		label: "运行日志",
-		to: "/admin/runtime-logs",
-		icon: ScrollText,
-		group: "platform",
-		permissions: ["runtimelog:view"],
-	},
-	{
-		label: "操作日志",
+		label: "日志",
 		to: "/admin/logs",
 		icon: ScrollText,
 		group: "platform",
-		permissions: ["log:view"],
+		children: [
+			{
+				label: "运行日志",
+				to: "/admin/runtime-logs",
+				icon: Terminal,
+				permissions: ["runtimelog:view"],
+			},
+			{
+				label: "操作日志",
+				to: "/admin/logs",
+				icon: History,
+				permissions: ["log:view"],
+			},
+		],
 	},
 ];

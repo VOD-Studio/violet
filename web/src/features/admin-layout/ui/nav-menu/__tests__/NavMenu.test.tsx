@@ -77,6 +77,10 @@ const getSettingsParent = () =>
 		.getAllByRole("button", { name: /站点设置/ })
 		.find((b) => b.hasAttribute("aria-expanded"));
 
+/** 取「日志」父项按钮（站点设置不含「日志」字样，不会误匹配） */
+const getLogParent = () =>
+	screen.getAllByRole("button", { name: /日志/ }).find((b) => b.hasAttribute("aria-expanded"));
+
 /** 取「站点设置」子菜单容器（data-state 标识展开态） */
 const getSettingsSubmenu = () => document.querySelector('[data-state][class*="grid-rows"]');
 
@@ -151,6 +155,21 @@ describe("NavMenu 子菜单渲染", () => {
 		render(<NavMenu />);
 
 		expect(getSettingsParent()?.className).not.toContain("before:bg-primary");
+	});
+
+	it("命中无公共前缀的子路由时父项激活（日志收两个异前缀子项）", () => {
+		setPath("/admin/runtime-logs");
+		render(<NavMenu />);
+
+		// /admin/runtime-logs 与父项 to（/admin/logs）无前缀关系，靠子项遍历命中
+		const parent = getLogParent();
+		expect(parent?.className).toContain("before:bg-primary");
+
+		// 展开后激活态移交子项，两个子链接均渲染
+		fireEvent.click(parent as HTMLElement);
+		expect(parent?.className).not.toContain("before:bg-primary");
+		expect(screen.queryAllByTestId("link-/admin/runtime-logs").length).toBeGreaterThan(0);
+		expect(screen.queryAllByTestId("link-/admin/logs").length).toBeGreaterThan(0);
 	});
 
 	it("收起态点击父项弹出子菜单，子项导航后关闭", () => {
