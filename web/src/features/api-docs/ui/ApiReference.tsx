@@ -84,7 +84,11 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 	const showToc = variant === "dialog" && !filtering;
 
 	/* 检索条 sticky 常驻：只属于右栏内容列，滚动中随时可过滤。
+		右端常驻计数：空闲显总端点数，过滤显「命中 / 总数」。
 		不用负边距外扩——会撑出 os-host 的横向滚动条 */
+	const totalEndpoints =
+		model.chapters.reduce((sum, c) => sum + c.operations.length, 0) +
+		model.appendix.reduce((sum, c) => sum + c.operations.length, 0);
 	const searchBlock = (
 		<div className={cn(variant === "dialog" && "sticky top-0 z-10 bg-card py-2")}>
 			<label
@@ -101,11 +105,11 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 					placeholder="过滤端点、摘要或标签……"
 					className="w-full bg-transparent font-mono text-sm outline-none placeholder:text-muted-foreground/45"
 				/>
-				{filtering ? (
-					<span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums">
-						{countMatches(model, query)}
-					</span>
-				) : null}
+				<span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums">
+					{filtering
+						? `${countMatches(model, query)} / ${totalEndpoints}`
+						: `${totalEndpoints} 端点`}
+				</span>
 			</label>
 		</div>
 	);
@@ -158,13 +162,27 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 					>
 						{model.title}
 					</h1>
-					{model.version ? (
-						<span className="font-mono text-xs text-muted-foreground/60">
-							v{model.version.replace(/^v/, "")}
-						</span>
+					{variant === "dialog" ? (
+						<Link
+							to="/docs"
+							className="ml-auto inline-flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+						>
+							独立页
+							<ArrowUpRight className="size-3.5" />
+						</Link>
 					) : null}
 				</div>
 				<div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/80">
+					{model.version ? (
+						<>
+							<span className="font-mono text-muted-foreground/60">
+								v{model.version.replace(/^v/, "")}
+							</span>
+							<span aria-hidden className="text-muted-foreground/40">
+								·
+							</span>
+						</>
+					) : null}
 					<span className="tabular-nums">{publicCount} 公开</span>
 					<span aria-hidden className="text-muted-foreground/40">
 						·
@@ -174,20 +192,6 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 						·
 					</span>
 					<span className="tabular-nums">{Object.keys(model.schemas).length} 模型</span>
-					{variant === "dialog" ? (
-						<>
-							<span aria-hidden className="text-muted-foreground/40">
-								·
-							</span>
-							<Link
-								to="/docs"
-								className="inline-flex items-center gap-0.5 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-							>
-								独立页
-								<ArrowUpRight className="size-3.5" />
-							</Link>
-						</>
-					) : null}
 				</div>
 
 				{/* 描述仅独立页保留：弹窗空间留给正文 */}
