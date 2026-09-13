@@ -102,12 +102,21 @@ export function schemaRefName(schema: OpenApiSchema | undefined): string | undef
 }
 
 /**
+ * schema 组件名的展示形态：在驼峰与缩写词界插入空格
+ * （ChatCreateConversationRequest → Chat Create Conversation Request、
+ * UserDTO → User DTO），只拆显示层，不影响 $ref 查找键。
+ */
+export function schemaDisplayName(name: string): string {
+	return name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2");
+}
+
+/**
  * schema 的展示类型名：引用用组件名，数组带 []，其余用 type/format。
  */
 export function schemaTypeName(schema: OpenApiSchema | undefined): string {
 	if (!schema) return "—";
 	const ref = schemaRefName(schema);
-	if (ref) return ref;
+	if (ref) return schemaDisplayName(ref);
 	if (schema.type === "array") return `${schemaTypeName(schema.items)}[]`;
 	const base = schema.type ?? "object";
 	return schema.format ? `${base}(${schema.format})` : base;

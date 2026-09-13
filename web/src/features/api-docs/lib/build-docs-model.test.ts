@@ -3,6 +3,7 @@ import type { OpenApiDoc } from "../model/types";
 import {
 	buildDocsModel,
 	operationMatches,
+	schemaDisplayName,
 	schemaRefName,
 	schemaTypeName,
 } from "./build-docs-model";
@@ -98,5 +99,14 @@ describe("schema helpers", () => {
 		expect(schemaTypeName({ type: "array", items: { type: "string" } })).toBe("string[]");
 		expect(schemaTypeName({ type: "integer", format: "int64" })).toBe("integer(int64)");
 		expect(schemaTypeName(undefined)).toBe("—");
+	});
+
+	it("组件名按驼峰与缩写词界拆词展示", () => {
+		expect(schemaDisplayName("ChatCreateConversationRequest")).toBe(
+			"Chat Create Conversation Request",
+		);
+		expect(schemaDisplayName("UserDTO")).toBe("User DTO");
+		expect(schemaDisplayName("HTTPRequest")).toBe("HTTP Request");
+		expect(schemaTypeName({ $ref: "#/components/schemas/TweetDTO" })).toBe("Tweet DTO");
 	});
 });

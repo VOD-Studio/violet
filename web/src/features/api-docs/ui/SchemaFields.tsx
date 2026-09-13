@@ -44,7 +44,9 @@ export function SchemaFields({ schema, schemas, depth = 1 }: SchemaFieldsProps) 
 							{field?.enum?.length ? ` · ${field.enum.join(" | ")}` : ""}
 						</span>
 						{field?.description ? (
-							<p className="mt-0.5 text-muted-foreground">{field.description}</p>
+							<p className="mt-0.5 font-serif text-muted-foreground">
+								{field.description}
+							</p>
 						) : null}
 						{depth > 0 &&
 						field &&
