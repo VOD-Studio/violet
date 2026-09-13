@@ -176,8 +176,9 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 			<div
 				className={cn(
 					isPage && "mt-7",
-					!isPage && "mt-5 min-h-0 flex-1",
-					showToc && "grid grid-cols-[13.5rem_minmax(0,1fr)] gap-10",
+					/* 始终 grid：过滤态单列也让 OverlayScroll 作为网格项被拉伸限高，否则高度随内容撑开无法滚动 */
+					!isPage && "mt-5 min-h-0 flex-1 grid",
+					showToc && "grid-cols-[13.5rem_minmax(0,1fr)] gap-10",
 				)}
 			>
 				{showToc ? (
