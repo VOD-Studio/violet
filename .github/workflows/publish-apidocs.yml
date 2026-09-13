@@ -47,7 +47,7 @@ jobs:
           # deleteUnmatchedResources:与 spec 同步——线上已删除的接口/模型在 Apifox 一并移除
           jq -Rs '{input: ., options: {deleteUnmatchedResources: true}}' openapi.json > payload.json
           resp=$(curl -fsS --max-time 120 -X POST \
-            "https://api.apifox.com/v1/projects/8484856/import-openapi" \
+            "https://api.apifox.com/v1/projects/8832265/import-openapi" \
             -H "X-Apifox-Api-Version: 2024-03-28" \
             -H "Authorization: Bearer $APIFOX_ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
