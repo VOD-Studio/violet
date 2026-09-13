@@ -325,9 +325,17 @@ function TocRail({
 }) {
 	const reduceMotion = useReducedMotion();
 	const activeItemRef = useRef<HTMLLIElement | null>(null);
-	// 当前章超出总目视野时跟随滚入（block:nearest 已在视野内则不动）
-	// biome-ignore lint/correctness/useExhaustiveDependencies: activeTag 仅作触发器，滚动目标经 activeItemRef 读取
+	// 总目发起的跳转进行中抑制「跟随滚入」：smooth 滚动途经的章节会逐个刷 activeTag，
+	// 不抑制的话总目会被途经项拖着重滚一遍；到站或 1.5s 超时后恢复跟随
+	const jumpTargetRef = useRef<string | null>(null);
+	const jumpLockUntilRef = useRef(0);
 	useEffect(() => {
+		if (jumpTargetRef.current) {
+			if (activeTag !== jumpTargetRef.current && Date.now() <= jumpLockUntilRef.current) {
+				return;
+			}
+			jumpTargetRef.current = null;
+		}
 		activeItemRef.current?.scrollIntoView({ block: "nearest" });
 	}, [activeTag]);
 	const scrollTo = (anchor: string) => {
@@ -335,7 +343,9 @@ function TocRail({
 			.getElementById(anchor)
 			?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
 	};
-	const jump = (anchor: string, ensureAppendix = false) => {
+	const jump = (anchor: string, ensureAppendix = false, targetTag?: string) => {
+		jumpTargetRef.current = targetTag ?? null;
+		jumpLockUntilRef.current = Date.now() + 1500;
 		if (ensureAppendix && !appendixOpen) {
 			onOpenAppendix();
 			// 等附录章节挂载完成再滚，双 rAF 保证在 commit 之后
@@ -368,7 +378,7 @@ function TocRail({
 										String(index + 1).padStart(2, "0"),
 									)}
 									active={activeTag === chapter.tag}
-									onJump={jump}
+									onJump={(anchor) => jump(anchor, false, chapter.tag)}
 								/>
 							</li>
 						))}
@@ -391,7 +401,7 @@ function TocRail({
 											count={chapter.operations.length}
 											anchor={chapterAnchor("appendix", `a${index + 1}`)}
 											active={activeTag === chapter.tag}
-											onJump={(anchor) => jump(anchor, true)}
+											onJump={(anchor) => jump(anchor, true, chapter.tag)}
 										/>
 									</li>
 								))}
