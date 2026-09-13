@@ -7,6 +7,14 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.26](https://github.com/VOD-Studio/violet/compare/v2.8.25...v2.8.26) (2026-09-13)
+
+
+### 修复
+
+* **ci:** API 文档推送拆独立 workflow 并修复 Deploy 解析失败 ([3a8b703](https://github.com/VOD-Studio/violet/commit/3a8b703d9c82a655bbbaf86585e89e45dc81bf1e))
+* **ci:** 还原 deploy.yml 修复 workflow 解析失败 ([7883d3b](https://github.com/VOD-Studio/violet/commit/7883d3bd8e32edd50dc6f3937bcdf6085ad93c80))
+
 ## [2.8.25](https://github.com/VOD-Studio/violet/compare/v2.8.24...v2.8.25) (2026-09-13)
 
 
