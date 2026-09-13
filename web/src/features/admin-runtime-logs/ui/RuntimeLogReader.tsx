@@ -91,15 +91,15 @@ export function RuntimeLogReader() {
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
 					{/* 不设高度上限：多面板同开时随内容增高交给页面滚动，
 					    裁切或内滚都会藏住底部面板；控制台以 min-h 保底。
-					    三块面板收进同一张卡：行内容 px-3 内缩避免贴边框，分隔线通栏 */}
+					    三块面板收进同一张卡，分隔线通栏；组件内部自带 8px 内缩 */}
 					<div className="min-w-0 shrink-0 overflow-hidden rounded-lg border border-edge-hairline bg-card">
-						<div className="border-b border-edge-hairline px-3">
+						<div className="border-b border-edge-hairline px-2">
 							<RuntimeLogFilters filters={filters} onApply={handleApply} />
 						</div>
-						<div className="border-b border-edge-hairline px-3">
+						<div className="border-b border-edge-hairline px-2">
 							<RuntimeLogStatusPanel />
 						</div>
-						<div className="px-3">
+						<div className="px-2">
 							<RuntimeLogPolicyPanel canManage={canManage} />
 						</div>
 					</div>

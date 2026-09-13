@@ -22,7 +22,8 @@ interface DisclosureProps {
  * 摘要行是完整可点行（hover 底色 + focus ring + 旋转箭头），展开/收起走
  * grid-rows 0fr↔1fr 高度过渡（同 NavMenuGroupItem / OAuthProviderCard 先例），
  * 开合不跳布局；visibility 随过渡切换，收起后内容不可聚焦。
- * data-state 暴露开合态供测试断言。
+ * 按钮与内容统一 px-2 内缩，盒子不越出组件边界，放入任何 overflow-hidden
+ * 容器（卡片、日志条目）都不会被裁切。data-state 暴露开合态供测试断言。
  */
 export function Disclosure({
 	label,
@@ -39,7 +40,7 @@ export function Disclosure({
 				type="button"
 				aria-expanded={open}
 				onClick={() => setOpen((value) => !value)}
-				className="-mx-2 flex w-[calc(100%+1rem)] items-center gap-1.5 rounded-md px-2 py-1.5 text-left font-medium transition-colors hover:bg-accent/60 focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
+				className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left font-medium transition-colors hover:bg-accent/60 focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
 			>
 				<ChevronRight
 					className={cn(
@@ -64,7 +65,7 @@ export function Disclosure({
 				)}
 			>
 				<div className="min-h-0 overflow-hidden">
-					<div className={cn("pt-2 pb-1", contentClassName)}>{children}</div>
+					<div className={cn("px-2 pt-2 pb-1", contentClassName)}>{children}</div>
 				</div>
 			</div>
 		</div>
