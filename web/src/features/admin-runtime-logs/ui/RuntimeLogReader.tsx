@@ -89,14 +89,16 @@ export function RuntimeLogReader() {
 				<InlineError message="服务器拒绝查看运行日志：权限不足。请联系管理员确认 runtimelog:view 授权。" />
 			) : (
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-					<div className="max-h-[45%] min-h-0 shrink-0 overflow-y-auto overscroll-contain">
+					{/* 不设高度上限：多面板同开时随内容增高交给页面滚动，
+					    裁切或内滚都会藏住底部面板；控制台以 min-h 保底 */}
+					<div className="min-w-0 shrink-0">
 						<RuntimeLogFilters filters={filters} onApply={handleApply} />
 						<RuntimeLogStatusPanel />
 						<RuntimeLogPolicyPanel canManage={canManage} />
 					</div>
 					<section
 						aria-label="运行日志历史与实时记录"
-						className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card"
+						className="flex min-h-80 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card"
 					>
 						<header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-edge-hairline px-3 py-3 text-xs sm:px-4">
 							<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
