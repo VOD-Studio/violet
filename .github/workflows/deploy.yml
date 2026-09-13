@@ -1,4 +1,4 @@
-# CD 发布流水线（结构化：detect、prepare、build-api 与 build-web 并行、prepare-server、migrate、deploy-api、deploy-web、publish-apidocs、release 与 rollback）
+# CD 发布流水线（结构化：detect、prepare、build-api 与 build-web 并行、prepare-server、migrate、deploy-api、deploy-web、release 与 rollback）
 #
 # 触发:
 #   - 打 v* tag: 自动发版到 rua 生产环境(release-please 合并 release PR 时触发)
@@ -13,8 +13,6 @@
 # 变更检测（detect）：按侧锚点（.current-version-api 与 .current-version-web）做 diff 基线，
 #   只部署实际变更侧，未改动侧不重建容器。锚点缺失（首次发版）或手动模式时全量部署。
 # 契约安全：deploy-api 部署后跑 scripts/smoke.sh 跨组件冒烟（旧 web 配新 api），失败触发 rollback。
-# API 文档：publish-apidocs 在 deploy-api 成功后拉生产活 spec 推送至 Apifox
-#   （apidoc.xunrua.top 随发版自动更新），失败仅告警不回滚。
 # 回滚：按侧回滚到各侧锚点，再做双侧健康检查。
 # 锚点：release 按实际部署侧回写（放最后，前面翻车不误写）；手动回滚成功后同样按侧回写。
 
@@ -497,52 +495,6 @@ jobs:
           echo "::error::web 健康检查失败,web 未在超时内就绪"
           exit 1
 
-  # ── publish-apidocs: API 文档随发版自动更新 ──
-  # deploy-api 成功后拉生产活 spec（GET /api/v1/openapi.json，与线上代码永远同版本），
-  # 经 Apifox 开放 API 推入项目 8484856，apidoc.xunrua.top 随之更新。
-  # 只访问外网、不碰服务器，放 GitHub 托管 runner；不在 rollback 链，推送失败仅告警
-  # 不回滚部署。APIFOX_ACCESS_TOKEN 未配置时跳过推送（告警提示）。
-  publish-apidocs:
-    needs: [prepare, deploy-api]
-    # always() 显式化：web-only 部署（deploy_api=false）时显式跳过，而非 needs 里
-    # deploy-api 被 skip 触发隐式传播
-    if: always() && needs.prepare.outputs.deploy_api == 'true' && needs.deploy-api.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: 拉取生产活 spec
-        run: |
-          curl -fsSL --max-time 60 https://xunrua.top/api/v1/openapi.json -o openapi.json
-          jq -e '.openapi != null' openapi.json > /dev/null \
-            || { echo "::error::拉取内容不是合法 OpenAPI spec"; exit 1; }
-          echo "已拉取 spec：$(wc -c < openapi.json) 字节"
-
-      - name: 推送至 Apifox
-        if: secrets.APIFOX_ACCESS_TOKEN != ''
-        env:
-          APIFOX_ACCESS_TOKEN: ${{ secrets.APIFOX_ACCESS_TOKEN }}
-        run: |
-          # deleteUnmatchedResources：与 spec 同步——线上已删除的接口/模型在 Apifox 一并移除
-          jq -Rs '{input: ., options: {deleteUnmatchedResources: true}}' openapi.json > payload.json
-          resp=$(curl -fsS --max-time 120 -X POST \
-            "https://api.apifox.com/v1/projects/8484856/import-openapi" \
-            -H "X-Apifox-Api-Version: 2024-03-28" \
-            -H "Authorization: Bearer $APIFOX_ACCESS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d @payload.json)
-          echo "$resp" | jq .
-          failed=$(echo "$resp" | jq '.data.errors // [] | length')
-          if [ "$failed" -gt 0 ]; then
-            echo "::error::Apifox 导入存在失败项"
-            echo "$resp" | jq -c '.data.errors // []'
-            exit 1
-          fi
-          echo "Apifox 更新完成：$(echo "$resp" | jq -c '.data.counters // {}')"
-
-      - name: 提示配置 token
-        if: secrets.APIFOX_ACCESS_TOKEN == ''
-        run: echo "::warning::未配置 APIFOX_ACCESS_TOKEN secret，已跳过 API 文档推送（Apifox 账号设置 → API 访问令牌生成后，加入仓库 Actions secrets）"
-
   # ── rollback: 失败聚合自动回滚
   rollback:
     needs: [prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web]
@@ -690,7 +642,7 @@ jobs:
   # github.com 不稳定)。issue 未关闭期间同时作为「tag 已发布但生产未部署」漂移
   # 状态的可见记录;auto-retry 接力重试或下次发版覆盖后,人工确认关闭。
   notify-failure:
-    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release, github-release, publish-apidocs]
+    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release, github-release]
     if: always() && failure()
     runs-on: ubuntu-latest
     permissions:
