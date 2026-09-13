@@ -1,0 +1,66 @@
+# API 文档自动推送：Apifox 发布链的旁路，独立于部署流水线（publish-apidocs.yml）。
+# 本 workflow 失败与否不影响 Deploy 及其 rollback（部署见 deploy.yml）。
+#
+# 触发:
+#   - workflow_run: Deploy 流水线成功完成后触发——部署完成才拉生产活 spec,保证内容与线上一致
+#   - workflow_dispatch: 手动补推(如 token 权限修复后)
+#
+# 文件版本:workflow_run 类 workflow 取默认分支版本,修复合并到 release/2.0 即生效(与 auto-retry 一致)。
+
+name: Publish API Docs
+
+on:
+  workflow_run:
+    workflows: [Deploy]
+    types: [completed]
+    branches: [release/2.0]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-apidocs
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Deploy 失败/回滚时不推送;手动 dispatch 无条件推
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # secrets 上下文在 if 表达式中不可用(解析期报 Unrecognized named-value,
+    # 曾让整条 Deploy 流水线 0s 失败),故经 job env 中转,step if 判 env
+    env:
+      APIFOX_ACCESS_TOKEN: ${{ secrets.APIFOX_ACCESS_TOKEN }}
+    steps:
+      - name: 拉取生产活 spec
+        run: |
+          curl -fsSL --max-time 60 https://xunrua.top/api/v1/openapi.json -o openapi.json
+          jq -e '.openapi != null' openapi.json > /dev/null \
+            || { echo "::error::拉取内容不是合法 OpenAPI spec"; exit 1; }
+          echo "已拉取 spec:$(wc -c < openapi.json) 字节"
+
+      - name: 推送至 Apifox
+        if: env.APIFOX_ACCESS_TOKEN != ''
+        run: |
+          # deleteUnmatchedResources:与 spec 同步——线上已删除的接口/模型在 Apifox 一并移除
+          jq -Rs '{input: ., options: {deleteUnmatchedResources: true}}' openapi.json > payload.json
+          resp=$(curl -fsS --max-time 120 -X POST \
+            "https://api.apifox.com/v1/projects/8484856/import-openapi" \
+            -H "X-Apifox-Api-Version: 2024-03-28" \
+            -H "Authorization: Bearer $APIFOX_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @payload.json)
+          echo "$resp" | jq .
+          failed=$(echo "$resp" | jq '.data.errors // [] | length')
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::Apifox 导入存在失败项"
+            echo "$resp" | jq -c '.data.errors // []'
+            exit 1
+          fi
+          echo "Apifox 更新完成:$(echo "$resp" | jq -c '.data.counters // {}')"
+
+      - name: 提示配置 token
+        if: env.APIFOX_ACCESS_TOKEN == ''
+        run: echo "::warning::未配置 APIFOX_ACCESS_TOKEN secret,已跳过 API 文档推送(Apifox 账号设置 → API 访问令牌生成后,加入仓库 Actions secrets)"
