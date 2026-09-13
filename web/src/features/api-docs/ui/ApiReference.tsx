@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
+import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 
 import { useOpenApiSpec } from "../api/useOpenApiSpec";
 import { buildDocsModel, operationMatches } from "../lib/build-docs-model";
@@ -82,6 +83,65 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 	const adminCount = model.appendix.reduce((sum, c) => sum + c.operations.length, 0);
 	const showToc = variant === "dialog" && !filtering;
 
+	/* 检索条 sticky 常驻：只属于右栏内容列，滚动中随时可过滤。
+		不用负边距外扩——会撑出 os-host 的横向滚动条 */
+	const searchBlock = (
+		<div className={cn(variant === "dialog" && "sticky top-0 z-10 bg-card py-2")}>
+			<label
+				className={cn(
+					"flex items-center gap-3 border-b border-border/70 pb-2.5 transition-colors focus-within:border-primary/60",
+					variant === "dialog" && "pr-9 sm:pr-11",
+				)}
+			>
+				<Search className="size-4 shrink-0 text-muted-foreground/50" />
+				<input
+					type="search"
+					value={query}
+					onChange={(e) => setQuery(e.target.value)}
+					placeholder="过滤端点、摘要或标签……"
+					className="w-full bg-transparent font-mono text-sm outline-none placeholder:text-muted-foreground/45"
+				/>
+				{filtering ? (
+					<span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums">
+						{countMatches(model, query)}
+					</span>
+				) : null}
+			</label>
+		</div>
+	);
+
+	const endpointBody = (
+		<>
+			{searchBlock}
+			<main
+				className={cn(
+					"min-w-0 space-y-14",
+					isPage && "sm:space-y-16",
+					!isPage && "mt-4 pb-6",
+				)}
+			>
+				{chapters.map((chapter, index) => (
+					<ChapterSection
+						key={chapter.tag}
+						chapter={chapter}
+						query={query}
+						model={model}
+						anchor={chapterAnchor("chapter", String(index + 1).padStart(2, "0"))}
+						marker={String(index + 1).padStart(2, "0")}
+					/>
+				))}
+				<AppendixSection
+					model={model}
+					query={query}
+					chapters={appendix}
+					filtering={filtering}
+					open={appendixOpen}
+					onToggle={() => setAppendixOpen((v) => !v)}
+				/>
+			</main>
+		</>
+	);
+
 	return (
 		/* 弹窗：头部常驻，双栏各自独立滚动（纸壳内容区已交给本组件 overflow-hidden） */
 		<div className={cn("text-foreground", !isPage && "flex h-full min-h-0 flex-col")}>
@@ -154,70 +214,17 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 						onOpenAppendix={() => setAppendixOpen(true)}
 					/>
 				) : null}
-				<div
-					className={cn(
-						"min-w-0",
-						!isPage && "min-h-0 overflow-y-auto overscroll-contain",
-					)}
-					style={!isPage ? { scrollbarWidth: "thin" } : undefined}
-				>
-					{/* 检索条 sticky 常驻：只属于右栏内容列，滚动中随时可过滤 */}
-					<div
-						className={cn(
-							variant === "dialog" && "sticky top-0 z-10 -mx-2 bg-card px-2 py-2",
-						)}
+				{isPage ? (
+					<div className="min-w-0">{endpointBody}</div>
+				) : (
+					/* 站点统一覆盖式滚动条；单一根子节点供内部 ResizeObserver 跟踪内容增高 */
+					<OverlayScroll
+						className="min-w-0 min-h-0"
+						style={{ overscrollBehavior: "contain" }}
 					>
-						<label
-							className={cn(
-								"flex items-center gap-3 border-b border-border/70 pb-2.5 transition-colors focus-within:border-primary/60",
-								variant === "dialog" && "pr-9 sm:pr-11",
-							)}
-						>
-							<Search className="size-4 shrink-0 text-muted-foreground/50" />
-							<input
-								type="search"
-								value={query}
-								onChange={(e) => setQuery(e.target.value)}
-								placeholder="过滤端点、摘要或标签……"
-								className="w-full bg-transparent font-mono text-sm outline-none placeholder:text-muted-foreground/45"
-							/>
-							{filtering ? (
-								<span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums">
-									{countMatches(model, query)}
-								</span>
-							) : null}
-						</label>
-					</div>
-					<main
-						className={cn(
-							"min-w-0 space-y-14",
-							isPage && "sm:space-y-16",
-							!isPage && "mt-4 pb-6",
-						)}
-					>
-						{chapters.map((chapter, index) => (
-							<ChapterSection
-								key={chapter.tag}
-								chapter={chapter}
-								query={query}
-								model={model}
-								anchor={chapterAnchor(
-									"chapter",
-									String(index + 1).padStart(2, "0"),
-								)}
-								marker={String(index + 1).padStart(2, "0")}
-							/>
-						))}
-						<AppendixSection
-							model={model}
-							query={query}
-							chapters={appendix}
-							filtering={filtering}
-							open={appendixOpen}
-							onToggle={() => setAppendixOpen((v) => !v)}
-						/>
-					</main>
-				</div>
+						<div>{endpointBody}</div>
+					</OverlayScroll>
+				)}
 			</div>
 		</div>
 	);
@@ -364,56 +371,59 @@ function TocRail({
 		scrollTo(anchor);
 	};
 	return (
-		<nav
-			aria-label="文档总目"
-			className="min-h-0 overflow-y-auto overscroll-contain pr-2"
-			style={{ scrollbarWidth: "thin", scrollbarGutter: "stable" }}
-		>
-			<p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
-				Contents
-			</p>
-			<ul className="mt-3">
-				{chapters.map((chapter, index) => (
-					<li
-						key={chapter.tag}
-						ref={chapter.tag === activeTag ? activeItemRef : undefined}
-					>
-						<TocItem
-							index={String(index + 1).padStart(2, "0")}
-							label={chapter.tag}
-							count={chapter.operations.length}
-							anchor={chapterAnchor("chapter", String(index + 1).padStart(2, "0"))}
-							active={activeTag === chapter.tag}
-							onJump={jump}
-						/>
-					</li>
-				))}
-			</ul>
-			{appendix.length > 0 ? (
-				<>
-					<hr className="my-3 border-t border-border/40" />
-					<p className="pt-1 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
-						Appendix
+		<nav aria-label="文档总目" className="min-h-0">
+			<OverlayScroll className="h-full">
+				<div className="pr-2">
+					<p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
+						Contents
 					</p>
-					<ul className="mt-1">
-						{appendix.map((chapter, index) => (
+					<ul className="mt-3">
+						{chapters.map((chapter, index) => (
 							<li
 								key={chapter.tag}
 								ref={chapter.tag === activeTag ? activeItemRef : undefined}
 							>
 								<TocItem
-									index={`A${index + 1}`}
+									index={String(index + 1).padStart(2, "0")}
 									label={chapter.tag}
 									count={chapter.operations.length}
-									anchor={chapterAnchor("appendix", `a${index + 1}`)}
+									anchor={chapterAnchor(
+										"chapter",
+										String(index + 1).padStart(2, "0"),
+									)}
 									active={activeTag === chapter.tag}
-									onJump={(anchor) => jump(anchor, true)}
+									onJump={jump}
 								/>
 							</li>
 						))}
 					</ul>
-				</>
-			) : null}
+					{appendix.length > 0 ? (
+						<>
+							<hr className="my-3 border-t border-border/40" />
+							<p className="pt-1 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
+								Appendix
+							</p>
+							<ul className="mt-1">
+								{appendix.map((chapter, index) => (
+									<li
+										key={chapter.tag}
+										ref={chapter.tag === activeTag ? activeItemRef : undefined}
+									>
+										<TocItem
+											index={`A${index + 1}`}
+											label={chapter.tag}
+											count={chapter.operations.length}
+											anchor={chapterAnchor("appendix", `a${index + 1}`)}
+											active={activeTag === chapter.tag}
+											onJump={(anchor) => jump(anchor, true)}
+										/>
+									</li>
+								))}
+							</ul>
+						</>
+					) : null}
+				</div>
+			</OverlayScroll>
 		</nav>
 	);
 }
