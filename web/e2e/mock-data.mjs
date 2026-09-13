@@ -1,18 +1,9 @@
 /**
  * 主题浏览器契约的 mock API 数据与路由表（无 HTTP 监听，供服务端与浏览器契约共用）。
  *
- * 职责只有两个：
- * 1. SSR：`node server.mjs` 按运行时环境变量 VITE_SSR_API_BASE_URL 直连本服务，
- *    保证首页 loader（site-identity）成功、真实 SSR 首帧成立。
- * 2. 浏览器：契约 spec 通过 page.route 读取本模块导出的 HANDLERS 语义
- *    （见 theme-contract.spec.ts 内的 mockFetch），拦截同源 /api/v1/* 请求。
- *
- * 端口取 PORT 环境变量（默认 9410），刻意避开本地开发后端的 9090，
- * 使契约可与 make dev 并存。
+ * 服务端（mock-api.mjs）与浏览器契约（theme-contract.spec.ts 的 page.route）
+ * 共用同一份 envelope 路由表，保证 SSR loader 与浏览器侧请求看到相同数据。
  */
-import { createServer } from "node:http";
-
-const PORT = Number(process.env.PORT || 9410);
 
 /** 首页 loader 必需的站点身份（含卷首引言，驱动 Epigraph 渲染）。 */
 const SITE_IDENTITY = {

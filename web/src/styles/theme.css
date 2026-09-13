@@ -1,6 +1,7 @@
 /*
  * Tailwind v4 theme 映射：Tailwind 工具类（bg-background、text-primary 等）
- * 到运行时 CSS 变量的绑定层。只写映射，不定义 token 值。
+ * 到运行时 CSS 变量的绑定层，以及 --animate-* token 引用的全局 keyframes。
+ * 颜色 token 只写映射，不定义值。
  *
  * 必须用 @theme inline：工具类在使用点直接引用 var(--xxx)，实际值由元素所在
  * 作用域（:root 或方言作用域）求值。去掉 inline 会把映射固定在 :root 提前求值，

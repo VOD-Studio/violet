@@ -34,18 +34,15 @@ const VIEWPORTS = [
 type ThemeMode = "light" | "dark" | "system";
 const THEMES: ThemeMode[] = ["light", "dark", "system"];
 
-/** 主题模式 → cookie 持久化值（SSR 读 cookie 定 <html> 首帧 class）。 */
-const THEME_COOKIE: Record<ThemeMode, string | null> = {
-	light: "light",
-	dark: "dark",
-	system: null,
-};
-
-/** 主题模式 → next-themes localStorage 值（hydration 后 class 不得翻转）。 */
-const THEME_STORAGE: Record<ThemeMode, string | null> = {
-	light: "light",
-	dark: "dark",
-	system: null,
+/**
+ * 主题模式的持久化偏好：cookie 供 SSR 定 <html> 首帧 class，
+ * localStorage 供 next-themes 在 hydration 后保持同一主题（缺一会翻转）。
+ * system 两者皆无，由系统外观经内联脚本解析。
+ */
+const THEME_PREFERENCE: Record<ThemeMode, { cookie: string | null; storage: string | null }> = {
+	light: { cookie: "light", storage: "light" },
+	dark: { cookie: "dark", storage: "dark" },
+	system: { cookie: null, storage: null },
 };
 
 interface Oklch {
@@ -87,6 +84,15 @@ function parseOklabChroma(value: string): { chroma: number; alpha: number } | nu
 	return { chroma: Math.hypot(a, b), alpha: match[3] ? Number(match[3]) : 1 };
 }
 
+/**
+ * expectColor - 断言值为可解析的 oklch 颜色并返回解析结果，供后续彩度/明度断言使用。
+ */
+function expectColor(value: string, label: string): Oklch {
+	const parsed = parseOklch(value);
+	if (!parsed) throw new Error(`${label}应为可解析 oklch 颜色，实际 ${value}`);
+	return parsed;
+}
+
 /** 在页面内读取一批与主题契约相关的计算值（token 字符串与解析后的颜色）。 */
 async function snapshotTheme(page: Page) {
 	return page.evaluate(() => {
@@ -117,13 +123,12 @@ async function snapshotTheme(page: Page) {
 /** 按主题模式准备 context：cookie（SSR 首帧）+ localStorage（next-themes）。 */
 async function newThemeContext(browser: import("@playwright/test").Browser, theme: ThemeMode) {
 	const context = await browser.newContext();
-	const cookie = THEME_COOKIE[theme];
+	const { cookie, storage } = THEME_PREFERENCE[theme];
 	if (cookie) {
 		await context.addCookies([
 			{ name: "theme", value: cookie, url: `http://127.0.0.1:${THEME_SERVER_PORT}` },
 		]);
 	}
-	const storage = THEME_STORAGE[theme];
 	if (storage) {
 		await context.addInitScript(
 			([value]) => {
@@ -172,26 +177,24 @@ async function routeClient(context: BrowserContext, options?: { blockScripts: bo
 function expectDialectSemantics(snapshot: Awaited<ReturnType<typeof snapshotTheme>>) {
 	const resolvedTheme = snapshot.htmlClass.includes("dark") ? "dark" : "light";
 
-	const rootPrimary = parseOklch(snapshot.rootPrimary);
-	const surfacePrimary = parseOklch(snapshot.surfacePrimary);
-	const rootDestructive = parseOklch(snapshot.rootDestructive);
-	const surfaceDestructive = parseOklch(snapshot.surfaceDestructive);
-	const rootBackground = parseOklch(snapshot.rootBackground);
-	expect(rootPrimary, "根作用域 --primary 应为可解析颜色").not.toBeNull();
-	expect(surfacePrimary, "公开方言 --primary 应为可解析颜色").not.toBeNull();
+	const rootPrimary = expectColor(snapshot.rootPrimary, "根作用域 --primary");
+	const surfacePrimary = expectColor(snapshot.surfacePrimary, "公开方言 --primary");
+	const rootDestructive = expectColor(snapshot.rootDestructive, "根作用域 --destructive");
+	expectColor(snapshot.surfaceDestructive, "方言作用域 --destructive");
+	const rootBrand = expectColor(snapshot.rootBrand, "根作用域 --brand");
+	const rootBackground = expectColor(snapshot.rootBackground, "画布 --background");
 
 	// 根作用域：高对比中性主要动作色（工具方言默认形态），且彩度不为 scoped accent 污染
 	expect(
-		rootPrimary!.c,
+		rootPrimary.c,
 		`根作用域主要动作色应为中性，实际 ${snapshot.rootPrimary}`,
 	).toBeLessThanOrEqual(0.01);
-	const extreme = Math.abs(rootPrimary!.l - 0.5);
+	// 高对比 = 明度远离中灰；0.25 排除中间调，只剩近黑（light）/近白（dark）
+	const extreme = Math.abs(rootPrimary.l - 0.5);
 	expect(extreme, "根作用域主要动作色应为高对比（明度远离中灰）").toBeGreaterThan(0.25);
 	// 根作用域 --brand 保持 palette 原彩度：页面 scope 未向上泄漏改写全局 token
-	const rootBrand = parseOklch(snapshot.rootBrand);
-	expect(rootBrand, "根作用域 --brand 应为可解析颜色").not.toBeNull();
 	expect(
-		rootBrand!.c,
+		rootBrand.c,
 		`根作用域品牌强调色不应被页面 scope 泄漏改写，实际 ${snapshot.rootBrand}`,
 	).toBeGreaterThan(0.05);
 
@@ -200,23 +203,21 @@ function expectDialectSemantics(snapshot: Awaited<ReturnType<typeof snapshotThem
 		snapshot.surfaceBrand,
 	);
 	expect(
-		surfacePrimary!.c,
+		surfacePrimary.c,
 		`公开方言主要动作色应有彩度，实际 ${snapshot.surfacePrimary}`,
 	).toBeGreaterThan(0.05);
 
-	// 行为状态色不受方言与 palette 改写
-	expect(surfaceDestructive, "destructive 应为可解析颜色").not.toBeNull();
+	// 行为状态色不受方言与 palette 改写：destructive 全局同一色值且保持危险彩度
 	expect(snapshot.surfaceDestructive, "destructive 在方言作用域不得被改写").toBe(
 		snapshot.rootDestructive,
 	);
-	expect(rootDestructive!.c).toBeGreaterThan(0.05);
+	expect(rootDestructive.c).toBeGreaterThan(0.05);
 
 	// 画布跟随主题：浅色近白、深色近黑
-	expect(rootBackground, "画布 token 应为可解析颜色").not.toBeNull();
 	if (resolvedTheme === "light") {
-		expect(rootBackground!.l).toBeGreaterThan(0.9);
+		expect(rootBackground.l).toBeGreaterThan(0.9);
 	} else {
-		expect(rootBackground!.l).toBeLessThan(0.3);
+		expect(rootBackground.l).toBeLessThan(0.3);
 	}
 }
 
@@ -229,8 +230,6 @@ for (const viewport of VIEWPORTS) {
 
 			// —— 首帧：阻断 JS bundle，SSR HTML + 内联主题脚本先渲染 ——
 			const firstFrameContext = await newThemeContext(browser, theme);
-			if (theme === "system") {
-			}
 			await routeClient(firstFrameContext, { blockScripts: true });
 			const firstPage = await firstFrameContext.newPage();
 			if (theme === "system") {
@@ -256,14 +255,12 @@ for (const viewport of VIEWPORTS) {
 			// 引言竖线：color-mix 解析结果应有彩度且非全透明，跟随 scoped accent
 			const firstBorder = firstFrame.epigraphBorder;
 			expect(firstBorder, "卷首引言竖线应存在").toBeTruthy();
-			const firstBorderParsed = parseOklabChroma(firstBorder!);
+			const firstBorderParsed = parseOklabChroma(firstBorder ?? "");
+			if (!firstBorderParsed)
+				throw new Error(`竖线颜色应为可解析混合色，实际 ${firstBorder}`);
+			expect(firstBorderParsed.alpha).toBeGreaterThan(0.1);
 			expect(
-				firstBorderParsed,
-				`竖线颜色应为可解析混合色，实际 ${firstBorder}`,
-			).not.toBeNull();
-			expect(firstBorderParsed!.alpha).toBeGreaterThan(0.1);
-			expect(
-				firstBorderParsed!.chroma,
+				firstBorderParsed.chroma,
 				`竖线应有彩度（scoped accent），实际 ${firstBorder}`,
 			).toBeGreaterThan(0.05);
 			if (firstFrame.textPrimaryColor) {
@@ -278,8 +275,6 @@ for (const viewport of VIEWPORTS) {
 
 			// —— hydration 后：放行 JS，浏览器侧 API 由 mock 应答 ——
 			const hydratedContext = await newThemeContext(browser, theme);
-			if (theme === "system") {
-			}
 			await routeClient(hydratedContext);
 			const page = await hydratedContext.newPage();
 			if (theme === "system") {

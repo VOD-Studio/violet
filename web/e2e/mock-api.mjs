@@ -3,8 +3,7 @@
  *
  * `node server.mjs` 按运行时环境变量 VITE_SSR_API_BASE_URL 直连本服务，
  * 保证首页 loader（site-identity）成功、真实 SSR 首帧成立。
- * 端口取 PORT 环境变量（默认 9410），刻意避开本地开发后端的 9090，
- * 使契约可与 make dev 并存。浏览器侧拦截复用 mock-data.mjs 的同一份路由表。
+ * 端口默认 9410，避开本地开发后端的 9090，使契约可与 make dev 并存。
  */
 import { createServer } from "node:http";
 import { handle } from "./mock-data.mjs";
