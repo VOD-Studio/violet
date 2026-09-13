@@ -4,6 +4,7 @@ import BlogCascade from "@features/posts/ui/BlogCascade";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
+import { PageHeader } from "@shared/ui/page-header";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -21,12 +22,7 @@ function BlogPage() {
 	const { limit } = Route.useLoaderData();
 	return (
 		<PageShell>
-			<header className="mb-10">
-				<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					All Posts
-				</p>
-				<h1 className="font-mono text-4xl font-bold">博客</h1>
-			</header>
+			<PageHeader eyebrow="All Posts" title="博客" />
 			<BlogCascade limit={limit} />
 		</PageShell>
 	);

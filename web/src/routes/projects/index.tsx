@@ -3,6 +3,7 @@ import { fetchProjects, useProjects } from "@features/projects/api/queries";
 import { ProjectCard } from "@features/projects/ui/ProjectCard";
 import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
 import Empty from "@shared/ui/empty";
+import { PageHeader } from "@shared/ui/page-header";
 import { PageShell } from "@shared/ui/page-shell";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
@@ -17,12 +18,7 @@ const ProjectsPage = () => {
 
 	return (
 		<PageShell>
-			<header className="mb-10">
-				<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					All Projects
-				</p>
-				<h1 className="font-mono text-4xl font-bold">项目</h1>
-			</header>
+			<PageHeader eyebrow="All Projects" title="项目" />
 			{isLoading ? (
 				<ProjectsSkeleton />
 			) : projects.length === 0 ? (
