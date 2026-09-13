@@ -4,6 +4,9 @@ import type * as React from "react";
 
 import { cn } from "@/shared/lib/utils";
 
+// default variant 的动作色走主要动作 token（bg-primary），由所在视觉方言决定其值：
+// 公开内容方言映射到品牌强调色，工具方言保持高对比中性色（web/src/styles/dialects/）。
+// 调用方不通过 className 覆盖 variant 的颜色语义；destructive 等状态色不随 palette 变化。
 const buttonVariants = cva(
     "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
     {

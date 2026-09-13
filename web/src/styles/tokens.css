@@ -1,8 +1,10 @@
 /*
  * 基础语义 token：画布、正文、卡片、浮层、静音表面、边界、输入、焦点，
- * 以及 destructive 等行为状态色。定义在根作用域（:root / .dark），全站共享。
+ * 以及 destructive / warning / success 等行为状态色。定义在根作用域（:root / .dark），全站共享。
  *
- * 行为状态色（destructive）不属于品牌层，任何 palette 与方言都不得改写其含义。
+ * 主要动作色（--primary 系）在基础层默认取高对比中性色，即工具方言所需形态；
+ * 公开内容方言在 dialects/public.css 把动作映射到品牌强调层（palettes/）。
+ * 行为状态色不属于品牌层，任何 palette 与方言都不得改写其含义。
  * 浅色主题为 shadcn neutral 调色板，next-themes 用 attribute="class"，
  * 默认（无 .dark）即浅色。
  */
@@ -30,6 +32,11 @@
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.577 0.245 27.325);
 	--destructive-foreground: oklch(0.985 0 0);
+	/* 行为状态色：固定语义，任何 palette 与方言不得改写含义 */
+	--warning: oklch(0.68 0.16 60);
+	--warning-foreground: oklch(0.985 0 0);
+	--success: oklch(0.577 0.148 156);
+	--success-foreground: oklch(0.985 0 0);
 	--border: oklch(0.922 0 0);
 	--input: oklch(0.922 0 0);
 	--ring: oklch(0.708 0 0);
@@ -85,6 +92,10 @@
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.704 0.191 22.216);
 	--destructive-foreground: oklch(0.985 0 0);
+	--warning: oklch(0.795 0.184 86);
+	--warning-foreground: oklch(0.205 0 0);
+	--success: oklch(0.792 0.209 152);
+	--success-foreground: oklch(0.205 0 0);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);

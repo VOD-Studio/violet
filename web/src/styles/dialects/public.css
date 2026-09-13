@@ -1,68 +1,67 @@
 /*
  * 公开内容方言作用域（Public Content Dialect）。
  *
- * 消费入口：给公开页面的主容器加 .public-surface 或 .home-surface。
- * 在基础 token 之上覆盖主要动作色（--primary）为暖珊瑚品牌强调，
- * 并把光标、滚动条、选区与焦点指示跟随该强调色。
- * 状态色（destructive 等）继承基础层，不被本作用域改写。
+ * 消费入口：给公开页面（首页、博客、系列、图库、人设、About、登录入口等）
+ * 的主容器加 .dialect-public。
+ *
+ * 方言职责：把主要动作色（--primary 系）映射到品牌强调层（palettes/ 提供的
+ * 暖珊瑚），并把光标、滚动条、选区与焦点指示跟随品牌色；画布与表面
+ * 采用首页验证过的近白／柔和炭黑值。行为状态色继承基础层，不被改写。
  */
-.public-surface,
-.home-surface {
+.dialect-public {
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.235 0 0);
 	--card: oklch(1 0 0);
 	--card-foreground: var(--foreground);
 	--popover: oklch(1 0 0);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.625 0.19 25);
-	--primary-foreground: oklch(0.99 0 0);
+	/* 主要动作 → 品牌强调（区别于工具方言的高对比中性动作） */
+	--primary: var(--brand);
+	--primary-foreground: var(--brand-foreground);
 	--secondary: oklch(0.955 0 0);
 	--secondary-foreground: var(--foreground);
 	--muted: oklch(0.96 0 0);
 	--muted-foreground: oklch(0.5 0 0);
-	--accent: oklch(0.95 0.025 25);
-	--accent-foreground: oklch(0.36 0.11 25);
+	/* hover 薄雾表面 → 品牌薄雾 */
+	--accent: var(--brand-wash);
+	--accent-foreground: var(--brand-wash-foreground);
 	--border: oklch(0.895 0 0);
 	--input: oklch(0.87 0 0);
-	--ring: var(--primary);
+	--ring: var(--brand-ring);
 	background: var(--background);
 	color: var(--foreground);
 }
 
-.dark .public-surface,
-.dark .home-surface {
+.dark .dialect-public {
 	--background: oklch(0.145 0 0);
 	--foreground: oklch(0.92 0 0);
 	--card: oklch(0.205 0 0);
 	--card-foreground: var(--foreground);
 	--popover: oklch(0.205 0 0);
 	--popover-foreground: var(--foreground);
-	--primary: oklch(0.72 0.15 22);
-	--primary-foreground: oklch(0.17 0 0);
+	--primary: var(--brand);
+	--primary-foreground: var(--brand-foreground);
 	--secondary: oklch(0.24 0 0);
 	--secondary-foreground: var(--foreground);
 	--muted: oklch(0.235 0 0);
 	--muted-foreground: oklch(0.7 0 0);
-	--accent: oklch(0.25 0.025 22);
-	--accent-foreground: oklch(0.88 0.065 22);
+	--accent: var(--brand-wash);
+	--accent-foreground: var(--brand-wash-foreground);
 	--border: oklch(0.92 0 0 / 12%);
 	--input: oklch(0.92 0 0 / 18%);
-	--ring: var(--primary);
+	--ring: var(--brand-ring);
 }
 
-.public-surface,
-.home-surface {
+.dialect-public {
 	caret-color: var(--primary);
 	scrollbar-color: color-mix(in oklch, var(--primary), transparent 55%) transparent;
 }
 
-.public-surface ::selection,
-.home-surface ::selection {
+.dialect-public ::selection {
 	background: var(--primary);
 	color: var(--primary-foreground);
 }
 
-.public-surface :focus-visible,
-.home-surface :focus-visible {
+.dialect-public :focus-visible {
 	outline-color: var(--primary);
 }

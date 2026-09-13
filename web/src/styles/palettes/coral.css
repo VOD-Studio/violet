@@ -1,0 +1,31 @@
+/*
+ * 公开内容方言的品牌强调层：暖珊瑚默认 palette（唯一启用的官方配色）。
+ *
+ * 品牌层只负责品牌强调色及其派生（前景、hover、薄雾、焦点环），
+ * 由方言作用域映射到主要动作色；画布与行为状态色不在 palette 管辖内。
+ * 未来新增官方预设或自定义强调色时，按同一组 token 提供适配即可，
+ * 页面调用方不感知 palette 名称。
+ */
+:root {
+	/* 暖珊瑚强调（浅色） */
+	--brand: oklch(0.625 0.19 25);
+	/* 品牌色之上的前景（浅色模式下为近白） */
+	--brand-foreground: oklch(0.99 0 0);
+	/* hover 态：同色相加深一档 */
+	--brand-hover: oklch(0.575 0.185 25);
+	/* 薄雾表面：低占比强调背景，只用于轻量 hover 面与弱强调 */
+	--brand-wash: oklch(0.95 0.025 25);
+	/* 薄雾之上的前景：深珊瑚 */
+	--brand-wash-foreground: oklch(0.36 0.11 25);
+	/* 焦点环 */
+	--brand-ring: oklch(0.625 0.19 25);
+}
+
+.dark {
+	--brand: oklch(0.72 0.15 22);
+	--brand-foreground: oklch(0.17 0 0);
+	--brand-hover: oklch(0.67 0.155 22);
+	--brand-wash: oklch(0.25 0.025 22);
+	--brand-wash-foreground: oklch(0.88 0.065 22);
+	--brand-ring: oklch(0.72 0.15 22);
+}

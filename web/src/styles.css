@@ -6,7 +6,7 @@
  * - styles/theme.css        Tailwind 工具类 ↔ 运行时 token 映射（@theme inline）
  * - styles/tokens.css       基础语义 token（:root / .dark）
  * - styles/palettes/        官方配色预设（品牌强调层 token）
- * - styles/dialects/        视觉方言作用域（公开内容等）
+ * - styles/dialects/        视觉方言作用域（公开内容 / 工具 / 沉浸）
  * - styles/base.css         全局基础行为（滚动条、字体、prose 排版契约）
  * - styles/transitions.css  页面转场 View Transitions
  * 组件专属样式一律放组件旁的 *.module.css 或 feature 持有的样式文件，
@@ -22,7 +22,10 @@
 @import "@fontsource/alex-brush/400.css";
 @import "./styles/theme.css";
 @import "./styles/tokens.css";
+@import "./styles/palettes/coral.css";
 @import "./styles/dialects/public.css";
+@import "./styles/dialects/tool.css";
+@import "./styles/dialects/immersive.css";
 @import "./styles/base.css";
 @import "./styles/transitions.css";
 

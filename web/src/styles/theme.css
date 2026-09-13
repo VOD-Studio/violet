@@ -38,9 +38,21 @@
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
 	--color-destructive-foreground: var(--destructive-foreground);
+	--color-warning: var(--warning);
+	--color-warning-foreground: var(--warning-foreground);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+
+	/* 品牌强调层：值由 styles/palettes/ 下的配色预设提供，页面不感知具体 palette */
+	--color-brand: var(--brand);
+	--color-brand-foreground: var(--brand-foreground);
+	--color-brand-hover: var(--brand-hover);
+	--color-brand-wash: var(--brand-wash);
+	--color-brand-wash-foreground: var(--brand-wash-foreground);
+	--color-brand-ring: var(--brand-ring);
 
 	/* 纸面（API 文档纸弹窗与文档页）：暖米纸 + 纸上墨字 */
 	--color-paper: var(--paper);
