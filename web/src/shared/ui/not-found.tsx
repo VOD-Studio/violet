@@ -17,7 +17,9 @@ export default function NotFound({ className }: NotFoundProps) {
 	return (
 		<div
 			className={cn(
-				"container mx-auto flex flex-col items-center justify-center px-6 py-32 text-center",
+				// 自挂公开方言作用域：根 notFoundComponent 处可继承壳层，404 路由体直接
+				// 渲染时也可独立成立；min-h 撑起真实页面高度，避免页脚上跳
+				"dialect-public container mx-auto flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-32 text-center",
 				className,
 			)}
 		>
