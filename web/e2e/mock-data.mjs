@@ -53,6 +53,21 @@ export function handle(method, pathname, search) {
 		const limit = Number(params.get("limit") || 5);
 		return { status: 200, body: paged(PUBLICATIONS.slice(0, limit), limit) };
 	}
+	if (pathname === "/api/v1/posts") {
+		const limit = Number(params.get("limit") || 12);
+		const posts = Array.from({ length: Math.min(limit, 6) }, (_, i) => ({
+			id: `10000000-0000-0000-0000-00000000000${i + 1}`,
+			slug: `contract-post-${i + 1}`,
+			title: `壳层契约文章 ${i + 1}`,
+			excerpt: "用于公开壳层视觉验收的样例摘要。",
+			cover_image: "",
+			view_count: i * 7,
+			published_at: "2026-08-1" + ((i % 9) + 1) + "T10:00:00Z",
+			tags: ["契约"],
+			is_featured: i === 0,
+		}));
+		return { status: 200, body: paged(posts, limit) };
+	}
 	if (pathname === "/api/v1/auth/session") {
 		return { status: 401, body: JSON.stringify({ error: "UNAUTHORIZED", message: "未登录" }) };
 	}
