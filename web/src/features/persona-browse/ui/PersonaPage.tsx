@@ -48,7 +48,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const reduceMotion = useReducedMotion();
 	if (isPending) {
 		return (
-			<main className={`dialect-public ${styles.page}`}>
+			<main className={`${styles.page}`}>
 				<RuaLoading label="正在整理人设档案…" />
 			</main>
 		);
@@ -56,7 +56,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (isError) {
 		return (
-			<main className={`dialect-public ${styles.page} ${styles.empty}`}>
+			<main className={`${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案暂时无法抵达</h1>
 					<p>请稍后再试。</p>
@@ -67,7 +67,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (!persona) {
 		return (
-			<main className={`dialect-public ${styles.page} ${styles.empty}`}>
+			<main className={`${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案尚未公开</h1>
 					<p>当前没有已激活的角色资料。</p>
@@ -94,10 +94,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const allAlts = heroAsset ? [heroAlt, ...galleryAlts] : [];
 
 	return (
-		<main
-			className={`dialect-public ${styles.page}`}
-			data-stale={isPlaceholderData || undefined}
-		>
+		<main className={`${styles.page}`} data-stale={isPlaceholderData || undefined}>
 			{/* --- Hero: 画报封面非对称构图 --- */}
 			<section className={styles.hero} aria-labelledby="persona-name">
 				<div className={styles.heroGlow} aria-hidden />

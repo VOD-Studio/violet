@@ -13,10 +13,7 @@ interface HomeExperienceSkeletonProps {
  */
 export function HomeExperienceSkeleton({ showFootprint = true }: HomeExperienceSkeletonProps) {
 	return (
-		<div
-			aria-busy="true"
-			className="dialect-public overflow-clip bg-background text-foreground"
-		>
+		<div aria-busy="true" className="overflow-clip bg-background text-foreground">
 			<span className="sr-only" role="status">
 				首页正在加载内容
 			</span>

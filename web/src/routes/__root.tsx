@@ -143,6 +143,10 @@ function RootComponent() {
 					className={cn(
 						"flex min-h-screen flex-col",
 						isFullscreenRoute && "h-dvh overflow-hidden",
+						// 公开壳层统一挂 Public Content 方言（PRD-0026 #322）：Header/Footer 与
+						// 公开页面共享同一品牌/动作/焦点语义。/chat 属工具方言，迁移（#328）前
+						// 保持根作用域中性；/admin 走独立布局不经过这里。
+						!isChatRoute && "dialect-public",
 					)}
 				>
 					<AnnouncementBar />
