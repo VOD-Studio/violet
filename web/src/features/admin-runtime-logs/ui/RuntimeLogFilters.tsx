@@ -1,6 +1,7 @@
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
+import { Disclosure } from "@shared/ui/disclosure";
 import { InlineError } from "@shared/ui/inline-error";
 import { type FormEvent, useState } from "react";
 import type { RuntimeLogFilter, RuntimeLogLevel } from "../model/types";
@@ -66,14 +67,13 @@ export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) 
 	}
 
 	return (
-		<details className="min-w-0 border-b border-edge-hairline">
-			<summary className="cursor-pointer rounded-sm py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring">
-				筛选日志
-				<span className="ml-2 font-normal text-muted-foreground">
-					{activeCount ? `已应用 ${activeCount} 项条件` : "全部已采集级别 · 不限时间"}
-				</span>
-			</summary>
-			<form onSubmit={handleSubmit} className="space-y-4 pb-4">
+		<Disclosure
+			label="筛选日志"
+			hint={activeCount ? `已应用 ${activeCount} 项条件` : "全部已采集级别 · 不限时间"}
+			className="border-b border-edge-hairline"
+			contentClassName="pb-4"
+		>
+			<form onSubmit={handleSubmit} className="space-y-4">
 				<fieldset className="space-y-2">
 					<legend className="text-sm">级别（可多选，不选表示全部）</legend>
 					<div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -168,6 +168,6 @@ export function RuntimeLogFilters({ filters, onApply }: RuntimeLogFiltersProps) 
 					</Button>
 				</div>
 			</form>
-		</details>
+		</Disclosure>
 	);
 }

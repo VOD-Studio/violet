@@ -3,6 +3,7 @@ import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Skeleton } from "@shared/ui/base/skeleton";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { Disclosure } from "@shared/ui/disclosure";
 import { InlineError } from "@shared/ui/inline-error";
 import { type FormEventHandler, type ReactNode, useId, useState } from "react";
 import type { SettingsMeta } from "../model/types";
@@ -107,16 +108,12 @@ export function SettingsSubPage({ title, description, state, children }: Setting
 										{meta.error}
 									</p>
 								)}
-								<details className="text-sm">
-									<summary className="cursor-pointer">查看字段来源</summary>
-									<dl className="mt-3 grid gap-2">
+								<Disclosure label="查看字段来源">
+									<dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
 										{Object.entries(meta.sources).map(([key, source]) => (
-											<div
-												key={key}
-												className="flex flex-wrap justify-between gap-2"
-											>
-												<dt className="break-all">{key}</dt>
-												<dd className="text-muted-foreground">
+											<div key={key} className="flex justify-between gap-3">
+												<dt className="wrap-breaks">{key}</dt>
+												<dd className="shrink-0 text-muted-foreground">
 													{source === "database"
 														? "数据库覆盖"
 														: "部署默认"}
@@ -124,7 +121,7 @@ export function SettingsSubPage({ title, description, state, children }: Setting
 											</div>
 										))}
 									</dl>
-								</details>
+								</Disclosure>
 								<div className="flex flex-wrap gap-2">
 									<Button
 										type="button"

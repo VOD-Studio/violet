@@ -5,6 +5,7 @@ import { copyText } from "@shared/lib/clipboard";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { Disclosure } from "@shared/ui/disclosure";
 import { Check, Copy, Globe, KeyRound, X } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -152,14 +153,13 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
 						<>
 							<ClientInstallView view={primary} />
 							{showFallback ? (
-								<details className="group">
-									<summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-										备选安装方式
-									</summary>
-									<div className="mt-2">
-										<ClientInstallView view={fallback} />
-									</div>
-								</details>
+								<Disclosure
+									label="备选安装方式"
+									className="text-muted-foreground"
+									contentClassName="mt-2"
+								>
+									<ClientInstallView view={fallback} />
+								</Disclosure>
 							) : null}
 						</>
 					)}

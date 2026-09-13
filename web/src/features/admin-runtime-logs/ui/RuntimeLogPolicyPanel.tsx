@@ -2,6 +2,7 @@ import { ApiError } from "@shared/api/error";
 import { formatDateTime } from "@shared/lib/date";
 import { formatBytes } from "@shared/lib/formatBytes";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { Disclosure } from "@shared/ui/disclosure";
 import { InlineError } from "@shared/ui/inline-error";
 import { type FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -129,23 +130,18 @@ export function RuntimeLogPolicyPanel({ canManage }: { canManage: boolean }) {
 
 	return (
 		<div className="min-w-0 border-t border-edge-hairline">
-			<details>
-				<summary className="cursor-pointer rounded-sm py-3 text-sm focus-visible:outline-2 focus-visible:outline-ring">
+			<Disclosure
+				label={
 					<span
 						className={
-							overLimit || rotation.last_error
-								? "font-medium text-destructive"
-								: "font-medium"
+							overLimit || rotation.last_error ? "text-destructive" : undefined
 						}
 					>
 						保留与容量
 					</span>
-					<span className="ml-2 text-xs text-muted-foreground">
-						{usage.records.toLocaleString()} /{" "}
-						{currentPolicy.max_records.toLocaleString()} 条 ·{" "}
-						{formatBytes(usage.payload_bytes)} / {formatBytes(currentPolicy.max_bytes)}
-					</span>
-				</summary>
+				}
+				hint={`${usage.records.toLocaleString()} / ${currentPolicy.max_records.toLocaleString()} 条 · ${formatBytes(usage.payload_bytes)} / ${formatBytes(currentPolicy.max_bytes)}`}
+			>
 				<div className="space-y-4 pb-4 text-xs">
 					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
 						<div className="space-y-1">
@@ -239,7 +235,7 @@ export function RuntimeLogPolicyPanel({ canManage }: { canManage: boolean }) {
 						</p>
 					)}
 				</div>
-			</details>
+			</Disclosure>
 			<ConfirmDialog
 				open={rotateOpen}
 				onOpenChange={setRotateOpen}

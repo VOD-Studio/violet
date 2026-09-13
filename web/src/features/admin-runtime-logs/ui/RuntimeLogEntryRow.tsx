@@ -1,5 +1,6 @@
 import { formatDateTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
+import { Disclosure } from "@shared/ui/disclosure";
 import type { RuntimeLogEntry, RuntimeLogLevel } from "../model/types";
 
 const LEVEL_CLASSES: Record<RuntimeLogLevel, string> = {
@@ -40,12 +41,12 @@ export function RuntimeLogEntryRow({ entry }: { entry: RuntimeLogEntry }) {
 					<pre className="m-0 min-w-0 whitespace-pre-wrap wrap-anywhere font-mono text-xs leading-relaxed text-foreground sm:text-[13px]">
 						{entry.message}
 					</pre>
-					<details className="min-w-0 text-xs text-muted-foreground">
-						<summary className="w-fit max-w-full cursor-pointer rounded-sm py-1 focus-visible:outline-2 focus-visible:outline-ring">
-							时间与关联标识
-							{entry.request_id || entry.trace_id ? " · 有关联标识" : ""}
-						</summary>
-						<dl className="mt-2 grid min-w-0 gap-2">
+					<Disclosure
+						label={`时间与关联标识${entry.request_id || entry.trace_id ? " · 有关联标识" : ""}`}
+						className="text-xs text-muted-foreground"
+						contentClassName="mt-2"
+					>
+						<dl className="grid min-w-0 gap-2">
 							{(
 								[
 									["发生时间", entry.occurred_at],
@@ -67,7 +68,7 @@ export function RuntimeLogEntryRow({ entry }: { entry: RuntimeLogEntry }) {
 								) : null,
 							)}
 						</dl>
-					</details>
+					</Disclosure>
 				</div>
 			</article>
 		</li>

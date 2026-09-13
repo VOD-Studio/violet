@@ -1,6 +1,7 @@
 import { ApiError } from "@shared/api/error";
 import { formatDateTime } from "@shared/lib/date";
 import { Skeleton } from "@shared/ui/base/skeleton";
+import { Disclosure } from "@shared/ui/disclosure";
 import { InlineError } from "@shared/ui/inline-error";
 import { useRuntimeLogStatus } from "../api/queries";
 
@@ -62,22 +63,20 @@ export function RuntimeLogStatusPanel() {
 
 	return (
 		<div className="min-w-0">
-			<details>
-				<summary className="cursor-pointer rounded-sm py-3 text-sm focus-visible:outline-2 focus-visible:outline-ring">
+			<Disclosure
+				label={
 					<span
 						className={
 							status.initialization_failed || status.persistence_failed > 0
-								? "font-medium text-destructive"
-								: "font-medium"
+								? "text-destructive"
+								: undefined
 						}
 					>
 						{stateLabel}
 					</span>
-					<span className="ml-2 text-xs text-muted-foreground">
-						zerolog 下限 {status.minimum_level.toUpperCase()} · 队列 {status.queued} /{" "}
-						{status.capacity}
-					</span>
-				</summary>
+				}
+				hint={`zerolog 下限 ${status.minimum_level.toUpperCase()} · 队列 ${status.queued} / ${status.capacity}`}
+			>
 				<div className="space-y-3 pb-4 text-xs">
 					<p className="leading-relaxed text-muted-foreground">
 						zerolog 在源端按此下限输出；标准库日志按 INFO 收录。选择 TRACE
@@ -125,7 +124,7 @@ export function RuntimeLogStatusPanel() {
 						</p>
 					)}
 				</div>
-			</details>
+			</Disclosure>
 			{status.initialization_failed && (
 				<p role="alert" className="pb-3 text-xs text-destructive">
 					采集器初始化失败，当前进程无法写入新日志。请检查服务端运行日志配置；已有历史仍可读取。
