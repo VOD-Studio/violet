@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -11,10 +10,8 @@ import { buildDocsModel, operationMatches } from "../lib/build-docs-model";
 import type { DocChapter, DocsModel } from "../model/types";
 import { OperationRow } from "./OperationRow";
 
-interface ApiReferenceProps {
-	/** dialog：弹窗内嵌（压缩留白、内边距交给纸壳）；page：独立页全幅 */
-	variant: "page" | "dialog";
-}
+/** 站外完整文档（Apifox），弹窗右上角尾链指向这里 */
+const EXTERNAL_DOCS_URL = "https://apidoc.xunrua.top/";
 
 /** 首页同款 spring 参数，章节滚入视口时复用。 */
 const REVEAL_SPRING = { type: "spring" as const, stiffness: 130, damping: 21, mass: 0.9 };
@@ -26,10 +23,10 @@ function chapterAnchor(prefix: string, marker: string): string {
 
 /**
  * API 文档渲染器：公开端点为正文、/admin 端点为折叠附录。
- * 弹窗排版为「书卷总目」：左栏 sticky 总目（scroll-spy 高亮 + 点线引导），
+ * 排版为「书卷总目」：左栏总目（scroll-spy 高亮 + 点线引导），
  * 右栏词条正文；关键字过滤命中 path/摘要/tag，过滤态收起总目全幅聚焦。
  */
-export function ApiReference({ variant }: ApiReferenceProps) {
+export function ApiReference() {
 	const { data, isLoading, isError } = useOpenApiSpec();
 	const [query, setQuery] = useState("");
 	const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -37,10 +34,10 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 	const model = useMemo(() => (data ? buildDocsModel(data) : null), [data]);
 	const filtering = query.trim().length > 0;
 
-	// scroll-spy 的观察目标：弹窗总目的正文各章 + 已展开的附录各章；
+	// scroll-spy 的观察目标：总目的正文各章 + 已展开的附录各章；
 	// 提前 return 之前调用，保 hooks 顺序稳定
 	const spyAnchors = useMemo(() => {
-		if (variant !== "dialog" || filtering || !model) return [];
+		if (filtering || !model) return [];
 		const mainAnchors = model.chapters.map((_, i) =>
 			chapterAnchor("chapter", String(i + 1).padStart(2, "0")),
 		);
@@ -48,7 +45,7 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 			? model.appendix.map((_, i) => chapterAnchor("appendix", `a${i + 1}`))
 			: [];
 		return [...mainAnchors, ...appendixAnchors];
-	}, [variant, filtering, model, appendixOpen]);
+	}, [filtering, model, appendixOpen]);
 	useScrollSpy(spyAnchors, setActiveTag);
 
 	if (isLoading) {
@@ -72,14 +69,13 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 		);
 	}
 
-	const isPage = variant === "page";
 	const withMatches = (chapters: DocChapter[]) =>
 		filtering
 			? chapters.filter((c) => c.operations.some((op) => operationMatches(op, c.tag, query)))
 			: chapters;
 	const chapters = withMatches(model.chapters);
 	const appendix = withMatches(model.appendix);
-	const showToc = variant === "dialog" && !filtering;
+	const showToc = !filtering;
 
 	/* 检索条置于头部之下、双栏之上，常驻可见（不在滚动容器内，无需 sticky）。
 		右端常驻计数：空闲显总端点数，过滤显「命中 / 总数」 */
@@ -107,9 +103,7 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 	);
 
 	const endpointBody = (
-		<main
-			className={cn("min-w-0 space-y-14", isPage && "sm:space-y-16", !isPage && "mt-5 pb-6")}
-		>
+		<main className="mt-5 min-w-0 space-y-14 pb-6">
 			{chapters.map((chapter, index) => (
 				<ChapterSection
 					key={chapter.tag}
@@ -132,41 +126,29 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 	);
 
 	return (
-		/* 弹窗：头部常驻，双栏各自独立滚动（纸壳内容区已交给本组件 overflow-hidden） */
-		<div className={cn("text-foreground", !isPage && "flex h-full min-h-0 flex-col")}>
-			<header className={cn(isPage ? "pb-8" : "pr-10 pb-2 sm:pr-14")}>
+		/* 头部常驻，双栏各自独立滚动（纸壳内容区已交给本组件 overflow-hidden） */
+		<div className="flex h-full min-h-0 flex-col text-foreground">
+			<header className="pr-10 pb-2 sm:pr-14">
 				<p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
 					API Reference
 				</p>
 				<div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-					<h1
-						className={cn(
-							"font-normal tracking-[-0.02em]",
-							isPage ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl",
-						)}
-					>
+					<h1 className="text-3xl font-normal tracking-[-0.02em] sm:text-4xl">
 						{model.title}
 					</h1>
-					{variant === "dialog" ? (
-						<Link
-							to="/docs"
-							className="ml-auto inline-flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-						>
-							独立页
-							<ArrowUpRight className="size-3.5" />
-						</Link>
-					) : null}
+					<a
+						href={EXTERNAL_DOCS_URL}
+						target="_blank"
+						rel="noreferrer"
+						className="ml-auto inline-flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+					>
+						完整文档
+						<ArrowUpRight className="size-3.5" />
+					</a>
 				</div>
 				{model.version ? (
 					<p className="mt-3 font-mono text-xs text-muted-foreground/60">
 						v{model.version.replace(/^v/, "")}
-					</p>
-				) : null}
-
-				{/* 描述仅独立页保留：弹窗空间留给正文 */}
-				{isPage && model.description ? (
-					<p className="mt-4 max-w-2xl font-serif text-sm leading-relaxed text-muted-foreground sm:text-base">
-						{model.description}
 					</p>
 				) : null}
 			</header>
@@ -175,9 +157,8 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 
 			<div
 				className={cn(
-					isPage && "mt-7",
 					/* 始终 grid：过滤态单列也让 OverlayScroll 作为网格项被拉伸限高，否则高度随内容撑开无法滚动 */
-					!isPage && "mt-5 min-h-0 flex-1 grid",
+					"mt-5 min-h-0 flex-1 grid",
 					showToc && "grid-cols-[13.5rem_minmax(0,1fr)] gap-10",
 				)}
 			>
@@ -190,17 +171,13 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 						onOpenAppendix={() => setAppendixOpen(true)}
 					/>
 				) : null}
-				{isPage ? (
-					<div className="min-w-0">{endpointBody}</div>
-				) : (
-					/* 站点统一覆盖式滚动条；单一根子节点供内部 ResizeObserver 跟踪内容增高 */
-					<OverlayScroll
-						className="min-w-0 min-h-0"
-						style={{ overscrollBehavior: "contain" }}
-					>
-						<div>{endpointBody}</div>
-					</OverlayScroll>
-				)}
+				{/* 站点统一覆盖式滚动条；单一根子节点供内部 ResizeObserver 跟踪内容增高 */}
+				<OverlayScroll
+					className="min-w-0 min-h-0"
+					style={{ overscrollBehavior: "contain" }}
+				>
+					<div>{endpointBody}</div>
+				</OverlayScroll>
 			</div>
 		</div>
 	);
@@ -208,7 +185,7 @@ export function ApiReference({ variant }: ApiReferenceProps) {
 
 /**
  * 总目 scroll-spy：锚点章节进入视口顶部带时置为当前章；
- * anchors 变化（附录展开挂出新章）时重建观察。独立页/过滤态传空数组即停用。
+ * anchors 变化（附录展开挂出新章）时重建观察。过滤态传空数组即停用。
  */
 function useScrollSpy(anchors: string[], setActiveTag: (tag: string | null) => void) {
 	useEffect(() => {

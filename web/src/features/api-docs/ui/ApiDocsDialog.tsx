@@ -23,7 +23,7 @@ export function ApiDocsDialog() {
 			/* 滚动交给内部双栏（总目/正文各自独立滚动），纸壳内容区自身不滚 */
 			contentClassName="overflow-hidden"
 		>
-			<ApiReference variant="dialog" />
+			<ApiReference />
 		</PaperDialog>
 	);
 }
