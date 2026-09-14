@@ -13,15 +13,24 @@
  * Markdown 图片语法 ![]() 降级为链接，不渲染 <img>：私聊场景下任意第三方图片
  * URL 会在打开消息时静默发起请求，泄露 IP/在线状态，这里没有图片代理能挡；
  * 真正的图片分享走既有的图片消息类型（上传 + 缩略图）。
+ *
+ * @ 提及渲染成跳用户主页的行内药丸：提到本人时加深底色（`data-mention-self`），
+ * 与「谁在叫我」这一唯一需要视觉抢眼的信息对应。
  */
 import type { CommentEmoteRef } from "@entities/comment/model/types";
 import { cn } from "@shared/lib/utils";
+import { Link } from "@tanstack/react-router";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { lazy, Suspense, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
-import { rehypeChatEmoji, rehypeChatInlineImage, remarkChatInline } from "../lib/chat-markdown";
-import type { ChatMedia } from "../model/types";
+import {
+	rehypeChatEmoji,
+	rehypeChatInlineImage,
+	rehypeChatMention,
+	remarkChatInline,
+} from "../lib/chat-markdown";
+import type { ChatMedia, ChatUser } from "../model/types";
 
 const LazyCodeCard = lazy(() =>
 	import("@shared/ui/code-preview/components/CodeCard").then((m) => ({ default: m.CodeCard })),
@@ -84,6 +93,34 @@ function chatImg({
 	);
 }
 
+/**
+ * data-mention 节点（见 chat-markdown.ts）渲染成跳用户主页的行内药丸；
+ * 其余 span 原样透传（表情兜底文本节点等）。
+ */
+function chatSpan({
+	children,
+	...rest
+}: ComponentProps<NonNullable<Exclude<Components["span"], string>>>) {
+	const props = rest as Record<string, unknown>;
+	const username = props["data-mention-username"];
+	if (typeof username !== "string") return <span {...rest}>{children}</span>;
+	const self = props["data-mention-self"] === "true";
+	return (
+		<Link
+			className={cn(
+				"rounded px-1 font-medium transition-colors hover:bg-current/20",
+				self ? "bg-current/25 font-semibold" : "bg-current/10",
+			)}
+			data-mention={props["data-mention"] as string | undefined}
+			data-mention-self={self ? "true" : undefined}
+			params={{ username }}
+			to="/users/$username"
+		>
+			{children}
+		</Link>
+	);
+}
+
 const chatMarkdownComponents: Components = {
 	p: ({ children }) => <p className="my-1 first:mt-0 last:mb-0">{children}</p>,
 	a: ({ children, href }) => (
@@ -117,6 +154,8 @@ const chatMarkdownComponents: Components = {
 	h6: HeadingFallback,
 	// 表情占位符替换出的 img（带 data-emoji 标记，见 chat-markdown.ts）不受影响，正常渲染。
 	img: chatImg,
+	// 提及占位符替换出的 span（带 data-mention 标记，见 chat-markdown.ts）渲染成用户主页链接。
+	span: chatSpan,
 	// 围栏块走 CodeCard（shiki 高亮 + 复制），懒加载；行内走纯样式。pre 透传给 code 分支。
 	pre: ({ children }) => <>{children}</>,
 	code: ({ className, children }) => {
@@ -151,6 +190,10 @@ export interface ChatMessageContentProps {
 	content: string;
 	/** 表情映射表，key 为 "[name]" */
 	emote?: Record<string, CommentEmoteRef>;
+	/** 提及映射表，key 为完整占位符 "@(username:id)"；缺省时占位符退化为 @username 文本 */
+	mentions?: Record<string, ChatUser>;
+	/** 当前查看者 ID，用于把提到本人的药丸标成 data-mention-self */
+	viewerID?: string;
 	className?: string;
 	/** 消息自带的上传媒体列表：`![img:id]` 占位符命中任一 id 时还原为内联图片 */
 	inlineMedia?: ChatMedia[];
@@ -161,11 +204,20 @@ export interface ChatMessageContentProps {
 export function ChatMessageContent({
 	content,
 	emote,
+	mentions,
+	viewerID,
 	className,
 	inlineMedia,
 	onImage,
 }: ChatMessageContentProps) {
-	const rehypePlugins = useMemo(() => [rehypeChatEmoji(emote), rehypeChatInlineImage()], [emote]);
+	const rehypePlugins = useMemo(
+		() => [
+			rehypeChatEmoji(emote),
+			rehypeChatInlineImage(),
+			rehypeChatMention(mentions, viewerID),
+		],
+		[emote, mentions, viewerID],
+	);
 	const components = useMemo<Components>(() => {
 		if (!inlineMedia?.length) return chatMarkdownComponents;
 		const mediaByID: Record<string, ChatMedia> = {};

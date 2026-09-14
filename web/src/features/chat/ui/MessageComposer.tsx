@@ -14,11 +14,14 @@ import { LoaderCircle, MessageSquareQuote, Reply, Send, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSendChatMessage } from "../api/queries";
+import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
 import type { ChatMessage } from "../model/types";
 
 export interface MessageComposerProps {
 	conversationID: string;
+	/** 当前用户 ID，用于把自己从提及候选里剔除 */
+	currentUserID: string;
 	/** 落定到当前会话的待发分享；非空时优先展示分享 banner 并接管发送逻辑。 */
 	pendingShare: PendingChatShare | null;
 	replyTarget: ChatMessage | null;
@@ -28,6 +31,7 @@ export interface MessageComposerProps {
 
 export function MessageComposer({
 	conversationID,
+	currentUserID,
 	pendingShare,
 	replyTarget,
 	onCancelReply,
@@ -40,6 +44,7 @@ export function MessageComposer({
 	const clearPendingShare = useShareTweetStore((s) => s.clearPending);
 	const { notifyTyping, notifyStopped } = useChatTypingBroadcaster(conversationID);
 	const composerRef = useRef<HTMLDivElement>(null);
+	const mentionCandidates = useMentionCandidates(conversationID, currentUserID);
 
 	useEffect(() => {
 		if (content.trim()) {
@@ -214,6 +219,7 @@ export function MessageComposer({
 					resetNonce={resetNonce}
 					onImagesChange={setImages}
 					onUploadingChange={setUploading}
+					mentionCandidates={mentionCandidates}
 					className="rounded-3xl border border-input bg-card transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
 					toolbarEnd={
 						<Button

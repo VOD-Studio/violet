@@ -11,8 +11,12 @@
  * rehypeChatEmoji 在 markdown 渲染出的 hast 树上做表情替换：[name] 占位符可能
  * 嵌在粗体/斜体标记内部，必须在解析后的树上按文本节点处理，不能像
  * EmojiText 那样对原始字符串做正则替换（会被 Markdown 解析打断）。
+ *
+ * rehypeChatMention 同理在 hast 上把 `@(username:id)` 占位符换成 data-mention 节点，
+ * 渲染成什么由 ChatMessageContent 的 span 覆盖决定（提及要跳用户主页，插件里造不出路由链接）。
  */
 import type { CommentEmoteRef } from "@entities/comment/model/types";
+import { mentionTokenPattern } from "@entities/user/model/mention-token";
 import { isImageURL } from "@shared/lib/url";
 import type { Element, ElementContent, Root as HastRoot, Text as HastText } from "hast";
 import type { Root as MdastRoot } from "mdast";
@@ -22,6 +26,7 @@ import { gfmAutolinkLiteral } from "micromark-extension-gfm-autolink-literal";
 import { gfmStrikethrough } from "micromark-extension-gfm-strikethrough";
 import type { Processor } from "unified";
 import { visit } from "unist-util-visit";
+import type { ChatUser } from "../model/types";
 
 export function remarkChatInline(this: unknown): void {
 	const self = this as Processor<MdastRoot>;
@@ -159,5 +164,68 @@ function inlineImageNode(id: string): Element {
 			loading: "lazy",
 		},
 		children: [],
+	};
+}
+
+const MENTION_TOKEN = mentionTokenPattern();
+
+/**
+ * 提及占位符替换插件工厂：`@(username:id)` 转为带 data-mention 的 span 节点。
+ *
+ * mentions 里查不到该 token（用户已注销）时退化成 `@username` 纯文本——占位符原样
+ * 吐出来不可读，而 username 段本身就是可读的。
+ */
+export function rehypeChatMention(
+	mentions: Record<string, ChatUser> | undefined,
+	viewerID: string | undefined,
+) {
+	return () => (tree: HastRoot) => {
+		visit(tree, "text", (node, index, parent) => {
+			if (index === undefined || !parent) return;
+			const replacement = splitMentionText(node.value, mentions, viewerID);
+			if (replacement) parent.children.splice(index, 1, ...replacement);
+		});
+	};
+}
+
+function splitMentionText(
+	text: string,
+	mentions: Record<string, ChatUser> | undefined,
+	viewerID: string | undefined,
+): ElementContent[] | null {
+	MENTION_TOKEN.lastIndex = 0;
+	let lastIndex = 0;
+	let matched = false;
+	const nodes: ElementContent[] = [];
+	for (let match = MENTION_TOKEN.exec(text); match; match = MENTION_TOKEN.exec(text)) {
+		const [fullMatch, username, userID] = match;
+		matched = true;
+		if (match.index > lastIndex) nodes.push(textNode(text.slice(lastIndex, match.index)));
+		const user = mentions?.[fullMatch];
+		nodes.push(
+			mentionNode(
+				user?.id ?? userID,
+				user?.username ?? username,
+				user?.display_name || username,
+				!!viewerID && (user?.id ?? userID) === viewerID,
+			),
+		);
+		lastIndex = match.index + fullMatch.length;
+	}
+	if (!matched) return null;
+	if (lastIndex < text.length) nodes.push(textNode(text.slice(lastIndex)));
+	return nodes;
+}
+
+function mentionNode(userID: string, username: string, label: string, self: boolean): Element {
+	return {
+		type: "element",
+		tagName: "span",
+		properties: {
+			"data-mention": userID,
+			"data-mention-username": username,
+			...(self ? { "data-mention-self": "true" } : {}),
+		},
+		children: [textNode(`@${label}`)],
 	};
 }

@@ -2,7 +2,7 @@
  * useRichTextInput - contentEditable 富文本输入 Hook
  *
  * 管理 contentEditable div 的核心逻辑：
- * - DOM ↔ Markdown 双向转换（[name] ↔ img/span 元素，![img:id] ↔ 图片节点）
+ * - DOM ↔ Markdown 双向转换（[name] ↔ img/span 元素，![img:id] ↔ 图片节点，@(username:id) ↔ 提及节点）
  * - Selection/Range API 管理光标位置
  * - emoji / 图片插入到光标处
  * - 粘贴强制纯文本
@@ -14,10 +14,13 @@
  * 内嵌图片（仅 inlineImages 消费方使用）用 data-image 标记：上传中/失败态是
  * contentEditable=false 的 <span>（叠加进度/失败态，可能有覆盖层子节点，需禁用
  * 编辑保证退格整体删除）；完成态是纯 <img>（与 emoji 图片节点同构，无子节点天然原子）。
+ * @ 提及（仅传入 mentionCandidates 的消费方使用）用 data-mention 标记：contentEditable=false
+ * 的 <span>，无子节点天然原子，序列化回 @(username:userID) 占位符。
  */
 
 import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
+import { humanizeMentionTokens, mentionTokenPattern } from "@entities/user/model/mention-token";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
 import { cn } from "@shared/lib/utils";
@@ -36,6 +39,10 @@ export interface UseRichTextInputOptions {
 	resolveImage?: (id: string) => string | undefined;
 	/** 内嵌图片节点处于失败态被点击移除时的回调 */
 	onImageRemove?: (id: string) => void;
+	/** 按用户 ID 查提及展示名，供 markdownToHtml 从 `@(username:id)` 占位符还原提及节点；查不到时回退 token 里的 username */
+	resolveMention?: (userID: string) => string | undefined;
+	/** 光标前的 `@查询词` 变化回调；null 表示光标已离开提及触发态 */
+	onMentionQueryChange?: (query: string | null) => void;
 }
 
 export type ImageNodeStatus = "uploading" | "done" | "error";
@@ -46,6 +53,8 @@ export interface UseRichTextInputReturn {
 	/** 在光标处插入/原地更新一个内嵌图片节点；同一 id 重复调用会替换已有节点（uploading → done/error）。
 	 * replaceId 传入时按它定位旧节点替换为新 id 节点（上传完成把本地 uuid 换键为服务端 file_id）。 */
 	insertImage: (id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void;
+	/** 在光标处插入提及节点，同时吃掉触发它的 `@查询词` 文本 */
+	insertMention: (userID: string, username: string, displayName: string) => void;
 	handleInput: () => void;
 	handlePaste: (e: React.ClipboardEvent) => void;
 	handleKeyDown: (e: React.KeyboardEvent) => void;
@@ -53,8 +62,17 @@ export interface UseRichTextInputReturn {
 	focus: () => void;
 }
 
-/** 匹配 `![img:<id>]` 图片占位符或 `[name]` emoji 占位符；图片分支优先，二者互不误吃。 */
-const TOKEN_PATTERN = /!\[img:([^\]]+)\]|\[([^\]]+)\]/g;
+/**
+ * 匹配 `![img:<id>]` 图片占位符、`[name]` emoji 占位符或 `@(username:id)` 提及占位符；
+ * 图片分支优先，三者互不误吃。捕获组依次为图片 id、emoji token 内容、提及 username、提及 userID。
+ */
+const TOKEN_PATTERN = new RegExp(
+	`!\\[img:([^\\]]+)\\]|\\[([^\\]]+)\\]|${mentionTokenPattern().source}`,
+	"g",
+);
+
+/** 提及节点样式：insertMention 造的节点与 markdownToHtml 还原的节点共用一套类名。 */
+const MENTION_NODE_CLASS = "rounded bg-primary/10 px-1 font-medium text-primary";
 
 /** 单独匹配图片占位符，供 extractImageIds 复用。 */
 const IMAGE_TOKEN_PATTERN = /!\[img:([^\]]+)\]/g;
@@ -80,14 +98,17 @@ export function stripImagePlaceholders(markdown: string): string {
 const EMOJI_PLACEHOLDER_PATTERN = /\[([^\]]+)\]/g;
 
 /**
- * 剥离 markdown 中的图片占位符与表情占位符，只留环绕文字——供无 emote 映射可查的
- * 纯文本预览场景复用（回复/引用预览、会话列表最后一条消息摘要）：这些场景拿不到
- * 表情解析结果，裸吐占位符文本（如 `[1:<uuid>]`）不可读，剥离比展示更合适。
+ * 剥离 markdown 中的图片占位符与表情占位符、把提及占位符还原成 `@username`，只留
+ * 可读文字——供无 emote 映射可查的纯文本预览场景复用（回复/引用预览、会话列表最后
+ * 一条消息摘要）：这些场景拿不到表情解析结果，裸吐占位符文本（如 `[1:<uuid>]`）不
+ * 可读，剥离比展示更合适；提及不同，`@username` 本身就是可读的。
  * 顺序不可换：先剥图片再剥表情——图片占位符自身形如 `[img:<id>]`，颠倒顺序会把
  * 开头的 `!` 落单残留。
  */
 export function stripPlaceholdersForPreview(markdown: string): string {
-	return stripImagePlaceholders(markdown).replace(EMOJI_PLACEHOLDER_PATTERN, "");
+	return humanizeMentionTokens(
+		stripImagePlaceholders(markdown).replace(EMOJI_PLACEHOLDER_PATTERN, ""),
+	);
 }
 
 function escapeHtml(text: string): string {
@@ -115,6 +136,8 @@ export function useRichTextInput({
 	onPasteFiles,
 	resolveImage,
 	onImageRemove,
+	resolveMention,
+	onMentionQueryChange,
 }: UseRichTextInputOptions): UseRichTextInputReturn {
 	const contentRef = useRef<HTMLDivElement>(null);
 	const lastSyncedRef = useRef("");
@@ -122,10 +145,14 @@ export function useRichTextInput({
 	const onSubmitRef = useRef(onSubmit);
 	const resolveImageRef = useRef(resolveImage);
 	const onImageRemoveRef = useRef(onImageRemove);
+	const resolveMentionRef = useRef(resolveMention);
+	const onMentionQueryChangeRef = useRef(onMentionQueryChange);
 	onChangeRef.current = onChange;
 	onSubmitRef.current = onSubmit;
 	resolveImageRef.current = resolveImage;
 	onImageRemoveRef.current = onImageRemove;
+	resolveMentionRef.current = resolveMention;
+	onMentionQueryChangeRef.current = onMentionQueryChange;
 
 	const { data: groups = [] } = useAllEmojis();
 
@@ -147,7 +174,7 @@ export function useRichTextInput({
 			TOKEN_PATTERN.lastIndex = 0;
 			let match: RegExpExecArray | null = TOKEN_PATTERN.exec(markdown);
 			while (match !== null) {
-				const [fullMatch, imageId, emojiToken] = match;
+				const [fullMatch, imageId, emojiToken, mentionUsername, mentionUserID] = match;
 				if (match.index > lastIndex) {
 					html += escapeHtml(markdown.slice(lastIndex, match.index)).replace(
 						/\n/g,
@@ -170,6 +197,9 @@ export function useRichTextInput({
 						const text = emoji?.text_content || fullMatch;
 						html += `<span data-emoji="${escapeHtml(fullMatch)}">${escapeHtml(text)}</span>`;
 					}
+				} else if (mentionUserID !== undefined && mentionUsername !== undefined) {
+					const display = resolveMentionRef.current?.(mentionUserID) || mentionUsername;
+					html += `<span data-mention="${escapeHtml(mentionUserID)}" data-mention-username="${escapeHtml(mentionUsername)}" contenteditable="false" class="${MENTION_NODE_CLASS}">@${escapeHtml(display)}</span>`;
 				}
 				lastIndex = match.index + fullMatch.length;
 				match = TOKEN_PATTERN.exec(markdown);
@@ -198,6 +228,11 @@ export function useRichTextInput({
 						if (el.dataset.imageStatus === "done") {
 							markdown += `![img:${imageId}]`;
 						}
+						return;
+					}
+					const mentionUserID = el.dataset.mention;
+					if (mentionUserID) {
+						markdown += `@(${el.dataset.mentionUsername}:${mentionUserID})`;
 						return;
 					}
 					const emojiName = el.dataset.emoji;
@@ -328,10 +363,53 @@ export function useRichTextInput({
 		[disabled, htmlToMarkdown],
 	);
 
+	const insertMention = useCallback(
+		(userID: string, username: string, displayName: string) => {
+			const div = contentRef.current;
+			if (!div || disabled) return;
+			div.focus();
+
+			const element = createMentionElement(userID, username, displayName);
+			// 提及节点后补一个空格：紧接着打字不会粘在药丸上，也给了光标一个落点。
+			// 用 NBSP 而非普通空格——行尾的普通空格会被浏览器折叠掉，随后打字就贴上去了；
+			// NBSP 参与 trim（提及独占一条消息时不会留白），也算 \s（后面再打 @ 仍能触发候选）。
+			const spacer = document.createTextNode("\u00a0");
+
+			const selection = window.getSelection();
+			if (!selection || selection.rangeCount === 0 || !div.contains(selection.anchorNode)) {
+				div.append(element, spacer);
+			} else {
+				const range = selection.getRangeAt(0);
+				// 触发候选浮层的 "@查询词" 仍是普通文本，插入前先吃掉，否则与提及节点重复。
+				const container = range.startContainer;
+				if (container.nodeType === Node.TEXT_NODE) {
+					const text = container.textContent ?? "";
+					const at = text.lastIndexOf("@", Math.max(range.startOffset - 1, 0));
+					if (at >= 0) range.setStart(container, at);
+				}
+				range.deleteContents();
+				range.insertNode(spacer);
+				range.insertNode(element);
+				range.setStartAfter(spacer);
+				range.collapse(true);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			}
+
+			lastSyncedRef.current = htmlToMarkdown();
+			onChangeRef.current?.(lastSyncedRef.current);
+			onMentionQueryChangeRef.current?.(null);
+		},
+		[disabled, htmlToMarkdown],
+	);
+
 	const handleInput = useCallback(() => {
 		const markdown = htmlToMarkdown();
 		lastSyncedRef.current = markdown;
 		onChangeRef.current?.(markdown);
+		if (onMentionQueryChangeRef.current && contentRef.current) {
+			onMentionQueryChangeRef.current(activeMentionQuery(contentRef.current));
+		}
 	}, [htmlToMarkdown]);
 
 	const handlePaste = useCallback(
@@ -407,12 +485,43 @@ export function useRichTextInput({
 		contentRef,
 		insertEmoji,
 		insertImage,
+		insertMention,
 		handleInput,
 		handlePaste,
 		handleKeyDown,
 		clear,
 		focus,
 	};
+}
+
+/**
+ * 提及节点：contentEditable=false 的 <span>，无子节点，退格一次整体删除。
+ * data-mention 存用户 ID（序列化依据），data-mention-username 存用户名（解析兜底）。
+ */
+function createMentionElement(userID: string, username: string, displayName: string): HTMLElement {
+	const span = document.createElement("span");
+	span.textContent = `@${displayName || username}`;
+	span.dataset.mention = userID;
+	span.dataset.mentionUsername = username;
+	span.contentEditable = "false";
+	span.className = MENTION_NODE_CLASS;
+	return span;
+}
+
+/**
+ * 光标前正在输入的 `@查询词`；null 表示光标不处于提及触发态。
+ *
+ * 触发条件：`@` 位于文本节点开头或空白之后（词首），且其后到光标之间没有空白与第二个 `@`。
+ */
+function activeMentionQuery(root: HTMLElement): string | null {
+	const selection = window.getSelection();
+	if (!selection?.isCollapsed || selection.rangeCount === 0) return null;
+	const range = selection.getRangeAt(0);
+	const container = range.startContainer;
+	if (container.nodeType !== Node.TEXT_NODE || !root.contains(container)) return null;
+	const before = (container.textContent ?? "").slice(0, range.startOffset);
+	const match = /(?:^|\s)@([^\s@]{0,32})$/.exec(before);
+	return match ? match[1] : null;
 }
 
 function createEmojiElement(name: string, display: string, size?: number): HTMLElement {

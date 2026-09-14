@@ -185,7 +185,11 @@ export function MessageBubble({
 						<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
 					)}
 					{editing && !message.is_deleted ? (
-						<MessageEditComposer message={message} onClose={() => setEditing(false)} />
+						<MessageEditComposer
+							currentUserID={currentUserID}
+							message={message}
+							onClose={() => setEditing(false)}
+						/>
 					) : message.is_deleted ? (
 						<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
 							<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
@@ -196,6 +200,8 @@ export function MessageBubble({
 							<ChatMessageContent
 								content={imageBubbleContent(message)}
 								emote={mergedEmote}
+								mentions={message.mentions}
+								viewerID={currentUserID}
 								inlineMedia={message.media}
 								onImage={onImage}
 								className="wrap-break-word"
@@ -214,6 +220,8 @@ export function MessageBubble({
 									<ChatMessageContent
 										content={message.content}
 										emote={mergedEmote}
+										mentions={message.mentions}
+										viewerID={currentUserID}
 										className="wrap-break-word"
 									/>
 									<BubbleTimestamp
@@ -233,6 +241,8 @@ export function MessageBubble({
 							<ChatMessageContent
 								content={message.content ?? ""}
 								emote={mergedEmote}
+								mentions={message.mentions}
+								viewerID={currentUserID}
 								className="wrap-break-word"
 							/>
 							<BubbleTimestamp

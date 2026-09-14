@@ -43,6 +43,7 @@ vi.mock("../../api/queries", () => ({
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useEditChatMessage: () => ({ mutate: vi.fn(), isPending: false }),
 	useChatMessageReaders: () => receiptMocks.readers,
+	useChatMembers: () => ({ data: [] }),
 }));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
@@ -92,12 +93,13 @@ function renderBubble(
 	message: ChatMessage,
 	onImage: (media: ChatMedia) => void = () => {},
 	conversationKind: ConversationKind = "direct",
+	currentUserID = "u_1",
 ) {
 	return render(
 		<MessageBubble
 			animateIn={false}
 			conversationKind={conversationKind}
-			currentUserID="u_1"
+			currentUserID={currentUserID}
 			emoteMap={{}}
 			highlighted={false}
 			layout={false}
@@ -172,6 +174,61 @@ describe("MessageBubble", () => {
 
 		expect(screen.getByText("你好世界")).toBeTruthy();
 		expect(screen.queryByText(/\[1:/)).toBeNull();
+	});
+
+	it("提及占位符渲染成跳用户主页的链接，展示当前显示名", () => {
+		const peerID = "00000000-0000-0000-0000-000000000002";
+		const message = imageMessage(undefined);
+		message.type = "text";
+		message.media = undefined;
+		message.content = `@(bob:${peerID}) 看下`;
+		message.mentions = {
+			[`@(bob:${peerID})`]: {
+				id: peerID,
+				username: "bob",
+				display_name: "Bob",
+				avatar_url: "",
+			},
+		};
+
+		const { container } = renderBubble(message);
+
+		const chip = container.querySelector("a[data-mention]");
+		expect(chip?.textContent).toBe("@Bob");
+		expect(chip?.getAttribute("href")).toBe("/users/bob");
+		expect(container.textContent).not.toContain("@(bob:");
+	});
+
+	it("提到本人的占位符带 data-mention-self 标记（高亮依据）", () => {
+		const selfID = "00000000-0000-0000-0000-00000000000a";
+		const message = imageMessage(undefined);
+		message.type = "text";
+		message.media = undefined;
+		message.content = `@(alice:${selfID}) 在吗`;
+		message.mentions = {
+			[`@(alice:${selfID})`]: {
+				id: selfID,
+				username: "alice",
+				display_name: "Alice",
+				avatar_url: "",
+			},
+		};
+
+		const { container } = renderBubble(message, () => {}, "direct", selfID);
+
+		expect(container.querySelector("[data-mention-self]")).toBeTruthy();
+	});
+
+	it("mentions 查不到的占位符退化为 @username 文本，不裸吐 token", () => {
+		const message = imageMessage(undefined);
+		message.type = "text";
+		message.media = undefined;
+		message.content = "@(ghost:00000000-0000-0000-0000-000000000009) 还在？";
+
+		const { container } = renderBubble(message);
+
+		expect(container.textContent).toContain("@ghost");
+		expect(container.textContent).not.toContain("@(ghost:");
 	});
 });
 
