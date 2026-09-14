@@ -64,6 +64,8 @@ export interface ChatMessage {
 	content?: string;
 	/** 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符（含方括号） */
 	custom_emote?: Record<string, CommentEmoteRef>;
+	/** 正文中 @(username:id) 提及占位符的解析结果，key 为完整占位符；解析不到的占位符缺省，由前端按 username 兜底 */
+	mentions?: Record<string, ChatUser>;
 	/** 图片消息的媒体列表，按输入流中的占位符顺序；非图片消息缺省 */
 	media?: ChatMedia[];
 	shared_tweet?: SharedTweet;

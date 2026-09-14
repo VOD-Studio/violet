@@ -371,6 +371,7 @@ export function ConversationPanel({
 					<TypingIndicator conversationID={conversation.id} members={members} />
 					<MessageComposer
 						conversationID={conversation.id}
+						currentUserID={currentUserID}
 						onCancelReply={() => setReplyTarget(null)}
 						onMessageSent={() => {
 							setReplyTarget(null);
