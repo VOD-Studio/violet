@@ -12,14 +12,15 @@ export interface RouteErrorProps {
  * RouteError - 公开路由错误态
  *
  * 与 NotFound 共享版面语言（mono 标题 + 静音描述 + 返回首页），但保留错误
- * 信息本身供排查。容器自带公开方言作用域：根 errorComponent 渲染在公开壳层
- * 之外，无法继承壳层的 .dialect-public，须自挂 scope 保证画布与强调语义一致。
+ * 信息本身供排查。不自带方言类：路由级错误渲染在壳层内继承所在路由的作用域，
+ * 根级错误渲染在壳层外落根作用域中性色——错误面不预设方言归属。
  */
 export default function RouteError({ error, className }: RouteErrorProps) {
 	return (
 		<div
 			className={cn(
-				"dialect-public container mx-auto flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-24 text-center",
+				// min-h 与 PageShell 同约定：撑起真实页面高度，避免页脚上跳
+				"container mx-auto flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-24 text-center",
 				className,
 			)}
 		>

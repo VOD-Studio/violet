@@ -62,7 +62,7 @@ export function handle(method, pathname, search) {
 			excerpt: "用于公开壳层视觉验收的样例摘要。",
 			cover_image: "",
 			view_count: i * 7,
-			published_at: "2026-08-1" + ((i % 9) + 1) + "T10:00:00Z",
+			published_at: `2026-08-1${i + 1}T10:00:00Z`,
 			tags: ["契约"],
 			is_featured: i === 0,
 		}));

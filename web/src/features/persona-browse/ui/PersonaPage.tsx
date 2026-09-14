@@ -48,7 +48,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const reduceMotion = useReducedMotion();
 	if (isPending) {
 		return (
-			<main className={`${styles.page}`}>
+			<main className={styles.page}>
 				<RuaLoading label="正在整理人设档案…" />
 			</main>
 		);
@@ -94,7 +94,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const allAlts = heroAsset ? [heroAlt, ...galleryAlts] : [];
 
 	return (
-		<main className={`${styles.page}`} data-stale={isPlaceholderData || undefined}>
+		<main className={styles.page} data-stale={isPlaceholderData || undefined}>
 			{/* --- Hero: 画报封面非对称构图 --- */}
 			<section className={styles.hero} aria-labelledby="persona-name">
 				<div className={styles.heroGlow} aria-hidden />

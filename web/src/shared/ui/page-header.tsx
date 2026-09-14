@@ -1,7 +1,7 @@
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
 
-interface PageHeaderProps {
+export interface PageHeaderProps {
 	/** 眉题：标题上方的英文 mono 小字（如 "All Posts"） */
 	eyebrow: string;
 	/** 页面主标题（如 "博客"） */
@@ -19,24 +19,20 @@ interface PageHeaderProps {
  * 列表页传 action 时呈左右两端底对齐；不传时退化为纯标题头。
  */
 export function PageHeader({ eyebrow, title, action, className }: PageHeaderProps) {
+	const titleBlock = (
+		<>
+			<p className="mb-2 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase">
+				{eyebrow}
+			</p>
+			<h1 className="font-mono text-4xl font-bold">{title}</h1>
+		</>
+	);
 	if (!action) {
-		return (
-			<header className={cn("mb-10", className)}>
-				<p className="mb-2 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase">
-					{eyebrow}
-				</p>
-				<h1 className="font-mono text-4xl font-bold">{title}</h1>
-			</header>
-		);
+		return <header className={cn("mb-10", className)}>{titleBlock}</header>;
 	}
 	return (
 		<header className={cn("mb-10 flex flex-wrap items-end justify-between gap-4", className)}>
-			<div>
-				<p className="mb-2 font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase">
-					{eyebrow}
-				</p>
-				<h1 className="font-mono text-4xl font-bold">{title}</h1>
-			</div>
+			<div>{titleBlock}</div>
 			{action}
 		</header>
 	);
