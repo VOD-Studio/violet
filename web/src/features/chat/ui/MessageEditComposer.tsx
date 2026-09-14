@@ -83,6 +83,7 @@ export function MessageEditComposer({ message, onClose }: MessageEditComposerPro
 	return (
 		<div className="min-w-60" onKeyDown={handleKeyDown}>
 			<RichCommentInput
+				autoFocus
 				value={value}
 				onChange={setValue}
 				onSubmit={save}
