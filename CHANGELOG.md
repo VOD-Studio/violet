@@ -7,7 +7,12 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
-## [2.8.27](https://github.com/VOD-Studio/violet/compare/v2.8.26...v2.8.27) (2026-09-14)
+## [2.9.0](https://github.com/VOD-Studio/violet/compare/v2.8.26...v2.9.0) (2026-09-14)
+
+
+### 新增
+
+* **chat:** 聊天消息支持 @ 提及 ([#365](https://github.com/VOD-Studio/violet/issues/365)) ([3515ed6](https://github.com/VOD-Studio/violet/commit/3515ed67a1823de41384c0c3480a234152ea29f5))
 
 
 ### 修复
