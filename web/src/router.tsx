@@ -1,7 +1,7 @@
 import type { SessionClaims } from "@entities/user/model/types";
+import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-import RouteError from "@shared/ui/route-error";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
