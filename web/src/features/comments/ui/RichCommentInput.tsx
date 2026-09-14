@@ -10,6 +10,7 @@
  * onImagesChange 回调通知父组件已上传图片列表（供提交时读取）；inlineImages 模式下
  * 按图片在文字流中的位置排序，而非上传发起顺序。
  * onUploadingChange 回调通知父组件上传状态（供禁用提交按钮）。
+ * mentionCandidates 非空时输入 `@` 触发提及候选浮层（成员列表由消费方给全量，筛选在本组件内做）。
  * resetNonce 变化时清空内部图片状态（供提交成功后重置）。
  */
 import { toEmojiToken } from "@entities/emoji/model/token";
@@ -18,13 +19,17 @@ import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { isImageURL } from "@shared/lib/url";
 import { Image as ImageIcon, Smile, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import {
 	extractImageIds,
 	type ImageNodeStatus,
 	useRichTextInput,
 } from "../hooks/use-rich-text-input";
+import { type MentionCandidate, MentionSuggestions } from "./MentionSuggestions";
+
+/** 候选浮层最多展示的候选数：房间成员通常个位数，超出时靠继续输入收窄而非滚动翻找。 */
+const mentionSuggestionLimit = 8;
 
 export interface PictureInput {
 	id?: string;
@@ -58,6 +63,8 @@ export interface RichCommentInputProps {
 	resetNonce?: number;
 	onImagesChange?: (images: PictureInput[]) => void;
 	onUploadingChange?: (uploading: boolean) => void;
+	/** @ 提及候选（全量成员，筛选在组件内做）；缺省或空数组时不启用提及 */
+	mentionCandidates?: MentionCandidate[];
 	toolbarEnd?: ReactNode;
 	className?: string;
 	inputClassName?: string;
@@ -90,6 +97,7 @@ export function RichCommentInput({
 	resetNonce = 0,
 	onImagesChange,
 	onUploadingChange,
+	mentionCandidates,
 	toolbarEnd,
 	className,
 	inputClassName,
@@ -202,18 +210,89 @@ export function RichCommentInput({
 		[],
 	);
 
-	const { contentRef, focus, insertEmoji, insertImage, handleInput, handlePaste, handleKeyDown } =
-		useRichTextInput({
-			value,
-			onChange,
-			onSubmit,
-			disabled,
-			submitOnEnter,
-			onPasteFiles: enableImage ? uploadFilesList : undefined,
-			resolveImage: inlineImages ? resolveImage : undefined,
-			onImageRemove: inlineImages ? handleRemoveImage : undefined,
-		});
+	const mentionEnabled = !!mentionCandidates?.length;
+	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+	const [mentionIndex, setMentionIndex] = useState(0);
+	const resolveMention = useCallback(
+		(userID: string) => mentionCandidates?.find((item) => item.id === userID)?.displayName,
+		[mentionCandidates],
+	);
+	// 查询词一变候选列表就变，高亮回到第一项；方向键改高亮时不触发 input，下标得以保留。
+	const handleMentionQueryChange = useCallback((query: string | null) => {
+		setMentionQuery(query);
+		setMentionIndex(0);
+	}, []);
+
+	const {
+		contentRef,
+		focus,
+		insertEmoji,
+		insertImage,
+		insertMention,
+		handleInput,
+		handlePaste,
+		handleKeyDown,
+	} = useRichTextInput({
+		value,
+		onChange,
+		onSubmit,
+		disabled,
+		submitOnEnter,
+		onPasteFiles: enableImage ? uploadFilesList : undefined,
+		resolveImage: inlineImages ? resolveImage : undefined,
+		onImageRemove: inlineImages ? handleRemoveImage : undefined,
+		resolveMention: mentionEnabled ? resolveMention : undefined,
+		onMentionQueryChange: mentionEnabled ? handleMentionQueryChange : undefined,
+	});
 	insertImageRef.current = insertImage;
+
+	const mentionMatches = useMemo(() => {
+		if (mentionQuery === null || !mentionCandidates?.length) return [];
+		const query = mentionQuery.trim().toLowerCase();
+		const matched = query
+			? mentionCandidates.filter(
+					(item) =>
+						item.username.toLowerCase().includes(query) ||
+						item.displayName.toLowerCase().includes(query),
+				)
+			: mentionCandidates;
+		return matched.slice(0, mentionSuggestionLimit);
+	}, [mentionCandidates, mentionQuery]);
+
+	const selectMention = (candidate: MentionCandidate) => {
+		insertMention(candidate.id, candidate.username, candidate.displayName);
+		setMentionQuery(null);
+	};
+
+	/** 提及浮层优先吃掉方向键/回车/Esc；返回 true 表示按键已被消费，不再交给编辑区。 */
+	const handleMentionKeyDown = (event: React.KeyboardEvent): boolean => {
+		if (event.nativeEvent.isComposing || mentionMatches.length === 0) return false;
+		switch (event.key) {
+			case "ArrowDown":
+				event.preventDefault();
+				setMentionIndex((index) => (index + 1) % mentionMatches.length);
+				return true;
+			case "ArrowUp":
+				event.preventDefault();
+				setMentionIndex(
+					(index) => (index - 1 + mentionMatches.length) % mentionMatches.length,
+				);
+				return true;
+			case "Enter":
+			case "Tab":
+				event.preventDefault();
+				selectMention(mentionMatches[mentionIndex] ?? mentionMatches[0]);
+				return true;
+			case "Escape":
+				event.preventDefault();
+				// 聊天 composer 的祖先监听 Esc 取消回复/分享，浮层开着时这一层先兜住。
+				event.stopPropagation();
+				setMentionQuery(null);
+				return true;
+			default:
+				return false;
+		}
+	};
 
 	useEffect(() => {
 		if (autoFocus && !disabled) focus();
@@ -334,7 +413,11 @@ export function RichCommentInput({
 			contentEditable={!disabled}
 			onInput={handleInput}
 			onPaste={handlePaste}
-			onKeyDown={handleKeyDown}
+			onKeyDown={(event) => {
+				if (handleMentionKeyDown(event)) return;
+				handleKeyDown(event);
+			}}
+			onBlur={() => setMentionQuery(null)}
 			data-placeholder={placeholder}
 			role="textbox"
 			aria-multiline="true"
@@ -398,18 +481,27 @@ export function RichCommentInput({
 			onChange={handleFileSelect}
 		/>
 	);
+	const suggestions = mentionMatches.length > 0 && (
+		<MentionSuggestions
+			activeIndex={mentionIndex}
+			candidates={mentionMatches}
+			onActiveIndexChange={setMentionIndex}
+			onSelect={selectMention}
+		/>
+	);
 
 	if (isInline) {
 		return (
 			<div
 				className={cn(
-					"rounded-3xl border border-edge-hairline bg-background px-2 py-1.5",
+					"relative rounded-3xl border border-edge-hairline bg-background px-2 py-1.5",
 					"focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
 					"transition-all",
 					disabled && "opacity-50",
 					className,
 				)}
 			>
+				{suggestions}
 				{fileInput}
 				{thumbnails}
 				<div className="flex items-center gap-1">
@@ -427,13 +519,14 @@ export function RichCommentInput({
 	return (
 		<div
 			className={cn(
-				"rounded-lg border border-edge-hairline bg-background",
+				"relative rounded-lg border border-edge-hairline bg-background",
 				"focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
 				"transition-all",
 				disabled && "opacity-50",
 				className,
 			)}
 		>
+			{suggestions}
 			{fileInput}
 			{editor}
 			{thumbnails}
