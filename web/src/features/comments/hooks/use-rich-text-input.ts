@@ -388,8 +388,19 @@ export function useRichTextInput({
 		onChangeRef.current?.("");
 	}, []);
 
+	// 光标落到内容末尾：编辑场景（预填正文）里裸 focus() 会把插入点留在首字符前，
+	// 用户续打字会插到句首。
 	const focus = useCallback(() => {
-		contentRef.current?.focus();
+		const div = contentRef.current;
+		if (!div) return;
+		div.focus();
+		const selection = window.getSelection();
+		if (!selection) return;
+		const range = document.createRange();
+		range.selectNodeContents(div);
+		range.collapse(false);
+		selection.removeAllRanges();
+		selection.addRange(range);
 	}, []);
 
 	return {

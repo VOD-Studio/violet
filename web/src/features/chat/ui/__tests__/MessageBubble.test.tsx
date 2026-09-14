@@ -228,6 +228,21 @@ describe("MessageBubble 消息编辑", () => {
 		expect(container.querySelector('[contenteditable="true"]')).toBeNull();
 		expect(screen.getByText("原始内容")).toBeTruthy();
 	});
+
+	// 回归：编辑框此前不自动 focus，用户点完编辑还得再点一次输入框才能改字。
+	it("进入编辑模式后输入框自动聚焦，光标落在正文末尾", () => {
+		const { container } = renderBubble(textMessage());
+
+		fireEvent.click(screen.getByLabelText("编辑消息"));
+		const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
+		expect(document.activeElement).toBe(editor);
+
+		const selection = window.getSelection();
+		expect(selection?.isCollapsed).toBe(true);
+		const range = selection?.getRangeAt(0);
+		expect(range?.startContainer).toBe(editor);
+		expect(range?.startOffset).toBe(editor.childNodes.length);
+	});
 });
 describe("MessageBubble 已读回执", () => {
 	const bob = { id: "u_2", username: "bob", display_name: "Bob", avatar_url: "" };
