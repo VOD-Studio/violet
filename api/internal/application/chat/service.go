@@ -226,6 +226,9 @@ type MessageDTO struct {
 	// CustomEmote 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符
 	// （含方括号，如 "[mycat:<uuid>]"）。系统表情不在此列，继续走客户端全局目录。
 	CustomEmote map[string]CustomEmojiRefDTO `json:"custom_emote,omitempty"`
+	// Mentions 正文中 @(username:uuid) 提及占位符的解析结果，key 为完整占位符原文
+	// （如 "@(luai:<uuid>)"）。解析不到的 token 省略，前端按 token 内的 username 兜底渲染。
+	Mentions map[string]UserDTO `json:"mentions,omitempty"`
 	// Media 图片媒体列表，按输入流顺序；文本消息为空。
 	Media []MediaDTO `json:"media,omitempty"`
 	// SharedTweet 分享推文的动态快照；被分享推文物理删除后为已删除占位。
@@ -794,10 +797,13 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 			return MessageDTO{}, err
 		}
 	}
+	mentioned, err := s.validateMentions(ctx, in.ConversationID, in.Content)
+	if err != nil {
+		return MessageDTO{}, err
+	}
 	now := s.now()
 	var message *domainchat.Message
 	var files []*domainupload.File
-	var err error
 	switch in.Type {
 	case domainchat.MessageText:
 		message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now, replyToID)
@@ -832,11 +838,15 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	preview := "发送了一张图片"
 	switch message.Type() {
 	case domainchat.MessageText:
-		preview = truncatePreview(message.Content(), 120)
+		preview = truncatePreview(humanizeMentionTokens(message.Content()), 120)
 	case domainchat.MessageTweetShare:
 		preview = "分享了一条推文"
 	}
-	events, err := s.repo.SaveMessage(ctx, message, recipients, map[string]any{"preview": preview})
+	payload := map[string]any{"preview": preview}
+	if len(mentioned) > 0 {
+		payload["mentions"] = mentionIDStrings(mentioned)
+	}
+	events, err := s.repo.SaveMessage(ctx, message, recipients, payload)
 	if err != nil {
 		for _, file := range files {
 			_ = s.files.UpdateRefCount(ctx, file.ID(), -1)
@@ -1084,6 +1094,10 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 		if err := s.customEmojis.ValidateContent(ctx, in.Content, in.UserID); err != nil {
 			return MessageDTO{}, err
 		}
+	}
+	// 编辑同样不允许提及非会话成员；编辑不触发提及推送（只有新消息提醒）。
+	if _, err := s.validateMentions(ctx, in.ConversationID, in.Content); err != nil {
+		return MessageDTO{}, err
 	}
 	if message.Type() == domainchat.MessageImage {
 		if _, err := s.chatImages(ctx, in.MediaIDs, in.UserID); err != nil {
@@ -1337,6 +1351,10 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		if err != nil {
 			return MessageDTO{}, err
 		}
+		dto.Mentions, err = s.resolveMentions(ctx, dto.Content)
+		if err != nil {
+			return MessageDTO{}, err
+		}
 	}
 	if message.SharedTweetID() != nil {
 		dto.SharedTweet, err = s.sharedTweetDTO(ctx, *message.SharedTweetID())
@@ -1413,6 +1431,45 @@ func (s *Service) resolveCustomEmote(ctx context.Context, content string, viewer
 	return result, nil
 }
 
+// resolveMentions 解析正文中的提及占位符，返回 token → 被提及用户资料的映射。
+// FindByIDs 未返回的 ID 静默省略（与 resolveCustomEmote 对未命中 ID 的口径一致）。
+func (s *Service) resolveMentions(ctx context.Context, content string) (map[string]UserDTO, error) {
+	ids, tokensByID := parseMentionTokens(content)
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	users, err := s.users.FindByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]UserDTO, len(tokensByID))
+	for _, user := range users {
+		dto := userToDTO(user)
+		for _, token := range tokensByID[user.GetID()] {
+			result[token] = dto
+		}
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	return result, nil
+}
+
+// validateMentions 校验正文提及的用户都是该会话的有效成员，返回被提及 ID 列表。
+//
+// 提及会绕过静音推送，因此只允许提及会话内的人；非成员或已离开一律拒绝，
+// 避免把会话正文当成向任意用户投递通知的通道。
+func (s *Service) validateMentions(ctx context.Context, conversationID domainshared.ID, content string) ([]domainshared.ID, error) {
+	ids, _ := parseMentionTokens(content)
+	for _, id := range ids {
+		member, err := s.repo.FindMember(ctx, conversationID, id)
+		if err != nil || !member.IsActive() {
+			return nil, domainshared.BadRequest("被提及的用户不在会话中")
+		}
+	}
+	return ids, nil
+}
+
 func messageReactionDTOs(reactions []domainchatreaction.AggregatedReaction) []MessageReactionDTO {
 	result := make([]MessageReactionDTO, 0, len(reactions))
 	for _, reaction := range reactions {
@@ -1435,7 +1492,7 @@ func (s *Service) messageReferenceDTO(ctx context.Context, message *domainchat.M
 		return dto, nil
 	}
 	if message.HasTextContent() {
-		dto.Content = truncatePreview(stripChatEmojiTokens(stripChatImageTokens(message.Content())), 120)
+		dto.Content = truncatePreview(humanizeMentionTokens(stripChatEmojiTokens(stripChatImageTokens(message.Content()))), 120)
 	}
 	if ids := message.MediaIDs(); len(ids) > 0 {
 		dto.Media, err = s.mediaDTO(ctx, ids[0])
@@ -1560,8 +1617,10 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 		if err != nil {
 			continue
 		}
+		mentioned := event.Type == domainchat.EventMessageCreated && payloadHasID(event.Payload["mentions"], event.UserID)
 		member, err := s.repo.FindMember(ctx, conversationID, event.UserID)
-		if err != nil || member.IsMuted() {
+		// 被提及者绕过静音：静音是「别为日常消息吵我」，不是「别叫我」。
+		if err != nil || (member.IsMuted() && !mentioned) {
 			continue
 		}
 		subs, err := s.repo.ListPushSubscriptions(ctx, event.UserID)
@@ -1569,10 +1628,15 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 			continue
 		}
 		payload := PushPayload{Title: "Violet 聊天", Body: "收到一条新消息", URL: "/chat", Tag: "violet-chat"}
-		if event.Type == domainchat.EventRoomInvited {
+		switch {
+		case event.Type == domainchat.EventRoomInvited:
 			payload.Title = "新的聊天邀请"
 			payload.Body = "你被邀请加入一个私有房间"
 			payload.Tag = "violet-chat-invite"
+		case mentioned:
+			payload.Title = "有人提到了你"
+			payload.Body = "在聊天中提到了你"
+			payload.Tag = "violet-chat-mention"
 		}
 		for _, subscription := range subs {
 			notification := payload
@@ -1618,6 +1682,29 @@ func eventConversationID(event domainchat.Event) (domainshared.ID, error) {
 		return domainshared.ID{}, domainshared.BadRequest("聊天事件缺少会话 ID")
 	}
 	return domainshared.ParseID(value)
+}
+
+// payloadHasID 判断事件 payload 中的 ID 字符串数组是否包含指定 ID。
+//
+// 兼容两种运行时形态：事件从 JSONB 反序列化回来是 []any（见 eventToDomain），
+// 而同事务内直接透传内存 payload 时仍是 []string。
+func payloadHasID(value any, id domainshared.ID) bool {
+	target := id.String()
+	switch items := value.(type) {
+	case []any:
+		for _, item := range items {
+			if s, ok := item.(string); ok && s == target {
+				return true
+			}
+		}
+	case []string:
+		for _, item := range items {
+			if item == target {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (s *Service) eventToDTO(ctx context.Context, event domainchat.Event) (EventDTO, error) {

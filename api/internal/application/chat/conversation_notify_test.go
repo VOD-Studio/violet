@@ -106,7 +106,7 @@ func TestCreateDirectConversationNotifiesRecipient(t *testing.T) {
 	senderID := domainshared.NewID()
 	recipientID := domainshared.NewID()
 	users := map[domainshared.ID]*domainuser.User{
-		senderID:   newReplyUser(senderID, "sender"),
+		senderID:    newReplyUser(senderID, "sender"),
 		recipientID: newReplyUser(recipientID, "recipient"),
 	}
 	svc, repo, notifier := newNotifyService(t, nil, users)
