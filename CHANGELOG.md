@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.27](https://github.com/VOD-Studio/violet/compare/v2.8.26...v2.8.27) (2026-09-14)
+
+
+### 修复
+
+* **chat:** 消息编辑框进入即自动聚焦 ([#364](https://github.com/VOD-Studio/violet/issues/364)) ([22e531d](https://github.com/VOD-Studio/violet/commit/22e531deb51adc42c9f89b73070cc1a5b296eef2))
+
 ## [2.8.26](https://github.com/VOD-Studio/violet/compare/v2.8.25...v2.8.26) (2026-09-13)
 
 
