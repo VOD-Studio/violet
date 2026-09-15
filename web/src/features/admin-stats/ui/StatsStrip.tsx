@@ -104,16 +104,13 @@ function Cell({ cell }: { cell: StripCell }) {
 			<div className="flex items-center justify-between">
 				<span className="text-muted-foreground text-xs font-medium">{cell.label}</span>
 				{alert && (
-					<span
-						className="size-1.5 rounded-full bg-amber-500 animate-pulse"
-						aria-hidden
-					/>
+					<span className="size-1.5 rounded-full bg-warning animate-pulse" aria-hidden />
 				)}
 			</div>
 			<div className="my-2.5 flex items-baseline">
 				<span
 					className={`font-mono text-3xl font-bold tracking-tight tabular-nums leading-none ${
-						alert ? "text-amber-600 dark:text-amber-400" : "text-foreground"
+						alert ? "text-warning" : "text-foreground"
 					}`}
 				>
 					{display}
@@ -121,16 +118,16 @@ function Cell({ cell }: { cell: StripCell }) {
 			</div>
 			<div className="flex h-4 items-center text-xs">
 				{cell.action && cell.value > 0 ? (
-					<span className="text-amber-600 dark:text-amber-400 flex items-center font-medium">
+					<span className="text-warning flex items-center font-medium">
 						{cell.action.hint} →
 					</span>
 				) : cell.context ? (
 					<span
 						className={`flex items-center gap-1 truncate ${
 							cell.trend === "up"
-								? "text-emerald-500"
+								? "text-success"
 								: cell.trend === "down"
-									? "text-red-500"
+									? "text-destructive"
 									: "text-muted-foreground"
 						}`}
 					>
