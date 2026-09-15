@@ -156,7 +156,12 @@ async function routeClient(context: BrowserContext, options?: { blockScripts: bo
 		}
 		const url = new URL(request.url());
 		if (url.pathname.startsWith("/api/")) {
-			const result = handle(request.method(), url.pathname, url.search);
+			const result = handle(
+				request.method(),
+				url.pathname,
+				url.search,
+				request.headers().cookie ?? "",
+			);
 			return route.fulfill({
 				status: result.status,
 				contentType: "application/json",
@@ -311,6 +316,119 @@ for (const theme of ["light", "dark"] as const) {
 		);
 		await context.close();
 	});
+}
+
+/**
+ * 后台工具方言契约：契约管理员 cookie（contract_admin=1）使 mock 会话按 root
+ * 应答（SSR server function 与客户端 RPC 同源转发 cookie，两端登录态一致）。
+ */
+async function newAdminContext(browser: import("@playwright/test").Browser, theme: ThemeMode) {
+	const context = await browser.newContext();
+	const cookies: {
+		name: string;
+		value: string;
+		url: string;
+	}[] = [{ name: "contract_admin", value: "1", url: `http://127.0.0.1:${THEME_SERVER_PORT}` }];
+	const { cookie } = THEME_PREFERENCE[theme];
+	if (cookie) {
+		cookies.push({
+			name: "theme",
+			value: cookie,
+			url: `http://127.0.0.1:${THEME_SERVER_PORT}`,
+		});
+	}
+	await context.addCookies(cookies);
+	const { storage } = THEME_PREFERENCE[theme];
+	if (storage) {
+		await context.addInitScript(
+			([value]) => {
+				localStorage.setItem("theme", value);
+			},
+			[storage] satisfies [string],
+		);
+	}
+	await routeClient(context);
+	return context;
+}
+
+for (const viewport of VIEWPORTS) {
+	for (const theme of ["light", "dark"] as const) {
+		test(`工具方言契约：后台壳层 ${theme} @ ${viewport.width}×${viewport.height}`, async ({
+			browser,
+		}) => {
+			test.setTimeout(90_000);
+			// /admin 为 ssr:false 客户端渲染：主题由 beforeLoad 读 cookie 决定，
+			// 契约验证 hydration 后壳层 token、当前导航品牌指示与溢出
+			const context = await newAdminContext(browser, theme);
+			const page = await context.newPage();
+			await page.setViewportSize(viewport);
+			await page.goto("/admin", { waitUntil: "load" });
+			await page.waitForLoadState("networkidle");
+			await expect(
+				page.locator(".dialect-tool"),
+				"后台壳层应挂 Tool 方言作用域",
+			).toBeVisible();
+
+			const snapshot = await page.evaluate(() => {
+				const scope = document.querySelector(".dialect-tool");
+				if (!scope) throw new Error("后台壳层缺少 .dialect-tool 作用域");
+				const cs = getComputedStyle(scope);
+				const root = getComputedStyle(document.documentElement);
+				const prop = (el: CSSStyleDeclaration, name: string) =>
+					el.getPropertyValue(name).trim();
+				const activeLink = document.querySelector('a[aria-current="page"]');
+				return {
+					htmlClass: document.documentElement.className,
+					primary: prop(cs, "--primary"),
+					ring: prop(cs, "--ring"),
+					destructive: prop(cs, "--destructive"),
+					background: prop(cs, "--background"),
+					rootPrimary: prop(root, "--primary"),
+					rootBrand: prop(root, "--brand"),
+					rootDestructive: prop(root, "--destructive"),
+					activeIndicator: activeLink
+						? getComputedStyle(activeLink, "::before").backgroundColor
+						: null,
+					scrollWidth: document.documentElement.scrollWidth,
+					innerWidth: window.innerWidth,
+				};
+			});
+
+			// 主要动作：工具方言 == 基础层默认高对比中性，与根作用域一致
+			expect(snapshot.primary, "工具方言主要动作色应为根作用域默认").toBe(
+				snapshot.rootPrimary,
+			);
+			const primary = expectColor(snapshot.primary, "工具方言主要动作色");
+			expect(primary.c, "后台 default action 应为中性色").toBeLessThanOrEqual(0.01);
+			expect(Math.abs(primary.l - 0.5), "后台 default action 应为高对比").toBeGreaterThan(
+				0.25,
+			);
+
+			// 焦点/当前导航：品牌强调（工具方言下品牌唯一露出点）
+			expect(snapshot.ring, "工具方言焦点环应映射品牌强调色").toBe(snapshot.rootBrand);
+			const indicator = parseOklabChroma(snapshot.activeIndicator ?? "");
+			if (snapshot.activeIndicator) {
+				expect(indicator, "当前导航指示条应为可解析混合色").toBeTruthy();
+				expect(
+					indicator?.chroma,
+					`当前导航指示条应使用品牌强调色，实际 ${snapshot.activeIndicator}`,
+				).toBeGreaterThan(0.05);
+			}
+
+			// 行为状态色不被改写；画布随主题；无横向溢出
+			expect(snapshot.destructive, "destructive 在工具方言不得被改写").toBe(
+				snapshot.rootDestructive,
+			);
+			const background = expectColor(snapshot.background, "工具方言画布");
+			if (theme === "light") {
+				expect(background.l, "浅色后台画布应近白").toBeGreaterThan(0.9);
+			} else {
+				expect(background.l, "深色后台画布应近黑").toBeLessThan(0.3);
+			}
+			expect(snapshot.scrollWidth).toBeLessThanOrEqual(snapshot.innerWidth);
+			await context.close();
+		});
+	}
 }
 
 for (const viewport of VIEWPORTS) {

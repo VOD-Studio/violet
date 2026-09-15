@@ -12,7 +12,7 @@ const PORT = Number(process.env.PORT || 9410);
 
 createServer((req, res) => {
 	const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
-	const result = handle(req.method, url.pathname, url.search);
+	const result = handle(req.method, url.pathname, url.search, req.headers.cookie ?? "");
 	res.writeHead(result.status, {
 		"content-type": "application/json; charset=utf-8",
 		"access-control-allow-origin": "*",
