@@ -31,12 +31,12 @@ const MusicPlayer = () => {
 						type="button"
 						onClick={toggle}
 						className={`flex items-center gap-2 rounded-full border border-edge-hairline px-4 py-2 backdrop-blur-md transition-all ${
-							isPlaying ? "bg-foreground/10" : "bg-background/80 dark:bg-zinc-900/80"
+							isPlaying ? "bg-foreground/10" : "bg-background/80 dark:bg-card/80"
 						}`}
 					>
 						<div className="flex h-3 w-3 items-center justify-center overflow-hidden rounded-full bg-foreground">
 							{isPlaying && (
-								<motion.div className="h-full w-full animate-pulse bg-blue-500 blur-[2px]" />
+								<motion.div className="h-full w-full animate-pulse bg-brand blur-[2px]" />
 							)}
 						</div>
 						<span className="text-xs font-medium">
@@ -50,7 +50,7 @@ const MusicPlayer = () => {
 					<button
 						type="button"
 						onClick={close}
-						className="flex h-8 w-8 items-center justify-center rounded-full border border-edge-hairline bg-background/80 dark:bg-zinc-900/80 backdrop-blur-md transition-colors hover:bg-foreground/10"
+						className="flex h-8 w-8 items-center justify-center rounded-full border border-edge-hairline bg-background/80 dark:bg-card/80 backdrop-blur-md transition-colors hover:bg-foreground/10"
 						aria-label="关闭"
 					>
 						<X className="size-4" />
