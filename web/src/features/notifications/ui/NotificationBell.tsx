@@ -55,18 +55,18 @@ const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	chat_room_invited: MessagesSquare,
 };
 
-/** source_type → 颜色映射 */
+/** source_type → 颜色映射：走行为状态与品牌语义（新增/注册=品牌、审核类=warning/success、失败/拒绝=destructive） */
 const sourceColor: Record<NotificationSourceType, string> = {
-	subscription_failed: "text-orange-500",
-	subscription_succeeded: "text-emerald-500",
-	friendlink_applied: "text-blue-500",
-	friendlink_reviewed: "text-blue-500",
-	comment_approved: "text-emerald-500",
-	comment_created: "text-emerald-500",
-	comment_pending: "text-amber-500",
-	comment_rejected: "text-red-500",
-	user_registered: "text-blue-500",
-	account_security: "text-purple-500",
+	subscription_failed: "text-destructive",
+	subscription_succeeded: "text-success",
+	friendlink_applied: "text-warning",
+	friendlink_reviewed: "text-success",
+	comment_approved: "text-success",
+	comment_created: "text-brand",
+	comment_pending: "text-warning",
+	comment_rejected: "text-destructive",
+	user_registered: "text-brand",
+	account_security: "text-warning",
 	chat_room_invited: "text-neon-cyan",
 };
 
@@ -115,13 +115,18 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 			}}
 		>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" size="icon-sm" aria-label="通知" className="relative">
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					aria-label="通知"
+					className="relative hover:bg-muted/70 hover:text-foreground"
+				>
 					{unread > 0 ? <BellRing className="size-4" /> : <Bell className="size-4" />}
 					{unread > 0 && (
 						<span
 							className={cn(
-								"absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1",
-								"text-[10px] font-bold leading-4 text-white",
+								"absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1",
+								"text-[10px] font-bold leading-4 text-destructive-foreground",
 							)}
 						>
 							{unread > 99 ? "99+" : unread}

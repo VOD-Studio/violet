@@ -106,7 +106,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					<Link
 						to="/blog/$slug"
 						params={{ slug: post.slug }}
-						className="transition-colors hover:text-neon-blue"
+						className="transition-colors hover:text-primary"
 					>
 						{post.title}
 					</Link>
