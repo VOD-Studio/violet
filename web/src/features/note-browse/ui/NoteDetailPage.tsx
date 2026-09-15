@@ -73,7 +73,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 							</div>
 
 							<div className="flex items-center gap-3 tabular-nums">
-								<span className="flex items-center gap-1 text-emerald-500/90 font-medium">
+								<span className="flex items-center gap-1 text-success font-medium">
 									<CheckCircle2 className="size-3" />
 									RESOLVED
 								</span>
@@ -159,7 +159,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 							<footer className="mt-10 border-t border-edge-hairline pt-6">
 								<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 									<div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-										<ShieldCheck className="size-4 text-emerald-500" />
+										<ShieldCheck className="size-4 text-success" />
 										<span>VERIFIED_POSTMORTEM_ENTRY</span>
 									</div>
 
