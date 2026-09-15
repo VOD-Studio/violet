@@ -32,8 +32,10 @@
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.577 0.245 27.325);
 	--destructive-foreground: oklch(0.985 0 0);
-	/* 行为状态色：固定语义，任何 palette 与方言不得改写含义 */
-	--warning: oklch(0.68 0.16 60);
+	/* 行为状态色：固定语义，任何 palette 与方言不得改写含义。
+	 * 浅色 warning 取 L 0.62：作 12px 徽章文字在白底/10% 洗底上 ≥3.4:1，
+	 * 再亮会跌破可读下限（0.68 时仅 3.0:1）。 */
+	--warning: oklch(0.62 0.16 60);
 	--warning-foreground: oklch(0.985 0 0);
 	--success: oklch(0.577 0.148 156);
 	--success-foreground: oklch(0.985 0 0);
