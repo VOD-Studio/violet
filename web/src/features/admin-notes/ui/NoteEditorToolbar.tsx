@@ -60,9 +60,7 @@ export function NoteEditorToolbar({
 					</Badge>
 				) : null}
 				{isDirty && !saving ? (
-					<span className="font-mono text-xs text-warning">
-						● 未保存
-					</span>
+					<span className="font-mono text-xs text-warning">● 未保存</span>
 				) : null}
 			</div>
 
