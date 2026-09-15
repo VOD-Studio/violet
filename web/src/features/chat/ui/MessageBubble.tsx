@@ -16,6 +16,7 @@ import type {
 	ChatMedia,
 	ChatMessage,
 	ChatMessageReference,
+	ChatUser,
 	ConversationKind,
 } from "../model/types";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
@@ -38,6 +39,8 @@ interface MessageBubbleProps {
 	messageRef: (node: HTMLElement | null) => void;
 	onDelete?: () => void;
 	onImage: (media: ChatMedia) => void;
+	/** 点击发送者或已读成员名字时追加提及。 */
+	onMention?: (user: ChatUser) => void;
 	onReply?: () => void;
 	onReplyTo?: () => void;
 	animateIn: boolean;
@@ -57,6 +60,7 @@ export function MessageBubble({
 	messageRef,
 	onDelete,
 	onImage,
+	onMention,
 	onReply,
 	onReplyTo,
 }: MessageBubbleProps) {
@@ -175,9 +179,15 @@ export function MessageBubble({
 				)}
 			>
 				{showSender && !mine && showSenderName && (
-					<span className="mb-0.5 px-0.5 text-xs font-medium text-primary">
+					<button
+						aria-label={`提及 ${message.sender.display_name}`}
+						className="mb-0.5 self-start rounded px-0.5 text-left text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+						disabled={!onMention}
+						onClick={() => onMention?.(message.sender)}
+						type="button"
+					>
 						{message.sender.display_name}
-					</span>
+					</button>
 				)}
 
 				{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
@@ -335,7 +345,11 @@ export function MessageBubble({
 					reactions={reactions}
 				/>
 				{mine && !message.is_deleted && (
-					<MessageReadReceipt conversationKind={conversationKind} message={message} />
+					<MessageReadReceipt
+						conversationKind={conversationKind}
+						message={message}
+						onMention={onMention}
+					/>
 				)}
 			</div>
 		</motion.article>

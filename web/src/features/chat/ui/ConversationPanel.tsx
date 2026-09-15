@@ -2,6 +2,7 @@
  * 会话面板：消息流（滚动加载历史）、气泡、输入区与详情抽屉的编排。
  */
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import type { RichCommentInputHandle } from "@features/comments/ui/RichCommentInput";
 import type { PendingChatShare } from "@shared/api/share-tweet-store";
 import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
@@ -18,7 +19,7 @@ import {
 } from "../api/queries";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
-import type { ChatConversation, ChatMessage } from "../model/types";
+import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
 import { MessageBubble } from "./MessageBubble";
@@ -65,6 +66,13 @@ export function ConversationPanel({
 	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
 	const [highlightedID, setHighlightedID] = useState<string | null>(null);
+	const inputRef = useRef<RichCommentInputHandle>(null);
+	const handleMention = (user: ChatUser) => {
+		if (user.id === currentUserID) return;
+		if (!inputRef.current?.appendMention(user.id)) {
+			toast.info("该用户不在当前会话的提及候选中");
+		}
+	};
 
 	const messages = useMemo(
 		() => messagePages?.pages.flatMap((page) => page.data).reverse() ?? [],
@@ -328,6 +336,7 @@ export function ConversationPanel({
 												: undefined
 										}
 										onImage={(media) => imagePreview.openPreview([media.url])}
+										onMention={handleMention}
 										onReply={
 											message.type !== "system" && !message.is_deleted
 												? () => setReplyTarget(message)
@@ -370,6 +379,7 @@ export function ConversationPanel({
 					</AnimatePresence>
 					<TypingIndicator conversationID={conversation.id} members={members} />
 					<MessageComposer
+						inputRef={inputRef}
 						conversationID={conversation.id}
 						currentUserID={currentUserID}
 						onCancelReply={() => setReplyTarget(null)}

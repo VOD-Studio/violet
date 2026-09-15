@@ -6,12 +6,16 @@ import {
 	stripImagePlaceholders,
 	stripPlaceholdersForPreview,
 } from "@features/comments/hooks/use-rich-text-input";
-import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
+import {
+	type PictureInput,
+	RichCommentInput,
+	type RichCommentInputHandle,
+} from "@features/comments/ui/RichCommentInput";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { LoaderCircle, MessageSquareQuote, Reply, Send, X } from "lucide-react";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSendChatMessage } from "../api/queries";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
@@ -19,6 +23,8 @@ import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
 import type { ChatMessage } from "../model/types";
 
 export interface MessageComposerProps {
+	/** 接收会话内点击用户名触发的提及。 */
+	inputRef?: Ref<RichCommentInputHandle>;
 	conversationID: string;
 	/** 当前用户 ID，用于把自己从提及候选里剔除 */
 	currentUserID: string;
@@ -30,6 +36,7 @@ export interface MessageComposerProps {
 }
 
 export function MessageComposer({
+	inputRef,
 	conversationID,
 	currentUserID,
 	pendingShare,
@@ -204,6 +211,7 @@ export function MessageComposer({
 					)
 				)}
 				<RichCommentInput
+					ref={inputRef}
 					autoFocus
 					value={content}
 					onChange={setContent}

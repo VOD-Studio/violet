@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChatMessageReference } from "../../model/types";
+import type { ChatMessage, ChatMessageReader, ChatMessageReference } from "../../model/types";
 
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({
@@ -96,10 +96,16 @@ const mockConversation = {
 };
 
 const mockSendMutateAsync = vi.fn().mockResolvedValue({});
+let mockReaders: ChatMessageReader[] = [];
 
 const defaultChatMessagesResult = () => ({
 	data: {
-		pages: [{ data: [mockConversation.last_message], pagination: { has_more: false } }],
+		pages: [
+			{
+				data: [mockConversation.last_message] as ChatMessage[],
+				pagination: { has_more: false },
+			},
+		],
 		pageParams: [""],
 	},
 	isLoading: false,
@@ -183,7 +189,7 @@ vi.mock("@features/chat/api/queries", () => ({
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
-	useChatMessageReaders: () => ({ data: [], isLoading: false, isError: false }),
+	useChatMessageReaders: () => ({ data: mockReaders, isLoading: false, isError: false }),
 }));
 vi.mock("../api/queries", () => ({
 	useChatConversations: () => ({
@@ -225,7 +231,7 @@ vi.mock("../api/queries", () => ({
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
-	useChatMessageReaders: () => ({ data: [], isLoading: false, isError: false }),
+	useChatMessageReaders: () => ({ data: mockReaders, isLoading: false, isError: false }),
 }));
 
 vi.mock("../hooks/useChatStream", () => ({
@@ -284,10 +290,11 @@ vi.mock("../api/queries", () => ({
 	useSetChatMuted: () => ({ mutate: vi.fn() }),
 	useAddChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
 	useRemoveChatMessageReaction: () => ({ mutate: vi.fn(), isPending: false }),
-	useChatMessageReaders: () => ({ data: [], isLoading: false, isError: false }),
+	useChatMessageReaders: () => ({ data: mockReaders, isLoading: false, isError: false }),
 }));
 
 import { ChatWorkspace } from "../ChatWorkspace";
+import { ConversationPanel } from "../ConversationPanel";
 
 function createWrapper() {
 	const qc = new QueryClient({
@@ -317,6 +324,7 @@ describe("ChatWorkspace", () => {
 	});
 
 	afterEach(() => {
+		mockReaders = [];
 		mockConversation.last_message.reply_to = undefined;
 		useChatMessagesMock.mockReturnValue(defaultChatMessagesResult());
 		window.history.replaceState({}, "", "/chat");
@@ -364,6 +372,103 @@ describe("ChatWorkspace", () => {
 
 		const profileLinks = screen.getAllByRole("link", { name: "dfy 的个人主页" });
 		expect(profileLinks[0]?.getAttribute("href")).toBe("/users/dfy");
+	});
+
+	function renderRoom() {
+		return render(
+			<ConversationPanel
+				conversation={{ ...mockConversation, kind: "room" }}
+				currentUserID={mockMe.id}
+				onBack={() => {}}
+				pendingShare={null}
+				showDetails={false}
+				onToggleDetails={() => {}}
+			/>,
+			{ wrapper: createWrapper() },
+		);
+	}
+
+	it("点击消息发送者名字追加提及，保留草稿并发送用户 ID", async () => {
+		useChatMessagesMock.mockReturnValue({
+			...defaultChatMessagesResult(),
+			data: {
+				pages: [
+					{
+						data: [{ ...mockConversation.last_message, sender: mockOtherUser }],
+						pagination: { has_more: false },
+					},
+				],
+				pageParams: [""],
+			},
+		});
+		renderRoom();
+		const editor = screen.getByRole("textbox");
+		editor.textContent = "请看这里 ";
+		fireEvent.input(editor);
+		const name = screen.getByRole("button", { name: "提及 dfy" });
+		name.focus();
+		fireEvent.click(name);
+		expect(editor.querySelector("[data-mention]")?.getAttribute("data-mention")).toBe(
+			mockOtherUser.id,
+		);
+		expect(editor.textContent).toBe("请看这里 @dfy\u00a0");
+		expect(document.activeElement).toBe(editor);
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+		await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalled());
+		expect(mockSendMutateAsync.mock.calls[0][0].input.content).toBe(
+			`请看这里 @(dfy:${mockOtherUser.id})`,
+		);
+	});
+
+	it("点击已读成员名字关闭名单，焦点留在输入框并支持再次点击", async () => {
+		mockReaders = [{ user: mockOtherUser, read_at: "2026-09-15T04:52:00Z" }];
+		useChatMessagesMock.mockReturnValue({
+			...defaultChatMessagesResult(),
+			data: {
+				pages: [
+					{
+						data: [
+							{
+								...mockConversation.last_message,
+								read_state: { read_count: 1, member_count: 1 },
+							},
+						],
+						pagination: { has_more: false },
+					},
+				],
+				pageParams: [""],
+			},
+		});
+		renderRoom();
+		const editor = screen.getByRole("textbox");
+		for (let count = 1; count <= 2; count++) {
+			fireEvent.click(screen.getByRole("button", { name: "1 人已读" }));
+			fireEvent.click(await screen.findByRole("button", { name: "提及 dfy" }));
+			await waitFor(() => {
+				expect(screen.queryByRole("button", { name: "提及 dfy" })).toBeNull();
+				expect(document.activeElement).toBe(editor);
+			});
+			expect(editor.querySelectorAll("[data-mention]")).toHaveLength(count);
+		}
+	});
+
+	it("历史消息中的离开成员不能通过点击名字提及", () => {
+		useChatMessagesMock.mockReturnValue({
+			...defaultChatMessagesResult(),
+			data: {
+				pages: [
+					{
+						data: [{ ...mockConversation.last_message, sender: mockContact }],
+						pagination: { has_more: false },
+					},
+				],
+				pageParams: [""],
+			},
+		});
+		renderRoom();
+		fireEvent.click(screen.getByRole("button", { name: "提及 Alice" }));
+		expect(screen.getByRole("textbox").querySelector("[data-mention]")).toBeNull();
+		expect(mockSendMutateAsync).not.toHaveBeenCalled();
 	});
 
 	it("输入消息并发送", async () => {
