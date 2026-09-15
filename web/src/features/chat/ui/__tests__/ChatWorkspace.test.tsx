@@ -7,7 +7,7 @@
  * 3. 消息列表中正确渲染消息内容与气泡
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage, ChatMessageReader, ChatMessageReference } from "../../model/types";
@@ -95,6 +95,7 @@ const mockConversation = {
 	},
 };
 
+const mockReadMutate = vi.fn();
 const mockSendMutateAsync = vi.fn().mockResolvedValue({});
 let mockReaders: ChatMessageReader[] = [];
 
@@ -179,7 +180,7 @@ vi.mock("@features/chat/api/queries", () => ({
 	useDeleteChatMessage: () => ({ mutate: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn() }),
 	useLeaveChatConversation: () => ({ mutateAsync: vi.fn() }),
-	useMarkChatRead: () => ({ mutate: vi.fn() }),
+	useMarkChatRead: () => ({ mutate: mockReadMutate }),
 	useRemoveChatMember: () => ({ mutate: vi.fn() }),
 	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
 	useSendChatMessage: () => ({
@@ -221,7 +222,7 @@ vi.mock("../api/queries", () => ({
 	useDeleteChatMessage: () => ({ mutate: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn() }),
 	useLeaveChatConversation: () => ({ mutateAsync: vi.fn() }),
-	useMarkChatRead: () => ({ mutate: vi.fn() }),
+	useMarkChatRead: () => ({ mutate: mockReadMutate }),
 	useRemoveChatMember: () => ({ mutate: vi.fn() }),
 	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
 	useSendChatMessage: () => ({
@@ -280,7 +281,7 @@ vi.mock("../api/queries", () => ({
 	useDeleteChatMessage: () => ({ mutate: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn() }),
 	useLeaveChatConversation: () => ({ mutateAsync: vi.fn() }),
-	useMarkChatRead: () => ({ mutate: vi.fn() }),
+	useMarkChatRead: () => ({ mutate: mockReadMutate }),
 	useRemoveChatMember: () => ({ mutate: vi.fn() }),
 	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
 	useSendChatMessage: () => ({
@@ -329,6 +330,164 @@ describe("ChatWorkspace", () => {
 		useChatMessagesMock.mockReturnValue(defaultChatMessagesResult());
 		window.history.replaceState({}, "", "/chat");
 		cleanup();
+	});
+
+	it("只上报前台实际可见的消息，切回窗口和滚动后继续推进", () => {
+		let frame: FrameRequestCallback | undefined;
+		const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+			frame = callback;
+			return 1;
+		});
+		const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+		const focus = vi.spyOn(document, "hasFocus").mockReturnValue(true);
+		const flushFrame = () =>
+			act(() => {
+				const callback = frame;
+				frame = undefined;
+				callback?.(0);
+			});
+		const latest = {
+			...mockConversation.last_message,
+			id: "m_2",
+			sender: mockOtherUser,
+			created_at: "2026-08-20T08:31:00Z",
+		};
+		useChatMessagesMock.mockReturnValue({
+			...defaultChatMessagesResult(),
+			data: {
+				pages: [
+					{
+						data: [latest, mockConversation.last_message],
+						pagination: { has_more: false },
+					},
+				],
+				pageParams: [""],
+			},
+		});
+		try {
+			const panel = (
+				<ConversationPanel
+					conversation={{ ...mockConversation, unread_count: 0 }}
+					currentUserID={mockMe.id}
+					onBack={() => {}}
+					pendingShare={null}
+					showDetails={false}
+					onToggleDetails={() => {}}
+				/>
+			);
+			const view = render(panel, { wrapper: createWrapper() });
+			const list = screen.getByTestId("chat-message-list");
+			vi.spyOn(list, "getBoundingClientRect").mockReturnValue({
+				top: 0,
+				bottom: 300,
+				height: 300,
+			} as DOMRect);
+			vi.spyOn(
+				screen.getByTestId("chat-message-m_1"),
+				"getBoundingClientRect",
+			).mockReturnValue({ top: 200, bottom: 250, height: 50 } as DOMRect);
+			const latestBounds = vi
+				.spyOn(screen.getByTestId("chat-message-m_2"), "getBoundingClientRect")
+				.mockReturnValue({ top: 350, bottom: 400, height: 50 } as DOMRect);
+			flushFrame();
+			expect(mockReadMutate).not.toHaveBeenCalled();
+			visibility.mockReturnValue("visible");
+			focus.mockReturnValue(false);
+			fireEvent(document, new Event("visibilitychange"));
+			flushFrame();
+			expect(mockReadMutate).not.toHaveBeenCalled();
+			focus.mockReturnValue(true);
+			fireEvent(window, new Event("focus"));
+			flushFrame();
+			expect(mockReadMutate).toHaveBeenLastCalledWith(
+				{ id: "c_1", messageId: "m_1" },
+				expect.anything(),
+			);
+			latestBounds.mockReturnValue({ top: 250, bottom: 300, height: 50 } as DOMRect);
+			fireEvent.scroll(list);
+			flushFrame();
+			expect(mockReadMutate).toHaveBeenLastCalledWith(
+				{ id: "c_1", messageId: "m_2" },
+				expect.anything(),
+			);
+			fireEvent.scroll(list);
+			flushFrame();
+			expect(mockReadMutate).toHaveBeenCalledTimes(2);
+
+			Object.defineProperties(list, {
+				scrollHeight: { value: 1000, configurable: true },
+				clientHeight: { value: 300, configurable: true },
+			});
+			list.scrollTop = 0;
+			fireEvent.scroll(list);
+			const third = { ...latest, id: "m_3", created_at: "2026-08-20T08:32:00Z" };
+			useChatMessagesMock.mockReturnValue({
+				...defaultChatMessagesResult(),
+				data: {
+					pages: [
+						{
+							data: [third, latest, mockConversation.last_message],
+							pagination: { has_more: false },
+						},
+					],
+					pageParams: [""],
+				},
+			});
+			vi.mocked(window.HTMLElement.prototype.scrollTo).mockClear();
+			view.rerender(
+				<ConversationPanel
+					conversation={{ ...mockConversation, unread_count: 1 }}
+					currentUserID={mockMe.id}
+					onBack={() => {}}
+					pendingShare={null}
+					showDetails={false}
+					onToggleDetails={() => {}}
+				/>,
+			);
+			vi.spyOn(
+				screen.getByTestId("chat-message-m_3"),
+				"getBoundingClientRect",
+			).mockReturnValue({ top: 900, bottom: 950, height: 50 } as DOMRect);
+			flushFrame();
+			expect(window.HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+			expect(mockReadMutate).toHaveBeenCalledTimes(2);
+			const nextRoomMessage = { ...latest, id: "m_other_room", conversation_id: "c_2" };
+			useChatMessagesMock.mockReturnValue({
+				...defaultChatMessagesResult(),
+				data: {
+					pages: [{ data: [nextRoomMessage], pagination: { has_more: false } }],
+					pageParams: [""],
+				},
+			});
+			view.rerender(
+				<ConversationPanel
+					conversation={{ ...mockConversation, id: "c_2" }}
+					currentUserID={mockMe.id}
+					onBack={() => {}}
+					pendingShare={null}
+					showDetails={false}
+					onToggleDetails={() => {}}
+				/>,
+			);
+			vi.spyOn(
+				screen.getByTestId("chat-message-list"),
+				"getBoundingClientRect",
+			).mockReturnValue({ top: 0, bottom: 300, height: 300 } as DOMRect);
+			vi.spyOn(
+				screen.getByTestId("chat-message-m_other_room"),
+				"getBoundingClientRect",
+			).mockReturnValue({ top: 200, bottom: 250, height: 50 } as DOMRect);
+			flushFrame();
+			expect(mockReadMutate).toHaveBeenLastCalledWith(
+				{ id: "c_2", messageId: "m_other_room" },
+				expect.anything(),
+			);
+		} finally {
+			cleanup();
+			raf.mockRestore();
+			visibility.mockRestore();
+			focus.mockRestore();
+		}
 	});
 
 	it("渲染聊天会话列表和主聊天面板", () => {
