@@ -226,7 +226,7 @@ type MessageDTO struct {
 	// CustomEmote 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符
 	// （含方括号，如 "[mycat:<uuid>]"）。系统表情不在此列，继续走客户端全局目录。
 	CustomEmote map[string]CustomEmojiRefDTO `json:"custom_emote,omitempty"`
-	// Mentions 正文中 @(username:uuid) 提及占位符的解析结果，key 为完整占位符原文
+	// Mentions 用户提及的解析结果，key 为完整 @(username:uuid)；全体提及 @(all:all) 不进入用户映射
 	// （如 "@(luai:<uuid>)"）。解析不到的 token 省略，前端按 token 内的 username 兜底渲染。
 	Mentions map[string]UserDTO `json:"mentions,omitempty"`
 	// Media 图片媒体列表，按输入流顺序；文本消息为空。
@@ -773,7 +773,8 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 
 // SendMessage 发送文本或图片消息。
 func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (MessageDTO, error) {
-	if _, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID); err != nil {
+	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
+	if err != nil {
 		return MessageDTO{}, err
 	}
 	if existing, err := s.repo.FindMessageByIdempotency(ctx, in.ConversationID, in.UserID, in.IdempotencyKey); err == nil {
@@ -797,7 +798,7 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 			return MessageDTO{}, err
 		}
 	}
-	mentioned, err := s.validateMentions(ctx, in.ConversationID, in.Content)
+	mentioned, err := s.validateMentions(ctx, in.ConversationID, in.Content, conversation.Kind())
 	if err != nil {
 		return MessageDTO{}, err
 	}
@@ -827,6 +828,14 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	recipients := memberIDs(members)
+	if hasMentionAll(message.Content()) {
+		mentioned = make([]domainshared.ID, 0, len(members))
+		for _, member := range members {
+			if member.IsActive() && member.UserID() != in.UserID {
+				mentioned = append(mentioned, member.UserID())
+			}
+		}
+	}
 	for i, file := range files {
 		if err := s.files.UpdateRefCount(ctx, file.ID(), 1); err != nil {
 			for _, previous := range files[:i] {
@@ -1080,7 +1089,8 @@ func (s *Service) DeleteMessage(ctx context.Context, adminID, conversationID, me
 // 图片消息的媒体引用整体替换：新增媒体先抬引用计数、落库成功后再释放被移除的，
 // 与删除消息共享「引用计数只为清理服务、不为展示服务」的口径。
 func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (MessageDTO, error) {
-	if _, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID); err != nil {
+	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
+	if err != nil {
 		return MessageDTO{}, err
 	}
 	message, err := s.repo.FindMessage(ctx, in.ConversationID, in.MessageID)
@@ -1096,7 +1106,7 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 		}
 	}
 	// 编辑同样不允许提及非会话成员；编辑不触发提及推送（只有新消息提醒）。
-	if _, err := s.validateMentions(ctx, in.ConversationID, in.Content); err != nil {
+	if _, err := s.validateMentions(ctx, in.ConversationID, in.Content, conversation.Kind()); err != nil {
 		return MessageDTO{}, err
 	}
 	if message.Type() == domainchat.MessageImage {
@@ -1459,7 +1469,10 @@ func (s *Service) resolveMentions(ctx context.Context, content string) (map[stri
 //
 // 提及会绕过静音推送，因此只允许提及会话内的人；非成员或已离开一律拒绝，
 // 避免把会话正文当成向任意用户投递通知的通道。
-func (s *Service) validateMentions(ctx context.Context, conversationID domainshared.ID, content string) ([]domainshared.ID, error) {
+func (s *Service) validateMentions(ctx context.Context, conversationID domainshared.ID, content string, kind domainchat.ConversationKind) ([]domainshared.ID, error) {
+	if hasMentionAll(content) && kind != domainchat.ConversationRoom {
+		return nil, domainshared.BadRequest("只有房间支持 @所有人")
+	}
 	ids, _ := parseMentionTokens(content)
 	for _, id := range ids {
 		member, err := s.repo.FindMember(ctx, conversationID, id)
@@ -1620,7 +1633,7 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 		mentioned := event.Type == domainchat.EventMessageCreated && payloadHasID(event.Payload["mentions"], event.UserID)
 		member, err := s.repo.FindMember(ctx, conversationID, event.UserID)
 		// 被提及者绕过静音：静音是「别为日常消息吵我」，不是「别叫我」。
-		if err != nil || (member.IsMuted() && !mentioned) {
+		if err != nil || !member.IsActive() || (member.IsMuted() && !mentioned) {
 			continue
 		}
 		subs, err := s.repo.ListPushSubscriptions(ctx, event.UserID)

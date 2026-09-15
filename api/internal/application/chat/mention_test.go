@@ -231,3 +231,88 @@ func TestNotifyEvents_MentionBypassesMute(t *testing.T) {
 	assert.Equal(t, "有人提到了你", push.sent[0].payload.Title)
 	assert.Equal(t, "在聊天中提到了你", push.sent[0].payload.Body, "订阅未开启预览时不泄露正文")
 }
+
+func TestSendMessage_MentionAllTargetsCurrentOtherMembers(t *testing.T) {
+	now := time.Date(2026, 9, 15, 8, 0, 0, 0, time.UTC)
+	conversationID, senderID := domainshared.NewID(), domainshared.NewID()
+	firstID, secondID, leftID := domainshared.NewID(), domainshared.NewID(), domainshared.NewID()
+	repo := &mentionChatRepo{
+		conversation: domainchat.ReconstructConversation(conversationID, firstID, domainchat.ConversationRoom, "房间", nil, now, now),
+		members: map[domainshared.ID]*domainchat.Member{
+			senderID: domainchat.ReconstructMember(conversationID, senderID, domainchat.MemberMember, now, nil, true),
+			firstID:  domainchat.ReconstructMember(conversationID, firstID, domainchat.MemberOwner, now, nil, true),
+			secondID: domainchat.ReconstructMember(conversationID, secondID, domainchat.MemberMember, now, nil, true),
+			leftID:   domainchat.ReconstructMember(conversationID, leftID, domainchat.MemberMember, now, &now, true),
+		},
+		subs: map[domainshared.ID][]*domainchat.PushSubscription{},
+	}
+	for id := range repo.members {
+		repo.subs[id] = []*domainchat.PushSubscription{{UserID: id, Endpoint: "https://push.example/" + id.String()}}
+	}
+	push := &capturePushSender{}
+	svc := newMentionService(t, now, repo, map[domainshared.ID]*domainuser.User{
+		senderID: newReplyUser(senderID, "sender"), firstID: newReplyUser(firstID, "first"),
+	}, push)
+	content := "@(all:all) @(all:all) " + mentionToken("first", firstID) + " 开会"
+	dto, err := svc.SendMessage(context.Background(), SendMessageInput{
+		UserID: senderID, ConversationID: conversationID, Type: domainchat.MessageText,
+		Content: content, IdempotencyKey: "mention-all",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, content, dto.Content)
+	assert.ElementsMatch(t, []string{firstID.String(), secondID.String()}, repo.savedPayload["mentions"])
+	assert.Equal(t, "@所有人 @所有人 @first 开会", repo.savedPayload["preview"])
+	assert.Len(t, dto.Mentions, 1, "全体目标不是用户，不应查询或伪造用户资料")
+
+	repo.savedPayload["conversation_id"] = conversationID.String()
+	repo.savedPayload["sender_id"] = senderID.String()
+	events := make([]domainchat.Event, 0, len(repo.members))
+	for id := range repo.members {
+		events = append(events, domainchat.Event{UserID: id, Type: domainchat.EventMessageCreated, Payload: repo.savedPayload, CreatedAt: now})
+	}
+	svc.notifyEvents(context.Background(), events)
+	require.Len(t, push.sent, 2, "自己和已离开成员不推送，重复提及不重复推送")
+	for _, sent := range push.sent {
+		assert.Contains(t, []domainshared.ID{firstID, secondID}, sent.userID)
+		assert.Equal(t, "violet-chat-mention", sent.payload.Tag)
+		assert.Equal(t, "在聊天中提到了你", sent.payload.Body)
+	}
+}
+
+func TestSendMessage_MentionAllRejectsDirectAndOutsideUser(t *testing.T) {
+	now := time.Now()
+	conversationID, senderID, outsiderID := domainshared.NewID(), domainshared.NewID(), domainshared.NewID()
+	for _, kind := range []domainchat.ConversationKind{domainchat.ConversationDirect, domainchat.ConversationRoom} {
+		t.Run(string(kind), func(t *testing.T) {
+			repo := &mentionChatRepo{
+				conversation: domainchat.ReconstructConversation(conversationID, senderID, kind, "房间", nil, now, now),
+				members: map[domainshared.ID]*domainchat.Member{
+					senderID: domainchat.ReconstructMember(conversationID, senderID, domainchat.MemberOwner, now, nil, false),
+				},
+			}
+			svc := newMentionService(t, now, repo, nil, nil)
+			content := "@(all:all)"
+			if kind == domainchat.ConversationRoom {
+				content += mentionToken("outsider", outsiderID)
+			}
+			_, err := svc.SendMessage(context.Background(), SendMessageInput{
+				UserID: senderID, ConversationID: conversationID, Type: domainchat.MessageText,
+				Content: content, IdempotencyKey: "invalid-all",
+			})
+			require.Error(t, err)
+			assert.True(t, domainshared.IsDomainError(err, domainshared.CodeBadRequest))
+			assert.Nil(t, repo.savedPayload)
+		})
+	}
+}
+
+func TestMentionAllTokenIdentity(t *testing.T) {
+	id := domainshared.NewID()
+	assert.False(t, hasMentionAll(mentionToken("all", id)), "用户名 all 的普通用户不代表全体")
+	assert.False(t, hasMentionAll("@所有人 @(all:all-invalid)"))
+	assert.True(t, hasMentionAll("@(all:all)"))
+	assert.True(t, hasMentionAll("@(renamed:all)"), "目标 ID 决定全体身份，名字仅为显示兜底")
+	assert.Equal(t, "@所有人", humanizeMentionTokens("@(renamed:all)"))
+	ids, _ := parseMentionTokens("@(all:all)")
+	assert.Empty(t, ids)
+}

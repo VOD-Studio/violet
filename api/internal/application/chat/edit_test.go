@@ -127,3 +127,39 @@ func TestEditMessageNoopSkipsPersistAndEvent(t *testing.T) {
 		t.Fatal("noop edit must not persist or broadcast")
 	}
 }
+
+func TestEditMessageMentionAllRoomOnlyWithoutPush(t *testing.T) {
+	for _, kind := range []domainchat.ConversationKind{domainchat.ConversationDirect, domainchat.ConversationRoom} {
+		t.Run(string(kind), func(t *testing.T) {
+			now := time.Now()
+			conversationID, userID := domainshared.NewID(), domainshared.NewID()
+			message, err := domainchat.NewTextMessage(conversationID, userID, "原文", "edit-all", now, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			svc, repo := newEditService(t, message, userID, conversationID, now.Add(time.Minute))
+			repo.conversation = domainchat.ReconstructConversation(conversationID, userID, kind, "房间", nil, now, now)
+			push := &capturePushSender{}
+			svc.push = push
+			dto, err := svc.EditMessage(context.Background(), EditMessageInput{
+				UserID: userID, ConversationID: conversationID, MessageID: message.ID(), Content: "@(all:all) 新内容",
+			})
+			if kind == domainchat.ConversationDirect {
+				if err == nil || repo.updated != nil {
+					t.Fatal("私聊全体提及必须在更新前被拒绝")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if dto.Content != "@(all:all) 新内容" || repo.eventType != domainchat.EventMessageUpdated {
+				t.Fatal("房间编辑必须保留全体提及并仅广播更新事件")
+			}
+			svc.notifyEvents(context.Background(), []domainchat.Event{{UserID: userID, Type: repo.eventType}})
+			if len(push.sent) != 0 {
+				t.Fatal("编辑不能触发提及推送")
+			}
+		})
+	}
+}
