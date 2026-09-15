@@ -12,17 +12,17 @@ export function SkillsSection({ settings }: AboutSectionProps) {
 		{
 			title: "擅长",
 			raw: settings.skills_strong,
-			color: "hover:border-blue-500/50 hover:bg-blue-500/10",
+			color: "hover:border-neon-blue/50 hover:bg-neon-blue/10",
 		},
 		{
 			title: "在学",
 			raw: settings.skills_learning,
-			color: "hover:border-amber-500/50 hover:bg-amber-500/10",
+			color: "hover:border-warning/50 hover:bg-warning/10",
 		},
 		{
 			title: "兴趣",
 			raw: settings.skills_interests,
-			color: "hover:border-purple-500/50 hover:bg-purple-500/10",
+			color: "hover:border-neon-purple/50 hover:bg-neon-purple/10",
 		},
 	]
 		.map((g) => ({

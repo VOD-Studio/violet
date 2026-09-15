@@ -4,14 +4,14 @@ import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 /**
  * HeroSection - About 页顶部 Hero 区（站点名）
  *
- * 渐变光斑背景 + 大字站名。从原默认渲染抽取为独立区块组件。
+ * 品牌色光斑背景 + 大字站名。从原默认渲染抽取为独立区块组件。
  */
 export function HeroSection({ settings }: AboutSectionProps) {
 	return (
 		<section className="relative flex h-[60vh] items-center justify-center overflow-hidden bg-background">
 			<div className="absolute inset-0 opacity-30">
-				<div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-[radial-gradient(circle,rgba(96,165,250,0.32),rgba(96,165,250,0.12)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(96,165,250,0.38),rgba(96,165,250,0.14)_45%,transparent_70%)] motion-safe:animate-blob" />
-				<div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-[radial-gradient(circle,rgba(192,132,252,0.30),rgba(192,132,252,0.10)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(192,132,252,0.38),rgba(192,132,252,0.14)_45%,transparent_70%)] motion-safe:animate-blob [animation-delay:2s]" />
+				<div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--brand)_32%,transparent),color-mix(in_oklab,var(--brand)_12%,transparent)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,color-mix(in_oklab,var(--brand)_38%,transparent),color-mix(in_oklab,var(--brand)_14%,transparent)_45%,transparent_70%)] motion-safe:animate-blob" />
+				<div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--brand-hover)_30%,transparent),color-mix(in_oklab,var(--brand-hover)_10%,transparent)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,color-mix(in_oklab,var(--brand-hover)_38%,transparent),color-mix(in_oklab,var(--brand-hover)_14%,transparent)_45%,transparent_70%)] motion-safe:animate-blob [animation-delay:2s]" />
 			</div>
 
 			<div className="z-10 flex flex-col items-center px-6 text-center">
