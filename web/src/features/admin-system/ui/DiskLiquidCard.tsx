@@ -1,5 +1,7 @@
+import { cn } from "@shared/lib/utils";
 import { useEffect, useState } from "react";
 import type { SystemDiskInfoDTO } from "../model/types";
+import animations from "./animations.module.css";
 import { formatBytes, formatPercent, thresholdColor } from "./format";
 
 /** DiskLiquidCardProps - 磁盘液位容器 props */
@@ -41,7 +43,10 @@ export function DiskLiquidCard({ disk, delay = 0 }: DiskLiquidCardProps) {
 
 	return (
 		<div
-			className="border-border bg-card animate-fade-in-up flex items-center gap-4 rounded-xl border p-4"
+			className={cn(
+				animations.fadeInUp,
+				"border-border bg-card flex items-center gap-4 rounded-xl border p-4",
+			)}
 			style={{ animationDelay: `${delay}ms` }}
 		>
 			{/* 液位容器 */}

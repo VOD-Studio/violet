@@ -17,7 +17,8 @@ export default function NotFound({ className }: NotFoundProps) {
 	return (
 		<div
 			className={cn(
-				"container mx-auto flex flex-col items-center justify-center px-6 py-32 text-center",
+				// min-h 与 PageShell 同约定：撑起真实页面高度，避免页脚上跳
+				"container mx-auto flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-32 text-center",
 				className,
 			)}
 		>

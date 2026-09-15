@@ -1,6 +1,7 @@
 import { useCountUp } from "@shared/hooks/use-count-up";
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
+import animations from "./animations.module.css";
 import { formatPercent, thresholdColor } from "./format";
 
 /** MetricCardProps - 实时指标卡 props */
@@ -64,7 +65,10 @@ export function MetricCard({
 
 	return (
 		<div
-			className="bg-card animate-fade-in-up flex items-center gap-4 rounded-xl border p-4"
+			className={cn(
+				animations.fadeInUp,
+				"bg-card flex items-center gap-4 rounded-xl border p-4",
+			)}
 			style={{ animationDelay: `${delay}ms` }}
 		>
 			{/* 环形进度环 */}

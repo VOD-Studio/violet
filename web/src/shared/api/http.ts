@@ -55,10 +55,14 @@ export interface UnpackedResponse<T = unknown> {
  * getBaseUrl - 根据 SSR/客户端环境返回 axios baseURL
  *
  * - 客户端：相对 /api/v1，由反向代理转发到后端（同源，cookie 自动携带）
- * - 服务端：从 VITE_SSR_API_BASE_URL 读内网地址（绕过反代，直连后端容器）
+ * - 服务端：优先读运行时环境变量（同一构建产物可按部署/契约环境切换后端地址），
+ *   再退到构建期内联的 VITE_SSR_API_BASE_URL，最后用本地默认值
  */
 const getBaseUrl = (): string => {
 	if (typeof window === "undefined") {
+		if (typeof process !== "undefined" && process.env?.VITE_SSR_API_BASE_URL) {
+			return process.env.VITE_SSR_API_BASE_URL;
+		}
 		return import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:9090/api/v1";
 	}
 	return import.meta.env.VITE_API_BASE_URL || "/api/v1";

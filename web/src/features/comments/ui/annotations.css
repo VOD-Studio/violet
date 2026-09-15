@@ -1,0 +1,68 @@
+/*
+ * 文章批注高亮与段评角标（comments feature 持有）。
+ * extract-blocks 等按固定 class 名生成运行时 DOM，用功能持有全局选择器而非 CSS Module。
+ */
+
+/* AnnotationLayer 批注高亮块（块级背景标记 + 左色条，PRD-0001 Issue-0005） */
+.annotation-highlight {
+	border-left: 3px solid hsl(217 91% 60% / 0.6);
+	background-color: hsl(217 91% 60% / 0.06);
+	border-radius: 0 4px 4px 0;
+	padding-left: 0.5em;
+	margin-left: -0.5em;
+	transition:
+		background-color 0.2s,
+		border-color 0.2s;
+	scroll-margin-top: 80px;
+}
+.annotation-highlight:hover {
+	background-color: hsl(217 91% 60% / 0.12);
+	border-left-color: hsl(217 91% 60%);
+}
+
+/* 草稿批注临时高亮：展开输入区时标记选中块，比已提交批注更醒目（amber 暖色区分） */
+.annotation-draft-highlight {
+	border-left: 3px solid hsl(38 92% 50% / 0.9);
+	background-color: hsl(38 92% 50% / 0.12);
+	border-radius: 0 4px 4px 0;
+	padding-left: 0.5em;
+	margin-left: -0.5em;
+	transition: background-color 0.2s;
+	scroll-margin-top: 80px;
+}
+
+/* 段评角标：段落末尾的 inline SVG（chat-bubble 气泡 + 数字 + 已评论对号切口）。
+   设计目标：比文字略大、紧贴段末、配色低饱和统一。 */
+.annotation-marker-inline {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 0.2em;
+	vertical-align: text-top;
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	padding: 0;
+	user-select: none;
+	/* muted slate 灰：低对比，不抢正文视觉（替代原先的鲜艳蓝） */
+	color: hsl(215 16% 47%);
+	transition:
+		color 0.15s,
+		opacity 0.15s;
+	/* 对号徽章描边颜色（切口色）：跟随页面背景，light 白 / dark 深 */
+	--marker-bg: hsl(var(--background));
+}
+.annotation-marker-inline:hover {
+	color: hsl(215 25% 35%);
+}
+/* SVG 角标：比文字略大（1.15em），醒目可点；宽度自适应 */
+.annotation-marker-inline .annotation-marker-svg {
+	height: 1.15em;
+	width: auto;
+	display: block;
+	overflow: visible; /* 允许右上角对号徽章溢出气泡 viewBox */
+}
+
+/* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
+.annotation-scroll {
+	scrollbar-gutter: stable;
+}

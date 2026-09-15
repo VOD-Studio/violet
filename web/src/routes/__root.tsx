@@ -1,6 +1,7 @@
 import { cn } from "@shared/lib/utils";
 import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
+import RouteError from "@shared/ui/route-error";
 import { SystemThemeTransition } from "@shared/ui/theme-transition";
 import {
 	createRootRouteWithContext,
@@ -95,20 +96,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 	shellComponent: RootDocument,
 	// 兜底：路由未匹配或子树抛出 notFound 错误时渲染统一 404 页面，
 	// 避免 TanStack Router 的默认 <p>Not Found</p>。
-	notFoundComponent: () => <NotFound className="py-24" />,
-	// 兜底：任何 loader 抛错或子树未捕获错误时，渲染在应用外壳内，
-	// 避免整页白屏（React 警告「consider setting errorComponent」）。
-	errorComponent: ({ error }) => (
-		<div className="container mx-auto px-4 py-24 text-center">
-			<p className="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-				System Error
-			</p>
-			<h1 className="mb-4 font-mono text-3xl font-bold">出错了</h1>
-			<p className="mx-auto mb-8 max-w-md text-sm text-muted-foreground">
-				{error instanceof Error ? error.message : "未知错误，请稍后重试"}
-			</p>
-		</div>
-	),
+	notFoundComponent: () => <NotFound />,
+	// 兜底：任何 loader 抛错或子树未捕获错误时，渲染统一错误页（自带真实页面
+	// 几何与公开方言作用域），避免整页白屏（React 警告「consider setting errorComponent」）。
+	errorComponent: ({ error }) => <RouteError error={error} />,
 });
 
 /**
@@ -124,6 +115,10 @@ function RootComponent() {
 	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
 	const isUsersRoute = pathname.startsWith("/users/");
 	const isFullscreenRoute = isChatRoute || isUsersRoute;
+	// 工具方言（聊天、个人中心）与实验豁免（/lab/*）不挂公开方言，保持根作用域中性，
+	// 待各自迁移 issue 落地方言后再接入
+	const isToolOrLabRoute =
+		isChatRoute || pathname.startsWith("/profile") || pathname.startsWith("/lab");
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -143,6 +138,8 @@ function RootComponent() {
 					className={cn(
 						"flex min-h-screen flex-col",
 						isFullscreenRoute && "h-dvh overflow-hidden",
+						// 公开壳层挂 Public Content 方言；/admin 独立布局不经过这里
+						!isToolOrLabRoute && "dialect-public",
 					)}
 				>
 					<AnnouncementBar />

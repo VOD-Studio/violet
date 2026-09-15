@@ -7,6 +7,7 @@ import { FriendsSkeleton } from "@features/friend-links/ui/FriendsSkeleton";
 import { PostcardWall } from "@features/friend-links/ui/PostcardWall";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
+import { PageHeader } from "@shared/ui/page-header";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Plus } from "lucide-react";
@@ -30,20 +31,18 @@ function FriendsPage() {
 
 	return (
 		<PageShell>
-			<header className="mb-10 flex flex-wrap items-end justify-between gap-4">
-				<div>
-					<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-						Friends
-					</p>
-					<h1 className="font-mono text-4xl font-bold">友链</h1>
-				</div>
-				{!isEmpty ? (
-					<Button variant="outline" onClick={() => setApplyOpen(true)}>
-						<Plus className="size-4" />
-						申请友链
-					</Button>
-				) : null}
-			</header>
+			<PageHeader
+				eyebrow="Friends"
+				title="友链"
+				action={
+					!isEmpty ? (
+						<Button variant="outline" onClick={() => setApplyOpen(true)}>
+							<Plus className="size-4" />
+							申请友链
+						</Button>
+					) : null
+				}
+			/>
 
 			{isLoading ? (
 				<FriendsSkeleton />

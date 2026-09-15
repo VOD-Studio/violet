@@ -5,6 +5,7 @@
         migrate migrate-down migrate-version check-publications reset-db db-shell redis-shell \
         api api-build api-test api-lint \
         web web-build web-preview web-lint web-format web-typecheck \
+        web-test web-contract \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
@@ -166,6 +167,9 @@ web-typecheck: ## TypeScript 类型检查
 
 web-test: ## 运行前端单元测试 (Vitest)
 	cd web && pnpm test
+
+web-contract: ## 运行主题浏览器契约（Playwright，需先 web-build）
+	cd web && pnpm test:contract
 
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），

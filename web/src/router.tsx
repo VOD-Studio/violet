@@ -1,4 +1,5 @@
 import type { SessionClaims } from "@entities/user/model/types";
+import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { RuaLoading } from "@widgets/PersonaMotion";
@@ -41,6 +42,9 @@ export const getRouter = () => {
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 30_000,
 		defaultPendingComponent: RuaLoading,
+		// 路由级错误在出错路由自己的槽位渲染（壳层 Header/Footer 保留），
+		// 根级错误才落 __root errorComponent 的整页兜底
+		defaultErrorComponent: RouteError,
 		defaultPendingMs: 180,
 		defaultPendingMinMs: 360,
 		defaultViewTransition: {

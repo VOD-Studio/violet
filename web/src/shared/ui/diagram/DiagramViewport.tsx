@@ -10,6 +10,7 @@
  *
  * 不感知 mermaid：children 是任意渲染产物（SVG），纯交互容器。
  */
+
 import {
 	Check,
 	Copy,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/shared/ui/base/button";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { exportPng, exportSvg as exportSvgFile } from "./export";
 import { useDiagramViewport } from "./useDiagramViewport";
 
@@ -102,7 +104,7 @@ export function DiagramViewport({
 			<div
 				className={
 					state.locked
-						? `code-block-scrollbar overflow-x-auto ${FOCUS_RING}`
+						? `${codeScrollbar.scrollbar} overflow-x-auto ${FOCUS_RING}`
 						: `overflow-hidden overscroll-contain ${FOCUS_RING}`
 				}
 				role="application"
@@ -198,7 +200,7 @@ export function DiagramViewport({
 							{exportMenuOpen ? (
 								<div
 									role="menu"
-									className="code-block-scrollbar absolute right-0 top-full z-20 mt-1 flex min-w-32 flex-col gap-0.5 rounded-md border border-edge-hairline bg-popover p-1 text-popover-foreground shadow-md"
+									className={`${codeScrollbar.scrollbar} absolute right-0 top-full z-20 mt-1 flex min-w-32 flex-col gap-0.5 rounded-md border border-edge-hairline bg-popover p-1 text-popover-foreground shadow-md`}
 								>
 									<button
 										type="button"

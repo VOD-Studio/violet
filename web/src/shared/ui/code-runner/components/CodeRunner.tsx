@@ -10,9 +10,11 @@
  * 样式遵循 violet 约定：bg-[#24292e]、border-edge-hairline、rounded-lg、
  * Tailwind v4 canonical 类（4px 倍数裸数字）。
  */
+
 import { ChevronDown, ChevronUp, Play, Terminal as TerminalIcon } from "lucide-react";
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { Button } from "@/shared/ui/base/button";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { useCodeRun } from "../hooks/useCodeRun";
 import { useVimPreference } from "../hooks/useVimPreference";
 import { CodeMirrorEditor } from "./CodeMirrorEditor";
@@ -155,7 +157,7 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
 			</div>
 
 			{/* 代码区：CodeMirror 可编辑 */}
-			<div className="code-block-scrollbar max-h-96 overflow-auto">
+			<div className={`${codeScrollbar.scrollbar} max-h-96 overflow-auto`}>
 				<CodeMirrorEditor
 					value={code}
 					language={language}

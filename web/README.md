@@ -40,7 +40,8 @@ web/src/
 │   └── vendor/       # 外部库本地适配
 ├── test/             # 测试配置与 setup
 ├── router.tsx        # 路由器入口
-└── styles.css        # 全局样式与 Tailwind 入口
+├── styles.css        # 全局样式唯一入口（只负责导入）
+└── styles/           # 全局样式实现：theme 映射 / token / palette / 方言 / 基础行为 / 转场
 ```
 
 ## 开发环境
@@ -133,7 +134,9 @@ API 基础配置见 `src/shared/api/`。
 
 ## 样式
 
-- Tailwind CSS v4，入口 `src/styles.css`。
+- Tailwind CSS v4，`src/styles.css` 是唯一全局入口，只负责导入；实现按所有权拆在 `src/styles/`（theme 映射、基础 token、配色预设、视觉方言、基础行为、页面转场）。
+- 组件专属样式放组件旁 `*.module.css`；运行时 DOM 的规则由所属 feature 持有样式文件。
+- 主题 token 分层：基础语义层（`styles/tokens.css`）、品牌强调层（`styles/palettes/`）、方言层（`styles/dialects/`）。公开页面主容器挂 `.dialect-public`、后台等工具界面挂 `.dialect-tool`、灯箱等沉浸舞台挂 `.dialect-immersive`；页面消费 semantic token，不直接绑定色值。
 - 支持 v4 任意值简写（如 `max-w-50`）。
 - 暗色/亮色主题通过 `next-themes` 管理。
 
@@ -146,6 +149,7 @@ pnpm test
 - 测试文件：`src/**/*.test.{ts,tsx}`
 - 环境：jsdom
 - setup：`src/test/setup.ts`
+- 主题浏览器契约（Playwright，需先 `pnpm build`）：`pnpm test:contract`，或仓库根 `make web-contract`
 
 ## 环境变量
 

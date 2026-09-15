@@ -21,3 +21,7 @@ todos.json
 
 # Codex 桌宠导出产物(脚本生成)
 web/scripts/codex-pet/dist/
+
+# Playwright
+**/test-results
+**/playwright-report

@@ -1,0 +1,92 @@
+/*
+ * 全局基础行为：滚动条、字体栈、选区外的基础排版契约。
+ * 只放跨页面共享的基础规则；组件专属样式归组件旁的 CSS Module。
+ */
+
+/* 全局滚动条：细条半透明，不使用 ::-webkit-scrollbar（会强制经典模式占空间） */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
+}
+
+body {
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+}
+
+html,
+body,
+input,
+textarea,
+select,
+button {
+	font-family: var(--font-sans);
+}
+
+/* Maple Mono 连字：所有 font-mono 元素启用标准连字 + 上下文替代 */
+.font-mono {
+	font-feature-settings: "liga", "calt";
+}
+
+.prose {
+	line-height: 1.75;
+	/*
+   * 排版颜色强制跟随主题 token，不依赖 typography 插件硬编码色值。
+   * 避免 proseNeutral 的固定灰色在主题下对比度异常（文字发灰不可读）。
+   */
+	--tw-prose-body: var(--color-foreground);
+	--tw-prose-headings: var(--color-foreground);
+	--tw-prose-bold: var(--color-foreground);
+	--tw-prose-lead: var(--color-foreground);
+	--tw-prose-links: var(--color-primary);
+	--tw-prose-counters: var(--color-muted-foreground);
+	--tw-prose-bullets: var(--color-muted-foreground);
+	--tw-prose-hr: var(--color-border);
+	--tw-prose-quotes: var(--color-foreground);
+	--tw-prose-quote-borders: var(--color-border);
+	--tw-prose-captions: var(--color-muted-foreground);
+	--tw-prose-code: var(--color-foreground);
+	--tw-prose-th: var(--color-foreground);
+	--tw-prose-td: var(--color-foreground);
+}
+
+/*
+ * 不要给 .prose pre 加 background/border/border-radius/backdrop-filter 等装饰。
+ * 文章代码块由 CodeBlock 自带完整卡片样式（dark bg + 圆角 + 边框 + shiki 高亮），
+ * 编辑器代码块由 .ProseMirror pre 兜底。此前的 .prose pre 规则未入 layer 且带
+ * !important，会盖过 CodeBlock 的 Tailwind 覆盖：内层 pre 出现圆角裁剪首/尾行，
+ * glass 背景盖住 shiki 高亮。
+ */
+
+/* 全局边框工具类：Tailwind v4 默认不生成 border-border，显式提供 */
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-border);
+	}
+
+	/*
+   * 文章标题锚点滚动偏移：点击目录跳转时，标题不被 sticky 头部（64px）遮挡。
+   * 80px = 头部 64px + 缓冲 16px，与 archive 页 scroll-mt-20 约定一致。
+   * 用 :where() 保持低优先级；同时覆盖 Markdown(.prose) 与 HTML(HtmlContent) 两路。
+   */
+	:where([data-article-content]) :is(h2, h3, h4)[id] {
+		scroll-margin-top: 80px;
+	}
+}
+
+/* 文章详情页任务列表对齐（HtmlContent 路径）
+ * Tiptap 输出 <li><label><input/checkbox></label><div><p>text</p></div></li>
+ * label 高度 = leading-8(2rem)，checkbox 垂直居中与首行文字中线对齐 */
+.prose ul[data-type="taskList"] li > label {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	height: 2rem;
+}
+.prose ul[data-type="taskList"] li > div > p:first-child {
+	margin-top: 0;
+}

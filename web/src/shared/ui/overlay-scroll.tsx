@@ -1,6 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 
+import styles from "./overlay-scroll.module.css";
+
 const THUMB_CLS =
 	"pointer-events-auto cursor-pointer touch-none rounded-full bg-foreground/20 hover:bg-foreground/40 absolute";
 const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
@@ -14,9 +16,9 @@ const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
  *
  * Stacking context 隔离：
  * - wrapper `isolation: isolate` 防止 track 的 z-index 泄漏到外部
- * - .os-host `isolation: isolate` 困住 children 的 z-index（sticky 列等），
+ * - 滚动宿主（module .host）困住 children 的 z-index（sticky 列等），
  *   使其不与 track 竞争
- * - track 只需 `z-index: 1`（仅需高于 .os-host 这个兄弟节点）
+ * - track 只需 `z-index: 1`（仅需高于滚动宿主这个兄弟节点）
  */
 const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 	({ children, className, style, ...props }, ref) => {
@@ -194,7 +196,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 			<div className={cn("relative isolate", className)}>
 				<div
 					ref={scrollRef}
-					className="os-host isolate h-full overflow-auto"
+					className={cn(styles.host, "isolate h-full overflow-auto")}
 					style={style}
 					{...props}
 				>

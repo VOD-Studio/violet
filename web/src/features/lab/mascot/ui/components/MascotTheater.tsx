@@ -10,6 +10,7 @@ import { useAgentStatus } from "../hooks/useAgentStatus";
 import { GROUP_LABEL, type MascotGroupFilter } from "../hooks/useMascotExhibit";
 import { MascotDirectorPanel } from "./MascotDirectorPanel";
 import { MascotEmotionLibrary } from "./MascotEmotionLibrary";
+import "../mascot-stage.css";
 
 type DockView = "states" | "controls";
 

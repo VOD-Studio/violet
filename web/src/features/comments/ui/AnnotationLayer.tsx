@@ -15,6 +15,7 @@ import { useBlockAnnotations } from "../api/queries";
 import { extractCandidateBlocks, findBlockElement } from "../lib/extract-blocks";
 import type { BlockCount } from "../model/types";
 import { AnnotationCard } from "./AnnotationCard";
+import "./annotations.css";
 
 /** 高亮块的 class（背景 + 左色条） */
 const HIGHLIGHT_CLASS = "annotation-highlight";

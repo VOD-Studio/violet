@@ -78,7 +78,7 @@ function AdminLayout() {
 	// overflow-hidden：侧边栏切换走 FLIP——内容区宽度瞬时到位后以 translateX
 	// 滑入，滑动期间视觉右缘短暂超出视口，需裁剪防止横向滚动条闪现。
 	return (
-		<div className="bg-background flex h-screen w-full overflow-hidden">
+		<div className="dialect-tool bg-background flex h-screen w-full overflow-hidden">
 			<AdminSidebar />
 			<div id="admin-content" className="flex min-w-0 flex-1 flex-col">
 				<AdminTopBar title={title} />
