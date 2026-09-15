@@ -52,7 +52,7 @@ export function NoteEditorToolbar({
 						<span
 							className={
 								note.status === "published"
-									? "size-1.5 rounded-full bg-emerald-500"
+									? "size-1.5 rounded-full bg-success"
 									: "size-1.5 rounded-full bg-muted-foreground/40"
 							}
 						/>
@@ -60,7 +60,7 @@ export function NoteEditorToolbar({
 					</Badge>
 				) : null}
 				{isDirty && !saving ? (
-					<span className="font-mono text-xs text-amber-600 dark:text-amber-400">
+					<span className="font-mono text-xs text-warning">
 						● 未保存
 					</span>
 				) : null}
