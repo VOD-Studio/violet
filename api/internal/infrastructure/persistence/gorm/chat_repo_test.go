@@ -95,8 +95,10 @@ func TestChatRepositoryReadPositions(t *testing.T) {
 
 	// A 读到 m1；C 读到 m2 后离开会话。
 	readAtA := now.Add(-10 * time.Minute)
-	require.NoError(t, repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userA, &m1, &readAtA)))
-	require.NoError(t, repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userC, &m2, &now)))
+	_, err = repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userA, &m1, &readAtA))
+	require.NoError(t, err)
+	_, err = repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userC, &m2, &now))
+	require.NoError(t, err)
 
 	pos, err := repo.FindReadPosition(ctx, conversationID, userA)
 	require.NoError(t, err)
@@ -122,4 +124,41 @@ func TestChatRepositoryReadPositions(t *testing.T) {
 	require.Nil(t, byUser[userB].ReadAt)
 	_, excluded := byUser[userC]
 	require.False(t, excluded)
+}
+
+func TestChatRepositoryReadPositionDoesNotRegress(t *testing.T) {
+	for _, gap := range []time.Duration{0, time.Minute} {
+		t.Run(gap.String(), func(t *testing.T) {
+			db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "test.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+			require.NoError(t, err)
+			require.NoError(t, db.AutoMigrate(&model.ChatMessage{}, &model.ChatReadPosition{}))
+			repo := NewChatRepository(db)
+			ctx := context.Background()
+			conversationID, userID := domainshared.NewID(), domainshared.NewID()
+			older := domainshared.IDFromUUID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+			newer := domainshared.IDFromUUID(uuid.MustParse("00000000-0000-0000-0000-000000000002"))
+			now := time.Now().UTC()
+			for i, id := range []domainshared.ID{older, newer} {
+				at := now.Add(time.Duration(i) * gap)
+				require.NoError(t, db.Create(&model.ChatMessage{ID: id.UUID(), ConversationID: conversationID.UUID(), SenderID: userID.UUID(), MessageType: "text", Content: "hi", IdempotencyKey: id.String(), CreatedAt: at, UpdatedAt: at}).Error)
+			}
+			earlier := now.Add(-time.Minute)
+			advanced, err := repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userID, &older, &earlier))
+			require.NoError(t, err)
+			require.True(t, advanced)
+			advanced, err = repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userID, &newer, &now))
+			require.True(t, advanced)
+			require.NoError(t, err)
+			later := now.Add(time.Hour)
+			for _, last := range []*domainshared.ID{&older, &newer, nil} {
+				advanced, err = repo.SaveReadPosition(ctx, domainchat.ReconstructReadPosition(conversationID, userID, last, &later))
+				require.False(t, advanced)
+				require.NoError(t, err)
+				position, err := repo.FindReadPosition(ctx, conversationID, userID)
+				require.NoError(t, err)
+				require.Equal(t, &newer, position.LastMessageID())
+				require.True(t, position.ReadAt().Equal(now), "重复或过期上报不修改阅读时间")
+			}
+		})
+	}
 }

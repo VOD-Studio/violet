@@ -66,8 +66,8 @@ type ConversationRepository interface {
 	// UpdateMessage 保存发送者的消息编辑结果（正文、编辑时间与媒体关联）。
 	UpdateMessage(ctx context.Context, message *Message) error
 
-	// SaveReadPosition 保存用户在会话中的阅读位置。
-	SaveReadPosition(ctx context.Context, position *ReadPosition) error
+	// SaveReadPosition 原子推进阅读位置；重复或更早的位置不更新，返回是否发生推进。
+	SaveReadPosition(ctx context.Context, position *ReadPosition) (bool, error)
 	// CountUnread 统计用户在指定会话中的未读消息数。
 	CountUnread(ctx context.Context, conversationID, userID shared.ID) (int64, error)
 	// CountAllUnread 统计用户全部会话的未读消息数。

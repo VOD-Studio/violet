@@ -379,13 +379,23 @@ func (r *ChatRepository) UpdateMessage(ctx context.Context, message *domainchat.
 	})
 }
 
-// SaveReadPosition 保存用户阅读位置。
-func (r *ChatRepository) SaveReadPosition(ctx context.Context, position *domainchat.ReadPosition) error {
+// SaveReadPosition 原子推进阅读位置，乱序请求不覆盖较新的水位与阅读时间。
+func (r *ChatRepository) SaveReadPosition(ctx context.Context, position *domainchat.ReadPosition) (bool, error) {
 	po := readPositionToPO(position)
-	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "conversation_id"}, {Name: "user_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"last_message_id", "read_at"}),
-	}).Create(po).Error
+		Where: clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: `
+excluded.last_message_id IS NOT NULL AND (
+ chat_read_positions.last_message_id IS NULL OR EXISTS (
+  SELECT 1 FROM chat_messages incoming, chat_messages current
+  WHERE incoming.id = excluded.last_message_id
+   AND current.id = chat_read_positions.last_message_id
+   AND (incoming.created_at > current.created_at
+    OR (incoming.created_at = current.created_at AND incoming.id > current.id))
+ ))`}}},
+	}).Create(po)
+	return result.RowsAffected > 0, result.Error
 }
 
 // CountUnread 统计指定会话未读消息。

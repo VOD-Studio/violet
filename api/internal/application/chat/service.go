@@ -877,20 +877,12 @@ func (s *Service) MarkRead(ctx context.Context, userID, conversationID, messageI
 	if _, err := s.repo.FindByIDForMember(ctx, conversationID, userID); err != nil {
 		return 0, err
 	}
-	previous, err := s.repo.FindReadPosition(ctx, conversationID, userID)
-	if err != nil {
-		return 0, err
-	}
 	var last *domainshared.ID
 	if !messageID.IsZero() {
-		message, err := s.repo.FindMessage(ctx, conversationID, messageID)
-		if err != nil {
+		if _, err := s.repo.FindMessage(ctx, conversationID, messageID); err != nil {
 			return 0, err
 		}
 		last = &messageID
-		if message.DeletedAt() != nil {
-			last = &messageID
-		}
 	} else {
 		messages, err := s.repo.ListMessages(ctx, conversationID, nil, 1)
 		if err != nil {
@@ -904,22 +896,22 @@ func (s *Service) MarkRead(ctx context.Context, userID, conversationID, messageI
 	readAt := new(time.Time)
 	*readAt = s.now()
 	position := domainchat.ReconstructReadPosition(conversationID, userID, last, readAt)
-	if err := s.repo.SaveReadPosition(ctx, position); err != nil {
+	advanced, err := s.repo.SaveReadPosition(ctx, position)
+	if err != nil {
 		return 0, err
 	}
-	if err := s.broadcastReadAdvanced(ctx, conversationID, userID, previous, position); err != nil {
-		return 0, err
+	if advanced {
+		if err := s.broadcastReadAdvanced(ctx, conversationID, userID, position); err != nil {
+			return 0, err
+		}
 	}
 	return s.repo.CountUnread(ctx, conversationID, userID)
 }
 
 // broadcastReadAdvanced 在水位推进时向其他有效成员广播 read.advanced 事件。
-func (s *Service) broadcastReadAdvanced(ctx context.Context, conversationID, userID domainshared.ID, previous, current *domainchat.ReadPosition) error {
+func (s *Service) broadcastReadAdvanced(ctx context.Context, conversationID, userID domainshared.ID, current *domainchat.ReadPosition) error {
 	last := current.LastMessageID()
 	if last == nil {
-		return nil
-	}
-	if previous != nil && previous.LastMessageID() != nil && previous.LastMessageID().Equal(*last) {
 		return nil
 	}
 	members, err := s.repo.ListMembers(ctx, conversationID, false)
