@@ -301,3 +301,16 @@ describe("inlineImages", () => {
 		});
 	});
 });
+
+describe("全体提及回显", () => {
+	afterEach(cleanup);
+	it("没有候选数据时仍可回显全体提及，编辑后保留目标身份", () => {
+		const onChange = vi.fn();
+		render(<RichCommentInput value="@(all:all) 开会" onChange={onChange} />);
+		const box = screen.getByRole("textbox");
+		expect(box.querySelector('[data-mention="all"]')?.textContent).toBe("@所有人");
+		box.append(document.createTextNode("！"));
+		fireEvent.input(box);
+		expect(onChange).toHaveBeenLastCalledWith("@(all:all) 开会！");
+	});
+});
