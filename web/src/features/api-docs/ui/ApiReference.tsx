@@ -10,8 +10,8 @@ import { buildDocsModel, operationMatches } from "../lib/build-docs-model";
 import type { DocChapter, DocsModel } from "../model/types";
 import { OperationRow } from "./OperationRow";
 
-/** 站外完整文档（Apifox），弹窗右上角尾链指向这里 */
-const EXTERNAL_DOCS_URL = "https://apidoc.xunrua.top/";
+/** 自托管完整文档站，弹窗右上角尾链指向这里 */
+const EXTERNAL_DOCS_URL = "https://api.xunrua.top/";
 
 /** 首页同款 spring 参数，章节滚入视口时复用。 */
 const REVEAL_SPRING = { type: "spring" as const, stiffness: 130, damping: 21, mass: 0.9 };
