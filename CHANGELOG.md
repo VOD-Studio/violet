@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.28](https://github.com/VOD-Studio/violet/compare/v2.8.27...v2.8.28) (2026-09-15)
+
+
+### 修复
+
+* **chat:** 修复超长消息气泡溢出布局 ([#369](https://github.com/VOD-Studio/violet/issues/369)) ([04c594c](https://github.com/VOD-Studio/violet/commit/04c594c00ac3dd9c5543e37d15ac8080763556c0))
+
 ## [2.8.27](https://github.com/VOD-Studio/violet/compare/v2.8.26...v2.8.27) (2026-09-14)
 
 
