@@ -275,11 +275,14 @@ for (const theme of ["light", "dark"] as const) {
 			};
 		});
 
-		// 画布：中性舞台恒近黑，不随明暗主题翻转
+		// 画布：中性舞台恒近黑，不随明暗主题翻转；实际底色消费画布 token
+		// （computed 串与原始 token 串的百分比写法可能不同，按解析后的色值比较）
 		const background = expectColor(stage.background, "沉浸画布 --background");
 		expect(background.l, "沉浸画布应为近黑舞台").toBeLessThan(0.3);
 		expect(background.c, "沉浸画布应为中性（无彩度）").toBeLessThanOrEqual(0.01);
-		expect(stage.scopeBackground, "舞台底色应消费画布 token").toBe(stage.background);
+		const scopeBackground = expectColor(stage.scopeBackground, "舞台实际底色");
+		expect(scopeBackground.l, "舞台底色明度应等于画布 token").toBe(background.l);
+		expect(scopeBackground.c, "舞台底色彩度应等于画布 token").toBe(background.c);
 
 		// 控制：主要动作色从品牌强调收回高对比中性（覆盖公开方言的品牌映射）
 		const primary = expectColor(stage.primary, "沉浸主要动作色");
@@ -406,13 +409,17 @@ for (const viewport of VIEWPORTS) {
 
 			// 焦点/当前导航：品牌强调（工具方言下品牌唯一露出点）
 			expect(snapshot.ring, "工具方言焦点环应映射品牌强调色").toBe(snapshot.rootBrand);
-			const indicator = parseOklabChroma(snapshot.activeIndicator ?? "");
-			if (snapshot.activeIndicator) {
-				expect(indicator, "当前导航指示条应为可解析混合色").toBeTruthy();
+			// 移动端视口可能命中的是移动导航项（无 before 指示条，底色透明）——仅对实际有色的指示条断言
+			const indicatorRaw = snapshot.activeIndicator ?? "";
+			const indicatorChroma =
+				parseOklch(indicatorRaw)?.c ?? parseOklabChroma(indicatorRaw)?.chroma ?? null;
+			if (indicatorChroma !== null) {
 				expect(
-					indicator?.chroma,
-					`当前导航指示条应使用品牌强调色，实际 ${snapshot.activeIndicator}`,
+					indicatorChroma,
+					`当前导航指示条应使用品牌强调色，实际 ${indicatorRaw}`,
 				).toBeGreaterThan(0.05);
+			} else if (indicatorRaw && indicatorRaw !== "rgba(0, 0, 0, 0)") {
+				throw new Error(`当前导航指示条颜色不可解析: ${indicatorRaw}`);
 			}
 
 			// 行为状态色不被改写；画布随主题；无横向溢出
