@@ -4,6 +4,7 @@ import type { PublishedGallery } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
+import { PageHeader } from "@shared/ui/page-header";
 import { PageShell } from "@shared/ui/page-shell";
 import { PhotoStack } from "@shared/ui/photo-stack";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
@@ -95,13 +96,12 @@ export function GalleryBrowsePage() {
 
 	return (
 		<PageShell>
-			<header className="mb-12 max-w-2xl space-y-3">
-				<p className="font-mono text-muted-foreground text-xs tracking-[0.3em] uppercase">
-					Photo Stories
-				</p>
-				<h1 className="font-mono font-bold text-4xl">图集</h1>
-				<p className="text-muted-foreground leading-relaxed">已经发布的视觉作品。</p>
-			</header>
+			<PageHeader
+				eyebrow="Photo Stories"
+				title="图集"
+				description="已经发布的视觉作品。"
+				className="mb-12 max-w-2xl"
+			/>
 
 			{feed.galleries.length === 0 ? (
 				<Empty
