@@ -44,6 +44,27 @@ const paged = (data, limit) =>
 		meta: { pagination: { page: 1, limit, total: data.length, total_pages: 1 } },
 	});
 
+/** 沉浸方言契约用公开图集：单图集单图，图片本体由契约路由按 /assets 路径应答。 */
+const CONTRACT_GALLERY = {
+	id: "20000000-0000-0000-0000-000000000001",
+	slug: "contract-gallery",
+	title: "沉浸契约图集",
+	summary: "用于沉浸方言视觉验收的样例图集。",
+	published_at: "2026-08-01T10:00:00Z",
+	items: [
+		{
+			file_id: "21000000-0000-0000-0000-000000000001",
+			position: 1,
+			thumbnail: "/assets/contract-image.png",
+			url: "/assets/contract-image.png",
+			width: 640,
+			height: 420,
+			alt_text: "契约样例图",
+			caption: "",
+		},
+	],
+};
+
 /** 与后端 envelope 语义一致的只读路由表；浏览器侧 page.route 复用同一份数据。 */
 export function handle(method, pathname, search) {
 	const params = new URLSearchParams(search || "");
@@ -78,6 +99,13 @@ export function handle(method, pathname, search) {
 	}
 	if (pathname === "/api/v1/settings") return { status: 200, body: envelope({}) };
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
+	if (pathname === "/api/v1/galleries") {
+		const limit = Number(params.get("limit") || 12);
+		return { status: 200, body: paged([CONTRACT_GALLERY], limit) };
+	}
+	if (pathname === "/api/v1/galleries/contract-gallery") {
+		return { status: 200, body: envelope(CONTRACT_GALLERY) };
+	}
 	return { status: 404, body: JSON.stringify({ error: "NOT_FOUND", message: pathname }) };
 }
 

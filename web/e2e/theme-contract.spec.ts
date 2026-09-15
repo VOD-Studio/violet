@@ -26,6 +26,12 @@ import { handle } from "./mock-data.mjs";
 const THEME_SERVER_PORT = 4173;
 const CLIENT_DIR = join(import.meta.dirname, "..", "dist", "client");
 
+/** 沉浸方言契约图集用的 1×1 PNG（经 /assets 路径应答，避免真实网络图源）。 */
+const CONTRACT_IMAGE_PNG = Buffer.from(
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+	"base64",
+);
+
 const VIEWPORTS = [
 	{ name: "mobile", width: 390, height: 844 },
 	{ name: "desktop", width: 1440, height: 900 },
@@ -158,6 +164,13 @@ async function routeClient(context: BrowserContext, options?: { blockScripts: bo
 			});
 		}
 		if (url.pathname.startsWith("/assets/")) {
+			if (url.pathname === "/assets/contract-image.png") {
+				return route.fulfill({
+					status: 200,
+					contentType: "image/png",
+					body: CONTRACT_IMAGE_PNG,
+				});
+			}
 			const file = join(CLIENT_DIR, url.pathname);
 			if (existsSync(file) && !file.endsWith("/")) {
 				const contentType = url.pathname.endsWith(".css")
@@ -219,6 +232,85 @@ function expectDialectSemantics(snapshot: Awaited<ReturnType<typeof snapshotThem
 	} else {
 		expect(rootBackground.l).toBeLessThan(0.3);
 	}
+}
+
+for (const theme of ["light", "dark"] as const) {
+	test(`沉浸方言契约：图库灯箱 ${theme}`, async ({ browser }) => {
+		test.setTimeout(90_000);
+		const context = await newThemeContext(browser, theme);
+		await routeClient(context);
+		const page = await context.newPage();
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await page.goto("/galleries", { waitUntil: "load" });
+		await page.waitForLoadState("networkidle");
+
+		// 进入图集详情并打开灯箱（Immersive 作用域挂在灯箱根容器）
+		await page.locator('a[href="/galleries/contract-gallery"]').first().click();
+		await page.waitForURL("**/galleries/contract-gallery");
+		await page.waitForLoadState("networkidle");
+		await page.locator("figure button").first().click();
+		const immersive = page.locator(".dialect-immersive");
+		await expect(immersive, "灯箱应挂 Immersive 方言作用域").toBeVisible();
+
+		const stage = await page.evaluate(() => {
+			const scope = document.querySelector(".dialect-immersive");
+			if (!scope) throw new Error("灯箱未挂 .dialect-immersive 作用域");
+			const cs = getComputedStyle(scope);
+			const root = getComputedStyle(document.documentElement);
+			const prop = (el: CSSStyleDeclaration, name: string) =>
+				el.getPropertyValue(name).trim();
+			return {
+				background: prop(cs, "--background"),
+				primary: prop(cs, "--primary"),
+				ring: prop(cs, "--ring"),
+				destructive: prop(cs, "--destructive"),
+				rootBrand: prop(root, "--brand"),
+				rootDestructive: prop(root, "--destructive"),
+				scopeBackground: cs.backgroundColor,
+			};
+		});
+
+		// 画布：中性舞台恒近黑，不随明暗主题翻转
+		const background = expectColor(stage.background, "沉浸画布 --background");
+		expect(background.l, "沉浸画布应为近黑舞台").toBeLessThan(0.3);
+		expect(background.c, "沉浸画布应为中性（无彩度）").toBeLessThanOrEqual(0.01);
+		expect(stage.scopeBackground, "舞台底色应消费画布 token").toBe(stage.background);
+
+		// 控制：主要动作色从品牌强调收回高对比中性（覆盖公开方言的品牌映射）
+		const primary = expectColor(stage.primary, "沉浸主要动作色");
+		expect(primary.c, "沉浸主要动作色应为中性").toBeLessThanOrEqual(0.01);
+		expect(Math.abs(primary.l - 0.5), "沉浸主要动作色应为高对比").toBeGreaterThan(0.25);
+
+		// 焦点：焦点环保留品牌彩度（媒体舞台内品牌唯一容身之处）
+		const ring = expectColor(stage.ring, "沉浸焦点环");
+		expect(ring.c, "沉浸焦点环应保留品牌彩度").toBeGreaterThan(0.05);
+		expect(stage.ring, "沉浸焦点环应等于品牌强调色").toBe(stage.rootBrand);
+
+		// 行为状态色不被方言改写
+		expect(stage.destructive, "destructive 在沉浸作用域不得被改写").toBe(stage.rootDestructive);
+
+		// 关闭灯箱：作用域卸载后无 token 泄漏（页面公开方言语义复原）
+		await immersive.click({ position: { x: 12, y: 500 } });
+		await expect(immersive).toHaveCount(0);
+		const afterClose = await page.evaluate(() => {
+			const surface = document.querySelector(".dialect-public");
+			if (!surface) throw new Error("关闭灯箱后缺少 .dialect-public 作用域");
+			const cs = getComputedStyle(surface);
+			const root = getComputedStyle(document.documentElement);
+			return {
+				surfacePrimary: cs.getPropertyValue("--primary").trim(),
+				surfaceBrand: cs.getPropertyValue("--brand").trim(),
+				rootBrand: root.getPropertyValue("--brand").trim(),
+			};
+		});
+		expect(afterClose.surfacePrimary, "公开方言主要动作色应回到品牌强调").toBe(
+			afterClose.surfaceBrand,
+		);
+		expect(afterClose.rootBrand, "根作用域 --brand 不被沉浸作用域泄漏改写").toBe(
+			stage.rootBrand,
+		);
+		await context.close();
+	});
 }
 
 for (const viewport of VIEWPORTS) {
