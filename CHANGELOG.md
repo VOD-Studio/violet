@@ -7,6 +7,29 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.30](https://github.com/VOD-Studio/violet/compare/v2.8.29...v2.8.30) (2026-09-15)
+
+
+### 新增
+
+* **web:** 公开壳层统一挂载 Public Content 方言作用域 ([98172c8](https://github.com/VOD-Studio/violet/commit/98172c8d40412c320884a6aa36fc3904498fc4e9))
+* **web:** 公开路由错误与 404 状态统一到真实页面几何 ([78fca54](https://github.com/VOD-Studio/violet/commit/78fca54f59b618db90f042b1ee2461e9c541e2af))
+* **web:** 建立三方言主题契约并统一公开壳层 ([#374](https://github.com/VOD-Studio/violet/issues/374)) ([b195d73](https://github.com/VOD-Studio/violet/commit/b195d73317abacdc31afc2163fd153a4498e9a11))
+* **web:** 建立品牌强调与主要动作分离的三方言主题作用域 ([a3e1c27](https://github.com/VOD-Studio/violet/commit/a3e1c277789ab4e1c14e241a1864ebc6de444004))
+* **web:** 统一公开页面标题头为共享 PageHeader ([e5ccb9e](https://github.com/VOD-Studio/violet/commit/e5ccb9ec4a156bb377a61d3cbf0156cc60901b7f))
+
+
+### 修复
+
+* **api-docs:** 完整文档尾链改指自托管文档站 ([199e14b](https://github.com/VOD-Studio/violet/commit/199e14bb2ee14922eba011b8d2cfa330a8ec773b))
+* **web:** 评审修正方言作用域归属与共享组件形态 ([b6cc3d3](https://github.com/VOD-Studio/violet/commit/b6cc3d3d90fcf3a011a603cc377a6b8d1983e076))
+
+
+### 重构
+
+* **web:** 按所有权拆分全局样式到 styles 目录 ([42574b1](https://github.com/VOD-Studio/violet/commit/42574b1df533b742ce5995eaa0e6d0c7c4da66ab))
+* **web:** 评审修正契约脚手架与方言入口形态 ([bac0e78](https://github.com/VOD-Studio/violet/commit/bac0e787f2c3c7c4cb799b7da829c38122fb4dfd))
+
 ## [2.8.29](https://github.com/VOD-Studio/violet/compare/v2.8.28...v2.8.29) (2026-09-15)
 
 
