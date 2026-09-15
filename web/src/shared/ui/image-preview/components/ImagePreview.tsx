@@ -264,7 +264,7 @@ function ImagePreviewDialog({
 			initial={{ opacity: 0 }}
 			animate={{ opacity: 1 }}
 			transition={{ duration: 0.25 }}
-			className="fixed inset-0 z-9999 overflow-hidden outline-none"
+			className="dialect-immersive fixed inset-0 z-9999 overflow-hidden outline-none"
 			// Radix modal 会禁用 body 指针事件；只有当前会话恢复交互。
 			style={{ pointerEvents: isPresent ? "auto" : "none" }}
 			onClick={onClose}
