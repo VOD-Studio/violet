@@ -3,6 +3,7 @@ import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useChatUnreadCount } from "@features/chat/api/queries";
+import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
 import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
@@ -44,6 +45,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const openCommand = useCommandUIStore((s) => s.open);
 	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
+	useChatUnreadTitle(user ? (chatUnread?.unread_count ?? 0) : 0);
 	const [notificationOpen, setNotificationOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const actionsPinned = notificationOpen || userMenuOpen;
