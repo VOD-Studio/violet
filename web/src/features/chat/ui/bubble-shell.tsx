@@ -5,12 +5,18 @@ import { formatDateTime, formatTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
 
-/** 消息气泡容器：mine 为实色主色，other 为浅底。 */
+/**
+ * 消息气泡容器：mine 为实色主色，other 为浅底。
+ *
+ * wrap-anywhere 而非 wrap-break-word：break-word 不参与 min-content 计算，
+ * 长 URL 这类不可断词会把气泡（及其 flex 子项的自动最小尺寸）顶到 max-width 之外。
+ * max-w-full 再兜住代码块等无法折行的内容：它们的 min-content 撑不小，只能被夹住后内部横向滚动。
+ */
 export function BubbleShell({ mine, children }: { mine: boolean; children: ReactNode }) {
 	return (
 		<div
 			className={cn(
-				"flex flex-wrap items-end gap-x-1.5 px-3.5 py-2 text-left text-[0.95rem] leading-relaxed",
+				"flex max-w-full flex-wrap items-end gap-x-1.5 px-3.5 py-2 text-left text-[0.95rem] leading-relaxed wrap-anywhere",
 				mine
 					? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
 					: "rounded-2xl rounded-bl-md bg-secondary text-foreground",

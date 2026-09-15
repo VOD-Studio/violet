@@ -254,8 +254,10 @@ export function ChatMessageContent({
 			},
 		};
 	}, [inlineMedia, onImage]);
+	// min-w-0：本体是气泡（flex 容器）的子项，代码块的 min-content 撑不小，
+	// 不解除自动最小尺寸就会把气泡顶宽，而不是让代码块自己横向滚动。
 	return (
-		<div className={cn(className)}>
+		<div className={cn("min-w-0", className)}>
 			<ReactMarkdown
 				remarkPlugins={REMARK_PLUGINS}
 				rehypePlugins={rehypePlugins}

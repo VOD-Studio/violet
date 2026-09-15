@@ -180,7 +180,9 @@ export function MessageBubble({
 					</span>
 				)}
 
-				<div className="relative">
+				{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
+				    的 min-content 会顶穿列的 max-w，须逐层夹住（气泡自身同理，见 BubbleShell）。 */}
+				<div className="relative max-w-full">
 					{message.reply_to && (
 						<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
 					)}
@@ -204,7 +206,6 @@ export function MessageBubble({
 								viewerID={currentUserID}
 								inlineMedia={message.media}
 								onImage={onImage}
-								className="wrap-break-word"
 							/>
 							<BubbleTimestamp
 								inline
@@ -222,7 +223,6 @@ export function MessageBubble({
 										emote={mergedEmote}
 										mentions={message.mentions}
 										viewerID={currentUserID}
-										className="wrap-break-word"
 									/>
 									<BubbleTimestamp
 										inline
@@ -243,7 +243,6 @@ export function MessageBubble({
 								emote={mergedEmote}
 								mentions={message.mentions}
 								viewerID={currentUserID}
-								className="wrap-break-word"
 							/>
 							<BubbleTimestamp
 								inline
