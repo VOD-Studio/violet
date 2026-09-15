@@ -116,10 +116,11 @@ function RootComponent() {
 	const isUsersRoute = pathname.startsWith("/users/");
 	const isFullscreenRoute = isChatRoute || isUsersRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
+	// 工具方言：个人中心与聊天已落地（.dialect-tool）；/lab 实验豁免保持根作用域
+	// 中性，实验样式不得反向改写正式页面 token
 	const isLabRoute = pathname.startsWith("/lab");
-	// 工具方言：个人中心已落地（.dialect-tool）；聊天与实验豁免保持根作用域中性，
-	// 待各自迁移 issue 落地方言后再接入
-	const isNeutralShellRoute = isChatRoute || isLabRoute;
+	const shellDialect =
+		isProfileRoute || isChatRoute ? "dialect-tool" : isLabRoute ? null : "dialect-public";
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -139,8 +140,9 @@ function RootComponent() {
 					className={cn(
 						"flex min-h-screen flex-col",
 						isFullscreenRoute && "h-dvh overflow-hidden",
-						// 公开壳层挂 Public Content 方言；/profile 挂 Tool 方言；/admin 独立布局不经过这里
-						isProfileRoute ? "dialect-tool" : !isNeutralShellRoute && "dialect-public",
+						// 公开壳层挂 Public Content 方言；/profile 与 /chat 挂 Tool 方言；
+						// /admin 独立布局不经过这里
+						shellDialect,
 					)}
 				>
 					<AnnouncementBar />
