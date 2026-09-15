@@ -7,6 +7,28 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.29](https://github.com/VOD-Studio/violet/compare/v2.8.28...v2.8.29) (2026-09-15)
+
+
+### 新增
+
+* **chat:** 支持房间全体提及通知 ([d51fc3f](https://github.com/VOD-Studio/violet/commit/d51fc3f6d9e115dde87cad72993661bd71a34591))
+* **chat:** 添加所有人提及入口 ([7e2e327](https://github.com/VOD-Studio/violet/commit/7e2e3271c495ef2baf13f782cb1c9243a42cf4a4))
+* **chat:** 点击用户名字追加提及 ([99699cc](https://github.com/VOD-Studio/violet/commit/99699ccf95217ed937f3a90bcc3f5d9c3fbbe4fe))
+* **mentions:** 支持全体提及占位符 ([dc9e404](https://github.com/VOD-Studio/violet/commit/dc9e4042f32495869c1f8ec2cf6ca1de7a607a0d))
+* **rich-input:** 支持外部追加用户提及 ([3fe12fa](https://github.com/VOD-Studio/violet/commit/3fe12faa14870da34c0820e106595acab36a2564))
+* **tweets:** 支持输入框粘贴图片 ([ff2e96b](https://github.com/VOD-Studio/violet/commit/ff2e96b5cb2a86d0ffd982f9b7b80aaabf589666))
+
+
+### 修复
+
+* **chat:** 修复已读名单姓名截断 ([d37d033](https://github.com/VOD-Studio/violet/commit/d37d033227df23af028fc27877714067a8f7e50e))
+* **chat:** 同步消息已读计数与名单 ([a977035](https://github.com/VOD-Studio/violet/commit/a9770357e1614a6e26c82dd9ab974ffd392deae2))
+* **chat:** 完善聊天已读与提及体验 ([#371](https://github.com/VOD-Studio/violet/issues/371)) ([4cb10d6](https://github.com/VOD-Studio/violet/commit/4cb10d68f3467c648e6bf5469d444be80df5092f))
+* **chat:** 按可见消息推进阅读位置 ([2bdc1c2](https://github.com/VOD-Studio/violet/commit/2bdc1c21d8e3fc84e9dad993045b0a6ec77c3700))
+* **chat:** 补充浏览器标签页未读提示 ([4fab56b](https://github.com/VOD-Studio/violet/commit/4fab56b9677837523959435f8ee2c8669739e7f1))
+* **chat:** 防止阅读位置被过期请求回退 ([9eed873](https://github.com/VOD-Studio/violet/commit/9eed87380094c8bc851b026333fe886fdfd166c2))
+
 ## [2.8.28](https://github.com/VOD-Studio/violet/compare/v2.8.27...v2.8.28) (2026-09-15)
 
 
