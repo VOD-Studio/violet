@@ -17,7 +17,9 @@
  * @ 提及渲染成跳用户主页的行内药丸：提到本人时加深底色（`data-mention-self`），
  * 与「谁在叫我」这一唯一需要视觉抢眼的信息对应。
  */
+
 import type { CommentEmoteRef } from "@entities/comment/model/types";
+import { MENTION_ALL } from "@entities/user/model/mention-token";
 import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
@@ -102,6 +104,13 @@ function chatSpan({
 	...rest
 }: ComponentProps<NonNullable<Exclude<Components["span"], string>>>) {
 	const props = rest as Record<string, unknown>;
+	if (props["data-mention"] === MENTION_ALL.id) {
+		return (
+			<span className="rounded bg-current/10 px-1 font-medium" data-mention={MENTION_ALL.id}>
+				{children}
+			</span>
+		);
+	}
 	const username = props["data-mention-username"];
 	if (typeof username !== "string") return <span {...rest}>{children}</span>;
 	const self = props["data-mention-self"] === "true";

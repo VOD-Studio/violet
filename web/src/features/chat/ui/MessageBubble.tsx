@@ -198,6 +198,7 @@ export function MessageBubble({
 					)}
 					{editing && !message.is_deleted ? (
 						<MessageEditComposer
+							conversationKind={conversationKind}
 							currentUserID={currentUserID}
 							message={message}
 							onClose={() => setEditing(false)}

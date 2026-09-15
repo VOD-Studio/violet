@@ -170,3 +170,16 @@ describe("ChatMessageContent", () => {
 		expect(container.textContent).toContain("文字");
 	});
 });
+
+describe("ChatMessageContent 全体提及", () => {
+	afterEach(cleanup);
+	it("全体提及在历史消息中显示为无主页链接的标签", () => {
+		const { container } = render(
+			<ChatMessageContent content="**@(all:all)** 开会" viewerID="reader" />,
+		);
+		expect(container.querySelector('[data-mention="all"]')?.textContent).toBe("@所有人");
+		expect(container.querySelector("strong")?.textContent).toBe("@所有人");
+		expect(container.querySelector("a")).toBeNull();
+		expect(container.textContent).not.toContain("@(all:all)");
+	});
+});

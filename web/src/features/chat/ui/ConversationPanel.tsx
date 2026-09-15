@@ -381,6 +381,7 @@ export function ConversationPanel({
 					<MessageComposer
 						inputRef={inputRef}
 						conversationID={conversation.id}
+						conversationKind={conversation.kind}
 						currentUserID={currentUserID}
 						onCancelReply={() => setReplyTarget(null)}
 						onMessageSent={() => {
