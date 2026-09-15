@@ -65,7 +65,7 @@ const Row = ({
 			<dd className="flex items-center gap-1.5 text-sm">
 				{bound ? (
 					<>
-						<CheckCircle2 className="size-3.5 text-emerald-500" />
+						<CheckCircle2 className="size-3.5 text-success" />
 						<span>{boundText}</span>
 					</>
 				) : (

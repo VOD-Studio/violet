@@ -115,10 +115,11 @@ function RootComponent() {
 	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
 	const isUsersRoute = pathname.startsWith("/users/");
 	const isFullscreenRoute = isChatRoute || isUsersRoute;
-	// 工具方言（聊天、个人中心）与实验豁免（/lab/*）不挂公开方言，保持根作用域中性，
+	const isProfileRoute = pathname.startsWith("/profile");
+	const isLabRoute = pathname.startsWith("/lab");
+	// 工具方言：个人中心已落地（.dialect-tool）；聊天与实验豁免保持根作用域中性，
 	// 待各自迁移 issue 落地方言后再接入
-	const isToolOrLabRoute =
-		isChatRoute || pathname.startsWith("/profile") || pathname.startsWith("/lab");
+	const isNeutralShellRoute = isChatRoute || isLabRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -138,8 +139,8 @@ function RootComponent() {
 					className={cn(
 						"flex min-h-screen flex-col",
 						isFullscreenRoute && "h-dvh overflow-hidden",
-						// 公开壳层挂 Public Content 方言；/admin 独立布局不经过这里
-						!isToolOrLabRoute && "dialect-public",
+						// 公开壳层挂 Public Content 方言；/profile 挂 Tool 方言；/admin 独立布局不经过这里
+						isProfileRoute ? "dialect-tool" : !isNeutralShellRoute && "dialect-public",
 					)}
 				>
 					<AnnouncementBar />
