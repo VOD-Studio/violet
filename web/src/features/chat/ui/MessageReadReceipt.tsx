@@ -66,12 +66,14 @@ export function MessageReadReceipt({ message, conversationKind }: MessageReadRec
 								key={reader.user.id}
 							>
 								<ChatAvatar className="size-6 shrink-0" user={reader.user} />
-								<span className="min-w-0 flex-1 truncate text-sm text-foreground">
-									{reader.user.display_name}
-								</span>
-								<span className="shrink-0 text-[11px] text-muted-foreground">
-									{formatDateTime(reader.read_at, "long-minute")}
-								</span>
+								<div className="min-w-0 flex-1">
+									<span className="block text-sm wrap-anywhere text-foreground">
+										{reader.user.display_name}
+									</span>
+									<span className="block text-[11px] text-muted-foreground">
+										{formatDateTime(reader.read_at, "long-minute")}
+									</span>
+								</div>
 							</li>
 						))}
 					</ul>
