@@ -12,16 +12,23 @@ import { toast } from "sonner";
 import { useEditChatMessage } from "../api/queries";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { imageBubbleContent } from "../lib/conversation";
-import type { ChatMessage } from "../model/types";
+import type { ChatMessage, ConversationKind } from "../model/types";
 
 interface MessageEditComposerProps {
 	message: ChatMessage;
+	/** 仅房间提供全体提及候选。 */
+	conversationKind?: ConversationKind;
 	/** 当前用户 ID，用于把自己从提及候选里剔除 */
 	currentUserID: string;
 	onClose: () => void;
 }
 
-export function MessageEditComposer({ message, currentUserID, onClose }: MessageEditComposerProps) {
+export function MessageEditComposer({
+	message,
+	conversationKind = "direct",
+	currentUserID,
+	onClose,
+}: MessageEditComposerProps) {
 	const isImage = message.type === "image";
 	// 编辑初值用归一化正文：旧格式消息缺失的占位符被前置补齐，否则预填图在编辑器里不渲染、保存时被静默丢弃。
 	const initialContent = useMemo(
@@ -43,7 +50,11 @@ export function MessageEditComposer({ message, currentUserID, onClose }: Message
 	const [images, setImages] = useState<PictureInput[]>(initialImages);
 	const [uploading, setUploading] = useState(false);
 	const edit = useEditChatMessage();
-	const mentionCandidates = useMentionCandidates(message.conversation_id, currentUserID);
+	const mentionCandidates = useMentionCandidates(
+		message.conversation_id,
+		currentUserID,
+		conversationKind,
+	);
 
 	// 与发送路径同一口径：媒体列表从正文占位符推导，剔除未上传完成与重复项。
 	const uploadedIDs = new Set(images.filter((img) => !!img.id).map((img) => img.id as string));

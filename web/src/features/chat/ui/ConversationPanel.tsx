@@ -2,6 +2,7 @@
  * 会话面板：消息流（滚动加载历史）、气泡、输入区与详情抽屉的编排。
  */
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import type { RichCommentInputHandle } from "@features/comments/ui/RichCommentInput";
 import type { PendingChatShare } from "@shared/api/share-tweet-store";
 import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
@@ -18,7 +19,7 @@ import {
 } from "../api/queries";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
-import type { ChatConversation, ChatMessage } from "../model/types";
+import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
 import { MessageBubble } from "./MessageBubble";
@@ -65,6 +66,13 @@ export function ConversationPanel({
 	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
 	const [highlightedID, setHighlightedID] = useState<string | null>(null);
+	const inputRef = useRef<RichCommentInputHandle>(null);
+	const handleMention = (user: ChatUser) => {
+		if (user.id === currentUserID) return;
+		if (!inputRef.current?.appendMention(user.id)) {
+			toast.info("该用户不在当前会话的提及候选中");
+		}
+	};
 
 	const messages = useMemo(
 		() => messagePages?.pages.flatMap((page) => page.data).reverse() ?? [],
@@ -88,28 +96,85 @@ export function ConversationPanel({
 		});
 	}, []);
 
-	useEffect(() => {
-		if (lastMessage?.id && conversation.unread_count > 0) {
-			read.mutate({ id: conversation.id, messageId: lastMessage.id });
-		}
-	}, [conversation.id, conversation.unread_count, lastMessage?.id, read.mutate]);
-
-	useEffect(() => {
-		if (lastMessage?.id) scrollToBottom(false);
-	}, [lastMessage?.id, scrollToBottom]);
+	const followLatestRef = useRef(true);
+	const lastSubmittedReadRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		if (!conversation.id) return;
+		followLatestRef.current = true;
+		lastSubmittedReadRef.current = null;
 		setReplyTarget(null);
 		setPendingFocusID(null);
 		setHighlightedID(null);
 		prependScrollAnchorRef.current = null;
 		latestKnownMessageTimeRef.current = null;
 		earliestKnownMessageTimeRef.current = null;
-		return () => {
-			messageRefs.current = {};
-		};
 	}, [conversation.id]);
+
+	useEffect(() => {
+		if (
+			lastMessage?.id &&
+			(followLatestRef.current || lastMessage.sender.id === currentUserID)
+		) {
+			scrollToBottom(false);
+		}
+	}, [lastMessage?.id, lastMessage?.sender.id, currentUserID, scrollToBottom]);
+
+	useEffect(() => {
+		const container = scrollContainerRef.current;
+		if (!container) return;
+		let frame = 0;
+		const markVisibleRead = () => {
+			if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+			const viewport = container.getBoundingClientRect();
+			if (viewport.height <= 0) return;
+			const previousIndex = messages.findIndex(
+				(message) => message.id === lastSubmittedReadRef.current,
+			);
+			for (let index = messages.length - 1; index > previousIndex; index--) {
+				const message = messages[index];
+				const bounds = messageRefs.current[message.id]?.getBoundingClientRect();
+				if (
+					!bounds ||
+					bounds.height <= 0 ||
+					bounds.bottom > viewport.bottom ||
+					bounds.bottom <= viewport.top
+				)
+					continue;
+				lastSubmittedReadRef.current = message.id;
+				read.mutate(
+					{ id: conversation.id, messageId: message.id },
+					{
+						onError: () => {
+							if (lastSubmittedReadRef.current === message.id)
+								lastSubmittedReadRef.current = null;
+						},
+					},
+				);
+				break;
+			}
+		};
+		const scheduleRead = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(markVisibleRead);
+		};
+		container.addEventListener("scroll", scheduleRead);
+		window.addEventListener("focus", scheduleRead);
+		window.addEventListener("resize", scheduleRead);
+		document.addEventListener("visibilitychange", scheduleRead);
+		const observer = new ResizeObserver(scheduleRead);
+		observer.observe(container);
+		if (container.firstElementChild) observer.observe(container.firstElementChild);
+		scheduleRead();
+		return () => {
+			cancelAnimationFrame(frame);
+			observer.disconnect();
+			container.removeEventListener("scroll", scheduleRead);
+			window.removeEventListener("focus", scheduleRead);
+			window.removeEventListener("resize", scheduleRead);
+			document.removeEventListener("visibilitychange", scheduleRead);
+		};
+	}, [conversation.id, messages, read.mutate]);
 
 	useEffect(() => {
 		if (!pendingFocusID) return;
@@ -145,6 +210,7 @@ export function ConversationPanel({
 		const container = scrollContainerRef.current;
 		if (!container) return;
 		const { scrollTop, scrollHeight, clientHeight } = container;
+		followLatestRef.current = scrollHeight - scrollTop - clientHeight <= 2;
 		setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 150);
 	}, []);
 
@@ -328,6 +394,7 @@ export function ConversationPanel({
 												: undefined
 										}
 										onImage={(media) => imagePreview.openPreview([media.url])}
+										onMention={handleMention}
 										onReply={
 											message.type !== "system" && !message.is_deleted
 												? () => setReplyTarget(message)
@@ -370,7 +437,9 @@ export function ConversationPanel({
 					</AnimatePresence>
 					<TypingIndicator conversationID={conversation.id} members={members} />
 					<MessageComposer
+						inputRef={inputRef}
 						conversationID={conversation.id}
+						conversationKind={conversation.kind}
 						currentUserID={currentUserID}
 						onCancelReply={() => setReplyTarget(null)}
 						onMessageSent={() => {

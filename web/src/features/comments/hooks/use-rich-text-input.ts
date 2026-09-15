@@ -20,7 +20,11 @@
 
 import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
-import { humanizeMentionTokens, mentionTokenPattern } from "@entities/user/model/mention-token";
+import {
+	humanizeMentionTokens,
+	MENTION_ALL,
+	mentionTokenPattern,
+} from "@entities/user/model/mention-token";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
 import { cn } from "@shared/lib/utils";
@@ -198,7 +202,10 @@ export function useRichTextInput({
 						html += `<span data-emoji="${escapeHtml(fullMatch)}">${escapeHtml(text)}</span>`;
 					}
 				} else if (mentionUserID !== undefined && mentionUsername !== undefined) {
-					const display = resolveMentionRef.current?.(mentionUserID) || mentionUsername;
+					const display =
+						mentionUserID === MENTION_ALL.id
+							? MENTION_ALL.displayName
+							: resolveMentionRef.current?.(mentionUserID) || mentionUsername;
 					html += `<span data-mention="${escapeHtml(mentionUserID)}" data-mention-username="${escapeHtml(mentionUsername)}" contenteditable="false" class="${MENTION_NODE_CLASS}">@${escapeHtml(display)}</span>`;
 				}
 				lastIndex = match.index + fullMatch.length;

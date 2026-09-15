@@ -2,12 +2,14 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMember, ChatMessage } from "../../model/types";
 import { MessageComposer } from "../MessageComposer";
+import { MessageEditComposer } from "../MessageEditComposer";
 
-const sendMocks = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
+const sendMocks = vi.hoisted(() => ({ mutateAsync: vi.fn(), edit: vi.fn() }));
 
 vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
 	useChatMembers: () => ({ data: members }),
+	useEditChatMessage: () => ({ mutate: sendMocks.edit, isPending: false }),
 }));
 vi.mock("../../hooks/useChatTyping", () => ({
 	useChatTypingBroadcaster: () => ({ notifyTyping: vi.fn(), notifyStopped: vi.fn() }),
@@ -67,6 +69,7 @@ function typeInto(box: HTMLElement, text: string) {
 afterEach(() => {
 	cleanup();
 	sendMocks.mutateAsync.mockReset();
+	sendMocks.edit.mockReset();
 });
 
 describe("MessageComposer", () => {
@@ -201,5 +204,77 @@ describe("MessageComposer", () => {
 
 		expect(screen.queryByRole("option")).toBeNull();
 		expect(onCancelReply).not.toHaveBeenCalled();
+	});
+});
+
+describe("MessageComposer 全体提及", () => {
+	it.each([
+		"@",
+		"@所有",
+		"@all",
+	])("房间输入 %s 可选择所有人，并发送独立的全体占位符", async (query) => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, query);
+		const all = screen.getByRole("option", { name: /所有人/ });
+		expect(screen.getAllByRole("option")[0]).toBe(all);
+		fireEvent.keyDown(box, { key: "Enter" });
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+		expect(box.querySelector('[data-mention="all"]')?.textContent).toBe("@所有人");
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+		await vi.waitFor(() => expect(sendMocks.mutateAsync).toHaveBeenCalled());
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe("@(all:all)");
+	});
+
+	it("私聊不提供全体提及候选", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="direct"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		typeInto(screen.getByRole("textbox"), "@");
+		expect(screen.queryByRole("option", { name: /所有人/ })).toBeNull();
+		expect(screen.getByRole("option", { name: /Bob/ })).toBeTruthy();
+	});
+});
+
+describe("MessageEditComposer 全体提及", () => {
+	it("房间编辑可选所有人，预填的全体提及仍保留在提交正文中", () => {
+		render(
+			<MessageEditComposer
+				message={textMessage("@(all:all) 原文")}
+				conversationKind="room"
+				currentUserID={selfID}
+				onClose={() => {}}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		expect(box.querySelector('[data-mention="all"]')?.textContent).toBe("@所有人");
+		const tail = document.createTextNode(" @");
+		box.append(tail);
+		const range = document.createRange();
+		range.setStart(tail, tail.length);
+		range.collapse(true);
+		window.getSelection()?.removeAllRanges();
+		window.getSelection()?.addRange(range);
+		fireEvent.input(box);
+		fireEvent.click(screen.getByRole("option", { name: /所有人/ }));
+		fireEvent.click(screen.getByRole("button", { name: "保存编辑" }));
+		expect(sendMocks.edit.mock.calls[0][0].input.content).toBe("@(all:all) 原文 @(all:all)");
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
 	});
 });

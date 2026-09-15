@@ -6,20 +6,28 @@ import {
 	stripImagePlaceholders,
 	stripPlaceholdersForPreview,
 } from "@features/comments/hooks/use-rich-text-input";
-import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
+import {
+	type PictureInput,
+	RichCommentInput,
+	type RichCommentInputHandle,
+} from "@features/comments/ui/RichCommentInput";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { LoaderCircle, MessageSquareQuote, Reply, Send, X } from "lucide-react";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSendChatMessage } from "../api/queries";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
-import type { ChatMessage } from "../model/types";
+import type { ChatMessage, ConversationKind } from "../model/types";
 
 export interface MessageComposerProps {
+	/** 接收会话内点击用户名触发的提及。 */
+	inputRef?: Ref<RichCommentInputHandle>;
 	conversationID: string;
+	/** 仅房间提供全体提及候选。 */
+	conversationKind?: ConversationKind;
 	/** 当前用户 ID，用于把自己从提及候选里剔除 */
 	currentUserID: string;
 	/** 落定到当前会话的待发分享；非空时优先展示分享 banner 并接管发送逻辑。 */
@@ -30,7 +38,9 @@ export interface MessageComposerProps {
 }
 
 export function MessageComposer({
+	inputRef,
 	conversationID,
+	conversationKind = "direct",
 	currentUserID,
 	pendingShare,
 	replyTarget,
@@ -44,7 +54,7 @@ export function MessageComposer({
 	const clearPendingShare = useShareTweetStore((s) => s.clearPending);
 	const { notifyTyping, notifyStopped } = useChatTypingBroadcaster(conversationID);
 	const composerRef = useRef<HTMLDivElement>(null);
-	const mentionCandidates = useMentionCandidates(conversationID, currentUserID);
+	const mentionCandidates = useMentionCandidates(conversationID, currentUserID, conversationKind);
 
 	useEffect(() => {
 		if (content.trim()) {
@@ -204,6 +214,7 @@ export function MessageComposer({
 					)
 				)}
 				<RichCommentInput
+					ref={inputRef}
 					autoFocus
 					value={content}
 					onChange={setContent}

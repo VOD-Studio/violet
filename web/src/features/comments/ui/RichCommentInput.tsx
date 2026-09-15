@@ -19,7 +19,16 @@ import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { isImageURL } from "@shared/lib/url";
 import { Image as ImageIcon, Smile, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	type ReactNode,
+	type Ref,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { cn } from "@/shared/lib/utils";
 import {
 	extractImageIds,
@@ -39,7 +48,14 @@ export interface PictureInput {
 	size: number;
 }
 
+/** 供外部交互向输入区追加提及。 */
+export interface RichCommentInputHandle {
+	/** 在草稿末尾追加候选内用户并聚焦；禁用或用户不在候选内时返回 false。 */
+	appendMention: (userID: string) => boolean;
+}
+
 export interface RichCommentInputProps {
+	ref?: Ref<RichCommentInputHandle>;
 	value: string;
 	onChange: (value: string) => void;
 	onSubmit?: () => void;
@@ -79,6 +95,7 @@ interface ImageItem {
 }
 
 export function RichCommentInput({
+	ref,
 	value,
 	onChange,
 	onSubmit,
@@ -245,6 +262,19 @@ export function RichCommentInput({
 		onMentionQueryChange: mentionEnabled ? handleMentionQueryChange : undefined,
 	});
 	insertImageRef.current = insertImage;
+	useImperativeHandle(
+		ref,
+		() => ({
+			appendMention(userID) {
+				const candidate = mentionCandidates?.find((item) => item.id === userID);
+				if (disabled || !candidate) return false;
+				focus();
+				insertMention(candidate.id, candidate.username, candidate.displayName);
+				return true;
+			},
+		}),
+		[disabled, focus, insertMention, mentionCandidates],
+	);
 
 	const mentionMatches = useMemo(() => {
 		if (mentionQuery === null || !mentionCandidates?.length) return [];

@@ -10,8 +10,8 @@
  *
  * contentEditable 在 jsdom 中有限制，手动设置 innerHTML + 触发 input 事件模拟用户输入。
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockUploadFile } = vi.hoisted(() => ({ mockUploadFile: vi.fn() }));
@@ -23,7 +23,11 @@ vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: mockUploadFile }),
 }));
 
-import { type PictureInput, RichCommentInput } from "../RichCommentInput";
+import {
+	type PictureInput,
+	RichCommentInput,
+	type RichCommentInputHandle,
+} from "../RichCommentInput";
 
 /** 受控包装：inlineImages 依赖 value 真正回灌才能驱动退格剔除等效果，镜像 chat 的用法。 */
 function Controlled({ onImagesChange }: { onImagesChange: (images: PictureInput[]) => void }) {
@@ -121,6 +125,54 @@ describe("RichCommentInput", () => {
 		);
 		const emojiBtn = container.querySelector('button[aria-label="添加表情"]');
 		expect(emojiBtn).toBeNull();
+	});
+
+	it("外部追加提及保留草稿和图片，支持重复点击并聚焦到末尾", () => {
+		const ref = createRef<RichCommentInputHandle>();
+		const onChange = vi.fn();
+		const userID = "00000000-0000-0000-0000-000000000002";
+		render(
+			<RichCommentInput
+				ref={ref}
+				value="草稿![img:photo] 邮件 a@example.com @未完成"
+				onChange={onChange}
+				inlineImages
+				initialImages={[{ id: "photo", url: "/photo.png", width: 1, height: 1, size: 1 }]}
+				mentionCandidates={[{ id: userID, username: "bob", displayName: "Bob" }]}
+			/>,
+		);
+		const editor = screen.getByRole("textbox");
+		const picture = editor.querySelector("[data-image]");
+		act(() => {
+			expect(ref.current?.appendMention(userID)).toBe(true);
+			expect(ref.current?.appendMention(userID)).toBe(true);
+		});
+		expect(editor.querySelector("[data-image]")).toBe(picture);
+		expect(editor.querySelectorAll("[data-mention]")).toHaveLength(2);
+		expect(onChange).toHaveBeenLastCalledWith(
+			`草稿![img:photo] 邮件 a@example.com @未完成@(bob:${userID})\u00a0@(bob:${userID})\u00a0`,
+		);
+		expect(document.activeElement).toBe(editor);
+		const range = window.getSelection()?.getRangeAt(0);
+		expect(range?.startContainer).toBe(editor);
+		expect(range?.startOffset).toBe(editor.childNodes.length);
+	});
+
+	it("禁用输入框或非候选用户不追加提及", () => {
+		const ref = createRef<RichCommentInputHandle>();
+		const onChange = vi.fn();
+		const props = {
+			ref,
+			value: "草稿",
+			onChange,
+			mentionCandidates: [{ id: "bob", username: "bob", displayName: "Bob" }],
+		};
+		const { rerender } = render(<RichCommentInput {...props} />);
+		expect(ref.current?.appendMention("unknown")).toBe(false);
+		rerender(<RichCommentInput {...props} disabled />);
+		expect(ref.current?.appendMention("bob")).toBe(false);
+		expect(onChange).not.toHaveBeenCalled();
+		expect(screen.getByRole("textbox").textContent).toBe("草稿");
 	});
 });
 
@@ -247,5 +299,18 @@ describe("inlineImages", () => {
 				expect.objectContaining({ id: "media-1" }),
 			]);
 		});
+	});
+});
+
+describe("全体提及回显", () => {
+	afterEach(cleanup);
+	it("没有候选数据时仍可回显全体提及，编辑后保留目标身份", () => {
+		const onChange = vi.fn();
+		render(<RichCommentInput value="@(all:all) 开会" onChange={onChange} />);
+		const box = screen.getByRole("textbox");
+		expect(box.querySelector('[data-mention="all"]')?.textContent).toBe("@所有人");
+		box.append(document.createTextNode("！"));
+		fireEvent.input(box);
+		expect(onChange).toHaveBeenLastCalledWith("@(all:all) 开会！");
 	});
 });

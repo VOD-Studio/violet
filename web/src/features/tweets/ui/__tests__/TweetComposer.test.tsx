@@ -7,7 +7,16 @@
  * - 纯文本/附图/引用的提交逻辑
  */
 import type { Emoji } from "@entities/emoji/model/types";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+	act,
+	cleanup,
+	createEvent,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
+import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // mock useMe
@@ -26,10 +35,12 @@ vi.mock("@features/tweets/api/mutations", () => ({
 	}),
 }));
 
-// mock useChunkedUpload
+const uploadFileMock = vi.fn();
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
-	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
+	useChunkedUpload: () => ({ uploadFile: uploadFileMock }),
 }));
+
+vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 // mock EmojiPicker: 简化受控触发 onSelect
 let emojiPickerOnSelect: ((emoji: Emoji) => void) | null = null;
@@ -69,10 +80,14 @@ import TweetComposer from "../TweetComposer";
 describe("TweetComposer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		uploadFileMock.mockReset().mockResolvedValue({ url: "/pasted.png" });
+		vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
+		vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 		emojiPickerOnSelect = null;
 	});
 	afterEach(() => {
 		cleanup();
+		vi.restoreAllMocks();
 	});
 
 	it("渲染输入框、图片按钮、表情按钮与发布按钮", () => {
@@ -139,5 +154,115 @@ describe("TweetComposer", () => {
 			{ content: "第一条推文 [doge]", images: [], quote_of: undefined },
 			expect.any(Object),
 		);
+	});
+
+	it("粘贴图片后上传并随推文提交，上传期间不可发布", async () => {
+		let finishUpload!: (result: { url: string }) => void;
+		uploadFileMock.mockReturnValueOnce(
+			new Promise((resolve) => {
+				finishUpload = resolve;
+			}),
+		);
+		render(<TweetComposer />);
+		const textarea = screen.getByRole("textbox");
+		fireEvent.change(textarea, { target: { value: "配图" } });
+		const file = new File(["png"], "clipboard.png", { type: "image/png" });
+		const event = createEvent.paste(textarea, {
+			clipboardData: { files: [file], getData: () => "" },
+		});
+		fireEvent(textarea, event);
+		expect(event.defaultPrevented).toBe(true);
+		expect(uploadFileMock).toHaveBeenCalledWith(file, expect.any(Function));
+		expect(screen.getByLabelText("移除图片")).toBeTruthy();
+		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
+			true,
+		);
+		await act(async () => finishUpload({ url: "/pasted.png" }));
+		fireEvent.click(screen.getByRole("button", { name: "发布" }));
+		expect(mutateMock).toHaveBeenCalledWith(
+			{ content: "配图", images: ["/pasted.png"], quote_of: undefined },
+			expect.any(Object),
+		);
+	});
+
+	it.each([
+		{ files: [] },
+		{ files: [new File(["text"], "note.txt", { type: "text/plain" })] },
+	])("无图片的剪贴板保留原生粘贴行为（%j）", ({ files }) => {
+		render(<TweetComposer />);
+		const textarea = screen.getByRole("textbox");
+		const event = createEvent.paste(textarea, {
+			clipboardData: { files, getData: () => "粘贴文字" },
+		});
+		fireEvent(textarea, event);
+		expect(event.defaultPrevented).toBe(false);
+		expect(uploadFileMock).not.toHaveBeenCalled();
+	});
+
+	it("图文混合粘贴上传图片并保留原生文本插入", async () => {
+		render(<TweetComposer />);
+		const event = createEvent.paste(screen.getByRole("textbox"), {
+			clipboardData: {
+				files: [new File(["png"], "clipboard.png", { type: "image/png" })],
+				getData: () => "图片说明",
+			},
+		});
+		await act(async () => {
+			fireEvent(screen.getByRole("textbox"), event);
+		});
+		expect(event.defaultPrevented).toBe(false);
+		expect(uploadFileMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("上传期间重复粘贴不会突破四张限制，移除后可以继续添加", async () => {
+		let finishUpload!: (result: { url: string }) => void;
+		uploadFileMock.mockReturnValueOnce(
+			new Promise((resolve) => {
+				finishUpload = resolve;
+			}),
+		);
+		render(<TweetComposer />);
+		const textarea = screen.getByRole("textbox");
+		const file = new File(["png"], "clipboard.png", { type: "image/png" });
+		const paste = (files: File[]) =>
+			fireEvent.paste(textarea, {
+				clipboardData: { files, getData: () => "" },
+			});
+		paste(Array.from({ length: 5 }, () => file));
+		paste([file]);
+		expect(uploadFileMock).toHaveBeenCalledTimes(1);
+		expect(toast.error).toHaveBeenCalledWith("请等待当前图片上传完成");
+		await act(async () => finishUpload({ url: "/pasted.png" }));
+		expect(uploadFileMock).toHaveBeenCalledTimes(4);
+		expect(screen.getAllByLabelText("移除图片")).toHaveLength(4);
+		paste([file]);
+		expect(uploadFileMock).toHaveBeenCalledTimes(4);
+		expect(toast.error).toHaveBeenCalledWith("最多 4 张图");
+		fireEvent.click(screen.getAllByLabelText("移除图片")[0]);
+		await act(async () => {
+			paste([file]);
+		});
+		expect(uploadFileMock).toHaveBeenCalledTimes(5);
+	});
+
+	it("粘贴超大图片沿用大小限制，上传失败后仍可再次粘贴", async () => {
+		render(<TweetComposer />);
+		const file = new File(["png"], "large.png", { type: "image/png" });
+		Object.defineProperty(file, "size", { value: 10 * 1024 * 1024 + 1 });
+		const paste = (image: File) =>
+			fireEvent.paste(screen.getByRole("textbox"), {
+				clipboardData: { files: [image], getData: () => "" },
+			});
+		paste(file);
+		expect(uploadFileMock).not.toHaveBeenCalled();
+		expect(toast.error).toHaveBeenCalledWith("large.png 超过 10MB");
+		uploadFileMock.mockRejectedValueOnce(new Error("offline"));
+		const valid = new File(["png"], "valid.png", { type: "image/png" });
+		paste(valid);
+		await waitFor(() => expect(screen.getByText("上传失败")).toBeTruthy());
+		await act(async () => {
+			paste(valid);
+		});
+		expect(uploadFileMock).toHaveBeenCalledTimes(2);
 	});
 });

@@ -6,12 +6,12 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// mentionTokenPattern 匹配聊天正文中的提及占位符 @(username:uuid)。
+// mentionTokenPattern 匹配用户提及 @(username:uuid) 与全体提及 @(all:all)。
 //
 // 提及与自定义表情 token 同为正文内联占位符：关系不落表，读路径从正文解析。
 // 占位符内嵌用户名是为了在解析不到用户（注销、改名）时前端仍能兜底渲染，
 // uuid 段才是权威身份；username 段与 domain/user 的 usernamePattern 一致。
-var mentionTokenPattern = regexp.MustCompile(`@\(([a-zA-Z0-9_-]{3,32}):([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\)`)
+var mentionTokenPattern = regexp.MustCompile(`@\(([a-zA-Z0-9_-]{3,32}):([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|all)\)`)
 
 // parseMentionTokens 解析正文中的提及占位符。
 //
@@ -39,9 +39,24 @@ func parseMentionTokens(content string) ([]domainshared.ID, map[domainshared.ID]
 	return ids, tokensByID
 }
 
-// humanizeMentionTokens 把提及占位符还原成 @username，供预览等人类可读场景使用。
+func hasMentionAll(content string) bool {
+	for _, match := range mentionTokenPattern.FindAllStringSubmatch(content, -1) {
+		if match[2] == "all" {
+			return true
+		}
+	}
+	return false
+}
+
+// humanizeMentionTokens 将用户与全体提及还原为可读预览。
 func humanizeMentionTokens(content string) string {
-	return mentionTokenPattern.ReplaceAllString(content, "@$1")
+	return mentionTokenPattern.ReplaceAllStringFunc(content, func(token string) string {
+		match := mentionTokenPattern.FindStringSubmatch(token)
+		if match[2] == "all" {
+			return "@所有人"
+		}
+		return "@" + match[1]
+	})
 }
 
 // mentionIDStrings 把被提及 ID 列表转成事件 payload 可序列化的字符串数组。

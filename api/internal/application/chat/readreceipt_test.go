@@ -49,9 +49,20 @@ func (r *receiptChatRepo) FindReadPosition(_ context.Context, _ domainshared.ID,
 	return r.positions[userID], nil
 }
 
-func (r *receiptChatRepo) SaveReadPosition(_ context.Context, position *domainchat.ReadPosition) error {
+func (r *receiptChatRepo) SaveReadPosition(_ context.Context, position *domainchat.ReadPosition) (bool, error) {
+	if previous := r.positions[position.UserID()]; previous != nil && previous.LastMessageID() != nil {
+		if position.LastMessageID() == nil {
+			return false, nil
+		}
+		last := r.messages[*previous.LastMessageID()]
+		at := last.CreatedAt()
+		state := domainchat.MemberReadState{LastMessageID: previous.LastMessageID(), LastReadAt: &at}
+		if state.Covers(r.messages[*position.LastMessageID()]) {
+			return false, nil
+		}
+	}
 	r.positions[position.UserID()] = position
-	return nil
+	return true, nil
 }
 
 func (r *receiptChatRepo) ListMemberReadStates(context.Context, domainshared.ID) ([]domainchat.MemberReadState, error) {
@@ -152,6 +163,18 @@ func TestMarkReadBroadcastsReadAdvanced(t *testing.T) {
 	if got := len(readAdvancedEvents(repo)); got != 1 {
 		t.Fatalf("read.advanced events after duplicate mark = %d, want 1", got)
 	}
+	older, err := domainchat.NewTextMessage(conversationID, other, "更早的消息", "rr-old", now.Add(-2*time.Minute), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo.messages[older.ID()] = older
+	if _, err := svc.MarkRead(context.Background(), reader, conversationID, older.ID()); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(readAdvancedEvents(repo)); got != 1 {
+		t.Fatalf("stale read emitted event: %d", got)
+	}
+
 }
 
 // 已读回执只附在发送者本人消息上：私聊看对方水位，房间聚合计数排除自己。

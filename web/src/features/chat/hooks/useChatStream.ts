@@ -44,8 +44,7 @@ export const useChatStream = () => {
 		if (!sessionActive || typeof window === "undefined") return;
 		const stream = new EventSource(chatEventStreamURL);
 		stream.onopen = () => {
-			queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
-			queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() });
+			queryClient.invalidateQueries({ queryKey: chatKeys.root });
 		};
 		stream.addEventListener("chat", (event) => {
 			try {
@@ -64,12 +63,15 @@ export const useChatStream = () => {
 					return;
 				}
 				if (payload.type === "read.advanced") {
-					// 已读回执只影响对应会话的消息列表（read_state 随消息 DTO 返回）；
+					// 已读回执同时刷新消息计数与按需加载的名单；
 					// 别人的阅读进度不改变我的会话列表与未读角标，不做全量失效。
 					const conversationID = payload.data.conversation_id;
 					if (typeof conversationID === "string") {
 						queryClient.invalidateQueries({
 							queryKey: chatKeys.messages(conversationID),
+						});
+						queryClient.invalidateQueries({
+							queryKey: chatKeys.readers(conversationID),
 						});
 					}
 					return;

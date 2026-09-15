@@ -34,6 +34,7 @@ interface ImageItem {
 	preview: string;
 }
 
+/** 推文发布框的引用目标与完成回调。 */
 export interface TweetComposerProps {
 	/** 引用转发的目标推文 */
 	quotedTweet?: Tweet | QuotedTweet;
@@ -50,6 +51,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const idRef = useRef(0);
+	const uploadBatchRef = useRef(false);
 	const createTweet = useCreateTweet();
 	const { uploadFile } = useChunkedUpload({ purpose: "tweet" });
 
@@ -65,8 +67,12 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 		!overLimit &&
 		(content.trim().length > 0 || doneUrls.length > 0 || !!quotedTweet);
 	/** 选择文件 → 逐个上传（顺序，避免并发挤占分片通道） */
-	const handleFiles = async (files: FileList | null) => {
+	const handleFiles = async (files: FileList | File[] | null) => {
 		if (!files || files.length === 0) return;
+		if (uploadBatchRef.current) {
+			toast.error("请等待当前图片上传完成");
+			return;
+		}
 		const slots = MAX_TWEET_IMAGES - images.length;
 		if (slots <= 0) {
 			toast.error(`最多 ${MAX_TWEET_IMAGES} 张图`);
@@ -76,42 +82,56 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 			toast.error(`最多 ${MAX_TWEET_IMAGES} 张图，已添加前 ${slots} 张`);
 		}
 		const picked = Array.from(files).slice(0, slots);
-		for (const file of picked) {
-			if (!file.type.startsWith("image/")) {
-				toast.error(`${file.name} 不是图片`);
-				continue;
-			}
-			if (file.size > MAX_IMAGE_SIZE) {
-				toast.error(`${file.name} 超过 ${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
-				continue;
-			}
-			const localId = ++idRef.current;
-			const preview = URL.createObjectURL(file);
-			setImages((prev) => [
-				...prev,
-				{ id: localId, url: "", progress: 0, status: "uploading", preview },
-			]);
-			try {
-				const res = await uploadFile(file, (p) => {
+		uploadBatchRef.current = true;
+		try {
+			for (const file of picked) {
+				if (!file.type.startsWith("image/")) {
+					toast.error(`${file.name} 不是图片`);
+					continue;
+				}
+				if (file.size > MAX_IMAGE_SIZE) {
+					toast.error(`${file.name} 超过 ${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
+					continue;
+				}
+				const localId = ++idRef.current;
+				const preview = URL.createObjectURL(file);
+				setImages((prev) => [
+					...prev,
+					{ id: localId, url: "", progress: 0, status: "uploading", preview },
+				]);
+				try {
+					const res = await uploadFile(file, (p) => {
+						setImages((prev) =>
+							prev.map((i) => (i.id === localId ? { ...i, progress: p.percent } : i)),
+						);
+					});
 					setImages((prev) =>
-						prev.map((i) => (i.id === localId ? { ...i, progress: p.percent } : i)),
+						prev.map((i) =>
+							i.id === localId ? { ...i, status: "done", url: res.url } : i,
+						),
 					);
-				});
-				setImages((prev) =>
-					prev.map((i) =>
-						i.id === localId ? { ...i, status: "done", url: res.url } : i,
-					),
-				);
-				URL.revokeObjectURL(preview);
-			} catch (err) {
-				setImages((prev) =>
-					prev.map((i) => (i.id === localId ? { ...i, status: "error" } : i)),
-				);
-				toastError(err, "图片上传失败");
+					URL.revokeObjectURL(preview);
+				} catch (err) {
+					setImages((prev) =>
+						prev.map((i) => (i.id === localId ? { ...i, status: "error" } : i)),
+					);
+					toastError(err, "图片上传失败");
+				}
 			}
+			// 清空 input value 以便重复选择同一文件
+			if (inputRef.current) inputRef.current.value = "";
+		} finally {
+			uploadBatchRef.current = false;
 		}
-		// 清空 input value 以便重复选择同一文件
-		if (inputRef.current) inputRef.current.value = "";
+	};
+
+	const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+		const files = Array.from(e.clipboardData.files).filter((file) =>
+			file.type.startsWith("image/"),
+		);
+		if (files.length === 0) return;
+		if (!e.clipboardData.getData("text/plain")) e.preventDefault();
+		void handleFiles(files);
 	};
 
 	const removeImage = (id: number) => {
@@ -186,6 +206,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 					ref={textareaRef}
 					value={content}
 					onChange={(e) => setContent(e.target.value)}
+					onPaste={handlePaste}
 					placeholder="有什么新鲜事？"
 					rows={3}
 					className="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"

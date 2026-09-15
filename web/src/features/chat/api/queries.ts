@@ -228,7 +228,11 @@ export const useSendChatMessage = () => {
 			qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(
 				chatKeys.messages(variables.id),
 				(old) => {
-					if (!old) return old;
+					if (
+						!old ||
+						old.pages.some((page) => page.data.some((item) => item.id === message.id))
+					)
+						return old;
 					return {
 						...old,
 						pages: old.pages.map((page, index) =>
@@ -237,6 +241,7 @@ export const useSendChatMessage = () => {
 					};
 				},
 			);
+			qc.invalidateQueries({ queryKey: chatKeys.messages(variables.id) });
 			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
 		},
 	});
