@@ -1,3 +1,4 @@
+import { CHAT_BADGES } from "@entities/chat-badge";
 import { describe, expect, it } from "vitest";
 import {
 	AVATAR_CHARMS,
@@ -22,12 +23,24 @@ describe("chat appearance contract", () => {
 		expect([AVATAR_FRAMES.length, AVATAR_CHARMS.length, BUBBLE_THEMES.length]).toEqual([
 			8, 24, 12,
 		]);
+		expect(CHAT_BADGES.length).toBe(24);
 		for (const item of AVATAR_FRAMES)
 			expect(normalizeAppearance({ avatar_frame_id: item.id }).avatar_frame_id).toBe(item.id);
 		for (const item of AVATAR_CHARMS)
 			expect(normalizeAppearance({ avatar_charm_id: item.id }).avatar_charm_id).toBe(item.id);
 		for (const item of BUBBLE_THEMES)
 			expect(normalizeAppearance({ bubble_theme_id: item.id }).bubble_theme_id).toBe(item.id);
+		for (const item of CHAT_BADGES)
+			expect(normalizeAppearance({ badge_ids: [item.id] }).badge_ids).toEqual([item.id]);
+	});
+	it("佩戴列表去重、截断到三枚并丢弃目录外项", () => {
+		expect(
+			normalizeAppearance({
+				badge_ids: ["rua", "rua", "tea-party", "no-such", "night-owl", "opal-heart"],
+			}).badge_ids,
+		).toEqual(["rua", "tea-party", "night-owl"]);
+		expect(normalizeAppearance({ badge_ids: "rua" }).badge_ids).toEqual([]);
+		expect(normalizeAppearance({}).badge_ids).toEqual([]);
 	});
 	it("绝不把 URL、CSS 或过期 ID 当作图片路径", () => {
 		expect(
@@ -66,6 +79,15 @@ describe("chat appearance contract", () => {
 				...EMPTY_APPEARANCE,
 				avatar_frame_id: "moon-cloud",
 			}),
+		).toBe(false);
+		expect(sameAppearance(EMPTY_APPEARANCE, { ...EMPTY_APPEARANCE, badge_ids: ["rua"] })).toBe(
+			false,
+		);
+		expect(
+			sameAppearance(
+				{ ...EMPTY_APPEARANCE, badge_ids: ["rua", "tea-party"] },
+				{ ...EMPTY_APPEARANCE, badge_ids: ["tea-party", "rua"] },
+			),
 		).toBe(false);
 	});
 });

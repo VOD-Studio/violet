@@ -1,5 +1,7 @@
 import type { ChatAppearance, ChatAppearanceState } from "../model/appearance";
+import { MAX_EQUIPPED_BADGES } from "../model/appearance";
 import {
+	BADGE_BY_ID,
 	BUBBLE_BY_ID,
 	CHARM_BY_ID,
 	EMPTY_APPEARANCE,
@@ -37,10 +39,21 @@ export function normalizeAppearance(value: unknown): ChatAppearance {
 		const id = input[key];
 		return typeof id === "string" && lookup.has(id) ? id : "";
 	};
+	// 佩戴列表整体去重截断;单枚合法性由目录查表兜底,持有校验在服务端。
+	const badgeIDs = Array.isArray(input.badge_ids)
+		? [
+				...new Set(
+					input.badge_ids.filter(
+						(id): id is string => typeof id === "string" && BADGE_BY_ID.has(id),
+					),
+				),
+			].slice(0, MAX_EQUIPPED_BADGES)
+		: [];
 	return {
 		avatar_frame_id: known("avatar_frame_id", FRAME_BY_ID),
 		avatar_charm_id: known("avatar_charm_id", CHARM_BY_ID),
 		bubble_theme_id: known("bubble_theme_id", BUBBLE_BY_ID),
+		badge_ids: badgeIDs,
 	};
 }
 
@@ -72,7 +85,9 @@ export function sameAppearance(a: ChatAppearance, b: ChatAppearance): boolean {
 	return (
 		a.avatar_frame_id === b.avatar_frame_id &&
 		a.avatar_charm_id === b.avatar_charm_id &&
-		a.bubble_theme_id === b.bubble_theme_id
+		a.bubble_theme_id === b.bubble_theme_id &&
+		a.badge_ids.length === b.badge_ids.length &&
+		a.badge_ids.every((id, index) => id === b.badge_ids[index])
 	);
 }
 

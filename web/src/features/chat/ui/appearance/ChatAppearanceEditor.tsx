@@ -1,7 +1,7 @@
 import { Button } from "@shared/ui/base/button";
 import { useState } from "react";
 import { fetchOwnAppearance } from "../../api/appearance";
-import { useSaveChatAppearance } from "../../api/appearance-queries";
+import { useOwnChatBadges, useSaveChatAppearance } from "../../api/appearance-queries";
 import { appearanceErrorMessage, sameAppearance } from "../../lib/appearance";
 import type { ChatAppearanceState } from "../../model/appearance";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../../model/appearance-catalog";
 import type { ChatUser } from "../../model/types";
 import { AppearanceOptionGrid } from "./AppearanceOptionGrid";
+import { BadgeEquipGrid } from "./BadgeEquipGrid";
 import styles from "./ChatAppearanceEditor.module.css";
 import { ChatAppearancePreview } from "./ChatAppearancePreview";
 
@@ -31,6 +32,8 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 	const [error, setError] = useState("");
 	const [reloading, setReloading] = useState(false);
 	const save = useSaveChatAppearance(user.id);
+	const ownedBadges = useOwnChatBadges(user.id, true);
+	const ownedIDs = ownedBadges.data?.map((grant) => grant.badge_id);
 	const busy = save.isPending || reloading;
 	const changed = !sameAppearance(base, draft);
 	const setField = (
@@ -38,6 +41,10 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 		value: string,
 	) => {
 		setDraft((old) => ({ ...old, [key]: value }));
+		setError("");
+	};
+	const setBadgeIDs = (ids: string[]) => {
+		setDraft((old) => ({ ...old, badge_ids: ids }));
 		setError("");
 	};
 	const reload = async () => {
@@ -87,6 +94,12 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 					onChange={(id) => setField("bubble_theme_id", id)}
 					disabled={busy}
 				/>
+				<BadgeEquipGrid
+					ownedIDs={ownedIDs}
+					value={draft.badge_ids}
+					onChange={setBadgeIDs}
+					disabled={busy}
+				/>
 			</div>
 			{error && (
 				<div role="alert" className={styles.error}>
@@ -107,7 +120,9 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 				<Button
 					variant="ghost"
 					disabled={busy}
-					onClick={() => setDraft({ ...EMPTY_APPEARANCE, revision: base.revision })}
+					onClick={() =>
+						setDraft({ ...EMPTY_APPEARANCE, badge_ids: [], revision: base.revision })
+					}
 				>
 					恢复默认
 				</Button>

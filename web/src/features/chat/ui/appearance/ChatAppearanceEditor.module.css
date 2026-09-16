@@ -134,6 +134,28 @@
 	opacity: 0.5;
 	cursor: wait;
 }
+.badgeGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+	gap: 0.5rem;
+}
+.badgeOption img {
+	width: 100%;
+	height: auto;
+	max-height: 2.5rem;
+	object-fit: contain;
+}
+.badgeOption:disabled {
+	cursor: not-allowed;
+	filter: grayscale(0.9);
+	opacity: 0.45;
+}
+.legendHint {
+	margin-left: 0.5rem;
+	font-weight: 400;
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
 .error {
 	color: var(--destructive);
 	font-size: 0.875rem;

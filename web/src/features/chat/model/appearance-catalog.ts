@@ -10,6 +10,7 @@ export const EMPTY_APPEARANCE: Readonly<ChatAppearance> = Object.freeze({
 	avatar_frame_id: "",
 	avatar_charm_id: "",
 	bubble_theme_id: "",
+	badge_ids: [],
 });
 
 /** 已核对 RUA 头像框;ID 须与服务端目录保持同步。 */
@@ -306,3 +307,5 @@ export const FRAME_BY_ID = new Map(AVATAR_FRAMES.map((item) => [item.id, item]))
 export const CHARM_BY_ID = new Map(AVATAR_CHARMS.map((item) => [item.id, item]));
 /** 共享只读气泡查表。 */
 export const BUBBLE_BY_ID = new Map(BUBBLE_THEMES.map((item) => [item.id, item]));
+/** 共享只读徽章查表。 */
+export { BADGE_BY_ID, type BadgeAsset, CHAT_BADGES } from "@entities/chat-badge";

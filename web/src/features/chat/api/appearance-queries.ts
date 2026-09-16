@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChatAppearance, ChatAppearanceState } from "../model/appearance";
 import { fetchOwnAppearance, saveOwnAppearance } from "./appearance";
+import { fetchOwnBadges } from "./chat-badges";
 
 /** 每个 key 都带浏览账号,防止登录切换后复用缓存。 */
 export const appearanceKeys = {
 	root: (viewer: string) => ["chat", "appearance", viewer] as const,
 	own: (viewer: string) => [...appearanceKeys.root(viewer), "own"] as const,
 	users: (viewer: string) => [...appearanceKeys.root(viewer), "users"] as const,
+	badges: (viewer: string) => [...appearanceKeys.root(viewer), "badges"] as const,
 	batch: (viewer: string, ids: readonly string[]) =>
 		[...appearanceKeys.users(viewer), ids] as const,
 };
@@ -25,6 +27,17 @@ export function useOwnChatAppearance(viewer: string) {
 	});
 }
 
+/** 本人徽章持有记录;仅在编辑器打开时按需加载。 */
+export function useOwnChatBadges(viewer: string, enabled: boolean) {
+	return useQuery({
+		queryKey: appearanceKeys.badges(viewer),
+		queryFn: ({ signal }) => fetchOwnBadges(signal),
+		enabled: enabled && Boolean(viewer),
+		staleTime: 60_000,
+		retry: false,
+	});
+}
+
 /** 不做乐观视觉更新:先取消竞态读取,只发布服务端接受的状态。 */
 export function useSaveChatAppearance(viewer: string) {
 	const client = useQueryClient();
@@ -38,7 +51,7 @@ export function useSaveChatAppearance(viewer: string) {
 				{ queryKey: appearanceKeys.users(viewer) },
 				(previous) => (previous ? { ...previous, [viewer]: state } : previous),
 			);
-			// Other users remain cached; the next foreground tick/focus revalidates the batch.
+			// 其余用户留在缓存,下一次前台心跳/聚焦时整批重验。
 		},
 	});
 }

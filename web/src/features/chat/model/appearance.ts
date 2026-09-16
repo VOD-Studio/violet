@@ -1,3 +1,6 @@
+/** 佩戴徽章的数量上限;持有数量不限,展示至多三枚。 */
+export const MAX_EQUIPPED_BADGES = 3;
+
 /** 公开装饰的目录 ID;空串表示“保持原始聊天样式”。 */
 export interface ChatAppearance {
 	/** 空串移除圆形头像框。 */
@@ -6,6 +9,8 @@ export interface ChatAppearance {
 	avatar_charm_id: string;
 	/** 空串恢复既有的收发双方气泡配色。 */
 	bubble_theme_id: string;
+	/** 佩戴的徽章 ID,按展示顺序;只含已授予项。 */
+	badge_ids: string[];
 }
 
 /** 只有本人(已登录)的端点才返回 revision。 */

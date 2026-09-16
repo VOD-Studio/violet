@@ -1,6 +1,7 @@
 import type { ChatAppearance } from "../../model/appearance";
 import { BUBBLE_BY_ID } from "../../model/appearance-catalog";
 import type { ChatUser } from "../../model/types";
+import { AppearanceBadgeStrip } from "./AppearanceBadgeStrip";
 import { AppearanceBubbleSurface } from "./AppearanceBubbleSurface";
 import { AvatarDecoration } from "./AvatarDecoration";
 import styles from "./ChatAppearanceEditor.module.css";
@@ -43,7 +44,10 @@ export function ChatAppearancePreview({ appearance, user }: ChatAppearancePrevie
 					)}
 				</AvatarDecoration>
 				<div className={styles.previewContent}>
-					<span className={styles.caption}>{label}</span>
+					<span className={styles.caption}>
+						{label}
+						<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} className="ms-1" />
+					</span>
 					{theme ? (
 						<AppearanceBubbleSurface theme={theme} mine={false}>
 							{sample}
