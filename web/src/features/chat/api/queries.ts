@@ -9,13 +9,18 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { useEffect } from "react";
+import {
+	type ChatSendRequest,
+	enqueueChatMessage,
+	reconcileChatOutbox,
+} from "../model/chat-outbox";
 import type {
 	ChatMessage,
 	ChatMessageReaction,
 	CreateConversationInput,
 	EditChatMessageInput,
 	PushSubscriptionInput,
-	SendMessageInput,
 } from "../model/types";
 import {
 	addChatMessageReaction,
@@ -39,7 +44,6 @@ import {
 	removeChatMessageReaction,
 	renameChatConversation,
 	saveChatPushSubscription,
-	sendChatMessage,
 	setChatMuted,
 } from "./client";
 import { chatKeys } from "./keys";
@@ -75,14 +79,19 @@ export const useChatMembers = (id: string | null) =>
 		enabled: Boolean(id),
 	});
 
-export const useChatMessages = (id: string | null) =>
-	useInfiniteQuery({
+export const useChatMessages = (id: string | null) => {
+	const query = useInfiniteQuery({
 		queryKey: id ? chatKeys.messages(id) : chatKeys.root,
 		queryFn: ({ pageParam }) => fetchChatMessages(id as string, pageParam || undefined),
 		initialPageParam: "",
 		getNextPageParam: (lastPage) => lastPage.pagination.next_cursor ?? undefined,
 		enabled: Boolean(id),
 	});
+	useEffect(() => {
+		if (query.data) reconcileChatOutbox(query.data.pages.flatMap((page) => page.data));
+	}, [query.data]);
+	return query;
+};
 /**
  * 消息已读成员名单（仅发送者可用）。
  *
@@ -214,37 +223,7 @@ export const useEditChatMessage = () => {
 
 export const useSendChatMessage = () => {
 	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: ({
-			id,
-			input,
-			idempotencyKey,
-		}: {
-			id: string;
-			input: SendMessageInput;
-			idempotencyKey: string;
-		}) => sendChatMessage(id, input, idempotencyKey),
-		onSuccess: (message, variables) => {
-			qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(
-				chatKeys.messages(variables.id),
-				(old) => {
-					if (
-						!old ||
-						old.pages.some((page) => page.data.some((item) => item.id === message.id))
-					)
-						return old;
-					return {
-						...old,
-						pages: old.pages.map((page, index) =>
-							index === 0 ? { ...page, data: [message, ...page.data] } : page,
-						),
-					};
-				},
-			);
-			qc.invalidateQueries({ queryKey: chatKeys.messages(variables.id) });
-			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
-		},
-	});
+	return { mutateAsync: (request: ChatSendRequest) => enqueueChatMessage(qc, request) };
 };
 
 export const useAddChatMessageReaction = (conversationID: string, messageID: string) => {

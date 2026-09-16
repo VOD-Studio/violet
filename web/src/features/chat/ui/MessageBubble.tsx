@@ -5,13 +5,23 @@ import type { Emoji } from "@entities/emoji/model/types";
 import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { cn } from "@shared/lib/utils";
-import { AlertTriangle, Check, Copy, Pencil, Reply, Smile, Trash2 } from "lucide-react";
+import {
+	AlertTriangle,
+	Check,
+	Copy,
+	LoaderCircle,
+	Pencil,
+	Reply,
+	Smile,
+	Trash2,
+} from "lucide-react";
 import { motion } from "motion/react";
 import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAddChatMessageReaction, useRemoveChatMessageReaction } from "../api/queries";
 import { imageBubbleContent } from "../lib/conversation";
+import type { OutgoingMessage } from "../model/chat-outbox";
 import type {
 	ChatMedia,
 	ChatMessage,
@@ -29,6 +39,8 @@ import { TweetShareCard } from "./TweetShareCard";
 
 interface MessageBubbleProps {
 	message: ChatMessage;
+	sending?: Pick<OutgoingMessage, "status" | "progress" | "error">;
+	onRetry?: () => void;
 	currentUserID: string;
 	/** 会话形态：决定自己消息已读回执的展示形态。 */
 	conversationKind: ConversationKind;
@@ -51,6 +63,8 @@ export function MessageBubble({
 	animateIn,
 	layout,
 	message,
+	sending,
+	onRetry,
 	currentUserID,
 	conversationKind,
 	emoteMap,
@@ -265,7 +279,7 @@ export function MessageBubble({
 					)}
 
 					{/* Hover 浮动微操作条 */}
-					{!message.is_deleted && !editing && (
+					{!sending && !message.is_deleted && !editing && (
 						<div
 							className={cn(
 								"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
@@ -340,12 +354,47 @@ export function MessageBubble({
 						</div>
 					)}
 				</div>
+				{sending && (
+					<div
+						className="mt-1 flex max-w-full items-center gap-1.5 px-1 text-xs text-muted-foreground"
+						role="status"
+						aria-live="polite"
+					>
+						{sending.status === "failed" ? (
+							<>
+								<AlertTriangle className="size-3.5 shrink-0 text-destructive" />
+								<span className="wrap-anywhere text-destructive">
+									{sending.error}
+								</span>
+								<button
+									type="button"
+									className="shrink-0 rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+									onClick={onRetry}
+								>
+									重试
+								</button>
+							</>
+						) : (
+							<>
+								<LoaderCircle
+									className="size-3.5 shrink-0 animate-spin"
+									aria-hidden="true"
+								/>
+								<span>
+									{sending.status === "uploading"
+										? `图片上传中 ${sending.progress}%`
+										: "发送中"}
+								</span>
+							</>
+						)}
+					</div>
+				)}
 				<ChatReactionBar
-					disabled={reactionBusy}
+					disabled={reactionBusy || Boolean(sending)}
 					onToggle={handleToggleReaction}
 					reactions={reactions}
 				/>
-				{mine && !message.is_deleted && (
+				{mine && !sending && !message.is_deleted && (
 					<MessageReadReceipt
 						conversationKind={conversationKind}
 						message={message}

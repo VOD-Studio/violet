@@ -4,7 +4,7 @@ import type { ChatMember, ChatMessage } from "../../model/types";
 import { MessageComposer } from "../MessageComposer";
 import { MessageEditComposer } from "../MessageEditComposer";
 
-const sendMocks = vi.hoisted(() => ({ mutateAsync: vi.fn(), edit: vi.fn() }));
+const sendMocks = vi.hoisted(() => ({ mutateAsync: vi.fn(), edit: vi.fn(), upload: vi.fn() }));
 
 vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
@@ -24,7 +24,7 @@ vi.mock("@features/emojis/api/mutations", () => ({
 	useUploadEmoji: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
-	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
+	useChunkedUpload: () => ({ uploadFile: sendMocks.upload }),
 }));
 
 const selfID = "00000000-0000-0000-0000-000000000001";
@@ -70,6 +70,7 @@ afterEach(() => {
 	cleanup();
 	sendMocks.mutateAsync.mockReset();
 	sendMocks.edit.mockReset();
+	sendMocks.upload.mockReset();
 });
 
 describe("MessageComposer", () => {
@@ -277,4 +278,113 @@ describe("MessageEditComposer 全体提及", () => {
 		expect(sendMocks.edit.mock.calls[0][0].input.content).toBe("@(all:all) 原文 @(all:all)");
 		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
 	});
+});
+
+describe("乐观提交", () => {
+	it("网络未完成时立即清空输入框并允许连续提交", () => {
+		sendMocks.mutateAsync.mockReturnValue(new Promise(() => {}));
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "第一条");
+		fireEvent.keyDown(box, { key: "Enter" });
+		expect(box.textContent).toBe("");
+		typeInto(box, "第二条");
+		const button = screen.getByRole("button", { name: "发送消息" });
+		expect(button.querySelector(".animate-spin")).toBeNull();
+		fireEvent.click(button);
+		expect(sendMocks.mutateAsync).toHaveBeenCalledTimes(2);
+		expect(sendMocks.mutateAsync.mock.calls.map(([request]) => request.input.content)).toEqual([
+			"第一条",
+			"第二条",
+		]);
+	});
+
+	it("提交时快照引用内容并立即解除回复", () => {
+		const cancel = vi.fn();
+		const target = textMessage("被引用的内容");
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={cancel}
+				pendingShare={null}
+				replyTarget={target}
+			/>,
+		);
+		typeInto(screen.getByRole("textbox"), "回复正文");
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+		expect(sendMocks.mutateAsync.mock.calls[0][0]).toMatchObject({
+			input: { reply_to_id: target.id },
+			draft: { reply_to: { id: target.id, content: target.content, sender } },
+		});
+		expect(cancel).toHaveBeenCalledOnce();
+	});
+
+	it("推文分享立即提交卡片快照与配文", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={{
+					conversationId: "c_1",
+					tweet: {
+						id: "tweet",
+						authorUsername: "bob",
+						content: "推文原文",
+						imageUrl: "/tweet.png",
+					},
+				}}
+				replyTarget={null}
+			/>,
+		);
+		typeInto(screen.getByRole("textbox"), "分享配文");
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+		expect(screen.getByRole("textbox").textContent).toBe("");
+		expect(sendMocks.mutateAsync.mock.calls[0][0]).toMatchObject({
+			input: { type: "tweet_share", shared_tweet_id: "tweet", content: "分享配文" },
+			draft: {
+				shared_tweet: {
+					id: "tweet",
+					content: "推文原文",
+					images: ["/tweet.png"],
+					author: { username: "bob" },
+				},
+			},
+		});
+	});
+});
+
+it("图片上传未完成也可发送并移交原始文件", async () => {
+	sendMocks.upload.mockReturnValue(new Promise(() => {}));
+	const { container } = render(
+		<MessageComposer
+			conversationID="c_1"
+			currentUserID={selfID}
+			onCancelReply={() => {}}
+			pendingShare={null}
+			replyTarget={null}
+		/>,
+	);
+	const file = new File(["image"], "photo.png", { type: "image/png" });
+	fireEvent.change(container.querySelector('input[type="file"]') as HTMLInputElement, {
+		target: { files: [file] },
+	});
+	const send = screen.getByRole("button", { name: "发送消息" }) as HTMLButtonElement;
+	await vi.waitFor(() => expect(send.disabled).toBe(false));
+	fireEvent.click(send);
+	expect(sendMocks.mutateAsync).toHaveBeenCalledOnce();
+	const request = sendMocks.mutateAsync.mock.calls[0][0];
+	expect(request.input.type).toBe("image");
+	expect(request.input.content).toBe(`![img:${request.images[0].id}]`);
+	expect(request.images[0].task.file).toBe(file);
+	expect(screen.getByRole("textbox").textContent).toBe("");
 });

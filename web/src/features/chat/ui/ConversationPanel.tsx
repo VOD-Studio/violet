@@ -7,6 +7,7 @@ import type { PendingChatShare } from "@shared/api/share-tweet-store";
 import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, LoaderCircle, MoreVertical } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -19,6 +20,7 @@ import {
 } from "../api/queries";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
+import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
 import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
@@ -74,9 +76,36 @@ export function ConversationPanel({
 		}
 	};
 
-	const messages = useMemo(
+	const qc = useQueryClient();
+	const outbox = useChatOutbox((state) => state.entries);
+	const serverMessages = useMemo(
 		() => messagePages?.pages.flatMap((page) => page.data).reverse() ?? [],
 		[messagePages?.pages],
+	);
+	const outgoing = useMemo(
+		() =>
+			outbox.filter(
+				(entry) =>
+					entry.request.id === conversation.id &&
+					entry.message.sender.id === currentUserID,
+			),
+		[outbox, conversation.id, currentUserID],
+	);
+	const messages = useMemo(() => {
+		const confirmed = new Set(
+			serverMessages.map((message) => message.client_message_id).filter(Boolean),
+		);
+		return [
+			...serverMessages,
+			...outgoing
+				.filter((entry) => !confirmed.has(entry.request.idempotencyKey))
+				.map((entry) => entry.message),
+		].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+	}, [serverMessages, outgoing]);
+	const pendingByID = new Map(
+		outgoing
+			.filter((entry) => entry.status !== "sent")
+			.map((entry) => [entry.message.id, entry]),
 	);
 	const lastMessage = messages.at(-1);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -133,6 +162,7 @@ export function ConversationPanel({
 			);
 			for (let index = messages.length - 1; index > previousIndex; index--) {
 				const message = messages[index];
+				if (message.id.startsWith("local:")) continue;
 				const bounds = messageRefs.current[message.id]?.getBoundingClientRect();
 				if (
 					!bounds ||
@@ -360,7 +390,7 @@ export function ConversationPanel({
 									</div>
 								))}
 
-							{messagesLoading ? (
+							{messagesLoading && messages.length === 0 ? (
 								<MessageSkeleton />
 							) : messages.length === 0 ? (
 								<MessageEmpty />
@@ -373,8 +403,15 @@ export function ConversationPanel({
 										currentUserID={currentUserID}
 										emoteMap={emoteMap}
 										highlighted={highlightedID === message.id}
-										key={message.id}
+										key={message.client_message_id ?? message.id}
 										message={message}
+										sending={pendingByID.get(message.id)}
+										onRetry={() =>
+											void retryChatMessage(
+												qc,
+												message.client_message_id ?? "",
+											)
+										}
 										messageRef={(node) => {
 											messageRefs.current[message.id] = node;
 										}}
@@ -385,7 +422,7 @@ export function ConversationPanel({
 										}
 										showSenderName={conversation.kind === "room"}
 										onDelete={
-											canManage
+											canManage && !pendingByID.has(message.id)
 												? () =>
 														deleteMessage.mutate({
 															conversationID: conversation.id,
@@ -396,7 +433,9 @@ export function ConversationPanel({
 										onImage={(media) => imagePreview.openPreview([media.url])}
 										onMention={handleMention}
 										onReply={
-											message.type !== "system" && !message.is_deleted
+											message.type !== "system" &&
+											!message.is_deleted &&
+											!pendingByID.has(message.id)
 												? () => setReplyTarget(message)
 												: undefined
 										}
@@ -437,6 +476,10 @@ export function ConversationPanel({
 					</AnimatePresence>
 					<TypingIndicator conversationID={conversation.id} members={members} />
 					<MessageComposer
+						key={conversation.id}
+						currentUser={
+							members.find((member) => member.user.id === currentUserID)?.user
+						}
 						inputRef={inputRef}
 						conversationID={conversation.id}
 						conversationKind={conversation.kind}
