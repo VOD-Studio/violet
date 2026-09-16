@@ -213,6 +213,8 @@ type MemberDTO struct {
 
 // MessageDTO 消息读模型。
 type MessageDTO struct {
+	// ClientMessageID 原始发送幂等键；仅发送者可见，用于合并本地待发送消息。
+	ClientMessageID string `json:"client_message_id,omitempty"`
 	// ID 消息 ID。
 	ID string `json:"id"`
 	// ConversationID 所属会话 ID。
@@ -1335,6 +1337,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		Type:           string(message.Type()),
 		Reactions:      messageReactionDTOs(reactions),
 		CreatedAt:      message.CreatedAt().Format(time.RFC3339Nano),
+	}
+	if message.SenderID().Equal(viewerUserID) {
+		dto.ClientMessageID = message.IdempotencyKey()
 	}
 	if message.DeletedAt() != nil {
 		dto.IsDeleted = true
