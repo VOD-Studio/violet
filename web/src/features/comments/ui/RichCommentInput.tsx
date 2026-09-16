@@ -17,6 +17,11 @@ import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
+import {
+	createImageUploadTask,
+	type ImageUploadReference,
+	type ImageUploadTask,
+} from "@shared/lib/image-upload-task";
 import { isImageURL } from "@shared/lib/url";
 import { Image as ImageIcon, Smile, X } from "lucide-react";
 import {
@@ -78,6 +83,8 @@ export interface RichCommentInputProps {
 	placeholder?: string;
 	resetNonce?: number;
 	onImagesChange?: (images: PictureInput[]) => void;
+	/** 包括尚未完成的上传；提交方须 retain 后再清空输入框。 */
+	onImageUploadsChange?: (images: ImageUploadReference[]) => void;
 	onUploadingChange?: (uploading: boolean) => void;
 	/** @ 提及候选（全量成员，筛选在组件内做）；缺省或空数组时不启用提及 */
 	mentionCandidates?: MentionCandidate[];
@@ -92,6 +99,8 @@ interface ImageItem {
 	progress: number;
 	status: ImageNodeStatus;
 	data?: PictureInput;
+	task?: ImageUploadTask;
+	release?: () => void;
 }
 
 export function RichCommentInput({
@@ -113,6 +122,7 @@ export function RichCommentInput({
 	placeholder = "写下你的评论…",
 	resetNonce = 0,
 	onImagesChange,
+	onImageUploadsChange,
 	onUploadingChange,
 	mentionCandidates,
 	toolbarEnd,
@@ -134,6 +144,12 @@ export function RichCommentInput({
 	);
 	const imageItemsRef = useRef<ImageItem[]>(imageItems);
 	imageItemsRef.current = imageItems;
+	useEffect(
+		() => () => {
+			for (const item of imageItemsRef.current) item.release?.();
+		},
+		[],
+	);
 
 	// insertImage 来自下方 useRichTextInput，而 useRichTextInput 又需要引用本函数（onPasteFiles）
 	// 构造 uploadFilesList——用 ref 打破这个循环依赖，本函数只在异步回调里读取，不影响其 deps。
@@ -148,12 +164,26 @@ export function RichCommentInput({
 			if (remaining <= 0) return;
 			const toUpload = files.slice(0, remaining);
 
-			const newItems: ImageItem[] = toUpload.map((file) => ({
-				id: crypto.randomUUID(),
-				previewUrl: URL.createObjectURL(file),
-				progress: 0,
-				status: "uploading" as const,
-			}));
+			const newItems: ImageItem[] = toUpload.map((file) => {
+				const task = createImageUploadTask(file, async (source, report) => {
+					const result = await uploadFile(source, (progress) => report(progress.percent));
+					return {
+						id: result.file_id,
+						url: result.url,
+						width: result.width ?? 0,
+						height: result.height ?? 0,
+						size: source.size,
+					};
+				});
+				return {
+					id: crypto.randomUUID(),
+					previewUrl: task.previewURL,
+					progress: 0,
+					status: "uploading",
+					task,
+					release: task.retain(),
+				};
+			});
 
 			setImageItems((prev) => [...prev, ...newItems]);
 			if (inlineImages) {
@@ -163,15 +193,14 @@ export function RichCommentInput({
 			}
 
 			for (let i = 0; i < toUpload.length; i++) {
-				const file = toUpload[i];
+				const task = newItems[i].task;
+				if (!task) continue;
 				const itemId = newItems[i].id;
 
 				try {
-					const result = await uploadFile(file, (progress) => {
+					const result = await task.upload((progress) => {
 						setImageItems((prev) =>
-							prev.map((item) =>
-								item.id === itemId ? { ...item, progress: progress.percent } : item,
-							),
+							prev.map((item) => (item.id === itemId ? { ...item, progress } : item)),
 						);
 					});
 
@@ -184,22 +213,22 @@ export function RichCommentInput({
 								? {
 										...item,
 										// 换键为服务端 file_id：value 占位符即媒体 id，提交内容可直接解析
-										id: result.file_id,
+										id: result.id,
 										status: "done" as const,
 										progress: 100,
 										data: {
-											id: result.file_id,
+											id: result.id,
 											url: result.url,
 											width: result.width ?? 0,
 											height: result.height ?? 0,
-											size: file.size,
+											size: task.file.size,
 										},
 									}
 								: item,
 						),
 					);
 					if (inlineImages)
-						insertImageRef.current?.(result.file_id, result.url, "done", itemId);
+						insertImageRef.current?.(result.id, result.url, "done", itemId);
 				} catch {
 					if (!imageItemsRef.current.some((item) => item.id === itemId)) continue;
 					setImageItems((prev) =>
@@ -217,7 +246,7 @@ export function RichCommentInput({
 	const handleRemoveImage = useCallback((id: string) => {
 		setImageItems((prev) => {
 			const item = prev.find((i) => i.id === id);
-			if (item) URL.revokeObjectURL(item.previewUrl);
+			if (item) item.release?.();
 			return prev.filter((i) => i.id !== id);
 		});
 	}, []);
@@ -348,6 +377,18 @@ export function RichCommentInput({
 	}, [imageItems, inlineImages, onImagesChange, value]);
 
 	useEffect(() => {
+		if (!onImageUploadsChange) return;
+		const ids = inlineImages ? extractImageIds(value) : imageItems.map((item) => item.id);
+		const byId = new Map(imageItems.map((item) => [item.id, item]));
+		onImageUploadsChange(
+			[...new Set(ids)].flatMap((id) => {
+				const item = byId.get(id);
+				return item?.task ? [{ id, task: item.task }] : [];
+			}),
+		);
+	}, [imageItems, inlineImages, value, onImageUploadsChange]);
+
+	useEffect(() => {
 		onUploadingChange?.(imageItems.some((i) => i.status === "uploading"));
 	}, [imageItems, onUploadingChange]);
 
@@ -360,7 +401,7 @@ export function RichCommentInput({
 			const next = prev.filter((item) => survivingIds.has(item.id));
 			if (next.length === prev.length) return prev;
 			for (const item of prev) {
-				if (!survivingIds.has(item.id)) URL.revokeObjectURL(item.previewUrl);
+				if (!survivingIds.has(item.id)) item.release?.();
 			}
 			return next;
 		});
@@ -373,7 +414,7 @@ export function RichCommentInput({
 			prevNonceRef.current = resetNonce;
 			setImageItems((prev) => {
 				prev.forEach((i) => {
-					URL.revokeObjectURL(i.previewUrl);
+					i.release?.();
 				});
 				return [];
 			});
