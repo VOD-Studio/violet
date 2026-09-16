@@ -7,6 +7,28 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.32](https://github.com/VOD-Studio/violet/compare/v2.8.31...v2.8.32) (2026-09-16)
+
+
+### 新增
+
+* **chat:** 向发送者回传客户端消息标识 ([bec72bf](https://github.com/VOD-Studio/violet/commit/bec72bf8a3b1d58faf7465dcc61fddee73b7f558))
+* **chat:** 统一所有消息的乐观发送 ([c09bf0e](https://github.com/VOD-Studio/violet/commit/c09bf0e41a73d3610233ae8be54c2fc53df25ca2))
+* **chat:** 统一消息乐观发送与浏览器通知修复 ([#379](https://github.com/VOD-Studio/violet/issues/379)) ([8727c1d](https://github.com/VOD-Studio/violet/commit/8727c1de1213908f13190e383e2b1222a96046c0))
+* **composer:** 保留待上传图片的本地占位符 ([0263c30](https://github.com/VOD-Studio/violet/commit/0263c30df97529ac3a02f46faaf9a40af4e8e925))
+
+
+### 修复
+
+* **chat:** 保留临时推送失败后的浏览器订阅 ([e776be9](https://github.com/VOD-Studio/violet/commit/e776be9f11196497a05dd70c6ecd8d8014b77472))
+* **chat:** 恢复连续消息的浏览器通知提醒 ([a573c15](https://github.com/VOD-Studio/violet/commit/a573c159509934378489300bf95028c76f89aa35))
+* **chat:** 按实际订阅状态切换浏览器通知 ([8dde66a](https://github.com/VOD-Studio/violet/commit/8dde66a4052873b8678d6768a7d457d8ab9cdee8))
+
+
+### 重构
+
+* **upload:** 支持图片上传任务在提交后继续运行 ([c21dd8d](https://github.com/VOD-Studio/violet/commit/c21dd8d9b2b681839af4d4000bf045684ca9ee66))
+
 ## [2.8.31](https://github.com/VOD-Studio/violet/compare/v2.8.30...v2.8.31) (2026-09-16)
 
 
