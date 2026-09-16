@@ -7,6 +7,38 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.31](https://github.com/VOD-Studio/violet/compare/v2.8.30...v2.8.31) (2026-09-16)
+
+
+### 新增
+
+* **web:** 个人中心挂载 Tool 方言作用域 ([eb5da42](https://github.com/VOD-Studio/violet/commit/eb5da42b5b1f1985ce439bd105f829a281531f18))
+* **web:** 后台当前导航指示条改品牌强调色 ([e7816ee](https://github.com/VOD-Studio/violet/commit/e7816ee54973b5c58be549cb80f6735eef923f32))
+* **web:** 图集页标题头统一 PageHeader 并支持副标题 ([9f75751](https://github.com/VOD-Studio/violet/commit/9f75751f8daab311c96995f40cbfc5fd2a60d847))
+* **web:** 媒体查看器与灯箱落 Immersive 方言 ([07a1df5](https://github.com/VOD-Studio/violet/commit/07a1df5b96488770e95d4083f76d5d6cd8ba4384))
+* **web:** 按页面家族完成全站视觉方言迁移 ([b02363d](https://github.com/VOD-Studio/violet/commit/b02363d190cd1baa738235651db8b7e2fbefb171))
+* **web:** 更新日志页迁移语义状态色并统一标题头 ([13193ad](https://github.com/VOD-Studio/violet/commit/13193ad26e563811c1f4558f881c7962b8551189))
+* **web:** 聊天页挂载 Tool 方言作用域 ([f34ea2e](https://github.com/VOD-Studio/violet/commit/f34ea2e15d23dd746e78a76f8830b542fe9a9da3))
+
+
+### 修复
+
+* **web:** About 页光斑与技能卡迁移语义 token ([888e6fc](https://github.com/VOD-Studio/violet/commit/888e6fccbc96b94203b8ce212c399334626f3c52))
+* **web:** Footer 色值迁移语义 token ([a8cbf70](https://github.com/VOD-Studio/violet/commit/a8cbf702c4604a8fd9738934317492868c4d782f))
+* **web:** 公告 severity 配置迁移行为状态 token ([a7eedcc](https://github.com/VOD-Studio/violet/commit/a7eedccdbfe673697af238353b1c3a09bbb51f3c))
+* **web:** 友链申请待审核印章改 warning token ([3c0bc98](https://github.com/VOD-Studio/violet/commit/3c0bc98e31d7d2b1e5147b3819b7acfa678a86be))
+* **web:** 后台仪表盘状态色迁移语义 token ([0939dd9](https://github.com/VOD-Studio/violet/commit/0939dd9ec390e00de301ceed4996230afa6212c9))
+* **web:** 工具方言焦点环映射品牌强调色 ([961160a](https://github.com/VOD-Studio/violet/commit/961160ad02a68030c56a6c87b221eb750704ce52))
+* **web:** 推文互动操作色迁移 neon token ([4297814](https://github.com/VOD-Studio/violet/commit/4297814cf995b765ae9a19a5e1b70ca52d48e2eb))
+* **web:** 文章阅读进度条改品牌渐变 ([6e6e10a](https://github.com/VOD-Studio/violet/commit/6e6e10aaa9df59fcee21394819ca8e22d8f239ee))
+* **web:** 笔记后台状态色迁移语义 token ([dd13b31](https://github.com/VOD-Studio/violet/commit/dd13b31caa0dbb3eac6b97fc682d3a094e6cde20))
+* **web:** 笔记页状态色迁移 success token ([74b8485](https://github.com/VOD-Studio/violet/commit/74b8485e373d12dc3dbf93e592c617c35f83de8c))
+* **web:** 表情分组来源标签迁移语义 token ([aab99c8](https://github.com/VOD-Studio/violet/commit/aab99c8fd27445a0e9c3e4b7ad07e6cf393accdf))
+* **web:** 设置与运维状态色迁移语义 token ([64e457e](https://github.com/VOD-Studio/violet/commit/64e457e1b02b532e50964b0fecef102a527561c8))
+* **web:** 评论色阶迁移语义 token ([ae5240e](https://github.com/VOD-Studio/violet/commit/ae5240e0f61dcdfbe9112cbcd54c49e8e50a50d9))
+* **web:** 返回顶部按钮改安静中性浮层 ([ee81fec](https://github.com/VOD-Studio/violet/commit/ee81fec4abff31da5327bf1f3fb354b3fb26728d))
+* **web:** 通知铃铛与博客卡片 hover 色统一语义 token ([e1d8c54](https://github.com/VOD-Studio/violet/commit/e1d8c5412116dd48d07d241fa5d33ab9a814639d))
+
 ## [2.8.30](https://github.com/VOD-Studio/violet/compare/v2.8.29...v2.8.30) (2026-09-15)
 
 
