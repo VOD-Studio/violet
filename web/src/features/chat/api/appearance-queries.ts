@@ -27,13 +27,13 @@ export function useOwnChatAppearance(viewer: string) {
 	});
 }
 
-/** 本人徽章持有记录;仅在编辑器打开时按需加载。 */
+/** 本人徽章持有记录;仅在编辑器打开时按需加载,每次打开都拉新(授予可能随时发生)。 */
 export function useOwnChatBadges(viewer: string, enabled: boolean) {
 	return useQuery({
 		queryKey: appearanceKeys.badges(viewer),
 		queryFn: ({ signal }) => fetchOwnBadges(signal),
 		enabled: enabled && Boolean(viewer),
-		staleTime: 60_000,
+		staleTime: 0,
 		retry: false,
 	});
 }

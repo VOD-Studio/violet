@@ -1,5 +1,4 @@
 import { CHAT_BADGES } from "@entities/chat-badge";
-import { cn } from "@shared/lib/utils";
 import { MAX_EQUIPPED_BADGES } from "../../model/appearance";
 import styles from "./ChatAppearanceEditor.module.css";
 
@@ -14,7 +13,7 @@ export interface BadgeEquipGridProps {
 	disabled?: boolean;
 }
 
-/** 徽章多选佩戴,至多三枚;未持有项锁定展示,授予后自动可选。 */
+/** 徽章多选网格;选中角标显示佩戴顺序,未持有项锁定并标注,清空动作在面板工具行。 */
 export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEquipGridProps) {
 	const owned = ownedIDs === undefined ? null : new Set(ownedIDs);
 	const toggle = (id: string) => {
@@ -25,32 +24,51 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 		if (value.length < MAX_EQUIPPED_BADGES) onChange([...value, id]);
 	};
 	return (
-		<fieldset className={styles.fieldset} disabled={disabled || owned === null}>
-			<legend className={styles.legend}>
-				徽章
-				<span className={styles.legendHint}>
-					{owned === null
-						? "持有记录加载中…"
-						: `已选 ${value.length}/${MAX_EQUIPPED_BADGES}`}
-				</span>
-			</legend>
+		<fieldset
+			className={styles.fieldset}
+			disabled={disabled || owned === null}
+			aria-label="徽章"
+		>
 			<div className={styles.badgeGrid}>
 				{CHAT_BADGES.map((badge) => {
 					const isOwned = owned?.has(badge.id) ?? false;
-					const selected = value.includes(badge.id);
+					const order = value.indexOf(badge.id);
+					const selected = order >= 0;
 					return (
 						<button
 							key={badge.id}
 							type="button"
-							className={cn(
-								styles.option,
-								styles.badgeOption,
-								!isOwned && styles.locked,
-							)}
+							className={styles.badgeOption}
 							aria-pressed={selected}
 							disabled={!isOwned}
 							onClick={() => toggle(badge.id)}
 						>
+							{selected && (
+								<span className={styles.orderTag} aria-hidden="true">
+									{order + 1}
+								</span>
+							)}
+							{!isOwned && (
+								<span className={styles.lockTag} aria-hidden="true">
+									<svg viewBox="0 0 12 12" width="9" height="9" fill="none">
+										<rect
+											x="2.5"
+											y="5"
+											width="7"
+											height="5"
+											rx="1"
+											stroke="currentColor"
+											strokeWidth="1.2"
+										/>
+										<path
+											d="M4 5V3.5a2 2 0 1 1 4 0V5"
+											stroke="currentColor"
+											strokeWidth="1.2"
+										/>
+									</svg>
+									未获得
+								</span>
+							)}
 							<img
 								src={badge.image}
 								alt=""
@@ -58,7 +76,7 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 								decoding="async"
 								draggable={false}
 							/>
-							<span>{isOwned ? badge.name : `${badge.name} · 未获得`}</span>
+							<span className={styles.optionName}>{badge.name}</span>
 						</button>
 					);
 				})}

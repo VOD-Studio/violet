@@ -13,7 +13,7 @@ export interface ChatAppearancePreviewProps {
 	user: ChatUser;
 }
 
-/** 预览用真实 HTML 文本与生产装饰组件,同时展示左右两个方向。 */
+/** 竖版实时预览:身份区随装饰联动,双气泡示意收发两个方向。 */
 export function ChatAppearancePreview({ appearance, user }: ChatAppearancePreviewProps) {
 	const theme = BUBBLE_BY_ID.get(appearance.bubble_theme_id);
 	const label = user.display_name || user.username;
@@ -30,9 +30,12 @@ export function ChatAppearancePreview({ appearance, user }: ChatAppearancePrevie
 		</>
 	);
 	return (
-		<section className={styles.preview} aria-label="未保存的聊天外观预览">
-			<span className={styles.caption}>实时预览 · 保存后对他人可见</span>
-			<div className={styles.previewRow}>
+		<aside className={styles.preview} aria-label="未保存的聊天外观预览">
+			<div className={styles.previewHead}>
+				<span className={styles.liveDot}>实时预览</span>
+				<span className={styles.caption}>保存后对他人可见</span>
+			</div>
+			<div className={styles.previewIdentity}>
 				<AvatarDecoration
 					frameId={appearance.avatar_frame_id}
 					charmId={appearance.avatar_charm_id}
@@ -43,32 +46,32 @@ export function ChatAppearancePreview({ appearance, user }: ChatAppearancePrevie
 						<span className={styles.face}>{label.slice(0, 1).toUpperCase()}</span>
 					)}
 				</AvatarDecoration>
-				<div className={styles.previewContent}>
-					<span className={styles.caption}>
-						{label}
-						<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} className="ms-1" />
-					</span>
+				<span className={styles.identityName}>
+					{label}
+					<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
+				</span>
+			</div>
+			<div className={styles.previewBubble}>
+				{theme ? (
+					<AppearanceBubbleSurface theme={theme} mine={false}>
+						{sample}
+					</AppearanceBubbleSurface>
+				) : (
+					<div className={styles.defaultBubble}>{sample}</div>
+				)}
+				<div className={styles.previewOutgoing}>
 					{theme ? (
-						<AppearanceBubbleSurface theme={theme} mine={false}>
-							{sample}
+						<AppearanceBubbleSurface theme={theme} mine>
+							好的 🌙
+							<time data-chat-timestamp="" className={styles.time}>
+								21:09
+							</time>
 						</AppearanceBubbleSurface>
 					) : (
-						<div className={styles.defaultBubble}>{sample}</div>
+						<div className={styles.defaultOutgoing}>好的 🌙</div>
 					)}
 				</div>
 			</div>
-			<div className={styles.outgoing}>
-				{theme ? (
-					<AppearanceBubbleSurface theme={theme} mine>
-						好的 🌙
-						<time data-chat-timestamp="" className={styles.time}>
-							21:09
-						</time>
-					</AppearanceBubbleSurface>
-				) : (
-					<div className={styles.defaultOutgoing}>好的 🌙</div>
-				)}
-			</div>
-		</section>
+		</aside>
 	);
 }

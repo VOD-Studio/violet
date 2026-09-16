@@ -29,7 +29,7 @@ export function ChatAppearanceDialog({ open, user, onOpenChange }: ChatAppearanc
 				<DialogHeader>
 					<DialogTitle>聊天外观</DialogTitle>
 					<DialogDescription>
-						头像框、角标与消息气泡分别选择。保存到账号后，在不同设备上同步。
+						头像框、挂件、气泡与徽章按账号保存，跨设备同步。
 					</DialogDescription>
 				</DialogHeader>
 				{query.data ? (
