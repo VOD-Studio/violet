@@ -173,8 +173,8 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
 function TokenBanner({ token, onDismiss }: { token: string; onDismiss: () => void }) {
 	const [copied, setCopied] = React.useState(false);
 	return (
-		<div className="flex items-start gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
-			<KeyRound className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-500" />
+		<div className="flex items-start gap-3 rounded-md border border-warning/50 bg-warning/10 p-3">
+			<KeyRound className="mt-0.5 size-4 shrink-0 text-warning" />
 			<div className="min-w-0 flex-1 space-y-1.5">
 				<p className="text-sm font-medium">令牌已创建，仅此一次完整显示</p>
 				<div className="flex items-center gap-2">

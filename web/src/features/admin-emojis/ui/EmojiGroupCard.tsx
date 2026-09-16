@@ -8,12 +8,11 @@ import { Switch } from "@shared/ui/base/switch";
 import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-/** 来源标签的颜色映射 */
+/** 来源标签的颜色映射：system=品牌、bilibili=外站品牌粉（neon-pink 承接）、custom=success */
 const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-linear-to-r from-blue-500/10 to-blue-600/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-	bilibili:
-		"bg-linear-to-r from-pink-500/10 to-pink-600/10 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800",
-	custom: "bg-linear-to-r from-emerald-500/10 to-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+	system: "bg-brand/10 text-brand border-brand/20",
+	bilibili: "bg-neon-pink/10 text-neon-pink border-neon-pink/20",
+	custom: "bg-success/10 text-success border-success/20",
 };
 
 /** 来源标签的中文映射 */

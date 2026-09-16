@@ -172,7 +172,7 @@ export default function AnnouncementBar() {
 		<div
 			ref={barRef}
 			style={{ viewTransitionName: "announcement-bar" }}
-			className="relative flex h-7 items-center justify-center gap-2 border-b border-edge-hairline bg-primary/95 px-12 font-mono text-xs dark:bg-zinc-900"
+			className="relative flex h-7 items-center justify-center gap-2 border-b border-edge-hairline bg-primary/95 px-12 font-mono text-xs dark:bg-card"
 			onMouseEnter={() => setPaused(true)}
 			onMouseLeave={() => setPaused(false)}
 			onFocus={() => setPaused(true)}

@@ -2,7 +2,8 @@
  * BackToTop - 返回顶部按钮（带动画）
  *
  * 滚动超过阈值（默认 400px）时从右下方滑入显现，点击平滑滚动回顶部。
- * 配合旋转 + 弹性缩放进场动画，悬停时光晕脉冲。
+ * 常驻悬浮件保持安静中性磨砂胶囊（同 Header/音乐胶囊浮层语言），
+ * 不沾品牌强调色——强调色只留给内容区的低占比强调。
  */
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -38,17 +39,15 @@ export function BackToTop({ threshold = 400, className }: BackToTopProps) {
 			onClick={scrollToTop}
 			aria-label="返回顶部"
 			className={cn(
-				"group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 shadow-lg backdrop-blur transition-all duration-300 hover:border-primary/50",
-				"hover:bg-accent active:scale-90",
+				"group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur-md transition-all duration-300",
+				"hover:bg-background/95 hover:text-foreground active:scale-90",
 				className ?? "fixed bottom-8 right-8 z-40",
 				visible
 					? "translate-y-0 scale-100 opacity-100"
 					: "pointer-events-none translate-y-4 scale-75 opacity-0",
 			)}
 		>
-			{/* 悬停光晕 */}
-			<span className="absolute inset-0 rounded-full bg-primary/10 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100" />
-			<ArrowUp className="relative size-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+			<ArrowUp className="size-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
 		</button>
 	);
 }

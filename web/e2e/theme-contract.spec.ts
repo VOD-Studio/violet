@@ -26,6 +26,12 @@ import { handle } from "./mock-data.mjs";
 const THEME_SERVER_PORT = 4173;
 const CLIENT_DIR = join(import.meta.dirname, "..", "dist", "client");
 
+/** 沉浸方言契约图集用的 1×1 PNG（经 /assets 路径应答，避免真实网络图源）。 */
+const CONTRACT_IMAGE_PNG = Buffer.from(
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+	"base64",
+);
+
 const VIEWPORTS = [
 	{ name: "mobile", width: 390, height: 844 },
 	{ name: "desktop", width: 1440, height: 900 },
@@ -150,7 +156,12 @@ async function routeClient(context: BrowserContext, options?: { blockScripts: bo
 		}
 		const url = new URL(request.url());
 		if (url.pathname.startsWith("/api/")) {
-			const result = handle(request.method(), url.pathname, url.search);
+			const result = handle(
+				request.method(),
+				url.pathname,
+				url.search,
+				request.headers().cookie ?? "",
+			);
 			return route.fulfill({
 				status: result.status,
 				contentType: "application/json",
@@ -158,6 +169,13 @@ async function routeClient(context: BrowserContext, options?: { blockScripts: bo
 			});
 		}
 		if (url.pathname.startsWith("/assets/")) {
+			if (url.pathname === "/assets/contract-image.png") {
+				return route.fulfill({
+					status: 200,
+					contentType: "image/png",
+					body: CONTRACT_IMAGE_PNG,
+				});
+			}
 			const file = join(CLIENT_DIR, url.pathname);
 			if (existsSync(file) && !file.endsWith("/")) {
 				const contentType = url.pathname.endsWith(".css")
@@ -218,6 +236,205 @@ function expectDialectSemantics(snapshot: Awaited<ReturnType<typeof snapshotThem
 		expect(rootBackground.l).toBeGreaterThan(0.9);
 	} else {
 		expect(rootBackground.l).toBeLessThan(0.3);
+	}
+}
+
+for (const theme of ["light", "dark"] as const) {
+	test(`沉浸方言契约：图库灯箱 ${theme}`, async ({ browser }) => {
+		test.setTimeout(90_000);
+		const context = await newThemeContext(browser, theme);
+		await routeClient(context);
+		const page = await context.newPage();
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await page.goto("/galleries", { waitUntil: "load" });
+		await page.waitForLoadState("networkidle");
+
+		// 进入图集详情并打开灯箱（Immersive 作用域挂在灯箱根容器）
+		await page.locator('a[href="/galleries/contract-gallery"]').first().click();
+		await page.waitForURL("**/galleries/contract-gallery");
+		await page.waitForLoadState("networkidle");
+		await page.locator("figure button").first().click();
+		const immersive = page.locator(".dialect-immersive");
+		await expect(immersive, "灯箱应挂 Immersive 方言作用域").toBeVisible();
+
+		const stage = await page.evaluate(() => {
+			const scope = document.querySelector(".dialect-immersive");
+			if (!scope) throw new Error("灯箱未挂 .dialect-immersive 作用域");
+			const cs = getComputedStyle(scope);
+			const root = getComputedStyle(document.documentElement);
+			const prop = (el: CSSStyleDeclaration, name: string) =>
+				el.getPropertyValue(name).trim();
+			return {
+				background: prop(cs, "--background"),
+				primary: prop(cs, "--primary"),
+				ring: prop(cs, "--ring"),
+				destructive: prop(cs, "--destructive"),
+				rootBrand: prop(root, "--brand"),
+				rootDestructive: prop(root, "--destructive"),
+				scopeBackground: cs.backgroundColor,
+			};
+		});
+
+		// 画布：中性舞台恒近黑，不随明暗主题翻转；实际底色消费画布 token
+		// （computed 串与原始 token 串的百分比写法可能不同，按解析后的色值比较）
+		const background = expectColor(stage.background, "沉浸画布 --background");
+		expect(background.l, "沉浸画布应为近黑舞台").toBeLessThan(0.3);
+		expect(background.c, "沉浸画布应为中性（无彩度）").toBeLessThanOrEqual(0.01);
+		const scopeBackground = expectColor(stage.scopeBackground, "舞台实际底色");
+		expect(scopeBackground.l, "舞台底色明度应等于画布 token").toBe(background.l);
+		expect(scopeBackground.c, "舞台底色彩度应等于画布 token").toBe(background.c);
+
+		// 控制：主要动作色从品牌强调收回高对比中性（覆盖公开方言的品牌映射）
+		const primary = expectColor(stage.primary, "沉浸主要动作色");
+		expect(primary.c, "沉浸主要动作色应为中性").toBeLessThanOrEqual(0.01);
+		expect(Math.abs(primary.l - 0.5), "沉浸主要动作色应为高对比").toBeGreaterThan(0.25);
+
+		// 焦点：焦点环保留品牌彩度（媒体舞台内品牌唯一容身之处）
+		const ring = expectColor(stage.ring, "沉浸焦点环");
+		expect(ring.c, "沉浸焦点环应保留品牌彩度").toBeGreaterThan(0.05);
+		expect(stage.ring, "沉浸焦点环应等于品牌强调色").toBe(stage.rootBrand);
+
+		// 行为状态色不被方言改写
+		expect(stage.destructive, "destructive 在沉浸作用域不得被改写").toBe(stage.rootDestructive);
+
+		// 关闭灯箱：作用域卸载后无 token 泄漏（页面公开方言语义复原）
+		await immersive.click({ position: { x: 12, y: 500 } });
+		await expect(immersive).toHaveCount(0);
+		const afterClose = await page.evaluate(() => {
+			const surface = document.querySelector(".dialect-public");
+			if (!surface) throw new Error("关闭灯箱后缺少 .dialect-public 作用域");
+			const cs = getComputedStyle(surface);
+			const root = getComputedStyle(document.documentElement);
+			return {
+				surfacePrimary: cs.getPropertyValue("--primary").trim(),
+				surfaceBrand: cs.getPropertyValue("--brand").trim(),
+				rootBrand: root.getPropertyValue("--brand").trim(),
+			};
+		});
+		expect(afterClose.surfacePrimary, "公开方言主要动作色应回到品牌强调").toBe(
+			afterClose.surfaceBrand,
+		);
+		expect(afterClose.rootBrand, "根作用域 --brand 不被沉浸作用域泄漏改写").toBe(
+			stage.rootBrand,
+		);
+		await context.close();
+	});
+}
+
+/**
+ * 后台工具方言契约：契约管理员 cookie（contract_admin=1）使 mock 会话按 root
+ * 应答（SSR server function 与客户端 RPC 同源转发 cookie，两端登录态一致）。
+ */
+async function newAdminContext(browser: import("@playwright/test").Browser, theme: ThemeMode) {
+	const context = await browser.newContext();
+	const cookies: {
+		name: string;
+		value: string;
+		url: string;
+	}[] = [{ name: "contract_admin", value: "1", url: `http://127.0.0.1:${THEME_SERVER_PORT}` }];
+	const { cookie } = THEME_PREFERENCE[theme];
+	if (cookie) {
+		cookies.push({
+			name: "theme",
+			value: cookie,
+			url: `http://127.0.0.1:${THEME_SERVER_PORT}`,
+		});
+	}
+	await context.addCookies(cookies);
+	const { storage } = THEME_PREFERENCE[theme];
+	if (storage) {
+		await context.addInitScript(
+			([value]) => {
+				localStorage.setItem("theme", value);
+			},
+			[storage] satisfies [string],
+		);
+	}
+	await routeClient(context);
+	return context;
+}
+
+for (const viewport of VIEWPORTS) {
+	for (const theme of ["light", "dark"] as const) {
+		test(`工具方言契约：后台壳层 ${theme} @ ${viewport.width}×${viewport.height}`, async ({
+			browser,
+		}) => {
+			test.setTimeout(90_000);
+			// /admin 为 ssr:false 客户端渲染：主题由 beforeLoad 读 cookie 决定，
+			// 契约验证 hydration 后壳层 token、当前导航品牌指示与溢出
+			const context = await newAdminContext(browser, theme);
+			const page = await context.newPage();
+			await page.setViewportSize(viewport);
+			await page.goto("/admin", { waitUntil: "load" });
+			await page.waitForLoadState("networkidle");
+			await expect(
+				page.locator(".dialect-tool"),
+				"后台壳层应挂 Tool 方言作用域",
+			).toBeVisible();
+
+			const snapshot = await page.evaluate(() => {
+				const scope = document.querySelector(".dialect-tool");
+				if (!scope) throw new Error("后台壳层缺少 .dialect-tool 作用域");
+				const cs = getComputedStyle(scope);
+				const root = getComputedStyle(document.documentElement);
+				const prop = (el: CSSStyleDeclaration, name: string) =>
+					el.getPropertyValue(name).trim();
+				const activeLink = document.querySelector('a[aria-current="page"]');
+				return {
+					htmlClass: document.documentElement.className,
+					primary: prop(cs, "--primary"),
+					ring: prop(cs, "--ring"),
+					destructive: prop(cs, "--destructive"),
+					background: prop(cs, "--background"),
+					rootPrimary: prop(root, "--primary"),
+					rootBrand: prop(root, "--brand"),
+					rootDestructive: prop(root, "--destructive"),
+					activeIndicator: activeLink
+						? getComputedStyle(activeLink, "::before").backgroundColor
+						: null,
+					scrollWidth: document.documentElement.scrollWidth,
+					innerWidth: window.innerWidth,
+				};
+			});
+
+			// 主要动作：工具方言 == 基础层默认高对比中性，与根作用域一致
+			expect(snapshot.primary, "工具方言主要动作色应为根作用域默认").toBe(
+				snapshot.rootPrimary,
+			);
+			const primary = expectColor(snapshot.primary, "工具方言主要动作色");
+			expect(primary.c, "后台 default action 应为中性色").toBeLessThanOrEqual(0.01);
+			expect(Math.abs(primary.l - 0.5), "后台 default action 应为高对比").toBeGreaterThan(
+				0.25,
+			);
+
+			// 焦点/当前导航：品牌强调（工具方言下品牌唯一露出点）
+			expect(snapshot.ring, "工具方言焦点环应映射品牌强调色").toBe(snapshot.rootBrand);
+			// 移动端视口可能命中的是移动导航项（无 before 指示条，底色透明）——仅对实际有色的指示条断言
+			const indicatorRaw = snapshot.activeIndicator ?? "";
+			const indicatorChroma =
+				parseOklch(indicatorRaw)?.c ?? parseOklabChroma(indicatorRaw)?.chroma ?? null;
+			if (indicatorChroma !== null) {
+				expect(
+					indicatorChroma,
+					`当前导航指示条应使用品牌强调色，实际 ${indicatorRaw}`,
+				).toBeGreaterThan(0.05);
+			} else if (indicatorRaw && indicatorRaw !== "rgba(0, 0, 0, 0)") {
+				throw new Error(`当前导航指示条颜色不可解析: ${indicatorRaw}`);
+			}
+
+			// 行为状态色不被改写；画布随主题；无横向溢出
+			expect(snapshot.destructive, "destructive 在工具方言不得被改写").toBe(
+				snapshot.rootDestructive,
+			);
+			const background = expectColor(snapshot.background, "工具方言画布");
+			if (theme === "light") {
+				expect(background.l, "浅色后台画布应近白").toBeGreaterThan(0.9);
+			} else {
+				expect(background.l, "深色后台画布应近黑").toBeLessThan(0.3);
+			}
+			expect(snapshot.scrollWidth).toBeLessThanOrEqual(snapshot.innerWidth);
+			await context.close();
+		});
 	}
 }
 

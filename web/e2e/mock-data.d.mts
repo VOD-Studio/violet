@@ -3,4 +3,5 @@ export declare function handle(
 	method: string,
 	pathname: string,
 	search?: string,
+	cookie?: string,
 ): { status: number; body: string };

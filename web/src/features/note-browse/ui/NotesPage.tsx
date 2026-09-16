@@ -98,11 +98,11 @@ export function NotesPage({ tag }: NotesPageProps) {
 /** 独创档案柜页头：工程打孔标头与实时指标 */
 function DossierHeader({ activeTag, totalNotes }: { activeTag?: string; totalNotes: number }) {
 	return (
-		<header className="border-edge-hairline relative mb-8 overflow-hidden rounded-xl border bg-gradient-to-b from-muted/30 to-muted/10 p-6 sm:p-8">
+		<header className="border-edge-hairline relative mb-8 overflow-hidden rounded-xl border bg-linear-to-b from-muted/30 to-muted/10 p-6 sm:p-8">
 			{/* 顶部微观装配标尺 */}
 			<div className="flex items-center justify-between border-b border-edge-hairline pb-4 font-mono text-[11px] text-muted-foreground/70">
 				<div className="flex items-center gap-2">
-					<span className="flex size-2 rounded-full bg-emerald-500/80 animate-pulse" />
+					<span className="flex size-2 rounded-full bg-success/80 animate-pulse" />
 					<span className="font-semibold tracking-wider text-foreground uppercase">
 						ENGINEERING FIELD LOGS
 					</span>

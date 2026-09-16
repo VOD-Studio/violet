@@ -165,7 +165,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 											{/* root 用户必有邮箱，无需重复显示；仅普通用户显示验证勾 */}
 											{!user.is_root && user.email_verified && (
 												<CheckCircle2
-													className="size-3 shrink-0 text-emerald-500"
+													className="size-3 shrink-0 text-success"
 													aria-label="邮箱已验证"
 												/>
 											)}

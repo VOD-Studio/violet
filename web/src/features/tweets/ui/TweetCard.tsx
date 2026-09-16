@@ -326,7 +326,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						}`}
 					>
 						{!isDetail && (
-							<div className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-sky-500/10 hover:text-sky-500 cursor-pointer">
+							<div className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-blue/10 hover:text-neon-blue cursor-pointer">
 								<MessageCircle className="size-4 transition-transform group-hover:scale-110" />
 								<span>{tweet.comment_count}</span>
 							</div>
@@ -336,7 +336,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							data-testid="quote-button"
 							aria-label="引用推文"
 							onClick={handleQuoteClick}
-							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
+							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-green/10 hover:text-neon-green"
 						>
 							<Repeat2 className="size-4 transition-transform group-hover:scale-110" />
 							<span>{tweet.quote_count}</span>
@@ -349,13 +349,13 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							disabled={toggleLike.isPending}
 							className={`group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
 								tweet.is_liked
-									? "font-medium text-rose-500 hover:bg-rose-500/10"
-									: "hover:bg-rose-500/10 hover:text-rose-500"
+									? "font-medium text-neon-pink hover:bg-neon-pink/10"
+									: "hover:bg-neon-pink/10 hover:text-neon-pink"
 							}`}
 						>
 							<Heart
 								className={`size-4 transition-transform group-hover:scale-110 ${
-									tweet.is_liked ? "fill-current text-rose-500" : ""
+									tweet.is_liked ? "fill-current text-neon-pink" : ""
 								}`}
 							/>
 							<span>{tweet.like_count}</span>

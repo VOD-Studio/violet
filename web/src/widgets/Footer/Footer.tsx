@@ -18,11 +18,11 @@ const Footer = () => {
 		`© ${year} ${siteName}. All rights reserved.`;
 
 	return (
-		<footer className="relative z-1 bg-[color-mix(in_oklab,rgb(139_92_246)_8%,var(--background))] pb-14 pt-8 text-foreground transition-colors">
-			{/* 顶部自然消融渐变带：淡紫罗兰随主题变量自适应晕染，无生硬边框切线 */}
+		<footer className="relative z-1 bg-[color-mix(in_oklab,var(--brand)_7%,var(--background))] pb-14 pt-8 text-foreground transition-colors">
+			{/* 顶部自然消融渐变带：品牌色低占比晕染，随 palette 自适应，无生硬边框切线 */}
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-[linear-gradient(to_bottom,transparent,color-mix(in_oklab,rgb(139_92_246)_8%,var(--background)))]"
+				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-[linear-gradient(to_bottom,transparent,color-mix(in_oklab,var(--brand)_7%,var(--background)))]"
 			/>
 			<div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
 				{/* 主内容双栏：左侧品牌与格言，右侧三列导航 */}
@@ -45,8 +45,8 @@ const Footer = () => {
 						</p>
 						<div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground">
 							<span className="relative flex size-2 items-center justify-center">
-								<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/50 opacity-75" />
-								<span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+								<span className="absolute inline-flex size-full animate-ping rounded-full bg-success/50 opacity-75" />
+								<span className="relative inline-flex size-1.5 rounded-full bg-success" />
 							</span>
 							<span>站点安静运行中</span>
 						</div>

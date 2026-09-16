@@ -106,7 +106,7 @@ function AnnouncementDetailPage() {
 					<span
 						className={
 							status === "scheduled"
-								? "inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400"
+								? "inline-flex items-center gap-1.5 text-warning"
 								: "inline-flex items-center gap-1.5"
 						}
 					>

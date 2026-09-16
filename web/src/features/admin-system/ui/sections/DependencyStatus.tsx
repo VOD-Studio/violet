@@ -34,7 +34,7 @@ function DepBadge({ name, dep }: { name: string; dep: SystemDepStatusDTO["postgr
 	return (
 		<span className="text-muted-foreground inline-flex items-center gap-1.5">
 			<span
-				className={`inline-block size-1.5 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`}
+				className={`inline-block size-1.5 rounded-full ${ok ? "bg-success" : "bg-destructive"}`}
 			/>
 			<span className="text-foreground font-medium">{name}</span>
 			<span className="tabular-nums">{ok ? formatLatency(dep.latencyMs) : "断开"}</span>

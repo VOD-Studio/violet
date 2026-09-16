@@ -37,7 +37,7 @@ export function TermPane({
 			)}
 		>
 			<header className="border-edge-hairline flex h-10 items-center gap-2.5 border-b px-4">
-				<span className="bg-emerald-500 size-1.5 shrink-0 rounded-full" aria-hidden />
+				<span className="bg-success size-1.5 shrink-0 rounded-full" aria-hidden />
 				<span className="text-muted-foreground font-mono text-xs">{tag}</span>
 				<span className="text-foreground text-sm font-medium">{title}</span>
 				{trailing && <div className="ml-auto flex items-center">{trailing}</div>}

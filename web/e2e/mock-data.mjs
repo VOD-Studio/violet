@@ -44,9 +44,87 @@ const paged = (data, limit) =>
 		meta: { pagination: { page: 1, limit, total: data.length, total_pages: 1 } },
 	});
 
-/** 与后端 envelope 语义一致的只读路由表；浏览器侧 page.route 复用同一份数据。 */
-export function handle(method, pathname, search) {
+/** 沉浸方言契约用公开图集：单图集单图，图片本体由契约路由按 /assets 路径应答。 */
+const CONTRACT_GALLERY = {
+	id: "20000000-0000-0000-0000-000000000001",
+	slug: "contract-gallery",
+	title: "沉浸契约图集",
+	summary: "用于沉浸方言视觉验收的样例图集。",
+	published_at: "2026-08-01T10:00:00Z",
+	items: [
+		{
+			file_id: "21000000-0000-0000-0000-000000000001",
+			position: 1,
+			thumbnail: "/assets/contract-image.png",
+			url: "/assets/contract-image.png",
+			width: 640,
+			height: 420,
+			alt_text: "契约样例图",
+			caption: "",
+		},
+	],
+};
+
+/** 工具方言契约的后台操作者（permissions 通配，满足 admin:access 门禁）。 */
+const ADMIN_USER = {
+	id: "30000000-0000-0000-0000-000000000001",
+	username: "contract",
+	display_name: "Contract",
+	email: "contract@local",
+	avatar_url: "",
+	bio: "",
+	role: "root",
+	is_root: true,
+	email_verified: true,
+	is_active: true,
+	created_at: "2026-01-01T00:00:00Z",
+	has_password: true,
+	permissions: ["*"],
+};
+
+const CONTRACT_POST_SUMMARY = (i) => ({
+	id: `31000000-0000-0000-0000-00000000000${i}`,
+	title: `契约文章 ${i}`,
+	slug: `contract-post-${i}`,
+	status: "published",
+	view_count: i * 11,
+	published_at: `2026-08-1${i}T10:00:00Z`,
+});
+
+/** 后台总览统计（GET /admin/stats）。 */
+const ADMIN_STATS = {
+	total_posts: 3,
+	total_comments: 5,
+	pending_comments: 1,
+	pending_friend_links: 0,
+	failing_subscriptions: 0,
+	total_views: 4200,
+	today_views: 32,
+	yesterday_views: 28,
+	week_comments: 2,
+	last_week_comments: 3,
+	total_users: 2,
+	recent_posts: [1, 2, 3].map(CONTRACT_POST_SUMMARY),
+	popular_posts: [3, 1].map(CONTRACT_POST_SUMMARY),
+};
+
+/** 浏览量趋势（GET /admin/stats/views）：30 个日聚合点 + 12 个月聚合点。 */
+const ADMIN_VIEW_TRENDS = {
+	daily: Array.from({ length: 30 }, (_, i) => ({
+		label: `2026-08-${String(i + 1).padStart(2, "0")}`,
+		count: 10 + ((i * 7) % 23),
+	})),
+	monthly: Array.from({ length: 12 }, (_, i) => ({
+		label: `2026-${String(i + 1).padStart(2, "0")}`,
+		count: 200 + i * 15,
+	})),
+};
+
+/** 与后端 envelope 语义一致的只读路由表；浏览器侧 page.route 复用同一份数据。
+ * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
+export function handle(method, pathname, search, cookie = "") {
 	const params = new URLSearchParams(search || "");
+	const isAdminActor = /(?:^|;\s*)contract_admin=1(?:;|$)/.test(cookie);
 	if (method !== "GET") return { status: 405, body: JSON.stringify({ error: "METHOD_NOT_ALLOWED" }) };
 	if (pathname === "/api/v1/site-identity") return { status: 200, body: envelope(SITE_IDENTITY) };
 	if (pathname === "/api/v1/publications") {
@@ -69,7 +147,33 @@ export function handle(method, pathname, search) {
 		return { status: 200, body: paged(posts, limit) };
 	}
 	if (pathname === "/api/v1/auth/session") {
-		return { status: 401, body: JSON.stringify({ error: "UNAUTHORIZED", message: "未登录" }) };
+		if (!isAdminActor) {
+			return { status: 401, body: JSON.stringify({ error: "UNAUTHORIZED", message: "未登录" }) };
+		}
+		return {
+			status: 200,
+			body: envelope({
+				user_id: "30000000-0000-0000-0000-000000000001",
+				role: "root",
+				email: "contract@local",
+				is_root: true,
+			}),
+		};
+	}
+	if (pathname === "/api/v1/auth/me") {
+		if (!isAdminActor) {
+			return { status: 401, body: JSON.stringify({ error: "UNAUTHORIZED", message: "未登录" }) };
+		}
+		return { status: 200, body: envelope(ADMIN_USER) };
+	}
+	if (pathname === "/api/v1/admin/stats") {
+		return { status: 200, body: envelope(ADMIN_STATS) };
+	}
+	if (pathname === "/api/v1/admin/stats/views") {
+		return { status: 200, body: envelope(ADMIN_VIEW_TRENDS) };
+	}
+	if (pathname === "/api/v1/admin/logs") {
+		return { status: 200, body: paged([], 20) };
 	}
 	if (pathname === "/api/v1/persona") return { status: 200, body: envelope(null) };
 	if (pathname === "/api/v1/tweets") {
@@ -78,6 +182,13 @@ export function handle(method, pathname, search) {
 	}
 	if (pathname === "/api/v1/settings") return { status: 200, body: envelope({}) };
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
+	if (pathname === "/api/v1/galleries") {
+		const limit = Number(params.get("limit") || 12);
+		return { status: 200, body: paged([CONTRACT_GALLERY], limit) };
+	}
+	if (pathname === "/api/v1/galleries/contract-gallery") {
+		return { status: 200, body: envelope(CONTRACT_GALLERY) };
+	}
 	return { status: 404, body: JSON.stringify({ error: "NOT_FOUND", message: pathname }) };
 }
 

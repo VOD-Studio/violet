@@ -15,9 +15,10 @@ interface FullscreenImage {
 }
 
 const controlClassName =
-	"inline-flex size-9 shrink-0 items-center justify-center rounded-md text-white/70 transition-[background-color,color,transform] hover:bg-white/10 hover:text-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-25";
+	"inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-[background-color,color,transform] hover:bg-muted hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-25";
 
-/** 通用媒体查看器：统一文件 chrome，并把格式渲染委托给 FilePreview。 */
+/** 通用媒体查看器：统一文件 chrome，并把格式渲染委托给 FilePreview。
+ * 根容器挂 Immersive 方言：中性舞台恒近黑，品牌色只留给焦点环。 */
 export function MediaViewer({
 	open,
 	onOpenChange,
@@ -108,16 +109,16 @@ export function MediaViewer({
 				onEscapeKeyDown={blockDialogDismiss}
 				onInteractOutside={blockDialogDismiss}
 				className={cn(
-					"h-[min(88dvh,48rem)] max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] gap-0 rounded-xl border border-white/10 bg-[#111318] shadow-2xl sm:max-w-[min(94vw,72rem)]",
+					"dialect-immersive h-[min(88dvh,48rem)] max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] gap-0 rounded-xl border border-border bg-card shadow-2xl sm:max-w-[min(94vw,72rem)]",
 				)}
 			>
 				<section className="flex h-full min-h-0 flex-col" aria-label="媒体查看器">
-					<header className="flex min-h-14 shrink-0 items-center gap-2 border-white/10 border-b bg-[#111318] px-2.5 py-2 text-white sm:gap-3 sm:px-4">
+					<header className="flex min-h-14 shrink-0 items-center gap-2 border-border border-b bg-card px-2.5 py-2 text-foreground sm:gap-3 sm:px-4">
 						<div className="min-w-0 flex-1">
 							<h2 className="truncate font-medium text-sm tracking-tight sm:text-base">
 								{item.name}
 							</h2>
-							<p className="mt-0.5 truncate text-[11px] text-white/45 sm:text-xs">
+							<p className="mt-0.5 truncate text-[11px] text-muted-foreground sm:text-xs">
 								{item.mimeType}
 								{sizeLabel ? ` · ${sizeLabel}` : ""}
 							</p>
@@ -127,7 +128,7 @@ export function MediaViewer({
 							className="flex shrink-0 items-center gap-0.5"
 							aria-label="媒体查看控制"
 						>
-							<span className="mr-1 hidden min-w-12 text-center font-mono text-white/50 text-xs tabular-nums min-[420px]:inline">
+							<span className="mr-1 hidden min-w-12 text-center font-mono text-muted-foreground text-xs tabular-nums min-[420px]:inline">
 								{safeIndex + 1} / {items.length}
 							</span>
 							<button
@@ -171,10 +172,9 @@ export function MediaViewer({
 						className={cn(
 							"min-h-0 flex-1",
 							isVideo && "flex items-center justify-center overflow-hidden bg-black",
-							isAudio && "overflow-hidden bg-[#0b0d11]",
-							immersive && !isVideo && !isAudio && "overflow-hidden bg-[#080a0d]",
-							!immersive &&
-								"overflow-auto bg-[#e7e8eb] p-2 text-foreground sm:p-4 dark:bg-[#181a1f]",
+							isAudio && "overflow-hidden bg-background",
+							immersive && !isVideo && !isAudio && "overflow-hidden bg-background",
+							!immersive && "overflow-auto bg-muted p-2 text-foreground sm:p-4",
 						)}
 					>
 						<FilePreview

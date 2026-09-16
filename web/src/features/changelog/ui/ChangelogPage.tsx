@@ -5,6 +5,7 @@ import { useReleases } from "@shared/api/releases";
 import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
+import { PageHeader } from "@shared/ui/page-header";
 import { RefreshCw, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";
@@ -12,16 +13,16 @@ import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";
 /** 单分类条目超过该数折叠（如 v2.4.0 的「修复」18 条），点「展开全部」兜底 */
 const COLLAPSE_ITEMS = 6;
 
-/** 分类标签配色：浅底深字 badge（对齐全站 severity 标签范式），按 label 关键词匹配 */
+/** 分类标签配色：浅底深字 badge（对齐全站 severity 标签范式），按 label 关键词匹配。
+ * 语义归位：破坏→warning、修复→destructive、新增→品牌、优化→success、重构→中性。 */
 const labelColorRules: { match: string; cls: string }[] = [
-	{ match: "破坏", cls: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
-	{ match: "新功能", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-	{ match: "新增", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-	{ match: "Bug", cls: "bg-red-500/10 text-red-600 dark:text-red-400" },
-	{ match: "修复", cls: "bg-red-500/10 text-red-600 dark:text-red-400" },
-	{ match: "重构", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
-	{ match: "性能", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-	{ match: "优化", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+	{ match: "破坏", cls: "bg-warning/10 text-warning" },
+	{ match: "新功能", cls: "bg-primary/10 text-primary" },
+	{ match: "新增", cls: "bg-primary/10 text-primary" },
+	{ match: "Bug", cls: "bg-destructive/10 text-destructive" },
+	{ match: "修复", cls: "bg-destructive/10 text-destructive" },
+	{ match: "性能", cls: "bg-success/10 text-success" },
+	{ match: "优化", cls: "bg-success/10 text-success" },
 ];
 
 function categoryColor(label: string): string {
@@ -80,13 +81,12 @@ export function ChangelogPage() {
 
 	return (
 		<main className="mx-auto w-full max-w-6xl px-6 py-20">
-			<header className="mb-16">
-				<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					Updates
-				</p>
-				<h1 className="font-mono text-4xl font-bold tracking-tight">更新日志</h1>
-				<p className="mt-3 text-base text-muted-foreground">本站各版本的变更记录</p>
-			</header>
+			<PageHeader
+				eyebrow="Updates"
+				title="更新日志"
+				description="本站各版本的变更记录"
+				className="mb-16"
+			/>
 
 			<div className="lg:grid lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-16">
 				<VersionNav items={navItems} current={current} activeId={activeId} />
@@ -122,7 +122,7 @@ export function ChangelogPage() {
 										</span>
 									) : null}
 									{release.breaking ? (
-										<span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
+										<span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-semibold text-warning">
 											<TriangleAlert className="size-3.5" />
 											破坏性变更
 										</span>

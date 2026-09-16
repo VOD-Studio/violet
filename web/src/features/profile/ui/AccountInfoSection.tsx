@@ -39,7 +39,10 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 							已验证
 						</span>
 					) : (
-						<span className="text-xs text-amber-600 dark:text-amber-400">未验证</span>
+						<span className="inline-flex items-center gap-1 text-xs text-warning">
+							<AlertTriangle className="size-3" />
+							未验证
+						</span>
 					)}
 				</Row>
 				<Row icon={<UserRound className="size-4" />} label="角色">
