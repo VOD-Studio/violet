@@ -1,0 +1,35 @@
+.avatar {
+	position: relative;
+	display: inline-grid;
+	vertical-align: middle;
+	isolation: isolate;
+	line-height: normal;
+	flex: none;
+}
+.frame,
+.charm {
+	position: absolute;
+	pointer-events: none;
+	user-select: none;
+	object-fit: contain;
+	max-width: none;
+}
+.frame {
+	width: calc(100% * var(--avatar-frame-scale, 1.35));
+	height: calc(100% * var(--avatar-frame-scale, 1.35));
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 1;
+}
+.charm {
+	width: 55%;
+	height: 55%;
+	right: -15%;
+	bottom: -12%;
+	z-index: 2;
+}
+.frame[hidden],
+.charm[hidden] {
+	display: none;
+}

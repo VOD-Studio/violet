@@ -20,6 +20,7 @@ import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAddChatMessageReaction, useRemoveChatMessageReaction } from "../api/queries";
+import { useChatAppearance } from "../hooks/useChatAppearance";
 import { imageBubbleContent } from "../lib/conversation";
 import type { OutgoingMessage } from "../model/chat-outbox";
 import type {
@@ -78,6 +79,7 @@ export function MessageBubble({
 	onReply,
 	onReplyTo,
 }: MessageBubbleProps) {
+	const appearance = useChatAppearance(message.sender.id);
 	const mine = message.sender.id === currentUserID;
 	const [editing, setEditing] = useState(false);
 	const reactions = message.reactions ?? [];
@@ -223,7 +225,7 @@ export function MessageBubble({
 							消息已被管理员删除
 						</div>
 					) : message.type === "image" && message.media?.length ? (
-						<BubbleShell mine={mine}>
+						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 							<ChatMessageContent
 								content={imageBubbleContent(message)}
 								emote={mergedEmote}
@@ -242,7 +244,7 @@ export function MessageBubble({
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
 							{message.content && (
-								<BubbleShell mine={mine}>
+								<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 									<ChatMessageContent
 										content={message.content}
 										emote={mergedEmote}
@@ -262,7 +264,7 @@ export function MessageBubble({
 							/>
 						</div>
 					) : (
-						<BubbleShell mine={mine}>
+						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 							<ChatMessageContent
 								content={message.content ?? ""}
 								emote={mergedEmote}
