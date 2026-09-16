@@ -42,14 +42,22 @@ function Host({
 	resolveImage,
 	onImageRemove,
 	onReady,
+	includePendingImages,
 }: {
 	value: string;
+	includePendingImages?: boolean;
 	onChange: (value: string) => void;
 	resolveImage?: (id: string) => string | undefined;
 	onImageRemove?: (id: string) => void;
 	onReady: (api: UseRichTextInputReturn) => void;
 }) {
-	const api = useRichTextInput({ value, onChange, resolveImage, onImageRemove });
+	const api = useRichTextInput({
+		value,
+		onChange,
+		resolveImage,
+		onImageRemove,
+		includePendingImages,
+	});
 	onReady(api);
 	return (
 		<div
@@ -120,6 +128,15 @@ describe("useRichTextInput 图片行内节点", () => {
 		expect(node).toBeTruthy();
 		expect(node?.getAttribute("data-image-status")).toBe("uploading");
 		expect(onChange).toHaveBeenLastCalledWith("");
+	});
+
+	it("开启任务接管后上传中与失败图片都保留本地占位符", () => {
+		const onChange = vi.fn();
+		render(<Host value="" onChange={onChange} onReady={onReady} includePendingImages />);
+		act(() => api.insertImage("local", "blob:preview", "uploading"));
+		expect(onChange).toHaveBeenLastCalledWith("![img:local]");
+		act(() => api.insertImage("local", "blob:preview", "error"));
+		expect(onChange).toHaveBeenLastCalledWith("![img:local]");
 	});
 
 	it("上传完成后原地替换为 done 节点，value 序列化为 ![img:id] 占位符", () => {

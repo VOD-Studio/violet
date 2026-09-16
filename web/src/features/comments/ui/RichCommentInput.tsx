@@ -83,7 +83,7 @@ export interface RichCommentInputProps {
 	placeholder?: string;
 	resetNonce?: number;
 	onImagesChange?: (images: PictureInput[]) => void;
-	/** 包括尚未完成的上传；提交方须 retain 后再清空输入框。 */
+	/** 上报全部上传并在正文中保留本地占位符；提交方须 retain 后再清空输入框。 */
 	onImageUploadsChange?: (images: ImageUploadReference[]) => void;
 	onUploadingChange?: (uploading: boolean) => void;
 	/** @ 提及候选（全量成员，筛选在组件内做）；缺省或空数组时不启用提及 */
@@ -284,6 +284,7 @@ export function RichCommentInput({
 		onSubmit,
 		disabled,
 		submitOnEnter,
+		includePendingImages: Boolean(onImageUploadsChange),
 		onPasteFiles: enableImage ? uploadFilesList : undefined,
 		resolveImage: inlineImages ? resolveImage : undefined,
 		onImageRemove: inlineImages ? handleRemoveImage : undefined,
