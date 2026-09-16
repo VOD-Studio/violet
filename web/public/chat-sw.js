@@ -6,6 +6,7 @@ self.addEventListener("push", (event) => {
 		icon: "/favicon.svg",
 		badge: "/favicon.svg",
 		tag: payload.tag || "violet-chat",
+		renotify: true,
 		data: { url: payload.url || "/chat" },
 	};
 	event.waitUntil(self.registration.showNotification(title, options));
