@@ -8,10 +8,12 @@ import (
 
 	"blog-api/config"
 	appchat "blog-api/internal/application/chat"
+	appappearance "blog-api/internal/application/chatappearance"
 	appcustomemoji "blog-api/internal/application/customemoji"
 	appshared "blog-api/internal/application/shared"
 	domainshared "blog-api/internal/domain/shared"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
+	appearancegorm "blog-api/internal/infrastructure/persistence/gorm/chatappearance"
 	infrapush "blog-api/internal/infrastructure/webpush"
 	chathttp "blog-api/internal/interfaces/http/handler/chat"
 )
@@ -37,7 +39,7 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 		pushSender = infrapush.NewSender(cfg.WebPush.VAPIDPublicKey, cfg.WebPush.VAPIDPrivateKey, cfg.WebPush.VAPIDSubject)
 	}
 	svc := appchat.NewService(repo, userRepo, fileRepo, manager, pushSender, cfg.WebPush.VAPIDPublicKey, nil, bus, reactionStore, tweetRepo, &chatCustomEmojiResolver{svc: customEmojiSvc})
-	return &ChatContainer{ChatService: svc, ChatHandler: chathttp.NewHandler(svc), StreamHandler: chathttp.NewStreamHandler(manager, svc)}
+	return &ChatContainer{ChatService: svc, ChatHandler: chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearancegorm.NewChatAppearanceStore(db))), StreamHandler: chathttp.NewStreamHandler(manager, svc)}
 }
 
 // chatCustomEmojiResolver 将 customemoji.Service 适配为 chat.CustomEmojiResolver

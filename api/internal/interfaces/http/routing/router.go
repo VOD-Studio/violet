@@ -445,6 +445,9 @@ func registerNotificationRoutes(v1 chi.Router, d *Deps) {
 func registerChatRoutes(v1 chi.Router, d *Deps) {
 	h := d.Chat
 	v1.Route("/chat", func(r chi.Router) {
+		r.With(d.SessionAuth).Get("/appearance", h.GetAppearance)
+		r.With(d.SessionAuth).Get("/appearances", h.ListAppearances)
+		r.With(d.SessionAuth, middleware.RateLimit("chat-appearance", d.Redis, time.Minute, 30)).Put("/appearance", h.UpdateAppearance)
 		r.With(d.SessionAuth).Get("/contacts", h.ListContacts)
 		r.With(d.SessionAuth).Get("/users/{username}", h.FindUserByUsername)
 		r.With(d.SessionAuth).Get("/unread-count", h.UnreadCount)
