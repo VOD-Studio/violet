@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
 	useChatPushConfig,
@@ -12,11 +12,31 @@ export function useChatPushNotifications() {
 	const save = useSaveChatPushSubscription();
 	const remove = useDeleteChatPushSubscription();
 	const [busy, setBusy] = useState(false);
+	const [subscribed, setSubscribed] = useState<boolean | null>(null);
 	const supported =
 		typeof window !== "undefined" &&
 		"Notification" in window &&
 		"serviceWorker" in navigator &&
 		"PushManager" in window;
+	useEffect(() => {
+		if (!supported) return;
+		let cancelled = false;
+		const refresh = async () => {
+			try {
+				const registration = await navigator.serviceWorker.getRegistration("/");
+				const subscription = await registration?.pushManager.getSubscription();
+				if (!cancelled) {
+					setSubscribed(Notification.permission === "granted" && !!subscription);
+				}
+			} catch {
+				if (!cancelled) setSubscribed(false);
+			}
+		};
+		void refresh();
+		return () => {
+			cancelled = true;
+		};
+	}, [supported]);
 	const enable = useCallback(
 		async (showPreview: boolean) => {
 			if (!supported || !config?.enabled || !config.public_key) {
@@ -33,7 +53,8 @@ export function useChatPushNotifications() {
 					toast.info("浏览器通知权限未开启");
 					return false;
 				}
-				const registration = await navigator.serviceWorker.register("/chat-sw.js");
+				await navigator.serviceWorker.register("/chat-sw.js");
+				const registration = await navigator.serviceWorker.ready;
 				const existing = await registration.pushManager.getSubscription();
 				const subscription =
 					existing ??
@@ -49,6 +70,7 @@ export function useChatPushNotifications() {
 					keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
 					show_preview: showPreview,
 				});
+				setSubscribed(true);
 				toast.success("浏览器通知已启用");
 				return true;
 			} catch {
@@ -70,6 +92,7 @@ export function useChatPushNotifications() {
 				await remove.mutateAsync(subscription.endpoint);
 				await subscription.unsubscribe();
 			}
+			setSubscribed(false);
 			toast.success("浏览器通知已关闭");
 		} catch {
 			toast.error("浏览器通知关闭失败");
@@ -95,11 +118,12 @@ export function useChatPushNotifications() {
 	return {
 		enabled: config?.enabled ?? false,
 		supported,
+		subscribed: subscribed === true,
 		permission:
 			typeof window === "undefined" || !("Notification" in window)
 				? "unsupported"
 				: Notification.permission,
-		busy,
+		busy: busy || (supported && subscribed === null),
 		enable,
 		disable,
 		updatePreview,

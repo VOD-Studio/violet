@@ -7,6 +7,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { OutgoingMessage } from "../../model/chat-outbox";
 import type {
 	ChatMedia,
 	ChatMessage,
@@ -94,6 +95,8 @@ function renderBubble(
 	onImage: (media: ChatMedia) => void = () => {},
 	conversationKind: ConversationKind = "direct",
 	currentUserID = "u_1",
+	sending?: Pick<OutgoingMessage, "status" | "progress" | "error">,
+	onRetry?: () => void,
 ) {
 	return render(
 		<MessageBubble
@@ -104,6 +107,8 @@ function renderBubble(
 			highlighted={false}
 			layout={false}
 			message={message}
+			sending={sending}
+			onRetry={onRetry}
 			messageRef={() => {}}
 			onImage={onImage}
 			showSender
@@ -354,4 +359,26 @@ describe("MessageBubble 已读回执", () => {
 		fireEvent.click(screen.getByText("2 人已读"));
 		expect(await screen.findByText("Bob")).toBeTruthy();
 	});
+});
+
+it("待发送图片显示进度并隐藏编辑与已读，失败后可原地重试", () => {
+	const message = { ...imageMessage("配图"), read_state: { read_count: 0, member_count: 1 } };
+	renderBubble(message, undefined, "direct", "u_1", { status: "uploading", progress: 42 });
+	expect(screen.getByRole("status").textContent).toContain("图片上传中 42%");
+	expect(screen.queryByRole("button", { name: "编辑消息" })).toBeNull();
+	expect(screen.queryByRole("button", { name: "添加消息表情" })).toBeNull();
+	expect(screen.queryByText("未读")).toBeNull();
+	cleanup();
+	const retry = vi.fn();
+	renderBubble(
+		message,
+		undefined,
+		"direct",
+		"u_1",
+		{ status: "failed", progress: 42, error: "图片上传失败" },
+		retry,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "重试" }));
+	expect(retry).toHaveBeenCalledOnce();
+	expect(screen.getByText("配图")).toBeTruthy();
 });

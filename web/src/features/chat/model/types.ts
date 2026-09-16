@@ -57,6 +57,8 @@ export interface ChatMessageReaction {
 }
 
 export interface ChatMessage {
+	/** 仅发送者可见，与发送请求的 Idempotency-Key 一致。 */
+	client_message_id?: string;
 	id: string;
 	conversation_id: string;
 	sender: ChatUser;

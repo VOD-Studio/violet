@@ -1,26 +1,27 @@
 /**
  * 消息输入区：回复/推文分享 banner 与富文本 composer，Enter 发送。
  */
+import { toEmojiToken } from "@entities/emoji/model/token";
 import {
 	extractImageIds,
 	stripImagePlaceholders,
 	stripPlaceholdersForPreview,
 } from "@features/comments/hooks/use-rich-text-input";
 import {
-	type PictureInput,
 	RichCommentInput,
 	type RichCommentInputHandle,
 } from "@features/comments/ui/RichCommentInput";
+import { useMyCustomEmojis } from "@features/customemoji/api/queries";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
+import type { ImageUploadReference } from "@shared/lib/image-upload-task";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
-import { LoaderCircle, MessageSquareQuote, Reply, Send, X } from "lucide-react";
+import { MessageSquareQuote, Reply, Send, X } from "lucide-react";
 import { type KeyboardEvent, type Ref, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useSendChatMessage } from "../api/queries";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
-import type { ChatMessage, ConversationKind } from "../model/types";
+import type { ChatMessage, ChatUser, ConversationKind, SendMessageInput } from "../model/types";
 
 export interface MessageComposerProps {
 	/** 接收会话内点击用户名触发的提及。 */
@@ -30,6 +31,7 @@ export interface MessageComposerProps {
 	conversationKind?: ConversationKind;
 	/** 当前用户 ID，用于把自己从提及候选里剔除 */
 	currentUserID: string;
+	currentUser?: ChatUser;
 	/** 落定到当前会话的待发分享；非空时优先展示分享 banner 并接管发送逻辑。 */
 	pendingShare: PendingChatShare | null;
 	replyTarget: ChatMessage | null;
@@ -42,14 +44,15 @@ export function MessageComposer({
 	conversationID,
 	conversationKind = "direct",
 	currentUserID,
+	currentUser,
 	pendingShare,
 	replyTarget,
 	onCancelReply,
 	onMessageSent,
 }: MessageComposerProps) {
 	const [content, setContent] = useState("");
-	const [images, setImages] = useState<PictureInput[]>([]);
-	const [uploading, setUploading] = useState(false);
+	const [images, setImages] = useState<ImageUploadReference[]>([]);
+	const submittedRef = useRef(false);
 	const [resetNonce, setResetNonce] = useState(0);
 	const clearPendingShare = useShareTweetStore((s) => s.clearPending);
 	const { notifyTyping, notifyStopped } = useChatTypingBroadcaster(conversationID);
@@ -70,84 +73,89 @@ export function MessageComposer({
 	}, [replyTarget]);
 
 	const send = useSendChatMessage();
+	const { data: customEmojis } = useMyCustomEmojis(true);
 
-	const sendMessage = async () => {
-		if (uploading || send.isPending) return;
-
-		if (pendingShare) {
-			try {
-				await send.mutateAsync({
-					id: conversationID,
-					input: {
-						type: "tweet_share",
-						content: content.trim(),
-						shared_tweet_id: pendingShare.tweet.id,
-					},
-					idempotencyKey: crypto.randomUUID(),
-				});
-				clearPendingShare();
-				setContent("");
-				setResetNonce((n) => n + 1);
-				onMessageSent?.();
-			} catch {
-				toast.error("消息发送失败，请重试");
-			}
-			return;
-		}
-
-		if (!content.trim() && images.length === 0) return;
-
-		const replyToID = replyTarget?.id;
-		// 输入流中已完成上传的图片 id（按占位符首次出现顺序）；占位符已从正文移除的
-		// 图片不随消息发送。全部图片与环绕文字合为一条图片消息，渲染端把 ![img:id]
-		// 占位符还原为内联图片，发出即与输入框一致的图文环绕。
-		const uploadedIDs = new Set(
-			images.filter((img) => !!img.id).map((img) => img.id as string),
-		);
-		const mediaIDs = extractImageIds(content).filter(
-			(id, index, ids) => uploadedIDs.has(id) && ids.indexOf(id) === index,
-		);
-		try {
-			if (mediaIDs.length > 0) {
-				const hasText = stripImagePlaceholders(content).trim().length > 0;
-				await send.mutateAsync({
-					id: conversationID,
-					input: {
-						type: "image",
-						media_ids: mediaIDs,
-						...(hasText ? { content: content.trim() } : {}),
-						...(replyToID ? { reply_to_id: replyToID } : {}),
-					},
-					idempotencyKey: crypto.randomUUID(),
-				});
-			} else {
-				const trimmedContent = stripImagePlaceholders(content).trim();
-				if (trimmedContent) {
-					await send.mutateAsync({
-						id: conversationID,
-						input: {
-							type: "text",
-							content: trimmedContent,
-							...(replyToID ? { reply_to_id: replyToID } : {}),
-						},
-						idempotencyKey: crypto.randomUUID(),
-					});
-				}
-			}
-
-			setContent("");
-			setImages([]);
-			setResetNonce((n) => n + 1);
-			onMessageSent?.();
-		} catch {
-			toast.error("消息发送失败，请重试");
-		}
+	const sendMessage = () => {
+		if (submittedRef.current) return;
+		const ids = new Set(extractImageIds(content));
+		const attachments = images.filter((image) => ids.has(image.id));
+		const text = attachments.length ? content.trim() : stripImagePlaceholders(content).trim();
+		if (!pendingShare && !text && !attachments.length) return;
+		const input: SendMessageInput = pendingShare
+			? { type: "tweet_share", content: text, shared_tweet_id: pendingShare.tweet.id }
+			: {
+					type: attachments.length ? "image" : "text",
+					content: text,
+					...(replyTarget ? { reply_to_id: replyTarget.id } : {}),
+				};
+		submittedRef.current = true;
+		void send.mutateAsync({
+			id: conversationID,
+			input,
+			idempotencyKey: crypto.randomUUID(),
+			images: pendingShare ? [] : attachments,
+			draft: {
+				custom_emote: Object.fromEntries(
+					[...(customEmojis?.owned ?? []), ...(customEmojis?.favorited ?? [])]
+						.filter((emoji) => text.includes(toEmojiToken(emoji)))
+						.map((emoji) => [
+							toEmojiToken(emoji),
+							{
+								url: emoji.url,
+								custom_emoji_id: emoji.custom_emoji_id,
+								relation: emoji.relation,
+							},
+						]),
+				),
+				sender: currentUser ?? {
+					id: currentUserID,
+					username: "",
+					display_name: "我",
+					avatar_url: "",
+				},
+				reply_to:
+					!pendingShare && replyTarget && replyTarget.type !== "system"
+						? {
+								id: replyTarget.id,
+								sender: replyTarget.sender,
+								type: replyTarget.type,
+								content: replyTarget.content,
+								media: replyTarget.media?.[0],
+								is_deleted: replyTarget.is_deleted,
+							}
+						: undefined,
+				shared_tweet: pendingShare
+					? {
+							id: pendingShare.tweet.id,
+							content: pendingShare.tweet.content,
+							is_deleted: false,
+							author: {
+								id: "",
+								username: pendingShare.tweet.authorUsername,
+								display_name: pendingShare.tweet.authorUsername,
+								avatar_url: "",
+							},
+							images: pendingShare.tweet.imageUrl
+								? [pendingShare.tweet.imageUrl]
+								: [],
+						}
+					: undefined,
+			},
+		});
+		setContent("");
+		setImages([]);
+		setResetNonce((n) => n + 1);
+		if (pendingShare) clearPendingShare();
+		notifyStopped();
+		onCancelReply();
+		onMessageSent?.();
+		composerRef.current?.querySelector<HTMLElement>('[role="textbox"]')?.focus();
 	};
 
-	const canSend =
-		!uploading &&
-		!send.isPending &&
-		(pendingShare ? true : Boolean(content.trim()) || images.length > 0);
+	useEffect(() => {
+		if (!content && !pendingShare) submittedRef.current = false;
+	}, [content, pendingShare]);
+	const canSend = Boolean(pendingShare || content.trim() || images.length);
 
 	return (
 		<div
@@ -228,8 +236,7 @@ export function MessageComposer({
 					layout="inline"
 					placeholder="输入消息…"
 					resetNonce={resetNonce}
-					onImagesChange={setImages}
-					onUploadingChange={setUploading}
+					onImageUploadsChange={setImages}
 					mentionCandidates={mentionCandidates}
 					className="rounded-3xl border border-input bg-card transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
 					toolbarEnd={
@@ -246,11 +253,7 @@ export function MessageComposer({
 									: "bg-secondary text-muted-foreground",
 							)}
 						>
-							{send.isPending ? (
-								<LoaderCircle className="size-4 animate-spin" />
-							) : (
-								<Send className="size-4" />
-							)}
+							<Send className="size-4" />
 						</Button>
 					}
 				/>

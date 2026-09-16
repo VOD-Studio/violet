@@ -37,6 +37,8 @@ export interface UseRichTextInputOptions {
 	disabled?: boolean;
 	/** 是否按 Enter 键即提交（Shift+Enter 换行），默认 false（仅 Ctrl/Cmd+Enter 提交） */
 	submitOnEnter?: boolean;
+	/** 上传中与失败图片也输出本地占位符，供提交方接管上传任务。 */
+	includePendingImages?: boolean;
 	/** 剪贴板粘贴图片文件回调 */
 	onPasteFiles?: (files: File[]) => void;
 	/** 按 id 查已上传图片的真实 URL，供 markdownToHtml 从 `![img:<id>]` 占位符还原图片节点（仅 inlineImages 消费方需要） */
@@ -137,6 +139,7 @@ export function useRichTextInput({
 	onSubmit,
 	disabled,
 	submitOnEnter = false,
+	includePendingImages = false,
 	onPasteFiles,
 	resolveImage,
 	onImageRemove,
@@ -231,8 +234,8 @@ export function useRichTextInput({
 				if (el.tagName === "IMG" || el.tagName === "SPAN") {
 					const imageId = el.dataset.image;
 					if (imageId) {
-						// 上传中/失败态节点不参与序列化，只有上传完成的图片才计入 value。
-						if (el.dataset.imageStatus === "done") {
+						// 普通表单只提交已上传图片；任务接管方需要保留本地占位符。
+						if (includePendingImages || el.dataset.imageStatus === "done") {
 							markdown += `![img:${imageId}]`;
 						}
 						return;
@@ -260,7 +263,7 @@ export function useRichTextInput({
 		};
 		div.childNodes.forEach(traverse);
 		return markdown;
-	}, []);
+	}, [includePendingImages]);
 
 	const syncToDom = useCallback(
 		(markdown: string) => {

@@ -42,18 +42,19 @@ func registerChatPaths(t *openapi3.T) {
 		"is_deleted": optBool("原消息是否已被管理员删除"),
 	})
 	registerSchema(t, "ChatMessageDTO", openapi3.Schemas{
-		"id":              reqStr("消息 ID"),
-		"conversation_id": reqStr("会话 ID"),
-		"sender":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
-		"type":            reqStr("text、image、system 或 tweet_share"),
-		"content":         optStr("文本内容或分享推文的配文"),
-		"custom_emote":    &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
-		"media":           &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeArray}, Items: &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"}}},
-		"shared_tweet":    &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
-		"reply_to":        &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
-		"is_deleted":      optBool("是否已被管理员删除"),
-		"deleted_at":      optStr("删除时间"),
-		"created_at":      reqStr("RFC3339 时间"),
+		"client_message_id": optStr("发送者可见的原始 Idempotency-Key，用于合并本地待发送消息"),
+		"id":                reqStr("消息 ID"),
+		"conversation_id":   reqStr("会话 ID"),
+		"sender":            &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
+		"type":              reqStr("text、image、system 或 tweet_share"),
+		"content":           optStr("文本内容或分享推文的配文"),
+		"custom_emote":      &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
+		"media":             &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeArray}, Items: &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"}}},
+		"shared_tweet":      &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
+		"reply_to":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
+		"is_deleted":        optBool("是否已被管理员删除"),
+		"deleted_at":        optStr("删除时间"),
+		"created_at":        reqStr("RFC3339 时间"),
 	})
 	registerSchema(t, "ChatConversationDTO", openapi3.Schemas{
 		"id":           reqStr("会话 ID"),
@@ -175,11 +176,11 @@ func registerChatPaths(t *openapi3.T) {
 	}, "emoji_id")
 
 	registerSchema(t, "ChatMessageReaderDTO", openapi3.Schemas{
-		"user_id":     reqStr("读者用户 ID"),
-		"username":    reqStr("用户名"),
+		"user_id":      reqStr("读者用户 ID"),
+		"username":     reqStr("用户名"),
 		"display_name": reqStr("展示名"),
-		"avatar_url":  reqStr("头像 URL"),
-		"read_at":     reqStr("读到该消息的时间（RFC3339）"),
+		"avatar_url":   reqStr("头像 URL"),
+		"read_at":      reqStr("读到该消息的时间（RFC3339）"),
 	})
 
 	registerSchema(t, "ChatEditMessageRequest", openapi3.Schemas{
@@ -190,11 +191,11 @@ func registerChatPaths(t *openapi3.T) {
 	get(t, "/chat/conversations/{conversationId}/messages/{messageId}/reactions", &openapi3.Operation{
 		Tags: []string{"聊天"}, Summary: "消息反应列表", Security: secure,
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID")},
-		Responses: responses(200, dataArrayResponse("ChatMessageReactionDTO", "按表情聚合的反应列表", 200, false)),
+		Responses:  responses(200, dataArrayResponse("ChatMessageReactionDTO", "按表情聚合的反应列表", 200, false)),
 	})
 	post(t, "/chat/conversations/{conversationId}/messages/{messageId}/reactions", &openapi3.Operation{
 		Tags: []string{"聊天"}, Summary: "添加消息反应", Security: secure,
-		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()},
+		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()},
 		RequestBody: jsonBody("ChatAddReactionRequest", true, "表情 ID"),
 		Responses:   responses(200, messageResponse("反应已添加")),
 	})
@@ -206,11 +207,11 @@ func registerChatPaths(t *openapi3.T) {
 	get(t, "/chat/conversations/{conversationId}/messages/{messageId}/readers", &openapi3.Operation{
 		Tags: []string{"聊天"}, Summary: "消息已读回执", Security: secure,
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID")},
-		Responses: responses(200, dataArrayResponse("ChatMessageReaderDTO", "读过该消息的成员列表", 200, false)),
+		Responses:  responses(200, dataArrayResponse("ChatMessageReaderDTO", "读过该消息的成员列表", 200, false)),
 	})
 	patch(t, "/chat/conversations/{conversationId}/messages/{messageId}", &openapi3.Operation{
 		Tags: []string{"聊天"}, Summary: "编辑已发消息", Description: "仅作者本人可编辑。", Security: secure,
-		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()},
+		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID"), csrfHeaderParam()},
 		RequestBody: jsonBody("ChatEditMessageRequest", true, "新消息内容"),
 		Responses:   responses(200, dataResponse("ChatMessageDTO", "编辑后的消息", 200)),
 	})

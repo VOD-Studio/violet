@@ -213,6 +213,8 @@ type MemberDTO struct {
 
 // MessageDTO 消息读模型。
 type MessageDTO struct {
+	// ClientMessageID 原始发送幂等键；仅发送者可见，用于合并本地待发送消息。
+	ClientMessageID string `json:"client_message_id,omitempty"`
 	// ID 消息 ID。
 	ID string `json:"id"`
 	// ConversationID 所属会话 ID。
@@ -1336,6 +1338,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		Reactions:      messageReactionDTOs(reactions),
 		CreatedAt:      message.CreatedAt().Format(time.RFC3339Nano),
 	}
+	if message.SenderID().Equal(viewerUserID) {
+		dto.ClientMessageID = message.IdempotencyKey()
+	}
 	if message.DeletedAt() != nil {
 		dto.IsDeleted = true
 		deletedAt := message.DeletedAt().Format(time.RFC3339Nano)
@@ -1651,7 +1656,13 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 				}
 			}
 			if err := s.push.Send(ctx, subscription, notification); err != nil {
-				_ = s.repo.DeletePushSubscription(ctx, event.UserID, subscription.Endpoint)
+				if errors.Is(err, ErrPushSubscriptionExpired) {
+					if err := s.repo.DeletePushSubscription(ctx, event.UserID, subscription.Endpoint); err != nil {
+						log.Warn().Msg("清理失效聊天推送订阅失败")
+					}
+				} else {
+					log.Warn().Msg("聊天浏览器推送失败，保留订阅供后续消息使用")
+				}
 			}
 		}
 	}

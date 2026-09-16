@@ -6,7 +6,7 @@
  * x 位移，退出动画期间抽屉仍占布局，聊天区会等动画结束后才突变撑宽。
  * jsdom 无布局引擎，断言语义落在 initial 样式的属性选择上（width vs transform）。
  */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatConversation, ChatMember } from "../../model/types";
 
@@ -22,16 +22,19 @@ vi.mock("../../api/queries", () => ({
 	useLeaveChatConversation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+const push = vi.hoisted(() => ({
+	permission: "default",
+	enabled: false,
+	subscribed: false,
+	supported: true,
+	busy: false,
+	enable: vi.fn(),
+	disable: vi.fn(),
+	updatePreview: vi.fn(),
+}));
+
 vi.mock("../../hooks/useChatPushNotifications", () => ({
-	useChatPushNotifications: () => ({
-		permission: "default",
-		enabled: false,
-		supported: true,
-		busy: false,
-		enable: vi.fn(),
-		disable: vi.fn(),
-		updatePreview: vi.fn(),
-	}),
+	useChatPushNotifications: () => push,
 }));
 
 vi.mock("../ChatAvatar", () => ({ ChatAvatar: () => null }));
@@ -76,8 +79,29 @@ const stubMatchMedia = (matches: boolean) => {
 
 afterEach(() => {
 	cleanup();
+	push.enabled = false;
+	push.subscribed = false;
+	push.permission = "default";
+	vi.clearAllMocks();
 	// jsdom 原生无 matchMedia，删除以恢复「未定义」的默认状态
 	Reflect.deleteProperty(window, "matchMedia");
+});
+
+it("已有通知权限但没有订阅时，设置按钮可以重新启用通知", () => {
+	stubMatchMedia(true);
+	push.enabled = true;
+	push.permission = "granted";
+	render(
+		<RoomDetails
+			conversation={mockConversation}
+			currentUserID={mockUser.id}
+			members={mockMembers}
+			onClose={() => {}}
+		/>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "启用浏览器通知" }));
+	expect(push.enable).toHaveBeenCalledWith(false);
+	expect(push.disable).not.toHaveBeenCalled();
 });
 
 describe("RoomDetails 动画模式", () => {

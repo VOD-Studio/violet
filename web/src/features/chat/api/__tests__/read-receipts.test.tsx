@@ -15,7 +15,11 @@ vi.mock("../client", () => ({
 	markChatRead: vi.fn(),
 	chatEventStreamURL: "/chat/events",
 }));
-vi.mock("@shared/api/session", () => ({ useSessionStore: () => true }));
+vi.mock("@shared/api/session", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@shared/api/session")>();
+	actual.useSessionStore.setState({ sessionActive: true });
+	return actual;
+});
 afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
@@ -95,6 +99,9 @@ it("发送响应晚于已读刷新时保留最新回执且不插入重复消息"
 			id: "c1",
 			input: { type: "text", content: "hello" },
 			idempotencyKey: "k",
+			draft: {
+				sender: { id: "self", username: "self", display_name: "Self", avatar_url: "" },
+			},
 		});
 	});
 	const data = qc.getQueryData<{ pages: (typeof page)[] }>(chatKeys.messages("c1"));
