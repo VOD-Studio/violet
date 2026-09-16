@@ -232,7 +232,7 @@ function NotificationSettings({
 }) {
 	const push = useChatPushNotifications();
 	const [showPreview, setShowPreview] = useState(false);
-	const granted = push.permission === "granted";
+	const subscribed = push.subscribed;
 
 	return (
 		<div className="rounded-2xl border border-border bg-secondary/40 p-4">
@@ -277,14 +277,14 @@ function NotificationSettings({
 						className="mt-2.5 h-7.5 w-full rounded-lg text-xs font-medium"
 						disabled={push.busy || !push.enabled || !push.supported}
 						onClick={() =>
-							granted ? void push.disable() : void push.enable(showPreview)
+							subscribed ? void push.disable() : void push.enable(showPreview)
 						}
 						size="sm"
-						variant={granted ? "outline" : "default"}
+						variant={subscribed ? "outline" : "default"}
 					>
 						{push.busy ? (
 							<LoaderCircle className="size-3 animate-spin" />
-						) : granted ? (
+						) : subscribed ? (
 							"关闭浏览器通知"
 						) : (
 							"启用浏览器通知"
