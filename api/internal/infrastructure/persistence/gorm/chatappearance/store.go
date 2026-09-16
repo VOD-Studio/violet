@@ -3,6 +3,7 @@ package chatappearance
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -21,15 +22,27 @@ func NewChatAppearanceStore(db *gorm.DB) *ChatAppearanceStore { return &ChatAppe
 var _ domain.Store = (*ChatAppearanceStore)(nil)
 
 type chatAppearanceRow struct {
-	UserID        string `gorm:"column:user_id"`
-	AvatarFrameID string `gorm:"column:avatar_frame_id"`
-	AvatarCharmID string `gorm:"column:avatar_charm_id"`
-	BubbleThemeID string `gorm:"column:bubble_theme_id"`
-	Revision      int64  `gorm:"column:revision"`
+	UserID        string          `gorm:"column:user_id"`
+	AvatarFrameID string          `gorm:"column:avatar_frame_id"`
+	AvatarCharmID string          `gorm:"column:avatar_charm_id"`
+	BubbleThemeID string          `gorm:"column:bubble_theme_id"`
+	BadgeIDsJSON  json.RawMessage `gorm:"column:badge_ids"`
+	Revision      int64           `gorm:"column:revision"`
 }
 
 func (r chatAppearanceRow) selection() domain.Selection {
-	return domain.Selection{AvatarFrameID: r.AvatarFrameID, AvatarCharmID: r.AvatarCharmID, BubbleThemeID: r.BubbleThemeID}
+	var badgeIDs []string
+	if len(r.BadgeIDsJSON) > 0 {
+		if err := json.Unmarshal(r.BadgeIDsJSON, &badgeIDs); err != nil {
+			badgeIDs = nil
+		}
+	}
+	return domain.Selection{
+		AvatarFrameID: r.AvatarFrameID,
+		AvatarCharmID: r.AvatarCharmID,
+		BubbleThemeID: r.BubbleThemeID,
+		BadgeIDs:      badgeIDs,
+	}
 }
 
 // Get 把缺失行视作原始样式,涵盖本功能上线前注册的账号。
@@ -63,19 +76,27 @@ func (s *ChatAppearanceStore) GetMany(ctx context.Context, ids []string) (map[st
 }
 
 // CompareAndSwap 用 RETURNING 原子写,不走读-改-写,并发标签页不会互相覆盖。
+// badge_ids 以 JSONB 落库,入参已在应用层校验过目录与数量。
 func (s *ChatAppearanceStore) CompareAndSwap(ctx context.Context, id string, value domain.Selection, expected int64) (domain.State, error) {
+	if value.BadgeIDs == nil {
+		value.BadgeIDs = []string{}
+	}
+	badgeIDsJSON, err := json.Marshal(value.BadgeIDs)
+	if err != nil {
+		return domain.State{}, err
+	}
 	var row *sql.Row
 	if expected == 0 {
 		row = s.db.WithContext(ctx).Raw(`INSERT INTO chat_user_appearances
-   (user_id, avatar_frame_id, avatar_charm_id, bubble_theme_id, revision)
-   VALUES (?, ?, ?, ?, 1) ON CONFLICT (user_id) DO NOTHING
-   RETURNING revision`, id, value.AvatarFrameID, value.AvatarCharmID, value.BubbleThemeID).Row()
+   (user_id, avatar_frame_id, avatar_charm_id, bubble_theme_id, badge_ids, revision)
+   VALUES (?, ?, ?, ?, ?::jsonb, 1) ON CONFLICT (user_id) DO NOTHING
+   RETURNING revision`, id, value.AvatarFrameID, value.AvatarCharmID, value.BubbleThemeID, string(badgeIDsJSON)).Row()
 	} else {
 		row = s.db.WithContext(ctx).Raw(`UPDATE chat_user_appearances
-   SET avatar_frame_id = ?, avatar_charm_id = ?, bubble_theme_id = ?,
+   SET avatar_frame_id = ?, avatar_charm_id = ?, bubble_theme_id = ?, badge_ids = ?::jsonb,
        revision = revision + 1, updated_at = CURRENT_TIMESTAMP
    WHERE user_id = ? AND revision = ? RETURNING revision`,
-			value.AvatarFrameID, value.AvatarCharmID, value.BubbleThemeID, id, expected).Row()
+			value.AvatarFrameID, value.AvatarCharmID, value.BubbleThemeID, string(badgeIDsJSON), id, expected).Row()
 	}
 	var revision int64
 	if err := row.Scan(&revision); err != nil {
