@@ -39,7 +39,8 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 		pushSender = infrapush.NewSender(cfg.WebPush.VAPIDPublicKey, cfg.WebPush.VAPIDPrivateKey, cfg.WebPush.VAPIDSubject)
 	}
 	svc := appchat.NewService(repo, userRepo, fileRepo, manager, pushSender, cfg.WebPush.VAPIDPublicKey, nil, bus, reactionStore, tweetRepo, &chatCustomEmojiResolver{svc: customEmojiSvc})
-	return &ChatContainer{ChatService: svc, ChatHandler: chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearancegorm.NewChatAppearanceStore(db))), StreamHandler: chathttp.NewStreamHandler(manager, svc)}
+	appearanceStore := appearancegorm.NewChatAppearanceStore(db)
+	return &ChatContainer{ChatService: svc, ChatHandler: chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)), StreamHandler: chathttp.NewStreamHandler(manager, svc)}
 }
 
 // chatCustomEmojiResolver 将 customemoji.Service 适配为 chat.CustomEmojiResolver

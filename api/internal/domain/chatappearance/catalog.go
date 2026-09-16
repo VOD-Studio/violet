@@ -41,6 +41,33 @@ var charms = map[string]struct{}{
 	"c-football-bow":    {},
 }
 
+var badges = map[string]struct{}{
+	"anniversary":     {},
+	"autumn-story":    {},
+	"cat-companion":   {},
+	"creative":        {},
+	"favorite":        {},
+	"first-meeting":   {},
+	"flower-friend":   {},
+	"football":        {},
+	"gaming":          {},
+	"gentle-support":  {},
+	"moon-postman":    {},
+	"moonlight":       {},
+	"music-listening": {},
+	"night-owl":       {},
+	"opal-heart":      {},
+	"reading":         {},
+	"resting":         {},
+	"ribbon-friend":   {},
+	"rua":             {},
+	"star-keeper":     {},
+	"starlight-wish":  {},
+	"tea-party":       {},
+	"violet-letter":   {},
+	"winter-letter":   {},
+}
+
 var bubbles = map[string]struct{}{
 	"game-night":    {},
 	"ivory-lace":    {},

@@ -28,7 +28,7 @@ func Decode(reader io.Reader) (domain.State, error) {
 	if err != nil || token != json.Delim('{') {
 		return zero, domain.ErrInvalid
 	}
-	fields := make(map[string]json.RawMessage, 4)
+	fields := make(map[string]json.RawMessage, 5)
 	for dec.More() {
 		token, err = dec.Token()
 		if err != nil {
@@ -42,7 +42,7 @@ func Decode(reader io.Reader) (domain.State, error) {
 			return zero, domain.ErrInvalid
 		}
 		switch key {
-		case "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "revision":
+		case "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "badge_ids", "revision":
 		default:
 			return zero, domain.ErrInvalid
 		}
@@ -53,7 +53,7 @@ func Decode(reader io.Reader) (domain.State, error) {
 		fields[key] = raw
 	}
 	token, err = dec.Token()
-	if err != nil || token != json.Delim('}') || len(fields) != 4 {
+	if err != nil || token != json.Delim('}') || len(fields) != 5 {
 		return zero, domain.ErrInvalid
 	}
 	if _, err = dec.Token(); err != io.EOF {
@@ -64,6 +64,7 @@ func Decode(reader io.Reader) (domain.State, error) {
 		"avatar_frame_id": &result.AvatarFrameID,
 		"avatar_charm_id": &result.AvatarCharmID,
 		"bubble_theme_id": &result.BubbleThemeID,
+		"badge_ids":       &result.BadgeIDs,
 		"revision":        &result.Revision,
 	} {
 		if json.Unmarshal(fields[key], target) != nil {

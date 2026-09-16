@@ -50,16 +50,18 @@ func TestPostgresAppearanceStore(t *testing.T) {
 	if err = tx.Exec(`CREATE TABLE users (id uuid PRIMARY KEY)`).Error; err != nil {
 		t.Fatal(err)
 	}
-	migrations, err := filepath.Glob("../../../../../migrations/*_chat_user_appearances.up.sql")
-	if err != nil || len(migrations) != 1 {
-		t.Fatalf("期望恰好一份外观迁移,实际 %v (%v)", migrations, err)
+	migrations, err := filepath.Glob("../../../../../migrations/1[178]_chat_user_*.up.sql")
+	if err != nil || len(migrations) != 2 {
+		t.Fatalf("期望外观与徽章两份迁移,实际 %v (%v)", migrations, err)
 	}
-	migrationSQL, err := os.ReadFile(migrations[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = tx.Exec(string(migrationSQL)).Error; err != nil {
-		t.Fatal(err)
+	for _, path := range migrations {
+		migrationSQL, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = tx.Exec(migrationSQL).Error; err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err = tx.Exec(`INSERT INTO users(id) VALUES ('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222')`).Error; err != nil {
 		t.Fatal(err)
@@ -80,12 +82,34 @@ func TestPostgresAppearanceStore(t *testing.T) {
 		t.Fatal("CAS 失败", err)
 	}
 	loaded, err := store.Get(ctx, id)
-	if err != nil || loaded != state {
+	if err != nil || loaded.Revision != state.Revision || !loaded.Selection.Equal(state.Selection) {
 		t.Fatal(loaded, err)
 	}
 	batch, err := store.GetMany(ctx, []string{id, "22222222-2222-4222-8222-222222222222"})
-	if err != nil || len(batch) != 2 || batch[id] != value {
+	if err != nil || len(batch) != 2 || !batch[id].Equal(value) {
 		t.Fatal(batch, err)
+	}
+	// 徽章持有:授予幂等,列表按目录 ID 稳定排序,撤销真正删行。
+	if err = store.Grant(ctx, "33333333-3333-4333-8333-333333333333", id, []string{"rua", "tea-party", "rua"}); err != nil {
+		t.Fatal(err)
+	}
+	grants, err := store.Grants(ctx, id)
+	if err != nil || len(grants) != 2 || grants[0].BadgeID != "rua" || grants[0].AwardedBy == "" {
+		t.Fatal(grants, err)
+	}
+	empty, err := store.Grants(ctx, "22222222-2222-4222-8222-222222222222")
+	if err != nil || len(empty) != 0 {
+		t.Fatal(empty, err)
+	}
+	byUsers, err := store.GrantsForUsers(ctx, []string{id, "22222222-2222-4222-8222-222222222222"})
+	if err != nil || len(byUsers[id]) != 2 || len(byUsers["22222222-2222-4222-8222-222222222222"]) != 0 {
+		t.Fatal(byUsers, err)
+	}
+	if err = store.Revoke(ctx, id, "rua"); err != nil {
+		t.Fatal(err)
+	}
+	if err = store.Revoke(ctx, id, "rua"); !errors.Is(err, domain.ErrInvalid) {
+		t.Fatal("重复撤销未报错", err)
 	}
 	reset, err := store.CompareAndSwap(ctx, id, domain.Selection{}, 1)
 	if err != nil || reset.Revision != 2 {

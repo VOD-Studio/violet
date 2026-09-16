@@ -6,10 +6,15 @@ import (
 	"testing"
 )
 
-const valid = `{"avatar_frame_id":"moon-cloud","avatar_charm_id":"a-star-bow","bubble_theme_id":"moon-letter","revision":0}`
+const valid = `{"avatar_frame_id":"moon-cloud","avatar_charm_id":"a-star-bow","bubble_theme_id":"moon-letter","badge_ids":["rua"],"revision":0}`
 
 func TestDecodeValidAndExplicitReset(t *testing.T) {
-	for _, payload := range []string{valid, " \n" + valid + "\t", `{"avatar_frame_id":"","avatar_charm_id":"","bubble_theme_id":"","revision":123}`} {
+	for _, payload := range []string{
+		valid,
+		" \n" + valid + "\t",
+		`{"avatar_frame_id":"","avatar_charm_id":"","bubble_theme_id":"","badge_ids":[],"revision":123}`,
+		`{"avatar_frame_id":"","avatar_charm_id":"","bubble_theme_id":"","badge_ids":["rua","tea-party","night-owl"],"revision":1}`,
+	} {
 		if _, err := Decode(strings.NewReader(payload)); err != nil {
 			t.Fatal(err)
 		}
@@ -28,6 +33,12 @@ func TestDecodeRejectsMalformedPartialAndInjectedInput(t *testing.T) {
 		"unknown theme":   strings.Replace(valid, "moon-letter", "https://bad.invalid/skin", 1),
 		"trailing":        valid + "{}", "trailing scalar": valid + "true", "oversize": strings.Repeat(" ", 2049) + valid,
 		"truncated": strings.TrimSuffix(valid, "}"), "bad type": strings.Replace(valid, `"a-star-bow"`, `42`, 1),
+		"badge overflow":       strings.Replace(valid, `["rua"]`, `["rua","tea-party","night-owl","opal-heart"]`, 1),
+		"badge duplicate":      strings.Replace(valid, `["rua"]`, `["rua","rua"]`, 1),
+		"badge unknown":        strings.Replace(valid, `["rua"]`, `["no-such-badge"]`, 1),
+		"badge not array":      strings.Replace(valid, `["rua"]`, `"rua"`, 1),
+		"badge element Scalar": strings.Replace(valid, `["rua"]`, `["rua",42]`, 1),
+		"badge null":           strings.Replace(valid, `["rua"]`, `null`, 1),
 	}
 	for name, payload := range tests {
 		t.Run(name, func(t *testing.T) {

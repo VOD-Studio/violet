@@ -222,13 +222,20 @@ func registerChatPaths(t *openapi3.T) {
 		"avatar_frame_id": reqStr("头像框 ID;空串表示不使用,只接受素材目录中的值"),
 		"avatar_charm_id": reqStr("头像挂件 ID;空串表示不使用,只接受素材目录中的值"),
 		"bubble_theme_id": reqStr("气泡主题 ID;空串表示不使用,只接受素材目录中的值"),
-	}, "avatar_frame_id", "avatar_charm_id", "bubble_theme_id")
+		"badge_ids":       strArray("佩戴的徽章 ID,按展示顺序;只含已授予项,至多 3 枚"),
+	}, "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "badge_ids")
 	registerSchema(t, "ChatAppearanceState", openapi3.Schemas{
 		"avatar_frame_id": reqStr("头像框 ID;空串表示不使用"),
 		"avatar_charm_id": reqStr("头像挂件 ID;空串表示不使用"),
 		"bubble_theme_id": reqStr("气泡主题 ID;空串表示不使用"),
+		"badge_ids":       strArray("佩戴的徽章 ID,按展示顺序;至多 3 枚"),
 		"revision":        optInt64("乐观锁版本;零表示尚未保存过外观"),
-	}, "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "revision")
+	}, "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "badge_ids", "revision")
+	registerSchema(t, "ChatBadgeGrantDTO", openapi3.Schemas{
+		"badge_id":   reqStr("徽章目录 ID"),
+		"awarded_at": reqStr("授予时间(RFC3339)"),
+		"awarded_by": optStr("授予操作者用户 ID;为空表示系统授予"),
+	})
 
 	get(t, "/chat/appearance", &openapi3.Operation{
 		Tags: []string{"聊天"}, Summary: "读取我的聊天外观", Security: secure,
@@ -254,6 +261,10 @@ func registerChatPaths(t *openapi3.T) {
 				}}},
 			},
 		}}),
+	})
+	get(t, "/chat/badges", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "我的徽章持有记录", Security: secure,
+		Responses: responses(200, dataArrayResponse("ChatBadgeGrantDTO", "持有记录,按授予时间升序", 200, false)),
 	})
 }
 
