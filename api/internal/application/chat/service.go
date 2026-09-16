@@ -1656,7 +1656,13 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 				}
 			}
 			if err := s.push.Send(ctx, subscription, notification); err != nil {
-				_ = s.repo.DeletePushSubscription(ctx, event.UserID, subscription.Endpoint)
+				if errors.Is(err, ErrPushSubscriptionExpired) {
+					if err := s.repo.DeletePushSubscription(ctx, event.UserID, subscription.Endpoint); err != nil {
+						log.Warn().Msg("清理失效聊天推送订阅失败")
+					}
+				} else {
+					log.Warn().Msg("聊天浏览器推送失败，保留订阅供后续消息使用")
+				}
 			}
 		}
 	}

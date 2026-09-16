@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"errors"
 
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
@@ -34,7 +35,10 @@ type EventNotifier interface {
 	Push(userID domainshared.ID, event EventDTO)
 }
 
-// PushSender 向浏览器推送系统通知。
+// ErrPushSubscriptionExpired 表示推送服务确认订阅已失效，可删除本地记录。
+var ErrPushSubscriptionExpired = errors.New("push subscription expired")
+
+// PushSender 向浏览器推送系统通知；订阅失效时返回 ErrPushSubscriptionExpired。
 type PushSender interface {
 	Send(ctx context.Context, subscription *domainchat.PushSubscription, payload PushPayload) error
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"net/http"
 
 	webpushlib "github.com/SherClockHolmes/webpush-go"
 
@@ -32,21 +32,23 @@ func (s *Sender) Send(ctx context.Context, subscription *domainchat.PushSubscrip
 	}
 	response, err := webpushlib.SendNotificationWithContext(ctx, body, &webpushlib.Subscription{
 		Endpoint: subscription.Endpoint,
-		Keys: webpushlib.Keys{P256dh: subscription.P256DH, Auth: subscription.Auth},
+		Keys:     webpushlib.Keys{P256dh: subscription.P256DH, Auth: subscription.Auth},
 	}, &webpushlib.Options{
-		Subscriber:     s.subject,
-		VAPIDPublicKey: s.publicKey,
+		Subscriber:      s.subject,
+		VAPIDPublicKey:  s.publicKey,
 		VAPIDPrivateKey: s.privateKey,
-		TTL:            300,
-		Topic:          payload.Tag,
+		TTL:             300,
+		Topic:           payload.Tag,
 	})
 	if err != nil {
 		return err
 	}
 	defer response.Body.Close()
+	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
+		return fmt.Errorf("%w: %s", appchat.ErrPushSubscriptionExpired, response.Status)
+	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		message, _ := io.ReadAll(io.LimitReader(response.Body, 4<<10))
-		return fmt.Errorf("web push returned %s: %s", response.Status, string(message))
+		return fmt.Errorf("web push returned %s", response.Status)
 	}
 	return nil
 }
