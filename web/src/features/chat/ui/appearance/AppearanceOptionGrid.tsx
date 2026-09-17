@@ -57,6 +57,7 @@ function CheckMark() {
 	return (
 		<span className={styles.check} aria-hidden="true">
 			<svg viewBox="0 0 12 12" width="8" height="8" fill="none">
+				<title>已选中</title>
 				<path
 					d="M2 6.2 4.8 9 10 3.4"
 					stroke="currentColor"

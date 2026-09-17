@@ -51,6 +51,7 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 							{!isOwned && (
 								<span className={styles.lockTag} aria-hidden="true">
 									<svg viewBox="0 0 12 12" width="9" height="9" fill="none">
+										<title>未获得</title>
 										<rect
 											x="2.5"
 											y="5"

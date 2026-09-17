@@ -1,23 +1,10 @@
-.dialog {
-	display: flex;
-	flex-direction: column;
-	width: calc(100vw - 2rem);
-	max-width: 62rem;
-	max-height: calc(100dvh - 2rem);
-	padding: 1.25rem;
-	overflow: hidden;
-}
 .editor {
 	display: grid;
+	flex: 1;
 	grid-template-columns: 16rem minmax(0, 1fr);
 	gap: 1.25rem;
 	min-height: 0;
 }
-.editor > .error,
-.editor > .actions {
-	grid-column: 1 / -1;
-}
-
 /* ---- 左栏：实时预览 ---- */
 .preview {
 	display: flex;
@@ -432,6 +419,11 @@
 	padding-top: 0.75rem;
 	border-top: 1px solid var(--border);
 }
+/* 高特异性规则置于基础规则之后，满足升序 */
+.editor > .error,
+.editor > .actions {
+	grid-column: 1 / -1;
+}
 .actionSpacer {
 	flex: 1;
 }
@@ -479,9 +471,6 @@
 }
 
 @media (max-width: 47.5rem) {
-	.dialog {
-		padding: 1rem;
-	}
 	.editor {
 		grid-template-columns: minmax(0, 1fr);
 	}
