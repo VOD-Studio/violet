@@ -113,6 +113,7 @@ api/
 | **notification** | notification | notification | 站内通知（SSE 实时推送、未读中心、事件订阅写通知） |
 | **chat** | chat | chat | 私聊/私有房间、文本与图片消息、成员提及与房间全体提及、cursor 历史、SSE 事件流、Web Push 订阅 |
 | **chatreaction** | chatreaction | chat | 聊天消息表情反应（成员鉴权、聚合计数、SSE 变化事件） |
+| **chatappearance** | chatappearance | chatappearance | 账号级聊天外观（头像框/挂件/气泡主题/佩戴徽章），本人读写与批量公开查询（CAS 乐观锁），管理员徽章授予与撤销（chat:manage） |
 | **api_token** | api_token | api_token | 个人访问令牌 PAT（MCP 授权凭证） |
 | **project** | project | project | 项目展示 CRUD |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |

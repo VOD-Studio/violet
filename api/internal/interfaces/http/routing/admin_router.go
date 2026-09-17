@@ -319,6 +319,14 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// 人设档案：读 persona:view；创建、保存、激活与删除 persona:manage。
 	registerAdminPersonaRoutes(r, d.Persona, perm)
 
+	// 聊天徽章授予:持有台账的管理动作统一收在 chat:manage(与删除违规消息同域)。
+	r.Route("/chat-badges", func(r chi.Router) {
+		r.Use(middleware.RequirePermission(perm, permission.ChatManage.String()))
+		r.Get("/grants", d.Chat.AdminListGrants)
+		r.Post("/grants", d.Chat.AdminGrant)
+		r.Delete("/grants/{userId}/{badgeId}", d.Chat.AdminRevoke)
+	})
+
 	return r
 }
 

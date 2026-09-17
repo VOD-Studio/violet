@@ -4,6 +4,8 @@
 import { formatDateTime, formatTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
+import { BUBBLE_BY_ID } from "../model/appearance-catalog";
+import { AppearanceBubbleSurface } from "./appearance/AppearanceBubbleSurface";
 
 /**
  * 消息气泡容器：mine 为实色主色，other 为浅底。
@@ -12,7 +14,23 @@ import type { ReactNode } from "react";
  * 长 URL 这类不可断词会把气泡（及其 flex 子项的自动最小尺寸）顶到 max-width 之外。
  * max-w-full 再兜住代码块等无法折行的内容：它们的 min-content 撑不小，只能被夹住后内部横向滚动。
  */
-export function BubbleShell({ mine, children }: { mine: boolean; children: ReactNode }) {
+export interface BubbleShellProps {
+	/** 保留既有的收/发消息对齐方式。 */
+	mine: boolean;
+	/** 既有的文本/图片/Markdown/时间内容。 */
+	children: ReactNode;
+	/** 空串或未知 ID 保持原气泡不变。 */
+	themeId?: string;
+}
+
+export function BubbleShell({ mine, children, themeId = "" }: BubbleShellProps) {
+	const theme = BUBBLE_BY_ID.get(themeId);
+	if (theme)
+		return (
+			<AppearanceBubbleSurface theme={theme} mine={mine}>
+				{children}
+			</AppearanceBubbleSurface>
+		);
 	return (
 		<div
 			className={cn(
@@ -43,6 +61,7 @@ export function BubbleTimestamp({
 }) {
 	return (
 		<span
+			data-chat-timestamp=""
 			className={cn(
 				"ml-auto inline-block whitespace-nowrap text-[11px] leading-5 tabular-nums",
 				mine ? "text-primary-foreground/60" : "text-muted-foreground",

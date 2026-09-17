@@ -7,7 +7,9 @@ import { cn } from "@shared/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useChatConversations } from "../api/queries";
 import { useChatSelection } from "../hooks/useChatSelection";
+import { conversationAppearanceUserIDs } from "../lib/appearance-users";
 import { conversationLabel } from "../lib/conversation";
+import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ConversationIndex } from "./ConversationIndex";
 import { ConversationPanel } from "./ConversationPanel";
 import { EmptyConversation } from "./chat-states";
@@ -41,51 +43,56 @@ export function ChatWorkspace() {
 	}, [pendingShare, selectConversation]);
 
 	return (
-		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background">
-			<aside
-				className={cn(
-					"relative flex w-full shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur-xl md:flex md:w-80 lg:w-84",
-					selectedID && "hidden md:flex",
-				)}
-			>
-				<ConversationIndex
-					conversations={filtered}
-					currentUserID={me?.id ?? ""}
-					loading={conversationsLoading}
-					selectedID={selectedID}
-					search={search}
-					showNew={showNew}
-					onSearch={setSearch}
-					onToggleNew={() => setShowNew((value) => !value)}
-					onSelect={selectConversation}
-					onCreated={(id) => {
-						selectConversation(id);
-						setShowNew(false);
-					}}
-				/>
-			</aside>
-
-			<main
-				className={cn(
-					"relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background/60",
-					!selectedID && "hidden md:flex",
-				)}
-			>
-				{selected ? (
-					<ConversationPanel
-						conversation={selected}
+		<ChatAppearanceProvider
+			currentUserID={me?.id ?? ""}
+			userIDs={conversationAppearanceUserIDs(conversations)}
+		>
+			<div className="flex h-full min-h-0 w-full overflow-hidden bg-background">
+				<aside
+					className={cn(
+						"relative flex w-full shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur-xl md:flex md:w-80 lg:w-84",
+						selectedID && "hidden md:flex",
+					)}
+				>
+					<ConversationIndex
+						conversations={filtered}
 						currentUserID={me?.id ?? ""}
-						onBack={clearSelection}
-						pendingShare={
-							pendingShare?.conversationId === selected.id ? pendingShare : null
-						}
-						showDetails={showDetails}
-						onToggleDetails={() => setShowDetails((value) => !value)}
+						loading={conversationsLoading}
+						selectedID={selectedID}
+						search={search}
+						showNew={showNew}
+						onSearch={setSearch}
+						onToggleNew={() => setShowNew((value) => !value)}
+						onSelect={selectConversation}
+						onCreated={(id) => {
+							selectConversation(id);
+							setShowNew(false);
+						}}
 					/>
-				) : (
-					<EmptyConversation onCreate={() => setShowNew(true)} />
-				)}
-			</main>
-		</div>
+				</aside>
+
+				<main
+					className={cn(
+						"relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background/60",
+						!selectedID && "hidden md:flex",
+					)}
+				>
+					{selected ? (
+						<ConversationPanel
+							conversation={selected}
+							currentUserID={me?.id ?? ""}
+							onBack={clearSelection}
+							pendingShare={
+								pendingShare?.conversationId === selected.id ? pendingShare : null
+							}
+							showDetails={showDetails}
+							onToggleDetails={() => setShowDetails((value) => !value)}
+						/>
+					) : (
+						<EmptyConversation onCreate={() => setShowNew(true)} />
+					)}
+				</main>
+			</div>
+		</ChatAppearanceProvider>
 	);
 }

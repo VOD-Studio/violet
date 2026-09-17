@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	appchat "blog-api/internal/application/chat"
+	appappearance "blog-api/internal/application/chatappearance"
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/interfaces/http/response"
@@ -17,7 +18,8 @@ import (
 
 // Handler 聊天 HTTP 适配器。
 type Handler struct {
-	svc *appchat.Service
+	svc        *appchat.Service
+	appearance *appappearance.Service
 }
 
 // NewHandler 构造聊天 handler。

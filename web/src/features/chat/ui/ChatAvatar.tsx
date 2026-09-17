@@ -1,6 +1,8 @@
 import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { useChatAppearance } from "../hooks/useChatAppearance";
 import type { ChatUser } from "../model/types";
+import { AvatarDecoration } from "./appearance/AvatarDecoration";
 
 export interface ChatAvatarProps {
 	/** 头像对应的聊天用户。 */
@@ -34,6 +36,7 @@ function fallbackColorClass(name: string): string {
 
 /** 聊天用户头像：有图片时渲染图片；无图片时渲染纯色圆盘 + 白色首字母。 */
 export function ChatAvatar({ user, className }: ChatAvatarProps) {
+	const appearance = useChatAppearance(user.id);
 	const label = user.display_name.trim() ? user.display_name : user.username;
 	const initial = label.slice(0, 1).toUpperCase();
 	const avatar = user.avatar_url ? (
@@ -61,7 +64,12 @@ export function ChatAvatar({ user, className }: ChatAvatarProps) {
 			params={{ username: user.username }}
 			to="/users/$username"
 		>
-			{avatar}
+			<AvatarDecoration
+				frameId={appearance.avatar_frame_id}
+				charmId={appearance.avatar_charm_id}
+			>
+				{avatar}
+			</AvatarDecoration>
 		</Link>
 	);
 }

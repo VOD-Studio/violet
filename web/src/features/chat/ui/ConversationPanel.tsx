@@ -19,9 +19,13 @@ import {
 	useMarkChatRead,
 } from "../api/queries";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
+import { useAppearanceScrollFollow } from "../hooks/useAppearanceScrollFollow";
+import { panelAppearanceUserIDs } from "../lib/appearance-users";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
 import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
+import { ChatAppearanceButton } from "./appearance/ChatAppearanceButton";
+import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
 import { MessageBubble } from "./MessageBubble";
@@ -126,6 +130,12 @@ export function ConversationPanel({
 	}, []);
 
 	const followLatestRef = useRef(true);
+	useAppearanceScrollFollow(
+		scrollContainerRef,
+		followLatestRef,
+		prependScrollAnchorRef,
+		conversation.id,
+	);
 	const lastSubmittedReadRef = useRef<string | null>(null);
 
 	useEffect(() => {
@@ -306,212 +316,223 @@ export function ConversationPanel({
 	const emoteMap = useEmojiEmoteMap();
 
 	return (
-		<motion.div
-			key={conversation.id}
-			initial={{ opacity: 0, y: 6, scale: 0.995 }}
-			animate={{ opacity: 1, y: 0, scale: 1 }}
-			exit={{ opacity: 0, y: -6, scale: 0.995 }}
-			transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-			className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+		<ChatAppearanceProvider
+			currentUserID={currentUserID}
+			userIDs={panelAppearanceUserIDs(conversation, members, messages)}
 		>
-			<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
-				<div className="flex min-w-0 items-center gap-2.5">
-					<Button
-						aria-label="返回会话列表"
-						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
-						onClick={onBack}
-						size="icon"
-						variant="ghost"
-					>
-						<ArrowLeft className="size-5" />
-					</Button>
-					<div className="shrink-0">
-						<ChatAvatar
-							user={conversationTargetUser(conversation, currentUserID)}
-							className="size-10 shrink-0"
-						/>
-					</div>
-					<div className="min-w-0">
-						<h2 className="truncate text-[0.95rem] font-semibold text-foreground">
-							{conversationLabel(conversation, currentUserID)}
-						</h2>
-						<p className="text-xs leading-4 text-muted-foreground">
-							{conversation.kind === "room"
-								? `${members.length} 位成员`
-								: "最后登录于最近"}
-						</p>
-					</div>
-				</div>
-
-				<div className="flex items-center gap-1">
-					<Button
-						aria-label="打开会话详情"
-						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
-						onClick={onToggleDetails}
-						size="icon"
-						variant="ghost"
-					>
-						<MoreVertical className="size-5" />
-					</Button>
-				</div>
-			</header>
-
-			<div className="relative flex min-h-0 flex-1 overflow-hidden">
-				<section className="flex min-h-0 min-w-0 flex-1 flex-col">
-					<div
-						ref={scrollContainerRef}
-						data-testid="chat-message-list"
-						onScroll={handleScroll}
-						className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 md:px-8"
-					>
-						<div className="mx-auto max-w-4xl space-y-4">
-							{messages.length > 0 &&
-								(hasNextPage ? (
-									<div
-										ref={topSentinelRef}
-										data-testid="chat-load-older-sentinel"
-										className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground"
-									>
-										{isFetchingNextPage && (
-											<>
-												<LoaderCircle className="size-3.5 animate-spin" />
-												加载更早的消息…
-											</>
-										)}
-									</div>
-								) : (
-									<div
-										className="my-4 flex items-center justify-center"
-										data-testid="chat-history-start"
-									>
-										<span className="rounded-full bg-secondary px-3 py-0.5 text-[11px] text-muted-foreground">
-											{formatDate(conversation.created_at, "long-month-day")}
-										</span>
-									</div>
-								))}
-
-							{messagesLoading && messages.length === 0 ? (
-								<MessageSkeleton />
-							) : messages.length === 0 ? (
-								<MessageEmpty />
-							) : (
-								messages.map((message, index) => (
-									<MessageBubble
-										layout={justBackfilled ? false : "position"}
-										animateIn={animateInIds.has(message.id)}
-										conversationKind={conversation.kind}
-										currentUserID={currentUserID}
-										emoteMap={emoteMap}
-										highlighted={highlightedID === message.id}
-										key={message.client_message_id ?? message.id}
-										message={message}
-										sending={pendingByID.get(message.id)}
-										onRetry={() =>
-											void retryChatMessage(
-												qc,
-												message.client_message_id ?? "",
-											)
-										}
-										messageRef={(node) => {
-											messageRefs.current[message.id] = node;
-										}}
-										showSender={
-											conversation.kind !== "room" ||
-											index === 0 ||
-											messages[index - 1]?.sender.id !== message.sender.id
-										}
-										showSenderName={conversation.kind === "room"}
-										onDelete={
-											canManage && !pendingByID.has(message.id)
-												? () =>
-														deleteMessage.mutate({
-															conversationID: conversation.id,
-															messageID: message.id,
-														})
-												: undefined
-										}
-										onImage={(media) => imagePreview.openPreview([media.url])}
-										onMention={handleMention}
-										onReply={
-											message.type !== "system" &&
-											!message.is_deleted &&
-											!pendingByID.has(message.id)
-												? () => setReplyTarget(message)
-												: undefined
-										}
-										onReplyTo={
-											message.reply_to && !message.reply_to.is_deleted
-												? () =>
-														setPendingFocusID(
-															message.reply_to?.id ?? null,
-														)
-												: undefined
-										}
-									/>
-								))
-							)}
-							<div className="h-0" />
+			<motion.div
+				key={conversation.id}
+				initial={{ opacity: 0, y: 6, scale: 0.995 }}
+				animate={{ opacity: 1, y: 0, scale: 1 }}
+				exit={{ opacity: 0, y: -6, scale: 0.995 }}
+				transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+				className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+			>
+				<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
+					<div className="flex min-w-0 items-center gap-2.5">
+						<Button
+							aria-label="返回会话列表"
+							className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
+							onClick={onBack}
+							size="icon"
+							variant="ghost"
+						>
+							<ArrowLeft className="size-5" />
+						</Button>
+						<div className="shrink-0">
+							<ChatAvatar
+								user={conversationTargetUser(conversation, currentUserID)}
+								className="size-10 shrink-0"
+							/>
+						</div>
+						<div className="min-w-0">
+							<h2 className="truncate text-[0.95rem] font-semibold text-foreground">
+								{conversationLabel(conversation, currentUserID)}
+							</h2>
+							<p className="text-xs leading-4 text-muted-foreground">
+								{conversation.kind === "room"
+									? `${members.length} 位成员`
+									: "最后登录于最近"}
+							</p>
 						</div>
 					</div>
-					<AnimatePresence>
-						{showScrollBottom && (
-							<motion.div
-								initial={{ opacity: 0, y: 12, scale: 0.8 }}
-								animate={{ opacity: 1, y: 0, scale: 1 }}
-								exit={{ opacity: 0, y: 12, scale: 0.8 }}
-								transition={{ duration: 0.15 }}
-								className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10"
-							>
-								<Button
-									aria-label="回到底部"
-									className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
-									onClick={() => scrollToBottom(true)}
-									size="icon-sm"
-									variant="outline"
+
+					<div className="flex items-center gap-1">
+						<ChatAppearanceButton />
+						<Button
+							aria-label="打开会话详情"
+							className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+							onClick={onToggleDetails}
+							size="icon"
+							variant="ghost"
+						>
+							<MoreVertical className="size-5" />
+						</Button>
+					</div>
+				</header>
+
+				<div className="relative flex min-h-0 flex-1 overflow-hidden">
+					<section className="flex min-h-0 min-w-0 flex-1 flex-col">
+						<div
+							ref={scrollContainerRef}
+							data-testid="chat-message-list"
+							onScroll={handleScroll}
+							className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 md:px-8"
+						>
+							<div className="mx-auto max-w-4xl space-y-4">
+								{messages.length > 0 &&
+									(hasNextPage ? (
+										<div
+											ref={topSentinelRef}
+											data-testid="chat-load-older-sentinel"
+											className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground"
+										>
+											{isFetchingNextPage && (
+												<>
+													<LoaderCircle className="size-3.5 animate-spin" />
+													加载更早的消息…
+												</>
+											)}
+										</div>
+									) : (
+										<div
+											className="my-4 flex items-center justify-center"
+											data-testid="chat-history-start"
+										>
+											<span className="rounded-full bg-secondary px-3 py-0.5 text-[11px] text-muted-foreground">
+												{formatDate(
+													conversation.created_at,
+													"long-month-day",
+												)}
+											</span>
+										</div>
+									))}
+
+								{messagesLoading && messages.length === 0 ? (
+									<MessageSkeleton />
+								) : messages.length === 0 ? (
+									<MessageEmpty />
+								) : (
+									messages.map((message, index) => (
+										<MessageBubble
+											layout={justBackfilled ? false : "position"}
+											animateIn={animateInIds.has(message.id)}
+											conversationKind={conversation.kind}
+											currentUserID={currentUserID}
+											emoteMap={emoteMap}
+											highlighted={highlightedID === message.id}
+											key={message.client_message_id ?? message.id}
+											message={message}
+											sending={pendingByID.get(message.id)}
+											onRetry={() =>
+												void retryChatMessage(
+													qc,
+													message.client_message_id ?? "",
+												)
+											}
+											messageRef={(node) => {
+												messageRefs.current[message.id] = node;
+											}}
+											showSender={
+												conversation.kind !== "room" ||
+												index === 0 ||
+												messages[index - 1]?.sender.id !== message.sender.id
+											}
+											showSenderName={conversation.kind === "room"}
+											onDelete={
+												canManage && !pendingByID.has(message.id)
+													? () =>
+															deleteMessage.mutate({
+																conversationID: conversation.id,
+																messageID: message.id,
+															})
+													: undefined
+											}
+											onImage={(media) =>
+												imagePreview.openPreview([media.url])
+											}
+											onMention={handleMention}
+											onReply={
+												message.type !== "system" &&
+												!message.is_deleted &&
+												!pendingByID.has(message.id)
+													? () => setReplyTarget(message)
+													: undefined
+											}
+											onReplyTo={
+												message.reply_to && !message.reply_to.is_deleted
+													? () =>
+															setPendingFocusID(
+																message.reply_to?.id ?? null,
+															)
+													: undefined
+											}
+										/>
+									))
+								)}
+								<div className="h-0" />
+							</div>
+						</div>
+						<AnimatePresence>
+							{showScrollBottom && (
+								<motion.div
+									initial={{ opacity: 0, y: 12, scale: 0.8 }}
+									animate={{ opacity: 1, y: 0, scale: 1 }}
+									exit={{ opacity: 0, y: 12, scale: 0.8 }}
+									transition={{ duration: 0.15 }}
+									className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10"
 								>
-									<ArrowDown className="size-4" />
-								</Button>
-							</motion.div>
+									<Button
+										aria-label="回到底部"
+										className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
+										onClick={() => scrollToBottom(true)}
+										size="icon-sm"
+										variant="outline"
+									>
+										<ArrowDown className="size-4" />
+									</Button>
+								</motion.div>
+							)}
+						</AnimatePresence>
+						<TypingIndicator conversationID={conversation.id} members={members} />
+						<MessageComposer
+							key={conversation.id}
+							currentUser={
+								members.find((member) => member.user.id === currentUserID)?.user
+							}
+							inputRef={inputRef}
+							conversationID={conversation.id}
+							conversationKind={conversation.kind}
+							currentUserID={currentUserID}
+							onCancelReply={() => setReplyTarget(null)}
+							onMessageSent={() => {
+								setReplyTarget(null);
+								scrollToBottom(true);
+							}}
+							pendingShare={pendingShare}
+							replyTarget={replyTarget}
+						/>
+					</section>
+
+					<AnimatePresence>
+						{showDetails && (
+							<RoomDetails
+								conversation={conversation}
+								currentUserID={currentUserID}
+								members={members}
+								onClose={onToggleDetails}
+							/>
 						)}
 					</AnimatePresence>
-					<TypingIndicator conversationID={conversation.id} members={members} />
-					<MessageComposer
-						key={conversation.id}
-						currentUser={
-							members.find((member) => member.user.id === currentUserID)?.user
-						}
-						inputRef={inputRef}
-						conversationID={conversation.id}
-						conversationKind={conversation.kind}
-						currentUserID={currentUserID}
-						onCancelReply={() => setReplyTarget(null)}
-						onMessageSent={() => {
-							setReplyTarget(null);
-							scrollToBottom(true);
-						}}
-						pendingShare={pendingShare}
-						replyTarget={replyTarget}
-					/>
-				</section>
-
-				<AnimatePresence>
-					{showDetails && (
-						<RoomDetails
-							conversation={conversation}
-							currentUserID={currentUserID}
-							members={members}
-							onClose={onToggleDetails}
-						/>
-					)}
-				</AnimatePresence>
-			</div>
-			<ImagePreview
-				open={imagePreview.open}
-				images={imagePreview.images}
-				currentIndex={imagePreview.currentIndex}
-				onClose={imagePreview.closePreview}
-				onIndexChange={imagePreview.setCurrentIndex}
-			/>
-		</motion.div>
+				</div>
+				<ImagePreview
+					open={imagePreview.open}
+					images={imagePreview.images}
+					currentIndex={imagePreview.currentIndex}
+					onClose={imagePreview.closePreview}
+					onIndexChange={imagePreview.setCurrentIndex}
+				/>
+			</motion.div>
+		</ChatAppearanceProvider>
 	);
 }

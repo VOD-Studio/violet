@@ -12,6 +12,7 @@ import {
 import type { AdminUserDTO } from "@features/admin-users/model/types";
 import { CreateUserDialog } from "@features/admin-users/ui/CreateUserDialog";
 import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
+import { UserBadgesDialog } from "@features/admin-users/ui/UserBadgesDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
@@ -19,7 +20,7 @@ import { Badge } from "@shared/ui/base/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
+import { BadgeCheck, Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
@@ -54,6 +55,8 @@ function AdminUsers() {
 	const [editDialogOpen, setEditDialogOpen] = useState(false);
 	const [editingUser, setEditingUser] = useState<AdminUserDTO | null>(null);
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+	const [badgesDialogOpen, setBadgesDialogOpen] = useState(false);
+	const [badgesUser, setBadgesUser] = useState<AdminUserDTO | null>(null);
 	const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
 	// 权限检查
@@ -243,7 +246,7 @@ function AdminUsers() {
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "96px",
+			width: "120px",
 			align: "center",
 			cell: (row) => {
 				// 安全防护：root 不可被任何人操作；被委派超管仅 root 可操作；自己不可被操作
@@ -275,6 +278,27 @@ function AdminUsers() {
 								<TooltipContent>
 									{isProtected ? "不可编辑此用户" : "编辑"}
 								</TooltipContent>
+							</Tooltip>
+						</PermissionGuard>
+						<PermissionGuard permission="chat:manage">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											onClick={(e) => {
+												e.stopPropagation();
+												setBadgesUser(row);
+												setBadgesDialogOpen(true);
+											}}
+											aria-label={`管理徽章 ${row.username}`}
+										>
+											<BadgeCheck className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>聊天徽章</TooltipContent>
 							</Tooltip>
 						</PermissionGuard>
 						<PermissionGuard permission="user:ban">
@@ -514,6 +538,15 @@ function AdminUsers() {
 					user={editingUser}
 					currentUserId={currentUserId}
 					isOperatorRoot={isOperatorRoot}
+				/>
+			)}
+
+			{/* 聊天徽章授予对话框 */}
+			{badgesUser && (
+				<UserBadgesDialog
+					open={badgesDialogOpen}
+					onOpenChange={setBadgesDialogOpen}
+					user={badgesUser}
 				/>
 			)}
 

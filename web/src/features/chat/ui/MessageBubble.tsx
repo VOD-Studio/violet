@@ -20,6 +20,7 @@ import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAddChatMessageReaction, useRemoveChatMessageReaction } from "../api/queries";
+import { useChatAppearance } from "../hooks/useChatAppearance";
 import { imageBubbleContent } from "../lib/conversation";
 import type { OutgoingMessage } from "../model/chat-outbox";
 import type {
@@ -29,6 +30,7 @@ import type {
 	ChatUser,
 	ConversationKind,
 } from "../model/types";
+import { AppearanceBadgeStrip } from "./appearance/AppearanceBadgeStrip";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatMessageContent } from "./ChatMessageContent";
@@ -78,6 +80,7 @@ export function MessageBubble({
 	onReply,
 	onReplyTo,
 }: MessageBubbleProps) {
+	const appearance = useChatAppearance(message.sender.id);
 	const mine = message.sender.id === currentUserID;
 	const [editing, setEditing] = useState(false);
 	const reactions = message.reactions ?? [];
@@ -193,15 +196,18 @@ export function MessageBubble({
 				)}
 			>
 				{showSender && !mine && showSenderName && (
-					<button
-						aria-label={`提及 ${message.sender.display_name}`}
-						className="mb-0.5 self-start rounded px-0.5 text-left text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-						disabled={!onMention}
-						onClick={() => onMention?.(message.sender)}
-						type="button"
-					>
-						{message.sender.display_name}
-					</button>
+					<span className="mb-0.5 flex items-center gap-1 self-start text-xs">
+						<button
+							aria-label={`提及 ${message.sender.display_name}`}
+							className="rounded px-0.5 text-left font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+							disabled={!onMention}
+							onClick={() => onMention?.(message.sender)}
+							type="button"
+						>
+							{message.sender.display_name}
+						</button>
+						<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
+					</span>
 				)}
 
 				{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
@@ -223,7 +229,7 @@ export function MessageBubble({
 							消息已被管理员删除
 						</div>
 					) : message.type === "image" && message.media?.length ? (
-						<BubbleShell mine={mine}>
+						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 							<ChatMessageContent
 								content={imageBubbleContent(message)}
 								emote={mergedEmote}
@@ -242,7 +248,7 @@ export function MessageBubble({
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
 							{message.content && (
-								<BubbleShell mine={mine}>
+								<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 									<ChatMessageContent
 										content={message.content}
 										emote={mergedEmote}
@@ -262,7 +268,7 @@ export function MessageBubble({
 							/>
 						</div>
 					) : (
-						<BubbleShell mine={mine}>
+						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 							<ChatMessageContent
 								content={message.content ?? ""}
 								emote={mergedEmote}

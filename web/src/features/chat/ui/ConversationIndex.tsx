@@ -16,6 +16,8 @@ import {
 	messagePreview,
 } from "../lib/conversation";
 import type { ChatConversation, ChatUser } from "../model/types";
+import { ChatAppearanceButton } from "./appearance/ChatAppearanceButton";
+import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
 import { NewConversationForm } from "./NewConversationForm";
@@ -52,7 +54,8 @@ export function ConversationIndex({
 		<div className="flex h-full min-h-0 flex-col">
 			<header className="shrink-0 px-3 pb-2 pt-4 md:px-4">
 				<div className="flex h-11 items-center justify-between gap-3 px-1">
-					<h1 className="text-[1.35rem] font-semibold text-foreground">聊天</h1>
+					<h1 className="mr-auto text-[1.35rem] font-semibold text-foreground">聊天</h1>
+					<ChatAppearanceButton />
 					<Button
 						aria-label="新建会话"
 						className={cn(
@@ -179,65 +182,74 @@ function SearchResults({
 	};
 
 	return (
-		<div className="space-y-4">
-			<SearchResultSection label="已有会话" count={conversations.length}>
-				{conversations.length > 0 ? (
-					<div className="space-y-1">
-						{conversations.map((conversation) => (
-							<ConversationRow
-								active={conversation.id === selectedID}
-								conversation={conversation}
-								currentUserID={currentUserID}
-								key={conversation.id}
-								onClick={() => onSelect(conversation.id)}
-							/>
-						))}
-					</div>
-				) : (
-					<p className="px-2.5 py-2 text-xs text-muted-foreground/70">没有匹配的会话</p>
-				)}
-			</SearchResultSection>
-			<SearchResultSection label="用户" count={contacts.length}>
-				{contactsQuery.isLoading ? (
-					<ChatContactSkeleton />
-				) : contacts.length > 0 ? (
-					<div className="space-y-1">
-						{contacts.map((user) => (
-							<div
-								className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all duration-150 hover:border-edge-hairline hover:bg-secondary/40"
-								key={user.id}
-							>
-								<ChatAvatar user={user} className="size-9 shrink-0" />
-								<div className="min-w-0 flex-1">
-									<p className="truncate text-xs font-semibold text-foreground">
-										{user.display_name}
-									</p>
-									<p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
-										@{user.username}
-									</p>
-								</div>
-								<Button
-									aria-label={`发起与${user.display_name}的私聊`}
-									disabled={busyID !== null}
-									onClick={() => void startPrivateChat(user)}
-									size="sm"
-									className="h-8 shrink-0 px-2.5 text-xs shadow-xs"
+		<ChatAppearanceProvider
+			currentUserID={currentUserID}
+			userIDs={contacts.map((user) => user.id)}
+		>
+			<div className="space-y-4">
+				<SearchResultSection label="已有会话" count={conversations.length}>
+					{conversations.length > 0 ? (
+						<div className="space-y-1">
+							{conversations.map((conversation) => (
+								<ConversationRow
+									active={conversation.id === selectedID}
+									conversation={conversation}
+									currentUserID={currentUserID}
+									key={conversation.id}
+									onClick={() => onSelect(conversation.id)}
+								/>
+							))}
+						</div>
+					) : (
+						<p className="px-2.5 py-2 text-xs text-muted-foreground/70">
+							没有匹配的会话
+						</p>
+					)}
+				</SearchResultSection>
+				<SearchResultSection label="用户" count={contacts.length}>
+					{contactsQuery.isLoading ? (
+						<ChatContactSkeleton />
+					) : contacts.length > 0 ? (
+						<div className="space-y-1">
+							{contacts.map((user) => (
+								<div
+									className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all duration-150 hover:border-edge-hairline hover:bg-secondary/40"
+									key={user.id}
 								>
-									{busyID === user.id ? (
-										<LoaderCircle className="size-3.5 animate-spin" />
-									) : (
-										<MessageCircle className="size-3.5" />
-									)}
-									<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
-								</Button>
-							</div>
-						))}
-					</div>
-				) : (
-					<p className="px-2.5 py-2 text-xs text-muted-foreground/70">没有匹配的用户</p>
-				)}
-			</SearchResultSection>
-		</div>
+									<ChatAvatar user={user} className="size-9 shrink-0" />
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-xs font-semibold text-foreground">
+											{user.display_name}
+										</p>
+										<p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+											@{user.username}
+										</p>
+									</div>
+									<Button
+										aria-label={`发起与${user.display_name}的私聊`}
+										disabled={busyID !== null}
+										onClick={() => void startPrivateChat(user)}
+										size="sm"
+										className="h-8 shrink-0 px-2.5 text-xs shadow-xs"
+									>
+										{busyID === user.id ? (
+											<LoaderCircle className="size-3.5 animate-spin" />
+										) : (
+											<MessageCircle className="size-3.5" />
+										)}
+										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
+									</Button>
+								</div>
+							))}
+						</div>
+					) : (
+						<p className="px-2.5 py-2 text-xs text-muted-foreground/70">
+							没有匹配的用户
+						</p>
+					)}
+				</SearchResultSection>
+			</div>
+		</ChatAppearanceProvider>
 	);
 }
 

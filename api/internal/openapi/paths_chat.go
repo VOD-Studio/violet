@@ -215,6 +215,57 @@ func registerChatPaths(t *openapi3.T) {
 		RequestBody: jsonBody("ChatEditMessageRequest", true, "新消息内容"),
 		Responses:   responses(200, dataResponse("ChatMessageDTO", "编辑后的消息", 200)),
 	})
+
+	// ---- 账号级聊天外观 ----
+
+	registerSchema(t, "ChatAppearanceSelection", openapi3.Schemas{
+		"avatar_frame_id": reqStr("头像框 ID;空串表示不使用,只接受素材目录中的值"),
+		"avatar_charm_id": reqStr("头像挂件 ID;空串表示不使用,只接受素材目录中的值"),
+		"bubble_theme_id": reqStr("气泡主题 ID;空串表示不使用,只接受素材目录中的值"),
+		"badge_ids":       strArray("佩戴的徽章 ID,按展示顺序;只含已授予项,至多 3 枚"),
+	}, "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "badge_ids")
+	registerSchema(t, "ChatAppearanceState", openapi3.Schemas{
+		"avatar_frame_id": reqStr("头像框 ID;空串表示不使用"),
+		"avatar_charm_id": reqStr("头像挂件 ID;空串表示不使用"),
+		"bubble_theme_id": reqStr("气泡主题 ID;空串表示不使用"),
+		"badge_ids":       strArray("佩戴的徽章 ID,按展示顺序;至多 3 枚"),
+		"revision":        optInt64("乐观锁版本;零表示尚未保存过外观"),
+	}, "avatar_frame_id", "avatar_charm_id", "bubble_theme_id", "badge_ids", "revision")
+	registerSchema(t, "ChatBadgeGrantDTO", openapi3.Schemas{
+		"badge_id":   reqStr("徽章目录 ID"),
+		"awarded_at": reqStr("授予时间(RFC3339)"),
+		"awarded_by": optStr("授予操作者用户 ID;为空表示系统授予"),
+	})
+
+	get(t, "/chat/appearance", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "读取我的聊天外观", Security: secure,
+		Responses: responses(200, dataResponse("ChatAppearanceState", "当前外观", 200)),
+	})
+	put(t, "/chat/appearance", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "保存我的聊天外观", Description: "全量替换;携带最近读取的 revision 做乐观并发,冲突时返回 409。", Security: secure,
+		Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatAppearanceState", true, "外观选择与版本"),
+		Responses: responses(200, dataResponse("ChatAppearanceState", "保存后的外观", 200)),
+	})
+	get(t, "/chat/appearances", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "批量查询公开外观", Description: "需登录;只返回公开装饰,不含他人 revision。", Security: secure,
+		Parameters: openapi3.Parameters{queryStrParam("user_ids", "逗号分隔的用户 ID,最多 50 个")},
+		Responses: responses(200, &openapi3.ResponseRef{Value: &openapi3.Response{
+			Description: strPtr("按用户 ID 索引的公开外观"),
+			Content: openapi3.Content{
+				"application/json": {Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{
+					Type: &openapi3.Types{openapi3.TypeObject},
+					Properties: openapi3.Schemas{
+						"data": {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeObject}, AdditionalProperties: openapi3.AdditionalProperties{Schema: &openapi3.SchemaRef{Ref: "#/components/schemas/ChatAppearanceSelection"}}}},
+						"meta": {Ref: "#/components/schemas/" + compMeta},
+					},
+				}}},
+			},
+		}}),
+	})
+	get(t, "/chat/badges", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "我的徽章持有记录", Security: secure,
+		Responses: responses(200, dataArrayResponse("ChatBadgeGrantDTO", "持有记录,按授予时间升序", 200, false)),
+	})
 }
 
 func idempotencyHeaderParam() *openapi3.ParameterRef {
