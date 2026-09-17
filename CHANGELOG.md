@@ -7,6 +7,24 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.33](https://github.com/VOD-Studio/violet/compare/v2.8.32...v2.8.33) (2026-09-17)
+
+
+### 新增
+
+* **chat:** 佩戴徽章并接入消息流与管理端授予 ([7bddaf0](https://github.com/VOD-Studio/violet/commit/7bddaf0cc6db2510377793a66759c1266eb31a0e))
+* **chat:** 保存聊天外观并提供账号级查询接口 ([64ce8b8](https://github.com/VOD-Studio/violet/commit/64ce8b899e5df9929ca5ddc76c6fabb46c49f002))
+* **chat:** 外观编辑器改用纸面弹窗 ([1feeb47](https://github.com/VOD-Studio/violet/commit/1feeb47d089a4a01f8b6a3be611b28d9a15a2e00))
+* **chat:** 接入头像挂件和自适应消息气泡 ([2d1f1e8](https://github.com/VOD-Studio/violet/commit/2d1f1e8a76c8c6d9428ebe94cf92ef006f577779))
+* **chat:** 新增聊天徽章持有台账与授予管理接口 ([f2fbd64](https://github.com/VOD-Studio/violet/commit/f2fbd64e2c968a5cfddb84d42b0be5ec64c0a200))
+* **chat:** 账号级聊天外观与徽章系统 ([e4a13cf](https://github.com/VOD-Studio/violet/commit/e4a13cf275773ef8201eba21824875b0db275268))
+* **chat:** 重设计外观编辑器为预览加分类面板 ([1b34cda](https://github.com/VOD-Studio/violet/commit/1b34cdab48621c210b1f587253d67021d167fbf6))
+
+
+### 修复
+
+* **chat:** 徽章佩戴写入外观偏好表 ([cdbbdf7](https://github.com/VOD-Studio/violet/commit/cdbbdf7c039a6b9e01f59d10583b4fcf18fdb31e))
+
 ## [2.8.32](https://github.com/VOD-Studio/violet/compare/v2.8.31...v2.8.32) (2026-09-16)
 
 
