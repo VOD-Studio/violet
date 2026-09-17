@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.34](https://github.com/VOD-Studio/violet/compare/v2.8.33...v2.8.34) (2026-09-17)
+
+
+### 修复
+
+* **migrations:** 恢复 118 迁移建表语句换行 ([#384](https://github.com/VOD-Studio/violet/issues/384)) ([b8c60b3](https://github.com/VOD-Studio/violet/commit/b8c60b3e9b9db85805175b1bddec1cf3438d3b11))
+
 ## [2.8.33](https://github.com/VOD-Studio/violet/compare/v2.8.32...v2.8.33) (2026-09-17)
 
 
