@@ -75,8 +75,14 @@
 	flex-direction: column;
 	gap: 0.5rem;
 }
-.previewOutgoing {
+.previewRow,
+.previewRowOutgoing {
 	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+}
+.previewRowOutgoing {
 	justify-content: flex-end;
 }
 .defaultBubble,
@@ -94,11 +100,11 @@
 	color: var(--primary-foreground);
 }
 .time {
-	margin-left: auto;
-	padding-left: 0.5rem;
+	flex: none;
 	font-size: 0.6875rem;
 	white-space: nowrap;
 	opacity: 0.7;
+	font-variant-numeric: tabular-nums;
 }
 .previewHint {
 	border-top: 1px dashed var(--border);
