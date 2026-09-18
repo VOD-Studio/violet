@@ -1,5 +1,5 @@
 /**
- * 消息气泡外壳与内嵌时间戳。
+ * 消息气泡外壳与气泡外时间戳。
  */
 import { formatDateTime, formatTime } from "@shared/lib/date";
 import { cn } from "@shared/lib/utils";
@@ -17,7 +17,7 @@ import { AppearanceBubbleSurface } from "./appearance/AppearanceBubbleSurface";
 export interface BubbleShellProps {
 	/** 保留既有的收/发消息对齐方式。 */
 	mine: boolean;
-	/** 既有的文本/图片/Markdown/时间内容。 */
+	/** 既有的文本/图片/Markdown 内容。 */
 	children: ReactNode;
 	/** 空串或未知 ID 保持原气泡不变。 */
 	themeId?: string;
@@ -34,7 +34,7 @@ export function BubbleShell({ mine, children, themeId = "" }: BubbleShellProps) 
 	return (
 		<div
 			className={cn(
-				"flex max-w-full flex-wrap items-end gap-x-1.5 px-3.5 py-2 text-left text-[0.95rem] leading-relaxed wrap-anywhere",
+				"flex max-w-full flex-wrap items-end px-3.5 py-2 text-left text-[0.95rem] leading-relaxed wrap-anywhere",
 				mine
 					? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
 					: "rounded-2xl rounded-bl-md bg-secondary text-foreground",
@@ -45,34 +45,40 @@ export function BubbleShell({ mine, children, themeId = "" }: BubbleShellProps) 
 	);
 }
 
-/** 气泡内时间戳：随正文行尾流动，mine 半透明白、other 弱化灰。editedAt 非空时前置「已编辑」标识，悬停可见最后编辑时间。 */
+/**
+ * 气泡外时间戳：常驻 DOM 但视觉隐藏，hover/焦点/长按时淡入。
+ *
+ * 放在头像槽而非气泡下方：不额外占用行高，窄屏也不会被裁切。
+ * editedAt 非空时前置「已编辑」标识，悬停可见最后编辑时间。
+ */
 export function BubbleTimestamp({
-	mine,
 	time,
 	editedAt,
-	inline = false,
+	forceVisible = false,
 	className,
 }: {
-	mine: boolean;
 	time: string;
 	editedAt?: string;
-	inline?: boolean;
+	/** 触屏长按等操作态没有 hover，由调用方直接点亮。 */
+	forceVisible?: boolean;
 	className?: string;
 }) {
 	return (
 		<span
-			data-chat-timestamp=""
 			className={cn(
-				"ml-auto inline-block whitespace-nowrap text-[11px] leading-5 tabular-nums",
-				mine ? "text-primary-foreground/60" : "text-muted-foreground",
-				inline && "float-right translate-y-0.5",
+				"whitespace-nowrap text-[10px] leading-4 tabular-nums text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100",
+				forceVisible && "opacity-100",
 				className,
 			)}
 		>
 			{editedAt && (
-				<span title={`编辑于 ${formatDateTime(editedAt, "long-minute")}`}>已编辑 · </span>
+				<span className="block" title={`编辑于 ${formatDateTime(editedAt, "long-minute")}`}>
+					已编辑
+				</span>
 			)}
-			{formatTime(time)}
+			<time className="block" dateTime={time} title={formatDateTime(time, "long-minute")}>
+				{formatTime(time)}
+			</time>
 		</span>
 	);
 }
