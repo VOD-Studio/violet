@@ -185,9 +185,9 @@ export function MessageBubble({
 			)}
 		>
 			{showSender ? (
-				<ChatAvatar user={message.sender} className="mt-0.5 size-8 shrink-0" />
+				<ChatAvatar user={message.sender} className="mt-0.5 size-10 shrink-0" />
 			) : (
-				<div aria-hidden="true" className="size-8 shrink-0" />
+				<div aria-hidden="true" className="size-10 shrink-0" />
 			)}
 			<div
 				className={cn(
