@@ -176,6 +176,66 @@ describe("RichCommentInput", () => {
 	});
 });
 
+describe("提及浮层键盘导航", () => {
+	const candidates = Array.from({ length: 8 }, (_, i) => ({
+		id: `u${i}`,
+		username: `user${i}`,
+		displayName: `用户${i}`,
+	}));
+
+	/** 在编辑区打一个 `@` 并把光标落在其后，触发候选浮层（jsdom 里得手动摆 Selection）。 */
+	function openSuggestions() {
+		const utils = render(
+			<RichCommentInput
+				value=""
+				onChange={() => {}}
+				mentionCandidates={candidates}
+				onSubmit={() => {}}
+			/>,
+		);
+		const editor = screen.getByRole("textbox");
+		editor.textContent = "@";
+		const textNode = editor.firstChild as Text;
+		const range = document.createRange();
+		range.setStart(textNode, 1);
+		range.collapse(true);
+		const selection = window.getSelection();
+		selection?.removeAllRanges();
+		selection?.addRange(range);
+		fireEvent.input(editor);
+		return { editor, ...utils };
+	}
+
+	afterEach(() => {
+		cleanup();
+	});
+
+	it("方向键换高亮项时把它滚进可视区", () => {
+		const { editor } = openSuggestions();
+		const options = screen.getAllByRole("option");
+		expect(options).toHaveLength(candidates.length);
+		const scrollIntoView = vi.spyOn(options[7], "scrollIntoView");
+
+		fireEvent.keyDown(editor, { key: "ArrowUp" });
+
+		expect(options[7].getAttribute("aria-selected")).toBe("true");
+		expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+	});
+
+	it("滚动带起的 hover（鼠标静止）不劫持键盘高亮，鼠标真实移动后恢复", () => {
+		const { editor } = openSuggestions();
+		const options = screen.getAllByRole("option");
+		fireEvent.keyDown(editor, { key: "ArrowUp" });
+
+		fireEvent.mouseOver(options[3]);
+		expect(options[7].getAttribute("aria-selected")).toBe("true");
+
+		fireEvent.mouseMove(screen.getByRole("listbox"));
+		fireEvent.mouseOver(options[3]);
+		expect(options[3].getAttribute("aria-selected")).toBe("true");
+	});
+});
+
 describe("inlineImages", () => {
 	beforeEach(() => {
 		mockUploadFile.mockReset();
