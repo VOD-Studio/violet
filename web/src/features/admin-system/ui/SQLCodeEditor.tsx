@@ -15,7 +15,7 @@ import { useEffect, useRef } from "react";
 import type { DatabaseSchemaDTO } from "../model/types";
 
 interface SQLCodeEditorProps {
-	value: string;
+	initialValue: string;
 	onChange: (value: string) => void;
 	onExecute: () => void;
 	schema?: DatabaseSchemaDTO;
@@ -49,8 +49,8 @@ const editorTheme = EditorView.theme({
 	"&.cm-focused": { outline: "none" },
 });
 
-/** admin-system 私有 SQL 编辑器，提供 PostgreSQL 语法与 schema 补全。 */
-export function SQLCodeEditor({ value, onChange, onExecute, schema }: SQLCodeEditorProps) {
+/** admin-system 私有 SQL 编辑器；initialValue 仅在实例挂载时读取。 */
+export function SQLCodeEditor({ initialValue, onChange, onExecute, schema }: SQLCodeEditorProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const viewRef = useRef<EditorView | null>(null);
 	const language = useRef(new Compartment());
@@ -65,7 +65,7 @@ export function SQLCodeEditor({ value, onChange, onExecute, schema }: SQLCodeEdi
 		const view = new EditorView({
 			parent: containerRef.current,
 			state: EditorState.create({
-				doc: value,
+				doc: initialValue,
 				extensions: [
 					lineNumbers(),
 					history(),
@@ -73,7 +73,7 @@ export function SQLCodeEditor({ value, onChange, onExecute, schema }: SQLCodeEdi
 					highlightActiveLine(),
 					highlightActiveLineGutter(),
 					bracketMatching(),
-					autocompletion(),
+					autocompletion({ activateOnTyping: false }),
 					syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
 					language.current.of(sql({ dialect: PostgreSQL, schema: buildSchema(schema) })),
 					keymap.of([
@@ -101,12 +101,6 @@ export function SQLCodeEditor({ value, onChange, onExecute, schema }: SQLCodeEdi
 			viewRef.current = null;
 		};
 	}, []);
-
-	useEffect(() => {
-		const view = viewRef.current;
-		if (!view || view.state.doc.toString() === value) return;
-		view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
-	}, [value]);
 
 	useEffect(() => {
 		const view = viewRef.current;

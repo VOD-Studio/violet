@@ -1,24 +1,67 @@
 import { Button } from "@shared/ui/base/button";
 import { Switch } from "@shared/ui/base/switch";
-import { AlertTriangle, DatabaseZap, Loader2, Play, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import {
+	AlertTriangle,
+	DatabaseZap,
+	Info,
+	Loader2,
+	Play,
+	RotateCcw,
+	TableProperties,
+} from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import { useExecuteSQL } from "../api/mutations";
 import { useDatabaseSchema } from "../api/queries";
 import type { DatabaseSchemaTableDTO, SQLResultDTO } from "../model/types";
 import { SQLCodeEditor } from "./SQLCodeEditor";
+import { DEFAULT_SYSTEM_SQL, LIST_TABLES_SQL } from "./sql-templates";
 
-const initialSQL = "SELECT now() AS server_time, current_database() AS database;";
+export interface SQLConsoleTabProps {
+	initialSQL?: string;
+	onSQLChange?: (sql: string) => void;
+}
 
 /** 受控 PostgreSQL 控制台页签。 */
-export function SQLConsoleTab() {
-	const [sql, setSQL] = useState(initialSQL);
+export function SQLConsoleTab({
+	initialSQL = DEFAULT_SYSTEM_SQL,
+	onSQLChange,
+}: SQLConsoleTabProps) {
+	const sqlRef = useRef(initialSQL);
+	const hasSQLRef = useRef(Boolean(initialSQL.trim()));
+	const [hasSQL, setHasSQL] = useState(hasSQLRef.current);
+	const [editorRevision, setEditorRevision] = useState(0);
 	const [allowMulti, setAllowMulti] = useState(false);
 	const [withExplain, setWithExplain] = useState(false);
 	const [confirmDangerous, setConfirmDangerous] = useState(false);
 	const schema = useDatabaseSchema();
 	const execute = useExecuteSQL();
 
+	const handleSQLChange = useCallback(
+		(value: string) => {
+			sqlRef.current = value;
+			onSQLChange?.(value);
+			const nextHasSQL = Boolean(value.trim());
+			if (nextHasSQL !== hasSQLRef.current) {
+				hasSQLRef.current = nextHasSQL;
+				setHasSQL(nextHasSQL);
+			}
+		},
+		[onSQLChange],
+	);
+
+	const loadSQL = useCallback(
+		(value: string) => {
+			sqlRef.current = value;
+			onSQLChange?.(value);
+			hasSQLRef.current = Boolean(value.trim());
+			setHasSQL(hasSQLRef.current);
+			setEditorRevision((revision) => revision + 1);
+			execute.reset();
+		},
+		[execute, onSQLChange],
+	);
 	const handleExecute = () => {
+		const sql = sqlRef.current;
 		if (!sql.trim() || execute.isPending) return;
 		execute.mutate({
 			sql,
@@ -39,7 +82,7 @@ export function SQLConsoleTab() {
 								查询编辑器
 							</h2>
 							<p className="text-muted-foreground mt-1 text-xs">
-								默认单语句，⌘/Ctrl + Enter 执行；结果最多返回 500 行
+								PostgreSQL · ⌘/Ctrl + Space 补全 · ⌘/Ctrl + Enter 执行
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
@@ -47,17 +90,14 @@ export function SQLConsoleTab() {
 								variant="ghost"
 								size="sm"
 								disabled={execute.isPending}
-								onClick={() => {
-									setSQL(initialSQL);
-									execute.reset();
-								}}
+								onClick={() => loadSQL(DEFAULT_SYSTEM_SQL)}
 							>
 								<RotateCcw className="size-3.5" />
 								重置
 							</Button>
 							<Button
 								size="sm"
-								disabled={!sql.trim() || execute.isPending}
+								disabled={!hasSQL || execute.isPending}
 								onClick={handleExecute}
 							>
 								{execute.isPending ? (
@@ -71,11 +111,29 @@ export function SQLConsoleTab() {
 					</div>
 
 					<SQLCodeEditor
-						value={sql}
-						onChange={setSQL}
+						key={editorRevision}
+						initialValue={sqlRef.current}
+						onChange={handleSQLChange}
 						onExecute={handleExecute}
 						schema={schema.data}
 					/>
+
+					<div className="text-muted-foreground bg-muted/35 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
+						<Info className="size-3.5 shrink-0" />
+						<span className="min-w-52 flex-1">
+							PostgreSQL 不支持 <code>SHOW TABLES</code>；查询 public 表请使用{" "}
+							<code>pg_catalog.pg_tables</code>。
+						</span>
+						<Button
+							variant="ghost"
+							size="xs"
+							disabled={execute.isPending}
+							onClick={() => loadSQL(LIST_TABLES_SQL)}
+						>
+							<TableProperties className="size-3" />
+							载入查表 SQL
+						</Button>
+					</div>
 
 					<div className="grid gap-3 sm:grid-cols-3">
 						<OptionSwitch

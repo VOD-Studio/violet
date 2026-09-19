@@ -2,12 +2,13 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { ArchiveRestore, Database, FileDown, ServerCog, SquareTerminal } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { BackupRestoreTab } from "./BackupRestoreTab";
 import { DatabaseStatusTab } from "./DatabaseStatusTab";
 import { DataExportTab } from "./DataExportTab";
 import { ServerStatusTab } from "./ServerStatusTab";
 import { SQLConsoleTab } from "./SQLConsoleTab";
+import { DEFAULT_SYSTEM_SQL } from "./sql-templates";
 
 type SystemPanelTab = "database" | "server" | "sql" | "export" | "backup";
 
@@ -67,6 +68,10 @@ export function SystemPanelPage() {
 	const canView = useHasPermission("system:view");
 	const canManage = useHasPermission("system:manage");
 	const [selectedTab, setSelectedTab] = useState<SystemPanelTab>("database");
+	const sqlDraftRef = useRef(DEFAULT_SYSTEM_SQL);
+	const handleSQLChange = useCallback((sql: string) => {
+		sqlDraftRef.current = sql;
+	}, []);
 	const tabs = [...(canView ? viewTabs : []), ...(canManage ? manageTabs : [])];
 	const activeTab = tabs.some((tab) => tab.value === selectedTab)
 		? selectedTab
@@ -94,20 +99,30 @@ export function SystemPanelPage() {
 					当前账号没有系统面板权限
 				</div>
 			) : (
-				<SystemPanelContent tab={activeTab} />
+				<SystemPanelContent
+					tab={activeTab}
+					sqlDraft={sqlDraftRef.current}
+					onSQLChange={handleSQLChange}
+				/>
 			)}
 		</PageShell>
 	);
 }
 
-function SystemPanelContent({ tab }: { tab: SystemPanelTab }) {
+interface SystemPanelContentProps {
+	tab: SystemPanelTab;
+	sqlDraft: string;
+	onSQLChange: (sql: string) => void;
+}
+
+function SystemPanelContent({ tab, sqlDraft, onSQLChange }: SystemPanelContentProps) {
 	switch (tab) {
 		case "database":
 			return <DatabaseStatusTab />;
 		case "server":
 			return <ServerStatusTab />;
 		case "sql":
-			return <SQLConsoleTab />;
+			return <SQLConsoleTab initialSQL={sqlDraft} onSQLChange={onSQLChange} />;
 		case "export":
 			return <DataExportTab />;
 		case "backup":

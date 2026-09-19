@@ -114,7 +114,7 @@ export function DataExportTab() {
 								<p className="text-sm font-medium">只读 SQL</p>
 							</div>
 							<SQLCodeEditor
-								value={query}
+								initialValue={query}
 								onChange={setQuery}
 								onExecute={handleExport}
 								schema={schema.data}
