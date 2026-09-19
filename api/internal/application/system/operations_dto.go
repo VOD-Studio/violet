@@ -96,9 +96,10 @@ type DatabaseActivity struct {
 	Query           string     `json:"query"`
 }
 
-// DatabaseSchema 是 SQL 补全与导出表选择使用的最小 schema 视图。
+// DatabaseSchema 是 SQL 补全、导出表选择与关系图使用的 schema 视图。
 type DatabaseSchema struct {
-	Tables []SchemaTable `json:"tables"`
+	Tables        []SchemaTable        `json:"tables"`
+	Relationships []SchemaRelationship `json:"relationships"`
 }
 
 // SchemaTable 描述一张表及其列。
@@ -113,6 +114,21 @@ type SchemaColumn struct {
 	Name     string `json:"name"`
 	DataType string `json:"data_type"`
 	Nullable bool   `json:"nullable"`
+}
+
+// SchemaRelationship 描述一条外键约束及其列映射。
+type SchemaRelationship struct {
+	Name          string   `json:"name"`
+	SourceSchema  string   `json:"source_schema"`
+	SourceTable   string   `json:"source_table"`
+	SourceColumns []string `json:"source_columns"`
+	TargetSchema  string   `json:"target_schema"`
+	TargetTable   string   `json:"target_table"`
+	TargetColumns []string `json:"target_columns"`
+	// OnUpdate 是 PostgreSQL 外键更新动作，如 CASCADE 或 NO ACTION。
+	OnUpdate string `json:"on_update"`
+	// OnDelete 是 PostgreSQL 外键删除动作，如 CASCADE 或 NO ACTION。
+	OnDelete string `json:"on_delete"`
 }
 
 // ExecuteSQLInput 是 SQL 控制台执行参数。

@@ -55,7 +55,7 @@ func registerAdminSystemPaths(t *openapi3.T) {
 	})
 	get(t, "/admin/system/schema", &openapi3.Operation{
 		Tags: []string{"系统"}, Summary: "数据库结构",
-		Description: "需 system:manage 权限。返回 public schema 的表与列。",
+		Description: "需 system:manage 权限。返回 public schema 的表、列与外键关系。",
 		Security:    secure, Responses: responses(200, freeDataResponse("数据库结构", 200)),
 	})
 	post(t, "/admin/system/sql", &openapi3.Operation{

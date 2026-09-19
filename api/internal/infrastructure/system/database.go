@@ -163,7 +163,7 @@ func (d *Database) GetDatabaseStatus(ctx context.Context) (*appsystem.DatabaseSt
 	return status, nil
 }
 
-// GetSchema 返回 public 用户表及列，供编辑器补全和导出白名单使用。
+// GetSchema 返回 public 用户表、列和外键关系，供编辑器补全、关系图谱和导出白名单使用。
 func (d *Database) GetSchema(ctx context.Context) (*appsystem.DatabaseSchema, error) {
 	rows, err := d.db.QueryContext(ctx, `
 		SELECT table_schema, table_name, column_name, data_type, is_nullable = 'YES'
@@ -176,7 +176,10 @@ func (d *Database) GetSchema(ctx context.Context) (*appsystem.DatabaseSchema, er
 	}
 	defer rows.Close()
 
-	result := &appsystem.DatabaseSchema{Tables: []appsystem.SchemaTable{}}
+	result := &appsystem.DatabaseSchema{
+		Tables:        []appsystem.SchemaTable{},
+		Relationships: []appsystem.SchemaRelationship{},
+	}
 	var current *appsystem.SchemaTable
 	for rows.Next() {
 		var schema, table string
@@ -193,6 +196,84 @@ func (d *Database) GetSchema(ctx context.Context) (*appsystem.DatabaseSchema, er
 		current.Columns = append(current.Columns, column)
 	}
 	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	relationshipRows, err := d.db.QueryContext(ctx, `
+		SELECT tc.constraint_name,
+		       tc.table_schema,
+		       tc.table_name,
+		       kcu.column_name,
+		       target.table_schema,
+		       target.table_name,
+		       target.column_name,
+		       rc.update_rule,
+		       rc.delete_rule
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+		  ON kcu.constraint_catalog = tc.constraint_catalog
+		 AND kcu.constraint_schema = tc.constraint_schema
+		 AND kcu.constraint_name = tc.constraint_name
+		JOIN information_schema.referential_constraints rc
+		  ON rc.constraint_catalog = tc.constraint_catalog
+		 AND rc.constraint_schema = tc.constraint_schema
+		 AND rc.constraint_name = tc.constraint_name
+		JOIN information_schema.key_column_usage target
+		  ON target.constraint_catalog = rc.unique_constraint_catalog
+		 AND target.constraint_schema = rc.unique_constraint_schema
+		 AND target.constraint_name = rc.unique_constraint_name
+		 AND target.ordinal_position = kcu.position_in_unique_constraint
+		WHERE tc.constraint_type = 'FOREIGN KEY'
+		  AND tc.table_schema = 'public'
+		  AND target.table_schema = 'public'
+		ORDER BY tc.table_schema, tc.table_name, tc.constraint_name, kcu.ordinal_position
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer relationshipRows.Close()
+
+	var relationship *appsystem.SchemaRelationship
+	for relationshipRows.Next() {
+		var name, sourceSchema, sourceTable, sourceColumn string
+		var targetSchema, targetTable, targetColumn, onUpdate, onDelete string
+		if err := relationshipRows.Scan(
+			&name,
+			&sourceSchema,
+			&sourceTable,
+			&sourceColumn,
+			&targetSchema,
+			&targetTable,
+			&targetColumn,
+			&onUpdate,
+			&onDelete,
+		); err != nil {
+			return nil, err
+		}
+		if relationship == nil ||
+			relationship.SourceSchema != sourceSchema ||
+			relationship.SourceTable != sourceTable ||
+			relationship.Name != name {
+			result.Relationships = append(result.Relationships, appsystem.SchemaRelationship{
+				Name:          name,
+				SourceSchema:  sourceSchema,
+				SourceTable:   sourceTable,
+				SourceColumns: []string{},
+				TargetSchema:  targetSchema,
+				TargetTable:   targetTable,
+				TargetColumns: []string{},
+				OnUpdate:      onUpdate,
+				OnDelete:      onDelete,
+			})
+			relationship = &result.Relationships[len(result.Relationships)-1]
+		}
+		relationship.SourceColumns = append(relationship.SourceColumns, sourceColumn)
+		relationship.TargetColumns = append(relationship.TargetColumns, targetColumn)
+	}
+	if err := relationshipRows.Err(); err != nil {
 		return nil, err
 	}
 	return result, nil

@@ -30,7 +30,7 @@ func (s *Service) GetDatabaseStatus(ctx context.Context) (*DatabaseStatus, error
 	return result, nil
 }
 
-// GetDatabaseSchema 读取可管理的用户表与列。
+// GetDatabaseSchema 读取可管理的用户表、列与外键关系。
 func (s *Service) GetDatabaseSchema(ctx context.Context) (*DatabaseSchema, error) {
 	if s.database == nil {
 		return nil, domainshared.Internal("数据库操作未配置", nil)
