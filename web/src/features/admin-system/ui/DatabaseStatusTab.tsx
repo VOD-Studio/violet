@@ -277,7 +277,7 @@ function ActivityTable({ activities }: { activities: DatabaseActivityDTO[] }) {
 			<div className="border-b px-5 py-4">
 				<h2 className="text-sm font-semibold">活动查询</h2>
 				<p className="text-muted-foreground mt-1 text-xs">
-					排除当前诊断请求，最多显示 50 条
+					仅显示采样瞬间仍在执行、等待锁或等待 I/O 的会话，排除当前诊断请求
 				</p>
 			</div>
 			<div className="max-h-80 overflow-auto">
@@ -313,11 +313,12 @@ function ActivityTable({ activities }: { activities: DatabaseActivityDTO[] }) {
 						))}
 						{activities.length === 0 && (
 							<tr>
-								<td
-									colSpan={3}
-									className="text-muted-foreground px-4 py-10 text-center"
-								>
-									当前没有活动查询
+								<td colSpan={3} className="px-4 py-9 text-center">
+									<p className="text-sm font-medium">数据库当前空闲</p>
+									<p className="text-muted-foreground mt-1 text-xs">
+										普通查询通常在 15
+										秒采样前已经结束，因此这里长期为空是正常状态。
+									</p>
 								</td>
 							</tr>
 						)}
