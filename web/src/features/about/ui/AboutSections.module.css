@@ -1,0 +1,555 @@
+.chapter {
+	padding: 4.75rem 0 4.5rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--foreground) 11%, transparent);
+}
+
+.chapter:last-child {
+	border-bottom: 0;
+}
+
+.chapterHeader {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(12rem, 20rem);
+	gap: 2rem;
+	align-items: baseline;
+	margin-bottom: 2rem;
+}
+
+.chapterTitle {
+	margin: 0;
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: clamp(1.65rem, 3.4vw, 2.25rem);
+	font-weight: 520;
+	letter-spacing: -0.035em;
+	line-height: 1.18;
+}
+
+.chapterIntro {
+	margin: 0;
+	color: var(--muted-foreground);
+	font-size: 0.78rem;
+	line-height: 1.75;
+	text-align: right;
+}
+
+.chapterBody {
+	min-width: 0;
+}
+
+.identity {
+	display: grid;
+	grid-template-columns: 8.5rem minmax(0, 1fr);
+	gap: clamp(1.5rem, 5vw, 3rem);
+	align-items: center;
+}
+
+.identityTextOnly {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.avatarFrame {
+	overflow: hidden;
+	aspect-ratio: 1;
+	border: 1px solid color-mix(in oklab, var(--foreground) 13%, transparent);
+	border-radius: 0.8rem;
+	background: var(--muted);
+}
+
+.avatarReveal {
+	width: 100%;
+	height: 100%;
+}
+
+.identityText {
+	min-width: 0;
+}
+
+.identityName {
+	margin: 0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.72rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.tagline {
+	max-width: 32rem;
+	margin: 0.7rem 0 0;
+	color: color-mix(in oklab, var(--foreground) 78%, var(--background));
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: clamp(1.25rem, 3vw, 1.8rem);
+	line-height: 1.6;
+}
+
+.bioCopy {
+	max-width: 42rem;
+	color: color-mix(in oklab, var(--foreground) 82%, var(--background));
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: 1rem;
+	line-height: 2;
+	white-space: pre-line;
+}
+
+.bioCopy p {
+	margin: 0;
+}
+
+.bioCopy p + p {
+	margin-top: 1.35rem;
+}
+
+.profileList {
+	margin: 0;
+	border-top: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+.profileRow {
+	display: grid;
+	grid-template-columns: 1.2rem 5rem minmax(0, 1fr);
+	gap: 0.9rem;
+	align-items: start;
+	padding: 0.95rem 0.65rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	transition: background-color 160ms ease-out;
+}
+
+.profileRow:hover {
+	background: color-mix(in oklab, var(--primary) 4%, transparent);
+}
+
+.profileIcon {
+	width: 1rem;
+	height: 1rem;
+	margin-top: 0.08rem;
+	color: var(--primary);
+}
+
+.profileTerm {
+	color: var(--muted-foreground);
+	font-size: 0.76rem;
+}
+
+.profileValue {
+	margin: 0;
+	font-size: 0.84rem;
+	line-height: 1.6;
+	text-align: right;
+}
+
+.profileValue a {
+	color: inherit;
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--primary) 35%, transparent);
+	text-underline-offset: 0.25em;
+}
+
+.profileValue a:hover {
+	color: var(--primary);
+	text-decoration-color: var(--primary);
+}
+
+.profileValue a:focus-visible {
+	border-radius: 0.2rem;
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 3px;
+}
+
+.skillStack {
+	border-bottom: 0;
+}
+
+.skillSummaryContent {
+	display: flex;
+	min-width: 0;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.skillLabel {
+	font-size: 0.88rem;
+	font-weight: 620;
+}
+
+.skillCount {
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.7rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.skillTags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+	padding-top: 0.15rem;
+}
+
+.skillTag {
+	border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+	border-radius: 0.38rem;
+	padding: 0.38rem 0.58rem;
+	background: color-mix(in oklab, var(--background) 96%, var(--muted));
+	color: color-mix(in oklab, var(--foreground) 78%, var(--background));
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.7rem;
+	transition:
+		border-color 160ms ease-out,
+		color 160ms ease-out;
+}
+
+.skillTag:hover {
+	border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+	color: var(--primary);
+}
+
+.socialList {
+	border-top: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+.socialLink {
+	display: grid;
+	grid-template-columns: 2rem minmax(0, 1fr) auto;
+	gap: 0.85rem;
+	align-items: center;
+	padding: 0.9rem 0.65rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	color: inherit;
+	text-decoration: none;
+	transition:
+		background-color 160ms ease-out,
+		color 160ms ease-out;
+}
+
+.socialLink:hover {
+	background: color-mix(in oklab, var(--primary) 4%, transparent);
+	color: var(--primary);
+}
+
+.socialLink:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: -2px;
+}
+
+.socialIconWrap {
+	display: grid;
+	width: 1.8rem;
+	height: 1.8rem;
+	place-items: center;
+	border: 1px solid color-mix(in oklab, var(--foreground) 13%, transparent);
+	border-radius: 50%;
+	background: var(--background);
+	color: var(--foreground);
+	transition:
+		border-color 160ms ease-out,
+		color 160ms ease-out;
+}
+
+.socialLink:hover .socialIconWrap {
+	border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+	color: var(--primary);
+}
+
+.socialIcon,
+.socialArrow {
+	width: 0.9rem;
+	height: 0.9rem;
+}
+
+.socialText {
+	min-width: 0;
+}
+
+.socialLabel {
+	display: block;
+	font-size: 0.84rem;
+	font-weight: 620;
+}
+
+.socialTarget {
+	display: block;
+	overflow: hidden;
+	margin-top: 0.12rem;
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.66rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.socialArrow {
+	color: var(--muted-foreground);
+}
+
+.statsGrid,
+.loadingRows {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	border-block: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+.stat,
+.loadingCell {
+	display: grid;
+	gap: 0.45rem;
+	padding: 1rem 0.8rem;
+	border-right: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+.stat:last-child,
+.loadingCell:last-child {
+	border-right: 0;
+}
+
+.statValue {
+	overflow: hidden;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: clamp(1.6rem, 4vw, 2.35rem);
+	font-weight: 520;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.04em;
+	line-height: 1;
+	text-overflow: ellipsis;
+}
+
+.statLabel {
+	color: var(--muted-foreground);
+	font-size: 0.68rem;
+}
+
+.releaseTimeline {
+	margin-left: -0.2rem;
+}
+
+.releaseSummaryContent {
+	display: flex;
+	min-width: 0;
+	align-items: baseline;
+	gap: 0.75rem;
+}
+
+.releaseVersion {
+	color: var(--primary);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.72rem;
+	font-weight: 620;
+	font-variant-numeric: tabular-nums;
+}
+
+.releaseName {
+	overflow: hidden;
+	flex: 1;
+	font-size: 0.82rem;
+	font-weight: 620;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.releaseCategory + .releaseCategory {
+	margin-top: 1.35rem;
+}
+
+.releaseCategoryTitle {
+	margin: 0 0 0.65rem;
+	color: var(--muted-foreground);
+	font-size: 0.68rem;
+	font-weight: 620;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.releaseItems {
+	display: grid;
+	gap: 0.55rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.releaseItem {
+	position: relative;
+	padding-left: 0.9rem;
+	color: color-mix(in oklab, var(--foreground) 78%, var(--background));
+	font-size: 0.78rem;
+	line-height: 1.7;
+}
+
+.releaseItem::before {
+	position: absolute;
+	top: 0.7em;
+	left: 0;
+	width: 0.24rem;
+	height: 0.24rem;
+	border-radius: 999px;
+	background: var(--primary);
+	content: "";
+}
+
+.releaseActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.8rem 1.2rem;
+	margin-top: 1.35rem;
+}
+
+.releaseLink,
+.allReleasesLink {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	color: var(--foreground);
+	font-size: 0.72rem;
+	font-weight: 620;
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--primary) 36%, transparent);
+	text-underline-offset: 0.25em;
+	transition:
+		color 160ms ease-out,
+		text-decoration-color 160ms ease-out;
+}
+
+.releaseLink:hover,
+.allReleasesLink:hover {
+	color: var(--primary);
+	text-decoration-color: var(--primary);
+}
+
+.releaseLink:focus-visible,
+.allReleasesLink:focus-visible {
+	border-radius: 0.2rem;
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 3px;
+}
+
+.releaseLinkIcon {
+	width: 0.8rem;
+	height: 0.8rem;
+}
+
+.allReleasesLink {
+	margin-top: 0.8rem;
+	margin-left: 7.5rem;
+}
+
+.state {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 1rem 0;
+	border-block: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	color: var(--muted-foreground);
+	font-size: 0.78rem;
+}
+
+.stateAction {
+	border: 0;
+	padding: 0;
+	background: transparent;
+	color: var(--foreground);
+	font: inherit;
+	font-weight: 620;
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--primary) 36%, transparent);
+	text-underline-offset: 0.25em;
+	cursor: pointer;
+}
+
+.stateAction:hover {
+	text-decoration-color: var(--primary);
+}
+
+.stateAction:focus-visible {
+	border-radius: 0.2rem;
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 3px;
+}
+
+.stateAction:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
+.loadingValue {
+	width: 80%;
+	height: 2.1rem;
+}
+
+.loadingLabel {
+	width: 45%;
+	height: 0.65rem;
+}
+
+.loadingRelease {
+	width: 100%;
+	height: 9rem;
+}
+
+@media (max-width: 39.99rem) {
+	.chapter {
+		padding: 3.5rem 0 3.25rem;
+	}
+
+	.chapterHeader {
+		grid-template-columns: 1fr;
+		gap: 0.65rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.chapterIntro {
+		max-width: 28rem;
+		text-align: left;
+	}
+
+	.identity {
+		grid-template-columns: 6.25rem minmax(0, 1fr);
+		gap: 1.25rem;
+	}
+
+	.profileRow {
+		grid-template-columns: 1.1rem 3.5rem minmax(0, 1fr);
+		gap: 0.65rem;
+		padding-inline: 0.35rem;
+	}
+
+	.statsGrid,
+	.loadingRows {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.stat:nth-child(2),
+	.loadingCell:nth-child(2) {
+		border-right: 0;
+	}
+
+	.stat:nth-child(-n + 2),
+	.loadingCell:nth-child(-n + 2) {
+		border-bottom: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+	}
+
+	.allReleasesLink {
+		margin-left: 5.5rem;
+	}
+}
+
+@media (max-width: 27rem) {
+	.identity {
+		grid-template-columns: 1fr;
+	}
+
+	.avatarFrame {
+		width: 6.5rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.profileRow,
+	.profileValue a,
+	.skillTag,
+	.socialLink,
+	.socialIconWrap,
+	.releaseLink,
+	.allReleasesLink {
+		transition: none;
+	}
+}

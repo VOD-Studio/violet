@@ -1,0 +1,298 @@
+.page {
+	width: min(100%, 80rem);
+	margin: 0 auto;
+	padding: 5.5rem 2rem 8rem;
+	color: var(--foreground);
+}
+
+.intro {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 3rem;
+	align-items: end;
+	padding-bottom: 3rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--foreground) 13%, transparent);
+}
+
+.introCopy {
+	min-width: 0;
+}
+
+.title {
+	position: relative;
+	width: fit-content;
+	margin: 0;
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: clamp(3.25rem, 7vw, 4.75rem);
+	font-weight: 520;
+	letter-spacing: -0.065em;
+	line-height: 0.95;
+}
+
+.title::after {
+	position: absolute;
+	right: -0.9rem;
+	bottom: 0.48rem;
+	width: 0.42rem;
+	height: 0.42rem;
+	border-radius: 999px;
+	background: var(--primary);
+	content: "";
+}
+
+.summary {
+	max-width: 39rem;
+	margin: 1.45rem 0 0;
+	color: color-mix(in oklab, var(--foreground) 76%, var(--background));
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: 1rem;
+	line-height: 1.95;
+}
+
+.byline {
+	display: grid;
+	justify-items: end;
+	gap: 0.45rem;
+	min-width: 10rem;
+}
+
+.bylineLabel {
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.62rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.siteLink {
+	display: inline-block;
+	margin-top: 1rem;
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.72rem;
+	letter-spacing: 0.05em;
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--primary) 35%, transparent);
+	text-underline-offset: 0.28em;
+	transition:
+		color 160ms ease-out,
+		text-decoration-color 160ms ease-out;
+}
+
+.siteLink:hover {
+	color: var(--primary);
+	text-decoration-color: var(--primary);
+}
+
+.siteLink:focus-visible {
+	border-radius: 0.2rem;
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 3px;
+}
+
+.contentGrid {
+	display: grid;
+	grid-template-areas: "content nav";
+	grid-template-columns: minmax(0, 46rem) minmax(10rem, 12.5rem);
+	gap: clamp(3rem, 8vw, 8rem);
+	align-items: start;
+	justify-content: space-between;
+}
+
+.chapterFlow {
+	grid-area: content;
+	min-width: 0;
+}
+
+.navigator {
+	grid-area: nav;
+	padding-top: 4.75rem;
+}
+
+.empty {
+	margin: 4.5rem 0 0;
+	color: var(--muted-foreground);
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	line-height: 1.9;
+}
+
+.statePage {
+	display: grid;
+	min-height: 60svh;
+	place-content: center;
+	justify-items: center;
+	padding: 6rem 1.5rem;
+	text-align: center;
+}
+
+.stateTitle {
+	margin: 0;
+	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+	font-size: clamp(2.8rem, 8vw, 4.5rem);
+	font-weight: 520;
+	letter-spacing: -0.055em;
+}
+
+.stateCopy {
+	margin: 1rem 0 0;
+	color: var(--muted-foreground);
+	line-height: 1.8;
+}
+
+.stateAction {
+	margin-top: 1.6rem;
+	border: 0;
+	border-radius: 0.45rem;
+	padding: 0.65rem 1rem;
+	background: var(--primary);
+	color: var(--primary-foreground);
+	font: inherit;
+	font-size: 0.82rem;
+	cursor: pointer;
+	transition: background-color 160ms ease-out;
+}
+
+.stateAction:hover {
+	background: color-mix(in oklab, var(--primary), var(--foreground) 12%);
+}
+
+.stateAction:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 3px;
+}
+
+.stateAction:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
+.skeletonTitle {
+	width: min(17rem, 70vw);
+	height: 4.5rem;
+}
+
+.skeletonCopy {
+	width: min(34rem, 78vw);
+	height: 4.2rem;
+	margin-top: 1.4rem;
+}
+
+.skeletonSignature {
+	width: 9rem;
+	height: 4rem;
+}
+
+.skeletonGrid {
+	display: grid;
+	grid-template-columns: minmax(0, 46rem) minmax(10rem, 12.5rem);
+	gap: clamp(3rem, 8vw, 8rem);
+	justify-content: space-between;
+}
+
+.skeletonFlow {
+	padding-top: 4.75rem;
+}
+
+.skeletonSection {
+	padding-bottom: 4rem;
+}
+
+.skeletonHeading {
+	width: 8rem;
+	height: 1.8rem;
+	margin-bottom: 1.5rem;
+}
+
+.skeletonLine {
+	width: 84%;
+	height: 0.85rem;
+	margin-top: 0.8rem;
+}
+
+.skeletonLine:nth-child(2) {
+	width: 92%;
+}
+
+.skeletonLine:nth-child(3) {
+	width: 76%;
+}
+
+.skeletonRail {
+	width: 100%;
+	height: 11rem;
+	margin-top: 4.75rem;
+}
+
+@media (max-width: 56rem) {
+	.page {
+		padding-inline: 1.5rem;
+	}
+
+	.intro {
+		gap: 2rem;
+	}
+
+	.contentGrid {
+		grid-template-areas:
+			"nav"
+			"content";
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+	}
+
+	.navigator {
+		padding-top: 2rem;
+	}
+
+	.skeletonGrid {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+	}
+
+	.skeletonRail {
+		display: none;
+	}
+}
+
+@media (max-width: 39.99rem) {
+	.page {
+		padding: 3.75rem 1.25rem 6rem;
+	}
+
+	.intro {
+		grid-template-columns: 1fr;
+		gap: 1.75rem;
+		align-items: start;
+		padding-bottom: 2.25rem;
+	}
+
+	.title {
+		font-size: clamp(3rem, 18vw, 4rem);
+	}
+
+	.summary {
+		font-size: 0.95rem;
+		line-height: 1.85;
+	}
+
+	.byline {
+		justify-items: start;
+		min-width: 0;
+	}
+
+	.skeletonTitle {
+		height: 3.6rem;
+	}
+
+	.skeletonSignature {
+		width: 7rem;
+		height: 3.2rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.siteLink,
+	.stateAction {
+		transition: none;
+	}
+}

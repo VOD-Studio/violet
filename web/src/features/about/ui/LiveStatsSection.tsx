@@ -1,36 +1,50 @@
 import { usePublicStats } from "@features/about/api/queries";
+import { useCountUp } from "@shared/hooks/use-count-up";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
-import { motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/**
- * LiveStatsSection - B2 站点生命体征
- *
- * 展示文章数 / 总字数 / 评论数 / 运行天数的跳动大字。
- * 用 motion 的数字插值动画驱动从 0 滚到目标值。
- * 接口失败时空数据降级（不渲染）。
- */
+import { AboutChapter } from "./AboutChapter";
+import { AboutSectionState } from "./AboutSectionState";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
+
+/** 展示站点公开统计，并在数据到达时平滑更新数字。 */
 export function LiveStatsSection(_: AboutSectionProps) {
-	const { data, isPending } = usePublicStats();
+	const { data, isPending, isError, isFetching, refetch } = usePublicStats();
 
-	// 加载中：区块级骨架（四格数字占位，避免数字从 0 跳变闪烁）
 	if (isPending) {
 		return (
-			<section className="mx-auto w-full max-w-5xl px-6 py-14">
-				<div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-					{Array.from({ length: 4 }, (_, i) => (
-						<div key={i} className="text-center">
-							<ShimmerSkeleton className="mx-auto h-12 w-20" />
-							<ShimmerSkeleton className="mx-auto mt-2 h-3 w-14" />
+			<AboutChapter id="live_stats" title="站点近况" intro="这些数字来自站点的公开统计。">
+				<div className={styles.loadingRows} role="status" aria-label="正在加载站点统计">
+					{["posts", "words", "comments", "uptime"].map((key) => (
+						<div key={key} className={styles.loadingCell}>
+							<ShimmerSkeleton className={styles.loadingValue} />
+							<ShimmerSkeleton className={styles.loadingLabel} />
 						</div>
 					))}
 				</div>
-			</section>
+			</AboutChapter>
 		);
 	}
 
-	if (!data) return null;
+	if (isError) {
+		return (
+			<AboutChapter id="live_stats" title="站点近况" intro="这些数字来自站点的公开统计。">
+				<AboutSectionState
+					message="站点统计暂时未能抵达。"
+					isRetrying={isFetching}
+					onRetry={() => void refetch()}
+				/>
+			</AboutChapter>
+		);
+	}
+
+	if (!data) {
+		return (
+			<AboutChapter id="live_stats" title="站点近况" intro="这些数字来自站点的公开统计。">
+				<AboutSectionState message="站点统计尚未公开。" />
+			</AboutChapter>
+		);
+	}
 
 	const items = [
 		{ label: "文章", value: data.posts_count },
@@ -40,56 +54,20 @@ export function LiveStatsSection(_: AboutSectionProps) {
 	];
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="grid grid-cols-2 gap-8 md:grid-cols-4"
-			>
+		<AboutChapter id="live_stats" title="站点近况" intro="这些数字来自站点的公开统计。">
+			<div className={styles.statsGrid}>
 				{items.map((item) => (
-					<div key={item.label} className="text-center">
-						<CountUp
-							to={item.value}
-							className="block text-4xl font-black tracking-tighter md:text-5xl"
-						/>
-						<span className="mt-2 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-							{item.label}
-						</span>
+					<div key={item.label} className={styles.stat}>
+						<CountUp to={item.value} className={styles.statValue} />
+						<span className={styles.statLabel}>{item.label}</span>
 					</div>
 				))}
-			</motion.div>
-		</section>
+			</div>
+		</AboutChapter>
 	);
 }
 
-/**
- * CountUp - 从 0 滚动到目标值的数字（requestAnimationFrame 驱动 easeOut 缓动）
- *
- * 用 rAF 自实现插值，避免依赖 motion 的命令式 animate API（签名不稳）。
- */
-function CountUp({ to, className }: { to: number; className?: string }) {
-	const [value, setValue] = useState(0);
-	const rafRef = useRef<number | undefined>(undefined);
-
-	useEffect(() => {
-		const duration = 1200;
-		const start = performance.now();
-		const tick = (now: number) => {
-			const t = Math.min((now - start) / duration, 1);
-			// easeOutCubic
-			const eased = 1 - (1 - t) ** 3;
-			setValue(Math.round(eased * to));
-			if (t < 1) {
-				rafRef.current = requestAnimationFrame(tick);
-			}
-		};
-		rafRef.current = requestAnimationFrame(tick);
-		return () => {
-			if (rafRef.current) cancelAnimationFrame(rafRef.current);
-		};
-	}, [to]);
-
-	return <span className={className}>{value.toLocaleString()}</span>;
+function CountUp({ to, className }: { to: number; className: string }) {
+	const value = useCountUp(to, 900);
+	return <span className={className}>{value.toLocaleString("zh-CN")}</span>;
 }

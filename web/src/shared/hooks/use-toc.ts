@@ -79,8 +79,13 @@ export function useActiveHeading(containerRef: React.RefObject<HTMLElement | nul
 			DEFAULT_TRIGGER_OFFSET;
 
 		const update = () => {
-			const offsets = headings.map((h) => h.getBoundingClientRect().top - triggerOffset);
-			const idx = pickActiveByPosition(offsets);
+			// 锚点滚动可能停在触发线后不足 1px；容差避免仍高亮上一节。
+			const offsets = headings.map((h) => h.getBoundingClientRect().top - triggerOffset - 1);
+			const pageHeight = document.documentElement.scrollHeight;
+			const atPageEnd =
+				pageHeight > window.innerHeight &&
+				window.scrollY + window.innerHeight >= pageHeight - 1;
+			const idx = atPageEnd ? orderedIds.length - 1 : pickActiveByPosition(offsets);
 			setActive(idx === null ? null : orderedIds[idx]);
 		};
 

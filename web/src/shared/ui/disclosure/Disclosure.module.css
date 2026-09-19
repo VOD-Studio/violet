@@ -1,0 +1,111 @@
+.root {
+	--disclosure-border: color-mix(in oklab, var(--foreground) 12%, transparent);
+	color: var(--foreground);
+}
+
+.line {
+	border-top: 1px solid var(--disclosure-border);
+}
+
+.line:last-child {
+	border-bottom: 1px solid var(--disclosure-border);
+}
+
+.panel {
+	overflow: clip;
+	border: 1px solid var(--disclosure-border);
+	border-radius: 0.8rem;
+	background: color-mix(in oklab, var(--background) 94%, var(--muted));
+}
+
+.summary {
+	display: grid;
+	width: 100%;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 1rem;
+	border: 0;
+	padding: 1rem 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		color 160ms ease-out,
+		background-color 160ms ease-out;
+}
+
+.panel .summary {
+	padding: 1rem 1.1rem;
+}
+
+.summary:hover {
+	color: var(--primary);
+}
+
+.panel .summary:hover {
+	background: color-mix(in oklab, var(--primary) 4%, transparent);
+}
+
+.summary:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 62%, transparent);
+	outline-offset: -2px;
+}
+
+.summaryContent {
+	min-width: 0;
+}
+
+.chevron {
+	width: 1rem;
+	height: 1rem;
+	color: var(--muted-foreground);
+	transition:
+		transform 220ms ease-out,
+		color 160ms ease-out;
+}
+
+.root[data-open="true"] .chevron {
+	transform: rotate(180deg);
+	color: var(--primary);
+}
+
+.contentGrid {
+	display: grid;
+	grid-template-rows: 0fr;
+	visibility: hidden;
+	transition:
+		grid-template-rows 240ms cubic-bezier(0.22, 1, 0.36, 1),
+		visibility 0s linear 240ms;
+}
+
+.root[data-open="true"] .contentGrid {
+	grid-template-rows: 1fr;
+	visibility: visible;
+	transition:
+		grid-template-rows 240ms cubic-bezier(0.22, 1, 0.36, 1),
+		visibility 0s linear 0s;
+}
+
+.contentClip {
+	min-height: 0;
+	overflow: hidden;
+}
+
+.content {
+	padding: 0 0 1rem;
+}
+
+.panel .content {
+	border-top: 1px solid var(--disclosure-border);
+	padding: 1.1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.summary,
+	.chevron,
+	.contentGrid {
+		transition: none;
+	}
+}

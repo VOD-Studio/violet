@@ -1,47 +1,50 @@
 import { resolveSectionOrder } from "@features/about/model/about-config";
-import { AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
-import { ABOUT_SECTION_IDS, resolveSectionComponent } from "@features/about/ui/section-registry";
+import { AboutPageLayout } from "@features/about/ui/AboutPageLayout";
+import { AboutPageError, AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
+import { ABOUT_SECTION_IDS, resolveAboutSection } from "@features/about/ui/section-registry";
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 
-/**
- * /about - 关于页
- *
- * 数据来自 useSettings（已全局预取）。
- *
- * 渲染模式（单套逻辑，无「默认/配置」双轨）：
- * - about_config 为空 → 全部区块默认 enabled，按注册表顺序渲染（出厂全显）。
- * - about_config 非空 → 解析 sections，按 order 排序、enabled 过滤，用区块注册表渲染。
- *
- * 所有区块均为真实组件；未知 id（历史配置残留）不渲染，避免占位框。
- */
 function AboutPage() {
-	const { data: settings, isLoading } = useSettings();
+	const { data: settings, isLoading, isError, isFetching, refetch } = useSettings();
 
 	if (isLoading) {
 		return <AboutPageSkeleton />;
 	}
-	if (!settings) {
-		return null;
+	if (isError || !settings) {
+		return <AboutPageError isRetrying={isFetching} onRetry={() => void refetch()} />;
 	}
-	const orderedIds = resolveSectionOrder(settings.about_config);
-	// 配置为空 → 默认全部区块 enabled，按注册表顺序渲染
-	const ids = orderedIds.length > 0 ? orderedIds : [...ABOUT_SECTION_IDS];
+
+	const configuredIds =
+		settings.about_config === null
+			? [...ABOUT_SECTION_IDS]
+			: resolveSectionOrder(settings.about_config);
+	const sections = configuredIds.flatMap((id) => {
+		const section = resolveAboutSection(id, settings);
+		return section ? [section] : [];
+	});
 
 	return (
-		<div className="flex flex-col">
-			{ids.map((id) => {
-				const Component = resolveSectionComponent(id);
-				if (!Component) return null;
-				return <Component key={id} section={{ id, enabled: true }} settings={settings} />;
-			})}
-		</div>
+		<AboutPageLayout
+			settings={settings}
+			sections={sections.map(({ id, label }) => ({ id, label }))}
+		>
+			{sections.map(({ id, Component }) => (
+				<Component key={id} settings={settings} />
+			))}
+		</AboutPageLayout>
 	);
 }
 
 export const Route = createFileRoute("/about/")({
 	head: () => ({
-		meta: [{ title: "关于" }],
+		meta: [
+			{ title: "关于" },
+			{
+				name: "description",
+				content: "关于 Violet、站点作者与持续更新记录的公开档案。",
+			},
+		],
 	}),
 	component: AboutPage,
 });

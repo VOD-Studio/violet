@@ -1,37 +1,42 @@
-import { motion } from "motion/react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
+import { avatarUrl } from "@shared/lib/image-url";
+import { cn } from "@shared/lib/utils";
+import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
 
-/**
- * AvatarTaglineSection - A1 头像 + 标语
- *
- * 圆形头像（avatar_url）+ 大字 tagline。avatar_url 为空时隐藏头像只显示 tagline。
- * 消费 settings.avatar_url / settings.tagline。
- */
+import { AboutChapter } from "./AboutChapter";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
+
+/** 用真实头像与站点标语完成关于页的见面段落。 */
 export function AvatarTaglineSection({ settings }: AboutSectionProps) {
-	if (!settings.tagline && !settings.avatar_url) return null;
+	const avatar = settings.avatar_url.trim();
+	const tagline = settings.tagline.trim();
+	if (!avatar && !tagline) return null;
+
+	const siteName = settings.site_name.trim() || "Violet";
+	const ownerName = settings.github_username.trim() || siteName;
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="flex flex-col items-center gap-6 text-center"
-			>
-				{settings.avatar_url ? (
-					<img
-						src={settings.avatar_url}
-						alt="头像"
-						className="size-28 rounded-full border border-edge-hairline object-cover shadow-sm"
-					/>
+		<AboutChapter id="avatar_tagline" title="先打个招呼">
+			<div className={cn(styles.identity, !avatar && styles.identityTextOnly)}>
+				{avatar ? (
+					<div className={styles.avatarFrame}>
+						<ImagePixelReveal
+							src={avatarUrl(avatar, ownerName)}
+							alt={`${ownerName} 的头像`}
+							variant="random"
+							tileSize={32}
+							duration={0.28}
+							spreadMs={320}
+							replayOnHover
+							className={styles.avatarReveal}
+						/>
+					</div>
 				) : null}
-				{settings.tagline ? (
-					<p className="text-2xl font-bold tracking-tight md:text-3xl">
-						{settings.tagline}
-					</p>
-				) : null}
-			</motion.div>
-		</section>
+				<div className={styles.identityText}>
+					<p className={styles.identityName}>{ownerName}</p>
+					<p className={styles.tagline}>{tagline || siteName}</p>
+				</div>
+			</div>
+		</AboutChapter>
 	);
 }

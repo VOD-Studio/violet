@@ -1,0 +1,51 @@
+.heading {
+	display: flex;
+	align-items: baseline;
+	gap: 0.45rem;
+	scroll-margin-top: 6rem;
+}
+
+.anchor {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.25rem;
+	color: var(--primary);
+	opacity: 0;
+	transition:
+		opacity 160ms ease-out,
+		background-color 160ms ease-out;
+}
+
+.anchor svg {
+	width: 0.82em;
+	height: 0.82em;
+}
+
+.heading:hover .anchor,
+.anchor:focus-visible {
+	opacity: 0.72;
+}
+
+.anchor:hover {
+	background: color-mix(in oklab, var(--primary) 9%, transparent);
+	opacity: 1;
+}
+
+.anchor:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 2px;
+}
+
+@media (hover: none) {
+	.anchor {
+		opacity: 0.52;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.anchor {
+		transition: none;
+	}
+}

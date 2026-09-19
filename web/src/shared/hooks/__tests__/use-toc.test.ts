@@ -178,4 +178,21 @@ describe("useActiveHeading", () => {
 
 		expect(container.firstElementChild?.getAttribute("data-active")).toBe("h2-1");
 	});
+
+	it("selects the final heading at page bottom when it cannot reach the trigger line", () => {
+		mockHeadingTops({ "h2-1": -800, "h2-2": 300 });
+		Object.defineProperty(document.documentElement, "scrollHeight", {
+			configurable: true,
+			value: 2000,
+		});
+		vi.stubGlobal("innerHeight", 800);
+		vi.stubGlobal("scrollY", 1200);
+
+		try {
+			const { container } = renderHeadings();
+			expect(container.firstElementChild?.getAttribute("data-active")).toBe("h2-2");
+		} finally {
+			Reflect.deleteProperty(document.documentElement, "scrollHeight");
+		}
+	});
 });

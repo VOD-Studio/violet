@@ -1,0 +1,74 @@
+.timeline {
+	display: grid;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.item {
+	display: grid;
+	grid-template-columns: 6.4rem minmax(0, 1fr);
+	gap: 1.1rem;
+}
+
+.markerColumn {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 0.8rem;
+	gap: 0.65rem;
+	align-items: start;
+}
+
+.markerColumn::after {
+	position: absolute;
+	top: 1.25rem;
+	right: 0.35rem;
+	bottom: 0;
+	width: 1px;
+	background: color-mix(in oklab, var(--foreground) 13%, transparent);
+	content: "";
+}
+
+.item:last-child .markerColumn::after {
+	display: none;
+}
+
+.date {
+	padding-top: 0.22rem;
+	color: var(--muted-foreground);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.68rem;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.marker {
+	position: relative;
+	z-index: 1;
+	display: block;
+	width: 0.55rem;
+	height: 0.55rem;
+	margin-top: 0.28rem;
+	border: 2px solid var(--background);
+	border-radius: 999px;
+	background: var(--primary);
+	box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+
+.content {
+	min-width: 0;
+	padding-bottom: 1rem;
+}
+
+@media (max-width: 38rem) {
+	.item {
+		grid-template-columns: 6.2rem minmax(0, 1fr);
+		gap: 0.6rem;
+	}
+
+	.date {
+		font-size: 0.62rem;
+	}
+}

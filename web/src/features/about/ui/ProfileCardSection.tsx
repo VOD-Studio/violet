@@ -1,39 +1,53 @@
-import { Briefcase, Hand, Mail, MapPin } from "lucide-react";
-import { motion } from "motion/react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
+import { Briefcase, Hand, type LucideIcon, Mail, MapPin } from "lucide-react";
 
-/**
- * ProfileCardSection - A2 名片卡
- *
- * 展示 role / location / available_for / email。空字段不显示对应行。
- * 横向 flex-wrap 布局，与内容流宽度一致（不再孤立窄卡片）。
- */
+import { AboutChapter } from "./AboutChapter";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
+
+interface ProfileRow {
+	Icon: LucideIcon;
+	label: string;
+	value: string;
+	href?: string;
+}
+
+/** 以定义列表呈现当前身份、位置与联系状态。 */
 export function ProfileCardSection({ settings }: AboutSectionProps) {
 	const rows = [
-		settings.profile_role ? { icon: Briefcase, label: settings.profile_role } : null,
-		settings.profile_location ? { icon: MapPin, label: settings.profile_location } : null,
-		settings.available_for ? { icon: Hand, label: settings.available_for } : null,
-		settings.social_email ? { icon: Mail, label: settings.social_email } : null,
-	].filter((r): r is { icon: typeof Briefcase; label: string } => r !== null);
+		settings.profile_role
+			? { Icon: Briefcase, label: "身份", value: settings.profile_role }
+			: null,
+		settings.profile_location
+			? { Icon: MapPin, label: "所在", value: settings.profile_location }
+			: null,
+		settings.available_for
+			? { Icon: Hand, label: "近况", value: settings.available_for }
+			: null,
+		settings.social_email
+			? {
+					Icon: Mail,
+					label: "邮件",
+					value: settings.social_email,
+					href: `mailto:${settings.social_email}`,
+				}
+			: null,
+	].filter((row): row is ProfileRow => row !== null);
 
 	if (rows.length === 0) return null;
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="flex flex-wrap gap-x-8 gap-y-3"
-			>
-				{rows.map(({ icon: Icon, label }) => (
-					<div key={label} className="flex items-center gap-2 text-sm text-foreground/80">
-						<Icon className="size-4 shrink-0 text-muted-foreground" />
-						<span>{label}</span>
+		<AboutChapter id="profile_card" title="现在">
+			<dl className={styles.profileList}>
+				{rows.map(({ Icon, label, value, href }) => (
+					<div key={label} className={styles.profileRow}>
+						<Icon className={styles.profileIcon} aria-hidden />
+						<dt className={styles.profileTerm}>{label}</dt>
+						<dd className={styles.profileValue}>
+							{href ? <a href={href}>{value}</a> : value}
+						</dd>
 					</div>
 				))}
-			</motion.div>
-		</section>
+			</dl>
+		</AboutChapter>
 	);
 }

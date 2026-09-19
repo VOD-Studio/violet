@@ -1,29 +1,21 @@
-import { motion } from "motion/react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
+import { AboutChapter } from "./AboutChapter";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
 
-/**
- * BioSection - 个人简介
- *
- * 较长正文简介（settings.bio）。与 AvatarTaglineSection 的短标语互补。
- */
+/** 将站长自述排成适合连续阅读的正文。 */
 export function BioSection({ settings }: AboutSectionProps) {
-	if (!settings.bio) return null;
+	const bio = settings.bio.trim();
+	if (!bio) return null;
+
+	const paragraphs = bio.split(/\n{2,}/).map((paragraph) => paragraph.trim());
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-			>
-				<h2 className="mb-6 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					简介
-				</h2>
-				<p className="whitespace-pre-line text-lg leading-relaxed text-foreground/80">
-					{settings.bio}
-				</p>
-			</motion.div>
-		</section>
+		<AboutChapter id="bio" title="关于我">
+			<div className={styles.bioCopy}>
+				{paragraphs.map((paragraph) => (
+					<p key={paragraph}>{paragraph}</p>
+				))}
+			</div>
+		</AboutChapter>
 	);
 }

@@ -1,101 +1,133 @@
 import { cleanItem } from "@features/changelog/model/clean-item";
 import { useReleases } from "@shared/api/releases";
 import { formatDate } from "@shared/lib/date";
+import { Disclosure } from "@shared/ui/disclosure";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { Timeline, TimelineItem } from "@shared/ui/timeline";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
-import { motion } from "motion/react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 
-/** 入口卡片展示的最新动态条数 */
-const PREVIEW_ITEMS = 3;
+import { AboutChapter } from "./AboutChapter";
+import { AboutSectionState } from "./AboutSectionState";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
 
-/**
- * ChangelogSection - 更新日志入口（about 页区块，后台可开关/排序）
- *
- * 完整日志在独立路由 /changelog；本区块只展示最新版本摘要 + 跳转入口，
- * 避免 about 页堆叠长列表。接口失败/空时优雅降级（不渲染）。
- */
+/** 展示最近几次发布，并允许在时间线原位展开版本摘要。 */
 export function ChangelogSection(_: AboutSectionProps) {
-	const { data, isPending } = useReleases();
+	const { data, isPending, isError, isFetching, refetch } = useReleases();
 
-	// 加载中：区块级骨架（标题静态 + 入口卡片形状占位）
 	if (isPending) {
 		return (
-			<section className="mx-auto w-full max-w-5xl px-6 py-14">
-				<div>
-					<ShimmerSkeleton className="mb-6 h-3 w-20" />
-					<div className="rounded-xl border border-edge-hairline p-6">
-						<div className="flex items-center gap-3">
-							<ShimmerSkeleton className="h-5 w-24" />
-							<ShimmerSkeleton className="h-3 w-16" />
-						</div>
-						<div className="mt-4 space-y-2">
-							<ShimmerSkeleton className="h-4 w-full" />
-							<ShimmerSkeleton className="h-4 w-5/6" />
-							<ShimmerSkeleton className="h-4 w-2/3" />
-						</div>
-						<ShimmerSkeleton className="mt-5 h-4 w-32" />
-					</div>
-				</div>
-			</section>
+			<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+				<ShimmerSkeleton className={styles.loadingRelease} />
+			</AboutChapter>
 		);
 	}
 
-	if (!data || data.releases.length === 0) return null;
+	if (isError) {
+		return (
+			<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+				<AboutSectionState
+					message="更新日志暂时未能抵达。"
+					isRetrying={isFetching}
+					onRetry={() => void refetch()}
+				/>
+			</AboutChapter>
+		);
+	}
 
-	const latest = data.releases[0];
-	const preview = latest.categories
-		.flatMap((c) => c.items)
-		.slice(0, PREVIEW_ITEMS)
-		.map((item) => cleanItem(item).text);
+	const releases = data?.releases.slice(0, 3) ?? [];
+	if (releases.length === 0) {
+		return (
+			<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+				<AboutSectionState message="暂时没有公开的更新记录。" />
+			</AboutChapter>
+		);
+	}
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-			>
-				<h2 className="mb-6 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					更新日志
-				</h2>
-				<Link
-					to="/changelog"
-					className="group block rounded-xl border border-edge-hairline bg-background p-6 transition-colors hover:border-primary/40"
-				>
-					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-						<span className="font-mono text-base font-semibold text-foreground">
-							{latest.tag}
-						</span>
-						{latest.published_at ? (
-							<span className="text-sm text-muted-foreground">
-								{formatDate(latest.published_at)}
-							</span>
-						) : null}
-						<span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-							当前版本
-						</span>
-					</div>
-					{preview.length > 0 ? (
-						<ul className="mt-3.5 space-y-2">
-							{preview.map((text, idx) => (
-								<li
-									key={idx}
-									className="truncate text-[15px] leading-7 text-foreground/75"
-								>
-									{text}
-								</li>
-							))}
-						</ul>
-					) : null}
-					<span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary">
-						查看完整更新日志
-						<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-					</span>
-				</Link>
-			</motion.div>
-		</section>
+		<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+			<Timeline ariaLabel="最近三次公开发布" className={styles.releaseTimeline}>
+				{releases.map((release, releaseIndex) => {
+					const categories = release.categories
+						.map((category) => ({
+							label: category.label,
+							items: category.items
+								.map((item) => cleanItem(item).text.trim())
+								.filter(Boolean),
+						}))
+						.filter((category) => category.items.length > 0);
+					const releaseName = release.name.trim();
+
+					return (
+						<TimelineItem
+							key={release.tag}
+							date={formatDate(release.published_at)}
+							dateTime={release.published_at}
+						>
+							<Disclosure
+								variant="panel"
+								defaultOpen={releaseIndex === 0}
+								summary={
+									<span className={styles.releaseSummaryContent}>
+										<span className={styles.releaseVersion}>{release.tag}</span>
+										{releaseName && releaseName !== release.tag ? (
+											<span className={styles.releaseName}>
+												{releaseName}
+											</span>
+										) : null}
+									</span>
+								}
+							>
+								{categories.length > 0 ? (
+									categories.map((category) => (
+										<section
+											key={category.label}
+											className={styles.releaseCategory}
+										>
+											<h3 className={styles.releaseCategoryTitle}>
+												{category.label}
+											</h3>
+											<ul className={styles.releaseItems}>
+												{category.items.map((item, index) => (
+													<li
+														key={`${category.label}-${index}`}
+														className={styles.releaseItem}
+													>
+														{item}
+													</li>
+												))}
+											</ul>
+										</section>
+									))
+								) : (
+									<AboutSectionState message="这个版本没有公开摘要。" />
+								)}
+								<div className={styles.releaseActions}>
+									{release.html_url ? (
+										<a
+											href={release.html_url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className={styles.releaseLink}
+										>
+											GitHub Release
+											<ArrowUpRight
+												className={styles.releaseLinkIcon}
+												aria-hidden
+											/>
+										</a>
+									) : null}
+								</div>
+							</Disclosure>
+						</TimelineItem>
+					);
+				})}
+			</Timeline>
+			<Link to="/changelog" className={styles.allReleasesLink}>
+				查看完整更新日志
+				<ArrowRight className={styles.releaseLinkIcon} aria-hidden />
+			</Link>
+		</AboutChapter>
 	);
 }
