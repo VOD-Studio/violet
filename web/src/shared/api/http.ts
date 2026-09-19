@@ -75,7 +75,7 @@ const getBaseUrl = (): string => {
  * 1. withCredentials: true（跨域携带 session/csrf cookie）
  * 2. axiosRetry：仅 ERR_NETWORK/ETIMEDOUT/5xx 重试 2 次，业务 4xx 不重试
  * 3. request interceptor：写请求自动注入 X-CSRF-Token header
- * 4. response success interceptor：拆 envelope 成 UnpackedResponse
+ * 4. response success interceptor：拆 JSON envelope；Blob/ArrayBuffer 原样返回
  * 5. response error interceptor：已登录会话收到 401 时清 auth 缓存并弹窗重登
  *
  * @param opts SSR 时传 forwardedCookie；客户端默认不传
@@ -115,9 +115,15 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 		return config;
 	});
 
-	// 成功响应：拆 envelope，业务层不感知 { data, meta } 结构
+	// 成功响应：附件原样返回；JSON 拆 envelope，业务层不感知 { data, meta } 结构
 	client.interceptors.response.use(
 		(response) => {
+			if (
+				response.config.responseType === "blob" ||
+				response.config.responseType === "arraybuffer"
+			) {
+				return response;
+			}
 			const env = response.data as Envelope;
 			const unpacked: UnpackedResponse = {
 				data: env.data,
@@ -136,8 +142,15 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 				useLoginDialogStore.getState().open();
 			}
 
-			// 归一化错误：把后端错误结构转成 ApiError 抛出
-			const body = err.response?.data as
+			let responseData: unknown = err.response?.data;
+			if (responseData instanceof Blob && responseData.type.includes("json")) {
+				try {
+					responseData = JSON.parse(await responseData.text());
+				} catch {
+					// 非 JSON 二进制错误继续使用 Axios 的兜底消息。
+				}
+			}
+			const body = responseData as
 				| (Envelope & {
 						error?: string;
 						message?: string;
