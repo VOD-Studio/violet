@@ -38,7 +38,9 @@ type Config struct {
 	// UploadDir 上传文件存储根目录（相对进程工作目录），如 "uploads"。
 	// 派生 emojiDir/chunkDir 等子目录，不持久化绝对路径，搬家可移植。
 	UploadDir string
-	// ResourceSigningKey 为公开资源游标与匿名令牌提供 HMAC 密钥。
+	// BackupDir 数据库备份目录，必须与公开上传目录分离并持久化。
+	BackupDir string
+	// ResourceSigningKey 为公开资源游标、匿名令牌与系统备份提供 HMAC 密钥。
 	ResourceSigningKey string
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
@@ -268,6 +270,7 @@ func Load() *Config {
 	v.SetDefault("port", "9090")
 	v.SetDefault("upload_path_prefix", "/uploads/")
 	v.SetDefault("upload_dir", "uploads")
+	v.SetDefault("backup_dir", "backups")
 	v.SetDefault("resource_signing_key", "")
 	v.SetDefault("bilibili_cookies", "")
 	v.SetDefault("bilibili_api_type", "user")
@@ -362,6 +365,7 @@ func Load() *Config {
 		Port:               v.GetString("port"),
 		UploadPathPrefix:   v.GetString("upload_path_prefix"),
 		UploadDir:          v.GetString("upload_dir"),
+		BackupDir:          v.GetString("backup_dir"),
 		ResourceSigningKey: v.GetString("resource_signing_key"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
@@ -460,6 +464,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Database.ConnMaxLifetime <= 0 {
 		return fmt.Errorf("database.conn_max_lifetime 必须大于 0")
+	}
+	if strings.TrimSpace(c.BackupDir) == "" {
+		return fmt.Errorf("backup_dir 不能为空")
 	}
 
 	// Redis 配置必须完整

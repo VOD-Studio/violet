@@ -1,5 +1,3 @@
-// Package app infra 基础设施初始化：收敛 DB/Redis/GORM 的连接、迁移与 AutoMigrate。
-// 从 cmd/server/main.go 抽离，使 main 仅负责编排。
 package app
 
 import (
@@ -30,18 +28,19 @@ type Infra struct {
 // 返回 cleanup 关闭 DB 连接；Redis 由 GC 回收，无需显式关闭。
 // 任一步骤失败则 log.Fatal（与原 main 行为一致）。
 func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
-	// --- 数据库 ---
 	db, err := sql.Open("pgx", cfg.Database.DSN())
 	if err != nil {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
+	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
 		log.Fatal().Err(err).Msg("数据库迁移失败")
 	}
 
-	// --- Redis ---
 	redisOpt, err := redis.ParseURL(cfg.Redis.DSN())
 	if err != nil {
 		log.Fatal().Err(err).Msg("解析 Redis 地址失败")
@@ -55,8 +54,7 @@ func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	// 配置受信代理（限流/IP 提取依赖；为空时一律使用 RemoteAddr）
 	middleware.SetTrustedProxies(cfg.TrustedProxies)
 
-	// --- GORM ---
-	gormDB, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}

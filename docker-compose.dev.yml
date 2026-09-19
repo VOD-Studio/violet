@@ -124,6 +124,8 @@ services:
       # go 编译缓存持久化：recreate 后 air 增量编译秒级完成，
       # 否则每次全量编译 ~2.5 分钟
       - go_build_cache:/root/.cache/go-build
+      # 系统面板数据库备份，容器重建后保留
+      - backups_data:/app/backups
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O-", "http://localhost:9090/api/health"]
       interval: 10s
@@ -188,3 +190,4 @@ volumes:
   postgres_data:
   redis_data:
   go_build_cache:
+  backups_data:

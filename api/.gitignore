@@ -1,4 +1,5 @@
 /uploads/
+/backups/
 
 # Environment variables (do not commit)
 .env

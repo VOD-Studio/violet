@@ -28,12 +28,12 @@ FROM alpine:3.20
 
 WORKDIR /app
 
-# 国内服务器从 alpine 官方源（dl-cdn）下载 ffmpeg 等 C 库很慢，
-# 换阿里云镜像源加速 apk
-RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
-
-# ffmpeg 用于视频上传后抽取第 1 秒帧生成封面，缺失会让视频素材封面为空
-RUN apk add --no-cache ca-certificates wget ffmpeg
+# 优先使用国内镜像；镜像不可用时回退官方源，避免构建被单一镜像阻断。
+# ffmpeg 用于视频封面；postgresql-client 为系统面板提供 pg_dump/psql；tar 用于备份运维。
+RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories && \
+    (apk add --no-cache ca-certificates wget ffmpeg postgresql-client tar || \
+     (sed -i 's#mirrors.aliyun.com#dl-cdn.alpinelinux.org#g' /etc/apk/repositories && \
+      apk add --no-cache ca-certificates wget ffmpeg postgresql-client tar))
 
 # 创建非 root 用户，UID/GID 与 distroless nonroot 保持一致
 RUN addgroup -g 65532 -S appgroup && adduser -u 65532 -S appuser -G appgroup
@@ -47,10 +47,8 @@ COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
 # 密钥与环境差异由 compose 注入进程环境,优先级 env > config.yaml > 代码默认值
 COPY --from=builder --chown=appuser:appgroup /app/config.yaml ./config.yaml
 
-# 预创建上传根目录并设置所有权：命名卷（uploads_data:/app/uploads）首次挂载时为空，
-# podman 会从镜像该路径复制属主——若此处为 root，appuser 将无法创建分片目录，
-# 触发「创建分片目录失败」500。先建好并 chown，保证卷挂载后 appuser 可写。
-RUN mkdir -p /app/uploads && chown -R 65532:65532 /app/uploads
+# 预创建持久化目录并设置所有权：命名卷首次挂载会继承镜像内路径属主。
+RUN mkdir -p /app/uploads /app/backups && chown -R 65532:65532 /app/uploads /app/backups
 
 USER appuser:appgroup
 

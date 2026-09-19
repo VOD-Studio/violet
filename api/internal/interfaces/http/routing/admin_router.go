@@ -253,10 +253,28 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.With(middleware.RequirePermission(perm, "media:delete")).Delete("/media/{id}", mediaH.DeleteFile)
 	r.With(middleware.RequirePermission(perm, "media:delete")).Post("/media/batch-delete", mediaH.BatchDeleteMedia)
 
-	// 服务器监控（需 system:view）
+	// 系统面板：状态读取与维护操作使用独立权限。
 	r.Route("/system", func(r chi.Router) {
-		r.With(middleware.RequirePermission(perm, "system:view")).Get("/snapshot", d.System.GetSnapshot)
-		r.With(middleware.RequirePermission(perm, "system:view")).Get("/history", d.System.GetHistory)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "system:view"))
+			r.Get("/snapshot", d.System.GetSnapshot)
+			r.Get("/history", d.System.GetHistory)
+			r.Get("/database", d.System.GetDatabaseStatus)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "system:manage"))
+			r.Get("/schema", d.System.GetDatabaseSchema)
+			r.Post("/sql", d.System.ExecuteSQL)
+			r.Post("/export", d.System.ExportData)
+			r.Get("/backups", d.System.ListBackups)
+			r.Post("/backups", d.System.CreateBackup)
+			r.Post("/backups/import", d.System.ImportBackup)
+			r.Get("/backups/{filename}/download", d.System.DownloadBackup)
+			r.Post("/backups/{filename}/restore", d.System.RestoreBackup)
+			r.Delete("/backups/{filename}", d.System.DeleteBackup)
+			r.Get("/tasks/{id}", d.System.GetBackupTask)
+			r.Put("/backup-settings", d.System.UpdateBackupSettings)
+		})
 	})
 
 	// 友链审核（读：friendlink:view；写：friendlink:manage）。

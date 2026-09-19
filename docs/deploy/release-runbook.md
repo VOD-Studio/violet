@@ -14,6 +14,8 @@ https://xunrua.top
 └────────────────┘   VIRTUAL_HOST        └──────────────┘
 ```
 
+PostgreSQL、Redis、公开上传与系统面板备份分别使用独立命名卷；备份卷挂载到 API 的 `/app/backups`，不经 nginx 暴露。
+
 ## 发版流程（release-please 自动化）
 
 发版由 [release-please](https://github.com/googleapis/release-please) 自动化驱动,从 Conventional Commits 推导版本号并维护 CHANGELOG。
