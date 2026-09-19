@@ -72,6 +72,10 @@ export function SystemPanelPage() {
 	const handleSQLChange = useCallback((sql: string) => {
 		sqlDraftRef.current = sql;
 	}, []);
+	const handleUseQuery = useCallback((sql: string) => {
+		sqlDraftRef.current = sql;
+		setSelectedTab("sql");
+	}, []);
 	const tabs = [...(canView ? viewTabs : []), ...(canManage ? manageTabs : [])];
 	const activeTab = tabs.some((tab) => tab.value === selectedTab)
 		? selectedTab
@@ -101,8 +105,10 @@ export function SystemPanelPage() {
 			) : (
 				<SystemPanelContent
 					tab={activeTab}
+					canManage={canManage}
 					sqlDraft={sqlDraftRef.current}
 					onSQLChange={handleSQLChange}
+					onUseQuery={handleUseQuery}
 				/>
 			)}
 		</PageShell>
@@ -111,14 +117,22 @@ export function SystemPanelPage() {
 
 interface SystemPanelContentProps {
 	tab: SystemPanelTab;
+	canManage: boolean;
 	sqlDraft: string;
 	onSQLChange: (sql: string) => void;
+	onUseQuery: (sql: string) => void;
 }
 
-function SystemPanelContent({ tab, sqlDraft, onSQLChange }: SystemPanelContentProps) {
+function SystemPanelContent({
+	tab,
+	canManage,
+	sqlDraft,
+	onSQLChange,
+	onUseQuery,
+}: SystemPanelContentProps) {
 	switch (tab) {
 		case "database":
-			return <DatabaseStatusTab />;
+			return <DatabaseStatusTab onUseQuery={canManage ? onUseQuery : undefined} />;
 		case "server":
 			return <ServerStatusTab />;
 		case "sql":

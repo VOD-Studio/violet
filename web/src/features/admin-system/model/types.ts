@@ -356,6 +356,7 @@ export interface DatabaseActivityDTO {
 
 export interface DatabaseSchemaDTO {
 	tables: DatabaseSchemaTableDTO[];
+	relationships: DatabaseSchemaRelationshipDTO[];
 }
 
 export interface DatabaseSchemaTableDTO {
@@ -368,6 +369,20 @@ export interface DatabaseSchemaColumnDTO {
 	name: string;
 	data_type: string;
 	nullable: boolean;
+}
+
+export interface DatabaseSchemaRelationshipDTO {
+	name: string;
+	source_schema: string;
+	source_table: string;
+	source_columns: string[];
+	target_schema: string;
+	target_table: string;
+	target_columns: string[];
+	/** PostgreSQL 外键更新动作，如 CASCADE 或 NO ACTION。 */
+	on_update: string;
+	/** PostgreSQL 外键删除动作，如 CASCADE 或 NO ACTION。 */
+	on_delete: string;
 }
 
 export interface ExecuteSQLInput {

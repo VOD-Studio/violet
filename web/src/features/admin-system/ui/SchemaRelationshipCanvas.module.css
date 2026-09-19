@@ -1,0 +1,220 @@
+.canvas {
+	--graph-violet: oklch(0.64 0.18 296);
+	--graph-cyan: oklch(0.7 0.14 205);
+	--xy-controls-button-background-color-default: color-mix(
+		in oklab,
+		var(--background) 90%,
+		transparent
+	);
+	--xy-controls-button-background-color-hover-default: color-mix(
+		in oklab,
+		var(--graph-violet) 10%,
+		var(--background)
+	);
+	--xy-controls-button-color-default: var(--foreground);
+	--xy-controls-button-color-hover-default: var(--graph-violet);
+	--xy-controls-button-border-color-default: color-mix(in oklab, var(--border) 70%, transparent);
+	--xy-minimap-background-color-default: color-mix(in oklab, var(--background) 92%, transparent);
+	width: 100%;
+	height: 100%;
+	background:
+		radial-gradient(
+			circle at 8% 12%,
+			color-mix(in oklab, var(--graph-violet) 14%, transparent),
+			transparent 34%
+		),
+		radial-gradient(
+			circle at 88% 82%,
+			color-mix(in oklab, var(--graph-cyan) 12%, transparent),
+			transparent 32%
+		),
+		linear-gradient(
+			145deg,
+			color-mix(in oklab, var(--background) 96%, var(--graph-violet)),
+			var(--background)
+		);
+}
+
+.controls {
+	overflow: hidden;
+	border: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+	border-radius: 0.75rem;
+	box-shadow: 0 10px 30px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+.miniMap {
+	overflow: hidden;
+	border: 1px solid color-mix(in oklab, var(--graph-violet) 24%, var(--border));
+	border-radius: 0.75rem;
+	box-shadow: 0 12px 34px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+.node {
+	--node-accent: var(--graph-violet);
+	position: relative;
+	display: flex;
+	width: 184px;
+	height: 104px;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid color-mix(in oklab, var(--node-accent) 18%, var(--border));
+	border-radius: 0.5rem;
+	background: color-mix(in oklab, var(--node-accent) 3.5%, var(--card));
+	box-shadow:
+		0 1px 0 color-mix(in oklab, var(--foreground) 5%, transparent),
+		0 8px 20px color-mix(in oklab, var(--foreground) 4%, transparent);
+	padding: 0.8rem 0.9rem 0.75rem;
+	color: var(--foreground);
+	text-align: left;
+	transition:
+		opacity 240ms ease,
+		filter 240ms ease,
+		border-color 240ms ease,
+		box-shadow 300ms ease,
+		background-color 240ms ease;
+}
+
+.node::before {
+	position: absolute;
+	top: 0;
+	right: 0.9rem;
+	left: 0.9rem;
+	height: 1px;
+	background: linear-gradient(90deg, var(--node-accent), transparent 72%);
+	content: "";
+	opacity: 0.72;
+}
+
+.node[data-state="active"] {
+	z-index: 3;
+	border-color: color-mix(in oklab, var(--node-accent) 74%, var(--border));
+	background: color-mix(in oklab, var(--node-accent) 8%, var(--card));
+	box-shadow:
+		0 20px 42px color-mix(in oklab, var(--node-accent) 18%, transparent),
+		0 0 0 2px color-mix(in oklab, var(--node-accent) 16%, transparent);
+}
+
+.node[data-state="related"] {
+	z-index: 2;
+	border-color: color-mix(in oklab, var(--node-accent) 52%, var(--border));
+	background: color-mix(in oklab, var(--node-accent) 6%, var(--card));
+	box-shadow: 0 12px 28px color-mix(in oklab, var(--node-accent) 11%, transparent);
+}
+
+.node[data-state="dimmed"] {
+	opacity: 0.12;
+	filter: saturate(0.35);
+}
+
+.node[data-state="idle"]:hover {
+	border-color: color-mix(in oklab, var(--node-accent) 56%, var(--border));
+	background: color-mix(in oklab, var(--node-accent) 6%, var(--card));
+	box-shadow: 0 15px 32px color-mix(in oklab, var(--node-accent) 13%, transparent);
+}
+
+.toneViolet {
+	--node-accent: var(--graph-violet);
+}
+
+.toneCyan {
+	--node-accent: var(--graph-cyan);
+}
+
+.toneRose {
+	--node-accent: oklch(0.72 0.16 18);
+}
+
+.toneAmber {
+	--node-accent: oklch(0.76 0.14 78);
+}
+
+.toneMint {
+	--node-accent: oklch(0.73 0.14 155);
+}
+
+.kicker {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	color: color-mix(in oklab, var(--node-accent) 82%, var(--muted-foreground));
+	font-family: var(--font-mono);
+	font-size: 0.5rem;
+	font-weight: 650;
+	letter-spacing: 0.12em;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+.schema {
+	margin-left: auto;
+	color: var(--muted-foreground);
+	font-weight: 500;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+.name {
+	position: relative;
+	z-index: 1;
+	overflow: hidden;
+	margin-top: 0.7rem;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 650;
+	line-height: 1.2;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.meta {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	margin-top: auto;
+	color: var(--muted-foreground);
+	font-family: var(--font-mono);
+	font-size: 0.55rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.metaDivider {
+	color: color-mix(in oklab, var(--node-accent) 30%, var(--border));
+}
+
+.dot {
+	width: 0.3rem;
+	height: 0.3rem;
+	border-radius: 999px;
+	background: var(--node-accent);
+	box-shadow: 0 0 7px color-mix(in oklab, var(--node-accent) 45%, transparent);
+}
+
+.watermark {
+	position: absolute;
+	right: 0.45rem;
+	bottom: -0.15rem;
+	color: var(--node-accent);
+	font-family: var(--font-mono);
+	font-size: 1.9rem;
+	font-weight: 700;
+	line-height: 1;
+	opacity: 0.07;
+	pointer-events: none;
+}
+
+.handle {
+	width: 1px;
+	height: 1px;
+	border: 0;
+	opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.node {
+		transition: none;
+	}
+}

@@ -9,9 +9,10 @@ import { Button } from "@shared/ui/base/button";
 import { Switch } from "@shared/ui/base/switch";
 import { Database, Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { useDatabaseStatus } from "../api/queries";
+import { useDatabaseSchema, useDatabaseStatus } from "../api/queries";
 import type { DatabaseActivityDTO, DatabaseIndexDTO, DatabaseTableDTO } from "../model/types";
 import { formatBytes } from "./format";
+import { SchemaRelationshipGraph } from "./SchemaRelationshipGraph";
 
 const numberFormat = new Intl.NumberFormat("zh-CN");
 
@@ -83,8 +84,12 @@ const tableColumns: DataTableColumn<DatabaseTableDTO>[] = [
 	},
 ];
 
+export interface DatabaseStatusTabProps {
+	onUseQuery?: (sql: string) => void;
+}
+
 /** PostgreSQL 数据库状态页签。 */
-export function DatabaseStatusTab() {
+export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 	const [polling, setPolling] = useState(true);
 	const query = useDatabaseStatus({ polling });
 	const tables = query.data?.tables ?? [];
@@ -189,12 +194,37 @@ export function DatabaseStatusTab() {
 				/>
 			</section>
 
+			{onUseQuery && <DatabaseRelationshipSection onUseQuery={onUseQuery} />}
+
 			<div className="grid gap-6 xl:grid-cols-2">
 				<IndexTable indexes={status.top_indexes} />
 				<ActivityTable activities={status.active_queries} />
 			</div>
 		</div>
 	);
+}
+
+function DatabaseRelationshipSection({ onUseQuery }: { onUseQuery: (sql: string) => void }) {
+	const query = useDatabaseSchema();
+	if (query.isLoading) {
+		return (
+			<div className="text-muted-foreground flex h-28 items-center justify-center gap-2 rounded-xl border border-primary/10 bg-primary/3 text-sm">
+				<Loader2 className="size-4 animate-spin" />
+				正在编排关系星图
+			</div>
+		);
+	}
+	if (query.error || !query.data) {
+		return (
+			<div className="rounded-xl border bg-card px-5 py-8 text-center">
+				<p className="text-sm font-medium">关系图谱读取失败</p>
+				<p className="text-muted-foreground mt-1 text-xs">
+					{query.error?.message ?? "schema 接口未返回数据"}
+				</p>
+			</div>
+		);
+	}
+	return <SchemaRelationshipGraph schema={query.data} onUseQuery={onUseQuery} />;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
