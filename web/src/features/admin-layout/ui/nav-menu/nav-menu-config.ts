@@ -257,11 +257,11 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		permissions: ["mcp:manage-tokens"],
 	},
 	{
-		label: "系统监控",
+		label: "系统面板",
 		to: "/admin/system",
 		icon: Activity,
 		group: "platform",
-		permissions: ["system:view"],
+		permissions: ["system:view", "system:manage"],
 	},
 	{
 		label: "操作日志",

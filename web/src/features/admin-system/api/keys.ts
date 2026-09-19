@@ -1,9 +1,10 @@
-/** systemKeys - 服务监控 query key 工厂 */
+/** 系统面板 query key 工厂。 */
 export const systemKeys = {
-	/** 模块根 */
 	all: ["admin-system"] as const,
-	/** 实时快照维度 */
 	snapshot: () => [...systemKeys.all, "snapshot"] as const,
-	/** 历史趋势维度 */
 	history: () => [...systemKeys.all, "history"] as const,
+	database: () => [...systemKeys.all, "database"] as const,
+	schema: () => [...systemKeys.all, "schema"] as const,
+	backups: () => [...systemKeys.all, "backups"] as const,
+	task: (id: string) => [...systemKeys.all, "task", id] as const,
 };

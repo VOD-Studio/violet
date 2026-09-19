@@ -294,3 +294,150 @@ export interface SystemSamplePointDTO {
 		rds: number;
 	};
 }
+
+/** PostgreSQL 运行状态与统计视图聚合。 */
+export interface DatabaseStatusDTO {
+	collected_at: string;
+	database_size: number;
+	total_connections: number;
+	max_connections: number;
+	table_count: number;
+	migration: MigrationStatusDTO;
+	pool: DatabasePoolStatsDTO;
+	tables: DatabaseTableDTO[];
+	top_indexes: DatabaseIndexDTO[];
+	active_queries: DatabaseActivityDTO[];
+}
+
+export interface MigrationStatusDTO {
+	version: number;
+	dirty: boolean;
+}
+
+export interface DatabasePoolStatsDTO {
+	inUse: number;
+	idle: number;
+	maxOpen: number;
+	waitCount: number;
+}
+
+export interface DatabaseTableDTO {
+	schema: string;
+	name: string;
+	estimated_rows: number;
+	table_size: number;
+	index_size: number;
+	total_size: number;
+	dead_tuples: number;
+	last_vacuum: string | null;
+	last_analyze: string | null;
+	statistics_fresh: boolean;
+}
+
+export interface DatabaseIndexDTO {
+	schema: string;
+	table: string;
+	name: string;
+	scans: number;
+	tuples_read: number;
+	size: number;
+}
+
+export interface DatabaseActivityDTO {
+	pid: number;
+	user: string;
+	state: string;
+	wait_event_type: string;
+	wait_event: string;
+	query_started_at: string | null;
+	duration_seconds: number;
+	query: string;
+}
+
+export interface DatabaseSchemaDTO {
+	tables: DatabaseSchemaTableDTO[];
+}
+
+export interface DatabaseSchemaTableDTO {
+	schema: string;
+	name: string;
+	columns: DatabaseSchemaColumnDTO[];
+}
+
+export interface DatabaseSchemaColumnDTO {
+	name: string;
+	data_type: string;
+	nullable: boolean;
+}
+
+export interface ExecuteSQLInput {
+	sql: string;
+	allow_multi: boolean;
+	confirm_dangerous: boolean;
+	with_explain: boolean;
+}
+
+export interface SQLResultDTO {
+	columns: string[];
+	rows: unknown[][];
+	affected_rows: number;
+	elapsed_ms: number;
+	statement_type: string;
+	truncated: boolean;
+}
+
+export interface ExportInput {
+	source: "table" | "query";
+	schema: string;
+	table: string;
+	query: string;
+	format: "csv" | "sql";
+	include_columns: boolean;
+}
+
+export interface BackupInfoDTO {
+	filename: string;
+	origin: "manual" | "auto" | "import";
+	created_at: string;
+	size: number;
+	uploads_filename?: string;
+	uploads_size?: number;
+	database_tool: string;
+}
+
+export interface BackupSettingsDTO {
+	auto_enabled: boolean;
+	/** UTC HH:mm。 */
+	time_utc: string;
+	retention_count: number;
+	include_uploads: boolean;
+}
+
+export interface BackupRunResultDTO {
+	at: string;
+	ok: boolean;
+	filename?: string;
+	error?: string;
+}
+
+export interface BackupSettingsViewDTO extends BackupSettingsDTO {
+	next_run_at?: string;
+	last_run?: BackupRunResultDTO;
+}
+
+export interface BackupListDTO {
+	backups: BackupInfoDTO[];
+	settings: BackupSettingsViewDTO;
+}
+
+export interface BackupTaskDTO {
+	id: string;
+	kind: "backup" | "restore";
+	status: "running" | "succeeded" | "failed";
+	message: string;
+	progress: number;
+	error?: string;
+	result_file?: string;
+	started_at: string;
+	finished_at?: string;
+}

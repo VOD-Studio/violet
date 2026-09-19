@@ -18,6 +18,9 @@ const SNAPSHOT_INTERVAL_MS = 5_000;
  */
 const HISTORY_INTERVAL_MS = 30_000;
 
+const DATABASE_INTERVAL_MS = 15_000;
+const TASK_INTERVAL_MS = 1_000;
+
 /** UseSystemMonitorOptions - 监控查询的公共控参 */
 export interface UseSystemMonitorOptions {
 	/**
@@ -46,5 +49,40 @@ export const useSystemHistory = ({ polling }: UseSystemMonitorOptions) =>
 		queryKey: systemKeys.history(),
 		queryFn: () => api.getSystemHistory(),
 		refetchInterval: polling ? HISTORY_INTERVAL_MS : 0,
+		refetchIntervalInBackground: false,
+	});
+
+/** 查询 PostgreSQL 状态；页面可关闭自动刷新。 */
+export const useDatabaseStatus = ({ polling }: UseSystemMonitorOptions) =>
+	useQuery({
+		queryKey: systemKeys.database(),
+		queryFn: () => api.getDatabaseStatus(),
+		refetchInterval: polling ? DATABASE_INTERVAL_MS : 0,
+		refetchIntervalInBackground: false,
+	});
+
+/** 获取 SQL 补全与表导出所需的 public schema。 */
+export const useDatabaseSchema = () =>
+	useQuery({
+		queryKey: systemKeys.schema(),
+		queryFn: () => api.getDatabaseSchema(),
+		staleTime: 60_000,
+	});
+
+/** 获取备份清单与调度设置。 */
+export const useBackups = () =>
+	useQuery({
+		queryKey: systemKeys.backups(),
+		queryFn: () => api.getBackups(),
+	});
+
+/** 轮询单个备份维护任务，任务结束后自动停止。 */
+export const useBackupTask = (id: string | null) =>
+	useQuery({
+		queryKey: systemKeys.task(id ?? ""),
+		queryFn: () => api.getBackupTask(id ?? ""),
+		enabled: !!id,
+		refetchInterval: (query) =>
+			query.state.data?.status === "running" ? TASK_INTERVAL_MS : false,
 		refetchIntervalInBackground: false,
 	});
