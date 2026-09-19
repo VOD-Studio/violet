@@ -20,7 +20,11 @@ export function SkillsSection({ settings }: AboutSectionProps) {
 	if (groups.length === 0) return null;
 
 	return (
-		<AboutChapter id="skills" title="所学与所爱" intro="点开一组，看看此刻投入时间的方向。">
+		<AboutChapter
+			id="skills"
+			title="常用的，正在学的"
+			intro="熟悉的工具、正在补的课，以及纯粹因为喜欢而靠近的事。"
+		>
 			<div className={styles.skillStack}>
 				{groups.map((group, index) => (
 					<Disclosure

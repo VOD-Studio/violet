@@ -1,5 +1,5 @@
 .chapter {
-	padding: 4.75rem 0 4.5rem;
+	padding: 4rem 0 3.75rem;
 	border-bottom: 1px solid color-mix(in oklab, var(--foreground) 11%, transparent);
 }
 
@@ -36,51 +36,6 @@
 	min-width: 0;
 }
 
-.identity {
-	display: grid;
-	grid-template-columns: 8.5rem minmax(0, 1fr);
-	gap: clamp(1.5rem, 5vw, 3rem);
-	align-items: center;
-}
-
-.identityTextOnly {
-	grid-template-columns: minmax(0, 1fr);
-}
-
-.avatarFrame {
-	overflow: hidden;
-	aspect-ratio: 1;
-	border: 1px solid color-mix(in oklab, var(--foreground) 13%, transparent);
-	border-radius: 0.8rem;
-	background: var(--muted);
-}
-
-.avatarReveal {
-	width: 100%;
-	height: 100%;
-}
-
-.identityText {
-	min-width: 0;
-}
-
-.identityName {
-	margin: 0;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	font-size: 0.72rem;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-}
-
-.tagline {
-	max-width: 32rem;
-	margin: 0.7rem 0 0;
-	color: color-mix(in oklab, var(--foreground) 78%, var(--background));
-	font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
-	font-size: clamp(1.25rem, 3vw, 1.8rem);
-	line-height: 1.6;
-}
-
 .bioCopy {
 	max-width: 42rem;
 	color: color-mix(in oklab, var(--foreground) 82%, var(--background));
@@ -88,6 +43,12 @@
 	font-size: 1rem;
 	line-height: 2;
 	white-space: pre-line;
+}
+
+.bioLead {
+	color: var(--foreground);
+	font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+	line-height: 1.8;
 }
 
 .bioCopy p {
@@ -501,11 +462,6 @@
 		text-align: left;
 	}
 
-	.identity {
-		grid-template-columns: 6.25rem minmax(0, 1fr);
-		gap: 1.25rem;
-	}
-
 	.profileRow {
 		grid-template-columns: 1.1rem 3.5rem minmax(0, 1fr);
 		gap: 0.65rem;
@@ -529,16 +485,6 @@
 
 	.allReleasesLink {
 		margin-left: 5.5rem;
-	}
-}
-
-@media (max-width: 27rem) {
-	.identity {
-		grid-template-columns: 1fr;
-	}
-
-	.avatarFrame {
-		width: 6.5rem;
 	}
 }
 

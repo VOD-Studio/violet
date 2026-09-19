@@ -70,7 +70,11 @@ export function SocialMatrixSection({ settings }: AboutSectionProps) {
 	if (entries.length === 0) return null;
 
 	return (
-		<AboutChapter id="social_matrix" title="保持联系">
+		<AboutChapter
+			id="social_matrix"
+			title="如果你想找到我"
+			intro="公开留下的联系方式都在这里，选你习惯的方式就好。"
+		>
 			<nav className={styles.socialList} aria-label="站长公开链接">
 				{entries.map(({ label, href, target, Icon }) => {
 					const isExternal = href.startsWith("http");

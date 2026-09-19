@@ -8,23 +8,21 @@ export function AboutPageSkeleton() {
 		<main className={styles.page} aria-busy="true" aria-label="正在加载关于页">
 			<header className={styles.intro}>
 				<div>
+					<ShimmerSkeleton className={styles.skeletonEyebrow} />
 					<ShimmerSkeleton className={styles.skeletonTitle} />
 					<ShimmerSkeleton className={styles.skeletonCopy} />
 				</div>
 				<ShimmerSkeleton className={styles.skeletonSignature} />
 			</header>
-			<div className={styles.skeletonGrid}>
-				<div className={styles.skeletonFlow}>
-					{["identity", "profile", "activity"].map((section) => (
-						<section key={section} className={styles.skeletonSection}>
-							<ShimmerSkeleton className={styles.skeletonHeading} />
-							<ShimmerSkeleton className={styles.skeletonLine} />
-							<ShimmerSkeleton className={styles.skeletonLine} />
-							<ShimmerSkeleton className={styles.skeletonLine} />
-						</section>
-					))}
-				</div>
-				<ShimmerSkeleton className={styles.skeletonRail} />
+			<div className={styles.skeletonFlow}>
+				{["story", "profile", "activity"].map((section) => (
+					<section key={section} className={styles.skeletonSection}>
+						<ShimmerSkeleton className={styles.skeletonHeading} />
+						<ShimmerSkeleton className={styles.skeletonLine} />
+						<ShimmerSkeleton className={styles.skeletonLine} />
+						<ShimmerSkeleton className={styles.skeletonLine} />
+					</section>
+				))}
 			</div>
 		</main>
 	);
@@ -40,7 +38,7 @@ export function AboutPageError({ onRetry, isRetrying }: AboutPageErrorProps) {
 	return (
 		<main className={styles.statePage}>
 			<h1 className={styles.stateTitle}>关于</h1>
-			<p className={styles.stateCopy}>公开档案暂时未能载入，请稍后重试。</p>
+			<p className={styles.stateCopy}>关于页内容暂时未能载入，请稍后重试。</p>
 			<button
 				type="button"
 				className={styles.stateAction}

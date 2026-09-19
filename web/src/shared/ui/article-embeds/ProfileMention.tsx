@@ -7,10 +7,15 @@ import type { ArticleProfile } from "./types";
 interface ProfileMentionProps {
 	label: string;
 	profile?: ArticleProfile;
+	actionLabel?: string;
 }
 
 /** 行内人物提及；鼠标悬停与键盘聚焦共享同一档案浮层。 */
-export function ProfileMention({ label, profile }: ProfileMentionProps) {
+export function ProfileMention({
+	label,
+	profile,
+	actionLabel = "打开完整档案",
+}: ProfileMentionProps) {
 	const [open, setOpen] = useState(false);
 	const visibleLabel = label.trim() || profile?.name || "人物档案";
 
@@ -63,7 +68,7 @@ export function ProfileMention({ label, profile }: ProfileMentionProps) {
 						<p className={styles.description}>{profile.description}</p>
 					) : null}
 					<p className={styles.openHint}>
-						打开完整档案
+						{actionLabel}
 						<ArrowUpRight aria-hidden />
 					</p>
 					<HoverCardPrimitive.Arrow className={styles.arrow} />

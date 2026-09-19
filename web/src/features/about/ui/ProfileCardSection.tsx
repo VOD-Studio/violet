@@ -36,7 +36,11 @@ export function ProfileCardSection({ settings }: AboutSectionProps) {
 	if (rows.length === 0) return null;
 
 	return (
-		<AboutChapter id="profile_card" title="现在">
+		<AboutChapter
+			id="profile_card"
+			title="此刻的我"
+			intro="不写一长串履历，只留下现在仍然有效的信息。"
+		>
 			<dl className={styles.profileList}>
 				{rows.map(({ Icon, label, value, href }) => (
 					<div key={label} className={styles.profileRow}>

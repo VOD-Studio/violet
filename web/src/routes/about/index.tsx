@@ -25,10 +25,7 @@ function AboutPage() {
 	});
 
 	return (
-		<AboutPageLayout
-			settings={settings}
-			sections={sections.map(({ id, label }) => ({ id, label }))}
-		>
+		<AboutPageLayout settings={settings} hasSections={sections.length > 0}>
 			{sections.map(({ id, Component }) => (
 				<Component key={id} settings={settings} />
 			))}
@@ -42,7 +39,7 @@ export const Route = createFileRoute("/about/")({
 			{ title: "关于" },
 			{
 				name: "description",
-				content: "关于 Violet、站点作者与持续更新记录的公开档案。",
+				content: "关于 Violet、xunrua，以及这座站仍在发生的变化。",
 			},
 		],
 	}),

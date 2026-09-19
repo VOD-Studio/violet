@@ -18,7 +18,11 @@ export function ChangelogSection(_: AboutSectionProps) {
 
 	if (isPending) {
 		return (
-			<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+			<AboutChapter
+				id="changelog"
+				title="最近在改什么"
+				intro="每次发布，都记录着 Violet 又往前走了一小步。"
+			>
 				<ShimmerSkeleton className={styles.loadingRelease} />
 			</AboutChapter>
 		);
@@ -26,7 +30,11 @@ export function ChangelogSection(_: AboutSectionProps) {
 
 	if (isError) {
 		return (
-			<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+			<AboutChapter
+				id="changelog"
+				title="最近在改什么"
+				intro="每次发布，都记录着 Violet 又往前走了一小步。"
+			>
 				<AboutSectionState
 					message="更新日志暂时未能抵达。"
 					isRetrying={isFetching}
@@ -39,14 +47,22 @@ export function ChangelogSection(_: AboutSectionProps) {
 	const releases = data?.releases.slice(0, 3) ?? [];
 	if (releases.length === 0) {
 		return (
-			<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+			<AboutChapter
+				id="changelog"
+				title="最近在改什么"
+				intro="每次发布，都记录着 Violet 又往前走了一小步。"
+			>
 				<AboutSectionState message="暂时没有公开的更新记录。" />
 			</AboutChapter>
 		);
 	}
 
 	return (
-		<AboutChapter id="changelog" title="最近更新" intro="Violet 最近几次公开发布的切片。">
+		<AboutChapter
+			id="changelog"
+			title="最近在改什么"
+			intro="每次发布，都记录着 Violet 又往前走了一小步。"
+		>
 			<Timeline ariaLabel="最近三次公开发布" className={styles.releaseTimeline}>
 				{releases.map((release, releaseIndex) => {
 					const categories = release.categories
