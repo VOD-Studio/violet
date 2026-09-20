@@ -6,4 +6,5 @@ export const notificationKeys = {
 	all: root,
 	list: [...root, "list"] as const,
 	unreadCount: [...root, "unread-count"] as const,
+	pushConfig: [...root, "push-config"] as const,
 };

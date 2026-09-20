@@ -2,8 +2,8 @@
  * NotificationBell - 通知铃铛 + 未读 Badge + 下拉面板
  *
  * 登录用户可见。点击展开下拉通知列表。
- * SSE 实时推送新通知 → Badge 更新；点击通知标记已读，
- * 聊天类通知同时跳转到对应会话。
+ * SSE 实时推送新通知 → Badge 更新；点击通知标记已读并按来源跳转到对应资源，
+ * 聊天类通知同时跳转到对应会话。面板底部提供浏览器通知开关。
  */
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
@@ -17,15 +17,19 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
+import { useNavigate } from "@tanstack/react-router";
 import {
 	Bell,
 	BellRing,
 	CheckCheck,
+	Heart,
 	Inbox,
 	Link2,
 	MessageCircle,
+	MessageCircleReply,
 	MessageCircleX,
 	MessagesSquare,
+	Repeat2,
 	Rss,
 	ShieldCheck,
 	UserPlus,
@@ -38,6 +42,7 @@ import {
 	useNotifications,
 	useUnreadCount,
 } from "../api/queries";
+import { useNotificationPushNotifications } from "../hooks/useNotificationPushNotifications";
 import { useNotificationStream } from "../hooks/useNotificationStream";
 
 /** source_type → 图标映射 */
@@ -53,7 +58,19 @@ const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	user_registered: UserPlus,
 	account_security: ShieldCheck,
 	chat_room_invited: MessagesSquare,
+	tweet_liked: Heart,
+	tweet_quoted: Repeat2,
+	tweet_commented: MessageCircle,
+	tweet_comment_replied: MessageCircleReply,
 };
+
+/** 推文互动来源：source_id 是推文，点击落到推文详情页 */
+const tweetSources: NotificationSourceType[] = [
+	"tweet_liked",
+	"tweet_quoted",
+	"tweet_commented",
+	"tweet_comment_replied",
+];
 
 /** source_type → 颜色映射：走行为状态与品牌语义（新增/注册=品牌、审核类=warning/success、失败/拒绝=destructive） */
 const sourceColor: Record<NotificationSourceType, string> = {
@@ -68,6 +85,10 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	user_registered: "text-brand",
 	account_security: "text-warning",
 	chat_room_invited: "text-neon-cyan",
+	tweet_liked: "text-neon-pink",
+	tweet_quoted: "text-neon-green",
+	tweet_commented: "text-neon-blue",
+	tweet_comment_replied: "text-brand",
 };
 
 /**
@@ -87,7 +108,9 @@ interface NotificationBellProps {
 
 const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 	useNotificationStream();
+	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
+	const push = useNotificationPushNotifications();
 	const { data: unreadData } = useUnreadCount();
 	const { data: notifPage } = useNotifications(1, 10);
 	const markRead = useMarkNotificationRead();
@@ -103,6 +126,10 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 			if (typeof conversationID === "string" && conversationID) {
 				openChatConversation(conversationID);
 			}
+			return;
+		}
+		if (tweetSources.includes(item.source_type) && item.source_id) {
+			navigate({ to: "/tweets/$id", params: { id: item.source_id } });
 		}
 	};
 
@@ -168,6 +195,32 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 							/>
 						))}
 					</div>
+				)}
+				{push.enabled && push.supported && (
+					<>
+						<DropdownMenuSeparator className="m-0" />
+						<div className="flex items-center justify-between gap-2 px-4 py-2.5">
+							<span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+								<Bell className="size-3.5 shrink-0" />
+								浏览器通知
+							</span>
+							<button
+								type="button"
+								disabled={push.busy}
+								onClick={() =>
+									push.subscribed ? void push.disable() : void push.enable()
+								}
+								className={cn(
+									"shrink-0 text-xs transition-colors disabled:opacity-60",
+									push.subscribed
+										? "text-muted-foreground hover:text-foreground"
+										: "text-brand hover:underline",
+								)}
+							>
+								{push.busy ? "处理中…" : push.subscribed ? "已开启，关闭" : "开启"}
+							</button>
+						</div>
+					</>
 				)}
 			</DropdownMenuContent>
 		</DropdownMenu>
