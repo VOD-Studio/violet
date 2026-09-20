@@ -1,4 +1,5 @@
 import { useActivePersona } from "@entities/persona/api/queries";
+import { useLatestComments } from "@features/comments/api/queries";
 import { useTimeline } from "@features/tweets/api/queries";
 
 import { useFootprintPublications, useRecentPublications, useSiteIdentity } from "./api/queries";
@@ -45,6 +46,13 @@ export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperien
 	const footprintQuery = useFootprintPublications(identity.home.footprint_enabled);
 	const timelineQuery = useTimeline(3, typeof document !== "undefined");
 	const tweets = timelineQuery.data?.pages.flatMap((page) => page.data ?? []) ?? [];
+	// 多取两把滤掉纯图评论（body 为空的附图评论不进橱窗）
+	const latestCommentsQuery = useLatestComments(4, {
+		enabled: typeof document !== "undefined",
+	});
+	const missives = (latestCommentsQuery.data ?? [])
+		.filter((comment) => comment.body.trim().length > 0)
+		.slice(0, 2);
 	const publicationError =
 		recentPublicationsQuery.data === undefined &&
 		(initialRecentPublicationsFailed || recentPublicationsQuery.isError);
@@ -60,6 +68,8 @@ export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperien
 				publicationRetrying={recentPublicationsQuery.isFetching}
 				onRetryPublications={() => void recentPublicationsQuery.refetch()}
 				tweetsLoading={timelineQuery.isPending}
+				missives={missives}
+				missivesLoading={latestCommentsQuery.isPending}
 			/>
 			{identity.home.footprint_enabled ? (
 				footprintQuery.isPending ? (

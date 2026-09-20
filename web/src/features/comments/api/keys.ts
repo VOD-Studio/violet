@@ -16,6 +16,8 @@ export const commentKeys = {
 	/** 批注按块聚合计数（轻量，不含正文） */
 	annotationSummary: (postId: string) =>
 		[...commentKeys.all, "annotation-summary", postId] as const,
+	/** 全站最新已审核评论（首页橱窗，limit 维度） */
+	latest: (limit: number) => [...commentKeys.all, "latest", limit] as const,
 	/** 回复列表维度（按顶层评论 id 聚合） */
 	replies: () => [...commentKeys.all, "replies"] as const,
 	/** 具体顶层评论的回复列表（含 sort/page 维度） */
