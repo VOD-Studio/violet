@@ -150,6 +150,7 @@ services:
       # ...其余同本地
     volumes:
       - uploads_data:/app/uploads
+      - backups_data:/app/backups
     healthcheck:
       # ← 必须用 GET，/api/health 不接受 HEAD（旧版用 HEAD 返回 405 导致一直 unhealthy）
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]
@@ -190,7 +191,7 @@ ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
   podman-compose -f docker-compose.prod.yml up -d'"
 ```
 
-`down` 只删容器，命名卷 `blog_postgres_data` / `blog_redis_data` / `blog_uploads_data` 保留，数据不丢。
+`down` 只删容器，命名卷 `blog_postgres_data` / `blog_redis_data` / `blog_uploads_data` / `blog_backups_data` 保留，数据不丢。`blog_backups_data` 存放系统面板生成的数据库备份与上传归档，不得映射到公开 `/uploads`。
 
 **重要**：如果只改了 web，重建 web 容器即可（避免 API 短暂中断）。但 `podman-compose up -d web` 若容器已存在会**复用旧容器**，必须先 `podman rm -f blog-web`：
 

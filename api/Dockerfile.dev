@@ -4,11 +4,12 @@ FROM golang:1.26-alpine
 
 ENV GOPROXY=https://goproxy.cn,direct
 
-# 安装运行时 C 库/工具 (ffmpeg 用于视频抽取封面，wget/ca-certificates/git)
-# 替换为国内阿里云源，加速 apk 下载
-RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
-
-RUN apk add --no-cache ca-certificates wget ffmpeg git
+# 优先使用国内镜像；镜像不可用时回退官方源，避免构建被单一镜像阻断。
+# ffmpeg 用于视频封面，pg_dump/psql 用于系统备份。
+RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories && \
+    (apk add --no-cache ca-certificates wget ffmpeg git postgresql-client tar || \
+     (sed -i 's#mirrors.aliyun.com#dl-cdn.alpinelinux.org#g' /etc/apk/repositories && \
+      apk add --no-cache ca-certificates wget ffmpeg git postgresql-client tar))
 
 # 安装 air (Go 热重载工具)
 RUN go install github.com/air-verse/air@latest

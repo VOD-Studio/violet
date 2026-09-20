@@ -102,3 +102,59 @@ describe("http 401 拦截器", () => {
 		expect(onExpired).not.toHaveBeenCalled();
 	});
 });
+
+describe("http 二进制响应", () => {
+	it("Blob 下载不经过 JSON 信封解包", async () => {
+		const client = createHttpClient();
+		const blob = new Blob(["violet backup"], { type: "application/sql" });
+		client.defaults.adapter = async (config) => ({
+			data: blob,
+			status: 200,
+			statusText: "OK",
+			headers: { "content-type": "application/sql" },
+			config,
+		});
+
+		const response = await client.get("/admin/system/backups/example.sql/download", {
+			responseType: "blob",
+		});
+
+		expect(response.data).toBe(blob);
+	});
+
+	it("Blob 下载错误保留后端错误码和诊断消息", async () => {
+		const client = createHttpClient();
+		client.defaults.adapter = async (config) =>
+			Promise.reject(
+				new AxiosError(
+					"Request failed with status code 400",
+					"ERR_BAD_REQUEST",
+					config,
+					{},
+					{
+						status: 400,
+						statusText: "Bad Request",
+						headers: { "content-type": "application/json" },
+						config,
+						data: new Blob(
+							[
+								JSON.stringify({
+									error: "VALIDATION_ERROR",
+									message: "导出查询必须是单条只读 SQL",
+								}),
+							],
+							{ type: "application/json" },
+						),
+					},
+				),
+			);
+
+		await expect(
+			client.post("/admin/system/export", {}, { responseType: "blob" }),
+		).rejects.toMatchObject({
+			code: "VALIDATION_ERROR",
+			message: "导出查询必须是单条只读 SQL",
+			status: 400,
+		});
+	});
+});

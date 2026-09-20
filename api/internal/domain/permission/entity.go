@@ -120,8 +120,9 @@ var (
 	AnnouncementView   = MustParse("announcement:view") // 公告管理页可见
 	AnnouncementManage = MustParse("announcement:manage")
 	// system
-	SystemView = MustParse("system:view") // 系统监控（主机/磁盘/运行时指标）
-	LogView    = MustParse("log:view")    // 操作日志（含 IP/操作明细）
+	SystemView   = MustParse("system:view")   // 查看系统与数据库状态
+	SystemManage = MustParse("system:manage") // 执行 SQL、导出数据与管理备份
+	LogView      = MustParse("log:view")      // 操作日志（含 IP/操作明细）
 	// mcp
 	MCPManageTokens = MustParse("mcp:manage-tokens") // 管理 MCP 访问令牌（PAT）
 	// chat

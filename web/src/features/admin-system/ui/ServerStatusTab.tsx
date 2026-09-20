@@ -1,4 +1,3 @@
-import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { formatDateTime } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import { Skeleton } from "@shared/ui/base/skeleton";
@@ -33,13 +32,8 @@ const DISK_SEGMENTS: SegmentedItem<DiskMode>[] = [
 	{ value: "io", label: "IO" },
 ];
 
-/** SystemMonitorPage - 服务监控页面容器
- *
- * 顶栏控件：视图切换（Segmented）+ 自动轮询开关 + 手动刷新按钮 + 上次更新时间。
- * 下方按视图渲染 StreamView / ConsoleView，并在底部追加磁盘表与主机/运行时面板。
- * 默认进入「时序带 + 开启轮询」，视图与轮询偏好均不持久化（监控页每次进入都重置）。
- */
-export function SystemMonitorPage() {
+/** 服务器状态页签，复用既有实时采样与历史趋势视图。 */
+export function ServerStatusTab() {
 	const [view, setView] = useState<MonitorView>("stream");
 	const [diskMode, setDiskMode] = useState<DiskMode>("liquid");
 	const [polling, setPolling] = useState(true);
@@ -49,7 +43,6 @@ export function SystemMonitorPage() {
 	const historyQ = useSystemHistory({ polling });
 
 	const handleManualRefresh = () => {
-		// polling 关闭时由按钮触发；开启时按钮也能立即强制刷新一次
 		void qc.invalidateQueries({ queryKey: systemKeys.all });
 	};
 
@@ -57,14 +50,22 @@ export function SystemMonitorPage() {
 	const error = snapshotQ.error ?? historyQ.error;
 
 	return (
-		<PageShell
-			title="系统监控"
-			description="服务器实时资源、依赖状态与历史趋势"
-			action={
-				<div className="flex items-center gap-3">
+		<div className="space-y-6 pt-5">
+			<div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
+				<p className="text-muted-foreground text-xs">
+					{snapshotQ.data
+						? `上次更新：${formatDateTime(snapshotQ.data.timestamp, "second")}`
+						: "等待首次采样"}
+				</p>
+				<div className="flex flex-wrap items-center gap-3">
 					<Segmented value={view} onValueChange={setView} segments={VIEW_SEGMENTS} />
 					<div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-						<Switch checked={polling} onCheckedChange={setPolling} size="sm" />
+						<Switch
+							aria-label="自动刷新服务器状态"
+							checked={polling}
+							onCheckedChange={setPolling}
+							size="sm"
+						/>
 						{polling ? (
 							<span className="flex items-center gap-1">
 								<Play className="size-3" />
@@ -87,14 +88,7 @@ export function SystemMonitorPage() {
 						刷新
 					</Button>
 				</div>
-			}
-		>
-			{/* 上次更新时间 */}
-			{snapshotQ.data && (
-				<p className="text-muted-foreground mb-4 text-xs">
-					上次更新：{formatDateTime(snapshotQ.data.timestamp, "second")}
-				</p>
-			)}
+			</div>
 
 			{error ? (
 				<ErrorBlock message={error.message} onRetry={handleManualRefresh} />
@@ -108,7 +102,6 @@ export function SystemMonitorPage() {
 						<ConsoleView snapshot={snapshotQ.data} history={historyQ.data} />
 					)}
 
-					{/* 磁盘明细：液位 / IO 两种模式切换 */}
 					<section className="space-y-3">
 						<div className="flex items-center justify-between">
 							<SectionTitle icon={<Activity className="size-3.5" />}>
@@ -128,7 +121,6 @@ export function SystemMonitorPage() {
 						)}
 					</section>
 
-					{/* 运行时脉搏 */}
 					<section className="space-y-3">
 						<SectionTitle icon={<Activity className="size-3.5" />}>运行时</SectionTitle>
 						<RuntimePulse runtime={snapshotQ.data.runtime} history={historyQ.data} />
@@ -137,7 +129,7 @@ export function SystemMonitorPage() {
 			) : (
 				<ErrorBlock message="暂无监控数据" onRetry={handleManualRefresh} />
 			)}
-		</PageShell>
+		</div>
 	);
 }
 

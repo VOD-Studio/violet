@@ -109,7 +109,11 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	commentReaction := NewCommentReactionContainer(db)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
 	notification := NewNotificationContainer(db, bus)
-	system := NewSystemContainer(db, rdb, ctx)
+	system, err := NewSystemContainer(infra.DB, db, rdb, settings.Store, cfg, ctx)
+	if err != nil {
+		roleCleanup()
+		return nil, nil, err
+	}
 	media := NewMediaContainer(db, rdb, cfg)
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
 	gallery := NewGalleryContainer(db, bus, permissionChecker)

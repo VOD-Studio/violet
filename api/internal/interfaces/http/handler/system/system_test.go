@@ -1,11 +1,3 @@
-// Package system 提供 system 监控模块的 HTTP handler 测试。
-//
-// handler 依赖 *appsystem.Service（具体结构体），测试构造真实 Service 注入
-// 手写的 MetricCollector stub（db/redis 为 nil → 依赖探活降级为 disconnected），
-// 仅断言 HTTP 层。
-//
-// 注：当前 handler 仅有 GetSnapshot / GetHistory 两个方法（任务描述中的 GetHealth
-// 在本 handler 中并不存在）。
 package system
 
 import (
@@ -41,7 +33,7 @@ func TestGetSnapshot_Success(t *testing.T) {
 		CPU:  appsystem.CPUInfo{UsagePercent: 12.3, Cores: 4},
 	}}
 	// db=nil, rdb=nil → checkDependencies 走 disconnected 分支不报错
-	h := NewHandler(appsystem.NewService(nil, nil, collector))
+	h := NewHandler(appsystem.NewService(nil, nil, collector, nil, nil, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/system/snapshot", nil)
 	rec := httptest.NewRecorder()
@@ -64,7 +56,7 @@ func TestGetSnapshot_Success(t *testing.T) {
 // 领域 INTERNAL 错误 → RespondError 映射为 500。
 func TestGetSnapshot_CollectError_Returns500(t *testing.T) {
 	collector := &stubMetricCollector{err: assertNotReached("采集失败")}
-	h := NewHandler(appsystem.NewService(nil, nil, collector))
+	h := NewHandler(appsystem.NewService(nil, nil, collector, nil, nil, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/system/snapshot", nil)
 	rec := httptest.NewRecorder()
@@ -77,7 +69,7 @@ func TestGetSnapshot_CollectError_Returns500(t *testing.T) {
 // TestGetHistory_EmptyWithNilRedis rdb=nil → 返回空采样点数组，仍 200。
 func TestGetHistory_EmptyWithNilRedis(t *testing.T) {
 	collector := &stubMetricCollector{}
-	h := NewHandler(appsystem.NewService(nil, nil, collector))
+	h := NewHandler(appsystem.NewService(nil, nil, collector, nil, nil, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/system/history", nil)
 	rec := httptest.NewRecorder()

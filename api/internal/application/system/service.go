@@ -1,10 +1,11 @@
-// Package system 提供服务器监控的应用用例。
+// Package system 提供系统监控、数据库操作与备份维护用例。
 package system
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -24,16 +25,36 @@ type MetricCollector interface {
 	Collect() (*Snapshot, error)
 }
 
-// Service 服务器监控用例服务
+// Service 编排系统监控、数据库操作与备份维护用例。
 type Service struct {
 	collector MetricCollector
 	rdb       *redis.Client
 	db        *gorm.DB
+	database  DatabaseOperations
+	backups   BackupOperations
+	settings  SettingsStore
+
+	tasksMu           sync.RWMutex
+	tasks             map[string]*BackupTask
+	maintenanceMu     sync.Mutex
+	maintenanceActive bool
+	settingsChanged   chan struct{}
 }
 
-// NewService 构造监控服务
-func NewService(db *gorm.DB, rdb *redis.Client, collector MetricCollector) *Service {
-	return &Service{db: db, rdb: rdb, collector: collector}
+// NewService 构造系统面板服务。
+func NewService(
+	db *gorm.DB,
+	rdb *redis.Client,
+	collector MetricCollector,
+	database DatabaseOperations,
+	backups BackupOperations,
+	settings SettingsStore,
+) *Service {
+	return &Service{
+		db: db, rdb: rdb, collector: collector,
+		database: database, backups: backups, settings: settings,
+		tasks: make(map[string]*BackupTask), settingsChanged: make(chan struct{}, 1),
+	}
 }
 
 // GetSnapshot 实时采集一次完整快照（含依赖探活）

@@ -127,7 +127,7 @@ api/
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
-| **system** | — | system | 系统级设置（site settings） |
+| **system** | — | system | 服务器与数据库状态、受控 SQL、数据导出及备份恢复 |
 | **coderunner** | coderunner | coderunner | 可运行代码块沙箱执行（复用 yggdrasil runner 镜像） |
 | **subscription** | subscription, subscription_entry | subscription | RSS 订阅源管理、抓取调度与转载 |
 | **audit** | audit | audit | 操作日志记录与查询 |

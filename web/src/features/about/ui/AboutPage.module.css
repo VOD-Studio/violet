@@ -1,0 +1,164 @@
+.page {
+	width: min(100%, 62rem);
+	margin: 0 auto;
+	padding: 4rem 1.5rem 8rem;
+	color: var(--foreground);
+}
+
+.intro {
+	width: 100%;
+}
+
+.eyebrow {
+	margin: 0;
+	color: color-mix(in oklab, var(--foreground) 68%, var(--background));
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.78rem;
+	font-weight: 700;
+	letter-spacing: 0.18em;
+}
+
+.title {
+	margin: 0.55rem 0 0;
+	font-family: var(--font-sans);
+	font-size: clamp(2.55rem, 5vw, 3rem);
+	font-weight: 700;
+	letter-spacing: -0.055em;
+	line-height: 1.08;
+}
+
+.subtitle {
+	max-width: 46rem;
+	margin: 0.85rem 0 0;
+	color: var(--muted-foreground);
+	font-size: 0.95rem;
+	line-height: 1.8;
+}
+
+.chapterFlow,
+.skeletonFlow {
+	width: 100%;
+	margin-top: 2.5rem;
+}
+
+.empty {
+	margin: 0;
+	color: var(--muted-foreground);
+	line-height: 1.9;
+}
+
+.statePage {
+	display: grid;
+	min-height: 60svh;
+	place-content: center;
+	justify-items: center;
+	padding: 6rem 1.5rem;
+	text-align: center;
+}
+
+.stateTitle {
+	margin: 0;
+	font-size: clamp(2.5rem, 8vw, 3.4rem);
+	font-weight: 700;
+	letter-spacing: -0.05em;
+}
+
+.stateCopy {
+	margin: 1rem 0 0;
+	color: var(--muted-foreground);
+	line-height: 1.8;
+}
+
+.stateAction {
+	margin-top: 1.6rem;
+	border: 0;
+	border-radius: 0.45rem;
+	padding: 0.65rem 1rem;
+	background: var(--primary);
+	color: var(--primary-foreground);
+	font: inherit;
+	font-size: 0.82rem;
+	cursor: pointer;
+	transition: background-color 160ms ease-out;
+}
+
+.stateAction:hover {
+	background: color-mix(in oklab, var(--primary), var(--foreground) 12%);
+}
+
+.stateAction:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline-offset: 3px;
+}
+
+.stateAction:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
+.skeletonEyebrow {
+	width: 5.5rem;
+	height: 0.8rem;
+}
+
+.skeletonTitle {
+	width: 8rem;
+	height: 3rem;
+	margin-top: 0.65rem;
+}
+
+.skeletonCopy {
+	width: min(32rem, 76vw);
+	height: 1rem;
+	margin-top: 1rem;
+}
+
+.skeletonSection {
+	padding-bottom: 3.75rem;
+}
+
+.skeletonHeading {
+	width: 13rem;
+	height: 1.7rem;
+	margin-bottom: 1.6rem;
+}
+
+.skeletonLine {
+	width: 84%;
+	height: 0.85rem;
+	margin-top: 0.9rem;
+}
+
+.skeletonLine:nth-child(2) {
+	width: 94%;
+}
+
+.skeletonLine:nth-child(3) {
+	width: 78%;
+}
+
+@media (max-width: 39.99rem) {
+	.page {
+		padding: 3rem 1.25rem 6rem;
+	}
+
+	.title {
+		font-size: 2.45rem;
+	}
+
+	.subtitle {
+		margin-top: 0.75rem;
+		font-size: 0.9rem;
+	}
+
+	.chapterFlow,
+	.skeletonFlow {
+		margin-top: 2.75rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.stateAction {
+		transition: none;
+	}
+}

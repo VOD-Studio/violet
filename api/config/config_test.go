@@ -88,8 +88,9 @@ func validTestConfig() Config {
 			Password: "password", SSLMode: "disable", MaxOpenConns: 5,
 			MaxIdleConns: 1, ConnMaxLifetime: time.Minute,
 		},
-		Redis:   RedisConfig{Host: "localhost", Port: 6379},
-		Cookie:  CookieConfig{SessionName: "session", CSRFName: "csrf", SameSite: "lax"},
-		Session: SessionConfig{IdleTTL: time.Hour},
+		Redis:     RedisConfig{Host: "localhost", Port: 6379},
+		Cookie:    CookieConfig{SessionName: "session", CSRFName: "csrf", SameSite: "lax"},
+		Session:   SessionConfig{IdleTTL: time.Hour},
+		BackupDir: "backups",
 	}
 }

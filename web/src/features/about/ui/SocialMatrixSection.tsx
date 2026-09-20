@@ -1,80 +1,108 @@
-import { Bird, GitBranch, Mail, Rss, Share2, Tv } from "lucide-react";
-import { motion } from "motion/react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
+import { GithubIcon } from "@shared/ui/icons";
+import { ArrowUpRight, AtSign, Mail, Rss, Share2, Tv } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 
-/**
- * SocialMatrixSection - A4 社交矩阵（扩展版）
- *
- * 渲染已配置的社交平台：GitHub（复用 github_username）/ Twitter / Mastodon / Email / RSS / Bilibili。
- * 仅渲染非空平台。GitHub 用户名拼完整 URL。
- */
+import { AboutChapter } from "./AboutChapter";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
+
+interface SocialEntry {
+	label: string;
+	href: string;
+	target: string;
+	Icon: ComponentType<SVGProps<SVGSVGElement>>;
+}
+
+/** 汇总已公开的社交与订阅入口。 */
 export function SocialMatrixSection({ settings }: AboutSectionProps) {
-	const entries = [
+	const candidates: Array<SocialEntry | null> = [
 		settings.github_username
 			? {
 					label: "GitHub",
 					href: `https://github.com/${settings.github_username}`,
-					sub: `@${settings.github_username}`,
-					icon: GitBranch,
+					target: `@${settings.github_username}`,
+					Icon: GithubIcon,
 				}
 			: null,
 		settings.social_twitter
-			? { label: "Twitter", href: settings.social_twitter, sub: "Twitter", icon: Bird }
+			? {
+					label: "X / Twitter",
+					href: settings.social_twitter,
+					target: formatTarget(settings.social_twitter),
+					Icon: AtSign,
+				}
 			: null,
 		settings.social_mastodon
-			? { label: "Mastodon", href: settings.social_mastodon, sub: "Mastodon", icon: Share2 }
+			? {
+					label: "Mastodon",
+					href: settings.social_mastodon,
+					target: formatTarget(settings.social_mastodon),
+					Icon: Share2,
+				}
 			: null,
 		settings.social_email
 			? {
 					label: "Email",
 					href: `mailto:${settings.social_email}`,
-					sub: settings.social_email,
-					icon: Mail,
+					target: settings.social_email,
+					Icon: Mail,
 				}
 			: null,
 		settings.social_rss
-			? { label: "RSS", href: settings.social_rss, sub: "RSS Feed", icon: Rss }
+			? {
+					label: "RSS",
+					href: settings.social_rss,
+					target: formatTarget(settings.social_rss),
+					Icon: Rss,
+				}
 			: null,
 		settings.social_bilibili
-			? { label: "Bilibili", href: settings.social_bilibili, sub: "Bilibili", icon: Tv }
+			? {
+					label: "Bilibili",
+					href: settings.social_bilibili,
+					target: formatTarget(settings.social_bilibili),
+					Icon: Tv,
+				}
 			: null,
-	].filter((e): e is NonNullable<typeof e> => e !== null);
+	];
+	const entries = candidates.filter((entry): entry is SocialEntry => entry !== null);
 
 	if (entries.length === 0) return null;
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-			>
-				<h2 className="mb-6 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					链接
-				</h2>
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					{entries.map(({ label, href, sub, icon: Icon }) => (
+		<AboutChapter
+			id="social_matrix"
+			title="还可以在哪里找到我？"
+			intro="如果想聊技术、交换友链，或者继续看看我在写什么，下面这些入口都可以。"
+		>
+			<nav className={styles.socialList} aria-label="站长公开链接">
+				{entries.map(({ label, href, target, Icon }) => {
+					const isExternal = href.startsWith("http");
+					return (
 						<a
 							key={label}
 							href={href}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="group flex items-center gap-4 rounded-xl border border-edge-hairline bg-background p-5 transition-all hover:border-primary/50 hover:shadow-md"
+							target={isExternal ? "_blank" : undefined}
+							rel={isExternal ? "noopener noreferrer" : undefined}
+							className={styles.socialLink}
+							aria-label={`${label}：${target}`}
 						>
-							<span className="flex size-11 items-center justify-center rounded-lg bg-muted text-foreground transition-colors group-hover:bg-accent">
-								<Icon className="size-5" />
+							<span className={styles.socialIconWrap}>
+								<Icon className={styles.socialIcon} aria-hidden />
 							</span>
-							<span className="min-w-0 flex-1">
-								<span className="block font-semibold">{label}</span>
-								<span className="block truncate text-sm text-muted-foreground">
-									{sub}
-								</span>
+							<span className={styles.socialText}>
+								<span className={styles.socialLabel}>{label}</span>
+								<span className={styles.socialTarget}>{target}</span>
 							</span>
+							<ArrowUpRight className={styles.socialArrow} aria-hidden />
 						</a>
-					))}
-				</div>
-			</motion.div>
-		</section>
+					);
+				})}
+			</nav>
+		</AboutChapter>
 	);
+}
+
+function formatTarget(value: string): string {
+	return value.replace(/^https?:\/\/(?:www\.)?/, "").replace(/\/$/, "");
 }

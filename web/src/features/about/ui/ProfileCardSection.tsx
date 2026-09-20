@@ -1,39 +1,39 @@
-import { Briefcase, Hand, Mail, MapPin } from "lucide-react";
-import { motion } from "motion/react";
-import type { AboutSectionProps } from "./AboutSectionPlaceholder";
+import styles from "./AboutSections.module.css";
+import type { AboutSectionProps } from "./types";
 
-/**
- * ProfileCardSection - A2 名片卡
- *
- * 展示 role / location / available_for / email。空字段不显示对应行。
- * 横向 flex-wrap 布局，与内容流宽度一致（不再孤立窄卡片）。
- */
+/** 将当前身份、所在地与联系状态写成文章中的一段话。 */
 export function ProfileCardSection({ settings }: AboutSectionProps) {
-	const rows = [
-		settings.profile_role ? { icon: Briefcase, label: settings.profile_role } : null,
-		settings.profile_location ? { icon: MapPin, label: settings.profile_location } : null,
-		settings.available_for ? { icon: Hand, label: settings.available_for } : null,
-		settings.social_email ? { icon: Mail, label: settings.social_email } : null,
-	].filter((r): r is { icon: typeof Briefcase; label: string } => r !== null);
+	const role = settings.profile_role.trim();
+	const location = settings.profile_location.trim();
+	const availableFor = settings.available_for.trim();
+	const email = settings.social_email.trim();
 
-	if (rows.length === 0) return null;
+	if (!role && !location && !availableFor && !email) return null;
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-6 py-14">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.6 }}
-				className="flex flex-wrap gap-x-8 gap-y-3"
-			>
-				{rows.map(({ icon: Icon, label }) => (
-					<div key={label} className="flex items-center gap-2 text-sm text-foreground/80">
-						<Icon className="size-4 shrink-0 text-muted-foreground" />
-						<span>{label}</span>
-					</div>
-				))}
-			</motion.div>
+		<section id="profile_card" className={styles.profileNote} aria-label="当前状态">
+			<p>
+				{role ? (
+					<>
+						现在，我以 <strong>{role}</strong> 这个身份工作。
+					</>
+				) : null}
+				{location ? <>坐标 {location}。</> : null}
+				{availableFor ? (
+					<>
+						最近：<mark className={styles.inlineMark}>{availableFor}</mark>。
+					</>
+				) : null}
+				{email ? (
+					<>
+						也可以直接
+						<a className={styles.inlineLink} href={`mailto:${email}`}>
+							写邮件
+						</a>
+						。
+					</>
+				) : null}
+			</p>
 		</section>
 	);
 }
