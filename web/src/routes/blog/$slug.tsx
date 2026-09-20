@@ -150,7 +150,7 @@ function BlogDetailPage() {
 				<BackLink to="/blog" label="博客" className="mb-8" history />
 
 				{/* 文章头 */}
-				<header className="mx-auto mb-12 max-w-3xl">
+				<header className="mx-auto mb-12 max-w-4xl">
 					{/* 标签 */}
 					{post.tags.length > 0 ? (
 						<div className="mb-4 flex flex-wrap gap-2">
@@ -263,7 +263,7 @@ function BlogDetailPage() {
 						data-article-content
 						onClick={articleImages.bind.onClick}
 						onKeyDown={articleImages.bind.onKeyDown}
-						className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
+						className="prose prose-neutral dark:prose-invert min-w-0 max-w-4xl flex-1"
 					>
 						<ArticleRichContent content={body} />
 						{post.show_signature && post.author ? (
@@ -289,7 +289,7 @@ function BlogDetailPage() {
 						{toc.length > 1 ? (
 							<aside className="hidden w-56 shrink-0 2xl:block" />
 						) : null}
-						<div className="min-w-0 max-w-3xl flex-1">
+						<div className="min-w-0 max-w-4xl flex-1">
 							<ChapterNav context={chapterCtx} />
 						</div>
 					</div>
@@ -328,7 +328,7 @@ function BlogDetailPage() {
 						) : null}
 						<Suspense
 							fallback={
-								<div className="min-h-32 w-full max-w-3xl animate-pulse rounded-lg bg-muted/40" />
+								<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
 							}
 						>
 							<CommentSection postId={post.id} />
