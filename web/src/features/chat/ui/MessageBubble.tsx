@@ -184,11 +184,20 @@ export function MessageBubble({
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
-			{showSender ? (
-				<ChatAvatar user={message.sender} className="mt-0.5 size-8 shrink-0" />
-			) : (
-				<div aria-hidden="true" className="size-8 shrink-0" />
-			)}
+			<div className="relative mt-0.5 size-10 shrink-0">
+				{showSender && (
+					<ChatAvatar
+						user={message.sender}
+						className="size-10 transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0"
+					/>
+				)}
+				<BubbleTimestamp
+					forceVisible={touchActionsVisible}
+					time={message.created_at}
+					editedAt={message.edited_at}
+					className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center"
+				/>
+			</div>
 			<div
 				className={cn(
 					"relative flex max-w-[min(70%,36rem)] flex-col",
@@ -238,12 +247,6 @@ export function MessageBubble({
 								inlineMedia={message.media}
 								onImage={onImage}
 							/>
-							<BubbleTimestamp
-								inline
-								mine={mine}
-								time={message.created_at}
-								editedAt={message.edited_at}
-							/>
 						</BubbleShell>
 					) : message.type === "tweet_share" ? (
 						<div className="flex flex-col gap-1.5">
@@ -254,12 +257,6 @@ export function MessageBubble({
 										emote={mergedEmote}
 										mentions={message.mentions}
 										viewerID={currentUserID}
-									/>
-									<BubbleTimestamp
-										inline
-										mine={mine}
-										time={message.created_at}
-										editedAt={message.edited_at}
 									/>
 								</BubbleShell>
 							)}
@@ -274,12 +271,6 @@ export function MessageBubble({
 								emote={mergedEmote}
 								mentions={message.mentions}
 								viewerID={currentUserID}
-							/>
-							<BubbleTimestamp
-								inline
-								mine={mine}
-								time={message.created_at}
-								editedAt={message.edited_at}
 							/>
 						</BubbleShell>
 					)}

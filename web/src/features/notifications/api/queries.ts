@@ -1,11 +1,15 @@
 /** notifications feature 查询与 mutation hooks */
 
 import {
+	deleteNotificationPushSubscription,
+	fetchNotificationPushConfig,
 	fetchNotifications,
 	fetchUnreadCount,
 	markAllNotificationsRead,
 	markNotificationRead,
 	type NotificationItem,
+	type NotificationPushSubscription,
+	saveNotificationPushSubscription,
 } from "@shared/api/notifications";
 import type { PagedResponse } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -78,3 +82,15 @@ export const useMarkAllRead = () => {
 		},
 	});
 };
+
+export const useNotificationPushConfig = () =>
+	useQuery({ queryKey: notificationKeys.pushConfig, queryFn: fetchNotificationPushConfig });
+
+export const useSaveNotificationPushSubscription = () =>
+	useMutation({
+		mutationFn: (input: NotificationPushSubscription) =>
+			saveNotificationPushSubscription(input),
+	});
+
+export const useDeleteNotificationPushSubscription = () =>
+	useMutation({ mutationFn: (endpoint: string) => deleteNotificationPushSubscription(endpoint) });

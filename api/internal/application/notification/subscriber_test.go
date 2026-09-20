@@ -16,6 +16,7 @@ import (
 	domainnotification "blog-api/internal/domain/notification"
 	domainshared "blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
+	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 )
 
@@ -101,8 +102,13 @@ func (f *fakeFriendlinkLookup) FindApplicantID(context.Context, domainshared.ID)
 // --- test helpers ---
 
 func newTestSubscriber(store *fakeStoreCorrect, subLookup SubscriptionOwnerLookup, commentLookup CommentAuthorLookup, adminLookup AdminUserLookup, friendlinkLookup FriendLinkApplicantLookup, postAuthorLookup CommentPostAuthorLookup) *Subscriber {
-	return NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, zerolog.Nop())
+	return NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, stubActorLookup{}, zerolog.Nop())
 }
+
+// stubActorLookup 固定返回互动发起者展示名，让推文通知标题可断言。
+type stubActorLookup struct{}
+
+func (stubActorLookup) FindDisplayName(context.Context, domainshared.ID) string { return "Alice" }
 
 func newID() domainshared.ID { return domainshared.NewID() }
 
@@ -117,7 +123,7 @@ func TestSubscriber_SubscriptionFetched_Failure_WritesNotification(t *testing.T)
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
@@ -154,7 +160,7 @@ func TestSubscriber_SubscriptionFetched_ManualSuccess_WritesNotification(t *test
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	// 手动触发（isSystem=false）+ 成功 → 应通知
@@ -176,7 +182,7 @@ func TestSubscriber_FriendLinkCreated_NotifiesAdmins(t *testing.T) {
 		&fakeCommentLookup{},
 		&fakeAdminLookup{ids: []domainshared.ID{admin1, admin2}},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkCreated(
@@ -199,7 +205,7 @@ func TestSubscriber_CommentApproved_NotifiesAuthor(t *testing.T) {
 		&fakeCommentLookup{authorID: &authorID},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domaincomment.NewCommentApproved(commentID))
@@ -217,7 +223,7 @@ func TestSubscriber_CommentApproved_Anonymous_NoNotification(t *testing.T) {
 		&fakeCommentLookup{authorID: nil},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domaincomment.NewCommentApproved(newID()))
@@ -244,7 +250,7 @@ func TestSubscriber_FriendLinkApproved_NotifiesApplicant(t *testing.T) {
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{applicantID: &applicantID},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkApproved(linkID, "测试站", "pending"))
@@ -263,7 +269,7 @@ func TestSubscriber_FriendLinkRejected_NotifiesApplicant(t *testing.T) {
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{applicantID: &applicantID},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkRejected(newID(), "测试站", "pending"))
@@ -280,7 +286,7 @@ func TestSubscriber_FriendLinkReviewed_Anonymous_NoNotification(t *testing.T) {
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{applicantID: nil},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkApproved(newID(), "测试站", "pending"))
@@ -295,7 +301,7 @@ func TestSubscriber_StoreError_FailSafeReturnsNil(t *testing.T) {
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	// 写入失败应降级（fail-safe）：记日志后返回 nil，不阻断 EventBus
@@ -321,7 +327,9 @@ func TestPushingSubscriber_StoreError_FailSafeNoPush(t *testing.T) {
 		&fakeAdminLookup{},
 		&fakeFriendlinkLookup{},
 		&fakePostAuthorLookup{},
+		stubActorLookup{},
 		notif,
+		nil,
 		zerolog.Nop(),
 	)
 
@@ -390,7 +398,7 @@ func TestSubscriber_UserRegistered_NotifiesAdmins(t *testing.T) {
 		&fakeCommentLookup{},
 		&fakeAdminLookup{ids: []domainshared.ID{adminID}},
 		&fakeFriendlinkLookup{},
-			&fakePostAuthorLookup{},
+		&fakePostAuthorLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainuser.NewUserRegistered(newUser, mustEmail(t, "new@example.com")))
@@ -539,4 +547,191 @@ func TestSubscriber_CommentAutoApproved_SkipsCommenterNotifiesPostAuthor(t *test
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, domainnotification.SourceCommentCreated, store.saved[0].SourceType())
 	assert.Equal(t, postAuthorID, store.saved[0].UserID())
+}
+
+// --- 推文互动通知 ---
+
+func newTweet(t *testing.T, authorID domainshared.ID, content string) *domaintweet.Tweet {
+	t.Helper()
+	tw, err := domaintweet.NewTweet(authorID, content, nil, nil)
+	require.NoError(t, err)
+	return tw
+}
+
+func TestSubscriber_TweetLiked_NotifiesAuthor(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID, actorID := newID(), newID()
+	tw := newTweet(t, authorID, "今天写了点代码")
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, actorID)))
+
+	require.Len(t, store.saved, 1)
+	saved := store.saved[0]
+	assert.Equal(t, authorID, saved.UserID())
+	assert.Equal(t, domainnotification.SourceTweetLiked, saved.SourceType())
+	assert.Equal(t, tw.ID(), saved.SourceID(), "通知指向被点赞的推文")
+	assert.Equal(t, "Alice 赞了你的推文", saved.Title())
+	assert.Equal(t, "今天写了点代码", saved.Body())
+	assert.Equal(t, actorID.String(), saved.Payload()["actor_id"])
+}
+
+func TestSubscriber_TweetLiked_SelfLikeSkipped(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID := newID()
+	tw := newTweet(t, authorID, "自赞不通知")
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, authorID)))
+	assert.Empty(t, store.saved)
+}
+
+func TestSubscriber_TweetQuoted_NotifiesQuotedAuthor(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	quotedAuthorID, actorID := newID(), newID()
+	quoted := newTweet(t, quotedAuthorID, "原推文")
+	quote := newTweet(t, actorID, "转发说两句")
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetQuoted(quoted, quote)))
+
+	require.Len(t, store.saved, 1)
+	saved := store.saved[0]
+	assert.Equal(t, quotedAuthorID, saved.UserID())
+	assert.Equal(t, domainnotification.SourceTweetQuoted, saved.SourceType())
+	assert.Equal(t, quoted.ID(), saved.SourceID(), "通知落回原推文而非引用推文")
+	assert.Equal(t, "Alice 转发了你的推文", saved.Title())
+	assert.Equal(t, quote.ID().String(), saved.Payload()["quote_tweet_id"])
+}
+
+func TestSubscriber_TweetQuoted_SelfQuoteSkipped(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID := newID()
+	quoted := newTweet(t, authorID, "原推文")
+	quote := newTweet(t, authorID, "自我转发")
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetQuoted(quoted, quote)))
+	assert.Empty(t, store.saved)
+}
+
+func TestSubscriber_TweetCommented_TopLevelNotifiesTweetAuthor(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	tweetAuthorID, actorID := newID(), newID()
+	c, err := domaintweet.NewComment(newID(), actorID, "说得好")
+	require.NoError(t, err)
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetCommented(c, tweetAuthorID, nil)))
+
+	require.Len(t, store.saved, 1)
+	saved := store.saved[0]
+	assert.Equal(t, tweetAuthorID, saved.UserID())
+	assert.Equal(t, domainnotification.SourceTweetCommented, saved.SourceType())
+	assert.Equal(t, "Alice 评论了你的推文", saved.Title())
+	assert.Equal(t, c.ID().String(), saved.Payload()["comment_id"])
+}
+
+// 回复别人推文下的评论 → 评论作者与推文作者各收一条，来源类型不同。
+func TestSubscriber_TweetCommented_ReplyNotifiesBothParties(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	tweetAuthorID, repliedAuthorID, actorID := newID(), newID(), newID()
+	c, err := domaintweet.NewComment(newID(), actorID, "我也觉得")
+	require.NoError(t, err)
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetCommented(c, tweetAuthorID, &repliedAuthorID)))
+
+	require.Len(t, store.saved, 2)
+	assert.Equal(t, repliedAuthorID, store.saved[0].UserID())
+	assert.Equal(t, domainnotification.SourceTweetCommentReplied, store.saved[0].SourceType())
+	assert.Equal(t, "Alice 回复了你的评论", store.saved[0].Title())
+	assert.Equal(t, tweetAuthorID, store.saved[1].UserID())
+	assert.Equal(t, domainnotification.SourceTweetCommented, store.saved[1].SourceType())
+}
+
+// 推文作者就是被回复的评论作者时只发一条，避免同一条评论两次打扰。
+func TestSubscriber_TweetCommented_SameRecipientDeduped(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID, actorID := newID(), newID()
+	c, err := domaintweet.NewComment(newID(), actorID, "回复楼主")
+	require.NoError(t, err)
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetCommented(c, authorID, &authorID)))
+
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, domainnotification.SourceTweetCommentReplied, store.saved[0].SourceType())
+}
+
+// 自评自己的推文不通知（唯一接收者就是操作者本人）。
+func TestSubscriber_TweetCommented_SelfCommentSkipped(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID := newID()
+	c, err := domaintweet.NewComment(newID(), authorID, "补充一句")
+	require.NoError(t, err)
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetCommented(c, authorID, nil)))
+	assert.Empty(t, store.saved)
+}
+
+// actorLookup 查不到展示名时标题用「有人」兜底，不出现空引号。
+func TestSubscriber_TweetLiked_UnknownActorFallsBack(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID := newID()
+	tw := newTweet(t, authorID, "内容")
+	sub := NewSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{},
+		&fakeFriendlinkLookup{}, &fakePostAuthorLookup{}, emptyActorLookup{}, zerolog.Nop())
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, newID())))
+
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "有人 赞了你的推文", store.saved[0].Title())
+}
+
+// emptyActorLookup 模拟用户已注销等查不到展示名的场景。
+type emptyActorLookup struct{}
+
+func (emptyActorLookup) FindDisplayName(context.Context, domainshared.ID) string { return "" }
+
+// fakeBrowserPusher 记录浏览器推送调用，验证 SSE 与 Web Push 双通道并行。
+type fakeBrowserPusher struct {
+	pushed []BrowserNotification
+}
+
+func (f *fakeBrowserPusher) PushBrowser(_ context.Context, _ domainshared.ID, n BrowserNotification) {
+	f.pushed = append(f.pushed, n)
+}
+
+// 写通知成功后 SSE 与浏览器推送都触发，且浏览器通知带落地路径。
+func TestPushingSubscriber_TweetLiked_PushesSSEAndBrowser(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	notif := &fakeNotifier{}
+	browser := &fakeBrowserPusher{}
+	authorID := newID()
+	tw := newTweet(t, authorID, "推文正文")
+	sub := NewPushingSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{},
+		&fakeFriendlinkLookup{}, &fakePostAuthorLookup{}, stubActorLookup{}, notif, browser, zerolog.Nop())
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, newID())))
+
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []domainshared.ID{authorID}, notif.pushed)
+	require.Len(t, browser.pushed, 1)
+	assert.Equal(t, "Alice 赞了你的推文", browser.pushed[0].Title)
+	assert.Equal(t, "/tweets/"+tw.ID().String(), browser.pushed[0].URL)
+	assert.Equal(t, domainnotification.SourceTweetLiked, browser.pushed[0].SourceType)
+}
+
+// Save 失败时两个推送通道都不触发（fail-safe 一致性）。
+func TestPushingSubscriber_StoreError_NoBrowserPush(t *testing.T) {
+	store := &fakeStoreCorrect{err: errors.New("db down")}
+	browser := &fakeBrowserPusher{}
+	tw := newTweet(t, newID(), "推文正文")
+	sub := NewPushingSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{},
+		&fakeFriendlinkLookup{}, &fakePostAuthorLookup{}, stubActorLookup{}, &fakeNotifier{}, browser, zerolog.Nop())
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, newID())))
+	assert.Empty(t, browser.pushed)
 }

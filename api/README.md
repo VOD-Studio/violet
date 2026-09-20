@@ -110,7 +110,7 @@ api/
 | **comment** | comment | comment | 评论 CRUD、回复、批注、审核（通过/垃圾/删除）、批量操作 |
 | **commentreaction** | commentreaction | commentreaction | 评论表情反应（IP 哈希匿名） |
 | **friendlink** | friendlink | friendlink | 友链申请、审核、上下架管理 |
-| **notification** | notification | notification | 站内通知（SSE 实时推送、未读中心、事件订阅写通知） |
+| **notification** | notification | notification | 站内通知（事件订阅写通知、未读中心、SSE 实时推送、浏览器 Web Push） |
 | **chat** | chat | chat | 私聊/私有房间、文本与图片消息、成员提及与房间全体提及、cursor 历史、SSE 事件流、Web Push 订阅 |
 | **chatreaction** | chatreaction | chat | 聊天消息表情反应（成员鉴权、聚合计数、SSE 变化事件） |
 | **chatappearance** | chatappearance | chatappearance | 账号级聊天外观（头像框/挂件/气泡主题/佩戴徽章），本人读写与批量公开查询（CAS 乐观锁），管理员徽章授予与撤销（chat:manage） |

@@ -180,3 +180,35 @@ func (c *Comment) Depth() int16         { return c.depth }
 func (c *Comment) Path() string         { return c.path }
 func (c *Comment) CreatedAt() time.Time { return c.timestamps.CreatedAt }
 func (c *Comment) UpdatedAt() time.Time { return c.timestamps.UpdatedAt }
+
+// TweetCommented 推文收到评论或回复的事件。
+//
+// AggregateID 指向所属推文（通知点开落到推文详情页）。一次评论最多通知两人：
+// 推文作者（收到新评论）与被回复的评论作者（收到回复），由订阅者按
+// RepliedToAuthorID 是否非空分派并过滤自我互动。
+type TweetCommented struct {
+	shared.BaseEvent
+	// TweetAuthorID 推文作者 ID
+	TweetAuthorID shared.ID
+	// ActorID 评论者 ID
+	ActorID shared.ID
+	// CommentID 新建评论 ID
+	CommentID shared.ID
+	// RepliedToAuthorID 被回复评论的作者 ID；顶层评论为 nil
+	RepliedToAuthorID *shared.ID
+	// Excerpt 评论正文前缀快照（纯图评论为空串）
+	Excerpt string
+}
+
+// NewTweetCommented 构造推文评论事件。
+// tweetAuthorID 由应用层从所属推文取得；repliedToAuthorID 顶层评论传 nil。
+func NewTweetCommented(c *Comment, tweetAuthorID shared.ID, repliedToAuthorID *shared.ID) TweetCommented {
+	return TweetCommented{
+		BaseEvent:         shared.NewBaseEvent("tweet.commented", c.tweetID),
+		TweetAuthorID:     tweetAuthorID,
+		ActorID:           c.authorID,
+		CommentID:         c.id,
+		RepliedToAuthorID: repliedToAuthorID,
+		Excerpt:           excerpt(c.body),
+	}
+}

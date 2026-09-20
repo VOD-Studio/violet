@@ -26,3 +26,18 @@ type Notification struct {
 
 // TableName 显式指定表名
 func (Notification) TableName() string { return "notifications" }
+
+// NotificationPushSubscription 站内通知的浏览器推送订阅持久化模型
+// （对应 notification_push_subscriptions 表，migration 120）。
+type NotificationPushSubscription struct {
+	UserID    uuid.UUID `gorm:"type:uuid;column:user_id;not null;index" json:"user_id"`
+	Endpoint  string    `gorm:"type:text;primaryKey" json:"endpoint"`
+	P256DH    string    `gorm:"type:text;column:p256dh;not null" json:"p256dh"`
+	Auth      string    `gorm:"type:text;not null" json:"auth"`
+	UserAgent string    `gorm:"type:text;column:user_agent;not null;default:''" json:"user_agent"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+// TableName 显式指定表名
+func (NotificationPushSubscription) TableName() string { return "notification_push_subscriptions" }

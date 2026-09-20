@@ -42,7 +42,7 @@ import {
 } from "../hooks/use-rich-text-input";
 import { type MentionCandidate, MentionSuggestions } from "./MentionSuggestions";
 
-/** 候选浮层最多展示的候选数：房间成员通常个位数，超出时靠继续输入收窄而非滚动翻找。 */
+/** 候选浮层最多展示的候选数：超出部分靠继续输入收窄，不指望滚动翻找。 */
 const mentionSuggestionLimit = 8;
 
 export interface PictureInput {

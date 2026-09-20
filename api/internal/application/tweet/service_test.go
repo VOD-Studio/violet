@@ -285,6 +285,16 @@ func newTestUser(t *testing.T, username string) *domainuser.User {
 	return u
 }
 
+// newUserWithID 造指定 ID 的用户，供按 ID 命中 FindByIDs 的作者资料填充。
+func newUserWithID(t *testing.T, id shared.ID, username string) *domainuser.User {
+	t.Helper()
+	uname, err := domainuser.ParseUsername(username)
+	require.NoError(t, err)
+	email, err := domainuser.ParseEmail(username + "@example.com")
+	require.NoError(t, err)
+	return domainuser.NewUser(id, email, uname, domainuser.NewPasswordHash("x"))
+}
+
 func newService(repo *fakeTweetRepo, users *fakeUserRepo, checker *fakeImageChecker, perm TweetPermissionChecker, bus appshared.EventBus) *Service {
 	return NewService(repo, nil, users, checker, perm, nil, bus)
 }
@@ -1201,4 +1211,148 @@ func TestTweet_EmoteEnriched(t *testing.T) {
 	require.Contains(t, dtos[0].Emote, "[doge]")
 	require.NotNil(t, dtos[0].QuotedTweet)
 	require.Contains(t, dtos[0].QuotedTweet.Emote, "[cat]")
+}
+
+// --- 互动事件发布（通知订阅者的输入）---
+
+// 首次点赞发 tweet.liked；重复点赞幂等，不再发第二次事件。
+func TestService_Like_PublishesEventOnceUntilUnliked(t *testing.T) {
+	authorID := shared.NewID()
+	tw := cannedTweets(authorID, time.Now(), 1)[0]
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tw.ID().String(): tw}}
+	bus := &captureBus{}
+	svc := newService(repo, &fakeUserRepo{}, nil, nil, bus)
+	actorID := shared.NewID().String()
+
+	require.NoError(t, svc.Like(context.Background(), actorID, tw.ID().String()))
+	require.Len(t, bus.events, 1)
+	liked, ok := bus.events[0].(domaintweet.TweetLiked)
+	require.True(t, ok)
+	assert.Equal(t, "tweet.liked", liked.EventName())
+	assert.Equal(t, tw.ID(), liked.AggregateID())
+	assert.Equal(t, authorID, liked.AuthorID)
+	assert.Equal(t, actorID, liked.ActorID.String())
+
+	require.NoError(t, svc.Like(context.Background(), actorID, tw.ID().String()))
+	assert.Len(t, bus.events, 1, "重复点赞不重复通知作者")
+
+	// 取消后再赞算新的一次互动
+	require.NoError(t, svc.Unlike(context.Background(), actorID, tw.ID().String()))
+	require.NoError(t, svc.Like(context.Background(), actorID, tw.ID().String()))
+	assert.Len(t, bus.events, 2)
+}
+
+func TestService_Unlike_PublishesNoEvent(t *testing.T) {
+	tw := cannedTweets(shared.NewID(), time.Now(), 1)[0]
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tw.ID().String(): tw}}
+	bus := &captureBus{}
+	svc := newService(repo, &fakeUserRepo{}, nil, nil, bus)
+	actorID := shared.NewID().String()
+	require.NoError(t, svc.Like(context.Background(), actorID, tw.ID().String()))
+	bus.events = nil
+
+	require.NoError(t, svc.Unlike(context.Background(), actorID, tw.ID().String()))
+	assert.Empty(t, bus.events, "取消点赞不通知")
+}
+
+// 引用转发同时发 tweet.created（审计）与 tweet.quoted（通知原作者）。
+func TestService_Create_QuotePublishesQuotedEvent(t *testing.T) {
+	quotedAuthorID := shared.NewID()
+	quoted := cannedTweets(quotedAuthorID, time.Now(), 1)[0]
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{quoted.ID().String(): quoted}}
+	bus := &captureBus{}
+	svc := newService(repo, &fakeUserRepo{}, &fakeImageChecker{}, nil, bus)
+	quoteOf := quoted.ID().String()
+	actorID := shared.NewID()
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		AuthorID: actorID.String(), Content: "值得一看", QuoteOf: &quoteOf,
+	})
+	require.NoError(t, err)
+
+	require.Len(t, bus.events, 2)
+	assert.Equal(t, "tweet.created", bus.events[0].EventName())
+	quotedEvent, ok := bus.events[1].(domaintweet.TweetQuoted)
+	require.True(t, ok)
+	assert.Equal(t, quoted.ID(), quotedEvent.AggregateID(), "事件挂原推文，通知落回原推文")
+	assert.Equal(t, quotedAuthorID, quotedEvent.AuthorID)
+	assert.Equal(t, actorID, quotedEvent.ActorID)
+}
+
+// 无引用的普通推文只发 tweet.created。
+func TestService_Create_PlainTweetPublishesNoQuotedEvent(t *testing.T) {
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}
+	bus := &captureBus{}
+	svc := newService(repo, &fakeUserRepo{}, &fakeImageChecker{}, nil, bus)
+
+	_, err := svc.Create(context.Background(), CreateInput{AuthorID: shared.NewID().String(), Content: "日常"})
+	require.NoError(t, err)
+
+	require.Len(t, bus.events, 1)
+	assert.Equal(t, "tweet.created", bus.events[0].EventName())
+}
+
+// 顶层评论发 tweet.commented，RepliedToAuthorID 为 nil（订阅者据此只通知推文作者）。
+func TestCreateComment_PublishesCommentedEvent(t *testing.T) {
+	tweetAuthorID := shared.NewID()
+	commenterID := shared.NewID()
+	tweetID := shared.NewID()
+	tw := domaintweet.ReconstructTweet(tweetID, tweetAuthorID, "hi", nil, nil, 0, time.Now(), time.Now())
+
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tw}}
+	comments := newFakeCommentRepo()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{commenterID.String(): newUserWithID(t, commenterID, "commenter")}}
+	bus := &captureBus{}
+	svc := NewService(repo, comments, users, nil, nil, nil, bus)
+
+	_, err := svc.CreateComment(ctxWithUser(commenterID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: commenterID.String(), Body: "好文",
+	})
+	require.NoError(t, err)
+
+	require.Len(t, bus.events, 1)
+	commented, ok := bus.events[0].(domaintweet.TweetCommented)
+	require.True(t, ok)
+	assert.Equal(t, "tweet.commented", commented.EventName())
+	assert.Equal(t, tweetID, commented.AggregateID())
+	assert.Equal(t, tweetAuthorID, commented.TweetAuthorID)
+	assert.Equal(t, commenterID, commented.ActorID)
+	assert.Nil(t, commented.RepliedToAuthorID)
+	assert.Equal(t, "好文", commented.Excerpt)
+}
+
+// 回复携带被回复评论的作者，供订阅者发「评论被回复」通知。
+func TestCreateComment_ReplyCarriesRepliedToAuthor(t *testing.T) {
+	tweetAuthorID := shared.NewID()
+	topAuthorID := shared.NewID()
+	replierID := shared.NewID()
+	tweetID := shared.NewID()
+	tw := domaintweet.ReconstructTweet(tweetID, tweetAuthorID, "hi", nil, nil, 0, time.Now(), time.Now())
+
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tw}}
+	comments := newFakeCommentRepo()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{
+		topAuthorID.String(): newUserWithID(t, topAuthorID, "topauthor"),
+		replierID.String():   newUserWithID(t, replierID, "replier"),
+	}}
+	bus := &captureBus{}
+	svc := NewService(repo, comments, users, nil, nil, nil, bus)
+
+	top, err := svc.CreateComment(ctxWithUser(topAuthorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: topAuthorID.String(), Body: "顶层",
+	})
+	require.NoError(t, err)
+	bus.events = nil
+
+	_, err = svc.CreateComment(ctxWithUser(replierID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: replierID.String(), Body: "回复", ParentID: top.ID,
+	})
+	require.NoError(t, err)
+
+	require.Len(t, bus.events, 1)
+	commented, ok := bus.events[0].(domaintweet.TweetCommented)
+	require.True(t, ok)
+	require.NotNil(t, commented.RepliedToAuthorID)
+	assert.Equal(t, topAuthorID, *commented.RepliedToAuthorID)
+	assert.Equal(t, tweetAuthorID, commented.TweetAuthorID)
 }

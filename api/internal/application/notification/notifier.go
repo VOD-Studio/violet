@@ -114,7 +114,8 @@ func (m *ConnectionManager) Push(userID domainshared.ID, event SSEEvent) {
 // 单实例时 Notifier 是 ConnectionManager；测试时可注入 NoopNotifier。
 type PushingSubscriber struct {
 	*Subscriber
-	notifier Notifier
+	notifier    Notifier
+	browserPush BrowserPusher
 }
 
 // NewPushingSubscriber 构造带推送的 subscriber。
@@ -125,12 +126,18 @@ func NewPushingSubscriber(
 	adminLookup AdminUserLookup,
 	friendlinkLookup FriendLinkApplicantLookup,
 	postAuthorLookup CommentPostAuthorLookup,
+	actorLookup ActorNameLookup,
 	notifier Notifier,
+	browserPush BrowserPusher,
 	log zerolog.Logger,
 ) *PushingSubscriber {
+	if browserPush == nil {
+		browserPush = NoopBrowserPusher{}
+	}
 	return &PushingSubscriber{
-		Subscriber: NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, log),
-		notifier:   notifier,
+		Subscriber:  NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, actorLookup, log),
+		notifier:    notifier,
+		browserPush: browserPush,
 	}
 }
 
@@ -170,6 +177,13 @@ func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.Domai
 			Body:       act.body,
 			Payload:    act.payload,
 			CreatedAt:  n.CreatedAt().Format(time.RFC3339),
+		})
+		// 浏览器系统通知：页面在后台或已关闭时的唯一送达通道，与 SSE 并行
+		s.browserPush.PushBrowser(ctx, act.userID, BrowserNotification{
+			SourceType: act.sourceType,
+			Title:      act.title,
+			Body:       act.body,
+			URL:        notificationURL(act.sourceType, act.payload),
 		})
 	}
 	return nil

@@ -41,6 +41,14 @@ const (
 	SourceAccountSecurity SourceType = "account_security"
 	// SourceChatRoomInvited 私有房间邀请。
 	SourceChatRoomInvited SourceType = "chat_room_invited"
+	// SourceTweetLiked 推文被点赞（通知推文作者）
+	SourceTweetLiked SourceType = "tweet_liked"
+	// SourceTweetQuoted 推文被引用转发（通知被引用推文作者）
+	SourceTweetQuoted SourceType = "tweet_quoted"
+	// SourceTweetCommented 推文收到评论（通知推文作者）
+	SourceTweetCommented SourceType = "tweet_commented"
+	// SourceTweetCommentReplied 推文评论收到回复（通知被回复的评论作者）
+	SourceTweetCommentReplied SourceType = "tweet_comment_replied"
 )
 
 // validSourceTypes 合法来源类型集合，供校验与 DB CHECK 同步参照。
@@ -56,6 +64,10 @@ var validSourceTypes = map[SourceType]bool{
 	SourceUserRegistered:        true,
 	SourceAccountSecurity:       true,
 	SourceChatRoomInvited:       true,
+	SourceTweetLiked:            true,
+	SourceTweetQuoted:           true,
+	SourceTweetCommented:        true,
+	SourceTweetCommentReplied:   true,
 }
 
 // IsValidSourceType 判断来源类型是否合法。

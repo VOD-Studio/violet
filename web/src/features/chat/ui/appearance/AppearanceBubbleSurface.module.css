@@ -40,10 +40,6 @@
 	min-width: 0;
 	max-width: 100%;
 }
-.bubble [data-chat-timestamp] {
-	color: inherit;
-	opacity: 0.7;
-}
 .bubble pre {
 	max-width: 100%;
 	overflow-x: auto;

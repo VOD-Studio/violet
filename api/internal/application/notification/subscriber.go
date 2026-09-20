@@ -14,6 +14,7 @@ import (
 	domainnotification "blog-api/internal/domain/notification"
 	domainshared "blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
+	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 )
 
@@ -35,6 +36,12 @@ type CommentAuthorLookup interface {
 type CommentPostAuthorLookup interface {
 	// FindPostAuthorID 返回文章作者的 userID；nil 表示文章已删除等无接收者场景。
 	FindPostAuthorID(ctx context.Context, commentID domainshared.ID) (*domainshared.ID, error)
+}
+
+// ActorNameLookup 解析互动发起者的展示名（推文互动通知标题用）。
+type ActorNameLookup interface {
+	// FindDisplayName 返回用户的展示名；查不到时返回空串（调用方用兜底文案）。
+	FindDisplayName(ctx context.Context, userID domainshared.ID) string
 }
 
 // AdminUserLookup 解析管理员用户（友链申请等 admin 通知用）。
@@ -60,6 +67,7 @@ type Subscriber struct {
 	adminLookup      AdminUserLookup
 	friendlinkLookup FriendLinkApplicantLookup
 	postAuthorLookup CommentPostAuthorLookup
+	actorLookup      ActorNameLookup
 	log              zerolog.Logger
 }
 
@@ -71,6 +79,7 @@ func NewSubscriber(
 	adminLookup AdminUserLookup,
 	friendlinkLookup FriendLinkApplicantLookup,
 	postAuthorLookup CommentPostAuthorLookup,
+	actorLookup ActorNameLookup,
 	log zerolog.Logger,
 ) *Subscriber {
 	return &Subscriber{
@@ -80,6 +89,7 @@ func NewSubscriber(
 		adminLookup:      adminLookup,
 		friendlinkLookup: friendlinkLookup,
 		postAuthorLookup: postAuthorLookup,
+		actorLookup:      actorLookup,
 		log:              log,
 	}
 }
@@ -167,6 +177,15 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 		return s.handleStatusChanged(e), true
 	case domainuser.UserRegistered:
 		return s.handleUserRegistered(ctx, e)
+
+	case domaintweet.TweetLiked:
+		return s.handleTweetLiked(ctx, e)
+
+	case domaintweet.TweetQuoted:
+		return s.handleTweetQuoted(ctx, e)
+
+	case domaintweet.TweetCommented:
+		return s.handleTweetCommented(ctx, e)
 
 	case domainchat.RoomInvited:
 		return []notifyAction{{
@@ -446,5 +465,93 @@ func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.
 		})
 	}
 
+	return actions, len(actions) > 0
+}
+
+// --- 推文互动通知 ---
+
+// actorName 取互动发起者展示名；查不到时用兜底文案（通知标题不能出现空引号）。
+func (s *Subscriber) actorName(ctx context.Context, actorID domainshared.ID) string {
+	if s.actorLookup == nil {
+		return "有人"
+	}
+	if name := s.actorLookup.FindDisplayName(ctx, actorID); name != "" {
+		return name
+	}
+	return "有人"
+}
+
+// handleTweetLiked 推文被点赞 → 通知推文作者；自赞跳过。
+func (s *Subscriber) handleTweetLiked(ctx context.Context, e domaintweet.TweetLiked) ([]notifyAction, bool) {
+	if e.AuthorID == e.ActorID {
+		return nil, false
+	}
+	return []notifyAction{{
+		userID:     e.AuthorID,
+		sourceType: domainnotification.SourceTweetLiked,
+		sourceID:   e.AggregateID(),
+		title:      fmt.Sprintf("%s 赞了你的推文", s.actorName(ctx, e.ActorID)),
+		body:       e.Excerpt,
+		payload: map[string]any{
+			"tweet_id": e.AggregateID().String(),
+			"actor_id": e.ActorID.String(),
+		},
+	}}, true
+}
+
+// handleTweetQuoted 推文被引用转发 → 通知被引用推文的作者；自引跳过。
+func (s *Subscriber) handleTweetQuoted(ctx context.Context, e domaintweet.TweetQuoted) ([]notifyAction, bool) {
+	if e.AuthorID == e.ActorID {
+		return nil, false
+	}
+	return []notifyAction{{
+		userID:     e.AuthorID,
+		sourceType: domainnotification.SourceTweetQuoted,
+		sourceID:   e.AggregateID(),
+		title:      fmt.Sprintf("%s 转发了你的推文", s.actorName(ctx, e.ActorID)),
+		body:       e.Excerpt,
+		payload: map[string]any{
+			"tweet_id":       e.AggregateID().String(),
+			"quote_tweet_id": e.QuoteTweetID.String(),
+			"actor_id":       e.ActorID.String(),
+		},
+	}}, true
+}
+
+// handleTweetCommented 推文收到评论/回复 → 最多两个接收者：
+// 被回复的评论作者（tweet_comment_replied）与推文作者（tweet_commented）。
+//
+// 去重规则：自我互动跳过；回复自己推文下别人的评论时，推文作者与评论者同人只发一条。
+func (s *Subscriber) handleTweetCommented(ctx context.Context, e domaintweet.TweetCommented) ([]notifyAction, bool) {
+	name := s.actorName(ctx, e.ActorID)
+	payload := map[string]any{
+		"tweet_id":   e.AggregateID().String(),
+		"comment_id": e.CommentID.String(),
+		"actor_id":   e.ActorID.String(),
+	}
+
+	actions := make([]notifyAction, 0, 2)
+	if e.RepliedToAuthorID != nil && *e.RepliedToAuthorID != e.ActorID {
+		actions = append(actions, notifyAction{
+			userID:     *e.RepliedToAuthorID,
+			sourceType: domainnotification.SourceTweetCommentReplied,
+			sourceID:   e.AggregateID(),
+			title:      fmt.Sprintf("%s 回复了你的评论", name),
+			body:       e.Excerpt,
+			payload:    payload,
+		})
+	}
+	// 推文作者已因「评论被回复」收到通知时不再重复推送同一条评论
+	alreadyNotified := len(actions) > 0 && actions[0].userID == e.TweetAuthorID
+	if e.TweetAuthorID != e.ActorID && !alreadyNotified {
+		actions = append(actions, notifyAction{
+			userID:     e.TweetAuthorID,
+			sourceType: domainnotification.SourceTweetCommented,
+			sourceID:   e.AggregateID(),
+			title:      fmt.Sprintf("%s 评论了你的推文", name),
+			body:       e.Excerpt,
+			payload:    payload,
+		})
+	}
 	return actions, len(actions) > 0
 }

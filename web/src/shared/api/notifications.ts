@@ -1,4 +1,4 @@
-import { apiGet, apiGetPaged, apiPost } from "./request";
+import { apiDelete, apiGet, apiGetPaged, apiPost } from "./request";
 
 /** 通知来源类型（与后端 source_type 受控枚举同步） */
 export type NotificationSourceType =
@@ -12,7 +12,11 @@ export type NotificationSourceType =
 	| "comment_rejected"
 	| "user_registered"
 	| "account_security"
-	| "chat_room_invited";
+	| "chat_room_invited"
+	| "tweet_liked"
+	| "tweet_quoted"
+	| "tweet_commented"
+	| "tweet_comment_replied";
 
 /** 通知读模型（后端 NotificationDTO 对应） */
 export interface NotificationItem {
@@ -55,3 +59,24 @@ export const markNotificationRead = (id: string) => apiPost<null>(`/notification
 
 /** 标记全部已读 */
 export const markAllNotificationsRead = () => apiPost<null>("/notifications/read-all");
+
+/** 浏览器推送配置（与聊天推送相互独立，各自授权各自订阅） */
+export interface NotificationPushConfig {
+	public_key: string;
+	enabled: boolean;
+}
+
+/** 上报服务端的浏览器推送订阅 */
+export interface NotificationPushSubscription {
+	endpoint: string;
+	keys: { p256dh: string; auth: string };
+}
+
+export const fetchNotificationPushConfig = () =>
+	apiGet<NotificationPushConfig>("/notifications/push/config");
+
+export const saveNotificationPushSubscription = (input: NotificationPushSubscription) =>
+	apiPost<null>("/notifications/push/subscription", input);
+
+export const deleteNotificationPushSubscription = (endpoint: string) =>
+	apiDelete<null>("/notifications/push/subscription", { data: { endpoint } });
