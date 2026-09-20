@@ -94,6 +94,7 @@ func ExtractHashtags(content string) []string {
 	}
 	return result
 }
+
 // excerpt 取正文前缀快照（rune 安全截断）
 func excerpt(content string) string {
 	runes := []rune(content)
@@ -198,3 +199,54 @@ func (t *Tweet) LikeCount() int       { return t.likeCount }
 func (t *Tweet) CreatedAt() time.Time { return t.timestamps.CreatedAt }
 func (t *Tweet) UpdatedAt() time.Time { return t.timestamps.UpdatedAt }
 func (t *Tweet) Hashtags() []string   { return ExtractHashtags(t.content) }
+
+// TweetLiked 推文被点赞事件。
+//
+// 仅首次点赞发布（重复点赞幂等不再发事件），供通知订阅者提醒作者。
+// AuthorID 是被通知人，ActorID 是点赞者；自赞由订阅者过滤。
+type TweetLiked struct {
+	shared.BaseEvent
+	// AuthorID 推文作者 ID（通知接收者）
+	AuthorID shared.ID
+	// ActorID 点赞者 ID
+	ActorID shared.ID
+	// Excerpt 推文正文前缀快照（通知正文用，不实时回查推文）
+	Excerpt string
+}
+
+// NewTweetLiked 构造推文点赞事件。
+func NewTweetLiked(t *Tweet, actorID shared.ID) TweetLiked {
+	return TweetLiked{
+		BaseEvent: shared.NewBaseEvent("tweet.liked", t.id),
+		AuthorID:  t.authorID,
+		ActorID:   actorID,
+		Excerpt:   excerpt(t.content),
+	}
+}
+
+// TweetQuoted 推文被引用转发事件。
+//
+// 被引用推文的作者是接收者，AggregateID 指向被引用推文（通知点开落到原推文）。
+type TweetQuoted struct {
+	shared.BaseEvent
+	// AuthorID 被引用推文作者 ID（通知接收者）
+	AuthorID shared.ID
+	// ActorID 发起引用转发的用户 ID
+	ActorID shared.ID
+	// QuoteTweetID 新产生的引用推文 ID
+	QuoteTweetID shared.ID
+	// Excerpt 被引用推文正文前缀快照
+	Excerpt string
+}
+
+// NewTweetQuoted 构造推文被引用事件。
+// quoted 是被引用的原推文，quote 是刚创建的引用推文。
+func NewTweetQuoted(quoted, quote *Tweet) TweetQuoted {
+	return TweetQuoted{
+		BaseEvent:    shared.NewBaseEvent("tweet.quoted", quoted.id),
+		AuthorID:     quoted.authorID,
+		ActorID:      quote.authorID,
+		QuoteTweetID: quote.id,
+		Excerpt:      excerpt(quoted.content),
+	}
+}
