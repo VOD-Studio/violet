@@ -7,6 +7,27 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.35](https://github.com/VOD-Studio/violet/compare/v2.8.34...v2.8.35) (2026-09-20)
+
+
+### 新增
+
+* **about:** 重设计公开档案页面 ([755cce4](https://github.com/VOD-Studio/violet/commit/755cce4d7da479d1fed185b1f13d716f61a20502))
+* **system:** 完成系统面板五页签 ([2ddb175](https://github.com/VOD-Studio/violet/commit/2ddb175b2793fb1085447c02f8749830cfa4f3e2))
+* **system:** 完成系统面板五页签 ([#387](https://github.com/VOD-Studio/violet/issues/387)) ([0fc77c5](https://github.com/VOD-Studio/violet/commit/0fc77c57ace6ed9d2f79f75ca7832d601e463397))
+* **system:** 实现数据库运维服务链路 ([1ad1a5c](https://github.com/VOD-Studio/violet/commit/1ad1a5c45aae25a29dd4deedaa90d3aa27edf3de))
+* **system:** 暴露数据库外键关系 ([23023d7](https://github.com/VOD-Studio/violet/commit/23023d7b727dfdd12eb983e00126e0b77b266eb8))
+* **system:** 添加交互式数据库关系图 ([16cdcca](https://github.com/VOD-Studio/violet/commit/16cdccaa5234059d537eb3a023d049894c7bcedc))
+
+
+### 修复
+
+* **about:** 对齐参考页重写叙事与技术栈 ([97c7f26](https://github.com/VOD-Studio/violet/commit/97c7f26a360d78bbcc7d1144ad4c6435ea081830))
+* **about:** 重写页面叙事并移除章节索引 ([1684110](https://github.com/VOD-Studio/violet/commit/1684110210698d8c018ba34a34fc7e8b02527495))
+* **api-client:** 保留二进制响应错误信息 ([a99e8b1](https://github.com/VOD-Studio/violet/commit/a99e8b13695753a1cdc1e871b3f7f5b7415049d7))
+* **system:** 消除 SQL 控制台输入卡顿 ([ede2fad](https://github.com/VOD-Studio/violet/commit/ede2fad09d53a6245897f765924aa3d56df27f34))
+* **system:** 说明活动查询采样语义 ([b7d9177](https://github.com/VOD-Studio/violet/commit/b7d9177d7481f2ca54a59d6e8a304f0ffa2f2e6b))
+
 ## [2.8.34](https://github.com/VOD-Studio/violet/compare/v2.8.33...v2.8.34) (2026-09-17)
 
 
