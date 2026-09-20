@@ -158,7 +158,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 	if err := s.repo.Save(ctx, tw); err != nil {
 		return TweetDTO{}, err
 	}
-	s.publishEvents(ctx, tw.PullEvents())
+	events := tw.PullEvents()
+	// 引用转发额外通知被引用推文的作者；quoted 已在上方校验存在
+	if quoteOf != nil {
+		if quoted, err := s.repo.FindByID(ctx, *quoteOf); err == nil {
+			events = append(events, domaintweet.NewTweetQuoted(quoted, tw))
+		}
+	}
+	s.publishEvents(ctx, events)
 
 	return s.toDTOs(ctx, []*domaintweet.Tweet{tw})[0], nil
 }
@@ -183,6 +190,9 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 }
 
 // Like 点赞推文（登录）：重复点赞幂等。
+//
+// 点赞前查一次已赞状态：仅首次点赞发布 TweetLiked，取消后再赞算新的一次。
+// 反复点/取消不该反复轰炸作者的通知铃铛。
 func (s *Service) Like(ctx context.Context, userIDStr, tweetIDStr string) error {
 	userID, err := shared.ParseID(userIDStr)
 	if err != nil {
@@ -192,7 +202,24 @@ func (s *Service) Like(ctx context.Context, userIDStr, tweetIDStr string) error 
 	if err != nil {
 		return shared.BadRequest("非法的推文 ID")
 	}
-	return s.repo.Like(ctx, tweetID, userID)
+	liked, err := s.repo.IsLiked(ctx, tweetID, userID)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.Like(ctx, tweetID, userID); err != nil {
+		return err
+	}
+	if liked {
+		return nil
+	}
+	tw, err := s.repo.FindByID(ctx, tweetID)
+	if err != nil {
+		// 点赞已落库，取不到推文只是无法生成通知快照，不回滚也不报错
+		log.Warn().Err(err).Str("tweet_id", tweetID.String()).Msg("推文点赞通知快照查询失败")
+		return nil
+	}
+	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetLiked(tw, userID)})
+	return nil
 }
 
 // Unlike 取消点赞推文（登录）：未点赞幂等，不报错。
@@ -606,7 +633,8 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 		return CommentDTO{}, shared.BadRequest("非法的用户 ID")
 	}
 	// 推文必须存在（评论挂推文下，推文删了不可评论）
-	if _, err := s.repo.FindByID(ctx, tweetID); err != nil {
+	tw, err := s.repo.FindByID(ctx, tweetID)
+	if err != nil {
 		return CommentDTO{}, err
 	}
 
@@ -630,6 +658,8 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 		}
 	}
 
+	// repliedToAuthorID 留给通知订阅者区分「推文收到评论」与「评论收到回复」
+	var repliedToAuthorID *shared.ID
 	if in.ParentID != "" {
 		parentID, err := shared.ParseID(in.ParentID)
 		if err != nil {
@@ -646,6 +676,8 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err
 		}
+		parentAuthorID := parent.AuthorID()
+		repliedToAuthorID = &parentAuthorID
 	} else {
 		_ = c.SetParent(nil)
 	}
@@ -653,6 +685,7 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
+	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetCommented(c, tw.AuthorID(), repliedToAuthorID)})
 	dto := s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0]
 	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
 		return CommentDTO{}, err
