@@ -8,12 +8,13 @@ func registerNotificationPaths(t *openapi3.T) {
 	secure := securityCookie()
 
 	registerSchema(t, "NotificationDTO", openapi3.Schemas{
-		"id":          reqStr("通知 ID"),
+		"id": reqStr("通知 ID"),
 		"source_type": strEnum("通知来源域",
 			"subscription_failed", "subscription_succeeded", "friendlink_applied",
 			"friendlink_reviewed", "comment_approved", "comment_created",
 			"comment_pending", "comment_rejected", "user_registered",
-			"account_security", "chat_room_invited"),
+			"account_security", "chat_room_invited",
+			"tweet_liked", "tweet_quoted", "tweet_commented", "tweet_comment_replied"),
 		"source_id":  reqStr("来源对象 ID"),
 		"title":      reqStr("标题"),
 		"body":       reqStr("正文"),
@@ -41,9 +42,9 @@ func registerNotificationPaths(t *openapi3.T) {
 	})
 
 	get(t, "/notifications/unread-count", &openapi3.Operation{
-		Tags:      []string{"通知"},
-		Summary:   "未读计数",
-		Security:  secure,
+		Tags:     []string{"通知"},
+		Summary:  "未读计数",
+		Security: secure,
 		Responses: responses(
 			200, dataResponse("NotificationUnreadCount", "未读数", 200),
 		),

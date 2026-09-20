@@ -42,9 +42,10 @@ func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *Notification
 	adminLookup := &adminUserAdapter{db: db}
 	friendlinkLookup := &friendlinkApplicantAdapter{db: db}
 	postAuthorLookup := &commentPostAuthorAdapter{db: db}
+	actorLookup := &actorNameAdapter{db: db}
 
 	// 通知 subscriber 订阅事件总线（带 SSE 推送）
-	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, connMgr, log.Logger)
+	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, actorLookup, connMgr, log.Logger)
 	subscriber.Subscribe(bus)
 
 	return &NotificationContainer{
@@ -52,6 +53,26 @@ func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *Notification
 		NotificationHandler: handler,
 		StreamHandler:       streamH,
 	}
+}
+
+// actorNameAdapter 查互动发起者的展示名（display_name 空则回落 username）。
+type actorNameAdapter struct {
+	db *gorm.DB
+}
+
+func (a *actorNameAdapter) FindDisplayName(ctx context.Context, userID domainshared.ID) string {
+	var name string
+	err := a.db.WithContext(ctx).
+		Table("users").
+		Select("COALESCE(NULLIF(display_name, ''), username)").
+		Where("id = ?", userID.UUID()).
+		Limit(1).
+		Scan(&name).Error
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("查询互动发起者展示名失败")
+		return ""
+	}
+	return name
 }
 
 // --- lookup 适配器 ---
