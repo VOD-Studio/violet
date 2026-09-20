@@ -6,10 +6,11 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type CSSProperties, type ReactNode } from "react";
 import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
+import { AnchoredHeading } from "@/shared/ui/anchored-heading";
 import { Checkbox } from "@/shared/ui/base/checkbox";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import type { ArticleContentContext } from "../../article-embeds/types";
@@ -46,6 +47,41 @@ function nodeToText(node: React.ReactNode): string {
 		return nodeToText(props.children);
 	}
 	return "";
+}
+
+/**
+ * 正文标题渲染:h2-h4 渲染管线都会补 slug id,有 id 时复用悬停锚点
+ * (与 About 章节同款),无 id 的标题退回普通标题。
+ */
+interface ProseHeadingProps {
+	as: "h2" | "h3" | "h4";
+	id?: string;
+	style?: CSSProperties;
+	className?: string;
+	children?: ReactNode;
+}
+
+function ProseHeading({ as, id, style, className, children }: ProseHeadingProps) {
+	if (!id) {
+		const Tag = as;
+		return (
+			<Tag style={style} className={className}>
+				{children}
+			</Tag>
+		);
+	}
+	const text = nodeToText(children).trim();
+	return (
+		<AnchoredHeading
+			as={as}
+			id={id}
+			style={style}
+			className={className}
+			linkLabel={text ? `链接到“${text}”` : undefined}
+		>
+			{children}
+		</AnchoredHeading>
+	);
 }
 
 /**
@@ -98,7 +134,8 @@ export const markdownComponents: Components = {
 		</h1>
 	),
 	h2: ({ children, style, className, id }) => (
-		<h2
+		<ProseHeading
+			as="h2"
 			id={id}
 			style={style}
 			className={cn(
@@ -107,25 +144,27 @@ export const markdownComponents: Components = {
 			)}
 		>
 			{children}
-		</h2>
+		</ProseHeading>
 	),
 	h3: ({ children, style, className, id }) => (
-		<h3
+		<ProseHeading
+			as="h3"
 			id={id}
 			style={style}
 			className={cn("mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0", className)}
 		>
 			{children}
-		</h3>
+		</ProseHeading>
 	),
 	h4: ({ children, style, className, id }) => (
-		<h4
+		<ProseHeading
+			as="h4"
 			id={id}
 			style={style}
 			className={cn("mb-3 mt-6 text-lg font-semibold first:mt-0", className)}
 		>
 			{children}
-		</h4>
+		</ProseHeading>
 	),
 	p: ({ children, style, className }) => (
 		<p style={style} className={cn("my-5 text-foreground/90", className)}>
