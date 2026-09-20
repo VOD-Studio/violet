@@ -263,6 +263,9 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 	v1.With(d.OptionalAuth).
 		Get("/comments/{commentId}/replies", commentH.ListReplies)
 
+	// 全站最新已审核评论（公开橱窗，首页「尺素」区块；静态段 latest 优先于 {id} 匹配）
+	v1.Get("/comments/latest", commentH.ListLatest)
+
 	// 批注按块聚合统计
 	v1.With(d.OptionalAuth).
 		Get("/posts/{postId}/annotations/summary", commentH.AnnotationSummary)

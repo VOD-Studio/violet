@@ -291,6 +291,41 @@ func TestListByPost_AnchorFilter_PassthroughToRepo(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+// TestListLatest_FixedScopeAndLimitClamp 验证橱窗端点的固定口径与 limit 钳制：
+//   - repo 收到 approved + 自由评论 + 顶层过滤（不透传调用方维度）
+//   - limit≤0 回落默认 3，超过上限钳到 10
+//   - DTO 带所属文章标题/slug
+func TestListLatest_FixedScopeAndLimitClamp(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	topLevel := domain.DepthFilterTopLevel
+
+	c1, _ := newDomainComment(shared.NewID(), shared.NewID(), "alice", "approved")
+	postID := shared.NewID()
+	items := []*domain.CommentWithPost{
+		{Comment: c1, Post: domain.PostRef{ID: postID, Title: "文心", Slug: "wen-xin"}},
+	}
+	expectFilter := domain.ListFilter{
+		Status: domain.StatusApproved, AnchorFilter: domain.AnchorFilterFree, DepthFilter: &topLevel,
+	}
+	repo.On("FindPageWithPost", mock.Anything, expectFilter, shared.PageQuery{Page: 1, Limit: 3}).
+		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 3}, items, 1), nil).Once()
+	// 超上限钳到 10
+	repo.On("FindPageWithPost", mock.Anything, expectFilter, shared.PageQuery{Page: 1, Limit: 10}).
+		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 10}, []*domain.CommentWithPost(nil), 0), nil).Once()
+
+	dtos, err := svc.ListLatest(context.Background(), 0)
+	assert.NoError(t, err)
+	assert.Len(t, dtos, 1)
+	assert.Equal(t, "alice", dtos[0].AuthorName)
+	assert.Equal(t, "文心", dtos[0].PostTitle)
+	assert.Equal(t, "wen-xin", dtos[0].PostSlug)
+	assert.Empty(t, dtos[0].ReplyToName, "顶层评论无 parent，reply_to_name 恒空")
+
+	_, err = svc.ListLatest(context.Background(), 50)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+}
+
 // newDomainComment 测试辅助：直接用 ReconstructComment 构造指定 status 的领域对象。
 func newDomainComment(id, postID shared.ID, author, status string) (*domain.Comment, error) {
 	if status != domain.StatusApproved && status != domain.StatusPending {

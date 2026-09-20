@@ -43,6 +43,11 @@ type stubCommentService struct {
 	listRepliesSort   string
 	listRepliesResult []appcomment.CommentDTO
 
+	// ListLatest 的 limit 透传记录
+	listLatestCalled bool
+	listLatestLimit  int
+	listLatestResult []appcomment.AdminCommentDTO
+
 	createInput  appcomment.CreateInput
 	createCalled bool
 	createErr    error
@@ -95,6 +100,13 @@ func (s *stubCommentService) ListAll(_ context.Context, _ string, anchorFilter d
 	return s.listAllResult, int64(len(s.listAllResult)), nil
 }
 func (s *stubCommentService) CountPending(context.Context) (int64, error) { return 0, nil }
+
+// ListLatest stub：记录 limit 入参供透传断言。
+func (s *stubCommentService) ListLatest(_ context.Context, limit int) ([]appcomment.AdminCommentDTO, error) {
+	s.listLatestCalled = true
+	s.listLatestLimit = limit
+	return s.listLatestResult, nil
+}
 func (s *stubCommentService) GetDetail(context.Context, string) (appcomment.AdminCommentDTO, error) {
 	return appcomment.AdminCommentDTO{}, nil
 }
@@ -194,9 +206,40 @@ func TestListByPost_TypeQueryParam_PassthroughAndDefault(t *testing.T) {
 }
 
 // =====================================================================
-// ListAll（后台）type query param 透传：缺省默认 All（与前台 ListByPost 默认 free 区分）
+// ListLatest 公开橱窗：limit 透传（钳制在 service 层，handler 只解析）
 // =====================================================================
 
+// TestListLatest_LimitPassthrough 验证 ?limit= 解析：缺省/非法传 0 由 service 回落默认，
+// 合法值原样透传。响应体为 data 数组（非分页信封）。
+func TestListLatest_LimitPassthrough(t *testing.T) {
+	cases := []struct {
+		query  string
+		expect int
+		desc   string
+	}{
+		{"", 0, "缺省 limit 传 0，service 回落默认"},
+		{"?limit=abc", 0, "非法 limit 传 0"},
+		{"?limit=5", 5, "合法 limit 透传"},
+	}
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			svc := &stubCommentService{listLatestResult: []appcomment.AdminCommentDTO{
+				{CommentDTO: appcomment.CommentDTO{ID: "c1", AuthorName: "alice"}, PostTitle: "文", PostSlug: "wen"},
+			}}
+			h := newHandlerWithStub(svc)
+			req := newJSONRequest(t, "GET", "/comments/latest"+c.query, "")
+			rr := httptest.NewRecorder()
+			h.ListLatest(rr, req)
+			require.Equal(t, http.StatusOK, rr.Code)
+			require.True(t, svc.listLatestCalled)
+			assert.Equal(t, c.expect, svc.listLatestLimit)
+		})
+	}
+}
+
+// =====================================================================
+// ListAll（后台）type query param 透传：缺省默认 All（与前台 ListByPost 默认 free 区分）
+// =====================================================================
 // TestListAll_TypeQueryParam_PassthroughAndDefault 验证后台 ListAll 的 ?type= 映射：
 //   - 缺省 → AnchorFilterAll（后台要看全部，与前台 ListByPost 默认 free 区分）
 //   - ?type=annotation → AnchorFilterAnnotation
