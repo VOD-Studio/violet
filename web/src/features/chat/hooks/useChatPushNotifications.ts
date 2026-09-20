@@ -53,7 +53,7 @@ export function useChatPushNotifications() {
 					toast.info("浏览器通知权限未开启");
 					return false;
 				}
-				await navigator.serviceWorker.register("/chat-sw.js");
+				await navigator.serviceWorker.register("/push-sw.js");
 				const registration = await navigator.serviceWorker.ready;
 				const existing = await registration.pushManager.getSubscription();
 				const subscription =
