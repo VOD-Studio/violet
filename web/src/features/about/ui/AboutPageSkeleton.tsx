@@ -7,12 +7,9 @@ export function AboutPageSkeleton() {
 	return (
 		<main className={styles.page} aria-busy="true" aria-label="正在加载关于页">
 			<header className={styles.intro}>
-				<div>
-					<ShimmerSkeleton className={styles.skeletonEyebrow} />
-					<ShimmerSkeleton className={styles.skeletonTitle} />
-					<ShimmerSkeleton className={styles.skeletonCopy} />
-				</div>
-				<ShimmerSkeleton className={styles.skeletonSignature} />
+				<ShimmerSkeleton className={styles.skeletonEyebrow} />
+				<ShimmerSkeleton className={styles.skeletonTitle} />
+				<ShimmerSkeleton className={styles.skeletonCopy} />
 			</header>
 			<div className={styles.skeletonFlow}>
 				{["story", "profile", "activity"].map((section) => (

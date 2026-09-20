@@ -22,7 +22,7 @@ export type AboutSectionId = (typeof ABOUT_SECTION_IDS)[number];
 
 export const ABOUT_SECTION_LABELS: Record<string, string> = {
 	bio: "个人自述",
-	profile_card: "此刻状态",
+	profile_card: "当前状态",
 	skills: "技能与兴趣",
 	social_matrix: "公开联系方式",
 	live_stats: "站点数字",
@@ -42,7 +42,7 @@ export interface ResolvedAboutSection {
 const registry: Record<AboutSectionId, AboutSectionDefinition> = {
 	bio: {
 		Component: BioSection,
-		isVisible: (settings) => hasText(settings.bio),
+		isVisible: () => true,
 	},
 	profile_card: {
 		Component: ProfileCardSection,

@@ -15,8 +15,8 @@ export function LiveStatsSection(_: AboutSectionProps) {
 		return (
 			<AboutChapter
 				id="live_stats"
-				title="Violet 的此刻"
-				intro="写下来的文章、留下的字，以及这座站运行过的时间。"
+				title="Violet 写下了多少东西？"
+				intro="数字不是成绩单，只是这座站确实一直在生长的证据。"
 			>
 				<div className={styles.loadingRows} role="status" aria-label="正在加载站点统计">
 					{["posts", "words", "comments", "uptime"].map((key) => (
@@ -34,8 +34,8 @@ export function LiveStatsSection(_: AboutSectionProps) {
 		return (
 			<AboutChapter
 				id="live_stats"
-				title="Violet 的此刻"
-				intro="写下来的文章、留下的字，以及这座站运行过的时间。"
+				title="Violet 写下了多少东西？"
+				intro="数字不是成绩单，只是这座站确实一直在生长的证据。"
 			>
 				<AboutSectionState
 					message="站点统计暂时未能抵达。"
@@ -50,8 +50,8 @@ export function LiveStatsSection(_: AboutSectionProps) {
 		return (
 			<AboutChapter
 				id="live_stats"
-				title="Violet 的此刻"
-				intro="写下来的文章、留下的字，以及这座站运行过的时间。"
+				title="Violet 写下了多少东西？"
+				intro="数字不是成绩单，只是这座站确实一直在生长的证据。"
 			>
 				<AboutSectionState message="站点统计尚未公开。" />
 			</AboutChapter>
@@ -68,8 +68,8 @@ export function LiveStatsSection(_: AboutSectionProps) {
 	return (
 		<AboutChapter
 			id="live_stats"
-			title="Violet 的此刻"
-			intro="写下来的文章、留下的字，以及这座站运行过的时间。"
+			title="Violet 写下了多少东西？"
+			intro="数字不是成绩单，只是这座站确实一直在生长的证据。"
 		>
 			<div className={styles.statsGrid}>
 				{items.map((item) => (

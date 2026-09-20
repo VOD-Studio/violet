@@ -72,8 +72,8 @@ export function SocialMatrixSection({ settings }: AboutSectionProps) {
 	return (
 		<AboutChapter
 			id="social_matrix"
-			title="如果你想找到我"
-			intro="公开留下的联系方式都在这里，选你习惯的方式就好。"
+			title="还可以在哪里找到我？"
+			intro="如果想聊技术、交换友链，或者继续看看我在写什么，下面这些入口都可以。"
 		>
 			<nav className={styles.socialList} aria-label="站长公开链接">
 				{entries.map(({ label, href, target, Icon }) => {

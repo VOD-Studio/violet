@@ -25,7 +25,7 @@ function AboutPage() {
 	});
 
 	return (
-		<AboutPageLayout settings={settings} hasSections={sections.length > 0}>
+		<AboutPageLayout hasSections={sections.length > 0}>
 			{sections.map(({ id, Component }) => (
 				<Component key={id} settings={settings} />
 			))}
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/about/")({
 			{ title: "关于" },
 			{
 				name: "description",
-				content: "关于 Violet、xunrua，以及这座站仍在发生的变化。",
+				content: "关于 xunrua、Violet，以及写代码和写字这两件长期的事。",
 			},
 		],
 	}),

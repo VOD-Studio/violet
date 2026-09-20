@@ -1,57 +1,39 @@
-import { Briefcase, Hand, type LucideIcon, Mail, MapPin } from "lucide-react";
-
-import { AboutChapter } from "./AboutChapter";
 import styles from "./AboutSections.module.css";
 import type { AboutSectionProps } from "./types";
 
-interface ProfileRow {
-	Icon: LucideIcon;
-	label: string;
-	value: string;
-	href?: string;
-}
-
-/** 以定义列表呈现当前身份、位置与联系状态。 */
+/** 将当前身份、所在地与联系状态写成文章中的一段话。 */
 export function ProfileCardSection({ settings }: AboutSectionProps) {
-	const rows = [
-		settings.profile_role
-			? { Icon: Briefcase, label: "身份", value: settings.profile_role }
-			: null,
-		settings.profile_location
-			? { Icon: MapPin, label: "所在", value: settings.profile_location }
-			: null,
-		settings.available_for
-			? { Icon: Hand, label: "近况", value: settings.available_for }
-			: null,
-		settings.social_email
-			? {
-					Icon: Mail,
-					label: "邮件",
-					value: settings.social_email,
-					href: `mailto:${settings.social_email}`,
-				}
-			: null,
-	].filter((row): row is ProfileRow => row !== null);
+	const role = settings.profile_role.trim();
+	const location = settings.profile_location.trim();
+	const availableFor = settings.available_for.trim();
+	const email = settings.social_email.trim();
 
-	if (rows.length === 0) return null;
+	if (!role && !location && !availableFor && !email) return null;
 
 	return (
-		<AboutChapter
-			id="profile_card"
-			title="此刻的我"
-			intro="不写一长串履历，只留下现在仍然有效的信息。"
-		>
-			<dl className={styles.profileList}>
-				{rows.map(({ Icon, label, value, href }) => (
-					<div key={label} className={styles.profileRow}>
-						<Icon className={styles.profileIcon} aria-hidden />
-						<dt className={styles.profileTerm}>{label}</dt>
-						<dd className={styles.profileValue}>
-							{href ? <a href={href}>{value}</a> : value}
-						</dd>
-					</div>
-				))}
-			</dl>
-		</AboutChapter>
+		<section id="profile_card" className={styles.profileNote} aria-label="当前状态">
+			<p>
+				{role ? (
+					<>
+						现在，我以 <strong>{role}</strong> 这个身份工作。
+					</>
+				) : null}
+				{location ? <>坐标 {location}。</> : null}
+				{availableFor ? (
+					<>
+						最近：<mark className={styles.inlineMark}>{availableFor}</mark>。
+					</>
+				) : null}
+				{email ? (
+					<>
+						也可以直接
+						<a className={styles.inlineLink} href={`mailto:${email}`}>
+							写邮件
+						</a>
+						。
+					</>
+				) : null}
+			</p>
+		</section>
 	);
 }
