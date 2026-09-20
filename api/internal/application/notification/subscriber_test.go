@@ -329,6 +329,7 @@ func TestPushingSubscriber_StoreError_FailSafeNoPush(t *testing.T) {
 		&fakePostAuthorLookup{},
 		stubActorLookup{},
 		notif,
+		nil,
 		zerolog.Nop(),
 	)
 
@@ -693,3 +694,44 @@ func TestSubscriber_TweetLiked_UnknownActorFallsBack(t *testing.T) {
 type emptyActorLookup struct{}
 
 func (emptyActorLookup) FindDisplayName(context.Context, domainshared.ID) string { return "" }
+
+// fakeBrowserPusher 记录浏览器推送调用，验证 SSE 与 Web Push 双通道并行。
+type fakeBrowserPusher struct {
+	pushed []BrowserNotification
+}
+
+func (f *fakeBrowserPusher) PushBrowser(_ context.Context, _ domainshared.ID, n BrowserNotification) {
+	f.pushed = append(f.pushed, n)
+}
+
+// 写通知成功后 SSE 与浏览器推送都触发，且浏览器通知带落地路径。
+func TestPushingSubscriber_TweetLiked_PushesSSEAndBrowser(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	notif := &fakeNotifier{}
+	browser := &fakeBrowserPusher{}
+	authorID := newID()
+	tw := newTweet(t, authorID, "推文正文")
+	sub := NewPushingSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{},
+		&fakeFriendlinkLookup{}, &fakePostAuthorLookup{}, stubActorLookup{}, notif, browser, zerolog.Nop())
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, newID())))
+
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []domainshared.ID{authorID}, notif.pushed)
+	require.Len(t, browser.pushed, 1)
+	assert.Equal(t, "Alice 赞了你的推文", browser.pushed[0].Title)
+	assert.Equal(t, "/tweets/"+tw.ID().String(), browser.pushed[0].URL)
+	assert.Equal(t, domainnotification.SourceTweetLiked, browser.pushed[0].SourceType)
+}
+
+// Save 失败时两个推送通道都不触发（fail-safe 一致性）。
+func TestPushingSubscriber_StoreError_NoBrowserPush(t *testing.T) {
+	store := &fakeStoreCorrect{err: errors.New("db down")}
+	browser := &fakeBrowserPusher{}
+	tw := newTweet(t, newID(), "推文正文")
+	sub := NewPushingSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{},
+		&fakeFriendlinkLookup{}, &fakePostAuthorLookup{}, stubActorLookup{}, &fakeNotifier{}, browser, zerolog.Nop())
+
+	require.NoError(t, sub.Handle(context.Background(), domaintweet.NewTweetLiked(tw, newID())))
+	assert.Empty(t, browser.pushed)
+}

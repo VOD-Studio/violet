@@ -31,6 +31,23 @@ func registerNotificationPaths(t *openapi3.T) {
 		"unread_count": optInt64("未读数"),
 	})
 
+	registerSchema(t, "NotificationPushConfig", openapi3.Schemas{
+		"public_key": optStr("VAPID 公钥"),
+		"enabled":    optBool("站点是否启用浏览器通知"),
+	})
+
+	registerSchema(t, "NotificationPushSubscriptionRequest", openapi3.Schemas{
+		"endpoint": reqStr("浏览器 Push endpoint"),
+		"keys": &openapi3.SchemaRef{Value: &openapi3.Schema{
+			Type:       &openapi3.Types{openapi3.TypeObject},
+			Properties: openapi3.Schemas{"p256dh": reqStr("浏览器公钥"), "auth": reqStr("浏览器认证密钥")},
+		}},
+	}, "endpoint", "keys")
+
+	registerSchema(t, "NotificationPushUnsubscribeRequest", openapi3.Schemas{
+		"endpoint": reqStr("浏览器 Push endpoint"),
+	}, "endpoint")
+
 	get(t, "/notifications", &openapi3.Operation{
 		Tags:       []string{"通知"},
 		Summary:    "通知列表",
@@ -75,6 +92,33 @@ func registerNotificationPaths(t *openapi3.T) {
 		Security:   secure,
 		Parameters: openapi3.Parameters{csrfHeaderParam()},
 		Responses:  responses(200, messageResponse("全部已读")),
+	})
+
+	get(t, "/notifications/push/config", &openapi3.Operation{
+		Tags:        []string{"通知"},
+		Summary:     "浏览器通知配置",
+		Description: "与聊天推送订阅相互独立：两者各自授权、各自订阅。",
+		Security:    secure,
+		Responses:   responses(200, dataResponse("NotificationPushConfig", "推送配置", 200)),
+	})
+
+	post(t, "/notifications/push/subscription", &openapi3.Operation{
+		Tags:        []string{"通知"},
+		Summary:     "启用浏览器通知",
+		Description: "按 endpoint upsert：同一浏览器重复授权覆盖密钥，不产生重复订阅。",
+		Security:    secure,
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("NotificationPushSubscriptionRequest", true, "推送订阅"),
+		Responses:   responses(201, messageResponse("浏览器通知已启用")),
+	})
+
+	del(t, "/notifications/push/subscription", &openapi3.Operation{
+		Tags:        []string{"通知"},
+		Summary:     "关闭浏览器通知",
+		Security:    secure,
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("NotificationPushUnsubscribeRequest", true, "推送订阅"),
+		Responses:   responses(204, noContentResponse("浏览器通知已关闭")),
 	})
 
 	post(t, "/notifications/{id}/read", &openapi3.Operation{

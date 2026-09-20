@@ -108,7 +108,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
 	commentReaction := NewCommentReactionContainer(db)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
-	notification := NewNotificationContainer(db, bus)
+	notification := NewNotificationContainer(db, cfg, bus)
 	system, err := NewSystemContainer(infra.DB, db, rdb, settings.Store, cfg, ctx)
 	if err != nil {
 		roleCleanup()

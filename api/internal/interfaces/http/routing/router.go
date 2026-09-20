@@ -437,6 +437,9 @@ func registerNotificationRoutes(v1 chi.Router, d *Deps) {
 			r.Get("/stream", d.NotificationStream.Stream)
 			r.Post("/read-all", notifH.MarkAllRead)
 			r.Post("/{id}/read", notifH.MarkRead)
+			r.Get("/push/config", notifH.PushConfig)
+			r.Post("/push/subscription", notifH.SavePushSubscription)
+			r.Delete("/push/subscription", notifH.DeletePushSubscription)
 		})
 	})
 }

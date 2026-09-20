@@ -7,18 +7,21 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"blog-api/config"
 	appnotification "blog-api/internal/application/notification"
 	appshared "blog-api/internal/application/shared"
 	domaincomment "blog-api/internal/domain/comment"
 	domainshared "blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
+	infrapush "blog-api/internal/infrastructure/webpush"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 )
 
 // NotificationContainer 通知模块容器。
 type NotificationContainer struct {
 	NotificationService *appnotification.Service
+	PushService         *appnotification.PushService
 	NotificationHandler *notificationhttp.Handler
 	StreamHandler       *notificationhttp.StreamHandler
 }
@@ -27,10 +30,21 @@ type NotificationContainer struct {
 //
 // subRepo / commentRepo 从 db 构造（GORM 仓储无状态，多实例安全）。
 // subscriber 订阅 bus 消费领域事件 → 写通知，平行于审计 subscriber。
-func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *NotificationContainer {
+func NewNotificationContainer(db *gorm.DB, cfg *config.Config, bus appshared.EventBus) *NotificationContainer {
 	repo := gormrepo.NewNotificationRepository(db)
 	svc := appnotification.NewService(repo, nil)
-	handler := notificationhttp.NewHandler(svc)
+
+	// 浏览器 Web Push：VAPID 三元组齐备才装发送器，否则只存订阅不投递
+	var webPushSender appnotification.WebPushSender
+	if cfg.WebPush.VAPIDPublicKey != "" && cfg.WebPush.VAPIDPrivateKey != "" && cfg.WebPush.VAPIDSubject != "" {
+		webPushSender = infrapush.NewNotificationSender(
+			infrapush.NewSender(cfg.WebPush.VAPIDPublicKey, cfg.WebPush.VAPIDPrivateKey, cfg.WebPush.VAPIDSubject),
+		)
+	}
+	pushSvc := appnotification.NewPushService(
+		gormrepo.NewNotificationPushRepository(db), webPushSender, cfg.WebPush.VAPIDPublicKey, nil, log.Logger,
+	)
+	handler := notificationhttp.NewHandler(svc, pushSvc)
 
 	// SSE 连接管理器 + 推送 subscriber
 	connMgr := appnotification.NewConnectionManager(log.Logger)
@@ -44,12 +58,13 @@ func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *Notification
 	postAuthorLookup := &commentPostAuthorAdapter{db: db}
 	actorLookup := &actorNameAdapter{db: db}
 
-	// 通知 subscriber 订阅事件总线（带 SSE 推送）
-	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, actorLookup, connMgr, log.Logger)
+	// 通知 subscriber 订阅事件总线（SSE 推在线标签页 + Web Push 覆盖页面关闭场景）
+	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, actorLookup, connMgr, pushSvc, log.Logger)
 	subscriber.Subscribe(bus)
 
 	return &NotificationContainer{
 		NotificationService: svc,
+		PushService:         pushSvc,
 		NotificationHandler: handler,
 		StreamHandler:       streamH,
 	}
