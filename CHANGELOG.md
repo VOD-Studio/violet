@@ -7,6 +7,34 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.36](https://github.com/VOD-Studio/violet/compare/v2.8.35...v2.8.36) (2026-09-20)
+
+
+### 新增
+
+* **notifications:** 铃铛接入推文互动与浏览器通知开关 ([196e69e](https://github.com/VOD-Studio/violet/commit/196e69e8588fea2ee9c910ac998db8073b5b9940))
+* **notification:** 完善推文互动与浏览器通知 ([#390](https://github.com/VOD-Studio/violet/issues/390)) ([37fe848](https://github.com/VOD-Studio/violet/commit/37fe8487a33d952216d1ef5536f19ea5d0f4364f))
+* **notification:** 推文互动事件写入站内通知 ([7e8a61f](https://github.com/VOD-Studio/violet/commit/7e8a61f52cd08146b1dcd92a440ca3b8349014ce))
+* **notification:** 站内通知接入浏览器 Web Push ([f5010e9](https://github.com/VOD-Studio/violet/commit/f5010e9c1c85482faef5817f19659c5fbfcc30de))
+* **notification:** 通知来源新增推文互动四类 ([d1eddba](https://github.com/VOD-Studio/violet/commit/d1eddba8a5e3c97f0f77d48620efb86e94fdcc81))
+* **tweet:** 发布推文互动事件供通知订阅者消费 ([a58b46e](https://github.com/VOD-Studio/violet/commit/a58b46ece1bd8d195f95dd4a631122c215eff0ff))
+* **tweet:** 新增点赞、转发与评论的互动领域事件 ([4108f00](https://github.com/VOD-Studio/violet/commit/4108f0029422e7f6e1d2568298bc3273b8013135))
+
+
+### 修复
+
+* **chat:** 外观预览时间戳同步气泡外位置 ([dc4bea3](https://github.com/VOD-Studio/violet/commit/dc4bea3512fdd1b9286ba7bb7df5cc4b82301d86))
+* **chat:** 放大消息流头像尺寸 ([830a4d8](https://github.com/VOD-Studio/violet/commit/830a4d8df6e3d5074298aa6c2638a61904d55d04))
+* **chat:** 消息时间戳移到气泡外悬停展示 ([825969b](https://github.com/VOD-Studio/violet/commit/825969bbafcec0a06ab3f7bd574588b7aacd6926))
+* **comments:** 提及浮层跟随键盘高亮滚动 ([b26f5f2](https://github.com/VOD-Studio/violet/commit/b26f5f2026da1fb887ccff1dc3b50dcc1100f847))
+
+
+### 重构
+
+* **shared:** 推送 service worker 改为站点级共用 ([67f42e5](https://github.com/VOD-Studio/violet/commit/67f42e5b2436143f2bb1402b0a2d50824e7c692a))
+* **shared:** 浏览器推送授权流程上提到 shared ([ffbd9eb](https://github.com/VOD-Studio/violet/commit/ffbd9eb05d49718b9e84fe1372c2c9f66b9d8488))
+* **webpush:** 发送器抽出域中立的投递接口 ([ea4f848](https://github.com/VOD-Studio/violet/commit/ea4f848ce37d88696a248d2c9b2a043cb8819a04))
+
 ## [2.8.35](https://github.com/VOD-Studio/violet/compare/v2.8.34...v2.8.35) (2026-09-20)
 
 
