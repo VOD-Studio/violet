@@ -58,7 +58,7 @@ function SpotlightCard({
 				className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/spotlight:opacity-100"
 				style={{
 					background:
-						"radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / 0.18), transparent 60%)",
+						"radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), color-mix(in oklch, var(--brand) 18%, transparent), transparent 60%)",
 				}}
 			/>
 			{/* 渐变边框层（dark 模式） */}
@@ -67,7 +67,7 @@ function SpotlightCard({
 				className="pointer-events-none absolute inset-0 hidden rounded-xl opacity-0 transition-opacity duration-300 group-hover/spotlight:opacity-100 dark:block"
 				style={{
 					boxShadow:
-						"inset 0 0 0 1px hsl(var(--neon-blue) / 0.35), inset 0 0 24px hsl(var(--neon-blue) / 0.08)",
+						"inset 0 0 0 1px color-mix(in oklch, var(--brand) 32%, transparent), inset 0 0 24px color-mix(in oklch, var(--brand) 8%, transparent)",
 				}}
 			/>
 			<div className="relative z-10 contents">{children}</div>

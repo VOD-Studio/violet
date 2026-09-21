@@ -247,7 +247,7 @@ const NotificationRow = ({ item, onSelect }: { item: NotificationItem; onSelect:
 					{formatRelativeTime(new Date(item.created_at))}
 				</p>
 			</div>
-			{!item.is_read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-blue-500" />}
+			{!item.is_read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
 		</DropdownMenuItem>
 	);
 };

@@ -41,7 +41,7 @@ export function AvatarUploader({ user }: AvatarUploaderProps) {
 				className="h-24 w-24 rounded-full"
 				alt={`${user.username} 的头像`}
 			/>
-			<label className="cursor-pointer text-sm text-blue-600 hover:underline">
+			<label className="cursor-pointer text-sm text-primary hover:underline">
 				{updateProfile.isPending ? "保存中..." : "更换头像"}
 				<input
 					type="file"
@@ -58,7 +58,7 @@ export function AvatarUploader({ user }: AvatarUploaderProps) {
 					}}
 				/>
 			</label>
-			{error && <p className="text-sm text-red-600">{error}</p>}
+			{error && <p className="text-sm text-destructive">{error}</p>}
 			<CropUploadDialog
 				file={pendingFile ?? undefined}
 				aspect={1}

@@ -1,0 +1,159 @@
+/**
+ * OKLCH 色彩转换与对比度计算工具。
+ *
+ * 提供从 OKLCH 到线性 sRGB / Hex 的转换，以及 WCAG 2.1 相对亮度与对比度比值计算。
+ * 纯数学实现，无外部库依赖。
+ */
+
+/**
+ * 解析 oklch 颜色字符串。
+ *
+ * @param str - 如 "oklch(0.53 0.205 286)" 或 "oklch(0.92 0.012 286 / 12%)"
+ */
+export function parseOklch(str: string): { l: number; c: number; h: number; alpha: number } | null {
+	const clean = str.trim();
+	const match = clean.match(
+		/^oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)(?:deg)?(?:\s*\/\s*([\d.]+%?))?\s*\)$/i,
+	);
+	if (!match) return null;
+
+	let l = Number.parseFloat(match[1]);
+	if (match[2] === "%") {
+		l /= 100;
+	}
+	const c = Number.parseFloat(match[3]);
+	const h = Number.parseFloat(match[4]);
+	let alpha = 1;
+
+	if (match[5]) {
+		const aStr = match[5];
+		if (aStr.endsWith("%")) {
+			alpha = Number.parseFloat(aStr.slice(0, -1)) / 100;
+		} else {
+			alpha = Number.parseFloat(aStr);
+		}
+	}
+
+	return { l, c, h, alpha: Math.min(Math.max(alpha, 0), 1) };
+}
+
+/**
+ * 将 OKLCH (L, C, H) 转换至 sRGB 空间及 16 进制 Hex 字符串。
+ *
+ * @param L - 明度 0..1
+ * @param C - 彩度 0..0.4+
+ * @param H - 色相角度 0..360
+ * @param alpha - 不透明度 0..1，小于 1 时输出 8 位 Hex
+ */
+export function oklchToRgb(
+	L: number,
+	C: number,
+	H: number,
+	alpha = 1,
+): {
+	r: number;
+	g: number;
+	b: number;
+	hex: string;
+	alpha: number;
+	rLin: number;
+	gLin: number;
+	bLin: number;
+} {
+	const hRad = (H * Math.PI) / 180;
+	const a = C * Math.cos(hRad);
+	const b = C * Math.sin(hRad);
+
+	const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+	const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+	const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+
+	const l = l_ ** 3;
+	const m = m_ ** 3;
+	const s = s_ ** 3;
+
+	const r = +4.0767434036 * l - 3.3077115913 * m + 0.2309699292 * s;
+	const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+	const bl = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+
+	const clamp = (x: number) => Math.min(Math.max(x, 0), 1);
+	const rLin = clamp(r);
+	const gLin = clamp(g);
+	const bLin = clamp(bl);
+
+	const gamma = (x: number) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
+
+	const R = Math.round(clamp(gamma(rLin)) * 255);
+	const G = Math.round(clamp(gamma(gLin)) * 255);
+	const B = Math.round(clamp(gamma(bLin)) * 255);
+
+	const safeAlpha = clamp(alpha);
+	const aHex =
+		safeAlpha < 1
+			? Math.round(safeAlpha * 255)
+					.toString(16)
+					.padStart(2, "0")
+			: "";
+
+	const hex = `#${[R, G, B].map((x) => x.toString(16).padStart(2, "0")).join("")}${aHex}`;
+
+	return { r: R, g: G, b: B, hex, alpha: safeAlpha, rLin, gLin, bLin };
+}
+
+/**
+ * 计算线性 sRGB 的 WCAG 相对亮度。
+ */
+export function getRelativeLuminance(rLin: number, gLin: number, bLin: number): number {
+	return 0.2126 * rLin + 0.7152 * gLin + 0.0722 * bLin;
+}
+
+/**
+ * 计算任意 OKLCH 颜色与另一 OKLCH 颜色之间的 WCAG 2.1 对比度 (1..21)。
+ * 若前景色包含 alpha (<1)，将先在线性 sRGB 空间与背景混色后再求相对亮度。
+ *
+ * @param fgOklch - 前景色 oklch 字符串
+ * @param bgOklch - 背景色 oklch 字符串
+ * @returns 对比度比值，如 5.75 表示 5.75:1
+ */
+export function getContrastRatio(fgOklch: string, bgOklch: string): number {
+	const fg = parseOklch(fgOklch);
+	const bg = parseOklch(bgOklch);
+	if (!fg || !bg) return 1;
+
+	const fgRgb = oklchToRgb(fg.l, fg.c, fg.h, fg.alpha);
+	const bgRgb = oklchToRgb(bg.l, bg.c, bg.h, bg.alpha);
+
+	// 线性空间混色合成
+	const rLinComposited = fgRgb.rLin * fg.alpha + bgRgb.rLin * (1 - fg.alpha);
+	const gLinComposited = fgRgb.gLin * fg.alpha + bgRgb.gLin * (1 - fg.alpha);
+	const bLinComposited = fgRgb.bLin * fg.alpha + bgRgb.bLin * (1 - fg.alpha);
+
+	const l1 = getRelativeLuminance(rLinComposited, gLinComposited, bLinComposited);
+	const l2 = getRelativeLuminance(bgRgb.rLin, bgRgb.gLin, bgRgb.bLin);
+
+	const brighter = Math.max(l1, l2);
+	const darker = Math.min(l1, l2);
+
+	return Number(((brighter + 0.05) / (darker + 0.05)).toFixed(2));
+}
+
+/**
+ * 评估 WCAG 评级。
+ *
+ * @param ratio - 对比度比值
+ */
+export function getWcagRating(ratio: number): {
+	rating: "AAA" | "AA" | "AA Large" | "Fail";
+	isAccessible: boolean;
+} {
+	if (ratio >= 7.0) {
+		return { rating: "AAA", isAccessible: true };
+	}
+	if (ratio >= 4.5) {
+		return { rating: "AA", isAccessible: true };
+	}
+	if (ratio >= 3.0) {
+		return { rating: "AA Large", isAccessible: true };
+	}
+	return { rating: "Fail", isAccessible: false };
+}

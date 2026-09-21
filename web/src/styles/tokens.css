@@ -5,124 +5,126 @@
  * 主要动作色（--primary 系）在基础层默认取高对比中性色，即工具方言所需形态；
  * 公开内容方言在 dialects/public.css 把动作映射到品牌强调层（palettes/）。
  * 行为状态色不属于品牌层，任何 palette 与方言都不得改写其含义。
- * 浅色主题为 shadcn neutral 调色板，next-themes 用 attribute="class"，
- * 默认（无 .dark）即浅色。
+ * 全站色调统一基于 Violet 经典冷香紫罗兰色相（Hue 286），赋予明暗主题浑然天成的优雅质感。
  */
 :root {
 	--radius: 0.625rem;
 
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
+	/* 浅色底色：温润白瓷质感，微泛极浅鸢尾冷香，消除纯白刺眼感 */
+	--background: oklch(0.992 0.003 286);
+	--foreground: oklch(0.19 0.015 286);
+	/* 卡片与浮层：纯净白表面，悬浮于底色之上 */
 	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
+	--card-foreground: oklch(0.19 0.015 286);
 	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	/* 纸面：暖米纸（hue 84≈米黄），深色模式换成深褐纸 */
-	--paper: oklch(0.973 0.014 84);
+	--popover-foreground: oklch(0.19 0.015 286);
+	/* 纸面：暖米古籍纸，深色模式换成深褐古纸 */
+	--paper: oklch(0.976 0.012 85);
 	--paper-foreground: oklch(0.24 0.014 60);
 	--paper-muted: oklch(0.46 0.016 60);
-	--paper-border: oklch(0.878 0.02 80);
+	--paper-border: oklch(0.885 0.018 80);
+	/* 基础主要动作（工具方言中性形态，高对比） */
 	--primary: oklch(0.205 0 0);
 	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.97 0 0);
-	--secondary-foreground: oklch(0.205 0 0);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
-	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
-	--destructive-foreground: oklch(0.985 0 0);
-	/* 行为状态色：固定语义，任何 palette 与方言不得改写含义。
-	 * 浅色 warning 取 L 0.62：作 12px 徽章文字在白底/10% 洗底上 ≥3.4:1，
-	 * 再亮会跌破可读下限（0.68 时仅 3.0:1）。 */
-	--warning: oklch(0.62 0.16 60);
-	--warning-foreground: oklch(0.985 0 0);
-	--success: oklch(0.577 0.148 156);
-	--success-foreground: oklch(0.985 0 0);
-	--border: oklch(0.922 0 0);
-	--input: oklch(0.922 0 0);
-	--ring: oklch(0.708 0 0);
+	--secondary: oklch(0.958 0.008 286);
+	--secondary-foreground: oklch(0.22 0.02 286);
+	--muted: oklch(0.962 0.006 286);
+	--muted-foreground: oklch(0.52 0.02 286);
+	--accent: oklch(0.962 0.006 286);
+	--accent-foreground: oklch(0.22 0.02 286);
+	/* 状态色：固定语义，不可被 palette 改写 */
+	--destructive: oklch(0.58 0.22 25);
+	--destructive-foreground: oklch(0.99 0 0);
+	--warning: oklch(0.64 0.16 75);
+	--warning-foreground: oklch(0.99 0 0);
+	--success: oklch(0.58 0.15 155);
+	--success-foreground: oklch(0.99 0 0);
+	--border: oklch(0.908 0.008 286);
+	--input: oklch(0.895 0.01 286);
+	--ring: oklch(0.53 0.205 286);
 
-	/* 前台遗留语义色（向后兼容） */
-	--bg: #ffffff;
-	--fg: #0a0a0a;
-	--edge-hairline: rgba(0, 0, 0, 0.05);
-	--surface-glass: rgba(255, 255, 255, 0.5);
-	--glow-soft: 220 90% 60%;
-	--persona-violet: oklch(0.54 0.07 303);
+	/* 前台遗留与高级材质语义色 */
+	--bg: #faf9fd;
+	--fg: #13111c;
+	--edge-hairline: oklch(0.19 0.015 286 / 6%);
+	--surface-glass: oklch(1 0 0 / 70%);
+	--glow-soft: 286 85% 65%;
+	--persona-violet: oklch(0.54 0.14 286);
 	--persona-gold: oklch(0.72 0.09 78);
 	--persona-ivory: oklch(0.985 0.012 84);
 
-	/* shadcn charts 调色板（5 色） */
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
+	/* 协调图表调色板（5 色） */
+	--chart-1: oklch(0.58 0.2 286);
+	--chart-2: oklch(0.64 0.16 220);
+	--chart-3: oklch(0.6 0.15 155);
+	--chart-4: oklch(0.74 0.16 75);
+	--chart-5: oklch(0.64 0.2 350);
 
 	/* Neon 强调色（浅色：饱和度适中，保证白底可读） */
-	--neon-purple: oklch(0.55 0.28 300);
+	--neon-purple: oklch(0.56 0.26 295);
 	--neon-blue: oklch(0.6 0.22 245);
 	--neon-green: oklch(0.62 0.19 150);
 	--neon-pink: oklch(0.65 0.25 350);
-	--neon-cyan: oklch(0.7 0.15 200);
+	--neon-cyan: oklch(0.7 0.16 210);
 }
 
 /*
- * 暗色主题 —— shadcn neutral 调色板。
+ * 暗色主题 —— 玄曜紫霄（Nocturnal Obsidian & Amethyst）。
  * next-themes 在 <html> 上加 .dark 类触发。
  */
 .dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	/* 深色纸面：深褐纸 + 米白墨 */
-	--paper: oklch(0.245 0.01 70);
+	/* 深色底色：深邃星空黑曜石，带低彩冷紫夜色微晕 */
+	--background: oklch(0.138 0.012 286);
+	--foreground: oklch(0.955 0.008 286);
+	--card: oklch(0.185 0.015 286);
+	--card-foreground: oklch(0.955 0.008 286);
+	--popover: oklch(0.185 0.015 286);
+	--popover-foreground: oklch(0.955 0.008 286);
+	/* 深色纸面：深褐古纸 + 浅象牙墨 */
+	--paper: oklch(0.23 0.012 70);
 	--paper-foreground: oklch(0.92 0.012 80);
 	--paper-muted: oklch(0.68 0.012 75);
-	--paper-border: oklch(0.33 0.012 70);
+	--paper-border: oklch(0.32 0.012 70);
+	/* 基础主要动作（工具方言中性形态，高对比） */
 	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.269 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--destructive-foreground: oklch(0.985 0 0);
-	--warning: oklch(0.795 0.184 86);
-	--warning-foreground: oklch(0.205 0 0);
-	--success: oklch(0.792 0.209 152);
-	--success-foreground: oklch(0.205 0 0);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.556 0 0);
+	--primary-foreground: oklch(0.18 0.015 286);
+	--secondary: oklch(0.225 0.016 286);
+	--secondary-foreground: oklch(0.95 0.008 286);
+	--muted: oklch(0.225 0.016 286);
+	--muted-foreground: oklch(0.68 0.022 286);
+	--accent: oklch(0.225 0.016 286);
+	--accent-foreground: oklch(0.95 0.008 286);
+	--destructive: oklch(0.68 0.2 25);
+	--destructive-foreground: oklch(0.99 0 0);
+	--warning: oklch(0.78 0.16 80);
+	--warning-foreground: oklch(0.18 0.02 80);
+	--success: oklch(0.76 0.18 155);
+	--success-foreground: oklch(0.14 0.02 155);
+	--border: oklch(0.92 0.012 286 / 12%);
+	--input: oklch(0.92 0.012 286 / 18%);
+	--ring: oklch(0.72 0.148 286);
 
-	/* 前台遗留语义色（向后兼容） */
-	--bg: #0a0a0a;
-	--fg: #ffffff;
-	--edge-hairline: rgba(255, 255, 255, 0.1);
-	--surface-glass: rgba(0, 0, 0, 0.5);
-	--glow-soft: 210 100% 70%;
-	--persona-violet: oklch(0.74 0.09 303);
+	/* 前台遗留与高级材质语义色 */
+	--bg: #0d0b14;
+	--fg: #f5f4fa;
+	--edge-hairline: oklch(1 0 0 / 8%);
+	--surface-glass: oklch(0.185 0.015 286 / 60%);
+	--glow-soft: 286 90% 75%;
+	--persona-violet: oklch(0.74 0.12 286);
 	--persona-gold: oklch(0.78 0.09 78);
 	--persona-ivory: oklch(0.24 0.018 84);
 
-	/* shadcn charts 调色板（暗色 5 色） */
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
+	/* 暗色图表调色板（5 色） */
+	--chart-1: oklch(0.72 0.18 286);
+	--chart-2: oklch(0.74 0.16 220);
+	--chart-3: oklch(0.76 0.16 155);
+	--chart-4: oklch(0.8 0.16 75);
+	--chart-5: oklch(0.74 0.18 350);
 
 	/* Neon 强调色（暗色：高饱和高亮度，发光感） */
-	--neon-purple: oklch(0.72 0.32 300);
+	--neon-purple: oklch(0.72 0.3 295);
 	--neon-blue: oklch(0.78 0.28 245);
 	--neon-green: oklch(0.8 0.25 150);
 	--neon-pink: oklch(0.75 0.3 350);
-	--neon-cyan: oklch(0.82 0.2 200);
+	--neon-cyan: oklch(0.82 0.2 210);
 }

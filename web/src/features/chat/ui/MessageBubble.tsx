@@ -184,21 +184,8 @@ export function MessageBubble({
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
-			<div
-				className={cn(
-					"mt-0.5 flex h-10 shrink-0 items-center gap-2",
-					mine && "flex-row-reverse",
-				)}
-			>
-				<BubbleTimestamp
-					forceVisible={touchActionsVisible}
-					time={message.created_at}
-					editedAt={message.edited_at}
-					className="w-8 shrink-0 text-center"
-				/>
-				<div className="size-10 shrink-0">
-					{showSender && <ChatAvatar user={message.sender} className="size-10" />}
-				</div>
+			<div className="mt-0.5 size-10 shrink-0">
+				{showSender && <ChatAvatar user={message.sender} className="size-10" />}
 			</div>
 			<div
 				className={cn(
@@ -277,79 +264,91 @@ export function MessageBubble({
 						</BubbleShell>
 					)}
 
-					{/* Hover 浮动微操作条 */}
-					{!sending && !message.is_deleted && !editing && (
+					{/* Hover 浮动微操作条与时间戳 */}
+					{!editing && (
 						<div
 							className={cn(
-								"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+								"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none",
 								touchActionsVisible && "opacity-100",
-								mine ? "right-full mr-1.5" : "left-full ml-1.5",
+								mine
+									? "right-full mr-1.5 flex-row"
+									: "left-full ml-1.5 flex-row-reverse",
 							)}
 						>
-							<EmojiPicker
-								align={mine ? "start" : "end"}
-								onSelect={handleAddReaction}
-								selectedIds={selfReactionIds}
-								showMyEmojis={false}
-								trigger={
-									<button
-										aria-label={
-											selfReactionIds.size >= 3
-												? "消息表情数量已达上限"
-												: "添加消息表情"
+							{!sending && !message.is_deleted && (
+								<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md">
+									<EmojiPicker
+										align={mine ? "start" : "end"}
+										onSelect={handleAddReaction}
+										selectedIds={selfReactionIds}
+										showMyEmojis={false}
+										trigger={
+											<button
+												aria-label={
+													selfReactionIds.size >= 3
+														? "消息表情数量已达上限"
+														: "添加消息表情"
+												}
+												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+												disabled={reactionBusy || selfReactionIds.size >= 3}
+												type="button"
+											>
+												<Smile className="size-3.5" />
+											</button>
 										}
-										className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={reactionBusy || selfReactionIds.size >= 3}
-										type="button"
-									>
-										<Smile className="size-3.5" />
-									</button>
-								}
-							/>
-							{mine && (
-								<button
-									aria-label="编辑消息"
-									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-									onClick={() => setEditing(true)}
-									type="button"
-								>
-									<Pencil className="size-3.5" />
-								</button>
-							)}
-							{onReply && (
-								<button
-									aria-label="回复消息"
-									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-									onClick={onReply}
-									type="button"
-								>
-									<Reply className="size-3.5" />
-								</button>
-							)}
-							{message.type === "text" && (
-								<button
-									aria-label="复制消息"
-									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-									onClick={() => void copyText()}
-									type="button"
-								>
-									{copied ? (
-										<Check className="size-3.5 text-primary" />
-									) : (
-										<Copy className="size-3.5" />
+									/>
+									{mine && (
+										<button
+											aria-label="编辑消息"
+											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+											onClick={() => setEditing(true)}
+											type="button"
+										>
+											<Pencil className="size-3.5" />
+										</button>
 									)}
-								</button>
+									{onReply && (
+										<button
+											aria-label="回复消息"
+											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+											onClick={onReply}
+											type="button"
+										>
+											<Reply className="size-3.5" />
+										</button>
+									)}
+									{message.type === "text" && (
+										<button
+											aria-label="复制消息"
+											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+											onClick={() => void copyText()}
+											type="button"
+										>
+											{copied ? (
+												<Check className="size-3.5 text-primary" />
+											) : (
+												<Copy className="size-3.5" />
+											)}
+										</button>
+									)}
+									{onDelete && (
+										<button
+											aria-label="删除违规消息"
+											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
+											onClick={onDelete}
+											type="button"
+										>
+											<Trash2 className="size-3.5" />
+										</button>
+									)}
+								</div>
 							)}
-							{onDelete && (
-								<button
-									aria-label="删除违规消息"
-									className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
-									onClick={onDelete}
-									type="button"
-								>
-									<Trash2 className="size-3.5" />
-								</button>
-							)}
+							<BubbleTimestamp
+								forceVisible={touchActionsVisible}
+								time={message.created_at}
+								editedAt={message.edited_at}
+								className="pointer-events-auto shrink-0 select-none text-center"
+							/>
 						</div>
 					)}
 				</div>

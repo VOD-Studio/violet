@@ -9,6 +9,11 @@
 	scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
 }
 
+/* 全局默认选区底色：极浅紫罗兰洗底，避免系统默认亮蓝与主题冲突 */
+::selection {
+	background-color: color-mix(in oklch, var(--brand) 28%, transparent);
+}
+
 body {
 	background-color: var(--color-background);
 	color: var(--color-foreground);
@@ -43,7 +48,7 @@ button {
 	--tw-prose-bullets: var(--color-muted-foreground);
 	--tw-prose-hr: var(--color-border);
 	--tw-prose-quotes: var(--color-foreground);
-	--tw-prose-quote-borders: var(--color-border);
+	--tw-prose-quote-borders: color-mix(in oklch, var(--color-primary) 40%, var(--color-border));
 	--tw-prose-captions: var(--color-muted-foreground);
 	--tw-prose-code: var(--color-foreground);
 	--tw-prose-th: var(--color-foreground);

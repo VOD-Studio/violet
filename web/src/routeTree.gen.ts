@@ -36,10 +36,12 @@ import { Route as NotesIdRouteImport } from './routes/notes.$id'
 import { Route as LabTocTreeRouteImport } from './routes/lab.toc-tree'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabSeriesRouteImport } from './routes/lab.series'
+import { Route as LabPaletteRouteImport } from './routes/lab.palette'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
 import { Route as LabMascotRouteImport } from './routes/lab.mascot'
 import { Route as LabGalleryRouteImport } from './routes/lab.gallery'
 import { Route as LabFriendsRouteImport } from './routes/lab.friends'
+import { Route as LabColorsRouteImport } from './routes/lab.colors'
 import { Route as LabBlogRouteImport } from './routes/lab.blog'
 import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
 import { Route as GalleriesSlugRouteImport } from './routes/galleries.$slug'
@@ -222,6 +224,11 @@ const LabSeriesRoute = LabSeriesRouteImport.update({
   path: '/lab/series',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LabPaletteRoute = LabPaletteRouteImport.update({
+  id: '/lab/palette',
+  path: '/lab/palette',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LabNavRoute = LabNavRouteImport.update({
   id: '/lab/nav',
   path: '/lab/nav',
@@ -240,6 +247,11 @@ const LabGalleryRoute = LabGalleryRouteImport.update({
 const LabFriendsRoute = LabFriendsRouteImport.update({
   id: '/lab/friends',
   path: '/lab/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabColorsRoute = LabColorsRouteImport.update({
+  id: '/lab/colors',
+  path: '/lab/colors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabBlogRoute = LabBlogRouteImport.update({
@@ -510,10 +522,12 @@ export interface FileRoutesByFullPath {
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
+  '/lab/colors': typeof LabColorsRoute
   '/lab/friends': typeof LabFriendsRoute
   '/lab/gallery': typeof LabGalleryRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
+  '/lab/palette': typeof LabPaletteRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
@@ -583,10 +597,12 @@ export interface FileRoutesByTo {
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
+  '/lab/colors': typeof LabColorsRoute
   '/lab/friends': typeof LabFriendsRoute
   '/lab/gallery': typeof LabGalleryRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
+  '/lab/palette': typeof LabPaletteRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
@@ -663,10 +679,12 @@ export interface FileRoutesById {
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
+  '/lab/colors': typeof LabColorsRoute
   '/lab/friends': typeof LabFriendsRoute
   '/lab/gallery': typeof LabGalleryRoute
   '/lab/mascot': typeof LabMascotRoute
   '/lab/nav': typeof LabNavRoute
+  '/lab/palette': typeof LabPaletteRoute
   '/lab/series': typeof LabSeriesRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
@@ -744,10 +762,12 @@ export interface FileRouteTypes {
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
+    | '/lab/colors'
     | '/lab/friends'
     | '/lab/gallery'
     | '/lab/mascot'
     | '/lab/nav'
+    | '/lab/palette'
     | '/lab/series'
     | '/lab/theme'
     | '/lab/toc-tree'
@@ -817,10 +837,12 @@ export interface FileRouteTypes {
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
+    | '/lab/colors'
     | '/lab/friends'
     | '/lab/gallery'
     | '/lab/mascot'
     | '/lab/nav'
+    | '/lab/palette'
     | '/lab/series'
     | '/lab/theme'
     | '/lab/toc-tree'
@@ -896,10 +918,12 @@ export interface FileRouteTypes {
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
+    | '/lab/colors'
     | '/lab/friends'
     | '/lab/gallery'
     | '/lab/mascot'
     | '/lab/nav'
+    | '/lab/palette'
     | '/lab/series'
     | '/lab/theme'
     | '/lab/toc-tree'
@@ -956,10 +980,12 @@ export interface RootRouteChildren {
   GalleriesSlugRoute: typeof GalleriesSlugRoute
   LabAnnouncementRoute: typeof LabAnnouncementRoute
   LabBlogRoute: typeof LabBlogRoute
+  LabColorsRoute: typeof LabColorsRoute
   LabFriendsRoute: typeof LabFriendsRoute
   LabGalleryRoute: typeof LabGalleryRoute
   LabMascotRoute: typeof LabMascotRoute
   LabNavRoute: typeof LabNavRoute
+  LabPaletteRoute: typeof LabPaletteRoute
   LabSeriesRoute: typeof LabSeriesRoute
   LabThemeRoute: typeof LabThemeRoute
   LabTocTreeRoute: typeof LabTocTreeRoute
@@ -1171,6 +1197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LabSeriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lab/palette': {
+      id: '/lab/palette'
+      path: '/lab/palette'
+      fullPath: '/lab/palette'
+      preLoaderRoute: typeof LabPaletteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lab/nav': {
       id: '/lab/nav'
       path: '/lab/nav'
@@ -1197,6 +1230,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/friends'
       fullPath: '/lab/friends'
       preLoaderRoute: typeof LabFriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/colors': {
+      id: '/lab/colors'
+      path: '/lab/colors'
+      fullPath: '/lab/colors'
+      preLoaderRoute: typeof LabColorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/blog': {
@@ -1687,10 +1727,12 @@ const rootRouteChildren: RootRouteChildren = {
   GalleriesSlugRoute: GalleriesSlugRoute,
   LabAnnouncementRoute: LabAnnouncementRoute,
   LabBlogRoute: LabBlogRoute,
+  LabColorsRoute: LabColorsRoute,
   LabFriendsRoute: LabFriendsRoute,
   LabGalleryRoute: LabGalleryRoute,
   LabMascotRoute: LabMascotRoute,
   LabNavRoute: LabNavRoute,
+  LabPaletteRoute: LabPaletteRoute,
   LabSeriesRoute: LabSeriesRoute,
   LabThemeRoute: LabThemeRoute,
   LabTocTreeRoute: LabTocTreeRoute,

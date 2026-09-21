@@ -44,11 +44,14 @@ export function InlineError({
 			<p
 				role="alert"
 				className={cn(
-					"flex items-center gap-2 font-mono text-xs text-red-600 dark:text-red-400",
+					"flex items-center gap-2 font-mono text-xs text-destructive",
 					className,
 				)}
 			>
-				<span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-red-500" />
+				<span
+					aria-hidden="true"
+					className="size-1.5 shrink-0 rounded-full bg-destructive"
+				/>
 				{message}
 			</p>
 		);
@@ -65,11 +68,11 @@ export function InlineError({
 			<div className="flex min-w-0 items-start gap-2.5">
 				<span
 					aria-hidden="true"
-					className="mt-1.5 size-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-400"
+					className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive"
 				/>
 				<div className="min-w-0">
 					<p className="font-mono text-[13px] text-foreground">
-						<span className="mr-2 tracking-[0.2em] text-red-600 uppercase dark:text-red-400">
+						<span className="mr-2 tracking-[0.2em] text-destructive uppercase">
 							Error
 						</span>
 						{message}

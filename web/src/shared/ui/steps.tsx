@@ -41,7 +41,7 @@ function PhysicalSteps({ steps, current, className }: StepsProps) {
 								className={cn(
 									"size-3 rounded-full border transition-colors duration-300",
 									isActive || isDone
-										? "border-neon-blue bg-neon-blue shadow-[0_0_12px_hsl(var(--glow-soft)/0.6)]"
+										? "border-primary bg-primary shadow-[0_0_12px_color-mix(in_oklch,var(--primary)_50%,transparent)]"
 										: "border-border bg-background",
 								)}
 								style={{
@@ -55,7 +55,7 @@ function PhysicalSteps({ steps, current, className }: StepsProps) {
 									className="mt-1 w-px flex-1 bg-border"
 									style={{
 										background: nextReached
-											? "linear-gradient(to bottom, hsl(var(--neon-blue)), hsl(var(--border)))"
+											? "linear-gradient(to bottom, var(--primary), var(--border))"
 											: undefined,
 									}}
 								>
@@ -64,7 +64,7 @@ function PhysicalSteps({ steps, current, className }: StepsProps) {
 										style={{
 											transform: nextReached ? "scaleY(1)" : "scaleY(0)",
 											background: nextReached
-												? "hsl(var(--neon-blue))"
+												? "var(--primary)"
 												: "transparent",
 										}}
 									/>
