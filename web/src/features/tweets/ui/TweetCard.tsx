@@ -260,7 +260,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							}}
 							role="button"
 							tabIndex={0}
-							className="mt-1 rounded-xl border border-edge-hairline bg-surface/30 p-3 text-xs transition-colors hover:border-foreground/20 hover:bg-surface/50 cursor-pointer"
+							className="mt-1 rounded-xl border border-edge-hairline bg-muted/30 p-3 text-xs transition-colors hover:border-foreground/20 hover:bg-muted/50 cursor-pointer"
 						>
 							<div className="flex items-center gap-2 mb-1.5">
 								<img

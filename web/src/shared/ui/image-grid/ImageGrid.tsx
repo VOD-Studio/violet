@@ -65,7 +65,7 @@ export function ImageGrid({ images, className }: ImageGridProps) {
 					<div
 						key={index}
 						className={cn(
-							"relative overflow-hidden rounded-xl border border-edge-hairline bg-surface/30",
+							"relative overflow-hidden rounded-xl border border-edge-hairline bg-muted/30",
 							count === 1
 								? "w-full max-h-95 aspect-16/10 sm:aspect-16/9"
 								: count === 2
