@@ -1,5 +1,7 @@
 import { PageShell } from "@shared/ui/page-shell";
 import type { ReactNode } from "react";
+import { LayoutSpec } from "./LayoutSpec";
+import { MotionCharter } from "./MotionCharter";
 import { QuickDecisionTable } from "./QuickDecisionTable";
 import { TokenDictionary } from "./TokenDictionary";
 
@@ -64,6 +66,7 @@ export const CHAPTERS: CodexChapter[] = [
 		num: "伍",
 		name: "布局规格",
 		scope: "间距、圆角、投影与容器的法定刻度。",
+		content: <LayoutSpec />,
 	},
 	{
 		num: "陆",
@@ -74,6 +77,7 @@ export const CHAPTERS: CodexChapter[] = [
 		num: "柒",
 		name: "动效章程",
 		scope: "运动的时间、幅度与克制的事由。",
+		content: <MotionCharter />,
 	},
 ];
 
