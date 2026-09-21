@@ -7,6 +7,24 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.40](https://github.com/VOD-Studio/violet/compare/v2.8.39...v2.8.40) (2026-09-21)
+
+
+### 新增
+
+* **lab:** 新增冷香紫罗兰主题色彩展示页 ([8081424](https://github.com/VOD-Studio/violet/commit/8081424b699b90744a998b4e556e88c5e07212f1))
+* **theme:** 重新设计全站冷香紫罗兰主题色体系与组件样式 ([09faa0d](https://github.com/VOD-Studio/violet/commit/09faa0d33bce4a23a2e4dea229d29b1c175abe30))
+* **theme:** 重设计冷香紫罗兰主题色体系并新增色彩实验室 ([#399](https://github.com/VOD-Studio/violet/issues/399)) ([42d7be8](https://github.com/VOD-Studio/violet/commit/42d7be809fd7edf4b84968009e6f408caac47369))
+
+
+### 修复
+
+* **chat:** 调整悬停时间戳至气泡外侧 ([4efb695](https://github.com/VOD-Studio/violet/commit/4efb695b4a84eedd444b30f87cab35fc7295eb44))
+* **lab:** 增强色彩实验室剪贴板降级与无障碍合规审计 ([3e04ec8](https://github.com/VOD-Studio/violet/commit/3e04ec8753e3e94926e081eb1d5b2a2eef86a7cc))
+* **lab:** 完善色彩实验室双域并置、表面文字对比度与组件演练 ([48c6b66](https://github.com/VOD-Studio/violet/commit/48c6b661bac8e1746808a952fd30897d4f42b827))
+* **theme:** 修复主题 cookie 写入在非安全上下文崩溃 ([55f88e0](https://github.com/VOD-Studio/violet/commit/55f88e05fa2316c9db3ac96b05791513982fb5d6))
+* **theme:** 修复暗色模式层叠覆盖与色域裁剪 ([96756cf](https://github.com/VOD-Studio/violet/commit/96756cff2a10f5f9a272beb1753c5fcf810318f0))
+
 ## [2.8.39](https://github.com/VOD-Studio/violet/compare/v2.8.38...v2.8.39) (2026-09-21)
 
 
