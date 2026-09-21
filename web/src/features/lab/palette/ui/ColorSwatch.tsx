@@ -5,6 +5,7 @@ import {
 	parseOklch,
 } from "@features/lab/palette/model/color-math";
 import type { TokenItem } from "@features/lab/palette/model/tokens";
+import { copyText } from "@shared/lib/clipboard";
 import { cn } from "@shared/lib/utils";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
@@ -48,11 +49,15 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 			: getContrastRatio(rawOklch, canvasColor);
 	const wcag = getWcagRating(contrast);
 
-	const handleCopy = (text: string, label: string) => {
-		navigator.clipboard.writeText(text);
-		setCopied(label);
-		toast.success(`已复制 ${label}: ${text}`);
-		setTimeout(() => setCopied(null), 2000);
+	const handleCopy = async (text: string, label: string) => {
+		const ok = await copyText(text);
+		if (ok) {
+			setCopied(label);
+			toast.success(`已复制 ${label}: ${text}`);
+			setTimeout(() => setCopied(null), 2000);
+		} else {
+			toast.error(`复制 ${label} 失败，请检查剪贴板权限`);
+		}
 	};
 
 	return (

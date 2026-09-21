@@ -75,7 +75,10 @@ export function PaletteLab() {
 
 			{/* 协调图表光谱与霓虹发光 */}
 			<div id="charts">
-				<ChartAndNeonSection mode={mode === "dual" ? "dual" : effectiveTheme} />
+				<ChartAndNeonSection
+					mode={mode === "dual" ? "dual" : effectiveTheme}
+					resolvedTheme={currentTheme}
+				/>
 			</div>
 
 			{/* 组件变体实装演练场 */}

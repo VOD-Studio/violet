@@ -1,6 +1,7 @@
 import { getContrastRatio, oklchToRgb, parseOklch } from "@features/lab/palette/model/color-math";
 import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
 import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
+import { copyText } from "@shared/lib/clipboard";
 import { cn } from "@shared/lib/utils";
 import { Segmented } from "@shared/ui/segmented";
 import { Check, Copy, Moon, Sparkles, Sun } from "lucide-react";
@@ -39,7 +40,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 	const activeRgb = effectiveTheme === "light" ? lightRgb : darkRgb;
 	const activeContrast = effectiveTheme === "light" ? lightContrast : darkContrast;
 
-	const handleCopyAll = () => {
+	const handleCopyAll = async () => {
 		const cssVariables = `:root {
   /* 品牌紫罗兰强调（浅色：皇家鸢尾紫） */
   --brand: oklch(0.53 0.205 286);
@@ -59,10 +60,14 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
   --brand-wash-foreground: oklch(0.9 0.07 286);
   --brand-ring: oklch(0.72 0.148 286);
 }`;
-		navigator.clipboard.writeText(cssVariables);
-		setCopied(true);
-		toast.success("已复制紫罗兰色彩系统 CSS 变量");
-		setTimeout(() => setCopied(false), 2000);
+		const ok = await copyText(cssVariables);
+		if (ok) {
+			setCopied(true);
+			toast.success("已复制紫罗兰色彩系统 CSS 变量");
+			setTimeout(() => setCopied(false), 2000);
+		} else {
+			toast.error("复制失败，请检查剪贴板权限");
+		}
 	};
 
 	return (

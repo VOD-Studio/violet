@@ -8,10 +8,14 @@ import { StatusMatrixSection } from "@features/lab/palette/ui/StatusMatrixSectio
 import { SurfaceLayersSection } from "@features/lab/palette/ui/SurfaceLayersSection";
 import { TokenExportSection } from "@features/lab/palette/ui/TokenExportSection";
 import { TonalRampSection } from "@features/lab/palette/ui/TonalRampSection";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// 模拟 navigator.clipboard
+// 模拟 navigator.clipboard 与 window.isSecureContext
+Object.defineProperty(window, "isSecureContext", {
+	value: true,
+	configurable: true,
+});
 Object.assign(navigator, {
 	clipboard: {
 		writeText: vi.fn().mockResolvedValue(undefined),
@@ -19,6 +23,11 @@ Object.assign(navigator, {
 });
 
 describe("Palette UI Components", () => {
+	beforeEach(() => {
+		vi.mocked(navigator.clipboard.writeText).mockClear();
+		vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+	});
+
 	afterEach(() => {
 		cleanup();
 		vi.clearAllMocks();
@@ -57,7 +66,21 @@ describe("Palette UI Components", () => {
 			render(<ColorSwatch token={BRAND_TOKENS[0]} mode="light" />);
 			const copyVarBtn = screen.getByText("--brand");
 			fireEvent.click(copyVarBtn);
-			expect(navigator.clipboard.writeText).toHaveBeenCalledWith("var(--brand)");
+			await waitFor(() => {
+				expect(navigator.clipboard.writeText).toHaveBeenCalledWith("var(--brand)");
+			});
+		});
+
+		it("剪贴板异常时优雅捕获不崩溃", async () => {
+			vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(
+				new Error("Permission denied"),
+			);
+			render(<ColorSwatch token={BRAND_TOKENS[0]} mode="light" />);
+			const copyVarBtn = screen.getByText("--brand");
+			fireEvent.click(copyVarBtn);
+			await waitFor(() => {
+				expect(navigator.clipboard.writeText).toHaveBeenCalled();
+			});
 		});
 	});
 
@@ -75,11 +98,13 @@ describe("Palette UI Components", () => {
 			expect(screen.getByText(/Amethyst · 深色/)).toBeDefined();
 		});
 
-		it("点击导出按钮复制全部变量", () => {
+		it("点击导出按钮复制全部变量", async () => {
 			render(<PaletteHero mode="sync" onModeChange={vi.fn()} resolvedTheme="light" />);
 			const exportBtn = screen.getByText("导出品牌变量");
 			fireEvent.click(exportBtn);
-			expect(navigator.clipboard.writeText).toHaveBeenCalled();
+			await waitFor(() => {
+				expect(navigator.clipboard.writeText).toHaveBeenCalled();
+			});
 		});
 	});
 
@@ -118,6 +143,12 @@ describe("Palette UI Components", () => {
 			expect(screen.getByText("霓虹高发光调色板（Neon）")).toBeDefined();
 			expect(screen.getByText("霓虹紫")).toBeDefined();
 		});
+
+		it("双域并置模式下支持传入 resolvedTheme", () => {
+			render(<ChartAndNeonSection mode="dual" resolvedTheme="dark" />);
+			expect(screen.getByText("浅色图表光谱（5 色）")).toBeDefined();
+			expect(screen.getByText("深色图表光谱（5 色）")).toBeDefined();
+		});
 	});
 
 	describe("ComponentPlaygroundSection", () => {
@@ -130,21 +161,24 @@ describe("Palette UI Components", () => {
 	});
 
 	describe("AccessibilitySection", () => {
-		it("渲染 WCAG 对比度合规审计表格", () => {
+		it("渲染 WCAG 对比度合规审计表格且 8 组组合全部达标", () => {
 			render(<AccessibilitySection />);
 			expect(screen.getByText("无障碍与对比度全景审计")).toBeDefined();
 			expect(screen.getByText("品牌色在画布底色上")).toBeDefined();
 			expect(screen.getByText("正文主墨色在画布底色上")).toBeDefined();
+			expect(screen.getAllByText("全部达标").length).toBe(8);
 		});
 	});
 
 	describe("TokenExportSection", () => {
-		it("渲染代码导出选项卡与复制按钮", () => {
+		it("渲染代码导出选项卡与复制按钮", async () => {
 			render(<TokenExportSection />);
 			expect(screen.getByText("色彩令牌导出")).toBeDefined();
 			const copyBtn = screen.getByText("复制当前片段");
 			fireEvent.click(copyBtn);
-			expect(navigator.clipboard.writeText).toHaveBeenCalled();
+			await waitFor(() => {
+				expect(navigator.clipboard.writeText).toHaveBeenCalled();
+			});
 		});
 	});
 });

@@ -1,7 +1,7 @@
 import { getContrastRatio, getWcagRating } from "@features/lab/palette/model/color-math";
 import { BRAND_TOKENS, STATUS_TOKENS, SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
 import { cn } from "@shared/lib/utils";
-import { ShieldCheck } from "lucide-react";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 
 export interface AccessibilitySectionProps {
 	className?: string;
@@ -131,6 +131,7 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 								const darkRatio = getContrastRatio(pair.darkFg, pair.darkBg);
 								const lightRating = getWcagRating(lightRatio);
 								const darkRating = getWcagRating(darkRatio);
+								const isPass = lightRating.isAccessible && darkRating.isAccessible;
 
 								return (
 									<tr
@@ -163,7 +164,14 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 												<span className="font-mono font-semibold">
 													{lightRatio}:1
 												</span>
-												<span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+												<span
+													className={cn(
+														"rounded-full px-2 py-0.5 font-mono text-[10px]",
+														lightRating.isAccessible
+															? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+															: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+													)}
+												>
 													{lightRating.rating}
 												</span>
 											</div>
@@ -183,16 +191,30 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 												<span className="font-mono font-semibold">
 													{darkRatio}:1
 												</span>
-												<span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+												<span
+													className={cn(
+														"rounded-full px-2 py-0.5 font-mono text-[10px]",
+														darkRating.isAccessible
+															? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+															: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+													)}
+												>
 													{darkRating.rating}
 												</span>
 											</div>
 										</td>
 										<td className="px-6 py-4 text-right">
-											<span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400 text-xs">
-												<ShieldCheck className="size-4" />
-												全部达标
-											</span>
+											{isPass ? (
+												<span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400 text-xs">
+													<ShieldCheck className="size-4" />
+													全部达标
+												</span>
+											) : (
+												<span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400 text-xs">
+													<ShieldAlert className="size-4" />
+													未达标
+												</span>
+											)}
 										</td>
 									</tr>
 								);

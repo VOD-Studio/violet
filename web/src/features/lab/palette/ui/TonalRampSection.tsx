@@ -1,5 +1,6 @@
 import { getContrastRatio, oklchToRgb, parseOklch } from "@features/lab/palette/model/color-math";
 import { TONAL_RAMP, type TonalRampStep } from "@features/lab/palette/model/tokens";
+import { copyText } from "@shared/lib/clipboard";
 import { cn } from "@shared/lib/utils";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
@@ -21,11 +22,15 @@ export function TonalRampSection({ className }: TonalRampSectionProps) {
 		? oklchToRgb(parsedActive.l, parsedActive.c, parsedActive.h)
 		: null;
 
-	const handleCopy = (text: string, label: string) => {
-		navigator.clipboard.writeText(text);
-		setCopiedKey(label);
-		toast.success(`已复制 ${label}: ${text}`);
-		setTimeout(() => setCopiedKey(null), 2000);
+	const handleCopy = async (text: string, label: string) => {
+		const ok = await copyText(text);
+		if (ok) {
+			setCopiedKey(label);
+			toast.success(`已复制 ${label}: ${text}`);
+			setTimeout(() => setCopiedKey(null), 2000);
+		} else {
+			toast.error(`复制 ${label} 失败，请检查剪贴板权限`);
+		}
 	};
 
 	return (

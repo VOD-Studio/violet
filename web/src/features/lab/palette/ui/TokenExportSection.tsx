@@ -1,3 +1,4 @@
+import { copyText } from "@shared/lib/clipboard";
 import { cn } from "@shared/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { Check, Copy } from "lucide-react";
@@ -120,11 +121,15 @@ export function TokenExportSection({ className }: TokenExportSectionProps) {
 		return JSON_SNIPPET;
 	};
 
-	const handleCopy = () => {
-		navigator.clipboard.writeText(getSnippet());
-		setCopied(true);
-		toast.success("已复制色彩令牌配置");
-		setTimeout(() => setCopied(false), 2000);
+	const handleCopy = async () => {
+		const ok = await copyText(getSnippet());
+		if (ok) {
+			setCopied(true);
+			toast.success("已复制色彩令牌配置");
+			setTimeout(() => setCopied(false), 2000);
+		} else {
+			toast.error("复制失败，请检查剪贴板权限");
+		}
 	};
 
 	return (
