@@ -1,5 +1,6 @@
 import { PageShell } from "@shared/ui/page-shell";
 import type { ReactNode } from "react";
+import { TokenDictionary } from "./TokenDictionary";
 
 /**
  * 设计总纲四字箴言：快速决策表查无此项时回退的最高判据。
@@ -34,7 +35,7 @@ interface CodexChapter {
 	content?: ReactNode;
 }
 
-const CHAPTERS: CodexChapter[] = [
+export const CHAPTERS: CodexChapter[] = [
 	{
 		num: "壹",
 		name: "设计原则",
@@ -55,6 +56,7 @@ const CHAPTERS: CodexChapter[] = [
 		num: "肆",
 		name: "token 词典",
 		scope: "品牌色、功能色、中性色、语义色——全部语义 token 的名称与实时值。",
+		content: <TokenDictionary />,
 	},
 	{
 		num: "伍",

@@ -68,8 +68,9 @@ export function cssColorToHex(color: string | undefined | null): string | null {
  *
  * 探针带 .dark 类时，.dark { --x: ... } 规则直接作用于该元素，读到暗色值；
  * 不带类时读到 :root 的浅色值。与 <html> 当前主题解耦。
+ * 营造法式的 token 词典复用此探针读取明暗双域实时值。
  */
-function readSiteVar(name: string, isDark: boolean): string {
+export function readSiteVar(name: string, isDark: boolean): string {
 	if (typeof window === "undefined" || typeof document === "undefined") return "";
 	const probe = document.createElement("span");
 	if (isDark) probe.className = "dark";
