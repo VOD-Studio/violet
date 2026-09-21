@@ -37,6 +37,14 @@ export const LABS = [
 		meta: "切换器 ×4",
 	},
 	{
+		to: "/lab/palette",
+		en: "Palette",
+		title: "冷香紫罗兰色彩系统",
+		description:
+			"全站冷香紫罗兰（Hue 286）调色体系：白瓷与玄曜双重画布、品牌色阶矩阵、薄雾表面与无损明暗光谱。",
+		meta: "明暗双域 · 色阶 ×11 · 材质/对比度/组件",
+	},
+	{
 		to: "/lab/nav",
 		en: "Back Nav",
 		title: "返回导航实验室",
