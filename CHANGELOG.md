@@ -7,6 +7,28 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.38](https://github.com/VOD-Studio/violet/compare/v2.8.37...v2.8.38) (2026-09-21)
+
+
+### 新增
+
+* **comment:** 新增全站最新已审核评论公开端点 ([c63480d](https://github.com/VOD-Studio/violet/commit/c63480dd2176805415a73a66128df67bddc8962b))
+* **home:** 首页尺素区接入真实评论 ([fd81e55](https://github.com/VOD-Studio/violet/commit/fd81e55cee0e0fbd2ae214a0fc93162368c674da))
+* **posts:** 文章正文标题悬停显露章节锚点 ([e252b90](https://github.com/VOD-Studio/violet/commit/e252b90f3da6a43974e2b71d0634ca7579c74c0c))
+* 首页尺素区接入真实评论与文章阅读体验优化 ([#395](https://github.com/VOD-Studio/violet/issues/395)) ([e5d2e73](https://github.com/VOD-Studio/violet/commit/e5d2e7387d7bd74f58dbf060915ea80071a0eb26))
+
+
+### 修复
+
+* **posts:** 文章内容列与封面图宽度对齐 ([28aa07b](https://github.com/VOD-Studio/violet/commit/28aa07b9f52a1951b21720d3d4f61088a2e35c3c))
+* **posts:** 文章目录移至右侧浮层不再占据正文空间 ([a31a47d](https://github.com/VOD-Studio/violet/commit/a31a47dbcd364d598f07fcf514db0a1b35077965))
+* **posts:** 阅读轨迹强调色跟随品牌主题 ([7455676](https://github.com/VOD-Studio/violet/commit/74556764b6983c5c827af20768f39dcce37a5de8))
+
+
+### 重构
+
+* **shared:** AnchoredHeading 支持透传 inline style ([2b8afe8](https://github.com/VOD-Studio/violet/commit/2b8afe85bed5b9256a64223da26e83c3528e99c2))
+
 ## [2.8.37](https://github.com/VOD-Studio/violet/compare/v2.8.36...v2.8.37) (2026-09-20)
 
 
