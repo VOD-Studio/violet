@@ -51,7 +51,7 @@ export function CyclicThemeButton({ size = "default" }: VariantProps) {
 						exit={{ rotate: -90, scale: 0.5, opacity: 0 }}
 						transition={{ duration: 0.2 }}
 					>
-						<Moon className={`${iconCls} text-indigo-400`} />
+						<Moon className={`${iconCls} text-primary`} />
 					</motion.div>
 				)}
 				{theme === "system" && (

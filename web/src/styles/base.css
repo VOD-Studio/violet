@@ -9,6 +9,11 @@
 	scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
 }
 
+/* 全局默认选区底色：极浅紫罗兰洗底，避免系统默认亮蓝与主题冲突 */
+::selection {
+	background-color: color-mix(in oklch, var(--brand) 28%, transparent);
+}
+
 body {
 	background-color: var(--color-background);
 	color: var(--color-foreground);

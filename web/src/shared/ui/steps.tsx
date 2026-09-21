@@ -64,7 +64,7 @@ function PhysicalSteps({ steps, current, className }: StepsProps) {
 										style={{
 											transform: nextReached ? "scaleY(1)" : "scaleY(0)",
 											background: nextReached
-												? "hsl(var(--neon-blue))"
+												? "var(--primary)"
 												: "transparent",
 										}}
 									/>

@@ -21,16 +21,16 @@
 }
 
 .dark {
-	/* 经典紫罗兰强调（深色：星空紫水晶，高透光高对比） */
-	--brand: oklch(0.72 0.165 286);
+	/* 经典紫罗兰强调（深色：星空紫水晶，高透光高对比，sRGB 色域全覆盖） */
+	--brand: oklch(0.72 0.148 286);
 	/* 品牌色之上的前景（深色下为深色墨字） */
 	--brand-foreground: oklch(0.14 0.02 286);
 	/* hover 态：同色相提亮微发光 */
-	--brand-hover: oklch(0.77 0.155 286);
+	--brand-hover: oklch(0.77 0.138 286);
 	/* 薄雾表面：半透明暗紫微光 */
 	--brand-wash: oklch(0.22 0.038 286);
 	/* 薄雾之上的前景：浅丁香紫 */
 	--brand-wash-foreground: oklch(0.9 0.07 286);
 	/* 焦点环 */
-	--brand-ring: oklch(0.72 0.165 286);
+	--brand-ring: oklch(0.72 0.148 286);
 }

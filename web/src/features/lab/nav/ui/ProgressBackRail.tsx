@@ -24,7 +24,7 @@ export function ProgressBackRail() {
 					{/* 进度线：样式对齐 /blog/$slug 顶栏 */}
 					<div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-1">
 						<div
-							className="h-full bg-linear-to-r from-cyan-400 to-blue-500"
+							className="h-full bg-linear-to-r from-brand to-brand-hover"
 							style={{ width: `${Math.round(progress * 100)}%` }}
 						/>
 					</div>

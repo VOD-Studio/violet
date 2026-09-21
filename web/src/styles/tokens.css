@@ -102,7 +102,7 @@
 	--success-foreground: oklch(0.14 0.02 155);
 	--border: oklch(0.92 0.012 286 / 12%);
 	--input: oklch(0.92 0.012 286 / 18%);
-	--ring: oklch(0.72 0.165 286);
+	--ring: oklch(0.72 0.148 286);
 
 	/* 前台遗留与高级材质语义色 */
 	--bg: #0d0b14;
