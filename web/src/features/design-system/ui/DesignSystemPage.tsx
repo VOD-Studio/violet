@@ -1,5 +1,6 @@
 import { PageShell } from "@shared/ui/page-shell";
 import type { ReactNode } from "react";
+import { QuickDecisionTable } from "./QuickDecisionTable";
 import { TokenDictionary } from "./TokenDictionary";
 
 /**
@@ -46,6 +47,7 @@ export const CHAPTERS: CodexChapter[] = [
 		num: "贰",
 		name: "快速决策表",
 		scope: "不知道该用哪个 token 时，先查这张表。表里没有的，回到基本原则。",
+		content: <QuickDecisionTable />,
 	},
 	{
 		num: "叁",
