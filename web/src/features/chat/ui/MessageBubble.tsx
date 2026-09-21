@@ -184,24 +184,26 @@ export function MessageBubble({
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
-			<div className="relative mt-0.5 size-10 shrink-0">
-				{showSender && (
-					<ChatAvatar
-						user={message.sender}
-						className="size-10 transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0"
-					/>
+			<div
+				className={cn(
+					"mt-0.5 flex h-10 shrink-0 items-center gap-2",
+					mine && "flex-row-reverse",
 				)}
+			>
 				<BubbleTimestamp
 					forceVisible={touchActionsVisible}
 					time={message.created_at}
 					editedAt={message.edited_at}
-					className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center"
+					className="w-8 shrink-0 text-center"
 				/>
+				<div className="size-10 shrink-0">
+					{showSender && <ChatAvatar user={message.sender} className="size-10" />}
+				</div>
 			</div>
 			<div
 				className={cn(
 					"relative flex max-w-[min(70%,36rem)] flex-col",
-					mine && "items-end text-right",
+					mine ? "items-end text-right" : "items-start",
 				)}
 			>
 				{showSender && !mine && showSenderName && (
