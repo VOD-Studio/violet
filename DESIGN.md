@@ -2,23 +2,23 @@
 name: "Violet Public Frontend"
 description: "真实个人创作、安静但有生命力的公开内容索引"
 colors:
-  coral-light: "oklch(0.625 0.19 25)"
-  on-coral-light: "oklch(0.99 0 0)"
-  coral-dark: "oklch(0.72 0.15 22)"
-  coral-wash-light: "oklch(0.95 0.025 25)"
-  coral-wash-dark: "oklch(0.25 0.025 22)"
-  canvas-light: "oklch(0.985 0 0)"
-  ink-light: "oklch(0.235 0 0)"
+  violet-light: "oklch(0.53 0.205 286)"
+  on-violet-light: "oklch(0.99 0 0)"
+  violet-dark: "oklch(0.72 0.165 286)"
+  violet-wash-light: "oklch(0.965 0.022 286)"
+  violet-wash-dark: "oklch(0.22 0.038 286)"
+  canvas-light: "oklch(0.992 0.003 286)"
+  ink-light: "oklch(0.19 0.015 286)"
   paper-light: "oklch(1 0 0)"
-  muted-surface-light: "oklch(0.96 0 0)"
-  muted-ink-light: "oklch(0.5 0 0)"
-  hairline-light: "oklch(0.895 0 0)"
-  canvas-dark: "oklch(0.17 0 0)"
-  ink-dark: "oklch(0.92 0 0)"
-  panel-dark: "oklch(0.205 0 0)"
-  muted-surface-dark: "oklch(0.235 0 0)"
-  muted-ink-dark: "oklch(0.7 0 0)"
-  hairline-dark: "oklch(0.92 0 0 / 12%)"
+  muted-surface-light: "oklch(0.962 0.006 286)"
+  muted-ink-light: "oklch(0.52 0.02 286)"
+  hairline-light: "oklch(0.908 0.008 286)"
+  canvas-dark: "oklch(0.138 0.012 286)"
+  ink-dark: "oklch(0.955 0.008 286)"
+  panel-dark: "oklch(0.185 0.015 286)"
+  muted-surface-dark: "oklch(0.225 0.016 286)"
+  muted-ink-dark: "oklch(0.68 0.022 286)"
+  hairline-dark: "oklch(0.92 0.012 286 / 12%)"
 typography:
   display:
     fontFamily: '"Manrope Variable", "Noto Sans SC", "PingFang SC", sans-serif'
@@ -61,12 +61,12 @@ spacing:
   section-wide: "9rem"
 components:
   button-primary:
-    backgroundColor: "{colors.coral-light}"
-    textColor: "{colors.on-coral-light}"
+    backgroundColor: "{colors.violet-light}"
+    textColor: "{colors.on-violet-light}"
     rounded: "{rounded.full}"
     padding: "0.625rem 1.25rem"
   button-primary-dark:
-    backgroundColor: "{colors.coral-dark}"
+    backgroundColor: "{colors.violet-dark}"
     textColor: "{colors.canvas-dark}"
     rounded: "{rounded.full}"
     padding: "0.625rem 1.25rem"
@@ -87,8 +87,8 @@ components:
     rounded: "{rounded.lg}"
     padding: "0.75rem"
   publication-row-hover:
-    backgroundColor: "{colors.coral-wash-light}"
-    textColor: "{colors.coral-light}"
+    backgroundColor: "{colors.violet-wash-light}"
+    textColor: "{colors.violet-light}"
     typography: "{typography.title}"
     rounded: "{rounded.lg}"
     padding: "0.75rem"
@@ -99,11 +99,11 @@ components:
     padding: "0.625rem 0.75rem"
   activity-node:
     backgroundColor: "{colors.canvas-light}"
-    textColor: "{colors.coral-light}"
+    textColor: "{colors.violet-light}"
     rounded: "{rounded.full}"
     size: "1.5rem"
   footprint-node:
-    backgroundColor: "{colors.coral-light}"
+    backgroundColor: "{colors.violet-light}"
     rounded: "{rounded.full}"
     size: "0.625rem"
   discovery-link:
@@ -142,12 +142,12 @@ components:
 
 ## Colors
 
-当前默认配色由暖珊瑚与中性层级组成；主题系统把外观模式与配色方案分离，同一时刻只允许一个品牌强调色发声。浅色和深色主题分别使用作用域 token，不用全局旧色板替代。
+当前默认配色由经典紫罗兰（Violet / Iris）与中性层级组成；主题系统把外观模式与配色方案分离，同一时刻只允许一个品牌强调色发声。浅色和深色主题分别使用作用域 token，不用全局旧色板替代。
 
 ### Brand Accent
 
-- **默认暖珊瑚**（`coral-light` / `coral-dark`）：默认方案用于作者名、链接悬停、焦点轮廓、时间轴节点、选择高亮和主动作。它的稀缺性让真实内容而非品牌色成为页面主体。
-- **强调薄雾**（`accent-wash-light` / `accent-wash-dark`）：由当前强调色派生，只用于轻量 hover 表面与低强度强调，不扩张为大面积背景。
+- **经典紫罗兰**（`violet-light` / `violet-dark`）：默认方案用于作者名、链接悬停、焦点轮廓、时间轴节点、选择高亮和主动作。它的稀缺性让真实内容而非品牌色成为页面主体。
+- **强调薄雾**（`violet-wash-light` / `violet-wash-dark`）：由当前强调色派生，只用于轻量 hover 表面与低强度强调，不扩张为大面积背景。
 
 ### Neutral
 
@@ -159,7 +159,7 @@ components:
 
 ### Named Rules
 
-**The One Accent Voice Rule.** 每套配色在同一界面只使用一个品牌强调色；暖珊瑚是默认值，不与其他装饰色竞争。该限制不取代 danger、warning、success 等行为语义色，也不约束实验室的独立原型。
+**The One Accent Voice Rule.** 每套配色在同一界面只使用一个品牌强调色；紫罗兰是默认值，不与其他装饰色竞争。该限制不取代 danger、warning、success 等行为语义色，也不约束实验室的独立原型。
 
 ### Theme Model
 
@@ -176,7 +176,7 @@ components:
 
 ### Current Migration Scope
 
-本轮只建立可扩展的 theme 接口、样式所有权、视觉方言与暖珊瑚默认适配，并逐页完成视觉迁移；不新增配色选择器、账号字段、API 或自定义颜色功能。多预设与自定义强调色作为后续独立 feature 接入同一接口，不要求本轮调用方再次改造。
+本轮建立可扩展的 theme 接口、样式所有权、视觉方言与紫罗兰签名配色适配，并逐页完成视觉迁移；不新增配色选择器、账号字段、API 或自定义颜色功能。多预设与自定义强调色作为后续独立 feature 接入同一接口，不要求本轮调用方再次改造。
 
 ### Style Ownership
 
@@ -196,7 +196,7 @@ components:
 ### Theme Acceptance
 
 - 每个正式方言至少在 `390 × 844` 移动视口与 `1440 × 900` 桌面视口验收，覆盖 `light / dark / system`，不得出现横向溢出、主题水合闪烁或由字体与 token 切换引起的布局偏移。
-- 默认方案、每套官方预设和自定义强调色边界样本都必须走同一视觉回归矩阵；不能只验证暖珊瑚后宣称主题系统成立。
+- 默认方案、每套官方预设和自定义强调色边界样本都必须走同一视觉回归矩阵；不能只验证单一预设后宣称主题系统成立。
 - 普通文字对比度至少为 `4.5:1`，大字号文字、控件边界和焦点指示至少为 `3:1`；颜色不是错误、成功、选中或禁用状态的唯一提示。
 - 自定义颜色无法同时派生出浅色与深色主题的合法强调前景时，拒绝保存并保留上一个有效方案，不静默降级为不可读颜色。
 - `prefers-reduced-motion` 下取消方向性位移与装饰循环，但保留状态变化和焦点反馈。

@@ -4,23 +4,23 @@
   "title": "Design System: Violet 公开前台新视觉世界",
   "extensions": {
     "colorMeta": {
-      "coral-light": { "role": "primary", "displayName": "浅色暖珊瑚", "canonical": "oklch(0.625 0.19 25)", "tonalRamp": ["oklch(0.15 0.19 25)", "oklch(0.25 0.19 25)", "oklch(0.35 0.19 25)", "oklch(0.45 0.19 25)", "oklch(0.55 0.19 25)", "oklch(0.65 0.19 25)", "oklch(0.8 0.19 25)", "oklch(0.95 0.19 25)"] },
-      "on-coral-light": { "role": "neutral", "displayName": "浅色珊瑚前景", "canonical": "oklch(0.99 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "coral-dark": { "role": "primary", "displayName": "深色暖珊瑚", "canonical": "oklch(0.72 0.15 22)", "tonalRamp": ["oklch(0.15 0.15 22)", "oklch(0.25 0.15 22)", "oklch(0.35 0.15 22)", "oklch(0.45 0.15 22)", "oklch(0.55 0.15 22)", "oklch(0.65 0.15 22)", "oklch(0.8 0.15 22)", "oklch(0.95 0.15 22)"] },
-      "coral-wash-light": { "role": "primary", "displayName": "浅色珊瑚薄雾", "canonical": "oklch(0.95 0.025 25)", "tonalRamp": ["oklch(0.15 0.025 25)", "oklch(0.25 0.025 25)", "oklch(0.35 0.025 25)", "oklch(0.45 0.025 25)", "oklch(0.55 0.025 25)", "oklch(0.65 0.025 25)", "oklch(0.8 0.025 25)", "oklch(0.95 0.025 25)"] },
-      "coral-wash-dark": { "role": "primary", "displayName": "深色珊瑚薄雾", "canonical": "oklch(0.25 0.025 22)", "tonalRamp": ["oklch(0.15 0.025 22)", "oklch(0.25 0.025 22)", "oklch(0.35 0.025 22)", "oklch(0.45 0.025 22)", "oklch(0.55 0.025 22)", "oklch(0.65 0.025 22)", "oklch(0.8 0.025 22)", "oklch(0.95 0.025 22)"] },
-      "canvas-light": { "role": "neutral", "displayName": "近白画布", "canonical": "oklch(0.985 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "ink-light": { "role": "neutral", "displayName": "浅色主题主墨色", "canonical": "oklch(0.235 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "violet-light": { "role": "primary", "displayName": "浅色紫罗兰", "canonical": "oklch(0.53 0.205 286)", "tonalRamp": ["oklch(0.15 0.205 286)", "oklch(0.25 0.205 286)", "oklch(0.35 0.205 286)", "oklch(0.45 0.205 286)", "oklch(0.55 0.205 286)", "oklch(0.65 0.205 286)", "oklch(0.8 0.205 286)", "oklch(0.95 0.205 286)"] },
+      "on-violet-light": { "role": "neutral", "displayName": "浅色紫罗兰前景", "canonical": "oklch(0.99 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
+      "violet-dark": { "role": "primary", "displayName": "深色紫罗兰", "canonical": "oklch(0.72 0.165 286)", "tonalRamp": ["oklch(0.15 0.165 286)", "oklch(0.25 0.165 286)", "oklch(0.35 0.165 286)", "oklch(0.45 0.165 286)", "oklch(0.55 0.165 286)", "oklch(0.65 0.165 286)", "oklch(0.8 0.165 286)", "oklch(0.95 0.165 286)"] },
+      "violet-wash-light": { "role": "primary", "displayName": "浅色紫罗兰薄雾", "canonical": "oklch(0.965 0.022 286)", "tonalRamp": ["oklch(0.15 0.022 286)", "oklch(0.25 0.022 286)", "oklch(0.35 0.022 286)", "oklch(0.45 0.022 286)", "oklch(0.55 0.022 286)", "oklch(0.65 0.022 286)", "oklch(0.8 0.022 286)", "oklch(0.95 0.022 286)"] },
+      "violet-wash-dark": { "role": "primary", "displayName": "深色紫罗兰薄雾", "canonical": "oklch(0.22 0.038 286)", "tonalRamp": ["oklch(0.15 0.038 286)", "oklch(0.25 0.038 286)", "oklch(0.35 0.038 286)", "oklch(0.45 0.038 286)", "oklch(0.55 0.038 286)", "oklch(0.65 0.038 286)", "oklch(0.8 0.038 286)", "oklch(0.95 0.038 286)"] },
+      "canvas-light": { "role": "neutral", "displayName": "温润白瓷画布", "canonical": "oklch(0.992 0.003 286)", "tonalRamp": ["oklch(0.15 0.003 286)", "oklch(0.25 0.003 286)", "oklch(0.35 0.003 286)", "oklch(0.45 0.003 286)", "oklch(0.55 0.003 286)", "oklch(0.65 0.003 286)", "oklch(0.8 0.003 286)", "oklch(0.95 0.003 286)"] },
+      "ink-light": { "role": "neutral", "displayName": "浅色冷墨文字", "canonical": "oklch(0.19 0.015 286)", "tonalRamp": ["oklch(0.15 0.015 286)", "oklch(0.25 0.015 286)", "oklch(0.35 0.015 286)", "oklch(0.45 0.015 286)", "oklch(0.55 0.015 286)", "oklch(0.65 0.015 286)", "oklch(0.8 0.015 286)", "oklch(0.95 0.015 286)"] },
       "paper-light": { "role": "neutral", "displayName": "白色纸面", "canonical": "oklch(1 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "muted-surface-light": { "role": "neutral", "displayName": "浅色静音表面", "canonical": "oklch(0.96 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "muted-ink-light": { "role": "neutral", "displayName": "浅色静音文字", "canonical": "oklch(0.5 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "hairline-light": { "role": "neutral", "displayName": "浅色发丝边界", "canonical": "oklch(0.895 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "canvas-dark": { "role": "neutral", "displayName": "柔和炭黑画布", "canonical": "oklch(0.17 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "ink-dark": { "role": "neutral", "displayName": "深色主题主墨色", "canonical": "oklch(0.92 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "panel-dark": { "role": "neutral", "displayName": "深色面板", "canonical": "oklch(0.205 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "muted-surface-dark": { "role": "neutral", "displayName": "深色静音表面", "canonical": "oklch(0.235 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "muted-ink-dark": { "role": "neutral", "displayName": "深色静音文字", "canonical": "oklch(0.7 0 0)", "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.45 0 0)", "oklch(0.55 0 0)", "oklch(0.65 0 0)", "oklch(0.8 0 0)", "oklch(0.95 0 0)"] },
-      "hairline-dark": { "role": "neutral", "displayName": "深色发丝边界", "canonical": "oklch(0.92 0 0 / 12%)", "tonalRamp": ["oklch(0.15 0 0 / 12%)", "oklch(0.25 0 0 / 12%)", "oklch(0.35 0 0 / 12%)", "oklch(0.45 0 0 / 12%)", "oklch(0.55 0 0 / 12%)", "oklch(0.65 0 0 / 12%)", "oklch(0.8 0 0 / 12%)", "oklch(0.95 0 0 / 12%)"] }
+      "muted-surface-light": { "role": "neutral", "displayName": "浅色静音表面", "canonical": "oklch(0.962 0.006 286)", "tonalRamp": ["oklch(0.15 0.006 286)", "oklch(0.25 0.006 286)", "oklch(0.35 0.006 286)", "oklch(0.45 0.006 286)", "oklch(0.55 0.006 286)", "oklch(0.65 0.006 286)", "oklch(0.8 0.006 286)", "oklch(0.95 0.006 286)"] },
+      "muted-ink-light": { "role": "neutral", "displayName": "浅色静音文字", "canonical": "oklch(0.52 0.02 286)", "tonalRamp": ["oklch(0.15 0.02 286)", "oklch(0.25 0.02 286)", "oklch(0.35 0.02 286)", "oklch(0.45 0.02 286)", "oklch(0.55 0.02 286)", "oklch(0.65 0.02 286)", "oklch(0.8 0.02 286)", "oklch(0.95 0.02 286)"] },
+      "hairline-light": { "role": "neutral", "displayName": "浅色发丝边界", "canonical": "oklch(0.908 0.008 286)", "tonalRamp": ["oklch(0.15 0.008 286)", "oklch(0.25 0.008 286)", "oklch(0.35 0.008 286)", "oklch(0.45 0.008 286)", "oklch(0.55 0.008 286)", "oklch(0.65 0.008 286)", "oklch(0.8 0.008 286)", "oklch(0.95 0.008 286)"] },
+      "canvas-dark": { "role": "neutral", "displayName": "玄曜星空画布", "canonical": "oklch(0.138 0.012 286)", "tonalRamp": ["oklch(0.138 0.012 286)", "oklch(0.25 0.012 286)", "oklch(0.35 0.012 286)", "oklch(0.45 0.012 286)", "oklch(0.55 0.012 286)", "oklch(0.65 0.012 286)", "oklch(0.8 0.012 286)", "oklch(0.95 0.012 286)"] },
+      "ink-dark": { "role": "neutral", "displayName": "深色星芒主墨色", "canonical": "oklch(0.955 0.008 286)", "tonalRamp": ["oklch(0.15 0.008 286)", "oklch(0.25 0.008 286)", "oklch(0.35 0.008 286)", "oklch(0.45 0.008 286)", "oklch(0.55 0.008 286)", "oklch(0.65 0.008 286)", "oklch(0.8 0.008 286)", "oklch(0.95 0.008 286)"] },
+      "panel-dark": { "role": "neutral", "displayName": "深色面板", "canonical": "oklch(0.185 0.015 286)", "tonalRamp": ["oklch(0.15 0.015 286)", "oklch(0.25 0.015 286)", "oklch(0.35 0.015 286)", "oklch(0.45 0.015 286)", "oklch(0.55 0.015 286)", "oklch(0.65 0.015 286)", "oklch(0.8 0.015 286)", "oklch(0.95 0.015 286)"] },
+      "muted-surface-dark": { "role": "neutral", "displayName": "深色静音表面", "canonical": "oklch(0.225 0.016 286)", "tonalRamp": ["oklch(0.15 0.016 286)", "oklch(0.25 0.016 286)", "oklch(0.35 0.016 286)", "oklch(0.45 0.016 286)", "oklch(0.55 0.016 286)", "oklch(0.65 0.016 286)", "oklch(0.8 0.016 286)", "oklch(0.95 0.016 286)"] },
+      "muted-ink-dark": { "role": "neutral", "displayName": "深色静音文字", "canonical": "oklch(0.68 0.022 286)", "tonalRamp": ["oklch(0.15 0.022 286)", "oklch(0.25 0.022 286)", "oklch(0.35 0.022 286)", "oklch(0.45 0.022 286)", "oklch(0.55 0.022 286)", "oklch(0.65 0.022 286)", "oklch(0.8 0.022 286)", "oklch(0.95 0.022 286)"] },
+      "hairline-dark": { "role": "neutral", "displayName": "深色发丝边界", "canonical": "oklch(0.92 0.012 286 / 12%)", "tonalRamp": ["oklch(0.15 0.012 286 / 12%)", "oklch(0.25 0.012 286 / 12%)", "oklch(0.35 0.012 286 / 12%)", "oklch(0.45 0.012 286 / 12%)", "oklch(0.55 0.012 286 / 12%)", "oklch(0.65 0.012 286 / 12%)", "oklch(0.8 0.012 286 / 12%)", "oklch(0.95 0.012 286 / 12%)"] }
     },
     "typographyMeta": {
       "display": { "displayName": "Identity Display", "purpose": "首页身份句；基础字号在 sm 与 lg 断点递增。" },
@@ -157,17 +157,17 @@
   ],
   "narrative": {
     "northStar": "安静生长的创作索引",
-    "overview": "“安静生长的创作索引”把 Violet 的公开前台视为一处由真实作者、真实内容和真实时间共同形成的个人空间。它不追求营销转化，也不借巨型刊头、杂志编排或仪表盘式卡片制造声量；身份介绍是序章，文章、笔记、推文、图集与系列按各自意图继续展开。\n\n这个世界以浅色近白或深色柔和炭黑为底，只让暖珊瑚承担少量强调。层级主要来自字体重量、充足留白、轻边界、灰度头像和克制的表面明度差；小幅 spring 与悬停位移提供生命力，但不抢夺内容注意力。所有身份与发布信息来自站点配置或公开数据，缺失时收拢结构，不伪造头像、文案、指标或大块占位。\n\n本规范适用于未来采用这套视觉世界的公开前台页面；当前首页是已经完成终审的首个验证表达。管理后台、实验室和尚未迁移的既存公开页面不在“已经采用”范围内。现有 Header 是兼容边界，本轮没有重写，也不把它定义为这套首页实现的新组件。",
+    "overview": "“安静生长的创作索引”把 Violet 的公开前台视为一处由真实作者、真实内容和真实时间共同形成的个人空间。它不追求营销转化，也不借巨型刊头、杂志编排或仪表盘式卡片制造声量；身份介绍是序章，文章、笔记、推文、图集与系列按各自意图继续展开。\n\n这个世界以浅色温润白瓷或深色玄曜星空为底，只让紫罗兰承担少量强调。层级主要来自字体重量、充足留白、轻边界、灰度头像和克制的表面明度差；小幅 spring 与悬停位移提供生命力，但不抢夺内容注意力。所有身份与发布信息来自站点配置或公开数据，缺失时收拢结构，不伪造头像、文案、指标或大块占位。\n\n本规范适用于未来采用这套视觉世界的公开前台页面；当前首页是已经完成终审的首个验证表达。管理后台、实验室和尚未迁移的既存公开页面不在“已经采用”范围内。现有 Header 是兼容边界，本轮没有重写，也不把它定义为这套首页实现的新组件。",
     "keyCharacteristics": [
-      "中性浅／深底色与低占比暖珊瑚强调",
+      "中性浅／深底色与低占比紫罗兰强调",
       "真实配置与公开内容驱动，缺失数据时收拢而非填充",
       "排版、留白、细线和小尺度 spring 形成层级",
       "灰度圆形头像、轻量目录、时间轴与发布足迹构成首页已验证表达"
     ],
     "rules": [
       {
-        "name": "The One Coral Voice Rule",
-        "body": "在这套新公开前台视觉世界里，暖珊瑚是唯一彩色强调；不以紫色呼应 Violet 名称，也不把这条限制外推到尚未迁移的既存实验页或后台。",
+        "name": "The One Accent Voice Rule",
+        "body": "在这套新公开前台视觉世界里，经典紫罗兰是签名品牌强调；同一时刻只允许一个彩色强调发声，保持界面优雅沉静，不与其他彩色竞争。",
         "section": "colors"
       },
       {
@@ -183,12 +183,12 @@
     ],
     "dos": [
       "Do 让真实作者配置、公开内容和发布时间决定版面，并在数据缺失时收拢对应区域。",
-      "Do 用暖珊瑚只标记身份、动作、焦点和时间节点，用中性色与留白承担其余层级。",
+      "Do 用经典紫罗兰只标记身份、动作、焦点和时间节点，用中性色与留白承担其余层级。",
       "Do 保持浅色与深色主题、键盘焦点、触摸布局和 `prefers-reduced-motion` 的完整表达。",
       "Do 把首页视为已验证表达，并将同一视觉原则逐页迁移到未来公开前台，而不是宣称全仓库已经完成换装。"
     ],
     "donts": [
-      "Don't 在这套新公开前台世界中加入紫色、霓虹色或多强调色竞争。",
+      "Don't 在这套新公开前台世界中加入杂乱冲突的多强调色竞争。",
       "Don't 使用巨型刊头、杂志／简报式编号、Swiss-editorial 排版、终端面板或仪表盘卡片网格。",
       "Don't 伪造头像、作者故事、发布指标、推荐语、占位内容或与真实创作无关的大幅图片。",
       "Don't 在设计文档中记录未由 Violet 当前实现验证的组件、代码或品牌资产。",
