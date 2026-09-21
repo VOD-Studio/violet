@@ -1,5 +1,6 @@
 import { PageShell } from "@shared/ui/page-shell";
 import type { ReactNode } from "react";
+import { ComponentSpecimens } from "./ComponentSpecimens";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
 import { QuickDecisionTable } from "./QuickDecisionTable";
@@ -72,6 +73,7 @@ export const CHAPTERS: CodexChapter[] = [
 		num: "陆",
 		name: "组件活样例",
 		scope: "真实控件活体陈列，样例即真相。",
+		content: <ComponentSpecimens />,
 	},
 	{
 		num: "柒",
