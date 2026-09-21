@@ -213,28 +213,54 @@ export function useSystemThemeTransition(): void {
 	}, [theme]);
 }
 
+/** theme cookie 有效期（秒），1 年 */
+const THEME_COOKIE_MAX_AGE = 31536000;
+
+/**
+ * persistThemeCookie - 把已解析主题写入 `theme` cookie
+ *
+ * SSR 读这条 cookie 给 <html> 预设 class（`shared/server/theme.ts` 的 getSSRTheme），
+ * 写不进去等于暗色用户刷新时首帧闪白。
+ *
+ * Cookie Store API 只在安全上下文（HTTPS 或 localhost）暴露，Firefox 与 Safari 至今未
+ * 实现；这些环境下全局 `cookieStore` 不存在，裸引用会抛 ReferenceError，必须回落
+ * document.cookie。
+ *
+ * @param resolved - 已解析的主题值，SSR 只认 light/dark 二态
+ */
+export function persistThemeCookie(resolved: "light" | "dark"): void {
+	if (typeof cookieStore !== "undefined") {
+		// CookieInit 无 maxAge 字段，expires 用 epoch ms 等价 1 年；写失败保留旧 cookie
+		cookieStore
+			.set({
+				name: "theme",
+				value: resolved,
+				path: "/",
+				sameSite: "lax",
+				expires: Date.now() + THEME_COOKIE_MAX_AGE * 1000,
+			})
+			.catch(() => undefined);
+		return;
+	}
+	// biome-ignore lint/suspicious/noDocumentCookie: 非安全上下文与 Firefox/Safari 无 Cookie Store API，此为唯一可写路径
+	document.cookie = `theme=${resolved}; path=/; SameSite=Lax; Max-Age=${THEME_COOKIE_MAX_AGE}`;
+}
+
 /**
  * SystemThemeTransition - 全局挂载用空组件
  *
  * 必须渲染在 ThemeProvider 内部才能拿到 useTheme；在 __root 的 AppProvider
  * 子树里挂一个即可让任意页面 OS 切换都触发扩散。
  *
- * 另同步 resolvedTheme → cookie（"light"/"dark"），供 SSR 读 cookie 给 <html>
- * 设正确 class 防 FOUC。覆盖所有场景：显式切换、system 模式 OS 切换、首次 mount。
+ * 另把 resolvedTheme 同步到 cookie 供 SSR 防 FOUC，见 persistThemeCookie。
+ * 覆盖所有场景：显式切换、system 模式 OS 切换、首次 mount。
  */
 export function SystemThemeTransition(): null {
 	useSystemThemeTransition();
 	const { resolvedTheme } = useTheme();
 	useEffect(() => {
 		if (resolvedTheme === "light" || resolvedTheme === "dark") {
-			cookieStore.set({
-				name: "theme",
-				value: resolvedTheme,
-				path: "/",
-				sameSite: "lax",
-				// CookieInit 无 maxAge 字段，用 expires（epoch ms）等价 max-age=31536000s（1 年）
-				expires: Date.now() + 31536000_000,
-			});
+			persistThemeCookie(resolvedTheme);
 		}
 	}, [resolvedTheme]);
 	return null;
