@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Archive,
 	BookOpen,
+	DraftingCompass,
 	FlaskConical,
 	FolderKanban,
 	House,
@@ -127,5 +128,12 @@ export const NAV_ITEMS: NavItem[] = [
 		to: "/lab",
 		icon: FlaskConical,
 		description: "探索原型与交互实验",
+	},
+	{
+		type: "route",
+		label: "营造法式",
+		to: "/design-system",
+		icon: DraftingCompass,
+		description: "查阅站点的用色用料与营造章程",
 	},
 ];
