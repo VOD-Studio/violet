@@ -6,7 +6,7 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
-import { lazy, Suspense, type CSSProperties, type ReactNode } from "react";
+import { type CSSProperties, lazy, type ReactNode, Suspense } from "react";
 import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
