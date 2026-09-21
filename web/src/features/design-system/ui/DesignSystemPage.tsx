@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ComponentSpecimens } from "./ComponentSpecimens";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
+import { PaletteGenerator } from "./PaletteGenerator";
 import { QuickDecisionTable } from "./QuickDecisionTable";
 import { TokenDictionary } from "./TokenDictionary";
 
@@ -56,6 +57,7 @@ export const CHAPTERS: CodexChapter[] = [
 		num: "叁",
 		name: "色板生成器",
 		scope: "选择一个主色，色彩生成算法为你生成完整的色板。",
+		content: <PaletteGenerator />,
 	},
 	{
 		num: "肆",
