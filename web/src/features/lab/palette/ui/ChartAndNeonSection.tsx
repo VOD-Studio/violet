@@ -1,5 +1,5 @@
-import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { CHART_TOKENS, NEON_TOKENS } from "@features/lab/palette/model/tokens";
+import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { cn } from "@shared/lib/utils";
 import { useState } from "react";
 
@@ -82,7 +82,9 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 												className="cursor-pointer transition-all duration-200"
 												onMouseEnter={() => setHoveredIdx(idx)}
 												onMouseLeave={() => setHoveredIdx(null)}
-												onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
+												onClick={() =>
+													setHoveredIdx(hoveredIdx === idx ? null : idx)
+												}
 											/>
 										);
 									});
@@ -166,7 +168,11 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 						</h4>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 							{CHART_TOKENS.map((token) => (
-								<ColorSwatch key={`light-${token.variable}`} token={token} mode="light" />
+								<ColorSwatch
+									key={`light-${token.variable}`}
+									token={token}
+									mode="light"
+								/>
 							))}
 						</div>
 					</div>
@@ -177,7 +183,11 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 						</h4>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 							{CHART_TOKENS.map((token) => (
-								<ColorSwatch key={`dark-${token.variable}`} token={token} mode="dark" />
+								<ColorSwatch
+									key={`dark-${token.variable}`}
+									token={token}
+									mode="dark"
+								/>
 							))}
 						</div>
 					</div>

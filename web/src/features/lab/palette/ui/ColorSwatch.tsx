@@ -42,9 +42,10 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 			: token.onSurfaceForeground.dark
 		: null;
 
-	const contrast = isSurfaceToken && onSurfaceFg
-		? getContrastRatio(onSurfaceFg, rawOklch)
-		: getContrastRatio(rawOklch, canvasColor);
+	const contrast =
+		isSurfaceToken && onSurfaceFg
+			? getContrastRatio(onSurfaceFg, rawOklch)
+			: getContrastRatio(rawOklch, canvasColor);
 	const wcag = getWcagRating(contrast);
 
 	const handleCopy = (text: string, label: string) => {
@@ -72,8 +73,12 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 						className="absolute inset-0 flex flex-col justify-center px-3.5 pointer-events-none"
 						style={{ color: onSurfaceFg }}
 					>
-						<span className="font-mono text-sm font-semibold tracking-tight">Aa 示例文本</span>
-						<span className="text-[10px] opacity-80">{token.onSurfaceForeground?.name}</span>
+						<span className="font-mono text-sm font-semibold tracking-tight">
+							Aa 示例文本
+						</span>
+						<span className="text-[10px] opacity-80">
+							{token.onSurfaceForeground?.name}
+						</span>
 					</div>
 				)}
 
@@ -85,7 +90,10 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 							wcag.isAccessible ? "bg-emerald-400" : "bg-amber-400",
 						)}
 					/>
-					<span className="font-mono">{isSurfaceToken ? "Aa " : ""}{contrast}:1</span>
+					<span className="font-mono">
+						{isSurfaceToken ? "Aa " : ""}
+						{contrast}:1
+					</span>
 					<span className="text-white/80">{wcag.rating}</span>
 				</div>
 

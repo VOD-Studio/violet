@@ -1,5 +1,5 @@
-import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
+import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { cn } from "@shared/lib/utils";
 import { Layers } from "lucide-react";
 
@@ -82,9 +82,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 								}}
 							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
-									<span className="font-semibold">
-										L2 · 薄雾受光面 Wash
-									</span>
+									<span className="font-semibold">L2 · 薄雾受光面 Wash</span>
 									<span>--brand-wash</span>
 								</div>
 								<p className="mt-1 text-[11px] opacity-80">
@@ -167,9 +165,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 								}}
 							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
-									<span className="font-semibold">
-										L2 · 薄雾受光面 Wash
-									</span>
+									<span className="font-semibold">L2 · 薄雾受光面 Wash</span>
 									<span>--brand-wash</span>
 								</div>
 								<p className="mt-1 text-[11px] opacity-80">
@@ -208,7 +204,11 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 						</h4>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{SURFACE_LAYERS.map((token) => (
-								<ColorSwatch key={`light-${token.variable}`} token={token} mode="light" />
+								<ColorSwatch
+									key={`light-${token.variable}`}
+									token={token}
+									mode="light"
+								/>
 							))}
 						</div>
 					</div>
@@ -219,7 +219,11 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 						</h4>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{SURFACE_LAYERS.map((token) => (
-								<ColorSwatch key={`dark-${token.variable}`} token={token} mode="dark" />
+								<ColorSwatch
+									key={`dark-${token.variable}`}
+									token={token}
+									mode="dark"
+								/>
 							))}
 						</div>
 					</div>

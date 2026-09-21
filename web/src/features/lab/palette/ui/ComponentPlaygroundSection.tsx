@@ -1,10 +1,10 @@
+import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { Textarea } from "@shared/ui/base/textarea";
 import { PhysicalSteps } from "@shared/ui/steps";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
-import { cn } from "@shared/lib/utils";
 import { BookOpen, ChevronLeft, ChevronRight, MousePointer, Sparkles } from "lucide-react";
 import { useState } from "react";
 
@@ -29,7 +29,8 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 					<h3 className="mt-1 text-2xl font-bold tracking-tight">基础组件主题实装演练</h3>
 				</div>
 				<p className="max-w-md text-xs text-muted-foreground">
-					验证 Button、Badge、PhysicalSteps、SpotlightCard、古纸排版及选区焦点环在紫罗兰下的质感。
+					验证
+					Button、Badge、PhysicalSteps、SpotlightCard、古纸排版及选区焦点环在紫罗兰下的质感。
 				</p>
 			</div>
 
@@ -73,7 +74,9 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 								</span>
 							</div>
 							<p className="mb-4 text-xs text-muted-foreground">
-								在公开内容方言内，标准 <code className="font-mono">variant="default"</code> 按钮自动继承品牌紫罗兰色：
+								在公开内容方言内，标准{" "}
+								<code className="font-mono">variant="default"</code>{" "}
+								按钮自动继承品牌紫罗兰色：
 							</p>
 							<div className="flex flex-wrap items-center gap-3">
 								<Button variant="default">
@@ -154,10 +157,22 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						<div className="max-w-xl py-2">
 							<PhysicalSteps
 								steps={[
-									{ title: "色彩空间数学建模", description: "基于 OKLCH 286° 色相构建均匀感知色阶" },
-									{ title: "白瓷与玄曜双重画布", description: "明暗底色消除极端眩光，赋予材质温润感" },
-									{ title: "空间表面与光雾层叠", description: "L0 至 L3 渐进式进深，搭配 2.2% 薄雾受光面" },
-									{ title: "全域组件与方言交付", description: "按钮、徽章、时间轴与选区光环全面点亮" },
+									{
+										title: "色彩空间数学建模",
+										description: "基于 OKLCH 286° 色相构建均匀感知色阶",
+									},
+									{
+										title: "白瓷与玄曜双重画布",
+										description: "明暗底色消除极端眩光，赋予材质温润感",
+									},
+									{
+										title: "空间表面与光雾层叠",
+										description: "L0 至 L3 渐进式进深，搭配 2.2% 薄雾受光面",
+									},
+									{
+										title: "全域组件与方言交付",
+										description: "按钮、徽章、时间轴与选区光环全面点亮",
+									},
 								]}
 								current={currentStep}
 							/>

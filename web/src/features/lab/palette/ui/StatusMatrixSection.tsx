@@ -1,5 +1,5 @@
-import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { STATUS_TOKENS } from "@features/lab/palette/model/tokens";
+import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { cn } from "@shared/lib/utils";
 import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 
@@ -36,7 +36,11 @@ export function StatusMatrixSection({ mode, className }: StatusMatrixSectionProp
 						</h4>
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 							{STATUS_TOKENS.map((token) => (
-								<ColorSwatch key={`light-${token.variable}`} token={token} mode="light" />
+								<ColorSwatch
+									key={`light-${token.variable}`}
+									token={token}
+									mode="light"
+								/>
 							))}
 						</div>
 					</div>
@@ -47,7 +51,11 @@ export function StatusMatrixSection({ mode, className }: StatusMatrixSectionProp
 						</h4>
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 							{STATUS_TOKENS.map((token) => (
-								<ColorSwatch key={`dark-${token.variable}`} token={token} mode="dark" />
+								<ColorSwatch
+									key={`dark-${token.variable}`}
+									token={token}
+									mode="dark"
+								/>
 							))}
 						</div>
 					</div>

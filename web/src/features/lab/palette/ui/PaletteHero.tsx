@@ -1,8 +1,8 @@
 import { getContrastRatio, oklchToRgb, parseOklch } from "@features/lab/palette/model/color-math";
 import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
 import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
-import { Segmented } from "@shared/ui/segmented";
 import { cn } from "@shared/lib/utils";
+import { Segmented } from "@shared/ui/segmented";
 import { Check, Copy, Moon, Sparkles, Sun } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -105,7 +105,9 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 				<div
 					className={cn(
 						"grid items-center gap-8",
-						mode === "dual" ? "grid-cols-1 lg:grid-cols-[1fr_1.4fr]" : "grid-cols-1 lg:grid-cols-[1.2fr_1fr]",
+						mode === "dual"
+							? "grid-cols-1 lg:grid-cols-[1fr_1.4fr]"
+							: "grid-cols-1 lg:grid-cols-[1.2fr_1fr]",
 					)}
 				>
 					{/* 左侧：色彩叙事与哲学参数 */}
@@ -116,7 +118,10 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								Hue 286° · 鸢尾冷香
 							</span>
 							<span className="rounded-full border border-edge-hairline px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-								WCAG {mode === "dual" ? `浅 ${lightContrast}:1 · 深 ${darkContrast}:1` : `${activeContrast >= 7.0 ? "AAA" : "AA"} ${activeContrast}:1`}
+								WCAG{" "}
+								{mode === "dual"
+									? `浅 ${lightContrast}:1 · 深 ${darkContrast}:1`
+									: `${activeContrast >= 7.0 ? "AAA" : "AA"} ${activeContrast}:1`}
 							</span>
 						</div>
 
@@ -147,7 +152,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								<span className="mt-0.5 font-mono text-base font-semibold">
 									{mode === "dual"
 										? `${lightParsed?.c.toFixed(3)} / ${darkParsed?.c.toFixed(3)}`
-										: activeParsed?.c.toFixed(3) ?? "0.205"}
+										: (activeParsed?.c.toFixed(3) ?? "0.205")}
 								</span>
 							</div>
 							<div className="rounded-lg border border-edge-hairline/60 bg-background/50 p-3">
@@ -157,7 +162,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								<span className="mt-0.5 font-mono text-base font-semibold">
 									{mode === "dual"
 										? `${lightParsed?.l.toFixed(2)} / ${darkParsed?.l.toFixed(2)}`
-										: activeParsed?.l.toFixed(2) ?? "0.53"}
+										: (activeParsed?.l.toFixed(2) ?? "0.53")}
 								</span>
 							</div>
 							<div className="rounded-lg border border-edge-hairline/60 bg-background/50 p-3">
@@ -167,7 +172,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								<span className="mt-0.5 font-mono text-base font-semibold">
 									{mode === "dual"
 										? `${lightRgb?.hex.toUpperCase()} / ${darkRgb?.hex.toUpperCase()}`
-										: activeRgb?.hex.toUpperCase() ?? "#684DDA"}
+										: (activeRgb?.hex.toUpperCase() ?? "#684DDA")}
 								</span>
 							</div>
 						</div>
@@ -196,7 +201,9 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 										<span className="font-mono text-xl font-bold tracking-tight">
 											{lightRgb?.hex.toUpperCase()}
 										</span>
-										<p className="mt-0.5 font-mono text-[11px] opacity-90">{brandToken.light}</p>
+										<p className="mt-0.5 font-mono text-[11px] opacity-90">
+											{brandToken.light}
+										</p>
 									</div>
 								</div>
 
@@ -219,7 +226,9 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 										<span className="font-mono text-xl font-bold tracking-tight">
 											{darkRgb?.hex.toUpperCase()}
 										</span>
-										<p className="mt-0.5 font-mono text-[11px] opacity-90">{brandToken.dark}</p>
+										<p className="mt-0.5 font-mono text-[11px] opacity-90">
+											{brandToken.dark}
+										</p>
 									</div>
 								</div>
 							</div>
@@ -235,7 +244,10 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								<div
 									className="relative z-10 flex items-center justify-between"
 									style={{
-										color: effectiveTheme === "light" ? "oklch(0.99 0 0)" : "oklch(0.14 0.02 286)",
+										color:
+											effectiveTheme === "light"
+												? "oklch(0.99 0 0)"
+												: "oklch(0.14 0.02 286)",
 									}}
 								>
 									<span className="font-mono text-xs font-semibold tracking-wider uppercase">
@@ -255,13 +267,18 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								<div
 									className="relative z-10"
 									style={{
-										color: effectiveTheme === "light" ? "oklch(0.99 0 0)" : "oklch(0.14 0.02 286)",
+										color:
+											effectiveTheme === "light"
+												? "oklch(0.99 0 0)"
+												: "oklch(0.14 0.02 286)",
 									}}
 								>
 									<span className="font-mono text-2xl font-bold tracking-tight md:text-3xl">
 										{activeRgb?.hex.toUpperCase()}
 									</span>
-									<p className="mt-1 font-mono text-xs opacity-90">{activeBrandOklch}</p>
+									<p className="mt-1 font-mono text-xs opacity-90">
+										{activeBrandOklch}
+									</p>
 								</div>
 							</div>
 						)}

@@ -1,13 +1,13 @@
-import { PaletteHero } from "@features/lab/palette/ui/PaletteHero";
-import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
-import { TonalRampSection } from "@features/lab/palette/ui/TonalRampSection";
-import { SurfaceLayersSection } from "@features/lab/palette/ui/SurfaceLayersSection";
-import { StatusMatrixSection } from "@features/lab/palette/ui/StatusMatrixSection";
-import { ChartAndNeonSection } from "@features/lab/palette/ui/ChartAndNeonSection";
-import { ComponentPlaygroundSection } from "@features/lab/palette/ui/ComponentPlaygroundSection";
-import { AccessibilitySection } from "@features/lab/palette/ui/AccessibilitySection";
-import { TokenExportSection } from "@features/lab/palette/ui/TokenExportSection";
 import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
+import { AccessibilitySection } from "@features/lab/palette/ui/AccessibilitySection";
+import { ChartAndNeonSection } from "@features/lab/palette/ui/ChartAndNeonSection";
+import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
+import { ComponentPlaygroundSection } from "@features/lab/palette/ui/ComponentPlaygroundSection";
+import { PaletteHero } from "@features/lab/palette/ui/PaletteHero";
+import { StatusMatrixSection } from "@features/lab/palette/ui/StatusMatrixSection";
+import { SurfaceLayersSection } from "@features/lab/palette/ui/SurfaceLayersSection";
+import { TokenExportSection } from "@features/lab/palette/ui/TokenExportSection";
+import { TonalRampSection } from "@features/lab/palette/ui/TonalRampSection";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
