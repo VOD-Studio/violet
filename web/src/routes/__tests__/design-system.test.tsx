@@ -1,4 +1,4 @@
-import { DesignSystemPage } from "@features/design-system/ui/DesignSystemPage";
+import { CHAPTERS, DesignSystemPage } from "@features/design-system/ui/DesignSystemPage";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { routeTree } from "../../routeTree.gen";
@@ -30,7 +30,7 @@ describe("营造法式页", () => {
 		}
 	});
 
-	it("七章节骨架齐备，未落地六章标注营造中", () => {
+	it("七章节骨架齐备，未落地章节标注营造中", () => {
 		render(<DesignSystemPage />);
 		for (const name of [
 			"快速决策表",
@@ -42,13 +42,17 @@ describe("营造法式页", () => {
 		]) {
 			expect(screen.getByRole("heading", { name })).toBeTruthy();
 		}
-		expect(screen.getAllByText("营造中")).toHaveLength(6);
+		// 徽标数与章节数据中未落地章数对账，章节落地后自然收敛
+		expect(screen.getAllByText("营造中")).toHaveLength(
+			CHAPTERS.filter((chapter) => !chapter.content).length,
+		);
 	});
 
 	it("设计原则章成文：箴言柱脚与全站底线", () => {
 		render(<DesignSystemPage />);
 		expect(screen.getByText(/语义 token 优先/)).toBeTruthy();
 		expect(screen.getByText(/WCAG AA 对比度/)).toBeTruthy();
-		expect(screen.getByText(/rounded-2xl/)).toBeTruthy();
+		// 底线与布局规格章都会复述圆角红线，存在即成文
+		expect(screen.getAllByText(/rounded-2xl/).length).toBeGreaterThan(0);
 	});
 });
