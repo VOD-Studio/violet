@@ -1,5 +1,5 @@
 import { oklchToRgb, parseOklch } from "@shared/lib/color-math";
-import { cssColorToHex, readSiteVar } from "@shared/ui/diagram/theme-variables";
+import { cssColorToHex, readSiteVar } from "@shared/lib/css-vars";
 
 /** 明暗双域 */
 export type TokenDomain = "light" | "dark";
