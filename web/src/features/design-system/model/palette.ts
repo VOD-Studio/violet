@@ -112,9 +112,9 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 	// 功能色：语义色相固定（绿=成功、黄=警示、红=危险），明度按域适配；
 	// 现行体系将其固定为不可变语义，此处展示算法全量推导的候选。
 	const functionalHues = [
-		{ role: "success", h: 150 },
-		{ role: "warning", h: 85 },
-		{ role: "destructive", h: 25 },
+		{ role: "--success", h: 150 },
+		{ role: "--warning", h: 85 },
+		{ role: "--destructive", h: 25 },
 	];
 	const functional: RoleColor[] = functionalHues.map(({ role, h: fh }) => ({
 		role,
@@ -174,6 +174,39 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 			light: swatch(0.53, cLight, h),
 			dark: swatch(0.72, cDark, h),
 			note: "焦点环",
+		},
+		{
+			role: "--popover",
+			light: swatch(0.985, 0.005, h),
+			dark: swatch(0.17, 0.014, h),
+			note: "浮层底",
+		},
+		{
+			role: "--popover-foreground",
+			light: swatch(0.19, 0.015, h),
+			dark: swatch(0.955, 0.008, h),
+		},
+		{
+			role: "--secondary",
+			light: swatch(0.955, 0.008, h),
+			dark: swatch(0.21, 0.02, h),
+			note: "次要动作面",
+		},
+		{
+			role: "--secondary-foreground",
+			light: swatch(0.21, 0.02, h),
+			dark: swatch(0.955, 0.008, h),
+		},
+		{
+			role: "--accent-foreground",
+			light: swatch(0.19, 0.015, h),
+			dark: swatch(0.955, 0.008, h),
+		},
+		{
+			role: "--primary-foreground",
+			light: swatch(0.99, 0, h),
+			dark: swatch(0.14, 0.02, h),
+			note: "主要动作上的文字",
 		},
 	];
 

@@ -25,6 +25,12 @@ describe("色板生成器", () => {
 			"--input",
 			"--primary",
 			"--ring",
+			"--popover",
+			"--popover-foreground",
+			"--secondary",
+			"--secondary-foreground",
+			"--accent-foreground",
+			"--primary-foreground",
 		]);
 	});
 

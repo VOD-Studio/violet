@@ -60,7 +60,7 @@ export function PaletteGenerator() {
 					<label className="flex items-center gap-3 text-sm" htmlFor="seed-hue">
 						色相
 						<input
-							className="w-44 accent-[--brand]"
+							className="w-44 accent-(--brand)"
 							id="seed-hue"
 							max={360}
 							min={0}
@@ -73,7 +73,7 @@ export function PaletteGenerator() {
 					<label className="flex items-center gap-3 text-sm" htmlFor="seed-chroma">
 						彩度
 						<input
-							className="w-32 accent-[--brand]"
+							className="w-32 accent-(--brand)"
 							id="seed-chroma"
 							max={0.3}
 							min={0.06}
