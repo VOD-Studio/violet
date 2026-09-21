@@ -82,6 +82,7 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 												className="cursor-pointer transition-all duration-200"
 												onMouseEnter={() => setHoveredIdx(idx)}
 												onMouseLeave={() => setHoveredIdx(null)}
+												onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
 											/>
 										);
 									});
@@ -110,12 +111,14 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 							const isHovered = hoveredIdx === idx;
 
 							return (
-								<div
+								<button
+									type="button"
 									key={item.label}
 									onMouseEnter={() => setHoveredIdx(idx)}
 									onMouseLeave={() => setHoveredIdx(null)}
+									onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
 									className={cn(
-										"flex cursor-pointer items-center justify-between rounded-lg border border-edge-hairline/60 p-3 transition-colors",
+										"flex w-full cursor-pointer items-center justify-between rounded-lg border border-edge-hairline/60 p-3 text-left transition-colors",
 										isHovered
 											? "bg-muted/60 border-brand/40"
 											: "hover:bg-muted/30",
@@ -147,7 +150,7 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 											{item.share}%
 										</span>
 									</div>
-								</div>
+								</button>
 							);
 						})}
 					</div>
@@ -155,11 +158,37 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 			</div>
 
 			{/* 图表令牌卡片 */}
-			<div className="mb-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-				{CHART_TOKENS.map((token) => (
-					<ColorSwatch key={token.variable} token={token} mode={activeMode} />
-				))}
-			</div>
+			{mode === "dual" ? (
+				<div className="mb-14 space-y-6">
+					<div>
+						<h4 className="mb-3 font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+							浅色图表光谱（5 色）
+						</h4>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+							{CHART_TOKENS.map((token) => (
+								<ColorSwatch key={`light-${token.variable}`} token={token} mode="light" />
+							))}
+						</div>
+					</div>
+
+					<div>
+						<h4 className="mb-3 font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+							深色图表光谱（5 色）
+						</h4>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+							{CHART_TOKENS.map((token) => (
+								<ColorSwatch key={`dark-${token.variable}`} token={token} mode="dark" />
+							))}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div className="mb-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+					{CHART_TOKENS.map((token) => (
+						<ColorSwatch key={token.variable} token={token} mode={mode} />
+					))}
+				</div>
+			)}
 
 			{/* 第二分栏：高能霓虹发光色板 */}
 			<div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-edge-hairline pb-4">
@@ -177,32 +206,92 @@ export function ChartAndNeonSection({ mode, className }: ChartAndNeonSectionProp
 			</div>
 
 			{/* 霓虹发光光棒 */}
-			<div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-5">
-				{NEON_TOKENS.map((token) => {
-					const rawColor = activeMode === "light" ? token.light : token.dark;
-					return (
-						<div
-							key={token.variable}
-							className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
-						>
-							{/* 发光光柱 */}
-							<div
-								className="mb-3 h-20 w-full rounded-lg shadow-sm transition-all group-hover:shadow-md"
-								style={{
-									backgroundColor: rawColor,
-									boxShadow: `0 0 16px color-mix(in oklch, ${rawColor} 35%, transparent)`,
-								}}
-							/>
-							<div className="w-full text-center">
-								<span className="text-xs font-semibold">{token.name}</span>
-								<span className="block font-mono text-[10px] text-muted-foreground">
-									{token.variable}
-								</span>
-							</div>
+			{mode === "dual" ? (
+				<div className="space-y-6">
+					<div>
+						<h4 className="mb-3 font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+							浅色霓虹高对比（白瓷基底）
+						</h4>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+							{NEON_TOKENS.map((token) => (
+								<div
+									key={`light-${token.variable}`}
+									className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
+								>
+									<div
+										className="mb-3 h-20 w-full rounded-lg shadow-sm transition-all group-hover:shadow-md"
+										style={{
+											backgroundColor: token.light,
+											boxShadow: `0 0 16px color-mix(in oklch, ${token.light} 35%, transparent)`,
+										}}
+									/>
+									<div className="w-full text-center">
+										<span className="text-xs font-semibold">{token.name}</span>
+										<span className="block font-mono text-[10px] text-muted-foreground">
+											{token.variable}
+										</span>
+									</div>
+								</div>
+							))}
 						</div>
-					);
-				})}
-			</div>
+					</div>
+
+					<div>
+						<h4 className="mb-3 font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+							深色霓虹高发光（玄曜星空基底）
+						</h4>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+							{NEON_TOKENS.map((token) => (
+								<div
+									key={`dark-${token.variable}`}
+									className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
+								>
+									<div
+										className="mb-3 h-20 w-full rounded-lg shadow-sm transition-all group-hover:shadow-md"
+										style={{
+											backgroundColor: token.dark,
+											boxShadow: `0 0 16px color-mix(in oklch, ${token.dark} 45%, transparent)`,
+										}}
+									/>
+									<div className="w-full text-center">
+										<span className="text-xs font-semibold">{token.name}</span>
+										<span className="block font-mono text-[10px] text-muted-foreground">
+											{token.variable}
+										</span>
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+					{NEON_TOKENS.map((token) => {
+						const rawColor = activeMode === "light" ? token.light : token.dark;
+						return (
+							<div
+								key={token.variable}
+								className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
+							>
+								{/* 发光光柱 */}
+								<div
+									className="mb-3 h-20 w-full rounded-lg shadow-sm transition-all group-hover:shadow-md"
+									style={{
+										backgroundColor: rawColor,
+										boxShadow: `0 0 16px color-mix(in oklch, ${rawColor} 35%, transparent)`,
+									}}
+								/>
+								<div className="w-full text-center">
+									<span className="text-xs font-semibold">{token.name}</span>
+									<span className="block font-mono text-[10px] text-muted-foreground">
+										{token.variable}
+									</span>
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			)}
 		</section>
 	);
 }

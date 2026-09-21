@@ -32,6 +32,12 @@ describe("palette tokens", () => {
 
 	it("空间表面层级与状态色格式正确", () => {
 		expect(SURFACE_LAYERS.length).toBeGreaterThanOrEqual(5);
+		for (const surface of SURFACE_LAYERS) {
+			expect(surface.isSurface).toBe(true);
+			expect(surface.onSurfaceForeground).toBeDefined();
+			expect(parseOklch(surface.onSurfaceForeground?.light ?? "")).not.toBeNull();
+			expect(parseOklch(surface.onSurfaceForeground?.dark ?? "")).not.toBeNull();
+		}
 		expect(STATUS_TOKENS.length).toBe(3);
 		expect(CHART_TOKENS.length).toBe(5);
 		expect(NEON_TOKENS.length).toBe(5);

@@ -32,6 +32,27 @@ describe("Palette UI Components", () => {
 			expect(screen.getByText("Primary Brand Voice")).toBeDefined();
 		});
 
+		it("针对空间表面材质正确计算其上文字对比度并显示 Aa", () => {
+			const canvasSurface = {
+				variable: "--card",
+				name: "卡片表面",
+				role: "Card",
+				light: "oklch(1 0 0)",
+				dark: "oklch(0.185 0.015 286)",
+				description: "卡片",
+				isSurface: true,
+				onSurfaceForeground: {
+					variable: "--card-foreground",
+					name: "卡片文字",
+					light: "oklch(0.19 0.015 286)",
+					dark: "oklch(0.955 0.008 286)",
+				},
+			};
+			render(<ColorSwatch token={canvasSurface} mode="light" />);
+			expect(screen.getAllByText(/Aa/).length).toBeGreaterThan(0);
+			expect(screen.getByText("AAA")).toBeDefined();
+		});
+
 		it("点击复制按钮调用 clipboard.writeText", async () => {
 			render(<ColorSwatch token={BRAND_TOKENS[0]} mode="light" />);
 			const copyVarBtn = screen.getByText("--brand");
@@ -46,6 +67,12 @@ describe("Palette UI Components", () => {
 			render(<PaletteHero mode="sync" onModeChange={onModeChange} resolvedTheme="light" />);
 			expect(screen.getByText("冷香紫罗兰签名体系")).toBeDefined();
 			expect(screen.getByText(/Hue 286°/)).toBeDefined();
+		});
+
+		it("双域并置模式下并列渲染浅色与深色主色块", () => {
+			render(<PaletteHero mode="dual" onModeChange={vi.fn()} resolvedTheme="light" />);
+			expect(screen.getByText(/Royal Iris · 浅色/)).toBeDefined();
+			expect(screen.getByText(/Amethyst · 深色/)).toBeDefined();
 		});
 
 		it("点击导出按钮复制全部变量", () => {
@@ -94,10 +121,11 @@ describe("Palette UI Components", () => {
 	});
 
 	describe("ComponentPlaygroundSection", () => {
-		it("渲染组件变体演练选项卡", () => {
+		it("渲染组件变体演练选项卡与方言对照", () => {
 			render(<ComponentPlaygroundSection />);
 			expect(screen.getByText("基础组件主题实装演练")).toBeDefined();
 			expect(screen.getByText(/品牌主动作 \(Brand\)/)).toBeDefined();
+			expect(screen.getByText(/dialect-public/)).toBeDefined();
 		});
 	});
 
@@ -106,7 +134,7 @@ describe("Palette UI Components", () => {
 			render(<AccessibilitySection />);
 			expect(screen.getByText("无障碍与对比度全景审计")).toBeDefined();
 			expect(screen.getByText("品牌色在画布底色上")).toBeDefined();
-			expect(screen.getByText("正文主墨色在画布上")).toBeDefined();
+			expect(screen.getByText("正文主墨色在画布底色上")).toBeDefined();
 		});
 	});
 

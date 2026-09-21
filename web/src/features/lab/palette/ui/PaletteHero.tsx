@@ -2,6 +2,7 @@ import { getContrastRatio, oklchToRgb, parseOklch } from "@features/lab/palette/
 import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
 import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
 import { Segmented } from "@shared/ui/segmented";
+import { cn } from "@shared/lib/utils";
 import { Check, Copy, Moon, Sparkles, Sun } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -21,17 +22,22 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 	const { switchTheme } = useThemeSwitcher();
 	const [copied, setCopied] = useState(false);
 
-	// 当前主品牌 token 在当前解析模式下的属性
-	const effectiveTheme = mode === "dual" ? resolvedTheme : mode === "sync" ? resolvedTheme : mode;
+	// 浅色与深色品牌主色参数
 	const brandToken = BRAND_TOKENS[0];
-	const rawBrandOklch = effectiveTheme === "light" ? brandToken.light : brandToken.dark;
-	const parsed = parseOklch(rawBrandOklch);
-	const rgb = parsed ? oklchToRgb(parsed.l, parsed.c, parsed.h) : null;
+	const lightParsed = parseOklch(brandToken.light);
+	const darkParsed = parseOklch(brandToken.dark);
+	const lightRgb = lightParsed ? oklchToRgb(lightParsed.l, lightParsed.c, lightParsed.h) : null;
+	const darkRgb = darkParsed ? oklchToRgb(darkParsed.l, darkParsed.c, darkParsed.h) : null;
 
-	// 对比度基线
-	const canvasOklch =
-		effectiveTheme === "light" ? "oklch(0.992 0.003 286)" : "oklch(0.138 0.012 286)";
-	const textContrast = getContrastRatio(rawBrandOklch, canvasOklch);
+	const lightContrast = getContrastRatio(brandToken.light, "oklch(0.992 0.003 286)");
+	const darkContrast = getContrastRatio(brandToken.dark, "oklch(0.138 0.012 286)");
+
+	// 单域模式下生效的属性
+	const effectiveTheme = mode === "dual" ? resolvedTheme : mode === "sync" ? resolvedTheme : mode;
+	const activeBrandOklch = effectiveTheme === "light" ? brandToken.light : brandToken.dark;
+	const activeParsed = effectiveTheme === "light" ? lightParsed : darkParsed;
+	const activeRgb = effectiveTheme === "light" ? lightRgb : darkRgb;
+	const activeContrast = effectiveTheme === "light" ? lightContrast : darkContrast;
 
 	const handleCopyAll = () => {
 		const cssVariables = `:root {
@@ -96,7 +102,12 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 
 			{/* 主视觉 Hero 色彩展示板 */}
 			<div className="relative overflow-hidden rounded-2xl border border-edge-hairline bg-card p-6 md:p-10 shadow-xs">
-				<div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
+				<div
+					className={cn(
+						"grid items-center gap-8",
+						mode === "dual" ? "grid-cols-1 lg:grid-cols-[1fr_1.4fr]" : "grid-cols-1 lg:grid-cols-[1.2fr_1fr]",
+					)}
+				>
 					{/* 左侧：色彩叙事与哲学参数 */}
 					<div>
 						<div className="mb-3 flex items-center gap-2">
@@ -105,7 +116,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								Hue 286° · 鸢尾冷香
 							</span>
 							<span className="rounded-full border border-edge-hairline px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-								WCAG {textContrast >= 7.0 ? "AAA" : "AA"} {textContrast}:1
+								WCAG {mode === "dual" ? `浅 ${lightContrast}:1 · 深 ${darkContrast}:1` : `${activeContrast >= 7.0 ? "AAA" : "AA"} ${activeContrast}:1`}
 							</span>
 						</div>
 
@@ -134,7 +145,9 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 									彩度 Chroma
 								</span>
 								<span className="mt-0.5 font-mono text-base font-semibold">
-									{parsed?.c.toFixed(3) ?? "0.205"}
+									{mode === "dual"
+										? `${lightParsed?.c.toFixed(3)} / ${darkParsed?.c.toFixed(3)}`
+										: activeParsed?.c.toFixed(3) ?? "0.205"}
 								</span>
 							</div>
 							<div className="rounded-lg border border-edge-hairline/60 bg-background/50 p-3">
@@ -142,7 +155,9 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 									明度 Lightness
 								</span>
 								<span className="mt-0.5 font-mono text-base font-semibold">
-									{parsed?.l.toFixed(2) ?? "0.53"}
+									{mode === "dual"
+										? `${lightParsed?.l.toFixed(2)} / ${darkParsed?.l.toFixed(2)}`
+										: activeParsed?.l.toFixed(2) ?? "0.53"}
 								</span>
 							</div>
 							<div className="rounded-lg border border-edge-hairline/60 bg-background/50 p-3">
@@ -150,7 +165,9 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 									Hex 代码
 								</span>
 								<span className="mt-0.5 font-mono text-base font-semibold">
-									{rgb?.hex.toUpperCase() ?? "#684DDA"}
+									{mode === "dual"
+										? `${lightRgb?.hex.toUpperCase()} / ${darkRgb?.hex.toUpperCase()}`
+										: activeRgb?.hex.toUpperCase() ?? "#684DDA"}
 								</span>
 							</div>
 						</div>
@@ -158,41 +175,103 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 
 					{/* 右侧：超大透光主色块与色轮角标 */}
 					<div className="flex flex-col items-center justify-center">
-						<div
-							className="relative flex h-64 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-6 shadow-md"
-							style={{ backgroundColor: rawBrandOklch }}
-						>
-							{/* 背景柔和微晕 */}
-							<div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-white/20 blur-2xl" />
+						{mode === "dual" ? (
+							<div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+								{/* 浅色域主色块 */}
+								<div
+									className="relative flex h-60 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-5 shadow-md"
+									style={{ backgroundColor: brandToken.light }}
+								>
+									<div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-white/20 blur-xl" />
+									<div className="relative z-10 flex items-center justify-between text-white">
+										<span className="font-mono text-[11px] font-semibold tracking-wider uppercase">
+											Royal Iris · 浅色
+										</span>
+										<div className="flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 text-[10px] backdrop-blur-xs">
+											<Sun className="size-3" />
+											<span>5.7:1 AA</span>
+										</div>
+									</div>
+									<div className="relative z-10 text-white">
+										<span className="font-mono text-xl font-bold tracking-tight">
+											{lightRgb?.hex.toUpperCase()}
+										</span>
+										<p className="mt-0.5 font-mono text-[11px] opacity-90">{brandToken.light}</p>
+									</div>
+								</div>
 
-							{/* 顶部标签 */}
-							<div className="relative z-10 flex items-center justify-between text-brand-foreground">
-								<span className="font-mono text-xs font-semibold tracking-wider uppercase">
-									Violet Iris · Brand Primary
-								</span>
-								<div className="flex items-center gap-1.5 rounded-full bg-black/20 px-2 py-0.5 text-[11px] backdrop-blur-xs">
-									{effectiveTheme === "light" ? (
-										<Sun className="size-3" />
-									) : (
-										<Moon className="size-3" />
-									)}
-									<span className="capitalize">{effectiveTheme}</span>
+								{/* 深色域主色块 */}
+								<div
+									className="relative flex h-60 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-5 shadow-md"
+									style={{ backgroundColor: brandToken.dark }}
+								>
+									<div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-white/30 blur-xl" />
+									<div className="relative z-10 flex items-center justify-between text-slate-950">
+										<span className="font-mono text-[11px] font-semibold tracking-wider uppercase">
+											Amethyst · 深色
+										</span>
+										<div className="flex items-center gap-1 rounded-full bg-black/15 px-2 py-0.5 text-[10px] backdrop-blur-xs">
+											<Moon className="size-3" />
+											<span>6.0:1 AA</span>
+										</div>
+									</div>
+									<div className="relative z-10 text-slate-950">
+										<span className="font-mono text-xl font-bold tracking-tight">
+											{darkRgb?.hex.toUpperCase()}
+										</span>
+										<p className="mt-0.5 font-mono text-[11px] opacity-90">{brandToken.dark}</p>
+									</div>
 								</div>
 							</div>
+						) : (
+							<div
+								className="relative flex h-64 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-6 shadow-md"
+								style={{ backgroundColor: activeBrandOklch }}
+							>
+								{/* 背景柔和微晕 */}
+								<div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-white/20 blur-2xl" />
 
-							{/* 底部代码 */}
-							<div className="relative z-10 text-brand-foreground">
-								<span className="font-mono text-2xl font-bold tracking-tight md:text-3xl">
-									{rgb?.hex.toUpperCase()}
-								</span>
-								<p className="mt-1 font-mono text-xs opacity-90">{rawBrandOklch}</p>
+								{/* 顶部标签 */}
+								<div
+									className="relative z-10 flex items-center justify-between"
+									style={{
+										color: effectiveTheme === "light" ? "oklch(0.99 0 0)" : "oklch(0.14 0.02 286)",
+									}}
+								>
+									<span className="font-mono text-xs font-semibold tracking-wider uppercase">
+										Violet Iris · Brand Primary
+									</span>
+									<div className="flex items-center gap-1.5 rounded-full bg-black/20 px-2 py-0.5 text-[11px] backdrop-blur-xs">
+										{effectiveTheme === "light" ? (
+											<Sun className="size-3" />
+										) : (
+											<Moon className="size-3" />
+										)}
+										<span className="capitalize">{effectiveTheme}</span>
+									</div>
+								</div>
+
+								{/* 底部代码 */}
+								<div
+									className="relative z-10"
+									style={{
+										color: effectiveTheme === "light" ? "oklch(0.99 0 0)" : "oklch(0.14 0.02 286)",
+									}}
+								>
+									<span className="font-mono text-2xl font-bold tracking-tight md:text-3xl">
+										{activeRgb?.hex.toUpperCase()}
+									</span>
+									<p className="mt-1 font-mono text-xs opacity-90">{activeBrandOklch}</p>
+								</div>
 							</div>
-						</div>
+						)}
 
 						<p className="mt-3 font-mono text-xs text-muted-foreground">
-							{effectiveTheme === "light"
-								? "浅色白瓷底色上的皇家鸢尾 (Lightness 0.53 · 对比度 5.7:1)"
-								: "深色星空底色上的紫水晶 (Lightness 0.72 · 对比度 6.0:1)"}
+							{mode === "dual"
+								? "左侧白瓷底色上的皇家鸢尾 (L: 0.53) ↔ 右侧星空底色上的紫水晶 (L: 0.72)"
+								: effectiveTheme === "light"
+									? "浅色白瓷底色上的皇家鸢尾 (Lightness 0.53 · 对比度 5.7:1)"
+									: "深色星空底色上的紫水晶 (Lightness 0.72 · 对比度 6.0:1)"}
 						</p>
 					</div>
 				</div>

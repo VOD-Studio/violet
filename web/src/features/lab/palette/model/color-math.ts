@@ -13,17 +13,20 @@
 export function parseOklch(str: string): { l: number; c: number; h: number; alpha: number } | null {
 	const clean = str.trim();
 	const match = clean.match(
-		/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/i,
+		/^oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)(?:deg)?(?:\s*\/\s*([\d.]+%?))?\s*\)$/i,
 	);
 	if (!match) return null;
 
-	const l = Number.parseFloat(match[1]);
-	const c = Number.parseFloat(match[2]);
-	const h = Number.parseFloat(match[3]);
+	let l = Number.parseFloat(match[1]);
+	if (match[2] === "%") {
+		l /= 100;
+	}
+	const c = Number.parseFloat(match[3]);
+	const h = Number.parseFloat(match[4]);
 	let alpha = 1;
 
-	if (match[4]) {
-		const aStr = match[4];
+	if (match[5]) {
+		const aStr = match[5];
 		if (aStr.endsWith("%")) {
 			alpha = Number.parseFloat(aStr.slice(0, -1)) / 100;
 		} else {
@@ -31,7 +34,7 @@ export function parseOklch(str: string): { l: number; c: number; h: number; alph
 		}
 	}
 
-	return { l, c, h, alpha };
+	return { l, c, h, alpha: Math.min(Math.max(alpha, 0), 1) };
 }
 
 /**
@@ -40,16 +43,19 @@ export function parseOklch(str: string): { l: number; c: number; h: number; alph
  * @param L - 明度 0..1
  * @param C - 彩度 0..0.4+
  * @param H - 色相角度 0..360
+ * @param alpha - 不透明度 0..1，小于 1 时输出 8 位 Hex
  */
 export function oklchToRgb(
 	L: number,
 	C: number,
 	H: number,
+	alpha = 1,
 ): {
 	r: number;
 	g: number;
 	b: number;
 	hex: string;
+	alpha: number;
 	rLin: number;
 	gLin: number;
 	bLin: number;
@@ -81,9 +87,17 @@ export function oklchToRgb(
 	const G = Math.round(clamp(gamma(gLin)) * 255);
 	const B = Math.round(clamp(gamma(bLin)) * 255);
 
-	const hex = `#${[R, G, B].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+	const safeAlpha = clamp(alpha);
+	const aHex =
+		safeAlpha < 1
+			? Math.round(safeAlpha * 255)
+					.toString(16)
+					.padStart(2, "0")
+			: "";
 
-	return { r: R, g: G, b: B, hex, rLin, gLin, bLin };
+	const hex = `#${[R, G, B].map((x) => x.toString(16).padStart(2, "0")).join("")}${aHex}`;
+
+	return { r: R, g: G, b: B, hex, alpha: safeAlpha, rLin, gLin, bLin };
 }
 
 /**
@@ -95,6 +109,7 @@ export function getRelativeLuminance(rLin: number, gLin: number, bLin: number): 
 
 /**
  * 计算任意 OKLCH 颜色与另一 OKLCH 颜色之间的 WCAG 2.1 对比度 (1..21)。
+ * 若前景色包含 alpha (<1)，将先在线性 sRGB 空间与背景混色后再求相对亮度。
  *
  * @param fgOklch - 前景色 oklch 字符串
  * @param bgOklch - 背景色 oklch 字符串
@@ -105,10 +120,15 @@ export function getContrastRatio(fgOklch: string, bgOklch: string): number {
 	const bg = parseOklch(bgOklch);
 	if (!fg || !bg) return 1;
 
-	const fgRgb = oklchToRgb(fg.l, fg.c, fg.h);
-	const bgRgb = oklchToRgb(bg.l, bg.c, bg.h);
+	const fgRgb = oklchToRgb(fg.l, fg.c, fg.h, fg.alpha);
+	const bgRgb = oklchToRgb(bg.l, bg.c, bg.h, bg.alpha);
 
-	const l1 = getRelativeLuminance(fgRgb.rLin, fgRgb.gLin, fgRgb.bLin);
+	// 线性空间混色合成
+	const rLinComposited = fgRgb.rLin * fg.alpha + bgRgb.rLin * (1 - fg.alpha);
+	const gLinComposited = fgRgb.gLin * fg.alpha + bgRgb.gLin * (1 - fg.alpha);
+	const bLinComposited = fgRgb.bLin * fg.alpha + bgRgb.bLin * (1 - fg.alpha);
+
+	const l1 = getRelativeLuminance(rLinComposited, gLinComposited, bLinComposited);
 	const l2 = getRelativeLuminance(bgRgb.rLin, bgRgb.gLin, bgRgb.bLin);
 
 	const brighter = Math.max(l1, l2);

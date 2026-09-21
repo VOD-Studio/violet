@@ -12,8 +12,6 @@ export interface SurfaceLayersSectionProps {
  * SurfaceLayersSection - 明暗双重画布与 5 层空间表面体系展示。
  */
 export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionProps) {
-	const activeMode = mode === "dual" ? "light" : mode;
-
 	return (
 		<section className={cn("mb-16", className)}>
 			<div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-edge-hairline pb-4">
@@ -35,7 +33,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 			<div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
 				{/* 浅色空间堆叠模型 */}
 				{(mode === "light" || mode === "dual") && (
-					<div className="rounded-2xl border border-edge-hairline bg-[#faf9fd] p-6 text-[#13111c]">
+					<div className="rounded-2xl border border-black/10 bg-[#faf9fd] p-6 text-[#13111c] shadow-xs">
 						<div className="mb-4 flex items-center justify-between">
 							<span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
 								<Layers className="size-3.5 text-brand" />
@@ -49,7 +47,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 						{/* 堆叠层级演示 */}
 						<div className="space-y-2.5">
 							{/* Level 0 底色 */}
-							<div className="rounded-xl border border-slate-200/80 bg-white/40 p-3.5 text-xs text-slate-600">
+							<div className="rounded-xl border border-slate-200/80 bg-white/50 p-3.5 text-xs text-slate-600">
 								<div className="flex items-center justify-between font-mono text-[11px]">
 									<span className="font-semibold text-slate-800">
 										L0 · 总画布 Canvas
@@ -75,27 +73,39 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 							</div>
 
 							{/* Level 2 浮层与薄雾 */}
-							<div className="ml-6 rounded-xl border border-brand/20 bg-[oklch(0.965_0.022_286)] p-3.5 text-xs shadow-sm">
+							<div
+								className="ml-6 rounded-xl border p-3.5 text-xs shadow-xs"
+								style={{
+									backgroundColor: "oklch(0.965 0.022 286)",
+									color: "oklch(0.35 0.14 286)",
+									borderColor: "oklch(0.53 0.205 286 / 20%)",
+								}}
+							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
-									<span className="font-semibold text-[oklch(0.35_0.14_286)]">
+									<span className="font-semibold">
 										L2 · 薄雾受光面 Wash
 									</span>
-									<span className="text-[oklch(0.35_0.14_286)]">
-										--brand-wash
-									</span>
+									<span>--brand-wash</span>
 								</div>
-								<p className="mt-1 text-[11px] text-[oklch(0.35_0.14_286)]/80">
+								<p className="mt-1 text-[11px] opacity-80">
 									交互高亮与弱强调徽章，仅保留 2.2% 极轻彩度。
 								</p>
 							</div>
 
 							{/* 古籍纸面 */}
-							<div className="rounded-xl border border-[oklch(0.885_0.018_80)] bg-[oklch(0.976_0.012_85)] p-3.5 text-xs text-[oklch(0.24_0.014_60)]">
+							<div
+								className="rounded-xl border p-3.5 text-xs shadow-xs"
+								style={{
+									backgroundColor: "oklch(0.976 0.012 85)",
+									color: "oklch(0.24 0.014 60)",
+									borderColor: "oklch(0.885 0.018 80)",
+								}}
+							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
 									<span className="font-semibold">专栏 · 暖米古籍纸 Paper</span>
 									<span>--paper</span>
 								</div>
-								<p className="mt-1 text-[11px] text-[oklch(0.46_0.016_60)]">
+								<p className="mt-1 text-[11px] opacity-80">
 									暖色系古纸阅读底，为专栏与文档提供典雅的书卷气质。
 								</p>
 							</div>
@@ -105,7 +115,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 
 				{/* 深色空间堆叠模型 */}
 				{(mode === "dark" || mode === "dual") && (
-					<div className="rounded-2xl border border-edge-hairline bg-[#0d0b14] p-6 text-[#f5f4fa]">
+					<div className="dark rounded-2xl border border-white/10 bg-[#0d0b14] p-6 text-[#f5f4fa] shadow-xs">
 						<div className="mb-4 flex items-center justify-between">
 							<span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300">
 								<Layers className="size-3.5 text-brand" />
@@ -132,7 +142,10 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 							</div>
 
 							{/* Level 1 卡片 */}
-							<div className="ml-3 rounded-xl border border-white/10 bg-[oklch(0.185_0.015_286)] p-3.5 text-xs shadow-xs">
+							<div
+								className="ml-3 rounded-xl border border-white/10 p-3.5 text-xs shadow-xs"
+								style={{ backgroundColor: "oklch(0.185 0.015 286)" }}
+							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
 									<span className="font-semibold text-zinc-100">
 										L1 · 卡片面板 Card
@@ -145,25 +158,39 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 							</div>
 
 							{/* Level 2 浮层与薄雾 */}
-							<div className="ml-6 rounded-xl border border-brand/25 bg-[oklch(0.22_0.038_286)] p-3.5 text-xs shadow-sm">
+							<div
+								className="ml-6 rounded-xl border p-3.5 text-xs shadow-xs"
+								style={{
+									backgroundColor: "oklch(0.22 0.038 286)",
+									color: "oklch(0.9 0.07 286)",
+									borderColor: "oklch(0.72 0.148 286 / 25%)",
+								}}
+							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
-									<span className="font-semibold text-[oklch(0.9_0.07_286)]">
+									<span className="font-semibold">
 										L2 · 薄雾受光面 Wash
 									</span>
-									<span className="text-[oklch(0.9_0.07_286)]">--brand-wash</span>
+									<span>--brand-wash</span>
 								</div>
-								<p className="mt-1 text-[11px] text-[oklch(0.9_0.07_286)]/80">
+								<p className="mt-1 text-[11px] opacity-80">
 									半透明暗紫微光，丁香紫前景色，透光不刺目。
 								</p>
 							</div>
 
 							{/* 古籍纸面 */}
-							<div className="rounded-xl border border-[oklch(0.32_0.012_70)] bg-[oklch(0.23_0.012_70)] p-3.5 text-xs text-[oklch(0.92_0.012_80)]">
+							<div
+								className="rounded-xl border p-3.5 text-xs shadow-xs"
+								style={{
+									backgroundColor: "oklch(0.23 0.012 70)",
+									color: "oklch(0.92 0.012 80)",
+									borderColor: "oklch(0.32 0.012 70)",
+								}}
+							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
 									<span className="font-semibold">专栏 · 深褐古纸 Paper</span>
 									<span>--paper</span>
 								</div>
-								<p className="mt-1 text-[11px] text-[oklch(0.68_0.012_75)]">
+								<p className="mt-1 text-[11px] opacity-80">
 									深褐泛古阅读面搭配浅象牙墨，护眼舒适。
 								</p>
 							</div>
@@ -173,11 +200,37 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 			</div>
 
 			{/* 表面令牌卡片网格 */}
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{SURFACE_LAYERS.map((token) => (
-					<ColorSwatch key={token.variable} token={token} mode={activeMode} />
-				))}
-			</div>
+			{mode === "dual" ? (
+				<div className="space-y-8">
+					<div>
+						<h4 className="mb-3 font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+							浅色白瓷空间表面（6 阶材质）
+						</h4>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{SURFACE_LAYERS.map((token) => (
+								<ColorSwatch key={`light-${token.variable}`} token={token} mode="light" />
+							))}
+						</div>
+					</div>
+
+					<div>
+						<h4 className="mb-3 font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+							深色玄曜空间表面（6 阶材质）
+						</h4>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{SURFACE_LAYERS.map((token) => (
+								<ColorSwatch key={`dark-${token.variable}`} token={token} mode="dark" />
+							))}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{SURFACE_LAYERS.map((token) => (
+						<ColorSwatch key={token.variable} token={token} mode={mode} />
+					))}
+				</div>
+			)}
 		</section>
 	);
 }

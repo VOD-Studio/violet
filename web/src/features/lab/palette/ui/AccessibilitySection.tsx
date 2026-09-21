@@ -1,4 +1,5 @@
 import { getContrastRatio, getWcagRating } from "@features/lab/palette/model/color-math";
+import { BRAND_TOKENS, STATUS_TOKENS, SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
 import { cn } from "@shared/lib/utils";
 import { ShieldCheck } from "lucide-react";
 
@@ -10,50 +11,87 @@ export interface AccessibilitySectionProps {
  * AccessibilitySection - WCAG 2.1 对比度与无障碍合规性审计矩阵。
  */
 export function AccessibilitySection({ className }: AccessibilitySectionProps) {
+	const brand = BRAND_TOKENS[0];
+	const brandFg = BRAND_TOKENS[1];
+	const brandWash = BRAND_TOKENS[3];
+	const brandWashFg = BRAND_TOKENS[4];
+
+	const canvas = SURFACE_LAYERS[0];
+	const card = SURFACE_LAYERS[1];
+	const paper = SURFACE_LAYERS[5];
+	const destructive = STATUS_TOKENS[0];
+
 	const auditPairs = [
 		{
 			label: "品牌色在画布底色上",
 			role: "Brand on Canvas",
-			lightFg: "oklch(0.53 0.205 286)",
-			lightBg: "oklch(0.992 0.003 286)",
-			darkFg: "oklch(0.72 0.148 286)",
-			darkBg: "oklch(0.138 0.012 286)",
+			lightFg: brand.light,
+			lightBg: canvas.light,
+			darkFg: brand.dark,
+			darkBg: canvas.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{
 			label: "品牌文字在品牌按钮上",
 			role: "Foreground on Brand",
-			lightFg: "oklch(0.99 0 0)",
-			lightBg: "oklch(0.53 0.205 286)",
-			darkFg: "oklch(0.14 0.02 286)",
-			darkBg: "oklch(0.72 0.148 286)",
+			lightFg: brandFg.light,
+			lightBg: brand.light,
+			darkFg: brandFg.dark,
+			darkBg: brand.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{
-			label: "正文主墨色在画布上",
+			label: "正文主墨色在画布底色上",
 			role: "Main Text on Canvas",
-			lightFg: "oklch(0.19 0.015 286)",
-			lightBg: "oklch(0.992 0.003 286)",
-			darkFg: "oklch(0.955 0.008 286)",
-			darkBg: "oklch(0.138 0.012 286)",
+			lightFg: canvas.onSurfaceForeground?.light ?? "oklch(0.19 0.015 286)",
+			lightBg: canvas.light,
+			darkFg: canvas.onSurfaceForeground?.dark ?? "oklch(0.955 0.008 286)",
+			darkBg: canvas.dark,
 			target: "WCAG AAA (≥ 7.0:1)",
 		},
 		{
-			label: "静音文字在画布上",
+			label: "静音文字在画布底色上",
 			role: "Muted Text on Canvas",
 			lightFg: "oklch(0.52 0.02 286)",
-			lightBg: "oklch(0.992 0.003 286)",
+			lightBg: canvas.light,
 			darkFg: "oklch(0.68 0.022 286)",
-			darkBg: "oklch(0.138 0.012 286)",
+			darkBg: canvas.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{
 			label: "薄雾文字在薄雾表面上",
 			role: "Wash Text on Wash Surface",
-			lightFg: "oklch(0.35 0.14 286)",
-			lightBg: "oklch(0.965 0.022 286)",
-			darkFg: "oklch(0.9 0.07 286)",
-			darkBg: "oklch(0.22 0.038 286)",
+			lightFg: brandWashFg.light,
+			lightBg: brandWash.light,
+			darkFg: brandWashFg.dark,
+			darkBg: brandWash.dark,
+			target: "WCAG AA (≥ 4.5:1)",
+		},
+		{
+			label: "卡片正文在卡片面板上",
+			role: "Card Text on Card Surface",
+			lightFg: card.onSurfaceForeground?.light ?? "oklch(0.19 0.015 286)",
+			lightBg: card.light,
+			darkFg: card.onSurfaceForeground?.dark ?? "oklch(0.955 0.008 286)",
+			darkBg: card.dark,
+			target: "WCAG AAA (≥ 7.0:1)",
+		},
+		{
+			label: "专栏古籍墨在纸面上",
+			role: "Paper Ink on Heritage Paper",
+			lightFg: paper.onSurfaceForeground?.light ?? "oklch(0.24 0.014 60)",
+			lightBg: paper.light,
+			darkFg: paper.onSurfaceForeground?.dark ?? "oklch(0.92 0.012 80)",
+			darkBg: paper.dark,
+			target: "WCAG AAA (≥ 7.0:1)",
+		},
+		{
+			label: "危险破坏动作在画布上",
+			role: "Destructive on Canvas",
+			lightFg: destructive.light,
+			lightBg: canvas.light,
+			darkFg: destructive.dark,
+			darkBg: canvas.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 	];
@@ -111,7 +149,17 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 											{pair.target}
 										</td>
 										<td className="px-6 py-4">
-											<div className="flex items-center gap-2">
+											<div className="flex items-center gap-2.5">
+												{/* 浅色实际文字视觉样本胶囊 */}
+												<span
+													className="inline-flex items-center justify-center rounded-md border border-black/10 px-2 py-0.5 font-mono text-xs font-semibold shadow-2xs"
+													style={{
+														backgroundColor: pair.lightBg,
+														color: pair.lightFg,
+													}}
+												>
+													Aa
+												</span>
 												<span className="font-mono font-semibold">
 													{lightRatio}:1
 												</span>
@@ -121,7 +169,17 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 											</div>
 										</td>
 										<td className="px-6 py-4">
-											<div className="flex items-center gap-2">
+											<div className="flex items-center gap-2.5">
+												{/* 深色实际文字视觉样本胶囊 */}
+												<span
+													className="inline-flex items-center justify-center rounded-md border border-white/10 px-2 py-0.5 font-mono text-xs font-semibold shadow-2xs"
+													style={{
+														backgroundColor: pair.darkBg,
+														color: pair.darkFg,
+													}}
+												>
+													Aa
+												</span>
 												<span className="font-mono font-semibold">
 													{darkRatio}:1
 												</span>

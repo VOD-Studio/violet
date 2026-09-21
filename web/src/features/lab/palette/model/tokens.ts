@@ -15,6 +15,15 @@ export interface TokenItem {
 		light: number;
 		dark: number;
 	};
+	/** 是否为空间表面/背景材质 */
+	isSurface?: boolean;
+	/** 表面上的主要前景色定义，用于评估文字与表面的易读性对比度 */
+	onSurfaceForeground?: {
+		variable: string;
+		name: string;
+		light: string;
+		dark: string;
+	};
 }
 
 export interface TonalRampStep {
@@ -61,6 +70,13 @@ export const BRAND_TOKENS: TokenItem[] = [
 		dark: "oklch(0.22 0.038 286)",
 		description:
 			"极浅鸢尾冷香透光层，只用于轻量 hover 面与弱强调徽章，拒绝大面积彩色喧宾夺主。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--brand-wash-foreground",
+			name: "薄雾字色",
+			light: "oklch(0.35 0.14 286)",
+			dark: "oklch(0.9 0.07 286)",
+		},
 	},
 	{
 		variable: "--brand-wash-foreground",
@@ -171,6 +187,13 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		dark: "oklch(0.138 0.012 286)",
 		description:
 			"浅色温润白瓷微泛冷香，彻底消除纯白刺眼眩光；深色玄曜黑曜石星空，带极低彩微晕。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--foreground",
+			name: "正文主墨",
+			light: "oklch(0.19 0.015 286)",
+			dark: "oklch(0.955 0.008 286)",
+		},
 	},
 	{
 		variable: "--card",
@@ -179,6 +202,13 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		light: "oklch(1 0 0)",
 		dark: "oklch(0.185 0.015 286)",
 		description: "浅色纯净白悬浮于白瓷之上形成微层级；深色面板提升 4.7% 明度，界定内容容器。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--card-foreground",
+			name: "卡片文字",
+			light: "oklch(0.19 0.015 286)",
+			dark: "oklch(0.955 0.008 286)",
+		},
 	},
 	{
 		variable: "--popover",
@@ -187,6 +217,13 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		light: "oklch(1 0 0)",
 		dark: "oklch(0.185 0.015 286)",
 		description: "下拉菜单、气泡提示与对话框实体，与阴影体系协同表达空间进深。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--popover-foreground",
+			name: "浮层文字",
+			light: "oklch(0.19 0.015 286)",
+			dark: "oklch(0.955 0.008 286)",
+		},
 	},
 	{
 		variable: "--surface-glass",
@@ -195,6 +232,13 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		light: "oklch(1 0 0 / 70%)",
 		dark: "oklch(0.185 0.015 286 / 60%)",
 		description: "半透明雾化层，搭配 backdrop-blur，用于顶部粘性导航栏与沉浸式浮层。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--foreground",
+			name: "介质文字",
+			light: "oklch(0.19 0.015 286)",
+			dark: "oklch(0.955 0.008 286)",
+		},
 	},
 	{
 		variable: "--brand-wash",
@@ -203,6 +247,13 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		light: "oklch(0.965 0.022 286)",
 		dark: "oklch(0.22 0.038 286)",
 		description: "带有冷香鸢尾色相的互动受光面，在 hover 与选中时营造轻柔呼吸感。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--brand-wash-foreground",
+			name: "薄雾字色",
+			light: "oklch(0.35 0.14 286)",
+			dark: "oklch(0.9 0.07 286)",
+		},
 	},
 	{
 		variable: "--paper",
@@ -211,6 +262,13 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		light: "oklch(0.976 0.012 85)",
 		dark: "oklch(0.23 0.012 70)",
 		description: "暖米古籍纸与深褐书页，专供长篇专栏、代码文档与书籍连续阅读体验。",
+		isSurface: true,
+		onSurfaceForeground: {
+			variable: "--paper-foreground",
+			name: "古籍墨字",
+			light: "oklch(0.24 0.014 60)",
+			dark: "oklch(0.92 0.012 80)",
+		},
 	},
 ];
 

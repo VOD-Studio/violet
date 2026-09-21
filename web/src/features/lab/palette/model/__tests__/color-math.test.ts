@@ -27,6 +27,15 @@ describe("color-math", () => {
 			expect(res?.alpha).toBeCloseTo(0.12);
 		});
 
+		it("成功解析带百分比 L 与 deg 色相单位的 oklch 字符串", () => {
+			const res = parseOklch("oklch(53% 0.205 286deg)");
+			expect(res).not.toBeNull();
+			expect(res?.l).toBeCloseTo(0.53);
+			expect(res?.c).toBe(0.205);
+			expect(res?.h).toBe(286);
+			expect(res?.alpha).toBe(1);
+		});
+
 		it("非法格式返回 null", () => {
 			expect(parseOklch("rgb(255, 0, 0)")).toBeNull();
 			expect(parseOklch("invalid")).toBeNull();
@@ -58,6 +67,12 @@ describe("color-math", () => {
 			const brandDark = oklchToRgb(0.72, 0.148, 286);
 			expect(brandDark.hex.toLowerCase()).toBe("#9e95fc");
 		});
+
+		it("带透明度时输出 8 位十六进制 Hex 且记录 alpha", () => {
+			const withAlpha = oklchToRgb(1, 0, 0, 0.7);
+			expect(withAlpha.alpha).toBe(0.7);
+			expect(withAlpha.hex.toLowerCase()).toBe("#ffffffb3");
+		});
 	});
 
 	describe("getRelativeLuminance", () => {
@@ -86,6 +101,12 @@ describe("color-math", () => {
 		it("紫罗兰品牌深色在黑曜星空底色上的对比度大于 5.5:1 (符合 WCAG AA)", () => {
 			const ratio = getContrastRatio("oklch(0.72 0.148 286)", "oklch(0.138 0.012 286)");
 			expect(ratio).toBeGreaterThan(5.5);
+		});
+
+		it("带透明度的半透明前景色正确线性合成对比度", () => {
+			// 纯白半透明 70% 在纯黑背景上混合后相对亮度约 0.7，与纯黑对比度显著大于 1:1
+			const ratio = getContrastRatio("oklch(1 0 0 / 70%)", "oklch(0 0 0)");
+			expect(ratio).toBeGreaterThan(10);
 		});
 	});
 
