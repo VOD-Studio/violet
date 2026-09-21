@@ -4,7 +4,7 @@ import {
 	getWcagRating,
 	oklchToRgb,
 	parseOklch,
-} from "@features/lab/palette/model/color-math";
+} from "@shared/lib/color-math";
 import { describe, expect, it } from "vitest";
 
 describe("color-math", () => {

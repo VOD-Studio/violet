@@ -1,4 +1,3 @@
-import { parseOklch } from "@features/lab/palette/model/color-math";
 import {
 	BRAND_TOKENS,
 	CHART_TOKENS,
@@ -7,6 +6,7 @@ import {
 	SURFACE_LAYERS,
 	TONAL_RAMP,
 } from "@features/lab/palette/model/tokens";
+import { parseOklch } from "@shared/lib/color-math";
 import { describe, expect, it } from "vitest";
 
 describe("palette tokens", () => {

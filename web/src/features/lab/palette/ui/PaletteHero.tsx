@@ -1,7 +1,7 @@
-import { getContrastRatio, oklchToRgb, parseOklch } from "@features/lab/palette/model/color-math";
 import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
 import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
 import { copyText } from "@shared/lib/clipboard";
+import { getContrastRatio, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { cn } from "@shared/lib/utils";
 import { Segmented } from "@shared/ui/segmented";
 import { Check, Copy, Moon, Sparkles, Sun } from "lucide-react";
