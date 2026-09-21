@@ -1,5 +1,8 @@
+import type { AdminComment } from "@entities/comment/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
+import { avatarUrl } from "@shared/lib/image-url";
+import { EmojiText } from "@shared/ui/emoji-text";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
@@ -17,6 +20,9 @@ export interface HomeIndexProps {
 	/** 仅重试关键发布物资源，不刷新整页。 */
 	onRetryPublications: () => void;
 	tweetsLoading: boolean;
+	/** 尺素橱窗的最新已审核评论（调用方已滤掉纯图评论） */
+	missives: AdminComment[];
+	missivesLoading: boolean;
 }
 
 /**
@@ -41,6 +47,8 @@ export function HomeIndex({
 	publicationRetrying,
 	onRetryPublications,
 	tweetsLoading,
+	missives,
+	missivesLoading,
 }: HomeIndexProps) {
 	const writings = items.slice(0, 5);
 	const leadItem = writings[0];
@@ -243,26 +251,76 @@ export function HomeIndex({
 							</h2>
 						</div>
 
-						<div className="space-y-5">
+						{missivesLoading ? (
+							<article
+								aria-live="polite"
+								className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground"
+							>
+								<p>正在收拢来信…</p>
+							</article>
+						) : missives.length > 0 ? (
+							<div className="space-y-5">
+								{missives.map((comment, index) => (
+									<article
+										key={comment.id}
+										className={
+											index === 0
+												? "relative pl-6"
+												: "relative border-t border-border/25 pt-4 pl-6"
+										}
+									>
+										<span
+											aria-hidden
+											className={`absolute left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none ${
+												index === 0 ? "-top-3" : "top-1"
+											}`}
+										>
+											“
+										</span>
+										<p className="line-clamp-3 text-xs leading-relaxed text-foreground/80">
+											<EmojiText text={comment.body} emote={comment.emote} />
+										</p>
+										<p className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground/75">
+											<span aria-hidden>—</span>
+											{comment.avatar_url ? (
+												<img
+													src={avatarUrl(comment.avatar_url)}
+													alt=""
+													className="size-4 shrink-0 rounded-full object-cover"
+													loading="lazy"
+												/>
+											) : (
+												<span
+													aria-hidden
+													className="flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground"
+												>
+													{comment.author_name.slice(0, 1).toUpperCase()}
+												</span>
+											)}
+											<span className="min-w-0 truncate">
+												{comment.author_name}
+												{comment.post_slug ? (
+													<>
+														{" · "}
+														<Link
+															to="/blog/$slug"
+															params={{ slug: comment.post_slug }}
+															className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+														>
+															《{comment.post_title}》
+														</Link>
+													</>
+												) : null}
+											</span>
+										</p>
+									</article>
+								))}
+							</div>
+						) : (
 							<article className="relative pl-6">
 								<span
 									aria-hidden
 									className="absolute -top-3 left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none"
-								>
-									“
-								</span>
-								<p className="text-xs leading-relaxed text-foreground/80">
-									文字间流转的不仅是技术细节，更是对创造与自由的感知。在繁杂的工程体系里，保有一份对美好界面的执着，非常难得。
-								</p>
-								<p className="mt-2 text-right text-[11px] text-muted-foreground/75">
-									— 读者手书
-								</p>
-							</article>
-
-							<article className="relative border-t border-border/25 pt-4 pl-6">
-								<span
-									aria-hidden
-									className="absolute top-1 left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none"
 								>
 									“
 								</span>
@@ -273,7 +331,7 @@ export function HomeIndex({
 									— 站长回笺
 								</p>
 							</article>
-						</div>
+						)}
 					</div>
 				</motion.div>
 			</div>

@@ -199,6 +199,7 @@ func TestCommentPaths(t *testing.T) {
 		"/posts/{postId}/comments", "/comments/{comment_id}/reactions",
 		"/comments/{comment_id}/reactions/{emoji_id}", "/comments/reactions/batch",
 		"/comments/{id}/approve", "/comments/{id}/spam", "/comments/{id}",
+		"/comments/latest",
 		"/admin/comments/pending", "/admin/comments/pending/count",
 		"/admin/comments", "/admin/comments/{id}", "/admin/comments/batch-status",
 	} {

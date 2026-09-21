@@ -251,6 +251,13 @@ type AdminCommentDTO struct {
 	PostSlug  string `json:"post_slug"`
 }
 
+// latestDefaultLimit / latestMaxLimit 全站最新评论端点（GET /comments/latest）的
+// 默认条数与上限。橱窗只取一小把，钳制防大 limit 拖库。
+const (
+	latestDefaultLimit = 3
+	latestMaxLimit     = 10
+)
+
 // ListAll 全局评论列表（后台管理，可选状态 + anchor 维度筛选）
 //
 // status 控制状态筛选；anchorFilter 控制 anchor 维度筛选（自由评论/批注/全部）。
@@ -287,6 +294,47 @@ func (s *Service) ListAll(ctx context.Context, status string, anchorFilter domai
 		return nil, 0, err
 	}
 	return dtos, result.Total, nil
+}
+
+// ListLatest 全站最新已审核自由评论（顶层），公开橱窗用（首页「尺素」区块）。
+//
+// 固定口径：approved + 自由评论（不含批注）+ 顶层（回复脱离上下文读不通），
+// 关联文章标题/slug 供前端跳转。排序为 created_at 倒序（FindPageWithPost
+// 非 ParentID 场景的默认序）。
+//
+// 与文章页黑洞模式不冲突：黑洞约束的是文章页评论区按 viewer 的可见性（PRD-0001），
+// 橱窗是站点公开门面，仅输出已通过审核的评论。
+// is_author 恒为 false（橱窗不做作者高亮，与 ListAll 同不查 post.author_id）。
+func (s *Service) ListLatest(ctx context.Context, limit int) ([]AdminCommentDTO, error) {
+	if limit <= 0 {
+		limit = latestDefaultLimit
+	}
+	if limit > latestMaxLimit {
+		limit = latestMaxLimit
+	}
+	topLevel := domain.DepthFilterTopLevel
+	result, err := s.commentRepo.FindPageWithPost(ctx, domain.ListFilter{
+		Status:       domain.StatusApproved,
+		AnchorFilter: domain.AnchorFilterFree,
+		DepthFilter:  &topLevel,
+	}, shared.PageQuery{Page: 1, Limit: limit}.Normalize())
+	if err != nil {
+		return nil, err
+	}
+	dtos := make([]AdminCommentDTO, 0, len(result.Items))
+	for _, cwp := range result.Items {
+		// 顶层评论无 parent，reply_to_name 恒空
+		dtos = append(dtos, AdminCommentDTO{
+			CommentDTO: toDTO(cwp.Comment, nil, ""),
+			PostID:     cwp.Post.ID.String(),
+			PostTitle:  cwp.Post.Title,
+			PostSlug:   cwp.Post.Slug,
+		})
+	}
+	if err := s.enrichAdminEmotes(ctx, dtos); err != nil {
+		return nil, err
+	}
+	return dtos, nil
 }
 
 // CountPending 统计待审核评论数量

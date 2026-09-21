@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 
@@ -32,6 +33,7 @@ type commentService interface {
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
 	ListPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	ListAll(ctx context.Context, status string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.AdminCommentDTO, int64, error)
+	ListLatest(ctx context.Context, limit int) ([]appcomment.AdminCommentDTO, error)
 	CountPending(ctx context.Context) (int64, error)
 	GetDetail(ctx context.Context, id string) (appcomment.AdminCommentDTO, error)
 	BatchUpdateStatus(ctx context.Context, ids []string, status string) (int64, error)
@@ -135,6 +137,20 @@ func (h *Handler) ListReplies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondPaged(w, items, page, limit, total)
+}
+
+// ListLatest 全站最新已审核评论（公开橱窗，首页「尺素」区块消费）。
+//
+// 过滤口径（approved + 自由评论 + 顶层）与 limit 钳制在 service 层；
+// limit 缺省/非法时传 0，由 service 回落默认值。
+func (h *Handler) ListLatest(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	items, err := h.svc.ListLatest(r.Context(), limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, items)
 }
 
 // mapCommentType 把 ?type= query param 映射为 domain.AnchorFilter。

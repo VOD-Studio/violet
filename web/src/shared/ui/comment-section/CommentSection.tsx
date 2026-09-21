@@ -31,7 +31,7 @@ export function CommentSection({
 	children,
 }: CommentSectionProps) {
 	return (
-		<section className="min-w-0 max-w-3xl flex-1" aria-label="评论区">
+		<section className="min-w-0 max-w-4xl flex-1" aria-label="评论区">
 			<header className="mb-6 flex items-center gap-2">
 				<MessageSquare className="size-5 text-muted-foreground" />
 				<h2 className="text-lg font-semibold text-foreground">{title}</h2>

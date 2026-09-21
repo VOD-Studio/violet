@@ -17,7 +17,8 @@ const BASE_BEND = 10.4;
 const BEND_WAVE = 0.6;
 const BASE_BEND_RANGE = 56;
 
-export const ARTICLE_TOC_RAIL_ACCENT = "oklch(0.5279 0.1125 270.7)";
+/** 轨迹强调色引用品牌层 token：跟随配色预设与明暗模式，不写死色值。 */
+export const ARTICLE_TOC_RAIL_ACCENT = "var(--brand)";
 export const ARTICLE_TOC_RAIL_X = 8;
 
 export function clamp(value: number, min: number, max: number) {

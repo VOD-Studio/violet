@@ -144,6 +144,16 @@ func registerCommentPaths(t *openapi3.T) {
 		),
 	})
 
+	get(t, "/comments/latest", &openapi3.Operation{
+		Tags:        []string{"评论"},
+		Summary:     "全站最新已审核评论",
+		Description: "公开橱窗（首页「尺素」区块）：approved 自由评论的顶层记录，按创建时间倒序，含文章标题/slug。limit 默认 3，上限 10。",
+		Parameters:  openapi3.Parameters{limitParam(10)},
+		Responses: responses(
+			200, dataArrayResponse("AdminCommentDTO", "最新评论列表", 200, false),
+		),
+	})
+
 	// ============ 评论反应 ============
 
 	get(t, "/comments/{comment_id}/reactions", &openapi3.Operation{

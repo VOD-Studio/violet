@@ -2,6 +2,7 @@ import { apiGet, apiGetPaged, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
+	AdminComment,
 	BatchReactionResult,
 	BatchReactionsQuery,
 	BlockCount,
@@ -70,6 +71,29 @@ export const useAnnotationSummary = (postId: string) =>
 		queryKey: commentKeys.annotationSummary(postId),
 		queryFn: () => fetchAnnotationSummary(postId),
 		enabled: !!postId,
+	});
+
+/**
+ * 全站最新已审核评论，公开橱窗读模型（返回 AdminComment，带文章标题/slug）。
+ *
+ * @remarks 口径为 approved + 自由评论 + 顶层，created_at 倒序，limit 默认 3 上限 10
+ * （钳制在后端）。与文章页黑洞模式（PRD-0001 按 viewer 过滤可见性）口径不同：
+ * 橱窗是站点公开门面，仅输出已过审内容，消费方是首页「尺素」区块。
+ */
+export const fetchLatestComments = async (limit = 3): Promise<AdminComment[]> =>
+	apiGet<AdminComment[]>("/comments/latest", { params: { limit } });
+
+/**
+ * useLatestComments - 全站最新已审核评论 hook
+ *
+ * @param enabled - SSR 环境传 false，客户端水合后再取（首页与时间线同款门控）
+ */
+export const useLatestComments = (limit = 3, options: { enabled?: boolean } = {}) =>
+	useQuery({
+		queryKey: commentKeys.latest(limit),
+		queryFn: () => fetchLatestComments(limit),
+		enabled: options.enabled ?? true,
+		staleTime: 30_000,
 	});
 
 /**

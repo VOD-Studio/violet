@@ -150,7 +150,7 @@ function BlogDetailPage() {
 				<BackLink to="/blog" label="博客" className="mb-8" history />
 
 				{/* 文章头 */}
-				<header className="mx-auto mb-12 max-w-3xl">
+				<header className="mx-auto mb-12 max-w-4xl">
 					{/* 标签 */}
 					{post.tags.length > 0 ? (
 						<div className="mb-4 flex flex-wrap gap-2">
@@ -227,17 +227,31 @@ function BlogDetailPage() {
 
 				{/* 正文 + TOC */}
 				<div className="relative mx-auto flex max-w-6xl justify-center gap-8">
-					{/* 左侧 TOC（大屏） */}
+					{/* 章内目录：普通文章用右侧浮层——壳挂在正文容器右缘外侧的留白里，
+					    不占正文流（正文保持居中），悬停时完整目录朝右侧空白展开；
+					    挂书文章与右侧全书目录会重叠，保留左侧占位列 */}
 					{toc.length > 1 ? (
-						<aside className="hidden w-56 shrink-0 2xl:block">
-							<div className="sticky top-24">
-								<ArticleToc
-									items={toc}
-									contentRef={contentRef}
-									isRailCollapsedAtRest
-								/>
+						seriesDetail ? (
+							<aside className="hidden w-56 shrink-0 2xl:block">
+								<div className="sticky top-24">
+									<ArticleToc
+										items={toc}
+										contentRef={contentRef}
+										isRailCollapsedAtRest
+									/>
+								</div>
+							</aside>
+						) : (
+							<div className="absolute inset-y-0 left-full hidden w-48 2xl:block">
+								<div className="sticky top-24">
+									<ArticleToc
+										items={toc}
+										contentRef={contentRef}
+										isRailCollapsedAtRest
+									/>
+								</div>
 							</div>
-						</aside>
+						)
 					) : null}
 
 					{/*
@@ -249,7 +263,7 @@ function BlogDetailPage() {
 						data-article-content
 						onClick={articleImages.bind.onClick}
 						onKeyDown={articleImages.bind.onKeyDown}
-						className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
+						className="prose prose-neutral dark:prose-invert min-w-0 max-w-4xl flex-1"
 					>
 						<ArticleRichContent content={body} />
 						{post.show_signature && post.author ? (
@@ -275,7 +289,7 @@ function BlogDetailPage() {
 						{toc.length > 1 ? (
 							<aside className="hidden w-56 shrink-0 2xl:block" />
 						) : null}
-						<div className="min-w-0 max-w-3xl flex-1">
+						<div className="min-w-0 max-w-4xl flex-1">
 							<ChapterNav context={chapterCtx} />
 						</div>
 					</div>
@@ -305,15 +319,16 @@ function BlogDetailPage() {
 				)}
 
 				{/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
-                    复用同样的 flex 结构保证与正文严格对齐（含大屏 TOC 偏移）。 */}
+                    复用同样的 flex 结构保证与正文严格对齐；仅挂书文章保留左侧占位
+                    （普通文章 TOC 是右侧浮层，评论区随正文居中）。 */}
 				{post?.id && commentsEnabled && (
 					<div className="relative mx-auto mt-16 flex max-w-6xl justify-center gap-8">
-						{toc.length > 1 ? (
+						{seriesDetail && toc.length > 1 ? (
 							<aside className="hidden w-56 shrink-0 2xl:block" />
 						) : null}
 						<Suspense
 							fallback={
-								<div className="min-h-32 w-full max-w-3xl animate-pulse rounded-lg bg-muted/40" />
+								<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
 							}
 						>
 							<CommentSection postId={post.id} />
@@ -323,13 +338,13 @@ function BlogDetailPage() {
 			</article>
 
 			{/*
-			 * 右下角浮动操作区（flex-col 竖列）：目录按钮（仅小屏，大屏用左侧 TOC）+ 返回顶部。
+			 * 右下角浮动操作区（flex-col 竖列）：目录按钮（仅小屏，大屏用侧边目录）+ 返回顶部。
 			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
 			 */}
 			<FloatingBack to="/blog" label="返回博客" history />
 			{toc.length > 1 || seriesDetail ? (
 				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
-					{/* 章内目录：2xl 及以上用左侧固定栏，小屏用浮动按钮 */}
+					{/* 章内目录：2xl 及以上用侧边目录，小屏用浮动按钮 */}
 					{toc.length > 1 ? (
 						<div className="2xl:hidden">
 							<MobileTocFab items={toc} contentRef={contentRef} />
