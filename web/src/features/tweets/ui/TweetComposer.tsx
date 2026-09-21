@@ -191,7 +191,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="rounded-2xl border border-edge-hairline bg-surface/30 p-4 sm:p-5 flex gap-3 transition-colors hover:bg-surface/50"
+			className="rounded-2xl border border-edge-hairline bg-muted/30 p-4 sm:p-5 flex gap-3 transition-colors hover:bg-muted/50"
 			aria-label="发布推文"
 		>
 			{me.data && (
@@ -255,7 +255,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 					</div>
 				)}
 				{quotedTweet && (
-					<div className="relative mt-3 rounded-lg border border-edge-hairline bg-surface/50 p-3 text-xs">
+					<div className="relative mt-3 rounded-lg border border-edge-hairline bg-muted/50 p-3 text-xs">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-1.5 font-medium text-foreground">
 								<span>{quotedTweet.author.username}</span>
