@@ -48,7 +48,7 @@ export function BubbleShell({ mine, children, themeId = "" }: BubbleShellProps) 
 /**
  * 气泡外时间戳：常驻 DOM 但视觉隐藏，hover/焦点/长按时淡入。
  *
- * 放在头像外侧而非气泡下方：不额外占用行高，也不遮挡头像装饰。
+ * 放在聊天框外侧（发送居左、接收居右）：不额外占用行高，也不遮挡头像与气泡装饰。
  * editedAt 非空时前置「已编辑」标识，悬停可见最后编辑时间。
  */
 export function BubbleTimestamp({

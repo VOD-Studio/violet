@@ -120,23 +120,28 @@ function renderBubble(
 afterEach(() => cleanup());
 
 describe("MessageBubble", () => {
-	it("时间戳显示在头像背离气泡的一侧且不隐藏头像", () => {
+	it("时间戳显示在聊天气泡外侧且不隐藏头像", () => {
 		const mine = renderBubble(imageMessage(undefined));
 		const mineAvatarSlot = mine.container.querySelector("article > div:first-child");
 
-		expect(mineAvatarSlot?.className).toContain("flex-row-reverse");
-		expect(mineAvatarSlot?.querySelector("time")?.parentElement?.className).not.toContain(
-			"absolute",
-		);
+		expect(mineAvatarSlot?.querySelector("time")).toBeNull();
 		expect(
 			screen.getByLabelText("Alice 的个人主页").querySelector("[aria-hidden]")?.className,
 		).not.toContain("group-hover:opacity-0");
+
+		const mineHoverSlot = mine.container.querySelector("time")?.closest("div.absolute");
+		expect(mineHoverSlot?.className).toContain("right-full");
+		expect(mineHoverSlot?.className).toContain("flex-row");
 
 		cleanup();
 		const incoming = renderBubble(imageMessage(undefined), () => {}, "direct", "u_2");
 		const incomingAvatarSlot = incoming.container.querySelector("article > div:first-child");
 
-		expect(incomingAvatarSlot?.className).not.toContain("flex-row-reverse");
+		expect(incomingAvatarSlot?.querySelector("time")).toBeNull();
+
+		const incomingHoverSlot = incoming.container.querySelector("time")?.closest("div.absolute");
+		expect(incomingHoverSlot?.className).toContain("left-full");
+		expect(incomingHoverSlot?.className).toContain("flex-row-reverse");
 	});
 
 	it("收到的消息气泡按内容收缩，不被发送者身份区拉宽", () => {
