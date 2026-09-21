@@ -201,7 +201,7 @@ export function MessageBubble({
 			<div
 				className={cn(
 					"relative flex max-w-[min(70%,36rem)] flex-col",
-					mine && "items-end text-right",
+					mine ? "items-end text-right" : "items-start",
 				)}
 			>
 				{showSender && !mine && showSenderName && (

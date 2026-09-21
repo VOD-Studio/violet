@@ -120,6 +120,18 @@ function renderBubble(
 afterEach(() => cleanup());
 
 describe("MessageBubble", () => {
+	it("收到的消息气泡按内容收缩，不被发送者身份区拉宽", () => {
+		const message = imageMessage(undefined);
+		message.type = "text";
+		message.media = undefined;
+		message.content = "短消息";
+
+		const { container } = renderBubble(message, () => {}, "room", "u_2");
+		const messageColumn = container.querySelector("article > div:nth-child(2)");
+
+		expect(messageColumn?.className).toContain("items-start");
+	});
+
 	it("图片消息占位符还原为内联图片，文字环绕且点击打开预览", () => {
 		const onImage = vi.fn();
 		const { container } = renderBubble(imageMessage("123![img:media-1]456"), onImage);
