@@ -21,6 +21,13 @@ export interface AvatarPickerProps {
 	pickerTitle?: string;
 	/** 素材来源。@default "all" */
 	source?: MediaCatalogSource;
+	/**
+	 * 紧凑形态：表格行内等小尺寸头像用。
+	 *
+	 * @remarks 角标随头像缩小，悬浮遮罩只压暗不显「更换」（小圆装不下两个字）。
+	 * @default false
+	 */
+	compact?: boolean;
 }
 
 /**
@@ -35,6 +42,7 @@ export function AvatarPicker({
 	disabled = false,
 	pickerTitle = "选择头像",
 	source = "all",
+	compact = false,
 }: AvatarPickerProps) {
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const rounded = shape === "square" ? "rounded-2xl" : "rounded-full";
@@ -74,7 +82,7 @@ export function AvatarPicker({
 								rounded,
 							)}
 						>
-							更换
+							{compact ? null : "更换"}
 						</span>
 					) : null}
 				</button>
@@ -83,9 +91,12 @@ export function AvatarPicker({
 						type="button"
 						aria-label="移除头像"
 						onClick={() => onChange(null)}
-						className="absolute -top-1 -right-1 z-10 grid size-5 place-items-center rounded-full bg-destructive text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className={cn(
+							"absolute z-10 grid place-items-center rounded-full bg-destructive text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+							compact ? "-top-0.5 -right-0.5 size-3.5" : "-top-1 -right-1 size-5",
+						)}
 					>
-						<X className="size-3" />
+						<X className={compact ? "size-2" : "size-3"} />
 					</button>
 				) : null}
 			</div>

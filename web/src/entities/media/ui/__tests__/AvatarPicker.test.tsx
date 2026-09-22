@@ -51,6 +51,21 @@ describe("AvatarPicker", () => {
 		expect(onChange).toHaveBeenCalledWith(null);
 	});
 
+	it("紧凑形态不显「更换」文字且角标缩小", () => {
+		render(
+			<AvatarPicker
+				value="/uploads/saber.png"
+				onChange={vi.fn()}
+				sizeClassName="size-8"
+				compact
+			/>,
+		);
+
+		const remove = screen.getByRole("button", { name: "移除头像" });
+		expect(remove.className).toContain("size-3.5");
+		expect(screen.queryByText("更换")).toBeNull();
+	});
+
 	it("禁用态不开素材库", () => {
 		const onChange = vi.fn();
 		render(<AvatarPicker value="" onChange={onChange} disabled />);
