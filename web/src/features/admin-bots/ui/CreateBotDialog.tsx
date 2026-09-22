@@ -1,3 +1,5 @@
+import type { MediaFile } from "@entities/media/model/types";
+import { AvatarPicker } from "@entities/media/ui/AvatarPicker";
 import { useCreateBot } from "@features/admin-bots/api/queries";
 import type { BotDTO } from "@features/admin-bots/model/types";
 import { Button } from "@shared/ui/base/button";
@@ -22,11 +24,13 @@ export function CreateBotDialog({ open, onOpenChange, onCreated }: CreateBotDial
 	const create = useCreateBot();
 	const [name, setName] = React.useState("");
 	const [username, setUsername] = React.useState("");
+	const [avatar, setAvatar] = React.useState<MediaFile | null>(null);
 
 	React.useEffect(() => {
 		if (open) {
 			setName("");
 			setUsername("");
+			setAvatar(null);
 		}
 	}, [open]);
 
@@ -43,7 +47,12 @@ export function CreateBotDialog({ open, onOpenChange, onCreated }: CreateBotDial
 			return;
 		}
 		create.mutate(
-			{ name: trimmedName, username: trimmedUsername },
+			{
+				name: trimmedName,
+				username: trimmedUsername,
+				// 未选头像时整个字段缺席：后端把空串当无效 ID 处理，省略语义更准
+				...(avatar ? { avatar_id: avatar.id } : {}),
+			},
 			{
 				onSuccess: (bot) => {
 					onOpenChange(false);
@@ -71,6 +80,20 @@ export function CreateBotDialog({ open, onOpenChange, onCreated }: CreateBotDial
 			}
 		>
 			<form id="create-bot-form" className="space-y-4" onSubmit={submit}>
+				<div className="flex items-center gap-3">
+					<AvatarPicker
+						value={avatar?.thumbnail || avatar?.url || ""}
+						alt={avatar?.alt_text || "Bot 头像"}
+						disabled={create.isPending}
+						onChange={setAvatar}
+					/>
+					<div className="min-w-0 space-y-0.5">
+						<p className="text-sm font-medium">头像（可选）</p>
+						<p className="text-xs leading-relaxed text-muted-foreground">
+							从素材库选一张图，同时作为虚拟用户的头像展示。
+						</p>
+					</div>
+				</div>
 				<div className="space-y-1.5">
 					<Label htmlFor="bot-name">显示名</Label>
 					<Input

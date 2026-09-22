@@ -19,6 +19,8 @@ export interface BotDTO {
 export interface CreateBotRequest {
 	name: string;
 	username: string;
+	/** 素材库图片 ID；省略表示不设头像，换头像走 PATCH 的 avatar_id */
+	avatar_id?: string;
 }
 
 /** 改名 / 启停。avatar_id 传空串清除头像，缺省表示不改 */

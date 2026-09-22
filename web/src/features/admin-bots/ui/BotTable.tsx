@@ -68,7 +68,18 @@ export function BotTable({ bots, pagination, loading, onTokenRotated }: BotTable
 		{
 			key: "name",
 			header: "名称",
-			cell: (row) => <span className="font-medium">{row.name}</span>,
+			cell: (row) => (
+				<div className="flex min-w-0 items-center gap-2">
+					{row.avatar_url ? (
+						<img
+							src={row.avatar_url}
+							alt=""
+							className="size-7 shrink-0 rounded-full object-cover"
+						/>
+					) : null}
+					<span className="truncate font-medium">{row.name}</span>
+				</div>
+			),
 		},
 		{
 			key: "username",

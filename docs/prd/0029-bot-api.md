@@ -228,8 +228,8 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 实测：`GET /chat/contacts?q=saber` 直接返回 bot 虚拟用户（`display_name` 即 bot 名），
 私聊创建与消息渲染走既有人类链路，前端一行未改。
 
-管理侧（V6）：`/admin/chat-bots`（平台组，`chat:bot-manage` 门禁）——列表、注册、
-一次性 token 卡（复制后关闭即从内存丢弃）、启停开关、重置与吊销的二次确认框。
+管理侧（V6）：`/admin/chat-bots`（平台组，`chat:bot-manage` 门禁）——列表（带头像）、注册（
+可从素材库选头像）、一次性 token 卡（复制后关闭即从内存丢弃）、启停开关、重置与吊销的二次确认框。
 
 ## 数据库迁移
 

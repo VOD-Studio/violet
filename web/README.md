@@ -112,7 +112,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/persona` | 当前人设的多语言公开档案、完整设定正文与有序设定图 |
 | `/admin/personas` | 多份人设档案及语言版本管理、完整文档编辑与当前人设切换 |
 | `/admin/galleries` | 图集管理（作者与状态筛选、自动保存、更新发布、撤回与永久删除、他人作品审核处置） |
-| `/admin/chat-bots` | 聊天 Bot 凭据管理（注册虚拟用户、启停、重置一次性 token、吊销） |
+| `/admin/chat-bots` | 聊天 Bot 凭据管理（注册虚拟用户可带头像、启停、重置一次性 token、吊销） |
 | `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
