@@ -42,8 +42,8 @@ describe("营造法式页", () => {
 		]) {
 			expect(screen.getByRole("heading", { name })).toBeTruthy();
 		}
-		// 徽标数与章节数据中未落地章数对账，章节落地后自然收敛
-		expect(screen.getAllByText("营造中")).toHaveLength(
+		// 徽标数与章节数据中未落地章数对账；全部落地后为 0
+		expect(screen.queryAllByText("营造中")).toHaveLength(
 			CHAPTERS.filter((chapter) => !chapter.content).length,
 		);
 	});
