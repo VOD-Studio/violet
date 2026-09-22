@@ -276,4 +276,13 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 
 事件流不补发，重连后用第 3 组的消息历史接口（`GET .../messages`）补齐断线期间漏掉的消息。
 
+上面五步的最小参考实现是 `scripts/bot-smoke.mjs`（零依赖 Node，真链路冒烟）：
+
+```bash
+BOT_SMOKE_TOKEN=violet_bot_xxx node scripts/bot-smoke.mjs   # 默认打 http://localhost:9090
+```
+
+除五步外还顺带卡住三件容易在集成处碎掉的事：同一 `Idempotency-Key` 重发只会拿到同一条消息、
+bot 自己发的消息不会回投给自己、历史接口读到的内容是最后一次编辑后的最终态。
+
 Saber 的接入实现见 Saber 仓库 `docs/platform-system.md`。
