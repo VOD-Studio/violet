@@ -77,6 +77,10 @@ const config = defineConfig({
 	// 不能进入 rolldown 依赖优化（rolldown 把它当真实包解析失败）。
 	// 排除所有 TanStack 内部包，让 plugin 自己处理这些模块。
 	optimizeDeps: {
+		// start-client-core 以裸子路径引用这两个依赖，首轮依赖预扫描发现不了，
+		// 会话中途才「发现新增依赖 → 重新优化 → 整页 reload」；reload 后新旧模块图混用，
+		// router 内部状态错位（如 match._nonReactive 为 undefined）。显式预打包消除抖动。
+		include: ["@tanstack/router-core/ssr/client", "seroval"],
 		exclude: [
 			"@tanstack/createServerFn",
 			"@tanstack/start-server-core",
