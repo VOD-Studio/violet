@@ -142,6 +142,15 @@ func (s *fakeUserStore) ExistsByUsername(_ context.Context, username domainuser.
 	return ok, nil
 }
 
+func (s *fakeUserStore) FindByUsername(_ context.Context, username domainuser.Username) (*domainuser.User, error) {
+	for _, user := range s.users {
+		if user.Username().Equal(username) {
+			return user, nil
+		}
+	}
+	return nil, domainuser.ErrNotFound
+}
+
 func (s *fakeUserStore) Delete(_ context.Context, id domainshared.ID) error {
 	delete(s.users, id)
 	return nil
@@ -297,6 +306,144 @@ func TestCreateBotRejectsBeforeWriting(t *testing.T) {
 		t.Fatalf("被拒绝的创建不得留下记录: bots=%d users=%d", len(bots.bots), len(users.users))
 	}
 }
+
+// TestCreateBotReclaimsRevokedBotUsername 吊销后同名重建必须可用。
+//
+// 吊销只删凭证、留着虚拟用户保历史署名，用户名因此一直占在 users 上；
+// 若注册路径见名就判冲突，管理员就再也注册不回这个 bot，只能被迫改名。
+func TestCreateBotReclaimsRevokedBotUsername(t *testing.T) {
+	ctx := context.Background()
+	svc, bots, users, bus := newBotService(t)
+
+	first, err := svc.CreateBot(ctx, CreateBotInput{Name: "Saber", Username: "saber"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.DeleteBot(ctx, domainshared.MustParseID(first.ID)); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := svc.CreateBot(ctx, CreateBotInput{Name: "Saber", Username: "saber"})
+	if err != nil {
+		t.Fatalf("吊销过的同名 bot 应可重新注册: %v", err)
+	}
+	// 复用同一个虚拟用户：历史消息的 sender_id 仍指向新 bot，署名不断。
+	if second.UserID != first.UserID {
+		t.Fatalf("应复用吊销前的虚拟用户，got %s want %s", second.UserID, first.UserID)
+	}
+	if len(users.users) != 1 || len(bots.bots) != 1 {
+		t.Fatalf("回收不得多出用户或凭证行: users=%d bots=%d", len(users.users), len(bots.bots))
+	}
+	reclaimed := users.users[domainshared.MustParseID(second.UserID)]
+	if !reclaimed.IsActive() {
+		t.Fatal("回收须把虚拟用户重新启用，否则联系人搜索仍搜不到它")
+	}
+	if second.Token == "" || second.Token == first.Token {
+		t.Fatal("重新注册须签发新凭据，旧 token 不能复活")
+	}
+	if _, err := svc.FindByToken(ctx, second.Token); err != nil {
+		t.Fatalf("新 token 必须能鉴权: %v", err)
+	}
+	if _, err := svc.FindByToken(ctx, first.Token); err == nil {
+		t.Fatal("吊销后旧 token 不得仍可鉴权")
+	}
+	if !bus.has(domainchat.BotCreated{}) || !bus.has(domainuser.UserStatusChanged{}) {
+		t.Fatalf("回收应发 BotCreated 与用户重新启用事件供审计，实得 %d 条", len(bus.events))
+	}
+}
+
+// TestCreateBotRejectsForeignUsername 只有「无凭证的 bot 空壳」能被回收，其余占用一律冲突。
+//
+// 抢名等于抢署名：被禁用的真用户、还挂着凭证的 bot（哪怕禁用）、以及邮箱
+// 蹭上 bot 域名但本地部分对不上 ID 的账号，都不能被注册路径接管。
+func TestCreateBotRejectsForeignUsername(t *testing.T) {
+	ctx := context.Background()
+	svc, _, users, _ := newBotService(t)
+
+	bannedID := domainshared.NewID()
+	banned := domainuser.NewUser(bannedID, mustEmail(t, "banned@example.com"), mustUsername(t, "banned"), domainuser.NewPasswordHash("$2y$hash"))
+	banned.Deactivate()
+	if err := users.Save(ctx, banned); err != nil {
+		t.Fatal(err)
+	}
+	// 邮箱形如 bot 虚拟用户，但本地部分的 ID 不是自己的 ID。
+	impostor := domainuser.NewUser(domainshared.NewID(), mustEmail(t, "bot+"+bannedID.String()+"@"+botUserEmailDomain), mustUsername(t, "impostor"), domainuser.NewPasswordHash("$2y$hash"))
+	impostor.Deactivate()
+	if err := users.Save(ctx, impostor); err != nil {
+		t.Fatal(err)
+	}
+	live, err := svc.CreateBot(ctx, CreateBotInput{Name: "Live", Username: "live_bot"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.UpdateBot(ctx, UpdateBotInput{ID: domainshared.MustParseID(live.ID), Enabled: ptr(false)}); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, username := range []string{"banned", "impostor", "live_bot"} {
+		if _, err := svc.CreateBot(ctx, CreateBotInput{Name: "Takeover", Username: username}); err != domainuser.ErrUsernameExists {
+			t.Fatalf("%s 不可回收，应返回 ErrUsernameExists, got %v", username, err)
+		}
+	}
+	if _, err := users.FindByID(ctx, bannedID); err != nil {
+		t.Fatalf("被拒绝的注册不得动到既有账号: %v", err)
+	}
+}
+
+// TestCreateBotReclaimResetsAvatar 回收时未选头像必须清掉上一任的头像。
+//
+// 注册表单是空的、界面却显示旧图，管理员看到的就不是他刚提交的 bot。
+func TestCreateBotReclaimResetsAvatar(t *testing.T) {
+	ctx := context.Background()
+	svc, _, users, _ := newBotService(t)
+	ready, _ := domainupload.NewFile(domainshared.NewID(), domainshared.NewID(), domainupload.PurposeAvatar, "a.png", "/p", "/u/a.png", 10, "image/png", "h")
+	svc.files.(*mockFileRepo).files[ready.ID()] = ready
+
+	first, err := svc.CreateBot(ctx, CreateBotInput{Name: "Saber", Username: "saber", AvatarID: ready.ID()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.AvatarURL != "/u/a.png" {
+		t.Fatalf("前置条件：注册时应带上头像, got %q", first.AvatarURL)
+	}
+	if err := svc.DeleteBot(ctx, domainshared.MustParseID(first.ID)); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := svc.CreateBot(ctx, CreateBotInput{Name: "Saber", Username: "saber"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.AvatarID != "" || second.AvatarURL != "" {
+		t.Fatalf("重新注册未选头像，须清掉旧头像: %+v", second)
+	}
+	if users.users[domainshared.MustParseID(second.UserID)].AvatarURL() != "" {
+		t.Fatal("虚拟用户的 avatar_url 未同步清空")
+	}
+}
+
+// mustEmail 测试用邮箱构造，非法即 fail。
+func mustEmail(t *testing.T, s string) domainuser.Email {
+	t.Helper()
+	email, err := domainuser.ParseEmail(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return email
+}
+
+// mustUsername 测试用用户名构造，非法即 fail。
+func mustUsername(t *testing.T, s string) domainuser.Username {
+	t.Helper()
+	username, err := domainuser.ParseUsername(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return username
+}
+
+// ptr 取字面量地址，供 UpdateBotInput 的可选指针字段使用。
+func ptr[T any](v T) *T { return &v }
 
 func TestCreateBotValidatesAvatarFile(t *testing.T) {
 	ctx := context.Background()

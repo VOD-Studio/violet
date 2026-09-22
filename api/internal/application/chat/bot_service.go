@@ -100,20 +100,23 @@ func NewBotService(
 // （password_hash 为空，与 OAuth-only 用户同构），因此只能经 bot token 鉴权，
 // 永远无法用密码登录本站。
 //
+// 用户名被已吊销 bot 的虚拟用户占着时不判冲突，而是回收复用那个用户：吊销只删
+// 凭证、留着用户以保住历史消息的署名，于是同名重建会永远撞在自己留下的空壳上。
+// 复用既把名字还给管理员，也让新凭证接上同一主体的历史。
+//
 // 不用事务包住两条写：本项目的多表原子性归仓储实现（见 ChatRepository
 // .SaveConversation），这里跨的又是两个聚合，改由「bot 写失败 → 补偿删除刚建的
-// 用户」收敛，避免为一个创建路径引入 UoW 装配。
+// 用户」收敛，避免为一个创建路径引入 UoW 装配。补偿只限本次新建的用户——回收来
+// 的空壳名下有历史消息，删它会连带抹掉记录。
 func (s *BotService) CreateBot(ctx context.Context, in CreateBotInput) (BotDTO, error) {
 	username, err := domainuser.ParseUsername(strings.TrimSpace(in.Username))
 	if err != nil {
 		return BotDTO{}, err
 	}
-	taken, err := s.users.ExistsByUsername(ctx, username)
+	// shell 非 nil = 这个名字属于一个已吊销 bot 留下的空壳，可以直接复用。
+	shell, err := s.reclaimableShell(ctx, username)
 	if err != nil {
 		return BotDTO{}, err
-	}
-	if taken {
-		return BotDTO{}, domainuser.ErrUsernameExists
 	}
 
 	avatarID, avatar, err := s.resolveAvatar(ctx, in.AvatarID)
@@ -122,20 +125,31 @@ func (s *BotService) CreateBot(ctx context.Context, in CreateBotInput) (BotDTO, 
 	}
 
 	now := s.now()
-	botID, userID := domainshared.NewID(), domainshared.NewID()
-	email, err := domainuser.ParseEmail("bot+" + userID.String() + "@" + botUserEmailDomain)
-	if err != nil {
-		return BotDTO{}, domainshared.Internal("构造 bot 虚拟用户邮箱失败", err)
+	botID := domainshared.NewID()
+	freshUser := shell == nil
+	user := shell
+	if freshUser {
+		userID := domainshared.NewID()
+		email, perr := domainuser.ParseEmail("bot+" + userID.String() + "@" + botUserEmailDomain)
+		if perr != nil {
+			return BotDTO{}, domainshared.Internal("构造 bot 虚拟用户邮箱失败", perr)
+		}
+		user = domainuser.NewUser(userID, email, username, domainuser.NewPasswordHash(""))
+		user.VerifyEmail()
+	} else {
+		user.Activate()
 	}
-	user := domainuser.NewUser(userID, email, username, domainuser.NewPasswordHash(""))
-	user.VerifyEmail()
 	if displayName, derr := domainuser.ParseDisplayName(strings.TrimSpace(in.Name)); derr == nil {
 		user.UpdateDisplayName(displayName)
 	}
 	if avatar != nil {
 		user.UpdateAvatarURL(avatar.URL())
+	} else {
+		// 没选头像时要连旧头像一起清掉：注册表单是空的、界面却显示上一任的图，
+		// 管理员看到的就不是他刚提交的那个 bot。
+		user.UpdateAvatarURL("")
 	}
-	bot, token, err := domainchat.NewBot(botID, userID, in.Name, avatarID, now)
+	bot, token, err := domainchat.NewBot(botID, user.GetID(), in.Name, avatarID, now)
 	if err != nil {
 		return BotDTO{}, err
 	}
@@ -144,13 +158,53 @@ func (s *BotService) CreateBot(ctx context.Context, in CreateBotInput) (BotDTO, 
 		return BotDTO{}, err
 	}
 	if err := s.bots.Save(ctx, bot); err != nil {
-		s.compensateUser(ctx, userID)
+		if freshUser {
+			s.compensateUser(ctx, user.GetID())
+		}
 		return BotDTO{}, err
 	}
 	s.publishEvents(ctx, user.PullEvents(), bot.PullEvents())
 	dto := newBotDTO(bot, user)
 	dto.Token = token.Value
 	return dto, nil
+}
+
+// reclaimableShell 判定用户名占用者能否回收：空闲与已吊销 bot 的空壳分别返回
+// (nil, nil) 与 (user, nil)，其余占用一律 ErrUsernameExists。
+//
+// 除邮箱形态外还要求名下确实没有凭证：还挂着凭证的 bot 哪怕被禁用也是有主的，
+// 同名注册必须撞墙，否则两份凭证共用一个身份。
+// 不要求 is_active=false——吊销时的停用是尽力而为（写失败只记日志），以凭证为准
+// 才不会留下「停不掉就永久占名」的死角。
+func (s *BotService) reclaimableShell(ctx context.Context, username domainuser.Username) (*domainuser.User, error) {
+	occupant, err := s.users.FindByUsername(ctx, username)
+	if errors.Is(err, domainuser.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !isBotVirtualUser(occupant) {
+		return nil, domainuser.ErrUsernameExists
+	}
+	_, berr := s.bots.FindByUserID(ctx, occupant.GetID())
+	switch {
+	case berr == nil:
+		return nil, domainuser.ErrUsernameExists
+	case errors.Is(berr, domainchat.ErrBotNotFound):
+		return occupant, nil
+	default:
+		return nil, berr
+	}
+}
+
+// isBotVirtualUser 账号是否为系统为 bot 建的虚拟用户。
+//
+// 邮箱形态是 bot+<自身用户 ID>@bot.violet.invalid，连本地部分的 ID 一起核对：
+// 只看后缀会把真用户误判成可回收的空壳，等于给注册开放抢名。
+func isBotVirtualUser(u *domainuser.User) bool {
+	local, domain, found := strings.Cut(u.Email().String(), "@")
+	return found && domain == botUserEmailDomain && local == "bot+"+u.GetID().String()
 }
 
 // GetBot 查询 bot 详情。

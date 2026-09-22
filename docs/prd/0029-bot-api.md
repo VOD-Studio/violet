@@ -138,6 +138,12 @@ chat.Service.SendMessage (senderID = 用户)
 `chat_messages.sender_id` 对 `users` 是 `ON DELETE CASCADE`，删用户会连带抹掉它发过的
 全部消息，毁掉可追溯的聊天历史。
 
+留下的虚拟用户仍占着 `users.username` 的唯一索引，所以注册对这种空壳是**回收复用**，
+不是见名就判冲突：邮箱形如 `bot+<自身 ID>@bot.violet.invalid`（连本地部分的 ID 一起核，
+光看域名会把真用户误判成壳）且名下已无凭证，就把原用户重新启用、按新表单同步展示名与
+头像（未选头像即清空），凭证挂回同一个 user ID，历史消息继续归属新 bot。真用户、被禁用
+的账号、以及仍挂着凭证的 bot（哪怕已禁用）一律 409——抢名等于抢署名。
+
 **仓储端口**：`FindByID` / `FindByUserID` / `FindByToken` / `ListByUserIDs` / `ListPage` /
 `Save` / `Delete`。`ListByUserIDs` 是给事件分发用的——判定「会话成员里哪些是 bot」要一次
 查完，逐个 `FindByUserID` 是 N+1。
