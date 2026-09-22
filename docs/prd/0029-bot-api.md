@@ -36,7 +36,7 @@ Violet Bot API (/api/v1/chat/bot/*)
 **Bot 身份体系**：
 
 - `Bot` 实体：name、avatar、tokenHash、permissions
-- 注册通过 admin 后台管理，生成 token（不存明文）
+- 注册通过 admin 后台管理，生成 token（比对用哈希，明文另存一份密文）
 - Bot 对应 `domain/user` 中的一个虚拟用户（复用用户体系）
 - Bot token 认证通过独立中间件 `BotAuth`，不走 session
 
@@ -117,7 +117,9 @@ chat.Service.SendMessage (senderID = 用户)
 
 **`Bot` 不变量**
 
-- `token_hash` 存 SHA-256 hex，明文只在 `NewBot` / `RegenerateToken` 的返回值里露面一次。
+- `token_hash` 存 SHA-256 hex 供鉴权比对；明文另经 AES-256-GCM 存在 `token_encrypted`，
+  所以 `NewBot` / `RegenerateToken` 之后还能反复取回。密钥没配、或 bot 早于密文列创建时
+  取不回来，只能重置。
 - `user_id` 指向的虚拟用户创建后不可换：换主体等于换一个人，该重建凭证而不是改字段。
 - 显示名上限 32 个 Unicode 字符，比 `chat_bots.name` 的 VARCHAR(80) 严——名字会同步到
   虚拟用户的 `display_name`，取上限的交集才不会写出「能存不能显示」的名。
@@ -141,8 +143,8 @@ chat.Service.SendMessage (senderID = 用户)
 查完，逐个 `FindByUserID` 是 N+1。
 
 **领域事件**：`chat.bot.created`、`.renamed`、`.avatar.updated`、`.enabled`、`.disabled`、
-`.token.regenerated`、`.deleted`，全部由审计订阅者落到操作日志。重置 token 只记
-「regenerated」，绝不落新旧凭据——哈希同样是泄露面。
+`.token.regenerated`、`.token.viewed`、`.deleted`，全部由审计订阅者落到操作日志。重置 token
+只记「regenerated」，查看只记「谁看了哪个 bot」，绝不落新旧凭据——哈希同样是泄露面。
 
 ## 应用层
 
@@ -229,7 +231,8 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 私聊创建与消息渲染走既有人类链路，前端一行未改。
 
 管理侧（V6）：`/admin/chat-bots`（平台组，`chat:bot-manage` 门禁）——列表（带头像）、注册（
-可从素材库选头像）、一次性 token 卡（复制后关闭即从内存丢弃）、启停开关、重置与吊销的二次确认框。
+可从素材库选头像）、token 卡（复制后关闭即从内存丢弃，但随时能从列表再调出来）、启停开关、
+重置与吊销的二次确认框。
 
 注册完不是终点：列表行内即可改名（点名称就地编辑，失焦提交、Esc 放弃）与换头像（点头像开素材库，
 角标清除），都走 `PATCH /admin/chat-bots/{id}` 的单字段补丁，复用注册时那份 `AvatarPicker`。
@@ -237,14 +240,17 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 ## 数据库迁移
 
 `122_create_chat_bots`（表 + `user_id`、`token_hash` 两个唯一索引；`avatar_id` 不建
-外键，与 chat_messages.media 同构，由应用层经 FileRepository 校验）与
-`123_add_chat_bot_permission`（`chat:bot-manage` 权限点 seed）。
+外键，与 chat_messages.media 同构，由应用层经 FileRepository 校验）、
+`123_add_chat_bot_permission`（`chat:bot-manage` 权限点 seed）与
+`124_add_chat_bot_token_ciphertext`（`token_encrypted` 可空列，存明文凭据的 AES-GCM 密文）。
 
 
 ## 安全
 
-- Bot token 只在创建/重置时返回明文，存储用哈希；`token_hash` 在持久化模型上带
-  `json:"-"`，防它经任何 DTO 序列化外泄
+- Bot token 比对用哈希，明文以 AES-256-GCM 密文存在 `token_encrypted`，密钥是 `BOT_TOKEN_KEY`；
+  两者在持久化模型上都带 `json:"-"`，防它们经任何 DTO 序列化外泄
+- 明文凭据只经 `POST /admin/chat-bots/{id}/token` 单个回显，不随列表广播；走 POST 而非 GET 是为了
+  不让凭据迚 URL（浏览器历史与反代理访问日志都存 URL），每次查看进操作日志
 - Bot 发消息走现有 `chat.Service.SendMessage`，经过消息保存、mention 解析、SSE 推送全链路；
   bot 能进的会话 = 它的虚拟用户是成员的会话，不另设一套范围授权
 - Bot SSE 只收本 bot 参与会话的事件，不全量推送；bot 自己发的消息不投给任何 bot

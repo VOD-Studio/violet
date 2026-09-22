@@ -17,4 +17,12 @@ export const updateBot = async (id: string, body: UpdateBotRequest): Promise<Bot
 export const regenerateBotToken = async (id: string): Promise<BotDTO> =>
 	apiPost<BotDTO>(`${BASE}/${id}/regenerate-token`);
 
+/**
+ * 回显明文凭据。
+ *
+ * @remarks 走 POST 而非 GET：明文不得出现在 URL 里（浏览器历史与反代理访问日志都存 URL）。
+ */
+export const revealBotToken = async (id: string): Promise<BotDTO> =>
+	apiPost<BotDTO>(`${BASE}/${id}/token`);
+
 export const deleteBot = async (id: string): Promise<null> => apiDelete<null>(`${BASE}/${id}`);

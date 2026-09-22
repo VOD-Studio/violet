@@ -30,13 +30,14 @@ function bot(overrides: Partial<BotDTO> = {}): BotDTO {
 		username: "saber",
 		name: "Saber",
 		enabled: true,
+		token_viewable: true,
 		created_at: "2026-09-22T10:00:00Z",
 		updated_at: "2026-09-22T10:00:00Z",
 		...overrides,
 	};
 }
 
-function renderTable(bots: BotDTO[], onTokenRotated = vi.fn()) {
+function renderTable(bots: BotDTO[], onTokenRevealed = vi.fn()) {
 	const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 	render(
 		<QueryClientProvider client={qc}>
@@ -44,11 +45,11 @@ function renderTable(bots: BotDTO[], onTokenRotated = vi.fn()) {
 				bots={bots}
 				pagination={pagination}
 				loading={false}
-				onTokenRotated={onTokenRotated}
+				onTokenRevealed={onTokenRevealed}
 			/>
 		</QueryClientProvider>,
 	);
-	return onTokenRotated;
+	return onTokenRevealed;
 }
 
 beforeEach(() => {
@@ -143,13 +144,32 @@ describe("BotTable", () => {
 	});
 
 	it("重置 token 成功后把新明文交给页面展示", async () => {
-		const onTokenRotated = renderTable([bot()]);
+		const onTokenRevealed = renderTable([bot()]);
 		fireEvent.click(screen.getByRole("button", { name: "重置 Saber 的 token" }));
 		fireEvent.click(screen.getByRole("button", { name: "确认重置" }));
 		await waitFor(() =>
 			expect(apiPost).toHaveBeenCalledWith("/admin/chat-bots/b1/regenerate-token"),
 		);
-		await waitFor(() => expect(onTokenRotated).toHaveBeenCalledOnce());
-		expect(onTokenRotated.mock.calls[0][0].token).toBe("violet_bot_new");
+		await waitFor(() => expect(onTokenRevealed).toHaveBeenCalledOnce());
+		expect(onTokenRevealed.mock.calls[0][0].token).toBe("violet_bot_new");
+	});
+
+	it("查看 token 仅回显凭据，不动库里那份", async () => {
+		const onTokenRevealed = renderTable([bot()]);
+		fireEvent.click(screen.getByRole("button", { name: "查看 Saber 的 token" }));
+		await waitFor(() => expect(apiPost).toHaveBeenCalledWith("/admin/chat-bots/b1/token"));
+		expect(apiPatch).not.toHaveBeenCalled();
+		expect(apiDelete).not.toHaveBeenCalled();
+		await waitFor(() => expect(onTokenRevealed).toHaveBeenCalledOnce());
+	});
+
+	it("库里无密文可解时查看入口置灰且不发请求", () => {
+		const onTokenRevealed = renderTable([bot({ token_viewable: false })]);
+		const trigger = screen.getByRole("button", { name: "查看 Saber 的 token" });
+		expect(trigger.hasAttribute("disabled")).toBe(true);
+
+		fireEvent.click(trigger);
+		expect(apiPost).not.toHaveBeenCalled();
+		expect(onTokenRevealed).not.toHaveBeenCalled();
 	});
 });

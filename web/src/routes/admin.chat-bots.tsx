@@ -18,7 +18,7 @@ function AdminChatBotsPage() {
 	const { data: paged, isLoading, pagination } = usePagedQuery(useBots);
 	const bots = paged?.data ?? [];
 	const [createOpen, setCreateOpen] = React.useState(false);
-	// 一次性明文：注册与重置后暂存，关掉提示即从内存丢弃（后端也取不回来）
+	// 明文凭据：注册、重置与「查看 token」后暂存，收起即从内存丢弃（库里存着密文，随时能再取）
 	const [reveal, setReveal] = React.useState<{ name: string; token: string } | null>(null);
 
 	return (
@@ -45,7 +45,7 @@ function AdminChatBotsPage() {
 						bots={bots}
 						pagination={pagination}
 						loading={isLoading}
-						onTokenRotated={(bot) =>
+						onTokenRevealed={(bot) =>
 							setReveal({ name: bot.name, token: bot.token ?? "" })
 						}
 					/>

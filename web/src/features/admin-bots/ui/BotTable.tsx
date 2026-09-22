@@ -2,6 +2,7 @@ import { AvatarPicker } from "@entities/media/ui/AvatarPicker";
 import {
 	useDeleteBot,
 	useRegenerateBotToken,
+	useRevealBotToken,
 	useUpdateBot,
 } from "@features/admin-bots/api/queries";
 import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
@@ -17,22 +18,23 @@ import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Switch } from "@shared/ui/base/switch";
 import { Modal } from "@shared/ui/modal";
-import { KeyRound, Trash2 } from "lucide-react";
+import { Eye, KeyRound, Trash2 } from "lucide-react";
 import * as React from "react";
 
 interface BotTableProps {
 	bots: BotDTO[];
 	pagination: DataTablePagination;
 	loading: boolean;
-	/** 重置成功后回传含新明文的 Bot，由页面凭据卡展示 */
-	onTokenRotated: (bot: BotDTO) => void;
+	/** 凭据取回后回传含明文的 Bot（重置与查看两条路径同源），由页面凭据卡展示 */
+	onTokenRevealed: (bot: BotDTO) => void;
 }
 
 type PendingAction = { kind: "rotate" | "revoke"; bot: BotDTO } | null;
 
-export function BotTable({ bots, pagination, loading, onTokenRotated }: BotTableProps) {
+export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTableProps) {
 	const update = useUpdateBot();
 	const rotate = useRegenerateBotToken();
+	const reveal = useRevealBotToken();
 	const del = useDeleteBot();
 	const [pending, setPending] = React.useState<PendingAction>(null);
 
@@ -59,7 +61,7 @@ export function BotTable({ bots, pagination, loading, onTokenRotated }: BotTable
 			rotate.mutate(bot.id, {
 				onSuccess: (next) => {
 					setPending(null);
-					onTokenRotated(next);
+					onTokenRevealed(next);
 				},
 			});
 			return;
@@ -130,9 +132,24 @@ export function BotTable({ bots, pagination, loading, onTokenRotated }: BotTable
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "96px",
+			width: "128px",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
+					{/* 库里无密文（早于密文列创建、密钥已换）时置灰：撞错误不如直接说明为什么看不了 */}
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						disabled={!row.token_viewable || reveal.isPending}
+						aria-label={`查看 ${row.name} 的 token`}
+						title={
+							row.token_viewable
+								? "查看 token"
+								: "该 Bot 的凭据未加密保存，无法查看，请重置 token"
+						}
+						onClick={() => reveal.mutate(row.id, { onSuccess: onTokenRevealed })}
+					>
+						<Eye className="size-3.5" />
+					</Button>
 					<Button
 						variant="ghost"
 						size="icon-sm"

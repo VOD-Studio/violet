@@ -10,7 +10,7 @@ export const useBots = (query: Parameters<typeof api.listBots>[0]) =>
 /**
  * 注册 Bot。
  *
- * @remarks 响应里的 token 是明文唯一一次露面，调用方必须立刻展示给操作者。
+ * @remarks 响应里的 token 是刚签发的明文；之后靠 useRevealBotToken 随时回看。
  */
 export const useCreateBot = () => {
 	const qc = useQueryClient();
@@ -45,6 +45,18 @@ export const useRegenerateBotToken = () => {
 		onError: (e: Error) => toast.error(`重置失败：${e.message}`),
 	});
 };
+
+/**
+ * 回显 Bot 当前的明文凭据。
+ *
+ * @remarks 走 mutation 不进查询缓存：凭据只存在调用方的本地 state 里，关掉展示卡即丢弃。
+ * 库里无密文可解（早于密文列创建、未配密钥或密钥已换）时后给 400，错误文案直接转给操作者。
+ */
+export const useRevealBotToken = () =>
+	useMutation({
+		mutationFn: (id: string) => api.revealBotToken(id),
+		onError: (e: Error) => toast.error(e.message),
+	});
 
 export const useDeleteBot = () => {
 	const qc = useQueryClient();

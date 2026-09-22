@@ -1,11 +1,11 @@
 import { copyText } from "@shared/lib/clipboard";
 import { Button } from "@shared/ui/base/button";
-import { AlertTriangle, Check, Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
 interface BotTokenCardProps {
-	/** 刚签发或刚重置的明文；null 表示当前无凭据可展示 */
+	/** 刚签发或刚回显的明文；null 表示当前无凭据可展示 */
 	token: string | null;
 	/** 凭据归属的 Bot 显示名 */
 	botName: string;
@@ -13,10 +13,10 @@ interface BotTokenCardProps {
 }
 
 /**
- * 一次性凭据展示卡。
+ * Bot 明文凭据展示卡。
  *
- * @remarks 明文只在响应里出现一次，关掉页面就取不回来，所以这里不给「再看看」的入口，
- * 只给复制与确认已保存。
+ * @remarks 凭据加密存在库里，关掉这张卡不会弄丢它：列表行的「查看 token」随时能再取一次。
+ * 所以「完成」只是从内存丢弃，不承担「确认已保存」语义。
  */
 export function BotTokenCard({ token, botName, onDismiss }: BotTokenCardProps) {
 	const [copied, setCopied] = React.useState(false);
@@ -42,9 +42,8 @@ export function BotTokenCard({ token, botName, onDismiss }: BotTokenCardProps) {
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
 					<h2 className="text-sm font-medium">「{botName}」的 token</h2>
-					<p className="flex items-center gap-1.5 text-xs text-destructive">
-						<AlertTriangle className="size-3.5 shrink-0" />
-						明文只显示这一次，关闭后只能重置凭据
+					<p className="text-xs text-muted-foreground">
+						凭据加密存库里，关掉卡片也不会丢，随时可从列表重新查看。
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
@@ -52,12 +51,7 @@ export function BotTokenCard({ token, botName, onDismiss }: BotTokenCardProps) {
 						{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
 						{copied ? "已复制" : "复制"}
 					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						onClick={onDismiss}
-						title="我已保存，关闭提示"
-					>
+					<Button size="sm" variant="ghost" onClick={onDismiss} title="收起明文">
 						完成
 					</Button>
 				</div>

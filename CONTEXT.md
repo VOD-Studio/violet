@@ -446,10 +446,10 @@ _Avoid_: 自动成就判定、商城/付费解锁、逐条消息外观冻结
 消息由 Violet 单一服务承载，登录用户通过本站加入会话。第一版不承诺 Matrix 客户端兼容、跨服务器联邦或端到端加密。
 
 **聊天 Bot（Chat Bot）**:
-以虚拟用户身份接入 Violet 站内聊天的外部程序（如 AI agent）。bot 是独立聚合根（`domain/chat/bot.go`）：持有 name、avatar、tokenHash、enabled，通过 admin 后台注册创建，生成一次性明文 token（`violet_bot_` 前缀 + 32 字节 crypto/rand base64url），库中只存 SHA-256 hex。bot 对应 `domain/user` 的一个虚拟用户，以此身份收发消息、走现有 `chat.Service` 全链路，前端无感区分 bot 与人类。鉴权走独立 `BotAuth` 中间件（Bearer token），不进 session cookie 体系。bot 的 SSE 事件流只推送 bot 参与会话的事件（direct 对端是 bot、或正文 mention 了 bot），不全量推送；bot 自己发的消息不推给任何 bot，避免回环。
+以虚拟用户身份接入 Violet 站内聊天的外部程序（如 AI agent）。bot 是独立聚合根（`domain/chat/bot.go`）：持有 name、avatar、tokenHash、token（明文，可能为空）、enabled，通过 admin 后台注册创建，生成明文 token（`violet_bot_` 前缀 + 32 字节 crypto/rand base64url），库里同时存它的 SHA-256 hex（鉴权比对）与 AES-256-GCM 密文（供后台随时回看，密钥 `BOT_TOKEN_KEY`）。bot 对应 `domain/user` 的一个虚拟用户，以此身份收发消息、走现有 `chat.Service` 全链路，前端无感区分 bot 与人类。鉴权走独立 `BotAuth` 中间件（Bearer token），不进 session cookie 体系。bot 的 SSE 事件流只推送 bot 参与会话的事件（direct 对端是 bot、或正文 mention 了 bot），不全量推送；bot 自己发的消息不推给任何 bot，避免回环。
 
 **Bot API**:
-面向持有 bot token 的外部程序的 HTTP 路由面（`/api/v1/chat/bot/*`），不绑定具体 bot 实现。入站：`GET /events`（SSE，订阅 bot 参与会话的事件；不补发，断线后拉消息历史补齐）、`GET /profile`（自查身份）；出站：`POST .../messages`（发消息，返回消息 ID 供后续 Edit）、`PATCH /conversations/{id}/messages/{id}`（编辑消息，用于流式回复——先 Send 占位再逐步 Edit）、`POST .../typing`（输入状态）；查询：`GET .../conversations`、`GET .../messages`。写端点按 bot 虚拟用户维度限流。管理路由 `/admin/chat-bots`（admin，需 `chat:bot-manage` 权限）。明文 token 仅在创建/重置时返回一次，丢失需重置。
+面向持有 bot token 的外部程序的 HTTP 路由面（`/api/v1/chat/bot/*`），不绑定具体 bot 实现。入站：`GET /events`（SSE，订阅 bot 参与会话的事件；不补发，断线后拉消息历史补齐）、`GET /profile`（自查身份）；出站：`POST .../messages`（发消息，返回消息 ID 供后续 Edit）、`PATCH /conversations/{id}/messages/{id}`（编辑消息，用于流式回复——先 Send 占位再逐步 Edit）、`POST .../typing`（输入状态）；查询：`GET .../conversations`、`GET .../messages`。写端点按 bot 虚拟用户维度限流。管理路由 `/admin/chat-bots`（admin，需 `chat:bot-manage` 权限）。明文 token 随时可回看：`POST /admin/chat-bots/{id}/token` 解密单个回显（不随列表广播，每次查看进操作日志）；库里没存密文（早于密文列创建、未配 `BOT_TOKEN_KEY` 或密钥已换）时取不回来，只能重置。
 _Avoid_: bot 用户（bot 是凭证聚合，"用户"指它对应的虚拟用户）、机器人（口语，不进文档与代码标识符）
 
 ## API 文档（API Reference）

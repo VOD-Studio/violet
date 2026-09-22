@@ -9,8 +9,10 @@ export interface BotDTO {
 	avatar_id?: string;
 	avatar_url?: string;
 	enabled: boolean;
-	/** 明文 token，仅创建与重置响应返回一次 */
+	/** 明文 token，仅创建、重置与「查看凭据」响应携带 */
 	token?: string;
+	/** 当前能否取回明文；false = 库里无可用密文，只能重置 token */
+	token_viewable: boolean;
 	created_at: string;
 	updated_at: string;
 }
