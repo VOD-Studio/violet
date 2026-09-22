@@ -91,17 +91,13 @@ export function LayoutSpec() {
 			<SpecRow label="投影与浮起">
 				<div className="flex flex-wrap items-start gap-6">
 					<div className="rounded-2xl bg-card p-4">
-						<p className="text-sm font-medium">平面</p>
-						<p className="mt-1 text-xs text-muted-foreground">贴画布，无任何处理</p>
-					</div>
-					<div className="rounded-2xl bg-card p-4 ring-1 ring-border">
-						<p className="text-sm font-medium">描边浮起</p>
+						<p className="text-sm font-medium">描边</p>
 						<p className="mt-1 font-mono text-xs text-muted-foreground">
-							ring-1 ring-border · 没有投影
+							ring-1 ring-border · 只是分界
 						</p>
 					</div>
 					<div className="rounded-2xl bg-card p-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
-						<p className="text-sm font-medium">轻微浮起感</p>
+						<p className="text-sm font-medium">轻微浮起感 · 唯一配方</p>
 						<p className="mt-1 font-mono text-xs text-muted-foreground">
 							0 4px 24px / 0.05 软影
 						</p>
@@ -112,8 +108,8 @@ export function LayoutSpec() {
 					</div>
 				</div>
 				<SampleNote>
-					浮起感两种配方：描边（ring-1 ring-border）或 5% 大半径软影（0 4px 24px /
-					0.05）； 暗色域软影几乎不可见，优先描边。硬投影一律禁用。
+					ring-1 ring-border 只是描边分界，不是浮起。浮起感唯一配方：0 4px 24px / 0.05
+					的轻微软影；硬投影一律禁用。暗色域软影弱，可加描边辅助分界。
 				</SampleNote>
 			</SpecRow>
 
