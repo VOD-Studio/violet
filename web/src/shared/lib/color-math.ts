@@ -157,3 +157,42 @@ export function getWcagRating(ratio: number): {
 	}
 	return { rating: "Fail", isAccessible: false };
 }
+
+/**
+ * hexToOklch - #rrggbb → OKLCH，oklchToRgb 的逆向。
+ *
+ * 供「给一个主色、推导整板」的交互使用：用户给的是 hex，
+ * 推导管线需要色相与彩度。8-bit 量化导致往返误差，L ±0.005、
+ * C ±0.005、H ±1°以内。
+ *
+ * @param hex - #rrggbb 或 #rrggbbaa（alpha 忽略）
+ * @returns l 0..1、c 0..0.4+、h 0..360；非法输入返回 null
+ */
+export function hexToOklch(hex: string): { l: number; c: number; h: number } | null {
+	const match = hex.trim().match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+	if (!match) return null;
+	const n = Number.parseInt(match[1], 16);
+	const r = ((n >> 16) & 0xff) / 255;
+	const g = ((n >> 8) & 0xff) / 255;
+	const b = (n & 0xff) / 255;
+
+	const linearize = (x: number) => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4);
+	const rLin = linearize(r);
+	const gLin = linearize(g);
+	const bLin = linearize(b);
+
+	// sRGB → OKLab（Björn Ottosson 标准矩阵）
+	const l_ = Math.cbrt(0.4122214708 * rLin + 0.5363325363 * gLin + 0.0514459929 * bLin);
+	const m_ = Math.cbrt(0.2119034982 * rLin + 0.6806995451 * gLin + 0.1073969566 * bLin);
+	const s_ = Math.cbrt(0.0883024619 * rLin + 0.2817188376 * gLin + 0.6299787005 * bLin);
+
+	const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
+	const a = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
+	const b2 = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
+
+	const c = Math.sqrt(a * a + b2 * b2);
+	let h = (Math.atan2(b2, a) * 180) / Math.PI;
+	if (h < 0) h += 360;
+
+	return { l: Number(L.toFixed(4)), c: Number(c.toFixed(4)), h: Number(h.toFixed(2)) };
+}

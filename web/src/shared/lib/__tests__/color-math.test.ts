@@ -2,9 +2,10 @@ import {
 	getContrastRatio,
 	getRelativeLuminance,
 	getWcagRating,
+	hexToOklch,
 	oklchToRgb,
 	parseOklch,
-} from "@features/lab/palette/model/color-math";
+} from "@shared/lib/color-math";
 import { describe, expect, it } from "vitest";
 
 describe("color-math", () => {
@@ -129,5 +130,36 @@ describe("color-math", () => {
 		it("< 3.0 评定为 Fail", () => {
 			expect(getWcagRating(2.1)).toEqual({ rating: "Fail", isAccessible: false });
 		});
+	});
+});
+
+describe("hexToOklch", () => {
+	it("与 oklchToRgb 往返一致（8-bit 量化容差内）", () => {
+		// 出 sRGB 色域的 oklch 会被 oklchToRgb 钳制，往返只在色域内成立
+		for (const [l, c, h] of [
+			[0.62, 0.12, 286],
+			[0.72, 0.1, 286],
+			[0.7, 0.12, 150],
+			[0.55, 0.12, 85],
+			[0.45, 0.1, 25],
+		] as const) {
+			const hex = oklchToRgb(l, c, h).hex;
+			const back = hexToOklch(hex);
+			if (!back) throw new Error("roundtrip should parse");
+			expect(Math.abs(back.l - l)).toBeLessThan(0.008); // 8-bit 量化在深色端 L 步长更大
+			expect(Math.abs(back.c - c)).toBeLessThan(0.012); // 近色域边缘的样本量化 + 轻微裁剪
+			expect(Math.abs(back.h - h)).toBeLessThan(3); // 近边缘裁剪会带偏色相 1–2°，取色推导场景不可感
+		}
+	});
+
+	it("纯灰的彩度为 0，色相归零角", () => {
+		const gray = hexToOklch("#808080");
+		if (!gray) throw new Error("gray should parse");
+		expect(gray.c).toBeLessThan(0.001);
+	});
+
+	it("非法输入返回 null", () => {
+		expect(hexToOklch("not-a-color")).toBeNull();
+		expect(hexToOklch("")).toBeNull();
 	});
 });

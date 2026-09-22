@@ -17,6 +17,8 @@
 		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
 	--font-signature: "Alex Brush", cursive;
+	/* 宋体典籍面：营造法式等装帧页的正文与标目用 */
+	--font-serif: Georgia, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, serif;
 	--animate-diagram-enter: diagram-enter 0.25s ease-out;
 	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
 	--animate-marquee: marquee 40s linear infinite;

@@ -1,5 +1,5 @@
-import { getContrastRatio, getWcagRating } from "@features/lab/palette/model/color-math";
 import { BRAND_TOKENS, STATUS_TOKENS, SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
+import { getContrastRatio, getWcagRating } from "@shared/lib/color-math";
 import { cn } from "@shared/lib/utils";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 

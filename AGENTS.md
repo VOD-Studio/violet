@@ -32,7 +32,7 @@
 - **类型检查**: `make web-typecheck`
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
-- **前端动笔前读 skill**:新建或编辑前端代码(组件/hook/util/测试)前读 `frontend-conventions`,编辑 className 前读 `tailwind-canonical-classes`——触发即读,不凭记忆;写完对照 skill 关键规则自查(TSDoc 标签形态、canonical 类形态)。
+- **前端动笔前读 skill**:新建或编辑前端代码(组件/hook/util/测试)前读 `frontend-conventions`,编辑 className 前读 `tailwind-canonical-classes`——触发即读,不凭记忆;写完对照 skill 关键规则自查(TSDoc 标签形态、canonical 类形态)。做 UI 设计决策(用色/间距/组件选型)前查站内「营造法式」页(`design-system` feature,源码即快速决策表与 token 词典)。
 
 ## 分支命名
 
@@ -98,6 +98,12 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 
 - **非必要不使用 `scale` 动效。** 悬停、选中、打开/关闭等常规状态不得靠缩放制造反馈；优先使用颜色、描边、阴影与透明度。只有图片预览、画布缩放等交互语义本身就是「缩放」时才使用。
 - **非必要不使用从上、下、左、右滑入/滑出的位移动效。** 普通面板、详情区、卡片和弹层默认直接呈现或仅淡入淡出；只有需要表达明确空间来源或去向时才使用方向性运动。
+
+## 前端视觉红线
+
+- **功能性圆角上限 `rounded-2xl`（16px）。** 再大只是装饰、不作功能圆角；胶囊 `rounded-full` 是形态不是超限圆角。
+- **硬投影禁用。** 浮起感唯一配方是 `0 4px 24px / 0.05` 的轻微软影；`ring-1 ring-border` 只是描边分界，不产生浮起。暗色域软影弱，可加描边辅助分界。其余 box-shadow 一律不用。
+- 用色、间距与组件选型查站内「营造法式」页（`/design-system`，源码即决策表与 token 词典）；冷香紫罗兰色板为可插拔预设，界面只锁 token 名不锁色值。
 
 ## 提交流程规范
 

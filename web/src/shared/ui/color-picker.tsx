@@ -80,7 +80,7 @@ export function ColorSwatch({ value, onChange, onClear }: ColorSwatchProps) {
 				</div>
 				<div className="my-3 h-px bg-edge-hairline" />
 				{/* 自定义 HSV 选色器 */}
-				<CustomColorPicker value={value || "#3b82f6"} onChange={onChange} />
+				<HsvColorPicker value={value || "#3b82f6"} onChange={onChange} />
 				<div className="my-3 h-px bg-edge-hairline" />
 				{/* 清除颜色 */}
 				<button
@@ -98,12 +98,20 @@ export function ColorSwatch({ value, onChange, onClear }: ColorSwatchProps) {
 
 /* —————— 自定义 HSV 选色器 —————— */
 
-interface CustomColorPickerProps {
+export interface HsvColorPickerProps {
+	/** 当前颜色 #rrggbb */
 	value: string;
+	/** 任意来源（拖动/输入/预设）产生新颜色时回调 */
 	onChange: (hex: string) => void;
 }
 
-function CustomColorPicker({ value, onChange }: CustomColorPickerProps) {
+/**
+ * HsvColorPicker - 自绘 HSV 选色器（饱和度/明度面板 + 色相条 + hex 输入）。
+ *
+ * 不依赖原生 input[type=color]。营造法式色板生成器是第二个消费方，
+ * 自 ColorSwatch 内部用法导出复用。
+ */
+export function HsvColorPicker({ value, onChange }: HsvColorPickerProps) {
 	const [hsv, setHsv] = useState(() => hexToHsv(value));
 	const svRef = useRef<HTMLDivElement>(null);
 	const hueRef = useRef<HTMLDivElement>(null);
