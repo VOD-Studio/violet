@@ -68,6 +68,7 @@ import { Route as AdminGalleriesRouteImport } from './routes/admin.galleries'
 import { Route as AdminFriendLinksRouteImport } from './routes/admin.friend-links'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
+import { Route as AdminChatBotsRouteImport } from './routes/admin.chat-bots'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
@@ -385,6 +386,11 @@ const AdminCommentsRoute = AdminCommentsRouteImport.update({
   path: '/comments',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminChatBotsRoute = AdminChatBotsRouteImport.update({
+  id: '/chat-bots',
+  path: '/chat-bots',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
@@ -504,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/persona': typeof PersonaRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/chat-bots': typeof AdminChatBotsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
   '/admin/friend-links': typeof AdminFriendLinksRoute
@@ -585,6 +592,7 @@ export interface FileRoutesByTo {
   '/persona': typeof PersonaRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/chat-bots': typeof AdminChatBotsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
   '/admin/friend-links': typeof AdminFriendLinksRoute
@@ -663,6 +671,7 @@ export interface FileRoutesById {
   '/persona': typeof PersonaRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/chat-bots': typeof AdminChatBotsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
   '/admin/friend-links': typeof AdminFriendLinksRoute
@@ -747,6 +756,7 @@ export interface FileRouteTypes {
     | '/persona'
     | '/register'
     | '/admin/announcements'
+    | '/admin/chat-bots'
     | '/admin/comments'
     | '/admin/emojis'
     | '/admin/friend-links'
@@ -828,6 +838,7 @@ export interface FileRouteTypes {
     | '/persona'
     | '/register'
     | '/admin/announcements'
+    | '/admin/chat-bots'
     | '/admin/comments'
     | '/admin/emojis'
     | '/admin/friend-links'
@@ -905,6 +916,7 @@ export interface FileRouteTypes {
     | '/persona'
     | '/register'
     | '/admin/announcements'
+    | '/admin/chat-bots'
     | '/admin/comments'
     | '/admin/emojis'
     | '/admin/friend-links'
@@ -1434,6 +1446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCommentsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/chat-bots': {
+      id: '/admin/chat-bots'
+      path: '/chat-bots'
+      fullPath: '/admin/chat-bots'
+      preLoaderRoute: typeof AdminChatBotsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/announcements': {
       id: '/admin/announcements'
       path: '/announcements'
@@ -1682,6 +1701,7 @@ const AdminSettingsRouteWithChildren = AdminSettingsRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminChatBotsRoute: typeof AdminChatBotsRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
   AdminEmojisRoute: typeof AdminEmojisRoute
   AdminFriendLinksRoute: typeof AdminFriendLinksRoute
@@ -1706,6 +1726,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminChatBotsRoute: AdminChatBotsRoute,
   AdminCommentsRoute: AdminCommentsRoute,
   AdminEmojisRoute: AdminEmojisRoute,
   AdminFriendLinksRoute: AdminFriendLinksRoute,

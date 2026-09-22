@@ -218,15 +218,18 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 
 ## 前端
 
-人类侧改动极小（V7，待做）：
+人类侧零改动（V7）：
 
 - bot 用户在联系人列表中显示（可搜索到 bot 虚拟用户）
 - bot 消息正常渲染（`MessageDTO` sender 是 bot 虚拟用户）
 - 流式编辑通过现有 `message.updated` SSE 事件（前端已支持）
 - 无需知道外部 bot 的存在
 
-管理侧（V6，待做）：`/admin` 平台组加「聊天 Bot」页，列表 + 注册 + 一次性 token 展示
-+ 启停 + 重置 + 吊销。
+实测：`GET /chat/contacts?q=saber` 直接返回 bot 虚拟用户（`display_name` 即 bot 名），
+私聊创建与消息渲染走既有人类链路，前端一行未改。
+
+管理侧（V6）：`/admin/chat-bots`（平台组，`chat:bot-manage` 门禁）——列表、注册、
+一次性 token 卡（复制后关闭即从内存丢弃）、启停开关、重置与吊销的二次确认框。
 
 ## 数据库迁移
 
@@ -254,8 +257,8 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 | V3 | 接口层：`BotAuth` 中间件 + bot 路由（含 CSRF 豁免回归测试） | 完成 |
 | V4 | Handler：`Profile`/`SendMessage`/`EditMessage`/`SetTyping`/会话与消息查询 + SSE + OpenAPI | 完成 |
 | V5 | 集成到 `chat.Service`：发消息与输入状态推给参与的 bot | 完成 |
-| V6 | admin 后台：bot 管理界面 | 待做 |
-| V7 | 前端：bot 用户搜索与会话发起 | 待做 |
+| V6 | admin 后台：bot 管理界面 | 完成 |
+| V7 | 前端：bot 用户搜索与会话发起 | 零改动即成立 |
 
 
 ## 对接方

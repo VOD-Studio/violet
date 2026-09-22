@@ -257,6 +257,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		permissions: ["mcp:manage-tokens"],
 	},
 	{
+		label: "聊天 Bot",
+		to: "/admin/chat-bots",
+		icon: Bot,
+		group: "platform",
+		permissions: ["chat:bot-manage"],
+	},
+	{
 		label: "系统面板",
 		to: "/admin/system",
 		icon: Activity,
