@@ -2,6 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// 素材库弹层换成 feature 内的桩（见 __tests__/fixtures.tsx）：
+// 真实 MediaPicker 是嵌套 Modal，jsdom 下 Radix 走不完退场动画，而用例只关心提交的载荷。
+vi.mock("@entities/media/ui/MediaPicker", async () => {
+	const { StubMediaPicker } = await import("../../__tests__/fixtures");
+	return { MediaPicker: StubMediaPicker };
+});
+
 vi.mock("@shared/api/request", () => ({
 	apiGetPaged: vi.fn(),
 	apiPost: vi.fn(),
@@ -61,12 +68,61 @@ describe("BotTable", () => {
 		expect(screen.getByText("@lancer")).toBeTruthy();
 	});
 
-	it("拨动状态开关即以 enabled 补丁调用后端", () => {
+	it("拨动状态开关即以 enabled 补丁调用后端", async () => {
 		renderTable([bot()]);
 		fireEvent.click(screen.getByRole("switch", { name: "禁用 Saber" }));
-		waitFor(() => {
-			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", { enabled: false });
-		});
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", { enabled: false }),
+		);
+	});
+
+	it("点击名称进入就地编辑，失焦提交改名", async () => {
+		renderTable([bot()]);
+		fireEvent.click(screen.getByRole("button", { name: "Saber" }));
+
+		const input = screen.getByRole("textbox", { name: "改名 Saber" });
+		fireEvent.change(input, { target: { value: "  Saber Alter  " } });
+		fireEvent.blur(input);
+
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", { name: "Saber Alter" }),
+		);
+	});
+
+	it("Esc 放弃与清空草稿都不发改名请求", () => {
+		renderTable([bot()]);
+
+		fireEvent.click(screen.getByRole("button", { name: "Saber" }));
+		const escaped = screen.getByRole("textbox", { name: "改名 Saber" });
+		fireEvent.change(escaped, { target: { value: "Renamed" } });
+		fireEvent.keyDown(escaped, { key: "Escape" });
+		fireEvent.blur(escaped);
+		expect(apiPatch).not.toHaveBeenCalled();
+
+		fireEvent.click(screen.getByRole("button", { name: "Saber" }));
+		const blank = screen.getByRole("textbox", { name: "改名 Saber" });
+		fireEvent.change(blank, { target: { value: "   " } });
+		fireEvent.blur(blank);
+		expect(apiPatch).not.toHaveBeenCalled();
+	});
+
+	it("从素材库选新头像即以 avatar_id 提交", async () => {
+		renderTable([bot({ avatar_url: "/uploads/saber.png" })]);
+		fireEvent.click(screen.getByRole("button", { name: "更换头像" }));
+		fireEvent.click(screen.getByRole("button", { name: "桩选素材" }));
+
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", { avatar_id: "media-1" }),
+		);
+	});
+
+	it("点角标移除头像即以 avatar_id 空串提交", async () => {
+		renderTable([bot({ avatar_id: "media-0", avatar_url: "/uploads/saber.png" })]);
+		fireEvent.click(screen.getByRole("button", { name: "移除头像" }));
+
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", { avatar_id: "" }),
+		);
 	});
 
 	it("吊销要先过确认框，确认后才发请求", () => {

@@ -231,6 +231,9 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 管理侧（V6）：`/admin/chat-bots`（平台组，`chat:bot-manage` 门禁）——列表（带头像）、注册（
 可从素材库选头像）、一次性 token 卡（复制后关闭即从内存丢弃）、启停开关、重置与吊销的二次确认框。
 
+注册完不是终点：列表行内即可改名（点名称就地编辑，失焦提交、Esc 放弃）与换头像（点头像开素材库，
+角标清除），都走 `PATCH /admin/chat-bots/{id}` 的单字段补丁，复用注册时那份 `AvatarPicker`。
+
 ## 数据库迁移
 
 `122_create_chat_bots`（表 + `user_id`、`token_hash` 两个唯一索引；`avatar_id` 不建

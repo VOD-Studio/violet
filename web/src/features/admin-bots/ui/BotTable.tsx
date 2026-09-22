@@ -1,8 +1,10 @@
+import { AvatarPicker } from "@entities/media/ui/AvatarPicker";
 import {
 	useDeleteBot,
 	useRegenerateBotToken,
 	useUpdateBot,
 } from "@features/admin-bots/api/queries";
+import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
 import type { BotDTO } from "@features/admin-bots/model/types";
 import {
 	DataTable,
@@ -12,6 +14,7 @@ import {
 import { formatDateTime } from "@shared/lib/date";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
 import { Switch } from "@shared/ui/base/switch";
 import { Modal } from "@shared/ui/modal";
 import { KeyRound, Trash2 } from "lucide-react";
@@ -70,14 +73,23 @@ export function BotTable({ bots, pagination, loading, onTokenRotated }: BotTable
 			header: "名称",
 			cell: (row) => (
 				<div className="flex min-w-0 items-center gap-2">
-					{row.avatar_url ? (
-						<img
-							src={row.avatar_url}
-							alt=""
-							className="size-7 shrink-0 rounded-full object-cover"
-						/>
-					) : null}
-					<span className="truncate font-medium">{row.name}</span>
+					{/* avatar_id 空串 = 清除，缺省 = 不改，与后端 PATCH 语义一致 */}
+					<AvatarPicker
+						value={row.avatar_url ?? ""}
+						alt={row.name}
+						sizeClassName="size-8"
+						compact
+						pickerTitle={`选择「${row.name}」的头像`}
+						disabled={update.isPending}
+						onChange={(file) =>
+							update.mutate({ id: row.id, body: { avatar_id: file?.id ?? "" } })
+						}
+					/>
+					<EditableBotName
+						name={row.name}
+						disabled={update.isPending}
+						onCommit={(name) => update.mutate({ id: row.id, body: { name } })}
+					/>
 				</div>
 			),
 		},
@@ -181,5 +193,68 @@ export function BotTable({ bots, pagination, loading, onTokenRotated }: BotTable
 				}
 			/>
 		</>
+	);
+}
+
+interface EditableBotNameProps {
+	/** 当前显示名，仅作初值与「是否真改了」的基准 */
+	name: string;
+	disabled: boolean;
+	/** 仅在名称有变化且非空时调用 */
+	onCommit: (name: string) => void;
+}
+
+/**
+ * 就地改名件：点击进入编辑，失焦提交，Esc 放弃。
+ */
+function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
+	const [editing, setEditing] = React.useState(false);
+	const [draft, setDraft] = React.useState(name);
+	// Esc 也走 blur 收口（避免同时触发两次提交），用 ref 标记这次 blur 不提交
+	const cancelled = React.useRef(false);
+
+	if (!editing) {
+		return (
+			<button
+				type="button"
+				disabled={disabled}
+				title="点击改名"
+				className="min-w-0 truncate rounded-md px-1 py-0.5 text-left font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+				onClick={() => {
+					cancelled.current = false;
+					setDraft(name);
+					setEditing(true);
+				}}
+			>
+				{name}
+			</button>
+		);
+	}
+
+	return (
+		<Input
+			aria-label={`改名 ${name}`}
+			autoFocus
+			maxLength={BOT_NAME_MAX}
+			value={draft}
+			className="h-7 w-40 text-sm font-medium"
+			onFocus={(e) => e.currentTarget.select()}
+			onChange={(e) => setDraft(e.target.value)}
+			onKeyDown={(e) => {
+				if (e.key === "Escape") {
+					cancelled.current = true;
+					e.currentTarget.blur();
+				} else if (e.key === "Enter") {
+					e.currentTarget.blur();
+				}
+			}}
+			onBlur={() => {
+				const next = draft.trim();
+				setEditing(false);
+				setDraft(name);
+				if (!cancelled.current && next && next !== name) onCommit(next);
+				cancelled.current = false;
+			}}
+		/>
 	);
 }

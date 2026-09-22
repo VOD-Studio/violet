@@ -1,6 +1,7 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { AvatarPicker } from "@entities/media/ui/AvatarPicker";
 import { useCreateBot } from "@features/admin-bots/api/queries";
+import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
 import type { BotDTO } from "@features/admin-bots/model/types";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -99,12 +100,12 @@ export function CreateBotDialog({ open, onOpenChange, onCreated }: CreateBotDial
 					<Input
 						id="bot-name"
 						value={name}
-						maxLength={32}
+						maxLength={BOT_NAME_MAX}
 						placeholder="Saber"
 						onChange={(e) => setName(e.target.value)}
 					/>
 					<p className="text-xs text-muted-foreground">
-						最长 32 个字符，同时作为虚拟用户的展示名
+						最长 {BOT_NAME_MAX} 个字符，同时作为虚拟用户的展示名
 					</p>
 				</div>
 				<div className="space-y-1.5">
