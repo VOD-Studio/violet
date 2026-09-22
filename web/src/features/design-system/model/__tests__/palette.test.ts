@@ -13,7 +13,7 @@ describe("色板生成器", () => {
 		}
 	});
 
-	it("语义角色与现行 token 角色一一对应", () => {
+	it("语义角色只收独立中性面,品牌同值行走别名", () => {
 		expect(palette.semantic.map((role) => role.role)).toEqual([
 			"--background",
 			"--foreground",
@@ -23,14 +23,13 @@ describe("色板生成器", () => {
 			"--accent",
 			"--border",
 			"--input",
+		]);
+		// 品牌层每行浅深值互不相同,重复方言名不设行
+		const brandHexes = palette.brandRoles.flatMap((role) => [role.light.hex, role.dark.hex]);
+		expect(new Set(brandHexes).size).toBe(brandHexes.length);
+		expect(palette.brandRoles.find((role) => role.role === "--brand")?.aliases).toEqual([
 			"--primary",
 			"--ring",
-			"--popover",
-			"--popover-foreground",
-			"--secondary",
-			"--secondary-foreground",
-			"--accent-foreground",
-			"--primary-foreground",
 		]);
 	});
 

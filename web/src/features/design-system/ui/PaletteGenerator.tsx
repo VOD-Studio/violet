@@ -1,6 +1,7 @@
 import { copyText } from "@shared/lib/clipboard";
-import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
+import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@shared/ui/color-picker";
+import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { RampStep, RoleColor, SwatchColor } from "../model/palette";
@@ -27,45 +28,103 @@ const DEFAULT_SEED = "#2563eb";
 
 const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
 
-function ColorCell({ color }: { color: SwatchColor }) {
+function SwatchButton({
+	color,
+	domain,
+	copied,
+	onPick,
+}: {
+	color: SwatchColor;
+	domain: string;
+	copied: boolean;
+	onPick: () => void;
+}) {
+	// 墨色随色块自身明度切换：主题 token 在深浅域会失配
+	const ink = (parseOklch(color.oklch)?.l ?? 0.5) < 0.62 ? "text-white" : "text-slate-900";
 	return (
-		<span className="inline-flex items-center gap-1.5">
+		<button
+			className={`relative h-9 w-full overflow-hidden rounded-lg outline-none ring-1 ring-border/60 transition-[filter] duration-300 ease-out hover:brightness-110 ${ink}`}
+			onClick={onPick}
+			style={{ backgroundColor: color.hex }}
+			title={`${domain} · ${color.oklch}`}
+			type="button"
+		>
 			<span
-				className="inline-block size-5 rounded-2 border border-border/60 transition-colors duration-300 ease-out"
-				style={{ backgroundColor: color.hex }}
-				title={color.oklch}
-			/>
-			<code className="font-mono text-[10px] text-muted-foreground">{color.hex}</code>
-		</span>
-	);
-}
-
-function RoleHeader() {
-	return (
-		<li className="grid grid-cols-1 gap-x-6 sm:grid-cols-[1fr_auto_auto] sm:items-baseline">
-			<span className="font-mono text-xs text-muted-foreground">角色</span>
-			<span className="hidden font-mono text-xs text-muted-foreground sm:inline">浅色</span>
-			<span className="hidden font-mono text-xs text-muted-foreground sm:inline">深色</span>
-		</li>
+				aria-hidden={copied}
+				className={`absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide transition-opacity duration-200 ease-out ${
+					copied ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+				}`}
+			>
+				{copied ? "✓" : color.hex.toUpperCase()}
+			</span>
+		</button>
 	);
 }
 
 function RoleRow({ role }: { role: RoleColor }) {
+	const [copied, setCopied] = useState(false);
+	const pick = async (domain: "light" | "dark") => {
+		const hex = role[domain].hex.toUpperCase();
+		if (await copyText(hex)) {
+			toast.success(`已复制 ${role.role} ${domain === "light" ? "浅色" : "深色"}: ${hex}`);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1200);
+		}
+	};
 	return (
-		<li className="grid grid-cols-1 gap-x-6 gap-y-1 border-b border-border/40 py-2.5 sm:grid-cols-[1fr_auto_auto] sm:items-baseline">
-			<span className="min-w-0">
+		<li className="group grid grid-cols-[1fr_6.5rem_6.5rem] items-center gap-x-4 rounded-xl px-3 py-2 transition-colors duration-200 ease-out hover:bg-muted/40 sm:grid-cols-[1fr_9rem_9rem]">
+			<div className="min-w-0">
 				<code className="font-mono text-xs">{role.role}</code>
+				{role.aliases?.length ? (
+					<span className="ml-2 font-mono text-[11px] text-muted-foreground">
+						= {role.aliases.join(" · ")}
+					</span>
+				) : null}
 				{role.note ? (
 					<span className="ml-2 text-xs text-muted-foreground">{role.note}</span>
 				) : null}
-			</span>
-			<span className="sm:justify-self-end">
-				<ColorCell color={role.light} />
-			</span>
-			<span className="sm:justify-self-end">
-				<ColorCell color={role.dark} />
-			</span>
+			</div>
+			<SwatchButton
+				color={role.light}
+				copied={copied}
+				domain="浅"
+				onPick={() => void pick("light")}
+			/>
+			<SwatchButton
+				color={role.dark}
+				copied={copied}
+				domain="深"
+				onPick={() => void pick("dark")}
+			/>
 		</li>
+	);
+}
+
+/** 角色展台：滚动入场淡入，行悬停聚焦，色块悬停显值、点击复制 */
+function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
+	return (
+		<motion.section
+			initial={{ opacity: 0 }}
+			transition={{ duration: 0.45, ease: "easeOut" }}
+			viewport={{ margin: "-60px", once: true }}
+			whileInView={{ opacity: 1 }}
+		>
+			<h3 className="mt-10 text-lg font-bold">{title}</h3>
+			<ul className="mt-2 grid grid-cols-[1fr_6.5rem_6.5rem] gap-x-4 px-3 pb-1.5 sm:grid-cols-[1fr_9rem_9rem]">
+				<span className="font-mono text-[11px] text-muted-foreground">角色</span>
+				<span className="text-center font-mono text-[11px] text-muted-foreground">
+					浅色
+				</span>
+				<span className="text-center font-mono text-[11px] text-muted-foreground">
+					深色
+				</span>
+			</ul>
+			<ul className="mt-0 space-y-0.5">
+				{roles.map((role) => (
+					<RoleRow key={role.role} role={role} />
+				))}
+			</ul>
+		</motion.section>
 	);
 }
 
@@ -188,48 +247,37 @@ export function PaletteGenerator() {
 				))}
 			</div>
 
-			<h3 className="mt-10 text-lg font-bold">品牌角色</h3>
-			<ul className="mt-3">
-				<RoleHeader />
-				{palette.brandRoles.map((role) => (
-					<RoleRow key={role.role} role={role} />
-				))}
-			</ul>
+			<RoleBoard roles={palette.brandRoles} title="品牌角色" />
 
-			<h3 className="mt-10 text-lg font-bold">功能色</h3>
-			<ul className="mt-3">
-				<RoleHeader />
-				{palette.functional.map((role) => (
-					<RoleRow key={role.role} role={role} />
-				))}
-			</ul>
+			<RoleBoard roles={palette.functional} title="功能色" />
 
-			<h3 className="mt-10 text-lg font-bold">中性带与语义角色</h3>
-			<ul className="mt-3">
-				<RoleHeader />
-				{palette.semantic.map((role) => (
-					<RoleRow key={role.role} role={role} />
-				))}
-			</ul>
+			<RoleBoard roles={palette.semantic} title="中性带与语义角色" />
 
-			<h3 className="mt-10 text-lg font-bold">对比度审计</h3>
-			<ul className="mt-3">
-				{palette.audits.map((audit) => (
-					<li
-						className="flex items-baseline gap-3 border-b border-border/40 py-2 text-sm"
-						key={audit.pair}
-					>
-						<span className={audit.pass ? "text-success" : "text-destructive"}>
-							{audit.pass ? "✓" : "✗"}
-						</span>
-						<span className="flex-1 text-muted-foreground">{audit.pair}</span>
-						<code className="font-mono text-xs">{audit.ratio}:1</code>
-						<span className="w-20 text-right font-mono text-xs text-muted-foreground">
-							{audit.rating}
-						</span>
-					</li>
-				))}
-			</ul>
+			<motion.section
+				initial={{ opacity: 0 }}
+				transition={{ duration: 0.45, ease: "easeOut" }}
+				viewport={{ margin: "-60px", once: true }}
+				whileInView={{ opacity: 1 }}
+			>
+				<h3 className="mt-10 text-lg font-bold">对比度审计</h3>
+				<ul className="mt-3">
+					{palette.audits.map((audit) => (
+						<li
+							className="flex items-baseline gap-3 border-b border-border/40 py-2 text-sm"
+							key={audit.pair}
+						>
+							<span className={audit.pass ? "text-success" : "text-destructive"}>
+								{audit.pass ? "✓" : "✗"}
+							</span>
+							<span className="flex-1 text-muted-foreground">{audit.pair}</span>
+							<code className="font-mono text-xs">{audit.ratio}:1</code>
+							<span className="w-20 text-right font-mono text-xs text-muted-foreground">
+								{audit.rating}
+							</span>
+						</li>
+					))}
+				</ul>
+			</motion.section>
 		</div>
 	);
 }

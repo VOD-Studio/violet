@@ -31,6 +31,8 @@ export interface RoleColor {
 	dark: SwatchColor;
 	/** 与现行体系的对应说明 */
 	note?: string;
+	/** 值完全相同的公开方言名字（如 --brand 即站内 --primary） */
+	aliases?: string[];
 }
 
 export interface ContrastAudit {
@@ -44,11 +46,11 @@ export interface GeneratedPalette {
 	seed: SeedColor;
 	/** 品牌色阶 ×11（浅到深） */
 	ramp: RampStep[];
-	/** 品牌角色层（brand/hover/wash/wash-foreground/foreground/ring） */
+	/** 品牌角色层（brand/hover/wash/wash-foreground/foreground），每行独立值 */
 	brandRoles: RoleColor[];
 	/** 功能色（现行体系固定语义不动，此处展示同源推导的候选） */
 	functional: RoleColor[];
-	/** 中性带与语义角色映射 */
+	/** 中性带：与品牌层无同值关系的独立语义面 */
 	semantic: RoleColor[];
 	/** 对比度审计 */
 	audits: ContrastAudit[];
@@ -79,7 +81,8 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		return { label: RAMP_LABELS[i], oklch: s.oklch, hex: s.hex };
 	});
 
-	// 品牌角色层：浅域深品牌色配深字，深域浅品牌色配暗字（对齐现行品牌层形态）
+	// 品牌角色层：浅域深品牌色配深字，深域浅品牌色配暗字（对齐现行品牌层形态）。
+	// 只收独立值；与 --brand 同值的 --brand-ring 不设行，公开方言名走 aliases。
 	const cLight = chromaAt(0.53, c);
 	const cDark = clamp(c * 0.75, 0, 0.15); // 深域彩度受限，防 sRGB 色域裁剪
 	const brandRoles: RoleColor[] = [
@@ -87,26 +90,35 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 			role: "--brand",
 			light: swatch(0.53, cLight, h),
 			dark: swatch(0.72, cDark, h),
+			aliases: ["--primary", "--ring"],
 			note: "品牌强调主色",
 		},
 		{
 			role: "--brand-hover",
 			light: swatch(0.47, chromaAt(0.47, c), h),
 			dark: swatch(0.77, cDark * 0.92, h),
+			note: "悬停加深",
 		},
 		{
 			role: "--brand-wash",
 			light: swatch(0.965, cLight * 0.11, h),
 			dark: swatch(0.22, cDark * 0.24, h),
+			aliases: ["--accent"],
 			note: "淡染面",
 		},
 		{
 			role: "--brand-wash-foreground",
 			light: swatch(0.35, chromaAt(0.35, c) * 0.7, h),
 			dark: swatch(0.9, cDark * 0.5, h),
+			note: "淡染面上的文字",
 		},
-		{ role: "--brand-foreground", light: swatch(0.99, 0, h), dark: swatch(0.14, 0.02, h) },
-		{ role: "--brand-ring", light: swatch(0.53, cLight, h), dark: swatch(0.72, cDark, h) },
+		{
+			role: "--brand-foreground",
+			light: swatch(0.99, 0, h),
+			dark: swatch(0.14, 0.02, h),
+			aliases: ["--primary-foreground"],
+			note: "品牌面上的文字",
+		},
 	];
 
 	// 功能色：语义色相固定（绿=成功、黄=警示、红=危险），明度按域适配；
@@ -123,7 +135,8 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		note: "现行体系固定语义，不随色板更迭",
 	}));
 
-	// 中性带与语义角色：中性带取种子色相的极低彩度晕染（正画布带微色晕的现行做法）
+	// 中性带：只收与品牌层无同值关系的独立语义面；
+	// primary/ring/accent 系是品牌层的公开方言名（见 brandRoles 的 aliases），不重复设行。
 	const semantic: RoleColor[] = [
 		{
 			role: "--background",
@@ -163,51 +176,6 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		},
 		{ role: "--border", light: swatch(0.9, 0.01, h), dark: swatch(0.26, 0.025, h) },
 		{ role: "--input", light: swatch(0.88, 0.012, h), dark: swatch(0.3, 0.03, h) },
-		{
-			role: "--primary",
-			light: swatch(0.53, cLight, h),
-			dark: swatch(0.72, cDark, h),
-			note: "公开方言映射品牌色",
-		},
-		{
-			role: "--ring",
-			light: swatch(0.53, cLight, h),
-			dark: swatch(0.72, cDark, h),
-			note: "焦点环",
-		},
-		{
-			role: "--popover",
-			light: swatch(0.985, 0.005, h),
-			dark: swatch(0.17, 0.014, h),
-			note: "浮层底",
-		},
-		{
-			role: "--popover-foreground",
-			light: swatch(0.19, 0.015, h),
-			dark: swatch(0.955, 0.008, h),
-		},
-		{
-			role: "--secondary",
-			light: swatch(0.955, 0.008, h),
-			dark: swatch(0.21, 0.02, h),
-			note: "次要动作面",
-		},
-		{
-			role: "--secondary-foreground",
-			light: swatch(0.21, 0.02, h),
-			dark: swatch(0.955, 0.008, h),
-		},
-		{
-			role: "--accent-foreground",
-			light: swatch(0.19, 0.015, h),
-			dark: swatch(0.955, 0.008, h),
-		},
-		{
-			role: "--primary-foreground",
-			light: swatch(0.99, 0, h),
-			dark: swatch(0.14, 0.02, h),
-			note: "主要动作上的文字",
-		},
 	];
 
 	const auditPair = (pair: string, fg: SwatchColor, bg: SwatchColor): ContrastAudit => {
@@ -216,9 +184,12 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		return { pair, ratio, rating, pass: isAccessible };
 	};
 
-	const bgL = semantic[0];
-	const fgL = semantic[1];
-	const mutedFgL = semantic[4];
+	const semanticByRole: Record<string, RoleColor> = Object.fromEntries(
+		semantic.map((role) => [role.role, role]),
+	);
+	const bgL = semanticByRole["--background"];
+	const fgL = semanticByRole["--foreground"];
+	const mutedFgL = semanticByRole["--muted-foreground"];
 	const brandLightColor = brandRoles[0].light;
 	const brandDarkColor = brandRoles[0].dark;
 	const audits: ContrastAudit[] = [
