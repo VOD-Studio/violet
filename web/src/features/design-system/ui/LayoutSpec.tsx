@@ -89,15 +89,21 @@ export function LayoutSpec() {
 			</SpecRow>
 
 			<SpecRow label="投影与浮起">
-				<div className="flex flex-wrap gap-6">
-					<div className="rounded-2xl border border-border bg-card p-4">
+				<div className="flex flex-wrap items-start gap-6">
+					<div className="rounded-2xl bg-card p-4">
 						<p className="text-sm font-medium">平面</p>
-						<p className="mt-1 text-xs text-muted-foreground">border-border，无浮起</p>
+						<p className="mt-1 text-xs text-muted-foreground">贴画布，无任何处理</p>
 					</div>
 					<div className="rounded-2xl bg-card p-4 ring-1 ring-border">
-						<p className="text-sm font-medium">轻微浮起 · 推荐</p>
-						<p className="mt-1 text-xs text-muted-foreground">
-							ring-1 ring-border，没有投影
+						<p className="text-sm font-medium">描边浮起</p>
+						<p className="mt-1 font-mono text-xs text-muted-foreground">
+							ring-1 ring-border · 没有投影
+						</p>
+					</div>
+					<div className="rounded-2xl bg-card p-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
+						<p className="text-sm font-medium">轻微浮起感</p>
+						<p className="mt-1 font-mono text-xs text-muted-foreground">
+							0 4px 24px / 0.05 软影
 						</p>
 					</div>
 					<div className="rounded-2xl bg-card p-4 opacity-60 shadow-lg">
@@ -105,7 +111,10 @@ export function LayoutSpec() {
 						<p className="mt-1 text-xs text-muted-foreground">又重又俗，禁用</p>
 					</div>
 				</div>
-				<SampleNote>层级浮起感的配方是描边而非投影：ring-1 ring-border。</SampleNote>
+				<SampleNote>
+					浮起感两种配方：描边（ring-1 ring-border）或 5% 大半径软影（0 4px 24px /
+					0.05）； 暗色域软影几乎不可见，优先描边。硬投影一律禁用。
+				</SampleNote>
 			</SpecRow>
 
 			<SpecRow label="容器">
