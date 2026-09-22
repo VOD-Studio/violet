@@ -1,27 +1,50 @@
+import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
+import { HsvColorPicker } from "@shared/ui/color-picker";
 import { useMemo, useState } from "react";
 import type { RoleColor, SwatchColor } from "../model/palette";
 import { generatePalette } from "../model/palette";
 
-/** 常用色相速选，含现行种子的对照位 */
-const HUE_PRESETS = [
-	{ h: 222, name: "靛蓝" },
-	{ h: 195, name: "青" },
-	{ h: 150, name: "松绿" },
-	{ h: 85, name: "橄榄" },
-	{ h: 55, name: "暖黄" },
-	{ h: 25, name: "赭" },
+// 备选主色里的两枚站内典藏：现役冷香紫罗兰与曾用暖珊瑚（值取自各自 palette 定义）
+const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
+const CORAL_SEED = oklchToRgb(0.625, 0.19, 25).hex;
+
+/** 主色速选：站内典藏在前，拿不准时一键落到一枚顺眼的主色 */
+const SEED_PRESETS = [
+	{ hex: VIOLET_SEED, name: "紫罗兰 · 现役预设" },
+	{ hex: CORAL_SEED, name: "暖珊瑚 · 曾用预设" },
+	{ hex: "#2563eb", name: "靛蓝" },
+	{ hex: "#0891b2", name: "青" },
+	{ hex: "#059669", name: "松绿" },
+	{ hex: "#65a30d", name: "橄榄" },
+	{ hex: "#d97706", name: "暖橙" },
+	{ hex: "#dc2626", name: "绯红" },
+	{ hex: "#db2777", name: "玫红" },
 ] as const;
+
+const DEFAULT_SEED = "#2563eb";
+
+const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
 
 function ColorCell({ color }: { color: SwatchColor }) {
 	return (
 		<span className="inline-flex items-center gap-1.5">
 			<span
-				className="inline-block size-5 rounded-2 border border-border/60"
+				className="inline-block size-5 rounded-2 border border-border/60 transition-colors duration-300 ease-out"
 				style={{ backgroundColor: color.hex }}
 				title={color.oklch}
 			/>
 			<code className="font-mono text-[10px] text-muted-foreground">{color.hex}</code>
 		</span>
+	);
+}
+
+function RoleHeader() {
+	return (
+		<li className="grid grid-cols-1 gap-x-6 sm:grid-cols-[1fr_auto_auto] sm:items-baseline">
+			<span className="font-mono text-xs text-muted-foreground">角色</span>
+			<span className="hidden font-mono text-xs text-muted-foreground sm:inline">浅色</span>
+			<span className="hidden font-mono text-xs text-muted-foreground sm:inline">深色</span>
+		</li>
 	);
 }
 
@@ -45,67 +68,70 @@ function RoleRow({ role }: { role: RoleColor }) {
 }
 
 /**
- * 色板生成器章内容：选主色 → 实时推导品牌色阶、品牌角色、功能色与
- * 语义角色映射（明暗双域并列预览），核心配对附 WCAG 对比度审计。
+ * 色板生成器章内容：给一个主色，色阶、品牌角色、功能色、中性带与
+ * 语义角色全部由此推导（明暗双域并列预览），核心配对附 WCAG 对比度审计。
  */
 export function PaletteGenerator() {
-	const [h, setH] = useState(222);
-	const [c, setC] = useState(0.16);
-	const palette = useMemo(() => generatePalette({ h, c }), [h, c]);
+	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
+	const palette = useMemo(() => {
+		const parsed = hexToOklch(seedHex);
+		const h = Math.round(parsed?.h ?? 222);
+		// 彩度钳到可入界面的克制区间；取到近灰主色时整板随之素净
+		const c = clamp(parsed?.c ?? 0.16, 0.04, 0.3);
+		return generatePalette({ h, c });
+	}, [seedHex]);
+	const seed = hexToOklch(seedHex);
 
 	return (
 		<div className="mt-8">
-			<div className="max-w-prose rounded-2xl border border-border/40 bg-card/50 p-6">
-				<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-					<label className="flex items-center gap-3 text-sm" htmlFor="seed-hue">
-						色相
-						<input
-							className="w-44 accent-(--brand)"
-							id="seed-hue"
-							max={360}
-							min={0}
-							onChange={(event) => setH(Number(event.target.value))}
-							type="range"
-							value={h}
+			<div className="rounded-2xl border border-border/40 bg-card/50 p-6">
+				<div className="flex flex-wrap items-start gap-x-10 gap-y-5">
+					<div className="flex items-center gap-4">
+						<div
+							className="size-16 shrink-0 rounded-2xl ring-1 ring-border transition-colors duration-300 ease-out"
+							style={{ backgroundColor: seedHex }}
 						/>
-						<code className="font-mono text-xs text-muted-foreground">{h}°</code>
-					</label>
-					<label className="flex items-center gap-3 text-sm" htmlFor="seed-chroma">
-						彩度
-						<input
-							className="w-32 accent-(--brand)"
-							id="seed-chroma"
-							max={0.3}
-							min={0.06}
-							onChange={(event) => setC(Number(event.target.value))}
-							step={0.01}
-							type="range"
-							value={c}
-						/>
-						<code className="font-mono text-xs text-muted-foreground">
-							{c.toFixed(2)}
-						</code>
-					</label>
-					<div className="flex items-center gap-1.5">
-						{HUE_PRESETS.map((preset) => (
+						<div>
+							<p className="text-base font-bold">主色</p>
+							<code className="block font-mono text-xs text-muted-foreground tabular-nums">
+								{seedHex.toUpperCase()}
+							</code>
+							<code className="block font-mono text-xs text-muted-foreground tabular-nums">
+								{seed
+									? `oklch(${seed.l.toFixed(3)} ${seed.c.toFixed(3)} ${seed.h.toFixed(1)})`
+									: "—"}
+							</code>
+							<p className="mt-1 text-xs text-muted-foreground">
+								给一个主色，其余全部由此推导。
+							</p>
+						</div>
+					</div>
+					<div
+						aria-label="主色速选"
+						className="flex flex-wrap items-center gap-2.5"
+						role="group"
+					>
+						{SEED_PRESETS.map((preset) => (
 							<button
-								aria-label={preset.name}
-								className={`size-6 rounded-full border transition-colors ${
-									h === preset.h ? "border-foreground" : "border-border/60"
+								aria-label={`主色 ${preset.name}`}
+								className={`size-8 rounded-full ring-1 transition-[background-color,box-shadow] duration-300 ease-out ${
+									seedHex === preset.hex
+										? "ring-2 ring-foreground"
+										: "ring-border hover:ring-foreground/40"
 								}`}
-								key={preset.h}
-								onClick={() => setH(preset.h)}
-								style={{ backgroundColor: `oklch(0.7 0.14 ${preset.h})` }}
+								key={preset.hex}
+								onClick={() => setSeedHex(preset.hex)}
+								style={{ backgroundColor: preset.hex }}
+								title={preset.name}
 								type="button"
 							/>
 						))}
 					</div>
 				</div>
-				<p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-					换色 =
-					换种子重跑算法：品牌色随色相与彩度全量推导，中性带取种子色相的低彩度晕染，
-					功能色保持固定语义色相，明度按域适配。
-				</p>
+				<div className="mt-6 max-w-72 border-t border-border/40 pt-5">
+					<p className="mb-3 text-xs text-muted-foreground">自定义主色</p>
+					<HsvColorPicker onChange={setSeedHex} value={seedHex} />
+				</div>
 			</div>
 
 			<h3 className="mt-10 text-lg font-bold">品牌色阶</h3>
@@ -113,7 +139,7 @@ export function PaletteGenerator() {
 				{palette.ramp.map((step) => (
 					<button
 						aria-label={`色阶 ${step.label} · ${step.hex}`}
-						className="h-16 flex-1"
+						className="h-20 flex-1 transition-colors duration-300 ease-out"
 						key={step.label}
 						style={{ backgroundColor: step.hex }}
 						title={`${step.label} · ${step.hex}`}
@@ -127,6 +153,7 @@ export function PaletteGenerator() {
 
 			<h3 className="mt-10 text-lg font-bold">品牌角色</h3>
 			<ul className="mt-3">
+				<RoleHeader />
 				{palette.brandRoles.map((role) => (
 					<RoleRow key={role.role} role={role} />
 				))}
@@ -134,6 +161,7 @@ export function PaletteGenerator() {
 
 			<h3 className="mt-10 text-lg font-bold">功能色</h3>
 			<ul className="mt-3">
+				<RoleHeader />
 				{palette.functional.map((role) => (
 					<RoleRow key={role.role} role={role} />
 				))}
@@ -141,6 +169,7 @@ export function PaletteGenerator() {
 
 			<h3 className="mt-10 text-lg font-bold">中性带与语义角色</h3>
 			<ul className="mt-3">
+				<RoleHeader />
 				{palette.semantic.map((role) => (
 					<RoleRow key={role.role} role={role} />
 				))}
