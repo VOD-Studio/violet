@@ -126,8 +126,9 @@ var (
 	// mcp
 	MCPManageTokens = MustParse("mcp:manage-tokens") // 管理 MCP 访问令牌（PAT）
 	// chat
-	ChatManage  = MustParse("chat:manage") // 管理违规聊天消息
-	AdminAccess = MustParse("admin:access")
+	ChatManage    = MustParse("chat:manage")     // 管理违规聊天消息
+	ChatBotManage = MustParse("chat:bot-manage") // 管理聊天 bot 凭证（注册/启停/重置 token/吊销）
+	AdminAccess   = MustParse("admin:access")
 	// customemoji
 	CustomEmojiManage = MustParse("customemoji:manage") // 管理自定义表情（强制下架任意用户的违规表情）
 	// gallery

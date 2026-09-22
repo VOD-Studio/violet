@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"blog-api/config"
-	"blog-api/internal/openapi"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
 	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
+	"blog-api/internal/openapi"
 )
 
 // 路由表中存在但不进入 API 契约文档的端点：健康检查与 spec 端点是基础设施，
@@ -40,10 +40,12 @@ func fullRouterDeps() *Deps {
 		SessionAuth:           identity,
 		OptionalAuth:          identity,
 		SessionAuthReadOnlyMW: identity,
-		SiteImpressionLimit:   identity,
-		SiteIdentity:          &siteidentityhttp.Handler{},
-		SiteImpression:        &siteimpressionhttp.Handler{},
-		Publication:           &publicationhttp.Handler{},
+		// BotAuth 是预构造中间件，nil 会让 chi 在 Use 处 panic（路由注册不吃 nil func）。
+		BotAuth:             identity,
+		SiteImpressionLimit: identity,
+		SiteIdentity:        &siteidentityhttp.Handler{},
+		SiteImpression:      &siteimpressionhttp.Handler{},
+		Publication:         &publicationhttp.Handler{},
 	}
 }
 

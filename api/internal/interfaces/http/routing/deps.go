@@ -108,6 +108,10 @@ type Deps struct {
 	NotificationStream  *notificationhttp.StreamHandler
 	Chat                *chathttp.Handler
 	ChatStream          *chathttp.StreamHandler
-	CustomEmoji         *customemojihttp.Handler
-	MCP                 MCPHandlers
+	// Bot API（外部程序以 Bearer bot token 收发消息）与其后台管理。
+	BotAuth      func(http.Handler) http.Handler
+	ChatBot      *chathttp.BotHandler
+	ChatBotAdmin *chathttp.BotAdminHandler
+	CustomEmoji  *customemojihttp.Handler
+	MCP          MCPHandlers
 }

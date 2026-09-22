@@ -18,11 +18,14 @@ import (
 	chathttp "blog-api/internal/interfaces/http/handler/chat"
 )
 
-// ChatContainer 聚合聊天服务、HTTP handler 与 SSE handler。
+// ChatContainer 聚合聊天服务、HTTP handler、SSE handler 与 bot 接入面。
 type ChatContainer struct {
-	ChatService   *appchat.Service
-	ChatHandler   *chathttp.Handler
-	StreamHandler *chathttp.StreamHandler
+	ChatService     *appchat.Service
+	ChatHandler     *chathttp.Handler
+	StreamHandler   *chathttp.StreamHandler
+	BotService      *appchat.BotService
+	BotHandler      *chathttp.BotHandler
+	BotAdminHandler *chathttp.BotAdminHandler
 }
 
 // NewChatContainer 装配聊天领域、持久化与浏览器推送。
@@ -40,7 +43,20 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 	}
 	svc := appchat.NewService(repo, userRepo, fileRepo, manager, pushSender, cfg.WebPush.VAPIDPublicKey, nil, bus, reactionStore, tweetRepo, &chatCustomEmojiResolver{svc: customEmojiSvc})
 	appearanceStore := appearancegorm.NewChatAppearanceStore(db)
-	return &ChatContainer{ChatService: svc, ChatHandler: chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)), StreamHandler: chathttp.NewStreamHandler(manager, svc)}
+
+	botRepo := gormrepo.NewBotRepository(db)
+	botConnections := appchat.NewBotConnectionManager(log.Logger)
+	svc.WithBotNotifier(appchat.NewBotEventDispatcher(repo, botRepo, botConnections, log.Logger))
+	botService := appchat.NewBotService(botRepo, userRepo, fileRepo, bus, nil)
+
+	return &ChatContainer{
+		ChatService:     svc,
+		ChatHandler:     chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)),
+		StreamHandler:   chathttp.NewStreamHandler(manager, svc),
+		BotService:      botService,
+		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections),
+		BotAdminHandler: chathttp.NewBotAdminHandler(botService),
+	}
 }
 
 // chatCustomEmojiResolver 将 customemoji.Service 适配为 chat.CustomEmojiResolver

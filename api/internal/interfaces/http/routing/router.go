@@ -113,6 +113,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 	// MCP 端点（顶层挂载，绕过 v1 CSRF/SessionAuth；PAT 鉴权在 handler 内）
 	registerMCPRoutes(r, d)
 
+	// Bot API（同样顶层挂载绕开 CSRF；鉴权走 Bearer bot token，见 registerBotRoutes）
+	registerBotRoutes(r, d)
+
 	// 图片服务（动态 resize/转码 + 二级缓存 + ETag/304）
 	r.Get(cfg.UploadPathPrefix+"*", d.Image.ServeImage)
 }
