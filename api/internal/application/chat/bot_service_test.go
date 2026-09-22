@@ -168,7 +168,8 @@ func (b *captureBus) has(event any) bool {
 		switch published.(type) {
 		case domainchat.BotCreated, domainchat.BotRenamed, domainchat.BotAvatarUpdated,
 			domainchat.BotDeleted, domainchat.BotEnabled, domainchat.BotDisabled,
-			domainchat.BotTokenRegenerated, domainuser.UserRegistered, domainuser.UserStatusChanged:
+			domainchat.BotTokenRegenerated, domainchat.BotTokenViewed,
+			domainuser.UserRegistered, domainuser.UserStatusChanged:
 			if sameEventType(published, event) {
 				return true
 			}
@@ -194,6 +195,8 @@ func sameEventType(got, want any) bool {
 			return "bot.disabled"
 		case domainchat.BotTokenRegenerated:
 			return "bot.token"
+		case domainchat.BotTokenViewed:
+			return "bot.token.viewed"
 		case domainuser.UserRegistered:
 			return "user.registered"
 		case domainuser.UserStatusChanged:
@@ -221,7 +224,7 @@ func newBotService(t *testing.T) (*BotService, *fakeBotRepo, *fakeUserStore, *ca
 	return NewBotService(bots, users, files, bus, now), bots, users, bus
 }
 
-func TestCreateBotIssuesOneTimeToken(t *testing.T) {
+func TestCreateBotReturnsPlaintextToken(t *testing.T) {
 	svc, bots, users, bus := newBotService(t)
 	var order []string
 	users.writeOrder = &order
@@ -367,6 +370,55 @@ func TestRegenerateTokenInvalidatesPrevious(t *testing.T) {
 	}
 	if !bus.has(domainchat.BotTokenRegenerated{}) {
 		t.Fatal("token 重置需审计")
+	}
+}
+
+func TestRevealTokenReturnsCurrentCredentialAndAudits(t *testing.T) {
+	ctx := context.Background()
+	svc, _, _, bus := newBotService(t)
+	created, err := svc.CreateBot(ctx, CreateBotInput{Name: "Saber", Username: "saber"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bus.events = nil
+
+	revealed, err := svc.RevealToken(ctx, domainshared.MustParseID(created.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if revealed.Token != created.Token {
+		t.Fatalf("查看到的必须是当前生效的那份凭据: %q != %q", revealed.Token, created.Token)
+	}
+	if _, err := svc.FindByToken(ctx, revealed.Token); err != nil {
+		t.Fatal("查看凭据不得轮换它")
+	}
+	if !bus.has(domainchat.BotTokenViewed{}) {
+		t.Fatal("查看凭据需审计")
+	}
+}
+
+func TestRevealTokenRejectsCredentialWithoutCiphertext(t *testing.T) {
+	// 密文列上线前建的 bot（或密钥已换）拿不到明文：必须报错引导重置，
+	// 不能返一个空 token 把空串当成可用凭据展示给持有方。
+	ctx := context.Background()
+	svc, bots, _, bus := newBotService(t)
+	created, err := svc.CreateBot(ctx, CreateBotInput{Name: "Saber", Username: "saber"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := domainshared.MustParseID(created.ID)
+	blind := domainchat.ReconstructBot(id, bots.bots[id].UserID(), "Saber", nil,
+		bots.bots[id].TokenHash(), "", true, time.Now(), time.Now())
+	bots.bots[id] = blind
+
+	if _, err := svc.RevealToken(ctx, id); err == nil {
+		t.Fatal("无可查看凭据时应报错")
+	}
+	if bus.has(domainchat.BotTokenViewed{}) {
+		t.Fatal("未成功取出明文就不该记查看事件")
+	}
+	if _, err := svc.FindByToken(ctx, created.Token); err != nil {
+		t.Fatal("拿不到明文不影响旧凭据鉴权")
 	}
 }
 

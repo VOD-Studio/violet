@@ -346,6 +346,8 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.Patch("/{botId}", d.ChatBotAdmin.Update)
 		r.Delete("/{botId}", d.ChatBotAdmin.Delete)
 		r.Post("/{botId}/regenerate-token", d.ChatBotAdmin.RegenerateToken)
+		// 回显明文凭据：只走 POST，URL 不落日志；每次查看都进操作日志。
+		r.Post("/{botId}/token", d.ChatBotAdmin.RevealToken)
 	})
 
 	// 聊天徽章授予:持有台账的管理动作统一收在 chat:manage(与删除违规消息同域)。

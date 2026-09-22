@@ -64,6 +64,7 @@ func TestAdminBotRoutesGateOnBotManagePermission(t *testing.T) {
 		"PATCH /chat-bots/{botId}",
 		"DELETE /chat-bots/{botId}",
 		"POST /chat-bots/{botId}/regenerate-token",
+		"POST /chat-bots/{botId}/token",
 	} {
 		require.Contains(t, routes, want)
 	}

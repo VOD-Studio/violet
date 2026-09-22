@@ -21,7 +21,7 @@ const botUserEmailDomain = "bot.violet.invalid"
 
 // BotDTO bot 读模型。
 //
-// Token 为一次性明文，仅创建与重置 token 的响应携带，列表与详情恒为空。
+// Token 为明文凭据：仅创建、重置与「查看凭据」三个响应携带，列表恒为空。
 // Username 是 bot 虚拟用户的寻址名（@mention 用它），Name 是显示名。
 type BotDTO struct {
 	// ID bot 凭证 ID。
@@ -38,8 +38,11 @@ type BotDTO struct {
 	AvatarURL string `json:"avatar_url,omitempty"`
 	// Enabled 是否启用；禁用后 token 鉴权即拒。
 	Enabled bool `json:"enabled"`
-	// Token 明文 token，仅创建/重置时返回一次。
+	// Token 明文 token，仅创建/重置/查看凭据时返回，列表不携带。
 	Token string `json:"token,omitempty"`
+	// TokenViewable 当前能否取回明文：false = 库里没存密文（早于密文列创建、
+	// 未配 BOT_TOKEN_KEY、或密钥已换），后台得提示重置而不是让操作者撞错误。
+	TokenViewable bool `json:"token_viewable"`
 	// CreatedAt 创建时间（RFC3339Nano）。
 	CreatedAt string `json:"created_at"`
 	// UpdatedAt 最近更新时间（RFC3339Nano）。
@@ -93,7 +96,7 @@ func NewBotService(
 
 // CreateBot 注册 bot：建虚拟用户 + bot 凭证。
 //
-// 返回的 DTO.Token 是明文 token 的唯一一次露面。虚拟用户不设密码
+// 返回的 DTO.Token 是刚签发的明文。虚拟用户不设密码
 // （password_hash 为空，与 OAuth-only 用户同构），因此只能经 bot token 鉴权，
 // 永远无法用密码登录本站。
 //
@@ -274,6 +277,32 @@ func (s *BotService) RegenerateToken(ctx context.Context, id domainshared.ID) (B
 	return dto, nil
 }
 
+// RevealToken 取回 bot 当前可用的明文凭据，供后台随时查看。
+//
+// 查看不动聚合状态，所以直接构造事件而不是 RecordEvent；审计要记下「谁在什么时候
+// 看了哪个 bot 的凭据」，但绝不记凭据本身。
+//
+// 明文为空时必须报错而非返回空串：空串会被前端当成一个可用 token 展示出去。
+// 置空只有两种成因——密文列上线前建的 bot，或者 BOT_TOKEN_KEY 换过。
+func (s *BotService) RevealToken(ctx context.Context, id domainshared.ID) (BotDTO, error) {
+	bot, err := s.bots.FindByID(ctx, id)
+	if err != nil {
+		return BotDTO{}, err
+	}
+	plain := bot.Token()
+	if plain == "" {
+		return BotDTO{}, domainshared.BadRequest("该 Bot 的 token 无法查看（凭据未加密保存或密钥已变更），请重置 token")
+	}
+	user, err := s.users.FindByID(ctx, bot.UserID())
+	if err != nil {
+		return BotDTO{}, err
+	}
+	s.publishEvents(ctx, []domainshared.DomainEvent{domainchat.NewBotTokenViewed(bot.ID(), bot.Name())})
+	dto := newBotDTO(bot, user)
+	dto.Token = plain
+	return dto, nil
+}
+
 // DeleteBot 吊销 bot 凭证并停用其虚拟用户。
 //
 // 只删凭证、不删用户：chat_messages.sender_id 对 users 是 ON DELETE CASCADE，
@@ -349,14 +378,15 @@ func (s *BotService) parseAvatarID(ctx context.Context, value string) (*domainsh
 // newBotDTO 组装读模型。明文 token 不在此处出现，由调用方按需附加。
 func newBotDTO(bot *domainchat.Bot, user *domainuser.User) BotDTO {
 	dto := BotDTO{
-		ID:        bot.ID().String(),
-		UserID:    bot.UserID().String(),
-		Username:  user.Username().String(),
-		Name:      bot.Name(),
-		Enabled:   bot.IsEnabled(),
-		AvatarURL: user.AvatarURL(),
-		CreatedAt: bot.CreatedAt.Format(time.RFC3339Nano),
-		UpdatedAt: bot.UpdatedAt.Format(time.RFC3339Nano),
+		ID:            bot.ID().String(),
+		UserID:        bot.UserID().String(),
+		Username:      user.Username().String(),
+		Name:          bot.Name(),
+		Enabled:       bot.IsEnabled(),
+		TokenViewable: bot.Token() != "",
+		AvatarURL:     user.AvatarURL(),
+		CreatedAt:     bot.CreatedAt.Format(time.RFC3339Nano),
+		UpdatedAt:     bot.UpdatedAt.Format(time.RFC3339Nano),
 	}
 	if bot.AvatarID() != nil {
 		dto.AvatarID = bot.AvatarID().String()

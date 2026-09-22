@@ -112,6 +112,9 @@ var (
 	ActionFetchFeed  = MustParse("fetch_feed")  // 拉取订阅源
 	ActionPauseFeed  = MustParse("pause_feed")  // 暂停订阅
 	ActionResumeFeed = MustParse("resume_feed") // 恢复订阅
+
+	// --- 凭据 ---
+	ActionViewSecret = MustParse("view_secret") // 查看凭据明文（只读但敏感，必须留痕）
 )
 
 // ActorType 操作者类型（区分真人操作与系统自动化）。

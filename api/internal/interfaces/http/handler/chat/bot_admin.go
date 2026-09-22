@@ -50,7 +50,7 @@ func (h *BotAdminHandler) List(w http.ResponseWriter, r *http.Request) {
 	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
-// Create 注册 bot。响应里的 token 是明文唯一一次露面，关掉页面就再也取不到。
+// Create 注册 bot。响应里的 token 是刚签发的明文，后台之后可随时回看。
 func (h *BotAdminHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createBotRequest
 	if err := decodeJSON(r, &req); err != nil {
@@ -111,6 +111,23 @@ func (h *BotAdminHandler) RegenerateToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 	dto, err := h.bots.RegenerateToken(r.Context(), botID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+// RevealToken 回显 bot 当前的明文 token（后台「查看凭据」）。
+//
+// 取而不改，但走 POST 而非 GET：凭据出现在 URL 里会被浏览器历史与反代理访问日志拓下来。
+func (h *BotAdminHandler) RevealToken(w http.ResponseWriter, r *http.Request) {
+	botID, err := parsePathID(chi.URLParam(r, "botId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.bots.RevealToken(r.Context(), botID)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

@@ -538,6 +538,16 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case domainchat.BotTokenViewed:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionViewSecret,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("查看聊天 Bot「%s」的 token", e.Name),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case domainchat.BotDeleted:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),

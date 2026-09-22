@@ -95,6 +95,23 @@ func NewBotTokenRegenerated(botID domainshared.ID, name string) BotTokenRegenera
 	}
 }
 
+// BotTokenViewed bot 凭据被查看事件。读取本身不改聚合状态，故由用例直接构造发布。
+//
+// 与 BotTokenRegenerated 同属安全敏感动作：凭据现在可反复解密查看，就得知道是谁取的。
+type BotTokenViewed struct {
+	domainshared.BaseEvent
+	// Name bot 显示名快照。
+	Name string
+}
+
+// NewBotTokenViewed 构造凭据查看事件。
+func NewBotTokenViewed(botID domainshared.ID, name string) BotTokenViewed {
+	return BotTokenViewed{
+		BaseEvent: domainshared.NewBaseEvent("chat.bot.token.viewed", botID),
+		Name:      name,
+	}
+}
+
 // BotEnabled bot 启用事件。
 type BotEnabled struct {
 	domainshared.BaseEvent

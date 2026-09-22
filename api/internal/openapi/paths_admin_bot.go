@@ -7,16 +7,17 @@ func registerAdminBotPaths(t *openapi3.T) {
 	secure := securityAdmin()
 
 	registerSchema(t, "BotDTO", openapi3.Schemas{
-		"id":         reqStr("bot 凭证 ID"),
-		"user_id":    reqStr("对应虚拟用户 ID，消息 sender.id 即此值"),
-		"username":   reqStr("虚拟用户名，@提及与私聊寻址用"),
-		"name":       reqStr("显示名"),
-		"avatar_id":  optStr("头像文件 ID，未设置为空"),
-		"avatar_url": optStr("头像地址"),
-		"enabled":    optBool("是否启用；禁用后 token 鉴权即拒"),
-		"token":      optStr("明文 token，仅创建与重置响应返回一次，列表与详情恒空"),
-		"created_at": reqStr("创建时间（RFC3339）"),
-		"updated_at": reqStr("最近更新时间（RFC3339）"),
+		"id":             reqStr("bot 凭证 ID"),
+		"user_id":        reqStr("对应虚拟用户 ID，消息 sender.id 即此值"),
+		"username":       reqStr("虚拟用户名，@提及与私聊寻址用"),
+		"name":           reqStr("显示名"),
+		"avatar_id":      optStr("头像文件 ID，未设置为空"),
+		"avatar_url":     optStr("头像地址"),
+		"enabled":        optBool("是否启用；禁用后 token 鉴权即拒"),
+		"token":          optStr("明文 token：创建/重置/查看凭据时返回；列表与详情恒空"),
+		"token_viewable": optBool("当前能否取回明文；false 表示库里无可用密文，只能重置"),
+		"created_at":     reqStr("创建时间（RFC3339）"),
+		"updated_at":     reqStr("最近更新时间（RFC3339）"),
 	})
 	registerSchema(t, "CreateBotRequest", openapi3.Schemas{
 		"name":      reqStr("显示名（≤32 字符，同时作为虚拟用户展示名）"),
@@ -31,7 +32,7 @@ func registerAdminBotPaths(t *openapi3.T) {
 
 	get(t, "/admin/chat-bots", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "Bot 列表",
-		Description: "需 chat:bot-manage 权限。token 恒为空——库里只有哈希，取不回明文。",
+		Description: "需 chat:bot-manage 权限。token 恒为空：明文凭据只在「查看凭据」响应里逐个返回，不随列表广播。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pageParam(), limitParam(100)},
 		Responses:   responses(200, dataArrayResponse("BotDTO", "bot 列表", 200, true)),
@@ -39,11 +40,11 @@ func registerAdminBotPaths(t *openapi3.T) {
 
 	post(t, "/admin/chat-bots", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "注册 Bot",
-		Description: "需 chat:bot-manage 权限。同时创建虚拟用户（无密码，不能用于登录）。token 明文只在本次响应出现。",
+		Description: "需 chat:bot-manage 权限。同时创建虚拟用户（无密码，不能用于登录）。token 明文随本次响应返回，之后可随时经「查看 token」回看。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{csrfHeaderParam()},
 		RequestBody: jsonBody("CreateBotRequest", true, "bot 参数"),
-		Responses:   responses(201, dataResponse("BotDTO", "新 bot（含一次性明文 token）", 201), 409, errorResponse("用户名已被占用")),
+		Responses:   responses(201, dataResponse("BotDTO", "新 bot（含明文 token）", 201), 409, errorResponse("用户名已被占用")),
 	})
 
 	patch(t, "/admin/chat-bots/{botId}", &openapi3.Operation{
@@ -54,9 +55,20 @@ func registerAdminBotPaths(t *openapi3.T) {
 		Responses:   responses(200, dataResponse("BotDTO", "更新后的 bot", 200), 404, errorResponse("bot 不存在")),
 	})
 
+	post(t, "/admin/chat-bots/{botId}/token", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "查看 token 明文",
+		Description: "需 chat:bot-manage 权限。解密库里存的密文回显当前可用凭据，每次查看进操作日志。" +
+			"走 POST 而非 GET 是为了不让凭据出现在 URL（浏览器历史与反代理日志）。" +
+			"未配 BOT_TOKEN_KEY、或 bot 早于密文列创建时无密文可解，返回 400，只能重置。",
+		Security:   secure,
+		Parameters: openapi3.Parameters{pathStrParam("botId", "bot ID"), csrfHeaderParam()},
+		Responses: responses(200, dataResponse("BotDTO", "含明文 token 的 bot", 200),
+			400, errorResponse("凭据不可查看，需重置"), 404, errorResponse("bot 不存在")),
+	})
+
 	post(t, "/admin/chat-bots/{botId}/regenerate-token", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "重置 token",
-		Description: "需 chat:bot-manage 权限。旧 token 即刻失效，明文只在本次响应出现。",
+		Description: "需 chat:bot-manage 权限。旧 token 即刻失效，新明文同时以密文形式落库，之后可反复查看。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("botId", "bot ID"), csrfHeaderParam()},
 		Responses:   responses(200, dataResponse("BotDTO", "新 token", 200), 404, errorResponse("bot 不存在")),
