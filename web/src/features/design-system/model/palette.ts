@@ -2,7 +2,7 @@ import { getContrastRatio, getWcagRating, oklchToRgb } from "@shared/lib/color-m
 
 /**
  * 色板生成器：选定一个主色（色相 + 彩度种子），推导完整色板——
- * 品牌色（色阶与角色）、功能色、中性带与语义角色。这是「色板可插拔」
+ * 品牌色阶、主色与强调角色、功能色、中性带。这是「色板可插拔」
  * 的机制化：换色 = 换种子重跑本算法。
  */
 
@@ -29,10 +29,8 @@ export interface RoleColor {
 	role: string;
 	light: SwatchColor;
 	dark: SwatchColor;
-	/** 与现行体系的对应说明 */
+	/** 用途说明 */
 	note?: string;
-	/** 值完全相同的公开方言名字（如 --brand 即站内 --primary） */
-	aliases?: string[];
 }
 
 export interface ContrastAudit {
@@ -46,17 +44,48 @@ export interface GeneratedPalette {
 	seed: SeedColor;
 	/** 品牌色阶 ×11（浅到深） */
 	ramp: RampStep[];
-	/** 品牌角色层（brand/hover/wash/wash-foreground/foreground），每行独立值 */
-	brandRoles: RoleColor[];
-	/** 功能色（现行体系固定语义不动，此处展示同源推导的候选） */
+	/** 主色与强调：primary/accent 系标准语义 token,每行独立值 */
+	primaryRoles: RoleColor[];
+	/** 功能色:行为状态语义,固定不随色板推导 */
 	functional: RoleColor[];
-	/** 中性带：与品牌层无同值关系的独立语义面 */
-	semantic: RoleColor[];
+	/** 中性带 */
+	neutral: RoleColor[];
 	/** 对比度审计 */
 	audits: ContrastAudit[];
 }
 
 const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
+
+/**
+ * 功能色：行为状态语义,色相与浓淡固定,不随种子色板更迭。
+ * 明度按明暗域适配:浅域用深色保字对比,深域用亮色保可见。
+ */
+const FUNCTIONAL_ROLES: RoleColor[] = [
+	{
+		role: "--info",
+		light: swatch(0.55, 0.16, 230),
+		dark: swatch(0.72, 0.14, 230),
+		note: "信息提示",
+	},
+	{
+		role: "--success",
+		light: swatch(0.55, 0.16, 150),
+		dark: swatch(0.72, 0.14, 150),
+		note: "成功状态",
+	},
+	{
+		role: "--warning",
+		light: swatch(0.55, 0.16, 85),
+		dark: swatch(0.72, 0.14, 85),
+		note: "警示状态",
+	},
+	{
+		role: "--destructive",
+		light: swatch(0.55, 0.16, 25),
+		dark: swatch(0.72, 0.14, 25),
+		note: "危险操作",
+	},
+];
 
 /** 色阶彩度包络：中段饱满、两端收敛，色阶才有层次 */
 function chromaAt(l: number, seedC: number): number {
@@ -81,63 +110,49 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		return { label: RAMP_LABELS[i], oklch: s.oklch, hex: s.hex };
 	});
 
-	// 品牌角色层：浅域深品牌色配深字，深域浅品牌色配暗字（对齐现行品牌层形态）。
-	// 只收独立值；与 --brand 同值的 --brand-ring 不设行，公开方言名走 aliases。
+	// 主色与强调：标准 shadcn 语义 token,每行独立值。
+	// --ring 与 --primary 同值不设行,公开方言名走 aliases;
+	// accent 系是主色的低占比形态(悬停与选中底及其上的文字)。
 	const cLight = chromaAt(0.53, c);
 	const cDark = clamp(c * 0.75, 0, 0.15); // 深域彩度受限，防 sRGB 色域裁剪
-	const brandRoles: RoleColor[] = [
+	const primaryRoles: RoleColor[] = [
 		{
-			role: "--brand",
+			role: "--primary",
 			light: swatch(0.53, cLight, h),
 			dark: swatch(0.72, cDark, h),
-			aliases: ["--primary", "--ring"],
-			note: "品牌强调主色",
+			note: "主色",
 		},
 		{
-			role: "--brand-hover",
+			role: "--primary-hover",
 			light: swatch(0.47, chromaAt(0.47, c), h),
 			dark: swatch(0.77, cDark * 0.92, h),
 			note: "悬停加深",
 		},
 		{
-			role: "--brand-wash",
-			light: swatch(0.965, cLight * 0.11, h),
-			dark: swatch(0.22, cDark * 0.24, h),
-			aliases: ["--accent"],
-			note: "淡染面",
+			role: "--primary-foreground",
+			light: swatch(0.99, 0, h),
+			dark: swatch(0.14, 0.02, h),
+			note: "主色上的文字",
 		},
 		{
-			role: "--brand-wash-foreground",
+			role: "--accent",
+			light: swatch(0.965, cLight * 0.11, h),
+			dark: swatch(0.22, cDark * 0.24, h),
+			note: "悬停与选中底",
+		},
+		{
+			role: "--accent-foreground",
 			light: swatch(0.35, chromaAt(0.35, c) * 0.7, h),
 			dark: swatch(0.9, cDark * 0.5, h),
 			note: "淡染面上的文字",
 		},
-		{
-			role: "--brand-foreground",
-			light: swatch(0.99, 0, h),
-			dark: swatch(0.14, 0.02, h),
-			aliases: ["--primary-foreground"],
-			note: "品牌面上的文字",
-		},
 	];
 
-	// 功能色：语义色相固定（绿=成功、黄=警示、红=危险），明度按域适配；
-	// 现行体系将其固定为不可变语义，此处展示算法全量推导的候选。
-	const functionalHues = [
-		{ role: "--success", h: 150 },
-		{ role: "--warning", h: 85 },
-		{ role: "--destructive", h: 25 },
-	];
-	const functional: RoleColor[] = functionalHues.map(({ role, h: fh }) => ({
-		role,
-		light: swatch(0.55, Math.min(c, 0.17), fh),
-		dark: swatch(0.72, Math.min(c, 0.14), fh),
-		note: "现行体系固定语义，不随色板更迭",
-	}));
+	// 功能色：行为状态语义,色相与浓淡固定,不随种子色板更迭(明度按明暗域适配)。
+	const functional = FUNCTIONAL_ROLES;
 
-	// 中性带：只收与品牌层无同值关系的独立语义面；
-	// primary/ring/accent 系是品牌层的公开方言名（见 brandRoles 的 aliases），不重复设行。
-	const semantic: RoleColor[] = [
+	// 中性带：与主色无同值关系的中性面；accent 系已在主色与强调组。
+	const neutral: RoleColor[] = [
 		{
 			role: "--background",
 			light: swatch(0.992, 0.004, h),
@@ -168,12 +183,6 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 			dark: swatch(0.68, 0.015, h),
 			note: "静默文字",
 		},
-		{
-			role: "--accent",
-			light: swatch(0.955, cLight * 0.11, h),
-			dark: swatch(0.25, cDark * 0.3, h),
-			note: "悬停与选中底",
-		},
 		{ role: "--border", light: swatch(0.9, 0.01, h), dark: swatch(0.26, 0.025, h) },
 		{ role: "--input", light: swatch(0.88, 0.012, h), dark: swatch(0.3, 0.03, h) },
 	];
@@ -184,26 +193,26 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		return { pair, ratio, rating, pass: isAccessible };
 	};
 
-	const semanticByRole: Record<string, RoleColor> = Object.fromEntries(
-		semantic.map((role) => [role.role, role]),
+	const neutralByRole: Record<string, RoleColor> = Object.fromEntries(
+		neutral.map((role) => [role.role, role]),
 	);
-	const bgL = semanticByRole["--background"];
-	const fgL = semanticByRole["--foreground"];
-	const mutedFgL = semanticByRole["--muted-foreground"];
-	const brandLightColor = brandRoles[0].light;
-	const brandDarkColor = brandRoles[0].dark;
+	const bgL = neutralByRole["--background"];
+	const fgL = neutralByRole["--foreground"];
+	const mutedFgL = neutralByRole["--muted-foreground"];
+	const primaryLightColor = primaryRoles[0].light;
+	const primaryDarkColor = primaryRoles[0].dark;
 	const audits: ContrastAudit[] = [
 		auditPair("墨色 × 画布 · 浅", fgL.light, bgL.light),
 		auditPair("墨色 × 画布 · 深", fgL.dark, bgL.dark),
 		auditPair("静默文字 × 画布 · 浅", mutedFgL.light, bgL.light),
 		auditPair("静默文字 × 画布 · 深", mutedFgL.dark, bgL.dark),
-		auditPair("品牌 × 品牌前景 · 浅", brandRoles[0].light, brandRoles[4].light),
-		auditPair("品牌 × 品牌前景 · 深", brandRoles[0].dark, brandRoles[4].dark),
-		auditPair("品牌字 × 淡染面 · 浅", brandRoles[3].light, brandRoles[2].light),
-		auditPair("品牌字 × 淡染面 · 深", brandRoles[3].dark, brandRoles[2].dark),
-		auditPair("品牌 × 画布 · 浅", brandLightColor, bgL.light),
-		auditPair("品牌 × 画布 · 深", brandDarkColor, bgL.dark),
+		auditPair("主色 × 主色前景 · 浅", primaryRoles[0].light, primaryRoles[2].light),
+		auditPair("主色 × 主色前景 · 深", primaryRoles[0].dark, primaryRoles[2].dark),
+		auditPair("强调字 × 淡染面 · 浅", primaryRoles[4].light, primaryRoles[3].light),
+		auditPair("强调字 × 淡染面 · 深", primaryRoles[4].dark, primaryRoles[3].dark),
+		auditPair("主色 × 画布 · 浅", primaryLightColor, bgL.light),
+		auditPair("主色 × 画布 · 深", primaryDarkColor, bgL.dark),
 	];
 
-	return { seed, ramp, brandRoles, functional, semantic, audits };
+	return { seed, ramp, primaryRoles, functional, neutral, audits };
 }

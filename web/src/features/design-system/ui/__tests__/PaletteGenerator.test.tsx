@@ -22,7 +22,7 @@ describe("色板生成器", () => {
 		render(<PaletteGenerator />);
 		expect(screen.getByRole("group", { name: "主色速选" })).toBeTruthy();
 		expect(screen.getByText("自定义主色")).toBeTruthy();
-		for (const title of ["品牌色阶", "品牌角色", "功能色", "中性带与语义角色", "对比度审计"]) {
+		for (const title of ["品牌色阶", "主色与强调", "功能色", "中性带", "对比度审计"]) {
 			expect(screen.getByRole("heading", { name: title })).toBeTruthy();
 		}
 	});

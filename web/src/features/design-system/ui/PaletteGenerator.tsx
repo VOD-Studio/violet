@@ -75,11 +75,6 @@ function RoleRow({ role }: { role: RoleColor }) {
 		<li className="group grid grid-cols-[1fr_6.5rem_6.5rem] items-center gap-x-4 rounded-xl px-3 py-2 transition-colors duration-200 ease-out hover:bg-muted/40 sm:grid-cols-[1fr_9rem_9rem]">
 			<div className="min-w-0">
 				<code className="font-mono text-xs">{role.role}</code>
-				{role.aliases?.length ? (
-					<span className="ml-2 font-mono text-[11px] text-muted-foreground">
-						= {role.aliases.join(" · ")}
-					</span>
-				) : null}
 				{role.note ? (
 					<span className="ml-2 text-xs text-muted-foreground">{role.note}</span>
 				) : null}
@@ -129,8 +124,8 @@ function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 }
 
 /**
- * 色板生成器章内容：给一个主色，色阶、品牌角色、功能色、中性带与
- * 语义角色全部由此推导（明暗双域并列预览），核心配对附 WCAG 对比度审计。
+ * 色板生成器章内容：给一个主色，色阶、主色与强调、功能色、中性带
+ * 全部由此推导（明暗双域并列预览），核心配对附 WCAG 对比度审计。
  */
 export function PaletteGenerator() {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
@@ -247,11 +242,11 @@ export function PaletteGenerator() {
 				))}
 			</div>
 
-			<RoleBoard roles={palette.brandRoles} title="品牌角色" />
+			<RoleBoard roles={palette.primaryRoles} title="主色与强调" />
 
 			<RoleBoard roles={palette.functional} title="功能色" />
 
-			<RoleBoard roles={palette.semantic} title="中性带与语义角色" />
+			<RoleBoard roles={palette.neutral} title="中性带" />
 
 			<motion.section
 				initial={{ opacity: 0 }}
