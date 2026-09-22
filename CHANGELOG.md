@@ -7,6 +7,38 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.41](https://github.com/VOD-Studio/violet/compare/v2.8.40...v2.8.41) (2026-09-22)
+
+
+### 新增
+
+* **design-system:** token 词典章节与运行时探针及防漂移对账 ([a62606d](https://github.com/VOD-Studio/violet/commit/a62606d063f936a992bfd4a82142af08de5042a5))
+* **design-system:** 布局规格与动效章程章节 ([ebf208e](https://github.com/VOD-Studio/violet/commit/ebf208e3cdaaffc0253b58d29f8463915797e6c5))
+* **design-system:** 快速决策表章节与裁定清单 ([01fc654](https://github.com/VOD-Studio/violet/commit/01fc654a326ecc66e6e33e498f7ff7dc36f775f9))
+* **design-system:** 新增营造法式设计系统页面 ([#408](https://github.com/VOD-Studio/violet/issues/408)) ([e11d0fe](https://github.com/VOD-Studio/violet/commit/e11d0fe8ca965d9349c17acf02bc67a770ac1f57))
+* **design-system:** 生成器语义角色补全对齐现行 token ([b5bee1d](https://github.com/VOD-Studio/violet/commit/b5bee1d8c4d0e981654320ac0ea8830c757c16eb))
+* **design-system:** 组件活样例章节 ([bf65566](https://github.com/VOD-Studio/violet/commit/bf655660e4cea9cdd0fa1c031b4057a4087d76a1))
+* **design-system:** 色板生成器重做为给主色推整板 ([130bf47](https://github.com/VOD-Studio/violet/commit/130bf4754235d2b2b8d5dad8e56f1a1327c3523a))
+* **design-system:** 色板生成器章节 ([3da1489](https://github.com/VOD-Studio/violet/commit/3da1489ed24542de4d0270f29bea2198a30f17f6))
+* **design-system:** 营造法式骨架页与更多入口 ([31bd285](https://github.com/VOD-Studio/violet/commit/31bd28599f620faad67db91804697ee340d818ef))
+* **theme:** 新增 --font-serif 宋体字体映射 ([b4d9693](https://github.com/VOD-Studio/violet/commit/b4d9693d9f484155f4216bd28703529cd865d376))
+
+
+### 修复
+
+* **design-system:** 投影浮起样例与红线改正 ([fd6f6e7](https://github.com/VOD-Studio/violet/commit/fd6f6e7ba5855de0042c44c54eccd222c0334005))
+* **design-system:** 浮起感语义更正为唯一软影配方 ([ea00a36](https://github.com/VOD-Studio/violet/commit/ea00a367a9b2d7edee6040d7273dee421125fc46))
+* **tweets:** 推文编辑器幽灵 token 替换为真实弱背景 ([0f1bbde](https://github.com/VOD-Studio/violet/commit/0f1bbde5339419ed3e2a63ab197e698cda28a609))
+* **ui:** brand 按钮移除投影 ([19c0096](https://github.com/VOD-Studio/violet/commit/19c0096950fb8a6e29263f2563b501fdfa511e5f))
+* **web:** 清扫剩余 bg-surface 幽灵类 ([37a3ab8](https://github.com/VOD-Studio/violet/commit/37a3ab88d068878e49ddd91833f1508f1b7c759f))
+
+
+### 重构
+
+* **shared-lib:** color-math 新增 hexToOklch 反向换算 ([f5327a6](https://github.com/VOD-Studio/violet/commit/f5327a64d2365508ec805fa1c5f77bb90a27d4df))
+* **shared-lib:** CSS 变量探针上提共享层 ([b00179d](https://github.com/VOD-Studio/violet/commit/b00179d8d1e9a7c2ff7eafab3c1dc3fcc3d32769))
+* **shared-lib:** 将 color-math 上提共享层 ([103eb55](https://github.com/VOD-Studio/violet/commit/103eb553ccf4341fb84e30ea25cdfa195e6d9bb5))
+
 ## [2.8.40](https://github.com/VOD-Studio/violet/compare/v2.8.39...v2.8.40) (2026-09-21)
 
 
