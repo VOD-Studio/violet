@@ -126,18 +126,21 @@ func (ChatPushSubscription) TableName() string { return "chat_push_subscriptions
 
 // ChatBot 聊天 bot 凭证持久化模型（对应 chat_bots 表，见 PRD-0029）。
 //
-// token_hash 只存 SHA-256 hex，明文不落库；json:"-" 防哈希经任何 DTO 序列化外泄。
-// enabled 刻意不带 gorm default tag：带 default 时 GORM 建插会跳过 false 零值，
-// 使「创建即禁用」被 DB 默认值静默改成启用。
+// token_hash 只存 SHA-256 hex 供鉴权比对；明文凭据另存一份 AES-GCM 密文，
+// 供后台随时解密查看（见 124 迁移）。enabled 刻意不带 gorm default tag：带 default 时
+// GORM 建插会跳过 false 零值，使「创建即禁用」被 DB 默认值静默改成启用。
 type ChatBot struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID    uuid.UUID  `gorm:"type:uuid;column:user_id;uniqueIndex;not null" json:"user_id"`
 	Name      string     `gorm:"type:varchar(80);not null" json:"name"`
 	AvatarID  *uuid.UUID `gorm:"type:uuid;column:avatar_id" json:"avatar_id,omitempty"`
 	TokenHash string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
-	Enabled   bool       `gorm:"column:enabled;not null" json:"enabled"`
-	CreatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	// TokenEncrypted 明文凭据的 AES-GCM 密文（base64）。NULL = 从未存过或密文已作废，
+	// 此时凭据只能靠重置刷新；json:"-" 防它经任何 DTO 序列化外泄。
+	TokenEncrypted *string   `gorm:"type:text;column:token_encrypted" json:"-"`
+	Enabled        bool      `gorm:"column:enabled;not null" json:"enabled"`
+	CreatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // TableName 显式指定表名。

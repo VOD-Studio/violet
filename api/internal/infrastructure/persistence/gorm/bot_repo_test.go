@@ -13,17 +13,31 @@ import (
 
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
+	"blog-api/internal/infrastructure/crypto"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
 func newBotRepoDB(t *testing.T) *BotRepository {
+	t.Helper()
+	return newBotRepoDBWith(t, testTokenBox(t))
+}
+
+func newBotRepoDBWith(t *testing.T, box *crypto.TokenBox) *BotRepository {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "bot.db")), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&model.ChatBot{}))
-	return NewBotRepository(db)
+	return NewBotRepository(db, box)
+}
+
+// testTokenBox 固定密钥的加解密件：测试不跑随机密钥生成，失败即测试环境坏了。
+func testTokenBox(t *testing.T) *crypto.TokenBox {
+	t.Helper()
+	box, err := crypto.NewTokenBoxFromSecret("unit-test-bot-token-key-0123456789")
+	require.NoError(t, err)
+	return box
 }
 
 func newTestBot(t *testing.T, name string, avatarID *domainshared.ID, enabled bool) *domainchat.Bot {
@@ -52,7 +66,70 @@ func TestBotRepositorySaveAndFindByID(t *testing.T) {
 	require.Equal(t, "Saber", got.Name())
 	require.Equal(t, avatarID, *got.AvatarID())
 	require.Equal(t, bot.TokenHash(), got.TokenHash())
+	require.Equal(t, bot.Token(), got.Token(), "配了密钥就要能取回明文")
 	require.True(t, got.IsEnabled())
+}
+
+func TestBotRepositoryTokenCiphertextRoundTrip(t *testing.T) {
+	repo := newBotRepoDB(t)
+	ctx := context.Background()
+	bot := newTestBot(t, "cipher-bot", nil, true)
+	require.NoError(t, repo.Save(ctx, bot))
+
+	var stored model.ChatBot
+	require.NoError(t, repo.db.Take(&stored).Error)
+	require.NotNil(t, stored.TokenEncrypted)
+	require.NotEmpty(t, *stored.TokenEncrypted)
+	require.NotEqual(t, bot.Token(), *stored.TokenEncrypted, "库里存的必须是密文而非明文")
+
+	got, err := repo.FindByID(ctx, bot.ID())
+	require.NoError(t, err)
+	require.Equal(t, bot.Token(), got.Token())
+
+	// 换个密钥：解不开就归为不可查看，不能丢出一个过不了鉴权的假凭据。
+	other, err := crypto.NewTokenBoxFromSecret("another-key-000000000000000000000000")
+	require.NoError(t, err)
+	rotated, err := NewBotRepository(repo.db, other).FindByID(ctx, bot.ID())
+	require.NoError(t, err)
+	require.Empty(t, rotated.Token(), "密钥不匹配时明文不可得")
+}
+
+func TestBotRepositoryWithoutKeyKeepsTokenUnviewable(t *testing.T) {
+	repo := newBotRepoDBWith(t, nil)
+	ctx := context.Background()
+	bot := newTestBot(t, "no-key", nil, true)
+	require.NoError(t, repo.Save(ctx, bot))
+
+	var stored model.ChatBot
+	require.NoError(t, repo.db.Take(&stored).Error)
+	require.Nil(t, stored.TokenEncrypted, "未配密钥时密文列留空，不写任何凭据")
+
+	got, err := repo.FindByID(ctx, bot.ID())
+	require.NoError(t, err)
+	require.Empty(t, got.Token())
+	require.Equal(t, bot.TokenHash(), got.TokenHash(), "取不到明文不影响鉴权用的哈希")
+}
+
+func TestBotRepositoryRewriteKeepsCiphertext(t *testing.T) {
+	// 改名/启停走同一条整行 upsert：手上没明文时不得把密文列覆盖成 NULL。
+	repo := newBotRepoDB(t)
+	ctx := context.Background()
+	bot := newTestBot(t, "rename-me", nil, true)
+	require.NoError(t, repo.Save(ctx, bot))
+
+	// 用未配密钥的仓储读同一行：拿不到明文，模拟存量旧行/密钥已换的 bot。
+	blind := NewBotRepository(repo.db, nil)
+	loaded, err := blind.FindByID(ctx, bot.ID())
+	require.NoError(t, err)
+	require.Empty(t, loaded.Token())
+	require.NoError(t, loaded.Rename("renamed", time.Now()))
+	require.NoError(t, repo.Save(ctx, loaded))
+
+	var stored model.ChatBot
+	require.NoError(t, repo.db.Take(&stored).Error)
+	require.NotNil(t, stored.TokenEncrypted, "改名不得弄丢已存的凭据密文")
+	require.Equal(t, "renamed", stored.Name)
+	require.Equal(t, bot.Token(), repo.toDomain(stored).Token(), "密文仍解得回原来的明文")
 }
 
 func TestBotRepositoryPersistsDisabledWithoutDefaultTag(t *testing.T) {

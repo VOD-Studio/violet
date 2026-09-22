@@ -53,6 +53,7 @@ func TestMaskValue(t *testing.T) {
 		{"bilibili_cookies", "SESSDATA=x", "***"},
 		{"resend_api_key", "re_123", "***"},
 		{"resource_signing_key", "cursor-signing-secret", "***"},
+		{"bot_token_key", "violet-bot-token-key-0123456789", "***"},
 		{"cookie.csrf_name", "violet_csrf", "violet_csrf"},
 		{"cookie.session_name", "violet_session", "violet_session"},
 		{"cookie.secure", false, "false"},
@@ -76,8 +77,13 @@ func TestValidateRequiresStrongResourceSigningKeyInProduction(t *testing.T) {
 		t.Fatal("生产环境短签名密钥应校验失败")
 	}
 	cfg.ResourceSigningKey = "0123456789abcdef0123456789abcdef"
+	cfg.BotTokenKey = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("生产环境缺 bot 凭据密钥应校验失败")
+	}
+	cfg.BotTokenKey = "0123456789abcdef0123456789abcdef"
 	if err := cfg.Validate(); err != nil {
-		t.Fatalf("32 字节签名密钥应通过校验: %v", err)
+		t.Fatalf("两把密钥都够长应通过校验: %v", err)
 	}
 }
 
@@ -88,9 +94,11 @@ func validTestConfig() Config {
 			Password: "password", SSLMode: "disable", MaxOpenConns: 5,
 			MaxIdleConns: 1, ConnMaxLifetime: time.Minute,
 		},
-		Redis:     RedisConfig{Host: "localhost", Port: 6379},
-		Cookie:    CookieConfig{SessionName: "session", CSRFName: "csrf", SameSite: "lax"},
-		Session:   SessionConfig{IdleTTL: time.Hour},
-		BackupDir: "backups",
+		Redis: RedisConfig{Host: "localhost", Port: 6379},
+		// 开发环境不强制：缺它只是 bot token 不可回看，不阻断启动
+		BotTokenKey: "0123456789abcdef0123456789abcdef",
+		Cookie:      CookieConfig{SessionName: "session", CSRFName: "csrf", SameSite: "lax"},
+		Session:     SessionConfig{IdleTTL: time.Hour},
+		BackupDir:   "backups",
 	}
 }

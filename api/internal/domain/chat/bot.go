@@ -34,7 +34,8 @@ func normalizeBotName(name string) (string, error) {
 	return trimmed, nil
 }
 
-// BotToken 明文 bot token，仅在创建或重置时一次性返回；库中只存哈希。
+// BotToken 明文 bot token。创建与重置时随响应返回一次，其余时候经
+// Bot.Token() 取回（前提是持久层存了可解密的密文，见仓储）。
 type BotToken struct {
 	// Value 明文 token 字符串。
 	Value string
@@ -188,7 +189,9 @@ func NewBotDeleted(botID, userID domainshared.ID, name string) BotDeleted {
 // bot 复用 domain/user 的虚拟用户身份参与会话，前端无感区分 bot 与人类。
 //
 // 不变量：
-//   - tokenHash 创建后只在 RegenerateToken 时替换；明文仅在创建/重置时一次性返回
+//   - tokenHash 创建后只在 RegenerateToken 时替换；鉴权比对走它，明文只在库里以密文形态存在
+//   - token 明文可能为空：引入密文列之前创建的 bot、或密钥已变更解不开时，
+//     凭证仍能正常鉴权（tokenHash 在），只是拿不回明文，只能重置
 //   - userID 对应虚拟用户 ID，创建后不可变
 //   - enabled 控制鉴权是否放行；禁用的 bot 的 token 仍可比对但鉴权拒绝
 type Bot struct {
@@ -199,8 +202,10 @@ type Bot struct {
 	name string
 	// avatarID 头像文件 ID；nil 表示无头像，渲染时用默认头像。
 	avatarID *domainshared.ID
-	// tokenHash API token 的 SHA-256 hex；明文不存。
+	// tokenHash API token 的 SHA-256 hex，落库并建唯一索引供鉴权反查。
 	tokenHash string
+	// token 明文 token，由持久层从密文列解密得到；空串表示不可查看。
+	token string
 	// enabled 是否启用。禁用的 bot 鉴权拒绝，但记录保留。
 	enabled bool
 	// timestamps 创建与更新时间。
@@ -210,7 +215,7 @@ type Bot struct {
 // NewBot 创建新 bot：生成 token，返回聚合根与明文 token。
 //
 // id 与 userID 由调用方预先生成（userID 对应已创建的虚拟用户）。
-// 明文 token 只在此处返回一次，调用方必须立即转交持有方，不落库不记日志。
+// 明文同时留在聚合上供持久层加密保存；日志与不加密的列不得出现它。
 func NewBot(id, userID domainshared.ID, name string, avatarID *domainshared.ID, now time.Time) (*Bot, BotToken, error) {
 	name, err := normalizeBotName(name)
 	if err != nil {
@@ -225,6 +230,7 @@ func NewBot(id, userID domainshared.ID, name string, avatarID *domainshared.ID, 
 		name:      name,
 		avatarID:  avatarID,
 		tokenHash: HashBotToken(raw),
+		token:     raw,
 		enabled:   true,
 	}
 	b.SetID(id)
@@ -240,6 +246,7 @@ func ReconstructBot(
 	name string,
 	avatarID *domainshared.ID,
 	tokenHash string,
+	token string,
 	enabled bool,
 	createdAt, updatedAt time.Time,
 ) *Bot {
@@ -248,6 +255,7 @@ func ReconstructBot(
 		name:      name,
 		avatarID:  avatarID,
 		tokenHash: tokenHash,
+		token:     token,
 		enabled:   enabled,
 	}
 	b.SetID(id)
@@ -256,16 +264,16 @@ func ReconstructBot(
 	return b
 }
 
-// RegenerateToken 生成新 token 并替换哈希，返回明文。
+// RegenerateToken 生成新 token 并替换哈希与明文，返回明文。
 //
 // 旧 token 立即失效：持有旧 token 的外部程序下次鉴权即被拒。
-// 明文只在此处返回一次。
 func (b *Bot) RegenerateToken(now time.Time) (BotToken, error) {
 	raw, err := generateBotToken()
 	if err != nil {
 		return BotToken{}, domainshared.Internal("生成 bot token 失败", err)
 	}
 	b.tokenHash = HashBotToken(raw)
+	b.token = raw
 	b.UpdatedAt = now
 	b.RecordEvent(NewBotTokenRegenerated(b.GetID(), b.name))
 	return BotToken{Value: raw}, nil
@@ -337,8 +345,12 @@ func (b *Bot) Name() string { return b.name }
 // AvatarID 返回头像文件 ID；nil 表示无头像。
 func (b *Bot) AvatarID() *domainshared.ID { return b.avatarID }
 
-// TokenHash 返回 token 哈希（仅鉴权比对用，不返回明文）。
+// TokenHash 返回 token 哈希（鉴权比对用）。
 func (b *Bot) TokenHash() string { return b.tokenHash }
+
+// Token 返回明文 token；空串表示本行没有可查看的凭据（密文缺失或密钥已换），
+// 调用方应引导重置而不是把空串当 token 返回给持有方。
+func (b *Bot) Token() string { return b.token }
 
 // IsEnabled 返回是否启用。
 func (b *Bot) IsEnabled() bool { return b.enabled }

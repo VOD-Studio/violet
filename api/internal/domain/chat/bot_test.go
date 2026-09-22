@@ -34,6 +34,8 @@ func TestNewBotGeneratesTokenAndHash(t *testing.T) {
 	require.Equal(t, hex.EncodeToString(expected[:]), b.TokenHash())
 	require.NotEqual(t, token.Value, b.TokenHash())
 	require.Len(t, b.TokenHash(), 64)
+	// 明文留在聚合上供持久层加密保存：拿不到它就存不出可回看的凭据。
+	require.Equal(t, token.Value, b.Token())
 
 	// 创建事件已记录。
 	require.True(t, b.HasEvents(), "NewBot 应记录 BotCreated 事件")
@@ -57,12 +59,13 @@ func TestReconstructBotPreservesFieldsAndNoEvents(t *testing.T) {
 	userID := shared.NewID()
 	avatar := shared.NewID()
 
-	b := chat.ReconstructBot(id, userID, "Saber", &avatar, "deadbeef", false, created, updated)
+	b := chat.ReconstructBot(id, userID, "Saber", &avatar, "deadbeef", "violet_bot_plain", false, created, updated)
 	require.Equal(t, id, b.ID())
 	require.Equal(t, userID, b.UserID())
 	require.Equal(t, "Saber", b.Name())
 	require.Equal(t, &avatar, b.AvatarID())
 	require.Equal(t, "deadbeef", b.TokenHash())
+	require.Equal(t, "violet_bot_plain", b.Token())
 	require.False(t, b.IsEnabled())
 	require.Equal(t, created, b.CreatedAt)
 	require.Equal(t, updated, b.UpdatedAt)
@@ -82,6 +85,7 @@ func TestRegenerateTokenReplacesHashAndRecordsEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEqual(t, original.Value, newToken.Value, "新明文必须不同于旧明文")
 	require.NotEqual(t, oldHash, b.TokenHash(), "哈希必须替换")
+	require.Equal(t, newToken.Value, b.Token(), "聚合上的明文必须跟着换成新 token")
 
 	// 新明文与新哈希一致。
 	expected := sha256.Sum256([]byte(newToken.Value))

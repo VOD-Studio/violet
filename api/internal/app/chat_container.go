@@ -12,6 +12,7 @@ import (
 	appcustomemoji "blog-api/internal/application/customemoji"
 	appshared "blog-api/internal/application/shared"
 	domainshared "blog-api/internal/domain/shared"
+	"blog-api/internal/infrastructure/crypto"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	appearancegorm "blog-api/internal/infrastructure/persistence/gorm/chatappearance"
 	infrapush "blog-api/internal/infrastructure/webpush"
@@ -44,7 +45,8 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 	svc := appchat.NewService(repo, userRepo, fileRepo, manager, pushSender, cfg.WebPush.VAPIDPublicKey, nil, bus, reactionStore, tweetRepo, &chatCustomEmojiResolver{svc: customEmojiSvc})
 	appearanceStore := appearancegorm.NewChatAppearanceStore(db)
 
-	botRepo := gormrepo.NewBotRepository(db)
+	botTokenBox := newBotTokenBox(cfg)
+	botRepo := gormrepo.NewBotRepository(db, botTokenBox)
 	botConnections := appchat.NewBotConnectionManager(log.Logger)
 	svc.WithBotNotifier(appchat.NewBotEventDispatcher(repo, botRepo, botConnections, log.Logger))
 	botService := appchat.NewBotService(botRepo, userRepo, fileRepo, bus, nil)
@@ -84,4 +86,22 @@ func (a *chatCustomEmojiResolver) ResolveByIDs(ctx context.Context, ids []domain
 
 func (a *chatCustomEmojiResolver) ValidateContent(ctx context.Context, content string, viewerID domainshared.ID) error {
 	return a.svc.ValidateContent(ctx, content, viewerID)
+}
+
+// newBotTokenBox 按配置装配 bot 凭据加解密件。
+//
+// 返回 nil 是合法降级（未配 BOT_TOKEN_KEY）：bot 仍能注册与鉴权，只是明文
+// 不入库，后台只能靠创建/重置那一次响应拿到 token。配置缺失不阻断启动：
+// 聊天以外的功能不该被一个选性密钥拖下。
+func newBotTokenBox(cfg *config.Config) *crypto.TokenBox {
+	if cfg.BotTokenKey == "" {
+		log.Warn().Msg("BOT_TOKEN_KEY 未配置：bot token 仅创建/重置时可见一次，无法事后查看")
+		return nil
+	}
+	box, err := crypto.NewTokenBoxFromSecret(cfg.BotTokenKey)
+	if err != nil {
+		log.Error().Err(err).Msg("BOT_TOKEN_KEY 无法初始化凭据加解密件，bot token 将不可回看")
+		return nil
+	}
+	return box
 }

@@ -16,7 +16,7 @@ import (
 // 零值，「创建即禁用」的 bot 于是被数据库默认值悄悄改成启用。
 func TestBotRepositoryIntegration_DisabledSurvivesColumnDefault(t *testing.T) {
 	db := setupIntegrationDB(t)
-	repo := NewBotRepository(db)
+	repo := NewBotRepository(db, testTokenBox(t))
 	ctx := context.Background()
 	userID := preseedAuthor(t, db)
 
@@ -33,11 +33,17 @@ func TestBotRepositoryIntegration_DisabledSurvivesColumnDefault(t *testing.T) {
 	raw := new(string)
 	require.NoError(t, db.Raw("SELECT token_hash FROM chat_bots WHERE id = ?", bot.ID()).Scan(raw).Error)
 	require.Len(t, *raw, 64, "库里存的是 SHA-256 hex")
+
+	// 真库侧再确认一次明文只以密文形态落地。
+	sealed := new(string)
+	require.NoError(t, db.Raw("SELECT token_encrypted FROM chat_bots WHERE id = ?", bot.ID()).Scan(sealed).Error)
+	require.NotEmpty(t, *sealed, "配了密钥就应存下密文")
+	require.NotContains(t, *sealed, bot.Token(), "明文凭据不得出现在库里")
 }
 
 func TestBotRepositoryIntegration_UpsertKeepsCreatedAt(t *testing.T) {
 	db := setupIntegrationDB(t)
-	repo := NewBotRepository(db)
+	repo := NewBotRepository(db, testTokenBox(t))
 	ctx := context.Background()
 	userID := preseedAuthor(t, db)
 
@@ -67,7 +73,7 @@ func TestBotRepositoryIntegration_UpsertKeepsCreatedAt(t *testing.T) {
 
 func TestBotRepositoryIntegration_TokenHashIsUnique(t *testing.T) {
 	db := setupIntegrationDB(t)
-	repo := NewBotRepository(db)
+	repo := NewBotRepository(db, testTokenBox(t))
 	ctx := context.Background()
 	userA, userB := preseedAuthor(t, db), preseedAuthor(t, db)
 
@@ -77,13 +83,13 @@ func TestBotRepositoryIntegration_TokenHashIsUnique(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Delete(ctx, first.ID()) })
 
 	// 手造一行同哈希的 bot：唯一索引必须拒绝，而不是让鉴权反查命中两条。
-	clone := domainchat.ReconstructBot(domainshared.NewID(), userB, "two", nil, first.TokenHash(), true, time.Now(), time.Now())
+	clone := domainchat.ReconstructBot(domainshared.NewID(), userB, "two", nil, first.TokenHash(), "", true, time.Now(), time.Now())
 	require.Error(t, repo.Save(ctx, clone), "token_hash 唯一索引应拒绝重复")
 }
 
 func TestBotRepositoryIntegration_ListByUserIDsAndPaging(t *testing.T) {
 	db := setupIntegrationDB(t)
-	repo := NewBotRepository(db)
+	repo := NewBotRepository(db, testTokenBox(t))
 	ctx := context.Background()
 
 	base := time.Now().UTC().Add(-time.Hour)
