@@ -98,7 +98,9 @@ func preseedAuthor(t *testing.T, db *gorm.DB) domainshared.ID {
 		`INSERT INTO users (id, username, email, password_hash, role, is_active, created_at, updated_at)
 		 VALUES (?, ?, ?, 'x', 'user', true, NOW(), NOW())`,
 		authorID.UUID(),
-		fmt.Sprintf("author-%s", authorID.UUID()),
+		// users.username 是 VARCHAR(32)：整个 UUID（36 字符）加前缀会撞 SQLSTATE 22001，
+		// 取 UUID 前 23 字符（丢掉尾部 13 个随机位仍足够区分并发用例）。
+		fmt.Sprintf("author-%s", authorID.UUID().String()[:23]),
 		fmt.Sprintf("author-%s@test", authorID.UUID()),
 	).Error)
 	return authorID
