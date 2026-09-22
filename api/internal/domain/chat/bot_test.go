@@ -126,3 +126,71 @@ func hashHex(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
 }
+
+func TestNewBotNormalizesName(t *testing.T) {
+	now := time.Now()
+
+	t.Run("trims surrounding space", func(t *testing.T) {
+		b, _, err := chat.NewBot(shared.NewID(), shared.NewID(), "   Saber  ", nil, now)
+		require.NoError(t, err)
+		require.Equal(t, "Saber", b.Name())
+	})
+
+	t.Run("rejects blank", func(t *testing.T) {
+		_, _, err := chat.NewBot(shared.NewID(), shared.NewID(), "   ", nil, now)
+		require.Error(t, err)
+	})
+
+	t.Run("counts runes not bytes", func(t *testing.T) {
+		name := strings.Repeat("诗", chat.MaxBotNameLength)
+		_, _, err := chat.NewBot(shared.NewID(), shared.NewID(), name, nil, now)
+		require.NoError(t, err, "32 个汉字应通过")
+		_, _, err = chat.NewBot(shared.NewID(), shared.NewID(), name+"诗", nil, now)
+		require.Error(t, err, "33 个汉字应拒绝")
+	})
+}
+
+func TestBotRenameRecordsEventOnlyOnRealChange(t *testing.T) {
+	b, _, err := chat.NewBot(shared.NewID(), shared.NewID(), "Saber", nil, time.Now())
+	require.NoError(t, err)
+	b.PullEvents()
+
+	require.NoError(t, b.Rename("Saber", time.Now()))
+	require.False(t, b.HasEvents(), "同名重命名不应记事件")
+
+	require.NoError(t, b.Rename("  Lancer  ", time.Now()))
+	events := b.PullEvents()
+	require.Len(t, events, 1)
+	renamed, ok := events[0].(chat.BotRenamed)
+	require.True(t, ok)
+	require.Equal(t, "Saber", renamed.From)
+	require.Equal(t, "Lancer", renamed.To)
+	require.Equal(t, "Lancer", b.Name())
+
+	require.Error(t, b.Rename("  ", time.Now()), "空名必须拒绝且不改动状态")
+	require.Equal(t, "Lancer", b.Name())
+}
+
+func TestBotSetAvatarTracksChangeAndClear(t *testing.T) {
+	avatar := shared.NewID()
+	now := time.Now()
+	b, _, err := chat.NewBot(shared.NewID(), shared.NewID(), "Saber", &avatar, now)
+	require.NoError(t, err)
+	b.PullEvents()
+
+	b.SetAvatar(&avatar, now)
+	require.False(t, b.HasEvents(), "同头像幂等")
+
+	other := shared.NewID()
+	b.SetAvatar(&other, now)
+	updated, ok := b.PullEvents()[0].(chat.BotAvatarUpdated)
+	require.True(t, ok)
+	require.Equal(t, other.String(), updated.AvatarID)
+	require.Equal(t, other, *b.AvatarID())
+
+	b.SetAvatar(nil, now)
+	require.Nil(t, b.AvatarID(), "传 nil 清除头像")
+	cleared, ok := b.PullEvents()[0].(chat.BotAvatarUpdated)
+	require.True(t, ok)
+	require.Empty(t, cleared.AvatarID, "清除头像时事件里的 ID 为空串")
+}

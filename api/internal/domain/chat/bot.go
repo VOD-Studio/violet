@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"strings"
 	"time"
 
 	domainshared "blog-api/internal/domain/shared"
@@ -12,6 +13,26 @@ import (
 
 // botTokenPrefix 明文 token 前缀，便于人眼与日志识别（与 PAT 的 violet_pat_ 同构）。
 const botTokenPrefix = "violet_bot_"
+
+// MaxBotNameLength bot 显示名上限。
+//
+// 比 chat_bots.name 的 VARCHAR(80) 更严：bot 名会同步到虚拟用户的 display_name，
+// 后者受 DisplayName 值对象 32 字符上限约束，取两者的交集才不会写出「能存不能显示」的名。
+const MaxBotNameLength = 32
+
+// normalizeBotName 修剪并校验 bot 名称。
+//
+// 按 Unicode 字符计数而非字节：中文名是常态，按字节会把 30 个汉字判为超限。
+func normalizeBotName(name string) (string, error) {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return "", domainshared.BadRequest("Bot 名称不能为空")
+	}
+	if len([]rune(trimmed)) > MaxBotNameLength {
+		return "", domainshared.BadRequest("Bot 名称最多 32 个字符")
+	}
+	return trimmed, nil
+}
 
 // BotToken 明文 bot token，仅在创建或重置时一次性返回；库中只存哈希。
 type BotToken struct {
@@ -31,10 +52,11 @@ func generateBotToken() (string, error) {
 	return botTokenPrefix + base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-// hashBotToken 对明文 token 取 SHA-256 hex。
+// HashBotToken 对明文 token 取 SHA-256 hex。
 //
 // 库中只存哈希：明文泄露后无法从哈希反推；鉴权时对入参同样哈希再比对。
-func hashBotToken(token string) string {
+// 导出是给鉴权路径复用同一规则，避免两处各写一份 SHA-256 而形态漂移。
+func HashBotToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
 }
@@ -102,6 +124,64 @@ func NewBotDisabled(botID domainshared.ID, name string) BotDisabled {
 	}
 }
 
+// BotRenamed bot 显示名变更事件。虚拟用户 display_name 由应用层同步。
+type BotRenamed struct {
+	domainshared.BaseEvent
+	// From 变更前名称。
+	From string
+	// To 变更后名称。
+	To string
+}
+
+// NewBotRenamed 构造名称变更事件。
+func NewBotRenamed(botID domainshared.ID, from, to string) BotRenamed {
+	return BotRenamed{
+		BaseEvent: domainshared.NewBaseEvent("chat.bot.renamed", botID),
+		From:      from,
+		To:        to,
+	}
+}
+
+// BotAvatarUpdated bot 头像变更事件。AvatarID 为空字符串表示清除头像。
+type BotAvatarUpdated struct {
+	domainshared.BaseEvent
+	// AvatarID 新头像文件 ID；空串表示无头像。
+	AvatarID string
+}
+
+// NewBotAvatarUpdated 构造头像变更事件。
+func NewBotAvatarUpdated(botID domainshared.ID, avatarID *domainshared.ID) BotAvatarUpdated {
+	value := ""
+	if avatarID != nil {
+		value = avatarID.String()
+	}
+	return BotAvatarUpdated{
+		BaseEvent: domainshared.NewBaseEvent("chat.bot.avatar.updated", botID),
+		AvatarID:  value,
+	}
+}
+
+// BotDeleted bot 凭证吊销事件。
+//
+// 删除不改变聚合内部状态，故不经 RecordEvent 由用例直接构造发布（与 PATDeleted 同构）。
+// UserID 是保留但被停用的虚拟用户：审计要能从凭证回溯到主体。
+type BotDeleted struct {
+	domainshared.BaseEvent
+	// Name bot 显示名快照。
+	Name string
+	// UserID 对应虚拟用户 ID。
+	UserID domainshared.ID
+}
+
+// NewBotDeleted 构造 bot 吊销事件。
+func NewBotDeleted(botID, userID domainshared.ID, name string) BotDeleted {
+	return BotDeleted{
+		BaseEvent: domainshared.NewBaseEvent("chat.bot.deleted", botID),
+		Name:      name,
+		UserID:    userID,
+	}
+}
+
 // Bot 聊天机器人聚合根。
 //
 // bot 是以虚拟用户身份接入 Violet 站内聊天的外部程序（如 AI agent）的凭证。
@@ -132,6 +212,10 @@ type Bot struct {
 // id 与 userID 由调用方预先生成（userID 对应已创建的虚拟用户）。
 // 明文 token 只在此处返回一次，调用方必须立即转交持有方，不落库不记日志。
 func NewBot(id, userID domainshared.ID, name string, avatarID *domainshared.ID, now time.Time) (*Bot, BotToken, error) {
+	name, err := normalizeBotName(name)
+	if err != nil {
+		return nil, BotToken{}, err
+	}
 	raw, err := generateBotToken()
 	if err != nil {
 		return nil, BotToken{}, domainshared.Internal("生成 bot token 失败", err)
@@ -140,7 +224,7 @@ func NewBot(id, userID domainshared.ID, name string, avatarID *domainshared.ID, 
 		userID:    userID,
 		name:      name,
 		avatarID:  avatarID,
-		tokenHash: hashBotToken(raw),
+		tokenHash: HashBotToken(raw),
 		enabled:   true,
 	}
 	b.SetID(id)
@@ -181,7 +265,7 @@ func (b *Bot) RegenerateToken(now time.Time) (BotToken, error) {
 	if err != nil {
 		return BotToken{}, domainshared.Internal("生成 bot token 失败", err)
 	}
-	b.tokenHash = hashBotToken(raw)
+	b.tokenHash = HashBotToken(raw)
 	b.UpdatedAt = now
 	b.RecordEvent(NewBotTokenRegenerated(b.GetID(), b.name))
 	return BotToken{Value: raw}, nil
@@ -205,6 +289,40 @@ func (b *Bot) Disable(now time.Time) {
 	b.enabled = false
 	b.UpdatedAt = now
 	b.RecordEvent(NewBotDisabled(b.GetID(), b.name))
+}
+
+// Rename 修改显示名。同名调用是幂等空操作（不记事件）。
+func (b *Bot) Rename(name string, now time.Time) error {
+	normalized, err := normalizeBotName(name)
+	if err != nil {
+		return err
+	}
+	if normalized == b.name {
+		return nil
+	}
+	previous := b.name
+	b.name = normalized
+	b.UpdatedAt = now
+	b.RecordEvent(NewBotRenamed(b.GetID(), previous, normalized))
+	return nil
+}
+
+// SetAvatar 替换头像；传 nil 清除头像。同值调用是幂等空操作（不记事件）。
+func (b *Bot) SetAvatar(avatarID *domainshared.ID, now time.Time) {
+	if sameID(b.avatarID, avatarID) {
+		return
+	}
+	b.avatarID = avatarID
+	b.UpdatedAt = now
+	b.RecordEvent(NewBotAvatarUpdated(b.GetID(), avatarID))
+}
+
+// sameID 比较两个可选 ID，nil 与非 nil 不等。
+func sameID(a, b *domainshared.ID) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return *a == *b
 }
 
 // ID 返回 bot 标识（AggregateRoot.GetID 的域内别名，与 Conversation/Message 同构）。
