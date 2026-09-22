@@ -24,10 +24,11 @@ type SetTypingInput struct {
 // 误导性的"过期正在输入"（见 CONTEXT.md「输入状态」词条）。EventDTO 不带 ID，
 // 使 SSE 帧不写 `id:` 行，避免污染其他事件类型依赖的 Last-Event-ID 续传序号。
 func (s *Service) SetTyping(ctx context.Context, in SetTypingInput) error {
-	if _, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID); err != nil {
+	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
+	if err != nil {
 		return err
 	}
-	if s.notifier == nil {
+	if s.notifier == nil && s.bots == nil {
 		return nil
 	}
 	members, err := s.repo.ListMembers(ctx, in.ConversationID, false)
@@ -44,11 +45,18 @@ func (s *Service) SetTyping(ctx context.Context, in SetTypingInput) error {
 			"is_typing":       in.IsTyping,
 		},
 	}
-	for _, member := range members {
-		if !member.IsActive() || member.UserID().Equal(in.UserID) {
-			continue
+	if s.notifier != nil {
+		for _, member := range members {
+			if !member.IsActive() || member.UserID().Equal(in.UserID) {
+				continue
+			}
+			s.notifier.Push(member.UserID(), dto)
 		}
-		s.notifier.Push(member.UserID(), dto)
+	}
+	// bot 收同一形态的载荷：私聊对端 bot 才收得到，群聊 typing 无 mention 信息可判定，
+	// 分发器的「仅被 @ 的 bot」规则自然把它排除。
+	if s.bots != nil {
+		s.bots.Dispatch(ctx, conversation, in.UserID, nil, dto)
 	}
 	return nil
 }

@@ -40,6 +40,15 @@ type Service struct {
 	now          func() time.Time
 	publicKey    string
 	customEmojis CustomEmojiResolver
+	bots         BotNotifier
+}
+
+// WithBotNotifier 注入 bot 事件投递器，返回自身便于装配链式调用。
+//
+// 未注入时聊天完全不做 bot 分发：bot 是可选接入面，不该给主链路增加 nil 之外的分支。
+func (s *Service) WithBotNotifier(notifier BotNotifier) *Service {
+	s.bots = notifier
+	return s
 }
 
 // NewService 构造聊天服务。
@@ -868,7 +877,28 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		return MessageDTO{}, err
 	}
 	s.notifyEvents(ctx, events)
+	s.dispatchBotMessage(ctx, conversation, message, mentioned)
 	return s.messageDTOWithReadState(ctx, message, in.UserID)
+}
+
+// dispatchBotMessage 新消息落库后向相关 bot 投递自带正文的事件快照。
+//
+// viewer 取发送者：bot 只关心正文与作者，自定义表情的 viewer 关系对它无意义，
+// 因此复用 messageDTO 而不另造一份只读模型。
+func (s *Service) dispatchBotMessage(ctx context.Context, conversation *domainchat.Conversation, message *domainchat.Message, mentioned []domainshared.ID) {
+	if s.bots == nil {
+		return
+	}
+	dto, err := s.messageDTO(ctx, message, message.SenderID())
+	if err != nil {
+		log.Warn().Err(err).Str("message_id", message.ID().String()).Msg("Bot 事件消息快照组装失败")
+		return
+	}
+	event := NewBotEvent(domainchat.EventMessageCreated, map[string]any{
+		"conversation_id": conversation.ID().String(),
+		"message":         dto,
+	}, s.now())
+	s.bots.Dispatch(ctx, conversation, message.SenderID(), mentioned, event)
 }
 
 // MarkRead 更新用户在会话中的阅读位置。
