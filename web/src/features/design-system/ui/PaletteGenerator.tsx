@@ -1,7 +1,9 @@
+import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@shared/ui/color-picker";
 import { useMemo, useState } from "react";
-import type { RoleColor, SwatchColor } from "../model/palette";
+import { toast } from "sonner";
+import type { RampStep, RoleColor, SwatchColor } from "../model/palette";
 import { generatePalette } from "../model/palette";
 
 // 备选主色里的两枚站内典藏：现役冷香紫罗兰与曾用暖珊瑚（值取自各自 palette 定义）
@@ -73,6 +75,8 @@ function RoleRow({ role }: { role: RoleColor }) {
  */
 export function PaletteGenerator() {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
+	const [hoverRamp, setHoverRamp] = useState<string | null>(null);
+	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
 	const palette = useMemo(() => {
 		const parsed = hexToOklch(seedHex);
 		const h = Math.round(parsed?.h ?? 222);
@@ -81,6 +85,15 @@ export function PaletteGenerator() {
 		return generatePalette({ h, c });
 	}, [seedHex]);
 	const seed = hexToOklch(seedHex);
+
+	const pickRamp = async (step: RampStep) => {
+		const hex = step.hex.toUpperCase();
+		if (await copyText(hex)) {
+			setCopiedRamp(step.label);
+			toast.success(`已复制 色阶 ${step.label}: ${hex}`);
+			setTimeout(() => setCopiedRamp(null), 1500);
+		}
+	};
 
 	return (
 		<div className="mt-8">
@@ -135,21 +148,45 @@ export function PaletteGenerator() {
 			</div>
 
 			<h3 className="mt-10 text-lg font-bold">品牌色阶</h3>
-			<div className="mt-3 flex overflow-hidden rounded-2xl border border-border/40">
+			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40">
+				<div className="grid grid-cols-11">
+					{palette.ramp.map((step, i) => (
+						<button
+							aria-label={`色阶 ${step.label} · ${step.hex.toUpperCase()}`}
+							className="relative h-20 outline-none"
+							key={step.label}
+							onMouseEnter={() => setHoverRamp(step.label)}
+							onMouseLeave={() => setHoverRamp(null)}
+							onClick={() => void pickRamp(step)}
+							style={{ backgroundColor: step.hex }}
+							title={`${step.label} · ${step.hex.toUpperCase()}`}
+							type="button"
+						>
+							<span
+								className={`pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold whitespace-nowrap transition-opacity duration-200 ease-out ${
+									hoverRamp === step.label ? "opacity-100" : "opacity-0"
+								} ${i >= 5 ? "text-white" : "text-slate-900"}`}
+							>
+								{step.hex.toUpperCase()}
+							</span>
+						</button>
+					))}
+				</div>
+			</div>
+			<div className="mt-2 grid grid-cols-11" aria-hidden="true">
 				{palette.ramp.map((step) => (
-					<button
-						aria-label={`色阶 ${step.label} · ${step.hex}`}
-						className="h-20 flex-1 transition-colors duration-300 ease-out"
+					<span
+						className={`text-center font-mono text-[10px] tabular-nums transition-colors duration-200 ease-out ${
+							hoverRamp === step.label || copiedRamp === step.label
+								? "text-foreground"
+								: "text-muted-foreground"
+						}`}
 						key={step.label}
-						style={{ backgroundColor: step.hex }}
-						title={`${step.label} · ${step.hex}`}
-						type="button"
-					/>
+					>
+						{step.label}
+					</span>
 				))}
 			</div>
-			<p className="mt-2 font-mono text-[10px] text-muted-foreground">
-				{palette.ramp.map((step) => step.label).join(" · ")}
-			</p>
 
 			<h3 className="mt-10 text-lg font-bold">品牌角色</h3>
 			<ul className="mt-3">
