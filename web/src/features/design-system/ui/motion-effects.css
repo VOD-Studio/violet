@@ -1,0 +1,43 @@
+@keyframes ink-ripple-expand {
+	0% {
+		transform: translate(-50%, -50%) scale(0);
+		opacity: 0.45;
+	}
+	100% {
+		transform: translate(-50%, -50%) scale(2.5);
+		opacity: 0;
+	}
+}
+
+@keyframes shake-damping {
+	0%,
+	100% {
+		transform: translate3d(0, 0, 0);
+	}
+	15%,
+	45%,
+	75% {
+		transform: translate3d(-5px, 0, 0);
+	}
+	30%,
+	60%,
+	90% {
+		transform: translate3d(5px, 0, 0);
+	}
+}
+
+@keyframes shine-sweep {
+	0% {
+		transform: translateX(-160%);
+	}
+	50%,
+	100% {
+		transform: translateX(360%);
+	}
+}
+
+@keyframes border-beam-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}

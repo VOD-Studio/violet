@@ -1,323 +1,829 @@
-/**
- * @fileoverview 动效效果库：可复用的 motion 动画原语（动效章程画廊的资产层）。
- *
- * 全部效果默认进入视口时触发一次（whileInView + once），任何新组件
- * 直接取用包裹即可获得该动效；参数出处 @shared/lib/motion。
- */
-
-import { MOTION_DURATION, MOTION_EASE, revealTransition } from "@shared/lib/motion";
+import "./motion-effects.css";
+import { MOTION_BEZIER, MOTION_DURATION, useInView, useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
 import {
-	animate,
-	motion,
-	useInView,
-	useMotionValue,
-	useReducedMotion,
-	useSpring,
-	useTransform,
-} from "motion/react";
-import { type ReactNode, useEffect, useRef } from "react";
+	type CSSProperties,
+	type MouseEvent as ReactMouseEvent,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 
-/** 进入视口触发一次的公共属性。 */
-interface RevealProps {
+export interface MagneticProps {
+	/** 磁吸强度（0~1，指针偏移的跟随比例，默认 0.3） */
+	strength?: number;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 磁吸纽扣：当指针靠近元素时微位移跟随，移出弹簧阻尼回弹。 */
+export function Magnetic({ strength = 0.3, className, children }: MagneticProps) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLDivElement>(null);
+	const [offset, setOffset] = useState({ x: 0, y: 0 });
+	const [isHovered, setIsHovered] = useState(false);
+
+	const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+		if (reduce || !ref.current) return;
+		const rect = ref.current.getBoundingClientRect();
+		const centerX = rect.left + rect.width / 2;
+		const centerY = rect.top + rect.height / 2;
+		const dx = (e.clientX - centerX) * strength;
+		const dy = (e.clientY - centerY) * strength;
+		setOffset({ x: dx, y: dy });
+	};
+
+	const handleMouseEnter = () => {
+		setIsHovered(true);
+	};
+
+	const handleMouseLeave = () => {
+		setIsHovered(false);
+		setOffset({ x: 0, y: 0 });
+	};
+
+	const style: CSSProperties = reduce
+		? {}
+		: {
+				transform: `translate3d(${offset.x}px, ${offset.y}px, 0)`,
+				transition: isHovered
+					? `transform ${MOTION_DURATION.press}s ease-out`
+					: `transform 0.45s ${MOTION_BEZIER.spring}`,
+				willChange: isHovered ? "transform" : "auto",
+			};
+
+	return (
+		<div
+			ref={ref}
+			className={cn("inline-block", className)}
+			style={style}
+			onMouseMove={handleMouseMove}
+			onMouseEnter={handleMouseEnter}
+			onMouseLeave={handleMouseLeave}
+		>
+			{children}
+		</div>
+	);
+}
+
+export interface TiltCardProps {
+	/** 最大倾斜角度（度，默认 8） */
+	maxAngle?: number;
+	/** 是否开启聚光灯跟随高光（默认 true） */
+	spotlight?: boolean;
+	/** 聚光灯颜色 */
+	spotlightColor?: string;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 3D 聚光灯卡片：鼠标移动时产生克制透视俯仰，伴随聚光灯跟随。 */
+export function TiltCard({
+	maxAngle = 8,
+	spotlight = true,
+	spotlightColor = "rgba(var(--primary-rgb, 120, 80, 200), 0.12)",
+	className,
+	children,
+}: TiltCardProps) {
+	const reduce = useReducedMotion();
+	const cardRef = useRef<HTMLDivElement>(null);
+	const [rotate, setRotate] = useState({ x: 0, y: 0 });
+	const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
+
+	const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+		if (reduce || !cardRef.current) return;
+		const rect = cardRef.current.getBoundingClientRect();
+		const px = (e.clientX - rect.left) / rect.width;
+		const py = (e.clientY - rect.top) / rect.height;
+		const rotX = (0.5 - py) * (maxAngle * 2);
+		const rotY = (px - 0.5) * (maxAngle * 2);
+		setRotate({ x: rotX, y: rotY });
+		setPointer({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+	};
+
+	const handleMouseLeave = () => {
+		setRotate({ x: 0, y: 0 });
+		setPointer(null);
+	};
+
+	return (
+		<div
+			ref={cardRef}
+			className={cn("relative overflow-hidden rounded-xl", className)}
+			style={
+				reduce
+					? {}
+					: {
+							perspective: "1000px",
+							transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
+							transition: pointer
+								? "transform 0.08s ease-out"
+								: `transform 0.4s ${MOTION_BEZIER.out}`,
+							willChange: pointer ? "transform" : "auto",
+						}
+			}
+			onMouseMove={handleMouseMove}
+			onMouseLeave={handleMouseLeave}
+		>
+			{children}
+			{spotlight && pointer && !reduce && (
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+					style={{
+						background: `radial-gradient(circle 200px at ${pointer.x}px ${pointer.y}px, ${spotlightColor}, transparent 80%)`,
+					}}
+				/>
+			)}
+		</div>
+	);
+}
+
+export interface PillSliderItem {
+	id: string;
+	label: string;
+}
+
+export interface PillSliderProps {
+	items: PillSliderItem[];
+	activeId: string;
+	onChange: (id: string) => void;
+	className?: string;
+}
+
+/** 流体滑动胶囊：多选项切换时，背景胶囊利用纯 CSS 平滑滑移拉伸。 */
+export function PillSlider({ items, activeId, onChange, className }: PillSliderProps) {
+	const reduce = useReducedMotion();
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [pillStyle, setPillStyle] = useState<{ left: number; width: number } | null>(null);
+
+	const updatePill = useCallback(() => {
+		if (!containerRef.current) return;
+		const activeBtn = containerRef.current.querySelector<HTMLButtonElement>(
+			`[data-pill-id='${activeId}']`,
+		);
+		if (!activeBtn) return;
+		const containerRect = containerRef.current.getBoundingClientRect();
+		const btnRect = activeBtn.getBoundingClientRect();
+		setPillStyle({
+			left: btnRect.left - containerRect.left,
+			width: btnRect.width,
+		});
+	}, [activeId]);
+
+	useLayoutEffect(() => {
+		updatePill();
+		window.addEventListener("resize", updatePill);
+		return () => window.removeEventListener("resize", updatePill);
+	}, [updatePill]);
+
+	return (
+		<div
+			ref={containerRef}
+			role="tablist"
+			className={cn(
+				"relative inline-flex items-center rounded-lg border border-border/40 bg-muted/40 p-1 select-none",
+				className,
+			)}
+		>
+			{pillStyle && (
+				<span
+					aria-hidden
+					className="absolute top-1 bottom-1 rounded-md bg-card shadow-xs"
+					style={{
+						left: `${pillStyle.left}px`,
+						width: `${pillStyle.width}px`,
+						transition: reduce
+							? "none"
+							: `left ${MOTION_DURATION.modal}s ${MOTION_BEZIER.out}, width ${MOTION_DURATION.modal}s ${MOTION_BEZIER.out}`,
+					}}
+				/>
+			)}
+			{items.map((item) => {
+				const active = item.id === activeId;
+				return (
+					<button
+						key={item.id}
+						type="button"
+						role="tab"
+						aria-selected={active}
+						data-pill-id={item.id}
+						onClick={() => onChange(item.id)}
+						className={cn(
+							"relative z-10 px-3.5 py-1.5 text-xs font-medium transition-colors duration-200",
+							active
+								? "text-foreground"
+								: "text-muted-foreground hover:text-foreground",
+						)}
+					>
+						{item.label}
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+export interface CheckmarkDrawProps {
+	checked: boolean;
+	/** 尺寸（像素，默认 24） */
+	size?: number;
+	color?: string;
+	className?: string;
+}
+
+/** 交互打勾绘制：操作成功时，圆环与对勾笔触通过 SVG 描边偏移勾出。 */
+export function CheckmarkDraw({
+	checked,
+	size = 24,
+	color = "currentColor",
+	className,
+}: CheckmarkDrawProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			className={cn("inline-block overflow-visible align-middle", className)}
+			aria-hidden="true"
+		>
+			<circle
+				cx="12"
+				cy="12"
+				r="9"
+				stroke={color}
+				strokeWidth="2"
+				strokeDasharray="57"
+				strokeDashoffset={checked || reduce ? "0" : "57"}
+				style={{
+					transition: reduce ? "none" : `stroke-dashoffset 0.35s ${MOTION_BEZIER.out}`,
+				}}
+			/>
+			<path
+				d="M8 12.5L10.8 15.3L16.2 9.5"
+				stroke={color}
+				strokeWidth="2.2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				strokeDasharray="18"
+				strokeDashoffset={checked || reduce ? "0" : "18"}
+				style={{
+					transition: reduce
+						? "none"
+						: `stroke-dashoffset 0.28s ${MOTION_BEZIER.out} 0.12s`,
+				}}
+			/>
+		</svg>
+	);
+}
+
+export interface InkRippleProps {
+	color?: string;
+	className?: string;
+	children: ReactNode;
+	onClick?: (e: ReactMouseEvent<HTMLButtonElement>) => void;
+}
+
+/** 墨晕涟漪：点击交互时以触点坐标为圆心扩散渐隐。 */
+export function InkRipple({
+	color = "rgba(120, 80, 200, 0.25)",
+	className,
+	children,
+	onClick,
+}: InkRippleProps) {
+	const reduce = useReducedMotion();
+	const [ripples, setRipples] = useState<
+		Array<{ id: number; x: number; y: number; size: number }>
+	>([]);
+
+	const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
+		onClick?.(e);
+		if (reduce) return;
+
+		const rect = e.currentTarget.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+		const size = Math.max(rect.width, rect.height) * 2;
+		const id = Date.now();
+
+		setRipples((prev) => [...prev, { id, x, y, size }]);
+		setTimeout(() => {
+			setRipples((prev) => prev.filter((r) => r.id !== id));
+		}, 600);
+	};
+
+	return (
+		<button
+			type="button"
+			className={cn(
+				"relative overflow-hidden inline-block cursor-pointer select-none text-left",
+				className,
+			)}
+			onClick={handleClick}
+		>
+			{children}
+			{ripples.map((ripple) => (
+				<span
+					key={ripple.id}
+					aria-hidden
+					className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+					style={{
+						left: ripple.x,
+						top: ripple.y,
+						width: ripple.size,
+						height: ripple.size,
+						backgroundColor: color,
+						animation: "ink-ripple-expand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+					}}
+				/>
+			))}
+		</button>
+	);
+}
+
+export interface ShakeProps {
+	/** 触发抖动的键值（每次数值变化触发一次摆动） */
+	shakeKey: number;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 警示摇晃：用于非法操作与验证失败时的阻尼物理摆动。 */
+export function Shake({ shakeKey, className, children }: ShakeProps) {
+	const reduce = useReducedMotion();
+	const [animating, setAnimating] = useState(false);
+
+	useEffect(() => {
+		if (shakeKey === 0 || reduce) return;
+		setAnimating(true);
+		const timer = setTimeout(() => setAnimating(false), 400);
+		return () => clearTimeout(timer);
+	}, [shakeKey, reduce]);
+
+	return (
+		<div
+			className={cn("inline-block", className)}
+			style={animating ? { animation: "shake-damping 0.4s ease-in-out" } : undefined}
+		>
+			{children}
+		</div>
+	);
+}
+
+export interface HoldToConfirmProps {
+	/** 蓄力时长（秒，默认 1.0） */
+	duration?: number;
+	onConfirm: () => void;
+	label?: string;
+	holdingLabel?: string;
+	confirmedLabel?: string;
+	className?: string;
+}
+
+/** 长按蓄力确认：按住蓄满方才确认，松开立即平滑回弹。 */
+export function HoldToConfirm({
+	duration = 1.0,
+	onConfirm,
+	label = "长按确认操作",
+	holdingLabel = "松开取消…",
+	confirmedLabel = "已确认完成",
+	className,
+}: HoldToConfirmProps) {
+	const reduce = useReducedMotion();
+	const [holding, setHolding] = useState(false);
+	const [progress, setProgress] = useState(0);
+	const [confirmed, setConfirmed] = useState(false);
+	const timerRef = useRef<number | null>(null);
+	const startTimeRef = useRef<number>(0);
+
+	const cancelHold = () => {
+		if (confirmed) return;
+		setHolding(false);
+		if (timerRef.current) cancelAnimationFrame(timerRef.current);
+		setProgress(0);
+	};
+
+	const startHold = () => {
+		if (confirmed) return;
+		if (reduce) {
+			setConfirmed(true);
+			onConfirm();
+			return;
+		}
+		setHolding(true);
+		startTimeRef.current = performance.now();
+
+		const step = (now: number) => {
+			const elapsed = (now - startTimeRef.current) / 1000;
+			const p = Math.min(elapsed / duration, 1);
+			setProgress(p);
+
+			if (p >= 1) {
+				setConfirmed(true);
+				setHolding(false);
+				onConfirm();
+			} else {
+				timerRef.current = requestAnimationFrame(step);
+			}
+		};
+
+		timerRef.current = requestAnimationFrame(step);
+	};
+
+	return (
+		<button
+			type="button"
+			className={cn(
+				"relative overflow-hidden rounded-lg border border-border/40 bg-card px-4 py-2.5 text-xs font-medium text-foreground select-none transition-shadow active:scale-[0.99]",
+				confirmed && "border-primary/40 bg-primary/10 text-primary",
+				className,
+			)}
+			onMouseDown={startHold}
+			onMouseUp={cancelHold}
+			onMouseLeave={cancelHold}
+			onTouchStart={startHold}
+			onTouchEnd={cancelHold}
+		>
+			{!confirmed && (
+				<span
+					aria-hidden
+					className="pointer-events-none absolute inset-y-0 left-0 bg-primary/20 transition-all"
+					style={{
+						width: `${progress * 100}%`,
+						transition: holding ? "none" : "width 0.25s ease-out",
+					}}
+				/>
+			)}
+			<span className="relative z-10 flex items-center justify-center gap-2">
+				{confirmed ? confirmedLabel : holding ? holdingLabel : label}
+			</span>
+		</button>
+	);
+}
+
+export interface SmoothExpandProps {
+	open: boolean;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 平滑展开折叠：基于 CSS grid-template-rows 原生动画。 */
+export function SmoothExpand({ open, className, children }: SmoothExpandProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<div
+			className={cn("grid transition-[grid-template-rows]", className)}
+			style={{
+				gridTemplateRows: open || reduce ? "1fr" : "0fr",
+				transitionDuration: reduce ? "0s" : `${MOTION_DURATION.collapse}s`,
+				transitionTimingFunction: MOTION_BEZIER.out,
+			}}
+		>
+			<div className="overflow-hidden min-h-0">{children}</div>
+		</div>
+	);
+}
+
+export interface RevealProps {
 	/** 动画延迟（秒） */
 	delay?: number;
-	/** 包裹层类名 */
 	className?: string;
 }
 
 /** 淡入：最克制的进场。 */
 export function FadeIn({ delay = 0, className, children }: RevealProps & { children: ReactNode }) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+
 	return (
-		<motion.div
+		<div
+			ref={ref}
 			className={className}
-			initial={{ opacity: 0 }}
-			whileInView={{ opacity: 1 }}
-			viewport={{ once: true, margin: "-40px" }}
-			transition={{ duration: MOTION_DURATION.reveal, ease: MOTION_EASE.softOut, delay }}
+			style={
+				reduce
+					? {}
+					: {
+							opacity: inView ? 1 : 0,
+							transition: `opacity ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.softOut} ${delay}s`,
+						}
+			}
 		>
 			{children}
-		</motion.div>
+		</div>
 	);
 }
 
-/** 滑入方向。 */
-type SlideDirection = "up" | "down" | "left" | "right";
-
-/** 滑入隐藏态坐标：方向决定位移轴。 */
-const SLIDE_HIDDEN: Record<SlideDirection, { opacity: number; x?: number; y?: number }> = {
-	up: { opacity: 0, y: 24 },
-	down: { opacity: 0, y: -24 },
-	left: { opacity: 0, x: 24 },
-	right: { opacity: 0, x: -24 },
-};
+export type SlideDirection = "up" | "down" | "left" | "right";
 
 export interface SlideInProps extends RevealProps {
-	/** 滑入方向：up 表示自下方滑入 */
 	direction?: SlideDirection;
 }
 
-/** 滑入：方向性进场，保留空间语义时使用。 */
+/** 滑入：保留空间来源语义时使用。 */
 export function SlideIn({
 	direction = "up",
 	delay = 0,
 	className,
 	children,
 }: SlideInProps & { children: ReactNode }) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+
+	const getTransform = () => {
+		if (inView || reduce) return "translate3d(0, 0, 0)";
+		switch (direction) {
+			case "up":
+				return "translate3d(0, 24px, 0)";
+			case "down":
+				return "translate3d(0, -24px, 0)";
+			case "left":
+				return "translate3d(24px, 0, 0)";
+			case "right":
+				return "translate3d(-24px, 0, 0)";
+		}
+	};
+
 	return (
-		<motion.div
+		<div
+			ref={ref}
 			className={className}
-			initial={SLIDE_HIDDEN[direction]}
-			whileInView={{ opacity: 1, x: 0, y: 0 }}
-			viewport={{ once: true, margin: "-40px" }}
-			transition={{ ...revealTransition, delay }}
+			style={
+				reduce
+					? {}
+					: {
+							opacity: inView ? 1 : 0,
+							transform: getTransform(),
+							transition: `opacity ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.out} ${delay}s, transform ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.out} ${delay}s`,
+						}
+			}
 		>
 			{children}
-		</motion.div>
+		</div>
 	);
 }
 
 /** 模糊聚焦：内容自虚化对焦，适合标题与主视觉。 */
 export function BlurIn({ delay = 0, className, children }: RevealProps & { children: ReactNode }) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+
 	return (
-		<motion.div
+		<div
+			ref={ref}
 			className={className}
-			initial={{ opacity: 0, filter: "blur(8px)" }}
-			whileInView={{ opacity: 1, filter: "blur(0px)" }}
-			viewport={{ once: true, margin: "-40px" }}
-			transition={{ duration: MOTION_DURATION.reveal, ease: MOTION_EASE.softOut, delay }}
+			style={
+				reduce
+					? {}
+					: {
+							opacity: inView ? 1 : 0,
+							filter: inView ? "blur(0px)" : "blur(8px)",
+							transition: `opacity ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.softOut} ${delay}s, filter ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.softOut} ${delay}s`,
+						}
+			}
 		>
 			{children}
-		</motion.div>
+		</div>
 	);
 }
 
-/** 缩放入座：自 0.92 微缩落座，适合卡片与插图。 */
+/** 缩放入座：自 0.94 微缩落座，适合卡片与插图。 */
 export function ScaleIn({ delay = 0, className, children }: RevealProps & { children: ReactNode }) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+
 	return (
-		<motion.div
+		<div
+			ref={ref}
 			className={className}
-			initial={{ opacity: 0, scale: 0.92 }}
-			whileInView={{ opacity: 1, scale: 1 }}
-			viewport={{ once: true, margin: "-40px" }}
-			transition={{ duration: MOTION_DURATION.reveal, ease: MOTION_EASE.out, delay }}
+			style={
+				reduce
+					? {}
+					: {
+							opacity: inView ? 1 : 0,
+							transform: inView ? "scale(1)" : "scale(0.94)",
+							transition: `opacity ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.out} ${delay}s, transform ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.out} ${delay}s`,
+						}
+			}
 		>
 			{children}
-		</motion.div>
+		</div>
 	);
 }
 
 export interface TextRevealProps {
-	/** 要逐词揭示的文本 */
 	text: string;
 	/** 首词延迟（秒） */
 	delay?: number;
-	/** 容器类名 */
 	className?: string;
 }
 
-/** 逐词揭示：文字自下方依序浮现，标题动效的招牌。 */
+/** 逐词揭示：文字自下方依序浮现。 */
 export function TextReveal({ text, delay = 0, className }: TextRevealProps) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLSpanElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
 	const words = text.split(" ");
 
 	return (
-		<motion.span
-			className={cn("inline", className)}
-			initial="hidden"
-			whileInView="visible"
-			viewport={{ once: true, margin: "-40px" }}
-			transition={{ staggerChildren: 0.06, delayChildren: delay }}
-		>
-			{words.map((word, index) => (
-				<motion.span
-					className="inline-block"
-					key={`${word}-${index}`}
-					variants={{
-						hidden: { opacity: 0, y: "0.9em" },
-						visible: { opacity: 1, y: "0em" },
-					}}
-					transition={{ duration: 0.5, ease: MOTION_EASE.out }}
-				>
-					{word}
-					{index < words.length - 1 ? "\u00A0" : ""}
-				</motion.span>
-			))}
-		</motion.span>
+		<span ref={ref} className={cn("inline-flex flex-wrap gap-x-1.5", className)}>
+			{words.map((word, index) => {
+				const wordDelay = delay + index * 0.06;
+				return (
+					<span key={`${word}-${index}`} className="inline-block overflow-hidden py-0.5">
+						<span
+							className="inline-block"
+							style={
+								reduce
+									? {}
+									: {
+											opacity: inView ? 1 : 0,
+											transform: inView
+												? "translate3d(0, 0, 0)"
+												: "translate3d(0, 100%, 0)",
+											transition: `opacity 0.45s ${MOTION_BEZIER.out} ${wordDelay}s, transform 0.45s ${MOTION_BEZIER.out} ${wordDelay}s`,
+										}
+							}
+						>
+							{word}
+						</span>
+					</span>
+				);
+			})}
+		</span>
 	);
 }
 
-/** 级联容器的子项：配合 StaggerGroup 使用。 */
-export function StaggerItem({ className, children }: { className?: string; children: ReactNode }) {
-	return (
-		<motion.div
-			className={className}
-			variants={{
-				hidden: { opacity: 0, y: 12 },
-				visible: { opacity: 1, y: 0 },
-			}}
-			transition={{ duration: 0.4, ease: MOTION_EASE.out }}
-		>
-			{children}
-		</motion.div>
-	);
+export interface StaggerGroupProps {
+	className?: string;
+	children: ReactNode;
 }
 
-/** 级联容器：直接子级 StaggerItem 依序进入，列表与卡组的编排动效。 */
-export function StaggerGroup({ className, children }: { className?: string; children: ReactNode }) {
+/** 级联容器：为子级提供依序入场节奏。 */
+export function StaggerGroup({ className, children }: StaggerGroupProps) {
+	return <div className={className}>{children}</div>;
+}
+
+export interface StaggerItemProps {
+	/** 在级联序列中的序号（从 0 开始） */
+	index?: number;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 级联容器的子项：根据 index 阶梯延迟进入。 */
+export function StaggerItem({ index = 0, className, children }: StaggerItemProps) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+	const delay = index * 0.08;
+
 	return (
-		<motion.div
+		<div
+			ref={ref}
 			className={className}
-			initial="hidden"
-			whileInView="visible"
-			viewport={{ once: true, margin: "-40px" }}
-			variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+			style={
+				reduce
+					? {}
+					: {
+							opacity: inView ? 1 : 0,
+							transform: inView ? "translate3d(0, 0, 0)" : "translate3d(0, 14px, 0)",
+							transition: `opacity 0.4s ${MOTION_BEZIER.out} ${delay}s, transform 0.4s ${MOTION_BEZIER.out} ${delay}s`,
+						}
+			}
 		>
 			{children}
-		</motion.div>
+		</div>
 	);
 }
 
 export interface NumberFlowProps {
-	/** 目标数值（整数，渲染时千分位分组） */
+	/** 目标数值（整数，千分位展示） */
 	value: number;
-	/** 滚动时长（秒） */
+	/** 滚动动画时长（秒，默认 1.2） */
 	duration?: number;
-	/** 类名 */
 	className?: string;
 }
 
-/** 数字滚动：数值变化时滚动到新值；等宽数字防宽度抖动。 */
+/** 数字滚动：数值变化时通过 requestAnimationFrame 缓动滚动到新值。 */
 export function NumberFlow({ value, duration = 1.2, className }: NumberFlowProps) {
 	const reduce = useReducedMotion();
 	const ref = useRef<HTMLSpanElement>(null);
 	const inView = useInView(ref, { once: true, margin: "-40px" });
-	const count = useMotionValue(0);
-	const text = useTransform(count, (v) => Math.round(v).toLocaleString());
+	const [displayValue, setDisplayValue] = useState(0);
+	const currentValRef = useRef(0);
 
 	useEffect(() => {
 		if (!inView) return undefined;
 		if (reduce) {
-			count.set(value);
+			currentValRef.current = value;
+			setDisplayValue(value);
 			return undefined;
 		}
-		const controls = animate(count, value, { duration, ease: MOTION_EASE.out });
-		return () => controls.stop();
-	}, [count, inView, value, duration, reduce]);
+
+		let frameId: number;
+		const startTime = performance.now();
+		const startValue = currentValRef.current;
+		const diff = value - startValue;
+
+		const animate = (currentTime: number) => {
+			const elapsed = (currentTime - startTime) / 1000;
+			const progress = Math.min(elapsed / duration, 1);
+			const eased = 1 - (1 - progress) ** 3;
+			const nextVal = Math.round(startValue + diff * eased);
+			currentValRef.current = nextVal;
+			setDisplayValue(nextVal);
+
+			if (progress < 1) {
+				frameId = requestAnimationFrame(animate);
+			}
+		};
+
+		frameId = requestAnimationFrame(animate);
+		return () => cancelAnimationFrame(frameId);
+	}, [inView, value, duration, reduce]);
 
 	return (
 		<span ref={ref} className={cn("tabular-nums", className)}>
-			<motion.span>{text}</motion.span>
+			{displayValue.toLocaleString()}
 		</span>
 	);
 }
 
 export interface ShineProps {
-	/** 扫光周期（秒，含停顿） */
+	/** 扫光周期（秒） */
 	interval?: number;
-	/** 高光颜色（任意 CSS 颜色） */
 	color?: string;
-	/** 包裹层类名 */
 	className?: string;
+	children: ReactNode;
 }
 
-/** 扫光：高光条周期性掠过容器，用于勋章、封面、强调卡。 */
+/** 扫光：高光条周期性斜掠过容器，用于勋章、封面与强调卡。 */
 export function Shine({
 	interval = 3,
-	color = "rgba(255,255,255,0.45)",
+	color = "rgba(255, 255, 255, 0.4)",
 	className,
 	children,
 }: ShineProps & { children: ReactNode }) {
+	const reduce = useReducedMotion();
+
 	return (
 		<div className={cn("relative overflow-hidden", className)}>
 			{children}
-			<div aria-hidden className="pointer-events-none absolute inset-0">
-				<motion.div
-					className="absolute inset-y-0 w-1/3"
+			{!reduce && (
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-0"
 					style={{
-						background: `linear-gradient(105deg, transparent, ${color}, transparent)`,
-					}}
-					initial={{ x: "-140%" }}
-					animate={{ x: "420%" }}
-					transition={{
-						duration: interval * 0.55,
-						repeat: Infinity,
-						repeatDelay: interval * 0.45,
-						ease: "easeInOut",
+						background: `linear-gradient(105deg, transparent 35%, ${color} 50%, transparent 65%)`,
+						animation: `shine-sweep ${interval}s ease-in-out infinite`,
 					}}
 				/>
-			</div>
+			)}
 		</div>
 	);
 }
 
 export interface BorderBeamProps {
-	/** 流光旋转周期（秒） */
+	/** 流光旋转周期（秒，默认 4） */
 	duration?: number;
-	/** 光斑颜色（任意 CSS 颜色） */
 	color?: string;
-	/** 包裹层类名 */
 	className?: string;
+	children: ReactNode;
 }
 
-/** 流光边框：一道光斑沿边框环绕，用于焦点态与特性卡。 */
+/** 流光边框：纯 CSS 光斑沿边框环绕，用于焦点态与特性卡。 */
 export function BorderBeam({
 	duration = 4,
-	color = "var(--brand)",
+	color = "var(--primary)",
 	className,
 	children,
 }: BorderBeamProps & { children: ReactNode }) {
+	const reduce = useReducedMotion();
+
 	return (
 		<div className={cn("relative overflow-hidden rounded-xl p-px", className)}>
-			<motion.div
-				aria-hidden
-				className="absolute inset-[-100%]"
-				style={{
-					background: `conic-gradient(from 0deg, transparent 0turn 0.88turn, ${color} 1turn)`,
-				}}
-				animate={{ rotate: 360 }}
-				transition={{ duration, repeat: Infinity, ease: "linear" }}
-			/>
+			{!reduce && (
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-[-100%]"
+					style={{
+						background: `conic-gradient(from 0deg, transparent 0turn 0.88turn, ${color} 1turn)`,
+						animation: `border-beam-spin ${duration}s linear infinite`,
+					}}
+				/>
+			)}
 			<div className="relative rounded-[calc(0.75rem-1px)] bg-card">{children}</div>
 		</div>
-	);
-}
-
-export interface MagneticProps {
-	/** 磁吸强度（0~1，指针偏移的跟随比例） */
-	strength?: number;
-	/** 包裹层类名 */
-	className?: string;
-}
-
-/** 磁吸：内容向指针方向弹性跟随，用于主要操作按钮。 */
-export function Magnetic({
-	strength = 0.25,
-	className,
-	children,
-}: MagneticProps & { children: ReactNode }) {
-	const ref = useRef<HTMLDivElement>(null);
-	const x = useMotionValue(0);
-	const y = useMotionValue(0);
-	const springX = useSpring(x, { stiffness: 260, damping: 20 });
-	const springY = useSpring(y, { stiffness: 260, damping: 20 });
-
-	return (
-		<motion.div
-			ref={ref}
-			className={cn("inline-block", className)}
-			style={{ x: springX, y: springY }}
-			onMouseMove={(event) => {
-				const rect = ref.current?.getBoundingClientRect();
-				if (!rect) return;
-				x.set((event.clientX - (rect.left + rect.width / 2)) * strength);
-				y.set((event.clientY - (rect.top + rect.height / 2)) * strength);
-			}}
-			onMouseLeave={() => {
-				x.set(0);
-				y.set(0);
-			}}
-		>
-			{children}
-		</motion.div>
 	);
 }

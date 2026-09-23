@@ -1,9 +1,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { MotionCharter } from "../MotionCharter";
-import { FadeIn, NumberFlow, TextReveal } from "../motion-effects";
+import {
+	CheckmarkDraw,
+	FadeIn,
+	HoldToConfirm,
+	Magnetic,
+	NumberFlow,
+	PillSlider,
+	SmoothExpand,
+	TextReveal,
+	TiltCard,
+} from "../motion-effects";
 
-describe("动效效果库画廊", () => {
+describe("动效章程自研动效库", () => {
 	it("总纲与三律法齐备", () => {
 		render(<MotionCharter />);
 		expect(screen.getByText("合成层律")).toBeTruthy();
@@ -11,9 +21,23 @@ describe("动效效果库画廊", () => {
 		expect(screen.getByText("快进快出律")).toBeTruthy();
 	});
 
-	it("十个效果全部陈列且可重播", () => {
+	it("交互类与浮现类全部效果陈列", () => {
 		render(<MotionCharter />);
-		for (const name of [
+		const interactiveTitles = [
+			"TiltCard · 3D 聚光灯卡片",
+			"PillSlider · 流体滑动胶囊",
+			"Magnetic · 磁吸纽扣",
+			"InkRipple · 墨晕水波",
+			"CheckmarkDraw · 交互打勾",
+			"HoldToConfirm · 蓄力长按",
+			"Shake · 物理警示摇晃",
+			"SmoothExpand · 平滑折叠展开",
+		];
+		for (const name of interactiveTitles) {
+			expect(screen.getByText(name)).toBeTruthy();
+		}
+
+		const replayTitles = [
 			"FadeIn · 淡入",
 			"SlideIn · 滑入",
 			"BlurIn · 模糊聚焦",
@@ -21,23 +45,115 @@ describe("动效效果库画廊", () => {
 			"TextReveal · 逐词揭示",
 			"Stagger · 级联编排",
 			"NumberFlow · 数字滚动",
-			"Shine · 扫光",
 			"BorderBeam · 流光边框",
-			"Magnetic · 磁吸",
-		]) {
+			"Shine · 微光扫影",
+		];
+		for (const name of replayTitles) {
 			expect(screen.getByText(name)).toBeTruthy();
 		}
-		// 每卡都有重播按钮
+
 		const replays = screen.getAllByRole("button", { name: "重播" });
-		expect(replays.length).toBe(10);
+		expect(replays.length).toBe(replayTitles.length);
 		for (const btn of replays) {
 			fireEvent.click(btn);
 		}
 	});
 
+	it("PillSlider 点击切换选中项", () => {
+		let selected = "week";
+		const items = [
+			{ id: "day", label: "日刻" },
+			{ id: "week", label: "周序" },
+		];
+		const { rerender } = render(
+			<PillSlider items={items} activeId={selected} onChange={(id) => (selected = id)} />,
+		);
+
+		const dayTab = screen.getByRole("tab", { name: "日刻" });
+		const weekTab = screen.getByRole("tab", { name: "周序" });
+		expect(weekTab.getAttribute("aria-selected")).toBe("true");
+		expect(dayTab.getAttribute("aria-selected")).toBe("false");
+
+		fireEvent.click(dayTab);
+		expect(selected).toBe("day");
+
+		rerender(
+			<PillSlider items={items} activeId={selected} onChange={(id) => (selected = id)} />,
+		);
+		expect(dayTab.getAttribute("aria-selected")).toBe("true");
+	});
+
+	it("CheckmarkDraw 渲染对勾与圆环", () => {
+		const { rerender, container } = render(<CheckmarkDraw checked={false} />);
+		expect(container.querySelector("circle")).toBeTruthy();
+		expect(container.querySelector("path")).toBeTruthy();
+
+		rerender(<CheckmarkDraw checked={true} />);
+		const circle = container.querySelector("circle");
+		expect(circle?.getAttribute("stroke-dashoffset")).toBe("0");
+	});
+
+	it("Magnetic 正常包裹并响应光标", () => {
+		const { container } = render(
+			<Magnetic>
+				<button type="button">测试按钮</button>
+			</Magnetic>,
+		);
+		const wrapper = container.firstChild as HTMLElement;
+		fireEvent.mouseEnter(wrapper);
+		fireEvent.mouseMove(wrapper, { clientX: 20, clientY: 20 });
+		fireEvent.mouseLeave(wrapper);
+		expect(screen.getByText("测试按钮")).toBeTruthy();
+	});
+
+	it("TiltCard 正常包裹并响应倾斜", () => {
+		const { container } = render(
+			<TiltCard>
+				<p>卡片内容</p>
+			</TiltCard>,
+		);
+		const card = container.firstChild as HTMLElement;
+		fireEvent.mouseMove(card, { clientX: 10, clientY: 10 });
+		fireEvent.mouseLeave(card);
+		expect(screen.getByText("卡片内容")).toBeTruthy();
+	});
+
+	it("SmoothExpand 展开收起切换高度过渡属性", () => {
+		const { container, rerender } = render(
+			<SmoothExpand open={false}>
+				<p>折叠内容</p>
+			</SmoothExpand>,
+		);
+		const el = container.firstChild as HTMLElement;
+		expect(el.style.gridTemplateRows).toBe("0fr");
+
+		rerender(
+			<SmoothExpand open={true}>
+				<p>折叠内容</p>
+			</SmoothExpand>,
+		);
+		expect(el.style.gridTemplateRows).toBe("1fr");
+	});
+
+	it("HoldToConfirm 长按与松手清零", () => {
+		let confirmed = false;
+		render(
+			<HoldToConfirm
+				duration={0.1}
+				onConfirm={() => {
+					confirmed = true;
+				}}
+			/>,
+		);
+		const btn = screen.getByRole("button");
+		fireEvent.mouseDown(btn);
+		fireEvent.mouseUp(btn);
+		expect(confirmed).toBe(false);
+	});
+
 	it("TextReveal 逐词拆分渲染", () => {
 		render(<TextReveal text="一花一叶 皆成文章" />);
-		expect(screen.getByText(/一花一叶/)).toBeTruthy();
+		expect(screen.getByText("一花一叶")).toBeTruthy();
 	});
 
 	it("NumberFlow 渲染等宽数字容器", () => {
