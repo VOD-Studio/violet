@@ -96,17 +96,17 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		name: "信息",
 		note: "客观提示",
 		light: {
-			solid: swatch(0.58, 0.18, 245),
+			solid: swatch(0.61, 0.15, 240),
 			foreground: swatch(0.99, 0, 0),
-			wash: swatch(0.965, 0.02, 245),
-			washForeground: swatch(0.38, 0.14, 245),
-			border: swatch(0.88, 0.045, 245),
+			wash: swatch(0.975, 0.015, 240),
+			washForeground: swatch(0.4, 0.12, 240),
+			border: swatch(0.91, 0.035, 240),
 		},
 		dark: {
-			solid: swatch(0.74, 0.16, 240),
+			solid: swatch(0.74, 0.145, 240),
 			foreground: swatch(0.16, 0.04, 240),
 			wash: swatch(0.2, 0.035, 240),
-			washForeground: swatch(0.88, 0.08, 240),
+			washForeground: swatch(0.9, 0.06, 240),
 			border: swatch(0.28, 0.05, 240),
 		},
 	},
@@ -115,18 +115,18 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		name: "成功",
 		note: "达成反馈",
 		light: {
-			solid: swatch(0.6, 0.17, 152),
+			solid: swatch(0.62, 0.145, 158),
 			foreground: swatch(0.99, 0, 0),
-			wash: swatch(0.965, 0.025, 152),
-			washForeground: swatch(0.35, 0.12, 152),
-			border: swatch(0.88, 0.05, 152),
+			wash: swatch(0.975, 0.02, 158),
+			washForeground: swatch(0.38, 0.12, 158),
+			border: swatch(0.91, 0.04, 158),
 		},
 		dark: {
-			solid: swatch(0.76, 0.16, 155),
-			foreground: swatch(0.15, 0.03, 155),
-			wash: swatch(0.2, 0.035, 155),
-			washForeground: swatch(0.88, 0.08, 155),
-			border: swatch(0.28, 0.05, 155),
+			solid: swatch(0.75, 0.15, 158),
+			foreground: swatch(0.15, 0.03, 158),
+			wash: swatch(0.2, 0.035, 158),
+			washForeground: swatch(0.9, 0.07, 158),
+			border: swatch(0.28, 0.05, 158),
 		},
 	},
 	{
@@ -134,18 +134,18 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		name: "警示",
 		note: "待决提醒",
 		light: {
-			solid: swatch(0.65, 0.17, 68),
+			solid: swatch(0.66, 0.155, 60),
 			foreground: swatch(0.99, 0, 0),
-			wash: swatch(0.97, 0.025, 68),
-			washForeground: swatch(0.38, 0.1, 68),
-			border: swatch(0.9, 0.06, 68),
+			wash: swatch(0.975, 0.02, 60),
+			washForeground: swatch(0.42, 0.12, 60),
+			border: swatch(0.91, 0.04, 60),
 		},
 		dark: {
-			solid: swatch(0.78, 0.16, 75),
+			solid: swatch(0.77, 0.15, 65),
 			foreground: swatch(0.16, 0.03, 75),
-			wash: swatch(0.22, 0.04, 75),
-			washForeground: swatch(0.9, 0.08, 75),
-			border: swatch(0.3, 0.06, 75),
+			wash: swatch(0.22, 0.04, 65),
+			washForeground: swatch(0.9, 0.07, 65),
+			border: swatch(0.3, 0.05, 65),
 		},
 	},
 	{
@@ -153,18 +153,18 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		name: "危险",
 		note: "操作阻断",
 		light: {
-			solid: swatch(0.58, 0.22, 27),
+			solid: swatch(0.58, 0.195, 20),
 			foreground: swatch(0.99, 0, 0),
-			wash: swatch(0.97, 0.02, 27),
-			washForeground: swatch(0.38, 0.14, 27),
-			border: swatch(0.9, 0.05, 27),
+			wash: swatch(0.975, 0.015, 20),
+			washForeground: swatch(0.42, 0.15, 20),
+			border: swatch(0.91, 0.035, 20),
 		},
 		dark: {
-			solid: swatch(0.7, 0.19, 25),
+			solid: swatch(0.69, 0.18, 18),
 			foreground: swatch(0.99, 0, 0),
-			wash: swatch(0.2, 0.04, 25),
-			washForeground: swatch(0.9, 0.07, 25),
-			border: swatch(0.3, 0.06, 25),
+			wash: swatch(0.2, 0.035, 18),
+			washForeground: swatch(0.9, 0.06, 18),
+			border: swatch(0.28, 0.05, 18),
 		},
 	},
 ];
@@ -176,22 +176,40 @@ const FUNCTIONAL_ROLES: RoleColor[] = FUNCTIONAL_SETS.map((set) => ({
 	dark: set.dark.solid,
 	note: `${set.name} · ${set.note}`,
 }));
-/** 色阶彩度包络：中段饱满、两端收敛，色阶才有层次 */
+
+interface RampSpec {
+	label: string;
+	l: number;
+	cRatio: number;
+}
+
+/** 色彩彩度包络：计算特定明度下的合理彩度 */
 function chromaAt(l: number, seedC: number): number {
 	const envelope = Math.max(0, 1 - Math.abs(l - 0.6) / 0.5);
 	return clamp(seedC * envelope * 1.35, 0, 0.37);
 }
-
-/** 品牌色阶：L 从浅到深 ×11 */
-const RAMP_L = [0.97, 0.93, 0.87, 0.78, 0.7, 0.62, 0.53, 0.45, 0.37, 0.28, 0.19];
-const RAMP_LABELS = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"];
+/** 品牌色阶规格：经过色彩动力学微调的感知明度与饱和度包络，保障 900/950 深邃可辨且全阶可用 */
+const RAMP_SPECS: RampSpec[] = [
+	{ label: "50", l: 0.98, cRatio: 0.12 },
+	{ label: "100", l: 0.95, cRatio: 0.25 },
+	{ label: "200", l: 0.9, cRatio: 0.45 },
+	{ label: "300", l: 0.82, cRatio: 0.68 },
+	{ label: "400", l: 0.72, cRatio: 0.88 },
+	{ label: "500", l: 0.62, cRatio: 1.0 },
+	{ label: "600", l: 0.53, cRatio: 0.96 },
+	{ label: "700", l: 0.44, cRatio: 0.85 },
+	{ label: "800", l: 0.355, cRatio: 0.72 },
+	{ label: "900", l: 0.28, cRatio: 0.6 },
+	{ label: "950", l: 0.21, cRatio: 0.48 },
+];
 
 export function generatePalette(seed: SeedColor): GeneratedPalette {
 	const { h, c } = seed;
 
-	const ramp: RampStep[] = RAMP_L.map((l, i) => {
-		const s = swatch(l, chromaAt(l, c), h);
-		return { label: RAMP_LABELS[i], oklch: s.oklch, hex: s.hex };
+	const ramp: RampStep[] = RAMP_SPECS.map((spec) => {
+		const cStep = Math.min(c * spec.cRatio, 0.32);
+		const s = swatch(spec.l, cStep, h);
+		return { label: spec.label, oklch: s.oklch, hex: s.hex };
 	});
 
 	// 主色与强调：标准 shadcn 语义 token,每行独立值。

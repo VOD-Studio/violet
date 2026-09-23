@@ -127,90 +127,90 @@ function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 	);
 }
 
-function FunctionalSwatch({
-	color,
-	domain,
-	label,
-	textColor,
-	borderColor,
-}: {
-	color: SwatchColor;
-	domain: string;
-	label: string;
-	textColor?: string;
-	borderColor?: string;
-}) {
-	const [copied, setCopied] = useState(false);
-	const defaultInk = (parseOklch(color.oklch)?.l ?? 0.5) < 0.62 ? "text-white" : "text-slate-900";
-	return (
-		<button
-			className="group relative flex h-9 w-full items-center justify-center overflow-hidden rounded-lg font-mono text-[10px] font-semibold tracking-wide outline-none ring-1 ring-border/50 transition-[filter] duration-150 hover:brightness-105"
-			onClick={async () => {
-				if (await copyText(color.hex.toUpperCase())) {
-					setCopied(true);
-					toast.success(`已复制 ${label} ${domain}: ${color.hex.toUpperCase()}`);
-					setTimeout(() => setCopied(false), 1200);
-				}
-			}}
-			style={{
-				backgroundColor: color.hex,
-				color: textColor ?? undefined,
-				borderColor: borderColor ?? undefined,
-			}}
-			title={`${domain} · ${color.oklch}`}
-			type="button"
-		>
-			<span className={textColor ? "" : defaultInk}>
-				{copied ? "✓" : color.hex.toUpperCase()}
-			</span>
-		</button>
-	);
-}
+function SemanticStatusCard({ set }: { set: FunctionalColorSet }) {
+	const [copied, setCopied] = useState<string | null>(null);
 
-function FunctionalRow({ set }: { set: FunctionalColorSet }) {
+	const copyHex = async (hex: string, label: string) => {
+		if (await copyText(hex.toUpperCase())) {
+			setCopied(label);
+			toast.success(`已复制 ${set.name} ${label}: ${hex.toUpperCase()}`);
+			setTimeout(() => setCopied(null), 1200);
+		}
+	};
+
 	return (
-		<li className="grid grid-cols-[1fr_7.5rem_7.5rem] items-center gap-x-3 rounded-xl px-3 py-2 transition-colors duration-150 hover:bg-muted/40 sm:grid-cols-[1fr_12rem_12rem] sm:gap-x-4">
-			<div className="flex min-w-0 items-center gap-2">
-				<span
-					className="size-2.5 shrink-0 rounded-full"
+		<div className="flex flex-col justify-between rounded-xl border border-border/50 bg-card/60 p-4 transition-all duration-200 hover:border-border/80 hover:shadow-xs">
+			<div>
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<span
+							className="size-2.5 rounded-full ring-2 ring-black/5 dark:ring-white/10"
+							style={{ backgroundColor: set.light.solid.hex }}
+						/>
+						<span className="text-sm font-bold text-foreground">{set.name}</span>
+						<span className="text-xs text-muted-foreground">{set.note}</span>
+					</div>
+					<code className="font-mono text-xs text-muted-foreground">--{set.key}</code>
+				</div>
+
+				<button
+					aria-label={`${set.name} 浅色主色 ${set.light.solid.hex.toUpperCase()}`}
+					className="group relative mt-3.5 flex h-14 w-full cursor-pointer flex-col justify-end rounded-lg p-2.5 text-left outline-none transition-[filter] duration-150 hover:brightness-105"
+					onClick={() => void copyHex(set.light.solid.hex, "主色")}
 					style={{ backgroundColor: set.light.solid.hex }}
-				/>
-				<span className="shrink-0 text-xs font-semibold">{set.name}</span>
-				<code className="shrink-0 font-mono text-xs text-muted-foreground">
-					--{set.key}
-				</code>
-				<span className="hidden truncate text-xs text-muted-foreground md:inline">
-					· {set.note}
-				</span>
+					type="button"
+				>
+					<div className="flex items-center justify-between text-white">
+						<span className="font-mono text-xs font-semibold tracking-wider">
+							{set.light.solid.hex.toUpperCase()}
+						</span>
+						<span className="text-[10px] font-medium opacity-0 transition-opacity group-hover:opacity-100">
+							{copied === "主色" ? "✓ 已复制" : "点击复制"}
+						</span>
+					</div>
+				</button>
+
+				<button
+					aria-label={`${set.name} 浅染底色 ${set.light.wash.hex.toUpperCase()}`}
+					className="group relative mt-2 flex h-10 w-full cursor-pointer items-center justify-between rounded-lg border px-3 text-left outline-none transition-[filter] duration-150 hover:brightness-98"
+					onClick={() => void copyHex(set.light.wash.hex, "浅染面")}
+					style={{
+						backgroundColor: set.light.wash.hex,
+						borderColor: set.light.border.hex,
+						color: set.light.washForeground.hex,
+					}}
+					type="button"
+				>
+					<span className="text-xs font-medium">浅染面</span>
+					<span className="font-mono text-xs font-semibold">
+						{copied === "浅染面" ? "✓ 已复制" : set.light.wash.hex.toUpperCase()}
+					</span>
+				</button>
 			</div>
-			{/* 浅色域：实色 + 浅染 */}
-			<div className="grid grid-cols-2 gap-1.5">
-				<FunctionalSwatch color={set.light.solid} domain="浅色实色" label={set.name} />
-				<FunctionalSwatch
-					borderColor={set.light.border.hex}
-					color={set.light.wash}
-					domain="浅色浅染"
-					label={set.name}
-					textColor={set.light.washForeground.hex}
-				/>
+
+			<div className="mt-3.5 flex items-center justify-between border-t border-border/40 pt-2.5 text-[11px] text-muted-foreground">
+				<span>暗色模式</span>
+				<div className="flex items-center gap-1.5">
+					<button
+						className="size-4.5 rounded-sm ring-1 ring-border/60 hover:brightness-110"
+						onClick={() => void copyHex(set.dark.solid.hex, "暗色主色")}
+						style={{ backgroundColor: set.dark.solid.hex }}
+						title={`暗色主色: ${set.dark.solid.hex.toUpperCase()}`}
+						type="button"
+					/>
+					<button
+						className="size-4.5 rounded-sm border hover:brightness-110"
+						onClick={() => void copyHex(set.dark.wash.hex, "暗色浅染")}
+						style={{
+							backgroundColor: set.dark.wash.hex,
+							borderColor: set.dark.border.hex,
+						}}
+						title={`暗色浅染: ${set.dark.wash.hex.toUpperCase()}`}
+						type="button"
+					/>
+				</div>
 			</div>
-			{/* 深色域：实色 + 浅染 */}
-			<div className="grid grid-cols-2 gap-1.5">
-				<FunctionalSwatch
-					color={set.dark.solid}
-					domain="深色实色"
-					label={set.name}
-					textColor={set.dark.foreground.hex}
-				/>
-				<FunctionalSwatch
-					borderColor={set.dark.border.hex}
-					color={set.dark.wash}
-					domain="深色浅染"
-					label={set.name}
-					textColor={set.dark.washForeground.hex}
-				/>
-			</div>
-		</li>
+		</div>
 	);
 }
 
@@ -371,84 +371,128 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 				) : (
 					<div className="space-y-3">
 						{/* 成功状态 */}
-						<div
-							className="flex items-start gap-3 rounded-xl border p-3.5"
-							style={{
-								backgroundColor: successSet.light.wash.hex,
-								borderColor: successSet.light.border.hex,
-								color: successSet.light.washForeground.hex,
-							}}
-						>
-							<CheckCircle2
-								className="mt-0.5 size-4 shrink-0"
-								style={{ color: successSet.light.solid.hex }}
-							/>
-							<div className="min-w-0">
-								<h5 className="text-xs font-bold">操作成功</h5>
-								<p className="mt-0.5 text-xs opacity-90">
+						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
+							<div
+								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+								style={{
+									backgroundColor: `${successSet.light.solid.hex}15`,
+									color: successSet.light.solid.hex,
+								}}
+							>
+								<CheckCircle2 className="size-4" />
+							</div>
+							<div className="min-w-0 flex-1">
+								<div className="flex items-center gap-2">
+									<h5 className="text-xs font-semibold text-foreground">
+										操作成功
+									</h5>
+									<span
+										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+										style={{
+											backgroundColor: `${successSet.light.solid.hex}12`,
+											color: successSet.light.solid.hex,
+										}}
+									>
+										已同步
+									</span>
+								</div>
+								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
 									数据已正常更新并同步至各端。
 								</p>
 							</div>
 						</div>
 
 						{/* 警示状态 */}
-						<div
-							className="flex items-start gap-3 rounded-xl border p-3.5"
-							style={{
-								backgroundColor: warningSet.light.wash.hex,
-								borderColor: warningSet.light.border.hex,
-								color: warningSet.light.washForeground.hex,
-							}}
-						>
-							<AlertTriangle
-								className="mt-0.5 size-4 shrink-0"
-								style={{ color: warningSet.light.solid.hex }}
-							/>
-							<div className="min-w-0">
-								<h5 className="text-xs font-bold">待决变更</h5>
-								<p className="mt-0.5 text-xs opacity-90">
+						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
+							<div
+								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+								style={{
+									backgroundColor: `${warningSet.light.solid.hex}15`,
+									color: warningSet.light.solid.hex,
+								}}
+							>
+								<AlertTriangle className="size-4" />
+							</div>
+							<div className="min-w-0 flex-1">
+								<div className="flex items-center gap-2">
+									<h5 className="text-xs font-semibold text-foreground">
+										待决变更
+									</h5>
+									<span
+										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+										style={{
+											backgroundColor: `${warningSet.light.solid.hex}12`,
+											color: warningSet.light.solid.hex,
+										}}
+									>
+										需确认
+									</span>
+								</div>
+								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
 									部分配置尚未确认，切换分支前请先保存当前修改。
 								</p>
 							</div>
 						</div>
 
 						{/* 危险状态 */}
-						<div
-							className="flex items-start gap-3 rounded-xl border p-3.5"
-							style={{
-								backgroundColor: destructiveSet.light.wash.hex,
-								borderColor: destructiveSet.light.border.hex,
-								color: destructiveSet.light.washForeground.hex,
-							}}
-						>
-							<AlertCircle
-								className="mt-0.5 size-4 shrink-0"
-								style={{ color: destructiveSet.light.solid.hex }}
-							/>
-							<div className="min-w-0">
-								<h5 className="text-xs font-bold">阻断提醒</h5>
-								<p className="mt-0.5 text-xs opacity-90">
+						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
+							<div
+								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+								style={{
+									backgroundColor: `${destructiveSet.light.solid.hex}15`,
+									color: destructiveSet.light.solid.hex,
+								}}
+							>
+								<AlertCircle className="size-4" />
+							</div>
+							<div className="min-w-0 flex-1">
+								<div className="flex items-center gap-2">
+									<h5 className="text-xs font-semibold text-foreground">
+										阻断提醒
+									</h5>
+									<span
+										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+										style={{
+											backgroundColor: `${destructiveSet.light.solid.hex}12`,
+											color: destructiveSet.light.solid.hex,
+										}}
+									>
+										不可逆
+									</span>
+								</div>
+								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
 									此操作将永久清理选中项目，请再次核验目标对象。
 								</p>
 							</div>
 						</div>
 
 						{/* 提示状态 */}
-						<div
-							className="flex items-start gap-3 rounded-xl border p-3.5"
-							style={{
-								backgroundColor: infoSet.light.wash.hex,
-								borderColor: infoSet.light.border.hex,
-								color: infoSet.light.washForeground.hex,
-							}}
-						>
-							<Info
-								className="mt-0.5 size-4 shrink-0"
-								style={{ color: infoSet.light.solid.hex }}
-							/>
-							<div className="min-w-0">
-								<h5 className="text-xs font-bold">系统说明</h5>
-								<p className="mt-0.5 text-xs opacity-90">
+						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
+							<div
+								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+								style={{
+									backgroundColor: `${infoSet.light.solid.hex}15`,
+									color: infoSet.light.solid.hex,
+								}}
+							>
+								<Info className="size-4" />
+							</div>
+							<div className="min-w-0 flex-1">
+								<div className="flex items-center gap-2">
+									<h5 className="text-xs font-semibold text-foreground">
+										系统说明
+									</h5>
+									<span
+										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+										style={{
+											backgroundColor: `${infoSet.light.solid.hex}12`,
+											color: infoSet.light.solid.hex,
+										}}
+									>
+										提示
+									</span>
+								</div>
+								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
 									色相与彩度由固定语义模型解算，明暗双域自适应。
 								</p>
 							</div>
@@ -797,23 +841,18 @@ export function PaletteGenerator() {
 				viewport={{ margin: "-40px", once: true }}
 				whileInView={{ opacity: 1 }}
 			>
-				<h3 className="mt-10 text-lg font-bold">功能色</h3>
-				<ul className="mt-2 grid grid-cols-[1fr_8rem_8rem] gap-x-4 px-3 pb-1.5 sm:grid-cols-[1fr_12rem_12rem]">
-					<span className="font-mono text-[11px] text-muted-foreground">语义角色</span>
-					<span className="text-center font-mono text-[11px] text-muted-foreground">
-						浅色（实色 / 浅染）
+				<div className="mt-10 flex items-baseline justify-between">
+					<h3 className="text-lg font-bold">功能色</h3>
+					<span className="text-xs text-muted-foreground">
+						固定状态语义，提供核心强调与柔和浅染双层映射
 					</span>
-					<span className="text-center font-mono text-[11px] text-muted-foreground">
-						深色（实色 / 浅染）
-					</span>
-				</ul>
-				<ul className="mt-0 space-y-1">
+				</div>
+				<div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 					{palette.functionalSets.map((set) => (
-						<FunctionalRow key={set.key} set={set} />
+						<SemanticStatusCard key={set.key} set={set} />
 					))}
-				</ul>
+				</div>
 			</motion.section>
-
 			{/* 中性带 */}
 			<RoleBoard roles={palette.neutral} title="中性带" />
 
