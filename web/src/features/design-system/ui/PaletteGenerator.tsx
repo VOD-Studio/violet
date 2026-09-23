@@ -1,6 +1,7 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@shared/ui/color-picker";
+import { Segmented } from "@shared/ui/segmented";
 import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info } from "lucide-react";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
@@ -241,30 +242,15 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 		>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<h3 className="text-lg font-bold">组件试穿沙盒</h3>
-				<div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
-					<button
-						className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-							activeTab === "actions"
-								? "bg-card text-foreground shadow-xs"
-								: "text-muted-foreground hover:text-foreground"
-						}`}
-						onClick={() => setActiveTab("actions")}
-						type="button"
-					>
-						动作与控件
-					</button>
-					<button
-						className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-							activeTab === "alerts"
-								? "bg-card text-foreground shadow-xs"
-								: "text-muted-foreground hover:text-foreground"
-						}`}
-						onClick={() => setActiveTab("alerts")}
-						type="button"
-					>
-						状态反馈横幅
-					</button>
-				</div>
+				<Segmented<"actions" | "alerts">
+					onValueChange={setActiveTab}
+					segments={[
+						{ value: "actions", label: "动作与控件" },
+						{ value: "alerts", label: "状态反馈横幅" },
+					]}
+					size="sm"
+					value={activeTab}
+				/>
 			</div>
 
 			<div className="mt-4 rounded-2xl border border-border/40 bg-card/50 p-6">
@@ -550,30 +536,15 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<h3 className="text-lg font-bold">代码导出</h3>
 				<div className="flex items-center gap-2">
-					<div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
-						<button
-							className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-								exportFormat === "css"
-									? "bg-card text-foreground shadow-xs"
-									: "text-muted-foreground hover:text-foreground"
-							}`}
-							onClick={() => setExportFormat("css")}
-							type="button"
-						>
-							CSS 变量
-						</button>
-						<button
-							className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-								exportFormat === "tailwind"
-									? "bg-card text-foreground shadow-xs"
-									: "text-muted-foreground hover:text-foreground"
-							}`}
-							onClick={() => setExportFormat("tailwind")}
-							type="button"
-						>
-							Tailwind v4 @theme
-						</button>
-					</div>
+					<Segmented<"css" | "tailwind">
+						onValueChange={setExportFormat}
+						segments={[
+							{ value: "css", label: "CSS 变量" },
+							{ value: "tailwind", label: "Tailwind v4 @theme" },
+						]}
+						size="sm"
+						value={exportFormat}
+					/>
 					<button
 						className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted/60"
 						onClick={() => void handleCopy()}
