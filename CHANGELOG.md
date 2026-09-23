@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.42](https://github.com/VOD-Studio/violet/compare/v2.8.41...v2.8.42) (2026-09-23)
+
+
+### 新增
+
+* **design-system:** 营造法式页新增色板生成器与菜单工作台 ([#414](https://github.com/VOD-Studio/violet/issues/414)) ([27b842e](https://github.com/VOD-Studio/violet/commit/27b842e9a074096074a815de8186a06b038c6b8f))
+
 ## [2.8.41](https://github.com/VOD-Studio/violet/compare/v2.8.40...v2.8.41) (2026-09-22)
 
 
