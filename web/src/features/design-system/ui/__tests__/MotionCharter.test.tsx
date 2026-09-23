@@ -2,14 +2,17 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { MotionCharter } from "../MotionCharter";
 import {
+	AuroraGlow,
 	CheckmarkDraw,
 	CopyButton,
 	CounterBadge,
 	FadeIn,
 	HoldToConfirm,
+	InfiniteMarquee,
 	Magnetic,
 	NumberFlow,
 	PillSlider,
+	PulseDot,
 	QuoteLine,
 	TextReveal,
 	TextUnderline,
@@ -52,6 +55,9 @@ describe("动效章程自研动效库", () => {
 			"TextReveal · 逐词揭示",
 			"Stagger · 级联编排",
 			"NumberFlow · 数字滚动",
+			"InfiniteMarquee · 无缝走马灯",
+			"PulseDot · 呼吸状态光晕",
+			"AuroraGlow · 水墨弥散极光",
 			"BorderBeam · 流光边框",
 			"Shine · 微光扫影",
 		];
@@ -203,5 +209,28 @@ describe("动效章程自研动效库", () => {
 		expect(screen.getByText("波浪批注")).toBeTruthy();
 		fireEvent.mouseEnter(wrapper);
 		fireEvent.mouseLeave(wrapper);
+	});
+
+	it("InfiniteMarquee 渲染跑道内容", () => {
+		render(
+			<InfiniteMarquee>
+				<span>跑道标签</span>
+			</InfiniteMarquee>,
+		);
+		expect(screen.getAllByText("跑道标签").length).toBe(2);
+	});
+
+	it("PulseDot 渲染呼吸指示点", () => {
+		const { container } = render(<PulseDot color="var(--primary)" size={8} />);
+		expect(container.querySelector("span")).toBeTruthy();
+	});
+
+	it("AuroraGlow 渲染水墨弥散内容", () => {
+		render(
+			<AuroraGlow>
+				<span>弥散内容</span>
+			</AuroraGlow>,
+		);
+		expect(screen.getByText("弥散内容")).toBeTruthy();
 	});
 });

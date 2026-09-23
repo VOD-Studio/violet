@@ -1,15 +1,18 @@
 import { type ReactNode, useState } from "react";
 import {
+	AuroraGlow,
 	BorderBeam,
 	CheckmarkDraw,
 	CopyButton,
 	CounterBadge,
 	FadeIn,
 	HoldToConfirm,
+	InfiniteMarquee,
 	InkRipple,
 	Magnetic,
 	NumberFlow,
 	PillSlider,
+	PulseDot,
 	QuoteLine,
 	ScaleIn,
 	Shake,
@@ -447,19 +450,75 @@ export function MotionCharter() {
 
 			<div>
 				<div className="mb-4">
-					<h4 className="text-base font-bold tracking-wide">三、质感氛围类动效</h4>
+					<h4 className="text-base font-bold tracking-wide">
+						三、氛围与持续动效（舞台级常驻循环）
+					</h4>
 					<p className="mt-1 text-xs text-muted-foreground">
-						流光微澜，纯 CSS 循环合成，无须 JavaScript 占用线程。
+						无须交互介入、全时段在后台静默运转的生命感原语，GPU 合成层 0 线程占用。
 					</p>
 				</div>
 				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+					<EffectCard
+						name="InfiniteMarquee · 无缝走马灯"
+						note="元素静默匀速首尾循环流动，悬停驻留，两端渐变羽化。"
+						usage="<InfiniteMarquee speed={24}>{items}</InfiniteMarquee>"
+					>
+						{() => (
+							<InfiniteMarquee speed={18} className="w-full max-w-sm py-2">
+								{["一花一叶", "营造法式", "东坡题跋", "兰亭修禊", "墨池遗韵"].map(
+									(tag) => (
+										<span
+											key={tag}
+											className="rounded-full border border-border/40 bg-card px-3 py-1 font-serif text-xs text-muted-foreground shadow-2xs"
+										>
+											{tag}
+										</span>
+									),
+								)}
+							</InfiniteMarquee>
+						)}
+					</EffectCard>
+
+					<EffectCard
+						name="PulseDot · 呼吸状态光晕"
+						note="同心水波向外脉冲呼吸扩散，用于在线状态与活体进程指示。"
+						usage="<PulseDot color='var(--primary)' size={8} />"
+					>
+						{() => (
+							<div className="flex items-center gap-6">
+								<div className="flex items-center gap-2 text-xs text-muted-foreground">
+									<PulseDot color="var(--primary)" size={8} />
+									<span>系统运行中</span>
+								</div>
+								<div className="flex items-center gap-2 text-xs text-muted-foreground">
+									<PulseDot color="#10b981" size={8} />
+									<span>实时同步</span>
+								</div>
+							</div>
+						)}
+					</EffectCard>
+
+					<EffectCard
+						name="AuroraGlow · 水墨弥散极光"
+						note="双色柔光斑在后台缓慢浮动漫游，提供舞台级生命质感。"
+						usage="<AuroraGlow>{children}</AuroraGlow>"
+					>
+						{() => (
+							<AuroraGlow className="w-full max-w-xs text-center">
+								<span className="font-serif text-xs font-semibold tracking-wider text-foreground">
+									水墨漫游 · 极光流动
+								</span>
+							</AuroraGlow>
+						)}
+					</EffectCard>
+
 					<EffectCard
 						name="BorderBeam · 流光边框"
 						note="一道纯 CSS 光斑沿边框环绕，用于焦点态与特性卡。"
 						usage="<BorderBeam duration={4}>{children}</BorderBeam>"
 					>
-						{(key) => (
-							<BorderBeam key={key}>
+						{() => (
+							<BorderBeam duration={4}>
 								<div className="rounded-xl px-4 py-3 text-sm font-medium">
 									流光环绕
 								</div>
@@ -480,7 +539,6 @@ export function MotionCharter() {
 					</EffectCard>
 				</div>
 			</div>
-
 			<div className="grid grid-cols-1 gap-x-6 gap-y-3 border-t border-border/40 py-6 sm:grid-cols-[10rem_1fr]">
 				<h4 className="text-base font-bold">既有体系</h4>
 				<ul className="space-y-1.5 text-sm text-muted-foreground">

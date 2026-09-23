@@ -1108,3 +1108,142 @@ export function CounterBadge({ count, className }: CounterBadgeProps) {
 		</span>
 	);
 }
+
+export interface InfiniteMarqueeProps {
+	/** 流动速度（完整循环一周时长，秒，默认 24） */
+	speed?: number;
+	/** 悬停是否暂停流动（默认 true） */
+	pauseOnHover?: boolean;
+	/** 是否反向流动 */
+	reverse?: boolean;
+	/** 两端是否有渐变羽化遮罩（默认 true） */
+	fadeEdges?: boolean;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 无缝走马灯：元素静默匀速首尾循环流动，悬停驻留，两端渐变羽化。 */
+export function InfiniteMarquee({
+	speed = 24,
+	pauseOnHover = true,
+	reverse = false,
+	fadeEdges = true,
+	className,
+	children,
+}: InfiniteMarqueeProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<div
+			className={cn(
+				"group relative overflow-hidden select-none",
+				fadeEdges && [
+					"[mask-image:linear-gradient(to_right,transparent_0%,black_10%,black_90%,transparent_100%)]",
+					"[-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_10%,black_90%,transparent_100%)]",
+				],
+				className,
+			)}
+		>
+			<div
+				className={cn(
+					"flex w-max items-center gap-4",
+					pauseOnHover && "group-hover:[animation-play-state:paused]",
+				)}
+				style={{
+					animation: reduce
+						? "none"
+						: `marquee-slide ${speed}s linear infinite ${reverse ? "reverse" : "normal"}`,
+				}}
+			>
+				<div className="flex shrink-0 items-center gap-4">{children}</div>
+				<div className="flex shrink-0 items-center gap-4" aria-hidden="true">
+					{children}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export interface PulseDotProps {
+	/** 圆点颜色（默认 var(--primary)） */
+	color?: string;
+	/** 圆点直径（像素，默认 8） */
+	size?: number;
+	className?: string;
+}
+
+/** 呼吸状态光晕：同心水波向外脉冲扩散，用于在线状态与活体进程指示。 */
+export function PulseDot({ color = "var(--primary)", size = 8, className }: PulseDotProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<span
+			className={cn(
+				"relative inline-flex items-center justify-center align-middle",
+				className,
+			)}
+			style={{ width: `${size * 2}px`, height: `${size * 2}px` }}
+		>
+			{!reduce && (
+				<span
+					aria-hidden
+					className="absolute inset-0 rounded-full"
+					style={{
+						backgroundColor: color,
+						animation: "pulse-ring 2s cubic-bezier(0.16, 1, 0.3, 1) infinite",
+					}}
+				/>
+			)}
+			<span
+				className="relative rounded-full shadow-xs"
+				style={{
+					width: `${size}px`,
+					height: `${size}px`,
+					backgroundColor: color,
+				}}
+			/>
+		</span>
+	);
+}
+
+export interface AuroraGlowProps {
+	className?: string;
+	children?: ReactNode;
+}
+
+/** 水墨弥散极光：双色柔光斑在后台缓慢浮动漫游，提供舞台级生命质感。 */
+export function AuroraGlow({ className, children }: AuroraGlowProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<div
+			className={cn(
+				"relative overflow-hidden rounded-xl border border-border/40 bg-card p-4",
+				className,
+			)}
+		>
+			{!reduce && (
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-0 overflow-hidden opacity-35 dark:opacity-20"
+				>
+					<div
+						className="absolute -top-1/4 -left-1/4 h-3/4 w-3/4 rounded-full blur-2xl"
+						style={{
+							backgroundColor: "var(--primary)",
+							animation: "aurora-float-1 9s ease-in-out infinite",
+						}}
+					/>
+					<div
+						className="absolute -bottom-1/4 -right-1/4 h-3/4 w-3/4 rounded-full blur-2xl"
+						style={{
+							backgroundColor: "color-mix(in srgb, var(--primary) 40%, #ec4899)",
+							animation: "aurora-float-2 11s ease-in-out infinite",
+						}}
+					/>
+				</div>
+			)}
+			<div className="relative z-10">{children}</div>
+		</div>
+	);
+}
