@@ -52,8 +52,20 @@ describe("色板生成器", () => {
 		expect(other.neutral[0].light.oklch).not.toBe(palette.neutral[0].light.oklch);
 	});
 
-	it("功能色为固定行为语义，不随种子更迭", () => {
+	it("功能色为固定行为语义，不随种子更迭，且具备完整的实色与浅染层级", () => {
 		const other = generatePalette({ h: 120, c: 0.3 });
 		expect(other.functional).toEqual(palette.functional);
+		expect(palette.functionalSets.map((s) => s.key)).toEqual([
+			"info",
+			"success",
+			"warning",
+			"destructive",
+		]);
+		for (const set of palette.functionalSets) {
+			expect(set.light.solid.hex).toMatch(/^#[0-9a-f]{6}$/);
+			expect(set.light.wash.hex).toMatch(/^#[0-9a-f]{6}$/);
+			expect(set.dark.solid.hex).toMatch(/^#[0-9a-f]{6}$/);
+			expect(set.dark.wash.hex).toMatch(/^#[0-9a-f]{6}$/);
+		}
 	});
 });

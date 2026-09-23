@@ -1,17 +1,32 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@shared/ui/color-picker";
-import { motion } from "framer-motion";
+import {
+	AlertCircle,
+	AlertTriangle,
+	Check,
+	CheckCircle2,
+	Copy,
+	Info,
+	Sparkles,
+} from "lucide-react";
+import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { RampStep, RoleColor, SwatchColor } from "../model/palette";
+import type {
+	FunctionalColorSet,
+	GeneratedPalette,
+	RampStep,
+	RoleColor,
+	SwatchColor,
+} from "../model/palette";
 import { generatePalette } from "../model/palette";
 
-// 备选主色里的两枚站内典藏：现役冷香紫罗兰与曾用暖珊瑚（值取自各自 palette 定义）
+// 备选主色里的两枚站内典藏：现役冷香紫罗兰与曾用暖珊瑚
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
 const CORAL_SEED = oklchToRgb(0.625, 0.19, 25).hex;
 
-/** 主色速选：站内典藏在前，拿不准时一键落到一枚顺眼的主色 */
+/** 主色速选预设库 */
 const SEED_PRESETS = [
 	{ hex: VIOLET_SEED, name: "紫罗兰 · 现役预设" },
 	{ hex: CORAL_SEED, name: "暖珊瑚 · 曾用预设" },
@@ -26,8 +41,6 @@ const SEED_PRESETS = [
 
 const DEFAULT_SEED = "#2563eb";
 
-const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
-
 function SwatchButton({
 	color,
 	domain,
@@ -39,11 +52,10 @@ function SwatchButton({
 	copied: boolean;
 	onPick: () => void;
 }) {
-	// 墨色随色块自身明度切换：主题 token 在深浅域会失配
 	const ink = (parseOklch(color.oklch)?.l ?? 0.5) < 0.62 ? "text-white" : "text-slate-900";
 	return (
 		<button
-			className={`relative h-9 w-full overflow-hidden rounded-lg outline-none ring-1 ring-border/60 transition-[filter] duration-300 ease-out hover:brightness-110 ${ink}`}
+			className={`relative h-9 w-full overflow-hidden rounded-lg outline-none ring-1 ring-border/60 transition-[filter] duration-200 ease-out hover:brightness-105 ${ink}`}
 			onClick={onPick}
 			style={{ backgroundColor: color.hex }}
 			title={`${domain} · ${color.oklch}`}
@@ -51,7 +63,7 @@ function SwatchButton({
 		>
 			<span
 				aria-hidden={copied}
-				className={`absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide transition-opacity duration-200 ease-out ${
+				className={`absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide transition-opacity duration-150 ease-out ${
 					copied ? "opacity-100" : "opacity-0 group-hover:opacity-100"
 				}`}
 			>
@@ -62,32 +74,32 @@ function SwatchButton({
 }
 
 function RoleRow({ role }: { role: RoleColor }) {
-	const [copied, setCopied] = useState(false);
+	const [copiedDomain, setCopiedDomain] = useState<"light" | "dark" | null>(null);
 	const pick = async (domain: "light" | "dark") => {
 		const hex = role[domain].hex.toUpperCase();
 		if (await copyText(hex)) {
 			toast.success(`已复制 ${role.role} ${domain === "light" ? "浅色" : "深色"}: ${hex}`);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1200);
+			setCopiedDomain(domain);
+			setTimeout(() => setCopiedDomain(null), 1200);
 		}
 	};
 	return (
 		<li className="group grid grid-cols-[1fr_6.5rem_6.5rem] items-center gap-x-4 rounded-xl px-3 py-2 transition-colors duration-200 ease-out hover:bg-muted/40 sm:grid-cols-[1fr_9rem_9rem]">
 			<div className="min-w-0">
-				<code className="font-mono text-xs">{role.role}</code>
+				<code className="font-mono text-xs font-medium">{role.role}</code>
 				{role.note ? (
 					<span className="ml-2 text-xs text-muted-foreground">{role.note}</span>
 				) : null}
 			</div>
 			<SwatchButton
 				color={role.light}
-				copied={copied}
+				copied={copiedDomain === "light"}
 				domain="浅"
 				onPick={() => void pick("light")}
 			/>
 			<SwatchButton
 				color={role.dark}
-				copied={copied}
+				copied={copiedDomain === "dark"}
 				domain="深"
 				onPick={() => void pick("dark")}
 			/>
@@ -100,8 +112,8 @@ function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 	return (
 		<motion.section
 			initial={{ opacity: 0 }}
-			transition={{ duration: 0.45, ease: "easeOut" }}
-			viewport={{ margin: "-60px", once: true }}
+			transition={{ duration: 0.35, ease: "easeOut" }}
+			viewport={{ margin: "-40px", once: true }}
 			whileInView={{ opacity: 1 }}
 		>
 			<h3 className="mt-10 text-lg font-bold">{title}</h3>
@@ -124,20 +136,521 @@ function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 }
 
 /**
+ * 完整功能色展台：展示 Solid 实色面、Wash 浅染底、Foreground 文字及描边的明暗对比。
+ */
+function FunctionalSpecimenCard({ set }: { set: FunctionalColorSet }) {
+	const [copiedType, setCopiedType] = useState<string | null>(null);
+
+	const handleCopy = async (hex: string, label: string) => {
+		if (await copyText(hex.toUpperCase())) {
+			setCopiedType(label);
+			toast.success(`已复制 ${set.name} ${label}: ${hex.toUpperCase()}`);
+			setTimeout(() => setCopiedType(null), 1200);
+		}
+	};
+
+	return (
+		<div className="rounded-xl border border-border/40 bg-card/40 p-4 transition-colors duration-200">
+			<div className="flex items-baseline justify-between gap-2">
+				<div className="flex items-center gap-2">
+					<span
+						className="size-3 shrink-0 rounded-full"
+						style={{ backgroundColor: set.light.solid.hex }}
+					/>
+					<h4 className="text-sm font-semibold">{set.name}</h4>
+					<code className="font-mono text-xs text-muted-foreground">--{set.key}</code>
+				</div>
+				<span className="text-xs text-muted-foreground">{set.note}</span>
+			</div>
+
+			<div className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+				{/* 浅色域 */}
+				<div className="space-y-2 rounded-lg border border-border/40 bg-background/60 p-2.5">
+					<span className="block font-mono text-[10px] text-muted-foreground">
+						浅色模式 · Light
+					</span>
+					<button
+						className="flex h-9 w-full items-center justify-between rounded-md px-3 font-mono text-xs font-medium text-white transition-opacity hover:opacity-90"
+						onClick={() => void handleCopy(set.light.solid.hex, "浅色实色")}
+						style={{ backgroundColor: set.light.solid.hex }}
+						type="button"
+					>
+						<span>实色 Solid</span>
+						<span>
+							{copiedType === "浅色实色" ? "✓" : set.light.solid.hex.toUpperCase()}
+						</span>
+					</button>
+					<button
+						className="flex h-9 w-full items-center justify-between rounded-md border px-3 font-mono text-xs font-medium transition-opacity hover:opacity-90"
+						onClick={() => void handleCopy(set.light.wash.hex, "浅色浅染底")}
+						style={{
+							backgroundColor: set.light.wash.hex,
+							borderColor: set.light.border.hex,
+							color: set.light.washForeground.hex,
+						}}
+						type="button"
+					>
+						<span>浅染 Wash</span>
+						<span>
+							{copiedType === "浅色浅染底" ? "✓" : set.light.wash.hex.toUpperCase()}
+						</span>
+					</button>
+				</div>
+
+				{/* 深色域 */}
+				<div className="space-y-2 rounded-lg border border-border/40 bg-slate-950/80 p-2.5">
+					<span className="block font-mono text-[10px] text-slate-400">
+						深色模式 · Dark
+					</span>
+					<button
+						className="flex h-9 w-full items-center justify-between rounded-md px-3 font-mono text-xs font-medium transition-opacity hover:opacity-90"
+						onClick={() => void handleCopy(set.dark.solid.hex, "深色实色")}
+						style={{
+							backgroundColor: set.dark.solid.hex,
+							color: set.dark.foreground.hex,
+						}}
+						type="button"
+					>
+						<span>实色 Solid</span>
+						<span>
+							{copiedType === "深色实色" ? "✓" : set.dark.solid.hex.toUpperCase()}
+						</span>
+					</button>
+					<button
+						className="flex h-9 w-full items-center justify-between rounded-md border px-3 font-mono text-xs font-medium transition-opacity hover:opacity-90"
+						onClick={() => void handleCopy(set.dark.wash.hex, "深色浅染底")}
+						style={{
+							backgroundColor: set.dark.wash.hex,
+							borderColor: set.dark.border.hex,
+							color: set.dark.washForeground.hex,
+						}}
+						type="button"
+					>
+						<span>浅染 Wash</span>
+						<span>
+							{copiedType === "深色浅染底" ? "✓" : set.dark.wash.hex.toUpperCase()}
+						</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/**
+ * 实时组件试穿沙盒：将当前色彩算法推导的主色、强调色、功能色动态注入真实组件样例。
+ */
+function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
+	const primaryLight = palette.primaryRoles[0].light.hex;
+	const primaryFgLight = palette.primaryRoles[2].light.hex;
+	const accentLight = palette.primaryRoles[3].light.hex;
+	const accentFgLight = palette.primaryRoles[4].light.hex;
+
+	const [switchOn, setSwitchOn] = useState(true);
+	const [activeTab, setActiveTab] = useState<"actions" | "alerts">("actions");
+
+	const { functionalSets } = palette;
+	const infoSet = functionalSets.find((s) => s.key === "info") ?? functionalSets[0];
+	const successSet = functionalSets.find((s) => s.key === "success") ?? functionalSets[1];
+	const warningSet = functionalSets.find((s) => s.key === "warning") ?? functionalSets[2];
+	const destructiveSet = functionalSets.find((s) => s.key === "destructive") ?? functionalSets[3];
+
+	return (
+		<motion.section
+			className="mt-10"
+			initial={{ opacity: 0 }}
+			transition={{ duration: 0.35, ease: "easeOut" }}
+			viewport={{ margin: "-40px", once: true }}
+			whileInView={{ opacity: 1 }}
+		>
+			<div className="flex flex-wrap items-baseline justify-between gap-2">
+				<div>
+					<h3 className="text-lg font-bold">组件试穿沙盒</h3>
+					<p className="mt-1 text-xs text-muted-foreground">
+						所见即所得：当前推导的品牌主色、强调色与升级功能色在此刻直接驱动真实界面组件。
+					</p>
+				</div>
+				<div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
+					<button
+						className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+							activeTab === "actions"
+								? "bg-card text-foreground shadow-xs"
+								: "text-muted-foreground hover:text-foreground"
+						}`}
+						onClick={() => setActiveTab("actions")}
+						type="button"
+					>
+						动作与控件
+					</button>
+					<button
+						className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+							activeTab === "alerts"
+								? "bg-card text-foreground shadow-xs"
+								: "text-muted-foreground hover:text-foreground"
+						}`}
+						onClick={() => setActiveTab("alerts")}
+						type="button"
+					>
+						状态反馈横幅
+					</button>
+				</div>
+			</div>
+
+			<div className="mt-4 rounded-2xl border border-border/40 bg-card/50 p-6">
+				{activeTab === "actions" ? (
+					<div className="space-y-6">
+						{/* 按钮群组 */}
+						<div>
+							<span className="block text-xs font-medium text-muted-foreground">
+								按钮与动作层级（Action Hierarchy）
+							</span>
+							<div className="mt-3 flex flex-wrap items-center gap-3">
+								<button
+									className="rounded-lg px-4 py-2 text-xs font-semibold shadow-xs transition-opacity hover:opacity-90"
+									style={{ backgroundColor: primaryLight, color: primaryFgLight }}
+									type="button"
+								>
+									主要动作 Primary
+								</button>
+								<button
+									className="rounded-lg px-4 py-2 text-xs font-medium transition-colors"
+									style={{ backgroundColor: accentLight, color: accentFgLight }}
+									type="button"
+								>
+									淡染强调 Accent
+								</button>
+								<button
+									className="rounded-lg border px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/40"
+									style={{ borderColor: primaryLight, color: primaryLight }}
+									type="button"
+								>
+									轮廓动作 Outline
+								</button>
+								<button
+									className="rounded-lg px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+									type="button"
+								>
+									幽灵动作 Ghost
+								</button>
+								<button
+									className="cursor-not-allowed rounded-lg border border-border/40 bg-muted/30 px-4 py-2 text-xs text-muted-foreground/60"
+									disabled
+									type="button"
+								>
+									禁用动作 Disabled
+								</button>
+							</div>
+						</div>
+
+						{/* 徽章胶囊与控件 */}
+						<div className="grid grid-cols-1 gap-6 border-t border-border/40 pt-4 sm:grid-cols-2">
+							<div>
+								<span className="block text-xs font-medium text-muted-foreground">
+									药丸徽章（Pills & Tags）
+								</span>
+								<div className="mt-3 flex flex-wrap items-center gap-2">
+									<span
+										className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+										style={{
+											backgroundColor: primaryLight,
+											color: primaryFgLight,
+										}}
+									>
+										主色徽标
+									</span>
+									<span
+										className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+										style={{
+											backgroundColor: accentLight,
+											color: accentFgLight,
+										}}
+									>
+										淡染胶囊
+									</span>
+									<span
+										className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
+										style={{ borderColor: primaryLight, color: primaryLight }}
+									>
+										描边标签
+									</span>
+								</div>
+							</div>
+
+							<div>
+								<span className="block text-xs font-medium text-muted-foreground">
+									表单与焦点环（Focus & Controls）
+								</span>
+								<div className="mt-3 flex items-center gap-4">
+									<input
+										className="h-8 w-44 rounded-md border border-border/60 bg-transparent px-2.5 text-xs outline-none transition-shadow"
+										placeholder="带焦点环的输入框..."
+										style={{
+											boxShadow: `0 0 0 1.5px ${primaryLight}`,
+										}}
+										type="text"
+									/>
+									<button
+										aria-label="沙盒开关状态"
+										className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out"
+										onClick={() => setSwitchOn(!switchOn)}
+										style={{
+											backgroundColor: switchOn ? primaryLight : undefined,
+										}}
+										type="button"
+									>
+										<span
+											className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+												switchOn ? "translate-x-4.5" : "translate-x-0.5"
+											} mt-0.5`}
+										/>
+									</button>
+									<span className="text-xs text-muted-foreground">
+										{switchOn ? "激活状态" : "关闭状态"}
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				) : (
+					<div className="space-y-3">
+						{/* 成功状态 */}
+						<div
+							className="flex items-start gap-3 rounded-xl border p-3.5"
+							style={{
+								backgroundColor: successSet.light.wash.hex,
+								borderColor: successSet.light.border.hex,
+								color: successSet.light.washForeground.hex,
+							}}
+						>
+							<CheckCircle2
+								className="mt-0.5 size-4 shrink-0"
+								style={{ color: successSet.light.solid.hex }}
+							/>
+							<div className="min-w-0">
+								<h5 className="text-xs font-bold">发布成功 · 状态正常更新</h5>
+								<p className="mt-0.5 text-xs opacity-90">
+									新配色算法已自动重算 WCAG 对比度并合拢至全站样式映射层。
+								</p>
+							</div>
+						</div>
+
+						{/* 警示状态 */}
+						<div
+							className="flex items-start gap-3 rounded-xl border p-3.5"
+							style={{
+								backgroundColor: warningSet.light.wash.hex,
+								borderColor: warningSet.light.border.hex,
+								color: warningSet.light.washForeground.hex,
+							}}
+						>
+							<AlertTriangle
+								className="mt-0.5 size-4 shrink-0"
+								style={{ color: warningSet.light.solid.hex }}
+							/>
+							<div className="min-w-0">
+								<h5 className="text-xs font-bold">待决变更 · 建议校验明暗双域</h5>
+								<p className="mt-0.5 text-xs opacity-90">
+									暖琥珀金已取代旧式泥黄，在亮浅白底与黑曜暗底上均具备优良识别率。
+								</p>
+							</div>
+						</div>
+
+						{/* 危险状态 */}
+						<div
+							className="flex items-start gap-3 rounded-xl border p-3.5"
+							style={{
+								backgroundColor: destructiveSet.light.wash.hex,
+								borderColor: destructiveSet.light.border.hex,
+								color: destructiveSet.light.washForeground.hex,
+							}}
+						>
+							<AlertCircle
+								className="mt-0.5 size-4 shrink-0"
+								style={{ color: destructiveSet.light.solid.hex }}
+							/>
+							<div className="min-w-0">
+								<h5 className="text-xs font-bold">阻断操作 · 不可逆变更确认</h5>
+								<p className="mt-0.5 text-xs opacity-90">
+									删除文章或解散项目等破坏性动作将严格触发防误触保护。
+								</p>
+							</div>
+						</div>
+
+						{/* 提示状态 */}
+						<div
+							className="flex items-start gap-3 rounded-xl border p-3.5"
+							style={{
+								backgroundColor: infoSet.light.wash.hex,
+								borderColor: infoSet.light.border.hex,
+								color: infoSet.light.washForeground.hex,
+							}}
+						>
+							<Info
+								className="mt-0.5 size-4 shrink-0"
+								style={{ color: infoSet.light.solid.hex }}
+							/>
+							<div className="min-w-0">
+								<h5 className="text-xs font-bold">系统广播 · 色彩科学说明</h5>
+								<p className="mt-0.5 text-xs opacity-90">
+									基于 OKLCH 空间进行等感知亮度调校，杜绝传统 sRGB
+									坐标下的色偏与脏色。
+								</p>
+							</div>
+						</div>
+					</div>
+				)}
+			</div>
+		</motion.section>
+	);
+}
+
+/**
+ * 代码导出工作台：生成标准 CSS Variables 或 Tailwind v4 @theme inline 声明代码。
+ */
+function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; seedHex: string }) {
+	const [exportFormat, setExportFormat] = useState<"css" | "tailwind">("css");
+	const [copied, setCopied] = useState(false);
+
+	const code = useMemo(() => {
+		if (exportFormat === "css") {
+			return `/* —— Violet 色板配置 (主色: ${seedHex.toUpperCase()}) —— */
+:root {
+  --brand: ${palette.primaryRoles[0].light.oklch};
+  --brand-foreground: ${palette.primaryRoles[2].light.oklch};
+  --brand-hover: ${palette.primaryRoles[1].light.oklch};
+  --brand-wash: ${palette.primaryRoles[3].light.oklch};
+  --brand-wash-foreground: ${palette.primaryRoles[4].light.oklch};
+  --brand-ring: ${palette.primaryRoles[0].light.oklch};
+
+  /* 状态功能色 */
+  --destructive: ${palette.functional[3].light.oklch};
+  --warning: ${palette.functional[2].light.oklch};
+  --success: ${palette.functional[1].light.oklch};
+  --info: ${palette.functional[0].light.oklch};
+}
+
+.dark {
+  --brand: ${palette.primaryRoles[0].dark.oklch};
+  --brand-foreground: ${palette.primaryRoles[2].dark.oklch};
+  --brand-hover: ${palette.primaryRoles[1].dark.oklch};
+  --brand-wash: ${palette.primaryRoles[3].dark.oklch};
+  --brand-wash-foreground: ${palette.primaryRoles[4].dark.oklch};
+  --brand-ring: ${palette.primaryRoles[0].dark.oklch};
+
+  /* 状态功能色 */
+  --destructive: ${palette.functional[3].dark.oklch};
+  --warning: ${palette.functional[2].dark.oklch};
+  --success: ${palette.functional[1].dark.oklch};
+  --info: ${palette.functional[0].dark.oklch};
+}`;
+		}
+
+		return `/* —— Tailwind CSS v4 色阶定义 —— */
+@theme inline {
+  --color-brand-50: ${palette.ramp[0].hex};
+  --color-brand-100: ${palette.ramp[1].hex};
+  --color-brand-200: ${palette.ramp[2].hex};
+  --color-brand-300: ${palette.ramp[3].hex};
+  --color-brand-400: ${palette.ramp[4].hex};
+  --color-brand-500: ${palette.ramp[5].hex};
+  --color-brand-600: ${palette.ramp[6].hex};
+  --color-brand-700: ${palette.ramp[7].hex};
+  --color-brand-800: ${palette.ramp[8].hex};
+  --color-brand-900: ${palette.ramp[9].hex};
+  --color-brand-950: ${palette.ramp[10].hex};
+}`;
+	}, [exportFormat, palette, seedHex]);
+
+	const handleCopy = async () => {
+		if (await copyText(code)) {
+			setCopied(true);
+			toast.success("已复制色板代码到剪贴板");
+			setTimeout(() => setCopied(false), 1500);
+		}
+	};
+
+	return (
+		<motion.section
+			className="mt-10"
+			initial={{ opacity: 0 }}
+			transition={{ duration: 0.35, ease: "easeOut" }}
+			viewport={{ margin: "-40px", once: true }}
+			whileInView={{ opacity: 1 }}
+		>
+			<div className="flex flex-wrap items-baseline justify-between gap-2">
+				<div>
+					<h3 className="text-lg font-bold">代码导出</h3>
+					<p className="mt-1 text-xs text-muted-foreground">
+						色板推导完成，一键导出为标准工程代码，粘贴至样式定义即可直接生效。
+					</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
+						<button
+							className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+								exportFormat === "css"
+									? "bg-card text-foreground shadow-xs"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+							onClick={() => setExportFormat("css")}
+							type="button"
+						>
+							CSS 变量
+						</button>
+						<button
+							className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+								exportFormat === "tailwind"
+									? "bg-card text-foreground shadow-xs"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+							onClick={() => setExportFormat("tailwind")}
+							type="button"
+						>
+							Tailwind v4 @theme
+						</button>
+					</div>
+					<button
+						className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted/60"
+						onClick={() => void handleCopy()}
+						type="button"
+					>
+						{copied ? (
+							<Check className="size-3.5 text-success" />
+						) : (
+							<Copy className="size-3.5" />
+						)}
+						<span>{copied ? "已复制" : "复制代码"}</span>
+					</button>
+				</div>
+			</div>
+
+			<div className="mt-3 overflow-hidden rounded-xl border border-border/40 bg-slate-950 p-4 text-slate-200">
+				<pre className="overflow-x-auto font-mono text-xs leading-relaxed">
+					<code>{code}</code>
+				</pre>
+			</div>
+		</motion.section>
+	);
+}
+
+/**
  * 色板生成器章内容：给一个主色，色阶、主色与强调、功能色、中性带
  * 全部由此推导（明暗双域并列预览），核心配对附 WCAG 对比度审计。
  */
 export function PaletteGenerator() {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
+	const [hexInput, setHexInput] = useState(DEFAULT_SEED);
 	const [hoverRamp, setHoverRamp] = useState<string | null>(null);
 	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
+
 	const palette = useMemo(() => {
 		const parsed = hexToOklch(seedHex);
 		const h = Math.round(parsed?.h ?? 222);
 		// 彩度钳到可入界面的克制区间；取到近灰主色时整板随之素净
-		const c = clamp(parsed?.c ?? 0.16, 0.04, 0.3);
+		const c = Math.min(Math.max(parsed?.c ?? 0.16, 0.04), 0.3);
 		return generatePalette({ h, c });
 	}, [seedHex]);
+
 	const seed = hexToOklch(seedHex);
 
 	const pickRamp = async (step: RampStep) => {
@@ -149,90 +662,220 @@ export function PaletteGenerator() {
 		}
 	};
 
+	const applyHexInput = (val: string) => {
+		setHexInput(val);
+		if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+			setSeedHex(val);
+		}
+	};
+
 	return (
 		<div className="mt-8">
+			{/* 主控制台 Deck */}
 			<div className="rounded-2xl border border-border/40 bg-card/50 p-6">
-				<div className="flex flex-wrap items-start gap-x-10 gap-y-5">
-					<div className="flex items-center gap-4">
-						<div
-							className="size-16 shrink-0 rounded-2xl ring-1 ring-border transition-colors duration-300 ease-out"
-							style={{ backgroundColor: seedHex }}
-						/>
+				<div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+					{/* 左侧：主色标本与参数 */}
+					<div className="flex flex-col justify-between space-y-4 lg:col-span-5">
 						<div>
-							<p className="text-base font-bold">主色</p>
-							<code className="block font-mono text-xs text-muted-foreground tabular-nums">
-								{seedHex.toUpperCase()}
-							</code>
-							<code className="block font-mono text-xs text-muted-foreground tabular-nums">
-								{seed
-									? `oklch(${seed.l.toFixed(3)} ${seed.c.toFixed(3)} ${seed.h.toFixed(1)})`
-									: "—"}
-							</code>
-							<p className="mt-1 text-xs text-muted-foreground">
-								给一个主色，其余全部由此推导。
+							<div className="flex items-center justify-between">
+								<p className="text-sm font-bold text-foreground">
+									主色种子 Specimen
+								</p>
+								<span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+									<Sparkles className="size-3 text-primary" />
+									生成源头
+								</span>
+							</div>
+							<div
+								className="mt-3 flex h-28 w-full flex-col justify-end rounded-xl p-4 shadow-xs ring-1 ring-black/5 transition-colors duration-200"
+								style={{ backgroundColor: seedHex }}
+							>
+								<div className="flex items-baseline justify-between">
+									<code
+										className={`font-mono text-xl font-bold tracking-wider ${
+											(seed?.l ?? 0.5) < 0.65
+												? "text-white"
+												: "text-slate-900"
+										}`}
+									>
+										{seedHex.toUpperCase()}
+									</code>
+									<button
+										className={`rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-xs transition-opacity hover:opacity-90 ${
+											(seed?.l ?? 0.5) < 0.65
+												? "bg-white/20 text-white"
+												: "bg-black/15 text-slate-900"
+										}`}
+										onClick={async () => {
+											if (await copyText(seedHex.toUpperCase())) {
+												toast.success(
+													`已复制主色: ${seedHex.toUpperCase()}`,
+												);
+											}
+										}}
+										type="button"
+									>
+										复制 HEX
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<div className="space-y-3">
+							<div className="grid grid-cols-3 gap-2">
+								<div className="rounded-lg border border-border/50 bg-background/50 p-2 text-center">
+									<span className="block text-[10px] text-muted-foreground">
+										明度 L
+									</span>
+									<span className="font-mono text-xs font-semibold tabular-nums">
+										{seed ? `${(seed.l * 100).toFixed(1)}%` : "—"}
+									</span>
+								</div>
+								<div className="rounded-lg border border-border/50 bg-background/50 p-2 text-center">
+									<span className="block text-[10px] text-muted-foreground">
+										彩度 C
+									</span>
+									<span className="font-mono text-xs font-semibold tabular-nums">
+										{seed ? seed.c.toFixed(3) : "—"}
+									</span>
+								</div>
+								<div className="rounded-lg border border-border/50 bg-background/50 p-2 text-center">
+									<span className="block text-[10px] text-muted-foreground">
+										色相 H
+									</span>
+									<span className="font-mono text-xs font-semibold tabular-nums">
+										{seed ? `${seed.h.toFixed(0)}°` : "—"}
+									</span>
+								</div>
+							</div>
+
+							<div className="flex items-center gap-2">
+								<span className="text-xs text-muted-foreground">HEX 输入:</span>
+								<input
+									className="h-8 flex-1 rounded-md border border-border/60 bg-transparent px-2.5 font-mono text-xs uppercase outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+									maxLength={7}
+									onChange={(e) => applyHexInput(e.target.value)}
+									placeholder="#2563EB"
+									type="text"
+									value={hexInput}
+								/>
+							</div>
+							<p className="text-[11px] text-muted-foreground">
+								给一个主色，其余全部语义色、色阶与中性带由此推导。
 							</p>
 						</div>
 					</div>
-					<div
-						aria-label="主色速选"
-						className="flex flex-wrap items-center gap-2.5"
-						role="group"
-					>
-						{SEED_PRESETS.map((preset) => (
-							<button
-								aria-label={`主色 ${preset.name}`}
-								className={`size-8 rounded-full ring-1 transition-[background-color,box-shadow] duration-300 ease-out ${
-									seedHex === preset.hex
-										? "ring-2 ring-foreground"
-										: "ring-border hover:ring-foreground/40"
-								}`}
-								key={preset.hex}
-								onClick={() => setSeedHex(preset.hex)}
-								style={{ backgroundColor: preset.hex }}
-								title={preset.name}
-								type="button"
+
+					{/* 右侧：速选与精细选色 */}
+					<div className="space-y-4 border-t border-border/40 pt-4 lg:col-span-7 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+						<div>
+							<p className="mb-2 text-xs font-medium text-muted-foreground">
+								主色速选
+							</p>
+							<div
+								aria-label="主色速选"
+								className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+								role="group"
+							>
+								{SEED_PRESETS.map((preset) => (
+									<button
+										aria-label={`主色 ${preset.name}`}
+										className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors duration-150 ${
+											seedHex.toLowerCase() === preset.hex.toLowerCase()
+												? "border-primary bg-primary/10 text-foreground ring-1 ring-primary"
+												: "border-border/60 bg-background/50 hover:bg-muted/50"
+										}`}
+										key={preset.hex}
+										onClick={() => {
+											setSeedHex(preset.hex);
+											setHexInput(preset.hex);
+										}}
+										type="button"
+									>
+										<span
+											className="size-4 shrink-0 rounded-full ring-1 ring-black/10"
+											style={{ backgroundColor: preset.hex }}
+										/>
+										<span className="truncate text-xs font-medium">
+											{preset.name}
+										</span>
+									</button>
+								))}
+							</div>
+						</div>
+
+						<div className="border-t border-border/40 pt-3">
+							<p className="mb-2 text-xs font-medium text-muted-foreground">
+								自定义主色
+							</p>
+							<HsvColorPicker
+								onChange={(hex) => {
+									setSeedHex(hex);
+									setHexInput(hex);
+								}}
+								value={seedHex}
 							/>
-						))}
+						</div>
 					</div>
-				</div>
-				<div className="mt-6 max-w-72 border-t border-border/40 pt-5">
-					<p className="mb-3 text-xs text-muted-foreground">自定义主色</p>
-					<HsvColorPicker onChange={setSeedHex} value={seedHex} />
 				</div>
 			</div>
 
-			<h3 className="mt-10 text-lg font-bold">品牌色阶</h3>
-			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40">
+			{/* 品牌色阶卡尺 */}
+			<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
+				<h3 className="text-lg font-bold">品牌色阶</h3>
+				<span className="text-xs text-muted-foreground">点击任意色阶即可复制 HEX 码</span>
+			</div>
+			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40 shadow-xs">
 				<div className="grid grid-cols-11">
-					{palette.ramp.map((step, i) => (
-						<button
-							aria-label={`色阶 ${step.label} · ${step.hex.toUpperCase()}`}
-							className="relative h-20 outline-none"
-							key={step.label}
-							onMouseEnter={() => setHoverRamp(step.label)}
-							onMouseLeave={() => setHoverRamp(null)}
-							onClick={() => void pickRamp(step)}
-							style={{ backgroundColor: step.hex }}
-							title={`${step.label} · ${step.hex.toUpperCase()}`}
-							type="button"
-						>
-							<span
-								className={`pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold whitespace-nowrap transition-opacity duration-200 ease-out ${
-									hoverRamp === step.label ? "opacity-100" : "opacity-0"
-								} ${i >= 5 ? "text-white" : "text-slate-900"}`}
+					{palette.ramp.map((step, i) => {
+						const isLight = i < 5;
+						const isSelected = hoverRamp === step.label || copiedRamp === step.label;
+						return (
+							<button
+								aria-label={`色阶 ${step.label} · ${step.hex.toUpperCase()}`}
+								className="group relative flex h-24 flex-col justify-between p-2 text-left outline-none transition-[filter] duration-150 ease-out hover:brightness-105"
+								key={step.label}
+								onClick={() => void pickRamp(step)}
+								onMouseEnter={() => setHoverRamp(step.label)}
+								onMouseLeave={() => setHoverRamp(null)}
+								style={{ backgroundColor: step.hex }}
+								title={`${step.label} · ${step.hex.toUpperCase()}`}
+								type="button"
 							>
-								{step.hex.toUpperCase()}
-							</span>
-						</button>
-					))}
+								<span
+									className={`pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide whitespace-nowrap transition-opacity duration-150 ease-out ${
+										isLight ? "text-slate-900" : "text-white"
+									} ${isSelected ? "opacity-100" : "opacity-0"}`}
+								>
+									{copiedRamp === step.label
+										? "✓ 已复制"
+										: step.hex.toUpperCase()}
+								</span>
+								<span
+									className={`font-mono text-[11px] font-semibold transition-opacity duration-150 ${
+										isLight ? "text-slate-800" : "text-white"
+									} ${isSelected ? "opacity-20" : "opacity-75"}`}
+								>
+									{step.label}
+								</span>
+								<span
+									className={`block font-mono text-[9px] tabular-nums transition-opacity duration-150 ${
+										isLight ? "text-slate-700/60" : "text-white/60"
+									} ${isSelected ? "opacity-0" : "opacity-100"}`}
+								>
+									{step.hex.toUpperCase()}
+								</span>
+							</button>
+						);
+					})}
 				</div>
 			</div>
 			<div className="mt-2 grid grid-cols-11" aria-hidden="true">
 				{palette.ramp.map((step) => (
 					<span
-						className={`text-center font-mono text-[10px] tabular-nums transition-colors duration-200 ease-out ${
+						className={`text-center font-mono text-[10px] tabular-nums transition-colors duration-150 ease-out ${
 							hoverRamp === step.label || copiedRamp === step.label
-								? "text-foreground"
+								? "font-bold text-foreground"
 								: "text-muted-foreground"
 						}`}
 						key={step.label}
@@ -242,31 +885,75 @@ export function PaletteGenerator() {
 				))}
 			</div>
 
+			{/* 实时组件沙盒 */}
+			<LiveComponentSandbox palette={palette} />
+
+			{/* 主色与强调 */}
 			<RoleBoard roles={palette.primaryRoles} title="主色与强调" />
 
-			<RoleBoard roles={palette.functional} title="功能色" />
-
-			<RoleBoard roles={palette.neutral} title="中性带" />
-
+			{/* 功能色 */}
 			<motion.section
 				initial={{ opacity: 0 }}
-				transition={{ duration: 0.45, ease: "easeOut" }}
-				viewport={{ margin: "-60px", once: true }}
+				transition={{ duration: 0.35, ease: "easeOut" }}
+				viewport={{ margin: "-40px", once: true }}
 				whileInView={{ opacity: 1 }}
 			>
-				<h3 className="mt-10 text-lg font-bold">对比度审计</h3>
-				<ul className="mt-3">
+				<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
+					<div>
+						<h3 className="text-lg font-bold">功能色</h3>
+						<p className="mt-1 text-xs text-muted-foreground">
+							基于 OKLCH
+							感知色彩科学重调的非对称语义色体系：实色（Solid）与浅染（Wash）齐备，告别暗沉发脏。
+						</p>
+					</div>
+				</div>
+				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+					{palette.functionalSets.map((set) => (
+						<FunctionalSpecimenCard key={set.key} set={set} />
+					))}
+				</div>
+			</motion.section>
+
+			{/* 中性带 */}
+			<RoleBoard roles={palette.neutral} title="中性带" />
+
+			{/* 代码导出 */}
+			<PaletteCodeExport palette={palette} seedHex={seedHex} />
+
+			{/* 对比度审计 */}
+			<motion.section
+				initial={{ opacity: 0 }}
+				transition={{ duration: 0.35, ease: "easeOut" }}
+				viewport={{ margin: "-40px", once: true }}
+				whileInView={{ opacity: 1 }}
+			>
+				<div className="mt-10 flex items-baseline justify-between">
+					<h3 className="text-lg font-bold">对比度审计</h3>
+					<span className="font-mono text-xs text-muted-foreground">
+						WCAG 2.1 规范验算
+					</span>
+				</div>
+				<ul className="mt-3 divide-y divide-border/40 rounded-xl border border-border/40 bg-card/30 px-4">
 					{palette.audits.map((audit) => (
-						<li
-							className="flex items-baseline gap-3 border-b border-border/40 py-2 text-sm"
-							key={audit.pair}
-						>
-							<span className={audit.pass ? "text-success" : "text-destructive"}>
+						<li className="flex items-baseline gap-3 py-2.5 text-sm" key={audit.pair}>
+							<span
+								className={`inline-flex size-4 items-center justify-center rounded-full text-xs font-bold ${
+									audit.pass
+										? "bg-success/15 text-success"
+										: "bg-destructive/15 text-destructive"
+								}`}
+							>
 								{audit.pass ? "✓" : "✗"}
 							</span>
 							<span className="flex-1 text-muted-foreground">{audit.pair}</span>
-							<code className="font-mono text-xs">{audit.ratio}:1</code>
-							<span className="w-20 text-right font-mono text-xs text-muted-foreground">
+							<code className="font-mono text-xs font-semibold tabular-nums">
+								{audit.ratio.toFixed(2)}:1
+							</code>
+							<span
+								className={`w-20 text-right font-mono text-xs ${
+									audit.pass ? "text-muted-foreground" : "text-destructive"
+								}`}
+							>
 								{audit.rating}
 							</span>
 						</li>

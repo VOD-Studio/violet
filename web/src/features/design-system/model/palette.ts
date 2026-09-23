@@ -40,6 +40,26 @@ export interface ContrastAudit {
 	pass: boolean;
 }
 
+export interface FunctionalColorSet {
+	key: "info" | "success" | "warning" | "destructive";
+	name: string;
+	note: string;
+	light: {
+		solid: SwatchColor;
+		foreground: SwatchColor;
+		wash: SwatchColor;
+		washForeground: SwatchColor;
+		border: SwatchColor;
+	};
+	dark: {
+		solid: SwatchColor;
+		foreground: SwatchColor;
+		wash: SwatchColor;
+		washForeground: SwatchColor;
+		border: SwatchColor;
+	};
+}
+
 export interface GeneratedPalette {
 	seed: SeedColor;
 	/** 品牌色阶 ×11（浅到深） */
@@ -48,6 +68,8 @@ export interface GeneratedPalette {
 	primaryRoles: RoleColor[];
 	/** 功能色:行为状态语义,固定不随色板推导 */
 	functional: RoleColor[];
+	/** 完整功能色体系（实色、洗染面、文字与边框） */
+	functionalSets: FunctionalColorSet[];
 	/** 中性带 */
 	neutral: RoleColor[];
 	/** 对比度审计 */
@@ -56,46 +78,108 @@ export interface GeneratedPalette {
 
 const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
 
+function swatch(l: number, c: number, h: number): SwatchColor {
+	const oklch = `oklch(${Number(l.toFixed(3))} ${Number(c.toFixed(3))} ${Number(h.toFixed(1))})`;
+	return { oklch, hex: oklchToRgb(l, c, h).hex };
+}
+
 /**
- * 功能色：行为状态语义,色相与浓淡固定,不随种子色板更迭。
- * 明度按明暗域适配:浅域用深色保字对比,深域用亮色保可见。
+ * 完整功能色体系：行为状态语义，不随种子色板更迭。
+ * 告别机械的统一度数，采用符合现代感知色彩科学（OKLCH）的非对称调优：
+ * 警示色用温润流金的琥珀金（杜绝恶心泥浆褐黄），成功色用清爽透亮的翡翠绿，
+ * 危险色用雅致鲜明的赤绯红，信息色用清澈蔚蓝。
+ * 同时齐备实色（Solid）、前景色（Foreground）、洗染面（Wash）与描边（Border）。
  */
-const FUNCTIONAL_ROLES: RoleColor[] = [
+export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 	{
-		role: "--info",
-		light: swatch(0.55, 0.16, 230),
-		dark: swatch(0.72, 0.14, 230),
-		note: "信息提示",
+		key: "info",
+		name: "信息蔚蓝",
+		note: "客观提示与系统广播",
+		light: {
+			solid: swatch(0.58, 0.18, 245),
+			foreground: swatch(0.99, 0, 0),
+			wash: swatch(0.965, 0.02, 245),
+			washForeground: swatch(0.38, 0.14, 245),
+			border: swatch(0.88, 0.045, 245),
+		},
+		dark: {
+			solid: swatch(0.74, 0.16, 240),
+			foreground: swatch(0.16, 0.04, 240),
+			wash: swatch(0.2, 0.035, 240),
+			washForeground: swatch(0.88, 0.08, 240),
+			border: swatch(0.28, 0.05, 240),
+		},
 	},
 	{
-		role: "--success",
-		light: swatch(0.55, 0.16, 150),
-		dark: swatch(0.72, 0.14, 150),
-		note: "成功状态",
+		key: "success",
+		name: "翡翠清绿",
+		note: "达成与积极反馈",
+		light: {
+			solid: swatch(0.6, 0.17, 152),
+			foreground: swatch(0.99, 0, 0),
+			wash: swatch(0.965, 0.025, 152),
+			washForeground: swatch(0.35, 0.12, 152),
+			border: swatch(0.88, 0.05, 152),
+		},
+		dark: {
+			solid: swatch(0.76, 0.16, 155),
+			foreground: swatch(0.15, 0.03, 155),
+			wash: swatch(0.2, 0.035, 155),
+			washForeground: swatch(0.88, 0.08, 155),
+			border: swatch(0.28, 0.05, 155),
+		},
 	},
 	{
-		role: "--warning",
-		light: swatch(0.55, 0.16, 85),
-		dark: swatch(0.72, 0.14, 85),
-		note: "警示状态",
+		key: "warning",
+		name: "暖琥珀金",
+		note: "警示与待决状态",
+		light: {
+			solid: swatch(0.65, 0.17, 68),
+			foreground: swatch(0.99, 0, 0),
+			wash: swatch(0.97, 0.025, 68),
+			washForeground: swatch(0.38, 0.1, 68),
+			border: swatch(0.9, 0.06, 68),
+		},
+		dark: {
+			solid: swatch(0.78, 0.16, 75),
+			foreground: swatch(0.16, 0.03, 75),
+			wash: swatch(0.22, 0.04, 75),
+			washForeground: swatch(0.9, 0.08, 75),
+			border: swatch(0.3, 0.06, 75),
+		},
 	},
 	{
-		role: "--destructive",
-		light: swatch(0.55, 0.16, 25),
-		dark: swatch(0.72, 0.14, 25),
-		note: "危险操作",
+		key: "destructive",
+		name: "纯正赤红",
+		note: "危险操作与阻断报错",
+		light: {
+			solid: swatch(0.58, 0.22, 27),
+			foreground: swatch(0.99, 0, 0),
+			wash: swatch(0.97, 0.02, 27),
+			washForeground: swatch(0.38, 0.14, 27),
+			border: swatch(0.9, 0.05, 27),
+		},
+		dark: {
+			solid: swatch(0.7, 0.19, 25),
+			foreground: swatch(0.99, 0, 0),
+			wash: swatch(0.2, 0.04, 25),
+			washForeground: swatch(0.9, 0.07, 25),
+			border: swatch(0.3, 0.06, 25),
+		},
 	},
 ];
 
+/** 保持向后兼容的简明列表 */
+const FUNCTIONAL_ROLES: RoleColor[] = FUNCTIONAL_SETS.map((set) => ({
+	role: `--${set.key}`,
+	light: set.light.solid,
+	dark: set.dark.solid,
+	note: `${set.name} · ${set.note}`,
+}));
 /** 色阶彩度包络：中段饱满、两端收敛，色阶才有层次 */
 function chromaAt(l: number, seedC: number): number {
 	const envelope = Math.max(0, 1 - Math.abs(l - 0.6) / 0.5);
 	return clamp(seedC * envelope * 1.35, 0, 0.37);
-}
-
-function swatch(l: number, c: number, h: number): SwatchColor {
-	const oklch = `oklch(${Number(l.toFixed(3))} ${Number(c.toFixed(3))} ${Number(h.toFixed(1))})`;
-	return { oklch, hex: oklchToRgb(l, c, h).hex };
 }
 
 /** 品牌色阶：L 从浅到深 ×11 */
@@ -212,7 +296,23 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 		auditPair("强调字 × 淡染面 · 深", primaryRoles[4].dark, primaryRoles[3].dark),
 		auditPair("主色 × 画布 · 浅", primaryLightColor, bgL.light),
 		auditPair("主色 × 画布 · 深", primaryDarkColor, bgL.dark),
+		auditPair("危险色 × 画布 · 浅", functional[3].light, bgL.light),
+		auditPair("危险色 × 画布 · 深", functional[3].dark, bgL.dark),
+		auditPair("成功色 × 画布 · 浅", functional[1].light, bgL.light),
+		auditPair("成功色 × 画布 · 深", functional[1].dark, bgL.dark),
+		auditPair("警示色 × 画布 · 浅", functional[2].light, bgL.light),
+		auditPair("警示色 × 画布 · 深", functional[2].dark, bgL.dark),
+		auditPair("信息色 × 画布 · 浅", functional[0].light, bgL.light),
+		auditPair("信息色 × 画布 · 深", functional[0].dark, bgL.dark),
 	];
 
-	return { seed, ramp, primaryRoles, functional, neutral, audits };
+	return {
+		seed,
+		ramp,
+		primaryRoles,
+		functional,
+		functionalSets: FUNCTIONAL_SETS,
+		neutral,
+		audits,
+	};
 }
