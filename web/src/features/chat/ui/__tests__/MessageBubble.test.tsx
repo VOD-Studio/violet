@@ -120,6 +120,21 @@ function renderBubble(
 afterEach(() => cleanup());
 
 describe("MessageBubble", () => {
+	it("Bot 历史文本使用独立卡片，凭据状态不影响身份标识", () => {
+		const message: ChatMessage = {
+			...imageMessage(undefined),
+			sender: { ...sender, is_bot: true },
+			type: "text",
+			content: "| 项目 | 值 |\n| --- | --- |\n| A | 1 |",
+			media: undefined,
+			edited_at: "2026-09-23T10:00:00Z",
+		};
+		const { container } = renderBubble(message, () => {}, "direct", "u_2");
+		expect(screen.getByText("BOT")).toBeTruthy();
+		expect(container.querySelector("table")?.textContent).toContain("A1");
+		expect(container.textContent).not.toContain("已编辑");
+	});
+
 	it("时间戳显示在聊天气泡外侧且不隐藏头像", () => {
 		const mine = renderBubble(imageMessage(undefined));
 		const mineAvatarSlot = mine.container.querySelector("article > div:first-child");

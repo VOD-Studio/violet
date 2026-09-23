@@ -16,10 +16,11 @@ const bot = {
 	username: "bot",
 	display_name: "Bot",
 	avatar_url: "",
+	is_bot: true,
 };
 const createdAt = "2026-09-23T10:00:00Z";
 
-test("bot 增量事件逐段更新同一条气泡，断线补发回查最新内容", async ({ page, context }) => {
+test("Bot 卡片随生成快照更新状态，断线后回查最新内容", async ({ page, context }) => {
 	await context.addCookies([
 		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
 	]);
@@ -42,7 +43,10 @@ test("bot 增量事件逐段更新同一条气泡，断线补发回查最新内�
 			}
 		};
 	});
-	let savedContent = "占位";
+	let savedContent = "";
+	let savedStatus = "pending";
+	let savedThinking = "";
+	let savedRevision = 0;
 	let messageReads = 0;
 	const message = () => ({
 		id: "m1",
@@ -50,6 +54,12 @@ test("bot 增量事件逐段更新同一条气泡，断线补发回查最新内�
 		sender: bot,
 		type: "text",
 		content: savedContent,
+		bot_reply: {
+			status: savedStatus,
+			thinking: savedThinking,
+			revision: savedRevision,
+			updated_at: createdAt,
+		},
 		reactions: [],
 		is_deleted: false,
 		created_at: createdAt,
@@ -112,26 +122,48 @@ test("bot 增量事件逐段更新同一条气泡，断线补发回查最新内�
 	});
 	await page.goto("/chat?c=c1");
 	const bubble = page.getByTestId("chat-message-m1");
-	await expect(bubble).toContainText("占位");
+	await expect(bubble).toContainText("BOT");
+	await expect(bubble).toContainText("等待回复");
 	await page.waitForLoadState("networkidle");
 	const initialReads = messageReads;
-	for (const [id, content] of [
-		["1", "第一段"],
-		["2", "第一段第二段"],
-		["3", "完整回复"],
+	for (const [id, status, content] of [
+		["1", "thinking", ""],
+		["2", "streaming", "第一段"],
+		["3", "completed", "完整回复"],
 	]) {
+		savedStatus = status;
+		savedContent = content;
+		savedThinking = "检查输入";
+		savedRevision = Number(id);
 		await page.evaluate(
 			(payload) =>
 				(window as Window & { emitChat?: (payload: unknown) => void }).emitChat?.(payload),
 			{
 				id,
 				type: "message.updated",
-				data: { conversation_id: "c1", message_id: "m1", content, edited_at: createdAt },
+				data: {
+					conversation_id: "c1",
+					message_id: "m1",
+					content,
+					bot_reply: {
+						status,
+						thinking: "检查输入",
+						revision: Number(id),
+						updated_at: createdAt,
+					},
+				},
 			},
 		);
-		await expect(bubble).toContainText(content);
+		await expect(bubble).toContainText(
+			status === "thinking" ? "正在思考" : status === "streaming" ? "正在回复" : "完整回复",
+		);
+		if (status === "thinking") {
+			await bubble.getByRole("button", { name: /思考过程/ }).click();
+			await expect(bubble).toContainText("检查输入");
+		}
 		await expect(bubble).toHaveCount(1);
 	}
+	await expect(bubble.getByRole("status")).toHaveCount(0);
 	expect(messageReads).toBe(initialReads);
 	savedContent = "断线后的最终正文";
 	await page.evaluate(
@@ -143,4 +175,9 @@ test("bot 增量事件逐段更新同一条气泡，断线补发回查最新内�
 	expect(messageReads).toBeGreaterThan(initialReads);
 	await page.reload();
 	await expect(page.getByTestId("chat-message-m1")).toContainText(savedContent);
+	await page.setViewportSize({ width: 375, height: 812 });
+	const cardBounds = await page.getByTestId("bot-reply-card").boundingBox();
+	expect(cardBounds).not.toBeNull();
+	expect(cardBounds?.x ?? -1).toBeGreaterThanOrEqual(0);
+	expect((cardBounds?.x ?? 0) + (cardBounds?.width ?? 0)).toBeLessThanOrEqual(375);
 });

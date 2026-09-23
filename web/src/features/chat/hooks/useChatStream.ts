@@ -5,7 +5,13 @@ import { useEffect } from "react";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
 import { useChatTypingStore } from "../model/chat-typing-store";
-import type { ChatConversation, ChatEvent, ChatMessage, ChatTypingEventData } from "../model/types";
+import type {
+	BotReply,
+	ChatConversation,
+	ChatEvent,
+	ChatMessage,
+	ChatTypingEventData,
+} from "../model/types";
 
 type ChatMessagesCache = InfiniteData<PagedResponse<ChatMessage>, unknown>;
 
@@ -79,13 +85,14 @@ export const useChatStream = () => {
 				}
 				const conversationID = payload.data.conversation_id;
 				const messageID = payload.data.message_id;
+				const botReply = parseBotReply(payload.data.bot_reply);
 				// 自定义表情的映射按查看者计算；仅有正文快照时须回查完整消息。
 				if (
 					payload.type === "message.updated" &&
 					typeof conversationID === "string" &&
 					typeof messageID === "string" &&
 					typeof payload.data.content === "string" &&
-					typeof payload.data.edited_at === "string" &&
+					(typeof payload.data.edited_at === "string" || botReply !== undefined) &&
 					!hasCustomEmojiToken(payload.data.content)
 				) {
 					const sequence = Number(payload.id);
@@ -118,7 +125,14 @@ export const useChatStream = () => {
 												return message;
 											found = true;
 											pageChanged = true;
-											return { ...message, content, edited_at: editedAt };
+											return {
+												...message,
+												content,
+												...(typeof editedAt === "string"
+													? { edited_at: editedAt }
+													: {}),
+												...(botReply ? { bot_reply: botReply } : {}),
+											};
 										});
 										return pageChanged ? { ...page, data } : page;
 									});
@@ -138,7 +152,10 @@ export const useChatStream = () => {
 												last_message: {
 													...conversation.last_message,
 													content,
-													edited_at: editedAt,
+													...(typeof editedAt === "string"
+														? { edited_at: editedAt }
+														: {}),
+													...(botReply ? { bot_reply: botReply } : {}),
 												},
 											}
 										: conversation;
@@ -194,4 +211,17 @@ export const useChatStream = () => {
 
 function hasCustomEmojiToken(content: string): boolean {
 	return /\[[^\]]+:[0-9a-fA-F-]{36}\]/.test(content);
+}
+
+function parseBotReply(value: unknown): BotReply | undefined {
+	if (!value || typeof value !== "object") return undefined;
+	const reply = value as Record<string, unknown>;
+	if (
+		typeof reply.status !== "string" ||
+		!["pending", "thinking", "streaming", "completed", "failed"].includes(reply.status) ||
+		typeof reply.revision !== "number" ||
+		typeof reply.updated_at !== "string"
+	)
+		return undefined;
+	return reply as unknown as BotReply;
 }

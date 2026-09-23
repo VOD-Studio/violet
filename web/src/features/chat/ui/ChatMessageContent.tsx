@@ -1,10 +1,8 @@
 /**
  * ChatMessageContent - 聊天消息 Markdown 渲染
  *
- * 聊天气泡专用的轻量 Markdown 管线：行内格式（粗体/斜体/删除线/行内代码/链接）+
- * 块级基础（围栏代码块/引用块/列表），不含表格、任务列表、标题、公式、mermaid、
- * 可运行代码块——那套重管线是给博客文章用的（见 shared/ui/markdown-preview），
- * 塞进消息气泡（`max-w-[min(82%,36rem)]`）既不合适也没必要。
+ * 普通聊天气泡使用轻量 Markdown；Bot 卡片追加标题、表格与任务列表。
+ * 两者都不启用公式、mermaid 与可运行代码块。
  *
  * 单换行走 remark-breaks 转成 <br>：保留旧版 whitespace-pre-wrap 的折行体验，
  * 否则 CommonMark 默认的段落合并规则会吃掉用户在 composer 里按 Shift+Enter
@@ -26,6 +24,7 @@ import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { lazy, Suspense, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import {
 	rehypeChatEmoji,
@@ -40,6 +39,7 @@ const LazyCodeCard = lazy(() =>
 );
 
 const REMARK_PLUGINS = [remarkChatInline, remarkBreaks];
+const BOT_REMARK_PLUGINS = [remarkGfm, remarkBreaks];
 
 /** 把 react-markdown 传入的子节点递归拼成纯文本（围栏代码块取源码用） */
 function nodeToText(node: ReactNode): string {
@@ -200,6 +200,25 @@ const chatMarkdownComponents: Components = {
 	},
 };
 
+const botMarkdownComponents: Components = {
+	...chatMarkdownComponents,
+	h1: ({ children }) => <h3 className="my-2 text-base font-semibold">{children}</h3>,
+	h2: ({ children }) => <h4 className="my-2 text-sm font-semibold">{children}</h4>,
+	h3: ({ children }) => <h5 className="my-2 text-sm font-semibold">{children}</h5>,
+	table: ({ children }) => (
+		<div className="my-2 max-w-full overflow-x-auto">
+			<table className="w-full border-collapse text-left text-sm">{children}</table>
+		</div>
+	),
+	th: ({ children }) => (
+		<th className="border border-border bg-muted px-2 py-1 font-medium">{children}</th>
+	),
+	td: ({ children }) => <td className="border border-border px-2 py-1">{children}</td>,
+	input: ({ checked }) => (
+		<input aria-label="任务状态" type="checkbox" checked={checked} disabled readOnly />
+	),
+};
+
 export interface ChatMessageContentProps {
 	/** 消息正文（Markdown 源文本） */
 	content: string;
@@ -214,6 +233,8 @@ export interface ChatMessageContentProps {
 	inlineMedia?: ChatMedia[];
 	/** 内联图片点击回调（打开原图预览） */
 	onImage?: (media: ChatMedia) => void;
+	/** bot 启用标题、表格与任务列表。 */
+	variant?: "chat" | "bot";
 }
 
 export function ChatMessageContent({
@@ -224,6 +245,7 @@ export function ChatMessageContent({
 	className,
 	inlineMedia,
 	onImage,
+	variant = "chat",
 }: ChatMessageContentProps) {
 	const rehypePlugins = useMemo(
 		() => [
@@ -234,11 +256,12 @@ export function ChatMessageContent({
 		[emote, mentions, viewerID],
 	);
 	const components = useMemo<Components>(() => {
-		if (!inlineMedia?.length) return chatMarkdownComponents;
+		const base = variant === "bot" ? botMarkdownComponents : chatMarkdownComponents;
+		if (!inlineMedia?.length) return base;
 		const mediaByID: Record<string, ChatMedia> = {};
 		for (const media of inlineMedia) mediaByID[media.id] = media;
 		return {
-			...chatMarkdownComponents,
+			...base,
 			img: ({ src, alt, ...rest }) => {
 				const props = rest as Record<string, unknown>;
 				const imageID = props["data-image"];
@@ -268,13 +291,13 @@ export function ChatMessageContent({
 				);
 			},
 		};
-	}, [inlineMedia, onImage]);
+	}, [inlineMedia, onImage, variant]);
 	// min-w-0：本体是气泡（flex 容器）的子项，代码块的 min-content 撑不小，
 	// 不解除自动最小尺寸就会把气泡顶宽，而不是让代码块自己横向滚动。
 	return (
 		<div className={cn("min-w-0", className)}>
 			<ReactMarkdown
-				remarkPlugins={REMARK_PLUGINS}
+				remarkPlugins={variant === "bot" ? BOT_REMARK_PLUGINS : REMARK_PLUGINS}
 				rehypePlugins={rehypePlugins}
 				components={components}
 			>

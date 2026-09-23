@@ -122,6 +122,21 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 			),
 		},
 		{
+			key: "show_thinking",
+			header: "展示思考",
+			width: "120px",
+			cell: (row) => (
+				<Switch
+					checked={row.show_thinking}
+					disabled={update.isPending}
+					aria-label={`${row.show_thinking ? "关闭" : "开启"} ${row.name} 的思考展示`}
+					onCheckedChange={(show_thinking) =>
+						update.mutate({ id: row.id, body: { show_thinking } })
+					}
+				/>
+			),
+		},
+		{
 			key: "created_at",
 			header: "创建时间",
 			width: "160px",

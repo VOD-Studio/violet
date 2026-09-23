@@ -9,6 +9,14 @@ export interface ChatUser {
 	username: string;
 	display_name: string;
 	avatar_url: string;
+	is_bot?: boolean;
+}
+
+export interface BotReply {
+	status: "pending" | "thinking" | "streaming" | "completed" | "failed";
+	thinking?: string;
+	revision: number;
+	updated_at: string;
 }
 
 export interface ChatMember {
@@ -62,6 +70,7 @@ export interface ChatMessage {
 	id: string;
 	conversation_id: string;
 	sender: ChatUser;
+	bot_reply?: BotReply;
 	type: MessageType;
 	content?: string;
 	/** 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符（含方括号） */

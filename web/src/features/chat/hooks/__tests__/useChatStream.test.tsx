@@ -135,6 +135,41 @@ it("缺少正文快照时回查消息", () => {
 	expect(client.getQueryState(key)?.isInvalidated).toBe(true);
 });
 
+it("Bot 生成快照同步正文、thinking 与完成状态", async () => {
+	const { client, wrapper, emit } = setupStream();
+	const key = chatKeys.messages("c1");
+	client.setQueryData(key, cacheWith(""));
+	renderHook(useChatStream, { wrapper });
+	for (const [id, status, content] of [
+		["1", "thinking", ""],
+		["2", "streaming", "第一段"],
+		["3", "completed", "最终回复"],
+	]) {
+		act(() =>
+			emit(id, {
+				conversation_id: "c1",
+				message_id: "m1",
+				content,
+				bot_reply: {
+					status,
+					thinking: "已分析",
+					revision: Number(id),
+					updated_at: "2026-09-23T10:00:01Z",
+				},
+			}),
+		);
+		await waitFor(() =>
+			expect(
+				client.getQueryData<MessagesCache>(key)?.pages[0].data[0].bot_reply?.status,
+			).toBe(status),
+		);
+	}
+	const result = client.getQueryData<MessagesCache>(key)?.pages[0].data[0];
+	expect(result?.content).toBe("最终回复");
+	expect(result?.bot_reply?.thinking).toBe("已分析");
+	expect(result?.edited_at).toBeUndefined();
+});
+
 it("含自定义表情的编辑回查按查看者解析的映射", () => {
 	const { client, wrapper, emit } = setupStream();
 	const key = chatKeys.messages("c1");
