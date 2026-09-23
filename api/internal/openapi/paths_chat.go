@@ -130,7 +130,7 @@ func registerChatPaths(t *openapi3.T) {
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam(), idempotencyHeaderParam()}, RequestBody: jsonBody("ChatSendMessageRequest", true, "消息参数"), Responses: responses(201, dataResponse("ChatMessageDTO", "已发送消息", 201)),
 	})
 	get(t, "/chat/events", &openapi3.Operation{
-		Tags: []string{"聊天"}, Summary: "聊天事件流", Description: "SSE 单用户事件流，支持 Last-Event-ID 断线补发。", Security: secure,
+		Tags: []string{"聊天"}, Summary: "聊天事件流", Description: "SSE 单用户事件流，支持 Last-Event-ID 断线补发。在线文本 message.updated 的 data 附带已保存的 content 与 edited_at；补发事件仍只带 conversation_id 和 message_id，客户端应回查当前消息。", Security: secure,
 		Responses: responses(200, &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr("text/event-stream")}}),
 	})
 	get(t, "/chat/unread-count", &openapi3.Operation{

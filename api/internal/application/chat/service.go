@@ -1171,7 +1171,16 @@ func (s *Service) EditMessage(ctx context.Context, in EditMessageInput) (Message
 	if err != nil {
 		return MessageDTO{}, err
 	}
-	s.notifyEvents(ctx, events)
+	if message.Type() == domainchat.MessageText && s.notifier != nil {
+		for _, event := range events {
+			dto := eventEnvelope(event)
+			dto.Data["content"] = message.Content()
+			dto.Data["edited_at"] = message.EditedAt().Format(time.RFC3339Nano)
+			s.notifier.Push(event.UserID, dto)
+		}
+	} else {
+		s.notifyEvents(ctx, events)
+	}
 	return s.messageDTOWithReadState(ctx, message, in.UserID)
 }
 
