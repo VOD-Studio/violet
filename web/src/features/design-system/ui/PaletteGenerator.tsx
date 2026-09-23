@@ -3,7 +3,6 @@ import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@shared/ui/color-picker";
 import { Segmented } from "@shared/ui/segmented";
 import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info } from "lucide-react";
-import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { GeneratedPalette, RampStep, RoleColor, SwatchColor } from "../model/palette";
@@ -96,12 +95,7 @@ function RoleRow({ role }: { role: RoleColor }) {
 /** 角色展台：与全站布局规格线格保持一致，行悬停聚焦，色块悬停显值、点击复制 */
 function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 	return (
-		<motion.section
-			initial={{ opacity: 0 }}
-			transition={{ duration: 0.35, ease: "easeOut" }}
-			viewport={{ margin: "-40px", once: true }}
-			whileInView={{ opacity: 1 }}
-		>
+		<section>
 			<h3 className="mt-10 text-lg font-bold">{title}</h3>
 			<ul className="mt-2 grid grid-cols-[1fr_6.5rem_6.5rem] gap-x-4 px-3 pb-1.5 sm:grid-cols-[1fr_9rem_9rem]">
 				<span className="font-mono text-[11px] text-muted-foreground">角色</span>
@@ -117,7 +111,7 @@ function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 					<RoleRow key={role.role} role={role} />
 				))}
 			</ul>
-		</motion.section>
+		</section>
 	);
 }
 
@@ -141,13 +135,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 	const destructiveSet = functionalSets.find((s) => s.key === "destructive") ?? functionalSets[3];
 
 	return (
-		<motion.section
-			className="mt-10"
-			initial={{ opacity: 0 }}
-			transition={{ duration: 0.35, ease: "easeOut" }}
-			viewport={{ margin: "-40px", once: true }}
-			whileInView={{ opacity: 1 }}
-		>
+		<section className="mt-10">
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<h3 className="text-lg font-bold">组件试穿沙盒</h3>
 				<Segmented<"actions" | "alerts">
@@ -408,7 +396,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 					</div>
 				)}
 			</div>
-		</motion.section>
+		</section>
 	);
 }
 
@@ -478,13 +466,7 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 	};
 
 	return (
-		<motion.section
-			className="mt-10"
-			initial={{ opacity: 0 }}
-			transition={{ duration: 0.35, ease: "easeOut" }}
-			viewport={{ margin: "-40px", once: true }}
-			whileInView={{ opacity: 1 }}
-		>
+		<section className="mt-10">
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<h3 className="text-lg font-bold">代码导出</h3>
 				<div className="flex items-center gap-2">
@@ -517,7 +499,7 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 					<code>{code}</code>
 				</pre>
 			</div>
-		</motion.section>
+		</section>
 	);
 }
 
@@ -759,12 +741,7 @@ export function PaletteGenerator() {
 			<PaletteCodeExport palette={palette} seedHex={seedHex} />
 
 			{/* 对比度审计 */}
-			<motion.section
-				initial={{ opacity: 0 }}
-				transition={{ duration: 0.35, ease: "easeOut" }}
-				viewport={{ margin: "-40px", once: true }}
-				whileInView={{ opacity: 1 }}
-			>
+			<section>
 				<div className="mt-10 flex items-baseline justify-between">
 					<h3 className="text-lg font-bold">对比度审计</h3>
 					<span className="font-mono text-xs text-muted-foreground">
@@ -797,7 +774,7 @@ export function PaletteGenerator() {
 						</li>
 					))}
 				</ul>
-			</motion.section>
+			</section>
 		</div>
 	);
 }

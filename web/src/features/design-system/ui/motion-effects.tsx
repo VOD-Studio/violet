@@ -1,6 +1,7 @@
 import "./motion-effects.css";
 import { MOTION_BEZIER, MOTION_DURATION, useInView, useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
+import { Check, Copy } from "lucide-react";
 import {
 	type CSSProperties,
 	type MouseEvent as ReactMouseEvent,
@@ -825,5 +826,102 @@ export function BorderBeam({
 			)}
 			<div className="relative rounded-[calc(0.75rem-1px)] bg-card">{children}</div>
 		</div>
+	);
+}
+
+export interface CopyButtonProps {
+	text: string;
+	onCopy?: () => void;
+	className?: string;
+}
+
+/** 就地复制按钮：点击时图标与状态平滑形变，就地确认。 */
+export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
+	const reduce = useReducedMotion();
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = async () => {
+		try {
+			if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+				await navigator.clipboard.writeText(text);
+			}
+		} catch {
+			// 剪贴板不可用时降级
+		}
+		setCopied(true);
+		onCopy?.();
+		setTimeout(() => setCopied(false), 1800);
+	};
+
+	return (
+		<button
+			type="button"
+			onClick={handleCopy}
+			aria-label={copied ? "已复制" : "复制"}
+			className={cn(
+				"relative inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 active:scale-95",
+				copied
+					? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+					: "border-border/40 bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+				className,
+			)}
+		>
+			<span
+				className={cn(
+					"inline-flex transition-transform duration-200",
+					reduce ? "" : copied ? "rotate-0 scale-100" : "scale-100",
+				)}
+			>
+				{copied ? <Check size={14} className="stroke-[2.5]" /> : <Copy size={14} />}
+			</span>
+			<span>{copied ? "已复制" : "点击复制"}</span>
+		</button>
+	);
+}
+
+export interface HoverLiftProps {
+	className?: string;
+	children: ReactNode;
+}
+
+/** 纸面微浮卡片：克制上浮 2px 并淡出软影，坚守无缩放底线。 */
+export function HoverLift({ className, children }: HoverLiftProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<div
+			className={cn(
+				"rounded-xl border border-border/40 bg-card transition-all select-none",
+				reduce
+					? ""
+					: "hover:-translate-y-0.5 hover:border-border/80 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] duration-200 ease-out",
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
+}
+
+export interface CounterBadgeProps {
+	count: number;
+	className?: string;
+}
+
+/** 计数微弹气泡：数值增减时触发微弹入场动画。 */
+export function CounterBadge({ count, className }: CounterBadgeProps) {
+	const reduce = useReducedMotion();
+
+	return (
+		<span
+			key={count}
+			className={cn(
+				"inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-primary",
+				reduce ? "" : "animate-in fade-in-50 zoom-in-95 duration-200 ease-out",
+				className,
+			)}
+		>
+			{count}
+		</span>
 	);
 }

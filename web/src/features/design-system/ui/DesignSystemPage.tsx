@@ -1,6 +1,6 @@
+import { useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
 import { PageShell } from "@shared/ui/page-shell";
-import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ComponentSpecimens } from "./ComponentSpecimens";
@@ -107,9 +107,6 @@ export const CHAPTERS: CodexChapter[] = [
 	},
 ];
 
-/** 章节换页缓动：快出缓进的丝滑曲线 */
-const CHAPTER_EASE = [0.22, 1, 0.36, 1] as const;
-
 /**
  * 营造法式——站点设计系统典籍页。
  *
@@ -198,13 +195,14 @@ export function DesignSystemPage() {
 				</nav>
 
 				<div className="min-w-0 flex-1">
-					{/* key 随章切换重挂：旧章即时让位，新章以淡入微浮入场 */}
-					<motion.section
+					<section
 						aria-labelledby={`chapter-${active.id}`}
-						initial={reduce ? false : { opacity: 0, y: 6 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.35, ease: CHAPTER_EASE }}
 						key={active.id}
+						className={cn(
+							reduce
+								? ""
+								: "animate-in fade-in-50 slide-in-from-bottom-1.5 duration-300 ease-out",
+						)}
 					>
 						<div className="flex items-baseline gap-3">
 							<span className="font-mono text-sm text-muted-foreground">
@@ -224,7 +222,7 @@ export function DesignSystemPage() {
 						</p>
 
 						{active.content}
-					</motion.section>
+					</section>
 				</div>
 			</div>
 		</PageShell>

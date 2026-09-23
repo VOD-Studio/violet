@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import { MotionCharter } from "../MotionCharter";
 import {
 	CheckmarkDraw,
+	CopyButton,
+	CounterBadge,
 	FadeIn,
 	HoldToConfirm,
+	HoverLift,
 	Magnetic,
 	NumberFlow,
 	PillSlider,
@@ -32,6 +35,9 @@ describe("动效章程自研动效库", () => {
 			"HoldToConfirm · 蓄力长按",
 			"Shake · 物理警示摇晃",
 			"SmoothExpand · 平滑折叠展开",
+			"CopyButton · 就地复制形变",
+			"HoverLift · 纸面微浮",
+			"CounterBadge · 计数微弹气泡",
 		];
 		for (const name of interactiveTitles) {
 			expect(screen.getByText(name)).toBeTruthy();
@@ -168,5 +174,27 @@ describe("动效章程自研动效库", () => {
 			</FadeIn>,
 		);
 		expect(screen.getByText("包裹内容")).toBeTruthy();
+	});
+
+	it("CopyButton 点击触发复制与文案切换", async () => {
+		render(<CopyButton text="测试文本" />);
+		const btn = screen.getByRole("button", { name: "复制" });
+		expect(btn).toBeTruthy();
+		fireEvent.click(btn);
+		expect(await screen.findByText("已复制")).toBeTruthy();
+	});
+
+	it("HoverLift 包裹内容正常渲染", () => {
+		render(
+			<HoverLift>
+				<p>纸面微浮</p>
+			</HoverLift>,
+		);
+		expect(screen.getByText("纸面微浮")).toBeTruthy();
+	});
+
+	it("CounterBadge 渲染数字", () => {
+		render(<CounterBadge count={99} />);
+		expect(screen.getByText("99")).toBeTruthy();
 	});
 });

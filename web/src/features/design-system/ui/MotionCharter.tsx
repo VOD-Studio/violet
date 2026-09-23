@@ -3,8 +3,11 @@ import {
 	BlurIn,
 	BorderBeam,
 	CheckmarkDraw,
+	CopyButton,
+	CounterBadge,
 	FadeIn,
 	HoldToConfirm,
+	HoverLift,
 	InkRipple,
 	Magnetic,
 	NumberFlow,
@@ -118,6 +121,7 @@ export function MotionCharter() {
 	const [checked, setChecked] = useState(true);
 	const [shakeTrigger, setShakeTrigger] = useState(0);
 	const [expandOpen, setExpandOpen] = useState(false);
+	const [counter, setCounter] = useState(42);
 
 	return (
 		<div className="mt-8 space-y-10">
@@ -283,6 +287,48 @@ export function MotionCharter() {
 									基于纯 CSS Grid 原生驱动，彻底消除高度跳变与闪烁问题。
 								</p>
 							</SmoothExpand>
+						</div>
+					</InteractiveCard>
+
+					<InteractiveCard
+						name="CopyButton · 就地复制形变"
+						note="点击就地切换对勾与状态反馈，无需弹窗打扰阅读流。"
+						usage='<CopyButton text="npm i @violet/ui" />'
+					>
+						<CopyButton text="https://violet.dev/design-system" />
+					</InteractiveCard>
+
+					<InteractiveCard
+						name="HoverLift · 纸面微浮"
+						note="移入仅位移 2px 与浮出软影，坚守非必要不用缩放的底线。"
+						usage="<HoverLift>{children}</HoverLift>"
+					>
+						<HoverLift className="w-56 p-3 text-center text-xs font-medium">
+							悬停体验东方纸面微浮
+						</HoverLift>
+					</InteractiveCard>
+
+					<InteractiveCard
+						name="CounterBadge · 计数微弹气泡"
+						note="数字变动时向上微弹淡入，用于点赞、收藏与未读数更新。"
+						usage="<CounterBadge count={count} />"
+					>
+						<div className="flex items-center gap-3">
+							<button
+								type="button"
+								onClick={() => setCounter((c) => Math.max(0, c - 1))}
+								className="rounded-md border border-border/40 px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+							>
+								-1
+							</button>
+							<CounterBadge count={counter} />
+							<button
+								type="button"
+								onClick={() => setCounter((c) => c + 1)}
+								className="rounded-md border border-border/40 px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+							>
+								+1
+							</button>
 						</div>
 					</InteractiveCard>
 				</div>
