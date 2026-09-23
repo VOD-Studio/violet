@@ -7,6 +7,35 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.43](https://github.com/VOD-Studio/violet/compare/v2.8.42...v2.8.43) (2026-09-23)
+
+
+### 新增
+
+* **design-system:** 全域清退三方动画依赖并补全高频交互动效 ([698e674](https://github.com/VOD-Studio/violet/commit/698e67433a26ebd126569c5c1baff04e97fa26d6))
+* **design-system:** 动效库解耦三方依赖并扩充交互类动效 ([74109b6](https://github.com/VOD-Studio/violet/commit/74109b63b2dc97d835fdcf23f08b03d998a006ea))
+* **design-system:** 动效章程自研体系重塑与色板生成器升级 ([#418](https://github.com/VOD-Studio/violet/issues/418)) ([1c61bae](https://github.com/VOD-Studio/violet/commit/1c61baedc711fbd7d4669660dc6a97257638635e))
+* **design-system:** 动效章程重塑为可复用效果库画廊 ([d313886](https://github.com/VOD-Studio/violet/commit/d3138869f5e09d855ccbeb23f69f3a7ebe7976f3))
+* **design-system:** 动效章程重构为四职责体系与真实动效样例 ([d50e78e](https://github.com/VOD-Studio/violet/commit/d50e78e252209e6e291864dd2720c638f36d40fa))
+* **design-system:** 扩充常驻持续循环动效原语 ([ff6ae2c](https://github.com/VOD-Studio/violet/commit/ff6ae2cf55c61a4d60e6d62897fb913be945764f))
+* **design-system:** 新增流水波浪线动效 ([bb5a61a](https://github.com/VOD-Studio/violet/commit/bb5a61af1035f38b88d0de3dc3ef65aee90d6802))
+* **design-system:** 移除模糊聚焦并落地文字下划线与引用线动效 ([2f08847](https://github.com/VOD-Studio/violet/commit/2f08847bc466b22c0a0d0f04a1dc550d870ed73f))
+* **design-system:** 计数气泡升级为逐位比对动效并清理折叠展开组件 ([e8be447](https://github.com/VOD-Studio/violet/commit/e8be447478aa9093edfd2141ca45b00c026aa0f4))
+* **design-system:** 重构功能色体系与色板生成器 ([b0165be](https://github.com/VOD-Studio/violet/commit/b0165bed0b976e4478d6ad62ac74a5e40ba7f0dd))
+
+
+### 修复
+
+* **design-system:** 修复复制按钮形态突变与定时器泄露 ([1db3995](https://github.com/VOD-Studio/violet/commit/1db3995287726c9d2f28627cb740c4578d4dddad))
+* **design-system:** 修复首屏闪烁、重构波浪线为裁剪揭示并拉开逐词与级联质感区隔 ([641c7ad](https://github.com/VOD-Studio/violet/commit/641c7ad12826e32e89dd1e078e997df748b31d85))
+* **design-system:** 移除违规微浮动效、重构折叠展开视差并根治气泡闪烁 ([0dccc74](https://github.com/VOD-Studio/violet/commit/0dccc74f632e4d5060898d838377979b5bd94fac))
+
+
+### 重构
+
+* **design-system:** 复用 shared/ui/segmented 分段器组件 ([6d0b4a7](https://github.com/VOD-Studio/violet/commit/6d0b4a70bacb0aa577159aa4a35b30e34f0ca311))
+* **design-system:** 重构品牌色阶算法与功能色卡片美学排版 ([ee49dfa](https://github.com/VOD-Studio/violet/commit/ee49dfad2de22bd9b2cc3a700a5e813a6ecdfeeb))
+
 ## [2.8.42](https://github.com/VOD-Studio/violet/compare/v2.8.41...v2.8.42) (2026-09-23)
 
 
