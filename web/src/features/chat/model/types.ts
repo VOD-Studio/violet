@@ -132,6 +132,7 @@ export interface ChatEvent {
 	id: string;
 	type:
 		| "message.created"
+		| "message.updated"
 		| "room.invited"
 		| "conversation.created"
 		| "member.changed"

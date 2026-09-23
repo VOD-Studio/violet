@@ -82,7 +82,8 @@ export const useChatMembers = (id: string | null) =>
 export const useChatMessages = (id: string | null) => {
 	const query = useInfiniteQuery({
 		queryKey: id ? chatKeys.messages(id) : chatKeys.root,
-		queryFn: ({ pageParam }) => fetchChatMessages(id as string, pageParam || undefined),
+		queryFn: ({ pageParam, signal }) =>
+			fetchChatMessages(id as string, pageParam || undefined, 50, signal),
 		initialPageParam: "",
 		getNextPageParam: (lastPage) => lastPage.pagination.next_cursor ?? undefined,
 		enabled: Boolean(id),

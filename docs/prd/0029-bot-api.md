@@ -230,7 +230,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 
 - bot 用户在联系人列表中显示（可搜索到 bot 虚拟用户）
 - bot 消息正常渲染（`MessageDTO` sender 是 bot 虚拟用户）
-- 连续编辑会发出 `message.updated` SSE 事件；现阶段前端收到事件后回查消息，V8 改为直接消费实时正文快照
+- 连续编辑会发出 `message.updated` SSE 事件；V8 在线事件携带正文快照，前端直接更新消息，断线补发时回查
 - 无需知道外部 bot 的存在
 
 实测：`GET /chat/contacts?q=saber` 直接返回 bot 虚拟用户（`display_name` 即 bot 名），
@@ -274,7 +274,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 | V5 | 集成到 `chat.Service`：发消息与输入状态推给参与的 bot | 完成 |
 | V6 | admin 后台：bot 管理界面 | 完成 |
 | V7 | 前端：bot 用户搜索与会话发起 | 零改动即成立 |
-| V8 | bot 回复的前端实时增量显示 | 待实现，方案见下节 |
+| V8 | bot 回复的前端实时增量显示 | 本地实现完成，真实 bot 联调待验收 |
 
 ## V8：bot 回复的前端实时增量显示
 
@@ -282,7 +282,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 
 **验收目标**：外部 bot 收到模型的文本增量后，用户在同一条消息气泡中持续看到真实生成的正文；刷新或断线重连后看到数据库里的最新正文。前端不按定时器伪造打字过程。
 
-现有链路已经允许 bot `POST .../messages` 创建消息，再连续 `PATCH .../messages/{messageId}` 提交累计正文；Saber 的 Presenter 消费模型 `TextDelta`，按约 200 ms 的间隔调用 Edit。每次 Edit 都保存完整消息并产生 `message.updated`。当前用户侧事件只带 `conversation_id` 与 `message_id`，`useChatStream` 收到每次更新都会失效会话、未读数及消息查询，由 HTTP 重拉决定画面何时变化。这是 V8 要补的接口和前端消费缺口。
+Bot 通过 `POST .../messages` 创建消息，再连续 `PATCH .../messages/{messageId}` 提交累计正文；Saber 的 Presenter 消费模型 `TextDelta`，按约 200 ms 的间隔调用 Edit。每次 Edit 都保存完整消息并产生 `message.updated`。V8 之前，用户侧事件只带 `conversation_id` 与 `message_id`，前端每次都要通过 HTTP 重拉消息；V8 让在线事件带正文，前端按事件更新缓存。
 
 ### 事件契约
 
@@ -300,7 +300,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 ### 浏览器消费
 
 - `useChatStream` 收到带 `content` 的 `message.updated` 后，按 `conversation_id`、`message_id` 定位消息缓存并直接替换正文与 `edited_at`。同一气泡随真实增量更新，不为每一段重新请求消息列表、会话列表和未读数。
-- 缓存里还没有这条消息、事件没有正文（断线补发或旧服务端）、或非文本编辑时，走现有查询失效回查路径。连接建立时继续全量对账。
+- 缓存里还没有这条消息、事件没有正文（断线补发或旧服务端）、非文本编辑、或正文含需按查看者解析的自定义表情时，走现有查询失效回查路径。连接建立时继续全量对账。
 - 用事件序号或编辑时间防止旧帧覆盖新正文；在途消息查询应支持取消，避免较早的 HTTP 响应在 SSE 快照之后覆盖新内容。
 - 沿用现有 Markdown 正文、输入状态与时间戳样式；本阶段不引入逐字动画。编辑标识是否对 bot 的生成过程隐藏，要先有明确的流完成信号，本阶段不靠时间猜测完成。
 
@@ -308,7 +308,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 
 1. **后端提交**：在应用层文本编辑的通知路径增加仅用于实时投递的快照，更新事件契约及 OpenAPI；保持持久化事件载荷和 bot 鉴权、成员校验不变。测试实时帧含已保存正文、补发帧按 ID 回查、普通编辑仍可用。
 2. **前端提交**：消费快照并更新 TanStack Query 消息缓存；无快照时回查。测试连续三段更新使用同一消息 ID、不会逐段发消息列表请求，旧帧与在途查询不会使正文倒退。
-3. **真链路验收**：在站内与启用流式模型的 bot 对话，观察至少三次真实增量、最终正文与历史接口一致；刷新与断线重连能恢复，普通用户编辑及另一个会话不受影响。`scripts/bot-smoke.mjs` 只证明 Bot API 连续编辑成功，不能代替浏览器和真实模型验收。
+3. **真链路验收（待做）**：在站内与启用流式模型的 bot 对话，观察至少三次真实增量、最终正文与历史接口一致；刷新与断线重连能恢复，普通用户编辑及另一个会话不受影响。浏览器契约测试使用模拟 SSE，`scripts/bot-smoke.mjs` 只证明 Bot API 连续编辑成功；两者都不能代替真实模型验收。
 
 V8 不需要数据库迁移；如果后续确需“回复中/完成/失败”的持久状态，再单独设计显式的完成协议，避免从两次增量间隔猜状态。
 
