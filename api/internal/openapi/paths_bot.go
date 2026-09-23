@@ -49,7 +49,7 @@ func registerBotPaths(t *openapi3.T) {
 
 	post(t, "/chat/bot/conversations/{conversationId}/messages", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "发送消息",
-		Description: "只开放文本消息。Idempotency-Key 必填：重试应是同一条消息，而不是刷第二遍屏。",
+		Description: "只开放文本消息。Idempotency-Key 必填：重试应是同一条消息，而不是刷第二遍屏。引用回复保存成功后，bot 已读位置推进到 reply_to_id。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), idempotencyHeaderParam()},
 		RequestBody: jsonBody("BotSendMessageRequest", true, "消息参数"),

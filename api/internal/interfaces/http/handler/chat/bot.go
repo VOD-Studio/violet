@@ -134,7 +134,7 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	dto, err := h.chat.SendMessage(r.Context(), appchat.SendMessageInput{
+	dto, err := h.chat.SendBotMessage(r.Context(), appchat.SendMessageInput{
 		UserID:         bot.UserID(),
 		ConversationID: conversationID,
 		Type:           domainchat.MessageText,

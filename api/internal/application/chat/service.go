@@ -881,6 +881,18 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	return s.messageDTOWithReadState(ctx, message, in.UserID)
 }
 
+// SendBotMessage 发送 bot 消息，并在引用回复成功后推进到被回复消息的阅读位置。
+func (s *Service) SendBotMessage(ctx context.Context, in SendMessageInput) (MessageDTO, error) {
+	dto, err := s.SendMessage(ctx, in)
+	if err != nil || in.ReplyToID.IsZero() || dto.ReplyTo == nil || dto.ReplyTo.ID != in.ReplyToID.String() {
+		return dto, err
+	}
+	if _, err := s.MarkRead(ctx, in.UserID, in.ConversationID, in.ReplyToID); err != nil {
+		log.Warn().Err(err).Str("conversation_id", in.ConversationID.String()).Str("message_id", in.ReplyToID.String()).Msg("Bot 回复已发送，但推进已读位置失败")
+	}
+	return dto, nil
+}
+
 // dispatchBotMessage 新消息落库后向相关 bot 投递自带正文的事件快照。
 //
 // viewer 取发送者：bot 只关心正文与作者，自定义表情的 viewer 关系对它无意义，

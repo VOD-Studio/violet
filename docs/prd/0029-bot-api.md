@@ -59,8 +59,9 @@ Violet Bot API (/api/v1/chat/bot/*)
 - `POST /api/v1/chat/bot/conversations/{conversationId}/messages`
 - header: `Idempotency-Key`（必填）；body: `{ content, reply_to_id? }`
 - 只开放文本消息：图片与分享推文涉及媒体归属校验，bot 侧没有上传通道
-- 调用现有 `chat.Service.SendMessage`，senderID = bot 虚拟用户 ID
+- 调用 `chat.Service.SendBotMessage`，senderID = bot 虚拟用户 ID
 - 返回 violet 消息 ID（供 bot 后续 Edit）
+- 引用回复保存成功后，bot 的阅读位置推进到 `reply_to_id`；同会话中更晚的消息仍未读。无引用的主动消息不推进已读
 
 **消息编辑**：
 
@@ -275,6 +276,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 | V6 | admin 后台：bot 管理界面 | 完成 |
 | V7 | 前端：bot 用户搜索与会话发起 | 零改动即成立 |
 | V8 | bot 回复的前端实时增量显示 | 本地实现完成，真实 bot 联调待验收 |
+| V9 | bot 引用回复推进已读位置 | 本地实现完成，真实 bot 联调待验收 |
 
 ## V8：bot 回复的前端实时增量显示
 
@@ -282,7 +284,7 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 
 **验收目标**：外部 bot 收到模型的文本增量后，用户在同一条消息气泡中持续看到真实生成的正文；刷新或断线重连后看到数据库里的最新正文。前端不按定时器伪造打字过程。
 
-Bot 通过 `POST .../messages` 创建消息，再连续 `PATCH .../messages/{messageId}` 提交累计正文；Saber 的 Presenter 消费模型 `TextDelta`，按约 200 ms 的间隔调用 Edit。每次 Edit 都保存完整消息并产生 `message.updated`。V8 之前，用户侧事件只带 `conversation_id` 与 `message_id`，前端每次都要通过 HTTP 重拉消息；V8 让在线事件带正文，前端按事件更新缓存。
+Bot 通过 `POST .../messages` 创建消息，再连续 `PATCH .../messages/{messageId}` 提交累计正文；Saber 的 taskStream 消费模型 `TextDelta`，按 Violet 配置默认 200 ms 的间隔调用 Edit。每次 Edit 都保存完整消息并产生 `message.updated`。V8 之前，用户侧事件只带 `conversation_id` 与 `message_id`，前端每次都要通过 HTTP 重拉消息；V8 让在线事件带正文，前端按事件更新缓存。
 
 ### 事件契约
 
@@ -311,6 +313,16 @@ Bot 通过 `POST .../messages` 创建消息，再连续 `PATCH .../messages/{mes
 3. **真链路验收（待做）**：在站内与启用流式模型的 bot 对话，观察至少三次真实增量、最终正文与历史接口一致；刷新与断线重连能恢复，普通用户编辑及另一个会话不受影响。浏览器契约测试使用模拟 SSE，`scripts/bot-smoke.mjs` 只证明 Bot API 连续编辑成功；两者都不能代替真实模型验收。
 
 V8 不需要数据库迁移；如果后续确需“回复中/完成/失败”的持久状态，再单独设计显式的完成协议，避免从两次增量间隔猜状态。
+
+## V9：Bot 引用回复推进已读位置
+
+Saber 的即时回复走持久化任务队列。入站 `message.created` 只表示收到消息，排队中的后续消息不能因此显示「已读」。taskStream 在生成第一段可见正文时，以原消息 ID 为 `reply_to_id` 调用 Bot API 的 `POST .../messages`。Violet 保存这条回复后，以 bot 虚拟用户身份调用现有 `MarkRead`，把水位推进到被引用消息；现有 `read.advanced` 事件让人类发送者的气泡由「未读」变成「已读」。
+
+- 标记目标是实际回复的消息 ID，不取会话最新消息；同会话更晚的提问留在队列中时仍为「未读」。
+- 发送失败不标已读；主动消息没有 `reply_to_id`，也不标。相同 `Idempotency-Key` 重试已存在的回复时仍补做已读推进。
+- 已读写入失败只记警告，不把已保存的回复改判失败。浏览器继续使用原有 `read_state` 与 `read.advanced`，不新增前端状态。
+
+待用运行中的 Saber 与 Violet 发一条带引用的真实回复，核对首段出现后原消息显示「已读」，排在后面的消息仍显示「未读」。
 
 
 ## 对接方
