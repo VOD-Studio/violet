@@ -137,6 +137,21 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 			),
 		},
 		{
+			key: "thinking_default_expanded",
+			header: "默认展开",
+			width: "120px",
+			cell: (row) => (
+				<Switch
+					checked={row.thinking_default_expanded}
+					disabled={update.isPending}
+					aria-label={`${row.thinking_default_expanded ? "默认折叠" : "默认展开"} ${row.name} 的思考过程`}
+					onCheckedChange={(thinking_default_expanded) =>
+						update.mutate({ id: row.id, body: { thinking_default_expanded } })
+					}
+				/>
+			),
+		},
+		{
 			key: "created_at",
 			header: "创建时间",
 			width: "160px",

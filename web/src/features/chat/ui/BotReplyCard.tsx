@@ -1,6 +1,6 @@
 import { Copy, LoaderCircle } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ChatMessage, ChatUser } from "../model/types";
 import { ChatMessageContent } from "./ChatMessageContent";
@@ -24,22 +24,14 @@ export function BotReplyCard({
 	onMention,
 	replyPreview,
 }: BotReplyCardProps) {
-	const [thinkingOpen, setThinkingOpen] = useState(false);
-	const autoOpenedThinking = useRef(false);
+	const reply = message.bot_reply;
+	const [thinkingOpen, setThinkingOpen] = useState(reply?.thinking_default_expanded ?? false);
 	const [stalled, setStalled] = useState(false);
 	const reducedMotion = useReducedMotion();
-	const reply = message.bot_reply;
 	const active =
 		reply?.status === "pending" ||
 		reply?.status === "thinking" ||
 		reply?.status === "streaming";
-
-	useEffect(() => {
-		if (active && reply?.thinking && !autoOpenedThinking.current) {
-			autoOpenedThinking.current = true;
-			setThinkingOpen(true);
-		}
-	}, [active, reply?.thinking]);
 
 	useEffect(() => {
 		if (!active || !reply) {

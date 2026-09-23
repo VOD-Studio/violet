@@ -31,6 +31,7 @@ function bot(overrides: Partial<BotDTO> = {}): BotDTO {
 		name: "Saber",
 		enabled: true,
 		show_thinking: false,
+		thinking_default_expanded: false,
 		token_viewable: true,
 		created_at: "2026-09-22T10:00:00Z",
 		updated_at: "2026-09-22T10:00:00Z",
@@ -83,6 +84,16 @@ describe("BotTable", () => {
 		fireEvent.click(screen.getByRole("switch", { name: "开启 Saber 的思考展示" }));
 		await waitFor(() =>
 			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", { show_thinking: true }),
+		);
+	});
+
+	it("默认展开开关只提交 thinking_default_expanded 配置", async () => {
+		renderTable([bot({ show_thinking: true })]);
+		fireEvent.click(screen.getByRole("switch", { name: "默认展开 Saber 的思考过程" }));
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/admin/chat-bots/b1", {
+				thinking_default_expanded: true,
+			}),
 		);
 	});
 

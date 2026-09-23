@@ -153,6 +153,7 @@ it("Bot 生成快照同步正文、thinking 与完成状态", async () => {
 				bot_reply: {
 					status,
 					thinking: "已分析",
+					thinking_default_expanded: true,
 					revision: Number(id),
 					updated_at: "2026-09-23T10:00:01Z",
 				},
@@ -167,6 +168,7 @@ it("Bot 生成快照同步正文、thinking 与完成状态", async () => {
 	const result = client.getQueryData<MessagesCache>(key)?.pages[0].data[0];
 	expect(result?.content).toBe("最终回复");
 	expect(result?.bot_reply?.thinking).toBe("已分析");
+	expect(result?.bot_reply?.thinking_default_expanded).toBe(true);
 	expect(result?.edited_at).toBeUndefined();
 });
 

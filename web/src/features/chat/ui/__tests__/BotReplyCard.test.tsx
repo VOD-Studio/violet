@@ -5,10 +5,11 @@ import { BotReplyCard } from "../BotReplyCard";
 
 afterEach(cleanup);
 
-it("生成时自动展开思考，手动收起后不被后续快照重新打开", async () => {
+it("按 Bot 配置默认展开思考，手动收起后不被后续快照重新打开", async () => {
 	const reply = {
 		status: "streaming" as const,
 		thinking: "分析问题",
+		thinking_default_expanded: true,
 		revision: 2,
 		updated_at: new Date().toISOString(),
 	};
@@ -69,6 +70,16 @@ it("生成时自动展开思考，手动收起后不被后续快照重新打开"
 	render(
 		<BotReplyCard
 			message={{ ...message, bot_reply: { ...reply, status: "completed" } }}
+			viewerID="viewer-1"
+		/>,
+	);
+	expect(screen.getByRole("button", { name: /思考过程/ }).getAttribute("aria-expanded")).toBe(
+		"true",
+	);
+	cleanup();
+	render(
+		<BotReplyCard
+			message={{ ...message, bot_reply: { ...reply, thinking_default_expanded: false } }}
 			viewerID="viewer-1"
 		/>,
 	);

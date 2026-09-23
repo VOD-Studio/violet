@@ -10,6 +10,7 @@ export interface BotDTO {
 	avatar_url?: string;
 	enabled: boolean;
 	show_thinking: boolean;
+	thinking_default_expanded: boolean;
 	/** 明文 token，仅创建、重置与「查看凭据」响应携带 */
 	token?: string;
 	/** 当前能否取回明文；false = 库里无可用密文，只能重置 token */
@@ -32,4 +33,5 @@ export interface UpdateBotRequest {
 	avatar_id?: string;
 	enabled?: boolean;
 	show_thinking?: boolean;
+	thinking_default_expanded?: boolean;
 }

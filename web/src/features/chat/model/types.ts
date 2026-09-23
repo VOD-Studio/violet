@@ -15,6 +15,7 @@ export interface ChatUser {
 export interface BotReply {
 	status: "pending" | "thinking" | "streaming" | "completed" | "failed";
 	thinking?: string;
+	thinking_default_expanded?: boolean;
 	revision: number;
 	updated_at: string;
 }
