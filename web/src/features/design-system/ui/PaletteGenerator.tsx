@@ -1,15 +1,7 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@shared/ui/color-picker";
-import {
-	AlertCircle,
-	AlertTriangle,
-	Check,
-	CheckCircle2,
-	Copy,
-	Info,
-	Sparkles,
-} from "lucide-react";
+import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info } from "lucide-react";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -22,14 +14,13 @@ import type {
 } from "../model/palette";
 import { generatePalette } from "../model/palette";
 
-// 备选主色里的两枚站内典藏：现役冷香紫罗兰与曾用暖珊瑚
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
 const CORAL_SEED = oklchToRgb(0.625, 0.19, 25).hex;
 
 /** 主色速选预设库 */
 const SEED_PRESETS = [
-	{ hex: VIOLET_SEED, name: "紫罗兰 · 现役预设" },
-	{ hex: CORAL_SEED, name: "暖珊瑚 · 曾用预设" },
+	{ hex: VIOLET_SEED, name: "紫罗兰" },
+	{ hex: CORAL_SEED, name: "暖珊瑚" },
 	{ hex: "#2563eb", name: "靛蓝" },
 	{ hex: "#0891b2", name: "青" },
 	{ hex: "#059669", name: "松绿" },
@@ -135,105 +126,90 @@ function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
 	);
 }
 
-/**
- * 完整功能色展台：展示 Solid 实色面、Wash 浅染底、Foreground 文字及描边的明暗对比。
- */
-function FunctionalSpecimenCard({ set }: { set: FunctionalColorSet }) {
-	const [copiedType, setCopiedType] = useState<string | null>(null);
-
-	const handleCopy = async (hex: string, label: string) => {
-		if (await copyText(hex.toUpperCase())) {
-			setCopiedType(label);
-			toast.success(`已复制 ${set.name} ${label}: ${hex.toUpperCase()}`);
-			setTimeout(() => setCopiedType(null), 1200);
-		}
-	};
-
+function FunctionalSwatch({
+	color,
+	domain,
+	label,
+	textColor,
+	borderColor,
+}: {
+	color: SwatchColor;
+	domain: string;
+	label: string;
+	textColor?: string;
+	borderColor?: string;
+}) {
+	const [copied, setCopied] = useState(false);
+	const defaultInk = (parseOklch(color.oklch)?.l ?? 0.5) < 0.62 ? "text-white" : "text-slate-900";
 	return (
-		<div className="rounded-xl border border-border/40 bg-card/40 p-4 transition-colors duration-200">
-			<div className="flex items-baseline justify-between gap-2">
-				<div className="flex items-center gap-2">
-					<span
-						className="size-3 shrink-0 rounded-full"
-						style={{ backgroundColor: set.light.solid.hex }}
-					/>
-					<h4 className="text-sm font-semibold">{set.name}</h4>
-					<code className="font-mono text-xs text-muted-foreground">--{set.key}</code>
-				</div>
-				<span className="text-xs text-muted-foreground">{set.note}</span>
-			</div>
+		<button
+			className="group relative flex h-9 w-full items-center justify-center overflow-hidden rounded-lg font-mono text-[10px] font-semibold tracking-wide outline-none ring-1 ring-border/50 transition-[filter] duration-150 hover:brightness-105"
+			onClick={async () => {
+				if (await copyText(color.hex.toUpperCase())) {
+					setCopied(true);
+					toast.success(`已复制 ${label} ${domain}: ${color.hex.toUpperCase()}`);
+					setTimeout(() => setCopied(false), 1200);
+				}
+			}}
+			style={{
+				backgroundColor: color.hex,
+				color: textColor ?? undefined,
+				borderColor: borderColor ?? undefined,
+			}}
+			title={`${domain} · ${color.oklch}`}
+			type="button"
+		>
+			<span className={textColor ? "" : defaultInk}>
+				{copied ? "✓" : color.hex.toUpperCase()}
+			</span>
+		</button>
+	);
+}
 
-			<div className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-				{/* 浅色域 */}
-				<div className="space-y-2 rounded-lg border border-border/40 bg-background/60 p-2.5">
-					<span className="block font-mono text-[10px] text-muted-foreground">
-						浅色模式 · Light
-					</span>
-					<button
-						className="flex h-9 w-full items-center justify-between rounded-md px-3 font-mono text-xs font-medium text-white transition-opacity hover:opacity-90"
-						onClick={() => void handleCopy(set.light.solid.hex, "浅色实色")}
-						style={{ backgroundColor: set.light.solid.hex }}
-						type="button"
-					>
-						<span>实色 Solid</span>
-						<span>
-							{copiedType === "浅色实色" ? "✓" : set.light.solid.hex.toUpperCase()}
-						</span>
-					</button>
-					<button
-						className="flex h-9 w-full items-center justify-between rounded-md border px-3 font-mono text-xs font-medium transition-opacity hover:opacity-90"
-						onClick={() => void handleCopy(set.light.wash.hex, "浅色浅染底")}
-						style={{
-							backgroundColor: set.light.wash.hex,
-							borderColor: set.light.border.hex,
-							color: set.light.washForeground.hex,
-						}}
-						type="button"
-					>
-						<span>浅染 Wash</span>
-						<span>
-							{copiedType === "浅色浅染底" ? "✓" : set.light.wash.hex.toUpperCase()}
-						</span>
-					</button>
-				</div>
-
-				{/* 深色域 */}
-				<div className="space-y-2 rounded-lg border border-border/40 bg-slate-950/80 p-2.5">
-					<span className="block font-mono text-[10px] text-slate-400">
-						深色模式 · Dark
-					</span>
-					<button
-						className="flex h-9 w-full items-center justify-between rounded-md px-3 font-mono text-xs font-medium transition-opacity hover:opacity-90"
-						onClick={() => void handleCopy(set.dark.solid.hex, "深色实色")}
-						style={{
-							backgroundColor: set.dark.solid.hex,
-							color: set.dark.foreground.hex,
-						}}
-						type="button"
-					>
-						<span>实色 Solid</span>
-						<span>
-							{copiedType === "深色实色" ? "✓" : set.dark.solid.hex.toUpperCase()}
-						</span>
-					</button>
-					<button
-						className="flex h-9 w-full items-center justify-between rounded-md border px-3 font-mono text-xs font-medium transition-opacity hover:opacity-90"
-						onClick={() => void handleCopy(set.dark.wash.hex, "深色浅染底")}
-						style={{
-							backgroundColor: set.dark.wash.hex,
-							borderColor: set.dark.border.hex,
-							color: set.dark.washForeground.hex,
-						}}
-						type="button"
-					>
-						<span>浅染 Wash</span>
-						<span>
-							{copiedType === "深色浅染底" ? "✓" : set.dark.wash.hex.toUpperCase()}
-						</span>
-					</button>
-				</div>
+function FunctionalRow({ set }: { set: FunctionalColorSet }) {
+	return (
+		<li className="grid grid-cols-[1fr_7.5rem_7.5rem] items-center gap-x-3 rounded-xl px-3 py-2 transition-colors duration-150 hover:bg-muted/40 sm:grid-cols-[1fr_12rem_12rem] sm:gap-x-4">
+			<div className="flex min-w-0 items-center gap-2">
+				<span
+					className="size-2.5 shrink-0 rounded-full"
+					style={{ backgroundColor: set.light.solid.hex }}
+				/>
+				<span className="shrink-0 text-xs font-semibold">{set.name}</span>
+				<code className="shrink-0 font-mono text-xs text-muted-foreground">
+					--{set.key}
+				</code>
+				<span className="hidden truncate text-xs text-muted-foreground md:inline">
+					· {set.note}
+				</span>
 			</div>
-		</div>
+			{/* 浅色域：实色 + 浅染 */}
+			<div className="grid grid-cols-2 gap-1.5">
+				<FunctionalSwatch color={set.light.solid} domain="浅色实色" label={set.name} />
+				<FunctionalSwatch
+					borderColor={set.light.border.hex}
+					color={set.light.wash}
+					domain="浅色浅染"
+					label={set.name}
+					textColor={set.light.washForeground.hex}
+				/>
+			</div>
+			{/* 深色域：实色 + 浅染 */}
+			<div className="grid grid-cols-2 gap-1.5">
+				<FunctionalSwatch
+					color={set.dark.solid}
+					domain="深色实色"
+					label={set.name}
+					textColor={set.dark.foreground.hex}
+				/>
+				<FunctionalSwatch
+					borderColor={set.dark.border.hex}
+					color={set.dark.wash}
+					domain="深色浅染"
+					label={set.name}
+					textColor={set.dark.washForeground.hex}
+				/>
+			</div>
+		</li>
 	);
 }
 
@@ -264,12 +240,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 			whileInView={{ opacity: 1 }}
 		>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<div>
-					<h3 className="text-lg font-bold">组件试穿沙盒</h3>
-					<p className="mt-1 text-xs text-muted-foreground">
-						所见即所得：当前推导的品牌主色、强调色与升级功能色在此刻直接驱动真实界面组件。
-					</p>
-				</div>
+				<h3 className="text-lg font-bold">组件试穿沙盒</h3>
 				<div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
 					<button
 						className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -302,7 +273,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 						{/* 按钮群组 */}
 						<div>
 							<span className="block text-xs font-medium text-muted-foreground">
-								按钮与动作层级（Action Hierarchy）
+								按钮与动作
 							</span>
 							<div className="mt-3 flex flex-wrap items-center gap-3">
 								<button
@@ -346,7 +317,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 						<div className="grid grid-cols-1 gap-6 border-t border-border/40 pt-4 sm:grid-cols-2">
 							<div>
 								<span className="block text-xs font-medium text-muted-foreground">
-									药丸徽章（Pills & Tags）
+									徽章与标签
 								</span>
 								<div className="mt-3 flex flex-wrap items-center gap-2">
 									<span
@@ -378,7 +349,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 
 							<div>
 								<span className="block text-xs font-medium text-muted-foreground">
-									表单与焦点环（Focus & Controls）
+									表单与焦点环
 								</span>
 								<div className="mt-3 flex items-center gap-4">
 									<input
@@ -405,7 +376,7 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 										/>
 									</button>
 									<span className="text-xs text-muted-foreground">
-										{switchOn ? "激活状态" : "关闭状态"}
+										{switchOn ? "开启" : "关闭"}
 									</span>
 								</div>
 							</div>
@@ -427,9 +398,9 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 								style={{ color: successSet.light.solid.hex }}
 							/>
 							<div className="min-w-0">
-								<h5 className="text-xs font-bold">发布成功 · 状态正常更新</h5>
+								<h5 className="text-xs font-bold">操作成功</h5>
 								<p className="mt-0.5 text-xs opacity-90">
-									新配色算法已自动重算 WCAG 对比度并合拢至全站样式映射层。
+									数据已正常更新并同步至各端。
 								</p>
 							</div>
 						</div>
@@ -448,9 +419,9 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 								style={{ color: warningSet.light.solid.hex }}
 							/>
 							<div className="min-w-0">
-								<h5 className="text-xs font-bold">待决变更 · 建议校验明暗双域</h5>
+								<h5 className="text-xs font-bold">待决变更</h5>
 								<p className="mt-0.5 text-xs opacity-90">
-									暖琥珀金已取代旧式泥黄，在亮浅白底与黑曜暗底上均具备优良识别率。
+									部分配置尚未确认，切换分支前请先保存当前修改。
 								</p>
 							</div>
 						</div>
@@ -469,9 +440,9 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 								style={{ color: destructiveSet.light.solid.hex }}
 							/>
 							<div className="min-w-0">
-								<h5 className="text-xs font-bold">阻断操作 · 不可逆变更确认</h5>
+								<h5 className="text-xs font-bold">阻断提醒</h5>
 								<p className="mt-0.5 text-xs opacity-90">
-									删除文章或解散项目等破坏性动作将严格触发防误触保护。
+									此操作将永久清理选中项目，请再次核验目标对象。
 								</p>
 							</div>
 						</div>
@@ -490,10 +461,9 @@ function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
 								style={{ color: infoSet.light.solid.hex }}
 							/>
 							<div className="min-w-0">
-								<h5 className="text-xs font-bold">系统广播 · 色彩科学说明</h5>
+								<h5 className="text-xs font-bold">系统说明</h5>
 								<p className="mt-0.5 text-xs opacity-90">
-									基于 OKLCH 空间进行等感知亮度调校，杜绝传统 sRGB
-									坐标下的色偏与脏色。
+									色相与彩度由固定语义模型解算，明暗双域自适应。
 								</p>
 							</div>
 						</div>
@@ -578,12 +548,7 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 			whileInView={{ opacity: 1 }}
 		>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<div>
-					<h3 className="text-lg font-bold">代码导出</h3>
-					<p className="mt-1 text-xs text-muted-foreground">
-						色板推导完成，一键导出为标准工程代码，粘贴至样式定义即可直接生效。
-					</p>
-				</div>
+				<h3 className="text-lg font-bold">代码导出</h3>
 				<div className="flex items-center gap-2">
 					<div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
 						<button
@@ -646,7 +611,6 @@ export function PaletteGenerator() {
 	const palette = useMemo(() => {
 		const parsed = hexToOklch(seedHex);
 		const h = Math.round(parsed?.h ?? 222);
-		// 彩度钳到可入界面的克制区间；取到近灰主色时整板随之素净
 		const c = Math.min(Math.max(parsed?.c ?? 0.16, 0.04), 0.3);
 		return generatePalette({ h, c });
 	}, [seedHex]);
@@ -677,15 +641,7 @@ export function PaletteGenerator() {
 					{/* 左侧：主色标本与参数 */}
 					<div className="flex flex-col justify-between space-y-4 lg:col-span-5">
 						<div>
-							<div className="flex items-center justify-between">
-								<p className="text-sm font-bold text-foreground">
-									主色种子 Specimen
-								</p>
-								<span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
-									<Sparkles className="size-3 text-primary" />
-									生成源头
-								</span>
-							</div>
+							<p className="text-sm font-bold text-foreground">主色</p>
 							<div
 								className="mt-3 flex h-28 w-full flex-col justify-end rounded-xl p-4 shadow-xs ring-1 ring-black/5 transition-colors duration-200"
 								style={{ backgroundColor: seedHex }}
@@ -760,9 +716,6 @@ export function PaletteGenerator() {
 									value={hexInput}
 								/>
 							</div>
-							<p className="text-[11px] text-muted-foreground">
-								给一个主色，其余全部语义色、色阶与中性带由此推导。
-							</p>
 						</div>
 					</div>
 
@@ -898,20 +851,21 @@ export function PaletteGenerator() {
 				viewport={{ margin: "-40px", once: true }}
 				whileInView={{ opacity: 1 }}
 			>
-				<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
-					<div>
-						<h3 className="text-lg font-bold">功能色</h3>
-						<p className="mt-1 text-xs text-muted-foreground">
-							基于 OKLCH
-							感知色彩科学重调的非对称语义色体系：实色（Solid）与浅染（Wash）齐备，告别暗沉发脏。
-						</p>
-					</div>
-				</div>
-				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+				<h3 className="mt-10 text-lg font-bold">功能色</h3>
+				<ul className="mt-2 grid grid-cols-[1fr_8rem_8rem] gap-x-4 px-3 pb-1.5 sm:grid-cols-[1fr_12rem_12rem]">
+					<span className="font-mono text-[11px] text-muted-foreground">语义角色</span>
+					<span className="text-center font-mono text-[11px] text-muted-foreground">
+						浅色（实色 / 浅染）
+					</span>
+					<span className="text-center font-mono text-[11px] text-muted-foreground">
+						深色（实色 / 浅染）
+					</span>
+				</ul>
+				<ul className="mt-0 space-y-1">
 					{palette.functionalSets.map((set) => (
-						<FunctionalSpecimenCard key={set.key} set={set} />
+						<FunctionalRow key={set.key} set={set} />
 					))}
-				</div>
+				</ul>
 			</motion.section>
 
 			{/* 中性带 */}

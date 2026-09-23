@@ -27,10 +27,10 @@ describe("色板生成器", () => {
 		}
 	});
 
-	it("速选含现役紫罗兰与曾用暖珊瑚两枚站内典藏", () => {
+	it("速选含紫罗兰与暖珊瑚两枚站内典藏", () => {
 		render(<PaletteGenerator />);
-		expect(screen.getByRole("button", { name: "主色 紫罗兰 · 现役预设" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "主色 暖珊瑚 · 曾用预设" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "主色 紫罗兰" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "主色 暖珊瑚" })).toBeTruthy();
 	});
 
 	it("换主色后整板重推导：点速选松绿即更新读出与色阶", () => {
@@ -86,8 +86,8 @@ describe("色板生成器", () => {
 
 		// 切换到状态反馈横幅
 		fireEvent.click(screen.getByRole("button", { name: "状态反馈横幅" }));
-		expect(screen.getByText(/发布成功 · 状态正常更新/)).toBeTruthy();
-		expect(screen.getByText(/待决变更 · 建议校验明暗双域/)).toBeTruthy();
+		expect(screen.getByText("操作成功")).toBeTruthy();
+		expect(screen.getByText("待决变更")).toBeTruthy();
 	});
 
 	it("代码导出支持 CSS 变量与 Tailwind v4 切换并可一键复制", async () => {

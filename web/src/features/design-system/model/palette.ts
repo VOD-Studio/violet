@@ -93,8 +93,8 @@ function swatch(l: number, c: number, h: number): SwatchColor {
 export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 	{
 		key: "info",
-		name: "信息蔚蓝",
-		note: "客观提示与系统广播",
+		name: "信息",
+		note: "客观提示",
 		light: {
 			solid: swatch(0.58, 0.18, 245),
 			foreground: swatch(0.99, 0, 0),
@@ -112,8 +112,8 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 	},
 	{
 		key: "success",
-		name: "翡翠清绿",
-		note: "达成与积极反馈",
+		name: "成功",
+		note: "达成反馈",
 		light: {
 			solid: swatch(0.6, 0.17, 152),
 			foreground: swatch(0.99, 0, 0),
@@ -131,8 +131,8 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 	},
 	{
 		key: "warning",
-		name: "暖琥珀金",
-		note: "警示与待决状态",
+		name: "警示",
+		note: "待决提醒",
 		light: {
 			solid: swatch(0.65, 0.17, 68),
 			foreground: swatch(0.99, 0, 0),
@@ -150,8 +150,8 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 	},
 	{
 		key: "destructive",
-		name: "纯正赤红",
-		note: "危险操作与阻断报错",
+		name: "危险",
+		note: "操作阻断",
 		light: {
 			solid: swatch(0.58, 0.22, 27),
 			foreground: swatch(0.99, 0, 0),
