@@ -1,5 +1,6 @@
 import { Copy, LoaderCircle } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ChatMessage, ChatUser } from "../model/types";
 import { ChatMessageContent } from "./ChatMessageContent";
@@ -24,12 +25,21 @@ export function BotReplyCard({
 	replyPreview,
 }: BotReplyCardProps) {
 	const [thinkingOpen, setThinkingOpen] = useState(false);
+	const autoOpenedThinking = useRef(false);
 	const [stalled, setStalled] = useState(false);
+	const reducedMotion = useReducedMotion();
 	const reply = message.bot_reply;
 	const active =
 		reply?.status === "pending" ||
 		reply?.status === "thinking" ||
 		reply?.status === "streaming";
+
+	useEffect(() => {
+		if (active && reply?.thinking && !autoOpenedThinking.current) {
+			autoOpenedThinking.current = true;
+			setThinkingOpen(true);
+		}
+	}, [active, reply?.thinking]);
 
 	useEffect(() => {
 		if (!active || !reply) {
@@ -119,18 +129,29 @@ export function BotReplyCard({
 							</button>
 						)}
 					</div>
-					<div
-						id={thinkingID}
-						hidden={!thinkingOpen}
-						className="mt-2 text-sm text-muted-foreground"
-					>
-						{thinkingOpen && (
-							<ChatMessageContent
-								content={reply.thinking}
-								variant="bot"
-								viewerID={viewerID}
-							/>
-						)}
+					<div id={thinkingID} aria-hidden={!thinkingOpen} inert={!thinkingOpen}>
+						<AnimatePresence initial={false}>
+							{thinkingOpen && (
+								<motion.div
+									initial={{ height: 0, opacity: 0 }}
+									animate={{ height: "auto", opacity: 1 }}
+									exit={{ height: 0, opacity: 0 }}
+									transition={{
+										duration: reducedMotion ? 0 : 0.2,
+										ease: "easeOut",
+									}}
+									className="overflow-hidden"
+								>
+									<div className="pt-2 text-sm text-muted-foreground">
+										<ChatMessageContent
+											content={reply.thinking}
+											variant="bot"
+											viewerID={viewerID}
+										/>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
 					</div>
 				</div>
 			)}
