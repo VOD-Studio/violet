@@ -27,10 +27,10 @@ describe("色板生成器", () => {
 		}
 	});
 
-	it("速选含现役紫罗兰与曾用暖珊瑚两枚站内典藏", () => {
+	it("速选含紫罗兰与暖珊瑚两枚站内典藏", () => {
 		render(<PaletteGenerator />);
-		expect(screen.getByRole("button", { name: "主色 紫罗兰 · 现役预设" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "主色 暖珊瑚 · 曾用预设" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "主色 紫罗兰" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "主色 暖珊瑚" })).toBeTruthy();
 	});
 
 	it("换主色后整板重推导：点速选松绿即更新读出与色阶", () => {
@@ -77,5 +77,47 @@ describe("色板生成器", () => {
 		render(<PaletteGenerator />);
 		expect(screen.queryByText("✗")).toBeNull();
 		expect(screen.getAllByText("✓").length).toBeGreaterThanOrEqual(10);
+	});
+
+	it("组件试穿沙盒支持动作控件与状态反馈横幅切换", () => {
+		render(<PaletteGenerator />);
+		expect(screen.getByRole("heading", { name: "组件试穿沙盒" })).toBeTruthy();
+		expect(screen.getByText("主要动作 Primary")).toBeTruthy();
+
+		// 切换到状态反馈横幅
+		fireEvent.click(screen.getByRole("button", { name: "状态反馈横幅" }));
+		expect(screen.getByText("操作成功")).toBeTruthy();
+		expect(screen.getByText("待决变更")).toBeTruthy();
+	});
+
+	it("代码导出支持 CSS 变量与 Tailwind v4 切换并可一键复制", async () => {
+		render(<PaletteGenerator />);
+		expect(screen.getByRole("heading", { name: "代码导出" })).toBeTruthy();
+		expect(screen.getByText(/--brand:/)).toBeTruthy();
+
+		// 切换到 Tailwind v4
+		fireEvent.click(screen.getByRole("button", { name: "Tailwind v4 @theme" }));
+		expect(screen.getByText(/--color-brand-50:/)).toBeTruthy();
+
+		// 复制代码
+		fireEvent.click(screen.getByRole("button", { name: /复制代码/ }));
+		await waitFor(() => {
+			expect(navigator.clipboard.writeText).toHaveBeenCalled();
+		});
+	});
+
+	it("HEX 文本输入框可直接驱动主色重算", () => {
+		render(<PaletteGenerator />);
+		const input = screen.getByDisplayValue("#2563eb");
+		fireEvent.change(input, { target: { value: "#10b981" } });
+		expect(screen.getAllByText("#10B981").length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("功能色展台统一收录全部核心语义角色", () => {
+		render(<PaletteGenerator />);
+		expect(screen.getByRole("heading", { name: "功能色" })).toBeTruthy();
+		for (const role of ["--info", "--success", "--warning", "--destructive"]) {
+			expect(screen.getByText(role)).toBeTruthy();
+		}
 	});
 });

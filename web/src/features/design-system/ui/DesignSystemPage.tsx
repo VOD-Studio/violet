@@ -1,8 +1,8 @@
+import { useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
 import { PageShell } from "@shared/ui/page-shell";
-import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ComponentSpecimens } from "./ComponentSpecimens";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
@@ -74,7 +74,7 @@ export const CHAPTERS: CodexChapter[] = [
 		id: "palette",
 		num: "叁",
 		name: "色板生成器",
-		scope: "选择一个主色，色彩生成算法为你生成完整的色板。",
+		scope: "以单一主色为种，推演全域色阶、语义角色与中性基准。",
 		content: <PaletteGenerator />,
 	},
 	{
@@ -107,9 +107,6 @@ export const CHAPTERS: CodexChapter[] = [
 	},
 ];
 
-/** 章节换页缓动：快出缓进的丝滑曲线 */
-const CHAPTER_EASE = [0.22, 1, 0.36, 1] as const;
-
 /**
  * 营造法式——站点设计系统典籍页。
  *
@@ -120,7 +117,10 @@ export function DesignSystemPage() {
 	const [activeId, setActiveId] = useState<ChapterId>("principles");
 	const active = CHAPTERS.find((chapter) => chapter.id === activeId) ?? CHAPTERS[0];
 	const reduce = useReducedMotion();
-
+	const isInitialMount = useRef(true);
+	useEffect(() => {
+		isInitialMount.current = false;
+	}, []);
 	const listRef = useRef<HTMLUListElement>(null);
 	const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
 	useLayoutEffect(() => {
@@ -156,8 +156,12 @@ export function DesignSystemPage() {
 					>
 						{marker && (
 							<span
-								aria-hidden
-								className="absolute left-0 hidden w-0.5 rounded-full bg-primary transition-[top,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:block"
+								className={cn(
+									"absolute left-0 hidden w-0.5 rounded-full bg-primary motion-reduce:transition-none lg:block",
+									isInitialMount.current
+										? "transition-none"
+										: "transition-[top,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+								)}
 								style={{ top: marker.top, height: marker.height }}
 							/>
 						)}
@@ -198,13 +202,14 @@ export function DesignSystemPage() {
 				</nav>
 
 				<div className="min-w-0 flex-1">
-					{/* key 随章切换重挂：旧章即时让位，新章以淡入微浮入场 */}
-					<motion.section
+					<section
 						aria-labelledby={`chapter-${active.id}`}
-						initial={reduce ? false : { opacity: 0, y: 6 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.35, ease: CHAPTER_EASE }}
 						key={active.id}
+						className={cn(
+							reduce || isInitialMount.current
+								? ""
+								: "animate-in fade-in-50 slide-in-from-bottom-1.5 duration-300 ease-out",
+						)}
 					>
 						<div className="flex items-baseline gap-3">
 							<span className="font-mono text-sm text-muted-foreground">
@@ -224,7 +229,7 @@ export function DesignSystemPage() {
 						</p>
 
 						{active.content}
-					</motion.section>
+					</section>
 				</div>
 			</div>
 		</PageShell>
