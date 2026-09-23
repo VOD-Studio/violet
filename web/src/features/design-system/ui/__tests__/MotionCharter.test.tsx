@@ -7,7 +7,6 @@ import {
 	CounterBadge,
 	FadeIn,
 	HoldToConfirm,
-	HoverLift,
 	Magnetic,
 	NumberFlow,
 	PillSlider,
@@ -39,7 +38,6 @@ describe("动效章程自研动效库", () => {
 			"Shake · 物理警示摇晃",
 			"SmoothExpand · 平滑折叠展开",
 			"CopyButton · 就地复制形变",
-			"HoverLift · 纸面微浮",
 			"CounterBadge · 计数微弹气泡",
 			"TextUnderline · 墨线生长下划线",
 			"WavyUnderline · 流水波浪线",
@@ -187,15 +185,6 @@ describe("动效章程自研动效库", () => {
 		expect(btn).toBeTruthy();
 		fireEvent.click(btn);
 		expect(await screen.findByText("已复制")).toBeTruthy();
-	});
-
-	it("HoverLift 包裹内容正常渲染", () => {
-		render(
-			<HoverLift>
-				<p>纸面微浮</p>
-			</HoverLift>,
-		);
-		expect(screen.getByText("纸面微浮")).toBeTruthy();
 	});
 
 	it("CounterBadge 渲染数字", () => {

@@ -470,12 +470,14 @@ export function HoldToConfirm({
 
 export interface SmoothExpandProps {
 	open: boolean;
+	/** 过渡时长（秒，默认 0.32） */
+	duration?: number;
 	className?: string;
 	children: ReactNode;
 }
 
-/** 平滑展开折叠：基于 CSS grid-template-rows 原生动画。 */
-export function SmoothExpand({ open, className, children }: SmoothExpandProps) {
+/** 平滑展开折叠：基于 CSS grid-template-rows 与内部内容视差淡入沉落。 */
+export function SmoothExpand({ open, duration = 0.32, className, children }: SmoothExpandProps) {
 	const reduce = useReducedMotion();
 
 	return (
@@ -483,11 +485,24 @@ export function SmoothExpand({ open, className, children }: SmoothExpandProps) {
 			className={cn("grid transition-[grid-template-rows]", className)}
 			style={{
 				gridTemplateRows: open || reduce ? "1fr" : "0fr",
-				transitionDuration: reduce ? "0s" : `${MOTION_DURATION.collapse}s`,
+				transitionDuration: reduce ? "0s" : `${duration}s`,
 				transitionTimingFunction: MOTION_BEZIER.out,
 			}}
 		>
-			<div className="overflow-hidden min-h-0">{children}</div>
+			<div className="overflow-hidden min-h-0">
+				<div
+					style={{
+						opacity: open || reduce ? 1 : 0,
+						transform:
+							open || reduce ? "translate3d(0, 0, 0)" : "translate3d(0, -8px, 0)",
+						transition: reduce
+							? "none"
+							: `opacity ${open ? duration * 0.95 : duration * 0.6}s ${MOTION_BEZIER.out}, transform ${duration}s ${MOTION_BEZIER.out}`,
+					}}
+				>
+					{children}
+				</div>
+			</div>
 		</div>
 	);
 }
@@ -1015,49 +1030,41 @@ export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
 	);
 }
 
-export interface HoverLiftProps {
-	className?: string;
-	children: ReactNode;
-}
-
-/** 纸面微浮卡片：克制上浮 2px 并淡出软影，坚守无缩放底线。 */
-export function HoverLift({ className, children }: HoverLiftProps) {
-	const reduce = useReducedMotion();
-
-	return (
-		<div
-			className={cn(
-				"rounded-xl border border-border/40 bg-card transition-all select-none",
-				reduce
-					? ""
-					: "hover:-translate-y-0.5 hover:border-border/80 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] duration-200 ease-out",
-				className,
-			)}
-		>
-			{children}
-		</div>
-	);
-}
-
 export interface CounterBadgeProps {
 	count: number;
 	className?: string;
 }
 
-/** 计数微弹气泡：数值增减时触发微弹入场动画。 */
+/** 计数微弹气泡：外层背景稳定不闪烁，内层数字伴随增减方向微滑入场。 */
 export function CounterBadge({ count, className }: CounterBadgeProps) {
 	const reduce = useReducedMotion();
+	const prevCountRef = useRef(count);
+	const direction = count >= prevCountRef.current ? "up" : "down";
+
+	useEffect(() => {
+		prevCountRef.current = count;
+	}, [count]);
 
 	return (
 		<span
-			key={count}
 			className={cn(
-				"inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-primary",
-				reduce ? "" : "animate-in fade-in-50 zoom-in-95 duration-200 ease-out",
+				"relative inline-flex items-center justify-center overflow-hidden rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-primary select-none",
 				className,
 			)}
 		>
-			{count}
+			<span
+				key={count}
+				className={cn(
+					"inline-block",
+					reduce
+						? ""
+						: direction === "up"
+							? "animate-in fade-in-50 slide-in-from-bottom-2 duration-200 ease-out"
+							: "animate-in fade-in-50 slide-in-from-top-2 duration-200 ease-out",
+				)}
+			>
+				{count}
+			</span>
 		</span>
 	);
 }
