@@ -13,25 +13,29 @@ describe("色板生成器", () => {
 		}
 	});
 
-	it("语义角色与现行 token 角色一一对应", () => {
-		expect(palette.semantic.map((role) => role.role)).toEqual([
+	it("主色与强调只收标准语义 token,中性带独立", () => {
+		expect(palette.primaryRoles.map((role) => role.role)).toEqual([
+			"--primary",
+			"--primary-hover",
+			"--primary-foreground",
+			"--accent",
+			"--accent-foreground",
+		]);
+		expect(palette.neutral.map((role) => role.role)).toEqual([
 			"--background",
 			"--foreground",
 			"--card",
 			"--muted",
 			"--muted-foreground",
-			"--accent",
 			"--border",
 			"--input",
-			"--primary",
-			"--ring",
-			"--popover",
-			"--popover-foreground",
-			"--secondary",
-			"--secondary-foreground",
-			"--accent-foreground",
-			"--primary-foreground",
 		]);
+		// 同一域列内色值互不相同
+		const roles = [...palette.primaryRoles, ...palette.neutral];
+		const lightHexes = roles.map((role) => role.light.hex);
+		const darkHexes = roles.map((role) => role.dark.hex);
+		expect(new Set(lightHexes).size).toBe(lightHexes.length);
+		expect(new Set(darkHexes).size).toBe(darkHexes.length);
 	});
 
 	it("同种子输出确定", () => {
@@ -45,6 +49,11 @@ describe("色板生成器", () => {
 
 	it("中性带带种子色相晕染：同 L 不同种子的画布色相不同", () => {
 		const other = generatePalette({ h: 120, c: 0.16 });
-		expect(other.semantic[0].light.oklch).not.toBe(palette.semantic[0].light.oklch);
+		expect(other.neutral[0].light.oklch).not.toBe(palette.neutral[0].light.oklch);
+	});
+
+	it("功能色为固定行为语义，不随种子更迭", () => {
+		const other = generatePalette({ h: 120, c: 0.3 });
+		expect(other.functional).toEqual(palette.functional);
 	});
 });
