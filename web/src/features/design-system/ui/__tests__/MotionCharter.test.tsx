@@ -11,8 +11,10 @@ import {
 	Magnetic,
 	NumberFlow,
 	PillSlider,
+	QuoteLine,
 	SmoothExpand,
 	TextReveal,
+	TextUnderline,
 	TiltCard,
 } from "../motion-effects";
 
@@ -38,6 +40,7 @@ describe("动效章程自研动效库", () => {
 			"CopyButton · 就地复制形变",
 			"HoverLift · 纸面微浮",
 			"CounterBadge · 计数微弹气泡",
+			"TextUnderline · 墨线生长下划线",
 		];
 		for (const name of interactiveTitles) {
 			expect(screen.getByText(name)).toBeTruthy();
@@ -46,7 +49,7 @@ describe("动效章程自研动效库", () => {
 		const replayTitles = [
 			"FadeIn · 淡入",
 			"SlideIn · 滑入",
-			"BlurIn · 模糊聚焦",
+			"QuoteLine · 引用墨脊注入",
 			"ScaleIn · 缩放入座",
 			"TextReveal · 逐词揭示",
 			"Stagger · 级联编排",
@@ -196,5 +199,19 @@ describe("动效章程自研动效库", () => {
 	it("CounterBadge 渲染数字", () => {
 		render(<CounterBadge count={99} />);
 		expect(screen.getByText("99")).toBeTruthy();
+	});
+
+	it("TextUnderline 悬停与渲染下划线", () => {
+		const { container } = render(<TextUnderline>文字下划线</TextUnderline>);
+		const wrapper = container.firstChild as HTMLElement;
+		expect(screen.getByText("文字下划线")).toBeTruthy();
+		fireEvent.mouseEnter(wrapper);
+		fireEvent.mouseLeave(wrapper);
+	});
+
+	it("QuoteLine 渲染引文与出处", () => {
+		render(<QuoteLine citation="营造法式">引文段落</QuoteLine>);
+		expect(screen.getByText("引文段落")).toBeTruthy();
+		expect(screen.getByText(/营造法式/)).toBeTruthy();
 	});
 });

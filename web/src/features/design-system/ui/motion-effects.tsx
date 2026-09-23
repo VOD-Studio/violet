@@ -571,32 +571,107 @@ export function SlideIn({
 		</div>
 	);
 }
+export interface TextUnderlineProps {
+	/** 触发模式：hover 悬停生长（默认），reveal 视口进入生长 */
+	mode?: "hover" | "reveal";
+	color?: string;
+	/** 线条粗细（像素，默认 1.5） */
+	thickness?: number;
+	className?: string;
+	children: ReactNode;
+}
 
-/** 模糊聚焦：内容自虚化对焦，适合标题与主视觉。 */
-export function BlurIn({ delay = 0, className, children }: RevealProps & { children: ReactNode }) {
+/** 文字下划线：墨线自左向右平滑生长延伸。 */
+export function TextUnderline({
+	mode = "hover",
+	color = "var(--primary)",
+	thickness = 1.5,
+	className,
+	children,
+}: TextUnderlineProps) {
 	const reduce = useReducedMotion();
-	const ref = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLSpanElement>(null);
 	const inView = useInView(ref, { once: true, margin: "-40px" });
+	const [hovered, setHovered] = useState(false);
+
+	const active = mode === "hover" ? hovered : inView;
 
 	return (
-		<div
+		<span
 			ref={ref}
-			className={className}
-			style={
-				reduce
-					? {}
-					: {
-							opacity: inView ? 1 : 0,
-							filter: inView ? "blur(0px)" : "blur(8px)",
-							transition: `opacity ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.softOut} ${delay}s, filter ${MOTION_DURATION.reveal}s ${MOTION_BEZIER.softOut} ${delay}s`,
-						}
-			}
+			className={cn("relative inline-block cursor-pointer select-none", className)}
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
 		>
 			{children}
-		</div>
+			<span
+				aria-hidden
+				className="pointer-events-none absolute bottom-0 left-0 right-0 origin-left"
+				style={{
+					height: `${thickness}px`,
+					backgroundColor: color,
+					transform: active || reduce ? "scaleX(1)" : "scaleX(0)",
+					transition: reduce ? "none" : `transform 0.28s ${MOTION_BEZIER.out}`,
+				}}
+			/>
+		</span>
 	);
 }
 
+export interface QuoteLineProps {
+	color?: string;
+	citation?: string;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 引用线：左侧墨脊自上至下平滑注入生长。 */
+export function QuoteLine({
+	color = "var(--primary)",
+	citation,
+	className,
+	children,
+}: QuoteLineProps) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLQuoteElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+
+	return (
+		<blockquote
+			ref={ref}
+			className={cn(
+				"relative my-2 pl-4 py-1 text-sm text-foreground/90 font-serif leading-relaxed",
+				className,
+			)}
+		>
+			<span
+				aria-hidden
+				className="pointer-events-none absolute left-0 top-0 bottom-0 w-0.5 origin-top rounded-full"
+				style={{
+					backgroundColor: color,
+					transform: inView || reduce ? "scaleY(1)" : "scaleY(0)",
+					transition: reduce ? "none" : `transform 0.45s ${MOTION_BEZIER.out}`,
+				}}
+			/>
+			<div
+				style={{
+					opacity: inView || reduce ? 1 : 0,
+					transform: inView || reduce ? "translate3d(0, 0, 0)" : "translate3d(6px, 0, 0)",
+					transition: reduce
+						? "none"
+						: `opacity 0.4s ${MOTION_BEZIER.softOut} 0.12s, transform 0.4s ${MOTION_BEZIER.out} 0.12s`,
+				}}
+			>
+				{children}
+				{citation && (
+					<footer className="mt-1.5 font-mono text-[11px] text-muted-foreground not-italic">
+						—— {citation}
+					</footer>
+				)}
+			</div>
+		</blockquote>
+	);
+}
 /** 缩放入座：自 0.94 微缩落座，适合卡片与插图。 */
 export function ScaleIn({ delay = 0, className, children }: RevealProps & { children: ReactNode }) {
 	const reduce = useReducedMotion();

@@ -1,6 +1,5 @@
 import { type ReactNode, useState } from "react";
 import {
-	BlurIn,
 	BorderBeam,
 	CheckmarkDraw,
 	CopyButton,
@@ -12,6 +11,7 @@ import {
 	Magnetic,
 	NumberFlow,
 	PillSlider,
+	QuoteLine,
 	ScaleIn,
 	Shake,
 	Shine,
@@ -20,6 +20,7 @@ import {
 	StaggerGroup,
 	StaggerItem,
 	TextReveal,
+	TextUnderline,
 	TiltCard,
 } from "./motion-effects";
 
@@ -331,6 +332,23 @@ export function MotionCharter() {
 							</button>
 						</div>
 					</InteractiveCard>
+
+					<InteractiveCard
+						name="TextUnderline · 墨线生长下划线"
+						note="悬停时底线自左至右行云流水生长，移出顺滑收缩，链接与词条标配。"
+						usage="<TextUnderline>{children}</TextUnderline>"
+					>
+						<p className="text-sm font-serif">
+							移入试探{" "}
+							<TextUnderline className="font-semibold text-primary">
+								此间风物
+							</TextUnderline>{" "}
+							与{" "}
+							<TextUnderline className="font-semibold text-foreground">
+								浮光掠影
+							</TextUnderline>
+						</p>
+					</InteractiveCard>
 				</div>
 			</div>
 
@@ -367,14 +385,14 @@ export function MotionCharter() {
 					</EffectCard>
 
 					<EffectCard
-						name="BlurIn · 模糊聚焦"
-						note="内容自虚化对焦，适合标题与主视觉。"
-						usage="<BlurIn>{children}</BlurIn>"
+						name="QuoteLine · 引用墨脊注入"
+						note="书卷引文进场：左侧墨脊自上至下平滑注入生长，引文温和淡入。"
+						usage='<QuoteLine citation="出处">{children}</QuoteLine>'
 					>
 						{(key) => (
-							<BlurIn key={key}>
-								<Demo>对焦完成</Demo>
-							</BlurIn>
+							<QuoteLine key={key} citation="营造法式 · 动效章">
+								物各从其类，运动皆有其序，墨线由上而下注入，静水流深。
+							</QuoteLine>
 						)}
 					</EffectCard>
 
