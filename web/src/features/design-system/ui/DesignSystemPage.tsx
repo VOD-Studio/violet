@@ -74,7 +74,7 @@ export const CHAPTERS: CodexChapter[] = [
 		id: "palette",
 		num: "叁",
 		name: "色板生成器",
-		scope: "选择一个主色，色彩生成算法为你生成完整的色板。",
+		scope: "以单一主色为种，推演全域色阶、语义角色与中性基准。",
 		content: <PaletteGenerator />,
 	},
 	{

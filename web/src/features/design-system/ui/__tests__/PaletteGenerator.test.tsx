@@ -108,8 +108,8 @@ describe("色板生成器", () => {
 
 	it("HEX 文本输入框可直接驱动主色重算", () => {
 		render(<PaletteGenerator />);
-		const input = screen.getByPlaceholderText("#2563EB");
-		fireEvent.change(input, { target: { value: "#10B981" } });
+		const input = screen.getByDisplayValue("#2563eb");
+		fireEvent.change(input, { target: { value: "#10b981" } });
 		expect(screen.getAllByText("#10B981").length).toBeGreaterThanOrEqual(1);
 	});
 });

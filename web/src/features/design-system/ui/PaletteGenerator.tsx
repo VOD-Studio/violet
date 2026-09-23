@@ -575,7 +575,6 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
  */
 export function PaletteGenerator() {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
-	const [hexInput, setHexInput] = useState(DEFAULT_SEED);
 	const [hoverRamp, setHoverRamp] = useState<string | null>(null);
 	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
 
@@ -596,25 +595,17 @@ export function PaletteGenerator() {
 			setTimeout(() => setCopiedRamp(null), 1500);
 		}
 	};
-
-	const applyHexInput = (val: string) => {
-		setHexInput(val);
-		if (/^#[0-9a-fA-F]{6}$/.test(val)) {
-			setSeedHex(val);
-		}
-	};
-
 	return (
 		<div className="mt-8">
 			{/* 主控制台 Deck */}
 			<div className="rounded-2xl border border-border/40 bg-card/50 p-6">
 				<div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-					{/* 左侧：主色标本与参数 */}
+					{/* 左侧：主色标本与科学参数 */}
 					<div className="flex flex-col justify-between space-y-4 lg:col-span-5">
 						<div>
 							<p className="text-sm font-bold text-foreground">主色</p>
 							<div
-								className="mt-3 flex h-28 w-full flex-col justify-end rounded-xl p-4 shadow-xs ring-1 ring-black/5 transition-colors duration-200"
+								className="mt-3 flex h-32 w-full flex-col justify-end rounded-xl p-4 shadow-xs ring-1 ring-black/5 transition-colors duration-200"
 								style={{ backgroundColor: seedHex }}
 							>
 								<div className="flex items-baseline justify-between">
@@ -648,7 +639,7 @@ export function PaletteGenerator() {
 							</div>
 						</div>
 
-						<div className="space-y-3">
+						<div className="space-y-2">
 							<div className="grid grid-cols-3 gap-2">
 								<div className="rounded-lg border border-border/50 bg-background/50 p-2 text-center">
 									<span className="block text-[10px] text-muted-foreground">
@@ -675,22 +666,15 @@ export function PaletteGenerator() {
 									</span>
 								</div>
 							</div>
-
-							<div className="flex items-center gap-2">
-								<span className="text-xs text-muted-foreground">HEX 输入:</span>
-								<input
-									className="h-8 flex-1 rounded-md border border-border/60 bg-transparent px-2.5 font-mono text-xs uppercase outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-									maxLength={7}
-									onChange={(e) => applyHexInput(e.target.value)}
-									placeholder="#2563EB"
-									type="text"
-									value={hexInput}
-								/>
+							<div className="rounded-lg border border-border/40 bg-background/30 px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
+								{seed
+									? `oklch(${seed.l.toFixed(3)} ${seed.c.toFixed(3)} ${seed.h.toFixed(1)})`
+									: "—"}
 							</div>
 						</div>
 					</div>
 
-					{/* 右侧：速选与精细选色 */}
+					{/* 右侧：速选与调色盘 */}
 					<div className="space-y-4 border-t border-border/40 pt-4 lg:col-span-7 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
 						<div>
 							<p className="mb-2 text-xs font-medium text-muted-foreground">
@@ -710,10 +694,7 @@ export function PaletteGenerator() {
 												: "border-border/60 bg-background/50 hover:bg-muted/50"
 										}`}
 										key={preset.hex}
-										onClick={() => {
-											setSeedHex(preset.hex);
-											setHexInput(preset.hex);
-										}}
+										onClick={() => setSeedHex(preset.hex)}
 										type="button"
 									>
 										<span
@@ -732,13 +713,7 @@ export function PaletteGenerator() {
 							<p className="mb-2 text-xs font-medium text-muted-foreground">
 								自定义主色
 							</p>
-							<HsvColorPicker
-								onChange={(hex) => {
-									setSeedHex(hex);
-									setHexInput(hex);
-								}}
-								value={seedHex}
-							/>
+							<HsvColorPicker onChange={setSeedHex} value={seedHex} />
 						</div>
 					</div>
 				</div>
