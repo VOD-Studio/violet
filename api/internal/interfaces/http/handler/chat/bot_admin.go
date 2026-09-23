@@ -36,8 +36,9 @@ type createBotRequest struct {
 type updateBotRequest struct {
 	Name *string `json:"name"`
 	// AvatarID 传空串清除头像，字段缺省表示不改。
-	AvatarID *string `json:"avatar_id"`
-	Enabled  *bool   `json:"enabled"`
+	AvatarID     *string `json:"avatar_id"`
+	Enabled      *bool   `json:"enabled"`
+	ShowThinking *bool   `json:"show_thinking"`
 }
 
 // List 分页列出 bot。
@@ -91,10 +92,11 @@ func (h *BotAdminHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dto, err := h.bots.UpdateBot(r.Context(), appchat.UpdateBotInput{
-		ID:       botID,
-		Name:     req.Name,
-		AvatarID: req.AvatarID,
-		Enabled:  req.Enabled,
+		ID:           botID,
+		Name:         req.Name,
+		AvatarID:     req.AvatarID,
+		Enabled:      req.Enabled,
+		ShowThinking: req.ShowThinking,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

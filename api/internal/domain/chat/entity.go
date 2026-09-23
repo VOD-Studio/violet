@@ -272,7 +272,7 @@ type Message struct {
 	conversationID shared.ID
 	// senderID 发送者 ID，创建后不可变。
 	senderID shared.ID
-	// messageType 消息类型：text、image 或 system。
+	// messageType 消息类型：text、image、system 或 tweet_share。
 	messageType MessageType
 	// content 文本内容；图片消息可选携带说明文字（caption），系统消息不为空。
 	content string
@@ -290,6 +290,8 @@ type Message struct {
 	deletedBy *shared.ID
 	// editedAt 最后编辑时间；非空表示发送者修订过内容，界面展示「已编辑」标识。
 	editedAt *time.Time
+	// botReply bot 生成信息；nil 表示普通消息或旧版 bot 文本消息。
+	botReply *BotReply
 	// timestamps 消息创建与更新时间。
 	shared.Timestamps
 }
@@ -419,11 +421,11 @@ func normalizeMediaIDs(mediaIDs []shared.ID) ([]shared.ID, error) {
 }
 
 // ReconstructMessage 从持久化数据重建消息。
-func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, editedAt *time.Time, createdAt, updatedAt time.Time) *Message {
+func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, editedAt *time.Time, botReply *BotReply, createdAt, updatedAt time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
 		content: content, mediaIDs: mediaIDs, sharedTweetID: sharedTweetID, replyToID: replyToID, idempotencyKey: idempotencyKey,
-		deletedAt: deletedAt, deletedBy: deletedBy, editedAt: editedAt,
+		deletedAt: deletedAt, deletedBy: deletedBy, editedAt: editedAt, botReply: botReply,
 		Timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 	m.SetID(id)
@@ -447,6 +449,9 @@ func (m *Message) Delete(adminID shared.ID, now time.Time) error {
 // Edit 修订消息内容：文本消息改正文，图片消息改说明文字并增删媒体（至少保留一张），
 // 分享消息只改配文；系统消息与已删除消息不可编辑。内容与媒体均无变化时不产生编辑标记。
 func (m *Message) Edit(content string, mediaIDs []shared.ID, now time.Time) error {
+	if m.botReply != nil {
+		return shared.BadRequest("生成中的 Bot 回复须使用生成更新接口")
+	}
 	if m.deletedAt != nil {
 		return shared.Conflict("消息已删除")
 	}

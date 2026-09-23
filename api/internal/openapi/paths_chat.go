@@ -9,6 +9,13 @@ func registerChatPaths(t *openapi3.T) {
 		"username":     reqStr("用户名"),
 		"display_name": reqStr("展示名"),
 		"avatar_url":   optStr("头像地址"),
+		"is_bot":       optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
+	})
+	registerSchema(t, "ChatBotReplyDTO", openapi3.Schemas{
+		"status":     reqStr("pending、thinking、streaming、completed 或 failed"),
+		"thinking":   optStr("后台允许展示时的思考内容"),
+		"revision":   optInt64("累计更新版本"),
+		"updated_at": reqStr("最近上报时间"),
 	})
 	registerSchema(t, "ChatMemberDTO", openapi3.Schemas{
 		"user":      &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
@@ -46,6 +53,7 @@ func registerChatPaths(t *openapi3.T) {
 		"id":                reqStr("消息 ID"),
 		"conversation_id":   reqStr("会话 ID"),
 		"sender":            &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
+		"bot_reply":         &openapi3.SchemaRef{Ref: "#/components/schemas/ChatBotReplyDTO"},
 		"type":              reqStr("text、image、system 或 tweet_share"),
 		"content":           optStr("文本内容或分享推文的配文"),
 		"custom_emote":      &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
@@ -130,7 +138,7 @@ func registerChatPaths(t *openapi3.T) {
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam(), idempotencyHeaderParam()}, RequestBody: jsonBody("ChatSendMessageRequest", true, "消息参数"), Responses: responses(201, dataResponse("ChatMessageDTO", "已发送消息", 201)),
 	})
 	get(t, "/chat/events", &openapi3.Operation{
-		Tags: []string{"聊天"}, Summary: "聊天事件流", Description: "SSE 单用户事件流，支持 Last-Event-ID 断线补发。在线文本 message.updated 的 data 附带已保存的 content 与 edited_at；补发事件仍只带 conversation_id 和 message_id，客户端应回查当前消息。", Security: secure,
+		Tags: []string{"聊天"}, Summary: "聊天事件流", Description: "SSE 单用户事件流，支持 Last-Event-ID 断线补发。在线文本 message.updated 的 data 附带已保存的 content 与 edited_at；Bot 生成更新附带 content 与 bot_reply。补发事件仍只带 conversation_id 和 message_id，客户端应回查当前消息。", Security: secure,
 		Responses: responses(200, &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr("text/event-stream")}}),
 	})
 	get(t, "/chat/unread-count", &openapi3.Operation{

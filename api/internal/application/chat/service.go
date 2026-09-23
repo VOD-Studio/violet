@@ -41,6 +41,7 @@ type Service struct {
 	publicKey    string
 	customEmojis CustomEmojiResolver
 	bots         BotNotifier
+	botRepo      domainchat.BotRepository
 }
 
 // WithBotNotifier 注入 bot 事件投递器，返回自身便于装配链式调用。
@@ -48,6 +49,12 @@ type Service struct {
 // 未注入时聊天完全不做 bot 分发：bot 是可选接入面，不该给主链路增加 nil 之外的分支。
 func (s *Service) WithBotNotifier(notifier BotNotifier) *Service {
 	s.bots = notifier
+	return s
+}
+
+// WithBotRepository 注入 Bot 展示配置，供思考内容读写策略使用。
+func (s *Service) WithBotRepository(repo domainchat.BotRepository) *Service {
+	s.botRepo = repo
 	return s
 }
 
@@ -103,6 +110,19 @@ type SendMessageInput struct {
 	ReplyToID domainshared.ID
 	// IdempotencyKey 客户端发送幂等键。
 	IdempotencyKey string
+	// BotPending 创建空正文的 Bot 生成占位消息，仅 Bot 入口可设置。
+	BotPending bool
+}
+
+// UpdateBotReplyInput 提交一条生成回复的累计快照。
+type UpdateBotReplyInput struct {
+	UserID         domainshared.ID
+	ConversationID domainshared.ID
+	MessageID      domainshared.ID
+	Content        string
+	Thinking       string
+	Status         domainchat.BotReplyStatus
+	Revision       int64
 }
 
 // EditMessageInput 编辑消息入参。
@@ -169,6 +189,15 @@ type UserDTO struct {
 	DisplayName string `json:"display_name"`
 	// AvatarURL 头像地址。
 	AvatarURL string `json:"avatar_url"`
+	IsBot     bool   `json:"is_bot"`
+}
+
+// BotReplyDTO 提供可恢复的生成状态。
+type BotReplyDTO struct {
+	Status    string `json:"status"`
+	Thinking  string `json:"thinking,omitempty"`
+	Revision  int64  `json:"revision"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // MediaDTO 图片媒体读模型。
@@ -229,7 +258,8 @@ type MessageDTO struct {
 	// ConversationID 所属会话 ID。
 	ConversationID string `json:"conversation_id"`
 	// Sender 发送者资料。
-	Sender UserDTO `json:"sender"`
+	Sender   UserDTO      `json:"sender"`
+	BotReply *BotReplyDTO `json:"bot_reply,omitempty"`
 	// Type 消息类型。
 	Type string `json:"type"`
 	// Content 文本内容；删除消息为空。
@@ -818,7 +848,14 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	var files []*domainupload.File
 	switch in.Type {
 	case domainchat.MessageText:
-		message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now, replyToID)
+		if in.BotPending {
+			if strings.TrimSpace(in.Content) != "" {
+				return MessageDTO{}, domainshared.BadRequest("等待中的 Bot 回复正文必须为空")
+			}
+			message, err = domainchat.NewPendingBotMessage(in.ConversationID, in.UserID, in.IdempotencyKey, now, replyToID)
+		} else {
+			message, err = domainchat.NewTextMessage(in.ConversationID, in.UserID, in.Content, in.IdempotencyKey, now, replyToID)
+		}
 	case domainchat.MessageImage:
 		files, err = s.chatImages(ctx, in.MediaIDs, in.UserID)
 		if err == nil {
@@ -858,7 +895,11 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	preview := "发送了一张图片"
 	switch message.Type() {
 	case domainchat.MessageText:
-		preview = truncatePreview(humanizeMentionTokens(message.Content()), 120)
+		if in.BotPending {
+			preview = "正在回复…"
+		} else {
+			preview = truncatePreview(humanizeMentionTokens(message.Content()), 120)
+		}
 	case domainchat.MessageTweetShare:
 		preview = "分享了一条推文"
 	}
@@ -884,13 +925,95 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 // SendBotMessage 发送 bot 消息，并在引用回复成功后推进到被回复消息的阅读位置。
 func (s *Service) SendBotMessage(ctx context.Context, in SendMessageInput) (MessageDTO, error) {
 	dto, err := s.SendMessage(ctx, in)
-	if err != nil || in.ReplyToID.IsZero() || dto.ReplyTo == nil || dto.ReplyTo.ID != in.ReplyToID.String() {
+	if err != nil || in.BotPending || in.ReplyToID.IsZero() || dto.ReplyTo == nil || dto.ReplyTo.ID != in.ReplyToID.String() {
 		return dto, err
 	}
 	if _, err := s.MarkRead(ctx, in.UserID, in.ConversationID, in.ReplyToID); err != nil {
 		log.Warn().Err(err).Str("conversation_id", in.ConversationID.String()).Str("message_id", in.ReplyToID.String()).Msg("Bot 回复已发送，但推进已读位置失败")
 	}
 	return dto, nil
+}
+
+// UpdateBotReply 保存累计正文、思考内容及终态，并实时投递同一条消息的快照。
+func (s *Service) UpdateBotReply(ctx context.Context, in UpdateBotReplyInput) (MessageDTO, error) {
+	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	message, err := s.repo.FindMessage(ctx, in.ConversationID, in.MessageID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	if message.SenderID() != in.UserID {
+		return MessageDTO{}, domainshared.Forbidden("只能更新自己的回复")
+	}
+	if s.botRepo == nil {
+		return MessageDTO{}, domainshared.Internal("Bot 展示配置未装配", nil)
+	}
+	bot, err := s.botRepo.FindByUserID(ctx, in.UserID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	if !bot.ShowThinking() {
+		in.Thinking = ""
+	}
+	if s.customEmojis != nil && in.Content != "" {
+		if err := s.customEmojis.ValidateContent(ctx, in.Content, in.UserID); err != nil {
+			return MessageDTO{}, err
+		}
+	}
+	if _, err := s.validateMentions(ctx, in.ConversationID, in.Content, conversation.Kind()); err != nil {
+		return MessageDTO{}, err
+	}
+	firstVisibleContent := message.Content() == "" && strings.TrimSpace(in.Content) != ""
+	previousRevision := int64(0)
+	if reply := message.BotReply(); reply != nil {
+		previousRevision = reply.Revision()
+		if sameBotReplySnapshot(message, in) {
+			return s.messageDTOWithReadState(ctx, message, in.UserID)
+		}
+	}
+	if err := message.AdvanceBotReply(in.Content, in.Thinking, in.Status, in.Revision, s.now()); err != nil {
+		return MessageDTO{}, err
+	}
+	members, err := s.repo.ListMembers(ctx, in.ConversationID, false)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	events, err := s.repo.UpdateBotReply(ctx, message, previousRevision, memberIDs(members))
+	if err != nil {
+		if domainshared.IsDomainError(err, domainshared.CodeConflict) {
+			latest, readErr := s.repo.FindMessage(ctx, in.ConversationID, in.MessageID)
+			if readErr == nil && sameBotReplySnapshot(latest, in) {
+				return s.messageDTOWithReadState(ctx, latest, in.UserID)
+			}
+		}
+		return MessageDTO{}, err
+	}
+	dto, err := s.messageDTOWithReadState(ctx, message, in.UserID)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	for _, event := range events {
+		frame := eventEnvelope(event)
+		frame.Data["content"] = dto.Content
+		frame.Data["bot_reply"] = dto.BotReply
+		if s.notifier != nil {
+			s.notifier.Push(event.UserID, frame)
+		}
+	}
+	if firstVisibleContent && message.ReplyToID() != nil {
+		if _, err := s.MarkRead(ctx, in.UserID, in.ConversationID, *message.ReplyToID()); err != nil {
+			log.Warn().Err(err).Str("message_id", in.MessageID.String()).Msg("Bot 回复已生成但推进已读位置失败")
+		}
+	}
+	return dto, nil
+}
+
+func sameBotReplySnapshot(message *domainchat.Message, in UpdateBotReplyInput) bool {
+	reply := message.BotReply()
+	return reply != nil && message.DeletedAt() == nil && in.Revision == reply.Revision() && in.Status == reply.Status() &&
+		strings.TrimSpace(in.Content) == message.Content() && in.Thinking == reply.Thinking()
 }
 
 // dispatchBotMessage 新消息落库后向相关 bot 投递自带正文的事件快照。
@@ -1399,6 +1522,19 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		dto.Reactions = []MessageReactionDTO{}
 		return dto, nil
 	}
+	if reply := message.BotReply(); reply != nil {
+		botReply := &BotReplyDTO{Status: string(reply.Status()), Revision: reply.Revision(), UpdatedAt: reply.UpdatedAt().Format(time.RFC3339Nano)}
+		if s.botRepo != nil {
+			bot, err := s.botRepo.FindByUserID(ctx, message.SenderID())
+			if err != nil && !errors.Is(err, domainchat.ErrBotNotFound) {
+				return MessageDTO{}, err
+			}
+			if err == nil && bot.ShowThinking() {
+				botReply.Thinking = reply.Thinking()
+			}
+		}
+		dto.BotReply = botReply
+	}
 	if message.EditedAt() != nil {
 		editedAt := message.EditedAt().Format(time.RFC3339Nano)
 		dto.EditedAt = &editedAt
@@ -1831,7 +1967,7 @@ func userToDTO(user *domainuser.User) UserDTO {
 	if displayName == "" {
 		displayName = username
 	}
-	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL()}
+	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: isBotVirtualUser(user)}
 }
 
 func memberIDs(members []*domainchat.Member) []domainshared.ID {

@@ -57,6 +57,10 @@ type ChatMessage struct {
 	DeletedAt      *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	DeletedBy      *uuid.UUID `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
 	EditedAt       *time.Time `gorm:"column:edited_at" json:"edited_at,omitempty"`
+	BotStatus      *string    `gorm:"column:bot_status" json:"bot_status,omitempty"`
+	BotThinking    string     `gorm:"column:bot_thinking" json:"-"`
+	BotRevision    int64      `gorm:"column:bot_revision" json:"bot_revision"`
+	BotUpdatedAt   *time.Time `gorm:"column:bot_updated_at" json:"bot_updated_at,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
@@ -139,6 +143,7 @@ type ChatBot struct {
 	// 此时凭据只能靠重置刷新；json:"-" 防它经任何 DTO 序列化外泄。
 	TokenEncrypted *string   `gorm:"type:text;column:token_encrypted" json:"-"`
 	Enabled        bool      `gorm:"column:enabled;not null" json:"enabled"`
+	ShowThinking   bool      `gorm:"column:show_thinking;not null" json:"show_thinking"`
 	CreatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }

@@ -65,6 +65,8 @@ type ConversationRepository interface {
 	DeleteMessage(ctx context.Context, message *Message) error
 	// UpdateMessage 保存发送者的消息编辑结果（正文、编辑时间与媒体关联）。
 	UpdateMessage(ctx context.Context, message *Message) error
+	// UpdateBotReply 按旧版本原子保存生成快照及消息更新事件。
+	UpdateBotReply(ctx context.Context, message *Message, previousRevision int64, recipientIDs []shared.ID) ([]Event, error)
 
 	// SaveReadPosition 原子推进阅读位置；重复或更早的位置不更新，返回是否发生推进。
 	SaveReadPosition(ctx context.Context, position *ReadPosition) (bool, error)

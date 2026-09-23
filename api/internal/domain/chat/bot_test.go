@@ -59,7 +59,7 @@ func TestReconstructBotPreservesFieldsAndNoEvents(t *testing.T) {
 	userID := shared.NewID()
 	avatar := shared.NewID()
 
-	b := chat.ReconstructBot(id, userID, "Saber", &avatar, "deadbeef", "violet_bot_plain", false, created, updated)
+	b := chat.ReconstructBot(id, userID, "Saber", &avatar, "deadbeef", "violet_bot_plain", false, false, created, updated)
 	require.Equal(t, id, b.ID())
 	require.Equal(t, userID, b.UserID())
 	require.Equal(t, "Saber", b.Name())

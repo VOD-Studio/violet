@@ -36,6 +36,13 @@ func (r *botReadRepo) SaveMessage(_ context.Context, message *domainchat.Message
 	return nil, nil
 }
 
+func (r *botReadRepo) UpdateBotReply(ctx context.Context, message *domainchat.Message, _ int64, recipientIDs []domainshared.ID) ([]domainchat.Event, error) {
+	r.messages[message.ID()] = message
+	return r.SaveEvent(ctx, recipientIDs, domainchat.EventMessageUpdated, map[string]any{
+		"conversation_id": message.ConversationID().String(), "message_id": message.ID().String(),
+	})
+}
+
 func (r *botReadRepo) SaveReadPosition(ctx context.Context, position *domainchat.ReadPosition) (bool, error) {
 	if r.readErr != nil {
 		return false, r.readErr
@@ -127,5 +134,51 @@ func TestSendBotMessageDoesNotMarkProactiveOrFailedSend(t *testing.T) {
 	repo.readErr = errors.New("写已读失败")
 	if _, err := svc.SendBotMessage(context.Background(), in); err != nil {
 		t.Fatalf("回复已保存时已读写入失败不应让 bot 重试发送: %v", err)
+	}
+}
+
+func TestPendingBotReplyReportsStateAndMarksReadOnFirstText(t *testing.T) {
+	svc, repo, conversationID, _, botUserID, targetID := newBotReadService(t)
+	now := time.Date(2026, 9, 23, 12, 0, 0, 0, time.UTC)
+	bot, _, err := domainchat.NewBot(domainshared.NewID(), botUserID, "Saber", nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bot.SetShowThinking(true, now)
+	botRepo := newFakeBotRepo()
+	botRepo.bots[bot.ID()] = bot
+	svc.WithBotRepository(botRepo)
+	created, err := svc.SendBotMessage(context.Background(), SendMessageInput{
+		UserID: botUserID, ConversationID: conversationID, Type: domainchat.MessageText,
+		ReplyToID: targetID, IdempotencyKey: "pending-reply", BotPending: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.BotReply == nil || created.BotReply.Status != "pending" || repo.positions[botUserID] != nil {
+		t.Fatalf("占位回复不应提前推进已读: %+v", created)
+	}
+	update := UpdateBotReplyInput{UserID: botUserID, ConversationID: conversationID, MessageID: repo.saved.ID(), Thinking: "正在检查", Status: domainchat.BotReplyThinking, Revision: 1}
+	thought, err := svc.UpdateBotReply(context.Background(), update)
+	if err != nil || thought.BotReply == nil || thought.BotReply.Thinking != "正在检查" || repo.positions[botUserID] != nil {
+		t.Fatalf("思考阶段状态或已读错误: %+v %v", thought, err)
+	}
+	update.Content, update.Status, update.Revision = "第一段", domainchat.BotReplyStreaming, 2
+	streaming, err := svc.UpdateBotReply(context.Background(), update)
+	if err != nil || streaming.Content != "第一段" {
+		t.Fatalf("正文快照错误: %+v %v", streaming, err)
+	}
+	position := repo.positions[botUserID]
+	if position == nil || position.LastMessageID() == nil || !position.LastMessageID().Equal(targetID) {
+		t.Fatalf("首段正文出现时应推进引用消息已读: %+v", position)
+	}
+	bot.SetShowThinking(false, now)
+	update.Content, update.Revision, update.Status = "最终回复", 3, domainchat.BotReplyCompleted
+	completed, err := svc.UpdateBotReply(context.Background(), update)
+	if err != nil || completed.BotReply == nil || completed.BotReply.Thinking != "" || completed.BotReply.Status != "completed" {
+		t.Fatalf("关闭展示后应过滤 thinking 且结束 loading: %+v %v", completed, err)
+	}
+	if _, err := svc.UpdateBotReply(context.Background(), update); err != nil {
+		t.Fatalf("相同 revision 的重试应返回现有快照: %v", err)
 	}
 }

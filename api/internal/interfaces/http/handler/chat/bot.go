@@ -119,11 +119,16 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Content   string `json:"content" validate:"required"`
+		Content   string `json:"content"`
 		ReplyToID string `json:"reply_to_id"`
+		Status    string `json:"status"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
+		return
+	}
+	if req.Status != "" && req.Status != string(domainchat.BotReplyPending) {
+		response.RespondError(w, r, domainshared.BadRequest("创建时只能设置 pending 状态"))
 		return
 	}
 	var replyToID domainshared.ID
@@ -141,6 +146,7 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		Content:        req.Content,
 		ReplyToID:      replyToID,
 		IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key")),
+		BotPending:     req.Status == string(domainchat.BotReplyPending),
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -151,7 +157,7 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 
 // EditMessage 编辑自己发过的消息。
 //
-// 流式回复的落地方式：先 SendMessage 发占位，再按增量反复 Edit。
+// 旧协议反复编辑正文；生成协议按 revision 提交累计快照和状态。
 // 归属校验由 chat.Service 的「只能编辑自己的消息」承担，传进去的 UserID
 // 就是本 bot 的虚拟用户，编辑别人的消息天然是 403。
 func (h *BotHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
@@ -166,18 +172,26 @@ func (h *BotHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Content string `json:"content" validate:"required"`
+		Content  string `json:"content"`
+		Thinking string `json:"thinking"`
+		Status   string `json:"status"`
+		Revision int64  `json:"revision"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	dto, err := h.chat.EditMessage(r.Context(), appchat.EditMessageInput{
-		UserID:         bot.UserID(),
-		ConversationID: conversationID,
-		MessageID:      messageID,
-		Content:        req.Content,
-	})
+	var dto appchat.MessageDTO
+	if req.Status != "" {
+		dto, err = h.chat.UpdateBotReply(r.Context(), appchat.UpdateBotReplyInput{
+			UserID: bot.UserID(), ConversationID: conversationID, MessageID: messageID,
+			Content: req.Content, Thinking: req.Thinking, Status: domainchat.BotReplyStatus(req.Status), Revision: req.Revision,
+		})
+	} else {
+		dto, err = h.chat.EditMessage(r.Context(), appchat.EditMessageInput{
+			UserID: bot.UserID(), ConversationID: conversationID, MessageID: messageID, Content: req.Content,
+		})
+	}
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

@@ -324,6 +324,36 @@ Saber 的即时回复走持久化任务队列。入站 `message.created` 只表�
 
 待用运行中的 Saber 与 Violet 发一条带引用的真实回复，核对首段出现后原消息显示「已读」，排在后面的消息仍显示「未读」。
 
+## V10：Bot 回复卡片与生成状态
+
+Violet 将 Bot 文本回复显示为带 `BOT` 标识的卡片。Bot 身份由虚拟用户邮箱 `bot+<自身 ID>@bot.violet.invalid` 判定并在消息 sender 中返回 `is_bot`；吊销凭据后用户仍保留，历史消息继续按 Bot 卡片展示。Bot 卡片复用聊天 Markdown 渲染管线，额外支持标题、表格和任务列表。
+
+后台 `show_thinking` 默认关闭。开启后，Bot 可在生成更新中提交可公开的 `thinking` 累计快照，卡片默认折叠并允许读者展开。关闭时新上报的 thinking 不保存，消息历史及实时 SSE 不返回已有 thinking。已经送到浏览器的内容无法撤回，管理员切换配置后，已打开的会话应刷新以重新读取策略。
+
+新协议先发一条空正文占位消息，再更新同一消息 ID：
+
+```http
+POST /api/v1/chat/bot/conversations/{conversationId}/messages
+Idempotency-Key: reply-task-id
+
+{"status":"pending","reply_to_id":"<被回复消息 ID>"}
+```
+
+```http
+PATCH /api/v1/chat/bot/conversations/{conversationId}/messages/{messageId}
+
+{"content":"累计正文","thinking":"累计思考","status":"streaming","revision":2}
+```
+
+- `status` 可为 `pending`、`thinking`、`streaming`、`completed`、`failed`。`completed` 必须有非空正文；终态不可再更新。
+- `revision` 从 1 递增。同版本且内容一致的重试返回当前快照；过期版本或并发写入被拒，避免旧增量覆盖新正文。
+- `message.updated` 的持久化事件仍只存消息 ID；在线帧带 `content` 与 `bot_reply`，历史接口读最新快照。Bot 更新不写普通消息的 `edited_at`。
+- 首段非空正文出现时推进 `reply_to_id` 的已读位置；pending 与纯 thinking 不推进。
+- 页面在 120 秒未收到新快照时将状态文案改为「等待 Bot 更新」，不推断生成已完成。真实 `failed/completed` 由 Bot 显式上报。
+- 不传 `status` 的 POST/PATCH 仍按原有发送和编辑协议处理，旧 Bot 可继续流式更新正文；它的卡片没有生成状态。
+
+Violet 端的状态、迁移、后台开关、卡片和 SSE 契约测试已接入；真实 Bot 的状态与 thinking 上报需要对接方实现并联调。
+
 
 ## 对接方
 

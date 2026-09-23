@@ -14,6 +14,7 @@ func registerAdminBotPaths(t *openapi3.T) {
 		"avatar_id":      optStr("头像文件 ID，未设置为空"),
 		"avatar_url":     optStr("头像地址"),
 		"enabled":        optBool("是否启用；禁用后 token 鉴权即拒"),
+		"show_thinking":  optBool("是否允许展示 bot 思考内容，默认关闭"),
 		"token":          optStr("明文 token：创建/重置/查看凭据时返回；列表与详情恒空"),
 		"token_viewable": optBool("当前能否取回明文；false 表示库里无可用密文，只能重置"),
 		"created_at":     reqStr("创建时间（RFC3339）"),
@@ -25,9 +26,10 @@ func registerAdminBotPaths(t *openapi3.T) {
 		"avatar_id": optStr("头像文件 ID，缺省表示不设头像"),
 	}, "name", "username")
 	registerSchema(t, "UpdateBotRequest", openapi3.Schemas{
-		"name":      nullableStr("新显示名；缺省表示不改"),
-		"avatar_id": nullableStr("新头像文件 ID；空串清除头像，缺省表示不改"),
-		"enabled":   optBool("启停；缺省表示不改"),
+		"name":          nullableStr("新显示名；缺省表示不改"),
+		"avatar_id":     nullableStr("新头像文件 ID；空串清除头像，缺省表示不改"),
+		"enabled":       optBool("启停；缺省表示不改"),
+		"show_thinking": optBool("是否允许展示思考内容；缺省表示不改"),
 	})
 
 	get(t, "/admin/chat-bots", &openapi3.Operation{

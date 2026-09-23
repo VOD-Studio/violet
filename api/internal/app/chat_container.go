@@ -47,6 +47,7 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 
 	botTokenBox := newBotTokenBox(cfg)
 	botRepo := gormrepo.NewBotRepository(db, botTokenBox)
+	svc.WithBotRepository(botRepo)
 	botConnections := appchat.NewBotConnectionManager(log.Logger)
 	svc.WithBotNotifier(appchat.NewBotEventDispatcher(repo, botRepo, botConnections, log.Logger))
 	botService := appchat.NewBotService(botRepo, userRepo, fileRepo, bus, nil)

@@ -203,7 +203,7 @@ func NewBotDeleted(botID, userID domainshared.ID, name string) BotDeleted {
 // Bot 聊天机器人聚合根。
 //
 // bot 是以虚拟用户身份接入 Violet 站内聊天的外部程序（如 AI agent）的凭证。
-// bot 复用 domain/user 的虚拟用户身份参与会话，前端无感区分 bot 与人类。
+// bot 复用 domain/user 的虚拟用户身份参与会话，消息公开资料可区分 bot。
 //
 // 不变量：
 //   - tokenHash 创建后只在 RegenerateToken 时替换；鉴权比对走它，明文只在库里以密文形态存在
@@ -225,6 +225,8 @@ type Bot struct {
 	token string
 	// enabled 是否启用。禁用的 bot 鉴权拒绝，但记录保留。
 	enabled bool
+	// showThinking 是否允许向会话成员展示思考内容。
+	showThinking bool
 	// timestamps 创建与更新时间。
 	domainshared.Timestamps
 }
@@ -265,15 +267,17 @@ func ReconstructBot(
 	tokenHash string,
 	token string,
 	enabled bool,
+	showThinking bool,
 	createdAt, updatedAt time.Time,
 ) *Bot {
 	b := &Bot{
-		userID:    userID,
-		name:      name,
-		avatarID:  avatarID,
-		tokenHash: tokenHash,
-		token:     token,
-		enabled:   enabled,
+		userID:       userID,
+		name:         name,
+		avatarID:     avatarID,
+		tokenHash:    tokenHash,
+		token:        token,
+		enabled:      enabled,
+		showThinking: showThinking,
 	}
 	b.SetID(id)
 	b.CreatedAt = createdAt
@@ -371,3 +375,15 @@ func (b *Bot) Token() string { return b.token }
 
 // IsEnabled 返回是否启用。
 func (b *Bot) IsEnabled() bool { return b.enabled }
+
+// ShowThinking 返回思考内容的展示策略。
+func (b *Bot) ShowThinking() bool { return b.showThinking }
+
+// SetShowThinking 更新思考内容展示策略。
+func (b *Bot) SetShowThinking(show bool, now time.Time) {
+	if b.showThinking == show {
+		return
+	}
+	b.showThinking = show
+	b.UpdatedAt = now
+}

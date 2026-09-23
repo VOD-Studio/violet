@@ -37,7 +37,8 @@ type BotDTO struct {
 	// AvatarURL 头像地址，取自虚拟用户资料。
 	AvatarURL string `json:"avatar_url,omitempty"`
 	// Enabled 是否启用；禁用后 token 鉴权即拒。
-	Enabled bool `json:"enabled"`
+	Enabled      bool `json:"enabled"`
+	ShowThinking bool `json:"show_thinking"`
 	// Token 明文 token，仅创建/重置/查看凭据时返回，列表不携带。
 	Token string `json:"token,omitempty"`
 	// TokenViewable 当前能否取回明文：false = 库里没存密文（早于密文列创建、
@@ -68,7 +69,8 @@ type UpdateBotInput struct {
 	// AvatarID 新头像文件 ID 字符串；nil 表示不改头像，空串表示清除头像。
 	AvatarID *string
 	// Enabled 启停；nil 表示不改。
-	Enabled *bool
+	Enabled      *bool
+	ShowThinking *bool
 }
 
 // BotService 聊天 bot 凭证的管理与鉴权用例。
@@ -296,6 +298,10 @@ func (s *BotService) UpdateBot(ctx context.Context, in UpdateBotInput) (BotDTO, 
 		}
 		changed = true
 	}
+	if in.ShowThinking != nil {
+		bot.SetShowThinking(*in.ShowThinking, now)
+		changed = true
+	}
 	if changed {
 		if err := s.bots.Save(ctx, bot); err != nil {
 			return BotDTO{}, err
@@ -437,6 +443,7 @@ func newBotDTO(bot *domainchat.Bot, user *domainuser.User) BotDTO {
 		Username:      user.Username().String(),
 		Name:          bot.Name(),
 		Enabled:       bot.IsEnabled(),
+		ShowThinking:  bot.ShowThinking(),
 		TokenViewable: bot.Token() != "",
 		AvatarURL:     user.AvatarURL(),
 		CreatedAt:     bot.CreatedAt.Format(time.RFC3339Nano),

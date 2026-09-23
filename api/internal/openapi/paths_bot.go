@@ -10,12 +10,16 @@ func registerBotPaths(t *openapi3.T) {
 	secure := securityBot()
 
 	registerSchema(t, "BotSendMessageRequest", openapi3.Schemas{
-		"content":     reqStr("文本内容，≤10000 字符；可含 @(username:uuid) 提及"),
+		"content":     optStr("文本内容，≤10000 字符；status=pending 时须为空"),
 		"reply_to_id": optStr("引用的同会话消息 ID，缺省表示不引用"),
-	}, "content")
+		"status":      optStr("pending 创建可恢复的生成回复；省略时兼容普通文本消息"),
+	})
 	registerSchema(t, "BotEditMessageRequest", openapi3.Schemas{
-		"content": reqStr("修订后的文本内容，整体替换原文"),
-	}, "content")
+		"content":  optStr("累计正文，整体替换原文"),
+		"thinking": optStr("累计思考内容；后台关闭展示时不保存"),
+		"status":   optStr("pending、thinking、streaming、completed 或 failed；省略时兼容旧版编辑"),
+		"revision": optInt64("生成更新递增版本，首次为 1"),
+	})
 	registerSchema(t, "BotTypingRequest", openapi3.Schemas{
 		"is_typing": optBool("true 表示正在输入，false 显式结束"),
 	})
@@ -49,7 +53,7 @@ func registerBotPaths(t *openapi3.T) {
 
 	post(t, "/chat/bot/conversations/{conversationId}/messages", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "发送消息",
-		Description: "只开放文本消息。Idempotency-Key 必填：重试应是同一条消息，而不是刷第二遍屏。引用回复保存成功后，bot 已读位置推进到 reply_to_id。",
+		Description: "只开放文本消息。Idempotency-Key 必填。status=pending 可创建空正文占位回复；首次非空正文更新后推进引用消息的已读位置。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), idempotencyHeaderParam()},
 		RequestBody: jsonBody("BotSendMessageRequest", true, "消息参数"),
@@ -58,7 +62,7 @@ func registerBotPaths(t *openapi3.T) {
 
 	patch(t, "/chat/bot/conversations/{conversationId}/messages/{messageId}", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "编辑自己的消息",
-		Description: "流式回复的落地方式：先发消息占位，再按增量反复编辑。编辑他人消息返回 403。",
+		Description: "生成回复须上报累计正文、思考内容、状态与递增 revision；终态不可再更新。省略 status 时沿用普通文本编辑。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("messageId", "消息 ID")},
 		RequestBody: jsonBody("BotEditMessageRequest", true, "修订内容"),
