@@ -2,7 +2,7 @@ import { useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
 import { PageShell } from "@shared/ui/page-shell";
 import type { ReactNode } from "react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ComponentSpecimens } from "./ComponentSpecimens";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
@@ -117,7 +117,10 @@ export function DesignSystemPage() {
 	const [activeId, setActiveId] = useState<ChapterId>("principles");
 	const active = CHAPTERS.find((chapter) => chapter.id === activeId) ?? CHAPTERS[0];
 	const reduce = useReducedMotion();
-
+	const isInitialMount = useRef(true);
+	useEffect(() => {
+		isInitialMount.current = false;
+	}, []);
 	const listRef = useRef<HTMLUListElement>(null);
 	const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
 	useLayoutEffect(() => {
@@ -153,8 +156,12 @@ export function DesignSystemPage() {
 					>
 						{marker && (
 							<span
-								aria-hidden
-								className="absolute left-0 hidden w-0.5 rounded-full bg-primary transition-[top,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:block"
+								className={cn(
+									"absolute left-0 hidden w-0.5 rounded-full bg-primary motion-reduce:transition-none lg:block",
+									isInitialMount.current
+										? "transition-none"
+										: "transition-[top,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+								)}
 								style={{ top: marker.top, height: marker.height }}
 							/>
 						)}
@@ -199,7 +206,7 @@ export function DesignSystemPage() {
 						aria-labelledby={`chapter-${active.id}`}
 						key={active.id}
 						className={cn(
-							reduce
+							reduce || isInitialMount.current
 								? ""
 								: "animate-in fade-in-50 slide-in-from-bottom-1.5 duration-300 ease-out",
 						)}

@@ -619,7 +619,7 @@ export function TextUnderline({
 }
 
 const WAVE_SVG_MASK =
-	"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 6'%3E%3Cpath d='M0 3 Q4 0.5, 8 3 T 16 3' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")";
+	"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 8'%3E%3Cpath d='M0 4 C3.5 1, 3.5 1, 7 4 C10.5 7, 10.5 7, 14 4' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E\")";
 
 export interface WavyUnderlineProps {
 	/** 触发模式：hover 悬停显现（默认），always 常驻，reveal 视口进入生长 */
@@ -632,7 +632,7 @@ export interface WavyUnderlineProps {
 	children: ReactNode;
 }
 
-/** 波浪下划线：书卷批注意象，支持悬停流水微澜与视口生长。 */
+/** 波浪下划线：书卷批注意象，裁剪平滑揭示，支持悬停流水微澜。 */
 export function WavyUnderline({
 	mode = "hover",
 	flow = true,
@@ -657,19 +657,19 @@ export function WavyUnderline({
 			{children}
 			<span
 				aria-hidden
-				className="pointer-events-none absolute -bottom-1.5 left-0 right-0 h-1.5 origin-left"
+				className="pointer-events-none absolute -bottom-2 left-0 right-0 h-2"
 				style={{
 					backgroundColor: color,
 					maskImage: WAVE_SVG_MASK,
 					WebkitMaskImage: WAVE_SVG_MASK,
 					maskRepeat: "repeat-x",
 					WebkitMaskRepeat: "repeat-x",
-					maskSize: "16px 6px",
-					WebkitMaskSize: "16px 6px",
-					transform: active || reduce ? "scaleX(1)" : "scaleX(0)",
-					transition: reduce ? "none" : `transform 0.28s ${MOTION_BEZIER.out}`,
+					maskSize: "14px 8px",
+					WebkitMaskSize: "14px 8px",
+					clipPath: active || reduce ? "inset(0 0% 0 0)" : "inset(0 100% 0 0)",
+					transition: reduce ? "none" : `clip-path 0.35s ${MOTION_BEZIER.out}`,
 					animation:
-						flow && active && !reduce ? "wave-flow 1.2s linear infinite" : "none",
+						flow && active && !reduce ? "wave-flow 1.4s linear infinite" : "none",
 				}}
 			/>
 		</span>
@@ -774,7 +774,7 @@ export function TextReveal({ text, delay = 0, className }: TextRevealProps) {
 			{words.map((word, index) => {
 				const wordDelay = delay + index * 0.06;
 				return (
-					<span key={`${word}-${index}`} className="inline-block overflow-hidden py-0.5">
+					<span key={`${word}-${index}`} className="inline-block overflow-hidden py-1">
 						<span
 							className="inline-block"
 							style={
@@ -783,9 +783,10 @@ export function TextReveal({ text, delay = 0, className }: TextRevealProps) {
 									: {
 											opacity: inView ? 1 : 0,
 											transform: inView
-												? "translate3d(0, 0, 0)"
-												: "translate3d(0, 100%, 0)",
-											transition: `opacity 0.45s ${MOTION_BEZIER.out} ${wordDelay}s, transform 0.45s ${MOTION_BEZIER.out} ${wordDelay}s`,
+												? "perspective(400px) rotateX(0deg) translate3d(0, 0, 0)"
+												: "perspective(400px) rotateX(-55deg) translate3d(0, 16px, 0)",
+											filter: inView ? "blur(0px)" : "blur(3px)",
+											transition: `opacity 0.45s ${MOTION_BEZIER.out} ${wordDelay}s, transform 0.45s ${MOTION_BEZIER.out} ${wordDelay}s, filter 0.45s ${MOTION_BEZIER.out} ${wordDelay}s`,
 										}
 							}
 						>
@@ -831,7 +832,9 @@ export function StaggerItem({ index = 0, className, children }: StaggerItemProps
 					? {}
 					: {
 							opacity: inView ? 1 : 0,
-							transform: inView ? "translate3d(0, 0, 0)" : "translate3d(0, 14px, 0)",
+							transform: inView
+								? "translate3d(0, 0, 0)"
+								: "translate3d(-18px, 12px, 0)",
 							transition: `opacity 0.4s ${MOTION_BEZIER.out} ${delay}s, transform 0.4s ${MOTION_BEZIER.out} ${delay}s`,
 						}
 			}

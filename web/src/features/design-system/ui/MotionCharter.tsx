@@ -428,28 +428,47 @@ export function MotionCharter() {
 
 					<EffectCard
 						name="TextReveal · 逐词揭示"
-						note="文字如墨迹着纸依序浮现，标题动效的招牌。"
+						note="文字自纸面 3D 活字翻转立起伴随虚实凝聚，标题动效的招牌。"
 						usage='<TextReveal text="标题文本" />'
 					>
 						{(key) => (
-							<TextReveal
-								key={key}
-								text="一花一叶 皆成文章"
-								className="text-lg font-bold"
-							/>
+							<div className="py-2 text-center">
+								<TextReveal
+									key={key}
+									text="一花一叶 皆成文章"
+									className="font-serif text-2xl font-bold tracking-wider text-foreground"
+								/>
+							</div>
 						)}
 					</EffectCard>
 
 					<EffectCard
 						name="Stagger · 级联编排"
-						note="列表与卡组依序进入，节奏 80ms 递进。"
+						note="结构化卡片流依序错落入场，双轴微倾角层叠，节奏 90ms 递进。"
 						usage="<StaggerGroup><StaggerItem index={0}>…</StaggerItem></StaggerGroup>"
 					>
 						{(key) => (
-							<StaggerGroup key={key} className="flex gap-2">
-								{["壹", "贰", "叁"].map((word, idx) => (
-									<StaggerItem key={word} index={idx}>
-										<Demo>{word}</Demo>
+							<StaggerGroup key={key} className="w-full max-w-xs space-y-2">
+								{[
+									{ title: "《营造法式·卷一》", time: "4 分钟前", tag: "已落定" },
+									{ title: "《东坡题跋·墨池记》", time: "昨天", tag: "研读中" },
+									{ title: "《文心雕龙·神思》", time: "3 天前", tag: "典藏" },
+								].map((card, idx) => (
+									<StaggerItem key={card.title} index={idx}>
+										<div className="flex items-center justify-between rounded-lg border border-border/40 bg-card px-3 py-2 text-xs shadow-xs">
+											<div className="flex items-center gap-2">
+												<span className="h-1.5 w-1.5 rounded-full bg-primary" />
+												<span className="font-serif font-medium text-foreground">
+													{card.title}
+												</span>
+											</div>
+											<div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+												<span>{card.time}</span>
+												<span className="rounded bg-muted px-1.5 py-0.5 font-mono">
+													{card.tag}
+												</span>
+											</div>
+										</div>
 									</StaggerItem>
 								))}
 							</StaggerGroup>
