@@ -16,6 +16,7 @@ import {
 	TextReveal,
 	TextUnderline,
 	TiltCard,
+	WavyUnderline,
 } from "../motion-effects";
 
 describe("动效章程自研动效库", () => {
@@ -41,6 +42,7 @@ describe("动效章程自研动效库", () => {
 			"HoverLift · 纸面微浮",
 			"CounterBadge · 计数微弹气泡",
 			"TextUnderline · 墨线生长下划线",
+			"WavyUnderline · 流水波浪线",
 		];
 		for (const name of interactiveTitles) {
 			expect(screen.getByText(name)).toBeTruthy();
@@ -213,5 +215,17 @@ describe("动效章程自研动效库", () => {
 		render(<QuoteLine citation="营造法式">引文段落</QuoteLine>);
 		expect(screen.getByText("引文段落")).toBeTruthy();
 		expect(screen.getByText(/营造法式/)).toBeTruthy();
+	});
+
+	it("WavyUnderline 悬停与常驻波浪线渲染", () => {
+		const { container } = render(
+			<WavyUnderline mode="always">
+				<span>波浪批注</span>
+			</WavyUnderline>,
+		);
+		const wrapper = container.firstChild as HTMLElement;
+		expect(screen.getByText("波浪批注")).toBeTruthy();
+		fireEvent.mouseEnter(wrapper);
+		fireEvent.mouseLeave(wrapper);
 	});
 });

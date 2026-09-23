@@ -41,3 +41,14 @@
 		transform: rotate(360deg);
 	}
 }
+
+@keyframes wave-flow {
+	from {
+		mask-position: 0 0;
+		-webkit-mask-position: 0 0;
+	}
+	to {
+		mask-position: 16px 0;
+		-webkit-mask-position: 16px 0;
+	}
+}

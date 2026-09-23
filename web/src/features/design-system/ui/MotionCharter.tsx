@@ -22,6 +22,7 @@ import {
 	TextReveal,
 	TextUnderline,
 	TiltCard,
+	WavyUnderline,
 } from "./motion-effects";
 
 /**
@@ -347,6 +348,23 @@ export function MotionCharter() {
 							<TextUnderline className="font-semibold text-foreground">
 								浮光掠影
 							</TextUnderline>
+						</p>
+					</InteractiveCard>
+
+					<InteractiveCard
+						name="WavyUnderline · 流水波浪线"
+						note="书卷批注意象，悬停如春水微澜向右流淌，移出顺滑收缩。"
+						usage="<WavyUnderline flow>{children}</WavyUnderline>"
+					>
+						<p className="text-sm font-serif">
+							移入体验{" "}
+							<WavyUnderline className="font-semibold text-primary">
+								春水微澜
+							</WavyUnderline>{" "}
+							与{" "}
+							<WavyUnderline mode="always" className="font-semibold text-foreground">
+								常驻圈点
+							</WavyUnderline>
 						</p>
 					</InteractiveCard>
 				</div>

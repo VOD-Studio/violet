@@ -618,6 +618,64 @@ export function TextUnderline({
 	);
 }
 
+const WAVE_SVG_MASK =
+	"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 6'%3E%3Cpath d='M0 3 Q4 0.5, 8 3 T 16 3' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")";
+
+export interface WavyUnderlineProps {
+	/** 触发模式：hover 悬停显现（默认），always 常驻，reveal 视口进入生长 */
+	mode?: "hover" | "always" | "reveal";
+	/** 悬停时是否流动微澜（默认 true） */
+	flow?: boolean;
+	/** 波浪颜色（默认 var(--primary)） */
+	color?: string;
+	className?: string;
+	children: ReactNode;
+}
+
+/** 波浪下划线：书卷批注意象，支持悬停流水微澜与视口生长。 */
+export function WavyUnderline({
+	mode = "hover",
+	flow = true,
+	color = "var(--primary)",
+	className,
+	children,
+}: WavyUnderlineProps) {
+	const reduce = useReducedMotion();
+	const ref = useRef<HTMLSpanElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-40px" });
+	const [hovered, setHovered] = useState(false);
+
+	const active = mode === "always" || (mode === "hover" ? hovered : inView);
+
+	return (
+		<span
+			ref={ref}
+			className={cn("relative inline-block cursor-pointer select-none", className)}
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
+		>
+			{children}
+			<span
+				aria-hidden
+				className="pointer-events-none absolute -bottom-1.5 left-0 right-0 h-1.5 origin-left"
+				style={{
+					backgroundColor: color,
+					maskImage: WAVE_SVG_MASK,
+					WebkitMaskImage: WAVE_SVG_MASK,
+					maskRepeat: "repeat-x",
+					WebkitMaskRepeat: "repeat-x",
+					maskSize: "16px 6px",
+					WebkitMaskSize: "16px 6px",
+					transform: active || reduce ? "scaleX(1)" : "scaleX(0)",
+					transition: reduce ? "none" : `transform 0.28s ${MOTION_BEZIER.out}`,
+					animation:
+						flow && active && !reduce ? "wave-flow 1.2s linear infinite" : "none",
+				}}
+			/>
+		</span>
+	);
+}
+
 export interface QuoteLineProps {
 	color?: string;
 	citation?: string;
