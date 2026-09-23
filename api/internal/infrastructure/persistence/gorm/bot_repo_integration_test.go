@@ -83,7 +83,7 @@ func TestBotRepositoryIntegration_TokenHashIsUnique(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Delete(ctx, first.ID()) })
 
 	// 手造一行同哈希的 bot：唯一索引必须拒绝，而不是让鉴权反查命中两条。
-	clone := domainchat.ReconstructBot(domainshared.NewID(), userB, "two", nil, first.TokenHash(), "", true, false, time.Now(), time.Now())
+	clone := domainchat.ReconstructBot(domainshared.NewID(), userB, "two", nil, first.TokenHash(), "", true, false, false, time.Now(), time.Now())
 	require.Error(t, repo.Save(ctx, clone), "token_hash 唯一索引应拒绝重复")
 }
 

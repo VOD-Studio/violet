@@ -12,10 +12,11 @@ func registerChatPaths(t *openapi3.T) {
 		"is_bot":       optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
 	})
 	registerSchema(t, "ChatBotReplyDTO", openapi3.Schemas{
-		"status":     reqStr("pending、thinking、streaming、completed 或 failed"),
-		"thinking":   optStr("后台允许展示时的思考内容"),
-		"revision":   optInt64("累计更新版本"),
-		"updated_at": reqStr("最近上报时间"),
+		"status":                    reqStr("pending、thinking、streaming、completed 或 failed"),
+		"thinking":                  optStr("后台允许展示时的思考内容"),
+		"thinking_default_expanded": optBool("思考内容是否默认展开"),
+		"revision":                  optInt64("累计更新版本"),
+		"updated_at":                reqStr("最近上报时间"),
 	})
 	registerSchema(t, "ChatMemberDTO", openapi3.Schemas{
 		"user":      &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},

@@ -227,6 +227,8 @@ type Bot struct {
 	enabled bool
 	// showThinking 是否允许向会话成员展示思考内容。
 	showThinking bool
+	// thinkingDefaultExpanded 思考内容在会话成员端是否默认展开。
+	thinkingDefaultExpanded bool
 	// timestamps 创建与更新时间。
 	domainshared.Timestamps
 }
@@ -268,16 +270,18 @@ func ReconstructBot(
 	token string,
 	enabled bool,
 	showThinking bool,
+	thinkingDefaultExpanded bool,
 	createdAt, updatedAt time.Time,
 ) *Bot {
 	b := &Bot{
-		userID:       userID,
-		name:         name,
-		avatarID:     avatarID,
-		tokenHash:    tokenHash,
-		token:        token,
-		enabled:      enabled,
-		showThinking: showThinking,
+		userID:                  userID,
+		name:                    name,
+		avatarID:                avatarID,
+		tokenHash:               tokenHash,
+		token:                   token,
+		enabled:                 enabled,
+		showThinking:            showThinking,
+		thinkingDefaultExpanded: thinkingDefaultExpanded,
 	}
 	b.SetID(id)
 	b.CreatedAt = createdAt
@@ -385,5 +389,17 @@ func (b *Bot) SetShowThinking(show bool, now time.Time) {
 		return
 	}
 	b.showThinking = show
+	b.UpdatedAt = now
+}
+
+// ThinkingDefaultExpanded 返回思考内容的默认展开状态。
+func (b *Bot) ThinkingDefaultExpanded() bool { return b.thinkingDefaultExpanded }
+
+// SetThinkingDefaultExpanded 更新思考内容的默认展开状态。
+func (b *Bot) SetThinkingDefaultExpanded(expanded bool, now time.Time) {
+	if b.thinkingDefaultExpanded == expanded {
+		return
+	}
+	b.thinkingDefaultExpanded = expanded
 	b.UpdatedAt = now
 }

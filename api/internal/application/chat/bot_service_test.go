@@ -555,7 +555,7 @@ func TestRevealTokenRejectsCredentialWithoutCiphertext(t *testing.T) {
 	}
 	id := domainshared.MustParseID(created.ID)
 	blind := domainchat.ReconstructBot(id, bots.bots[id].UserID(), "Saber", nil,
-		bots.bots[id].TokenHash(), "", true, false, time.Now(), time.Now())
+		bots.bots[id].TokenHash(), "", true, false, false, time.Now(), time.Now())
 	bots.bots[id] = blind
 
 	if _, err := svc.RevealToken(ctx, id); err == nil {
@@ -582,12 +582,13 @@ func TestUpdateBotSyncsProfileAndState(t *testing.T) {
 
 	newName := "Lancer"
 	enabled := false
+	expanded := true
 	cleared := ""
-	dto, err := svc.UpdateBot(ctx, UpdateBotInput{ID: botID, Name: &newName, Enabled: &enabled, AvatarID: &cleared})
+	dto, err := svc.UpdateBot(ctx, UpdateBotInput{ID: botID, Name: &newName, Enabled: &enabled, AvatarID: &cleared, ThinkingDefaultExpanded: &expanded})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if dto.Name != "Lancer" || dto.Enabled || dto.AvatarID != "" || dto.Token != "" {
+	if dto.Name != "Lancer" || dto.Enabled || dto.AvatarID != "" || dto.Token != "" || !dto.ThinkingDefaultExpanded {
 		t.Fatalf("dto = %+v", dto)
 	}
 	if dto.UpdatedAt == dto.CreatedAt {

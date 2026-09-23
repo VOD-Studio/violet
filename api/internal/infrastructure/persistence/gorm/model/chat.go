@@ -141,11 +141,12 @@ type ChatBot struct {
 	TokenHash string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
 	// TokenEncrypted 明文凭据的 AES-GCM 密文（base64）。NULL = 从未存过或密文已作废，
 	// 此时凭据只能靠重置刷新；json:"-" 防它经任何 DTO 序列化外泄。
-	TokenEncrypted *string   `gorm:"type:text;column:token_encrypted" json:"-"`
-	Enabled        bool      `gorm:"column:enabled;not null" json:"enabled"`
-	ShowThinking   bool      `gorm:"column:show_thinking;not null" json:"show_thinking"`
-	CreatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	TokenEncrypted          *string   `gorm:"type:text;column:token_encrypted" json:"-"`
+	Enabled                 bool      `gorm:"column:enabled;not null" json:"enabled"`
+	ShowThinking            bool      `gorm:"column:show_thinking;not null" json:"show_thinking"`
+	ThinkingDefaultExpanded bool      `gorm:"column:thinking_default_expanded;not null" json:"thinking_default_expanded"`
+	CreatedAt               time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt               time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // TableName 显式指定表名。

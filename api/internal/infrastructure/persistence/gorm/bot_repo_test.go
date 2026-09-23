@@ -69,10 +69,17 @@ func TestBotRepositorySaveAndFindByID(t *testing.T) {
 	require.Equal(t, bot.Token(), got.Token(), "配了密钥就要能取回明文")
 	require.True(t, got.IsEnabled())
 	bot.SetShowThinking(true, time.Now())
+	bot.SetThinkingDefaultExpanded(true, time.Now())
 	require.NoError(t, repo.Save(ctx, bot))
 	got, err = repo.FindByID(ctx, bot.ID())
 	require.NoError(t, err)
 	require.True(t, got.ShowThinking())
+	require.True(t, got.ThinkingDefaultExpanded())
+	bot.SetThinkingDefaultExpanded(false, time.Now())
+	require.NoError(t, repo.Save(ctx, bot))
+	got, err = repo.FindByID(ctx, bot.ID())
+	require.NoError(t, err)
+	require.False(t, got.ThinkingDefaultExpanded())
 }
 
 func TestBotRepositoryTokenCiphertextRoundTrip(t *testing.T) {

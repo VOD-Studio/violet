@@ -7,18 +7,19 @@ func registerAdminBotPaths(t *openapi3.T) {
 	secure := securityAdmin()
 
 	registerSchema(t, "BotDTO", openapi3.Schemas{
-		"id":             reqStr("bot 凭证 ID"),
-		"user_id":        reqStr("对应虚拟用户 ID，消息 sender.id 即此值"),
-		"username":       reqStr("虚拟用户名，@提及与私聊寻址用"),
-		"name":           reqStr("显示名"),
-		"avatar_id":      optStr("头像文件 ID，未设置为空"),
-		"avatar_url":     optStr("头像地址"),
-		"enabled":        optBool("是否启用；禁用后 token 鉴权即拒"),
-		"show_thinking":  optBool("是否允许展示 bot 思考内容，默认关闭"),
-		"token":          optStr("明文 token：创建/重置/查看凭据时返回；列表与详情恒空"),
-		"token_viewable": optBool("当前能否取回明文；false 表示库里无可用密文，只能重置"),
-		"created_at":     reqStr("创建时间（RFC3339）"),
-		"updated_at":     reqStr("最近更新时间（RFC3339）"),
+		"id":                        reqStr("bot 凭证 ID"),
+		"user_id":                   reqStr("对应虚拟用户 ID，消息 sender.id 即此值"),
+		"username":                  reqStr("虚拟用户名，@提及与私聊寻址用"),
+		"name":                      reqStr("显示名"),
+		"avatar_id":                 optStr("头像文件 ID，未设置为空"),
+		"avatar_url":                optStr("头像地址"),
+		"enabled":                   optBool("是否启用；禁用后 token 鉴权即拒"),
+		"show_thinking":             optBool("是否允许展示 bot 思考内容，默认关闭"),
+		"thinking_default_expanded": optBool("思考内容是否默认展开，默认折叠"),
+		"token":                     optStr("明文 token：创建/重置/查看凭据时返回；列表与详情恒空"),
+		"token_viewable":            optBool("当前能否取回明文；false 表示库里无可用密文，只能重置"),
+		"created_at":                reqStr("创建时间（RFC3339）"),
+		"updated_at":                reqStr("最近更新时间（RFC3339）"),
 	})
 	registerSchema(t, "CreateBotRequest", openapi3.Schemas{
 		"name":      reqStr("显示名（≤32 字符，同时作为虚拟用户展示名）"),
@@ -26,10 +27,11 @@ func registerAdminBotPaths(t *openapi3.T) {
 		"avatar_id": optStr("头像文件 ID，缺省表示不设头像"),
 	}, "name", "username")
 	registerSchema(t, "UpdateBotRequest", openapi3.Schemas{
-		"name":          nullableStr("新显示名；缺省表示不改"),
-		"avatar_id":     nullableStr("新头像文件 ID；空串清除头像，缺省表示不改"),
-		"enabled":       optBool("启停；缺省表示不改"),
-		"show_thinking": optBool("是否允许展示思考内容；缺省表示不改"),
+		"name":                      nullableStr("新显示名；缺省表示不改"),
+		"avatar_id":                 nullableStr("新头像文件 ID；空串清除头像，缺省表示不改"),
+		"enabled":                   optBool("启停；缺省表示不改"),
+		"show_thinking":             optBool("是否允许展示思考内容；缺省表示不改"),
+		"thinking_default_expanded": optBool("思考内容是否默认展开；缺省表示不改"),
 	})
 
 	get(t, "/admin/chat-bots", &openapi3.Operation{

@@ -194,10 +194,11 @@ type UserDTO struct {
 
 // BotReplyDTO 提供可恢复的生成状态。
 type BotReplyDTO struct {
-	Status    string `json:"status"`
-	Thinking  string `json:"thinking,omitempty"`
-	Revision  int64  `json:"revision"`
-	UpdatedAt string `json:"updated_at"`
+	Status                  string `json:"status"`
+	Thinking                string `json:"thinking,omitempty"`
+	ThinkingDefaultExpanded bool   `json:"thinking_default_expanded"`
+	Revision                int64  `json:"revision"`
+	UpdatedAt               string `json:"updated_at"`
 }
 
 // MediaDTO 图片媒体读模型。
@@ -1529,8 +1530,11 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 			if err != nil && !errors.Is(err, domainchat.ErrBotNotFound) {
 				return MessageDTO{}, err
 			}
-			if err == nil && bot.ShowThinking() {
-				botReply.Thinking = reply.Thinking()
+			if err == nil {
+				if bot.ShowThinking() {
+					botReply.Thinking = reply.Thinking()
+				}
+				botReply.ThinkingDefaultExpanded = bot.ThinkingDefaultExpanded()
 			}
 		}
 		dto.BotReply = botReply

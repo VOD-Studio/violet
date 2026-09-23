@@ -36,9 +36,10 @@ type createBotRequest struct {
 type updateBotRequest struct {
 	Name *string `json:"name"`
 	// AvatarID 传空串清除头像，字段缺省表示不改。
-	AvatarID     *string `json:"avatar_id"`
-	Enabled      *bool   `json:"enabled"`
-	ShowThinking *bool   `json:"show_thinking"`
+	AvatarID                *string `json:"avatar_id"`
+	Enabled                 *bool   `json:"enabled"`
+	ShowThinking            *bool   `json:"show_thinking"`
+	ThinkingDefaultExpanded *bool   `json:"thinking_default_expanded"`
 }
 
 // List 分页列出 bot。
@@ -79,7 +80,7 @@ func (h *BotAdminHandler) Create(w http.ResponseWriter, r *http.Request) {
 	response.RespondCreated(w, dto)
 }
 
-// Update 改名、换头像或启停。
+// Update 修改 Bot 资料与展示配置。
 func (h *BotAdminHandler) Update(w http.ResponseWriter, r *http.Request) {
 	botID, err := parsePathID(chi.URLParam(r, "botId"))
 	if err != nil {
@@ -92,11 +93,12 @@ func (h *BotAdminHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dto, err := h.bots.UpdateBot(r.Context(), appchat.UpdateBotInput{
-		ID:           botID,
-		Name:         req.Name,
-		AvatarID:     req.AvatarID,
-		Enabled:      req.Enabled,
-		ShowThinking: req.ShowThinking,
+		ID:                      botID,
+		Name:                    req.Name,
+		AvatarID:                req.AvatarID,
+		Enabled:                 req.Enabled,
+		ShowThinking:            req.ShowThinking,
+		ThinkingDefaultExpanded: req.ThinkingDefaultExpanded,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

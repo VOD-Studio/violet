@@ -145,6 +145,7 @@ func TestPendingBotReplyReportsStateAndMarksReadOnFirstText(t *testing.T) {
 		t.Fatal(err)
 	}
 	bot.SetShowThinking(true, now)
+	bot.SetThinkingDefaultExpanded(true, now)
 	botRepo := newFakeBotRepo()
 	botRepo.bots[bot.ID()] = bot
 	svc.WithBotRepository(botRepo)
@@ -155,12 +156,12 @@ func TestPendingBotReplyReportsStateAndMarksReadOnFirstText(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if created.BotReply == nil || created.BotReply.Status != "pending" || repo.positions[botUserID] != nil {
+	if created.BotReply == nil || created.BotReply.Status != "pending" || !created.BotReply.ThinkingDefaultExpanded || repo.positions[botUserID] != nil {
 		t.Fatalf("占位回复不应提前推进已读: %+v", created)
 	}
 	update := UpdateBotReplyInput{UserID: botUserID, ConversationID: conversationID, MessageID: repo.saved.ID(), Thinking: "正在检查", Status: domainchat.BotReplyThinking, Revision: 1}
 	thought, err := svc.UpdateBotReply(context.Background(), update)
-	if err != nil || thought.BotReply == nil || thought.BotReply.Thinking != "正在检查" || repo.positions[botUserID] != nil {
+	if err != nil || thought.BotReply == nil || thought.BotReply.Thinking != "正在检查" || !thought.BotReply.ThinkingDefaultExpanded || repo.positions[botUserID] != nil {
 		t.Fatalf("思考阶段状态或已读错误: %+v %v", thought, err)
 	}
 	update.Content, update.Status, update.Revision = "第一段", domainchat.BotReplyStreaming, 2

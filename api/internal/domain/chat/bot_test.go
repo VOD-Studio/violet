@@ -59,7 +59,7 @@ func TestReconstructBotPreservesFieldsAndNoEvents(t *testing.T) {
 	userID := shared.NewID()
 	avatar := shared.NewID()
 
-	b := chat.ReconstructBot(id, userID, "Saber", &avatar, "deadbeef", "violet_bot_plain", false, false, created, updated)
+	b := chat.ReconstructBot(id, userID, "Saber", &avatar, "deadbeef", "violet_bot_plain", false, false, true, created, updated)
 	require.Equal(t, id, b.ID())
 	require.Equal(t, userID, b.UserID())
 	require.Equal(t, "Saber", b.Name())
@@ -67,6 +67,7 @@ func TestReconstructBotPreservesFieldsAndNoEvents(t *testing.T) {
 	require.Equal(t, "deadbeef", b.TokenHash())
 	require.Equal(t, "violet_bot_plain", b.Token())
 	require.False(t, b.IsEnabled())
+	require.True(t, b.ThinkingDefaultExpanded())
 	require.Equal(t, created, b.CreatedAt)
 	require.Equal(t, updated, b.UpdatedAt)
 	require.False(t, b.HasEvents(), "重建不应记录事件")
