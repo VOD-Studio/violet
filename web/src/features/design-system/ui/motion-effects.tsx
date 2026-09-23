@@ -468,45 +468,6 @@ export function HoldToConfirm({
 	);
 }
 
-export interface SmoothExpandProps {
-	open: boolean;
-	/** 过渡时长（秒，默认 0.32） */
-	duration?: number;
-	className?: string;
-	children: ReactNode;
-}
-
-/** 平滑展开折叠：基于 CSS grid-template-rows 与内部内容视差淡入沉落。 */
-export function SmoothExpand({ open, duration = 0.32, className, children }: SmoothExpandProps) {
-	const reduce = useReducedMotion();
-
-	return (
-		<div
-			className={cn("grid transition-[grid-template-rows]", className)}
-			style={{
-				gridTemplateRows: open || reduce ? "1fr" : "0fr",
-				transitionDuration: reduce ? "0s" : `${duration}s`,
-				transitionTimingFunction: MOTION_BEZIER.out,
-			}}
-		>
-			<div className="overflow-hidden min-h-0">
-				<div
-					style={{
-						opacity: open || reduce ? 1 : 0,
-						transform:
-							open || reduce ? "translate3d(0, 0, 0)" : "translate3d(0, -8px, 0)",
-						transition: reduce
-							? "none"
-							: `opacity ${open ? duration * 0.95 : duration * 0.6}s ${MOTION_BEZIER.out}, transform ${duration}s ${MOTION_BEZIER.out}`,
-					}}
-				>
-					{children}
-				</div>
-			</div>
-		</div>
-	);
-}
-
 export interface RevealProps {
 	/** 动画延迟（秒） */
 	delay?: number;
@@ -1035,35 +996,57 @@ export interface CounterBadgeProps {
 	className?: string;
 }
 
-/** 计数微弹气泡：外层背景稳定不闪烁，内层数字伴随增减方向微滑入场。 */
+/** 计数微弹气泡：逐位对比，仅发生数值变化的字符微滑入场，其余位数静止。 */
 export function CounterBadge({ count, className }: CounterBadgeProps) {
 	const reduce = useReducedMotion();
 	const prevCountRef = useRef(count);
+	const prevStr = prevCountRef.current.toLocaleString();
+	const currentStr = count.toLocaleString();
 	const direction = count >= prevCountRef.current ? "up" : "down";
 
 	useEffect(() => {
 		prevCountRef.current = count;
 	}, [count]);
 
+	const currChars = currentStr.split("");
+	const prevChars = prevStr.split("");
+	const offset = currChars.length - prevChars.length;
+
 	return (
 		<span
 			className={cn(
-				"relative inline-flex items-center justify-center overflow-hidden rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-primary select-none",
+				"relative inline-flex items-center justify-center overflow-hidden rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-primary select-none",
 				className,
 			)}
 		>
-			<span
-				key={count}
-				className={cn(
-					"inline-block",
-					reduce
-						? ""
-						: direction === "up"
-							? "animate-in fade-in-50 slide-in-from-bottom-2 duration-200 ease-out"
-							: "animate-in fade-in-50 slide-in-from-top-2 duration-200 ease-out",
-				)}
-			>
-				{count}
+			<span className="inline-flex items-center">
+				{currChars.map((char, idx) => {
+					const prevIdx = idx - offset;
+					const prevChar = prevIdx >= 0 ? prevChars[prevIdx] : undefined;
+					const isChanged = prevChar !== char;
+
+					if (!isChanged || reduce) {
+						return (
+							<span key={`static-${idx}`} className="inline-block">
+								{char}
+							</span>
+						);
+					}
+
+					return (
+						<span
+							key={`anim-${idx}-${char}`}
+							className={cn(
+								"inline-block",
+								direction === "up"
+									? "animate-in fade-in-50 slide-in-from-bottom-2.5 duration-200 ease-out"
+									: "animate-in fade-in-50 slide-in-from-top-2.5 duration-200 ease-out",
+							)}
+						>
+							{char}
+						</span>
+					);
+				})}
 			</span>
 		</span>
 	);

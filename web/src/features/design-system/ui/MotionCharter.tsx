@@ -15,7 +15,6 @@ import {
 	Shake,
 	Shine,
 	SlideIn,
-	SmoothExpand,
 	StaggerGroup,
 	StaggerItem,
 	TextReveal,
@@ -121,7 +120,6 @@ export function MotionCharter() {
 	const [activeSegment, setActiveSegment] = useState("week");
 	const [checked, setChecked] = useState(true);
 	const [shakeTrigger, setShakeTrigger] = useState(0);
-	const [expandOpen, setExpandOpen] = useState(false);
 	const [counter, setCounter] = useState(42);
 
 	return (
@@ -259,56 +257,6 @@ export function MotionCharter() {
 							>
 								点击触发警示摇晃
 							</button>
-						</div>
-					</InteractiveCard>
-
-					<InteractiveCard
-						name="SmoothExpand · 平滑折叠展开"
-						note="CSS Grid 与视差沉落结合，无须 JS 测高，彻底消除折叠截断与布局跳变。"
-						usage="<SmoothExpand open={isOpen}>{children}</SmoothExpand>"
-					>
-						<div className="w-full max-w-xs rounded-xl border border-border/40 bg-card p-3 shadow-xs">
-							<button
-								type="button"
-								onClick={() => setExpandOpen((o) => !o)}
-								className="flex w-full items-center justify-between text-xs font-semibold text-foreground select-none"
-							>
-								<div className="flex items-center gap-2">
-									<span className="h-1.5 w-1.5 rounded-full bg-primary" />
-									<span>营造法则明细项（点击展开/折叠）</span>
-								</div>
-								<span
-									className="text-xs text-muted-foreground transition-transform duration-300 ease-out"
-									style={{
-										transform: expandOpen ? "rotate(180deg)" : "rotate(0deg)",
-									}}
-								>
-									▾
-								</span>
-							</button>
-							<SmoothExpand open={expandOpen} className="mt-2">
-								<div className="space-y-1.5 border-t border-border/30 pt-2.5 text-[11px] leading-relaxed text-muted-foreground">
-									<div className="flex items-center justify-between rounded bg-muted/40 px-2 py-1">
-										<span className="font-medium text-foreground">
-											合成层约束
-										</span>
-										<span className="font-mono text-[10px] text-primary">
-											GPU paint-only
-										</span>
-									</div>
-									<div className="flex items-center justify-between rounded bg-muted/40 px-2 py-1">
-										<span className="font-medium text-foreground">
-											自适应测高
-										</span>
-										<span className="font-mono text-[10px] text-muted-foreground">
-											CSS 0fr → 1fr
-										</span>
-									</div>
-									<p className="px-0.5 text-[10px] text-muted-foreground/80">
-										展开时内部伴随视差下沉与渐显，收起加速淡出，杜绝文字挤压抖动。
-									</p>
-								</div>
-							</SmoothExpand>
 						</div>
 					</InteractiveCard>
 

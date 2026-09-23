@@ -11,7 +11,6 @@ import {
 	NumberFlow,
 	PillSlider,
 	QuoteLine,
-	SmoothExpand,
 	TextReveal,
 	TextUnderline,
 	TiltCard,
@@ -36,7 +35,6 @@ describe("动效章程自研动效库", () => {
 			"CheckmarkDraw · 交互打勾",
 			"HoldToConfirm · 蓄力长按",
 			"Shake · 物理警示摇晃",
-			"SmoothExpand · 平滑折叠展开",
 			"CopyButton · 就地复制形变",
 			"CounterBadge · 计数微弹气泡",
 			"TextUnderline · 墨线生长下划线",
@@ -126,24 +124,6 @@ describe("动效章程自研动效库", () => {
 		fireEvent.mouseLeave(card);
 		expect(screen.getByText("卡片内容")).toBeTruthy();
 	});
-
-	it("SmoothExpand 展开收起切换高度过渡属性", () => {
-		const { container, rerender } = render(
-			<SmoothExpand open={false}>
-				<p>折叠内容</p>
-			</SmoothExpand>,
-		);
-		const el = container.firstChild as HTMLElement;
-		expect(el.style.gridTemplateRows).toBe("0fr");
-
-		rerender(
-			<SmoothExpand open={true}>
-				<p>折叠内容</p>
-			</SmoothExpand>,
-		);
-		expect(el.style.gridTemplateRows).toBe("1fr");
-	});
-
 	it("HoldToConfirm 长按与松手清零", () => {
 		let confirmed = false;
 		render(
@@ -187,9 +167,16 @@ describe("动效章程自研动效库", () => {
 		expect(await screen.findByText("已复制")).toBeTruthy();
 	});
 
-	it("CounterBadge 渲染数字", () => {
-		render(<CounterBadge count={99} />);
-		expect(screen.getByText("99")).toBeTruthy();
+	it("CounterBadge 逐位对比：未变位数静止，仅变动位动画", () => {
+		const { rerender } = render(<CounterBadge count={42} />);
+		expect(screen.getByText("4")).toBeTruthy();
+		expect(screen.getByText("2")).toBeTruthy();
+
+		rerender(<CounterBadge count={43} />);
+		expect(screen.getByText("4")).toBeTruthy();
+		expect(screen.getByText("3")).toBeTruthy();
+		const digit3 = screen.getByText("3");
+		expect(digit3.className).toContain("animate-in");
 	});
 
 	it("TextUnderline 悬停与渲染下划线", () => {
