@@ -942,15 +942,26 @@ export function BorderBeam({
 }
 
 export interface CopyButtonProps {
+	/** 要复制的文本内容 */
 	text: string;
+	/** 按钮文案（默认 "复制"） */
+	label?: string;
+	/** 成功回调 */
 	onCopy?: () => void;
 	className?: string;
 }
 
-/** 就地复制按钮：点击时图标与状态平滑形变，就地确认。 */
-export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
+/** 复制反馈按钮：图标与文案原位平滑交接，外层尺寸严格锚定，杜绝挤压变形。 */
+export function CopyButton({ text, label = "复制", onCopy, className }: CopyButtonProps) {
 	const reduce = useReducedMotion();
 	const [copied, setCopied] = useState(false);
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		return () => {
+			clearTimeout(timerRef.current ?? undefined);
+		};
+	}, []);
 
 	const handleCopy = async () => {
 		try {
@@ -958,35 +969,81 @@ export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
 				await navigator.clipboard.writeText(text);
 			}
 		} catch {
-			// 剪贴板不可用时降级
+			// 剪贴板受限时降级
 		}
+
 		setCopied(true);
 		onCopy?.();
-		setTimeout(() => setCopied(false), 1800);
+
+		clearTimeout(timerRef.current ?? undefined);
+		timerRef.current = setTimeout(() => {
+			setCopied(false);
+		}, 1800);
 	};
 
 	return (
 		<button
 			type="button"
 			onClick={handleCopy}
-			aria-label={copied ? "已复制" : "复制"}
+			aria-label={copied ? "已复制" : label}
 			className={cn(
-				"relative inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 active:scale-95",
+				"relative inline-flex items-center gap-1.5 rounded-lg border border-border/40 bg-card px-3 py-1.5 text-xs font-medium transition-colors duration-200 select-none",
 				copied
-					? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-					: "border-border/40 bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+					? "border-primary/40 bg-primary/10 text-primary"
+					: "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
 				className,
 			)}
 		>
-			<span
-				className={cn(
-					"inline-flex transition-transform duration-200",
-					reduce ? "" : copied ? "rotate-0 scale-100" : "scale-100",
-				)}
-			>
-				{copied ? <Check size={14} className="stroke-[2.5]" /> : <Copy size={14} />}
+			<span className="relative flex h-3.5 w-3.5 items-center justify-center">
+				<span
+					className={cn(
+						"absolute inset-0 flex items-center justify-center transition-all duration-200",
+						reduce
+							? copied
+								? "hidden"
+								: "block"
+							: copied
+								? "opacity-0 -translate-y-1"
+								: "opacity-100 translate-y-0",
+					)}
+				>
+					<Copy size={13} />
+				</span>
+				<span
+					className={cn(
+						"absolute inset-0 flex items-center justify-center transition-all duration-200",
+						reduce
+							? copied
+								? "block"
+								: "hidden"
+							: copied
+								? "opacity-100 translate-y-0 text-primary"
+								: "opacity-0 translate-y-1",
+					)}
+				>
+					<Check size={13} className="stroke-[2.5]" />
+				</span>
 			</span>
-			<span>{copied ? "已复制" : "点击复制"}</span>
+			<span className="relative inline-grid text-left">
+				<span
+					className={cn(
+						"col-start-1 row-start-1 transition-opacity duration-200",
+						copied
+							? "opacity-100 font-medium text-primary"
+							: "opacity-0 pointer-events-none",
+					)}
+				>
+					已复制
+				</span>
+				<span
+					className={cn(
+						"col-start-1 row-start-1 transition-opacity duration-200",
+						copied ? "opacity-0 pointer-events-none" : "opacity-100",
+					)}
+				>
+					{label}
+				</span>
+			</span>
 		</button>
 	);
 }

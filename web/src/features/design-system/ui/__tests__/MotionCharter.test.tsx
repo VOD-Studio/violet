@@ -35,7 +35,7 @@ describe("动效章程自研动效库", () => {
 			"CheckmarkDraw · 交互打勾",
 			"HoldToConfirm · 蓄力长按",
 			"Shake · 物理警示摇晃",
-			"CopyButton · 就地复制形变",
+			"CopyButton · 就地复制反馈",
 			"CounterBadge · 计数微弹气泡",
 			"TextUnderline · 墨线生长下划线",
 			"WavyUnderline · 流水波浪线",
