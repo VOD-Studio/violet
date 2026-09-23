@@ -113,12 +113,11 @@ describe("色板生成器", () => {
 		expect(screen.getAllByText("#10B981").length).toBeGreaterThanOrEqual(1);
 	});
 
-	it("功能色展台包含 4 个核心语义状态卡片与浅染面", () => {
+	it("功能色展台统一收录全部核心语义角色", () => {
 		render(<PaletteGenerator />);
 		expect(screen.getByRole("heading", { name: "功能色" })).toBeTruthy();
 		for (const role of ["--info", "--success", "--warning", "--destructive"]) {
 			expect(screen.getByText(role)).toBeTruthy();
 		}
-		expect(screen.getAllByText("浅染面").length).toBe(4);
 	});
 });
