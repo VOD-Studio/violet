@@ -34,6 +34,15 @@ interface GroupItemConfig {
 	showShine?: boolean;
 }
 
+interface GroupLayout {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+	actualSide: CartoonPopoverSide;
+	arrowOffset: number;
+}
+
 interface GroupContextValue {
 	activeValue: string | null;
 	registerItem: (item: GroupItemConfig) => void;
@@ -129,13 +138,13 @@ export function CartoonPopoverGroup({
 }: CartoonPopoverGroupProps) {
 	const [activeValue, setActiveValue] = useState<string | null>(null);
 	const [lastActiveValue, setLastActiveValue] = useState<string | null>(null);
+	const [targetLayout, setTargetLayout] = useState<GroupLayout | null>(null);
+	const teleportNextRef = useRef(false);
 	const itemsMap = useRef(new Map<string, GroupItemConfig>());
 	const closeTimerRef = useRef<number | null>(null);
 
 	const measureRef = useRef<HTMLDivElement | null>(null);
 	const floatingRef = useRef<HTMLDivElement | null>(null);
-	// 下一次目标更新是否应跳过滑行直接落位（浮层从关闭到打开的瞬间）
-	const teleportNextRef = useRef(false);
 
 	const clearCloseTimer = useCallback(() => {
 		if (closeTimerRef.current !== null) {
@@ -155,14 +164,14 @@ export function CartoonPopoverGroup({
 	const handleTriggerEnter = useCallback(
 		(val: string) => {
 			const wasOpen = activeValue !== null;
-			const wasClosing = closeTimerRef.current !== null;
 			clearCloseTimer();
-			setActiveValue(val);
-			setLastActiveValue(val);
-			// 浮层未打开或在关闭缓冲中再次进入：请求弹簧 teleport，落位不做滑行
-			if (!wasOpen || wasClosing) {
+			if (!wasOpen) {
+				// 新一轮打开必须先丢弃旧坐标，等当前条目完成测量后再直接落位。
+				setTargetLayout(null);
 				teleportNextRef.current = true;
 			}
+			setActiveValue(val);
+			setLastActiveValue(val);
 		},
 		[activeValue, clearCloseTimer],
 	);
@@ -212,15 +221,6 @@ export function CartoonPopoverGroup({
 		};
 	}, [activeValue, lastActiveValue, sideOffset]);
 
-	const [targetLayout, setTargetLayout] = useState<{
-		x: number;
-		y: number;
-		width: number;
-		height: number;
-		actualSide: CartoonPopoverSide;
-		arrowOffset: number;
-	} | null>(null);
-
 	// 主动重算目标几何：供测量节点 layout 后调用，消除首帧高度估算误差
 	const triggerRelayout = useCallback(() => {
 		setTargetLayout((prev) => {
@@ -254,6 +254,7 @@ export function CartoonPopoverGroup({
 	}, [activeValue, triggerRelayout]);
 
 	// 多维物理联合弹簧解算器：驱动浮层在多按钮间平滑滑行与宽高自适应拉伸
+	const shouldTeleport = teleportNextRef.current && targetLayout !== null;
 	const springGeometry = useMultiSpring(
 		targetLayout
 			? {
@@ -270,9 +271,11 @@ export function CartoonPopoverGroup({
 			mass: 0.8,
 			precision: 0.2,
 		},
-		{ teleport: teleportNextRef.current },
+		{ teleport: shouldTeleport },
 	);
-	teleportNextRef.current = false;
+	if (shouldTeleport) {
+		teleportNextRef.current = false;
+	}
 
 	// 整体透明度弹簧驱动开合
 	const progress = useSpringValue(activeValue ? 1 : 0, {

@@ -6,6 +6,7 @@ describe("CartoonPopoverGroup Component", () => {
 	afterEach(() => {
 		cleanup();
 		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	it("在群组中悬停条目时弹出共享浮层，滑向下一个条目时平滑切换而不卸载", () => {
@@ -67,5 +68,53 @@ describe("CartoonPopoverGroup Component", () => {
 			vi.advanceTimersByTime(1200);
 		});
 		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
+	it("完全关闭后悬停其他条目时直接从新条目位置出现", () => {
+		vi.useFakeTimers();
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+
+		render(
+			<CartoonPopoverGroup closeDelay={150}>
+				<CartoonPopoverGroupItem
+					value="tab1"
+					trigger={<button type="button">按钮一</button>}
+				>
+					<p>内容一</p>
+				</CartoonPopoverGroupItem>
+				<CartoonPopoverGroupItem
+					value="tab2"
+					trigger={<button type="button">按钮二</button>}
+				>
+					<p>内容二</p>
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+
+		const trigger1 = screen.getByText("按钮一").closest<HTMLElement>("[data-popover-item]");
+		const trigger2 = screen.getByText("按钮二").closest<HTMLElement>("[data-popover-item]");
+		if (!trigger1 || !trigger2) throw new Error("Popover triggers not found");
+
+		trigger1.getBoundingClientRect = () => new DOMRect(200, 100, 80, 40);
+		trigger2.getBoundingClientRect = () => new DOMRect(600, 100, 80, 40);
+
+		fireEvent.mouseEnter(trigger1);
+		act(() => vi.advanceTimersByTime(20));
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+
+		fireEvent.mouseLeave(trigger1);
+		fireEvent.mouseEnter(trigger2);
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+		act(() => vi.advanceTimersByTime(1200));
+		expect(screen.getByRole("dialog").style.left).toBe("530px");
+
+		fireEvent.mouseLeave(trigger2);
+		act(() => vi.advanceTimersByTime(160));
+		act(() => vi.advanceTimersByTime(1200));
+		expect(screen.queryByRole("dialog")).toBeNull();
+
+		fireEvent.mouseEnter(trigger1);
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
 	});
 });
