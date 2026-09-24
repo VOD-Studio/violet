@@ -15,6 +15,7 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useSpringValue } from "./spring";
 import "./cartoon-popover.css";
 import { computePosition } from "./floating";
 import type {
@@ -123,13 +124,6 @@ function getShadowClass(style: CartoonShadowStyle): string {
 		return "shadow-[3px_3px_0_0_var(--cartoon-shadow)]";
 	}
 	return "shadow-[0_4px_24px_rgba(0,0,0,0.06)]";
-}
-
-/**
- * 获取动画样式类名。
- */
-function getAnimationClass(closing: boolean): string {
-	return closing ? "cartoon-popover-closing" : "cartoon-popover-enter";
 }
 
 /**
@@ -442,8 +436,6 @@ export function CartoonPopoverContent({
 	const { open, setOpen, triggerRef, contentRef, popoverId, handleMouseEnter, handleMouseLeave } =
 		useCartoonPopover();
 
-	const [rendered, setRendered] = useState(open);
-	const [isClosing, setIsClosing] = useState(false);
 	const [coords, setCoords] = useState<{
 		x: number;
 		y: number;
@@ -452,22 +444,12 @@ export function CartoonPopoverContent({
 		transformOrigin: string;
 	} | null>(null);
 
-	// 退出动画过渡管理
-	useEffect(() => {
-		if (open) {
-			setRendered(true);
-			setIsClosing(false);
-		} else if (rendered) {
-			setIsClosing(true);
-			const timer = setTimeout(() => {
-				setRendered(false);
-				setIsClosing(false);
-			}, 160);
-			return () => clearTimeout(timer);
-		}
-	}, [open, rendered]);
-
-	// 计算绝对定位坐标与箭头偏移
+	const progress = useSpringValue(open ? 1 : 0, {
+		stiffness: 420,
+		damping: 30,
+		mass: 0.8,
+		precision: 0.01,
+	});
 	const updatePosition = useCallback(() => {
 		const triggerEl = triggerRef.current;
 		const contentEl = contentRef.current;
@@ -501,7 +483,7 @@ export function CartoonPopoverContent({
 
 	// 打开时或视口滚动/变化时重新定位
 	useEffect(() => {
-		if (!rendered) return;
+		if (!open) return;
 		updatePosition();
 
 		window.addEventListener("scroll", updatePosition, true);
@@ -511,7 +493,7 @@ export function CartoonPopoverContent({
 			window.removeEventListener("scroll", updatePosition, true);
 			window.removeEventListener("resize", updatePosition);
 		};
-	}, [rendered, updatePosition]);
+	}, [open, updatePosition]);
 
 	// 点击外部关闭与 Escape 键关闭
 	useEffect(() => {
@@ -544,23 +526,23 @@ export function CartoonPopoverContent({
 		};
 	}, [open, setOpen, triggerRef, contentRef]);
 
-	if (!rendered) {
-		return null;
-	}
-
 	const meta = VARIANT_MAP[variant] ?? VARIANT_MAP.default;
 	const shadowClass = getShadowClass(shadowStyle);
-	const animClass = getAnimationClass(isClosing);
 	const targetContainer = container ?? (typeof document !== "undefined" ? document.body : null);
 
 	if (!targetContainer) return null;
 
-	const contentNode = (
+	const isVisible = open || progress > 0.01;
+	if (!isVisible) return null;
+
+	const scale = 0.94 + 0.06 * progress;
+	const yOffset = ((coords?.actualSide ?? side) === "bottom" ? -4 : 4) * (1 - progress);
+
+	return createPortal(
 		<div
 			ref={(node) => {
 				contentRef.current = node;
 				if (node && !coords) {
-					// 挂载初次立即计算位置
 					updatePosition();
 				}
 			}}
@@ -584,7 +566,10 @@ export function CartoonPopoverContent({
 					position: "fixed",
 					left: coords ? `${coords.x}px` : "-9999px",
 					top: coords ? `${coords.y}px` : "-9999px",
-					"--cartoon-origin": coords?.transformOrigin ?? "center",
+					opacity: progress,
+					transform: `translate3d(0, ${yOffset}px, 0) scale(${scale})`,
+					transformOrigin: coords?.transformOrigin ?? "center",
+					pointerEvents: open ? "auto" : "none",
 					...meta.style,
 					...style,
 				} as CSSProperties
@@ -593,7 +578,6 @@ export function CartoonPopoverContent({
 				"relative z-50 w-72 rounded-2xl border-2 p-4 text-sm outline-none select-none",
 				meta.className,
 				shadowClass,
-				animClass,
 				className,
 			)}
 			{...props}
@@ -638,10 +622,9 @@ export function CartoonPopoverContent({
 			{showArrow && bubbleStyle !== "sticker" && coords && (
 				<SpeechArrow side={coords.actualSide} offset={coords.arrowOffset} />
 			)}
-		</div>
+		</div>,
+		targetContainer,
 	);
-
-	return createPortal(contentNode, targetContainer);
 }
 
 /**

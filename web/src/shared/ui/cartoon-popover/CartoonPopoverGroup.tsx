@@ -10,9 +10,9 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
-import "./cartoon-popover.css";
 import { SpeechArrow } from "./CartoonPopover";
 import { computePosition } from "./floating";
+import { useMultiSpring, useSpringValue } from "./spring";
 import type {
 	CartoonBubbleVariant,
 	CartoonPopoverGroupProps,
@@ -116,8 +116,9 @@ function getShadowClass(style: CartoonShadowStyle): string {
 
 /**
  * 连续平滑移动 Popover 群组：
- * 鼠标在同一排触发器间滑过时，共享浮层容器在 X 轴与宽高尺寸间平滑过渡，
- * 小尾巴连续滑动对准当前触发器，内容高度不同时自动拉伸变形。
+ * 采用自研物理弹簧驱动（Spring Dynamics）：鼠标在一排触发器间滑过时，
+ * 共享浮层容器在 X/Y 轴与宽高尺寸间平滑过渡变形，小尾巴连续追踪当前触发器，
+ * 方向翻转时自动自适应，完全不依赖任何第三方动画库。
  */
 export function CartoonPopoverGroup({
 	sideOffset = 14,
@@ -126,24 +127,12 @@ export function CartoonPopoverGroup({
 	children,
 }: CartoonPopoverGroupProps) {
 	const [activeValue, setActiveValue] = useState<string | null>(null);
+	const [lastActiveValue, setLastActiveValue] = useState<string | null>(null);
 	const itemsMap = useRef(new Map<string, GroupItemConfig>());
 	const closeTimerRef = useRef<number | null>(null);
 
-	const [renderedValue, setRenderedValue] = useState<string | null>(null);
-	const [isClosing, setIsClosing] = useState(false);
-	const [isMorphing, setIsMorphing] = useState(false);
-
 	const measureRef = useRef<HTMLDivElement | null>(null);
 	const floatingRef = useRef<HTMLDivElement | null>(null);
-
-	const [layout, setLayout] = useState<{
-		x: number;
-		y: number;
-		width: number;
-		height: number;
-		actualSide: CartoonPopoverSide;
-		arrowOffset: number;
-	} | null>(null);
 
 	const clearCloseTimer = useCallback(() => {
 		if (closeTimerRef.current !== null) {
@@ -163,12 +152,10 @@ export function CartoonPopoverGroup({
 	const handleTriggerEnter = useCallback(
 		(val: string) => {
 			clearCloseTimer();
-			if (activeValue && activeValue !== val) {
-				setIsMorphing(true);
-			}
 			setActiveValue(val);
+			setLastActiveValue(val);
 		},
-		[activeValue, clearCloseTimer],
+		[clearCloseTimer],
 	);
 
 	const handleTriggerLeave = useCallback(() => {
@@ -178,26 +165,12 @@ export function CartoonPopoverGroup({
 		}, closeDelay);
 	}, [clearCloseTimer, closeDelay]);
 
-	useEffect(() => {
-		if (activeValue) {
-			setRenderedValue(activeValue);
-			setIsClosing(false);
-		} else if (renderedValue) {
-			setIsClosing(true);
-			const timer = window.setTimeout(() => {
-				setRenderedValue(null);
-				setIsClosing(false);
-				setIsMorphing(false);
-				setLayout(null);
-			}, 140);
-			return () => window.clearTimeout(timer);
-		}
-	}, [activeValue, renderedValue]);
-
-	const updateLayout = useCallback(() => {
-		if (!activeValue) return;
-		const item = itemsMap.current.get(activeValue);
-		if (!item?.triggerEl) return;
+	// 计算目标几何物理参数
+	const computeTargetLayout = useCallback(() => {
+		const targetVal = activeValue ?? lastActiveValue;
+		if (!targetVal) return null;
+		const item = itemsMap.current.get(targetVal);
+		if (!item?.triggerEl) return null;
 
 		const triggerRect = item.triggerEl.getBoundingClientRect();
 		const measureEl = measureRef.current;
@@ -218,33 +191,48 @@ export function CartoonPopoverGroup({
 			viewportHeight: window.innerHeight,
 		});
 
-		setLayout({
+		return {
 			x: result.x,
 			y: result.y,
 			width: contentWidth,
 			height: contentHeight,
 			actualSide: result.actualSide,
 			arrowOffset: result.arrowOffset,
-		});
-	}, [activeValue, sideOffset]);
-
-	useEffect(() => {
-		if (renderedValue) {
-			updateLayout();
-		}
-	}, [renderedValue, updateLayout]);
-
-	useEffect(() => {
-		if (!renderedValue) return;
-		window.addEventListener("scroll", updateLayout, true);
-		window.addEventListener("resize", updateLayout);
-		return () => {
-			window.removeEventListener("scroll", updateLayout, true);
-			window.removeEventListener("resize", updateLayout);
 		};
-	}, [renderedValue, updateLayout]);
+	}, [activeValue, lastActiveValue, sideOffset]);
 
-	const currentItem = renderedValue ? itemsMap.current.get(renderedValue) : null;
+	const targetLayout = computeTargetLayout();
+
+	// 多维物理联合弹簧解算器：驱动浮层在多按钮间平滑滑行与宽高自适应拉伸
+	const springGeometry = useMultiSpring(
+		targetLayout
+			? {
+					x: targetLayout.x,
+					y: targetLayout.y,
+					width: targetLayout.width,
+					height: targetLayout.height,
+					arrowOffset: targetLayout.arrowOffset,
+				}
+			: null,
+		{
+			stiffness: 380,
+			damping: 32,
+			mass: 0.8,
+			precision: 0.2,
+		},
+	);
+
+	// 整体透明度弹簧驱动开合
+	const progress = useSpringValue(activeValue ? 1 : 0, {
+		stiffness: 420,
+		damping: 30,
+		mass: 0.8,
+		precision: 0.01,
+	});
+
+	const isVisible = Boolean(activeValue || progress > 0.01);
+	const displayedValue = activeValue ?? lastActiveValue;
+	const currentItem = displayedValue ? itemsMap.current.get(displayedValue) : null;
 	const variant = currentItem?.variant ?? "default";
 	const meta = VARIANT_MAP[variant] ?? VARIANT_MAP.default;
 	const shadowClass = getShadowClass(currentItem?.shadowStyle ?? "soft");
@@ -267,7 +255,7 @@ export function CartoonPopoverGroup({
 			</div>
 
 			{/* 隐藏尺寸测量节点 */}
-			{renderedValue && currentItem && (
+			{isVisible && currentItem && (
 				<div
 					ref={measureRef}
 					aria-hidden="true"
@@ -287,9 +275,11 @@ export function CartoonPopoverGroup({
 				</div>
 			)}
 
-			{/* 共享平滑滑动浮层 */}
-			{renderedValue &&
+			{/* 物理弹簧驱动的共享平滑滑动浮层 */}
+			{isVisible &&
 				currentItem &&
+				springGeometry &&
+				targetLayout &&
 				typeof document !== "undefined" &&
 				createPortal(
 					<div
@@ -303,10 +293,13 @@ export function CartoonPopoverGroup({
 						style={
 							{
 								position: "fixed",
-								left: layout ? `${layout.x}px` : "-9999px",
-								top: layout ? `${layout.y}px` : "-9999px",
-								width: layout ? `${layout.width}px` : "auto",
-								height: layout ? `${layout.height}px` : "auto",
+								left: `${springGeometry.x}px`,
+								top: `${springGeometry.y}px`,
+								width: `${springGeometry.width}px`,
+								height: `${springGeometry.height}px`,
+								opacity: progress,
+								transform: `scale(${0.96 + 0.04 * progress})`,
+								pointerEvents: activeValue ? "auto" : "none",
 								...meta.style,
 							} as CSSProperties
 						}
@@ -314,8 +307,6 @@ export function CartoonPopoverGroup({
 							"relative z-50 overflow-visible rounded-2xl border-2 p-4 text-sm outline-none select-none",
 							meta.className,
 							shadowClass,
-							isMorphing && "cartoon-popover-morphing",
-							isClosing ? "cartoon-popover-closing" : "cartoon-popover-enter",
 						)}
 					>
 						{/* 漫画气泡微光 */}
@@ -340,17 +331,16 @@ export function CartoonPopoverGroup({
 							</p>
 						)}
 
-						{/* 内容插槽：平滑交叉淡入 */}
-						<div key={renderedValue} className="animate-in fade-in-0 duration-150">
+						{/* 内容插槽 */}
+						<div key={displayedValue} className="animate-in fade-in-0 duration-150">
 							{currentItem.contentNode}
 						</div>
 
 						{/* 连续平滑滑动小尾巴 */}
-						{currentItem.showArrow !== false && layout && (
+						{currentItem.showArrow !== false && (
 							<SpeechArrow
-								side={layout.actualSide}
-								offset={layout.arrowOffset}
-								className={isMorphing ? "cartoon-arrow-morphing" : undefined}
+								side={targetLayout.actualSide}
+								offset={springGeometry.arrowOffset}
 							/>
 						)}
 					</div>,

@@ -6,6 +6,8 @@ export {
 	CartoonPopoverHeader,
 	CartoonPopoverTitle,
 	CartoonPopoverTrigger,
+	SpeechArrow,
+	type SpeechArrowProps,
 } from "./CartoonPopover";
 
 export {
@@ -15,6 +17,7 @@ export {
 } from "./CartoonPopoverGroup";
 
 export { computePosition } from "./floating";
+export { MultiSpringStore, ScalarSpringStore, useMultiSpring, useSpringValue } from "./spring";
 
 export type {
 	CartoonAnimationType,

@@ -62,9 +62,9 @@ describe("CartoonPopoverGroup Component", () => {
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
-		// 等待退出过渡
+		// 弹簧自然衰减至停机（precision=0.01 约需 1s）
 		act(() => {
-			vi.advanceTimersByTime(150);
+			vi.advanceTimersByTime(1200);
 		});
 		expect(screen.queryByRole("dialog")).toBeNull();
 	});
