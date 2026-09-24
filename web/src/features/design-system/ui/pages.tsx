@@ -1,15 +1,10 @@
-import {
-	ComponentSpecimens,
-	SpecimensButtons,
-	SpecimensFeedback,
-	SpecimensStatus,
-} from "./ComponentSpecimens";
 import { DesignPrinciples } from "./DesignPrinciples";
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
 import { PaletteGenerator } from "./PaletteGenerator";
 import { QuickDecisionTable } from "./QuickDecisionTable";
+import { SpecimensIndex } from "./SpecimensIndex";
 import { TokenDictionary } from "./TokenDictionary";
 
 /**
@@ -109,71 +104,8 @@ export function MotionPage() {
 }
 
 /**
- * 柒 · 组件活样例子页（全量）
+ * 柒 · 组件目录子页
  */
 export function SpecimensPage() {
-	return (
-		<div className="space-y-6">
-			<DesignSystemDocHeader
-				num="柒"
-				title="组件活样例"
-				scope="真实控件活体陈列，样例即真相。"
-			/>
-			<ComponentSpecimens />
-		</div>
-	);
-}
-
-/**
- * 柒.1 · 按钮与控件子页
- */
-export function SpecimensButtonsPage() {
-	return (
-		<div className="space-y-6">
-			<DesignSystemDocHeader
-				num="柒 · 壹"
-				title="按钮与控件"
-				scope="主要动作、次要动作、危险动作与尺寸规格。"
-			/>
-			<div className="mt-8 rounded-2xl border border-border/40 bg-card/50 p-6">
-				<SpecimensButtons />
-			</div>
-		</div>
-	);
-}
-
-/**
- * 柒.2 · 徽章与状态子页
- */
-export function SpecimensStatusPage() {
-	return (
-		<div className="space-y-6">
-			<DesignSystemDocHeader
-				num="柒 · 贰"
-				title="徽标与状态"
-				scope="状态标签、语义色阶微章与骨架占位态。"
-			/>
-			<div className="mt-8 rounded-2xl border border-border/40 bg-card/50 p-6">
-				<SpecimensStatus />
-			</div>
-		</div>
-	);
-}
-
-/**
- * 柒.3 · 输入与交互子页
- */
-export function SpecimensFeedbackPage() {
-	return (
-		<div className="space-y-6">
-			<DesignSystemDocHeader
-				num="柒 · 叁"
-				title="输入与交互"
-				scope="单行输入、多行文本域与物理开关控件。"
-			/>
-			<div className="mt-8 rounded-2xl border border-border/40 bg-card/50 p-6">
-				<SpecimensFeedback />
-			</div>
-		</div>
-	);
+	return <SpecimensIndex />;
 }

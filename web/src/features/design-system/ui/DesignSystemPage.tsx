@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { ALL_NAV_ITEMS } from "../model/navigation";
-import { ComponentSpecimens } from "./ComponentSpecimens";
 import { DesignPrinciples } from "./DesignPrinciples";
 import { DesignSystemLayout } from "./DesignSystemLayout";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
 import { PaletteGenerator } from "./PaletteGenerator";
 import { QuickDecisionTable } from "./QuickDecisionTable";
+import { SpecimensIndex } from "./SpecimensIndex";
 import { TokenDictionary } from "./TokenDictionary";
 
 /** 章节标识 */
@@ -34,7 +34,7 @@ const CONTENT_BY_ID: Record<string, ReactNode> = {
 	palette: <PaletteGenerator />,
 	tokens: <TokenDictionary />,
 	layout: <LayoutSpec />,
-	specimens: <ComponentSpecimens />,
+	specimens: <SpecimensIndex />,
 	motion: <MotionCharter />,
 };
 

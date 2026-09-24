@@ -85,9 +85,7 @@ import { Route as AdminPersonasIndexRouteImport } from './routes/admin.personas.
 import { Route as AdminNotesIndexRouteImport } from './routes/admin.notes.index'
 import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.galleries.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
-import { Route as DesignSystemSpecimensStatusRouteImport } from './routes/design-system.specimens.status'
-import { Route as DesignSystemSpecimensFeedbackRouteImport } from './routes/design-system.specimens.feedback'
-import { Route as DesignSystemSpecimensButtonsRouteImport } from './routes/design-system.specimens.buttons'
+import { Route as DesignSystemSpecimensCommentSectionRouteImport } from './routes/design-system.specimens.comment-section'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
@@ -484,22 +482,10 @@ const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
   path: '/tweets/topics/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DesignSystemSpecimensStatusRoute =
-  DesignSystemSpecimensStatusRouteImport.update({
-    id: '/status',
-    path: '/status',
-    getParentRoute: () => DesignSystemSpecimensRoute,
-  } as any)
-const DesignSystemSpecimensFeedbackRoute =
-  DesignSystemSpecimensFeedbackRouteImport.update({
-    id: '/feedback',
-    path: '/feedback',
-    getParentRoute: () => DesignSystemSpecimensRoute,
-  } as any)
-const DesignSystemSpecimensButtonsRoute =
-  DesignSystemSpecimensButtonsRouteImport.update({
-    id: '/buttons',
-    path: '/buttons',
+const DesignSystemSpecimensCommentSectionRoute =
+  DesignSystemSpecimensCommentSectionRouteImport.update({
+    id: '/comment-section',
+    path: '/comment-section',
     getParentRoute: () => DesignSystemSpecimensRoute,
   } as any)
 const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
@@ -657,9 +643,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
-  '/design-system/specimens/buttons': typeof DesignSystemSpecimensButtonsRoute
-  '/design-system/specimens/feedback': typeof DesignSystemSpecimensFeedbackRoute
-  '/design-system/specimens/status': typeof DesignSystemSpecimensStatusRoute
+  '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -744,9 +728,7 @@ export interface FileRoutesByTo {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
-  '/design-system/specimens/buttons': typeof DesignSystemSpecimensButtonsRoute
-  '/design-system/specimens/feedback': typeof DesignSystemSpecimensFeedbackRoute
-  '/design-system/specimens/status': typeof DesignSystemSpecimensStatusRoute
+  '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
   '/admin/notes': typeof AdminNotesIndexRoute
@@ -840,9 +822,7 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
-  '/design-system/specimens/buttons': typeof DesignSystemSpecimensButtonsRoute
-  '/design-system/specimens/feedback': typeof DesignSystemSpecimensFeedbackRoute
-  '/design-system/specimens/status': typeof DesignSystemSpecimensStatusRoute
+  '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -937,9 +917,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
-    | '/design-system/specimens/buttons'
-    | '/design-system/specimens/feedback'
-    | '/design-system/specimens/status'
+    | '/design-system/specimens/comment-section'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1024,9 +1002,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
-    | '/design-system/specimens/buttons'
-    | '/design-system/specimens/feedback'
-    | '/design-system/specimens/status'
+    | '/design-system/specimens/comment-section'
     | '/tweets/topics/$tag'
     | '/admin/galleries'
     | '/admin/notes'
@@ -1119,9 +1095,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
-    | '/design-system/specimens/buttons'
-    | '/design-system/specimens/feedback'
-    | '/design-system/specimens/status'
+    | '/design-system/specimens/comment-section'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1709,25 +1683,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TweetsTopicsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/design-system/specimens/status': {
-      id: '/design-system/specimens/status'
-      path: '/status'
-      fullPath: '/design-system/specimens/status'
-      preLoaderRoute: typeof DesignSystemSpecimensStatusRouteImport
-      parentRoute: typeof DesignSystemSpecimensRoute
-    }
-    '/design-system/specimens/feedback': {
-      id: '/design-system/specimens/feedback'
-      path: '/feedback'
-      fullPath: '/design-system/specimens/feedback'
-      preLoaderRoute: typeof DesignSystemSpecimensFeedbackRouteImport
-      parentRoute: typeof DesignSystemSpecimensRoute
-    }
-    '/design-system/specimens/buttons': {
-      id: '/design-system/specimens/buttons'
-      path: '/buttons'
-      fullPath: '/design-system/specimens/buttons'
-      preLoaderRoute: typeof DesignSystemSpecimensButtonsRouteImport
+    '/design-system/specimens/comment-section': {
+      id: '/design-system/specimens/comment-section'
+      path: '/comment-section'
+      fullPath: '/design-system/specimens/comment-section'
+      preLoaderRoute: typeof DesignSystemSpecimensCommentSectionRouteImport
       parentRoute: typeof DesignSystemSpecimensRoute
     }
     '/auth/github/callback': {
@@ -1980,16 +1940,13 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface DesignSystemSpecimensRouteChildren {
-  DesignSystemSpecimensButtonsRoute: typeof DesignSystemSpecimensButtonsRoute
-  DesignSystemSpecimensFeedbackRoute: typeof DesignSystemSpecimensFeedbackRoute
-  DesignSystemSpecimensStatusRoute: typeof DesignSystemSpecimensStatusRoute
+  DesignSystemSpecimensCommentSectionRoute: typeof DesignSystemSpecimensCommentSectionRoute
   DesignSystemSpecimensIndexRoute: typeof DesignSystemSpecimensIndexRoute
 }
 
 const DesignSystemSpecimensRouteChildren: DesignSystemSpecimensRouteChildren = {
-  DesignSystemSpecimensButtonsRoute: DesignSystemSpecimensButtonsRoute,
-  DesignSystemSpecimensFeedbackRoute: DesignSystemSpecimensFeedbackRoute,
-  DesignSystemSpecimensStatusRoute: DesignSystemSpecimensStatusRoute,
+  DesignSystemSpecimensCommentSectionRoute:
+    DesignSystemSpecimensCommentSectionRoute,
   DesignSystemSpecimensIndexRoute: DesignSystemSpecimensIndexRoute,
 }
 

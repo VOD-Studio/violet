@@ -131,27 +131,15 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 			{
 				id: "specimens",
 				num: "柒",
-				title: "组件活样例",
+				title: "组件目录",
 				to: "/design-system/specimens",
-				scope: "真实控件活体陈列，样例即真相。",
+				scope: "全站复合组件索引与高保真交互文档。",
 				children: [
 					{
-						id: "specimens-buttons",
-						title: "按钮与控件",
-						to: "/design-system/specimens/buttons",
-						description: "Button, Toggle, Segmented",
-					},
-					{
-						id: "specimens-status",
-						title: "徽标与状态",
-						to: "/design-system/specimens/status",
-						description: "Badge, Tag, Dot Indicator",
-					},
-					{
-						id: "specimens-feedback",
-						title: "输入与交互",
-						to: "/design-system/specimens/feedback",
-						description: "Input, Textarea, Switch",
+						id: "comment-section",
+						title: "评论区",
+						to: "/design-system/specimens/comment-section",
+						description: "CommentSection",
 					},
 				],
 			},

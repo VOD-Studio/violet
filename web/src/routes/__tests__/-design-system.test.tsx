@@ -5,15 +5,31 @@ import {
 	MotionPage,
 	PalettePage,
 	PrinciplesPage,
-	SpecimensButtonsPage,
-	SpecimensFeedbackPage,
 	SpecimensPage,
-	SpecimensStatusPage,
 	TokensPage,
 } from "@features/design-system/ui/pages";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { routeTree } from "../../routeTree.gen";
+
+// SpecimensIndex 的组件条目渲染 TanStack Link，脱离 Router 需 mock；
+// 保留原模块导出，routeTree.gen.ts 依赖 createRootRouteWithContext 等
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@tanstack/react-router")>()),
+	Link: ({
+		children,
+		to,
+		className,
+	}: {
+		children: React.ReactNode;
+		to: string;
+		className?: string;
+	}) => (
+		<a href={to} className={className}>
+			{children}
+		</a>
+	),
+}));
 
 /**
  * 遍历生成的路由树收集全量路由路径，用来对账导航配置指向的路由真实存在。
@@ -112,21 +128,14 @@ describe("各章节子页成文渲染", () => {
 		expect(screen.getByRole("heading", { level: 2, name: "动效章程" })).toBeTruthy();
 	});
 
-	it("组件活样例章全量正常渲染", () => {
+	it("组件目录章渲染组件条目", () => {
 		render(<SpecimensPage />);
-		expect(screen.getByRole("heading", { level: 2, name: "组件活样例" })).toBeTruthy();
-	});
+		expect(screen.getByRole("heading", { level: 2, name: "组件目录" })).toBeTruthy();
 
-	it("组件活样例二级子路由（按钮、徽标、输入）专项正常渲染", () => {
-		const { unmount: u1 } = render(<SpecimensButtonsPage />);
-		expect(screen.getByRole("heading", { level: 2, name: "按钮与控件" })).toBeTruthy();
-		u1();
-
-		const { unmount: u2 } = render(<SpecimensStatusPage />);
-		expect(screen.getByRole("heading", { level: 2, name: "徽标与状态" })).toBeTruthy();
-		u2();
-
-		render(<SpecimensFeedbackPage />);
-		expect(screen.getByRole("heading", { level: 2, name: "输入与交互" })).toBeTruthy();
+		const specimensItem = ALL_NAV_ITEMS.find((item) => item.id === "specimens");
+		expect(specimensItem?.children?.length).toBeGreaterThan(0);
+		for (const sub of specimensItem?.children ?? []) {
+			expect(screen.getByRole("heading", { name: sub.title })).toBeTruthy();
+		}
 	});
 });
