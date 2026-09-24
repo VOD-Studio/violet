@@ -22,7 +22,6 @@ const VARIANT_CODE = `<Button type="button" variant="default">主要动作</Butt
 <Button type="button" variant="outline">描边动作</Button>
 <Button type="button" variant="ghost">轻量动作</Button>
 <Button type="button" variant="link">文字动作</Button>
-<Button type="button" variant="brand">品牌动作</Button>
 <Button type="button" variant="destructive">危险动作</Button>`;
 
 const SIZE_CODE = `import { Plus } from "lucide-react";
@@ -63,9 +62,9 @@ interface PropRow {
 const BUTTON_PROPS: PropRow[] = [
 	{
 		name: "variant",
-		type: "default | destructive | outline | secondary | ghost | brand | link",
+		type: "default | destructive | outline | secondary | ghost | link",
 		defaultValue: "default",
-		meaning: "动作的视觉层级。主要动作随页面方言变化；brand 固定使用品牌色。",
+		meaning: "主要动作使用 primary 语义色，并随所在页面方言取值。",
 	},
 	{
 		name: "size",
@@ -169,8 +168,8 @@ export function ButtonDocPage() {
 				<div className="space-y-3">
 					<h3 className="text-lg font-semibold text-foreground">视觉层级</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						一个区域只给主要动作最高强调。危险操作使用
-						destructive；需要明确品牌露出时才用 brand，普通主要操作用 default。
+						主要动作使用 default，底色来自 primary；危险操作使用
+						destructive，其余动作按层级降低强调。
 					</p>
 					<ComponentDemo code={VARIANT_CODE}>
 						<div className="flex flex-wrap items-center justify-center gap-3">
@@ -188,9 +187,6 @@ export function ButtonDocPage() {
 							</Button>
 							<Button type="button" variant="link">
 								文字动作
-							</Button>
-							<Button type="button" variant="brand">
-								品牌动作
 							</Button>
 							<Button type="button" variant="destructive">
 								危险动作

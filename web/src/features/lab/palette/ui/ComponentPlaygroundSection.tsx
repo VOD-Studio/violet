@@ -51,11 +51,6 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</h4>
 
 						<div className="flex flex-wrap items-center gap-3">
-							<Button variant="brand">
-								<Sparkles className="size-4" />
-								品牌主动作 (Brand)
-							</Button>
-
 							<Button variant="default">默认主操作 (Default)</Button>
 							<Button variant="secondary">次级操作 (Secondary)</Button>
 							<Button variant="outline">边框轮廓 (Outline)</Button>
@@ -144,7 +139,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 								</Button>
 								<Button
 									size="xs"
-									variant="brand"
+									variant="default"
 									onClick={() => setCurrentStep((s) => Math.min(3, s + 1))}
 									disabled={currentStep === 3}
 								>
