@@ -1,18 +1,9 @@
 import { copyText } from "@shared/lib/clipboard";
-import { useShikiHighlight } from "@shared/ui/code-preview/use-shiki-highlight";
 import { CommentList, CommentSection, type CommentSectionConfig } from "@shared/ui/comment-section";
-import {
-	Check,
-	ChevronDown,
-	Component,
-	Copy,
-	FileCode2,
-	GitBranch,
-	Heart,
-	Send,
-} from "lucide-react";
-import { type ReactNode, useState } from "react";
-import "./component-code.css";
+import { Check, Component, Copy, FileCode2, GitBranch, Heart, Send } from "lucide-react";
+import { useState } from "react";
+import { ApiTable, type ApiTableColumn } from "./ApiTable";
+import { ComponentDemo } from "./ComponentDemo";
 
 interface DemoComment {
 	id: string;
@@ -244,180 +235,58 @@ const CONFIG_FIELDS: PropRow[] = [
 	},
 ];
 
-/**
- * 浅色高亮代码块：github-light 主题 + 行号，与页面底色浑然一体。
- */
-function LightCodeBlock({ code }: { code: string }) {
-	const { html, loading } = useShikiHighlight(code, "tsx", { theme: "light" });
-
-	return (
-		<div className="font-mono text-sm leading-relaxed">
-			{loading ? (
-				<div className="flex h-24 items-center justify-center">
-					<div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
-				</div>
-			) : html ? (
-				<div
-					className="shiki-line-numbers overflow-x-auto px-1 py-3 [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
-					// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义，输出属性仅 class/style 受控集合，无注入面
-					dangerouslySetInnerHTML={{ __html: html }}
-				/>
-			) : (
-				<pre className="shiki-line-numbers overflow-x-auto px-1 py-3 text-sm text-foreground">
-					<code>{code}</code>
-				</pre>
-			)}
-		</div>
-	);
-}
-
-/**
- * 折叠面板式组件演示（HeroUI 形态）：组件本体自然展示，下方浅色代码区
- * 折叠时以渐变遮罩截断，居中「Expand code」胶囊无缝展开；复制图标固定于卡片右上。
- */
-function ExpandableDemoBox({ children, code }: { children: ReactNode; code: string }) {
-	// 短代码（≤ 6 行）直接完整展示，不折叠、无遮罩
-	const collapsible = code.split("\n").length > 6;
-	const [showCode, setShowCode] = useState(!collapsible);
-	const [copied, setCopied] = useState(false);
-
-	const handleCopy = async () => {
-		const ok = await copyText(code);
-		if (ok) {
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		}
-	};
-
-	return (
-		<div>
-			{/* 组件自然展示，无外壳 */}
-			{children}
-
-			{/* 代码区：细线分隔，浅色底与页面浑然一体 */}
-			<div className="relative mt-6 overflow-hidden rounded-xl border border-border/70 bg-card">
-				{/* 复制图标固定于卡片右上，实底浮层避免与代码文字混叠 */}
-				<button
-					type="button"
-					onClick={handleCopy}
-					className="absolute top-2.5 right-2.5 z-10 rounded-sm bg-background p-1 text-muted-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors hover:bg-muted hover:text-foreground"
-					title="复制代码"
-				>
-					{copied ? (
-						<Check className="size-3.5 text-green-500" />
-					) : (
-						<Copy className="size-3.5" />
-					)}
-					<span className="sr-only">复制代码</span>
-				</button>
-
-				{/* max-height 过渡提供平滑的展开收起动画 */}
-				<div
-					className={`relative overflow-hidden transition-[max-height] duration-300 ease-in-out ${
-						!collapsible || showCode ? "max-h-[80rem]" : "max-h-52"
-					}`}
-				>
-					<LightCodeBlock code={code} />
-
-					{/* 折叠态：底部渐变遮罩 + 内联展开控件 */}
-					{collapsible && !showCode && (
-						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-16 animate-in fade-in items-end justify-center bg-gradient-to-t from-card via-card/90 to-transparent duration-200">
-							<button
-								type="button"
-								onClick={() => setShowCode(true)}
-								className="pointer-events-auto mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-							>
-								<span>展开代码</span>
-								<ChevronDown className="size-3" />
-							</button>
-						</div>
-					)}
-				</div>
-
-				{/* 展开态：与展开控件同款的居中收起控件 */}
-				{collapsible && showCode && (
-					<div className="flex justify-center border-t border-border/40 py-2.5">
-						<button
-							type="button"
-							onClick={() => setShowCode(false)}
-							className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-						>
-							<span>收起代码</span>
-							<ChevronDown className="size-3 rotate-180" />
-						</button>
-					</div>
+/** 参数表标准四列：Prop 胶囊（必填星标）/ Type 徽标 / Default / 说明 */
+const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
+	{
+		label: "Prop",
+		headerClassName: "w-44",
+		cellClassName: "font-mono font-medium text-foreground",
+		render: (row) => (
+			<div className="flex items-center gap-1.5">
+				<code className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+					{row.prop}
+				</code>
+				{row.required && (
+					<span className="text-destructive font-mono text-xs" title="Required">
+						*
+					</span>
 				)}
 			</div>
-		</div>
-	);
-}
+		),
+	},
+	{
+		label: "Type",
+		headerClassName: "w-60",
+		cellClassName: "font-mono text-muted-foreground",
+		render: (row) => (
+			<code className="inline-block rounded-md bg-muted/60 px-2 py-0.5 text-[11px] break-all">
+				{row.type}
+			</code>
+		),
+	},
+	{
+		label: "Default",
+		headerClassName: "w-28",
+		cellClassName: "font-mono text-muted-foreground",
+		render: (row) =>
+			row.defaultValue ? (
+				<code className="rounded-md bg-muted/60 px-2 py-0.5 text-[11px]">
+					{row.defaultValue}
+				</code>
+			) : (
+				<span className="text-muted-foreground/40 text-xs">-</span>
+			),
+	},
+	{
+		label: "Description",
+		headerClassName: "min-w-56",
+		cellClassName: "text-muted-foreground leading-relaxed",
+		render: (row) => row.description,
+	},
+];
 
 /**
- * 现代标准 API 表格。
- */
-function HeroApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
-	return (
-		<div className="space-y-4 font-sans">
-			<h3 className="text-lg font-bold tracking-tight text-foreground">{title}</h3>
-
-			<div className="overflow-x-auto rounded-xl">
-				<table className="w-full min-w-160 border-collapse text-left text-xs">
-					<thead>
-						<tr className="bg-muted/50 font-mono text-muted-foreground">
-							<th className="rounded-l-xl py-3 px-4 font-semibold w-44">Prop</th>
-							<th className="py-3 px-4 font-semibold w-60">Type</th>
-							<th className="py-3 px-4 font-semibold w-28">Default</th>
-							<th className="rounded-r-xl py-3 px-4 font-semibold min-w-56">
-								Description
-							</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-border/30">
-						{rows.map((row) => (
-							<tr key={row.prop} className="transition-colors hover:bg-muted/15">
-								<td className="py-3.5 px-4 font-mono font-medium text-foreground align-top">
-									<div className="flex items-center gap-1.5">
-										<code className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
-											{row.prop}
-										</code>
-										{row.required && (
-											<span
-												className="text-destructive font-mono text-xs"
-												title="Required"
-											>
-												*
-											</span>
-										)}
-									</div>
-								</td>
-								<td className="py-3.5 px-4 font-mono text-muted-foreground align-top">
-									<code className="inline-block rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground break-all">
-										{row.type}
-									</code>
-								</td>
-								<td className="py-3.5 px-4 font-mono text-muted-foreground align-top">
-									{row.defaultValue ? (
-										<code className="rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
-											{row.defaultValue}
-										</code>
-									) : (
-										<span className="text-muted-foreground/40 text-xs">-</span>
-									)}
-								</td>
-								<td className="py-3.5 px-4 text-xs text-muted-foreground leading-relaxed align-top">
-									{row.description}
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</div>
-	);
-}
-
-/**
- * 评论区组件文档页（对齐 HeroUI 规范，折叠面板式代码展开）。
+ * 评论区组件文档页（折叠面板式代码展开）。
  */
 export function CommentSectionDocPage() {
 	const [comments] = useState<DemoComment[]>(BASIC_COMMENTS);
@@ -581,7 +450,7 @@ export function CommentSectionDocPage() {
 						双层扁平回复结构。子回复以 @ 昵称指示对象，不向内无限嵌套。
 					</p>
 
-					<ExpandableDemoBox code={BASIC_USAGE_CODE}>
+					<ComponentDemo code={BASIC_USAGE_CODE}>
 						<CommentSection
 							title={`全部评论 (${comments.length})`}
 							form={null}
@@ -589,7 +458,7 @@ export function CommentSectionDocPage() {
 						>
 							<CommentList comments={comments} config={config} isLoggedIn={true} />
 						</CommentSection>
-					</ExpandableDemoBox>
+					</ComponentDemo>
 				</div>
 
 				{/* 案例 2: Empty State */}
@@ -601,11 +470,11 @@ export function CommentSectionDocPage() {
 						当评论数据为空时，自动呈现轻量空状态占位。
 					</p>
 
-					<ExpandableDemoBox code={EMPTY_STATE_CODE}>
+					<ComponentDemo code={EMPTY_STATE_CODE}>
 						<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
 							<CommentList comments={[]} config={config} isLoggedIn={true} />
 						</CommentSection>
-					</ExpandableDemoBox>
+					</ComponentDemo>
 				</div>
 
 				{/* 案例 3: Loading State */}
@@ -618,7 +487,7 @@ export function CommentSectionDocPage() {
 						，自动渲染 Shimmer 骨架条目。
 					</p>
 
-					<ExpandableDemoBox code={LOADING_STATE_CODE}>
+					<ComponentDemo code={LOADING_STATE_CODE}>
 						<CommentSection title="全部评论" form={null} isLoggedIn={true}>
 							<CommentList
 								comments={[]}
@@ -627,16 +496,31 @@ export function CommentSectionDocPage() {
 								isLoading={true}
 							/>
 						</CommentSection>
-					</ExpandableDemoBox>
+					</ComponentDemo>
 				</div>
 			</section>
 
 			{/* 4. API Reference */}
 			<section aria-label="API Reference" className="space-y-10">
 				<h2 className="text-2xl font-bold tracking-tight text-foreground">API Reference</h2>
-				<HeroApiTable title="CommentSection Props" rows={SECTION_PROPS} />
-				<HeroApiTable title="CommentDisplayItem (Data Model)" rows={ITEM_FIELDS} />
-				<HeroApiTable title="CommentSectionConfig (Adapter)" rows={CONFIG_FIELDS} />
+				<ApiTable
+					title="CommentSection Props"
+					columns={PROP_COLUMNS}
+					rows={SECTION_PROPS}
+					rowKey={(row) => row.prop}
+				/>
+				<ApiTable
+					title="CommentDisplayItem (Data Model)"
+					columns={PROP_COLUMNS}
+					rows={ITEM_FIELDS}
+					rowKey={(row) => row.prop}
+				/>
+				<ApiTable
+					title="CommentSectionConfig (Adapter)"
+					columns={PROP_COLUMNS}
+					rows={CONFIG_FIELDS}
+					rowKey={(row) => row.prop}
+				/>
 			</section>
 		</div>
 	);
