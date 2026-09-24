@@ -84,22 +84,22 @@ export class ScalarSpringStore {
 }
 
 /**
- * 多维联合物理弹簧 Store（驱动坐标、宽高与小尾巴形变）
+ * 多维联合物理弹簧 Store（驱动坐标、宽高与小尾巴形变）。
  */
 export class MultiSpringStore<T extends Record<string, number>> {
-	private current: T;
+	private current: T | null;
 	private target: T;
 	private velocities: Map<string, number> = new Map();
 	private config: Required<SpringConfig>;
 	private listeners = new Set<() => void>();
 	private rafId: number | null = null;
 	private lastTime = 0;
-	private snapshotCache: T;
+	private snapshotCache: T | null;
 
-	constructor(initial: T, config: SpringConfig = {}) {
-		this.current = { ...initial };
-		this.target = { ...initial };
-		this.snapshotCache = { ...initial };
+	constructor(config: SpringConfig = {}) {
+		this.current = null;
+		this.target = {} as T;
+		this.snapshotCache = null;
 		this.config = { ...DEFAULT_SPRING, ...config };
 	}
 
@@ -116,9 +116,30 @@ export class MultiSpringStore<T extends Record<string, number>> {
 
 	getSnapshot = () => this.snapshotCache;
 
-	getServerSnapshot = () => this.target;
+	getServerSnapshot = () => null;
+
+	/** teleport: 跳过物理解算，直接置于目标并清零速度（用于首次出现与重新出现） */
+	teleport(next: T) {
+		this.target = { ...next };
+		this.current = { ...next };
+		this.snapshotCache = { ...next };
+		this.velocities.clear();
+		if (this.rafId !== null) {
+			cancelAnimationFrame(this.rafId);
+			this.rafId = null;
+		}
+		for (const listener of this.listeners) {
+			listener();
+		}
+	}
 
 	setTarget(newTargets: T) {
+		// 首次出现：直接落位，不做从旧位置的滑入
+		if (!this.current) {
+			this.teleport(newTargets);
+			return;
+		}
+
 		let changed = false;
 		for (const [key, val] of Object.entries(newTargets)) {
 			if ((this.target as Record<string, number>)[key] !== val) {
@@ -138,6 +159,11 @@ export class MultiSpringStore<T extends Record<string, number>> {
 	private tick = (now: number) => {
 		const dtSeconds = Math.min((now - this.lastTime) / 1000, 0.064);
 		this.lastTime = now;
+
+		if (!this.current) {
+			this.rafId = null;
+			return;
+		}
 
 		let hasMoving = false;
 		const next = { ...this.current } as Record<string, number>;
@@ -197,16 +223,23 @@ export function useSpringValue(target: number, config?: SpringConfig): number {
 export function useMultiSpring<T extends Record<string, number>>(
 	targets: T | null,
 	config?: SpringConfig,
+	options?: { teleport?: boolean },
 ): T | null {
 	const storeRef = useRef<MultiSpringStore<T> | null>(null);
+	const configRef = useRef(config);
+	configRef.current = config;
 
 	if (targets && !storeRef.current) {
-		storeRef.current = new MultiSpringStore(targets, config);
+		storeRef.current = new MultiSpringStore<T>(configRef.current);
 	}
 
 	const store = storeRef.current;
 	if (store && targets) {
-		store.setTarget(targets);
+		if (options?.teleport) {
+			store.teleport(targets);
+		} else {
+			store.setTarget(targets);
+		}
 	}
 
 	const snapshot = useSyncExternalStore<T | null>(
@@ -215,5 +248,5 @@ export function useMultiSpring<T extends Record<string, number>>(
 		store ? store.getServerSnapshot : () => null,
 	);
 
-	return targets ? snapshot : null;
+	return snapshot;
 }

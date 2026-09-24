@@ -6,6 +6,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
@@ -133,6 +134,8 @@ export function CartoonPopoverGroup({
 
 	const measureRef = useRef<HTMLDivElement | null>(null);
 	const floatingRef = useRef<HTMLDivElement | null>(null);
+	// 下一次目标更新是否应跳过滑行直接落位（浮层从关闭到打开的瞬间）
+	const teleportNextRef = useRef(false);
 
 	const clearCloseTimer = useCallback(() => {
 		if (closeTimerRef.current !== null) {
@@ -151,11 +154,17 @@ export function CartoonPopoverGroup({
 
 	const handleTriggerEnter = useCallback(
 		(val: string) => {
+			const wasOpen = activeValue !== null;
+			const wasClosing = closeTimerRef.current !== null;
 			clearCloseTimer();
 			setActiveValue(val);
 			setLastActiveValue(val);
+			// 浮层未打开或在关闭缓冲中再次进入：请求弹簧 teleport，落位不做滑行
+			if (!wasOpen || wasClosing) {
+				teleportNextRef.current = true;
+			}
 		},
-		[clearCloseTimer],
+		[activeValue, clearCloseTimer],
 	);
 
 	const handleTriggerLeave = useCallback(() => {
@@ -201,18 +210,57 @@ export function CartoonPopoverGroup({
 		};
 	}, [activeValue, lastActiveValue, sideOffset]);
 
-	const targetLayout = computeTargetLayout();
+	const [targetLayout, setTargetLayout] = useState<{
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+		actualSide: CartoonPopoverSide;
+		arrowOffset: number;
+	} | null>(null);
+
+	// 主动重算目标几何：供测量节点 layout 后调用，消除首帧高度估算误差
+	const triggerRelayout = useCallback(() => {
+		setTargetLayout((prev) => {
+			const next = computeTargetLayout();
+			const same =
+				prev &&
+				next &&
+				prev.x === next.x &&
+				prev.y === next.y &&
+				prev.width === next.width &&
+				prev.height === next.height &&
+				prev.arrowOffset === next.arrowOffset &&
+				prev.actualSide === next.actualSide;
+			return same ? prev : next;
+		});
+	}, [computeTargetLayout]);
+
+	useEffect(() => {
+		triggerRelayout();
+	}, [triggerRelayout]);
+
+	// 滚动与视口变化时重算目标位置
+	useEffect(() => {
+		if (!activeValue) return;
+		window.addEventListener("scroll", triggerRelayout, true);
+		window.addEventListener("resize", triggerRelayout);
+		return () => {
+			window.removeEventListener("scroll", triggerRelayout, true);
+			window.removeEventListener("resize", triggerRelayout);
+		};
+	}, [activeValue, triggerRelayout]);
 
 	// 多维物理联合弹簧解算器：驱动浮层在多按钮间平滑滑行与宽高自适应拉伸
 	const springGeometry = useMultiSpring(
 		targetLayout
 			? {
-					x: targetLayout.x,
-					y: targetLayout.y,
-					width: targetLayout.width,
-					height: targetLayout.height,
-					arrowOffset: targetLayout.arrowOffset,
-				}
+				x: targetLayout.x,
+				y: targetLayout.y,
+				width: targetLayout.width,
+				height: targetLayout.height,
+				arrowOffset: targetLayout.arrowOffset,
+			}
 			: null,
 		{
 			stiffness: 380,
@@ -220,7 +268,9 @@ export function CartoonPopoverGroup({
 			mass: 0.8,
 			precision: 0.2,
 		},
+		{ teleport: teleportNextRef.current },
 	);
+	teleportNextRef.current = false;
 
 	// 整体透明度弹簧驱动开合
 	const progress = useSpringValue(activeValue ? 1 : 0, {
@@ -256,23 +306,14 @@ export function CartoonPopoverGroup({
 
 			{/* 隐藏尺寸测量节点 */}
 			{isVisible && currentItem && (
-				<div
+				<MeasureNode
 					ref={measureRef}
-					aria-hidden="true"
-					className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 w-72 rounded-2xl border-2 p-4 text-sm opacity-0"
+					onMeasure={triggerRelayout}
+					title={currentItem.title}
+					description={currentItem.description}
 				>
-					{currentItem.title && (
-						<h4 className="mb-2 text-sm font-bold tracking-wide">
-							{currentItem.title}
-						</h4>
-					)}
-					{currentItem.description && (
-						<p className="mb-2 text-xs leading-relaxed text-current/80">
-							{currentItem.description}
-						</p>
-					)}
 					{currentItem.contentNode}
-				</div>
+				</MeasureNode>
 			)}
 
 			{/* 物理弹簧驱动的共享平滑滑动浮层 */}
@@ -422,6 +463,55 @@ export function CartoonPopoverGroupItem({
 			onMouseLeave={() => context?.handleTriggerLeave()}
 		>
 			{trigger}
+		</div>
+	);
+}
+
+/**
+ * 隐藏测量节点：内容挂载后同步触发重测量，供弹簧取到准确的宽高目标。
+ */
+function MeasureNode({
+	ref,
+	title,
+	description,
+	onMeasure,
+	children,
+}: {
+	ref: React.RefObject<HTMLDivElement | null>;
+	title?: ReactNode;
+	description?: ReactNode;
+	onMeasure: () => void;
+	children: ReactNode;
+}) {
+	useLayoutEffect(() => {
+		if (!ref.current) return;
+		const el = ref.current;
+		const last = { w: el.offsetWidth, h: el.offsetHeight };
+		onMeasure();
+		const observer = new ResizeObserver(() => {
+			const w = el.offsetWidth;
+			const h = el.offsetHeight;
+			if (w !== last.w || h !== last.h) {
+				last.w = w;
+				last.h = h;
+				onMeasure();
+			}
+		});
+		observer.observe(el);
+		return () => observer.disconnect();
+	});
+
+	return (
+		<div
+			ref={ref}
+			aria-hidden="true"
+			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 w-72 rounded-2xl border-2 p-4 text-sm opacity-0"
+		>
+			{title && <h4 className="mb-2 text-sm font-bold tracking-wide">{title}</h4>}
+			{description && (
+				<p className="mb-2 text-xs leading-relaxed text-current/80">{description}</p>
+			)}
+			{children}
 		</div>
 	);
 }
