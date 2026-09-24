@@ -9,131 +9,99 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as ChangelogRouteImport } from './routes/changelog'
-import { Route as ChatRouteImport } from './routes/chat'
-import { Route as DesignSystemRouteImport } from './routes/design-system'
-import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as FriendsRouteImport } from './routes/friends'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as PersonaRouteImport } from './routes/persona'
 import { Route as RegisterRouteImport } from './routes/register'
-import { Route as AboutIndexRouteImport } from './routes/about/index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
-import { Route as AdminChatBotsRouteImport } from './routes/admin.chat-bots'
-import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
-import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
-import { Route as AdminFriendLinksRouteImport } from './routes/admin.friend-links'
-import { Route as AdminGalleriesRouteImport } from './routes/admin.galleries'
-import { Route as AdminLogsRouteImport } from './routes/admin.logs'
-import { Route as AdminMcpRouteImport } from './routes/admin.mcp'
-import { Route as AdminMediaRouteImport } from './routes/admin.media'
-import { Route as AdminNotesRouteImport } from './routes/admin.notes'
-import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
-import { Route as AdminPersonasRouteImport } from './routes/admin.personas'
-import { Route as AdminPostsRouteImport } from './routes/admin.posts'
-import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
-import { Route as AdminRolesRouteImport } from './routes/admin.roles'
-import { Route as AdminSeriesRouteImport } from './routes/admin.series'
-import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
-import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
-import { Route as AdminSystemRouteImport } from './routes/admin.system'
-import { Route as AdminTagsRouteImport } from './routes/admin.tags'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
-import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
-import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
-import { Route as GalleriesIndexRouteImport } from './routes/galleries.index'
-import { Route as GalleriesSlugRouteImport } from './routes/galleries.$slug'
-import { Route as LabIndexRouteImport } from './routes/lab.index'
-import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
-import { Route as LabBlogRouteImport } from './routes/lab.blog'
-import { Route as LabColorsRouteImport } from './routes/lab.colors'
-import { Route as LabFriendsRouteImport } from './routes/lab.friends'
-import { Route as LabGalleryRouteImport } from './routes/lab.gallery'
-import { Route as LabMascotRouteImport } from './routes/lab.mascot'
-import { Route as LabNavRouteImport } from './routes/lab.nav'
-import { Route as LabPaletteRouteImport } from './routes/lab.palette'
-import { Route as LabSeriesRouteImport } from './routes/lab.series'
-import { Route as LabThemeRouteImport } from './routes/lab.theme'
-import { Route as LabTocTreeRouteImport } from './routes/lab.toc-tree'
-import { Route as NotesIndexRouteImport } from './routes/notes.index'
-import { Route as NotesIdRouteImport } from './routes/notes.$id'
-import { Route as ProfileIndexRouteImport } from './routes/profile/index'
-import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
-import { Route as SeriesIndexRouteImport } from './routes/series.index'
-import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
+import { Route as PersonaRouteImport } from './routes/persona'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
+import { Route as DesignSystemRouteImport } from './routes/design-system'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
-import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
+import { Route as SeriesIndexRouteImport } from './routes/series.index'
+import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as NotesIndexRouteImport } from './routes/notes.index'
+import { Route as LabIndexRouteImport } from './routes/lab.index'
+import { Route as GalleriesIndexRouteImport } from './routes/galleries.index'
+import { Route as DesignSystemIndexRouteImport } from './routes/design-system.index'
+import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as UsersUsernameRouteImport } from './routes/users/$username'
-import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.galleries.index'
-import { Route as AdminGalleriesIdRouteImport } from './routes/admin.galleries.$id'
-import { Route as AdminNotesIndexRouteImport } from './routes/admin.notes.index'
-import { Route as AdminNotesIdRouteImport } from './routes/admin.notes.$id'
-import { Route as AdminPersonasIndexRouteImport } from './routes/admin.personas.index'
-import { Route as AdminPersonasIdRouteImport } from './routes/admin.personas.$id'
-import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
-import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
-import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
+import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
+import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
+import { Route as NotesIdRouteImport } from './routes/notes.$id'
+import { Route as LabTocTreeRouteImport } from './routes/lab.toc-tree'
+import { Route as LabThemeRouteImport } from './routes/lab.theme'
+import { Route as LabSeriesRouteImport } from './routes/lab.series'
+import { Route as LabPaletteRouteImport } from './routes/lab.palette'
+import { Route as LabNavRouteImport } from './routes/lab.nav'
+import { Route as LabMascotRouteImport } from './routes/lab.mascot'
+import { Route as LabGalleryRouteImport } from './routes/lab.gallery'
+import { Route as LabFriendsRouteImport } from './routes/lab.friends'
+import { Route as LabColorsRouteImport } from './routes/lab.colors'
+import { Route as LabBlogRouteImport } from './routes/lab.blog'
+import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
+import { Route as GalleriesSlugRouteImport } from './routes/galleries.$slug'
+import { Route as DesignSystemTokensRouteImport } from './routes/design-system.tokens'
+import { Route as DesignSystemSpecimensRouteImport } from './routes/design-system.specimens'
+import { Route as DesignSystemPrinciplesRouteImport } from './routes/design-system.principles'
+import { Route as DesignSystemPaletteRouteImport } from './routes/design-system.palette'
+import { Route as DesignSystemMotionRouteImport } from './routes/design-system.motion'
+import { Route as DesignSystemLayoutRouteImport } from './routes/design-system.layout'
+import { Route as DesignSystemDecisionsRouteImport } from './routes/design-system.decisions'
+import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
+import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
+import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminTagsRouteImport } from './routes/admin.tags'
+import { Route as AdminSystemRouteImport } from './routes/admin.system'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminSeriesRouteImport } from './routes/admin.series'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
+import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
+import { Route as AdminPostsRouteImport } from './routes/admin.posts'
+import { Route as AdminPersonasRouteImport } from './routes/admin.personas'
+import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
+import { Route as AdminNotesRouteImport } from './routes/admin.notes'
+import { Route as AdminMediaRouteImport } from './routes/admin.media'
+import { Route as AdminMcpRouteImport } from './routes/admin.mcp'
+import { Route as AdminLogsRouteImport } from './routes/admin.logs'
+import { Route as AdminGalleriesRouteImport } from './routes/admin.galleries'
+import { Route as AdminFriendLinksRouteImport } from './routes/admin.friend-links'
+import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
+import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
+import { Route as AdminChatBotsRouteImport } from './routes/admin.chat-bots'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
-import { Route as AdminSeriesIdRouteImport } from './routes/admin.series.$id'
-import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.about'
-import { Route as AdminSettingsAuthRouteImport } from './routes/admin.settings.auth'
-import { Route as AdminSettingsCodeRunnerRouteImport } from './routes/admin.settings.code-runner'
-import { Route as AdminSettingsGeneralRouteImport } from './routes/admin.settings.general'
-import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings.github'
-import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
-import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
-import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
+import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
+import { Route as AdminPersonasIndexRouteImport } from './routes/admin.personas.index'
+import { Route as AdminNotesIndexRouteImport } from './routes/admin.notes.index'
+import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.galleries.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
+import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
+import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
+import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
+import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings.github'
+import { Route as AdminSettingsGeneralRouteImport } from './routes/admin.settings.general'
+import { Route as AdminSettingsCodeRunnerRouteImport } from './routes/admin.settings.code-runner'
+import { Route as AdminSettingsAuthRouteImport } from './routes/admin.settings.auth'
+import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.about'
+import { Route as AdminSeriesIdRouteImport } from './routes/admin.series.$id'
+import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
+import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
+import { Route as AdminPersonasIdRouteImport } from './routes/admin.personas.$id'
+import { Route as AdminNotesIdRouteImport } from './routes/admin.notes.$id'
+import { Route as AdminGalleriesIdRouteImport } from './routes/admin.galleries.$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChangelogRoute = ChangelogRouteImport.update({
-  id: '/changelog',
-  path: '/changelog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChatRoute = ChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DesignSystemRoute = DesignSystemRouteImport.update({
-  id: '/design-system',
-  path: '/design-system',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeedDotxmlRoute = FeedDotxmlRouteImport.update({
-  id: '/feed.xml',
-  path: '/feed.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FriendsRoute = FriendsRouteImport.update({
-  id: '/friends',
-  path: '/friends',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonaRoute = PersonaRouteImport.update({
@@ -141,244 +109,49 @@ const PersonaRoute = PersonaRouteImport.update({
   path: '/persona',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AboutIndexRoute = AboutIndexRouteImport.update({
-  id: '/about/',
-  path: '/about/',
+const FriendsRoute = FriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedDotxmlRoute = FeedDotxmlRouteImport.update({
+  id: '/feed.xml',
+  path: '/feed.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemRoute = DesignSystemRouteImport.update({
+  id: '/design-system',
+  path: '/design-system',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangelogRoute = ChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
-  id: '/announcements',
-  path: '/announcements',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminChatBotsRoute = AdminChatBotsRouteImport.update({
-  id: '/chat-bots',
-  path: '/chat-bots',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCommentsRoute = AdminCommentsRouteImport.update({
-  id: '/comments',
-  path: '/comments',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEmojisRoute = AdminEmojisRouteImport.update({
-  id: '/emojis',
-  path: '/emojis',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminFriendLinksRoute = AdminFriendLinksRouteImport.update({
-  id: '/friend-links',
-  path: '/friend-links',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminGalleriesRoute = AdminGalleriesRouteImport.update({
-  id: '/galleries',
-  path: '/galleries',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLogsRoute = AdminLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMcpRoute = AdminMcpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMediaRoute = AdminMediaRouteImport.update({
-  id: '/media',
-  path: '/media',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminNotesRoute = AdminNotesRouteImport.update({
-  id: '/notes',
-  path: '/notes',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
-  id: '/permissions',
-  path: '/permissions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPersonasRoute = AdminPersonasRouteImport.update({
-  id: '/personas',
-  path: '/personas',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPostsRoute = AdminPostsRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProjectsRoute = AdminProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminRolesRoute = AdminRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSeriesRoute = AdminSeriesRouteImport.update({
-  id: '/series',
-  path: '/series',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
-  id: '/subscriptions',
-  path: '/subscriptions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSystemRoute = AdminSystemRouteImport.update({
-  id: '/system',
-  path: '/system',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTagsRoute = AdminTagsRouteImport.update({
-  id: '/tags',
-  path: '/tags',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AnnouncementsIdRoute = AnnouncementsIdRouteImport.update({
-  id: '/announcements/$id',
-  path: '/announcements/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogArchiveRoute = BlogArchiveRouteImport.update({
-  id: '/blog/archive',
-  path: '/blog/archive',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GalleriesIndexRoute = GalleriesIndexRouteImport.update({
-  id: '/galleries/',
-  path: '/galleries/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GalleriesSlugRoute = GalleriesSlugRouteImport.update({
-  id: '/galleries/$slug',
-  path: '/galleries/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabIndexRoute = LabIndexRouteImport.update({
-  id: '/lab/',
-  path: '/lab/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabAnnouncementRoute = LabAnnouncementRouteImport.update({
-  id: '/lab/announcement',
-  path: '/lab/announcement',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabBlogRoute = LabBlogRouteImport.update({
-  id: '/lab/blog',
-  path: '/lab/blog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabColorsRoute = LabColorsRouteImport.update({
-  id: '/lab/colors',
-  path: '/lab/colors',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabFriendsRoute = LabFriendsRouteImport.update({
-  id: '/lab/friends',
-  path: '/lab/friends',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabGalleryRoute = LabGalleryRouteImport.update({
-  id: '/lab/gallery',
-  path: '/lab/gallery',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabMascotRoute = LabMascotRouteImport.update({
-  id: '/lab/mascot',
-  path: '/lab/mascot',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabNavRoute = LabNavRouteImport.update({
-  id: '/lab/nav',
-  path: '/lab/nav',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabPaletteRoute = LabPaletteRouteImport.update({
-  id: '/lab/palette',
-  path: '/lab/palette',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabSeriesRoute = LabSeriesRouteImport.update({
-  id: '/lab/series',
-  path: '/lab/series',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabThemeRoute = LabThemeRouteImport.update({
-  id: '/lab/theme',
-  path: '/lab/theme',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabTocTreeRoute = LabTocTreeRouteImport.update({
-  id: '/lab/toc-tree',
-  path: '/lab/toc-tree',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotesIndexRoute = NotesIndexRouteImport.update({
-  id: '/notes/',
-  path: '/notes/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotesIdRoute = NotesIdRouteImport.update({
-  id: '/notes/$id',
-  path: '/notes/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileIndexRoute = ProfileIndexRouteImport.update({
-  id: '/profile/',
-  path: '/profile/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SeriesIndexRoute = SeriesIndexRouteImport.update({
-  id: '/series/',
-  path: '/series/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SeriesSlugRoute = SeriesSlugRouteImport.update({
-  id: '/series/$slug',
-  path: '/series/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TweetsIndexRoute = TweetsIndexRouteImport.update({
@@ -386,9 +159,54 @@ const TweetsIndexRoute = TweetsIndexRouteImport.update({
   path: '/tweets/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TweetsIdRoute = TweetsIdRouteImport.update({
-  id: '/tweets/$id',
-  path: '/tweets/$id',
+const SeriesIndexRoute = SeriesIndexRouteImport.update({
+  id: '/series/',
+  path: '/series/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesIndexRoute = NotesIndexRouteImport.update({
+  id: '/notes/',
+  path: '/notes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabIndexRoute = LabIndexRouteImport.update({
+  id: '/lab/',
+  path: '/lab/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleriesIndexRoute = GalleriesIndexRouteImport.update({
+  id: '/galleries/',
+  path: '/galleries/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemIndexRoute = DesignSystemIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AboutIndexRoute = AboutIndexRouteImport.update({
+  id: '/about/',
+  path: '/about/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsersUsernameRoute = UsersUsernameRouteImport.update({
@@ -396,84 +214,274 @@ const UsersUsernameRoute = UsersUsernameRouteImport.update({
   path: '/users/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminGalleriesIndexRoute = AdminGalleriesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminGalleriesRoute,
+const TweetsIdRoute = TweetsIdRouteImport.update({
+  id: '/tweets/$id',
+  path: '/tweets/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminGalleriesIdRoute = AdminGalleriesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminGalleriesRoute,
+const SeriesSlugRoute = SeriesSlugRouteImport.update({
+  id: '/series/$slug',
+  path: '/series/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminNotesIndexRoute = AdminNotesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminNotesRoute,
+const NotesIdRoute = NotesIdRouteImport.update({
+  id: '/notes/$id',
+  path: '/notes/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminNotesIdRoute = AdminNotesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminNotesRoute,
+const LabTocTreeRoute = LabTocTreeRouteImport.update({
+  id: '/lab/toc-tree',
+  path: '/lab/toc-tree',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPersonasIndexRoute = AdminPersonasIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminPersonasRoute,
+const LabThemeRoute = LabThemeRouteImport.update({
+  id: '/lab/theme',
+  path: '/lab/theme',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPersonasIdRoute = AdminPersonasIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminPersonasRoute,
+const LabSeriesRoute = LabSeriesRouteImport.update({
+  id: '/lab/series',
+  path: '/lab/series',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminPostsRoute,
+const LabPaletteRoute = LabPaletteRouteImport.update({
+  id: '/lab/palette',
+  path: '/lab/palette',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPostsIdRoute = AdminPostsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminPostsRoute,
+const LabNavRoute = LabNavRouteImport.update({
+  id: '/lab/nav',
+  path: '/lab/nav',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AdminPostsRoute,
+const LabMascotRoute = LabMascotRouteImport.update({
+  id: '/lab/mascot',
+  path: '/lab/mascot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabGalleryRoute = LabGalleryRouteImport.update({
+  id: '/lab/gallery',
+  path: '/lab/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabFriendsRoute = LabFriendsRouteImport.update({
+  id: '/lab/friends',
+  path: '/lab/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabColorsRoute = LabColorsRouteImport.update({
+  id: '/lab/colors',
+  path: '/lab/colors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabBlogRoute = LabBlogRouteImport.update({
+  id: '/lab/blog',
+  path: '/lab/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabAnnouncementRoute = LabAnnouncementRouteImport.update({
+  id: '/lab/announcement',
+  path: '/lab/announcement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleriesSlugRoute = GalleriesSlugRouteImport.update({
+  id: '/galleries/$slug',
+  path: '/galleries/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemTokensRoute = DesignSystemTokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const DesignSystemSpecimensRoute = DesignSystemSpecimensRouteImport.update({
+  id: '/specimens',
+  path: '/specimens',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const DesignSystemPrinciplesRoute = DesignSystemPrinciplesRouteImport.update({
+  id: '/principles',
+  path: '/principles',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const DesignSystemPaletteRoute = DesignSystemPaletteRouteImport.update({
+  id: '/palette',
+  path: '/palette',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const DesignSystemMotionRoute = DesignSystemMotionRouteImport.update({
+  id: '/motion',
+  path: '/motion',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const DesignSystemLayoutRoute = DesignSystemLayoutRouteImport.update({
+  id: '/layout',
+  path: '/layout',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const DesignSystemDecisionsRoute = DesignSystemDecisionsRouteImport.update({
+  id: '/decisions',
+  path: '/decisions',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
+const BlogArchiveRoute = BlogArchiveRouteImport.update({
+  id: '/blog/archive',
+  path: '/blog/archive',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnouncementsIdRoute = AnnouncementsIdRouteImport.update({
+  id: '/announcements/$id',
+  path: '/announcements/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTagsRoute = AdminTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSystemRoute = AdminSystemRouteImport.update({
+  id: '/system',
+  path: '/system',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSeriesRoute = AdminSeriesRouteImport.update({
+  id: '/series',
+  path: '/series',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProjectsRoute = AdminProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPostsRoute = AdminPostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPersonasRoute = AdminPersonasRouteImport.update({
+  id: '/personas',
+  path: '/personas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
+  id: '/permissions',
+  path: '/permissions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotesRoute = AdminNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMediaRoute = AdminMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMcpRoute = AdminMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLogsRoute = AdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGalleriesRoute = AdminGalleriesRouteImport.update({
+  id: '/galleries',
+  path: '/galleries',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFriendLinksRoute = AdminFriendLinksRouteImport.update({
+  id: '/friend-links',
+  path: '/friend-links',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEmojisRoute = AdminEmojisRouteImport.update({
+  id: '/emojis',
+  path: '/emojis',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCommentsRoute = AdminCommentsRouteImport.update({
+  id: '/comments',
+  path: '/comments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminChatBotsRoute = AdminChatBotsRouteImport.update({
+  id: '/chat-bots',
+  path: '/chat-bots',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminSeriesIndexRoute = AdminSeriesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminSeriesRoute,
 } as any)
-const AdminSeriesIdRoute = AdminSeriesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminSeriesRoute,
+const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPostsRoute,
 } as any)
-const AdminSettingsAboutRoute = AdminSettingsAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => AdminSettingsRoute,
+const AdminPersonasIndexRoute = AdminPersonasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPersonasRoute,
 } as any)
-const AdminSettingsAuthRoute = AdminSettingsAuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => AdminSettingsRoute,
+const AdminNotesIndexRoute = AdminNotesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminNotesRoute,
 } as any)
-const AdminSettingsCodeRunnerRoute = AdminSettingsCodeRunnerRouteImport.update({
-  id: '/code-runner',
-  path: '/code-runner',
-  getParentRoute: () => AdminSettingsRoute,
+const AdminGalleriesIndexRoute = AdminGalleriesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminGalleriesRoute,
 } as any)
-const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
-  id: '/general',
-  path: '/general',
-  getParentRoute: () => AdminSettingsRoute,
+const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
+  id: '/tweets/topics/$tag',
+  path: '/tweets/topics/$tag',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSettingsGithubRoute = AdminSettingsGithubRouteImport.update({
-  id: '/github',
-  path: '/github',
+const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
+  id: '/auth/github/callback',
+  path: '/auth/github/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSettingsProfileRoute = AdminSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
 const AdminSettingsLlmRoute = AdminSettingsLlmRouteImport.update({
@@ -481,20 +489,60 @@ const AdminSettingsLlmRoute = AdminSettingsLlmRouteImport.update({
   path: '/llm',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
-const AdminSettingsProfileRoute = AdminSettingsProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const AdminSettingsGithubRoute = AdminSettingsGithubRouteImport.update({
+  id: '/github',
+  path: '/github',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
-const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
-  id: '/auth/github/callback',
-  path: '/auth/github/callback',
-  getParentRoute: () => rootRouteImport,
+const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => AdminSettingsRoute,
 } as any)
-const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
-  id: '/tweets/topics/$tag',
-  path: '/tweets/topics/$tag',
-  getParentRoute: () => rootRouteImport,
+const AdminSettingsCodeRunnerRoute = AdminSettingsCodeRunnerRouteImport.update({
+  id: '/code-runner',
+  path: '/code-runner',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsAuthRoute = AdminSettingsAuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsAboutRoute = AdminSettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSeriesIdRoute = AdminSeriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminSeriesRoute,
+} as any)
+const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminPostsRoute,
+} as any)
+const AdminPostsIdRoute = AdminPostsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminPostsRoute,
+} as any)
+const AdminPersonasIdRoute = AdminPersonasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminPersonasRoute,
+} as any)
+const AdminNotesIdRoute = AdminNotesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminNotesRoute,
+} as any)
+const AdminGalleriesIdRoute = AdminGalleriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminGalleriesRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -502,7 +550,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/chat': typeof ChatRoute
-  '/design-system': typeof DesignSystemRoute
+  '/design-system': typeof DesignSystemRouteWithChildren
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
@@ -533,6 +581,13 @@ export interface FileRoutesByFullPath {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/design-system/decisions': typeof DesignSystemDecisionsRoute
+  '/design-system/layout': typeof DesignSystemLayoutRoute
+  '/design-system/motion': typeof DesignSystemMotionRoute
+  '/design-system/palette': typeof DesignSystemPaletteRoute
+  '/design-system/principles': typeof DesignSystemPrinciplesRoute
+  '/design-system/specimens': typeof DesignSystemSpecimensRoute
+  '/design-system/tokens': typeof DesignSystemTokensRoute
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -552,6 +607,7 @@ export interface FileRoutesByFullPath {
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/design-system/': typeof DesignSystemIndexRoute
   '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
   '/notes/': typeof NotesIndexRoute
@@ -584,7 +640,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
   '/chat': typeof ChatRoute
-  '/design-system': typeof DesignSystemRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
@@ -610,6 +665,13 @@ export interface FileRoutesByTo {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/design-system/decisions': typeof DesignSystemDecisionsRoute
+  '/design-system/layout': typeof DesignSystemLayoutRoute
+  '/design-system/motion': typeof DesignSystemMotionRoute
+  '/design-system/palette': typeof DesignSystemPaletteRoute
+  '/design-system/principles': typeof DesignSystemPrinciplesRoute
+  '/design-system/specimens': typeof DesignSystemSpecimensRoute
+  '/design-system/tokens': typeof DesignSystemTokensRoute
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -629,6 +691,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
+  '/design-system': typeof DesignSystemIndexRoute
   '/galleries': typeof GalleriesIndexRoute
   '/lab': typeof LabIndexRoute
   '/notes': typeof NotesIndexRoute
@@ -663,7 +726,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/chat': typeof ChatRoute
-  '/design-system': typeof DesignSystemRoute
+  '/design-system': typeof DesignSystemRouteWithChildren
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
@@ -694,6 +757,13 @@ export interface FileRoutesById {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/design-system/decisions': typeof DesignSystemDecisionsRoute
+  '/design-system/layout': typeof DesignSystemLayoutRoute
+  '/design-system/motion': typeof DesignSystemMotionRoute
+  '/design-system/palette': typeof DesignSystemPaletteRoute
+  '/design-system/principles': typeof DesignSystemPrinciplesRoute
+  '/design-system/specimens': typeof DesignSystemSpecimensRoute
+  '/design-system/tokens': typeof DesignSystemTokensRoute
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -713,6 +783,7 @@ export interface FileRoutesById {
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/design-system/': typeof DesignSystemIndexRoute
   '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
   '/notes/': typeof NotesIndexRoute
@@ -779,6 +850,13 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/design-system/decisions'
+    | '/design-system/layout'
+    | '/design-system/motion'
+    | '/design-system/palette'
+    | '/design-system/principles'
+    | '/design-system/specimens'
+    | '/design-system/tokens'
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
@@ -798,6 +876,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/design-system/'
     | '/galleries/'
     | '/lab/'
     | '/notes/'
@@ -830,7 +909,6 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/chat'
-    | '/design-system'
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
@@ -856,6 +934,13 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/design-system/decisions'
+    | '/design-system/layout'
+    | '/design-system/motion'
+    | '/design-system/palette'
+    | '/design-system/principles'
+    | '/design-system/specimens'
+    | '/design-system/tokens'
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
@@ -875,6 +960,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/blog'
+    | '/design-system'
     | '/galleries'
     | '/lab'
     | '/notes'
@@ -939,6 +1025,13 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/design-system/decisions'
+    | '/design-system/layout'
+    | '/design-system/motion'
+    | '/design-system/palette'
+    | '/design-system/principles'
+    | '/design-system/specimens'
+    | '/design-system/tokens'
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
@@ -958,6 +1051,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/design-system/'
     | '/galleries/'
     | '/lab/'
     | '/notes/'
@@ -992,7 +1086,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   ChangelogRoute: typeof ChangelogRoute
   ChatRoute: typeof ChatRoute
-  DesignSystemRoute: typeof DesignSystemRoute
+  DesignSystemRoute: typeof DesignSystemRouteWithChildren
   FeedDotxmlRoute: typeof FeedDotxmlRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
@@ -1033,67 +1127,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/changelog': {
-      id: '/changelog'
-      path: '/changelog'
-      fullPath: '/changelog'
-      preLoaderRoute: typeof ChangelogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chat': {
-      id: '/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof ChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/design-system': {
-      id: '/design-system'
-      path: '/design-system'
-      fullPath: '/design-system'
-      preLoaderRoute: typeof DesignSystemRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/feed.xml': {
-      id: '/feed.xml'
-      path: '/feed.xml'
-      fullPath: '/feed.xml'
-      preLoaderRoute: typeof FeedDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/friends': {
-      id: '/friends'
-      path: '/friends'
-      fullPath: '/friends'
-      preLoaderRoute: typeof FriendsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/persona': {
@@ -1103,340 +1141,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PersonaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about/': {
-      id: '/about/'
-      path: '/about'
-      fullPath: '/about/'
-      preLoaderRoute: typeof AboutIndexRouteImport
+    '/friends': {
+      id: '/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof FriendsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feed.xml': {
+      id: '/feed.xml'
+      path: '/feed.xml'
+      fullPath: '/feed.xml'
+      preLoaderRoute: typeof FeedDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system': {
+      id: '/design-system'
+      path: '/design-system'
+      fullPath: '/design-system'
+      preLoaderRoute: typeof DesignSystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/changelog': {
+      id: '/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
       path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/announcements': {
-      id: '/admin/announcements'
-      path: '/announcements'
-      fullPath: '/admin/announcements'
-      preLoaderRoute: typeof AdminAnnouncementsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/chat-bots': {
-      id: '/admin/chat-bots'
-      path: '/chat-bots'
-      fullPath: '/admin/chat-bots'
-      preLoaderRoute: typeof AdminChatBotsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/comments': {
-      id: '/admin/comments'
-      path: '/comments'
-      fullPath: '/admin/comments'
-      preLoaderRoute: typeof AdminCommentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/emojis': {
-      id: '/admin/emojis'
-      path: '/emojis'
-      fullPath: '/admin/emojis'
-      preLoaderRoute: typeof AdminEmojisRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/friend-links': {
-      id: '/admin/friend-links'
-      path: '/friend-links'
-      fullPath: '/admin/friend-links'
-      preLoaderRoute: typeof AdminFriendLinksRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/galleries': {
-      id: '/admin/galleries'
-      path: '/galleries'
-      fullPath: '/admin/galleries'
-      preLoaderRoute: typeof AdminGalleriesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/logs': {
-      id: '/admin/logs'
-      path: '/logs'
-      fullPath: '/admin/logs'
-      preLoaderRoute: typeof AdminLogsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/mcp': {
-      id: '/admin/mcp'
-      path: '/mcp'
-      fullPath: '/admin/mcp'
-      preLoaderRoute: typeof AdminMcpRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/media': {
-      id: '/admin/media'
-      path: '/media'
-      fullPath: '/admin/media'
-      preLoaderRoute: typeof AdminMediaRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/notes': {
-      id: '/admin/notes'
-      path: '/notes'
-      fullPath: '/admin/notes'
-      preLoaderRoute: typeof AdminNotesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/permissions': {
-      id: '/admin/permissions'
-      path: '/permissions'
-      fullPath: '/admin/permissions'
-      preLoaderRoute: typeof AdminPermissionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/personas': {
-      id: '/admin/personas'
-      path: '/personas'
-      fullPath: '/admin/personas'
-      preLoaderRoute: typeof AdminPersonasRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/posts': {
-      id: '/admin/posts'
-      path: '/posts'
-      fullPath: '/admin/posts'
-      preLoaderRoute: typeof AdminPostsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/projects': {
-      id: '/admin/projects'
-      path: '/projects'
-      fullPath: '/admin/projects'
-      preLoaderRoute: typeof AdminProjectsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/roles': {
-      id: '/admin/roles'
-      path: '/roles'
-      fullPath: '/admin/roles'
-      preLoaderRoute: typeof AdminRolesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/series': {
-      id: '/admin/series'
-      path: '/series'
-      fullPath: '/admin/series'
-      preLoaderRoute: typeof AdminSeriesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/subscriptions': {
-      id: '/admin/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/admin/subscriptions'
-      preLoaderRoute: typeof AdminSubscriptionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/system': {
-      id: '/admin/system'
-      path: '/system'
-      fullPath: '/admin/system'
-      preLoaderRoute: typeof AdminSystemRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/tags': {
-      id: '/admin/tags'
-      path: '/tags'
-      fullPath: '/admin/tags'
-      preLoaderRoute: typeof AdminTagsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/announcements/$id': {
-      id: '/announcements/$id'
-      path: '/announcements/$id'
-      fullPath: '/announcements/$id'
-      preLoaderRoute: typeof AnnouncementsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/': {
-      id: '/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/archive': {
-      id: '/blog/archive'
-      path: '/blog/archive'
-      fullPath: '/blog/archive'
-      preLoaderRoute: typeof BlogArchiveRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/galleries/': {
-      id: '/galleries/'
-      path: '/galleries'
-      fullPath: '/galleries/'
-      preLoaderRoute: typeof GalleriesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/galleries/$slug': {
-      id: '/galleries/$slug'
-      path: '/galleries/$slug'
-      fullPath: '/galleries/$slug'
-      preLoaderRoute: typeof GalleriesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/': {
-      id: '/lab/'
-      path: '/lab'
-      fullPath: '/lab/'
-      preLoaderRoute: typeof LabIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/announcement': {
-      id: '/lab/announcement'
-      path: '/lab/announcement'
-      fullPath: '/lab/announcement'
-      preLoaderRoute: typeof LabAnnouncementRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/blog': {
-      id: '/lab/blog'
-      path: '/lab/blog'
-      fullPath: '/lab/blog'
-      preLoaderRoute: typeof LabBlogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/colors': {
-      id: '/lab/colors'
-      path: '/lab/colors'
-      fullPath: '/lab/colors'
-      preLoaderRoute: typeof LabColorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/friends': {
-      id: '/lab/friends'
-      path: '/lab/friends'
-      fullPath: '/lab/friends'
-      preLoaderRoute: typeof LabFriendsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/gallery': {
-      id: '/lab/gallery'
-      path: '/lab/gallery'
-      fullPath: '/lab/gallery'
-      preLoaderRoute: typeof LabGalleryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/mascot': {
-      id: '/lab/mascot'
-      path: '/lab/mascot'
-      fullPath: '/lab/mascot'
-      preLoaderRoute: typeof LabMascotRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/nav': {
-      id: '/lab/nav'
-      path: '/lab/nav'
-      fullPath: '/lab/nav'
-      preLoaderRoute: typeof LabNavRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/palette': {
-      id: '/lab/palette'
-      path: '/lab/palette'
-      fullPath: '/lab/palette'
-      preLoaderRoute: typeof LabPaletteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/series': {
-      id: '/lab/series'
-      path: '/lab/series'
-      fullPath: '/lab/series'
-      preLoaderRoute: typeof LabSeriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/theme': {
-      id: '/lab/theme'
-      path: '/lab/theme'
-      fullPath: '/lab/theme'
-      preLoaderRoute: typeof LabThemeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/toc-tree': {
-      id: '/lab/toc-tree'
-      path: '/lab/toc-tree'
-      fullPath: '/lab/toc-tree'
-      preLoaderRoute: typeof LabTocTreeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notes/': {
-      id: '/notes/'
-      path: '/notes'
-      fullPath: '/notes/'
-      preLoaderRoute: typeof NotesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notes/$id': {
-      id: '/notes/$id'
-      path: '/notes/$id'
-      fullPath: '/notes/$id'
-      preLoaderRoute: typeof NotesIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile/': {
-      id: '/profile/'
-      path: '/profile'
-      fullPath: '/profile/'
-      preLoaderRoute: typeof ProfileIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects/': {
-      id: '/projects/'
-      path: '/projects'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof ProjectsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/series/': {
-      id: '/series/'
-      path: '/series'
-      fullPath: '/series/'
-      preLoaderRoute: typeof SeriesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/series/$slug': {
-      id: '/series/$slug'
-      path: '/series/$slug'
-      fullPath: '/series/$slug'
-      preLoaderRoute: typeof SeriesSlugRouteImport
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tweets/': {
@@ -1446,11 +1211,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TweetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tweets/$id': {
-      id: '/tweets/$id'
-      path: '/tweets/$id'
-      fullPath: '/tweets/$id'
-      preLoaderRoute: typeof TweetsIdRouteImport
+    '/series/': {
+      id: '/series/'
+      path: '/series'
+      fullPath: '/series/'
+      preLoaderRoute: typeof SeriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes/': {
+      id: '/notes/'
+      path: '/notes'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof NotesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/': {
+      id: '/lab/'
+      path: '/lab'
+      fullPath: '/lab/'
+      preLoaderRoute: typeof LabIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/': {
+      id: '/galleries/'
+      path: '/galleries'
+      fullPath: '/galleries/'
+      preLoaderRoute: typeof GalleriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system/': {
+      id: '/design-system/'
+      path: '/'
+      fullPath: '/design-system/'
+      preLoaderRoute: typeof DesignSystemIndexRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/about/': {
+      id: '/about/'
+      path: '/about'
+      fullPath: '/about/'
+      preLoaderRoute: typeof AboutIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/users/$username': {
@@ -1460,68 +1288,327 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/galleries/': {
-      id: '/admin/galleries/'
-      path: '/'
-      fullPath: '/admin/galleries/'
-      preLoaderRoute: typeof AdminGalleriesIndexRouteImport
-      parentRoute: typeof AdminGalleriesRoute
+    '/tweets/$id': {
+      id: '/tweets/$id'
+      path: '/tweets/$id'
+      fullPath: '/tweets/$id'
+      preLoaderRoute: typeof TweetsIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/galleries/$id': {
-      id: '/admin/galleries/$id'
-      path: '/$id'
-      fullPath: '/admin/galleries/$id'
-      preLoaderRoute: typeof AdminGalleriesIdRouteImport
-      parentRoute: typeof AdminGalleriesRoute
+    '/series/$slug': {
+      id: '/series/$slug'
+      path: '/series/$slug'
+      fullPath: '/series/$slug'
+      preLoaderRoute: typeof SeriesSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/notes/': {
-      id: '/admin/notes/'
-      path: '/'
-      fullPath: '/admin/notes/'
-      preLoaderRoute: typeof AdminNotesIndexRouteImport
-      parentRoute: typeof AdminNotesRoute
+    '/notes/$id': {
+      id: '/notes/$id'
+      path: '/notes/$id'
+      fullPath: '/notes/$id'
+      preLoaderRoute: typeof NotesIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/notes/$id': {
-      id: '/admin/notes/$id'
-      path: '/$id'
-      fullPath: '/admin/notes/$id'
-      preLoaderRoute: typeof AdminNotesIdRouteImport
-      parentRoute: typeof AdminNotesRoute
+    '/lab/toc-tree': {
+      id: '/lab/toc-tree'
+      path: '/lab/toc-tree'
+      fullPath: '/lab/toc-tree'
+      preLoaderRoute: typeof LabTocTreeRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/personas/': {
-      id: '/admin/personas/'
-      path: '/'
-      fullPath: '/admin/personas/'
-      preLoaderRoute: typeof AdminPersonasIndexRouteImport
-      parentRoute: typeof AdminPersonasRoute
+    '/lab/theme': {
+      id: '/lab/theme'
+      path: '/lab/theme'
+      fullPath: '/lab/theme'
+      preLoaderRoute: typeof LabThemeRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/personas/$id': {
-      id: '/admin/personas/$id'
-      path: '/$id'
-      fullPath: '/admin/personas/$id'
-      preLoaderRoute: typeof AdminPersonasIdRouteImport
-      parentRoute: typeof AdminPersonasRoute
+    '/lab/series': {
+      id: '/lab/series'
+      path: '/lab/series'
+      fullPath: '/lab/series'
+      preLoaderRoute: typeof LabSeriesRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/posts/': {
-      id: '/admin/posts/'
-      path: '/'
-      fullPath: '/admin/posts/'
-      preLoaderRoute: typeof AdminPostsIndexRouteImport
-      parentRoute: typeof AdminPostsRoute
+    '/lab/palette': {
+      id: '/lab/palette'
+      path: '/lab/palette'
+      fullPath: '/lab/palette'
+      preLoaderRoute: typeof LabPaletteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/posts/$id': {
-      id: '/admin/posts/$id'
-      path: '/$id'
-      fullPath: '/admin/posts/$id'
-      preLoaderRoute: typeof AdminPostsIdRouteImport
-      parentRoute: typeof AdminPostsRoute
+    '/lab/nav': {
+      id: '/lab/nav'
+      path: '/lab/nav'
+      fullPath: '/lab/nav'
+      preLoaderRoute: typeof LabNavRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/posts/new': {
-      id: '/admin/posts/new'
-      path: '/new'
-      fullPath: '/admin/posts/new'
-      preLoaderRoute: typeof AdminPostsNewRouteImport
-      parentRoute: typeof AdminPostsRoute
+    '/lab/mascot': {
+      id: '/lab/mascot'
+      path: '/lab/mascot'
+      fullPath: '/lab/mascot'
+      preLoaderRoute: typeof LabMascotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/gallery': {
+      id: '/lab/gallery'
+      path: '/lab/gallery'
+      fullPath: '/lab/gallery'
+      preLoaderRoute: typeof LabGalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/friends': {
+      id: '/lab/friends'
+      path: '/lab/friends'
+      fullPath: '/lab/friends'
+      preLoaderRoute: typeof LabFriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/colors': {
+      id: '/lab/colors'
+      path: '/lab/colors'
+      fullPath: '/lab/colors'
+      preLoaderRoute: typeof LabColorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/blog': {
+      id: '/lab/blog'
+      path: '/lab/blog'
+      fullPath: '/lab/blog'
+      preLoaderRoute: typeof LabBlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/announcement': {
+      id: '/lab/announcement'
+      path: '/lab/announcement'
+      fullPath: '/lab/announcement'
+      preLoaderRoute: typeof LabAnnouncementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/$slug': {
+      id: '/galleries/$slug'
+      path: '/galleries/$slug'
+      fullPath: '/galleries/$slug'
+      preLoaderRoute: typeof GalleriesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system/tokens': {
+      id: '/design-system/tokens'
+      path: '/tokens'
+      fullPath: '/design-system/tokens'
+      preLoaderRoute: typeof DesignSystemTokensRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/design-system/specimens': {
+      id: '/design-system/specimens'
+      path: '/specimens'
+      fullPath: '/design-system/specimens'
+      preLoaderRoute: typeof DesignSystemSpecimensRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/design-system/principles': {
+      id: '/design-system/principles'
+      path: '/principles'
+      fullPath: '/design-system/principles'
+      preLoaderRoute: typeof DesignSystemPrinciplesRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/design-system/palette': {
+      id: '/design-system/palette'
+      path: '/palette'
+      fullPath: '/design-system/palette'
+      preLoaderRoute: typeof DesignSystemPaletteRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/design-system/motion': {
+      id: '/design-system/motion'
+      path: '/motion'
+      fullPath: '/design-system/motion'
+      preLoaderRoute: typeof DesignSystemMotionRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/design-system/layout': {
+      id: '/design-system/layout'
+      path: '/layout'
+      fullPath: '/design-system/layout'
+      preLoaderRoute: typeof DesignSystemLayoutRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/design-system/decisions': {
+      id: '/design-system/decisions'
+      path: '/decisions'
+      fullPath: '/design-system/decisions'
+      preLoaderRoute: typeof DesignSystemDecisionsRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
+    '/blog/archive': {
+      id: '/blog/archive'
+      path: '/blog/archive'
+      fullPath: '/blog/archive'
+      preLoaderRoute: typeof BlogArchiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/announcements/$id': {
+      id: '/announcements/$id'
+      path: '/announcements/$id'
+      fullPath: '/announcements/$id'
+      preLoaderRoute: typeof AnnouncementsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/tags': {
+      id: '/admin/tags'
+      path: '/tags'
+      fullPath: '/admin/tags'
+      preLoaderRoute: typeof AdminTagsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/system': {
+      id: '/admin/system'
+      path: '/system'
+      fullPath: '/admin/system'
+      preLoaderRoute: typeof AdminSystemRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/series': {
+      id: '/admin/series'
+      path: '/series'
+      fullPath: '/admin/series'
+      preLoaderRoute: typeof AdminSeriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/projects': {
+      id: '/admin/projects'
+      path: '/projects'
+      fullPath: '/admin/projects'
+      preLoaderRoute: typeof AdminProjectsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/posts': {
+      id: '/admin/posts'
+      path: '/posts'
+      fullPath: '/admin/posts'
+      preLoaderRoute: typeof AdminPostsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/personas': {
+      id: '/admin/personas'
+      path: '/personas'
+      fullPath: '/admin/personas'
+      preLoaderRoute: typeof AdminPersonasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/permissions': {
+      id: '/admin/permissions'
+      path: '/permissions'
+      fullPath: '/admin/permissions'
+      preLoaderRoute: typeof AdminPermissionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notes': {
+      id: '/admin/notes'
+      path: '/notes'
+      fullPath: '/admin/notes'
+      preLoaderRoute: typeof AdminNotesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/media': {
+      id: '/admin/media'
+      path: '/media'
+      fullPath: '/admin/media'
+      preLoaderRoute: typeof AdminMediaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/mcp': {
+      id: '/admin/mcp'
+      path: '/mcp'
+      fullPath: '/admin/mcp'
+      preLoaderRoute: typeof AdminMcpRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/logs': {
+      id: '/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/galleries': {
+      id: '/admin/galleries'
+      path: '/galleries'
+      fullPath: '/admin/galleries'
+      preLoaderRoute: typeof AdminGalleriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/friend-links': {
+      id: '/admin/friend-links'
+      path: '/friend-links'
+      fullPath: '/admin/friend-links'
+      preLoaderRoute: typeof AdminFriendLinksRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/emojis': {
+      id: '/admin/emojis'
+      path: '/emojis'
+      fullPath: '/admin/emojis'
+      preLoaderRoute: typeof AdminEmojisRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/comments': {
+      id: '/admin/comments'
+      path: '/comments'
+      fullPath: '/admin/comments'
+      preLoaderRoute: typeof AdminCommentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/chat-bots': {
+      id: '/admin/chat-bots'
+      path: '/chat-bots'
+      fullPath: '/admin/chat-bots'
+      preLoaderRoute: typeof AdminChatBotsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/series/': {
       id: '/admin/series/'
@@ -1530,46 +1617,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSeriesIndexRouteImport
       parentRoute: typeof AdminSeriesRoute
     }
-    '/admin/series/$id': {
-      id: '/admin/series/$id'
-      path: '/$id'
-      fullPath: '/admin/series/$id'
-      preLoaderRoute: typeof AdminSeriesIdRouteImport
-      parentRoute: typeof AdminSeriesRoute
+    '/admin/posts/': {
+      id: '/admin/posts/'
+      path: '/'
+      fullPath: '/admin/posts/'
+      preLoaderRoute: typeof AdminPostsIndexRouteImport
+      parentRoute: typeof AdminPostsRoute
     }
-    '/admin/settings/about': {
-      id: '/admin/settings/about'
-      path: '/about'
-      fullPath: '/admin/settings/about'
-      preLoaderRoute: typeof AdminSettingsAboutRouteImport
-      parentRoute: typeof AdminSettingsRoute
+    '/admin/personas/': {
+      id: '/admin/personas/'
+      path: '/'
+      fullPath: '/admin/personas/'
+      preLoaderRoute: typeof AdminPersonasIndexRouteImport
+      parentRoute: typeof AdminPersonasRoute
     }
-    '/admin/settings/auth': {
-      id: '/admin/settings/auth'
-      path: '/auth'
-      fullPath: '/admin/settings/auth'
-      preLoaderRoute: typeof AdminSettingsAuthRouteImport
-      parentRoute: typeof AdminSettingsRoute
+    '/admin/notes/': {
+      id: '/admin/notes/'
+      path: '/'
+      fullPath: '/admin/notes/'
+      preLoaderRoute: typeof AdminNotesIndexRouteImport
+      parentRoute: typeof AdminNotesRoute
     }
-    '/admin/settings/code-runner': {
-      id: '/admin/settings/code-runner'
-      path: '/code-runner'
-      fullPath: '/admin/settings/code-runner'
-      preLoaderRoute: typeof AdminSettingsCodeRunnerRouteImport
-      parentRoute: typeof AdminSettingsRoute
+    '/admin/galleries/': {
+      id: '/admin/galleries/'
+      path: '/'
+      fullPath: '/admin/galleries/'
+      preLoaderRoute: typeof AdminGalleriesIndexRouteImport
+      parentRoute: typeof AdminGalleriesRoute
     }
-    '/admin/settings/general': {
-      id: '/admin/settings/general'
-      path: '/general'
-      fullPath: '/admin/settings/general'
-      preLoaderRoute: typeof AdminSettingsGeneralRouteImport
-      parentRoute: typeof AdminSettingsRoute
+    '/tweets/topics/$tag': {
+      id: '/tweets/topics/$tag'
+      path: '/tweets/topics/$tag'
+      fullPath: '/tweets/topics/$tag'
+      preLoaderRoute: typeof TweetsTopicsTagRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/settings/github': {
-      id: '/admin/settings/github'
-      path: '/github'
-      fullPath: '/admin/settings/github'
-      preLoaderRoute: typeof AdminSettingsGithubRouteImport
+    '/auth/github/callback': {
+      id: '/auth/github/callback'
+      path: '/auth/github/callback'
+      fullPath: '/auth/github/callback'
+      preLoaderRoute: typeof AuthGithubCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/settings/profile': {
+      id: '/admin/settings/profile'
+      path: '/profile'
+      fullPath: '/admin/settings/profile'
+      preLoaderRoute: typeof AdminSettingsProfileRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
     '/admin/settings/llm': {
@@ -1579,26 +1673,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsLlmRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
-    '/admin/settings/profile': {
-      id: '/admin/settings/profile'
-      path: '/profile'
-      fullPath: '/admin/settings/profile'
-      preLoaderRoute: typeof AdminSettingsProfileRouteImport
+    '/admin/settings/github': {
+      id: '/admin/settings/github'
+      path: '/github'
+      fullPath: '/admin/settings/github'
+      preLoaderRoute: typeof AdminSettingsGithubRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
-    '/auth/github/callback': {
-      id: '/auth/github/callback'
-      path: '/auth/github/callback'
-      fullPath: '/auth/github/callback'
-      preLoaderRoute: typeof AuthGithubCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/settings/general': {
+      id: '/admin/settings/general'
+      path: '/general'
+      fullPath: '/admin/settings/general'
+      preLoaderRoute: typeof AdminSettingsGeneralRouteImport
+      parentRoute: typeof AdminSettingsRoute
     }
-    '/tweets/topics/$tag': {
-      id: '/tweets/topics/$tag'
-      path: '/tweets/topics/$tag'
-      fullPath: '/tweets/topics/$tag'
-      preLoaderRoute: typeof TweetsTopicsTagRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/settings/code-runner': {
+      id: '/admin/settings/code-runner'
+      path: '/code-runner'
+      fullPath: '/admin/settings/code-runner'
+      preLoaderRoute: typeof AdminSettingsCodeRunnerRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/auth': {
+      id: '/admin/settings/auth'
+      path: '/auth'
+      fullPath: '/admin/settings/auth'
+      preLoaderRoute: typeof AdminSettingsAuthRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/about': {
+      id: '/admin/settings/about'
+      path: '/about'
+      fullPath: '/admin/settings/about'
+      preLoaderRoute: typeof AdminSettingsAboutRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/series/$id': {
+      id: '/admin/series/$id'
+      path: '/$id'
+      fullPath: '/admin/series/$id'
+      preLoaderRoute: typeof AdminSeriesIdRouteImport
+      parentRoute: typeof AdminSeriesRoute
+    }
+    '/admin/posts/new': {
+      id: '/admin/posts/new'
+      path: '/new'
+      fullPath: '/admin/posts/new'
+      preLoaderRoute: typeof AdminPostsNewRouteImport
+      parentRoute: typeof AdminPostsRoute
+    }
+    '/admin/posts/$id': {
+      id: '/admin/posts/$id'
+      path: '/$id'
+      fullPath: '/admin/posts/$id'
+      preLoaderRoute: typeof AdminPostsIdRouteImport
+      parentRoute: typeof AdminPostsRoute
+    }
+    '/admin/personas/$id': {
+      id: '/admin/personas/$id'
+      path: '/$id'
+      fullPath: '/admin/personas/$id'
+      preLoaderRoute: typeof AdminPersonasIdRouteImport
+      parentRoute: typeof AdminPersonasRoute
+    }
+    '/admin/notes/$id': {
+      id: '/admin/notes/$id'
+      path: '/$id'
+      fullPath: '/admin/notes/$id'
+      preLoaderRoute: typeof AdminNotesIdRouteImport
+      parentRoute: typeof AdminNotesRoute
+    }
+    '/admin/galleries/$id': {
+      id: '/admin/galleries/$id'
+      path: '/$id'
+      fullPath: '/admin/galleries/$id'
+      preLoaderRoute: typeof AdminGalleriesIdRouteImport
+      parentRoute: typeof AdminGalleriesRoute
     }
   }
 }
@@ -1751,12 +1901,38 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface DesignSystemRouteChildren {
+  DesignSystemDecisionsRoute: typeof DesignSystemDecisionsRoute
+  DesignSystemLayoutRoute: typeof DesignSystemLayoutRoute
+  DesignSystemMotionRoute: typeof DesignSystemMotionRoute
+  DesignSystemPaletteRoute: typeof DesignSystemPaletteRoute
+  DesignSystemPrinciplesRoute: typeof DesignSystemPrinciplesRoute
+  DesignSystemSpecimensRoute: typeof DesignSystemSpecimensRoute
+  DesignSystemTokensRoute: typeof DesignSystemTokensRoute
+  DesignSystemIndexRoute: typeof DesignSystemIndexRoute
+}
+
+const DesignSystemRouteChildren: DesignSystemRouteChildren = {
+  DesignSystemDecisionsRoute: DesignSystemDecisionsRoute,
+  DesignSystemLayoutRoute: DesignSystemLayoutRoute,
+  DesignSystemMotionRoute: DesignSystemMotionRoute,
+  DesignSystemPaletteRoute: DesignSystemPaletteRoute,
+  DesignSystemPrinciplesRoute: DesignSystemPrinciplesRoute,
+  DesignSystemSpecimensRoute: DesignSystemSpecimensRoute,
+  DesignSystemTokensRoute: DesignSystemTokensRoute,
+  DesignSystemIndexRoute: DesignSystemIndexRoute,
+}
+
+const DesignSystemRouteWithChildren = DesignSystemRoute._addFileChildren(
+  DesignSystemRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   ChangelogRoute: ChangelogRoute,
   ChatRoute: ChatRoute,
-  DesignSystemRoute: DesignSystemRoute,
+  DesignSystemRoute: DesignSystemRouteWithChildren,
   FeedDotxmlRoute: FeedDotxmlRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
