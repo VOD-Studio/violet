@@ -290,7 +290,7 @@ function ExpandableDemoBox({ children, code }: { children: ReactNode; code: stri
 	};
 
 	return (
-		<div>
+		<div className="max-w-4xl">
 			{/* 组件自然展示，无外壳 */}
 			{children}
 
