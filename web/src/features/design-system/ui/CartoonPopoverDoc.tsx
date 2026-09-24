@@ -305,7 +305,13 @@ const CONTENT_PROPS: PropRow[] = [
 		name: "title",
 		type: "ReactNode",
 		defaultValue: "—",
-		meaning: "可选快捷标题；传入时自动渲染虚线分隔的卡通头部。",
+		meaning: "可选快捷标题；传入时自动渲染头部。",
+	},
+	{
+		name: "divided",
+		type: "boolean",
+		defaultValue: "false",
+		meaning: "头部与正文之间是否显示虚线分隔线（默认不显示）。",
 	},
 	{
 		name: "showClose",

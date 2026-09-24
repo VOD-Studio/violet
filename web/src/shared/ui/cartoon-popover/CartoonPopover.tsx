@@ -401,55 +401,52 @@ function SpeechArrow({ side, offset, bubbleStyle }: SpeechArrowProps) {
 	const H = 8;
 	const D = 3;
 	const totalH = H + D; // 11px
+	const borderCompensation = 2; // 补偿气泡自身的 2px 边框盒模型位移
 
 	let arrowStyle: CSSProperties = {};
 	let pathFill = "";
 	let pathStroke = "";
 
 	if (side === "bottom") {
-		// 气泡在下方，尾巴在顶部朝上，定位在 top: -8px
+		// 气泡在下方，尾巴在顶部朝上，定位在 top: -10px 补偿 2px border
 		arrowStyle = {
-			top: `-${H}px`,
+			top: `-${H + borderCompensation}px`,
 			left: `${offset - W / 2}px`,
 		};
-		// 多边形：尖角 (8, 0)，底边矩形伸到 y = 11，遮盖气泡顶边 2px 边框
 		pathFill = `M 0 ${H} L ${W / 2} 0 L ${W} ${H} L ${W} ${totalH} L 0 ${totalH} Z`;
-		// 斜边描线：从 (0, 8) 到 (8, 0) 再到 (16, 8)，起点终点精准压在气泡顶边线上
 		pathStroke = `M 0 ${H} L ${W / 2} 0 L ${W} ${H}`;
 	} else if (side === "top") {
-		// 气泡在上方，尾巴在底部朝下，定位在 bottom: -8px
+		// 气泡在上方，尾巴在底部朝下，定位在 bottom: -10px
 		arrowStyle = {
-			bottom: `-${H}px`,
+			bottom: `-${H + borderCompensation}px`,
 			left: `${offset - W / 2}px`,
 		};
-		// 多边形：尖角 (8, 11)，顶边矩形伸到 y = 0
 		pathFill = `M 0 ${D} L ${W} ${D} L ${W} 0 L 0 0 Z M 0 ${D} L ${W / 2} ${totalH} L ${W} ${D} Z`;
 		pathStroke = `M 0 ${D} L ${W / 2} ${totalH} L ${W} ${D}`;
 	} else if (side === "right") {
-		// 气泡在右侧，尾巴在左侧朝左，定位在 left: -8px
+		// 气泡在右侧，尾巴在左侧朝左，定位在 left: -10px
 		arrowStyle = {
-			left: `-${H}px`,
+			left: `-${H + borderCompensation}px`,
 			top: `${offset - W / 2}px`,
 		};
 		pathFill = `M ${H} 0 L 0 ${W / 2} L ${H} ${W} L ${totalH} ${W} L ${totalH} 0 Z`;
 		pathStroke = `M ${H} 0 L 0 ${W / 2} L ${H} ${W}`;
 	} else {
-		// 气泡在左侧，尾巴在右侧朝右，定位在 right: -8px
+		// 气泡在左侧，尾巴在右侧朝右，定位在 right: -10px
 		arrowStyle = {
-			right: `-${H}px`,
+			right: `-${H + borderCompensation}px`,
 			top: `${offset - W / 2}px`,
 		};
 		pathFill = `M ${D} 0 L ${totalH} ${W / 2} L ${D} ${W} L 0 ${W} L 0 0 Z`;
 		pathStroke = `M ${D} 0 L ${totalH} ${W / 2} L ${D} ${W}`;
 	}
-
 	const isHorizontal = side === "left" || side === "right";
 	const svgW = isHorizontal ? totalH : W;
 	const svgH = isHorizontal ? W : totalH;
 
 	return (
 		<div
-			className="pointer-events-none absolute z-10 overflow-visible"
+			className="pointer-events-none absolute z-20 overflow-visible"
 			style={arrowStyle}
 			aria-hidden="true"
 		>
@@ -492,6 +489,7 @@ export function CartoonPopoverContent({
 	showShine = true,
 	title,
 	description,
+	divided = false,
 	showClose = false,
 	container,
 	className,
@@ -671,7 +669,7 @@ export function CartoonPopoverContent({
 
 			{/* 可选快捷头部 */}
 			{hasHeader && (
-				<CartoonPopoverHeader>
+				<CartoonPopoverHeader divided={divided}>
 					{title ? (
 						typeof title === "string" ? (
 							<CartoonPopoverTitle>{title}</CartoonPopoverTitle>
@@ -716,11 +714,17 @@ export function CartoonPopoverContent({
 /**
  * CartoonPopoverHeader 头部容器（带卡通虚线底边分隔）。
  */
-export function CartoonPopoverHeader({ className, children, ...props }: CartoonPopoverHeaderProps) {
+export function CartoonPopoverHeader({
+	className,
+	divided = false,
+	children,
+	...props
+}: CartoonPopoverHeaderProps) {
 	return (
 		<div
 			className={cn(
-				"mb-2.5 flex items-center justify-between gap-3 border-b-2 border-dashed border-current/15 pb-2",
+				"mb-2 flex items-center justify-between gap-3",
+				divided && "border-b-2 border-dashed border-current/15 pb-2",
 				className,
 			)}
 			{...props}

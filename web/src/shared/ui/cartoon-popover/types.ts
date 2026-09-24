@@ -167,6 +167,11 @@ export interface CartoonPopoverContentProps extends Omit<ComponentPropsWithoutRe
 	 */
 	showClose?: boolean;
 	/**
+	 * 头部与正文之间是否显示虚线分隔
+	 * @default false
+	 */
+	divided?: boolean;
+	/**
 	 * 挂载的目标 DOM 容器，默认 document.body
 	 */
 	container?: HTMLElement | null;
@@ -176,6 +181,8 @@ export interface CartoonPopoverContentProps extends Omit<ComponentPropsWithoutRe
  * 头部容器参数
  */
 export interface CartoonPopoverHeaderProps extends ComponentPropsWithoutRef<"div"> {
+	/** 是否显示底部虚线分隔 */
+	divided?: boolean;
 	children?: ReactNode;
 }
 
