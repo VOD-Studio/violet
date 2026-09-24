@@ -1,7 +1,18 @@
+import { copyText } from "@shared/lib/clipboard";
 import { CodeCard } from "@shared/ui/code-preview";
 import { CommentList, CommentSection, type CommentSectionConfig } from "@shared/ui/comment-section";
-import { Heart, Send } from "lucide-react";
-import { useState } from "react";
+import {
+	Check,
+	ChevronDown,
+	ChevronUp,
+	Component,
+	Copy,
+	FileCode2,
+	GitBranch,
+	Heart,
+	Send,
+} from "lucide-react";
+import { type ReactNode, useState } from "react";
 
 interface DemoComment {
 	id: string;
@@ -82,6 +93,14 @@ export function ArticleComments({ comments, isLoggedIn }: Props) {
   );
 }`;
 
+const EMPTY_STATE_CODE = `<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
+  <CommentList comments={[]} config={config} isLoggedIn={true} />
+</CommentSection>`;
+
+const LOADING_STATE_CODE = `<CommentSection title="全部评论" form={null} isLoggedIn={true}>
+  <CommentList comments={[]} config={config} isLoggedIn={true} isLoading={true} />
+</CommentSection>`;
+
 interface PropRow {
 	prop: string;
 	type: string;
@@ -160,7 +179,7 @@ const ITEM_FIELDS: PropRow[] = [
 		prop: "tone",
 		type: '"default" | "discussion" | "author"',
 		defaultValue: '"default"',
-		description: "左侧视觉色阶：author 呈品牌高光",
+		description: "左侧视觉色阶：author 呈品牌高光，discussion 呈中性色",
 	},
 	{
 		prop: "isAuthor",
@@ -226,31 +245,100 @@ const CONFIG_FIELDS: PropRow[] = [
 ];
 
 /**
- * HeroUI 风格标准 API 表格组件。
+ * HeroUI 标志性一体化演示卡片（上方纯净舞台 + 下方可折叠代码）。
  */
-function ApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
+function HeroDemoBox({
+	children,
+	code,
+	defaultExpanded = false,
+}: {
+	children: ReactNode;
+	code: string;
+	defaultExpanded?: boolean;
+}) {
+	const [expanded, setExpanded] = useState(defaultExpanded);
+
 	return (
-		<div className="space-y-3 font-sans">
-			<h4 className="text-base font-semibold tracking-tight text-foreground">{title}</h4>
-			<div className="overflow-x-auto rounded-xl border border-border/70 bg-card">
+		<div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
+			{/* 上半部分：预览舞台 */}
+			<div className="flex min-h-64 items-center justify-center p-6 sm:p-10 bg-background/40">
+				<div className="w-full max-w-2xl">{children}</div>
+			</div>
+
+			{/* 下半部分：连体代码区 */}
+			<div className="relative border-t border-border/60 bg-muted/15">
+				<div
+					className={`overflow-hidden transition-all duration-300 ${
+						expanded ? "max-h-[800px]" : "max-h-24"
+					}`}
+				>
+					<CodeCard
+						code={code}
+						language="tsx"
+						className="rounded-none! border-0! bg-transparent!"
+					/>
+				</div>
+
+				{/* 底部展开 / 折叠胶囊控制器 */}
+				{!expanded ? (
+					<div className="absolute inset-x-0 bottom-0 flex h-20 items-end justify-center bg-gradient-to-t from-background/95 to-transparent pb-3 pointer-events-none">
+						<button
+							type="button"
+							onClick={() => setExpanded(true)}
+							className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 py-1 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
+						>
+							<span>Expand code</span>
+							<ChevronDown className="size-3.5 text-muted-foreground" />
+						</button>
+					</div>
+				) : (
+					<div className="flex justify-center border-t border-border/40 bg-card/50 py-2">
+						<button
+							type="button"
+							onClick={() => setExpanded(false)}
+							className="flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 py-1 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
+						>
+							<span>Collapse code</span>
+							<ChevronUp className="size-3.5 text-muted-foreground" />
+						</button>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
+/**
+ * HeroUI 标志性 API 表格（圆角底座表头 + 纯净行距代码标签，支持自适应水平滚动）。
+ */
+function HeroApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
+	return (
+		<div className="space-y-4 font-sans">
+			<h3 className="text-lg font-bold tracking-tight text-foreground">{title}</h3>
+
+			<div className="overflow-x-auto rounded-xl">
 				<table className="w-full min-w-160 border-collapse text-left text-xs">
 					<thead>
-						<tr className="border-b border-border/70 bg-muted/40 font-mono text-muted-foreground">
-							<th className="py-3 px-4 font-semibold w-48">Prop</th>
-							<th className="py-3 px-4 font-semibold w-64">Type</th>
-							<th className="py-3 px-4 font-semibold w-32">Default</th>
-							<th className="py-3 px-4 font-semibold">Description</th>
+						<tr className="border-b border-border/40 bg-muted/50 font-mono text-muted-foreground">
+							<th className="rounded-l-xl py-3 px-4 font-semibold w-44">Prop</th>
+							<th className="py-3 px-4 font-semibold w-60">Type</th>
+							<th className="py-3 px-4 font-semibold w-28">Default</th>
+							<th className="rounded-r-xl py-3 px-4 font-semibold min-w-56">
+								Description
+							</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-border/40">
+					<tbody className="divide-y divide-border/30">
 						{rows.map((row) => (
-							<tr key={row.prop} className="transition-colors hover:bg-muted/20">
-								<td className="py-3 px-4 font-mono font-medium text-foreground">
+							<tr key={row.prop} className="transition-colors hover:bg-muted/15">
+								<td className="py-3.5 px-4 font-mono font-medium text-foreground align-top">
 									<div className="flex items-center gap-1.5">
-										<code className="text-xs">{row.prop}</code>
+										<code className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+											{row.prop}
+										</code>
 										{row.required && (
 											<span
-												className="text-destructive font-mono text-[11px]"
+												className="text-destructive font-mono text-xs"
 												title="Required"
 											>
 												*
@@ -258,19 +346,21 @@ function ApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
 										)}
 									</div>
 								</td>
-								<td className="py-3 px-4 font-mono text-muted-foreground">
-									<span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-foreground font-mono">
+								<td className="py-3.5 px-4 font-mono text-muted-foreground align-top">
+									<code className="inline-block rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground break-all">
 										{row.type}
-									</span>
+									</code>
 								</td>
-								<td className="py-3 px-4 font-mono text-muted-foreground">
+								<td className="py-3.5 px-4 font-mono text-muted-foreground align-top">
 									{row.defaultValue ? (
-										<code className="text-[11px]">{row.defaultValue}</code>
+										<code className="rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+											{row.defaultValue}
+										</code>
 									) : (
-										<span className="text-muted-foreground/40">-</span>
+										<span className="text-muted-foreground/40 text-xs">-</span>
 									)}
 								</td>
-								<td className="py-3 px-4 text-muted-foreground leading-relaxed">
+								<td className="py-3.5 px-4 text-xs text-muted-foreground leading-relaxed align-top">
 									{row.description}
 								</td>
 							</tr>
@@ -283,12 +373,21 @@ function ApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
 }
 
 /**
- * 评论区组件文档页（对标 HeroUI 现代组件库规范）。
+ * 评论区组件文档页（对齐 HeroUI 规范）。
  */
 export function CommentSectionDocPage() {
 	const [comments] = useState<DemoComment[]>(BASIC_COMMENTS);
 	const [likes, setLikes] = useState<Record<string, number>>({ "c-1": 12, "c-1-1": 3, "c-2": 5 });
 	const [hasLiked, setHasLiked] = useState<Record<string, boolean>>({ "c-1": true });
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = async () => {
+		const ok = await copyText(IMPORT_CODE);
+		if (ok) {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}
+	};
 
 	const handleToggleLike = (id: string) => {
 		setHasLiked((prev) => {
@@ -370,98 +469,124 @@ export function CommentSectionDocPage() {
 	};
 
 	return (
-		<div className="space-y-16 pb-20">
-			{/* 1. Header (组件标题与简介，对标 HeroUI) */}
+		<div className="space-y-16 pb-24 font-sans">
+			{/* 1. Header (对标 HeroUI) */}
 			<div className="space-y-3">
-				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl font-sans">
-					CommentSection
-				</h1>
-				<p className="text-base text-muted-foreground leading-relaxed">
-					纯展示评论套件。抹平后端异构字段，支持双层扁平回复、身份视觉色阶与业务插槽扩展。
-				</p>
-			</div>
-
-			{/* 2. Usage (导入方式) */}
-			<section aria-label="Usage" className="space-y-3 font-sans">
-				<h2 className="text-xl font-bold tracking-tight text-foreground">Usage</h2>
-				<CodeCard code={IMPORT_CODE} language="tsx" title="@shared/ui/comment-section" />
-			</section>
-
-			{/* 3. Examples (案例展示，每个案例一个独立纯净舞台 + 代码) */}
-			<section aria-label="Examples" className="space-y-12 font-sans">
-				<h2 className="text-xl font-bold tracking-tight text-foreground">Examples</h2>
-
-				{/* 案例 1: Default 基础用法 */}
-				<div className="space-y-4">
-					<h3 className="text-base font-semibold tracking-tight text-foreground">
-						Default
-					</h3>
-					<p className="text-sm text-muted-foreground">
-						包含顶层表单插槽与双层扁平回复结构。子回复以 @
-						昵称指示对象，不向内无线嵌套。
-					</p>
-
-					{/* 演示画布 */}
-					<div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-10 shadow-xs">
-						<div className="mx-auto max-w-2xl">
-							<CommentSection
-								title={`全部评论 (${comments.length})`}
-								form={
-									<div className="flex items-start gap-3">
-										<div
-											aria-hidden="true"
-											className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-wash font-mono text-xs font-bold text-brand-wash-foreground"
-										>
-											V
-										</div>
-										<div className="min-w-0 flex-1 rounded-lg border border-input bg-card px-3 py-2 text-xs text-muted-foreground">
-											写下你的评论观点...
-										</div>
-										<button
-											type="button"
-											className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
-										>
-											<Send className="size-3" />
-											<span>发表</span>
-										</button>
-									</div>
-								}
-								isLoggedIn={true}
-							>
-								<CommentList
-									comments={comments}
-									config={config}
-									isLoggedIn={true}
-								/>
-							</CommentSection>
-						</div>
-					</div>
-
-					{/* 紧随其后的代码 */}
-					<CodeCard code={BASIC_USAGE_CODE} language="tsx" title="App.tsx" />
+				<div className="flex flex-wrap items-center justify-between gap-4">
+					<h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+						CommentSection
+					</h1>
+					<button
+						type="button"
+						className="flex items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					>
+						<Copy className="size-3.5" />
+						<span>Copy Markdown</span>
+					</button>
 				</div>
 
-				{/* 案例 2: Empty 状态 */}
-				<div className="space-y-4">
-					<h3 className="text-base font-semibold tracking-tight text-foreground">
+				<p className="text-base text-muted-foreground leading-relaxed">
+					纯展示评论套件。抹平后端异构字段，支持双层扁平回复、身份视觉色阶与插槽机制。
+				</p>
+
+				{/* 快捷 Pill 链接 */}
+				<div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
+					<span className="flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-foreground">
+						<GitBranch className="size-3 text-muted-foreground" />
+						<span>Source</span>
+					</span>
+					<span className="flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-foreground">
+						<FileCode2 className="size-3 text-muted-foreground" />
+						<span>types.ts</span>
+					</span>
+					<span className="flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-foreground">
+						<Component className="size-3 text-muted-foreground" />
+						<span>Composite</span>
+					</span>
+				</div>
+			</div>
+
+			{/* 2. Usage */}
+			<section aria-label="Usage" className="space-y-3">
+				<h2 className="text-2xl font-bold tracking-tight text-foreground">Usage</h2>
+				<div className="relative flex items-center justify-between rounded-xl border border-border/70 bg-muted/30 px-4 py-3 font-mono text-xs">
+					<code className="text-foreground">{IMPORT_CODE}</code>
+					<button
+						type="button"
+						onClick={handleCopy}
+						className="text-muted-foreground transition-colors hover:text-foreground"
+						title="复制代码"
+					>
+						{copied ? (
+							<Check className="size-4 text-green-500" />
+						) : (
+							<Copy className="size-4" />
+						)}
+					</button>
+				</div>
+			</section>
+
+			{/* 3. Examples */}
+			<section aria-label="Examples" className="space-y-12">
+				<h2 className="text-2xl font-bold tracking-tight text-foreground">Examples</h2>
+
+				{/* 案例 1: Default */}
+				<div className="space-y-3">
+					<h3 className="text-lg font-bold tracking-tight text-foreground">Default</h3>
+					<p className="text-sm text-muted-foreground">
+						包含顶层表单插槽与双层扁平回复结构。子回复以 @
+						昵称指示对象，不向内无限嵌套。
+					</p>
+
+					<HeroDemoBox code={BASIC_USAGE_CODE}>
+						<CommentSection
+							title={`全部评论 (${comments.length})`}
+							form={
+								<div className="flex items-start gap-3">
+									<div
+										aria-hidden="true"
+										className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-wash font-mono text-xs font-bold text-brand-wash-foreground"
+									>
+										V
+									</div>
+									<div className="min-w-0 flex-1 rounded-lg border border-input bg-card px-3 py-2 text-xs text-muted-foreground">
+										写下你的评论观点...
+									</div>
+									<button
+										type="button"
+										className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
+									>
+										<Send className="size-3" />
+										<span>发表</span>
+									</button>
+								</div>
+							}
+							isLoggedIn={true}
+						>
+							<CommentList comments={comments} config={config} isLoggedIn={true} />
+						</CommentSection>
+					</HeroDemoBox>
+				</div>
+
+				{/* 案例 2: Empty State */}
+				<div className="space-y-3">
+					<h3 className="text-lg font-bold tracking-tight text-foreground">
 						Empty State
 					</h3>
 					<p className="text-sm text-muted-foreground">
 						当评论数据为空时，自动呈现自带的轻量空状态占位。
 					</p>
 
-					<div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-10 shadow-xs">
-						<div className="mx-auto max-w-2xl">
-							<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
-								<CommentList comments={[]} config={config} isLoggedIn={true} />
-							</CommentSection>
-						</div>
-					</div>
+					<HeroDemoBox code={EMPTY_STATE_CODE}>
+						<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
+							<CommentList comments={[]} config={config} isLoggedIn={true} />
+						</CommentSection>
+					</HeroDemoBox>
 				</div>
 
-				{/* 案例 3: Loading 状态 */}
-				<div className="space-y-4">
-					<h3 className="text-base font-semibold tracking-tight text-foreground">
+				{/* 案例 3: Loading State */}
+				<div className="space-y-3">
+					<h3 className="text-lg font-bold tracking-tight text-foreground">
 						Loading State
 					</h3>
 					<p className="text-sm text-muted-foreground">
@@ -469,27 +594,25 @@ export function CommentSectionDocPage() {
 						，自动渲染 Shimmer 骨架条目。
 					</p>
 
-					<div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-10 shadow-xs">
-						<div className="mx-auto max-w-2xl">
-							<CommentSection title="全部评论" form={null} isLoggedIn={true}>
-								<CommentList
-									comments={[]}
-									config={config}
-									isLoggedIn={true}
-									isLoading={true}
-								/>
-							</CommentSection>
-						</div>
-					</div>
+					<HeroDemoBox code={LOADING_STATE_CODE}>
+						<CommentSection title="全部评论" form={null} isLoggedIn={true}>
+							<CommentList
+								comments={[]}
+								config={config}
+								isLoggedIn={true}
+								isLoading={true}
+							/>
+						</CommentSection>
+					</HeroDemoBox>
 				</div>
 			</section>
 
-			{/* 4. API Reference (标准参数表格) */}
-			<section aria-label="API Reference" className="space-y-8 font-sans">
-				<h2 className="text-xl font-bold tracking-tight text-foreground">API Reference</h2>
-				<ApiTable title="CommentSection Props" rows={SECTION_PROPS} />
-				<ApiTable title="CommentDisplayItem (Data Model)" rows={ITEM_FIELDS} />
-				<ApiTable title="CommentSectionConfig (Adapter)" rows={CONFIG_FIELDS} />
+			{/* 4. API Reference */}
+			<section aria-label="API Reference" className="space-y-10">
+				<h2 className="text-2xl font-bold tracking-tight text-foreground">API Reference</h2>
+				<HeroApiTable title="CommentSection Props" rows={SECTION_PROPS} />
+				<HeroApiTable title="CommentDisplayItem (Data Model)" rows={ITEM_FIELDS} />
+				<HeroApiTable title="CommentSectionConfig (Adapter)" rows={CONFIG_FIELDS} />
 			</section>
 		</div>
 	);
