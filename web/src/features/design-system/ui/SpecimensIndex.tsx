@@ -1,9 +1,4 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
-import { ALL_NAV_ITEMS } from "../model/navigation";
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
-
-const COMPONENTS = ALL_NAV_ITEMS.find((item) => item.id === "specimens")?.children ?? [];
 
 const COMMON_SECTIONS = [
 	{
@@ -122,58 +117,6 @@ export function SpecimensIndex() {
 					))}
 				</div>
 			</section>
-
-			<section aria-labelledby="documented-examples" className="space-y-5">
-				<div className="space-y-2 border-b border-border pb-4">
-					<h2 id="documented-examples" className="text-xl font-bold text-foreground">
-						本站示例
-					</h2>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						Button 示范动作型组件的文档写法；CommentSection 保留现有复合组件文档。
-					</p>
-				</div>
-				<ul className="divide-y divide-border/70">
-					{COMPONENTS.map((item) => (
-						<li key={item.id}>
-							<Link
-								to={item.to}
-								className="group flex items-center justify-between gap-4 py-4 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-							>
-								<span>
-									<span className="block font-semibold text-foreground group-hover:text-primary">
-										{item.title}
-									</span>
-									<span className="mt-1 block text-sm text-muted-foreground">
-										{item.description}
-									</span>
-								</span>
-								<ArrowUpRight
-									aria-hidden="true"
-									className="size-4 shrink-0 text-muted-foreground group-hover:text-primary"
-								/>
-							</Link>
-						</li>
-					))}
-				</ul>
-			</section>
-
-			<p className="border-t border-border pt-5 text-xs leading-relaxed text-muted-foreground">
-				参考{" "}
-				<a
-					href="https://heroui.com/cn/docs/react/components"
-					className="underline underline-offset-2 hover:text-foreground"
-				>
-					HeroUI 的组件目录
-				</a>
-				与{" "}
-				<a
-					href="https://heroui.com/cn/docs/react/components/button"
-					className="underline underline-offset-2 hover:text-foreground"
-				>
-					Button 文档
-				</a>
-				的信息结构；示例使用本站组件与本站真实 API。
-			</p>
 		</article>
 	);
 }
