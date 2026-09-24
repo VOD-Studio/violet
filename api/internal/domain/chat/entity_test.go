@@ -263,7 +263,7 @@ func TestMemberReadStateCovers(t *testing.T) {
 	u3 := shared.IDFromUUID(uuid.UUID{0x03})
 	u4 := shared.IDFromUUID(uuid.UUID{0x04})
 	messageAt := func(id shared.ID, at time.Time) *chat.Message {
-		return chat.ReconstructMessage(id, conversationID, senderID, chat.MessageText, "内容", nil, nil, nil, "k-"+id.String(), nil, nil, nil, at, at)
+		return chat.ReconstructMessage(id, conversationID, senderID, chat.MessageText, "内容", nil, nil, nil, "k-"+id.String(), nil, nil, nil, nil, at, at)
 	}
 
 	older := messageAt(u1, base.Add(-time.Hour))

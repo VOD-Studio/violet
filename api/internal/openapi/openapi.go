@@ -107,6 +107,8 @@ func build() (*openapi3.T, error) {
 	registerPersonaPaths(t)
 	registerChatPaths(t)
 	registerAdminChatBadgePaths(t)
+	registerBotPaths(t)
+	registerAdminBotPaths(t)
 	registerCustomEmojiPaths(t)
 	registerTweetPaths(t)
 	registerSeriesPaths(t)

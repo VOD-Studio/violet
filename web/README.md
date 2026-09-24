@@ -106,12 +106,13 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/profile` | 个人资料 |
 | `/login`, `/register`, `/forgot-password` | 认证 |
 | `/changelog` | 更新日志 |
-| `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、未读、Web Push 设置、账号级聊天外观）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
+| `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、Bot 斜杠命令补全、未读、Web Push 设置、账号级聊天外观）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
 | `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
 | `/notes`, `/notes/:id` | 公开笔记流（游标分页 + 标签筛选）与详情，复用文章渲染管线 |
 | `/persona` | 当前人设的多语言公开档案、完整设定正文与有序设定图 |
 | `/admin/personas` | 多份人设档案及语言版本管理、完整文档编辑与当前人设切换 |
 | `/admin/galleries` | 图集管理（作者与状态筛选、自动保存、更新发布、撤回与永久删除、他人作品审核处置） |
+| `/admin/chat-bots` | 聊天 Bot 凭据管理（注册虚拟用户可带头像、启停、重置一次性 token、吊销） |
 | `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。

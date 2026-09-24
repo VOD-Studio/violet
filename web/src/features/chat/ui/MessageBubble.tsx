@@ -1,5 +1,5 @@
 /**
- * 消息气泡：正文/图片/推文分享三种形态，hover 长按操作条与 reaction 挂载点。
+ * 消息气泡与 Bot 回复卡片，承载操作条和表情反应。
  */
 import type { Emoji } from "@entities/emoji/model/types";
 import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
@@ -31,6 +31,7 @@ import type {
 	ConversationKind,
 } from "../model/types";
 import { AppearanceBadgeStrip } from "./appearance/AppearanceBadgeStrip";
+import { BotReplyCard } from "./BotReplyCard";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatMessageContent } from "./ChatMessageContent";
@@ -82,6 +83,7 @@ export function MessageBubble({
 }: MessageBubbleProps) {
 	const appearance = useChatAppearance(message.sender.id);
 	const mine = message.sender.id === currentUserID;
+	const isBotReply = message.sender.is_bot && message.type === "text";
 	const [editing, setEditing] = useState(false);
 	const reactions = message.reactions ?? [];
 	const selfReactionIds = useMemo(
@@ -170,8 +172,14 @@ export function MessageBubble({
 			ref={messageRef}
 			data-testid={`chat-message-${message.id}`}
 			layout={layout}
-			initial={animateIn ? { opacity: 0, y: 12, scale: 0.98 } : false}
-			animate={{ opacity: 1, y: 0, scale: 1 }}
+			initial={
+				animateIn
+					? isBotReply
+						? { opacity: 0 }
+						: { opacity: 0, y: 12, scale: 0.98 }
+					: false
+			}
+			animate={isBotReply ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
 			transition={{ type: "spring", stiffness: 450, damping: 28 }}
 			onPointerDown={startLongPress}
 			onPointerLeave={clearLongPress}
@@ -189,11 +197,13 @@ export function MessageBubble({
 			</div>
 			<div
 				className={cn(
-					"relative flex max-w-[min(70%,36rem)] flex-col",
+					isBotReply
+						? "relative flex min-w-0 w-full max-w-[min(82%,45rem)] flex-col"
+						: "relative flex max-w-[min(70%,36rem)] flex-col",
 					mine ? "items-end text-right" : "items-start",
 				)}
 			>
-				{showSender && !mine && showSenderName && (
+				{showSender && !mine && showSenderName && !isBotReply && (
 					<span className="mb-0.5 flex items-center gap-1 self-start text-xs">
 						<button
 							aria-label={`提及 ${message.sender.display_name}`}
@@ -210,8 +220,8 @@ export function MessageBubble({
 
 				{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
 				    的 min-content 会顶穿列的 max-w，须逐层夹住（气泡自身同理，见 BubbleShell）。 */}
-				<div className="relative max-w-full">
-					{message.reply_to && (
+				<div className={cn("relative max-w-full", isBotReply && "w-full min-w-0")}>
+					{message.reply_to && !isBotReply && (
 						<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
 					)}
 					{editing && !message.is_deleted ? (
@@ -226,6 +236,21 @@ export function MessageBubble({
 							<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
 							消息已被管理员删除
 						</div>
+					) : isBotReply ? (
+						<BotReplyCard
+							message={message}
+							viewerID={currentUserID}
+							emote={mergedEmote}
+							onMention={onMention}
+							replyPreview={
+								message.reply_to ? (
+									<ReplyPreview
+										reference={message.reply_to}
+										onClick={onReplyTo}
+									/>
+								) : undefined
+							}
+						/>
 					) : message.type === "image" && message.media?.length ? (
 						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
 							<ChatMessageContent
@@ -346,7 +371,7 @@ export function MessageBubble({
 							<BubbleTimestamp
 								forceVisible={touchActionsVisible}
 								time={message.created_at}
-								editedAt={message.edited_at}
+								editedAt={isBotReply ? undefined : message.edited_at}
 								className="pointer-events-auto shrink-0 select-none text-center"
 							/>
 						</div>

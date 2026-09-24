@@ -18,6 +18,7 @@ import (
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
+	domainchat "blog-api/internal/domain/chat"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domaingallery "blog-api/internal/domain/gallery"
@@ -464,6 +465,97 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
 			Summary:    fmt.Sprintf("删除访问令牌「%s」", e.Name),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("注册聊天 Bot「%s」", e.Name),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotRenamed:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.To},
+			Summary:    fmt.Sprintf("重命名聊天 Bot「%s」→「%s」", e.From, e.To),
+			Changes:    []domainaudit.FieldChange{{Field: "name", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotAvatarUpdated:
+		action := "更新"
+		if e.AvatarID == "" {
+			action = "清除"
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("%s聊天 Bot 头像", action),
+			Changes:    []domainaudit.FieldChange{{Field: "avatar_id", To: e.AvatarID}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotEnabled:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("启用聊天 Bot「%s」", e.Name),
+			Changes:    []domainaudit.FieldChange{{Field: "enabled", From: false, To: true}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotDisabled:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("禁用聊天 Bot「%s」", e.Name),
+			Changes:    []domainaudit.FieldChange{{Field: "enabled", From: true, To: false}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotTokenRegenerated:
+		// 只记「重置过」，绝不含新旧 token 本身：哈希同样是泄露面。
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("重置聊天 Bot「%s」的 token", e.Name),
+			Changes:    []domainaudit.FieldChange{{Field: "token", From: nil, To: "regenerated"}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotTokenViewed:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionViewSecret,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("查看聊天 Bot「%s」的 token", e.Name),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainchat.BotDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "chat_bot", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("吊销聊天 Bot「%s」", e.Name),
+			Metadata:   map[string]any{"user_id": e.UserID.String()},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

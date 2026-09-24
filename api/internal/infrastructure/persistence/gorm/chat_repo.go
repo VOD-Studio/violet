@@ -379,6 +379,37 @@ func (r *ChatRepository) UpdateMessage(ctx context.Context, message *domainchat.
 	})
 }
 
+// UpdateBotReply 原子更新生成快照和事件序号，防止旧请求覆盖新正文。
+func (r *ChatRepository) UpdateBotReply(ctx context.Context, message *domainchat.Message, previousRevision int64, recipientIDs []domainshared.ID) ([]domainchat.Event, error) {
+	reply := message.BotReply()
+	if reply == nil {
+		return nil, domainshared.BadRequest("消息不是 Bot 生成回复")
+	}
+	var events []domainchat.Event
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.ChatMessage{}).
+			Where("id = ? AND conversation_id = ? AND sender_id = ? AND bot_revision = ? AND bot_status IN ? AND deleted_at IS NULL",
+				message.ID().UUID(), message.ConversationID().UUID(), message.SenderID().UUID(), previousRevision,
+				[]string{string(domainchat.BotReplyPending), string(domainchat.BotReplyThinking), string(domainchat.BotReplyStreaming)}).
+			Updates(map[string]any{
+				"content": message.Content(), "bot_thinking": reply.Thinking(), "bot_status": string(reply.Status()),
+				"bot_revision": reply.Revision(), "bot_updated_at": reply.UpdatedAt(), "updated_at": message.UpdatedAt,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return domainshared.Conflict("Bot 回复已更新")
+		}
+		var err error
+		events, err = saveEvents(tx, recipientIDs, domainchat.EventMessageUpdated, map[string]any{
+			"conversation_id": message.ConversationID().String(), "message_id": message.ID().String(),
+		})
+		return err
+	})
+	return events, err
+}
+
 // SaveReadPosition 原子推进阅读位置，乱序请求不覆盖较新的水位与阅读时间。
 func (r *ChatRepository) SaveReadPosition(ctx context.Context, position *domainchat.ReadPosition) (bool, error) {
 	po := readPositionToPO(position)
@@ -572,11 +603,20 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 		u := m.DeletedBy().UUID()
 		deletedBy = &u
 	}
-	return &model.ChatMessage{
+	po := &model.ChatMessage{
 		ID: m.ID().UUID(), ConversationID: m.ConversationID().UUID(), SenderID: m.SenderID().UUID(),
 		MessageType: string(m.Type()), Content: m.Content(), SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
 		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, EditedAt: m.EditedAt(), CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
 	}
+	if reply := m.BotReply(); reply != nil {
+		status := string(reply.Status())
+		updatedAt := reply.UpdatedAt()
+		po.BotStatus = &status
+		po.BotThinking = reply.Thinking()
+		po.BotRevision = reply.Revision()
+		po.BotUpdatedAt = &updatedAt
+	}
+	return po
 }
 
 // messageMediaToPOs 把消息的图片媒体引用展开为关联表行，position 与 MediaIDs 顺序一致。
@@ -603,7 +643,11 @@ func messageToDomain(po model.ChatMessage, mediaIDs []domainshared.ID) *domainch
 		id := domainshared.IDFromUUID(*po.DeletedBy)
 		deletedBy = &id
 	}
-	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, po.CreatedAt, po.UpdatedAt)
+	var botReply *domainchat.BotReply
+	if po.BotStatus != nil && po.BotUpdatedAt != nil {
+		botReply = domainchat.ReconstructBotReply(domainchat.BotReplyStatus(*po.BotStatus), po.BotThinking, po.BotRevision, *po.BotUpdatedAt)
+	}
+	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, botReply, po.CreatedAt, po.UpdatedAt)
 }
 
 // listMessageMedia 批量加载消息的图片媒体引用，按 position 升序。

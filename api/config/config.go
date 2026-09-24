@@ -42,6 +42,10 @@ type Config struct {
 	BackupDir string
 	// ResourceSigningKey 为公开资源游标、匿名令牌与系统备份提供 HMAC 密钥。
 	ResourceSigningKey string
+	// BotTokenKey 加密 bot 明文凭据的密钥（AES-256-GCM）。
+	// 未配置时仍能注册 bot，但凭据不落密文，只能靠创建/重置那一次响应拿到；
+	// 改了它只影响解密：库里旧密文全部作废，对应 bot 需重置一次凭据。
+	BotTokenKey string
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
@@ -367,6 +371,7 @@ func Load() *Config {
 		UploadDir:          v.GetString("upload_dir"),
 		BackupDir:          v.GetString("backup_dir"),
 		ResourceSigningKey: v.GetString("resource_signing_key"),
+		BotTokenKey:        v.GetString("bot_token_key"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
 		KiteURL:            v.GetString("kite_url"),
@@ -448,6 +453,10 @@ func (c *Config) Validate() error {
 		}
 		if len(c.ResourceSigningKey) < 32 {
 			return fmt.Errorf("生产环境 RESOURCE_SIGNING_KEY 至少需要 32 字节")
+		}
+		// 不配就只能一次性展示凭据，管理员关掉弹窗就再也取不回
+		if len(c.BotTokenKey) < 32 {
+			return fmt.Errorf("生产环境 BOT_TOKEN_KEY 至少需要 32 字节")
 		}
 	}
 

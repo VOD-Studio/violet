@@ -119,17 +119,19 @@ export function ConversationPanel({
 	const prependScrollAnchorRef = useRef<number | null>(null);
 	const latestKnownMessageTimeRef = useRef<number | null>(null);
 	const earliestKnownMessageTimeRef = useRef<number | null>(null);
+	const followLatestRef = useRef(true);
+	const lastScrollPositionRef = useRef({ top: 0, height: 0 });
 
 	const scrollToBottom = useCallback((smooth = true) => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
+		followLatestRef.current = true;
 		container.scrollTo({
 			top: Math.max(0, container.scrollHeight - container.clientHeight),
 			behavior: smooth ? "smooth" : "auto",
 		});
 	}, []);
 
-	const followLatestRef = useRef(true);
 	useAppearanceScrollFollow(
 		scrollContainerRef,
 		followLatestRef,
@@ -138,9 +140,10 @@ export function ConversationPanel({
 	);
 	const lastSubmittedReadRef = useRef<string | null>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!conversation.id) return;
 		followLatestRef.current = true;
+		lastScrollPositionRef.current = { top: 0, height: 0 };
 		lastSubmittedReadRef.current = null;
 		setReplyTarget(null);
 		setPendingFocusID(null);
@@ -150,13 +153,12 @@ export function ConversationPanel({
 		earliestKnownMessageTimeRef.current = null;
 	}, [conversation.id]);
 
+	useLayoutEffect(() => {
+		if (lastMessage?.id && followLatestRef.current) scrollToBottom(false);
+	}, [lastMessage, scrollToBottom]);
+
 	useEffect(() => {
-		if (
-			lastMessage?.id &&
-			(followLatestRef.current || lastMessage.sender.id === currentUserID)
-		) {
-			scrollToBottom(false);
-		}
+		if (lastMessage?.id && lastMessage.sender.id === currentUserID) scrollToBottom(false);
 	}, [lastMessage?.id, lastMessage?.sender.id, currentUserID, scrollToBottom]);
 
 	useEffect(() => {
@@ -250,9 +252,19 @@ export function ConversationPanel({
 		const container = scrollContainerRef.current;
 		if (!container) return;
 		const { scrollTop, scrollHeight, clientHeight } = container;
-		followLatestRef.current = scrollHeight - scrollTop - clientHeight <= 2;
-		setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 150);
+		const distance = scrollHeight - scrollTop - clientHeight;
+		if (distance <= 2) followLatestRef.current = true;
+		else if (
+			scrollHeight === lastScrollPositionRef.current.height &&
+			scrollTop < lastScrollPositionRef.current.top - 2
+		)
+			followLatestRef.current = false;
+		lastScrollPositionRef.current = { top: scrollTop, height: scrollHeight };
+		setShowScrollBottom(distance > 150);
 	}, []);
+	const pauseFollow = () => {
+		followLatestRef.current = false;
+	};
 
 	useEffect(() => {
 		const container = scrollContainerRef.current;
@@ -377,6 +389,20 @@ export function ConversationPanel({
 							ref={scrollContainerRef}
 							data-testid="chat-message-list"
 							onScroll={handleScroll}
+							onPointerDownCapture={pauseFollow}
+							onTouchStartCapture={pauseFollow}
+							onWheelCapture={(event) => {
+								if (event.deltaY < 0) pauseFollow();
+							}}
+							onKeyDownCapture={(event) => {
+								if (
+									event.key === "ArrowUp" ||
+									event.key === "PageUp" ||
+									event.key === "Home" ||
+									(event.key === " " && event.shiftKey)
+								)
+									pauseFollow();
+							}}
 							className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 md:px-8"
 						>
 							<div className="mx-auto max-w-4xl space-y-4">

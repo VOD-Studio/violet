@@ -20,6 +20,7 @@ import (
 type Handler struct {
 	svc        *appchat.Service
 	appearance *appappearance.Service
+	commands   *appchat.BotCommandService
 }
 
 // NewHandler 构造聊天 handler。

@@ -26,6 +26,9 @@ upload_dir: uploads
 backup_dir: backups
 # env: RESOURCE_SIGNING_KEY（密钥，生产必填；游标、匿名令牌与系统备份 HMAC）
 resource_signing_key: ""
+# env: BOT_TOKEN_KEY（密钥，生产必填；加密保存 bot 明文凭据，供后台随时查看）
+# 留空则 bot token 只在创建/重置那一次可见；改这个值会让库里旧密文解不开，需逐个重置
+bot_token_key: ""
 
 # ── 数据库 ──────────────────────────────────
 database:

@@ -52,6 +52,20 @@ describe("ChatMessageContent", () => {
 		expect(container.querySelector("li")?.textContent).toContain("[ ] 待办");
 	});
 
+	it("Bot 正文支持标题、表格与任务列表", () => {
+		const { container } = render(
+			<ChatMessageContent
+				variant="bot"
+				content={"# 结果\n\n| 项目 | 值 |\n| --- | --- |\n| A | 1 |\n\n- [x] 完成"}
+			/>,
+		);
+		expect(container.querySelector("h3")?.textContent).toBe("结果");
+		expect(container.querySelector("table")?.textContent).toContain("A1");
+		expect(container.querySelector('input[type="checkbox"]')?.hasAttribute("checked")).toBe(
+			true,
+		);
+	});
+
 	it("Markdown 图片语法降级为链接，不发起图片请求", () => {
 		const { container } = render(
 			<ChatMessageContent content="![截图](https://evil.example.com/track.png)" />,

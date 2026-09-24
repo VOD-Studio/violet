@@ -5,7 +5,13 @@ import { useEffect } from "react";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
 import { useChatTypingStore } from "../model/chat-typing-store";
-import type { ChatEvent, ChatMessage, ChatTypingEventData } from "../model/types";
+import type {
+	BotReply,
+	ChatConversation,
+	ChatEvent,
+	ChatMessage,
+	ChatTypingEventData,
+} from "../model/types";
 
 type ChatMessagesCache = InfiniteData<PagedResponse<ChatMessage>, unknown>;
 
@@ -42,6 +48,7 @@ export const useChatStream = () => {
 
 	useEffect(() => {
 		if (!sessionActive || typeof window === "undefined") return;
+		const latestUpdate = new Map<string, number>();
 		const stream = new EventSource(chatEventStreamURL);
 		stream.onopen = () => {
 			queryClient.invalidateQueries({ queryKey: chatKeys.root });
@@ -78,6 +85,101 @@ export const useChatStream = () => {
 				}
 				const conversationID = payload.data.conversation_id;
 				const messageID = payload.data.message_id;
+				const botReply = parseBotReply(payload.data.bot_reply);
+				// 自定义表情的映射按查看者计算；仅有正文快照时须回查完整消息。
+				if (
+					payload.type === "message.updated" &&
+					typeof conversationID === "string" &&
+					typeof messageID === "string" &&
+					typeof payload.data.content === "string" &&
+					(typeof payload.data.edited_at === "string" || botReply !== undefined) &&
+					!hasCustomEmojiToken(payload.data.content)
+				) {
+					const sequence = Number(payload.id);
+					if (Number.isSafeInteger(sequence) && sequence > 0) {
+						const updateKey = `${conversationID}:${messageID}`;
+						if (sequence <= (latestUpdate.get(updateKey) ?? 0)) return;
+						latestUpdate.set(updateKey, sequence);
+						const queryKey = chatKeys.messages(conversationID);
+						const content = payload.data.content;
+						const editedAt = payload.data.edited_at;
+						const cached = queryClient.getQueryData<ChatMessagesCache>(queryKey);
+						const hasMessage = cached?.pages.some((page) =>
+							page.data.some(
+								(message) => message.id === messageID && message.type === "text",
+							),
+						);
+						const ready = hasMessage
+							? queryClient.cancelQueries({ queryKey })
+							: queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false });
+						void ready
+							.then(() => {
+								if (latestUpdate.get(updateKey) !== sequence) return;
+								let found = false;
+								queryClient.setQueryData<ChatMessagesCache>(queryKey, (current) => {
+									if (!current) return current;
+									const pages = current.pages.map((page) => {
+										let pageChanged = false;
+										const data = page.data.map((message) => {
+											if (message.id !== messageID || message.type !== "text")
+												return message;
+											found = true;
+											pageChanged = true;
+											return {
+												...message,
+												content,
+												...(typeof editedAt === "string"
+													? { edited_at: editedAt }
+													: {}),
+												...(botReply ? { bot_reply: botReply } : {}),
+											};
+										});
+										return pageChanged ? { ...page, data } : page;
+									});
+									return found ? { ...current, pages } : current;
+								});
+								if (!found) {
+									if (hasMessage)
+										void queryClient.invalidateQueries({ queryKey });
+									return;
+								}
+								const updateLastMessage = (
+									conversation: ChatConversation,
+								): ChatConversation =>
+									conversation.last_message?.id === messageID
+										? {
+												...conversation,
+												last_message: {
+													...conversation.last_message,
+													content,
+													...(typeof editedAt === "string"
+														? { edited_at: editedAt }
+														: {}),
+													...(botReply ? { bot_reply: botReply } : {}),
+												},
+											}
+										: conversation;
+								queryClient.setQueryData<ChatConversation>(
+									chatKeys.conversation(conversationID),
+									(current) => (current ? updateLastMessage(current) : current),
+								);
+								queryClient.setQueryData<PagedResponse<ChatConversation>>(
+									chatKeys.conversations(),
+									(current) => {
+										if (!current) return current;
+										const data = current.data.map(updateLastMessage);
+										return data.some(
+											(item, index) => item !== current.data[index],
+										)
+											? { ...current, data }
+											: current;
+									},
+								);
+							})
+							.catch(() => queryClient.invalidateQueries({ queryKey }));
+						return;
+					}
+				}
 				if (
 					payload.type === "message.created" &&
 					typeof conversationID === "string" &&
@@ -97,6 +199,9 @@ export const useChatStream = () => {
 						queryClient.invalidateQueries({
 							queryKey: chatKeys.members(conversationID),
 						});
+						queryClient.invalidateQueries({
+							queryKey: chatKeys.botCommands(conversationID),
+						});
 					}
 				}
 			} catch {
@@ -106,3 +211,20 @@ export const useChatStream = () => {
 		return () => stream.close();
 	}, [queryClient, sessionActive]);
 };
+
+function hasCustomEmojiToken(content: string): boolean {
+	return /\[[^\]]+:[0-9a-fA-F-]{36}\]/.test(content);
+}
+
+function parseBotReply(value: unknown): BotReply | undefined {
+	if (!value || typeof value !== "object") return undefined;
+	const reply = value as Record<string, unknown>;
+	if (
+		typeof reply.status !== "string" ||
+		!["pending", "thinking", "streaming", "completed", "failed"].includes(reply.status) ||
+		typeof reply.revision !== "number" ||
+		typeof reply.updated_at !== "string"
+	)
+		return undefined;
+	return reply as unknown as BotReply;
+}

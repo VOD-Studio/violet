@@ -49,6 +49,7 @@ export interface UseRichTextInputOptions {
 	resolveMention?: (userID: string) => string | undefined;
 	/** 光标前的 `@查询词` 变化回调；null 表示光标已离开提及触发态 */
 	onMentionQueryChange?: (query: string | null) => void;
+	onSlashQueryChange?: (query: string | null) => void;
 }
 
 export type ImageNodeStatus = "uploading" | "done" | "error";
@@ -61,6 +62,12 @@ export interface UseRichTextInputReturn {
 	insertImage: (id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void;
 	/** 在光标处插入提及节点，同时吃掉触发它的 `@查询词` 文本 */
 	insertMention: (userID: string, username: string, displayName: string) => void;
+	replaceSlashQuery: (
+		command: string,
+		mention?: { id: string; username: string; displayName: string },
+	) => boolean;
+	prependMention: (userID: string, username: string, displayName: string) => void;
+	refreshQueries: () => void;
 	handleInput: () => void;
 	handlePaste: (e: React.ClipboardEvent) => void;
 	handleKeyDown: (e: React.KeyboardEvent) => void;
@@ -145,6 +152,7 @@ export function useRichTextInput({
 	onImageRemove,
 	resolveMention,
 	onMentionQueryChange,
+	onSlashQueryChange,
 }: UseRichTextInputOptions): UseRichTextInputReturn {
 	const contentRef = useRef<HTMLDivElement>(null);
 	const lastSyncedRef = useRef("");
@@ -154,12 +162,14 @@ export function useRichTextInput({
 	const onImageRemoveRef = useRef(onImageRemove);
 	const resolveMentionRef = useRef(resolveMention);
 	const onMentionQueryChangeRef = useRef(onMentionQueryChange);
+	const onSlashQueryChangeRef = useRef(onSlashQueryChange);
 	onChangeRef.current = onChange;
 	onSubmitRef.current = onSubmit;
 	resolveImageRef.current = resolveImage;
 	onImageRemoveRef.current = onImageRemove;
 	resolveMentionRef.current = resolveMention;
 	onMentionQueryChangeRef.current = onMentionQueryChange;
+	onSlashQueryChangeRef.current = onSlashQueryChange;
 
 	const { data: groups = [] } = useAllEmojis();
 
@@ -413,14 +423,72 @@ export function useRichTextInput({
 		[disabled, htmlToMarkdown],
 	);
 
+	const refreshQueries = useCallback(() => {
+		const div = contentRef.current;
+		if (!div) return;
+		onMentionQueryChangeRef.current?.(activeMentionQuery(div));
+		onSlashQueryChangeRef.current?.(
+			htmlToMarkdown().startsWith("/") ? (leadingSlashRange(div)?.query ?? null) : null,
+		);
+	}, [htmlToMarkdown]);
+
 	const handleInput = useCallback(() => {
 		const markdown = htmlToMarkdown();
 		lastSyncedRef.current = markdown;
 		onChangeRef.current?.(markdown);
-		if (onMentionQueryChangeRef.current && contentRef.current) {
-			onMentionQueryChangeRef.current(activeMentionQuery(contentRef.current));
-		}
-	}, [htmlToMarkdown]);
+		refreshQueries();
+	}, [htmlToMarkdown, refreshQueries]);
+
+	const replaceSlashQuery = useCallback(
+		(command: string, mention?: { id: string; username: string; displayName: string }) => {
+			const div = contentRef.current;
+			if (!div || disabled || !htmlToMarkdown().startsWith("/")) return false;
+			const active = leadingSlashRange(div);
+			if (!active) return false;
+			const range = active.range;
+			range.deleteContents();
+			const fragment = document.createDocumentFragment();
+			if (mention) {
+				fragment.append(
+					createMentionElement(mention.id, mention.username, mention.displayName),
+				);
+				fragment.append(document.createTextNode(" "));
+			}
+			const text = document.createTextNode(command);
+			fragment.append(text);
+			range.insertNode(fragment);
+			range.setStartAfter(text);
+			range.collapse(true);
+			const selection = window.getSelection();
+			selection?.removeAllRanges();
+			selection?.addRange(range);
+			div.focus();
+			lastSyncedRef.current = htmlToMarkdown();
+			onChangeRef.current?.(lastSyncedRef.current);
+			onMentionQueryChangeRef.current?.(null);
+			onSlashQueryChangeRef.current?.(null);
+			return true;
+		},
+		[disabled, htmlToMarkdown],
+	);
+
+	const prependMention = useCallback(
+		(userID: string, username: string, displayName: string) => {
+			const div = contentRef.current;
+			if (!div || disabled) return;
+			const range = document.createRange();
+			range.selectNodeContents(div);
+			range.collapse(true);
+			const fragment = document.createDocumentFragment();
+			fragment.append(createMentionElement(userID, username, displayName));
+			fragment.append(document.createTextNode(" "));
+			range.insertNode(fragment);
+			lastSyncedRef.current = htmlToMarkdown();
+			onChangeRef.current?.(lastSyncedRef.current);
+			focusEditorEnd(div);
+		},
+		[disabled, htmlToMarkdown],
+	);
 
 	const handlePaste = useCallback(
 		(e: React.ClipboardEvent) => {
@@ -496,12 +564,37 @@ export function useRichTextInput({
 		insertEmoji,
 		insertImage,
 		insertMention,
+		replaceSlashQuery,
+		prependMention,
+		refreshQueries,
 		handleInput,
 		handlePaste,
 		handleKeyDown,
 		clear,
 		focus,
 	};
+}
+
+function leadingSlashRange(root: HTMLElement): { range: Range; query: string } | null {
+	const selection = window.getSelection();
+	if (!selection?.isCollapsed || selection.rangeCount === 0) return null;
+	const caret = selection.getRangeAt(0);
+	if (!root.contains(caret.startContainer)) return null;
+	const range = document.createRange();
+	range.selectNodeContents(root);
+	range.setEnd(caret.startContainer, caret.startOffset);
+	const prefix = range.toString();
+	return /^\/[^\n]{0,80}$/.test(prefix) ? { range, query: prefix.slice(1) } : null;
+}
+
+function focusEditorEnd(root: HTMLElement): void {
+	root.focus();
+	const range = document.createRange();
+	range.selectNodeContents(root);
+	range.collapse(false);
+	const selection = window.getSelection();
+	selection?.removeAllRanges();
+	selection?.addRange(range);
 }
 
 /**

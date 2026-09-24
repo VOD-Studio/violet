@@ -1,14 +1,20 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ChatMember, ChatMessage } from "../../model/types";
+import type { BotCommandsResponse, ChatMember, ChatMessage } from "../../model/types";
 import { MessageComposer } from "../MessageComposer";
 import { MessageEditComposer } from "../MessageEditComposer";
 
-const sendMocks = vi.hoisted(() => ({ mutateAsync: vi.fn(), edit: vi.fn(), upload: vi.fn() }));
+const sendMocks = vi.hoisted(() => ({
+	mutateAsync: vi.fn(),
+	edit: vi.fn(),
+	upload: vi.fn(),
+	refetch: vi.fn(),
+}));
 
 vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
-	useChatMembers: () => ({ data: members }),
+	useChatMembers: () => ({ data: activeMembers }),
+	useBotCommands: () => ({ data: catalogData, refetch: sendMocks.refetch }),
 	useEditChatMessage: () => ({ mutate: sendMocks.edit, isPending: false }),
 }));
 vi.mock("../../hooks/useChatTyping", () => ({
@@ -40,6 +46,29 @@ const members: ChatMember[] = [
 	},
 	{ user: sender, role: "member", joined_at: "2026-08-25T08:00:00Z", is_muted: false },
 ];
+let activeMembers = members;
+let catalogData: BotCommandsResponse = { bots: [] };
+const bot1 = {
+	id: "00000000-0000-0000-0000-000000000010",
+	username: "saber",
+	display_name: "Saber",
+	avatar_url: "",
+	is_bot: true,
+};
+const bot2 = {
+	id: "00000000-0000-0000-0000-000000000011",
+	username: "helper",
+	display_name: "Helper",
+	avatar_url: "",
+	is_bot: true,
+};
+const taskCommand = {
+	id: "task.list",
+	path: ["task", "list"],
+	description: "查看任务列表",
+	arguments: [],
+	scope: "conversation" as const,
+};
 
 function textMessage(content?: string): ChatMessage {
 	return {
@@ -71,9 +100,211 @@ afterEach(() => {
 	sendMocks.mutateAsync.mockReset();
 	sendMocks.edit.mockReset();
 	sendMocks.upload.mockReset();
+	sendMocks.refetch.mockReset();
+	activeMembers = members;
+	catalogData = { bots: [] };
 });
 
 describe("MessageComposer", () => {
+	it("私聊斜杠菜单只补全，下一次 Enter 才发送", async () => {
+		catalogData = {
+			bots: [
+				{
+					bot_user_id: bot1.id,
+					username: bot1.username,
+					name: bot1.display_name,
+					revision: "v1",
+					commands: [taskCommand],
+				},
+			],
+		};
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "/ta");
+		expect(screen.getByRole("option", { name: /task list/ })).toBeTruthy();
+		fireEvent.keyDown(box, { key: "Enter", isComposing: true });
+		fireEvent.keyDown(box, { key: "Enter", shiftKey: true });
+		expect(screen.getByRole("option", { name: /task list/ })).toBeTruthy();
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+		fireEvent.keyDown(box, { key: "Tab" });
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+		expect(box.textContent).toContain("/task list");
+		fireEvent.keyDown(box, { key: "Enter" });
+		await vi.waitFor(() => expect(sendMocks.mutateAsync).toHaveBeenCalledOnce());
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe("/task list");
+	});
+
+	it("没有可用 Bot 目录时斜杠仍是普通草稿", async () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "/task list");
+		expect(screen.queryByRole("listbox", { name: "Bot 命令" })).toBeNull();
+		fireEvent.keyDown(box, { key: "Enter" });
+		await vi.waitFor(() => expect(sendMocks.mutateAsync).toHaveBeenCalledOnce());
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe("/task list");
+	});
+
+	it("手输命令只自动寻址唯一启用的 Bot", async () => {
+		activeMembers = [
+			...members,
+			{ user: bot1, role: "member", joined_at: "", is_muted: false },
+			{ user: bot2, role: "member", joined_at: "", is_muted: false },
+		];
+		catalogData = {
+			bots: [
+				{
+					bot_user_id: bot1.id,
+					username: bot1.username,
+					name: "Saber",
+					revision: "",
+					commands: [],
+				},
+			],
+		};
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "/task list");
+		fireEvent.keyDown(box, { key: "Enter" });
+		await vi.waitFor(() => expect(sendMocks.mutateAsync).toHaveBeenCalledOnce());
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe(
+			`@(saber:${bot1.id}) /task list`,
+		);
+	});
+
+	it("群聊补全用真实 bot ID 寻址，参数提示不进入草稿", async () => {
+		activeMembers = [
+			...members,
+			{ user: bot1, role: "member", joined_at: "", is_muted: false },
+			{ user: bot2, role: "member", joined_at: "", is_muted: false },
+		];
+		catalogData = {
+			bots: [
+				{
+					bot_user_id: bot1.id,
+					username: bot1.username,
+					name: bot1.display_name,
+					revision: "v1",
+					commands: [
+						{
+							...taskCommand,
+							id: "task.status",
+							path: ["task", "status"],
+							arguments: [{ name: "id", type: "integer", required: true }],
+						},
+					],
+				},
+				{
+					bot_user_id: bot2.id,
+					username: bot2.username,
+					name: bot2.display_name,
+					revision: "v1",
+					commands: [taskCommand],
+				},
+			],
+		};
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "/task");
+		expect(screen.getByRole("option", { name: /Saber \/task status <id>/ })).toBeTruthy();
+		fireEvent.keyDown(box, { key: "ArrowDown" });
+		fireEvent.keyDown(box, { key: "Enter" });
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+		expect(box.querySelector("[data-mention]")?.getAttribute("data-mention")).toBe(bot2.id);
+		fireEvent.keyDown(box, { key: "Enter" });
+		await vi.waitFor(() => expect(sendMocks.mutateAsync).toHaveBeenCalledOnce());
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe(
+			`@(helper:${bot2.id}) /task list`,
+		);
+	});
+
+	it("多 bot 手输命令先选择目标；Esc 只关闭命令菜单", async () => {
+		activeMembers = [
+			...members,
+			{ user: bot1, role: "member", joined_at: "", is_muted: false },
+			{ user: bot2, role: "member", joined_at: "", is_muted: false },
+		];
+		catalogData = {
+			bots: [
+				{
+					bot_user_id: bot1.id,
+					username: bot1.username,
+					name: bot1.display_name,
+					revision: "v1",
+					commands: [taskCommand],
+				},
+				{
+					bot_user_id: bot2.id,
+					username: bot2.username,
+					name: bot2.display_name,
+					revision: "",
+					commands: [],
+				},
+			],
+		};
+		const cancelReply = vi.fn();
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={cancelReply}
+				pendingShare={null}
+				replyTarget={textMessage("原消息")}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "/");
+		fireEvent.keyDown(box, { key: "Escape" });
+		expect(screen.queryByRole("option")).toBeNull();
+		expect(cancelReply).not.toHaveBeenCalled();
+		typeInto(box, "/task list 9");
+		fireEvent.keyDown(box, { key: "Enter" });
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+		expect(screen.getByRole("listbox", { name: "选择命令目标" })).toBeTruthy();
+		fireEvent.keyDown(box, { key: "ArrowDown" });
+		fireEvent.keyDown(box, { key: "Enter" });
+		expect(box.querySelector("[data-mention]")?.getAttribute("data-mention")).toBe(bot2.id);
+		fireEvent.keyDown(box, { key: "Enter" });
+		await vi.waitFor(() => expect(sendMocks.mutateAsync).toHaveBeenCalledOnce());
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe(
+			`@(helper:${bot2.id}) /task list 9`,
+		);
+	});
 	it("剥离表情占位符，不泄漏裸 token 文本", () => {
 		render(
 			<MessageComposer

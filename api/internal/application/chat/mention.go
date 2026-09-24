@@ -2,9 +2,38 @@ package chat
 
 import (
 	"regexp"
+	"strings"
+	"unicode"
 
 	domainshared "blog-api/internal/domain/shared"
 )
+
+// leadingCommandTarget 只识别正文开头的提及加斜杠命令，参数中的提及不参与寻址。
+func leadingCommandTarget(content string) (domainshared.ID, bool) {
+	if !strings.HasPrefix(content, "@(") {
+		return domainshared.ID{}, false
+	}
+	end := strings.IndexByte(content, ')')
+	if end < 0 || end+1 >= len(content) {
+		return domainshared.ID{}, false
+	}
+	rest := content[end+1:]
+	trimmed := strings.TrimLeftFunc(rest, unicode.IsSpace)
+	if trimmed == rest {
+		return domainshared.ID{}, false
+	}
+	rest = trimmed
+	if !strings.HasPrefix(rest, "/") || strings.HasPrefix(rest, "//") {
+		return domainshared.ID{}, false
+	}
+	token := content[:end+1]
+	match := mentionTokenPattern.FindStringSubmatchIndex(token)
+	if len(match) < 6 || match[0] != 0 || match[1] != len(token) {
+		return domainshared.ID{}, true
+	}
+	id, _ := domainshared.ParseID(token[match[4]:match[5]])
+	return id, true
+}
 
 // mentionTokenPattern 匹配用户提及 @(username:uuid) 与全体提及 @(all:all)。
 //

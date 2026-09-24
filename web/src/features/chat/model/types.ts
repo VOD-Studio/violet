@@ -9,6 +9,15 @@ export interface ChatUser {
 	username: string;
 	display_name: string;
 	avatar_url: string;
+	is_bot?: boolean;
+}
+
+export interface BotReply {
+	status: "pending" | "thinking" | "streaming" | "completed" | "failed";
+	thinking?: string;
+	thinking_default_expanded?: boolean;
+	revision: number;
+	updated_at: string;
 }
 
 export interface ChatMember {
@@ -16,6 +25,26 @@ export interface ChatMember {
 	role: MemberRole;
 	joined_at: string;
 	is_muted: boolean;
+}
+
+export interface BotCommand {
+	id: string;
+	path: string[];
+	description: string;
+	arguments: { name: string; type: "string" | "integer" | "boolean"; required: boolean }[];
+	scope: "conversation" | "global";
+}
+
+export interface BotCommandCatalog {
+	bot_user_id: string;
+	username: string;
+	name: string;
+	revision: string;
+	commands: BotCommand[];
+}
+
+export interface BotCommandsResponse {
+	bots: BotCommandCatalog[];
 }
 
 export interface ChatMedia {
@@ -62,6 +91,7 @@ export interface ChatMessage {
 	id: string;
 	conversation_id: string;
 	sender: ChatUser;
+	bot_reply?: BotReply;
 	type: MessageType;
 	content?: string;
 	/** 正文中 [name:uuid] 自定义表情占位符的解析结果，key 为完整占位符（含方括号） */
@@ -132,6 +162,7 @@ export interface ChatEvent {
 	id: string;
 	type:
 		| "message.created"
+		| "message.updated"
 		| "room.invited"
 		| "conversation.created"
 		| "member.changed"

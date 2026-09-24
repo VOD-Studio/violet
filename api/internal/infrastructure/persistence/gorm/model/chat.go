@@ -57,6 +57,10 @@ type ChatMessage struct {
 	DeletedAt      *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	DeletedBy      *uuid.UUID `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
 	EditedAt       *time.Time `gorm:"column:edited_at" json:"edited_at,omitempty"`
+	BotStatus      *string    `gorm:"column:bot_status" json:"bot_status,omitempty"`
+	BotThinking    string     `gorm:"column:bot_thinking" json:"-"`
+	BotRevision    int64      `gorm:"column:bot_revision" json:"bot_revision"`
+	BotUpdatedAt   *time.Time `gorm:"column:bot_updated_at" json:"bot_updated_at,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
@@ -123,3 +127,38 @@ type ChatPushSubscription struct {
 
 // TableName 显式指定表名。
 func (ChatPushSubscription) TableName() string { return "chat_push_subscriptions" }
+
+// ChatBot 聊天 bot 凭证持久化模型（对应 chat_bots 表，见 PRD-0029）。
+//
+// token_hash 只存 SHA-256 hex 供鉴权比对；明文凭据另存一份 AES-GCM 密文，
+// 供后台随时解密查看（见 124 迁移）。enabled 刻意不带 gorm default tag：带 default 时
+// GORM 建插会跳过 false 零值，使「创建即禁用」被 DB 默认值静默改成启用。
+type ChatBot struct {
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID    uuid.UUID  `gorm:"type:uuid;column:user_id;uniqueIndex;not null" json:"user_id"`
+	Name      string     `gorm:"type:varchar(80);not null" json:"name"`
+	AvatarID  *uuid.UUID `gorm:"type:uuid;column:avatar_id" json:"avatar_id,omitempty"`
+	TokenHash string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
+	// TokenEncrypted 明文凭据的 AES-GCM 密文（base64）。NULL = 从未存过或密文已作废，
+	// 此时凭据只能靠重置刷新；json:"-" 防它经任何 DTO 序列化外泄。
+	TokenEncrypted          *string   `gorm:"type:text;column:token_encrypted" json:"-"`
+	Enabled                 bool      `gorm:"column:enabled;not null" json:"enabled"`
+	ShowThinking            bool      `gorm:"column:show_thinking;not null" json:"show_thinking"`
+	ThinkingDefaultExpanded bool      `gorm:"column:thinking_default_expanded;not null" json:"thinking_default_expanded"`
+	CreatedAt               time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt               time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+// TableName 显式指定表名。
+func (ChatBot) TableName() string { return "chat_bots" }
+
+// ChatBotCommandCatalog 保存 bot 最近一次发布的完整目录。
+type ChatBotCommandCatalog struct {
+	BotID         uuid.UUID      `gorm:"type:uuid;column:bot_id;primaryKey" json:"bot_id"`
+	SchemaVersion int            `gorm:"column:schema_version;not null" json:"schema_version"`
+	Revision      string         `gorm:"type:varchar(64);not null" json:"revision"`
+	Commands      datatypes.JSON `gorm:"type:jsonb;not null" json:"commands"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;not null" json:"updated_at"`
+}
+
+func (ChatBotCommandCatalog) TableName() string { return "chat_bot_command_catalogs" }

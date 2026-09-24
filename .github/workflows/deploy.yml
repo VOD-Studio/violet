@@ -370,17 +370,19 @@ jobs:
           podman tag ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
           echo "已载入 violet-web:${{ needs.prepare.outputs.tag }}"
 
-      - name: 确保生产资源签名密钥
+      - name: 确保生产密钥已配置
         run: |
           ENV_FILE=/root/docker/violet/.env
           touch "${ENV_FILE}"
-          if ! grep -q '^RESOURCE_SIGNING_KEY=.' "${ENV_FILE}"; then
-            umask 077
-            printf '\nRESOURCE_SIGNING_KEY=%s\n' "$(openssl rand -base64 48 | tr -d '\n')" >> "${ENV_FILE}"
-            echo "已生成 RESOURCE_SIGNING_KEY"
-          else
-            echo "RESOURCE_SIGNING_KEY 已存在"
-          fi
+          umask 077
+          for KEY in RESOURCE_SIGNING_KEY BOT_TOKEN_KEY; do
+            if ! grep -q "^${KEY}=." "${ENV_FILE}"; then
+              printf '\n%s=%s\n' "${KEY}" "$(openssl rand -base64 48 | tr -d '\n')" >> "${ENV_FILE}"
+              echo "已生成 ${KEY}"
+            else
+              echo "${KEY} 已存在"
+            fi
+          done
 
       - name: 同步 compose 文件到部署目录
         run: |

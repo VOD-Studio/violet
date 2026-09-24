@@ -16,6 +16,7 @@ import (
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
+	domainchat "blog-api/internal/domain/chat"
 	domaincomment "blog-api/internal/domain/comment"
 	domaingallery "blog-api/internal/domain/gallery"
 	domainpost "blog-api/internal/domain/post"
@@ -680,5 +681,79 @@ func TestSubscriber_GalleryModerated_RecordsModerateWithAuthor(t *testing.T) {
 		assert.Equal(t, operation, e.Metadata["operation"])
 		assert.Equal(t, "gallery", e.Resource.Type)
 		assert.Equal(t, "他人作品", e.Resource.Name)
+	}
+}
+
+// TestSubscriber_BotEvents 聊天 Bot 凭据生命周期的审计映射：
+// 注册、改名、头像、启停、重置 token、吊销都要留痕，且摘要里不含凭据本身。
+func TestSubscriber_BotEvents(t *testing.T) {
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+	botID := shared.NewID()
+	userID := shared.NewID()
+	avatarID := shared.NewID()
+
+	cases := []struct {
+		name       string
+		event      shared.DomainEvent
+		wantAction domainaudit.Action
+		wantName   string
+		wantIn     string
+		wantChange string
+	}{
+		{
+			name: "created", event: domainchat.NewBotCreated(botID, userID, "Saber"),
+			wantAction: domainaudit.ActionCreate, wantName: "Saber", wantIn: "注册聊天 Bot",
+		},
+		{
+			name: "renamed", event: domainchat.NewBotRenamed(botID, "Saber", "Lancer"),
+			wantAction: domainaudit.ActionUpdate, wantName: "Lancer", wantIn: "重命名聊天 Bot「Saber」→「Lancer」", wantChange: "name",
+		},
+		{
+			name: "avatar_set", event: domainchat.NewBotAvatarUpdated(botID, &avatarID),
+			wantAction: domainaudit.ActionUpdate, wantIn: "更新聊天 Bot 头像", wantChange: "avatar_id",
+		},
+		{
+			name: "avatar_cleared", event: domainchat.NewBotAvatarUpdated(botID, nil),
+			wantAction: domainaudit.ActionUpdate, wantIn: "清除聊天 Bot 头像",
+		},
+		{
+			name: "enabled", event: domainchat.NewBotEnabled(botID, "Saber"),
+			wantAction: domainaudit.ActionUpdateStatus, wantName: "Saber", wantIn: "启用聊天 Bot", wantChange: "enabled",
+		},
+		{
+			name: "disabled", event: domainchat.NewBotDisabled(botID, "Saber"),
+			wantAction: domainaudit.ActionUpdateStatus, wantName: "Saber", wantIn: "禁用聊天 Bot", wantChange: "enabled",
+		},
+		{
+			name: "token_regenerated", event: domainchat.NewBotTokenRegenerated(botID, "Saber"),
+			wantAction: domainaudit.ActionUpdate, wantName: "Saber", wantIn: "重置聊天 Bot「Saber」的 token", wantChange: "token",
+		},
+		{
+			name: "deleted", event: domainchat.NewBotDeleted(botID, userID, "Saber"),
+			wantAction: domainaudit.ActionDelete, wantName: "Saber", wantIn: "吊销聊天 Bot",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := &fakeStore{}
+			sub := newTestSubscriber(store)
+			require.NoError(t, sub.Handle(ctx, tc.event))
+
+			require.Len(t, store.appended, 1)
+			e := store.appended[0]
+			assert.Equal(t, tc.wantAction, e.Action)
+			assert.Equal(t, "chat_bot", e.Resource.Type)
+			assert.Equal(t, botID.String(), e.Resource.ID)
+			if tc.wantName != "" {
+				assert.Equal(t, tc.wantName, e.Resource.Name)
+			}
+			assert.Contains(t, e.Summary, tc.wantIn)
+			assert.NotContains(t, e.Summary, "violet_bot_", "审计摘要不得出现凭据形态")
+			if tc.wantChange != "" {
+				require.NotEmpty(t, e.Changes)
+				assert.Equal(t, tc.wantChange, e.Changes[0].Field)
+			}
+		})
 	}
 }

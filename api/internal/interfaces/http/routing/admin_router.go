@@ -337,6 +337,19 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// 人设档案：读 persona:view；创建、保存、激活与删除 persona:manage。
 	registerAdminPersonaRoutes(r, d.Persona, perm)
 
+	// 聊天 Bot 凭证管理：注册、改名换像、启停、重置 token 与吊销。
+	// 与 chat:manage（消息处置）分码：能删违规消息的人未必要能给外部程序发凭据。
+	r.Route("/chat-bots", func(r chi.Router) {
+		r.Use(middleware.RequirePermission(perm, permission.ChatBotManage.String()))
+		r.Get("/", d.ChatBotAdmin.List)
+		r.Post("/", d.ChatBotAdmin.Create)
+		r.Patch("/{botId}", d.ChatBotAdmin.Update)
+		r.Delete("/{botId}", d.ChatBotAdmin.Delete)
+		r.Post("/{botId}/regenerate-token", d.ChatBotAdmin.RegenerateToken)
+		// 回显明文凭据：只走 POST，URL 不落日志；每次查看都进操作日志。
+		r.Post("/{botId}/token", d.ChatBotAdmin.RevealToken)
+	})
+
 	// 聊天徽章授予:持有台账的管理动作统一收在 chat:manage(与删除违规消息同域)。
 	r.Route("/chat-badges", func(r chi.Router) {
 		r.Use(middleware.RequirePermission(perm, permission.ChatManage.String()))

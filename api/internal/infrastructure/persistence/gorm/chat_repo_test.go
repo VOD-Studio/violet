@@ -56,6 +56,32 @@ func TestChatRepositoryUpdateMessageReplacesContentAndMedia(t *testing.T) {
 	require.NotNil(t, reloaded.EditedAt())
 }
 
+func TestChatRepositoryBotReplyRejectsStaleSnapshot(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "bot-reply.db")), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&model.ChatMessage{}, &model.ChatMessageMedia{}, &model.ChatEvent{}))
+	repo := NewChatRepository(db)
+	now := time.Now().UTC()
+	message, err := domainchat.NewPendingBotMessage(domainshared.NewID(), domainshared.NewID(), "reply-cas", now, nil)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(messageToPO(message)).Error)
+	stale, err := repo.FindMessage(context.Background(), message.ConversationID(), message.ID())
+	require.NoError(t, err)
+	require.NoError(t, message.AdvanceBotReply("新正文", "", domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
+	events, err := repo.UpdateBotReply(context.Background(), message, 0, []domainshared.ID{domainshared.NewID()})
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+	require.NoError(t, stale.AdvanceBotReply("旧正文", "", domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
+	_, err = repo.UpdateBotReply(context.Background(), stale, 0, nil)
+	require.Error(t, err)
+	reloaded, err := repo.FindMessage(context.Background(), message.ConversationID(), message.ID())
+	require.NoError(t, err)
+	require.Equal(t, "新正文", reloaded.Content())
+	require.EqualValues(t, 1, reloaded.BotReply().Revision())
+}
+
 // 已读回执的数据基础：阅读位置查询与成员水位列表。
 func TestChatRepositoryReadPositions(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "test.db")), &gorm.Config{

@@ -172,6 +172,7 @@ vi.mock("@features/chat/api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => useChatMessagesMock(),
+	useBotCommands: () => ({ data: { bots: [] }, refetch: vi.fn() }),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -214,6 +215,7 @@ vi.mock("../api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => useChatMessagesMock(),
+	useBotCommands: () => ({ data: { bots: [] }, refetch: vi.fn() }),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -273,6 +275,7 @@ vi.mock("../api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => useChatMessagesMock(),
+	useBotCommands: () => ({ data: { bots: [] }, refetch: vi.fn() }),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -418,6 +421,8 @@ describe("ChatWorkspace", () => {
 				scrollHeight: { value: 1000, configurable: true },
 				clientHeight: { value: 300, configurable: true },
 			});
+			list.scrollTop = 700;
+			fireEvent.scroll(list);
 			list.scrollTop = 0;
 			fireEvent.scroll(list);
 			const third = { ...latest, id: "m_3", created_at: "2026-08-20T08:32:00Z" };
@@ -505,7 +510,7 @@ describe("ChatWorkspace", () => {
 			screen.getAllByRole("link", { name: "dfy 的个人主页" }).length,
 		).toBeGreaterThanOrEqual(2);
 		// 消息输入框与富文本组件（RichCommentInput）
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		expect(editor).toBeTruthy();
 		expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
@@ -633,7 +638,7 @@ describe("ChatWorkspace", () => {
 	it("输入消息并发送", async () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.textContent = "新消息测试";
 		fireEvent.input(editor);
 
@@ -669,7 +674,7 @@ describe("ChatWorkspace", () => {
 			expect(container.querySelector('[data-image-status="done"]')).toBeTruthy();
 		});
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		// 用 appendChild 而非 textContent 赋值：后者会清空既有子节点，连带删掉刚插入的图片节点。
 		editor.appendChild(document.createTextNode("配图文字"));
 		fireEvent.input(editor);
@@ -704,7 +709,7 @@ describe("ChatWorkspace", () => {
 			expect(container.querySelectorAll('[data-image-status="done"]').length).toBe(2);
 		});
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.appendChild(document.createTextNode("两张图"));
 		fireEvent.input(editor);
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -728,7 +733,7 @@ describe("ChatWorkspace", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "回复消息" }));
 		expect(screen.getByText("回复 xfy")).toBeTruthy();
-		fireEvent.input(screen.getByRole("textbox", { name: "评论内容" }), {
+		fireEvent.input(screen.getByRole("textbox", { name: "消息内容" }), {
 			target: { textContent: "这是回复" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -769,7 +774,7 @@ describe("ChatWorkspace", () => {
 			scrollHeight: { configurable: true, value: 1000 },
 		});
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.textContent = "滚动目标测试";
 		fireEvent.input(editor);
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -778,6 +783,133 @@ describe("ChatWorkspace", () => {
 			expect(messageScroller.scrollTop).toBe(700);
 		});
 		expect(window.HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+	});
+
+	it("流式内容增长时跟随底部，手动上滚暂停并在滚回底部后恢复", () => {
+		const observers: Array<{ callback: ResizeObserverCallback; targets: Element[] }> = [];
+		class ResizeObserverProbe {
+			targets: Element[] = [];
+			constructor(readonly callback: ResizeObserverCallback) {
+				observers.push(this);
+			}
+			observe(target: Element) {
+				this.targets.push(target);
+			}
+			unobserve() {}
+			disconnect() {}
+		}
+		vi.stubGlobal("ResizeObserver", ResizeObserverProbe);
+		const frames = new Map<number, FrameRequestCallback>();
+		let nextFrame = 0;
+		const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+			const id = ++nextFrame;
+			frames.set(id, callback);
+			return id;
+		});
+		const cancelRaf = vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+			frames.delete(id);
+		});
+		const botMessage: ChatMessage = {
+			...mockConversation.last_message,
+			id: "m_bot",
+			sender: { ...mockOtherUser, is_bot: true },
+			created_at: "2026-08-20T08:31:00Z",
+			bot_reply: {
+				status: "streaming",
+				thinking: "分析中",
+				revision: 1,
+				updated_at: new Date().toISOString(),
+			},
+		};
+		const setContent = (content: string) =>
+			useChatMessagesMock.mockReturnValue({
+				...defaultChatMessagesResult(),
+				data: {
+					pages: [
+						{
+							data: [{ ...botMessage, content }, mockConversation.last_message],
+							pagination: { has_more: false },
+						},
+					],
+					pageParams: [""],
+				},
+			});
+		const panel = () => (
+			<ConversationPanel
+				conversation={mockConversation}
+				currentUserID={mockMe.id}
+				onBack={() => {}}
+				pendingShare={null}
+				showDetails={false}
+				onToggleDetails={() => {}}
+			/>
+		);
+		try {
+			setContent("第一段");
+			const view = render(panel(), { wrapper: createWrapper() });
+			const list = screen.getByTestId("chat-message-list") as HTMLDivElement;
+			let height = 1000;
+			Object.defineProperties(list, {
+				clientHeight: { configurable: true, value: 300 },
+				scrollHeight: { configurable: true, get: () => height },
+			});
+			const flushResize = () => {
+				const observer = observers.find(({ targets }) =>
+					targets.includes(list.firstElementChild as Element),
+				);
+				expect(observer).toBeDefined();
+				act(() => observer?.callback([], observer as unknown as ResizeObserver));
+				act(() => {
+					const pending = [...frames.values()];
+					frames.clear();
+					for (const frame of pending) frame(0);
+				});
+			};
+			list.scrollTop = 700;
+			fireEvent.scroll(list);
+			height = 1200;
+			fireEvent.scroll(list);
+			flushResize();
+			expect(list.scrollTop).toBe(900);
+			fireEvent.scroll(list);
+
+			height = 1300;
+			setContent("第一段第二段");
+			view.rerender(panel());
+			expect(list.scrollTop).toBe(1000);
+			fireEvent.scroll(list);
+
+			list.scrollTop = 500;
+			fireEvent.scroll(list);
+			height = 1400;
+			setContent("第一段第二段第三段");
+			view.rerender(panel());
+			fireEvent.scroll(list);
+			flushResize();
+			expect(list.scrollTop).toBe(500);
+
+			list.scrollTop = 1100;
+			fireEvent.scroll(list);
+			height = 1500;
+			setContent("第一段第二段第三段第四段");
+			view.rerender(panel());
+			fireEvent.scroll(list);
+			flushResize();
+			expect(list.scrollTop).toBe(1200);
+
+			fireEvent.pointerDown(list);
+			height = 1600;
+			setContent("第一段第二段第三段第四段第五段");
+			view.rerender(panel());
+			fireEvent.scroll(list);
+			flushResize();
+			expect(list.scrollTop).toBe(1200);
+		} finally {
+			cleanup();
+			raf.mockRestore();
+			cancelRaf.mockRestore();
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it("从统一搜索结果发起私聊", () => {

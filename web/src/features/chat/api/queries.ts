@@ -28,6 +28,7 @@ import {
 	deleteChatMessage,
 	deleteChatPushSubscription,
 	editChatMessage,
+	fetchBotCommands,
 	fetchChatContacts,
 	fetchChatConversation,
 	fetchChatConversations,
@@ -79,10 +80,20 @@ export const useChatMembers = (id: string | null) =>
 		enabled: Boolean(id),
 	});
 
+export const useBotCommands = (id: string, menuOpen = false) =>
+	useQuery({
+		queryKey: chatKeys.botCommands(id),
+		queryFn: () => fetchBotCommands(id),
+		staleTime: 30_000,
+		refetchInterval: menuOpen ? 30_000 : false,
+		retry: false,
+	});
+
 export const useChatMessages = (id: string | null) => {
 	const query = useInfiniteQuery({
 		queryKey: id ? chatKeys.messages(id) : chatKeys.root,
-		queryFn: ({ pageParam }) => fetchChatMessages(id as string, pageParam || undefined),
+		queryFn: ({ pageParam, signal }) =>
+			fetchChatMessages(id as string, pageParam || undefined, 50, signal),
 		initialPageParam: "",
 		getNextPageParam: (lastPage) => lastPage.pagination.next_cursor ?? undefined,
 		enabled: Boolean(id),
