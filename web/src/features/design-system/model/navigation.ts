@@ -147,6 +147,12 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 						to: "/design-system/specimens/comment-section",
 						description: "评论区 · 纯展示评论套件",
 					},
+					{
+						id: "cartoon-popover",
+						title: "CartoonPopover",
+						to: "/design-system/specimens/cartoon-popover",
+						description: "卡通气泡 · 纯手绘对白与思考浮层",
+					},
 				],
 			},
 		],
