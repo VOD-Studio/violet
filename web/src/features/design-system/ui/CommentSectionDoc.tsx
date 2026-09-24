@@ -1,17 +1,8 @@
 import { copyText } from "@shared/lib/clipboard";
 import { CodeCard } from "@shared/ui/code-preview";
 import { CommentList, CommentSection, type CommentSectionConfig } from "@shared/ui/comment-section";
-import {
-	Check,
-	ChevronDown,
-	ChevronUp,
-	Component,
-	Copy,
-	FileCode2,
-	GitBranch,
-	Heart,
-	Send,
-} from "lucide-react";
+import { Segmented } from "@shared/ui/segmented";
+import { Check, Component, Copy, FileCode2, GitBranch, Heart, Send } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 interface DemoComment {
@@ -245,62 +236,40 @@ const CONFIG_FIELDS: PropRow[] = [
 ];
 
 /**
- * HeroUI 风格一体化演示卡片（上方纯净舞台 + 下方高质感深色代码区）。
+ * HeroUI / shadcn 风格卡片：支持 [预览 | 代码] 顶层切换，杜绝生硬拼接感。
  */
 function HeroDemoBox({ children, code }: { children: ReactNode; code: string }) {
-	const lineCount = code.split("\n").length;
-	const isCollapsible = lineCount > 7;
-	const [expanded, setExpanded] = useState(!isCollapsible);
+	const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
 
 	return (
 		<div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
-			{/* 上半部分：预览舞台（居中大方铺开） */}
-			<div className="flex min-h-64 items-center justify-center p-6 sm:p-10 bg-background/50">
-				<div className="w-full max-w-2xl">{children}</div>
+			{/* 顶部工具栏：纯净的 [预览 | 代码] 切换 */}
+			<div className="flex items-center justify-end border-b border-border/60 bg-muted/20 px-4 py-2">
+				<Segmented
+					value={activeTab}
+					onValueChange={(val) => setActiveTab(val as "preview" | "code")}
+					segments={[
+						{ value: "preview", label: "预览" },
+						{ value: "code", label: "代码" },
+					]}
+					size="sm"
+				/>
 			</div>
 
-			{/* 下半部分：高对比度连体深色代码区 */}
-			<div className="relative border-t border-border/70 bg-[#24292e]">
-				<div
-					className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${
-						!isCollapsible || expanded ? "max-h-[800px]" : "max-h-40"
-					}`}
-				>
+			{/* 内容视口：预览态通透干净，代码态浑然一体 */}
+			{activeTab === "preview" ? (
+				<div className="flex min-h-64 items-center justify-center p-6 sm:p-10 bg-background/40">
+					<div className="w-full max-w-2xl">{children}</div>
+				</div>
+			) : (
+				<div className="bg-[#24292e]">
 					<CodeCard
 						code={code}
 						language="tsx"
 						className="rounded-none! border-0! bg-transparent!"
 					/>
 				</div>
-
-				{/* 仅在代码较长且处于折叠态时，渲染深色渐变遮罩与 Expand 胶囊 */}
-				{isCollapsible && !expanded && (
-					<div className="absolute inset-x-0 bottom-0 flex h-24 items-end justify-center bg-gradient-to-t from-[#24292e] via-[#24292e]/85 to-transparent pb-3 pointer-events-none">
-						<button
-							type="button"
-							onClick={() => setExpanded(true)}
-							className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/20 bg-[#2d333b] px-4 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-[#373e47] hover:border-white/30"
-						>
-							<span>Expand code</span>
-							<ChevronDown className="size-3.5 text-white/70" />
-						</button>
-					</div>
-				)}
-
-				{/* 展开后的底部收起控制条 */}
-				{isCollapsible && expanded && (
-					<div className="flex justify-center border-t border-white/10 bg-[#24292e] py-2">
-						<button
-							type="button"
-							onClick={() => setExpanded(false)}
-							className="flex items-center gap-1.5 rounded-full border border-white/20 bg-[#2d333b] px-4 py-1 text-xs font-medium text-white/90 shadow-sm transition-all hover:bg-[#373e47] hover:text-white"
-						>
-							<span>Collapse code</span>
-							<ChevronUp className="size-3.5 text-white/70" />
-						</button>
-					</div>
-				)}
-			</div>
+			)}
 		</div>
 	);
 }
