@@ -295,7 +295,7 @@ function ExpandableDemoBox({ children, code }: { children: ReactNode; code: stri
 			{children}
 
 			{/* 代码区：细线分隔，浅色底与页面浑然一体 */}
-			<div className="relative mt-6 overflow-hidden rounded-2xl border border-border/70 bg-card">
+			<div className="relative mt-6 overflow-hidden rounded-xl border border-border/70 bg-card">
 				{/* 复制图标固定于卡片右上，实底浮层避免与代码文字混叠 */}
 				<button
 					type="button"
