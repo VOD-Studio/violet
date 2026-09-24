@@ -1,0 +1,108 @@
+/* 卡通 Popover 专属果冻与弹性动画 */
+
+@keyframes cartoon-jelly-in {
+	0% {
+		opacity: 0;
+		transform: scale(0.65) rotate(-2.5deg);
+	}
+	55% {
+		opacity: 1;
+		transform: scale(1.05) rotate(1.2deg);
+	}
+	78% {
+		transform: scale(0.97) rotate(-0.5deg);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) rotate(0deg);
+	}
+}
+
+@keyframes cartoon-bounce-in {
+	0% {
+		opacity: 0;
+		transform: translateY(10px) scale(0.86);
+	}
+	65% {
+		opacity: 1;
+		transform: translateY(-3px) scale(1.02);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes cartoon-fade-in {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes cartoon-pop-out {
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(0.82) rotate(1deg);
+	}
+}
+
+/* 思考小泡泡的阶梯弹入 */
+@keyframes thought-bubble-pop {
+	0% {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	70% {
+		opacity: 1;
+		transform: scale(1.15);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.cartoon-popover-anim-jelly {
+	animation: cartoon-jelly-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+	transform-origin: var(--cartoon-origin, center);
+}
+
+.cartoon-popover-anim-bounce {
+	animation: cartoon-bounce-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards;
+	transform-origin: var(--cartoon-origin, center);
+}
+
+.cartoon-popover-anim-fade {
+	animation: cartoon-fade-in 180ms ease-out forwards;
+}
+
+[data-slot="cartoon-popover-content"].cartoon-popover-closing {
+	animation: cartoon-pop-out 160ms ease-in forwards;
+	pointer-events: none;
+}
+
+.thought-bubble-dot-1 {
+	animation: thought-bubble-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) 40ms backwards;
+}
+
+.thought-bubble-dot-2 {
+	animation: thought-bubble-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cartoon-popover-anim-jelly,
+	.cartoon-popover-anim-bounce,
+	[data-slot="cartoon-popover-content"].cartoon-popover-closing,
+	.thought-bubble-dot-1,
+	.thought-bubble-dot-2 {
+		animation: cartoon-fade-in 150ms ease-out forwards;
+		transform: none;
+	}
+}
