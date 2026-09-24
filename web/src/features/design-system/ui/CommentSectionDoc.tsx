@@ -1,14 +1,8 @@
-import { Button } from "@shared/ui/base/button";
 import { CodeCard } from "@shared/ui/code-preview";
 import { CommentList, CommentSection, type CommentSectionConfig } from "@shared/ui/comment-section";
-import { Segmented } from "@shared/ui/segmented";
-import { Heart } from "lucide-react";
+import { Heart, Send } from "lucide-react";
 import { useState } from "react";
-import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
 
-type ViewMode = "preview" | "empty" | "loading";
-
-/** 演示用原始评论：字段由接入方自行定义，config.map 负责映射 */
 interface DemoComment {
 	id: string;
 	user: string;
@@ -23,12 +17,12 @@ interface DemoComment {
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
 
-const DEMO_COMMENTS: DemoComment[] = [
+const BASIC_COMMENTS: DemoComment[] = [
 	{
 		id: "c-1",
 		user: "DefectingCat",
 		role: "author",
-		text: "展示层与数据层分离后，文章评论和推文评论共用同一套交互；正文、操作与回复表单都由接入方注入。",
+		text: "展示层与数据层解耦后，文章评论和推文评论共用同一套交互逻辑；正文、操作与回复表单均通过插槽注入。",
 		time: hoursAgo(3),
 		likes: 12,
 		repliesCount: 1,
@@ -37,7 +31,7 @@ const DEMO_COMMENTS: DemoComment[] = [
 				id: "c-1-1",
 				parentId: "c-1",
 				user: "Lin",
-				text: "两层扁平加 @ 昵称，长回复串在窄屏上也不会挤压排版。",
+				text: "双层扁平回复结构配合 @ 昵称标注，在移动端不会发生多层级挤压。",
 				time: hoursAgo(2),
 				likes: 3,
 			},
@@ -46,7 +40,7 @@ const DEMO_COMMENTS: DemoComment[] = [
 	{
 		id: "c-2",
 		user: "Kite",
-		text: "接入时只需要提供一个 config：映射函数加几个插槽。",
+		text: "业务方只需提供一个 CommentSectionConfig 适配器即可完成接入。",
 		time: hoursAgo(1),
 		likes: 5,
 		repliesCount: 0,
@@ -54,130 +48,256 @@ const DEMO_COMMENTS: DemoComment[] = [
 	},
 ];
 
-const INITIAL_LIKES: Record<string, number> = { "c-1": 12, "c-1-1": 3, "c-2": 5 };
+const IMPORT_CODE = `import { CommentSection, CommentList } from "@shared/ui/comment-section";`;
 
-const USAGE_CODE = `const config: CommentSectionConfig<PostComment> = {
-	repliesMode: "preview",
-	map: (item) => ({
-		id: item.id,
-		depth: item.parentId ? 1 : 0,
-		authorName: item.author.name,
-		body: item.content,
-		createdAt: item.createdAt,
-		raw: item,
-	}),
-	renderReplyForm: (item, { onSuccess }) => (
-		<ReplyComposer target={item} onSubmitted={onSuccess} />
-	),
+const BASIC_USAGE_CODE = `import { CommentSection, CommentList, type CommentSectionConfig } from "@shared/ui/comment-section";
+
+const config: CommentSectionConfig<PostComment> = {
+  repliesMode: "preview",
+  map: (item) => ({
+    id: item.id,
+    depth: item.parentId ? 1 : 0,
+    authorName: item.author.name,
+    authorAvatarUrl: item.author.avatar,
+    body: item.content,
+    createdAt: item.createdAt,
+    tone: item.isAuthor ? "author" : "default",
+    raw: item,
+  }),
+  renderReplyForm: (item, { onSuccess }) => (
+    <ReplyComposer target={item} onSubmitted={onSuccess} />
+  ),
+  renderActions: (item) => <ReactionBar targetId={item.id} />,
 };
 
-<CommentSection title="全部评论" form={<Composer />} isLoggedIn>
-	<CommentList comments={data} config={config} isLoggedIn />
-</CommentSection>`;
+export function ArticleComments({ comments, isLoggedIn }: Props) {
+  return (
+    <CommentSection
+      title="全部评论"
+      form={<CommentComposer />}
+      isLoggedIn={isLoggedIn}
+    >
+      <CommentList comments={comments} config={config} isLoggedIn={isLoggedIn} />
+    </CommentSection>
+  );
+}`;
 
-interface PropSpec {
-	name: string;
+interface PropRow {
+	prop: string;
 	type: string;
-	note: string;
+	defaultValue?: string;
+	description: string;
+	required?: boolean;
 }
 
-const SECTION_PROPS: PropSpec[] = [
-	{ name: "title", type: "ReactNode", note: "标题行内容，如「评论 (12)」。" },
-	{ name: "form", type: "ReactNode", note: "顶部表单插槽，由接入方提供。" },
-	{ name: "isLoggedIn", type: "boolean", note: "登录态；控制回复按钮与列表区可见性。" },
-	{ name: "blackhole", type: "boolean", note: "匿名黑洞：未登录时不渲染列表区。" },
-	{ name: "banner", type: "ReactNode", note: "黑洞模式的登录引导条，随 blackhole 使用。" },
-	{ name: "children", type: "ReactNode", note: "列表区，通常为 CommentList。" },
-];
-
-const ITEM_FIELDS: PropSpec[] = [
-	{ name: "id", type: "string", note: "评论 ID。" },
-	{ name: "depth", type: "0 | 1", note: "层级：0 顶层，1 回复；两层扁平，不深嵌套。" },
-	{ name: "authorName", type: "string", note: "作者昵称；无头像时渲染首字母。" },
-	{ name: "authorAvatarUrl", type: "string", note: "头像 URL，空值走首字母兜底。" },
-	{ name: "authorHref", type: "string", note: "作者主页；缺省时昵称不渲染为链接。" },
-	{ name: "body", type: "string", note: "正文纯文本；未经 renderBody 时直接渲染。" },
-	{ name: "createdAt", type: "string", note: "RFC3339 时间。" },
-	{ name: "tone", type: '"default" | "discussion" | "author"', note: "卡片左侧色阶。" },
-	{ name: "isAuthor", type: "boolean", note: "渲染「作者」徽章。" },
-	{ name: "isPending", type: "boolean", note: "渲染「审批中」徽章。" },
-	{ name: "repliesTotal", type: "number", note: "回复总数；缺省时回复区走 toggle 模式。" },
-	{ name: "repliesPreview", type: "T[]", note: "回复预览；缺省时展开才拉取。" },
-	{ name: "raw", type: "T", note: "原始对象，回传给插槽与回调。" },
-];
-
-const CONFIG_FIELDS: PropSpec[] = [
-	{ name: "map", type: "(raw: T) => CommentDisplayItem", note: "业务数据 → 展示模型的映射。" },
+const SECTION_PROPS: PropRow[] = [
 	{
-		name: "repliesMode",
+		prop: "title",
+		type: "ReactNode",
+		required: true,
+		description: "评论区头部标题内容（如「全部评论 (12)」）",
+	},
+	{
+		prop: "form",
+		type: "ReactNode",
+		required: true,
+		description: "顶部发表表单插槽，由接入方提供输入界面",
+	},
+	{
+		prop: "isLoggedIn",
+		type: "boolean",
+		required: true,
+		description: "当前访客的登录状态，控制子项中回复按钮与操作权限",
+	},
+	{
+		prop: "blackhole",
+		type: "boolean",
+		defaultValue: "false",
+		description: "匿名黑洞模式：未登录时完全隐藏评论列表区",
+	},
+	{
+		prop: "banner",
+		type: "ReactNode",
+		description: "黑洞模式下的登录引导提示条",
+	},
+	{
+		prop: "children",
+		type: "ReactNode",
+		required: true,
+		description: "列表容器子节点，通常装配 CommentList",
+	},
+];
+
+const ITEM_FIELDS: PropRow[] = [
+	{ prop: "id", type: "string", required: true, description: "评论唯一标识" },
+	{
+		prop: "depth",
+		type: "0 | 1",
+		required: true,
+		description: "缩进深度：0 为顶层评论，1 为回复（严格双层扁平）",
+	},
+	{
+		prop: "authorName",
+		type: "string",
+		required: true,
+		description: "作者昵称；头像缺省时自动渲染首字母",
+	},
+	{ prop: "authorAvatarUrl", type: "string", description: "作者头像 URL 地址" },
+	{ prop: "authorHref", type: "string", description: "作者个人主页链接；缺省时昵称不可点击" },
+	{
+		prop: "body",
+		type: "string",
+		required: true,
+		description: "纯文本正文；未传 renderBody 时默认直接渲染",
+	},
+	{
+		prop: "createdAt",
+		type: "string",
+		required: true,
+		description: "创建时间（RFC3339 字符串）",
+	},
+	{
+		prop: "tone",
+		type: '"default" | "discussion" | "author"',
+		defaultValue: '"default"',
+		description: "左侧视觉色阶：author 呈品牌高光",
+	},
+	{
+		prop: "isAuthor",
+		type: "boolean",
+		defaultValue: "false",
+		description: "是否为作者本人，开启后渲染「作者」徽标",
+	},
+	{
+		prop: "isPending",
+		type: "boolean",
+		defaultValue: "false",
+		description: "是否待审核，开启后渲染「审批中」徽标",
+	},
+	{
+		prop: "repliesTotal",
+		type: "number",
+		description: "回复总数；缺省时回复区退化为查看折叠模式",
+	},
+	{ prop: "repliesPreview", type: "T[]", description: "预先随顶层评论返回的回复预览列表" },
+	{
+		prop: "raw",
+		type: "T",
+		required: true,
+		description: "原始业务数据对象，原样回传给插槽与回调",
+	},
+];
+
+const CONFIG_FIELDS: PropRow[] = [
+	{
+		prop: "map",
+		type: "(raw: T) => CommentDisplayItem<T>",
+		required: true,
+		description: "将原始业务数据转换为展示模型的映射函数",
+	},
+	{
+		prop: "repliesMode",
 		type: '"preview" | "toggle"',
-		note: "preview 依赖后端预览与总数；toggle 展开才拉取。",
-	},
-	{ name: "renderBody", type: "(item) => ReactNode", note: "正文插槽；缺省渲染纯文本。" },
-	{ name: "renderActions", type: "(item) => ReactNode", note: "操作插槽，如反应栏、删除按钮。" },
-	{
-		name: "renderReplyForm",
-		type: "(item, { onSuccess }) => ReactNode",
-		note: "内联回复表单；提交成功后调用 onSuccess。",
+		required: true,
+		description: "回复区加载机制：preview 依赖初始预览；toggle 点开后懒加载",
 	},
 	{
-		name: "renderExpandedReplies",
-		type: "(props) => ReactNode",
-		note: "展开回复的懒加载区，由接入方包装查询。",
+		prop: "renderBody",
+		type: "(item: CommentDisplayItem<T>) => ReactNode",
+		description: "自定义正文渲染插槽（支持注入 Markdown / Emoji / 媒体）",
+	},
+	{
+		prop: "renderActions",
+		type: "(item: CommentDisplayItem<T>) => ReactNode",
+		description: "单条评论底部操作区插槽（如点赞 ReactionBar、删除等）",
+	},
+	{
+		prop: "renderReplyForm",
+		type: "(item: CommentDisplayItem<T>, opts: { onSuccess }) => ReactNode",
+		required: true,
+		description: "内联回复输入表单插槽；提交成功后触发 onSuccess(newRaw)",
+	},
+	{
+		prop: "renderExpandedReplies",
+		type: "(props: ExpandedProps) => ReactNode",
+		required: true,
+		description: "展开回复的懒加载查询区，由接入方封装分页 hooks 渲染",
 	},
 ];
 
-function PropGroup({ title, note, rows }: { title: string; note: string; rows: PropSpec[] }) {
+/**
+ * HeroUI 风格标准 API 表格组件。
+ */
+function ApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
 	return (
-		<div>
-			<h4 className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-				<code className="font-mono text-sm font-bold">{title}</code>
-				<span className="text-xs text-muted-foreground">{note}</span>
-			</h4>
-			<ul className="mt-2">
-				{rows.map((row) => (
-					<li
-						className="grid grid-cols-1 gap-x-6 gap-y-1 border-b border-border/40 py-2.5 last:border-b-0 sm:grid-cols-[16rem_minmax(0,1fr)] sm:items-baseline"
-						key={row.name}
-					>
-						<div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-							<code className="font-mono text-xs font-medium">{row.name}</code>
-							<code className="font-mono text-xs text-muted-foreground">
-								{row.type}
-							</code>
-						</div>
-						<span className="text-sm leading-relaxed text-muted-foreground">
-							{row.note}
-						</span>
-					</li>
-				))}
-			</ul>
+		<div className="space-y-3 font-sans">
+			<h4 className="text-base font-semibold tracking-tight text-foreground">{title}</h4>
+			<div className="overflow-x-auto rounded-xl border border-border/70 bg-card">
+				<table className="w-full min-w-160 border-collapse text-left text-xs">
+					<thead>
+						<tr className="border-b border-border/70 bg-muted/40 font-mono text-muted-foreground">
+							<th className="py-3 px-4 font-semibold w-48">Prop</th>
+							<th className="py-3 px-4 font-semibold w-64">Type</th>
+							<th className="py-3 px-4 font-semibold w-32">Default</th>
+							<th className="py-3 px-4 font-semibold">Description</th>
+						</tr>
+					</thead>
+					<tbody className="divide-y divide-border/40">
+						{rows.map((row) => (
+							<tr key={row.prop} className="transition-colors hover:bg-muted/20">
+								<td className="py-3 px-4 font-mono font-medium text-foreground">
+									<div className="flex items-center gap-1.5">
+										<code className="text-xs">{row.prop}</code>
+										{row.required && (
+											<span
+												className="text-destructive font-mono text-[11px]"
+												title="Required"
+											>
+												*
+											</span>
+										)}
+									</div>
+								</td>
+								<td className="py-3 px-4 font-mono text-muted-foreground">
+									<span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-foreground font-mono">
+										{row.type}
+									</span>
+								</td>
+								<td className="py-3 px-4 font-mono text-muted-foreground">
+									{row.defaultValue ? (
+										<code className="text-[11px]">{row.defaultValue}</code>
+									) : (
+										<span className="text-muted-foreground/40">-</span>
+									)}
+								</td>
+								<td className="py-3 px-4 text-muted-foreground leading-relaxed">
+									{row.description}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }
 
 /**
- * 评论区组件文档页：真实组件演示、接入代码与公开契约。
+ * 评论区组件文档页（对标 HeroUI 现代组件库规范）。
  */
 export function CommentSectionDocPage() {
-	const [viewMode, setViewMode] = useState<ViewMode>("preview");
-	const [comments, setComments] = useState(DEMO_COMMENTS);
-	const [likes, setLikes] = useState(INITIAL_LIKES);
-	const [liked, setLiked] = useState<Record<string, boolean>>({ "c-1": true });
-	const [replyDraft, setReplyDraft] = useState("");
+	const [comments] = useState<DemoComment[]>(BASIC_COMMENTS);
+	const [likes, setLikes] = useState<Record<string, number>>({ "c-1": 12, "c-1-1": 3, "c-2": 5 });
+	const [hasLiked, setHasLiked] = useState<Record<string, boolean>>({ "c-1": true });
 
-	const reset = () => {
-		setComments(DEMO_COMMENTS);
-		setLikes(INITIAL_LIKES);
-		setLiked({ "c-1": true });
-		setReplyDraft("");
-	};
-
-	const toggleLike = (id: string) => {
-		setLiked((prev) => {
-			const next = !prev[id];
-			setLikes((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + (next ? 1 : -1) }));
-			return { ...prev, [id]: next };
+	const handleToggleLike = (id: string) => {
+		setHasLiked((prev) => {
+			const active = !prev[id];
+			setLikes((curr) => ({
+				...curr,
+				[id]: (curr[id] ?? 0) + (active ? 1 : -1),
+			}));
+			return { ...prev, [id]: active };
 		});
 	};
 
@@ -198,11 +318,12 @@ export function CommentSectionDocPage() {
 			raw,
 		}),
 		renderActions: (item) => {
-			const isLiked = Boolean(liked[item.id]);
+			const isLiked = Boolean(hasLiked[item.id]);
+			const count = likes[item.id] ?? 0;
 			return (
 				<button
 					type="button"
-					onClick={() => toggleLike(item.id)}
+					onClick={() => handleToggleLike(item.id)}
 					className={`inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-xs transition-colors ${
 						isLiked
 							? "bg-destructive/10 text-destructive"
@@ -210,50 +331,38 @@ export function CommentSectionDocPage() {
 					}`}
 				>
 					<Heart className={`size-3 ${isLiked ? "fill-current" : ""}`} />
-					<span className="tabular-nums">{likes[item.id] ?? 0}</span>
+					<span className="tabular-nums font-mono">{count}</span>
 				</button>
 			);
 		},
-		renderReplyForm: (_item, { onSuccess }) => (
-			<div className="space-y-2">
+		renderReplyForm: (item) => (
+			<div className="mt-3 space-y-2 rounded-xl border border-border/70 bg-background/60 p-3 font-sans">
+				<div className="text-xs text-muted-foreground">回复给 @{item.authorName}</div>
 				<textarea
 					rows={2}
-					value={replyDraft}
-					onChange={(e) => setReplyDraft(e.target.value)}
-					placeholder="回复…"
-					className="w-full resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+					placeholder="写下善意的回复..."
+					className="w-full resize-none rounded-lg border border-input bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus-visible:border-ring"
 				/>
 				<div className="flex justify-end">
-					<Button
-						size="sm"
+					<button
 						type="button"
-						disabled={!replyDraft.trim()}
-						onClick={() => {
-							onSuccess({
-								id: `reply-${Date.now()}`,
-								parentId: "manual",
-								user: "访客",
-								text: replyDraft.trim(),
-								time: new Date().toISOString(),
-								likes: 0,
-							});
-							setReplyDraft("");
-						}}
+						className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
 					>
-						发送
-					</Button>
+						<Send className="size-3" />
+						<span>发送</span>
+					</button>
 				</div>
 			</div>
 		),
 		renderExpandedReplies: ({ knownReplies }) => (
-			<ul className="space-y-2">
+			<ul className="space-y-2 pt-1 font-sans">
 				{knownReplies.map((reply) => (
 					<li
-						className="rounded-lg border border-border/50 bg-muted/30 p-3 text-xs"
 						key={reply.id}
+						className="rounded-lg border border-border/50 bg-muted/30 p-3 text-xs"
 					>
-						<span className="font-medium">{reply.authorName}</span>
-						<p className="mt-1 text-foreground">{reply.body}</p>
+						<span className="font-medium text-foreground">{reply.authorName}</span>
+						<p className="mt-1 text-muted-foreground">{reply.body}</p>
 					</li>
 				))}
 			</ul>
@@ -261,146 +370,127 @@ export function CommentSectionDocPage() {
 	};
 
 	return (
-		<div className="mt-8">
-			<DesignSystemDocHeader
-				num="柒 · 壹"
-				title="评论区"
-				scope="文章与推文共用的纯展示评论层：适配、两层扁平回复、插槽与门控。"
-			/>
-
-			{/* 总纲 */}
-			<div className="grid grid-cols-1 gap-x-6 gap-y-3 border-b border-border/40 py-6 sm:grid-cols-[10rem_minmax(0,1fr)]">
-				<h4 className="text-base font-bold">总纲</h4>
-				<div>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						<code className="font-mono text-xs">CommentSection</code> 是容器，{" "}
-						<code className="font-mono text-xs">CommentList</code>{" "}
-						渲染列表；组件不发请求，数据经{" "}
-						<code className="font-mono text-xs">CommentSectionConfig</code> 由 feature
-						层注入。接入只需四事——
-					</p>
-					<ol className="mt-3 space-y-1.5">
-						<li className="text-sm text-muted-foreground">
-							<span className="font-bold text-foreground">适配</span>
-							<span className="ml-2">config.map 把业务数据映射为展示模型。</span>
-						</li>
-						<li className="text-sm text-muted-foreground">
-							<span className="font-bold text-foreground">两层</span>
-							<span className="ml-2">
-								回复一律 depth 1，以 @ 昵称标注回复对象，不深嵌套。
-							</span>
-						</li>
-						<li className="text-sm text-muted-foreground">
-							<span className="font-bold text-foreground">插槽</span>
-							<span className="ml-2">
-								正文、操作、回复表单均为插槽，缺省有合理形态。
-							</span>
-						</li>
-						<li className="text-sm text-muted-foreground">
-							<span className="font-bold text-foreground">门控</span>
-							<span className="ml-2">
-								isLoggedIn 控制回复按钮；blackhole 匿名时整区隐藏。
-							</span>
-						</li>
-					</ol>
-				</div>
+		<div className="space-y-16 pb-20">
+			{/* 1. Header (组件标题与简介，对标 HeroUI) */}
+			<div className="space-y-3">
+				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl font-sans">
+					CommentSection
+				</h1>
+				<p className="text-base text-muted-foreground leading-relaxed">
+					纯展示评论套件。抹平后端异构字段，支持双层扁平回复、身份视觉色阶与业务插槽扩展。
+				</p>
 			</div>
 
-			{/* 预览 */}
-			<div className="grid grid-cols-1 gap-x-6 gap-y-3 border-b border-border/40 py-6 sm:grid-cols-[10rem_minmax(0,1fr)]">
-				<h4 className="text-base font-bold">预览</h4>
-				<div>
-					<div className="flex items-center justify-between gap-4 font-sans">
-						<Segmented
-							value={viewMode}
-							onValueChange={(v) => setViewMode(v as ViewMode)}
-							segments={[
-								{ value: "preview", label: "常规" },
-								{ value: "empty", label: "空状态" },
-								{ value: "loading", label: "加载中" },
-							]}
-						/>
-						{viewMode === "preview" && (
-							<button
-								type="button"
-								onClick={reset}
-								className="rounded-md border border-border/40 px-2 py-0.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-							>
-								重置
-							</button>
-						)}
-					</div>
+			{/* 2. Usage (导入方式) */}
+			<section aria-label="Usage" className="space-y-3 font-sans">
+				<h2 className="text-xl font-bold tracking-tight text-foreground">Usage</h2>
+				<CodeCard code={IMPORT_CODE} language="tsx" title="@shared/ui/comment-section" />
+			</section>
 
-					<div className="mx-auto mt-8 max-w-2xl font-sans">
-						{viewMode === "preview" && (
+			{/* 3. Examples (案例展示，每个案例一个独立纯净舞台 + 代码) */}
+			<section aria-label="Examples" className="space-y-12 font-sans">
+				<h2 className="text-xl font-bold tracking-tight text-foreground">Examples</h2>
+
+				{/* 案例 1: Default 基础用法 */}
+				<div className="space-y-4">
+					<h3 className="text-base font-semibold tracking-tight text-foreground">
+						Default
+					</h3>
+					<p className="text-sm text-muted-foreground">
+						包含顶层表单插槽与双层扁平回复结构。子回复以 @
+						昵称指示对象，不向内无线嵌套。
+					</p>
+
+					{/* 演示画布 */}
+					<div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-10 shadow-xs">
+						<div className="mx-auto max-w-2xl">
 							<CommentSection
-								title={`评论 (${comments.length})`}
+								title={`全部评论 (${comments.length})`}
 								form={
 									<div className="flex items-start gap-3">
 										<div
 											aria-hidden="true"
-											className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground"
+											className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-wash font-mono text-xs font-bold text-brand-wash-foreground"
 										>
 											V
 										</div>
-										<div className="min-w-0 flex-1 rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-muted-foreground">
-											说点什么…
+										<div className="min-w-0 flex-1 rounded-lg border border-input bg-card px-3 py-2 text-xs text-muted-foreground">
+											写下你的评论观点...
 										</div>
-										<Button size="sm" type="button">
-											发表
-										</Button>
+										<button
+											type="button"
+											className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
+										>
+											<Send className="size-3" />
+											<span>发表</span>
+										</button>
 									</div>
 								}
-								isLoggedIn
+								isLoggedIn={true}
 							>
-								<CommentList comments={comments} config={config} isLoggedIn />
+								<CommentList
+									comments={comments}
+									config={config}
+									isLoggedIn={true}
+								/>
 							</CommentSection>
-						)}
+						</div>
+					</div>
 
-						{viewMode === "empty" && (
-							<CommentSection title="评论 (0)" form={null} isLoggedIn>
-								<CommentList comments={[]} config={config} isLoggedIn />
-							</CommentSection>
-						)}
+					{/* 紧随其后的代码 */}
+					<CodeCard code={BASIC_USAGE_CODE} language="tsx" title="App.tsx" />
+				</div>
 
-						{viewMode === "loading" && (
-							<CommentSection title="评论" form={null} isLoggedIn>
-								<CommentList comments={[]} config={config} isLoggedIn isLoading />
+				{/* 案例 2: Empty 状态 */}
+				<div className="space-y-4">
+					<h3 className="text-base font-semibold tracking-tight text-foreground">
+						Empty State
+					</h3>
+					<p className="text-sm text-muted-foreground">
+						当评论数据为空时，自动呈现自带的轻量空状态占位。
+					</p>
+
+					<div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-10 shadow-xs">
+						<div className="mx-auto max-w-2xl">
+							<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
+								<CommentList comments={[]} config={config} isLoggedIn={true} />
 							</CommentSection>
-						)}
+						</div>
 					</div>
 				</div>
-			</div>
 
-			{/* 用法 */}
-			<div className="grid grid-cols-1 gap-x-6 gap-y-3 border-b border-border/40 py-6 sm:grid-cols-[10rem_minmax(0,1fr)]">
-				<h4 className="text-base font-bold">用法</h4>
-				<div>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						从 <code className="font-mono text-xs">@shared/ui/comment-section</code>{" "}
-						导入，实现一个 config 即接入：
+				{/* 案例 3: Loading 状态 */}
+				<div className="space-y-4">
+					<h3 className="text-base font-semibold tracking-tight text-foreground">
+						Loading State
+					</h3>
+					<p className="text-sm text-muted-foreground">
+						首屏加载期间传入 <code className="font-mono text-xs">isLoading</code>
+						，自动渲染 Shimmer 骨架条目。
 					</p>
-					<CodeCard className="mt-4" code={USAGE_CODE} language="tsx" title="接入示例" />
-				</div>
-			</div>
 
-			{/* 契约 */}
-			<div className="grid grid-cols-1 gap-x-6 gap-y-3 py-6 sm:grid-cols-[10rem_minmax(0,1fr)]">
-				<h4 className="text-base font-bold">契约</h4>
-				<div className="space-y-8">
-					<PropGroup title="CommentSection" note="容器" rows={SECTION_PROPS} />
-					<PropGroup
-						title="CommentDisplayItem<T>"
-						note="数据模型（config.map 输出）"
-						rows={ITEM_FIELDS}
-					/>
-					<PropGroup
-						title="CommentSectionConfig<T>"
-						note="适配配置"
-						rows={CONFIG_FIELDS}
-					/>
+					<div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-10 shadow-xs">
+						<div className="mx-auto max-w-2xl">
+							<CommentSection title="全部评论" form={null} isLoggedIn={true}>
+								<CommentList
+									comments={[]}
+									config={config}
+									isLoggedIn={true}
+									isLoading={true}
+								/>
+							</CommentSection>
+						</div>
+					</div>
 				</div>
-			</div>
+			</section>
+
+			{/* 4. API Reference (标准参数表格) */}
+			<section aria-label="API Reference" className="space-y-8 font-sans">
+				<h2 className="text-xl font-bold tracking-tight text-foreground">API Reference</h2>
+				<ApiTable title="CommentSection Props" rows={SECTION_PROPS} />
+				<ApiTable title="CommentDisplayItem (Data Model)" rows={ITEM_FIELDS} />
+				<ApiTable title="CommentSectionConfig (Adapter)" rows={CONFIG_FIELDS} />
+			</section>
 		</div>
 	);
 }
