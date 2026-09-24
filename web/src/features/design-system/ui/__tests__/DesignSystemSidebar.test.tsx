@@ -55,4 +55,10 @@ describe("DesignSystemSidebar", () => {
 		fireEvent.click(screen.getByRole("link", { name: /设计原则/ }));
 		expect(onNavigate).toHaveBeenCalled();
 	});
+
+	it("访问二级子路由时所属分组自动展开并高亮子项", () => {
+		render(<DesignSystemSidebar currentPath="/design-system/specimens/feedback" />);
+		const activeSubLink = screen.getByRole("link", { name: "输入与交互" });
+		expect(activeSubLink.getAttribute("aria-current")).toBe("page");
+	});
 });

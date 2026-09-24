@@ -158,9 +158,9 @@ export function DesignSystemSidebar({
 												className={cn(
 													"relative z-10 flex flex-1 items-baseline gap-2.5 rounded-lg px-2.5 py-2 text-left font-medium transition-colors duration-150",
 													isThisItemActive
-														? "text-primary font-bold"
+														? "text-primary font-semibold"
 														: isBranchActive
-															? "text-foreground font-semibold"
+															? "text-foreground font-medium"
 															: "text-muted-foreground hover:text-foreground",
 												)}
 											>
@@ -168,7 +168,7 @@ export function DesignSystemSidebar({
 													className={cn(
 														"font-serif text-xs transition-colors duration-150",
 														isBranchActive
-															? "text-primary font-bold"
+															? "text-primary font-medium"
 															: "text-muted-foreground/70",
 													)}
 												>
@@ -214,50 +214,94 @@ export function DesignSystemSidebar({
 														}}
 														className="overflow-hidden"
 													>
-														<ul className="mt-1 ml-4 border-l border-border/60 pl-3 space-y-1 pb-1">
-															{item.children?.map((sub) => {
-																const isThisSubActive =
-																	activeKey === sub.to;
+														<div className="relative mt-1 ml-4 pl-3 pb-1">
+															{/* 静态未激活底轨：恒定发丝线，位置固定绝不造成抖动 */}
+															<div
+																aria-hidden="true"
+																className="absolute left-0 top-1 bottom-1 w-px bg-border/50"
+															/>
 
-																return (
-																	<li
-																		key={sub.id}
-																		className="relative"
-																	>
-																		{/* 全树共享流体滑块：从一级平滑流体滑动至二级，非弹簧 */}
-																		{isThisSubActive && (
-																			<motion.div
-																				layoutId="ds-fluid-indicator"
-																				className="absolute inset-0 rounded-md bg-primary/10 pointer-events-none"
-																				transition={
-																					FLUID_TRANSITION
-																				}
-																			/>
-																		)}
+															{/* 代表本组被选中的高亮竖线：自上而下墨线注入流体生长动画 */}
+															<AnimatePresence>
+																{isBranchActive && (
+																	<motion.div
+																		key="active-group-line"
+																		aria-hidden="true"
+																		initial={{
+																			scaleY: 0,
+																			opacity: 0,
+																		}}
+																		animate={{
+																			scaleY: 1,
+																			opacity: 1,
+																		}}
+																		exit={{
+																			scaleY: 0,
+																			opacity: 0,
+																		}}
+																		transition={{
+																			scaleY: {
+																				type: "tween",
+																				ease: [
+																					0.22, 1, 0.36,
+																					1,
+																				],
+																				duration: 0.28,
+																			},
+																			opacity: {
+																				duration: 0.18,
+																			},
+																		}}
+																		className="absolute left-0 top-1 bottom-1 w-0.5 -translate-x-1/2 origin-top rounded-full bg-primary pointer-events-none"
+																	/>
+																)}
+															</AnimatePresence>
 
-																		<Link
-																			to={sub.to}
-																			onClick={onNavigate}
-																			aria-current={
-																				isThisSubActive
-																					? "page"
-																					: undefined
-																			}
-																			className={cn(
-																				"relative z-10 block rounded-md px-2 py-1.5 text-xs transition-colors duration-150 font-normal",
-																				isThisSubActive
-																					? "font-medium text-primary"
-																					: "text-muted-foreground hover:text-foreground",
-																			)}
+															<ul className="space-y-1">
+																{item.children?.map((sub) => {
+																	const isThisSubActive =
+																		activeKey === sub.to;
+
+																	return (
+																		<li
+																			key={sub.id}
+																			className="relative"
 																		>
-																			<span className="truncate">
-																				{sub.title}
-																			</span>
-																		</Link>
-																	</li>
-																);
-															})}
-														</ul>
+																			{/* 全树共享流体滑块：从一级平滑流体滑动至二级，非弹簧 */}
+																			{isThisSubActive && (
+																				<motion.div
+																					layoutId="ds-fluid-indicator"
+																					className="absolute inset-0 rounded-md bg-primary/10 pointer-events-none"
+																					transition={
+																						FLUID_TRANSITION
+																					}
+																				/>
+																			)}
+
+																			<Link
+																				to={sub.to}
+																				onClick={onNavigate}
+																				aria-current={
+																					isThisSubActive
+																						? "page"
+																						: undefined
+																				}
+																				className={cn(
+																					"relative z-10 block rounded-md px-2 py-1.5 text-xs transition-colors duration-150 font-normal",
+																					isThisSubActive
+																						? "font-medium text-primary"
+																						: "text-muted-foreground hover:text-foreground",
+																				)}
+																			>
+																				<span className="truncate">
+																					{sub.title}
+																				</span>
+																			</Link>
+																		</li>
+																	);
+																})}
+															</ul>
+														</div>
 													</motion.div>
 												)}
 											</AnimatePresence>

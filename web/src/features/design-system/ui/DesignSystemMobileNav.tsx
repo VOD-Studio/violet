@@ -233,19 +233,19 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 																to={item.to}
 																onClick={() => setDrawerOpen(false)}
 																className={cn(
-																	"relative z-10 flex flex-1 items-baseline gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-150",
+																	"relative z-10 flex flex-1 items-baseline gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-150 font-medium",
 																	isThisItemActive
-																		? "font-bold text-primary"
+																		? "text-primary font-semibold"
 																		: isBranchActive
-																			? "text-foreground font-semibold"
+																			? "text-foreground font-medium"
 																			: "text-muted-foreground hover:text-foreground",
 																)}
 															>
 																<span
 																	className={cn(
-																		"font-serif text-xs",
+																		"font-serif text-xs transition-colors duration-150",
 																		isBranchActive
-																			? "text-primary font-bold"
+																			? "text-primary font-medium"
 																			: "text-muted-foreground/60",
 																	)}
 																>
@@ -306,60 +306,107 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 																		}}
 																		className="overflow-hidden"
 																	>
-																		<ul className="ml-5 border-l border-border/40 pl-3 py-1 space-y-1">
-																			{item.children?.map(
-																				(sub) => {
-																					const isThisSubActive =
-																						activeKey ===
-																						sub.to;
+																		<div className="relative ml-5 pl-3 py-1">
+																			{/* 静态未激活底轨：恒定发丝线，位置固定绝不造成抖动 */}
+																			<div
+																				aria-hidden="true"
+																				className="absolute left-0 top-1 bottom-1 w-px bg-border/40"
+																			/>
 
-																					return (
-																						<li
-																							key={
-																								sub.id
-																							}
-																							className="relative"
-																						>
-																							{isThisSubActive && (
-																								<motion.div
-																									layoutId="ds-mobile-fluid-indicator"
-																									className="absolute inset-0 rounded-lg bg-primary/10 pointer-events-none"
-																									transition={
-																										FLUID_TRANSITION
-																									}
-																								/>
-																							)}
-
-																							<Link
-																								to={
-																									sub.to
-																								}
-																								onClick={() =>
-																									setDrawerOpen(
-																										false,
-																									)
-																								}
-																								aria-current={
-																									isThisSubActive
-																										? "page"
-																										: undefined
-																								}
-																								className={cn(
-																									"relative z-10 block rounded-lg px-2.5 py-2 text-xs transition-colors duration-150",
-																									isThisSubActive
-																										? "font-medium text-primary"
-																										: "text-muted-foreground hover:text-foreground",
-																								)}
-																							>
+																			{/* 代表本组被选中的高亮竖线：自上而下墨线注入流体生长动画 */}
+																			<AnimatePresence>
+																				{isBranchActive && (
+																					<motion.div
+																						key="active-group-line-mobile"
+																						aria-hidden="true"
+																						initial={{
+																							scaleY: 0,
+																							opacity: 0,
+																						}}
+																						animate={{
+																							scaleY: 1,
+																							opacity: 1,
+																						}}
+																						exit={{
+																							scaleY: 0,
+																							opacity: 0,
+																						}}
+																						transition={{
+																							scaleY: {
+																								type: "tween",
+																								ease: [
+																									0.22,
+																									1,
+																									0.36,
+																									1,
+																								],
+																								duration: 0.28,
+																							},
+																							opacity:
 																								{
-																									sub.title
+																									duration: 0.18,
+																								},
+																						}}
+																						className="absolute left-0 top-1 bottom-1 w-0.5 -translate-x-1/2 origin-top rounded-full bg-primary pointer-events-none"
+																					/>
+																				)}
+																			</AnimatePresence>
+
+																			<ul className="space-y-1">
+																				{item.children?.map(
+																					(sub) => {
+																						const isThisSubActive =
+																							activeKey ===
+																							sub.to;
+
+																						return (
+																							<li
+																								key={
+																									sub.id
 																								}
-																							</Link>
-																						</li>
-																					);
-																				},
-																			)}
-																		</ul>
+																								className="relative"
+																							>
+																								{isThisSubActive && (
+																									<motion.div
+																										layoutId="ds-mobile-fluid-indicator"
+																										className="absolute inset-0 rounded-lg bg-primary/10 pointer-events-none"
+																										transition={
+																											FLUID_TRANSITION
+																										}
+																									/>
+																								)}
+
+																								<Link
+																									to={
+																										sub.to
+																									}
+																									onClick={() =>
+																										setDrawerOpen(
+																											false,
+																										)
+																									}
+																									aria-current={
+																										isThisSubActive
+																											? "page"
+																											: undefined
+																									}
+																									className={cn(
+																										"relative z-10 block rounded-lg px-2.5 py-2 text-xs transition-colors duration-150 font-normal",
+																										isThisSubActive
+																											? "font-medium text-primary"
+																											: "text-muted-foreground hover:text-foreground",
+																									)}
+																								>
+																									{
+																										sub.title
+																									}
+																								</Link>
+																							</li>
+																						);
+																					},
+																				)}
+																			</ul>
+																		</div>
 																	</motion.div>
 																)}
 															</AnimatePresence>
