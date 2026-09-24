@@ -18,7 +18,6 @@ import { createPortal } from "react-dom";
 import "./cartoon-popover.css";
 import { computePosition } from "./floating";
 import type {
-	CartoonAnimationType,
 	CartoonBubbleVariant,
 	CartoonPopoverCloseProps,
 	CartoonPopoverContentProps,
@@ -129,18 +128,8 @@ function getShadowClass(style: CartoonShadowStyle): string {
 /**
  * 获取动画样式类名。
  */
-function getAnimationClass(anim: CartoonAnimationType, closing: boolean): string {
-	if (closing) {
-		return "cartoon-popover-closing";
-	}
-	switch (anim) {
-		case "bounce":
-			return "cartoon-popover-anim-bounce";
-		case "fade":
-			return "cartoon-popover-anim-fade";
-		default:
-			return "cartoon-popover-anim-jelly";
-	}
+function getAnimationClass(closing: boolean): string {
+	return closing ? "cartoon-popover-closing" : "cartoon-popover-enter";
 }
 
 /**
@@ -341,12 +330,13 @@ export function CartoonPopoverTrigger({
  * 消除气泡自身的 2px 边框阻隔，并让两侧 2px 漫画斜边精准焊接入气泡轮廓，
  * 彻底消除黑线阻断与悬空缝隙。
  */
-interface SpeechArrowProps {
+export interface SpeechArrowProps {
 	side: CartoonPopoverSide;
 	offset: number;
+	className?: string;
 }
 
-function SpeechArrow({ side, offset }: SpeechArrowProps) {
+export function SpeechArrow({ side, offset, className }: SpeechArrowProps) {
 	// 经典对白三角形尾巴：外露 8px，宽 16px，底部 3px 深入气泡内部覆盖消除 2px 边框线
 	const W = 16;
 	const H = 8;
@@ -397,7 +387,7 @@ function SpeechArrow({ side, offset }: SpeechArrowProps) {
 
 	return (
 		<div
-			className="pointer-events-none absolute z-20 overflow-visible"
+			className={cn("pointer-events-none absolute z-20 overflow-visible", className)}
 			style={arrowStyle}
 			aria-hidden="true"
 		>
@@ -435,7 +425,6 @@ export function CartoonPopoverContent({
 	bubbleStyle = "speech",
 	variant = "default",
 	shadowStyle = "soft",
-	animation = "jelly",
 	showArrow = true,
 	showShine = true,
 	title,
@@ -561,7 +550,7 @@ export function CartoonPopoverContent({
 
 	const meta = VARIANT_MAP[variant] ?? VARIANT_MAP.default;
 	const shadowClass = getShadowClass(shadowStyle);
-	const animClass = getAnimationClass(animation, isClosing);
+	const animClass = getAnimationClass(isClosing);
 	const targetContainer = container ?? (typeof document !== "undefined" ? document.body : null);
 
 	if (!targetContainer) return null;

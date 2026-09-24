@@ -32,12 +32,9 @@ export type CartoonBubbleVariant = "default" | "brand" | "amber" | "mint" | "ros
 export type CartoonShadowStyle = "soft" | "comic";
 
 /**
- * 动画效果：
- * - jelly: 果冻回弹（轻微倾斜与弹性）
- * - bounce: 俏皮单次弹跳
- * - fade: 平滑纯淡入淡出（减弱动画时自动降级）
+ * 单个气泡动画类型
  */
-export type CartoonAnimationType = "jelly" | "bounce" | "fade";
+export type CartoonAnimationType = "fade";
 
 /**
  * 根组件状态与受控参数
@@ -114,7 +111,7 @@ export interface CartoonPopoverContentProps extends Omit<ComponentPropsWithoutRe
 	align?: CartoonPopoverAlign;
 	/**
 	 * 气泡与触发器的间距（像素）
-	 * @default 12
+	 * @default 14
 	 */
 	sideOffset?: number;
 	/**
@@ -138,11 +135,6 @@ export interface CartoonPopoverContentProps extends Omit<ComponentPropsWithoutRe
 	 */
 	shadowStyle?: CartoonShadowStyle;
 	/**
-	 * 动画效果
-	 * @default "jelly"
-	 */
-	animation?: CartoonAnimationType;
-	/**
 	 * 是否显示气泡小尾巴
 	 * @default true
 	 */
@@ -161,15 +153,15 @@ export interface CartoonPopoverContentProps extends Omit<ComponentPropsWithoutRe
 	 */
 	description?: ReactNode;
 	/**
-	 * 是否显示右上角卡通关闭按钮
-	 * @default false
-	 */
-	showClose?: boolean;
-	/**
 	 * 头部与正文之间是否显示虚线分隔
 	 * @default false
 	 */
 	divided?: boolean;
+	/**
+	 * 是否显示右上角卡通关闭按钮
+	 * @default false
+	 */
+	showClose?: boolean;
 	/**
 	 * 挂载的目标 DOM 容器，默认 document.body
 	 */
@@ -204,4 +196,32 @@ export interface CartoonPopoverDescriptionProps extends ComponentPropsWithoutRef
  */
 export interface CartoonPopoverCloseProps extends ComponentPropsWithoutRef<"button"> {
 	children?: ReactNode;
+}
+
+/**
+ * 连续平滑移动 Popover 群组参数
+ */
+export interface CartoonPopoverGroupProps {
+	/**
+	 * 气泡与触发器的间距（像素）
+	 * @default 14
+	 */
+	sideOffset?: number;
+	/**
+	 * 鼠标离开整排群组的收起延迟（毫秒）
+	 * @default 180
+	 */
+	closeDelay?: number;
+	/** 整体外层类名 */
+	className?: string;
+	children: ReactNode;
+}
+
+/**
+ * 群组内单个触发条目参数
+ */
+export interface CartoonPopoverItemProps {
+	/** 条目唯一标识 */
+	value: string;
+	children: ReactNode;
 }

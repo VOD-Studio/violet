@@ -8,6 +8,12 @@ export {
 	CartoonPopoverTrigger,
 } from "./CartoonPopover";
 
+export {
+	CartoonPopoverGroup,
+	CartoonPopoverGroupItem,
+	type CartoonPopoverGroupItemProps,
+} from "./CartoonPopoverGroup";
+
 export { computePosition } from "./floating";
 
 export type {
@@ -18,7 +24,9 @@ export type {
 	CartoonPopoverCloseProps,
 	CartoonPopoverContentProps,
 	CartoonPopoverDescriptionProps,
+	CartoonPopoverGroupProps,
 	CartoonPopoverHeaderProps,
+	CartoonPopoverItemProps,
 	CartoonPopoverProps,
 	CartoonPopoverSide,
 	CartoonPopoverTitleProps,
