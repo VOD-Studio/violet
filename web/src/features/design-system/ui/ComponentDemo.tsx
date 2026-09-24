@@ -1,13 +1,13 @@
 import { copyText } from "@shared/lib/clipboard";
-import { Check, ChevronDown, Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { LightCodeBlock } from "./LightCodeBlock";
 
 /**
  * ComponentDemo - 组件文档页折叠演示面板
  *
- * 上方自然展示组件本体（children），下方代码卡片以渐变遮罩截断，
- * 点「展开代码」平滑展开完整浅色高亮代码；复制图标固定于卡片右上。
+ * 一体化卡片：上方舞台内组件垂直水平居中，下方代码区以细线分隔、
+ * 同底色浑然一体；折叠时以渐变遮罩截断，居中悬浮胶囊无缝展开。
  * 短代码（≤ 6 行）直接完整展示，不渲染遮罩与收起控件。
  */
 export function ComponentDemo({ children, code }: { children: ReactNode; code: string }) {
@@ -25,23 +25,25 @@ export function ComponentDemo({ children, code }: { children: ReactNode; code: s
 	};
 
 	return (
-		<div>
-			{/* 组件自然展示，无外壳 */}
-			{children}
+		<div className="overflow-hidden rounded-xl border border-border/70 bg-card">
+			{/* 舞台：组件垂直水平居中，大片留白 */}
+			<div className="flex min-h-64 items-center justify-center p-6 sm:p-10">
+				<div className="w-full max-w-2xl">{children}</div>
+			</div>
 
-			{/* 代码区：细线分隔，浅色底与页面浑然一体 */}
-			<div className="relative mt-6 overflow-hidden rounded-xl border border-border/70 bg-card">
-				{/* 复制图标固定于卡片右上，实底浮层避免与代码文字混叠 */}
+			{/* 代码区：细线分隔，与舞台同底 */}
+			<div className="relative border-t border-border/60">
+				{/* 复制图标固定于代码区右上，纯图标形态 */}
 				<button
 					type="button"
 					onClick={handleCopy}
-					className="absolute top-2.5 right-2.5 z-10 rounded-sm bg-background p-1 text-muted-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors hover:bg-muted hover:text-foreground"
+					className="absolute top-3.5 right-4 z-10 text-muted-foreground transition-colors hover:text-foreground"
 					title="复制代码"
 				>
 					{copied ? (
-						<Check className="size-3.5 text-green-500" />
+						<Check className="size-4 text-green-500" />
 					) : (
-						<Copy className="size-3.5" />
+						<Copy className="size-4" />
 					)}
 					<span className="sr-only">复制代码</span>
 				</button>
@@ -54,31 +56,29 @@ export function ComponentDemo({ children, code }: { children: ReactNode; code: s
 				>
 					<LightCodeBlock code={code} />
 
-					{/* 折叠态：底部渐变遮罩 + 内联展开控件 */}
+					{/* 折叠态：底部渐变遮罩 + 居中悬浮胶囊 */}
 					{collapsible && !showCode && (
-						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-16 animate-in fade-in items-end justify-center bg-gradient-to-t from-card via-card/90 to-transparent duration-200">
+						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24 animate-in fade-in items-end justify-center bg-gradient-to-t from-card via-card/90 to-transparent pb-5 duration-200">
 							<button
 								type="button"
 								onClick={() => setShowCode(true)}
-								className="pointer-events-auto mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+								className="pointer-events-auto inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
 							>
 								<span>展开代码</span>
-								<ChevronDown className="size-3" />
 							</button>
 						</div>
 					)}
 				</div>
 
-				{/* 展开态：与展开控件同款的居中收起控件 */}
+				{/* 展开态：与 Expand 胶囊同款的居中收起胶囊 */}
 				{collapsible && showCode && (
-					<div className="flex justify-center border-t border-border/40 py-2.5">
+					<div className="flex justify-center border-t border-border/50 py-3">
 						<button
 							type="button"
 							onClick={() => setShowCode(false)}
-							className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+							className="inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
 						>
 							<span>收起代码</span>
-							<ChevronDown className="size-3 rotate-180" />
 						</button>
 					</div>
 				)}
