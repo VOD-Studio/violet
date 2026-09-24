@@ -30,6 +30,7 @@
 - **系统面板**：数据库与服务器状态、受控 SQL 控制台、流式数据导出、手动及定时备份与数据库恢复
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
+- **设计系统文档**：在 `/design-system/specimens` 查阅组件文档写法与按能力选写的栏目，并查看本站 Button 的可操作示例
 - **工程化**：DDD 四层架构、CQRS、事件驱动审计、release-please 自动发版、CI/CD 全自动部署（含迁移门禁与自动回滚）
 
 ## 技术栈

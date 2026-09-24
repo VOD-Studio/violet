@@ -133,8 +133,14 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 				num: "柒",
 				title: "组件目录",
 				to: "/design-system/specimens",
-				scope: "全站复合组件索引与高保真交互文档。",
+				scope: "组件文档的共通要求与按能力取舍，以及本站真实组件示例。",
 				children: [
+					{
+						id: "button",
+						title: "Button",
+						to: "/design-system/specimens/button",
+						description: "按钮 · 动作层级与交互状态",
+					},
 					{
 						id: "comment-section",
 						title: "CommentSection",
