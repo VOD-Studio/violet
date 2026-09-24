@@ -90,19 +90,19 @@ export function LayoutSpec() {
 
 			<SpecRow label="投影与浮起">
 				<div className="flex flex-wrap items-start gap-6">
-					<div className="rounded-2xl bg-card p-4">
+					<div className="rounded-lg bg-card p-4 ring-1 ring-border">
 						<p className="text-sm font-medium">描边</p>
 						<p className="mt-1 font-mono text-xs text-muted-foreground">
-							ring-1 ring-border · 只是分界
+							ring-1 ring-border
 						</p>
 					</div>
-					<div className="rounded-2xl bg-card p-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
+					<div className="rounded-lg bg-card p-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
 						<p className="text-sm font-medium">轻微浮起感 · 唯一配方</p>
 						<p className="mt-1 font-mono text-xs text-muted-foreground">
 							0 4px 24px / 0.05 软影
 						</p>
 					</div>
-					<div className="rounded-2xl bg-card p-4 opacity-60 shadow-lg">
+					<div className="rounded-lg bg-card p-4 opacity-60 shadow-lg">
 						<p className="text-sm font-medium line-through">硬投影</p>
 						<p className="mt-1 text-xs text-muted-foreground">又重又俗，禁用</p>
 					</div>
