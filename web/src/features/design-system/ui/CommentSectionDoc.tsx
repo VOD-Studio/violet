@@ -300,13 +300,13 @@ function ExpandableDemoBox({ children, code }: { children: ReactNode; code: stri
 				<button
 					type="button"
 					onClick={handleCopy}
-					className="absolute top-3 right-3 z-10 rounded-md border border-border/60 bg-background p-1.5 text-muted-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors hover:bg-muted hover:text-foreground"
+					className="absolute top-2.5 right-2.5 z-10 rounded-sm bg-background p-1 text-muted-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors hover:bg-muted hover:text-foreground"
 					title="复制代码"
 				>
 					{copied ? (
-						<Check className="size-4 text-green-500" />
+						<Check className="size-3.5 text-green-500" />
 					) : (
-						<Copy className="size-4" />
+						<Copy className="size-3.5" />
 					)}
 					<span className="sr-only">复制代码</span>
 				</button>
