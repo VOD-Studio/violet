@@ -3,12 +3,12 @@ import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
-import { type ReactNode, useEffect } from "react";
+import type { ReactNode } from "react";
 
 /**
  * 样例分组：标目 + token 出处注 + 真实控件活体。
  */
-function SpecimenGroup({
+export function SpecimenGroup({
 	id,
 	title,
 	provenance,
@@ -24,7 +24,7 @@ function SpecimenGroup({
 		<section
 			id={id}
 			aria-label={title}
-			className="border-b border-border/40 py-6 last:border-b-0 scroll-mt-28"
+			className="border-b border-border/40 py-6 last:border-b-0"
 		>
 			<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
 				<h3 className="text-lg font-bold">{title}</h3>
@@ -35,44 +35,33 @@ function SpecimenGroup({
 	);
 }
 
-/**
- * 组件活样例章内容：直接渲染真实共享控件，样例即真相——
- * 不截图、不仿品，此处所见即站点在用的控件本体。
- */
-export function ComponentSpecimens() {
-	useEffect(() => {
-		if (typeof window !== "undefined" && window.location.hash) {
-			const id = window.location.hash.slice(1);
-			const target = document.getElementById(id);
-			if (target) {
-				const timer = setTimeout(() => {
-					target.scrollIntoView({ behavior: "smooth", block: "start" });
-				}, 80);
-				return () => clearTimeout(timer);
-			}
-		}
-	}, []);
-
+/** 按钮控件活体样例 */
+export function SpecimensButtons() {
 	return (
-		<div className="mt-8 rounded-2xl border border-border/40 bg-card/50 p-6">
-			<SpecimenGroup
-				id="buttons"
-				title="按钮"
-				provenance="bg-primary · bg-secondary · border · bg-brand · bg-destructive · hover:bg-accent"
-			>
-				<Button>主要动作</Button>
-				<Button variant="secondary">次要动作</Button>
-				<Button variant="outline">描边动作</Button>
-				<Button variant="brand">品牌动作</Button>
-				<Button variant="destructive">危险动作</Button>
-				<Button variant="ghost">幽灵动作</Button>
-				<Button variant="outline" disabled>
-					不可用
-				</Button>
-				<Button size="sm">小尺寸</Button>
-				<Button size="lg">大尺寸</Button>
-			</SpecimenGroup>
+		<SpecimenGroup
+			id="buttons"
+			title="按钮"
+			provenance="bg-primary · bg-secondary · border · bg-brand · bg-destructive · hover:bg-accent"
+		>
+			<Button>主要动作</Button>
+			<Button variant="secondary">次要动作</Button>
+			<Button variant="outline">描边动作</Button>
+			<Button variant="brand">品牌动作</Button>
+			<Button variant="destructive">危险动作</Button>
+			<Button variant="ghost">幽灵动作</Button>
+			<Button variant="outline" disabled>
+				不可用
+			</Button>
+			<Button size="sm">小尺寸</Button>
+			<Button size="lg">大尺寸</Button>
+		</SpecimenGroup>
+	);
+}
 
+/** 徽章状态活体样例 */
+export function SpecimensStatus() {
+	return (
+		<>
 			<SpecimenGroup
 				id="status"
 				title="徽章"
@@ -86,19 +75,6 @@ export function ComponentSpecimens() {
 				<Badge variant="destructive">危险</Badge>
 			</SpecimenGroup>
 
-			<SpecimenGroup
-				id="feedback"
-				title="输入与交互"
-				provenance="border-input · bg-transparent · ring-ring（焦点环）"
-			>
-				<Input placeholder="单行输入" className="w-56" />
-				<Textarea placeholder="多行输入" className="h-20 w-72" />
-				<div className="flex items-center gap-2">
-					<Switch aria-label="开关样例" />
-					<span className="text-sm text-muted-foreground">开关</span>
-				</div>
-			</SpecimenGroup>
-
 			<SpecimenGroup title="状态" provenance="disabled:opacity-50 · animate-pulse（骨架）">
 				<Button disabled>禁用态</Button>
 				<span
@@ -107,6 +83,37 @@ export function ComponentSpecimens() {
 					className="block h-9 w-28 animate-pulse rounded-md bg-muted"
 				/>
 			</SpecimenGroup>
+		</>
+	);
+}
+
+/** 输入交互活体样例 */
+export function SpecimensFeedback() {
+	return (
+		<SpecimenGroup
+			id="feedback"
+			title="输入与交互"
+			provenance="border-input · bg-transparent · ring-ring（焦点环）"
+		>
+			<Input placeholder="单行输入" className="w-56" />
+			<Textarea placeholder="多行输入" className="h-20 w-72" />
+			<div className="flex items-center gap-2">
+				<Switch aria-label="开关样例" />
+				<span className="text-sm text-muted-foreground">开关</span>
+			</div>
+		</SpecimenGroup>
+	);
+}
+
+/**
+ * 组件活样例全量展示。
+ */
+export function ComponentSpecimens() {
+	return (
+		<div className="mt-8 rounded-2xl border border-border/40 bg-card/50 p-6 space-y-2">
+			<SpecimensButtons />
+			<SpecimensStatus />
+			<SpecimensFeedback />
 		</div>
 	);
 }

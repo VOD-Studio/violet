@@ -2,7 +2,7 @@ import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	DESIGN_SYSTEM_NAV_GROUPS,
 	type DesignSystemNavItem,
@@ -16,15 +16,42 @@ export interface DesignSystemMobileNavProps {
 	currentPath: string;
 }
 
+const FLUID_TRANSITION = {
+	type: "tween" as const,
+	ease: [0.22, 1, 0.36, 1] as const,
+	duration: 0.22,
+};
+
 /**
  * 营造法式移动端专属悬浮导航：
- * 采用大拇指操作热区黄金法则设计，
- * 底部居中悬浮灵动岛胶囊（上一章/下一章秒切 + 触控唤醒底栏卷目抽屉），
- * 正文零遮挡，单手盲操极度舒适。
+ * 抽屉内全树共享非弹簧纯平滑流体指示器，
+ * 一级与二级无缝流体滑移，零回弹，零闪烁。
  */
 export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemMobileNavProps) {
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const { prev, next } = getSiblingNavItems(activeItem.id);
+
+	const activeKey = (() => {
+		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
+			for (const item of group.items) {
+				if (item.children) {
+					const matchedSub = item.children.find((sub) => currentPath === sub.to);
+					if (matchedSub) return matchedSub.to;
+				}
+			}
+		}
+		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
+			for (const item of group.items) {
+				if (
+					currentPath === item.to ||
+					(currentPath.startsWith(item.to) && currentPath[item.to.length] === "/")
+				) {
+					return item.to;
+				}
+			}
+		}
+		return currentPath;
+	})();
 
 	// 二级菜单展开状态管理
 	const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>(() => {
@@ -32,7 +59,10 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
 			for (const item of group.items) {
 				if (item.children && item.children.length > 0) {
-					if (currentPath.startsWith(item.to)) {
+					if (
+						currentPath.startsWith(item.to) ||
+						item.children.some((child) => currentPath === child.to)
+					) {
 						initial[item.id] = true;
 					}
 				}
@@ -40,6 +70,24 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 		}
 		return initial;
 	});
+
+	// 路径变化时展开对应父章节
+	useEffect(() => {
+		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
+			for (const item of group.items) {
+				if (item.children && item.children.length > 0) {
+					if (
+						currentPath.startsWith(item.to) ||
+						item.children.some((child) => currentPath === child.to)
+					) {
+						setExpandedMap((prev) =>
+							prev[item.id] ? prev : { ...prev, [item.id]: true },
+						);
+					}
+				}
+			}
+		}
+	}, [currentPath]);
 
 	const toggleExpand = (itemId: string) => {
 		setExpandedMap((prev) => ({
@@ -111,17 +159,17 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
-							transition={{ duration: 0.2 }}
+							transition={{ duration: 0.18 }}
 							onClick={() => setDrawerOpen(false)}
 							className="absolute inset-0 bg-background/80 backdrop-blur-xs"
 						/>
 
-						{/* 物理弹簧向上滑出的卷目卡片 */}
+						{/* 纯平滑轻量抽屉 */}
 						<motion.div
 							initial={{ y: "100%" }}
 							animate={{ y: 0 }}
 							exit={{ y: "100%" }}
-							transition={{ type: "spring", damping: 28, stiffness: 300 }}
+							transition={{ duration: 0.22, ease: "easeOut" }}
 							className="relative z-10 flex max-h-[82vh] flex-col rounded-t-3xl border-t border-border/60 bg-card/95 shadow-2xl backdrop-blur-2xl"
 						>
 							{/* 顶部抓手与标题栏 */}
@@ -161,32 +209,43 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 													item.children && item.children.length > 0,
 												);
 												const isExpanded = Boolean(expandedMap[item.id]);
-												const isCurrent =
-													currentPath === item.to ||
-													(currentPath.startsWith(item.to) &&
-														currentPath[item.to.length] === "/");
+												const isThisItemActive = activeKey === item.to;
+												const isBranchActive =
+													currentPath.startsWith(item.to) ||
+													Boolean(
+														item.children?.some(
+															(sub) => currentPath === sub.to,
+														),
+													);
 
 												return (
-													<li
-														key={item.id}
-														className="rounded-xl overflow-hidden"
-													>
-														<div className="flex items-center justify-between">
+													<li key={item.id} className="space-y-0.5">
+														<div className="relative flex items-center justify-between rounded-xl">
+															{isThisItemActive && (
+																<motion.div
+																	layoutId="ds-mobile-fluid-indicator"
+																	className="absolute inset-0 rounded-xl bg-primary/10 pointer-events-none"
+																	transition={FLUID_TRANSITION}
+																/>
+															)}
+
 															<Link
 																to={item.to}
 																onClick={() => setDrawerOpen(false)}
 																className={cn(
-																	"flex flex-1 items-baseline gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
-																	isCurrent
-																		? "bg-primary/10 font-medium text-foreground"
-																		: "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+																	"relative z-10 flex flex-1 items-baseline gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-150",
+																	isThisItemActive
+																		? "font-bold text-primary"
+																		: isBranchActive
+																			? "text-foreground font-semibold"
+																			: "text-muted-foreground hover:text-foreground",
 																)}
 															>
 																<span
 																	className={cn(
-																		"font-serif text-xs font-bold",
-																		isCurrent
-																			? "text-primary"
+																		"font-serif text-xs",
+																		isBranchActive
+																			? "text-primary font-bold"
 																			: "text-muted-foreground/60",
 																	)}
 																>
@@ -203,23 +262,15 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 																	onClick={() =>
 																		toggleExpand(item.id)
 																	}
-																	className="p-2.5 text-muted-foreground/60 hover:text-foreground"
+																	className="relative z-10 p-2.5 text-muted-foreground/60 hover:text-foreground"
 																>
-																	<motion.span
-																		animate={{
-																			rotate: isExpanded
-																				? 180
-																				: 0,
-																		}}
-																		transition={{
-																			type: "spring",
-																			stiffness: 380,
-																			damping: 24,
-																		}}
-																		className="flex items-center justify-center"
-																	>
-																		<ChevronDown className="h-4 w-4" />
-																	</motion.span>
+																	<ChevronDown
+																		className={cn(
+																			"h-4 w-4 transition-transform duration-200 ease-out",
+																			isExpanded &&
+																				"rotate-180",
+																		)}
+																	/>
 																	<span className="sr-only">
 																		{isExpanded
 																			? "收起"
@@ -230,7 +281,7 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 															)}
 														</div>
 
-														{/* 二级菜单展开项 */}
+														{/* 二级菜单展开项：纯平滑 Tween，无弹簧 */}
 														{hasChildren && (
 															<AnimatePresence initial={false}>
 																{isExpanded && (
@@ -248,43 +299,39 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 																			opacity: 0,
 																		}}
 																		transition={{
-																			height: {
-																				type: "spring",
-																				stiffness: 340,
-																				damping: 28,
-																				mass: 0.8,
-																			},
+																			height: FLUID_TRANSITION,
 																			opacity: {
-																				duration: 0.18,
+																				duration: 0.16,
 																			},
 																		}}
 																		className="overflow-hidden"
 																	>
-																		<ul className="ml-6 border-l border-border/50 pl-3 py-1 space-y-1">
+																		<ul className="ml-5 border-l border-border/40 pl-3 py-1 space-y-1">
 																			{item.children?.map(
 																				(sub) => {
-																					const isSubCurrent =
-																						currentPath ===
-																							sub.to ||
-																						(typeof window !==
-																							"undefined" &&
-																							window
-																								.location
-																								.hash &&
-																							sub.to.endsWith(
-																								window
-																									.location
-																									.hash,
-																							));
+																					const isThisSubActive =
+																						activeKey ===
+																						sub.to;
 
 																					return (
 																						<li
 																							key={
 																								sub.id
 																							}
+																							className="relative"
 																						>
-																							<a
-																								href={
+																							{isThisSubActive && (
+																								<motion.div
+																									layoutId="ds-mobile-fluid-indicator"
+																									className="absolute inset-0 rounded-lg bg-primary/10 pointer-events-none"
+																									transition={
+																										FLUID_TRANSITION
+																									}
+																								/>
+																							)}
+
+																							<Link
+																								to={
 																									sub.to
 																								}
 																								onClick={() =>
@@ -292,9 +339,14 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 																										false,
 																									)
 																								}
+																								aria-current={
+																									isThisSubActive
+																										? "page"
+																										: undefined
+																								}
 																								className={cn(
-																									"block py-2 text-xs transition-colors",
-																									isSubCurrent
+																									"relative z-10 block rounded-lg px-2.5 py-2 text-xs transition-colors duration-150",
+																									isThisSubActive
 																										? "font-medium text-primary"
 																										: "text-muted-foreground hover:text-foreground",
 																								)}
@@ -302,7 +354,7 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 																								{
 																									sub.title
 																								}
-																							</a>
+																							</Link>
 																						</li>
 																					);
 																				},
