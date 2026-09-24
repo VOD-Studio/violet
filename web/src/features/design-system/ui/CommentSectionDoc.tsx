@@ -245,31 +245,25 @@ const CONFIG_FIELDS: PropRow[] = [
 ];
 
 /**
- * HeroUI 标志性一体化演示卡片（上方纯净舞台 + 下方可折叠代码）。
+ * HeroUI 风格一体化演示卡片（上方纯净舞台 + 下方高质感深色代码区）。
  */
-function HeroDemoBox({
-	children,
-	code,
-	defaultExpanded = false,
-}: {
-	children: ReactNode;
-	code: string;
-	defaultExpanded?: boolean;
-}) {
-	const [expanded, setExpanded] = useState(defaultExpanded);
+function HeroDemoBox({ children, code }: { children: ReactNode; code: string }) {
+	const lineCount = code.split("\n").length;
+	const isCollapsible = lineCount > 7;
+	const [expanded, setExpanded] = useState(!isCollapsible);
 
 	return (
 		<div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
-			{/* 上半部分：预览舞台 */}
-			<div className="flex min-h-64 items-center justify-center p-6 sm:p-10 bg-background/40">
+			{/* 上半部分：预览舞台（居中大方铺开） */}
+			<div className="flex min-h-64 items-center justify-center p-6 sm:p-10 bg-background/50">
 				<div className="w-full max-w-2xl">{children}</div>
 			</div>
 
-			{/* 下半部分：连体代码区 */}
-			<div className="relative border-t border-border/60 bg-muted/15">
+			{/* 下半部分：高对比度连体深色代码区 */}
+			<div className="relative border-t border-border/70 bg-[#24292e]">
 				<div
-					className={`overflow-hidden transition-all duration-300 ${
-						expanded ? "max-h-[800px]" : "max-h-24"
+					className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${
+						!isCollapsible || expanded ? "max-h-[800px]" : "max-h-40"
 					}`}
 				>
 					<CodeCard
@@ -279,27 +273,30 @@ function HeroDemoBox({
 					/>
 				</div>
 
-				{/* 底部展开 / 折叠胶囊控制器 */}
-				{!expanded ? (
-					<div className="absolute inset-x-0 bottom-0 flex h-20 items-end justify-center bg-gradient-to-t from-background/95 to-transparent pb-3 pointer-events-none">
+				{/* 仅在代码较长且处于折叠态时，渲染深色渐变遮罩与 Expand 胶囊 */}
+				{isCollapsible && !expanded && (
+					<div className="absolute inset-x-0 bottom-0 flex h-24 items-end justify-center bg-gradient-to-t from-[#24292e] via-[#24292e]/85 to-transparent pb-3 pointer-events-none">
 						<button
 							type="button"
 							onClick={() => setExpanded(true)}
-							className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 py-1 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
+							className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/20 bg-[#2d333b] px-4 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-[#373e47] hover:border-white/30"
 						>
 							<span>Expand code</span>
-							<ChevronDown className="size-3.5 text-muted-foreground" />
+							<ChevronDown className="size-3.5 text-white/70" />
 						</button>
 					</div>
-				) : (
-					<div className="flex justify-center border-t border-border/40 bg-card/50 py-2">
+				)}
+
+				{/* 展开后的底部收起控制条 */}
+				{isCollapsible && expanded && (
+					<div className="flex justify-center border-t border-white/10 bg-[#24292e] py-2">
 						<button
 							type="button"
 							onClick={() => setExpanded(false)}
-							className="flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 py-1 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
+							className="flex items-center gap-1.5 rounded-full border border-white/20 bg-[#2d333b] px-4 py-1 text-xs font-medium text-white/90 shadow-sm transition-all hover:bg-[#373e47] hover:text-white"
 						>
 							<span>Collapse code</span>
-							<ChevronUp className="size-3.5 text-muted-foreground" />
+							<ChevronUp className="size-3.5 text-white/70" />
 						</button>
 					</div>
 				)}
