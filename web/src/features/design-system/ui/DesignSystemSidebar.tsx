@@ -1,8 +1,6 @@
 import { cn } from "@shared/lib/utils";
-import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { TreeNav, type TreeNavGroup } from "@shared/ui/tree-nav";
+import { useMemo } from "react";
 import { DESIGN_SYSTEM_NAV_GROUPS } from "../model/navigation";
 
 export interface DesignSystemSidebarProps {
@@ -14,92 +12,38 @@ export interface DesignSystemSidebarProps {
 	className?: string;
 }
 
-/** 统一的非弹簧流体缓动配置：纯净流体滑动，快速到位，绝无弹簧回弹与晃动 */
-const FLUID_TRANSITION = {
-	type: "tween" as const,
-	ease: [0.22, 1, 0.36, 1] as const,
-	duration: 0.22,
-};
-
 /**
  * 营造法式卷目索引导航：
- * 采用全树共享 LayoutId 纯平滑流体指示器，
- * 一级与多级项之间丝滑流体滑移变形，非弹簧，零回弹，零闪烁。
+ * 委托至 shared/ui/tree-nav 通用多级树形导航，
+ * 支持最多 4 级目录深度与多级左侧竖线流体注入生长动效，严格零布局抖动。
  */
 export function DesignSystemSidebar({
 	currentPath,
 	onNavigate,
 	className,
 }: DesignSystemSidebarProps) {
-	// 默认展开包含当前活跃路由或其子项的条目
-	const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>(() => {
-		const initial: Record<string, boolean> = {};
-		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
-			for (const item of group.items) {
-				if (item.children && item.children.length > 0) {
-					if (
-						currentPath.startsWith(item.to) ||
-						item.children.some((child) => currentPath === child.to)
-					) {
-						initial[item.id] = true;
-					}
-				}
-			}
-		}
-		return initial;
-	});
-
-	// 路径变化时，确保目标父章节展开
-	useEffect(() => {
-		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
-			for (const item of group.items) {
-				if (item.children && item.children.length > 0) {
-					if (
-						currentPath.startsWith(item.to) ||
-						item.children.some((child) => currentPath === child.to)
-					) {
-						setExpandedMap((prev) =>
-							prev[item.id] ? prev : { ...prev, [item.id]: true },
-						);
-					}
-				}
-			}
-		}
-	}, [currentPath]);
-
-	const toggleExpand = (itemId: string) => {
-		setExpandedMap((prev) => ({
-			...prev,
-			[itemId]: !prev[itemId],
-		}));
-	};
-
-	// 计算全局唯一的活跃项 Key
-	const activeKey = (() => {
-		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
-			for (const item of group.items) {
-				if (item.children) {
-					const matchedSub = item.children.find((sub) => currentPath === sub.to);
-					if (matchedSub) return matchedSub.to;
-				}
-			}
-		}
-		for (const group of DESIGN_SYSTEM_NAV_GROUPS) {
-			for (const item of group.items) {
-				if (
-					currentPath === item.to ||
-					(currentPath.startsWith(item.to) && currentPath[item.to.length] === "/")
-				) {
-					return item.to;
-				}
-			}
-		}
-		return currentPath;
-	})();
+	const treeNavGroups: TreeNavGroup[] = useMemo(
+		() =>
+			DESIGN_SYSTEM_NAV_GROUPS.map((group) => ({
+				id: group.id,
+				title: group.title,
+				items: group.items.map((item) => ({
+					id: item.id,
+					title: item.title,
+					to: item.to,
+					badge: item.num,
+					children: item.children?.map((sub) => ({
+						id: sub.id,
+						title: sub.title,
+						to: sub.to,
+					})),
+				})),
+			})),
+		[],
+	);
 
 	return (
-		<nav
-			aria-label="营造法式卷目"
+		<div
 			className={cn(
 				"w-60 shrink-0 border-r border-border/50 py-2 pr-6 select-none",
 				className,
@@ -118,201 +62,14 @@ export function DesignSystemSidebar({
 				</p>
 			</div>
 
-			{/* 卷册目录列表 */}
-			<div className="space-y-6">
-				{DESIGN_SYSTEM_NAV_GROUPS.map((group) => (
-					<div key={group.id} className="space-y-2">
-						<div className="px-2 text-xs font-serif font-bold text-foreground/80 tracking-wider">
-							{group.title}
-						</div>
-
-						<ul className="space-y-1">
-							{group.items.map((item) => {
-								const hasChildren = Boolean(
-									item.children && item.children.length > 0,
-								);
-								const isExpanded = Boolean(expandedMap[item.id]);
-
-								const isThisItemActive = activeKey === item.to;
-								const isBranchActive =
-									currentPath.startsWith(item.to) ||
-									Boolean(item.children?.some((sub) => currentPath === sub.to));
-
-								return (
-									<li key={item.id} className="space-y-1">
-										{/* 一级菜单行：高度恒定、独立高亮 */}
-										<div className="relative flex items-center justify-between rounded-lg">
-											{/* 全树共享流体滑块：纯 Tween 缓动，非弹簧，滑移至当前一级项 */}
-											{isThisItemActive && (
-												<motion.div
-													layoutId="ds-fluid-indicator"
-													className="absolute inset-0 rounded-lg bg-primary/10 pointer-events-none"
-													transition={FLUID_TRANSITION}
-												/>
-											)}
-
-											<Link
-												to={item.to}
-												onClick={onNavigate}
-												aria-current={isThisItemActive ? "page" : undefined}
-												className={cn(
-													"relative z-10 flex flex-1 items-baseline gap-2.5 rounded-lg px-2.5 py-2 text-left font-medium transition-colors duration-150",
-													isThisItemActive
-														? "text-primary font-semibold"
-														: isBranchActive
-															? "text-foreground font-medium"
-															: "text-muted-foreground hover:text-foreground",
-												)}
-											>
-												<span
-													className={cn(
-														"font-serif text-xs transition-colors duration-150",
-														isBranchActive
-															? "text-primary font-medium"
-															: "text-muted-foreground/70",
-													)}
-												>
-													{item.num}
-												</span>
-												<span className="tracking-wide text-xs sm:text-[13px]">
-													{item.title}
-												</span>
-											</Link>
-
-											{hasChildren && (
-												<button
-													type="button"
-													onClick={() => toggleExpand(item.id)}
-													title={isExpanded ? "收起子章节" : "展开子章节"}
-													className="relative z-10 mr-1 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground transition-colors"
-												>
-													<ChevronRight
-														className={cn(
-															"h-3.5 w-3.5 transition-transform duration-200 ease-out",
-															isExpanded && "rotate-90",
-														)}
-													/>
-													<span className="sr-only">
-														{isExpanded ? "收起" : "展开"}
-														{item.title}子章节
-													</span>
-												</button>
-											)}
-										</div>
-
-										{/* 二级菜单列表 */}
-										{hasChildren && (
-											<AnimatePresence initial={false}>
-												{isExpanded && (
-													<motion.div
-														initial={{ height: 0, opacity: 0 }}
-														animate={{ height: "auto", opacity: 1 }}
-														exit={{ height: 0, opacity: 0 }}
-														transition={{
-															height: FLUID_TRANSITION,
-															opacity: { duration: 0.16 },
-														}}
-														className="overflow-hidden"
-													>
-														<div className="relative mt-1 ml-4 pl-3 pb-1">
-															{/* 静态未激活底轨：恒定发丝线，位置固定绝不造成抖动 */}
-															<div
-																aria-hidden="true"
-																className="absolute left-0 top-1 bottom-1 w-px bg-border/50"
-															/>
-
-															{/* 代表本组被选中的高亮竖线：自上而下墨线注入流体生长动画 */}
-															<AnimatePresence>
-																{isBranchActive && (
-																	<motion.div
-																		key="active-group-line"
-																		aria-hidden="true"
-																		initial={{
-																			scaleY: 0,
-																			opacity: 0,
-																		}}
-																		animate={{
-																			scaleY: 1,
-																			opacity: 1,
-																		}}
-																		exit={{
-																			scaleY: 0,
-																			opacity: 0,
-																		}}
-																		transition={{
-																			scaleY: {
-																				type: "tween",
-																				ease: [
-																					0.22, 1, 0.36,
-																					1,
-																				],
-																				duration: 0.28,
-																			},
-																			opacity: {
-																				duration: 0.18,
-																			},
-																		}}
-																		className="absolute left-0 top-1 bottom-1 w-0.5 -translate-x-1/2 origin-top rounded-full bg-primary pointer-events-none"
-																	/>
-																)}
-															</AnimatePresence>
-
-															<ul className="space-y-1">
-																{item.children?.map((sub) => {
-																	const isThisSubActive =
-																		activeKey === sub.to;
-
-																	return (
-																		<li
-																			key={sub.id}
-																			className="relative"
-																		>
-																			{/* 全树共享流体滑块：从一级平滑流体滑动至二级，非弹簧 */}
-																			{isThisSubActive && (
-																				<motion.div
-																					layoutId="ds-fluid-indicator"
-																					className="absolute inset-0 rounded-md bg-primary/10 pointer-events-none"
-																					transition={
-																						FLUID_TRANSITION
-																					}
-																				/>
-																			)}
-
-																			<Link
-																				to={sub.to}
-																				onClick={onNavigate}
-																				aria-current={
-																					isThisSubActive
-																						? "page"
-																						: undefined
-																				}
-																				className={cn(
-																					"relative z-10 block rounded-md px-2 py-1.5 text-xs transition-colors duration-150 font-normal",
-																					isThisSubActive
-																						? "font-medium text-primary"
-																						: "text-muted-foreground hover:text-foreground",
-																				)}
-																			>
-																				<span className="truncate">
-																					{sub.title}
-																				</span>
-																			</Link>
-																		</li>
-																	);
-																})}
-															</ul>
-														</div>
-													</motion.div>
-												)}
-											</AnimatePresence>
-										)}
-									</li>
-								);
-							})}
-						</ul>
-					</div>
-				))}
-			</div>
-		</nav>
+			{/* 多级目录导航 */}
+			<TreeNav
+				currentPath={currentPath}
+				groups={treeNavGroups}
+				onNavigate={onNavigate}
+				fluidLayoutId="ds-fluid-indicator"
+				ariaLabel="营造法式卷目"
+			/>
+		</div>
 	);
 }
