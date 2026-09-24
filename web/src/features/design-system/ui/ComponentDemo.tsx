@@ -1,20 +1,18 @@
 import { copyText } from "@shared/lib/clipboard";
 import { Check, Copy } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useRef, useState } from "react";
 import { LightCodeBlock } from "./LightCodeBlock";
 
 /**
- * ComponentDemo - 组件文档页折叠演示面板
- *
- * 一体化卡片：上方舞台内组件垂直水平居中，下方代码区以细线分隔、
- * 同底色浑然一体；折叠时以渐变遮罩截断，居中悬浮胶囊无缝展开。
- * 短代码（≤ 6 行）直接完整展示，不渲染遮罩与收起控件。
+ * 展示真实组件及对应代码；较长代码可展开查看与复制。
  */
 export function ComponentDemo({ children, code }: { children: ReactNode; code: string }) {
-	// 短代码（≤ 6 行）直接完整展示，不折叠、无遮罩
 	const collapsible = code.split("\n").length > 6;
 	const [showCode, setShowCode] = useState(!collapsible);
 	const [copied, setCopied] = useState(false);
+	const codeId = useId();
+	const codeRef = useRef<HTMLDivElement>(null);
+	const animationRef = useRef<Animation | null>(null);
 
 	const handleCopy = async () => {
 		const ok = await copyText(code);
@@ -24,16 +22,34 @@ export function ComponentDemo({ children, code }: { children: ReactNode; code: s
 		}
 	};
 
+	const toggleCode = () => {
+		const codeBox = codeRef.current;
+		const nextOpen = !showCode;
+		if (codeBox) {
+			const from = codeBox.getBoundingClientRect().height;
+			const to = nextOpen ? Math.max(208, codeBox.scrollHeight) : 208;
+			animationRef.current?.cancel();
+			if (from !== to && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+				const animation = codeBox.animate(
+					[{ height: `${from}px` }, { height: `${to}px` }],
+					{ duration: 260, easing: "ease-in-out" },
+				);
+				animationRef.current = animation;
+				animation.onfinish = () => {
+					if (animationRef.current === animation) animationRef.current = null;
+				};
+			}
+		}
+		setShowCode(nextOpen);
+	};
+
 	return (
 		<div className="overflow-hidden rounded-xl border border-border/70 bg-card">
-			{/* 舞台：组件垂直水平居中，大片留白 */}
 			<div className="flex min-h-64 items-center justify-center p-6 sm:p-10">
 				<div className="w-full max-w-2xl">{children}</div>
 			</div>
 
-			{/* 代码区：细线分隔，与舞台同底 */}
 			<div className="relative border-t border-border/60">
-				{/* 复制图标固定于代码区右上，纯图标形态 */}
 				<button
 					type="button"
 					onClick={handleCopy}
@@ -48,39 +64,34 @@ export function ComponentDemo({ children, code }: { children: ReactNode; code: s
 					<span className="sr-only">复制代码</span>
 				</button>
 
-				{/* max-height 过渡提供平滑的展开收起动画 */}
 				<div
-					className={`relative overflow-hidden transition-[max-height] duration-300 ease-in-out ${
-						!collapsible || showCode ? "max-h-[80rem]" : "max-h-52"
-					}`}
+					ref={codeRef}
+					id={codeId}
+					className={`relative overflow-hidden ${!collapsible || showCode ? "h-auto" : "h-52"}`}
 				>
-					<LightCodeBlock code={code} />
-
-					{/* 折叠态：底部渐变遮罩 + 居中悬浮胶囊 */}
-					{collapsible && !showCode && (
-						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24 animate-in fade-in items-end justify-center bg-gradient-to-t from-card via-card/90 to-transparent pb-5 duration-200">
-							<button
-								type="button"
-								onClick={() => setShowCode(true)}
-								className="pointer-events-auto inline-flex items-center rounded-full bg-card px-4 py-1.5 text-sm text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
-							>
-								<span>Expand code</span>
-							</button>
-						</div>
+					<div className={collapsible ? "pb-16" : undefined}>
+						<LightCodeBlock code={code} />
+					</div>
+					{collapsible && (
+						<div
+							aria-hidden="true"
+							className={`pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card via-card/90 to-transparent transition-opacity duration-200 ${
+								showCode ? "opacity-0" : "opacity-100"
+							}`}
+						/>
 					)}
 				</div>
 
-				{/* 展开态：与 Expand 胶囊同款的居中收起胶囊 */}
-				{collapsible && showCode && (
-					<div className="flex justify-center border-t border-border/50 py-3">
-						<button
-							type="button"
-							onClick={() => setShowCode(false)}
-							className="inline-flex items-center rounded-full bg-card px-4 py-1.5 text-sm text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
-						>
-							<span>Collapse code</span>
-						</button>
-					</div>
+				{collapsible && (
+					<button
+						type="button"
+						onClick={toggleCode}
+						aria-expanded={showCode}
+						aria-controls={codeId}
+						className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center rounded-full border border-border/70 bg-card px-4 py-1.5 text-sm text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors hover:bg-muted"
+					>
+						{showCode ? "Collapse code" : "Expand code"}
+					</button>
 				)}
 			</div>
 		</div>
