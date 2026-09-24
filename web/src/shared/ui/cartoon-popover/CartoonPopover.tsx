@@ -611,7 +611,6 @@ export function CartoonPopoverContent({
 	const meta = VARIANT_MAP[variant] ?? VARIANT_MAP.default;
 	const shadowClass = getShadowClass(shadowStyle);
 	const animClass = getAnimationClass(animation, isClosing);
-	const hasHeader = Boolean(title || showClose);
 	const targetContainer = container ?? (typeof document !== "undefined" ? document.body : null);
 
 	if (!targetContainer) return null;
@@ -667,19 +666,17 @@ export function CartoonPopoverContent({
 				/>
 			)}
 
+			{/* 右上角关闭按钮 */}
+			{showClose && <CartoonPopoverClose className="absolute top-3.5 right-3.5" />}
+
 			{/* 可选快捷头部 */}
-			{hasHeader && (
+			{title && (
 				<CartoonPopoverHeader divided={divided}>
-					{title ? (
-						typeof title === "string" ? (
-							<CartoonPopoverTitle>{title}</CartoonPopoverTitle>
-						) : (
-							title
-						)
+					{typeof title === "string" ? (
+						<CartoonPopoverTitle>{title}</CartoonPopoverTitle>
 					) : (
-						<div />
+						title
 					)}
-					{showClose && <CartoonPopoverClose />}
 				</CartoonPopoverHeader>
 			)}
 
@@ -780,14 +777,12 @@ export function CartoonPopoverClose({ className, onClick, ...props }: CartoonPop
 				}
 			}}
 			className={cn(
-				"inline-flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current/80 bg-background text-foreground/80 shadow-[1px_1px_0_0_currentColor] transition-all duration-200",
-				"hover:rotate-90 hover:scale-110 hover:border-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/70 dark:hover:border-rose-400 dark:hover:text-rose-400",
-				"active:scale-90 active:rotate-45",
+				"inline-flex size-6 shrink-0 items-center justify-center rounded-full text-current/50 transition-all hover:bg-current/10 hover:text-current active:scale-90",
 				className,
 			)}
 			{...props}
 		>
-			<X className="size-3.5 stroke-[2.8]" />
+			<X className="size-3.5 stroke-[2.2]" />
 		</button>
 	);
 }
