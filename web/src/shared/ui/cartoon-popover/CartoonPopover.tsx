@@ -19,7 +19,6 @@ import "./cartoon-popover.css";
 import { computePosition } from "./floating";
 import type {
 	CartoonAnimationType,
-	CartoonBubbleStyle,
 	CartoonBubbleVariant,
 	CartoonPopoverCloseProps,
 	CartoonPopoverContentProps,
@@ -345,57 +344,9 @@ export function CartoonPopoverTrigger({
 interface SpeechArrowProps {
 	side: CartoonPopoverSide;
 	offset: number;
-	bubbleStyle: CartoonBubbleStyle;
 }
 
-function SpeechArrow({ side, offset, bubbleStyle }: SpeechArrowProps) {
-	if (bubbleStyle === "thought") {
-		// 思考气泡：双级小圆点依次阶梯延伸，总高度紧凑不穿模
-		let containerStyle: CSSProperties = {};
-		if (side === "bottom") {
-			containerStyle = { top: "-10px", left: `${offset - 6}px` };
-		} else if (side === "top") {
-			containerStyle = { bottom: "-10px", left: `${offset - 6}px` };
-		} else if (side === "right") {
-			containerStyle = { left: "-10px", top: `${offset - 6}px` };
-		} else {
-			containerStyle = { right: "-10px", top: `${offset - 6}px` };
-		}
-
-		return (
-			<div
-				className="pointer-events-none absolute flex items-center justify-center"
-				style={containerStyle}
-				aria-hidden="true"
-			>
-				<svg
-					width="12"
-					height="12"
-					viewBox="0 0 12 12"
-					className="overflow-visible"
-					aria-hidden="true"
-				>
-					<circle
-						cx="6"
-						cy="4"
-						r="3.5"
-						className="thought-bubble-dot-1"
-						style={{ fill: "var(--cartoon-bg)", stroke: "var(--cartoon-border)" }}
-						strokeWidth="2"
-					/>
-					<circle
-						cx="6"
-						cy="9.5"
-						r="2"
-						className="thought-bubble-dot-2"
-						style={{ fill: "var(--cartoon-bg)", stroke: "var(--cartoon-border)" }}
-						strokeWidth="1.5"
-					/>
-				</svg>
-			</div>
-		);
-	}
-
+function SpeechArrow({ side, offset }: SpeechArrowProps) {
 	// 经典对白三角形尾巴：外露 8px，宽 16px，底部 3px 深入气泡内部覆盖消除 2px 边框线
 	const W = 16;
 	const H = 8;
@@ -696,11 +647,7 @@ export function CartoonPopoverContent({
 
 			{/* 气泡小尾巴 */}
 			{showArrow && bubbleStyle !== "sticker" && coords && (
-				<SpeechArrow
-					side={coords.actualSide}
-					offset={coords.arrowOffset}
-					bubbleStyle={bubbleStyle}
-				/>
+				<SpeechArrow side={coords.actualSide} offset={coords.arrowOffset} />
 			)}
 		</div>
 	);

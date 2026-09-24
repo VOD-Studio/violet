@@ -4,7 +4,7 @@ import {
 	CartoonPopoverContent,
 	CartoonPopoverTrigger,
 } from "@shared/ui/cartoon-popover";
-import { HelpCircle, MessageCircle, MousePointerClick, Sparkles } from "lucide-react";
+import { HelpCircle, MessageCircle, MousePointerClick } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
@@ -66,23 +66,13 @@ const STYLES_CODE = `<div className="flex flex-wrap gap-4">
     </CartoonPopoverContent>
   </CartoonPopover>
 
-  {/* 思考气泡 */}
+  {/* 便签贴纸 */}
   <CartoonPopover>
     <CartoonPopoverTrigger asChild>
-      <Button variant="outline">思考气泡 (Thought)</Button>
+      <Button variant="outline">便签贴纸 (Sticker)</Button>
     </CartoonPopoverTrigger>
-    <CartoonPopoverContent bubbleStyle="thought" variant="brand" title="心里在想…" showClose>
-      <p className="text-xs">由双层微动小圆点依次延伸，表达思考与内心独白。</p>
-    </CartoonPopoverContent>
-  </CartoonPopover>
-
-  {/* 贴纸气泡 */}
-  <CartoonPopover>
-    <CartoonPopoverTrigger asChild>
-      <Button variant="outline">贴纸气泡 (Sticker)</Button>
-    </CartoonPopoverTrigger>
-    <CartoonPopoverContent bubbleStyle="sticker" variant="amber" shadowStyle="comic" title="便签贴纸">
-      <p className="text-xs">没有小尾巴的圆润卡片，搭配 3px 漫画实色投影。</p>
+    <CartoonPopoverContent bubbleStyle="sticker" variant="amber" shadowStyle="comic" title="便签贴纸" showClose>
+      <p className="text-xs">不带小尾巴的圆润卡片，搭配 3px 漫画实色投影。</p>
     </CartoonPopoverContent>
   </CartoonPopover>
 </div>`;
@@ -267,9 +257,9 @@ const CONTENT_PROPS: PropRow[] = [
 	},
 	{
 		name: "bubbleStyle",
-		type: '"speech" | "thought" | "sticker"',
+		type: '"speech" | "sticker"',
 		defaultValue: '"speech"',
-		meaning: "气泡形态：经典对白三角形尾巴、思考小圆点尾巴或无尾巴贴纸。",
+		meaning: "气泡形态：经典对白三角形尾巴，或无尾巴的便签贴纸卡片。",
 	},
 	{
 		name: "variant",
@@ -359,8 +349,7 @@ export function CartoonPopoverDocPage() {
 					<div className="flex justify-center py-6">
 						<CartoonPopover>
 							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="default" className="gap-2">
-									<Sparkles className="size-4" />
+								<Button type="button" variant="default">
 									打开卡通气泡
 								</Button>
 							</CartoonPopoverTrigger>
@@ -410,8 +399,7 @@ export function CartoonPopoverDocPage() {
 
 						<CartoonPopover openOnHover>
 							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="outline" className="gap-1.5">
-									<Sparkles className="size-4" />
+								<Button type="button" variant="outline">
 									悬停或点击 (Both)
 								</Button>
 							</CartoonPopoverTrigger>
@@ -431,7 +419,7 @@ export function CartoonPopoverDocPage() {
 					气泡形态 (bubbleStyle)
 				</h2>
 				<p className="text-sm leading-relaxed text-muted-foreground">
-					提供对白气泡（speech）、思考气泡（thought）与贴纸气泡（sticker）。
+					提供带三角形小尾巴的经典对白气泡（speech）与无尾巴的便签贴纸（sticker）。
 				</p>
 				<ComponentDemo code={STYLES_CODE}>
 					<div className="flex flex-wrap items-center justify-center gap-4 py-6">
@@ -453,25 +441,7 @@ export function CartoonPopoverDocPage() {
 							<CartoonPopoverTrigger asChild>
 								<Button type="button" variant="outline" className="gap-1.5">
 									<HelpCircle className="size-4" />
-									思考气泡
-								</Button>
-							</CartoonPopoverTrigger>
-							<CartoonPopoverContent
-								bubbleStyle="thought"
-								variant="brand"
-								title="心里在想…"
-								showClose
-							>
-								<p className="text-xs">
-									由双层微动小圆点依次延伸，表达思考与内心独白。
-								</p>
-							</CartoonPopoverContent>
-						</CartoonPopover>
-
-						<CartoonPopover>
-							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="outline">
-									贴纸气泡
+									便签贴纸
 								</Button>
 							</CartoonPopoverTrigger>
 							<CartoonPopoverContent
@@ -479,9 +449,10 @@ export function CartoonPopoverDocPage() {
 								variant="amber"
 								shadowStyle="comic"
 								title="便签贴纸"
+								showClose
 							>
 								<p className="text-xs">
-									没有小尾巴的圆润卡片，搭配 3px 漫画实色投影。
+									不带小尾巴的圆润卡片，搭配 3px 漫画实色投影。
 								</p>
 							</CartoonPopoverContent>
 						</CartoonPopover>

@@ -115,13 +115,13 @@ describe("CartoonPopover Component", () => {
 		expect(screen.getByText("受控内容")).toBeTruthy();
 	});
 
-	it("渲染色彩变体与思考气泡形态属性", () => {
+	it("渲染色彩变体与贴纸气泡形态属性", () => {
 		render(
 			<CartoonPopover defaultOpen>
 				<CartoonPopoverTrigger>触发器</CartoonPopoverTrigger>
-				<CartoonPopoverContent variant="brand" bubbleStyle="thought" shadowStyle="comic">
+				<CartoonPopoverContent variant="brand" bubbleStyle="sticker" shadowStyle="comic">
 					<CartoonPopoverHeader>
-						<CartoonPopoverTitle>思考中</CartoonPopoverTitle>
+						<CartoonPopoverTitle>便签标题</CartoonPopoverTitle>
 						<CartoonPopoverClose />
 					</CartoonPopoverHeader>
 					<CartoonPopoverDescription>喵喵喵</CartoonPopoverDescription>
@@ -131,7 +131,7 @@ describe("CartoonPopover Component", () => {
 
 		const content = screen.getByRole("dialog");
 		expect(content.getAttribute("data-variant")).toBe("brand");
-		expect(content.getAttribute("data-bubble-style")).toBe("thought");
+		expect(content.getAttribute("data-bubble-style")).toBe("sticker");
 		expect(content.className).toContain("shadow-[3px_3px_0_0_var(--cartoon-shadow)]");
 
 		// 点击右上角关闭胶囊

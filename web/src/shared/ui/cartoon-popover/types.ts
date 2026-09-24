@@ -17,10 +17,9 @@ export type CartoonTriggerMode = "click" | "hover" | "both";
 /**
  * 卡通气泡形态风格：
  * - speech: 经典漫画对白气泡（带平滑三角形小尾巴）
- * - thought: 思考泡泡（小圆点阶梯延伸尾巴）
  * - sticker: 卡通贴纸气泡（无尾巴，饱满圆角）
  */
-export type CartoonBubbleStyle = "speech" | "thought" | "sticker";
+export type CartoonBubbleStyle = "speech" | "sticker";
 
 /**
  * 卡通色彩变体
