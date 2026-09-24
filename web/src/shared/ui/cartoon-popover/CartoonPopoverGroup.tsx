@@ -183,7 +183,8 @@ export function CartoonPopoverGroup({
 
 		const triggerRect = item.triggerEl.getBoundingClientRect();
 		const measureEl = measureRef.current;
-		let contentWidth = 280;
+		// 宽度策略：最小 220px（min-w-55 在测量节点上），内容由 CSS 层自然撑开，JS 直接采用测量结果
+		let contentWidth = 220;
 		let contentHeight = 110;
 		if (measureEl) {
 			contentWidth = Math.max(220, measureEl.offsetWidth);
@@ -196,6 +197,7 @@ export function CartoonPopoverGroup({
 			contentHeight,
 			side: item.side ?? "bottom",
 			sideOffset,
+			collisionPadding: 16,
 			viewportWidth: window.innerWidth,
 			viewportHeight: window.innerHeight,
 		});
@@ -255,12 +257,12 @@ export function CartoonPopoverGroup({
 	const springGeometry = useMultiSpring(
 		targetLayout
 			? {
-				x: targetLayout.x,
-				y: targetLayout.y,
-				width: targetLayout.width,
-				height: targetLayout.height,
-				arrowOffset: targetLayout.arrowOffset,
-			}
+					x: targetLayout.x,
+					y: targetLayout.y,
+					width: targetLayout.width,
+					height: targetLayout.height,
+					arrowOffset: targetLayout.arrowOffset,
+				}
 			: null,
 		{
 			stiffness: 380,
@@ -505,7 +507,7 @@ function MeasureNode({
 		<div
 			ref={ref}
 			aria-hidden="true"
-			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 w-72 rounded-2xl border-2 p-4 text-sm opacity-0"
+			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 min-w-55 w-max rounded-2xl border-2 p-4 text-sm opacity-0"
 		>
 			{title && <h4 className="mb-2 text-sm font-bold tracking-wide">{title}</h4>}
 			{description && (

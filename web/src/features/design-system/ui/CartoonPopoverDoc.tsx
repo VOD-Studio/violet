@@ -74,7 +74,7 @@ const GROUP_CODE = `<CartoonPopoverGroup>
   >
     <div className="space-y-1 text-xs">
       <p>冷香紫罗兰专属方言底色。</p>
-      <p className="text-muted-foreground">内容行数较多时，浮层自动平滑拉伸高度。</p>
+      <p className="text-muted-foreground">内容变化时平滑拉伸高度。</p>
     </div>
   </CartoonPopoverGroupItem>
 
@@ -87,7 +87,7 @@ const GROUP_CODE = `<CartoonPopoverGroup>
     <div className="space-y-1 text-xs">
       <p>暖阳提示信息，内容更丰富。</p>
       <p>鼠标在这一排按钮间滑过时：</p>
-      <p className="text-muted-foreground">气泡与小尾巴平滑滑动过去，绝不一闪一闪！</p>
+      <p className="text-muted-foreground">气泡平滑滑过去，绝不一闪一闪！</p>
     </div>
   </CartoonPopoverGroupItem>
 
@@ -409,7 +409,7 @@ export function CartoonPopoverDocPage() {
 								<div className="space-y-1 text-xs">
 									<p>冷香紫罗兰专属方言底色。</p>
 									<p className="text-muted-foreground">
-										内容高度增加时，浮层与小尾巴平滑过渡拉伸！
+										内容变化时平滑拉伸高度！
 									</p>
 								</div>
 							</CartoonPopoverGroupItem>
@@ -428,7 +428,7 @@ export function CartoonPopoverDocPage() {
 									<p>暖阳提示信息，内容行数更多。</p>
 									<p>鼠标横向滑过这一排按钮时：</p>
 									<p className="text-muted-foreground">
-										浮层平滑滑动过去，绝不重复消失再显示。
+										浮层平滑滑过去，绝不闪现。
 									</p>
 								</div>
 							</CartoonPopoverGroupItem>
