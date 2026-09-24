@@ -419,9 +419,9 @@ export function CommentSectionDocPage() {
 				</div>
 			</div>
 
-			{/* 2. Usage 引入 */}
-			<section aria-label="Usage" className="space-y-3">
-				<h2 className="text-xl font-bold tracking-tight text-foreground">Usage</h2>
+			{/* 2. 用法引入 */}
+			<section aria-label="用法" className="space-y-3">
+				<h2 className="text-xl font-bold tracking-tight text-foreground">用法</h2>
 				<div className="relative flex items-center justify-between rounded-xl border border-border/70 bg-muted/30 px-4 py-3 font-mono text-xs">
 					<code className="text-foreground">{IMPORT_CODE}</code>
 					<button
@@ -439,13 +439,13 @@ export function CommentSectionDocPage() {
 				</div>
 			</section>
 
-			{/* 3. Examples 案例展示（折叠面板展开代码） */}
-			<section aria-label="Examples" className="space-y-14">
-				<h2 className="text-2xl font-bold tracking-tight text-foreground">Examples</h2>
+			{/* 3. 示例（折叠面板展开代码） */}
+			<section aria-label="示例" className="space-y-14">
+				<h2 className="text-2xl font-bold tracking-tight text-foreground">示例</h2>
 
-				{/* 案例 1: Default */}
+				{/* 案例 1: 基础用法 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-bold tracking-tight text-foreground">Default</h3>
+					<h3 className="text-lg font-bold tracking-tight text-foreground">基础用法</h3>
 					<p className="text-sm text-muted-foreground">
 						双层扁平回复结构。子回复以 @ 昵称指示对象，不向内无限嵌套。
 					</p>
@@ -461,11 +461,9 @@ export function CommentSectionDocPage() {
 					</ComponentDemo>
 				</div>
 
-				{/* 案例 2: Empty State */}
+				{/* 案例 2: 空状态 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-bold tracking-tight text-foreground">
-						Empty State
-					</h3>
+					<h3 className="text-lg font-bold tracking-tight text-foreground">空状态</h3>
 					<p className="text-sm text-muted-foreground">
 						当评论数据为空时，自动呈现轻量空状态占位。
 					</p>
@@ -477,11 +475,9 @@ export function CommentSectionDocPage() {
 					</ComponentDemo>
 				</div>
 
-				{/* 案例 3: Loading State */}
+				{/* 案例 3: 加载中 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-bold tracking-tight text-foreground">
-						Loading State
-					</h3>
+					<h3 className="text-lg font-bold tracking-tight text-foreground">加载中</h3>
 					<p className="text-sm text-muted-foreground">
 						首屏加载期间传入 <code className="font-mono text-xs">isLoading</code>
 						，自动渲染 Shimmer 骨架条目。
@@ -500,9 +496,9 @@ export function CommentSectionDocPage() {
 				</div>
 			</section>
 
-			{/* 4. API Reference */}
-			<section aria-label="API Reference" className="space-y-10">
-				<h2 className="text-2xl font-bold tracking-tight text-foreground">API Reference</h2>
+			{/* 4. API 参考 */}
+			<section aria-label="API 参考" className="space-y-10">
+				<h2 className="text-2xl font-bold tracking-tight text-foreground">API 参考</h2>
 				<ApiTable
 					title="CommentSection Props"
 					columns={PROP_COLUMNS}

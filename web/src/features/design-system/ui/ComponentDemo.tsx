@@ -62,9 +62,9 @@ export function ComponentDemo({ children, code }: { children: ReactNode; code: s
 							<button
 								type="button"
 								onClick={() => setShowCode(true)}
-								className="pointer-events-auto inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
+								className="pointer-events-auto inline-flex items-center rounded-full bg-card px-4 py-1.5 text-sm text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
 							>
-								<span>展开代码</span>
+								<span>Expand code</span>
 							</button>
 						</div>
 					)}
@@ -76,9 +76,9 @@ export function ComponentDemo({ children, code }: { children: ReactNode; code: s
 						<button
 							type="button"
 							onClick={() => setShowCode(false)}
-							className="inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
+							className="inline-flex items-center rounded-full bg-card px-4 py-1.5 text-sm text-foreground shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-colors hover:bg-muted"
 						>
-							<span>收起代码</span>
+							<span>Collapse code</span>
 						</button>
 					</div>
 				)}
