@@ -203,6 +203,49 @@ func TestDispatchRoomOnlyMentions(t *testing.T) {
 	}
 }
 
+func TestDispatchRoomCommandOnlyReachesLeadingTarget(t *testing.T) {
+	firstUser, secondUser, human := domainshared.NewID(), domainshared.NewID(), domainshared.NewID()
+	first := newTestBotForUser(t, firstUser, "First", true)
+	second := newTestBotForUser(t, secondUser, "Second", true)
+	dispatcher, conversation := newDispatcher(t, domainchat.ConversationRoom,
+		[]dispatchMember{{userID: human, active: true}, {userID: firstUser, active: true}, {userID: secondUser, active: true}},
+		map[domainshared.ID]*domainchat.Bot{first.ID(): first, second.ID(): second})
+	firstCh, closeFirst := dispatcher.connections.Register(first.ID())
+	secondCh, closeSecond := dispatcher.connections.Register(second.ID())
+	defer closeFirst()
+	defer closeSecond()
+	content := "@(first:" + firstUser.String() + ") /task status @(second:" + secondUser.String() + ")"
+	event := NewBotEvent(domainchat.EventMessageCreated, map[string]any{"message": MessageDTO{Content: content}}, time.Now())
+	dispatcher.Dispatch(context.Background(), conversation, human, []domainshared.ID{firstUser, secondUser}, event)
+	select {
+	case <-firstCh:
+	default:
+		t.Fatal("开头寻址的 bot 应收到命令")
+	}
+	select {
+	case <-secondCh:
+		t.Fatal("参数中提及的 bot 不得执行命令")
+	default:
+	}
+
+	event.Data["message"] = MessageDTO{Content: "@(bad:invalid) /task list @(second:" + secondUser.String() + ")"}
+	dispatcher.Dispatch(context.Background(), conversation, human, []domainshared.ID{secondUser}, event)
+	select {
+	case <-secondCh:
+		t.Fatal("无效的开头目标不得把命令广播给参数中的 bot")
+	default:
+	}
+
+	// 普通提及消息仍投给所有被提及的 bot。
+	event.Data["message"] = MessageDTO{Content: "你好 " + content}
+	dispatcher.Dispatch(context.Background(), conversation, human, []domainshared.ID{firstUser, secondUser}, event)
+	select {
+	case <-secondCh:
+	default:
+		t.Fatal("普通消息的提及投递不得改变")
+	}
+}
+
 // --- Service 侧接线 ---
 
 type captureBotNotifier struct {

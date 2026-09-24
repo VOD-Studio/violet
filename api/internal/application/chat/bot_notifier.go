@@ -92,6 +92,13 @@ func NewBotEventDispatcher(repo domainchat.ConversationRepository, bots domainch
 
 // Dispatch 见 BotNotifier。
 func (d *BotEventDispatcher) Dispatch(ctx context.Context, conversation *domainchat.Conversation, senderID domainshared.ID, mentionedIDs []domainshared.ID, event EventDTO) {
+	if conversation.Kind() == domainchat.ConversationRoom && event.Type == string(domainchat.EventMessageCreated) {
+		if message, ok := event.Data["message"].(MessageDTO); ok {
+			if target, command := leadingCommandTarget(message.Content); command {
+				mentionedIDs = []domainshared.ID{target}
+			}
+		}
+	}
 	targets, err := d.recipientIDs(ctx, conversation, senderID, mentionedIDs)
 	if err != nil {
 		d.log.Warn().Err(err).Str("conversation_id", conversation.ID().String()).Msg("判定 Bot 事件接收者失败")
