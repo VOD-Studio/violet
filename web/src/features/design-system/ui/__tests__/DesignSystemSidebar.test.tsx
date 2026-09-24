@@ -43,7 +43,7 @@ describe("DesignSystemSidebar", () => {
 		const expandBtn = screen.getByRole("button", { name: /展开组件目录子章节/ });
 		fireEvent.click(expandBtn);
 
-		expect(screen.getByText("评论区")).toBeTruthy();
+		expect(screen.getByText("CommentSection")).toBeTruthy();
 	});
 
 	it("点击导航项触发 onNavigate 回调", () => {
@@ -57,7 +57,7 @@ describe("DesignSystemSidebar", () => {
 
 	it("访问二级子路由时所属分组自动展开并高亮子项", () => {
 		render(<DesignSystemSidebar currentPath="/design-system/specimens/comment-section" />);
-		const activeSubLink = screen.getByRole("link", { name: "评论区" });
+		const activeSubLink = screen.getByRole("link", { name: "CommentSection" });
 		expect(activeSubLink.getAttribute("aria-current")).toBe("page");
 	});
 });

@@ -137,9 +137,9 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 				children: [
 					{
 						id: "comment-section",
-						title: "评论区",
+						title: "CommentSection",
 						to: "/design-system/specimens/comment-section",
-						description: "CommentSection",
+						description: "评论区 · 纯展示评论套件",
 					},
 				],
 			},
