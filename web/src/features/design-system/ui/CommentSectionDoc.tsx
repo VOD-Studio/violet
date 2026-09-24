@@ -290,7 +290,7 @@ function ExpandableDemoBox({ children, code }: { children: ReactNode; code: stri
 	};
 
 	return (
-		<div className="max-w-4xl">
+		<div>
 			{/* 组件自然展示，无外壳 */}
 			{children}
 
@@ -513,7 +513,7 @@ export function CommentSectionDocPage() {
 	};
 
 	return (
-		<div className="space-y-16 pb-24 font-sans">
+		<div className="mx-auto w-full max-w-4xl space-y-16 pb-24 font-sans">
 			{/* 1. Header 标题区 */}
 			<div className="space-y-3">
 				<div className="flex flex-wrap items-center justify-between gap-4">
