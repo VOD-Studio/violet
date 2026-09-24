@@ -258,12 +258,12 @@ function LightCodeBlock({ code }: { code: string }) {
 				</div>
 			) : html ? (
 				<div
-					className="shiki-line-numbers overflow-x-auto px-5 pt-12 pb-4 [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
+					className="shiki-line-numbers overflow-x-auto px-1 py-3 [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义，输出属性仅 class/style 受控集合，无注入面
 					dangerouslySetInnerHTML={{ __html: html }}
 				/>
 			) : (
-				<pre className="shiki-line-numbers overflow-x-auto px-5 pt-12 pb-4 text-sm text-foreground">
+				<pre className="shiki-line-numbers overflow-x-auto px-1 py-3 text-sm text-foreground">
 					<code>{code}</code>
 				</pre>
 			)}
