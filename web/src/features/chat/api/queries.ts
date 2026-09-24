@@ -28,6 +28,7 @@ import {
 	deleteChatMessage,
 	deleteChatPushSubscription,
 	editChatMessage,
+	fetchBotCommands,
 	fetchChatContacts,
 	fetchChatConversation,
 	fetchChatConversations,
@@ -77,6 +78,15 @@ export const useChatMembers = (id: string | null) =>
 		queryKey: id ? chatKeys.members(id) : chatKeys.root,
 		queryFn: () => fetchChatMembers(id as string),
 		enabled: Boolean(id),
+	});
+
+export const useBotCommands = (id: string, menuOpen = false) =>
+	useQuery({
+		queryKey: chatKeys.botCommands(id),
+		queryFn: () => fetchBotCommands(id),
+		staleTime: 30_000,
+		refetchInterval: menuOpen ? 30_000 : false,
+		retry: false,
 	});
 
 export const useChatMessages = (id: string | null) => {

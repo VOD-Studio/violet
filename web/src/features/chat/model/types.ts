@@ -27,6 +27,26 @@ export interface ChatMember {
 	is_muted: boolean;
 }
 
+export interface BotCommand {
+	id: string;
+	path: string[];
+	description: string;
+	arguments: { name: string; type: "string" | "integer" | "boolean"; required: boolean }[];
+	scope: "conversation" | "global";
+}
+
+export interface BotCommandCatalog {
+	bot_user_id: string;
+	username: string;
+	name: string;
+	revision: string;
+	commands: BotCommand[];
+}
+
+export interface BotCommandsResponse {
+	bots: BotCommandCatalog[];
+}
+
 export interface ChatMedia {
 	id: string;
 	url: string;

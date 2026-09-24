@@ -147,7 +147,7 @@ for (const viewport of [
 			});
 		});
 		await page.goto("/chat?c=c1");
-		const editor = page.getByRole("textbox", { name: "评论内容" });
+		const editor = page.getByRole("textbox", { name: "消息内容" });
 		await expect(editor).toBeVisible();
 		const startupErrors = errors.splice(0);
 		expect(startupErrors.length).toBeLessThanOrEqual(1);

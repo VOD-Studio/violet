@@ -5,6 +5,7 @@ export const chatKeys = {
 	conversations: () => [...root, "conversations"] as const,
 	conversation: (id: string) => [...root, "conversation", id] as const,
 	members: (id: string) => [...root, "conversation", id, "members"] as const,
+	botCommands: (id: string) => [...root, "conversation", id, "bot-commands"] as const,
 	messages: (id: string) => [...root, "conversation", id, "messages"] as const,
 	readers: (id: string) => [...root, "conversation", id, "message"] as const,
 	messageReaders: (conversationID: string, messageID: string) =>

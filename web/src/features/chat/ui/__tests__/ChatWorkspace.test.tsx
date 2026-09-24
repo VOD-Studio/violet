@@ -172,6 +172,7 @@ vi.mock("@features/chat/api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => useChatMessagesMock(),
+	useBotCommands: () => ({ data: { bots: [] }, refetch: vi.fn() }),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -214,6 +215,7 @@ vi.mock("../api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => useChatMessagesMock(),
+	useBotCommands: () => ({ data: { bots: [] }, refetch: vi.fn() }),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -273,6 +275,7 @@ vi.mock("../api/queries", () => ({
 		fetchNextPage: vi.fn(),
 	}),
 	useChatMessages: () => useChatMessagesMock(),
+	useBotCommands: () => ({ data: { bots: [] }, refetch: vi.fn() }),
 	useChatMembers: () => ({
 		data: mockConversation.members,
 		isLoading: false,
@@ -507,7 +510,7 @@ describe("ChatWorkspace", () => {
 			screen.getAllByRole("link", { name: "dfy 的个人主页" }).length,
 		).toBeGreaterThanOrEqual(2);
 		// 消息输入框与富文本组件（RichCommentInput）
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		expect(editor).toBeTruthy();
 		expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
@@ -635,7 +638,7 @@ describe("ChatWorkspace", () => {
 	it("输入消息并发送", async () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.textContent = "新消息测试";
 		fireEvent.input(editor);
 
@@ -671,7 +674,7 @@ describe("ChatWorkspace", () => {
 			expect(container.querySelector('[data-image-status="done"]')).toBeTruthy();
 		});
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		// 用 appendChild 而非 textContent 赋值：后者会清空既有子节点，连带删掉刚插入的图片节点。
 		editor.appendChild(document.createTextNode("配图文字"));
 		fireEvent.input(editor);
@@ -706,7 +709,7 @@ describe("ChatWorkspace", () => {
 			expect(container.querySelectorAll('[data-image-status="done"]').length).toBe(2);
 		});
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.appendChild(document.createTextNode("两张图"));
 		fireEvent.input(editor);
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -730,7 +733,7 @@ describe("ChatWorkspace", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "回复消息" }));
 		expect(screen.getByText("回复 xfy")).toBeTruthy();
-		fireEvent.input(screen.getByRole("textbox", { name: "评论内容" }), {
+		fireEvent.input(screen.getByRole("textbox", { name: "消息内容" }), {
 			target: { textContent: "这是回复" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
@@ -771,7 +774,7 @@ describe("ChatWorkspace", () => {
 			scrollHeight: { configurable: true, value: 1000 },
 		});
 
-		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.textContent = "滚动目标测试";
 		fireEvent.input(editor);
 		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));

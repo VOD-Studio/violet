@@ -57,6 +57,8 @@ export interface PictureInput {
 export interface RichCommentInputHandle {
 	/** 在草稿末尾追加候选内用户并聚焦；禁用或用户不在候选内时返回 false。 */
 	appendMention: (userID: string) => boolean;
+	replaceSlashQuery: (command: string, mention?: MentionCandidate) => boolean;
+	prependMention: (userID: string, username: string, displayName: string) => void;
 }
 
 export interface RichCommentInputProps {
@@ -88,6 +90,12 @@ export interface RichCommentInputProps {
 	onUploadingChange?: (uploading: boolean) => void;
 	/** @ 提及候选（全量成员，筛选在组件内做）；缺省或空数组时不启用提及 */
 	mentionCandidates?: MentionCandidate[];
+	onSlashQueryChange?: (query: string | null) => void;
+	onSlashKeyDown?: (event: React.KeyboardEvent) => boolean;
+	slashSuggestions?: ReactNode;
+	slashListboxId?: string;
+	slashActiveOptionId?: string;
+	editorLabel?: string;
 	toolbarEnd?: ReactNode;
 	className?: string;
 	inputClassName?: string;
@@ -125,6 +133,12 @@ export function RichCommentInput({
 	onImageUploadsChange,
 	onUploadingChange,
 	mentionCandidates,
+	onSlashQueryChange,
+	onSlashKeyDown,
+	slashSuggestions,
+	slashListboxId,
+	slashActiveOptionId,
+	editorLabel = "评论内容",
 	toolbarEnd,
 	className,
 	inputClassName,
@@ -264,10 +278,21 @@ export function RichCommentInput({
 		[mentionCandidates],
 	);
 	// 查询词一变候选列表就变，高亮回到第一项；方向键改高亮时不触发 input，下标得以保留。
-	const handleMentionQueryChange = useCallback((query: string | null) => {
-		setMentionQuery(query);
-		setMentionIndex(0);
-	}, []);
+	const handleMentionQueryChange = useCallback(
+		(query: string | null) => {
+			setMentionQuery(query);
+			setMentionIndex(0);
+			if (query !== null) onSlashQueryChange?.(null);
+		},
+		[onSlashQueryChange],
+	);
+	const handleSlashQueryChange = useCallback(
+		(query: string | null) => {
+			if (query !== null) setMentionQuery(null);
+			onSlashQueryChange?.(query);
+		},
+		[onSlashQueryChange],
+	);
 
 	const {
 		contentRef,
@@ -275,6 +300,9 @@ export function RichCommentInput({
 		insertEmoji,
 		insertImage,
 		insertMention,
+		replaceSlashQuery,
+		prependMention,
+		refreshQueries,
 		handleInput,
 		handlePaste,
 		handleKeyDown,
@@ -290,6 +318,7 @@ export function RichCommentInput({
 		onImageRemove: inlineImages ? handleRemoveImage : undefined,
 		resolveMention: mentionEnabled ? resolveMention : undefined,
 		onMentionQueryChange: mentionEnabled ? handleMentionQueryChange : undefined,
+		onSlashQueryChange: onSlashQueryChange ? handleSlashQueryChange : undefined,
 	});
 	insertImageRef.current = insertImage;
 	useImperativeHandle(
@@ -302,8 +331,12 @@ export function RichCommentInput({
 				insertMention(candidate.id, candidate.username, candidate.displayName);
 				return true;
 			},
+			replaceSlashQuery(command, mention) {
+				return replaceSlashQuery(command, mention);
+			},
+			prependMention,
 		}),
-		[disabled, focus, insertMention, mentionCandidates],
+		[disabled, focus, insertMention, mentionCandidates, prependMention, replaceSlashQuery],
 	);
 
 	const mentionMatches = useMemo(() => {
@@ -486,14 +519,24 @@ export function RichCommentInput({
 			onInput={handleInput}
 			onPaste={handlePaste}
 			onKeyDown={(event) => {
+				if (onSlashKeyDown?.(event)) return;
 				if (handleMentionKeyDown(event)) return;
 				handleKeyDown(event);
 			}}
-			onBlur={() => setMentionQuery(null)}
+			onKeyUp={(event) => {
+				if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+					refreshQueries();
+			}}
+			onClick={refreshQueries}
+			onBlur={() => {
+				setMentionQuery(null);
+				onSlashQueryChange?.(null);
+			}}
 			data-placeholder={placeholder}
 			role="textbox"
-			aria-multiline="true"
-			aria-label="评论内容"
+			aria-label={editorLabel}
+			aria-controls={slashSuggestions ? slashListboxId : undefined}
+			aria-activedescendant={slashSuggestions ? slashActiveOptionId : undefined}
 			tabIndex={0}
 			suppressContentEditableWarning
 			className={cn(
@@ -566,7 +609,7 @@ export function RichCommentInput({
 		return (
 			<div
 				className={cn(
-					"relative rounded-3xl border border-edge-hairline bg-background px-2 py-1.5",
+					"relative rounded-2xl border border-edge-hairline bg-background px-2 py-1.5",
 					"focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
 					"transition-all",
 					disabled && "opacity-50",
@@ -574,6 +617,7 @@ export function RichCommentInput({
 				)}
 			>
 				{suggestions}
+				{slashSuggestions}
 				{fileInput}
 				{thumbnails}
 				<div className="flex items-center gap-1">
@@ -599,6 +643,7 @@ export function RichCommentInput({
 			)}
 		>
 			{suggestions}
+			{slashSuggestions}
 			{fileInput}
 			{editor}
 			{thumbnails}

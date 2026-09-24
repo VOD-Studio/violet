@@ -199,6 +199,9 @@ export const useChatStream = () => {
 						queryClient.invalidateQueries({
 							queryKey: chatKeys.members(conversationID),
 						});
+						queryClient.invalidateQueries({
+							queryKey: chatKeys.botCommands(conversationID),
+						});
 					}
 				}
 			} catch {
