@@ -21,6 +21,7 @@ func registerBotRoutes(r chi.Router, d *Deps) {
 	r.Route("/api/v1/chat/bot", func(br chi.Router) {
 		br.Use(d.BotAuth)
 		br.Get("/profile", h.Profile)
+		br.With(middleware.RateLimitByUser("chat-bot-commands", d.Redis, time.Minute, 30)).Put("/commands", h.PutCommands)
 		br.Get("/events", h.Stream)
 		br.Get("/conversations", h.ListConversations)
 		br.Get("/conversations/{conversationId}", h.GetConversation)

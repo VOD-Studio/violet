@@ -34,6 +34,7 @@ func TestBotAPIRoutesBypassCSRF(t *testing.T) {
 	routes := routeMethods(t, router)
 	for _, want := range []string{
 		"GET /api/v1/chat/bot/profile",
+		"PUT /api/v1/chat/bot/commands",
 		"GET /api/v1/chat/bot/events",
 		"GET /api/v1/chat/bot/conversations",
 		"GET /api/v1/chat/bot/conversations/{conversationId}/messages",

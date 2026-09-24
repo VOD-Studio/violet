@@ -469,6 +469,7 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Get("/conversations", h.ListConversations)
 		r.With(d.SessionAuth).Post("/conversations", h.CreateConversation)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}", h.GetConversation)
+		r.With(d.SessionAuth).Get("/conversations/{conversationId}/bot-commands", h.ListBotCommands)
 		r.With(d.SessionAuth).Patch("/conversations/{conversationId}", h.RenameConversation)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}/members", h.ListMembers)
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/members", h.InviteMember)

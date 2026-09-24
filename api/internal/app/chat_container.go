@@ -51,13 +51,14 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 	botConnections := appchat.NewBotConnectionManager(log.Logger)
 	svc.WithBotNotifier(appchat.NewBotEventDispatcher(repo, botRepo, botConnections, log.Logger))
 	botService := appchat.NewBotService(botRepo, userRepo, fileRepo, bus, nil)
+	botCommands := appchat.NewBotCommandService(repo, botRepo, gormrepo.NewBotCommandCatalogRepository(db), userRepo)
 
 	return &ChatContainer{
 		ChatService:     svc,
-		ChatHandler:     chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)),
+		ChatHandler:     chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)).WithBotCommands(botCommands),
 		StreamHandler:   chathttp.NewStreamHandler(manager, svc),
 		BotService:      botService,
-		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections),
+		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections).WithBotCommands(botCommands),
 		BotAdminHandler: chathttp.NewBotAdminHandler(botService),
 	}
 }

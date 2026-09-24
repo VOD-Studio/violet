@@ -125,6 +125,12 @@ func registerChatPaths(t *openapi3.T) {
 		Tags: []string{"聊天"}, Summary: "会话详情", Security: secure,
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID")}, Responses: responses(200, dataResponse("ChatConversationDTO", "会话详情", 200)),
 	})
+	get(t, "/chat/conversations/{conversationId}/bot-commands", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "会话 Bot 命令目录", Security: secure,
+		Description: "只向有效成员返回会话内启用 bot 的目录；未发布时命令为空，目录存在不表示 bot 在线。",
+		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID")},
+		Responses:   responses(200, dataResponse("ChatBotCommands", "目录列表", 200), 404, errorResponse("非会话成员")),
+	})
 	patch(t, "/chat/conversations/{conversationId}", &openapi3.Operation{
 		Tags: []string{"聊天"}, Summary: "修改房间名称", Security: secure,
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatRenameConversationRequest", true, "仅使用 title"),

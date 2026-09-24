@@ -452,6 +452,9 @@ _Avoid_: 自动成就判定、商城/付费解锁、逐条消息外观冻结
 面向持有 bot token 的外部程序的 HTTP 路由面（`/api/v1/chat/bot/*`），不绑定具体 bot 实现。入站：`GET /events`（SSE，订阅 bot 参与会话的事件；不补发，断线后拉消息历史补齐）、`GET /profile`（自查身份）；出站：`POST .../messages`（发消息；传 `status=pending` 可创建空正文生成占位）、`PATCH /conversations/{id}/messages/{id}`（旧调用编辑正文；生成回复传累计正文、thinking、status 与递增 revision）、`POST .../typing`（输入状态）；查询：`GET .../conversations`、`GET .../messages`。生成回复的 `pending/thinking/streaming/completed/failed` 状态持久化，完成与失败不可再更新；首段非空正文出现时推进引用消息的已读位置。showThinking 默认关闭，关闭时新上报的思考内容不保存，历史与实时读模型不返回思考内容。写端点按 bot 虚拟用户维度限流。管理路由 `/admin/chat-bots`（admin，需 `chat:bot-manage` 权限）。明文 token 随时可回看：`POST /admin/chat-bots/{id}/token` 解密单个回显（不随列表广播，每次查看进操作日志）；库里没存密文（早于密文列创建、未配 `BOT_TOKEN_KEY` 或密钥已换）时取不回来，只能重置。
 _Avoid_: bot 用户（bot 是凭证聚合，"用户"指它对应的虚拟用户）、机器人（口语，不进文档与代码标识符）
 
+**Bot 命令目录**:
+Bot 对自己能在 Violet 执行的命令所发布的完整声明。会话成员只看得到本会话内启用 Bot 的目录；目录说明可提供的能力，不代表当前用户有执行权限，也不代表 Bot 在线。房间中的斜杠命令以开头提及的虚拟用户 ID 指定唯一目标；命令参数中的其他提及不参与寻址。
+
 ## API 文档（API Reference）
 
 > 文档数据源是后端运行时实时提供的 OpenAPI spec（与线上代码同版本），消费端直读活水，不存在独立的文档发布链。防漂移由路由对账测试把关。

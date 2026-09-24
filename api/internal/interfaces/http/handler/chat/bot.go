@@ -21,9 +21,10 @@ import (
 // chat.Service 用例：成员校验、mention 解析、消息持久化与 SSE 推送走同一条链路，
 // 服务层不存在 bot 专用第二套实现。
 type BotHandler struct {
-	chat  *appchat.Service
-	bots  *appchat.BotService
-	conns *appchat.BotConnectionManager
+	chat     *appchat.Service
+	bots     *appchat.BotService
+	conns    *appchat.BotConnectionManager
+	commands *appchat.BotCommandService
 }
 
 // NewBotHandler 构造 bot 聊天适配器。conns 为 nil 时事件流端点不可用。

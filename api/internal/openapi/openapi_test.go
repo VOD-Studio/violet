@@ -79,6 +79,7 @@ func TestChatPaths(t *testing.T) {
 	for _, path := range []string{
 		"/chat/conversations",
 		"/chat/conversations/{conversationId}",
+		"/chat/conversations/{conversationId}/bot-commands",
 		"/chat/conversations/{conversationId}/members",
 		"/chat/conversations/{conversationId}/messages",
 		"/chat/conversations/{conversationId}/read",

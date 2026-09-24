@@ -8,6 +8,31 @@ import "github.com/getkin/kin-openapi/openapi3"
 // 同一条链路，文档也就只有一个形状。
 func registerBotPaths(t *openapi3.T) {
 	secure := securityBot()
+	registerSchema(t, "BotCommandArgument", openapi3.Schemas{
+		"name": reqStr("参数名"), "type": strEnum("参数类型", "string", "integer", "boolean"),
+		"required": optBool("是否必填"),
+	}, "name", "type", "required")
+	registerSchema(t, "BotCommand", openapi3.Schemas{
+		"id": reqStr("稳定命令 ID"), "path": strArray("不含前缀的命令路径"),
+		"description": reqStr("简短说明"), "arguments": refArray("参数提示", "BotCommandArgument"),
+		"scope": strEnum("作用域", "conversation", "global"),
+	}, "id", "path", "description", "arguments", "scope")
+	registerSchema(t, "BotCommandCatalogRequest", openapi3.Schemas{
+		"schema_version": optInt("固定为 1"), "commands": refArray("完整目录；空数组撤销", "BotCommand"),
+	}, "schema_version", "commands")
+	registerSchema(t, "BotCommandRevision", openapi3.Schemas{"revision": reqStr("规范化目录 SHA-256 hex")}, "revision")
+	registerSchema(t, "ChatBotCommandCatalog", openapi3.Schemas{
+		"bot_user_id": reqStr("bot 虚拟用户 ID"), "username": reqStr("构造提及 token 所需用户名"),
+		"name": reqStr("显示名"), "revision": reqStr("内容摘要"), "commands": refArray("命令目录", "BotCommand"),
+	}, "bot_user_id", "username", "name", "revision", "commands")
+	registerSchema(t, "ChatBotCommands", openapi3.Schemas{"bots": refArray("会话内已启用的 bot；未发布目录时命令为空", "ChatBotCommandCatalog")}, "bots")
+
+	put(t, "/chat/bot/commands", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "替换本 bot 的命令目录", Security: secure,
+		Description: "最多 64 KiB、100 项。相同内容重复发布保持 revision 与更新时间；空数组撤销。",
+		RequestBody: jsonBody("BotCommandCatalogRequest", true, "完整目录"),
+		Responses:   responses(200, dataResponse("BotCommandRevision", "目录版本", 200), 400, errorResponse("目录格式非法")),
+	})
 
 	registerSchema(t, "BotSendMessageRequest", openapi3.Schemas{
 		"content":     optStr("文本内容，≤10000 字符；status=pending 时须为空"),

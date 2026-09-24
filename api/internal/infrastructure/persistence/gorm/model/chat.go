@@ -151,3 +151,14 @@ type ChatBot struct {
 
 // TableName 显式指定表名。
 func (ChatBot) TableName() string { return "chat_bots" }
+
+// ChatBotCommandCatalog 保存 bot 最近一次发布的完整目录。
+type ChatBotCommandCatalog struct {
+	BotID         uuid.UUID      `gorm:"type:uuid;column:bot_id;primaryKey" json:"bot_id"`
+	SchemaVersion int            `gorm:"column:schema_version;not null" json:"schema_version"`
+	Revision      string         `gorm:"type:varchar(64);not null" json:"revision"`
+	Commands      datatypes.JSON `gorm:"type:jsonb;not null" json:"commands"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;not null" json:"updated_at"`
+}
+
+func (ChatBotCommandCatalog) TableName() string { return "chat_bot_command_catalogs" }

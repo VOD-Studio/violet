@@ -1,6 +1,6 @@
 # PRD：聊天框中的 Saber 斜杠命令
 
-状态：待实施。本 PRD 描述 Violet 的命令目录、群聊寻址与聊天框交互；Saber 命令定义和执行的对应方案见其仓库 `docs/unified-chat-commands-plan.md`。跨仓库请求字段、命令语法和部署顺序须同步维护。
+状态：实施中。本 PRD 描述 Violet 的命令目录、群聊寻址与聊天框交互；Saber 命令定义和执行的对应方案见其仓库 `docs/unified-chat-commands-plan.md`。跨仓库请求字段、命令语法和部署顺序须同步维护。
 
 ## 用户要完成什么
 
@@ -71,6 +71,7 @@ Saber 通过现有 Bot Token 调用 `PUT /api/v1/chat/bot/commands`，整体替�
   "bots": [
     {
       "bot_user_id": "<bot-user-id>",
+      "username": "saber",
       "name": "Saber",
       "revision": "<content-hash>",
       "commands": []
@@ -79,7 +80,7 @@ Saber 通过现有 Bot Token 调用 `PUT /api/v1/chat/bot/commands`，整体替�
 }
 ```
 
-该接口使用现有登录会话认证，只向当前会话有效成员返回目录，并只包含当前会话中的启用 bot。Violet 不代理浏览器请求到 Saber，也不向浏览器提供 Bot Token。目录由 Saber 在启动、重连或配置变更时重发；目录获取失败不会影响现有聊天。目录更新时间不代表 bot 在线，界面不把旧目录解释为“在线”。降级 Saber 到不支持命令的版本前，先撤销目录。
+该接口使用现有登录会话认证，只向当前会话有效成员返回目录，并只包含当前会话中的启用 bot；未发布目录的 bot 返回空命令和空 revision。`username` 用于构造现有提及 token，寻址权威仍是 `bot_user_id`。Violet 不代理浏览器请求到 Saber，也不向浏览器提供 Bot Token。目录由 Saber 在启动、重连或配置变更时重发；目录获取失败不会影响现有聊天。目录更新时间不代表 bot 在线，界面不把旧目录解释为“在线”。降级 Saber 到不支持命令的版本前，先撤销目录。
 
 ## 后端与前端落点
 
