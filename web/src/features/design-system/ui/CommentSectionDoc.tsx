@@ -1,9 +1,18 @@
 import { copyText } from "@shared/lib/clipboard";
-import { CodeCard } from "@shared/ui/code-preview";
+import { useShikiHighlight } from "@shared/ui/code-preview/use-shiki-highlight";
 import { CommentList, CommentSection, type CommentSectionConfig } from "@shared/ui/comment-section";
-import { Segmented } from "@shared/ui/segmented";
-import { Check, Component, Copy, FileCode2, GitBranch, Heart, Send } from "lucide-react";
+import {
+	Check,
+	ChevronDown,
+	Component,
+	Copy,
+	FileCode2,
+	GitBranch,
+	Heart,
+	Send,
+} from "lucide-react";
 import { type ReactNode, useState } from "react";
+import "./component-code.css";
 
 interface DemoComment {
 	id: string;
@@ -236,46 +245,115 @@ const CONFIG_FIELDS: PropRow[] = [
 ];
 
 /**
- * HeroUI / shadcn 风格卡片：支持 [预览 | 代码] 顶层切换，杜绝生硬拼接感。
+ * 浅色高亮代码块：github-light 主题 + 行号，与页面底色浑然一体。
  */
-function HeroDemoBox({ children, code }: { children: ReactNode; code: string }) {
-	const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+function LightCodeBlock({ code }: { code: string }) {
+	const { html, loading } = useShikiHighlight(code, "tsx", { theme: "light" });
 
 	return (
-		<div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
-			{/* 顶部工具栏：纯净的 [预览 | 代码] 切换 */}
-			<div className="flex items-center justify-end border-b border-border/60 bg-muted/20 px-4 py-2">
-				<Segmented
-					value={activeTab}
-					onValueChange={(val) => setActiveTab(val as "preview" | "code")}
-					segments={[
-						{ value: "preview", label: "预览" },
-						{ value: "code", label: "代码" },
-					]}
-					size="sm"
+		<div className="font-mono text-sm leading-relaxed">
+			{loading ? (
+				<div className="flex h-24 items-center justify-center">
+					<div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
+				</div>
+			) : html ? (
+				<div
+					className="shiki-line-numbers overflow-x-auto px-5 py-4 [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义，输出属性仅 class/style 受控集合，无注入面
+					dangerouslySetInnerHTML={{ __html: html }}
 				/>
-			</div>
-
-			{/* 内容视口：预览态通透干净，代码态浑然一体 */}
-			{activeTab === "preview" ? (
-				<div className="flex min-h-64 items-center justify-center p-6 sm:p-10 bg-background/40">
-					<div className="w-full max-w-2xl">{children}</div>
-				</div>
 			) : (
-				<div className="bg-[#24292e]">
-					<CodeCard
-						code={code}
-						language="tsx"
-						className="rounded-none! border-0! bg-transparent!"
-					/>
-				</div>
+				<pre className="shiki-line-numbers overflow-x-auto px-5 py-4 text-sm text-foreground">
+					<code>{code}</code>
+				</pre>
 			)}
 		</div>
 	);
 }
 
 /**
- * HeroUI 标志性 API 表格（圆角底座表头 + 纯净行距代码标签，支持自适应水平滚动）。
+ * 折叠面板式组件演示（HeroUI 形态）：组件本体自然展示，下方浅色代码区
+ * 折叠时以渐变遮罩截断，居中「Expand code」胶囊无缝展开；复制图标固定于卡片右上。
+ */
+function ExpandableDemoBox({ children, code }: { children: ReactNode; code: string }) {
+	// 短代码（≤ 6 行）直接完整展示，不折叠、无遮罩
+	const collapsible = code.split("\n").length > 6;
+	const [showCode, setShowCode] = useState(!collapsible);
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = async () => {
+		const ok = await copyText(code);
+		if (ok) {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}
+	};
+
+	return (
+		<div>
+			{/* 组件自然展示，无外壳 */}
+			{children}
+
+			{/* 代码区：细线分隔，浅色底与页面浑然一体 */}
+			<div className="relative mt-6 overflow-hidden rounded-2xl border border-border/70 bg-card">
+				{/* 复制图标固定于卡片右上，不随代码横向滚动 */}
+				<button
+					type="button"
+					onClick={handleCopy}
+					className="absolute top-3 right-3 z-10 rounded-md border border-border/60 bg-background/80 p-1.5 text-muted-foreground backdrop-blur-xs transition-colors hover:bg-muted hover:text-foreground"
+					title="复制代码"
+				>
+					{copied ? (
+						<Check className="size-4 text-green-500" />
+					) : (
+						<Copy className="size-4" />
+					)}
+					<span className="sr-only">复制代码</span>
+				</button>
+
+				{/* max-height 过渡提供平滑的展开收起动画 */}
+				<div
+					className={`relative overflow-hidden transition-[max-height] duration-300 ease-in-out ${
+						!collapsible || showCode ? "max-h-[80rem]" : "max-h-52"
+					}`}
+				>
+					<LightCodeBlock code={code} />
+
+					{/* 折叠态：底部渐变遮罩 + 内联展开控件 */}
+					{collapsible && !showCode && (
+						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-16 animate-in fade-in items-end justify-center bg-gradient-to-t from-card via-card/90 to-transparent duration-200">
+							<button
+								type="button"
+								onClick={() => setShowCode(true)}
+								className="pointer-events-auto mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+							>
+								<span>展开代码</span>
+								<ChevronDown className="size-3" />
+							</button>
+						</div>
+					)}
+				</div>
+
+				{/* 展开态：与展开控件同款的居中收起控件 */}
+				{collapsible && showCode && (
+					<div className="flex justify-center border-t border-border/40 py-2.5">
+						<button
+							type="button"
+							onClick={() => setShowCode(false)}
+							className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<span>收起代码</span>
+							<ChevronDown className="size-3 rotate-180" />
+						</button>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
+/**
+ * 现代标准 API 表格。
  */
 function HeroApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
 	return (
@@ -339,7 +417,7 @@ function HeroApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
 }
 
 /**
- * 评论区组件文档页（对齐 HeroUI 规范）。
+ * 评论区组件文档页（对齐 HeroUI 规范，折叠面板式代码展开）。
  */
 export function CommentSectionDocPage() {
 	const [comments] = useState<DemoComment[]>(BASIC_COMMENTS);
@@ -436,7 +514,7 @@ export function CommentSectionDocPage() {
 
 	return (
 		<div className="space-y-16 pb-24 font-sans">
-			{/* 1. Header (对标 HeroUI) */}
+			{/* 1. Header 标题区 */}
 			<div className="space-y-3">
 				<div className="flex flex-wrap items-center justify-between gap-4">
 					<h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
@@ -472,9 +550,9 @@ export function CommentSectionDocPage() {
 				</div>
 			</div>
 
-			{/* 2. Usage */}
+			{/* 2. Usage 引入 */}
 			<section aria-label="Usage" className="space-y-3">
-				<h2 className="text-2xl font-bold tracking-tight text-foreground">Usage</h2>
+				<h2 className="text-xl font-bold tracking-tight text-foreground">Usage</h2>
 				<div className="relative flex items-center justify-between rounded-xl border border-border/70 bg-muted/30 px-4 py-3 font-mono text-xs">
 					<code className="text-foreground">{IMPORT_CODE}</code>
 					<button
@@ -492,19 +570,18 @@ export function CommentSectionDocPage() {
 				</div>
 			</section>
 
-			{/* 3. Examples */}
-			<section aria-label="Examples" className="space-y-12">
+			{/* 3. Examples 案例展示（折叠面板展开代码） */}
+			<section aria-label="Examples" className="space-y-14">
 				<h2 className="text-2xl font-bold tracking-tight text-foreground">Examples</h2>
 
 				{/* 案例 1: Default */}
 				<div className="space-y-3">
 					<h3 className="text-lg font-bold tracking-tight text-foreground">Default</h3>
 					<p className="text-sm text-muted-foreground">
-						包含顶层表单插槽与双层扁平回复结构。子回复以 @
-						昵称指示对象，不向内无限嵌套。
+						双层扁平回复结构。子回复以 @ 昵称指示对象，不向内无限嵌套。
 					</p>
 
-					<HeroDemoBox code={BASIC_USAGE_CODE}>
+					<ExpandableDemoBox code={BASIC_USAGE_CODE}>
 						<CommentSection
 							title={`全部评论 (${comments.length})`}
 							form={
@@ -531,7 +608,7 @@ export function CommentSectionDocPage() {
 						>
 							<CommentList comments={comments} config={config} isLoggedIn={true} />
 						</CommentSection>
-					</HeroDemoBox>
+					</ExpandableDemoBox>
 				</div>
 
 				{/* 案例 2: Empty State */}
@@ -540,14 +617,14 @@ export function CommentSectionDocPage() {
 						Empty State
 					</h3>
 					<p className="text-sm text-muted-foreground">
-						当评论数据为空时，自动呈现自带的轻量空状态占位。
+						当评论数据为空时，自动呈现轻量空状态占位。
 					</p>
 
-					<HeroDemoBox code={EMPTY_STATE_CODE}>
+					<ExpandableDemoBox code={EMPTY_STATE_CODE}>
 						<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
 							<CommentList comments={[]} config={config} isLoggedIn={true} />
 						</CommentSection>
-					</HeroDemoBox>
+					</ExpandableDemoBox>
 				</div>
 
 				{/* 案例 3: Loading State */}
@@ -560,7 +637,7 @@ export function CommentSectionDocPage() {
 						，自动渲染 Shimmer 骨架条目。
 					</p>
 
-					<HeroDemoBox code={LOADING_STATE_CODE}>
+					<ExpandableDemoBox code={LOADING_STATE_CODE}>
 						<CommentSection title="全部评论" form={null} isLoggedIn={true}>
 							<CommentList
 								comments={[]}
@@ -569,7 +646,7 @@ export function CommentSectionDocPage() {
 								isLoading={true}
 							/>
 						</CommentSection>
-					</HeroDemoBox>
+					</ExpandableDemoBox>
 				</div>
 			</section>
 

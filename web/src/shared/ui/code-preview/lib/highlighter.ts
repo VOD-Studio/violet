@@ -68,6 +68,9 @@ type SupportedLanguage = keyof typeof LANG_LOADERS;
 /** 主题（前台展示固定 github-dark，与原 useShikiHighlight/useCodeHighlight 一致） */
 const THEME = "github-dark";
 
+/** 浅色主题（组件文档页代码区使用，与页面底色自然衔接） */
+const THEME_LIGHT = "github-light";
+
 /** 语言别名 → 白名单 id（处理 sh/bash、yml/yaml 等常见等价写法） */
 const LANG_ALIAS: Record<string, string> = {
 	js: "javascript",
@@ -127,7 +130,10 @@ export function getHighlighter(): Promise<HighlighterCore> {
 		// base64 内联，无需运行时 fetch），与 shiki/bundle/full 的 engine 装配方式一致。
 		highlighterPromise = getSingletonHighlighterCore({
 			engine: createOnigurumaEngine(import("shiki/wasm")),
-			themes: [() => import("shiki/dist/themes/github-dark.mjs")],
+			themes: [
+				() => import("shiki/dist/themes/github-dark.mjs"),
+				() => import("shiki/dist/themes/github-light.mjs"),
+			],
 		});
 	}
 	return highlighterPromise;
@@ -173,5 +179,24 @@ export async function highlightCode(code: string, lang: string): Promise<string>
 	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME });
 }
 
+/**
+ * highlightCodeLight - 以浅色主题（github-light）高亮代码字符串
+ *
+ * 组件文档页代码区使用：与浅色页面底色自然衔接，避免黑底代码块在文档页的割裂感。
+ *
+ * @param code 原始代码
+ * @param lang 任意 lang id（解析与降级策略同 {@link highlightCode}）
+ * @returns 高亮 HTML（shiki 输出）
+ */
+export async function highlightCodeLight(code: string, lang: string): Promise<string> {
+	const resolved = resolveSupportedLanguage(lang);
+	const highlighter = await getHighlighter();
+	const finalLang = resolved ?? "plaintext";
+	if (resolved) {
+		await ensureLanguage(resolved);
+	}
+	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME_LIGHT });
+}
+
 /** Theme 名导出，供外部复用样式约定 */
-export { THEME as SHIKI_THEME };
+export { THEME as SHIKI_THEME, THEME_LIGHT as SHIKI_THEME_LIGHT };
