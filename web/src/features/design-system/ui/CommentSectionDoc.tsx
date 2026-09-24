@@ -258,12 +258,12 @@ function LightCodeBlock({ code }: { code: string }) {
 				</div>
 			) : html ? (
 				<div
-					className="shiki-line-numbers overflow-x-auto px-5 py-4 [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
+					className="shiki-line-numbers overflow-x-auto px-5 pt-12 pb-4 [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义，输出属性仅 class/style 受控集合，无注入面
 					dangerouslySetInnerHTML={{ __html: html }}
 				/>
 			) : (
-				<pre className="shiki-line-numbers overflow-x-auto px-5 py-4 text-sm text-foreground">
+				<pre className="shiki-line-numbers overflow-x-auto px-5 pt-12 pb-4 text-sm text-foreground">
 					<code>{code}</code>
 				</pre>
 			)}
@@ -296,11 +296,11 @@ function ExpandableDemoBox({ children, code }: { children: ReactNode; code: stri
 
 			{/* 代码区：细线分隔，浅色底与页面浑然一体 */}
 			<div className="relative mt-6 overflow-hidden rounded-2xl border border-border/70 bg-card">
-				{/* 复制图标固定于卡片右上，不随代码横向滚动 */}
+				{/* 复制图标固定于卡片右上，实底浮层避免与代码文字混叠 */}
 				<button
 					type="button"
 					onClick={handleCopy}
-					className="absolute top-3 right-3 z-10 rounded-md border border-border/60 bg-background/80 p-1.5 text-muted-foreground backdrop-blur-xs transition-colors hover:bg-muted hover:text-foreground"
+					className="absolute top-3 right-3 z-10 rounded-md border border-border/60 bg-background p-1.5 text-muted-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors hover:bg-muted hover:text-foreground"
 					title="复制代码"
 				>
 					{copied ? (
@@ -363,7 +363,7 @@ function HeroApiTable({ title, rows }: { title: string; rows: PropRow[] }) {
 			<div className="overflow-x-auto rounded-xl">
 				<table className="w-full min-w-160 border-collapse text-left text-xs">
 					<thead>
-						<tr className="border-b border-border/40 bg-muted/50 font-mono text-muted-foreground">
+						<tr className="bg-muted/50 font-mono text-muted-foreground">
 							<th className="rounded-l-xl py-3 px-4 font-semibold w-44">Prop</th>
 							<th className="py-3 px-4 font-semibold w-60">Type</th>
 							<th className="py-3 px-4 font-semibold w-28">Default</th>
@@ -584,26 +584,7 @@ export function CommentSectionDocPage() {
 					<ExpandableDemoBox code={BASIC_USAGE_CODE}>
 						<CommentSection
 							title={`全部评论 (${comments.length})`}
-							form={
-								<div className="flex items-start gap-3">
-									<div
-										aria-hidden="true"
-										className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-wash font-mono text-xs font-bold text-brand-wash-foreground"
-									>
-										V
-									</div>
-									<div className="min-w-0 flex-1 rounded-lg border border-input bg-card px-3 py-2 text-xs text-muted-foreground">
-										写下你的评论观点...
-									</div>
-									<button
-										type="button"
-										className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
-									>
-										<Send className="size-3" />
-										<span>发表</span>
-									</button>
-								</div>
-							}
+							form={null}
 							isLoggedIn={true}
 						>
 							<CommentList comments={comments} config={config} isLoggedIn={true} />

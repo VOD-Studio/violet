@@ -39,7 +39,7 @@ export function CommentSection({
 
 			{blackhole && !isLoggedIn && banner}
 
-			<div className="mb-8">{form}</div>
+			{form != null && <div className="mb-8">{form}</div>}
 
 			{(!blackhole || isLoggedIn) && children}
 		</section>
