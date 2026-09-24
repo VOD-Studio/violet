@@ -1,5 +1,8 @@
+import { useReducedMotion } from "@shared/lib/motion";
+import { cn } from "@shared/lib/utils";
 import { PageShell } from "@shared/ui/page-shell";
 import type { ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ComponentSpecimens } from "./ComponentSpecimens";
 import { LayoutSpec } from "./LayoutSpec";
 import { MotionCharter } from "./MotionCharter";
@@ -27,10 +30,22 @@ const BASELINES = [
 	"功能性圆角不过 rounded-2xl，硬投影一律禁用。",
 ] as const;
 
+/** 章节标识：菜单取值。 */
+type ChapterId =
+	| "principles"
+	| "decisions"
+	| "palette"
+	| "tokens"
+	| "layout"
+	| "specimens"
+	| "motion";
+
 /**
- * 营造章节骨架：content 的章节已在卷内成文，其余由后续营造逐章落地。
+ * 营造章节：菜单一次只呈一章，未落地章以「营造中」诚实占位。
  */
 interface CodexChapter {
+	/** 章节标识 */
+	id: ChapterId;
 	/** 汉字数字章号 */
 	num: string;
 	name: string;
@@ -42,42 +57,49 @@ interface CodexChapter {
 
 export const CHAPTERS: CodexChapter[] = [
 	{
+		id: "principles",
 		num: "壹",
 		name: "设计原则",
 		scope: "查表无果时回退的最高判据，与贯穿全站的底线。",
 		content: <DesignPrinciples />,
 	},
 	{
+		id: "decisions",
 		num: "贰",
 		name: "快速决策表",
 		scope: "不知道该用哪个 token 时，先查这张表。表里没有的，回到基本原则。",
 		content: <QuickDecisionTable />,
 	},
 	{
+		id: "palette",
 		num: "叁",
 		name: "色板生成器",
-		scope: "选择一个主色，色彩生成算法为你生成完整的色板。",
+		scope: "以单一主色为种，推演全域色阶、语义角色与中性基准。",
 		content: <PaletteGenerator />,
 	},
 	{
+		id: "tokens",
 		num: "肆",
 		name: "token 词典",
 		scope: "品牌色、功能色、中性色、语义色——全部语义 token 的名称与实时值。",
 		content: <TokenDictionary />,
 	},
 	{
+		id: "layout",
 		num: "伍",
 		name: "布局规格",
 		scope: "间距、圆角、投影与容器的法定刻度。",
 		content: <LayoutSpec />,
 	},
 	{
+		id: "specimens",
 		num: "陆",
 		name: "组件活样例",
 		scope: "真实控件活体陈列，样例即真相。",
 		content: <ComponentSpecimens />,
 	},
 	{
+		id: "motion",
 		num: "柒",
 		name: "动效章程",
 		scope: "运动的时间、幅度与克制的事由。",
@@ -88,10 +110,32 @@ export const CHAPTERS: CodexChapter[] = [
 /**
  * 营造法式——站点设计系统典籍页。
  *
- * 宋体典籍呈现：箴言立四柱，章节按「章号 + 章名 + 范围」成卷，
- * 已成文章节在卷内成文，未落地章节以「营造中」诚实占位。
+ * 左侧典籍目录立卷目，滑动墨线指示当前章；
+ * 右侧一次只呈一章，换页以淡出淡入交叉过渡。
  */
 export function DesignSystemPage() {
+	const [activeId, setActiveId] = useState<ChapterId>("principles");
+	const active = CHAPTERS.find((chapter) => chapter.id === activeId) ?? CHAPTERS[0];
+	const reduce = useReducedMotion();
+	const isInitialMount = useRef(true);
+	useEffect(() => {
+		isInitialMount.current = false;
+	}, []);
+	const listRef = useRef<HTMLUListElement>(null);
+	const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
+	useLayoutEffect(() => {
+		const measure = () => {
+			const current = listRef.current?.querySelector<HTMLElement>(
+				`[data-chapter-id='${active.id}']`,
+			);
+			if (!current) return;
+			setMarker({ top: current.offsetTop, height: current.offsetHeight });
+		};
+		measure();
+		window.addEventListener("resize", measure);
+		return () => window.removeEventListener("resize", measure);
+	}, [active.id]);
+
 	return (
 		<PageShell className="font-serif">
 			<header className="mb-12">
@@ -104,32 +148,90 @@ export function DesignSystemPage() {
 				</p>
 			</header>
 
-			{CHAPTERS.map((chapter) => (
-				<section
-					aria-labelledby={`codex-chapter-${chapter.num}`}
-					className="border-t border-border/60 py-10 first:border-t-0 first:pt-0"
-					key={chapter.name}
-				>
-					<div className="flex items-baseline gap-3">
-						<span className="font-mono text-sm text-muted-foreground">
-							{chapter.num}
-						</span>
-						<h2 className="text-2xl font-bold" id={`codex-chapter-${chapter.num}`}>
-							{chapter.name}
-						</h2>
-						{chapter.content ? null : (
-							<span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-								营造中
-							</span>
+			<div className="flex flex-col gap-8 lg:flex-row lg:gap-16">
+				<nav aria-label="营造章节" className="lg:sticky lg:top-24 lg:self-start">
+					<ul
+						ref={listRef}
+						className="relative flex flex-row flex-wrap gap-2 lg:w-44 lg:flex-col lg:gap-0"
+					>
+						{marker && (
+							<span
+								className={cn(
+									"absolute left-0 hidden w-0.5 rounded-full bg-primary motion-reduce:transition-none lg:block",
+									isInitialMount.current
+										? "transition-none"
+										: "transition-[top,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+								)}
+								style={{ top: marker.top, height: marker.height }}
+							/>
 						)}
-					</div>
-					<p className="mt-3 max-w-prose leading-relaxed text-muted-foreground">
-						{chapter.scope}
-					</p>
+						{CHAPTERS.map((chapter) => {
+							const current = chapter.id === active.id;
+							return (
+								<li key={chapter.id}>
+									<button
+										type="button"
+										onClick={() => setActiveId(chapter.id)}
+										aria-current={current ? "true" : undefined}
+										data-chapter-id={chapter.id}
+										className={cn(
+											"flex items-baseline gap-3 py-2.5 pr-3 pl-5 text-left transition-colors duration-300",
+											current
+												? "text-foreground"
+												: "text-muted-foreground hover:text-foreground",
+										)}
+									>
+										<span
+											className={cn(
+												"text-xs transition-colors duration-300",
+												current
+													? "text-primary"
+													: "text-muted-foreground/60",
+											)}
+										>
+											{chapter.num}
+										</span>
+										<span className="text-[15px] tracking-wide">
+											{chapter.name}
+										</span>
+									</button>
+								</li>
+							);
+						})}
+					</ul>
+				</nav>
 
-					{chapter.content}
-				</section>
-			))}
+				<div className="min-w-0 flex-1">
+					<section
+						aria-labelledby={`chapter-${active.id}`}
+						key={active.id}
+						className={cn(
+							reduce || isInitialMount.current
+								? ""
+								: "animate-in fade-in-50 slide-in-from-bottom-1.5 duration-300 ease-out",
+						)}
+					>
+						<div className="flex items-baseline gap-3">
+							<span className="font-mono text-sm text-muted-foreground">
+								{active.num}
+							</span>
+							<h2 className="text-2xl font-bold" id={`chapter-${active.id}`}>
+								{active.name}
+							</h2>
+							{active.content ? null : (
+								<span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
+									营造中
+								</span>
+							)}
+						</div>
+						<p className="mt-3 max-w-prose leading-relaxed text-muted-foreground">
+							{active.scope}
+						</p>
+
+						{active.content}
+					</section>
+				</div>
+			</div>
 		</PageShell>
 	);
 }

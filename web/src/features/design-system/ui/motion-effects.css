@@ -1,0 +1,94 @@
+@keyframes ink-ripple-expand {
+	0% {
+		transform: translate(-50%, -50%) scale(0);
+		opacity: 0.45;
+	}
+	100% {
+		transform: translate(-50%, -50%) scale(2.5);
+		opacity: 0;
+	}
+}
+
+@keyframes shake-damping {
+	0%,
+	100% {
+		transform: translate3d(0, 0, 0);
+	}
+	15%,
+	45%,
+	75% {
+		transform: translate3d(-5px, 0, 0);
+	}
+	30%,
+	60%,
+	90% {
+		transform: translate3d(5px, 0, 0);
+	}
+}
+
+@keyframes shine-sweep {
+	0% {
+		transform: translateX(-160%);
+	}
+	50%,
+	100% {
+		transform: translateX(360%);
+	}
+}
+
+@keyframes border-beam-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes wave-flow {
+	from {
+		mask-position: 0 0;
+		-webkit-mask-position: 0 0;
+	}
+	to {
+		mask-position: 14px 0;
+		-webkit-mask-position: 14px 0;
+	}
+}
+
+@keyframes marquee-slide {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+	to {
+		transform: translate3d(-50%, 0, 0);
+	}
+}
+
+@keyframes pulse-ring {
+	0% {
+		transform: scale(0.95);
+		opacity: 0.8;
+	}
+	100% {
+		transform: scale(2.8);
+		opacity: 0;
+	}
+}
+
+@keyframes aurora-float-1 {
+	0%,
+	100% {
+		transform: translate3d(-10%, -10%, 0) scale(1);
+	}
+	50% {
+		transform: translate3d(20%, 15%, 0) scale(1.2);
+	}
+}
+
+@keyframes aurora-float-2 {
+	0%,
+	100% {
+		transform: translate3d(20%, 20%, 0) scale(1.1);
+	}
+	50% {
+		transform: translate3d(-15%, -10%, 0) scale(0.9);
+	}
+}

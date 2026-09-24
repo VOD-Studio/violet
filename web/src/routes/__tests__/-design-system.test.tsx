@@ -1,5 +1,5 @@
 import { CHAPTERS, DesignSystemPage } from "@features/design-system/ui/DesignSystemPage";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { routeTree } from "../../routeTree.gen";
 
@@ -30,22 +30,24 @@ describe("营造法式页", () => {
 		}
 	});
 
-	it("七章节骨架齐备，未落地章节标注营造中", () => {
+	it("菜单立全部章节，未落地章节标注营造中", () => {
 		render(<DesignSystemPage />);
-		for (const name of [
-			"快速决策表",
-			"色板生成器",
-			"token 词典",
-			"布局规格",
-			"组件活样例",
-			"动效章程",
-		]) {
-			expect(screen.getByRole("heading", { name })).toBeTruthy();
+		for (const chapter of CHAPTERS) {
+			expect(screen.getByRole("button", { name: new RegExp(chapter.name) })).toBeTruthy();
 		}
 		// 徽标数与章节数据中未落地章数对账；全部落地后为 0
 		expect(screen.queryAllByText("营造中")).toHaveLength(
 			CHAPTERS.filter((chapter) => !chapter.content).length,
 		);
+	});
+
+	it("菜单切换章节，一次只呈一章", () => {
+		render(<DesignSystemPage />);
+		fireEvent.click(screen.getByRole("button", { name: /色板生成器/ }));
+		expect(screen.getByRole("heading", { level: 2, name: "色板生成器" })).toBeTruthy();
+		// 原章卸载：章头与箴言都不在
+		expect(screen.queryByRole("heading", { level: 2, name: "设计原则" })).toBeNull();
+		expect(screen.queryByText("有效")).toBeNull();
 	});
 
 	it("设计原则章成文：箴言柱脚与全站底线", () => {

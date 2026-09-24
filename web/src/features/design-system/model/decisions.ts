@@ -202,19 +202,13 @@ export const DECISION_CATEGORIES: DecisionCategory[] = [
 	},
 	{
 		id: "chart",
-		title: "图表与霓虹",
+		title: "图表",
 		rows: [
 			{
 				scene: "图表序列色",
 				className: "bg-chart-1",
 				varName: "--chart-1",
 				reason: "序列色一至五（chart-1…chart-5）按序取用，不自配色。",
-			},
-			{
-				scene: "霓虹强调",
-				className: "text-neon-purple",
-				varName: "--neon-purple",
-				reason: "装饰与运营事件专用（purple/blue/green/pink/cyan），正文界面不用。",
 			},
 		],
 	},

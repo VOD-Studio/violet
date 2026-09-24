@@ -39,6 +39,9 @@ export function cssColorToHex(color: string | undefined | null): string | null {
 		.join("")}`;
 }
 
+let lightProbe: HTMLSpanElement | null = null;
+let darkProbe: HTMLSpanElement | null = null;
+
 /**
  * readSiteVar - 读站点 CSS 变量，按 isDark 选浅/深变体
  *
@@ -48,13 +51,17 @@ export function cssColorToHex(color: string | undefined | null): string | null {
  */
 export function readSiteVar(name: string, isDark: boolean): string {
 	if (typeof window === "undefined" || typeof document === "undefined") return "";
-	const probe = document.createElement("span");
-	if (isDark) probe.className = "dark";
-	probe.style.display = "none";
-	document.documentElement.appendChild(probe);
-	try {
-		return window.getComputedStyle(probe).getPropertyValue(name).trim();
-	} finally {
-		probe.remove();
+	// 探针常驻复用：循环调用(如 token 词典逐 token 读取)时避免上百次
+	// 「插入 → 强制样式计算 → 移除」阻塞主线程；断线(测试重建 DOM)则重建
+	let probe = isDark ? darkProbe : lightProbe;
+	if (!probe?.isConnected) {
+		probe = document.createElement("span");
+		if (isDark) probe.className = "dark";
+		probe.style.display = "none";
+		probe.setAttribute("aria-hidden", "true");
+		document.documentElement.appendChild(probe);
+		if (isDark) darkProbe = probe;
+		else lightProbe = probe;
 	}
+	return window.getComputedStyle(probe).getPropertyValue(name).trim();
 }
