@@ -3,23 +3,29 @@ import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 /**
  * 样例分组：标目 + token 出处注 + 真实控件活体。
  */
 function SpecimenGroup({
+	id,
 	title,
 	provenance,
 	children,
 }: {
+	id?: string;
 	title: string;
 	/** 该组控件消费的 token / 类名出处 */
 	provenance: string;
 	children: ReactNode;
 }) {
 	return (
-		<section aria-label={title} className="border-b border-border/40 py-6 last:border-b-0">
+		<section
+			id={id}
+			aria-label={title}
+			className="border-b border-border/40 py-6 last:border-b-0 scroll-mt-28"
+		>
 			<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
 				<h3 className="text-lg font-bold">{title}</h3>
 				<code className="font-mono text-xs text-muted-foreground">{provenance}</code>
@@ -34,9 +40,23 @@ function SpecimenGroup({
  * 不截图、不仿品，此处所见即站点在用的控件本体。
  */
 export function ComponentSpecimens() {
+	useEffect(() => {
+		if (typeof window !== "undefined" && window.location.hash) {
+			const id = window.location.hash.slice(1);
+			const target = document.getElementById(id);
+			if (target) {
+				const timer = setTimeout(() => {
+					target.scrollIntoView({ behavior: "smooth", block: "start" });
+				}, 80);
+				return () => clearTimeout(timer);
+			}
+		}
+	}, []);
+
 	return (
 		<div className="mt-8 rounded-2xl border border-border/40 bg-card/50 p-6">
 			<SpecimenGroup
+				id="buttons"
 				title="按钮"
 				provenance="bg-primary · bg-secondary · border · bg-brand · bg-destructive · hover:bg-accent"
 			>
@@ -54,6 +74,7 @@ export function ComponentSpecimens() {
 			</SpecimenGroup>
 
 			<SpecimenGroup
+				id="status"
 				title="徽章"
 				provenance="bg-primary · bg-secondary · bg-brand-wash + text-brand-wash-foreground · border-border"
 			>
@@ -66,7 +87,8 @@ export function ComponentSpecimens() {
 			</SpecimenGroup>
 
 			<SpecimenGroup
-				title="输入"
+				id="feedback"
+				title="输入与交互"
 				provenance="border-input · bg-transparent · ring-ring（焦点环）"
 			>
 				<Input placeholder="单行输入" className="w-56" />

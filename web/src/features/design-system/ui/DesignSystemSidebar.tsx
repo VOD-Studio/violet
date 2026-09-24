@@ -2,7 +2,7 @@ import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DESIGN_SYSTEM_NAV_GROUPS } from "../model/navigation";
 
 export interface DesignSystemSidebarProps {
@@ -16,14 +16,27 @@ export interface DesignSystemSidebarProps {
 
 /**
  * 营造法式卷目索引导航：
- * 采用 LayoutId 物理弹簧滑动胶囊指示器，
- * 搭配自然流体弹簧物理折叠展开动画，顺滑紧凑。
+ * 一级与二级菜单均拥有专属 LayoutId 物理弹簧滑动高亮指示器，
+ * 二级菜单锚点点击支持丝滑平滑缓动滚动，告别生硬瞬间瞬移。
  */
 export function DesignSystemSidebar({
 	currentPath,
 	onNavigate,
 	className,
 }: DesignSystemSidebarProps) {
+	const [activeHash, setActiveHash] = useState(() =>
+		typeof window !== "undefined" ? window.location.hash : "",
+	);
+
+	// 监听浏览器 hash 变化
+	useEffect(() => {
+		const handleHashChange = () => {
+			setActiveHash(window.location.hash);
+		};
+		window.addEventListener("hashchange", handleHashChange);
+		return () => window.removeEventListener("hashchange", handleHashChange);
+	}, []);
+
 	// 默认展开包含当前活跃路由或其子项的条目
 	const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>(() => {
 		const initial: Record<string, boolean> = {};
@@ -47,6 +60,23 @@ export function DesignSystemSidebar({
 			...prev,
 			[itemId]: !prev[itemId],
 		}));
+	};
+
+	// 二级锚点平滑滚动处理
+	const handleSubClick = (e: React.MouseEvent<HTMLAnchorElement>, to: string) => {
+		onNavigate?.();
+		const hashIndex = to.indexOf("#");
+		if (hashIndex !== -1) {
+			const hash = to.slice(hashIndex);
+			const targetId = hash.slice(1);
+			const target = document.getElementById(targetId);
+			if (target) {
+				e.preventDefault();
+				target.scrollIntoView({ behavior: "smooth", block: "start" });
+				window.history.pushState(null, "", to);
+				setActiveHash(hash);
+			}
+		}
 	};
 
 	return (
@@ -88,7 +118,7 @@ export function DesignSystemSidebar({
 
 								return (
 									<li key={item.id} className="relative">
-										{/* 物理弹簧滑动高亮底块：项与项之间流体无缝切换 */}
+										{/* 一级菜单物理弹簧滑动高亮底块 */}
 										{isCurrent && (
 											<motion.div
 												layoutId="ds-nav-active-indicator"
@@ -176,24 +206,44 @@ export function DesignSystemSidebar({
 														<ul className="mt-1 ml-5 border-l border-border/50 pl-2.5 space-y-0.5 pb-0.5">
 															{item.children?.map((sub) => {
 																const isSubCurrent =
-																	currentPath === sub.to ||
-																	(typeof window !==
-																		"undefined" &&
-																		window.location.hash &&
+																	(activeHash &&
 																		sub.to.endsWith(
-																			window.location.hash,
-																		));
+																			activeHash,
+																		)) ||
+																	(!activeHash &&
+																		currentPath === sub.to);
 
 																return (
-																	<li key={sub.id}>
+																	<li
+																		key={sub.id}
+																		className="relative"
+																	>
+																		{/* 二级菜单专属物理滑动指示器 */}
+																		{isSubCurrent && (
+																			<motion.span
+																				layoutId="ds-nav-sub-indicator"
+																				className="absolute inset-0 rounded-md bg-primary/10 border-l-2 border-primary pointer-events-none"
+																				transition={{
+																					type: "spring",
+																					stiffness: 450,
+																					damping: 35,
+																				}}
+																			/>
+																		)}
+
 																		<a
 																			href={sub.to}
-																			onClick={onNavigate}
+																			onClick={(e) =>
+																				handleSubClick(
+																					e,
+																					sub.to,
+																				)
+																			}
 																			className={cn(
-																				"block rounded-md px-2 py-1.5 text-xs transition-colors duration-150",
+																				"relative z-10 block rounded-md px-2 py-1.5 text-xs transition-colors duration-150",
 																				isSubCurrent
-																					? "font-medium text-primary bg-primary/5"
-																					: "text-muted-foreground/80 hover:text-foreground hover:bg-muted/30",
+																					? "font-medium text-foreground"
+																					: "text-muted-foreground/80 hover:text-foreground",
 																			)}
 																		>
 																			<span className="truncate">
