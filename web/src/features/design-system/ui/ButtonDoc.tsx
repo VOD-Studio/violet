@@ -1,6 +1,6 @@
 import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Loader2, Plus } from "lucide-react";
+import { ArrowRight, Download, Mail, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
@@ -18,29 +18,46 @@ function Example() {
 }`;
 
 const VARIANT_CODE = `<Button type="button" variant="default">主要动作</Button>
+<Button type="button" variant="brand">品牌强调</Button>
 <Button type="button" variant="secondary">次要动作</Button>
+<Button type="button" variant="soft">柔和淡染</Button>
 <Button type="button" variant="outline">描边动作</Button>
 <Button type="button" variant="ghost">轻量动作</Button>
 <Button type="button" variant="link">文字动作</Button>
-<Button type="button" variant="destructive">危险动作</Button>`;
+<Button type="button" variant="destructive">危险操作</Button>`;
 
 const SIZE_CODE = `import { Plus } from "lucide-react";
 
-<Button type="button" size="xs">极小</Button>
-<Button type="button" size="sm">小</Button>
+<Button type="button" size="xs">极小 xs</Button>
+<Button type="button" size="sm">小 sm</Button>
 <Button type="button" size="default">默认</Button>
-<Button type="button" size="lg">大</Button>
+<Button type="button" size="lg">大 lg</Button>
+<Button type="button" size="xl">特大 xl</Button>
 <Button type="button" size="icon" aria-label="新建">
   <Plus aria-hidden="true" />
 </Button>`;
 
-const STATE_CODE = `import { Loader2 } from "lucide-react";
+const ICON_CODE = `import { ArrowRight, Download, Mail, Sparkles } from "lucide-react";
 
-<Button type="button" disabled>不可用</Button>
-<Button type="button" disabled aria-busy="true">
-  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-  处理中…
-</Button>`;
+<Button leftIcon={<Mail />}>发送邮件</Button>
+<Button rightIcon={<ArrowRight />} variant="brand">继续阅读</Button>
+<Button leftIcon={<Sparkles />} variant="soft">灵感启发</Button>
+<Button leftIcon={<Download />} rightIcon={<ArrowRight />} variant="outline">导出数据</Button>`;
+
+const STATE_CODE = `import { Button } from "@shared/ui/base/button";
+import { Mail } from "lucide-react";
+
+{/* 1. 内置加载中状态（自动禁用并展示平滑指示器，杜绝宽度跳动） */}
+<Button loading>保存修改</Button>
+
+{/* 2. 携带自定义文案的加载状态 */}
+<Button loading loadingText="正在同步数据...">提交发布</Button>
+
+{/* 3. 前置图标平滑切换：leftIcon 在加载时自动替换为加载指示器 */}
+<Button loading leftIcon={<Mail />}>发送邮件</Button>
+
+{/* 4. 原生不可用状态 */}
+<Button disabled>已归档</Button>`;
 
 const LINK_CODE = `import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
@@ -62,39 +79,64 @@ interface PropRow {
 const BUTTON_PROPS: PropRow[] = [
 	{
 		name: "variant",
-		type: "default | destructive | outline | secondary | ghost | link",
-		defaultValue: "default",
-		meaning: "主要动作使用 primary 语义色，并随所在页面方言取值。",
+		type: '"default" | "brand" | "secondary" | "soft" | "outline" | "ghost" | "link" | "destructive"',
+		defaultValue: '"default"',
+		meaning: "视觉层级变体，严格绑定 Violet 语义 Token（primary / brand / secondary 等）。",
 	},
 	{
 		name: "size",
-		type: "default | xs | sm | lg | icon | icon-xs | icon-sm | icon-lg",
-		defaultValue: "default",
-		meaning: "高度与内边距；纯图标按钮使用 icon 档位并提供可访问名称。",
+		type: '"default" | "xs" | "sm" | "lg" | "xl" | "icon" | "icon-xs" | "icon-sm" | "icon-lg"',
+		defaultValue: '"default"',
+		meaning: "高度与内外边距规格；纯图标按钮使用 icon 档位并提供 aria-label。",
+	},
+	{
+		name: "loading",
+		type: "boolean",
+		defaultValue: "false",
+		meaning: "内置加载中状态；自动禁用、打上 aria-busy 并平滑替换前置图标或展示指示器。",
+	},
+	{
+		name: "loadingText",
+		type: "ReactNode",
+		defaultValue: "—",
+		meaning:
+			"处于 loading 态时展示的文案；提供时替换正文，省略时保留正文并在前置位展示旋转动画。",
+	},
+	{
+		name: "leftIcon",
+		type: "ReactNode",
+		defaultValue: "—",
+		meaning: "按钮前置图标插槽；加载时平滑替换为加载指示器以杜绝页面布局跳变。",
+	},
+	{
+		name: "rightIcon",
+		type: "ReactNode",
+		defaultValue: "—",
+		meaning: "按钮后置图标插槽。",
 	},
 	{
 		name: "asChild",
 		type: "boolean",
 		defaultValue: "false",
-		meaning: "把样式与属性赋予唯一子元素；导航场景传入 Link。",
+		meaning: "基于 Radix Slot 将样式与属性赋予唯一子元素；导航跳转场景传入 Link。",
 	},
 	{
 		name: "disabled",
 		type: "boolean",
 		defaultValue: "false",
-		meaning: "原生 button 的禁用状态；链接没有对应的原生 disabled 语义。",
+		meaning: "原生 button 禁用属性；同时阻止 active 物理微沉与点击事件。",
 	},
 	{
 		name: "type",
-		type: "button | submit | reset",
-		defaultValue: "浏览器原生值",
-		meaning: "继承原生 button 属性；表单内的非提交动作应显式设为 button。",
+		type: '"button" | "submit" | "reset"',
+		defaultValue: '"button"',
+		meaning: "原生 button 类型；默认为安全防触发表单提交的 button 类型。",
 	},
 	{
 		name: "onClick / className",
 		type: "原生 button 属性",
 		defaultValue: "—",
-		meaning: "事件回调与布局类名可透传；不要用 className 覆盖 variant 的颜色语义。",
+		meaning: "标准事件回调与额外布局类名；严禁通过 className 覆盖 variant 的颜色语义。",
 	},
 ];
 
@@ -113,7 +155,7 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 	},
 	{ label: "默认值", headerClassName: "min-w-28", render: (row) => row.defaultValue },
 	{
-		label: "何时使用",
+		label: "说明与约束",
 		headerClassName: "min-w-56",
 		cellClassName: "text-muted-foreground leading-relaxed",
 		render: (row) => row.meaning,
@@ -123,6 +165,12 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 /** 以真实 Button 展示用法、视觉层级、状态和语义边界。 */
 export function ButtonDocPage() {
 	const [clicks, setClicks] = useState(0);
+	const [simulating, setSimulating] = useState(false);
+
+	const handleSimulateLoading = () => {
+		setSimulating(true);
+		window.setTimeout(() => setSimulating(false), 2000);
+	};
 
 	return (
 		<article className="mx-auto w-full max-w-4xl space-y-14 pb-24 font-sans">
@@ -134,8 +182,8 @@ export function ButtonDocPage() {
 					Button 按钮
 				</h1>
 				<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
-					触发操作时用按钮，导航时用链接。展示本站的动作层级、尺寸和状态；
-					加载状态由调用方组合，不是组件内置属性。
+					触发操作时用按钮，导航时用链接。基于 Violet 语义 Token
+					与精工物理层级打造：顶边细微内高光与底部轻触感阴影、自然的按压微沉触觉、内置平滑加载（杜绝布局抖动）与首选图标插槽。
 				</p>
 				<p className="text-xs text-muted-foreground">
 					源码{" "}
@@ -150,7 +198,7 @@ export function ButtonDocPage() {
 					用法
 				</h2>
 				<p className="text-sm leading-relaxed text-muted-foreground">
-					从项目公共组件导入。下方按钮是可操作的，代码与预览使用同一个状态更新方式。
+					从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
 				</p>
 				<ComponentDemo code={BASIC_CODE}>
 					<div className="flex justify-center">
@@ -165,19 +213,27 @@ export function ButtonDocPage() {
 				<h2 id="button-examples" className="text-xl font-bold text-foreground">
 					按能力选择示例
 				</h2>
+
+				{/* 视觉层级 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">视觉层级</h3>
+					<h3 className="text-lg font-semibold text-foreground">视觉层级 (Variants)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						主要动作使用 default，底色来自 primary；危险操作使用
-						destructive，其余动作按层级降低强调。
+						主要动作使用 default（随方言映射），品牌强调使用专属 brand，柔和辅助使用
+						soft，描边与次级使用 outline / secondary，轻量操作使用 ghost。
 					</p>
 					<ComponentDemo code={VARIANT_CODE}>
 						<div className="flex flex-wrap items-center justify-center gap-3">
 							<Button type="button" variant="default">
 								主要动作
 							</Button>
+							<Button type="button" variant="brand">
+								品牌强调
+							</Button>
 							<Button type="button" variant="secondary">
 								次要动作
+							</Button>
+							<Button type="button" variant="soft">
+								柔和淡染
 							</Button>
 							<Button type="button" variant="outline">
 								描边动作
@@ -189,30 +245,35 @@ export function ButtonDocPage() {
 								文字动作
 							</Button>
 							<Button type="button" variant="destructive">
-								危险动作
+								危险操作
 							</Button>
 						</div>
 					</ComponentDemo>
 				</div>
 
+				{/* 尺寸规格 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">尺寸与图标</h3>
+					<h3 className="text-lg font-semibold text-foreground">尺寸规格 (Sizes)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						纯图标按钮必须提供 aria-label；图标本身为装饰，不重复朗读。
+						包含 xs 到 xl 五个高度梯度；纯图标按钮请使用 icon 档位并提供明确的
+						aria-label。
 					</p>
 					<ComponentDemo code={SIZE_CODE}>
 						<div className="flex flex-wrap items-center justify-center gap-3">
 							<Button type="button" size="xs">
-								极小
+								极小 xs
 							</Button>
 							<Button type="button" size="sm">
-								小
+								小 sm
 							</Button>
 							<Button type="button" size="default">
 								默认
 							</Button>
 							<Button type="button" size="lg">
-								大
+								大 lg
+							</Button>
+							<Button type="button" size="xl">
+								特大 xl
 							</Button>
 							<Button type="button" size="icon" aria-label="新建">
 								<Plus aria-hidden="true" />
@@ -221,29 +282,80 @@ export function ButtonDocPage() {
 					</ComponentDemo>
 				</div>
 
+				{/* 图标扩展 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">不可用与处理中</h3>
+					<h3 className="text-lg font-semibold text-foreground">图标插槽 (Icons)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						组件没有 isLoading 属性。提交期间由调用方传入 disabled、状态文案和加载图标。
+						原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
 					</p>
-					<ComponentDemo code={STATE_CODE}>
+					<ComponentDemo code={ICON_CODE}>
 						<div className="flex flex-wrap items-center justify-center gap-3">
-							<Button type="button" disabled>
-								不可用
+							<Button leftIcon={<Mail aria-hidden="true" />}>发送邮件</Button>
+							<Button rightIcon={<ArrowRight aria-hidden="true" />} variant="brand">
+								继续阅读
 							</Button>
-							<Button type="button" disabled aria-busy="true">
-								<Loader2 aria-hidden="true" className="size-4 animate-spin" />
-								处理中…
+							<Button leftIcon={<Sparkles aria-hidden="true" />} variant="soft">
+								灵感启发
+							</Button>
+							<Button
+								leftIcon={<Download aria-hidden="true" />}
+								rightIcon={<ArrowRight aria-hidden="true" />}
+								variant="outline"
+							>
+								导出数据
 							</Button>
 						</div>
 					</ComponentDemo>
 				</div>
 
+				{/* 状态与加载 */}
 				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">作为导航链接</h3>
+					<h3 className="text-lg font-semibold text-foreground">状态与加载 (Loading)</h3>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						内置 loading 支持：处于加载中时自动禁用并设置
+						aria-busy；前置图标平滑切换为指示器，杜绝页面宽度抖动。
+					</p>
+					<ComponentDemo code={STATE_CODE}>
+						<div className="flex flex-wrap items-center justify-center gap-3">
+							<Button
+								type="button"
+								variant="brand"
+								loading={simulating}
+								onClick={handleSimulateLoading}
+							>
+								{simulating ? "正在处理…" : "点击体验加载"}
+							</Button>
+							<Button
+								type="button"
+								variant="default"
+								loading
+								loadingText="正在同步数据..."
+							>
+								提交发布
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								loading
+								leftIcon={<Mail aria-hidden="true" />}
+							>
+								发送邮件
+							</Button>
+							<Button type="button" disabled>
+								已归档
+							</Button>
+						</div>
+					</ComponentDemo>
+				</div>
+
+				{/* 链接模式 */}
+				<div className="space-y-3">
+					<h3 className="text-lg font-semibold text-foreground">
+						作为导航链接 (asChild)
+					</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						跳转页面使用 Link；asChild
-						只复用按钮外观，不改变链接语义。试着用键盘聚焦并打开它。
+						只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
 					</p>
 					<ComponentDemo code={LINK_CODE}>
 						<div className="flex justify-center">
@@ -262,8 +374,7 @@ export function ButtonDocPage() {
 					API 参考
 				</h2>
 				<p className="text-sm leading-relaxed text-muted-foreground">
-					下表只列本站 Button 的特殊属性与影响语义的原生属性；其余 HTML button
-					属性保持原生行为。
+					下表列出 Button 扩展属性与关键语义定义；其余标准 HTML button 属性均完全支持。
 				</p>
 				<ApiTable
 					title="Button Props"
@@ -279,15 +390,15 @@ export function ButtonDocPage() {
 				</h2>
 				<ul className="space-y-3 text-sm leading-relaxed text-muted-foreground">
 					<li className="border-l-2 border-border pl-4">
-						键盘用户应能通过 Tab 定位，并看到焦点描边；不要用 className 清掉
+						键盘用户通过 Tab 定位时呈现高对比度聚焦描边；严禁使用 className 抹除
 						focus-visible 样式。
 					</li>
 					<li className="border-l-2 border-border pl-4">
-						表单内的非提交按钮明确设置 type="button"；提交按钮才用 type="submit"。
+						Button 默认 type="button"，表单内主提交操作请显式设置 type="submit"。
 					</li>
 					<li className="border-l-2 border-border pl-4">
-						asChild 包裹链接时不要依赖 disabled
-						禁止跳转；在调用方移除链接或改用原生按钮。
+						asChild 包裹链接时不应传 disabled 禁止跳转；应由调用方在 JSX
+						逻辑中条件渲染纯文本或原生按钮。
 					</li>
 				</ul>
 			</section>
