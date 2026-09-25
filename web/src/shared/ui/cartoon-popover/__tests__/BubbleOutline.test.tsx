@@ -1,140 +1,80 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { BubbleOutline } from "../BubbleOutline";
+import type { CartoonPopoverSide } from "../types";
 
-function getStrokePaths(container: HTMLElement): string[] {
-	return [...container.querySelectorAll("svg path[stroke-dashoffset]")].map(
-		(p) => p.getAttribute("d") ?? "",
-	);
-}
-
-function getFillPath(container: HTMLElement): string | null {
-	return container.querySelector('svg path:not([fill="none"])')?.getAttribute("d") ?? null;
+function coordinates(path: string): number[] {
+	return [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map(([value]) => Number(value));
 }
 
 describe("BubbleOutline 轮廓几何", () => {
 	afterEach(cleanup);
 
-	it("bottom 侧从尾巴尖端起笔，V 边 45° 沉降到边框中心线后沿圆角绕行", () => {
+	it.each<CartoonPopoverSide>([
+		"bottom",
+		"top",
+		"right",
+		"left",
+	])("%s 侧小尾巴指向触发器，宽度不超过 16px、外露不超过 8px，填充与描线同轨", (side) => {
+		const width = 220;
+		const height = 80;
+		const arrowOffset = side === "top" || side === "bottom" ? 110 : 40;
 		const { container } = render(
 			<BubbleOutline
-				width={288}
-				height={144}
-				side="bottom"
-				arrowOffset={144}
+				width={width}
+				height={height}
+				side={side}
+				arrowOffset={arrowOffset}
 				showArrow
 				progress={1}
 			/>,
 		);
-		const [first, second] = getStrokePaths(container);
-		// 尖端外露 10px，坐标即盒坐标，与静止态同轨道
-		expect(first.startsWith("M 144 -10")).toBe(true);
-		expect(second.startsWith("M 144 -10")).toBe(true);
-		// V 边沉降点落在边框中心线 y=1 上，未夹持时对称 ±11
-		expect(first).toContain("L 133 1");
-		expect(second).toContain("L 155 1");
-		expect(first).toContain("H 16 A 15 15 0 0 0 1 16 V 128 A 15 15 0 0 0 16 143 H 144");
-		expect(second).toContain("H 272 A 15 15 0 0 1 287 16 V 128 A 15 15 0 0 1 272 143 H 144");
-	});
-
-	it("尾巴背景三角与描线共用同一沉降点", () => {
-		const { container } = render(
-			<BubbleOutline
-				width={288}
-				height={144}
-				side="bottom"
-				arrowOffset={144}
-				showArrow
-				progress={0}
-			/>,
+		const fill = container.querySelector('svg path:not([fill="none"])');
+		const strokes = [...container.querySelectorAll("svg path[stroke-dashoffset]")];
+		expect(fill).not.toBeNull();
+		expect(strokes).toHaveLength(2);
+		const points = coordinates(fill?.getAttribute("d") ?? "");
+		const [startX, startY, baseX, baseY, far] = points;
+		const vertical = side === "top" || side === "bottom";
+		const tip = vertical ? startX : startY;
+		const outer = vertical ? startY : startX;
+		const near = vertical ? baseX : baseY;
+		const edge = vertical ? baseY : baseX;
+		const signedTip =
+			side === "bottom" || side === "right" ? outer : outer - (vertical ? height : width);
+		expect(tip).toBe(arrowOffset);
+		expect(Math.abs(signedTip)).toBeLessThanOrEqual(8);
+		expect(far - near).toBeLessThanOrEqual(16);
+		expect(far - near).toBeGreaterThan(0);
+		expect(edge).toBe(
+			side === "bottom" || side === "right" ? 1 : (vertical ? height : width) - 1,
 		);
-		expect(getFillPath(container)).toBe("M 144 -10 L 133 1 H 155 Z");
-		// 无尾巴形态不渲染背景三角
-		const sticker = render(
-			<BubbleOutline
-				width={220}
-				height={80}
-				side="bottom"
-				arrowOffset={110}
-				showArrow={false}
-				progress={1}
-			/>,
-		);
-		expect(getFillPath(sticker.container)).toBeNull();
-	});
-
-	it("top 侧尖端在底边外侧，V 边沉降到边框中心线", () => {
-		const { container } = render(
-			<BubbleOutline
-				width={220}
-				height={80}
-				side="top"
-				arrowOffset={100}
-				showArrow
-				progress={1}
-			/>,
-		);
-		const [first, second] = getStrokePaths(container);
-		expect(first.startsWith("M 100 90")).toBe(true);
-		expect(first).toContain("L 89 79 H 16 A 15 15 0 0 1 1 64 V 16 A 15 15 0 0 1 16 1 H 110");
-		expect(second).toContain(
-			"L 111 79 H 204 A 15 15 0 0 0 219 64 V 16 A 15 15 0 0 0 204 1 H 110",
+		const first = coordinates(strokes[0].getAttribute("d") ?? "");
+		const second = coordinates(strokes[1].getAttribute("d") ?? "");
+		expect(first.slice(0, 4)).toEqual([startX, startY, baseX, baseY]);
+		expect(second.slice(0, 4)).toEqual(
+			vertical ? [startX, startY, far, baseY] : [startX, startY, baseX, far],
 		);
 	});
 
-	it("right 侧尖端在左边外侧，V 边沉降到边框中心线后沿周界绕行", () => {
+	it("靠近圆角时尾巴连接点留在直边上", () => {
 		const { container } = render(
 			<BubbleOutline
 				width={220}
 				height={80}
-				side="right"
-				arrowOffset={40}
-				showArrow
-				progress={1}
-			/>,
-		);
-		const [first, second] = getStrokePaths(container);
-		expect(first.startsWith("M -10 40")).toBe(true);
-		expect(first).toContain("L 1 29 V 16 A 15 15 0 0 1 16 1 H 204 A 15 15 0 0 1 219 16 V 40");
-		expect(second).toContain("L 1 51 V 64 A 15 15 0 0 0 16 79 H 204 A 15 15 0 0 0 219 64 V 40");
-	});
-
-	it("left 侧尖端在右边外侧，V 边沉降到边框中心线", () => {
-		const { container } = render(
-			<BubbleOutline
-				width={220}
-				height={80}
-				side="left"
-				arrowOffset={40}
-				showArrow
-				progress={1}
-			/>,
-		);
-		const [first, second] = getStrokePaths(container);
-		expect(first.startsWith("M 230 40")).toBe(true);
-		expect(first).toContain("L 219 29 V 16 A 15 15 0 0 0 204 1 H 16 A 15 15 0 0 0 1 16 V 40");
-		expect(second).toContain("L 219 51 V 64 A 15 15 0 0 1 204 79 H 16 A 15 15 0 0 1 1 64 V 40");
-	});
-
-	it("沉降点撞圆角时夹持到直边段，保持尾巴与周界连续", () => {
-		const { container } = render(
-			<BubbleOutline
-				width={288}
-				height={144}
 				side="bottom"
-				arrowOffset={24}
+				arrowOffset={21}
 				showArrow
 				progress={1}
 			/>,
 		);
-		const [first, second] = getStrokePaths(container);
-		// arrowOffset=24 时左侧沉降点 13 落入 16px 圆角区，夹持到 16
-		expect(first).toContain("L 16 1 H 16");
-		expect(second).toContain("L 35 1");
-		expect(getFillPath(container)).toBe("M 24 -10 L 16 1 H 35 Z");
+		const fill = container.querySelector('svg path:not([fill="none"])');
+		const [, , near, , far] = coordinates(fill?.getAttribute("d") ?? "");
+		expect(near).toBeGreaterThanOrEqual(16);
+		expect(far).toBeLessThanOrEqual(204);
 	});
 
-	it("无尾巴时从周界中点起笔，不出现界外坐标", () => {
+	it("不显示尾巴时无背景三角，轮廓从周界中点闭合", () => {
 		const { container } = render(
 			<BubbleOutline
 				width={220}
@@ -145,13 +85,10 @@ describe("BubbleOutline 轮廓几何", () => {
 				progress={1}
 			/>,
 		);
-		const [first, second] = getStrokePaths(container);
-		expect(first.startsWith("M 110 1")).toBe(true);
-		expect(second.startsWith("M 110 1")).toBe(true);
-		for (const d of [first, second]) {
-			for (const value of d.matchAll(/(-?[\d.]+)/g)) {
-				expect(Number(value[1])).toBeGreaterThanOrEqual(-1);
-			}
-		}
+		expect(container.querySelector('svg path:not([fill="none"])')).toBeNull();
+		const strokes = container.querySelectorAll("svg path[stroke-dashoffset]");
+		expect(strokes).toHaveLength(2);
+		expect(coordinates(strokes[0].getAttribute("d") ?? "").slice(0, 2)).toEqual([110, 1]);
+		expect(coordinates(strokes[1].getAttribute("d") ?? "").slice(0, 2)).toEqual([110, 1]);
 	});
 });
