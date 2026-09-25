@@ -1,9 +1,9 @@
 import { useVerifyOAuth } from "@features/admin-settings/api/queries";
 import type { OAuthProviderStatus } from "@features/admin-settings/model/types";
 import { copyText } from "@shared/lib/clipboard";
-import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { Switch } from "@shared/ui/base/switch";
+import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { type ReactNode, useState } from "react";
 

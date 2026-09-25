@@ -1,5 +1,5 @@
 import { useCountUp } from "@shared/hooks/use-count-up";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 import animations from "./animations.module.css";
 import { formatPercent, thresholdColor } from "./format";

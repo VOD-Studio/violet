@@ -1,6 +1,6 @@
-import { cn } from "@shared/lib/utils";
 import type { EmotionDef } from "@violet/mascot";
 import { Mascot } from "@violet/mascot";
+import { cn } from "cn";
 import { useEffect, useRef } from "react";
 
 type EmotionGridItemVariant = "grid" | "rail";

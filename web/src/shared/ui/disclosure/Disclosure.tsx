@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { ChevronDown } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 

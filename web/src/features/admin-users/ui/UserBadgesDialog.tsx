@@ -1,8 +1,8 @@
 import { CHAT_BADGES, useGrantBadges, useRevokeBadge, useUserBadges } from "@entities/chat-badge";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "cn";
 import { BadgeCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Modal } from "@/shared/ui/modal";
 import type { AdminUserDTO } from "../model/types";

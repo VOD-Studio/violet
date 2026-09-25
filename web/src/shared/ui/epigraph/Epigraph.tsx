@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Signature } from "@shared/ui/signature";
+import { cn } from "cn";
 import type { HTMLAttributes } from "react";
 
 import styles from "./Epigraph.module.css";

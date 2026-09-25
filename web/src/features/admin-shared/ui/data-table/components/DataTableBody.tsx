@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { Fragment, type ReactNode } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Skeleton } from "@/shared/ui/base/skeleton";
 import { TableBody, TableCell, TableRow } from "@/shared/ui/base/table";

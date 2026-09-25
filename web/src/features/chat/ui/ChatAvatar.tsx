@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { useChatAppearance } from "../hooks/useChatAppearance";
 import type { ChatUser } from "../model/types";
 import { AvatarDecoration } from "./appearance/AvatarDecoration";

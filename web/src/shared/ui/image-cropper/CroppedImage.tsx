@@ -1,8 +1,8 @@
 import { parseCrop } from "@shared/lib/crop-url";
 import { contentImageUrl } from "@shared/lib/image-url";
+import { cn } from "cn";
 import { ImageOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 import { coverCropTransform, type Size } from "./lib/crop-display";
 
 export interface CroppedImageProps {

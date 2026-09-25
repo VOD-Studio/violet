@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 
 /** LabDirection - 博客排版实验室方向标识 */
 export type LabDirection =

@@ -27,7 +27,7 @@ import {
 } from "@entities/user/model/mention-token";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 export interface UseRichTextInputOptions {

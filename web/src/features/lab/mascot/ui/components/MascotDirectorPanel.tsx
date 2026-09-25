@@ -1,5 +1,6 @@
 import type { EmotionDef } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
+import { cn } from "cn";
 import {
 	Hand,
 	Heart,
@@ -20,7 +21,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { cn } from "@/shared/lib/utils";
 import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 
 interface StageAction {

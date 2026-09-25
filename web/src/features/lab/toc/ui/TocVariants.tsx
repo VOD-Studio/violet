@@ -1,5 +1,5 @@
 import { SegmentedArticleToc } from "@entities/post/ui/SegmentedArticleToc";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { RefObject } from "react";

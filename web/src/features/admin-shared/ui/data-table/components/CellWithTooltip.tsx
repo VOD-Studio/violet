@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import {
 	Children,
 	cloneElement,
@@ -8,7 +9,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/base/tooltip";
 
 interface CellWithTooltipProps {

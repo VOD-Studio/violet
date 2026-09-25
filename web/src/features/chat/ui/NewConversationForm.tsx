@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
+import { cn } from "cn";
 import { Check, LoaderCircle, Search, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useDeferredValue, useEffect, useRef, useState } from "react";

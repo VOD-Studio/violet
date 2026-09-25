@@ -1,7 +1,7 @@
-import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AdminBrand } from "./AdminBrand";
 import { useAdminSidebarStore } from "./admin-sidebar-store";

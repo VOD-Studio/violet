@@ -8,7 +8,6 @@
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import { formatRelativeTime } from "@shared/lib/date";
-import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import {
 	DropdownMenu,
@@ -18,6 +17,7 @@ import {
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
 import { useNavigate } from "@tanstack/react-router";
+import { cn } from "cn";
 import {
 	Bell,
 	BellRing,

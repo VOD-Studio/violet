@@ -1,6 +1,6 @@
 import type { MediaCatalogSource } from "@entities/media/api/queries";
 import type { MediaFile } from "@entities/media/model/types";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { ImagePlus, X } from "lucide-react";
 import { useState } from "react";
 import { MediaPicker } from "./MediaPicker";

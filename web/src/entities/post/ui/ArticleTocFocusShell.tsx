@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { type FocusEvent, type ReactNode, type RefObject, useState } from "react";
 
 import { ArticleTocRail } from "./ArticleTocRail";

@@ -14,7 +14,7 @@ import {
 	type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useEffect, useMemo, useState } from "react";
 import type { DatabaseSchemaTableDTO } from "../model/types";
 import styles from "./SchemaRelationshipCanvas.module.css";

@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 

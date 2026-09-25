@@ -11,7 +11,7 @@
  * 用法：
  * <InlineError message={err.message} onRetry={() => mutate()} />
  */
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 export interface InlineErrorProps {

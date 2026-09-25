@@ -7,9 +7,9 @@ import {
 import type { MediaCatalogQuery, MediaFile, MediaType } from "@entities/media/model/types";
 import { imageUrl } from "@shared/lib/image-url";
 import { Pagination } from "@shared/ui/pagination";
+import { cn } from "cn";
 import { Check, FileText, Film, Music } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import {
 	Select,

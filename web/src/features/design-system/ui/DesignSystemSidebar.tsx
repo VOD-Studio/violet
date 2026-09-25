@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { TreeNav, type TreeNavGroup } from "@shared/ui/tree-nav";
+import { cn } from "cn";
 import { useMemo } from "react";
 import { DESIGN_SYSTEM_NAV_GROUPS } from "../model/navigation";
 

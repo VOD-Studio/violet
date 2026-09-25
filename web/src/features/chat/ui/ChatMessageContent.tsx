@@ -18,8 +18,8 @@
 
 import type { CommentEmoteRef } from "@entities/comment/model/types";
 import { MENTION_ALL } from "@entities/user/model/mention-token";
-import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { lazy, Suspense, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";

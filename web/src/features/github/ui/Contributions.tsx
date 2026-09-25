@@ -1,6 +1,6 @@
-import { cn } from "@shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import Empty from "@shared/ui/empty";
+import { cn } from "cn";
 
 import { useContributions } from "../api/queries";
 import { CONTRIBUTION_LEVEL_CLASS, getContributionLevel } from "../model/contribution-level";

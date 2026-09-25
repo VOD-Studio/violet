@@ -1,9 +1,9 @@
 import { FilePreview } from "@shared/ui/file-preview";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { Modal } from "@shared/ui/modal";
+import { cn } from "cn";
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 import { formatMediaSize, isImmersiveMedia, reservesArrowKeys } from "./media-viewer-utils";
 import type { MediaViewerProps } from "./types";
 

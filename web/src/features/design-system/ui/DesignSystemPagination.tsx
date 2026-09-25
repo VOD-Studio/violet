@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getSiblingNavItems } from "../model/navigation";
 

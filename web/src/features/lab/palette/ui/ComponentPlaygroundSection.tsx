@@ -1,10 +1,10 @@
-import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { Textarea } from "@shared/ui/base/textarea";
 import { PhysicalSteps } from "@shared/ui/steps";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
+import { cn } from "cn";
 import { BookOpen, ChevronLeft, ChevronRight, MousePointer, Sparkles } from "lucide-react";
 import { useState } from "react";
 

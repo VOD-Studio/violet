@@ -22,10 +22,11 @@
  * 收缩为内容宽度（xychart 源码行短时整块仅 ~368px），block 容器让失败态自然
  * 占满父宽。成功态 SVG 居中改在内层 flex wrapper 内部，保留视觉。
  */
+
+import { cn } from "cn";
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { subscribeThemeRerender } from "@/shared/lib/theme-rerender";
-import { cn } from "@/shared/lib/utils";
 import { CodeCard } from "@/shared/ui/code-preview/components/CodeCard";
 import { DiagramFullscreen } from "./DiagramFullscreen";
 import { DiagramPlaceholder } from "./DiagramPlaceholder";

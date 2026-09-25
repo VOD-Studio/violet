@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { Hash } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 

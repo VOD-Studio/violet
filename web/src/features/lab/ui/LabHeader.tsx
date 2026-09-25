@@ -1,6 +1,6 @@
 import { LABS } from "@features/lab/model/registry";
-import { cn } from "@shared/lib/utils";
 import { BackLink } from "@shared/ui/back-link";
+import { cn } from "cn";
 
 /**
  * LabHeader - lab 子页统一页头

@@ -1,4 +1,3 @@
-import { cn } from "@shared/lib/utils";
 import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
@@ -16,6 +15,7 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { RuaRouteTransition } from "@widgets/PersonaMotion";
+import { cn } from "cn";
 import { useEffect } from "react";
 import { ApiDocsDialog } from "@/features/api-docs";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";

@@ -1,6 +1,6 @@
+import { cn } from "cn";
 import { Columns3, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import {
 	DropdownMenu,

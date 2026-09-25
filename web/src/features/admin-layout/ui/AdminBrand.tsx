@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 
 /**
  * AdminBrand - 后台品牌区

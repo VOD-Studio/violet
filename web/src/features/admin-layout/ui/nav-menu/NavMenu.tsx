@@ -1,5 +1,5 @@
 import { useMe } from "@features/auth/api/queries";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { NavMenuGroupItem } from "./NavMenuGroupItem";
 import { NavMenuLink } from "./NavMenuLink";
 import { NAV_MENU_GROUPS, NAV_MENU_ITEMS, type NavMenuItem } from "./nav-menu-config";

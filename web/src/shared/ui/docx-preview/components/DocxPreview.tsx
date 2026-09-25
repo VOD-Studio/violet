@@ -10,8 +10,8 @@
  * 注意：仅支持 .docx（OOXML），老式二进制 .doc 不支持（由 FilePreview 占位）。
  */
 
+import { cn } from "cn";
 import { Download } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useDocxRender } from "../hooks/useDocxRender";

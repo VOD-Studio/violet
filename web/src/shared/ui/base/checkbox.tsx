@@ -3,7 +3,7 @@ import { Check, Minus } from "lucide-react";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 import type * as React from "react";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "cn";
 
 /**
  * 复选框样式变体。

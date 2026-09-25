@@ -5,7 +5,7 @@
  * 展开前先让堆叠逐张飞离（scatter），收起后从散开位逐层归位（assemble），
  * 收拢期间视口跟随舞台平滑回滚。
  */
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";

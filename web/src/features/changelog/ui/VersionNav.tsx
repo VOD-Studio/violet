@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useEffect, useRef } from "react";
 
 /** 版本导航项（tag + 锚点 id） */

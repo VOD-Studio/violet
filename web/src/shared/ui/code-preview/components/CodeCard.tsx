@@ -7,10 +7,10 @@
  * @remarks 走懒加载消费时与 shiki 高亮链同 chunk 拉取，不进宿主主包。
  */
 
+import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/shared/lib/clipboard";
-import { cn } from "@/shared/lib/utils";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { useShikiHighlight } from "../use-shiki-highlight";
 

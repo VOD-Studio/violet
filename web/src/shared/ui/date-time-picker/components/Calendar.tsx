@@ -1,4 +1,5 @@
 import { formatDate } from "@shared/lib/date";
+import { cn } from "cn";
 import {
 	addMonths,
 	getDay,
@@ -13,8 +14,6 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
-
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import type { CalendarProps } from "../types/date-time-picker-types";
 import { isDateDisabled } from "../utils/date-time-utils";

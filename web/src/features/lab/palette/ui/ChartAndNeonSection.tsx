@@ -1,6 +1,6 @@
 import { CHART_TOKENS, NEON_TOKENS } from "@features/lab/palette/model/tokens";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useState } from "react";
 
 export interface ChartAndNeonSectionProps {

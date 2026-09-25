@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { useRouter } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ArrowLeft } from "lucide-react";
 import type { MouseEventHandler, ReactNode } from "react";
 

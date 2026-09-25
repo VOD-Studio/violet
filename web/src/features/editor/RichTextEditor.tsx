@@ -20,6 +20,7 @@
 
 import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { cn } from "cn";
 import { Code2, Download, FileUp, Globe } from "lucide-react";
 import {
 	forwardRef,
@@ -31,7 +32,6 @@ import {
 	useState,
 } from "react";
 import { urlErrorMessage, validateUrl } from "@/shared/lib/url";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Checkbox } from "@/shared/ui/base/checkbox";
 import { Input } from "@/shared/ui/base/input";

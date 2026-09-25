@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { Slot } from "radix-ui";
 import type * as React from "react";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "cn";
 
 /**
  * 按钮样式变体定义。

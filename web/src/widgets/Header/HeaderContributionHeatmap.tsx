@@ -2,8 +2,8 @@ import {
 	CONTRIBUTION_LEVEL_CLASS,
 	getContributionLevel,
 } from "@features/github/model/contribution-level";
-import { cn } from "@shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { cn } from "cn";
 import { useMemo } from "react";
 
 interface HeaderContributionHeatmapProps {

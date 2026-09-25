@@ -10,7 +10,7 @@
  * 点击任意图片打开 ImagePreview 全屏预览（复用 useImagePreview hook）。
  */
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
-import { cn } from "@/shared/lib/utils";
+import { cn } from "cn";
 
 export interface ImageGridImage {
 	/** 原图 URL */

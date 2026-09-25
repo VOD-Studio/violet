@@ -1,8 +1,7 @@
+import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
-
-import { cn } from "@/shared/lib/utils";
 
 interface ModalHeaderProps {
 	/** 标题（字符串或自定义节点） */

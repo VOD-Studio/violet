@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 interface PageShellProps {

@@ -1,6 +1,7 @@
 "use client";
 
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { LayoutGrid, Table } from "lucide-react";
 import type * as React from "react";
 import {
@@ -11,7 +12,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { cn } from "@/shared/lib/utils";
 
 /**
  * SegmentedItem - 分段器单项定义

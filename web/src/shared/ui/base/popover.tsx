@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Popover as PopoverPrimitive } from "radix-ui";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "cn";
 
 /** Popover 根组件，控制浮层显隐 */
 function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {

@@ -1,7 +1,7 @@
 import type { Announcement } from "@features/settings/model/types";
-import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { motion } from "motion/react";
 import { fmtDate, fmtStamp, statusOf } from "../model/event";
 

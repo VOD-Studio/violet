@@ -1,9 +1,9 @@
 "use client";
 
+import { cn } from "cn";
 import { Loader2, Search, X } from "lucide-react";
 import { type ComponentProps, useCallback, useId, useRef, useState } from "react";
 import { useDebouncedCallback } from "@/shared/hooks/use-debounced-callback";
-import { cn } from "@/shared/lib/utils";
 
 export interface SearchInputProps
 	extends Omit<ComponentProps<"input">, "value" | "onChange" | "type" | "size"> {

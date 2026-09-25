@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import Empty from "@shared/ui/empty";
+import { cn } from "cn";
 import { ExternalLink, GitFork, Star } from "lucide-react";
 
 import { useRepos } from "../api/queries";

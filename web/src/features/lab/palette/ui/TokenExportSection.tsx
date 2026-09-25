@@ -1,6 +1,6 @@
 import { copyText } from "@shared/lib/clipboard";
-import { cn } from "@shared/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
+import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

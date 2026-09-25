@@ -1,7 +1,7 @@
 import { useActivePersona } from "@entities/persona/api/queries";
 import { useSettings } from "@features/settings/api/queries";
-import { cn } from "@shared/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
+import { cn } from "cn";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { HeaderContributionCard } from "./HeaderContributionCard";

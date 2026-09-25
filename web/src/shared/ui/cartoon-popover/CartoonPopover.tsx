@@ -1,5 +1,5 @@
 import { useReducedMotion } from "@shared/lib/motion";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { X } from "lucide-react";
 import {
 	Children,

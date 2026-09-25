@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useEffect, useRef } from "react";
 import type { BotCommand, BotCommandCatalog, ChatUser } from "../model/types";
 

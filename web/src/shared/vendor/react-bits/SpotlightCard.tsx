@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useSpotlight } from "@shared/hooks/use-spotlight";
 import * as React from "react";
 

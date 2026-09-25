@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Segmented } from "@shared/ui/segmented";
+import { cn } from "cn";
 
 const LOCALE_LABELS: Readonly<Record<string, string>> = {
 	"zh-CN": "简体中文",

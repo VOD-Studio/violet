@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { cn } from "@/shared/lib/utils";
 
 import styles from "./overlay-scroll.module.css";
 

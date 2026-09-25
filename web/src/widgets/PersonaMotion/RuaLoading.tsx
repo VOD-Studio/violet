@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { SpriteSheet } from "@shared/ui/sprite-sheet";
+import { cn } from "cn";
 import styles from "./RuaLoading.module.css";
 
 export interface RuaLoadingProps {

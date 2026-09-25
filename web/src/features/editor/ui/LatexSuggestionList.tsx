@@ -4,7 +4,7 @@
  * 候选命令列表：命令名 + 中文提示，高亮项由键盘导航决定，
  * 点击接受（onMouseDown 阻止 blur 保持输入框焦点）。
  */
-import { cn } from "@/shared/lib/utils";
+import { cn } from "cn";
 import type { LatexCommand } from "../lib/latex-commands";
 
 export interface LatexSuggestionListProps {

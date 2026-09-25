@@ -1,5 +1,5 @@
 import { useMagnetic } from "@shared/hooks/use-magnetic";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import type * as React from "react";
 
 export interface MagneticProps extends React.HTMLAttributes<HTMLSpanElement> {

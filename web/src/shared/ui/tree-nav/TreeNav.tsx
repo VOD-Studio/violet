@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";

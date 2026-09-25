@@ -9,7 +9,6 @@ import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
-import { cn } from "@shared/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -19,6 +18,7 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
+import { cn } from "cn";
 import { CheckCircle2, LayoutDashboard, LogOut, MessageCircle, Search, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

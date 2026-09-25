@@ -1,6 +1,6 @@
-import { cn } from "@shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import type { NavMenuItem } from "./nav-menu-config";
 
 export const NAV_ITEM_BASE =

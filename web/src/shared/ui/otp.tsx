@@ -1,6 +1,6 @@
+import { cn } from "cn";
 import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS, type SlotProps } from "input-otp";
 import * as React from "react";
-import { cn } from "@/shared/lib/utils";
 
 /**
  * InputOTP - 验证码输入组件（基于 input-otp 库，shadcn 风格封装）

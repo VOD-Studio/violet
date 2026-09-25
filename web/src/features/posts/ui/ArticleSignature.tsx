@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { Signature } from "@shared/ui/signature";
+import { cn } from "cn";
 import { useInView } from "motion/react";
 import { useRef } from "react";
 
