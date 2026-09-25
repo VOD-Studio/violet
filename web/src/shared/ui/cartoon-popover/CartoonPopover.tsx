@@ -20,7 +20,6 @@ import { BubbleOutline } from "./BubbleOutline";
 import { computePosition } from "./floating";
 import { useSpringValue } from "./spring";
 import type {
-	CartoonBubbleVariant,
 	CartoonPopoverCloseProps,
 	CartoonPopoverContentProps,
 	CartoonPopoverContextValue,
@@ -30,9 +29,9 @@ import type {
 	CartoonPopoverSide,
 	CartoonPopoverTitleProps,
 	CartoonPopoverTriggerProps,
-	CartoonShadowStyle,
 	CartoonTriggerMode,
 } from "./types";
+import { darkContentOpacity, getShadowClass, VARIANT_MAP } from "./variants";
 
 const CartoonPopoverContext = createContext<CartoonPopoverContextValue | null>(null);
 
@@ -42,89 +41,6 @@ function useCartoonPopover() {
 		throw new Error("CartoonPopover 子组件必须包裹在 <CartoonPopover> 内使用。");
 	}
 	return context;
-}
-
-/**
- * 变体对应的样式和 CSS 变量映射。
- */
-interface VariantMeta {
-	className: string;
-	style: CSSProperties;
-}
-
-const VARIANT_MAP: Record<CartoonBubbleVariant, VariantMeta> = {
-	default: {
-		className: "bg-card text-foreground border-foreground/80 dark:border-foreground/85",
-		style: {
-			"--cartoon-bg": "var(--card)",
-			"--cartoon-border": "var(--foreground)",
-			"--cartoon-shadow": "var(--foreground)",
-		} as CSSProperties,
-	},
-	brand: {
-		className:
-			"bg-[oklch(0.97_0.02_286)] text-[oklch(0.24_0.06_286)] border-brand dark:bg-[oklch(0.22_0.05_286)] dark:text-[oklch(0.96_0.02_286)] dark:border-brand",
-		style: {
-			"--cartoon-bg": "oklch(0.97 0.02 286)",
-			"--cartoon-border": "var(--color-brand, #7c3aed)",
-			"--cartoon-shadow": "var(--color-brand, #7c3aed)",
-		} as CSSProperties,
-	},
-	amber: {
-		className:
-			"bg-amber-50 text-amber-950 border-amber-500 dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-400",
-		style: {
-			"--cartoon-bg": "#fffbeb",
-			"--cartoon-border": "#f59e0b",
-			"--cartoon-shadow": "#d97706",
-		} as CSSProperties,
-	},
-	mint: {
-		className:
-			"bg-emerald-50 text-emerald-950 border-emerald-500 dark:bg-emerald-950/70 dark:text-emerald-100 dark:border-emerald-400",
-		style: {
-			"--cartoon-bg": "#ecfdf5",
-			"--cartoon-border": "#10b981",
-			"--cartoon-shadow": "#059669",
-		} as CSSProperties,
-	},
-	rose: {
-		className:
-			"bg-rose-50 text-rose-950 border-rose-400 dark:bg-rose-950/70 dark:text-rose-100 dark:border-rose-400",
-		style: {
-			"--cartoon-bg": "#fff1f2",
-			"--cartoon-border": "#fb7185",
-			"--cartoon-shadow": "#f43f5e",
-		} as CSSProperties,
-	},
-	sky: {
-		className:
-			"bg-sky-50 text-sky-950 border-sky-400 dark:bg-sky-950/70 dark:text-sky-100 dark:border-sky-400",
-		style: {
-			"--cartoon-bg": "#f0f9ff",
-			"--cartoon-border": "#38bdf8",
-			"--cartoon-shadow": "#0284c7",
-		} as CSSProperties,
-	},
-	dark: {
-		className:
-			"bg-neutral-900 text-neutral-100 border-neutral-300 dark:bg-neutral-950 dark:text-neutral-50 dark:border-neutral-400",
-		style: {
-			"--cartoon-bg": "#171717",
-			"--cartoon-border": "#d4d4d4",
-			"--cartoon-shadow": "#ffffff",
-		} as CSSProperties,
-	},
-};
-
-/**
- * 投影样式映射。
- */
-function getShadowClass(style: CartoonShadowStyle): string {
-	if (style === "comic") {
-		return "shadow-[3px_3px_0_0_var(--cartoon-shadow)]";
-	}
-	return "shadow-[0_4px_24px_rgba(0,0,0,0.06)]";
 }
 
 /**
@@ -514,37 +430,41 @@ export function CartoonPopoverContent({
 			{showShine && (
 				<span
 					aria-hidden="true"
-					className="pointer-events-none absolute top-2.5 left-4.5 h-1 w-6 rounded-full bg-white/50 dark:bg-white/15"
+					className={cn(
+						"pointer-events-none absolute top-2.5 left-4.5 h-1 w-6 rounded-full",
+						variant === "dark" ? "bg-violet-200/30" : "bg-white/50 dark:bg-white/15",
+					)}
 				/>
 			)}
 
-			{/* 右上角关闭按钮 */}
-			{showClose && <CartoonPopoverClose className="absolute top-3.5 right-3.5" />}
-
-			{/* 可选快捷头部 */}
-			{title && (
-				<CartoonPopoverHeader divided={divided}>
-					{typeof title === "string" ? (
-						<CartoonPopoverTitle>{title}</CartoonPopoverTitle>
-					) : (
-						title
-					)}
-				</CartoonPopoverHeader>
-			)}
-
-			{/* 可选描述 */}
-			{description && (
-				<div className="mb-2">
-					{typeof description === "string" ? (
-						<CartoonPopoverDescription>{description}</CartoonPopoverDescription>
-					) : (
-						description
-					)}
-				</div>
-			)}
-
-			{/* 主内容插槽 */}
-			{children}
+			<div
+				style={
+					variant === "dark" && !reduceMotion
+						? { opacity: darkContentOpacity(ink) }
+						: undefined
+				}
+			>
+				{showClose && <CartoonPopoverClose className="absolute top-3.5 right-3.5" />}
+				{title && (
+					<CartoonPopoverHeader divided={divided}>
+						{typeof title === "string" ? (
+							<CartoonPopoverTitle>{title}</CartoonPopoverTitle>
+						) : (
+							title
+						)}
+					</CartoonPopoverHeader>
+				)}
+				{description && (
+					<div className="mb-2">
+						{typeof description === "string" ? (
+							<CartoonPopoverDescription>{description}</CartoonPopoverDescription>
+						) : (
+							description
+						)}
+					</div>
+				)}
+				{children}
+			</div>
 		</div>,
 		targetContainer,
 	);

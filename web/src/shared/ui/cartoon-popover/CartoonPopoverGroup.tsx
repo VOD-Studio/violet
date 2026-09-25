@@ -21,6 +21,7 @@ import type {
 	CartoonPopoverSide,
 	CartoonShadowStyle,
 } from "./types";
+import { darkContentOpacity, getShadowClass, VARIANT_MAP } from "./variants";
 
 interface GroupItemConfig {
 	value: string;
@@ -53,77 +54,6 @@ interface GroupContextValue {
 }
 
 const GroupContext = createContext<GroupContextValue | null>(null);
-
-const VARIANT_MAP: Record<CartoonBubbleVariant, { className: string; style: CSSProperties }> = {
-	default: {
-		className: "bg-card text-foreground border-foreground/80 dark:border-foreground/85",
-		style: {
-			"--cartoon-bg": "var(--card)",
-			"--cartoon-border": "var(--foreground)",
-			"--cartoon-shadow": "var(--foreground)",
-		} as CSSProperties,
-	},
-	brand: {
-		className:
-			"bg-[oklch(0.97_0.02_286)] text-[oklch(0.24_0.06_286)] border-brand dark:bg-[oklch(0.22_0.05_286)] dark:text-[oklch(0.96_0.02_286)] dark:border-brand",
-		style: {
-			"--cartoon-bg": "oklch(0.97 0.02 286)",
-			"--cartoon-border": "var(--color-brand, #7c3aed)",
-			"--cartoon-shadow": "var(--color-brand, #7c3aed)",
-		} as CSSProperties,
-	},
-	amber: {
-		className:
-			"bg-amber-50 text-amber-950 border-amber-500 dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-400",
-		style: {
-			"--cartoon-bg": "#fffbeb",
-			"--cartoon-border": "#f59e0b",
-			"--cartoon-shadow": "#d97706",
-		} as CSSProperties,
-	},
-	mint: {
-		className:
-			"bg-emerald-50 text-emerald-950 border-emerald-500 dark:bg-emerald-950/70 dark:text-emerald-100 dark:border-emerald-400",
-		style: {
-			"--cartoon-bg": "#ecfdf5",
-			"--cartoon-border": "#10b981",
-			"--cartoon-shadow": "#059669",
-		} as CSSProperties,
-	},
-	rose: {
-		className:
-			"bg-rose-50 text-rose-950 border-rose-400 dark:bg-rose-950/70 dark:text-rose-100 dark:border-rose-400",
-		style: {
-			"--cartoon-bg": "#fff1f2",
-			"--cartoon-border": "#fb7185",
-			"--cartoon-shadow": "#f43f5e",
-		} as CSSProperties,
-	},
-	sky: {
-		className:
-			"bg-sky-50 text-sky-950 border-sky-400 dark:bg-sky-950/70 dark:text-sky-100 dark:border-sky-400",
-		style: {
-			"--cartoon-bg": "#f0f9ff",
-			"--cartoon-border": "#38bdf8",
-			"--cartoon-shadow": "#0284c7",
-		} as CSSProperties,
-	},
-	dark: {
-		className:
-			"bg-neutral-900 text-neutral-100 border-neutral-300 dark:bg-neutral-950 dark:text-neutral-50 dark:border-neutral-400",
-		style: {
-			"--cartoon-bg": "#171717",
-			"--cartoon-border": "#d4d4d4",
-			"--cartoon-shadow": "#ffffff",
-		} as CSSProperties,
-	},
-};
-
-function getShadowClass(style: CartoonShadowStyle): string {
-	return style === "comic"
-		? "shadow-[3px_3px_0_0_var(--cartoon-shadow)]"
-		: "shadow-[0_4px_24px_rgba(0,0,0,0.06)]";
-}
 
 /**
  * 连续平滑移动 Popover 群组：
@@ -369,32 +299,50 @@ export function CartoonPopoverGroup({
 						{currentItem.showShine !== false && (
 							<span
 								aria-hidden="true"
-								className="pointer-events-none absolute top-2.5 left-4.5 h-1 w-6 rounded-full bg-white/50 dark:bg-white/15"
+								className={cn(
+									"pointer-events-none absolute top-2.5 left-4.5 h-1 w-6 rounded-full",
+									variant === "dark"
+										? "bg-violet-200/30"
+										: "bg-white/50 dark:bg-white/15",
+								)}
 							/>
 						)}
 
-						{/* 标题 */}
-						{currentItem.title && (
-							<h4 className="mb-2 text-sm font-bold tracking-wide">
-								{currentItem.title}
-							</h4>
-						)}
-
-						{/* 描述 */}
-						{currentItem.description && (
-							<p className="mb-2 text-xs leading-relaxed text-current/80">
-								{currentItem.description}
-							</p>
-						)}
-
-						{/* 内容插槽 */}
 						<div
 							key={displayedValue}
-							className={
-								reduceMotion ? undefined : "animate-in fade-in-0 duration-150"
+							style={
+								variant === "dark" && !reduceMotion
+									? { opacity: darkContentOpacity(ink) }
+									: undefined
 							}
 						>
-							{currentItem.contentNode}
+							<div
+								className={
+									variant === "dark" && !reduceMotion
+										? "animate-in fade-in-0 duration-200"
+										: undefined
+								}
+							>
+								{currentItem.title && (
+									<h4 className="mb-2 text-sm font-bold tracking-wide">
+										{currentItem.title}
+									</h4>
+								)}
+								{currentItem.description && (
+									<p className="mb-2 text-xs leading-relaxed text-current/80">
+										{currentItem.description}
+									</p>
+								)}
+								<div
+									className={
+										variant !== "dark" && !reduceMotion
+											? "animate-in fade-in-0 duration-150"
+											: undefined
+									}
+								>
+									{currentItem.contentNode}
+								</div>
+							</div>
 						</div>
 					</div>,
 					document.body,

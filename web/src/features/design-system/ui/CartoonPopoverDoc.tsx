@@ -125,9 +125,9 @@ const GROUP_CODE = `<CartoonPopoverGroup>
     value="dark"
     trigger={<Button size="sm" variant="outline">Dark</Button>}
     variant="dark"
-    title="Dark 暗夜黑"
+    title="Dark 夜墨"
   >
-    <p className="text-xs">高对比漫画质感，暗黑底色。</p>
+    <p className="text-xs">紫黑底与低亮灰紫描线，轮廓先成、文字后显。</p>
   </CartoonPopoverGroupItem>
 </CartoonPopoverGroup>`;
 
@@ -485,9 +485,11 @@ export function CartoonPopoverDocPage() {
 									</Button>
 								}
 								variant="dark"
-								title="Dark 暗夜黑"
+								title="Dark 夜墨"
 							>
-								<p className="text-xs">高对比漫画质感，暗黑底色。</p>
+								<p className="text-xs">
+									紫黑底与低亮灰紫描线，轮廓先成、文字后显。
+								</p>
 							</CartoonPopoverGroupItem>
 						</CartoonPopoverGroup>
 					</div>

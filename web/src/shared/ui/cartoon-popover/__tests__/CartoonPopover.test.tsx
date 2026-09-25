@@ -57,11 +57,14 @@ describe("CartoonPopover Component", () => {
 		render(
 			<CartoonPopover>
 				<CartoonPopoverTrigger>减少动效触发器</CartoonPopoverTrigger>
-				<CartoonPopoverContent showClose>减少动效内容</CartoonPopoverContent>
+				<CartoonPopoverContent variant="dark" showClose>
+					减少动效内容
+				</CartoonPopoverContent>
 			</CartoonPopover>,
 		);
 		fireEvent.click(screen.getByRole("button", { name: "减少动效触发器" }));
 		expect(screen.getByRole("dialog").style.opacity).toBe("1");
+		expect(screen.getByText("减少动效内容").style.opacity).toBe("");
 		fireEvent.click(screen.getByRole("button", { name: "关闭" }));
 		expect(screen.queryByRole("dialog")).toBeNull();
 	});
@@ -100,6 +103,28 @@ describe("CartoonPopover Component", () => {
 		const done = bubble.querySelectorAll("svg path[stroke-dashoffset]");
 		expect(Number(done[0].getAttribute("stroke-dashoffset"))).toBeCloseTo(0, 5);
 		expect(bubble.style.borderColor).toBe("transparent");
+		vi.useRealTimers();
+	});
+
+	it("Dark 在打开时先描线后显字，关闭时先退字", () => {
+		vi.useFakeTimers();
+		render(
+			<CartoonPopover>
+				<CartoonPopoverTrigger>夜墨触发器</CartoonPopoverTrigger>
+				<CartoonPopoverContent variant="dark">夜墨正文</CartoonPopoverContent>
+			</CartoonPopover>,
+		);
+		const trigger = screen.getByRole("button", { name: "夜墨触发器" });
+		fireEvent.click(trigger);
+		act(() => vi.advanceTimersByTime(160));
+		const bubble = screen.getByRole("dialog");
+		const body = screen.getByText("夜墨正文");
+		expect(Number(body.style.opacity)).toBeLessThan(Number(bubble.style.opacity));
+		act(() => vi.advanceTimersByTime(800));
+		expect(Number(body.style.opacity)).toBe(1);
+		fireEvent.click(trigger);
+		act(() => vi.advanceTimersByTime(100));
+		expect(Number(body.style.opacity)).toBeLessThan(Number(bubble.style.opacity));
 		vi.useRealTimers();
 	});
 
