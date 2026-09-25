@@ -17,7 +17,6 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { RichTextEditor } from "@features/editor";
 import { useTags } from "@features/tags/api/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -31,6 +30,7 @@ import {
 } from "@shared/ui/base/sheet";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { useNavigate } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ExternalLink, Loader2, Maximize2, Plus, Tag as TagIcon, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";

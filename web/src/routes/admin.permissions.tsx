@@ -10,9 +10,9 @@ import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ChevronRight, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 
 export const Route = createFileRoute("/admin/permissions")({
 	component: AdminPermissionsPage,

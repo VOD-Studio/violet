@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { motion } from "motion/react";
-import { cn } from "@/shared/lib/utils";
 
 interface ImagePreviewThumbnailsProps {
 	images: string[];

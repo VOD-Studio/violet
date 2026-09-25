@@ -1,6 +1,14 @@
-import { DesignSystemPage } from "@features/design-system/ui/DesignSystemPage";
-import { createFileRoute } from "@tanstack/react-router";
+import { DesignSystemLayout } from "@features/design-system/ui/DesignSystemLayout";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/design-system")({
-	component: DesignSystemPage,
+	beforeLoad: ({ location }) => {
+		if (location.pathname === "/design-system" || location.pathname === "/design-system/") {
+			throw redirect({
+				to: "/design-system/principles",
+				replace: true,
+			});
+		}
+	},
+	component: DesignSystemLayout,
 });

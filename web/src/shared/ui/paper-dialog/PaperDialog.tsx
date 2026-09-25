@@ -1,8 +1,8 @@
+import { cn } from "cn";
 import { X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/utils";
 
 import { PaperSurface } from "./PaperSurface";
 

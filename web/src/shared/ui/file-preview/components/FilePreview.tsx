@@ -19,9 +19,9 @@
  * → FilePlaceholder 下载占位。
  */
 
+import { cn } from "cn";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
-import { cn } from "@/shared/lib/utils";
 import { FilePreviewVariantContext } from "../file-preview-context";
 import type { FilePreviewComponentProps } from "../types/file-preview-types";
 import { type FileKind, getFileKind } from "../utils/mime-utils";

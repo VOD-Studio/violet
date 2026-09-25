@@ -1,6 +1,6 @@
 import type { AdminComment } from "@features/admin-comments/model/types";
+import { cn } from "cn";
 import { Images, Quote } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 
 const ANCHOR_PREVIEW_MAX = 60;
 

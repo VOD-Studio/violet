@@ -1,5 +1,5 @@
 import { BADGE_BY_ID } from "@entities/chat-badge";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 
 export interface AppearanceBadgeStripProps {
 	/** 佩戴的徽章 ID,按展示顺序;未知 ID 由目录查表兜底跳过。 */

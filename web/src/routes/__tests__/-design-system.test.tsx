@@ -1,60 +1,110 @@
-import { CHAPTERS, DesignSystemPage } from "@features/design-system/ui/DesignSystemPage";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { ALL_NAV_ITEMS } from "@features/design-system/model/navigation";
+import {
+	DecisionsPage,
+	LayoutPage,
+	MotionPage,
+	PalettePage,
+	PrinciplesPage,
+	TokensPage,
+} from "@features/design-system/ui/pages";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { routeTree } from "../../routeTree.gen";
 
 /**
- * 装配后的路由实例把注册路径收在 options.id；沿 children 走一遍
- * 即得生成路由树的全量路径，用来对账导航配置指向的路由真实存在。
+ * 遍历生成的路由树收集全量路由路径，用来对账导航配置指向的路由真实存在。
  */
-function collectRouteIds(node: unknown, acc: Set<string> = new Set()): Set<string> {
-	const n = node as { options?: { id?: unknown }; children?: unknown[] } | null;
+function collectRoutePaths(
+	node: unknown,
+	parentPath = "",
+	acc: Set<string> = new Set(),
+): Set<string> {
+	const n = node as {
+		options?: { id?: string; path?: string };
+		path?: string;
+		fullPath?: string;
+		children?: unknown;
+	} | null;
 	if (!n) return acc;
-	if (typeof n.options?.id === "string") acc.add(n.options.id);
-	for (const kid of n.children ?? []) collectRouteIds(kid, acc);
+
+	const rawPath = n.options?.path ?? n.path ?? n.options?.id ?? "";
+	let currentPath = parentPath;
+	if (rawPath) {
+		if (rawPath === "/") {
+			currentPath = parentPath || "/";
+		} else if (rawPath.startsWith("/")) {
+			currentPath =
+				parentPath && parentPath !== "/"
+					? `${parentPath}${rawPath}`.replace(/\/+/g, "/")
+					: rawPath;
+		} else {
+			currentPath = `${parentPath}/${rawPath}`.replace(/\/+/g, "/");
+		}
+	}
+
+	if (currentPath) acc.add(currentPath);
+	if (n.fullPath) acc.add(n.fullPath);
+	if (n.options?.id) acc.add(n.options.id);
+
+	const kids = Array.isArray(n.children)
+		? n.children
+		: n.children && typeof n.children === "object"
+			? Object.values(n.children)
+			: [];
+
+	for (const kid of kids) {
+		collectRoutePaths(kid, currentPath, acc);
+	}
 	return acc;
 }
 
-describe("/design-system 路由", () => {
-	it("注册进生成的路由树", () => {
-		expect(collectRouteIds(routeTree).has("/design-system")).toBe(true);
+describe("/design-system 多路由体系", () => {
+	it("父路由、一级章节与全部二级子路由均注册进路由树", () => {
+		const routePaths = collectRoutePaths(routeTree);
+		expect(routePaths.has("/design-system")).toBe(true);
+
+		for (const item of ALL_NAV_ITEMS) {
+			expect(routePaths.has(item.to)).toBe(true);
+			for (const sub of item.children ?? []) {
+				expect(routePaths.has(sub.to)).toBe(true);
+			}
+		}
 	});
 });
 
-describe("营造法式页", () => {
-	it("渲染标题与箴言四字", () => {
-		render(<DesignSystemPage />);
-		expect(screen.getByRole("heading", { level: 1, name: "营造法式" })).toBeTruthy();
+describe("各章节子页成文渲染", () => {
+	it("设计原则章渲染箴言四字与全站底线", () => {
+		render(<PrinciplesPage />);
+		expect(screen.getByRole("heading", { level: 2, name: "设计原则" })).toBeTruthy();
 		for (const word of ["有效", "清晰", "准确", "美"]) {
 			expect(screen.getByText(word)).toBeTruthy();
 		}
-	});
-
-	it("菜单立全部章节，未落地章节标注营造中", () => {
-		render(<DesignSystemPage />);
-		for (const chapter of CHAPTERS) {
-			expect(screen.getByRole("button", { name: new RegExp(chapter.name) })).toBeTruthy();
-		}
-		// 徽标数与章节数据中未落地章数对账；全部落地后为 0
-		expect(screen.queryAllByText("营造中")).toHaveLength(
-			CHAPTERS.filter((chapter) => !chapter.content).length,
-		);
-	});
-
-	it("菜单切换章节，一次只呈一章", () => {
-		render(<DesignSystemPage />);
-		fireEvent.click(screen.getByRole("button", { name: /色板生成器/ }));
-		expect(screen.getByRole("heading", { level: 2, name: "色板生成器" })).toBeTruthy();
-		// 原章卸载：章头与箴言都不在
-		expect(screen.queryByRole("heading", { level: 2, name: "设计原则" })).toBeNull();
-		expect(screen.queryByText("有效")).toBeNull();
-	});
-
-	it("设计原则章成文：箴言柱脚与全站底线", () => {
-		render(<DesignSystemPage />);
 		expect(screen.getByText(/语义 token 优先/)).toBeTruthy();
 		expect(screen.getByText(/WCAG AA 对比度/)).toBeTruthy();
-		// 底线与布局规格章都会复述圆角红线，存在即成文
-		expect(screen.getAllByText(/rounded-2xl/).length).toBeGreaterThan(0);
+	});
+
+	it("快速决策表章正常渲染", () => {
+		render(<DecisionsPage />);
+		expect(screen.getByRole("heading", { level: 2, name: "快速决策表" })).toBeTruthy();
+	});
+
+	it("色板生成器章正常渲染", () => {
+		render(<PalettePage />);
+		expect(screen.getByRole("heading", { level: 2, name: "色板生成器" })).toBeTruthy();
+	});
+
+	it("Token 词典章正常渲染", () => {
+		render(<TokensPage />);
+		expect(screen.getByRole("heading", { level: 2, name: "Token 词典" })).toBeTruthy();
+	});
+
+	it("布局规格章正常渲染", () => {
+		render(<LayoutPage />);
+		expect(screen.getByRole("heading", { level: 2, name: "布局规格" })).toBeTruthy();
+	});
+
+	it("动效章程章正常渲染", () => {
+		render(<MotionPage />);
+		expect(screen.getByRole("heading", { level: 2, name: "动效章程" })).toBeTruthy();
 	});
 });

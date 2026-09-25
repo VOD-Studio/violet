@@ -1,6 +1,6 @@
 import { STATUS_TOKENS } from "@features/lab/palette/model/tokens";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export interface StatusMatrixSectionProps {

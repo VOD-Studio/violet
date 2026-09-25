@@ -1,7 +1,7 @@
 import type { TokenItem } from "@features/lab/palette/model/tokens";
 import { copyText } from "@shared/lib/clipboard";
 import { getContrastRatio, getWcagRating, oklchToRgb, parseOklch } from "@shared/lib/color-math";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

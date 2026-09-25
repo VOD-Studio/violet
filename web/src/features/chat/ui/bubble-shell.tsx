@@ -2,7 +2,7 @@
  * 消息气泡外壳与气泡外时间戳。
  */
 import { formatDateTime, formatTime } from "@shared/lib/date";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 import { BUBBLE_BY_ID } from "../model/appearance-catalog";
 import { AppearanceBubbleSurface } from "./appearance/AppearanceBubbleSurface";

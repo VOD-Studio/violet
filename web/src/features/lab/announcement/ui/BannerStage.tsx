@@ -1,6 +1,6 @@
 import type { Announcement } from "@features/settings/model/types";
-import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { cn } from "cn";
 import type { ReactNode, Ref } from "react";
 import { useState } from "react";
 

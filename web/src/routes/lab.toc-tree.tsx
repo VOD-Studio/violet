@@ -4,8 +4,8 @@ import { DemoArticle } from "@features/lab/toc/ui/DemoArticle";
 import { TocFloatingSwitcher } from "@features/lab/toc/ui/TocFloatingSwitcher";
 import { TocVariantView } from "@features/lab/toc/ui/TocVariants";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import { cn } from "@shared/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
+import { cn } from "cn";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 

@@ -9,9 +9,9 @@
  * - 下载
  */
 
+import { cn } from "cn";
 import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
 import { formatDateTime } from "@/shared/lib/date";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useSpreadsheet } from "../hooks/useSpreadsheet";

@@ -1,6 +1,6 @@
 import "./motion-effects.css";
 import { MOTION_BEZIER, MOTION_DURATION, useInView, useReducedMotion } from "@shared/lib/motion";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import {
 	type CSSProperties,

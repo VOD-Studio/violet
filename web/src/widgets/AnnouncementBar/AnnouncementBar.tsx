@@ -19,8 +19,8 @@ import {
 	useWheelStep,
 } from "@features/lab/announcement/ui/use-banner-ticker";
 import { useAnnouncements } from "@features/settings/api/queries";
-import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { cn } from "cn";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_KEY = "announcement:read-ids";

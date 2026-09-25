@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 export interface EmptyProps {

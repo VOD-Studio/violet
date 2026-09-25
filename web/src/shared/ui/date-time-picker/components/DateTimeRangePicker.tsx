@@ -1,8 +1,7 @@
 import { formatDateTime } from "@shared/lib/date";
+import { cn } from "cn";
 import { CalendarIcon, Clock } from "lucide-react";
 import * as React from "react";
-
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
 import {

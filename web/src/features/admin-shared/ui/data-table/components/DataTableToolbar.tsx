@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/utils";
 
 interface DataTableToolbarProps {
 	/** 左侧筛选槽位，由调用方自定义 */

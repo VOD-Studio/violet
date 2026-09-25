@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { ChevronLeft, Layers, PanelLeft, PanelLeftClose } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

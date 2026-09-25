@@ -1,9 +1,9 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
 import { formatRelativeTime } from "@shared/lib/date";
-import { cn } from "@shared/lib/utils";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 

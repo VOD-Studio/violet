@@ -1,6 +1,6 @@
-import { cn } from "@shared/lib/utils";
 import { HistoryBack } from "@shared/ui/history-back";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ArrowLeft } from "lucide-react";
 import type { ComponentProps } from "react";
 

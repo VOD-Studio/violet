@@ -2,8 +2,8 @@
  * 会话索引侧栏：标题、搜索、会话列表与搜索结果（含发起私聊）。
  */
 
-import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
+import { cn } from "cn";
 import { LoaderCircle, MessageCircle, Plus, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useDeferredValue, useState } from "react";

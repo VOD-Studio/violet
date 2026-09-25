@@ -1,5 +1,5 @@
 import { avatarUrl } from "@shared/lib/image-url";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 
 export interface AvatarUser {
 	/** 用户名（唯一登录标识，同时作 alt 兜底） */

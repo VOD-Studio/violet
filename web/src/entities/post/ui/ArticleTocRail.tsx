@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { AnimatePresence, motion } from "motion/react";
 import type { CSSProperties, RefObject } from "react";
 

@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 import {
 	COLUMNS_CONTROL_KEY,

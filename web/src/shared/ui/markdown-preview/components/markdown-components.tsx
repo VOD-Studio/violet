@@ -6,10 +6,10 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
+import { cn } from "cn";
 import { type CSSProperties, lazy, type ReactNode, Suspense } from "react";
 import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
-import { cn } from "@/shared/lib/utils";
 import { AnchoredHeading } from "@/shared/ui/anchored-heading";
 import { Checkbox } from "@/shared/ui/base/checkbox";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";

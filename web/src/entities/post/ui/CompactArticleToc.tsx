@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { motion, useReducedMotion } from "motion/react";
 import type { MouseEvent } from "react";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";

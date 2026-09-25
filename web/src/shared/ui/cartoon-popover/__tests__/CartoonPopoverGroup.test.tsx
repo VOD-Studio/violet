@@ -1,0 +1,177 @@
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { CartoonPopoverGroup, CartoonPopoverGroupItem } from "../CartoonPopoverGroup";
+
+describe("CartoonPopoverGroup Component", () => {
+	afterEach(() => {
+		cleanup();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
+	});
+
+	it("在群组中悬停条目时弹出共享浮层，滑向下一个条目时平滑切换而不卸载", () => {
+		vi.useFakeTimers();
+		render(
+			<CartoonPopoverGroup closeDelay={150}>
+				<CartoonPopoverGroupItem
+					value="tab1"
+					trigger={<button type="button">按钮一</button>}
+					title="标题一"
+				>
+					<p>内容一</p>
+				</CartoonPopoverGroupItem>
+				<CartoonPopoverGroupItem
+					value="tab2"
+					trigger={<button type="button">按钮二</button>}
+					title="标题二"
+				>
+					<p>内容二（高度更高）</p>
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+
+		expect(screen.queryByRole("dialog")).toBeNull();
+
+		// 鼠标滑入第一个按钮
+		const btn1 = screen.getByText("按钮一");
+		const trigger1 = btn1.closest("[data-popover-item]");
+		if (!trigger1) throw new Error("Trigger 1 not found");
+		fireEvent.mouseEnter(trigger1);
+		act(() => {
+			vi.advanceTimersByTime(20);
+		});
+
+		// 浮层已打开，展示内容一
+		const dialog1 = screen.getByRole("dialog");
+		expect(within(dialog1).getByText("内容一")).toBeTruthy();
+
+		// 鼠标直接滑入第二个按钮（不收起，直接切换）
+		const btn2 = screen.getByText("按钮二");
+		const trigger2 = btn2.closest("[data-popover-item]");
+		if (!trigger2) throw new Error("Trigger 2 not found");
+		fireEvent.mouseEnter(trigger2);
+		act(() => {
+			vi.advanceTimersByTime(20);
+		});
+
+		// 浮层始终保持，内容无缝平滑切至内容二
+		const dialog2 = screen.getByRole("dialog");
+		expect(within(dialog2).getByText("内容二（高度更高）")).toBeTruthy();
+
+		// 鼠标移出第二个按钮并超时
+		fireEvent.mouseLeave(trigger2);
+		act(() => {
+			vi.advanceTimersByTime(160);
+		});
+		act(() => vi.advanceTimersByTime(64));
+		const fadingDialog = document.querySelector<HTMLElement>(
+			'[data-slot="cartoon-popover-content"]',
+		);
+		if (!fadingDialog) throw new Error("Exiting popover not found");
+		const closingOpacity = Number(fadingDialog.style.opacity);
+		expect(closingOpacity).toBeGreaterThan(0);
+		expect(closingOpacity).toBeLessThan(1);
+		fireEvent.mouseEnter(trigger2);
+		const reopenedDialog = screen.getByRole("dialog");
+		expect(Number(reopenedDialog.style.opacity)).toBeCloseTo(closingOpacity, 5);
+		fireEvent.mouseLeave(trigger2);
+		act(() => vi.advanceTimersByTime(160));
+		// 弹簧自然衰减至停机（precision=0.01 约需 1s）
+		act(() => {
+			vi.advanceTimersByTime(1200);
+		});
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
+	it("减少动效时切换条目立即落位，关闭缓冲结束后立即卸载", () => {
+		vi.useFakeTimers();
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({
+				matches: true,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+			})),
+		);
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+		render(
+			<CartoonPopoverGroup closeDelay={150}>
+				<CartoonPopoverGroupItem
+					value="first"
+					trigger={<button type="button">第一个</button>}
+				>
+					内容一
+				</CartoonPopoverGroupItem>
+				<CartoonPopoverGroupItem
+					value="second"
+					trigger={<button type="button">第二个</button>}
+				>
+					内容二
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+		const first = screen.getByText("第一个").closest<HTMLElement>("[data-popover-item]");
+		const second = screen.getByText("第二个").closest<HTMLElement>("[data-popover-item]");
+		if (!first || !second) throw new Error("Popover triggers not found");
+		first.getBoundingClientRect = () => new DOMRect(200, 100, 80, 40);
+		second.getBoundingClientRect = () => new DOMRect(600, 100, 80, 40);
+
+		fireEvent.mouseEnter(first);
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+		fireEvent.mouseEnter(second);
+		expect(screen.getByRole("dialog").style.left).toBe("530px");
+		fireEvent.mouseLeave(second);
+		act(() => vi.advanceTimersByTime(150));
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
+	it("完全关闭后悬停其他条目时直接从新条目位置出现", () => {
+		vi.useFakeTimers();
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+
+		render(
+			<CartoonPopoverGroup closeDelay={150}>
+				<CartoonPopoverGroupItem
+					value="tab1"
+					trigger={<button type="button">按钮一</button>}
+				>
+					<p>内容一</p>
+				</CartoonPopoverGroupItem>
+				<CartoonPopoverGroupItem
+					value="tab2"
+					trigger={<button type="button">按钮二</button>}
+				>
+					<p>内容二</p>
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+
+		const trigger1 = screen.getByText("按钮一").closest<HTMLElement>("[data-popover-item]");
+		const trigger2 = screen.getByText("按钮二").closest<HTMLElement>("[data-popover-item]");
+		if (!trigger1 || !trigger2) throw new Error("Popover triggers not found");
+
+		trigger1.getBoundingClientRect = () => new DOMRect(200, 100, 80, 40);
+		trigger2.getBoundingClientRect = () => new DOMRect(600, 100, 80, 40);
+
+		fireEvent.mouseEnter(trigger1);
+		act(() => vi.advanceTimersByTime(20));
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+
+		fireEvent.mouseLeave(trigger1);
+		fireEvent.mouseEnter(trigger2);
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+		act(() => vi.advanceTimersByTime(1200));
+		expect(screen.getByRole("dialog").style.left).toBe("530px");
+
+		fireEvent.mouseLeave(trigger2);
+		act(() => vi.advanceTimersByTime(160));
+		act(() => vi.advanceTimersByTime(1200));
+		expect(screen.queryByRole("dialog")).toBeNull();
+
+		fireEvent.mouseEnter(trigger1);
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+	});
+});

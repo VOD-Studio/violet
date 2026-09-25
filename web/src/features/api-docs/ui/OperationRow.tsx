@@ -1,8 +1,7 @@
+import { cn } from "cn";
 import { ArrowRight } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { type ReactNode, useState } from "react";
-
-import { cn } from "@/shared/lib/utils";
 
 import { schemaDisplayName, schemaRefName } from "../lib/build-docs-model";
 import type { DocOperation, OpenApiSchema } from "../model/types";

@@ -2,7 +2,6 @@ import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
 import { AccessibilitySection } from "@features/lab/palette/ui/AccessibilitySection";
 import { ChartAndNeonSection } from "@features/lab/palette/ui/ChartAndNeonSection";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
-import { ComponentPlaygroundSection } from "@features/lab/palette/ui/ComponentPlaygroundSection";
 import { PaletteHero } from "@features/lab/palette/ui/PaletteHero";
 import { StatusMatrixSection } from "@features/lab/palette/ui/StatusMatrixSection";
 import { SurfaceLayersSection } from "@features/lab/palette/ui/SurfaceLayersSection";
@@ -148,15 +147,6 @@ describe("Palette UI Components", () => {
 			render(<ChartAndNeonSection mode="dual" resolvedTheme="dark" />);
 			expect(screen.getByText("浅色图表光谱（5 色）")).toBeDefined();
 			expect(screen.getByText("深色图表光谱（5 色）")).toBeDefined();
-		});
-	});
-
-	describe("ComponentPlaygroundSection", () => {
-		it("渲染组件变体演练选项卡与方言对照", () => {
-			render(<ComponentPlaygroundSection />);
-			expect(screen.getByText("基础组件主题实装演练")).toBeDefined();
-			expect(screen.getByText(/品牌主动作 \(Brand\)/)).toBeDefined();
-			expect(screen.getByText(/dialect-public/)).toBeDefined();
 		});
 	});
 

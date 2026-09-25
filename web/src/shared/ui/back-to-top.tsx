@@ -5,9 +5,10 @@
  * 常驻悬浮件保持安静中性磨砂胶囊（同 Header/音乐胶囊浮层语言），
  * 不沾品牌强调色——强调色只留给内容区的低占比强调。
  */
+
+import { cn } from "cn";
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 
 export interface BackToTopProps {
 	/** 显示阈值（滚动距离 px），默认 400 */

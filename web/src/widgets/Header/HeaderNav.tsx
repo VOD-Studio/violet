@@ -1,6 +1,5 @@
 import type { NavRouteItem } from "@shared/config/nav";
 import { NAV_ITEMS } from "@shared/config/nav";
-import { cn } from "@shared/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -9,6 +8,7 @@ import {
 import type { SegmentedItem } from "@shared/ui/segmented";
 import { Segmented } from "@shared/ui/segmented";
 import { useRouterState } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ChevronDown, LayoutGrid } from "lucide-react";
 import { useState } from "react";
 

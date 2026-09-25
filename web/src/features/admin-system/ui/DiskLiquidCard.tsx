@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useEffect, useState } from "react";
 import type { SystemDiskInfoDTO } from "../model/types";
 import animations from "./animations.module.css";

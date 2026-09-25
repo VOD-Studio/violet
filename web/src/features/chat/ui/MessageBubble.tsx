@@ -4,7 +4,7 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import {
 	AlertTriangle,
 	Check,

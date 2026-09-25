@@ -1,6 +1,5 @@
+import { cn } from "cn";
 import type { ReactNode } from "react";
-
-import { cn } from "@/shared/lib/utils";
 
 interface ModalBodyProps {
 	/** 内容 */

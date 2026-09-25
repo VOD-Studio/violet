@@ -7,9 +7,9 @@
 
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
+import { cn } from "cn";
 import { Bold, Code, Italic, Link as LinkIcon } from "lucide-react";
 import type { MouseEvent } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { shouldShowBubbleMenu } from "./should-show";
 

@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import Empty from "@shared/ui/empty";
+import { cn } from "cn";
 
 import { usePosts } from "../api/queries";
 import type { PostListQuery } from "../model/types";

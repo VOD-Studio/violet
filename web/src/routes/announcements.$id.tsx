@@ -2,13 +2,13 @@ import { statusOf } from "@features/lab/announcement/model/event";
 import { useAnnouncement } from "@features/settings/api/queries";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { BackLink } from "@shared/ui/back-link";
 import { Button } from "@shared/ui/base/button";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
 

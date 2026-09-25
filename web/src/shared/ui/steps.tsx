@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 
 /** 步骤项 */
 export interface StepItem {

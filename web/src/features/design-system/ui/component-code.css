@@ -1,0 +1,19 @@
+/*
+ * 组件文档页代码区行号（shiki 输出 .line span 的官方 CSS counter 方案）。
+ * 由 features/design-system/ui 持有，仅作用于 .shiki-line-numbers 作用域。
+ */
+.shiki-line-numbers code {
+	counter-reset: shiki-line;
+}
+
+.shiki-line-numbers .line::before {
+	counter-increment: shiki-line;
+	content: counter(shiki-line);
+	display: inline-block;
+	width: 1.25rem;
+	margin-right: 0.75rem;
+	text-align: right;
+	color: var(--muted-foreground);
+	opacity: 0.55;
+	user-select: none;
+}

@@ -5,9 +5,9 @@
  * Tiptap 表格默认无 UI，需自行提供这些命令入口（#5）。
  */
 import type { Editor } from "@tiptap/react";
+import { cn } from "cn";
 import { Columns2, Grid2x2, Rows2, Table as TableIcon, Trash2, Undo2 } from "lucide-react";
 import type { MouseEvent } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 
 interface TableToolbarProps {

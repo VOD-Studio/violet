@@ -4,8 +4,8 @@
  */
 import { extractImageIds } from "@features/comments/hooks/use-rich-text-input";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
-import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
+import { cn } from "cn";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { toast } from "sonner";

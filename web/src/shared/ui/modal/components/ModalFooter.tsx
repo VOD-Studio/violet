@@ -1,6 +1,5 @@
+import { cn } from "cn";
 import type { ReactNode } from "react";
-
-import { cn } from "@/shared/lib/utils";
 
 interface ModalFooterProps {
 	/** 操作按钮等内容 */

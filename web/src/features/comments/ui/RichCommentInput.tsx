@@ -23,6 +23,7 @@ import {
 	type ImageUploadTask,
 } from "@shared/lib/image-upload-task";
 import { isImageURL } from "@shared/lib/url";
+import { cn } from "cn";
 import { Image as ImageIcon, Smile, X } from "lucide-react";
 import {
 	type ReactNode,
@@ -34,7 +35,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { cn } from "@/shared/lib/utils";
 import {
 	extractImageIds,
 	type ImageNodeStatus,

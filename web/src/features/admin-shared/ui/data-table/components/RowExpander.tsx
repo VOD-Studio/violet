@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { ChevronRight } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 
 interface RowExpanderProps {
 	/** 该行是否已展开 */

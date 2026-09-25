@@ -3,7 +3,7 @@
  */
 import { useMe } from "@features/auth/api/queries";
 import { useShareTweetStore } from "@shared/api/share-tweet-store";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useEffect, useMemo, useState } from "react";
 import { useChatConversations } from "../api/queries";
 import { useChatSelection } from "../hooks/useChatSelection";

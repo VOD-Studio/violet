@@ -1,8 +1,7 @@
+import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-
-import { cn } from "@/shared/lib/utils";
 import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 
 import { useOpenApiSpec } from "../api/useOpenApiSpec";

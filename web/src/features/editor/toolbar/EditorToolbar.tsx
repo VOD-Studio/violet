@@ -8,10 +8,10 @@
  * 关闭时对应色板、分组、按钮与图片下拉随扩展 schema 同步收窄。
  */
 import type { Editor } from "@tiptap/react";
+import { cn } from "cn";
 import { ChevronDown, ImagePlus, Upload } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useMemo } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import {
 	DropdownMenu,

@@ -6,8 +6,9 @@
  * 视觉一致。消费方按 renderers.ts 同款方式深路径直连引入，避免经
  * diagram/index barrel 把 mermaid 依赖树拉进文章正文主 chunk。
  */
+
+import { cn } from "cn";
 import { Workflow } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 
 export function DiagramPlaceholder({ className }: { className?: string }) {
 	return (

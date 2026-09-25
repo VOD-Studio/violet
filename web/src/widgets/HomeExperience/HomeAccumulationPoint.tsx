@@ -1,6 +1,6 @@
 import { formatDate } from "@shared/lib/date";
-import { cn } from "@shared/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
+import { cn } from "cn";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";

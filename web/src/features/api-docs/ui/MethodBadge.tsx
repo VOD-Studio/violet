@@ -1,4 +1,4 @@
-import { cn } from "@/shared/lib/utils";
+import { cn } from "cn";
 
 /** 方法语义色：纯文字着色，配合固定字宽在白纸面上作扫描锚点 */
 const METHOD_TEXT: Record<string, string> = {

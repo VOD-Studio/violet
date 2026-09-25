@@ -4,7 +4,7 @@
  * 筛选与按键消费留在 RichCommentInput——只有它拿得到 contentEditable 的光标态，
  * 浮层自己无从判断「当前查询词是什么」。
  */
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { useEffect, useRef } from "react";
 
 export interface MentionCandidate {

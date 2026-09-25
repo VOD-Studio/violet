@@ -1,6 +1,6 @@
 import { SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { Layers } from "lucide-react";
 
 export interface SurfaceLayersSectionProps {

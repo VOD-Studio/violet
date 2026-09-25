@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { cn } from "cn";
 
 export interface PostListSkeletonProps {
 	mixedSizes?: ("sm" | "md" | "lg")[];

@@ -1,6 +1,6 @@
 import type { NavItem, NavRouteItem } from "@shared/config/nav";
-import { cn } from "@shared/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { cn } from "cn";
 
 export interface HeaderNavItemProps {
 	item: NavItem;

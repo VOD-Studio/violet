@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/utils";
+import { cn } from "cn";
 import { GripHorizontal } from "lucide-react";
 import { animate } from "motion/react";
 import type { PointerEvent as ReactPointerEvent } from "react";

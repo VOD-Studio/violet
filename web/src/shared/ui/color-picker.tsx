@@ -5,9 +5,9 @@
  * 自定义选色器不依赖原生 input[type=color]，自绘指针交互。
  */
 
+import { cn } from "cn";
 import { Baseline, Palette } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import {
 	DropdownMenu,

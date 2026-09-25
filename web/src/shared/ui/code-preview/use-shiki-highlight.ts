@@ -9,7 +9,7 @@
  * bundle/full 不再进入构建产物。
  */
 import { useEffect, useState } from "react";
-import { highlightCode } from "./lib/highlighter";
+import { highlightCode, highlightCodeLight } from "./lib/highlighter";
 
 export interface UseShikiHighlightResult {
 	/** 高亮后的 HTML（shiki 输出 <pre class="shiki">），未完成时为空 */
@@ -18,11 +18,22 @@ export interface UseShikiHighlightResult {
 	loading: boolean;
 }
 
+export interface UseShikiHighlightOptions {
+	/** 高亮主题：dark（默认，github-dark）| light（github-light，文档页代码区） */
+	theme?: "dark" | "light";
+}
+
 /**
  * @param code 原始代码字符串
  * @param language shiki 语言 ID（如 typescript / go / bash），未知传 "text"
+ * @param options 可选主题，缺省 dark 保持既有调用行为
  */
-export function useShikiHighlight(code: string, language: string): UseShikiHighlightResult {
+export function useShikiHighlight(
+	code: string,
+	language: string,
+	options?: UseShikiHighlightOptions,
+): UseShikiHighlightResult {
+	const theme = options?.theme ?? "dark";
 	const [html, setHtml] = useState("");
 	const [loading, setLoading] = useState(true);
 
@@ -31,7 +42,10 @@ export function useShikiHighlight(code: string, language: string): UseShikiHighl
 		setLoading(true);
 		void (async () => {
 			try {
-				const out = await highlightCode(code, language);
+				const out =
+					theme === "light"
+						? await highlightCodeLight(code, language)
+						: await highlightCode(code, language);
 				if (!cancelled) {
 					setHtml(out);
 					setLoading(false);
@@ -47,7 +61,7 @@ export function useShikiHighlight(code: string, language: string): UseShikiHighl
 		return () => {
 			cancelled = true;
 		};
-	}, [code, language]);
+	}, [code, language, theme]);
 
 	return { html, loading };
 }

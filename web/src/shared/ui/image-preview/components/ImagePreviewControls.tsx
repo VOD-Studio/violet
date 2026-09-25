@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -11,7 +12,6 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 
 /** 图片查看器工具栏与循环导航的操作契约。 */

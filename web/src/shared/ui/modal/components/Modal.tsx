@@ -1,7 +1,6 @@
+import { cn } from "cn";
 import { AnimatePresence, motion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-
-import { cn } from "@/shared/lib/utils";
 import { MODAL_SIZES, type ModalProps } from "../types/modal-types";
 import { ModalBody } from "./ModalBody";
 import { ModalFooter } from "./ModalFooter";

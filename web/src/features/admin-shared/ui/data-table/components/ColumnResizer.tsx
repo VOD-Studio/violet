@@ -1,5 +1,5 @@
+import { cn } from "cn";
 import { useRef, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 
 interface ColumnResizerProps {
 	/** 当前列宽（px），拖拽起点 */

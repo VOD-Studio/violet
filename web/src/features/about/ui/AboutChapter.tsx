@@ -1,5 +1,5 @@
-import { cn } from "@shared/lib/utils";
 import { AnchoredHeading } from "@shared/ui/anchored-heading";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 import styles from "./AboutSections.module.css";

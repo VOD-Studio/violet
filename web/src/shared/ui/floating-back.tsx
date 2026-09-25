@@ -1,9 +1,9 @@
 import { HistoryBack } from "@shared/ui/history-back";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
-import { cn } from "@/shared/lib/utils";
 
 /**
  * FloatingBack - 浮动返回钮(nav-lab 方向②落生产)
