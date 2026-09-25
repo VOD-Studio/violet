@@ -328,7 +328,7 @@ export function CartoonPopoverDocPage() {
 					CartoonPopover 卡通气泡
 				</h1>
 				<p className="text-sm leading-relaxed text-muted-foreground">
-					卡通风格气泡浮层，支持点击与悬停触发、对白小尾巴，并在并排触发器间支持连续平滑滑行与宽高自适应变形。
+					轮廓从小尾巴尖端起笔、一笔连通圆角边框向两侧描绘，关闭时沿原路收回并淡去，不缩放整块内容。并排触发器间连续滑行，减少动效时即时开合。
 				</p>
 				<p className="font-mono text-xs text-muted-foreground">
 					源码 web/src/shared/ui/cartoon-popover/CartoonPopover.tsx

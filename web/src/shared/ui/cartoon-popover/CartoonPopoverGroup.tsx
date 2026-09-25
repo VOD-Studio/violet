@@ -1,3 +1,4 @@
+import { useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
 import {
 	type CSSProperties,
@@ -11,7 +12,7 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { SpeechArrow } from "./CartoonPopover";
+import { BubbleOutline } from "./BubbleOutline";
 import { computePosition } from "./floating";
 import { useMultiSpring, useSpringValue } from "./spring";
 import type {
@@ -253,6 +254,7 @@ export function CartoonPopoverGroup({
 		};
 	}, [activeValue, triggerRelayout]);
 
+	const reduceMotion = useReducedMotion();
 	// 多维物理联合弹簧解算器：驱动浮层在多按钮间平滑滑行与宽高自适应拉伸
 	const shouldTeleport = teleportNextRef.current && targetLayout !== null;
 	const springGeometry = useMultiSpring(
@@ -271,21 +273,19 @@ export function CartoonPopoverGroup({
 			mass: 0.8,
 			precision: 0.2,
 		},
-		{ teleport: shouldTeleport },
+		{ teleport: shouldTeleport || reduceMotion },
 	);
 	if (shouldTeleport) {
 		teleportNextRef.current = false;
 	}
 
-	// 整体透明度弹簧驱动开合
-	const progress = useSpringValue(activeValue ? 1 : 0, {
-		stiffness: 420,
-		damping: 30,
-		mass: 0.8,
-		precision: 0.01,
-	});
-
-	const isVisible = Boolean(activeValue || progress > 0.01);
+	const progress = useSpringValue(
+		activeValue ? 1 : 0,
+		{ stiffness: 360, damping: 38, mass: 0.8, precision: 0.01 },
+		{ instant: reduceMotion },
+	);
+	const ink = Math.max(0, Math.min(1, progress));
+	const isVisible = Boolean(activeValue || ink > 0.01);
 	const displayedValue = activeValue ?? lastActiveValue;
 	const currentItem = displayedValue ? itemsMap.current.get(displayedValue) : null;
 	const variant = currentItem?.variant ?? "default";
@@ -332,6 +332,8 @@ export function CartoonPopoverGroup({
 						ref={floatingRef}
 						role="dialog"
 						aria-modal="false"
+						aria-hidden={!activeValue}
+						inert={!activeValue}
 						data-slot="cartoon-popover-content"
 						data-variant={variant}
 						onMouseEnter={clearCloseTimer}
@@ -343,8 +345,8 @@ export function CartoonPopoverGroup({
 								top: `${springGeometry.y}px`,
 								width: `${springGeometry.width}px`,
 								height: `${springGeometry.height}px`,
-								opacity: progress,
-								transform: `scale(${0.96 + 0.04 * progress})`,
+								opacity: ink,
+								borderColor: "transparent",
 								pointerEvents: activeValue ? "auto" : "none",
 								...meta.style,
 							} as CSSProperties
@@ -355,6 +357,14 @@ export function CartoonPopoverGroup({
 							shadowClass,
 						)}
 					>
+						<BubbleOutline
+							width={springGeometry.width}
+							height={springGeometry.height}
+							side={targetLayout.actualSide}
+							arrowOffset={springGeometry.arrowOffset}
+							showArrow={currentItem.showArrow !== false}
+							progress={ink}
+						/>
 						{/* 漫画气泡微光 */}
 						{currentItem.showShine !== false && (
 							<span
@@ -378,17 +388,14 @@ export function CartoonPopoverGroup({
 						)}
 
 						{/* 内容插槽 */}
-						<div key={displayedValue} className="animate-in fade-in-0 duration-150">
+						<div
+							key={displayedValue}
+							className={
+								reduceMotion ? undefined : "animate-in fade-in-0 duration-150"
+							}
+						>
 							{currentItem.contentNode}
 						</div>
-
-						{/* 连续平滑滑动小尾巴 */}
-						{currentItem.showArrow !== false && (
-							<SpeechArrow
-								side={targetLayout.actualSide}
-								offset={springGeometry.arrowOffset}
-							/>
-						)}
 					</div>,
 					document.body,
 				)}

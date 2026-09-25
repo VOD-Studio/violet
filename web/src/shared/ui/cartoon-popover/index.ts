@@ -6,8 +6,6 @@ export {
 	CartoonPopoverHeader,
 	CartoonPopoverTitle,
 	CartoonPopoverTrigger,
-	SpeechArrow,
-	type SpeechArrowProps,
 } from "./CartoonPopover";
 
 export {

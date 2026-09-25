@@ -52,19 +52,33 @@ export class ScalarSpringStore {
 			this.rafId = requestAnimationFrame(this.tick);
 		}
 	}
+	snapTo(value: number) {
+		if (this.current === value && this.target === value && this.rafId === null) return;
+		this.current = value;
+		this.target = value;
+		this.velocity = 0;
+		if (this.rafId !== null) {
+			cancelAnimationFrame(this.rafId);
+			this.rafId = null;
+		}
+		for (const listener of this.listeners) {
+			listener();
+		}
+	}
 
 	private tick = (now: number) => {
-		const dtSeconds = Math.min((now - this.lastTime) / 1000, 0.064);
+		let remaining = Math.min((now - this.lastTime) / 1000, 0.064);
 		this.lastTime = now;
-
-		const displacement = this.current - this.target;
-		const springForce = -this.config.stiffness * displacement;
-		const dampingForce = -this.config.damping * this.velocity;
-		const acceleration = (springForce + dampingForce) / this.config.mass;
-
-		this.velocity += acceleration * dtSeconds;
-		this.current += this.velocity * dtSeconds;
-
+		while (remaining > 0) {
+			const dt = Math.min(remaining, 0.016);
+			remaining -= dt;
+			const displacement = this.current - this.target;
+			const acceleration =
+				(-this.config.stiffness * displacement - this.config.damping * this.velocity) /
+				this.config.mass;
+			this.velocity += acceleration * dt;
+			this.current += this.velocity * dt;
+		}
 		const isAtRest =
 			Math.abs(this.current - this.target) < this.config.precision &&
 			Math.abs(this.velocity) < this.config.precision;
@@ -120,9 +134,19 @@ export class MultiSpringStore<T extends Record<string, number>> {
 
 	/** teleport: 跳过物理解算，直接置于目标并清零速度（用于首次出现与重新出现） */
 	teleport(next: T) {
+		if (this.rafId === null && this.current) {
+			let same = true;
+			for (const key in next) {
+				if (this.current[key] !== next[key] || this.target[key] !== next[key]) {
+					same = false;
+					break;
+				}
+			}
+			if (same) return;
+		}
 		this.target = { ...next };
 		this.current = { ...next };
-		this.snapshotCache = { ...next };
+		this.snapshotCache = this.current;
 		this.velocities.clear();
 		if (this.rafId !== null) {
 			cancelAnimationFrame(this.rafId);
@@ -157,7 +181,7 @@ export class MultiSpringStore<T extends Record<string, number>> {
 	}
 
 	private tick = (now: number) => {
-		const dtSeconds = Math.min((now - this.lastTime) / 1000, 0.064);
+		let remaining = Math.min((now - this.lastTime) / 1000, 0.064);
 		this.lastTime = now;
 
 		if (!this.current) {
@@ -165,37 +189,40 @@ export class MultiSpringStore<T extends Record<string, number>> {
 			return;
 		}
 
-		let hasMoving = false;
 		const next = { ...this.current } as Record<string, number>;
-
-		for (const [key, targetVal] of Object.entries(this.target as Record<string, number>)) {
-			const curVal = next[key] ?? targetVal;
-			const v = this.velocities.get(key) ?? 0;
-
-			const displacement = curVal - targetVal;
-			const springForce = -this.config.stiffness * displacement;
-			const dampingForce = -this.config.damping * v;
-			const acceleration = (springForce + dampingForce) / this.config.mass;
-
-			const nextV = v + acceleration * dtSeconds;
-			const nextCur = curVal + nextV * dtSeconds;
-
-			const isAtRest =
-				Math.abs(nextCur - targetVal) < this.config.precision &&
-				Math.abs(nextV) < this.config.precision;
-
-			if (isAtRest) {
-				next[key] = targetVal;
-				this.velocities.set(key, 0);
-			} else {
-				next[key] = nextCur;
-				this.velocities.set(key, nextV);
-				hasMoving = true;
+		while (remaining > 0) {
+			const dt = Math.min(remaining, 0.016);
+			remaining -= dt;
+			for (const key in this.target) {
+				const targetVal = this.target[key];
+				const curVal = next[key] ?? targetVal;
+				const velocity = this.velocities.get(key) ?? 0;
+				const acceleration =
+					(-this.config.stiffness * (curVal - targetVal) -
+						this.config.damping * velocity) /
+					this.config.mass;
+				const nextVelocity = velocity + acceleration * dt;
+				next[key] = curVal + nextVelocity * dt;
+				this.velocities.set(key, nextVelocity);
 			}
 		}
 
+		let hasMoving = false;
+		for (const key in this.target) {
+			const targetVal = this.target[key];
+			const velocity = this.velocities.get(key) ?? 0;
+			if (
+				Math.abs(next[key] - targetVal) < this.config.precision &&
+				Math.abs(velocity) < this.config.precision
+			) {
+				next[key] = targetVal;
+				this.velocities.set(key, 0);
+			} else {
+				hasMoving = true;
+			}
+		}
 		this.current = next as T;
-		this.snapshotCache = { ...next } as T;
+		this.snapshotCache = this.current;
 
 		if (!hasMoving) {
 			this.rafId = null;
@@ -209,13 +236,21 @@ export class MultiSpringStore<T extends Record<string, number>> {
 	};
 }
 
-export function useSpringValue(target: number, config?: SpringConfig): number {
+export function useSpringValue(
+	target: number,
+	config?: SpringConfig,
+	options?: { instant?: boolean },
+): number {
 	const storeRef = useRef<ScalarSpringStore | null>(null);
 	if (!storeRef.current) {
 		storeRef.current = new ScalarSpringStore(target, config);
 	}
 	const store = storeRef.current;
-	store.setTarget(target);
+	if (options?.instant) {
+		store.snapTo(target);
+	} else {
+		store.setTarget(target);
+	}
 
 	return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
 }

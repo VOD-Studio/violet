@@ -7,6 +7,7 @@ describe("CartoonPopoverGroup Component", () => {
 		cleanup();
 		vi.useRealTimers();
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 	});
 
 	it("在群组中悬停条目时弹出共享浮层，滑向下一个条目时平滑切换而不卸载", () => {
@@ -63,10 +64,66 @@ describe("CartoonPopoverGroup Component", () => {
 		act(() => {
 			vi.advanceTimersByTime(160);
 		});
+		act(() => vi.advanceTimersByTime(64));
+		const fadingDialog = document.querySelector<HTMLElement>(
+			'[data-slot="cartoon-popover-content"]',
+		);
+		if (!fadingDialog) throw new Error("Exiting popover not found");
+		const closingOpacity = Number(fadingDialog.style.opacity);
+		expect(closingOpacity).toBeGreaterThan(0);
+		expect(closingOpacity).toBeLessThan(1);
+		fireEvent.mouseEnter(trigger2);
+		const reopenedDialog = screen.getByRole("dialog");
+		expect(Number(reopenedDialog.style.opacity)).toBeCloseTo(closingOpacity, 5);
+		fireEvent.mouseLeave(trigger2);
+		act(() => vi.advanceTimersByTime(160));
 		// 弹簧自然衰减至停机（precision=0.01 约需 1s）
 		act(() => {
 			vi.advanceTimersByTime(1200);
 		});
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
+	it("减少动效时切换条目立即落位，关闭缓冲结束后立即卸载", () => {
+		vi.useFakeTimers();
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({
+				matches: true,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+			})),
+		);
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+		render(
+			<CartoonPopoverGroup closeDelay={150}>
+				<CartoonPopoverGroupItem
+					value="first"
+					trigger={<button type="button">第一个</button>}
+				>
+					内容一
+				</CartoonPopoverGroupItem>
+				<CartoonPopoverGroupItem
+					value="second"
+					trigger={<button type="button">第二个</button>}
+				>
+					内容二
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+		const first = screen.getByText("第一个").closest<HTMLElement>("[data-popover-item]");
+		const second = screen.getByText("第二个").closest<HTMLElement>("[data-popover-item]");
+		if (!first || !second) throw new Error("Popover triggers not found");
+		first.getBoundingClientRect = () => new DOMRect(200, 100, 80, 40);
+		second.getBoundingClientRect = () => new DOMRect(600, 100, 80, 40);
+
+		fireEvent.mouseEnter(first);
+		expect(screen.getByRole("dialog").style.left).toBe("130px");
+		fireEvent.mouseEnter(second);
+		expect(screen.getByRole("dialog").style.left).toBe("530px");
+		fireEvent.mouseLeave(second);
+		act(() => vi.advanceTimersByTime(150));
 		expect(screen.queryByRole("dialog")).toBeNull();
 	});
 

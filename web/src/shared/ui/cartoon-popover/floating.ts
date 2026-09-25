@@ -17,8 +17,6 @@ export interface ComputePositionResult {
 	y: number;
 	actualSide: CartoonPopoverSide;
 	arrowOffset: number;
-	arrowSide: CartoonPopoverSide;
-	transformOrigin: string;
 }
 
 /**
@@ -125,24 +123,10 @@ export function computePosition(options: ComputePositionOptions): ComputePositio
 		arrowOffset = Math.max(minOffset, Math.min(relativeY, maxOffset));
 	}
 
-	// 5. 动画展开原点：与小尾巴方向绑定，避免缩放动画向触发器方向膨胀发生穿模
-	let transformOrigin = "center";
-	if (actualSide === "bottom") {
-		transformOrigin = `${arrowOffset}px top`;
-	} else if (actualSide === "top") {
-		transformOrigin = `${arrowOffset}px bottom`;
-	} else if (actualSide === "right") {
-		transformOrigin = `left ${arrowOffset}px`;
-	} else if (actualSide === "left") {
-		transformOrigin = `right ${arrowOffset}px`;
-	}
-
 	return {
 		x: Math.round(x),
 		y: Math.round(y),
 		actualSide,
 		arrowOffset: Math.round(arrowOffset),
-		arrowSide: actualSide,
-		transformOrigin,
 	};
 }

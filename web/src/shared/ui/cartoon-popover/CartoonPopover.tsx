@@ -1,3 +1,4 @@
+import { useReducedMotion } from "@shared/lib/motion";
 import { cn } from "@shared/lib/utils";
 import { X } from "lucide-react";
 import {
@@ -15,9 +16,9 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useSpringValue } from "./spring";
-import "./cartoon-popover.css";
+import { BubbleOutline } from "./BubbleOutline";
 import { computePosition } from "./floating";
+import { useSpringValue } from "./spring";
 import type {
 	CartoonBubbleVariant,
 	CartoonPopoverCloseProps,
@@ -318,97 +319,6 @@ export function CartoonPopoverTrigger({
 }
 
 /**
- * 卡通小尾巴（Arrow / Tail）纯手写 SVG 遮罩连通实现。
- *
- * 采用遮罩填充（Overlap Mask）技术：在气泡边框相接处覆盖一块背景填充矩形，
- * 消除气泡自身的 2px 边框阻隔，并让两侧 2px 漫画斜边精准焊接入气泡轮廓，
- * 彻底消除黑线阻断与悬空缝隙。
- */
-export interface SpeechArrowProps {
-	side: CartoonPopoverSide;
-	offset: number;
-	className?: string;
-}
-
-export function SpeechArrow({ side, offset, className }: SpeechArrowProps) {
-	// 经典对白三角形尾巴：外露 8px，宽 16px，底部 3px 深入气泡内部覆盖消除 2px 边框线
-	const W = 16;
-	const H = 8;
-	const D = 3;
-	const totalH = H + D; // 11px
-	const borderCompensation = 2; // 补偿气泡自身的 2px 边框盒模型位移
-
-	let arrowStyle: CSSProperties = {};
-	let pathFill = "";
-	let pathStroke = "";
-
-	if (side === "bottom") {
-		// 气泡在下方，尾巴在顶部朝上，定位在 top: -10px 补偿 2px border
-		arrowStyle = {
-			top: `-${H + borderCompensation}px`,
-			left: `${offset - W / 2}px`,
-		};
-		pathFill = `M 0 ${H} L ${W / 2} 0 L ${W} ${H} L ${W} ${totalH} L 0 ${totalH} Z`;
-		pathStroke = `M 0 ${H} L ${W / 2} 0 L ${W} ${H}`;
-	} else if (side === "top") {
-		// 气泡在上方，尾巴在底部朝下，定位在 bottom: -10px
-		arrowStyle = {
-			bottom: `-${H + borderCompensation}px`,
-			left: `${offset - W / 2}px`,
-		};
-		pathFill = `M 0 ${D} L ${W} ${D} L ${W} 0 L 0 0 Z M 0 ${D} L ${W / 2} ${totalH} L ${W} ${D} Z`;
-		pathStroke = `M 0 ${D} L ${W / 2} ${totalH} L ${W} ${D}`;
-	} else if (side === "right") {
-		// 气泡在右侧，尾巴在左侧朝左，定位在 left: -10px
-		arrowStyle = {
-			left: `-${H + borderCompensation}px`,
-			top: `${offset - W / 2}px`,
-		};
-		pathFill = `M ${H} 0 L 0 ${W / 2} L ${H} ${W} L ${totalH} ${W} L ${totalH} 0 Z`;
-		pathStroke = `M ${H} 0 L 0 ${W / 2} L ${H} ${W}`;
-	} else {
-		// 气泡在左侧，尾巴在右侧朝右，定位在 right: -10px
-		arrowStyle = {
-			right: `-${H + borderCompensation}px`,
-			top: `${offset - W / 2}px`,
-		};
-		pathFill = `M ${D} 0 L ${totalH} ${W / 2} L ${D} ${W} L 0 ${W} L 0 0 Z`;
-		pathStroke = `M ${D} 0 L ${totalH} ${W / 2} L ${D} ${W}`;
-	}
-	const isHorizontal = side === "left" || side === "right";
-	const svgW = isHorizontal ? totalH : W;
-	const svgH = isHorizontal ? W : totalH;
-
-	return (
-		<div
-			className={cn("pointer-events-none absolute z-20 overflow-visible", className)}
-			style={arrowStyle}
-			aria-hidden="true"
-		>
-			<svg
-				width={svgW}
-				height={svgH}
-				viewBox={`0 0 ${svgW} ${svgH}`}
-				className="overflow-visible"
-				aria-hidden="true"
-			>
-				{/* 背景遮罩层：抹除气泡边框并连通气泡内部 */}
-				<path d={pathFill} style={{ fill: "var(--cartoon-bg)" }} />
-				{/* 2px 漫画圆润斜边描线 */}
-				<path
-					d={pathStroke}
-					fill="none"
-					style={{ stroke: "var(--cartoon-border)" }}
-					strokeWidth="2"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</svg>
-		</div>
-	);
-}
-
-/**
  * CartoonPopoverContent 气泡浮层主体。
  */
 export function CartoonPopoverContent({
@@ -439,24 +349,26 @@ export function CartoonPopoverContent({
 	const [coords, setCoords] = useState<{
 		x: number;
 		y: number;
+		width: number;
+		height: number;
 		actualSide: CartoonPopoverSide;
 		arrowOffset: number;
-		transformOrigin: string;
 	} | null>(null);
 
-	const progress = useSpringValue(open ? 1 : 0, {
-		stiffness: 420,
-		damping: 30,
-		mass: 0.8,
-		precision: 0.01,
-	});
+	const reduceMotion = useReducedMotion();
+	const progress = useSpringValue(
+		open ? 1 : 0,
+		{ stiffness: 360, damping: 38, mass: 0.8, precision: 0.01 },
+		{ instant: reduceMotion },
+	);
+	const ink = Math.max(0, Math.min(1, progress));
 	const updatePosition = useCallback(() => {
 		const triggerEl = triggerRef.current;
 		const contentEl = contentRef.current;
 		if (!triggerEl || !contentEl) return;
 
 		const triggerRect = triggerEl.getBoundingClientRect();
-		// 使用 offsetWidth/Height 避免 CSS transform scale 动画影响尺寸测量
+		// offsetWidth/Height 不受开合透明度影响。
 		const contentWidth = contentEl.offsetWidth;
 		const contentHeight = contentEl.offsetHeight;
 
@@ -475,9 +387,10 @@ export function CartoonPopoverContent({
 		setCoords({
 			x: result.x,
 			y: result.y,
+			width: contentWidth,
+			height: contentHeight,
 			actualSide: result.actualSide,
 			arrowOffset: result.arrowOffset,
-			transformOrigin: result.transformOrigin,
 		});
 	}, [side, align, sideOffset, collisionPadding, triggerRef, contentRef]);
 
@@ -485,6 +398,12 @@ export function CartoonPopoverContent({
 	useEffect(() => {
 		if (!open) return;
 		updatePosition();
+		const contentEl = contentRef.current;
+		const observer =
+			contentEl && typeof ResizeObserver !== "undefined"
+				? new ResizeObserver(updatePosition)
+				: null;
+		if (observer && contentEl) observer.observe(contentEl);
 
 		window.addEventListener("scroll", updatePosition, true);
 		window.addEventListener("resize", updatePosition);
@@ -492,8 +411,9 @@ export function CartoonPopoverContent({
 		return () => {
 			window.removeEventListener("scroll", updatePosition, true);
 			window.removeEventListener("resize", updatePosition);
+			observer?.disconnect();
 		};
-	}, [open, updatePosition]);
+	}, [open, updatePosition, contentRef]);
 
 	// 点击外部关闭与 Escape 键关闭
 	useEffect(() => {
@@ -532,11 +452,8 @@ export function CartoonPopoverContent({
 
 	if (!targetContainer) return null;
 
-	const isVisible = open || progress > 0.01;
+	const isVisible = open || ink > 0.01;
 	if (!isVisible) return null;
-
-	const scale = 0.94 + 0.06 * progress;
-	const yOffset = ((coords?.actualSide ?? side) === "bottom" ? -4 : 4) * (1 - progress);
 
 	return createPortal(
 		<div
@@ -549,6 +466,8 @@ export function CartoonPopoverContent({
 			id={popoverId}
 			role="dialog"
 			aria-modal="false"
+			aria-hidden={!open}
+			inert={!open}
 			data-slot="cartoon-popover-content"
 			data-variant={variant}
 			data-bubble-style={bubbleStyle}
@@ -566,9 +485,8 @@ export function CartoonPopoverContent({
 					position: "fixed",
 					left: coords ? `${coords.x}px` : "-9999px",
 					top: coords ? `${coords.y}px` : "-9999px",
-					opacity: progress,
-					transform: `translate3d(0, ${yOffset}px, 0) scale(${scale})`,
-					transformOrigin: coords?.transformOrigin ?? "center",
+					opacity: ink,
+					borderColor: "transparent",
 					pointerEvents: open ? "auto" : "none",
 					...meta.style,
 					...style,
@@ -582,6 +500,16 @@ export function CartoonPopoverContent({
 			)}
 			{...props}
 		>
+			{coords && (
+				<BubbleOutline
+					width={coords.width}
+					height={coords.height}
+					side={coords.actualSide}
+					arrowOffset={coords.arrowOffset}
+					showArrow={showArrow && bubbleStyle !== "sticker"}
+					progress={ink}
+				/>
+			)}
 			{/* 卡通气泡顶部微光条 */}
 			{showShine && (
 				<span
@@ -617,11 +545,6 @@ export function CartoonPopoverContent({
 
 			{/* 主内容插槽 */}
 			{children}
-
-			{/* 气泡小尾巴 */}
-			{showArrow && bubbleStyle !== "sticker" && coords && (
-				<SpeechArrow side={coords.actualSide} offset={coords.arrowOffset} />
-			)}
 		</div>,
 		targetContainer,
 	);
