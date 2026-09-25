@@ -86,6 +86,7 @@ import { Route as AdminNotesIndexRouteImport } from './routes/admin.notes.index'
 import { Route as AdminGalleriesIndexRouteImport } from './routes/admin.galleries.index'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 import { Route as DesignSystemSpecimensCommentSectionRouteImport } from './routes/design-system.specimens.comment-section'
+import { Route as DesignSystemSpecimensCheckboxRouteImport } from './routes/design-system.specimens.checkbox'
 import { Route as DesignSystemSpecimensCartoonPopoverRouteImport } from './routes/design-system.specimens.cartoon-popover'
 import { Route as DesignSystemSpecimensButtonRouteImport } from './routes/design-system.specimens.button'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
@@ -490,6 +491,12 @@ const DesignSystemSpecimensCommentSectionRoute =
     path: '/comment-section',
     getParentRoute: () => DesignSystemSpecimensRoute,
   } as any)
+const DesignSystemSpecimensCheckboxRoute =
+  DesignSystemSpecimensCheckboxRouteImport.update({
+    id: '/checkbox',
+    path: '/checkbox',
+    getParentRoute: () => DesignSystemSpecimensRoute,
+  } as any)
 const DesignSystemSpecimensCartoonPopoverRoute =
   DesignSystemSpecimensCartoonPopoverRouteImport.update({
     id: '/cartoon-popover',
@@ -659,6 +666,7 @@ export interface FileRoutesByFullPath {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
+  '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
   '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
@@ -746,6 +754,7 @@ export interface FileRoutesByTo {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
+  '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
   '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
@@ -842,6 +851,7 @@ export interface FileRoutesById {
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
+  '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
   '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
@@ -939,6 +949,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
+    | '/design-system/specimens/checkbox'
     | '/design-system/specimens/comment-section'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
@@ -1026,6 +1037,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
+    | '/design-system/specimens/checkbox'
     | '/design-system/specimens/comment-section'
     | '/tweets/topics/$tag'
     | '/admin/galleries'
@@ -1121,6 +1133,7 @@ export interface FileRouteTypes {
     | '/auth/github/callback'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
+    | '/design-system/specimens/checkbox'
     | '/design-system/specimens/comment-section'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
@@ -1716,6 +1729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignSystemSpecimensCommentSectionRouteImport
       parentRoute: typeof DesignSystemSpecimensRoute
     }
+    '/design-system/specimens/checkbox': {
+      id: '/design-system/specimens/checkbox'
+      path: '/checkbox'
+      fullPath: '/design-system/specimens/checkbox'
+      preLoaderRoute: typeof DesignSystemSpecimensCheckboxRouteImport
+      parentRoute: typeof DesignSystemSpecimensRoute
+    }
     '/design-system/specimens/cartoon-popover': {
       id: '/design-system/specimens/cartoon-popover'
       path: '/cartoon-popover'
@@ -1982,6 +2002,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface DesignSystemSpecimensRouteChildren {
   DesignSystemSpecimensButtonRoute: typeof DesignSystemSpecimensButtonRoute
   DesignSystemSpecimensCartoonPopoverRoute: typeof DesignSystemSpecimensCartoonPopoverRoute
+  DesignSystemSpecimensCheckboxRoute: typeof DesignSystemSpecimensCheckboxRoute
   DesignSystemSpecimensCommentSectionRoute: typeof DesignSystemSpecimensCommentSectionRoute
   DesignSystemSpecimensIndexRoute: typeof DesignSystemSpecimensIndexRoute
 }
@@ -1990,6 +2011,7 @@ const DesignSystemSpecimensRouteChildren: DesignSystemSpecimensRouteChildren = {
   DesignSystemSpecimensButtonRoute: DesignSystemSpecimensButtonRoute,
   DesignSystemSpecimensCartoonPopoverRoute:
     DesignSystemSpecimensCartoonPopoverRoute,
+  DesignSystemSpecimensCheckboxRoute: DesignSystemSpecimensCheckboxRoute,
   DesignSystemSpecimensCommentSectionRoute:
     DesignSystemSpecimensCommentSectionRoute,
   DesignSystemSpecimensIndexRoute: DesignSystemSpecimensIndexRoute,

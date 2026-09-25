@@ -142,6 +142,12 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 						description: "按钮 · 动作层级与交互状态",
 					},
 					{
+						id: "checkbox",
+						title: "Checkbox",
+						to: "/design-system/specimens/checkbox",
+						description: "复选框 · 三态选择与微光实体反馈",
+					},
+					{
 						id: "comment-section",
 						title: "CommentSection",
 						to: "/design-system/specimens/comment-section",
