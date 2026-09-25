@@ -7,6 +7,64 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.44](https://github.com/VOD-Studio/violet/compare/v2.8.43...v2.8.44) (2026-09-25)
+
+
+### 新增
+
+* **cartoon-popover:** 气泡轮廓改为尾巴起笔的一笔描线 ([f592655](https://github.com/VOD-Studio/violet/commit/f592655fa56512b4e63513cb1966d584269157cf))
+* **chat:** 在聊天框补全 Bot 斜杠命令 ([632fdc2](https://github.com/VOD-Studio/violet/commit/632fdc2c73d55ec4521f3e4b751a1f471b39f115))
+* **chat:** 支持 Bot 命令目录发布与查询 ([a1ba36b](https://github.com/VOD-Studio/violet/commit/a1ba36bbf56ef7eee63c1ca2ae7d170167428dbf))
+* **chat:** 支持聊天 Bot API 与斜杠命令 ([498af3c](https://github.com/VOD-Studio/violet/commit/498af3cbc157e45c056651035f68823a235e2658))
+* **design-system:** 多级展开左侧竖线增加组选中流体注入动效 ([62eda79](https://github.com/VOD-Studio/violet/commit/62eda794bac51edccd10cad135a712f3043ff98b))
+* **design-system:** 完善营造法式导航体系与基础组件质感 ([928153b](https://github.com/VOD-Studio/violet/commit/928153b8e6b8628c6f1956740ceaf95ba6226831))
+* **design-system:** 对齐 HeroUI 完整组件文档规范 ([ce5e189](https://github.com/VOD-Studio/violet/commit/ce5e1891536bcffaf42f11e0e61fffafe1f7aac2))
+* **design-system:** 按 HeroUI 规范重构评论组件文档页 ([409b6f4](https://github.com/VOD-Studio/violet/commit/409b6f47bcb1b809e7d7b35031ce3a7df161de7a))
+* **design-system:** 新增评论区组件文档页 ([dc6d0c1](https://github.com/VOD-Studio/violet/commit/dc6d0c112107a0843cf8593a4f7b2b62fc2f4040))
+* **design-system:** 演示面板改为一体化舞台卡片并统一中文文案 ([8667755](https://github.com/VOD-Studio/violet/commit/866775547e9a7d3a8ea7c60db6d2ad8f2fcb2859))
+* **design-system:** 组件文档代码区改为浅色主题折叠面板 ([da7709b](https://github.com/VOD-Studio/violet/commit/da7709b36b3e1c7a00904c45afde68044e9729d1))
+* **design-system:** 重新设计营造法式多路由与典籍导航体系 ([383cdd7](https://github.com/VOD-Studio/violet/commit/383cdd70c6929c8abc62b0a1a24f924ee69cd62f))
+* **shared-ui:** 卡通气泡改用弹簧动力学动效 ([94440c1](https://github.com/VOD-Studio/violet/commit/94440c1a369705368cfda2e4576bc00d8c885145))
+* **shared-ui:** 实现 CartoonPopoverGroup 连续平滑滑动与自适应形变 ([853bbdb](https://github.com/VOD-Studio/violet/commit/853bbdb5f711dd541a81eab6403b26460c30df26))
+* **shared-ui:** 实现卡通风格 Popover 通用组件 ([92a0a87](https://github.com/VOD-Studio/violet/commit/92a0a87b867447abf2c0e5e84857e31f0fa96a21))
+* **shared-ui:** 新增多级树导航组件 TreeNav 并支持最多 4 级 ([c8b2ed1](https://github.com/VOD-Studio/violet/commit/c8b2ed1fb68ff0875eff7376b497b59e03e0c574))
+
+
+### 修复
+
+* **cartoon-popover:** 修复重新悬停跨位飞入 ([084ae39](https://github.com/VOD-Studio/violet/commit/084ae39466b7efa9c9569d33a1c15d7b787b748a))
+* **cartoon-popover:** 缩小对白气泡尾巴 ([168c395](https://github.com/VOD-Studio/violet/commit/168c395f253253b03282211f272ee1555cb23bb1))
+* **cartoon-popover:** 重设计 Dark 气泡的配色与显影 ([c45d603](https://github.com/VOD-Studio/violet/commit/c45d60352db00df207945649142820f9dffae91f))
+* **chat:** 群聊命令仅投递开头寻址的 Bot ([2387b75](https://github.com/VOD-Studio/violet/commit/2387b75ec57bc4a71b0de4cddd9197741da166d7))
+* **design-system:** 二级菜单平滑缓动滚动与滑动指示器 ([22f7507](https://github.com/VOD-Studio/violet/commit/22f7507915631d37e604e850cfd46812b13d9a1c))
+* **design-system:** 优化组件演示卡片代码对比度与展开交互 ([e963689](https://github.com/VOD-Studio/violet/commit/e9636897d371d1c3cccfddf56108072d3a064981))
+* **design-system:** 修复代码示例收起卡顿 ([3432b79](https://github.com/VOD-Studio/violet/commit/3432b79feeba4c43cbbcbaefd826cf9d80b9ee48))
+* **design-system:** 复制按钮零遮挡与表单空值渲染优化 ([3e7c6bf](https://github.com/VOD-Studio/violet/commit/3e7c6bf025cf9db0aba12c67839768574962555f))
+* **design-system:** 对齐侧栏吸附位置 ([40a51ab](https://github.com/VOD-Studio/violet/commit/40a51abb2e57611a3f53bf2c71f4ece47b955782))
+* **design-system:** 收紧组件文档代码区排版 ([a57ec19](https://github.com/VOD-Studio/violet/commit/a57ec199449de655e987174c0e84122d6152e6d4))
+* **design-system:** 文档界面文案中文化并精修折叠胶囊 ([173aace](https://github.com/VOD-Studio/violet/commit/173aace78f3fd59c1a18cece52c679a137e2affe))
+* **design-system:** 根除全屏快照闪烁与接入纯Tween流体滑动指示器 ([2bc2391](https://github.com/VOD-Studio/violet/commit/2bc2391fdfed2d471cfab7c7bc946076a0135f39))
+* **design-system:** 组件文档正文限宽居中适配大屏 ([2019507](https://github.com/VOD-Studio/violet/commit/2019507cfb17546da13fee7b8f4c0f7f3a71fbce))
+* **design-system:** 组件演示与代码块统一为等宽排版 ([f342c05](https://github.com/VOD-Studio/violet/commit/f342c0588efa25dcf2b280fabfec66dedd72996a))
+* **design-system:** 组件目录子项改用组件名命名 ([3e88d14](https://github.com/VOD-Studio/violet/commit/3e88d14cb9a960ca2803b767d1e5e8f008f498be))
+* **shared-ui:** 优化 Button 加载过渡与点击反馈 ([b9886c5](https://github.com/VOD-Studio/violet/commit/b9886c5677746dc8f00365a1c9360dd9a8f93e01))
+* **shared-ui:** 修复卡通气泡群组三类位移与贴边缺陷 ([a705e32](https://github.com/VOD-Studio/violet/commit/a705e32304b5ff2de8cdbd9a1cf7242d687e790d))
+* **shared-ui:** 修复卡通气泡边框穿透并移除强制虚线 ([ebdb9de](https://github.com/VOD-Studio/violet/commit/ebdb9de8c51bf9df35532819792d917d1270bf20))
+* **shared-ui:** 卡通气泡群组宽度改为最小宽度内容撑开 ([c18d45b](https://github.com/VOD-Studio/violet/commit/c18d45b0d6489bb74d7d71aa5bb8e6332606268f))
+* **web:** 锁定 seroval 1.6.7 解决 isStream 缺失报错 ([865855c](https://github.com/VOD-Studio/violet/commit/865855c277d2676bee609311e35af21c642a5020))
+
+
+### 重构
+
+* **button:** 移除废弃品牌按钮变体 ([cae9949](https://github.com/VOD-Studio/violet/commit/cae994995fa87349489729f8eccf5112186b291a))
+* **design-system:** 抽取组件文档公共基建并泛型化参数表格 ([4dd7cb9](https://github.com/VOD-Studio/violet/commit/4dd7cb961ac3f168331a194e706b86bba0107f0f))
+* **design-system:** 演示卡片重构为预览与代码视图切换 ([3b8ba68](https://github.com/VOD-Studio/violet/commit/3b8ba68486f238df112441c8402597e2912891c9))
+* **design-system:** 目录导航迁移至公共组件 TreeNav ([8015cf3](https://github.com/VOD-Studio/violet/commit/8015cf3507ff14ff0616fed994d4aa23d2117e83))
+* **shared-ui:** 移除怪异思考小天线并禁止使用Sparkles图标 ([fd9930e](https://github.com/VOD-Studio/violet/commit/fd9930e4293a392c408f5f535f92e0d05acecd6f))
+* **shared-ui:** 重构 Button 触感质感与功能扩展 ([0fa279c](https://github.com/VOD-Studio/violet/commit/0fa279c7d203b91328c68820469648e215c6a4db))
+* **shared-ui:** 重构 Checkbox 触感质感并补齐三态支持 ([486f088](https://github.com/VOD-Studio/violet/commit/486f088b4e765dc6c36dd657d48c0766f34e0700))
+* **web:** 全局迁移 cn 导入至 cn 独立包并清理旧依赖 ([571782d](https://github.com/VOD-Studio/violet/commit/571782dab67ef18a91313fe4de892d3a622d7bd5))
+
 ## [2.8.43](https://github.com/VOD-Studio/violet/compare/v2.8.42...v2.8.43) (2026-09-23)
 
 
