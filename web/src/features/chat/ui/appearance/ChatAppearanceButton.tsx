@@ -2,7 +2,7 @@ import { useMe } from "@features/auth/api/queries";
 import { Button } from "@shared/ui/base/button";
 import { Palette } from "lucide-react";
 import { useState } from "react";
-import { ChatAppearanceDialog } from "./ChatAppearanceDialog";
+import { ChatAppearancePanel } from "./ChatAppearancePanel";
 
 /** 桌面侧栏与移动会话页共用的外观编辑入口。 */
 export function ChatAppearanceButton() {
@@ -18,19 +18,18 @@ export function ChatAppearanceButton() {
 				title="聊天外观"
 				onClick={() => setOpen(true)}
 			>
-				<Palette aria-hidden="true" className="size-5" />
+				<Palette aria-hidden className="size-5" />
 			</Button>
 			{open && (
-				<ChatAppearanceDialog
+				<ChatAppearancePanel
 					key={me.id}
-					open={open}
 					user={{
 						id: me.id,
 						username: me.username,
 						display_name: me.display_name ?? "",
 						avatar_url: me.avatar_url ?? "",
 					}}
-					onOpenChange={setOpen}
+					onClose={() => setOpen(false)}
 				/>
 			)}
 		</>

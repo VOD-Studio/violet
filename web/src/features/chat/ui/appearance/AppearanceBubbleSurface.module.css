@@ -36,6 +36,20 @@
 	padding-right: 1rem;
 	padding-left: 2.5rem;
 }
+
+/* 选中卡里的缩小演示:同九宫格底板,收窄留白与饰件 */
+.bubble[data-compact="true"] {
+	min-height: 0;
+	padding: 0.4375rem 0.625rem 0.5rem;
+	padding-right: 1.625rem;
+	font-size: 0.6875rem;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+
+.bubble[data-compact="true"][data-side="incoming"] {
+	padding-left: 1.625rem;
+}
 .bubble > :not(.ornament) {
 	min-width: 0;
 	max-width: 100%;
@@ -60,6 +74,17 @@
 }
 .bubble[data-side="incoming"] .ornament {
 	left: -4px;
+	right: auto;
+}
+/* 紧凑演示的饰件覆盖:置于基础饰件之后,满足升序 */
+.bubble[data-compact="true"] .ornament {
+	width: 18px;
+	height: 18px;
+	right: -2px;
+	bottom: -2px;
+}
+.bubble[data-compact="true"][data-side="incoming"] .ornament {
+	left: -2px;
 	right: auto;
 }
 .ornament[hidden] {
