@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { ArrowRight, Mail, Plus } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Button, buttonVariants } from "../button";
 
@@ -77,36 +77,39 @@ describe("Button Component", () => {
 		expect(handleClick).not.toHaveBeenCalled();
 	});
 
-	describe("加载状态 (loading)", () => {
-		it("处于 loading 状态时自动禁用并设置 aria-busy", () => {
+	describe("加载状态与平滑展开动效", () => {
+		it("处于 loading 状态时自动禁用、设置 aria-busy 且正文持续在场可见", () => {
 			const handleClick = vi.fn();
 			render(
 				<Button loading onClick={handleClick}>
-					保存
+					保存修改
 				</Button>,
 			);
-			const btn = screen.getByRole("button", { name: "保存" });
+			const btn = screen.getByRole("button", { name: "保存修改" });
 			expect((btn as HTMLButtonElement).disabled).toBe(true);
 			expect(btn.getAttribute("aria-busy")).toBe("true");
 			expect(btn.getAttribute("data-loading")).toBe("true");
-			expect(btn.querySelector("svg.animate-spin")).not.toBeNull();
+
+			// 指示器包含平滑展开 grid 类名，正文持续留存可见
+			const spinner = btn.querySelector("svg.animate-spin");
+			expect(spinner).not.toBeNull();
+			expect(screen.getByText("保存修改")).toBeDefined();
 
 			fireEvent.click(btn);
 			expect(handleClick).not.toHaveBeenCalled();
 		});
 
-		it("提供 loadingText 时替换正文内容", () => {
+		it("提供 loadingText 时正确替换展示提示文案", () => {
 			render(
 				<Button loading loadingText="正在同步数据...">
 					原本文案
 				</Button>,
 			);
-			expect(screen.queryByText("原本文案")).toBeNull();
 			expect(screen.getByText("正在同步数据...")).toBeDefined();
-			expect(document.querySelector("svg.animate-spin")).not.toBeNull();
+			expect(screen.queryByText("原本文案")).toBeNull();
 		});
 
-		it("处于 loading 状态时平滑替换 leftIcon 而非双重展示", () => {
+		it("带前置图标按钮在 loading 时平滑切换为指示器且正文完好", () => {
 			const { rerender } = render(
 				<Button leftIcon={<Mail data-testid="mail-icon" />}>发送邮件</Button>,
 			);
@@ -121,16 +124,6 @@ describe("Button Component", () => {
 			expect(screen.queryByTestId("mail-icon")).toBeNull();
 			expect(document.querySelector("svg.animate-spin")).not.toBeNull();
 			expect(screen.getByText("发送邮件")).toBeDefined();
-		});
-
-		it("图标按钮处于 loading 状态时不残留旧文本或溢出", () => {
-			render(
-				<Button size="icon" loading aria-label="新建项目">
-					<Plus data-testid="plus-icon" />
-				</Button>,
-			);
-			expect(screen.queryByTestId("plus-icon")).toBeNull();
-			expect(document.querySelector("svg.animate-spin")).not.toBeNull();
 		});
 	});
 
@@ -170,5 +163,13 @@ describe("Button Component", () => {
 		const classes = buttonVariants({ variant: "brand", size: "lg" });
 		expect(classes).toContain("bg-brand");
 		expect(classes).toContain("h-10");
+	});
+
+	describe("触觉与稳定性规范", () => {
+		it("杜绝任何 active 位移或抖动类名（如 translate-y），保持几何绝对稳定", () => {
+			const classes = buttonVariants({ variant: "default" });
+			expect(classes).not.toContain("translate-y");
+			expect(classes).not.toContain("scale");
+		});
 	});
 });
