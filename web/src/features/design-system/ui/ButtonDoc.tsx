@@ -47,13 +47,13 @@ const ICON_CODE = `import { ArrowRight, Download, Mail, Sparkles } from "lucide-
 const STATE_CODE = `import { Button } from "@shared/ui/base/button";
 import { Mail } from "lucide-react";
 
-{/* 1. 内置加载中状态（自动禁用并展示平滑指示器，杜绝宽度跳动） */}
+{/* 1. 内置平滑加载（正文在场留存，指示器自适应平滑展开） */}
 <Button loading>保存修改</Button>
 
 {/* 2. 携带自定义文案的加载状态 */}
 <Button loading loadingText="正在同步数据...">提交发布</Button>
 
-{/* 3. 前置图标平滑切换：leftIcon 在加载时自动替换为加载指示器 */}
+{/* 3. 前置图标按钮加载（原位平滑淡入淡出，零宽度跳变） */}
 <Button loading leftIcon={<Mail />}>发送邮件</Button>
 
 {/* 4. 原生不可用状态 */}
@@ -183,7 +183,7 @@ export function ButtonDocPage() {
 				</h1>
 				<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
 					触发操作时用按钮，导航时用链接。基于 Violet 语义 Token
-					与精工物理层级打造：顶边细微内高光与底部轻触感阴影、自然的按压微沉触觉、内置平滑加载（杜绝布局抖动）与首选图标插槽。
+					与静穆物理层级打造：顶边细微内高光与底部轻触感阴影、纯光学明度吸收按压反馈（无位移颤抖与缩放）、平滑加载动画（正文持续留存，指示器平滑展开或原位淡入淡出）与首选图标插槽。
 				</p>
 				<p className="text-xs text-muted-foreground">
 					源码{" "}
@@ -313,7 +313,7 @@ export function ButtonDocPage() {
 					<h3 className="text-lg font-semibold text-foreground">状态与加载 (Loading)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						内置 loading 支持：处于加载中时自动禁用并设置
-						aria-busy；前置图标平滑切换为指示器，杜绝页面宽度抖动。
+						aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
 					</p>
 					<ComponentDemo code={STATE_CODE}>
 						<div className="flex flex-wrap items-center justify-center gap-3">
@@ -323,7 +323,7 @@ export function ButtonDocPage() {
 								loading={simulating}
 								onClick={handleSimulateLoading}
 							>
-								{simulating ? "正在处理…" : "点击体验加载"}
+								保存修改
 							</Button>
 							<Button
 								type="button"
