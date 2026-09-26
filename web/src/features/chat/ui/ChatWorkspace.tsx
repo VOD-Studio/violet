@@ -10,6 +10,7 @@ import { useChatSelection } from "../hooks/useChatSelection";
 import { conversationAppearanceUserIDs } from "../lib/appearance-users";
 import { conversationLabel } from "../lib/conversation";
 import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
+import { ChatAppearanceWorkspace } from "./appearance/ChatAppearanceWorkspace";
 import { ConversationIndex } from "./ConversationIndex";
 import { ConversationPanel } from "./ConversationPanel";
 import { EmptyConversation } from "./chat-states";
@@ -23,6 +24,7 @@ export function ChatWorkspace() {
 	const [search, setSearch] = useState("");
 	const [showDetails, setShowDetails] = useState(false);
 	const [showNew, setShowNew] = useState(false);
+	const [appearanceOpen, setAppearanceOpen] = useState(false);
 
 	const selected = conversations.find((conversation) => conversation.id === selectedID) ?? null;
 	const filtered = useMemo(() => {
@@ -39,7 +41,10 @@ export function ChatWorkspace() {
 
 	// 从 ShareTweetDialog 落定的待发分享：自动切到目标会话，输入框读同一 store 的 pending 展示 banner。
 	useEffect(() => {
-		if (pendingShare) selectConversation(pendingShare.conversationId);
+		if (pendingShare) {
+			selectConversation(pendingShare.conversationId);
+			setAppearanceOpen(false);
+		}
 	}, [pendingShare, selectConversation]);
 
 	return (
@@ -51,7 +56,7 @@ export function ChatWorkspace() {
 				<aside
 					className={cn(
 						"relative flex w-full shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur-xl md:flex md:w-80 lg:w-84",
-						selectedID && "hidden md:flex",
+						(selectedID || appearanceOpen) && "hidden md:flex",
 					)}
 				>
 					<ConversationIndex
@@ -61,12 +66,24 @@ export function ChatWorkspace() {
 						selectedID={selectedID}
 						search={search}
 						showNew={showNew}
+						appearanceOpen={appearanceOpen}
+						onOpenAppearance={() => {
+							setAppearanceOpen((open) => !open);
+							setShowNew(false);
+						}}
 						onSearch={setSearch}
-						onToggleNew={() => setShowNew((value) => !value)}
-						onSelect={selectConversation}
+						onToggleNew={() => {
+							setShowNew((value) => !value);
+							setAppearanceOpen(false);
+						}}
+						onSelect={(id) => {
+							selectConversation(id);
+							setAppearanceOpen(false);
+						}}
 						onCreated={(id) => {
 							selectConversation(id);
 							setShowNew(false);
+							setAppearanceOpen(false);
 						}}
 					/>
 				</aside>
@@ -74,22 +91,43 @@ export function ChatWorkspace() {
 				<main
 					className={cn(
 						"relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background/60",
-						!selectedID && "hidden md:flex",
+						!selectedID && !appearanceOpen && "hidden md:flex",
 					)}
 				>
-					{selected ? (
-						<ConversationPanel
-							conversation={selected}
-							currentUserID={me?.id ?? ""}
-							onBack={clearSelection}
-							pendingShare={
-								pendingShare?.conversationId === selected.id ? pendingShare : null
-							}
-							showDetails={showDetails}
-							onToggleDetails={() => setShowDetails((value) => !value)}
+					<div
+						className={cn(
+							"flex h-full min-h-0 min-w-0 flex-1 flex-col",
+							appearanceOpen && "invisible",
+						)}
+						inert={appearanceOpen}
+					>
+						{selected ? (
+							<ConversationPanel
+								conversation={selected}
+								currentUserID={me?.id ?? ""}
+								onBack={clearSelection}
+								pendingShare={
+									pendingShare?.conversationId === selected.id
+										? pendingShare
+										: null
+								}
+								showDetails={showDetails}
+								onToggleDetails={() => setShowDetails((value) => !value)}
+							/>
+						) : (
+							<EmptyConversation onCreate={() => setShowNew(true)} />
+						)}
+					</div>
+					{appearanceOpen && me && (
+						<ChatAppearanceWorkspace
+							user={{
+								id: me.id,
+								username: me.username,
+								display_name: me.display_name ?? "",
+								avatar_url: me.avatar_url ?? "",
+							}}
+							onClose={() => setAppearanceOpen(false)}
 						/>
-					) : (
-						<EmptyConversation onCreate={() => setShowNew(true)} />
 					)}
 				</main>
 			</div>
