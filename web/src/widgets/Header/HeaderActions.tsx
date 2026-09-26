@@ -9,6 +9,7 @@ import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
+import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -45,7 +46,8 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const openCommand = useCommandUIStore((s) => s.open);
 	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
-	useChatUnreadTitle(user ? (chatUnread?.unread_count ?? 0) : 0);
+	const unreadChatCount = chatUnread?.unread_count ?? 0;
+	useChatUnreadTitle(user ? unreadChatCount : 0);
 	const [notificationOpen, setNotificationOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const actionsPinned = notificationOpen || userMenuOpen;
@@ -91,7 +93,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 			className="group pointer-events-auto flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
 		>
 			{/* 工具区随 hover 展开；通知或用户菜单打开时保持展开。 */}
-			<div className="pointer-events-none hidden max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-hover:pointer-events-auto lg:group-hover:max-w-52 lg:group-hover:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-52 lg:group-data-[pinned]:opacity-100">
+			<div className="pointer-events-none hidden max-w-0 items-center gap-3 overflow-hidden py-2 opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-hover:pointer-events-auto lg:group-hover:max-w-56 lg:group-hover:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-56 lg:group-data-[pinned]:opacity-100">
 				{/* 搜索命令面板按钮 */}
 				<button
 					type="button"
@@ -104,18 +106,25 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 
 				{user && <NotificationBell onOpenChange={setNotificationOpen} />}
 				{user && (
-					<Link
-						aria-label="聊天"
-						className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-						to="/chat"
+					<BadgeAnchor
+						badge={
+							unreadChatCount > 0 ? (
+								<Badge size="count" variant="default">
+									{unreadChatCount > 99 ? "99+" : unreadChatCount}
+								</Badge>
+							) : null
+						}
 					>
-						<MessageCircle className="size-4" />
-						{chatUnread && chatUnread.unread_count > 0 && (
-							<span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-neon-blue px-1 text-center font-mono text-[10px] leading-4 text-white">
-								{chatUnread.unread_count > 99 ? "99+" : chatUnread.unread_count}
-							</span>
-						)}
-					</Link>
+						<Link
+							aria-label={
+								unreadChatCount > 0 ? `聊天，${unreadChatCount} 条未读` : "聊天"
+							}
+							className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+							to="/chat"
+						>
+							<MessageCircle className="size-4" />
+						</Link>
+					</BadgeAnchor>
 				)}
 
 				{/* 主题切换开关 */}

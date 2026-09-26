@@ -8,6 +8,7 @@
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import { formatRelativeTime } from "@shared/lib/date";
+import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import {
 	DropdownMenu,
@@ -141,26 +142,26 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 				onOpenChange?.(nextOpen);
 			}}
 		>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label="通知"
-					className="relative hover:bg-muted/70 hover:text-foreground"
-				>
-					{unread > 0 ? <BellRing className="size-4" /> : <Bell className="size-4" />}
-					{unread > 0 && (
-						<span
-							className={cn(
-								"absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1",
-								"text-[10px] font-bold leading-4 text-destructive-foreground",
-							)}
-						>
+			<BadgeAnchor
+				badge={
+					unread > 0 ? (
+						<Badge size="count" variant="destructive">
 							{unread > 99 ? "99+" : unread}
-						</span>
-					)}
-				</Button>
-			</DropdownMenuTrigger>
+						</Badge>
+					) : null
+				}
+			>
+				<DropdownMenuTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						aria-label={unread > 0 ? `通知，${unread} 条未读` : "通知"}
+						className="rounded-full text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+					>
+						{unread > 0 ? <BellRing className="size-4" /> : <Bell className="size-4" />}
+					</Button>
+				</DropdownMenuTrigger>
+			</BadgeAnchor>
 			<DropdownMenuContent
 				align="end"
 				sideOffset={10}
