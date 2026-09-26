@@ -28,7 +28,10 @@
 	width: 18rem;
 }
 
+/* 预览舞台:高度恒定,换气泡主题时分类菜单不被挤动 */
 .stageShell {
+	flex: none;
+	height: 13.5rem;
 	overflow: hidden;
 	border: 1px solid var(--border);
 	border-radius: 1rem;
@@ -37,7 +40,9 @@
 
 .stage {
 	display: flex;
+	height: 100%;
 	flex-direction: column;
+	justify-content: center;
 	gap: 1rem;
 	padding: 1.25rem;
 }
@@ -124,34 +129,47 @@
 }
 
 .categoryButton {
+	position: relative;
 	display: flex;
 	min-height: 2.75rem;
 	align-items: center;
-	gap: 0.75rem;
 	padding: 0.5rem 0.75rem;
-	border: 1px solid transparent;
+	border: 0;
 	border-radius: 0.5rem;
 	background: none;
 	color: var(--muted-foreground);
 	cursor: pointer;
 	font-size: 0.875rem;
 	text-align: left;
-	transition:
-		background-color 0.15s ease,
-		border-color 0.15s ease,
-		color 0.15s ease;
+	transition: color 0.15s ease;
 }
 
-.categoryButton:hover {
+.categoryButton:hover:not([aria-pressed="true"]) {
 	background: var(--muted);
 	color: var(--foreground);
 }
 
 .categoryButton[aria-pressed="true"] {
-	border-color: var(--brand);
-	background: var(--brand-wash);
 	color: var(--brand-wash-foreground);
 	font-weight: 600;
+}
+
+/* 流体滑动选中块:由 motion layoutId 在分类间搬运 */
+.categoryPill {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	border: 1px solid var(--brand);
+	border-radius: 0.5rem;
+	background: var(--brand-wash);
+}
+
+.categoryContent {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
 }
 
 /* 右栏:选项流占满剩余宽度;列数按右栏实际宽度走容器查询 */

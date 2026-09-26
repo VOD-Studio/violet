@@ -1,5 +1,6 @@
 import { Button } from "@shared/ui/base/button";
 import { Award, CircleUserRound, Gem, MessageSquare } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { fetchOwnAppearance } from "../../api/appearance";
 import { useOwnChatBadges, useSaveChatAppearance } from "../../api/appearance-queries";
@@ -108,6 +109,8 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 	};
 	const active = CATEGORIES.find((item) => item.id === category);
 	const selectedValue = active && "field" in active ? draft[active.field] : undefined;
+	// 减少动态偏好下滑块直接跳变,不播滑动
+	const reducedMotion = useReducedMotion();
 	return (
 		<div className={styles.editor}>
 			<div className={styles.body}>
@@ -116,16 +119,36 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 					<nav className={styles.categoryNav} aria-label="外观分类">
 						{CATEGORIES.map((item) => {
 							const Icon = item.icon;
+							const selected = category === item.id;
 							return (
 								<button
 									key={item.id}
 									type="button"
 									className={styles.categoryButton}
-									aria-pressed={category === item.id}
+									aria-pressed={selected}
 									onClick={() => setCategory(item.id)}
 								>
-									<Icon aria-hidden="true" className="size-5" />
-									<span>{item.label}</span>
+									{/* layoutId 共享布局:选中底色块在分类间流体滑动 */}
+									{selected && (
+										<motion.span
+											aria-hidden="true"
+											className={styles.categoryPill}
+											layoutId="chat-appearance-category-pill"
+											transition={
+												reducedMotion
+													? { duration: 0 }
+													: {
+															type: "spring",
+															stiffness: 420,
+															damping: 38,
+														}
+											}
+										/>
+									)}
+									<span className={styles.categoryContent}>
+										<Icon aria-hidden="true" className="size-5" />
+										<span>{item.label}</span>
+									</span>
 								</button>
 							);
 						})}
