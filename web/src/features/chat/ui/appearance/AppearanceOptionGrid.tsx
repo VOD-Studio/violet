@@ -13,9 +13,9 @@ export interface AppearanceOptionGridProps {
 	label: string;
 	/** 卡片拟真形态,决定展台内的渲染方式。 */
 	variant: OptionVariant;
-	/** 目录中的安全选项;「不使用」由首位磁贴承担,不占工具行。 */
+	/** 目录白名单;首项展示默认形态。 */
 	options: readonly AppearanceAsset[];
-	/** 本地草稿当前选中的 ID;空串即「不使用」。 */
+	/** 空串代表默认外观。 */
 	value: string;
 	/** 只更新草稿;选中不立即保存。 */
 	onChange: (id: string) => void;
@@ -23,7 +23,6 @@ export interface AppearanceOptionGridProps {
 	disabled?: boolean;
 }
 
-/** 单选装饰展架;首位「不使用」磁贴,选中态为品牌描边加内嵌角标。 */
 export function AppearanceOptionGrid({
 	label,
 	variant,
@@ -37,17 +36,23 @@ export function AppearanceOptionGrid({
 			<div className={styles.grid}>
 				<button
 					type="button"
-					className={`${styles.option} ${styles.emptyOption}`}
+					className={styles.option}
 					aria-pressed={value === ""}
 					onClick={() => onChange("")}
 				>
-					<span className={styles.figure}>
-						<span className={styles.emptyMold}>
-							<CircleSlash aria-hidden className="size-4" />
-						</span>
+					<span className={styles.figure} aria-hidden="true">
+						{variant === "bubble" ? (
+							<span className={styles.defaultOptionBubble}>你好，周末见</span>
+						) : (
+							<span className={styles.emptyMold}>
+								<CircleSlash aria-hidden className="size-4" />
+							</span>
+						)}
 						{value === "" && <CheckMark />}
 					</span>
-					<span className={styles.optionName}>不使用</span>
+					<span className={styles.optionName}>
+						{variant === "bubble" ? "默认气泡" : "不使用"}
+					</span>
 				</button>
 				{options.map((item) => {
 					const selected = value === item.id;
@@ -59,7 +64,7 @@ export function AppearanceOptionGrid({
 							aria-pressed={selected}
 							onClick={() => onChange(item.id)}
 						>
-							<span className={styles.figure}>
+							<span className={styles.figure} aria-hidden="true">
 								<Showpiece variant={variant} item={item} />
 								{selected && <CheckMark />}
 							</span>
@@ -79,7 +84,7 @@ function Showpiece({ variant, item }: { variant: OptionVariant; item: Appearance
 		if (!theme) return null;
 		return (
 			<AppearanceBubbleSurface theme={theme} mine={false} compact>
-				你好
+				你好，周末见
 			</AppearanceBubbleSurface>
 		);
 	}
