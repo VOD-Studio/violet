@@ -39,6 +39,7 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 							key={badge.id}
 							type="button"
 							className={styles.badgeOption}
+							aria-label={badge.name}
 							aria-pressed={selected}
 							disabled={!isOwned}
 							onClick={() => toggle(badge.id)}
@@ -77,7 +78,6 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 								decoding="async"
 								draggable={false}
 							/>
-							<span className={styles.optionName}>{badge.name}</span>
 						</button>
 					);
 				})}

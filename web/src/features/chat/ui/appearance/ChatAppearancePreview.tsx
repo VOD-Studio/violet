@@ -30,9 +30,6 @@ export function ChatAppearancePreview({ appearance, user }: ChatAppearancePrevie
 
 	return (
 		<aside aria-label="未保存的聊天外观预览" className={styles.stageShell}>
-			<div className={styles.stageHeader}>
-				<span className={styles.stageTitle}>预览</span>
-			</div>
 			<div className={styles.stage}>
 				<div className={styles.previewRow}>
 					<div className={styles.previewAvatar}>{avatar}</div>
