@@ -25,7 +25,7 @@
 	flex-direction: column;
 	flex: none;
 	gap: 1.25rem;
-	width: 21rem;
+	width: 18rem;
 }
 
 .stageShell {
@@ -136,6 +136,10 @@
 	cursor: pointer;
 	font-size: 0.875rem;
 	text-align: left;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease,
+		color 0.15s ease;
 }
 
 .categoryButton:hover {
@@ -150,16 +154,54 @@
 	font-weight: 600;
 }
 
-/* 右栏:选项流占满剩余宽度 */
+/* 右栏:选项流占满剩余宽度;列数按右栏实际宽度走容器查询 */
 .shelf {
 	flex: 1;
 	min-width: 0;
+	container-type: inline-size;
+}
+
+/* 中档:主区放不下左右分栏,预览与分类并排一行,选项流全宽 */
+@media (max-width: 66rem) {
+	.body {
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.sideRail {
+		position: static;
+		flex-direction: row;
+		width: 100%;
+		gap: 1.5rem;
+	}
+
+	.stageShell {
+		flex: 1;
+		max-width: 26rem;
+	}
+
+	.categoryNav {
+		flex: none;
+		width: 10.5rem;
+		margin-left: auto;
+	}
+
+	/* column 下 align-items: flex-start 会让 inline-size 容器按 0 收缩,显式给全宽 */
+	.shelf {
+		width: 100%;
+	}
 }
 
 .shelfTools {
 	display: flex;
 	justify-content: flex-end;
 	margin-bottom: 0.75rem;
+	/* 常驻占位:不可见时保持高度,选中/取消不把网格整体推移 */
+	visibility: hidden;
+}
+
+.shelfTools[data-active="true"] {
+	visibility: visible;
 }
 
 .clearButton {
@@ -185,21 +227,78 @@
 	margin: 0;
 }
 
+/* 固定列数网格:仅用于头像框/挂件这类圆形素材 */
 .grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+	grid-template-columns: repeat(4, minmax(0, 1fr));
 	gap: 0.5rem;
 }
 
-.badgeGrid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+@container (max-width: 30rem) {
+	.grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+/* 流式陈列:横条素材(徽章/气泡)按自然尺寸换行,素材本体即按钮 */
+.flow,
+.badgeFlow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
 	gap: 0.5rem;
+}
+
+.flowOption {
+	position: relative;
+	padding: 0.375rem;
+	border: 0;
+	border-radius: 0.75rem;
+	background: none;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.flowOption:hover {
+	background: var(--muted);
+}
+
+.flowOption[aria-pressed="true"] {
+	background: var(--brand-wash);
+	box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+.flowOption:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+.badgeOption {
+	position: relative;
+	display: block;
+	padding: 0.5rem 0.75rem;
+	border: 0;
+	border-radius: 0.625rem;
+	background: none;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.badgeOption img {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	height: auto;
+	max-height: 2.75rem;
+	object-fit: contain;
 }
 
 /* 去卡片化:素材即单元,默认无边界,悬停显底,选中轻染 */
-.option,
-.badgeOption {
+.option {
 	position: relative;
 	display: flex;
 	min-width: 0;
@@ -220,13 +319,11 @@
 		box-shadow 0.15s ease;
 }
 
-.option:hover,
-.badgeOption:hover {
+.option:hover {
 	background: var(--muted);
 }
 
-.option[aria-pressed="true"],
-.badgeOption[aria-pressed="true"] {
+.option[aria-pressed="true"] {
 	background: var(--brand-wash);
 	box-shadow: inset 0 0 0 1px var(--brand);
 }
@@ -234,6 +331,7 @@
 .categoryButton:focus-visible,
 .clearButton:focus-visible,
 .option:focus-visible,
+.flowOption:focus-visible,
 .badgeOption:focus-visible {
 	outline: 2px solid var(--ring);
 	outline-offset: 2px;
@@ -273,13 +371,6 @@
 	font-size: 0.75rem;
 }
 
-.badgeOption img {
-	width: auto;
-	max-width: 88%;
-	max-height: 3.25rem;
-	object-fit: contain;
-}
-
 .optionName {
 	display: -webkit-box;
 	max-width: 100%;
@@ -290,10 +381,9 @@
 	line-height: 1.35;
 }
 
-.option[aria-pressed="true"] .optionName,
-.badgeOption[aria-pressed="true"] .optionName {
+.option[aria-pressed="true"] .optionName {
+	/* 只变色不加粗:字重变化会改变文本宽度,造成选中时的布局抖动 */
 	color: var(--brand);
-	font-weight: 600;
 }
 
 .check,
@@ -379,22 +469,27 @@
 	}
 }
 
-@media (max-width: 56rem) {
+@media (max-width: 40rem) {
 	.body {
-		flex-direction: column;
-		gap: 1.25rem;
 		padding: 1rem 1rem 1.5rem;
 	}
 
 	.sideRail {
-		position: static;
-		width: 100%;
+		flex-direction: column;
 		gap: 1rem;
+	}
+
+	.stageShell {
+		width: 100%;
+		max-width: 26rem;
+		margin-inline: auto;
 	}
 
 	.categoryNav {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
+		width: 100%;
+		margin-left: 0;
 		gap: 0.5rem;
 	}
 
@@ -405,14 +500,6 @@
 		gap: 0.25rem;
 		padding: 0.5rem 0.25rem;
 		text-align: center;
-	}
-
-	.grid {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-
-	.badgeGrid {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
 	.actionContent {

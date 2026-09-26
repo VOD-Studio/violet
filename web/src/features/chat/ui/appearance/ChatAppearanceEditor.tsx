@@ -134,18 +134,20 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 				<section className={styles.shelf} aria-label="选择聊天外观">
 					{/* key 换分类即重挂内容,由 panelAnimate 播放一次轻淡入 */}
 					<div key={category} className={styles.panelAnimate}>
-						{category === "badges" && draft.badge_ids.length > 0 && (
-							<div className={styles.shelfTools}>
-								<button
-									type="button"
-									className={styles.clearButton}
-									disabled={busy}
-									onClick={() => setBadgeIDs([])}
-								>
-									清空佩戴
-								</button>
-							</div>
-						)}
+						{/* 清空动作常驻占位:出现/消失不再把网格整体下推 */}
+						<div
+							className={styles.shelfTools}
+							data-active={category === "badges" && draft.badge_ids.length > 0}
+						>
+							<button
+								type="button"
+								className={styles.clearButton}
+								disabled={busy}
+								onClick={() => setBadgeIDs([])}
+							>
+								清空佩戴
+							</button>
+						</div>
 						{active && "field" in active ? (
 							<AppearanceOptionGrid
 								label={active.label}

@@ -31,28 +31,33 @@ export function AppearanceOptionGrid({
 	onChange,
 	disabled,
 }: AppearanceOptionGridProps) {
+	// 气泡是横条素材:流式排列,素材本体即按钮;头像框/挂件是圆形素材,固定列网格
+	const flow = variant === "bubble";
+	const container = flow ? styles.flow : styles.grid;
 	return (
 		<fieldset className={styles.fieldset} disabled={disabled} aria-label={label}>
-			<div className={styles.grid}>
+			<div className={container}>
 				<button
 					type="button"
-					className={styles.option}
+					className={flow ? styles.flowOption : styles.option}
+					aria-label={flow ? "默认气泡" : undefined}
 					aria-pressed={value === ""}
 					onClick={() => onChange("")}
 				>
-					<span className={styles.figure} aria-hidden="true">
-						{variant === "bubble" ? (
-							<span className={styles.defaultOptionBubble}>你好，周末见</span>
-						) : (
+					{flow ? (
+						<span className={styles.defaultOptionBubble}>你好，周末见</span>
+					) : (
+						<span className={styles.figure} aria-hidden="true">
 							<span className={styles.emptyMold}>
 								<CircleSlash aria-hidden className="size-4" />
 							</span>
-						)}
-						{value === "" && <CheckMark />}
-					</span>
-					<span className={styles.optionName}>
-						{variant === "bubble" ? "默认气泡" : "不使用"}
-					</span>
+							{value === "" && <CheckMark />}
+						</span>
+					)}
+					{!flow && (
+						<span className={styles.optionName}>{flow ? "默认气泡" : "不使用"}</span>
+					)}
+					{flow && value === "" && <CheckMark />}
 				</button>
 				{options.map((item) => {
 					const selected = value === item.id;
@@ -60,20 +65,37 @@ export function AppearanceOptionGrid({
 						<button
 							key={item.id}
 							type="button"
-							className={styles.option}
+							className={flow ? styles.flowOption : styles.option}
+							aria-label={flow ? item.name : undefined}
 							aria-pressed={selected}
 							onClick={() => onChange(item.id)}
 						>
-							<span className={styles.figure} aria-hidden="true">
-								<Showpiece variant={variant} item={item} />
-								{selected && <CheckMark />}
-							</span>
-							<span className={styles.optionName}>{item.name}</span>
+							{flow ? (
+								<BubbleShowpiece item={item} />
+							) : (
+								<span className={styles.figure} aria-hidden="true">
+									<Showpiece variant={variant} item={item} />
+									{selected && <CheckMark />}
+								</span>
+							)}
+							{!flow && <span className={styles.optionName}>{item.name}</span>}
+							{flow && selected && <CheckMark />}
 						</button>
 					);
 				})}
 			</div>
 		</fieldset>
+	);
+}
+
+/** 流式气泡:迷你气泡本体即按钮,带主题名供读屏。 */
+function BubbleShowpiece({ item }: { item: AppearanceAsset }) {
+	const theme = BUBBLE_BY_ID.get(item.id);
+	if (!theme) return null;
+	return (
+		<AppearanceBubbleSurface theme={theme} mine={false} compact>
+			你好，周末见
+		</AppearanceBubbleSurface>
 	);
 }
 
