@@ -28,10 +28,10 @@
 	width: 18rem;
 }
 
-/* 预览舞台:高度恒定,换气泡主题时分类菜单不被挤动 */
+/* 预览舞台:高度恒定,换气泡主题时分类菜单不被挤动;单条对方视角消息 */
 .stageShell {
 	flex: none;
-	height: 13.5rem;
+	height: 11rem;
 	overflow: hidden;
 	border: 1px solid var(--border);
 	border-radius: 1rem;
@@ -47,16 +47,11 @@
 	padding: 1.25rem;
 }
 
-.previewRow,
-.previewRowOutgoing {
+.previewRow {
 	display: flex;
 	min-width: 0;
 	align-items: flex-start;
 	gap: 0.75rem;
-}
-
-.previewRowOutgoing {
-	justify-content: flex-end;
 }
 
 .previewAvatar {
@@ -76,18 +71,13 @@
 	object-fit: cover;
 }
 
-.previewMessage,
-.previewMessageOutgoing {
+.previewMessage {
 	display: flex;
 	max-width: 100%;
 	min-width: 0;
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 0.5rem;
-}
-
-.previewMessageOutgoing {
-	align-items: flex-end;
 }
 
 .identityName {
@@ -99,27 +89,16 @@
 	font-weight: 600;
 }
 
-.defaultBubble,
-.defaultOutgoing {
+.defaultBubble {
 	max-width: 100%;
 	padding: 0.625rem 0.875rem;
-	border-radius: 1rem;
+	border-radius: 1rem 1rem 1rem 0.25rem;
 	background: var(--secondary);
 	color: var(--foreground);
 	font-size: 0.875rem;
 	line-height: 1.625;
 	text-align: left;
 	overflow-wrap: anywhere;
-}
-
-.defaultBubble {
-	border-bottom-left-radius: 0.25rem;
-}
-
-.defaultOutgoing {
-	border-bottom-right-radius: 0.25rem;
-	background: var(--primary);
-	color: var(--primary-foreground);
 }
 
 .categoryNav {
