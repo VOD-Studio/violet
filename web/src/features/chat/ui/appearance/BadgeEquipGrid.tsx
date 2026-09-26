@@ -29,7 +29,7 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 			disabled={disabled || owned === null}
 			aria-label="徽章"
 		>
-			<div className={styles.badgeFlow}>
+			<div className={styles.badgeGrid}>
 				{CHAT_BADGES.map((badge) => {
 					const isOwned = owned?.has(badge.id) ?? false;
 					const order = value.indexOf(badge.id);
