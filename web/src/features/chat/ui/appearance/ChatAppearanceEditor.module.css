@@ -89,18 +89,6 @@
 	font-weight: 600;
 }
 
-.defaultBubble {
-	max-width: 100%;
-	padding: 0.625rem 0.875rem;
-	border-radius: 1rem 1rem 1rem 0.25rem;
-	background: var(--secondary);
-	color: var(--foreground);
-	font-size: 0.875rem;
-	line-height: 1.625;
-	text-align: left;
-	overflow-wrap: anywhere;
-}
-
 .categoryNav {
 	display: flex;
 	flex-direction: column;
@@ -369,12 +357,16 @@
 
 .defaultOptionBubble {
 	display: block;
+	width: 100%;
 	max-width: 100%;
-	padding: 0.5rem 0.75rem;
+	padding: 0.5rem 0.875rem;
 	border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
 	background: var(--primary);
 	color: var(--primary-foreground);
-	font-size: 0.8125rem;
+	font-size: 0.95rem;
+	line-height: 1.625;
+	text-align: left;
+	overflow-wrap: anywhere;
 }
 
 .optionName {

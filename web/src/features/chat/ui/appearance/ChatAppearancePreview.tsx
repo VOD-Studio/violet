@@ -1,8 +1,7 @@
 import type { ChatAppearance } from "../../model/appearance";
-import { BUBBLE_BY_ID } from "../../model/appearance-catalog";
 import type { ChatUser } from "../../model/types";
+import { BubbleShell } from "../bubble-shell";
 import { AppearanceBadgeStrip } from "./AppearanceBadgeStrip";
-import { AppearanceBubbleSurface } from "./AppearanceBubbleSurface";
 import { AvatarDecoration } from "./AvatarDecoration";
 import styles from "./ChatAppearanceEditor.module.css";
 
@@ -14,7 +13,6 @@ export interface ChatAppearancePreviewProps {
 }
 
 export function ChatAppearancePreview({ appearance, user }: ChatAppearancePreviewProps) {
-	const theme = BUBBLE_BY_ID.get(appearance.bubble_theme_id);
 	const label = user.display_name || user.username;
 
 	return (
@@ -40,13 +38,9 @@ export function ChatAppearancePreview({ appearance, user }: ChatAppearancePrevie
 							{label}
 							<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
 						</span>
-						{theme ? (
-							<AppearanceBubbleSurface theme={theme} mine={false}>
-								周末见，到了告诉我一声。
-							</AppearanceBubbleSurface>
-						) : (
-							<div className={styles.defaultBubble}>周末见，到了告诉我一声。</div>
-						)}
+						<BubbleShell mine={false} themeId={appearance.bubble_theme_id}>
+							周末见，到了告诉我一声。
+						</BubbleShell>
 					</div>
 				</div>
 			</div>
