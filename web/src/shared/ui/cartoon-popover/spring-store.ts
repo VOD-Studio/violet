@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from "react";
+import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
 
 export interface SpringConfig {
 	stiffness?: number;
@@ -171,7 +171,7 @@ export class MultiSpringStore<T extends Record<string, number>> {
 				break;
 			}
 		}
-		if (!changed && this.rafId === null) return;
+		if (!changed) return;
 
 		this.target = { ...newTargets };
 		if (this.rafId === null) {
@@ -246,11 +246,13 @@ export function useSpringValue(
 		storeRef.current = new ScalarSpringStore(target, config);
 	}
 	const store = storeRef.current;
-	if (options?.instant) {
-		store.snapTo(target);
-	} else {
-		store.setTarget(target);
-	}
+	useLayoutEffect(() => {
+		if (options?.instant) {
+			store.snapTo(target);
+		} else {
+			store.setTarget(target);
+		}
+	}, [store, target, options?.instant]);
 
 	return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
 }
@@ -269,13 +271,14 @@ export function useMultiSpring<T extends Record<string, number>>(
 	}
 
 	const store = storeRef.current;
-	if (store && targets) {
+	useLayoutEffect(() => {
+		if (!store || !targets) return;
 		if (options?.teleport) {
 			store.teleport(targets);
 		} else {
 			store.setTarget(targets);
 		}
-	}
+	}, [store, targets, options?.teleport]);
 
 	const snapshot = useSyncExternalStore<T | null>(
 		store ? store.subscribe : () => () => {},
