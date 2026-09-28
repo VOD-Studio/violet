@@ -162,7 +162,7 @@ describe("色板生成器", () => {
 		render(<PaletteGenerator />);
 		const componentCard = document.querySelector('[data-title="在组件中"] pre');
 		expect(componentCard?.textContent).toContain('variant="primary"');
-		expect(componentCard?.textContent).toContain("text-primary-base-foreground");
+		expect(componentCard?.textContent).toContain('variant="soft"');
 		const cssCard = document.querySelector('[data-title="在 CSS 文件中"] pre');
 		expect(cssCard?.textContent).toContain("var(--primary-base)");
 		expect(cssCard?.textContent).toContain("@apply bg-primary-base");

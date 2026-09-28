@@ -2,7 +2,7 @@ import { copyText } from "@shared/lib/clipboard";
 import { Check, Component, Copy, FileCode2, GitBranch } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { CommentSectionBasicDemo } from "./examples/comment-section/basic";
 import basicSource from "./examples/comment-section/basic.tsx?raw";
 import { CommentSectionEmptyDemo } from "./examples/comment-section/empty-state";
@@ -288,9 +288,15 @@ export function CommentSectionDocPage() {
 						双层扁平回复结构。子回复以 @ 昵称指示对象，不向内无限嵌套。
 					</p>
 
-					<ComponentDemo code={basicSource}>
+					<CodeCard
+						code={basicSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CommentSectionBasicDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 案例 2: 空状态 */}
@@ -300,9 +306,15 @@ export function CommentSectionDocPage() {
 						当评论数据为空时，自动呈现轻量空状态占位。
 					</p>
 
-					<ComponentDemo code={emptySource}>
+					<CodeCard
+						code={emptySource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CommentSectionEmptyDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 案例 3: 加载中 */}
@@ -313,9 +325,15 @@ export function CommentSectionDocPage() {
 						，自动渲染 Shimmer 骨架条目。
 					</p>
 
-					<ComponentDemo code={loadingSource}>
+					<CodeCard
+						code={loadingSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CommentSectionLoadingDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 			</section>
 

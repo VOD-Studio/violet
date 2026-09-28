@@ -1,5 +1,5 @@
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ButtonBasicDemo } from "./examples/button/basic";
 import basicSource from "./examples/button/basic.tsx?raw";
 import { ButtonIconsDemo } from "./examples/button/icons";
@@ -137,9 +137,15 @@ export function ButtonDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
 				</p>
-				<ComponentDemo code={basicSource}>
+				<CodeCard
+					code={basicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<ButtonBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="button-examples" className="space-y-12">
@@ -154,9 +160,15 @@ export function ButtonDocPage() {
 						主要动作使用 default（随方言映射），固定主色强调使用 primary，柔和辅助使用
 						soft，描边与次级使用 outline / secondary，轻量操作使用 ghost。
 					</p>
-					<ComponentDemo code={variantsSource}>
+					<CodeCard
+						code={variantsSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<ButtonVariantsDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 尺寸规格 */}
@@ -166,9 +178,15 @@ export function ButtonDocPage() {
 						包含 xs 到 xl 五个高度梯度；纯图标按钮请使用 icon 档位并提供明确的
 						aria-label。
 					</p>
-					<ComponentDemo code={sizesSource}>
+					<CodeCard
+						code={sizesSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<ButtonSizesDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 图标扩展 */}
@@ -177,9 +195,15 @@ export function ButtonDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
 					</p>
-					<ComponentDemo code={iconsSource}>
+					<CodeCard
+						code={iconsSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<ButtonIconsDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 状态与加载 */}
@@ -189,9 +213,15 @@ export function ButtonDocPage() {
 						内置 loading 支持：处于加载中时自动禁用并设置
 						aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
 					</p>
-					<ComponentDemo code={statesSource}>
+					<CodeCard
+						code={statesSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<ButtonStatesDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 链接模式 */}
@@ -203,9 +233,15 @@ export function ButtonDocPage() {
 						跳转页面使用 Link；asChild
 						只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
 					</p>
-					<ComponentDemo code={linkSource}>
+					<CodeCard
+						code={linkSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<ButtonLinkDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 			</section>
 

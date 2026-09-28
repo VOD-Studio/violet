@@ -1,4 +1,4 @@
-import { ComponentDemo } from "../ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ButtonBasicDemo } from "../examples/button/basic";
 import buttonBasicSource from "../examples/button/basic.tsx?raw";
 import { GuideCode, GuideLink, GuideSection } from "./GuideParts";
@@ -42,9 +42,15 @@ export default function QuickStartGuide() {
 				</p>
 			</GuideSection>
 			<GuideSection title="使用组件">
-				<ComponentDemo code={buttonBasicSource}>
+				<CodeCard
+					code={buttonBasicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<ButtonBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 				<GuideCode
 					code={
 						'import { Button } from "@violet/ui";\n\nexport function SaveAction() {\n  return <Button type="button" onClick={() => console.log("saved")}>保存</Button>;\n}'

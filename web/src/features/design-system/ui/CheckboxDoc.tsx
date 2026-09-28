@@ -1,5 +1,5 @@
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { CheckboxBasicDemo } from "./examples/checkbox/basic";
 import basicSource from "./examples/checkbox/basic.tsx?raw";
 import { CheckboxDisabledDemo } from "./examples/checkbox/disabled";
@@ -117,9 +117,15 @@ export function CheckboxDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					与 Label 配合使用，点击复选框或关联文字标签均可无缝切换勾选。
 				</p>
-				<ComponentDemo code={basicSource}>
+				<CodeCard
+					code={basicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<CheckboxBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="checkbox-examples" className="space-y-12">
@@ -137,9 +143,15 @@ export function CheckboxDocPage() {
 						indeterminate
 						状态，呈现减号指示器；再次点击父级可统一全选或全部反选。下方为完整联动实况：
 					</p>
-					<ComponentDemo code={triStateSource}>
+					<CodeCard
+						code={triStateSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CheckboxTriStateDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 视觉变体 */}
@@ -149,9 +161,15 @@ export function CheckboxDocPage() {
 						default 变体使用 primary 主要语义色，随页面所在方言自动映射；primary
 						变体显式绑定冷香紫罗兰主色，适合需保持固定主色的选项。
 					</p>
-					<ComponentDemo code={variantsSource}>
+					<CodeCard
+						code={variantsSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CheckboxVariantsDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 尺寸梯度 */}
@@ -161,9 +179,15 @@ export function CheckboxDocPage() {
 						涵盖 sm (14px)、default (16px) 与 lg
 						(20px)；小号推荐用于数据表格行，大号用于醒目卡片或移动端大点击区域。
 					</p>
-					<ComponentDemo code={sizesSource}>
+					<CodeCard
+						code={sizesSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CheckboxSizesDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 
 				{/* 禁用状态 */}
@@ -172,9 +196,15 @@ export function CheckboxDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						禁用时透明度自然降低，阻止鼠标光标与键盘聚焦交互。
 					</p>
-					<ComponentDemo code={disabledSource}>
+					<CodeCard
+						code={disabledSource}
+						language="tsx"
+						variant="light"
+						lineNumbers
+						collapseLines={6}
+					>
 						<CheckboxDisabledDemo />
-					</ComponentDemo>
+					</CodeCard>
 				</div>
 			</section>
 

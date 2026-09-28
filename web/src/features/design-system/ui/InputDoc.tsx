@@ -1,5 +1,5 @@
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { InputBasicDemo } from "./examples/input/basic";
 import basicSource from "./examples/input/basic.tsx?raw";
 
@@ -68,9 +68,15 @@ export function InputDocPage() {
 					Label。输入一个字符，再输入第二个字符，观察由示例自身设置的 aria-invalid
 					状态变化。
 				</p>
-				<ComponentDemo code={basicSource}>
+				<CodeCard
+					code={basicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<InputBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="input-api" className="space-y-4">

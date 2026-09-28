@@ -1,5 +1,5 @@
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { CartoonPopoverBasicDemo } from "./examples/cartoon-popover/basic";
 import basicSource from "./examples/cartoon-popover/basic.tsx?raw";
 import { CartoonPopoverGroupDemo } from "./examples/cartoon-popover/group";
@@ -200,9 +200,15 @@ export function CartoonPopoverDocPage() {
 					从 shared/ui/cartoon-popover 导入。点击触发器即可弹出，支持外部点击与 Escape
 					自动关闭。
 				</p>
-				<ComponentDemo code={basicSource}>
+				<CodeCard
+					code={basicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<CartoonPopoverBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			{/* 连续平滑滑动群组 */}
@@ -214,9 +220,15 @@ export function CartoonPopoverDocPage() {
 					当有一排带有 Popover 的按钮时，使用 CartoonPopoverGroup
 					包裹。鼠标在组内滑过时浮层连续滑动并随内容调整尺寸；完全离开后沿轮廓收起，再次进入从新位置描线淡入。系统启用「减少动态效果」时即时开合。
 				</p>
-				<ComponentDemo code={groupSource}>
+				<CodeCard
+					code={groupSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<CartoonPopoverGroupDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			{/* 悬停与触发方式 */}
@@ -228,9 +240,15 @@ export function CartoonPopoverDocPage() {
 					支持仅点击（click）、仅悬停（hover）或两者兼具（both /
 					openOnHover）。悬停模式下移入气泡内容区保持打开，鼠标离开后平滑收起。
 				</p>
-				<ComponentDemo code={hoverSource}>
+				<CodeCard
+					code={hoverSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<CartoonPopoverHoverDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			{/* 气泡形态 */}
@@ -241,9 +259,15 @@ export function CartoonPopoverDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					提供带三角形小尾巴的经典对白气泡（speech）与无尾巴的便签贴纸（sticker）。
 				</p>
-				<ComponentDemo code={stylesSource}>
+				<CodeCard
+					code={stylesSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<CartoonPopoverStylesDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			{/* API 参数契约表格 */}

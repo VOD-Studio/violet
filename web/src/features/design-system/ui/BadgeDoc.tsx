@@ -1,5 +1,5 @@
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
 import { BadgeCounterDemo } from "./examples/badge/counter";
 import counterSource from "./examples/badge/counter.tsx?raw";
 import { BadgeDotDemo } from "./examples/badge/dot";
@@ -93,9 +93,15 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					主色、次要、警示、描边、透明与链接外观。Link 负责跳转，Badge 不代替链接。
 				</p>
-				<ComponentDemo code={variantsSource}>
+				<CodeCard
+					code={variantsSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<BadgeVariantsDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="badge-counter" className="space-y-4">
@@ -105,9 +111,15 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					点击调整数量。超过 99 显示 99+、为零时隐藏角标：两者均由调用方计算。
 				</p>
-				<ComponentDemo code={counterSource}>
+				<CodeCard
+					code={counterSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<BadgeCounterDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="badge-dot" className="space-y-4">
@@ -117,9 +129,15 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					只需提示存在新消息、不需显示数量时使用 dot，并以 edge 贴住按钮圆弧。
 				</p>
-				<ComponentDemo code={dotSource}>
+				<CodeCard
+					code={dotSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<BadgeDotDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="badge-api" className="space-y-8">

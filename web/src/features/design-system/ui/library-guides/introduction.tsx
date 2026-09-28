@@ -1,4 +1,4 @@
-import { ComponentDemo } from "../ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ButtonBasicDemo } from "../examples/button/basic";
 import buttonBasicSource from "../examples/button/basic.tsx?raw";
 import { GuideLink, GuideSection } from "./GuideParts";
@@ -13,9 +13,15 @@ export default function IntroductionGuide() {
 					的组件库，附明暗一体的语义主题 token。营造法式是它的在线用法与设计规范，
 					不是另一套组件实现。
 				</p>
-				<ComponentDemo code={buttonBasicSource}>
+				<CodeCard
+					code={buttonBasicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<ButtonBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</GuideSection>
 			<GuideSection title="核心特性">
 				<ul className="list-disc space-y-2 pl-5">

@@ -1,5 +1,5 @@
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { DialogBasicDemo } from "./examples/dialog/basic";
 import basicSource from "./examples/dialog/basic.tsx?raw";
 
@@ -67,9 +67,15 @@ export function DialogDocPage() {
 					以下示例直接从 <code className="font-mono">@violet/ui</code>{" "}
 					导入；点击打开，使用关闭按钮、右上角按钮或 Escape 退出。
 				</p>
-				<ComponentDemo code={basicSource}>
+				<CodeCard
+					code={basicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<DialogBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="dialog-api" className="space-y-4">

@@ -1,5 +1,5 @@
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { TabsBasicDemo } from "./examples/tabs/basic";
 import basicSource from "./examples/tabs/basic.tsx?raw";
 
@@ -65,9 +65,15 @@ export function TabsDocPage() {
 					从 <code className="font-mono">@violet/ui</code>{" "}
 					导入组合件；点击标签即可切换实际内容。
 				</p>
-				<ComponentDemo code={basicSource}>
+				<CodeCard
+					code={basicSource}
+					language="tsx"
+					variant="light"
+					lineNumbers
+					collapseLines={6}
+				>
 					<TabsBasicDemo />
-				</ComponentDemo>
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="tabs-api" className="space-y-4">
