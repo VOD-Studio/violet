@@ -14,6 +14,16 @@ vi.mock("@tanstack/react-router", () => ({
 	),
 }));
 
+// shiki 高亮是异步且把文本拆进多个着色 span，与页面行为无关；
+// mock 成纯文本 pre 以便断言代码内容
+vi.mock("@shared/ui/code-preview/components/CodeCard", () => ({
+	CodeCard: ({ code, title }: { code: string; title?: string }) => (
+		<div data-title={title}>
+			<pre>{code}</pre>
+		</div>
+	),
+}));
+
 Object.defineProperty(window, "isSecureContext", {
 	value: true,
 	configurable: true,
@@ -49,8 +59,9 @@ describe("色板生成器", () => {
 			"分隔线",
 			"其他",
 			"基础色",
-			"组件中如何用色",
-			"默认主题与自定义颜色",
+			"如何使用颜色",
+			"默认主题",
+			"自定义颜色",
 			"对比度审计",
 		]) {
 			expect(screen.getByRole("heading", { name: title })).toBeTruthy();
@@ -147,22 +158,31 @@ describe("色板生成器", () => {
 		});
 	});
 
-	it("代码导出支持 CSS 变量与 Tailwind v4 切换并可一键复制", async () => {
+	it("如何使用颜色并列组件与 CSS 双示例", () => {
 		render(<PaletteGenerator />);
-		const exportSection = screen.getByRole("heading", { name: "代码导出" }).closest("section");
-		expect(exportSection?.querySelector("pre code")?.textContent).toContain("--primary-base:");
+		const componentCard = document.querySelector('[data-title="在组件中"] pre');
+		expect(componentCard?.textContent).toContain('variant="primary"');
+		expect(componentCard?.textContent).toContain("text-primary-base-foreground");
+		const cssCard = document.querySelector('[data-title="在 CSS 文件中"] pre');
+		expect(cssCard?.textContent).toContain("var(--primary-base)");
+		expect(cssCard?.textContent).toContain("@apply bg-primary-base");
+	});
 
-		// 切换到 Tailwind v4
-		fireEvent.click(screen.getByRole("button", { name: "Tailwind v4 @theme" }));
-		expect(exportSection?.querySelector("pre code")?.textContent).toContain(
-			"--color-primary-50:",
+	it("默认主题与自定义颜色展示真实主题源码", () => {
+		render(<PaletteGenerator />);
+		const violetCard = document.querySelector(
+			'[data-title="@violet/ui/styles/palettes/violet.css"] pre',
 		);
-
-		// 复制代码
-		fireEvent.click(screen.getByRole("button", { name: /复制代码/ }));
-		await waitFor(() => {
-			expect(navigator.clipboard.writeText).toHaveBeenCalled();
-		});
+		expect(violetCard?.textContent).toContain("--primary-base-ring:");
+		const coralCard = document.querySelector(
+			'[data-title="覆盖主色源 · palettes/coral.css"] pre',
+		);
+		expect(coralCard?.textContent).toContain("--primary-base: oklch(0.625 0.19 25)");
+		const siteTokensCard = document.querySelector(
+			'[data-title="添加业务色 · styles/site-tokens.css"] pre',
+		);
+		expect(siteTokensCard?.textContent).toContain("--paper: oklch(0.976 0.012 85)");
+		expect(siteTokensCard?.textContent).toContain("--color-paper: var(--paper)");
 	});
 
 	it("HEX 文本输入框可直接驱动主色重算", () => {

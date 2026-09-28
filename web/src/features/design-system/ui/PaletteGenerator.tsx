@@ -1,11 +1,12 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
-import { HsvColorPicker, Segmented } from "@violet/ui";
-import { Check, Copy } from "lucide-react";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
+import { HsvColorPicker } from "@violet/ui";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { GeneratedPalette, RampStep } from "../model/palette";
+import type { RampStep } from "../model/palette";
 import { generatePalette } from "../model/palette";
+import usageDemoSource from "./examples/palette/usage.tsx?raw";
 import { ColorRoleComparison } from "./ColorRoleComparison";
 import { GuideLink } from "./library-guides/GuideParts";
 
@@ -27,108 +28,95 @@ const SEED_PRESETS = [
 
 const DEFAULT_SEED = SEED_PRESETS[0].hex;
 
-/**
- * 代码导出工作台：生成标准 CSS Variables 或 Tailwind v4 @theme inline 声明代码。
+/** 「在 CSS 文件中」示例：语义变量的两种消费方式。 */
+const USAGE_CSS_SNIPPET = `/* 直接使用 CSS 变量 */
+.my-component {
+	background: var(--primary-base);
+	color: var(--primary-base-foreground);
+	border: 1px solid var(--border);
+}
+
+/* 配合 @apply 与 @layer */
+@layer components {
+	.action-button {
+		@apply bg-primary-base text-primary-base-foreground;
+
+		&:hover {
+			@apply bg-primary-base-hover;
+		}
+	}
+}`;
+
+/** 默认主色源预设源码副本；真实文件为 @violet/ui 的 styles/palettes/violet.css，改契约需两处同步。 */
+const VIOLET_PALETTE_SOURCE = `/*
+ * Violet 主色源：紫罗兰（Violet / Iris）默认 palette。
+ *
+ * 本层只提供稳定主色及其状态；页面方言决定是否把语义 primary 映射到主色源。
+ * 画布与行为状态色不在 palette 管辖内。
  */
-function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; seedHex: string }) {
-	const [exportFormat, setExportFormat] = useState<"css" | "tailwind">("css");
-	const [copied, setCopied] = useState(false);
-
-	const code = useMemo(() => {
-		if (exportFormat === "css") {
-			return `/* —— Violet 色板配置 (主色: ${seedHex.toUpperCase()}) —— */
 :root {
-  --primary-base: ${palette.primaryRoles[0].light.oklch};
-  --primary-base-foreground: ${palette.primaryRoles[2].light.oklch};
-  --primary-base-hover: ${palette.primaryRoles[1].light.oklch};
-  --primary-base-soft: ${palette.primaryRoles[3].light.oklch};
-  --primary-base-soft-foreground: ${palette.primaryRoles[4].light.oklch};
-  --primary-base-ring: ${palette.primaryRoles[0].light.oklch};
-
-  /* 状态功能色 */
-  --destructive: ${palette.functional[3].light.oklch};
-  --warning: ${palette.functional[2].light.oklch};
-  --success: ${palette.functional[1].light.oklch};
-  --info: ${palette.functional[0].light.oklch};
+	--primary-base: oklch(0.53 0.205 286);
+	--primary-base-foreground: oklch(0.99 0 0);
+	--primary-base-hover: oklch(0.47 0.215 286);
+	--primary-base-soft: oklch(0.965 0.022 286);
+	--primary-base-soft-foreground: oklch(0.35 0.14 286);
+	--primary-base-ring: oklch(0.53 0.205 286);
 }
 
 .dark {
-  --primary-base: ${palette.primaryRoles[0].dark.oklch};
-  --primary-base-foreground: ${palette.primaryRoles[2].dark.oklch};
-  --primary-base-hover: ${palette.primaryRoles[1].dark.oklch};
-  --primary-base-soft: ${palette.primaryRoles[3].dark.oklch};
-  --primary-base-soft-foreground: ${palette.primaryRoles[4].dark.oklch};
-  --primary-base-ring: ${palette.primaryRoles[0].dark.oklch};
-
-  /* 状态功能色 */
-  --destructive: ${palette.functional[3].dark.oklch};
-  --warning: ${palette.functional[2].dark.oklch};
-  --success: ${palette.functional[1].dark.oklch};
-  --info: ${palette.functional[0].dark.oklch};
+	--primary-base: oklch(0.72 0.148 286);
+	--primary-base-foreground: oklch(0.14 0.02 286);
+	--primary-base-hover: oklch(0.77 0.138 286);
+	--primary-base-soft: oklch(0.22 0.038 286);
+	--primary-base-soft-foreground: oklch(0.9 0.07 286);
+	--primary-base-ring: oklch(0.72 0.148 286);
 }`;
-		}
 
-		return `/* —— Tailwind CSS v4 主色色阶 —— */
-@theme inline {
-  --color-primary-50: ${palette.ramp[0].hex};
-  --color-primary-100: ${palette.ramp[1].hex};
-  --color-primary-200: ${palette.ramp[2].hex};
-  --color-primary-300: ${palette.ramp[3].hex};
-  --color-primary-400: ${palette.ramp[4].hex};
-  --color-primary-500: ${palette.ramp[5].hex};
-  --color-primary-600: ${palette.ramp[6].hex};
-  --color-primary-700: ${palette.ramp[7].hex};
-  --color-primary-800: ${palette.ramp[8].hex};
-  --color-primary-900: ${palette.ramp[9].hex};
-  --color-primary-950: ${palette.ramp[10].hex};
-}`;
-	}, [exportFormat, palette, seedHex]);
-
-	const handleCopy = async () => {
-		if (await copyText(code)) {
-			setCopied(true);
-			toast.success("已复制色板代码到剪贴板");
-			setTimeout(() => setCopied(false), 1500);
-		}
-	};
-
-	return (
-		<section className="mt-10">
-			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<h3 className="text-lg font-bold">代码导出</h3>
-				<div className="flex items-center gap-2">
-					<Segmented<"css" | "tailwind">
-						onValueChange={setExportFormat}
-						segments={[
-							{ value: "css", label: "CSS 变量" },
-							{ value: "tailwind", label: "Tailwind v4 @theme" },
-						]}
-						size="sm"
-						value={exportFormat}
-					/>
-					<button
-						className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted/60"
-						onClick={() => void handleCopy()}
-						type="button"
-					>
-						{copied ? (
-							<Check className="size-3.5 text-success" />
-						) : (
-							<Copy className="size-3.5" />
-						)}
-						<span>{copied ? "已复制" : "复制代码"}</span>
-					</button>
-				</div>
-			</div>
-
-			<div className="mt-3 overflow-hidden rounded-xl border border-border/40 bg-slate-950 p-4 text-slate-200">
-				<pre className="overflow-x-auto font-mono text-xs leading-relaxed">
-					<code>{code}</code>
-				</pre>
-			</div>
-		</section>
-	);
+/** 暖珊瑚覆盖预设源码副本；真实文件为 web/src/styles/palettes/coral.css，改契约需两处同步。 */
+const CORAL_PALETTE_SOURCE = `/*
+ * 暖珊瑚主色源预设。
+ *
+ * 与组件库默认 palette 提供相同的 primary-base 契约；页面调用方不感知预设名。
+ */
+:root {
+	--primary-base: oklch(0.625 0.19 25);
+	--primary-base-foreground: oklch(0.99 0 0);
+	--primary-base-hover: oklch(0.575 0.185 25);
+	--primary-base-soft: oklch(0.95 0.025 25);
+	--primary-base-soft-foreground: oklch(0.36 0.11 25);
+	--primary-base-ring: oklch(0.625 0.19 25);
 }
+
+.dark {
+	--primary-base: oklch(0.72 0.15 22);
+	--primary-base-foreground: oklch(0.17 0 0);
+	--primary-base-hover: oklch(0.67 0.155 22);
+	--primary-base-soft: oklch(0.25 0.025 22);
+	--primary-base-soft-foreground: oklch(0.88 0.065 22);
+	--primary-base-ring: oklch(0.72 0.15 22);
+}`;
+
+/** 站点业务语义色模式节选（真实文件 web/src/styles/site-tokens.css，此处展示「定义 + 注册」骨架）。 */
+const SITE_TOKENS_SNIPPET = `/*
+ * 站点业务语义色：只被本站特定场景消费的颜色。
+ * 组件库基础层只保留跨场景的通用语义；本文件定义值并注册同名的
+ * Tailwind 颜色工具类，导入顺序在包样式之后。
+ */
+:root {
+	/* 纸面：API 文档纸弹窗与文档页的暖米纸 + 纸上墨字 */
+	--paper: oklch(0.976 0.012 85);
+	--paper-foreground: oklch(0.24 0.014 60);
+}
+
+.dark {
+	--paper: oklch(0.23 0.012 70);
+	--paper-foreground: oklch(0.92 0.012 80);
+}
+
+@theme inline {
+	--color-paper: var(--paper);
+	--color-paper-foreground: var(--paper-foreground);
+}`;
 
 /**
  * 色板生成器章内容：给一个主色，推导色阶与完整语义角色。
@@ -360,63 +348,60 @@ export function PaletteGenerator() {
 
 			<ColorRoleComparison palette={palette} />
 
+			{/* 如何使用颜色 */}
 			<section className="mt-10" id="palette-usage">
-				<h3 className="text-lg font-bold">组件中如何用色</h3>
+				<h3 className="text-lg font-bold">如何使用颜色</h3>
 				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-					组件只消费语义角色，不根据具体色相分支。颜色负责表达动作优先级与状态，
-					尺寸、字重、描边和上下文负责形成其余视觉差异。
+					组件只消费语义角色，不根据具体色相分支：solid 与 foreground、soft 与
+					soft-foreground 成对使用，悬停与聚焦态由主色源派生，文字对比度需满足 WCAG AA。
 				</p>
-				<div className="mt-4 grid gap-3 sm:grid-cols-2">
-					{[
-						{
-							title: "主色用于最高优先级",
-							body: "一个操作区只保留一个实色主动作；选择、hover 与次级提示改用柔和主色。",
-						},
-						{
-							title: "状态色不可互换",
-							body: "成功、警告、危险和信息只表达对应状态，不作为装饰或栏目分类颜色。",
-						},
-						{
-							title: "表面依赖中性色层级",
-							body: "画布、卡片和弱化面由少量基础值派生，靠小幅明度差和描边组织空间。",
-						},
-						{
-							title: "前景必须与背景成对",
-							body: "solid 与 foreground、soft 与 soft-foreground 成对使用，并通过对比度审计。",
-						},
-					].map((principle) => (
-						<article
-							className="rounded-xl border border-border/50 bg-card/40 p-4"
-							key={principle.title}
-						>
-							<h4 className="text-sm font-semibold">{principle.title}</h4>
-							<p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-								{principle.body}
-							</p>
-						</article>
-					))}
+				<div className="mt-4 grid gap-4 lg:grid-cols-2">
+					<CodeCard code={usageDemoSource} language="tsx" title="在组件中" />
+					<CodeCard code={USAGE_CSS_SNIPPET} language="css" title="在 CSS 文件中" />
 				</div>
 			</section>
 
+			{/* 默认主题 */}
 			<section className="mt-10">
-				<h3 className="text-lg font-bold">默认主题与自定义颜色</h3>
-				<p className="mt-1 text-sm leading-7 text-muted-foreground">
-					当前选色器是本页受控预览：切换主色只更新上方浅色与深色示例，
-					不会写入根节点、持久化设置或改变项目其他界面。项目真正接入主题切换时，
-					在独立主题作用域覆盖主色源；完整约束见{" "}
-					<GuideLink to="/design-system/guides/theming">主题</GuideLink>。
+				<h3 className="text-lg font-bold">默认主题</h3>
+				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
+					主题分三层：主色源预设提供六变量契约（base / foreground / hover / soft /
+					soft-foreground / ring，明暗成对）；语义 token 定义画布、正文与行为状态色；
+					<code className="font-mono text-[13px]">@theme inline</code> 把两者映射为
+					Tailwind 工具类。换主题只替换主色源层。
 				</p>
-				<pre className="mt-3 overflow-x-auto rounded-xl border border-border/40 bg-card/30 p-4 font-mono text-xs leading-6 text-foreground">
-					<code>
-						{
-							'/* 组件只消费语义 */\n<Button variant="primary">保存</Button>\n<Button variant="soft">稍后处理</Button>\n\n/* 自定义主题作用域：当前项目尚未接入运行时切换 */\n[data-theme="custom"] {\n  --primary-base: oklch(0.62 0.18 250);\n  --primary-base-foreground: oklch(0.99 0 0);\n  --primary-base-hover: oklch(0.56 0.19 250);\n  --primary-base-soft: oklch(0.96 0.02 250);\n  --primary-base-soft-foreground: oklch(0.35 0.12 250);\n}\n\n@theme inline {\n  --color-primary-base: var(--primary-base);\n  --color-primary-base-foreground: var(--primary-base-foreground);\n}'
-						}
-					</code>
-				</pre>
+				<CodeCard
+					className="mt-4"
+					code={VIOLET_PALETTE_SOURCE}
+					language="css"
+					title="@violet/ui/styles/palettes/violet.css"
+				/>
 			</section>
 
-			{/* 代码导出 */}
-			<PaletteCodeExport palette={palette} seedHex={seedHex} />
+			{/* 自定义颜色 */}
+			<section className="mt-10">
+				<h3 className="text-lg font-bold">自定义颜色</h3>
+				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
+					覆盖主色源：新建预设文件提供同名六变量，在包样式之后导入，行为状态色不随主色更换。
+					添加业务语义色：在站点层定义明暗成对变量，并在{" "}
+					<code className="font-mono text-[13px]">@theme inline</code> 注册同名{" "}
+					<code className="font-mono text-[13px]">--color-*</code>{" "}
+					即得到对应工具类。完整约束见{" "}
+					<GuideLink to="/design-system/guides/theming">主题指南</GuideLink>。
+				</p>
+				<div className="mt-4 grid gap-4 lg:grid-cols-2">
+					<CodeCard
+						code={CORAL_PALETTE_SOURCE}
+						language="css"
+						title="覆盖主色源 · palettes/coral.css"
+					/>
+					<CodeCard
+						code={SITE_TOKENS_SNIPPET}
+						language="css"
+						title="添加业务色 · styles/site-tokens.css"
+					/>
+				</div>
+			</section>
 
 			{/* 对比度审计 */}
 			<section>
