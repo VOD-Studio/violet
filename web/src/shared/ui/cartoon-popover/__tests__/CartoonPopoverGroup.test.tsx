@@ -174,4 +174,65 @@ describe("CartoonPopoverGroup Component", () => {
 		fireEvent.mouseEnter(trigger1);
 		expect(screen.getByRole("dialog").style.left).toBe("130px");
 	});
+
+	it("完整退出后重新悬停不触发渲染期更新，随后切换仍保持弹簧滑动", () => {
+		vi.useFakeTimers();
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+		render(
+			<CartoonPopoverGroup closeDelay={150}>
+				<CartoonPopoverGroupItem
+					value="first"
+					trigger={<button type="button">第一个</button>}
+				>
+					内容一
+				</CartoonPopoverGroupItem>
+				<CartoonPopoverGroupItem
+					value="second"
+					trigger={<button type="button">第二个</button>}
+				>
+					内容二
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+		const first = screen.getByText("第一个").closest<HTMLElement>("[data-popover-item]");
+		const second = screen.getByText("第二个").closest<HTMLElement>("[data-popover-item]");
+		if (!first || !second) throw new Error("Popover triggers not found");
+		first.getBoundingClientRect = () => new DOMRect(200, 100, 80, 40);
+		second.getBoundingClientRect = () => new DOMRect(600, 100, 80, 40);
+
+		fireEvent.mouseEnter(first);
+		act(() => vi.advanceTimersByTime(1200));
+		fireEvent.mouseLeave(first);
+		act(() => vi.advanceTimersByTime(150));
+		act(() => vi.advanceTimersByTime(1200));
+		expect(document.querySelector('[data-slot="cartoon-popover-content"]')).toBeNull();
+
+		fireEvent.mouseEnter(second);
+		const reopened = screen.getByRole("dialog");
+		expect(reopened.style.left).toBe("530px");
+		expect(reopened.style.opacity).toBe("0");
+		expect(reopened.querySelector("path[stroke]")?.getAttribute("stroke-dashoffset")).toBe("1");
+		act(() => vi.advanceTimersByTime(64));
+		expect(Number(reopened.style.opacity)).toBeGreaterThan(0);
+		expect(Number(reopened.style.opacity)).toBeLessThan(1);
+		const stroke = Number(
+			reopened.querySelector("path[stroke]")?.getAttribute("stroke-dashoffset"),
+		);
+		expect(stroke).toBeGreaterThan(0);
+		expect(stroke).toBeLessThan(1);
+		act(() => vi.advanceTimersByTime(1200));
+		fireEvent.mouseEnter(first);
+		const start = Number.parseFloat(screen.getByRole("dialog").style.left);
+		act(() => vi.advanceTimersByTime(32));
+		const midpoint = Number.parseFloat(screen.getByRole("dialog").style.left);
+		expect(midpoint).toBeLessThan(start);
+		expect(midpoint).toBeGreaterThan(130);
+		expect(
+			errors.mock.calls.filter(([message]) =>
+				String(message).includes("Cannot update a component"),
+			),
+		).toEqual([]);
+	});
 });

@@ -1,8 +1,12 @@
 import { animateThemeRipple, applyThemeClass } from "@shared/ui/theme-transition";
 import { useTheme } from "next-themes";
-import { useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { TargetTheme } from "@/shared/lib/theme-rerender";
 import type { ThemeOption } from "./types";
+
+const subscribeToHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 /**
  * ThemePointer - 触发切换时的指针坐标
@@ -21,6 +25,11 @@ interface ThemePointer {
  */
 export function useThemeSwitcher() {
 	const { theme, setTheme } = useTheme();
+	const hydrated = useSyncExternalStore(
+		subscribeToHydration,
+		getClientHydrationSnapshot,
+		getServerHydrationSnapshot,
+	);
 
 	const switchTheme = useCallback(
 		(target: ThemeOption, pointer?: ThemePointer) => {
@@ -55,7 +64,9 @@ export function useThemeSwitcher() {
 	// 用判空收窄替代 as 断言：next-themes 的 theme 是 string | undefined，
 	// 收窄到三态之一或 undefined。显式注解避免 TS 把字面量联合拓宽成 string。
 	const resolved: ThemeOption | undefined =
-		theme === "light" || theme === "dark" || theme === "system" ? theme : undefined;
+		hydrated && (theme === "light" || theme === "dark" || theme === "system")
+			? theme
+			: undefined;
 
 	return { theme: resolved, switchTheme };
 }

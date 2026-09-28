@@ -24,7 +24,6 @@ import { panelAppearanceUserIDs } from "../lib/appearance-users";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
 import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
-import { ChatAppearanceButton } from "./appearance/ChatAppearanceButton";
 import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
@@ -369,18 +368,15 @@ export function ConversationPanel({
 						</div>
 					</div>
 
-					<div className="flex items-center gap-1">
-						<ChatAppearanceButton />
-						<Button
-							aria-label="打开会话详情"
-							className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
-							onClick={onToggleDetails}
-							size="icon"
-							variant="ghost"
-						>
-							<MoreVertical className="size-5" />
-						</Button>
-					</div>
+					<Button
+						aria-label="打开会话详情"
+						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+						onClick={onToggleDetails}
+						size="icon"
+						variant="ghost"
+					>
+						<MoreVertical className="size-5" />
+					</Button>
 				</header>
 
 				<div className="relative flex min-h-0 flex-1 overflow-hidden">

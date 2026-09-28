@@ -1,55 +1,103 @@
-import { cn } from "cn";
+import { CircleSlash } from "lucide-react";
 import type { AppearanceAsset } from "../../model/appearance";
+import { BUBBLE_BY_ID } from "../../model/appearance-catalog";
+import { AppearanceBubbleSurface } from "./AppearanceBubbleSurface";
+import { AvatarDecoration } from "./AvatarDecoration";
 import styles from "./ChatAppearanceEditor.module.css";
+
+/** 卡片的拟真展示形态:头像装饰落在模具上,气泡渲染真实迷你气泡。 */
+export type OptionVariant = "frame" | "charm" | "bubble";
 
 export interface AppearanceOptionGridProps {
 	/** 无障碍分组名(tab 已承载可见分类名)。 */
 	label: string;
-	/** 目录中的安全选项;「不使用」动作用面板工具行,不占网格格位。 */
+	/** 卡片拟真形态,决定展台内的渲染方式。 */
+	variant: OptionVariant;
+	/** 目录白名单;首项展示默认形态。 */
 	options: readonly AppearanceAsset[];
-	/** 本地草稿当前选中的 ID。 */
+	/** 空串代表默认外观。 */
 	value: string;
 	/** 只更新草稿;选中不立即保存。 */
 	onChange: (id: string) => void;
-	/** 固定列数,保证目录项数恰好排满整行。 */
-	columns: 4 | 6;
 	/** 保存进行中禁止编辑。 */
 	disabled?: boolean;
 }
 
-/** 单选装饰网格;选中项亮主色并打角标,原生按钮保证键盘与读屏可用。 */
 export function AppearanceOptionGrid({
 	label,
+	variant,
 	options,
 	value,
 	onChange,
-	columns,
 	disabled,
 }: AppearanceOptionGridProps) {
+	// 气泡用大格网格:正常渲染迷你气泡,底色花纹可辨;头像框/挂件是圆形素材网格
+	const isBubble = variant === "bubble";
+	const container = isBubble ? styles.bubbleGrid : styles.grid;
 	return (
 		<fieldset className={styles.fieldset} disabled={disabled} aria-label={label}>
-			<div className={cn(styles.grid, columns === 4 ? styles.gridFour : styles.gridSix)}>
-				{options.map((item) => (
-					<button
-						key={item.id}
-						type="button"
-						className={styles.option}
-						aria-pressed={value === item.id}
-						onClick={() => onChange(item.id)}
-					>
-						{value === item.id && <CheckMark />}
-						<img
-							src={item.image}
-							alt=""
-							loading="lazy"
-							decoding="async"
-							draggable={false}
-						/>
-						<span className={styles.optionName}>{item.name}</span>
-					</button>
-				))}
+			<div className={container}>
+				<button
+					type="button"
+					className={styles.option}
+					aria-pressed={value === ""}
+					onClick={() => onChange("")}
+				>
+					<span className={styles.figure} aria-hidden="true">
+						{isBubble ? (
+							<span className={styles.defaultOptionBubble}>你好，周末见</span>
+						) : (
+							<span className={styles.emptyMold}>
+								<CircleSlash aria-hidden className="size-4" />
+							</span>
+						)}
+						{value === "" && <CheckMark />}
+					</span>
+					<span className={styles.optionName}>{isBubble ? "默认气泡" : "不使用"}</span>
+				</button>
+				{options.map((item) => {
+					const selected = value === item.id;
+					return (
+						<button
+							key={item.id}
+							type="button"
+							className={styles.option}
+							aria-pressed={selected}
+							onClick={() => onChange(item.id)}
+						>
+							<span className={styles.figure} aria-hidden="true">
+								<Showpiece variant={variant} item={item} />
+								{selected && <CheckMark />}
+							</span>
+							<span className={styles.optionName}>{item.name}</span>
+						</button>
+					);
+				})}
 			</div>
 		</fieldset>
+	);
+}
+
+/** 展台内容:装饰必须落在头像模具上,气泡用真实迷你气泡而非切片原图。 */
+function Showpiece({ variant, item }: { variant: OptionVariant; item: AppearanceAsset }) {
+	if (variant === "bubble") {
+		const theme = BUBBLE_BY_ID.get(item.id);
+		if (!theme) return null;
+		return (
+			<span className={styles.bubbleDemo}>
+				<AppearanceBubbleSurface theme={theme} mine={false}>
+					你好，周末见
+				</AppearanceBubbleSurface>
+			</span>
+		);
+	}
+	return (
+		<AvatarDecoration
+			frameId={variant === "frame" ? item.id : ""}
+			charmId={variant === "charm" ? item.id : ""}
+		>
+			<span aria-hidden className={styles.mold} />
+		</AvatarDecoration>
 	);
 }
 

@@ -378,7 +378,7 @@ export function CartoonPopoverDocPage() {
 				</h2>
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					当有一排带有 Popover 的按钮时，使用 CartoonPopoverGroup
-					包裹。鼠标滑过时共享浮层平滑滑动过去，小尾巴连续跟随，内容高度不同时自动平滑拉伸变形，杜绝一闪一闪的重新弹出。
+					包裹。鼠标在组内滑过时浮层连续滑动并随内容调整尺寸；完全离开后沿轮廓收起，再次进入从新位置描线淡入。系统启用「减少动态效果」时即时开合。
 				</p>
 				<ComponentDemo code={GROUP_CODE}>
 					<div className="flex flex-wrap items-center justify-center gap-3 py-6">

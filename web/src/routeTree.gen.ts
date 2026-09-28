@@ -98,6 +98,7 @@ import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.ll
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as DesignSystemSpecimensIndexRouteImport } from './routes/design-system.specimens.index'
+import { Route as DesignSystemSpecimensBadgeRouteImport } from './routes/design-system.specimens.badge'
 import { Route as DesignSystemSpecimensButtonRouteImport } from './routes/design-system.specimens.button'
 import { Route as DesignSystemSpecimensCartoonPopoverRouteImport } from './routes/design-system.specimens.cartoon-popover'
 import { Route as DesignSystemSpecimensCheckboxRouteImport } from './routes/design-system.specimens.checkbox'
@@ -550,6 +551,12 @@ const DesignSystemSpecimensIndexRoute =
     path: '/',
     getParentRoute: () => DesignSystemSpecimensRoute,
   } as any)
+const DesignSystemSpecimensBadgeRoute =
+  DesignSystemSpecimensBadgeRouteImport.update({
+    id: '/badge',
+    path: '/badge',
+    getParentRoute: () => DesignSystemSpecimensRoute,
+  } as any)
 const DesignSystemSpecimensButtonRoute =
   DesignSystemSpecimensButtonRouteImport.update({
     id: '/button',
@@ -664,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/design-system/specimens/badge': typeof DesignSystemSpecimensBadgeRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
   '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
@@ -752,6 +760,7 @@ export interface FileRoutesByTo {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/design-system/specimens/badge': typeof DesignSystemSpecimensBadgeRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
   '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
@@ -849,6 +858,7 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/design-system/specimens/badge': typeof DesignSystemSpecimensBadgeRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
   '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
@@ -947,6 +957,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/design-system/specimens/badge'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
     | '/design-system/specimens/checkbox'
@@ -1035,6 +1046,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/design-system/specimens/badge'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
     | '/design-system/specimens/checkbox'
@@ -1131,6 +1143,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/design-system/specimens/badge'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
     | '/design-system/specimens/checkbox'
@@ -1813,6 +1826,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignSystemSpecimensIndexRouteImport
       parentRoute: typeof DesignSystemSpecimensRoute
     }
+    '/design-system/specimens/badge': {
+      id: '/design-system/specimens/badge'
+      path: '/badge'
+      fullPath: '/design-system/specimens/badge'
+      preLoaderRoute: typeof DesignSystemSpecimensBadgeRouteImport
+      parentRoute: typeof DesignSystemSpecimensRoute
+    }
     '/design-system/specimens/button': {
       id: '/design-system/specimens/button'
       path: '/button'
@@ -2000,6 +2020,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface DesignSystemSpecimensRouteChildren {
+  DesignSystemSpecimensBadgeRoute: typeof DesignSystemSpecimensBadgeRoute
   DesignSystemSpecimensButtonRoute: typeof DesignSystemSpecimensButtonRoute
   DesignSystemSpecimensCartoonPopoverRoute: typeof DesignSystemSpecimensCartoonPopoverRoute
   DesignSystemSpecimensCheckboxRoute: typeof DesignSystemSpecimensCheckboxRoute
@@ -2008,6 +2029,7 @@ interface DesignSystemSpecimensRouteChildren {
 }
 
 const DesignSystemSpecimensRouteChildren: DesignSystemSpecimensRouteChildren = {
+  DesignSystemSpecimensBadgeRoute: DesignSystemSpecimensBadgeRoute,
   DesignSystemSpecimensButtonRoute: DesignSystemSpecimensButtonRoute,
   DesignSystemSpecimensCartoonPopoverRoute:
     DesignSystemSpecimensCartoonPopoverRoute,

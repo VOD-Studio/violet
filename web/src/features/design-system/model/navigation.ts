@@ -142,6 +142,12 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 						description: "按钮 · 动作层级与交互状态",
 					},
 					{
+						id: "badge",
+						title: "Badge",
+						to: "/design-system/specimens/badge",
+						description: "徽章与角标 · 标签、数量与状态提示",
+					},
+					{
 						id: "checkbox",
 						title: "Checkbox",
 						to: "/design-system/specimens/checkbox",

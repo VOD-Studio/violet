@@ -6,11 +6,9 @@
 	align-items: flex-end;
 	column-gap: 0.375rem;
 	min-width: 0;
-	min-height: 3rem;
 	max-width: 100%;
 	box-sizing: border-box;
-	padding: 0.875rem 1rem 1rem;
-	padding-right: 2.5rem;
+	padding: 0.5rem 0.875rem;
 	border-radius: 1.25rem;
 	background: var(--appearance-fill);
 	color: var(--appearance-ink);
@@ -25,16 +23,28 @@
 	inset: 0;
 	z-index: -1;
 	pointer-events: none;
-	border: 24px solid transparent;
+	border: 8px solid transparent;
+	border-right-width: 12px;
+	border-left-width: 12px;
 	border-image-source: var(--appearance-surface);
 	border-image-slice: var(--appearance-slice, 48) fill;
-	border-image-width: 24px;
+	border-image-width: 8px 12px;
 	border-image-repeat: stretch;
 	box-sizing: border-box;
 }
-.bubble[data-side="incoming"] {
-	padding-right: 1rem;
-	padding-left: 2.5rem;
+
+/* 选中卡里的缩小演示:同九宫格底板,收窄留白与饰件 */
+.bubble[data-compact="true"] {
+	min-height: 0;
+	padding: 0.4375rem 0.625rem 0.5rem;
+	padding-right: 1.625rem;
+	font-size: 0.6875rem;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+
+.bubble[data-compact="true"][data-side="incoming"] {
+	padding-left: 1.625rem;
 }
 .bubble > :not(.ornament) {
 	min-width: 0;
@@ -51,15 +61,26 @@
 	position: absolute;
 	pointer-events: none;
 	user-select: none;
-	width: 32px;
-	height: 32px;
+	width: 24px;
+	height: 24px;
 	object-fit: contain;
-	right: -4px;
+	right: -10px;
 	bottom: -4px;
 	z-index: 1;
 }
 .bubble[data-side="incoming"] .ornament {
-	left: -4px;
+	left: -10px;
+	right: auto;
+}
+/* 紧凑演示的饰件覆盖:置于基础饰件之后,满足升序 */
+.bubble[data-compact="true"] .ornament {
+	width: 18px;
+	height: 18px;
+	right: -2px;
+	bottom: -2px;
+}
+.bubble[data-compact="true"][data-side="incoming"] .ornament {
+	left: -2px;
 	right: auto;
 }
 .ornament[hidden] {

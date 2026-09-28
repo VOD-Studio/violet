@@ -154,8 +154,8 @@ export function CartoonPopoverGroup({
 
 	// 主动重算目标几何：供测量节点 layout 后调用，消除首帧高度估算误差
 	const triggerRelayout = useCallback(() => {
+		const next = computeTargetLayout();
 		setTargetLayout((prev) => {
-			const next = computeTargetLayout();
 			const same =
 				prev &&
 				next &&
@@ -459,7 +459,7 @@ function MeasureNode({
 		});
 		observer.observe(el);
 		return () => observer.disconnect();
-	});
+	}, [onMeasure, ref]);
 
 	return (
 		<div

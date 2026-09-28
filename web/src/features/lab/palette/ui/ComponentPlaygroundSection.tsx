@@ -93,23 +93,10 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</h4>
 
 						<div className="flex flex-wrap items-center gap-3">
-							<Badge variant="brand">
-								<Sparkles className="size-3" />
-								品牌薄雾 (Brand Wash)
-							</Badge>
-
-							<Badge variant="default">默认深色 (Default)</Badge>
+							<Badge variant="default">主要状态 (Default)</Badge>
 							<Badge variant="secondary">中性次级 (Secondary)</Badge>
 							<Badge variant="outline">发丝边框 (Outline)</Badge>
 							<Badge variant="destructive">阻断警告 (Destructive)</Badge>
-						</div>
-
-						<div className="mt-6 border-t border-edge-hairline/60 pt-4">
-							<span className="text-xs text-muted-foreground">
-								说明：<code className="font-mono text-brand">variant="brand"</code>{" "}
-								使用低占比的 <code className="font-mono">--brand-wash</code>{" "}
-								薄雾底色与深紫罗兰墨字，契合安静生长的设计哲学。
-							</span>
 						</div>
 					</div>
 				</TabsContent>

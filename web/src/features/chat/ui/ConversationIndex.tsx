@@ -28,6 +28,8 @@ interface ConversationIndexProps {
 	loading: boolean;
 	selectedID: string | null;
 	search: string;
+	appearanceOpen: boolean;
+	onOpenAppearance: () => void;
 	showNew: boolean;
 	onSearch: (value: string) => void;
 	onToggleNew: () => void;
@@ -40,6 +42,8 @@ export function ConversationIndex({
 	currentUserID,
 	loading,
 	selectedID,
+	appearanceOpen,
+	onOpenAppearance,
 	search,
 	showNew,
 	onSearch,
@@ -55,7 +59,7 @@ export function ConversationIndex({
 			<header className="shrink-0 px-3 pb-2 pt-4 md:px-4">
 				<div className="flex h-11 items-center justify-between gap-3 px-1">
 					<h1 className="mr-auto text-[1.35rem] font-semibold text-foreground">聊天</h1>
-					<ChatAppearanceButton />
+					<ChatAppearanceButton active={appearanceOpen} onClick={onOpenAppearance} />
 					<Button
 						aria-label="新建会话"
 						className={cn(
