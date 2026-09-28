@@ -123,7 +123,7 @@ api/
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
 | **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
 | **image** | image | image | 图片处理 |
-| **tweet** | tweet | tweet | 推文/动态发布 |
+| **tweet** | tweet | tweet | 推文发布与互动、免凭据 X 原文预览、共享来源刷新和撤回 |
 | **settings** | settings | settings | 站点配置（key-value） |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
@@ -155,8 +155,22 @@ api/
 | `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit / notification 订阅者消费事件） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
 | `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
+| `xtweet/` | tweet 应用层的获取、媒体和预览缓存端口 | Fetcher, MediaStore, PreviewStore | FxTwitter v2 与一次 Syndication 回退、来源图片本地保存、用户绑定预览凭证 |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
 | `persistence/gorm/` | 各 `*Repository` | GORM 实现 | 所有数据库访问 |
+
+### X 原文预览与转发
+
+接口前缀为 `/api/v1`，写请求沿用 session cookie 与 `X-CSRF-Token`。字段和响应见 OpenAPI；行为与验收记录见 [PRD-0031](../docs/prd/0031-X推文免凭据转发.md)。
+
+| 方法与路径 | 请求与权限 |
+| --- | --- |
+| `POST /tweets/external/preview` | 登录后提交 `{ "url": "https://x.com/jack/status/20" }`，每用户每分钟 5 次、每日 50 次 |
+| `POST /tweets` | 外部转发提交 `external_preview_token` 与 UUID `client_request_id`，可附 `content` 和本人上传的 `images`；不与 `quote_of` 同时使用，沿用每用户每小时 10 次请求限流 |
+| `POST /tweets/external/{externalId}/refresh` | 内置超管或 `tweet:delete-any`，刷新所有转发共用的来源 |
+| `DELETE /tweets/external/{externalId}` | 同上权限，下架来源正文与所有版本媒体，保留本站推文及讨论 |
+
+部署需允许服务端访问 `api.fxtwitter.com`、`cdn.syndication.twimg.com` 与 `pbs.twimg.com`，无需配置 X 凭据。来源图片保存在上传目录的 `external-tweets/`；该目录及其图片变换响应使用 `Cache-Control: no-store`，反向代理或 CDN 必须遵守此策略。确认撤回后阻止自动重新导入；后台分批检查仍被引用的来源，并回收孤立媒体。
 
 ## 依赖注入
 

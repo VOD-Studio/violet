@@ -1,4 +1,6 @@
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BotCommandsResponse, ChatMember, ChatMessage } from "../../model/types";
 import { MessageComposer } from "../MessageComposer";
@@ -10,6 +12,7 @@ const sendMocks = vi.hoisted(() => ({
 	upload: vi.fn(),
 	refetch: vi.fn(),
 }));
+const previewMock = vi.hoisted(() => ({ portal: false }));
 
 vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
@@ -103,6 +106,8 @@ afterEach(() => {
 	sendMocks.refetch.mockReset();
 	activeMembers = members;
 	catalogData = { bots: [] };
+	previewMock.portal = false;
+	useShareTweetStore.setState({ tweet: null, pending: null });
 });
 
 describe("MessageComposer", () => {
@@ -559,7 +564,7 @@ describe("乐观提交", () => {
 		expect(cancel).toHaveBeenCalledOnce();
 	});
 
-	it("推文分享立即提交卡片快照与配文", () => {
+	it("推文分享立即提交本站 ID 与配文", () => {
 		render(
 			<MessageComposer
 				conversationID="c_1"
@@ -592,6 +597,28 @@ describe("乐观提交", () => {
 			},
 		});
 	});
+
+	it("图片灯箱的 Escape 不取消分享，输入框的 Escape 仍可取消", () => {
+		previewMock.portal = true;
+		const share = {
+			conversationId: "c_1",
+			tweet: { id: "tweet", authorUsername: "bob", content: "" },
+		};
+		useShareTweetStore.setState({ pending: share });
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={share}
+				replyTarget={null}
+			/>,
+		);
+		fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+		expect(useShareTweetStore.getState().pending).toBe(share);
+		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
+		expect(useShareTweetStore.getState().pending).toBeNull();
+	});
 });
 
 it("图片上传未完成也可发送并移交原始文件", async () => {
@@ -619,3 +646,17 @@ it("图片上传未完成也可发送并移交原始文件", async () => {
 	expect(request.images[0].task.file).toBe(file);
 	expect(screen.getByRole("textbox").textContent).toBe("");
 });
+vi.mock("../TweetSharingPreview", () => ({
+	TweetSharingPreview: () => (
+		<>
+			<div>当前推文预览</div>
+			{previewMock.portal &&
+				createPortal(
+					<div role="dialog" tabIndex={-1}>
+						图片灯箱
+					</div>,
+					document.body,
+				)}
+		</>
+	),
+}));

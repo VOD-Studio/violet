@@ -2,6 +2,7 @@
  * 消息输入区：回复/推文分享 banner 与富文本 composer，Enter 发送。
  */
 import { toEmojiToken } from "@entities/emoji/model/token";
+import { type PendingChatShare, useShareTweetStore } from "@entities/tweet/model/share-store";
 import {
 	extractImageIds,
 	stripImagePlaceholders,
@@ -12,7 +13,6 @@ import {
 	type RichCommentInputHandle,
 } from "@features/comments/ui/RichCommentInput";
 import { useMyCustomEmojis } from "@features/customemoji/api/queries";
-import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import type { ImageUploadReference } from "@shared/lib/image-upload-task";
 import { Button } from "@violet/ui";
 
@@ -40,6 +40,7 @@ import {
 	botTargetListboxId,
 	botTargetOptionId,
 } from "./BotCommandMenu";
+import { TweetSharingPreview } from "./TweetSharingPreview";
 
 export interface MessageComposerProps {
 	/** 接收会话内点击用户名触发的提及。 */
@@ -324,6 +325,7 @@ export function MessageComposer({
 		<div
 			ref={composerRef}
 			onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+				if (!event.currentTarget.contains(event.target as Node)) return;
 				if (event.key === "Escape" && needsTarget) {
 					event.preventDefault();
 					setNeedsTarget(false);
@@ -346,7 +348,12 @@ export function MessageComposer({
 								分享推文 @{pendingShare.tweet.authorUsername}
 							</p>
 							<p className="truncate text-xs text-muted-foreground">
-								{pendingShare.tweet.content || "（图片推文）"}
+								{pendingShare.tweet.content ||
+									(pendingShare.tweet.externalTweet
+										? "X 推文转发"
+										: pendingShare.tweet.quotedTweet
+											? "本站引用"
+											: "（图片推文）")}
 							</p>
 						</div>
 						<button
@@ -386,6 +393,11 @@ export function MessageComposer({
 							</button>
 						</div>
 					)
+				)}
+				{pendingShare && (
+					<div className="mb-3">
+						<TweetSharingPreview id={pendingShare.tweet.id} />
+					</div>
 				)}
 				<RichCommentInput
 					ref={setRichInputRef}

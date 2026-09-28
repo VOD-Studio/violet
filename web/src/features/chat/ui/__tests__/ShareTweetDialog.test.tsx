@@ -1,6 +1,6 @@
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { authKeys } from "@features/auth/api/keys";
 import { httpClient } from "@shared/api/http";
-import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import type { InternalAxiosRequestConfig } from "axios";
@@ -28,7 +28,18 @@ describe("ShareTweetDialog 私有查询边界", () => {
 		httpClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
 			requests.push(config.url ?? "");
 			return {
-				data: { data: [], meta: {} },
+				data: {
+					data: config.url?.startsWith("/tweets/")
+						? {
+								id: "tweet-1",
+								author: { id: "author", username: "author", avatar_url: "" },
+								content: "分享内容",
+								images: [],
+								created_at: "2026-01-01T00:00:00Z",
+							}
+						: [],
+					meta: {},
+				},
 				status: 200,
 				statusText: "OK",
 				headers: {},
@@ -58,7 +69,9 @@ describe("ShareTweetDialog 私有查询边界", () => {
 		await act(async () => {
 			queryClient.setQueryData(authKeys.me(), { id: "viewer" });
 		});
-		await waitFor(() => expect(requests).toEqual(["/chat/conversations"]));
+		await waitFor(() =>
+			expect([...requests].sort()).toEqual(["/chat/conversations", "/tweets/tweet-1"]),
+		);
 
 		await act(async () => {
 			useShareTweetStore.getState().close();

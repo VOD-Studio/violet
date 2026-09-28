@@ -1,12 +1,12 @@
 // Package image 提供 GET /uploads/{path} 图片服务 handler。
 //
-// 无参数时直传原文件(immutable 缓存);有参数时动态处理(resize/thumb/rotate/转码),
-// 经 application/image.Service(二级缓存 + singleflight)处理后返回,带 ETag/304。
+// 普通上传使用 immutable 缓存，外部来源媒体不缓存；带参数时处理尺寸和格式。
 package image
 
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -16,14 +16,12 @@ import (
 	"blog-api/internal/interfaces/http/response"
 )
 
-// Handler 图片服务 handler
 type Handler struct {
 	svc       *appimage.Service
 	uploadDir string
 	urlPrefix string
 }
 
-// NewHandler 创建图片服务 handler
 func NewHandler(svc *appimage.Service, uploadDir, urlPrefix string) *Handler {
 	return &Handler{
 		svc:       svc,
@@ -34,12 +32,13 @@ func NewHandler(svc *appimage.Service, uploadDir, urlPrefix string) *Handler {
 
 // ServeImage GET /uploads/{path}
 func (h *Handler) ServeImage(w http.ResponseWriter, r *http.Request) {
-	relPath := r.URL.Path // /uploads/xxx
+	relPath := r.URL.Path
 	// 路径安全:拒 ..、\0、绝对路径、.cache 目录
-	if strings.Contains(relPath, "..") || strings.Contains(relPath, "\x00") || strings.Contains(relPath, "/.cache/") {
+	if strings.Contains(relPath, "..") || strings.Contains(relPath, "\x00") || strings.Contains(relPath, "/.cache/") || strings.Contains(relPath, "/.external-tmp/") {
 		response.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "非法路径"})
 		return
 	}
+	relPath = path.Clean(relPath)
 
 	params, hasParams, err := parseParams(r)
 	if err != nil {
@@ -68,13 +67,16 @@ func (h *Handler) ServeImage(w http.ResponseWriter, r *http.Request) {
 
 	// ETag / 304
 	etag := `"` + result.ETag + `"`
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	if strings.HasPrefix(relPath, h.urlPrefix+"/external-tweets/") {
+		w.Header().Set("Cache-Control", "no-store")
+	}
 	if match := r.Header.Get("If-None-Match"); match == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 	w.Header().Set("Content-Type", result.MimeType)
 	w.Header().Set("ETag", etag)
-	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Write(result.Bytes)
 }
@@ -101,6 +103,9 @@ func (h *Handler) serveOriginal(w http.ResponseWriter, r *http.Request, relPath 
 		return
 	}
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	if strings.HasPrefix(relPath, h.urlPrefix+"/external-tweets/") {
+		w.Header().Set("Cache-Control", "no-store")
+	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, r, clean)
 }

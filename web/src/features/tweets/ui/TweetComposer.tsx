@@ -3,6 +3,7 @@
 import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji } from "@entities/emoji/model/types";
 import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
+import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { useMe } from "@features/auth/api/queries";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
@@ -11,12 +12,13 @@ import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { isImageURL } from "@shared/lib/url";
 import { Button } from "@violet/ui";
-
-import { AlertCircle, ImagePlus, Loader2, Send, Smile, X } from "lucide-react";
+import { AlertCircle, ImagePlus, Link2, Loader2, Send, Smile, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateTweet } from "../api/mutations";
+import { useExternalTweetPreview } from "../hooks/useExternalTweetPreview";
 import { MAX_TWEET_IMAGES, MAX_TWEET_LENGTH } from "../model/types";
+import { ExternalTweetPreviewPanel } from "./ExternalTweetPreviewPanel";
 
 /** 单图最大 10MB（与通用 Uploader 默认一致） */
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -54,7 +56,12 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	const idRef = useRef(0);
 	const uploadBatchRef = useRef(false);
 	const createTweet = useCreateTweet();
+	const external = useExternalTweetPreview();
+	const [externalOpen, setExternalOpen] = useState(false);
+	const submitting = useRef(false);
+	const attempt = useRef<{ fingerprint: string; id: string } | null>(null);
 	const { uploadFile } = useChunkedUpload({ purpose: "tweet" });
+	const externalMode = externalOpen && !quotedTweet;
 
 	// rune 计数（按 Unicode 码点，对齐后端 utf8.RuneCountInString）
 	const charCount = [...content].length;
@@ -62,14 +69,26 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	const overLimit = remaining < 0;
 	const doneUrls = images.filter((i) => i.status === "done").map((i) => i.url);
 	const uploading = images.some((i) => i.status === "uploading");
+	const body = {
+		content: content.trim(),
+		images: doneUrls,
+		quote_of: quotedTweet?.id,
+		...(externalMode && external.preview
+			? { external_preview_token: external.preview.preview_token }
+			: {}),
+	};
+	const fingerprint = JSON.stringify(body);
+	const retrying = createTweet.isError && attempt.current?.fingerprint === fingerprint;
+	const readyExternal = !!external.preview?.can_publish && (!external.expired || retrying);
 	const canSubmit =
 		!createTweet.isPending &&
 		!uploading &&
 		!overLimit &&
-		(content.trim().length > 0 || doneUrls.length > 0 || !!quotedTweet);
+		(!externalMode || readyExternal) &&
+		(content.trim().length > 0 || doneUrls.length > 0 || !!quotedTweet || readyExternal);
 	/** 选择文件 → 逐个上传（顺序，避免并发挤占分片通道） */
 	const handleFiles = async (files: FileList | File[] | null) => {
-		if (!files || files.length === 0) return;
+		if (submitting.current || !files || files.length === 0) return;
 		if (uploadBatchRef.current) {
 			toast.error("请等待当前图片上传完成");
 			return;
@@ -136,12 +155,14 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	};
 
 	const removeImage = (id: number) => {
+		if (submitting.current) return;
 		const item = images.find((i) => i.id === id);
 		if (item?.preview) URL.revokeObjectURL(item.preview);
 		setImages((prev) => prev.filter((i) => i.id !== id));
 	};
 
 	const handleEmojiSelect = (emoji: Emoji) => {
+		if (submitting.current) return;
 		const imageUrl = emoji.gif_url || emoji.url;
 		const token = toEmojiToken(emoji);
 		const emojiText =
@@ -171,20 +192,36 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 			toast.error(`正文不能超过 ${MAX_TWEET_LENGTH} 字`);
 			return;
 		}
-		if (!content.trim() && doneUrls.length === 0 && !quotedTweet) {
+		if (submitting.current || !canSubmit) return;
+		if (!content.trim() && doneUrls.length === 0 && !quotedTweet && !readyExternal) {
 			toast.error("说点什么吧");
 			return;
 		}
+		if (externalMode && attempt.current?.fingerprint !== fingerprint) {
+			attempt.current = { fingerprint, id: crypto.randomUUID() };
+		}
+		submitting.current = true;
 		createTweet.mutate(
-			{ content: content.trim(), images: doneUrls, quote_of: quotedTweet?.id },
+			{ ...body, ...(externalMode ? { client_request_id: attempt.current?.id } : {}) },
 			{
 				onSuccess: () => {
+					submitting.current = false;
+					attempt.current = null;
+					external.reset();
+					setExternalOpen(false);
 					setContent("");
 					setImages([]);
 					onSuccess?.();
 					toast.success("已发布");
 				},
-				onError: (err) => toastError(err, "发布失败"),
+				onError: (err) => {
+					submitting.current = false;
+					if (err instanceof ApiError && err.code.startsWith("EXTERNAL_PREVIEW_")) {
+						attempt.current = null;
+						external.invalidate(err.message);
+					}
+					toastError(err, "发布失败");
+				},
 			},
 		);
 	};
@@ -209,9 +246,21 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 					onChange={(e) => setContent(e.target.value)}
 					onPaste={handlePaste}
 					placeholder="有什么新鲜事？"
+					disabled={createTweet.isPending}
 					rows={3}
 					className="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
 				/>
+
+				{externalOpen && !quotedTweet && (
+					<ExternalTweetPreviewPanel
+						state={external}
+						disabled={createTweet.isPending}
+						onCancel={() => {
+							external.reset();
+							setExternalOpen(false);
+						}}
+					/>
+				)}
 
 				{images.length > 0 && (
 					<div className="mt-2 flex flex-wrap gap-2">
@@ -247,6 +296,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 									type="button"
 									onClick={() => removeImage(img.id)}
 									aria-label="移除图片"
+									disabled={createTweet.isPending}
 									className="absolute top-1 right-1 inline-flex size-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
 								>
 									<X className="size-3" />
@@ -268,6 +318,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 								<button
 									type="button"
 									onClick={onCancelQuote}
+									disabled={createTweet.isPending}
 									className="text-muted-foreground hover:text-foreground"
 									title="取消引用"
 								>
@@ -283,6 +334,11 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 						{quotedTweet.images && quotedTweet.images.length > 0 && (
 							<div className="mt-1.5 text-muted-foreground">
 								[{quotedTweet.images.length} 张图片]
+							</div>
+						)}
+						{quotedTweet.external_tweet && (
+							<div className="mt-2">
+								<ExternalTweetCard tweet={quotedTweet.external_tweet} compact />
 							</div>
 						)}
 					</div>
@@ -304,12 +360,30 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 							size="icon"
 							className="size-8"
 							onClick={() => inputRef.current?.click()}
-							disabled={images.length >= MAX_TWEET_IMAGES || uploading}
+							disabled={
+								createTweet.isPending ||
+								images.length >= MAX_TWEET_IMAGES ||
+								uploading
+							}
 							aria-label="添加图片"
 							title={`图片 ${images.length}/${MAX_TWEET_IMAGES}`}
 						>
 							<ImagePlus className="size-4" />
 						</Button>
+						{!quotedTweet && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								aria-label="转发 X 推文"
+								title="转发 X 推文"
+								disabled={createTweet.isPending || externalOpen}
+								onClick={() => setExternalOpen(true)}
+							>
+								<Link2 className="size-4" />
+							</Button>
+						)}
 						<EmojiPicker
 							onSelect={handleEmojiSelect}
 							align="start"
@@ -321,6 +395,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 									size="icon"
 									className="size-8 text-muted-foreground hover:text-foreground"
 									aria-label="添加表情"
+									disabled={createTweet.isPending}
 									title="添加表情"
 								>
 									<Smile className="size-4" />

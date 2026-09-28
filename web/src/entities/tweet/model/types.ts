@@ -42,6 +42,7 @@ export interface QuotedTweet {
 	quote_count: number;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
+	external_tweet?: ExternalTweet | null;
 }
 
 /**
@@ -54,7 +55,7 @@ export interface Tweet {
 	id: string;
 	/** 作者资料卡 */
 	author: TweetAuthor;
-	/** 正文，≤500 rune；纯图推文为空串 */
+	/** 本站正文，≤500 rune；纯图或纯 X 转发时为空串。 */
 	content: string;
 	/** 图片 URL 列表（/uploads/...），≤4 张；纯文本推文为空数组 */
 	images: string[];
@@ -73,6 +74,59 @@ export interface Tweet {
 	quoted_tweet?: QuotedTweet;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
+	external_tweet?: ExternalTweet | null;
+}
+
+/** 共享的 X 原文；不可用时不携带旧正文或媒体。 */
+export interface ExternalTweet {
+	id: string;
+	/** X ID 为十进制字符串，不转换为 Number。 */
+	source_id: string;
+	canonical_url: string;
+	snapshot_version: string;
+	/** unavailable 仅表示暂不可用，不是确定删除。 */
+	availability: "available" | "unavailable" | "deleted" | "private";
+	snapshot?: ExternalTweetSnapshot | null;
+	/** 最多展示一层；更深层仅保留 snapshot.quote_url。 */
+	quoted_tweet?: ExternalTweet | null;
+}
+
+/** 服务端规范化并保存的外部正文与本站媒体。 */
+export interface ExternalTweetSnapshot {
+	author: {
+		id: string;
+		name: string;
+		handle: string;
+		url: string;
+		avatar_url: string;
+		verified?: boolean | null;
+	};
+	text: string;
+	/** 不使用本站表情替换或话题解析。 */
+	segments: ExternalTweetSegment[] | null;
+	published_at: string;
+	completeness: "complete" | "partial" | "unknown";
+	media: ExternalTweetMedia[] | null;
+	warnings: string[] | null;
+	quote_url?: string;
+}
+
+/** UTF-16 facets 已在服务端转换为有序纯文本片段。 */
+export interface ExternalTweetSegment {
+	kind: "text" | "link" | "mention" | "hashtag";
+	text: string;
+	url?: string;
+}
+
+/** 外部媒体已落盘；视频和 GIF 的 url 仅指向本站封面。 */
+export interface ExternalTweetMedia {
+	kind: "photo" | "video" | "animated_gif";
+	url: string;
+	thumbnail_url: string;
+	width: number;
+	height: number;
+	alt: string;
+	file_id: string;
 }
 
 /** TweetEmoteRef - 推文表情映射值别名 */

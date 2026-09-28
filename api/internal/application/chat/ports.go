@@ -1,6 +1,7 @@
 package chat
 
 import (
+	apptweet "blog-api/internal/application/tweet"
 	"context"
 	"errors"
 
@@ -28,6 +29,11 @@ type FileRepository interface {
 // TweetRepository 聊天分享推文的查询端口（分享到聊天，只读）。
 type TweetRepository interface {
 	FindByID(ctx context.Context, id domainshared.ID) (*domaintweet.Tweet, error)
+}
+
+type TweetReader interface {
+	GetByID(context.Context, string) (apptweet.TweetDTO, error)
+	GetByIDs(context.Context, []domainshared.ID) ([]apptweet.TweetDTO, error)
 }
 
 // EventNotifier 向在线聊天 SSE 连接广播事件。

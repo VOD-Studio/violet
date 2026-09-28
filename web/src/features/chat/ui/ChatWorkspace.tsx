@@ -1,8 +1,9 @@
 /**
  * 聊天工作区：会话索引侧栏 + 会话面板的顶层布局与选中态编排。
  */
+
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { useMe } from "@features/auth/api/queries";
-import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { cn } from "cn";
 import { useEffect, useMemo, useState } from "react";
 import { useChatConversations } from "../api/queries";

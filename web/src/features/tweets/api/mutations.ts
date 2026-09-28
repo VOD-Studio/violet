@@ -46,13 +46,36 @@ export const useCreateTweet = () => {
 			// 下次进入会重新拉取最新列表，无需额外 invalidate。
 			qc.setQueriesData<TimelineCache>({ queryKey: tweetKeys.timeline }, (old) => {
 				if (!old || old.pages.length === 0) return old;
+				if (old.pages.some((page) => page.data.some((item) => item.id === tweet.id))) {
+					return {
+						...old,
+						pages: old.pages.map((page) => ({
+							...page,
+							data: page.data.map((item) => (item.id === tweet.id ? tweet : item)),
+						})),
+					};
+				}
 				const [first, ...rest] = old.pages;
 				return {
 					...old,
 					pages: [{ ...first, data: [tweet, ...first.data] }, ...rest],
 				};
 			});
+			qc.setQueryData(tweetKeys.detail(tweet.id), tweet);
+			void qc.invalidateQueries({ queryKey: [...tweetKeys.all, "userTimeline"] });
 		},
+	});
+};
+
+export const useManageExternalTweet = (id: string, operation: "refresh" | "withdraw") => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: () =>
+			operation === "withdraw"
+				? apiDelete(`/tweets/external/${id}`)
+				: apiPost(`/tweets/external/${id}/refresh`, {}),
+		// 刷新可能先确认原文失效再返回错误；所有引用与聊天缓存都重新读取。
+		onSettled: () => qc.invalidateQueries(),
 	});
 };
 

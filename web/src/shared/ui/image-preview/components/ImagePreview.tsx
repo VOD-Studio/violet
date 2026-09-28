@@ -7,6 +7,7 @@ import {
 	useReducedMotion,
 	useTransform,
 } from "motion/react";
+import { Dialog as DialogPrimitive } from "radix-ui";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useImagePreviewControls } from "../hooks/useImagePreviewControls";
@@ -214,7 +215,6 @@ function ImagePreviewDialog({
 	const overlayRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
 		if (!isPresent) return;
-		overlayRef.current?.focus();
 		return () => {
 			returnFocus.current?.focus({ preventScroll: true });
 		};
@@ -253,89 +253,106 @@ function ImagePreviewDialog({
 	}, [isPresent]);
 
 	return (
-		<motion.div
-			ref={overlayRef}
-			role="dialog"
-			aria-modal="true"
-			aria-label="图片预览"
-			aria-hidden={!isPresent}
-			inert={!isPresent}
-			tabIndex={-1}
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{ duration: 0.25 }}
-			className="dialect-immersive fixed inset-0 z-9999 overflow-hidden outline-none"
-			// Radix modal 会禁用 body 指针事件；只有当前会话恢复交互。
-			style={{ pointerEvents: isPresent ? "auto" : "none" }}
-			onClick={onClose}
-		>
-			<motion.div
-				className="absolute inset-0 bg-black/70"
-				style={{ opacity: chromeOpacity }}
-			/>
-			<motion.div
-				className="pointer-events-none absolute inset-0 z-50 [&>*]:pointer-events-auto"
-				style={{ opacity: chromeOpacity }}
+		<DialogPrimitive.Root open={isPresent} onOpenChange={(open) => !open && onClose()}>
+			<DialogPrimitive.Content
+				asChild
+				forceMount
+				aria-describedby={undefined}
+				onOpenAutoFocus={(event) => {
+					event.preventDefault();
+					overlayRef.current?.focus();
+				}}
+				onCloseAutoFocus={(event) => event.preventDefault()}
+				onEscapeKeyDown={(event) => event.preventDefault()}
 			>
-				<ImagePreviewControls
-					scale={scale}
-					currentIndex={index}
-					totalImages={images.length}
-					listVisible={listVisible}
-					onClose={onClose}
-					onZoomIn={handleZoomIn}
-					onZoomOut={handleZoomOut}
-					onPrevious={handlePrevious}
-					onNext={handleNext}
-					onRotateLeft={handleRotateLeft}
-					onRotateRight={handleRotateRight}
-					onFlipX={handleFlipX}
-					onFlipY={handleFlipY}
-					onToggleList={() => setListVisible((visible) => !visible)}
-					onReset={handleResetAll}
-				/>
-			</motion.div>
-
-			<AnimatePresence custom={direction}>
-				{images[index] ? (
-					<ImagePreviewImage
-						key={`${index}:${images[index]}`}
-						src={images[index]}
-						thumbnail={thumbnails?.[index]}
-						alt={alts?.[index] ?? `预览图片 ${index + 1}`}
-						direction={direction}
-						triggerRect={returnRect}
-						placeholderAspectRatio={opening.aspectRatios[index]}
-						closeProgress={closeProgress}
-						initialNaturalSize={opening.index === index ? opening.size : undefined}
-						scale={scale}
-						rotate={rotate}
-						flipX={flipX}
-						flipY={flipY}
-						onLoad={() => setLoadedSource(images[index])}
-						onReset={handleResetAll}
-						onWheelFollow={handleWheel}
-						onSwipeLeft={images.length > 1 ? handleNext : undefined}
-						onSwipeRight={images.length > 1 ? handlePrevious : undefined}
-						resetKey={resetKey}
+				<motion.div
+					ref={overlayRef}
+					role="dialog"
+					aria-modal="true"
+					aria-label="图片预览"
+					aria-hidden={!isPresent}
+					inert={!isPresent}
+					tabIndex={-1}
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 0.25 }}
+					className="dialect-immersive fixed inset-0 z-9999 overflow-hidden outline-none"
+					// Radix modal 会禁用 body 指针事件；只有当前会话恢复交互。
+					style={{ pointerEvents: isPresent ? "auto" : "none" }}
+					onClick={onClose}
+				>
+					<DialogPrimitive.Title className="sr-only">图片预览</DialogPrimitive.Title>
+					<motion.div
+						className="absolute inset-0 bg-black/70"
+						style={{ opacity: chromeOpacity }}
 					/>
-				) : null}
-			</AnimatePresence>
-
-			<AnimatePresence>
-				{listVisible ? (
 					<motion.div
 						className="pointer-events-none absolute inset-0 z-50 [&>*]:pointer-events-auto"
 						style={{ opacity: chromeOpacity }}
 					>
-						<ImagePreviewThumbnails
-							images={thumbnails ?? images}
+						<ImagePreviewControls
+							scale={scale}
 							currentIndex={index}
-							onSelect={handleSelect}
+							totalImages={images.length}
+							listVisible={listVisible}
+							onClose={onClose}
+							onZoomIn={handleZoomIn}
+							onZoomOut={handleZoomOut}
+							onPrevious={handlePrevious}
+							onNext={handleNext}
+							onRotateLeft={handleRotateLeft}
+							onRotateRight={handleRotateRight}
+							onFlipX={handleFlipX}
+							onFlipY={handleFlipY}
+							onToggleList={() => setListVisible((visible) => !visible)}
+							onReset={handleResetAll}
 						/>
 					</motion.div>
-				) : null}
-			</AnimatePresence>
-		</motion.div>
+
+					<AnimatePresence custom={direction}>
+						{images[index] ? (
+							<ImagePreviewImage
+								key={`${index}:${images[index]}`}
+								src={images[index]}
+								thumbnail={thumbnails?.[index]}
+								alt={alts?.[index] ?? `预览图片 ${index + 1}`}
+								direction={direction}
+								triggerRect={returnRect}
+								placeholderAspectRatio={opening.aspectRatios[index]}
+								closeProgress={closeProgress}
+								initialNaturalSize={
+									opening.index === index ? opening.size : undefined
+								}
+								scale={scale}
+								rotate={rotate}
+								flipX={flipX}
+								flipY={flipY}
+								onLoad={() => setLoadedSource(images[index])}
+								onReset={handleResetAll}
+								onWheelFollow={handleWheel}
+								onSwipeLeft={images.length > 1 ? handleNext : undefined}
+								onSwipeRight={images.length > 1 ? handlePrevious : undefined}
+								resetKey={resetKey}
+							/>
+						) : null}
+					</AnimatePresence>
+
+					<AnimatePresence>
+						{listVisible ? (
+							<motion.div
+								className="pointer-events-none absolute inset-0 z-50 [&>*]:pointer-events-auto"
+								style={{ opacity: chromeOpacity }}
+							>
+								<ImagePreviewThumbnails
+									images={thumbnails ?? images}
+									currentIndex={index}
+									onSelect={handleSelect}
+								/>
+							</motion.div>
+						) : null}
+					</AnimatePresence>
+				</motion.div>
+			</DialogPrimitive.Content>
+		</DialogPrimitive.Root>
 	);
 }
