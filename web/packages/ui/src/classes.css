@@ -1,0 +1,20 @@
+/*
+ * BEM 类名样式入口：为核心组件提供不依赖 React / Tailwind 的预编译类（.v-button 等），
+ * 前缀 v- 用于规避宿主类名冲突。
+ * 必须先导入 @violet/ui/tokens.css 或 styles.css：本入口只含组件类，
+ * 颜色、圆角全部取自语义 token，脱离 token 层无法解析。
+ * 类名契约：块 v-<name>、元素 v-<name>__<element>、修饰符 v-<name>--<modifier>；
+ * 交互状态优先原生伪类（:hover/:focus-visible/:disabled），并保留
+ * [data-state]/[aria-*] 属性形态以兼容自定义控件。
+ */
+@import "./classes/button.css";
+@import "./classes/badge.css";
+@import "./classes/card.css";
+@import "./classes/input.css";
+@import "./classes/textarea.css";
+@import "./classes/checkbox.css";
+@import "./classes/switch.css";
+@import "./classes/separator.css";
+@import "./classes/skeleton.css";
+@import "./classes/label.css";
+@import "./classes/tabs.css";

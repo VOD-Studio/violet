@@ -1,0 +1,39 @@
+/*
+ * Skeleton 组件的 BEM 类名样式（.v-skeleton 及 __sheen）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 占位底色取 --secondary；扫光用正文色低透明度混合，随明暗主题自动适配，
+ * 不依赖站点级 --glow-soft（那是宿主 token，包内不假设存在）。
+ */
+
+.v-skeleton {
+	position: relative;
+	overflow: hidden;
+	border-radius: calc(var(--radius) - 2px);
+	background-color: var(--secondary);
+}
+
+.v-skeleton__sheen {
+	position: absolute;
+	inset: 0;
+	transform: translateX(-100%);
+	background: linear-gradient(
+		90deg,
+		transparent,
+		color-mix(in oklab, var(--foreground) 12%, transparent),
+		transparent
+	);
+	animation: v-skeleton-shimmer 1.6s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes v-skeleton-shimmer {
+	to {
+		transform: translateX(100%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.v-skeleton__sheen {
+		animation: none;
+	}
+}

@@ -1,0 +1,74 @@
+/*
+ * Switch 组件的 BEM 类名样式（.v-switch 及 __thumb）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 状态双轨：[data-state]（Radix 风格）与 [aria-checked]（role="switch" 元素）等价生效。
+ */
+
+.v-switch {
+	box-sizing: border-box;
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	width: 2rem;
+	height: 1.15rem;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 9999px;
+	background-color: var(--input);
+	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+	cursor: pointer;
+	transition: background-color 150ms ease-out;
+}
+
+.v-switch:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+.v-switch__thumb {
+	display: block;
+	box-sizing: border-box;
+	width: 1rem;
+	height: 1rem;
+	margin: 0;
+	border-radius: 9999px;
+	background-color: var(--background);
+	transition: transform 150ms ease-out;
+}
+
+.v-switch[data-state="checked"],
+.v-switch[aria-checked="true"] {
+	background-color: var(--primary);
+}
+
+.v-switch[data-state="checked"] .v-switch__thumb,
+.v-switch[aria-checked="true"] .v-switch__thumb {
+	transform: translateX(calc(100% - 2px));
+}
+
+/* —— 尺寸 —— */
+
+.v-switch--sm {
+	width: 1.5rem;
+	height: 0.875rem;
+}
+
+.v-switch--sm .v-switch__thumb {
+	width: 0.75rem;
+	height: 0.75rem;
+}
+
+.v-switch--sm[data-state="checked"] .v-switch__thumb,
+.v-switch--sm[aria-checked="true"] .v-switch__thumb {
+	/* 位移相对滑块自身宽度：100% - 2px 恰好贴住轨道右缘 */
+	transform: translateX(calc(100% - 2px));
+}
+
+/* —— 状态 —— */
+
+.v-switch:disabled,
+.v-switch[data-disabled="true"],
+.v-switch[aria-disabled="true"] {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
