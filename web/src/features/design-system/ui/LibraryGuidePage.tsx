@@ -1,24 +1,27 @@
 import { notFound } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { DESIGN_SYSTEM_CATALOG } from "../model/guides";
-import { AGENT_GUIDES } from "./library-guides/AgentGuides";
-import { FOUNDATION_GUIDES } from "./library-guides/FoundationGuides";
-import { INTRODUCTION_GUIDES } from "./library-guides/IntroductionGuides";
+import { GUIDE_CONTENT } from "./library-guides/registry";
 
-const GUIDE_CONTENT: Record<string, ReactNode> = {
-	...INTRODUCTION_GUIDES,
-	...FOUNDATION_GUIDES,
-	...AGENT_GUIDES,
-};
+/** 正文加载占位：与指南页排版同宽，避免标题与正文间跳变。 */
+function GuideFallback() {
+	return (
+		<div className="space-y-4" aria-busy="true">
+			<div className="h-4 w-1/3 rounded-xs bg-muted" />
+			<div className="h-3 w-2/3 rounded-xs bg-muted/70" />
+			<div className="h-3 w-1/2 rounded-xs bg-muted/50" />
+		</div>
+	);
+}
 
-/** 按目录呈现指南内容；条目不在目录的指南路由上或缺少内容时走 404。 */
+/** 左侧目录定路由，header 由目录数据渲染；正文按章节懒加载，未知或未登记路径走 404。 */
 export function LibraryGuidePage({ slug }: { slug: string }) {
 	const guide = DESIGN_SYSTEM_CATALOG.flatMap((group) => group.items).find(
 		(item) => item.id === slug && item.to === `/design-system/guides/${slug}`,
 	);
 	const group = guide && DESIGN_SYSTEM_CATALOG.find((item) => item.items.includes(guide));
-	const content = GUIDE_CONTENT[slug];
-	if (!group || !guide || !content) throw notFound();
+	const Content = GUIDE_CONTENT[slug as keyof typeof GUIDE_CONTENT];
+	if (!group || !guide || !Content) throw notFound();
 
 	return (
 		<article className="mx-auto w-full max-w-4xl space-y-10 pb-24 font-sans">
@@ -31,7 +34,9 @@ export function LibraryGuidePage({ slug }: { slug: string }) {
 					{guide.scope}
 				</p>
 			</header>
-			{content}
+			<Suspense fallback={<GuideFallback />}>
+				<Content />
+			</Suspense>
 		</article>
 	);
 }
