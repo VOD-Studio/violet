@@ -75,6 +75,31 @@ export function CartoonPopoverGroup({
 	const itemsMap = useRef(new Map<string, GroupItemConfig>());
 	const closeTimerRef = useRef<number | null>(null);
 
+	const reduceMotion = useReducedMotion();
+	// 多维物理联合弹簧解算器：驱动浮层在多按钮间平滑滑行与宽高自适应拉伸
+	const shouldTeleport = teleportNextRef.current && targetLayout !== null;
+	const [springGeometry, resetSpring] = useMultiSpring(
+		targetLayout
+			? {
+					x: targetLayout.x,
+					y: targetLayout.y,
+					width: targetLayout.width,
+					height: targetLayout.height,
+					arrowOffset: targetLayout.arrowOffset,
+				}
+			: null,
+		{
+			stiffness: 380,
+			damping: 32,
+			mass: 0.8,
+			precision: 0.2,
+		},
+		{ teleport: shouldTeleport || reduceMotion },
+	);
+	if (shouldTeleport) {
+		teleportNextRef.current = false;
+	}
+
 	const measureRef = useRef<HTMLDivElement | null>(null);
 	const floatingRef = useRef<HTMLDivElement | null>(null);
 
@@ -98,14 +123,16 @@ export function CartoonPopoverGroup({
 			const wasOpen = activeValue !== null;
 			clearCloseTimer();
 			if (!wasOpen) {
-				// 新一轮打开必须先丢弃旧坐标，等当前条目完成测量后再直接落位。
+				// 完全关闭后重新打开：丢弃旧坐标并清空弹簧，
+				// 浮层在测量出新布局前保持卸载，重挂载即在新位置，无旧位置滑入。
 				setTargetLayout(null);
 				teleportNextRef.current = true;
+				resetSpring();
 			}
 			setActiveValue(val);
 			setLastActiveValue(val);
 		},
-		[activeValue, clearCloseTimer],
+		[activeValue, clearCloseTimer, resetSpring],
 	);
 
 	const handleTriggerLeave = useCallback(() => {
@@ -184,31 +211,6 @@ export function CartoonPopoverGroup({
 			window.removeEventListener("resize", triggerRelayout);
 		};
 	}, [activeValue, triggerRelayout]);
-
-	const reduceMotion = useReducedMotion();
-	// 多维物理联合弹簧解算器：驱动浮层在多按钮间平滑滑行与宽高自适应拉伸
-	const shouldTeleport = teleportNextRef.current && targetLayout !== null;
-	const springGeometry = useMultiSpring(
-		targetLayout
-			? {
-					x: targetLayout.x,
-					y: targetLayout.y,
-					width: targetLayout.width,
-					height: targetLayout.height,
-					arrowOffset: targetLayout.arrowOffset,
-				}
-			: null,
-		{
-			stiffness: 380,
-			damping: 32,
-			mass: 0.8,
-			precision: 0.2,
-		},
-		{ teleport: shouldTeleport || reduceMotion },
-	);
-	if (shouldTeleport) {
-		teleportNextRef.current = false;
-	}
 
 	const progress = useSpringValue(
 		activeValue ? 1 : 0,

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 
 export interface SpringConfig {
 	stiffness?: number;
@@ -132,6 +132,21 @@ export class MultiSpringStore<T extends Record<string, number>> {
 
 	getServerSnapshot = () => null;
 
+	/** reset: 清空当前值与速度，浮层回到「未出现」状态；下次 setTarget 自动走 teleport 直接落位 */
+	reset() {
+		this.current = null;
+		this.target = {} as T;
+		this.snapshotCache = null;
+		this.velocities.clear();
+		if (this.rafId !== null) {
+			cancelAnimationFrame(this.rafId);
+			this.rafId = null;
+		}
+		for (const listener of this.listeners) {
+			listener();
+		}
+	}
+
 	/** teleport: 跳过物理解算，直接置于目标并清零速度（用于首次出现与重新出现） */
 	teleport(next: T) {
 		if (this.rafId === null && this.current) {
@@ -261,7 +276,7 @@ export function useMultiSpring<T extends Record<string, number>>(
 	targets: T | null,
 	config?: SpringConfig,
 	options?: { teleport?: boolean },
-): T | null {
+): [T | null, () => void] {
 	const storeRef = useRef<MultiSpringStore<T> | null>(null);
 	const configRef = useRef(config);
 	configRef.current = config;
@@ -286,5 +301,9 @@ export function useMultiSpring<T extends Record<string, number>>(
 		store ? store.getServerSnapshot : () => null,
 	);
 
-	return snapshot;
+	const reset = useCallback(() => {
+		store?.reset();
+	}, [store]);
+
+	return [snapshot, reset];
 }
