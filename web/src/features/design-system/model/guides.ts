@@ -67,8 +67,8 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 			},
 			{
 				id: "roadmap",
-				title: "路线图",
-				scope: "已交付能力与尚未开放的能力。",
+				title: "版本记录",
+				scope: "当前版本的能力变更与发布节奏。",
 				to: "/design-system/guides/roadmap",
 			},
 		],

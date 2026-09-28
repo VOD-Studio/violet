@@ -11,7 +11,7 @@
 - [组件目录](https://xunrua.top/design-system/specimens): 组件示例与公开契约。
 
 - [命令行](https://xunrua.top/design-system/guides/cli): 构建与打包命令及专用 CLI 的边界。
-- [路线图](https://xunrua.top/design-system/guides/roadmap): 已交付与尚未提供的能力。
+- [版本记录](https://xunrua.top/design-system/guides/roadmap): 当前版本的能力变更与发布节奏。
 
 ## 设计指南
 
