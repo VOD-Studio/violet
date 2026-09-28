@@ -34,7 +34,25 @@ describe("色板生成器", () => {
 		render(<PaletteGenerator />);
 		expect(screen.getByRole("group", { name: "主色速选" })).toBeTruthy();
 		expect(screen.getByText("自定义主色")).toBeTruthy();
-		for (const title of ["品牌色阶", "主色与强调", "语义角色", "用法与覆盖", "对比度审计"]) {
+		for (const title of [
+			"主色色阶",
+			"主色",
+			"默认（中性色）",
+			"信息",
+			"成功",
+			"警告",
+			"危险",
+			"前景色",
+			"背景色",
+			"表面色",
+			"表单字段",
+			"分隔线",
+			"其他",
+			"基础色",
+			"组件中如何用色",
+			"默认主题与自定义颜色",
+			"对比度审计",
+		]) {
 			expect(screen.getByRole("heading", { name: title })).toBeTruthy();
 		}
 	});
@@ -90,25 +108,55 @@ describe("色板生成器", () => {
 		expect(screen.getAllByText("✓").length).toBeGreaterThanOrEqual(10);
 	});
 
-	it("组件试穿沙盒支持动作控件与状态反馈横幅切换", () => {
+	it("主色选择只更新本页明暗预览，不写入项目根主题", () => {
 		render(<PaletteGenerator />);
-		expect(screen.getByRole("heading", { name: "组件试穿沙盒" })).toBeTruthy();
-		expect(screen.getByText("主要动作 Primary")).toBeTruthy();
+		const lightPreview = document.querySelector<HTMLElement>('[data-palette-preview="light"]');
+		expect(lightPreview).toBeTruthy();
+		const initialPreviewPrimary = lightPreview?.style.getPropertyValue("--primary-base");
+		const initialRootPrimary =
+			document.documentElement.style.getPropertyValue("--primary-base");
 
-		// 切换到状态反馈横幅
-		fireEvent.click(screen.getByRole("button", { name: "状态反馈横幅" }));
-		expect(screen.getByText("操作成功")).toBeTruthy();
-		expect(screen.getByText("待决变更")).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "主色 松绿" }));
+
+		expect(lightPreview?.style.getPropertyValue("--primary-base")).not.toBe(
+			initialPreviewPrimary,
+		);
+		expect(document.documentElement.style.getPropertyValue("--primary-base")).toBe(
+			initialRootPrimary,
+		);
+		expect(screen.getAllByText(/受控预览/).length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("悬停颜色卡显示对应变量定义", async () => {
+		render(<PaletteGenerator />);
+		const trigger = document.querySelector<HTMLButtonElement>(
+			'button[title^="--warning-hover ·"]',
+		);
+		if (!trigger) {
+			throw new Error("未找到警告色 Hover 卡片");
+		}
+
+		fireEvent.mouseEnter(trigger);
+
+		await waitFor(() => {
+			const popover = screen.getByRole("dialog", {
+				name: "--warning-hover 颜色定义",
+			});
+			expect(popover.textContent).toContain("--color-warning-hover:");
+			expect(popover.textContent).toContain("var(--warning-foreground) 10%");
+		});
 	});
 
 	it("代码导出支持 CSS 变量与 Tailwind v4 切换并可一键复制", async () => {
 		render(<PaletteGenerator />);
-		expect(screen.getByRole("heading", { name: "代码导出" })).toBeTruthy();
-		expect(screen.getByText(/--brand:/)).toBeTruthy();
+		const exportSection = screen.getByRole("heading", { name: "代码导出" }).closest("section");
+		expect(exportSection?.querySelector("pre code")?.textContent).toContain("--primary-base:");
 
 		// 切换到 Tailwind v4
 		fireEvent.click(screen.getByRole("button", { name: "Tailwind v4 @theme" }));
-		expect(screen.getByText(/--color-brand-50:/)).toBeTruthy();
+		expect(exportSection?.querySelector("pre code")?.textContent).toContain(
+			"--color-primary-50:",
+		);
 
 		// 复制代码
 		fireEvent.click(screen.getByRole("button", { name: /复制代码/ }));
@@ -122,26 +170,5 @@ describe("色板生成器", () => {
 		const input = screen.getByDisplayValue(VIOLET_SEED_HEX);
 		fireEvent.change(input, { target: { value: "#10b981" } });
 		expect(screen.getAllByText("#10B981").length).toBeGreaterThanOrEqual(1);
-	});
-
-	it("语义角色清单统一收录画布、交互、状态、表单与基础角色", () => {
-		render(<PaletteGenerator />);
-		expect(screen.getByRole("heading", { name: "语义角色" })).toBeTruthy();
-		for (const token of [
-			"--background",
-			"--foreground",
-			"--primary",
-			"--secondary",
-			"--success",
-			"--warning",
-			"--destructive",
-			"--input",
-			"--ring",
-			"--border",
-			"--muted",
-			"--chart-1",
-		]) {
-			expect(screen.getAllByText(token).length).toBeGreaterThanOrEqual(1);
-		}
 	});
 });

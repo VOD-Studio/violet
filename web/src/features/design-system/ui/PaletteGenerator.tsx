@@ -1,11 +1,12 @@
 import { copyText } from "@shared/lib/clipboard";
-import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
+import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
 import { HsvColorPicker, Segmented } from "@violet/ui";
-import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { GeneratedPalette, RampStep, RoleColor, SwatchColor } from "../model/palette";
+import type { GeneratedPalette, RampStep } from "../model/palette";
 import { generatePalette } from "../model/palette";
+import { ColorRoleComparison } from "./ColorRoleComparison";
 import { GuideLink } from "./library-guides/GuideParts";
 
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
@@ -26,380 +27,6 @@ const SEED_PRESETS = [
 
 const DEFAULT_SEED = SEED_PRESETS[0].hex;
 
-function SwatchButton({
-	color,
-	domain,
-	copied,
-	onPick,
-}: {
-	color: SwatchColor;
-	domain: string;
-	copied: boolean;
-	onPick: () => void;
-}) {
-	const ink = (parseOklch(color.oklch)?.l ?? 0.5) < 0.62 ? "text-white" : "text-slate-900";
-	return (
-		<button
-			className={`relative h-9 w-full overflow-hidden rounded-lg outline-none ring-1 ring-border/60 transition-[filter] duration-150 ease-out hover:brightness-105 ${ink}`}
-			onClick={onPick}
-			style={{ backgroundColor: color.hex }}
-			title={`${domain} · ${color.oklch}`}
-			type="button"
-		>
-			<span
-				aria-hidden={copied}
-				className={`absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide transition-opacity duration-150 ease-out ${
-					copied ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-				}`}
-			>
-				{copied ? "✓" : color.hex.toUpperCase()}
-			</span>
-		</button>
-	);
-}
-
-function RoleRow({ role }: { role: RoleColor }) {
-	const [copiedDomain, setCopiedDomain] = useState<"light" | "dark" | null>(null);
-	const pick = async (domain: "light" | "dark") => {
-		const hex = role[domain].hex.toUpperCase();
-		if (await copyText(hex)) {
-			toast.success(`已复制 ${role.role} ${domain === "light" ? "浅色" : "深色"}: ${hex}`);
-			setCopiedDomain(domain);
-			setTimeout(() => setCopiedDomain(null), 1200);
-		}
-	};
-	return (
-		<li className="group grid grid-cols-[1fr_6.5rem_6.5rem] items-center gap-x-4 rounded-xl px-3 py-2 transition-colors duration-150 hover:bg-muted/40 sm:grid-cols-[1fr_9rem_9rem]">
-			<div className="min-w-0">
-				<code className="font-mono text-xs font-medium">{role.role}</code>
-				{role.note ? (
-					<span className="ml-2 text-xs text-muted-foreground">{role.note}</span>
-				) : null}
-			</div>
-			<SwatchButton
-				color={role.light}
-				copied={copiedDomain === "light"}
-				domain="浅"
-				onPick={() => void pick("light")}
-			/>
-			<SwatchButton
-				color={role.dark}
-				copied={copiedDomain === "dark"}
-				domain="深"
-				onPick={() => void pick("dark")}
-			/>
-		</li>
-	);
-}
-
-/** 角色展台：与全站布局规格线格保持一致，行悬停聚焦，色块悬停显值、点击复制 */
-function RoleBoard({ title, roles }: { title: string; roles: RoleColor[] }) {
-	return (
-		<section>
-			<h3 className="mt-10 text-lg font-bold">{title}</h3>
-			<ul className="mt-2 grid grid-cols-[1fr_6.5rem_6.5rem] gap-x-4 px-3 pb-1.5 sm:grid-cols-[1fr_9rem_9rem]">
-				<span className="font-mono text-[11px] text-muted-foreground">角色</span>
-				<span className="text-center font-mono text-[11px] text-muted-foreground">
-					浅色
-				</span>
-				<span className="text-center font-mono text-[11px] text-muted-foreground">
-					深色
-				</span>
-			</ul>
-			<ul className="mt-0 space-y-0.5">
-				{roles.map((role) => (
-					<RoleRow key={role.role} role={role} />
-				))}
-			</ul>
-		</section>
-	);
-}
-
-/**
- * 实时组件试穿沙盒：将当前色彩算法推导的主色、强调色、功能色动态注入真实组件样例。
- * 遵循现代极简美学：卡片纯净中性底、发丝微边框、精准微光点缀。
- */
-function LiveComponentSandbox({ palette }: { palette: GeneratedPalette }) {
-	const primaryLight = palette.primaryRoles[0].light.hex;
-	const primaryFgLight = palette.primaryRoles[2].light.hex;
-	const accentLight = palette.primaryRoles[3].light.hex;
-	const accentFgLight = palette.primaryRoles[4].light.hex;
-
-	const [switchOn, setSwitchOn] = useState(true);
-	const [activeTab, setActiveTab] = useState<"actions" | "alerts">("actions");
-
-	const { functionalSets } = palette;
-	const infoSet = functionalSets.find((s) => s.key === "info") ?? functionalSets[0];
-	const successSet = functionalSets.find((s) => s.key === "success") ?? functionalSets[1];
-	const warningSet = functionalSets.find((s) => s.key === "warning") ?? functionalSets[2];
-	const destructiveSet = functionalSets.find((s) => s.key === "destructive") ?? functionalSets[3];
-
-	return (
-		<section className="mt-10">
-			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<h3 className="text-lg font-bold">组件试穿沙盒</h3>
-				<Segmented<"actions" | "alerts">
-					onValueChange={setActiveTab}
-					segments={[
-						{ value: "actions", label: "动作与控件" },
-						{ value: "alerts", label: "状态反馈横幅" },
-					]}
-					size="sm"
-					value={activeTab}
-				/>
-			</div>
-
-			<div className="mt-4 rounded-2xl border border-border/40 bg-card/50 p-6">
-				{activeTab === "actions" ? (
-					<div className="space-y-6">
-						{/* 按钮群组 */}
-						<div>
-							<span className="block text-xs font-medium text-muted-foreground">
-								按钮与动作
-							</span>
-							<div className="mt-3 flex flex-wrap items-center gap-3">
-								<button
-									className="rounded-lg px-4 py-2 text-xs font-semibold shadow-xs transition-opacity hover:opacity-90"
-									style={{ backgroundColor: primaryLight, color: primaryFgLight }}
-									type="button"
-								>
-									主要动作 Primary
-								</button>
-								<button
-									className="rounded-lg px-4 py-2 text-xs font-medium transition-colors"
-									style={{ backgroundColor: accentLight, color: accentFgLight }}
-									type="button"
-								>
-									淡染强调 Accent
-								</button>
-								<button
-									className="rounded-lg border px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/40"
-									style={{ borderColor: primaryLight, color: primaryLight }}
-									type="button"
-								>
-									轮廓动作 Outline
-								</button>
-								<button
-									className="rounded-lg px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-									type="button"
-								>
-									幽灵动作 Ghost
-								</button>
-								<button
-									className="cursor-not-allowed rounded-lg border border-border/40 bg-muted/30 px-4 py-2 text-xs text-muted-foreground/60"
-									disabled
-									type="button"
-								>
-									禁用动作 Disabled
-								</button>
-							</div>
-						</div>
-
-						{/* 徽章胶囊与控件 */}
-						<div className="grid grid-cols-1 gap-6 border-t border-border/40 pt-4 sm:grid-cols-2">
-							<div>
-								<span className="block text-xs font-medium text-muted-foreground">
-									徽章与标签
-								</span>
-								<div className="mt-3 flex flex-wrap items-center gap-2">
-									<span
-										className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-										style={{
-											backgroundColor: primaryLight,
-											color: primaryFgLight,
-										}}
-									>
-										主色徽标
-									</span>
-									<span
-										className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-										style={{
-											backgroundColor: accentLight,
-											color: accentFgLight,
-										}}
-									>
-										淡染胶囊
-									</span>
-									<span
-										className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
-										style={{ borderColor: primaryLight, color: primaryLight }}
-									>
-										描边标签
-									</span>
-								</div>
-							</div>
-
-							<div>
-								<span className="block text-xs font-medium text-muted-foreground">
-									表单与焦点环
-								</span>
-								<div className="mt-3 flex items-center gap-4">
-									<input
-										className="h-8 w-44 rounded-md border border-border/60 bg-transparent px-2.5 text-xs outline-none transition-shadow"
-										placeholder="带焦点环的输入框..."
-										style={{
-											boxShadow: `0 0 0 1.5px ${primaryLight}`,
-										}}
-										type="text"
-									/>
-									<button
-										aria-label="沙盒开关状态"
-										className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out"
-										onClick={() => setSwitchOn(!switchOn)}
-										style={{
-											backgroundColor: switchOn ? primaryLight : undefined,
-										}}
-										type="button"
-									>
-										<span
-											className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-												switchOn ? "translate-x-4.5" : "translate-x-0.5"
-											} mt-0.5`}
-										/>
-									</button>
-									<span className="text-xs text-muted-foreground">
-										{switchOn ? "开启" : "关闭"}
-									</span>
-								</div>
-							</div>
-						</div>
-					</div>
-				) : (
-					<div className="space-y-3">
-						{/* 成功状态 */}
-						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
-							<div
-								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
-								style={{
-									backgroundColor: `${successSet.light.solid.hex}15`,
-									color: successSet.light.solid.hex,
-								}}
-							>
-								<CheckCircle2 className="size-4" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-2">
-									<h5 className="text-xs font-semibold text-foreground">
-										操作成功
-									</h5>
-									<span
-										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-										style={{
-											backgroundColor: `${successSet.light.solid.hex}12`,
-											color: successSet.light.solid.hex,
-										}}
-									>
-										已同步
-									</span>
-								</div>
-								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-									数据已正常更新并同步至各端。
-								</p>
-							</div>
-						</div>
-
-						{/* 警示状态 */}
-						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
-							<div
-								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
-								style={{
-									backgroundColor: `${warningSet.light.solid.hex}15`,
-									color: warningSet.light.solid.hex,
-								}}
-							>
-								<AlertTriangle className="size-4" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-2">
-									<h5 className="text-xs font-semibold text-foreground">
-										待决变更
-									</h5>
-									<span
-										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-										style={{
-											backgroundColor: `${warningSet.light.solid.hex}12`,
-											color: warningSet.light.solid.hex,
-										}}
-									>
-										需确认
-									</span>
-								</div>
-								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-									部分配置尚未确认，切换分支前请先保存当前修改。
-								</p>
-							</div>
-						</div>
-
-						{/* 危险状态 */}
-						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
-							<div
-								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
-								style={{
-									backgroundColor: `${destructiveSet.light.solid.hex}15`,
-									color: destructiveSet.light.solid.hex,
-								}}
-							>
-								<AlertCircle className="size-4" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-2">
-									<h5 className="text-xs font-semibold text-foreground">
-										阻断提醒
-									</h5>
-									<span
-										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-										style={{
-											backgroundColor: `${destructiveSet.light.solid.hex}12`,
-											color: destructiveSet.light.solid.hex,
-										}}
-									>
-										不可逆
-									</span>
-								</div>
-								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-									此操作将永久清理选中项目，请再次核验目标对象。
-								</p>
-							</div>
-						</div>
-
-						{/* 提示状态 */}
-						<div className="group relative flex items-start gap-3.5 rounded-xl border border-border/60 bg-card/70 p-3.5 transition-colors hover:border-border">
-							<div
-								className="flex size-7 shrink-0 items-center justify-center rounded-lg"
-								style={{
-									backgroundColor: `${infoSet.light.solid.hex}15`,
-									color: infoSet.light.solid.hex,
-								}}
-							>
-								<Info className="size-4" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-2">
-									<h5 className="text-xs font-semibold text-foreground">
-										系统说明
-									</h5>
-									<span
-										className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-										style={{
-											backgroundColor: `${infoSet.light.solid.hex}12`,
-											color: infoSet.light.solid.hex,
-										}}
-									>
-										提示
-									</span>
-								</div>
-								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-									色相与彩度由固定语义模型解算，明暗双域自适应。
-								</p>
-							</div>
-						</div>
-					</div>
-				)}
-			</div>
-		</section>
-	);
-}
-
 /**
  * 代码导出工作台：生成标准 CSS Variables 或 Tailwind v4 @theme inline 声明代码。
  */
@@ -411,12 +38,12 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 		if (exportFormat === "css") {
 			return `/* —— Violet 色板配置 (主色: ${seedHex.toUpperCase()}) —— */
 :root {
-  --brand: ${palette.primaryRoles[0].light.oklch};
-  --brand-foreground: ${palette.primaryRoles[2].light.oklch};
-  --brand-hover: ${palette.primaryRoles[1].light.oklch};
-  --brand-wash: ${palette.primaryRoles[3].light.oklch};
-  --brand-wash-foreground: ${palette.primaryRoles[4].light.oklch};
-  --brand-ring: ${palette.primaryRoles[0].light.oklch};
+  --primary-base: ${palette.primaryRoles[0].light.oklch};
+  --primary-base-foreground: ${palette.primaryRoles[2].light.oklch};
+  --primary-base-hover: ${palette.primaryRoles[1].light.oklch};
+  --primary-base-soft: ${palette.primaryRoles[3].light.oklch};
+  --primary-base-soft-foreground: ${palette.primaryRoles[4].light.oklch};
+  --primary-base-ring: ${palette.primaryRoles[0].light.oklch};
 
   /* 状态功能色 */
   --destructive: ${palette.functional[3].light.oklch};
@@ -426,12 +53,12 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 }
 
 .dark {
-  --brand: ${palette.primaryRoles[0].dark.oklch};
-  --brand-foreground: ${palette.primaryRoles[2].dark.oklch};
-  --brand-hover: ${palette.primaryRoles[1].dark.oklch};
-  --brand-wash: ${palette.primaryRoles[3].dark.oklch};
-  --brand-wash-foreground: ${palette.primaryRoles[4].dark.oklch};
-  --brand-ring: ${palette.primaryRoles[0].dark.oklch};
+  --primary-base: ${palette.primaryRoles[0].dark.oklch};
+  --primary-base-foreground: ${palette.primaryRoles[2].dark.oklch};
+  --primary-base-hover: ${palette.primaryRoles[1].dark.oklch};
+  --primary-base-soft: ${palette.primaryRoles[3].dark.oklch};
+  --primary-base-soft-foreground: ${palette.primaryRoles[4].dark.oklch};
+  --primary-base-ring: ${palette.primaryRoles[0].dark.oklch};
 
   /* 状态功能色 */
   --destructive: ${palette.functional[3].dark.oklch};
@@ -441,19 +68,19 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 }`;
 		}
 
-		return `/* —— Tailwind CSS v4 色阶定义 —— */
+		return `/* —— Tailwind CSS v4 主色色阶 —— */
 @theme inline {
-  --color-brand-50: ${palette.ramp[0].hex};
-  --color-brand-100: ${palette.ramp[1].hex};
-  --color-brand-200: ${palette.ramp[2].hex};
-  --color-brand-300: ${palette.ramp[3].hex};
-  --color-brand-400: ${palette.ramp[4].hex};
-  --color-brand-500: ${palette.ramp[5].hex};
-  --color-brand-600: ${palette.ramp[6].hex};
-  --color-brand-700: ${palette.ramp[7].hex};
-  --color-brand-800: ${palette.ramp[8].hex};
-  --color-brand-900: ${palette.ramp[9].hex};
-  --color-brand-950: ${palette.ramp[10].hex};
+  --color-primary-50: ${palette.ramp[0].hex};
+  --color-primary-100: ${palette.ramp[1].hex};
+  --color-primary-200: ${palette.ramp[2].hex};
+  --color-primary-300: ${palette.ramp[3].hex};
+  --color-primary-400: ${palette.ramp[4].hex};
+  --color-primary-500: ${palette.ramp[5].hex};
+  --color-primary-600: ${palette.ramp[6].hex};
+  --color-primary-700: ${palette.ramp[7].hex};
+  --color-primary-800: ${palette.ramp[8].hex};
+  --color-primary-900: ${palette.ramp[9].hex};
+  --color-primary-950: ${palette.ramp[10].hex};
 }`;
 	}, [exportFormat, palette, seedHex]);
 
@@ -504,66 +131,24 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 }
 
 /**
- * 语义角色清单：逐项对应组件库文档 Colors 小节，
- * 顺序为先画布与内容、再交互与状态、后表单与工具、末为模式无关基础色。
- */
-const SEMANTIC_ROLES = [
-	{ token: "background", label: "背景", usage: "界面基底画布，建立整体对比与氛围。" },
-	{ token: "card", label: "表面", usage: "卡片、面板与浮层的抬升面，靠分层而非色相跳跃区隔。" },
-	{
-		token: "foreground",
-		label: "前景",
-		usage: "正文与图标，随背景与表面上下文自动适配，勿在组件内硬编码。",
-	},
-	{ token: "primary", label: "主要动作", usage: "界面内最高优先级的操作。" },
-	{
-		token: "secondary",
-		label: "默认动作",
-		usage: "次要操作与中性骨架，弱化于主要动作。",
-	},
-	{ token: "success", label: "成功", usage: "积极结果、确认与完成状态。" },
-	{ token: "warning", label: "警告", usage: "需谨慎或复核、但非破坏性的过渡状态。" },
-	{ token: "destructive", label: "危险", usage: "破坏性、不可逆的操作与错误，一眼可辨。" },
-	{
-		token: "input",
-		label: "表单字段",
-		usage: "输入与控件专用描边，覆盖默认、聚焦与悬停等状态。",
-	},
-	{
-		token: "ring",
-		label: "焦点环",
-		usage: "键盘聚焦时的可视环，与交互角色保持可辨识对比。",
-	},
-	{ token: "border", label: "分隔线", usage: "分割线与描边，低对比、组织内容不抢眼。" },
-	{
-		token: "muted",
-		label: "弱化面",
-		usage: "静音背景与占位内容等工具性角色，弱化视觉重量。",
-	},
-	{
-		token: "chart-1",
-		label: "基础色",
-		usage: "模式无关的底层取值（图表五色等），明暗主题间保持稳定语义。",
-	},
-] as const;
-
-/**
- * 色板生成器章内容：给一个主色，色阶、主色与强调、功能色、中性带
- * 全部由此推导（明暗双域并列预览），核心配对附 WCAG 对比度审计。
+ * 色板生成器章内容：给一个主色，推导色阶与完整语义角色。
+ * 自定义主色只控制本页预览容器，不写入项目主题。
  */
 export function PaletteGenerator() {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
 	const [hoverRamp, setHoverRamp] = useState<string | null>(null);
 	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
 
-	const palette = useMemo(() => {
-		const parsed = hexToOklch(seedHex);
-		const h = Math.round(parsed?.h ?? 222);
-		const c = Math.min(Math.max(parsed?.c ?? 0.16, 0.04), 0.3);
-		return generatePalette({ h, c });
-	}, [seedHex]);
-
-	const seed = hexToOklch(seedHex);
+	const seed = useMemo(() => hexToOklch(seedHex), [seedHex]);
+	const palette = useMemo(
+		() =>
+			generatePalette({
+				l: seed?.l ?? 0.53,
+				h: seed?.h ?? 222,
+				c: seed?.c ?? 0.16,
+			}),
+		[seed],
+	);
 
 	const pickRamp = async (step: RampStep) => {
 		const hex = step.hex.toUpperCase();
@@ -708,9 +293,9 @@ export function PaletteGenerator() {
 					</div>
 				</div>
 			</div>
-			{/* 品牌色阶卡尺 */}
+			{/* 主色色阶卡尺 */}
 			<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
-				<h3 className="text-lg font-bold">品牌色阶</h3>
+				<h3 className="text-lg font-bold">主色色阶</h3>
 				<span className="text-xs text-muted-foreground">点击任意色阶即可复制 HEX 码</span>
 			</div>
 			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
@@ -773,53 +358,58 @@ export function PaletteGenerator() {
 				))}
 			</div>
 
-			{/* 实时组件沙盒 */}
-			<LiveComponentSandbox palette={palette} />
+			<ColorRoleComparison palette={palette} />
 
-			{/* 主色与强调 */}
-			<RoleBoard roles={palette.primaryRoles} title="主色与强调" />
-
-			{/* 语义角色：HeroUI 式紧凑清单，色值来自当前主题 token */}
-			<section className="mt-10">
-				<h3 className="text-lg font-bold">语义角色</h3>
-				<p className="mt-1 text-sm leading-7 text-muted-foreground">
-					系统不暴露庞大的原始色表：多数颜色由主色与少量基础值自动派生，
-					在保持对比度、层级与主题行为一致的同时易于理解与修改。
-					颜色先传达用途与状态，视觉变化来自尺度、强调与上下文。
+			<section className="mt-10" id="palette-usage">
+				<h3 className="text-lg font-bold">组件中如何用色</h3>
+				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
+					组件只消费语义角色，不根据具体色相分支。颜色负责表达动作优先级与状态，
+					尺寸、字重、描边和上下文负责形成其余视觉差异。
 				</p>
-				<ul className="mt-3 divide-y divide-border/40 rounded-xl border border-border/40 bg-card/30 px-4">
-					{SEMANTIC_ROLES.map((role) => (
-						<li className="flex items-center gap-3 py-2.5" key={role.token}>
-							<span
-								aria-hidden="true"
-								className="size-5 shrink-0 rounded-md ring-1 ring-black/5"
-								style={{ backgroundColor: `var(--${role.token})` }}
-							/>
-							<span className="w-20 shrink-0 text-sm font-semibold text-foreground">
-								{role.label}
-							</span>
-							<code className="w-24 shrink-0 font-mono text-xs text-muted-foreground">
-								--{role.token}
-							</code>
-							<span className="min-w-0 flex-1 text-xs leading-5 text-muted-foreground">
-								{role.usage}
-							</span>
-						</li>
+				<div className="mt-4 grid gap-3 sm:grid-cols-2">
+					{[
+						{
+							title: "主色用于最高优先级",
+							body: "一个操作区只保留一个实色主动作；选择、hover 与次级提示改用柔和主色。",
+						},
+						{
+							title: "状态色不可互换",
+							body: "成功、警告、危险和信息只表达对应状态，不作为装饰或栏目分类颜色。",
+						},
+						{
+							title: "表面依赖中性色层级",
+							body: "画布、卡片和弱化面由少量基础值派生，靠小幅明度差和描边组织空间。",
+						},
+						{
+							title: "前景必须与背景成对",
+							body: "solid 与 foreground、soft 与 soft-foreground 成对使用，并通过对比度审计。",
+						},
+					].map((principle) => (
+						<article
+							className="rounded-xl border border-border/50 bg-card/40 p-4"
+							key={principle.title}
+						>
+							<h4 className="text-sm font-semibold">{principle.title}</h4>
+							<p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+								{principle.body}
+							</p>
+						</article>
 					))}
-				</ul>
+				</div>
 			</section>
 
-			{/* 用法与覆盖 */}
 			<section className="mt-10">
-				<h3 className="text-lg font-bold">用法与覆盖</h3>
+				<h3 className="text-lg font-bold">默认主题与自定义颜色</h3>
 				<p className="mt-1 text-sm leading-7 text-muted-foreground">
-					组件里成对使用语义类名；CSS 里直接引用变量，主题级色值调整见{" "}
-					<GuideLink to="/design-system/guides/theming">主题</GuideLink>
+					当前选色器是本页受控预览：切换主色只更新上方浅色与深色示例，
+					不会写入根节点、持久化设置或改变项目其他界面。项目真正接入主题切换时，
+					在独立主题作用域覆盖主色源；完整约束见{" "}
+					<GuideLink to="/design-system/guides/theming">主题</GuideLink>。
 				</p>
 				<pre className="mt-3 overflow-x-auto rounded-xl border border-border/40 bg-card/30 p-4 font-mono text-xs leading-6 text-foreground">
 					<code>
 						{
-							'/* 组件中 */}\n<div className="bg-background text-foreground">\n  <button className="bg-primary text-primary-foreground hover:bg-primary/90">保存</button>\n</div>\n\n/* CSS 中 */\n.my-panel {\n  background: var(--card);\n  color: var(--card-foreground);\n  border: 1px solid var(--border);\n}\n\n/* 添加自定义颜色并暴露给 Tailwind */\n:root { --info: oklch(0.6 0.15 210); }\n@theme inline { --color-info: var(--info); }\n/* 之后即可使用 bg-info / text-info */'
+							'/* 组件只消费语义 */\n<Button variant="primary">保存</Button>\n<Button variant="soft">稍后处理</Button>\n\n/* 自定义主题作用域：当前项目尚未接入运行时切换 */\n[data-theme="custom"] {\n  --primary-base: oklch(0.62 0.18 250);\n  --primary-base-foreground: oklch(0.99 0 0);\n  --primary-base-hover: oklch(0.56 0.19 250);\n  --primary-base-soft: oklch(0.96 0.02 250);\n  --primary-base-soft-foreground: oklch(0.35 0.12 250);\n}\n\n@theme inline {\n  --color-primary-base: var(--primary-base);\n  --color-primary-base-foreground: var(--primary-base-foreground);\n}'
 						}
 					</code>
 				</pre>

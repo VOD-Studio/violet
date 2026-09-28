@@ -1,16 +1,27 @@
+import { hexToOklch } from "@shared/lib/color-math";
 import { describe, expect, it } from "vitest";
 import { generatePalette } from "../palette";
 
 describe("色板生成器", () => {
-	const palette = generatePalette({ h: 222, c: 0.16 });
+	const palette = generatePalette({ l: 0.53, h: 222, c: 0.16 });
 
-	it("品牌色阶 ×11，浅到深，hex 均为 7 位", () => {
+	it("主色色阶 ×11，浅到深，hex 均为 7 位", () => {
 		expect(palette.ramp).toHaveLength(11);
 		expect(palette.ramp[0].label).toBe("50");
 		expect(palette.ramp[10].label).toBe("950");
 		for (const step of palette.ramp) {
 			expect(step.hex).toMatch(/^#[0-9a-f]{6}$/);
 		}
+	});
+
+	it("浅色主色保留用户选择的种子颜色", () => {
+		const selected = "#e44a49";
+		const seed = hexToOklch(selected);
+		if (!seed) throw new Error("测试色应可转换为 OKLCH");
+
+		const generated = generatePalette({ l: seed.l, h: seed.h, c: seed.c });
+
+		expect(generated.primaryRoles[0].light.hex).toBe(selected);
 	});
 
 	it("主色与强调只收标准语义 token,中性带独立", () => {
@@ -39,7 +50,7 @@ describe("色板生成器", () => {
 	});
 
 	it("同种子输出确定", () => {
-		expect(generatePalette({ h: 222, c: 0.16 })).toEqual(palette);
+		expect(generatePalette({ l: 0.53, h: 222, c: 0.16 })).toEqual(palette);
 	});
 
 	it("核心配对全部通过 WCAG 审计", () => {
@@ -48,12 +59,12 @@ describe("色板生成器", () => {
 	});
 
 	it("中性带带种子色相晕染：同 L 不同种子的画布色相不同", () => {
-		const other = generatePalette({ h: 120, c: 0.16 });
+		const other = generatePalette({ l: 0.53, h: 120, c: 0.16 });
 		expect(other.neutral[0].light.oklch).not.toBe(palette.neutral[0].light.oklch);
 	});
 
 	it("功能色为固定行为语义，不随种子更迭，且具备完整的实色与浅染层级", () => {
-		const other = generatePalette({ h: 120, c: 0.3 });
+		const other = generatePalette({ l: 0.53, h: 120, c: 0.3 });
 		expect(other.functional).toEqual(palette.functional);
 		expect(palette.functionalSets.map((s) => s.key)).toEqual([
 			"info",
