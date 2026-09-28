@@ -1,157 +1,13 @@
-import {
-	CartoonPopover,
-	CartoonPopoverContent,
-	CartoonPopoverGroup,
-	CartoonPopoverGroupItem,
-	CartoonPopoverTrigger,
-} from "@shared/ui/cartoon-popover";
-import { Button } from "@violet/ui";
-import { HelpCircle, MessageCircle, MousePointerClick } from "lucide-react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
-
-const BASIC_CODE = `import { Button } from "@violet/ui";;
-import {
-  CartoonPopover,
-  CartoonPopoverContent,
-  CartoonPopoverTrigger,
-} from "@shared/ui/cartoon-popover";
-
-function Example() {
-  return (
-    <CartoonPopover>
-      <CartoonPopoverTrigger asChild>
-        <Button variant="default">打开卡通气泡</Button>
-      </CartoonPopoverTrigger>
-      <CartoonPopoverContent
-        title="温馨提示"
-        description="带有对白尾巴的卡通气泡。"
-        showClose
-      >
-        <p className="text-xs">支持视口防溢出自动对齐，点击外部或 Esc 关闭。</p>
-      </CartoonPopoverContent>
-    </CartoonPopover>
-  );
-}`;
-
-const HOVER_CODE = `<div className="flex flex-wrap gap-4">
-  {/* 悬停触发 */}
-  <CartoonPopover triggerMode="hover">
-    <CartoonPopoverTrigger asChild>
-      <Button variant="outline">悬停显示 (Hover)</Button>
-    </CartoonPopoverTrigger>
-    <CartoonPopoverContent variant="brand" title="悬停提示">
-      <p className="text-xs">鼠标移入立即弹出，移入气泡内部继续保持。</p>
-    </CartoonPopoverContent>
-  </CartoonPopover>
-
-  {/* 点击与悬停兼备 */}
-  <CartoonPopover openOnHover>
-    <CartoonPopoverTrigger asChild>
-      <Button variant="outline">悬停或点击 (Both)</Button>
-    </CartoonPopoverTrigger>
-    <CartoonPopoverContent variant="amber" title="双模触发" showClose>
-      <p className="text-xs">支持鼠标悬停浮出，也支持直接点击固定。</p>
-    </CartoonPopoverContent>
-  </CartoonPopover>
-</div>`;
-
-const GROUP_CODE = `<CartoonPopoverGroup>
-  <CartoonPopoverGroupItem
-    value="default"
-    trigger={<Button size="sm" variant="outline">Default</Button>}
-    variant="default"
-    title="Default"
-  >
-    <p className="text-xs">经典单行文本，高度紧凑。</p>
-  </CartoonPopoverGroupItem>
-
-  <CartoonPopoverGroupItem
-    value="brand"
-    trigger={<Button size="sm" variant="outline">Brand</Button>}
-    variant="brand"
-    title="Brand 品牌色"
-  >
-    <div className="space-y-1 text-xs">
-      <p>冷香紫罗兰专属方言底色。</p>
-      <p className="text-muted-foreground">内容变化时平滑拉伸高度。</p>
-    </div>
-  </CartoonPopoverGroupItem>
-
-  <CartoonPopoverGroupItem
-    value="amber"
-    trigger={<Button size="sm" variant="outline">Amber</Button>}
-    variant="amber"
-    title="Amber 元气黄"
-  >
-    <div className="space-y-1 text-xs">
-      <p>暖阳提示信息，内容更丰富。</p>
-      <p>鼠标在这一排按钮间滑过时：</p>
-      <p className="text-muted-foreground">气泡平滑滑过去，绝不一闪一闪！</p>
-    </div>
-  </CartoonPopoverGroupItem>
-
-  <CartoonPopoverGroupItem
-    value="mint"
-    trigger={<Button size="sm" variant="outline">Mint</Button>}
-    variant="mint"
-    title="Mint 清新绿"
-  >
-    <p className="text-xs">回到单行，高度再次顺畅收缩。</p>
-  </CartoonPopoverGroupItem>
-
-  <CartoonPopoverGroupItem
-    value="rose"
-    trigger={<Button size="sm" variant="outline">Rose</Button>}
-    variant="rose"
-    title="Rose 蜜桃粉"
-  >
-    <p className="text-xs">活泼软萌的趣味点缀。</p>
-  </CartoonPopoverGroupItem>
-
-  <CartoonPopoverGroupItem
-    value="sky"
-    trigger={<Button size="sm" variant="outline">Sky</Button>}
-    variant="sky"
-    title="Sky 晴空蓝"
-  >
-    <div className="space-y-1 text-xs">
-      <p>轻盈微风色调。</p>
-      <p className="text-muted-foreground">离开整排按钮后统一缓冲收起。</p>
-    </div>
-  </CartoonPopoverGroupItem>
-
-  <CartoonPopoverGroupItem
-    value="dark"
-    trigger={<Button size="sm" variant="outline">Dark</Button>}
-    variant="dark"
-    title="Dark 夜墨"
-  >
-    <p className="text-xs">紫黑底与低亮灰紫描线，轮廓先成、文字后显。</p>
-  </CartoonPopoverGroupItem>
-</CartoonPopoverGroup>`;
-
-const STYLES_CODE = `<div className="flex flex-wrap gap-4">
-  {/* 经典对白气泡 */}
-  <CartoonPopover>
-    <CartoonPopoverTrigger asChild>
-      <Button variant="outline">对白气泡 (Speech)</Button>
-    </CartoonPopoverTrigger>
-    <CartoonPopoverContent bubbleStyle="speech" title="漫画对白" showClose>
-      <p className="text-xs">平滑连通的三角形小尾巴，精准指向触发器中心。</p>
-    </CartoonPopoverContent>
-  </CartoonPopover>
-
-  {/* 便签贴纸 */}
-  <CartoonPopover>
-    <CartoonPopoverTrigger asChild>
-      <Button variant="outline">便签贴纸 (Sticker)</Button>
-    </CartoonPopoverTrigger>
-    <CartoonPopoverContent bubbleStyle="sticker" variant="amber" shadowStyle="comic" title="便签贴纸" showClose>
-      <p className="text-xs">不带小尾巴的圆润卡片，搭配 3px 漫画实色投影。</p>
-    </CartoonPopoverContent>
-  </CartoonPopover>
-</div>`;
+import { CartoonPopoverBasicDemo } from "./examples/cartoon-popover/basic";
+import basicSource from "./examples/cartoon-popover/basic.tsx?raw";
+import { CartoonPopoverGroupDemo } from "./examples/cartoon-popover/group";
+import groupSource from "./examples/cartoon-popover/group.tsx?raw";
+import { CartoonPopoverHoverDemo } from "./examples/cartoon-popover/hover";
+import hoverSource from "./examples/cartoon-popover/hover.tsx?raw";
+import { CartoonPopoverStylesDemo } from "./examples/cartoon-popover/styles";
+import stylesSource from "./examples/cartoon-popover/styles.tsx?raw";
 
 interface PropRow {
 	name: string;
@@ -344,30 +200,8 @@ export function CartoonPopoverDocPage() {
 					从 shared/ui/cartoon-popover 导入。点击触发器即可弹出，支持外部点击与 Escape
 					自动关闭。
 				</p>
-				<ComponentDemo code={BASIC_CODE}>
-					<div className="flex justify-center py-6">
-						<CartoonPopover>
-							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="default">
-									打开卡通气泡
-								</Button>
-							</CartoonPopoverTrigger>
-							<CartoonPopoverContent
-								title="你好，旅人！"
-								description="欢迎来到紫罗兰的营造法式典籍。"
-								showClose
-								side="bottom"
-								variant="brand"
-							>
-								<div className="space-y-1 pt-1 text-xs">
-									<p>对白小尾巴与气泡边框平滑连通，内部背景无阻隔。</p>
-									<p className="text-muted-foreground">
-										支持点击、悬停与视口防溢出自动对齐。
-									</p>
-								</div>
-							</CartoonPopoverContent>
-						</CartoonPopover>
-					</div>
+				<ComponentDemo code={basicSource}>
+					<CartoonPopoverBasicDemo />
 				</ComponentDemo>
 			</section>
 
@@ -380,119 +214,8 @@ export function CartoonPopoverDocPage() {
 					当有一排带有 Popover 的按钮时，使用 CartoonPopoverGroup
 					包裹。鼠标在组内滑过时浮层连续滑动并随内容调整尺寸；完全离开后沿轮廓收起，再次进入从新位置描线淡入。系统启用「减少动态效果」时即时开合。
 				</p>
-				<ComponentDemo code={GROUP_CODE}>
-					<div className="flex flex-wrap items-center justify-center gap-3 py-6">
-						<CartoonPopoverGroup>
-							<CartoonPopoverGroupItem
-								value="default"
-								trigger={
-									<Button size="sm" variant="outline">
-										Default
-									</Button>
-								}
-								variant="default"
-								title="Default"
-							>
-								<p className="text-xs">经典单行文本，高度紧凑。</p>
-							</CartoonPopoverGroupItem>
-
-							<CartoonPopoverGroupItem
-								value="brand"
-								trigger={
-									<Button size="sm" variant="outline">
-										Brand
-									</Button>
-								}
-								variant="brand"
-								title="Brand 品牌色"
-							>
-								<div className="space-y-1 text-xs">
-									<p>冷香紫罗兰专属方言底色。</p>
-									<p className="text-muted-foreground">
-										内容变化时平滑拉伸高度！
-									</p>
-								</div>
-							</CartoonPopoverGroupItem>
-
-							<CartoonPopoverGroupItem
-								value="amber"
-								trigger={
-									<Button size="sm" variant="outline">
-										Amber
-									</Button>
-								}
-								variant="amber"
-								title="Amber 元气黄"
-							>
-								<div className="space-y-1 text-xs">
-									<p>暖阳提示信息，内容行数更多。</p>
-									<p>鼠标横向滑过这一排按钮时：</p>
-									<p className="text-muted-foreground">
-										浮层平滑滑过去，绝不闪现。
-									</p>
-								</div>
-							</CartoonPopoverGroupItem>
-
-							<CartoonPopoverGroupItem
-								value="mint"
-								trigger={
-									<Button size="sm" variant="outline">
-										Mint
-									</Button>
-								}
-								variant="mint"
-								title="Mint 清新绿"
-							>
-								<p className="text-xs">回到单行，高度再次自适应收缩。</p>
-							</CartoonPopoverGroupItem>
-
-							<CartoonPopoverGroupItem
-								value="rose"
-								trigger={
-									<Button size="sm" variant="outline">
-										Rose
-									</Button>
-								}
-								variant="rose"
-								title="Rose 蜜桃粉"
-							>
-								<p className="text-xs">活泼软萌的趣味点缀说明。</p>
-							</CartoonPopoverGroupItem>
-
-							<CartoonPopoverGroupItem
-								value="sky"
-								trigger={
-									<Button size="sm" variant="outline">
-										Sky
-									</Button>
-								}
-								variant="sky"
-								title="Sky 晴空蓝"
-							>
-								<div className="space-y-1 text-xs">
-									<p>轻盈微风色调。</p>
-									<p className="text-muted-foreground">
-										离开整排按钮后统一缓冲收起。
-									</p>
-								</div>
-							</CartoonPopoverGroupItem>
-
-							<CartoonPopoverGroupItem
-								value="dark"
-								trigger={
-									<Button size="sm" variant="outline">
-										Dark
-									</Button>
-								}
-								variant="dark"
-								title="Dark 夜墨"
-							>
-								<p className="text-xs">
-									紫黑底与低亮灰紫描线，轮廓先成、文字后显。
-								</p>
-							</CartoonPopoverGroupItem>
-						</CartoonPopoverGroup>
-					</div>
+				<ComponentDemo code={groupSource}>
+					<CartoonPopoverGroupDemo />
 				</ComponentDemo>
 			</section>
 
@@ -505,35 +228,8 @@ export function CartoonPopoverDocPage() {
 					支持仅点击（click）、仅悬停（hover）或两者兼具（both /
 					openOnHover）。悬停模式下移入气泡内容区保持打开，鼠标离开后平滑收起。
 				</p>
-				<ComponentDemo code={HOVER_CODE}>
-					<div className="flex flex-wrap items-center justify-center gap-4 py-6">
-						<CartoonPopover triggerMode="hover">
-							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="outline" className="gap-1.5">
-									<MousePointerClick className="size-4" />
-									悬停显示 (Hover)
-								</Button>
-							</CartoonPopoverTrigger>
-							<CartoonPopoverContent variant="brand" title="悬停提示">
-								<p className="text-xs">
-									鼠标移入立即弹出，移入气泡内部继续保持，体验平滑。
-								</p>
-							</CartoonPopoverContent>
-						</CartoonPopover>
-
-						<CartoonPopover openOnHover>
-							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="outline">
-									悬停或点击 (Both)
-								</Button>
-							</CartoonPopoverTrigger>
-							<CartoonPopoverContent variant="amber" title="双模触发" showClose>
-								<p className="text-xs">
-									既可悬停预览，也支持直接点击固定，带关闭胶囊。
-								</p>
-							</CartoonPopoverContent>
-						</CartoonPopover>
-					</div>
+				<ComponentDemo code={hoverSource}>
+					<CartoonPopoverHoverDemo />
 				</ComponentDemo>
 			</section>
 
@@ -545,42 +241,8 @@ export function CartoonPopoverDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					提供带三角形小尾巴的经典对白气泡（speech）与无尾巴的便签贴纸（sticker）。
 				</p>
-				<ComponentDemo code={STYLES_CODE}>
-					<div className="flex flex-wrap items-center justify-center gap-4 py-6">
-						<CartoonPopover>
-							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="outline" className="gap-1.5">
-									<MessageCircle className="size-4" />
-									对白气泡
-								</Button>
-							</CartoonPopoverTrigger>
-							<CartoonPopoverContent bubbleStyle="speech" title="漫画对白" showClose>
-								<p className="text-xs">
-									平滑连通的三角形小尾巴，精准指向触发器中心。
-								</p>
-							</CartoonPopoverContent>
-						</CartoonPopover>
-
-						<CartoonPopover>
-							<CartoonPopoverTrigger asChild>
-								<Button type="button" variant="outline" className="gap-1.5">
-									<HelpCircle className="size-4" />
-									便签贴纸
-								</Button>
-							</CartoonPopoverTrigger>
-							<CartoonPopoverContent
-								bubbleStyle="sticker"
-								variant="amber"
-								shadowStyle="comic"
-								title="便签贴纸"
-								showClose
-							>
-								<p className="text-xs">
-									不带小尾巴的圆润卡片，搭配 3px 漫画实色投影。
-								</p>
-							</CartoonPopoverContent>
-						</CartoonPopover>
-					</div>
+				<ComponentDemo code={stylesSource}>
+					<CartoonPopoverStylesDemo />
 				</ComponentDemo>
 			</section>
 

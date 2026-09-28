@@ -1,73 +1,17 @@
-import { Link } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
-import { ArrowRight, Download, Mail, Plus, Sparkles } from "lucide-react";
-import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
-
-const BASIC_CODE = `import { Button } from "@violet/ui";;
-import { useState } from "react";
-
-function Example() {
-  const [clicks, setClicks] = useState(0);
-  return (
-    <Button type="button" onClick={() => setClicks((count) => count + 1)}>
-      已点击 {clicks} 次
-    </Button>
-  );
-}`;
-
-const VARIANT_CODE = `<Button type="button" variant="default">主要动作</Button>
-<Button type="button" variant="brand">品牌强调</Button>
-<Button type="button" variant="secondary">次要动作</Button>
-<Button type="button" variant="soft">柔和淡染</Button>
-<Button type="button" variant="outline">描边动作</Button>
-<Button type="button" variant="ghost">轻量动作</Button>
-<Button type="button" variant="link">文字动作</Button>
-<Button type="button" variant="destructive">危险操作</Button>`;
-
-const SIZE_CODE = `import { Plus } from "lucide-react";
-
-<Button type="button" size="xs">极小 xs</Button>
-<Button type="button" size="sm">小 sm</Button>
-<Button type="button" size="default">默认</Button>
-<Button type="button" size="lg">大 lg</Button>
-<Button type="button" size="xl">特大 xl</Button>
-<Button type="button" size="icon" aria-label="新建">
-  <Plus aria-hidden="true" />
-</Button>`;
-
-const ICON_CODE = `import { ArrowRight, Download, Mail, Sparkles } from "lucide-react";
-
-<Button leftIcon={<Mail />}>发送邮件</Button>
-<Button rightIcon={<ArrowRight />} variant="brand">继续阅读</Button>
-<Button leftIcon={<Sparkles />} variant="soft">灵感启发</Button>
-<Button leftIcon={<Download />} rightIcon={<ArrowRight />} variant="outline">导出数据</Button>`;
-
-const STATE_CODE = `import { Button } from "@violet/ui";;
-import { Mail } from "lucide-react";
-
-{/* 1. 内置平滑加载（正文在场留存，指示器自适应平滑展开） */}
-<Button loading>保存修改</Button>
-
-{/* 2. 携带自定义文案的加载状态 */}
-<Button loading loadingText="正在同步数据...">提交发布</Button>
-
-{/* 3. 前置图标按钮加载（原位平滑淡入淡出，零宽度跳变） */}
-<Button loading leftIcon={<Mail />}>发送邮件</Button>
-
-{/* 4. 原生不可用状态 */}
-<Button disabled>已归档</Button>`;
-
-const LINK_CODE = `import { Button } from "@violet/ui";;
-import { Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
-
-<Button asChild variant="outline">
-  <Link to="/design-system/decisions">
-    查看快速决策表 <ArrowRight aria-hidden="true" />
-  </Link>
-</Button>`;
+import { ButtonBasicDemo } from "./examples/button/basic";
+import basicSource from "./examples/button/basic.tsx?raw";
+import { ButtonIconsDemo } from "./examples/button/icons";
+import iconsSource from "./examples/button/icons.tsx?raw";
+import { ButtonLinkDemo } from "./examples/button/link";
+import linkSource from "./examples/button/link.tsx?raw";
+import { ButtonSizesDemo } from "./examples/button/sizes";
+import sizesSource from "./examples/button/sizes.tsx?raw";
+import { ButtonStatesDemo } from "./examples/button/states";
+import statesSource from "./examples/button/states.tsx?raw";
+import { ButtonVariantsDemo } from "./examples/button/variants";
+import variantsSource from "./examples/button/variants.tsx?raw";
 
 interface PropRow {
 	name: string;
@@ -164,14 +108,6 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 
 /** 以真实 Button 展示用法、视觉层级、状态和语义边界。 */
 export function ButtonDocPage() {
-	const [clicks, setClicks] = useState(0);
-	const [simulating, setSimulating] = useState(false);
-
-	const handleSimulateLoading = () => {
-		setSimulating(true);
-		window.setTimeout(() => setSimulating(false), 2000);
-	};
-
 	return (
 		<article className="mx-auto w-full max-w-4xl space-y-14 pb-24 font-sans">
 			<header className="space-y-3">
@@ -186,7 +122,7 @@ export function ButtonDocPage() {
 					与静穆物理层级打造：顶边细微内高光与底部轻触感阴影、纯光学明度吸收按压反馈（无位移颤抖与缩放）、平滑加载动画（正文持续留存，指示器平滑展开或原位淡入淡出）与首选图标插槽。
 				</p>
 				<p className="text-xs text-muted-foreground">
-					源码{" "}
+					源码
 					<code className="font-mono text-foreground">
 						web/src/shared/ui/base/button.tsx
 					</code>
@@ -200,12 +136,8 @@ export function ButtonDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
 				</p>
-				<ComponentDemo code={BASIC_CODE}>
-					<div className="flex justify-center">
-						<Button type="button" onClick={() => setClicks((count) => count + 1)}>
-							已点击 {clicks} 次
-						</Button>
-					</div>
+				<ComponentDemo code={basicSource}>
+					<ButtonBasicDemo />
 				</ComponentDemo>
 			</section>
 
@@ -221,33 +153,8 @@ export function ButtonDocPage() {
 						主要动作使用 default（随方言映射），品牌强调使用专属 brand，柔和辅助使用
 						soft，描边与次级使用 outline / secondary，轻量操作使用 ghost。
 					</p>
-					<ComponentDemo code={VARIANT_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-3">
-							<Button type="button" variant="default">
-								主要动作
-							</Button>
-							<Button type="button" variant="brand">
-								品牌强调
-							</Button>
-							<Button type="button" variant="secondary">
-								次要动作
-							</Button>
-							<Button type="button" variant="soft">
-								柔和淡染
-							</Button>
-							<Button type="button" variant="outline">
-								描边动作
-							</Button>
-							<Button type="button" variant="ghost">
-								轻量动作
-							</Button>
-							<Button type="button" variant="link">
-								文字动作
-							</Button>
-							<Button type="button" variant="destructive">
-								危险操作
-							</Button>
-						</div>
+					<ComponentDemo code={variantsSource}>
+						<ButtonVariantsDemo />
 					</ComponentDemo>
 				</div>
 
@@ -258,27 +165,8 @@ export function ButtonDocPage() {
 						包含 xs 到 xl 五个高度梯度；纯图标按钮请使用 icon 档位并提供明确的
 						aria-label。
 					</p>
-					<ComponentDemo code={SIZE_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-3">
-							<Button type="button" size="xs">
-								极小 xs
-							</Button>
-							<Button type="button" size="sm">
-								小 sm
-							</Button>
-							<Button type="button" size="default">
-								默认
-							</Button>
-							<Button type="button" size="lg">
-								大 lg
-							</Button>
-							<Button type="button" size="xl">
-								特大 xl
-							</Button>
-							<Button type="button" size="icon" aria-label="新建">
-								<Plus aria-hidden="true" />
-							</Button>
-						</div>
+					<ComponentDemo code={sizesSource}>
+						<ButtonSizesDemo />
 					</ComponentDemo>
 				</div>
 
@@ -288,23 +176,8 @@ export function ButtonDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
 					</p>
-					<ComponentDemo code={ICON_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-3">
-							<Button leftIcon={<Mail aria-hidden="true" />}>发送邮件</Button>
-							<Button rightIcon={<ArrowRight aria-hidden="true" />} variant="brand">
-								继续阅读
-							</Button>
-							<Button leftIcon={<Sparkles aria-hidden="true" />} variant="soft">
-								灵感启发
-							</Button>
-							<Button
-								leftIcon={<Download aria-hidden="true" />}
-								rightIcon={<ArrowRight aria-hidden="true" />}
-								variant="outline"
-							>
-								导出数据
-							</Button>
-						</div>
+					<ComponentDemo code={iconsSource}>
+						<ButtonIconsDemo />
 					</ComponentDemo>
 				</div>
 
@@ -315,36 +188,8 @@ export function ButtonDocPage() {
 						内置 loading 支持：处于加载中时自动禁用并设置
 						aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
 					</p>
-					<ComponentDemo code={STATE_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-3">
-							<Button
-								type="button"
-								variant="brand"
-								loading={simulating}
-								onClick={handleSimulateLoading}
-							>
-								保存修改
-							</Button>
-							<Button
-								type="button"
-								variant="default"
-								loading
-								loadingText="正在同步数据..."
-							>
-								提交发布
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								loading
-								leftIcon={<Mail aria-hidden="true" />}
-							>
-								发送邮件
-							</Button>
-							<Button type="button" disabled>
-								已归档
-							</Button>
-						</div>
+					<ComponentDemo code={statesSource}>
+						<ButtonStatesDemo />
 					</ComponentDemo>
 				</div>
 
@@ -357,14 +202,8 @@ export function ButtonDocPage() {
 						跳转页面使用 Link；asChild
 						只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
 					</p>
-					<ComponentDemo code={LINK_CODE}>
-						<div className="flex justify-center">
-							<Button asChild variant="outline">
-								<Link to="/design-system/decisions">
-									查看快速决策表 <ArrowRight aria-hidden="true" />
-								</Link>
-							</Button>
-						</div>
+					<ComponentDemo code={linkSource}>
+						<ButtonLinkDemo />
 					</ComponentDemo>
 				</div>
 			</section>
