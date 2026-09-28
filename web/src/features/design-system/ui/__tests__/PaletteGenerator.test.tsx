@@ -173,15 +173,21 @@ describe("色板生成器", () => {
 		const violetCard = document.querySelector(
 			'[data-title="@violet/ui/styles/palettes/violet.css"] pre',
 		);
-		expect(violetCard?.textContent).toContain("--primary-base-ring:");
+		expect(violetCard?.textContent).toContain(
+			"--primary-base-ring: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286))",
+		);
 		const coralCard = document.querySelector(
 			'[data-title="覆盖主色源 · palettes/coral.css"] pre',
 		);
-		expect(coralCard?.textContent).toContain("--primary-base: oklch(0.625 0.19 25)");
+		expect(coralCard?.textContent).toContain(
+			"--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22))",
+		);
 		const siteTokensCard = document.querySelector(
 			'[data-title="添加业务色 · styles/site-tokens.css"] pre',
 		);
-		expect(siteTokensCard?.textContent).toContain("--paper: oklch(0.976 0.012 85)");
+		expect(siteTokensCard?.textContent).toContain(
+			"--paper: light-dark(oklch(0.976 0.012 85), oklch(0.23 0.012 70))",
+		);
 		expect(siteTokensCard?.textContent).toContain("--color-paper: var(--paper)");
 	});
 

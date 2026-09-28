@@ -53,7 +53,7 @@ const AppProvider = ({ children }: AppProviderProps) => {
 	return (
 		<QueryClientProvider client={clientQueryClient}>
 			<GoogleOAuthGate>
-				<ThemeProvider attribute="class" defaultTheme="system">
+				<ThemeProvider attribute="class" defaultTheme="system" enableColorScheme={false}>
 					<CustomEmojiContextMenu>{children}</CustomEmojiContextMenu>
 					<ThemedToaster />
 				</ThemeProvider>

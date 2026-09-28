@@ -5,9 +5,10 @@ export default function DarkModeGuide() {
 	return (
 		<GuideSection title="通过祖先类切换">
 			<p>
-				主题入口为 <code>:root</code> 提供浅色值，为 <code>.dark</code> 提供暗色值。库不注入
-				JS 主题管理。本站在根 Provider 使用 <code>next-themes</code> 的{" "}
-				<code>attribute="class"</code> 和 <code>defaultTheme="system"</code>，它把 dark
+				主题 token 以 <code>light-dark()</code> 单声明成对提供明暗取值；
+				<code>.dark</code> 类只负责把 <code>color-scheme</code> 切到 dark
+				以激活暗色支。库不注入 JS 主题管理。本站在根 Provider 使用 <code>next-themes</code>{" "}
+				的 <code>attribute="class"</code> 和 <code>defaultTheme="system"</code>，它把 dark
 				类挂到 html。
 			</p>
 			<GuideCode

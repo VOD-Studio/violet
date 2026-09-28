@@ -2,21 +2,14 @@
  * 暖珊瑚主色源预设。
  *
  * 与组件库默认 palette 提供相同的 primary-base 契约；页面调用方不感知预设名。
+ * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark
+ * （color-scheme: dark）激活。
  */
 :root {
-	--primary-base: oklch(0.625 0.19 25);
-	--primary-base-foreground: oklch(0.99 0 0);
-	--primary-base-hover: oklch(0.575 0.185 25);
-	--primary-base-soft: oklch(0.95 0.025 25);
-	--primary-base-soft-foreground: oklch(0.36 0.11 25);
-	--primary-base-ring: oklch(0.625 0.19 25);
-}
-
-.dark {
-	--primary-base: oklch(0.72 0.15 22);
-	--primary-base-foreground: oklch(0.17 0 0);
-	--primary-base-hover: oklch(0.67 0.155 22);
-	--primary-base-soft: oklch(0.25 0.025 22);
-	--primary-base-soft-foreground: oklch(0.88 0.065 22);
-	--primary-base-ring: oklch(0.72 0.15 22);
+	--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
+	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.17 0 0));
+	--primary-base-hover: light-dark(oklch(0.575 0.185 25), oklch(0.67 0.155 22));
+	--primary-base-soft: light-dark(oklch(0.95 0.025 25), oklch(0.25 0.025 22));
+	--primary-base-soft-foreground: light-dark(oklch(0.36 0.11 25), oklch(0.88 0.065 22));
+	--primary-base-ring: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
 }

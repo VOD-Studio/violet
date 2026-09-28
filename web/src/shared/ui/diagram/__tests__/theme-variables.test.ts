@@ -47,18 +47,24 @@ describe("getThemeVariables", () => {
 	});
 
 	/**
-	 * 安装 getComputedStyle mock：探针带 .dark 类 → 返回暗色变量；否则浅色。
-	 * color-resolution 探针（style.color 已设）→ 把 oklch 规范化为 rgb()，
-	 * 模拟真实浏览器行为。L→灰度映射够测，无需感知均匀。
+	 * 安装 getComputedStyle mock：探针 style 的 color-scheme=dark → 返回暗色域
+	 * 变量（模拟浏览器对 light-dark() 按探针 color-scheme 取支）；backgroundColor
+	 * 上的 var(name) 映射回对应域变量值。color-resolution 探针（style.color 已设）
+	 * → 把 oklch 规范化为 rgb()，模拟真实浏览器行为。L→灰度映射够测，无需感知均匀。
 	 */
 	function mockComputedStyle(light: Record<string, string>, dark: Record<string, string>) {
 		vi.spyOn(window, "getComputedStyle").mockImplementation((el) => {
 			const node = el as HTMLElement;
-			const isDark = node.className?.includes("dark");
-			const vars = isDark ? dark : light;
+			const vars = node.style?.getPropertyValue("color-scheme") === "dark" ? dark : light;
 			const inlineColor = node.style?.color;
+			const inlineBg = node.style?.backgroundColor;
 			return {
 				getPropertyValue: (name: string) => vars[name.trim()] ?? "",
+				get backgroundColor(): string {
+					// readSiteVar 把 var(name) 落到 background-color 触发按域求值
+					const m = inlineBg?.match(/^var\((.+)\)$/);
+					return m ? (vars[m[1].trim()] ?? "") : "";
+				},
 				get color(): string {
 					if (!inlineColor) return "";
 					const m = inlineColor.match(/oklch\(\s*([\d.]+)/);

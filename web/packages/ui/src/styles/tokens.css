@@ -1,96 +1,65 @@
 /*
  * 基础语义 token：画布、正文、卡片、浮层、静音表面、边界、输入、焦点，
- * 以及 destructive / warning / success 等行为状态色。定义在根作用域（:root / .dark），全站共享。
+ * 以及 destructive / warning / success 等行为状态色。定义在根作用域，全站共享。
+ *
+ * 明暗成对取值以 light-dark() 单声明表达：暗色支由 .dark 作用域的
+ * color-scheme 激活（next-themes 挂 html），不再维护 :root / .dark 两份块。
  *
  * 主要动作色（--primary 系）在基础层默认取高对比中性色，即工具方言所需形态；
  * 公开内容方言在 dialects/public.css 把动作映射到主色源（palettes/）。
  * 行为状态色不属于主色源，任何 palette 与方言都不得改写其含义。
  * 全站色调统一基于 Violet 经典冷香紫罗兰色相（Hue 286），赋予明暗主题浑然天成的优雅质感。
  */
+
+/* light-dark() 的取值开关：消费方只要保留 .dark 类挂 html 即获得暗色支 */
+:root {
+	color-scheme: light;
+}
+
+.dark {
+	color-scheme: dark;
+}
+
 :root {
 	--radius: 0.625rem;
 
-	/* 浅色底色：温润白瓷质感，微泛极浅鸢尾冷香，消除纯白刺眼感 */
-	--background: oklch(0.992 0.003 286);
-	--foreground: oklch(0.19 0.015 286);
-	/* 卡片与浮层：纯净白表面，悬浮于底色之上 */
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.19 0.015 286);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.19 0.015 286);
+	/* 浅色底色：温润白瓷质感，微泛极浅鸢尾冷香；暗色：玄曜紫霄星空黑曜石 */
+	--background: light-dark(oklch(0.992 0.003 286), oklch(0.138 0.012 286));
+	--foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
+	/* 卡片与浮层：浅色纯净白表面；暗色低彩冷紫夜色微晕，悬浮于底色之上 */
+	--card: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
+	--card-foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
+	--popover: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
+	--popover-foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
 	/* 纸面、人设与 Neon 等站点业务语义色由宿主提供（见 web/src/styles/site-tokens.css） */
 	/* 基础主要动作（工具方言中性形态，高对比） */
-	--primary: oklch(0.205 0 0);
-	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.958 0.008 286);
-	--secondary-foreground: oklch(0.22 0.02 286);
-	--muted: oklch(0.962 0.006 286);
-	--muted-foreground: oklch(0.52 0.02 286);
-	--accent: oklch(0.962 0.006 286);
-	--accent-foreground: oklch(0.22 0.02 286);
+	--primary: light-dark(oklch(0.205 0 0), oklch(0.922 0 0));
+	--primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.18 0.015 286));
+	--secondary: light-dark(oklch(0.958 0.008 286), oklch(0.225 0.016 286));
+	--secondary-foreground: light-dark(oklch(0.22 0.02 286), oklch(0.95 0.008 286));
+	--muted: light-dark(oklch(0.962 0.006 286), oklch(0.225 0.016 286));
+	--muted-foreground: light-dark(oklch(0.52 0.02 286), oklch(0.68 0.022 286));
+	--accent: light-dark(oklch(0.962 0.006 286), oklch(0.225 0.016 286));
+	--accent-foreground: light-dark(oklch(0.22 0.02 286), oklch(0.95 0.008 286));
 	/* 状态色：固定语义，采用现代高级 OKLCH 感知色彩美学校准 */
-	--destructive: oklch(0.58 0.195 20);
-	--destructive-foreground: oklch(0.99 0 0);
-	--warning: oklch(0.66 0.155 60);
-	--warning-foreground: oklch(0.99 0 0);
-	--success: oklch(0.62 0.145 158);
-	--success-foreground: oklch(0.99 0 0);
-	--border: oklch(0.908 0.008 286);
-	--input: oklch(0.895 0.01 286);
-	--ring: oklch(0.53 0.205 286);
+	--destructive: light-dark(oklch(0.58 0.195 20), oklch(0.69 0.18 18));
+	--destructive-foreground: light-dark(oklch(0.99 0 0), oklch(0.99 0 0));
+	--warning: light-dark(oklch(0.66 0.155 60), oklch(0.77 0.15 65));
+	--warning-foreground: light-dark(oklch(0.99 0 0), oklch(0.16 0.03 75));
+	--success: light-dark(oklch(0.62 0.145 158), oklch(0.75 0.15 158));
+	--success-foreground: light-dark(oklch(0.99 0 0), oklch(0.15 0.03 158));
+	--border: light-dark(oklch(0.908 0.008 286), oklch(0.92 0.012 286 / 12%));
+	--input: light-dark(oklch(0.895 0.01 286), oklch(0.92 0.012 286 / 18%));
+	--ring: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
 
 	/* 站点定制语义色：发丝级轻分隔线与玻璃拟态表面（其余业务色由宿主提供） */
-	--edge-hairline: oklch(0.19 0.015 286 / 6%);
-	--surface-glass: oklch(1 0 0 / 70%);
+	--edge-hairline: light-dark(oklch(0.19 0.015 286 / 6%), oklch(1 0 0 / 8%));
+	--surface-glass: light-dark(oklch(1 0 0 / 70%), oklch(0.185 0.015 286 / 60%));
 
 	/* 协调图表调色板（5 色） */
-	--chart-1: oklch(0.58 0.2 286);
-	--chart-2: oklch(0.64 0.16 220);
-	--chart-3: oklch(0.6 0.15 155);
-	--chart-4: oklch(0.74 0.16 75);
-	--chart-5: oklch(0.64 0.2 350);
-}
-
-/*
- * 暗色主题 —— 玄曜紫霄（Nocturnal Obsidian & Amethyst）。
- * next-themes 在 <html> 上加 .dark 类触发。
- */
-.dark {
-	/* 深色底色：深邃星空黑曜石，带低彩冷紫夜色微晕 */
-	--background: oklch(0.138 0.012 286);
-	--foreground: oklch(0.955 0.008 286);
-	--card: oklch(0.185 0.015 286);
-	--card-foreground: oklch(0.955 0.008 286);
-	--popover: oklch(0.185 0.015 286);
-	--popover-foreground: oklch(0.955 0.008 286);
-	/* 纸面、人设与 Neon 等站点业务语义色由宿主提供 */
-	/* 基础主要动作（工具方言中性形态，高对比） */
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.18 0.015 286);
-	--secondary: oklch(0.225 0.016 286);
-	--secondary-foreground: oklch(0.95 0.008 286);
-	--muted: oklch(0.225 0.016 286);
-	--muted-foreground: oklch(0.68 0.022 286);
-	--accent: oklch(0.225 0.016 286);
-	--accent-foreground: oklch(0.95 0.008 286);
-	--destructive: oklch(0.69 0.18 18);
-	--destructive-foreground: oklch(0.99 0 0);
-	--warning: oklch(0.77 0.15 65);
-	--warning-foreground: oklch(0.16 0.03 75);
-	--success: oklch(0.75 0.15 158);
-	--success-foreground: oklch(0.15 0.03 158);
-	--border: oklch(0.92 0.012 286 / 12%);
-	--input: oklch(0.92 0.012 286 / 18%);
-	--ring: oklch(0.72 0.148 286);
-
-	/* 站点定制语义色：发丝级轻分隔线与玻璃拟态表面 */
-	--edge-hairline: oklch(1 0 0 / 8%);
-	--surface-glass: oklch(0.185 0.015 286 / 60%);
-
-	/* 暗色图表调色板（5 色） */
-	--chart-1: oklch(0.72 0.18 286);
-	--chart-2: oklch(0.74 0.16 220);
-	--chart-3: oklch(0.76 0.16 155);
-	--chart-4: oklch(0.8 0.16 75);
-	--chart-5: oklch(0.74 0.18 350);
+	--chart-1: light-dark(oklch(0.58 0.2 286), oklch(0.72 0.18 286));
+	--chart-2: light-dark(oklch(0.64 0.16 220), oklch(0.74 0.16 220));
+	--chart-3: light-dark(oklch(0.6 0.15 155), oklch(0.76 0.16 155));
+	--chart-4: light-dark(oklch(0.74 0.16 75), oklch(0.8 0.16 75));
+	--chart-5: light-dark(oklch(0.64 0.2 350), oklch(0.74 0.18 350));
 }

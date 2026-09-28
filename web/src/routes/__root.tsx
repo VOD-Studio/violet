@@ -175,13 +175,10 @@ function RootComponent() {
  */
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const { theme } = Route.useRouteContext();
+	// color-scheme 不内联注入：light-dark() 的取值开关由 tokens 的
+	// .dark 规则驱动，内联会永远压过它
 	return (
-		<html
-			lang="zh-CN"
-			className={theme}
-			style={{ colorScheme: theme }}
-			suppressHydrationWarning
-		>
+		<html className={theme} lang="zh-CN" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>

@@ -3,21 +3,14 @@
  *
  * 本层只提供稳定主色及其状态；页面方言决定是否把语义 primary 映射到主色源。
  * 画布与行为状态色不在 palette 管辖内。
+ * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark
+ * （color-scheme: dark）激活。
  */
 :root {
-	--primary-base: oklch(0.53 0.205 286);
-	--primary-base-foreground: oklch(0.99 0 0);
-	--primary-base-hover: oklch(0.47 0.215 286);
-	--primary-base-soft: oklch(0.965 0.022 286);
-	--primary-base-soft-foreground: oklch(0.35 0.14 286);
-	--primary-base-ring: oklch(0.53 0.205 286);
-}
-
-.dark {
-	--primary-base: oklch(0.72 0.148 286);
-	--primary-base-foreground: oklch(0.14 0.02 286);
-	--primary-base-hover: oklch(0.77 0.138 286);
-	--primary-base-soft: oklch(0.22 0.038 286);
-	--primary-base-soft-foreground: oklch(0.9 0.07 286);
-	--primary-base-ring: oklch(0.72 0.148 286);
+	--primary-base: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
+	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.14 0.02 286));
+	--primary-base-hover: light-dark(oklch(0.47 0.215 286), oklch(0.77 0.138 286));
+	--primary-base-soft: light-dark(oklch(0.965 0.022 286), oklch(0.22 0.038 286));
+	--primary-base-soft-foreground: light-dark(oklch(0.35 0.14 286), oklch(0.9 0.07 286));
+	--primary-base-ring: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
 }

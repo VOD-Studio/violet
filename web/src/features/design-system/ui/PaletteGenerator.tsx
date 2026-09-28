@@ -53,23 +53,16 @@ const VIOLET_PALETTE_SOURCE = `/*
  *
  * 本层只提供稳定主色及其状态；页面方言决定是否把语义 primary 映射到主色源。
  * 画布与行为状态色不在 palette 管辖内。
+ * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark
+ * （color-scheme: dark）激活。
  */
 :root {
-	--primary-base: oklch(0.53 0.205 286);
-	--primary-base-foreground: oklch(0.99 0 0);
-	--primary-base-hover: oklch(0.47 0.215 286);
-	--primary-base-soft: oklch(0.965 0.022 286);
-	--primary-base-soft-foreground: oklch(0.35 0.14 286);
-	--primary-base-ring: oklch(0.53 0.205 286);
-}
-
-.dark {
-	--primary-base: oklch(0.72 0.148 286);
-	--primary-base-foreground: oklch(0.14 0.02 286);
-	--primary-base-hover: oklch(0.77 0.138 286);
-	--primary-base-soft: oklch(0.22 0.038 286);
-	--primary-base-soft-foreground: oklch(0.9 0.07 286);
-	--primary-base-ring: oklch(0.72 0.148 286);
+	--primary-base: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
+	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.14 0.02 286));
+	--primary-base-hover: light-dark(oklch(0.47 0.215 286), oklch(0.77 0.138 286));
+	--primary-base-soft: light-dark(oklch(0.965 0.022 286), oklch(0.22 0.038 286));
+	--primary-base-soft-foreground: light-dark(oklch(0.35 0.14 286), oklch(0.9 0.07 286));
+	--primary-base-ring: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
 }`;
 
 /** 暖珊瑚覆盖预设源码副本；真实文件为 web/src/styles/palettes/coral.css，改契约需两处同步。 */
@@ -77,23 +70,16 @@ const CORAL_PALETTE_SOURCE = `/*
  * 暖珊瑚主色源预设。
  *
  * 与组件库默认 palette 提供相同的 primary-base 契约；页面调用方不感知预设名。
+ * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark
+ * （color-scheme: dark）激活。
  */
 :root {
-	--primary-base: oklch(0.625 0.19 25);
-	--primary-base-foreground: oklch(0.99 0 0);
-	--primary-base-hover: oklch(0.575 0.185 25);
-	--primary-base-soft: oklch(0.95 0.025 25);
-	--primary-base-soft-foreground: oklch(0.36 0.11 25);
-	--primary-base-ring: oklch(0.625 0.19 25);
-}
-
-.dark {
-	--primary-base: oklch(0.72 0.15 22);
-	--primary-base-foreground: oklch(0.17 0 0);
-	--primary-base-hover: oklch(0.67 0.155 22);
-	--primary-base-soft: oklch(0.25 0.025 22);
-	--primary-base-soft-foreground: oklch(0.88 0.065 22);
-	--primary-base-ring: oklch(0.72 0.15 22);
+	--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
+	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.17 0 0));
+	--primary-base-hover: light-dark(oklch(0.575 0.185 25), oklch(0.67 0.155 22));
+	--primary-base-soft: light-dark(oklch(0.95 0.025 25), oklch(0.25 0.025 22));
+	--primary-base-soft-foreground: light-dark(oklch(0.36 0.11 25), oklch(0.88 0.065 22));
+	--primary-base-ring: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
 }`;
 
 /** 站点业务语义色模式节选（真实文件 web/src/styles/site-tokens.css，此处展示「定义 + 注册」骨架）。 */
@@ -103,14 +89,9 @@ const SITE_TOKENS_SNIPPET = `/*
  * Tailwind 颜色工具类，导入顺序在包样式之后。
  */
 :root {
-	/* 纸面：API 文档纸弹窗与文档页的暖米纸 + 纸上墨字 */
-	--paper: oklch(0.976 0.012 85);
-	--paper-foreground: oklch(0.24 0.014 60);
-}
-
-.dark {
-	--paper: oklch(0.23 0.012 70);
-	--paper-foreground: oklch(0.92 0.012 80);
+	/* 纸面：明暗成对取值以 light-dark() 单声明表达 */
+	--paper: light-dark(oklch(0.976 0.012 85), oklch(0.23 0.012 70));
+	--paper-foreground: light-dark(oklch(0.24 0.014 60), oklch(0.92 0.012 80));
 }
 
 @theme inline {
@@ -355,7 +336,7 @@ export function PaletteGenerator() {
 					组件只消费语义角色，不根据具体色相分支：solid 与 foreground、soft 与
 					soft-foreground 成对使用，悬停与聚焦态由主色源派生，文字对比度需满足 WCAG AA。
 				</p>
-				<div className="mt-4 grid gap-4 lg:grid-cols-2">
+				<div className="mt-4 space-y-4">
 					<CodeCard code={usageDemoSource} language="tsx" title="在组件中" />
 					<CodeCard code={USAGE_CSS_SNIPPET} language="css" title="在 CSS 文件中" />
 				</div>
@@ -366,7 +347,9 @@ export function PaletteGenerator() {
 				<h3 className="text-lg font-bold">默认主题</h3>
 				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
 					主题分三层：主色源预设提供六变量契约（base / foreground / hover / soft /
-					soft-foreground / ring，明暗成对）；语义 token 定义画布、正文与行为状态色；
+					soft-foreground / ring），每支以 light-dark() 同时声明浅色与深色取值， 暗色支由
+					html 上的 .dark（color-scheme: dark）激活；语义 token
+					定义画布、正文与行为状态色；
 					<code className="font-mono text-[13px]">@theme inline</code> 把两者映射为
 					Tailwind 工具类。换主题只替换主色源层。
 				</p>
@@ -383,13 +366,13 @@ export function PaletteGenerator() {
 				<h3 className="text-lg font-bold">自定义颜色</h3>
 				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
 					覆盖主色源：新建预设文件提供同名六变量，在包样式之后导入，行为状态色不随主色更换。
-					添加业务语义色：在站点层定义明暗成对变量，并在{" "}
+					添加业务语义色：在站点层以 light-dark() 声明明暗成对取值，并在{" "}
 					<code className="font-mono text-[13px]">@theme inline</code> 注册同名{" "}
 					<code className="font-mono text-[13px]">--color-*</code>{" "}
 					即得到对应工具类。完整约束见{" "}
 					<GuideLink to="/design-system/guides/theming">主题指南</GuideLink>。
 				</p>
-				<div className="mt-4 grid gap-4 lg:grid-cols-2">
+				<div className="mt-4 space-y-4">
 					<CodeCard
 						code={CORAL_PALETTE_SOURCE}
 						language="css"
