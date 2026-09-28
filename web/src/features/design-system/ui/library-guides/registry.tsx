@@ -11,6 +11,7 @@ export const GUIDE_CONTENT = {
 	cli: lazy(() => import("./cli")),
 	roadmap: lazy(() => import("./roadmap")),
 	theming: lazy(() => import("./theming")),
+	"theme-builder": lazy(() => import("./theme-builder")),
 	"dark-mode": lazy(() => import("./dark-mode")),
 	styling: lazy(() => import("./styling")),
 	animation: lazy(() => import("./animation")),
