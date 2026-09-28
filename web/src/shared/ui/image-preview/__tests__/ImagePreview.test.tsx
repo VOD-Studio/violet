@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Dialog as DialogPrimitive } from "radix-ui";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImagePreview } from "../components/ImagePreview";
@@ -56,6 +57,29 @@ function Harness() {
 			onIndexChange={setIndex}
 			onClose={() => {}}
 		/>
+	);
+}
+
+function NestedDialogHarness() {
+	const [open, setOpen] = useState(true);
+	const [preview, setPreview] = useState(false);
+	return (
+		<DialogPrimitive.Root open={open} onOpenChange={setOpen}>
+			<DialogPrimitive.Portal>
+				<DialogPrimitive.Content aria-describedby={undefined}>
+					<DialogPrimitive.Title>分享目标</DialogPrimitive.Title>
+					<button type="button" onClick={() => setPreview(true)}>
+						打开照片
+					</button>
+					<ImagePreview
+						open={preview}
+						images={images}
+						alts={alts}
+						onClose={() => setPreview(false)}
+					/>
+				</DialogPrimitive.Content>
+			</DialogPrimitive.Portal>
+		</DialogPrimitive.Root>
 	);
 }
 
@@ -238,6 +262,20 @@ describe("ImagePreview 尺寸与加载", () => {
 });
 
 describe("ImagePreview 导航与手势", () => {
+	it("内嵌弹窗中接管焦点与图片按键，关闭后保留底层弹窗", async () => {
+		render(<NestedDialogHarness />);
+		const trigger = screen.getByRole("button", { name: "打开照片" });
+		await waitFor(() => expect(document.activeElement).toBe(trigger));
+		fireEvent.click(trigger);
+		const preview = await screen.findByRole("dialog", { name: "图片预览" });
+		await waitFor(() => expect(document.activeElement).toBe(preview));
+		fireEvent.keyDown(preview, { key: "ArrowRight" });
+		await image("山峰");
+		fireEvent.keyDown(preview, { key: "Escape" });
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "图片预览" })).toBeNull());
+		await waitFor(() => expect(screen.getByRole("dialog", { name: "分享目标" })).toBeTruthy());
+		await waitFor(() => expect(document.activeElement).toBe(trigger));
+	});
 	it("横竖图同时进出场，各自保持比例而不是等待旧图退场", async () => {
 		render(<Harness />);
 		const previous = await image("湖畔");
