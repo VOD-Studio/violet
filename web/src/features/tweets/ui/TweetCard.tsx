@@ -1,17 +1,6 @@
-/**
- * TweetCard - 推文卡片（时间线 / 用户主页 / 详情页共用）
- *
- * 展示：作者头像 + 用户名 + 相对时间 + 正文 + 图片网格 + 赞数占位。
- * 交互（T3）：
- *   - 整卡可点进详情页（/tweets/$id），图片网格与删除按钮 stopPropagation 不触发导航
- *   - 作者本人或持 tweet:delete-any 者可见删除按钮，二次确认后调用 useDeleteTweet
- *
- * variant="detail" 时放大展示：完整时间戳（替代相对时间）+ 更大头像。
- * 详情页是后续 P2 评论区、P3 转发链接的落点，结构上预留。
- */
-
 import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import type { Tweet } from "@entities/tweet/model/types";
+import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
@@ -25,10 +14,12 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, Heart, MessageCircle, Repeat2, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ExternalTweetActions } from "./ExternalTweetActions";
 import TweetComposer from "./TweetComposer";
 import TweetContent from "./TweetContent";
 export type TweetCardVariant = "timeline" | "detail";
 
+/** 时间线、个人主页与详情共用；来源跳转、图片和互动保持独立操作。 */
 export interface TweetCardProps {
 	/** 推文数据 */
 	tweet: Tweet;
@@ -80,9 +71,10 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 			authorUsername: tweet.author.username,
 			content: tweet.content,
 			imageUrl: tweet.images[0],
+			externalTweet: tweet.external_tweet,
+			quotedTweet: tweet.quoted_tweet,
 		});
 	};
-	// 正文非空才渲染（纯图推文 content 为空串）
 	const hasContent = tweet.content.length > 0;
 	const isDetail = variant === "detail";
 
@@ -125,7 +117,10 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					isDetail
 						? undefined
 						: (e) => {
-								if (e.key === "Enter" || e.key === " ") {
+								if (
+									e.target === e.currentTarget &&
+									(e.key === "Enter" || e.key === " ")
+								) {
 									e.preventDefault();
 									openDetail();
 								}
@@ -229,11 +224,22 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					{gridImages.length > 0 && (
 						<div
 							onClick={(e) => e.stopPropagation()}
-							onKeyDown={(e) => e.stopPropagation()}
+							onKeyDown={(e) => {
+								if (e.currentTarget.contains(e.target as Node)) e.stopPropagation();
+							}}
 							className="w-full my-0.5"
 						>
 							<ImageGrid images={gridImages} />
 						</div>
+					)}
+
+					{tweet.external_tweet && (
+						<>
+							<ExternalTweetCard tweet={tweet.external_tweet} />
+							{me.data && canDeleteAny && (
+								<ExternalTweetActions tweet={tweet.external_tweet} />
+							)}
+						</>
 					)}
 
 					{/* 嵌套引用推文 */}
@@ -249,7 +255,11 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 								}
 							}}
 							onKeyDown={(e) => {
-								if ((e.key === "Enter" || e.key === " ") && tweet.quoted_tweet) {
+								if (
+									e.target === e.currentTarget &&
+									(e.key === "Enter" || e.key === " ") &&
+									tweet.quoted_tweet
+								) {
 									e.preventDefault();
 									e.stopPropagation();
 									navigate({
@@ -289,7 +299,10 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 								<div
 									className="mt-2"
 									onClick={(e) => e.stopPropagation()}
-									onKeyDown={(e) => e.stopPropagation()}
+									onKeyDown={(e) => {
+										if (e.currentTarget.contains(e.target as Node))
+											e.stopPropagation();
+									}}
 									role="presentation"
 								>
 									<ImageGrid
@@ -297,6 +310,14 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 											url,
 											thumbnail: contentImageUrl(url, { width: 300 }),
 										}))}
+									/>
+								</div>
+							)}
+							{tweet.quoted_tweet.external_tweet && (
+								<div className="mt-2">
+									<ExternalTweetCard
+										tweet={tweet.quoted_tweet.external_tweet}
+										compact
 									/>
 								</div>
 							)}
@@ -327,7 +348,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					>
 						{!isDetail && (
 							<div className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-blue/10 hover:text-neon-blue cursor-pointer">
-								<MessageCircle className="size-4 transition-transform group-hover:scale-110" />
+								<MessageCircle className="size-4" />
 								<span>{tweet.comment_count}</span>
 							</div>
 						)}
@@ -338,7 +359,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							onClick={handleQuoteClick}
 							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-green/10 hover:text-neon-green"
 						>
-							<Repeat2 className="size-4 transition-transform group-hover:scale-110" />
+							<Repeat2 className="size-4" />
 							<span>{tweet.quote_count}</span>
 						</button>
 						<button
@@ -354,7 +375,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							}`}
 						>
 							<Heart
-								className={`size-4 transition-transform group-hover:scale-110 ${
+								className={`size-4 ${
 									tweet.is_liked ? "fill-current text-neon-pink" : ""
 								}`}
 							/>
@@ -367,7 +388,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 							onClick={handleShareClick}
 							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-cyan/10 hover:text-neon-cyan"
 						>
-							<Share2 className="size-4 transition-transform group-hover:scale-110" />
+							<Share2 className="size-4" />
 						</button>
 					</div>
 				</div>

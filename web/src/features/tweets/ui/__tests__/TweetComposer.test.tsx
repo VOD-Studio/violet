@@ -7,6 +7,7 @@
  * - 纯文本/附图/引用的提交逻辑
  */
 import type { Emoji } from "@entities/emoji/model/types";
+import { ApiError } from "@shared/api/error";
 import {
 	act,
 	cleanup,
@@ -18,6 +19,7 @@ import {
 } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExternalTweetPreview } from "../../hooks/useExternalTweetPreview";
 
 // mock useMe
 vi.mock("@features/auth/api/queries", () => ({
@@ -36,6 +38,10 @@ vi.mock("@features/tweets/api/mutations", () => ({
 }));
 
 const uploadFileMock = vi.fn();
+const previewPostMock = vi.fn();
+vi.mock("@shared/api/request", () => ({
+	apiPost: (...args: unknown[]) => previewPostMock(...args),
+}));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: uploadFileMock }),
 }));
@@ -77,9 +83,51 @@ vi.mock("@features/emojis/ui/EmojiPicker", () => ({
 
 import TweetComposer from "../TweetComposer";
 
+function previewFixture(): ExternalTweetPreview {
+	return {
+		external_tweet: {
+			id: "source",
+			source_id: "20",
+			canonical_url: "https://x.com/jack/status/20",
+			snapshot_version: "v1",
+			availability: "available",
+			snapshot: {
+				author: {
+					id: "12",
+					name: "Jack",
+					handle: "jack",
+					url: "https://x.com/jack",
+					avatar_url: "",
+				},
+				text: "原文",
+				segments: null,
+				published_at: "2020-01-01T00:00:00Z",
+				completeness: "complete",
+				media: null,
+				warnings: null,
+			},
+		},
+		preview_token: "a".repeat(64),
+		expires_at: new Date(Date.now() + 900000).toISOString(),
+		can_publish: true,
+		warnings: [],
+	};
+}
+
+async function openExternalPreview() {
+	fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
+	fireEvent.change(screen.getByPlaceholderText("https://x.com/用户名/status/推文ID"), {
+		target: { value: "https://x.com/jack/status/20" },
+	});
+	await act(async () => {
+		fireEvent.click(screen.getByRole("button", { name: "预览原文" }));
+	});
+}
+
 describe("TweetComposer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		previewPostMock.mockReset();
 		uploadFileMock.mockReset().mockResolvedValue({ url: "/pasted.png" });
 		vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
 		vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
@@ -264,5 +312,74 @@ describe("TweetComposer", () => {
 			paste(valid);
 		});
 		expect(uploadFileMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("预览失败和取消均保留感想，等待预览时不发布普通推文", async () => {
+		previewPostMock.mockRejectedValueOnce(
+			new ApiError({ error: "EXTERNAL_MEDIA_FAILED", message: "图片准备失败", status: 400 }),
+		);
+		render(<TweetComposer />);
+		const textarea = screen.getByPlaceholderText("有什么新鲜事？") as HTMLTextAreaElement;
+		fireEvent.change(textarea, { target: { value: "保留我的感想" } });
+		await openExternalPreview();
+		expect(screen.getByRole("alert").textContent).toContain("图片准备失败");
+		expect(textarea.value).toBe("保留我的感想");
+		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
+			true,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "取消 X 转发" }));
+		expect(textarea.value).toBe("保留我的感想");
+		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
+			false,
+		);
+	});
+
+	it("纯转发只提交凭证，重复点击和网络重试沿用同一请求 ID", async () => {
+		previewPostMock.mockResolvedValue(previewFixture());
+		render(<TweetComposer />);
+		await openExternalPreview();
+		const submit = screen.getByRole("button", { name: "发布" });
+		fireEvent.click(submit);
+		fireEvent.click(submit);
+		expect(mutateMock).toHaveBeenCalledTimes(1);
+		const first = mutateMock.mock.calls[0][0];
+		expect(first).toEqual({
+			content: "",
+			images: [],
+			quote_of: undefined,
+			external_preview_token: "a".repeat(64),
+			client_request_id: expect.any(String),
+		});
+		act(() => mutateMock.mock.calls[0][1].onError(ApiError.network()));
+		fireEvent.click(submit);
+		expect(mutateMock).toHaveBeenCalledTimes(2);
+		expect(mutateMock.mock.calls[1][0].client_request_id).toBe(first.client_request_id);
+	});
+
+	it("发布时原文变化要求重新预览，感想和链接保留", async () => {
+		previewPostMock.mockResolvedValue(previewFixture());
+		render(<TweetComposer />);
+		const textarea = screen.getByPlaceholderText("有什么新鲜事？") as HTMLTextAreaElement;
+		fireEvent.change(textarea, { target: { value: "感想草稿" } });
+		await openExternalPreview();
+		fireEvent.click(screen.getByRole("button", { name: "发布" }));
+		act(() =>
+			mutateMock.mock.calls[0][1].onError(
+				new ApiError({
+					error: "EXTERNAL_PREVIEW_CHANGED",
+					message: "请重新预览",
+					status: 400,
+				}),
+			),
+		);
+		expect(screen.getByRole("alert").textContent).toBe("请重新预览");
+		expect(textarea.value).toBe("感想草稿");
+		expect(
+			(screen.getByPlaceholderText("https://x.com/用户名/status/推文ID") as HTMLInputElement)
+				.value,
+		).toBe("https://x.com/jack/status/20");
+		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
+			true,
+		);
 	});
 });

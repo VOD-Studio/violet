@@ -57,7 +57,7 @@ export interface ChatMedia {
 	height?: number;
 }
 
-/** 分享到聊天的推文快照；`is_deleted` 时其余字段均为空（被分享推文已物理删除）。 */
+/** 按本站推文 ID 读取的当前内容；`is_deleted` 时仅保留 ID 与删除标记。 */
 export interface SharedTweet {
 	id: string;
 	author?: ChatUser;
@@ -65,6 +65,8 @@ export interface SharedTweet {
 	images?: string[];
 	created_at?: string;
 	is_deleted: boolean;
+	external_tweet?: ExternalTweet | null;
+	quoted_tweet?: QuotedTweet | null;
 }
 
 export interface ChatMessageReference {
@@ -201,3 +203,5 @@ export interface PushSubscriptionInput {
 export interface ChatUnreadCount {
 	unread_count: number;
 }
+
+import type { ExternalTweet, QuotedTweet } from "@entities/tweet/model/types";

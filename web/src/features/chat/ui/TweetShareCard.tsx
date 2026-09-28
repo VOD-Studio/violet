@@ -1,13 +1,4 @@
-/**
- * TweetShareCard - 聊天消息内嵌的分享推文卡片。
- *
- * 渲染分享到聊天的推文快照（作者头像/用户名/相对时间 + 完整正文 + 图片网格）；
- * `tweet.is_deleted` 时渲染"该推文已被删除"占位，不展示任何原内容字段
- * （被分享推文物理删除后，后端联结未命中，见 CONTEXT.md「推文分享消息」词条）。
- * 整卡可点击跳转 `/tweets/$id`；头像/用户名单独可跳 `/users/$username`
- * （stopPropagation，避免触发整卡的详情页跳转）。
- */
-
+import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
@@ -15,8 +6,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, MessageSquareQuote } from "lucide-react";
 import type { SharedTweet } from "../model/types";
 
+/** 聊天接口按本站推文 ID 读取的当前内容，删除时不展示历史原文。 */
 export interface TweetShareCardProps {
-	/** 分享的推文快照 */
 	tweet: SharedTweet;
 }
 
@@ -45,7 +36,7 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 			className="w-72 max-w-full cursor-pointer overflow-hidden rounded-xl border border-neon-cyan/30 bg-card/80 text-left backdrop-blur-md transition-colors hover:border-neon-cyan/60 hover:bg-card/95"
 			onClick={openDetail}
 			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
+				if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
 					e.preventDefault();
 					openDetail();
 				}
@@ -103,9 +94,51 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 				<div
 					className="px-3 pb-3"
 					onClick={(e) => e.stopPropagation()}
-					onKeyDown={(e) => e.stopPropagation()}
+					onKeyDown={(e) => {
+						if (e.currentTarget.contains(e.target as Node)) e.stopPropagation();
+					}}
 				>
 					<ImageGrid images={images} />
+				</div>
+			)}
+			{tweet.external_tweet && (
+				<div className="px-3 pb-3">
+					<ExternalTweetCard tweet={tweet.external_tweet} compact />
+				</div>
+			)}
+			{tweet.quoted_tweet && (
+				<div className="space-y-2 px-3 pb-3">
+					<Link
+						to="/tweets/$id"
+						params={{ id: tweet.quoted_tweet.id }}
+						onClick={(e) => e.stopPropagation()}
+						className="block rounded-lg border border-border p-2 text-xs text-muted-foreground hover:bg-accent"
+					>
+						引用 @{tweet.quoted_tweet.author.username}
+						{tweet.quoted_tweet.content && (
+							<p className="mt-1 whitespace-pre-wrap text-foreground">
+								{tweet.quoted_tweet.content}
+							</p>
+						)}
+					</Link>
+					{(tweet.quoted_tweet.images ?? []).length > 0 && (
+						<div
+							onClick={(e) => e.stopPropagation()}
+							onKeyDown={(e) => {
+								if (e.currentTarget.contains(e.target as Node)) e.stopPropagation();
+							}}
+						>
+							<ImageGrid
+								images={(tweet.quoted_tweet.images ?? []).map((url) => ({
+									url,
+									thumbnail: contentImageUrl(url, { width: 400 }),
+								}))}
+							/>
+						</div>
+					)}
+					{tweet.quoted_tweet.external_tweet && (
+						<ExternalTweetCard tweet={tweet.quoted_tweet.external_tweet} compact />
+					)}
 				</div>
 			)}
 		</div>
