@@ -39,6 +39,9 @@ export interface CreateTweetInput {
 	images: string[];
 	/** 转发引用的推文 ID */
 	quote_of?: string;
+	external_preview_token?: string;
+	/** X 转发必填；同一发布重试保留同一个 UUID。 */
+	client_request_id?: string;
 }
 
 /** 评论正文长度上限（rune 计，对齐后端 MaxCommentBodyLen） */

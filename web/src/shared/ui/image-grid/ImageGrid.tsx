@@ -21,6 +21,8 @@ export interface ImageGridImage {
 	width?: number;
 	/** 图片高度 */
 	height?: number;
+	/** 图片的替代文本，同时作为预览按钮名称。 */
+	alt?: string;
 }
 
 export interface ImageGridProps {
@@ -75,6 +77,9 @@ export function ImageGrid({ images, className }: ImageGridProps) {
 					>
 						<div
 							role="button"
+							aria-label={
+								image.alt ? `查看图片：${image.alt}` : `查看第 ${index + 1} 张图片`
+							}
 							tabIndex={0}
 							className="size-full cursor-pointer rounded border border-edge-hairline bg-cover bg-center transition-opacity hover:opacity-90"
 							style={{ backgroundImage: `url(${image.thumbnail || image.url})` }}

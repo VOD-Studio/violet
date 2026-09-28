@@ -1,9 +1,10 @@
 /**
  * 会话面板：消息流（滚动加载历史）、气泡、输入区与详情抽屉的编排。
  */
+
+import type { PendingChatShare } from "@entities/tweet/model/share-store";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import type { RichCommentInputHandle } from "@features/comments/ui/RichCommentInput";
-import type { PendingChatShare } from "@shared/api/share-tweet-store";
 import { formatDate } from "@shared/lib/date";
 import { Button } from "@shared/ui/base/button";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";

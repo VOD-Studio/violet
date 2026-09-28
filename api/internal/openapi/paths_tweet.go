@@ -5,6 +5,7 @@ import "github.com/getkin/kin-openapi/openapi3"
 // registerTweetPaths 注册推文接口（PRD-0013）：时间线/详情/话题/发布/删除/
 // 点赞/评论，以及用户主页公开资料与推文列表。
 func registerTweetPaths(t *openapi3.T) {
+	registerExternalTweetPaths(t)
 	// ---- 公共 schema ----
 
 	registerSchema(t, "TweetAuthorDTO", openapi3.Schemas{
@@ -22,26 +23,28 @@ func registerTweetPaths(t *openapi3.T) {
 	})
 
 	registerSchema(t, "QuotedTweetDTO", openapi3.Schemas{
-		"id":          reqStr("被引用推文 ID"),
-		"author":      optRef("被引用推文作者", "TweetAuthorDTO"),
-		"content":     reqStr("正文"),
-		"images":      strArray("配图 URL"),
-		"quote_count": optInt("被引用推文自身的引用数"),
-		"created_at":  reqStr("发布时间（RFC3339）"),
+		"id":             reqStr("被引用推文 ID"),
+		"author":         optRef("被引用推文作者", "TweetAuthorDTO"),
+		"content":        reqStr("正文"),
+		"images":         strArray("配图 URL"),
+		"quote_count":    optInt("被引用推文自身的引用数"),
+		"created_at":     reqStr("发布时间（RFC3339）"),
+		"external_tweet": optRef("当前共享 X 原文，失效时仅有来源占位", "ExternalTweetDTO"),
 	})
 
 	registerSchema(t, "TweetDTO", openapi3.Schemas{
-		"id":            reqStr("推文 ID（UUID）"),
-		"author":        optRef("作者", "TweetAuthorDTO"),
-		"content":       reqStr("正文（≤500 字）"),
-		"images":        strArray("配图 URL（≤4 张）"),
-		"like_count":    optInt("点赞数"),
-		"is_liked":      optBool("当前用户是否已点赞（匿名恒 false）"),
-		"comment_count": optInt("评论数"),
-		"quote_count":   optInt("引用数"),
-		"quote_of":      nullableStr("引用的推文 ID（无引用时缺省）"),
-		"quoted_tweet":  optRef("被引用推文详情（引用推文才有）", "QuotedTweetDTO"),
-		"created_at":    reqStr("发布时间（RFC3339 UTC）"),
+		"id":             reqStr("推文 ID（UUID）"),
+		"author":         optRef("作者", "TweetAuthorDTO"),
+		"content":        reqStr("正文（≤500 字）"),
+		"images":         strArray("配图 URL（≤4 张）"),
+		"like_count":     optInt("点赞数"),
+		"is_liked":       optBool("当前用户是否已点赞（匿名恒 false）"),
+		"comment_count":  optInt("评论数"),
+		"quote_count":    optInt("引用数"),
+		"quote_of":       nullableStr("引用的推文 ID（无引用时缺省）"),
+		"quoted_tweet":   optRef("被引用推文详情（引用推文才有）", "QuotedTweetDTO"),
+		"created_at":     reqStr("发布时间（RFC3339 UTC）"),
+		"external_tweet": optRef("当前共享 X 原文，失效时仅有来源占位", "ExternalTweetDTO"),
 	})
 
 	registerSchema(t, "TweetCommentDTO", openapi3.Schemas{
@@ -65,15 +68,17 @@ func registerTweetPaths(t *openapi3.T) {
 	})
 
 	registerSchema(t, "CreateTweetRequest", openapi3.Schemas{
-		"content":  optStr("正文（content/images/quote_of 至少一项，≤500 字）"),
-		"images":   strArray("配图 URL（≤4 张，须归当前用户）"),
-		"quote_of": nullableStr("被引用推文 ID（无引用时缺省）"),
+		"content":                optStr("正文或转发感想（content/images/quote_of/external_preview_token 至少一项，≤500 字）"),
+		"images":                 strArray("配图 URL（≤4 张，须归当前用户）"),
+		"quote_of":               nullableStr("被引用推文 ID（无引用时缺省）"),
+		"external_preview_token": optStr("服务端预览凭证，与 quote_of 互斥"),
+		"client_request_id":      optStr("发布操作 UUID；X 转发必填，同用户同键同内容返回原结果"),
 	})
 
 	registerSchema(t, "CreateTweetCommentRequest", openapi3.Schemas{
 		"body":      optStr("评论正文（body/pictures 至少一项）"),
 		"parent_id": optStr("父评论 ID（空=顶层评论）"),
-		"pictures": refArray("评论配图", "TweetCommentPicture"),
+		"pictures":  refArray("评论配图", "TweetCommentPicture"),
 	})
 
 	registerSchema(t, "TweetCommentPicture", openapi3.Schemas{
@@ -116,7 +121,7 @@ func registerTweetPaths(t *openapi3.T) {
 		Tags:        []string{"推文"},
 		Summary:     "按话题查推文",
 		Description: "话题维度倒序列表，cursor 分页；tag 为空时返回空列表。",
-		Parameters: append(openapi3.Parameters{pathStrParam("tag", "话题标签")}, tweetPageParams()...),
+		Parameters:  append(openapi3.Parameters{pathStrParam("tag", "话题标签")}, tweetPageParams()...),
 		Responses: responses(
 			200, dataArrayResponse("TweetDTO", "话题推文列表", 200, true),
 		),
@@ -127,13 +132,16 @@ func registerTweetPaths(t *openapi3.T) {
 	post(t, "/tweets", &openapi3.Operation{
 		Tags:    []string{"推文"},
 		Summary: "发布推文",
-		Description: "登录 + 发布限流。content/images/quote_of 至少一项；" +
+		Description: "登录 + 发布限流。content/images/quote_of/external_preview_token 至少一项；" +
 			"配图 URL 须归当前用户，quote_of 指向不存在的推文返回 404。",
 		Security:    securityCookie(),
 		Parameters:  openapi3.Parameters{csrfHeaderParam()},
 		RequestBody: jsonBody("CreateTweetRequest", true, "推文内容"),
 		Responses: responses(
 			201, dataResponse("TweetDTO", "新发布的推文", 201),
+			400, errorResponse("预览过期、已使用或原文版本变化；请重新预览"),
+			403, errorResponse("预览不属于当前用户或图片所有权不符"),
+			409, errorResponse("同一发布请求 ID 携带不同内容"),
 			404, errorResponse("被引用推文不存在"),
 			422, errorResponse("content/images/quote_of 全为空或超限"),
 		),

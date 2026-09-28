@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	appshared "blog-api/internal/application/shared"
+	apptweet "blog-api/internal/application/tweet"
 	domainchat "blog-api/internal/domain/chat"
 	domainchatreaction "blog-api/internal/domain/chatreaction"
 	domainshared "blog-api/internal/domain/shared"
@@ -33,6 +34,7 @@ type Service struct {
 	users        UserRepository
 	files        FileRepository
 	tweets       TweetRepository
+	tweetReader  TweetReader
 	reactions    domainchatreaction.Store
 	notifier     EventNotifier
 	push         PushSender
@@ -57,6 +59,8 @@ func (s *Service) WithBotRepository(repo domainchat.BotRepository) *Service {
 	s.botRepo = repo
 	return s
 }
+
+func (s *Service) WithTweetReader(reader TweetReader) *Service { s.tweetReader = reader; return s }
 
 // NewService 构造聊天服务。
 // customEmojis 为 nil 时跳过消息正文中 [name:uuid] 自定义表情占位符的解析。
@@ -219,10 +223,9 @@ type MediaDTO struct {
 	Height *int `json:"height,omitempty"`
 }
 
-// SharedTweetDTO 分享到聊天的推文快照读模型。
+// SharedTweetDTO 分享到聊天时读取的当前推文内容。
 //
-// 不建外键：Author/Content/Images/CreatedAt 均在被分享推文物理删除后清空，仅保留 IsDeleted 占位标记
-// （与 tweets.quote_of 对已删除被引用推文的处理同构，见 CONTEXT.md「推文分享消息」词条）。
+// 本站推文物理删除后仅保留 ID 与 IsDeleted；外部原文撤回时保留本站内容。
 type SharedTweetDTO struct {
 	// ID 推文 ID。
 	ID string `json:"id"`
@@ -235,7 +238,9 @@ type SharedTweetDTO struct {
 	// CreatedAt 推文创建时间；推文已删除时为空。
 	CreatedAt string `json:"created_at,omitempty"`
 	// IsDeleted 被分享的推文是否已被物理删除。
-	IsDeleted bool `json:"is_deleted"`
+	IsDeleted     bool                       `json:"is_deleted"`
+	ExternalTweet *apptweet.ExternalTweetDTO `json:"external_tweet,omitempty"`
+	QuotedTweet   *apptweet.QuotedTweetDTO   `json:"quoted_tweet,omitempty"`
 }
 
 // MemberDTO 会话成员读模型。
@@ -273,7 +278,7 @@ type MessageDTO struct {
 	Mentions map[string]UserDTO `json:"mentions,omitempty"`
 	// Media 图片媒体列表，按输入流顺序；文本消息为空。
 	Media []MediaDTO `json:"media,omitempty"`
-	// SharedTweet 分享推文的动态快照；被分享推文物理删除后为已删除占位。
+	// SharedTweet 读取当前推文与来源状态；本站推文删除后为占位。
 	SharedTweet *SharedTweetDTO `json:"shared_tweet,omitempty"`
 	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
 	ReplyTo *MessageReferenceDTO `json:"reply_to,omitempty"`
@@ -798,8 +803,26 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 	if err != nil {
 		return ListResult[MessageDTO]{}, err
 	}
+	views := make(map[string]apptweet.TweetDTO)
+	if s.tweetReader != nil {
+		ids := make([]domainshared.ID, 0, len(rows))
+		seen := make(map[string]bool)
+		for _, row := range rows {
+			if id := row.SharedTweetID(); id != nil && !seen[id.String()] {
+				seen[id.String()] = true
+				ids = append(ids, *id)
+			}
+		}
+		items, err := s.tweetReader.GetByIDs(ctx, ids)
+		if err != nil {
+			return ListResult[MessageDTO]{}, err
+		}
+		for _, item := range items {
+			views[item.ID] = item
+		}
+	}
 	for _, row := range rows {
-		dto, err := s.messageDTOWithReactions(ctx, row, reactions[row.ID().String()], userID)
+		dto, err := s.messageDTOWithReactions(ctx, row, reactions[row.ID().String()], userID, views)
 		if err != nil {
 			return ListResult[MessageDTO]{}, err
 		}
@@ -1500,7 +1523,7 @@ func (s *Service) listMessageReactions(ctx context.Context, messages []*domainch
 	return s.reactions.ListByMessages(ctx, ids, viewerUserID)
 }
 
-func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainchat.Message, reactions []domainchatreaction.AggregatedReaction, viewerUserID domainshared.ID) (MessageDTO, error) {
+func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainchat.Message, reactions []domainchatreaction.AggregatedReaction, viewerUserID domainshared.ID, views ...map[string]apptweet.TweetDTO) (MessageDTO, error) {
 	sender, err := s.users.FindByID(ctx, message.SenderID())
 	if err != nil {
 		return MessageDTO{}, err
@@ -1555,7 +1578,7 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		}
 	}
 	if message.SharedTweetID() != nil {
-		dto.SharedTweet, err = s.sharedTweetDTO(ctx, *message.SharedTweetID())
+		dto.SharedTweet, err = s.sharedTweetDTO(ctx, *message.SharedTweetID(), views...)
 		if err != nil {
 			return MessageDTO{}, err
 		}
@@ -1712,7 +1735,27 @@ func (s *Service) mediaDTO(ctx context.Context, mediaID domainshared.ID) (*Media
 	return &MediaDTO{ID: file.ID().String(), URL: file.URL(), Thumbnail: file.Thumbnail(), MIMEType: file.MimeType(), Size: file.Size(), Width: file.Width(), Height: file.Height()}, nil
 }
 
-func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID) (*SharedTweetDTO, error) {
+func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID, views ...map[string]apptweet.TweetDTO) (*SharedTweetDTO, error) {
+	if s.tweetReader != nil {
+		var view apptweet.TweetDTO
+		var err error
+		if len(views) > 0 {
+			var ok bool
+			view, ok = views[0][tweetID.String()]
+			if !ok {
+				return &SharedTweetDTO{ID: tweetID.String(), IsDeleted: true}, nil
+			}
+		} else {
+			view, err = s.tweetReader.GetByID(ctx, tweetID.String())
+			if errors.Is(err, domaintweet.ErrNotFound) || domainshared.IsDomainError(err, domainshared.CodeNotFound) {
+				return &SharedTweetDTO{ID: tweetID.String(), IsDeleted: true}, nil
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &SharedTweetDTO{ID: view.ID, Author: &UserDTO{ID: view.Author.ID, Username: view.Author.Username, AvatarURL: view.Author.AvatarURL}, Content: view.Content, Images: view.Images, CreatedAt: view.CreatedAt, ExternalTweet: view.ExternalTweet, QuotedTweet: view.QuotedTweet}, nil
+	}
 	t, err := s.tweets.FindByID(ctx, tweetID)
 	if err != nil {
 		if errors.Is(err, domaintweet.ErrNotFound) {

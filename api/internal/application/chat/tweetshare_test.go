@@ -5,6 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	apptweet "blog-api/internal/application/tweet"
+
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
@@ -13,6 +18,48 @@ import (
 
 type shareTweetRepo struct {
 	tweets map[domainshared.ID]*domaintweet.Tweet
+}
+
+type liveTweetReader struct {
+	view  apptweet.TweetDTO
+	batch int
+}
+
+func (r *liveTweetReader) GetByID(context.Context, string) (apptweet.TweetDTO, error) {
+	return r.view, nil
+}
+
+func (r *liveTweetReader) GetByIDs(context.Context, []domainshared.ID) ([]apptweet.TweetDTO, error) {
+	r.batch++
+	return []apptweet.TweetDTO{r.view}, nil
+}
+
+func TestSharedExternalTweetReadsCurrentSourceWithoutPersistingItsBody(t *testing.T) {
+	conversationID, userID, authorID := domainshared.NewID(), domainshared.NewID(), domainshared.NewID()
+	tweet, err := domaintweet.NewTweet(authorID, "本站感想", nil, nil)
+	require.NoError(t, err)
+	svc, repo := newShareService(t, tweet, userID, authorID, conversationID)
+	reader := &liveTweetReader{view: apptweet.TweetDTO{
+		ID: tweet.ID().String(), Content: "本站感想", Author: apptweet.AuthorDTO{ID: authorID.String(), Username: "bob"},
+		ExternalTweet: &apptweet.ExternalTweetDTO{ID: domainshared.NewID().String(), SourceID: "20", Availability: domaintweet.ExternalAvailable, Snapshot: &domaintweet.ExternalSnapshot{Text: "不可复制进聊天记录的原文"}},
+	}}
+	svc.WithTweetReader(reader)
+	_, err = svc.SendMessage(context.Background(), SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageTweetShare, SharedTweetID: tweet.ID(), IdempotencyKey: "source-share"})
+	require.NoError(t, err)
+	require.NotNil(t, repo.saved)
+	assert.Empty(t, repo.saved.Content())
+	first, err := svc.ListMessages(context.Background(), userID, conversationID, "", 20)
+	require.NoError(t, err)
+	require.Len(t, first.Items, 1)
+	assert.Equal(t, "不可复制进聊天记录的原文", first.Items[0].SharedTweet.ExternalTweet.Snapshot.Text)
+	reader.view.ExternalTweet = &apptweet.ExternalTweetDTO{ID: reader.view.ExternalTweet.ID, SourceID: "20", Availability: domaintweet.ExternalPrivate}
+	second, err := svc.ListMessages(context.Background(), userID, conversationID, "", 20)
+	require.NoError(t, err)
+	require.NotNil(t, second.Items[0].SharedTweet.ExternalTweet)
+	assert.Nil(t, second.Items[0].SharedTweet.ExternalTweet.Snapshot)
+	assert.Equal(t, "本站感想", second.Items[0].SharedTweet.Content)
+	assert.False(t, second.Items[0].SharedTweet.IsDeleted)
+	assert.Equal(t, 2, reader.batch)
 }
 
 func (r *shareTweetRepo) FindByID(_ context.Context, id domainshared.ID) (*domaintweet.Tweet, error) {

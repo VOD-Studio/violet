@@ -356,6 +356,15 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 	tweetH := d.Tweet
 
 	v1.Route("/tweets", func(r chi.Router) {
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Cache-Control", "no-store")
+				next.ServeHTTP(w, r)
+			})
+		})
+		r.With(d.SessionAuth, middleware.RateLimitByUser("x-preview-minute", d.Redis, time.Minute, 5), middleware.RateLimitByUser("x-preview-day", d.Redis, 24*time.Hour, 50)).Post("/external/preview", tweetH.PreviewExternal)
+		r.With(d.SessionAuth).Delete("/external/{externalId}", tweetH.WithdrawExternal)
+		r.With(d.SessionAuth, middleware.RateLimitByUser("x-refresh", d.Redis, time.Minute, 5)).Post("/external/{externalId}/refresh", tweetH.RefreshExternal)
 		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
 		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
 		r.With(d.OptionalAuth).Get("/topics/{tag}", tweetH.ListByTopic)

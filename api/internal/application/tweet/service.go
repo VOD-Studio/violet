@@ -12,6 +12,9 @@ package tweet
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
@@ -38,7 +41,10 @@ type Service struct {
 	perm        TweetPermissionChecker
 	emojiLookup EmojiLookup
 	bus         appshared.EventBus
+	external    *ExternalService
 }
+
+func (s *Service) WithExternal(external *ExternalService) *Service { s.external = external; return s }
 
 // NewService 构造服务。
 // checker 为 nil 时跳过图片归属校验（仅限测试场景；生产容器必须注入）。
@@ -62,10 +68,13 @@ func NewService(
 // CreateInput 发推文入参。
 type CreateInput struct {
 	// AuthorID 作者（当前登录用户 ID，handler 从 session ctx 提取）
-	AuthorID string
-	Content  string
-	Images   []string
-	QuoteOf  *string
+	AuthorID             string
+	Content              string
+	Images               []string
+	QuoteOf              *string
+	ExternalPreviewToken string
+	// ClientRequestID 外部转发必填；旧原创客户端可省略。
+	ClientRequestID string
 }
 
 // AuthorDTO 推文作者资料卡（时间线/详情页展示用）。
@@ -88,29 +97,31 @@ type UserProfileDTO struct {
 
 // QuotedTweetDTO 被引用推文读模型。
 type QuotedTweetDTO struct {
-	ID         string              `json:"id"`
-	Author     AuthorDTO           `json:"author"`
-	Content    string              `json:"content"`
-	Images     []string            `json:"images"`
-	Emote      map[string]EmojiRef `json:"emote,omitempty"`
-	QuoteCount int                 `json:"quote_count"`
-	CreatedAt  string              `json:"created_at"`
+	ID            string              `json:"id"`
+	Author        AuthorDTO           `json:"author"`
+	Content       string              `json:"content"`
+	Images        []string            `json:"images"`
+	Emote         map[string]EmojiRef `json:"emote,omitempty"`
+	QuoteCount    int                 `json:"quote_count"`
+	CreatedAt     string              `json:"created_at"`
+	ExternalTweet *ExternalTweetDTO   `json:"external_tweet,omitempty"`
 }
 
 // TweetDTO 推文读模型（序列化跨层传输）。
 type TweetDTO struct {
-	ID           string              `json:"id"`
-	Author       AuthorDTO           `json:"author"`
-	Content      string              `json:"content"`
-	Images       []string            `json:"images"`
-	Emote        map[string]EmojiRef `json:"emote,omitempty"`
-	LikeCount    int                 `json:"like_count"`
-	IsLiked      bool                `json:"is_liked"`
-	CommentCount int                 `json:"comment_count"`
-	QuoteCount   int                 `json:"quote_count"`
-	QuoteOf      *string             `json:"quote_of,omitempty"`
-	QuotedTweet  *QuotedTweetDTO     `json:"quoted_tweet,omitempty"`
-	CreatedAt    string              `json:"created_at"`
+	ID            string              `json:"id"`
+	Author        AuthorDTO           `json:"author"`
+	Content       string              `json:"content"`
+	Images        []string            `json:"images"`
+	Emote         map[string]EmojiRef `json:"emote,omitempty"`
+	LikeCount     int                 `json:"like_count"`
+	IsLiked       bool                `json:"is_liked"`
+	CommentCount  int                 `json:"comment_count"`
+	QuoteCount    int                 `json:"quote_count"`
+	QuoteOf       *string             `json:"quote_of,omitempty"`
+	QuotedTweet   *QuotedTweetDTO     `json:"quoted_tweet,omitempty"`
+	CreatedAt     string              `json:"created_at"`
+	ExternalTweet *ExternalTweetDTO   `json:"external_tweet,omitempty"`
 }
 
 // --- 写用例 ---
@@ -122,6 +133,64 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 	authorID, err := shared.ParseID(in.AuthorID)
 	if err != nil {
 		return TweetDTO{}, shared.BadRequest("非法的作者 ID")
+	}
+	pub := domaintweet.Publication{}
+	publicationRepo, _ := s.repo.(domaintweet.PublicationRepository)
+	if in.ExternalPreviewToken != "" && in.ClientRequestID == "" {
+		return TweetDTO{}, shared.BadRequest("X 转发需要发布请求 ID")
+	}
+	if in.ClientRequestID != "" {
+		requestID, err := shared.ParseID(in.ClientRequestID)
+		if err != nil || requestID.IsZero() {
+			return TweetDTO{}, shared.BadRequest("非法的发布请求 ID")
+		}
+		pub.ClientRequestID = &requestID
+		if publicationRepo == nil {
+			return TweetDTO{}, shared.Internal("发布幂等服务未启用", nil)
+		}
+		quote := ""
+		if in.QuoteOf != nil {
+			quote = *in.QuoteOf
+		}
+		body, _ := json.Marshal(struct {
+			Content string
+			Images  []string
+			Quote   string
+			Token   string
+		}{strings.TrimSpace(in.Content), append([]string{}, in.Images...), quote, in.ExternalPreviewToken})
+		hash := sha256.Sum256(body)
+		pub.RequestHash = hex.EncodeToString(hash[:])
+		old, err := publicationRepo.FindByRequestID(ctx, authorID, requestID)
+		if err == nil {
+			if old.Publication().RequestHash != pub.RequestHash {
+				return TweetDTO{}, shared.Conflict("同一发布请求不能更换内容")
+			}
+			return s.toDTOs(ctx, []*domaintweet.Tweet{old})[0], nil
+		}
+		if !errors.Is(err, domaintweet.ErrNotFound) {
+			return TweetDTO{}, err
+		}
+	}
+	var binding *domaintweet.ExternalPreviewBinding
+	if in.ExternalPreviewToken != "" {
+		if in.QuoteOf != nil && *in.QuoteOf != "" {
+			return TweetDTO{}, shared.Validation("本站引用与 X 原文不能同时指定")
+		}
+		if s.external == nil {
+			return TweetDTO{}, shared.Internal("X 转发服务未启用", nil)
+		}
+		binding, err = s.external.Binding(ctx, in.AuthorID, in.ExternalPreviewToken)
+		if err != nil {
+			return TweetDTO{}, err
+		}
+		externalID, err := shared.ParseID(binding.ExternalID)
+		if err != nil {
+			return TweetDTO{}, shared.BadRequest("非法的原文凭证")
+		}
+		pub.ExternalTweetID = &externalID
+		tokenHash := sha256.Sum256([]byte(in.ExternalPreviewToken))
+		digest := hex.EncodeToString(tokenHash[:])
+		pub.PreviewTokenHash = &digest
 	}
 	if validator, ok := s.emojiLookup.(appshared.CustomEmojiContentValidator); ok {
 		if err := validator.ValidateContent(ctx, in.Content, authorID); err != nil {
@@ -144,7 +213,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 		quoteOf = &qid
 	}
 
-	tw, err := domaintweet.NewTweet(authorID, in.Content, in.Images, quoteOf)
+	tw, err := domaintweet.NewTweet(authorID, in.Content, in.Images, quoteOf, pub)
 	if err != nil {
 		return TweetDTO{}, err
 	}
@@ -155,8 +224,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 		}
 	}
 
-	if err := s.repo.Save(ctx, tw); err != nil {
-		return TweetDTO{}, err
+	if pub.ClientRequestID != nil {
+		var created bool
+		tw, created, err = publicationRepo.Publish(ctx, tw, binding)
+		if err != nil {
+			return TweetDTO{}, err
+		}
+		if !created {
+			return s.toDTOs(ctx, []*domaintweet.Tweet{tw})[0], nil
+		}
+	} else {
+		if err := s.repo.Save(ctx, tw); err != nil {
+			return TweetDTO{}, err
+		}
 	}
 	events := tw.PullEvents()
 	// 引用转发额外通知被引用推文的作者；quoted 已在上方校验存在
@@ -244,6 +324,14 @@ func (s *Service) GetByID(ctx context.Context, id string) (TweetDTO, error) {
 		return TweetDTO{}, err
 	}
 	return s.toDTOs(ctx, []*domaintweet.Tweet{tw})[0], nil
+}
+
+func (s *Service) GetByIDs(ctx context.Context, ids []shared.ID) ([]TweetDTO, error) {
+	tweets, err := s.repo.FindByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return s.toDTOs(ctx, tweets), nil
 }
 
 // ListTimeline 全局时间线（公开）：倒序 cursor 分页。
@@ -408,6 +496,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 	}
 
 	authorIDs := make([]shared.ID, 0, len(tweets))
+	externalViews := s.externalViews(ctx, tweets, quotedTweetsMap)
 	seen := make(map[string]bool, len(tweets))
 	for _, tw := range tweets {
 		id := tw.AuthorID()
@@ -504,30 +593,32 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			quoteOfStr = &qs
 			if qt, ok := quotedTweetsMap[qs]; ok {
 				quotedTweetDTO = &QuotedTweetDTO{
-					ID:         qt.ID().String(),
-					Author:     authors[qt.AuthorID().String()],
-					Content:    qt.Content(),
-					Images:     qt.Images(),
-					Emote:      filterEmoteForBody(qt.Content(), allEmoteMap),
-					QuoteCount: int(quoteCountMap[qt.ID().String()]),
-					CreatedAt:  qt.CreatedAt().UTC().Format(time.RFC3339),
+					ID:            qt.ID().String(),
+					Author:        authors[qt.AuthorID().String()],
+					Content:       qt.Content(),
+					Images:        qt.Images(),
+					Emote:         filterEmoteForBody(qt.Content(), allEmoteMap),
+					QuoteCount:    int(quoteCountMap[qt.ID().String()]),
+					CreatedAt:     qt.CreatedAt().UTC().Format(time.RFC3339),
+					ExternalTweet: sourceView(qt, externalViews),
 				}
 			}
 		}
 
 		dtos = append(dtos, TweetDTO{
-			ID:           tw.ID().String(),
-			Author:       authors[tw.AuthorID().String()],
-			Content:      tw.Content(),
-			Images:       tw.Images(),
-			Emote:        filterEmoteForBody(tw.Content(), allEmoteMap),
-			LikeCount:    tw.LikeCount(),
-			IsLiked:      likedMap[tw.ID().String()],
-			CommentCount: int(commentCountMap[tw.ID().String()]),
-			QuoteCount:   int(quoteCountMap[tw.ID().String()]),
-			QuoteOf:      quoteOfStr,
-			QuotedTweet:  quotedTweetDTO,
-			CreatedAt:    tw.CreatedAt().UTC().Format(time.RFC3339),
+			ID:            tw.ID().String(),
+			Author:        authors[tw.AuthorID().String()],
+			Content:       tw.Content(),
+			Images:        tw.Images(),
+			Emote:         filterEmoteForBody(tw.Content(), allEmoteMap),
+			LikeCount:     tw.LikeCount(),
+			IsLiked:       likedMap[tw.ID().String()],
+			CommentCount:  int(commentCountMap[tw.ID().String()]),
+			QuoteCount:    int(quoteCountMap[tw.ID().String()]),
+			QuoteOf:       quoteOfStr,
+			QuotedTweet:   quotedTweetDTO,
+			CreatedAt:     tw.CreatedAt().UTC().Format(time.RFC3339),
+			ExternalTweet: sourceView(tw, externalViews),
 		})
 	}
 	return dtos

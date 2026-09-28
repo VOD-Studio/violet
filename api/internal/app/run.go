@@ -53,6 +53,7 @@ func startJobs(ctx context.Context, c *Container, gormDB *gorm.DB, uploadRoot st
 	}()
 
 	go job.NewCleanupJob(gormDB, chunkDir, uploadRoot).Start(ctx)
+	go job.NewExternalTweetJob(c.Tweet.ExternalService).Start(ctx)
 
 	go job.NewSubscriptionJob(
 		c.Subscription.SubscriptionService,
