@@ -33,13 +33,18 @@ import {
 import type { CompleteUploadResult } from "@features/upload/model/types";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { ApiError } from "@shared/api/error";
-import { Button } from "@shared/ui/base/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Textarea } from "@shared/ui/base/textarea";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { Link, useNavigate } from "@tanstack/react-router";
+import {
+	Button,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	ConfirmDialog,
+	Input,
+	Label,
+	Textarea,
+} from "@violet/ui";
 import {
 	AlertTriangle,
 	ExternalLink,

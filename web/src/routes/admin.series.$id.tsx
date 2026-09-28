@@ -29,20 +29,20 @@ import { PostPickerDialog } from "@features/admin-series/ui/PostPickerDialog";
 import { SeriesSheet } from "@features/admin-series/ui/SeriesSheet";
 import { SortableChapterRow } from "@features/admin-series/ui/SortableChapterRow";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
-import { Button } from "@shared/ui/base/button";
+import { HistoryBack } from "@shared/ui/history-back";
+import { createFileRoute } from "@tanstack/react-router";
 import {
+	Button,
+	ConfirmDialog,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@shared/ui/base/dialog";
-import { Input } from "@shared/ui/base/input";
-import { Skeleton } from "@shared/ui/base/skeleton";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { HistoryBack } from "@shared/ui/history-back";
-import { createFileRoute } from "@tanstack/react-router";
+	Input,
+	Skeleton,
+} from "@violet/ui";
 import { BookPlus, Globe, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 

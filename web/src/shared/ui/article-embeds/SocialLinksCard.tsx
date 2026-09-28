@@ -1,4 +1,4 @@
-import { GithubIcon } from "@shared/ui/icons";
+import { GithubIcon } from "@violet/ui";
 import { ArrowUpRight, AtSign, Globe2, Mail, Rss, Video } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import styles from "./SocialLinksCard.module.css";

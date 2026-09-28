@@ -1,4 +1,5 @@
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { Palette } from "lucide-react";
 
 interface ChatAppearanceButtonProps {

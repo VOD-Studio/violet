@@ -1,8 +1,8 @@
 import { withCrop } from "@shared/lib/crop-url";
-import { Button } from "@shared/ui/base/button";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import type { CropRect } from "@shared/ui/image-cropper/types";
-import { Modal } from "@shared/ui/modal";
+import { Button, Modal } from "@violet/ui";
+
 import { useState } from "react";
 
 export interface CropSelectDialogProps {

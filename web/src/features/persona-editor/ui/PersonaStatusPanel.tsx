@@ -1,9 +1,8 @@
 import type { PersonaDetail } from "@entities/persona/model/types";
 import type { PersonaCompletenessItem } from "@features/persona-editor/model/document";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { localeLabel } from "@shared/ui/locale-switcher";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
 import { Check, Circle } from "lucide-react";
 
 interface PersonaStatusPanelProps {

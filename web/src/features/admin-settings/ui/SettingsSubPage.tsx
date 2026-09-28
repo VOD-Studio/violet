@@ -1,6 +1,7 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { type FormEventHandler, type ReactNode, useId } from "react";
 
 /**

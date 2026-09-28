@@ -1,10 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { GalleryItem } from "@entities/gallery/model/types";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Textarea } from "@shared/ui/base/textarea";
+import { Button, Input, Label, Textarea } from "@violet/ui";
+
 import { ArrowDown, ArrowUp, GripVertical, Trash2 } from "lucide-react";
 
 interface GalleryItemEditorProps {

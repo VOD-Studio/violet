@@ -7,9 +7,11 @@
  * 交互契约：Esc 关闭（补全下拉开着时 Esc 只关下拉）；行内 Enter 关闭；块级 Enter 换行。
  * 定位与开闭由 MathView 的 Popover 承载，本组件只管面板本身。
  */
+
+import { Button } from "@violet/ui";
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/shared/ui/base/button";
+
 import { renderKatexElement } from "@/shared/ui/katex";
 import { LatexSourceField } from "./LatexSourceField";
 

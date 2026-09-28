@@ -3,27 +3,26 @@ import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { Cover } from "@features/admin-media/ui/Cover";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@shared/ui/base/button";
-import { Checkbox } from "@shared/ui/base/checkbox";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import {
+	Button,
+	Checkbox,
+	Input,
+	Label,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
-} from "@shared/ui/base/sheet";
-import { Switch } from "@shared/ui/base/switch";
-import { Textarea } from "@shared/ui/base/textarea";
+	Switch,
+	Textarea,
+} from "@violet/ui";
+
 import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
 import { Loader2, Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

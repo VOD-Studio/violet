@@ -7,10 +7,9 @@ import {
 } from "@features/lab/gallery/ui/FeedVariants";
 import { GridJustified, GridMasonry, GridUniform } from "@features/lab/gallery/ui/GridVariants";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import Empty from "@shared/ui/empty";
 import { ImagePreview } from "@shared/ui/image-preview";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Empty, Segmented } from "@violet/ui";
 import { useState } from "react";
 
 type PreviewState = "data" | "empty";

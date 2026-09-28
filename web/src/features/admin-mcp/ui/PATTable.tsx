@@ -6,9 +6,15 @@ import {
 	type DataTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import {
+	Badge,
+	Button,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+
 import { Cable, Trash2 } from "lucide-react";
 
 interface PATTableProps {

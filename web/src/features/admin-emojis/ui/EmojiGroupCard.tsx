@@ -1,16 +1,23 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@shared/ui/base/card";
-import { Switch } from "@shared/ui/base/switch";
+import {
+	Badge,
+	Button,
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+	Switch,
+} from "@violet/ui";
+
 import { cn } from "cn";
 import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-/** 来源标签的颜色映射：system=品牌、bilibili=外站品牌粉（neon-pink 承接）、custom=success */
+/** 来源标签的颜色映射：system=主色、bilibili=外站品牌粉（neon-pink 承接）、custom=success */
 const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-brand/10 text-brand border-brand/20",
+	system: "bg-primary-base/10 text-primary-base border-primary-base/20",
 	bilibili: "bg-neon-pink/10 text-neon-pink border-neon-pink/20",
 	custom: "bg-success/10 text-success border-success/20",
 };

@@ -1,8 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { useUpdateProfile } from "@features/auth/api/mutations";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Textarea } from "@shared/ui/base/textarea";
+import { Button, Input, Textarea } from "@violet/ui";
+
 import { AtSign, Check, PencilLine, Quote, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";

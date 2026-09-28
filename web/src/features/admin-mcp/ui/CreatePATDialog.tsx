@@ -5,13 +5,10 @@ import {
 	PAT_SCOPES,
 	type PATScope,
 } from "@features/admin-mcp/model/types";
-import { Button } from "@shared/ui/base/button";
-import { Checkbox } from "@shared/ui/base/checkbox";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import { DateTimePicker } from "@shared/ui/date-time-picker/components/DateTimePicker";
 import type { DateTimePreset } from "@shared/ui/date-time-picker/types/date-time-picker-types";
-import { Modal } from "@shared/ui/modal";
+import { Button, Checkbox, Input, Label, Modal } from "@violet/ui";
+
 import { Loader2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";

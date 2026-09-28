@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
 
 /**
  * FriendsSkeleton - /friends 页骨架屏

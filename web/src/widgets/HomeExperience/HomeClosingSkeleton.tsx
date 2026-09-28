@@ -1,4 +1,4 @@
-import { Skeleton } from "@shared/ui/base/skeleton";
+import { Skeleton } from "@violet/ui";
 
 /** 首页探索导航专属骨架屏（对齐诗意双核与底部自然消融层）。 */
 export function HomeClosingSkeleton() {

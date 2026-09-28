@@ -4,9 +4,8 @@
  * 文章评论与推文评论共用：loading 骨架 / 空态 / 列表 / 加载更多。
  * 文章侧在外层包 ReactionProvider 批量拉反应（展开回复不在此范围，由 ReactionBar 自行降级）。
  */
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
+
 import { CommentItem } from "./CommentItem";
 import type { CommentRaw, CommentSectionConfig } from "./types";
 

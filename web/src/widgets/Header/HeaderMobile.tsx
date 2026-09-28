@@ -7,7 +7,8 @@ import {
 	SheetHeader,
 	SheetTitle,
 	SheetTrigger,
-} from "@shared/ui/base/sheet";
+} from "@violet/ui";
+
 import { Menu } from "lucide-react";
 import { useState } from "react";
 

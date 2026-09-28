@@ -2,7 +2,8 @@
  * 会话详情抽屉：成员管理、邀请、通知设置与离开会话。
  */
 
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { Bell, BellOff, LoaderCircle, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";

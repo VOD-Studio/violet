@@ -6,8 +6,8 @@ import { CreatePATDialog } from "@features/admin-mcp/ui/CreatePATDialog";
 import { PATTable } from "@features/admin-mcp/ui/PATTable";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
-import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { Plus } from "lucide-react";
 import * as React from "react";
 

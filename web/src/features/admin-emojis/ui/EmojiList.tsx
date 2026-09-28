@@ -1,6 +1,6 @@
 import type { Emoji } from "@entities/emoji/model/types";
-import { Button } from "@shared/ui/base/button";
-import { Pagination } from "@shared/ui/pagination";
+import { Button, Pagination } from "@violet/ui";
+
 import { CheckSquare, Images, Search, Square } from "lucide-react";
 import { useMemo } from "react";
 import { EmojiCard } from "./EmojiCard";

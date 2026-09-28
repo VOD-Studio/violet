@@ -8,13 +8,9 @@
 import { Cover } from "@features/admin-media/ui/Cover";
 import type { PostForm } from "@features/admin-posts/model/schema";
 import { useTags } from "@features/tags/api/queries";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
+import { Badge, Input, Label, Switch, Textarea } from "@violet/ui";
 import { X } from "lucide-react";
 import { type Control, Controller, type UseFormRegister } from "react-hook-form";
-import { Badge } from "@/shared/ui/base/badge";
-import { Switch } from "@/shared/ui/base/switch";
-import { Textarea } from "@/shared/ui/base/textarea";
 
 interface PostEditorSidebarProps {
 	control: Control<PostForm>;

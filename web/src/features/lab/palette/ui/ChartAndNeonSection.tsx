@@ -123,7 +123,7 @@ export function ChartAndNeonSection({ mode, resolvedTheme, className }: ChartAnd
 									className={cn(
 										"flex w-full cursor-pointer items-center justify-between rounded-lg border border-edge-hairline/60 p-3 text-left transition-colors",
 										isHovered
-											? "bg-muted/60 border-brand/40"
+											? "bg-muted/60 border-primary-base/40"
 											: "hover:bg-muted/30",
 									)}
 								>
@@ -227,7 +227,7 @@ export function ChartAndNeonSection({ mode, resolvedTheme, className }: ChartAnd
 							{NEON_TOKENS.map((token) => (
 								<div
 									key={`light-${token.variable}`}
-									className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
+									className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-primary-base/40"
 								>
 									<div
 										className="mb-3 h-20 w-full rounded-lg shadow-sm transition-all group-hover:shadow-md"
@@ -255,7 +255,7 @@ export function ChartAndNeonSection({ mode, resolvedTheme, className }: ChartAnd
 							{NEON_TOKENS.map((token) => (
 								<div
 									key={`dark-${token.variable}`}
-									className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
+									className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-primary-base/40"
 								>
 									<div
 										className="mb-3 h-20 w-full rounded-lg shadow-sm transition-all group-hover:shadow-md"
@@ -282,7 +282,7 @@ export function ChartAndNeonSection({ mode, resolvedTheme, className }: ChartAnd
 						return (
 							<div
 								key={token.variable}
-								className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40"
+								className="group relative flex flex-col items-center justify-between rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-primary-base/40"
 							>
 								{/* 发光光柱 */}
 								<div

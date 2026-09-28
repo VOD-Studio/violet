@@ -1,4 +1,5 @@
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { ArrowDownLeft, ArrowUpRight, DatabaseZap, SquareTerminal, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { DatabaseSchemaRelationshipDTO, DatabaseSchemaTableDTO } from "../model/types";

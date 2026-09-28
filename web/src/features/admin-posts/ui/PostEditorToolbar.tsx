@@ -1,11 +1,12 @@
-import { Button } from "@shared/ui/base/button";
 import {
+	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@shared/ui/base/dropdown-menu";
+} from "@violet/ui";
+
 import {
 	History,
 	Maximize2,

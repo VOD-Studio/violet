@@ -8,16 +8,20 @@ import {
 } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	Button,
+	Input,
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	Label,
+	ResendButton,
+} from "@violet/ui";
 import { MailCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
-import { Button } from "@/shared/ui/base/button";
-import { Input } from "@/shared/ui/base/input";
-import { Label } from "@/shared/ui/base/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/ui/otp";
-import { ResendButton } from "@/shared/ui/resend-button";
 
 /**
  * /forgot-password - 忘记密码页（分步重置）

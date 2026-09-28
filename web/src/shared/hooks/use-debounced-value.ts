@@ -1,5 +1,5 @@
+import { useDebouncedCallback } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
-import { useDebouncedCallback } from "./use-debounced-callback";
 
 /**
  * 对高频变化的值进行防抖延迟返回。

@@ -4,15 +4,19 @@ import { type RegisterFormData, registerSchema } from "@features/auth/model/sche
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@shared/api/error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	Button,
+	Input,
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	Label,
+	ResendButton,
+} from "@violet/ui";
 import { MailCheck } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Button } from "@/shared/ui/base/button";
-import { Input } from "@/shared/ui/base/input";
-import { Label } from "@/shared/ui/base/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/ui/otp";
-import { ResendButton } from "@/shared/ui/resend-button";
 
 /**
  * /register - 注册页（分步验证）

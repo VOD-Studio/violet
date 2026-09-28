@@ -1,5 +1,6 @@
 import { isImageURL } from "@shared/lib/url";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import type { ChatMessageReaction } from "../model/types";

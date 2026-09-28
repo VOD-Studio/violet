@@ -1,6 +1,6 @@
 import TweetTimeline from "@features/tweets/ui/TweetTimeline";
-import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PageShell } from "@violet/ui";
 import { ArrowLeft, Hash } from "lucide-react";
 
 function TopicTimelinePage() {

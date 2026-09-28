@@ -97,12 +97,16 @@ import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
+import { Route as DesignSystemGuidesSlugRouteImport } from './routes/design-system.guides.$slug'
 import { Route as DesignSystemSpecimensIndexRouteImport } from './routes/design-system.specimens.index'
 import { Route as DesignSystemSpecimensBadgeRouteImport } from './routes/design-system.specimens.badge'
 import { Route as DesignSystemSpecimensButtonRouteImport } from './routes/design-system.specimens.button'
 import { Route as DesignSystemSpecimensCartoonPopoverRouteImport } from './routes/design-system.specimens.cartoon-popover'
 import { Route as DesignSystemSpecimensCheckboxRouteImport } from './routes/design-system.specimens.checkbox'
 import { Route as DesignSystemSpecimensCommentSectionRouteImport } from './routes/design-system.specimens.comment-section'
+import { Route as DesignSystemSpecimensDialogRouteImport } from './routes/design-system.specimens.dialog'
+import { Route as DesignSystemSpecimensInputRouteImport } from './routes/design-system.specimens.input'
+import { Route as DesignSystemSpecimensTabsRouteImport } from './routes/design-system.specimens.tabs'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 
 const IndexRoute = IndexRouteImport.update({
@@ -545,6 +549,11 @@ const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
   path: '/auth/github/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DesignSystemGuidesSlugRoute = DesignSystemGuidesSlugRouteImport.update({
+  id: '/guides/$slug',
+  path: '/guides/$slug',
+  getParentRoute: () => DesignSystemRoute,
+} as any)
 const DesignSystemSpecimensIndexRoute =
   DesignSystemSpecimensIndexRouteImport.update({
     id: '/',
@@ -579,6 +588,24 @@ const DesignSystemSpecimensCommentSectionRoute =
   DesignSystemSpecimensCommentSectionRouteImport.update({
     id: '/comment-section',
     path: '/comment-section',
+    getParentRoute: () => DesignSystemSpecimensRoute,
+  } as any)
+const DesignSystemSpecimensDialogRoute =
+  DesignSystemSpecimensDialogRouteImport.update({
+    id: '/dialog',
+    path: '/dialog',
+    getParentRoute: () => DesignSystemSpecimensRoute,
+  } as any)
+const DesignSystemSpecimensInputRoute =
+  DesignSystemSpecimensInputRouteImport.update({
+    id: '/input',
+    path: '/input',
+    getParentRoute: () => DesignSystemSpecimensRoute,
+  } as any)
+const DesignSystemSpecimensTabsRoute =
+  DesignSystemSpecimensTabsRouteImport.update({
+    id: '/tabs',
+    path: '/tabs',
     getParentRoute: () => DesignSystemSpecimensRoute,
   } as any)
 const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
@@ -671,11 +698,15 @@ export interface FileRoutesByFullPath {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/design-system/guides/$slug': typeof DesignSystemGuidesSlugRoute
   '/design-system/specimens/badge': typeof DesignSystemSpecimensBadgeRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
   '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
   '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
+  '/design-system/specimens/dialog': typeof DesignSystemSpecimensDialogRoute
+  '/design-system/specimens/input': typeof DesignSystemSpecimensInputRoute
+  '/design-system/specimens/tabs': typeof DesignSystemSpecimensTabsRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -760,11 +791,15 @@ export interface FileRoutesByTo {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/design-system/guides/$slug': typeof DesignSystemGuidesSlugRoute
   '/design-system/specimens/badge': typeof DesignSystemSpecimensBadgeRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
   '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
   '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
+  '/design-system/specimens/dialog': typeof DesignSystemSpecimensDialogRoute
+  '/design-system/specimens/input': typeof DesignSystemSpecimensInputRoute
+  '/design-system/specimens/tabs': typeof DesignSystemSpecimensTabsRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
   '/admin/notes': typeof AdminNotesIndexRoute
@@ -858,11 +893,15 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/design-system/guides/$slug': typeof DesignSystemGuidesSlugRoute
   '/design-system/specimens/badge': typeof DesignSystemSpecimensBadgeRoute
   '/design-system/specimens/button': typeof DesignSystemSpecimensButtonRoute
   '/design-system/specimens/cartoon-popover': typeof DesignSystemSpecimensCartoonPopoverRoute
   '/design-system/specimens/checkbox': typeof DesignSystemSpecimensCheckboxRoute
   '/design-system/specimens/comment-section': typeof DesignSystemSpecimensCommentSectionRoute
+  '/design-system/specimens/dialog': typeof DesignSystemSpecimensDialogRoute
+  '/design-system/specimens/input': typeof DesignSystemSpecimensInputRoute
+  '/design-system/specimens/tabs': typeof DesignSystemSpecimensTabsRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -957,11 +996,15 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/design-system/guides/$slug'
     | '/design-system/specimens/badge'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
     | '/design-system/specimens/checkbox'
     | '/design-system/specimens/comment-section'
+    | '/design-system/specimens/dialog'
+    | '/design-system/specimens/input'
+    | '/design-system/specimens/tabs'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1046,11 +1089,15 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/design-system/guides/$slug'
     | '/design-system/specimens/badge'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
     | '/design-system/specimens/checkbox'
     | '/design-system/specimens/comment-section'
+    | '/design-system/specimens/dialog'
+    | '/design-system/specimens/input'
+    | '/design-system/specimens/tabs'
     | '/tweets/topics/$tag'
     | '/admin/galleries'
     | '/admin/notes'
@@ -1143,11 +1190,15 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/design-system/guides/$slug'
     | '/design-system/specimens/badge'
     | '/design-system/specimens/button'
     | '/design-system/specimens/cartoon-popover'
     | '/design-system/specimens/checkbox'
     | '/design-system/specimens/comment-section'
+    | '/design-system/specimens/dialog'
+    | '/design-system/specimens/input'
+    | '/design-system/specimens/tabs'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1819,6 +1870,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGithubCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/design-system/guides/$slug': {
+      id: '/design-system/guides/$slug'
+      path: '/guides/$slug'
+      fullPath: '/design-system/guides/$slug'
+      preLoaderRoute: typeof DesignSystemGuidesSlugRouteImport
+      parentRoute: typeof DesignSystemRoute
+    }
     '/design-system/specimens/': {
       id: '/design-system/specimens/'
       path: '/'
@@ -1859,6 +1917,27 @@ declare module '@tanstack/react-router' {
       path: '/comment-section'
       fullPath: '/design-system/specimens/comment-section'
       preLoaderRoute: typeof DesignSystemSpecimensCommentSectionRouteImport
+      parentRoute: typeof DesignSystemSpecimensRoute
+    }
+    '/design-system/specimens/dialog': {
+      id: '/design-system/specimens/dialog'
+      path: '/dialog'
+      fullPath: '/design-system/specimens/dialog'
+      preLoaderRoute: typeof DesignSystemSpecimensDialogRouteImport
+      parentRoute: typeof DesignSystemSpecimensRoute
+    }
+    '/design-system/specimens/input': {
+      id: '/design-system/specimens/input'
+      path: '/input'
+      fullPath: '/design-system/specimens/input'
+      preLoaderRoute: typeof DesignSystemSpecimensInputRouteImport
+      parentRoute: typeof DesignSystemSpecimensRoute
+    }
+    '/design-system/specimens/tabs': {
+      id: '/design-system/specimens/tabs'
+      path: '/tabs'
+      fullPath: '/design-system/specimens/tabs'
+      preLoaderRoute: typeof DesignSystemSpecimensTabsRouteImport
       parentRoute: typeof DesignSystemSpecimensRoute
     }
     '/tweets/topics/$tag': {
@@ -2025,6 +2104,9 @@ interface DesignSystemSpecimensRouteChildren {
   DesignSystemSpecimensCartoonPopoverRoute: typeof DesignSystemSpecimensCartoonPopoverRoute
   DesignSystemSpecimensCheckboxRoute: typeof DesignSystemSpecimensCheckboxRoute
   DesignSystemSpecimensCommentSectionRoute: typeof DesignSystemSpecimensCommentSectionRoute
+  DesignSystemSpecimensDialogRoute: typeof DesignSystemSpecimensDialogRoute
+  DesignSystemSpecimensInputRoute: typeof DesignSystemSpecimensInputRoute
+  DesignSystemSpecimensTabsRoute: typeof DesignSystemSpecimensTabsRoute
   DesignSystemSpecimensIndexRoute: typeof DesignSystemSpecimensIndexRoute
 }
 
@@ -2036,6 +2118,9 @@ const DesignSystemSpecimensRouteChildren: DesignSystemSpecimensRouteChildren = {
   DesignSystemSpecimensCheckboxRoute: DesignSystemSpecimensCheckboxRoute,
   DesignSystemSpecimensCommentSectionRoute:
     DesignSystemSpecimensCommentSectionRoute,
+  DesignSystemSpecimensDialogRoute: DesignSystemSpecimensDialogRoute,
+  DesignSystemSpecimensInputRoute: DesignSystemSpecimensInputRoute,
+  DesignSystemSpecimensTabsRoute: DesignSystemSpecimensTabsRoute,
   DesignSystemSpecimensIndexRoute: DesignSystemSpecimensIndexRoute,
 }
 
@@ -2053,6 +2138,7 @@ interface DesignSystemRouteChildren {
   DesignSystemSpecimensRoute: typeof DesignSystemSpecimensRouteWithChildren
   DesignSystemTokensRoute: typeof DesignSystemTokensRoute
   DesignSystemIndexRoute: typeof DesignSystemIndexRoute
+  DesignSystemGuidesSlugRoute: typeof DesignSystemGuidesSlugRoute
 }
 
 const DesignSystemRouteChildren: DesignSystemRouteChildren = {
@@ -2064,6 +2150,7 @@ const DesignSystemRouteChildren: DesignSystemRouteChildren = {
   DesignSystemSpecimensRoute: DesignSystemSpecimensRouteWithChildren,
   DesignSystemTokensRoute: DesignSystemTokensRoute,
   DesignSystemIndexRoute: DesignSystemIndexRoute,
+  DesignSystemGuidesSlugRoute: DesignSystemGuidesSlugRoute,
 }
 
 const DesignSystemRouteWithChildren = DesignSystemRoute._addFileChildren(

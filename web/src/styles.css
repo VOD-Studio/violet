@@ -1,18 +1,9 @@
 /*
- * web/src/styles.css —— 全局样式唯一入口。
+ * web/src/styles.css —— 站点全局样式入口。
  *
- * 只负责导入 Tailwind、字体与各全局样式层，不承载任何实现；
- * 所有权划分：
- * - styles/theme.css        Tailwind 工具类 ↔ 运行时 token 映射（@theme inline）
- * - styles/tokens.css       基础语义 token（:root / .dark）
- * - styles/palettes/        官方配色预设（品牌强调层 token）
- * - styles/dialects/        视觉方言作用域（公开内容 / 工具 / 沉浸）
- * - styles/base.css         全局基础行为（滚动条、字体、prose 排版契约）
- * - styles/transitions.css  页面转场 View Transitions
- * 组件专属样式一律放组件旁的 *.module.css 或 feature 持有的样式文件，
- * 不回流到本文件或 styles/ 下的全局层。
- *
- * 导入顺序即层叠顺序：theme → tokens → palette → dialects → base → transitions。
+ * 导入顺序即层叠顺序：Tailwind → 字体 → @violet/ui 主题 → 站点方言 →
+ * 全局基础行为 → 页面转场。@violet/ui 持有 Tailwind 映射、基础 token 与
+ * Violet 默认 palette；方言及站点特有规则仍由应用持有。
  */
 @import "tailwindcss";
 @import "@fontsource/maple-mono/400.css";
@@ -20,9 +11,8 @@
 @import "@fontsource/maple-mono/600.css";
 @import "@fontsource/maple-mono/700.css";
 @import "@fontsource/alex-brush/400.css";
-@import "./styles/theme.css";
-@import "./styles/tokens.css";
-@import "./styles/palettes/violet.css";
+@import "@violet/ui/styles.css";
+@import "./styles/site-tokens.css";
 @import "./styles/dialects/public.css";
 @import "./styles/dialects/tool.css";
 @import "./styles/dialects/immersive.css";

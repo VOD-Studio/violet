@@ -15,13 +15,13 @@ export const VARIANT_MAP: Record<CartoonBubbleVariant, VariantMeta> = {
 			"--cartoon-shadow": "var(--foreground)",
 		} as CSSProperties,
 	},
-	brand: {
+	primary: {
 		className:
-			"bg-[oklch(0.97_0.02_286)] text-[oklch(0.24_0.06_286)] border-brand dark:bg-[oklch(0.22_0.05_286)] dark:text-[oklch(0.96_0.02_286)] dark:border-brand",
+			"bg-[oklch(0.97_0.02_286)] text-[oklch(0.24_0.06_286)] border-primary-base dark:bg-[oklch(0.22_0.05_286)] dark:text-[oklch(0.96_0.02_286)] dark:border-primary-base",
 		style: {
 			"--cartoon-bg": "oklch(0.97 0.02 286)",
-			"--cartoon-border": "var(--color-brand, #7c3aed)",
-			"--cartoon-shadow": "var(--color-brand, #7c3aed)",
+			"--cartoon-border": "var(--color-primary-base, #7c3aed)",
+			"--cartoon-shadow": "var(--color-primary-base, #7c3aed)",
 		} as CSSProperties,
 	},
 	amber: {

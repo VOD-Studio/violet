@@ -43,11 +43,12 @@ let lightProbe: HTMLSpanElement | null = null;
 let darkProbe: HTMLSpanElement | null = null;
 
 /**
- * readSiteVar - 读站点 CSS 变量，按 isDark 选浅/深变体
+ * readSiteVar - 读站点 CSS 变量在指定明暗域解析后的具体颜色
  *
- * 探针带 .dark 类时，.dark { --x: ... } 规则直接作用于该元素，读到暗色值；
- * 不带类时读到 :root 的浅色值。与 <html> 当前主题解耦。
- * 营造法式的 token 词典复用此探针读取明暗双域实时值。
+ * custom property 的 computed value 原样透传 light-dark()/var()，不按域解析；
+ * 探针显式设置 color-scheme，再把变量落到 background-color 上触发求值，
+ * light-dark() 依探针的 color-scheme 取对应支。与 <html> 当前主题解耦。
+ * 营造法式的 token 词典与 mermaid 主题映射复用此探针。
  */
 export function readSiteVar(name: string, isDark: boolean): string {
 	if (typeof window === "undefined" || typeof document === "undefined") return "";
@@ -56,12 +57,16 @@ export function readSiteVar(name: string, isDark: boolean): string {
 	let probe = isDark ? darkProbe : lightProbe;
 	if (!probe?.isConnected) {
 		probe = document.createElement("span");
-		if (isDark) probe.className = "dark";
 		probe.style.display = "none";
 		probe.setAttribute("aria-hidden", "true");
 		document.documentElement.appendChild(probe);
 		if (isDark) darkProbe = probe;
 		else lightProbe = probe;
 	}
-	return window.getComputedStyle(probe).getPropertyValue(name).trim();
+	// 显式 color-scheme 覆盖继承（html 可能带 .dark）；用 setProperty 而非
+	// 简写属性赋值，jsdom 的 cssstyle 不识别 colorScheme 简写
+	probe.style.setProperty("color-scheme", isDark ? "dark" : "light");
+	if (!window.getComputedStyle(probe).getPropertyValue(name).trim()) return "";
+	probe.style.backgroundColor = `var(${name})`;
+	return (window.getComputedStyle(probe).backgroundColor ?? "").trim();
 }

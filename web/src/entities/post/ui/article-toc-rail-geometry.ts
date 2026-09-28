@@ -17,8 +17,8 @@ const BASE_BEND = 10.4;
 const BEND_WAVE = 0.6;
 const BASE_BEND_RANGE = 56;
 
-/** 轨迹强调色引用品牌层 token：跟随配色预设与明暗模式，不写死色值。 */
-export const ARTICLE_TOC_RAIL_ACCENT = "var(--brand)";
+/** 轨迹强调色引用主色源 token：跟随配色预设与明暗模式，不写死色值。 */
+export const ARTICLE_TOC_RAIL_ACCENT = "var(--primary-base)";
 export const ARTICLE_TOC_RAIL_X = 8;
 
 export function clamp(value: number, min: number, max: number) {

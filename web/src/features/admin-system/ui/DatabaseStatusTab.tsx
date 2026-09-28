@@ -4,9 +4,8 @@ import {
 	useClientPagination,
 } from "@features/admin-shared/ui/data-table";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Switch } from "@shared/ui/base/switch";
+import { Badge, Button, Switch } from "@violet/ui";
+
 import { Database, Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useDatabaseSchema, useDatabaseStatus } from "../api/queries";

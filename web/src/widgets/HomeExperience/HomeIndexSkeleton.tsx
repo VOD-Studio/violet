@@ -1,4 +1,4 @@
-import { Skeleton } from "@shared/ui/base/skeleton";
+import { Skeleton } from "@violet/ui";
 
 /** 首页近稿与偶得尺素专属骨架屏（与正式 HomeIndex 1:1 几何高度对齐）。 */
 export function HomeIndexSkeleton() {

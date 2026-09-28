@@ -1,3 +1,5 @@
+import { DESIGN_SYSTEM_CATALOG } from "./guides";
+
 /**
  * 设计系统二级子菜单项。
  */
@@ -12,6 +14,8 @@ export interface DesignSystemNavSubItem {
 	badge?: string;
 	/** 简述 */
 	description?: string;
+	/** 公开包组件或站点私有组件 */
+	category: "library" | "site";
 }
 
 /**
@@ -31,7 +35,7 @@ export interface DesignSystemNavItem {
 	/** 可选角标说明，如「营造中」 */
 	badge?: string;
 	/** 二级子菜单列表，配置时呈可折叠展开树 */
-	children?: DesignSystemNavSubItem[];
+	children?: readonly DesignSystemNavSubItem[];
 }
 
 /**
@@ -66,110 +70,21 @@ export const BASELINES = [
 	"功能性圆角不过 rounded-2xl，硬投影一律禁用。",
 ] as const;
 
-/**
- * 营造法式典籍卷目编排。
- */
-export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
-	{
-		id: "principles-group",
-		title: "卷一 · 纲纪准则",
-		items: [
-			{
-				id: "principles",
-				num: "壹",
-				title: "设计原则",
-				to: "/design-system/principles",
-				scope: "查表无果时回退的最高判据，与贯穿全站的底线。",
-			},
-			{
-				id: "decisions",
-				num: "贰",
-				title: "快速决策表",
-				to: "/design-system/decisions",
-				scope: "不知道该用哪个 token 时，先查这张表。表里没有的，回到基本原则。",
-			},
-		],
-	},
-	{
-		id: "foundations-group",
-		title: "卷二 · 营造法度",
-		items: [
-			{
-				id: "palette",
-				num: "叁",
-				title: "色板生成器",
-				to: "/design-system/palette",
-				scope: "以单一主色为种，推演全域色阶、语义角色与中性基准。",
-			},
-			{
-				id: "tokens",
-				num: "肆",
-				title: "Token 词典",
-				to: "/design-system/tokens",
-				scope: "品牌色、功能色、中性色、语义色——全部语义 token 的名称与实时值。",
-			},
-			{
-				id: "layout",
-				num: "伍",
-				title: "布局规格",
-				to: "/design-system/layout",
-				scope: "间距、圆角、投影与容器的法定刻度。",
-			},
-			{
-				id: "motion",
-				num: "陆",
-				title: "动效章程",
-				to: "/design-system/motion",
-				scope: "运动的时间、幅度与克制的事由。",
-			},
-		],
-	},
-	{
-		id: "components-group",
-		title: "卷三 · 构件陈列",
-		items: [
-			{
-				id: "specimens",
-				num: "柒",
-				title: "组件目录",
-				to: "/design-system/specimens",
-				scope: "组件文档的共通要求与按能力取舍，以及本站真实组件示例。",
-				children: [
-					{
-						id: "button",
-						title: "Button",
-						to: "/design-system/specimens/button",
-						description: "按钮 · 动作层级与交互状态",
-					},
-					{
-						id: "badge",
-						title: "Badge",
-						to: "/design-system/specimens/badge",
-						description: "徽章与角标 · 标签、数量与状态提示",
-					},
-					{
-						id: "checkbox",
-						title: "Checkbox",
-						to: "/design-system/specimens/checkbox",
-						description: "复选框 · 三态选择与微光实体反馈",
-					},
-					{
-						id: "comment-section",
-						title: "CommentSection",
-						to: "/design-system/specimens/comment-section",
-						description: "评论区 · 纯展示评论套件",
-					},
-					{
-						id: "cartoon-popover",
-						title: "CartoonPopover",
-						to: "/design-system/specimens/cartoon-popover",
-						description: "卡通气泡 · 纯手绘对白与思考浮层",
-					},
-				],
-			},
-		],
-	},
-];
+/** 卷内条目编号统一用中文数字，保持营造法式的卷别体例。 */
+const CN_NUMERALS = ["壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖", "拾"] as const;
+
+/** 目录是唯一真相；导航分组只是给目录条目补上卷内编号。 */
+export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = DESIGN_SYSTEM_CATALOG.map(
+	(group) => ({
+		id: group.id,
+		title: group.title,
+		items: group.items.map((item, index) => ({
+			num: CN_NUMERALS[index] ?? String(index + 1),
+			badge: undefined,
+			...item,
+		})),
+	}),
+);
 
 /**
  * 展平后的全部可导航一级章节列表。
@@ -181,8 +96,8 @@ export const ALL_NAV_ITEMS: DesignSystemNavItem[] = DESIGN_SYSTEM_NAV_GROUPS.fla
 /**
  * 根据当前 pathname 匹配对应的章节项。
  *
- * @param pathname - 当前路由路径
- * @returns 匹配到的导航项，未匹配时返回首章
+ * 先精确匹配，再回退到最长前缀命中（覆盖子路由）；
+ * 均未命中时回退到第一章。
  */
 export function findNavItemByPath(pathname: string): DesignSystemNavItem {
 	const normalized = pathname.replace(/\/$/, "");
@@ -195,9 +110,6 @@ export function findNavItemByPath(pathname: string): DesignSystemNavItem {
 
 /**
  * 根据当前项推导上篇与下篇导航链接。
- *
- * @param currentId - 当前页面条目标识
- * @returns 上一章与下一章的元数据
  */
 export function getSiblingNavItems(currentId: string): {
 	prev: DesignSystemNavItem | null;

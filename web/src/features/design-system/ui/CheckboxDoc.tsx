@@ -1,128 +1,15 @@
-import { Checkbox } from "@shared/ui/base/checkbox";
-import { Label } from "@shared/ui/base/label";
-import { useState } from "react";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
-
-const BASIC_CODE = `import { Checkbox } from "@shared/ui/base/checkbox";
-import { Label } from "@shared/ui/base/label";
-import { useState } from "react";
-
-function Example() {
-  const [checked, setChecked] = useState(false);
-  return (
-    <div className="flex items-center gap-2.5">
-      <Checkbox
-        id="terms"
-        checked={checked}
-        onCheckedChange={(val) => setChecked(Boolean(val))}
-      />
-      <Label htmlFor="terms" className="cursor-pointer text-sm font-medium">
-        已阅读并同意服务协议（状态：{checked ? "已勾选" : "未勾选"}）
-      </Label>
-    </div>
-  );
-}`;
-
-const TRI_STATE_CODE = `import { Checkbox } from "@shared/ui/base/checkbox";
-import { Label } from "@shared/ui/base/label";
-import { useState } from "react";
-
-const ITEMS = [
-  { id: "notify-email", label: "邮件推送通知" },
-  { id: "notify-sms", label: "短信安全警报" },
-  { id: "notify-browser", label: "浏览器网页通知" },
-];
-
-function TriStateDemo() {
-  const [selected, setSelected] = useState<string[]>(["notify-email"]);
-
-  const allSelected = selected.length === ITEMS.length;
-  const isIndeterminate = selected.length > 0 && !allSelected;
-
-  const handleSelectAll = () => {
-    setSelected(allSelected ? [] : ITEMS.map((item) => item.id));
-  };
-
-  const handleToggleItem = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  return (
-    <div className="w-full max-w-sm rounded-xl border border-border/70 p-4 space-y-3 bg-card/50">
-      <div className="flex items-center gap-2.5 border-b border-border/40 pb-3">
-        <Checkbox
-          id="select-all"
-          variant="brand"
-          checked={allSelected ? true : isIndeterminate ? "indeterminate" : false}
-          onCheckedChange={handleSelectAll}
-        />
-        <Label htmlFor="select-all" className="cursor-pointer font-semibold text-sm">
-          全选全部通道 ({selected.length}/{ITEMS.length})
-        </Label>
-      </div>
-
-      <div className="space-y-2.5 pl-6">
-        {ITEMS.map((item) => (
-          <div key={item.id} className="flex items-center gap-2.5">
-            <Checkbox
-              id={item.id}
-              variant="brand"
-              checked={selected.includes(item.id)}
-              onCheckedChange={() => handleToggleItem(item.id)}
-            />
-            <Label htmlFor={item.id} className="cursor-pointer text-sm text-foreground/90">
-              {item.label}
-            </Label>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}`;
-
-const VARIANT_CODE = `<div className="flex flex-wrap items-center gap-6">
-  <div className="flex items-center gap-2.5">
-    <Checkbox id="var-default" variant="default" defaultChecked />
-    <Label htmlFor="var-default">Default 主要语义</Label>
-  </div>
-  <div className="flex items-center gap-2.5">
-    <Checkbox id="var-brand" variant="brand" defaultChecked />
-    <Label htmlFor="var-brand">Brand 紫罗兰专属</Label>
-  </div>
-</div>`;
-
-const SIZE_CODE = `<div className="flex flex-wrap items-center gap-6">
-  <div className="flex items-center gap-2">
-    <Checkbox id="size-sm" size="sm" defaultChecked />
-    <Label htmlFor="size-sm" className="text-xs">小号 sm (14px)</Label>
-  </div>
-  <div className="flex items-center gap-2.5">
-    <Checkbox id="size-default" size="default" defaultChecked />
-    <Label htmlFor="size-default" className="text-sm">默认 default (16px)</Label>
-  </div>
-  <div className="flex items-center gap-3">
-    <Checkbox id="size-lg" size="lg" defaultChecked />
-    <Label htmlFor="size-lg" className="text-base font-medium">大号 lg (20px)</Label>
-  </div>
-</div>`;
-
-const DISABLED_CODE = `<div className="flex flex-wrap items-center gap-6">
-  <div className="flex items-center gap-2.5">
-    <Checkbox id="dis-unchecked" disabled />
-    <Label htmlFor="dis-unchecked" className="text-muted-foreground">未选禁用</Label>
-  </div>
-  <div className="flex items-center gap-2.5">
-    <Checkbox id="dis-checked" defaultChecked disabled />
-    <Label htmlFor="dis-checked" className="text-muted-foreground">已选禁用</Label>
-  </div>
-  <div className="flex items-center gap-2.5">
-    <Checkbox id="dis-indeterminate" checked="indeterminate" disabled />
-    <Label htmlFor="dis-indeterminate" className="text-muted-foreground">半选禁用</Label>
-  </div>
-</div>`;
+import { CheckboxBasicDemo } from "./examples/checkbox/basic";
+import basicSource from "./examples/checkbox/basic.tsx?raw";
+import { CheckboxDisabledDemo } from "./examples/checkbox/disabled";
+import disabledSource from "./examples/checkbox/disabled.tsx?raw";
+import { CheckboxSizesDemo } from "./examples/checkbox/sizes";
+import sizesSource from "./examples/checkbox/sizes.tsx?raw";
+import { CheckboxTriStateDemo } from "./examples/checkbox/tri-state";
+import triStateSource from "./examples/checkbox/tri-state.tsx?raw";
+import { CheckboxVariantsDemo } from "./examples/checkbox/variants";
+import variantsSource from "./examples/checkbox/variants.tsx?raw";
 
 interface PropRow {
 	name: string;
@@ -152,10 +39,10 @@ const CHECKBOX_PROPS: PropRow[] = [
 	},
 	{
 		name: "variant",
-		type: '"default" | "brand"',
+		type: '"default" | "primary"',
 		defaultValue: '"default"',
 		meaning:
-			"视觉变体：default 绑定主要动作语义色（随方言映射），brand 显式绑定 Violet 品牌紫罗兰色。",
+			"视觉变体：default 绑定主要动作语义色（随方言映射），primary 显式绑定 Violet 主色源。",
 	},
 	{
 		name: "size",
@@ -199,30 +86,8 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 	},
 ];
 
-const ITEMS = [
-	{ id: "notify-email", label: "邮件推送通知" },
-	{ id: "notify-sms", label: "短信安全警报" },
-	{ id: "notify-browser", label: "浏览器网页通知" },
-];
-
 /** 以真实 Checkbox 展示用法、三态交互、尺寸规格与无障碍语义边界。 */
 export function CheckboxDocPage() {
-	const [basicChecked, setBasicChecked] = useState(false);
-	const [selected, setSelected] = useState<string[]>(["notify-email"]);
-
-	const allSelected = selected.length === ITEMS.length;
-	const isIndeterminate = selected.length > 0 && !allSelected;
-
-	const handleSelectAll = () => {
-		setSelected(allSelected ? [] : ITEMS.map((item) => item.id));
-	};
-
-	const handleToggleItem = (id: string) => {
-		setSelected((prev) =>
-			prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-		);
-	};
-
 	return (
 		<article className="mx-auto w-full max-w-4xl space-y-14 pb-24 font-sans">
 			<header className="space-y-3">
@@ -240,7 +105,7 @@ export function CheckboxDocPage() {
 				<p className="text-xs text-muted-foreground">
 					源码{" "}
 					<code className="font-mono text-foreground">
-						web/src/shared/ui/base/checkbox.tsx
+						web/packages/ui/src/checkbox/checkbox.tsx
 					</code>
 				</p>
 			</header>
@@ -252,23 +117,9 @@ export function CheckboxDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					与 Label 配合使用，点击复选框或关联文字标签均可无缝切换勾选。
 				</p>
-				<ComponentDemo code={BASIC_CODE}>
-					<div className="flex items-center justify-center">
-						<div className="flex items-center gap-2.5">
-							<Checkbox
-								id="basic-terms"
-								checked={basicChecked}
-								onCheckedChange={(val) => setBasicChecked(Boolean(val))}
-							/>
-							<Label
-								htmlFor="basic-terms"
-								className="cursor-pointer text-sm font-medium select-none"
-							>
-								已阅读并同意服务协议（状态：{basicChecked ? "已勾选" : "未勾选"}）
-							</Label>
-						</div>
-					</div>
-				</ComponentDemo>
+				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
+					<CheckboxBasicDemo />
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="checkbox-examples" className="space-y-12">
@@ -286,82 +137,21 @@ export function CheckboxDocPage() {
 						indeterminate
 						状态，呈现减号指示器；再次点击父级可统一全选或全部反选。下方为完整联动实况：
 					</p>
-					<ComponentDemo code={TRI_STATE_CODE}>
-						<div className="flex justify-center">
-							<div className="w-full max-w-sm space-y-3 rounded-xl border border-border/70 bg-card/60 p-4 shadow-xs">
-								<div className="flex items-center gap-2.5 border-b border-border/40 pb-3">
-									<Checkbox
-										id="select-all"
-										variant="brand"
-										checked={
-											allSelected
-												? true
-												: isIndeterminate
-													? "indeterminate"
-													: false
-										}
-										onCheckedChange={handleSelectAll}
-									/>
-									<Label
-										htmlFor="select-all"
-										className="cursor-pointer text-sm font-semibold select-none"
-									>
-										全选全部通知通道 ({selected.length}/{ITEMS.length})
-									</Label>
-								</div>
-
-								<div className="space-y-2.5 pl-6">
-									{ITEMS.map((item) => (
-										<div key={item.id} className="flex items-center gap-2.5">
-											<Checkbox
-												id={item.id}
-												variant="brand"
-												checked={selected.includes(item.id)}
-												onCheckedChange={() => handleToggleItem(item.id)}
-											/>
-											<Label
-												htmlFor={item.id}
-												className="cursor-pointer text-sm text-foreground/90 select-none"
-											>
-												{item.label}
-											</Label>
-										</div>
-									))}
-								</div>
-							</div>
-						</div>
-					</ComponentDemo>
+					<CodeCard code={triStateSource} language="tsx" lineNumbers collapseLines={6}>
+						<CheckboxTriStateDemo />
+					</CodeCard>
 				</div>
 
 				{/* 视觉变体 */}
 				<div className="space-y-3">
 					<h3 className="text-lg font-semibold text-foreground">视觉变体 (Variants)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						default 变体使用 primary 主要语义色，随页面所在方言自动映射；brand
-						变体显式绑定冷香紫罗兰高光，适合品牌专属选项。
+						default 变体使用 primary 主要语义色，随页面所在方言自动映射；primary
+						变体显式绑定冷香紫罗兰主色，适合需保持固定主色的选项。
 					</p>
-					<ComponentDemo code={VARIANT_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-8">
-							<div className="flex items-center gap-2.5">
-								<Checkbox id="demo-var-default" variant="default" defaultChecked />
-								<Label
-									htmlFor="demo-var-default"
-									className="cursor-pointer select-none"
-								>
-									Default 主要动作
-								</Label>
-							</div>
-							<div className="flex items-center gap-2.5">
-								<Checkbox id="demo-var-brand" variant="brand" defaultChecked />
-								<Label
-									htmlFor="demo-var-brand"
-									className="cursor-pointer select-none"
-								>
-									Brand 紫罗兰专属
-								</Label>
-							</div>
-						</div>
-					</ComponentDemo>
+					<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
+						<CheckboxVariantsDemo />
+					</CodeCard>
 				</div>
 
 				{/* 尺寸梯度 */}
@@ -371,37 +161,9 @@ export function CheckboxDocPage() {
 						涵盖 sm (14px)、default (16px) 与 lg
 						(20px)；小号推荐用于数据表格行，大号用于醒目卡片或移动端大点击区域。
 					</p>
-					<ComponentDemo code={SIZE_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-8">
-							<div className="flex items-center gap-2">
-								<Checkbox id="demo-size-sm" size="sm" defaultChecked />
-								<Label
-									htmlFor="demo-size-sm"
-									className="cursor-pointer text-xs select-none"
-								>
-									小号 sm (14px)
-								</Label>
-							</div>
-							<div className="flex items-center gap-2.5">
-								<Checkbox id="demo-size-default" size="default" defaultChecked />
-								<Label
-									htmlFor="demo-size-default"
-									className="cursor-pointer text-sm select-none"
-								>
-									默认 default (16px)
-								</Label>
-							</div>
-							<div className="flex items-center gap-3">
-								<Checkbox id="demo-size-lg" size="lg" defaultChecked />
-								<Label
-									htmlFor="demo-size-lg"
-									className="cursor-pointer text-base font-medium select-none"
-								>
-									大号 lg (20px)
-								</Label>
-							</div>
-						</div>
-					</ComponentDemo>
+					<CodeCard code={sizesSource} language="tsx" lineNumbers collapseLines={6}>
+						<CheckboxSizesDemo />
+					</CodeCard>
 				</div>
 
 				{/* 禁用状态 */}
@@ -410,38 +172,9 @@ export function CheckboxDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						禁用时透明度自然降低，阻止鼠标光标与键盘聚焦交互。
 					</p>
-					<ComponentDemo code={DISABLED_CODE}>
-						<div className="flex flex-wrap items-center justify-center gap-8">
-							<div className="flex items-center gap-2.5">
-								<Checkbox id="demo-dis-unchecked" disabled />
-								<Label
-									htmlFor="demo-dis-unchecked"
-									className="text-muted-foreground"
-								>
-									未选禁用
-								</Label>
-							</div>
-							<div className="flex items-center gap-2.5">
-								<Checkbox id="demo-dis-checked" defaultChecked disabled />
-								<Label htmlFor="demo-dis-checked" className="text-muted-foreground">
-									已选禁用
-								</Label>
-							</div>
-							<div className="flex items-center gap-2.5">
-								<Checkbox
-									id="demo-dis-indeterminate"
-									checked="indeterminate"
-									disabled
-								/>
-								<Label
-									htmlFor="demo-dis-indeterminate"
-									className="text-muted-foreground"
-								>
-									半选禁用
-								</Label>
-							</div>
-						</div>
-					</ComponentDemo>
+					<CodeCard code={disabledSource} language="tsx" lineNumbers collapseLines={6}>
+						<CheckboxDisabledDemo />
+					</CodeCard>
 				</div>
 			</section>
 

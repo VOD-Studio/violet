@@ -7,8 +7,9 @@
  * - 暂停时（非 loading/error）：中央大播放按钮
  */
 
+import { Button } from "@violet/ui";
 import { AlertCircle, Play, RotateCcw } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
+
 import type { VideoLoadStatus } from "../types/video-preview-types";
 
 interface VideoOverlayProps {

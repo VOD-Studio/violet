@@ -2,7 +2,7 @@ import type { MediaFile } from "@entities/media/model/types";
 import { AvatarPicker } from "@entities/media/ui/AvatarPicker";
 import type { PersonaAdminAsset } from "@entities/persona/model/types";
 import { mediaFileToPersonaAvatar } from "@features/persona-editor/model/document";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
 
 interface PersonaAvatarFieldProps {
 	avatar: PersonaAdminAsset | null;

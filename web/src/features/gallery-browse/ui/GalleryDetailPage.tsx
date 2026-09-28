@@ -3,13 +3,10 @@ import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGalleryItem } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
 import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
 import { HistoryBack } from "@shared/ui/history-back";
 import { ImagePreview } from "@shared/ui/image-preview";
-import { PageShell } from "@shared/ui/page-shell";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
+import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useState } from "react";
 
 interface GalleryDetailPageProps {

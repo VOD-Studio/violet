@@ -4,19 +4,20 @@ import { useCreateSeries, useUpdateSeries } from "@features/admin-series/api/mut
 import { type SeriesForm, seriesSchema } from "@features/admin-series/model/schema";
 import type { AdminSeriesListItem } from "@features/admin-series/model/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useDebouncedCallback } from "@shared/hooks/use-debounced-callback";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import {
+	Button,
+	Input,
+	Label,
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
-} from "@shared/ui/base/sheet";
-import { Textarea } from "@shared/ui/base/textarea";
+	Textarea,
+	useDebouncedCallback,
+} from "@violet/ui";
+
 import { WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";

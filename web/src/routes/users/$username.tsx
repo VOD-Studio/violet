@@ -13,16 +13,12 @@ import TweetCard from "@features/tweets/ui/TweetCard";
 import type { PagedResponse } from "@shared/api/types";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
 import { Magnetic } from "@shared/ui/magnetic";
-import { PageShell } from "@shared/ui/page-shell";
 import { ParticleField } from "@shared/ui/particle-field";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { ProfileCard } from "@shared/vendor/react-bits/ProfileCard";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { Badge, Button, DecryptedText, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { cn } from "cn";
 import { differenceInDays } from "date-fns";
 import {

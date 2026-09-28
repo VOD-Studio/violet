@@ -2,8 +2,8 @@ import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
 import { formatRelativeTime } from "@shared/lib/date";
 import { contentImageUrl } from "@shared/lib/image-url";
-import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState } from "react";
 

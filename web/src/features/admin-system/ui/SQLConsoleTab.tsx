@@ -1,5 +1,5 @@
-import { Button } from "@shared/ui/base/button";
-import { Switch } from "@shared/ui/base/switch";
+import { Button, Switch } from "@violet/ui";
+
 import {
 	AlertTriangle,
 	DatabaseZap,

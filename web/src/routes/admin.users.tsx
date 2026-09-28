@@ -16,24 +16,27 @@ import { UserBadgesDialog } from "@features/admin-users/ui/UserBadgesDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeCheck, Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { useMe } from "@/features/auth/api/queries";
-import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
-import { Button } from "@/shared/ui/base/button";
 import {
+	Badge,
+	Button,
+	ConfirmDialog,
+	SearchInput,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/shared/ui/base/select";
-import { SearchInput } from "@/shared/ui/search-input";
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+import { BadgeCheck, Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useMe } from "@/features/auth/api/queries";
+import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
 
 export const Route = createFileRoute("/admin/users")({
 	component: AdminUsers,

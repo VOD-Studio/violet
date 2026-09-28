@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from "@violet/ui";
 import { cn } from "cn";
 import {
 	Children,
@@ -9,7 +10,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/base/tooltip";
 
 interface CellWithTooltipProps {
 	/** 单元格内容 */

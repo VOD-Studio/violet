@@ -1,4 +1,5 @@
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { Award, CircleUserRound, Gem, MessageSquare } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";

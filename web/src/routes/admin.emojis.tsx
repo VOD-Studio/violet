@@ -14,17 +14,23 @@ import { StatsCard } from "@features/admin-emojis/ui/StatsCard";
 import { StatsCardSkeleton } from "@features/admin-emojis/ui/StatsCardSkeleton";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Card, CardContent } from "@shared/ui/base/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import Empty from "@shared/ui/empty";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+	Badge,
+	Button,
+	Card,
+	CardContent,
+	ConfirmDialog,
+	Empty,
+	SearchInput,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from "@violet/ui";
 import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { SearchInput } from "@/shared/ui/search-input";
 
 /**
  * /admin/emojis - 表情管理

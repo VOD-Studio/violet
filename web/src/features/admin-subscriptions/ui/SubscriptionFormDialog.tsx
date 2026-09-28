@@ -5,18 +5,19 @@ import {
 	type SubscriptionDTO,
 	type SubscriptionInterval,
 } from "@features/admin-subscriptions/model/types";
-import { Button } from "@shared/ui/base/button";
-import { Checkbox } from "@shared/ui/base/checkbox";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import {
+	Button,
+	Checkbox,
+	Input,
+	Label,
+	Modal,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { Modal } from "@shared/ui/modal";
+} from "@violet/ui";
+
 import * as React from "react";
 import { toast } from "sonner";
 

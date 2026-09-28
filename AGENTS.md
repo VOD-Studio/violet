@@ -13,9 +13,9 @@
 
 > 这是**代码组织原则**,不是 commit 拆分规则。规则 1(公共组件单独提交)管「commit 怎么拆」,本节管「代码该放哪一层」。两者分开理解。
 
-- **前端公共层不夹带 feature 业务逻辑**。`web/src/shared/`(`ui`/`lib`/`api`/`config`/`server`/`vendor`)只放跨 feature 通用件,不写 `posts` / `comments` / `editor` 等特定 feature 的业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)约束依赖方向,`shared` 不反向依赖 `features`。
+- **前端通用组件与站点公共层各归其位**。跨 feature 的通用 React 组件及基础语义 token 在 `web/packages/ui/`，从 `@violet/ui` 根入口使用组件；Tailwind v4 后导入 `@violet/ui/styles.css`。`web/src/styles/dialects/` 保留站点方言；`web/src/shared/` 只放站点级通用能力，以上两层均不夹带 `posts` / `comments` / `editor` 等 feature 业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)不允许向业务层反向依赖。
 - **后端各层各司其职**:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`,HTTP 适配进 `interfaces`;`internal/middleware/` 只放通用横切中间件(auth/cors/csrf/ratelimit 等)。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
-- **判断「是否公共」看是否被多个 feature/domain 引用**,而非位置。某 feature 私有逻辑一旦被第二个 feature 复用,应先 `refactor: 将 X 从 features/A 提到 shared/` 落定代码归属(提交规则见规则 1),再在新 feature 接入。
+- **判断「是否公共」看真实消费方**,不是位置。feature 私有逻辑被第二个 feature 复用时先上提；通用组件进 `web/packages/ui/`，站点专用基础能力进 `web/src/shared/`，有业务语义的实体逻辑进 `web/src/entities/`（提交规则见规则 1）。
 
 ## 开发流与命令 (Makefile)
 所有核心操作都通过根目录的 `Makefile` 统管：

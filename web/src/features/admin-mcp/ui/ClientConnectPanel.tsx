@@ -2,8 +2,8 @@ import { type ConfigContext, MCP_CLIENTS } from "@features/admin-mcp/model/clien
 import { MCP_SERVERS, serversForScopes } from "@features/admin-mcp/model/types";
 import { ClientInstallView } from "@features/admin-mcp/ui/ClientInstallView";
 import { copyText } from "@shared/lib/clipboard";
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+
 import { cn } from "cn";
 import { Check, Copy, Globe, KeyRound, X } from "lucide-react";
 import * as React from "react";

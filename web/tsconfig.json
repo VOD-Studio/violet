@@ -13,8 +13,7 @@
 			"@entities/*": ["./src/entities/*"],
 			"@shared/*": ["./src/shared/*"],
 			"@server/*": ["./src/shared/server/*"],
-			"@ui": ["./src/shared/ui"],
-			"@ui/*": ["./src/shared/ui/*"],
+			"@violet/ui": ["./packages/ui/src/index.ts"],
 			"@lib/*": ["./src/shared/lib/*"],
 			"@config/*": ["./src/shared/config/*"],
 			"@vendor/react-bits/*": ["./src/shared/vendor/react-bits/*"]

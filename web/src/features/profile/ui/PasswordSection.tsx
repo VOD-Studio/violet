@@ -1,8 +1,6 @@
 import { useChangePassword } from "@features/auth/api/mutations";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import { useNavigate } from "@tanstack/react-router";
+import { Button, Input, Label } from "@violet/ui";
 import { Check, KeyRound, PencilLine, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

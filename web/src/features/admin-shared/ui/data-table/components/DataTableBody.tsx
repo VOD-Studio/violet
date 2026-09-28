@@ -1,10 +1,15 @@
+import {
+	Button,
+	Empty,
+	Skeleton,
+	TableBody,
+	TableCell,
+	TableRow,
+	TooltipProvider,
+} from "@violet/ui";
 import { cn } from "cn";
 import { Fragment, type ReactNode } from "react";
-import { Button } from "@/shared/ui/base/button";
-import { Skeleton } from "@/shared/ui/base/skeleton";
-import { TableBody, TableCell, TableRow } from "@/shared/ui/base/table";
-import { TooltipProvider } from "@/shared/ui/base/tooltip";
-import Empty from "@/shared/ui/empty";
+
 import type { DataTableColumn } from "../types/data-table-types";
 import {
 	COLUMNS_CONTROL_KEY,

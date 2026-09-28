@@ -31,12 +31,17 @@ import {
 	type RichTextEditorHandle,
 } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useDebouncedCallback } from "@shared/hooks/use-debounced-callback";
-import { Input } from "@shared/ui/base/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import {
+	ConfirmDialog,
+	Input,
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	useDebouncedCallback,
+} from "@violet/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";

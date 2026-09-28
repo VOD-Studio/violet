@@ -105,7 +105,7 @@ vi.mock("@features/gallery-editor/api/mutations", () => ({
 	useSaveGalleryDraft: () => ({ mutateAsync: saveMutateAsync }),
 }));
 
-vi.mock("@shared/ui/confirm-dialog", () => ({
+vi.mock("@violet/ui/confirm-dialog", () => ({
 	ConfirmDialog: ({
 		open,
 		confirmLabel,

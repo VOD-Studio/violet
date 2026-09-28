@@ -1,6 +1,5 @@
 import type { ExternalTweet } from "@entities/tweet/model/types";
-import { Button } from "@shared/ui/base/button";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { Button, ConfirmDialog } from "@violet/ui";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

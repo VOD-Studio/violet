@@ -2,14 +2,16 @@ import { getContrastRatio, getWcagRating, oklchToRgb } from "@shared/lib/color-m
 
 /**
  * 色板生成器：选定一个主色（色相 + 彩度种子），推导完整色板——
- * 品牌色阶、主色与强调角色、功能色、中性带。这是「色板可插拔」
+ * 主色色阶、主色与强调角色、功能色、中性带。这是「色板可插拔」
  * 的机制化：换色 = 换种子重跑本算法。
  */
 
 export interface SeedColor {
+	/** 感知明度 0..1 */
+	l: number;
 	/** 色相角 0..360 */
 	h: number;
-	/** 彩度 0.06..0.30（克制上限，过饱和不入界面） */
+	/** 彩度；输入来自 sRGB 选色器，主色保留原值 */
 	c: number;
 }
 
@@ -62,7 +64,7 @@ export interface FunctionalColorSet {
 
 export interface GeneratedPalette {
 	seed: SeedColor;
-	/** 品牌色阶 ×11（浅到深） */
+	/** 主色色阶 ×11（浅到深） */
 	ramp: RampStep[];
 	/** 主色与强调：primary/accent 系标准语义 token,每行独立值 */
 	primaryRoles: RoleColor[];
@@ -188,7 +190,7 @@ function chromaAt(l: number, seedC: number): number {
 	const envelope = Math.max(0, 1 - Math.abs(l - 0.6) / 0.5);
 	return clamp(seedC * envelope * 1.35, 0, 0.37);
 }
-/** 品牌色阶规格：经过色彩动力学微调的感知明度与饱和度包络，保障 900/950 深邃可辨且全阶可用 */
+/** 主色色阶规格：经过色彩动力学微调的感知明度与饱和度包络，保障 900/950 深邃可辨且全阶可用 */
 const RAMP_SPECS: RampSpec[] = [
 	{ label: "50", l: 0.98, cRatio: 0.12 },
 	{ label: "100", l: 0.95, cRatio: 0.25 },
@@ -204,7 +206,7 @@ const RAMP_SPECS: RampSpec[] = [
 ];
 
 export function generatePalette(seed: SeedColor): GeneratedPalette {
-	const { h, c } = seed;
+	const { l, h, c } = seed;
 
 	const ramp: RampStep[] = RAMP_SPECS.map((spec) => {
 		const cStep = Math.min(c * spec.cRatio, 0.32);
@@ -215,30 +217,41 @@ export function generatePalette(seed: SeedColor): GeneratedPalette {
 	// 主色与强调：标准 shadcn 语义 token,每行独立值。
 	// --ring 与 --primary 同值不设行,公开方言名走 aliases;
 	// accent 系是主色的低占比形态(悬停与选中底及其上的文字)。
-	const cLight = chromaAt(0.53, c);
+	const primaryLight = swatch(l, c, h);
 	const cDark = clamp(c * 0.75, 0, 0.15); // 深域彩度受限，防 sRGB 色域裁剪
+	const primaryDark = swatch(clamp(Math.max(l, 0.72), 0.62, 0.82), cDark, h);
+	const foregroundCandidates = [swatch(0.99, 0, h), swatch(0.14, 0.02, h)];
+	const pickForeground = (background: SwatchColor) =>
+		foregroundCandidates.reduce((best, candidate) =>
+			getContrastRatio(candidate.oklch, background.oklch) >
+			getContrastRatio(best.oklch, background.oklch)
+				? candidate
+				: best,
+		);
+	const primaryLightForeground = pickForeground(primaryLight);
+	const primaryDarkForeground = pickForeground(primaryDark);
 	const primaryRoles: RoleColor[] = [
 		{
 			role: "--primary",
-			light: swatch(0.53, cLight, h),
-			dark: swatch(0.72, cDark, h),
+			light: primaryLight,
+			dark: primaryDark,
 			note: "主色",
 		},
 		{
 			role: "--primary-hover",
-			light: swatch(0.47, chromaAt(0.47, c), h),
-			dark: swatch(0.77, cDark * 0.92, h),
-			note: "悬停加深",
+			light: swatch(clamp(l - 0.06, 0.12, 0.9), clamp(c * 1.04, 0, 0.32), h),
+			dark: swatch(clamp(Math.max(l, 0.77), 0.67, 0.87), cDark * 0.92, h),
+			note: "悬停态",
 		},
 		{
 			role: "--primary-foreground",
-			light: swatch(0.99, 0, h),
-			dark: swatch(0.14, 0.02, h),
+			light: primaryLightForeground,
+			dark: primaryDarkForeground,
 			note: "主色上的文字",
 		},
 		{
 			role: "--accent",
-			light: swatch(0.965, cLight * 0.11, h),
+			light: swatch(0.965, c * 0.11, h),
 			dark: swatch(0.22, cDark * 0.24, h),
 			note: "悬停与选中底",
 		},

@@ -1,6 +1,5 @@
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 import { Link } from "@tanstack/react-router";
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AdminBrand } from "./AdminBrand";

@@ -1,5 +1,4 @@
-import { Card, CardContent, CardHeader } from "@shared/ui/base/card";
-import { Skeleton } from "@shared/ui/base/skeleton";
+import { Card, CardContent, CardHeader, Skeleton } from "@violet/ui";
 
 /**
  * GroupCardSkeleton - 分组卡片骨架屏

@@ -1,6 +1,5 @@
-import { Button } from "@shared/ui/base/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
-import { SearchInput } from "@shared/ui/search-input";
+import { Button, Popover, PopoverContent, PopoverTrigger, SearchInput } from "@violet/ui";
+
 import { cn } from "cn";
 import { Check, ChevronsUpDown, TableProperties } from "lucide-react";
 import { useMemo, useState } from "react";

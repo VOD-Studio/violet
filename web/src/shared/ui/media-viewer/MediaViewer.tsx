@@ -1,6 +1,7 @@
 import { FilePreview } from "@shared/ui/file-preview";
 import { ImagePreview } from "@shared/ui/image-preview";
-import { Modal } from "@shared/ui/modal";
+import { Modal } from "@violet/ui";
+
 import { cn } from "cn";
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";

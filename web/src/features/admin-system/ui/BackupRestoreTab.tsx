@@ -1,11 +1,6 @@
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Switch } from "@shared/ui/base/switch";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { Modal } from "@shared/ui/modal";
 import { useQueryClient } from "@tanstack/react-query";
+import { Badge, Button, ConfirmDialog, Input, Modal, Switch } from "@violet/ui";
 import {
 	Archive,
 	CalendarClock,

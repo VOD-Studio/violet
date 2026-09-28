@@ -1,8 +1,7 @@
 import { BlogSkeleton } from "@features/lab/blog/ui/BlogSkeleton";
 import { CascadeFlow } from "@features/lab/blog/ui/CascadeFlow";
-import Empty from "@shared/ui/empty";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { useQueries } from "@tanstack/react-query";
+import { Empty, ShimmerSkeleton } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
 import { postKeys } from "../api/keys";
 import { fetchPosts, usePosts } from "../api/queries";

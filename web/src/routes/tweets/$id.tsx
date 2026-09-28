@@ -2,11 +2,9 @@ import { tweetKeys } from "@features/tweets/api/keys";
 import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
-import Empty from "@shared/ui/empty";
 import { HistoryBack } from "@shared/ui/history-back";
-import { PageShell } from "@shared/ui/page-shell";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 
 /**
  * /tweets/$id - 单条推文详情页（公开）

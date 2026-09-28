@@ -1,9 +1,5 @@
-import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@shared/ui/base/chart";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@violet/ui";
+
 import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import type { SystemDiskInfoDTO, SystemHistoryDTO, SystemSamplePointDTO } from "../model/types";

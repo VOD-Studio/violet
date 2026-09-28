@@ -1,7 +1,6 @@
 import type { PersonaSaveState } from "@features/persona-editor/model/types";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
+import { Badge, Button } from "@violet/ui";
 import { ArrowLeft, CircleCheck, ExternalLink, Loader2, Save, Trash2 } from "lucide-react";
 import { PersonaSaveIndicator } from "./PersonaSaveIndicator";
 

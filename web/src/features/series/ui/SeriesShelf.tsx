@@ -2,11 +2,9 @@ import { fetchSeries, seriesKeys, useSeries } from "@features/series/api";
 import type { SeriesSummary } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
 import { formatDate } from "@shared/lib/date";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
 
 const PAGE_LIMIT = 24;

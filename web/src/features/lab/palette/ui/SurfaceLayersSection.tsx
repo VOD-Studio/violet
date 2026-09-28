@@ -36,7 +36,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 					<div className="rounded-2xl border border-black/10 bg-[#faf9fd] p-6 text-[#13111c] shadow-xs">
 						<div className="mb-4 flex items-center justify-between">
 							<span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-								<Layers className="size-3.5 text-brand" />
+								<Layers className="size-3.5 text-primary-base" />
 								浅色画布空间层叠 · 温润白瓷
 							</span>
 							<span className="font-mono text-[10px] text-slate-400">
@@ -83,7 +83,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
 									<span className="font-semibold">L2 · 薄雾受光面 Wash</span>
-									<span>--brand-wash</span>
+									<span>--primary-base-soft</span>
 								</div>
 								<p className="mt-1 text-[11px] opacity-80">
 									交互高亮与弱强调徽章，仅保留 2.2% 极轻彩度。
@@ -116,7 +116,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 					<div className="dark rounded-2xl border border-white/10 bg-[#0d0b14] p-6 text-[#f5f4fa] shadow-xs">
 						<div className="mb-4 flex items-center justify-between">
 							<span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300">
-								<Layers className="size-3.5 text-brand" />
+								<Layers className="size-3.5 text-primary-base" />
 								深色画布空间层叠 · 玄曜星空
 							</span>
 							<span className="font-mono text-[10px] text-zinc-500">
@@ -166,7 +166,7 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 							>
 								<div className="flex items-center justify-between font-mono text-[11px]">
 									<span className="font-semibold">L2 · 薄雾受光面 Wash</span>
-									<span>--brand-wash</span>
+									<span>--primary-base-soft</span>
 								</div>
 								<p className="mt-1 text-[11px] opacity-80">
 									半透明暗紫微光，丁香紫前景色，透光不刺目。

@@ -64,9 +64,9 @@ describe("DiagramBlock 加载与渲染", () => {
 		await waitFor(() => {
 			expect(screen.queryByText("图表渲染失败")).toBeNull();
 		});
-		// 源码块：深色代码块视觉族（顶栏语言标签 + 高亮源码）
-		const top = container.querySelector(".bg-\\[\\#24292e\\]");
-		expect(top).toBeTruthy();
+		// 源码块：CodeCard 顶栏语言标签存在（降级即代码卡呈现）
+		const top = container.querySelector(".font-mono.text-xs");
+		expect(top?.textContent).toContain("mermaid");
 		// 源码出现在代码块内（shiki 高亮前 fallback 纯文本，检测到即可）
 		await waitFor(() => {
 			const allCode = container.querySelectorAll("code");

@@ -1,20 +1,21 @@
 import { useAllRoles } from "@features/admin-roles/api/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/shared/ui/base/button";
-import { Input } from "@/shared/ui/base/input";
-import { Label } from "@/shared/ui/base/label";
 import {
+	Button,
+	Input,
+	Label,
+	Modal,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/shared/ui/base/select";
-import { Switch } from "@/shared/ui/base/switch";
-import { Modal } from "@/shared/ui/modal";
+	Switch,
+} from "@violet/ui";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+
 import { useCreateUser } from "../api/queries";
 import { type CreateUserForm, createUserSchema } from "../model/schema";
 

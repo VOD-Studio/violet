@@ -3,7 +3,8 @@ import type { UserDTO } from "@entities/user/model/types";
 import { useUpdateProfile } from "@features/auth/api/mutations";
 import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/CropUploadDialog";
 import { avatarUrl } from "@shared/lib/image-url";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
+
 import { cn } from "cn";
 import { Camera, ShieldCheck, User as UserIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";

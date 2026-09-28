@@ -1,7 +1,5 @@
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Modal } from "@shared/ui/modal";
+import { Button, Input, Label, Modal } from "@violet/ui";
+
 import * as React from "react";
 import { toast } from "sonner";
 import type { FriendLinkAdminDTO, FriendLinkManualRequest } from "../model/types";

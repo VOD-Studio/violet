@@ -1,5 +1,5 @@
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { localeLabel } from "@shared/ui/locale-switcher";
+import { ConfirmDialog } from "@violet/ui";
 
 interface PersonaEditorDialogsProps {
 	deleteOpen: boolean;

@@ -4,10 +4,10 @@ import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview"
 import { formatDate, formatDateTime } from "@shared/lib/date";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { BackLink } from "@shared/ui/back-link";
-import { Button } from "@shared/ui/base/button";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";

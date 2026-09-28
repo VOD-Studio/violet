@@ -11,7 +11,7 @@ import { ApiError } from "@shared/api/error";
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { isImageURL } from "@shared/lib/url";
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
 import { AlertCircle, ImagePlus, Link2, Loader2, Send, Smile, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";

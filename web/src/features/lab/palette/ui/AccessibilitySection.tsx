@@ -1,4 +1,4 @@
-import { BRAND_TOKENS, STATUS_TOKENS, SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
+import { PRIMARY_TOKENS, STATUS_TOKENS, SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
 import { getContrastRatio, getWcagRating } from "@shared/lib/color-math";
 import { cn } from "cn";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
@@ -11,10 +11,10 @@ export interface AccessibilitySectionProps {
  * AccessibilitySection - WCAG 2.1 对比度与无障碍合规性审计矩阵。
  */
 export function AccessibilitySection({ className }: AccessibilitySectionProps) {
-	const brand = BRAND_TOKENS[0];
-	const brandFg = BRAND_TOKENS[1];
-	const brandWash = BRAND_TOKENS[3];
-	const brandWashFg = BRAND_TOKENS[4];
+	const primary = PRIMARY_TOKENS[0];
+	const primaryForeground = PRIMARY_TOKENS[1];
+	const primarySoft = PRIMARY_TOKENS[3];
+	const primarySoftForeground = PRIMARY_TOKENS[4];
 
 	const canvas = SURFACE_LAYERS[0];
 	const card = SURFACE_LAYERS[1];
@@ -23,21 +23,21 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 
 	const auditPairs = [
 		{
-			label: "品牌色在画布底色上",
-			role: "Brand on Canvas",
-			lightFg: brand.light,
+			label: "主色在画布底色上",
+			role: "Primary on Canvas",
+			lightFg: primary.light,
 			lightBg: canvas.light,
-			darkFg: brand.dark,
+			darkFg: primary.dark,
 			darkBg: canvas.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{
-			label: "品牌文字在品牌按钮上",
-			role: "Foreground on Brand",
-			lightFg: brandFg.light,
-			lightBg: brand.light,
-			darkFg: brandFg.dark,
-			darkBg: brand.dark,
+			label: "主色前景在主色按钮上",
+			role: "Foreground on Primary",
+			lightFg: primaryForeground.light,
+			lightBg: primary.light,
+			darkFg: primaryForeground.dark,
+			darkBg: primary.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{
@@ -59,12 +59,12 @@ export function AccessibilitySection({ className }: AccessibilitySectionProps) {
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{
-			label: "薄雾文字在薄雾表面上",
-			role: "Wash Text on Wash Surface",
-			lightFg: brandWashFg.light,
-			lightBg: brandWash.light,
-			darkFg: brandWashFg.dark,
-			darkBg: brandWash.dark,
+			label: "柔和面文字在柔和表面上",
+			role: "Primary Soft Foreground",
+			lightFg: primarySoftForeground.light,
+			lightBg: primarySoft.light,
+			darkFg: primarySoftForeground.dark,
+			darkBg: primarySoft.dark,
 			target: "WCAG AA (≥ 4.5:1)",
 		},
 		{

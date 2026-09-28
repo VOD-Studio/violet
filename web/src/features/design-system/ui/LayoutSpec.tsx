@@ -57,7 +57,7 @@ export function LayoutSpec() {
 							<code className="w-12 font-mono text-xs text-muted-foreground">
 								{step.utility}
 							</code>
-							<div className={`h-3 bg-brand-wash ${step.utility}`} />
+							<div className={`h-3 bg-primary-base-soft ${step.utility}`} />
 							<span className="font-mono text-xs text-muted-foreground">
 								{step.px}px
 							</span>

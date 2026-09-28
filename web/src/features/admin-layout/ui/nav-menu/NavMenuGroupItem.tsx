@@ -1,5 +1,5 @@
-import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { useRouterState } from "@tanstack/react-router";
+import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

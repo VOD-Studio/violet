@@ -1,4 +1,4 @@
-import { Checkbox } from "@/shared/ui/base/checkbox";
+import { Checkbox } from "@violet/ui";
 
 interface SelectAllCheckboxProps {
 	/** 当前页所有可见行是否全选 */

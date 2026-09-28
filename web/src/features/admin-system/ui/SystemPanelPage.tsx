@@ -1,6 +1,7 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
+import { Segmented, type SegmentedItem } from "@violet/ui";
+
 import { ArchiveRestore, Database, FileDown, ServerCog, SquareTerminal } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { BackupRestoreTab } from "./BackupRestoreTab";

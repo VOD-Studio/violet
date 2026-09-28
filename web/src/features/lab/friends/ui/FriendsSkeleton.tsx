@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
 
 export type LabDirection = "cards" | "postcards" | "terminal";
 

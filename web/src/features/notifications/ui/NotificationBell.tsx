@@ -8,16 +8,17 @@
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import { formatRelativeTime } from "@shared/lib/date";
-import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
+import { useNavigate } from "@tanstack/react-router";
 import {
+	Badge,
+	BadgeAnchor,
+	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@shared/ui/base/dropdown-menu";
-import { useNavigate } from "@tanstack/react-router";
+} from "@violet/ui";
 import { cn } from "cn";
 import {
 	Bell,
@@ -73,23 +74,23 @@ const tweetSources: NotificationSourceType[] = [
 	"tweet_comment_replied",
 ];
 
-/** source_type → 颜色映射：走行为状态与品牌语义（新增/注册=品牌、审核类=warning/success、失败/拒绝=destructive） */
+/** source_type → 颜色映射：走行为状态与主色语义（新增/注册=主色、审核类=warning/success、失败/拒绝=destructive） */
 const sourceColor: Record<NotificationSourceType, string> = {
 	subscription_failed: "text-destructive",
 	subscription_succeeded: "text-success",
 	friendlink_applied: "text-warning",
 	friendlink_reviewed: "text-success",
 	comment_approved: "text-success",
-	comment_created: "text-brand",
+	comment_created: "text-primary-base",
 	comment_pending: "text-warning",
 	comment_rejected: "text-destructive",
-	user_registered: "text-brand",
+	user_registered: "text-primary-base",
 	account_security: "text-warning",
 	chat_room_invited: "text-neon-cyan",
 	tweet_liked: "text-neon-pink",
 	tweet_quoted: "text-neon-green",
 	tweet_commented: "text-neon-blue",
-	tweet_comment_replied: "text-brand",
+	tweet_comment_replied: "text-primary-base",
 };
 
 /**
@@ -215,7 +216,7 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 									"shrink-0 text-xs transition-colors disabled:opacity-60",
 									push.subscribed
 										? "text-muted-foreground hover:text-foreground"
-										: "text-brand hover:underline",
+										: "text-primary-base hover:underline",
 								)}
 							>
 								{push.busy ? "处理中…" : push.subscribed ? "已开启，关闭" : "开启"}

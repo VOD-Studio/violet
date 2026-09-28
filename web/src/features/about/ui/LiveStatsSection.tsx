@@ -1,6 +1,6 @@
 import { usePublicStats } from "@features/about/api/queries";
 import { useCountUp } from "@shared/hooks/use-count-up";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
 
 import { AboutChapter } from "./AboutChapter";
 import { AboutSectionState } from "./AboutSectionState";

@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@violet/ui";
 import { Film } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui/base/button";
 
 interface FramePickerProps {
 	/** 视频 URL */

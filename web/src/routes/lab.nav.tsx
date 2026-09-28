@@ -3,8 +3,8 @@ import { ProgressBackRail } from "@features/lab/nav/ui/ProgressBackRail";
 import { ScrollRevealChip } from "@features/lab/nav/ui/ScrollRevealChip";
 import { StickyBackBar } from "@features/lab/nav/ui/StickyBackBar";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Segmented } from "@violet/ui";
 import { useState } from "react";
 
 type NavDirection = "sticky" | "fab" | "reveal" | "progress";

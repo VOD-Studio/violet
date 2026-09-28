@@ -52,13 +52,13 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 				aria-label="移动端章节切换"
 				className="fixed right-0 bottom-6 left-0 z-40 flex justify-center px-4 pointer-events-none md:hidden"
 			>
-				<div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/90 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl pointer-events-auto">
+				<div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/90 p-1 shadow-[0_4px_24px_rgba(0,0,0,0.05)] backdrop-blur-xl pointer-events-auto">
 					{/* 上一章快捷切换 */}
 					{prev ? (
 						<Link
 							to={prev.to}
 							title={`上一章：${prev.title}`}
-							className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground active:scale-95"
+							className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
 						>
 							<ChevronLeft className="h-4 w-4" />
 							<span className="sr-only">上一章</span>
@@ -71,7 +71,7 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 					<button
 						type="button"
 						onClick={() => setDrawerOpen(true)}
-						className="flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/15 active:scale-98"
+						className="flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/15"
 					>
 						<BookOpen className="h-3.5 w-3.5 text-primary" />
 						<span className="font-serif font-bold text-primary">
@@ -88,7 +88,7 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 						<Link
 							to={next.to}
 							title={`下一章：${next.title}`}
-							className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground active:scale-95"
+							className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
 						>
 							<ChevronRight className="h-4 w-4" />
 							<span className="sr-only">下一章</span>
@@ -119,7 +119,7 @@ export function DesignSystemMobileNav({ activeItem, currentPath }: DesignSystemM
 							animate={{ y: 0 }}
 							exit={{ y: "100%" }}
 							transition={{ duration: 0.22, ease: "easeOut" }}
-							className="relative z-10 flex max-h-[82vh] flex-col rounded-t-3xl border-t border-border/60 bg-card/95 shadow-2xl backdrop-blur-2xl"
+							className="relative z-10 flex max-h-[82vh] flex-col rounded-t-2xl border-t border-border/60 bg-card/95 shadow-[0_4px_24px_rgba(0,0,0,0.05)] backdrop-blur-2xl"
 						>
 							{/* 顶部抓手与标题栏 */}
 							<div className="flex flex-col items-center border-b border-border/40 px-5 pt-3 pb-4">

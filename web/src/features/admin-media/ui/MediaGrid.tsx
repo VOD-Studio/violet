@@ -1,8 +1,8 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { imageUrl } from "@shared/lib/image-url";
+import { Button } from "@violet/ui";
 import type { LucideIcon } from "lucide-react";
 import { Crop, FileText, Film, Music, Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
 
 interface MediaGridProps {
 	files: MediaFile[];

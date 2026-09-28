@@ -6,20 +6,20 @@ import {
 } from "@entities/media/model/constants";
 import type { MediaCatalogQuery, MediaFile, MediaType } from "@entities/media/model/types";
 import { imageUrl } from "@shared/lib/image-url";
-import { Pagination } from "@shared/ui/pagination";
-import { cn } from "cn";
-import { Check, FileText, Film, Music } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/shared/ui/base/button";
 import {
+	Button,
+	Modal,
+	Pagination,
+	SearchInput,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/shared/ui/base/select";
-import { Modal } from "@/shared/ui/modal";
-import { SearchInput } from "@/shared/ui/search-input";
+} from "@violet/ui";
+import { cn } from "cn";
+import { Check, FileText, Film, Music } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 /** 素材库选择器参数。 */
 export interface MediaPickerProps {

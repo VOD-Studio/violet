@@ -1,14 +1,16 @@
-import { Button } from "@shared/ui/base/button";
 import {
+	Button,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@shared/ui/base/dialog";
-import { Switch } from "@shared/ui/base/switch";
-import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
+	Segmented,
+	type SegmentedItem,
+	Switch,
+} from "@violet/ui";
+
 import { Maximize2, Waypoints } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DatabaseSchemaDTO } from "../model/types";

@@ -2,7 +2,8 @@ import {
 	CONTRIBUTION_LEVEL_CLASS,
 	getContributionLevel,
 } from "@features/github/model/contribution-level";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+
 import { cn } from "cn";
 import { useMemo } from "react";
 

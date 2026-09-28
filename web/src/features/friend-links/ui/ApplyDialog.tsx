@@ -1,11 +1,16 @@
 import { useCsrfToken } from "@features/auth/api/queries";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Textarea } from "@shared/ui/base/textarea";
-import { Modal } from "@shared/ui/modal";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@shared/ui/otp";
-import { ResendButton } from "@shared/ui/resend-button";
+import {
+	Button,
+	Input,
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	Label,
+	Modal,
+	ResendButton,
+	Textarea,
+} from "@violet/ui";
+
 import { ArrowLeft, ArrowRight, Mailbox, UserRoundCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";

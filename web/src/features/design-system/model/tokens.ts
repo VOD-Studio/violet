@@ -1,9 +1,6 @@
 /**
- * 营造法式 token 词典的清单数据：与样式映射层（styles/theme.css）对账的唯一清单。
- *
- * 只收录映射层已映射到工具类的颜色 token；词干（stem）对应 --color-<stem>，
- * 变量名（varName）对应映射右侧的 var(--x)。防漂移对账测试双向核对本清单
- * 与映射层：清单引用幽灵 token、或映射层核心 token 未收录，任一失衡即红。
+ * 营造法式展示的语义色清单。词干对应包内 @theme inline 的 --color-<stem>，
+ * varName 对应颜色变量；新增公开 token 时同步包样式与此清单。
  */
 
 export interface TokenDoc {
@@ -28,7 +25,7 @@ export const TOKEN_GROUPS: TokenGroup[] = [
 	{
 		id: "semantic",
 		title: "语义色",
-		note: "组件消费的主干。主要动作色随方言映射：公开方言映射品牌色，工具方言保持高对比中性。",
+		note: "组件消费的主干。主要动作色随方言映射：公开方言映射主色源，工具方言保持高对比中性。",
 		tokens: [
 			{ varName: "--background", stem: "background", purpose: "页面画布底色。" },
 			{ varName: "--foreground", stem: "foreground", purpose: "画布上的正文墨色。" },
@@ -88,24 +85,36 @@ export const TOKEN_GROUPS: TokenGroup[] = [
 		],
 	},
 	{
-		id: "brand",
-		title: "品牌色",
+		id: "primary-source",
+		title: "主色源",
 		note: "值由配色预设层提供，页面不感知具体色板——色板可插拔，换预设全站跟随。",
 		tokens: [
-			{ varName: "--brand", stem: "brand", purpose: "品牌强调主色。" },
+			{ varName: "--primary-base", stem: "primary-base", purpose: "稳定主色。" },
 			{
-				varName: "--brand-foreground",
-				stem: "brand-foreground",
-				purpose: "品牌色上的文字。",
+				varName: "--primary-base-foreground",
+				stem: "primary-base-foreground",
+				purpose: "主色面上的文字。",
 			},
-			{ varName: "--brand-hover", stem: "brand-hover", purpose: "品牌悬停态。" },
-			{ varName: "--brand-wash", stem: "brand-wash", purpose: "品牌淡染面。" },
 			{
-				varName: "--brand-wash-foreground",
-				stem: "brand-wash-foreground",
-				purpose: "淡染面上的文字。",
+				varName: "--primary-base-hover",
+				stem: "primary-base-hover",
+				purpose: "主色悬停态。",
 			},
-			{ varName: "--brand-ring", stem: "brand-ring", purpose: "品牌焦点环。" },
+			{
+				varName: "--primary-base-soft",
+				stem: "primary-base-soft",
+				purpose: "主色柔和面。",
+			},
+			{
+				varName: "--primary-base-soft-foreground",
+				stem: "primary-base-soft-foreground",
+				purpose: "柔和面上的文字。",
+			},
+			{
+				varName: "--primary-base-ring",
+				stem: "primary-base-ring",
+				purpose: "主色焦点环。",
+			},
 		],
 	},
 	{

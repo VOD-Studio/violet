@@ -13,7 +13,7 @@ import { TokenDictionary } from "../TokenDictionary";
 describe("token 词典", () => {
 	it("六个分组齐备", () => {
 		render(<TokenDictionary />);
-		for (const title of ["语义色", "品牌色", "纸面", "材质遗留", "图表色", "霓虹色"]) {
+		for (const title of ["语义色", "主色源", "纸面", "材质遗留", "图表色", "霓虹色"]) {
 			expect(screen.getByRole("region", { name: title })).toBeTruthy();
 		}
 	});

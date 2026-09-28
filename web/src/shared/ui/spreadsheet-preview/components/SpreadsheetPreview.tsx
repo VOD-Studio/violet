@@ -9,10 +9,11 @@
  * - 下载
  */
 
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
 import { formatDateTime } from "@/shared/lib/date";
-import { Button } from "@/shared/ui/base/button";
+
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useSpreadsheet } from "../hooks/useSpreadsheet";
 import type { CellValue, SpreadsheetPreviewProps } from "../types/spreadsheet-preview-types";

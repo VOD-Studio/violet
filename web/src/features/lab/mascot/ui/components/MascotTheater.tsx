@@ -2,10 +2,11 @@ import type { EmotionDef } from "@violet/mascot";
 import { resolveEmotionId } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
 import { MascotStage } from "@violet/mascot/react";
+import { Segmented, type SegmentedItem } from "@violet/ui";
 import { cn } from "cn";
 import { Grid2X2, Pause, Play, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useRef, useState } from "react";
-import { Segmented, type SegmentedItem } from "@/shared/ui/segmented";
+
 import { useAgentStatus } from "../hooks/useAgentStatus";
 import { GROUP_LABEL, type MascotGroupFilter } from "../hooks/useMascotExhibit";
 import { MascotDirectorPanel } from "./MascotDirectorPanel";

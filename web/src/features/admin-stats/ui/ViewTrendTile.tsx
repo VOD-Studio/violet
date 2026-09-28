@@ -4,8 +4,10 @@ import {
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
-} from "@shared/ui/base/chart";
-import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
+	Segmented,
+	type SegmentedItem,
+} from "@violet/ui";
+
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useViewTrends } from "../api/queries";

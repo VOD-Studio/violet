@@ -23,7 +23,7 @@ export function StatusMatrixSection({ mode, className }: StatusMatrixSectionProp
 				</div>
 				<p className="max-w-md text-xs text-muted-foreground">
 					状态语义色具有不可篡改性（Protected
-					Invariant）。无论品牌方言或调色板如何更迭，红、黄、绿状态语义永不被覆写。
+					Invariant）。无论页面方言或主色如何更迭，红、黄、绿状态语义永不被覆写。
 				</p>
 			</div>
 

@@ -2,7 +2,8 @@
  * 空态与骨架屏：无选中会话、会话列表空、消息空与加载占位。
  */
 
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { cn } from "cn";
 import { Image as ImageIcon, MessageCircle, Plus } from "lucide-react";
 

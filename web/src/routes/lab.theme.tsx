@@ -1,7 +1,7 @@
 import ThemeToggle, { type ThemeSize, type ThemeVariant } from "@features/lab/theme/ui";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Segmented } from "@violet/ui";
 import { useState } from "react";
 
 const DIRECTIONS: { value: ThemeVariant; label: string; intent: string }[] = [

@@ -1,5 +1,6 @@
+import { Button } from "@violet/ui";
 import { Download } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
+
 import { useFilePreviewVariant } from "../file-preview-context";
 import { getFileInfo } from "../utils/mime-utils";
 

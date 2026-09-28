@@ -5,10 +5,8 @@ import { FriendsSkeleton, type LabDirection } from "@features/lab/friends/ui/Fri
 import { PostcardWall } from "@features/lab/friends/ui/PostcardWall";
 import { TerminalList } from "@features/lab/friends/ui/TerminalList";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Button, Empty, Segmented } from "@violet/ui";
 import { ArrowRight, Plus } from "lucide-react";
 import { useState } from "react";
 

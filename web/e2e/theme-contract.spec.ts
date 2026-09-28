@@ -12,9 +12,9 @@
  *   复核 class 与全部 token 计算值与首帧一致，且无横向溢出。
  *
  * 语义关系断言（不锁定具体色值）：
- * - 公开方言（.dialect-public）的主要动作色 --primary 必须解析为品牌强调色
- *   （== --brand，且明显有彩度），引言竖线与 text-primary 元素跟随该 scoped accent；
- * - 根作用域保持高对比中性动作色且 --brand 未被页面 scope 泄漏改写；
+ * - 公开方言（.dialect-public）的主要动作色 --primary 必须解析为主色源
+ *   （== --primary-base，且明显有彩度），引言竖线与 text-primary 元素跟随该 scoped accent；
+ * - 根作用域保持高对比中性动作色且 --primary-base 未被页面 scope 泄漏改写；
  * - --destructive 在根与公开方言作用域完全一致（palette 不改写行为状态色）。
  */
 
@@ -111,11 +111,11 @@ async function snapshotTheme(page: Page) {
 		return {
 			htmlClass: document.documentElement.className,
 			rootPrimary: prop(document.documentElement, "--primary"),
-			rootBrand: prop(document.documentElement, "--brand"),
+			rootPrimaryBase: prop(document.documentElement, "--primary-base"),
 			rootDestructive: prop(document.documentElement, "--destructive"),
 			rootBackground: prop(document.documentElement, "--background"),
 			surfacePrimary: prop(surface, "--primary"),
-			surfaceBrand: prop(surface, "--brand"),
+			surfacePrimaryBase: prop(surface, "--primary-base"),
 			surfaceDestructive: prop(surface, "--destructive"),
 			surfaceBackground: prop(surface, "--background"),
 			epigraphBorder: epigraph ? cs(epigraph).borderLeftColor : null,
@@ -199,7 +199,7 @@ function expectDialectSemantics(snapshot: Awaited<ReturnType<typeof snapshotThem
 	const surfacePrimary = expectColor(snapshot.surfacePrimary, "公开方言 --primary");
 	const rootDestructive = expectColor(snapshot.rootDestructive, "根作用域 --destructive");
 	expectColor(snapshot.surfaceDestructive, "方言作用域 --destructive");
-	const rootBrand = expectColor(snapshot.rootBrand, "根作用域 --brand");
+	const rootPrimaryBase = expectColor(snapshot.rootPrimaryBase, "根作用域 --primary-base");
 	const rootBackground = expectColor(snapshot.rootBackground, "画布 --background");
 
 	// 根作用域：高对比中性主要动作色（工具方言默认形态），且彩度不为 scoped accent 污染
@@ -210,15 +210,15 @@ function expectDialectSemantics(snapshot: Awaited<ReturnType<typeof snapshotThem
 	// 高对比 = 明度远离中灰；0.25 排除中间调，只剩近黑（light）/近白（dark）
 	const extreme = Math.abs(rootPrimary.l - 0.5);
 	expect(extreme, "根作用域主要动作色应为高对比（明度远离中灰）").toBeGreaterThan(0.25);
-	// 根作用域 --brand 保持 palette 原彩度：页面 scope 未向上泄漏改写全局 token
+	// 根作用域 --primary-base 保持 palette 原彩度：页面 scope 未向上泄漏改写全局 token
 	expect(
-		rootBrand.c,
-		`根作用域品牌强调色不应被页面 scope 泄漏改写，实际 ${snapshot.rootBrand}`,
+		rootPrimaryBase.c,
+		`根作用域主色源不应被页面 scope 泄漏改写，实际 ${snapshot.rootPrimaryBase}`,
 	).toBeGreaterThan(0.05);
 
-	// 公开方言：主要动作 == 品牌强调，且有明显彩度（捕获「提前求值退化为黑白」类回归）
-	expect(snapshot.surfacePrimary, "公开方言主要动作色应映射到品牌强调色").toBe(
-		snapshot.surfaceBrand,
+	// 公开方言：主要动作 == 主色源，且有明显彩度（捕获「提前求值退化为黑白」类回归）
+	expect(snapshot.surfacePrimary, "公开方言主要动作色应映射到主色源").toBe(
+		snapshot.surfacePrimaryBase,
 	);
 	expect(
 		surfacePrimary.c,
@@ -269,7 +269,7 @@ for (const theme of ["light", "dark"] as const) {
 				primary: prop(cs, "--primary"),
 				ring: prop(cs, "--ring"),
 				destructive: prop(cs, "--destructive"),
-				rootBrand: prop(root, "--brand"),
+				rootPrimaryBase: prop(root, "--primary-base"),
 				rootDestructive: prop(root, "--destructive"),
 				scopeBackground: cs.backgroundColor,
 			};
@@ -284,15 +284,15 @@ for (const theme of ["light", "dark"] as const) {
 		expect(scopeBackground.l, "舞台底色明度应等于画布 token").toBe(background.l);
 		expect(scopeBackground.c, "舞台底色彩度应等于画布 token").toBe(background.c);
 
-		// 控制：主要动作色从品牌强调收回高对比中性（覆盖公开方言的品牌映射）
+		// 控制：主要动作色从主色源收回高对比中性（覆盖公开方言的主色映射）
 		const primary = expectColor(stage.primary, "沉浸主要动作色");
 		expect(primary.c, "沉浸主要动作色应为中性").toBeLessThanOrEqual(0.01);
 		expect(Math.abs(primary.l - 0.5), "沉浸主要动作色应为高对比").toBeGreaterThan(0.25);
 
-		// 焦点：焦点环保留品牌彩度（媒体舞台内品牌唯一容身之处）
+		// 焦点：焦点环保留主色彩度（媒体舞台内主色的唯一容身之处）
 		const ring = expectColor(stage.ring, "沉浸焦点环");
-		expect(ring.c, "沉浸焦点环应保留品牌彩度").toBeGreaterThan(0.05);
-		expect(stage.ring, "沉浸焦点环应等于品牌强调色").toBe(stage.rootBrand);
+		expect(ring.c, "沉浸焦点环应保留主色彩度").toBeGreaterThan(0.05);
+		expect(stage.ring, "沉浸焦点环应等于主色源").toBe(stage.rootPrimaryBase);
 
 		// 行为状态色不被方言改写
 		expect(stage.destructive, "destructive 在沉浸作用域不得被改写").toBe(stage.rootDestructive);
@@ -307,15 +307,15 @@ for (const theme of ["light", "dark"] as const) {
 			const root = getComputedStyle(document.documentElement);
 			return {
 				surfacePrimary: cs.getPropertyValue("--primary").trim(),
-				surfaceBrand: cs.getPropertyValue("--brand").trim(),
-				rootBrand: root.getPropertyValue("--brand").trim(),
+				surfacePrimaryBase: cs.getPropertyValue("--primary-base").trim(),
+				rootPrimaryBase: root.getPropertyValue("--primary-base").trim(),
 			};
 		});
-		expect(afterClose.surfacePrimary, "公开方言主要动作色应回到品牌强调").toBe(
-			afterClose.surfaceBrand,
+		expect(afterClose.surfacePrimary, "公开方言主要动作色应回到主色源").toBe(
+			afterClose.surfacePrimaryBase,
 		);
-		expect(afterClose.rootBrand, "根作用域 --brand 不被沉浸作用域泄漏改写").toBe(
-			stage.rootBrand,
+		expect(afterClose.rootPrimaryBase, "根作用域主色源不被沉浸作用域泄漏改写").toBe(
+			stage.rootPrimaryBase,
 		);
 		await context.close();
 	});
@@ -361,7 +361,7 @@ for (const viewport of VIEWPORTS) {
 		}) => {
 			test.setTimeout(90_000);
 			// /admin 为 ssr:false 客户端渲染：主题由 beforeLoad 读 cookie 决定，
-			// 契约验证 hydration 后壳层 token、当前导航品牌指示与溢出
+			// 契约验证 hydration 后壳层 token、当前导航主色指示与溢出
 			const context = await newAdminContext(browser, theme);
 			const page = await context.newPage();
 			await page.setViewportSize(viewport);
@@ -387,7 +387,7 @@ for (const viewport of VIEWPORTS) {
 					destructive: prop(cs, "--destructive"),
 					background: prop(cs, "--background"),
 					rootPrimary: prop(root, "--primary"),
-					rootBrand: prop(root, "--brand"),
+					rootPrimaryBase: prop(root, "--primary-base"),
 					rootDestructive: prop(root, "--destructive"),
 					activeIndicator: activeLink
 						? getComputedStyle(activeLink, "::before").backgroundColor
@@ -407,8 +407,8 @@ for (const viewport of VIEWPORTS) {
 				0.25,
 			);
 
-			// 焦点/当前导航：品牌强调（工具方言下品牌唯一露出点）
-			expect(snapshot.ring, "工具方言焦点环应映射品牌强调色").toBe(snapshot.rootBrand);
+			// 焦点/当前导航：主色强调（工具方言下主色的唯一露出点）
+			expect(snapshot.ring, "工具方言焦点环应映射主色源").toBe(snapshot.rootPrimaryBase);
 			// 移动端视口可能命中的是移动导航项（无 before 指示条，底色透明）——仅对实际有色的指示条断言
 			const indicatorRaw = snapshot.activeIndicator ?? "";
 			const indicatorChroma =
@@ -416,7 +416,7 @@ for (const viewport of VIEWPORTS) {
 			if (indicatorChroma !== null) {
 				expect(
 					indicatorChroma,
-					`当前导航指示条应使用品牌强调色，实际 ${indicatorRaw}`,
+					`当前导航指示条应使用主色，实际 ${indicatorRaw}`,
 				).toBeGreaterThan(0.05);
 			} else if (indicatorRaw && indicatorRaw !== "rgba(0, 0, 0, 0)") {
 				throw new Error(`当前导航指示条颜色不可解析: ${indicatorRaw}`);

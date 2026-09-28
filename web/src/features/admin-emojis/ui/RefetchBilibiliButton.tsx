@@ -1,6 +1,5 @@
-import { Button } from "@shared/ui/base/button";
-import { PromptDialog } from "@shared/ui/prompt-dialog/PromptDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button, PromptDialog } from "@violet/ui";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

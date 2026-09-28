@@ -1,4 +1,5 @@
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { useOwnChatAppearance } from "../../api/appearance-queries";

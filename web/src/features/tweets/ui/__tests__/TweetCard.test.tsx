@@ -46,7 +46,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 // ConfirmDialog 基于 Modal（Radix Dialog），jsdom 下需要 portal 容器，
 // 这里简化：mock 成受控渲染——open 时直接渲染 onConfirm 按钮
-vi.mock("@shared/ui/confirm-dialog", () => ({
+vi.mock("@violet/ui/confirm-dialog", () => ({
 	ConfirmDialog: ({
 		open,
 		onConfirm,

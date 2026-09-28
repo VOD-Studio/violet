@@ -9,15 +9,16 @@ import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
-import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+	Badge,
+	BadgeAnchor,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@shared/ui/base/dropdown-menu";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+} from "@violet/ui";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import { cn } from "cn";
 import { CheckCircle2, LayoutDashboard, LogOut, MessageCircle, Search, User } from "lucide-react";

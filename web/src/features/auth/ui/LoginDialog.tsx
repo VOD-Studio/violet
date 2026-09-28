@@ -6,16 +6,12 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { clearSessionActive } from "@shared/api/session";
-import { Button } from "@shared/ui/base/button";
-import { GithubIcon, GoogleIcon } from "@shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { Button, GithubIcon, GoogleIcon, Input, Label, Modal } from "@violet/ui";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Input } from "@/shared/ui/base/input";
-import { Label } from "@/shared/ui/base/label";
-import { Modal } from "@/shared/ui/modal";
 
 /**
  * 后端未返回 message 时的兜底文案（按状态码）。与 /login 页面保持一致。

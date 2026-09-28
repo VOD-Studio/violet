@@ -13,18 +13,19 @@ import {
 	useGenerateCovers,
 	useGenerateCoversStandalone,
 } from "@features/admin-series/api/mutations";
-import { Button } from "@shared/ui/base/button";
 import {
+	Button,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@shared/ui/base/dialog";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import InlineError from "@shared/ui/inline-error";
+	InlineError,
+	Input,
+	Label,
+} from "@violet/ui";
+
 import { WandSparkles } from "lucide-react";
 import { useState } from "react";
 

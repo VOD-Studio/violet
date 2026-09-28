@@ -12,12 +12,14 @@
  *
  * AnimatePresence 由父组件（DiagramBlock）包裹，本组件只渲染 motion.div。
  */
+
+import { Button } from "@violet/ui";
 import { FileCode, FileImage, Lock, RotateCcw, Unlock, X, ZoomIn, ZoomOut } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "@/shared/ui/base/button";
+
 import { exportPng, exportSvg as exportSvgFile } from "./export";
 import { FALLBACK_DIAGRAM_LABEL } from "./label";
 import { useDiagramViewport } from "./useDiagramViewport";

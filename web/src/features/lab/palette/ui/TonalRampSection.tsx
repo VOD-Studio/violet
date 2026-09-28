@@ -109,7 +109,7 @@ export function TonalRampSection({ className }: TonalRampSectionProps) {
 						<button
 							type="button"
 							onClick={() => handleCopy(rgbActive?.hex.toUpperCase() ?? "", "Hex")}
-							className="flex items-center gap-1.5 rounded-md border border-edge-hairline bg-background px-3 py-1.5 font-mono text-xs font-medium transition-colors hover:border-brand"
+							className="flex items-center gap-1.5 rounded-md border border-edge-hairline bg-background px-3 py-1.5 font-mono text-xs font-medium transition-colors hover:border-primary-base"
 						>
 							{copiedKey === "Hex" ? (
 								<Check className="size-3 text-emerald-500" />
@@ -122,7 +122,7 @@ export function TonalRampSection({ className }: TonalRampSectionProps) {
 						<button
 							type="button"
 							onClick={() => handleCopy(activeStep.oklch, "OKLCH")}
-							className="flex items-center gap-1.5 rounded-md border border-edge-hairline bg-background px-3 py-1.5 font-mono text-xs font-medium transition-colors hover:border-brand"
+							className="flex items-center gap-1.5 rounded-md border border-edge-hairline bg-background px-3 py-1.5 font-mono text-xs font-medium transition-colors hover:border-primary-base"
 						>
 							{copiedKey === "OKLCH" ? (
 								<Check className="size-3 text-emerald-500" />

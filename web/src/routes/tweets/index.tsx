@@ -1,7 +1,6 @@
 import { TweetTimeline } from "@features/tweets/ui/TweetTimeline";
-import { PageHeader } from "@shared/ui/page-header";
-import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader, PageShell } from "@violet/ui";
 
 /** /tweets - 全局推文时间线（公开）：登录态见发布框，匿名只见时间线，cursor 滚动加载 */
 function TweetsPage() {

@@ -2,10 +2,8 @@ import type { Tag } from "@entities/tag/model/types";
 import { type TagForm, tagSchema } from "@features/admin-tags/model/schema";
 import { useCreateTag, useUpdateTag } from "@features/tags/api/mutations";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Modal } from "@shared/ui/modal";
+import { Button, Input, Label, Modal } from "@violet/ui";
+
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";

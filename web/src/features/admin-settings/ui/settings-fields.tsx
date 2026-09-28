@@ -1,4 +1,5 @@
-import { Switch } from "@shared/ui/base/switch";
+import { Switch } from "@violet/ui";
+
 import * as React from "react";
 
 /**

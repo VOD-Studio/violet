@@ -13,11 +13,8 @@ import {
 	type DataTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Switch } from "@shared/ui/base/switch";
-import { Modal } from "@shared/ui/modal";
+import { Badge, Button, Input, Modal, Switch } from "@violet/ui";
+
 import { Eye, KeyRound, Trash2 } from "lucide-react";
 import * as React from "react";
 

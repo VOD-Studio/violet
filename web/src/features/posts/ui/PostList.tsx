@@ -1,4 +1,5 @@
-import Empty from "@shared/ui/empty";
+import { Empty } from "@violet/ui";
+
 import { cn } from "cn";
 
 import { usePosts } from "../api/queries";

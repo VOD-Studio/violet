@@ -232,7 +232,7 @@ describe("CartoonPopover Component", () => {
 		render(
 			<CartoonPopover defaultOpen>
 				<CartoonPopoverTrigger>触发器</CartoonPopoverTrigger>
-				<CartoonPopoverContent variant="brand" bubbleStyle="sticker" shadowStyle="comic">
+				<CartoonPopoverContent variant="primary" bubbleStyle="sticker" shadowStyle="comic">
 					<CartoonPopoverHeader>
 						<CartoonPopoverTitle>便签标题</CartoonPopoverTitle>
 						<CartoonPopoverClose />
@@ -243,7 +243,7 @@ describe("CartoonPopover Component", () => {
 		);
 
 		const content = screen.getByRole("dialog");
-		expect(content.getAttribute("data-variant")).toBe("brand");
+		expect(content.getAttribute("data-variant")).toBe("primary");
 		expect(content.getAttribute("data-bubble-style")).toBe("sticker");
 		expect(content.className).toContain("shadow-[3px_3px_0_0_var(--cartoon-shadow)]");
 

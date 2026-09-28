@@ -1,6 +1,6 @@
-import { cn } from "cn";
 import { useSpotlight } from "@shared/hooks/use-spotlight";
-import * as React from "react";
+import { cn } from "cn";
+import type * as React from "react";
 
 export interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
 	/** 聚光半径（px） */
@@ -58,7 +58,7 @@ function SpotlightCard({
 				className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/spotlight:opacity-100"
 				style={{
 					background:
-						"radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), color-mix(in oklch, var(--brand) 18%, transparent), transparent 60%)",
+						"radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), color-mix(in oklch, var(--primary-base) 18%, transparent), transparent 60%)",
 				}}
 			/>
 			{/* 渐变边框层（dark 模式） */}
@@ -67,7 +67,7 @@ function SpotlightCard({
 				className="pointer-events-none absolute inset-0 hidden rounded-xl opacity-0 transition-opacity duration-300 group-hover/spotlight:opacity-100 dark:block"
 				style={{
 					boxShadow:
-						"inset 0 0 0 1px color-mix(in oklch, var(--brand) 32%, transparent), inset 0 0 24px color-mix(in oklch, var(--brand) 8%, transparent)",
+						"inset 0 0 0 1px color-mix(in oklch, var(--primary-base) 32%, transparent), inset 0 0 24px color-mix(in oklch, var(--primary-base) 8%, transparent)",
 				}}
 			/>
 			<div className="relative z-10 contents">{children}</div>

@@ -19,9 +19,7 @@ function renderCard(wrapperClassName?: string) {
 		wrapperClassName ? <div className={wrapperClassName}>{card}</div> : card,
 	);
 	const root = container.firstElementChild as HTMLElement;
-	const card_ = wrapperClassName
-		? (root.firstElementChild as HTMLElement)
-		: root;
+	const card_ = wrapperClassName ? (root.firstElementChild as HTMLElement) : root;
 	const layers = card_.querySelectorAll<HTMLElement>("span.pointer-events-none");
 	return { card: card_, layers };
 }

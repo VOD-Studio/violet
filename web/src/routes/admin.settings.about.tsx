@@ -25,8 +25,8 @@ import {
 import type { AboutSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
-import { Switch } from "@shared/ui/base/switch";
 import { createFileRoute } from "@tanstack/react-router";
+import { Switch } from "@violet/ui";
 import { GripVertical } from "lucide-react";
 
 /**

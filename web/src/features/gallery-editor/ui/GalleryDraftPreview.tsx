@@ -1,8 +1,8 @@
 import type { GalleryItem } from "@entities/gallery/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { PhotoStack } from "@shared/ui/photo-stack";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
 import { Images } from "lucide-react";
 import { useState } from "react";
 

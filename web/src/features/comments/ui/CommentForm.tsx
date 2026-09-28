@@ -17,10 +17,8 @@ import { useCreateComment, useSendCommentCode } from "@features/comments/api/mut
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@shared/ui/otp";
-import { ResendButton } from "@shared/ui/resend-button";
+import { Button, Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
+
 import { Loader2, LogIn, MailCheck, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

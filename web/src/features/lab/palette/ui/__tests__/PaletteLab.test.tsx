@@ -1,4 +1,4 @@
-import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
+import { PRIMARY_TOKENS } from "@features/lab/palette/model/tokens";
 import { AccessibilitySection } from "@features/lab/palette/ui/AccessibilitySection";
 import { ChartAndNeonSection } from "@features/lab/palette/ui/ChartAndNeonSection";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
@@ -34,10 +34,10 @@ describe("Palette UI Components", () => {
 
 	describe("ColorSwatch", () => {
 		it("正确渲染色彩名称、变量名与对比度", () => {
-			render(<ColorSwatch token={BRAND_TOKENS[0]} mode="light" />);
-			expect(screen.getByText("品牌主色")).toBeDefined();
-			expect(screen.getByText("--brand")).toBeDefined();
-			expect(screen.getByText("Primary Brand Voice")).toBeDefined();
+			render(<ColorSwatch token={PRIMARY_TOKENS[0]} mode="light" />);
+			expect(screen.getByText("主色")).toBeDefined();
+			expect(screen.getByText("--primary-base")).toBeDefined();
+			expect(screen.getByText("Primary Base")).toBeDefined();
 		});
 
 		it("针对空间表面材质正确计算其上文字对比度并显示 Aa", () => {
@@ -62,11 +62,11 @@ describe("Palette UI Components", () => {
 		});
 
 		it("点击复制按钮调用 clipboard.writeText", async () => {
-			render(<ColorSwatch token={BRAND_TOKENS[0]} mode="light" />);
-			const copyVarBtn = screen.getByText("--brand");
+			render(<ColorSwatch token={PRIMARY_TOKENS[0]} mode="light" />);
+			const copyVarBtn = screen.getByText("--primary-base");
 			fireEvent.click(copyVarBtn);
 			await waitFor(() => {
-				expect(navigator.clipboard.writeText).toHaveBeenCalledWith("var(--brand)");
+				expect(navigator.clipboard.writeText).toHaveBeenCalledWith("var(--primary-base)");
 			});
 		});
 
@@ -74,8 +74,8 @@ describe("Palette UI Components", () => {
 			vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(
 				new Error("Permission denied"),
 			);
-			render(<ColorSwatch token={BRAND_TOKENS[0]} mode="light" />);
-			const copyVarBtn = screen.getByText("--brand");
+			render(<ColorSwatch token={PRIMARY_TOKENS[0]} mode="light" />);
+			const copyVarBtn = screen.getByText("--primary-base");
 			fireEvent.click(copyVarBtn);
 			await waitFor(() => {
 				expect(navigator.clipboard.writeText).toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe("Palette UI Components", () => {
 
 		it("点击导出按钮复制全部变量", async () => {
 			render(<PaletteHero mode="sync" onModeChange={vi.fn()} resolvedTheme="light" />);
-			const exportBtn = screen.getByText("导出品牌变量");
+			const exportBtn = screen.getByText("导出主色变量");
 			fireEvent.click(exportBtn);
 			await waitFor(() => {
 				expect(navigator.clipboard.writeText).toHaveBeenCalled();
@@ -154,7 +154,7 @@ describe("Palette UI Components", () => {
 		it("渲染 WCAG 对比度合规审计表格且 8 组组合全部达标", () => {
 			render(<AccessibilitySection />);
 			expect(screen.getByText("无障碍与对比度全景审计")).toBeDefined();
-			expect(screen.getByText("品牌色在画布底色上")).toBeDefined();
+			expect(screen.getByText("主色在画布底色上")).toBeDefined();
 			expect(screen.getByText("正文主墨色在画布底色上")).toBeDefined();
 			expect(screen.getAllByText("全部达标").length).toBe(8);
 		});

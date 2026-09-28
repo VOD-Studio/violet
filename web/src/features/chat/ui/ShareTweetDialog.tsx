@@ -15,8 +15,8 @@ import {
 	useCreateChatConversation,
 } from "@features/chat/api/queries";
 import type { ChatUser } from "@features/chat/model/types";
-import { Modal } from "@shared/ui/modal";
 import { useNavigate } from "@tanstack/react-router";
+import { Modal } from "@violet/ui";
 import { LoaderCircle, Search } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";

@@ -1,5 +1,5 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import Empty from "@shared/ui/empty";
+import { Empty, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+
 import { cn } from "cn";
 
 import { useContributions } from "../api/queries";

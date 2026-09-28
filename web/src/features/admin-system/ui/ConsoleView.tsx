@@ -1,10 +1,6 @@
 import { formatDateTime, formatTime } from "@shared/lib/date";
-import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@shared/ui/base/chart";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@violet/ui";
+
 import { Activity, Cpu, Gauge as GaugeIcon, MemoryStick } from "lucide-react";
 import { useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";

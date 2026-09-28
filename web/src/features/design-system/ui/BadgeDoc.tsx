@@ -1,76 +1,11 @@
-import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Link } from "@tanstack/react-router";
-import { Bell, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
-
-const VARIANT_CODE = `import { Badge } from "@shared/ui/base/badge";
-import { Link } from "@tanstack/react-router";
-
-<Badge>默认</Badge>
-<Badge variant="secondary">次要</Badge>
-<Badge variant="destructive">警示</Badge>
-<Badge variant="outline">描边</Badge>
-<Badge variant="ghost">无底色</Badge>
-<Link to="/design-system/decisions" className="rounded-full focus-visible:outline-2 focus-visible:outline-ring">
-  <Badge variant="link">查看决策表</Badge>
-</Link>`;
-
-const COUNTER_CODE = `import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Bell } from "lucide-react";
-import { useState } from "react";
-
-function NotificationCount() {
-  const [count, setCount] = useState(3);
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-4">
-      <BadgeAnchor
-        badge={count > 0 ? (
-          <Badge size="count" variant="destructive">
-            {count > 99 ? "99+" : count}
-          </Badge>
-        ) : null}
-      >
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="outline"
-          className="rounded-full"
-          aria-label={count > 0 ? \`通知，\${count} 条未读\` : "通知，无未读消息"}
-        >
-          <Bell aria-hidden="true" />
-        </Button>
-      </BadgeAnchor>
-      <Button type="button" variant="outline" size="sm"
-        onClick={() => setCount((n) => Math.max(0, n - 1))}>-1</Button>
-      <Button type="button" variant="outline" size="sm"
-        onClick={() => setCount((n) => n + 1)}>+1</Button>
-      <Button type="button" variant="outline" size="sm"
-        onClick={() => setCount((n) => n + 100)}>+100</Button>
-      <Button type="button" variant="ghost" size="sm"
-        onClick={() => setCount(0)}>清零</Button>
-    </div>
-  );
-}`;
-
-const DOT_CODE = `import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { MessageCircle } from "lucide-react";
-
-<BadgeAnchor placement="edge" badge={<Badge size="dot" variant="default" />}>
-  <Button
-    type="button"
-    size="icon-sm"
-    variant="outline"
-    className="rounded-full"
-    aria-label="聊天，有新消息"
-  >
-    <MessageCircle aria-hidden="true" />
-  </Button>
-</BadgeAnchor>`;
+import { BadgeCounterDemo } from "./examples/badge/counter";
+import counterSource from "./examples/badge/counter.tsx?raw";
+import { BadgeDotDemo } from "./examples/badge/dot";
+import dotSource from "./examples/badge/dot.tsx?raw";
+import { BadgeVariantsDemo } from "./examples/badge/variants";
+import variantsSource from "./examples/badge/variants.tsx?raw";
 
 interface PropRow {
 	name: string;
@@ -133,8 +68,6 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 
 /** 展示 Badge 标签与 BadgeAnchor 角标的真实用法。 */
 export function BadgeDocPage() {
-	const [count, setCount] = useState(3);
-
 	return (
 		<article className="mx-auto w-full max-w-4xl space-y-14 pb-24 font-sans">
 			<header className="space-y-3">
@@ -148,7 +81,7 @@ export function BadgeDocPage() {
 				<p className="text-xs text-muted-foreground">
 					源码{" "}
 					<code className="font-mono text-foreground">
-						web/src/shared/ui/base/badge.tsx
+						web/packages/ui/src/badge/badge.tsx
 					</code>
 				</p>
 			</header>
@@ -160,21 +93,9 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					主色、次要、警示、描边、透明与链接外观。Link 负责跳转，Badge 不代替链接。
 				</p>
-				<ComponentDemo code={VARIANT_CODE}>
-					<div className="flex flex-wrap items-center justify-center gap-3">
-						<Badge>默认</Badge>
-						<Badge variant="secondary">次要</Badge>
-						<Badge variant="destructive">警示</Badge>
-						<Badge variant="outline">描边</Badge>
-						<Badge variant="ghost">无底色</Badge>
-						<Link
-							to="/design-system/decisions"
-							className="rounded-full focus-visible:outline-2 focus-visible:outline-ring"
-						>
-							<Badge variant="link">查看决策表</Badge>
-						</Link>
-					</div>
-				</ComponentDemo>
+				<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
+					<BadgeVariantsDemo />
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="badge-counter" className="space-y-4">
@@ -184,58 +105,9 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					点击调整数量。超过 99 显示 99+、为零时隐藏角标：两者均由调用方计算。
 				</p>
-				<ComponentDemo code={COUNTER_CODE}>
-					<div className="flex flex-wrap items-center justify-center gap-4">
-						<BadgeAnchor
-							badge={
-								count > 0 ? (
-									<Badge size="count" variant="destructive">
-										{count > 99 ? "99+" : count}
-									</Badge>
-								) : null
-							}
-						>
-							<Button
-								type="button"
-								size="icon-sm"
-								variant="outline"
-								className="rounded-full"
-								aria-label={
-									count > 0 ? `通知，${count} 条未读` : "通知，无未读消息"
-								}
-							>
-								<Bell aria-hidden="true" />
-							</Button>
-						</BadgeAnchor>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => setCount((n) => Math.max(0, n - 1))}
-						>
-							-1
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => setCount((n) => n + 1)}
-						>
-							+1
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => setCount((n) => n + 100)}
-						>
-							+100
-						</Button>
-						<Button type="button" variant="ghost" size="sm" onClick={() => setCount(0)}>
-							清零
-						</Button>
-					</div>
-				</ComponentDemo>
+				<CodeCard code={counterSource} language="tsx" lineNumbers collapseLines={6}>
+					<BadgeCounterDemo />
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="badge-dot" className="space-y-4">
@@ -245,24 +117,9 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					只需提示存在新消息、不需显示数量时使用 dot，并以 edge 贴住按钮圆弧。
 				</p>
-				<ComponentDemo code={DOT_CODE}>
-					<div className="flex justify-center">
-						<BadgeAnchor
-							placement="edge"
-							badge={<Badge size="dot" variant="default" />}
-						>
-							<Button
-								type="button"
-								size="icon-sm"
-								variant="outline"
-								className="rounded-full"
-								aria-label="聊天，有新消息"
-							>
-								<MessageCircle aria-hidden="true" />
-							</Button>
-						</BadgeAnchor>
-					</div>
-				</ComponentDemo>
+				<CodeCard code={dotSource} language="tsx" lineNumbers collapseLines={6}>
+					<BadgeDotDemo />
+				</CodeCard>
 			</section>
 
 			<section aria-labelledby="badge-api" className="space-y-8">

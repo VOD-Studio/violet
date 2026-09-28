@@ -4,8 +4,8 @@
  * 包含：上一页/页码/下一页、缩放（- / 比例 / + / 重置）、下载。
  */
 
+import { Button } from "@violet/ui";
 import { ChevronLeft, ChevronRight, Download, Maximize, Minus, Plus } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
 
 interface PdfToolbarProps {
 	currentPage: number;

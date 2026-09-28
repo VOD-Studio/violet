@@ -1,4 +1,5 @@
-import { Segmented } from "@shared/ui/segmented";
+import { Segmented } from "@violet/ui";
+
 import { ArrowLeft, ArrowRight, BookOpen, Library, ListTree } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import type { SeriesSurface, SeriesVariant } from "../model/mock";

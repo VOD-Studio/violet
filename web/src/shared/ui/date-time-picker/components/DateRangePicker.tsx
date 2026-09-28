@@ -1,9 +1,9 @@
 import { formatDate } from "@shared/lib/date";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 import { cn } from "cn";
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
-import { Button } from "@/shared/ui/base/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
+
 import type { DateRangePickerProps } from "../types/date-time-picker-types";
 import { formatPickerValue, parsePickerValue } from "../utils/date-time-utils";
 import { Calendar } from "./Calendar";

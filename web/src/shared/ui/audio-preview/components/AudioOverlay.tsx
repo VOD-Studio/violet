@@ -4,8 +4,9 @@
  * 覆盖波形区域的三种状态：加载中、加载失败（含重试）。
  */
 
+import { Button } from "@violet/ui";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
+
 import type { AudioLoadStatus } from "../types/audio-preview-types";
 
 interface AudioOverlayProps {

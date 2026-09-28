@@ -112,7 +112,7 @@ export function BubbleOutline({
 			height={height}
 			viewBox={`0 0 ${width} ${height}`}
 			aria-hidden="true"
-			className="pointer-events-none absolute top-0 left-0 z-10 overflow-visible"
+			className="pointer-events-none absolute -top-0.5 -left-0.5 z-10 overflow-visible"
 		>
 			{showArrow && (
 				<path

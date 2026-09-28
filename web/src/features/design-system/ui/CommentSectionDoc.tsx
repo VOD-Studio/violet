@@ -1,96 +1,16 @@
 import { copyText } from "@shared/lib/clipboard";
-import { CommentList, CommentSection, type CommentSectionConfig } from "@shared/ui/comment-section";
-import { Check, Component, Copy, FileCode2, GitBranch, Heart, Send } from "lucide-react";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
+import { Check, Component, Copy, FileCode2, GitBranch } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { ComponentDemo } from "./ComponentDemo";
-
-interface DemoComment {
-	id: string;
-	user: string;
-	text: string;
-	time: string;
-	role?: "author";
-	likes: number;
-	parentId?: string;
-	repliesCount?: number;
-	previewList?: DemoComment[];
-}
-
-const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
-
-const BASIC_COMMENTS: DemoComment[] = [
-	{
-		id: "c-1",
-		user: "DefectingCat",
-		role: "author",
-		text: "展示层与数据层解耦后，文章评论和推文评论共用同一套交互逻辑；正文、操作与回复表单均通过插槽注入。",
-		time: hoursAgo(3),
-		likes: 12,
-		repliesCount: 1,
-		previewList: [
-			{
-				id: "c-1-1",
-				parentId: "c-1",
-				user: "Lin",
-				text: "双层扁平回复结构配合 @ 昵称标注，在移动端不会发生多层级挤压。",
-				time: hoursAgo(2),
-				likes: 3,
-			},
-		],
-	},
-	{
-		id: "c-2",
-		user: "Kite",
-		text: "业务方只需提供一个 CommentSectionConfig 适配器即可完成接入。",
-		time: hoursAgo(1),
-		likes: 5,
-		repliesCount: 0,
-		previewList: [],
-	},
-];
+import { CommentSectionBasicDemo } from "./examples/comment-section/basic";
+import basicSource from "./examples/comment-section/basic.tsx?raw";
+import { CommentSectionEmptyDemo } from "./examples/comment-section/empty-state";
+import emptySource from "./examples/comment-section/empty-state.tsx?raw";
+import { CommentSectionLoadingDemo } from "./examples/comment-section/loading-state";
+import loadingSource from "./examples/comment-section/loading-state.tsx?raw";
 
 const IMPORT_CODE = `import { CommentSection, CommentList } from "@shared/ui/comment-section";`;
-
-const BASIC_USAGE_CODE = `import { CommentSection, CommentList, type CommentSectionConfig } from "@shared/ui/comment-section";
-
-const config: CommentSectionConfig<PostComment> = {
-  repliesMode: "preview",
-  map: (item) => ({
-    id: item.id,
-    depth: item.parentId ? 1 : 0,
-    authorName: item.author.name,
-    authorAvatarUrl: item.author.avatar,
-    body: item.content,
-    createdAt: item.createdAt,
-    tone: item.isAuthor ? "author" : "default",
-    raw: item,
-  }),
-  renderReplyForm: (item, { onSuccess }) => (
-    <ReplyComposer target={item} onSubmitted={onSuccess} />
-  ),
-  renderActions: (item) => <ReactionBar targetId={item.id} />,
-};
-
-export function ArticleComments({ comments, isLoggedIn }: Props) {
-  return (
-    <CommentSection
-      title="全部评论"
-      form={<CommentComposer />}
-      isLoggedIn={isLoggedIn}
-    >
-      <CommentList comments={comments} config={config} isLoggedIn={isLoggedIn} />
-    </CommentSection>
-  );
-}`;
-
-const EMPTY_STATE_CODE = `<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
-  <CommentList comments={[]} config={config} isLoggedIn={true} />
-</CommentSection>`;
-
-const LOADING_STATE_CODE = `<CommentSection title="全部评论" form={null} isLoggedIn={true}>
-  <CommentList comments={[]} config={config} isLoggedIn={true} isLoading={true} />
-</CommentSection>`;
 
 interface PropRow {
 	prop: string;
@@ -170,7 +90,7 @@ const ITEM_FIELDS: PropRow[] = [
 		prop: "tone",
 		type: '"default" | "discussion" | "author"',
 		defaultValue: '"default"',
-		description: "左侧视觉色阶：author 呈品牌高光，discussion 呈中性色",
+		description: "左侧视觉色阶：author 呈主色高光，discussion 呈中性色",
 	},
 	{
 		prop: "isAuthor",
@@ -289,9 +209,6 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
  * 评论区组件文档页（折叠面板式代码展开）。
  */
 export function CommentSectionDocPage() {
-	const [comments] = useState<DemoComment[]>(BASIC_COMMENTS);
-	const [likes, setLikes] = useState<Record<string, number>>({ "c-1": 12, "c-1-1": 3, "c-2": 5 });
-	const [hasLiked, setHasLiked] = useState<Record<string, boolean>>({ "c-1": true });
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = async () => {
@@ -300,85 +217,6 @@ export function CommentSectionDocPage() {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		}
-	};
-
-	const handleToggleLike = (id: string) => {
-		setHasLiked((prev) => {
-			const active = !prev[id];
-			setLikes((curr) => ({
-				...curr,
-				[id]: (curr[id] ?? 0) + (active ? 1 : -1),
-			}));
-			return { ...prev, [id]: active };
-		});
-	};
-
-	const config: CommentSectionConfig<DemoComment> = {
-		repliesMode: "preview",
-		map: (raw) => ({
-			id: raw.id,
-			depth: raw.parentId ? 1 : 0,
-			parentId: raw.parentId,
-			replyToName: raw.parentId ? "DefectingCat" : undefined,
-			authorName: raw.user,
-			isAuthor: raw.role === "author",
-			body: raw.text,
-			createdAt: raw.time,
-			tone: raw.role === "author" ? "author" : "default",
-			repliesTotal: raw.repliesCount ?? raw.previewList?.length ?? 0,
-			repliesPreview: raw.previewList,
-			raw,
-		}),
-		renderActions: (item) => {
-			const isLiked = Boolean(hasLiked[item.id]);
-			const count = likes[item.id] ?? 0;
-			return (
-				<button
-					type="button"
-					onClick={() => handleToggleLike(item.id)}
-					className={`inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-xs transition-colors ${
-						isLiked
-							? "bg-destructive/10 text-destructive"
-							: "text-muted-foreground hover:bg-muted hover:text-foreground"
-					}`}
-				>
-					<Heart className={`size-3 ${isLiked ? "fill-current" : ""}`} />
-					<span className="tabular-nums font-mono">{count}</span>
-				</button>
-			);
-		},
-		renderReplyForm: (item) => (
-			<div className="mt-3 space-y-2 rounded-xl border border-border/70 bg-background/60 p-3 font-sans">
-				<div className="text-xs text-muted-foreground">回复给 @{item.authorName}</div>
-				<textarea
-					rows={2}
-					placeholder="写下善意的回复..."
-					className="w-full resize-none rounded-lg border border-input bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus-visible:border-ring"
-				/>
-				<div className="flex justify-end">
-					<button
-						type="button"
-						className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
-					>
-						<Send className="size-3" />
-						<span>发送</span>
-					</button>
-				</div>
-			</div>
-		),
-		renderExpandedReplies: ({ knownReplies }) => (
-			<ul className="space-y-2 pt-1 font-sans">
-				{knownReplies.map((reply) => (
-					<li
-						key={reply.id}
-						className="rounded-lg border border-border/50 bg-muted/30 p-3 text-xs"
-					>
-						<span className="font-medium text-foreground">{reply.authorName}</span>
-						<p className="mt-1 text-muted-foreground">{reply.body}</p>
-					</li>
-				))}
-			</ul>
-		),
 	};
 
 	return (
@@ -450,15 +288,9 @@ export function CommentSectionDocPage() {
 						双层扁平回复结构。子回复以 @ 昵称指示对象，不向内无限嵌套。
 					</p>
 
-					<ComponentDemo code={BASIC_USAGE_CODE}>
-						<CommentSection
-							title={`全部评论 (${comments.length})`}
-							form={null}
-							isLoggedIn={true}
-						>
-							<CommentList comments={comments} config={config} isLoggedIn={true} />
-						</CommentSection>
-					</ComponentDemo>
+					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
+						<CommentSectionBasicDemo />
+					</CodeCard>
 				</div>
 
 				{/* 案例 2: 空状态 */}
@@ -468,11 +300,9 @@ export function CommentSectionDocPage() {
 						当评论数据为空时，自动呈现轻量空状态占位。
 					</p>
 
-					<ComponentDemo code={EMPTY_STATE_CODE}>
-						<CommentSection title="全部评论 (0)" form={null} isLoggedIn={true}>
-							<CommentList comments={[]} config={config} isLoggedIn={true} />
-						</CommentSection>
-					</ComponentDemo>
+					<CodeCard code={emptySource} language="tsx" lineNumbers collapseLines={6}>
+						<CommentSectionEmptyDemo />
+					</CodeCard>
 				</div>
 
 				{/* 案例 3: 加载中 */}
@@ -483,16 +313,9 @@ export function CommentSectionDocPage() {
 						，自动渲染 Shimmer 骨架条目。
 					</p>
 
-					<ComponentDemo code={LOADING_STATE_CODE}>
-						<CommentSection title="全部评论" form={null} isLoggedIn={true}>
-							<CommentList
-								comments={[]}
-								config={config}
-								isLoggedIn={true}
-								isLoading={true}
-							/>
-						</CommentSection>
-					</ComponentDemo>
+					<CodeCard code={loadingSource} language="tsx" lineNumbers collapseLines={6}>
+						<CommentSectionLoadingDemo />
+					</CodeCard>
 				</div>
 			</section>
 

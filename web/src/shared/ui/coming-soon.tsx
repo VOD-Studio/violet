@@ -1,5 +1,5 @@
-import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 
 export interface ComingSoonProps {
 	title: string;

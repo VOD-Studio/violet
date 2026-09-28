@@ -1,17 +1,23 @@
 import { formatDateTime } from "@shared/lib/date";
-import { cn } from "cn";
-import { CalendarIcon, Clock } from "lucide-react";
-import * as React from "react";
-import { Button } from "@/shared/ui/base/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
 import {
+	Button,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/shared/ui/base/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/ui/base/tooltip";
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+import { cn } from "cn";
+import { CalendarIcon, Clock } from "lucide-react";
+import * as React from "react";
+
 import type { DateTimeRange, DateTimeRangePickerProps } from "../types/date-time-picker-types";
 import {
 	combineDateTime,

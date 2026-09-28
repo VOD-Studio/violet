@@ -11,19 +11,22 @@ import { useCreateGalleryDraft, useDeleteGallery } from "@features/gallery-edito
 import { useAdminGalleries } from "@features/gallery-editor/api/queries";
 import { GALLERY_STATUS_LABELS } from "@features/gallery-editor/model/status";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
+import { useNavigate } from "@tanstack/react-router";
 import {
+	Badge,
+	Button,
+	ConfirmDialog,
+	SearchInput,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { SearchInput } from "@shared/ui/search-input";
-import { useNavigate } from "@tanstack/react-router";
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

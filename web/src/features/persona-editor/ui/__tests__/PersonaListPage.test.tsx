@@ -105,7 +105,7 @@ vi.mock("@features/persona-editor/api/queries", () => ({
 	useAdminPersonas: (query: Record<string, unknown>) => listQuery(query),
 }));
 
-vi.mock("@shared/ui/search-input", () => ({
+vi.mock("@violet/ui/search-input", () => ({
 	SearchInput: ({ onSearch }: { onSearch: (value: string) => void }) => (
 		<input aria-label="搜索人设" onChange={(event) => onSearch(event.target.value)} />
 	),
