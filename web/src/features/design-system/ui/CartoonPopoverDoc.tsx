@@ -1,5 +1,5 @@
-import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
+import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { CartoonPopoverBasicDemo } from "./examples/cartoon-popover/basic";
 import basicSource from "./examples/cartoon-popover/basic.tsx?raw";
 import { CartoonPopoverGroupDemo } from "./examples/cartoon-popover/group";

@@ -1,6 +1,5 @@
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
+import { Button, Input } from "@violet/ui";
 import { Loader2, X } from "lucide-react";
 import { useId } from "react";
 import type { useExternalTweetPreview } from "../hooks/useExternalTweetPreview";

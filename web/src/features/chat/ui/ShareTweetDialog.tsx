@@ -15,7 +15,6 @@ import {
 	useCreateChatConversation,
 } from "@features/chat/api/queries";
 import type { ChatUser } from "@features/chat/model/types";
-import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { useNavigate } from "@tanstack/react-router";
 import { Modal } from "@violet/ui";
 import { LoaderCircle, Search } from "lucide-react";

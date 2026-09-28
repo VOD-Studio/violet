@@ -6,11 +6,12 @@
  *
  * @remarks 走懒加载消费时与 shiki 高亮链同 chunk 拉取，不进宿主主包。
  */
-import { copyText } from "@/shared/lib/clipboard";
-import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
+
 import { cn } from "cn";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { copyText } from "@/shared/lib/clipboard";
+import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import "../component-code.css";
 import { useShikiHighlight } from "../use-shiki-highlight";
 

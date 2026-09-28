@@ -1,8 +1,8 @@
 import { copyText } from "@shared/lib/clipboard";
+import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { Check, Component, Copy, FileCode2, GitBranch } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
-import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { CommentSectionBasicDemo } from "./examples/comment-section/basic";
 import basicSource from "./examples/comment-section/basic.tsx?raw";
 import { CommentSectionEmptyDemo } from "./examples/comment-section/empty-state";

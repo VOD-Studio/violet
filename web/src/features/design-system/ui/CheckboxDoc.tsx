@@ -1,5 +1,5 @@
-import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
+import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { CheckboxBasicDemo } from "./examples/checkbox/basic";
 import basicSource from "./examples/checkbox/basic.tsx?raw";
 import { CheckboxDisabledDemo } from "./examples/checkbox/disabled";

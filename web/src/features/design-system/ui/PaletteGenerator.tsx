@@ -6,9 +6,9 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { RampStep } from "../model/palette";
 import { generatePalette } from "../model/palette";
-import variantsSource from "./examples/button/variants.tsx?raw";
-import { ButtonVariantsDemo } from "./examples/button/variants";
 import { ColorRoleComparison } from "./ColorRoleComparison";
+import { ButtonVariantsDemo } from "./examples/button/variants";
+import variantsSource from "./examples/button/variants.tsx?raw";
 import { GuideLink } from "./library-guides/GuideParts";
 
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;

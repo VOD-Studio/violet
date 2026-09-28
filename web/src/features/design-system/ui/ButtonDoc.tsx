@@ -1,5 +1,5 @@
-import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
+import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ButtonBasicDemo } from "./examples/button/basic";
 import basicSource from "./examples/button/basic.tsx?raw";
 import { ButtonIconsDemo } from "./examples/button/icons";
