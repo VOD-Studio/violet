@@ -27,6 +27,7 @@ interface GroupItemConfig {
 	value: string;
 	triggerEl: HTMLElement | null;
 	contentNode: ReactNode;
+	ariaLabel?: string;
 	title?: ReactNode;
 	description?: ReactNode;
 	variant?: CartoonBubbleVariant;
@@ -261,6 +262,7 @@ export function CartoonPopoverGroup({
 					<div
 						ref={floatingRef}
 						role="dialog"
+						aria-label={currentItem.ariaLabel}
 						aria-modal="false"
 						aria-hidden={!activeValue}
 						inert={!activeValue}
@@ -308,39 +310,42 @@ export function CartoonPopoverGroup({
 							/>
 						)}
 
-						<div
-							key={displayedValue}
-							style={
-								variant === "dark" && !reduceMotion
-									? { opacity: darkContentOpacity(ink) }
-									: undefined
-							}
-						>
+						{/* 内容按目标尺寸排布：弹簧过渡只裁切可视范围，避免中间宽度下文字重排跳动 */}
+						<div className="overflow-hidden" style={{ width: targetLayout.width - 36 }}>
 							<div
-								className={
+								key={displayedValue}
+								style={
 									variant === "dark" && !reduceMotion
-										? "animate-in fade-in-0 duration-200"
+										? { opacity: darkContentOpacity(ink) }
 										: undefined
 								}
 							>
-								{currentItem.title && (
-									<h4 className="mb-2 text-sm font-bold tracking-wide">
-										{currentItem.title}
-									</h4>
-								)}
-								{currentItem.description && (
-									<p className="mb-2 text-xs leading-relaxed text-current/80">
-										{currentItem.description}
-									</p>
-								)}
 								<div
 									className={
-										variant !== "dark" && !reduceMotion
-											? "animate-in fade-in-0 duration-150"
+										variant === "dark" && !reduceMotion
+											? "animate-in fade-in-0 duration-200"
 											: undefined
 									}
 								>
-									{currentItem.contentNode}
+									{currentItem.title && (
+										<h4 className="mb-2 text-sm font-bold tracking-wide">
+											{currentItem.title}
+										</h4>
+									)}
+									{currentItem.description && (
+										<p className="mb-2 text-xs leading-relaxed text-current/80">
+											{currentItem.description}
+										</p>
+									)}
+									<div
+										className={
+											variant !== "dark" && !reduceMotion
+												? "animate-in fade-in-0 duration-150"
+												: undefined
+										}
+									>
+										{currentItem.contentNode}
+									</div>
 								</div>
 							</div>
 						</div>
@@ -357,6 +362,8 @@ export function CartoonPopoverGroup({
 export interface CartoonPopoverGroupItemProps {
 	value: string;
 	trigger: ReactNode;
+	ariaLabel?: string;
+	className?: string;
 	title?: ReactNode;
 	description?: ReactNode;
 	variant?: CartoonBubbleVariant;
@@ -370,6 +377,8 @@ export interface CartoonPopoverGroupItemProps {
 export function CartoonPopoverGroupItem({
 	value,
 	trigger,
+	ariaLabel,
+	className,
 	title,
 	description,
 	variant = "default",
@@ -391,6 +400,7 @@ export function CartoonPopoverGroupItem({
 			value,
 			triggerEl: triggerRef.current,
 			contentNode: children,
+			ariaLabel,
 			title,
 			description,
 			variant,
@@ -402,6 +412,7 @@ export function CartoonPopoverGroupItem({
 		return () => unregisterItem?.(value);
 	}, [
 		value,
+		ariaLabel,
 		children,
 		title,
 		description,
@@ -418,7 +429,7 @@ export function CartoonPopoverGroupItem({
 		<div
 			ref={triggerRef}
 			data-popover-item={value}
-			className="inline-block"
+			className={cn("inline-block", className)}
 			onMouseEnter={() => context?.handleTriggerEnter(value)}
 			onMouseLeave={() => context?.handleTriggerLeave()}
 		>
