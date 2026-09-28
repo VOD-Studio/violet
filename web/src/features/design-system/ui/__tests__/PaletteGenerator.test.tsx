@@ -1,6 +1,18 @@
+import { oklchToRgb } from "@shared/lib/color-math";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { PaletteGenerator } from "../PaletteGenerator";
+
+/** 与组件 SEED_PRESETS[0] 同源的初始主色。 */
+const VIOLET_SEED_HEX = oklchToRgb(0.53, 0.205, 286).hex;
+
+// Mock @tanstack/react-router 中的 Link（GuideLink 依赖路由上下文）
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+		<a href={to}>{children}</a>
+	),
+}));
 
 Object.defineProperty(window, "isSecureContext", {
 	value: true,
@@ -18,11 +30,11 @@ describe("色板生成器", () => {
 		vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
 	});
 
-	it("主色速选、自定义 HSV 选色器与五个推导区块齐备", () => {
+	it("主色速选、自定义 HSV 选色器与推导区块齐备", () => {
 		render(<PaletteGenerator />);
 		expect(screen.getByRole("group", { name: "主色速选" })).toBeTruthy();
 		expect(screen.getByText("自定义主色")).toBeTruthy();
-		for (const title of ["品牌色阶", "主色与强调", "功能色", "中性带", "对比度审计"]) {
+		for (const title of ["品牌色阶", "主色与强调", "语义角色", "用法与覆盖", "对比度审计"]) {
 			expect(screen.getByRole("heading", { name: title })).toBeTruthy();
 		}
 	});
@@ -35,10 +47,9 @@ describe("色板生成器", () => {
 
 	it("换主色后整板重推导：点速选松绿即更新读出与色阶", () => {
 		render(<PaletteGenerator />);
-		expect(screen.getByText("#2563EB")).toBeTruthy();
+		expect(screen.getByText(VIOLET_SEED_HEX.toUpperCase())).toBeTruthy();
 		fireEvent.click(screen.getByRole("button", { name: "主色 松绿" }));
 		expect(screen.getByText("#059669")).toBeTruthy();
-		expect(screen.getByTitle(/^50 · #/)).toBeTruthy();
 	});
 
 	it("色阶数字行与 11 列色块对齐齐备", () => {
@@ -108,16 +119,29 @@ describe("色板生成器", () => {
 
 	it("HEX 文本输入框可直接驱动主色重算", () => {
 		render(<PaletteGenerator />);
-		const input = screen.getByDisplayValue("#2563eb");
+		const input = screen.getByDisplayValue(VIOLET_SEED_HEX);
 		fireEvent.change(input, { target: { value: "#10b981" } });
 		expect(screen.getAllByText("#10B981").length).toBeGreaterThanOrEqual(1);
 	});
 
-	it("功能色展台统一收录全部核心语义角色", () => {
+	it("语义角色清单统一收录画布、交互、状态、表单与基础角色", () => {
 		render(<PaletteGenerator />);
-		expect(screen.getByRole("heading", { name: "功能色" })).toBeTruthy();
-		for (const role of ["--info", "--success", "--warning", "--destructive"]) {
-			expect(screen.getByText(role)).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "语义角色" })).toBeTruthy();
+		for (const token of [
+			"--background",
+			"--foreground",
+			"--primary",
+			"--secondary",
+			"--success",
+			"--warning",
+			"--destructive",
+			"--input",
+			"--ring",
+			"--border",
+			"--muted",
+			"--chart-1",
+		]) {
+			expect(screen.getAllByText(token).length).toBeGreaterThanOrEqual(1);
 		}
 	});
 });

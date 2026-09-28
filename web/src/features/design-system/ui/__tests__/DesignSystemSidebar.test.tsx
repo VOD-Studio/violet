@@ -36,7 +36,7 @@ describe("DesignSystemSidebar", () => {
 
 	it("当前活跃章节呈现 aria-current=page", () => {
 		render(<DesignSystemSidebar currentPath="/design-system/palette" />);
-		const paletteLink = screen.getByRole("link", { name: /色板生成器/ });
+		const paletteLink = screen.getByRole("link", { name: /颜色/ });
 		expect(paletteLink.getAttribute("aria-current")).toBe("page");
 	});
 

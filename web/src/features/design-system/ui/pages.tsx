@@ -40,15 +40,15 @@ export function DecisionsPage() {
 }
 
 /**
- * 叁 · 色板生成器子页
+ * 伍 · 颜色子页
  */
 export function PalettePage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="叁"
-				title="色板生成器"
-				scope="以单一主色为种，推演全域色阶、语义角色与中性基准。"
+				num="伍"
+				title="颜色"
+				scope="语义角色导览与主色种子推导色阶的生成器。"
 			/>
 			<PaletteGenerator />
 		</div>
@@ -56,13 +56,13 @@ export function PalettePage() {
 }
 
 /**
- * 肆 · Token 词典子页
+ * 陆 · Token 词典子页
  */
 export function TokensPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="肆"
+				num="陆"
 				title="Token 词典"
 				scope="品牌色、功能色、中性色、语义色——全部语义 token 的名称与实时值。"
 			/>
@@ -72,13 +72,13 @@ export function TokensPage() {
 }
 
 /**
- * 伍 · 布局规格子页
+ * 柒 · 布局规格子页
  */
 export function LayoutPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="伍"
+				num="柒"
 				title="布局规格"
 				scope="间距、圆角、投影与容器的法定刻度。"
 			/>
@@ -88,13 +88,13 @@ export function LayoutPage() {
 }
 
 /**
- * 陆 · 动效章程子页
+ * 捌 · 动效章程子页
  */
 export function MotionPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="陆"
+				num="捌"
 				title="动效章程"
 				scope="运动的时间、幅度与克制的事由。"
 			/>
@@ -104,7 +104,7 @@ export function MotionPage() {
 }
 
 /**
- * 柒 · 组件目录子页
+ * 壹 · 组件目录子页（卷四）
  */
 export function SpecimensPage() {
 	return <SpecimensIndex />;

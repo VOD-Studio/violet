@@ -1,12 +1,12 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { HsvColorPicker, Segmented } from "@violet/ui";
-
 import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { GeneratedPalette, RampStep, RoleColor, SwatchColor } from "../model/palette";
 import { generatePalette } from "../model/palette";
+import { GuideLink } from "./library-guides/GuideParts";
 
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
 const CORAL_SEED = oklchToRgb(0.625, 0.19, 25).hex;
@@ -24,7 +24,7 @@ const SEED_PRESETS = [
 	{ hex: "#db2777", name: "玫红" },
 ] as const;
 
-const DEFAULT_SEED = "#2563eb";
+const DEFAULT_SEED = SEED_PRESETS[0].hex;
 
 function SwatchButton({
 	color,
@@ -504,6 +504,50 @@ function PaletteCodeExport({ palette, seedHex }: { palette: GeneratedPalette; se
 }
 
 /**
+ * 语义角色清单：逐项对应组件库文档 Colors 小节，
+ * 顺序为先画布与内容、再交互与状态、后表单与工具、末为模式无关基础色。
+ */
+const SEMANTIC_ROLES = [
+	{ token: "background", label: "背景", usage: "界面基底画布，建立整体对比与氛围。" },
+	{ token: "card", label: "表面", usage: "卡片、面板与浮层的抬升面，靠分层而非色相跳跃区隔。" },
+	{
+		token: "foreground",
+		label: "前景",
+		usage: "正文与图标，随背景与表面上下文自动适配，勿在组件内硬编码。",
+	},
+	{ token: "primary", label: "主要动作", usage: "界面内最高优先级的操作。" },
+	{
+		token: "secondary",
+		label: "默认动作",
+		usage: "次要操作与中性骨架，弱化于主要动作。",
+	},
+	{ token: "success", label: "成功", usage: "积极结果、确认与完成状态。" },
+	{ token: "warning", label: "警告", usage: "需谨慎或复核、但非破坏性的过渡状态。" },
+	{ token: "destructive", label: "危险", usage: "破坏性、不可逆的操作与错误，一眼可辨。" },
+	{
+		token: "input",
+		label: "表单字段",
+		usage: "输入与控件专用描边，覆盖默认、聚焦与悬停等状态。",
+	},
+	{
+		token: "ring",
+		label: "焦点环",
+		usage: "键盘聚焦时的可视环，与交互角色保持可辨识对比。",
+	},
+	{ token: "border", label: "分隔线", usage: "分割线与描边，低对比、组织内容不抢眼。" },
+	{
+		token: "muted",
+		label: "弱化面",
+		usage: "静音背景与占位内容等工具性角色，弱化视觉重量。",
+	},
+	{
+		token: "chart-1",
+		label: "基础色",
+		usage: "模式无关的底层取值（图表五色等），明暗主题间保持稳定语义。",
+	},
+] as const;
+
+/**
  * 色板生成器章内容：给一个主色，色阶、主色与强调、功能色、中性带
  * 全部由此推导（明暗双域并列预览），核心配对附 WCAG 对比度审计。
  */
@@ -532,6 +576,10 @@ export function PaletteGenerator() {
 
 	return (
 		<div className="mt-8">
+			<p className="text-sm leading-7 text-muted-foreground">
+				颜色体系围绕语义意图构建，而非堆砌色板：先选对角色，色值由主题与下面的生成器提供。
+				成对使用背景与前景，文本对比度需满足 WCAG AA。
+			</p>
 			{/* 主控制台 Deck：严格遵循布局规格 */}
 			<div className="rounded-2xl border border-border/40 bg-card/50 p-6">
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -731,11 +779,51 @@ export function PaletteGenerator() {
 			{/* 主色与强调 */}
 			<RoleBoard roles={palette.primaryRoles} title="主色与强调" />
 
-			{/* 功能色：与全站布局规格与角色展台完全统一 */}
-			<RoleBoard roles={palette.functional} title="功能色" />
+			{/* 语义角色：HeroUI 式紧凑清单，色值来自当前主题 token */}
+			<section className="mt-10">
+				<h3 className="text-lg font-bold">语义角色</h3>
+				<p className="mt-1 text-sm leading-7 text-muted-foreground">
+					系统不暴露庞大的原始色表：多数颜色由主色与少量基础值自动派生，
+					在保持对比度、层级与主题行为一致的同时易于理解与修改。
+					颜色先传达用途与状态，视觉变化来自尺度、强调与上下文。
+				</p>
+				<ul className="mt-3 divide-y divide-border/40 rounded-xl border border-border/40 bg-card/30 px-4">
+					{SEMANTIC_ROLES.map((role) => (
+						<li className="flex items-center gap-3 py-2.5" key={role.token}>
+							<span
+								aria-hidden="true"
+								className="size-5 shrink-0 rounded-md ring-1 ring-black/5"
+								style={{ backgroundColor: `var(--${role.token})` }}
+							/>
+							<span className="w-20 shrink-0 text-sm font-semibold text-foreground">
+								{role.label}
+							</span>
+							<code className="w-24 shrink-0 font-mono text-xs text-muted-foreground">
+								--{role.token}
+							</code>
+							<span className="min-w-0 flex-1 text-xs leading-5 text-muted-foreground">
+								{role.usage}
+							</span>
+						</li>
+					))}
+				</ul>
+			</section>
 
-			{/* 中性带 */}
-			<RoleBoard roles={palette.neutral} title="中性带" />
+			{/* 用法与覆盖 */}
+			<section className="mt-10">
+				<h3 className="text-lg font-bold">用法与覆盖</h3>
+				<p className="mt-1 text-sm leading-7 text-muted-foreground">
+					组件里成对使用语义类名；CSS 里直接引用变量，主题级色值调整见{" "}
+					<GuideLink to="/design-system/guides/theming">主题</GuideLink>
+				</p>
+				<pre className="mt-3 overflow-x-auto rounded-xl border border-border/40 bg-card/30 p-4 font-mono text-xs leading-6 text-foreground">
+					<code>
+						{
+							'/* 组件中 */}\n<div className="bg-background text-foreground">\n  <button className="bg-primary text-primary-foreground hover:bg-primary/90">保存</button>\n</div>\n\n/* CSS 中 */\n.my-panel {\n  background: var(--card);\n  color: var(--card-foreground);\n  border: 1px solid var(--border);\n}\n\n/* 添加自定义颜色并暴露给 Tailwind */\n:root { --info: oklch(0.6 0.15 210); }\n@theme inline { --color-info: var(--info); }\n/* 之后即可使用 bg-info / text-info */'
+						}
+					</code>
+				</pre>
+			</section>
 
 			{/* 代码导出 */}
 			<PaletteCodeExport palette={palette} seedHex={seedHex} />

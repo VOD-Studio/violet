@@ -18,11 +18,7 @@
 	--card-foreground: oklch(0.19 0.015 286);
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.19 0.015 286);
-	/* 纸面：暖米古籍纸，深色模式换成深褐古纸 */
-	--paper: oklch(0.976 0.012 85);
-	--paper-foreground: oklch(0.24 0.014 60);
-	--paper-muted: oklch(0.46 0.016 60);
-	--paper-border: oklch(0.885 0.018 80);
+	/* 纸面、人设与 Neon 等站点业务语义色由宿主提供（见 web/src/styles/site-tokens.css） */
 	/* 基础主要动作（工具方言中性形态，高对比） */
 	--primary: oklch(0.205 0 0);
 	--primary-foreground: oklch(0.985 0 0);
@@ -43,15 +39,9 @@
 	--input: oklch(0.895 0.01 286);
 	--ring: oklch(0.53 0.205 286);
 
-	/* 前台遗留与高级材质语义色 */
-	--bg: #faf9fd;
-	--fg: #13111c;
+	/* 站点定制语义色：发丝级轻分隔线与玻璃拟态表面（其余业务色由宿主提供） */
 	--edge-hairline: oklch(0.19 0.015 286 / 6%);
 	--surface-glass: oklch(1 0 0 / 70%);
-	--glow-soft: 286 85% 65%;
-	--persona-violet: oklch(0.54 0.14 286);
-	--persona-gold: oklch(0.72 0.09 78);
-	--persona-ivory: oklch(0.985 0.012 84);
 
 	/* 协调图表调色板（5 色） */
 	--chart-1: oklch(0.58 0.2 286);
@@ -59,13 +49,6 @@
 	--chart-3: oklch(0.6 0.15 155);
 	--chart-4: oklch(0.74 0.16 75);
 	--chart-5: oklch(0.64 0.2 350);
-
-	/* Neon 强调色（浅色：饱和度适中，保证白底可读） */
-	--neon-purple: oklch(0.56 0.26 295);
-	--neon-blue: oklch(0.6 0.22 245);
-	--neon-green: oklch(0.62 0.19 150);
-	--neon-pink: oklch(0.65 0.25 350);
-	--neon-cyan: oklch(0.7 0.16 210);
 }
 
 /*
@@ -80,11 +63,7 @@
 	--card-foreground: oklch(0.955 0.008 286);
 	--popover: oklch(0.185 0.015 286);
 	--popover-foreground: oklch(0.955 0.008 286);
-	/* 深色纸面：深褐古纸 + 浅象牙墨 */
-	--paper: oklch(0.23 0.012 70);
-	--paper-foreground: oklch(0.92 0.012 80);
-	--paper-muted: oklch(0.68 0.012 75);
-	--paper-border: oklch(0.32 0.012 70);
+	/* 纸面、人设与 Neon 等站点业务语义色由宿主提供 */
 	/* 基础主要动作（工具方言中性形态，高对比） */
 	--primary: oklch(0.922 0 0);
 	--primary-foreground: oklch(0.18 0.015 286);
@@ -104,15 +83,9 @@
 	--input: oklch(0.92 0.012 286 / 18%);
 	--ring: oklch(0.72 0.148 286);
 
-	/* 前台遗留与高级材质语义色 */
-	--bg: #0d0b14;
-	--fg: #f5f4fa;
+	/* 站点定制语义色：发丝级轻分隔线与玻璃拟态表面 */
 	--edge-hairline: oklch(1 0 0 / 8%);
 	--surface-glass: oklch(0.185 0.015 286 / 60%);
-	--glow-soft: 286 90% 75%;
-	--persona-violet: oklch(0.74 0.12 286);
-	--persona-gold: oklch(0.78 0.09 78);
-	--persona-ivory: oklch(0.24 0.018 84);
 
 	/* 暗色图表调色板（5 色） */
 	--chart-1: oklch(0.72 0.18 286);
@@ -120,11 +93,4 @@
 	--chart-3: oklch(0.76 0.16 155);
 	--chart-4: oklch(0.8 0.16 75);
 	--chart-5: oklch(0.74 0.18 350);
-
-	/* Neon 强调色（暗色：高饱和高亮度，发光感） */
-	--neon-purple: oklch(0.72 0.3 295);
-	--neon-blue: oklch(0.78 0.28 245);
-	--neon-green: oklch(0.8 0.25 150);
-	--neon-pink: oklch(0.75 0.3 350);
-	--neon-cyan: oklch(0.82 0.2 210);
 }

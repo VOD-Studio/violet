@@ -96,6 +96,12 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 		title: "卷三 · 设计法度",
 		items: [
 			{
+				id: "palette",
+				title: "颜色",
+				scope: "语义角色导览与主色种子推导色阶的生成器。",
+				to: "/design-system/palette",
+			},
+			{
 				id: "theming",
 				title: "主题",
 				scope: "CSS 变量、默认色板与方言。",
@@ -118,12 +124,6 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 				title: "组合",
 				scope: "原生语义、asChild 与组合式组件。",
 				to: "/design-system/guides/composition",
-			},
-			{
-				id: "palette",
-				title: "色板生成器",
-				scope: "以单一主色为种，推演全域色阶、语义角色与中性基准。",
-				to: "/design-system/palette",
 			},
 			{
 				id: "tokens",
