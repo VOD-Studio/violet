@@ -17,7 +17,7 @@ export function CartoonPopoverHoverDemo() {
 						悬停显示 (Hover)
 					</Button>
 				</CartoonPopoverTrigger>
-				<CartoonPopoverContent variant="brand" title="悬停提示">
+				<CartoonPopoverContent variant="primary" title="悬停提示">
 					<p className="text-xs">鼠标移入立即弹出，移入气泡内部继续保持，体验平滑。</p>
 				</CartoonPopoverContent>
 			</CartoonPopover>

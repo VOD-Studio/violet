@@ -36,7 +36,7 @@ const MusicPlayer = () => {
 					>
 						<div className="flex h-3 w-3 items-center justify-center overflow-hidden rounded-full bg-foreground">
 							{isPlaying && (
-								<motion.div className="h-full w-full animate-pulse bg-brand blur-[2px]" />
+								<motion.div className="h-full w-full animate-pulse bg-primary-base blur-[2px]" />
 							)}
 						</div>
 						<span className="text-xs font-medium">

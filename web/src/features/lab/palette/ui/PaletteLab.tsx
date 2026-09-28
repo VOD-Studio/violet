@@ -14,7 +14,7 @@ import { useState } from "react";
  * /lab/palette - 冷香紫罗兰色彩系统实验室
  *
  * 全站冷香紫罗兰（Hue 286）调色体系展示页面：
- * 聚合品牌主色、11 阶色阶、明暗双重画布与 5 层表面层级、状态色、
+ * 聚合主色、11 阶色阶、明暗双重画布与 5 层表面层级、状态色、
  * 协调图表 5 色、霓虹发光材质、组件实装及 WCAG 2.1 对比度审计。
  */
 export function PaletteLab() {
@@ -34,7 +34,7 @@ export function PaletteLab() {
 					Index
 				</span>
 				{[
-					{ label: "核心品牌", id: "brand" },
+					{ label: "核心主色", id: "primary" },
 					{ label: "色阶光谱", id: "tonal-ramp" },
 					{ label: "空间表面", id: "surfaces" },
 					{ label: "状态语义", id: "status" },
@@ -46,7 +46,7 @@ export function PaletteLab() {
 					<a
 						key={nav.id}
 						href={`#${nav.id}`}
-						className="rounded-full border border-edge-hairline bg-card/60 px-3 py-1 text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground"
+						className="rounded-full border border-edge-hairline bg-card/60 px-3 py-1 text-muted-foreground transition-colors hover:border-primary-base/40 hover:text-foreground"
 					>
 						{nav.label}
 					</a>
@@ -54,7 +54,7 @@ export function PaletteLab() {
 			</div>
 
 			{/* 主视觉看板与模式切换器 */}
-			<div id="brand">
+			<div id="primary">
 				<PaletteHero mode={mode} onModeChange={setMode} resolvedTheme={currentTheme} />
 			</div>
 

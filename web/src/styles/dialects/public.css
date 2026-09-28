@@ -4,9 +4,8 @@
  * 消费入口：给公开页面（首页、博客、系列、图库、人设、About、登录入口等）
  * 的主容器加 .dialect-public。
  *
- * 方言职责：把主要动作色（--primary 系）映射到品牌强调层（palettes/ 提供的
- * 紫罗兰／鸢尾），并把光标、滚动条、选区与焦点指示跟随品牌色；画布与表面
- * 采用温润白瓷／玄曜夜色。行为状态色继承基础层，不被改写。
+ * 方言职责：把主要动作色（--primary 系）映射到主色源，并让光标、滚动条、
+ * 选区与焦点跟随主色；画布与表面采用温润白瓷／玄曜夜色。
  */
 .dialect-public {
 	--background: oklch(0.992 0.003 286);
@@ -15,19 +14,19 @@
 	--card-foreground: var(--foreground);
 	--popover: oklch(1 0 0);
 	--popover-foreground: var(--foreground);
-	/* 主要动作 → 品牌强调（区别于工具方言的高对比中性动作） */
-	--primary: var(--brand);
-	--primary-foreground: var(--brand-foreground);
+	/* 主要动作 → 稳定主色源（区别于工具方言的高对比中性动作） */
+	--primary: var(--primary-base);
+	--primary-foreground: var(--primary-base-foreground);
 	--secondary: oklch(0.958 0.008 286);
 	--secondary-foreground: var(--foreground);
 	--muted: oklch(0.962 0.006 286);
 	--muted-foreground: oklch(0.52 0.02 286);
-	/* hover 薄雾表面 → 品牌薄雾 */
-	--accent: var(--brand-wash);
-	--accent-foreground: var(--brand-wash-foreground);
+	/* hover 薄雾表面 → 主色浅染 */
+	--accent: var(--primary-base-soft);
+	--accent-foreground: var(--primary-base-soft-foreground);
 	--border: oklch(0.908 0.008 286);
 	--input: oklch(0.895 0.01 286);
-	--ring: var(--brand-ring);
+	--ring: var(--primary-base-ring);
 	background: var(--background);
 	color: var(--foreground);
 }
@@ -39,17 +38,17 @@
 	--card-foreground: var(--foreground);
 	--popover: oklch(0.185 0.015 286);
 	--popover-foreground: var(--foreground);
-	--primary: var(--brand);
-	--primary-foreground: var(--brand-foreground);
+	--primary: var(--primary-base);
+	--primary-foreground: var(--primary-base-foreground);
 	--secondary: oklch(0.225 0.016 286);
 	--secondary-foreground: var(--foreground);
 	--muted: oklch(0.225 0.016 286);
 	--muted-foreground: oklch(0.68 0.022 286);
-	--accent: var(--brand-wash);
-	--accent-foreground: var(--brand-wash-foreground);
+	--accent: var(--primary-base-soft);
+	--accent-foreground: var(--primary-base-soft-foreground);
 	--border: oklch(0.92 0.012 286 / 12%);
 	--input: oklch(0.92 0.012 286 / 18%);
-	--ring: var(--brand-ring);
+	--ring: var(--primary-base-ring);
 }
 
 .dialect-public {

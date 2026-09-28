@@ -59,7 +59,7 @@ describe("Checkbox Component", () => {
 		expect(handleCheckedChange).not.toHaveBeenCalled();
 	});
 
-	it.each(["default", "brand"] as const)("正确应用 %s 变体并标记 data-variant", (variant) => {
+	it.each(["default", "primary"] as const)("正确应用 %s 变体并标记 data-variant", (variant) => {
 		render(<Checkbox variant={variant} aria-label={`${variant} 复选框`} />);
 		const cb = screen.getByRole("checkbox", { name: `${variant} 复选框` });
 		expect(cb.getAttribute("data-variant")).toBe(variant);

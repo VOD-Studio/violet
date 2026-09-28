@@ -19,11 +19,11 @@ const JSON_SNIPPET = `{
   "name": "Violet Cold Fragrance Palette",
   "hue": 286,
   "tokens": {
-    "brand": {
+    "primary": {
       "light": "oklch(0.53 0.205 286)",
       "dark": "oklch(0.72 0.148 286)"
     },
-    "brandWash": {
+    "primarySoft": {
       "light": "oklch(0.965 0.022 286)",
       "dark": "oklch(0.22 0.038 286)"
     },
@@ -78,7 +78,7 @@ export function TokenExportSection({ className }: TokenExportSectionProps) {
 				<button
 					type="button"
 					onClick={handleCopy}
-					className="flex items-center gap-1.5 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium transition-colors hover:border-brand hover:text-brand"
+					className="flex items-center gap-1.5 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium transition-colors hover:border-primary-base hover:text-primary-base"
 				>
 					{copied ? (
 						<Check className="size-3.5 text-emerald-500" />

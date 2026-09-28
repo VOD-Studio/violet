@@ -15,9 +15,9 @@ import { cn } from "cn";
 import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-/** 来源标签的颜色映射：system=品牌、bilibili=外站品牌粉（neon-pink 承接）、custom=success */
+/** 来源标签的颜色映射：system=主色、bilibili=外站品牌粉（neon-pink 承接）、custom=success */
 const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-brand/10 text-brand border-brand/20",
+	system: "bg-primary-base/10 text-primary-base border-primary-base/20",
 	bilibili: "bg-neon-pink/10 text-neon-pink border-neon-pink/20",
 	custom: "bg-success/10 text-success border-success/20",
 };

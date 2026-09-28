@@ -90,7 +90,7 @@ const ITEM_FIELDS: PropRow[] = [
 		prop: "tone",
 		type: '"default" | "discussion" | "author"',
 		defaultValue: '"default"',
-		description: "左侧视觉色阶：author 呈品牌高光，discussion 呈中性色",
+		description: "左侧视觉色阶：author 呈主色高光，discussion 呈中性色",
 	},
 	{
 		prop: "isAuthor",

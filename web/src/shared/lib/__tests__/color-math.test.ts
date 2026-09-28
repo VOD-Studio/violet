@@ -59,14 +59,14 @@ describe("color-math", () => {
 			expect(black.b).toBe(0);
 		});
 
-		it("正确将紫罗兰浅色品牌主色转换为预期 Hex", () => {
-			const brandLight = oklchToRgb(0.53, 0.205, 286);
-			expect(brandLight.hex.toLowerCase()).toBe("#684dda");
+		it("正确将紫罗兰浅色主色转换为预期 Hex", () => {
+			const primaryLight = oklchToRgb(0.53, 0.205, 286);
+			expect(primaryLight.hex.toLowerCase()).toBe("#684dda");
 		});
 
-		it("正确将紫罗兰深色品牌主色转换为预期 Hex", () => {
-			const brandDark = oklchToRgb(0.72, 0.148, 286);
-			expect(brandDark.hex.toLowerCase()).toBe("#9e95fc");
+		it("正确将紫罗兰深色主色转换为预期 Hex", () => {
+			const primaryDark = oklchToRgb(0.72, 0.148, 286);
+			expect(primaryDark.hex.toLowerCase()).toBe("#9e95fc");
 		});
 
 		it("带透明度时输出 8 位十六进制 Hex 且记录 alpha", () => {
@@ -94,12 +94,12 @@ describe("color-math", () => {
 			expect(ratio).toBe(1);
 		});
 
-		it("紫罗兰品牌浅色在白瓷底色上的对比度大于 5:1 (符合 WCAG AA)", () => {
+		it("紫罗兰浅色主色在白瓷底色上的对比度大于 5:1 (符合 WCAG AA)", () => {
 			const ratio = getContrastRatio("oklch(0.53 0.205 286)", "oklch(0.992 0.003 286)");
 			expect(ratio).toBeGreaterThan(5.0);
 		});
 
-		it("紫罗兰品牌深色在黑曜星空底色上的对比度大于 5.5:1 (符合 WCAG AA)", () => {
+		it("紫罗兰深色主色在黑曜星空底色上的对比度大于 5.5:1 (符合 WCAG AA)", () => {
 			const ratio = getContrastRatio("oklch(0.72 0.148 286)", "oklch(0.138 0.012 286)");
 			expect(ratio).toBeGreaterThan(5.5);
 		});

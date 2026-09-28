@@ -12,6 +12,7 @@
 @import "@fontsource/maple-mono/700.css";
 @import "@fontsource/alex-brush/400.css";
 @import "@violet/ui/styles.css";
+@import "./styles/site-tokens.css";
 @import "./styles/dialects/public.css";
 @import "./styles/dialects/tool.css";
 @import "./styles/dialects/immersive.css";

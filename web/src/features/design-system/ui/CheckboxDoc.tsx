@@ -39,10 +39,10 @@ const CHECKBOX_PROPS: PropRow[] = [
 	},
 	{
 		name: "variant",
-		type: '"default" | "brand"',
+		type: '"default" | "primary"',
 		defaultValue: '"default"',
 		meaning:
-			"视觉变体：default 绑定主要动作语义色（随方言映射），brand 显式绑定 Violet 品牌紫罗兰色。",
+			"视觉变体：default 绑定主要动作语义色（随方言映射），primary 显式绑定 Violet 主色源。",
 	},
 	{
 		name: "size",
@@ -146,8 +146,8 @@ export function CheckboxDocPage() {
 				<div className="space-y-3">
 					<h3 className="text-lg font-semibold text-foreground">视觉变体 (Variants)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						default 变体使用 primary 主要语义色，随页面所在方言自动映射；brand
-						变体显式绑定冷香紫罗兰高光，适合品牌专属选项。
+						default 变体使用 primary 主要语义色，随页面所在方言自动映射；primary
+						变体显式绑定冷香紫罗兰主色，适合需保持固定主色的选项。
 					</p>
 					<ComponentDemo code={variantsSource}>
 						<CheckboxVariantsDemo />

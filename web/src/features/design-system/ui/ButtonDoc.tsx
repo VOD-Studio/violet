@@ -23,9 +23,10 @@ interface PropRow {
 const BUTTON_PROPS: PropRow[] = [
 	{
 		name: "variant",
-		type: '"default" | "brand" | "secondary" | "soft" | "outline" | "ghost" | "link" | "destructive"',
+		type: '"default" | "primary" | "secondary" | "soft" | "outline" | "ghost" | "link" | "destructive"',
 		defaultValue: '"default"',
-		meaning: "视觉层级变体，严格绑定 Violet 语义 Token（primary / brand / secondary 等）。",
+		meaning:
+			"视觉层级变体，严格绑定 Violet 语义 Token（primary / primary-base / secondary 等）。",
 	},
 	{
 		name: "size",
@@ -150,7 +151,7 @@ export function ButtonDocPage() {
 				<div className="space-y-3">
 					<h3 className="text-lg font-semibold text-foreground">视觉层级 (Variants)</h3>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						主要动作使用 default（随方言映射），品牌强调使用专属 brand，柔和辅助使用
+						主要动作使用 default（随方言映射），固定主色强调使用 primary，柔和辅助使用
 						soft，描边与次级使用 outline / secondary，轻量操作使用 ghost。
 					</p>
 					<ComponentDemo code={variantsSource}>

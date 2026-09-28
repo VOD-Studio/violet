@@ -24,7 +24,7 @@ describe("Button Component", () => {
 
 	it.each([
 		"default",
-		"brand",
+		"primary",
 		"secondary",
 		"soft",
 		"outline",
@@ -161,12 +161,12 @@ describe("Button Component", () => {
 
 	it("调用方类名覆盖按钮配方背景色", () => {
 		render(
-			<Button variant="outline" className="bg-brand">
+			<Button variant="outline" className="bg-primary-base">
 				自定义背景
 			</Button>,
 		);
 		const button = screen.getByRole("button", { name: "自定义背景" });
-		expect(button.classList.contains("bg-brand")).toBe(true);
+		expect(button.classList.contains("bg-primary-base")).toBe(true);
 		expect(button.classList.contains("bg-background/90")).toBe(false);
 	});
 });

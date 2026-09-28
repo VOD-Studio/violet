@@ -20,14 +20,14 @@ export function CartoonPopoverGroupDemo() {
 				</CartoonPopoverGroupItem>
 
 				<CartoonPopoverGroupItem
-					value="brand"
+					value="primary"
 					trigger={
 						<Button size="sm" variant="outline">
-							Brand
+							Primary
 						</Button>
 					}
-					variant="brand"
-					title="Brand 品牌色"
+					variant="primary"
+					title="Primary 主色"
 				>
 					<div className="space-y-1 text-xs">
 						<p>冷香紫罗兰专属方言底色。</p>

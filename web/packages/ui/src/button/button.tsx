@@ -10,10 +10,11 @@ const buttonVariants = tv({
 		variant: {
 			default:
 				"border border-primary/20 bg-primary text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18),0_1px_2px_0_rgba(0,0,0,0.06)] hover:bg-primary/90 hover:border-primary/40 active:brightness-[0.92] dark:active:brightness-110 active:shadow-[inset_0_1px_1px_rgba(0,0,0,0.15)]",
-			brand: "border border-brand-hover/30 bg-brand text-brand-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22),0_1px_2px_0_color-mix(in_oklch,var(--color-brand,#7c3aed)_25%,transparent)] hover:bg-brand-hover hover:border-brand-hover/50 active:brightness-[0.92] dark:active:brightness-110 active:shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)]",
+			primary:
+				"border border-primary-base-hover/30 bg-primary-base text-primary-base-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22),0_1px_2px_0_color-mix(in_oklch,var(--color-primary-base,#7c3aed)_25%,transparent)] hover:bg-primary-base-hover hover:border-primary-base-hover/50 active:brightness-[0.92] dark:active:brightness-110 active:shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)]",
 			secondary:
 				"border border-border/60 bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 hover:border-border active:bg-secondary/90 active:brightness-95 dark:border-border/40",
-			soft: "border border-brand/20 bg-brand-wash text-brand-wash-foreground shadow-xs hover:bg-brand-wash/80 hover:border-brand/40 active:bg-brand-wash/90 active:border-brand/30",
+			soft: "border border-primary-base/20 bg-primary-base-soft text-primary-base-soft-foreground shadow-xs hover:bg-primary-base-soft/80 hover:border-primary-base/40 active:bg-primary-base-soft/90 active:border-primary-base/30",
 			outline:
 				"border border-border/80 bg-background/90 text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-foreground/20 active:bg-accent active:text-accent-foreground dark:border-input dark:bg-card/40 dark:hover:bg-input/50 dark:hover:border-input",
 			ghost: "text-foreground/85 hover:bg-accent/80 hover:text-foreground active:bg-accent/90 active:text-foreground dark:hover:bg-accent/50",

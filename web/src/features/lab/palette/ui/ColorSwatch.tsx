@@ -58,7 +58,7 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 	return (
 		<div
 			className={cn(
-				"group relative flex flex-col rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-brand/40",
+				"group relative flex flex-col rounded-xl border border-edge-hairline bg-card p-4 transition-colors hover:border-primary-base/40",
 				className,
 			)}
 		>
@@ -140,7 +140,7 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 					<button
 						type="button"
 						onClick={() => handleCopy(`var(${token.variable})`, "CSS Variable")}
-						className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-brand"
+						className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-primary-base"
 					>
 						<span>{token.variable}</span>
 						{copied === "CSS Variable" ? (

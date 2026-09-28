@@ -113,7 +113,7 @@ const CONTENT_PROPS: PropRow[] = [
 	},
 	{
 		name: "variant",
-		type: '"default" | "brand" | "amber" | "mint" | "rose" | "sky" | "dark"',
+		type: '"default" | "primary" | "amber" | "mint" | "rose" | "sky" | "dark"',
 		defaultValue: '"default"',
 		meaning: "卡通色彩变体，自动匹配气泡背景、描边与尾巴颜色。",
 	},

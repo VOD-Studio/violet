@@ -128,7 +128,7 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 			{
 				id: "tokens",
 				title: "Token 词典",
-				scope: "品牌色、功能色、中性色、语义色——全部语义 token 的名称与实时值。",
+				scope: "主色、功能色、中性色、语义色——全部语义 token 的名称与实时值。",
 				to: "/design-system/tokens",
 			},
 			{

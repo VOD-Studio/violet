@@ -1,6 +1,6 @@
 /**
  * hex(#rrggbb) → HSV。
- * 非法输入回落 { h:220, s:0.8, v:0.9 }（品牌蓝附近），保证选色器始终有有效色相可渲染。
+ * 非法输入回落 { h:220, s:0.8, v:0.9 }（常用蓝色附近），保证选色器始终有有效色相可渲染。
  */
 export function hexToHsv(hex: string): { h: number; s: number; v: number } {
 	const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);

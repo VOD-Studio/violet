@@ -24,7 +24,14 @@ export type CartoonBubbleStyle = "speech" | "sticker";
 /**
  * 卡通色彩变体
  */
-export type CartoonBubbleVariant = "default" | "brand" | "amber" | "mint" | "rose" | "sky" | "dark";
+export type CartoonBubbleVariant =
+	| "default"
+	| "primary"
+	| "amber"
+	| "mint"
+	| "rose"
+	| "sky"
+	| "dark";
 
 /**
  * 投影风格

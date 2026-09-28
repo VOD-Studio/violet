@@ -66,22 +66,22 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						{/* 公开内容方言对照 */}
 						<div className="mt-8 rounded-xl border border-edge-hairline/80 bg-background/50 p-5 dialect-public">
 							<div className="mb-2 flex items-center justify-between">
-								<span className="font-mono text-xs font-semibold text-brand">
+								<span className="font-mono text-xs font-semibold text-primary-base">
 									.dialect-public 方言作用域对照
 								</span>
 								<span className="font-mono text-[11px] text-muted-foreground">
-									--primary → var(--brand)
+									--primary → var(--primary-base)
 								</span>
 							</div>
 							<p className="mb-4 text-xs text-muted-foreground">
 								在公开内容方言内，标准{" "}
 								<code className="font-mono">variant="default"</code>{" "}
-								按钮自动继承品牌紫罗兰色：
+								按钮自动继承紫罗兰主色：
 							</p>
 							<div className="flex flex-wrap items-center gap-3">
 								<Button variant="default">
 									<Sparkles className="size-4" />
-									公开主按钮 (Follows Brand)
+									公开主按钮 (Follows Primary)
 								</Button>
 								<Button variant="outline">公开边框</Button>
 								<Button variant="ghost">公开悬停</Button>
@@ -172,7 +172,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 					<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 						{/* SpotlightCard 聚光测试 */}
 						<SpotlightCard className="p-6">
-							<div className="flex items-center gap-2 text-xs font-semibold text-brand">
+							<div className="flex items-center gap-2 text-xs font-semibold text-primary-base">
 								<MousePointer className="size-4" />
 								<span>边缘聚光交互 SpotlightCard</span>
 							</div>
@@ -217,8 +217,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 							</h4>
 							<p className="text-sm leading-relaxed select-all">
 								拖动鼠标选中这段文字：全站已配置全局柔和紫罗兰高亮选区（::selection
-								绑定 --brand 与
-								--brand-foreground），在浅色白瓷与深色玄曜下均能呈现丝滑冷香触感。
+								绑定 --primary-base），在浅色白瓷与深色玄曜下均能呈现丝滑冷香触感。
 							</p>
 						</div>
 
@@ -229,7 +228,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 							</h4>
 							<input
 								type="text"
-								placeholder="点击测试输入框 --brand-ring 焦点环..."
+								placeholder="点击测试输入框 --primary-base-ring 焦点环..."
 								className="w-full rounded-lg border border-input bg-background px-3.5 py-2 text-sm transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							/>
 							<Textarea

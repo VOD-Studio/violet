@@ -20,7 +20,7 @@ export function CartoonPopoverBasicDemo() {
 					description="欢迎来到紫罗兰的营造法式典籍。"
 					showClose
 					side="bottom"
-					variant="brand"
+					variant="primary"
 				>
 					<div className="space-y-1 pt-1 text-xs">
 						<p>对白小尾巴与气泡边框平滑连通，内部背景无阻隔。</p>

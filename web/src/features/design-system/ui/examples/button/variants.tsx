@@ -7,8 +7,8 @@ export function ButtonVariantsDemo() {
 			<Button type="button" variant="default">
 				主要动作
 			</Button>
-			<Button type="button" variant="brand">
-				品牌强调
+			<Button type="button" variant="primary">
+				主色强调
 			</Button>
 			<Button type="button" variant="secondary">
 				次要动作

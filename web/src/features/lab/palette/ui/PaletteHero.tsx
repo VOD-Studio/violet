@@ -1,4 +1,4 @@
-import { BRAND_TOKENS } from "@features/lab/palette/model/tokens";
+import { PRIMARY_TOKENS } from "@features/lab/palette/model/tokens";
 import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
 import { copyText } from "@shared/lib/clipboard";
 import { getContrastRatio, oklchToRgb, parseOklch } from "@shared/lib/color-math";
@@ -24,42 +24,42 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 	const { switchTheme } = useThemeSwitcher();
 	const [copied, setCopied] = useState(false);
 
-	// 浅色与深色品牌主色参数
-	const brandToken = BRAND_TOKENS[0];
-	const lightParsed = parseOklch(brandToken.light);
-	const darkParsed = parseOklch(brandToken.dark);
+	// 浅色与深色主色参数
+	const primaryToken = PRIMARY_TOKENS[0];
+	const lightParsed = parseOklch(primaryToken.light);
+	const darkParsed = parseOklch(primaryToken.dark);
 	const lightRgb = lightParsed ? oklchToRgb(lightParsed.l, lightParsed.c, lightParsed.h) : null;
 	const darkRgb = darkParsed ? oklchToRgb(darkParsed.l, darkParsed.c, darkParsed.h) : null;
 
-	const lightContrast = getContrastRatio(brandToken.light, "oklch(0.992 0.003 286)");
-	const darkContrast = getContrastRatio(brandToken.dark, "oklch(0.138 0.012 286)");
+	const lightContrast = getContrastRatio(primaryToken.light, "oklch(0.992 0.003 286)");
+	const darkContrast = getContrastRatio(primaryToken.dark, "oklch(0.138 0.012 286)");
 
 	// 单域模式下生效的属性
 	const effectiveTheme = mode === "dual" ? resolvedTheme : mode === "sync" ? resolvedTheme : mode;
-	const activeBrandOklch = effectiveTheme === "light" ? brandToken.light : brandToken.dark;
+	const activePrimaryOklch = effectiveTheme === "light" ? primaryToken.light : primaryToken.dark;
 	const activeParsed = effectiveTheme === "light" ? lightParsed : darkParsed;
 	const activeRgb = effectiveTheme === "light" ? lightRgb : darkRgb;
 	const activeContrast = effectiveTheme === "light" ? lightContrast : darkContrast;
 
 	const handleCopyAll = async () => {
 		const cssVariables = `:root {
-  /* 品牌紫罗兰强调（浅色：皇家鸢尾紫） */
-  --brand: oklch(0.53 0.205 286);
-  --brand-foreground: oklch(0.99 0 0);
-  --brand-hover: oklch(0.47 0.215 286);
-  --brand-wash: oklch(0.965 0.022 286);
-  --brand-wash-foreground: oklch(0.35 0.14 286);
-  --brand-ring: oklch(0.53 0.205 286);
+  /* 紫罗兰主色源（浅色：皇家鸢尾紫） */
+  --primary-base: oklch(0.53 0.205 286);
+  --primary-base-foreground: oklch(0.99 0 0);
+  --primary-base-hover: oklch(0.47 0.215 286);
+  --primary-base-soft: oklch(0.965 0.022 286);
+  --primary-base-soft-foreground: oklch(0.35 0.14 286);
+  --primary-base-ring: oklch(0.53 0.205 286);
 }
 
 .dark {
-  /* 品牌紫罗兰强调（深色：星空紫水晶，全 sRGB 覆盖） */
-  --brand: oklch(0.72 0.148 286);
-  --brand-foreground: oklch(0.14 0.02 286);
-  --brand-hover: oklch(0.77 0.138 286);
-  --brand-wash: oklch(0.22 0.038 286);
-  --brand-wash-foreground: oklch(0.9 0.07 286);
-  --brand-ring: oklch(0.72 0.148 286);
+  /* 紫罗兰主色源（深色：星空紫水晶，全 sRGB 覆盖） */
+  --primary-base: oklch(0.72 0.148 286);
+  --primary-base-foreground: oklch(0.14 0.02 286);
+  --primary-base-hover: oklch(0.77 0.138 286);
+  --primary-base-soft: oklch(0.22 0.038 286);
+  --primary-base-soft-foreground: oklch(0.9 0.07 286);
+  --primary-base-ring: oklch(0.72 0.148 286);
 }`;
 		const ok = await copyText(cssVariables);
 		if (ok) {
@@ -95,14 +95,14 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 				<button
 					type="button"
 					onClick={handleCopyAll}
-					className="flex items-center gap-1.5 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium text-foreground transition-colors hover:border-brand hover:text-brand"
+					className="flex items-center gap-1.5 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary-base hover:text-primary-base"
 				>
 					{copied ? (
 						<Check className="size-3.5 text-emerald-500" />
 					) : (
 						<Copy className="size-3.5" />
 					)}
-					<span>导出品牌变量</span>
+					<span>导出主色变量</span>
 				</button>
 			</div>
 
@@ -119,7 +119,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 					{/* 左侧：色彩叙事与哲学参数 */}
 					<div>
 						<div className="mb-3 flex items-center gap-2">
-							<span className="inline-flex items-center gap-1 rounded-full bg-brand-wash px-2.5 py-1 text-xs font-medium text-brand-wash-foreground">
+							<span className="inline-flex items-center gap-1 rounded-full bg-primary-base-soft px-2.5 py-1 text-xs font-medium text-primary-base-soft-foreground">
 								<Sparkles className="size-3" />
 								Hue 286° · 鸢尾冷香
 							</span>
@@ -191,7 +191,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								{/* 浅色域主色块 */}
 								<div
 									className="relative flex h-60 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-5 shadow-md"
-									style={{ backgroundColor: brandToken.light }}
+									style={{ backgroundColor: primaryToken.light }}
 								>
 									<div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-white/20 blur-xl" />
 									<div className="relative z-10 flex items-center justify-between text-white">
@@ -208,7 +208,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 											{lightRgb?.hex.toUpperCase()}
 										</span>
 										<p className="mt-0.5 font-mono text-[11px] opacity-90">
-											{brandToken.light}
+											{primaryToken.light}
 										</p>
 									</div>
 								</div>
@@ -216,7 +216,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 								{/* 深色域主色块 */}
 								<div
 									className="relative flex h-60 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-5 shadow-md"
-									style={{ backgroundColor: brandToken.dark }}
+									style={{ backgroundColor: primaryToken.dark }}
 								>
 									<div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-white/30 blur-xl" />
 									<div className="relative z-10 flex items-center justify-between text-slate-950">
@@ -233,7 +233,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 											{darkRgb?.hex.toUpperCase()}
 										</span>
 										<p className="mt-0.5 font-mono text-[11px] opacity-90">
-											{brandToken.dark}
+											{primaryToken.dark}
 										</p>
 									</div>
 								</div>
@@ -241,7 +241,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 						) : (
 							<div
 								className="relative flex h-64 w-full flex-col justify-between overflow-hidden rounded-2xl border border-edge-hairline/80 p-6 shadow-md"
-								style={{ backgroundColor: activeBrandOklch }}
+								style={{ backgroundColor: activePrimaryOklch }}
 							>
 								{/* 背景柔和微晕 */}
 								<div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-white/20 blur-2xl" />
@@ -257,7 +257,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 									}}
 								>
 									<span className="font-mono text-xs font-semibold tracking-wider uppercase">
-										Violet Iris · Brand Primary
+										Violet Iris · Primary
 									</span>
 									<div className="flex items-center gap-1.5 rounded-full bg-black/20 px-2 py-0.5 text-[11px] backdrop-blur-xs">
 										{effectiveTheme === "light" ? (
@@ -283,7 +283,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 										{activeRgb?.hex.toUpperCase()}
 									</span>
 									<p className="mt-1 font-mono text-xs opacity-90">
-										{activeBrandOklch}
+										{activePrimaryOklch}
 									</p>
 								</div>
 							</div>

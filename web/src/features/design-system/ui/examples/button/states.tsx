@@ -15,7 +15,7 @@ export function ButtonStatesDemo() {
 		<div className="flex flex-wrap items-center justify-center gap-3">
 			<Button
 				type="button"
-				variant="brand"
+				variant="primary"
 				loading={simulating}
 				onClick={handleSimulateLoading}
 			>

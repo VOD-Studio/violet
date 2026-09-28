@@ -3,9 +3,8 @@
  *
  * 消费入口：给灯箱、媒体查看器与内容型图表舞台的根容器加 .dialect-immersive。
  *
- * 舞台恒近黑、明暗主题不变，媒体内容优先；主要动作色从品牌强调收回高对比
- * 中性（常嵌在公开方言内，须覆盖其 --primary 品牌映射）。
- * 品牌色只保留给焦点（--ring）、选中与进度等控件反馈。
+ * 舞台恒近黑、明暗主题不变；主要动作色收回高对比中性。
+ * 主色源只保留给焦点、选中与进度等控件反馈。
  * 行为状态色继承基础层，不被改写。
  */
 .dialect-immersive {
@@ -25,7 +24,7 @@
 	--accent-foreground: var(--foreground);
 	--border: oklch(1 0 0 / 12%);
 	--input: oklch(1 0 0 / 16%);
-	--ring: var(--brand-ring);
+	--ring: var(--primary-base-ring);
 	background: var(--background);
 	color: var(--foreground);
 }

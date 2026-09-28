@@ -14,17 +14,17 @@ export default function ThemingGuide() {
 				<GuideCode
 					language="css"
 					code={
-						'@import "tailwindcss";\n@import "@violet/ui/styles.css";\n\n/* 在包样式之后覆盖品牌色，不覆盖行为状态色 */\n:root { --brand: oklch(0.53 0.205 286); }\n.dark { --brand: oklch(0.72 0.148 286); }'
+						'@import "tailwindcss";\n@import "@violet/ui/styles.css";\n\n/* 在包样式之后覆盖主色源，不覆盖行为状态色 */\n:root { --primary-base: oklch(0.53 0.205 286); }\n.dark { --primary-base: oklch(0.72 0.148 286); }'
 					}
 				/>
 			</GuideSection>
 			<GuideSection title="站点方言">
 				<p>
-					组件库只提供默认值。本站的 <code>dialect-public</code> 将主要动作映射到品牌色，
+					组件库只提供默认值。本站的 <code>dialect-public</code> 将主要动作映射到主色源，
 					<code>dialect-tool</code> 保留中性主要动作；它们是 web
 					应用的样式，不随库发布。消费方可以在自己的 CSS
 					作用域覆盖同名语义变量。覆盖后检查文字对比度，尤其是{" "}
-					<code>--brand-foreground</code>。
+					<code>--primary-base-foreground</code>。
 				</p>
 			</GuideSection>
 		</>

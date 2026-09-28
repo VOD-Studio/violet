@@ -30,7 +30,7 @@ export function CheckboxTriStateDemo() {
 				<div className="flex items-center gap-2.5 border-b border-border/40 pb-3">
 					<Checkbox
 						id="select-all"
-						variant="brand"
+						variant="primary"
 						checked={allSelected ? true : isIndeterminate ? "indeterminate" : false}
 						onCheckedChange={handleSelectAll}
 					/>
@@ -47,7 +47,7 @@ export function CheckboxTriStateDemo() {
 						<div key={item.id} className="flex items-center gap-2.5">
 							<Checkbox
 								id={item.id}
-								variant="brand"
+								variant="primary"
 								checked={selected.includes(item.id)}
 								onCheckedChange={() => handleToggleItem(item.id)}
 							/>

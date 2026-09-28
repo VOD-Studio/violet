@@ -117,7 +117,7 @@
 }
 
 .categoryButton[aria-pressed="true"] {
-	color: var(--brand-wash-foreground);
+	color: var(--primary-base-soft-foreground);
 	font-weight: 600;
 }
 
@@ -126,9 +126,9 @@
 	position: absolute;
 	inset: 0;
 	z-index: 0;
-	border: 1px solid var(--brand);
+	border: 1px solid var(--primary-base);
 	border-radius: 0.5rem;
-	background: var(--brand-wash);
+	background: var(--primary-base-soft);
 }
 
 .categoryContent {
@@ -307,8 +307,8 @@
 
 .option[aria-pressed="true"],
 .badgeOption[aria-pressed="true"] {
-	background: var(--brand-wash);
-	box-shadow: inset 0 0 0 1px var(--brand);
+	background: var(--primary-base-soft);
+	box-shadow: inset 0 0 0 1px var(--primary-base);
 }
 
 .categoryButton:focus-visible,
@@ -382,7 +382,7 @@
 
 .option[aria-pressed="true"] .optionName {
 	/* 只变色不加粗:字重变化会改变文本宽度,造成选中时的布局抖动 */
-	color: var(--brand);
+	color: var(--primary-base);
 }
 
 .check,
@@ -396,8 +396,8 @@
 	place-items: center;
 	padding: 0 0.25rem;
 	border-radius: 50%;
-	background: var(--brand);
-	color: var(--brand-foreground);
+	background: var(--primary-base);
+	color: var(--primary-base-foreground);
 	font-size: 0.75rem;
 	font-variant-numeric: tabular-nums;
 }

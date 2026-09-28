@@ -11,7 +11,7 @@ export default function StylingGuide() {
 			</p>
 			<GuideCode
 				code={
-					'import { Button } from "@violet/ui";\n\n<Button variant="brand" size="sm" className="w-full">保存</Button>'
+					'import { Button } from "@violet/ui";\n\n<Button variant="primary" size="sm" className="w-full">保存</Button>'
 				}
 			/>
 			<p>

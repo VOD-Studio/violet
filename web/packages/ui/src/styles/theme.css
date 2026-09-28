@@ -49,13 +49,13 @@
 	--color-input: var(--input);
 	--color-ring: var(--ring);
 
-	/* 品牌强调层：值由 styles/palettes/ 下的配色预设提供，页面不感知具体 palette */
-	--color-brand: var(--brand);
-	--color-brand-foreground: var(--brand-foreground);
-	--color-brand-hover: var(--brand-hover);
-	--color-brand-wash: var(--brand-wash);
-	--color-brand-wash-foreground: var(--brand-wash-foreground);
-	--color-brand-ring: var(--brand-ring);
+	/* 主色源：值由 palettes/ 提供，语义 primary 可按页面方言映射到这一层 */
+	--color-primary-base: var(--primary-base);
+	--color-primary-base-foreground: var(--primary-base-foreground);
+	--color-primary-base-hover: var(--primary-base-hover);
+	--color-primary-base-soft: var(--primary-base-soft);
+	--color-primary-base-soft-foreground: var(--primary-base-soft-foreground);
+	--color-primary-base-ring: var(--primary-base-ring);
 
 	--radius-lg: var(--radius);
 	--radius-md: calc(var(--radius) - 2px);

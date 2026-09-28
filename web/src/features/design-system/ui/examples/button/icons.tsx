@@ -6,7 +6,7 @@ export function ButtonIconsDemo() {
 	return (
 		<div className="flex flex-wrap items-center justify-center gap-3">
 			<Button leftIcon={<Mail aria-hidden="true" />}>发送邮件</Button>
-			<Button rightIcon={<ArrowRight aria-hidden="true" />} variant="brand">
+			<Button rightIcon={<ArrowRight aria-hidden="true" />} variant="primary">
 				继续阅读
 			</Button>
 			<Button leftIcon={<Sparkles aria-hidden="true" />} variant="soft">

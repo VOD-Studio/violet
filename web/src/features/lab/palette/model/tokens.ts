@@ -1,7 +1,7 @@
 /**
  * 冷香紫罗兰（Violet）色彩体系元数据与色阶定义。
  *
- * 聚合全站品牌、底色画布、表面材质、状态色、图表调色板与霓虹光色定义。
+ * 聚合全站主色、底色画布、表面材质、状态色、图表调色板与霓虹光色定义。
  */
 
 export interface TokenItem {
@@ -34,28 +34,28 @@ export interface TonalRampStep {
 	usage: string;
 }
 
-/** 品牌紫罗兰 6 核心令牌 */
-export const BRAND_TOKENS: TokenItem[] = [
+/** 紫罗兰主色源的 6 个核心 token */
+export const PRIMARY_TOKENS: TokenItem[] = [
 	{
-		variable: "--brand",
-		name: "品牌主色",
-		role: "Primary Brand Voice",
+		variable: "--primary-base",
+		name: "主色",
+		role: "Primary Base",
 		light: "oklch(0.53 0.205 286)",
 		dark: "oklch(0.72 0.148 286)",
 		description:
 			"皇家鸢尾／星空紫水晶。浅色对比度 >5.7:1，暗色精准调校至 0.148 Chroma，100% sRGB 全覆盖无裁剪。",
 	},
 	{
-		variable: "--brand-foreground",
-		name: "品牌色前景",
-		role: "On Brand Surface",
+		variable: "--primary-base-foreground",
+		name: "主色前景",
+		role: "On Primary Surface",
 		light: "oklch(0.99 0 0)",
 		dark: "oklch(0.14 0.02 286)",
 		description:
-			"品牌色之上的前景色，浅色采用纯白瓷高对比，暗色采用深冷墨字，确保 AA/AAA 级易读性。",
+			"主色面上的前景色，浅色采用纯白瓷高对比，暗色采用深冷墨字，确保 AA/AAA 级易读性。",
 	},
 	{
-		variable: "--brand-hover",
+		variable: "--primary-base-hover",
 		name: "悬停高亮",
 		role: "Interactive Hover",
 		light: "oklch(0.47 0.215 286)",
@@ -63,36 +63,35 @@ export const BRAND_TOKENS: TokenItem[] = [
 		description: "浅色下同色相加深稳重，暗色下提亮微透光，提供细腻的微交互动势。",
 	},
 	{
-		variable: "--brand-wash",
-		name: "薄雾表面",
-		role: "Atmospheric Wash",
+		variable: "--primary-base-soft",
+		name: "柔和表面",
+		role: "Primary Soft",
 		light: "oklch(0.965 0.022 286)",
 		dark: "oklch(0.22 0.038 286)",
-		description:
-			"极浅鸢尾冷香透光层，只用于轻量 hover 面与弱强调徽章，拒绝大面积彩色喧宾夺主。",
+		description: "主色的低强调表面，只用于轻量 hover 面与弱强调徽章。",
 		isSurface: true,
 		onSurfaceForeground: {
-			variable: "--brand-wash-foreground",
-			name: "薄雾字色",
+			variable: "--primary-base-soft-foreground",
+			name: "柔和面字色",
 			light: "oklch(0.35 0.14 286)",
 			dark: "oklch(0.9 0.07 286)",
 		},
 	},
 	{
-		variable: "--brand-wash-foreground",
-		name: "薄雾字色",
-		role: "Text on Wash",
+		variable: "--primary-base-soft-foreground",
+		name: "柔和面字色",
+		role: "Text on Primary Soft",
 		light: "oklch(0.35 0.14 286)",
 		dark: "oklch(0.9 0.07 286)",
-		description: "薄雾表面上的伴生文字，浅色为深紫罗兰墨色，暗色为浅丁香紫。",
+		description: "主色柔和面上的伴生文字，浅色为深紫罗兰墨色，暗色为浅丁香紫。",
 	},
 	{
-		variable: "--brand-ring",
+		variable: "--primary-base-ring",
 		name: "焦点外环",
 		role: "Focus Ring",
 		light: "oklch(0.53 0.205 286)",
 		dark: "oklch(0.72 0.148 286)",
-		description: "键盘 Tab 导航与输入框聚焦时的特征光环，与品牌色浑然一体。",
+		description: "键盘 Tab 导航与输入框聚焦时的特征光环，与主色保持一致。",
 	},
 ];
 
@@ -130,15 +129,15 @@ export const TONAL_RAMP: TonalRampStep[] = [
 		step: 400,
 		name: "星空紫水晶",
 		oklch: "oklch(0.72 0.148 286)",
-		role: "Dark Mode Brand",
-		usage: "暗色模式核心品牌强调色（--brand）",
+		role: "Dark Mode Primary",
+		usage: "暗色模式核心主色（--primary-base）",
 	},
 	{
 		step: 500,
 		name: "皇家鸢尾紫",
 		oklch: "oklch(0.53 0.205 286)",
-		role: "Light Mode Brand",
-		usage: "浅色模式核心品牌强调色（--brand）",
+		role: "Light Mode Primary",
+		usage: "浅色模式核心主色（--primary-base）",
 	},
 	{
 		step: 600,
@@ -241,16 +240,16 @@ export const SURFACE_LAYERS: TokenItem[] = [
 		},
 	},
 	{
-		variable: "--brand-wash",
-		name: "薄雾交互表面",
-		role: "Level 3 · Mist Wash",
+		variable: "--primary-base-soft",
+		name: "柔和交互表面",
+		role: "Level 3 · Primary Soft",
 		light: "oklch(0.965 0.022 286)",
 		dark: "oklch(0.22 0.038 286)",
-		description: "带有冷香鸢尾色相的互动受光面，在 hover 与选中时营造轻柔呼吸感。",
+		description: "带有冷香鸢尾色相的互动受光面，在 hover 与选中时提供低强调反馈。",
 		isSurface: true,
 		onSurfaceForeground: {
-			variable: "--brand-wash-foreground",
-			name: "薄雾字色",
+			variable: "--primary-base-soft-foreground",
+			name: "柔和面字色",
 			light: "oklch(0.35 0.14 286)",
 			dark: "oklch(0.9 0.07 286)",
 		},
@@ -280,7 +279,7 @@ export const STATUS_TOKENS: TokenItem[] = [
 		role: "Destructive / Crimson",
 		light: "oklch(0.58 0.22 25)",
 		dark: "oklch(0.68 0.2 25)",
-		description: "警告删除、阻断错误与危险操作。独立色相，不受品牌色覆写影响。",
+		description: "警告删除、阻断错误与危险操作。独立色相，不受主色覆写影响。",
 	},
 	{
 		variable: "--warning",
@@ -308,7 +307,7 @@ export const CHART_TOKENS: TokenItem[] = [
 		role: "Violet Primary",
 		light: "oklch(0.58 0.2 286)",
 		dark: "oklch(0.72 0.18 286)",
-		description: "与品牌色呼应的主序列，负责主要量纲与第一指标。",
+		description: "与主色呼应的主序列，负责主要量纲与第一指标。",
 	},
 	{
 		variable: "--chart-2",

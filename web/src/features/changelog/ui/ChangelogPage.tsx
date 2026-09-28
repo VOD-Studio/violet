@@ -13,7 +13,7 @@ import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";
 const COLLAPSE_ITEMS = 6;
 
 /** 分类标签配色：浅底深字 badge（对齐全站 severity 标签范式），按 label 关键词匹配。
- * 语义归位：破坏→warning、修复→destructive、新增→品牌、优化→success、重构→中性。 */
+ * 语义归位：破坏→warning、修复→destructive、新增→主色、优化→success、重构→中性。 */
 const labelColorRules: { match: string; cls: string }[] = [
 	{ match: "破坏", cls: "bg-warning/10 text-warning" },
 	{ match: "新功能", cls: "bg-primary/10 text-primary" },

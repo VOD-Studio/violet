@@ -140,7 +140,7 @@ API 基础配置见 `src/shared/api/`。
 
 - Tailwind CSS v4，`src/styles.css` 是全局入口；基础语义 token、默认色板和 Tailwind 映射归 `packages/ui/src/styles/`，站点视觉方言、基础行为和转场归 `src/styles/`。
 - 组件专属样式放组件旁 `*.module.css`；运行时 DOM 的规则由所属 feature 持有样式文件。
-- 主题 token 分层：组件库的基础语义与品牌强调层在 `packages/ui/src/styles/`，站点方言在 `src/styles/dialects/`。公开页面主容器挂 `.dialect-public`、后台等工具界面挂 `.dialect-tool`、灯箱等沉浸舞台挂 `.dialect-immersive`；页面消费 semantic token，不直接绑定色值。
+- 主题 token 分层：组件库的基础语义与主色源在 `packages/ui/src/styles/`，站点方言在 `src/styles/dialects/`。公开页面主容器挂 `.dialect-public`、后台等工具界面挂 `.dialect-tool`、灯箱等沉浸舞台挂 `.dialect-immersive`；页面消费 semantic token，不直接绑定色值。
 - 支持 v4 任意值简写（如 `max-w-50`）。
 - 暗色/亮色主题通过 `next-themes` 管理。
 

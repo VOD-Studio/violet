@@ -1,7 +1,7 @@
 import {
-	BRAND_TOKENS,
 	CHART_TOKENS,
 	NEON_TOKENS,
+	PRIMARY_TOKENS,
 	STATUS_TOKENS,
 	SURFACE_LAYERS,
 	TONAL_RAMP,
@@ -10,9 +10,9 @@ import { parseOklch } from "@shared/lib/color-math";
 import { describe, expect, it } from "vitest";
 
 describe("palette tokens", () => {
-	it("全部品牌令牌包含合法 oklch 颜色定义", () => {
-		expect(BRAND_TOKENS.length).toBe(6);
-		for (const token of BRAND_TOKENS) {
+	it("全部主色 token 包含合法 oklch 颜色定义", () => {
+		expect(PRIMARY_TOKENS.length).toBe(6);
+		for (const token of PRIMARY_TOKENS) {
 			expect(parseOklch(token.light)).not.toBeNull();
 			expect(parseOklch(token.dark)).not.toBeNull();
 			expect(token.variable.startsWith("--")).toBe(true);
