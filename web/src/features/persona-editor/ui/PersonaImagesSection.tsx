@@ -23,9 +23,8 @@ import {
 } from "@features/persona-editor/model/document";
 import type { CompleteUploadResult } from "@features/upload/model/types";
 import { Uploader } from "@features/upload/ui/Uploader";
-import { Button } from "@shared/ui/base/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { ImagePreview } from "@shared/ui/image-preview";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
 import { ImagePlus } from "lucide-react";
 import { useState } from "react";
 import { PersonaImageEditor } from "./PersonaImageEditor";

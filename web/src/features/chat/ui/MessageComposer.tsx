@@ -14,7 +14,8 @@ import {
 import { useMyCustomEmojis } from "@features/customemoji/api/queries";
 import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import type { ImageUploadReference } from "@shared/lib/image-upload-task";
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { cn } from "cn";
 import { MessageSquareQuote, Reply, Send, X } from "lucide-react";
 import {

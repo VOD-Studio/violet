@@ -2,11 +2,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { PersonaAdminImage } from "@entities/persona/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Textarea } from "@shared/ui/base/textarea";
+import { Badge, Button, Input, Label, Textarea } from "@violet/ui";
+
 import { ArrowDown, ArrowUp, GripVertical, Trash2 } from "lucide-react";
 
 interface PersonaImageEditorProps {

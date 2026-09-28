@@ -1,5 +1,5 @@
-import { PageShell } from "@shared/ui/page-shell";
 import { Outlet, useRouterState } from "@tanstack/react-router";
+import { PageShell } from "@violet/ui";
 import { findNavItemByPath } from "../model/navigation";
 import { DesignSystemMobileNav } from "./DesignSystemMobileNav";
 import { DesignSystemPagination } from "./DesignSystemPagination";

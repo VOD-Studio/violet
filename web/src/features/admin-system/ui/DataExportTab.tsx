@@ -1,13 +1,15 @@
-import { Button } from "@shared/ui/base/button";
 import {
+	Button,
+	Segmented,
+	type SegmentedItem,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { Switch } from "@shared/ui/base/switch";
-import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
+	Switch,
+} from "@violet/ui";
+
 import { Download, FileDown, Loader2, SquareTerminal, Table2 } from "lucide-react";
 import { useState } from "react";
 import { useExportData } from "../api/mutations";

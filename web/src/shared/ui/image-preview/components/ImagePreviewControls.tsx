@@ -1,3 +1,4 @@
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import {
 	ChevronLeft,
@@ -12,7 +13,6 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
 
 /** 图片查看器工具栏与循环导航的操作契约。 */
 export interface ImagePreviewControlsProps {

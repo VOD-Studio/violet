@@ -4,9 +4,8 @@ import BlogCascade from "@features/posts/ui/BlogCascade";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
-import { PageHeader } from "@shared/ui/page-header";
-import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader, PageShell } from "@violet/ui";
 
 /** 默认每页条数：站点设置未加载/未配置时的兜底 */
 const DEFAULT_PAGE_SIZE = 12;

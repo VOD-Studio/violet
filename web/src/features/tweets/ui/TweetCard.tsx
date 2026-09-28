@@ -17,11 +17,10 @@ import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutatio
 import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
-import { Modal } from "@shared/ui/modal/components/Modal";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { ConfirmDialog, Modal } from "@violet/ui";
 import { AlertCircle, Heart, MessageCircle, Repeat2, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

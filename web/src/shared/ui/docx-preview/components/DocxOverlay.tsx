@@ -2,8 +2,9 @@
  * Docx 加载/错误遮罩
  */
 
+import { Button } from "@violet/ui";
 import { AlertCircle, FileText, RotateCcw } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
+
 import type { DocxLoadStatus } from "../types/docx-preview-types";
 
 interface DocxOverlayProps {

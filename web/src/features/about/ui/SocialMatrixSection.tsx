@@ -1,4 +1,4 @@
-import { GithubIcon } from "@shared/ui/icons";
+import { GithubIcon } from "@violet/ui";
 import { ArrowUpRight, AtSign, Mail, Rss, Share2, Tv } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 

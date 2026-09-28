@@ -1,4 +1,4 @@
-import { GithubIcon } from "@shared/ui/icons";
+import { GithubIcon } from "@violet/ui";
 import { ArrowUpRight, GitFork, Star } from "lucide-react";
 import styles from "./RepositoryCard.module.css";
 import type { GitHubEmbedConfig } from "./types";

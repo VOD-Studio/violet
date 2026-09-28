@@ -5,8 +5,8 @@ import { CreateBotDialog } from "@features/admin-bots/ui/CreateBotDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
-import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { Plus } from "lucide-react";
 import * as React from "react";
 

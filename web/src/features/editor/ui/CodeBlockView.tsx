@@ -10,19 +10,20 @@ import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run"
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
-import type { createLowlight } from "lowlight";
-import { Play } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/shared/ui/base/button";
 // isTerminalStatus 是值（函数），与上面同属值导入
 import {
+	Button,
 	Select,
 	SelectContent,
 	SelectGroup,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/shared/ui/base/select";
+} from "@violet/ui";
+import type { createLowlight } from "lowlight";
+import { Play } from "lucide-react";
+import { useState } from "react";
+
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { ensureLanguageRegistered } from "../extensions";
 

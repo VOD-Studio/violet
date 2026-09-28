@@ -1,6 +1,4 @@
 import type { EmotionDef } from "@violet/mascot";
-import { Grid2X2 } from "lucide-react";
-import { useState } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -8,10 +6,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@/shared/ui/base/dialog";
-import { OverlayScroll } from "@/shared/ui/overlay-scroll";
-import { SearchInput } from "@/shared/ui/search-input";
-import { Segmented } from "@/shared/ui/segmented";
+	OverlayScroll,
+	SearchInput,
+	Segmented,
+} from "@violet/ui";
+import { Grid2X2 } from "lucide-react";
+import { useState } from "react";
+
 import type { MascotGroupFilter } from "../hooks/useMascotExhibit";
 import { EmotionGridItem } from "./EmotionGridItem";
 

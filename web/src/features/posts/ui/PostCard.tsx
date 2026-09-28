@@ -1,10 +1,10 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import { formatRelativeTime } from "@shared/lib/date";
 import { AvatarGroup } from "@shared/ui/avatar-group";
-import { Badge } from "@shared/ui/base/badge";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
+import { Badge } from "@violet/ui";
 import { ImageOff, Star } from "lucide-react";
 import { useViewTransitionStore } from "@/shared/lib/view-transition-store";
 

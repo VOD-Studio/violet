@@ -11,8 +11,8 @@ import {
 	validatePersonaDocument,
 } from "@features/persona-editor/model/document";
 import { ApiError } from "@shared/api/error";
-import { Button } from "@shared/ui/base/button";
 import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

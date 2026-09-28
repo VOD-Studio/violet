@@ -1,7 +1,7 @@
 import { withCrop } from "@shared/lib/crop-url";
-import { Button } from "@shared/ui/base/button";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
-import { Modal } from "@shared/ui/modal";
+import { Button, Modal } from "@violet/ui";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";

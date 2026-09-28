@@ -1,6 +1,7 @@
+import { OverlayScroll } from "@violet/ui";
 import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { OverlayScroll } from "@/shared/ui/overlay-scroll";
+
 import {
 	COLUMNS_CONTROL_KEY,
 	type DataTableColumn,

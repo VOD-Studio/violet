@@ -21,17 +21,17 @@ import {
 import { SubscriptionFormDialog } from "@features/admin-subscriptions/ui/SubscriptionFormDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
+import { createFileRoute } from "@tanstack/react-router";
 import {
+	Badge,
+	Button,
+	ConfirmDialog,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { createFileRoute } from "@tanstack/react-router";
+} from "@violet/ui";
 import { AlertTriangle, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
 import * as React from "react";
 

@@ -8,13 +8,14 @@
  * - 加载/错误状态 + 重试
  */
 
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { copyText } from "@/shared/lib/clipboard";
-import { Button } from "@/shared/ui/base/button";
+
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useMarkdown } from "../hooks/useMarkdown";
 import type { MarkdownPreviewProps } from "../types/markdown-preview-types";

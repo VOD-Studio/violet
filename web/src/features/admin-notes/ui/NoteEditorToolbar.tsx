@@ -1,8 +1,7 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { Badge, Button, ConfirmDialog } from "@violet/ui";
+
 import { ArrowLeft, ExternalLink, Loader2, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 

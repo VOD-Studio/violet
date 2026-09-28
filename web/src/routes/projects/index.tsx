@@ -2,11 +2,9 @@ import { projectKeys } from "@features/projects/api/keys";
 import { fetchProjects, useProjects } from "@features/projects/api/queries";
 import { ProjectCard } from "@features/projects/ui/ProjectCard";
 import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
-import Empty from "@shared/ui/empty";
-import { PageHeader } from "@shared/ui/page-header";
-import { PageShell } from "@shared/ui/page-shell";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
+import { Empty, PageHeader, PageShell } from "@violet/ui";
 
 const ProjectsPage = () => {
 	// 列表数据由 loader 预取并脱水合，这里复用缓存

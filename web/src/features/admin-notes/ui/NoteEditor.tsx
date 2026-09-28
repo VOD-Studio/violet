@@ -15,9 +15,8 @@ import {
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { RichTextEditor } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@shared/ui/base/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
 import { useNavigate } from "@tanstack/react-router";
+import { Input, Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
 import { cn } from "cn";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

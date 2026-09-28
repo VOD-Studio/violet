@@ -2,8 +2,8 @@ import { CustomEmojiContextMenu } from "@features/customemoji/ui/CustomEmojiCont
 import { useSettings } from "@features/settings/api/queries";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { clientQueryClient } from "@shared/api/query-client";
-import { Toaster } from "@shared/ui/base/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@violet/ui";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 

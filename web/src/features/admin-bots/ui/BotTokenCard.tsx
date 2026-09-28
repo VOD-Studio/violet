@@ -1,5 +1,6 @@
 import { copyText } from "@shared/lib/clipboard";
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { Check, Copy } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";

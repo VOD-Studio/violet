@@ -9,9 +9,8 @@
 
 import { useMe } from "@features/auth/api/queries";
 import { useTimeline, useTopicTimeline } from "@features/tweets/api/queries";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
+
 import { Loader2 } from "lucide-react";
 import TweetCard from "./TweetCard";
 import { TweetComposer } from "./TweetComposer";

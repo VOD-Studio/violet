@@ -1,5 +1,6 @@
 import type { EmotionDef } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
+import { OverlayScroll } from "@violet/ui";
 import { cn } from "cn";
 import {
 	Hand,
@@ -21,7 +22,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 
 interface StageAction {
 	label: string;

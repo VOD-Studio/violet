@@ -8,16 +8,17 @@
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import { formatRelativeTime } from "@shared/lib/date";
-import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
+import { useNavigate } from "@tanstack/react-router";
 import {
+	Badge,
+	BadgeAnchor,
+	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@shared/ui/base/dropdown-menu";
-import { useNavigate } from "@tanstack/react-router";
+} from "@violet/ui";
 import { cn } from "cn";
 import {
 	Bell,

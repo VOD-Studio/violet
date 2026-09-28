@@ -3,10 +3,8 @@ import { AvatarPicker } from "@entities/media/ui/AvatarPicker";
 import { useCreateBot } from "@features/admin-bots/api/queries";
 import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
 import type { BotDTO } from "@features/admin-bots/model/types";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Modal } from "@shared/ui/modal";
+import { Button, Input, Label, Modal } from "@violet/ui";
+
 import * as React from "react";
 import { toast } from "sonner";
 

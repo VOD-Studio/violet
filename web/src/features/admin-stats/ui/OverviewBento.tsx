@@ -1,4 +1,5 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
+
 import { useDashboardStats, useViewTrends } from "../api/queries";
 import { ActivityTicker } from "./ActivityTicker";
 import { MilestoneTile } from "./MilestoneTile";

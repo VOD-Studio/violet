@@ -1,14 +1,11 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { useUpdateMediaMetadata } from "@features/admin-media/api/mutations";
+import { Button, Input, Label, Modal } from "@violet/ui";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
-import { Button } from "@/shared/ui/base/button";
-import { Input } from "@/shared/ui/base/input";
-import { Label } from "@/shared/ui/base/label";
-import { Modal } from "@/shared/ui/modal";
 
 interface EditMediaDialogProps {
 	open: boolean;

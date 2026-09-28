@@ -1,12 +1,6 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@violet/ui";
 import { Clock } from "lucide-react";
 
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/shared/ui/base/select";
 import type { TimePickerProps } from "../types/date-time-picker-types";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));

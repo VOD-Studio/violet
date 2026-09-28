@@ -1,4 +1,5 @@
-import { Label } from "@/shared/ui/base/label";
+import { Label } from "@violet/ui";
+
 import type { DateTimeRangePickerFieldProps } from "../types/date-time-picker-types";
 import { DateTimeRangePicker } from "./DateTimeRangePicker";
 

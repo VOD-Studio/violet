@@ -1,11 +1,11 @@
-import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { ArrowRight, Download, Mail, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
 
-const BASIC_CODE = `import { Button } from "@shared/ui/base/button";
+const BASIC_CODE = `import { Button } from "@violet/ui";;
 import { useState } from "react";
 
 function Example() {
@@ -44,7 +44,7 @@ const ICON_CODE = `import { ArrowRight, Download, Mail, Sparkles } from "lucide-
 <Button leftIcon={<Sparkles />} variant="soft">灵感启发</Button>
 <Button leftIcon={<Download />} rightIcon={<ArrowRight />} variant="outline">导出数据</Button>`;
 
-const STATE_CODE = `import { Button } from "@shared/ui/base/button";
+const STATE_CODE = `import { Button } from "@violet/ui";;
 import { Mail } from "lucide-react";
 
 {/* 1. 内置平滑加载（正文在场留存，指示器自适应平滑展开） */}
@@ -59,7 +59,7 @@ import { Mail } from "lucide-react";
 {/* 4. 原生不可用状态 */}
 <Button disabled>已归档</Button>`;
 
-const LINK_CODE = `import { Button } from "@shared/ui/base/button";
+const LINK_CODE = `import { Button } from "@violet/ui";;
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 

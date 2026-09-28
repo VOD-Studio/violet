@@ -1,4 +1,5 @@
-import { Segmented } from "@shared/ui/segmented";
+import { Segmented } from "@violet/ui";
+
 import { cn } from "cn";
 
 const LOCALE_LABELS: Readonly<Record<string, string>> = {

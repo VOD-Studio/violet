@@ -1,4 +1,4 @@
-import Empty from "@shared/ui/empty";
+import { Empty } from "@violet/ui";
 
 /**
  * MusicPlayerEmpty - 无播放列表占位

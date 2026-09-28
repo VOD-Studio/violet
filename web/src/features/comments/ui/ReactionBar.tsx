@@ -8,8 +8,8 @@ import type { Emoji } from "@entities/emoji/model/types";
 import { useAddReaction, useRemoveReaction } from "@features/comments/api/mutations";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { isImageURL } from "@shared/lib/url";
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+
 import { Loader2, Smile } from "lucide-react";
 import { useMemo } from "react";
 import type { Reaction } from "../model/types";

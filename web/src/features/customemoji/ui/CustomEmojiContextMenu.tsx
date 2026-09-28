@@ -3,12 +3,8 @@ import {
 	useFavoriteCustomEmoji,
 	useUnfavoriteCustomEmoji,
 } from "@features/customemoji/api/queries";
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuTrigger,
-} from "@shared/ui/base/context-menu";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@violet/ui";
+
 import { BookmarkMinus, BookmarkPlus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";

@@ -1,9 +1,8 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { useTags } from "@features/tags/api/queries";
 import { formatDate } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
+import { Badge, Input, Label } from "@violet/ui";
+
 import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon, X } from "lucide-react";
 import { useMemo, useState } from "react";
 

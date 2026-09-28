@@ -1,7 +1,6 @@
 import { SeriesShelf } from "@features/series/ui/SeriesShelf";
-import { PageHeader } from "@shared/ui/page-header";
-import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader, PageShell } from "@violet/ui";
 
 function SeriesIndexPage() {
 	return (

@@ -2,17 +2,18 @@ import type { Emoji } from "@entities/emoji/model/types";
 import { type EmojiEditForm, emojiEditSchema } from "@features/admin-emojis/model/schema";
 import type { UpdateEmojiRequest } from "@features/admin-emojis/model/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import {
+	Button,
+	Input,
+	Label,
+	Modal,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { Modal } from "@shared/ui/modal";
+} from "@violet/ui";
+
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";

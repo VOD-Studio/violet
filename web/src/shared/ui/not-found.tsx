@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import DecryptedText from "@vendor/react-bits/DecryptedText";
+import { DecryptedText } from "@violet/ui";
+
 import { cn } from "cn";
 import { ArrowLeft } from "lucide-react";
 

@@ -16,17 +16,22 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useProjects, useProjectsPaged } from "@features/projects/api/queries";
 
 import type { Project } from "@features/projects/model/types";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+	Badge,
+	Button,
+	ConfirmDialog,
+	Input,
+	Modal,
+	Textarea,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { Code, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Textarea } from "@/shared/ui/base/textarea";
 
 /** 创建/编辑表单初值 */
 const EMPTY: CreateProject = {

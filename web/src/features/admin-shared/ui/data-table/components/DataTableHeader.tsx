@@ -1,8 +1,5 @@
-import { cn } from "cn";
-import { Columns3, RotateCcw } from "lucide-react";
-import type { ReactNode } from "react";
-import { Button } from "@/shared/ui/base/button";
 import {
+	Button,
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
@@ -10,8 +7,14 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/shared/ui/base/dropdown-menu";
-import { TableHead, TableHeader, TableRow } from "@/shared/ui/base/table";
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@violet/ui";
+import { cn } from "cn";
+import { Columns3, RotateCcw } from "lucide-react";
+import type { ReactNode } from "react";
+
 import type { DataTableColumn, DataTableSort } from "../types/data-table-types";
 import {
 	COLUMNS_CONTROL_KEY,

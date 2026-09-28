@@ -18,21 +18,28 @@ import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Checkbox } from "@shared/ui/base/checkbox";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+	Badge,
+	Button,
+	Checkbox,
+	ConfirmDialog,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@shared/ui/base/dropdown-menu";
-import { Input } from "@shared/ui/base/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { SearchInput } from "@shared/ui/search-input";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+	Input,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	SearchInput,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@violet/ui";
 import {
 	Archive,
 	ChevronDown,
@@ -51,13 +58,6 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Tag as TagEntity } from "@/entities/tag/model/types";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/shared/ui/base/select";
 
 /**
  * /admin/posts - 文章管理列表页

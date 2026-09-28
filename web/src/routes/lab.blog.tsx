@@ -10,9 +10,8 @@ import { WovenBento } from "@features/lab/blog/ui/WovenBento";
 import { LabHeader } from "@features/lab/ui/LabHeader";
 import { usePosts } from "@features/posts/api/queries";
 import type { Post } from "@features/posts/model/types";
-import Empty from "@shared/ui/empty";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Empty, Segmented } from "@violet/ui";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";

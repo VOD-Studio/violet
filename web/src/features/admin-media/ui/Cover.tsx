@@ -10,8 +10,8 @@
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import { CropSelectDialog } from "@features/upload/ui/CropSelectDialog";
-import { Button } from "@shared/ui/base/button";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
+import { Button } from "@violet/ui";
 import { ImagePlus } from "lucide-react";
 import { useState } from "react";
 

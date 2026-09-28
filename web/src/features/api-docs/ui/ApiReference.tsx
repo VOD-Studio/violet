@@ -1,8 +1,8 @@
+import { OverlayScroll } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 
 import { useOpenApiSpec } from "../api/useOpenApiSpec";
 import { buildDocsModel, operationMatches } from "../lib/build-docs-model";

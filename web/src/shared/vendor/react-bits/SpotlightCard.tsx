@@ -1,6 +1,6 @@
-import { cn } from "cn";
 import { useSpotlight } from "@shared/hooks/use-spotlight";
-import * as React from "react";
+import { cn } from "cn";
+import type * as React from "react";
 
 export interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
 	/** 聚光半径（px） */

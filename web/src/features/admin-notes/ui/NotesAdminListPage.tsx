@@ -10,17 +10,21 @@ import {
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
 import {
+	Badge,
+	Button,
+	ConfirmDialog,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

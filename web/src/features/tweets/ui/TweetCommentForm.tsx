@@ -13,8 +13,8 @@
 import type { TweetComment } from "@entities/tweet/model/types";
 import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { ApiError } from "@shared/api/error";
-import { Button } from "@shared/ui/base/button";
 import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
 import { Loader2, LogIn, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

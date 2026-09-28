@@ -1,12 +1,10 @@
 import { usePublishedNote } from "@entities/note/api/queries";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { formatDate } from "@shared/lib/date";
-import Empty from "@shared/ui/empty";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import { PageShell } from "@shared/ui/page-shell";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
+import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { ArrowLeft, Calendar, CheckCircle2, Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

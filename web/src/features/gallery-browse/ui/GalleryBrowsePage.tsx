@@ -2,13 +2,9 @@ import { usePublishedGalleryFeed } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGallery } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { PageHeader } from "@shared/ui/page-header";
-import { PageShell } from "@shared/ui/page-shell";
 import { PhotoStack } from "@shared/ui/photo-stack";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
+import { Button, Empty, PageHeader, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { Loader2 } from "lucide-react";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;

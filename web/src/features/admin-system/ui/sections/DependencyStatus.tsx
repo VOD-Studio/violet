@@ -1,4 +1,5 @@
-import { Badge } from "@shared/ui/base/badge";
+import { Badge } from "@violet/ui";
+
 import type { SystemDepStatusDTO } from "../../model/types";
 import { formatLatency } from "../format";
 

@@ -1,6 +1,6 @@
 import type { SeriesDetail } from "@features/series/model/types";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
 import { Link } from "@tanstack/react-router";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
 import { BookOpen } from "lucide-react";
 import { useState } from "react";
 

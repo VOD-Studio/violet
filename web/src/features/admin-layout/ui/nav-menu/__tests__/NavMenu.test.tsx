@@ -12,8 +12,8 @@
  * Link 退化为普通 <a> 以脱离 RouterProvider 上下文。
  */
 
-import { TooltipProvider } from "@shared/ui/base/tooltip";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { TooltipProvider } from "@violet/ui";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // 受控的当前 pathname，各用例通过 setPath 设置。

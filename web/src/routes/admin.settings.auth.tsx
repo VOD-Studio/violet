@@ -7,8 +7,8 @@ import {
 import { OAuthProviderCard } from "@features/admin-settings/ui/OAuthProviderCard";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
-import { Input } from "@shared/ui/base/input";
 import { createFileRoute } from "@tanstack/react-router";
+import { Input } from "@violet/ui";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 

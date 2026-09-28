@@ -20,6 +20,7 @@
 
 import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { Button, Checkbox, Input, Modal, PromptDialog } from "@violet/ui";
 import { cn } from "cn";
 import { Code2, Download, FileUp, Globe } from "lucide-react";
 import {
@@ -32,11 +33,7 @@ import {
 	useState,
 } from "react";
 import { urlErrorMessage, validateUrl } from "@/shared/lib/url";
-import { Button } from "@/shared/ui/base/button";
-import { Checkbox } from "@/shared/ui/base/checkbox";
-import { Input } from "@/shared/ui/base/input";
-import { Modal } from "@/shared/ui/modal/components/Modal";
-import { PromptDialog } from "@/shared/ui/prompt-dialog";
+
 import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
 import { useEditorUpload } from "./hooks/useEditorUpload";
 import { useWordCount } from "./hooks/useWordCount";

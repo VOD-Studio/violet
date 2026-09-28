@@ -3,8 +3,8 @@ import type { GithubSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
-import { Input } from "@shared/ui/base/input";
 import { createFileRoute } from "@tanstack/react-router";
+import { Input } from "@violet/ui";
 
 /** GitHub 子页表单值（仅本页字段） */
 interface GithubForm {

@@ -3,9 +3,8 @@ import { cleanItem, groupItems } from "@features/changelog/model/clean-item";
 import { VersionNav, versionAnchorId } from "@features/changelog/ui/VersionNav";
 import { useReleases } from "@shared/api/releases";
 import { formatDate } from "@shared/lib/date";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { PageHeader } from "@shared/ui/page-header";
+import { Button, Empty, PageHeader } from "@violet/ui";
+
 import { RefreshCw, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";

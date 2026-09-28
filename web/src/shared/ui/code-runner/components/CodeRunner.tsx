@@ -11,9 +11,10 @@
  * Tailwind v4 canonical 类（4px 倍数裸数字）。
  */
 
+import { Button } from "@violet/ui";
 import { ChevronDown, ChevronUp, Play, Terminal as TerminalIcon } from "lucide-react";
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
-import { Button } from "@/shared/ui/base/button";
+
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { useCodeRun } from "../hooks/useCodeRun";
 import { useVimPreference } from "../hooks/useVimPreference";

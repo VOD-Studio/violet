@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
 
 import styles from "./AboutPage.module.css";
 

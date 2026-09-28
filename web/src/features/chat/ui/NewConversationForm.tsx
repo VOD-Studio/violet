@@ -1,4 +1,5 @@
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { cn } from "cn";
 import { Check, LoaderCircle, Search, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";

@@ -14,9 +14,9 @@
 import { useMe } from "@features/auth/api/queries";
 import { fetchComments } from "@features/comments/api/queries";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
-import { Button } from "@shared/ui/base/button";
 import { CommentList, CommentSection as CommentSectionShell } from "@shared/ui/comment-section";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { Button } from "@violet/ui";
 import { LogIn } from "lucide-react";
 import { useMemo } from "react";
 import { CommentForm } from "./CommentForm";

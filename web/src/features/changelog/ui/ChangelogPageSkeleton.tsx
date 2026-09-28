@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
 
 /**
  * ChangelogPageSkeleton - 更新日志页骨架屏

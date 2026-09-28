@@ -1,10 +1,8 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import { createPersonaFact, MAX_PERSONA_FACTS } from "@features/persona-editor/model/document";
 import type { PersonaDraftFact } from "@features/persona-editor/model/types";
-import { Button } from "@shared/ui/base/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
-import { Input } from "@shared/ui/base/input";
-import { Textarea } from "@shared/ui/base/textarea";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } from "@violet/ui";
+
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 interface PersonaFactsSectionProps {

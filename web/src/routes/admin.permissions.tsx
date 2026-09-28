@@ -5,11 +5,16 @@ import { CreatePermissionDialog } from "@features/admin-permissions/ui/CreatePer
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+	Badge,
+	Button,
+	ConfirmDialog,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
 import { ChevronRight, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";

@@ -4,9 +4,8 @@ import type { ProfileSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
-import { Input } from "@shared/ui/base/input";
-import { Textarea } from "@shared/ui/base/textarea";
 import { createFileRoute } from "@tanstack/react-router";
+import { Input, Textarea } from "@violet/ui";
 
 // 「关于」子页表单值：A 线区块消费字段（头像/标语/名片/技能/社交）+ bio。
 interface ProfileForm {

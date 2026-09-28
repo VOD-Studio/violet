@@ -13,10 +13,8 @@ import { useUploadEmoji } from "@features/emojis/api/mutations";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { useSessionStore } from "@shared/api/session";
 import { isImageURL } from "@shared/lib/url";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
-import { ScrollArea } from "@shared/ui/scroll-area";
+import { Button, Input, Popover, PopoverContent, PopoverTrigger, ScrollArea } from "@violet/ui";
+
 import { cn } from "cn";
 import { ImagePlus, Loader2, Smile } from "lucide-react";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";

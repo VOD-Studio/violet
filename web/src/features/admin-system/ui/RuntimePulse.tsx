@@ -1,4 +1,5 @@
-import { type ChartConfig, ChartContainer } from "@shared/ui/base/chart";
+import { type ChartConfig, ChartContainer } from "@violet/ui";
+
 import { useMemo } from "react";
 import { Line, LineChart } from "recharts";
 import type { SystemHistoryDTO, SystemRuntimeInfoDTO, SystemSamplePointDTO } from "../model/types";

@@ -1,4 +1,4 @@
-import { Skeleton } from "@/shared/ui/base/skeleton";
+import { Skeleton } from "@violet/ui";
 
 interface MediaGridSkeletonProps {
 	/** 骨架卡片数量，默认 10 */

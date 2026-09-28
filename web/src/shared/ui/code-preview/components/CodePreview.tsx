@@ -9,11 +9,12 @@
  * - 加载/错误状态 + 重试
  */
 
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/shared/lib/clipboard";
-import { Button } from "@/shared/ui/base/button";
+
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useCodeHighlight } from "../hooks/useCodeHighlight";
 import type { CodePreviewProps } from "../types/code-preview-types";

@@ -1,11 +1,11 @@
-import { Checkbox } from "@shared/ui/base/checkbox";
-import { Label } from "@shared/ui/base/label";
+import { Checkbox, Label } from "@violet/ui";
+
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
 
-const BASIC_CODE = `import { Checkbox } from "@shared/ui/base/checkbox";
-import { Label } from "@shared/ui/base/label";
+const BASIC_CODE = `import { Checkbox } from "@violet/ui";;
+import { Label } from "@violet/ui";;
 import { useState } from "react";
 
 function Example() {
@@ -24,8 +24,8 @@ function Example() {
   );
 }`;
 
-const TRI_STATE_CODE = `import { Checkbox } from "@shared/ui/base/checkbox";
-import { Label } from "@shared/ui/base/label";
+const TRI_STATE_CODE = `import { Checkbox } from "@violet/ui";;
+import { Label } from "@violet/ui";;
 import { useState } from "react";
 
 const ITEMS = [

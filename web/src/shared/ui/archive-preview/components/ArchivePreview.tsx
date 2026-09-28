@@ -9,10 +9,11 @@
  * - 下载原始压缩包
  */
 
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { AlertCircle, Download, FileArchive, RotateCcw } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/shared/ui/base/button";
+
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
 import { useArchive } from "../hooks/useArchive";
 import type { ArchivePreviewProps } from "../types/archive-preview-types";

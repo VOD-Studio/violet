@@ -12,8 +12,10 @@
  *
  * 定位与开闭由 DiagramPopoverView 的 Portal 承载，本组件只管面板本身。
  */
+
+import { Button } from "@violet/ui";
 import { Trash2 } from "lucide-react";
-import { Button } from "@/shared/ui/base/button";
+
 import type { MermaidRenderState } from "../hooks/useMermaidSvg";
 
 export interface DiagramEditPanelProps {

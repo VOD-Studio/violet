@@ -1,5 +1,5 @@
 import type { UserDTO } from "@entities/user/model/types";
-import { GithubIcon } from "@shared/ui/icons/github";
+import { GithubIcon } from "@violet/ui";
 import { CheckCircle2, KeyRound, Link2Off, Mail } from "lucide-react";
 import { SectionCard } from "./SectionCard";
 

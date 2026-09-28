@@ -6,6 +6,7 @@
  * 鼠标移出控制栏 3 秒后自动隐藏（播放中）。
  */
 
+import { Button } from "@violet/ui";
 import {
 	Maximize,
 	Minimize,
@@ -17,7 +18,7 @@ import {
 	VolumeX,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui/base/button";
+
 import { PLAYBACK_RATES, type VideoPlayerState } from "../types/video-preview-types";
 import { formatTime } from "../utils/format";
 

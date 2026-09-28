@@ -1,12 +1,11 @@
-import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
 import { Link } from "@tanstack/react-router";
+import { Badge, BadgeAnchor, Button } from "@violet/ui";
 import { Bell, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
 
-const VARIANT_CODE = `import { Badge } from "@shared/ui/base/badge";
+const VARIANT_CODE = `import { Badge } from "@violet/ui";;
 import { Link } from "@tanstack/react-router";
 
 <Badge>默认</Badge>
@@ -18,8 +17,8 @@ import { Link } from "@tanstack/react-router";
   <Badge variant="link">查看决策表</Badge>
 </Link>`;
 
-const COUNTER_CODE = `import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
+const COUNTER_CODE = `import { Badge, BadgeAnchor } from "@violet/ui";;
+import { Button } from "@violet/ui";;
 import { Bell } from "lucide-react";
 import { useState } from "react";
 
@@ -56,8 +55,8 @@ function NotificationCount() {
   );
 }`;
 
-const DOT_CODE = `import { Badge, BadgeAnchor } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
+const DOT_CODE = `import { Badge, BadgeAnchor } from "@violet/ui";;
+import { Button } from "@violet/ui";;
 import { MessageCircle } from "lucide-react";
 
 <BadgeAnchor placement="edge" badge={<Badge size="dot" variant="default" />}>

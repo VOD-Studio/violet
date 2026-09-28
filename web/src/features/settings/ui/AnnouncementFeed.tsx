@@ -1,7 +1,7 @@
 import { AnnouncementSkeleton } from "@features/lab/announcement/ui/AnnouncementSkeleton";
 import { EditorialIndex } from "@features/lab/announcement/ui/EditorialIndex";
 import { useAnnouncements } from "@features/settings/api/queries";
-import Empty from "@shared/ui/empty";
+import { Empty } from "@violet/ui";
 
 /**
  * AnnouncementFeed - 首页公告区（编辑索引方向）

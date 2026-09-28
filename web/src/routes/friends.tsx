@@ -5,11 +5,8 @@ import { useFriendLinks } from "@features/friend-links/api/queries";
 import { ApplyDialog } from "@features/friend-links/ui/ApplyDialog";
 import { FriendsSkeleton } from "@features/friend-links/ui/FriendsSkeleton";
 import { PostcardWall } from "@features/friend-links/ui/PostcardWall";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { PageHeader } from "@shared/ui/page-header";
-import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
+import { Button, Empty, PageHeader, PageShell } from "@violet/ui";
 import { ArrowRight, Plus } from "lucide-react";
 import { useState } from "react";
 

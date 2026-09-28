@@ -1,10 +1,6 @@
 import { formatDateTime, formatTime } from "@shared/lib/date";
-import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@shared/ui/base/chart";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@violet/ui";
+
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import type { SystemHistoryDTO, SystemSamplePointDTO, SystemSnapshotDTO } from "../model/types";
 import { formatPercent, formatRate } from "./format";

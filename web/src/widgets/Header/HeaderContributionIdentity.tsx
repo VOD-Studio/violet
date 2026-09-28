@@ -1,8 +1,8 @@
 import type { PublicPersona } from "@entities/persona/model/types";
 import type { SiteSettings } from "@features/settings/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
-import { GithubIcon } from "@shared/ui/icons";
 import { Link } from "@tanstack/react-router";
+import { GithubIcon } from "@violet/ui";
 import { ArrowUpRight, Mail, Sparkles } from "lucide-react";
 
 interface HeaderContributionIdentityProps {

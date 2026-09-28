@@ -1,8 +1,5 @@
 import type { PersonaDraftLocalization } from "@features/persona-editor/model/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
-import { Textarea } from "@shared/ui/base/textarea";
+import { Card, CardContent, CardHeader, CardTitle, Input, Label, Textarea } from "@violet/ui";
 
 interface PersonaIdentitySectionProps {
 	localization: PersonaDraftLocalization;

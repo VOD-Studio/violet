@@ -10,13 +10,18 @@ import { useCreatePersona, useDeletePersona } from "@features/persona-editor/api
 import { useAdminPersonas } from "@features/persona-editor/api/queries";
 import { ApiError } from "@shared/api/error";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { localeLabel } from "@shared/ui/locale-switcher";
-import { SearchInput } from "@shared/ui/search-input";
 import { useNavigate } from "@tanstack/react-router";
+import {
+	Badge,
+	Button,
+	ConfirmDialog,
+	SearchInput,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

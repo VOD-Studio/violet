@@ -1,4 +1,5 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { ShimmerSkeleton } from "@violet/ui";
+
 import { cn } from "cn";
 
 export interface ProjectsSkeletonProps {

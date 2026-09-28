@@ -1,6 +1,7 @@
 import { BlogSkeleton } from "@features/lab/blog/ui/BlogSkeleton";
 import { WovenBento } from "@features/lab/blog/ui/WovenBento";
-import Empty from "@shared/ui/empty";
+import { Empty } from "@violet/ui";
+
 import { usePosts } from "../api/queries";
 import type { PostListQuery } from "../model/types";
 

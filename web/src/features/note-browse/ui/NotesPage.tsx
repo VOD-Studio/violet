@@ -1,11 +1,8 @@
 import { usePublishedNotesFeed } from "@entities/note/api/queries";
 import type { PublicNote } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { PageShell } from "@shared/ui/page-shell";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
+import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { ArrowRight, Calendar, Filter, Loader2 } from "lucide-react";
 import { useMemo } from "react";
 import { noteExcerpt, notePlainLength, noteTitle } from "../model/display";

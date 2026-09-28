@@ -7,18 +7,18 @@ import {
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
+import { createFileRoute } from "@tanstack/react-router";
 import {
+	Badge,
+	Button,
+	Input,
+	Modal,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@shared/ui/base/select";
-import { Modal } from "@shared/ui/modal";
-import { createFileRoute } from "@tanstack/react-router";
+} from "@violet/ui";
 import { Eye } from "lucide-react";
 import { useState } from "react";
 

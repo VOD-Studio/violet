@@ -2,8 +2,8 @@ import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
 import { useSearchPosts } from "@features/posts/api/queries";
 import { NAV_ITEMS, type NavItem } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
-import { CommandList } from "@shared/ui/command";
 import { useNavigate } from "@tanstack/react-router";
+import { CommandList } from "@violet/ui";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCommandUIStore } from "./command-ui-store";

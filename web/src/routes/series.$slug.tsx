@@ -1,10 +1,7 @@
 import { fetchSeriesBySlug, seriesKeys, useSeriesDetail } from "@features/series/api";
 import { SeriesDetailBody } from "@features/series/ui/SeriesDetailBody";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { PageShell } from "@shared/ui/page-shell";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 
 function SeriesDetailPage() {
 	const { slug } = Route.useParams();

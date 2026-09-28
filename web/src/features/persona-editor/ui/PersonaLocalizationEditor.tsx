@@ -1,8 +1,8 @@
 import { RichTextEditor } from "@features/editor";
 import type { PersonaDraftLocalization } from "@features/persona-editor/model/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
 import { PersonaFactsSection } from "./PersonaFactsSection";
 import { PersonaIdentitySection } from "./PersonaIdentitySection";
 import { PersonaImagesSection } from "./PersonaImagesSection";

@@ -1,9 +1,6 @@
 import { formatDateTime } from "@shared/lib/date";
-import { Button } from "@shared/ui/base/button";
-import { Skeleton } from "@shared/ui/base/skeleton";
-import { Switch } from "@shared/ui/base/switch";
-import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button, Segmented, type SegmentedItem, Skeleton, Switch } from "@violet/ui";
 import { Activity, Pause, Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { systemKeys } from "../api/keys";

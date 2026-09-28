@@ -2,10 +2,10 @@ import { mediaCatalogKeys } from "@entities/media/api/keys";
 import type { MediaFile } from "@entities/media/model/types";
 import { useUploadThumbnail } from "@features/upload/api/mutations";
 import { useQueryClient } from "@tanstack/react-query";
+import { Modal } from "@violet/ui";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
 import { FramePicker } from "@/shared/ui/frame-picker";
-import { Modal } from "@/shared/ui/modal";
 
 interface MediaCoverDialogProps {
 	open: boolean;

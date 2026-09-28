@@ -29,24 +29,25 @@ import { cropImageToBlob } from "@features/upload/lib/crop-image";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { withCrop } from "@shared/lib/crop-url";
 import { formatDate } from "@shared/lib/date";
-import { Button } from "@shared/ui/base/button";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Images, Pencil, Trash2, Upload } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import {
+	Button,
+	ConfirmDialog,
+	Modal,
+	SearchInput,
+	Segmented,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/shared/ui/base/select";
-import { Modal } from "@/shared/ui/modal";
-import { SearchInput } from "@/shared/ui/search-input";
-import { Segmented, viewTypeSegments } from "@/shared/ui/segmented";
+	viewTypeSegments,
+} from "@violet/ui";
+import { Images, Pencil, Trash2, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 type ViewMode = "grid" | "table";
 

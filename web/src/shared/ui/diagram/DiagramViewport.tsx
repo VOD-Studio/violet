@@ -11,6 +11,7 @@
  * 不感知 mermaid：children 是任意渲染产物（SVG），纯交互容器。
  */
 
+import { Button } from "@violet/ui";
 import {
 	Check,
 	Copy,
@@ -25,7 +26,7 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui/base/button";
+
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { exportPng, exportSvg as exportSvgFile } from "./export";
 import { useDiagramViewport } from "./useDiagramViewport";

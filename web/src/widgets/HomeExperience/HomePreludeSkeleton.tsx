@@ -1,4 +1,4 @@
-import { Skeleton } from "@shared/ui/base/skeleton";
+import { Skeleton } from "@violet/ui";
 
 /** 首页个人序章专属骨架屏（保持满屏视口空间，与正式 HomePrelude 1:1 几何对齐）。 */
 export function HomePreludeSkeleton() {

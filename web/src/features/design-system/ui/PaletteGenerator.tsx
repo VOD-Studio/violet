@@ -1,7 +1,7 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb, parseOklch } from "@shared/lib/color-math";
-import { HsvColorPicker } from "@shared/ui/color-picker";
-import { Segmented } from "@shared/ui/segmented";
+import { HsvColorPicker, Segmented } from "@violet/ui";
+
 import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";

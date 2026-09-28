@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
+
 import type { ReactNode } from "react";
 
 interface StatsCardProps {

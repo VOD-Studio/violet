@@ -8,7 +8,7 @@ const { filePreviewProps, modalProps } = vi.hoisted(() => ({
 	modalProps: vi.fn(),
 }));
 
-vi.mock("@shared/ui/modal", () => ({
+vi.mock("@violet/ui/modal", () => ({
 	Modal: (props: {
 		children: ReactNode;
 		open: boolean;

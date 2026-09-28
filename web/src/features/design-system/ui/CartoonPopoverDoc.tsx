@@ -1,4 +1,3 @@
-import { Button } from "@shared/ui/base/button";
 import {
 	CartoonPopover,
 	CartoonPopoverContent,
@@ -6,11 +5,12 @@ import {
 	CartoonPopoverGroupItem,
 	CartoonPopoverTrigger,
 } from "@shared/ui/cartoon-popover";
+import { Button } from "@violet/ui";
 import { HelpCircle, MessageCircle, MousePointerClick } from "lucide-react";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ComponentDemo } from "./ComponentDemo";
 
-const BASIC_CODE = `import { Button } from "@shared/ui/base/button";
+const BASIC_CODE = `import { Button } from "@violet/ui";;
 import {
   CartoonPopover,
   CartoonPopoverContent,

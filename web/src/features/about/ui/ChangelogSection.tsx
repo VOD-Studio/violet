@@ -2,9 +2,9 @@ import { cleanItem } from "@features/changelog/model/clean-item";
 import { useReleases } from "@shared/api/releases";
 import { formatDate } from "@shared/lib/date";
 import { Disclosure } from "@shared/ui/disclosure";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Timeline, TimelineItem } from "@shared/ui/timeline";
 import { Link } from "@tanstack/react-router";
+import { ShimmerSkeleton } from "@violet/ui";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { AboutChapter } from "./AboutChapter";

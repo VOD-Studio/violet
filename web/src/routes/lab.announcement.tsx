@@ -15,9 +15,8 @@ import { Receipts } from "@features/lab/announcement/ui/Receipts";
 import { StatusBoard } from "@features/lab/announcement/ui/StatusBoard";
 import { Ticker } from "@features/lab/announcement/ui/Ticker";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import Empty from "@shared/ui/empty";
-import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Empty, Segmented } from "@violet/ui";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";

@@ -23,11 +23,8 @@ import {
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
+import { Badge, Button, ConfirmDialog, Segmented, type SegmentedItem } from "@violet/ui";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 

@@ -7,10 +7,16 @@ import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { formatDateTime } from "@shared/lib/date";
 import { AvatarGroup } from "@shared/ui/avatar-group/AvatarGroup";
-import { Button } from "@shared/ui/base/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog";
-import { SearchInput } from "@shared/ui/search-input";
+import {
+	Button,
+	ConfirmDialog,
+	SearchInput,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 

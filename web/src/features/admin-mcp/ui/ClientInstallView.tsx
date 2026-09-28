@@ -1,5 +1,6 @@
 import type { InstallView } from "@features/admin-mcp/model/clients";
-import { Button } from "@shared/ui/base/button";
+import { Button } from "@violet/ui";
+
 import { lazy, Suspense } from "react";
 
 /**

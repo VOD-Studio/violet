@@ -1,4 +1,4 @@
-import { Skeleton } from "@shared/ui/base/skeleton";
+import { Skeleton } from "@violet/ui";
 
 /** 首页积微成著时间线专属骨架屏（与正式 HomeAccumulation 1:1 几何高度对齐）。 */
 export function HomeAccumulationSkeleton() {

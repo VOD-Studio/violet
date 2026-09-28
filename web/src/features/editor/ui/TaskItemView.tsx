@@ -12,7 +12,7 @@ import {
 	NodeViewWrapper,
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { Checkbox } from "@/shared/ui/base/checkbox";
+import { Checkbox } from "@violet/ui";
 
 function TaskItemComponent({ node, updateAttributes, editor }: NodeViewProps) {
 	const checked = node.attrs.checked as boolean;

@@ -1,7 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { SeriesChapterDTO } from "@features/admin-series/model/types";
-import { Badge } from "@shared/ui/base/badge";
+import { Badge } from "@violet/ui";
+
 import { GripVertical, Link2, Trash2 } from "lucide-react";
 
 interface SortableChapterRowProps {

@@ -1,14 +1,11 @@
 import { MAX_PERSONA_LOCALES } from "@features/persona-editor/model/document";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
-import { Input } from "@shared/ui/base/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import {
 	COMMON_PERSONA_LOCALES,
 	LocaleSwitcher,
 	localeLabel,
 	normalizeLocaleInput,
 } from "@shared/ui/locale-switcher";
+import { Badge, Button, Input, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 import { Check, Languages, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 

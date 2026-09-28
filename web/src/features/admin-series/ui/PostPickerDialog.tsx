@@ -1,17 +1,18 @@
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem } from "@features/admin-posts/model/types";
-import { Badge } from "@shared/ui/base/badge";
-import { Button } from "@shared/ui/base/button";
 import {
+	Badge,
+	Button,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@shared/ui/base/dialog";
-import { Skeleton } from "@shared/ui/base/skeleton";
-import { SearchInput } from "@shared/ui/search-input";
+	SearchInput,
+	Skeleton,
+} from "@violet/ui";
+
 import { useEffect, useState } from "react";
 
 interface PostPickerDialogProps {

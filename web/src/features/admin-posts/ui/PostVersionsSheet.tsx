@@ -1,21 +1,19 @@
 import { formatDateTime } from "@shared/lib/date";
 import { AvatarGroup } from "@shared/ui/avatar-group";
-import { Button } from "@shared/ui/base/button";
+import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import {
+	Button,
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@shared/ui/base/dialog";
-import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetHeader,
 	SheetTitle,
-} from "@shared/ui/base/sheet";
-import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+} from "@violet/ui";
 import { Clock, History } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

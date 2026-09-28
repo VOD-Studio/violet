@@ -1,13 +1,13 @@
-import { Button } from "@shared/ui/base/button";
+import { Link } from "@tanstack/react-router";
 import {
+	Button,
 	Sheet,
 	SheetClose,
 	SheetContent,
 	SheetHeader,
 	SheetTitle,
 	SheetTrigger,
-} from "@shared/ui/base/sheet";
-import { Link } from "@tanstack/react-router";
+} from "@violet/ui";
 import { ArrowLeft, Menu } from "lucide-react";
 import { useState } from "react";
 import { AdminBrand } from "./AdminBrand";

@@ -8,9 +8,8 @@ import {
 	HOME_FOOTPRINT_AGGREGATION_MAX_DAYS,
 	HOME_FOOTPRINT_AGGREGATION_MIN_DAYS,
 } from "@features/settings/model/types";
-
-import { Input } from "@shared/ui/base/input";
 import { createFileRoute } from "@tanstack/react-router";
+import { Input } from "@violet/ui";
 import { Controller } from "react-hook-form";
 
 /** 基础信息子页表单值（仅本页字段） */
