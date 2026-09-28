@@ -169,6 +169,45 @@ describe("CartoonPopoverGroup Component", () => {
 		expect(Number.parseFloat(content?.style.width ?? "")).toBeGreaterThanOrEqual(230.40625);
 	});
 
+	it("短代码气泡按内容宽度定位，不被旧最小宽度撑空", () => {
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({
+				matches: true,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+			})),
+		);
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.getAttribute("aria-hidden") === "true"
+				? new DOMRect(-9999, -9999, 136.8125, 84)
+				: new DOMRect(979, 640, 130, 40);
+		});
+		render(
+			<CartoonPopoverGroup>
+				<CartoonPopoverGroupItem
+					value="link"
+					trigger={<button type="button">链接</button>}
+					side="top"
+				>
+					<pre className="whitespace-pre-wrap">
+						<code>{"--color-link:\n  var(--link);"}</code>
+					</pre>
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+
+		const trigger = screen.getByText("链接").closest("[data-popover-item]");
+		if (!trigger) throw new Error("Popover trigger not found");
+		fireEvent.mouseEnter(trigger);
+		const dialog = screen.getByRole("dialog");
+		expect(Number.parseFloat(dialog.style.width)).toBeCloseTo(136.8125, 5);
+		const content = dialog.querySelector<HTMLElement>(":scope > div.overflow-hidden");
+		expect(Number.parseFloat(content?.style.width ?? "")).toBeCloseTo(100.8125, 5);
+	});
+
 	it("完全关闭后悬停其他条目时直接从新条目位置出现", () => {
 		vi.useFakeTimers();
 		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(

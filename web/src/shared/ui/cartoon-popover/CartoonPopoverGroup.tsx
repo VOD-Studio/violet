@@ -151,12 +151,12 @@ export function CartoonPopoverGroup({
 
 		const triggerRect = item.triggerEl.getBoundingClientRect();
 		const measureEl = measureRef.current;
-		// 保留亚像素宽度；取整后代码行可能多折一行，撑破按旧行数测得的高度。
-		let contentWidth = 220;
+		// 尾巴与圆角需留安全边距；超过 80px 后由内容自然决定宽度。
+		let contentWidth = 80;
 		let contentHeight = 110;
 		if (measureEl) {
 			const { width, height } = measureEl.getBoundingClientRect();
-			contentWidth = Math.max(220, width);
+			contentWidth = Math.max(80, width);
 			contentHeight = Math.max(50, height);
 		}
 
@@ -478,7 +478,7 @@ function MeasureNode({
 		<div
 			ref={ref}
 			aria-hidden="true"
-			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 min-w-55 w-max rounded-2xl border-2 p-4 text-sm opacity-0"
+			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 min-w-20 w-max rounded-2xl border-2 p-4 text-sm opacity-0"
 		>
 			{title && <h4 className="mb-2 text-sm font-bold tracking-wide">{title}</h4>}
 			{description && (
