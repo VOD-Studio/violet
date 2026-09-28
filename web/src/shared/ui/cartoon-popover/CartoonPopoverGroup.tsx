@@ -151,12 +151,13 @@ export function CartoonPopoverGroup({
 
 		const triggerRect = item.triggerEl.getBoundingClientRect();
 		const measureEl = measureRef.current;
-		// 宽度策略：最小 220px（min-w-55 在测量节点上），内容由 CSS 层自然撑开，JS 直接采用测量结果
+		// 保留亚像素宽度；取整后代码行可能多折一行，撑破按旧行数测得的高度。
 		let contentWidth = 220;
 		let contentHeight = 110;
 		if (measureEl) {
-			contentWidth = Math.max(220, measureEl.offsetWidth);
-			contentHeight = Math.max(50, measureEl.offsetHeight);
+			const { width, height } = measureEl.getBoundingClientRect();
+			contentWidth = Math.max(220, width);
+			contentHeight = Math.max(50, height);
 		}
 
 		const result = computePosition({
@@ -459,14 +460,13 @@ function MeasureNode({
 	useLayoutEffect(() => {
 		if (!ref.current) return;
 		const el = ref.current;
-		const last = { w: el.offsetWidth, h: el.offsetHeight };
+		let { width: lastWidth, height: lastHeight } = el.getBoundingClientRect();
 		onMeasure();
 		const observer = new ResizeObserver(() => {
-			const w = el.offsetWidth;
-			const h = el.offsetHeight;
-			if (w !== last.w || h !== last.h) {
-				last.w = w;
-				last.h = h;
+			const { width, height } = el.getBoundingClientRect();
+			if (width !== lastWidth || height !== lastHeight) {
+				lastWidth = width;
+				lastHeight = height;
 				onMeasure();
 			}
 		});
