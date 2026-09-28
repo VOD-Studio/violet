@@ -1,6 +1,6 @@
 import type { NavRouteItem } from "@shared/config/nav";
 import { NAV_ITEMS } from "@shared/config/nav";
-import { useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 import type { SegmentedItem } from "@violet/ui";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Segmented } from "@violet/ui";
@@ -24,7 +24,7 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
 	const [browseOpen, setBrowseOpen] = useState(false);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
-
+	const navigate = useNavigate();
 	const activePrimary = primaryItems.find((item) => matchesRoute(pathname, item));
 	const activeSecondary = secondaryItems.find(
 		(item): item is NavRouteItem => item.type === "route" && matchesRoute(pathname, item),
@@ -36,7 +36,6 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 		const Icon = item.icon;
 		return {
 			value: item.to,
-			to: item.to,
 			label: (
 				<span className="flex items-center gap-1.5">
 					<Icon className="size-3.5 shrink-0" />
@@ -53,7 +52,7 @@ const HeaderNav = ({ onAction }: HeaderNavProps) => {
 		>
 			<Segmented
 				value={activeValue}
-				onValueChange={() => {}}
+				onValueChange={(to) => navigate({ to })}
 				segments={segments}
 				rounded="full"
 				size="sm"
