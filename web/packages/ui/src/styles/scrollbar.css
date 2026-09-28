@@ -1,0 +1,25 @@
+/*
+ * 滚动条主题化层：工具类与 data-scrollbar 属性模式，均只作用于挂载元素自身。
+ *
+ * 使用标准属性 scrollbar-width / scrollbar-color（Firefox 起步，Chromium 121+、
+ * Safari 已跟进），不写 ::-webkit-scrollbar 私有伪元素；颜色取 tokens.css 的
+ * --scrollbar-thumb / --scrollbar-track，基于语义色自动适配明暗。
+ * 全局滚动条形态由宿主决定，本层不设任何默认样式。
+ */
+
+.scrollbar-thin,
+[data-scrollbar="thin"] {
+	scrollbar-width: thin;
+	scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.scrollbar-default,
+[data-scrollbar="default"] {
+	scrollbar-width: auto;
+	scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.scrollbar-none,
+[data-scrollbar="none"] {
+	scrollbar-width: none;
+}

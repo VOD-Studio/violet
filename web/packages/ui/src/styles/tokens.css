@@ -55,6 +55,12 @@
 	--edge-hairline: light-dark(oklch(0.19 0.015 286 / 6%), oklch(1 0 0 / 8%));
 	--surface-glass: light-dark(oklch(1 0 0 / 70%), oklch(0.185 0.015 286 / 60%));
 
+	/* 滚动条主题化：thumb 混合正文色随明暗自动适配；宽度与槽位供宿主按需消费 */
+	--scrollbar-thumb: color-mix(in oklab, var(--foreground) 15%, transparent);
+	--scrollbar-track: transparent;
+	--scrollbar-width: thin;
+	--scrollbar-gutter: auto;
+
 	/* 协调图表调色板（5 色） */
 	--chart-1: light-dark(oklch(0.58 0.2 286), oklch(0.72 0.18 286));
 	--chart-2: light-dark(oklch(0.64 0.16 220), oklch(0.74 0.16 220));
