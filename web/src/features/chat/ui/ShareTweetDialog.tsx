@@ -6,6 +6,8 @@
  * 联系人；选定目标后 commit() 落定待发分享并跳转 /chat，聊天输入框读 pending
  * 展示分享 banner、可选加配文后发送。
  */
+
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { useMe } from "@features/auth/api/queries";
 import {
 	useChatContacts,
@@ -13,7 +15,6 @@ import {
 	useCreateChatConversation,
 } from "@features/chat/api/queries";
 import type { ChatUser } from "@features/chat/model/types";
-import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { Modal } from "@shared/ui/modal";
 import { useNavigate } from "@tanstack/react-router";
 import { LoaderCircle, Search } from "lucide-react";

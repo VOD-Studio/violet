@@ -10,11 +10,11 @@
  * 详情页是后续 P2 评论区、P3 转发链接的落点，结构上预留。
  */
 
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import type { Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
-import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";

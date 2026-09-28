@@ -1,6 +1,6 @@
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { authKeys } from "@features/auth/api/keys";
 import { httpClient } from "@shared/api/http";
-import { useShareTweetStore } from "@shared/api/share-tweet-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import type { InternalAxiosRequestConfig } from "axios";

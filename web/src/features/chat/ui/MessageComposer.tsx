@@ -2,6 +2,7 @@
  * 消息输入区：回复/推文分享 banner 与富文本 composer，Enter 发送。
  */
 import { toEmojiToken } from "@entities/emoji/model/token";
+import { type PendingChatShare, useShareTweetStore } from "@entities/tweet/model/share-store";
 import {
 	extractImageIds,
 	stripImagePlaceholders,
@@ -12,7 +13,6 @@ import {
 	type RichCommentInputHandle,
 } from "@features/comments/ui/RichCommentInput";
 import { useMyCustomEmojis } from "@features/customemoji/api/queries";
-import { type PendingChatShare, useShareTweetStore } from "@shared/api/share-tweet-store";
 import type { ImageUploadReference } from "@shared/lib/image-upload-task";
 import { Button } from "@shared/ui/base/button";
 import { cn } from "cn";
