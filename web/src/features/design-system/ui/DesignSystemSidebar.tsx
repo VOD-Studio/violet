@@ -58,7 +58,7 @@ export function DesignSystemSidebar({
 					<span className="font-serif text-xs font-medium text-primary/80">卷目</span>
 				</div>
 				<p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-					站点的用色、用料与营造章程
+					React 组件、设计 token 与使用手册
 				</p>
 			</div>
 

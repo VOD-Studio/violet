@@ -1,4 +1,9 @@
+import { Link } from "@tanstack/react-router";
+import { ALL_NAV_ITEMS } from "../model/navigation";
+
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
+
+const COMPONENT_DOCS = ALL_NAV_ITEMS.find((item) => item.id === "specimens")?.children ?? [];
 
 const COMMON_SECTIONS = [
 	{
@@ -57,9 +62,49 @@ export function SpecimensIndex() {
 		<article className="space-y-12 pb-16">
 			<DesignSystemDocHeader
 				num="柒"
-				title="组件文档"
-				scope="先写共通的使用契约，再按组件能力选择示例。按钮、表单、数据列表和弹窗不需要同一份固定模板。"
+				title="组件目录"
+				scope="从 @violet/ui 导出的组件可以在工作区直接使用；站点私有套件只供对应业务页面调用。各用法页的预览与复制代码来自同一示例文件。"
 			/>
+
+			<section aria-labelledby="package-components" className="space-y-5">
+				<h2 id="package-components" className="text-xl font-bold text-foreground">
+					@violet/ui 组件
+				</h2>
+				<div className="grid gap-3 sm:grid-cols-2">
+					{COMPONENT_DOCS.filter((doc) => doc.category === "library").map((doc) => (
+						<Link
+							key={doc.id}
+							to={doc.to}
+							className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-accent/40"
+						>
+							<h3 className="font-mono text-base font-semibold text-foreground">
+								{doc.title}
+							</h3>
+							<p className="mt-2 text-sm text-muted-foreground">{doc.description}</p>
+						</Link>
+					))}
+				</div>
+			</section>
+
+			<section aria-labelledby="site-components" className="space-y-4">
+				<h2 id="site-components" className="text-xl font-bold text-foreground">
+					站点私有套件
+				</h2>
+				<p className="text-sm text-muted-foreground">
+					这些是站点 feature 的展示示例，不属于 @violet/ui 公开导出。
+				</p>
+				<div className="flex flex-wrap gap-4">
+					{COMPONENT_DOCS.filter((doc) => doc.category === "site").map((doc) => (
+						<Link
+							key={doc.id}
+							to={doc.to}
+							className="font-mono text-sm text-primary underline underline-offset-4"
+						>
+							{doc.title}
+						</Link>
+					))}
+				</div>
+			</section>
 
 			<section aria-labelledby="common-sections" className="space-y-5">
 				<div className="space-y-2 border-b border-border pb-4">

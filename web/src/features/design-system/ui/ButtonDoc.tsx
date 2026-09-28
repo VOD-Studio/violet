@@ -124,7 +124,7 @@ export function ButtonDocPage() {
 				<p className="text-xs text-muted-foreground">
 					源码
 					<code className="font-mono text-foreground">
-						web/src/shared/ui/base/button.tsx
+						web/packages/ui/src/button/button.tsx
 					</code>
 				</p>
 			</header>

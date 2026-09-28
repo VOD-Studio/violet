@@ -1,3 +1,5 @@
+import { LIBRARY_GUIDE_GROUPS } from "./guides";
+
 /**
  * 设计系统二级子菜单项。
  */
@@ -12,6 +14,8 @@ export interface DesignSystemNavSubItem {
 	badge?: string;
 	/** 简述 */
 	description?: string;
+	/** 公开包组件或站点私有组件 */
+	category: "library" | "site";
 }
 
 /**
@@ -66,10 +70,21 @@ export const BASELINES = [
 	"功能性圆角不过 rounded-2xl，硬投影一律禁用。",
 ] as const;
 
-/**
- * 营造法式典籍卷目编排。
- */
+/** 在线指南和既有营造法式章节共用一份导航。 */
+const libraryNavGroups: DesignSystemNavGroup[] = LIBRARY_GUIDE_GROUPS.map((group) => ({
+	id: group.id,
+	title: group.title,
+	items: group.items.map((guide, index) => ({
+		id: `guide-${guide.slug}`,
+		num: String(index + 1).padStart(2, "0"),
+		title: guide.title,
+		to: `/design-system/guides/${guide.slug}`,
+		scope: guide.scope,
+	})),
+}));
+
 export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
+	libraryNavGroups[0],
 	{
 		id: "principles-group",
 		title: "卷一 · 纲纪准则",
@@ -90,6 +105,7 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 			},
 		],
 	},
+	libraryNavGroups[1],
 	{
 		id: "foundations-group",
 		title: "卷二 · 营造法度",
@@ -140,35 +156,62 @@ export const DESIGN_SYSTEM_NAV_GROUPS: DesignSystemNavGroup[] = [
 						title: "Button",
 						to: "/design-system/specimens/button",
 						description: "按钮 · 动作层级与交互状态",
+						category: "library",
 					},
 					{
 						id: "badge",
 						title: "Badge",
 						to: "/design-system/specimens/badge",
 						description: "徽章与角标 · 标签、数量与状态提示",
+						category: "library",
 					},
 					{
 						id: "checkbox",
 						title: "Checkbox",
 						to: "/design-system/specimens/checkbox",
 						description: "复选框 · 三态选择与微光实体反馈",
+						category: "library",
+					},
+					{
+						id: "dialog",
+						title: "Dialog",
+						to: "/design-system/specimens/dialog",
+						description: "弹窗 · 焦点管理与关闭语义",
+						category: "library",
+					},
+					{
+						id: "tabs",
+						title: "Tabs",
+						to: "/design-system/specimens/tabs",
+						description: "标签页 · 面板与键盘导航",
+						category: "library",
+					},
+					{
+						id: "input",
+						title: "Input",
+						to: "/design-system/specimens/input",
+						description: "输入框 · 受控输入与表单状态",
+						category: "library",
 					},
 					{
 						id: "comment-section",
 						title: "CommentSection",
 						to: "/design-system/specimens/comment-section",
 						description: "评论区 · 纯展示评论套件",
+						category: "site",
 					},
 					{
 						id: "cartoon-popover",
 						title: "CartoonPopover",
 						to: "/design-system/specimens/cartoon-popover",
 						description: "卡通气泡 · 纯手绘对白与思考浮层",
+						category: "site",
 					},
 				],
 			},
 		],
 	},
+	libraryNavGroups[2],
 ];
 
 /**
