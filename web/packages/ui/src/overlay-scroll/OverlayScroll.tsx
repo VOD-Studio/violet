@@ -1,8 +1,6 @@
 import { cn } from "cn";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
-import styles from "./overlay-scroll.module.css";
-
 const THUMB_CLS =
 	"pointer-events-auto cursor-pointer touch-none rounded-full bg-foreground/20 hover:bg-foreground/40 absolute";
 const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
@@ -16,9 +14,7 @@ const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
  *
  * Stacking context 隔离：
  * - wrapper `isolation: isolate` 防止 track 的 z-index 泄漏到外部
- * - 滚动宿主（module .host）困住 children 的 z-index（sticky 列等），
- *   使其不与 track 竞争
- * - track 只需 `z-index: 1`（仅需高于滚动宿主这个兄弟节点）
+ * - 滚动宿主（scrollbar-width:none 的任意类）困住 children 的 z-index（sticky 列等），
  */
 const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 	({ children, className, style, ...props }, ref) => {
@@ -30,7 +26,8 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 
 		const hoveringRef = useRef(false);
 		const draggingRef = useRef(false);
-		const hideTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+		// window.setTimeout 的数字句柄：不引 NodeJS 类型，保持声明产物可移植。
+		const hideTimerRef = useRef<number | undefined>(undefined);
 
 		useImperativeHandle(ref, () => scrollRef.current ?? document.createElement("div"), []);
 
@@ -58,7 +55,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 
 			const scheduleHide = (delay: number) => {
 				clearTimeout(hideTimerRef.current);
-				hideTimerRef.current = setTimeout(() => {
+				hideTimerRef.current = window.setTimeout(() => {
 					if (!hoveringRef.current && !draggingRef.current) {
 						hideThumbs();
 					}
@@ -196,7 +193,10 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 			<div className={cn("relative isolate", className)}>
 				<div
 					ref={scrollRef}
-					className={cn(styles.host, "isolate h-full overflow-auto")}
+					className={cn(
+						"[scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+						"isolate h-full overflow-auto",
+					)}
 					style={style}
 					{...props}
 				>

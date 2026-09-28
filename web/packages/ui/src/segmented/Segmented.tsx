@@ -1,6 +1,5 @@
 "use client";
 
-import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { LayoutGrid, Table } from "lucide-react";
 import type * as React from "react";
@@ -21,8 +20,6 @@ export interface SegmentedItem<V extends string = string> {
 	value: V;
 	/** 显示内容（文本或图标） */
 	label: React.ReactNode;
-	/** 路由跳转目标（提供时渲染为链接） */
-	to?: string;
 	/** 是否禁用该段 */
 	disabled?: boolean;
 }
@@ -157,21 +154,6 @@ export function Segmented<V extends string = string>({
 					seg.disabled && !isActive && "hover:text-muted-foreground",
 					itemClassName,
 				);
-
-				if (seg.to) {
-					return (
-						<Link
-							key={seg.value}
-							to={seg.to}
-							data-segment-item=""
-							aria-current={isActive ? "page" : undefined}
-							onClick={() => onValueChange(seg.value)}
-							className={itemClasses}
-						>
-							{seg.label}
-						</Link>
-					);
-				}
 
 				return (
 					<button
