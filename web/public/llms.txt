@@ -7,24 +7,20 @@
 - [介绍](https://xunrua.top/design-system/guides/introduction): 包的使用范围与限制。
 - [快速入门](https://xunrua.top/design-system/guides/quick-start): 工作区安装、CSS 导入和 Button 用法。
 - [设计原则](https://xunrua.top/design-system/principles): 站点设计判据。
-- [框架集成](https://xunrua.top/design-system/guides/integration): 现有 React 应用接入方式。
+- [框架集成](https://xunrua.top/design-system/guides/integration): Vite 与 TanStack Start 已验证，更多框架暂未开放。
 - [组件目录](https://xunrua.top/design-system/specimens): 组件示例与公开契约。
 
 - [命令行](https://xunrua.top/design-system/guides/cli): 构建与打包命令及专用 CLI 的边界。
 - [路线图](https://xunrua.top/design-system/guides/roadmap): 已交付与尚未提供的能力。
-- [手册](https://xunrua.top/design-system/guides/handbook): 按任务查找设计规范与组件。
 
 ## 设计指南
 
 - [颜色与语义 token](https://xunrua.top/design-system/tokens)
-- [颜色](https://xunrua.top/design-system/guides/colors)
 - [主题](https://xunrua.top/design-system/guides/theming)
 - [深色模式](https://xunrua.top/design-system/guides/dark-mode)
 - [样式](https://xunrua.top/design-system/guides/styling)
 - [动画](https://xunrua.top/design-system/motion)
-- [动效指南](https://xunrua.top/design-system/guides/animation)
 - [组合](https://xunrua.top/design-system/guides/composition)
-- [代理用户界面](https://xunrua.top/design-system/guides/agentic-ui)
 
 ## 组件用法
 
@@ -39,5 +35,4 @@
 
 - [Agent Skills](https://xunrua.top/design-system/guides/skills): 项目内技能入口。
 - [AGENTS.md](https://xunrua.top/design-system/guides/agents-md): 包的代理规范。
-- [预览](https://xunrua.top/design-system/guides/preview): 检查真实组件与明暗状态。
 - [MCP 服务器](https://xunrua.top/design-system/guides/mcp): 区分博客 MCP 与尚未提供的组件文档 MCP。

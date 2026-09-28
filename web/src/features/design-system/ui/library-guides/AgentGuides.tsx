@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
 import packageAgentRules from "../../../../../packages/ui/AGENTS.md?raw";
-import { ComponentDemo } from "../ComponentDemo";
-import { ButtonBasicDemo } from "../examples/button/basic";
-import buttonBasicSource from "../examples/button/basic.tsx?raw";
 import { GuideCode, GuideLink, GuideSection } from "./GuideParts";
 
 export const AGENT_GUIDES: Record<string, ReactNode> = {
@@ -65,28 +62,6 @@ export const AGENT_GUIDES: Record<string, ReactNode> = {
 					code="cd web\npnpm dev\n# 访问 /design-system/specimens 查看真实组件示例"
 				/>
 				<p>在本仓库内让编码智能体按规则调用这几个 skill；仓库外暂不提供可安装的技能包。</p>
-			</GuideSection>
-		</>
-	),
-	preview: (
-		<>
-			<GuideSection title="预览真实组件">
-				<p>
-					下面是实际运行的 <code>@violet/ui</code>{" "}
-					Button：点击观察计数，展开源码查看同一个示例文件。打开{" "}
-					<GuideLink to="/design-system/specimens">组件目录</GuideLink>{" "}
-					可访问更多交互预览。
-				</p>
-				<ComponentDemo code={buttonBasicSource}>
-					<ButtonBasicDemo />
-				</ComponentDemo>
-			</GuideSection>
-			<GuideSection title="验收场景">
-				<p>
-					切换网站明暗主题核对语义色，键盘 Tab
-					聚焦操作按钮，并在移动端检查侧栏和组件布局。文档预览是当前站点版本的真实运行结果，不等于库已作为
-					npm 包发布。
-				</p>
 			</GuideSection>
 		</>
 	),

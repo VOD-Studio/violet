@@ -3,36 +3,68 @@ import { ComponentDemo } from "../ComponentDemo";
 import { ButtonBasicDemo } from "../examples/button/basic";
 import buttonBasicSource from "../examples/button/basic.tsx?raw";
 import { GuideCode, GuideLink, GuideSection } from "./GuideParts";
+import { GuidePending } from "./GuidePending";
 
 export const INTRODUCTION_GUIDES: Record<string, ReactNode> = {
 	introduction: (
 		<>
-			<GuideSection title="先用包，再查法式">
+			<GuideSection title="violet 的组件库">
 				<p>
-					<code>@violet/ui</code> 是可构建并打包分发的 React 组件库。Button、Dialog、 Tabs
-					等组件从根入口导出；主题由独立 CSS 入口提供。营造法式是在线用法与设计规范，
+					<code>@violet/ui</code> 是基于 React 19、Tailwind CSS v4 与 Radix UI
+					的组件库，附明暗一体的语义主题 token。营造法式是它的在线用法与设计规范，
 					不是另一套组件实现。
 				</p>
 				<ComponentDemo code={buttonBasicSource}>
 					<ButtonBasicDemo />
 				</ComponentDemo>
-				<p>
-					预览和复制的代码出自同一示例文件。继续阅读{" "}
-					<GuideLink to="/design-system/guides/quick-start">快速入门</GuideLink>
-					，或直接查看 <GuideLink to="/design-system/specimens">组件目录</GuideLink>。
-				</p>
 			</GuideSection>
-			<GuideSection title="当前使用范围">
+			<GuideSection title="核心特性">
+				<ul className="list-disc space-y-2 pl-5">
+					<li>
+						<strong>默认即成体系</strong>：语义 token 与 Violet
+						色板开箱可用，明暗主题同一套类名。
+					</li>
+					<li>
+						<strong>无障碍基座</strong>：交互件构建在 Radix UI
+						之上，焦点管理、键盘导航与屏幕阅读器语义内建。
+					</li>
+					<li>
+						<strong>组合式部件</strong>：Dialog、Tabs
+						等以根、触发器、内容部件导出，按需组合不锁死结构。
+					</li>
+					<li>
+						<strong>完整类型化</strong>：根入口导出全部组件与变体类型，IDE 补全可用。
+					</li>
+					<li>
+						<strong>宿主解耦</strong>：不绑定路由与主题库，由应用自带并桥接。
+					</li>
+				</ul>
+			</GuideSection>
+			<GuideSection title="常见问题">
+				<ul className="space-y-2">
+					<li>
+						<strong>能在仓库外使用吗？</strong>能。构建产物可打包为 tarball 安装到独立
+						React 19 项目；npm 发布尚未执行。
+					</li>
+					<li>
+						<strong>支持 TypeScript 吗？</strong>完全类型化，类型声明随构建产物提供。
+					</li>
+					<li>
+						<strong>怎么定制样式？</strong>优先用变体与语义类，主题值通过覆盖 CSS
+						变量调整，见 <GuideLink to="/design-system/guides/theming">主题</GuideLink>
+						。
+					</li>
+					<li>
+						<strong>什么协议？</strong>MIT。
+					</li>
+				</ul>
+			</GuideSection>
+			<GuideSection title="下一步">
 				<p>
-					包构建后提供 ESM JavaScript、类型声明和 CSS，可在仓库外通过构建产物 tarball
-					安装。 当前未发布到 npm；React 19 与 Tailwind CSS v4
-					是宿主要求，包不提供独立主题 Provider。
-				</p>
-				<p>
-					选择动作语义、色彩和排版时查{" "}
-					<GuideLink to="/design-system/principles">设计原则</GuideLink> 与{" "}
-					<GuideLink to="/design-system/decisions">快速决策表</GuideLink>
-					；不要把站点业务模块里的组件当作包的公开导出。
+					从 <GuideLink to="/design-system/guides/quick-start">快速入门</GuideLink>{" "}
+					跑起第一个组件，或到{" "}
+					<GuideLink to="/design-system/specimens">组件目录</GuideLink>
+					逐个查看用法、示例与限制。
 				</p>
 			</GuideSection>
 		</>
@@ -79,24 +111,46 @@ export const INTRODUCTION_GUIDES: Record<string, ReactNode> = {
 	),
 	integration: (
 		<>
-			<GuideSection title="React 与构建器">
+			<GuideSection title="Vite（已验证）">
 				<p>
-					站点与同仓库应用通过 <code>workspace:*</code> 消费源码入口；仓库外的 React
-					19、Tailwind CSS v4 项目安装构建 tarball 后，同样从 <code>@violet/ui</code>{" "}
-					导入组件、从 <code>@violet/ui/styles.css</code> 导入样式——tarball 内的 exports
-					指向 dist 的 ESM、类型声明和 CSS，外部项目不需要转译包内 TSX 源码。
+					在 Vite 项目的全局 CSS 先后导入 Tailwind 与包样式，即可使用全部组件；
+					以下路径在仓库外的独立 React 19 + Vite 8 项目实测通过。
 				</p>
+				<GuideCode
+					language="ts"
+					title="vite.config.ts"
+					code={
+						'import tailwindcss from "@tailwindcss/vite";\nimport react from "@vitejs/plugin-react";\nimport { defineConfig } from "vite";\n\nexport default defineConfig({ plugins: [tailwindcss(), react()] });'
+					}
+				/>
+				<GuideCode
+					language="css"
+					title="src/styles.css"
+					code={'@import "tailwindcss";\n@import "@violet/ui/styles.css";'}
+				/>
+			</GuideSection>
+			<GuideSection title="TanStack Start（已验证）">
 				<p>
-					SSR 页面要在根布局加载全局样式，让首屏和客户端拿到同一套变量。把{" "}
-					<code>.dark</code> 挂在 html 或共同祖先；包不负责管理主题持久化。详见{" "}
+					本站即宿主：通过 <code>workspace:*</code> 消费包，SSR
+					页面在根布局加载同一份全局样式，让首屏与客户端拿到同一套变量；把{" "}
+					<code>.dark</code> 挂在 html 或共同祖先，主题持久化由应用负责，见{" "}
 					<GuideLink to="/design-system/guides/dark-mode">深色模式</GuideLink>。
 				</p>
+				<GuideCode
+					language="bash"
+					title="安装（工作区）"
+					code="cd web\npnpm install\npnpm dev"
+				/>
 			</GuideSection>
-			<GuideSection title="其他框架的边界">
-				<p>
-					构建产物可作为 tarball 在其他 React 19 项目中安装；目前没有 Vue/Svelte
-					原生组件。其他 SSR 框架应在根布局加载全局样式，并自行管理主题持久化。
-				</p>
+			<GuideSection title="更多框架">
+				<p>以下宿主尚未验证或暂无计划，先列出方向；开放后在此补充实测步骤。</p>
+				<div className="grid gap-3 sm:grid-cols-2">
+					<GuidePending title="Next.js（App Router）">SSR 布局导入验证中</GuidePending>
+					<GuidePending title="Remix">暂未开放</GuidePending>
+					<GuidePending title="Astro">暂未开放</GuidePending>
+					<GuidePending title="Storybook">暂未开放</GuidePending>
+				</div>
+				<p>没有 Vue/Svelte 原生组件；构建产物面向 React 19 宿主。</p>
 			</GuideSection>
 		</>
 	),
@@ -132,35 +186,6 @@ export const INTRODUCTION_GUIDES: Record<string, ReactNode> = {
 				<p>
 					scoped npm registry 发布、专用的组件文档 MCP server、用于安装组件的专用 CLI
 					尚未提供。需要这些能力时先补齐实际服务，再更新接入说明。
-				</p>
-			</GuideSection>
-		</>
-	),
-	handbook: (
-		<>
-			<GuideSection title="照什么做">
-				<ul className="list-disc space-y-2 pl-5">
-					<li>
-						选择颜色：先查{" "}
-						<GuideLink to="/design-system/decisions">快速决策表</GuideLink>，再查{" "}
-						<GuideLink to="/design-system/tokens">Token 词典</GuideLink>。
-					</li>
-					<li>
-						写页面：对照 <GuideLink to="/design-system/layout">布局规格</GuideLink> 和{" "}
-						<GuideLink to="/design-system/motion">动效章程</GuideLink>。
-					</li>
-					<li>
-						调用组件：先看 <GuideLink to="/design-system/specimens">组件目录</GuideLink>
-						，再看具体组件的导入、示例与限制。
-					</li>
-				</ul>
-			</GuideSection>
-			<GuideSection title="设计底线">
-				<p>
-					语义 token 优先、正文与底色保持 WCAG AA 对比；功能圆角最大{" "}
-					<code>rounded-2xl</code>
-					，浮起仅用轻软影。常规反馈用颜色、描边、透明度，不靠缩放或方向位移动效。具体判据见{" "}
-					<GuideLink to="/design-system/principles">设计原则</GuideLink>。
 				</p>
 			</GuideSection>
 		</>

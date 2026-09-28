@@ -27,9 +27,11 @@ describe("DesignSystemSidebar", () => {
 	it("渲染卷首标题与各卷别分组", () => {
 		render(<DesignSystemSidebar currentPath="/design-system/principles" />);
 		expect(screen.getByText("营造法式")).toBeTruthy();
-		expect(screen.getByText("卷一 · 纲纪准则")).toBeTruthy();
-		expect(screen.getByText("卷二 · 营造法度")).toBeTruthy();
-		expect(screen.getByText("卷三 · 构件陈列")).toBeTruthy();
+		expect(screen.getByText("卷一 · 入门")).toBeTruthy();
+		expect(screen.getByText("卷二 · 纲纪准则")).toBeTruthy();
+		expect(screen.getByText("卷三 · 设计法度")).toBeTruthy();
+		expect(screen.getByText("卷四 · 构件陈列")).toBeTruthy();
+		expect(screen.getByText("卷五 · 智能体")).toBeTruthy();
 	});
 
 	it("当前活跃章节呈现 aria-current=page", () => {
