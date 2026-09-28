@@ -6,8 +6,8 @@ export default function CliGuide() {
 		<GuideSection title="构建与打包">
 			<p>
 				仓库没有独立的 <code>violet-ui</code> 安装 CLI。使用 pnpm 构建并打包
-				<code>@violet/ui</code>；发布到 scoped npm registry 是未来的人工操作，
-				当前请安装 tarball，而非直接运行 <code>pnpm add @violet/ui</code>。
+				<code>@violet/ui</code>；发布到 scoped npm registry 是未来的人工操作， 当前请安装
+				tarball，而非直接运行 <code>pnpm add @violet/ui</code>。
 			</p>
 			<GuideCode
 				language="bash"

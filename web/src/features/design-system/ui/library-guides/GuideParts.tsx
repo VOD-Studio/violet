@@ -3,8 +3,12 @@ import type { ReactNode } from "react";
 import { CodeCard } from "@/shared/ui/code-preview/components/CodeCard";
 
 export function GuideSection({ title, children }: { title: string; children: ReactNode }) {
+	const anchor = title
+		.toLowerCase()
+		.replace(/[（）()：:]/g, "")
+		.replace(/[\s/]+/g, "-");
 	return (
-		<section className="space-y-4 border-t border-border/60 pt-8">
+		<section id={anchor} className="scroll-mt-20 space-y-4 border-t border-border/60 pt-8">
 			<h2 className="text-xl font-bold text-foreground">{title}</h2>
 			<div className="space-y-4 text-sm leading-7 text-muted-foreground">{children}</div>
 		</section>
