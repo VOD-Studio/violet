@@ -1,11 +1,9 @@
-// Package image 提供 uploads 图片服务 handler 的测试。
-//
-// ServeImage 的路径安全检查（400）、参数解析（400）与无参数直传原文件路径
-// （serveOriginal，走 http.ServeFile，不触碰 svc）均在 svc 解引用前完成，
-// 故用 nil svc 即可覆盖。404 用真实临时目录（文件不存在）验证。
 package image
 
 import (
+	"bytes"
+	stdimage "image"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,6 +13,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	appimage "blog-api/internal/application/image"
+	infraimage "blog-api/internal/infrastructure/image"
 )
 
 // TestServeImage_PathTraversal_Returns400 路径含 ".." → 拒绝 400。
@@ -28,6 +29,42 @@ func TestServeImage_PathTraversal_Returns400(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "非法路径")
+}
+
+func TestExternalImagesAreUncachedAndUnavailableAfterWithdrawal(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "external-tweets", "source", "version", "photo.png")
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	var data bytes.Buffer
+	require.NoError(t, png.Encode(&data, stdimage.NewRGBA(stdimage.Rect(0, 0, 64, 64))))
+	require.NoError(t, os.WriteFile(path, data.Bytes(), 0o644))
+	svc := appimage.NewService(infraimage.NewTransformer(), nil, dir, "/uploads")
+	h := NewHandler(svc, dir, "/uploads")
+	paths := []string{
+		"/uploads/external-tweets/source/version/photo.png",
+		"/uploads//external-tweets/source/version/photo.png",
+		"/uploads/./external-tweets/source/version/photo.png",
+	}
+	for _, path := range paths {
+		for _, suffix := range []string{"", "?w=32"} {
+			rec := httptest.NewRecorder()
+			h.ServeImage(rec, httptest.NewRequest(http.MethodGet, path+suffix, nil))
+			require.Equal(t, 200, rec.Code)
+			assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
+		}
+	}
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "external-tweets", "source")))
+	for _, path := range paths {
+		for _, suffix := range []string{"", "?w=32"} {
+			rec := httptest.NewRecorder()
+			h.ServeImage(rec, httptest.NewRequest(http.MethodGet, path+suffix, nil))
+			assert.GreaterOrEqual(t, rec.Code, 400)
+			assert.NotEqual(t, data.Bytes(), rec.Body.Bytes())
+		}
+	}
+	rec := httptest.NewRecorder()
+	h.ServeImage(rec, httptest.NewRequest(http.MethodGet, "/uploads/.external-tmp/photo.png", nil))
+	assert.Equal(t, 400, rec.Code)
 }
 
 // TestServeImage_NullByteInPath_Returns400 路径含 \0 → 拒绝 400。

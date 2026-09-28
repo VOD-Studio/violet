@@ -38,14 +38,16 @@ func NewService(transformer domainimage.ImageTransformer, cache domainimage.Imag
 func (s *Service) Serve(relPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
 	// 物理路径:剥掉 urlPrefix 前缀,接到 uploadDir
 	srcPath := filepath.Join(s.uploadDir, strings.TrimPrefix(relPath, s.urlPrefix))
+	// 共享来源可撤回；处理图直接读取当前文件，避免删除后由历史缓存继续展示。
+	if strings.HasPrefix(srcPath, filepath.Join(s.uploadDir, "external-tweets")+string(filepath.Separator)) {
+		return s.transformer.Transform(srcPath, params)
+	}
 	cacheKey := cacheKey(srcPath, params)
 
-	// 一级缓存查找
 	if cached, _ := s.cache.Get(cacheKey); cached.Bytes != nil {
 		return cached, nil
 	}
 
-	// singleflight 防击穿:同 key 并发只处理一次
 	v, err, _ := s.group.Do(cacheKey, func() (any, error) {
 		// 二次查缓存(singleflight 内可能已被并发请求填充)
 		if cached, _ := s.cache.Get(cacheKey); cached.Bytes != nil {

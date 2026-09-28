@@ -34,12 +34,14 @@ func registerChatPaths(t *openapi3.T) {
 		"height":    optInt("图片高度"),
 	})
 	registerSchema(t, "ChatSharedTweetDTO", openapi3.Schemas{
-		"id":         reqStr("推文 ID"),
-		"author":     &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
-		"content":    optStr("推文正文；推文已删除时为空"),
-		"images":     strArray("推文图片 URL 列表；推文已删除时为空"),
-		"created_at": optStr("推文创建时间；推文已删除时为空"),
-		"is_deleted": optBool("被分享的推文是否已被物理删除"),
+		"external_tweet": optRef("当前 X 原文，撤回后仅返回来源占位", "ExternalTweetDTO"),
+		"quoted_tweet":   optRef("一层本站引用", "QuotedTweetDTO"),
+		"id":             reqStr("推文 ID"),
+		"author":         &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
+		"content":        optStr("推文正文；推文已删除时为空"),
+		"images":         strArray("推文图片 URL 列表；推文已删除时为空"),
+		"created_at":     optStr("推文创建时间；推文已删除时为空"),
+		"is_deleted":     optBool("被分享的推文是否已被物理删除"),
 	})
 	registerSchema(t, "ChatMessageReferenceDTO", openapi3.Schemas{
 		"id":         reqStr("被引用消息 ID"),

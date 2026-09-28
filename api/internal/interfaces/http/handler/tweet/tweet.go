@@ -34,6 +34,7 @@ func (h *Handler) ListTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondCursor(w, dtos, limit, nextCursor != "", nextCursor)
 }
+
 // ListByTopic 话题时间线（公开）：GET /tweets/topics/{tag}?cursor=&limit=
 func (h *Handler) ListByTopic(w http.ResponseWriter, r *http.Request) {
 	cursor, limit := response.ParseCursor(r)
@@ -46,9 +47,11 @@ func (h *Handler) ListByTopic(w http.ResponseWriter, r *http.Request) {
 }
 
 type createTweetRequest struct {
-	Content string   `json:"content"`
-	Images  []string `json:"images"`
-	QuoteOf *string  `json:"quote_of,omitempty"`
+	Content              string   `json:"content"`
+	Images               []string `json:"images"`
+	QuoteOf              *string  `json:"quote_of,omitempty"`
+	ExternalPreviewToken string   `json:"external_preview_token,omitempty"`
+	ClientRequestID      string   `json:"client_request_id,omitempty"`
 }
 
 // Create 发推文（登录）：POST /tweets
@@ -59,16 +62,54 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dto, err := h.svc.Create(r.Context(), apptweet.CreateInput{
-		AuthorID: interfacesmw.GetUserIDFromContext(r),
-		Content:  req.Content,
-		Images:   req.Images,
-		QuoteOf:  req.QuoteOf,
+		AuthorID:             interfacesmw.GetUserIDFromContext(r),
+		Content:              req.Content,
+		Images:               req.Images,
+		QuoteOf:              req.QuoteOf,
+		ExternalPreviewToken: req.ExternalPreviewToken,
+		ClientRequestID:      req.ClientRequestID,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondCreated(w, dto)
+}
+
+func (h *Handler) PreviewExternal(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+	var req struct {
+		URL string `json:"url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.svc.PreviewExternal(r.Context(), interfacesmw.GetUserIDFromContext(r), req.URL)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	response.RespondOK(w, dto)
+}
+
+func (h *Handler) WithdrawExternal(w http.ResponseWriter, r *http.Request) {
+	if err := h.svc.WithdrawExternal(r.Context(), r.PathValue("externalId")); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "X 原文已下架，本站讨论保留")
+}
+
+func (h *Handler) RefreshExternal(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.svc.RefreshExternal(r.Context(), r.PathValue("externalId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	response.RespondOK(w, dto)
 }
 
 // Get 推文详情（公开）：GET /tweets/{id}
@@ -100,6 +141,7 @@ func (h *Handler) ListByUser(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondCursor(w, dtos, limit, nextCursor != "", nextCursor)
 }
+
 // GetUserProfile 用户公开资料卡（公开）：GET /users/{username}
 func (h *Handler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	dto, err := h.svc.GetUserProfile(r.Context(), r.PathValue("username"))
@@ -109,6 +151,7 @@ func (h *Handler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, dto)
 }
+
 // Like 点赞推文（登录）：POST /tweets/{id}/like
 func (h *Handler) Like(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
@@ -129,12 +172,11 @@ func (h *Handler) Unlike(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]string{"message": "已取消点赞"})
 }
 
-
 // --- 推文评论（P2 / issue #107）---
 
 type createCommentRequest struct {
-	Body     string               `json:"body"`
-	ParentID string               `json:"parent_id"`
+	Body     string `json:"body"`
+	ParentID string `json:"parent_id"`
 	// Pictures 评论附图（可选，Bilibili 式，url/width/height/size）
 	Pictures []apptweet.PictureInput `json:"pictures"`
 }

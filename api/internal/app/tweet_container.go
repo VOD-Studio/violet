@@ -3,35 +3,33 @@ package app
 import (
 	"context"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"blog-api/config"
 	appcustomemoji "blog-api/internal/application/customemoji"
 	appshared "blog-api/internal/application/shared"
 	apptweet "blog-api/internal/application/tweet"
 	domainemoji "blog-api/internal/domain/emoji"
 	"blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
+	infraimage "blog-api/internal/infrastructure/image"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
+	"blog-api/internal/infrastructure/xtweet"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	"blog-api/internal/middleware"
 )
 
-// TweetContainer 聚合推文模块的 handler 与 service（供根容器/路由拆取）。
 type TweetContainer struct {
-	TweetHandler *tweethttp.Handler
-	TweetService *apptweet.Service
+	TweetHandler    *tweethttp.Handler
+	TweetService    *apptweet.Service
+	ExternalService *apptweet.ExternalService
 }
 
-// NewTweetContainer 装配推文 DDD 模块。
-//
-// fileRepo 适配为 TweetImageChecker（发布时图片归属校验）；
-// emojiRepo 适配为 EmojiLookup（评论 emote 富化，解析 body [name] 查表）；
-// customEmojiSvc 解析 body 中的 [name:uuid] 自定义表情占位符；
-// userRepo 供作者资料填充与 username 解析；
-// perm 供「作者或 tweet:delete-any」删除判定的权限码分支；
-// bus 发布 TweetCreated/TweetDeleted（审计订阅者消费）。
 func NewTweetContainer(
 	db *gorm.DB,
+	redisClient *redis.Client,
+	cfg *config.Config,
 	perm apptweet.TweetPermissionChecker,
 	customEmojiSvc *appcustomemoji.Service,
 	bus appshared.EventBus,
@@ -41,6 +39,11 @@ func NewTweetContainer(
 	userRepo := gormrepo.NewUserRepository(db)
 	fileRepo := gormrepo.NewFileRepository(db)
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
+	external := apptweet.NewExternalService(
+		gormrepo.NewExternalTweetRepository(db), xtweet.NewFetcher(nil),
+		xtweet.NewMediaStore(cfg.UploadDir, cfg.UploadPathPrefix, infraimage.NewProcessor(cfg.UploadDir, cfg.UploadPathPrefix), nil),
+		xtweet.NewPreviewStore(redisClient),
+	)
 	svc := apptweet.NewService(
 		tweetRepo,
 		commentRepo,
@@ -49,10 +52,11 @@ func NewTweetContainer(
 		perm,
 		&tweetEmojiLookupAdapter{repo: emojiRepo, customEmojiSvc: customEmojiSvc},
 		bus,
-	)
+	).WithExternal(external)
 	return &TweetContainer{
-		TweetHandler: tweethttp.NewHandler(svc),
-		TweetService: svc,
+		TweetHandler:    tweethttp.NewHandler(svc),
+		TweetService:    svc,
+		ExternalService: external,
 	}
 }
 

@@ -123,8 +123,9 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
-	tweet := NewTweetContainer(db, permissionChecker, customEmoji.Service, bus)
+	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus)
 	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
+	chat.ChatService.WithTweetReader(tweet.TweetService)
 
 	c := &Container{
 		Role: role, Settings: settings, SiteIdentity: siteIdentity, SiteImpression: siteImpression, Auth: auth, Content: content, Comment: comment,

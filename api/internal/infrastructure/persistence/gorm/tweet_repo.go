@@ -2,12 +2,15 @@ package gorm
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"errors"
-	"strings"
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"strings"
+	"time"
 
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
@@ -28,8 +31,20 @@ func NewTweetRepository(db *gorm.DB) *TweetRepository {
 //
 // 推文不可编辑（聚合根无 Update），upsert 服务 T5 点赞计数（like_count）回写。
 func (r *TweetRepository) Save(ctx context.Context, t *domaintweet.Tweet) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return saveTweet(tx, t, false)
+	})
+}
+
+func saveTweet(tx *gorm.DB, t *domaintweet.Tweet, create bool) error {
 	po := tweetToPO(t)
-	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+	var err error
+	if create {
+		err = tx.Create(&po).Error
+	} else {
+		err = tx.Save(&po).Error
+	}
+	if err != nil {
 		return domainshared.Internal("保存推文失败", err)
 	}
 	tags := t.Hashtags()
@@ -42,11 +57,114 @@ func (r *TweetRepository) Save(ctx context.Context, t *domaintweet.Tweet) error 
 				CreatedAt: po.CreatedAt,
 			}
 		}
-		if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&hashtags).Error; err != nil {
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&hashtags).Error; err != nil {
 			return domainshared.Internal("保存推文话题关联失败", err)
 		}
 	}
 	return nil
+}
+
+func (r *TweetRepository) FindByRequestID(ctx context.Context, authorID, requestID domainshared.ID) (*domaintweet.Tweet, error) {
+	var po model.Tweet
+	err := r.db.WithContext(ctx).Where("author_id = ? AND client_request_id = ?", authorID.UUID(), requestID.UUID()).First(&po).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domaintweet.ErrNotFound
+	}
+	if err != nil {
+		return nil, domainshared.Internal("查询发布结果失败", err)
+	}
+	return tweetToDomain(po)
+}
+
+func (r *TweetRepository) Publish(ctx context.Context, t *domaintweet.Tweet, binding *domaintweet.ExternalPreviewBinding) (*domaintweet.Tweet, bool, error) {
+	result := t
+	created := false
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		pub := t.Publication()
+		if pub.ClientRequestID != nil {
+			if tx.Name() == "postgres" {
+				key := sha256.Sum256([]byte(t.AuthorID().String() + pub.ClientRequestID.String()))
+				if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", int64(binary.BigEndian.Uint64(key[:8]))).Error; err != nil {
+					return err
+				}
+			}
+			var old model.Tweet
+			err := tx.Where("author_id = ? AND client_request_id = ?", t.AuthorID().UUID(), pub.ClientRequestID.UUID()).First(&old).Error
+			if err == nil {
+				if old.RequestHash != pub.RequestHash {
+					return domainshared.Conflict("同一发布请求不能更换内容")
+				}
+				result, err = tweetToDomain(old)
+				return err
+			}
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+		if binding != nil {
+			if pub.ExternalTweetID == nil || pub.ExternalTweetID.String() != binding.ExternalID {
+				return domainshared.BadRequest("原文凭证与发布内容不一致")
+			}
+			if binding.UserID != t.AuthorID().String() {
+				return domainshared.Forbidden("不能使用其他用户的预览凭证")
+			}
+			if time.Now().After(binding.ExpiresAt) {
+				return domainshared.NewError("EXTERNAL_PREVIEW_EXPIRED", "预览已过期，请重新预览后确认")
+			}
+			if pub.PreviewTokenHash != nil {
+				if tx.Name() == "postgres" {
+					key := sha256.Sum256([]byte("external-preview:" + *pub.PreviewTokenHash))
+					if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", int64(binary.BigEndian.Uint64(key[:8]))).Error; err != nil {
+						return err
+					}
+				}
+				var count int64
+				if err := tx.Model(&model.Tweet{}).Where("external_preview_token_hash = ?", *pub.PreviewTokenHash).Count(&count).Error; err != nil {
+					return err
+				}
+				if count != 0 {
+					return domainshared.NewError("EXTERNAL_PREVIEW_USED", "该预览已经发布，请重新预览")
+				}
+			}
+			ids := []string{binding.ExternalID}
+			if binding.QuotedID != "" && binding.QuotedID != binding.ExternalID {
+				ids = append(ids, binding.QuotedID)
+			}
+			var rows []model.ExternalTweet
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id IN ?", ids).Order("id").Find(&rows).Error; err != nil {
+				return err
+			}
+			if len(rows) != len(ids) {
+				return domainshared.Conflict("原文记录已变化，请重新预览")
+			}
+			for _, row := range rows {
+				if row.ID.String() == binding.ExternalID {
+					ext, err := externalToDomain(row)
+					if err != nil {
+						return err
+					}
+					if !ext.CanPublish() || ext.Version != binding.Version {
+						return domainshared.NewError("EXTERNAL_PREVIEW_CHANGED", "原文已变化或不可用，请重新预览后确认")
+					}
+					quoteID := ""
+					if ext.QuotedID != nil {
+						quoteID = ext.QuotedID.String()
+					}
+					if quoteID != binding.QuotedID {
+						return domainshared.NewError("EXTERNAL_PREVIEW_CHANGED", "引用原文已变化，请重新预览")
+					}
+				} else if row.SnapshotVersion != binding.QuotedVersion {
+					return domainshared.NewError("EXTERNAL_PREVIEW_CHANGED", "引用原文已变化，请重新预览")
+				}
+			}
+		}
+		if err := saveTweet(tx, t, true); err != nil {
+			return err
+		}
+		created = true
+		return nil
+	})
+	return result, created, err
 }
 
 // FindByID 按 ID 查找推文。
@@ -61,6 +179,7 @@ func (r *TweetRepository) FindByID(ctx context.Context, id domainshared.ID) (*do
 	}
 	return tweetToDomain(po)
 }
+
 // FindByIDs 批量按 ID 查找推文（服务 toDTOs 预加载引用推文）。
 func (r *TweetRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domaintweet.Tweet, error) {
 	if len(ids) == 0 {
@@ -171,6 +290,7 @@ func (r *TweetRepository) Delete(ctx context.Context, id domainshared.ID) error 
 	}
 	return nil
 }
+
 // Like 点赞推文（重复点赞幂等；推文不存在返回 ErrNotFound）。
 func (r *TweetRepository) Like(ctx context.Context, tweetID, userID domainshared.ID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -250,6 +370,7 @@ func (r *TweetRepository) FindLikedTweetIDs(ctx context.Context, userID domainsh
 	}
 	return result, nil
 }
+
 // CountQuotesByTweetIDs 批量查询推文列表的被引用次数。
 func (r *TweetRepository) CountQuotesByTweetIDs(ctx context.Context, tweetIDs []domainshared.ID) (map[string]int64, error) {
 	res := make(map[string]int64, len(tweetIDs))
@@ -293,6 +414,17 @@ func tweetToPO(t *domaintweet.Tweet) model.Tweet {
 		u := q.UUID()
 		po.QuoteOf = &u
 	}
+	pub := t.Publication()
+	if pub.ExternalTweetID != nil {
+		id := pub.ExternalTweetID.UUID()
+		po.ExternalTweetID = &id
+	}
+	if pub.ClientRequestID != nil {
+		id := pub.ClientRequestID.UUID()
+		po.ClientRequestID = &id
+	}
+	po.RequestHash = pub.RequestHash
+	po.ExternalPreviewTokenHash = pub.PreviewTokenHash
 	if c := t.CreatedAt(); !c.IsZero() {
 		po.CreatedAt = c
 	}
@@ -304,6 +436,15 @@ func tweetToPO(t *domaintweet.Tweet) model.Tweet {
 
 // tweetToDomain 持久化模型 → 领域实体。
 func tweetToDomain(po model.Tweet) (*domaintweet.Tweet, error) {
+	pub := domaintweet.Publication{RequestHash: po.RequestHash, PreviewTokenHash: po.ExternalPreviewTokenHash}
+	if po.ExternalTweetID != nil {
+		id := domainshared.IDFromUUID(*po.ExternalTweetID)
+		pub.ExternalTweetID = &id
+	}
+	if po.ClientRequestID != nil {
+		id := domainshared.IDFromUUID(*po.ClientRequestID)
+		pub.ClientRequestID = &id
+	}
 	var quoteOf *domainshared.ID
 	if po.QuoteOf != nil {
 		id := domainshared.MustParseID(po.QuoteOf.String())
@@ -318,8 +459,10 @@ func tweetToDomain(po model.Tweet) (*domaintweet.Tweet, error) {
 		po.LikeCount,
 		po.CreatedAt,
 		po.UpdatedAt,
+		pub,
 	), nil
 }
 
 // 编译期断言：仓储实现满足领域接口。
 var _ domaintweet.TweetRepository = (*TweetRepository)(nil)
+var _ domaintweet.PublicationRepository = (*TweetRepository)(nil)

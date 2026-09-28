@@ -1,6 +1,6 @@
 // Package tweet 定义推文聚合的领域模型（PRD-0013）。
 //
-// 推文是多用户微博的短内容单元：纯文本（≤500 rune）+ 最多 4 张图，两者至少其一。
+// 本站正文上限 500 rune、上传图片上限 4 张；也可仅引用本站推文或共享 X 原文。
 // 三条领域规则：
 //   - 即发即出：无先审后发状态机，创建即对公众可见
 //   - 不可编辑：聚合根无 Update 路径，反悔 = 删除重发
@@ -40,7 +40,7 @@ func NewTweetCreated(t *Tweet) TweetCreated {
 	return TweetCreated{
 		BaseEvent: shared.NewBaseEvent("tweet.created", t.id),
 		AuthorID:  t.authorID,
-		Excerpt:   excerpt(t.content),
+		Excerpt:   t.NotificationExcerpt(),
 	}
 }
 
@@ -61,7 +61,7 @@ func NewTweetDeleted(t *Tweet) TweetDeleted {
 	return TweetDeleted{
 		BaseEvent: shared.NewBaseEvent("tweet.deleted", t.id),
 		AuthorID:  t.authorID,
-		Excerpt:   excerpt(t.content),
+		Excerpt:   t.NotificationExcerpt(),
 	}
 }
 
@@ -123,6 +123,8 @@ type Tweet struct {
 	images []string
 	// quoteOf 转发引用的推文 ID（可选）
 	quoteOf *shared.ID
+	// publication 外部来源关联与本次发布的幂等标识，创建后固定。
+	publication Publication
 	// likeCount 点赞冗余计数（tweet_likes 表是唯一数据源，此列服务列表性能）
 	likeCount int
 	// timestamps 创建/更新时间（无 Update 路径，updated_at 实际恒等于 created_at）
@@ -133,10 +135,17 @@ type Tweet struct {
 //
 // content 先 trim 再校验：纯空白正文视为空，无图片无引用时拒绝。
 // 创建成功记录 TweetCreated 事件（应用层 Save 后发布）。
-func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shared.ID) (*Tweet, error) {
+func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shared.ID, publication ...Publication) (*Tweet, error) {
+	var pub Publication
+	if len(publication) > 0 {
+		pub = publication[0]
+	}
+	if quoteOf != nil && pub.ExternalTweetID != nil {
+		return nil, shared.Validation("本站引用与 X 原文不能同时指定")
+	}
 	content = strings.TrimSpace(content)
-	if content == "" && len(images) == 0 && quoteOf == nil {
-		return nil, shared.Validation("推文内容、图片与引用至少包含一项")
+	if content == "" && len(images) == 0 && quoteOf == nil && pub.ExternalTweetID == nil {
+		return nil, shared.Validation("推文内容、图片、引用与 X 原文至少包含一项")
 	}
 	if utf8.RuneCountInString(content) > MaxContentRunes {
 		return nil, shared.Validation("推文内容不能超过 500 字")
@@ -155,12 +164,13 @@ func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shar
 
 	now := time.Now()
 	t := &Tweet{
-		id:         shared.NewID(),
-		authorID:   authorID,
-		content:    content,
-		images:     images,
-		quoteOf:    quoteOf,
-		timestamps: shared.Timestamps{CreatedAt: now, UpdatedAt: now},
+		id:          shared.NewID(),
+		authorID:    authorID,
+		content:     content,
+		images:      images,
+		quoteOf:     quoteOf,
+		publication: pub,
+		timestamps:  shared.Timestamps{CreatedAt: now, UpdatedAt: now},
 	}
 	t.RecordEvent(NewTweetCreated(t))
 	return t, nil
@@ -174,31 +184,47 @@ func ReconstructTweet(
 	quoteOf *shared.ID,
 	likeCount int,
 	createdAt, updatedAt time.Time,
+	publication ...Publication,
 ) *Tweet {
+	var pub Publication
+	if len(publication) > 0 {
+		pub = publication[0]
+	}
 	if images == nil {
 		images = []string{}
 	}
 	return &Tweet{
-		id:         id,
-		authorID:   authorID,
-		content:    content,
-		images:     images,
-		quoteOf:    quoteOf,
-		likeCount:  likeCount,
-		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
+		id:          id,
+		authorID:    authorID,
+		content:     content,
+		images:      images,
+		quoteOf:     quoteOf,
+		publication: pub,
+		likeCount:   likeCount,
+		timestamps:  shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
 
 // 访问器（无 setter：不可编辑）
-func (t *Tweet) ID() shared.ID        { return t.id }
-func (t *Tweet) AuthorID() shared.ID  { return t.authorID }
-func (t *Tweet) Content() string      { return t.content }
-func (t *Tweet) Images() []string     { return t.images }
-func (t *Tweet) QuoteOf() *shared.ID  { return t.quoteOf }
-func (t *Tweet) LikeCount() int       { return t.likeCount }
-func (t *Tweet) CreatedAt() time.Time { return t.timestamps.CreatedAt }
-func (t *Tweet) UpdatedAt() time.Time { return t.timestamps.UpdatedAt }
-func (t *Tweet) Hashtags() []string   { return ExtractHashtags(t.content) }
+func (t *Tweet) ID() shared.ID               { return t.id }
+func (t *Tweet) AuthorID() shared.ID         { return t.authorID }
+func (t *Tweet) Content() string             { return t.content }
+func (t *Tweet) Images() []string            { return t.images }
+func (t *Tweet) QuoteOf() *shared.ID         { return t.quoteOf }
+func (t *Tweet) LikeCount() int              { return t.likeCount }
+func (t *Tweet) CreatedAt() time.Time        { return t.timestamps.CreatedAt }
+func (t *Tweet) UpdatedAt() time.Time        { return t.timestamps.UpdatedAt }
+func (t *Tweet) Hashtags() []string          { return ExtractHashtags(t.content) }
+func (t *Tweet) Publication() Publication    { return t.publication }
+func (t *Tweet) ExternalTweetID() *shared.ID { return t.publication.ExternalTweetID }
+
+// NotificationExcerpt 不在通知中保存外部正文，保证撤回后没有遗留摘录。
+func (t *Tweet) NotificationExcerpt() string {
+	if t.content == "" && t.ExternalTweetID() != nil {
+		return "转发了一条 X 推文"
+	}
+	return excerpt(t.content)
+}
 
 // TweetLiked 推文被点赞事件。
 //
@@ -220,7 +246,7 @@ func NewTweetLiked(t *Tweet, actorID shared.ID) TweetLiked {
 		BaseEvent: shared.NewBaseEvent("tweet.liked", t.id),
 		AuthorID:  t.authorID,
 		ActorID:   actorID,
-		Excerpt:   excerpt(t.content),
+		Excerpt:   t.NotificationExcerpt(),
 	}
 }
 
@@ -247,6 +273,6 @@ func NewTweetQuoted(quoted, quote *Tweet) TweetQuoted {
 		AuthorID:     quoted.authorID,
 		ActorID:      quote.authorID,
 		QuoteTweetID: quote.id,
-		Excerpt:      excerpt(quoted.content),
+		Excerpt:      quoted.NotificationExcerpt(),
 	}
 }
