@@ -98,13 +98,13 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 			{
 				id: "palette",
 				title: "颜色",
-				scope: "语义角色导览与主色种子推导色阶的生成器。",
+				scope: "语义色角色、主色推导与组件用色指南。",
 				to: "/design-system/palette",
 			},
 			{
 				id: "theming",
 				title: "主题",
-				scope: "CSS 变量、默认色板与方言。",
+				scope: "导入、切换与扩展主题：从默认色板到自定义作用域。",
 				to: "/design-system/guides/theming",
 			},
 			{
@@ -118,6 +118,12 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 				title: "样式",
 				scope: "Tailwind v4 与组件变体的职责。",
 				to: "/design-system/guides/styling",
+			},
+			{
+				id: "animation",
+				title: "动画",
+				scope: "组件动效的工具、motion 编排与减弱动态底线。",
+				to: "/design-system/guides/animation",
 			},
 			{
 				id: "composition",

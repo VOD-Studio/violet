@@ -13,6 +13,7 @@ export const GUIDE_CONTENT = {
 	theming: lazy(() => import("./theming")),
 	"dark-mode": lazy(() => import("./dark-mode")),
 	styling: lazy(() => import("./styling")),
+	animation: lazy(() => import("./animation")),
 	composition: lazy(() => import("./composition")),
 	llms: lazy(() => import("./llms")),
 	mcp: lazy(() => import("./mcp")),
