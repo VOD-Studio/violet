@@ -1,0 +1,25 @@
+/*
+ * 代码卡行号（shiki 输出 .line span 的官方 CSS counter 方案）。
+ * 仅作用于 .shiki-line-numbers 作用域；深底代码卡下行号改固定灰。
+ */
+.shiki-line-numbers code {
+	counter-reset: shiki-line;
+}
+
+.shiki-line-numbers .line::before {
+	counter-increment: shiki-line;
+	content: counter(shiki-line);
+	display: inline-block;
+	width: 1.25rem;
+	margin-right: 0.75rem;
+	text-align: right;
+	color: var(--muted-foreground);
+	opacity: 0.55;
+	user-select: none;
+}
+
+/* 深底卡上 --muted-foreground 跟随页面主题会深底深字，固定 GitHub 灰 */
+.code-card-dark .shiki-line-numbers .line::before {
+	color: rgb(139 148 158);
+	opacity: 0.9;
+}

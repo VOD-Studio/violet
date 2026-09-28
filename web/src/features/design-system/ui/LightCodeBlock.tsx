@@ -1,11 +1,10 @@
 import { useShikiHighlight } from "@shared/ui/code-preview/use-shiki-highlight";
-import "./component-code.css";
+import "@shared/ui/code-preview/component-code.css";
 
 /**
  * LightCodeBlock - 浅色主题代码块（github-light 高亮 + CSS 行号）
  *
  * 组件文档页专用：与页面底色自然衔接，避免深色代码块在文档页的割裂感。
- * 依赖 component-code.css 提供的 .shiki-line-numbers 行号计数样式。
  */
 export function LightCodeBlock({ code }: { code: string }) {
 	const { html, loading } = useShikiHighlight(code, "tsx", { theme: "light" });
