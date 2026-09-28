@@ -23,3 +23,9 @@
 	color: rgb(139 148 158);
 	opacity: 0.9;
 }
+
+/* 恒浅底卡的行号同样固定，不跟随页面主题 */
+.code-card-light .shiki-line-numbers .line::before {
+	color: #6e7781;
+	opacity: 0.9;
+}

@@ -137,13 +137,7 @@ export function ButtonDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
 				</p>
-				<CodeCard
-					code={basicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 					<ButtonBasicDemo />
 				</CodeCard>
 			</section>
@@ -160,13 +154,7 @@ export function ButtonDocPage() {
 						主要动作使用 default（随方言映射），固定主色强调使用 primary，柔和辅助使用
 						soft，描边与次级使用 outline / secondary，轻量操作使用 ghost。
 					</p>
-					<CodeCard
-						code={variantsSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
 						<ButtonVariantsDemo />
 					</CodeCard>
 				</div>
@@ -178,13 +166,7 @@ export function ButtonDocPage() {
 						包含 xs 到 xl 五个高度梯度；纯图标按钮请使用 icon 档位并提供明确的
 						aria-label。
 					</p>
-					<CodeCard
-						code={sizesSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={sizesSource} language="tsx" lineNumbers collapseLines={6}>
 						<ButtonSizesDemo />
 					</CodeCard>
 				</div>
@@ -195,13 +177,7 @@ export function ButtonDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
 					</p>
-					<CodeCard
-						code={iconsSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={iconsSource} language="tsx" lineNumbers collapseLines={6}>
 						<ButtonIconsDemo />
 					</CodeCard>
 				</div>
@@ -213,13 +189,7 @@ export function ButtonDocPage() {
 						内置 loading 支持：处于加载中时自动禁用并设置
 						aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
 					</p>
-					<CodeCard
-						code={statesSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={statesSource} language="tsx" lineNumbers collapseLines={6}>
 						<ButtonStatesDemo />
 					</CodeCard>
 				</div>
@@ -233,13 +203,7 @@ export function ButtonDocPage() {
 						跳转页面使用 Link；asChild
 						只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
 					</p>
-					<CodeCard
-						code={linkSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={linkSource} language="tsx" lineNumbers collapseLines={6}>
 						<ButtonLinkDemo />
 					</CodeCard>
 				</div>

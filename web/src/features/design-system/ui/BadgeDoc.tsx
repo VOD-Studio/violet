@@ -93,13 +93,7 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					主色、次要、警示、描边、透明与链接外观。Link 负责跳转，Badge 不代替链接。
 				</p>
-				<CodeCard
-					code={variantsSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
 					<BadgeVariantsDemo />
 				</CodeCard>
 			</section>
@@ -111,13 +105,7 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					点击调整数量。超过 99 显示 99+、为零时隐藏角标：两者均由调用方计算。
 				</p>
-				<CodeCard
-					code={counterSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={counterSource} language="tsx" lineNumbers collapseLines={6}>
 					<BadgeCounterDemo />
 				</CodeCard>
 			</section>
@@ -129,13 +117,7 @@ export function BadgeDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					只需提示存在新消息、不需显示数量时使用 dot，并以 edge 贴住按钮圆弧。
 				</p>
-				<CodeCard
-					code={dotSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={dotSource} language="tsx" lineNumbers collapseLines={6}>
 					<BadgeDotDemo />
 				</CodeCard>
 			</section>

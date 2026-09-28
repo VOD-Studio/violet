@@ -180,6 +180,23 @@ export async function highlightCode(code: string, lang: string): Promise<string>
 }
 
 /**
+ * highlightCodeLight - 以浅色主题高亮代码字符串
+ *
+ * @param code - 原始代码
+ * @param lang - 任意 lang id（解析与降级策略同 {@link highlightCode}）
+ * @returns 高亮 HTML（shiki 输出）
+ */
+export async function highlightCodeLight(code: string, lang: string): Promise<string> {
+	const resolved = resolveSupportedLanguage(lang);
+	const highlighter = await getHighlighter();
+	const finalLang = resolved ?? "plaintext";
+	if (resolved) {
+		await ensureLanguage(resolved);
+	}
+	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME_LIGHT });
+}
+
+/**
  * highlightCodeAuto - 双主题高亮，token 颜色输出 light-dark() 由 CSS 自动切换
  *
  * 无需 JS 感知站点明暗：跟随元素 color-scheme 取对应主题取值，与组件库

@@ -117,13 +117,7 @@ export function CheckboxDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					与 Label 配合使用，点击复选框或关联文字标签均可无缝切换勾选。
 				</p>
-				<CodeCard
-					code={basicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 					<CheckboxBasicDemo />
 				</CodeCard>
 			</section>
@@ -143,13 +137,7 @@ export function CheckboxDocPage() {
 						indeterminate
 						状态，呈现减号指示器；再次点击父级可统一全选或全部反选。下方为完整联动实况：
 					</p>
-					<CodeCard
-						code={triStateSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={triStateSource} language="tsx" lineNumbers collapseLines={6}>
 						<CheckboxTriStateDemo />
 					</CodeCard>
 				</div>
@@ -161,13 +149,7 @@ export function CheckboxDocPage() {
 						default 变体使用 primary 主要语义色，随页面所在方言自动映射；primary
 						变体显式绑定冷香紫罗兰主色，适合需保持固定主色的选项。
 					</p>
-					<CodeCard
-						code={variantsSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
 						<CheckboxVariantsDemo />
 					</CodeCard>
 				</div>
@@ -179,13 +161,7 @@ export function CheckboxDocPage() {
 						涵盖 sm (14px)、default (16px) 与 lg
 						(20px)；小号推荐用于数据表格行，大号用于醒目卡片或移动端大点击区域。
 					</p>
-					<CodeCard
-						code={sizesSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={sizesSource} language="tsx" lineNumbers collapseLines={6}>
 						<CheckboxSizesDemo />
 					</CodeCard>
 				</div>
@@ -196,13 +172,7 @@ export function CheckboxDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						禁用时透明度自然降低，阻止鼠标光标与键盘聚焦交互。
 					</p>
-					<CodeCard
-						code={disabledSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={disabledSource} language="tsx" lineNumbers collapseLines={6}>
 						<CheckboxDisabledDemo />
 					</CodeCard>
 				</div>

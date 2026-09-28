@@ -338,13 +338,7 @@ export function PaletteGenerator() {
 					soft-foreground 成对使用，悬停与聚焦态由主色源派生，文字对比度需满足 WCAG AA。
 				</p>
 				<div className="mt-4 space-y-4">
-					<CodeCard
-						code={variantsSource}
-						language="tsx"
-						lineNumbers
-						title="在组件中"
-						variant="light"
-					>
+					<CodeCard code={variantsSource} language="tsx" lineNumbers title="在组件中">
 						<ButtonVariantsDemo />
 					</CodeCard>
 					<CodeCard
@@ -352,7 +346,6 @@ export function PaletteGenerator() {
 						language="css"
 						lineNumbers
 						title="在 CSS 文件中"
-						variant="light"
 					/>
 				</div>
 			</section>
@@ -374,7 +367,6 @@ export function PaletteGenerator() {
 					language="css"
 					lineNumbers
 					title="@violet/ui/styles/palettes/violet.css"
-					variant="light"
 				/>
 			</section>
 
@@ -395,14 +387,12 @@ export function PaletteGenerator() {
 						language="css"
 						lineNumbers
 						title="覆盖主色源 · palettes/coral.css"
-						variant="light"
 					/>
 					<CodeCard
 						code={SITE_TOKENS_SNIPPET}
 						language="css"
 						lineNumbers
 						title="添加业务色 · styles/site-tokens.css"
-						variant="light"
 					/>
 				</div>
 			</section>

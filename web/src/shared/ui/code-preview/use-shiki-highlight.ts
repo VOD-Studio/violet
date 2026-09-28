@@ -9,7 +9,7 @@
  * bundle/full 不再进入构建产物。
  */
 import { useEffect, useState } from "react";
-import { highlightCode, highlightCodeAuto } from "./lib/highlighter";
+import { highlightCode, highlightCodeAuto, highlightCodeLight } from "./lib/highlighter";
 
 export interface UseShikiHighlightResult {
 	/** 高亮后的 HTML（shiki 输出 <pre class="shiki">），未完成时为空 */
@@ -20,12 +20,12 @@ export interface UseShikiHighlightResult {
 
 export interface UseShikiHighlightOptions {
 	/**
-	 * 高亮主题：dark（默认，github-dark）| auto（双主题，token 颜色为
-	 * light-dark() 由 CSS 按站点明暗切换）
+	 * 高亮主题：dark（默认，github-dark）| light（github-light）| auto（双主题，
+	 * token 颜色为 light-dark() 由 CSS 按站点明暗切换）
 	 *
 	 * @default dark
 	 */
-	theme?: "dark" | "auto";
+	theme?: "dark" | "light" | "auto";
 }
 
 /**
@@ -38,7 +38,7 @@ export function useShikiHighlight(
 	language: string,
 	options?: UseShikiHighlightOptions,
 ): UseShikiHighlightResult {
-	const theme = options?.theme ?? "dark";
+	const theme = options?.theme ?? "auto";
 	const [html, setHtml] = useState("");
 	const [loading, setLoading] = useState(true);
 
@@ -48,9 +48,11 @@ export function useShikiHighlight(
 		void (async () => {
 			try {
 				const out =
-					theme === "auto"
-						? await highlightCodeAuto(code, language)
-						: await highlightCode(code, language);
+					theme === "light"
+						? await highlightCodeLight(code, language)
+						: theme === "auto"
+							? await highlightCodeAuto(code, language)
+							: await highlightCode(code, language);
 				if (!cancelled) {
 					setHtml(out);
 					setLoading(false);

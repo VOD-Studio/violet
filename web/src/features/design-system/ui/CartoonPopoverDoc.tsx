@@ -200,13 +200,7 @@ export function CartoonPopoverDocPage() {
 					从 shared/ui/cartoon-popover 导入。点击触发器即可弹出，支持外部点击与 Escape
 					自动关闭。
 				</p>
-				<CodeCard
-					code={basicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 					<CartoonPopoverBasicDemo />
 				</CodeCard>
 			</section>
@@ -220,13 +214,7 @@ export function CartoonPopoverDocPage() {
 					当有一排带有 Popover 的按钮时，使用 CartoonPopoverGroup
 					包裹。鼠标在组内滑过时浮层连续滑动并随内容调整尺寸；完全离开后沿轮廓收起，再次进入从新位置描线淡入。系统启用「减少动态效果」时即时开合。
 				</p>
-				<CodeCard
-					code={groupSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={groupSource} language="tsx" lineNumbers collapseLines={6}>
 					<CartoonPopoverGroupDemo />
 				</CodeCard>
 			</section>
@@ -240,13 +228,7 @@ export function CartoonPopoverDocPage() {
 					支持仅点击（click）、仅悬停（hover）或两者兼具（both /
 					openOnHover）。悬停模式下移入气泡内容区保持打开，鼠标离开后平滑收起。
 				</p>
-				<CodeCard
-					code={hoverSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={hoverSource} language="tsx" lineNumbers collapseLines={6}>
 					<CartoonPopoverHoverDemo />
 				</CodeCard>
 			</section>
@@ -259,13 +241,7 @@ export function CartoonPopoverDocPage() {
 				<p className="text-sm leading-relaxed text-muted-foreground">
 					提供带三角形小尾巴的经典对白气泡（speech）与无尾巴的便签贴纸（sticker）。
 				</p>
-				<CodeCard
-					code={stylesSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={stylesSource} language="tsx" lineNumbers collapseLines={6}>
 					<CartoonPopoverStylesDemo />
 				</CodeCard>
 			</section>

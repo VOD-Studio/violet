@@ -288,13 +288,7 @@ export function CommentSectionDocPage() {
 						双层扁平回复结构。子回复以 @ 昵称指示对象，不向内无限嵌套。
 					</p>
 
-					<CodeCard
-						code={basicSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 						<CommentSectionBasicDemo />
 					</CodeCard>
 				</div>
@@ -306,13 +300,7 @@ export function CommentSectionDocPage() {
 						当评论数据为空时，自动呈现轻量空状态占位。
 					</p>
 
-					<CodeCard
-						code={emptySource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={emptySource} language="tsx" lineNumbers collapseLines={6}>
 						<CommentSectionEmptyDemo />
 					</CodeCard>
 				</div>
@@ -325,13 +313,7 @@ export function CommentSectionDocPage() {
 						，自动渲染 Shimmer 骨架条目。
 					</p>
 
-					<CodeCard
-						code={loadingSource}
-						language="tsx"
-						variant="light"
-						lineNumbers
-						collapseLines={6}
-					>
+					<CodeCard code={loadingSource} language="tsx" lineNumbers collapseLines={6}>
 						<CommentSectionLoadingDemo />
 					</CodeCard>
 				</div>

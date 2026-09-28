@@ -42,13 +42,7 @@ export default function QuickStartGuide() {
 				</p>
 			</GuideSection>
 			<GuideSection title="使用组件">
-				<CodeCard
-					code={buttonBasicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={buttonBasicSource} language="tsx" lineNumbers collapseLines={6}>
 					<ButtonBasicDemo />
 				</CodeCard>
 				<GuideCode

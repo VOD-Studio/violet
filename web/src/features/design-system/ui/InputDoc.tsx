@@ -68,13 +68,7 @@ export function InputDocPage() {
 					Label。输入一个字符，再输入第二个字符，观察由示例自身设置的 aria-invalid
 					状态变化。
 				</p>
-				<CodeCard
-					code={basicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 					<InputBasicDemo />
 				</CodeCard>
 			</section>

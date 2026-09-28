@@ -65,13 +65,7 @@ export function TabsDocPage() {
 					从 <code className="font-mono">@violet/ui</code>{" "}
 					导入组合件；点击标签即可切换实际内容。
 				</p>
-				<CodeCard
-					code={basicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 					<TabsBasicDemo />
 				</CodeCard>
 			</section>

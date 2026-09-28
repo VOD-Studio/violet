@@ -13,13 +13,7 @@ export default function IntroductionGuide() {
 					的组件库，附明暗一体的语义主题 token。营造法式是它的在线用法与设计规范，
 					不是另一套组件实现。
 				</p>
-				<CodeCard
-					code={buttonBasicSource}
-					language="tsx"
-					variant="light"
-					lineNumbers
-					collapseLines={6}
-				>
+				<CodeCard code={buttonBasicSource} language="tsx" lineNumbers collapseLines={6}>
 					<ButtonBasicDemo />
 				</CodeCard>
 			</GuideSection>
