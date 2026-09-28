@@ -49,7 +49,7 @@ const USAGE_CSS_SNIPPET = `/* 直接使用 CSS 变量 */
 
 /** 默认主色源预设源码副本；真实文件为 @violet/ui 的 styles/palettes/violet.css，改契约需两处同步。 */
 const VIOLET_PALETTE_SOURCE = `/*
- * Violet 主色源：紫罗兰（Violet / Iris）默认 palette。
+ * 默认主色源预设。
  *
  * 本层只提供稳定主色及其状态；页面方言决定是否把语义 primary 映射到主色源。
  * 画布与行为状态色不在 palette 管辖内。
@@ -149,20 +149,18 @@ export function PaletteGenerator() {
 							>
 								<div className="flex items-baseline justify-between">
 									<code
-										className={`font-mono text-xl font-bold tracking-wider ${
-											(seed?.l ?? 0.5) < 0.65
+										className={`font-mono text-xl font-bold tracking-wider ${(seed?.l ?? 0.5) < 0.65
 												? "text-white"
 												: "text-slate-900"
-										}`}
+											}`}
 									>
 										{seedHex.toUpperCase()}
 									</code>
 									<button
-										className={`rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-xs transition-opacity hover:opacity-90 ${
-											(seed?.l ?? 0.5) < 0.65
+										className={`rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-xs transition-opacity hover:opacity-90 ${(seed?.l ?? 0.5) < 0.65
 												? "bg-white/20 text-white"
 												: "bg-black/15 text-slate-900"
-										}`}
+											}`}
 										onClick={async () => {
 											if (await copyText(seedHex.toUpperCase())) {
 												toast.success(
@@ -239,11 +237,10 @@ export function PaletteGenerator() {
 									return (
 										<button
 											aria-label={`主色 ${preset.name}`}
-											className={`size-7 cursor-pointer rounded-full transition-[box-shadow,filter] duration-150 ease-out hover:brightness-110 ${
-												isSelected
+											className={`size-7 cursor-pointer rounded-full transition-[box-shadow,filter] duration-150 ease-out hover:brightness-110 ${isSelected
 													? ""
 													: "ring-1 ring-border/60 hover:ring-border"
-											}`}
+												}`}
 											key={preset.hex}
 											onClick={() => setSeedHex(preset.hex)}
 											style={{
@@ -285,25 +282,22 @@ export function PaletteGenerator() {
 								type="button"
 							>
 								<span
-									className={`pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide whitespace-nowrap transition-opacity duration-150 ease-out ${
-										isLight ? "text-slate-900" : "text-white"
-									} ${isSelected ? "opacity-100" : "opacity-0"}`}
+									className={`pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold tracking-wide whitespace-nowrap transition-opacity duration-150 ease-out ${isLight ? "text-slate-900" : "text-white"
+										} ${isSelected ? "opacity-100" : "opacity-0"}`}
 								>
 									{copiedRamp === step.label
 										? "✓ 已复制"
 										: step.hex.toUpperCase()}
 								</span>
 								<span
-									className={`font-mono text-[11px] font-semibold transition-opacity duration-150 ${
-										isLight ? "text-slate-800" : "text-white"
-									} ${isSelected ? "opacity-20" : "opacity-75"}`}
+									className={`font-mono text-[11px] font-semibold transition-opacity duration-150 ${isLight ? "text-slate-800" : "text-white"
+										} ${isSelected ? "opacity-20" : "opacity-75"}`}
 								>
 									{step.label}
 								</span>
 								<span
-									className={`block font-mono text-[9px] tabular-nums transition-opacity duration-150 ${
-										isLight ? "text-slate-700/60" : "text-white/60"
-									} ${isSelected ? "opacity-0" : "opacity-100"}`}
+									className={`block font-mono text-[9px] tabular-nums transition-opacity duration-150 ${isLight ? "text-slate-700/60" : "text-white/60"
+										} ${isSelected ? "opacity-0" : "opacity-100"}`}
 								>
 									{step.hex.toUpperCase()}
 								</span>
@@ -315,11 +309,10 @@ export function PaletteGenerator() {
 			<div className="mt-2 grid grid-cols-11" aria-hidden="true">
 				{palette.ramp.map((step) => (
 					<span
-						className={`text-center font-mono text-[10px] tabular-nums transition-colors duration-150 ease-out ${
-							hoverRamp === step.label || copiedRamp === step.label
+						className={`text-center font-mono text-[10px] tabular-nums transition-colors duration-150 ease-out ${hoverRamp === step.label || copiedRamp === step.label
 								? "font-bold text-foreground"
 								: "text-muted-foreground"
-						}`}
+							}`}
 						key={step.label}
 					>
 						{step.label}
@@ -398,11 +391,10 @@ export function PaletteGenerator() {
 					{palette.audits.map((audit) => (
 						<li className="flex items-baseline gap-3 py-2.5 text-sm" key={audit.pair}>
 							<span
-								className={`inline-flex size-4 items-center justify-center rounded-full text-xs font-bold ${
-									audit.pass
+								className={`inline-flex size-4 items-center justify-center rounded-full text-xs font-bold ${audit.pass
 										? "bg-success/15 text-success"
 										: "bg-destructive/15 text-destructive"
-								}`}
+									}`}
 							>
 								{audit.pass ? "✓" : "✗"}
 							</span>
@@ -411,9 +403,8 @@ export function PaletteGenerator() {
 								{audit.ratio.toFixed(2)}:1
 							</code>
 							<span
-								className={`w-20 text-right font-mono text-xs ${
-									audit.pass ? "text-muted-foreground" : "text-destructive"
-								}`}
+								className={`w-20 text-right font-mono text-xs ${audit.pass ? "text-muted-foreground" : "text-destructive"
+									}`}
 							>
 								{audit.rating}
 							</span>
