@@ -266,7 +266,7 @@ export function MotionCharter() {
 					<InteractiveCard
 						name="CopyButton · 就地复制反馈"
 						note="图标与文案原位平滑交接，外层尺寸严格锚定，杜绝挤压变形。"
-						usage='<CopyButton text="npm i @violet/ui" />'
+						usage='<CopyButton text="https://violet.dev/design-system" label="点击复制" />'
 					>
 						<CopyButton text="https://violet.dev/design-system" label="点击复制" />
 					</InteractiveCard>

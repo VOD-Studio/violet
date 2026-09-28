@@ -12,7 +12,7 @@
 | 路由 | TanStack Router（文件路由） |
 | 状态管理 | Zustand + TanStack Query v5 |
 | 样式 | Tailwind CSS v4 |
-| UI 组件 | `@violet/ui` 工作区包（Radix UI + Tailwind v4 主题） |
+| UI 组件 | `@violet/ui` 可打包组件库（Radix UI + Tailwind v4 主题） |
 | 表单 | React Hook Form + Zod |
 | 富文本 | TipTap v3 |
 | 代码高亮 | Shiki / lowlight |
@@ -44,7 +44,7 @@ web/src/
 └── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
 ```
 
-`web/packages/ui/` 是私有 pnpm workspace 包：组件由 `@violet/ui` 根入口导出；主题 CSS 由 `@violet/ui/styles.css` 导出，必须在 Tailwind CSS v4 之后导入。营造法式 `/design-system` 提供入门、主题规范与组件用法。
+`web/packages/ui/` 是可独立构建并打包的 pnpm workspace 包：`@violet/ui` 根入口导出 ESM 与类型声明；`@violet/ui/styles.css` 导出带 Tailwind v4 `@source` 的打包 CSS，须在宿主的 Tailwind CSS v4 之后导入。运行 `pnpm --filter @violet/ui build`，再运行 `pnpm --filter @violet/ui pack --pack-destination /tmp` 可生成供外部 React 19 + Tailwind v4 项目安装的 tarball；npm 发布尚未执行。营造法式 `/design-system/guides/quick-start` 提供独立项目安装说明。
 
 ## 开发环境
 

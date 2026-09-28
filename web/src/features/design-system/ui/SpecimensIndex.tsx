@@ -63,7 +63,7 @@ export function SpecimensIndex() {
 			<DesignSystemDocHeader
 				num="柒"
 				title="组件目录"
-				scope="从 @violet/ui 导出的组件可以在工作区直接使用；站点私有套件只供对应业务页面调用。各用法页的预览与复制代码来自同一示例文件。"
+				scope="从 @violet/ui 导出的组件可通过构建后的 tarball 安装到独立 React 项目；站点私有套件只供对应业务页面调用。各用法页的预览与复制代码来自同一示例文件。"
 			/>
 
 			<section aria-labelledby="package-components" className="space-y-5">

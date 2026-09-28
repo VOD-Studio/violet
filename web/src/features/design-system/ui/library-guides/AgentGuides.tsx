@@ -21,8 +21,8 @@ export const AGENT_GUIDES: Record<string, ReactNode> = {
 				</p>
 				<p>
 					llms.txt 是文档发现入口，不包含组件源码或实时 props 表。使用组件前查看{" "}
-					<GuideLink to="/design-system/specimens">组件用法页</GuideLink>，再核对{" "}
-					<code>web/packages/ui/src/index.ts</code> 的真实导出。
+					<GuideLink to="/design-system/specimens">组件用法页</GuideLink>
+					；开发库本身时再核对 <code>web/packages/ui/src/index.ts</code> 的真实导出。
 				</p>
 			</GuideSection>
 		</>

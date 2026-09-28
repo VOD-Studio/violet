@@ -1,19 +1,17 @@
 # 营造法式 / @violet/ui
 
-> violet 博客仓库中的 React 19 + Tailwind CSS v4 组件库与用法文档。@violet/ui 当前是 private pnpm workspace 包；没有 npm 安装包或专用组件文档 MCP server。
+> React 19 + Tailwind CSS v4 组件库与用法文档。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。
 
 ## 开始使用
 
 - [介绍](https://xunrua.top/design-system/guides/introduction): 包的使用范围与限制。
-- [快速入门](https://xunrua.top/design-system/guides/quick-start): pnpm workspace、CSS 导入和 Button 用法。
+- [快速入门](https://xunrua.top/design-system/guides/quick-start): 工作区安装、CSS 导入和 Button 用法。
 - [设计原则](https://xunrua.top/design-system/principles): 站点设计判据。
 - [框架集成](https://xunrua.top/design-system/guides/integration): 现有 React 应用接入方式。
 - [组件目录](https://xunrua.top/design-system/specimens): 组件示例与公开契约。
 
-- [命令行](https://xunrua.top/design-system/guides/cli): 当前工作区可用的命令及专用 CLI 的边界。
-- [组件案例](https://xunrua.top/design-system/guides/examples): 可操作的同源示例。
+- [命令行](https://xunrua.top/design-system/guides/cli): 构建与打包命令及专用 CLI 的边界。
 - [路线图](https://xunrua.top/design-system/guides/roadmap): 已交付与尚未提供的能力。
-- [Figma](https://xunrua.top/design-system/guides/figma): 设计资产现状。
 - [手册](https://xunrua.top/design-system/guides/handbook): 按任务查找设计规范与组件。
 
 ## 设计指南
