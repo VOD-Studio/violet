@@ -48,7 +48,7 @@ export function PalettePage() {
 			<DesignSystemDocHeader
 				num="伍"
 				title="颜色"
-				scope="语义角色导览与主色种子推导色阶的生成器。"
+				scope="语义色角色、主色推导与组件用色指南。"
 			/>
 			<PaletteGenerator />
 		</div>
