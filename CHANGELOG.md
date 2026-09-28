@@ -7,6 +7,36 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.45](https://github.com/VOD-Studio/violet/compare/v2.8.44...v2.8.45) (2026-09-28)
+
+
+### 新增
+
+* **badge:** 添加徽章与角标组件 ([075565e](https://github.com/VOD-Studio/violet/commit/075565ec45caa2b35ca5a092f9f70f83e4b539aa))
+* **chat:** 改造聊天外观工作区 ([54783e0](https://github.com/VOD-Studio/violet/commit/54783e0d3d5060bc8d5013427365b00cc0b11069))
+
+
+### 修复
+
+* **cartoon-popover:** 恢复气泡开合描线动画 ([f843be9](https://github.com/VOD-Studio/violet/commit/f843be968a3fbcb314537c026edfbaa4e09d2a48))
+* **chat:** 分类菜单流体滑动并锁定预览舞台高度 ([b0b1e3f](https://github.com/VOD-Studio/violet/commit/b0b1e3fd39a4dbdc5c424777e446ba9fe67cf5ea))
+* **chat:** 外观预览只保留对方视角单条消息 ([187a1bb](https://github.com/VOD-Studio/violet/commit/187a1bb7e72863fd7a316080660321b29654db4f))
+* **chat:** 徽章改四列网格陈列修复铺满排版 ([4053e34](https://github.com/VOD-Studio/violet/commit/4053e34e0449ab3ae16b978aff62ad73b5b939a9))
+* **chat:** 统一默认与主题气泡尺寸 ([3b9437f](https://github.com/VOD-Studio/violet/commit/3b9437f0d8263a6388c8416e89be1c62023a99d5))
+* **chat:** 补齐徽章选中描边 ([ddd61de](https://github.com/VOD-Studio/violet/commit/ddd61de2dd7259961dd09c16858408c9324fed56))
+* **header:** 修复未读角标裁切 ([6f08702](https://github.com/VOD-Studio/violet/commit/6f08702ce9bfd57b8f50628451d2c092c034335a))
+* **theme:** 修复主题切换器水合首帧不一致 ([22c334d](https://github.com/VOD-Studio/violet/commit/22c334d06af2cad1c69b6846db87ac3fe19c544a))
+
+
+### 重构
+
+* **chat:** 外观选择改为分栏布局并去除选项卡片 ([37cad7f](https://github.com/VOD-Studio/violet/commit/37cad7f702586453f36a10e8f1a30856a4c316a5))
+* **chat:** 外观选择界面重排为QQ式目录与展架 ([8310f39](https://github.com/VOD-Studio/violet/commit/8310f397d22b681192f4b1b1de766220d53e2d37))
+* **chat:** 外观选项按素材形态重排布局 ([f49234b](https://github.com/VOD-Studio/violet/commit/f49234b975285e218e7567cfa5c04ad444ee8547))
+* **chat:** 气泡主题改大格网格陈列 ([f70d61a](https://github.com/VOD-Studio/violet/commit/f70d61a765229521519bde15c2a8dcd8aec0b2e0))
+* **chat:** 聊天外观入口收敛到会话列表侧栏 ([2a3133d](https://github.com/VOD-Studio/violet/commit/2a3133da067a175819d8ed410ed45a6ba13b41c9))
+* **chat:** 聊天外观改为右侧装扮面板并对齐品牌视觉 ([dee693a](https://github.com/VOD-Studio/violet/commit/dee693a6472fdf908590523d3411d952cb01e21f))
+
 ## [2.8.44](https://github.com/VOD-Studio/violet/compare/v2.8.43...v2.8.44) (2026-09-25)
 
 
