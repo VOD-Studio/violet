@@ -12,23 +12,45 @@ v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/go
 
 ### 新增
 
+* **design-system:** 将营造法式扩展为组件库手册 ([dece64d](https://github.com/VOD-Studio/violet/commit/dece64dda5033709e2c2b33ad6616976002bf48a))
+* **design-system:** 色板页用色指引三节重造 ([6399219](https://github.com/VOD-Studio/violet/commit/63992192952eb72908ebdd0f29f0d7cedce5260b))
+* **design-system:** 色板页重构为受控预览与明暗并列颜色章节 ([bc9de9f](https://github.com/VOD-Studio/violet/commit/bc9de9f5b7ecab1eea10efda063b6ad215655144))
+* **design-system:** 颜色页角色化重构并收拢业务色 ([129e2ad](https://github.com/VOD-Studio/violet/commit/129e2ad6828802088852abb51cd11b2d65e106e2))
 * **image-grid:** 为图片预览补充可访问名称 ([44039b4](https://github.com/VOD-Studio/violet/commit/44039b4ccd4d7c7d43849a7e058a8fd8b3979099))
+* **shared-ui:** CodeCard 支持亮色形态行号演示与行数阈值折叠 ([87ba525](https://github.com/VOD-Studio/violet/commit/87ba5254616274ddcfd4c5e576bad38fa85c728f))
 * **tweet:** 实现免凭据 X 原文转发流程 ([553d0ce](https://github.com/VOD-Studio/violet/commit/553d0ce1f5542c84127a47a88d14de793d15e8a9))
 * **tweet:** 接入 X 转发与统一原文展示 ([ee222e0](https://github.com/VOD-Studio/violet/commit/ee222e0376b52ab6ce5fa917f6a75fad1e716629))
 * **tweet:** 支持 X 推文免凭据转发 ([c64b4e4](https://github.com/VOD-Studio/violet/commit/c64b4e43163ae087db401752e294a1726f83027c))
 * **tweet:** 添加共享 X 原文展示卡片 ([9bc7e98](https://github.com/VOD-Studio/violet/commit/9bc7e9852affb0249258f8de1e2e797409f74dd5))
 * **tweet:** 添加聊天分享的当前原文查询 ([ea6102b](https://github.com/VOD-Studio/violet/commit/ea6102b30ebe36b133bbcbcfd916bfcc38485678))
+* **ui:** 将语义主题样式纳入组件库 ([b3051cc](https://github.com/VOD-Studio/violet/commit/b3051cc13ed13f29ec150825ff6cd8de1b3a588e))
+* **ui:** 组件库具备独立构建与打包能力 ([8ac834c](https://github.com/VOD-Studio/violet/commit/8ac834c5a68202baa7d5416ca474905496ca511a))
+* 组件库提取与设计系统文档体系重构 ([1e5eab4](https://github.com/VOD-Studio/violet/commit/1e5eab41f90d2f85dc097a313c2fecc80db904e3))
 
 
 ### 修复
 
+* **cartoon-popover:** 修复群组弹层描边错位与切换首帧文字重排 ([592276a](https://github.com/VOD-Studio/violet/commit/592276a3a097bc867717898d681e88c82632ee8f))
+* **cartoon-popover:** 完全关闭后重开浮层不再从旧位置飞入 ([98ef645](https://github.com/VOD-Studio/violet/commit/98ef64530d64f83b6f445467cd8fc7cef26446a2))
+* **design-system:** 色板页收敛为单根气泡群组 ([d949200](https://github.com/VOD-Studio/violet/commit/d949200fd0986d1d2253ee9c7bba9cd5b5f4b36a))
 * **image-preview:** 修复嵌套弹窗的焦点与快捷键 ([8de237d](https://github.com/VOD-Studio/violet/commit/8de237ddb969c64512eeda6d6870c06ff703204e))
+* **tweets:** 外部推文组件迁移组件库导入 ([49dcb33](https://github.com/VOD-Studio/violet/commit/49dcb33030ded26a5728b83190c7a98649e2d057))
 
 
 ### 重构
 
+* **design-system:** 指南正文按章节路由化并懒加载 ([362befd](https://github.com/VOD-Studio/violet/commit/362befd0119f2fb8575f9556ede63e5d3f01be99))
+* **design-system:** 文档页示例代码与渲染同源化 ([9a7c1cd](https://github.com/VOD-Studio/violet/commit/9a7c1cdca771a60c0aa9f76f3473728c173ad48c))
+* **design-system:** 目录统一为单一卷别结构并移除重复章节 ([5859df3](https://github.com/VOD-Studio/violet/commit/5859df38814c0ef8e873064bc7232099430d4547))
+* **design-system:** 组件文档页演示迁移至 CodeCard ([dfeb425](https://github.com/VOD-Studio/violet/commit/dfeb425d5a26cbe295e1654f2df505c8a9063f67))
+* **shared-ui:** 代码卡主题收敛为缺省双主题的两值形态 ([c2755c0](https://github.com/VOD-Studio/violet/commit/c2755c0d3c6fa1d5494bd2ee960aca90f4884a7c))
+* **shared-ui:** 代码卡改双主题高亮并以 children 提供演示区 ([f3ab26e](https://github.com/VOD-Studio/violet/commit/f3ab26eeb978d14a56b4ac7da2bd3b533ea98440))
+* **shared-ui:** 通用组件迁入 @violet/ui 组件库 ([b2b802a](https://github.com/VOD-Studio/violet/commit/b2b802a26ecaae74fd8dd33df72c310c5869004e))
 * **tweet:** 将推文缓存键归入实体层 ([5f41a54](https://github.com/VOD-Studio/violet/commit/5f41a54e9ea8c020c032267950b7c37a24ad96a0))
 * **tweet:** 将聊天分享状态归入实体层 ([1dfeb0b](https://github.com/VOD-Studio/violet/commit/1dfeb0b756e70ee013ab1277023f0bb44457704c))
+* **ui:** brand 语义色全量迁移为 primary ([8bca851](https://github.com/VOD-Studio/violet/commit/8bca8514f4b2a94c8cfc380c25f44609f71200cd))
+* **ui:** 将组件变体迁移到 tailwind-variants ([5c428ea](https://github.com/VOD-Studio/violet/commit/5c428ea7e20f2554c4d6ed90d3a73b45fc28d5ee))
+* **ui:** 语义色明暗定义迁移 light-dark() ([7a8af01](https://github.com/VOD-Studio/violet/commit/7a8af01538a70f24e97948a6ff20d914bd50fee6))
 
 ## [2.8.45](https://github.com/VOD-Studio/violet/compare/v2.8.44...v2.8.45) (2026-09-28)
 
