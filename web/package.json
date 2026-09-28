@@ -76,7 +76,6 @@
 		"@xyflow/react": "^12.11.6",
 		"axios": "^1.18.0",
 		"axios-retry": "^4.5.0",
-		"class-variance-authority": "^0.7.1",
 		"cn": "^0.4.0",
 		"d3-force": "^3.0.0",
 		"date-fns": "^4.4.0",

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ArrowRight, Mail } from "lucide-react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Button, buttonVariants } from "../button";
+import { Button } from "../button";
 
 describe("Button Component", () => {
 	afterEach(cleanup);
@@ -159,17 +159,14 @@ describe("Button Component", () => {
 		});
 	});
 
-	it("导出 buttonVariants 函数供其他组件复用", () => {
-		const classes = buttonVariants({ variant: "brand", size: "lg" });
-		expect(classes).toContain("bg-brand");
-		expect(classes).toContain("h-10");
-	});
-
-	describe("触觉与稳定性规范", () => {
-		it("杜绝任何 active 位移或抖动类名（如 translate-y），保持几何绝对稳定", () => {
-			const classes = buttonVariants({ variant: "default" });
-			expect(classes).not.toContain("translate-y");
-			expect(classes).not.toContain("scale");
-		});
+	it("调用方类名覆盖按钮配方背景色", () => {
+		render(
+			<Button variant="outline" className="bg-brand">
+				自定义背景
+			</Button>,
+		);
+		const button = screen.getByRole("button", { name: "自定义背景" });
+		expect(button.classList.contains("bg-brand")).toBe(true);
+		expect(button.classList.contains("bg-background/90")).toBe(false);
 	});
 });

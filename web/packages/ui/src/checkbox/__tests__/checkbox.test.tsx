@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Checkbox, checkboxVariants } from "../checkbox";
+import { Checkbox } from "../checkbox";
 
 describe("Checkbox Component", () => {
 	afterEach(cleanup);
@@ -69,11 +69,5 @@ describe("Checkbox Component", () => {
 		render(<Checkbox size={size} aria-label={`${size} 复选框`} />);
 		const cb = screen.getByRole("checkbox", { name: `${size} 复选框` });
 		expect(cb.getAttribute("data-size")).toBe(size);
-	});
-
-	it("导出 checkboxVariants 工具函数", () => {
-		const classes = checkboxVariants({ variant: "brand", size: "lg" });
-		expect(classes).toContain("data-[state=checked]:bg-brand");
-		expect(classes).toContain("size-5");
 	});
 });
