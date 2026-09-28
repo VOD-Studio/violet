@@ -1,16 +1,14 @@
 import { create } from "zustand";
+import type { ExternalTweet, QuotedTweet } from "./types";
 
-/**
- * 分享到聊天时携带的推文展示信息。
- *
- * 由发起分享的一方（TweetCard）在打开时一次性写入，避免 ShareTweetDialog
- * 与落地后的聊天输入框各自重新拉取推文详情。
- */
+/** 分享到聊天时携带的推文展示信息；展示原文前另行读取当前状态。 */
 export interface ShareTweetPreview {
 	id: string;
 	authorUsername: string;
 	content: string;
 	imageUrl?: string;
+	externalTweet?: ExternalTweet | null;
+	quotedTweet?: QuotedTweet | null;
 }
 
 /** 已选定目标会话、待聊天输入框落地发送的分享。 */
