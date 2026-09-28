@@ -394,10 +394,10 @@ function SideBySideSection({
 	return (
 		<section className="mt-12">
 			<SectionHeading description={description} title={title} />
-			<CartoonPopoverGroup className="mt-5 flex w-full flex-col items-stretch gap-4 sm:flex-row">
+			<div className="mt-5 flex w-full flex-col gap-4 sm:flex-row">
 				<ThemeColumn color={color} mode="light" style={lightStyle} />
 				<ThemeColumn color={color} mode="dark" style={darkStyle} />
-			</CartoonPopoverGroup>
+			</div>
 		</section>
 	);
 }
@@ -437,7 +437,7 @@ function StackedSection({
 	return (
 		<section className="mt-12">
 			<SectionHeading description={description} title={title} />
-			<CartoonPopoverGroup className="mt-5 flex w-full flex-col items-stretch gap-4">
+			<div className="mt-5 flex w-full flex-col gap-4">
 				{(
 					[
 						["light", lightColors, lightStyle],
@@ -462,7 +462,7 @@ function StackedSection({
 						</div>
 					</div>
 				))}
-			</CartoonPopoverGroup>
+			</div>
 		</section>
 	);
 }
@@ -527,10 +527,10 @@ function FormFieldSection({
 				description="表单字段使用专用颜色覆盖默认、悬停、聚焦、占位与前景状态，使输入控件与按钮保持清晰区分。"
 				title="表单字段"
 			/>
-			<CartoonPopoverGroup className="mt-5 flex w-full flex-col items-stretch gap-4">
+			<div className="mt-5 flex w-full flex-col gap-4">
 				<FormFieldBlock mode="light" style={lightStyle} />
 				<FormFieldBlock mode="dark" style={darkStyle} />
-			</CartoonPopoverGroup>
+			</div>
 		</section>
 	);
 }
@@ -580,314 +580,332 @@ export function ColorRoleComparison({ palette }: ColorRoleComparisonProps) {
 
 	return (
 		<div className="mt-12">
-			<div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm leading-6 text-muted-foreground">
-				这里是受控预览。切换上方主色只重算本页以下色块，不会写入根节点、持久化设置或改变项目主题。
-			</div>
-
-			<SideBySideSection
-				color={PRIMARY_COLOR}
-				darkStyle={darkStyle}
-				description="主色代表产品的主识别色，用于关键操作、高亮与重点时刻。应节制使用；悬停、柔和背景和聚焦状态都从基础主色派生。"
-				lightStyle={lightStyle}
-				title="主色"
-			/>
-			<SideBySideSection
-				color={DEFAULT_COLOR}
-				darkStyle={darkStyle}
-				description="默认色构成系统的中性骨架，用于大多数非强调的界面元素。"
-				lightStyle={lightStyle}
-				title="默认（中性色）"
-			/>
-			<SideBySideSection
-				color={statusColor("info", "信息")}
-				darkStyle={darkStyle}
-				description="信息色传达客观说明与系统提示，不要求用户立即处理。"
-				lightStyle={lightStyle}
-				title="信息"
-			/>
-			<SideBySideSection
-				color={statusColor("success", "成功")}
-				darkStyle={darkStyle}
-				description="成功色传达积极结果、确认与完成状态，常用于反馈、状态指示与校验通过。"
-				lightStyle={lightStyle}
-				title="成功"
-			/>
-			<SideBySideSection
-				color={statusColor("warning", "警告")}
-				darkStyle={darkStyle}
-				description="警告色表示需谨慎、存在风险，或需要留意但非破坏性的过渡状态。"
-				lightStyle={lightStyle}
-				title="警告"
-			/>
-			<SideBySideSection
-				color={statusColor("destructive", "危险")}
-				darkStyle={darkStyle}
-				description="危险色表示破坏性、不可逆或关键的操作与状态，应稳定用于错误、危险按钮与严重告警。"
-				lightStyle={lightStyle}
-				title="危险"
-			/>
-
-			<StackedSection
-				darkColors={sameStacked([
-					{
-						background: "var(--foreground)",
-						border: true,
-						label: "前景",
-						token: "--foreground",
-					},
-					{ background: "var(--muted)", border: true, label: "弱化", token: "--muted" },
-					{
-						background: "var(--segment)",
-						border: true,
-						label: "分段",
-						token: "--segment",
-					},
-					{
-						background: "var(--overlay)",
-						border: true,
-						label: "遮罩",
-						token: "--overlay",
-					},
-					{ background: "var(--link)", border: true, label: "链接", token: "--link" },
-				])}
-				darkStyle={darkStyle}
-				description="前景色用于文字与图标，针对可读性优化并随背景上下文适配；组件内不应硬编码。"
-				lightColors={sameStacked([
-					{ background: "var(--foreground)", label: "前景", token: "--foreground" },
-					{ background: "var(--muted)", label: "弱化", token: "--muted" },
-					{
-						background: "var(--segment)",
-						border: true,
-						label: "分段",
-						token: "--segment",
-					},
-					{
-						background: "var(--overlay)",
-						border: true,
-						label: "遮罩",
-						token: "--overlay",
-					},
-					{ background: "var(--link)", label: "链接", token: "--link" },
-				])}
-				lightStyle={lightStyle}
-				title="前景色"
-			/>
-			<StackedSection
-				darkColors={sameStacked([
-					{
-						background: "var(--background)",
-						border: true,
-						label: "背景",
-						token: "--background",
-					},
-					{
-						background: "var(--background-secondary)",
-						border: true,
-						label: "次级",
-						token: "--background-secondary",
-					},
-					{
-						background: "var(--background-tertiary)",
-						border: true,
-						label: "第三级",
-						token: "--background-tertiary",
-					},
-					{
-						background: "var(--background-inverse)",
-						border: true,
-						label: "反色",
-						token: "--background-inverse",
-					},
-				])}
-				darkStyle={darkStyle}
-				description="背景色定义界面的基底画布，在保持视觉克制的前提下建立整体对比与氛围。"
-				lightColors={sameStacked([
-					{
-						background: "var(--background)",
-						border: true,
-						label: "背景",
-						token: "--background",
-					},
-					{
-						background: "var(--background-secondary)",
-						border: true,
-						label: "次级",
-						token: "--background-secondary",
-					},
-					{
-						background: "var(--background-tertiary)",
-						border: true,
-						label: "第三级",
-						token: "--background-tertiary",
-					},
-					{
-						background: "var(--background-inverse)",
-						label: "反色",
-						token: "--background-inverse",
-					},
-				])}
-				lightStyle={lightStyle}
-				title="背景色"
-			/>
-			<StackedSection
-				darkColors={sameStacked([
-					{
-						background: "var(--surface)",
-						border: true,
-						label: "表面",
-						token: "--surface",
-					},
-					{
-						background: "var(--surface-secondary)",
-						border: true,
-						label: "次级",
-						token: "--surface-secondary",
-					},
-					{
-						background: "var(--surface-tertiary)",
-						border: true,
-						label: "第三级",
-						token: "--surface-tertiary",
-					},
-				])}
-				darkStyle={darkStyle}
-				description="表面色叠在背景之上，用于卡片、面板、模态与下拉；层级来自抬升与对比，而非强烈色相跳跃。"
-				lightColors={sameStacked([
-					{
-						background: "var(--surface)",
-						border: true,
-						label: "表面",
-						token: "--surface",
-					},
-					{
-						background: "var(--surface-secondary)",
-						border: true,
-						label: "次级",
-						token: "--surface-secondary",
-					},
-					{
-						background: "var(--surface-tertiary)",
-						border: true,
-						label: "第三级",
-						token: "--surface-tertiary",
-					},
-				])}
-				lightStyle={lightStyle}
-				title="表面色"
-			/>
-			<FormFieldSection darkStyle={darkStyle} lightStyle={lightStyle} />
-			<StackedSection
-				darkColors={sameStacked([
-					{
-						background: "var(--separator)",
-						border: true,
-						label: "分隔线",
-						token: "--separator",
-					},
-					{
-						background: "var(--separator-secondary)",
-						border: true,
-						label: "次级",
-						token: "--separator-secondary",
-					},
-					{
-						background: "var(--separator-tertiary)",
-						border: true,
-						label: "第三级",
-						token: "--separator-tertiary",
-					},
-				])}
-				darkStyle={darkStyle}
-				description="分隔线用于描边与轻量边界，应保持低对比，只组织内容而不抢夺注意力。"
-				lightColors={sameStacked([
-					{
-						background: "var(--separator)",
-						border: true,
-						label: "分隔线",
-						token: "--separator",
-					},
-					{
-						background: "var(--separator-secondary)",
-						border: true,
-						label: "次级",
-						token: "--separator-secondary",
-					},
-					{
-						background: "var(--separator-tertiary)",
-						border: true,
-						label: "第三级",
-						token: "--separator-tertiary",
-					},
-				])}
-				lightStyle={lightStyle}
-				title="分隔线"
-			/>
-			<StackedSection
-				darkColors={sameStacked([
-					{ background: "var(--border)", border: true, label: "边框", token: "--border" },
-					{ background: "var(--backdrop)", label: "背衬", token: "--backdrop" },
-					{
-						background: "var(--overlay)",
-						border: true,
-						label: "遮罩",
-						token: "--overlay",
-					},
-					{
-						background: "var(--segment)",
-						border: true,
-						label: "分段",
-						token: "--segment",
-					},
-				])}
-				darkStyle={darkStyle}
-				description="其他颜色承担特定工具性角色，用于边界、背衬与浮层组织。"
-				lightColors={sameStacked([
-					{ background: "var(--border)", border: true, label: "边框", token: "--border" },
-					{ background: "var(--backdrop)", label: "背衬", token: "--backdrop" },
-					{
-						background: "var(--overlay)",
-						border: true,
-						label: "遮罩",
-						token: "--overlay",
-					},
-					{
-						background: "var(--segment)",
-						border: true,
-						label: "分段",
-						token: "--segment",
-					},
-				])}
-				lightStyle={lightStyle}
-				title="其他"
-			/>
-			<section className="mt-12">
-				<SectionHeading
-					description="基础色是模式无关的底层取值，作为语义角色的根基，在明暗主题之间保持不变。"
-					title="基础色"
-				/>
-				<div style={lightStyle}>
-					<CartoonPopoverGroup className="mt-5 flex w-full flex-wrap items-stretch gap-2 sm:flex-nowrap">
-						{[
-							{
-								background: "var(--white)",
-								border: true,
-								label: "白",
-								token: "--white",
-							},
-							{ background: "var(--black)", label: "黑", token: "--black" },
-							{
-								background: "var(--snow)",
-								border: true,
-								label: "雪白",
-								token: "--snow",
-							},
-							{ background: "var(--eclipse)", label: "月蚀", token: "--eclipse" },
-						].map((color) => (
-							<StackedSwatch key={color.token} {...color} />
-						))}
-					</CartoonPopoverGroup>
+			{/* 全页共享一个气泡群组：跨章节移动时不出现第二个浮层叠加 */}
+			<CartoonPopoverGroup className="block w-full">
+				<div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm leading-6 text-muted-foreground">
+					这里是受控预览。切换上方主色只重算本页以下色块，不会写入根节点、持久化设置或改变项目主题。
 				</div>
-			</section>
+
+				<SideBySideSection
+					color={PRIMARY_COLOR}
+					darkStyle={darkStyle}
+					description="主色代表产品的主识别色，用于关键操作、高亮与重点时刻。应节制使用；悬停、柔和背景和聚焦状态都从基础主色派生。"
+					lightStyle={lightStyle}
+					title="主色"
+				/>
+				<SideBySideSection
+					color={DEFAULT_COLOR}
+					darkStyle={darkStyle}
+					description="默认色构成系统的中性骨架，用于大多数非强调的界面元素。"
+					lightStyle={lightStyle}
+					title="默认（中性色）"
+				/>
+				<SideBySideSection
+					color={statusColor("info", "信息")}
+					darkStyle={darkStyle}
+					description="信息色传达客观说明与系统提示，不要求用户立即处理。"
+					lightStyle={lightStyle}
+					title="信息"
+				/>
+				<SideBySideSection
+					color={statusColor("success", "成功")}
+					darkStyle={darkStyle}
+					description="成功色传达积极结果、确认与完成状态，常用于反馈、状态指示与校验通过。"
+					lightStyle={lightStyle}
+					title="成功"
+				/>
+				<SideBySideSection
+					color={statusColor("warning", "警告")}
+					darkStyle={darkStyle}
+					description="警告色表示需谨慎、存在风险，或需要留意但非破坏性的过渡状态。"
+					lightStyle={lightStyle}
+					title="警告"
+				/>
+				<SideBySideSection
+					color={statusColor("destructive", "危险")}
+					darkStyle={darkStyle}
+					description="危险色表示破坏性、不可逆或关键的操作与状态，应稳定用于错误、危险按钮与严重告警。"
+					lightStyle={lightStyle}
+					title="危险"
+				/>
+
+				<StackedSection
+					darkColors={sameStacked([
+						{
+							background: "var(--foreground)",
+							border: true,
+							label: "前景",
+							token: "--foreground",
+						},
+						{
+							background: "var(--muted)",
+							border: true,
+							label: "弱化",
+							token: "--muted",
+						},
+						{
+							background: "var(--segment)",
+							border: true,
+							label: "分段",
+							token: "--segment",
+						},
+						{
+							background: "var(--overlay)",
+							border: true,
+							label: "遮罩",
+							token: "--overlay",
+						},
+						{ background: "var(--link)", border: true, label: "链接", token: "--link" },
+					])}
+					darkStyle={darkStyle}
+					description="前景色用于文字与图标，针对可读性优化并随背景上下文适配；组件内不应硬编码。"
+					lightColors={sameStacked([
+						{ background: "var(--foreground)", label: "前景", token: "--foreground" },
+						{ background: "var(--muted)", label: "弱化", token: "--muted" },
+						{
+							background: "var(--segment)",
+							border: true,
+							label: "分段",
+							token: "--segment",
+						},
+						{
+							background: "var(--overlay)",
+							border: true,
+							label: "遮罩",
+							token: "--overlay",
+						},
+						{ background: "var(--link)", label: "链接", token: "--link" },
+					])}
+					lightStyle={lightStyle}
+					title="前景色"
+				/>
+				<StackedSection
+					darkColors={sameStacked([
+						{
+							background: "var(--background)",
+							border: true,
+							label: "背景",
+							token: "--background",
+						},
+						{
+							background: "var(--background-secondary)",
+							border: true,
+							label: "次级",
+							token: "--background-secondary",
+						},
+						{
+							background: "var(--background-tertiary)",
+							border: true,
+							label: "第三级",
+							token: "--background-tertiary",
+						},
+						{
+							background: "var(--background-inverse)",
+							border: true,
+							label: "反色",
+							token: "--background-inverse",
+						},
+					])}
+					darkStyle={darkStyle}
+					description="背景色定义界面的基底画布，在保持视觉克制的前提下建立整体对比与氛围。"
+					lightColors={sameStacked([
+						{
+							background: "var(--background)",
+							border: true,
+							label: "背景",
+							token: "--background",
+						},
+						{
+							background: "var(--background-secondary)",
+							border: true,
+							label: "次级",
+							token: "--background-secondary",
+						},
+						{
+							background: "var(--background-tertiary)",
+							border: true,
+							label: "第三级",
+							token: "--background-tertiary",
+						},
+						{
+							background: "var(--background-inverse)",
+							label: "反色",
+							token: "--background-inverse",
+						},
+					])}
+					lightStyle={lightStyle}
+					title="背景色"
+				/>
+				<StackedSection
+					darkColors={sameStacked([
+						{
+							background: "var(--surface)",
+							border: true,
+							label: "表面",
+							token: "--surface",
+						},
+						{
+							background: "var(--surface-secondary)",
+							border: true,
+							label: "次级",
+							token: "--surface-secondary",
+						},
+						{
+							background: "var(--surface-tertiary)",
+							border: true,
+							label: "第三级",
+							token: "--surface-tertiary",
+						},
+					])}
+					darkStyle={darkStyle}
+					description="表面色叠在背景之上，用于卡片、面板、模态与下拉；层级来自抬升与对比，而非强烈色相跳跃。"
+					lightColors={sameStacked([
+						{
+							background: "var(--surface)",
+							border: true,
+							label: "表面",
+							token: "--surface",
+						},
+						{
+							background: "var(--surface-secondary)",
+							border: true,
+							label: "次级",
+							token: "--surface-secondary",
+						},
+						{
+							background: "var(--surface-tertiary)",
+							border: true,
+							label: "第三级",
+							token: "--surface-tertiary",
+						},
+					])}
+					lightStyle={lightStyle}
+					title="表面色"
+				/>
+				<FormFieldSection darkStyle={darkStyle} lightStyle={lightStyle} />
+				<StackedSection
+					darkColors={sameStacked([
+						{
+							background: "var(--separator)",
+							border: true,
+							label: "分隔线",
+							token: "--separator",
+						},
+						{
+							background: "var(--separator-secondary)",
+							border: true,
+							label: "次级",
+							token: "--separator-secondary",
+						},
+						{
+							background: "var(--separator-tertiary)",
+							border: true,
+							label: "第三级",
+							token: "--separator-tertiary",
+						},
+					])}
+					darkStyle={darkStyle}
+					description="分隔线用于描边与轻量边界，应保持低对比，只组织内容而不抢夺注意力。"
+					lightColors={sameStacked([
+						{
+							background: "var(--separator)",
+							border: true,
+							label: "分隔线",
+							token: "--separator",
+						},
+						{
+							background: "var(--separator-secondary)",
+							border: true,
+							label: "次级",
+							token: "--separator-secondary",
+						},
+						{
+							background: "var(--separator-tertiary)",
+							border: true,
+							label: "第三级",
+							token: "--separator-tertiary",
+						},
+					])}
+					lightStyle={lightStyle}
+					title="分隔线"
+				/>
+				<StackedSection
+					darkColors={sameStacked([
+						{
+							background: "var(--border)",
+							border: true,
+							label: "边框",
+							token: "--border",
+						},
+						{ background: "var(--backdrop)", label: "背衬", token: "--backdrop" },
+						{
+							background: "var(--overlay)",
+							border: true,
+							label: "遮罩",
+							token: "--overlay",
+						},
+						{
+							background: "var(--segment)",
+							border: true,
+							label: "分段",
+							token: "--segment",
+						},
+					])}
+					darkStyle={darkStyle}
+					description="其他颜色承担特定工具性角色，用于边界、背衬与浮层组织。"
+					lightColors={sameStacked([
+						{
+							background: "var(--border)",
+							border: true,
+							label: "边框",
+							token: "--border",
+						},
+						{ background: "var(--backdrop)", label: "背衬", token: "--backdrop" },
+						{
+							background: "var(--overlay)",
+							border: true,
+							label: "遮罩",
+							token: "--overlay",
+						},
+						{
+							background: "var(--segment)",
+							border: true,
+							label: "分段",
+							token: "--segment",
+						},
+					])}
+					lightStyle={lightStyle}
+					title="其他"
+				/>
+				<section className="mt-12">
+					<SectionHeading
+						description="基础色是模式无关的底层取值，作为语义角色的根基，在明暗主题之间保持不变。"
+						title="基础色"
+					/>
+					<div style={lightStyle}>
+						<div className="mt-5 flex w-full flex-wrap gap-2 sm:flex-nowrap">
+							{[
+								{
+									background: "var(--white)",
+									border: true,
+									label: "白",
+									token: "--white",
+								},
+								{ background: "var(--black)", label: "黑", token: "--black" },
+								{
+									background: "var(--snow)",
+									border: true,
+									label: "雪白",
+									token: "--snow",
+								},
+								{ background: "var(--eclipse)", label: "月蚀", token: "--eclipse" },
+							].map((color) => (
+								<StackedSwatch key={color.token} {...color} />
+							))}
+						</div>
+					</div>
+				</section>
+			</CartoonPopoverGroup>
 		</div>
 	);
 }
