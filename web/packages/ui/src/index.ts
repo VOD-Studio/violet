@@ -1,9 +1,7 @@
 /**
- * @violet/ui - violet 组件库统一入口。
+ * @violet/ui 组件库统一 JavaScript 入口。
  *
- * 推荐 `import { Button } from "@violet/ui"`；重型组件（recharts 图表等）
- * 可用子路径 `@violet/ui/chart` 减小 dev 模块图。子路径形态由
- * package.json exports 的 "./*" 通配提供。
+ * @remarks 所有组件与类型从包根导入；主题样式单独从 @violet/ui/styles.css 导入。
  */
 
 export * from "./badge";

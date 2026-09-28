@@ -1,9 +1,6 @@
 /**
- * 营造法式 token 词典的清单数据：与样式映射层（styles/theme.css）对账的唯一清单。
- *
- * 只收录映射层已映射到工具类的颜色 token；词干（stem）对应 --color-<stem>，
- * 变量名（varName）对应映射右侧的 var(--x)。防漂移对账测试双向核对本清单
- * 与映射层：清单引用幽灵 token、或映射层核心 token 未收录，任一失衡即红。
+ * 营造法式展示的语义色清单。词干对应包内 @theme inline 的 --color-<stem>，
+ * varName 对应颜色变量；新增公开 token 时同步包样式与此清单。
  */
 
 export interface TokenDoc {
