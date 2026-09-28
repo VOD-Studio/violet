@@ -7,6 +7,29 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.46](https://github.com/VOD-Studio/violet/compare/v2.8.45...v2.8.46) (2026-09-28)
+
+
+### 新增
+
+* **image-grid:** 为图片预览补充可访问名称 ([44039b4](https://github.com/VOD-Studio/violet/commit/44039b4ccd4d7c7d43849a7e058a8fd8b3979099))
+* **tweet:** 实现免凭据 X 原文转发流程 ([553d0ce](https://github.com/VOD-Studio/violet/commit/553d0ce1f5542c84127a47a88d14de793d15e8a9))
+* **tweet:** 接入 X 转发与统一原文展示 ([ee222e0](https://github.com/VOD-Studio/violet/commit/ee222e0376b52ab6ce5fa917f6a75fad1e716629))
+* **tweet:** 支持 X 推文免凭据转发 ([c64b4e4](https://github.com/VOD-Studio/violet/commit/c64b4e43163ae087db401752e294a1726f83027c))
+* **tweet:** 添加共享 X 原文展示卡片 ([9bc7e98](https://github.com/VOD-Studio/violet/commit/9bc7e9852affb0249258f8de1e2e797409f74dd5))
+* **tweet:** 添加聊天分享的当前原文查询 ([ea6102b](https://github.com/VOD-Studio/violet/commit/ea6102b30ebe36b133bbcbcfd916bfcc38485678))
+
+
+### 修复
+
+* **image-preview:** 修复嵌套弹窗的焦点与快捷键 ([8de237d](https://github.com/VOD-Studio/violet/commit/8de237ddb969c64512eeda6d6870c06ff703204e))
+
+
+### 重构
+
+* **tweet:** 将推文缓存键归入实体层 ([5f41a54](https://github.com/VOD-Studio/violet/commit/5f41a54e9ea8c020c032267950b7c37a24ad96a0))
+* **tweet:** 将聊天分享状态归入实体层 ([1dfeb0b](https://github.com/VOD-Studio/violet/commit/1dfeb0b756e70ee013ab1277023f0bb44457704c))
+
 ## [2.8.45](https://github.com/VOD-Studio/violet/compare/v2.8.44...v2.8.45) (2026-09-28)
 
 
