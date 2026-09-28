@@ -180,22 +180,27 @@ export async function highlightCode(code: string, lang: string): Promise<string>
 }
 
 /**
- * highlightCodeLight - 以浅色主题（github-light）高亮代码字符串
+ * highlightCodeAuto - 双主题高亮，token 颜色输出 light-dark() 由 CSS 自动切换
  *
- * 组件文档页代码区使用：与浅色页面底色自然衔接，避免黑底代码块在文档页的割裂感。
+ * 无需 JS 感知站点明暗：跟随元素 color-scheme 取对应主题取值，与组件库
+ * 语义 token 的明暗机制一致。
  *
- * @param code 原始代码
- * @param lang 任意 lang id（解析与降级策略同 {@link highlightCode}）
+ * @param code - 原始代码
+ * @param lang - 任意 lang id（解析与降级策略同 {@link highlightCode}）
  * @returns 高亮 HTML（shiki 输出）
  */
-export async function highlightCodeLight(code: string, lang: string): Promise<string> {
+export async function highlightCodeAuto(code: string, lang: string): Promise<string> {
 	const resolved = resolveSupportedLanguage(lang);
 	const highlighter = await getHighlighter();
 	const finalLang = resolved ?? "plaintext";
 	if (resolved) {
 		await ensureLanguage(resolved);
 	}
-	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME_LIGHT });
+	return highlighter.codeToHtml(code, {
+		lang: finalLang,
+		themes: { light: THEME_LIGHT, dark: THEME },
+		defaultColor: "light-dark()",
+	});
 }
 
 /** Theme 名导出，供外部复用样式约定 */
