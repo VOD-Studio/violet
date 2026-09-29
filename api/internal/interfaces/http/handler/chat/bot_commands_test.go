@@ -49,7 +49,7 @@ func TestPutCommandsUsesAuthenticatedBotAndRejectsInvalidBodies(t *testing.T) {
 	}
 	store := &commandCatalogStore{catalogs: map[domainshared.ID]domainchat.BotCommandCatalog{}}
 	service := appchat.NewBotCommandService(nil, nil, store, nil)
-	handler := NewBotHandler(nil, nil, nil).WithBotCommands(service)
+	handler := NewBotHandler(nil, nil, nil, nil, 0).WithBotCommands(service)
 	router := chi.NewRouter()
 	router.Use(middleware.BotAuth(commandBotLookup{"token-a": botA, "token-b": botB}))
 	router.Put("/commands", handler.PutCommands)

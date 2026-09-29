@@ -26,16 +26,14 @@ type errorResponse struct {
 	Details   map[string][]string `json:"details,omitempty"`
 }
 
-// RespondError 统一错误响应辅助函数
-//
-// handler 调用 service/用例后，直接：
-//
-//	if err != nil {
-//	    response.RespondError(w, r, err)
-//	    return
-//	}
-//
-// 自动识别 DomainError 并按 Code 翻译为对应 HTTP 状态码。
+// RespondPayloadTooLarge 返回统一的 413 错误。
+func RespondPayloadTooLarge(w http.ResponseWriter, r *http.Request, message string) {
+	WriteJSON(w, http.StatusRequestEntityTooLarge, errorResponse{
+		Error: "PAYLOAD_TOO_LARGE", Message: message, RequestID: GetRequestID(r),
+	})
+}
+
+// RespondError 识别应用错误并翻译为统一 HTTP 错误响应。
 func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 	if err == nil {
 		return

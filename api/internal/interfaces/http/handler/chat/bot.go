@@ -1,7 +1,10 @@
 package chat
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -9,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	appchat "blog-api/internal/application/chat"
+	appmedia "blog-api/internal/application/media"
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/interfaces/http/response"
@@ -20,16 +24,22 @@ import (
 // 全部端点由 BotAuth 中间件注入 bot 身份，之后以 bot 的虚拟用户 ID 复用人类侧的
 // chat.Service 用例：成员校验、mention 解析、消息持久化与 SSE 推送走同一条链路，
 // 服务层不存在 bot 专用第二套实现。
+type botMediaSaver interface {
+	SaveBotMedia(context.Context, appmedia.SaveBotMediaInput) (appmedia.BotMediaDTO, error)
+}
+
 type BotHandler struct {
-	chat     *appchat.Service
-	bots     *appchat.BotService
-	conns    *appchat.BotConnectionManager
-	commands *appchat.BotCommandService
+	chat          *appchat.Service
+	bots          *appchat.BotService
+	conns         *appchat.BotConnectionManager
+	commands      *appchat.BotCommandService
+	media         botMediaSaver
+	mediaMaxBytes int64
 }
 
 // NewBotHandler 构造 bot 聊天适配器。conns 为 nil 时事件流端点不可用。
-func NewBotHandler(chatSvc *appchat.Service, botSvc *appchat.BotService, conns *appchat.BotConnectionManager) *BotHandler {
-	return &BotHandler{chat: chatSvc, bots: botSvc, conns: conns}
+func NewBotHandler(chatSvc *appchat.Service, botSvc *appchat.BotService, conns *appchat.BotConnectionManager, media botMediaSaver, mediaMaxBytes int64) *BotHandler {
+	return &BotHandler{chat: chatSvc, bots: botSvc, conns: conns, media: media, mediaMaxBytes: mediaMaxBytes}
 }
 
 // requireBot 取出当前请求的 bot。中间件已鉴权，此处只防路由漏挂 BotAuth。
@@ -108,10 +118,66 @@ func (h *BotHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	response.RespondCursor(w, result.Items, limit, result.HasMore, result.NextCursor)
 }
 
-// SendMessage 以 bot 身份发消息。
+// UploadMedia 上传一张由当前 bot 所有的聊天图片。
+func (h *BotHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
+	bot, err := h.requireBot(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if h.media == nil {
+		response.RespondError(w, r, domainshared.Internal("Bot 媒体上传未启用", nil))
+		return
+	}
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		response.RespondError(w, r, domainshared.BadRequest("multipart 请求格式错误"))
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		response.RespondError(w, r, domainshared.BadRequest("缺少图片文件"))
+		return
+	}
+	defer file.Close()
+
+	reader := io.Reader(file)
+	if h.mediaMaxBytes > 0 {
+		reader = io.LimitReader(file, h.mediaMaxBytes+1)
+	}
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		response.RespondError(w, r, domainshared.BadRequest("读取图片失败"))
+		return
+	}
+	if h.mediaMaxBytes > 0 && int64(len(data)) > h.mediaMaxBytes {
+		response.RespondPayloadTooLarge(w, r, "图片超过上传大小上限")
+		return
+	}
+	mimeType, _, err := mime.ParseMediaType(header.Header.Get("Content-Type"))
+	if err != nil {
+		response.RespondError(w, r, domainshared.BadRequest("图片 MIME 类型无效"))
+		return
+	}
+	if mimeType == "application/octet-stream" {
+		mimeType = http.DetectContentType(data)
+	}
+	filename := strings.TrimSpace(r.FormValue("filename"))
+	if filename == "" {
+		filename = header.Filename
+	}
+	result, err := h.media.SaveBotMedia(r.Context(), appmedia.SaveBotMediaInput{
+		OwnerID: bot.UserID(), OriginalName: filename, MIMEType: mimeType, Data: data,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondCreated(w, result)
+}
+
+// SendMessage 以 bot 身份发送文本或图片消息。
 //
-// 只开放文本：图片与分享推文涉及媒体归属与引用校验，bot 侧没有对应上传通道，
-// 提前留口子只会变成没人鉴权的入口。
+// 图片须先走 bot 媒体端点上传，再用 media_ids 引用；归属与图片类型由 chat.Service 校验。
 // Idempotency-Key 必填——外部程序重试是同一条消息，重试两次不该刷两遍屏。
 func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	bot, conversationID, err := h.botConversation(r)
@@ -120,16 +186,39 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Content   string `json:"content"`
-		ReplyToID string `json:"reply_to_id"`
-		Status    string `json:"status"`
+		Type      string   `json:"type"`
+		Content   string   `json:"content"`
+		MediaIDs  []string `json:"media_ids"`
+		ReplyToID string   `json:"reply_to_id"`
+		Status    string   `json:"status"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	if req.Status != "" && req.Status != string(domainchat.BotReplyPending) {
+	messageType := domainchat.MessageType(strings.TrimSpace(req.Type))
+	if messageType == "" {
+		messageType = domainchat.MessageText
+	}
+	if messageType != domainchat.MessageText && messageType != domainchat.MessageImage {
+		response.RespondError(w, r, domainshared.BadRequest("Bot 仅支持 text 或 image 消息"))
+		return
+	}
+	if messageType == domainchat.MessageImage && req.Status != "" {
+		response.RespondError(w, r, domainshared.BadRequest("图片消息不支持生成状态"))
+		return
+	}
+	if messageType == domainchat.MessageText && req.Status != "" && req.Status != string(domainchat.BotReplyPending) {
 		response.RespondError(w, r, domainshared.BadRequest("创建时只能设置 pending 状态"))
+		return
+	}
+	mediaIDs, err := parseIDs(req.MediaIDs)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if messageType == domainchat.MessageImage && len(mediaIDs) == 0 {
+		response.RespondError(w, r, domainshared.BadRequest("图片消息至少需要一个媒体文件"))
 		return
 	}
 	var replyToID domainshared.ID
@@ -143,8 +232,9 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	dto, err := h.chat.SendBotMessage(r.Context(), appchat.SendMessageInput{
 		UserID:         bot.UserID(),
 		ConversationID: conversationID,
-		Type:           domainchat.MessageText,
+		Type:           messageType,
 		Content:        req.Content,
+		MediaIDs:       mediaIDs,
 		ReplyToID:      replyToID,
 		IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key")),
 		BotPending:     req.Status == string(domainchat.BotReplyPending),
