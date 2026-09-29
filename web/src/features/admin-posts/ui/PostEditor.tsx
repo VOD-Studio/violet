@@ -552,11 +552,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 					</div>
 				</div>
 
-				{/* 右侧栏 */}
 				{/* 右侧栏：桌面 grid 并排；移动端通过工具栏「设置」侧滑抽屉打开 */}
 				{!(zenMode && sidebarCollapsed) && (
 					<>
-						<div className="hidden lg:block">
+						<div className="hidden overflow-y-auto lg:block">
 							<PostEditorSidebar control={control} register={register} />
 						</div>
 						<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
