@@ -1,9 +1,11 @@
+import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
 import { DesignPrinciples } from "./DesignPrinciples";
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
 import { LayoutSpec } from "./LayoutSpec";
-import { GuideTocLayout } from "./LibraryGuideToc";
+import { GuideTocContent, GuideTocLayout } from "./LibraryGuideToc";
 import paletteDocSource from "./library-guides/content/palette.md?raw";
-import { MarkdownGuideDoc } from "./library-guides/markdown-guide";
+import paletteIntroSource from "./library-guides/content/palette-intro.md?raw";
+import { paletteCodeRenderer } from "./library-guides/palette-code";
 import { MotionCharter } from "./MotionCharter";
 import { PaletteGenerator } from "./PaletteGenerator";
 import { QuickDecisionTable } from "./QuickDecisionTable";
@@ -54,8 +56,19 @@ export function PalettePage() {
 					title="颜色"
 					scope="语义色角色、主色推导与组件用色指南。"
 				/>
-				<MarkdownGuideDoc source={paletteDocSource} />
-				<PaletteGenerator />
+				<GuideTocContent>
+					<MarkdownContent
+						content={paletteIntroSource}
+						className="[&_p]:my-0 [&_p]:text-sm [&_p]:leading-7 [&_p]:text-muted-foreground"
+					/>
+					<PaletteGenerator>
+						<MarkdownContent
+							content={paletteDocSource}
+							codeRenderer={paletteCodeRenderer}
+							className="mt-10"
+						/>
+					</PaletteGenerator>
+				</GuideTocContent>
 			</div>
 		</GuideTocLayout>
 	);

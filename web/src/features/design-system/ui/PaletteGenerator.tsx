@@ -1,6 +1,7 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
 import { HsvColorPicker } from "@violet/ui";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { RampStep } from "../model/palette";
@@ -26,10 +27,11 @@ const SEED_PRESETS = [
 const DEFAULT_SEED = SEED_PRESETS[0].hex;
 
 /**
- * 色板生成器章内容：给一个主色，推导色阶与完整语义角色。
- * 自定义主色只控制本页预览容器，不写入项目主题。
+ * 给定主色推导色阶、语义角色与对比度；正文插入位于角色预览与审计之间。
+ *
+ * @param children - 用色指南正文，独立于生成器计算状态
  */
-export function PaletteGenerator() {
+export function PaletteGenerator({ children }: { children?: ReactNode }) {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
 	const [hoverRamp, setHoverRamp] = useState<string | null>(null);
 	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
@@ -187,7 +189,7 @@ export function PaletteGenerator() {
 			</div>
 			{/* 主色色阶卡尺 */}
 			<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
-				<h3 className="text-lg font-bold">主色色阶</h3>
+				<h2 className="text-lg font-bold">主色色阶</h2>
 				<span className="text-xs text-muted-foreground">点击任意色阶即可复制 HEX 码</span>
 			</div>
 			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
@@ -252,10 +254,12 @@ export function PaletteGenerator() {
 
 			<ColorRoleComparison palette={palette} />
 
+			{children}
+
 			{/* 对比度审计 */}
 			<section>
 				<div className="mt-10 flex items-baseline justify-between">
-					<h3 className="text-lg font-bold">对比度审计</h3>
+					<h2 className="text-lg font-bold">对比度审计</h2>
 					<span className="font-mono text-xs text-muted-foreground">
 						WCAG 2.1 规范验算
 					</span>

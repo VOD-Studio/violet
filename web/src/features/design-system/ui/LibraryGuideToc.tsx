@@ -1,38 +1,28 @@
 /**
- * LibraryGuideToc - 营造法式指南页右侧页内目录（feature 私有）
- *
- * 形态对标组件文档站：正文右栏 sticky 目录轨，h2/h3 两级缩进，
- * 当前阅读节随滚动高亮（scrollspy 纯高亮，不涉及动效，减弱动态无影响）。
- * xl 以下整栏隐藏（hidden xl:block），不挤压正文可读宽度。
- *
- * 注册协议：Markdown 正文组件（markdown-guide.tsx）渲染完成后把
- * { items, bodyRef } 经 GuideTocContext 上报给 LibraryGuidePage，
- * 页面据此切换「正文 + 目录」双栏布局；JSX 指南不上报，布局零变化。
+ * 文档目录的双栏排版与视觉适配；标题提取、定位和滚动跟踪复用共享 TOC 能力。
  */
-import { useActiveHeading } from "@shared/hooks/use-toc";
+import {
+	extractDomToc,
+	handleTocLinkClick,
+	type TocItem,
+	useTocNavigation,
+} from "@shared/hooks/use-toc";
 import { cn } from "cn";
+import { useReducedMotion } from "motion/react";
 import {
 	createContext,
 	type ReactNode,
 	type RefObject,
 	useCallback,
 	useContext,
+	useLayoutEffect,
+	useRef,
 	useState,
 } from "react";
 
-/** 目录条目：从渲染后的正文容器提取的 h2/h3 */
-export interface GuideTocItem {
-	/** 标题层级 */
-	level: 2 | 3;
-	/** 标题纯文本 */
-	text: string;
-	/** 标题锚点 id（渲染管线内由项目统一 Slugger 生成） */
-	id: string;
-}
-
 /** 一次目录注册：条目列表 + 正文容器 ref（scrollspy 监听目标） */
 export interface GuideTocRegistration {
-	items: GuideTocItem[];
+	items: TocItem[];
 	bodyRef: RefObject<HTMLElement | null>;
 }
 
@@ -65,6 +55,37 @@ export function GuideTocProvider({
 	children: ReactNode;
 }) {
 	return <GuideTocContext.Provider value={onRegister}>{children}</GuideTocContext.Provider>;
+}
+
+/**
+ * 统一从渲染后的正文容器登记目录，混排 JSX 和 Markdown 的页面也能覆盖全部标题。
+ *
+ * @param contentKey - 正文切换时触发重新提取
+ */
+export function GuideTocContent({
+	children,
+	contentKey,
+}: {
+	children: ReactNode;
+	contentKey?: string;
+}) {
+	const registerToc = useGuideTocRegistrar();
+	const bodyRef = useRef<HTMLDivElement>(null);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: contentKey 变更代表正文 DOM 已重渲染，需重新采集标题
+	useLayoutEffect(() => {
+		const el = bodyRef.current;
+		if (!el) return;
+		const items = extractDomToc(el);
+		registerToc(items.length ? { items, bodyRef } : null);
+		return () => registerToc(null);
+	}, [contentKey, registerToc]);
+
+	return (
+		<div ref={bodyRef} className="[&_h2]:scroll-mt-20 [&_h3]:scroll-mt-20 [&_h4]:scroll-mt-20">
+			{children}
+		</div>
+	);
 }
 
 /**
@@ -106,7 +127,7 @@ export function GuideTocLayout({ children }: { children: ReactNode }) {
 
 interface LibraryGuideTocProps {
 	/** 目录条目（空数组时整栏不渲染） */
-	items: GuideTocItem[];
+	items: TocItem[];
 	/** 正文容器 ref，用于滚动高亮定位 */
 	bodyRef: RefObject<HTMLElement | null>;
 	/** 附加类名 */
@@ -114,33 +135,75 @@ interface LibraryGuideTocProps {
 }
 
 /**
- * 指南页右侧页内目录：sticky 目录轨 + scrollspy 高亮。
- *
- * 视觉约束：链接 hover 只变色；无卡片容器、无缩放动效。
+ * 指南页右侧目录：标题跟踪与定位由共享 hook 处理；这里仅决定显示形态。
  */
 export function LibraryGuideToc({ items, bodyRef, className }: LibraryGuideTocProps) {
-	const activeId = useActiveHeading(bodyRef);
+	const { activeId, navigateTo } = useTocNavigation(bodyRef, items);
+	const reduced = useReducedMotion();
+	const railRef = useRef<HTMLDivElement>(null);
+	const listRef = useRef<HTMLUListElement>(null);
+	const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: activeId / items 更新后需重测活动条目的 DOM 位置
+	useLayoutEffect(() => {
+		const rail = railRef.current;
+		const active = listRef.current?.querySelector<HTMLElement>('[aria-current="location"]');
+		const item = active?.parentElement;
+		if (!rail || !active || !item) {
+			setIndicator(null);
+			return;
+		}
+		setIndicator({ top: item.offsetTop, height: item.offsetHeight });
+		const railBox = rail.getBoundingClientRect();
+		const activeBox = active.getBoundingClientRect();
+		if (activeBox.top < railBox.top || activeBox.bottom > railBox.bottom) {
+			rail.scrollTo({
+				top: rail.scrollTop + activeBox.top - railBox.top - railBox.height / 2,
+				behavior: reduced ? "instant" : "smooth",
+			});
+		}
+	}, [activeId, items, reduced]);
 
 	if (items.length === 0) return null;
 
 	return (
 		<nav aria-label="页内目录" className={cn("hidden w-56 shrink-0 xl:block", className)}>
-			<div className="sticky top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto pb-8">
+			<div
+				ref={railRef}
+				className="sticky top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto pb-8"
+			>
 				<p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">目录</p>
-				<ul className="border-l border-border/60">
+				<ul ref={listRef} className="relative border-l border-border/60">
+					{indicator && (
+						<span
+							aria-hidden="true"
+							className="pointer-events-none absolute top-0 -left-px w-0.5 bg-primary motion-safe:transition-[transform,height] motion-safe:duration-250 motion-safe:ease-out"
+							style={{
+								transform: `translateY(${indicator.top}px)`,
+								height: indicator.height,
+							}}
+						/>
+					)}
 					{items.map((item) => {
 						const active = item.id === activeId;
 						return (
 							<li key={item.id}>
 								<a
-									href={`#${item.id}`}
+									href={`#${encodeURIComponent(item.id)}`}
+									onClick={(event) =>
+										handleTocLinkClick(event, item.id, navigateTo)
+									}
 									aria-current={active ? "location" : undefined}
 									className={cn(
-										"-ml-px block border-l-2 py-1.5 pr-2 text-xs leading-5 transition-colors",
-										item.level === 2 ? "pl-3" : "pl-7",
+										"block py-1.5 pr-2 text-xs leading-5 motion-safe:transition-colors",
+										item.level === 2
+											? "pl-3"
+											: item.level === 3
+												? "pl-7"
+												: "pl-11",
 										active
-											? "border-primary font-medium text-foreground"
-											: "border-transparent text-muted-foreground hover:text-foreground",
+											? "font-medium text-foreground"
+											: "text-muted-foreground hover:text-foreground",
 									)}
 								>
 									{item.text}
