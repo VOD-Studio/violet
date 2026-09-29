@@ -1,6 +1,9 @@
 import { DesignPrinciples } from "./DesignPrinciples";
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
 import { LayoutSpec } from "./LayoutSpec";
+import { GuideTocLayout } from "./LibraryGuideToc";
+import paletteDocSource from "./library-guides/content/palette.md?raw";
+import { MarkdownGuideDoc } from "./library-guides/markdown-guide";
 import { MotionCharter } from "./MotionCharter";
 import { PaletteGenerator } from "./PaletteGenerator";
 import { QuickDecisionTable } from "./QuickDecisionTable";
@@ -44,14 +47,17 @@ export function DecisionsPage() {
  */
 export function PalettePage() {
 	return (
-		<div className="space-y-6">
-			<DesignSystemDocHeader
-				num="伍"
-				title="颜色"
-				scope="语义色角色、主色推导与组件用色指南。"
-			/>
-			<PaletteGenerator />
-		</div>
+		<GuideTocLayout>
+			<div className="space-y-6">
+				<DesignSystemDocHeader
+					num="伍"
+					title="颜色"
+					scope="语义色角色、主色推导与组件用色指南。"
+				/>
+				<MarkdownGuideDoc source={paletteDocSource} />
+				<PaletteGenerator />
+			</div>
+		</GuideTocLayout>
 	);
 }
 

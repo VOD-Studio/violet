@@ -1,23 +1,14 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
-import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { HsvColorPicker } from "@violet/ui";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import coralPaletteSource from "../../../../packages/ui/src/styles/palettes/coral.css?raw";
-import violetPaletteSource from "../../../../packages/ui/src/styles/palettes/violet.css?raw";
 import type { RampStep } from "../model/palette";
 import { generatePalette } from "../model/palette";
 import { ColorRoleComparison } from "./ColorRoleComparison";
-import { ColorUsageDemo } from "./examples/color/usage";
-import usageSource from "./examples/color/usage.tsx?raw";
-import { GuideLink } from "./library-guides/GuideParts";
 
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
 const CORAL_SEED = oklchToRgb(0.625, 0.19, 25).hex;
-
-const VIOLET_PALETTE_CSS = violetPaletteSource.slice(violetPaletteSource.indexOf(":root {"));
-const CORAL_PALETTE_CSS = coralPaletteSource.slice(coralPaletteSource.indexOf(":root"));
 
 /** 主色速选预设库 */
 const SEED_PRESETS = [
@@ -33,44 +24,6 @@ const SEED_PRESETS = [
 ] as const;
 
 const DEFAULT_SEED = SEED_PRESETS[0].hex;
-
-const USAGE_CSS_SNIPPET = `/* 在应用的 CSS 文件中；先由入口导入 @violet/ui/styles.css */
-.my-component {
-	background: var(--primary-base);
-	color: var(--primary-base-foreground);
-	border: 1px solid var(--border);
-}
-
-@layer components {
-	.action-button {
-		@apply bg-primary-base text-primary-base-foreground;
-		&:hover {
-			@apply bg-primary-base-hover;
-		}
-	}
-}`;
-
-const OVERRIDE_ENTRY_SNIPPET = `/* src/styles.css：先加载包，再加载应用自己的覆盖文件 */
-@import "tailwindcss";
-@import "@violet/ui/styles.css";
-@import "@violet/ui/palettes/coral.css";
-
-/* 仅需要品牌色作为默认动作时，在自己的作用域里成对映射 */
-.brand-actions {
-	--primary: var(--primary-base);
-	--primary-foreground: var(--primary-base-foreground);
-}`;
-
-const CUSTOM_COLOR_SNIPPET = `/* src/styles/notice.css；在应用入口的包样式之后导入 */
-:root {
-	--notice: light-dark(oklch(0.52 0.15 240), oklch(0.72 0.12 240));
-	--notice-foreground: light-dark(oklch(0.99 0 0), oklch(0.15 0.02 240));
-}
-
-@theme inline {
-	--color-notice: var(--notice);
-	--color-notice-foreground: var(--notice-foreground);
-}`;
 
 /**
  * 色板生成器章内容：给一个主色，推导色阶与完整语义角色。
@@ -103,10 +56,7 @@ export function PaletteGenerator() {
 
 	return (
 		<div className="mt-8">
-			<p className="text-sm leading-7 text-muted-foreground">
-				颜色体系围绕语义意图构建，而非堆砌色板：先选对角色，色值由主题与下面的生成器提供。
-				成对使用背景与前景，文本对比度需满足 WCAG AA。
-			</p>
+			{/* 主色控制台与色阶推导；文节内容见 content/palette.md */}
 			{/* 主控制台 Deck：严格遵循布局规格 */}
 			<div className="rounded-2xl border border-border/40 bg-card/50 p-6">
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -301,130 +251,6 @@ export function PaletteGenerator() {
 			</div>
 
 			<ColorRoleComparison palette={palette} />
-
-			{/* 如何使用颜色 */}
-			<section className="mt-10" id="palette-usage">
-				<h3 className="text-lg font-bold">如何使用颜色</h3>
-				<p className="mt-1 text-sm leading-7 text-muted-foreground">
-					先选语义角色，再成对使用背景与前景色；自定义元素也一样用{" "}
-					<code>bg-primary-base-soft text-primary-base-soft-foreground</code>
-					，不要只换背景不换文字。
-				</p>
-				<div className="mt-4 space-y-5">
-					<div>
-						<h4 className="mb-2 text-sm font-semibold">在组件中</h4>
-						<p className="mb-3 text-sm leading-7 text-muted-foreground">
-							<code>Button</code> 不传 variant（即 default）使用{" "}
-							<code>--primary</code>
-							：裸包默认是高对比中性色；本页处于本站公开内容方言，已将它映射到 Violet
-							主色，因此下方预览的默认按钮也是紫色。<code>primary</code> 始终使用{" "}
-							<code>--primary-base</code>，<code>soft</code> 使用{" "}
-							<code>--primary-base-soft</code> 及各自的前景色。
-						</p>
-						<CodeCard code={usageSource} language="tsx" title="组件与工具类">
-							<ColorUsageDemo />
-						</CodeCard>
-					</div>
-					<div>
-						<h4 className="mb-2 text-sm font-semibold">在 CSS 文件中</h4>
-						<p className="mb-3 text-sm leading-7 text-muted-foreground">
-							应用 CSS 可直接读取 <code>var(--primary-base)</code>；使用{" "}
-							<code>@apply</code> 时，把规则写在由 Tailwind v4
-							编译的应用样式中，且先在入口导入 <code>tailwindcss</code> 与{" "}
-							<code>@violet/ui/styles.css</code>。
-						</p>
-						<CodeCard code={USAGE_CSS_SNIPPET} language="css" title="应用样式示例" />
-					</div>
-				</div>
-			</section>
-
-			{/* 默认主题 */}
-			<section className="mt-10">
-				<h3 className="text-lg font-bold">默认主题</h3>
-				<p className="mt-1 text-sm leading-7 text-muted-foreground">
-					入口只需 <code>@import "@violet/ui/styles.css";</code>（先导入{" "}
-					<code>tailwindcss</code>）。包内的 <code>tokens.css</code> 提供默认中性{" "}
-					<code>--primary</code> 与画布、状态色；<code>palettes/violet.css</code> 提供六个{" "}
-					<code>--primary-base*</code> 主色源值；<code>theme.css</code> 用{" "}
-					<code>@theme inline</code> 注册{" "}
-					<code>--color-primary-base: var(--primary-base)</code>
-					，使 <code>bg-primary-base</code> 在使用位置读取当前变量。下面展示包内预设源码，
-					不是可导入的包子路径。
-				</p>
-				<p className="mt-2 text-sm leading-7 text-muted-foreground">
-					默认 <code>:root</code> 为 <code>color-scheme: light</code>；宿主把{" "}
-					<code>.dark</code> 挂在 html 时，<code>color-scheme: dark</code> 激活{" "}
-					<code>light-dark()</code> 的暗色值。本站 <code>.dialect-public</code> 才将{" "}
-					<code>--primary</code> 与前景色映射到主色源；这个站点方言不随包发布。
-				</p>
-				<CodeCard
-					className="mt-4"
-					code={VIOLET_PALETTE_CSS}
-					language="css"
-					title="包内源码 · 默认 violet.css"
-				/>
-			</section>
-
-			{/* 自定义颜色 */}
-			<section className="mt-10">
-				<h3 className="text-lg font-bold">自定义颜色</h3>
-				<div className="mt-4 space-y-5">
-					<div>
-						<h4 className="text-sm font-semibold">覆盖已有颜色</h4>
-						<p className="mt-1 text-sm leading-7 text-muted-foreground">
-							在应用自己的 CSS
-							中覆盖主色源六变量（基色、前景、悬停、柔和底与前景、焦点环），
-							保留明暗两套值并检查文字对比度。本站的珊瑚文件是完整示例；放在包样式之后导入。
-							仅需局部改变默认动作时，还须在同一作用域成对重映射{" "}
-							<code>--primary</code> / <code>--primary-foreground</code>
-							；不能只在子元素重写 <code>--primary-base</code>
-							，期待上层方言继承的默认动作自动更新。
-						</p>
-						<p className="mt-2 text-sm leading-7 text-muted-foreground">
-							<code>--success</code> / <code>--success-foreground</code>{" "}
-							等行为状态色不会随主色源切换；
-							若要改其视觉值，另外成对覆盖同名语义变量即可，已有{" "}
-							<code>--color-*</code> 映射不用重复注册。
-						</p>
-						<CodeCard
-							className="mt-3"
-							code={CORAL_PALETTE_CSS}
-							language="css"
-							title="包内源码 · palettes/coral.css"
-						/>
-						<CodeCard
-							className="mt-3"
-							code={OVERRIDE_ENTRY_SNIPPET}
-							language="css"
-							title="应用入口与可选的局部语义映射"
-						/>
-					</div>
-					<div>
-						<h4 className="text-sm font-semibold">添加自定义颜色</h4>
-						<p className="mt-1 text-sm leading-7 text-muted-foreground">
-							新颜色要同时定义底色与前景色，并在应用 CSS 以 <code>@theme inline</code>{" "}
-							注册各自的 <code>--color-*</code> 映射。把示例文件在包样式后以{" "}
-							<code>@import "./styles/notice.css";</code> 导入应用入口，再使用{" "}
-							<code>className="bg-notice text-notice-foreground"</code>。 现有{" "}
-							<code>primary-base</code>、<code>success</code>{" "}
-							等已经注册，不必重复声明。
-						</p>
-						<CodeCard
-							className="mt-3"
-							code={CUSTOM_COLOR_SNIPPET}
-							language="css"
-							title="应用自有颜色 · src/styles/notice.css"
-						/>
-					</div>
-				</div>
-				<p className="mt-3 text-sm text-muted-foreground">
-					主题切换与站点作用域的完整设置见{" "}
-					<GuideLink to="/design-system/guides/theming">主题指南</GuideLink>
-					；调好主色后可用
-					<GuideLink to="/design-system/guides/theme-builder">主题构建器</GuideLink>
-					导出可落盘的色板 CSS。
-				</p>
-			</section>
 
 			{/* 对比度审计 */}
 			<section>

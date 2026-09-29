@@ -11,7 +11,14 @@
  */
 import { useActiveHeading } from "@shared/hooks/use-toc";
 import { cn } from "cn";
-import { createContext, type ReactNode, type RefObject, useContext } from "react";
+import {
+	createContext,
+	type ReactNode,
+	type RefObject,
+	useCallback,
+	useContext,
+	useState,
+} from "react";
 
 /** 目录条目：从渲染后的正文容器提取的 h2/h3 */
 export interface GuideTocItem {
@@ -58,6 +65,43 @@ export function GuideTocProvider({
 	children: ReactNode;
 }) {
 	return <GuideTocContext.Provider value={onRegister}>{children}</GuideTocContext.Provider>;
+}
+
+/**
+ * 「正文 + 右侧目录」双栏布局骨架，供指南页与文档型卷页复用。
+ *
+ * 正文组件经 GuideTocContext 上报目录后切换双栏：双栏区域左缘锚定在
+ * 无目录时 max-w-4xl 居中版心的左缘，目录出现时版心零位移、可用宽度
+ * 只向右生长；无目录（或 xl 以下目录隐藏）回落单栏，排版不变。
+ */
+export function GuideTocLayout({ children }: { children: ReactNode }) {
+	const [toc, setToc] = useState<GuideTocRegistration | null>(null);
+	const registerToc = useCallback((registration: GuideTocRegistration | null) => {
+		setToc(registration);
+	}, []);
+	const hasToc = toc !== null && toc.items.length > 0;
+	return (
+		<GuideTocProvider onRegister={registerToc}>
+			<div
+				className={
+					hasToc
+						? // 左缘 = max(0, (容器宽-56rem)/2)（即 mx-auto max-w-4xl 的左缘），
+							// 宽 = min(剩余宽度, 56rem 正文 + 2.5rem 间距 + 14rem 目录)
+							"ml-[max(0px,calc((100%_-_56rem)/2))] w-[min(calc(100%_-_max(0px,calc((100%_-_56rem)/2))),72.5rem)]"
+						: "mx-auto w-full max-w-4xl"
+				}
+			>
+				{hasToc ? (
+					<div className="flex gap-10">
+						<div className="min-w-0 max-w-4xl flex-1">{children}</div>
+						<LibraryGuideToc items={toc.items} bodyRef={toc.bodyRef} />
+					</div>
+				) : (
+					children
+				)}
+			</div>
+		</GuideTocProvider>
+	);
 }
 
 interface LibraryGuideTocProps {
