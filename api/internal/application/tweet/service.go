@@ -82,6 +82,10 @@ type AuthorDTO struct {
 	ID        string `json:"id"`
 	Username  string `json:"username"`
 	AvatarURL string `json:"avatar_url"`
+	// Provider 第三方登录方式（头像角标）："github" / "google"；密码注册省略
+	Provider string `json:"provider,omitempty"`
+	// ProfileURL 第三方主页链接，仅 GitHub 有；Google 无公开个人主页省略
+	ProfileURL string `json:"profile_url,omitempty"`
 }
 
 // UserProfileDTO 用户公开资料卡（公开，仅包含不敏感的非私域字段）。
@@ -521,10 +525,13 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			log.Warn().Err(err).Msg("推文作者资料批量查询失败，降级为空资料")
 		}
 		for _, u := range users {
+			provider, profileURL := u.OAuthIdentity()
 			authors[u.GetID().String()] = AuthorDTO{
-				ID:        u.GetID().String(),
-				Username:  u.Username().String(),
-				AvatarURL: u.AvatarURL(),
+				ID:         u.GetID().String(),
+				Username:   u.Username().String(),
+				AvatarURL:  u.AvatarURL(),
+				Provider:   provider,
+				ProfileURL: profileURL,
 			}
 		}
 	}
@@ -891,8 +898,10 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 			log.Warn().Err(err).Msg("推文评论作者资料批量查询失败，降级为空资料")
 		}
 		for _, u := range users {
+			provider, profileURL := u.OAuthIdentity()
 			authors[u.GetID().String()] = AuthorDTO{
 				ID: u.GetID().String(), Username: u.Username().String(), AvatarURL: u.AvatarURL(),
+				Provider: provider, ProfileURL: profileURL,
 			}
 		}
 	}

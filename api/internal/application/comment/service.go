@@ -12,6 +12,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/shared"
+	user "blog-api/internal/domain/user"
 )
 
 // codePrefix 匿名评论验证码在 CodeStore 中的场景前缀。
@@ -90,6 +91,12 @@ type CommentDTO struct {
 	Depth       int16            `json:"depth"`
 	AuthorName  string           `json:"author_name"`
 	AvatarURL   string           `json:"avatar_url"`
+	// AuthorProvider 评论者第三方登录方式（头像角标）："github" / "google"；
+	// 密码注册与匿名评论省略。双绑定时 GitHub 优先（见 user.User.OAuthIdentity）。
+	AuthorProvider string `json:"author_provider,omitempty"`
+	// AuthorProfileURL 第三方主页链接，目前仅 GitHub 有；存量账号未回填
+	// github_login 时省略（角标只显图标不可跳）。Google 无公开个人主页恒省略。
+	AuthorProfileURL string `json:"author_profile_url,omitempty"`
 	Body        string           `json:"body"`
 	Pictures    []domain.Picture `json:"pictures"`
 	// Emote 表情映射表。key 为 [name]（含方括号），value 为表情图片 URL。
@@ -97,9 +104,8 @@ type CommentDTO struct {
 	Emote map[string]EmojiRef `json:"emote,omitempty"`
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
-	IsAuthor bool `json:"is_author"`
-	// Anchor 选区批注锚点；自由评论为 nil（JSON 省略），批注非 nil。
-	Anchor    *AnchorDTO `json:"anchor,omitempty"`
+	IsAuthor   bool       `json:"is_author"`
+	Anchor     *AnchorDTO `json:"anchor,omitempty"`
 	Status    string     `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
 	CreatedAt string     `json:"created_at"`
 	// Replies 顶层评论下的回复预览（前 N 条）。仅顶层 DTO 带，回复节点省略。
@@ -114,6 +120,8 @@ type CommentDTO struct {
 // Service 评论用例服务
 type Service struct {
 	commentRepo domain.CommentRepository
+	// userRepo 富化评论作者第三方登录角标（author_provider/author_profile_url）
+	userRepo    user.UserRepository
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	emojiLookup EmojiLookup
@@ -129,15 +137,13 @@ type SitePolicy interface {
 
 // NewService 构造评论用例服务。
 //
+// userRepo 富化评论作者第三方登录角标，nil 时跳过（匿名评论/密码注册无角标）。
 // codeStore 和 emailSender 用于匿名评论的邮箱验证码两步流（PRD-0001）。
 // emojiLookup 用于 toDTO 后解析 body 中的 [name] 构建 emote 映射，nil 时跳过。
 // sitePolicy 用于 Create 时的开关/审核分流，nil 时按「开评论 + 需审核」兜底。
-func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
-	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
+func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
+	return &Service{commentRepo: repo, userRepo: userRepo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
 }
-
-// ListByPost 按文章列出评论。
-//
 // 黑洞模式（PRD-0001）：匿名 viewer（viewerUserID 为空字符串）直接返回空数组，
 // 看不到任何评论（含自己刚提交的）；登录 viewer 返回 approved ∪ 自己的 pending。
 //
@@ -181,6 +187,8 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 	// 建 parent_id → author_name 索引，批量填 reply_to_name（避免每条回复单独查 DB）
 	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
+	// 顶层 + 回复预览实体平铺，供 enrichOAuthIdentities 一次批量富化角标
+	flat := make([]*domain.Comment, 0, len(items)+replyPreviewLimit*len(items))
 	for _, c := range items {
 		name := ""
 		if c.ParentID() != nil {
@@ -209,8 +217,13 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 				}
 				dto.Replies = append(dto.Replies, toDTO(r, authorID, rName))
 			}
+			flat = append(flat, replies.Items...)
 		}
 		dtos = append(dtos, dto)
+		flat = append(flat, c)
+	}
+	if err := s.enrichOAuthIdentities(ctx, dtos, flat); err != nil {
+		return nil, 0, err
 	}
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
@@ -401,6 +414,9 @@ func (s *Service) ListReplies(ctx context.Context, parentID, viewerUserID, sort 
 			name = parentNames[c.ParentID().String()]
 		}
 		dtos = append(dtos, toDTO(c, nil, name))
+	}
+	if err := s.enrichOAuthIdentities(ctx, dtos, items); err != nil {
+		return nil, 0, err
 	}
 	if err := s.enrichEmotes(ctx, dtos); err != nil {
 		return nil, 0, err
@@ -602,7 +618,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		// 提交即 pending（人工审核制），发事件供通知管理员待审
 		s.publish(ctx, domain.NewCommentSubmitted(c.ID()))
 	}
-	dto := toDTO(c, nil, replyToName)
+	dtos := []CommentDTO{toDTO(c, nil, replyToName)}
+	if err := s.enrichOAuthIdentities(ctx, dtos, []*domain.Comment{c}); err != nil {
+		return CommentDTO{}, err
+	}
+	dto := dtos[0]
 	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
 		return CommentDTO{}, err
 	}
@@ -884,6 +904,64 @@ func (s *Service) enrichEmotes(ctx context.Context, dtos []CommentDTO) error {
 		dtos[i].Emote = filterEmoteForBody(dtos[i].Body, emoteMap)
 		for j := range dtos[i].Replies {
 			dtos[i].Replies[j].Emote = filterEmoteForBody(dtos[i].Replies[j].Body, emoteMap)
+		}
+	}
+	return nil
+}
+
+// oauthIdent 评论作者的第三方登录身份（User.OAuthIdentity 的搬运形态）。
+type oauthIdent struct{ provider, profileURL string }
+
+// enrichOAuthIdentities 批量填充 DTO 的 AuthorProvider / AuthorProfileURL（头像角标）。
+//
+// 按 comments 的 user_id 去重后一次 FindByIDs 查 users，再按 commentID 回填
+// （含嵌套 Replies）。匿名评论（user_id 空）与密码注册用户查不到身份，不填。
+// userRepo 未注入（测试）时跳过。
+func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, comments []*domain.Comment) error {
+	if s.userRepo == nil || len(dtos) == 0 || len(comments) == 0 {
+		return nil
+	}
+	userIDSet := make(map[shared.ID]struct{}, len(comments))
+	for _, c := range comments {
+		if c.UserID() != nil {
+			userIDSet[*c.UserID()] = struct{}{}
+		}
+	}
+	if len(userIDSet) == 0 {
+		return nil
+	}
+	userIDs := make([]shared.ID, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+	users, err := s.userRepo.FindByIDs(ctx, userIDs)
+	if err != nil {
+		return err
+	}
+	identByUser := make(map[string]oauthIdent, len(users))
+	for _, u := range users {
+		provider, profileURL := u.OAuthIdentity()
+		identByUser[u.GetID().String()] = oauthIdent{provider: provider, profileURL: profileURL}
+	}
+	identByComment := make(map[string]oauthIdent, len(comments))
+	for _, c := range comments {
+		if c.UserID() == nil {
+			continue
+		}
+		if ident, ok := identByUser[c.UserID().String()]; ok {
+			identByComment[c.ID().String()] = ident
+		}
+	}
+	fill := func(d *CommentDTO) {
+		if ident, ok := identByComment[d.ID]; ok {
+			d.AuthorProvider = ident.provider
+			d.AuthorProfileURL = ident.profileURL
+		}
+	}
+	for i := range dtos {
+		fill(&dtos[i])
+		for j := range dtos[i].Replies {
+			fill(&dtos[i].Replies[j])
 		}
 	}
 	return nil

@@ -85,6 +85,10 @@ export interface Comment {
 	author_name: string;
 	/** 作者头像 URL */
 	avatar_url: string;
+	/** 作者第三方登录方式（头像右下角角标）："github" | "google"；匿名/密码注册省略 */
+	author_provider?: "github" | "google";
+	/** 作者第三方主页 URL；仅 GitHub 有，存量账号未回填 github_login 时省略 */
+	author_profile_url?: string;
 	/** 评论正文 */
 	body: string;
 	/** 附件图片列表，无图为空数组 */

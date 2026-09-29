@@ -9,6 +9,7 @@ import { formatDate } from "@shared/lib/date";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@violet/ui";
+import { cn } from "cn";
 import { ArrowDown, ArrowLeft, LoaderCircle, MoreVertical } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -24,7 +25,7 @@ import { useAppearanceScrollFollow } from "../hooks/useAppearanceScrollFollow";
 import { panelAppearanceUserIDs } from "../lib/appearance-users";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
-import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
+import type { ChatConversation, ChatMedia, ChatMessage, ChatUser } from "../model/types";
 import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
@@ -114,6 +115,74 @@ export function ConversationPanel({
 	const lastMessage = messages.at(-1);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const messageRefs = useRef<Record<string, HTMLElement | null>>({});
+
+	// 消息分组（Telegram 式连续同发送者一段，direct 与 room 统一）：
+	// 组 wrapper 内 absolute 头像列铺满组、column-reverse 贴组尾，CSS sticky
+	// 双向约束（top-0 / bottom-2）让头像贴可见范围底部随滚动、贴组尾、离场钉住。
+	// system 消息（日期等）断组且自成渲染单元。
+	const renderUnits = useMemo(() => {
+		const units: Array<
+			| { kind: "group"; headId: string; mine: boolean; messages: ChatMessage[] }
+			| { kind: "single"; message: ChatMessage }
+		> = [];
+		let open: { kind: "group"; headId: string; mine: boolean; messages: ChatMessage[] } | null =
+			null;
+		for (const message of messages) {
+			if (message.type === "system") {
+				open = null;
+				units.push({ kind: "single", message });
+				continue;
+			}
+			if (open && open.messages.at(-1)?.sender.id === message.sender.id) {
+				open.messages.push(message);
+			} else {
+				open = {
+					kind: "group",
+					headId: message.id,
+					mine: message.sender.id === currentUserID,
+					messages: [message],
+				};
+				units.push(open);
+			}
+		}
+		return units;
+	}, [messages, currentUserID]);
+
+	// MessageBubble 公共 props 装配（组内/单条共用）；isHead 标记组首（控制名字行）
+	const bubbleProps = (message: ChatMessage, isHead: boolean) => ({
+		layout: (justBackfilled ? false : "position") as "position" | false,
+		animateIn: animateInIds.has(message.id),
+		conversationKind: conversation.kind,
+		currentUserID,
+		emoteMap,
+		highlighted: highlightedID === message.id,
+		message,
+		sending: pendingByID.get(message.id),
+		onRetry: () => void retryChatMessage(qc, message.client_message_id ?? ""),
+		messageRef: (node: HTMLElement | null) => {
+			messageRefs.current[message.id] = node;
+		},
+		showSender: isHead,
+		showSenderName: conversation.kind === "room",
+		onDelete:
+			canManage && !pendingByID.has(message.id)
+				? () =>
+						deleteMessage.mutate({
+							conversationID: conversation.id,
+							messageID: message.id,
+						})
+				: undefined,
+		onImage: (media: ChatMedia) => imagePreview.openPreview([media.url]),
+		onMention: handleMention,
+		onReply:
+			message.type !== "system" && !message.is_deleted && !pendingByID.has(message.id)
+				? () => setReplyTarget(message)
+				: undefined,
+		onReplyTo:
+			message.reply_to && !message.reply_to.is_deleted
+				? () => setPendingFocusID(message.reply_to?.id ?? null)
+				: undefined,
+	});
 	const [showScrollBottom, setShowScrollBottom] = useState(false);
 	const topSentinelRef = useRef<HTMLDivElement>(null);
 	const prependScrollAnchorRef = useRef<number | null>(null);
@@ -400,9 +469,9 @@ export function ConversationPanel({
 								)
 									pauseFollow();
 							}}
-							className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 md:px-8"
+							className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-5 md:px-8"
 						>
-							<div className="mx-auto max-w-4xl space-y-4">
+							<div className="mx-auto max-w-4xl space-y-4 pb-5">
 								{messages.length > 0 &&
 									(hasNextPage ? (
 										<div
@@ -436,62 +505,47 @@ export function ConversationPanel({
 								) : messages.length === 0 ? (
 									<MessageEmpty />
 								) : (
-									messages.map((message, index) => (
-										<MessageBubble
-											layout={justBackfilled ? false : "position"}
-											animateIn={animateInIds.has(message.id)}
-											conversationKind={conversation.kind}
-											currentUserID={currentUserID}
-											emoteMap={emoteMap}
-											highlighted={highlightedID === message.id}
-											key={message.client_message_id ?? message.id}
-											message={message}
-											sending={pendingByID.get(message.id)}
-											onRetry={() =>
-												void retryChatMessage(
-													qc,
-													message.client_message_id ?? "",
-												)
-											}
-											messageRef={(node) => {
-												messageRefs.current[message.id] = node;
-											}}
-											showSender={
-												conversation.kind !== "room" ||
-												index === 0 ||
-												messages[index - 1]?.sender.id !== message.sender.id
-											}
-											showSenderName={conversation.kind === "room"}
-											onDelete={
-												canManage && !pendingByID.has(message.id)
-													? () =>
-															deleteMessage.mutate({
-																conversationID: conversation.id,
-																messageID: message.id,
-															})
-													: undefined
-											}
-											onImage={(media) =>
-												imagePreview.openPreview([media.url])
-											}
-											onMention={handleMention}
-											onReply={
-												message.type !== "system" &&
-												!message.is_deleted &&
-												!pendingByID.has(message.id)
-													? () => setReplyTarget(message)
-													: undefined
-											}
-											onReplyTo={
-												message.reply_to && !message.reply_to.is_deleted
-													? () =>
-															setPendingFocusID(
-																message.reply_to?.id ?? null,
-															)
-													: undefined
-											}
-										/>
-									))
+									renderUnits.map((unit) =>
+										unit.kind === "single" ? (
+											<MessageBubble
+												key={
+													unit.message.client_message_id ??
+													unit.message.id
+												}
+												{...bubbleProps(unit.message, false)}
+											/>
+										) : (
+											<div key={unit.headId} className="relative space-y-4">
+												{unit.messages.map((message) => (
+													<MessageBubble
+														key={
+															message.client_message_id ?? message.id
+														}
+														{...bubbleProps(
+															message,
+															message === unit.messages[0],
+														)}
+													/>
+												))}
+												{/* Telegram 式组头像列：铺满组、贴组尾，sticky 双向约束
+												    让头像贴可见范围底部随滚动移动，组滚出视口前不消失 */}
+												<div
+													className={cn(
+														"pointer-events-none absolute inset-y-0 flex w-10 flex-col-reverse",
+														unit.mine ? "right-0" : "left-0",
+													)}
+												>
+													{/* sticky 贴滚动视口底（容器底 padding 移到列表内容上，避免 sticky 约束线被 padding 顶起） */}
+													<div className="pointer-events-auto sticky bottom-2 top-0">
+														<ChatAvatar
+															user={unit.messages[0].sender}
+															className="size-10"
+														/>
+													</div>
+												</div>
+											</div>
+										),
+									)
 								)}
 								<div className="h-0" />
 							</div>

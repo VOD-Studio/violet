@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { Badge } from "../badge";
+import { Badge, BadgeAnchor } from "../badge";
 
 describe("Badge", () => {
 	afterEach(cleanup);
@@ -27,5 +27,35 @@ describe("Badge", () => {
 		const badge = screen.getByText("12");
 		expect(badge.classList.contains("px-1")).toBe(true);
 		expect(badge.classList.contains("px-0")).toBe(false);
+	});
+});
+
+describe("BadgeAnchor", () => {
+	afterEach(cleanup);
+
+	it("bottom-corner 将角标定位于右下角", () => {
+		render(
+			<BadgeAnchor placement="bottom-corner" badge={<Badge size="dot" variant="default" />}>
+				<button type="button">头像</button>
+			</BadgeAnchor>,
+		);
+		const anchor = screen.getByText("头像").parentElement;
+		const badgeSlot = anchor?.querySelector('[aria-hidden="true"]');
+		expect(badgeSlot?.classList.contains("bottom-0.5")).toBe(true);
+		expect(badgeSlot?.classList.contains("translate-y-1/2")).toBe(true);
+		expect(badgeSlot?.classList.contains("-translate-y-1/2")).toBe(false);
+	});
+
+	it("默认 corner 保持右上角定位", () => {
+		render(
+			<BadgeAnchor badge={<Badge size="dot" variant="default" />}>
+				<button type="button">通知</button>
+			</BadgeAnchor>,
+		);
+		const badgeSlot = screen
+			.getByText("通知")
+			.parentElement?.querySelector('[aria-hidden="true"]');
+		expect(badgeSlot?.classList.contains("top-0.5")).toBe(true);
+		expect(badgeSlot?.classList.contains("-translate-y-1/2")).toBe(true);
 	});
 });

@@ -135,14 +135,11 @@ describe("MessageBubble", () => {
 		expect(container.textContent).not.toContain("已编辑");
 	});
 
-	it("时间戳显示在聊天气泡外侧且不隐藏头像", () => {
+	it("时间戳显示在聊天气泡外侧，不落入头像占位列", () => {
 		const mine = renderBubble(imageMessage(undefined));
 		const mineAvatarSlot = mine.container.querySelector("article > div:first-child");
 
 		expect(mineAvatarSlot?.querySelector("time")).toBeNull();
-		expect(
-			screen.getByLabelText("Alice 的个人主页").querySelector("[aria-hidden]")?.className,
-		).not.toContain("group-hover:opacity-0");
 
 		const mineHoverSlot = mine.container.querySelector("time")?.closest("div.absolute");
 		expect(mineHoverSlot?.className).toContain("right-full");

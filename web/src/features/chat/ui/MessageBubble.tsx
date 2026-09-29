@@ -33,7 +33,6 @@ import type {
 import { AppearanceBadgeStrip } from "./appearance/AppearanceBadgeStrip";
 import { BotReplyCard } from "./BotReplyCard";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
-import { ChatAvatar } from "./ChatAvatar";
 import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatReactionBar } from "./ChatReactionBar";
 import { MessageEditComposer } from "./MessageEditComposer";
@@ -192,9 +191,8 @@ export function MessageBubble({
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
-			<div className="mt-0.5 size-10 shrink-0">
-				{showSender && <ChatAvatar user={message.sender} className="size-10" />}
-			</div>
+			{/* 头像占位列：头像本体在组层 sticky 列（见 ConversationPanel），此处仅保位 */}
+			<div className="mt-0.5 size-10 shrink-0" />
 			<div
 				className={cn(
 					isBotReply

@@ -38,7 +38,7 @@ func NewCommentContainer(db *gorm.DB, redisClient *redis.Client, emailSender *in
 	postRepo := gormrepo.NewPostRepository(db)
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
 	codeStore := infraauth.NewRedisCodeStore(redisClient)
-	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo, customEmojiSvc: customEmojiSvc}, &commentSitePolicy{svc: settingsSvc}, bus)
+	commentSvc := appcomment.NewService(commentRepo, userRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo, customEmojiSvc: customEmojiSvc}, &commentSitePolicy{svc: settingsSvc}, bus)
 	return &CommentContainer{
 		CommentHandler: commenthttp.NewHandler(commentSvc, userRepo, postRepo),
 		CommentService: commentSvc,

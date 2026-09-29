@@ -69,6 +69,8 @@ export function buildTweetCommentConfig({
 			parentId: c.parent_id,
 			authorName: c.author.username,
 			authorAvatarUrl: c.author.avatar_url,
+			authorProvider: c.author.provider,
+			authorProfileUrl: c.author.profile_url,
 			authorHref: `/users/${c.author.username}`,
 			isAuthor: !!tweetAuthorId && c.author.id === tweetAuthorId,
 			isPending: false,

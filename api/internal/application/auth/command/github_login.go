@@ -176,6 +176,10 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		u = user.NewUser(shared.NewID(), email, username, user.NewPasswordHash(""))
 		u.VerifyEmail()
 		u.SetGithubID(githubIDStr)
+		// 空 login（API 边缘响应）不写入：保持 nil 语义（角标只显图标不可跳），避免拼出裸主页坏链
+		if userInfo.Login != "" {
+			u.SetGithubLogin(userInfo.Login)
+		}
 		
 		if userInfo.AvatarURL != "" {
 			u.UpdateProfile(userInfo.AvatarURL, "")
@@ -190,6 +194,14 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		if u.GithubID() == nil {
 			u.SetGithubID(githubIDStr)
 			changed = true
+		}
+		// GitHub 用户可能改名，每次登录刷新 login（主页链接片段）；
+		// 空 login 同样跳过，防止异常响应把已回填的有效 login 覆盖成空串
+		if userInfo.Login != "" {
+			if login := u.GithubLogin(); login == nil || *login != userInfo.Login {
+				u.SetGithubLogin(userInfo.Login)
+				changed = true
+			}
 		}
 		
 		if userInfo.AvatarURL != "" && u.AvatarURL() == "" {

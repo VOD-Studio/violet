@@ -220,6 +220,12 @@ type User struct {
 	googleID *string
 	// githubID 绑定的 Github 账号 ID
 	githubID *string
+	// githubLogin 绑定的 GitHub 用户名（login）
+	//
+	// 与 githubID（数字 ID，绑定判定凭证）互补：login 用于拼
+	// https://github.com/<login> 主页链接。GitHub 用户可改名，每次登录刷新；
+	// 存量账号在下次 GitHub 登录时回填，回填前 login 为 nil（角标只显图标不可跳转）。
+	githubLogin *string
 	// isRoot 是否为 root 用户
 	//
 	// 区分 root 与被委派超管：root 靠标志位短路通配放行、持有授权与自救主权；
@@ -277,6 +283,7 @@ func ReconstructUser(
 	role Role,
 	googleID *string,
 	githubID *string,
+	githubLogin *string,
 	isRoot bool,
 	emailVerified bool,
 	isActive bool,
@@ -293,6 +300,7 @@ func ReconstructUser(
 		role:           role,
 		googleID:       googleID,
 		githubID:       githubID,
+		githubLogin:    githubLogin,
 		isRoot:         isRoot,
 		emailVerified:  emailVerified,
 		isActive:       isActive,
@@ -373,6 +381,11 @@ func (u *User) SetGoogleID(id string) {
 // SetGithubID 设置绑定的 Github ID
 func (u *User) SetGithubID(id string) {
 	u.githubID = &id
+}
+
+// SetGithubLogin 设置绑定的 GitHub 用户名（GitHub 登录时刷新，用户可能在 GitHub 改名）
+func (u *User) SetGithubLogin(login string) {
+	u.githubLogin = &login
 }
 
 // Activate 启用账户
@@ -474,6 +487,27 @@ func (u *User) GoogleID() *string { return u.googleID }
 
 // GithubID 获取绑定的 Github ID
 func (u *User) GithubID() *string { return u.githubID }
+
+// GithubLogin 获取绑定的 GitHub 用户名；未绑定或存量未回填时为 nil
+func (u *User) GithubLogin() *string { return u.githubLogin }
+
+// OAuthIdentity 返回第三方登录身份标识，供头像角标等公开展示。
+//
+// provider 取 "github" / "google" / ""（未绑定）；profileURL 仅 GitHub 有
+// （https://github.com/<login>），Google 无公开个人主页故恒为空串。
+// 双绑定（Google 建号后绑 GitHub）时 GitHub 优先：角标可跳转主页，信息量更大。
+func (u *User) OAuthIdentity() (provider, profileURL string) {
+	if u.githubID != nil {
+		if u.githubLogin != nil {
+			return "github", "https://github.com/" + *u.githubLogin
+		}
+		return "github", ""
+	}
+	if u.googleID != nil {
+		return "google", ""
+	}
+	return "", ""
+}
 
 // IsSuperAdmin 是否为超级管理员（便捷方法，权限守卫常用）
 func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }

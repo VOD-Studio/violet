@@ -40,9 +40,10 @@ const ANCHOR_PROPS: PropRow[] = [
 	},
 	{
 		name: "placement",
-		type: '"corner" | "edge"',
+		type: '"corner" | "edge" | "bottom-corner"',
 		defaultValue: '"corner"',
-		meaning: "数量胶囊外置；小圆点使用 edge 贴住按钮圆弧。",
+		meaning:
+			"数量胶囊外置；小圆点使用 edge 贴住按钮圆弧；bottom-corner 置于右下角（头像在线状态等）。",
 	},
 ];
 

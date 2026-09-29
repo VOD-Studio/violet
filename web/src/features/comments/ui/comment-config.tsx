@@ -57,6 +57,8 @@ export function buildArticleCommentConfig({
 			replyToName: c.reply_to_name,
 			authorName: c.author_name,
 			authorAvatarUrl: c.avatar_url,
+			authorProvider: c.author_provider,
+			authorProfileUrl: c.author_profile_url,
 			isAuthor: c.is_author,
 			isPending: c.status === "pending",
 			body: c.body,

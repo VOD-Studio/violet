@@ -13,6 +13,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/shared"
+	domainuser "blog-api/internal/domain/user"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 )
 
@@ -45,6 +46,68 @@ func TestEnrichEmotes_ResolvesCustomAndSystemTokens(t *testing.T) {
 	assert.Equal(t, "/doge.png", dtos[0].Emote["[doge]"].URL)
 }
 
+// TestEnrichOAuthIdentities_FillsProviderAndURL 验证头像角标富化：
+// GitHub 绑定（有 login）填 provider + 主页 URL、Google 绑定只填 provider、
+// 匿名评论不填；嵌套 Replies 同批回填。
+func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
+	userRepo := new(mocks.MockUserRepository)
+	svc := &Service{userRepo: userRepo}
+
+	ghUID, gUID := shared.NewID(), shared.NewID()
+	ghEmail, _ := domainuser.ParseEmail("gh@example.com")
+	ghName, _ := domainuser.ParseUsername("alice")
+	ghID, ghLogin := "12345", "octocat"
+	ghUser := domainuser.ReconstructUser(ghUID, ghEmail, ghName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		nil, &ghID, &ghLogin, false, true, true, time.Time{}, time.Time{})
+	gEmail, _ := domainuser.ParseEmail("g@example.com")
+	gName, _ := domainuser.ParseUsername("bob")
+	gSub := "google-sub-1"
+	gUser := domainuser.ReconstructUser(gUID, gEmail, gName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		&gSub, nil, nil, false, true, true, time.Time{}, time.Time{})
+
+	postID, ghCID, gCID, anonCID := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	ghComment := domain.ReconstructComment(ghCID, postID, &ghUID, nil, ghCID.String()+"/", 0, nil,
+		"alice", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+	gComment := domain.ReconstructComment(gCID, postID, &gUID, nil, gCID.String()+"/", 0, nil,
+		"bob", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+	anonComment := domain.ReconstructComment(anonCID, postID, nil, nil, anonCID.String()+"/", 0, nil,
+		"carol", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+
+	userRepo.On("FindByIDs", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{ghUser, gUser}, nil).Once()
+
+	// dtos[0] 带一条回复预览（同一 GitHub 作者），验证嵌套回填
+	dtos := []CommentDTO{
+		{ID: ghCID.String(), Replies: []CommentDTO{{ID: ghCID.String()}}},
+		{ID: gCID.String()},
+		{ID: anonCID.String()},
+	}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{ghComment, gComment, anonComment})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "github", dtos[0].AuthorProvider)
+	assert.Equal(t, "https://github.com/octocat", dtos[0].AuthorProfileURL)
+	assert.Equal(t, "github", dtos[0].Replies[0].AuthorProvider)
+	assert.Equal(t, "https://github.com/octocat", dtos[0].Replies[0].AuthorProfileURL)
+	assert.Equal(t, "google", dtos[1].AuthorProvider)
+	assert.Empty(t, dtos[1].AuthorProfileURL)
+	assert.Empty(t, dtos[2].AuthorProvider)
+	assert.Empty(t, dtos[2].AuthorProfileURL)
+	userRepo.AssertExpectations(t)
+}
+
+// TestEnrichOAuthIdentities_NilUserRepoSkips 验证 userRepo 未注入时跳过富化（不报错）。
+func TestEnrichOAuthIdentities_NilUserRepoSkips(t *testing.T) {
+	svc := &Service{}
+	dtos := []CommentDTO{{ID: "c1"}}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, nil)
+	assert.NoError(t, err)
+	assert.Empty(t, dtos[0].AuthorProvider)
+}
+
 // fakeSitePolicy 可配置的站点评论策略 stub
 type fakeSitePolicy struct {
 	enabled    bool
@@ -62,7 +125,7 @@ func newServiceWithMocks(policy SitePolicy) (*Service, *mocks.MockCommentReposit
 	repo := new(mocks.MockCommentRepository)
 	codeStore := new(mocks.MockCommentCodeStore)
 	emailSender := new(mocks.MockCommentEmailSender)
-	return NewService(repo, codeStore, emailSender, noopEmojiLookup{}, policy, infraeventbus.NewInMemory()), repo, codeStore, emailSender
+	return NewService(repo, nil, codeStore, emailSender, noopEmojiLookup{}, policy, infraeventbus.NewInMemory()), repo, codeStore, emailSender
 }
 
 func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
