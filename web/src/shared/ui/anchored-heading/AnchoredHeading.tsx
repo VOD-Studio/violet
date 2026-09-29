@@ -1,7 +1,7 @@
 import { copyText } from "@shared/lib/clipboard";
 import { cn } from "cn";
-import { Link2 } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { CopyCheck, Link } from "lucide-react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import styles from "./AnchoredHeading.module.css";
@@ -25,11 +25,28 @@ export function AnchoredHeading({
 	copyLabel = "复制此章节链接",
 	style,
 }: AnchoredHeadingProps) {
+	const [copied, setCopied] = useState(false);
+	const resetTimer = useRef<number | undefined>(undefined);
+
+	useEffect(
+		() => () => {
+			clearTimeout(resetTimer.current);
+		},
+		[],
+	);
+
 	const copyLink = async () => {
 		const url = new URL(window.location.href);
 		url.hash = id;
-		if (await copyText(url.href)) toast.success("已复制章节链接");
-		else toast.error("复制链接失败");
+		if (await copyText(url.href)) {
+			clearTimeout(resetTimer.current);
+			setCopied(true);
+			resetTimer.current = window.setTimeout(() => {
+				setCopied(false);
+				resetTimer.current = undefined;
+			}, 2000);
+			toast.success("已复制章节链接");
+		} else toast.error("复制链接失败");
 	};
 
 	return (
@@ -39,10 +56,11 @@ export function AnchoredHeading({
 				type="button"
 				onClick={() => void copyLink()}
 				className={styles.copyLink}
-				aria-label={copyLabel}
-				title={copyLabel}
+				data-copied={copied}
+				aria-label={copied ? "已复制章节链接" : copyLabel}
+				title={copied ? "已复制章节链接" : copyLabel}
 			>
-				<Link2 aria-hidden />
+				{copied ? <CopyCheck aria-hidden /> : <Link aria-hidden />}
 			</button>
 		</Heading>
 	);

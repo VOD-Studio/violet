@@ -10,6 +10,7 @@
 | `animate-marquee` | 40s 线性循环 | 跑马灯横滚 |
 | `animate-blob` / `animate-nexus-shimmer` | 品牌氛围动效 | 站点装饰层 |
 
+交互反馈类过渡（悬停显现、复制回显、指示线滑动）不走 keyframes，统一引用 `--transition-feedback`（160ms ease-out，`@violet/ui/styles.css` 的 theme 层注册）。
 组件不暴露独立的动画状态属性（`data-entering` 之类）；进入/退出态由 Radix 的 `data-[state=open]` 等 Radix 状态选择器配合 `motion` 组件处理。
 
 ## 用 Tailwind 写动画
