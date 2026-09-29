@@ -1,5 +1,6 @@
 import { copyText } from "@shared/lib/clipboard";
 import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { HsvColorPicker } from "@violet/ui";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
@@ -189,7 +190,13 @@ export function PaletteGenerator({ children }: { children?: ReactNode }) {
 			</div>
 			{/* 主色色阶卡尺 */}
 			<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
-				<h2 className="text-lg font-bold">主色色阶</h2>
+				<AnchoredHeading
+					as="h2"
+					id="主色色阶"
+					className="text-2xl font-bold tracking-tight"
+				>
+					主色色阶
+				</AnchoredHeading>
 				<span className="text-xs text-muted-foreground">点击任意色阶即可复制 HEX 码</span>
 			</div>
 			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
@@ -259,7 +266,13 @@ export function PaletteGenerator({ children }: { children?: ReactNode }) {
 			{/* 对比度审计 */}
 			<section>
 				<div className="mt-10 flex items-baseline justify-between">
-					<h2 className="text-lg font-bold">对比度审计</h2>
+					<AnchoredHeading
+						as="h2"
+						id="对比度审计"
+						className="text-2xl font-bold tracking-tight"
+					>
+						对比度审计
+					</AnchoredHeading>
 					<span className="font-mono text-xs text-muted-foreground">
 						WCAG 2.1 规范验算
 					</span>

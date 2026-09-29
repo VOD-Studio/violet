@@ -1,5 +1,7 @@
 import type { GeneratedPalette } from "@features/design-system/model/palette";
 import { copyText } from "@shared/lib/clipboard";
+import { slugify } from "@shared/lib/slug";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CartoonPopoverGroup, CartoonPopoverGroupItem } from "@shared/ui/cartoon-popover";
 import { Settings2 } from "lucide-react";
 import { type CSSProperties, type MouseEvent, type ReactElement, useId } from "react";
@@ -132,7 +134,13 @@ function createPreviewStyle(palette: GeneratedPalette, mode: PreviewMode): Previ
 function SectionHeading({ description, title }: { description: string; title: string }) {
 	return (
 		<header>
-			<h3 className="text-2xl font-bold tracking-tight text-foreground">{title}</h3>
+			<AnchoredHeading
+				as="h3"
+				id={slugify(title)}
+				className="text-xl font-semibold tracking-tight text-foreground"
+			>
+				{title}
+			</AnchoredHeading>
 			<p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">{description}</p>
 		</header>
 	);

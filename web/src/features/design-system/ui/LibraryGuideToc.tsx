@@ -177,10 +177,13 @@ export function LibraryGuideToc({ items, bodyRef, className }: LibraryGuideTocPr
 					{indicator && (
 						<span
 							aria-hidden="true"
-							className="pointer-events-none absolute top-0 -left-px w-0.5 bg-primary motion-safe:transition-[transform,height] motion-safe:duration-250 motion-safe:ease-out"
+							className="pointer-events-none absolute top-0 -left-px w-0.5 bg-primary"
 							style={{
 								transform: `translateY(${indicator.top}px)`,
 								height: indicator.height,
+								transition: reduced
+									? undefined
+									: "transform var(--transition-feedback, 160ms ease-out), height var(--transition-feedback, 160ms ease-out)",
 							}}
 						/>
 					)}
