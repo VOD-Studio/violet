@@ -15,6 +15,7 @@ import {
 	type RefObject,
 	useCallback,
 	useContext,
+	useEffect,
 	useLayoutEffect,
 	useRef,
 	useState,
@@ -144,35 +145,93 @@ export function LibraryGuideToc({ items, bodyRef, className }: LibraryGuideTocPr
 	const listRef = useRef<HTMLUListElement>(null);
 	const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: activeId / items 更新后需重测活动条目的 DOM 位置
+	useEffect(() => {
+		const body = bodyRef.current;
+		const list = listRef.current;
+		if (!body || !list) return;
+		const rows = items
+			.map((item) => ({
+				heading: body.querySelector<HTMLElement>(`[id="${CSS.escape(item.id)}"]`),
+				item: list.querySelector<HTMLAnchorElement>(
+					`a[href="#${encodeURIComponent(item.id)}"]`,
+				)?.parentElement,
+			}))
+			.filter((row): row is { heading: HTMLElement; item: HTMLLIElement } =>
+				Boolean(row.heading && row.item),
+			);
+
+		// 竖线覆盖视口内可见的首个到最后一个标题；无可见标题时保留上一段范围
+		const measure = () => {
+			let first: HTMLLIElement | null = null;
+			let last: HTMLLIElement | null = null;
+			for (const { heading, item } of rows) {
+				if (!heading) continue;
+				const box = heading.getBoundingClientRect();
+				if (box.bottom > 0 && box.top < window.innerHeight) {
+					if (!first) first = item;
+					last = item;
+				}
+			}
+			if (first && last) {
+				setIndicator({
+					top: first.offsetTop,
+					height: last.offsetTop + last.offsetHeight - first.offsetTop,
+				});
+			}
+		};
+
+		measure();
+		let frame = 0;
+		const schedule = () => {
+			if (frame) return;
+			frame = requestAnimationFrame(() => {
+				frame = 0;
+				measure();
+			});
+		};
+		window.addEventListener("scroll", schedule, { passive: true });
+		window.addEventListener("resize", schedule, { passive: true });
+		return () => {
+			window.removeEventListener("scroll", schedule);
+			window.removeEventListener("resize", schedule);
+			if (frame) cancelAnimationFrame(frame);
+		};
+	}, [bodyRef, items]);
+
 	useLayoutEffect(() => {
+		if (!activeId) return;
 		const rail = railRef.current;
-		const active = listRef.current?.querySelector<HTMLElement>('[aria-current="location"]');
-		const item = active?.parentElement;
-		if (!rail || !active || !item) {
-			setIndicator(null);
-			return;
-		}
-		setIndicator({ top: item.offsetTop, height: item.offsetHeight });
+		const active = listRef.current?.querySelector<HTMLElement>(
+			`a[href="#${encodeURIComponent(activeId)}"]`,
+		);
+		if (!rail || !active) return;
 		const railBox = rail.getBoundingClientRect();
 		const activeBox = active.getBoundingClientRect();
-		if (activeBox.top < railBox.top || activeBox.bottom > railBox.bottom) {
+		// 活动条目越过目录中线即提前滚至居中，向上滚出顶界也回滚
+		if (activeBox.top < railBox.top || activeBox.bottom > railBox.top + railBox.height / 2) {
 			rail.scrollTo({
 				top: rail.scrollTop + activeBox.top - railBox.top - railBox.height / 2,
 				behavior: reduced ? "instant" : "smooth",
 			});
 		}
-	}, [activeId, items, reduced]);
+	}, [activeId, reduced]);
 
 	if (items.length === 0) return null;
 
 	return (
-		<nav aria-label="页内目录" className={cn("hidden w-56 shrink-0 xl:block", className)}>
-			<div
-				ref={railRef}
-				className="sticky top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto pb-8"
-			>
-				<p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">目录</p>
+		<nav
+			aria-label="页内目录"
+			className={cn(
+				// 吸附位 102px = Header 54px + 上边距 48px，与 DesignSystemSidebar 一致：
+				// 初始即贴住，消除正文滚动初期的跟随位移。
+				"hidden w-56 shrink-0 flex-col xl:sticky xl:top-[102px] xl:flex xl:max-h-[min(60dvh,calc(100dvh-8.5rem))]",
+				className,
+			)}
+		>
+			<p className="mb-3 flex-none text-xs font-medium tracking-wide text-muted-foreground">
+				目录
+			</p>
+			<div ref={railRef} className="scrollbar-none min-h-0 flex-1 overflow-y-auto pb-8">
 				<ul ref={listRef} className="relative border-l border-border/60">
 					{indicator && (
 						<span
