@@ -7,6 +7,22 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.48](https://github.com/VOD-Studio/violet/compare/v2.8.47...v2.8.48) (2026-09-29)
+
+
+### 新增
+
+* **chat:** Bot 媒体 API 支持图片消息与上传端点 ([de94d32](https://github.com/VOD-Studio/violet/commit/de94d32f4880dfe92b1c96d58369de6b5978d710))
+* **posts:** 优化文章目录阅读体验 ([e8add62](https://github.com/VOD-Studio/violet/commit/e8add6210f2c4dd923400d1c902ed6a8346cd9bf))
+* **posts:** 优化文章目录阅读体验 ([272e179](https://github.com/VOD-Studio/violet/commit/272e179ab9628850973d59f70271ee8384f57c5f))
+
+
+### 修复
+
+* **editor:** 修复文章设置栏窄窗口裁剪 ([41a47c9](https://github.com/VOD-Studio/violet/commit/41a47c9167184ca8ccc17bb4d5eda7111b6ea513))
+* **editor:** 修复文章设置栏窄窗口裁剪 ([d35ea51](https://github.com/VOD-Studio/violet/commit/d35ea5127fea6bd481c8eb3e8ccc0b8398d82643))
+* **media:** 上传前校验图片像素与结构 ([7eb2b00](https://github.com/VOD-Studio/violet/commit/7eb2b004ad28a1fe2809636027c988c1d027f9ca))
+
 ## [2.8.47](https://github.com/VOD-Studio/violet/compare/v2.8.46...v2.8.47) (2026-09-29)
 
 
