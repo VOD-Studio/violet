@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -28,8 +29,13 @@ type botMediaSaver interface {
 	SaveBotMedia(context.Context, appmedia.SaveBotMediaInput) (appmedia.BotMediaDTO, error)
 }
 
+type botMessageSender interface {
+	SendBotMessage(context.Context, appchat.SendMessageInput) (appchat.MessageDTO, error)
+}
+
 type BotHandler struct {
 	chat          *appchat.Service
+	messageSender botMessageSender
 	bots          *appchat.BotService
 	conns         *appchat.BotConnectionManager
 	commands      *appchat.BotCommandService
@@ -39,7 +45,7 @@ type BotHandler struct {
 
 // NewBotHandler 构造 bot 聊天适配器。conns 为 nil 时事件流端点不可用。
 func NewBotHandler(chatSvc *appchat.Service, botSvc *appchat.BotService, conns *appchat.BotConnectionManager, media botMediaSaver, mediaMaxBytes int64) *BotHandler {
-	return &BotHandler{chat: chatSvc, bots: botSvc, conns: conns, media: media, mediaMaxBytes: mediaMaxBytes}
+	return &BotHandler{chat: chatSvc, messageSender: chatSvc, bots: botSvc, conns: conns, media: media, mediaMaxBytes: mediaMaxBytes}
 }
 
 // requireBot 取出当前请求的 bot。中间件已鉴权，此处只防路由漏挂 BotAuth。
@@ -130,6 +136,11 @@ func (h *BotHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		var maxBytesError *http.MaxBytesError
+		if errors.As(err, &maxBytesError) {
+			response.RespondPayloadTooLarge(w, r, "图片超过上传大小上限")
+			return
+		}
 		response.RespondError(w, r, domainshared.BadRequest("multipart 请求格式错误"))
 		return
 	}
@@ -229,7 +240,7 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	dto, err := h.chat.SendBotMessage(r.Context(), appchat.SendMessageInput{
+	dto, err := h.messageSender.SendBotMessage(r.Context(), appchat.SendMessageInput{
 		UserID:         bot.UserID(),
 		ConversationID: conversationID,
 		Type:           messageType,
