@@ -38,7 +38,6 @@ export function ButtonBasicDemo() {
 - [快速入门](/design-system/guides/quick-start)：安装、导入样式与第一个组件。
 - [组件目录](/design-system/specimens)：逐组件的用法、示例与限制。
 - [Token 词典](/design-system/tokens)与[颜色](/design-system/palette)：语义变量名与实时值。
-- [主题构建器](/design-system/guides/theme-builder)：可视化调色并导出色板 CSS。
 - `https://xunrua.top/llms.txt`：供 AI 编码助手读取的文档索引，用法见快速入门的「让 AI 代劳」。
 
 ## 常见问题

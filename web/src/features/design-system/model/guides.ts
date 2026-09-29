@@ -108,12 +108,6 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 				to: "/design-system/guides/theming",
 			},
 			{
-				id: "theme-builder",
-				title: "主题构建器",
-				scope: "调整主色、圆角与滚动条，实时预览并生成 custom.css。",
-				to: "/design-system/guides/theme-builder",
-			},
-			{
 				id: "dark-mode",
 				title: "深色模式",
 				scope: "通过 html.dark 切换语义色。",

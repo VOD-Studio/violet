@@ -84,4 +84,4 @@ coral.css
 }
 ```
 
-主题切换与站点作用域的完整设置见[主题指南](/design-system/guides/theming)；调好主色后可用[主题构建器](/design-system/guides/theme-builder)导出可落盘的色板 CSS。
+主题切换与站点作用域的完整设置见[主题指南](/design-system/guides/theming)。

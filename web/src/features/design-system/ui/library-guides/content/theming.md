@@ -127,7 +127,7 @@ JS 侧是 ESM tree-shaking：`import { Button } from "@violet/ui"` 只打包用�
 @import "@violet/ui/styles.css";
 ```
 
-要创建自有命名主题，复制一份色板文件，把选择器改成你的名字（如 `[data-theme="ocean"]`），六个 `--primary-base*` 成对改值。可以用[主题构建器](/design-system/guides/theme-builder)可视化调色并导出这份 CSS。
+要创建自有命名主题，复制一份色板文件，把选择器改成你的名字（如 `[data-theme="ocean"]`），六个 `--primary-base*` 成对改值。主色推导效果可在[颜色](/design-system/palette)页预览，再手动写入色板文件。
 
 ## 自定义组件样式
 
@@ -272,6 +272,5 @@ export function CampaignActions() {
 ## 相关资源
 
 - [颜色](/design-system/palette)：语义色角色与主色推导
-- [主题构建器](/design-system/guides/theme-builder)：可视化调色并导出色板 CSS
 - [深色模式](/design-system/guides/dark-mode)：明暗切换的宿主职责
 - [样式](/design-system/guides/styling)：Tailwind v4 与组件变体
