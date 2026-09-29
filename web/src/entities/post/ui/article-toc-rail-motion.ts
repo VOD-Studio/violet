@@ -19,6 +19,7 @@ interface UseArticleTocRailMotionOptions {
 	activeId: string | null;
 	active: boolean;
 	contentRef?: RefObject<HTMLElement | null>;
+	readPercent: number;
 }
 
 const MAX_VELOCITY_BEND = 14;
@@ -75,7 +76,8 @@ function useHeadingRatios(items: ArticleTocRailItem[], contentRef?: RefObject<HT
 	return ratios;
 }
 
-function useArticleReadPercent(
+/** 文章正文从进入视口到读完的百分比，供阅读轨和悬停目录共用。 */
+export function useArticleReadPercent(
 	contentRef: RefObject<HTMLElement | null> | undefined,
 	fallback: number,
 ) {
@@ -128,14 +130,13 @@ export function useArticleTocRailMotion({
 	activeId,
 	active,
 	contentRef,
+	readPercent,
 }: UseArticleTocRailMotionOptions) {
 	const reduced = useReducedMotion();
 	const activeIndex = Math.max(
 		0,
 		items.findIndex((item) => item.id === activeId),
 	);
-	const fallbackProgress = items.length > 1 ? (activeIndex / (items.length - 1)) * 100 : 0;
-	const readPercent = useArticleReadPercent(contentRef, fallbackProgress);
 	const headingRatios = useHeadingRatios(items, contentRef);
 	const activeItem = items[activeIndex];
 	const activeRootItem = activeItem
@@ -269,6 +270,5 @@ export function useArticleTocRailMotion({
 		containerRef,
 		labelRef,
 		markerRefs,
-		readPercent,
 	};
 }

@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { CSSProperties, RefObject } from "react";
 
 import { ARTICLE_TOC_RAIL_ACCENT } from "./article-toc-rail-geometry";
@@ -9,6 +9,7 @@ interface ArticleTocRailProps {
 	items: ArticleTocRailItem[];
 	activeId: string | null;
 	active: boolean;
+	readPercent: number;
 	contentRef?: RefObject<HTMLElement | null>;
 	className?: string;
 }
@@ -18,19 +19,13 @@ export function ArticleTocRail({
 	items,
 	activeId,
 	active,
+	readPercent,
 	contentRef,
 	className,
 }: ArticleTocRailProps) {
-	const {
-		accentPathRef,
-		activeRootItem,
-		basePathRef,
-		containerRef,
-		labelRef,
-		markerRefs,
-		readPercent,
-	} = useArticleTocRailMotion({ active, activeId, contentRef, items });
-
+	const reduced = useReducedMotion();
+	const { accentPathRef, activeRootItem, basePathRef, containerRef, labelRef, markerRefs } =
+		useArticleTocRailMotion({ active, activeId, contentRef, items, readPercent });
 	if (items.length === 0) return null;
 
 	return (
@@ -38,7 +33,11 @@ export function ArticleTocRail({
 			aria-hidden="true"
 			data-toc-rail
 			ref={containerRef}
-			className={cn("pointer-events-none absolute inset-y-0 left-0 w-12", className)}
+			className={cn(
+				"pointer-events-none absolute inset-y-0 left-0 w-12 motion-safe:transition-opacity motion-safe:duration-300",
+				active ? "opacity-100" : "opacity-0",
+				className,
+			)}
 			style={{ "--toc-rail-accent": ARTICLE_TOC_RAIL_ACCENT } as CSSProperties}
 		>
 			<svg
@@ -49,7 +48,9 @@ export function ArticleTocRail({
 					clipPath: active
 						? "inset(-2% -50% -2% -2%)"
 						: `inset(${readPercent}% -50% ${100 - readPercent}% -2%)`,
-					transition: `clip-path ${active ? 550 : 450}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+					transition: reduced
+						? "none"
+						: `clip-path ${active ? 550 : 450}ms cubic-bezier(0.4, 0, 0.2, 1)`,
 				}}
 			>
 				<path
@@ -119,17 +120,17 @@ export function ArticleTocRail({
 				data-toc-rail-label
 				className={cn(
 					"absolute top-0 left-9 flex flex-col gap-0.5 transition-opacity duration-300",
-					active ? "opacity-100 delay-700" : "opacity-0 delay-0",
+					active ? "opacity-100 delay-200" : "opacity-0 delay-0",
 				)}
 			>
 				<AnimatePresence mode="wait">
 					{activeRootItem ? (
 						<motion.span
 							key={activeRootItem.id}
-							initial={{ opacity: 0, y: 3 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0, y: -3 }}
-							transition={{ duration: 0.25, ease: "easeOut" }}
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: reduced ? 0 : 0.25, ease: "easeOut" }}
 							className="block max-w-35 truncate text-[10px] leading-tight text-muted-foreground/40"
 						>
 							{activeRootItem.title}
