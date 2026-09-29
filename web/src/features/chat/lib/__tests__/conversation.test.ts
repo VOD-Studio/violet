@@ -1,9 +1,9 @@
 /**
- * messagePreview 测试：侧边栏会话预览对人类可读，剥离内联图片占位符。
+ * 会话侧栏工具测试：messagePreview 预览可读、formatRelativeTime 边界。
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage } from "../../model/types";
-import { messagePreview } from "../conversation";
+import { formatRelativeTime, messagePreview } from "../conversation";
 
 function imageMessage(content?: string): ChatMessage {
 	return {
@@ -72,5 +72,22 @@ describe("messagePreview", () => {
 		expect(messagePreview(textMessage("[1:00000000-0000-0000-0000-000000000001]"))).toBe(
 			"文本消息",
 		);
+	});
+});
+
+describe("formatRelativeTime", () => {
+	afterEach(() => vi.useRealTimers());
+
+	it("未来时间（服务器时钟略快于本机）按当天时钟显示，不出现 -1 天", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-09-29T10:00:00"));
+		// 服务器时间戳比本机快 2 秒：floor(负毫秒/一天) 曾得 -1
+		expect(formatRelativeTime("2026-09-29T10:00:02")).toMatch(/^\d{1,2}:\d{2}$/);
+	});
+
+	it("24 小时内跨日历天仍显示时钟（按流逝时长而非日历天）", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-09-29T00:30:00"));
+		expect(formatRelativeTime("2026-09-28T23:30:00")).toMatch(/^\d{1,2}:\d{2}$/);
 	});
 });

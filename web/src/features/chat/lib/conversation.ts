@@ -59,7 +59,9 @@ export function formatRelativeTime(value: string) {
 	const diffMs = now.getTime() - date.getTime();
 	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-	if (diffDays === 0) {
+	// diffMs 为负（服务器时钟略快于本机的实时消息）时 floor 得 -1，曾显示「-1天前」；
+	// 未来时间一律按当天时钟显示
+	if (diffDays === 0 || diffMs < 0) {
 		return formatClockTime(value);
 	}
 	if (diffDays === 1) {
