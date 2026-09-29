@@ -7,6 +7,28 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.49](https://github.com/VOD-Studio/violet/compare/v2.8.48...v2.8.49) (2026-09-29)
+
+
+### 新增
+
+* **chat:** Telegram 式组头像跟随滚动 ([698d585](https://github.com/VOD-Studio/violet/commit/698d58551266d69e650e1c6de914c582d6c27780))
+* **comments:** 评论头像第三方登录角标 ([c316bf2](https://github.com/VOD-Studio/violet/commit/c316bf24fff9649df510a33b6108065d3e71a553))
+* **comment:** 评论作者第三方登录角标字段 ([107adef](https://github.com/VOD-Studio/violet/commit/107adeff6f5e48b7265ae8020ab0f1a5d37c2b70))
+* **ui:** BadgeAnchor 支持右下角角标方向 ([feaacb8](https://github.com/VOD-Studio/violet/commit/feaacb80def5efaa14f417534e3a3ae5584527f9))
+* **user:** GitHub 登录名存储与第三方登录身份标识 ([480b804](https://github.com/VOD-Studio/violet/commit/480b8046b311047aa26f50234513abb9dfb7ede6))
+
+
+### 修复
+
+* **chat:** 会话相对时间负时长显示 -1 天修复 ([9e41b35](https://github.com/VOD-Studio/violet/commit/9e41b35e4f0c0ff19b90e837072413968d4f4591))
+* **user:** GitHub 登录空 login 不落库 ([a992a47](https://github.com/VOD-Studio/violet/commit/a992a473f751683c7aa7f612d2a6ab5ba4b623cd))
+
+
+### 重构
+
+* **chat:** 会话详情抽屉改为 overlay 滑入 ([87f852a](https://github.com/VOD-Studio/violet/commit/87f852ab0a19c20c59a1deef9c17cd34f0ebe811))
+
 ## [2.8.48](https://github.com/VOD-Studio/violet/compare/v2.8.47...v2.8.48) (2026-09-29)
 
 
