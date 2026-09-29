@@ -222,12 +222,15 @@ function ColorBlock({
 	border = false,
 	hoverBackground,
 	label,
+	textColor,
 	token,
 }: {
 	background: string;
 	border?: boolean;
 	hoverBackground?: string;
 	label: string;
+	/** 实色面上的文字色；缺省时按底色反色自动求黑白 */
+	textColor?: string;
 	token: string;
 }) {
 	const style = {
@@ -249,13 +252,13 @@ function ColorBlock({
 			>
 				<span
 					className="text-sm font-medium tracking-tight"
-					style={textContrastStyle(background)}
+					style={textColor ? { color: textColor } : textContrastStyle(background)}
 				>
 					{label}
 				</span>
 				<span
 					className="truncate font-mono text-[10px] leading-tight opacity-60 sm:hidden"
-					style={textContrastStyle(background)}
+					style={textColor ? { color: textColor } : textContrastStyle(background)}
 				>
 					{token}
 				</span>
@@ -269,12 +272,15 @@ function ColorHeader({
 	hoverBackground,
 	mode,
 	name,
+	textColor,
 	token,
 }: {
 	background: string;
 	hoverBackground: string;
 	mode: PreviewMode;
 	name: string;
+	/** 实色头块上的文字色；缺省时按底色反色自动求黑白 */
+	textColor?: string;
 	token: string;
 }) {
 	const style = {
@@ -294,18 +300,21 @@ function ColorHeader({
 				<span className="flex flex-col">
 					<span
 						className="text-lg font-medium tracking-tight"
-						style={textContrastStyle(background)}
+						style={textColor ? { color: textColor } : textContrastStyle(background)}
 					>
 						{name}
 					</span>
 					<span
 						className="font-mono text-[10px] leading-tight opacity-60 sm:hidden"
-						style={textContrastStyle(background)}
+						style={textColor ? { color: textColor } : textContrastStyle(background)}
 					>
 						{token}
 					</span>
 				</span>
-				<span className="text-xs font-medium" style={textContrastStyle(background)}>
+				<span
+					className="text-xs font-medium"
+					style={textColor ? { color: textColor } : textContrastStyle(background)}
+				>
 					{mode === "light" ? "Light" : "Dark"}
 				</span>
 			</button>
@@ -333,6 +342,7 @@ function ThemeColumn({
 				hoverBackground={`var(${color.hover})`}
 				mode={mode}
 				name={color.name}
+				textColor={`var(${color.foreground})`}
 				token={color.base}
 			/>
 			<div className={`flex gap-2 ${color.soft ? "flex-col sm:flex-row" : "flex-col"}`}>
@@ -342,13 +352,14 @@ function ThemeColumn({
 				>
 					<span
 						className="text-base font-medium tracking-tight"
-						style={textContrastStyle(`var(${color.base})`)}
+						style={{ color: `var(${color.foreground})` }}
 					>
 						{color.name}
 					</span>
 					<ColorBlock
 						background={`var(${color.hover})`}
 						label="Hover"
+						textColor={`var(${color.foreground})`}
 						token={color.hover}
 					/>
 					<ColorBlock
