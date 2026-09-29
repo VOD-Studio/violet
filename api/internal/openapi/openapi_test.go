@@ -284,7 +284,7 @@ func TestAdminStatsAndSettingsPaths(t *testing.T) {
 	spec, _ := Spec()
 	// 站点设置按菜单子页拆成 7 组，每组 GET/PUT 两个路径
 	for _, p := range []string{
-		"/admin/settings/general", "/admin/settings/auth", "/admin/settings/github",
+		"/admin/settings/general", "/admin/settings/github",
 		"/admin/settings/profile", "/admin/settings/about", "/admin/settings/llm",
 		"/admin/settings/code-runner",
 		"/admin/logs", "/admin/logs/user/{id}",
@@ -293,7 +293,7 @@ func TestAdminStatsAndSettingsPaths(t *testing.T) {
 	}
 	for _, s := range []string{
 		"DashboardStats", "ViewTrends",
-		"GeneralSettings", "AuthSettings", "GithubSettings", "ProfileSettings",
+		"GeneralSettings", "GithubSettings", "ProfileSettings",
 		"AboutSettings", "LlmSettings", "CodeRunnerSettings",
 		"AuditEvent",
 	} {

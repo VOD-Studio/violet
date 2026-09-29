@@ -75,7 +75,6 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		path, schema, summary string
 	}{
 		{"/admin/settings/general", "GeneralSettings", "基础信息"},
-		{"/admin/settings/auth", "AuthSettings", "第三方登录开关"},
 		{"/admin/settings/github", "GithubSettings", "GitHub 资料"},
 		{"/admin/settings/profile", "ProfileSettings", "关于博主内容"},
 		{"/admin/settings/about", "AboutSettings", "关于页区块配置"},

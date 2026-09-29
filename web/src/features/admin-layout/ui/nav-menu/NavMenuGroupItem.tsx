@@ -127,7 +127,7 @@ export function NavMenuGroupItem({
 	return (
 		<div className="flex flex-col">
 			{trigger}
-			{/* 子菜单：grid-rows 0fr↔1fr 高度过渡（同 OAuthProviderCard 先例），展开/收起不跳布局；
+			{/* 子菜单：grid-rows 0fr↔1fr 高度过渡（grid-rows 高度过渡先例），展开/收起不跳布局；
 			    data-state 供测试断言可见性；visibility 随过渡切换，收起后子项不可被 tab 聚焦 */}
 			<div
 				ref={submenuRef}

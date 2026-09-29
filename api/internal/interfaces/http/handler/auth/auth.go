@@ -23,20 +23,20 @@ import (
 
 // Handler auth HTTP 处理器（DDD 版）
 type Handler struct {
-	register      *authcmd.RegisterUserHandler  // 注册用例
-	login         *authcmd.LoginHandler         // 账号密码登录用例
-	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
-	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
-	logout        *authcmd.LogoutHandler        // 登出用例
-	createSession *authcmd.CreateSessionHandler // session 创建用例，登录后下发 cookie
-	verify        *authcmd.VerifyEmailHandler   // 邮箱验证用例
+	register      *authcmd.RegisterUserHandler   // 注册用例
+	login         *authcmd.LoginHandler          // 账号密码登录用例
+	google        *authcmd.GoogleLoginHandler    // Google OAuth 登录用例
+	github        *authcmd.GithubLoginHandler    // GitHub OAuth 登录用例
+	logout        *authcmd.LogoutHandler         // 登出用例
+	createSession *authcmd.CreateSessionHandler  // session 创建用例，登录后下发 cookie
+	verify        *authcmd.VerifyEmailHandler    // 邮箱验证用例
 	forgot        *authcmd.ForgotPasswordHandler // 忘记密码用例，发送重置码
 	reset         *authcmd.ResetPasswordHandler  // 重置密码用例
-	updatePf      *authcmd.UpdateProfileHandler   // 更新个人资料用例
-	changePwd     *authcmd.ChangePasswordHandler  // 修改密码用例
-	getMe         *authquery.GetMeHandler          // 获取当前用户信息用例
-	settings      *appsettings.Service             // 站点设置服务，OAuth 启用判断
-	oauthCreds    *authcmd.OAuthCredentials        // OAuth 凭据运行时存储（后台可写）
+	updatePf      *authcmd.UpdateProfileHandler  // 更新个人资料用例
+	changePwd     *authcmd.ChangePasswordHandler // 修改密码用例
+	getMe         *authquery.GetMeHandler        // 获取当前用户信息用例
+	settings      *appsettings.Service           // 站点设置服务，OAuth 启用判断
+	oauthCreds    *authcmd.OAuthCredentials // OAuth 凭据（env 只读）
 
 	validate  *validator.Validate  // 请求体校验器
 	cookieCfg config.CookieConfig  // session cookie 配置（名/域/Secure/SameSite）
@@ -68,12 +68,12 @@ func NewHandler(
 	return &Handler{
 		register: register, login: login, google: google, github: github, logout: logout,
 		createSession: createSession,
-		verify: verify, forgot: forgot, reset: reset,
+		verify:        verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
 		oauthCreds: oauthCreds,
 		validate:   validator.New(),
-		cookieCfg: cookieCfg,
-		session:   session,
+		cookieCfg:  cookieCfg,
+		session:    session,
 	}
 }
 
@@ -114,75 +114,6 @@ func (h *Handler) ensureOAuthEnabled(ctx context.Context, provider string) error
 		}
 	}
 	return nil
-}
-
-// GetOAuthStatus GET /admin/oauth/status —— OAuth 凭据状态检测。
-// 各 provider 返回 enabled（管理员开关）/凭据配置状态/脱敏预览，
-// persisted=false 提示后台写入未落盘（重启后失效）。
-func (h *Handler) GetOAuthStatus(w http.ResponseWriter, r *http.Request) {
-	settings, err := h.settings.GetAll(r.Context())
-	if err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	st := h.oauthCreds.Status()
-	response.RespondOK(w, map[string]any{
-		"google_login_enabled": settings.GoogleLoginEnabled,
-		"github_login_enabled": settings.GithubLoginEnabled,
-		"google":               st.Google,
-		"github":               st.Github,
-	})
-}
-
-// VerifyOAuthCredentials POST /admin/oauth/verify —— 探测凭据在 provider 侧的有效性。
-// 用假 code 打 token 端点读错误码（OAuth 无公开 client 查询端点，防枚举）：
-// GitHub 404=App 已删 / incorrect_client_credentials=secret 错 / bad_verification_code=有效；
-// Google invalid_client=已删 / 其余=client 存在。手动触发，勿自动轮询。
-func (h *Handler) VerifyOAuthCredentials(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Provider string `json:"provider" validate:"required"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	result, err := h.oauthCreds.VerifyProvider(r.Context(), req.Provider)
-	if err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	response.RespondOK(w, result)
-}
-
-// UpdateOAuthCredentials PUT /admin/oauth/credentials —— 后台写入 OAuth 凭据。
-// 内存立即生效；nil 字段不更新（前端留空=保持原值，secret 不回显）。
-func (h *Handler) UpdateOAuthCredentials(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		GoogleClientID     *string `json:"google_client_id"`
-		GithubClientID     *string `json:"github_client_id"`
-		GithubClientSecret *string `json:"github_client_secret"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	if req.GoogleClientID == nil && req.GithubClientID == nil && req.GithubClientSecret == nil {
-		response.RespondError(w, r, domainsettings.ErrInvalidSetting)
-		return
-	}
-	if err := h.oauthCreds.Update(r.Context(), authcmd.OAuthCredentialUpdate{
-		GoogleClientID:     req.GoogleClientID,
-		GithubClientID:     req.GithubClientID,
-		GithubClientSecret: req.GithubClientSecret,
-	}); err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	st := h.oauthCreds.Status()
-	response.RespondOK(w, map[string]any{
-		"google": st.Google,
-		"github": st.Github,
-	})
 }
 
 // Register POST /auth/register
@@ -350,9 +281,9 @@ func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, map[string]any{
-		"user_id":                userID,
-		"role":                   interfacesmw.GetUserRoleFromContext(r),
-		"email":                  interfacesmw.GetUserEmailFromContext(r),
+		"user_id": userID,
+		"role":    interfacesmw.GetUserRoleFromContext(r),
+		"email":   interfacesmw.GetUserEmailFromContext(r),
 		"is_root": interfacesmw.GetUserIsRootFromContext(r),
 	})
 }
@@ -452,10 +383,10 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
-		Username   *string `json:"username" validate:"omitempty,min=3,max=32"`
+		Username    *string `json:"username" validate:"omitempty,min=3,max=32"`
 		DisplayName *string `json:"display_name" validate:"omitempty,max=32"`
-		Bio        *string `json:"bio" validate:"omitempty,max=500"`
-		AvatarURL  *string `json:"avatar_url" validate:"omitempty,max=2048"`
+		Bio         *string `json:"bio" validate:"omitempty,max=500"`
+		AvatarURL   *string `json:"avatar_url" validate:"omitempty,max=2048"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -474,13 +405,13 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, map[string]any{
-		"id":         u.GetID().String(),
-		"username":   u.Username().String(),
+		"id":           u.GetID().String(),
+		"username":     u.Username().String(),
 		"display_name": u.DisplayName().String(),
-		"email":      u.Email().String(),
-		"avatar_url": u.AvatarURL(),
-		"bio":        u.Bio(),
-		"role":       string(u.Role()),
+		"email":        u.Email().String(),
+		"avatar_url":   u.AvatarURL(),
+		"bio":          u.Bio(),
+		"role":         string(u.Role()),
 	})
 }
 

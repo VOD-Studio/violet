@@ -33,20 +33,6 @@ export interface OAuthProviderStatus {
 	issue: string;
 }
 
-/** OAuth 凭据状态（/admin/oauth/status 响应） */
-export interface OAuthStatusDTO {
-	google_login_enabled: boolean;
-	github_login_enabled: boolean;
-	google: OAuthProviderStatus;
-	github: OAuthProviderStatus;
-}
-/** OAuth 凭据写入入参（全可选；留空字段=保持原值，secret 不回显） */
-export interface OAuthCredentialsInput {
-	google_client_id?: string;
-	github_client_id?: string;
-	github_client_secret?: string;
-}
-
 /** GitHub 组（用户名/Token/更新日志仓库名） */
 export interface GithubSettingsDTO {
 	github_username: string;

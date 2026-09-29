@@ -39,7 +39,6 @@ func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 //
 // 原 GET/PUT /admin/settings 一次性返回/接收全量聚合，已拆成 7 组子接口：
 //   /admin/settings/general      基础信息
-//   /admin/settings/auth         第三方登录开关
 //   /admin/settings/github       GitHub 资料
 //   /admin/settings/profile      关于博主内容
 //   /admin/settings/about        关于页区块版面配置
@@ -85,36 +84,6 @@ func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 		CustomEmojiMaxPerUser:        req.CustomEmojiMaxPerUser,
 		HomeFootprintEnabled:         req.HomeFootprintEnabled,
 		HomeFootprintAggregationDays: req.HomeFootprintAggregationDays,
-	})
-	if err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	response.RespondOK(w, data)
-}
-
-// GetAuth 获取认证组
-func (h *Handler) GetAuth(w http.ResponseWriter, r *http.Request) {
-	data, err := h.svc.GetAuth(r.Context())
-	if err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	response.RespondOK(w, data)
-}
-
-// UpdateAuth 更新认证组
-func (h *Handler) UpdateAuth(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		GoogleLoginEnabled *bool `json:"google_login_enabled"`
-		GithubLoginEnabled *bool `json:"github_login_enabled"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	data, err := h.svc.UpdateAuth(r.Context(), appsettings.AuthUpdate{
-		GoogleLoginEnabled: req.GoogleLoginEnabled, GithubLoginEnabled: req.GithubLoginEnabled,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

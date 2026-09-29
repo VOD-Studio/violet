@@ -43,7 +43,7 @@ func TestSiteImpressionRouteSupportsAnonymousCSRFFlow(t *testing.T) {
 	authHandler := authhttp.NewHandler(
 		nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
-		appauth.NewOAuthCredentials("", "", "", stubCredsRepo{}),
+		appauth.NewOAuthCredentials("", "", ""),
 		cookieConfig,
 		config.SessionConfig{},
 	)
@@ -98,12 +98,3 @@ func TestSiteImpressionRouteSupportsAnonymousCSRFFlow(t *testing.T) {
 	assert.Contains(t, impressionResponse.Body.String(), `"impressed":true`)
 	assert.Contains(t, impressionResponse.Header().Get("Set-Cookie"), "violet_impression=")
 }
-
-
-// stubCredsRepo 凭据仓储桩：路由测试不触 DB
-type stubCredsRepo struct{}
-
-func (stubCredsRepo) Load(_ context.Context) (appauth.OAuthCredentialsRecord, error) {
-	return appauth.OAuthCredentialsRecord{}, nil
-}
-func (stubCredsRepo) Save(_ context.Context, _ appauth.OAuthCredentialsRecord) error { return nil }

@@ -40,7 +40,6 @@ func NewAdminRouter(d *Deps) chi.Router {
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:view"))
 			sub.Get("/general", settingsH.GetGeneral)
-			sub.Get("/auth", settingsH.GetAuth)
 			sub.Get("/github", settingsH.GetGithub)
 			sub.Get("/profile", settingsH.GetProfile)
 			sub.Get("/about", settingsH.GetAbout)
@@ -50,27 +49,11 @@ func NewAdminRouter(d *Deps) chi.Router {
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:update"))
 			sub.Put("/general", settingsH.UpdateGeneral)
-			sub.Put("/auth", settingsH.UpdateAuth)
 			sub.Put("/github", settingsH.UpdateGithub)
 			sub.Put("/profile", settingsH.UpdateProfile)
 			sub.Put("/about", settingsH.UpdateAbout)
 			sub.Put("/llm", settingsH.UpdateLlm)
 			sub.Put("/code-runner", settingsH.UpdateCodeRunner)
-		})
-	})
-
-	// OAuth 凭据（读 settings:view；写 settings:update，与设置组同权限域）
-	r.Route("/oauth", func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			r.Use(middleware.RequirePermission(perm, "settings:view"))
-			r.Get("/status", d.Auth.GetOAuthStatus)
-		})
-		r.Group(func(r chi.Router) {
-			r.Use(middleware.RequirePermission(perm, "settings:update"))
-			// 探测虽是读操作（不落盘），但外呼 provider 且管理员手动触发，
-			// 与写入同权限域
-			r.Post("/verify", d.Auth.VerifyOAuthCredentials)
-			r.Put("/credentials", d.Auth.UpdateOAuthCredentials)
 		})
 	})
 

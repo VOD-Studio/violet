@@ -212,12 +212,6 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				permissions: ["settings:view"],
 			},
 			{
-				label: "认证",
-				to: "/admin/settings/auth",
-				icon: Shield,
-				permissions: ["settings:view"],
-			},
-			{
 				label: "GitHub",
 				to: "/admin/settings/github",
 				icon: GitBranch,

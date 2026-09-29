@@ -17,9 +17,9 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	"blog-api/internal/application/mocks"
 	domainsession "blog-api/internal/domain/session"
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	domainshared "blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	"blog-api/internal/middleware"
 )
 
@@ -44,7 +44,7 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 	email, _ := domainuser.ParseEmail("u@example.com")
 	username, _ := domainuser.ParseUsername("alice")
 	return domainuser.ReconstructUser(uid, email, username, domainuser.DisplayName{}, hash, "", "", domainuser.RoleUser,
-		nil, nil, nil, false, true, true, time.Time{}, time.Time{},)
+		nil, nil, nil, false, true, true, time.Time{}, time.Time{})
 }
 
 // TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 violet_session + violet_csrf cookie，body 含 user_id。
@@ -69,7 +69,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 
 	h := NewHandler(
 		nil, login, nil, nil, nil, createSession,
-		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", "", &stubCredsRepo{}),
+		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
 	)
@@ -130,7 +130,7 @@ func TestLogin_ByUsername(t *testing.T) {
 
 	h := NewHandler(
 		nil, login, nil, nil, nil, createSession,
-		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", "", &stubCredsRepo{}),
+		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
 	)
@@ -150,7 +150,7 @@ func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
-		authcmd.NewOAuthCredentials("", "", "", &stubCredsRepo{}),
+		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
 	)
@@ -182,7 +182,7 @@ func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
-		authcmd.NewOAuthCredentials("", "", "", &stubCredsRepo{}),
+		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
 	)
@@ -206,7 +206,7 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, logout, nil,
 		nil, nil, nil, nil, nil, nil, nil,
-		authcmd.NewOAuthCredentials("", "", "", &stubCredsRepo{}),
+		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour},
 	)
@@ -227,11 +227,3 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 		assert.Equal(t, -1, c.MaxAge, "cookie %s 应被清除（MaxAge=-1）", c.Name)
 	}
 }
-
-// stubCredsRepo 凭据仓储桩：handler 测试不触 DB
-type stubCredsRepo struct{}
-
-func (stubCredsRepo) Load(_ context.Context) (authcmd.OAuthCredentialsRecord, error) {
-	return authcmd.OAuthCredentialsRecord{}, nil
-}
-func (stubCredsRepo) Save(_ context.Context, _ authcmd.OAuthCredentialsRecord) error { return nil }

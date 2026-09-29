@@ -1,18 +1,14 @@
-import { apiGet, apiPost, apiPut } from "@shared/api/request";
+import { apiGet, apiPut } from "@shared/api/request";
 import type {
 	AboutSettingsDTO,
-	AuthSettingsDTO,
 	CodeRunnerSettingsDTO,
 	GeneralSettingsDTO,
 	GithubSettingsDTO,
 	LlmSettingsDTO,
-	OAuthCredentialsInput,
-	OAuthProviderStatus,
 	ProfileSettingsDTO,
 } from "../model/types";
 
 const BASE = "/admin/settings";
-const OAUTH_BASE = "/admin/oauth";
 
 /**
  * 站点设置分组 client —— 对齐后端 7 组子接口。
@@ -26,11 +22,6 @@ const OAUTH_BASE = "/admin/oauth";
 export const getGeneral = () => apiGet<GeneralSettingsDTO>(`${BASE}/general`);
 export const updateGeneral = (body: Partial<GeneralSettingsDTO>) =>
 	apiPut<GeneralSettingsDTO>(`${BASE}/general`, body);
-
-/** getAuth / updateAuth —— 认证组 */
-export const getAuth = () => apiGet<AuthSettingsDTO>(`${BASE}/auth`);
-export const updateAuth = (body: Partial<AuthSettingsDTO>) =>
-	apiPut<AuthSettingsDTO>(`${BASE}/auth`, body);
 
 /** getGithub / updateGithub —— GitHub 组 */
 export const getGithub = () => apiGet<GithubSettingsDTO>(`${BASE}/github`);
@@ -56,20 +47,3 @@ export const updateLlm = (body: Partial<LlmSettingsDTO>) =>
 export const getCodeRunner = () => apiGet<CodeRunnerSettingsDTO>(`${BASE}/code-runner`);
 export const updateCodeRunner = (body: Partial<CodeRunnerSettingsDTO>) =>
 	apiPut<CodeRunnerSettingsDTO>(`${BASE}/code-runner`, body);
-
-/** OAuth 凭据状态与写入（DB 单行表持久化，admin 权限域） */
-export const getOAuthStatus = () =>
-	apiGet<{
-		google_login_enabled: boolean;
-		github_login_enabled: boolean;
-		google: OAuthProviderStatus;
-		github: OAuthProviderStatus;
-	}>(`${OAUTH_BASE}/status`);
-export const updateOAuthCredentials = (body: OAuthCredentialsInput) =>
-	apiPut<{
-		google: OAuthProviderStatus;
-		github: OAuthProviderStatus;
-	}>(`${OAUTH_BASE}/credentials`, body);
-/** 探测 provider 侧凭据有效性（假 code 打 token 端点读错误码） */
-export const verifyOAuthCredentials = (provider: string) =>
-	apiPost<{ valid: boolean; detail: string }>(`${OAUTH_BASE}/verify`, { provider });

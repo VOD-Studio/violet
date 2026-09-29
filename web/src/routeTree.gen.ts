@@ -90,7 +90,6 @@ import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminSeriesIndexRouteImport } from './routes/admin.series.index'
 import { Route as AdminSeriesIdRouteImport } from './routes/admin.series.$id'
 import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.about'
-import { Route as AdminSettingsAuthRouteImport } from './routes/admin.settings.auth'
 import { Route as AdminSettingsCodeRunnerRouteImport } from './routes/admin.settings.code-runner'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin.settings.general'
 import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings.github'
@@ -514,11 +513,6 @@ const AdminSettingsAboutRoute = AdminSettingsAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
-const AdminSettingsAuthRoute = AdminSettingsAuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => AdminSettingsRoute,
-} as any)
 const AdminSettingsCodeRunnerRoute = AdminSettingsCodeRunnerRouteImport.update({
   id: '/code-runner',
   path: '/code-runner',
@@ -691,7 +685,6 @@ export interface FileRoutesByFullPath {
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
-  '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/github': typeof AdminSettingsGithubRoute
@@ -784,7 +777,6 @@ export interface FileRoutesByTo {
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
-  '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/github': typeof AdminSettingsGithubRoute
@@ -886,7 +878,6 @@ export interface FileRoutesById {
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/series/$id': typeof AdminSeriesIdRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
-  '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/github': typeof AdminSettingsGithubRoute
@@ -989,7 +980,6 @@ export interface FileRouteTypes {
     | '/admin/posts/new'
     | '/admin/series/$id'
     | '/admin/settings/about'
-    | '/admin/settings/auth'
     | '/admin/settings/code-runner'
     | '/admin/settings/general'
     | '/admin/settings/github'
@@ -1082,7 +1072,6 @@ export interface FileRouteTypes {
     | '/admin/posts/new'
     | '/admin/series/$id'
     | '/admin/settings/about'
-    | '/admin/settings/auth'
     | '/admin/settings/code-runner'
     | '/admin/settings/general'
     | '/admin/settings/github'
@@ -1183,7 +1172,6 @@ export interface FileRouteTypes {
     | '/admin/posts/new'
     | '/admin/series/$id'
     | '/admin/settings/about'
-    | '/admin/settings/auth'
     | '/admin/settings/code-runner'
     | '/admin/settings/general'
     | '/admin/settings/github'
@@ -1821,13 +1809,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsAboutRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
-    '/admin/settings/auth': {
-      id: '/admin/settings/auth'
-      path: '/auth'
-      fullPath: '/admin/settings/auth'
-      preLoaderRoute: typeof AdminSettingsAuthRouteImport
-      parentRoute: typeof AdminSettingsRoute
-    }
     '/admin/settings/code-runner': {
       id: '/admin/settings/code-runner'
       path: '/code-runner'
@@ -2024,7 +2005,6 @@ const AdminSeriesRouteWithChildren = AdminSeriesRoute._addFileChildren(
 
 interface AdminSettingsRouteChildren {
   AdminSettingsAboutRoute: typeof AdminSettingsAboutRoute
-  AdminSettingsAuthRoute: typeof AdminSettingsAuthRoute
   AdminSettingsCodeRunnerRoute: typeof AdminSettingsCodeRunnerRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
   AdminSettingsGithubRoute: typeof AdminSettingsGithubRoute
@@ -2034,7 +2014,6 @@ interface AdminSettingsRouteChildren {
 
 const AdminSettingsRouteChildren: AdminSettingsRouteChildren = {
   AdminSettingsAboutRoute: AdminSettingsAboutRoute,
-  AdminSettingsAuthRoute: AdminSettingsAuthRoute,
   AdminSettingsCodeRunnerRoute: AdminSettingsCodeRunnerRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
   AdminSettingsGithubRoute: AdminSettingsGithubRoute,
@@ -2203,12 +2182,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
