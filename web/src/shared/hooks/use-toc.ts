@@ -46,6 +46,8 @@ export function extractDomToc(root: HTMLElement): TocItem[] {
 	const slugger = new Slugger();
 	const items: TocItem[] = [];
 	for (const heading of headings) {
+		// 演示卡内部的标题不属于文档正文，跳过提取
+		if (heading.closest("[data-toc-ignore]")) continue;
 		const text = (heading.textContent ?? "").trim();
 		if (!text) continue;
 		if (!heading.id) {
@@ -124,7 +126,9 @@ export function useActiveHeading(
 		const el = containerRef.current;
 		if (!el) return;
 
-		const headings = Array.from(el.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]"));
+		const headings = Array.from(
+			el.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]"),
+		).filter((heading) => !heading.closest("[data-toc-ignore]"));
 		if (headings.length === 0) return;
 		const orderedIds = headings.map((h) => h.id);
 

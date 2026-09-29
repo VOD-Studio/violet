@@ -1,6 +1,7 @@
+import { slugify } from "@shared/lib/slug";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { cn } from "cn";
 import type { ReactNode } from "react";
-
 /**
  * ApiTable 单列定义：列头文案 + 单元格渲染器，列数与列宽由调用方自由组合。
  */
@@ -38,7 +39,13 @@ export function ApiTable<T>({
 }) {
 	return (
 		<div className="space-y-4 font-sans">
-			<h3 className="text-lg font-bold tracking-tight text-foreground">{title}</h3>
+			<AnchoredHeading
+				as="h3"
+				id={slugify(title)}
+				className="text-lg font-bold tracking-tight text-foreground"
+			>
+				{title}
+			</AnchoredHeading>
 
 			<div className="overflow-x-auto rounded-xl">
 				<table className="w-full min-w-160 border-collapse text-left text-xs">

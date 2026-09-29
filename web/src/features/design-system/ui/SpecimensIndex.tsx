@@ -1,6 +1,6 @@
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { Link } from "@tanstack/react-router";
 import { ALL_NAV_ITEMS } from "../model/navigation";
-
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
 import { GuideTocContent, GuideTocLayout } from "./LibraryGuideToc";
 
@@ -128,9 +128,13 @@ export function SpecimensIndex() {
 										{String(index + 1).padStart(2, "0")}
 									</span>
 									<div className="space-y-1">
-										<h3 className="text-base font-semibold text-foreground">
+										<AnchoredHeading
+											as="h3"
+											id="{section.title}"
+											className="text-base font-semibold text-foreground"
+										>
 											{section.title}
-										</h3>
+										</AnchoredHeading>
 										<p className="text-sm leading-relaxed text-muted-foreground">
 											{section.detail}
 										</p>
@@ -159,9 +163,13 @@ export function SpecimensIndex() {
 									className="grid gap-2 py-5 sm:grid-cols-[minmax(8rem,1fr)_2fr] sm:gap-8"
 								>
 									<div>
-										<h3 className="font-semibold text-foreground">
+										<AnchoredHeading
+											as="h3"
+											id="{section.name}"
+											className="font-semibold text-foreground"
+										>
 											{section.name}
-										</h3>
+										</AnchoredHeading>
 										<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
 											{section.when}
 										</p>

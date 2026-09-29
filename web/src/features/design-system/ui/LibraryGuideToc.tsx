@@ -20,6 +20,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useNaturalAnchorTop } from "../model/use-natural-anchor-top";
 
 /** 一次目录注册：条目列表 + 正文容器 ref（scrollspy 监听目标） */
 export interface GuideTocRegistration {
@@ -98,6 +99,7 @@ export function GuideTocContent({
  */
 export function GuideTocLayout({ children }: { children: ReactNode }) {
 	const [toc, setToc] = useState<GuideTocRegistration | null>(null);
+	const contentAnchor = useNaturalAnchorTop<HTMLDivElement>();
 	const registerToc = useCallback((registration: GuideTocRegistration | null) => {
 		setToc(registration);
 	}, []);
@@ -115,8 +117,14 @@ export function GuideTocLayout({ children }: { children: ReactNode }) {
 			>
 				{hasToc ? (
 					<div className="flex gap-10">
-						<div className="min-w-0 max-w-4xl flex-1">{children}</div>
-						<LibraryGuideToc items={toc.items} bodyRef={toc.bodyRef} />
+						<div className="min-w-0 max-w-4xl flex-1" ref={contentAnchor.ref}>
+							{children}
+						</div>
+						<LibraryGuideToc
+							anchorTop={contentAnchor.top}
+							items={toc.items}
+							bodyRef={toc.bodyRef}
+						/>
 					</div>
 				) : (
 					children
@@ -133,12 +141,14 @@ interface LibraryGuideTocProps {
 	bodyRef: RefObject<HTMLElement | null>;
 	/** 附加类名 */
 	className?: string;
+	/** 同排正文列的文档顶位：目录吸附位与之对齐，初始即贴住 */
+	anchorTop: number | null;
 }
 
 /**
  * 指南页右侧目录：标题跟踪与定位由共享 hook 处理；这里仅决定显示形态。
  */
-export function LibraryGuideToc({ items, bodyRef, className }: LibraryGuideTocProps) {
+export function LibraryGuideToc({ items, bodyRef, className, anchorTop }: LibraryGuideTocProps) {
 	const { activeId, navigateTo } = useTocNavigation(bodyRef, items);
 	const reduced = useReducedMotion();
 	const railRef = useRef<HTMLDivElement>(null);
@@ -221,12 +231,15 @@ export function LibraryGuideToc({ items, bodyRef, className }: LibraryGuideTocPr
 	return (
 		<nav
 			aria-label="页内目录"
-			className={cn(
-				// 吸附位 102px = Header 54px + 上边距 48px，与 DesignSystemSidebar 一致：
-				// 初始即贴住，消除正文滚动初期的跟随位移。
-				"hidden w-56 shrink-0 flex-col xl:sticky xl:top-[102px] xl:flex xl:max-h-[min(60dvh,calc(100dvh-8.5rem))]",
-				className,
-			)}
+			className={cn("hidden w-56 shrink-0 flex-col xl:sticky xl:flex", className)}
+			style={
+				anchorTop === null
+					? undefined
+					: {
+							top: anchorTop,
+							maxHeight: `calc(100dvh - ${anchorTop}px - 2rem)`,
+						}
+			}
 		>
 			<p className="mb-3 flex-none text-xs font-medium tracking-wide text-muted-foreground">
 				目录

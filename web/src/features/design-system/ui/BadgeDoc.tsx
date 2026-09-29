@@ -1,3 +1,4 @@
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { BadgeCounterDemo } from "./examples/badge/counter";
@@ -6,6 +7,7 @@ import { BadgeDotDemo } from "./examples/badge/dot";
 import dotSource from "./examples/badge/dot.tsx?raw";
 import { BadgeVariantsDemo } from "./examples/badge/variants";
 import variantsSource from "./examples/badge/variants.tsx?raw";
+import { SpecimenDoc } from "./SpecimenDoc";
 
 interface PropRow {
 	name: string;
@@ -69,92 +71,114 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 /** 展示 Badge 标签与 BadgeAnchor 角标的真实用法。 */
 export function BadgeDocPage() {
 	return (
-		<article className="mx-auto w-full max-w-4xl space-y-14 pb-24 font-sans">
-			<header className="space-y-3">
-				<h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-					Badge 徽章与角标
-				</h1>
-				<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
-					标签表达简短状态；角标附着在触发器右上角，表示数量或新消息。Badge
-					只负责展示，不读取数据；调用方决定数量、文案与是否显示。
-				</p>
-				<p className="text-xs text-muted-foreground">
-					源码{" "}
-					<code className="font-mono text-foreground">
-						web/packages/ui/src/badge/badge.tsx
-					</code>
-				</p>
-			</header>
+		<SpecimenDoc>
+			<article className="space-y-14 pb-24 font-sans">
+				<header className="space-y-3">
+					<h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+						Badge 徽章与角标
+					</h1>
+					<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
+						标签表达简短状态；角标附着在触发器右上角，表示数量或新消息。Badge
+						只负责展示，不读取数据；调用方决定数量、文案与是否显示。
+					</p>
+					<p className="text-xs text-muted-foreground">
+						源码{" "}
+						<code className="font-mono text-foreground">
+							web/packages/ui/src/badge/badge.tsx
+						</code>
+					</p>
+				</header>
 
-			<section aria-labelledby="badge-variants" className="space-y-4">
-				<h2 id="badge-variants" className="text-xl font-bold text-foreground">
-					标签颜色
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					主色、次要、警示、描边、透明与链接外观。Link 负责跳转，Badge 不代替链接。
-				</p>
-				<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
-					<BadgeVariantsDemo />
-				</CodeCard>
-			</section>
+				<section aria-labelledby="badge-variants" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="badge-variants"
+						className="text-xl font-bold text-foreground"
+					>
+						标签颜色
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						主色、次要、警示、描边、透明与链接外观。Link 负责跳转，Badge 不代替链接。
+					</p>
+					<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
+						<BadgeVariantsDemo />
+					</CodeCard>
+				</section>
 
-			<section aria-labelledby="badge-counter" className="space-y-4">
-				<h2 id="badge-counter" className="text-xl font-bold text-foreground">
-					数量角标
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					点击调整数量。超过 99 显示 99+、为零时隐藏角标：两者均由调用方计算。
-				</p>
-				<CodeCard code={counterSource} language="tsx" lineNumbers collapseLines={6}>
-					<BadgeCounterDemo />
-				</CodeCard>
-			</section>
+				<section aria-labelledby="badge-counter" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="badge-counter"
+						className="text-xl font-bold text-foreground"
+					>
+						数量角标
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						点击调整数量。超过 99 显示 99+、为零时隐藏角标：两者均由调用方计算。
+					</p>
+					<CodeCard code={counterSource} language="tsx" lineNumbers collapseLines={6}>
+						<BadgeCounterDemo />
+					</CodeCard>
+				</section>
 
-			<section aria-labelledby="badge-dot" className="space-y-4">
-				<h2 id="badge-dot" className="text-xl font-bold text-foreground">
-					状态点
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					只需提示存在新消息、不需显示数量时使用 dot，并以 edge 贴住按钮圆弧。
-				</p>
-				<CodeCard code={dotSource} language="tsx" lineNumbers collapseLines={6}>
-					<BadgeDotDemo />
-				</CodeCard>
-			</section>
+				<section aria-labelledby="badge-dot" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="badge-dot"
+						className="text-xl font-bold text-foreground"
+					>
+						状态点
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						只需提示存在新消息、不需显示数量时使用 dot，并以 edge 贴住按钮圆弧。
+					</p>
+					<CodeCard code={dotSource} language="tsx" lineNumbers collapseLines={6}>
+						<BadgeDotDemo />
+					</CodeCard>
+				</section>
 
-			<section aria-labelledby="badge-api" className="space-y-8">
-				<h2 id="badge-api" className="text-xl font-bold text-foreground">
-					API 参考
-				</h2>
-				<ApiTable
-					title="Badge Props"
-					columns={PROP_COLUMNS}
-					rows={BADGE_PROPS}
-					rowKey={(row) => row.name}
-				/>
-				<ApiTable
-					title="BadgeAnchor Props"
-					columns={PROP_COLUMNS}
-					rows={ANCHOR_PROPS}
-					rowKey={(row) => row.name}
-				/>
-			</section>
+				<section aria-labelledby="badge-api" className="space-y-8">
+					<AnchoredHeading
+						as="h2"
+						id="badge-api"
+						className="text-xl font-bold text-foreground"
+					>
+						API 参考
+					</AnchoredHeading>
+					<ApiTable
+						title="Badge Props"
+						columns={PROP_COLUMNS}
+						rows={BADGE_PROPS}
+						rowKey={(row) => row.name}
+					/>
+					<ApiTable
+						title="BadgeAnchor Props"
+						columns={PROP_COLUMNS}
+						rows={ANCHOR_PROPS}
+						rowKey={(row) => row.name}
+					/>
+				</section>
 
-			<section aria-labelledby="badge-guidance" className="space-y-4">
-				<h2 id="badge-guidance" className="text-xl font-bold text-foreground">
-					使用边界
-				</h2>
-				<ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
-					<li>
-						BadgeAnchor 的角标不接收点击、对读屏隐藏；真实未读数要写在触发器 Button 的
-						aria-label 中，包括零计数状态。
-					</li>
-					<li>
-						数量角标贴近按钮右上圆弧，并向外延伸；状态点直接贴合圆弧。祖先若裁切溢出，数量角标顶部至少留
-						8px，并与邻近操作保持间距。
-					</li>
-				</ul>
-			</section>
-		</article>
+				<section aria-labelledby="badge-guidance" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="badge-guidance"
+						className="text-xl font-bold text-foreground"
+					>
+						使用边界
+					</AnchoredHeading>
+					<ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
+						<li>
+							BadgeAnchor 的角标不接收点击、对读屏隐藏；真实未读数要写在触发器 Button
+							的 aria-label 中，包括零计数状态。
+						</li>
+						<li>
+							数量角标贴近按钮右上圆弧，并向外延伸；状态点直接贴合圆弧。祖先若裁切溢出，数量角标顶部至少留
+							8px，并与邻近操作保持间距。
+						</li>
+					</ul>
+				</section>
+			</article>
+		</SpecimenDoc>
 	);
 }
