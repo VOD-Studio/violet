@@ -57,6 +57,35 @@ describe("CommentItem", () => {
 		expect(screen.getByText("U")).toBeTruthy();
 	});
 
+	it("GitHub 登录作者头像右下角渲染可跳转角标", () => {
+		render(
+			<CommentItem
+				item={mk("c1", {
+					authorProvider: "github",
+					authorProfileUrl: "https://github.com/octocat",
+				})}
+				level={0}
+				isLoggedIn={false}
+				config={stubConfig()}
+			/>,
+		);
+		const link = screen.getByRole("link", { name: "user-c1 的 GitHub 主页" });
+		expect(link.getAttribute("href")).toBe("https://github.com/octocat");
+		expect(link.getAttribute("target")).toBe("_blank");
+	});
+
+	it("Google 登录作者渲染纯展示角标，无链接", () => {
+		render(
+			<CommentItem
+				item={mk("c1", { authorProvider: "google" })}
+				level={0}
+				isLoggedIn={false}
+				config={stubConfig()}
+			/>,
+		);
+		expect(screen.queryByRole("link")).toBeNull();
+	});
+
 	it("作者本人渲染「作者」徽章", () => {
 		render(
 			<CommentItem

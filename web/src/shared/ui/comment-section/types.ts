@@ -31,6 +31,10 @@ export interface CommentDisplayItem<T extends CommentRaw = CommentRaw> {
 	authorAvatarUrl?: string;
 	/** 作者主页（可选，如推文 /users/$username；文章匿名评论无主页） */
 	authorHref?: string;
+	/** 作者第三方登录方式（头像右下角角标图标）："github" | "google"；匿名/密码注册省略 */
+	authorProvider?: "github" | "google";
+	/** 作者第三方主页 URL；仅 GitHub 有（角标可点击跳转），Google 无公开主页省略 */
+	authorProfileUrl?: string;
 	/** 是否作者本人（作者徽章） */
 	isAuthor?: boolean;
 	/** 是否待审核（「审批中」徽章；推文即发即出恒 false） */

@@ -20,6 +20,10 @@ export interface TweetAuthor {
 	username: string;
 	/** 头像 URL，可能为空（渲染层经 avatarUrl 走首字母兜底） */
 	avatar_url: string;
+	/** 第三方登录方式（头像右下角角标）："github" | "google"；密码注册省略 */
+	provider?: "github" | "google";
+	/** 第三方主页 URL；仅 GitHub 有（角标可点击跳转），Google 省略 */
+	profile_url?: string;
 }
 
 /**
