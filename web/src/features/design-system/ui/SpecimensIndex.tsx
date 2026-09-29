@@ -61,7 +61,7 @@ export function SpecimensIndex() {
 	return (
 		<article className="space-y-12 pb-16">
 			<DesignSystemDocHeader
-				num="柒"
+				num="壹"
 				title="组件目录"
 				scope="从 @violet/ui 导出的组件可通过构建后的 tarball 安装到独立 React 项目；站点私有套件只供对应业务页面调用。各用法页的预览与复制代码来自同一示例文件。"
 			/>

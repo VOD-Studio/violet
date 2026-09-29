@@ -23,3 +23,17 @@
 [data-scrollbar="none"] {
 	scrollbar-width: none;
 }
+
+/* 悬停浮现：静止时滑块轨道全透明，指针悬停或键盘聚焦时按主题色淡入 */
+.scrollbar-hover-reveal,
+[data-scrollbar="hover-reveal"] {
+	scrollbar-color: transparent transparent;
+	transition: scrollbar-color var(--transition-feedback, 160ms ease-out);
+}
+
+.scrollbar-hover-reveal:hover,
+.scrollbar-hover-reveal:focus-within,
+[data-scrollbar="hover-reveal"]:hover,
+[data-scrollbar="hover-reveal"]:focus-within {
+	scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}

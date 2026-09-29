@@ -136,11 +136,12 @@ function TreeNavItemNode({
 					? "text-xs opacity-90"
 					: "text-[11px] opacity-80";
 
-	// 统一恒定字重，避免字重突变导致文字变宽引发水平抖动
+	// 统一恒定字重（font-normal），避免字重突变导致文字变宽引发水平抖动；
+	// 激活态仅以颜色与流体滑块区分。
 	const linkColorClass = isThisItemActive
-		? "text-primary font-semibold"
+		? "text-primary font-normal"
 		: isBranchActive
-			? "text-foreground font-medium"
+			? "text-foreground font-normal"
 			: "text-muted-foreground hover:text-foreground font-normal";
 
 	const content = (

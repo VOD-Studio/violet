@@ -52,7 +52,7 @@ export function PalettePage() {
 		<GuideTocLayout>
 			<div className="space-y-6">
 				<DesignSystemDocHeader
-					num="伍"
+					num="壹"
 					title="颜色"
 					scope="语义色角色、主色推导与组件用色指南。"
 				/>
@@ -81,7 +81,7 @@ export function TokensPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="陆"
+				num="叁"
 				title="Token 词典"
 				scope="主色、功能色、中性色、语义色——全部语义 token 的名称与实时值。"
 			/>
@@ -97,7 +97,7 @@ export function LayoutPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="柒"
+				num="肆"
 				title="布局规格"
 				scope="间距、圆角、投影与容器的法定刻度。"
 			/>
@@ -113,7 +113,7 @@ export function MotionPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="捌"
+				num="伍"
 				title="动效章程"
 				scope="运动的时间、幅度与克制的事由。"
 			/>
