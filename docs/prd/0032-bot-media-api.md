@@ -78,7 +78,7 @@ POST .../conversations/{id}/messages ← 扩展：type=image + media_ids
   - `file`（必填）：图片字节
   - `filename`（可选）：原始文件名，仅作 `originalName` 元数据
 - **校验**：
-  - 大小上限 ≤ `chat.bot.media_max_bytes`（默认 10MB，0 = 不限制）
+  - 大小上限 ≤ `bot_media_max_bytes`（默认 10MB，0 = 不限制）
   - MIME 白名单：`image/png|jpeg|gif|webp`（`mime.ParseMediaType` 后比对）
   - 存储名内部生成（UUID/哈希），**不接受 filename 作路径**，防路径注入
   - 宽高用 `image.DecodeConfig` 解析
@@ -169,17 +169,13 @@ POST .../conversations/{id}/messages ← 扩展：type=image + media_ids
 
 ## 配置变更
 
-`config.Chat`（或对应结构）新增：
-```go
-BotMediaMaxBytes int64 `mapstructure:"bot_media_max_bytes"` // 默认 10MB，0 = 不限制
-```
-`config.SetDefault("chat.bot_media_max_bytes", 10*1024*1024)`。仅一个可调项，避免过度参数化。
+新增顶层配置 `bot_media_max_bytes`，环境变量为 `BOT_MEDIA_MAX_BYTES`。默认 10MB，设为 0 时不限制。
 
-## 待确认事项（实现时读代码即可定）
+## 已确认事项
 
-1. **`MessageDTO.Media[].URL` 相对还是绝对路径**？读 `application/chat/service.go` 的 MediaDTO 组装代码确认。saber 侧下载时据此决定是否拼 endpoint。
-2. **`bot_notifier.go` / `bot.go:writeBotEvent` 是否已序列化 `Media`**？若裁剪了字段，第 3 个提交需要补全。
-3. **落盘逻辑复用方式**：`UploadService` 是否有可直接调的「整体落盘建记录」入口，还是要从 `CompleteUpload`（`service.go:987`）里抽一个共享方法。
+1. `MessageDTO.Media[].URL` 返回 `/uploads/...` 站内相对路径。
+2. Bot SSE 与消息历史均直接序列化 `MessageDTO.Media`。
+3. 整体上传由 `UploadService` 的共享图片落盘流程处理，不经过分片上传会话。
 
 ## 不在本次范围
 
