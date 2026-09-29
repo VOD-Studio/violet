@@ -78,7 +78,7 @@ function ProseHeading({ as, id, style, className, children }: ProseHeadingProps)
 			id={id}
 			style={style}
 			className={className}
-			linkLabel={text ? `链接到“${text}”` : undefined}
+			copyLabel={text ? `复制“${text}”的链接` : undefined}
 		>
 			{children}
 		</AnchoredHeading>

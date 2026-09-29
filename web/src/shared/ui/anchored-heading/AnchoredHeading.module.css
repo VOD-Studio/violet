@@ -5,10 +5,11 @@
 	scroll-margin-top: 6rem;
 }
 
-.anchor {
+.copyLink {
 	display: inline-flex;
 	flex: none;
 	align-items: center;
+	cursor: pointer;
 	justify-content: center;
 	border-radius: 0.25rem;
 	color: var(--primary);
@@ -18,34 +19,34 @@
 		background-color 160ms ease-out;
 }
 
-.anchor svg {
+.copyLink svg {
 	width: 0.82em;
 	height: 0.82em;
 }
 
-.heading:hover .anchor,
-.anchor:focus-visible {
+.heading:hover .copyLink,
+.copyLink:focus-visible {
 	opacity: 0.72;
 }
 
-.anchor:hover {
+.copyLink:hover {
 	background: color-mix(in oklab, var(--primary) 9%, transparent);
 	opacity: 1;
 }
 
-.anchor:focus-visible {
+.copyLink:focus-visible {
 	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
 	outline-offset: 2px;
 }
 
 @media (hover: none) {
-	.anchor {
+	.copyLink {
 		opacity: 0.52;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.anchor {
+	.copyLink {
 		transition: none;
 	}
 }
