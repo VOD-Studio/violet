@@ -11,7 +11,7 @@ import MobileTocFab from "@features/posts/ui/MobileTocFab";
 import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
 import { useChapterContext, useSeriesDetail } from "@features/series/api";
 import { ChapterNav, SeriesBelonging } from "@features/series/ui/ChapterNav";
-import { MobileSeriesTocFab, SeriesToc } from "@features/series/ui/SeriesToc";
+import { SeriesTocFab } from "@features/series/ui/SeriesToc";
 import { useSettings } from "@features/settings/api/queries";
 import { apiPost } from "@shared/api/request";
 import { SITE_URL } from "@shared/config/env";
@@ -146,14 +146,14 @@ function BlogDetailPage() {
 				/>
 			</div>
 
-			<article className="container mx-auto px-6 py-16">
+			<article className="container mx-auto px-6 py-16 xl:max-w-312">
 				<BackLink to="/blog" label="博客" className="mb-8" history />
 
 				{/* 文章头 */}
-				<header className="mx-auto mb-12 max-w-4xl">
+				<header className="mb-12 max-w-4xl text-center">
 					{/* 标签 */}
 					{post.tags.length > 0 ? (
-						<div className="mb-4 flex flex-wrap gap-2">
+						<div className="mb-4 flex flex-wrap justify-center gap-2">
 							{post.tags.map((tag) => (
 								<span
 									key={tag}
@@ -167,7 +167,7 @@ function BlogDetailPage() {
 					{/* 系列书归属标注 */}
 					<SeriesBelonging context={chapterCtx ?? null} />
 
-					<h1 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+					<h1 className="mb-3 font-mono text-3xl font-bold leading-tight tracking-tight md:text-4xl">
 						{post.title}
 					</h1>
 
@@ -186,13 +186,12 @@ function BlogDetailPage() {
 					) : null}
 
 					{/* 元信息 */}
-					<div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
+					<div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
 						{post.author ? (
 							<span className="inline-flex items-center gap-1.5">
 								<AvatarGroup
 									users={[post.author, ...(post.collaborators ?? [])]}
 									size="sm"
-									highlightFirst
 								/>
 								<span>{post.author.username}</span>
 							</span>
@@ -213,7 +212,7 @@ function BlogDetailPage() {
 				{/* 封面图 */}
 				{post.cover_image ? (
 					<div
-						className="mx-auto mb-9 max-w-4xl overflow-hidden rounded-2xl"
+						className="mb-9 max-w-4xl overflow-hidden rounded-2xl"
 						style={{ viewTransitionName: "post-cover" }}
 					>
 						<CroppedImage
@@ -225,33 +224,20 @@ function BlogDetailPage() {
 					</div>
 				) : null}
 
-				{/* 正文 + TOC */}
-				<div className="relative mx-auto flex max-w-6xl justify-center gap-8">
-					{/* 章内目录：普通文章用右侧浮层——壳挂在正文容器右缘外侧的留白里，
-					    不占正文流（正文保持居中），悬停时完整目录朝右侧空白展开；
-					    挂书文章与右侧全书目录会重叠，保留左侧占位列 */}
+				{/* 章内目录随正文和评论区保持粘性定位，到文章末尾让位给页脚。 */}
+				<div className="relative flex max-w-6xl flex-col">
+					{/* 章内目录：贴在正文右缘外 3rem，阅读轨静置，悬停后在同一位置展开目录。
+					    全书目录仍由右下角的 SeriesTocFab 承载。 */}
 					{toc.length > 1 ? (
-						seriesDetail ? (
-							<aside className="hidden w-56 shrink-0 2xl:block">
-								<div className="sticky top-24">
-									<ArticleToc
-										items={toc}
-										contentRef={contentRef}
-										isRailCollapsedAtRest
-									/>
-								</div>
-							</aside>
-						) : (
-							<div className="absolute inset-y-0 left-full hidden w-48 2xl:block">
-								<div className="sticky top-24">
-									<ArticleToc
-										items={toc}
-										contentRef={contentRef}
-										isRailCollapsedAtRest
-									/>
-								</div>
+						<div className="absolute inset-y-0 left-[59rem] hidden w-64 xl:block">
+							<div className="sticky top-24">
+								<ArticleToc
+									items={toc}
+									contentRef={contentRef}
+									isRailCollapsedAtRest
+								/>
 							</div>
-						)
+						</div>
 					) : null}
 
 					{/*
@@ -270,71 +256,53 @@ function BlogDetailPage() {
 							<ArticleSignature name={post.author.username} />
 						) : null}
 					</main>
-					{/* 右侧全书目录（挂书文章大屏显示；左层=章内 TOC，右层=全书目录） */}
-					{seriesDetail ? (
-						<aside className="hidden w-48 shrink-0 lg:block">
-							<div className="sticky top-24">
-								<p className="text-muted-foreground mb-2 px-2 font-mono text-[10px] tracking-wider uppercase">
-									《{seriesDetail.title}》
-								</p>
-								<SeriesToc detail={seriesDetail} currentSlug={slug} />
+
+					{/* 上一章/下一章导航（挂书文章显示；与正文左对齐） */}
+					{chapterCtx ? (
+						<div className="relative mt-12 flex max-w-6xl">
+							<div className="min-w-0 max-w-4xl flex-1">
+								<ChapterNav context={chapterCtx} />
 							</div>
-						</aside>
-					) : null}
-				</div>
-
-				{/* 上一章/下一章导航（挂书文章显示；对齐正文宽含 TOC 偏移） */}
-				{chapterCtx ? (
-					<div className="relative mx-auto mt-12 flex max-w-6xl justify-center gap-8">
-						{toc.length > 1 ? (
-							<aside className="hidden w-56 shrink-0 2xl:block" />
-						) : null}
-						<div className="min-w-0 max-w-4xl flex-1">
-							<ChapterNav context={chapterCtx} />
 						</div>
-					</div>
-				) : null}
+					) : null}
 
-				{/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
-				{commentsEnabled && (
-					<Suspense fallback={null}>
-						<AnnotationLayer
-							contentRef={contentRef}
-							summary={summary ?? []}
-							postId={post?.id}
-							isLoggedIn={isLoggedIn}
-						/>
-					</Suspense>
-				)}
-
-				{/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
-				{post?.id && commentsEnabled && (
-					<Suspense fallback={null}>
-						<FloatingToolbar
-							contentRef={contentRef}
-							isLoggedIn={isLoggedIn}
-							postId={post.id}
-						/>
-					</Suspense>
-				)}
-
-				{/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
-                    复用同样的 flex 结构保证与正文严格对齐；仅挂书文章保留左侧占位
-                    （普通文章 TOC 是右侧浮层，评论区随正文居中）。 */}
-				{post?.id && commentsEnabled && (
-					<div className="relative mx-auto mt-16 flex max-w-6xl justify-center gap-8">
-						{seriesDetail && toc.length > 1 ? (
-							<aside className="hidden w-56 shrink-0 2xl:block" />
-						) : null}
-						<Suspense
-							fallback={
-								<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
-							}
-						>
-							<CommentSection postId={post.id} />
+					{/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
+					{commentsEnabled && (
+						<Suspense fallback={null}>
+							<AnnotationLayer
+								contentRef={contentRef}
+								summary={summary ?? []}
+								postId={post?.id}
+								isLoggedIn={isLoggedIn}
+							/>
 						</Suspense>
-					</div>
-				)}
+					)}
+
+					{/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
+					{post?.id && commentsEnabled && (
+						<Suspense fallback={null}>
+							<FloatingToolbar
+								contentRef={contentRef}
+								isLoggedIn={isLoggedIn}
+								postId={post.id}
+							/>
+						</Suspense>
+					)}
+
+					{/* 底部自由评论区：放在 article 内、正文容器之后，与正文左对齐
+                    （章内 TOC 与全书目录均不占布局列）。 */}
+					{post?.id && commentsEnabled && (
+						<div className="relative mt-16 flex max-w-6xl">
+							<Suspense
+								fallback={
+									<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
+								}
+							>
+								<CommentSection postId={post.id} />
+							</Suspense>
+						</div>
+					)}
+				</div>
 			</article>
 
 			{/*
@@ -344,17 +312,15 @@ function BlogDetailPage() {
 			<FloatingBack to="/blog" label="返回博客" history />
 			{toc.length > 1 || seriesDetail ? (
 				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
-					{/* 章内目录：2xl 及以上用侧边目录，小屏用浮动按钮 */}
+					{/* 章内目录：xl 及以上用侧边浮层，小屏用浮动按钮 */}
 					{toc.length > 1 ? (
-						<div className="2xl:hidden">
+						<div className="xl:hidden">
 							<MobileTocFab items={toc} contentRef={contentRef} />
 						</div>
 					) : null}
-					{/* 全书目录：lg 及以上用右侧固定栏，小屏用浮动按钮（两套导航独立入口） */}
+					{/* 全书目录：悬浮面板单一入口，全宽度可用（不占正文布局列） */}
 					{seriesDetail ? (
-						<div className="lg:hidden">
-							<MobileSeriesTocFab detail={seriesDetail} currentSlug={slug} />
-						</div>
+						<SeriesTocFab detail={seriesDetail} currentSlug={slug} />
 					) : null}
 					<BackToTop className="relative" />
 				</div>

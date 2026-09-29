@@ -2,7 +2,7 @@ import { cn } from "cn";
 import { type FocusEvent, type ReactNode, type RefObject, useState } from "react";
 
 import { ArticleTocRail } from "./ArticleTocRail";
-import type { ArticleTocRailItem } from "./article-toc-rail-motion";
+import { type ArticleTocRailItem, useArticleReadPercent } from "./article-toc-rail-motion";
 
 interface ArticleTocFocusShellProps {
 	items: ArticleTocRailItem[];
@@ -21,6 +21,12 @@ export function ArticleTocFocusShell({
 	const [isHovered, setIsHovered] = useState(false);
 	const [hasFocusWithin, setHasFocusWithin] = useState(false);
 	const railActive = !isHovered && !hasFocusWithin;
+	const activeIndex = Math.max(
+		0,
+		items.findIndex((item) => item.id === activeId),
+	);
+	const fallbackPercent = items.length > 1 ? (activeIndex / (items.length - 1)) * 100 : 0;
+	const readPercent = useArticleReadPercent(contentRef, fallbackPercent);
 
 	return (
 		<div
@@ -36,7 +42,7 @@ export function ArticleTocFocusShell({
 					setHasFocusWithin(false);
 				}
 			}}
-			className="relative h-[calc(100vh-8rem)] min-h-96 max-h-224 rounded-xl"
+			className="relative h-[55vh] max-h-[calc(100vh-8rem)] rounded-xl"
 		>
 			<button
 				type="button"
@@ -47,17 +53,74 @@ export function ArticleTocFocusShell({
 				)}
 			/>
 			<div
+				aria-hidden={railActive}
+				inert={railActive}
 				className={cn(
-					"absolute inset-x-0 top-0 flex max-h-[75vh] flex-col overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+					"absolute inset-x-0 top-0 flex max-h-full flex-col px-2 motion-safe:transition-[clip-path] motion-safe:duration-400 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
 					railActive && "pointer-events-none",
 				)}
+				style={{ clipPath: railActive ? "inset(0 100% 0 0)" : "inset(0 0 0 0)" }}
 			>
 				{children(railActive)}
+				<div className="mt-4 shrink-0 pl-2">
+					<svg
+						aria-hidden="true"
+						viewBox="0 0 208 12"
+						preserveAspectRatio="none"
+						className="h-3 w-full text-border"
+					>
+						<path
+							d="M1 6 C21 0 41 0 61 6 S101 12 121 6 S161 0 181 6 S201 12 207 8"
+							fill="none"
+							pathLength={1}
+							strokeDasharray={1}
+							strokeDashoffset={railActive ? 1 : 0}
+							className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-500"
+							stroke="currentColor"
+							strokeWidth="1.5"
+						/>
+					</svg>
+					<div
+						className="mt-4 flex items-center gap-2.5 text-sm text-foreground"
+						role="progressbar"
+						aria-label="阅读进度"
+						aria-valuemin={0}
+						aria-valuemax={100}
+						aria-valuenow={readPercent}
+					>
+						<svg aria-hidden="true" viewBox="0 0 24 24" className="size-5 -rotate-90">
+							<circle
+								cx="12"
+								cy="12"
+								r="9"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2.5"
+								className="text-border"
+							/>
+							<circle
+								cx="12"
+								cy="12"
+								r="9"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2.5"
+								pathLength={100}
+								strokeDasharray={100}
+								strokeDashoffset={railActive ? 100 : 100 - readPercent}
+								strokeLinecap="round"
+								className="text-primary motion-safe:transition-[stroke-dashoffset] motion-safe:duration-300"
+							/>
+						</svg>
+						<span className="tabular-nums">{readPercent}%</span>
+					</div>
+				</div>
 			</div>
 			<ArticleTocRail
 				items={items}
 				activeId={activeId}
 				active={railActive}
+				readPercent={readPercent}
 				contentRef={contentRef}
 			/>
 		</div>

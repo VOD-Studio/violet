@@ -1,6 +1,7 @@
+import { SegmentedArticleToc } from "@entities/post/ui/SegmentedArticleToc";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import ArticleToc, { buildTree } from "./ArticleToc";
 
 beforeAll(() => {
@@ -21,6 +22,11 @@ beforeAll(() => {
 
 beforeEach(() => {
 	window.history.replaceState(null, "", "/");
+});
+
+afterEach(() => {
+	vi.restoreAllMocks();
+	vi.unstubAllGlobals();
 });
 
 const items = [
@@ -66,27 +72,61 @@ describe("ArticleToc", () => {
 		expect(onNavigate).toHaveBeenCalledTimes(1);
 	});
 
-	it("折叠按钮只切换当前卡片内容", async () => {
-		const contentRef = createRef<HTMLElement>();
-		const onNavigate = vi.fn();
-		render(<ArticleToc items={items} contentRef={contentRef} onNavigate={onNavigate} />);
-		const collapse = screen.getByRole("button", { name: "收起 第一章" });
-		fireEvent.click(collapse);
-		expect(screen.getByRole("button", { name: "展开 第一章" })).toBeTruthy();
-		await waitFor(() => expect(screen.queryByText("1.1 小节")).toBeNull());
-		expect(onNavigate).not.toHaveBeenCalled();
-	});
-
-	it("可以手动展开非当前一级菜单", async () => {
+	it("全部层级标题无需展开即可见", () => {
 		const contentRef = createRef<HTMLElement>();
 		render(<ArticleToc items={items} contentRef={contentRef} />);
+		for (const item of items) {
+			expect(screen.getByRole("link", { name: item.text })).toBeTruthy();
+		}
+		expect(screen.queryByRole("button", { name: "展开 第一章" })).toBeNull();
+	});
 
-		expect(screen.queryByText("2.1 小节")).toBeNull();
-		fireEvent.click(screen.getByRole("button", { name: "展开 第二章" }));
+	it("悬停展开目录与阅读进度，离开时退出交互", () => {
+		render(
+			<ArticleToc
+				items={items}
+				contentRef={createRef<HTMLElement>()}
+				isRailCollapsedAtRest
+			/>,
+		);
+		const shell = screen.getByRole("group", {
+			name: "文章目录；悬停或聚焦以展开完整目录",
+		});
+		const panel = shell.querySelector("[data-toc-accordion]")?.parentElement;
+		expect(panel?.hasAttribute("inert")).toBe(true);
 
-		await waitFor(() => expect(screen.queryByText("2.1 小节")).not.toBeNull());
-		expect(screen.getByRole("button", { name: "收起 第二章" })).toBeTruthy();
-		await waitFor(() => expect(screen.queryByText("1.1 小节")).toBeNull());
+		fireEvent.mouseEnter(shell);
+		expect(panel?.hasAttribute("inert")).toBe(false);
+		expect(screen.getByRole("progressbar", { name: "阅读进度" })).toBeTruthy();
+		expect(screen.queryByRole("button", { name: "返回顶部" })).toBeNull();
+
+		fireEvent.mouseLeave(shell);
+		expect(panel?.hasAttribute("inert")).toBe(true);
+	});
+
+	it("键盘焦点从入口移动到目录条目时保持展开，离开后收起", () => {
+		render(
+			<ArticleToc
+				items={items}
+				contentRef={createRef<HTMLElement>()}
+				isRailCollapsedAtRest
+			/>,
+		);
+		const shell = screen.getByRole("group", {
+			name: "文章目录；悬停或聚焦以展开完整目录",
+		});
+		const panel = shell.querySelector("[data-toc-accordion]")?.parentElement;
+		const trigger = screen.getByRole("button", { name: "展开完整目录" });
+		fireEvent.focus(trigger);
+		expect(panel?.hasAttribute("inert")).toBe(false);
+		const link = screen.getByRole("link", { name: "第一章" });
+
+		fireEvent.blur(trigger, { relatedTarget: link });
+		fireEvent.focus(link);
+		expect(panel?.hasAttribute("inert")).toBe(false);
+
+		fireEvent.blur(link, { relatedTarget: document.body });
+		expect(panel?.hasAttribute("inert")).toBe(true);
 	});
 
 	it("点击标题链接保留文章路径并写入标题哈希", () => {
@@ -110,5 +150,67 @@ describe("ArticleToc", () => {
 		expect(window.location.pathname).toBe("/blog/css-to-stylex-migration");
 		expect(decodeURIComponent(window.location.hash)).toBe("#为什么我决定放弃-tailwind");
 		expect(onNavigate).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("文章目录可见标题指示线", () => {
+	it("在相邻标题之间逐帧跟随阅读位置，空档中也不断线", async () => {
+		vi.stubGlobal("CSS", { escape: (value: string) => value });
+		vi.stubGlobal("scrollY", 0);
+		const nodes = [
+			{ id: "first", title: "第一章" },
+			{ id: "second", title: "第二章" },
+			{ id: "third", title: "第三章" },
+		];
+		const body = document.createElement("article");
+		const positions = [80, 400, 2000];
+		for (const [index, node] of nodes.entries()) {
+			const heading = document.createElement("h2");
+			heading.id = node.id;
+			vi.spyOn(heading, "getBoundingClientRect").mockImplementation(
+				() => ({ top: positions[index] }) as DOMRect,
+			);
+			body.append(heading);
+		}
+
+		render(
+			<SegmentedArticleToc
+				nodes={nodes}
+				activeId="first"
+				onNavigate={vi.fn()}
+				contentRef={{ current: body }}
+				isRailCollapsedAtRest
+			/>,
+		);
+		document.querySelectorAll("[data-toc-accordion] li").forEach((row, index) => {
+			Object.defineProperty(row, "offsetTop", { value: index * 36 });
+			Object.defineProperty(row, "offsetHeight", { value: 36 });
+		});
+		const indicator = () =>
+			document.querySelector<HTMLElement>("[data-toc-accordion] ul > span");
+		const position = () =>
+			Number.parseFloat(indicator()?.style.transform.slice("translateY(".length) ?? "NaN");
+		fireEvent.resize(window);
+		await waitFor(() =>
+			expect(Number.parseFloat(indicator()?.style.height ?? "0")).toBeGreaterThan(36),
+		);
+		const sameLine = indicator();
+		const start = position();
+
+		vi.stubGlobal("scrollY", 50);
+		fireEvent.scroll(window);
+		await waitFor(() => expect(position()).toBeGreaterThan(start));
+		const next = position();
+		expect(next).toBeLessThan(36);
+
+		vi.stubGlobal("scrollY", 900);
+		fireEvent.scroll(window);
+		await waitFor(() => expect(position()).toBeGreaterThan(36));
+		const gap = position();
+		vi.stubGlobal("scrollY", 920);
+		fireEvent.scroll(window);
+		await waitFor(() => expect(position()).toBeGreaterThan(gap));
+		expect(position() - gap).toBeLessThan(3);
+		expect(indicator()).toBe(sameLine);
 	});
 });

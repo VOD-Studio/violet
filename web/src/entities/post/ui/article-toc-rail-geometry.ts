@@ -57,13 +57,32 @@ export function getArticleTocRailGeometry({
 	return { bend, bendRange, path };
 }
 
+/**
+ * 计算 marker 应落在路径上的 x：按弯曲段贝塞尔的 y(t) 反解参数 t，
+ * 再取 x(t)=ARTICLE_TOC_RAIL_X+bend·t²(3-2t)，保证点精确嵌在轨迹线上。
+ * 之前的 cos² 衰减近似与贝塞尔 x(t) 系统性偏差，滚动加速时点会漂离曲线。
+ */
 export function getArticleTocRailMarkerX(
 	markerY: number,
 	progressY: number,
 	bend: number,
 	bendRange: number,
 ) {
-	const distance = Math.abs(markerY - progressY) / bendRange;
-	const markerBend = distance >= 1 ? 0 : bend * Math.cos((distance * Math.PI) / 2) ** 2;
-	return ARTICLE_TOC_RAIL_X + markerBend;
+	if (bend === 0 || bendRange <= 0) return ARTICLE_TOC_RAIL_X;
+	const u = Math.abs(markerY - progressY) / bendRange;
+	if (u >= 1) return ARTICLE_TOC_RAIL_X;
+
+	// 弯曲段归一 y(t) = (1-t)³ + 0.45·3(1-t)²t + 0.3·3(1-t)t²（与路径 C 控制点一致），
+	// u∈(0,1) 单调，二分求 t。
+	const yOf = (t: number) =>
+		(1 - t) ** 3 + 0.45 * 3 * (1 - t) ** 2 * t + 0.3 * 3 * (1 - t) * t * t;
+	let lo = 0;
+	let hi = 1;
+	for (let i = 0; i < 12; i += 1) {
+		const mid = (lo + hi) / 2;
+		if (yOf(mid) > u) lo = mid;
+		else hi = mid;
+	}
+	const t = (lo + hi) / 2;
+	return ARTICLE_TOC_RAIL_X + bend * t * t * (3 - 2 * t);
 }

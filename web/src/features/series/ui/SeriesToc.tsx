@@ -50,23 +50,10 @@ function ChapterList({
 }
 
 /**
- * 全书目录（阅读器壳的左层导航）：大屏右侧 sticky 侧栏，高亮当前章。
- * 空书/无章节渲染 null。
+ * 全书目录浮动按钮 + 右侧悬浮面板（全宽度单一入口，不占正文布局列）。
+ * 与章内 TOC 分列两个入口；空书/无章节渲染 null。
  */
-export function SeriesToc({ detail, currentSlug }: { detail: SeriesDetail; currentSlug: string }) {
-	if (detail.chapter_count === 0) return null;
-	return (
-		<div className="max-h-[calc(100dvh-8rem)] space-y-1 overflow-y-auto py-1">
-			<ChapterList detail={detail} currentSlug={currentSlug} />
-		</div>
-	);
-}
-
-/**
- * 全书目录浮动按钮 + 底部 Sheet（移动端；与章内 TOC FAB 分列两个入口，
- * 见 PRD「移动端两套导航分别进不同抽屉」）。
- */
-export function MobileSeriesTocFab({
+export function SeriesTocFab({
 	detail,
 	currentSlug,
 }: {
@@ -82,17 +69,17 @@ export function MobileSeriesTocFab({
 				type="button"
 				onClick={() => setOpen(true)}
 				aria-label="打开全书目录"
-				className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 shadow-lg backdrop-blur transition-all duration-300 hover:border-primary/50 hover:bg-accent active:scale-90"
+				className="flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur transition-colors duration-300 hover:border-primary/50 hover:bg-accent hover:text-foreground"
 			>
-				<BookOpen className="size-5 transition-transform duration-300 group-hover:scale-110" />
+				<BookOpen className="size-5" />
 			</button>
-			<SheetContent side="bottom" className="max-h-[70vh] p-0">
+			<SheetContent side="right" className="flex w-80 max-w-[85vw] flex-col p-0">
 				<SheetHeader className="border-b border-edge-hairline">
 					<SheetTitle className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
 						《{detail.title}》目录
 					</SheetTitle>
 				</SheetHeader>
-				<div className="max-h-[60vh] overflow-y-auto px-4 py-4">
+				<div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-4 py-4">
 					<ChapterList
 						detail={detail}
 						currentSlug={currentSlug}
