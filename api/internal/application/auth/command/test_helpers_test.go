@@ -17,7 +17,7 @@ var zeroTime time.Time
 func testUser() *domainuser.User {
 	uid, _ := domainshared.ParseID(testUserID)
 	return domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, domainuser.NewPasswordHash("hashed"), "", "", domainuser.RoleUser,
-		nil, nil, false, true, true, zeroTime, zeroTime,)
+		nil, nil, nil, false, true, true, zeroTime, zeroTime,)
 }
 
 // mustEmail 解析邮箱，解析失败 panic（测试固定值，不会失败）。
