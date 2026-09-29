@@ -1,10 +1,10 @@
 /**
  * RoomDetails 组件测试
  *
- * 锁定动画模式选择：xl 起抽屉在文档流内，必须用宽度动画驱动 flex 重排
- * （聊天区同帧伸缩）；xl 以下为覆盖式位移动画。回归场景：xl 下若退回
- * x 位移，退出动画期间抽屉仍占布局，聊天区会等动画结束后才突变撑宽。
- * jsdom 无布局引擎，断言语义落在 initial 样式的属性选择上（width vs transform）。
+ * 锁定动画模式：抽屉为 overlay 滑入（transform 合成层），全断点统一，
+ * 不参与聊天区布局。回归场景：曾用 width 弹簧驱动文档流推挤，整个
+ * 消息列表每帧 reflow 导致打开/关闭卡顿。jsdom 无布局引擎，断言语义
+ * 落在 initial 样式的属性选择上（transform 而非 width）。
  */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -105,23 +105,7 @@ it("已有通知权限但没有订阅时，设置按钮可以重新启用通知"
 });
 
 describe("RoomDetails 动画模式", () => {
-	it("xl 断点：宽度动画（与聊天区同帧重排）", () => {
-		stubMatchMedia(true);
-		render(
-			<RoomDetails
-				conversation={mockConversation}
-				currentUserID={mockUser.id}
-				members={mockMembers}
-				onClose={() => {}}
-			/>,
-		);
-		const aside = screen.getByRole("complementary");
-		expect(aside.style.width).toBe("0px");
-		expect(aside.style.transform).not.toContain("translateX");
-	});
-
-	it("xl 以下：覆盖式位移动画（聊天区不参与布局变化）", () => {
-		stubMatchMedia(false);
+	it("全断点统一 overlay 位移动画，不驱动宽度（避免聊天区每帧 reflow）", () => {
 		render(
 			<RoomDetails
 				conversation={mockConversation}
