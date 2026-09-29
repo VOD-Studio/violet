@@ -27,7 +27,7 @@ func TestSaveBotMedia(t *testing.T) {
 	repo := &botMediaRepo{}
 	svc := NewUploadService(repo, nil, storage.NewLocalStorage(tmp, "/uploads/"), nil, filepath.Join(tmp, "chunks"), tmp, "/uploads/")
 	ownerID := domainshared.NewID()
-	data := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}
+	data := validPNG(t)
 
 	got, err := svc.SaveBotMedia(context.Background(), SaveBotMediaInput{
 		OwnerID: ownerID, OriginalName: "../../avatar.png", MIMEType: "image/png", Data: data,
@@ -61,7 +61,7 @@ func TestSaveBotMediaRejectsMIMEOrContentMismatch(t *testing.T) {
 		data     []byte
 	}{
 		{name: "unsupported", mimeType: "text/plain", data: []byte("hello")},
-		{name: "mismatch", mimeType: "image/jpeg", data: []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}},
+		{name: "mismatch", mimeType: "image/jpeg", data: validPNG(t)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := svc.SaveBotMedia(context.Background(), SaveBotMediaInput{

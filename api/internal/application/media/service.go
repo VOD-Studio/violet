@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"image"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	_ "golang.org/x/image/webp"
 
 	domainemoji "blog-api/internal/domain/emoji"
 	domainmusic "blog-api/internal/domain/music"
@@ -1529,6 +1531,8 @@ func SniffImageExt(data []byte) (string, bool) {
 	}
 }
 
+const maxWholeImagePixels = 20_000_000
+
 var imageMIMEByExt = map[string]string{
 	"png":  "image/png",
 	"jpg":  "image/jpeg",
@@ -1610,6 +1614,21 @@ func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, p
 	if err := tmpFile.Close(); err != nil {
 		return nil, shared.Internal("关闭临时文件失败", err)
 	}
+	tmp, err := os.Open(tmpPath)
+	if err != nil {
+		return nil, shared.Internal("读取临时图片失败", err)
+	}
+	config, format, decodeErr := image.DecodeConfig(tmp)
+	closeErr := tmp.Close()
+	if decodeErr != nil || closeErr != nil || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > maxWholeImagePixels {
+		return nil, shared.BadRequest("图片尺寸无效或超过像素上限")
+	}
+	if format == "jpeg" {
+		format = "jpg"
+	}
+	if format != ext {
+		return nil, shared.BadRequest("图片格式与文件内容不一致")
+	}
 	if s.processor != nil {
 		validMIME, err := s.processor.Validate(tmpPath)
 		if err != nil {
@@ -1643,12 +1662,8 @@ func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, p
 	if err != nil {
 		return nil, shared.Internal("创建文件记录失败", err)
 	}
+	f.SetDimensions(config.Width, config.Height)
 	if s.processor != nil {
-		width, height := s.processor.Dimensions(finalPath)
-		if width <= 0 || height <= 0 {
-			return nil, shared.BadRequest("无法读取图片尺寸")
-		}
-		f.SetDimensions(width, height)
 		if thumbnail := s.processor.Thumbnail(finalPath, fileID.String(), purpose, mimeType); thumbnail != "" {
 			f.SetThumbnail(thumbnail)
 		}
