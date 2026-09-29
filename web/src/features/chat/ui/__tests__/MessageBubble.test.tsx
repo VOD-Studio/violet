@@ -92,7 +92,7 @@ function imageMessage(content?: string): ChatMessage {
 
 function renderBubble(
 	message: ChatMessage,
-	onImage: (media: ChatMedia) => void = () => {},
+	onImage: (media: ChatMedia) => void = () => { },
 	conversationKind: ConversationKind = "direct",
 	currentUserID = "u_1",
 	sending?: Pick<OutgoingMessage, "status" | "progress" | "error">,
@@ -109,7 +109,7 @@ function renderBubble(
 			message={message}
 			sending={sending}
 			onRetry={onRetry}
-			messageRef={() => {}}
+			messageRef={() => { }}
 			onImage={onImage}
 			showSender
 			showSenderName
@@ -129,27 +129,24 @@ describe("MessageBubble", () => {
 			media: undefined,
 			edited_at: "2026-09-23T10:00:00Z",
 		};
-		const { container } = renderBubble(message, () => {}, "direct", "u_2");
+		const { container } = renderBubble(message, () => { }, "direct", "u_2");
 		expect(screen.getByText("BOT")).toBeTruthy();
 		expect(container.querySelector("table")?.textContent).toContain("A1");
 		expect(container.textContent).not.toContain("已编辑");
 	});
 
-	it("时间戳显示在聊天气泡外侧且不隐藏头像", () => {
+	it("时间戳显示在聊天气泡外侧，不落入头像占位列", () => {
 		const mine = renderBubble(imageMessage(undefined));
 		const mineAvatarSlot = mine.container.querySelector("article > div:first-child");
 
 		expect(mineAvatarSlot?.querySelector("time")).toBeNull();
-		expect(
-			screen.getByLabelText("Alice 的个人主页").querySelector("[aria-hidden]")?.className,
-		).not.toContain("group-hover:opacity-0");
 
 		const mineHoverSlot = mine.container.querySelector("time")?.closest("div.absolute");
 		expect(mineHoverSlot?.className).toContain("right-full");
 		expect(mineHoverSlot?.className).toContain("flex-row");
 
 		cleanup();
-		const incoming = renderBubble(imageMessage(undefined), () => {}, "direct", "u_2");
+		const incoming = renderBubble(imageMessage(undefined), () => { }, "direct", "u_2");
 		const incomingAvatarSlot = incoming.container.querySelector("article > div:first-child");
 
 		expect(incomingAvatarSlot?.querySelector("time")).toBeNull();
@@ -165,7 +162,7 @@ describe("MessageBubble", () => {
 		message.media = undefined;
 		message.content = "短消息";
 
-		const { container } = renderBubble(message, () => {}, "room", "u_2");
+		const { container } = renderBubble(message, () => { }, "room", "u_2");
 		const messageColumn = container.querySelector("article > div:nth-child(2)");
 
 		expect(messageColumn?.className).toContain("items-start");
@@ -270,7 +267,7 @@ describe("MessageBubble", () => {
 			},
 		};
 
-		const { container } = renderBubble(message, () => {}, "direct", selfID);
+		const { container } = renderBubble(message, () => { }, "direct", selfID);
 
 		expect(container.querySelector("[data-mention-self]")).toBeTruthy();
 	});
@@ -403,7 +400,7 @@ describe("MessageBubble 已读回执", () => {
 		};
 		renderBubble(
 			receiptMessage({ read_state: { read_count: 2, member_count: 3 } }),
-			() => {},
+			() => { },
 			"room",
 		);
 

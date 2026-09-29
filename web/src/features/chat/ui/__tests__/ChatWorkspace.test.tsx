@@ -854,11 +854,15 @@ describe("ChatWorkspace", () => {
 				scrollHeight: { configurable: true, get: () => height },
 			});
 			const flushResize = () => {
-				const observer = observers.find(({ targets }) =>
+				// 同一元素可能被多个 ResizeObserver 实例 observe，
+				// 真实浏览器会逐实例回调，这里同样全部触发。
+				const matched = observers.filter(({ targets }) =>
 					targets.includes(list.firstElementChild as Element),
 				);
-				expect(observer).toBeDefined();
-				act(() => observer?.callback([], observer as unknown as ResizeObserver));
+				expect(matched.length).toBeGreaterThan(0);
+				for (const observer of matched) {
+					act(() => observer.callback([], observer as unknown as ResizeObserver));
+				}
 				act(() => {
 					const pending = [...frames.values()];
 					frames.clear();
