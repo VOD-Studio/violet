@@ -236,7 +236,7 @@ describe("useActiveHeading", () => {
 describe("useTocNavigation", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
-	it("scrolls to a heading smoothly, follows reduced motion, and ignores headings outside the article", () => {
+	it("scrolls to a heading smoothly, follows reduced motion, and ignores headings outside the article", async () => {
 		const root = document.createElement("section");
 		root.innerHTML = '<h2 id="first">第一章</h2><h2 id="second">第二章</h2>';
 		document.body.append(root);
@@ -253,14 +253,20 @@ describe("useTocNavigation", () => {
 		vi.stubGlobal("matchMedia", () => media);
 
 		const { result, unmount } = renderHook(() => useTocNavigation(ref, items));
-		act(() => result.current.navigateTo("first"));
+		await act(async () => {
+			await result.current.navigateTo("first");
+		});
 		expect(firstScroll).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
 		expect(result.current.activeId).toBe("first");
 
 		media.matches = true;
-		act(() => result.current.navigateTo("second"));
+		await act(async () => {
+			await result.current.navigateTo("second");
+		});
 		expect(secondScroll).toHaveBeenCalledWith({ behavior: "instant", block: "start" });
-		act(() => result.current.navigateTo("not-in-content"));
+		await act(async () => {
+			await result.current.navigateTo("not-in-content");
+		});
 		expect(firstScroll).toHaveBeenCalledTimes(1);
 		expect(secondScroll).toHaveBeenCalledTimes(1);
 		unmount();

@@ -192,11 +192,13 @@ export function useTocNavigation(
 	const [manualActiveId, setManualActiveId] = useState<string | null>(null);
 
 	const navigateTo = useCallback(
-		(id: string) => {
+		async (id: string) => {
 			const hash = `#${encodeURIComponent(id)}`;
 			if (window.location.hash !== hash) {
 				if (router) {
-					void router.navigate({
+					// hash 写入须先于滚动提交：WebKit 中导航异步落盘 history 会中断
+					// 进行中的平滑滚动（表现为直接跳变）。
+					await router.navigate({
 						hash: id,
 						hashScrollIntoView: false,
 						resetScroll: false,
