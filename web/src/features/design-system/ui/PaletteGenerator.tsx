@@ -1,5 +1,5 @@
 import { copyText } from "@shared/lib/clipboard";
-import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
+import { getContrastRatio, hexToOklch, oklchToRgb } from "@shared/lib/color-math";
 import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { HsvColorPicker } from "@violet/ui";
 import type { ReactNode } from "react";
@@ -38,6 +38,16 @@ export function PaletteGenerator({ children }: { children?: ReactNode }) {
 	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
 
 	const seed = useMemo(() => hexToOklch(seedHex), [seedHex]);
+	// OKLCH 明度对高彩度蓝青类色相偏估，固定阈值会选错文字色；
+	// 与生成器的 pickForeground 同法：黑白候选取对比度高者。
+	const seedTextLight = useMemo(() => {
+		if (!seed) return true;
+		const swatch = `oklch(${seed.l} ${seed.c} ${seed.h})`;
+		return (
+			getContrastRatio("oklch(0.99 0 0)", swatch) >=
+			getContrastRatio("oklch(0.21 0.006 286)", swatch)
+		);
+	}, [seed]);
 	const palette = useMemo(
 		() =>
 			generatePalette({
@@ -76,16 +86,14 @@ export function PaletteGenerator({ children }: { children?: ReactNode }) {
 								<div className="flex items-baseline justify-between">
 									<code
 										className={`font-mono text-xl font-bold tracking-wider ${
-											(seed?.l ?? 0.5) < 0.65
-												? "text-white"
-												: "text-slate-900"
+											seedTextLight ? "text-white" : "text-slate-900"
 										}`}
 									>
 										{seedHex.toUpperCase()}
 									</code>
 									<button
 										className={`rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-xs transition-opacity hover:opacity-90 ${
-											(seed?.l ?? 0.5) < 0.65
+											seedTextLight
 												? "bg-white/20 text-white"
 												: "bg-black/15 text-slate-900"
 										}`}
