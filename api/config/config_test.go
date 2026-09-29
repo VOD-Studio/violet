@@ -87,6 +87,14 @@ func TestValidateRequiresStrongResourceSigningKeyInProduction(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsNegativeBotMediaLimit(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.BotMediaMaxBytes = -1
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("负数 Bot 图片上限应校验失败")
+	}
+}
+
 func validTestConfig() Config {
 	return Config{
 		Database: DatabaseConfig{

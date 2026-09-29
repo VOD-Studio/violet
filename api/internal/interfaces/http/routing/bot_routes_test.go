@@ -36,6 +36,7 @@ func TestBotAPIRoutesBypassCSRF(t *testing.T) {
 		"GET /api/v1/chat/bot/profile",
 		"PUT /api/v1/chat/bot/commands",
 		"GET /api/v1/chat/bot/events",
+		"POST /api/v1/chat/bot/media",
 		"GET /api/v1/chat/bot/conversations",
 		"GET /api/v1/chat/bot/conversations/{conversationId}/messages",
 		"POST /api/v1/chat/bot/conversations/{conversationId}/messages",

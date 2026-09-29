@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"image"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	_ "golang.org/x/image/webp"
 
 	domainemoji "blog-api/internal/domain/emoji"
 	domainmusic "blog-api/internal/domain/music"
@@ -1512,7 +1514,7 @@ func fileToDTO(f *domainupload.File) FileDTO {
 	}
 }
 
-// SniffImageExt 按首部 magic bytes 识别图片格式（png/jpg/webp）；
+// SniffImageExt 按首部 magic bytes 识别图片格式（png/jpg/gif/webp）；
 // 未知格式 ok=false。
 func SniffImageExt(data []byte) (string, bool) {
 	switch {
@@ -1520,6 +1522,8 @@ func SniffImageExt(data []byte) (string, bool) {
 		return "png", true
 	case len(data) >= 3 && data[0] == 0xff && data[1] == 0xd8 && data[2] == 0xff:
 		return "jpg", true
+	case len(data) >= 6 && (string(data[:6]) == "GIF87a" || string(data[:6]) == "GIF89a"):
+		return "gif", true
 	case len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP":
 		return "webp", true
 	default:
@@ -1527,51 +1531,125 @@ func SniffImageExt(data []byte) (string, bool) {
 	}
 }
 
+const maxWholeImagePixels = 20_000_000
+
+var imageMIMEByExt = map[string]string{
+	"png":  "image/png",
+	"jpg":  "image/jpeg",
+	"gif":  "image/gif",
+	"webp": "image/webp",
+}
+
+// SaveBotMediaInput 是 bot 整体上传图片的用例入参。
+type SaveBotMediaInput struct {
+	OwnerID      shared.ID
+	OriginalName string
+	MIMEType     string
+	Data         []byte
+}
+
+// BotMediaDTO 是 bot 上传成功后可用于发送图片消息的文件信息。
+type BotMediaDTO struct {
+	ID       string `json:"id"`
+	URL      string `json:"url"`
+	MIMEType string `json:"mime_type"`
+	Width    int    `json:"width"`  // 像素
+	Height   int    `json:"height"` // 像素
+	Size     int64  `json:"size"`   // 字节
+}
+
+// SaveBotMedia 校验并保存 bot 上传的聊天图片。
+func (s *UploadService) SaveBotMedia(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
+	ext, ok := SniffImageExt(in.Data)
+	if !ok {
+		return BotMediaDTO{}, shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
+	}
+	mimeType := imageMIMEByExt[ext]
+	if in.MIMEType != mimeType {
+		return BotMediaDTO{}, shared.BadRequest("图片 MIME 类型与文件内容不一致")
+	}
+	originalName := strings.TrimSpace(in.OriginalName)
+	if originalName == "" {
+		originalName = "image." + ext
+	}
+	f, err := s.saveWholeImage(ctx, in.OwnerID, domainupload.PurposeChat, originalName, mimeType, ext, in.Data)
+	if err != nil {
+		return BotMediaDTO{}, err
+	}
+	width, height := 0, 0
+	if f.Width() != nil {
+		width = *f.Width()
+		height = *f.Height()
+	}
+	return BotMediaDTO{
+		ID: f.ID().String(), URL: f.URL(), MIMEType: f.MimeType(),
+		Width: width, Height: height, Size: f.Size(),
+	}, nil
+}
+
 // SaveGeneratedCover 把 AI 生成的封面字节落素材库（purpose=material）。
-//
-// 流程：字节 magic bytes 嗅探定扩展名（自治校验，不信任调用方传入）→
-// 写临时文件做 Validate 深度解码 → BuildPath → SHA-256 去重 hash →
-// NewFile + processor 缩略图/尺寸 → fileRepo.Save。
-// 返回站内 URL；引用计数从 0 开始（挂书封面时不加引用，删素材自然拒绝被引用文件）。
 func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.ID, data []byte) (string, error) {
 	ext, ok := SniffImageExt(data)
-	if !ok {
+	if !ok || ext == "gif" {
 		return "", shared.BadRequest("AI 封面仅支持 png/jpg/webp")
 	}
-	mimeType := map[string]string{"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[ext]
-
-	// 写临时文件走 Validate 的完整解码校验（格式损坏/截断字节在此拦截）
-	tmpFile, err := os.CreateTemp("", "cover-*."+ext)
+	f, err := s.saveWholeImage(ctx, ownerID, domainupload.PurposeMaterial, "ai-cover."+ext, imageMIMEByExt[ext], ext, data)
 	if err != nil {
-		return "", shared.Internal("创建临时文件失败", err)
+		return "", err
+	}
+	return f.URL(), nil
+}
+
+func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, purpose, originalName, mimeType, ext string, data []byte) (*domainupload.File, error) {
+	tmpFile, err := os.CreateTemp("", "image-*."+ext)
+	if err != nil {
+		return nil, shared.Internal("创建临时文件失败", err)
 	}
 	tmpPath := tmpFile.Name()
 	defer os.Remove(tmpPath)
 	if _, err := tmpFile.Write(data); err != nil {
 		tmpFile.Close()
-		return "", shared.Internal("写临时文件失败", err)
+		return nil, shared.Internal("写临时文件失败", err)
 	}
 	if err := tmpFile.Close(); err != nil {
-		return "", shared.Internal("关闭临时文件失败", err)
+		return nil, shared.Internal("关闭临时文件失败", err)
+	}
+	tmp, err := os.Open(tmpPath)
+	if err != nil {
+		return nil, shared.Internal("读取临时图片失败", err)
+	}
+	config, format, decodeErr := image.DecodeConfig(tmp)
+	closeErr := tmp.Close()
+	if decodeErr != nil || closeErr != nil || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > maxWholeImagePixels {
+		return nil, shared.BadRequest("图片尺寸无效或超过像素上限")
+	}
+	if format == "jpeg" {
+		format = "jpg"
+	}
+	if format != ext {
+		return nil, shared.BadRequest("图片格式与文件内容不一致")
 	}
 	if s.processor != nil {
-		if _, err := s.processor.Validate(tmpPath); err != nil {
-			return "", shared.BadRequest("生成结果不是有效图片: " + err.Error())
+		validMIME, err := s.processor.Validate(tmpPath)
+		if err != nil {
+			return nil, shared.BadRequest("图片内容无效: " + err.Error())
+		}
+		if validMIME != mimeType {
+			return nil, shared.BadRequest("图片 MIME 类型与文件内容不一致")
 		}
 	}
 
-	fileUUID := shared.NewID()
-	finalPath, fileURL, err := s.storage.BuildPath(domainupload.PurposeMaterial, time.Now(), fileUUID.String(), "."+ext)
+	fileID := shared.NewID()
+	finalPath, fileURL, err := s.storage.BuildPath(purpose, time.Now(), fileID.String(), "."+ext)
 	if err != nil {
-		return "", shared.BadRequest("非法的存储路径: " + err.Error())
+		return nil, shared.BadRequest("非法的存储路径: " + err.Error())
 	}
 	if err := s.storage.EnsureDir(filepath.Dir(finalPath)); err != nil {
-		return "", shared.Internal("创建目录失败", err)
+		return nil, shared.Internal("创建目录失败", err)
 	}
 	if err := os.WriteFile(finalPath, data, 0o644); err != nil {
-		return "", shared.Internal("写入封面失败", err)
+		return nil, shared.Internal("写入图片失败", err)
 	}
-	// 落盘成功后任一步失败都移除 finalPath，避免 DB 无记录的孤儿文件（评审修复）
 	persisted := false
 	defer func() {
 		if !persisted {
@@ -1580,21 +1658,19 @@ func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.I
 	}()
 
 	sum := sha256.Sum256(data)
-	f, err := domainupload.NewFile(fileUUID, ownerID, domainupload.PurposeMaterial, "ai-cover."+ext, finalPath, fileURL, int64(len(data)), mimeType, hex.EncodeToString(sum[:]))
+	f, err := domainupload.NewFile(fileID, ownerID, purpose, originalName, finalPath, fileURL, int64(len(data)), mimeType, hex.EncodeToString(sum[:]))
 	if err != nil {
-		return "", shared.Internal("创建文件记录失败", err)
+		return nil, shared.Internal("创建文件记录失败", err)
 	}
+	f.SetDimensions(config.Width, config.Height)
 	if s.processor != nil {
-		if w, h := s.processor.Dimensions(finalPath); w > 0 {
-			f.SetDimensions(w, h)
-		}
-		if thumb := s.processor.Thumbnail(finalPath, fileUUID.String(), filepath.Join(domainupload.PurposeMaterial, mimeToCategory(mimeType)), mimeType); thumb != "" {
-			f.SetThumbnail(thumb)
+		if thumbnail := s.processor.Thumbnail(finalPath, fileID.String(), purpose, mimeType); thumbnail != "" {
+			f.SetThumbnail(thumbnail)
 		}
 	}
 	if err := s.fileRepo.Save(ctx, f); err != nil {
-		return "", shared.Internal("保存文件记录失败", err)
+		return nil, shared.Internal("保存文件记录失败", err)
 	}
 	persisted = true
-	return fileURL, nil
+	return f, nil
 }

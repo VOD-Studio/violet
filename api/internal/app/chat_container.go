@@ -10,6 +10,7 @@ import (
 	appchat "blog-api/internal/application/chat"
 	appappearance "blog-api/internal/application/chatappearance"
 	appcustomemoji "blog-api/internal/application/customemoji"
+	appmedia "blog-api/internal/application/media"
 	appshared "blog-api/internal/application/shared"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/infrastructure/crypto"
@@ -31,7 +32,7 @@ type ChatContainer struct {
 
 // NewChatContainer 装配聊天领域、持久化与浏览器推送。
 // customEmojiSvc 解析消息正文中的 [name:uuid] 自定义表情占位符。
-func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, bus appshared.EventBus) *ChatContainer {
+func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, uploadSvc *appmedia.UploadService, bus appshared.EventBus) *ChatContainer {
 	repo := gormrepo.NewChatRepository(db)
 	reactionStore := gormrepo.NewChatMessageReactionStore(db)
 	userRepo := gormrepo.NewUserRepository(db)
@@ -58,7 +59,7 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 		ChatHandler:     chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)).WithBotCommands(botCommands),
 		StreamHandler:   chathttp.NewStreamHandler(manager, svc),
 		BotService:      botService,
-		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections).WithBotCommands(botCommands),
+		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections, uploadSvc, cfg.BotMediaMaxBytes).WithBotCommands(botCommands),
 		BotAdminHandler: chathttp.NewBotAdminHandler(botService),
 	}
 }

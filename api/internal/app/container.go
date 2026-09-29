@@ -124,7 +124,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus)
-	chat := NewChatContainer(db, cfg, customEmoji.Service, bus)
+	chat := NewChatContainer(db, cfg, customEmoji.Service, media.UploadService, bus)
 	chat.ChatService.WithTweetReader(tweet.TweetService)
 
 	c := &Container{

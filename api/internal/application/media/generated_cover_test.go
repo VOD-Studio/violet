@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,15 @@ import (
 )
 
 // recordingFileRepo 记录 Save 的 fake，校验落库字段。
+func validPNG(t *testing.T) []byte {
+	t.Helper()
+	data, err := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
 type recordingFileRepo struct {
 	fakeFileRepo
 	saved []*struct {
@@ -41,7 +51,7 @@ func TestSaveGeneratedCover_PersistsMaterialFile(t *testing.T) {
 	repo := &recordingFileRepo{fakeFileRepo: fakeFileRepo{ownerID: domainshared.NewID()}}
 	svc := NewUploadService(repo, nil, storage.NewLocalStorage(tmp, "/uploads/"), nil, filepath.Join(tmp, "chunks"), tmp, "/uploads/")
 	owner := domainshared.NewID()
-	png := []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}
+	png := validPNG(t)
 
 	url, err := svc.SaveGeneratedCover(context.Background(), owner, png)
 	if err != nil {
@@ -84,6 +94,7 @@ func TestSniffImageExt(t *testing.T) {
 	}{
 		{"png", []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}, "png"},
 		{"jpeg", []byte{0xff, 0xd8, 0xff, 0xe0}, "jpg"},
+		{"gif", []byte("GIF89a"), "gif"},
 		{"webp", []byte{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '}, "webp"},
 	}
 	for _, c := range cases {

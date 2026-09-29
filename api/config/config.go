@@ -46,6 +46,8 @@ type Config struct {
 	// 未配置时仍能注册 bot，但凭据不落密文，只能靠创建/重置那一次响应拿到；
 	// 改了它只影响解密：库里旧密文全部作废，对应 bot 需重置一次凭据。
 	BotTokenKey string
+	// BotMediaMaxBytes Bot 图片整体上传的字节上限；0 表示不限制。
+	BotMediaMaxBytes int64
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
@@ -276,6 +278,7 @@ func Load() *Config {
 	v.SetDefault("upload_dir", "uploads")
 	v.SetDefault("backup_dir", "backups")
 	v.SetDefault("resource_signing_key", "")
+	v.SetDefault("bot_media_max_bytes", int64(10<<20))
 	v.SetDefault("bilibili_cookies", "")
 	v.SetDefault("bilibili_api_type", "user")
 	v.SetDefault("kite_url", "http://localhost:3721")
@@ -372,6 +375,7 @@ func Load() *Config {
 		BackupDir:          v.GetString("backup_dir"),
 		ResourceSigningKey: v.GetString("resource_signing_key"),
 		BotTokenKey:        v.GetString("bot_token_key"),
+		BotMediaMaxBytes:   v.GetInt64("bot_media_max_bytes"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
 		KiteURL:            v.GetString("kite_url"),
@@ -429,6 +433,9 @@ func Load() *Config {
 
 // Validate 验证配置的有效性
 func (c *Config) Validate() error {
+	if c.BotMediaMaxBytes < 0 {
+		return fmt.Errorf("bot_media_max_bytes 不能为负数")
+	}
 	// 数据库配置必须完整
 	if c.Database.Host == "" {
 		return fmt.Errorf("DATABASE_HOST 未配置")

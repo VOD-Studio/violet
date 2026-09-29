@@ -34,10 +34,17 @@ func registerBotPaths(t *openapi3.T) {
 		Responses:   responses(200, dataResponse("BotCommandRevision", "目录版本", 200), 400, errorResponse("目录格式非法")),
 	})
 
+	registerSchema(t, "BotMediaDTO", openapi3.Schemas{
+		"id": reqStr("媒体文件 ID"), "url": reqStr("站内相对访问 URL"),
+		"mime_type": reqStr("图片 MIME 类型"), "width": optInt("图片宽度"),
+		"height": optInt("图片高度"), "size": optInt64("文件字节数"),
+	}, "id", "url", "mime_type", "width", "height", "size")
 	registerSchema(t, "BotSendMessageRequest", openapi3.Schemas{
-		"content":     optStr("文本内容，≤10000 字符；status=pending 时须为空"),
+		"type":        strEnum("消息类型；省略时为 text", "text", "image"),
+		"content":     optStr("文本内容或图片说明，≤10000 字符；status=pending 时须为空"),
+		"media_ids":   strArray("图片文件 ID；type=image 时必填"),
 		"reply_to_id": optStr("引用的同会话消息 ID，缺省表示不引用"),
-		"status":      optStr("pending 创建可恢复的生成回复；省略时兼容普通文本消息"),
+		"status":      optStr("pending 创建可恢复的文本生成回复；图片消息必须省略"),
 	})
 	registerSchema(t, "BotEditMessageRequest", openapi3.Schemas{
 		"content":  optStr("累计正文，整体替换原文"),
@@ -54,6 +61,26 @@ func registerBotPaths(t *openapi3.T) {
 		Description: "返回 bot 与其虚拟用户标识：消息 sender.id 即 user_id，被 @ 判定比对 username。",
 		Security:    secure,
 		Responses:   responses(200, dataResponse("BotDTO", "bot 资料", 200), 401, errorResponse("token 无效"), 403, errorResponse("bot 已禁用")),
+	})
+
+	mediaUploadBody := &openapi3.RequestBodyRef{Value: &openapi3.RequestBody{
+		Required: true,
+		Content: openapi3.Content{
+			"multipart/form-data": {Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{
+				Type: &openapi3.Types{openapi3.TypeObject},
+				Properties: openapi3.Schemas{
+					"file":     {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}, Format: "binary"}},
+					"filename": optStr("可选原始文件名，仅作元数据"),
+				},
+				Required: []string{"file"},
+			}}},
+		},
+	}}
+	post(t, "/chat/bot/media", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "上传聊天图片", Security: secure,
+		Description: "上传一张不超过配置上限的 png、jpeg、gif 或 webp 图片，文件归当前 bot 虚拟用户所有。",
+		RequestBody: mediaUploadBody,
+		Responses:   responses(201, dataResponse("BotMediaDTO", "已上传媒体", 201), 400, errorResponse("图片格式非法"), 401, errorResponse("token 无效"), 403, errorResponse("bot 已禁用"), 413, errorResponse("图片超过大小上限")),
 	})
 
 	get(t, "/chat/bot/conversations", &openapi3.Operation{
@@ -78,7 +105,7 @@ func registerBotPaths(t *openapi3.T) {
 
 	post(t, "/chat/bot/conversations/{conversationId}/messages", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "发送消息",
-		Description: "只开放文本消息。Idempotency-Key 必填。status=pending 可创建空正文占位回复；首次非空正文更新后推进引用消息的已读位置。",
+		Description: "支持文本与图片消息。图片须先上传并用 media_ids 引用，且不支持 pending 状态。Idempotency-Key 必填。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), idempotencyHeaderParam()},
 		RequestBody: jsonBody("BotSendMessageRequest", true, "消息参数"),
