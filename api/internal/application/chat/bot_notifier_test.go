@@ -9,6 +9,7 @@ import (
 
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
+	domainupload "blog-api/internal/domain/upload"
 	domainuser "blog-api/internal/domain/user"
 )
 
@@ -305,6 +306,35 @@ func TestDispatchBotMessageCarriesMessageSnapshot(t *testing.T) {
 	}
 	if len(call.mentioned) != 1 || call.mentioned[0] != botUser {
 		t.Fatalf("mention 需透传给分发器: %v", call.mentioned)
+	}
+}
+
+func TestDispatchBotImageCarriesMediaSnapshot(t *testing.T) {
+	now := time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC)
+	human, mediaID := domainshared.NewID(), domainshared.NewID()
+	conversation, err := domainchat.NewConversation(domainchat.ConversationDirect, human, "会话", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	message, err := domainchat.NewImageMessage(conversation.ID(), human, []domainshared.ID{mediaID}, "图片", "k-image", now, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := newChatImageFile(t, mediaID, human)
+	file.SetDimensions(640, 480)
+	files := &mockFileRepo{files: map[domainshared.ID]*domainupload.File{mediaID: file}}
+	users := newFakeUserStore()
+	email, _ := domainuser.ParseEmail("human@example.com")
+	username, _ := domainuser.ParseUsername("human")
+	users.users[human] = domainuser.NewUser(human, email, username, domainuser.NewPasswordHash("x"))
+	notifier := &captureBotNotifier{}
+	svc := NewService(nil, users, files, nil, nil, "", func() time.Time { return now }, nil, nil, nil, nil).WithBotNotifier(notifier)
+
+	svc.dispatchBotMessage(context.Background(), conversation, message, nil)
+
+	snapshot := notifier.calls[0].event.Data["message"].(MessageDTO)
+	if len(snapshot.Media) != 1 || snapshot.Media[0].ID != mediaID.String() || snapshot.Media[0].Width == nil || *snapshot.Media[0].Width != 640 {
+		t.Fatalf("图片事件缺少媒体快照: %+v", snapshot.Media)
 	}
 }
 
