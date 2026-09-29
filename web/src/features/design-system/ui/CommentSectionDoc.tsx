@@ -1,4 +1,5 @@
 import { copyText } from "@shared/lib/clipboard";
+import { slugify } from "@shared/lib/slug";
 import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { Check, Component, Copy, FileCode2, GitBranch } from "lucide-react";
@@ -356,7 +357,7 @@ export function CommentSectionDocPage() {
 				<section aria-label="API 参考" className="space-y-10">
 					<AnchoredHeading
 						as="h2"
-						id="API 参考"
+						id={slugify("API 参考")}
 						className="text-2xl font-bold tracking-tight text-foreground"
 					>
 						API 参考

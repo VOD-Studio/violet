@@ -1,3 +1,4 @@
+import { slugify } from "@shared/lib/slug";
 import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
@@ -162,7 +163,7 @@ export function ButtonDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="视觉层级 (Variants)"
+							id={slugify("视觉层级 (Variants)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							视觉层级 (Variants)
@@ -186,7 +187,7 @@ export function ButtonDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="尺寸规格 (Sizes)"
+							id={slugify("尺寸规格 (Sizes)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							尺寸规格 (Sizes)
@@ -204,7 +205,7 @@ export function ButtonDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="图标插槽 (Icons)"
+							id={slugify("图标插槽 (Icons)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							图标插槽 (Icons)
@@ -221,7 +222,7 @@ export function ButtonDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="状态与加载 (Loading)"
+							id={slugify("状态与加载 (Loading)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							状态与加载 (Loading)
@@ -239,7 +240,7 @@ export function ButtonDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="作为导航链接 (asChild)"
+							id={slugify("作为导航链接 (asChild)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							作为导航链接 (asChild)

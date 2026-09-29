@@ -1,3 +1,4 @@
+import { slugify } from "@shared/lib/slug";
 import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
@@ -278,7 +279,7 @@ export function CartoonPopoverDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="CartoonPopover 根组件参数"
+							id={slugify("CartoonPopover 根组件参数")}
 							className="text-sm font-semibold text-foreground"
 						>
 							CartoonPopover 根组件参数
@@ -294,7 +295,7 @@ export function CartoonPopoverDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="CartoonPopoverGroup 群组参数"
+							id={slugify("CartoonPopoverGroup 群组参数")}
 							className="text-sm font-semibold text-foreground"
 						>
 							CartoonPopoverGroup 群组参数
@@ -310,7 +311,7 @@ export function CartoonPopoverDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="CartoonPopoverContent 内容面板参数"
+							id={slugify("CartoonPopoverContent 内容面板参数")}
 							className="text-sm font-semibold text-foreground"
 						>
 							CartoonPopoverContent 内容面板参数

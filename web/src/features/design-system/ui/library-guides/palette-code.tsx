@@ -6,8 +6,13 @@ import violetPaletteSource from "../../../../../packages/ui/src/styles/palettes/
 import { ColorUsageDemo } from "../examples/color/usage";
 import usageSource from "../examples/color/usage.tsx?raw";
 
-const VIOLET_PALETTE_CSS = violetPaletteSource.slice(violetPaletteSource.indexOf(":root {"));
-const CORAL_PALETTE_CSS = coralPaletteSource.slice(coralPaletteSource.indexOf(":root"));
+// 裁掉文件头注释只展示变量声明区；找不到标记时整文件展示，避免 slice(-1) 静默错位
+const sliceFromMarker = (source: string, marker: string): string => {
+	const at = source.indexOf(marker);
+	return at === -1 ? source : source.slice(at);
+};
+const VIOLET_PALETTE_CSS = sliceFromMarker(violetPaletteSource, ":root {");
+const CORAL_PALETTE_CSS = sliceFromMarker(coralPaletteSource, ":root");
 
 const EXAMPLE_TITLES: Record<string, string> = {
 	"language-palette-css": "应用样式示例",

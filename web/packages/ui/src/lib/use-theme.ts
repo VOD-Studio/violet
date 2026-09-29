@@ -91,7 +91,8 @@ function getServerSnapshot(): ThemeState {
 }
 
 function getSnapshot(): ThemeState {
-	ensureInitialized();
+	// 刻意不做初始化：快照必须纯净，localStorage/DOM 副作用推迟到 subscribe（effect 阶段），
+	// 否则客户端首帧与 SSR 输出分叉引发 hydration mismatch。
 	return state;
 }
 
@@ -104,13 +105,19 @@ function setTheme(theme: ThemeChoice): void {
 /**
  * 管理 light/dark/system 三态主题并同步到 <html> 的 dark 类。
  *
- * @remarks 初始值读取 localStorage["violet-theme"]（无效时回退 defaultTheme）；
+ * @remarks 初始值读取 localStorage["violet-theme"]（无效时回退 defaultTheme），
+ * 读取与 <html> 类名同步推迟到挂载后的 effect，首帧与 SSR 输出一致（无 hydration 分叉）；
  * system 经 prefers-color-scheme 解析并监听变化。同页多实例共享同一模块级状态。
- * SSR 环境下安全（不触碰 document/localStorage/matchMedia）。
  */
 export function useTheme(defaultTheme: ThemeChoice = "system"): UseThemeResult {
-	ensureInitialized(defaultTheme);
-	const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+	const subscribeWithDefault = useCallback(
+		(listener: () => void) => {
+			ensureInitialized(defaultTheme);
+			return subscribe(listener);
+		},
+		[defaultTheme],
+	);
+	const snapshot = useSyncExternalStore(subscribeWithDefault, getSnapshot, getServerSnapshot);
 	const update = useCallback((next: ThemeChoice) => {
 		setTheme(next);
 	}, []);

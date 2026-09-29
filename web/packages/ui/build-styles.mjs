@@ -3,7 +3,6 @@
 // - src/tokens.css → dist/tokens.css：纯 CSS 变量子集（无 @theme / @source，Headless 场景）
 // - src/classes.css → dist/classes.css：BEM 类名产物（.v-button 等，Headless 场景），
 //   各组件类文件经 @import 内联进单一产物。
-// palette 入口在 styles/ 子目录而产物须落在 dist/palettes/，故与上面分开构建、各自对齐 outbase。
 // 独立脚本而非 vite 入口：CSS 里的 @source "./" 是给宿主 Tailwind 的指令，
 // 打包后位于 dist 根，恰好扫描到同目录的打包 JS；构建器必须原样保留未知 at-rule。
 import { build } from "esbuild";

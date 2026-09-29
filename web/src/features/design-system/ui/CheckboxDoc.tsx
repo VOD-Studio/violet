@@ -1,3 +1,4 @@
+import { slugify } from "@shared/lib/slug";
 import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
@@ -142,7 +143,7 @@ export function CheckboxDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="全选与半选联动 (Tri-state / Indeterminate)"
+							id={slugify("全选与半选联动 (Tri-state / Indeterminate)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							全选与半选联动 (Tri-state / Indeterminate)
@@ -166,7 +167,7 @@ export function CheckboxDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="视觉变体 (Variants)"
+							id={slugify("视觉变体 (Variants)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							视觉变体 (Variants)
@@ -189,7 +190,7 @@ export function CheckboxDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="尺寸规格 (Sizes)"
+							id={slugify("尺寸规格 (Sizes)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							尺寸规格 (Sizes)
@@ -207,7 +208,7 @@ export function CheckboxDocPage() {
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
-							id="禁用状态 (Disabled)"
+							id={slugify("禁用状态 (Disabled)")}
 							className="text-lg font-semibold text-foreground"
 						>
 							禁用状态 (Disabled)
