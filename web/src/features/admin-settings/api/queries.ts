@@ -141,9 +141,13 @@ export const useUpdateOAuthCredentials = () => {
 					persisted: boolean;
 				}>
 			>(settingsKeys.oauth(), (prev) => ({ ...(prev ?? {}), ...data }));
-			toast.success(
-				data.persisted ? "OAuth 凭据已保存" : "OAuth 凭据已保存（未落盘，重启后失效）",
-			);
+			if (data.persisted) {
+				toast.success("OAuth 凭据已保存并写入 .env");
+			} else {
+				toast.error(
+					"凭据已生效，但写入 .env 失败——API 重启后将回退旧值。请在服务器检查 .env 可写性（见页面红色提示）",
+				);
+			}
 		},
 		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
 	});
