@@ -7,6 +7,38 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.47](https://github.com/VOD-Studio/violet/compare/v2.8.46...v2.8.47) (2026-09-29)
+
+
+### 新增
+
+* **anchored-heading:** 标题复制按钮悬停显现与统一反馈动效 ([370edd3](https://github.com/VOD-Studio/violet/commit/370edd3f76e284a481c67440be33af9fb4776557))
+* **anchored-heading:** 点击标题按钮复制直达链接 ([4a97978](https://github.com/VOD-Studio/violet/commit/4a97978b9105ea4746b4793762d0039b906618f2))
+* **design-system:** 主题构建器指南页 ([fd83f76](https://github.com/VOD-Studio/violet/commit/fd83f766eb7247f6aa2fedd0d5bb76a752d43477))
+* **design-system:** 指南 Markdown 化管线与右侧目录树 ([f881ca2](https://github.com/VOD-Studio/violet/commit/f881ca2d151bf196e7b3624b19b53b514a2a0e8c))
+* **design-system:** 移除主题构建器指南 ([7839c5e](https://github.com/VOD-Studio/violet/commit/7839c5e2ebb66ec5d8145c719f16e562ff0fc9f7))
+* **design-system:** 组件文档接入页内目录并自研吸附位测量 ([1c5bcf0](https://github.com/VOD-Studio/violet/commit/1c5bcf0f4d6e561204469bd14ca02019866fd74d))
+* **design-system:** 组件目录页接入页内目录 ([d366ca3](https://github.com/VOD-Studio/violet/commit/d366ca37819d5a9662116ec4677444baed29d2e9))
+* **ui:** BEM 类名化组件样式与 classes 导出 ([a6e3de9](https://github.com/VOD-Studio/violet/commit/a6e3de9d5271829cd02a680334f1d5b67b4c48f6))
+* **ui:** 包级 useTheme hook ([e23ab7b](https://github.com/VOD-Studio/violet/commit/e23ab7be380540a7a424f759c916a0c9a4aa12f7))
+* **ui:** 样式分层子导出与命名主题色板 ([ae355ff](https://github.com/VOD-Studio/violet/commit/ae355ffb7403480bc03a119c6b6568dcb6c6a2b2))
+
+
+### 修复
+
+* **cartoon-popover:** 修复气泡代码换行越界 ([8089f69](https://github.com/VOD-Studio/violet/commit/8089f6970227086679e8d9191c8e2d5809d79491))
+* **cartoon-popover:** 让短内容气泡按内容收缩 ([ac89ce6](https://github.com/VOD-Studio/violet/commit/ac89ce636fc8113833e1bfa6ea1721218715e767))
+* **design-system:** 主色卡文字改为按对比度取黑白 ([fa969b2](https://github.com/VOD-Studio/violet/commit/fa969b21e28dfc708261ee69543b174f23614bfe))
+* **design-system:** 修正页内目录跟随与高亮范围 ([fc590ac](https://github.com/VOD-Studio/violet/commit/fc590acc970efcbe66921abe271da56e885563df))
+* **design-system:** 处理 PR 评审意见 ([1281a7e](https://github.com/VOD-Studio/violet/commit/1281a7e0cdb1f225f5983df6dceb0d005350a4db))
+* **design-system:** 恢复颜色章节原有内容 ([630ef0e](https://github.com/VOD-Studio/violet/commit/630ef0edc75581de44e33241c91674bfeb6c6ba8))
+* **design-system:** 收敛侧栏交互并重组纲纪章节 ([684dba8](https://github.com/VOD-Studio/violet/commit/684dba865ce8d921e6a534c6d83d08236ceb145d))
+* **design-system:** 统一颜色章标题字阶与目录动效 ([a4ae9ba](https://github.com/VOD-Studio/violet/commit/a4ae9bab3f6f84fc69ee40ce197e8a72a36f8143))
+* **header:** 修复主导航分段点击无法切换 ([dfc9d49](https://github.com/VOD-Studio/violet/commit/dfc9d49178cb5a1cada648205a7fd3d54a3e2e21))
+* **toc:** 修复目录点击正文跳变 ([ac842d3](https://github.com/VOD-Studio/violet/commit/ac842d3ead288db44a1c67323ba8789215258c30))
+* **toc:** 统一目录锚点导航与滚动定位 ([36c96b9](https://github.com/VOD-Studio/violet/commit/36c96b92d2a9d81aae5b1320f2a52cfd04bb8e29))
+* **ui:** 状态色实色与前景对齐 WCAG AA ([11ca6be](https://github.com/VOD-Studio/violet/commit/11ca6bece44e89a871ed89128b0e9529bbb0ec3b))
+
 ## [2.8.46](https://github.com/VOD-Studio/violet/compare/v2.8.45...v2.8.46) (2026-09-28)
 
 
