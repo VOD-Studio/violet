@@ -7,10 +7,8 @@ import {
 import { OAuthProviderCard } from "@features/admin-settings/ui/OAuthProviderCard";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
-import { copyText } from "@shared/lib/clipboard";
 import { createFileRoute } from "@tanstack/react-router";
 import { Input } from "@violet/ui";
-import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -19,9 +17,6 @@ interface AuthForm {
 	google_login_enabled: boolean;
 	github_login_enabled: boolean;
 }
-
-const DIAGNOSE_CMD =
-	"docker exec <api容器> sh -c 'ls -l /app/.env && touch /app/.env && echo writable'";
 
 /**
  * 认证设置页：第三方登录开关与 OAuth 凭据同卡同存。
@@ -47,7 +42,6 @@ export function AuthSettingsPage() {
 		}
 	}, [authData, reset]);
 
-	const [cmdCopied, setCmdCopied] = useState(false);
 	const [googleId, setGoogleId] = useState("");
 	const [githubId, setGithubId] = useState("");
 	const [githubSecret, setGithubSecret] = useState("");
@@ -83,41 +77,7 @@ export function AuthSettingsPage() {
 		>
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">第三方登录</h3>
-				{oauthStatus && !oauthStatus.persisted && (
-					<div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
-						<p className="font-medium text-destructive">
-							OAuth 凭据未持久化：当前值仅在内存生效，API 重启后将回退 .env 旧值
-						</p>
-						<p className="mt-1.5 leading-6 text-muted-foreground">
-							通常是容器内 .env 只读挂载或权限不足。API 日志（"写入 .env
-							失败"）有具体成因； 或在服务器执行以下命令定位：
-						</p>
-						<div className="mt-2 flex items-center gap-2">
-							<code className="min-w-0 flex-1 overflow-x-auto rounded-lg bg-muted/60 px-3 py-2 font-mono text-xs whitespace-nowrap">
-								docker exec &lt;api容器&gt; sh -c 'ls -l /app/.env &amp;&amp; touch
-								/app/.env &amp;&amp; echo writable'
-							</code>
-							<button
-								type="button"
-								aria-label="复制诊断命令"
-								onClick={async () => {
-									if (await copyText(DIAGNOSE_CMD)) {
-										setCmdCopied(true);
-										setTimeout(() => setCmdCopied(false), 1500);
-									}
-								}}
-								className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-							>
-								{cmdCopied ? (
-									<Check className="size-3.5" />
-								) : (
-									<Copy className="size-3.5" />
-								)}
-								{cmdCopied ? "已复制" : "复制"}
-							</button>
-						</div>
-					</div>
-				)}
+
 				<Controller
 					control={control}
 					name="google_login_enabled"

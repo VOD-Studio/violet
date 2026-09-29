@@ -39,10 +39,7 @@ export interface OAuthStatusDTO {
 	github_login_enabled: boolean;
 	google: OAuthProviderStatus;
 	github: OAuthProviderStatus;
-	/** 最近一次写入是否成功落盘 .env（false=重启后失效） */
-	persisted: boolean;
 }
-
 /** OAuth 凭据写入入参（全可选；留空字段=保持原值，secret 不回显） */
 export interface OAuthCredentialsInput {
 	google_client_id?: string;

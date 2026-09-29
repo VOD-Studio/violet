@@ -42,7 +42,7 @@ func (s *stubSettingsStore) UpsertMany(context.Context, map[string]string) error
 var _ domainsettings.SettingsStore = (*stubSettingsStore)(nil)
 
 func newSettingsHandler(store *stubSettingsStore) *Handler {
-	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory()), authcmd.NewOAuthCredentials("", "", ""))
+	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory()), authcmd.NewOAuthCredentials("", "", "", stubCredsRepo{}))
 }
 
 func newJSONRequest(method, target, body string) *http.Request {
@@ -117,3 +117,12 @@ func TestUpdateGeneral_InvalidJSON_Returns400(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "非法 JSON 应 400")
 }
+
+
+// stubCredsRepo 凭据仓储桩：settings 测试不触 DB
+type stubCredsRepo struct{}
+
+func (stubCredsRepo) Load(_ context.Context) (authcmd.OAuthCredentialsRecord, error) {
+	return authcmd.OAuthCredentialsRecord{}, nil
+}
+func (stubCredsRepo) Save(_ context.Context, _ authcmd.OAuthCredentialsRecord) error { return nil }

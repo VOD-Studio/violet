@@ -131,7 +131,6 @@ func (h *Handler) GetOAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"github_login_enabled": settings.GithubLoginEnabled,
 		"google":               st.Google,
 		"github":               st.Github,
-		"persisted":            st.Persisted,
 	})
 }
 
@@ -171,7 +170,7 @@ func (h *Handler) UpdateOAuthCredentials(w http.ResponseWriter, r *http.Request)
 		response.RespondError(w, r, domainsettings.ErrInvalidSetting)
 		return
 	}
-	if err := h.oauthCreds.Update(authcmd.OAuthCredentialUpdate{
+	if err := h.oauthCreds.Update(r.Context(), authcmd.OAuthCredentialUpdate{
 		GoogleClientID:     req.GoogleClientID,
 		GithubClientID:     req.GithubClientID,
 		GithubClientSecret: req.GithubClientSecret,
@@ -181,9 +180,8 @@ func (h *Handler) UpdateOAuthCredentials(w http.ResponseWriter, r *http.Request)
 	}
 	st := h.oauthCreds.Status()
 	response.RespondOK(w, map[string]any{
-		"google":    st.Google,
-		"github":    st.Github,
-		"persisted": st.Persisted,
+		"google": st.Google,
+		"github": st.Github,
 	})
 }
 

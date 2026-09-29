@@ -4,46 +4,77 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
-	"os"
-	"sort"
 	"strings"
 	"sync"
 
-	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/brand"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 )
 
-// OAuthCredentials OAuth 凭据的运行时可变存储。
-//
-// 初始值来自进程环境（config.Load）；后台写入后内存立即生效（登录链路
-// 每次调用实时读取），并尽力持久化到 .env（容器内 /app/.env，生产经
-// compose 挂载即宿主机 .env），使重建容器后新值成为初始环境。
-// 不落库：client_secret 属敏感凭据，与 site_settings（可公开读取的
-// 运行配置）隔离，与 env 密钥同一信任域。
-type OAuthCredentials struct {
-	mu              sync.RWMutex
-	googleClientID  string
-	githubClientID  string
-	githubSecret    string
-	dotenvPersisted bool // 最近一次写入是否成功落盘（status 端点展示）
+// OAuthCredentialsRepository OAuth 凭据的持久化端口（DB 单行表，admin 权限域）。
+// secret 不进 site_settings（公开可读域）；本端口对应的表只经 admin 端点读写，
+// 与 env 密钥同一信任域。
+type OAuthCredentialsRepository interface {
+	// Load 读取凭据行；从未保存过时返回零值
+	Load(ctx context.Context) (OAuthCredentialsRecord, error)
+	// Save 整行 upsert（空串=显式清空该字段）
+	Save(ctx context.Context, rec OAuthCredentialsRecord) error
 }
 
-// NewOAuthCredentials 构造，初始值来自启动环境
-func NewOAuthCredentials(googleClientID, githubClientID, githubClientSecret string) *OAuthCredentials {
+// OAuthCredentialsRecord 凭据字段载体
+type OAuthCredentialsRecord struct {
+	GoogleClientID     string
+	GithubClientID     string
+	GithubClientSecret string
+}
+
+// OAuthCredentials OAuth 凭据的运行时存储。
+//
+// 启动时以 env 为初值，再从 DB 载入后台保存过的字段覆盖（DB 为最新）；
+// 后台保存 = 内存 + DB 同步落库，DB 失败即整体失败并回滚内存，
+// 不存在「已生效但未持久化」的中间态。
+type OAuthCredentials struct {
+	mu             sync.RWMutex
+	googleClientID string
+	githubClientID string
+	githubSecret   string
+	repo           OAuthCredentialsRepository
+}
+
+// NewOAuthCredentials 构造；repo 为持久化端口，Bootstrap 前仅用 env 初值
+func NewOAuthCredentials(googleClientID, githubClientID, githubClientSecret string, repo OAuthCredentialsRepository) *OAuthCredentials {
 	return &OAuthCredentials{
 		googleClientID: googleClientID,
 		githubClientID: githubClientID,
 		githubSecret:   githubClientSecret,
+		repo:           repo,
 	}
 }
 
-// GoogleClientID 当前生效的 Google client_id
+// Bootstrap 启动时从 DB 载入：非空字段覆盖 env 初值（后台保存过的以 DB 为准）。
+// DB 不可达时保留 env 初值并记录错误——登录用 env 凭据仍可用，后台保存会显式失败。
+func (c *OAuthCredentials) Bootstrap(ctx context.Context) error {
+	rec, err := c.repo.Load(ctx)
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if rec.GoogleClientID != "" {
+		c.googleClientID = rec.GoogleClientID
+	}
+	if rec.GithubClientID != "" {
+		c.githubClientID = rec.GithubClientID
+	}
+	if rec.GithubClientSecret != "" {
+		c.githubSecret = rec.GithubClientSecret
+	}
+	return nil
+}
 func (c *OAuthCredentials) GoogleClientID() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -71,11 +102,13 @@ type OAuthCredentialUpdate struct {
 	GithubClientSecret *string
 }
 
-// Update 更新内存凭据并持久化 .env。
-// 内存更新成功即返回 nil（登录链路立即用新值）；.env 落盘失败仅记日志，
-// 由 Status 的 persisted 字段暴露给后台提示「重启后失效」。
-func (c *OAuthCredentials) Update(in OAuthCredentialUpdate) error {
+// Update 保存凭据：内存 + DB 同步落库。
+//
+// 先在内存求出新值并写入 DB，成功后提交内存；DB 失败则回滚内存到旧值，
+// 返回错误——不存在「已生效但未持久化」的中间态。
+func (c *OAuthCredentials) Update(ctx context.Context, in OAuthCredentialUpdate) error {
 	c.mu.Lock()
+	oldGoogle, oldGithubID, oldGithubSecret := c.googleClientID, c.githubClientID, c.githubSecret
 	if in.GoogleClientID != nil {
 		c.googleClientID = strings.TrimSpace(*in.GoogleClientID)
 	}
@@ -85,8 +118,17 @@ func (c *OAuthCredentials) Update(in OAuthCredentialUpdate) error {
 	if in.GithubClientSecret != nil {
 		c.githubSecret = strings.TrimSpace(*in.GithubClientSecret)
 	}
+	next := OAuthCredentialsRecord{
+		GoogleClientID: c.googleClientID, GithubClientID: c.githubClientID, GithubClientSecret: c.githubSecret,
+	}
 	c.mu.Unlock()
-	c.dotenvPersisted = persistOAuthDotenv(c)
+
+	if err := c.repo.Save(ctx, next); err != nil {
+		c.mu.Lock()
+		c.googleClientID, c.githubClientID, c.githubSecret = oldGoogle, oldGithubID, oldGithubSecret
+		c.mu.Unlock()
+		return shared.Internal("OAuth 凭据保存失败", err)
+	}
 	return nil
 }
 
@@ -104,8 +146,6 @@ type ProviderStatus struct {
 type OAuthStatusOutput struct {
 	Google ProviderStatus `json:"google"`
 	Github ProviderStatus `json:"github"`
-	// Persisted 最近一次写入是否成功落盘 .env（false=重启后失效）
-	Persisted bool `json:"persisted"`
 }
 
 // Status 检测两个 provider 的凭据配置状态。
@@ -136,7 +176,7 @@ func (c *OAuthCredentials) Status() OAuthStatusOutput {
 		gh.Configured = true
 	}
 
-	return OAuthStatusOutput{Google: g, Github: gh, Persisted: c.dotenvPersisted}
+	return OAuthStatusOutput{Google: g, Github: gh}
 }
 
 // preview 脱敏预览：保留前 8 后 6 字符，过短则全掩码
@@ -150,90 +190,6 @@ func preview(s string) string {
 	return s[:8] + "..." + s[len(s)-6:]
 }
 
-// dotenvCandidates .env 候选路径，与 config.Load 的 godotenv.Load 对齐：
-// 容器内 /app/.env（compose 挂载宿主机 .env）；本地开发 api/(go run) 的 ../.env
-// 与仓库根 .env。取第一个「存在或可创建」的。
-func dotenvCandidates() []string {
-	return []string{".env", "../.env"}
-}
-
-// persistOAuthDotenv 把凭据 upsert 进 .env。
-//
-// 读-改-写整文件：保留既有键序与注释，仅替换/追加三个 OAuth 键。
-// 首个候选路径均不存在时在 cwd 创建 .env（容器 WORKDIR /app）。
-func persistOAuthDotenv(c *OAuthCredentials) bool {
-	c.mu.RLock()
-	kvs := map[string]string{
-		"GOOGLE_CLIENT_ID":     c.googleClientID,
-		"GITHUB_CLIENT_ID":     c.githubClientID,
-		"GITHUB_CLIENT_SECRET": c.githubSecret,
-	}
-	c.mu.RUnlock()
-
-	var path string
-	for _, p := range dotenvCandidates() {
-		if _, err := os.Stat(p); err == nil {
-			path = p
-			break
-		}
-	}
-	if path == "" {
-		path = dotenvCandidates()[0]
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil && !os.IsNotExist(err) {
-		log.Warn().Str("path", path).Err(err).Msg("读取 .env 失败，OAuth 凭据仅内存生效")
-		return false
-	}
-
-	lines := upsertDotenvKeys(strings.Split(string(data), "\n"), kvs)
-	out := strings.Join(lines, "\n")
-	if !strings.HasSuffix(out, "\n") {
-		out += "\n"
-	}
-	if err := os.WriteFile(path, []byte(out), 0o600); err != nil {
-		log.Warn().Str("path", path).Err(err).Msg("写入 .env 失败，OAuth 凭据仅内存生效（容器重建后丢失）")
-		return false
-	}
-	return true
-}
-
-var dotenvKeyOrder = [...]string{"GOOGLE_CLIENT_ID", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"}
-
-// upsertDotenvKeys 在 .env 行数组里替换或追加键值（保留注释与顺序）
-func upsertDotenvKeys(lines []string, kvs map[string]string) []string {
-	done := make(map[string]bool, len(kvs))
-	out := make([]string, 0, len(lines)+len(kvs))
-	for _, ln := range lines {
-		replaced := ln
-		for k, v := range kvs {
-			if strings.HasPrefix(strings.TrimLeft(ln, " \t"), k+"=") {
-				replaced = fmt.Sprintf("%s=%s", k, v)
-				done[k] = true
-				break
-			}
-		}
-		out = append(out, replaced)
-	}
-	for _, key := range dotenvKeyOrder {
-		if value, ok := kvs[key]; ok && !done[key] {
-			out = append(out, fmt.Sprintf("%s=%s", key, value))
-			done[key] = true
-		}
-	}
-	extraKeys := make([]string, 0, len(kvs))
-	for key := range kvs {
-		if !done[key] {
-			extraKeys = append(extraKeys, key)
-		}
-	}
-	sort.Strings(extraKeys)
-	for _, key := range extraKeys {
-		out = append(out, fmt.Sprintf("%s=%s", key, kvs[key]))
-	}
-	return out
-}
 
 // VerifyResult 单 provider 凭据有效性探测结果
 type VerifyResult struct {

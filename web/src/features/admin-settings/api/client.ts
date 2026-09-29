@@ -57,20 +57,18 @@ export const getCodeRunner = () => apiGet<CodeRunnerSettingsDTO>(`${BASE}/code-r
 export const updateCodeRunner = (body: Partial<CodeRunnerSettingsDTO>) =>
 	apiPut<CodeRunnerSettingsDTO>(`${BASE}/code-runner`, body);
 
-/** OAuth 凭据状态与写入（env 域，独立于 settings 分组，不落库） */
+/** OAuth 凭据状态与写入（DB 单行表持久化，admin 权限域） */
 export const getOAuthStatus = () =>
 	apiGet<{
 		google_login_enabled: boolean;
 		github_login_enabled: boolean;
 		google: OAuthProviderStatus;
 		github: OAuthProviderStatus;
-		persisted: boolean;
 	}>(`${OAUTH_BASE}/status`);
 export const updateOAuthCredentials = (body: OAuthCredentialsInput) =>
 	apiPut<{
 		google: OAuthProviderStatus;
 		github: OAuthProviderStatus;
-		persisted: boolean;
 	}>(`${OAUTH_BASE}/credentials`, body);
 /** 探测 provider 侧凭据有效性（假 code 打 token 端点读错误码） */
 export const verifyOAuthCredentials = (provider: string) =>

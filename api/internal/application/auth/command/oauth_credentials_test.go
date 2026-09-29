@@ -1,15 +1,34 @@
 package command
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"context"
+	"errors"
 	"testing"
 )
 
-// OAuthCredentials 契约测试：检测逻辑、部分更新语义、.env upsert 保序保注释。
+type fakeRepo struct {
+	saved OAuthCredentialsRecord
+	load  OAuthCredentialsRecord
+	err   error
+	last  *OAuthCredentialsRecord
+}
+
+func (f *fakeRepo) Load(_ context.Context) (OAuthCredentialsRecord, error) {
+	return f.load, f.err
+}
+
+func (f *fakeRepo) Save(_ context.Context, rec OAuthCredentialsRecord) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.saved = rec
+	f.last = &rec
+	return nil
+}
+
+// 检测逻辑与部分更新语义（DB 成功路径）
 func TestOAuthCredentials_Status_DetectsMissingAndMalformed(t *testing.T) {
-	c := NewOAuthCredentials("", "", "")
+	c := NewOAuthCredentials("", "", "", &fakeRepo{})
 
 	st := c.Status()
 	if st.Google.Configured {
@@ -23,23 +42,23 @@ func TestOAuthCredentials_Status_DetectsMissingAndMalformed(t *testing.T) {
 	}
 
 	// Google: 格式异常的 client_id
-	c.Update(OAuthCredentialUpdate{GoogleClientID: strPtr("not-a-google-id")})
+	_ = c.Update(context.Background(), OAuthCredentialUpdate{GoogleClientID: strPtr("not-a-google-id")})
 	st = c.Status()
 	if st.Google.Configured || st.Google.Issue == "" {
 		t.Error("格式异常的 Google client_id 不应 configured")
 	}
 
 	// GitHub: 只配 id 缺 secret
-	c.Update(OAuthCredentialUpdate{GithubClientID: strPtr("Ov23li8S1SHPLyT85o6y")})
+	_ = c.Update(context.Background(), OAuthCredentialUpdate{GithubClientID: strPtr("Ov23li8S1SHPLyT85o6y")})
 	st = c.Status()
 	if st.Github.Configured {
 		t.Error("缺 secret 不应 configured")
 	}
 
 	// 补齐后全部就绪
-	c.Update(OAuthCredentialUpdate{
+	_ = c.Update(context.Background(), OAuthCredentialUpdate{
 		GoogleClientID:     strPtr("191445014130-abc.apps.googleusercontent.com"),
-		GithubClientSecret: strPtr("ghp_secret"),
+		GithubClientSecret: strPtr("ghp-secret"),
 	})
 	st = c.Status()
 	if !st.Google.Configured || !st.Github.Configured {
@@ -53,65 +72,50 @@ func TestOAuthCredentials_Status_DetectsMissingAndMalformed(t *testing.T) {
 	}
 }
 
-// upsertDotenvKeys 契约：已有键原地替换、新键追加、注释与顺序保留
-func TestUpsertDotenvKeys_PreservesCommentsAndOrder(t *testing.T) {
-	lines := []string{
-		"# 数据库",
-		"DATABASE_HOST=localhost",
-		"",
-		"  GITHUB_CLIENT_ID=old",
-		"# OAuth",
-	}
-	out := upsertDotenvKeys(lines, map[string]string{
-		"GITHUB_CLIENT_ID":     "new-id",
-		"GOOGLE_CLIENT_ID":     "g-id",
-		"GITHUB_CLIENT_SECRET": "gh-secret",
+// Bootstrap：DB 非空字段覆盖 env 初值，空字段保留 env
+func TestOAuthCredentials_Bootstrap_DBOverridesEnv(t *testing.T) {
+	c := NewOAuthCredentials("env-google", "env-gh-id", "env-gh-secret", &fakeRepo{
+		load: OAuthCredentialsRecord{GithubClientID: "db-gh-id", GithubClientSecret: "db-gh-secret"},
 	})
-
-	want := []string{
-		"# 数据库",
-		"DATABASE_HOST=localhost",
-		"",
-		"GITHUB_CLIENT_ID=new-id", // 缩进键也命中替换（ TrimLeft 后匹配）
-		"# OAuth",
-		"GOOGLE_CLIENT_ID=g-id",
-		"GITHUB_CLIENT_SECRET=gh-secret",
+	if err := c.Bootstrap(context.Background()); err != nil {
+		t.Fatalf("Bootstrap 不应失败: %v", err)
 	}
-	if len(out) != len(want) {
-		t.Fatalf("行数 = %d, want %d: %v", len(out), len(want), out)
+	if c.GoogleClientID() != "env-google" {
+		t.Error("DB 空字段应保留 env 初值")
 	}
-	for i := range want {
-		if out[i] != want[i] {
-			t.Errorf("line[%d] = %q, want %q", i, out[i], want[i])
-		}
+	if c.GithubClientID() != "db-gh-id" || c.GithubClientSecret() != "db-gh-secret" {
+		t.Error("DB 非空字段应覆盖 env 初值")
 	}
 }
 
-// persistOAuthDotenv 集成：临时目录写 .env，验证文件内容与 persisted 返回值
-func TestPersistOAuthDotenv_WritesFile(t *testing.T) {
-	dir := t.TempDir()
-	old, _ := os.Getwd()
-	defer os.Chdir(old)
-	if err := os.Chdir(dir); err != nil {
-		t.Skipf("chdir 失败: %v", err)
-	}
-	if err := os.WriteFile(".env", []byte("X=1\nGITHUB_CLIENT_ID=old\n"), 0o600); err != nil {
-		t.Fatal(err)
+// Update 落库失败必须整体失败并回滚内存（不存在半生效态）
+func TestOAuthCredentials_Update_FailsAndRollsBack(t *testing.T) {
+	c := NewOAuthCredentials("g", "old-id", "old-secret", &fakeRepo{})
+	if err := c.Update(context.Background(), OAuthCredentialUpdate{GithubClientID: strPtr("new-id")}); err != nil {
+		t.Fatalf("首次保存应成功: %v", err)
 	}
 
-	c := NewOAuthCredentials("g.apps.googleusercontent.com", "gh-id", "gh-sec")
-	if !persistOAuthDotenv(c) {
-		t.Fatal("落盘应成功")
+	failing := &fakeRepo{err: errors.New("db down")}
+	c2 := NewOAuthCredentials("g", "old-id", "old-secret", failing)
+	err := c2.Update(context.Background(), OAuthCredentialUpdate{GithubClientID: strPtr("new-id")})
+	if err == nil {
+		t.Fatal("DB 失败应返回错误")
 	}
-	data, err := os.ReadFile(filepath.Join(dir, ".env"))
-	if err != nil {
-		t.Fatal(err)
+	if c2.GithubClientID() != "old-id" {
+		t.Error("DB 失败后内存必须回滚到旧值")
 	}
-	s := string(data)
-	for _, want := range []string{"X=1", "GITHUB_CLIENT_ID=gh-id", "GOOGLE_CLIENT_ID=g.apps.googleusercontent.com", "GITHUB_CLIENT_SECRET=gh-sec"} {
-		if !strings.Contains(s, want) {
-			t.Errorf(".env 缺少 %q:\n%s", want, s)
-		}
+}
+
+// Update 成功路径把整行最新值写入 DB
+func TestOAuthCredentials_Update_PersistsWholeRow(t *testing.T) {
+	repo := &fakeRepo{}
+	c := NewOAuthCredentials("g", "id1", "s1", repo)
+	_ = c.Update(context.Background(), OAuthCredentialUpdate{GithubClientID: strPtr("id2")})
+	if repo.last == nil || repo.last.GithubClientID != "id2" {
+		t.Error("保存应整行落库最新值")
+	}
+	if repo.last.GoogleClientID != "g" || repo.last.GithubClientSecret != "s1" {
+		t.Error("落库应包含未更新字段的当前值")
 	}
 }
 

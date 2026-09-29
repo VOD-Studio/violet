@@ -134,20 +134,8 @@ export const useUpdateOAuthCredentials = () => {
 		mutationFn: (body: OAuthCredentialsInput) => api.updateOAuthCredentials(body),
 		onSuccess: (data) => {
 			// 覆盖 status 缓存的 provider 部分（enabled 开关字段保持）
-			qc.setQueryData<
-				Partial<{
-					google: typeof data.google;
-					github: typeof data.github;
-					persisted: boolean;
-				}>
-			>(settingsKeys.oauth(), (prev) => ({ ...(prev ?? {}), ...data }));
-			if (data.persisted) {
-				toast.success("OAuth 凭据已保存并写入 .env");
-			} else {
-				toast.error(
-					"凭据已生效，但写入 .env 失败——API 重启后将回退旧值。请在服务器检查 .env 可写性（见页面红色提示）",
-				);
-			}
+			qc.setQueryData(settingsKeys.oauth(), (prev) => ({ ...(prev ?? {}), ...data }));
+			toast.success("OAuth 凭据已保存");
 		},
 		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
 	});

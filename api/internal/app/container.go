@@ -80,9 +80,16 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
 	permissionChecker := role.PermissionChecker
 
-	// OAuth 凭据运行时存储：初始值来自 env；auth（登录链路）与 settings
-	// （公开 client_id 下发）共享同一实例，后台写入即刻全局生效。
-	oauthCreds := authcmd.NewOAuthCredentials(cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret)
+	// OAuth 凭据运行时存储：env 为初值，DB 单行表为后台保存的持久层
+	// （auth 登录链路与 settings 公开 client_id 下发共享同一实例）。
+	// Bootstrap 失败不阻断启动：登录仍可用 env 凭据，后台保存会显式失败。
+	oauthCreds := authcmd.NewOAuthCredentials(
+		cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret,
+		gormrepo.NewOAuthCredentialsStore(db),
+	)
+	if err := oauthCreds.Bootstrap(ctx); err != nil {
+		log.Logger.Warn().Err(err).Msg("OAuth 凭据 DB 载入失败，沿用 env 初值")
+	}
 
 	settings := NewSettingsContainer(db, bus, oauthCreds)
 	siteIdentity := NewSiteIdentityContainer(settings.Store)
