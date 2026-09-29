@@ -1,7 +1,8 @@
+import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
 import { ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { type MouseEvent, type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
 import { CompactArticleToc } from "./CompactArticleToc";
@@ -38,20 +39,6 @@ function flattenNodes(nodes: SegmentedTocNode[], depth = 0, prefix = "", topId =
 			...flattenNodes(node.children ?? [], depth + 1, indexLabel, rootId),
 		];
 	});
-}
-
-function handleHeadingClick(
-	event: MouseEvent<HTMLAnchorElement>,
-	id: string,
-	onNavigate: (id: string) => void,
-) {
-	if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-		return;
-	}
-	event.preventDefault();
-	const href = `#${encodeURIComponent(id)}`;
-	if (window.location.hash !== href) window.history.pushState(null, "", href);
-	onNavigate(id);
 }
 
 /** 实验室与博客详情共用的分段手风琴目录。 */
@@ -123,7 +110,7 @@ export function SegmentedArticleToc({
 				activeTopId={activeTopId}
 				expandedId={expandedId}
 				onExpandedIdChange={updateExpandedId}
-				onNavigate={(event, id) => handleHeadingClick(event, id, onNavigate)}
+				onNavigate={(event, id) => handleTocLinkClick(event, id, onNavigate)}
 			/>
 		);
 	}
@@ -172,7 +159,7 @@ export function SegmentedArticleToc({
 								href={`#${node.id}`}
 								onClick={(event) => {
 									updateExpandedId(node.id);
-									handleHeadingClick(event, node.id, onNavigate);
+									handleTocLinkClick(event, node.id, onNavigate);
 								}}
 								aria-label={node.title}
 								aria-current={isActive ? "location" : undefined}
@@ -236,7 +223,7 @@ export function SegmentedArticleToc({
 											<a
 												href={`#${item.id}`}
 												onClick={(event) =>
-													handleHeadingClick(event, item.id, onNavigate)
+													handleTocLinkClick(event, item.id, onNavigate)
 												}
 												aria-label={item.title}
 												aria-current={
