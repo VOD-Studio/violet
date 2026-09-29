@@ -20,7 +20,7 @@ export function AboutChapter({ id, title, intro, className, children }: AboutCha
 				<AnchoredHeading
 					id={id}
 					className={styles.chapterTitle}
-					linkLabel={`链接到“${title}”`}
+					copyLabel={`复制“${title}”的链接`}
 				>
 					{title}
 				</AnchoredHeading>

@@ -1,6 +1,11 @@
+import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
 import { DesignPrinciples } from "./DesignPrinciples";
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
 import { LayoutSpec } from "./LayoutSpec";
+import { GuideTocContent, GuideTocLayout } from "./LibraryGuideToc";
+import paletteDocSource from "./library-guides/content/palette.md?raw";
+import paletteIntroSource from "./library-guides/content/palette-intro.md?raw";
+import { paletteCodeRenderer } from "./library-guides/palette-code";
 import { MotionCharter } from "./MotionCharter";
 import { PaletteGenerator } from "./PaletteGenerator";
 import { QuickDecisionTable } from "./QuickDecisionTable";
@@ -44,14 +49,28 @@ export function DecisionsPage() {
  */
 export function PalettePage() {
 	return (
-		<div className="space-y-6">
-			<DesignSystemDocHeader
-				num="伍"
-				title="颜色"
-				scope="语义角色导览与主色种子推导色阶的生成器。"
-			/>
-			<PaletteGenerator />
-		</div>
+		<GuideTocLayout>
+			<div className="space-y-6">
+				<DesignSystemDocHeader
+					num="壹"
+					title="颜色"
+					scope="语义色角色、主色推导与组件用色指南。"
+				/>
+				<GuideTocContent>
+					<MarkdownContent
+						content={paletteIntroSource}
+						className="[&_p]:my-0 [&_p]:text-sm [&_p]:leading-7 [&_p]:text-muted-foreground"
+					/>
+					<PaletteGenerator>
+						<MarkdownContent
+							content={paletteDocSource}
+							codeRenderer={paletteCodeRenderer}
+							className="mt-10"
+						/>
+					</PaletteGenerator>
+				</GuideTocContent>
+			</div>
+		</GuideTocLayout>
 	);
 }
 
@@ -62,7 +81,7 @@ export function TokensPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="陆"
+				num="叁"
 				title="Token 词典"
 				scope="主色、功能色、中性色、语义色——全部语义 token 的名称与实时值。"
 			/>
@@ -78,7 +97,7 @@ export function LayoutPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="柒"
+				num="肆"
 				title="布局规格"
 				scope="间距、圆角、投影与容器的法定刻度。"
 			/>
@@ -94,7 +113,7 @@ export function MotionPage() {
 	return (
 		<div className="space-y-6">
 			<DesignSystemDocHeader
-				num="捌"
+				num="伍"
 				title="动效章程"
 				scope="运动的时间、幅度与克制的事由。"
 			/>

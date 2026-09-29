@@ -12,7 +12,11 @@
 	],
 	"exports": {
 		".": "./src/index.ts",
-		"./styles.css": "./src/styles.css"
+		"./styles.css": "./src/styles.css",
+		"./tokens.css": "./src/tokens.css",
+		"./classes.css": "./src/classes.css",
+		"./palettes/violet.css": "./src/styles/palettes/violet.css",
+		"./palettes/coral.css": "./src/styles/palettes/coral.css"
 	},
 	"scripts": {
 		"build": "vite build && tsc -p tsconfig.build.json && node build-styles.mjs",
@@ -28,7 +32,11 @@
 				"types": "./dist/index.d.ts",
 				"import": "./dist/index.js"
 			},
-			"./styles.css": "./dist/styles.css"
+			"./styles.css": "./dist/styles.css",
+			"./tokens.css": "./dist/tokens.css",
+			"./classes.css": "./dist/classes.css",
+			"./palettes/violet.css": "./dist/palettes/violet.css",
+			"./palettes/coral.css": "./dist/palettes/coral.css"
 		}
 	},
 	"peerDependencies": {

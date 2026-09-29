@@ -1,7 +1,8 @@
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { Link } from "@tanstack/react-router";
 import { ALL_NAV_ITEMS } from "../model/navigation";
-
 import { DesignSystemDocHeader } from "./DesignSystemDocHeader";
+import { GuideTocContent, GuideTocLayout } from "./LibraryGuideToc";
 
 const COMPONENT_DOCS = ALL_NAV_ITEMS.find((item) => item.id === "specimens")?.children ?? [];
 
@@ -59,109 +60,129 @@ const CAPABILITY_SECTIONS = [
 /** 组件文档的共通内容与按组件能力选写的栏目。 */
 export function SpecimensIndex() {
 	return (
-		<article className="space-y-12 pb-16">
-			<DesignSystemDocHeader
-				num="柒"
-				title="组件目录"
-				scope="从 @violet/ui 导出的组件可通过构建后的 tarball 安装到独立 React 项目；站点私有套件只供对应业务页面调用。各用法页的预览与复制代码来自同一示例文件。"
-			/>
+		<GuideTocLayout>
+			<article className="space-y-6 pb-16">
+				<DesignSystemDocHeader
+					num="壹"
+					title="组件目录"
+					scope="从 @violet/ui 导出的组件可通过构建后的 tarball 安装到独立 React 项目；站点私有套件只供对应业务页面调用。各用法页的预览与复制代码来自同一示例文件。"
+				/>
+				<GuideTocContent>
+					<section aria-labelledby="package-components" className="space-y-5">
+						<h2 id="package-components" className="text-xl font-bold text-foreground">
+							@violet/ui 组件
+						</h2>
+						<div className="grid gap-3 sm:grid-cols-2">
+							{COMPONENT_DOCS.filter((doc) => doc.category === "library").map(
+								(doc) => (
+									<Link
+										key={doc.id}
+										to={doc.to}
+										className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-accent/40"
+									>
+										<div className="font-mono text-base font-semibold text-foreground">
+											{doc.title}
+										</div>
+										<p className="mt-2 text-sm text-muted-foreground">
+											{doc.description}
+										</p>
+									</Link>
+								),
+							)}
+						</div>
+					</section>
 
-			<section aria-labelledby="package-components" className="space-y-5">
-				<h2 id="package-components" className="text-xl font-bold text-foreground">
-					@violet/ui 组件
-				</h2>
-				<div className="grid gap-3 sm:grid-cols-2">
-					{COMPONENT_DOCS.filter((doc) => doc.category === "library").map((doc) => (
-						<Link
-							key={doc.id}
-							to={doc.to}
-							className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-accent/40"
-						>
-							<h3 className="font-mono text-base font-semibold text-foreground">
-								{doc.title}
-							</h3>
-							<p className="mt-2 text-sm text-muted-foreground">{doc.description}</p>
-						</Link>
-					))}
-				</div>
-			</section>
+					<section aria-labelledby="site-components" className="space-y-4">
+						<h2 id="site-components" className="text-xl font-bold text-foreground">
+							站点私有套件
+						</h2>
+						<p className="text-sm text-muted-foreground">
+							这些是站点 feature 的展示示例，不属于 @violet/ui 公开导出。
+						</p>
+						<div className="flex flex-wrap gap-4">
+							{COMPONENT_DOCS.filter((doc) => doc.category === "site").map((doc) => (
+								<Link
+									key={doc.id}
+									to={doc.to}
+									className="font-mono text-sm text-primary underline underline-offset-4"
+								>
+									{doc.title}
+								</Link>
+							))}
+						</div>
+					</section>
 
-			<section aria-labelledby="site-components" className="space-y-4">
-				<h2 id="site-components" className="text-xl font-bold text-foreground">
-					站点私有套件
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					这些是站点 feature 的展示示例，不属于 @violet/ui 公开导出。
-				</p>
-				<div className="flex flex-wrap gap-4">
-					{COMPONENT_DOCS.filter((doc) => doc.category === "site").map((doc) => (
-						<Link
-							key={doc.id}
-							to={doc.to}
-							className="font-mono text-sm text-primary underline underline-offset-4"
-						>
-							{doc.title}
-						</Link>
-					))}
-				</div>
-			</section>
-
-			<section aria-labelledby="common-sections" className="space-y-5">
-				<div className="space-y-2 border-b border-border pb-4">
-					<h2 id="common-sections" className="text-xl font-bold text-foreground">
-						每篇都应回答
-					</h2>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						读者需要先知道能否使用，再知道怎么使用；栏目名称可以随组件调整。
-					</p>
-				</div>
-				<ol className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
-					{COMMON_SECTIONS.map((section, index) => (
-						<li key={section.title} className="flex gap-4">
-							<span className="shrink-0 font-mono text-sm text-primary">
-								{String(index + 1).padStart(2, "0")}
-							</span>
-							<div className="space-y-1">
-								<h3 className="text-base font-semibold text-foreground">
-									{section.title}
-								</h3>
-								<p className="text-sm leading-relaxed text-muted-foreground">
-									{section.detail}
-								</p>
-							</div>
-						</li>
-					))}
-				</ol>
-			</section>
-
-			<section aria-labelledby="capability-sections" className="space-y-5">
-				<div className="space-y-2 border-b border-border pb-4">
-					<h2 id="capability-sections" className="text-xl font-bold text-foreground">
-						按能力增补
-					</h2>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						以下是选题，不是每篇必填的栏目。组件不支持的状态或属性，不写示例。
-					</p>
-				</div>
-				<div className="divide-y divide-border/70">
-					{CAPABILITY_SECTIONS.map((section) => (
-						<div
-							key={section.name}
-							className="grid gap-2 py-5 sm:grid-cols-[minmax(8rem,1fr)_2fr] sm:gap-8"
-						>
-							<div>
-								<h3 className="font-semibold text-foreground">{section.name}</h3>
-								<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-									{section.when}
-								</p>
-							</div>
+					<section aria-labelledby="common-sections" className="space-y-5">
+						<div className="space-y-2 border-b border-border pb-4">
+							<h2 id="common-sections" className="text-xl font-bold text-foreground">
+								每篇都应回答
+							</h2>
 							<p className="text-sm leading-relaxed text-muted-foreground">
-								{section.show}
+								读者需要先知道能否使用，再知道怎么使用；栏目名称可以随组件调整。
 							</p>
 						</div>
-					))}
-				</div>
-			</section>
-		</article>
+						<ol className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+							{COMMON_SECTIONS.map((section, index) => (
+								<li key={section.title} className="flex gap-4">
+									<span className="shrink-0 font-mono text-sm text-primary">
+										{String(index + 1).padStart(2, "0")}
+									</span>
+									<div className="space-y-1">
+										<AnchoredHeading
+											as="h3"
+											id="{section.title}"
+											className="text-base font-semibold text-foreground"
+										>
+											{section.title}
+										</AnchoredHeading>
+										<p className="text-sm leading-relaxed text-muted-foreground">
+											{section.detail}
+										</p>
+									</div>
+								</li>
+							))}
+						</ol>
+					</section>
+
+					<section aria-labelledby="capability-sections" className="space-y-5">
+						<div className="space-y-2 border-b border-border pb-4">
+							<h2
+								id="capability-sections"
+								className="text-xl font-bold text-foreground"
+							>
+								按能力增补
+							</h2>
+							<p className="text-sm leading-relaxed text-muted-foreground">
+								以下是选题，不是每篇必填的栏目。组件不支持的状态或属性，不写示例。
+							</p>
+						</div>
+						<div className="divide-y divide-border/70">
+							{CAPABILITY_SECTIONS.map((section) => (
+								<div
+									key={section.name}
+									className="grid gap-2 py-5 sm:grid-cols-[minmax(8rem,1fr)_2fr] sm:gap-8"
+								>
+									<div>
+										<AnchoredHeading
+											as="h3"
+											id="{section.name}"
+											className="font-semibold text-foreground"
+										>
+											{section.name}
+										</AnchoredHeading>
+										<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+											{section.when}
+										</p>
+									</div>
+									<p className="text-sm leading-relaxed text-muted-foreground">
+										{section.show}
+									</p>
+								</div>
+							))}
+						</div>
+					</section>
+				</GuideTocContent>
+			</article>
+		</GuideTocLayout>
 	);
 }

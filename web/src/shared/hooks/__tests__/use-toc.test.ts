@@ -1,5 +1,11 @@
-import { extractToc, pickActiveByPosition, useActiveHeading } from "@shared/hooks/use-toc";
-import { act, render } from "@testing-library/react";
+import {
+	extractDomToc,
+	extractToc,
+	pickActiveByPosition,
+	useActiveHeading,
+	useTocNavigation,
+} from "@shared/hooks/use-toc";
+import { act, render, renderHook } from "@testing-library/react";
 import { createElement, createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -47,6 +53,24 @@ describe("extractToc", () => {
 		const toc = extractToc(html);
 		expect(toc).toHaveLength(2);
 		expect(new Set(toc.map((it) => it.id)).size).toBe(2);
+	});
+});
+
+describe("extractDomToc", () => {
+	it("combines rendered JSX and Markdown headings without losing existing anchors", () => {
+		const root = document.createElement("section");
+		root.innerHTML =
+			'<h2>主色色阶</h2><h3 id="主色色阶">已有锚点</h3><h3>主色色阶</h3><h4>详细用法</h4>';
+		const items = extractDomToc(root);
+		expect(items).toEqual([
+			{ level: 2, id: "主色色阶-1", text: "主色色阶" },
+			{ level: 3, id: "主色色阶", text: "已有锚点" },
+			{ level: 3, id: "主色色阶-2", text: "主色色阶" },
+			{ level: 4, id: "详细用法", text: "详细用法" },
+		]);
+		expect(Array.from(root.querySelectorAll("h2,h3,h4"), (heading) => heading.id)).toEqual(
+			items.map((item) => item.id),
+		);
 	});
 });
 
@@ -131,7 +155,7 @@ describe("useActiveHeading", () => {
 		for (const cb of pending) cb(0);
 	}
 
-	function renderHeadings() {
+	function renderHeadings(secondMarginTop?: string) {
 		const ref = createRef<HTMLElement>();
 		const TestComponent = () => {
 			const active = useActiveHeading(ref);
@@ -139,7 +163,11 @@ describe("useActiveHeading", () => {
 				"main",
 				{ ref, "data-active": active ?? "null" },
 				createElement("h2", { id: "h2-1" }, "第一章"),
-				createElement("h2", { id: "h2-2" }, "第二章"),
+				createElement(
+					"h2",
+					{ id: "h2-2", style: { scrollMarginTop: secondMarginTop } },
+					"第二章",
+				),
 			);
 		};
 		return { ref, ...render(createElement(TestComponent)) };
@@ -170,6 +198,14 @@ describe("useActiveHeading", () => {
 		expect(container.firstElementChild?.getAttribute("data-active")).toBe("h2-2");
 	});
 
+	it("highlights a Markdown heading at its own scroll margin when mixed with JSX headings", () => {
+		mockHeadingTops({ "h2-1": -200, "h2-2": 96 });
+
+		const { container } = renderHeadings("96px");
+
+		expect(container.firstElementChild?.getAttribute("data-active")).toBe("h2-2");
+	});
+
 	it("keeps the last crossed heading during a long gap without clearing the highlight", () => {
 		// 两章之间大段正文：第一章已远滚过，第二章还远在下方
 		mockHeadingTops({ "h2-1": -800, "h2-2": 1200 });
@@ -194,5 +230,46 @@ describe("useActiveHeading", () => {
 		} finally {
 			Reflect.deleteProperty(document.documentElement, "scrollHeight");
 		}
+	});
+});
+
+describe("useTocNavigation", () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it("scrolls to a heading smoothly, follows reduced motion, and ignores headings outside the article", async () => {
+		const root = document.createElement("section");
+		root.innerHTML = '<h2 id="first">第一章</h2><h2 id="second">第二章</h2>';
+		document.body.append(root);
+		const ref = { current: root };
+		const items = extractDomToc(root);
+		const first = root.querySelector<HTMLElement>("#first");
+		const second = root.querySelector<HTMLElement>("#second");
+		const firstScroll = vi.fn();
+		const secondScroll = vi.fn();
+		if (!first || !second) throw new Error("missing headings");
+		first.scrollIntoView = firstScroll;
+		second.scrollIntoView = secondScroll;
+		const media = { matches: false };
+		vi.stubGlobal("matchMedia", () => media);
+
+		const { result, unmount } = renderHook(() => useTocNavigation(ref, items));
+		await act(async () => {
+			await result.current.navigateTo("first");
+		});
+		expect(firstScroll).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+		expect(result.current.activeId).toBe("first");
+
+		media.matches = true;
+		await act(async () => {
+			await result.current.navigateTo("second");
+		});
+		expect(secondScroll).toHaveBeenCalledWith({ behavior: "instant", block: "start" });
+		await act(async () => {
+			await result.current.navigateTo("not-in-content");
+		});
+		expect(firstScroll).toHaveBeenCalledTimes(1);
+		expect(secondScroll).toHaveBeenCalledTimes(1);
+		unmount();
+		root.remove();
 	});
 });

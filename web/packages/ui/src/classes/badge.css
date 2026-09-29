@@ -1,0 +1,78 @@
+/*
+ * Badge 组件的 BEM 类名样式（.v-badge）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * --count/--dot 尺寸修饰仅控制形态，角标定位由宿主布局负责。
+ */
+
+.v-badge {
+	display: inline-flex;
+	width: fit-content;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	padding: 0.125rem 0.5rem;
+	border: 1px solid transparent;
+	border-radius: 9999px;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.v-badge svg {
+	pointer-events: none;
+	width: 0.75rem;
+	height: 0.75rem;
+}
+
+/* —— 变体 —— */
+
+.v-badge--default {
+	background-color: var(--primary);
+	color: var(--primary-foreground);
+}
+
+.v-badge--secondary {
+	background-color: var(--secondary);
+	color: var(--secondary-foreground);
+}
+
+.v-badge--destructive {
+	background-color: var(--destructive);
+	color: var(--destructive-foreground);
+}
+
+.v-badge--outline {
+	border-color: var(--border);
+	color: var(--foreground);
+}
+
+.v-badge--ghost {
+	color: var(--foreground);
+}
+
+.v-badge--link {
+	/* link 形态贴合文字宽度，去掉胶囊内边距 */
+	padding: 0;
+	color: var(--primary);
+	text-decoration: underline;
+	text-underline-offset: 4px;
+}
+
+/* —— 尺寸 —— */
+
+.v-badge--count {
+	min-width: 1rem;
+	height: 1rem;
+	padding: 0 0.25rem;
+	font-size: 10px;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+.v-badge--dot {
+	width: 0.625rem;
+	height: 0.625rem;
+	padding: 0;
+}

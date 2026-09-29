@@ -89,42 +89,6 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 				scope: "不知道该用哪个 token 时，先查这张表。表里没有的，回到基本原则。",
 				to: "/design-system/decisions",
 			},
-		],
-	},
-	{
-		id: "foundations",
-		title: "卷三 · 设计法度",
-		items: [
-			{
-				id: "palette",
-				title: "颜色",
-				scope: "语义角色导览与主色种子推导色阶的生成器。",
-				to: "/design-system/palette",
-			},
-			{
-				id: "theming",
-				title: "主题",
-				scope: "CSS 变量、默认色板与方言。",
-				to: "/design-system/guides/theming",
-			},
-			{
-				id: "dark-mode",
-				title: "深色模式",
-				scope: "通过 html.dark 切换语义色。",
-				to: "/design-system/guides/dark-mode",
-			},
-			{
-				id: "styling",
-				title: "样式",
-				scope: "Tailwind v4 与组件变体的职责。",
-				to: "/design-system/guides/styling",
-			},
-			{
-				id: "composition",
-				title: "组合",
-				scope: "原生语义、asChild 与组合式组件。",
-				to: "/design-system/guides/composition",
-			},
 			{
 				id: "tokens",
 				title: "Token 词典",
@@ -142,6 +106,48 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 				title: "动效章程",
 				scope: "运动的时间、幅度与克制的事由。",
 				to: "/design-system/motion",
+			},
+		],
+	},
+	{
+		id: "foundations",
+		title: "卷三 · 设计法度",
+		items: [
+			{
+				id: "palette",
+				title: "颜色",
+				scope: "语义色角色、主色推导与组件用色指南。",
+				to: "/design-system/palette",
+			},
+			{
+				id: "theming",
+				title: "主题",
+				scope: "导入、切换与扩展主题：从默认色板到自定义作用域。",
+				to: "/design-system/guides/theming",
+			},
+			{
+				id: "dark-mode",
+				title: "深色模式",
+				scope: "通过 html.dark 切换语义色。",
+				to: "/design-system/guides/dark-mode",
+			},
+			{
+				id: "styling",
+				title: "样式",
+				scope: "Tailwind v4 与组件变体的职责。",
+				to: "/design-system/guides/styling",
+			},
+			{
+				id: "animation",
+				title: "动画",
+				scope: "组件动效的工具、motion 编排与减弱动态底线。",
+				to: "/design-system/guides/animation",
+			},
+			{
+				id: "composition",
+				title: "组合",
+				scope: "原生语义、asChild 与组合式组件。",
+				to: "/design-system/guides/composition",
 			},
 		],
 	},

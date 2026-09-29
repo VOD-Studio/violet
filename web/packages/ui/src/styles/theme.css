@@ -21,7 +21,8 @@
 	--font-serif: Georgia, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, serif;
 	--animate-diagram-enter: diagram-enter 0.25s ease-out;
 	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
-	--animate-marquee: marquee 40s linear infinite;
+	/* 交互反馈统一过渡：160ms 缓出（悬停显现、复制回显、指示线滑动共用） */
+	--transition-feedback: 160ms ease-out;
 
 	/* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
 	/* bg-background / text-foreground / bg-primary / border-border 等 */

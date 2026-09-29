@@ -1,0 +1,18 @@
+/*
+ * 暖珊瑚主色源预设（包内第二色板，命名主题 coral）。
+ *
+ * 作用域写成 :root, [data-theme="coral"]：整站换色时在包样式之后导入本文件，
+ * 同特异性下源级联后者胜，:root 分支覆盖默认 violet；子树局部换色则由宿主在
+ * 任意容器挂 data-theme="coral"，变量直接落在该元素上向后代生效。
+ * data-theme 只切换主色源，不是明暗开关：明暗仍由 html 上的 .dark
+ * （color-scheme: dark）激活 light-dark() 暗色支。
+ */
+:root,
+[data-theme="coral"] {
+	--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
+	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.17 0 0));
+	--primary-base-hover: light-dark(oklch(0.575 0.185 25), oklch(0.67 0.155 22));
+	--primary-base-soft: light-dark(oklch(0.95 0.025 25), oklch(0.25 0.025 22));
+	--primary-base-soft-foreground: light-dark(oklch(0.36 0.11 25), oklch(0.88 0.065 22));
+	--primary-base-ring: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
+}

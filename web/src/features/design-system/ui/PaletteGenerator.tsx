@@ -1,15 +1,13 @@
 import { copyText } from "@shared/lib/clipboard";
-import { hexToOklch, oklchToRgb } from "@shared/lib/color-math";
-import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
+import { getContrastRatio, hexToOklch, oklchToRgb } from "@shared/lib/color-math";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { HsvColorPicker } from "@violet/ui";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { RampStep } from "../model/palette";
 import { generatePalette } from "../model/palette";
 import { ColorRoleComparison } from "./ColorRoleComparison";
-import { ButtonVariantsDemo } from "./examples/button/variants";
-import variantsSource from "./examples/button/variants.tsx?raw";
-import { GuideLink } from "./library-guides/GuideParts";
 
 const VIOLET_SEED = oklchToRgb(0.53, 0.205, 286).hex;
 const CORAL_SEED = oklchToRgb(0.625, 0.19, 25).hex;
@@ -29,87 +27,27 @@ const SEED_PRESETS = [
 
 const DEFAULT_SEED = SEED_PRESETS[0].hex;
 
-/** 「在 CSS 文件中」示例：语义变量的两种消费方式。 */
-const USAGE_CSS_SNIPPET = `/* 直接使用 CSS 变量 */
-.my-component {
-	background: var(--primary-base);
-	color: var(--primary-base-foreground);
-	border: 1px solid var(--border);
-}
-
-/* 配合 @apply 与 @layer */
-@layer components {
-	.action-button {
-		@apply bg-primary-base text-primary-base-foreground;
-
-		&:hover {
-			@apply bg-primary-base-hover;
-		}
-	}
-}`;
-
-/** 默认主色源预设源码副本；真实文件为 @violet/ui 的 styles/palettes/violet.css，改契约需两处同步。 */
-const VIOLET_PALETTE_SOURCE = `/*
- * 默认主色源预设。
- *
- * 本层只提供稳定主色及其状态；页面方言决定是否把语义 primary 映射到主色源。
- * 画布与行为状态色不在 palette 管辖内。
- * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark
- * （color-scheme: dark）激活。
- */
-:root {
-	--primary-base: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
-	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.14 0.02 286));
-	--primary-base-hover: light-dark(oklch(0.47 0.215 286), oklch(0.77 0.138 286));
-	--primary-base-soft: light-dark(oklch(0.965 0.022 286), oklch(0.22 0.038 286));
-	--primary-base-soft-foreground: light-dark(oklch(0.35 0.14 286), oklch(0.9 0.07 286));
-	--primary-base-ring: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
-}`;
-
-/** 暖珊瑚覆盖预设源码副本；真实文件为 web/src/styles/palettes/coral.css，改契约需两处同步。 */
-const CORAL_PALETTE_SOURCE = `/*
- * 暖珊瑚主色源预设。
- *
- * 与组件库默认 palette 提供相同的 primary-base 契约；页面调用方不感知预设名。
- * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark
- * （color-scheme: dark）激活。
- */
-:root {
-	--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
-	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.17 0 0));
-	--primary-base-hover: light-dark(oklch(0.575 0.185 25), oklch(0.67 0.155 22));
-	--primary-base-soft: light-dark(oklch(0.95 0.025 25), oklch(0.25 0.025 22));
-	--primary-base-soft-foreground: light-dark(oklch(0.36 0.11 25), oklch(0.88 0.065 22));
-	--primary-base-ring: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
-}`;
-
-/** 站点业务语义色模式节选（真实文件 web/src/styles/site-tokens.css，此处展示「定义 + 注册」骨架）。 */
-const SITE_TOKENS_SNIPPET = `/*
- * 站点业务语义色：只被本站特定场景消费的颜色。
- * 组件库基础层只保留跨场景的通用语义；本文件定义值并注册同名的
- * Tailwind 颜色工具类，导入顺序在包样式之后。
- */
-:root {
-	/* 纸面：明暗成对取值以 light-dark() 单声明表达 */
-	--paper: light-dark(oklch(0.976 0.012 85), oklch(0.23 0.012 70));
-	--paper-foreground: light-dark(oklch(0.24 0.014 60), oklch(0.92 0.012 80));
-}
-
-@theme inline {
-	--color-paper: var(--paper);
-	--color-paper-foreground: var(--paper-foreground);
-}`;
-
 /**
- * 色板生成器章内容：给一个主色，推导色阶与完整语义角色。
- * 自定义主色只控制本页预览容器，不写入项目主题。
+ * 给定主色推导色阶、语义角色与对比度；正文插入位于角色预览与审计之间。
+ *
+ * @param children - 用色指南正文，独立于生成器计算状态
  */
-export function PaletteGenerator() {
+export function PaletteGenerator({ children }: { children?: ReactNode }) {
 	const [seedHex, setSeedHex] = useState(DEFAULT_SEED);
 	const [hoverRamp, setHoverRamp] = useState<string | null>(null);
 	const [copiedRamp, setCopiedRamp] = useState<string | null>(null);
 
 	const seed = useMemo(() => hexToOklch(seedHex), [seedHex]);
+	// OKLCH 明度对高彩度蓝青类色相偏估，固定阈值会选错文字色；
+	// 与生成器的 pickForeground 同法：黑白候选取对比度高者。
+	const seedTextLight = useMemo(() => {
+		if (!seed) return true;
+		const swatch = `oklch(${seed.l} ${seed.c} ${seed.h})`;
+		return (
+			getContrastRatio("oklch(0.99 0 0)", swatch) >=
+			getContrastRatio("oklch(0.21 0.006 286)", swatch)
+		);
+	}, [seed]);
 	const palette = useMemo(
 		() =>
 			generatePalette({
@@ -131,10 +69,7 @@ export function PaletteGenerator() {
 
 	return (
 		<div className="mt-8">
-			<p className="text-sm leading-7 text-muted-foreground">
-				颜色体系围绕语义意图构建，而非堆砌色板：先选对角色，色值由主题与下面的生成器提供。
-				成对使用背景与前景，文本对比度需满足 WCAG AA。
-			</p>
+			{/* 主色控制台与色阶推导；文节内容见 content/palette.md */}
 			{/* 主控制台 Deck：严格遵循布局规格 */}
 			<div className="rounded-2xl border border-border/40 bg-card/50 p-6">
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -151,16 +86,14 @@ export function PaletteGenerator() {
 								<div className="flex items-baseline justify-between">
 									<code
 										className={`font-mono text-xl font-bold tracking-wider ${
-											(seed?.l ?? 0.5) < 0.65
-												? "text-white"
-												: "text-slate-900"
+											seedTextLight ? "text-white" : "text-slate-900"
 										}`}
 									>
 										{seedHex.toUpperCase()}
 									</code>
 									<button
 										className={`rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-xs transition-opacity hover:opacity-90 ${
-											(seed?.l ?? 0.5) < 0.65
+											seedTextLight
 												? "bg-white/20 text-white"
 												: "bg-black/15 text-slate-900"
 										}`}
@@ -265,7 +198,13 @@ export function PaletteGenerator() {
 			</div>
 			{/* 主色色阶卡尺 */}
 			<div className="mt-10 flex flex-wrap items-baseline justify-between gap-2">
-				<h3 className="text-lg font-bold">主色色阶</h3>
+				<AnchoredHeading
+					as="h2"
+					id="主色色阶"
+					className="text-2xl font-bold tracking-tight"
+				>
+					主色色阶
+				</AnchoredHeading>
 				<span className="text-xs text-muted-foreground">点击任意色阶即可复制 HEX 码</span>
 			</div>
 			<div className="mt-3 overflow-hidden rounded-2xl border border-border/40 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
@@ -330,77 +269,18 @@ export function PaletteGenerator() {
 
 			<ColorRoleComparison palette={palette} />
 
-			{/* 如何使用颜色 */}
-			<section className="mt-10" id="palette-usage">
-				<h3 className="text-lg font-bold">如何使用颜色</h3>
-				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-					组件只消费语义角色，不根据具体色相分支：solid 与 foreground、soft 与
-					soft-foreground 成对使用，悬停与聚焦态由主色源派生，文字对比度需满足 WCAG AA。
-				</p>
-				<div className="mt-4 space-y-4">
-					<CodeCard code={variantsSource} language="tsx" lineNumbers title="在组件中">
-						<ButtonVariantsDemo />
-					</CodeCard>
-					<CodeCard
-						code={USAGE_CSS_SNIPPET}
-						language="css"
-						lineNumbers
-						title="在 CSS 文件中"
-					/>
-				</div>
-			</section>
-
-			{/* 默认主题 */}
-			<section className="mt-10">
-				<h3 className="text-lg font-bold">默认主题</h3>
-				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-					主题分三层：主色源预设提供六变量契约（base / foreground / hover / soft /
-					soft-foreground / ring），每支以 light-dark() 同时声明浅色与深色取值， 暗色支由
-					html 上的 .dark（color-scheme: dark）激活；语义 token
-					定义画布、正文与行为状态色；
-					<code className="font-mono text-[13px]">@theme inline</code> 把两者映射为
-					Tailwind 工具类。换主题只替换主色源层。
-				</p>
-				<CodeCard
-					className="mt-4"
-					code={VIOLET_PALETTE_SOURCE}
-					language="css"
-					lineNumbers
-					title="@violet/ui/styles/palettes/violet.css"
-				/>
-			</section>
-
-			{/* 自定义颜色 */}
-			<section className="mt-10">
-				<h3 className="text-lg font-bold">自定义颜色</h3>
-				<p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-					覆盖主色源：新建预设文件提供同名六变量，在包样式之后导入，行为状态色不随主色更换。
-					添加业务语义色：在站点层以 light-dark() 声明明暗成对取值，并在{" "}
-					<code className="font-mono text-[13px]">@theme inline</code> 注册同名{" "}
-					<code className="font-mono text-[13px]">--color-*</code>{" "}
-					即得到对应工具类。完整约束见{" "}
-					<GuideLink to="/design-system/guides/theming">主题指南</GuideLink>。
-				</p>
-				<div className="mt-4 space-y-4">
-					<CodeCard
-						code={CORAL_PALETTE_SOURCE}
-						language="css"
-						lineNumbers
-						title="覆盖主色源 · palettes/coral.css"
-					/>
-					<CodeCard
-						code={SITE_TOKENS_SNIPPET}
-						language="css"
-						lineNumbers
-						title="添加业务色 · styles/site-tokens.css"
-					/>
-				</div>
-			</section>
+			{children}
 
 			{/* 对比度审计 */}
 			<section>
 				<div className="mt-10 flex items-baseline justify-between">
-					<h3 className="text-lg font-bold">对比度审计</h3>
+					<AnchoredHeading
+						as="h2"
+						id="对比度审计"
+						className="text-2xl font-bold tracking-tight"
+					>
+						对比度审计
+					</AnchoredHeading>
 					<span className="font-mono text-xs text-muted-foreground">
 						WCAG 2.1 规范验算
 					</span>

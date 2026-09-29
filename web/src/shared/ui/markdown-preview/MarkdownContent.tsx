@@ -14,6 +14,7 @@
 
 import { Slugger } from "@shared/lib/slug";
 import type { Element, Nodes, Root } from "hast";
+import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -67,15 +68,23 @@ export interface MarkdownContentProps {
 	className?: string;
 	/** 文章级人物等可选上下文，仅传给语义化内容节点。 */
 	context?: ArticleContentContext;
+	/** 文档等场景按需替换代码渲染，行内代码须回退到默认实现。 */
+	codeRenderer?: Components["code"];
 }
 
-export function MarkdownContent({ content, className, context }: MarkdownContentProps) {
+export function MarkdownContent({
+	content,
+	className,
+	context,
+	codeRenderer,
+}: MarkdownContentProps) {
+	const components = createMarkdownComponents(context);
 	return (
 		<div className={className}>
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm, remarkMath]}
 				rehypePlugins={[rehypeSlugHeadings]}
-				components={createMarkdownComponents(context)}
+				components={codeRenderer ? { ...components, code: codeRenderer } : components}
 			>
 				{content}
 			</ReactMarkdown>

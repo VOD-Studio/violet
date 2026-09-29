@@ -90,7 +90,7 @@ function swatch(l: number, c: number, h: number): SwatchColor {
  * 告别机械的统一度数，采用符合现代感知色彩科学（OKLCH）的非对称调优：
  * 警示色用温润流金的琥珀金（杜绝恶心泥浆褐黄），成功色用清爽透亮的翡翠绿，
  * 危险色用雅致鲜明的赤绯红，信息色用清澈蔚蓝。
- * 同时齐备实色（Solid）、前景色（Foreground）、洗染面（Wash）与描边（Border）。
+ * 实色与其前景满足 WCAG AA（白字 ≥4.5:1）；警示琥珀为保警示亮度取深字（5.4:1）。
  */
 export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 	{
@@ -98,7 +98,7 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		name: "信息",
 		note: "客观提示",
 		light: {
-			solid: swatch(0.61, 0.15, 240),
+			solid: swatch(0.575, 0.15, 240),
 			foreground: swatch(0.99, 0, 0),
 			wash: swatch(0.975, 0.015, 240),
 			washForeground: swatch(0.4, 0.12, 240),
@@ -117,7 +117,7 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		name: "成功",
 		note: "达成反馈",
 		light: {
-			solid: swatch(0.62, 0.145, 158),
+			solid: swatch(0.575, 0.145, 158),
 			foreground: swatch(0.99, 0, 0),
 			wash: swatch(0.975, 0.02, 158),
 			washForeground: swatch(0.38, 0.12, 158),
@@ -137,7 +137,7 @@ export const FUNCTIONAL_SETS: FunctionalColorSet[] = [
 		note: "待决提醒",
 		light: {
 			solid: swatch(0.66, 0.155, 60),
-			foreground: swatch(0.99, 0, 0),
+			foreground: swatch(0.16, 0.03, 60),
 			wash: swatch(0.975, 0.02, 60),
 			washForeground: swatch(0.42, 0.12, 60),
 			border: swatch(0.91, 0.04, 60),

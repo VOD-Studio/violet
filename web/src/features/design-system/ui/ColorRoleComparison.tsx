@@ -1,5 +1,7 @@
 import type { GeneratedPalette } from "@features/design-system/model/palette";
 import { copyText } from "@shared/lib/clipboard";
+import { slugify } from "@shared/lib/slug";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CartoonPopoverGroup, CartoonPopoverGroupItem } from "@shared/ui/cartoon-popover";
 import { Settings2 } from "lucide-react";
 import { type CSSProperties, type MouseEvent, type ReactElement, useId } from "react";
@@ -132,7 +134,13 @@ function createPreviewStyle(palette: GeneratedPalette, mode: PreviewMode): Previ
 function SectionHeading({ description, title }: { description: string; title: string }) {
 	return (
 		<header>
-			<h3 className="text-2xl font-bold tracking-tight text-foreground">{title}</h3>
+			<AnchoredHeading
+				as="h3"
+				id={slugify(title)}
+				className="text-xl font-semibold tracking-tight text-foreground"
+			>
+				{title}
+			</AnchoredHeading>
 			<p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">{description}</p>
 		</header>
 	);
@@ -214,12 +222,15 @@ function ColorBlock({
 	border = false,
 	hoverBackground,
 	label,
+	textColor,
 	token,
 }: {
 	background: string;
 	border?: boolean;
 	hoverBackground?: string;
 	label: string;
+	/** 实色面上的文字色；缺省时按底色反色自动求黑白 */
+	textColor?: string;
 	token: string;
 }) {
 	const style = {
@@ -241,13 +252,13 @@ function ColorBlock({
 			>
 				<span
 					className="text-sm font-medium tracking-tight"
-					style={textContrastStyle(background)}
+					style={textColor ? { color: textColor } : textContrastStyle(background)}
 				>
 					{label}
 				</span>
 				<span
 					className="truncate font-mono text-[10px] leading-tight opacity-60 sm:hidden"
-					style={textContrastStyle(background)}
+					style={textColor ? { color: textColor } : textContrastStyle(background)}
 				>
 					{token}
 				</span>
@@ -261,12 +272,15 @@ function ColorHeader({
 	hoverBackground,
 	mode,
 	name,
+	textColor,
 	token,
 }: {
 	background: string;
 	hoverBackground: string;
 	mode: PreviewMode;
 	name: string;
+	/** 实色头块上的文字色；缺省时按底色反色自动求黑白 */
+	textColor?: string;
 	token: string;
 }) {
 	const style = {
@@ -286,18 +300,21 @@ function ColorHeader({
 				<span className="flex flex-col">
 					<span
 						className="text-lg font-medium tracking-tight"
-						style={textContrastStyle(background)}
+						style={textColor ? { color: textColor } : textContrastStyle(background)}
 					>
 						{name}
 					</span>
 					<span
 						className="font-mono text-[10px] leading-tight opacity-60 sm:hidden"
-						style={textContrastStyle(background)}
+						style={textColor ? { color: textColor } : textContrastStyle(background)}
 					>
 						{token}
 					</span>
 				</span>
-				<span className="text-xs font-medium" style={textContrastStyle(background)}>
+				<span
+					className="text-xs font-medium"
+					style={textColor ? { color: textColor } : textContrastStyle(background)}
+				>
 					{mode === "light" ? "Light" : "Dark"}
 				</span>
 			</button>
@@ -325,6 +342,7 @@ function ThemeColumn({
 				hoverBackground={`var(${color.hover})`}
 				mode={mode}
 				name={color.name}
+				textColor={`var(${color.foreground})`}
 				token={color.base}
 			/>
 			<div className={`flex gap-2 ${color.soft ? "flex-col sm:flex-row" : "flex-col"}`}>
@@ -334,13 +352,14 @@ function ThemeColumn({
 				>
 					<span
 						className="text-base font-medium tracking-tight"
-						style={textContrastStyle(`var(${color.base})`)}
+						style={{ color: `var(${color.foreground})` }}
 					>
 						{color.name}
 					</span>
 					<ColorBlock
 						background={`var(${color.hover})`}
 						label="Hover"
+						textColor={`var(${color.foreground})`}
 						token={color.hover}
 					/>
 					<ColorBlock

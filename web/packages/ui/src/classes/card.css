@@ -1,0 +1,69 @@
+/*
+ * Card 组件的 BEM 类名样式（.v-card 及其元素）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 卡片圆角比控件级 var(--radius) 大一档，浮层表面感来自 --card 面 + 细边框。
+ */
+
+.v-card {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	padding: 1.5rem 0;
+	border: 1px solid var(--border);
+	border-radius: calc(var(--radius) + 0.125rem);
+	background-color: var(--card);
+	color: var(--card-foreground);
+	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+}
+
+.v-card__header {
+	display: grid;
+	grid-auto-rows: min-content;
+	grid-template-rows: auto auto;
+	align-items: start;
+	gap: 0.5rem;
+	padding: 0 1.5rem;
+}
+
+/* 挂载 __action 时头部分两列，动作区靠右跨两行 */
+.v-card__header:has(.v-card__action) {
+	grid-template-columns: 1fr auto;
+}
+
+.v-card__title {
+	font-weight: 600;
+	line-height: 1;
+}
+
+.v-card__description {
+	font-size: 0.875rem;
+	color: var(--muted-foreground);
+}
+
+.v-card__action {
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	align-self: start;
+	justify-self: end;
+}
+
+.v-card__content {
+	padding: 0 1.5rem;
+}
+
+.v-card__footer {
+	display: flex;
+	align-items: center;
+	padding: 0 1.5rem;
+}
+
+/* 分隔线修饰：需要头尾与内容拉开时使用，边框走向与卡片留白配套 */
+.v-card__header--divided {
+	padding-block: 0 1.5rem;
+	border-block-end: 1px solid var(--border);
+}
+
+.v-card__footer--divided {
+	padding-block: 1.5rem 0;
+	border-block-start: 1px solid var(--border);
+}

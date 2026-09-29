@@ -23,6 +23,7 @@ export * from "./input";
 export * from "./label";
 // headless hook 与上游效果件（有包外消费方，经 barrel 暴露）
 export { useDebouncedCallback } from "./lib/use-debounced-callback";
+export { type ThemeChoice, type UseThemeResult, useTheme } from "./lib/use-theme";
 export * from "./modal";
 export * from "./otp";
 export * from "./overlay-scroll";

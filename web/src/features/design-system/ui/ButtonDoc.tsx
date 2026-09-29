@@ -1,3 +1,5 @@
+import { slugify } from "@shared/lib/slug";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { ButtonBasicDemo } from "./examples/button/basic";
@@ -12,6 +14,7 @@ import { ButtonStatesDemo } from "./examples/button/states";
 import statesSource from "./examples/button/states.tsx?raw";
 import { ButtonVariantsDemo } from "./examples/button/variants";
 import variantsSource from "./examples/button/variants.tsx?raw";
+import { SpecimenDoc } from "./SpecimenDoc";
 
 interface PropRow {
 	name: string;
@@ -110,138 +113,191 @@ const PROP_COLUMNS: ApiTableColumn<PropRow>[] = [
 /** 以真实 Button 展示用法、视觉层级、状态和语义边界。 */
 export function ButtonDocPage() {
 	return (
-		<article className="mx-auto w-full max-w-4xl space-y-14 pb-24 font-sans">
-			<header className="space-y-3">
-				<p className="font-mono text-xs tracking-wider text-muted-foreground">
-					动作 · Button
-				</p>
-				<h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-					Button 按钮
-				</h1>
-				<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
-					触发操作时用按钮，导航时用链接。基于 Violet 语义 Token
-					与静穆物理层级打造：顶边细微内高光与底部轻触感阴影、纯光学明度吸收按压反馈（无位移颤抖与缩放）、平滑加载动画（正文持续留存，指示器平滑展开或原位淡入淡出）与首选图标插槽。
-				</p>
-				<p className="text-xs text-muted-foreground">
-					源码
-					<code className="font-mono text-foreground">
-						web/packages/ui/src/button/button.tsx
-					</code>
-				</p>
-			</header>
-
-			<section aria-labelledby="button-usage" className="space-y-4">
-				<h2 id="button-usage" className="text-xl font-bold text-foreground">
-					用法
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
-				</p>
-				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
-					<ButtonBasicDemo />
-				</CodeCard>
-			</section>
-
-			<section aria-labelledby="button-examples" className="space-y-12">
-				<h2 id="button-examples" className="text-xl font-bold text-foreground">
-					按能力选择示例
-				</h2>
-
-				{/* 视觉层级 */}
-				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">视觉层级 (Variants)</h3>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						主要动作使用 default（随方言映射），固定主色强调使用 primary，柔和辅助使用
-						soft，描边与次级使用 outline / secondary，轻量操作使用 ghost。
+		<SpecimenDoc>
+			<article className="space-y-14 pb-24 font-sans">
+				<header className="space-y-3">
+					<p className="font-mono text-xs tracking-wider text-muted-foreground">
+						动作 · Button
 					</p>
-					<CodeCard code={variantsSource} language="tsx" lineNumbers collapseLines={6}>
-						<ButtonVariantsDemo />
-					</CodeCard>
-				</div>
-
-				{/* 尺寸规格 */}
-				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">尺寸规格 (Sizes)</h3>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						包含 xs 到 xl 五个高度梯度；纯图标按钮请使用 icon 档位并提供明确的
-						aria-label。
+					<h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+						Button 按钮
+					</h1>
+					<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
+						触发操作时用按钮，导航时用链接。基于 Violet 语义 Token
+						与静穆物理层级打造：顶边细微内高光与底部轻触感阴影、纯光学明度吸收按压反馈（无位移颤抖与缩放）、平滑加载动画（正文持续留存，指示器平滑展开或原位淡入淡出）与首选图标插槽。
 					</p>
-					<CodeCard code={sizesSource} language="tsx" lineNumbers collapseLines={6}>
-						<ButtonSizesDemo />
-					</CodeCard>
-				</div>
-
-				{/* 图标扩展 */}
-				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">图标插槽 (Icons)</h3>
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
+					<p className="text-xs text-muted-foreground">
+						源码
+						<code className="font-mono text-foreground">
+							web/packages/ui/src/button/button.tsx
+						</code>
 					</p>
-					<CodeCard code={iconsSource} language="tsx" lineNumbers collapseLines={6}>
-						<ButtonIconsDemo />
-					</CodeCard>
-				</div>
+				</header>
 
-				{/* 状态与加载 */}
-				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">状态与加载 (Loading)</h3>
+				<section aria-labelledby="button-usage" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="button-usage"
+						className="text-xl font-bold text-foreground"
+					>
+						用法
+					</AnchoredHeading>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						内置 loading 支持：处于加载中时自动禁用并设置
-						aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
+						从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
 					</p>
-					<CodeCard code={statesSource} language="tsx" lineNumbers collapseLines={6}>
-						<ButtonStatesDemo />
+					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
+						<ButtonBasicDemo />
 					</CodeCard>
-				</div>
+				</section>
 
-				{/* 链接模式 */}
-				<div className="space-y-3">
-					<h3 className="text-lg font-semibold text-foreground">
-						作为导航链接 (asChild)
-					</h3>
+				<section aria-labelledby="button-examples" className="space-y-12">
+					<AnchoredHeading
+						as="h2"
+						id="button-examples"
+						className="text-xl font-bold text-foreground"
+					>
+						按能力选择示例
+					</AnchoredHeading>
+
+					{/* 视觉层级 */}
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("视觉层级 (Variants)")}
+							className="text-lg font-semibold text-foreground"
+						>
+							视觉层级 (Variants)
+						</AnchoredHeading>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							主要动作使用 default（随方言映射），固定主色强调使用
+							primary，柔和辅助使用 soft，描边与次级使用 outline /
+							secondary，轻量操作使用 ghost。
+						</p>
+						<CodeCard
+							code={variantsSource}
+							language="tsx"
+							lineNumbers
+							collapseLines={6}
+						>
+							<ButtonVariantsDemo />
+						</CodeCard>
+					</div>
+
+					{/* 尺寸规格 */}
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("尺寸规格 (Sizes)")}
+							className="text-lg font-semibold text-foreground"
+						>
+							尺寸规格 (Sizes)
+						</AnchoredHeading>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							包含 xs 到 xl 五个高度梯度；纯图标按钮请使用 icon 档位并提供明确的
+							aria-label。
+						</p>
+						<CodeCard code={sizesSource} language="tsx" lineNumbers collapseLines={6}>
+							<ButtonSizesDemo />
+						</CodeCard>
+					</div>
+
+					{/* 图标扩展 */}
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("图标插槽 (Icons)")}
+							className="text-lg font-semibold text-foreground"
+						>
+							图标插槽 (Icons)
+						</AnchoredHeading>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
+						</p>
+						<CodeCard code={iconsSource} language="tsx" lineNumbers collapseLines={6}>
+							<ButtonIconsDemo />
+						</CodeCard>
+					</div>
+
+					{/* 状态与加载 */}
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("状态与加载 (Loading)")}
+							className="text-lg font-semibold text-foreground"
+						>
+							状态与加载 (Loading)
+						</AnchoredHeading>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							内置 loading 支持：处于加载中时自动禁用并设置
+							aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
+						</p>
+						<CodeCard code={statesSource} language="tsx" lineNumbers collapseLines={6}>
+							<ButtonStatesDemo />
+						</CodeCard>
+					</div>
+
+					{/* 链接模式 */}
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("作为导航链接 (asChild)")}
+							className="text-lg font-semibold text-foreground"
+						>
+							作为导航链接 (asChild)
+						</AnchoredHeading>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							跳转页面使用 Link；asChild
+							只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
+						</p>
+						<CodeCard code={linkSource} language="tsx" lineNumbers collapseLines={6}>
+							<ButtonLinkDemo />
+						</CodeCard>
+					</div>
+				</section>
+
+				<section aria-labelledby="button-api" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="button-api"
+						className="text-xl font-bold text-foreground"
+					>
+						API 参考
+					</AnchoredHeading>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						跳转页面使用 Link；asChild
-						只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
+						下表列出 Button 扩展属性与关键语义定义；其余标准 HTML button
+						属性均完全支持。
 					</p>
-					<CodeCard code={linkSource} language="tsx" lineNumbers collapseLines={6}>
-						<ButtonLinkDemo />
-					</CodeCard>
-				</div>
-			</section>
+					<ApiTable
+						title="Button Props"
+						columns={PROP_COLUMNS}
+						rows={BUTTON_PROPS}
+						rowKey={(row) => row.name}
+					/>
+				</section>
 
-			<section aria-labelledby="button-api" className="space-y-4">
-				<h2 id="button-api" className="text-xl font-bold text-foreground">
-					API 参考
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					下表列出 Button 扩展属性与关键语义定义；其余标准 HTML button 属性均完全支持。
-				</p>
-				<ApiTable
-					title="Button Props"
-					columns={PROP_COLUMNS}
-					rows={BUTTON_PROPS}
-					rowKey={(row) => row.name}
-				/>
-			</section>
-
-			<section aria-labelledby="button-guidance" className="space-y-4">
-				<h2 id="button-guidance" className="text-xl font-bold text-foreground">
-					使用边界
-				</h2>
-				<ul className="space-y-3 text-sm leading-relaxed text-muted-foreground">
-					<li className="border-l-2 border-border pl-4">
-						键盘用户通过 Tab 定位时呈现高对比度聚焦描边；严禁使用 className 抹除
-						focus-visible 样式。
-					</li>
-					<li className="border-l-2 border-border pl-4">
-						Button 默认 type="button"，表单内主提交操作请显式设置 type="submit"。
-					</li>
-					<li className="border-l-2 border-border pl-4">
-						asChild 包裹链接时不应传 disabled 禁止跳转；应由调用方在 JSX
-						逻辑中条件渲染纯文本或原生按钮。
-					</li>
-				</ul>
-			</section>
-		</article>
+				<section aria-labelledby="button-guidance" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="button-guidance"
+						className="text-xl font-bold text-foreground"
+					>
+						使用边界
+					</AnchoredHeading>
+					<ul className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+						<li className="border-l-2 border-border pl-4">
+							键盘用户通过 Tab 定位时呈现高对比度聚焦描边；严禁使用 className 抹除
+							focus-visible 样式。
+						</li>
+						<li className="border-l-2 border-border pl-4">
+							Button 默认 type="button"，表单内主提交操作请显式设置 type="submit"。
+						</li>
+						<li className="border-l-2 border-border pl-4">
+							asChild 包裹链接时不应传 disabled 禁止跳转；应由调用方在 JSX
+							逻辑中条件渲染纯文本或原生按钮。
+						</li>
+					</ul>
+				</section>
+			</article>
+		</SpecimenDoc>
 	);
 }

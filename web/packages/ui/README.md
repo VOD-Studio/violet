@@ -21,6 +21,14 @@ React 19 + Tailwind CSS v4 组件库，附 Violet 明暗语义主题 token。
 
 包内 CSS 携带 `@source` 指令，宿主 Tailwind 会扫描打包后的组件类名；深色模式由宿主在根元素挂 `.dark` 类驱动。
 
+样式入口按粒度分四个：
+
+- `@violet/ui/styles.css` — 完整（语义 token + Tailwind 映射 + 滚动条工具类 + 默认 violet 色板）。
+- `@violet/ui/tokens.css` — Headless：仅 CSS 变量，无 `@theme` 映射与 `@source`，供不用 Tailwind 的宿主直接 `var(--primary)` 消费。
+- `@violet/ui/palettes/violet.css` / `@violet/ui/palettes/coral.css` — 主色源子导出；整站换色在包样式之后导入，仅子树换色在包样式之前导入并给容器挂 `data-theme`。
+
+默认色板、明暗切换与自定义主题见[主题指南](https://xunrua.top/design-system/guides/theming)；语义色角色与用法见[颜色指南](https://xunrua.top/design-system/palette)。
+
 ## 使用组件
 
 ```tsx

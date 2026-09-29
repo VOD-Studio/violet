@@ -161,7 +161,7 @@ export function CodeCard({
 	};
 
 	return (
-		<div className={cn(skin.root, className)}>
+		<div data-toc-ignore="" className={cn(skin.root, className)}>
 			{children && (
 				<div
 					className={cn(

@@ -1,3 +1,5 @@
+import { slugify } from "@shared/lib/slug";
+import { AnchoredHeading } from "@shared/ui/anchored-heading";
 import { CodeCard } from "@shared/ui/code-preview/components/CodeCard";
 import { ApiTable, type ApiTableColumn } from "./ApiTable";
 import { CartoonPopoverBasicDemo } from "./examples/cartoon-popover/basic";
@@ -8,6 +10,7 @@ import { CartoonPopoverHoverDemo } from "./examples/cartoon-popover/hover";
 import hoverSource from "./examples/cartoon-popover/hover.tsx?raw";
 import { CartoonPopoverStylesDemo } from "./examples/cartoon-popover/styles";
 import stylesSource from "./examples/cartoon-popover/styles.tsx?raw";
+import { SpecimenDoc } from "./SpecimenDoc";
 
 interface PropRow {
 	name: string;
@@ -172,122 +175,156 @@ const GROUP_PROPS: PropRow[] = [
 
 export function CartoonPopoverDocPage() {
 	return (
-		<article className="space-y-12 pb-16">
-			{/* 头部导言 */}
-			<header className="space-y-3">
-				<div className="flex items-center gap-2 text-xs text-muted-foreground">
-					<span>浮层</span>
-					<span aria-hidden="true">·</span>
-					<span>CartoonPopover</span>
-				</div>
-				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-					CartoonPopover 卡通气泡
-				</h1>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					轮廓从小尾巴尖端起笔、一笔连通圆角边框向两侧描绘，关闭时沿原路收回并淡去，不缩放整块内容。并排触发器间连续滑行，减少动效时即时开合。
-				</p>
-				<p className="font-mono text-xs text-muted-foreground">
-					源码 web/src/shared/ui/cartoon-popover/CartoonPopover.tsx
-				</p>
-			</header>
+		<SpecimenDoc>
+			<article className="space-y-12 pb-16">
+				{/* 头部导言 */}
+				<header className="space-y-3">
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
+						<span>浮层</span>
+						<span aria-hidden="true">·</span>
+						<span>CartoonPopover</span>
+					</div>
+					<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+						CartoonPopover 卡通气泡
+					</h1>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						轮廓从小尾巴尖端起笔、一笔连通圆角边框向两侧描绘，关闭时沿原路收回并淡去，不缩放整块内容。并排触发器间连续滑行，减少动效时即时开合。
+					</p>
+					<p className="font-mono text-xs text-muted-foreground">
+						源码 web/src/shared/ui/cartoon-popover/CartoonPopover.tsx
+					</p>
+				</header>
 
-			{/* 基础用法演练 */}
-			<section aria-labelledby="usage-heading" className="space-y-4">
-				<h2 id="usage-heading" className="text-xl font-semibold text-foreground">
-					用法
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					从 shared/ui/cartoon-popover 导入。点击触发器即可弹出，支持外部点击与 Escape
-					自动关闭。
-				</p>
-				<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
-					<CartoonPopoverBasicDemo />
-				</CodeCard>
-			</section>
+				{/* 基础用法演练 */}
+				<section aria-labelledby="usage-heading" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="usage-heading"
+						className="text-xl font-semibold text-foreground"
+					>
+						用法
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						从 shared/ui/cartoon-popover 导入。点击触发器即可弹出，支持外部点击与 Escape
+						自动关闭。
+					</p>
+					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
+						<CartoonPopoverBasicDemo />
+					</CodeCard>
+				</section>
 
-			{/* 连续平滑滑动群组 */}
-			<section aria-labelledby="group-heading" className="space-y-4">
-				<h2 id="group-heading" className="text-xl font-semibold text-foreground">
-					并排连续平滑移动 (CartoonPopoverGroup)
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					当有一排带有 Popover 的按钮时，使用 CartoonPopoverGroup
-					包裹。鼠标在组内滑过时浮层连续滑动并随内容调整尺寸；完全离开后沿轮廓收起，再次进入从新位置描线淡入。系统启用「减少动态效果」时即时开合。
-				</p>
-				<CodeCard code={groupSource} language="tsx" lineNumbers collapseLines={6}>
-					<CartoonPopoverGroupDemo />
-				</CodeCard>
-			</section>
+				{/* 连续平滑滑动群组 */}
+				<section aria-labelledby="group-heading" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="group-heading"
+						className="text-xl font-semibold text-foreground"
+					>
+						并排连续平滑移动 (CartoonPopoverGroup)
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						当有一排带有 Popover 的按钮时，使用 CartoonPopoverGroup
+						包裹。鼠标在组内滑过时浮层连续滑动并随内容调整尺寸；完全离开后沿轮廓收起，再次进入从新位置描线淡入。系统启用「减少动态效果」时即时开合。
+					</p>
+					<CodeCard code={groupSource} language="tsx" lineNumbers collapseLines={6}>
+						<CartoonPopoverGroupDemo />
+					</CodeCard>
+				</section>
 
-			{/* 悬停与触发方式 */}
-			<section aria-labelledby="hover-heading" className="space-y-4">
-				<h2 id="hover-heading" className="text-xl font-semibold text-foreground">
-					触发方式 (triggerMode & hover)
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					支持仅点击（click）、仅悬停（hover）或两者兼具（both /
-					openOnHover）。悬停模式下移入气泡内容区保持打开，鼠标离开后平滑收起。
-				</p>
-				<CodeCard code={hoverSource} language="tsx" lineNumbers collapseLines={6}>
-					<CartoonPopoverHoverDemo />
-				</CodeCard>
-			</section>
+				{/* 悬停与触发方式 */}
+				<section aria-labelledby="hover-heading" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="hover-heading"
+						className="text-xl font-semibold text-foreground"
+					>
+						触发方式 (triggerMode & hover)
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						支持仅点击（click）、仅悬停（hover）或两者兼具（both /
+						openOnHover）。悬停模式下移入气泡内容区保持打开，鼠标离开后平滑收起。
+					</p>
+					<CodeCard code={hoverSource} language="tsx" lineNumbers collapseLines={6}>
+						<CartoonPopoverHoverDemo />
+					</CodeCard>
+				</section>
 
-			{/* 气泡形态 */}
-			<section aria-labelledby="styles-heading" className="space-y-4">
-				<h2 id="styles-heading" className="text-xl font-semibold text-foreground">
-					气泡形态 (bubbleStyle)
-				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					提供带三角形小尾巴的经典对白气泡（speech）与无尾巴的便签贴纸（sticker）。
-				</p>
-				<CodeCard code={stylesSource} language="tsx" lineNumbers collapseLines={6}>
-					<CartoonPopoverStylesDemo />
-				</CodeCard>
-			</section>
+				{/* 气泡形态 */}
+				<section aria-labelledby="styles-heading" className="space-y-4">
+					<AnchoredHeading
+						as="h2"
+						id="styles-heading"
+						className="text-xl font-semibold text-foreground"
+					>
+						气泡形态 (bubbleStyle)
+					</AnchoredHeading>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						提供带三角形小尾巴的经典对白气泡（speech）与无尾巴的便签贴纸（sticker）。
+					</p>
+					<CodeCard code={stylesSource} language="tsx" lineNumbers collapseLines={6}>
+						<CartoonPopoverStylesDemo />
+					</CodeCard>
+				</section>
 
-			{/* API 参数契约表格 */}
-			<section aria-labelledby="api-heading" className="space-y-6">
-				<h2 id="api-heading" className="text-xl font-semibold text-foreground">
-					公开契约
-				</h2>
+				{/* API 参数契约表格 */}
+				<section aria-labelledby="api-heading" className="space-y-6">
+					<AnchoredHeading
+						as="h2"
+						id="api-heading"
+						className="text-xl font-semibold text-foreground"
+					>
+						公开契约
+					</AnchoredHeading>
 
-				<div className="space-y-3">
-					<h3 className="text-sm font-semibold text-foreground">
-						CartoonPopover 根组件参数
-					</h3>
-					<ApiTable<PropRow>
-						title="CartoonPopover 根组件参数"
-						columns={PROP_COLUMNS}
-						rows={ROOT_PROPS}
-						rowKey={(r) => r.name}
-					/>
-				</div>
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("CartoonPopover 根组件参数")}
+							className="text-sm font-semibold text-foreground"
+						>
+							CartoonPopover 根组件参数
+						</AnchoredHeading>
+						<ApiTable<PropRow>
+							title="CartoonPopover 根组件参数"
+							columns={PROP_COLUMNS}
+							rows={ROOT_PROPS}
+							rowKey={(r) => r.name}
+						/>
+					</div>
 
-				<div className="space-y-3">
-					<h3 className="text-sm font-semibold text-foreground">
-						CartoonPopoverGroup 群组参数
-					</h3>
-					<ApiTable<PropRow>
-						title="CartoonPopoverGroup 参数"
-						columns={PROP_COLUMNS}
-						rows={GROUP_PROPS}
-						rowKey={(r) => r.name}
-					/>
-				</div>
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("CartoonPopoverGroup 群组参数")}
+							className="text-sm font-semibold text-foreground"
+						>
+							CartoonPopoverGroup 群组参数
+						</AnchoredHeading>
+						<ApiTable<PropRow>
+							title="CartoonPopoverGroup 参数"
+							columns={PROP_COLUMNS}
+							rows={GROUP_PROPS}
+							rowKey={(r) => r.name}
+						/>
+					</div>
 
-				<div className="space-y-3">
-					<h3 className="text-sm font-semibold text-foreground">
-						CartoonPopoverContent 内容面板参数
-					</h3>
-					<ApiTable<PropRow>
-						title="CartoonPopoverContent 参数"
-						columns={PROP_COLUMNS}
-						rows={CONTENT_PROPS}
-						rowKey={(r) => r.name}
-					/>
-				</div>
-			</section>
-		</article>
+					<div className="space-y-3">
+						<AnchoredHeading
+							as="h3"
+							id={slugify("CartoonPopoverContent 内容面板参数")}
+							className="text-sm font-semibold text-foreground"
+						>
+							CartoonPopoverContent 内容面板参数
+						</AnchoredHeading>
+						<ApiTable<PropRow>
+							title="CartoonPopoverContent 参数"
+							columns={PROP_COLUMNS}
+							rows={CONTENT_PROPS}
+							rowKey={(r) => r.name}
+						/>
+					</div>
+				</section>
+			</article>
+		</SpecimenDoc>
 	);
 }

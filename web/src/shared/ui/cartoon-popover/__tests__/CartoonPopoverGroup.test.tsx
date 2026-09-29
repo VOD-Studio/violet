@@ -94,8 +94,9 @@ describe("CartoonPopoverGroup Component", () => {
 				removeEventListener: vi.fn(),
 			})),
 		);
-		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
-		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+			new DOMRect(0, 0, 220, 80),
+		);
 		render(
 			<CartoonPopoverGroup closeDelay={150}>
 				<CartoonPopoverGroupItem
@@ -127,10 +128,91 @@ describe("CartoonPopoverGroup Component", () => {
 		expect(screen.queryByRole("dialog")).toBeNull();
 	});
 
+	it("测量节点含亚像素宽度时不收窄气泡内容", () => {
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({
+				matches: true,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+			})),
+		);
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(266);
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(84);
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.getAttribute("aria-hidden") === "true"
+				? new DOMRect(-9999, -9999, 266.40625, 84)
+				: new DOMRect(441, 640, 138, 40);
+		});
+		render(
+			<CartoonPopoverGroup>
+				<CartoonPopoverGroupItem
+					value="foreground"
+					trigger={<button type="button">Foreground</button>}
+					side="top"
+				>
+					<pre className="whitespace-pre-wrap">
+						--color-destructive-foreground: var(--destructive-foreground);
+					</pre>
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+
+		const trigger = screen.getByText("Foreground").closest("[data-popover-item]");
+		if (!trigger) throw new Error("Popover trigger not found");
+		fireEvent.mouseEnter(trigger);
+		const dialog = screen.getByRole("dialog");
+		expect(Number.parseFloat(dialog.style.width)).toBeGreaterThanOrEqual(266.40625);
+		const content = dialog.querySelector<HTMLElement>(":scope > div.overflow-hidden");
+		expect(Number.parseFloat(content?.style.width ?? "")).toBeGreaterThanOrEqual(230.40625);
+	});
+
+	it("短代码气泡按内容宽度定位，不被旧最小宽度撑空", () => {
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({
+				matches: true,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+			})),
+		);
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.getAttribute("aria-hidden") === "true"
+				? new DOMRect(-9999, -9999, 136.8125, 84)
+				: new DOMRect(979, 640, 130, 40);
+		});
+		render(
+			<CartoonPopoverGroup>
+				<CartoonPopoverGroupItem
+					value="link"
+					trigger={<button type="button">链接</button>}
+					side="top"
+				>
+					<pre className="whitespace-pre-wrap">
+						<code>{"--color-link:\n  var(--link);"}</code>
+					</pre>
+				</CartoonPopoverGroupItem>
+			</CartoonPopoverGroup>,
+		);
+
+		const trigger = screen.getByText("链接").closest("[data-popover-item]");
+		if (!trigger) throw new Error("Popover trigger not found");
+		fireEvent.mouseEnter(trigger);
+		const dialog = screen.getByRole("dialog");
+		expect(Number.parseFloat(dialog.style.width)).toBeCloseTo(136.8125, 5);
+		const content = dialog.querySelector<HTMLElement>(":scope > div.overflow-hidden");
+		expect(Number.parseFloat(content?.style.width ?? "")).toBeCloseTo(100.8125, 5);
+	});
+
 	it("完全关闭后悬停其他条目时直接从新条目位置出现", () => {
 		vi.useFakeTimers();
-		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
-		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+			new DOMRect(0, 0, 220, 80),
+		);
 
 		render(
 			<CartoonPopoverGroup closeDelay={150}>
@@ -177,8 +259,9 @@ describe("CartoonPopoverGroup Component", () => {
 
 	it("完整退出后重新悬停不触发渲染期更新，随后切换仍保持弹簧滑动", () => {
 		vi.useFakeTimers();
-		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(220);
-		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(80);
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+			new DOMRect(0, 0, 220, 80),
+		);
 		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
 		render(
 			<CartoonPopoverGroup closeDelay={150}>

@@ -1,6 +1,6 @@
 import { SegmentedArticleToc, type SegmentedTocNode } from "@entities/post/ui/SegmentedArticleToc";
-import { type TocItem, useActiveHeading } from "@shared/hooks/use-toc";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type TocItem, useTocNavigation } from "@shared/hooks/use-toc";
+import { useCallback, useMemo } from "react";
 
 export interface ArticleTocProps {
 	items: TocItem[];
@@ -49,29 +49,17 @@ const ArticleToc = ({
 	hideTitle,
 	isRailCollapsedAtRest,
 }: ArticleTocProps) => {
-	const observedActiveId = useActiveHeading(contentRef);
+	const { activeId: observedActiveId, navigateTo } = useTocNavigation(contentRef, items);
 	const nodes = useMemo(() => buildTree(items).map(toSegmentedNode), [items]);
-	const [manualActiveId, setManualActiveId] = useState<string | null>(null);
-	const activeId = manualActiveId ?? observedActiveId ?? nodes[0]?.id ?? null;
+	const activeId = observedActiveId ?? nodes[0]?.id ?? null;
 
 	const handleNavigate = useCallback(
 		(id: string) => {
-			setManualActiveId(id);
-			document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+			navigateTo(id);
 			onNavigate?.();
 		},
-		[onNavigate],
+		[navigateTo, onNavigate],
 	);
-
-	useEffect(() => {
-		const clearManualActive = () => setManualActiveId(null);
-		window.addEventListener("wheel", clearManualActive, { passive: true });
-		window.addEventListener("touchstart", clearManualActive, { passive: true });
-		return () => {
-			window.removeEventListener("wheel", clearManualActive);
-			window.removeEventListener("touchstart", clearManualActive);
-		};
-	}, []);
 
 	if (!items.length) return null;
 

@@ -151,12 +151,13 @@ export function CartoonPopoverGroup({
 
 		const triggerRect = item.triggerEl.getBoundingClientRect();
 		const measureEl = measureRef.current;
-		// 宽度策略：最小 220px（min-w-55 在测量节点上），内容由 CSS 层自然撑开，JS 直接采用测量结果
-		let contentWidth = 220;
+		// 尾巴与圆角需留安全边距；超过 80px 后由内容自然决定宽度。
+		let contentWidth = 80;
 		let contentHeight = 110;
 		if (measureEl) {
-			contentWidth = Math.max(220, measureEl.offsetWidth);
-			contentHeight = Math.max(50, measureEl.offsetHeight);
+			const { width, height } = measureEl.getBoundingClientRect();
+			contentWidth = Math.max(80, width);
+			contentHeight = Math.max(50, height);
 		}
 
 		const result = computePosition({
@@ -459,14 +460,13 @@ function MeasureNode({
 	useLayoutEffect(() => {
 		if (!ref.current) return;
 		const el = ref.current;
-		const last = { w: el.offsetWidth, h: el.offsetHeight };
+		let { width: lastWidth, height: lastHeight } = el.getBoundingClientRect();
 		onMeasure();
 		const observer = new ResizeObserver(() => {
-			const w = el.offsetWidth;
-			const h = el.offsetHeight;
-			if (w !== last.w || h !== last.h) {
-				last.w = w;
-				last.h = h;
+			const { width, height } = el.getBoundingClientRect();
+			if (width !== lastWidth || height !== lastHeight) {
+				lastWidth = width;
+				lastHeight = height;
 				onMeasure();
 			}
 		});
@@ -478,7 +478,7 @@ function MeasureNode({
 		<div
 			ref={ref}
 			aria-hidden="true"
-			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 min-w-55 w-max rounded-2xl border-2 p-4 text-sm opacity-0"
+			className="pointer-events-none fixed -top-[9999px] -left-[9999px] z-0 min-w-20 w-max rounded-2xl border-2 p-4 text-sm opacity-0"
 		>
 			{title && <h4 className="mb-2 text-sm font-bold tracking-wide">{title}</h4>}
 			{description && (
