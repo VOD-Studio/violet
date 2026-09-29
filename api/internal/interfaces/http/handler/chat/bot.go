@@ -135,6 +135,9 @@ func (h *BotHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, domainshared.Internal("Bot 媒体上传未启用", nil))
 		return
 	}
+	if h.mediaMaxBytes > 0 {
+		r.Body = http.MaxBytesReader(w, r.Body, h.mediaMaxBytes+(1<<20))
+	}
 	if err := r.ParseMultipartForm(1 << 20); err != nil {
 		var maxBytesError *http.MaxBytesError
 		if errors.As(err, &maxBytesError) {

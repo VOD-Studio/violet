@@ -1549,9 +1549,9 @@ type BotMediaDTO struct {
 	ID       string `json:"id"`
 	URL      string `json:"url"`
 	MIMEType string `json:"mime_type"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
-	Size     int64  `json:"size"`
+	Width    int    `json:"width"`  // 像素
+	Height   int    `json:"height"` // 像素
+	Size     int64  `json:"size"`   // 字节
 }
 
 // SaveBotMedia 校验并保存 bot 上传的聊天图片。
@@ -1644,9 +1644,11 @@ func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, p
 		return nil, shared.Internal("创建文件记录失败", err)
 	}
 	if s.processor != nil {
-		if width, height := s.processor.Dimensions(finalPath); width > 0 {
-			f.SetDimensions(width, height)
+		width, height := s.processor.Dimensions(finalPath)
+		if width <= 0 || height <= 0 {
+			return nil, shared.BadRequest("无法读取图片尺寸")
 		}
+		f.SetDimensions(width, height)
 		if thumbnail := s.processor.Thumbnail(finalPath, fileID.String(), purpose, mimeType); thumbnail != "" {
 			f.SetThumbnail(thumbnail)
 		}
