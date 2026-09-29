@@ -50,12 +50,12 @@ export function Badge({
 }
 
 /**
- * 将装饰性角标置于触发器右上角，保留子节点原有的 DOM、焦点与点击行为。
+ * 将装饰性角标锚定在子节点角落，保留子节点原有的 DOM、焦点与点击行为。
  */
 export interface BadgeAnchorProps extends React.ComponentProps<"span"> {
 	badge?: React.ReactNode;
-	/** corner 外置数量胶囊；edge 让小圆点贴住按钮边缘。 */
-	placement?: "corner" | "edge";
+	/** corner 右上角外置胶囊；edge 让小圆点贴住按钮右上边缘；bottom-corner 置于右下角（头像在线状态等）。 */
+	placement?: "corner" | "edge" | "bottom-corner";
 	children: React.ReactNode;
 }
 
@@ -79,7 +79,9 @@ export function BadgeAnchor({
 						"pointer-events-none absolute flex",
 						placement === "corner"
 							? "top-0.5 right-0.75 translate-x-1/2 -translate-y-1/2"
-							: "top-0 right-0",
+							: placement === "bottom-corner"
+								? "bottom-0.5 right-0.75 translate-x-1/2 translate-y-1/2"
+								: "top-0 right-0",
 					)}
 					aria-hidden="true"
 				>
