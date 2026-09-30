@@ -29,6 +29,8 @@ type TokenRepository interface {
 	FindPageByUser(ctx context.Context, userID string, q domainshared.PageQuery) (domainshared.PageResult[*PAT], error)
 	// Delete 删除（吊销）PAT。按 id + userID 双重定位，防越权删除他人 token。
 	Delete(ctx context.Context, id, userID string) error
+	// DeleteByUser 吊销某用户全部 PAT（账号注销时批量失效，比逐个 Delete 少 N 次往返）。
+	DeleteByUser(ctx context.Context, userID string) error
 }
 
 // 领域错误

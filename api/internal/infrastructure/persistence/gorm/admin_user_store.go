@@ -36,6 +36,12 @@ func (s *AdminUserStore) FindPage(ctx context.Context, filter domainuseradmin.Li
 		like := "%" + filter.Keyword + "%"
 		query = query.Where("username LIKE ? OR email LIKE ?", like, like)
 	}
+	if filter.Status == "deleted" {
+		query = query.Where("deleted_at IS NOT NULL")
+	} else {
+		// 缺省仅活跃：已注销用户不出现在常规管理视图
+		query = query.Where("deleted_at IS NULL")
+	}
 	var pos []newmodel.User
 	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "用户")
 	if err != nil {
@@ -70,14 +76,15 @@ func (s *AdminUserStore) FindByID(ctx context.Context, id domainshared.ID) (*dom
 func (s *AdminUserStore) ExistsByEmail(ctx context.Context, email domainuser.Email) (bool, error) {
 	var count int64
 	err := s.db.WithContext(ctx).Model(&newmodel.User{}).
-		Where("email = ?", email.String()).
+		Where("email = ? AND deleted_at IS NULL", email.String()).
 		Count(&count).Error
 	if err != nil {
 		return false, domainshared.Internal("查询邮箱存在性失败", err)
 	}
 	return count > 0, nil
 }
-// FindByIDs 按 ID 批量查找（批量操作前的安全校验用）
+
+// FindByIDs 按 ID 批量查找（批量操作前的安全校验用，含已注销——调用方按需过滤）
 func (s *AdminUserStore) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domainuser.User, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -107,16 +114,31 @@ func (s *AdminUserStore) Save(ctx context.Context, u *domainuser.User) error {
 	return s.db.WithContext(ctx).Save(&po).Error
 }
 
-// Delete 删除用户
-func (s *AdminUserStore) Delete(ctx context.Context, id domainshared.ID) error {
-	result := s.db.WithContext(ctx).Where("id = ?", id.UUID()).Delete(&newmodel.User{})
-	if result.Error != nil {
-		return domainshared.Internal("删除用户失败", result.Error)
+// existsByColumn 活跃用户中按列查存在性（恢复预检/查重共用，排除已注销）。
+func (s *AdminUserStore) existsByColumn(ctx context.Context, column, value string) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).Model(&newmodel.User{}).
+		Where(column+" = ? AND deleted_at IS NULL", value).
+		Count(&count).Error
+	if err != nil {
+		return false, domainshared.Internal("查询身份占用失败", err)
 	}
-	if result.RowsAffected == 0 {
-		return domainuser.ErrNotFound
-	}
-	return nil
+	return count > 0, nil
+}
+
+// ExistsByUsername 用户名是否已被活跃用户占用
+func (s *AdminUserStore) ExistsByUsername(ctx context.Context, username domainuser.Username) (bool, error) {
+	return s.existsByColumn(ctx, "username", username.String())
+}
+
+// ExistsByGoogleID Google 身份是否已被活跃用户占用
+func (s *AdminUserStore) ExistsByGoogleID(ctx context.Context, googleID string) (bool, error) {
+	return s.existsByColumn(ctx, "google_id", googleID)
+}
+
+// ExistsByGithubID GitHub 身份是否已被活跃用户占用
+func (s *AdminUserStore) ExistsByGithubID(ctx context.Context, githubID string) (bool, error) {
+	return s.existsByColumn(ctx, "github_id", githubID)
 }
 
 // BatchUpdateStatus 批量启用/禁用

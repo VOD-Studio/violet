@@ -2,7 +2,7 @@ package command
 
 import "testing"
 
-// T1(#449)：身份匹配键只认 primary+verified 的 email。
+// 身份匹配键只认 primary+verified 的 email。
 // emails[0] 兜底曾允许未验证 email 参与账号匹配——在 GitHub 挂他人邮箱即可接管 violet 账号。
 func TestPickPrimaryVerifiedEmail(t *testing.T) {
 	cases := []struct {

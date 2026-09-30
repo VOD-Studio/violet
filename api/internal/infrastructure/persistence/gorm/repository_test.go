@@ -162,7 +162,7 @@ func TestUserRepository_FindByProviderID(t *testing.T) {
 	u.SetGithubID("42")
 	require.NoError(t, repo.Save(ctx, u))
 
-	// T2(#450)：OAuth 登录按 provider id 优先查找——绑定后用户改 provider 侧
+	// OAuth 登录按 provider id 优先查找——绑定后用户改 provider 侧
 	// email 仍按 id 命中，不再走建号分支撞唯一索引。
 	byGoogle, err := repo.FindByGoogleID(ctx, "google-sub-123")
 	require.NoError(t, err)

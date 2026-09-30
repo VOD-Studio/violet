@@ -14,7 +14,7 @@ import (
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 )
 
-// T5(#453)：解绑前置校验——解绑后必须仍有登录方式。
+// 解绑前置校验：解绑后必须仍有登录方式。
 func TestUnbindProvider(t *testing.T) {
 	newRepo := func(u *domainuser.User) *mocks.MockUserRepository {
 		repo := new(mocks.MockUserRepository)

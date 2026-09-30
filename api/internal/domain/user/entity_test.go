@@ -135,7 +135,7 @@ func TestUser_VerifyEmail_Idempotent(t *testing.T) {
 	}
 }
 
-// T9(#457)：注销（软删除）领域状态机。
+// 注销（软删除）领域状态机。
 func TestUser_SoftDelete(t *testing.T) {
 	email, _ := ParseEmail("del@example.com")
 	username, _ := ParseUsername("deluser")

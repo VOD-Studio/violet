@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 
 	domainsession "blog-api/internal/domain/session"
@@ -21,7 +24,10 @@ type fakeStore struct {
 	findByIDs     []*domainuser.User
 	findErr       error
 	findByIDUser  *domainuser.User
-	emailExists   bool
+	emailExists    bool
+	usernameExists bool
+	googleExists   bool
+	githubExists   bool
 	affected      int64
 	batchErr      error
 
@@ -36,7 +42,7 @@ type fakeStore struct {
 		role  string
 	}
 	saveCalls []*domainuser.User
-	delCalls  []shared.ID
+
 }
 
 type listStoreCall struct {
@@ -70,9 +76,16 @@ func (f *fakeStore) Save(_ context.Context, u *domainuser.User) error {
 	return nil
 }
 
-func (f *fakeStore) Delete(_ context.Context, id shared.ID) error {
-	f.delCalls = append(f.delCalls, id)
-	return nil
+func (f *fakeStore) ExistsByUsername(context.Context, domainuser.Username) (bool, error) {
+	return f.usernameExists, nil
+}
+
+func (f *fakeStore) ExistsByGoogleID(context.Context, string) (bool, error) {
+	return f.googleExists, nil
+}
+
+func (f *fakeStore) ExistsByGithubID(context.Context, string) (bool, error) {
+	return f.githubExists, nil
 }
 
 func (f *fakeStore) BatchUpdateStatus(_ context.Context, ids []shared.ID, isActive bool) (int64, error) {
@@ -114,7 +127,7 @@ func mustUser(t *testing.T, username, email string, role domainuser.Role, active
 }
 
 func newTestService(store *fakeStore) *Service {
-	return NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil)
+	return NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
 }
 
 func TestService_Create_VerifiesEmailForAdminCreatedUser(t *testing.T) {
@@ -165,7 +178,7 @@ func TestService_UpdateUserRole_RevokesSession(t *testing.T) {
 	target := mustUser(t, "u1", "u1@example.com", domainuser.RoleUser, true)
 	store := &fakeStore{findByIDUser: &target}
 	sessions := &fakeSessionStore{}
-	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions)
+	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions, nil)
 
 	err := svc.UpdateUserRole(context.Background(),
 		target.GetID().String(), string(domainuser.RoleAdmin),
@@ -182,7 +195,7 @@ func TestService_Delete_RevokesSession(t *testing.T) {
 	target := mustUser(t, "victim", "victim@example.com", domainuser.RoleUser, true)
 	store := &fakeStore{findByIDUser: &target}
 	sessions := &fakeSessionStore{}
-	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions)
+	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions, nil)
 
 	err := svc.Delete(context.Background(),
 		target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
@@ -231,6 +244,61 @@ func TestService_Update_Email(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Delete 为软删编排（置位+吊销凭证），Restore 带身份占用预检。
+func TestService_SoftDeleteAndRestore(t *testing.T) {
+	t.Run("注销置位并吊销 session", func(t *testing.T) {
+		target := mustUser(t, "victim", "victim@example.com", domainuser.RoleUser, true)
+		store := &fakeStore{findByIDUser: &target}
+		sessions := &fakeSessionStore{}
+		svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions, nil)
+
+		err := svc.Delete(context.Background(),
+			target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.NoError(t, err)
+		require.Len(t, store.saveCalls, 1, "软删应经 Save 持久化")
+		assert.True(t, store.saveCalls[0].IsDeleted(), "持久化聚合应处于注销态")
+		assert.Len(t, sessions.revoked, 1, "注销应吊销全部 session")
+	})
+
+	t.Run("恢复成功往返", func(t *testing.T) {
+		target := mustUser(t, "victim", "victim@example.com", domainuser.RoleUser, true)
+		target.Delete(time.Now())
+		store := &fakeStore{findByIDUser: &target}
+		svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+
+		dto, err := svc.Restore(context.Background(),
+			target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.NoError(t, err)
+		assert.False(t, dto.IsDeleted, "恢复后 DTO 不应为注销态")
+		require.Len(t, store.saveCalls, 1)
+		assert.False(t, store.saveCalls[0].IsDeleted())
+	})
+
+	t.Run("身份被占用恢复返回冲突", func(t *testing.T) {
+		target := mustUser(t, "victim", "victim@example.com", domainuser.RoleUser, true)
+		target.Delete(time.Now())
+		store := &fakeStore{findByIDUser: &target, emailExists: true}
+		svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+
+		_, err := svc.Restore(context.Background(),
+			target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "邮箱")
+		assert.Empty(t, store.saveCalls, "冲突时不得落库")
+	})
+
+	t.Run("未注销账号恢复返回 400", func(t *testing.T) {
+		target := mustUser(t, "alive", "alive@example.com", domainuser.RoleUser, true)
+		store := &fakeStore{findByIDUser: &target}
+		svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+
+		_, err := svc.Restore(context.Background(),
+			target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "未处于注销状态")
+	})
 }
 
 func TestService_List_MapsToDTOs(t *testing.T) {

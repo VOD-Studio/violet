@@ -20,6 +20,8 @@ type ListFilter struct {
 	IsActive *bool
 	// Keyword 用户名/邮箱模糊搜索关键词，空串 = 不过滤
 	Keyword string
+	// Status 按注销状态筛选："active"（默认，排除已注销）/ "deleted"（仅已注销）/ 空串同 active
+	Status string
 }
 
 // AdminUserStore 用户管理存储端口（admin 专用查询）
@@ -29,14 +31,18 @@ type AdminUserStore interface {
 	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[user.User], error)
 	// FindByID 按 ID 查找（admin 不限条件）
 	FindByID(ctx context.Context, id shared.ID) (*user.User, error)
-	// ExistsByEmail 邮箱是否已被占用（email 变更查重）
+	// ExistsByEmail 邮箱是否已被占用（email 变更查重，排除已注销）
 	ExistsByEmail(ctx context.Context, email user.Email) (bool, error)
+	// ExistsByUsername 用户名是否已被活跃用户占用（恢复预检）
+	ExistsByUsername(ctx context.Context, username user.Username) (bool, error)
+	// ExistsByGoogleID Google 身份是否已被活跃用户占用（恢复预检）
+	ExistsByGoogleID(ctx context.Context, googleID string) (bool, error)
+	// ExistsByGithubID GitHub 身份是否已被活跃用户占用（恢复预检）
+	ExistsByGithubID(ctx context.Context, githubID string) (bool, error)
 	// FindByIDs 按 ID 批量查找（批量操作前的安全校验用）
 	FindByIDs(ctx context.Context, ids []shared.ID) ([]*user.User, error)
 	// Save 保存用户（upsert）
 	Save(ctx context.Context, u *user.User) error
-	// Delete 删除用户
-	Delete(ctx context.Context, id shared.ID) error
 	// BatchUpdateStatus 批量启用/禁用，返回受影响数
 	BatchUpdateStatus(ctx context.Context, ids []shared.ID, isActive bool) (int64, error)
 	// BatchUpdateRole 批量修改角色，返回受影响数

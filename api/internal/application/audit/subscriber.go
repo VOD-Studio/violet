@@ -152,6 +152,26 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case domainuser.UserSoftDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
+			Summary:    fmt.Sprintf("注销用户「%s」（内容保留，身份释放）", e.UserName),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainuser.UserRestored:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
+			Summary:    fmt.Sprintf("恢复注销用户「%s」", e.UserName),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case domainuser.UserEmailVerified:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
