@@ -136,15 +136,13 @@ func dedupeAndRewrite(tx *gorm.DB, ref ownedRef, p, s interface{}) error {
 	} else {
 		// 撞键判定：secondary 行与 primary 行在 dedupCols 上同值
 		match := ""
-		args := []interface{}{}
 		for _, c := range ref.dedupCols {
 			match += fmt.Sprintf(" AND x.%s = t.%s", c, c)
 		}
 		delSQL = fmt.Sprintf(
 			"DELETE FROM %s t WHERE t.%s = ? AND EXISTS (SELECT 1 FROM %s x WHERE x.%s = ?%s)",
 			ref.table, ref.col, ref.table, ref.col, match)
-		args = append(args, s, p)
-		if err := tx.Exec(delSQL, args...).Error; err != nil {
+		if err := tx.Exec(delSQL, s, p).Error; err != nil {
 			return err
 		}
 	}
