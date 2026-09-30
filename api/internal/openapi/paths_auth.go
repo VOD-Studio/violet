@@ -261,6 +261,7 @@ func registerAuthPaths(t *openapi3.T) {
 			RequestBody: jsonBody("OAuthLoginRequest", true, "OAuth 凭证"),
 			Responses: responses(
 				200, dataResponse("LoginResponse", "登录成功（session 走 cookie）", 200),
+				400, errorResponse("provider 状态响应异常"),
 				401, errorResponse("ID Token 校验失败"),
 				403, errorResponse("该 OAuth 登录方式未启用"),
 			),

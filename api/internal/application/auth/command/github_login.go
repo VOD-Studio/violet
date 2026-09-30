@@ -121,39 +121,16 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 
 	githubIDStr := strconv.Itoa(userInfo.ID)
 	
-	// 3. Get user email
+	// 3. Get user email：只认 primary+verified（身份匹配键安全底线）。
+	// userInfo.Email 是用户公开的 primary（GitHub 要求验证后才能设 primary）可直接信任；
+	// /user/emails 里非 primary 或未验证的地址一律不用——未验证 email 参与匹配
+	// 等于允许「在 GitHub 挂他人邮箱」接管对应 violet 账号。
 	emailStr := userInfo.Email
 	if emailStr == "" {
-		reqEmail, err := http.NewRequestWithContext(ctx, "GET", "https://api.github.com/user/emails", nil)
-		if err == nil {
-			reqEmail.Header.Set("Authorization", "Bearer "+tokenRes.AccessToken)
-			reqEmail.Header.Set("Accept", "application/json")
-			reqEmail.Header.Set("User-Agent", brand.GitHubOAuthUA)
-			respEmail, err := http.DefaultClient.Do(reqEmail)
-			if err == nil {
-				defer respEmail.Body.Close()
-				var emails []struct {
-					Email    string `json:"email"`
-					Primary  bool   `json:"primary"`
-					Verified bool   `json:"verified"`
-				}
-				if json.NewDecoder(respEmail.Body).Decode(&emails) == nil {
-					for _, e := range emails {
-						if e.Primary && e.Verified {
-							emailStr = e.Email
-							break
-						}
-					}
-					if emailStr == "" && len(emails) > 0 {
-						emailStr = emails[0].Email
-					}
-				}
-			}
-		}
+		emailStr = fetchGithubPrimaryEmail(ctx, tokenRes.AccessToken)
 	}
-
 	if emailStr == "" {
-		return LoginOutput{}, shared.BadRequest("Github 账号缺少邮箱信息")
+		return LoginOutput{}, shared.BadRequest("GitHub 账号未提供已验证的主邮箱，无法完成登录。请在 GitHub 设置的 Emails 页将常用邮箱设为已验证的主邮箱后重试。")
 	}
 
 	email, err := user.ParseEmail(emailStr)
@@ -261,4 +238,46 @@ func generateGithubUsername(ctx context.Context, login string, emailStr string, 
 	}
 
 	return user.Username{}, errors.New("无法生成唯一的用户名")
+}
+
+// githubEmail /user/emails 端点的条目形态。
+type githubEmail struct {
+	Email    string `json:"email"`
+	Primary  bool   `json:"primary"`
+	Verified bool   `json:"verified"`
+}
+
+// pickPrimaryVerifiedEmail 返回列表中 primary 且 verified 的邮箱，无则空串。
+// 不做任何兜底：未验证地址不得作为身份匹配键（防接管）。
+func pickPrimaryVerifiedEmail(emails []githubEmail) string {
+	for _, e := range emails {
+		if e.Primary && e.Verified {
+			return e.Email
+		}
+	}
+	return ""
+}
+
+// fetchGithubPrimaryEmail 拉 /user/emails 并取 primary+verified 邮箱。
+//
+// 网络失败、响应异常、无可用邮箱统一返回空串：对调用方语义等价（都走
+// 「未提供已验证的主邮箱」拒绝路径），不向用户暴露 GitHub 侧的失败细节。
+func fetchGithubPrimaryEmail(ctx context.Context, token string) string {
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.github.com/user/emails", nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", brand.GitHubOAuthUA)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	var emails []githubEmail
+	if json.NewDecoder(resp.Body).Decode(&emails) != nil {
+		return ""
+	}
+	return pickPrimaryVerifiedEmail(emails)
 }
