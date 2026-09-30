@@ -154,8 +154,8 @@ func registerChatPaths(t *openapi3.T) {
 		Tags: []string{"聊天"}, Summary: "聊天未读数", Security: secure, Responses: responses(200, dataResponse("ChatUnreadCount", "未读数", 200)),
 	})
 	registerSchema(t, "ChatUnreadCount", openapi3.Schemas{"unread_count": optInt64("全部会话未读数")})
-	get(t, "/chat/push/config", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "Web Push 配置", Security: secure, Responses: responses(200, dataResponse("ChatPushConfig", "推送配置", 200))})
-	registerSchema(t, "ChatPushConfig", openapi3.Schemas{"public_key": optStr("VAPID 公钥"), "enabled": optBool("是否启用")})
+	get(t, "/chat/push/config", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "Web Push 配置", Security: secure, Parameters: openapi3.Parameters{queryStrParam("endpoint_hash", "当前浏览器 endpoint 的 SHA-256 十六进制指纹；省略时 subscribed 为 false")}, Responses: responses(200, dataResponse("ChatPushConfig", "推送配置", 200))})
+	registerSchema(t, "ChatPushConfig", openapi3.Schemas{"public_key": optStr("VAPID 公钥"), "enabled": optBool("是否启用"), "subscribed": optBool("当前用户在此浏览器是否已订阅聊天通知")})
 	post(t, "/chat/push/subscription", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "启用浏览器通知", Security: secure, Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatPushSubscriptionRequest", true, "推送订阅"), Responses: responses(201, messageResponse("浏览器通知已启用"))})
 	get(t, "/chat/users/{username}", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "按用户名查找用户", Security: secure, Parameters: openapi3.Parameters{pathStrParam("username", "用户名")}, Responses: responses(200, dataResponse("ChatUserDTO", "用户资料", 200))})
 	get(t, "/chat/contacts", &openapi3.Operation{

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -1430,6 +1431,23 @@ func (s *Service) EventsAfter(ctx context.Context, userID domainshared.ID, after
 // PushPublicKey 返回当前 VAPID 公钥；未配置时为空。
 func (s *Service) PushPublicKey() string { return s.publicKey }
 
+// HasPushSubscription 核对当前用户的 endpoint SHA-256 指纹，不返回推送凭据。
+func (s *Service) HasPushSubscription(ctx context.Context, userID domainshared.ID, endpointHash string) (bool, error) {
+	if endpointHash == "" {
+		return false, nil
+	}
+	subs, err := s.repo.ListPushSubscriptions(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	for _, sub := range subs {
+		if fmt.Sprintf("%x", sha256.Sum256([]byte(sub.Endpoint))) == endpointHash {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // SavePushSubscription 注册当前浏览器推送订阅。
 func (s *Service) SavePushSubscription(ctx context.Context, userID domainshared.ID, endpoint, p256dh, auth, userAgent string, showPreview bool) error {
 	if strings.TrimSpace(endpoint) == "" || strings.TrimSpace(p256dh) == "" || strings.TrimSpace(auth) == "" {
@@ -1869,6 +1887,7 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 		}
 		subs, err := s.repo.ListPushSubscriptions(ctx, event.UserID)
 		if err != nil {
+			log.Warn().Err(err).Str("user_id", event.UserID.String()).Msg("查询聊天推送订阅失败")
 			continue
 		}
 		payload := PushPayload{Title: "Violet 聊天", Body: "收到一条新消息", URL: "/chat", Tag: "violet-chat"}
@@ -1892,10 +1911,10 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 			if err := s.push.Send(ctx, subscription, notification); err != nil {
 				if errors.Is(err, ErrPushSubscriptionExpired) {
 					if err := s.repo.DeletePushSubscription(ctx, event.UserID, subscription.Endpoint); err != nil {
-						log.Warn().Msg("清理失效聊天推送订阅失败")
+						log.Warn().Err(err).Str("user_id", event.UserID.String()).Msg("清理失效聊天推送订阅失败")
 					}
 				} else {
-					log.Warn().Msg("聊天浏览器推送失败，保留订阅供后续消息使用")
+					log.Warn().Err(err).Int64("event_sequence", event.Sequence).Str("user_id", event.UserID.String()).Msg("聊天浏览器推送失败，保留订阅供后续消息使用")
 				}
 			}
 		}

@@ -84,7 +84,10 @@ export const useMarkAllRead = () => {
 };
 
 export const useNotificationPushConfig = () =>
-	useQuery({ queryKey: notificationKeys.pushConfig, queryFn: fetchNotificationPushConfig });
+	useQuery({
+		queryKey: notificationKeys.pushConfig,
+		queryFn: () => fetchNotificationPushConfig(),
+	});
 
 export const useSaveNotificationPushSubscription = () =>
 	useMutation({

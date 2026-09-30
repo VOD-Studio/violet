@@ -1,3 +1,7 @@
+// 此 Worker 只处理通知，无 fetch 缓存，可直接接替旧通知脚本。
+self.addEventListener("install", (event) => event.waitUntil(self.skipWaiting()));
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
 // 站点级推送 service worker：聊天消息与站内通知共用。
 // 一个作用域只能注册一个 service worker，两条推送通道共享同一脚本，
 // 靠服务端下发的 title/body/url/tag 区分，脚本本身不含业务分支。

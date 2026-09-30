@@ -64,6 +64,7 @@ export const markAllNotificationsRead = () => apiPost<null>("/notifications/read
 export interface NotificationPushConfig {
 	public_key: string;
 	enabled: boolean;
+	subscribed: boolean;
 }
 
 /** 上报服务端的浏览器推送订阅 */
@@ -72,8 +73,10 @@ export interface NotificationPushSubscription {
 	keys: { p256dh: string; auth: string };
 }
 
-export const fetchNotificationPushConfig = () =>
-	apiGet<NotificationPushConfig>("/notifications/push/config");
+export const fetchNotificationPushConfig = (endpointHash?: string) =>
+	apiGet<NotificationPushConfig>("/notifications/push/config", {
+		params: { endpoint_hash: endpointHash },
+	});
 
 export const saveNotificationPushSubscription = (input: NotificationPushSubscription) =>
 	apiPost<null>("/notifications/push/subscription", input);

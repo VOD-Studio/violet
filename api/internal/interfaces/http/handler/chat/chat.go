@@ -594,9 +594,23 @@ func (h *Handler) UnreadCount(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{"unread_count": count})
 }
 
-// PushConfig 返回 Web Push 公钥。
-func (h *Handler) PushConfig(w http.ResponseWriter, _ *http.Request) {
-	response.RespondOK(w, map[string]any{"public_key": h.svc.PushPublicKey(), "enabled": h.svc.PushPublicKey() != ""})
+// PushConfig 返回 Web Push 配置与当前用户的浏览器订阅状态。
+func (h *Handler) PushConfig(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	subscribed, err := h.svc.HasPushSubscription(r.Context(), userID, r.URL.Query().Get("endpoint_hash"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{
+		"public_key": h.svc.PushPublicKey(),
+		"enabled":    h.svc.PushPublicKey() != "",
+		"subscribed": subscribed,
+	})
 }
 
 // SavePushSubscription 保存浏览器推送订阅。

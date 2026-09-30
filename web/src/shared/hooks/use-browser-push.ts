@@ -5,7 +5,8 @@
  * `/push-sw.js`，各自的订阅表在服务端互相独立，因此授权开关也是两次独立决定。
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useSessionStore } from "@shared/api/session";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 /** 上报服务端的浏览器订阅数据。 */
@@ -18,6 +19,7 @@ export interface BrowserPushApi<TExtra extends object> {
 	/** 站点是否启用推送（VAPID 公钥与后端密钥都就位）。 */
 	enabled: boolean;
 	publicKey: string;
+	check: (endpointHash: string) => Promise<{ subscribed: boolean }>;
 	save: (input: BrowserPushSubscriptionPayload & TExtra) => Promise<unknown>;
 	remove: (endpoint: string) => Promise<unknown>;
 }
@@ -34,7 +36,9 @@ type SubscriptionExtra = Record<string, unknown>;
 export function useBrowserPushNotifications<
 	TExtra extends SubscriptionExtra = Record<never, never>,
 >(api: BrowserPushApi<TExtra>) {
-	const { enabled, publicKey, save, remove } = api;
+	const { enabled, publicKey, check, save, remove } = api;
+	const sessionVersion = useSessionStore((state) => state.sessionVersion);
+	const revision = useRef(0);
 	const [busy, setBusy] = useState(false);
 	const [subscribed, setSubscribed] = useState<boolean | null>(null);
 	const supported =
@@ -44,23 +48,44 @@ export function useBrowserPushNotifications<
 		"PushManager" in window;
 
 	useEffect(() => {
-		if (!supported) return;
 		let cancelled = false;
+		setSubscribed(null);
 		const refresh = async () => {
+			const current = ++revision.current;
+			let registered = false;
 			try {
-				const subscription = await getPushSubscription();
-				if (!cancelled) {
-					setSubscribed(Notification.permission === "granted" && !!subscription);
+				if (supported && enabled && Notification.permission === "granted") {
+					const existing = await navigator.serviceWorker.getRegistration("/");
+					if (existing) {
+						const registration = await registerPushWorker().catch(() => existing);
+						const subscription = await registration.pushManager.getSubscription();
+						if (subscription) {
+							const hash = await hashEndpoint(subscription.endpoint);
+							registered = (await check(hash)).subscribed === true;
+						}
+					}
 				}
 			} catch {
-				if (!cancelled) setSubscribed(false);
+				registered = false;
 			}
+			if (
+				!cancelled &&
+				current === revision.current &&
+				sessionVersion === useSessionStore.getState().sessionVersion
+			)
+				setSubscribed(registered);
 		};
 		void refresh();
+		window.addEventListener("focus", refresh);
+		window.addEventListener("online", refresh);
+		window.addEventListener("browser-push-changed", refresh);
 		return () => {
 			cancelled = true;
+			window.removeEventListener("focus", refresh);
+			window.removeEventListener("online", refresh);
+			window.removeEventListener("browser-push-changed", refresh);
 		};
-	}, [supported]);
+	}, [check, enabled, supported, sessionVersion]);
 
 	/** 取回当前浏览器的订阅；没有则按 VAPID 公钥新建。未授权时返回 null。 */
 	const ensureSubscription = useCallback(async () => {
@@ -72,7 +97,7 @@ export function useBrowserPushNotifications<
 			toast.info("浏览器通知权限未开启");
 			return null;
 		}
-		await navigator.serviceWorker.register("/push-sw.js");
+		await registerPushWorker();
 		const registration = await navigator.serviceWorker.ready;
 		const existing = await registration.pushManager.getSubscription();
 		return (
@@ -90,12 +115,14 @@ export function useBrowserPushNotifications<
 				toast.error("当前环境未配置浏览器通知");
 				return false;
 			}
+			revision.current++;
 			setBusy(true);
 			try {
 				const subscription = await ensureSubscription();
 				if (!subscription) return false;
 				await saveSubscription(save, subscription, extra);
 				setSubscribed(true);
+				window.dispatchEvent(new Event("browser-push-changed"));
 				toast.success("浏览器通知已启用");
 				return true;
 			} catch {
@@ -110,14 +137,15 @@ export function useBrowserPushNotifications<
 
 	const disable = useCallback(async () => {
 		if (!supported) return;
+		revision.current++;
 		setBusy(true);
 		try {
 			const subscription = await getPushSubscription();
 			if (subscription) {
 				await remove(subscription.endpoint);
-				await subscription.unsubscribe();
 			}
 			setSubscribed(false);
+			window.dispatchEvent(new Event("browser-push-changed"));
 			toast.success("浏览器通知已关闭");
 		} catch {
 			toast.error("浏览器通知关闭失败");
@@ -129,12 +157,12 @@ export function useBrowserPushNotifications<
 	/** 订阅已存在时改写附加字段（不重新申请权限）。 */
 	const update = useCallback(
 		async (extra?: TExtra) => {
-			if (!supported || !enabled) return;
+			if (!supported || !enabled || !subscribed) return;
 			const subscription = await getPushSubscription();
 			if (!subscription) return;
 			await saveSubscription(save, subscription, extra);
 		},
-		[enabled, save, supported],
+		[enabled, save, subscribed, supported],
 	);
 
 	return {
@@ -179,4 +207,13 @@ function decodePushKey(value: string) {
 	const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
 	const raw = window.atob(base64);
 	return Uint8Array.from(raw, (character) => character.charCodeAt(0));
+}
+
+function registerPushWorker() {
+	return navigator.serviceWorker.register("/push-sw.js", { updateViaCache: "none" });
+}
+
+async function hashEndpoint(endpoint: string) {
+	const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint));
+	return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
