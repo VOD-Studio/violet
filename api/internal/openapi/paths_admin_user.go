@@ -158,6 +158,26 @@ func registerAdminUserPaths(t *openapi3.T) {
 		),
 	})
 
+	registerSchema(t, "MergeUsersRequest", openapi3.Schemas{
+		"primary_id":       reqStr("合并保留方用户 ID（UUID）"),
+		"secondary_id":     reqStr("被合并方用户 ID（UUID），其内容归属迁移后账号删除"),
+		"confirm_username": reqStr("被合并方用户名（二次确认，必须完全匹配）"),
+	}, "primary_id", "secondary_id", "confirm_username")
+	post(t, "/admin/users/merge", &openapi3.Operation{
+		Tags:        []string{"用户管理"},
+		Summary:     "合并账号",
+		Description: "把 secondary 的全部内容归属（文章/评论/推文/通知等 30+ 表）迁移给 primary 后删除 secondary。单事务：任一步失败整体回滚。复合唯一键撞行保留 primary 侧；OAuth 绑定 primary 优先。不可逆，confirm_username 必须等于被合并方用户名。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("MergeUsersRequest", true, "合并双方与确认用户名"),
+		Responses: responses(
+			200, dataResponse("AdminUserDTO", "合并后的保留方用户", 200),
+			400, errorResponse("参数不合法 / 主被合并方相同 / confirm_username 不匹配"),
+			403, errorResponse("内置超级管理员不可参与合并"),
+			404, errorResponse("任一账号不存在"),
+		),
+	})
+
 	patch(t, "/admin/users/{id}/role", &openapi3.Operation{
 		Tags:        []string{"用户管理"},
 		Summary:     "修改用户角色",

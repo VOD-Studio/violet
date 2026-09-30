@@ -24,6 +24,7 @@ type fakeStore struct {
 	findByIDs     []*domainuser.User
 	findErr       error
 	findByIDUser  *domainuser.User
+	byID          map[string]*domainuser.User
 	emailExists    bool
 	usernameExists bool
 	googleExists   bool
@@ -55,7 +56,13 @@ func (f *fakeStore) FindPage(_ context.Context, filter ListFilter, q shared.Page
 	return f.listRes, f.listErr
 }
 
-func (f *fakeStore) FindByID(_ context.Context, _ shared.ID) (*domainuser.User, error) {
+func (f *fakeStore) FindByID(_ context.Context, id shared.ID) (*domainuser.User, error) {
+	if f.byID != nil {
+		if u, ok := f.byID[id.String()]; ok {
+			return u, nil
+		}
+		return nil, errors.New("not in byID stub")
+	}
 	if f.findByIDUser != nil {
 		return f.findByIDUser, nil
 	}
@@ -300,6 +307,70 @@ func TestService_SoftDeleteAndRestore(t *testing.T) {
 		assert.Contains(t, err.Error(), "未处于注销状态")
 	})
 }
+
+// MergeUsers 守卫：confirm 不匹配 / 相同 ID / root 参与 / merger 未装配。
+func TestService_MergeUsers(t *testing.T) {
+	primary := mustUser(t, "keepa", "keepa@example.com", domainuser.RoleUser, true)
+	secondary := mustUser(t, "dupb", "dupb@example.com", domainuser.RoleUser, true)
+	root := mustUser(t, "rootx", "rootx@example.com", domainuser.RoleUser, true)
+	root.MarkAsRoot()
+
+	t.Run("confirm 用户名不匹配拒绝", func(t *testing.T) {
+		store := &fakeStore{findByIDUser: &primary}
+		svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+		svc.SetMerger(&fakeMerger{})
+		_, err := svc.MergeUsers(context.Background(), MergeInput{
+			PrimaryID: primary.GetID().String(), SecondaryID: secondary.GetID().String(),
+			ConfirmUsername: "wrong-name",
+		}, "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "不匹配")
+	})
+
+	t.Run("主被合并方相同拒绝", func(t *testing.T) {
+		svc := NewService(&fakeStore{}, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+		_, err := svc.MergeUsers(context.Background(), MergeInput{
+			PrimaryID: primary.GetID().String(), SecondaryID: primary.GetID().String(),
+			ConfirmUsername: "keepa",
+		}, "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "不能相同")
+	})
+
+	t.Run("merger 未装配拒绝", func(t *testing.T) {
+		byID := map[string]*domainuser.User{
+			primary.GetID().String():   &primary,
+			secondary.GetID().String(): &secondary,
+		}
+		svc := NewService(&fakeStore{byID: byID}, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+		_, err := svc.MergeUsers(context.Background(), MergeInput{
+			PrimaryID: primary.GetID().String(), SecondaryID: secondary.GetID().String(),
+			ConfirmUsername: "dupb",
+		}, "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "未装配")
+	})
+
+	t.Run("root 参与拒绝", func(t *testing.T) {
+		byID := map[string]*domainuser.User{
+			root.GetID().String():      &root,
+			secondary.GetID().String(): &secondary,
+		}
+		svc := NewService(&fakeStore{byID: byID}, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+		svc.SetMerger(&fakeMerger{})
+		_, err := svc.MergeUsers(context.Background(), MergeInput{
+			PrimaryID: root.GetID().String(), SecondaryID: secondary.GetID().String(),
+			ConfirmUsername: "dupb",
+		}, "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "超级管理员")
+	})
+}
+
+// fakeMerger UserMerger 测试桩。
+type fakeMerger struct{}
+
+func (f *fakeMerger) Merge(context.Context, shared.ID, shared.ID) error { return nil }
 
 func TestService_List_MapsToDTOs(t *testing.T) {
 	u1 := mustUser(t, "alice", "alice@example.com", domainuser.RoleAdmin, true)

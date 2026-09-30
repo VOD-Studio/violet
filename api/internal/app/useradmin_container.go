@@ -20,5 +20,7 @@ func NewUserAdminContainer(db *gorm.DB, hasher authcmd.PasswordHasher, bus appsh
 	// 注销时批量吊销该用户全部 PAT
 	patRepo := gormrepo.NewAPITokenRepository(db)
 	svc := appuseradmin.NewService(store, hasher, bus, sessionStore, patRepo)
+	// 账号合并执行器（30+ 表迁移，与 store 同 db）
+	svc.SetMerger(gormrepo.NewUserMergeExecutor(db))
 	return &UserAdminContainer{UserAdminHandler: useradminhttp.NewHandler(svc)}
 }

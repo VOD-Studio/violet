@@ -104,6 +104,24 @@ func NewUserRestored(userID shared.ID, userName string) UserRestored {
 	}
 }
 
+// UsersMerged 账号已合并事件（secondary 内容归属迁入 primary，secondary 删除）。
+type UsersMerged struct {
+	shared.BaseEvent
+	// PrimaryName 合并保留方用户名
+	PrimaryName string
+	// SecondaryName 被合并方用户名快照
+	SecondaryName string
+}
+
+// NewUsersMerged 构造账号合并事件（aggregateID 为保留方 primary）
+func NewUsersMerged(primaryID shared.ID, secondaryName, primaryName string) UsersMerged {
+	return UsersMerged{
+		BaseEvent:     shared.NewBaseEvent("user.merged", primaryID),
+		PrimaryName:   primaryName,
+		SecondaryName: secondaryName,
+	}
+}
+
 // UserRoleChanged 用户角色已变更事件
 //
 // From/To 为变更前后角色（审计 before/after 字段）；UserName 为资源名快照。

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	domainshared "blog-api/internal/domain/shared"
+
 	appuseradmin "blog-api/internal/application/useradmin"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -137,6 +139,32 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) RestoreUser(w http.ResponseWriter, r *http.Request) {
 	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
 	dto, err := h.svc.Restore(r.Context(), r.PathValue("id"), opID, opRole, opIsBuiltin, ip, ua)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+// MergeUsers 合并账号（secondary 内容归属迁入 primary 后删除 secondary）
+func (h *Handler) MergeUsers(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PrimaryID       string `json:"primary_id" validate:"required,uuid"`
+		SecondaryID     string `json:"secondary_id" validate:"required,uuid"`
+		ConfirmUsername string `json:"confirm_username" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.PrimaryID == "" || req.SecondaryID == "" || req.ConfirmUsername == "" {
+		response.RespondError(w, r, domainshared.BadRequest("primary_id/secondary_id/confirm_username 均必填"))
+		return
+	}
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	dto, err := h.svc.MergeUsers(r.Context(), appuseradmin.MergeInput{
+		PrimaryID: req.PrimaryID, SecondaryID: req.SecondaryID, ConfirmUsername: req.ConfirmUsername,
+	}, opID, opRole, opIsBuiltin, ip, ua)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

@@ -31,11 +31,16 @@ type Service struct {
 	sessions appshared.SessionStore
 	// patRepo 账号注销时批量吊销 PAT；nil 时跳过（测试桩）
 	patRepo domainapitoken.TokenRepository
+	// merger 账号合并执行器（30+ 表迁移）；nil 时 MergeUsers 拒绝
+	merger domainuseradmin.UserMerger
 }
 
 func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore, patRepo domainapitoken.TokenRepository) *Service {
 	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions, patRepo: patRepo}
 }
+
+// SetMerger 注入合并执行器（与 NewService 分离：merger 与 store 同源装配）。
+func (s *Service) SetMerger(m domainuseradmin.UserMerger) { s.merger = m }
 
 // revokeSessions 吊销指定用户的全部 session（角色/状态变更后强制重登）。
 // 吊销失败仅记录日志不阻断主流程：DB 已更新成功，session 吊销为尽力而为的安全增强。
