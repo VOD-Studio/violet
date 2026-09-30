@@ -60,8 +60,11 @@ type PostDTO struct {
 	ShowSignature  bool         `json:"show_signature"`
 	SEOTitle       string       `json:"seo_title"`
 	SEODescription string       `json:"seo_description"`
-	PublishedAt    string       `json:"published_at,omitempty"`  // 发布时间（RFC3339）；空串=未发布（草稿或归档）
-	CanonicalURL   *string      `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
+	PublishedAt    string       `json:"published_at,omitempty"` // 发布时间（RFC3339）；空串=未发布（草稿或归档）
+	// EditedAt 发布后最近一次版本快照时间（RFC3339）；空串=发布后未编辑过。
+	// 判据是 post_versions 而非 posts.updated_at：后者会被精选、标签等元数据操作刷新，误报编辑。
+	EditedAt     string  `json:"edited_at,omitempty"`
+	CanonicalURL *string `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
 	Tags           []string     `json:"tags"`
 	CreatedAt      string       `json:"created_at"`
 	UpdatedAt      string       `json:"updated_at"`
@@ -224,7 +227,14 @@ func (s *Service) detailDTO(ctx context.Context, p *domain.Post) PostDTO {
 	dtos := []PostDTO{toDTO(p)}
 	s.fillAuthor(ctx, dtos)
 	s.fillCollaborators(ctx, &dtos[0])
-	return dtos[0]
+	dto := dtos[0]
+	// 编辑标记只看发布后的版本快照；查询失败降级为「未编辑」，不阻塞详情返回。
+	if published := p.PublishedAt(); published != nil {
+		if v, err := s.repo.FindLatestVersionAfter(ctx, p.ID(), *published); err == nil && v != nil {
+			dto.EditedAt = v.CreatedAt().Format(time.RFC3339)
+		}
+	}
+	return dto
 }
 
 // ListPublished 分页列出已发布文章（前台），返回不含正文的列表项，避免响应过大。

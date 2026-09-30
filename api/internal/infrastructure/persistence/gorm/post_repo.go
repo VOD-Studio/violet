@@ -397,6 +397,25 @@ func (r *PostRepository) FindVersionsByPostID(ctx context.Context, postID domain
 	return result, nil
 }
 
+func (r *PostRepository) FindLatestVersionAfter(
+	ctx context.Context,
+	postID domainshared.ID,
+	after time.Time,
+) (*post.PostVersion, error) {
+	var po model.PostVersion
+	err := r.db.WithContext(ctx).
+		Where("post_id = ? AND created_at > ?", postID.UUID(), after).
+		Order("created_at DESC").
+		First(&po).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, domainshared.Internal("查询发布后版本失败", err)
+	}
+	return postVersionToDomain(po)
+}
+
 func (r *PostRepository) GetVersionByID(ctx context.Context, versionID domainshared.ID) (*post.PostVersion, error) {
 	var po model.PostVersion
 	if err := r.db.WithContext(ctx).First(&po, "id = ?", versionID.UUID()).Error; err != nil {
