@@ -272,8 +272,15 @@ export function DataTableBody<T>({
 											}
 										>
 											<div
+												data-fit-content={
+													(col.fitContent ?? col.sticky === "right")
+														? col.key
+														: undefined
+												}
 												className={cn(
 													"flex items-center",
+													(col.fitContent ?? col.sticky === "right") &&
+														"w-max",
 													ALIGN_FLEX_CLASS[col.align ?? "left"],
 												)}
 											>

@@ -1,6 +1,6 @@
 import { OverlayScroll } from "@violet/ui";
 import { cn } from "cn";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import {
 	COLUMNS_CONTROL_KEY,
@@ -207,34 +207,73 @@ export function DataTable<T>({
 		return [...injected, ...baseVisible];
 	}, [baseVisible, selectable, expandable, columns, storageKey]);
 
-	// 每列实际宽度（含拖拽结果），供 colgroup 使用
+	// 内容适配列仅测量不可截断的单元格；未显式调整的其他列保持自适应。
+	const bodyTableRef = useRef<HTMLTableElement>(null);
+	const [fitContentWidths, setFitContentWidths] = useState<Record<string, number>>({});
+	useLayoutEffect(() => {
+		if (
+			loading ||
+			error ||
+			data.length === 0 ||
+			!visibleColumns.some((col) => col.fitContent ?? col.sticky === "right")
+		) {
+			setFitContentWidths((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+			return;
+		}
+		const widths: Record<string, number> = {};
+		for (const element of bodyTableRef.current?.querySelectorAll<HTMLElement>(
+			"[data-fit-content]",
+		) ?? []) {
+			const key = element.dataset.fitContent;
+			const cell = element.closest("td");
+			if (!key || !cell) continue;
+			const style = getComputedStyle(cell);
+			const width =
+				Math.ceil(element.getBoundingClientRect().width) +
+				parseFloat(style.paddingLeft) +
+				parseFloat(style.paddingRight);
+			widths[key] = Math.max(widths[key] ?? 0, width);
+		}
+		setFitContentWidths((prev) =>
+			Object.keys(prev).length === Object.keys(widths).length &&
+			Object.entries(widths).every(([key, width]) => prev[key] === width)
+				? prev
+				: widths,
+		);
+	}, [data, visibleColumns, loading, error]);
+
 	const columnWidthMap = useMemo(() => {
 		const map = new Map<string, number>();
 		for (const col of visibleColumns) {
-			const fromStore = columnWidths[col.key];
-			if (fromStore != null) {
-				map.set(col.key, fromStore);
-			} else {
-				const matched = col.width?.match(/^(\d+(?:\.\d+)?)px$/);
-				map.set(col.key, matched ? Number(matched[1]) : 0);
-			}
+			const matched = col.width?.match(/^(\d+(?:\.\d+)?)px$/);
+			map.set(
+				col.key,
+				Math.max(
+					columnWidths[col.key] ?? (matched ? Number(matched[1]) : 0),
+					(col.fitContent ?? col.sticky === "right")
+						? (fitContentWidths[col.key] ?? 0)
+						: 0,
+				),
+			);
 		}
 		return map;
-	}, [visibleColumns, columnWidths]);
+	}, [visibleColumns, columnWidths, fitContentWidths]);
 
-	// colgroup 使用的 CSS 宽度字符串：拖拽结果转 px，否则用列定义的原始 width
 	const colgroupWidthMap = useMemo(() => {
 		const map = new Map<string, string>();
 		for (const col of visibleColumns) {
-			const fromStore = columnWidths[col.key];
-			if (fromStore != null) {
-				map.set(col.key, `${fromStore}px`);
+			const measured = fitContentWidths[col.key];
+			if (
+				columnWidths[col.key] != null ||
+				((col.fitContent ?? col.sticky === "right") && measured != null)
+			) {
+				map.set(col.key, `${columnWidthMap.get(col.key)}px`);
 			} else if (col.width) {
 				map.set(col.key, col.width);
 			}
 		}
 		return map;
-	}, [visibleColumns, columnWidths]);
+	}, [visibleColumns, columnWidths, fitContentWidths, columnWidthMap]);
 
 	const offsets = useMemo(
 		() => computeStickyOffsets(visibleColumns, columnWidthMap),
@@ -416,6 +455,7 @@ export function DataTable<T>({
 					aria-busy={loading ? true : undefined}
 				>
 					<table
+						ref={bodyTableRef}
 						className="text-sm"
 						style={{
 							tableLayout: "fixed",
