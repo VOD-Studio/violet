@@ -13,6 +13,7 @@ import {
 import type { AdminUserDTO } from "@features/admin-users/model/types";
 import { CreateUserDialog } from "@features/admin-users/ui/CreateUserDialog";
 import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
+import { MergeUsersDialog } from "@features/admin-users/ui/MergeUsersDialog";
 import { UserBadgesDialog } from "@features/admin-users/ui/UserBadgesDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
@@ -37,6 +38,7 @@ import {
 	ArchiveRestore,
 	BadgeCheck,
 	Download,
+	Merge,
 	Pencil,
 	Plus,
 	RefreshCw,
@@ -72,6 +74,8 @@ function AdminUsers() {
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [badgesDialogOpen, setBadgesDialogOpen] = useState(false);
 	const [badgesUser, setBadgesUser] = useState<AdminUserDTO | null>(null);
+	const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+	const [mergeTarget, setMergeTarget] = useState<AdminUserDTO | null>(null);
 	const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
 	// 权限检查
@@ -246,7 +250,7 @@ function AdminUsers() {
 			key: "email_verified",
 			header: "邮箱验证",
 			cell: (row) => (
-				<Badge variant={row.email_verified ? "outline" : "secondary"}>
+				<Badge variant={row.email_verified ? "default" : "secondary"}>
 					{row.email_verified ? "已验证" : "未验证"}
 				</Badge>
 			),
@@ -263,8 +267,9 @@ function AdminUsers() {
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "120px",
+			width: "160px",
 			align: "center",
+			stopClickPropagation: true,
 			cell: (row) => {
 				// 安全防护分两层：
 				// 编辑基础信息（用户名/邮箱/密码等）对 root/自己放开——后端 useradmin.Update
@@ -275,6 +280,7 @@ function AdminUsers() {
 					(!isOperatorRoot && row.role === "superadmin") ||
 					row.id === currentUserId;
 				return (
+					// 操作列点击不触发行点击：拦截在 DataTable 的 td 层（列声明 stopClickPropagation）
 					<div className="flex justify-center gap-2">
 						<PermissionGuard permission="user:list">
 							<Tooltip>
@@ -360,13 +366,33 @@ function AdminUsers() {
 										</span>
 									</TooltipTrigger>
 									<TooltipContent>
-										{isProtected
-											? "不可注销此用户"
-											: "注销（内容保留，可恢复）"}
+										{isProtected ? "不可注销此用户" : "注销"}
 									</TooltipContent>
 								</Tooltip>
 							</PermissionGuard>
 						)}
+						<PermissionGuard permission="user:ban">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											disabled={deletedView === "deleted" || isProtected}
+											onClick={(e) => {
+												e.stopPropagation();
+												setMergeTarget(row);
+												setMergeDialogOpen(true);
+											}}
+											aria-label={`合并用户 ${row.username}`}
+										>
+											<Merge className="size-3.5" />
+										</Button>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>合并到其他账号</TooltipContent>
+							</Tooltip>
+						</PermissionGuard>
 					</div>
 				);
 			},
@@ -606,6 +632,15 @@ function AdminUsers() {
 				onConfirm={handleConfirmDelete}
 				loading={deleteUser.isPending}
 			/>
+
+			{/* 合并账号对话框 */}
+			{mergeTarget && (
+				<MergeUsersDialog
+					open={mergeDialogOpen}
+					onOpenChange={setMergeDialogOpen}
+					user={mergeTarget}
+				/>
+			)}
 		</TooltipProvider>
 	);
 }

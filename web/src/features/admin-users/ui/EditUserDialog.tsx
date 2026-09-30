@@ -157,14 +157,13 @@ export function EditUserDialog({
 					<Input
 						id="edit-username"
 						{...register("username")}
-						placeholder="请输入用户名（3-32 字符）"
+						placeholder="请输入用户名"
 						aria-invalid={!!errors.username}
 					/>
 					{errors.username && (
 						<p className="text-sm text-destructive">{errors.username.message}</p>
 					)}
 				</div>
-
 				{/* 显示名 */}
 				<div className="space-y-2">
 					<Label htmlFor="edit-display-name">显示名</Label>

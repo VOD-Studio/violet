@@ -64,6 +64,17 @@ export const restoreUser = async (id: string): Promise<AdminUserDTO> => {
 };
 
 /**
+ * 合并账号（secondary 内容归属迁给 primary 后删除 secondary）
+ */
+export const mergeUsers = async (data: {
+	primary_id: string;
+	secondary_id: string;
+	confirm_username: string;
+}): Promise<AdminUserDTO> => {
+	return apiPost<AdminUserDTO>("/admin/users/merge", data);
+};
+
+/**
  * 修改用户角色
  */
 export const updateUserRole = async (id: string, data: UpdateUserRoleRequest): Promise<void> => {

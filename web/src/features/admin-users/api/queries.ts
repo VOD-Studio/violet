@@ -116,6 +116,28 @@ export const useRestoreUser = () => {
 };
 
 /**
+ * useMergeUsers - 合并账号
+ */
+export const useMergeUsers = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: {
+			primary_id: string;
+			secondary_id: string;
+			confirm_username: string;
+		}) => api.mergeUsers(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminUsersKeys.lists() });
+			toast.success("账号合并完成");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message);
+		},
+	});
+};
+
+/**
  * useUpdateUserRole - 更新用户角色
  */
 export const useUpdateUserRole = () => {
