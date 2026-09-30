@@ -5,12 +5,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 
 	authcmd "blog-api/internal/application/auth/command"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // ============================================================
@@ -53,10 +55,13 @@ func (s *RedisLinkTokenStore) Issue(ctx context.Context, payload *authcmd.LinkTo
 	return token, nil
 }
 
-// Get 读取 payload（不消费）。不存在返回 redis.Nil，由调用方按 token 无效处理。
+// Get 读取 payload（不消费）。不存在（含过期）包装为 NotFound，调用方据此按 token 无效处理。
 func (s *RedisLinkTokenStore) Get(ctx context.Context, token string) (*authcmd.LinkTokenPayload, error) {
 	data, err := s.client.Get(ctx, linkTokenKeyPrefix+token).Bytes()
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, domainshared.NotFound("link_token")
+		}
 		return nil, err
 	}
 	var payload authcmd.LinkTokenPayload

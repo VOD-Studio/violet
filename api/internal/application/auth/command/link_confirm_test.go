@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -18,9 +19,10 @@ import (
 // fakeLinkTokenStore LinkTokenStore 的内存 fake，模拟 Redis 语义
 // （payload TTL 由 deleted 标记近似，attempts 独立计数）。
 type fakeLinkTokenStore struct {
-	payload  map[string]*LinkTokenPayload
-	attempts map[string]int
-	consumed []string
+	payload    map[string]*LinkTokenPayload
+	attempts   map[string]int
+	consumed   []string
+	consumeErr error // 非-nil 时 Consume 模拟 Redis 删除失败
 }
 
 func newFakeLinkTokenStore() *fakeLinkTokenStore {
@@ -41,6 +43,9 @@ func (f *fakeLinkTokenStore) Get(_ context.Context, token string) (*LinkTokenPay
 }
 
 func (f *fakeLinkTokenStore) Consume(_ context.Context, token string) error {
+	if f.consumeErr != nil {
+		return f.consumeErr
+	}
 	delete(f.payload, token)
 	delete(f.attempts, token)
 	f.consumed = append(f.consumed, token)
@@ -159,6 +164,41 @@ func TestConfirmLink(t *testing.T) {
 		_, err := h.Handle(context.Background(), ConfirmLinkInput{LinkToken: token, Password: "s3cret!"})
 		assert.ErrorIs(t, err, domainuser.ErrAccountDisabled)
 	})
+
+	t.Run("token 消费失败时不绑定账号", func(t *testing.T) {
+		u := linkedAccount(t, "u@example.com", "s3cret!")
+		repo := new(mocks.MockUserRepository)
+		repo.On("FindByEmail", mockAnyCtx(), mustEmail("u@example.com")).Return(u, nil).Once()
+		repo.On("FindByGithubID", mockAnyCtx(), "42").Return(nil, domainuser.ErrNotFound).Once()
+		store := newFakeLinkTokenStore()
+		store.consumeErr = errors.New("redis down")
+		token, _ := store.Issue(context.Background(), githubPayload("u@example.com"), linkTokenTTL)
+		h := NewConfirmLinkHandler(repo, store, NewBcryptHasher(), infraeventbus.NewInMemory())
+
+		_, err := h.Handle(context.Background(), ConfirmLinkInput{LinkToken: token, Password: "s3cret!"})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, store.consumeErr, "存储故障应原样上抛而非伪装成功")
+		assert.Nil(t, u.GithubID(), "消费失败时不得写入绑定")
+		repo.AssertNotCalled(t, "Save", mockAnyCtx(), mockAnything())
+	})
+
+	t.Run("超限作废失败时上抛存储错误", func(t *testing.T) {
+		u := linkedAccount(t, "u@example.com", "s3cret!")
+		store := newFakeLinkTokenStore()
+		token, _ := store.Issue(context.Background(), githubPayload("u@example.com"), linkTokenTTL)
+		h := NewConfirmLinkHandler(newFindEmailRepo(u), store, NewBcryptHasher(), infraeventbus.NewInMemory())
+
+		for i := 1; i < maxLinkPasswordAttempts; i++ {
+			_, _ = h.Handle(context.Background(), ConfirmLinkInput{LinkToken: token, Password: "wrong"})
+		}
+		store.consumeErr = errors.New("redis down")
+		_, err := h.Handle(context.Background(), ConfirmLinkInput{LinkToken: token, Password: "wrong"})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, store.consumeErr, "作废失败必须上抛，token 残留时正确密码仍可重放")
+	})
+
 }
 
 // newFindEmailRepo 固定按 email 返回 u、provider id 未绑定的最简 mock。

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	authcmd "blog-api/internal/application/auth/command"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 func TestLinkTokenStore(t *testing.T) {
@@ -45,19 +46,23 @@ func TestLinkTokenStore(t *testing.T) {
 	// Consume 一次性删除 payload 与计数
 	require.NoError(t, store.Consume(ctx, token))
 	_, err = store.Get(ctx, token)
-	require.Error(t, err, "消费后 Get 应失败")
+	var notFound *domainshared.DomainError
+	require.ErrorAs(t, err, &notFound, "消费后 Get 应为 NotFound 而非存储故障")
+	assert.True(t, domainshared.IsDomainError(err, domainshared.CodeNotFound))
 	n, err = store.IncrAttempts(ctx, token)
 	require.NoError(t, err)
 	assert.Equal(t, 1, n, "消费后计数应重置（新 key）")
 
 	// 无效 token
 	_, err = store.Get(ctx, "bogus")
-	require.Error(t, err)
+	require.ErrorAs(t, err, &notFound, "无效 token 应为 NotFound")
+	assert.True(t, domainshared.IsDomainError(err, domainshared.CodeNotFound))
 
 	// TTL：payload 到期即不可读（miniredis 快进）
 	token2, err := store.Issue(ctx, payload, 50*time.Millisecond)
 	require.NoError(t, err)
 	mr.FastForward(100 * time.Millisecond)
 	_, err = store.Get(ctx, token2)
-	require.Error(t, err, "过期 payload 应不可读")
+	require.ErrorAs(t, err, &notFound, "过期 payload 应为 NotFound")
+	assert.True(t, domainshared.IsDomainError(err, domainshared.CodeNotFound))
 }

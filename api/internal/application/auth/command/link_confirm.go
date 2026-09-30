@@ -150,8 +150,12 @@ func NewConfirmLinkHandler(repo user.UserRepository, tokens LinkTokenStore, hash
 // session 创建交由 CreateSessionHandler（与其他登录方式同构）。
 func (h *ConfirmLinkHandler) Handle(ctx context.Context, in ConfirmLinkInput) (LoginOutput, error) {
 	payload, err := h.tokens.Get(ctx, in.LinkToken)
-	if err != nil || payload == nil {
-		return LoginOutput{}, ErrLinkTokenInvalid
+	if err != nil {
+		// token 不存在/过期/作废统一提示过期；存储故障等原样上抛，不伪装成客户端错误
+		if shared.IsDomainError(err, shared.CodeNotFound) {
+			return LoginOutput{}, ErrLinkTokenInvalid
+		}
+		return LoginOutput{}, err
 	}
 	email, err := user.ParseEmail(payload.Email)
 	if err != nil {
@@ -185,7 +189,10 @@ func (h *ConfirmLinkHandler) Handle(ctx context.Context, in ConfirmLinkInput) (L
 			log.Warn().Err(aerr).Msg("绑定确认密码错误计数失败")
 		}
 		if attempts >= maxLinkPasswordAttempts {
-			_ = h.tokens.Consume(ctx, in.LinkToken)
+			// 作废失败必须上抛：token 残留时第 6 次输入正确密码仍会完成绑定
+			if err := h.tokens.Consume(ctx, in.LinkToken); err != nil {
+				return LoginOutput{}, err
+			}
 		}
 		return LoginOutput{}, user.ErrInvalidCredentials
 	}
@@ -194,13 +201,17 @@ func (h *ConfirmLinkHandler) Handle(ctx context.Context, in ConfirmLinkInput) (L
 		return LoginOutput{}, user.ErrAccountDisabled
 	}
 
+	// 密码已验证：立即消费 token，之后任何失败（如 Save 失败）都不允许同 token 重放。
+	// 消费后流程失败的用户需重走 OAuth 第一阶段重新签发，可接受。
+	if err := h.tokens.Consume(ctx, in.LinkToken); err != nil {
+		return LoginOutput{}, err
+	}
+
 	if changed := applyProviderBinding(u, payload); changed {
 		if err := h.userRepo.Save(ctx, u); err != nil {
 			return LoginOutput{}, err
 		}
 	}
-
-	_ = h.tokens.Consume(ctx, in.LinkToken)
 	if err := h.bus.Publish(ctx, []shared.DomainEvent{NewUserLoggedIn(u.GetID(), payload.Provider)}); err != nil {
 		log.Warn().Err(err).Msg("发布绑定登录事件失败")
 	}
