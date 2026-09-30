@@ -285,6 +285,9 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 	if err := s.store.Delete(ctx, uid); err != nil {
 		return err
 	}
+	// 删除后吊销全部 session：DB 行已不存在，残留登录态会让已删用户在 session TTL 内
+	// 仍通过鉴权中间件（session 只查 Redis 不反查用户），写操作产生孤儿数据。
+	s.revokeSessions(ctx, uid.String())
 	// 删除是破坏性操作，手动构造事件发布（聚合根不可继续存在）
 	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewUserDeleted(uid, u.Username().String())}); err != nil {
 		log.Warn().Err(err).Msg("发布用户删除事件失败")

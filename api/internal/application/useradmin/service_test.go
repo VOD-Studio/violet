@@ -172,6 +172,22 @@ func TestService_UpdateUserRole_RevokesSession(t *testing.T) {
 	}
 }
 
+func TestService_Delete_RevokesSession(t *testing.T) {
+	target := mustUser(t, "victim", "victim@example.com", domainuser.RoleUser, true)
+	store := &fakeStore{findByIDUser: &target}
+	sessions := &fakeSessionStore{}
+	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions)
+
+	err := svc.Delete(context.Background(),
+		target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+	if err != nil {
+		t.Fatalf("Delete 返回错误: %v", err)
+	}
+	if len(sessions.revoked) != 1 || sessions.revoked[0] != target.GetID().String() {
+		t.Errorf("删除用户后应吊销其全部 session, 实际 revoked=%v", sessions.revoked)
+	}
+}
+
 func TestService_List_MapsToDTOs(t *testing.T) {
 	u1 := mustUser(t, "alice", "alice@example.com", domainuser.RoleAdmin, true)
 	u2 := mustUser(t, "bob", "bob@example.com", domainuser.RoleUser, false)
