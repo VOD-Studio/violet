@@ -1,8 +1,10 @@
 import { useConfirmLinkMutation } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
+import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
 import { useLinkConfirmStore } from "@features/auth/model/link-confirm-store";
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button, Input, Label, Modal } from "@violet/ui";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -15,12 +17,24 @@ import { toast } from "sonner";
  * 密码确认后绑定并登录。无密码账号（OAuth 建号）引导走忘记密码补设后回来。
  * 全局挂载于 __root，由 useLinkConfirmStore 触发。
  */
+
+/** 从当前路由 search 读登录页跳转目标 */
+function readRedirect(search: unknown): string | undefined {
+	if (typeof search !== "object" || search === null || !("redirect" in search)) {
+		return undefined;
+	}
+	return typeof search.redirect === "string" ? search.redirect : undefined;
+}
+
 export function LinkConfirmDialog() {
 	const payload = useLinkConfirmStore((s) => s.payload);
 	const closeConfirm = useLinkConfirmStore((s) => s.close);
 	const closeLogin = useLoginDialogStore((s) => s.close);
 	const csrfToken = useCsrfToken({ enabled: payload !== null });
 	const confirmLink = useConfirmLinkMutation(csrfToken);
+	const navigate = useNavigate();
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const redirect = readRedirect(useRouterState({ select: (s) => s.location.search }));
 
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
@@ -52,6 +66,12 @@ export function LinkConfirmDialog() {
 					closeConfirm();
 					// 若从登录弹窗发起，一并收起（GitHub 回调页无登录弹窗，close 幂等）
 					closeLogin();
+					if (pathname === "/login") {
+						const target = safeRedirectTarget(redirect);
+						navigate({ to: target, replace: true }).catch(() => {
+							window.location.href = target;
+						});
+					}
 				},
 				onError: (err) => {
 					const msg =
