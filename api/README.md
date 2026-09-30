@@ -314,6 +314,8 @@ make help         # 查看所有命令
 | `trusted_proxies` | 受信代理 CIDR（为空时忽略 X-Forwarded-For） |
 | `resend_api_key` | Resend 邮件 API Key |
 | `web_push.*` | 浏览器 Web Push 的 VAPID 公钥、私钥与 subject；私钥仅从环境变量读取 |
+
+`GET /api/v1/chat/push/config` 与 `GET /api/v1/notifications/push/config` 可传 `endpoint_hash`（浏览器订阅地址的 SHA-256 十六进制指纹），返回当前登录用户在对应通道的 `subscribed` 状态；未传时为 `false`，不返回订阅地址或密钥。
 | `superadmin.*` | 初始超级管理员账户 |
 
 > 各键上方的行内注释标注对应的 env 覆盖名；敏感值一律走环境变量，不写入 `config.yaml`。

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -1429,6 +1430,23 @@ func (s *Service) EventsAfter(ctx context.Context, userID domainshared.ID, after
 
 // PushPublicKey 返回当前 VAPID 公钥；未配置时为空。
 func (s *Service) PushPublicKey() string { return s.publicKey }
+
+// HasPushSubscription 核对当前用户的 endpoint SHA-256 指纹，不返回推送凭据。
+func (s *Service) HasPushSubscription(ctx context.Context, userID domainshared.ID, endpointHash string) (bool, error) {
+	if endpointHash == "" {
+		return false, nil
+	}
+	subs, err := s.repo.ListPushSubscriptions(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	for _, sub := range subs {
+		if fmt.Sprintf("%x", sha256.Sum256([]byte(sub.Endpoint))) == endpointHash {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 // SavePushSubscription 注册当前浏览器推送订阅。
 func (s *Service) SavePushSubscription(ctx context.Context, userID domainshared.ID, endpoint, p256dh, auth, userAgent string, showPreview bool) error {
