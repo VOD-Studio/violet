@@ -28,6 +28,10 @@ type UserRepository interface {
 	FindByGoogleID(ctx context.Context, googleID string) (*User, error)
 	// FindByGithubID 按 GitHub ID 查找（OAuth 登录：绑定身份优先于 email 匹配）
 	FindByGithubID(ctx context.Context, githubID string) (*User, error)
+	// FindByIDsForDisplay 按 ID 批量查找（含已注销用户）。
+	// 供内容作者展示：已注销用户的 DTO 层转「已注销用户」占位，
+	// 与登录路径的排除查询（FindByIDs）分野。
+	FindByIDsForDisplay(ctx context.Context, ids []shared.ID) ([]*User, error)
 
 	// ExistsByEmail 邮箱是否已存在（注册查重，比 FindByEmail 更轻量）
 	ExistsByEmail(ctx context.Context, email Email) (bool, error)

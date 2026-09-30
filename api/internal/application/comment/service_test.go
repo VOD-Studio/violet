@@ -59,13 +59,13 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	ghID, ghLogin := "12345", "octocat"
 	ghUser := domainuser.ReconstructUser(ghUID, ghEmail, ghName, domainuser.DisplayName{},
 		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
-		nil, &ghID, &ghLogin, false, true, true, time.Time{}, time.Time{})
+		nil, &ghID, &ghLogin, false, true, true, time.Time{}, time.Time{}, time.Time{})
 	gEmail, _ := domainuser.ParseEmail("g@example.com")
 	gName, _ := domainuser.ParseUsername("bob")
 	gSub := "google-sub-1"
 	gUser := domainuser.ReconstructUser(gUID, gEmail, gName, domainuser.DisplayName{},
 		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
-		&gSub, nil, nil, false, true, true, time.Time{}, time.Time{})
+		&gSub, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
 
 	postID, ghCID, gCID, anonCID := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
 	zero := time.Time{}

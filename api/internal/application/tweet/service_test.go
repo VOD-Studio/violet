@@ -147,6 +147,9 @@ func (f *fakeUserRepo) FindByGoogleID(context.Context, string) (*domainuser.User
 func (f *fakeUserRepo) FindByGithubID(context.Context, string) (*domainuser.User, error) {
 	panic("未使用")
 }
+func (f *fakeUserRepo) FindByIDsForDisplay(_ context.Context, ids []shared.ID) ([]*domainuser.User, error) {
+	return f.FindByIDs(context.Background(), ids)
+}
 func (f *fakeUserRepo) ExistsByEmail(context.Context, domainuser.Email) (bool, error) {
 	panic("未使用")
 }

@@ -51,6 +51,7 @@ func toPO(u *user.User) model.User {
 		IsRoot:              u.IsRoot(),
 		EmailVerified:       u.EmailVerified(),
 		IsActive:            u.IsActive(),
+		DeletedAt:           nilIfZero(u.DeletedAt()),
 	}
 }
 
@@ -97,15 +98,26 @@ func toDomain(po model.User) (*user.User, error) {
 		po.IsRoot,
 		po.EmailVerified,
 		po.IsActive,
+		derefTime(po.DeletedAt),
 		po.CreatedAt,
 		po.UpdatedAt,
 	), nil
 }
 
+// nilIfZero 领域层零值时间 → PO 可空列（NULL=活跃）。
+func nilIfZero(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
+}
+
+// （*time.Time → time.Time 的 derefTime 复用 note_repo.go 的同签名实现）
+
 // FindByID 按 ID 查找用户
 func (r *UserRepository) FindByID(ctx context.Context, id domainshared.ID) (*user.User, error) {
 	var po model.User
-	err := r.db.WithContext(ctx).Where("id = ?", id.UUID()).First(&po).Error
+	err := r.db.WithContext(ctx).Where("id = ? AND deleted_at IS NULL", id.UUID()).First(&po).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user.ErrNotFound
@@ -119,6 +131,31 @@ func (r *UserRepository) FindByID(ctx context.Context, id domainshared.ID) (*use
 //
 // 空切片直接返回空结果；缺失的 ID 静默跳过，由调用方处理 author 缺失。
 func (r *UserRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*user.User, error) {
+	if len(ids) == 0 {
+		return []*user.User{}, nil
+	}
+	uuids := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		uuids = append(uuids, id.UUID())
+	}
+	var pos []model.User
+	if err := r.db.WithContext(ctx).Where("id IN ? AND deleted_at IS NULL", uuids).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("批量查询用户失败", err)
+	}
+	users := make([]*user.User, 0, len(pos))
+	for i := range pos {
+		u, err := toDomain(pos[i])
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+// FindByIDsForDisplay 按 ID 批量查找，含已注销用户（作者展示用）。
+// 已注销用户的 DTO 层转占位，不在此过滤。
+func (r *UserRepository) FindByIDsForDisplay(ctx context.Context, ids []domainshared.ID) ([]*user.User, error) {
 	if len(ids) == 0 {
 		return []*user.User{}, nil
 	}
@@ -144,7 +181,7 @@ func (r *UserRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) (
 // FindByEmail 按邮箱查找用户
 func (r *UserRepository) FindByEmail(ctx context.Context, email user.Email) (*user.User, error) {
 	var po model.User
-	err := r.db.WithContext(ctx).Where("email = ?", email.String()).First(&po).Error
+	err := r.db.WithContext(ctx).Where("email = ? AND deleted_at IS NULL", email.String()).First(&po).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user.ErrNotFound
@@ -157,7 +194,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email user.Email) (*us
 // FindByUsername 按用户名查找用户
 func (r *UserRepository) FindByUsername(ctx context.Context, username user.Username) (*user.User, error) {
 	var po model.User
-	err := r.db.WithContext(ctx).Where("username = ?", username.String()).First(&po).Error
+	err := r.db.WithContext(ctx).Where("username = ? AND deleted_at IS NULL", username.String()).First(&po).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user.ErrNotFound
@@ -180,7 +217,7 @@ func (r *UserRepository) FindByGithubID(ctx context.Context, githubID string) (*
 // findByProviderID 按 OAuth 绑定列查找，NotFound 归一为 user.ErrNotFound。
 func (r *UserRepository) findByProviderID(ctx context.Context, column, id string) (*user.User, error) {
 	var po model.User
-	err := r.db.WithContext(ctx).Where(column+" = ?", id).First(&po).Error
+	err := r.db.WithContext(ctx).Where(column+" = ? AND deleted_at IS NULL", id).First(&po).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user.ErrNotFound
@@ -195,7 +232,7 @@ func (r *UserRepository) ListContacts(ctx context.Context, query string, exclude
 	query = strings.TrimSpace(query)
 	db := r.db.WithContext(ctx).
 		Model(&model.User{}).
-		Where("is_active = ?", true).
+		Where("is_active = ? AND deleted_at IS NULL", true).
 		Where("id <> ?", excludeID.UUID())
 	if query != "" {
 		like := "%" + query + "%"
@@ -223,7 +260,7 @@ func (r *UserRepository) ListContacts(ctx context.Context, query string, exclude
 func (r *UserRepository) ExistsByEmail(ctx context.Context, email user.Email) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.User{}).
-		Where("email = ?", email.String()).
+		Where("email = ? AND deleted_at IS NULL", email.String()).
 		Count(&count).Error
 	if err != nil {
 		return false, domainshared.Internal("查询邮箱存在性失败", err)
@@ -235,7 +272,7 @@ func (r *UserRepository) ExistsByEmail(ctx context.Context, email user.Email) (b
 func (r *UserRepository) ExistsByUsername(ctx context.Context, username user.Username) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.User{}).
-		Where("username = ?", username.String()).
+		Where("username = ? AND deleted_at IS NULL", username.String()).
 		Count(&count).Error
 	if err != nil {
 		return false, domainshared.Internal("查询用户名存在性失败", err)
