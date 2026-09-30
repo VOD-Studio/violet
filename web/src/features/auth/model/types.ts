@@ -130,6 +130,18 @@ export interface ChangePasswordRequest {
 }
 
 /**
+ * BindingsDTO - POST/DELETE /auth/connections/{provider} 返回的登录方式状态
+ */
+export interface BindingsDTO {
+	/** 是否设置了密码 */
+	has_password: boolean;
+	/** 是否绑定 Google */
+	google_bound: boolean;
+	/** 是否绑定 GitHub */
+	github_bound: boolean;
+}
+
+/**
  * MessageResponse - 后端 RespondMessage 返回结构
  *
  * 后端 RespondMessage 把消息放进 meta.message，data 为 null。

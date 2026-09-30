@@ -1,9 +1,10 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
-import { apiPatch, apiPost } from "@shared/api/request";
+import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { clearSessionActive, markSessionActive } from "@shared/api/session";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
+	BindingsDTO,
 	ChangePasswordRequest,
 	ForgotPasswordRequest,
 	LoginRequest,
@@ -162,11 +163,65 @@ export const useConfirmLinkMutation = (csrfToken?: string) => {
 };
 
 /**
- * useForgotPassword - 发起密码重置邮件
+ * bindConnection - POST /auth/connections/{provider}（登录态绑定 OAuth）
+ */
+export const bindConnection = (
+	provider: "google" | "github",
+	credential: string,
+	csrfToken?: string,
+) => {
+	const token = csrfToken || getCSRFToken();
+	return apiPost<BindingsDTO>(
+		`/auth/connections/${provider}`,
+		{
+			credential: provider === "google" ? credential : undefined,
+			code: provider === "github" ? credential : undefined,
+		},
+		{
+			headers: token ? { [CSRF_HEADER]: token } : undefined,
+			__skipAuthDialog: true,
+		},
+	);
+};
+
+/**
+ * useBindConnectionMutation - 设置页绑定 OAuth
+ */
+export const useBindConnectionMutation = (csrfToken?: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (input: { provider: "google" | "github"; credential: string }) =>
+			bindConnection(input.provider, input.credential, csrfToken),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: authKeys.me() });
+		},
+	});
+};
+
+/**
+ * useUnbindConnectionMutation - DELETE /auth/connections/{provider}
+ */
+export const useUnbindConnectionMutation = (csrfToken?: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (provider: "google" | "github") =>
+			apiDelete<BindingsDTO>(`/auth/connections/${provider}`, {
+				headers:
+					csrfToken || getCSRFToken()
+						? { [CSRF_HEADER]: csrfToken || getCSRFToken() }
+						: undefined,
+			}),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: authKeys.me() });
+		},
+	});
+};
+
+/**
  *
  * 后端始终返回成功以防邮箱枚举，调用方不应据响应判断邮箱是否存在。
  *
- * @returns POST /auth/forgot-password，成功 data 为 null
+ * @returns POST / auth / forgot - password，成功 data 为 null
  */
 export const useForgotPassword = () =>
 	useMutation({
