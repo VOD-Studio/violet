@@ -1,10 +1,6 @@
 /**
- * LinkConfirmDialog 确认成功后的路由行为测试。
- *
- * 确认绑定成功即完成登录：/login 页发起时必须显式跳转离开——
- * beforeLoad 只在进入路由时跑，invalidate me 不会把已登录用户带离登录页，
- * 否则用户停在登录页看到「绑定成功，已登录」却无法离开。
- * 登录弹窗（其他页面）发起时无需导航，弹窗收起即可。
+ * LinkConfirmDialog 确认成功后的路由行为测试：
+ * /login 页发起跳转离开（含 redirect 校验），登录弹窗发起原地收起。
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -28,7 +24,7 @@ vi.mock("@shared/api/request", () => ({
 	apiGetPaged: vi.fn(),
 }));
 
-// mock csrf：confirmLink 走 getCSRFToken() 读 cookie，固定返回空避免 jsdom cookie 干扰
+// mock csrf：getCSRFToken 固定返回空，避免 jsdom cookie 干扰
 vi.mock("@shared/api/csrf", () => ({
 	CSRF_HEADER: "X-CSRF-Token",
 	getCSRFToken: vi.fn(() => ""),
@@ -120,6 +116,14 @@ describe("LinkConfirmDialog 确认成功后的导航", () => {
 
 	it("/login 页无 redirect 参数时跳回首页", async () => {
 		const router = await renderAt("/login");
+		await submitConfirm();
+		await waitFor(() => {
+			expect(router.state.location.pathname).toBe("/");
+		});
+	});
+
+	it("redirect 指向外部站点时拒绝并跳回首页（防开放重定向）", async () => {
+		const router = await renderAt("/login?redirect=https://evil.com");
 		await submitConfirm();
 		await waitFor(() => {
 			expect(router.state.location.pathname).toBe("/");

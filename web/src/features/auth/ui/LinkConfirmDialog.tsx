@@ -1,5 +1,6 @@
 import { useConfirmLinkMutation } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
+import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
 import { useLinkConfirmStore } from "@features/auth/model/link-confirm-store";
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
@@ -17,13 +18,14 @@ import { toast } from "sonner";
  * 全局挂载于 __root，由 useLinkConfirmStore 触发。
  */
 
-/** 读当前路由 search 的 redirect 参数（登录页跳转目标），非字符串或缺省返回 undefined */
+/** 从当前路由 search 读登录页跳转目标 */
 function readRedirect(search: unknown): string | undefined {
 	if (typeof search !== "object" || search === null || !("redirect" in search)) {
 		return undefined;
 	}
 	return typeof search.redirect === "string" ? search.redirect : undefined;
 }
+
 export function LinkConfirmDialog() {
 	const payload = useLinkConfirmStore((s) => s.payload);
 	const closeConfirm = useLinkConfirmStore((s) => s.close);
@@ -64,9 +66,8 @@ export function LinkConfirmDialog() {
 					closeConfirm();
 					// 若从登录弹窗发起，一并收起（GitHub 回调页无登录弹窗，close 幂等）
 					closeLogin();
-					// /login 页发起时 beforeLoad 不会重跑，已登录用户会滞留登录页，需显式跳转
 					if (pathname === "/login") {
-						const target = redirect || "/";
+						const target = safeRedirectTarget(redirect);
 						navigate({ to: target, replace: true }).catch(() => {
 							window.location.href = target;
 						});

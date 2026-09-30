@@ -2,6 +2,7 @@ import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
+import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/login")({
 		// 已登录(网络确认)则重定向到目标页,避免已登录用户看到登录页。
 		// 只认 context.auth(父路由 __root.beforeLoad 已 await getAuthSession 的准确网络判定)。
 		if (context.auth.isAuthenticated && context.auth.claims) {
-			throw redirect({ to: search.redirect || "/", replace: true });
+			throw redirect({ to: safeRedirectTarget(search.redirect), replace: true });
 		}
 	},
 	component: LoginPage,
@@ -75,7 +76,7 @@ function LoginPage() {
 			googleLogin.mutate(tokenResponse.access_token, {
 				onSuccess: async () => {
 					toast.success("登录成功");
-					const target = redirect || "/";
+					const target = safeRedirectTarget(redirect);
 					try {
 						await navigate({ to: target, replace: true });
 					} catch {
@@ -104,14 +105,14 @@ function LoginPage() {
 		login.mutate(data, {
 			onSuccess: async () => {
 				toast.success("登录成功");
-				const target = redirect || "/";
+				const target = safeRedirectTarget(redirect);
 				try {
 					await navigate({ to: target, replace: true });
 				} catch {
 					window.location.href = target;
 				}
 				// useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
-				// Header 等观察者会自动拉取一次 me，这里不再显式 refetch。
+				// Header 等观察者会自动拉取一次 me。这里不再显式 refetch。
 			},
 			onError: (err) => {
 				// 优先展示后端返回的具体原因（邮箱未验证 / 账户已被禁用 /
