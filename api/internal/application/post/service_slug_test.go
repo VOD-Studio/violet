@@ -55,9 +55,9 @@ func (f *fakeSlugRepo) FindPublishedByYear(context.Context, int) ([]*domain.Post
 func (f *fakeSlugRepo) FindVersionsByPostID(context.Context, shared.ID) ([]*domain.PostVersion, error) {
 	panic("not implemented")
 }
-func (f *fakeSlugRepo) FindLatestVersionAfter(
+func (f *fakeSlugRepo) FindVersionsAfter(
 	context.Context, shared.ID, time.Time,
-) (*domain.PostVersion, error) {
+) ([]*domain.PostVersion, error) {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) GetVersionByID(context.Context, shared.ID) (*domain.PostVersion, error) {
