@@ -5,7 +5,7 @@ import { GITHUB_BIND_INTENT_KEY } from "@features/profile/ui/ConnectionsSection"
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -20,10 +20,19 @@ export const Route = createFileRoute("/auth/github/callback")({
 
 function GithubCallbackPage() {
 	const { code } = useSearch({ from: "/auth/github/callback" });
-	const githubLogin = useGithubLoginMutation();
-	const bindConnection = useBindConnectionMutation();
+	const { mutateAsync: githubLogin } = useGithubLoginMutation();
+	const { mutateAsync: bindConnection } = useBindConnectionMutation();
 	const qc = useQueryClient();
 	const navigate = useNavigate();
+	const handledCode = useRef<string | null>(null);
+	const isMounted = useRef(false);
+
+	useEffect(() => {
+		isMounted.current = true;
+		return () => {
+			isMounted.current = false;
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!code) {
@@ -32,38 +41,44 @@ function GithubCallbackPage() {
 			return;
 		}
 
+		// 授权码只消费一次，StrictMode 重放 Effect 时也不能重发或改走登录。
+		if (handledCode.current === code) return;
+		handledCode.current = code;
+
 		// 设置页发起的绑定流程：清除意图标记后走 bind 而非 login
 		const isBindIntent = window.sessionStorage.getItem(GITHUB_BIND_INTENT_KEY) === "1";
 		window.sessionStorage.removeItem(GITHUB_BIND_INTENT_KEY);
 
 		if (isBindIntent) {
-			bindConnection.mutate(
-				{ provider: "github", credential: code },
-				{
-					onSuccess: () => {
-						toast.success("GitHub 绑定成功");
-						qc.invalidateQueries({ queryKey: authKeys.me() });
-						navigate({ to: "/profile", replace: true });
-					},
-					onError: (err) => {
-						toast.error(
-							`GitHub 绑定失败：${err instanceof Error ? err.message : "请重试"}`,
-						);
-						navigate({ to: "/profile", replace: true });
-					},
+			// Promise 回调不依赖 mutation 订阅，StrictMode 清理订阅后仍可处理结果。
+			void bindConnection({ provider: "github", credential: code }).then(
+				() => {
+					if (!isMounted.current || handledCode.current !== code) return;
+					toast.success("GitHub 绑定成功");
+					qc.invalidateQueries({ queryKey: authKeys.me() });
+					navigate({ to: "/profile", replace: true });
+				},
+				(err: unknown) => {
+					if (!isMounted.current || handledCode.current !== code) return;
+					toast.error(
+						`GitHub 绑定失败：${err instanceof Error ? err.message : "请重试"}`,
+					);
+					navigate({ to: "/profile", replace: true });
 				},
 			);
 			return;
 		}
 
-		githubLogin.mutate(code, {
-			onSuccess: () => {
+		void githubLogin(code).then(
+			() => {
+				if (!isMounted.current || handledCode.current !== code) return;
 				toast.success("登录成功");
 				// useGithubLoginMutation 的 onSuccess 已 invalidate authKeys.me() 并
 				// markSessionActive()，新页面加载时 Header 会自动拉取一次 me。
 				navigate({ to: "/", replace: true });
 			},
-			onError: (err) => {
+			(err: unknown) => {
+				if (!isMounted.current || handledCode.current !== code) return;
 				if (openLinkConfirmFromError(err)) {
 					// 确认弹窗全局挂载，回调页只负责离开 loading 界面
 					navigate({ to: "/", replace: true });
@@ -72,8 +87,8 @@ function GithubCallbackPage() {
 				toast.error("GitHub 登录失败");
 				navigate({ to: "/login", replace: true });
 			},
-		});
-	}, [code, githubLogin.mutate, bindConnection, qc, navigate]);
+		);
+	}, [code, githubLogin, bindConnection, qc, navigate]);
 
 	return (
 		<div className="flex h-screen w-screen items-center justify-center">
