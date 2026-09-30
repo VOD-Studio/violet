@@ -252,7 +252,10 @@ function AdminUsers() {
 			width: "120px",
 			align: "center",
 			cell: (row) => {
-				// 安全防护：root 不可被任何人操作；被委派超管仅 root 可操作；自己不可被操作
+				// 安全防护分两层：
+				// 编辑基础信息（用户名/邮箱/密码等）对 root/自己放开——后端 useradmin.Update
+				// 只守卫角色/状态变更，基础信息本就可改，前端此前一刀切禁用是过度限制；
+				// 破坏性操作（删除）维持全保护：root 不可被删；被委派超管仅 root 可操作；不可删自己。
 				const isProtected =
 					row.is_root ||
 					(!isOperatorRoot && row.role === "superadmin") ||
@@ -266,7 +269,6 @@ function AdminUsers() {
 										<Button
 											variant="ghost"
 											size="icon-sm"
-											disabled={isProtected}
 											onClick={(e) => {
 												e.stopPropagation();
 												setEditingUser(row);
@@ -278,9 +280,7 @@ function AdminUsers() {
 										</Button>
 									</span>
 								</TooltipTrigger>
-								<TooltipContent>
-									{isProtected ? "不可编辑此用户" : "编辑"}
-								</TooltipContent>
+								<TooltipContent>编辑</TooltipContent>
 							</Tooltip>
 						</PermissionGuard>
 						<PermissionGuard permission="chat:manage">
@@ -504,15 +504,7 @@ function AdminUsers() {
 						</div>
 					)}
 					onRowClick={(row) => {
-						// 受保护用户（root/被委派超管且操作者非 root/自己）不可通过行点击编辑
-						const isProtected =
-							row.is_root ||
-							(!isOperatorRoot && row.role === "superadmin") ||
-							row.id === currentUserId;
-						if (isProtected) {
-							toast.error("不可编辑此用户");
-							return;
-						}
+						// 行点击即编辑：基础信息对 root/自己放开（危险字段在 EditUserDialog 内禁用）
 						if (canUpdateUser) {
 							setEditingUser(row);
 							setEditDialogOpen(true);

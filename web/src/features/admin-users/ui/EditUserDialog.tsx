@@ -54,6 +54,8 @@ export function EditUserDialog({
 	// 角色是否不可选：目标是 root（不可降级）或编辑自己（不可改自己角色）
 	// 被委派超管可由 root 改角色，故不在此禁用
 	const roleDisabled = user.is_root || user.id === currentUserId;
+	// 状态开关同守卫：不可禁用 root / 自己（后端 useradmin.Update 状态变更守卫兜底 403）
+	const statusDisabled = user.is_root || user.id === currentUserId;
 
 	const {
 		register,
@@ -96,9 +98,16 @@ export function EditUserDialog({
 			username: data.username,
 			display_name: data.display_name,
 			email: data.email,
-			role: data.role,
-			is_active: data.is_active,
 		};
+
+		// 禁用的字段不进 PATCH 体（nil=不更新）：root/自己的角色与状态由后端守卫兜底，
+		// 原值重发会被守卫直接 403（守卫不比对值是否变化）。
+		if (!roleDisabled) {
+			updateData.role = data.role;
+		}
+		if (!statusDisabled) {
+			updateData.is_active = data.is_active;
+		}
 
 		// 只有填写了密码才更新
 		if (data.password && data.password.length > 0) {
@@ -242,11 +251,17 @@ export function EditUserDialog({
 					<Label htmlFor="edit-is_active" className="cursor-pointer">
 						启用账户
 					</Label>
-					<Switch
-						id="edit-is_active"
-						checked={isActive}
-						onCheckedChange={(checked) => setValue("is_active", checked)}
-					/>
+					<div className="flex items-center gap-2">
+						<Switch
+							id="edit-is_active"
+							checked={isActive}
+							onCheckedChange={(checked) => setValue("is_active", checked)}
+							disabled={statusDisabled}
+						/>
+						{statusDisabled ? (
+							<span className="text-xs text-muted-foreground">不可禁用该账户</span>
+						) : null}
+					</div>
 				</div>
 			</form>
 		</Modal>
