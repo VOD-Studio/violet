@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-
 import { ApiError } from "@shared/api/error";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useLinkConfirmStore } from "../model/link-confirm-store";
 import { openLinkConfirmFromError } from "./open-link-confirm";
