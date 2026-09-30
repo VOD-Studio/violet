@@ -7,6 +7,22 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.51](https://github.com/VOD-Studio/violet/compare/v2.8.50...v2.8.51) (2026-09-30)
+
+
+### 修复
+
+* **auth:** OAuth 绑定确认成功后跳转离开登录页 ([9ef57f6](https://github.com/VOD-Studio/violet/commit/9ef57f69fd90e565522d88153f4e565f77b1f641))
+* **auth:** 修复 GitHub 授权回调重复请求 ([5d74a9b](https://github.com/VOD-Studio/violet/commit/5d74a9bff9d16cc335ebc2718d45d600b9d14032))
+* **auth:** 修复 GitHub 授权回调重复请求 ([3ec5206](https://github.com/VOD-Studio/violet/commit/3ec5206a4d2b15d9a2c2c93e498f3b672214ade2))
+* **auth:** 校验登录跳转目标防开放重定向 ([c237e67](https://github.com/VOD-Studio/violet/commit/c237e67dda4c9634dc0550766cea0ad29d99eaab))
+* **layout:** 矮内容页 main 撑满视口让 footer 沉底 ([82be73b](https://github.com/VOD-Studio/violet/commit/82be73bd5a82ba67e6828b0102d857b37cca1b12))
+* **notification:** 按用户核验浏览器通道订阅 ([5d44698](https://github.com/VOD-Studio/violet/commit/5d44698ef0991611275ea28fb875aeb3fe5d6d07))
+* OAuth 绑定确认跳转与矮内容页 footer 布局修复 ([2bee159](https://github.com/VOD-Studio/violet/commit/2bee15924e0b3403590125cc8e82f363ac8e8968))
+* **shared:** 修复浏览器推送订阅状态 ([9d5cdd4](https://github.com/VOD-Studio/violet/commit/9d5cdd499570a005595cb786cb149b7591b407da))
+* **webpush:** 修复浏览器推送订阅与离线投递 ([7389fcf](https://github.com/VOD-Studio/violet/commit/7389fcf662145fc03d02681e9400b764a38917ed))
+* **webpush:** 修复短暂离线后的通知丢失 ([3bf3399](https://github.com/VOD-Studio/violet/commit/3bf339976ff6ced09b897da816e1a17342de60b1))
+
 ## [2.8.50](https://github.com/VOD-Studio/violet/compare/v2.8.49...v2.8.50) (2026-09-30)
 
 
