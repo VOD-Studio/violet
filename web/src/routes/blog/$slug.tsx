@@ -26,15 +26,9 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import { FloatingBack } from "@shared/ui/floating-back";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	TextUnderline,
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@violet/ui";
-import { ArrowLeft, Calendar, ExternalLink, Eye } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { Popover, PopoverContent, PopoverTrigger, TextUnderline } from "@violet/ui";
+import { ArrowLeft, Calendar, ExternalLink, Eye, PencilLine } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 /**
  * 评论相关组件懒加载：批注层 / 浮动工具条 / 评论区都在首屏可视区下方，
@@ -207,24 +201,9 @@ function BlogDetailPage() {
 							<span className="inline-flex items-center gap-1.5">
 								<Calendar className="size-3.5" />
 								{formatDate(post.published_at, "long-date")}
-								{post.edited_at ? (
-									<TooltipProvider delayDuration={200}>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												{/* 标记本身小字弱化常驻，hover 墨线生长提示可交互 */}
-												<TextUnderline className="text-xs text-muted-foreground/80">
-													已编辑
-												</TextUnderline>
-											</TooltipTrigger>
-											<TooltipContent>
-												编辑于 {formatDate(post.edited_at, "long-date")} ·{" "}
-												{post.edited_version_count ?? 1} 个版本
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								) : null}
 							</span>
 						) : null}
+						{post.edited_at ? <RevisionChip post={post} /> : null}
 						<span className="inline-flex items-center gap-1.5">
 							<Eye className="size-3.5" />
 							{viewCount} 次阅读
@@ -351,6 +330,59 @@ function BlogDetailPage() {
 				<BackToTop />
 			)}
 		</>
+	);
+}
+
+interface RevisionChipProps {
+	post: PostDetail;
+}
+
+/** 发布后修订标记胶囊：hover 墨线生长并浮出修订摘要。 */
+function RevisionChip({ post }: RevisionChipProps) {
+	const count = post.edited_version_count ?? 1;
+	// 胶囊仅在 edited_at 存在时挂载，日期可安全收敛
+	const editedDate = post.edited_at ?? "";
+	const [open, setOpen] = useState(false);
+	const closeTimer = useRef(0);
+	// 延迟关闭容纳指针从胶囊移向浮层；两侧任一重新进入即取消关闭。
+	const openNow = () => {
+		window.clearTimeout(closeTimer.current);
+		setOpen(true);
+	};
+	const closeSoon = () => {
+		window.clearTimeout(closeTimer.current);
+		closeTimer.current = window.setTimeout(() => setOpen(false), 120);
+	};
+	useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<button
+					type="button"
+					aria-label={`修订历史：共 ${count} 个版本`}
+					onMouseEnter={openNow}
+					onMouseLeave={closeSoon}
+					// 键盘可达性交给 radix 原生 Enter/Esc；focus 打开会与关闭时的焦点归还打架
+					className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs transition-colors hover:bg-accent"
+				>
+					<PencilLine className="size-3" />
+					<TextUnderline thickness={1}>{count} 次修订</TextUnderline>
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="center"
+				className="w-64"
+				onMouseEnter={openNow}
+				onMouseLeave={closeSoon}
+			>
+				<p className="text-sm font-medium">修订历史</p>
+				<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+					本文发布后经过 {count} 次修订，最近一次编辑于{" "}
+					{formatDate(editedDate, "long-date")}。
+				</p>
+			</PopoverContent>
+		</Popover>
 	);
 }
 
