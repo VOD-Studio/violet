@@ -24,6 +24,10 @@ const codePrefix = "comment"
 // 前端首屏无需为每条顶层发独立请求拉预览。「查看全部」走 GET /comments/{id}/replies。
 const replyPreviewLimit = 3
 
+// DeletedUserName 已注销用户在评论作者位的占位名（PRD-0034：注销后内容保留，
+// 作者不再以原名快照示人）。
+const DeletedUserName = "已注销用户"
+
 // 领域错误（映射见 internal/interfaces/http/response/error.go 的 httpStatusForCode）
 var (
 	// ErrInvalidCode 邮箱验证码错误、已过期、或尝试次数耗尽（5 次错误锁定）。
@@ -912,11 +916,14 @@ func (s *Service) enrichEmotes(ctx context.Context, dtos []CommentDTO) error {
 // oauthIdent 评论作者的第三方登录身份（User.OAuthIdentity 的搬运形态）。
 type oauthIdent struct{ provider, profileURL string }
 
-// enrichOAuthIdentities 批量填充 DTO 的 AuthorProvider / AuthorProfileURL（头像角标）。
+// enrichOAuthIdentities 批量填充作者展示信息：OAuth 角标 + 注销占位。
 //
-// 按 comments 的 user_id 去重后一次 FindByIDs 查 users，再按 commentID 回填
-// （含嵌套 Replies）。匿名评论（user_id 空）与密码注册用户查不到身份，不填。
-// userRepo 未注入（测试）时跳过。
+// 按 comments 的 user_id 去重后一次 FindByIDsForDisplay 查 users（含已注销，
+// 与登录路径的排除查询分野），再按 commentID 回填（含嵌套 Replies）：
+//   - 活跃作者：填 AuthorProvider/AuthorProfileURL（角标），快照名照常
+//   - 已注销作者：覆盖快照为「已注销用户」占位（名字占位、头像清空、无角标），
+//     其被回复引用（reply_to_name）同样替换
+// 匿名评论（user_id 空）不填。userRepo 未注入（测试）时跳过。
 func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, comments []*domain.Comment) error {
 	if s.userRepo == nil || len(dtos) == 0 || len(comments) == 0 {
 		return nil
@@ -934,14 +941,39 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 	for id := range userIDSet {
 		userIDs = append(userIDs, id)
 	}
-	users, err := s.userRepo.FindByIDs(ctx, userIDs)
+	users, err := s.userRepo.FindByIDsForDisplay(ctx, userIDs)
 	if err != nil {
 		return err
 	}
 	identByUser := make(map[string]oauthIdent, len(users))
+	deletedByUser := make(map[string]bool, len(users))
 	for _, u := range users {
+		if u.IsDeleted() {
+			deletedByUser[u.GetID().String()] = true
+			continue // 已注销不填角标，走占位
+		}
 		provider, profileURL := u.OAuthIdentity()
 		identByUser[u.GetID().String()] = oauthIdent{provider: provider, profileURL: profileURL}
+	}
+
+	// commentID → 作者/父评论作者是否已注销
+	authorDeleted := make(map[string]bool, len(comments))
+	parentAuthorDeleted := make(map[string]bool, len(comments))
+	authorIDByComment := make(map[string]string, len(comments))
+	for _, c := range comments {
+		if c.UserID() != nil {
+			authorIDByComment[c.ID().String()] = c.UserID().String()
+		}
+	}
+	for _, c := range comments {
+		if uid, ok := authorIDByComment[c.ID().String()]; ok && deletedByUser[uid] {
+			authorDeleted[c.ID().String()] = true
+		}
+		if c.ParentID() != nil {
+			if puid, ok := authorIDByComment[c.ParentID().String()]; ok && deletedByUser[puid] {
+				parentAuthorDeleted[c.ID().String()] = true
+			}
+		}
 	}
 	identByComment := make(map[string]oauthIdent, len(comments))
 	for _, c := range comments {
@@ -953,9 +985,17 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 		}
 	}
 	fill := func(d *CommentDTO) {
-		if ident, ok := identByComment[d.ID]; ok {
+		if authorDeleted[d.ID] {
+			d.AuthorName = DeletedUserName
+			d.AvatarURL = ""
+			d.AuthorProvider = ""
+			d.AuthorProfileURL = ""
+		} else if ident, ok := identByComment[d.ID]; ok {
 			d.AuthorProvider = ident.provider
 			d.AuthorProfileURL = ident.profileURL
+		}
+		if parentAuthorDeleted[d.ID] {
+			d.ReplyToName = DeletedUserName
 		}
 	}
 	for i := range dtos {
