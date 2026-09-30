@@ -117,8 +117,8 @@ export function DataTable<T>({
 		setSelected(next);
 	};
 
-	// —— 列宽状态（localStorage 持久化） ——
-	const widthStorageKey = storageKey ? `${storageKey}-widths` : undefined;
+	// 仅用户手动调整的列宽可持久化；旧 key 曾保存首次测量的自适应宽度，不再读取。
+	const widthStorageKey = storageKey ? `${storageKey}-widths-v2` : undefined;
 	const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
 		if (!widthStorageKey) return {};
 		try {
@@ -254,38 +254,7 @@ export function DataTable<T>({
 	const showFooter = pagination != null && pagination.total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
 
-	// —— 首次渲染后，从 DOM 读取所有列的实际宽度 ——
-	const tableRef = useRef<HTMLTableElement>(null);
 	const headerScrollRef = useRef<HTMLDivElement>(null);
-	const hasInitializedWidths = useRef(false);
-
-	useEffect(() => {
-		if (hasInitializedWidths.current || !tableRef.current) return;
-
-		// 读取所有 th 的实际宽度
-		const ths = tableRef.current.querySelectorAll("thead th");
-		const initialWidths: Record<string, number> = {};
-		let hasAnyWidth = false;
-
-		ths.forEach((th, index) => {
-			const col = visibleColumns[index];
-			if (!col) return;
-
-			// 如果已经有存储的宽度，跳过
-			if (columnWidths[col.key] != null) return;
-
-			const width = th.getBoundingClientRect().width;
-			if (width > 0) {
-				initialWidths[col.key] = Math.round(width);
-				hasAnyWidth = true;
-			}
-		});
-
-		if (hasAnyWidth) {
-			setColumnWidths((prev) => ({ ...prev, ...initialWidths }));
-			hasInitializedWidths.current = true;
-		}
-	}, [visibleColumns, columnWidths]);
 
 	// —— 滚动状态检测：控制固定列阴影显示 ——
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -394,10 +363,9 @@ export function DataTable<T>({
 			<DataTableToolbar className="shrink-0" toolbar={toolbar} />
 
 			<div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
-				{/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}
+				{/* Header — 与 body 共用 colgroup 宽度，横向滚动位置由 body 同步 */}
 				<div ref={headerScrollRef} className="shrink-0 overflow-hidden">
 					<table
-						ref={tableRef}
 						className="caption-bottom text-sm"
 						style={{
 							tableLayout: "fixed",
