@@ -1887,6 +1887,7 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 		}
 		subs, err := s.repo.ListPushSubscriptions(ctx, event.UserID)
 		if err != nil {
+			log.Warn().Err(err).Str("user_id", event.UserID.String()).Msg("查询聊天推送订阅失败")
 			continue
 		}
 		payload := PushPayload{Title: "Violet 聊天", Body: "收到一条新消息", URL: "/chat", Tag: "violet-chat"}
@@ -1910,10 +1911,10 @@ func (s *Service) notifyEvents(ctx context.Context, events []domainchat.Event) {
 			if err := s.push.Send(ctx, subscription, notification); err != nil {
 				if errors.Is(err, ErrPushSubscriptionExpired) {
 					if err := s.repo.DeletePushSubscription(ctx, event.UserID, subscription.Endpoint); err != nil {
-						log.Warn().Msg("清理失效聊天推送订阅失败")
+						log.Warn().Err(err).Str("user_id", event.UserID.String()).Msg("清理失效聊天推送订阅失败")
 					}
 				} else {
-					log.Warn().Msg("聊天浏览器推送失败，保留订阅供后续消息使用")
+					log.Warn().Err(err).Int64("event_sequence", event.Sequence).Str("user_id", event.UserID.String()).Msg("聊天浏览器推送失败，保留订阅供后续消息使用")
 				}
 			}
 		}
