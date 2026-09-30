@@ -31,6 +31,10 @@ func (externalUserRepo) FindByIDs(context.Context, []shared.ID) ([]*domainuser.U
 	return nil, nil
 }
 
+func (externalUserRepo) FindByIDsForDisplay(context.Context, []shared.ID) ([]*domainuser.User, error) {
+	return nil, nil
+}
+
 type externalBus struct {
 	appshared.NoopEventBus
 	count atomic.Int64
