@@ -30,6 +30,8 @@ export interface DataTableColumn<T> {
 	exportValue?: (row: T) => string | number | null;
 	/** 附加到 th 与 td 的类名 */
 	className?: string;
+	/** 该列单元格点击不触发行点击回调（操作列等纯按钮区）：td 层拦截冒泡，兼容禁用按钮不派发 click 落到单元格的场景 */
+	stopClickPropagation?: boolean;
 }
 
 /** 排序态，由调用方受控 */

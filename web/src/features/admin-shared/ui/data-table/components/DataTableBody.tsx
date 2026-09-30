@@ -265,6 +265,11 @@ export function DataTableBody<T>({
 												sticky.className,
 												col.className,
 											)}
+											onClick={
+												col.stopClickPropagation
+													? (e) => e.stopPropagation()
+													: undefined
+											}
 										>
 											<div
 												className={cn(
