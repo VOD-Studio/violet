@@ -26,22 +26,24 @@ type GithubLoginInput struct {
 }
 
 type GithubLoginHandler struct {
-	userRepo  user.UserRepository
-	creds     *OAuthCredentials
-	hasher       PasswordHasher
-	bus          appshared.EventBus
+	userRepo user.UserRepository
+	creds    *OAuthCredentials
+	tokens   LinkTokenStore
+	bus      appshared.EventBus
 }
 
+// NewGithubLoginHandler 构造 GitHub 登录用例。
+// email 匹配到已有账号且未绑定 GitHub 时返回 LinkConfirmationRequiredError（409 确认流）。
 func NewGithubLoginHandler(
 	repo user.UserRepository,
 	creds *OAuthCredentials,
-	hasher PasswordHasher,
+	tokens LinkTokenStore,
 	bus appshared.EventBus,
 ) *GithubLoginHandler {
 	return &GithubLoginHandler{
 		userRepo: repo,
 		creds:    creds,
-		hasher:   hasher,
+		tokens:   tokens,
 		bus:      bus,
 	}
 }
@@ -175,31 +177,33 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 			return LoginOutput{}, err
 		}
 	} else {
-		changed := false
+		// 用户存在。未绑定 GitHub：首次匹配，进入密码确认流（PRD-0033：
+		// 静默绑定会让「在 GitHub 挂他人已验证邮箱」直接登入他人账号）。
 		if u.GithubID() == nil {
-			u.SetGithubID(githubIDStr)
-			changed = true
-		}
-		// GitHub 用户可能改名，每次登录刷新 login（主页链接片段）；
-		// 空 login 同样跳过，防止异常响应把已回填的有效 login 覆盖成空串
-		if userInfo.Login != "" {
-			if login := u.GithubLogin(); login == nil || *login != userInfo.Login {
-				u.SetGithubLogin(userInfo.Login)
-				changed = true
+			confirm, err := newLinkConfirmation(ctx, h.tokens, u, &LinkTokenPayload{
+				Provider: "github", ProviderUID: githubIDStr,
+				Email: email.String(), GithubLogin: userInfo.Login, AvatarURL: userInfo.AvatarURL,
+			})
+			if err != nil {
+				return LoginOutput{}, err
 			}
+			return LoginOutput{}, confirm
 		}
-		
-		if userInfo.AvatarURL != "" && u.AvatarURL() == "" {
-			u.UpdateProfile(userInfo.AvatarURL, u.Bio())
-			changed = true
+		// 该 email 账号已绑定其他 GitHub 身份（同 email 双 GitHub 账号，罕见）：
+		// 不允许覆盖，联系管理员处理。
+		if *u.GithubID() != githubIDStr {
+			return LoginOutput{}, shared.Conflict("该邮箱账号已绑定其他 GitHub 身份，请联系管理员")
 		}
 
-		if changed {
+		if changed := applyProviderBinding(u, &LinkTokenPayload{
+			Provider: "github", ProviderUID: githubIDStr,
+			GithubLogin: userInfo.Login, AvatarURL: userInfo.AvatarURL,
+		}); changed {
 			if err := h.userRepo.Save(ctx, u); err != nil {
 				return LoginOutput{}, err
 			}
 		}
-		
+
 		if !u.CanLogin() {
 			return LoginOutput{}, user.ErrAccountDisabled
 		}

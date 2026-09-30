@@ -264,11 +264,33 @@ func registerAuthPaths(t *openapi3.T) {
 				400, errorResponse("provider 状态响应异常"),
 				401, errorResponse("ID Token 校验失败"),
 				403, errorResponse("该 OAuth 登录方式未启用"),
+				409, errorResponse("email 已注册账号且未绑定该 provider：需 link_token + 密码确认（POST /auth/link/confirm）"),
 			),
 		}
 	}
 	post(t, "/auth/google", oauthLogin("Google"))
 	post(t, "/auth/github", oauthLogin("GitHub"))
+
+	// ---- POST /auth/link/confirm（OAuth 首次匹配密码确认绑定，公开 + 限流）----
+	registerSchema(t, "LinkConfirmRequest", openapi3.Schemas{
+		"link_token": reqStr("OAuth 登录 409 响应下发的一次性确认凭证（5 分钟有效）"),
+		"password":   reqStr("该邮箱账号的密码"),
+	}, "link_token", "password")
+	post(t, "/auth/link/confirm", &openapi3.Operation{
+		Tags:        []string{"认证"},
+		Summary:     "OAuth 绑定确认",
+		Description: "OAuth 登录 email 匹配到已有账号且未绑定该 provider 时（409 LINK_CONFIRMATION_REQUIRED），" +
+			"输入账号密码确认后绑定 provider 身份并创建 session。密码错 5 次作废 link_token。",
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("LinkConfirmRequest", true, "确认凭证与密码"),
+		Responses: responses(
+			200, dataResponse("LoginResponse", "绑定并登录成功（session 走 cookie）", 200),
+			400, errorResponse("link_token 无效或已过期"),
+			401, errorResponse("密码错误"),
+			403, errorResponse("账号未设置密码或被禁用"),
+			409, errorResponse("该 provider 身份已绑定其他账号"),
+		),
+	})
 
 	// ---- admin OAuth 凭据管理 ----
 	registerSchema(t, "OAuthProviderStatus", openapi3.Schemas{

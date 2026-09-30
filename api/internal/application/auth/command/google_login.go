@@ -26,22 +26,23 @@ type GoogleLoginInput struct {
 type GoogleLoginHandler struct {
 	userRepo user.UserRepository
 	clientID string
-	hasher   PasswordHasher
+	tokens   LinkTokenStore
 	bus      appshared.EventBus
 }
 
 // NewGoogleLoginHandler 构造谷歌登录用例。
 // 仅校验 Google 凭证并找到/创建用户，返回 userID；session 创建交由 CreateSessionHandler。
+// email 匹配到已有账号且未绑定 Google 时返回 LinkConfirmationRequiredError（409 确认流）。
 func NewGoogleLoginHandler(
 	repo user.UserRepository,
 	clientID string,
-	hasher PasswordHasher,
+	tokens LinkTokenStore,
 	bus appshared.EventBus,
 ) *GoogleLoginHandler {
 	return &GoogleLoginHandler{
 		userRepo: repo,
 		clientID: clientID,
-		hasher:   hasher,
+		tokens:   tokens,
 		bus:      bus,
 	}
 }
@@ -121,25 +122,33 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 			return LoginOutput{}, err
 		}
 	} else {
-		// 用户存在，检查并绑定 Google ID
-		changed := false
+		// 用户存在。未绑定 Google：首次匹配，进入密码确认流（PRD-0033：
+		// 静默绑定会让「在 provider 挂他人已验证邮箱」直接登入他人账号，
+		// 必须由账号密码确认后才能绑定）。
 		if u.GoogleID() == nil {
-			u.SetGoogleID(subject)
-			changed = true
+			confirm, err := newLinkConfirmation(ctx, h.tokens, u, &LinkTokenPayload{
+				Provider: "google", ProviderUID: subject,
+				Email: email.String(), AvatarURL: payload.Picture,
+			})
+			if err != nil {
+				return LoginOutput{}, err
+			}
+			return LoginOutput{}, confirm
 		}
-		
-		// 如果用户还没有头像，使用 Google 提供的头像
-		if payload.Picture != "" && u.AvatarURL() == "" {
-			u.UpdateProfile(payload.Picture, u.Bio())
-			changed = true
+		// 该 email 账号已绑定其他 Google 身份（同 email 双 Google 账号，罕见）：
+		// 不允许覆盖，联系管理员处理。
+		if *u.GoogleID() != subject {
+			return LoginOutput{}, shared.Conflict("该邮箱账号已绑定其他 Google 身份，请联系管理员")
 		}
 
-		if changed {
+		if changed := applyProviderBinding(u, &LinkTokenPayload{
+			Provider: "google", ProviderUID: subject, AvatarURL: payload.Picture,
+		}); changed {
 			if err := h.userRepo.Save(ctx, u); err != nil {
 				return LoginOutput{}, err
 			}
 		}
-		
+
 		if !u.CanLogin() {
 			return LoginOutput{}, user.ErrAccountDisabled
 		}

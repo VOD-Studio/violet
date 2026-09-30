@@ -68,7 +68,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	sessionStore.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	h := NewHandler(
-		nil, login, nil, nil, nil, createSession,
+		nil, login, nil, nil, nil, nil, createSession,
 		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
@@ -129,7 +129,7 @@ func TestLogin_ByUsername(t *testing.T) {
 	sessionStore.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	h := NewHandler(
-		nil, login, nil, nil, nil, createSession,
+		nil, login, nil, nil, nil, nil, createSession,
 		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
@@ -148,7 +148,7 @@ func TestLogin_ByUsername(t *testing.T) {
 // 对应 Issue-0003：Handler.Session 读 ctx claims 返回 user_id/role/email。
 func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 	h := NewHandler(
-		nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
 		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
@@ -180,7 +180,7 @@ func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 // TestSession_Returns401WhenUnauthenticated 验证 /auth/session 未登录时返回 401。
 func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 	h := NewHandler(
-		nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
 		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),
@@ -204,7 +204,7 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 	sessionStore.On("DeleteForUser", mock.Anything, "user-1", domainsession.ID("sess-abc")).Return(nil)
 
 	h := NewHandler(
-		nil, nil, nil, nil, logout, nil,
+		nil, nil, nil, nil, nil, logout, nil,
 		nil, nil, nil, nil, nil, nil, nil,
 		authcmd.NewOAuthCredentials("", "", ""),
 		testCookieCfg(),

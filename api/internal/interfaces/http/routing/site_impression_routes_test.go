@@ -41,7 +41,7 @@ func (r *routeSiteImpressionRepository) Contains(_ context.Context, hash domains
 func TestSiteImpressionRouteSupportsAnonymousCSRFFlow(t *testing.T) {
 	cookieConfig := config.CookieConfig{CSRFName: "violet_csrf", SameSite: "lax"}
 	authHandler := authhttp.NewHandler(
-		nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
 		appauth.NewOAuthCredentials("", "", ""),
 		cookieConfig,
