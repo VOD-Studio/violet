@@ -150,8 +150,9 @@ function RootComponent() {
 					<Header isAuthenticated={auth.isAuthenticated} />
 					<main
 						className={cn(
-							"flex-1 flex-col",
-							isFullscreenRoute && "flex min-h-0 overflow-hidden",
+							"flex flex-1 flex-col",
+							!isFullscreenRoute && "min-h-[calc(100dvh-4rem)]",
+							isFullscreenRoute && "min-h-0 overflow-hidden",
 						)}
 					>
 						<Outlet />
