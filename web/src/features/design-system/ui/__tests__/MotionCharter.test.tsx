@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { TextUnderline } from "@violet/ui";
 import { describe, expect, it } from "vitest";
 import { MotionCharter } from "../MotionCharter";
 import {
@@ -15,7 +16,6 @@ import {
 	PulseDot,
 	QuoteLine,
 	TextReveal,
-	TextUnderline,
 	TiltCard,
 	WavyUnderline,
 } from "../motion-effects";

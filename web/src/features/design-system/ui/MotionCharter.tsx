@@ -1,3 +1,4 @@
+import { TextUnderline } from "@violet/ui";
 import { type ReactNode, useState } from "react";
 import {
 	AuroraGlow,
@@ -21,7 +22,6 @@ import {
 	StaggerGroup,
 	StaggerItem,
 	TextReveal,
-	TextUnderline,
 	TiltCard,
 	WavyUnderline,
 } from "./motion-effects";
