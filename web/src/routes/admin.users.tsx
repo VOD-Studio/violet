@@ -260,6 +260,8 @@ function AdminUsers() {
 			header: "创建时间",
 			accessorKey: "created_at",
 			sortable: true,
+			width: "170px",
+			fitContent: true,
 			cell: (row) => formatDateTime(row.created_at, "second"),
 		},
 		{
@@ -267,7 +269,6 @@ function AdminUsers() {
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "160px",
 			align: "center",
 			stopClickPropagation: true,
 			cell: (row) => {
