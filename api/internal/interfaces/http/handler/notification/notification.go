@@ -83,11 +83,17 @@ func mustGetUserID(r *http.Request) domainshared.ID {
 
 // --- 浏览器通知（Web Push）---
 
-// PushConfig 返回站点 VAPID 公钥与推送启用状态（前端据此决定是否展示开关）。
-func (h *Handler) PushConfig(w http.ResponseWriter, _ *http.Request) {
+// PushConfig 返回 Web Push 配置与当前用户的浏览器订阅状态。
+func (h *Handler) PushConfig(w http.ResponseWriter, r *http.Request) {
+	subscribed, err := h.push.HasPushSubscription(r.Context(), mustGetUserID(r), r.URL.Query().Get("endpoint_hash"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
 	response.RespondOK(w, map[string]any{
 		"public_key": h.push.PublicKey(),
 		"enabled":    h.push.Enabled(),
+		"subscribed": subscribed,
 	})
 }
 

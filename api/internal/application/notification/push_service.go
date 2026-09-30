@@ -2,7 +2,9 @@ package notification
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -51,6 +53,23 @@ func (s *PushService) Enabled() bool { return s.publicKey != "" && s.sender != n
 
 // PublicKey 返回 VAPID 公钥（未配置时为空串）。
 func (s *PushService) PublicKey() string { return s.publicKey }
+
+// HasPushSubscription 核对当前用户的 endpoint SHA-256 指纹，不返回推送凭据。
+func (s *PushService) HasPushSubscription(ctx context.Context, userID domainshared.ID, endpointHash string) (bool, error) {
+	if endpointHash == "" {
+		return false, nil
+	}
+	subs, err := s.repo.ListByUser(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	for _, sub := range subs {
+		if fmt.Sprintf("%x", sha256.Sum256([]byte(sub.Endpoint))) == endpointHash {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 // Subscribe 注册当前浏览器的推送订阅。
 func (s *PushService) Subscribe(ctx context.Context, userID domainshared.ID, endpoint, p256dh, auth, userAgent string) error {

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"testing"
@@ -77,5 +78,30 @@ func TestNotifyEventsPushSubscriptionLifecycle(t *testing.T) {
 			require.Equal(t, tc.delivered, push.delivered)
 			require.Len(t, repo.subs[userID], tc.subscriptions)
 		})
+	}
+}
+
+func TestHasPushSubscriptionIsScopedToUserAndEndpoint(t *testing.T) {
+	ctx := context.Background()
+	userID := domainshared.NewID()
+	endpoint := "https://push.example/device"
+	repo := &pushLifecycleRepo{mentionChatRepo: mentionChatRepo{
+		subs: map[domainshared.ID][]*domainchat.PushSubscription{userID: {{UserID: userID, Endpoint: endpoint}}},
+	}}
+	svc := NewService(repo, nil, nil, nil, nil, "", nil, nil, nil, nil, nil)
+	fingerprint := fmt.Sprintf("%x", sha256.Sum256([]byte(endpoint)))
+	for _, tc := range []struct {
+		user domainshared.ID
+		hash string
+		want bool
+	}{
+		{userID, fingerprint, true},
+		{domainshared.NewID(), fingerprint, false},
+		{userID, "", false},
+		{userID, "unknown", false},
+	} {
+		got, err := svc.HasPushSubscription(ctx, tc.user, tc.hash)
+		require.NoError(t, err)
+		require.Equal(t, tc.want, got)
 	}
 }

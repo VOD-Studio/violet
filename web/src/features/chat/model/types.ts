@@ -189,6 +189,7 @@ export interface ChatTypingEventData {
 export interface PushConfig {
 	public_key: string;
 	enabled: boolean;
+	subscribed: boolean;
 }
 
 export interface PushSubscriptionInput {

@@ -5,7 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
+	"net/url"
+	"strconv"
+	"time"
 
 	webpushlib "github.com/SherClockHolmes/webpush-go"
 
@@ -54,27 +59,69 @@ func (s *Sender) Deliver(ctx context.Context, subscription Subscription, notific
 	if err != nil {
 		return err
 	}
-	response, err := webpushlib.SendNotificationWithContext(ctx, body, &webpushlib.Subscription{
-		Endpoint: subscription.Endpoint,
-		Keys:     webpushlib.Keys{P256dh: subscription.P256DH, Auth: subscription.Auth},
-	}, &webpushlib.Options{
-		Subscriber:      s.subject,
-		VAPIDPublicKey:  s.publicKey,
-		VAPIDPrivateKey: s.privateKey,
-		TTL:             300,
-		Topic:           notification.Tag,
-	})
-	if err != nil {
-		return err
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	var lastErr error
+	var delay time.Duration
+	for attempt := 0; attempt < 3; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+		response, err := webpushlib.SendNotificationWithContext(ctx, body, &webpushlib.Subscription{
+			Endpoint: subscription.Endpoint,
+			Keys:     webpushlib.Keys{P256dh: subscription.P256DH, Auth: subscription.Auth},
+		}, &webpushlib.Options{
+			Subscriber:      s.subject,
+			VAPIDPublicKey:  s.publicKey,
+			VAPIDPrivateKey: s.privateKey,
+			TTL:             86400,
+			Urgency:         webpushlib.UrgencyHigh,
+			// Tag 只控制系统通知显示；不设 Topic，避免覆盖尚未投递的聊天消息。
+		})
+		delay = pushRetryDelay("", attempt)
+		if err != nil {
+			// url.Error 包含完整 endpoint，不能进入日志。
+			var urlErr *url.Error
+			if errors.As(err, &urlErr) {
+				err = urlErr.Err
+			}
+			lastErr = fmt.Errorf("web push transport: %w", err)
+			var networkErr net.Error
+			if ctx.Err() == nil && errors.As(err, &networkErr) && networkErr.Timeout() {
+				continue
+			}
+			return lastErr
+		}
+		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4096))
+		_ = response.Body.Close()
+		if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
+			return fmt.Errorf("%w: HTTP %d", ErrSubscriptionExpired, response.StatusCode)
+		}
+		if response.StatusCode >= 200 && response.StatusCode < 300 {
+			return nil
+		}
+		lastErr = fmt.Errorf("web push returned HTTP %d", response.StatusCode)
+		if response.StatusCode != http.StatusTooManyRequests && response.StatusCode < 500 {
+			return lastErr
+		}
+		delay = pushRetryDelay(response.Header.Get("Retry-After"), attempt)
 	}
-	defer response.Body.Close()
-	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
-		return fmt.Errorf("%w: %s", ErrSubscriptionExpired, response.Status)
+	return lastErr
+}
+
+func pushRetryDelay(retryAfter string, attempt int) time.Duration {
+	delay := 250 * time.Millisecond * time.Duration(1<<attempt)
+	if seconds, err := strconv.Atoi(retryAfter); err == nil && seconds > 0 {
+		return max(delay, time.Duration(min(seconds, 10))*time.Second)
 	}
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("web push returned %s", response.Status)
+	if retryAt, err := http.ParseTime(retryAfter); err == nil {
+		return max(delay, time.Until(retryAt))
 	}
-	return nil
+	return delay
 }
 
 // Send 适配 appchat.PushSender 端口：把聊天载荷转成中立形态并翻译失效错误。

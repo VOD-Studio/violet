@@ -2,6 +2,7 @@ package notification
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"testing"
@@ -167,5 +168,29 @@ func TestNotificationURL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, notificationURL(tc.sourceType, tc.payload))
 		})
+	}
+}
+
+func TestHasPushSubscriptionIsScopedToUserAndEndpoint(t *testing.T) {
+	ctx := context.Background()
+	userID := domainshared.NewID()
+	endpoint := "https://push.example/device"
+	repo := newFakePushRepo()
+	svc := newPushService(repo, &stubSender{})
+	require.NoError(t, svc.Subscribe(ctx, userID, endpoint, "key", "auth", ""))
+	fingerprint := fmt.Sprintf("%x", sha256.Sum256([]byte(endpoint)))
+	for _, tc := range []struct {
+		user domainshared.ID
+		hash string
+		want bool
+	}{
+		{userID, fingerprint, true},
+		{domainshared.NewID(), fingerprint, false},
+		{userID, "", false},
+		{userID, "unknown", false},
+	} {
+		got, err := svc.HasPushSubscription(ctx, tc.user, tc.hash)
+		require.NoError(t, err)
+		require.Equal(t, tc.want, got)
 	}
 }

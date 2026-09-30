@@ -34,6 +34,7 @@ func registerNotificationPaths(t *openapi3.T) {
 	registerSchema(t, "NotificationPushConfig", openapi3.Schemas{
 		"public_key": optStr("VAPID 公钥"),
 		"enabled":    optBool("站点是否启用浏览器通知"),
+		"subscribed": optBool("当前用户在此浏览器是否已订阅站内通知"),
 	})
 
 	registerSchema(t, "NotificationPushSubscriptionRequest", openapi3.Schemas{
@@ -99,6 +100,7 @@ func registerNotificationPaths(t *openapi3.T) {
 		Summary:     "浏览器通知配置",
 		Description: "与聊天推送订阅相互独立：两者各自授权、各自订阅。",
 		Security:    secure,
+		Parameters:  openapi3.Parameters{queryStrParam("endpoint_hash", "当前浏览器 endpoint 的 SHA-256 十六进制指纹；省略时 subscribed 为 false")},
 		Responses:   responses(200, dataResponse("NotificationPushConfig", "推送配置", 200)),
 	})
 
