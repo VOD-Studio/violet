@@ -1,4 +1,5 @@
 import { useGithubLoginMutation } from "@features/auth/api/mutations";
+import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -33,7 +34,12 @@ function GithubCallbackPage() {
 				// markSessionActive()，新页面加载时 Header 会自动拉取一次 me。
 				navigate({ to: "/", replace: true });
 			},
-			onError: () => {
+			onError: (err) => {
+				if (openLinkConfirmFromError(err)) {
+					// 确认弹窗全局挂载，回调页只负责离开 loading 界面
+					navigate({ to: "/", replace: true });
+					return;
+				}
 				toast.error("GitHub 登录失败");
 				navigate({ to: "/login", replace: true });
 			},

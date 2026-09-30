@@ -12,6 +12,8 @@ export interface ApiErrorInit {
 	details?: Record<string, string[]>;
 	/** 请求追踪 ID */
 	requestId?: string;
+	/** 后端错误响应的原始 body（非标准字段透传，如 409 link_confirmation_required 的 link_token） */
+	data?: Record<string, unknown>;
 }
 
 /**
@@ -36,6 +38,8 @@ export class ApiError extends Error {
 	readonly details?: Record<string, string[]>;
 	/** 请求追踪 ID */
 	readonly requestId?: string;
+	/** 后端错误响应原始 body（link_token 等非标准字段从中读取） */
+	readonly data?: Record<string, unknown>;
 
 	constructor(init: ApiErrorInit) {
 		super(init.message);
@@ -44,6 +48,7 @@ export class ApiError extends Error {
 		this.status = init.status;
 		this.details = init.details;
 		this.requestId = init.requestId;
+		this.data = init.data;
 	}
 
 	/**

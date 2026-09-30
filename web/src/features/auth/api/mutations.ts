@@ -129,6 +129,39 @@ export const useGithubLoginMutation = (csrfToken?: string) => {
 };
 
 /**
+ * confirmLink - POST /auth/link/confirm
+ *
+ * OAuth 登录 409 LINK_CONFIRMATION_REQUIRED 后的密码确认绑定，
+ * 成功即完成登录（session cookie 由响应下发）。
+ */
+export const confirmLink = (linkToken: string, password: string, csrfToken?: string) => {
+	const token = csrfToken || getCSRFToken();
+	return apiPost<LoginResponse>(
+		"/auth/link/confirm",
+		{ link_token: linkToken, password },
+		{
+			headers: token ? { [CSRF_HEADER]: token } : undefined,
+			__skipAuthDialog: true,
+		},
+	);
+};
+
+/**
+ * useConfirmLinkMutation - OAuth 绑定确认
+ */
+export const useConfirmLinkMutation = (csrfToken?: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (input: { linkToken: string; password: string }) =>
+			confirmLink(input.linkToken, input.password, csrfToken),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: authKeys.me() });
+			markSessionActive();
+		},
+	});
+};
+
+/**
  * useForgotPassword - 发起密码重置邮件
  *
  * 后端始终返回成功以防邮箱枚举，调用方不应据响应判断邮箱是否存在。

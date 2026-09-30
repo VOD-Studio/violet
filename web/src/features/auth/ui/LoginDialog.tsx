@@ -1,6 +1,7 @@
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { clearAuthCache, useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
+import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useGoogleLogin } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
@@ -53,6 +54,7 @@ export function LoginDialog() {
 					// 这里不再显式 refetch，避免与 mutation 的 invalidate 产生双发。
 				},
 				onError: (err) => {
+					if (openLinkConfirmFromError(err)) return;
 					const msg =
 						err instanceof ApiError
 							? err.message ||

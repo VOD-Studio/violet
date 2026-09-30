@@ -387,6 +387,7 @@ func (h *Handler) respondLoginError(w http.ResponseWriter, r *http.Request, err 
 			"link_token":   confirm.Token,
 			"email":        confirm.Email,
 			"has_password": confirm.HasPassword,
+			"provider":     confirm.Provider,
 			"request_id":   response.GetRequestID(r),
 		})
 		return

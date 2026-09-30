@@ -60,6 +60,8 @@ type LinkConfirmationRequiredError struct {
 	Token       string
 	Email       string // 已脱敏
 	HasPassword bool
+	// Provider 提供方展示名（"Google"/"GitHub"），前端弹窗文案直接使用
+	Provider string
 }
 
 func (e *LinkConfirmationRequiredError) Error() string {
@@ -87,6 +89,7 @@ func newLinkConfirmation(ctx context.Context, tokens LinkTokenStore, u *user.Use
 		Token:       token,
 		Email:       maskEmail(payload.Email),
 		HasPassword: u.PasswordHash().String() != "",
+		Provider:    providerDisplayName(payload.Provider),
 	}, nil
 }
 

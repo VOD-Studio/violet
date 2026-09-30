@@ -18,6 +18,7 @@ import { RuaRouteTransition } from "@widgets/PersonaMotion";
 import { cn } from "cn";
 import { useEffect } from "react";
 import { ApiDocsDialog } from "@/features/api-docs";
+import { LinkConfirmDialog } from "@/features/auth/ui/LinkConfirmDialog";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
@@ -161,6 +162,7 @@ function RootComponent() {
 			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
+			<LinkConfirmDialog />
 			<ApiDocsDialog />
 			<ShareTweetDialog />
 			<CustomCursor />
