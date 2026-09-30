@@ -152,15 +152,15 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 			}
 			const body = responseData as
 				| (Envelope & {
-					error?: string;
-					message?: string;
-					details?: Record<string, string[]>;
-					request_id?: string;
-					// 后端错误响应可携带非标准字段（如 409 LINK_CONFIRMATION_REQUIRED
-					// 的 link_token/email/has_password），index signature 使整型
-					// 可直接赋给 ApiError.data 而无需双重断言。
-					[key: string]: unknown;
-				})
+						error?: string;
+						message?: string;
+						details?: Record<string, string[]>;
+						request_id?: string;
+						// 后端错误响应可携带非标准字段（如 409 LINK_CONFIRMATION_REQUIRED
+						// 的 link_token/email/has_password），index signature 使整型
+						// 可直接赋给 ApiError.data 而无需双重断言。
+						[key: string]: unknown;
+				  })
 				| undefined;
 
 			if (body?.error) {
