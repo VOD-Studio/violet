@@ -41,6 +41,8 @@ export function SaveAction() {
 
 组件用法与在线示例见营造法式：https://xunrua.top/design-system
 
+`OverlayScroll` 用组件库的 `[data-scrollbar="none"]` 隐藏原生滚动条，只显示悬停/滚动时的覆盖式滑块；宿主需要导入 `@violet/ui/styles.css`，否则全局滚动条规则可能与覆盖式滑块叠加。
+
 ## 从源码构建
 
 ```bash

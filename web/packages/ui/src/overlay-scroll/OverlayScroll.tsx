@@ -12,9 +12,9 @@ const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
  * 支持垂直/水平方向自动检测、拖拽 thumb 滚动。
  * thumb 在鼠标移入内容区或滚动时显示，移出后自动隐藏。
  *
- * Stacking context 隔离：
- * - wrapper `isolation: isolate` 防止 track 的 z-index 泄漏到外部
- * - 滚动宿主（scrollbar-width:none 的任意类）困住 children 的 z-index（sticky 列等），
+ * wrapper 与滚动宿主各自隔离 stacking context，避免固定列与轨道 z-index 泄漏。
+ * data-scrollbar="none" 由组件库的非分层样式提供，不能用 Tailwind utility：
+ * 宿主未分层的全局 scrollbar-width 规则会覆盖分层 utility。
  */
 const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 	({ children, className, style, ...props }, ref) => {
@@ -193,12 +193,10 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 			<div className={cn("relative isolate", className)}>
 				<div
 					ref={scrollRef}
-					className={cn(
-						"[scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
-						"isolate h-full overflow-auto",
-					)}
+					className="isolate h-full overflow-auto"
 					style={style}
 					{...props}
+					data-scrollbar="none"
 				>
 					{children}
 				</div>
