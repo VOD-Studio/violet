@@ -83,6 +83,8 @@ export interface PostDetail {
 	canonical_url?: string;
 	/** 发布时间，RFC3339，草稿可能为空 */
 	published_at?: string;
+	/** 发布后最近一次编辑的版本快照时间，RFC3339；缺省 = 发布后未编辑过 */
+	edited_at?: string;
 	/** 标签名列表 */
 	tags: string[];
 	/** 创建时间，RFC3339 */
