@@ -52,6 +52,26 @@ func NewUserEmailVerified(userID shared.ID) UserEmailVerified {
 	}
 }
 
+// UserEmailChanged 用户邮箱已修改事件
+//
+// From/To 为变更前后邮箱（审计 before/after 字段）。
+type UserEmailChanged struct {
+	shared.BaseEvent
+	// From 变更前邮箱
+	From string
+	// To 变更后邮箱
+	To string
+}
+
+// NewUserEmailChanged 构造邮箱修改事件
+func NewUserEmailChanged(userID shared.ID, from, to string) UserEmailChanged {
+	return UserEmailChanged{
+		BaseEvent: shared.NewBaseEvent("user.email_changed", userID),
+		From:      from,
+		To:        to,
+	}
+}
+
 // UserRoleChanged 用户角色已变更事件
 //
 // From/To 为变更前后角色（审计 before/after 字段）；UserName 为资源名快照。
@@ -348,6 +368,19 @@ func (u *User) ChangeUsername(name Username) {
 	u.RecordEvent(NewUserUsernameChanged(u.GetID(), old, name.String()))
 }
 
+// ChangeEmail 修改邮箱
+//
+// 值对象校验由调用方在 ParseEmail 完成，此处仅赋值并更新时间戳。
+// 管理员侧互信操作：保持既有 emailVerified 状态不变（与后台建号直接已验证同语义），
+// 不回退为未验证——emailVerified 是登录前置条件，回退会把用户锁在门外。
+func (u *User) ChangeEmail(email Email) {
+	if u.email.String() == email.String() {
+		return // 无实际变更不记事件
+	}
+	old := u.email.String()
+	u.email = email
+	u.RecordEvent(NewUserEmailChanged(u.GetID(), old, email.String()))
+}
 // ChangeRole 修改角色
 //
 // 校验角色合法性，保证聚合内 role 始终是有效枚举值。

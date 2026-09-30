@@ -66,6 +66,17 @@ func (s *AdminUserStore) FindByID(ctx context.Context, id domainshared.ID) (*dom
 	return toDomain(po)
 }
 
+// ExistsByEmail 邮箱是否已被占用（email 变更查重）
+func (s *AdminUserStore) ExistsByEmail(ctx context.Context, email domainuser.Email) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).Model(&newmodel.User{}).
+		Where("email = ?", email.String()).
+		Count(&count).Error
+	if err != nil {
+		return false, domainshared.Internal("查询邮箱存在性失败", err)
+	}
+	return count > 0, nil
+}
 // FindByIDs 按 ID 批量查找（批量操作前的安全校验用）
 func (s *AdminUserStore) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domainuser.User, error) {
 	if len(ids) == 0 {

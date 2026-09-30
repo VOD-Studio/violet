@@ -2,6 +2,7 @@ package useradmin
 
 import (
 	"context"
+	"strings"
 	"errors"
 	"testing"
 	"time"
@@ -20,6 +21,7 @@ type fakeStore struct {
 	findByIDs     []*domainuser.User
 	findErr       error
 	findByIDUser  *domainuser.User
+	emailExists   bool
 	affected      int64
 	batchErr      error
 
@@ -57,6 +59,10 @@ func (f *fakeStore) FindByID(_ context.Context, _ shared.ID) (*domainuser.User, 
 func (f *fakeStore) FindByIDs(_ context.Context, ids []shared.ID) ([]*domainuser.User, error) {
 	f.findIDsCalls = append(f.findIDsCalls, ids)
 	return f.findByIDs, f.findErr
+}
+
+func (f *fakeStore) ExistsByEmail(context.Context, domainuser.Email) (bool, error) {
+	return f.emailExists, nil
 }
 
 func (f *fakeStore) Save(_ context.Context, u *domainuser.User) error {
@@ -185,6 +191,45 @@ func TestService_Delete_RevokesSession(t *testing.T) {
 	}
 	if len(sessions.revoked) != 1 || sessions.revoked[0] != target.GetID().String() {
 		t.Errorf("删除用户后应吊销其全部 session, 实际 revoked=%v", sessions.revoked)
+	}
+}
+
+func TestService_Update_Email(t *testing.T) {
+	cases := []struct {
+		name        string
+		input       *string
+		emailExists bool
+		wantEmail   string
+		wantErr     string
+	}{
+		{name: "变更成功", input: new("new@example.com"), wantEmail: "new@example.com"},
+		{name: "邮箱被占用返回冲突", input: new("new@example.com"), emailExists: true, wantErr: "邮箱已被注册", wantEmail: "u1@example.com"},
+		{name: "与原值相同不触发变更", input: new("u1@example.com"), wantEmail: "u1@example.com"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			target := mustUser(t, "u1", "u1@example.com", domainuser.RoleUser, true)
+			store := &fakeStore{findByIDUser: &target, emailExists: tc.emailExists}
+			svc := newTestService(store)
+
+			dto, err := svc.Update(context.Background(), UpdateInput{ID: target.GetID().String(), Email: tc.input},
+				"op-1", string(domainuser.RoleAdmin), true)
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("期望错误含 %q, 实际 %v", tc.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Update 返回错误: %v", err)
+			}
+			if dto.Email != tc.wantEmail {
+				t.Errorf("邮箱 want %s, got %s", tc.wantEmail, dto.Email)
+			}
+			if len(store.saveCalls) != 1 || store.saveCalls[0].Email().String() != tc.wantEmail {
+				t.Errorf("持久化聚合邮箱不匹配: %+v", store.saveCalls)
+			}
+		})
 	}
 }
 

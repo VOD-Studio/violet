@@ -29,6 +29,8 @@ type AdminUserStore interface {
 	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[user.User], error)
 	// FindByID 按 ID 查找（admin 不限条件）
 	FindByID(ctx context.Context, id shared.ID) (*user.User, error)
+	// ExistsByEmail 邮箱是否已被占用（email 变更查重）
+	ExistsByEmail(ctx context.Context, email user.Email) (bool, error)
 	// FindByIDs 按 ID 批量查找（批量操作前的安全校验用）
 	FindByIDs(ctx context.Context, ids []shared.ID) ([]*user.User, error)
 	// Save 保存用户（upsert）

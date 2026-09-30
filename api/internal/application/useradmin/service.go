@@ -3,6 +3,7 @@ package useradmin
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -161,8 +162,6 @@ type UpdateInput struct {
 	Role        *string
 	IsActive    *bool
 	DisplayName *string
-	Bio         *string
-	AvatarURL   *string
 	IPAddress   string
 	UserAgent   string
 }
@@ -218,6 +217,21 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	}
 
 	// 应用变更
+	// 邮箱变更（管理员互信操作）：查重排除自身后变更，保持 emailVerified 不变。
+	if in.Email != nil && strings.TrimSpace(*in.Email) != u.Email().String() {
+		email, err := domainuser.ParseEmail(*in.Email)
+		if err != nil {
+			return UserDTO{}, err
+		}
+		exists, err := s.store.ExistsByEmail(ctx, email)
+		if err != nil {
+			return UserDTO{}, err
+		}
+		if exists {
+			return UserDTO{}, domainuser.ErrEmailExists
+		}
+		u.ChangeEmail(email)
+	}
 	if in.Username != nil {
 		un, err := domainuser.ParseUsername(*in.Username)
 		if err != nil {

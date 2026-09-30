@@ -119,6 +119,17 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case domainuser.UserEmailChanged:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionChangeEmail,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("修改用户邮箱：%s → %s", e.From, e.To),
+			Changes:    []domainaudit.FieldChange{{Field: "email", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case domainuser.UserEmailVerified:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
