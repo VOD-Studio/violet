@@ -1,6 +1,5 @@
 import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
-import { useReducedMotion } from "motion/react";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
@@ -81,9 +80,12 @@ export function SegmentedArticleToc({
 	const listRef = useRef<HTMLUListElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
-	const reduced = useReducedMotion();
+	const [railActive, setRailActive] = useState(true);
 
 	// 以正文标题的文档位置为锚，视口上下沿在相邻目录行间连续插值。
+	// railActive 进入依赖是刻意的：展开切换时重跑以重置 lastScrollTarget，
+	// 让目录滚回当前阅读位置；effect 体内无需直接读取该值。
+	// biome-ignore lint/correctness/useExhaustiveDependencies: 依赖为重跑触发器
 	useEffect(() => {
 		const body = contentRef?.current;
 		const list = listRef.current;
@@ -122,7 +124,6 @@ export function SegmentedArticleToc({
 			indicator.style.transform = `translateY(${start}px)`;
 			indicator.style.height = `${Math.max(0, end - start)}px`;
 			indicator.style.opacity = "1";
-
 			const scroll = scrollRef.current;
 			if (!isRailCollapsedAtRest || !scroll || scroll.scrollHeight <= scroll.clientHeight)
 				return;
@@ -133,8 +134,10 @@ export function SegmentedArticleToc({
 				visibleCenter > scroll.clientHeight * 0.7
 			) {
 				const target = center - scroll.clientHeight / 2;
-				if (lastScrollTarget === null || Math.abs(target - lastScrollTarget) > 24) {
-					scroll.scrollTo({ top: target, behavior: reduced ? "instant" : "smooth" });
+				// 帧级 instant 跟随：阅读滚动时每帧 target 增量小，逐帧直跳即平滑；
+				// smooth 会在 target 连续变化时反复重启，长距离点击时表现为来回甩动。
+				if (lastScrollTarget === null || Math.abs(target - lastScrollTarget) > 2) {
+					scroll.scrollTo({ top: target, behavior: "instant" });
 					lastScrollTarget = target;
 				}
 			}
@@ -165,7 +168,7 @@ export function SegmentedArticleToc({
 			window.removeEventListener("resize", onResize);
 			if (frame) cancelAnimationFrame(frame);
 		};
-	}, [contentRef, flatItems, isRailCollapsedAtRest, reduced]);
+	}, [contentRef, flatItems, isRailCollapsedAtRest, railActive]);
 
 	if (compact) {
 		return (
@@ -242,7 +245,12 @@ export function SegmentedArticleToc({
 	if (!isRailCollapsedAtRest) return renderTocList();
 
 	return (
-		<ArticleTocFocusShell items={flatItems} activeId={activeId} contentRef={contentRef}>
+		<ArticleTocFocusShell
+			items={flatItems}
+			activeId={activeId}
+			contentRef={contentRef}
+			onRailActiveChange={setRailActive}
+		>
 			{renderTocList}
 		</ArticleTocFocusShell>
 	);
