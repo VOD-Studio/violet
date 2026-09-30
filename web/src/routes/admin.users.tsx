@@ -8,6 +8,7 @@ import {
 	useBatchUpdateRole,
 	useBatchUpdateStatus,
 	useDeleteUser,
+	useRestoreUser,
 } from "@features/admin-users/api/queries";
 import type { AdminUserDTO } from "@features/admin-users/model/types";
 import { CreateUserDialog } from "@features/admin-users/ui/CreateUserDialog";
@@ -32,7 +33,16 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { BadgeCheck, Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
+import {
+	ArchiveRestore,
+	BadgeCheck,
+	Download,
+	Pencil,
+	Plus,
+	RefreshCw,
+	Trash2,
+	UserCog,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
@@ -47,6 +57,8 @@ function AdminUsers() {
 	const [keyword, setKeyword] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
+	// 注销视图：active（缺省，仅活跃）/ deleted（仅已注销，行内提供恢复）
+	const [deletedView, setDeletedView] = useState<"active" | "deleted">("active");
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
 
@@ -86,12 +98,14 @@ function AdminUsers() {
 		keyword: keyword || undefined,
 		role: roleFilter === "all" ? undefined : roleFilter,
 		is_active: statusFilter === "all" ? undefined : statusFilter === "active",
+		status: deletedView,
 	});
 
 	// Mutations
 	const batchUpdateStatus = useBatchUpdateStatus();
 	const batchUpdateRole = useBatchUpdateRole();
 	const deleteUser = useDeleteUser();
+	const restoreUser = useRestoreUser();
 
 	// 批量选中是否含受保护用户（root 或自己）——含则禁用批量改/禁用
 	// 注：被委派超管可被 root 批量处置，故此处只保护 root。
@@ -304,30 +318,55 @@ function AdminUsers() {
 								<TooltipContent>聊天徽章</TooltipContent>
 							</Tooltip>
 						</PermissionGuard>
-						<PermissionGuard permission="user:ban">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<span>
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-											disabled={isProtected}
-											onClick={(e) => {
-												e.stopPropagation();
-												handleDelete(row);
-											}}
-											aria-label={`删除用户 ${row.username}`}
-										>
-											<Trash2 className="size-3.5" />
-										</Button>
-									</span>
-								</TooltipTrigger>
-								<TooltipContent>
-									{isProtected ? "不可删除此用户" : "删除"}
-								</TooltipContent>
-							</Tooltip>
-						</PermissionGuard>
+						{deletedView === "deleted" ? (
+							<PermissionGuard permission="user:ban">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span>
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												onClick={(e) => {
+													e.stopPropagation();
+													restoreUser.mutate(row.id);
+												}}
+												aria-label={`恢复用户 ${row.username}`}
+											>
+												<ArchiveRestore className="size-3.5" />
+											</Button>
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>恢复</TooltipContent>
+								</Tooltip>
+							</PermissionGuard>
+						) : (
+							<PermissionGuard permission="user:ban">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span>
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+												disabled={isProtected}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDelete(row);
+												}}
+												aria-label={`注销用户 ${row.username}`}
+											>
+												<Trash2 className="size-3.5" />
+											</Button>
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>
+										{isProtected
+											? "不可注销此用户"
+											: "注销（内容保留，可恢复）"}
+									</TooltipContent>
+								</Tooltip>
+							</PermissionGuard>
+						)}
 					</div>
 				);
 			},
@@ -380,6 +419,18 @@ function AdminUsers() {
 								<SelectItem value="all">全部状态</SelectItem>
 								<SelectItem value="active">正常</SelectItem>
 								<SelectItem value="inactive">已禁用</SelectItem>
+							</SelectContent>
+						</Select>
+						<Select
+							value={deletedView}
+							onValueChange={(v) => setDeletedView(v as "active" | "deleted")}
+						>
+							<SelectTrigger className="h-9 w-30" aria-label="注销视图">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="active">活跃用户</SelectItem>
+								<SelectItem value="deleted">已注销</SelectItem>
 							</SelectContent>
 						</Select>
 						<Select
@@ -545,13 +596,13 @@ function AdminUsers() {
 				/>
 			)}
 
-			{/* 删除确认对话框 */}
+			{/* 注销确认对话框 */}
 			<ConfirmDialog
 				open={deleteConfirmOpen}
 				onOpenChange={setDeleteConfirmOpen}
-				title="确认删除用户"
-				description="此操作不可撤销，确定要删除这个用户吗？"
-				confirmLabel="删除"
+				title="确认注销用户"
+				description="注销后该用户不可登录、历史内容以「已注销用户」展示，邮箱等身份释放可被新用户注册；后台可在「已注销」视图中恢复。"
+				confirmLabel="注销"
 				onConfirm={handleConfirmDelete}
 				loading={deleteUser.isPending}
 			/>
