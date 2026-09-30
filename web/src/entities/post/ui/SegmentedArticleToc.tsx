@@ -1,5 +1,6 @@
 import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
+import { useReducedMotion } from "motion/react";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
@@ -80,10 +81,11 @@ export function SegmentedArticleToc({
 	const listRef = useRef<HTMLUListElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
+	const reduced = useReducedMotion();
 	const [railActive, setRailActive] = useState(true);
 
 	// 以正文标题的文档位置为锚，视口上下沿在相邻目录行间连续插值。
-	// railActive 进入依赖是刻意的：展开切换时重跑以重置 lastScrollTarget，
+	// railActive 进入依赖是刻意的：展开切换时重跑以重置 listTarget，
 	// 让目录滚回当前阅读位置；effect 体内无需直接读取该值。
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 依赖为重跑触发器
 	useEffect(() => {
@@ -108,7 +110,31 @@ export function SegmentedArticleToc({
 		let anchors: TocAnchor[] = [];
 		let frame = 0;
 		let needsMeasure = false;
-		let lastScrollTarget: number | null = null;
+		let listTarget: number | null = null;
+		let followFrame = 0;
+		const followStep = () => {
+			followFrame = 0;
+			const scroll = scrollRef.current;
+			if (!scroll || listTarget === null) return;
+			const delta = listTarget - scroll.scrollTop;
+			if (Math.abs(delta) < 0.5) {
+				scroll.scrollTop = listTarget;
+				return;
+			}
+			scroll.scrollTop += delta * 0.16;
+			followFrame = requestAnimationFrame(followStep);
+		};
+		const startFollow = () => {
+			if (!followFrame) followFrame = requestAnimationFrame(followStep);
+		};
+		// 用户手动滚动目录时让位：取消趋近，避免与滚轮/触摸抢滚动条。
+		const onUserListScroll = () => {
+			listTarget = null;
+			if (followFrame) {
+				cancelAnimationFrame(followFrame);
+				followFrame = 0;
+			}
+		};
 		const measureAnchors = () => {
 			const scrollY = window.scrollY;
 			anchors = rows.map(({ heading, row }) => ({
@@ -133,13 +159,11 @@ export function SegmentedArticleToc({
 				visibleCenter < scroll.clientHeight * 0.3 ||
 				visibleCenter > scroll.clientHeight * 0.7
 			) {
-				const target = center - scroll.clientHeight / 2;
-				// 帧级 instant 跟随：阅读滚动时每帧 target 增量小，逐帧直跳即平滑；
-				// smooth 会在 target 连续变化时反复重启，长距离点击时表现为来回甩动。
-				if (lastScrollTarget === null || Math.abs(target - lastScrollTarget) > 2) {
-					scroll.scrollTo({ top: target, behavior: "instant" });
-					lastScrollTarget = target;
-				}
+				listTarget = center - scroll.clientHeight / 2;
+				if (reduced) scroll.scrollTop = listTarget;
+				// 帧级 lerp 趋近：每帧向 target 收敛 16%，连续平滑且无动画重启；
+				// scrollTo(smooth) 在 target 逐帧变化时会反复重启，长距离点击表现为来回甩动。
+				else startFollow();
 			}
 		};
 		measureAnchors();
@@ -162,13 +186,17 @@ export function SegmentedArticleToc({
 		resizeObserver.observe(body);
 		window.addEventListener("scroll", onScroll, { passive: true });
 		window.addEventListener("resize", onResize, { passive: true });
+		const listScroller = scrollRef.current;
+		listScroller?.addEventListener("wheel", onUserListScroll, { passive: true });
 		return () => {
 			resizeObserver.disconnect();
 			window.removeEventListener("scroll", onScroll);
 			window.removeEventListener("resize", onResize);
+			listScroller?.removeEventListener("wheel", onUserListScroll);
 			if (frame) cancelAnimationFrame(frame);
+			if (followFrame) cancelAnimationFrame(followFrame);
 		};
-	}, [contentRef, flatItems, isRailCollapsedAtRest, railActive]);
+	}, [contentRef, flatItems, isRailCollapsedAtRest, railActive, reduced]);
 
 	if (compact) {
 		return (
