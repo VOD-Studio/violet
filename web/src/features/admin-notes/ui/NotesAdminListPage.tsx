@@ -127,7 +127,6 @@ export function NotesAdminListPage() {
 		{
 			key: "actions",
 			header: "操作",
-			width: "96px",
 			sticky: "right",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
