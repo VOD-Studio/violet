@@ -1,8 +1,14 @@
+import { webcrypto } from "node:crypto";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { useChatPushNotifications } from "../useChatPushNotifications";
 
-const { save, remove } = vi.hoisted(() => ({ save: vi.fn(), remove: vi.fn() }));
+const { save, remove, check } = vi.hoisted(() => ({
+	save: vi.fn(),
+	remove: vi.fn(),
+	check: vi.fn(),
+}));
+vi.mock("../../api/client", () => ({ fetchChatPushConfig: check }));
 vi.mock("../../api/queries", () => ({
 	useChatPushConfig: () => ({ data: { enabled: true, public_key: "AQID" } }),
 	useSaveChatPushSubscription: () => ({ mutateAsync: save }),
@@ -17,6 +23,15 @@ afterEach(() => {
 
 it("已有通知权限时，关闭订阅后仍可重新启用", async () => {
 	let active = true;
+	let subscribed = true;
+	check.mockImplementation(async () => ({ subscribed }));
+	save.mockImplementation(async () => {
+		subscribed = true;
+	});
+	remove.mockImplementation(async () => {
+		subscribed = false;
+	});
+	vi.stubGlobal("crypto", webcrypto);
 	const subscription = {
 		endpoint: "https://push.example/subscription",
 		toJSON: () => ({
@@ -53,6 +68,7 @@ it("已有通知权限时，关闭订阅后仍可重新启用", async () => {
 	expect(Notification.permission).toBe("granted");
 	await act(() => result.current.enable(false));
 	expect(result.current.subscribed).toBe(true);
-	expect(registration.pushManager.subscribe).toHaveBeenCalledOnce();
+	expect(registration.pushManager.subscribe).not.toHaveBeenCalled();
+	expect(subscription.unsubscribe).not.toHaveBeenCalled();
 	expect(save).toHaveBeenCalledOnce();
 });

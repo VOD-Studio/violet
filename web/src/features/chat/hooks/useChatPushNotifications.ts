@@ -1,4 +1,5 @@
 import { useBrowserPushNotifications } from "@shared/hooks/use-browser-push";
+import { fetchChatPushConfig } from "../api/client";
 import {
 	useChatPushConfig,
 	useDeleteChatPushSubscription,
@@ -13,6 +14,7 @@ export function useChatPushNotifications() {
 	const push = useBrowserPushNotifications<{ show_preview: boolean }>({
 		enabled: config?.enabled ?? false,
 		publicKey: config?.public_key ?? "",
+		check: fetchChatPushConfig,
 		save: (input) => save.mutateAsync(input),
 		remove: (endpoint) => remove.mutateAsync(endpoint),
 	});

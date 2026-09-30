@@ -334,7 +334,7 @@ export const useMarkChatRead = () => {
 };
 
 export const useChatPushConfig = () =>
-	useQuery({ queryKey: chatKeys.pushConfig(), queryFn: fetchChatPushConfig });
+	useQuery({ queryKey: chatKeys.pushConfig(), queryFn: () => fetchChatPushConfig() });
 
 export const useSaveChatPushSubscription = () =>
 	useMutation({ mutationFn: (input: PushSubscriptionInput) => saveChatPushSubscription(input) });

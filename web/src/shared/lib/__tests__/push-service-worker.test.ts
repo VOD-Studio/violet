@@ -4,17 +4,24 @@ import { runInNewContext } from "node:vm";
 import { expect, it, vi } from "vitest";
 
 /** 在隔离 vm 中加载 push-sw.js，返回其注册的监听器与 showNotification 间谍。 */
-const loadServiceWorker = () => {
+const loadServiceWorker = (script = "push-sw.js") => {
 	const listeners = new Map<string, (event: unknown) => void>();
 	const showNotification = vi.fn().mockResolvedValue(undefined);
-	runInNewContext(readFileSync("public/push-sw.js", "utf8"), {
+	const skipWaiting = vi.fn().mockResolvedValue(undefined);
+	const claim = vi.fn().mockResolvedValue(undefined);
+	const context = {
+		importScripts: (url: string) =>
+			runInNewContext(readFileSync(`public${url}`, "utf8"), context),
 		self: {
 			addEventListener: (type: string, listener: (event: unknown) => void) =>
 				listeners.set(type, listener),
 			registration: { showNotification },
+			skipWaiting,
+			clients: { claim },
 		},
-	});
-	return { listeners, showNotification };
+	};
+	runInNewContext(readFileSync(`public/${script}`, "utf8"), context);
+	return { listeners, showNotification, skipWaiting, claim };
 };
 
 it("连续收到相同标签的推送时仍请求再次提醒", async () => {
@@ -57,4 +64,17 @@ it("站内通知推送透传服务端下发的标题、标签与落地路径", a
 			data: { url: "/tweets/abc" },
 		}),
 	);
+});
+
+it.each(["push-sw.js", "chat-sw.js"])("%s 自动接替旧 Worker 并保留推送处理", async (script) => {
+	const { listeners, skipWaiting, claim } = loadServiceWorker(script);
+	const pending: Promise<unknown>[] = [];
+	for (const type of ["install", "activate"]) {
+		listeners.get(type)?.({ waitUntil: (promise: Promise<unknown>) => pending.push(promise) });
+	}
+	await Promise.all(pending);
+	expect(skipWaiting).toHaveBeenCalledOnce();
+	expect(claim).toHaveBeenCalledOnce();
+	expect(listeners.has("push")).toBe(true);
+	expect(listeners.has("notificationclick")).toBe(true);
 });

@@ -1,3 +1,4 @@
+import { fetchNotificationPushConfig } from "@shared/api/notifications";
 import { useBrowserPushNotifications } from "@shared/hooks/use-browser-push";
 import {
 	useDeleteNotificationPushSubscription,
@@ -13,6 +14,7 @@ export function useNotificationPushNotifications() {
 	return useBrowserPushNotifications({
 		enabled: config?.enabled ?? false,
 		publicKey: config?.public_key ?? "",
+		check: fetchNotificationPushConfig,
 		save: (input) => save.mutateAsync(input),
 		remove: (endpoint) => remove.mutateAsync(endpoint),
 	});
