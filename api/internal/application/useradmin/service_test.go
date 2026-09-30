@@ -29,8 +29,9 @@ type fakeStore struct {
 	usernameExists bool
 	googleExists   bool
 	githubExists   bool
-	affected      int64
-	batchErr      error
+	existsErr      error // 非-nil 时 ExistsBy* 模拟存储故障
+	affected       int64
+	batchErr       error
 
 	listCalls    []listStoreCall
 	findIDsCalls [][]shared.ID
@@ -75,7 +76,7 @@ func (f *fakeStore) FindByIDs(_ context.Context, ids []shared.ID) ([]*domainuser
 }
 
 func (f *fakeStore) ExistsByEmail(context.Context, domainuser.Email) (bool, error) {
-	return f.emailExists, nil
+	return f.emailExists, f.existsErr
 }
 
 func (f *fakeStore) Save(_ context.Context, u *domainuser.User) error {
@@ -84,15 +85,15 @@ func (f *fakeStore) Save(_ context.Context, u *domainuser.User) error {
 }
 
 func (f *fakeStore) ExistsByUsername(context.Context, domainuser.Username) (bool, error) {
-	return f.usernameExists, nil
+	return f.usernameExists, f.existsErr
 }
 
 func (f *fakeStore) ExistsByGoogleID(context.Context, string) (bool, error) {
-	return f.googleExists, nil
+	return f.googleExists, f.existsErr
 }
 
 func (f *fakeStore) ExistsByGithubID(context.Context, string) (bool, error) {
-	return f.githubExists, nil
+	return f.githubExists, f.existsErr
 }
 
 func (f *fakeStore) BatchUpdateStatus(_ context.Context, ids []shared.ID, isActive bool) (int64, error) {
@@ -294,6 +295,19 @@ func TestService_SoftDeleteAndRestore(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "邮箱")
 		assert.Empty(t, store.saveCalls, "冲突时不得落库")
+	})
+
+	t.Run("身份预检存储错误时拒绝恢复", func(t *testing.T) {
+		target := mustUser(t, "victim", "victim@example.com", domainuser.RoleUser, true)
+		target.Delete(time.Now())
+		store := &fakeStore{findByIDUser: &target, existsErr: errors.New("db down")}
+		svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil, nil)
+
+		_, err := svc.Restore(context.Background(),
+			target.GetID().String(), "op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+		require.Error(t, err)
+		assert.ErrorIs(t, err, store.existsErr, "存储故障应上抛而非当作无冲突")
+		assert.Empty(t, store.saveCalls, "预检不可靠时不得落库")
 	})
 
 	t.Run("未注销账号恢复返回 400", func(t *testing.T) {

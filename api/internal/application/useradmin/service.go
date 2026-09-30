@@ -347,7 +347,11 @@ func (s *Service) Restore(ctx context.Context, id, operatorID, operatorRole stri
 		return UserDTO{}, shared.BadRequest("该账号未处于注销状态")
 	}
 
-	if conflicts := s.identityConflicts(ctx, u); len(conflicts) > 0 {
+	conflicts, err := s.identityConflicts(ctx, u)
+	if err != nil {
+		return UserDTO{}, err
+	}
+	if len(conflicts) > 0 {
 		return UserDTO{}, shared.NewError(string(shared.CodeConflict),
 			"恢复失败，以下身份已被其他账号占用："+strings.Join(conflicts, "、"))
 	}
@@ -364,25 +368,34 @@ func (s *Service) Restore(ctx context.Context, id, operatorID, operatorRole stri
 
 // identityConflicts 检查账号四项身份在活跃用户中的占用，返回冲突字段中文名。
 // username/provider id 的占用检查由 AdminUserStore 的 Exists* 端口提供（排除已注销）。
-func (s *Service) identityConflicts(ctx context.Context, u *domainuser.User) []string {
+// 任一检查的存储错误直接上抛：身份预检不可靠时不得继续恢复（否则落库撞唯一索引报 500）。
+func (s *Service) identityConflicts(ctx context.Context, u *domainuser.User) ([]string, error) {
 	var conflicts []string
-	if exists, err := s.store.ExistsByEmail(ctx, u.Email()); err == nil && exists {
+	if exists, err := s.store.ExistsByEmail(ctx, u.Email()); err != nil {
+		return nil, err
+	} else if exists {
 		conflicts = append(conflicts, "邮箱")
 	}
-	if exists, err := s.store.ExistsByUsername(ctx, u.Username()); err == nil && exists {
+	if exists, err := s.store.ExistsByUsername(ctx, u.Username()); err != nil {
+		return nil, err
+	} else if exists {
 		conflicts = append(conflicts, "用户名")
 	}
 	if u.GoogleID() != nil {
-		if exists, err := s.store.ExistsByGoogleID(ctx, *u.GoogleID()); err == nil && exists {
+		if exists, err := s.store.ExistsByGoogleID(ctx, *u.GoogleID()); err != nil {
+			return nil, err
+		} else if exists {
 			conflicts = append(conflicts, "Google 身份")
 		}
 	}
 	if u.GithubID() != nil {
-		if exists, err := s.store.ExistsByGithubID(ctx, *u.GithubID()); err == nil && exists {
+		if exists, err := s.store.ExistsByGithubID(ctx, *u.GithubID()); err != nil {
+			return nil, err
+		} else if exists {
 			conflicts = append(conflicts, "GitHub 身份")
 		}
 	}
-	return conflicts
+	return conflicts, nil
 }
 
 // UpdateUserRole 修改单个用户角色
