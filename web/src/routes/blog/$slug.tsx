@@ -265,7 +265,7 @@ function BlogDetailPage() {
 
 					{/* 上一章/下一章导航（挂书文章显示；与正文左对齐） */}
 					{chapterCtx ? (
-						<div className="relative mt-12 flex max-w-6xl">
+						<div className="relative mt-12 flex max-w-4xl">
 							<div className="min-w-0 max-w-4xl flex-1">
 								<ChapterNav context={chapterCtx} />
 							</div>
@@ -298,7 +298,7 @@ function BlogDetailPage() {
 					{/* 底部自由评论区：放在 article 内、正文容器之后，与正文左对齐
                     （章内 TOC 与全书目录均不占布局列）。 */}
 					{post?.id && commentsEnabled && (
-						<div className="relative mt-16 flex max-w-6xl">
+						<div className="relative mt-16 flex max-w-4xl">
 							<Suspense
 								fallback={
 									<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
