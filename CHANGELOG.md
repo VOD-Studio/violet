@@ -7,6 +7,43 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.50](https://github.com/VOD-Studio/violet/compare/v2.8.49...v2.8.50) (2026-09-30)
+
+
+### 新增
+
+* **admin-shared:** DataTable 支持列级点击拦截 ([3085005](https://github.com/VOD-Studio/violet/commit/308500554c78b6cbb98cdeed93bf565250a4d70b))
+* **auth:** OAuth 绑定与解绑端点 ([56d3c15](https://github.com/VOD-Studio/violet/commit/56d3c15421d7bb6bf1e5439f424fb5d0acf1ba8e)), closes [#453](https://github.com/VOD-Studio/violet/issues/453)
+* **auth:** OAuth 首次匹配需密码确认绑定 ([bed343e](https://github.com/VOD-Studio/violet/commit/bed343e29e353731a774a21ac363a2dae522019b)), closes [#451](https://github.com/VOD-Studio/violet/issues/451)
+* **comment:** 已注销用户评论占位显示 ([8c8b9c7](https://github.com/VOD-Studio/violet/commit/8c8b9c7635bf23a7912ab352e8254a7ce1e5d6f8)), closes [#459](https://github.com/VOD-Studio/violet/issues/459)
+* **useradmin:** Update 支持 email 变更 ([8371f7f](https://github.com/VOD-Studio/violet/commit/8371f7f20bc183c9139a59252f6e39cbc6cda2f6))
+* **useradmin:** 注销编排与恢复端点 ([1831184](https://github.com/VOD-Studio/violet/commit/18311845906c4d66d77f303f4662472433ae3872)), closes [#458](https://github.com/VOD-Studio/violet/issues/458)
+* **useradmin:** 管理员账号合并端点 ([44e4a0c](https://github.com/VOD-Studio/violet/commit/44e4a0cba360829780f99e6ecf8801fadfd03727)), closes [#455](https://github.com/VOD-Studio/violet/issues/455)
+* **user:** 用户软删除与部分唯一索引 ([54b5469](https://github.com/VOD-Studio/violet/commit/54b546997c65745b5dd1e4a6b87f30970d0f5008)), closes [#457](https://github.com/VOD-Studio/violet/issues/457)
+* **web:** 放开 root 与自己的基础信息编辑 ([6ad2cee](https://github.com/VOD-Studio/violet/commit/6ad2cee32dd6d954c6f4179f62e8fb7824d95c44))
+* **web:** 登录绑定确认流覆盖三处登录入口 ([c8a7788](https://github.com/VOD-Studio/violet/commit/c8a778871de60280683d43aa55e3171eb38c139a)), closes [#452](https://github.com/VOD-Studio/violet/issues/452)
+* **web:** 管理后台已注销视图与恢复 ([cbb6ca0](https://github.com/VOD-Studio/violet/commit/cbb6ca05c3c98039054c6753f0e5200f9969b047)), closes [#460](https://github.com/VOD-Studio/violet/issues/460)
+* **web:** 管理后台账号合并入口 ([cdeae06](https://github.com/VOD-Studio/violet/commit/cdeae06ba0e8c2053d992687ac761b46c93ed507)), closes [#456](https://github.com/VOD-Studio/violet/issues/456)
+* **web:** 设置页登录方式绑定与解绑 ([3b789d8](https://github.com/VOD-Studio/violet/commit/3b789d87c985af51b904fbd0cd459b79a4601e29)), closes [#454](https://github.com/VOD-Studio/violet/issues/454)
+* 账号关联体系与用户注销软删除 ([44d9581](https://github.com/VOD-Studio/violet/commit/44d9581512a1704e5bd059141ea7cc5ff63958a0))
+
+
+### 修复
+
+* **admin-notes:** 让操作列按内容宽度显示 ([a422f30](https://github.com/VOD-Studio/violet/commit/a422f304c6edb1d1ae8590b268886b4a1b6e61ac))
+* **auth:** GitHub 登录只认已验证主邮箱 ([38f8bea](https://github.com/VOD-Studio/violet/commit/38f8bea1023dd7557defb0b6a6a9db2ebf212461)), closes [#449](https://github.com/VOD-Studio/violet/issues/449)
+* **auth:** OAuth 登录按 provider id 优先查找 ([c0ce8bc](https://github.com/VOD-Studio/violet/commit/c0ce8bca9faefaba9b062d9f5d5fed3d3473a160)), closes [#450](https://github.com/VOD-Studio/violet/issues/450)
+* **auth:** 绑定确认不再吞掉 link_token 存储错误 ([0f6e1c0](https://github.com/VOD-Studio/violet/commit/0f6e1c0d9f7a18e8222b6dd5120dfbf27c2380e6))
+* **data-table:** 不再固化首次渲染的列宽 ([402740b](https://github.com/VOD-Studio/violet/commit/402740b6b9984e098dd49a42bc24b5ac8c79bad0))
+* **data-table:** 拖动列宽时保持其他列稳定 ([7bd2a21](https://github.com/VOD-Studio/violet/commit/7bd2a21dfe2340d52d023e536e48f839611d7732))
+* **data-table:** 按行内容适配右固定列宽 ([610c10b](https://github.com/VOD-Studio/violet/commit/610c10ba1873fb0c0736f8e3039bd9fccc7aee02))
+* **deploy:** Docker 依赖层补齐 workspace 包清单 ([07edd98](https://github.com/VOD-Studio/violet/commit/07edd98e643db099684f2cf03e469b9eaade69bc))
+* **ui:** 修正覆盖滚动条滑块拖拽终点 ([d483537](https://github.com/VOD-Studio/violet/commit/d4835375d54ec39206f1879b5dfe801fb70fb541))
+* **ui:** 隐藏覆盖滚动条的原生轨道 ([eaf482d](https://github.com/VOD-Studio/violet/commit/eaf482d2396a995dcccf21c869319b7899879b89))
+* **useradmin:** 删除用户后吊销其全部 session ([41fcc88](https://github.com/VOD-Studio/violet/commit/41fcc887d65db414fd18e4cc04b7f1aada790701))
+* **useradmin:** 账号恢复的身份预检错误直接上抛 ([defdf34](https://github.com/VOD-Studio/violet/commit/defdf34464c1abefc933c0a0324ded115e75e5a6))
+* **users:** 创建时间列按内容宽度完整展示 ([456bb95](https://github.com/VOD-Studio/violet/commit/456bb957e5607ce59ae3ee36da165019adad5815))
+
 ## [2.8.49](https://github.com/VOD-Studio/violet/compare/v2.8.48...v2.8.49) (2026-09-29)
 
 
