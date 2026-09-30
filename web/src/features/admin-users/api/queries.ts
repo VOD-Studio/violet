@@ -80,7 +80,7 @@ export const useUpdateUser = () => {
 };
 
 /**
- * useDeleteUser - 删除用户
+ * useDeleteUser - 注销用户（软删除）
  */
 export const useDeleteUser = () => {
 	const queryClient = useQueryClient();
@@ -89,10 +89,50 @@ export const useDeleteUser = () => {
 		mutationFn: (id: string) => api.deleteUser(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: adminUsersKeys.lists() });
-			toast.success("用户删除成功");
+			toast.success("用户已注销");
 		},
 		onError: (error: Error) => {
-			toast.error(`删除用户失败: ${error.message}`);
+			toast.error(`注销用户失败: ${error.message}`);
+		},
+	});
+};
+
+/**
+ * useRestoreUser - 恢复注销用户
+ */
+export const useRestoreUser = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (id: string) => api.restoreUser(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminUsersKeys.lists() });
+			toast.success("用户已恢复");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message);
+		},
+	});
+};
+
+/**
+ * useMergeUsers - 合并账号
+ */
+export const useMergeUsers = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: {
+			primary_id: string;
+			secondary_id: string;
+			confirm_username: string;
+		}) => api.mergeUsers(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminUsersKeys.lists() });
+			toast.success("账号合并完成");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message);
 		},
 	});
 };

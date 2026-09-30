@@ -131,15 +131,50 @@ func registerAdminUserPaths(t *openapi3.T) {
 
 	del(t, "/admin/users/{id}", &openapi3.Operation{
 		Tags:        []string{"用户管理"},
-		Summary:     "删除用户",
-		Description: "删除用户。需管理员权限。",
+		Summary:     "注销用户",
+		Description: "软删除：内容保留（作者展示为「已注销用户」占位）、身份释放可被新用户注册、session 与 PAT 全部吊销、后台可恢复。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
 			pathStrParam("id", "用户 ID（UUID）"), csrfHeaderParam(),
 		},
 		Responses: responses(
-			200, messageResponse("用户已删除"),
+			200, messageResponse("用户已注销"),
 			404, errorResponse("用户不存在"),
+		),
+	})
+
+	post(t, "/admin/users/{id}/restore", &openapi3.Operation{
+		Tags:        []string{"用户管理"},
+		Summary:     "恢复注销用户",
+		Description: "恢复注销账号。前置校验身份占用：email/username/google_id/github_id 任一被活跃用户持有返回 409（message 列出冲突字段）。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pathStrParam("id", "用户 ID（UUID）"), csrfHeaderParam(),
+		},
+		Responses: responses(
+			200, dataResponse("AdminUserDTO", "恢复后的用户", 200),
+			400, errorResponse("该账号未处于注销状态"),
+			409, errorResponse("身份已被其他账号占用（message 列出冲突项）"),
+		),
+	})
+
+	registerSchema(t, "MergeUsersRequest", openapi3.Schemas{
+		"primary_id":       reqStr("合并保留方用户 ID（UUID）"),
+		"secondary_id":     reqStr("被合并方用户 ID（UUID），其内容归属迁移后账号删除"),
+		"confirm_username": reqStr("被合并方用户名（二次确认，必须完全匹配）"),
+	}, "primary_id", "secondary_id", "confirm_username")
+	post(t, "/admin/users/merge", &openapi3.Operation{
+		Tags:        []string{"用户管理"},
+		Summary:     "合并账号",
+		Description: "把 secondary 的全部内容归属（文章/评论/推文/通知等 30+ 表）迁移给 primary 后删除 secondary。单事务：任一步失败整体回滚。复合唯一键撞行保留 primary 侧；OAuth 绑定 primary 优先。不可逆，confirm_username 必须等于被合并方用户名。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("MergeUsersRequest", true, "合并双方与确认用户名"),
+		Responses: responses(
+			200, dataResponse("AdminUserDTO", "合并后的保留方用户", 200),
+			400, errorResponse("参数不合法 / 主被合并方相同 / confirm_username 不匹配"),
+			403, errorResponse("内置超级管理员不可参与合并"),
+			404, errorResponse("任一账号不存在"),
 		),
 	})
 

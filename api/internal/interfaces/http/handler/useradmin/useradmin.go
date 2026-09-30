@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	domainshared "blog-api/internal/domain/shared"
+
 	appuseradmin "blog-api/internal/application/useradmin"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -41,6 +43,8 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		Role:     r.URL.Query().Get("role"),
 		IsActive: isActive,
 		Keyword:  r.URL.Query().Get("keyword"),
+		// status=deleted 查看已注销用户；缺省仅活跃
+		Status: r.URL.Query().Get("status"),
 	}
 	result, err := h.svc.List(r.Context(), filter, response.ParsePageQuery(r))
 	if err != nil {
@@ -121,14 +125,51 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
-// DeleteUser 删除用户
+// DeleteUser 注销用户（软删除）
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
 	if err := h.svc.Delete(r.Context(), r.PathValue("id"), opID, opRole, opIsBuiltin, ip, ua); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondMessage(w, http.StatusOK, "用户已删除")
+	response.RespondMessage(w, http.StatusOK, "用户已注销")
+}
+
+// RestoreUser 恢复注销用户
+func (h *Handler) RestoreUser(w http.ResponseWriter, r *http.Request) {
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	dto, err := h.svc.Restore(r.Context(), r.PathValue("id"), opID, opRole, opIsBuiltin, ip, ua)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+// MergeUsers 合并账号（secondary 内容归属迁入 primary 后删除 secondary）
+func (h *Handler) MergeUsers(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PrimaryID       string `json:"primary_id" validate:"required,uuid"`
+		SecondaryID     string `json:"secondary_id" validate:"required,uuid"`
+		ConfirmUsername string `json:"confirm_username" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.PrimaryID == "" || req.SecondaryID == "" || req.ConfirmUsername == "" {
+		response.RespondError(w, r, domainshared.BadRequest("primary_id/secondary_id/confirm_username 均必填"))
+		return
+	}
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	dto, err := h.svc.MergeUsers(r.Context(), appuseradmin.MergeInput{
+		PrimaryID: req.PrimaryID, SecondaryID: req.SecondaryID, ConfirmUsername: req.ConfirmUsername,
+	}, opID, opRole, opIsBuiltin, ip, ua)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 // UpdateUserRole 修改用户角色

@@ -36,6 +36,10 @@ type authorLookupStub struct {
 	users []*userdomain.User
 }
 
+func (s *authorLookupStub) FindByIDsForDisplay(context.Context, []shared.ID) ([]*userdomain.User, error) {
+	return s.users, nil
+}
+
 func (s *authorLookupStub) FindByIDs(context.Context, []shared.ID) ([]*userdomain.User, error) {
 	return s.users, nil
 }

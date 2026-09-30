@@ -45,6 +45,10 @@ func (f *fakeRepo) Delete(_ context.Context, id, userID string) error {
 	return nil
 }
 
+func (f *fakeRepo) DeleteByUser(_ context.Context, _ string) error {
+	return nil
+}
+
 func TestService_Create_ReturnsPlaintextToken(t *testing.T) {
 	repo := &fakeRepo{}
 	svc := NewService(repo, infraeventbus.NewInMemory())

@@ -144,6 +144,7 @@ func registerAuthRoutes(v1 chi.Router, d *Deps) {
 		r.With(middleware.AuthRateLimit(redisClient)).Post("/login", authH.Login)
 		r.With(middleware.AuthRateLimit(redisClient)).Post("/google", authH.GoogleLogin)
 		r.With(middleware.AuthRateLimit(redisClient)).Post("/github", authH.GithubLogin)
+		r.With(middleware.AuthRateLimit(redisClient)).Post("/link/confirm", authH.ConfirmLink)
 		r.With(middleware.AuthRateLimit(redisClient)).Post("/forgot-password", authH.ForgotPassword)
 		r.With(middleware.AuthRateLimit(redisClient)).Post("/reset-password", authH.ResetPassword)
 
@@ -157,6 +158,9 @@ func registerAuthRoutes(v1 chi.Router, d *Deps) {
 			r.Get("/me", authH.GetMe)
 			r.Patch("/profile", authH.UpdateProfile)
 			r.Patch("/password", authH.ChangePassword)
+			// 设置页「登录方式」管理（登录态）
+			r.Post("/connections/{provider}", authH.BindConnection)
+			r.Delete("/connections/{provider}", authH.UnbindConnection)
 		})
 	})
 }

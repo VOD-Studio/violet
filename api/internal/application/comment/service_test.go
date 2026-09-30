@@ -59,13 +59,13 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	ghID, ghLogin := "12345", "octocat"
 	ghUser := domainuser.ReconstructUser(ghUID, ghEmail, ghName, domainuser.DisplayName{},
 		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
-		nil, &ghID, &ghLogin, false, true, true, time.Time{}, time.Time{})
+		nil, &ghID, &ghLogin, false, true, true, time.Time{}, time.Time{}, time.Time{})
 	gEmail, _ := domainuser.ParseEmail("g@example.com")
 	gName, _ := domainuser.ParseUsername("bob")
 	gSub := "google-sub-1"
 	gUser := domainuser.ReconstructUser(gUID, gEmail, gName, domainuser.DisplayName{},
 		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
-		&gSub, nil, nil, false, true, true, time.Time{}, time.Time{})
+		&gSub, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
 
 	postID, ghCID, gCID, anonCID := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
 	zero := time.Time{}
@@ -76,7 +76,7 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	anonComment := domain.ReconstructComment(anonCID, postID, nil, nil, anonCID.String()+"/", 0, nil,
 		"carol", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
 
-	userRepo.On("FindByIDs", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
 		Return([]*domainuser.User{ghUser, gUser}, nil).Once()
 
 	// dtos[0] 带一条回复预览（同一 GitHub 作者），验证嵌套回填
@@ -106,6 +106,58 @@ func TestEnrichOAuthIdentities_NilUserRepoSkips(t *testing.T) {
 	err := svc.enrichOAuthIdentities(context.Background(), dtos, nil)
 	assert.NoError(t, err)
 	assert.Empty(t, dtos[0].AuthorProvider)
+}
+
+// TestEnrichOAuthIdentities_DeletedAuthorPlaceholder 已注销作者的评论显示占位。
+func TestEnrichOAuthIdentities_DeletedAuthorPlaceholder(t *testing.T) {
+	userRepo := new(mocks.MockUserRepository)
+	svc := &Service{userRepo: userRepo}
+
+	// 已注销作者（deletedAt 非零）+ 其 GitHub 绑定残留在行内（注销不清列，恢复用）
+	dUID := shared.NewID()
+	dEmail, _ := domainuser.ParseEmail("gone@example.com")
+	dName, _ := domainuser.ParseUsername("gone")
+	ghID := "42"
+	deletedUser := domainuser.ReconstructUser(dUID, dEmail, dName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		nil, &ghID, nil, false, true, true, time.Now(), time.Time{}, time.Time{})
+	deletedUser.Delete(time.Now())
+
+	// 活跃作者（对照：快照与角标照常）
+	aUID := shared.NewID()
+	aEmail, _ := domainuser.ParseEmail("alive@example.com")
+	aName, _ := domainuser.ParseUsername("alive")
+	aliveUser := domainuser.ReconstructUser(aUID, aEmail, aName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
+
+	postID, dCID := shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	// 顶层：注销作者（快照名 "gone"）；回复：活跃作者回复注销者（reply_to 指向注销顶层）
+	topComment := domain.ReconstructComment(dCID, postID, &dUID, nil, dCID.String()+"/", 0, nil,
+		"gone", "https://cdn/avatar.png", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+	replyCID := shared.NewID()
+	replyComment := domain.ReconstructComment(replyCID, postID, &aUID, &dCID, dCID.String()+replyCID.String()+"/", 1, nil,
+		"alive", "", "", "", "reply", nil, domain.StatusApproved, "gone", "", zero, zero)
+
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{deletedUser, aliveUser}, nil).Once()
+
+	dtos := []CommentDTO{{
+		ID: dCID.String(), AuthorName: "gone", AvatarURL: "https://cdn/avatar.png",
+		Replies: []CommentDTO{{ID: replyCID.String(), AuthorName: "alive", ReplyToName: "gone"}},
+	}}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{topComment, replyComment})
+
+	assert.NoError(t, err)
+	// 注销作者：占位覆盖快照，无头像无角标
+	assert.Equal(t, DeletedUserName, dtos[0].AuthorName)
+	assert.Empty(t, dtos[0].AvatarURL)
+	assert.Empty(t, dtos[0].AuthorProvider)
+	// 活跃回复者：快照照常，reply_to 指向注销者 → 占位替换
+	assert.Equal(t, "alive", dtos[0].Replies[0].AuthorName)
+	assert.Equal(t, DeletedUserName, dtos[0].Replies[0].ReplyToName)
+	userRepo.AssertExpectations(t)
 }
 
 // fakeSitePolicy 可配置的站点评论策略 stub

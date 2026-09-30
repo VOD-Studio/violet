@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -15,6 +16,7 @@ import (
 	authquery "blog-api/internal/application/auth/query"
 	appsettings "blog-api/internal/application/settings"
 	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -27,6 +29,9 @@ type Handler struct {
 	login         *authcmd.LoginHandler         // 账号密码登录用例
 	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
 	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
+	confirmLink   *authcmd.ConfirmLinkHandler    // OAuth 首次匹配密码确认绑定用例
+	bindProvider  *authcmd.BindProviderHandler    // 设置页绑定 OAuth 用例
+	unbindProvider *authcmd.UnbindProviderHandler // 设置页解绑 OAuth 用例
 	logout        *authcmd.LogoutHandler        // 登出用例
 	createSession *authcmd.CreateSessionHandler // session 创建用例，登录后下发 cookie
 	verify        *authcmd.VerifyEmailHandler   // 邮箱验证用例
@@ -52,6 +57,9 @@ func NewHandler(
 	login *authcmd.LoginHandler,
 	google *authcmd.GoogleLoginHandler,
 	github *authcmd.GithubLoginHandler,
+	confirmLink *authcmd.ConfirmLinkHandler,
+	bindProvider *authcmd.BindProviderHandler,
+	unbindProvider *authcmd.UnbindProviderHandler,
 	logout *authcmd.LogoutHandler,
 	createSession *authcmd.CreateSessionHandler,
 	verify *authcmd.VerifyEmailHandler,
@@ -66,7 +74,8 @@ func NewHandler(
 	session config.SessionConfig,
 ) *Handler {
 	return &Handler{
-		register: register, login: login, google: google, github: github, logout: logout,
+		register: register, login: login, google: google, github: github, confirmLink: confirmLink, logout: logout,
+		bindProvider: bindProvider, unbindProvider: unbindProvider,
 		createSession: createSession,
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
@@ -288,7 +297,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 
 	out, err := h.google.Handle(ctxWithAuditInfo(r), authcmd.GoogleLoginInput{Credential: req.Credential})
 	if err != nil {
-		response.RespondError(w, r, err)
+		h.respondLoginError(w, r, err)
 		return
 	}
 	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
@@ -338,6 +347,124 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{
 		"user_id": out.UserID,
 	})
+}
+
+// ConfirmLink POST /auth/link/confirm —— OAuth 首次匹配的密码确认绑定。
+// 成功后与登录同构：CreateSession + Set-Cookie。
+func (h *Handler) ConfirmLink(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		LinkToken string `json:"link_token" validate:"required"`
+		Password  string `json:"password" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+
+	out, err := h.confirmLink.Handle(ctxWithAuditInfo(r), authcmd.ConfirmLinkInput{LinkToken: req.LinkToken, Password: req.Password})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
+		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
+	response.RespondOK(w, map[string]any{
+		"user_id": out.UserID,
+	})
+}
+
+// respondLoginError 登录类错误响应：409 确认流携带 confirm 数据，其余走统一翻译。
+func (h *Handler) respondLoginError(w http.ResponseWriter, r *http.Request, err error) {
+	var confirm *authcmd.LinkConfirmationRequiredError
+	if errors.As(err, &confirm) {
+		response.WriteJSON(w, http.StatusConflict, map[string]any{
+			"error":        "LINK_CONFIRMATION_REQUIRED",
+			"message":      confirm.Error(),
+			"link_token":   confirm.Token,
+			"email":        confirm.Email,
+			"has_password": confirm.HasPassword,
+			"provider":     confirm.Provider,
+			"request_id":   response.GetRequestID(r),
+		})
+		return
+	}
+	response.RespondError(w, r, err)
+}
+
+// BindConnection POST /auth/connections/{provider} —— 设置页绑定 OAuth（登录态）。
+func (h *Handler) BindConnection(w http.ResponseWriter, r *http.Request) {
+	provider := r.PathValue("provider")
+	if provider != "google" && provider != "github" {
+		response.RespondError(w, r, shared.BadRequest("未知的登录方式"))
+		return
+	}
+	if err := h.ensureOAuthEnabled(r.Context(), provider); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	userID := interfacesmw.GetUserIDFromContext(r)
+
+	var dto authcmd.BindingsDTO
+	var err error
+	switch provider {
+	case "google":
+		var req struct {
+			Credential string `json:"credential" validate:"required"`
+		}
+		if jerr := json.NewDecoder(r.Body).Decode(&req); jerr != nil {
+			response.RespondError(w, r, jerr)
+			return
+		}
+		if verr := h.validate.Struct(req); verr != nil {
+			response.RespondError(w, r, verr)
+			return
+		}
+		dto, err = h.bindProvider.BindGoogle(ctxWithAuditInfo(r), authcmd.BindGoogleInput{UserID: userID, Credential: req.Credential})
+	default:
+		var req struct {
+			Code string `json:"code" validate:"required"`
+		}
+		if jerr := json.NewDecoder(r.Body).Decode(&req); jerr != nil {
+			response.RespondError(w, r, jerr)
+			return
+		}
+		if verr := h.validate.Struct(req); verr != nil {
+			response.RespondError(w, r, verr)
+			return
+		}
+		dto, err = h.bindProvider.BindGithub(ctxWithAuditInfo(r), authcmd.BindGithubInput{UserID: userID, Code: req.Code})
+	}
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+// UnbindConnection DELETE /auth/connections/{provider} —— 设置页解绑 OAuth（登录态）。
+func (h *Handler) UnbindConnection(w http.ResponseWriter, r *http.Request) {
+	provider := r.PathValue("provider")
+	if provider != "google" && provider != "github" {
+		response.RespondError(w, r, shared.BadRequest("未知的登录方式"))
+		return
+	}
+	userID := interfacesmw.GetUserIDFromContext(r)
+	dto, err := h.unbindProvider.Handle(ctxWithAuditInfo(r), authcmd.UnbindInput{UserID: userID, Provider: provider})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 // Session GET /auth/session（SSR 探活，只读）

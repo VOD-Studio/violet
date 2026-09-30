@@ -8,10 +8,12 @@ import {
 	useBatchUpdateRole,
 	useBatchUpdateStatus,
 	useDeleteUser,
+	useRestoreUser,
 } from "@features/admin-users/api/queries";
 import type { AdminUserDTO } from "@features/admin-users/model/types";
 import { CreateUserDialog } from "@features/admin-users/ui/CreateUserDialog";
 import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
+import { MergeUsersDialog } from "@features/admin-users/ui/MergeUsersDialog";
 import { UserBadgesDialog } from "@features/admin-users/ui/UserBadgesDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
@@ -32,7 +34,17 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { BadgeCheck, Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
+import {
+	ArchiveRestore,
+	BadgeCheck,
+	Download,
+	Merge,
+	Pencil,
+	Plus,
+	RefreshCw,
+	Trash2,
+	UserCog,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
@@ -47,6 +59,8 @@ function AdminUsers() {
 	const [keyword, setKeyword] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
+	// 注销视图：active（缺省，仅活跃）/ deleted（仅已注销，行内提供恢复）
+	const [deletedView, setDeletedView] = useState<"active" | "deleted">("active");
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
 
@@ -60,6 +74,8 @@ function AdminUsers() {
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [badgesDialogOpen, setBadgesDialogOpen] = useState(false);
 	const [badgesUser, setBadgesUser] = useState<AdminUserDTO | null>(null);
+	const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+	const [mergeTarget, setMergeTarget] = useState<AdminUserDTO | null>(null);
 	const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
 	// 权限检查
@@ -86,12 +102,14 @@ function AdminUsers() {
 		keyword: keyword || undefined,
 		role: roleFilter === "all" ? undefined : roleFilter,
 		is_active: statusFilter === "all" ? undefined : statusFilter === "active",
+		status: deletedView,
 	});
 
 	// Mutations
 	const batchUpdateStatus = useBatchUpdateStatus();
 	const batchUpdateRole = useBatchUpdateRole();
 	const deleteUser = useDeleteUser();
+	const restoreUser = useRestoreUser();
 
 	// 批量选中是否含受保护用户（root 或自己）——含则禁用批量改/禁用
 	// 注：被委派超管可被 root 批量处置，故此处只保护 root。
@@ -232,7 +250,7 @@ function AdminUsers() {
 			key: "email_verified",
 			header: "邮箱验证",
 			cell: (row) => (
-				<Badge variant={row.email_verified ? "outline" : "secondary"}>
+				<Badge variant={row.email_verified ? "default" : "secondary"}>
 					{row.email_verified ? "已验证" : "未验证"}
 				</Badge>
 			),
@@ -242,6 +260,8 @@ function AdminUsers() {
 			header: "创建时间",
 			accessorKey: "created_at",
 			sortable: true,
+			width: "170px",
+			fitContent: true,
 			cell: (row) => formatDateTime(row.created_at, "second"),
 		},
 		{
@@ -249,15 +269,19 @@ function AdminUsers() {
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "120px",
 			align: "center",
+			stopClickPropagation: true,
 			cell: (row) => {
-				// 安全防护：root 不可被任何人操作；被委派超管仅 root 可操作；自己不可被操作
+				// 安全防护分两层：
+				// 编辑基础信息（用户名/邮箱/密码等）对 root/自己放开——后端 useradmin.Update
+				// 只守卫角色/状态变更，基础信息本就可改，前端此前一刀切禁用是过度限制；
+				// 破坏性操作（删除）维持全保护：root 不可被删；被委派超管仅 root 可操作；不可删自己。
 				const isProtected =
 					row.is_root ||
 					(!isOperatorRoot && row.role === "superadmin") ||
 					row.id === currentUserId;
 				return (
+					// 操作列点击不触发行点击：拦截在 DataTable 的 td 层（列声明 stopClickPropagation）
 					<div className="flex justify-center gap-2">
 						<PermissionGuard permission="user:list">
 							<Tooltip>
@@ -266,7 +290,6 @@ function AdminUsers() {
 										<Button
 											variant="ghost"
 											size="icon-sm"
-											disabled={isProtected}
 											onClick={(e) => {
 												e.stopPropagation();
 												setEditingUser(row);
@@ -278,9 +301,7 @@ function AdminUsers() {
 										</Button>
 									</span>
 								</TooltipTrigger>
-								<TooltipContent>
-									{isProtected ? "不可编辑此用户" : "编辑"}
-								</TooltipContent>
+								<TooltipContent>编辑</TooltipContent>
 							</Tooltip>
 						</PermissionGuard>
 						<PermissionGuard permission="chat:manage">
@@ -304,6 +325,53 @@ function AdminUsers() {
 								<TooltipContent>聊天徽章</TooltipContent>
 							</Tooltip>
 						</PermissionGuard>
+						{deletedView === "deleted" ? (
+							<PermissionGuard permission="user:ban">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span>
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												onClick={(e) => {
+													e.stopPropagation();
+													restoreUser.mutate(row.id);
+												}}
+												aria-label={`恢复用户 ${row.username}`}
+											>
+												<ArchiveRestore className="size-3.5" />
+											</Button>
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>恢复</TooltipContent>
+								</Tooltip>
+							</PermissionGuard>
+						) : (
+							<PermissionGuard permission="user:ban">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span>
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+												disabled={isProtected}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDelete(row);
+												}}
+												aria-label={`注销用户 ${row.username}`}
+											>
+												<Trash2 className="size-3.5" />
+											</Button>
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>
+										{isProtected ? "不可注销此用户" : "注销"}
+									</TooltipContent>
+								</Tooltip>
+							</PermissionGuard>
+						)}
 						<PermissionGuard permission="user:ban">
 							<Tooltip>
 								<TooltipTrigger asChild>
@@ -311,21 +379,19 @@ function AdminUsers() {
 										<Button
 											variant="ghost"
 											size="icon-sm"
-											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-											disabled={isProtected}
+											disabled={deletedView === "deleted" || isProtected}
 											onClick={(e) => {
 												e.stopPropagation();
-												handleDelete(row);
+												setMergeTarget(row);
+												setMergeDialogOpen(true);
 											}}
-											aria-label={`删除用户 ${row.username}`}
+											aria-label={`合并用户 ${row.username}`}
 										>
-											<Trash2 className="size-3.5" />
+											<Merge className="size-3.5" />
 										</Button>
 									</span>
 								</TooltipTrigger>
-								<TooltipContent>
-									{isProtected ? "不可删除此用户" : "删除"}
-								</TooltipContent>
+								<TooltipContent>合并到其他账号</TooltipContent>
 							</Tooltip>
 						</PermissionGuard>
 					</div>
@@ -380,6 +446,18 @@ function AdminUsers() {
 								<SelectItem value="all">全部状态</SelectItem>
 								<SelectItem value="active">正常</SelectItem>
 								<SelectItem value="inactive">已禁用</SelectItem>
+							</SelectContent>
+						</Select>
+						<Select
+							value={deletedView}
+							onValueChange={(v) => setDeletedView(v as "active" | "deleted")}
+						>
+							<SelectTrigger className="h-9 w-30" aria-label="注销视图">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="active">活跃用户</SelectItem>
+								<SelectItem value="deleted">已注销</SelectItem>
 							</SelectContent>
 						</Select>
 						<Select
@@ -504,15 +582,7 @@ function AdminUsers() {
 						</div>
 					)}
 					onRowClick={(row) => {
-						// 受保护用户（root/被委派超管且操作者非 root/自己）不可通过行点击编辑
-						const isProtected =
-							row.is_root ||
-							(!isOperatorRoot && row.role === "superadmin") ||
-							row.id === currentUserId;
-						if (isProtected) {
-							toast.error("不可编辑此用户");
-							return;
-						}
+						// 行点击即编辑：基础信息对 root/自己放开（危险字段在 EditUserDialog 内禁用）
 						if (canUpdateUser) {
 							setEditingUser(row);
 							setEditDialogOpen(true);
@@ -553,16 +623,25 @@ function AdminUsers() {
 				/>
 			)}
 
-			{/* 删除确认对话框 */}
+			{/* 注销确认对话框 */}
 			<ConfirmDialog
 				open={deleteConfirmOpen}
 				onOpenChange={setDeleteConfirmOpen}
-				title="确认删除用户"
-				description="此操作不可撤销，确定要删除这个用户吗？"
-				confirmLabel="删除"
+				title="确认注销用户"
+				description="注销后该用户不可登录、历史内容以「已注销用户」展示，邮箱等身份释放可被新用户注册；后台可在「已注销」视图中恢复。"
+				confirmLabel="注销"
 				onConfirm={handleConfirmDelete}
 				loading={deleteUser.isPending}
 			/>
+
+			{/* 合并账号对话框 */}
+			{mergeTarget && (
+				<MergeUsersDialog
+					open={mergeDialogOpen}
+					onOpenChange={setMergeDialogOpen}
+					user={mergeTarget}
+				/>
+			)}
 		</TooltipProvider>
 	);
 }

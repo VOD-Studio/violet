@@ -225,6 +225,30 @@ func (m *MockUserRepository) FindByUsername(ctx context.Context, username domain
 	return args.Get(0).(*domainuser.User), args.Error(1)
 }
 
+func (m *MockUserRepository) FindByGoogleID(ctx context.Context, googleID string) (*domainuser.User, error) {
+	args := m.Called(ctx, googleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainuser.User), args.Error(1)
+}
+
+func (m *MockUserRepository) FindByGithubID(ctx context.Context, githubID string) (*domainuser.User, error) {
+	args := m.Called(ctx, githubID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainuser.User), args.Error(1)
+}
+
+func (m *MockUserRepository) FindByIDsForDisplay(ctx context.Context, ids []shared.ID) ([]*domainuser.User, error) {
+	args := m.Called(ctx, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domainuser.User), args.Error(1)
+}
+
 func (m *MockUserRepository) ListContacts(ctx context.Context, query string, excludeID shared.ID, afterUsername string, afterID shared.ID, limit int) ([]*domainuser.User, error) {
 	args := m.Called(ctx, query, excludeID, afterUsername, afterID, limit)
 	if args.Get(0) == nil {

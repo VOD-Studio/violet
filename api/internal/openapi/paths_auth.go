@@ -261,13 +261,69 @@ func registerAuthPaths(t *openapi3.T) {
 			RequestBody: jsonBody("OAuthLoginRequest", true, "OAuth 凭证"),
 			Responses: responses(
 				200, dataResponse("LoginResponse", "登录成功（session 走 cookie）", 200),
+				400, errorResponse("provider 状态响应异常"),
 				401, errorResponse("ID Token 校验失败"),
 				403, errorResponse("该 OAuth 登录方式未启用"),
+				409, errorResponse("email 已注册账号且未绑定该 provider：需 link_token + 密码确认（POST /auth/link/confirm）"),
 			),
 		}
 	}
 	post(t, "/auth/google", oauthLogin("Google"))
 	post(t, "/auth/github", oauthLogin("GitHub"))
+
+	// ---- POST /auth/link/confirm（OAuth 首次匹配密码确认绑定，公开 + 限流）----
+	registerSchema(t, "LinkConfirmRequest", openapi3.Schemas{
+		"link_token": reqStr("OAuth 登录 409 响应下发的一次性确认凭证（5 分钟有效）"),
+		"password":   reqStr("该邮箱账号的密码"),
+	}, "link_token", "password")
+	post(t, "/auth/link/confirm", &openapi3.Operation{
+		Tags:        []string{"认证"},
+		Summary:     "OAuth 绑定确认",
+		Description: "OAuth 登录 email 匹配到已有账号且未绑定该 provider 时（409 LINK_CONFIRMATION_REQUIRED），" +
+			"输入账号密码确认后绑定 provider 身份并创建 session。密码错 5 次作废 link_token。",
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("LinkConfirmRequest", true, "确认凭证与密码"),
+		Responses: responses(
+			200, dataResponse("LoginResponse", "绑定并登录成功（session 走 cookie）", 200),
+			400, errorResponse("link_token 无效或已过期"),
+			401, errorResponse("密码错误"),
+			403, errorResponse("账号未设置密码或被禁用"),
+			409, errorResponse("该 provider 身份已绑定其他账号"),
+		),
+	})
+
+	// ---- /auth/connections/{provider}（设置页登录方式管理，登录态）----
+	registerSchema(t, "BindingsDTO", openapi3.Schemas{
+		"has_password": optBool("是否设置了密码"),
+		"google_bound": optBool("是否绑定 Google"),
+		"github_bound": optBool("是否绑定 GitHub"),
+	}, "has_password", "google_bound", "github_bound")
+	registerSchema(t, "BindConnectionRequest", openapi3.Schemas{
+		"credential": optStr("Google access token（provider=google 时必填）"),
+		"code":       optStr("GitHub 授权码（provider=github 时必填）"),
+	})
+	post(t, "/auth/connections/{provider}", &openapi3.Operation{
+		Tags:        []string{"认证"},
+		Summary:     "绑定 OAuth 登录",
+		Description: "登录态绑定：校验 provider 身份未被任何账号占用（409），成功返回最新绑定状态。",
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("BindConnectionRequest", true, "provider 凭证"),
+		Responses: responses(
+			200, dataResponse("BindingsDTO", "最新绑定状态", 200),
+			400, errorResponse("请求不合法或已绑定该 provider"),
+			409, errorResponse("该 provider 身份已绑定其他账号"),
+		),
+	})
+	del(t, "/auth/connections/{provider}", &openapi3.Operation{
+		Tags:        []string{"认证"},
+		Summary:     "解绑 OAuth 登录",
+		Description: "登录态解绑：解绑后必须仍存在至少一种登录方式（密码或剩余 OAuth），否则 400。",
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		Responses: responses(
+			200, dataResponse("BindingsDTO", "最新绑定状态", 200),
+			400, errorResponse("未绑定该 provider 或解绑后无登录方式"),
+		),
+	})
 
 	// ---- admin OAuth 凭据管理 ----
 	registerSchema(t, "OAuthProviderStatus", openapi3.Schemas{

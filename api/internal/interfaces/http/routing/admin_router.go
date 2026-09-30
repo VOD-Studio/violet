@@ -91,6 +91,8 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(perm, "user:ban"))
 			r.Delete("/{id}", userAdminH.DeleteUser)
+			r.Post("/{id}/restore", userAdminH.RestoreUser)
+			r.Post("/merge", userAdminH.MergeUsers)
 			r.Patch("/{id}/status", userAdminH.UpdateUserStatus)
 			r.Post("/batch-status", userAdminH.BatchUpdateStatus)
 		})

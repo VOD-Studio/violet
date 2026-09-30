@@ -38,13 +38,17 @@ func NewAuthContainer(
 
 	sessionStore := infraauth.NewRedisSessionStore(redisClient)
 	codeStore := infraauth.NewRedisCodeStore(redisClient)
+	linkTokens := infraauth.NewRedisLinkTokenStore(redisClient)
 
 	hasher := authcmd.NewBcryptHasher()
 
 	register := authcmd.NewRegisterUserHandler(userRepo, codeStore, emailSender, hasher, bus)
 	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
-	google := authcmd.NewGoogleLoginHandler(userRepo, cfg.GoogleClientID, hasher, bus)
-	github := authcmd.NewGithubLoginHandler(userRepo, oauthCreds, hasher, bus)
+	google := authcmd.NewGoogleLoginHandler(userRepo, cfg.GoogleClientID, linkTokens, bus)
+	github := authcmd.NewGithubLoginHandler(userRepo, oauthCreds, linkTokens, bus)
+	confirmLink := authcmd.NewConfirmLinkHandler(userRepo, linkTokens, hasher, bus)
+	bindProvider := authcmd.NewBindProviderHandler(userRepo, oauthCreds, bus)
+	unbindProvider := authcmd.NewUnbindProviderHandler(userRepo, bus)
 	logout := authcmd.NewLogoutHandler(sessionStore, bus)
 	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
 	verify := authcmd.NewVerifyEmailHandler(userRepo, codeStore, bus)
@@ -58,7 +62,8 @@ func NewAuthContainer(
 	ensureSuperAdmin := authcmd.NewEnsureSuperAdminHandler(userRepo, hasher)
 
 	authHandler := authhttp.NewHandler(
-		register, login, google, github, logout, createSession, verify, forgot, reset,
+		register, login, google, github, confirmLink, bindProvider, unbindProvider,
+		logout, createSession, verify, forgot, reset,
 		updatePf, changePwd, getMe, settingsSvc, oauthCreds, cfg.Cookie, cfg.Session,
 	)
 

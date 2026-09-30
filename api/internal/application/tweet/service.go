@@ -519,12 +519,16 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 
 	authors := make(map[string]AuthorDTO, len(authorIDs))
 	if len(authorIDs) > 0 {
-		users, err := s.userRepo.FindByIDs(ctx, authorIDs)
+		users, err := s.userRepo.FindByIDsForDisplay(ctx, authorIDs)
 		if err != nil {
 			// 作者资料填充失败不阻断时间线：降级为零值作者（列表可用性优先）
 			log.Warn().Err(err).Msg("推文作者资料批量查询失败，降级为空资料")
 		}
 		for _, u := range users {
+			if u.IsDeleted() {
+				authors[u.GetID().String()] = deletedAuthorDTO(u.GetID().String())
+				continue
+			}
 			provider, profileURL := u.OAuthIdentity()
 			authors[u.GetID().String()] = AuthorDTO{
 				ID:         u.GetID().String(),
@@ -893,11 +897,15 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 	}
 	authors := make(map[string]AuthorDTO, len(authorIDs))
 	if len(authorIDs) > 0 {
-		users, err := s.userRepo.FindByIDs(ctx, authorIDs)
+		users, err := s.userRepo.FindByIDsForDisplay(ctx, authorIDs)
 		if err != nil {
 			log.Warn().Err(err).Msg("推文评论作者资料批量查询失败，降级为空资料")
 		}
 		for _, u := range users {
+			if u.IsDeleted() {
+				authors[u.GetID().String()] = deletedAuthorDTO(u.GetID().String())
+				continue
+			}
 			provider, profileURL := u.OAuthIdentity()
 			authors[u.GetID().String()] = AuthorDTO{
 				ID: u.GetID().String(), Username: u.Username().String(), AvatarURL: u.AvatarURL(),
@@ -923,6 +931,19 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 		})
 	}
 	return dtos
+}
+
+// deletedAuthorUsername 已注销作者在推文/推文评论作者位的占位名
+//（与评论域 DeletedUserName 同值；本地定义避免跨 feature 依赖）。
+const deletedAuthorUsername = "已注销用户"
+
+// deletedAuthorDTO 已注销作者的占位资料卡：名字占位、无头像无角标无主页，
+// ID 保留（前端按空头像渲染默认占位图）。
+func deletedAuthorDTO(id string) AuthorDTO {
+	return AuthorDTO{
+		ID:       id,
+		Username: deletedAuthorUsername,
+	}
 }
 
 // canDeleteComment 判断操作者是否有权删除指定评论。

@@ -14,6 +14,8 @@ export interface DataTableColumn<T> {
 	align?: "left" | "center" | "right";
 	/** 列宽，如 "120px" 或 "20%"；固定列建议 px 以精确累加偏移 */
 	width?: string;
+	/** 按行内容最大宽度撑开列（width 作最小宽度）；右固定列默认开启，可显式关闭 */
+	fitContent?: boolean;
 	/** 固定列，left/right 分别贴边，同侧多列按宽度累加 */
 	sticky?: "left" | "right";
 	/** 开启后表头可点击触发 onSortChange */
@@ -30,6 +32,8 @@ export interface DataTableColumn<T> {
 	exportValue?: (row: T) => string | number | null;
 	/** 附加到 th 与 td 的类名 */
 	className?: string;
+	/** 该列单元格点击不触发行点击回调（操作列等纯按钮区）：td 层拦截冒泡，兼容禁用按钮不派发 click 落到单元格的场景 */
+	stopClickPropagation?: boolean;
 }
 
 /** 排序态，由调用方受控 */

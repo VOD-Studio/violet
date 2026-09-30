@@ -150,6 +150,34 @@ func TestUserRepository_ExistsChecks(t *testing.T) {
 	assert.False(t, exists)
 }
 
+func TestUserRepository_FindByProviderID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewUserRepository(db)
+	ctx := context.Background()
+
+	email, _ := user.ParseEmail("linked@example.com")
+	username, _ := user.ParseUsername("linkeduser")
+	u := user.NewUser(shared.NewID(), email, username, user.NewPasswordHash("$2a$10$hash"))
+	u.SetGoogleID("google-sub-123")
+	u.SetGithubID("42")
+	require.NoError(t, repo.Save(ctx, u))
+
+	// OAuth 登录按 provider id 优先查找——绑定后用户改 provider 侧
+	// email 仍按 id 命中，不再走建号分支撞唯一索引。
+	byGoogle, err := repo.FindByGoogleID(ctx, "google-sub-123")
+	require.NoError(t, err)
+	assert.Equal(t, u.GetID(), byGoogle.GetID())
+
+	byGithub, err := repo.FindByGithubID(ctx, "42")
+	require.NoError(t, err)
+	assert.Equal(t, u.GetID(), byGithub.GetID())
+
+	_, err = repo.FindByGoogleID(ctx, "nobody")
+	assert.ErrorIs(t, err, user.ErrNotFound)
+	_, err = repo.FindByGithubID(ctx, "nobody")
+	assert.ErrorIs(t, err, user.ErrNotFound)
+}
+
 func TestUserRepository_FindByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewUserRepository(db)

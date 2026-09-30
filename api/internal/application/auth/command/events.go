@@ -35,6 +35,38 @@ func NewUserLoggedOut(userID shared.ID) UserLoggedOut {
 	}
 }
 
+// ProviderBound OAuth 身份绑定到账号事件（应用层事实）。
+//
+// 订阅者：审计服务（记录绑定操作，provider id 属敏感关联面）。
+type ProviderBound struct {
+	shared.BaseEvent
+	// Provider 绑定的提供方：google | github
+	Provider string
+}
+
+// NewProviderBound 构造绑定事件
+func NewProviderBound(userID shared.ID, provider string) ProviderBound {
+	return ProviderBound{
+		BaseEvent: shared.NewBaseEvent("auth.provider_bound", userID),
+		Provider:  provider,
+	}
+}
+
+// ProviderUnbound OAuth 身份解绑事件（应用层事实）。
+type ProviderUnbound struct {
+	shared.BaseEvent
+	// Provider 解绑的提供方：google | github
+	Provider string
+}
+
+// NewProviderUnbound 构造解绑事件
+func NewProviderUnbound(userID shared.ID, provider string) ProviderUnbound {
+	return ProviderUnbound{
+		BaseEvent: shared.NewBaseEvent("auth.provider_unbound", userID),
+		Provider:  provider,
+	}
+}
+
 // UserLoginFailed 登录失败事件（应用层事实）。
 //
 // 订阅者：审计服务（记录失败尝试，便于发现暴力破解）。

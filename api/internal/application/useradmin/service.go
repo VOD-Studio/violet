@@ -3,10 +3,13 @@ package useradmin
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
 	appshared "blog-api/internal/application/shared"
+	domainapitoken "blog-api/internal/domain/api_token"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	domainuseradmin "blog-api/internal/domain/useradmin"
@@ -26,11 +29,18 @@ type Service struct {
 	hasher   PasswordHasher
 	bus      appshared.EventBus
 	sessions appshared.SessionStore
+	// patRepo 账号注销时批量吊销 PAT；nil 时跳过（测试桩）
+	patRepo domainapitoken.TokenRepository
+	// merger 账号合并执行器（30+ 表迁移）；nil 时 MergeUsers 拒绝
+	merger domainuseradmin.UserMerger
 }
 
-func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore) *Service {
-	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions}
+func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore, patRepo domainapitoken.TokenRepository) *Service {
+	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions, patRepo: patRepo}
 }
+
+// SetMerger 注入合并执行器（与 NewService 分离：merger 与 store 同源装配）。
+func (s *Service) SetMerger(m domainuseradmin.UserMerger) { s.merger = m }
 
 // revokeSessions 吊销指定用户的全部 session（角色/状态变更后强制重登）。
 // 吊销失败仅记录日志不阻断主流程：DB 已更新成功，session 吊销为尽力而为的安全增强。
@@ -64,6 +74,8 @@ type UserDTO struct {
 	IsRoot              bool   `json:"is_root"`
 	EmailVerified       bool   `json:"email_verified"`
 	IsActive            bool   `json:"is_active"`
+	// IsDeleted 是否已注销（软删除），后台「已注销」筛选视图用
+	IsDeleted bool `json:"is_deleted"`
 	Bio                 string `json:"bio"`
 	AvatarURL           string `json:"avatar_url"`
 	CreatedAt           string `json:"created_at"`
@@ -161,8 +173,6 @@ type UpdateInput struct {
 	Role        *string
 	IsActive    *bool
 	DisplayName *string
-	Bio         *string
-	AvatarURL   *string
 	IPAddress   string
 	UserAgent   string
 }
@@ -218,6 +228,21 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	}
 
 	// 应用变更
+	// 邮箱变更（管理员互信操作）：查重排除自身后变更，保持 emailVerified 不变。
+	if in.Email != nil && strings.TrimSpace(*in.Email) != u.Email().String() {
+		email, err := domainuser.ParseEmail(*in.Email)
+		if err != nil {
+			return UserDTO{}, err
+		}
+		exists, err := s.store.ExistsByEmail(ctx, email)
+		if err != nil {
+			return UserDTO{}, err
+		}
+		if exists {
+			return UserDTO{}, domainuser.ErrEmailExists
+		}
+		u.ChangeEmail(email)
+	}
 	if in.Username != nil {
 		un, err := domainuser.ParseUsername(*in.Username)
 		if err != nil {
@@ -282,14 +307,95 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 	if u.GetID().String() == operatorID {
 		return shared.Forbidden("不可删除自己")
 	}
-	if err := s.store.Delete(ctx, uid); err != nil {
+	// 软删除（注销）：置 deleted_at 保留行（历史内容作者占位展示），
+	// 身份列原值保留但部分唯一索引已释放（可被新用户注册占用）。
+	u.Delete(time.Now())
+	if err := s.store.Save(ctx, u); err != nil {
 		return err
 	}
-	// 删除是破坏性操作，手动构造事件发布（聚合根不可继续存在）
-	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewUserDeleted(uid, u.Username().String())}); err != nil {
-		log.Warn().Err(err).Msg("发布用户删除事件失败")
+	// 注销即失去全部登录凭证：session 与 PAT 同步吊销，
+	// 否则 TTL 内残留登录态仍通过鉴权（session 中间件不反查用户）产生孤儿数据。
+	s.revokeSessions(ctx, uid.String())
+	if s.patRepo != nil {
+		if err := s.patRepo.DeleteByUser(ctx, uid.String()); err != nil {
+			log.Warn().Err(err).Str("user_id", uid.String()).Msg("注销时批量吊销 PAT 失败")
+		}
+	}
+	if err := s.bus.Publish(ctx, u.PullEvents()); err != nil {
+		log.Warn().Err(err).Msg("发布用户注销事件失败")
 	}
 	return nil
+}
+
+// Restore 恢复注销账号。
+//
+// 前置校验身份占用：email/username/google_id/github_id 任一被活跃用户持有 → 409
+// （注销后身份已释放，可能已被新用户占用，冲突信息列出字段名由管理员处置）。
+func (s *Service) Restore(ctx context.Context, id, operatorID, operatorRole string, operatorIsRoot bool, ip, ua string) (UserDTO, error) {
+	uid, err := shared.ParseID(id)
+	if err != nil {
+		return UserDTO{}, err
+	}
+	u, err := s.store.FindByID(ctx, uid)
+	if err != nil {
+		return UserDTO{}, err
+	}
+	if u.IsRoot() {
+		return UserDTO{}, shared.Forbidden("不可操作内置超级管理员")
+	}
+	if !u.IsDeleted() {
+		return UserDTO{}, shared.BadRequest("该账号未处于注销状态")
+	}
+
+	conflicts, err := s.identityConflicts(ctx, u)
+	if err != nil {
+		return UserDTO{}, err
+	}
+	if len(conflicts) > 0 {
+		return UserDTO{}, shared.NewError(string(shared.CodeConflict),
+			"恢复失败，以下身份已被其他账号占用："+strings.Join(conflicts, "、"))
+	}
+
+	u.Restore()
+	if err := s.store.Save(ctx, u); err != nil {
+		return UserDTO{}, err
+	}
+	if err := s.bus.Publish(ctx, u.PullEvents()); err != nil {
+		log.Warn().Err(err).Msg("发布用户恢复事件失败")
+	}
+	return toDTO(u), nil
+}
+
+// identityConflicts 检查账号四项身份在活跃用户中的占用，返回冲突字段中文名。
+// username/provider id 的占用检查由 AdminUserStore 的 Exists* 端口提供（排除已注销）。
+// 任一检查的存储错误直接上抛：身份预检不可靠时不得继续恢复（否则落库撞唯一索引报 500）。
+func (s *Service) identityConflicts(ctx context.Context, u *domainuser.User) ([]string, error) {
+	var conflicts []string
+	if exists, err := s.store.ExistsByEmail(ctx, u.Email()); err != nil {
+		return nil, err
+	} else if exists {
+		conflicts = append(conflicts, "邮箱")
+	}
+	if exists, err := s.store.ExistsByUsername(ctx, u.Username()); err != nil {
+		return nil, err
+	} else if exists {
+		conflicts = append(conflicts, "用户名")
+	}
+	if u.GoogleID() != nil {
+		if exists, err := s.store.ExistsByGoogleID(ctx, *u.GoogleID()); err != nil {
+			return nil, err
+		} else if exists {
+			conflicts = append(conflicts, "Google 身份")
+		}
+	}
+	if u.GithubID() != nil {
+		if exists, err := s.store.ExistsByGithubID(ctx, *u.GithubID()); err != nil {
+			return nil, err
+		} else if exists {
+			conflicts = append(conflicts, "GitHub 身份")
+		}
+	}
+	return conflicts, nil
 }
 
 // UpdateUserRole 修改单个用户角色
@@ -489,7 +595,8 @@ func toDTO(u *domainuser.User) UserDTO {
 		ID: u.GetID().String(), Username: u.Username().String(), DisplayName: u.DisplayName().String(), Email: u.Email().String(),
 		Role: string(u.Role()), IsRoot: u.IsRoot(),
 		EmailVerified: u.EmailVerified(), IsActive: u.IsActive(),
-		AvatarURL: u.AvatarURL(), Bio: u.Bio(),
+		IsDeleted:     u.IsDeleted(),
+		AvatarURL:     u.AvatarURL(), Bio: u.Bio(),
 		CreatedAt: u.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
 	}
 	return dto

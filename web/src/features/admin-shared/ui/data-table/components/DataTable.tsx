@@ -1,6 +1,6 @@
 import { OverlayScroll } from "@violet/ui";
 import { cn } from "cn";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import {
 	COLUMNS_CONTROL_KEY,
@@ -117,8 +117,8 @@ export function DataTable<T>({
 		setSelected(next);
 	};
 
-	// —— 列宽状态（localStorage 持久化） ——
-	const widthStorageKey = storageKey ? `${storageKey}-widths` : undefined;
+	// 仅用户手动调整的列宽可持久化；旧 key 曾保存首次测量的自适应宽度，不再读取。
+	const widthStorageKey = storageKey ? `${storageKey}-widths-v2` : undefined;
 	const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
 		if (!widthStorageKey) return {};
 		try {
@@ -139,12 +139,13 @@ export function DataTable<T>({
 		}
 	}, [columnWidths, widthStorageKey]);
 
-	const resizeColumn = (key: string, width: number) => {
-		setColumnWidths((prev) => ({ ...prev, [key]: width }));
-		// 拖拽后延迟检测滚动状态，因为 DOM 需要时间更新
-		setTimeout(() => {
-			checkScroll();
-		}, 0);
+	const resizeColumn = (key: string, width: number, widths: number[]) => {
+		setColumnWidths((prev) => ({
+			...prev,
+			...Object.fromEntries(visibleColumns.map((col, index) => [col.key, widths[index]])),
+			[key]: width,
+		}));
+		requestAnimationFrame(checkScroll);
 	};
 
 	// —— 行展开状态 ——
@@ -207,34 +208,73 @@ export function DataTable<T>({
 		return [...injected, ...baseVisible];
 	}, [baseVisible, selectable, expandable, columns, storageKey]);
 
-	// 每列实际宽度（含拖拽结果），供 colgroup 使用
+	// 内容适配列仅测量不可截断的单元格；未显式调整的其他列保持自适应。
+	const bodyTableRef = useRef<HTMLTableElement>(null);
+	const [fitContentWidths, setFitContentWidths] = useState<Record<string, number>>({});
+	useLayoutEffect(() => {
+		if (
+			loading ||
+			error ||
+			data.length === 0 ||
+			!visibleColumns.some((col) => col.fitContent ?? col.sticky === "right")
+		) {
+			setFitContentWidths((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+			return;
+		}
+		const widths: Record<string, number> = {};
+		for (const element of bodyTableRef.current?.querySelectorAll<HTMLElement>(
+			"[data-fit-content]",
+		) ?? []) {
+			const key = element.dataset.fitContent;
+			const cell = element.closest("td");
+			if (!key || !cell) continue;
+			const style = getComputedStyle(cell);
+			const width =
+				Math.ceil(element.getBoundingClientRect().width) +
+				parseFloat(style.paddingLeft) +
+				parseFloat(style.paddingRight);
+			widths[key] = Math.max(widths[key] ?? 0, width);
+		}
+		setFitContentWidths((prev) =>
+			Object.keys(prev).length === Object.keys(widths).length &&
+			Object.entries(widths).every(([key, width]) => prev[key] === width)
+				? prev
+				: widths,
+		);
+	}, [data, visibleColumns, loading, error]);
+
 	const columnWidthMap = useMemo(() => {
 		const map = new Map<string, number>();
 		for (const col of visibleColumns) {
-			const fromStore = columnWidths[col.key];
-			if (fromStore != null) {
-				map.set(col.key, fromStore);
-			} else {
-				const matched = col.width?.match(/^(\d+(?:\.\d+)?)px$/);
-				map.set(col.key, matched ? Number(matched[1]) : 0);
-			}
+			const matched = col.width?.match(/^(\d+(?:\.\d+)?)px$/);
+			map.set(
+				col.key,
+				Math.max(
+					columnWidths[col.key] ?? (matched ? Number(matched[1]) : 0),
+					(col.fitContent ?? col.sticky === "right")
+						? (fitContentWidths[col.key] ?? 0)
+						: 0,
+				),
+			);
 		}
 		return map;
-	}, [visibleColumns, columnWidths]);
+	}, [visibleColumns, columnWidths, fitContentWidths]);
 
-	// colgroup 使用的 CSS 宽度字符串：拖拽结果转 px，否则用列定义的原始 width
 	const colgroupWidthMap = useMemo(() => {
 		const map = new Map<string, string>();
 		for (const col of visibleColumns) {
-			const fromStore = columnWidths[col.key];
-			if (fromStore != null) {
-				map.set(col.key, `${fromStore}px`);
+			const measured = fitContentWidths[col.key];
+			if (
+				columnWidths[col.key] != null ||
+				((col.fitContent ?? col.sticky === "right") && measured != null)
+			) {
+				map.set(col.key, `${columnWidthMap.get(col.key)}px`);
 			} else if (col.width) {
 				map.set(col.key, col.width);
 			}
 		}
 		return map;
-	}, [visibleColumns, columnWidths]);
+	}, [visibleColumns, columnWidths, fitContentWidths, columnWidthMap]);
 
 	const offsets = useMemo(
 		() => computeStickyOffsets(visibleColumns, columnWidthMap),
@@ -254,38 +294,7 @@ export function DataTable<T>({
 	const showFooter = pagination != null && pagination.total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
 
-	// —— 首次渲染后，从 DOM 读取所有列的实际宽度 ——
-	const tableRef = useRef<HTMLTableElement>(null);
 	const headerScrollRef = useRef<HTMLDivElement>(null);
-	const hasInitializedWidths = useRef(false);
-
-	useEffect(() => {
-		if (hasInitializedWidths.current || !tableRef.current) return;
-
-		// 读取所有 th 的实际宽度
-		const ths = tableRef.current.querySelectorAll("thead th");
-		const initialWidths: Record<string, number> = {};
-		let hasAnyWidth = false;
-
-		ths.forEach((th, index) => {
-			const col = visibleColumns[index];
-			if (!col) return;
-
-			// 如果已经有存储的宽度，跳过
-			if (columnWidths[col.key] != null) return;
-
-			const width = th.getBoundingClientRect().width;
-			if (width > 0) {
-				initialWidths[col.key] = Math.round(width);
-				hasAnyWidth = true;
-			}
-		});
-
-		if (hasAnyWidth) {
-			setColumnWidths((prev) => ({ ...prev, ...initialWidths }));
-			hasInitializedWidths.current = true;
-		}
-	}, [visibleColumns, columnWidths]);
 
 	// —— 滚动状态检测：控制固定列阴影显示 ——
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -394,10 +403,9 @@ export function DataTable<T>({
 			<DataTableToolbar className="shrink-0" toolbar={toolbar} />
 
 			<div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
-				{/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}
+				{/* Header — 与 body 共用 colgroup 宽度，横向滚动位置由 body 同步 */}
 				<div ref={headerScrollRef} className="shrink-0 overflow-hidden">
 					<table
-						ref={tableRef}
 						className="caption-bottom text-sm"
 						style={{
 							tableLayout: "fixed",
@@ -425,7 +433,6 @@ export function DataTable<T>({
 							onToggleSelectAll={toggleSelectAll}
 							resizable={resizable}
 							columnMinWidth={columnMinWidth}
-							columnWidthMap={columnWidthMap}
 							onResizeColumn={resizeColumn}
 							// 列控制
 							allColumns={columns}
@@ -448,6 +455,7 @@ export function DataTable<T>({
 					aria-busy={loading ? true : undefined}
 				>
 					<table
+						ref={bodyTableRef}
 						className="text-sm"
 						style={{
 							tableLayout: "fixed",

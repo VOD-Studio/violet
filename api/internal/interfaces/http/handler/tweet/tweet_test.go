@@ -89,6 +89,9 @@ func (s *stubUserRepo) FindByIDs(_ context.Context, ids []shared.ID) ([]*domainu
 	}
 	return out, nil
 }
+func (s *stubUserRepo) FindByIDsForDisplay(ctx context.Context, ids []shared.ID) ([]*domainuser.User, error) {
+	return s.FindByIDs(ctx, ids)
+}
 func (s *stubUserRepo) FindByUsername(_ context.Context, username domainuser.Username) (*domainuser.User, error) {
 	for _, u := range s.users {
 		if u.Username().String() == username.String() {

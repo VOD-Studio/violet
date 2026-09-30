@@ -164,6 +164,8 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 	case domainuser.UserPasswordChanged:
 		return s.handlePasswordChanged(e), true
 
+	case domainuser.UserEmailChanged:
+		return s.handleEmailChanged(e), true
 	case domainapitoken.PATCreated:
 		return s.handlePATCreated(e), true
 
@@ -225,6 +227,13 @@ func (s *Subscriber) handlePasswordChanged(e domainuser.UserPasswordChanged) []n
 	)
 }
 
+func (s *Subscriber) handleEmailChanged(e domainuser.UserEmailChanged) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		"账号邮箱已修改",
+		fmt.Sprintf("邮箱已由 %s 改为 %s。如非本人操作，请立即联系管理员", e.From, e.To),
+		map[string]any{"action": "email_changed"},
+	)
+}
 func (s *Subscriber) handlePATCreated(e domainapitoken.PATCreated) []notifyAction {
 	return s.selfSecurityAction(e.AggregateID(),
 		fmt.Sprintf("API Token「%s」已创建", e.Name),

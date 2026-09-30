@@ -235,7 +235,7 @@ func TestAdminUserStore_BatchUpdateRole(t *testing.T) {
 	}
 }
 
-func TestAdminUserStore_Delete(t *testing.T) {
+func TestAdminUserStore_SoftDeleteSemantics(t *testing.T) {
 	db := setupAdminUserTestDB(t)
 	store := NewAdminUserStore(db)
 	ctx := context.Background()
@@ -243,15 +243,35 @@ func TestAdminUserStore_Delete(t *testing.T) {
 	u := newAdminTestUser(t, 1)
 	require.NoError(t, store.Save(ctx, u))
 
-	// 删除成功
-	require.NoError(t, store.Delete(ctx, u.GetID()))
+	// 注销（软删）：置 deletedAt 后 Save，行仍在
+	u.Delete(time.Now())
+	require.NoError(t, store.Save(ctx, u))
 
-	// FindByID 不存在 → nil 用户 + ErrNotFound
+	// FindByID（admin 不限条件）仍可查到——恢复入口的依据
 	got, err := store.FindByID(ctx, u.GetID())
-	assert.Nil(t, got)
-	assert.ErrorIs(t, err, user.ErrNotFound)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.True(t, got.IsDeleted())
 
-	// 重复删除 → ErrNotFound
-	err = store.Delete(ctx, u.GetID())
-	assert.ErrorIs(t, err, user.ErrNotFound)
+	// FindPage 缺省仅活跃：查不到
+	page, err := store.FindPage(ctx, useradmin.ListFilter{}, shared.PageQuery{Page: 1, Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), page.Total)
+
+	// FindPage status=deleted：只查已注销
+	page, err = store.FindPage(ctx, useradmin.ListFilter{Status: "deleted"}, shared.PageQuery{Page: 1, Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), page.Total)
+
+	// ExistsByEmail 排除已注销：身份已释放
+	exists, err := store.ExistsByEmail(ctx, u.Email())
+	require.NoError(t, err)
+	assert.False(t, exists)
+
+	// 恢复后回到活跃视图
+	got.Restore()
+	require.NoError(t, store.Save(ctx, got))
+	page, err = store.FindPage(ctx, useradmin.ListFilter{}, shared.PageQuery{Page: 1, Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), page.Total)
 }

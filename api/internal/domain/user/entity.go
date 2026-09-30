@@ -52,6 +52,76 @@ func NewUserEmailVerified(userID shared.ID) UserEmailVerified {
 	}
 }
 
+// UserEmailChanged 用户邮箱已修改事件
+//
+// From/To 为变更前后邮箱（审计 before/after 字段）。
+type UserEmailChanged struct {
+	shared.BaseEvent
+	// From 变更前邮箱
+	From string
+	// To 变更后邮箱
+	To string
+}
+
+// NewUserEmailChanged 构造邮箱修改事件
+func NewUserEmailChanged(userID shared.ID, from, to string) UserEmailChanged {
+	return UserEmailChanged{
+		BaseEvent: shared.NewBaseEvent("user.email_changed", userID),
+		From:      from,
+		To:        to,
+	}
+}
+
+// UserSoftDeleted 用户已注销（软删除）事件
+//
+// 注销后内容保留（作者展示为占位）、身份释放、session/PAT 全部吊销。
+type UserSoftDeleted struct {
+	shared.BaseEvent
+	// UserName 注销前用户名快照
+	UserName string
+}
+
+// NewUserSoftDeleted 构造注销事件
+func NewUserSoftDeleted(userID shared.ID, userName string) UserSoftDeleted {
+	return UserSoftDeleted{
+		BaseEvent: shared.NewBaseEvent("user.soft_deleted", userID),
+		UserName:  userName,
+	}
+}
+
+// UserRestored 注销账号已恢复事件
+type UserRestored struct {
+	shared.BaseEvent
+	// UserName 用户名快照
+	UserName string
+}
+
+// NewUserRestored 构造恢复事件
+func NewUserRestored(userID shared.ID, userName string) UserRestored {
+	return UserRestored{
+		BaseEvent: shared.NewBaseEvent("user.restored", userID),
+		UserName:  userName,
+	}
+}
+
+// UsersMerged 账号已合并事件（secondary 内容归属迁入 primary，secondary 删除）。
+type UsersMerged struct {
+	shared.BaseEvent
+	// PrimaryName 合并保留方用户名
+	PrimaryName string
+	// SecondaryName 被合并方用户名快照
+	SecondaryName string
+}
+
+// NewUsersMerged 构造账号合并事件（aggregateID 为保留方 primary）
+func NewUsersMerged(primaryID shared.ID, secondaryName, primaryName string) UsersMerged {
+	return UsersMerged{
+		BaseEvent:     shared.NewBaseEvent("user.merged", primaryID),
+		PrimaryName:   primaryName,
+		SecondaryName: secondaryName,
+	}
+}
+
 // UserRoleChanged 用户角色已变更事件
 //
 // From/To 为变更前后角色（审计 before/after 字段）；UserName 为资源名快照。
@@ -236,6 +306,9 @@ type User struct {
 	emailVerified bool
 	// isActive 是否启用
 	isActive bool
+	// deletedAt 软删除（注销）时间。零值=活跃；非零=已注销：
+	// 不可登录、不可被 OAuth 匹配、身份（email/username/provider id）释放可被新用户占用。
+	deletedAt time.Time
 	// timestamps 审计时间戳
 	timestamps shared.Timestamps
 }
@@ -287,6 +360,7 @@ func ReconstructUser(
 	isRoot bool,
 	emailVerified bool,
 	isActive bool,
+	deletedAt time.Time,
 	createdAt time.Time,
 	updatedAt time.Time,
 ) *User {
@@ -304,6 +378,7 @@ func ReconstructUser(
 		isRoot:         isRoot,
 		emailVerified:  emailVerified,
 		isActive:       isActive,
+		deletedAt:      deletedAt,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -348,6 +423,19 @@ func (u *User) ChangeUsername(name Username) {
 	u.RecordEvent(NewUserUsernameChanged(u.GetID(), old, name.String()))
 }
 
+// ChangeEmail 修改邮箱
+//
+// 值对象校验由调用方在 ParseEmail 完成，此处仅赋值并更新时间戳。
+// 管理员侧互信操作：保持既有 emailVerified 状态不变（与后台建号直接已验证同语义），
+// 不回退为未验证——emailVerified 是登录前置条件，回退会把用户锁在门外。
+func (u *User) ChangeEmail(email Email) {
+	if u.email.String() == email.String() {
+		return // 无实际变更不记事件
+	}
+	old := u.email.String()
+	u.email = email
+	u.RecordEvent(NewUserEmailChanged(u.GetID(), old, email.String()))
+}
 // ChangeRole 修改角色
 //
 // 校验角色合法性，保证聚合内 role 始终是有效枚举值。
@@ -387,6 +475,44 @@ func (u *User) SetGithubID(id string) {
 func (u *User) SetGithubLogin(login string) {
 	u.githubLogin = &login
 }
+
+// ClearGoogleID 解绑 Google 登录（置 nil，列恢复可空语义）。
+func (u *User) ClearGoogleID() {
+	u.googleID = nil
+}
+
+// ClearGithubID 解绑 GitHub 登录（同时清 login 快照，防悬挂的半绑定状态）。
+func (u *User) ClearGithubID() {
+	u.githubID = nil
+	u.githubLogin = nil
+}
+
+// Delete 注销（软删除）账号。
+//
+// 置 deletedAt：登录/OAuth 匹配/注册查重路径全部排除（部分唯一索引同时
+// 释放身份），历史内容的作者展示走「含已删」查询后由 DTO 层占位。
+// root 不可注销（应用层守卫，同不可删除）。
+func (u *User) Delete(now time.Time) {
+	if !u.deletedAt.IsZero() {
+		return // 幂等
+	}
+	u.deletedAt = now
+	u.RecordEvent(NewUserSoftDeleted(u.GetID(), u.username.String()))
+}
+
+// Restore 恢复注销账号。
+// 身份占用（email/username/provider id 被新用户持有）由应用层预检，
+// 此处只清时间戳；isActive 保持原值语义（注销不改启用位）。
+func (u *User) Restore() {
+	u.deletedAt = time.Time{}
+	u.RecordEvent(NewUserRestored(u.GetID(), u.username.String()))
+}
+
+// IsDeleted 是否已注销（软删除）。
+func (u *User) IsDeleted() bool { return !u.deletedAt.IsZero() }
+
+// DeletedAt 注销时间（零值=活跃），持久化用。
+func (u *User) DeletedAt() time.Time { return u.deletedAt }
 
 // Activate 启用账户
 func (u *User) Activate() {
@@ -452,8 +578,8 @@ func (u *User) ReRegister(username Username, passwordHash PasswordHash) error {
 
 // CanLogin 是否满足登录条件
 //
-// 业务规则：禁用用户不能登录。
-func (u *User) CanLogin() bool { return u.isActive }
+// 业务规则：禁用或已注销（软删除）用户不能登录。
+func (u *User) CanLogin() bool { return u.isActive && u.deletedAt.IsZero() }
 
 // MatchPassword 比较明文密码是否匹配哈希
 //

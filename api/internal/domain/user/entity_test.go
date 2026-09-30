@@ -2,6 +2,7 @@ package user
 
 import (
 	"testing"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -131,6 +132,47 @@ func TestUser_VerifyEmail_Idempotent(t *testing.T) {
 	u.VerifyEmail()
 	if len(u.PullEvents()) != 0 {
 		t.Error("重复 VerifyEmail 应幂等，不记录事件")
+	}
+}
+
+// 注销（软删除）领域状态机。
+func TestUser_SoftDelete(t *testing.T) {
+	email, _ := ParseEmail("del@example.com")
+	username, _ := ParseUsername("deluser")
+	u := NewUser(shared.NewID(), email, username, NewPasswordHash("$2a$10$h"))
+	u.PullEvents()
+
+	if u.IsDeleted() {
+		t.Fatal("新用户不应处于注销态")
+	}
+	if !u.CanLogin() {
+		t.Fatal("活跃用户应可登录")
+	}
+
+	now := time.Now()
+	u.Delete(now)
+	if !u.IsDeleted() || !u.DeletedAt().Equal(now) {
+		t.Error("Delete 后应处于注销态且记录时间")
+	}
+	if u.CanLogin() {
+		t.Error("注销用户不可登录")
+	}
+	if events := u.PullEvents(); len(events) != 1 || events[0].EventName() != "user.soft_deleted" {
+		t.Errorf("注销应记录 user.soft_deleted 事件，实际 %v", events)
+	}
+
+	// 重复 Delete 幂等
+	u.Delete(time.Now())
+	if len(u.PullEvents()) != 0 {
+		t.Error("重复 Delete 应幂等不记事件")
+	}
+
+	u.Restore()
+	if u.IsDeleted() || u.CanLogin() != true {
+		t.Error("Restore 后应恢复活跃（isActive 未被注销改动）")
+	}
+	if events := u.PullEvents(); len(events) != 1 || events[0].EventName() != "user.restored" {
+		t.Errorf("恢复应记录 user.restored 事件，实际 %v", events)
 	}
 }
 

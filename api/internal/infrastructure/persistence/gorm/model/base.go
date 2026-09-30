@@ -33,9 +33,9 @@ type BaseModel struct {
 //   - internal/model.User（旧 DTO）：API 响应，将逐步废弃
 type User struct {
 	BaseModel
-	Username     string `gorm:"type:varchar(32);unique;not null" json:"username"`
+	Username     string `gorm:"type:varchar(32);not null" json:"username"`
 	DisplayName  string `gorm:"type:varchar(32);default:''" json:"display_name"`
-	Email        string `gorm:"type:varchar(255);unique;not null" json:"email"`
+	Email        string `gorm:"type:varchar(255);not null" json:"email"`
 	PasswordHash string `gorm:"type:varchar(255);not null" json:"-"`
 	AvatarURL    string `gorm:"type:text" json:"avatar_url"`
 	Bio          string `gorm:"type:text" json:"bio"`
@@ -44,10 +44,15 @@ type User struct {
 	IsRoot bool `gorm:"column:is_root;not null;default:false" json:"is_root"`
 	EmailVerified       bool   `gorm:"not null;default:false" json:"email_verified"`
 	IsActive            bool   `gorm:"not null;default:false" json:"is_active"`
-	GoogleID            *string `gorm:"type:varchar(255);uniqueIndex" json:"google_id"`
-	GithubID            *string `gorm:"type:varchar(255);uniqueIndex" json:"github_id"`
-	GithubLogin         *string `gorm:"type:varchar(39)" json:"github_login,omitempty"`
-	RoleID              *int32 `gorm:"index" json:"role_id,omitempty"`
+	// GoogleID/GithubID/Email/Username 的唯一性由 migration 部分唯一索引保证
+	// （WHERE deleted_at IS NULL，注销即释放身份），模型不带 unique tag 防 AutoMigrate 重建全量索引
+	GoogleID    *string `gorm:"type:varchar(255)" json:"google_id"`
+	GithubID    *string `gorm:"type:varchar(255)" json:"github_id"`
+	GithubLogin *string `gorm:"type:varchar(39)" json:"github_login,omitempty"`
+	RoleID      *int32  `gorm:"index" json:"role_id,omitempty"`
+	// DeletedAt 软删除时间戳，NULL=活跃。查询过滤由仓储显式控制（不用 gorm.DeletedAt
+	// 的全局过滤：展示路径需要「含已删」查询与登录路径的「排除已删」并存）
+	DeletedAt *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 }
 
 // TableName 显式指定表名（GORM 默认会复数化为 users，此处显式表达意图）

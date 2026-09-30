@@ -115,7 +115,7 @@ export function CreateUserDialog({
 					<Input
 						id="username"
 						{...register("username")}
-						placeholder="请输入用户名（3-32 字符）"
+						placeholder="请输入用户名"
 						aria-invalid={!!errors.username}
 					/>
 					{errors.username && (

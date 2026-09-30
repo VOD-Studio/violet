@@ -265,10 +265,22 @@ export function DataTableBody<T>({
 												sticky.className,
 												col.className,
 											)}
+											onClick={
+												col.stopClickPropagation
+													? (e) => e.stopPropagation()
+													: undefined
+											}
 										>
 											<div
+												data-fit-content={
+													(col.fitContent ?? col.sticky === "right")
+														? col.key
+														: undefined
+												}
 												className={cn(
 													"flex items-center",
+													(col.fitContent ?? col.sticky === "right") &&
+														"w-max",
 													ALIGN_FLEX_CLASS[col.align ?? "left"],
 												)}
 											>

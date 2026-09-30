@@ -96,6 +96,16 @@ func (r *APITokenRepository) Delete(ctx context.Context, id, userID string) erro
 		Delete(&model.APIToken{}).Error
 }
 
+// DeleteByUser 吊销某用户全部 PAT（账号注销时批量失效）。
+func (r *APITokenRepository) DeleteByUser(ctx context.Context, userID string) error {
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Delete(&model.APIToken{}).Error; err != nil {
+		return domainshared.Internal("批量吊销用户访问令牌失败", err)
+	}
+	return nil
+}
+
 // TouchLastUsed 刷新 last_used_at。用于 PAT 鉴权中间件。
 func (r *APITokenRepository) TouchLastUsed(ctx context.Context, id string, now time.Time) error {
 	return r.db.WithContext(ctx).

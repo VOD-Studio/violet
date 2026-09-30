@@ -10,6 +10,9 @@ RUN corepack enable
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/agent-status/package.json ./packages/agent-status/package.json
+COPY packages/mascot/package.json ./packages/mascot/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
 
 # postinstall 脚本会把 pdf.worker.min.mjs 复制到 public/，deps 阶段没有源码，
 # 需预先创建 public/ 否则 ENOENT

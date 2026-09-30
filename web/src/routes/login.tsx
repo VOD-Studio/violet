@@ -1,6 +1,7 @@
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
+import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -84,6 +85,7 @@ function LoginPage() {
 					// Header 等观察者只会自动拉取一次 me，这里不再显式 refetch。
 				},
 				onError: (err) => {
+					if (openLinkConfirmFromError(err)) return;
 					toast.error(err instanceof ApiError ? err.message : "登录失败");
 				},
 			});

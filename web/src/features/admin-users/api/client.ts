@@ -55,6 +55,26 @@ export const deleteUser = async (id: string): Promise<void> => {
 };
 
 /**
+ * 恢复注销用户
+ *
+ * 身份（email/username/OAuth 绑定）已被新用户占用时后端返回 409 并列出冲突字段。
+ */
+export const restoreUser = async (id: string): Promise<AdminUserDTO> => {
+	return apiPost<AdminUserDTO>(`/admin/users/${id}/restore`);
+};
+
+/**
+ * 合并账号（secondary 内容归属迁给 primary 后删除 secondary）
+ */
+export const mergeUsers = async (data: {
+	primary_id: string;
+	secondary_id: string;
+	confirm_username: string;
+}): Promise<AdminUserDTO> => {
+	return apiPost<AdminUserDTO>("/admin/users/merge", data);
+};
+
+/**
  * 修改用户角色
  */
 export const updateUserRole = async (id: string, data: UpdateUserRoleRequest): Promise<void> => {

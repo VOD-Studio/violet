@@ -571,6 +571,10 @@ var batchActionPerm = map[string]string{
 	"unfeature":   "post:publish",
 }
 
+// deletedAuthorName 已注销作者在文章作者位的占位名
+//（与评论/推文域占位同值；本地定义避免跨 feature 依赖）。
+const deletedAuthorName = "已注销用户"
+
 // BatchAction 对多篇文章执行同一操作，返回成功操作数。
 //
 // BatchGetByIDs 一次性校验存在性（含回收站行）；逐条按 action 映射的权限码 +
@@ -985,12 +989,17 @@ func (s *Service) fillAuthor(ctx context.Context, dtos []PostDTO) {
 	if len(ids) == 0 {
 		return
 	}
-	users, err := s.userRepo.FindByIDs(ctx, ids)
+	users, err := s.userRepo.FindByIDsForDisplay(ctx, ids)
 	if err != nil {
 		return // 作者信息缺失不阻塞文章列表
 	}
 	authors := make(map[string]*AuthorDTO, len(users))
 	for _, u := range users {
+		if u.IsDeleted() {
+			// 已注销作者：占位展示（名字占位、无头像），不再以原名示人
+			authors[u.GetID().String()] = &AuthorDTO{Username: deletedAuthorName}
+			continue
+		}
 		authors[u.GetID().String()] = &AuthorDTO{
 			Username:  u.Username().String(),
 			AvatarURL: u.AvatarURL(),

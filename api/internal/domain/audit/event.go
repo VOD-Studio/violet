@@ -88,6 +88,9 @@ var (
 	ActionChangePassword = MustParse("change_password") // 修改密码
 	ActionVerifyEmail    = MustParse("verify_email")    // 邮箱验证
 	ActionChangeUsername = MustParse("change_username") // 修改用户名
+	ActionChangeEmail    = MustParse("change_email")    // 修改邮箱
+	ActionBindProvider   = MustParse("bind_provider")   // 绑定 OAuth 登录
+	ActionUnbindProvider = MustParse("unbind_provider") // 解绑 OAuth 登录
 	ActionUpdateRole     = MustParse("update_role")     // 用户角色变更
 	ActionUpdateStatus   = MustParse("update_status")   // 用户状态变更
 	ActionBatchUpdate    = MustParse("batch_update")    // 批量更新

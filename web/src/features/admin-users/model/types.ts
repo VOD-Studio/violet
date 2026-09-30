@@ -28,6 +28,8 @@ export interface AdminUserDTO {
 	email_verified: boolean;
 	/** 账户是否启用 */
 	is_active: boolean;
+	/** 是否已注销（软删除） */
+	is_deleted: boolean;
 	/** 个人简介 */
 	bio: string;
 	/** 头像 URL */
@@ -44,6 +46,8 @@ export interface ListUsersRequest extends PageQuery {
 	role?: string;
 	/** 状态筛选（可选） */
 	is_active?: boolean;
+	/** 注销状态筛选：缺省仅活跃；deleted 仅已注销 */
+	status?: "active" | "deleted";
 	/** 关键词搜索（用户名/邮箱，可选） */
 	keyword?: string;
 }

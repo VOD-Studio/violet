@@ -12,9 +12,9 @@ const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
  * 支持垂直/水平方向自动检测、拖拽 thumb 滚动。
  * thumb 在鼠标移入内容区或滚动时显示，移出后自动隐藏。
  *
- * Stacking context 隔离：
- * - wrapper `isolation: isolate` 防止 track 的 z-index 泄漏到外部
- * - 滚动宿主（scrollbar-width:none 的任意类）困住 children 的 z-index（sticky 列等），
+ * wrapper 与滚动宿主各自隔离 stacking context，避免固定列与轨道 z-index 泄漏。
+ * data-scrollbar="none" 由组件库的非分层样式提供，不能用 Tailwind utility：
+ * 宿主未分层的全局 scrollbar-width 规则会覆盖分层 utility。
  */
 const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 	({ children, className, style, ...props }, ref) => {
@@ -62,10 +62,6 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 				}, delay);
 			};
 
-			// track 用 top-0.5/bottom-0.5（左右各 2px inset），thumb 位移上限要扣除这 4px，
-			// 否则滚到末端 thumb 会越过 track 边界、被外层 overflow-hidden 裁掉。
-			const TRACK_INSET = 4;
-
 			const update = () => {
 				cancelAnimationFrame(raf);
 				raf = requestAnimationFrame(() => {
@@ -85,20 +81,24 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 					hTrack.style.display = canH ? "" : "none";
 
 					if (canV) {
-						const thumbH = Math.max((clientHeight / scrollHeight) * clientHeight, 24);
-						const maxTop = clientHeight - thumbH - TRACK_INSET;
-						const top =
-							maxTop > 0 ? (scrollTop / (scrollHeight - clientHeight)) * maxTop : 0;
+						const trackHeight = vTrack.clientHeight;
+						const thumbH = Math.min(
+							Math.max((clientHeight / scrollHeight) * trackHeight, 24),
+							trackHeight,
+						);
+						const travel = trackHeight - thumbH;
 						vThumb.style.height = `${thumbH}px`;
-						vThumb.style.transform = `translate3d(0,${top}px,0)`;
+						vThumb.style.transform = `translate3d(0,${(scrollTop / (scrollHeight - clientHeight)) * travel}px,0)`;
 					}
 					if (canH) {
-						const thumbW = Math.max((clientWidth / scrollWidth) * clientWidth, 24);
-						const maxLeft = clientWidth - thumbW - TRACK_INSET;
-						const left =
-							maxLeft > 0 ? (scrollLeft / (scrollWidth - clientWidth)) * maxLeft : 0;
+						const trackWidth = hTrack.clientWidth;
+						const thumbW = Math.min(
+							Math.max((clientWidth / scrollWidth) * trackWidth, 24),
+							trackWidth,
+						);
+						const travel = trackWidth - thumbW;
 						hThumb.style.width = `${thumbW}px`;
-						hThumb.style.transform = `translate3d(${left}px,0,0)`;
+						hThumb.style.transform = `translate3d(${(scrollLeft / (scrollWidth - clientWidth)) * travel}px,0,0)`;
 					}
 				});
 			};
@@ -131,8 +131,8 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 				showThumbs();
 				const startY = e.clientY;
 				const startTop = el.scrollTop;
-				const ratio = el.scrollHeight / el.clientHeight;
-
+				const travel = vTrack.clientHeight - vThumb.getBoundingClientRect().height;
+				const ratio = travel > 0 ? (el.scrollHeight - el.clientHeight) / travel : 0;
 				const move = (ev: PointerEvent) => {
 					el.scrollTop = startTop + (ev.clientY - startY) * ratio;
 				};
@@ -152,8 +152,8 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 				showThumbs();
 				const startX = e.clientX;
 				const startLeft = el.scrollLeft;
-				const ratio = el.scrollWidth / el.clientWidth;
-
+				const travel = hTrack.clientWidth - hThumb.getBoundingClientRect().width;
+				const ratio = travel > 0 ? (el.scrollWidth - el.clientWidth) / travel : 0;
 				const move = (ev: PointerEvent) => {
 					el.scrollLeft = startLeft + (ev.clientX - startX) * ratio;
 				};
@@ -193,12 +193,10 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 			<div className={cn("relative isolate", className)}>
 				<div
 					ref={scrollRef}
-					className={cn(
-						"[scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
-						"isolate h-full overflow-auto",
-					)}
+					className="isolate h-full overflow-auto"
 					style={style}
 					{...props}
+					data-scrollbar="none"
 				>
 					{children}
 				</div>
