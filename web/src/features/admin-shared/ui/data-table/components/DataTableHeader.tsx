@@ -45,8 +45,7 @@ interface DataTableHeaderProps<T> {
 	onToggleSelectAll: () => void;
 	resizable: boolean;
 	columnMinWidth: number;
-	columnWidthMap: Map<string, number>;
-	onResizeColumn: (key: string, width: number) => void;
+	onResizeColumn: (key: string, width: number, widths: number[]) => void;
 	// 列控制
 	allColumns?: DataTableColumn<T>[];
 	hiddenKeys?: Set<string>;
@@ -73,7 +72,6 @@ export function DataTableHeader<T>({
 	onToggleSelectAll,
 	resizable,
 	columnMinWidth,
-	columnWidthMap,
 	onResizeColumn,
 	allColumns,
 	hiddenKeys,
@@ -236,9 +234,10 @@ export function DataTableHeader<T>({
 							)}
 							{showResizer && (
 								<ColumnResizer
-									width={columnWidthMap.get(col.key) ?? 0}
 									minWidth={columnMinWidth}
-									onResize={(w) => onResizeColumn(col.key, w)}
+									onResize={(width, widths) =>
+										onResizeColumn(col.key, width, widths)
+									}
 								/>
 							)}
 						</TableHead>

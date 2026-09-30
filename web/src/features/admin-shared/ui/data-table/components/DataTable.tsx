@@ -139,12 +139,13 @@ export function DataTable<T>({
 		}
 	}, [columnWidths, widthStorageKey]);
 
-	const resizeColumn = (key: string, width: number) => {
-		setColumnWidths((prev) => ({ ...prev, [key]: width }));
-		// 拖拽后延迟检测滚动状态，因为 DOM 需要时间更新
-		setTimeout(() => {
-			checkScroll();
-		}, 0);
+	const resizeColumn = (key: string, width: number, widths: number[]) => {
+		setColumnWidths((prev) => ({
+			...prev,
+			...Object.fromEntries(visibleColumns.map((col, index) => [col.key, widths[index]])),
+			[key]: width,
+		}));
+		requestAnimationFrame(checkScroll);
 	};
 
 	// —— 行展开状态 ——
@@ -432,7 +433,6 @@ export function DataTable<T>({
 							onToggleSelectAll={toggleSelectAll}
 							resizable={resizable}
 							columnMinWidth={columnMinWidth}
-							columnWidthMap={columnWidthMap}
 							onResizeColumn={resizeColumn}
 							// 列控制
 							allColumns={columns}

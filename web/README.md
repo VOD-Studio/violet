@@ -46,6 +46,8 @@ web/src/
 
 `web/packages/ui/` 是可独立构建并打包的 pnpm workspace 包：`@violet/ui` 根入口导出 ESM 与类型声明；`@violet/ui/styles.css` 导出带 Tailwind v4 `@source` 的打包 CSS，须在宿主的 Tailwind CSS v4 之后导入。运行 `pnpm --filter @violet/ui build`，再运行 `pnpm --filter @violet/ui pack --pack-destination /tmp` 可生成供外部 React 19 + Tailwind v4 项目安装的 tarball；npm 发布尚未执行。营造法式 `/design-system/guides/quick-start` 提供独立项目安装说明。
 
+后台 `DataTable` 默认让未调整的列随容器伸缩；右固定列按行内容撑开，操作按钮增减无需维护 `width`。时间等需完整展示的非固定列可设置 `fitContent: true`；拖拽列宽后记录当时的列布局，重置列设置可恢复自适应。
+
 ## 开发环境
 
 项目使用 **pnpm** 作为包管理器，请勿使用 npm 或 yarn。
