@@ -85,6 +85,8 @@ export interface PostDetail {
 	published_at?: string;
 	/** 发布后最近一次编辑的版本快照时间，RFC3339；缺省 = 发布后未编辑过 */
 	edited_at?: string;
+	/** 发布后的版本快照数；缺省 = 发布后未编辑过 */
+	edited_version_count?: number;
 	/** 标签名列表 */
 	tags: string[];
 	/** 创建时间，RFC3339 */

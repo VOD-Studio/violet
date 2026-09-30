@@ -26,7 +26,14 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import { FloatingBack } from "@shared/ui/floating-back";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, ExternalLink, Eye, PencilLine } from "lucide-react";
+import {
+	TextUnderline,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+import { ArrowLeft, Calendar, ExternalLink, Eye } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef } from "react";
 
 /**
@@ -200,12 +207,22 @@ function BlogDetailPage() {
 							<span className="inline-flex items-center gap-1.5">
 								<Calendar className="size-3.5" />
 								{formatDate(post.published_at, "long-date")}
-							</span>
-						) : null}
-						{post.edited_at ? (
-							<span className="inline-flex items-center gap-1.5">
-								<PencilLine className="size-3.5" />
-								编辑于 {formatDate(post.edited_at, "long-date")}
+								{post.edited_at ? (
+									<TooltipProvider delayDuration={200}>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												{/* 标记本身小字弱化常驻，hover 墨线生长提示可交互 */}
+												<TextUnderline className="text-xs text-muted-foreground/80">
+													已编辑
+												</TextUnderline>
+											</TooltipTrigger>
+											<TooltipContent>
+												编辑于 {formatDate(post.edited_at, "long-date")} ·{" "}
+												{post.edited_version_count ?? 1} 个版本
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								) : null}
 							</span>
 						) : null}
 						<span className="inline-flex items-center gap-1.5">
