@@ -138,9 +138,17 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		return LoginOutput{}, err
 	}
 
-	u, err := h.userRepo.FindByEmail(ctx, email)
+	// 查找顺序：绑定身份（provider id）优先，email 其次（同 Google 登录，
+	// 绑定后用户改 GitHub primary email 仍按 id 命中，防建号分支撞唯一索引）。
+	u, err := h.userRepo.FindByGithubID(ctx, githubIDStr)
 	if err != nil && !shared.IsDomainError(err, shared.CodeNotFound) {
 		return LoginOutput{}, err
+	}
+	if u == nil {
+		u, err = h.userRepo.FindByEmail(ctx, email)
+		if err != nil && !shared.IsDomainError(err, shared.CodeNotFound) {
+			return LoginOutput{}, err
+		}
 	}
 
 	if u == nil {

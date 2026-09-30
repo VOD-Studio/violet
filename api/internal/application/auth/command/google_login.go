@@ -84,9 +84,18 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 
 	subject := payload.Subject
 
-	u, err := h.userRepo.FindByEmail(ctx, email)
+	// 查找顺序：绑定身份（provider id）优先，email 其次。绑定后用户改 Google 侧
+	// primary email 仍按 id 命中直接登录——只按 email 查会在匹配失败后走建号
+	// 分支，SetGoogleID 撞唯一索引报 500。
+	u, err := h.userRepo.FindByGoogleID(ctx, subject)
 	if err != nil && !shared.IsDomainError(err, shared.CodeNotFound) {
 		return LoginOutput{}, err
+	}
+	if u == nil {
+		u, err = h.userRepo.FindByEmail(ctx, email)
+		if err != nil && !shared.IsDomainError(err, shared.CodeNotFound) {
+			return LoginOutput{}, err
+		}
 	}
 
 	if u == nil {

@@ -24,6 +24,10 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email Email) (*User, error)
 	// FindByUsername 按用户名查找用户（用于注册查重）
 	FindByUsername(ctx context.Context, username Username) (*User, error)
+	// FindByGoogleID 按 Google ID 查找（OAuth 登录：绑定身份优先于 email 匹配）
+	FindByGoogleID(ctx context.Context, googleID string) (*User, error)
+	// FindByGithubID 按 GitHub ID 查找（OAuth 登录：绑定身份优先于 email 匹配）
+	FindByGithubID(ctx context.Context, githubID string) (*User, error)
 
 	// ExistsByEmail 邮箱是否已存在（注册查重，比 FindByEmail 更轻量）
 	ExistsByEmail(ctx context.Context, email Email) (bool, error)

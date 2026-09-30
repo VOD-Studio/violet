@@ -167,6 +167,29 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username user.Usern
 	return toDomain(po)
 }
 
+// FindByGoogleID 按 Google ID 查找用户（google_id 有唯一索引）
+func (r *UserRepository) FindByGoogleID(ctx context.Context, googleID string) (*user.User, error) {
+	return r.findByProviderID(ctx, "google_id", googleID)
+}
+
+// FindByGithubID 按 GitHub ID 查找用户（github_id 有唯一索引）
+func (r *UserRepository) FindByGithubID(ctx context.Context, githubID string) (*user.User, error) {
+	return r.findByProviderID(ctx, "github_id", githubID)
+}
+
+// findByProviderID 按 OAuth 绑定列查找，NotFound 归一为 user.ErrNotFound。
+func (r *UserRepository) findByProviderID(ctx context.Context, column, id string) (*user.User, error) {
+	var po model.User
+	err := r.db.WithContext(ctx).Where(column+" = ?", id).First(&po).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, user.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询用户失败", err)
+	}
+	return toDomain(po)
+}
+
 // ListContacts 按用户名或展示名列出可聊天用户。
 func (r *UserRepository) ListContacts(ctx context.Context, query string, excludeID domainshared.ID, afterUsername string, afterID domainshared.ID, limit int) ([]*user.User, error) {
 	query = strings.TrimSpace(query)
