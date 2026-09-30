@@ -49,41 +49,17 @@ func NewGoogleLoginHandler(
 
 // Handle 执行谷歌登录
 func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (LoginOutput, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.googleapis.com/oauth2/v3/userinfo", nil)
-	if err != nil {
-		return LoginOutput{}, shared.Internal("构建 Google API 请求失败", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+in.Credential)
-	
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return LoginOutput{}, shared.Internal("请求 Google API 失败", err)
-	}
-	defer resp.Body.Close()
-	
-	if resp.StatusCode != http.StatusOK {
-		return LoginOutput{}, user.ErrInvalidCredentials
-	}
-	
-	var payload struct {
-		Email   string `json:"email"`
-		Subject string `json:"sub"`
-		Picture string `json:"picture"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return LoginOutput{}, shared.Internal("解析 Google 响应失败", err)
-	}
-
-	if payload.Email == "" {
-		return LoginOutput{}, shared.BadRequest("Google 账号缺少邮箱信息")
-	}
-
-	email, err := user.ParseEmail(payload.Email)
+	profile, err := fetchGoogleProfile(ctx, in.Credential)
 	if err != nil {
 		return LoginOutput{}, err
 	}
 
-	subject := payload.Subject
+	email, err := user.ParseEmail(profile.Email)
+	if err != nil {
+		return LoginOutput{}, err
+	}
+
+	subject := profile.Subject
 
 	// 查找顺序：绑定身份（provider id）优先，email 其次。绑定后用户改 Google 侧
 	// primary email 仍按 id 命中直接登录——只按 email 查会在匹配失败后走建号
@@ -99,6 +75,7 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		}
 	}
 
+
 	if u == nil {
 		// 用户不存在，创建新用户。
 		// 密码存空哈希：OAuth 建号用户没有密码（bcrypt 对空哈希必然校验失败，
@@ -113,8 +90,8 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		u.VerifyEmail() // 谷歌账号已验证
 		u.SetGoogleID(subject)
 		
-		if payload.Picture != "" {
-			u.UpdateProfile(payload.Picture, "")
+		if profile.Picture != "" {
+			u.UpdateProfile(profile.Picture, "")
 		}
 
 		u.Activate()          // 激活账号
@@ -128,7 +105,7 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		if u.GoogleID() == nil {
 			confirm, err := newLinkConfirmation(ctx, h.tokens, u, &LinkTokenPayload{
 				Provider: "google", ProviderUID: subject,
-				Email: email.String(), AvatarURL: payload.Picture,
+				Email: email.String(), AvatarURL: profile.Picture,
 			})
 			if err != nil {
 				return LoginOutput{}, err
@@ -142,7 +119,7 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		}
 
 		if changed := applyProviderBinding(u, &LinkTokenPayload{
-			Provider: "google", ProviderUID: subject, AvatarURL: payload.Picture,
+			Provider: "google", ProviderUID: subject, AvatarURL: profile.Picture,
 		}); changed {
 			if err := h.userRepo.Save(ctx, u); err != nil {
 				return LoginOutput{}, err
@@ -192,4 +169,44 @@ func generateGoogleUsername(ctx context.Context, email user.Email, userRepo user
 	}
 
 	return user.Username{}, errors.New("无法生成唯一的用户名")
+}
+
+// googleProfile Google userinfo 的最小身份形态。
+type googleProfile struct {
+	Email   string
+	Subject string
+	Picture string
+}
+
+// fetchGoogleProfile 用 access token 调 Google userinfo 拉取已验证身份。
+// 登录与设置页绑定共用；凭证无效统一返回 ErrInvalidCredentials。
+func fetchGoogleProfile(ctx context.Context, credential string) (googleProfile, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.googleapis.com/oauth2/v3/userinfo", nil)
+	if err != nil {
+		return googleProfile{}, shared.Internal("构建 Google API 请求失败", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+credential)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return googleProfile{}, shared.Internal("请求 Google API 失败", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return googleProfile{}, user.ErrInvalidCredentials
+	}
+
+	var payload struct {
+		Email   string `json:"email"`
+		Subject string `json:"sub"`
+		Picture string `json:"picture"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return googleProfile{}, shared.Internal("解析 Google 响应失败", err)
+	}
+	if payload.Email == "" {
+		return googleProfile{}, shared.BadRequest("Google 账号缺少邮箱信息")
+	}
+	return googleProfile{Email: payload.Email, Subject: payload.Subject, Picture: payload.Picture}, nil
 }

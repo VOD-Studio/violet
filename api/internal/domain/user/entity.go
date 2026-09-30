@@ -421,6 +421,17 @@ func (u *User) SetGithubLogin(login string) {
 	u.githubLogin = &login
 }
 
+// ClearGoogleID 解绑 Google 登录（置 nil，列恢复可空语义）。
+func (u *User) ClearGoogleID() {
+	u.googleID = nil
+}
+
+// ClearGithubID 解绑 GitHub 登录（同时清 login 快照，防悬挂的半绑定状态）。
+func (u *User) ClearGithubID() {
+	u.githubID = nil
+	u.githubLogin = nil
+}
+
 // Activate 启用账户
 func (u *User) Activate() {
 	if u.isActive {

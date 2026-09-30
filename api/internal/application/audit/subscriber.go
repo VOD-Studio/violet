@@ -130,6 +130,28 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case authcmd.ProviderBound:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionBindProvider,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("绑定 %s 登录", e.Provider),
+			Changes:    []domainaudit.FieldChange{{Field: "provider", From: nil, To: e.Provider}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.ProviderUnbound:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUnbindProvider,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("解绑 %s 登录", e.Provider),
+			Changes:    []domainaudit.FieldChange{{Field: "provider", From: e.Provider, To: nil}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case domainuser.UserEmailVerified:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),

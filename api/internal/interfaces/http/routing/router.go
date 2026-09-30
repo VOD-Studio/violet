@@ -158,6 +158,9 @@ func registerAuthRoutes(v1 chi.Router, d *Deps) {
 			r.Get("/me", authH.GetMe)
 			r.Patch("/profile", authH.UpdateProfile)
 			r.Patch("/password", authH.ChangePassword)
+			// 设置页「登录方式」管理（登录态）
+			r.Post("/connections/{provider}", authH.BindConnection)
+			r.Delete("/connections/{provider}", authH.UnbindConnection)
 		})
 	})
 }

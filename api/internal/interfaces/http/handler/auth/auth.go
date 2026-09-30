@@ -16,6 +16,7 @@ import (
 	authquery "blog-api/internal/application/auth/query"
 	appsettings "blog-api/internal/application/settings"
 	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -28,7 +29,9 @@ type Handler struct {
 	login         *authcmd.LoginHandler         // 账号密码登录用例
 	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
 	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
-	confirmLink   *authcmd.ConfirmLinkHandler   // OAuth 首次匹配密码确认绑定用例
+	confirmLink   *authcmd.ConfirmLinkHandler    // OAuth 首次匹配密码确认绑定用例
+	bindProvider  *authcmd.BindProviderHandler    // 设置页绑定 OAuth 用例
+	unbindProvider *authcmd.UnbindProviderHandler // 设置页解绑 OAuth 用例
 	logout        *authcmd.LogoutHandler        // 登出用例
 	createSession *authcmd.CreateSessionHandler // session 创建用例，登录后下发 cookie
 	verify        *authcmd.VerifyEmailHandler   // 邮箱验证用例
@@ -55,6 +58,8 @@ func NewHandler(
 	google *authcmd.GoogleLoginHandler,
 	github *authcmd.GithubLoginHandler,
 	confirmLink *authcmd.ConfirmLinkHandler,
+	bindProvider *authcmd.BindProviderHandler,
+	unbindProvider *authcmd.UnbindProviderHandler,
 	logout *authcmd.LogoutHandler,
 	createSession *authcmd.CreateSessionHandler,
 	verify *authcmd.VerifyEmailHandler,
@@ -70,6 +75,7 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		register: register, login: login, google: google, github: github, confirmLink: confirmLink, logout: logout,
+		bindProvider: bindProvider, unbindProvider: unbindProvider,
 		createSession: createSession,
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
@@ -393,6 +399,72 @@ func (h *Handler) respondLoginError(w http.ResponseWriter, r *http.Request, err 
 		return
 	}
 	response.RespondError(w, r, err)
+}
+
+// BindConnection POST /auth/connections/{provider} —— 设置页绑定 OAuth（登录态）。
+func (h *Handler) BindConnection(w http.ResponseWriter, r *http.Request) {
+	provider := r.PathValue("provider")
+	if provider != "google" && provider != "github" {
+		response.RespondError(w, r, shared.BadRequest("未知的登录方式"))
+		return
+	}
+	if err := h.ensureOAuthEnabled(r.Context(), provider); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	userID := interfacesmw.GetUserIDFromContext(r)
+
+	var dto authcmd.BindingsDTO
+	var err error
+	switch provider {
+	case "google":
+		var req struct {
+			Credential string `json:"credential" validate:"required"`
+		}
+		if jerr := json.NewDecoder(r.Body).Decode(&req); jerr != nil {
+			response.RespondError(w, r, jerr)
+			return
+		}
+		if verr := h.validate.Struct(req); verr != nil {
+			response.RespondError(w, r, verr)
+			return
+		}
+		dto, err = h.bindProvider.BindGoogle(ctxWithAuditInfo(r), authcmd.BindGoogleInput{UserID: userID, Credential: req.Credential})
+	default:
+		var req struct {
+			Code string `json:"code" validate:"required"`
+		}
+		if jerr := json.NewDecoder(r.Body).Decode(&req); jerr != nil {
+			response.RespondError(w, r, jerr)
+			return
+		}
+		if verr := h.validate.Struct(req); verr != nil {
+			response.RespondError(w, r, verr)
+			return
+		}
+		dto, err = h.bindProvider.BindGithub(ctxWithAuditInfo(r), authcmd.BindGithubInput{UserID: userID, Code: req.Code})
+	}
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+// UnbindConnection DELETE /auth/connections/{provider} —— 设置页解绑 OAuth（登录态）。
+func (h *Handler) UnbindConnection(w http.ResponseWriter, r *http.Request) {
+	provider := r.PathValue("provider")
+	if provider != "google" && provider != "github" {
+		response.RespondError(w, r, shared.BadRequest("未知的登录方式"))
+		return
+	}
+	userID := interfacesmw.GetUserIDFromContext(r)
+	dto, err := h.unbindProvider.Handle(ctxWithAuditInfo(r), authcmd.UnbindInput{UserID: userID, Provider: provider})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 // Session GET /auth/session（SSR 探活，只读）
