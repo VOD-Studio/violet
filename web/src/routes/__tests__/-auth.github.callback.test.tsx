@@ -1,5 +1,5 @@
+import { GITHUB_BIND_INTENT_KEY } from "@features/auth/hooks/use-github-oauth";
 import { useLinkConfirmStore } from "@features/auth/model/link-confirm-store";
-import { GITHUB_BIND_INTENT_KEY } from "@features/profile/ui/ConnectionsSection";
 import { ApiError } from "@shared/api/error";
 import { apiPost } from "@shared/api/request";
 import { useSessionStore } from "@shared/api/session";
@@ -23,10 +23,6 @@ vi.mock("@shared/api/request", () => ({
 	apiGet: vi.fn(),
 	apiPatch: vi.fn(),
 	apiDelete: vi.fn(),
-}));
-
-vi.mock("@features/profile/ui/ConnectionsSection", () => ({
-	GITHUB_BIND_INTENT_KEY: "violet:github-bind-intent",
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -188,7 +184,7 @@ describe("GitHub 授权回调", () => {
 
 		expect(apiPost).toHaveBeenCalledTimes(1);
 		expect(useLinkConfirmStore.getState().payload?.linkToken).toBe("test-link-token");
-		expect(router.navigate).toHaveBeenCalledExactlyOnceWith({ to: "/", replace: true });
+		expect(router.navigate).toHaveBeenCalledExactlyOnceWith({ to: "/login", replace: true });
 		expect(toast.error).not.toHaveBeenCalled();
 	});
 });

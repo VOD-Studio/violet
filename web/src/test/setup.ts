@@ -39,6 +39,24 @@ Object.defineProperty(globalThis, "IntersectionObserver", {
 	configurable: true,
 	value: IntersectionObserverMock,
 });
+/**
+ * jsdom 未实现 matchMedia，SpriteSheet（prefers-reduced-motion）等动效组件
+ * 挂载时依赖。提供恒不匹配的最小 mock。
+ */
+Object.defineProperty(globalThis, "matchMedia", {
+	writable: true,
+	configurable: true,
+	value: (query: string) => ({
+		matches: false,
+		media: query,
+		onchange: null,
+		addListener: vi.fn(),
+		removeListener: vi.fn(),
+		addEventListener: vi.fn(),
+		removeEventListener: vi.fn(),
+		dispatchEvent: vi.fn(),
+	}),
+});
 
 if (typeof Element !== "undefined") {
 	Object.defineProperty(Element.prototype, "scrollIntoView", {

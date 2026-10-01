@@ -1,10 +1,13 @@
 import { authKeys } from "@features/auth/api/keys";
 import { useBindConnectionMutation, useGithubLoginMutation } from "@features/auth/api/mutations";
+import {
+	GITHUB_BIND_INTENT_KEY,
+	GITHUB_OAUTH_MESSAGE,
+} from "@features/auth/hooks/use-github-oauth";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
-import { GITHUB_BIND_INTENT_KEY } from "@features/profile/ui/ConnectionsSection";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { RuaLoading } from "@widgets/PersonaMotion";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -25,6 +28,7 @@ function GithubCallbackPage() {
 	const qc = useQueryClient();
 	const navigate = useNavigate();
 	const handledCode = useRef<string | null>(null);
+	const returnedRef = useRef(false);
 	const isMounted = useRef(false);
 
 	useEffect(() => {
@@ -35,6 +39,21 @@ function GithubCallbackPage() {
 	}, []);
 
 	useEffect(() => {
+		// popup 发起的授权：一次性授权码交回发起窗口后本窗口立即退出，
+		// 不在此消费（发起窗口的 onCode 走 XHR，与 Google 登录同构）。
+		// 无 code（如用户在 GitHub 侧取消授权）同样直接关窗。
+		if (window.opener && !window.opener.closed) {
+			if (returnedRef.current) return;
+			returnedRef.current = true;
+			if (code) {
+				window.opener.postMessage(
+					{ type: GITHUB_OAUTH_MESSAGE, code },
+					window.location.origin,
+				);
+			}
+			window.close();
+			return;
+		}
 		if (!code) {
 			toast.error("未获取到授权码");
 			navigate({ to: "/login", replace: true });
@@ -80,8 +99,9 @@ function GithubCallbackPage() {
 			(err: unknown) => {
 				if (!isMounted.current || handledCode.current !== code) return;
 				if (openLinkConfirmFromError(err)) {
-					// 确认弹窗全局挂载，回调页只负责离开 loading 界面
-					navigate({ to: "/", replace: true });
+					// 确认弹窗全局挂载；背景落登录页而非首页，避免「未操作却被
+					// 跳走」的错觉，用户取消弹窗后也能原地换登录方式重试
+					navigate({ to: "/login", replace: true });
 					return;
 				}
 				toast.error("GitHub 登录失败");
@@ -90,12 +110,5 @@ function GithubCallbackPage() {
 		);
 	}, [code, githubLogin, bindConnection, qc, navigate]);
 
-	return (
-		<div className="flex h-screen w-screen items-center justify-center">
-			<div className="flex flex-col items-center gap-4">
-				<Loader2 className="size-8 animate-spin text-primary" />
-				<p className="text-sm text-muted-foreground">正在处理 GitHub 授权...</p>
-			</div>
-		</div>
-	);
+	return <RuaLoading label="正在处理 GitHub 授权" detail="授权完成即可继续" className="h-dvh" />;
 }
