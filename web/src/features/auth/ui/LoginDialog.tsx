@@ -1,5 +1,10 @@
-import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
+import {
+	useGithubLoginMutation,
+	useGoogleLoginMutation,
+	useLogin,
+} from "@features/auth/api/mutations";
 import { clearAuthCache, useCsrfToken } from "@features/auth/api/queries";
+import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import type { LoginRequest } from "@features/auth/model/types";
@@ -39,7 +44,8 @@ export function LoginDialog() {
 	const csrfToken = useCsrfToken({ enabled: isOpen });
 	const login = useLogin();
 	const googleLogin = useGoogleLoginMutation(csrfToken);
-	const { showGoogle, showGithub, showOAuth, githubClientId } = useOAuthVisibility();
+	const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
+	const githubLogin = useGithubLoginMutation(csrfToken);
 
 	const handleGoogleLogin = useGoogleLogin({
 		flow: "implicit",
@@ -68,12 +74,29 @@ export function LoginDialog() {
 		onError: () => toast.error("Google 登录失败，请重试"),
 	});
 
-	const handleGithubLogin = () => {
-		const redirectUri = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-		const clientId = githubClientId || import.meta.env.VITE_GITHUB_CLIENT_ID;
-		if (!clientId) return;
-		window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
-	};
+	const openGithubWindow = useGithubOAuth({
+		onCode: (ghCode) => {
+			githubLogin.mutate(ghCode, {
+				onSuccess: () => {
+					toast.success("登录成功");
+					close();
+					setForm({ identifier: "", password: "" });
+					// useGithubLoginMutation 的 onSuccess 已 invalidate authKeys.me()
+					// 并 markSessionActive()，这里不显式 refetch（同 Google 登录）。
+				},
+				onError: (err) => {
+					if (openLinkConfirmFromError(err)) return;
+					const msg =
+						err instanceof ApiError
+							? err.message ||
+								FALLBACK_BY_STATUS[err.status] ||
+								"登录失败，请稍后重试"
+							: err.message || "登录失败，请检查网络";
+					toast.error(msg);
+				},
+			});
+		},
+	});
 
 	const [form, setForm] = useState<LoginRequest>({ identifier: "", password: "" });
 	const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
@@ -226,7 +249,8 @@ export function LoginDialog() {
 									variant="outline"
 									size="icon"
 									className="ml-4 size-12 rounded-full"
-									onClick={() => handleGithubLogin()}
+									onClick={() => openGithubWindow()}
+									disabled={githubLogin.isPending}
 								>
 									<GithubIcon title="GitHub" className="size-6" />
 								</Button>

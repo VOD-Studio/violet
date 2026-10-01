@@ -1,5 +1,10 @@
-import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
+import {
+	useGithubLoginMutation,
+	useGoogleLoginMutation,
+	useLogin,
+} from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
+import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
@@ -67,8 +72,9 @@ function LoginPage() {
 
 	const csrfToken = useCsrfToken();
 	const login = useLogin(csrfToken);
+	const githubLogin = useGithubLoginMutation(csrfToken);
 	const googleLogin = useGoogleLoginMutation(csrfToken);
-	const { showGoogle, showGithub, showOAuth, githubClientId } = useOAuthVisibility();
+	const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
 
 	const handleGoogleLogin = useGoogleLogin({
 		flow: "implicit",
@@ -94,12 +100,25 @@ function LoginPage() {
 		onError: () => toast.error("Google 登录失败，请重试"),
 	});
 
-	const handleGithubLogin = () => {
-		const redirectUri = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-		const clientId = githubClientId || import.meta.env.VITE_GITHUB_CLIENT_ID;
-		if (!clientId) return;
-		window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
-	};
+	const openGithubWindow = useGithubOAuth({
+		onCode: (ghCode) => {
+			githubLogin.mutate(ghCode, {
+				onSuccess: async () => {
+					toast.success("登录成功");
+					const target = safeRedirectTarget(redirect);
+					try {
+						await navigate({ to: target, replace: true });
+					} catch {
+						window.location.href = target;
+					}
+				},
+				onError: (err) => {
+					if (openLinkConfirmFromError(err)) return;
+					toast.error(err instanceof ApiError ? err.message : "登录失败");
+				},
+			});
+		},
+	});
 
 	const onSubmit = handleSubmit((data) => {
 		login.mutate(data, {
@@ -220,7 +239,8 @@ function LoginPage() {
 										variant="outline"
 										size="icon"
 										className="ml-4 size-12 rounded-full"
-										onClick={() => handleGithubLogin()}
+										onClick={openGithubWindow}
+										disabled={githubLogin.isPending}
 									>
 										<GithubIcon title="GitHub" className="size-6" />
 									</Button>

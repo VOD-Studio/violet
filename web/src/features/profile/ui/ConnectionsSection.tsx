@@ -4,6 +4,7 @@ import {
 	useUnbindConnectionMutation,
 } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
+import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { useGoogleLogin } from "@react-oauth/google";
 import { GithubIcon } from "@violet/ui";
@@ -17,9 +18,6 @@ interface ConnectionsSectionProps {
 	user: UserDTO;
 }
 
-/** GitHub 绑定意图标记：回调页据此区分「绑定」与「登录」。 */
-export const GITHUB_BIND_INTENT_KEY = "violet:github-bind-intent";
-
 /**
  * ConnectionsSection - 登录方式卡片
  *
@@ -31,8 +29,22 @@ export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 	const csrfToken = useCsrfToken();
 	const bindConnection = useBindConnectionMutation(csrfToken);
 	const unbindConnection = useUnbindConnectionMutation(csrfToken);
-	const { showGoogle, showGithub, githubClientId } = useOAuthVisibility();
+	const { showGoogle, showGithub } = useOAuthVisibility();
 	const [pendingProvider, setPendingProvider] = useState<"google" | "github" | null>(null);
+	const openGithubWindow = useGithubOAuth({
+		bindIntent: true,
+		onCode: (ghCode) => {
+			setPendingProvider("github");
+			bindConnection.mutate(
+				{ provider: "github", credential: ghCode },
+				{
+					onSuccess: () => toast.success("GitHub 绑定成功"),
+					onError: (err) => handleBindError(err, "GitHub"),
+					onSettled: () => setPendingProvider(null),
+				},
+			);
+		},
+	});
 
 	const handleBindError = (err: unknown, provider: string) => {
 		const msg = err instanceof Error ? err.message : "绑定失败，请重试";
@@ -54,18 +66,6 @@ export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 		},
 		onError: () => toast.error("Google 授权失败，请重试"),
 	});
-
-	const startGithubBind = () => {
-		const redirectUri = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-		const clientId = githubClientId || import.meta.env.VITE_GITHUB_CLIENT_ID;
-		if (!clientId) {
-			toast.error("GitHub 登录未配置");
-			return;
-		}
-		// 回调页共用登录的 redirect_uri，以 sessionStorage 标记绑定意图
-		window.sessionStorage.setItem(GITHUB_BIND_INTENT_KEY, "1");
-		window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
-	};
 
 	const handleUnbind = (provider: "google" | "github") => {
 		const label = provider === "google" ? "Google" : "GitHub";
@@ -131,7 +131,7 @@ export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 								/>
 							) : (
 								<BindButton
-									onClick={startGithubBind}
+									onClick={() => openGithubWindow()}
 									disabled={pending("github")}
 								/>
 							)
