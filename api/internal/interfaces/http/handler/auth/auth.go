@@ -333,7 +333,7 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 
 	out, err := h.github.Handle(ctxWithAuditInfo(r), authcmd.GithubLoginInput{Credential: req.Credential})
 	if err != nil {
-		response.RespondError(w, r, err)
+		h.respondLoginError(w, r, err)
 		return
 	}
 	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{

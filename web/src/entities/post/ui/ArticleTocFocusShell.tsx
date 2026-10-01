@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { type FocusEvent, type ReactNode, type RefObject, useState } from "react";
+import { type FocusEvent, type ReactNode, type RefObject, useEffect, useState } from "react";
 
 import { ArticleTocRail } from "./ArticleTocRail";
 import { type ArticleTocRailItem, useArticleReadPercent } from "./article-toc-rail-motion";
@@ -8,6 +8,8 @@ interface ArticleTocFocusShellProps {
 	items: ArticleTocRailItem[];
 	activeId: string | null;
 	contentRef?: RefObject<HTMLElement | null>;
+	/** 展开态切换通知；收起(true)→展开(false)时目录列表需滚回当前阅读位置。 */
+	onRailActiveChange?: (active: boolean) => void;
 	children: (railActive: boolean) => ReactNode;
 }
 
@@ -16,11 +18,15 @@ export function ArticleTocFocusShell({
 	items,
 	activeId,
 	contentRef,
+	onRailActiveChange,
 	children,
 }: ArticleTocFocusShellProps) {
 	const [isHovered, setIsHovered] = useState(false);
 	const [hasFocusWithin, setHasFocusWithin] = useState(false);
 	const railActive = !isHovered && !hasFocusWithin;
+	useEffect(() => {
+		onRailActiveChange?.(railActive);
+	}, [onRailActiveChange, railActive]);
 	const activeIndex = Math.max(
 		0,
 		items.findIndex((item) => item.id === activeId),

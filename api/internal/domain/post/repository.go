@@ -2,6 +2,7 @@ package post
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -34,6 +35,9 @@ type PostRepository interface {
 	// --- 历史版本控制 ---
 	SaveVersion(ctx context.Context, version *PostVersion) error
 	FindVersionsByPostID(ctx context.Context, postID shared.ID) ([]*PostVersion, error)
+	// FindVersionsAfter 返回 postID 在 after 之后创建的全部版本快照（created_at 倒序）。
+	// 供详情页判定「发布后是否编辑过」与编辑次数（edited_at / edited_version_count）。
+	FindVersionsAfter(ctx context.Context, postID shared.ID, after time.Time) ([]*PostVersion, error)
 	GetVersionByID(ctx context.Context, versionID shared.ID) (*PostVersion, error)
 	// FindCollaboratorIDsByPostID 返回该文章的协同者 ID（按首次编辑时间升序、去重、排除 owner）。
 	// 协同者 = 在 post_versions.editor_id 出现过且不等于 posts.author_id 的用户。

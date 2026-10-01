@@ -547,53 +547,6 @@ export function SlideIn({
 		</div>
 	);
 }
-export interface TextUnderlineProps {
-	/** 触发模式：hover 悬停生长（默认），reveal 视口进入生长 */
-	mode?: "hover" | "reveal";
-	color?: string;
-	/** 线条粗细（像素，默认 1.5） */
-	thickness?: number;
-	className?: string;
-	children: ReactNode;
-}
-
-/** 文字下划线：墨线自左向右平滑生长延伸。 */
-export function TextUnderline({
-	mode = "hover",
-	color = "var(--primary)",
-	thickness = 1.5,
-	className,
-	children,
-}: TextUnderlineProps) {
-	const reduce = useReducedMotion();
-	const ref = useRef<HTMLSpanElement>(null);
-	const inView = useInView(ref, { once: true, margin: "-40px" });
-	const [hovered, setHovered] = useState(false);
-
-	const active = mode === "hover" ? hovered : inView;
-
-	return (
-		<span
-			ref={ref}
-			className={cn("relative inline-block cursor-pointer select-none", className)}
-			onMouseEnter={() => setHovered(true)}
-			onMouseLeave={() => setHovered(false)}
-		>
-			{children}
-			<span
-				aria-hidden
-				className="pointer-events-none absolute bottom-0 left-0 right-0 origin-left"
-				style={{
-					height: `${thickness}px`,
-					backgroundColor: color,
-					transform: active || reduce ? "scaleX(1)" : "scaleX(0)",
-					transition: reduce ? "none" : `transform 0.28s ${MOTION_BEZIER.out}`,
-				}}
-			/>
-		</span>
-	);
-}
-
 const WAVE_SVG_MASK =
 	"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 8'%3E%3Cpath d='M0 4 C3.5 1, 3.5 1, 7 4 C10.5 7, 10.5 7, 14 4' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E\")";
 

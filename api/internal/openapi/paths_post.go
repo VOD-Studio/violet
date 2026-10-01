@@ -23,6 +23,8 @@ func registerPostPaths(t *openapi3.T) {
 		"seo_title":       optStr("SEO 标题"),
 		"seo_description": optStr("SEO 描述"),
 		"published_at":    optStr("发布时间（RFC3339，可空）"),
+		"edited_at":       optStr("发布后最近一次版本快照时间（RFC3339，可空）；缺省=发布后未编辑过"),
+		"edited_version_count": optInt("发布后版本快照数；缺省=发布后未编辑过"),
 		"tags":            strArray("标签 slug 列表"),
 		"created_at":      optStr("创建时间（RFC3339）"),
 		"updated_at":      optStr("更新时间（RFC3339）"),

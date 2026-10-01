@@ -26,8 +26,9 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import { FloatingBack } from "@shared/ui/floating-back";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Popover, PopoverContent, PopoverTrigger, TextUnderline } from "@violet/ui";
 import { ArrowLeft, Calendar, ExternalLink, Eye } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 /**
  * 评论相关组件懒加载：批注层 / 浮动工具条 / 评论区都在首屏可视区下方，
@@ -199,7 +200,13 @@ function BlogDetailPage() {
 						{post.published_at ? (
 							<span className="inline-flex items-center gap-1.5">
 								<Calendar className="size-3.5" />
-								{formatDate(post.published_at, "long-date")}
+								<span>{formatDate(post.published_at, "long-date")}</span>
+								{post.edited_at ? <RevisionChip post={post} /> : null}
+							</span>
+						) : post.edited_at ? (
+							<span className="inline-flex items-center gap-1.5">
+								<Calendar className="size-3.5" />
+								<RevisionChip post={post} standalone />
 							</span>
 						) : null}
 						<span className="inline-flex items-center gap-1.5">
@@ -259,7 +266,7 @@ function BlogDetailPage() {
 
 					{/* 上一章/下一章导航（挂书文章显示；与正文左对齐） */}
 					{chapterCtx ? (
-						<div className="relative mt-12 flex max-w-6xl">
+						<div className="relative mt-12 flex max-w-4xl">
 							<div className="min-w-0 max-w-4xl flex-1">
 								<ChapterNav context={chapterCtx} />
 							</div>
@@ -292,7 +299,7 @@ function BlogDetailPage() {
 					{/* 底部自由评论区：放在 article 内、正文容器之后，与正文左对齐
                     （章内 TOC 与全书目录均不占布局列）。 */}
 					{post?.id && commentsEnabled && (
-						<div className="relative mt-16 flex max-w-6xl">
+						<div className="relative mt-16 flex max-w-4xl">
 							<Suspense
 								fallback={
 									<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
@@ -328,6 +335,91 @@ function BlogDetailPage() {
 				<BackToTop />
 			)}
 		</>
+	);
+}
+
+export interface RevisionChipProps {
+	post: PostDetail;
+	/** 是否脱离发布日期独立渲染 */
+	standalone?: boolean;
+}
+
+/** 发布后修订提示：纯 hover 驱动轻量 Popover，结合纯净 1px TextUnderline 墨线动效。 */
+export function RevisionChip({ post, standalone }: RevisionChipProps) {
+	const [open, setOpen] = useState(false);
+	const closeTimer = useRef<number>(0);
+
+	const handleOpen = () => {
+		window.clearTimeout(closeTimer.current);
+		setOpen(true);
+	};
+
+	const handleClose = () => {
+		window.clearTimeout(closeTimer.current);
+		closeTimer.current = window.setTimeout(() => {
+			setOpen(false);
+		}, 120);
+	};
+
+	useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+	const count = post.edited_version_count ?? 1;
+	const editedDate = post.edited_at ?? "";
+	if (!editedDate) return null;
+
+	const formattedEditDate = formatDate(editedDate, "long-date");
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<button
+					type="button"
+					className="inline-flex cursor-pointer items-center gap-1.5 select-none bg-transparent p-0 font-inherit text-inherit"
+					onMouseEnter={handleOpen}
+					onMouseLeave={handleClose}
+					onClick={(e) => e.preventDefault()}
+				>
+					{!standalone && <span className="text-muted-foreground/40">·</span>}
+					<TextUnderline
+						thickness={1}
+						color="var(--primary)"
+						className="text-xs text-muted-foreground/75 transition-colors hover:text-foreground"
+					>
+						{standalone ? `编辑于 ${formattedEditDate}` : "(已编辑)"}
+					</TextUnderline>
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				side="top"
+				sideOffset={8}
+				align="center"
+				className="w-64 rounded-xl border border-border/80 bg-popover/95 p-3 text-popover-foreground shadow-[0_4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
+				onMouseEnter={handleOpen}
+				onMouseLeave={handleClose}
+			>
+				{/* 顶栏：简明小标题与修订次数 */}
+				<div className="flex items-center justify-between border-b border-border/50 pb-2">
+					<span className="font-sans text-xs font-medium text-foreground">修订记录</span>
+					<span className="font-mono text-[11px] text-muted-foreground">
+						共 {count} 次
+					</span>
+				</div>
+
+				{/* 时间事实两行：无冗余宣传模板 */}
+				<div className="mt-2.5 space-y-1.5 font-mono text-xs">
+					{post.published_at ? (
+						<div className="flex items-center justify-between text-muted-foreground">
+							<span>首次发布</span>
+							<span>{formatDate(post.published_at, "long-date")}</span>
+						</div>
+					) : null}
+					<div className="flex items-center justify-between text-foreground">
+						<span className="text-muted-foreground">最近编辑</span>
+						<span className="font-medium">{formattedEditDate}</span>
+					</div>
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 }
 

@@ -46,11 +46,16 @@ func (h *StreamHandler) Stream(w http.ResponseWriter, r *http.Request) {
 			lastSequence = 0
 		}
 	}
-	if events, replayErr := h.svc.EventsAfter(r.Context(), userID, lastSequence, 100); replayErr == nil {
-		for _, event := range events {
-			writeEvent(w, event)
+	// 首连（无有效 Last-Event-ID）不重放历史：登录后的会话列表与未读数由客户端
+	// 全量拉取对账，从最老事件补发满额 limit 条只会让前端逐条失效查询，形成
+	// 每次登录约百次的请求风暴。补发只服务断线重连的对账。
+	if lastSequence > 0 {
+		if events, replayErr := h.svc.EventsAfter(r.Context(), userID, lastSequence, 100); replayErr == nil {
+			for _, event := range events {
+				writeEvent(w, event)
+			}
+			flusher.Flush()
 		}
-		flusher.Flush()
 	}
 
 	ch, cleanup := h.manager.Register(userID)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"testing"
+	"time"
 
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
@@ -52,6 +53,11 @@ func (f *fakeSlugRepo) FindPublishedByYear(context.Context, int) ([]*domain.Post
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) FindVersionsByPostID(context.Context, shared.ID) ([]*domain.PostVersion, error) {
+	panic("not implemented")
+}
+func (f *fakeSlugRepo) FindVersionsAfter(
+	context.Context, shared.ID, time.Time,
+) ([]*domain.PostVersion, error) {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) GetVersionByID(context.Context, shared.ID) (*domain.PostVersion, error) {

@@ -46,6 +46,7 @@ export * from "./steps";
 export * from "./switch";
 export * from "./table";
 export * from "./tabs";
+export * from "./text-underline";
 export * from "./textarea";
 export * from "./tooltip";
 export { default as DecryptedText } from "./vendor/DecryptedText";
