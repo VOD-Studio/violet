@@ -227,3 +227,34 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 		assert.Equal(t, -1, c.MaxAge, "cookie %s 应被清除（MaxAge=-1）", c.Name)
 	}
 }
+
+// TestRespondLoginError_LinkConfirmation 验证 LinkConfirmationRequiredError 映射为 409 确认流响应。
+// 对应前端 open-link-confirm.ts 契约：link_token/email/has_password/provider 四字段缺一不可，
+// 否则回调页无法打开绑定弹窗（生产 bug：GithubLogin 漏接此路径整链退化为 500）。
+func TestRespondLoginError_LinkConfirmation(t *testing.T) {
+	h := NewHandler(
+		nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, authcmd.NewOAuthCredentials("", "", ""),
+		testCookieCfg(),
+		config.SessionConfig{IdleTTL: time.Hour},
+	)
+
+	err := &authcmd.LinkConfirmationRequiredError{
+		Token:       "link-token-1",
+		Email:       "x***@gmail.com",
+		HasPassword: true,
+		Provider:    "GitHub",
+	}
+	req := httptest.NewRequest(http.MethodPost, "/auth/github", nil)
+	rec := httptest.NewRecorder()
+	h.respondLoginError(rec, req, err)
+
+	require.Equal(t, http.StatusConflict, rec.Code, "确认流错误应返回 409 而非 500")
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	assert.Equal(t, "LINK_CONFIRMATION_REQUIRED", body["error"])
+	assert.Equal(t, "link-token-1", body["link_token"])
+	assert.Equal(t, "x***@gmail.com", body["email"])
+	assert.Equal(t, true, body["has_password"])
+	assert.Equal(t, "GitHub", body["provider"])
+}
