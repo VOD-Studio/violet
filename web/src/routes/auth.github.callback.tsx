@@ -80,8 +80,9 @@ function GithubCallbackPage() {
 			(err: unknown) => {
 				if (!isMounted.current || handledCode.current !== code) return;
 				if (openLinkConfirmFromError(err)) {
-					// 确认弹窗全局挂载，回调页只负责离开 loading 界面
-					navigate({ to: "/", replace: true });
+					// 确认弹窗全局挂载；背景落登录页而非首页，避免「未操作却被
+					// 跳走」的错觉，用户取消弹窗后也能原地换登录方式重试
+					navigate({ to: "/login", replace: true });
 					return;
 				}
 				toast.error("GitHub 登录失败");

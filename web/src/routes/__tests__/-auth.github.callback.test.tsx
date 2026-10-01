@@ -188,7 +188,7 @@ describe("GitHub 授权回调", () => {
 
 		expect(apiPost).toHaveBeenCalledTimes(1);
 		expect(useLinkConfirmStore.getState().payload?.linkToken).toBe("test-link-token");
-		expect(router.navigate).toHaveBeenCalledExactlyOnceWith({ to: "/", replace: true });
+		expect(router.navigate).toHaveBeenCalledExactlyOnceWith({ to: "/login", replace: true });
 		expect(toast.error).not.toHaveBeenCalled();
 	});
 });
