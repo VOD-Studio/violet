@@ -7,6 +7,32 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.52](https://github.com/VOD-Studio/violet/compare/v2.8.51...v2.8.52) (2026-10-01)
+
+
+### 新增
+
+* **blog:** 文章修订标识改用 hover 驱动 Popover 与墨线组件 ([c3aae0c](https://github.com/VOD-Studio/violet/commit/c3aae0c07c2f22db48a7b040ad53e06b62537658))
+* **post:** 修订胶囊以悬停浮层展示编辑摘要 ([c492e02](https://github.com/VOD-Studio/violet/commit/c492e02070b2a3f7a9da9450f289da00a292e12f))
+* **post:** 日期旁以已编辑标记替代独立编辑时间项 ([7aaeab0](https://github.com/VOD-Studio/violet/commit/7aaeab0ec2277767c1a77218e8426adc8ac6eddc))
+* **post:** 详情返回发布后编辑时间 ([f46afb3](https://github.com/VOD-Studio/violet/commit/f46afb3887f44c3813bae64d316483705b041d59))
+* **post:** 详情返回发布后编辑版本数 ([95f04d1](https://github.com/VOD-Studio/violet/commit/95f04d1238c09b03e6876e1bc511e38e8a5138cc))
+* **post:** 详情页显示编辑时间 ([a8f2171](https://github.com/VOD-Studio/violet/commit/a8f21710a34771f7bcc1259c64f4ab4530840f15))
+
+
+### 修复
+
+* **chat:** 首连不重放历史事件 ([574329e](https://github.com/VOD-Studio/violet/commit/574329e14e52816aafc5c94dfd3f2d2678f433f3))
+* **handler:** GitHub 登录绑定确认流错误码修复 ([89acf7c](https://github.com/VOD-Studio/violet/commit/89acf7cf5f65b17a54a7001ebf77a184554fa019))
+* **post:** 目录滚动跟随与悬停展开对账修复 ([1a672f3](https://github.com/VOD-Studio/violet/commit/1a672f3a5431930d240d0ea5d34c706d3eca63b4))
+* **post:** 目录跟随滚动改缓动趋近 ([dd1f4bc](https://github.com/VOD-Studio/violet/commit/dd1f4bca987970e4293bf7a8a1f47b793ff47e5f))
+* **post:** 评论区与章节导航行不再遮挡悬停目录 ([66b2acf](https://github.com/VOD-Studio/violet/commit/66b2acf9622db1d78f4b9b001c102110b72d0352))
+
+
+### 重构
+
+* **ui:** TextUnderline 上提到组件库 ([f2c2e89](https://github.com/VOD-Studio/violet/commit/f2c2e896311d6ff6cd7bd12b17f3a68adf8fdcb6))
+
 ## [2.8.51](https://github.com/VOD-Studio/violet/compare/v2.8.50...v2.8.51) (2026-09-30)
 
 
