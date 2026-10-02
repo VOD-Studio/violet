@@ -3,8 +3,10 @@ package gorm
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -63,10 +65,26 @@ func migrationsAbsDir(t *testing.T) string {
 	return "file://" + abs
 }
 
-// setupIntegrationDB 建立到 PostgreSQL 的连接并确保 migration 已执行到最新。
+// 每例使用独立 schema，避免图库与发布投影的跨表夹具互相污染。
 func setupIntegrationDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	dsn := pgDSNFromEnv(t)
+	admin, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	require.NoError(t, err)
+	adminSQL, err := admin.DB()
+	require.NoError(t, err)
+	schema := "repository_test_" + strings.ReplaceAll(domainshared.NewID().String(), "-", "")
+	t.Cleanup(func() {
+		assert.NoError(t, admin.Exec(`DROP SCHEMA IF EXISTS "`+schema+`" CASCADE`).Error)
+		assert.NoError(t, adminSQL.Close())
+	})
+	require.NoError(t, admin.Exec(`CREATE SCHEMA "`+schema+`"`).Error)
+	parsed, err := url.Parse(dsn)
+	require.NoError(t, err)
+	query := parsed.Query()
+	query.Set("search_path", schema)
+	parsed.RawQuery = query.Encode()
+	dsn = parsed.String()
 
 	m, err := migrate.New(migrationsAbsDir(t), toMigrateDSN(dsn))
 	require.NoError(t, err)
@@ -80,14 +98,9 @@ func setupIntegrationDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 
-	// 每个测试结束时清理本次写入的版本与文章数据，避免数据累积污染后续用例。
-	t.Cleanup(func() {
-		_ = db.Exec("DELETE FROM post_versions").Error
-		_ = db.Exec("DELETE FROM posts").Error
-		_ = db.Exec("DELETE FROM tags").Error
-		sqlDB, _ := db.DB()
-		_ = sqlDB.Close()
-	})
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, sqlDB.Close()) })
 	return db
 }
 
@@ -124,7 +137,7 @@ func TestPostRepositoryIntegration_SaveVersion(t *testing.T) {
 
 	var tagsColumn string
 	require.NoError(t, db.Raw(
-		`SELECT column_name FROM information_schema.columns WHERE table_name = 'post_versions' AND column_name = 'tags'`,
+		`SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'post_versions' AND column_name = 'tags'`,
 	).Scan(&tagsColumn).Error)
 	assert.Equal(t, "tags", tagsColumn, "post_versions 应有 tags 列")
 
@@ -140,4 +153,17 @@ func TestPostRepositoryIntegration_SaveVersion(t *testing.T) {
 	loaded2, err := repo.GetVersionByID(context.Background(), version2.ID())
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"go", "web"}, loaded2.Tags())
+}
+
+func TestIntegrationFixturesUseIsolatedSchemas(t *testing.T) {
+	first := setupIntegrationDB(t)
+	second := setupIntegrationDB(t)
+	require.NoError(t, first.Exec("INSERT INTO tags (name, slug) VALUES ('isolated', 'isolated')").Error)
+	var count int64
+	require.NoError(t, second.Table("tags").Count(&count).Error)
+	assert.Zero(t, count)
+	var firstSchema, secondSchema string
+	require.NoError(t, first.Raw("SELECT current_schema()").Scan(&firstSchema).Error)
+	require.NoError(t, second.Raw("SELECT current_schema()").Scan(&secondSchema).Error)
+	assert.NotEqual(t, firstSchema, secondSchema)
 }

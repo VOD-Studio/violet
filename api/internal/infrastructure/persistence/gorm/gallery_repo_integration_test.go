@@ -13,9 +13,17 @@ import (
 	appgallery "blog-api/internal/application/gallery"
 	appshared "blog-api/internal/application/shared"
 	domaingallery "blog-api/internal/domain/gallery"
+	"blog-api/internal/domain/permission"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
+	"blog-api/internal/middleware"
 )
+
+type galleryOwnerPermissions struct{}
+
+func (galleryOwnerPermissions) HasPermission(_ string, _ bool, codes ...string) bool {
+	return len(codes) == 1 && codes[0] == permission.GalleryManage.String()
+}
 
 func preseedGalleryFile(t *testing.T, db *gorm.DB, ownerID domainshared.ID, name string) domainshared.ID {
 	t.Helper()
@@ -58,7 +66,8 @@ func TestGallerySaveIntegrationCommitsAndRollsBackWithReferences(t *testing.T) {
 	var deferredCount int
 	require.NoError(t, db.Raw(
 		`SELECT COUNT(*) FROM pg_constraint
-		 WHERE conname IN ('fk_galleries_working_revision', 'fk_galleries_published_revision')
+		 WHERE conrelid = 'galleries'::regclass
+		   AND conname IN ('fk_galleries_working_revision', 'fk_galleries_published_revision')
 		   AND condeferrable AND condeferred`,
 	).Scan(&deferredCount).Error)
 	assert.Equal(t, 2, deferredCount)
@@ -230,6 +239,7 @@ func TestGalleryPublishRollbackLeavesDraftAndReferencesUnchanged(t *testing.T) {
 func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *testing.T) {
 	db := setupIntegrationDB(t)
 	ownerID := preseedAuthor(t, db)
+	ctx := context.WithValue(context.Background(), middleware.UserIDKey, ownerID.String())
 	firstID := preseedGalleryFile(t, db, ownerID, "maintenance-first.jpg")
 	secondID := preseedGalleryFile(t, db, ownerID, "maintenance-second.jpg")
 	thirdID := preseedGalleryFile(t, db, ownerID, "maintenance-third.jpg")
@@ -241,23 +251,23 @@ func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *tes
 
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
-	draft, err := service.CreateDraft(context.Background(), ownerID.String())
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, galleryOwnerPermissions{}, nil)
+	draft, err := service.CreateDraft(ctx, ownerID.String())
 	require.NoError(t, err)
-	saved, err := service.Save(context.Background(), appgallery.SaveInput{
+	saved, err := service.Save(ctx, appgallery.SaveInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: draft.Version,
 		Title: "旧标题", Summary: "旧摘要",
 		Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: secondID.String(), Caption: "旧说明"}},
 	})
 	require.NoError(t, err)
-	published, err := service.Publish(context.Background(), appgallery.PublishInput{
+	published, err := service.Publish(ctx, appgallery.PublishInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: saved.Version,
 	})
 	require.NoError(t, err)
 	originalSlug := *published.Slug
 	originalPublishedAt := *published.PublishedAt
 
-	modified, err := service.Save(context.Background(), appgallery.SaveInput{
+	modified, err := service.Save(ctx, appgallery.SaveInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: published.Version,
 		Title: "新标题", Summary: "新摘要",
 		Items: []appgallery.SaveItemInput{{FileID: thirdID.String(), Caption: "新说明"}, {FileID: firstID.String(), AltTextOverride: "新替代文本"}},
@@ -265,7 +275,7 @@ func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *tes
 	require.NoError(t, err)
 	assert.Equal(t, domaingallery.StatusModified, modified.Status)
 
-	updated, err := service.Publish(context.Background(), appgallery.PublishInput{
+	updated, err := service.Publish(ctx, appgallery.PublishInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: modified.Version,
 	})
 	require.NoError(t, err)
@@ -276,7 +286,7 @@ func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *tes
 	assert.Zero(t, galleryRefCount(t, db, secondID))
 	assert.Equal(t, 1, galleryRefCount(t, db, thirdID))
 
-	public, err := service.GetPublished(context.Background(), originalSlug)
+	public, err := service.GetPublished(ctx, originalSlug)
 	require.NoError(t, err)
 	assert.Equal(t, "新标题", public.Title)
 	assert.Equal(t, "新摘要", public.Summary)
@@ -290,26 +300,26 @@ func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *tes
 	require.NoError(t, db.Model(&model.GalleryRevision{}).Where("gallery_id = ?", draft.ID).Count(&revisionCount).Error)
 	assert.Equal(t, int64(1), revisionCount)
 
-	unpublished, err := service.Unpublish(context.Background(), appgallery.VersionInput{
+	unpublished, err := service.Unpublish(ctx, appgallery.VersionInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: updated.Version,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, domaingallery.StatusUnpublished, unpublished.Status)
 	assert.Equal(t, originalSlug, *unpublished.Slug)
 	assert.Equal(t, originalPublishedAt, *unpublished.PublishedAt)
-	_, err = service.GetPublished(context.Background(), originalSlug)
+	_, err = service.GetPublished(ctx, originalSlug)
 	assert.ErrorIs(t, err, domaingallery.ErrNotFound)
 	assert.Equal(t, 1, galleryRefCount(t, db, firstID))
 	assert.Equal(t, 1, galleryRefCount(t, db, thirdID))
 
-	republished, err := service.Publish(context.Background(), appgallery.PublishInput{
+	republished, err := service.Publish(ctx, appgallery.PublishInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: unpublished.Version,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, originalSlug, *republished.Slug)
 	assert.Equal(t, originalPublishedAt, *republished.PublishedAt)
 
-	require.NoError(t, service.Delete(context.Background(), appgallery.VersionInput{
+	require.NoError(t, service.Delete(ctx, appgallery.VersionInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: republished.Version,
 	}))
 	assert.Zero(t, galleryRefCount(t, db, firstID))
@@ -324,6 +334,7 @@ func TestGalleryPublishedMaintenanceLifecycleCleansSnapshotsAndReferences(t *tes
 func TestGalleryMaintenanceFailuresRollBackPointersSnapshotsAndReferences(t *testing.T) {
 	db := setupIntegrationDB(t)
 	ownerID := preseedAuthor(t, db)
+	ctx := context.WithValue(context.Background(), middleware.UserIDKey, ownerID.String())
 	firstID := preseedGalleryFile(t, db, ownerID, "failure-first.jpg")
 	secondID := preseedGalleryFile(t, db, ownerID, "failure-second.jpg")
 	thirdID := preseedGalleryFile(t, db, ownerID, "failure-third.jpg")
@@ -337,17 +348,17 @@ func TestGalleryMaintenanceFailuresRollBackPointersSnapshotsAndReferences(t *tes
 
 	repo := NewGalleryRepository(db)
 	assets := NewGalleryAssetStore(db)
-	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, nil, nil)
-	draft, err := service.CreateDraft(context.Background(), ownerID.String())
+	service := appgallery.NewService(repo, assets, NewGalleryUnitOfWork(db), appshared.NoopEventBus{}, galleryOwnerPermissions{}, nil)
+	draft, err := service.CreateDraft(ctx, ownerID.String())
 	require.NoError(t, err)
-	saved, err := service.Save(context.Background(), appgallery.SaveInput{
+	saved, err := service.Save(ctx, appgallery.SaveInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: draft.Version,
 		Title: "旧标题", Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: secondID.String()}},
 	})
 	require.NoError(t, err)
-	published, err := service.Publish(context.Background(), appgallery.PublishInput{UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: saved.Version})
+	published, err := service.Publish(ctx, appgallery.PublishInput{UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: saved.Version})
 	require.NoError(t, err)
-	modified, err := service.Save(context.Background(), appgallery.SaveInput{
+	modified, err := service.Save(ctx, appgallery.SaveInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: published.Version,
 		Title: "新标题", Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: thirdID.String()}},
 	})
@@ -364,7 +375,7 @@ func TestGalleryMaintenanceFailuresRollBackPointersSnapshotsAndReferences(t *tes
 		BEFORE UPDATE OR DELETE ON galleries
 		FOR EACH ROW EXECUTE FUNCTION gallery_test_reject_maintenance()`).Error)
 
-	_, err = service.Publish(context.Background(), appgallery.PublishInput{
+	_, err = service.Publish(ctx, appgallery.PublishInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: modified.Version,
 	})
 	require.Error(t, err)
@@ -373,14 +384,14 @@ func TestGalleryMaintenanceFailuresRollBackPointersSnapshotsAndReferences(t *tes
 	assert.Equal(t, 1, galleryRefCount(t, db, secondID))
 	assert.Equal(t, 1, galleryRefCount(t, db, thirdID))
 
-	public, err := service.GetPublished(context.Background(), *published.Slug)
+	public, err := service.GetPublished(ctx, *published.Slug)
 	require.NoError(t, err)
 	assert.Equal(t, "旧标题", public.Title)
 	var revisionCount int64
 	require.NoError(t, db.Model(&model.GalleryRevision{}).Where("gallery_id = ?", draft.ID).Count(&revisionCount).Error)
 	assert.Equal(t, int64(2), revisionCount)
 
-	err = service.Delete(context.Background(), appgallery.VersionInput{
+	err = service.Delete(ctx, appgallery.VersionInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: modified.Version,
 	})
 	require.Error(t, err)
