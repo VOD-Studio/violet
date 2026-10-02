@@ -198,8 +198,10 @@ docker-up: ## Docker 生产模式启动
 deploy-prod-init: ## 生产环境首次初始化（从模板生成 .env）
 	@./scripts/init-production.sh
 
-deploy-prod: deploy-prod-init ## 构建并启动生产环境容器
-	@docker compose -f docker-compose.prod.yml up -d --build
+deploy-prod: deploy-prod-init ## 构建、迁移并启动生产环境容器
+	@docker compose -f docker-compose.prod.yml build api web
+	@docker compose -f docker-compose.prod.yml run --rm --entrypoint /migrate api up
+	@docker compose -f docker-compose.prod.yml up -d --no-build
 
 deploy-prod-build: ## 只构建生产环境镜像，不运行容器
 	@docker compose -f docker-compose.prod.yml build
@@ -215,14 +217,14 @@ deploy-prod-logs: ## 查看生产环境容器日志
 
 # ==================== 远程部署 (rua) ====================
 
-deploy-remote: ## 完整部署到 rua 服务器（构建 + 传输 + 启动 + nginx patch）
-	@./scripts/deploy-prod.sh
+deploy-remote: ## SSH 部署不可变镜像，用法: make deploy-remote manifest=发布清单.json source=/服务器/检出目录
+	@./scripts/deploy-prod.sh --manifest "$(manifest)" --source-root "$(source)" --host "$(or $(host),rua)"
 
-deploy-remote-skip-build: ## 部署到 rua（跳过构建，使用已有镜像）
-	@./scripts/deploy-prod.sh --skip-build
+deploy-remote-skip-build: ## SSH 恢复完整归档，用法: make deploy-remote-skip-build v=v2.0.0
+	@./scripts/deploy-prod.sh --rollback "$(v)" --host "$(or $(host),rua)"
 
-deploy-remote-patch: ## 仅 patch rua 上的 nginx 配置
-	@./scripts/deploy-prod.sh --patch-only
+deploy-remote-patch: ## nginx 配置随完整发布清单部署，不支持单独覆盖
+	@echo "请通过 make deploy-remote 部署含 nginx 配置的发布清单"; exit 1
 
 # ==================== CI/CD 触发 (gh CLI) ====================
 
