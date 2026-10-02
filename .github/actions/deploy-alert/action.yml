@@ -42,11 +42,13 @@ runs:
         - 原因: ${REASON:-见 run 日志}
         - Run: ${RUN_URL}"
 
-        # 同 run 去重:issue 开着则追加评论;已关闭(人工处理过)再失败则重开
-        EXISTING=$(gh issue list --search "in:title \"run ${RUN_ID} 部署失败\"" --state open \
+        # 同 run 去重；已关闭告警再次失败时重开原 issue。
+        EXISTING=$(gh issue list --search "in:title \"run ${RUN_ID} 部署失败\"" --state all \
           --json number --jq '.[0].number // empty')
 
         if [ -n "${EXISTING}" ]; then
+          STATE=$(gh issue view "${EXISTING}" --json state --jq '.state')
+          if [ "$STATE" = CLOSED ]; then gh issue reopen "${EXISTING}"; fi
           gh issue comment "${EXISTING}" --body "${ENTRY}
 
         @DefectingCat @xunrua @JingpengZhang"

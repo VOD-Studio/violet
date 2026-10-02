@@ -50,7 +50,7 @@ func TestPostgresAppearanceStore(t *testing.T) {
 	if err = tx.Exec(`CREATE TABLE users (id uuid PRIMARY KEY)`).Error; err != nil {
 		t.Fatal(err)
 	}
-	migrations, err := filepath.Glob("../../../../../migrations/1[178]_chat_user_*.up.sql")
+	migrations, err := filepath.Glob("../../../../../migrations/11[78]_chat_user_*.up.sql")
 	if err != nil || len(migrations) != 2 {
 		t.Fatalf("期望外观与徽章两份迁移,实际 %v (%v)", migrations, err)
 	}
@@ -59,11 +59,11 @@ func TestPostgresAppearanceStore(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = tx.Exec(migrationSQL).Error; err != nil {
+		if err = tx.Exec(string(migrationSQL)).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err = tx.Exec(`INSERT INTO users(id) VALUES ('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222')`).Error; err != nil {
+	if err = tx.Exec(`INSERT INTO users(id) VALUES ('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222'),('33333333-3333-4333-8333-333333333333')`).Error; err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
@@ -97,9 +97,9 @@ func TestPostgresAppearanceStore(t *testing.T) {
 	if err != nil || len(grants) != 2 || grants[0].BadgeID != "rua" || grants[0].AwardedBy == "" {
 		t.Fatal(grants, err)
 	}
-	empty, err := store.Grants(ctx, "22222222-2222-4222-8222-222222222222")
-	if err != nil || len(empty) != 0 {
-		t.Fatal(empty, err)
+	emptyGrants, err := store.Grants(ctx, "22222222-2222-4222-8222-222222222222")
+	if err != nil || len(emptyGrants) != 0 {
+		t.Fatal(emptyGrants, err)
 	}
 	byUsers, err := store.GrantsForUsers(ctx, []string{id, "22222222-2222-4222-8222-222222222222"})
 	if err != nil || len(byUsers[id]) != 2 || len(byUsers["22222222-2222-4222-8222-222222222222"]) != 0 {

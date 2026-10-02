@@ -21,6 +21,7 @@ const bot = {
 const createdAt = "2026-09-23T10:00:00Z";
 
 test("Bot 卡片随生成快照更新状态，断线后回查最新内容", async ({ page, context }) => {
+	await page.clock.setFixedTime(new Date(createdAt));
 	await context.addCookies([
 		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
 	]);

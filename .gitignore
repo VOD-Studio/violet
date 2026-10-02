@@ -80,3 +80,5 @@ docs/superpowers/
 
 # TanStack Router 自动生成
 routeTree.gen.ts
+# Python deployment tooling
+__pycache__/

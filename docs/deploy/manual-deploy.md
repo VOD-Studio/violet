@@ -1,51 +1,73 @@
-# xunrua.top 手动部署指南
+# 手动部署与服务器前置配置
 
-> ⚠️ **日常部署请用 CI**:`release-runbook.md` 描述的 release-please + deploy.yml 已支持 api+web 自动部署。本手册仅作 runner 不可用或紧急手动发布的应急兜底。
+日常发布使用 [发布与回滚手册](release-runbook.md)。Runner 不可用时，SSH 入口仍调用 `scripts/deploy-release.py`，共用生产锁、迁移门禁、归档与健康检查。
 
-记录手动部署 2.0（API + SSR Web）到 `xunrua.top` 的完整流程。该流程独立于 CI（`release-runbook.md` 描述的 release-please + GitHub Actions 路径），适用于 runner 不可用或需要紧急手动发布的场景。
+## 连接与运行环境
 
-## 服务器环境
+生产主机 SSH 端口为 `29888`。给本机配置别名后，下面命令统一使用该别名：
 
-| 项 | 值 |
-|---|---|
-| 主机 | `xunrua.top`（root 登录，SSH 已配免密；服务器 SSH 端口为 `29888`） |
-| 架构 | `linux/amd64`（x86_64） |
-| 容器运行时 | `podman` + `podman-compose`（**非 docker**） |
-| 默认 shell | `fish`（脚本一律用 `bash -lc '...'` 显式调用） |
-| 前置反代 | `nginx-proxy` + `letsencrypt-companion` 容器，监听 80/443 |
-| 部署目录 | `/root/docker/violet`（含 `.env`、`secrets/`、`docker-compose.prod.yml`） |
-| 构建目录 | `/root/build/violet`（临时，源码 + podman build，构建完可删） |
-
-### 架构概览
-
-```
-Internet ──► nginx-proxy (80/443, TLS)
-                │
-                ├─ VIRTUAL_HOST=xunrua.top ──► blog-web:3000 (SSR)
-                │   （通过 nginx-proxy 自动生成的 server block）
-                │
-                ├─ /api/ /uploads/ （vhost.d 手动配置）──► blog-api:9090
-                │
-                └─ /assets/* + 静态扩展名 （vhost.d 手动配置）
-                    └─ try_files /var/www/blog-client （nginx 直接服务文件）
-
-blog-web ──SSR 回源──► blog-api:9090 (via violet_network, VITE_SSR_API_BASE_URL)
-blog-api ──► blog-postgres:5432, blog-redis:6379 (via violet_network)
-
-# 静态资源产物路径：
-# web 容器 build → /app/dist/client/ → podman cp → 宿主机 /root/docker/nginx-proxy/blog-client/
-#                                          ↑ nginx-proxy 容器挂载为 /var/www/blog-client:ro
+```sshconfig
+Host rua
+    HostName xunrua.top
+    User root
+    Port 29888
 ```
 
-`nginx-proxy` 通过 docker-gen 监听容器事件，根据容器的 `VIRTUAL_HOST` / `VIRTUAL_PORT` 环境变量自动生成 `/etc/nginx/conf.d/default.conf`。`/api/` 反代规则在 `/etc/nginx/vhost.d/xunrua.top`（手动维护，nginx-proxy 不会覆盖）。
+```bash
+ssh rua 'bash -lc "python3 --version && docker compose version && podman --version"'
+```
 
-## 前置条件
+服务器使用 Podman；`docker` 为兼容入口，`docker compose` 调用外部 Docker Compose provider。2026-10-02 只读检查为 Podman 5.8.2、Docker Compose 5.1.4、Python 3.9.25。部署脚本需要 Python 3.9+ 与支持 `--project-directory` 的 Docker Compose provider。服务器默认 shell 为 fish，复杂命令显式使用 `bash -lc`。
 
-1. 本地能 `ssh xunrua.top echo ok`（免密）。
-2. 本地装了 `rsync`。
-3. 服务器 `/root/docker/violet` 已就绪：含 `.env`（敏感凭据，**部署过程绝不覆盖**）。
-4. `nginx-proxy` + `letsencrypt-companion` 容器在跑（负责 TLS 证书与反代）。
-5. v2rayA 分流代理与 socat 中继在跑（API 容器 OAuth 外呼依赖，见下节）。
+部署目录 `/root/docker/violet` 必须已有 `.env`、secrets、两份 Compose 文件、运行中的数据库与服务。外部 nginx-proxy 网络、TLS 反代和共享资源目录需预先就绪。该入口接管已有部署，不负责空机初始化。
+
+## SSH 回滚
+
+```bash
+./scripts/deploy-prod.sh --host rua --rollback v2.0.1
+# 或
+make deploy-remote-skip-build host=rua v=v2.0.1
+```
+
+版本必须来自服务器 `.releases/versions/`，并保留其镜像缓存。回滚恢复完整归档，不支持单侧恢复或数据库 down。
+
+## SSH 正向发布
+
+准备包含完整 Git 历史的服务器 checkout，使它的 HEAD 等于目标提交；保留其中的 Compose 与 nginx 配置。先完成该提交的 CI，并把双侧镜像发布到 GHCR。镜像必须为 linux/amd64，使用构建返回的 digest。
+
+本地候选清单格式如下（值需替换为真实构建结果）：
+
+```json
+{
+  "version": "v2.0.2",
+  "revision": "<完整40位提交SHA>",
+  "api_image": "ghcr.io/vod-studio/violet-api@sha256:<64位digest>",
+  "web_image": "ghcr.io/vod-studio/violet-web@sha256:<64位digest>"
+}
+```
+
+```bash
+./scripts/deploy-prod.sh --host rua   --manifest /tmp/release-manifest.json   --source-root /root/build/violet
+# source-root 是服务器 Git checkout；manifest 是本地文件。
+```
+
+SSH wrapper 只传输事务脚本与候选清单，不同步源码、不构建镜像。服务器必须具备 GHCR 拉取权限。它不会自动运行 GitHub CI，操作者负责核对检查结果；事务仍验证候选 SHA 与源码一致、版本顺序、schema 和实际镜像。
+
+运行结束后核对 summary 或 `.releases/current.json`。若存在 `pending.json`，按发布手册核对实际状态后再恢复，不能循环重跑。
+
+## nginx 与静态文件
+
+nginx-proxy 的 Compose 挂载应包含：
+
+```yaml
+volumes:
+  - ./vhost.d:/etc/nginx/vhost.d
+  - ./blog-client:/var/www/blog-client:ro
+```
+
+版本化 vhost 配置在 `deploy/nginx/xunrua.top`，由部署事务快照和安装。API 只暴露 9090，Web 只暴露 3000，80/443 由 nginx-proxy 占用；两侧必须加入 proxy 网络。`/api/health` 使用 GET。
+
+事务从候选 Web 镜像提前提取 `dist/client/`，逐文件原子更新共享目录并保留旧 hash 文件。独立 `sync-client.sh` 入口已停用，避免绕过事务清空静态目录。磁盘清理须按保留的发布集合处理，不能直接 prune 归档需要的镜像。
 
 ### 服务器级代理组件（OAuth 外呼）
 
@@ -80,268 +102,6 @@ systemctl enable --now socat-v2ray@10.89.0.1.service socat-v2ray@10.89.1.1.servi
 验证：`curl -x http://10.89.0.1:20172 https://www.googleapis.com/` 秒回 404 即通。
 GitHub（`github.com` / `api.github.com`）国内直连可达，走分流端口同样直连不受影响。
 
-## 完整部署流程
-
-### 第 1 步：同步源码到服务器构建目录
-
-本地是 Apple Silicon（arm64），`buildx` 跨架构构建（amd64 via QEMU）在本机几乎不可用（卡死）。因此**在服务器原生 amd64 构建**。
-
-```bash
-# 在项目根执行
-rsync -az --delete \
-  --exclude='node_modules' \
-  --exclude='.git' \
-  --exclude='uploads' \
-  --exclude='tmp' \
-  --exclude='bin' \
-  --exclude='dist' \
-  --exclude='.tanstack' \
-  --exclude='.omc' \
-  api web xunrua.top:/root/build/violet/
-```
-
-排除 `node_modules` / `uploads`（可达数百 MB），服务器上 podman build 会重新装依赖。
-
-### 第 2 步：服务器上构建镜像
-
-用 `nohup` + 日志文件构建，避免 SSH 超时断开杀掉进程。**必须用 `bash -lc`**（服务器默认 fish）。
-
-```bash
-# 构建 API 镜像
-ssh xunrua.top "bash -lc 'cd /root/build/violet && \
-  rm -f /tmp/build-api.log && \
-  nohup bash -c \"podman build -t localhost/violet-api:latest -f api/Dockerfile api > /tmp/build-api.log 2>&1; echo BUILD_API_EXIT=\$? >> /tmp/build-api.log\" >/dev/null 2>&1 & disown'"
-
-# 构建 Web 镜像
-ssh xunrua.top "bash -lc 'cd /root/build/violet && \
-  rm -f /tmp/build-web.log && \
-  nohup bash -c \"podman build -t localhost/violet-web:latest -f web/Dockerfile web > /tmp/build-web.log 2>&1; echo BUILD_WEB_EXIT=\$? >> /tmp/build-web.log\" >/dev/null 2>&1 & disown'"
-```
-
-轮询日志直到 `BUILD_*_EXIT=0`：
-
-```bash
-ssh xunrua.top "grep BUILD_API_EXIT /tmp/build-api.log; tail -3 /tmp/build-api.log"
-ssh xunrua.top "grep BUILD_WEB_EXIT /tmp/build-web.log; tail -3 /tmp/build-web.log"
-```
-
-构建要点：
-- `api/Dockerfile` 已设 `GOPROXY=https://goproxy.cn,direct`，国内服务器下载 Go modules 不超时。
-- `web/Dockerfile` 多阶段：deps（pnpm install）→ builder（vite build + prune 生产依赖）→ runtime。
-- `web/server.mjs` 是 SSR 启动器（详见下方「关键设计」），runtime 入口为 `node server.mjs`。
-
-### 第 3 步：准备部署用 compose 文件
-
-服务器 `/root/docker/violet` 没有 `api/`、`web/` 源码（只有 `.env` 和 `secrets/`），所以 compose 必须用 `image:` 引用已构建的镜像，**不能用 `build:`**。
-
-生成 `/root/docker/violet/docker-compose.prod.yml`（关键片段）：
-
-```yaml
-services:
-  # postgres / redis: 同本地 docker-compose.prod.yml，省略
-
-  api:
-    image: localhost/violet-api:latest   # ← 用 image，不是 build
-    container_name: blog-api
-    expose: ["9090"]                         # ← 2.0 端口是 9090（旧版 8080）
-    env_file: [./.env]
-    environment:
-      DATABASE_HOST: postgres
-      # ...其余同本地
-    volumes:
-      - uploads_data:/app/uploads
-      - backups_data:/app/backups
-    healthcheck:
-      # ← 必须用 GET，/api/health 不接受 HEAD（旧版用 HEAD 返回 405 导致一直 unhealthy）
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]
-    networks: [backend, proxy]               # ← 必须同时在 proxy 网络，nginx-proxy 才能转发
-
-  web:
-    image: localhost/violet-web:latest
-    container_name: blog-web
-    expose: ["3000"]                         # ← 不用 ports，避免和 nginx-proxy 抢 80
-    environment:
-      VIRTUAL_HOST: xunrua.top
-      VIRTUAL_PORT: "3000"                   # ← 告诉 nginx-proxy 转发到 3000
-      LETSENCRYPT_HOST: xunrua.top
-      LETSENCRYPT_EMAIL: defect.y@qq.com
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
-    networks: [backend, proxy]
-```
-
-完整文件见仓库 `docker-compose.prod.yml`（构建参数版）—— 部署时把 `build:` 段整体替换为 `image:`。
-
-### 第 4 步：备份旧 compose 并上传新的
-
-```bash
-# 备份（回滚用）
-ssh xunrua.top "cp /root/docker/violet/docker-compose.prod.yml \
-  /root/docker/violet/docker-compose.prod.yml.bak-$(date +%Y%m%d-%H%M%S)"
-
-# 上传（本地把 image 版 compose 放到 /tmp 再 scp）
-scp /tmp/deploy-compose.yml xunrua.top:/root/docker/violet/docker-compose.prod.yml
-```
-
-### 第 5 步：重启服务（保留 secrets / 数据卷）
-
-```bash
-ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
-  podman-compose -f docker-compose.prod.yml down && \
-  podman-compose -f docker-compose.prod.yml up -d'"
-```
-
-`down` 只删容器，命名卷 `blog_postgres_data` / `blog_redis_data` / `blog_uploads_data` / `blog_backups_data` 保留，数据不丢。`blog_backups_data` 存放系统面板生成的数据库备份与上传归档，不得映射到公开 `/uploads`。
-
-**重要**：如果只改了 web，重建 web 容器即可（避免 API 短暂中断）。但 `podman-compose up -d web` 若容器已存在会**复用旧容器**，必须先 `podman rm -f blog-web`：
-
-```bash
-ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
-  podman rm -f blog-web && \
-  podman-compose -f docker-compose.prod.yml up -d web'"
-```
-
-### 第 6 步：确认 nginx 反代
-
-`nginx-proxy` 会根据 `blog-web` 的 `VIRTUAL_HOST` 自动生成 `xunrua.top` 的 server block。但 **`/api/` 反代需要手动维护** `/etc/nginx/vhost.d/xunrua.top`（在 nginx-proxy 容器内）：
-
-```bash
-ssh xunrua.top "podman exec nginx-proxy cat /etc/nginx/vhost.d/xunrua.top"
-```
-
-内容应为（**端口必须是 9090**）：
-
-```nginx
-location ^~ /api/ {
-    proxy_pass http://blog-api:9090;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-```
-
-若端口是旧的 8080，改并 reload：
-
-```bash
-ssh xunrua.top "bash -lc '\
-  podman exec nginx-proxy sed -i s/blog-api:8080/blog-api:9090/g /etc/nginx/vhost.d/xunrua.top && \
-  podman exec nginx-proxy nginx -t && \
-  podman exec nginx-proxy nginx -s reload'"
-```
-
-若 `blog-api` 不在 `nginx-proxy` 网络（nginx-proxy 转发失败 502），手动接入：
-
-```bash
-ssh xunrua.top "podman network connect nginx-proxy blog-api"
-```
-
-（compose 里 `networks: [backend, proxy]` + `proxy: external: true` 应自动处理，但 podman-compose 偶发不接入时需手动。）
-
-### 第 7 步：验证
-
-```bash
-# 容器状态（4 个都应 healthy）
-ssh xunrua.top "podman ps --format '{{.Names}}\t{{.Status}}' | grep blog"
-
-# 外部访问
-curl -sk -o /dev/null -w "web:%{http_code}\n" https://xunrua.top/
-curl -sk -o /dev/null -w "css:%{http_code}\n" https://xunrua.top/assets/styles-<hash>.css
-curl -sk https://xunrua.top/api/v1/announcements   # 应返回 {"data":[...]}
-curl -sk -o /dev/null -w "health:%{http_code}\n" https://xunrua.top/api/health
-```
-
-## 关键设计：为什么 web 需要 server.mjs
-
-TanStack Start 1.168 的 `vite build` 产出 `dist/server/server.js`，它只导出 H3 风格的 `{ fetch }` handler，**不调用 `listen()` 监听端口**。直接 `node dist/server/server.js` 会加载完模块立即退出（exit 0）。
-
-`web/server.mjs` 是一层薄的 `node:http` wrapper：
-- 用 `node:http` 创建 HTTP server 监听 `PORT`（默认 3000）
-- 每个请求转成 Web `Request` 交给 `dist/server/server.js` 的 `fetch`
-- 同时服务 `dist/client/` 下的静态资源（带 hash 的永久缓存，其他 no-cache）
-- 优雅处理 SIGTERM/SIGINT
-
-这是 TanStack Start「ditching adapters」理念下的标准做法：框架不绑定 HTTP server，由部署方提供最薄的 node:http 桥接。
-
-## 常见坑
-
-### 1. 端口 80 冲突
-web 容器若用 `ports: ["80:3000"]`，会和 `nginx-proxy`（已占 80）冲突，启动报 `bind: address already in use`。**web 只能用 `expose: ["3000"]`**，让 nginx-proxy 转发。
-
-### 2. healthcheck 用 HEAD 导致 API 一直 unhealthy
-`/api/health` 路由只注册了 GET。旧 compose 用 `wget --spider`（发 HEAD）返回 405，API 永远 unhealthy，web 因 `depends_on: api healthy` 起不来。**healthcheck 必须显式 `--method=GET`**。
-
-### 3. blog-api 不在 nginx-proxy 网络
-若 `nginx-proxy` 转发 `/api/` 报 502，检查 `blog-api` 是否同时在 `violet_network` 和 `nginx-proxy` 两个网络。podman-compose 的 external 网络偶尔不自动接入，用 `podman network connect nginx-proxy blog-api` 手动补。
-
-### 4. podman-compose up 不重建已存在容器
-改了镜像后 `podman-compose up -d web` 若 `blog-web` 容器已存在，会复用旧容器（跑旧镜像）。**必须先 `podman rm -f blog-web`** 再 up，或用 `podman-compose up -d --force-recreate web`。
-
-### 5. SSH 连接中断
-服务器构建慢（pnpm install + vite build 约 1-2 分钟），SSH 超时会杀进程。**一律用 `nohup ... & disown` + 日志文件**，然后轮询日志。
-
-### 6. podman 镜像短名匹配到错误的 arm64 localhost 镜像
-compose 里 `image: postgres:16-alpine` 写短名时，podman 会优先匹配 `localhost/postgres:16-alpine`（可能由 buildx 或其他操作残留的 arm64 镜像），在 amd64 服务器上报 `Exec format error`，容器疯狂重启。**postgres/redis 必须用全限定名** `docker.io/library/postgres:16-alpine`，且定期清理 `podman image prune` 防止污染。
-
-排查：`podman image inspect <image> --format "{{.Architecture}}"` 看架构；删除错误镜像 `podman rmi -f localhost/postgres:16-alpine`。
-
-### 7. 国内服务器 apk 下载极慢
-alpine 官方源 `dl-cdn.alpinelinux.org` 在国内服务器下载 ffmpeg 等 C 库（113 个包）可能耗时超过 10 分钟甚至超时。**Dockerfile runtime 阶段 `apk add` 前换阿里云源**：
-```dockerfile
-RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
-RUN apk add --no-cache ca-certificates wget ffmpeg
-```
-（api/Dockerfile 已内置此修改。Go module 下载同理，已设 `GOPROXY=https://goproxy.cn,direct`。）
-
-### 8. 静态资源（/assets/*）404 —— nginx 与 web 容器职责边界
-TanStack Start 的 `dist/server/server.js` **不服务静态资源**（只导出 SSR fetch handler）。若 nginx 也没有静态文件访问权，`/assets/*.css|js` 会两边都没人服务，全 404，页面白屏。
-
-**解法**：让 nginx-proxy 直接服务静态资源（见下方「静态资源部署」章节）。web 容器 `dist/client/` 通过宿主机共享目录暴露给 nginx-proxy，nginx 在 vhost.d 加 `location ~* \.(css|js|...)$` 直接 `try_files`。
-
-## 静态资源部署（nginx 直接服务）
-
-web 构建产物 `dist/client/`（含 `assets/`、favicon、pdf.worker 等）由 nginx 直接服务，不走 SSR。一次性配置 + 每次部署同步产物。
-
-### 一次性配置（nginx-proxy 加挂载）
-
-nginx-proxy 是 compose 管理（`/root/docker/nginx-proxy/docker-compose.yml`），加挂载后重建：
-
-```bash
-# 创建共享目录
-ssh xunrua.top 'mkdir -p /root/docker/nginx-proxy/blog-client'
-
-# 给 nginx-proxy compose 的 volumes 加一行（备份后 sed 插入）
-ssh xunrua.top 'cd /root/docker/nginx-proxy && cp docker-compose.yml docker-compose.yml.bak && \
-  sed -i "/\.\/html:\/usr\/share\/nginx\/html/a\\      - ./blog-client:/var/www/blog-client:ro" docker-compose.yml && \
-  podman-compose up -d'   # 重建 nginx-proxy 容器应用新挂载
-```
-
-### vhost.d 加静态资源 location（幂等）
-
-`deploy/nginx/xunrua.top` 是该 vhost 的版本化真相源。发版流水线会把它同步到
-`/root/docker/nginx-proxy/vhost.d/xunrua.top`，随后校验并 reload Nginx。配置包含：
-
-- 静态资源 `try_files` 与一年 immutable 缓存。
-- HTML、CSS、JavaScript、JSON、SVG、Wasm 等文本资源的 gzip 压缩。
-- `/api/` 与 `/uploads/` 到 `blog-api:9090` 的反向代理。
-
-首次接入时只需确保 nginx-proxy compose 已挂载 `vhost.d/` 和 `blog-client/`；
-不要再直接修改容器内 `/etc/nginx/vhost.d/xunrua.top`，避免下次部署覆盖。
-
-reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-proxy nginx -s reload'`
-
-### 每次部署 web 后同步产物
-
-**web 容器重建后必须执行**，否则 nginx 服务的还是旧版本（hash 不匹配 → 404）。
-
-已封装为脚本，在项目根执行：
-
-```bash
-./scripts/sync-client.sh                  # 默认远程 xunrua.top
-./scripts/sync-client.sh --host <其他host> # 指定其他 SSH host
-```
-
-脚本做的事：清空共享目录 → `podman cp blog-web:/app/dist/client/.` → 共享目录。
 
 ## 代码运行器（可运行代码块沙箱执行）
 
@@ -352,9 +112,9 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
 1. **暴露 podman sock**：api 容器需调宿主 podman daemon 起隔离容器。
    ```bash
    # 启用 podman system service（暴露 sock，持久化需 enable --now）
-   ssh xunrua.top "sudo systemctl enable --now podman.socket"
+   ssh rua "sudo systemctl enable --now podman.socket"
    # 验证 sock 可连
-   ssh xunrua.top "sudo curl -sf --unix-socket /run/podman/podman.sock http://localhost/v4.0.0/libpod/info >/dev/null && echo OK"
+   ssh rua "sudo curl -sf --unix-socket /run/podman/podman.sock http://localhost/v4.0.0/libpod/info >/dev/null && echo OK"
    ```
    podman 的 docker-compat sock 通常在 `/run/podman/podman.sock`。
 
@@ -366,10 +126,10 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
    cd ~/Developer/xfy/yggdrasil
    docker/build-runners.sh
    docker save yggdrasil-runner-python yggdrasil-runner-node yggdrasil-runner-go yggdrasil-runner-rust yggdrasil-runner-bun | gzip > /tmp/runners.tar.gz
-   scp /tmp/runners.tar.gz xunrua.top:/tmp/
-   ssh xunrua.top "gunzip -c /tmp/runners.tar.gz | podman load"
+   scp /tmp/runners.tar.gz rua:/tmp/
+   ssh rua "gunzip -c /tmp/runners.tar.gz | podman load"
    # 验证
-   ssh xunrua.top "podman images | grep yggdrasil-runner"
+   ssh rua "podman images | grep yggdrasil-runner"
    ```
 
 3. **配置环境变量**：在 `.env` 加 `CODE_RUNNER_ENABLED=true` + `DOCKER_SOCKET_PATH=/run/podman/podman.sock`（覆盖默认 `/var/run/docker.sock`）。全套配置项见 `.env.example` 的「代码运行器」段。
@@ -379,14 +139,13 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
 ### 启用验证
 
 ```bash
-# 重启 api 容器加载新配置
-ssh xunrua.top "cd /root/docker/violet && podman-compose -f docker-compose.prod.yml up -d --force-recreate api"
+# 配置改动通过新的双侧发布生效，随后检查 socket 与 runner 镜像
 
 # api 容器内验证能调 podman daemon
-ssh xunrua.top "podman exec blog-api ls /var/run/docker.sock"
+ssh rua "podman exec blog-api ls /var/run/docker.sock"
 
 # 验证 runner 镜像可见（api 通过 podman sock 调宿主 daemon，镜像在宿主层）
-ssh xunrua.top "podman images | grep yggdrasil-runner"
+ssh rua "podman images | grep yggdrasil-runner"
 ```
 
 ### SSE 长连接注意
@@ -401,54 +160,3 @@ ssh xunrua.top "podman images | grep yggdrasil-runner"
 - 执行容器 cap_drop ALL / no-new-privileges / readonly rootfs / network=none
 - 内存/CPU/pids 限制（pids_limit=128，防 fork 炸弹）
 - 非 root 用户（1000:1000）运行用户代码
-
-## 回滚
-
-### 镜像级回滚（podman 保留了旧镜像层）
-```bash
-# 查看历史镜像
-ssh xunrua.top "podman images localhost/violet-api"
-# 旧镜像若还在，retag 后重启
-ssh xunrua.top "bash -lc 'podman tag <旧image-id> localhost/violet-api:latest && \
-  cd /root/docker/violet && podman-compose -f docker-compose.prod.yml up -d --force-recreate api'"
-```
-
-### compose 回滚
-```bash
-ssh xunrua.top "cp /root/docker/violet/docker-compose.prod.yml.bak-YYYYMMDD-HHMMSS \
-  /root/docker/violet/docker-compose.prod.yml && \
-  cd /root/docker/violet && podman-compose -f docker-compose.prod.yml up -d --force-recreate"
-```
-
-### 数据库回滚
-若新版本含破坏性迁移，回滚前在服务器手动降版本 schema：
-```bash
-ssh xunrua.top "podman exec blog-api /migrate version"       # 查看当前版本
-ssh xunrua.top "podman exec blog-api /migrate down -n 1"     # 回滚一次迁移
-```
-
-## 临时占位容器（web 故障时保住 API）
-
-web 容器跑不起来时，nginx-proxy 不会生成 `xunrua.top` 的 server block（没有健康容器可转发），导致**整个站（含 API）502**。这时起一个占位容器顶住 nginx 配置：
-
-```bash
-ssh xunrua.top "podman run -d --name blog-web-placeholder --network nginx-proxy \
-  -e VIRTUAL_HOST=xunrua.top -e VIRTUAL_PORT=80 \
-  -e LETSENCRYPT_HOST=xunrua.top -e LETSENCRYPT_EMAIL=defect.y@qq.com \
-  docker.io/library/nginx:alpine"
-```
-
-placeholder 让 nginx-proxy 生成 xunrua.top 配置，`/api/` 反代照常工作（vhost.d 规则不依赖 web）。web 修好后 `podman rm -f blog-web-placeholder` 再起真 blog-web。
-
-## 清理
-
-```bash
-# 删除构建目录（镜像已 tag，源码不再需要）
-ssh xunrua.top "rm -rf /root/build/violet"
-
-# 删除旧 image tar 包（若用 rsync + 服务器构建，不再有 images.tar.gz）
-ssh xunrua.top "rm -f /root/docker/violet/images.tar.gz /root/docker/violet/*.tar.gz"
-
-# podman 清理未使用的镜像层（释放空间）
-ssh xunrua.top "podman image prune -f"
-```

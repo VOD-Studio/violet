@@ -8,7 +8,7 @@ Go 后端服务，为博客平台提供 RESTful API。采用 **DDD 四层架构*
 |------|------|
 | 语言 | Go 1.26 |
 | Web 框架 | chi v5 |
-| ORM | GORM（仓储实现，表结构由 SQL 迁移管理，无 AutoMigrate） |
+| ORM | GORM（仓储实现；生产表结构由 SQL 迁移管理） |
 | 数据库 | PostgreSQL 16 + golang-migrate（SQL 迁移） |
 | 缓存 | Redis 7（session / 验证码 / 限流 / 状态存储） |
 | 认证 | Opaque session cookie + CSRF double-submit |
@@ -270,11 +270,23 @@ v1.Route("/newsletter", func(r chi.Router) {
 
 ### 6. 数据库
 
-表结构由 golang-migrate SQL 迁移管理（无 AutoMigrate）：在 `api/migrations/` 手写递增序号的 `NNN_xxx.{up,down}.sql` 后执行迁移：
+生产表结构由 golang-migrate SQL 迁移管理：在 `api/migrations/` 手写递增序号的 `NNN_xxx.{up,down}.sql` 后执行迁移：
 
 ```bash
 make migrate              # 应用新迁移
 make migrate-down n=1     # 回滚最近一次迁移
+```
+
+生产环境（`ENVIRONMENT=production`）启动只读取迁移状态，不执行 SQL 迁移或 GORM AutoMigrate。发布前须运行镜像内的 `/migrate up`。空库、缺少所需迁移或 dirty 状态会阻止启动；数据库版本高于镜像携带版本时允许启动，兼容性回滚仍要求业务代码适配当前 schema。开发环境保留启动自动迁移与 AutoMigrate。
+
+迁移失败后必须核对失败 SQL 和实际 schema，由维护者修复；应用不会自动清除 dirty 或跳到最新版本。新增迁移 132 接管历史 AutoMigrate 补出的时间字段，回退该迁移时保留字段与数据。
+
+迁移安全集成测试在独立 schema 中运行，使用专用 PostgreSQL 测试库：
+
+```bash
+cd api
+MIGRATE_TEST_DSN='postgres://postgres:password@127.0.0.1:5432/migration_test?sslmode=disable' \
+  go test -tags=integration ./internal/migrate -count=1
 ```
 
 > 已应用到任何环境的迁移文件**禁止原地修改**（改动不会同步进库，产生 schema 漂移），变更一律新增迁移。

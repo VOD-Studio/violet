@@ -1,11 +1,6 @@
-# CI/CD 部署专用 override
-# 用法: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps api
-#       docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps web
-# 将 api/web 服务从本地构建改为引用预构建镜像 violet-{api,web}:latest,
-# 配合 --no-build 复用 deploy step 已构建并打好版本 tag 的镜像。
-# 手动流程 make deploy-remote 只用 docker-compose.prod.yml,本文件不影响它。
+# 部署脚本显式传入不可变镜像；不允许缺值时回退到 latest。
 services:
   api:
-    image: violet-api:latest
+    image: ${API_IMAGE:?API_IMAGE digest is required}
   web:
-    image: violet-web:latest
+    image: ${WEB_IMAGE:?WEB_IMAGE digest is required}
