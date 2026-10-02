@@ -24,9 +24,8 @@ type Infra struct {
 	Redis *redis.Client
 }
 
-// InitInfra 初始化全部基础设施：数据库连接 + 迁移、Redis 连接、受信代理、GORM + AutoMigrate。
-// 返回 cleanup 关闭 DB 连接；Redis 由 GC 回收，无需显式关闭。
-// 任一步骤失败则 log.Fatal（与原 main 行为一致）。
+// InitInfra 装配数据库与 Redis；生产环境只校验迁移状态，开发环境自动应用迁移。
+// 返回的 cleanup 关闭数据库连接；初始化失败会终止进程。
 func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	db, err := sql.Open("pgx", cfg.Database.DSN())
 	if err != nil {
@@ -36,9 +35,15 @@ func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 
-	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
-	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
-		log.Fatal().Err(err).Msg("数据库迁移失败")
+	if cfg.Environment == "production" {
+		if err := migrate.CheckSchema(ctx, "migrations", db); err != nil {
+			log.Fatal().Err(err).Msg("数据库迁移状态校验失败")
+		}
+	} else {
+		migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
+		if err := migrate.RunMigrations("migrations", migrateURL); err != nil {
+			log.Fatal().Err(err).Msg("数据库迁移失败")
+		}
 	}
 
 	redisOpt, err := redis.ParseURL(cfg.Redis.DSN())
@@ -59,21 +64,21 @@ func InitInfra(ctx context.Context, cfg *config.Config) (*Infra, func()) {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}
 
-	// DDD 新 model 的 AutoMigrate（全 GORM AutoMigrate 策略）
-	// 记录警告但不致命退出，保证服务能启动。
-	if err := gormDB.AutoMigrate(
-		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
-		&newmodel.Post{}, &newmodel.PostVersion{}, &newmodel.PostView{}, &newmodel.Tag{},
-		&newmodel.Comment{}, &newmodel.CommentReaction{},
-		&newmodel.Announcement{}, &newmodel.Project{},
-		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
-		&newmodel.MusicSetting{},
-		&newmodel.File{}, &newmodel.UploadSession{},
-		&newmodel.APIToken{},
-		&newmodel.Subscription{},
-		&newmodel.SubscriptionEntry{},
-	); err != nil {
-		log.Warn().Err(err).Msg("AutoMigrate error")
+	if cfg.Environment != "production" {
+		if err := gormDB.AutoMigrate(
+			&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
+			&newmodel.Post{}, &newmodel.PostVersion{}, &newmodel.PostView{}, &newmodel.Tag{},
+			&newmodel.Comment{}, &newmodel.CommentReaction{},
+			&newmodel.Announcement{}, &newmodel.Project{},
+			&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
+			&newmodel.MusicSetting{},
+			&newmodel.File{}, &newmodel.UploadSession{},
+			&newmodel.APIToken{},
+			&newmodel.Subscription{},
+			&newmodel.SubscriptionEntry{},
+		); err != nil {
+			log.Warn().Err(err).Msg("AutoMigrate error")
+		}
 	}
 
 	infra := &Infra{DB: db, Gorm: gormDB, Redis: redisClient}

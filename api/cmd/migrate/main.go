@@ -12,8 +12,8 @@
 //	go run ./cmd/migrate version     # 查看当前版本
 //	go run ./cmd/migrate goto <v>    # 迁移到指定版本
 //
-// 注: 服务启动时会通过 internal/migrate 自动执行迁移，
-// 本工具用于手动控制（回滚、修复 dirty、CI 校验等场景）。
+// 生产由独立部署任务执行迁移，服务启动只读检查 schema；开发环境保留自动迁移。
+// 本工具用于部署、回滚、修复 dirty 与 CI 校验。
 package main
 
 import (

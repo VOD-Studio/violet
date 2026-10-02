@@ -1,10 +1,11 @@
 package migrate
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -13,148 +14,67 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// RunMigrations 执行数据库迁移
-// migrationsPath: migrations 文件目录路径，如 "migrations"
-// databaseURL: 数据库连接字符串，如 "pgx5://user:pass@localhost:5432/db?sslmode=disable"
-// db: 数据库连接，用于执行额外的修复 SQL
-func RunMigrations(migrationsPath, databaseURL string, db *sql.DB) error {
-	m, err := migrate.New(
-		fmt.Sprintf("file://%s", migrationsPath),
-		databaseURL,
-	)
+// RunMigrations 应用尚未执行的 SQL 迁移；dirty 状态必须经人工修复后才能继续。
+func RunMigrations(migrationsPath, databaseURL string) error {
+	m, err := migrate.New(fmt.Sprintf("file://%s", migrationsPath), databaseURL)
 	if err != nil {
 		return fmt.Errorf("创建迁移实例失败: %w", err)
 	}
 	defer m.Close()
 
-	// 获取迁移文件的最新版本号
-	latestVersion, err := getLatestVersionFromFiles(migrationsPath)
-	if err != nil {
-		return fmt.Errorf("获取最新版本失败: %w", err)
-	}
-
-	// 检查当前版本和 dirty 状态
-	version, dirty, err := m.Version()
-	if err != nil && err != migrate.ErrNilVersion {
-		return fmt.Errorf("获取迁移版本失败: %w", err)
-	}
-
-	// 如果 dirty 状态异常，先确保缺失字段存在，再强制跳到最新版本
-	if dirty {
-		fmt.Printf("检测到 dirty 状态，当前版本 %d，先检查缺失字段...\n", version)
-		// 执行必要的修复 SQL（确保缺失字段被添加）
-		if err := ensureLatestSchema(db); err != nil {
-			fmt.Printf("警告: 执行修复 SQL 失败: %v\n", err)
-		}
-		fmt.Printf("强制跳到最新版本 %d...\n", latestVersion)
-		if err := m.Force(latestVersion); err != nil {
-			return fmt.Errorf("强制设置版本失败: %w", err)
-		}
-		fmt.Printf("已将版本强制设置为 %d\n", latestVersion)
-		return nil
-	}
-
-	// 正常执行迁移
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("执行迁移失败: %w", err)
 	}
+	return nil
+}
 
-	// 获取最终版本
-	version, dirty, err = m.Version()
+// CheckSchema 只读校验数据库已完成本镜像所需迁移。允许更高版本，以支持兼容性镜像回滚。
+// 不创建迁移元数据，也不修复 dirty 状态；缺失或未完成的迁移必须由独立迁移命令处理。
+func CheckSchema(ctx context.Context, migrationsPath string, db *sql.DB) error {
+	latest, err := getLatestVersionFromFiles(migrationsPath)
 	if err != nil {
-		return fmt.Errorf("获取迁移版本失败: %w", err)
+		return fmt.Errorf("读取镜像迁移版本失败: %w", err)
 	}
-
+	var count, version int
+	var dirty bool
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(*), COALESCE(MAX(version), 0), COALESCE(BOOL_OR(dirty), false) FROM schema_migrations`).Scan(&count, &version, &dirty); err != nil {
+		return fmt.Errorf("读取数据库迁移状态失败，请先执行独立迁移: %w", err)
+	}
+	if count != 1 {
+		return fmt.Errorf("数据库迁移记录数量异常: %d，需要一条已完成的迁移记录", count)
+	}
 	if dirty {
-		return fmt.Errorf("数据库迁移状态异常，需要手动修复")
+		return fmt.Errorf("数据库迁移未完成: %w", migrate.ErrDirty{Version: version})
 	}
-
-	fmt.Printf("数据库迁移完成，当前版本: %d\n", version)
+	if version < latest {
+		return fmt.Errorf("数据库迁移版本 %d 低于镜像要求 %d，请先执行独立迁移", version, latest)
+	}
 	return nil
 }
 
-// ensureLatestSchema 确保数据库表结构完整，添加缺失的字段
-func ensureLatestSchema(db *sql.DB) error {
-	// 检查并添加 seo_keywords 字段（版本 9）
-	var hasColumn bool
-	row := db.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1 FROM information_schema.columns
-			WHERE table_name = 'posts' AND column_name = 'seo_keywords'
-		)
-	`)
-	if err := row.Scan(&hasColumn); err != nil {
-		return fmt.Errorf("检查 seo_keywords 字段失败: %w", err)
-	}
-
-	if !hasColumn {
-		fmt.Printf("添加缺失的 seo_keywords 字段...\n")
-		_, err := db.Exec(`ALTER TABLE posts ADD COLUMN seo_keywords VARCHAR(255)`)
-		if err != nil {
-			return fmt.Errorf("添加 seo_keywords 字段失败: %w", err)
-		}
-		fmt.Printf("已添加 seo_keywords 字段\n")
-	}
-
-	return nil
-}
-
-// getLatestVersionFromFiles 从迁移文件目录获取最新版本号
 func getLatestVersionFromFiles(migrationsPath string) (int, error) {
-	// 匹配迁移文件名格式：001_xxx.up.sql, 002_xxx.up.sql 等
-	re := regexp.MustCompile(`^(\d+)_.*\.up\.sql$`)
-	maxVersion := 0
-
+	re := regexp.MustCompile(`^(\d+)_.+\.up\.sql$`)
 	files, err := os.ReadDir(migrationsPath)
 	if err != nil {
 		return 0, fmt.Errorf("读取迁移目录失败: %w", err)
 	}
-
+	latest := 0
 	for _, file := range files {
 		if file.IsDir() {
 			continue
 		}
-		name := file.Name()
-		matches := re.FindStringSubmatch(name)
-		if len(matches) > 1 {
-			v, err := strconv.Atoi(matches[1])
-			if err != nil {
-				continue
-			}
-			if v > maxVersion {
-				maxVersion = v
-			}
-		}
-	}
-
-	// 同时检查子目录（如 api/migrations）
-	subDirs, _ := os.ReadDir(migrationsPath)
-	for _, subDir := range subDirs {
-		if !subDir.IsDir() {
+		matches := re.FindStringSubmatch(file.Name())
+		if matches == nil {
 			continue
 		}
-		subFiles, err := os.ReadDir(filepath.Join(migrationsPath, subDir.Name()))
+		version, err := strconv.Atoi(matches[1])
 		if err != nil {
-			continue
+			return 0, fmt.Errorf("解析迁移版本 %s 失败: %w", file.Name(), err)
 		}
-		for _, file := range subFiles {
-			name := file.Name()
-			matches := re.FindStringSubmatch(name)
-			if len(matches) > 1 {
-				v, err := strconv.Atoi(matches[1])
-				if err != nil {
-					continue
-				}
-				if v > maxVersion {
-					maxVersion = v
-				}
-			}
-		}
+		latest = max(latest, version)
 	}
-
-	if maxVersion == 0 {
+	if latest == 0 {
 		return 0, fmt.Errorf("未找到迁移文件")
 	}
-
-	return maxVersion, nil
+	return latest, nil
 }
