@@ -17,7 +17,7 @@ import time
 import uuid
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener
 
 
 VERSION = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
@@ -174,7 +174,7 @@ class Deployment:
 
     def fetch(self, url):
         request = Request(url, headers={"Cache-Control": "no-cache", "User-Agent": "violet-deploy-check"})
-        with urlopen(request, timeout=15) as response:
+        with build_opener(ProxyHandler({})).open(request, timeout=15) as response:
             return response.read(), response.headers.get("Content-Type", "")
 
     def verify(self, manifest):

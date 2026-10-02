@@ -1,12 +1,18 @@
 """Exercise transaction failures without a daemon or production network."""
 
 import importlib.util
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import threading
 import unittest
+from unittest import mock
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 
 SPEC = importlib.util.spec_from_file_location("deploy_release", Path(__file__).parents[1] / "deploy-release.py")
 DEPLOY = importlib.util.module_from_spec(SPEC)
@@ -101,6 +107,77 @@ class FakeDeployment(DEPLOY.Deployment):
         if url.endswith(".js"):
             return b"javascript", "application/javascript"
         return b'<html><title>violet</title><script src="/assets/new-hash.js"></script></html>', "text/html"
+
+
+class SiteFetchRouting(unittest.TestCase):
+    def serve(self, status, body, requests):
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requests.append(self.path)
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, _format, *_args):
+                pass
+
+        # The server name is unused; avoid host reverse-DNS latency in this loopback fixture.
+        with mock.patch("http.server.socket.getfqdn", return_value="localhost"):
+            server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        worker = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
+        worker.start()
+        def close():
+            server.shutdown()
+            worker.join(timeout=2)
+            server.server_close()
+        self.addCleanup(close)
+        return f"http://127.0.0.1:{server.server_port}"
+
+    def test_site_fetch_ignores_registry_proxy_without_changing_pull_environment(self):
+        origin_requests = []
+        proxy_requests = []
+        origin = self.serve(200, b'{"status":"ok"}', origin_requests)
+        proxy = self.serve(502, b'{"error":"registry proxy unavailable"}', proxy_requests)
+        proxy_environment = {
+            "HTTP_PROXY": proxy, "HTTPS_PROXY": proxy,
+            "http_proxy": proxy, "https_proxy": proxy,
+            "NO_PROXY": "", "no_proxy": "",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            deployment = DEPLOY.Deployment(DEPLOY.arguments([
+                "--manifest", str(Path(directory) / "candidate.json"),
+                "--deploy-dir", directory,
+            ]))
+            with mock.patch.dict(os.environ, proxy_environment, clear=True), mock.patch("urllib.request._opener", None):
+                # A control request proves that this environment routes ordinary urllib requests through the broken proxy.
+                with self.assertRaises(HTTPError) as control:
+                    urlopen(origin + "/control", timeout=2)
+                self.assertEqual(control.exception.code, 502)
+                control.exception.close()
+                environment_before = dict(os.environ)
+                result = None
+                fetch_error = None
+                try:
+                    result = deployment.fetch(origin + "/api/health")
+                except (OSError, URLError) as error:
+                    fetch_error = error
+                    if hasattr(error, "close"):
+                        error.close()
+
+                pull_environment = {}
+                def record_pull(command, **kwargs):
+                    pull_environment.update(os.environ if kwargs.get("env") is None else kwargs["env"])
+                    return subprocess.CompletedProcess(command, 0, "", "")
+                with mock.patch.object(DEPLOY.subprocess, "run", side_effect=record_pull) as run:
+                    deployment.pull_image(digest("api", "3"))
+                    self.assertEqual(run.call_args.args[0], ["docker", "pull", digest("api", "3")])
+                self.assertEqual(dict(os.environ), environment_before)
+                self.assertEqual(pull_environment, proxy_environment)
+                self.assertIsNone(fetch_error, f"Site verification depended on the registry proxy: {fetch_error}")
+                self.assertEqual(result, (b'{"status":"ok"}', "application/json"))
+                self.assertEqual(origin_requests, ["/api/health"])
+                self.assertEqual(proxy_requests, [origin + "/control"])
 
 
 class Transactions(unittest.TestCase):
