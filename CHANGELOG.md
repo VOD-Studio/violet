@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.55](https://github.com/VOD-Studio/violet/compare/v2.8.54...v2.8.55) (2026-10-02)
+
+
+### 修复
+
+* **deploy:** 隔离公网检查的网络代理 ([#477](https://github.com/VOD-Studio/violet/issues/477)) ([1a65338](https://github.com/VOD-Studio/violet/commit/1a65338de2c98bb9c277a600b48dbafac157c3fb))
+
 ## [2.8.54](https://github.com/VOD-Studio/violet/compare/v2.8.53...v2.8.54) (2026-10-02)
 
 
