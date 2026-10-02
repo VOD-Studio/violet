@@ -17,7 +17,7 @@ import time
 import uuid
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener
 
 
 VERSION = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
@@ -28,6 +28,14 @@ COMPOSE_FILES = ("docker-compose.prod.yml", "docker-compose.ci.yml")
 
 class DeployError(RuntimeError):
     pass
+
+
+def error_summary(error):
+    if isinstance(error, subprocess.TimeoutExpired):
+        return f"command timed out after {error.timeout}s"
+    if isinstance(error, subprocess.CalledProcessError):
+        return f"command failed (exit {error.returncode})"
+    return str(error)
 
 
 def atomic_write(path, data):
@@ -174,7 +182,7 @@ class Deployment:
 
     def fetch(self, url):
         request = Request(url, headers={"Cache-Control": "no-cache", "User-Agent": "violet-deploy-check"})
-        with urlopen(request, timeout=15) as response:
+        with build_opener(ProxyHandler({})).open(request, timeout=15) as response:
             return response.read(), response.headers.get("Content-Type", "")
 
     def verify(self, manifest):
@@ -466,7 +474,10 @@ class Deployment:
                         self.pending_path.unlink()
                         self.output("rolled_back")
                     except BaseException as recovery_error:
-                        raise DeployError(f"Deploy failed and restoration failed; pending record retained: {recovery_error}") from error
+                        raise DeployError(
+                            f"Deploy failed: {error_summary(error)}; restoration failed: "
+                            f"{error_summary(recovery_error)}; pending record retained"
+                        ) from error
             elif pending["phase"] != "migration":
                 self.pending_path.unlink()
             # A failed or interrupted migration requires inspection; never restart old services.
@@ -512,7 +523,7 @@ def main():
     try:
         Deployment(arguments()).execute()
     except (DeployError, OSError, ValueError, subprocess.SubprocessError) as error:
-        print(f"::error::{error}", file=sys.stderr)
+        print(f"::error::{error_summary(error)}", file=sys.stderr)
         return 1
     return 0
 
