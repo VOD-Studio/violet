@@ -69,14 +69,6 @@ PATTERNS: tuple[SensitivePattern, ...] = (
 )
 
 
-def clipped_fragment(line: str, start: int, end: int) -> str:
-    """Return the matched fragment truncated to at most 60 characters."""
-    fragment = line[start:end].strip()
-    if len(fragment) <= 60:
-        return fragment
-    return f"{fragment[:59]}…"
-
-
 def scan(content: str) -> list[str]:
     findings: list[tuple[int, int, int, str]] = []
 
@@ -88,8 +80,7 @@ def scan(content: str) -> list[str]:
                         line_number,
                         match.start(),
                         pattern_index,
-                        f"{line_number}: {pattern.name}: "
-                        f"{clipped_fragment(line, match.start(), match.end())}",
+                        f"{line_number}: {pattern.name}",
                     )
                 )
 
