@@ -7,6 +7,21 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.54](https://github.com/VOD-Studio/violet/compare/v2.8.53...v2.8.54) (2026-10-02)
+
+
+### 修复
+
+* **ci:** 使用最新 Go 补丁执行安全检查 ([2092477](https://github.com/VOD-Studio/violet/commit/20924778992b7ca0e470b7606a22a619d26234ad))
+* **ci:** 补齐发布前检查 ([0ab7018](https://github.com/VOD-Studio/violet/commit/0ab70189e2f210a59feab224998e9f0168bd42f0))
+* **migrate:** 分离生产迁移与应用启动 ([4dee18f](https://github.com/VOD-Studio/violet/commit/4dee18fe8e6e824acd731760848b8483dec56e12))
+
+
+### 重构
+
+* **deploy:** 使用不可变发布清单部署 ([97b74d0](https://github.com/VOD-Studio/violet/commit/97b74d02eec4b59792f2346514ea9b40d1393604))
+* **deploy:** 按不可变清单执行发布事务 ([57237c6](https://github.com/VOD-Studio/violet/commit/57237c69ec004f958ec8088d1a0a633008969253))
+
 ## [2.8.53](https://github.com/VOD-Studio/violet/compare/v2.8.52...v2.8.53) (2026-10-01)
 
 
