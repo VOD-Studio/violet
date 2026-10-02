@@ -1,18 +1,3 @@
-# CI 流水线
-#
-# PR 和 push 到 main / release/2.0 时触发，并行跑后端与前端检查。
-# 后端：go vet、go test、golangci-lint、build 与 Docker 镜像构建验证
-# 前端：biome check、tsc、vitest 与 build
-#
-# 任一 job 失败则 PR 检查失败，阻止合并（ruleset required status checks）。
-# release-please 的 release PR 只改 CHANGELOG 与 manifest，也必须跑 CI：
-# 它是 required checks 的适用对象，paths-ignore 跳过的 check 永远 pending
-# 无法合并（#142）。
-#
-# 按变更侧裁剪：changes job 检测 api/web 变更，无变更侧的 job 空跑 success
-# （而非 skip）——required checks 接受 success，skip/pending 会卡合并（#142）。
-# 空跑保持 job 名与恒 success 语义，verify-ci（deploy.yml）白名单不受影响。
-
 name: CI
 
 on:
@@ -20,14 +5,29 @@ on:
     branches: [main, release/2.0]
   pull_request:
     branches: [main, release/2.0]
+  workflow_call:
+    inputs:
+      ref:
+        description: 精确验证的提交 SHA
+        required: true
+        type: string
+      full:
+        description: 强制执行双侧检查
+        type: boolean
+        default: true
+      build_images:
+        description: 是否额外验证 Docker 镜像构建
+        type: boolean
+        default: false
 
-# 同一 PR 多次 push 时取消旧的运行
+# PR 取消旧检查；主干与部署调用按提交隔离，后续 push 不取消待发布提交的检查。
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && !inputs.ref }}
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   # ============================================================
@@ -38,16 +38,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      api: ${{ steps.filter.outputs.api }}
-      web: ${{ steps.filter.outputs.web }}
+      api: ${{ inputs.full && 'true' || steps.filter.outputs.api }}
+      web: ${{ inputs.full && 'true' || steps.filter.outputs.web }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ inputs.ref || github.sha }}
           # paths-filter 对比需要历史；只拉 commit/tree，blob 按需
           fetch-depth: 0
           filter: blob:none
 
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        if: ${{ !inputs.full }}
         id: filter
         with:
           initial-fetch-depth: '20'
@@ -72,6 +74,18 @@ jobs:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: violet_ci
+          POSTGRES_PASSWORD: violet_ci
+          POSTGRES_DB: violet_test
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U violet_ci -d violet_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:
       run:
         working-directory: api
@@ -84,12 +98,14 @@ jobs:
         working-directory: .
         run: echo "无 api 侧变更，跳过后端检查"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: needs.changes.outputs.api == 'true'
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Setup Go
         if: needs.changes.outputs.api == 'true'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: "1.26"
           cache-dependency-path: api/go.sum
@@ -105,7 +121,7 @@ jobs:
       # lint 前置到 build/test 之前:比 test 快,提前暴露静态错误,fail fast
       - name: golangci-lint
         if: needs.changes.outputs.api == 'true'
-        uses: golangci/golangci-lint-action@v9
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
           version: v2.12.2
           working-directory: api
@@ -117,15 +133,24 @@ jobs:
 
       - name: Go test
         if: needs.changes.outputs.api == 'true'
+        env:
+          BLOG_TEST_PG_DSN: postgres://violet_ci:violet_ci@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/violet_test?sslmode=disable
         run: go test ./... -v -count=1
 
-      - name: Setup Docker Buildx
+      - name: Migration integration tests
         if: needs.changes.outputs.api == 'true'
-        uses: docker/setup-buildx-action@v3
+        env:
+          MIGRATE_TEST_DSN: postgres://violet_ci:violet_ci@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/violet_test?sslmode=disable
+          CHAT_APPEARANCE_TEST_DSN: postgres://violet_ci:violet_ci@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/violet_test?sslmode=disable
+        run: go test -tags=integration ./internal/migrate ./internal/infrastructure/persistence/gorm/chatappearance -v -count=1
+
+      - name: Setup Docker Buildx
+        if: needs.changes.outputs.api == 'true' && (!inputs.ref || inputs.build_images)
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Docker 镜像构建验证
-        if: needs.changes.outputs.api == 'true'
-        uses: docker/build-push-action@v6
+        if: needs.changes.outputs.api == 'true' && (!inputs.ref || inputs.build_images)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./api
           push: false
@@ -157,18 +182,20 @@ jobs:
         working-directory: .
         run: echo "无 web 侧变更，跳过前端检查"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: needs.changes.outputs.web == 'true'
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Setup pnpm
         if: needs.changes.outputs.web == 'true'
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 10
 
       - name: Setup Node.js
         if: needs.changes.outputs.web == 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: "22"
           cache: pnpm
@@ -196,15 +223,23 @@ jobs:
         if: needs.changes.outputs.web == 'true'
         run: pnpm build
 
-      - name: Setup Docker Buildx
+      - name: Install Chromium
         if: needs.changes.outputs.web == 'true'
-        uses: docker/setup-buildx-action@v3
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser contracts
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm test:contract --workers=2
+
+      - name: Setup Docker Buildx
+        if: needs.changes.outputs.web == 'true' && (!inputs.ref || inputs.build_images)
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       # 镜像构建验证:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
       # 在此拦截,避免流入生产部署才暴露
       - name: Docker 镜像构建验证
-        if: needs.changes.outputs.web == 'true'
-        uses: docker/build-push-action@v6
+        if: needs.changes.outputs.web == 'true' && (!inputs.ref || inputs.build_images)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./web
           push: false
@@ -223,22 +258,31 @@ jobs:
   # ============================================================
   security:
     name: Dependency Security
-    needs: changes
+    needs: [changes, infrastructure]
+    if: always()
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
+      - name: Enforce infrastructure and change detection
+        if: needs.changes.result != 'success' || needs.infrastructure.result != 'success'
+        run: |
+          echo '::error::变更检测或基础设施检查未通过'
+          exit 1
+
       # 无依赖文件变更时空跑 success（同 backend 的 #142 说明）
       - name: 无依赖文件变更，跳过
         if: needs.changes.outputs.api != 'true' && needs.changes.outputs.web != 'true'
         run: echo "无 api/web 依赖文件变更，跳过依赖扫描"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Setup Go
         if: needs.changes.outputs.api == 'true'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: "1.26"
           cache-dependency-path: api/go.sum
@@ -268,38 +312,15 @@ jobs:
           # 提取有修复版本的漏洞(Fixed in: 非 N/A)
           fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
           if [ -n "$fixable" ]; then
-            # fix 版本可能尚未进入 setup-go 清单(Go 刚发布/即将发布的窗口期):
-            # govulncheck DB 从 release dashboard prepared 态就提前标记 fix 版本,
-            # 但 runner 装不到,升级无门。fix 版本严格高于当前 toolchain 时
-            # 降级 warning;setup-go 清单同步后 toolchain 升级,漏洞自动消失。
-            CURRENT_GO=$(go version | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' || true)
-            if [ -z "${CURRENT_GO}" ]; then
-              # 解析失败(rc/devel 等非三段版本号)时跳过降级、保持 error:
-              # 窗口期降级的 fail-safe 方向是宁可误报,不可漏报可修复漏洞
-              echo "::warning::无法解析当前 Go 版本,跳过窗口期降级(保持 error 语义)"
-            else
-              for FIX_VER in $(echo "$fixable" | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' | sort -u); do
-                # fix 严格高于当前 → runner 装不到 → 窗口期降级;
-                # fix <= 当前时保持 error(go.mod 声明过旧导致,升级声明即可)
-                if [ "$(printf '%s\n%s\n' "$CURRENT_GO" "$FIX_VER" | sort -V | tail -1)" = "$FIX_VER" ] && [ "$CURRENT_GO" != "$FIX_VER" ]; then
-                  echo "::warning::${FIX_VER} 尚未进入 setup-go 清单(当前 ${CURRENT_GO}),相关漏洞降级为 advisory"
-                  # @ 锚定行尾:govulncheck 格式为 "Fixed in: module@version",
-                  # 避免子串误删(go1.26.6 误删 go1.26.60 的行)
-                  fixable=$(echo "$fixable" | grep -v "@${FIX_VER}\$" || true)
-                fi
-              done
-            fi
-          fi
-          if [ -n "$fixable" ]; then
             echo "::error::发现可修复的漏洞,请升级依赖:"
             echo "$fixable"
             exit 1
           fi
-          echo "::warning::所有漏洞均为 Fixed-in-N/A 或 fix 版本尚未进入 toolchain 清单,降级为 advisory"
+          echo "::warning::所有漏洞均为 Fixed-in-N/A,降级为 advisory"
 
       - name: Setup pnpm
         if: needs.changes.outputs.web == 'true'
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 10
 
@@ -308,3 +329,101 @@ jobs:
         working-directory: web
         run: pnpm audit --audit-level=high
         continue-on-error: true
+
+  infrastructure:
+    name: Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Check release version intent
+        if: github.event_name == 'pull_request' && !inputs.ref
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          args=(--base "$BASE_SHA" --head "$HEAD_SHA")
+          if [[ "$HEAD_BRANCH" == release-please--* ]]; then
+            args+=(--release-pr)
+          fi
+          python3 scripts/check-release-version.py "${args[@]}"
+
+      - name: Install workflow checkers
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          SHELLCHECK_VERSION: 0.11.0
+        run: |
+          tool_dir="$RUNNER_TEMP/workflow-tools"
+          mkdir -p "$tool_dir"
+          curl -fsSL --retry 3 "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" -o "$tool_dir/actionlint.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $tool_dir/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$tool_dir/actionlint.tar.gz" -C "$tool_dir" actionlint
+          curl -fsSL --retry 3 "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" -o "$tool_dir/shellcheck.tar.xz"
+          echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $tool_dir/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf "$tool_dir/shellcheck.tar.xz" -C "$tool_dir" --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
+          echo "$tool_dir" >> "$GITHUB_PATH"
+          python3 -m pip install --disable-pip-version-check --target "$RUNNER_TEMP/workflow-python" PyYAML==6.0.3
+
+      - name: Validate workflows and composite actions
+        env:
+          PYTHONPATH: ${{ runner.temp }}/workflow-python
+        run: |
+          printf 'self-hosted-runner:\n  labels: [rua]\n' > "$RUNNER_TEMP/actionlint.yaml"
+          actionlint -config-file "$RUNNER_TEMP/actionlint.yaml" -oneline
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import subprocess
+          import tempfile
+          import yaml
+
+          config = pathlib.Path(os.environ["RUNNER_TEMP"]) / "actionlint.yaml"
+          for path in sorted(pathlib.Path(".github/actions").rglob("action.y*ml")):
+              action = yaml.safe_load(path.read_text())
+              if action["runs"]["using"] != "composite":
+                  continue
+              inputs = {name: {**value, "type": "string"} for name, value in action.get("inputs", {}).items()}
+              workflow = {
+                  "on": {"workflow_call": {"inputs": inputs}},
+                  "jobs": {"validate": {"runs-on": "ubuntu-latest", "steps": action["runs"]["steps"]}},
+              }
+              with tempfile.NamedTemporaryFile(mode="w", suffix=".yml") as fixture:
+                  yaml.safe_dump(workflow, fixture)
+                  fixture.flush()
+                  print(f"Checking {path}", flush=True)
+                  subprocess.run(["actionlint", "-config-file", str(config), "-oneline", fixture.name], check=True)
+          PY
+
+      - name: Deployment script tests
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
+
+      - name: Shell syntax
+        run: |
+          while IFS= read -r -d '' script; do
+            bash -n "$script"
+          done < <(find scripts -type f -name '*.sh' -print0)
+          bash -n scripts/hooks/pre-commit
+
+      - name: Validate production compose
+        env:
+          DATABASE_USER: violet_ci
+          DATABASE_PASSWORD: ci-only-placeholder
+          RESOURCE_SIGNING_KEY: ci-only-placeholder-resource-signing-key
+          BOT_TOKEN_KEY: ci-only-placeholder-bot-token-key
+          CORS_ALLOWED_ORIGINS: https://ci.example.invalid
+          API_IMAGE: ghcr.io/vod-studio/violet-api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          WEB_IMAGE: ghcr.io/vod-studio/violet-web@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          GOOGLE_CLIENT_ID: ''
+          GITHUB_CLIENT_ID: ''
+        run: |
+          temp_dir=$(mktemp -d)
+          trap 'rm -rf "$temp_dir"' EXIT
+          cp docker-compose.prod.yml docker-compose.ci.yml "$temp_dir/"
+          touch "$temp_dir/.env"
+          docker compose --project-directory "$temp_dir" -f "$temp_dir/docker-compose.prod.yml" -f "$temp_dir/docker-compose.ci.yml" config --quiet

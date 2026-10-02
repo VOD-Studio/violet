@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write       # 创建 release PR + 打 tag
+  actions: read         # 失败告警读取运行状态
   pull-requests: write  # 开/合并 release PR
   issues: write         # 失败告警 issue(deploy-alert)
 
@@ -34,13 +35,26 @@ jobs:
     # 正常 10-20s,基线紊乱回溯全历史时 3m30s+;10 分钟上限兜住异常放大
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-        # 仅为失败告警 step 提供仓库内 composite action(deploy-alert)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: release/2.0
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 检查当前发布批次的版本意图
+        run: |
+          set -euo pipefail
+          # 检查当前主干整批未发布提交，覆盖 PR 检查后基线又推进的情况。
+          baseline=$(git log --first-parent -1 --format=%H -- .release-please-manifest.json)
+          python3 scripts/check-release-version.py --base "$baseline" --head HEAD
+          if previous=$(git rev-parse --verify "$baseline^" 2>/dev/null); then
+            python3 scripts/check-release-version.py --base "$previous" --head "$baseline" --release-pr
+          fi
       - id: release
-        uses: googleapis/release-please-action@v5
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         with:
           # PAT 绕过组织对 GITHUB_TOKEN 创建 PR 的限制
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          target-branch: release/2.0
           # v4 自定义配置走 manifest 文件
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json

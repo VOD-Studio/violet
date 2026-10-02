@@ -325,7 +325,6 @@ type User struct {
 
 ### 版本号
 
-- **按需触发，非默认**。release-please 默认从 commit 类型推导版本号(`feat` → minor, `fix` → patch)。**只有用户明确说「发补丁 / release as patch / 发 patch」时**,才在 footer 加 `Release-As: v<版本>` 锁定为 patch;用户不提就不加,让 release-please 自行推导。
-- **做法**:用户要求发补丁时,在合并到 `release/2.0` 的 feature 分支上,最后一个发版型 commit(`feat`/`fix`/`perf`/`refactor`)的 footer 加 `Release-As: v<下个 patch>`。算下个 patch:查最新 tag(`git tag --sort=-v:refname | head -1`),patch +1。
-- **minor/major**:同理,用户明确要求时在 footer 写对应版本号(如 `Release-As: v2.9.0`),否则不干预。
-
+- **按需触发，非默认**。release-please 默认从 commit 类型推导版本号（`feat` → minor，`fix` → patch）。用户未明确要求时不写 `Release-As`。
+- **按发布批次集中决定**。只有用户明确要求 patch/minor/major 或指定版本时，才为待发布批次设置一次 `Release-As: v<版本>`。基于最新 `release/2.0` manifest 与已发布 tag 确定目标；不要让多个并行 feature 分支各自计算并写死“下个 patch”。
+- **合并前重新核对**。目标必须大于当前已发布版本。若其他 release PR 先合并，移除或更新尚未合并分支中的过期 footer，再重新检查。PR CI 和 release-please 发布前都会拦截过期意图；追加新 footer 不会抵消历史中的过期 footer。
