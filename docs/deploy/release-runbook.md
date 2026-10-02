@@ -80,6 +80,7 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 
 - **构建失败**：`auto-retry.yml` 仅重试 tag push 中单纯的 API/Web 构建失败，最多总计三次 attempt。CI、迁移、切换、健康检查或回滚失败均不自动重试生产操作。
 - **部署已恢复旧版本**：查看失败日志与 summary，确认 `current.json` 的实际版本。修复问题后以新版本发布。
+- **部署与恢复均失败**：错误摘要分别保留 `Deploy failed` 和 `restoration failed` 上下文；先区分首次失败与恢复失败的阶段，再检查 `pending.json`。摘要不输出子进程参数、标准输出或错误输出中的凭据；命令错误保留退出码或超时时间。
 - **迁移失败或事务中断**：保留 `pending.json` 并阻止后续部署。先检查该记录的 phase、事务目录、当前容器镜像、`schema_migrations` 和公网状态。dirty 记录说明 SQL 可能部分执行；依据实际 schema 修复迁移，不能盲目 `force` 或删除 pending。
 - **需要人工解除 pending**：先完成数据库一致性核对、恢复匹配的镜像与配置、验证公网，再将实际状态与 `current.json` 对齐并保留事故证据。只有确认不存在未完成写入时才能移除 pending；无法确认时保持阻断。
 

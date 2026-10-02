@@ -30,6 +30,14 @@ class DeployError(RuntimeError):
     pass
 
 
+def error_summary(error):
+    if isinstance(error, subprocess.TimeoutExpired):
+        return f"command timed out after {error.timeout}s"
+    if isinstance(error, subprocess.CalledProcessError):
+        return f"command failed (exit {error.returncode})"
+    return str(error)
+
+
 def atomic_write(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -466,7 +474,10 @@ class Deployment:
                         self.pending_path.unlink()
                         self.output("rolled_back")
                     except BaseException as recovery_error:
-                        raise DeployError(f"Deploy failed and restoration failed; pending record retained: {recovery_error}") from error
+                        raise DeployError(
+                            f"Deploy failed: {error_summary(error)}; restoration failed: "
+                            f"{error_summary(recovery_error)}; pending record retained"
+                        ) from error
             elif pending["phase"] != "migration":
                 self.pending_path.unlink()
             # A failed or interrupted migration requires inspection; never restart old services.
@@ -512,7 +523,7 @@ def main():
     try:
         Deployment(arguments()).execute()
     except (DeployError, OSError, ValueError, subprocess.SubprocessError) as error:
-        print(f"::error::{error}", file=sys.stderr)
+        print(f"::error::{error_summary(error)}", file=sys.stderr)
         return 1
     return 0
 

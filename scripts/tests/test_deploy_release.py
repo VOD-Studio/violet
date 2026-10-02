@@ -387,6 +387,41 @@ class Transactions(unittest.TestCase):
         self.assertTrue(self.current()["version"].startswith("bootstrap-"))
         self.assertFalse((self.deployment.state / "versions/v1.1.0").exists())
 
+    def test_failed_restoration_reports_original_and_recovery_failures(self):
+        def failing_fetch(_url):
+            if self.deployment.up_count == 1:
+                raise OSError("candidate TLS handshake failed")
+            raise OSError("previous release connection refused")
+        self.deployment.fetch = failing_fetch
+        with self.assertRaises(DEPLOY.DeployError) as failure:
+            self.deployment.execute()
+        self.assertIn("candidate TLS handshake failed", str(failure.exception))
+        self.assertIn("previous release connection refused", str(failure.exception))
+        self.assertTrue(self.deployment.pending_path.exists())
+        self.assertTrue(self.current()["version"].startswith("bootstrap-"))
+
+    def test_failed_restoration_omits_subprocess_arguments_and_output(self):
+        compose = self.deployment.compose
+        def fail_switch(manifest, *arguments, **kwargs):
+            if arguments[0] == "up":
+                if manifest["version"] == "v1.1.0":
+                    raise subprocess.TimeoutExpired(
+                        ["docker", "compose", "private-command-argument"], 2,
+                        output="private-stdout", stderr="private-stderr",
+                    )
+                raise subprocess.CalledProcessError(
+                    7, ["docker", "compose", "private-recovery-argument"],
+                    output="private-recovery-stdout", stderr="private-recovery-stderr",
+                )
+            return compose(manifest, *arguments, **kwargs)
+        self.deployment.compose = fail_switch
+        with self.assertRaises(DEPLOY.DeployError) as failure:
+            self.deployment.execute()
+        self.assertIn("Deploy failed: command timed out after 2s", str(failure.exception))
+        self.assertIn("restoration failed: command failed (exit 7)", str(failure.exception))
+        self.assertNotIn("private-", str(failure.exception))
+        self.assertTrue(self.deployment.pending_path.exists())
+
     def test_missing_static_asset_causes_rollback(self):
         original_fetch = self.deployment.fetch
         def missing_asset(url):
