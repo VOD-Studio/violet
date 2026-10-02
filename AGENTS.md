@@ -80,17 +80,13 @@ GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdow
 
 五个 canonical triage 角色(needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix),label 字符串与角色名一致,wontfix 复用 GitHub 自带。详见 `docs/agents/triage-labels.md`。
 
-### Session notes
+### Blog writing
 
-会话收尾自动沉淀知识笔记(`.agents/skills/session-notes/`):重量分诊→拆条成文(敏感信息双层门禁)→一键裁定→经 violet-notes MCP 入库。术语见 CONTEXT.md「笔记(Notes)」节,部署见 `docs/guides/mcp-servers.md`。
+会话收尾使用 `.agents/skills/blog-writing/` 轻量筛选值得解释的工程发现，按读者问题写文章或按检索场景写笔记；不以功能规模分级，不默认上传。显式 `/blog-writing` 可写作、改稿、保存或发布，沿用用户已有授权。文章质量与出版操作分开，草稿可供完整审阅。术语见 CONTEXT.md「笔记(Notes)」节，部署见 `docs/guides/mcp-servers.md`。
 
 ### Domain docs
 
 Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`docs/adr/` 放 auth 系列 ADR。详见 `docs/agents/domain.md`。
-
-### Session notes
-
-任务完成并验证后，若会话产出完整功能或可复用工程经验，使用 `.agents/skills/session-notes/` 分诊并沉淀；支持 `/session-notes` 补录，琐碎、重复或未完成会话不触发。
 
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
 

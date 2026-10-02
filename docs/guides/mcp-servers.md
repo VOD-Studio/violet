@@ -101,7 +101,7 @@ MCP server 在 `.omp/mcp.json` 声明：
 
 ### violet-notes — 知识笔记写入（AI 会话沉淀）
 
-AI 会话收尾时按仓库 skill `.agents/skills/session-notes` 的流程调用：分诊（功能级→源码驱动的工程文章毛坯 / 经验级→笔记 / 琐碎→沉默）→ 拆条成文（敏感信息扫描脚本 + 模型语义自查双层门禁）→ 一键裁定（直接发布 / 存草稿 / 不发）→ 入库。功能级文章围绕产品与工程边界、数据模型、关键链路、失败场景和恢复语义展开，并明确区分运行验证、源码确认与尚未复现的风险。
+会话收尾使用 `.agents/skills/blog-writing/` 从可解释的工程发现选题：需要展开因果或机制时写文章，一个触发条件和修法已足够时写笔记，同主题有新增材料时更新，只有过程记录时不写。文章围绕具体读者问题组织；稿件完成并经过独立审读后，可交付全文或本地文件供审阅。保存、发布与写作分开，自动捕获不默认上传，用户明确的保存或发布授权不重复确认。
 
 | 工具 | 用途 |
 |------|------|
@@ -110,15 +110,17 @@ AI 会话收尾时按仓库 skill `.agents/skills/session-notes` 的流程调用
 | `list_notes` / `get_note` | 查自己的笔记（含草稿）——沉淀前查重用 |
 | `delete_note` | 物理删除 |
 
-**安全语义**：`notes:publish` 是「直发」的唯一授权凭据——AI 捕获用 PAT 永不授 `posts:publish`，文章毛坯物理隔离在草稿；公开可见性由用户在会话裁定时的那一次点击把关。标签经本 server 自动创建（`CreateOrGet`），无需先 `create_tag`。
+**权限与状态**：新笔记 `status=published` 需要 `notes:publish`；文章新建为草稿，公开发布单独需要 `posts:publish`。当前没有发布已有笔记草稿的 MCP 工具，`update_note` 保持原状态。更新已发布的文章或笔记会直接修改线上内容，写入 scope 本身不能当作用户授权。当前 notes 单项 get/update/delete 未在后端校验作者，skill 仅操作本人列表核对过的 ID；这不能代替服务端权限校验。
 
-**会话捕获 skill 部署**（一次性）：
+**会话捕获 skill 部署**：
 
-1. 后台「MCP 接入」页签发捕获用 PAT：scope 勾 `notes:read`、`notes:write`、`notes:publish`、`posts:read`、`posts:write`（**不勾 `posts:publish`**）；token 只显示一次，存入密钥管理，不进仓库。
-2. 在 agent 客户端（如 ZCode）的 MCP 配置里注册 `violet-notes` 与 `violet-posts` 两个 server，PAT 经环境变量注入（见上方配置示例）。
-3. skill 已随仓库分发（`.agents/skills/session-notes/`），在该仓库内工作的 agent 会话自动可用；验证：开一场有产出的会话，收尾时观察分诊→裁定→入库全链。
+1. 在后台「MCP 接入」按用途签发 PAT：阅读需要 `notes:read` / `posts:read`，草稿保存需要对应 `write`；需要公开发布时另加对应 `publish`。不需要发布时不授发布 scope，凭据不进仓库。
+2. 在 agent 客户端注册 `violet-notes` 与 `violet-posts`，PAT 经环境变量注入。
+3. 在仓库内用 `/blog-writing` 或自动收尾选题；先检查选题与稿件质量，再按明确目标验证草稿保存或发布。真实秘密必须从稿件删除，草稿也不例外。
 
-MCP 工具缺失、连接失败、鉴权失败或调用失败时，skill 会询问是否把失败项保存到项目级 `.agents/session-notes/pending/` 并提交到当前分支。恢复稿包含目标 operation、目标状态、扫描结果和正文，不含凭据；MCP 恢复后由后续 `/session-notes` 或自动触发继续入库。MCP operation 成功后立即删除恢复稿并提交删除：笔记以创建或更新成功为准，文章以创建博客草稿成功为准，不等待后台公开发布。
+MCP 不可用时仍可完成本地稿件。保存或发布失败保留同一稿件、已知目标 ID 与最后确认阶段；恢复先核对远端状态，避免重复创建。不默认向仓库提交恢复稿；用户明确要求项目归档时才使用 `.agents/session-notes/pending/`。已有恢复稿按其中的真实目标状态续接，发布目标不能因草稿已保存就标记完成。
+
+当前 `update_post` 无法无损保留 SEO 与精选元数据；有此类元数据时 skill 保留本地修改稿并说明限制，不直接覆盖。完整操作及恢复规则见 [出版参考](../../.agents/skills/blog-writing/references/publishing.md)。
 
 ## 使用决策
 
@@ -126,7 +128,7 @@ MCP 工具缺失、连接失败、鉴权失败或调用失败时，skill 会询�
 - 看读者反馈 → **comments**
 - 写/改/发布自己的文章 → **posts**
 - 搬运外站 / 订阅 RSS → **scraper**
-- 会话沉淀知识笔记 → **notes**（配合 `.agents/skills/session-notes`）
+- 会话沉淀知识笔记 → **notes**（配合 `.agents/skills/blog-writing`）
 
 ## 更新日志
 

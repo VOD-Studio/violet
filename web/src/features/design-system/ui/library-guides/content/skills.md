@@ -8,7 +8,7 @@
 | `frontend-conventions` | 前端文件落位与注释规范 |
 | `tailwind-canonical-classes` | Tailwind v4 类名的规范形态 |
 
-目录下还有 `session-notes`、`api-toolchain` 等服务仓库其他流程的技能，与组件库无直接关系。
+目录下还有 `blog-writing`、`api-toolchain` 等服务仓库其他流程的技能，与组件库无直接关系。
 
 ## 技能结构
 
