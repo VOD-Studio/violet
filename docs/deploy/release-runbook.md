@@ -85,6 +85,8 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 
 ## GitHub 配置与上线边界
 
+Go 检查与漏洞扫描获取最新 Go 1.26 补丁，避免 runner 缓存旧工具链。可修复的可达 Go 漏洞会阻断；`Fixed in: N/A` 仍作为告警，前端 `pnpm audit` 仍为 advisory。因此 CI 通过不代表依赖零漏洞，无修复版本的风险仍需单独跟踪。
+
 工作流文件之外还需维护分支规则、tag 规则、production 环境与 runner 权限。此次代码改造不修改这些仓库设置：
 
 - `release/2.0` 必须要求 Backend、Frontend、Dependency Security 通过；建议启用合并前更新分支，避免旧绿色检查绕过新基线。
