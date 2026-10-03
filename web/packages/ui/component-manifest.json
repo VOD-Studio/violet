@@ -144,7 +144,8 @@
 		{
 			"name": "search-input",
 			"status": "legacy",
-			"entry": "src/components/search-input/index.ts"
+			"entry": "src/components/search-input/index.ts",
+			"documentation": "web/packages/ui/docs/components/search-input.md"
 		},
 		{
 			"name": "segmented",

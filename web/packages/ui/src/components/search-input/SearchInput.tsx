@@ -5,6 +5,7 @@ import { Loader2, Search, X } from "lucide-react";
 import { type ComponentProps, useCallback, useId, useRef, useState } from "react";
 import { useDebouncedCallback } from "../../lib/use-debounced-callback";
 
+/** 防抖搜索保留 input 的原生属性、键盘事件和 ref；className 作用于外壳。 */
 export interface SearchInputProps
 	extends Omit<ComponentProps<"input">, "value" | "onChange" | "type" | "size"> {
 	/** 受控值；传则受控，须配 onValueChange 回写 */
@@ -13,7 +14,7 @@ export interface SearchInputProps
 	defaultValue?: string;
 	/** 实时值回调（每次击键，未经防抖） */
 	onValueChange?: (value: string) => void;
-	/** 防抖后值回调（默认 300ms 静默期后触发，回车立即触发） */
+	/** 静默期结束后搜索；非输入法确认的回车立即搜索当前文本。 */
 	onSearch?: (value: string) => void;
 	/** 防抖延迟，默认 300ms */
 	delay?: number;
@@ -35,30 +36,7 @@ const iconSizeMap = {
 	sm: "size-3.5",
 };
 
-/**
- * SearchInput - 带防抖的搜索输入框
- *
- * 内置防抖能力，使用方无法漏接：传 onSearch 即自动防抖（默认 300ms）。
- * 双回调设计兼顾灵活性：
- * - onValueChange：实时值，每次击键触发（供 live UI 如空态文案）
- * - onSearch：防抖值，静默期后或回车时触发（供查询请求）
- *
- * 交互：
- * - 回车：flush 立即触发挂起的 onSearch
- * - 清除（×）：cancel 丢弃挂起，立即触发 onSearch("") + onClear
- * - loading：显示 spinner 覆盖 ×
- *
- * 受控/非受控：
- * - 传 value 受控，必须配 onValueChange 回写
- * - 不传 value 用 defaultValue 非受控，仅需 onSearch 拿防抖结果
- *
- * @example
- * // 非受控（最常见）
- * <SearchInput defaultValue="" onSearch={setKeyword} />
- *
- * // 受控（需 live 值）
- * <SearchInput value={q} onValueChange={setQ} onSearch={setFilteredQ} />
- */
+/** 调用方的 onKeyDown 先执行，preventDefault 可取消内部的回车搜索。 */
 export function SearchInput({
 	value,
 	defaultValue = "",
@@ -70,15 +48,35 @@ export function SearchInput({
 	onClear,
 	className,
 	placeholder,
+	onKeyDown,
+	disabled,
+	readOnly,
+	ref,
 	...rest
 }: SearchInputProps) {
 	const reactId = useId();
-	// 非受控内部值
 	const [inner, setInner] = useState(defaultValue);
 	const isControlled = value !== undefined;
-	const currentValue = isControlled ? (value as string) : inner;
+	const currentValue = value ?? inner;
+	const inputRef = useRef<HTMLInputElement>(null);
+	const attachRef = useCallback(
+		(node: HTMLInputElement | null) => {
+			inputRef.current = node;
+			if (typeof ref === "function") {
+				const cleanup = ref(node);
+				if (typeof cleanup === "function") {
+					return () => {
+						inputRef.current = null;
+						cleanup();
+					};
+				}
+			} else if (ref) {
+				ref.current = node;
+			}
+		},
+		[ref],
+	);
 
-	// 防抖：trailing-only，挂载时不触发（trailing 天然跳过初值）
 	const debounced = useDebouncedCallback(
 		(v: string) => {
 			onSearch?.(v);
@@ -90,33 +88,43 @@ export function SearchInput({
 		(next: string) => {
 			if (!isControlled) setInner(next);
 			onValueChange?.(next);
-			onSearch ? debounced.run(next) : undefined;
+			if (onSearch) debounced.run(next);
 		},
 		[isControlled, onValueChange, onSearch, debounced],
 	);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (disabled || readOnly) return;
 		update(e.target.value);
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			// 回车立即触发挂起的防抖调用
-			if (onSearch) debounced.flush();
-		}
+		onKeyDown?.(e);
+		if (
+			e.defaultPrevented ||
+			disabled ||
+			!onSearch ||
+			e.key !== "Enter" ||
+			e.nativeEvent.isComposing ||
+			e.nativeEvent.keyCode === 229
+		)
+			return;
+		e.preventDefault();
+		debounced.run(e.currentTarget.value);
+		debounced.flush();
 	};
 
 	const handleClear = () => {
+		if (disabled || readOnly) return;
 		debounced.cancel();
 		if (!isControlled) setInner("");
 		onValueChange?.("");
 		onSearch?.("");
 		onClear?.();
+		inputRef.current?.focus();
 	};
 
 	const showClear = !loading && currentValue.length > 0;
-	const inputRef = useRef<HTMLInputElement>(null);
 
 	return (
 		<div
@@ -135,12 +143,15 @@ export function SearchInput({
 				aria-hidden="true"
 			/>
 			<input
-				ref={inputRef}
+				{...rest}
+				ref={attachRef}
 				id={rest.id ?? `search-${reactId}`}
 				type="text"
 				value={currentValue}
 				onChange={handleChange}
 				onKeyDown={handleKeyDown}
+				disabled={disabled}
+				readOnly={readOnly}
 				placeholder={placeholder ?? "搜索…"}
 				className={cn(
 					"w-full rounded-md border border-input bg-background text-foreground",
@@ -149,12 +160,11 @@ export function SearchInput({
 					"disabled:cursor-not-allowed disabled:opacity-50",
 					sizeMap[size],
 				)}
-				{...rest}
 			/>
 			{loading ? (
 				<Loader2
 					className={cn(
-						"absolute right-2.5 animate-spin text-muted-foreground",
+						"absolute right-2.5 animate-spin text-muted-foreground motion-reduce:animate-none",
 						iconSizeMap[size],
 					)}
 					aria-hidden="true"
@@ -166,12 +176,14 @@ export function SearchInput({
 					className={cn(
 						"absolute right-2 flex items-center justify-center rounded-full",
 						"text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+						"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+						"disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
 						size === "sm" ? "size-5" : "size-6",
 					)}
 					aria-label="清除搜索"
-					tabIndex={-1}
+					disabled={disabled || readOnly}
 				>
-					<X className={size === "sm" ? "size-3" : "size-3.5"} />
+					<X aria-hidden="true" className={size === "sm" ? "size-3" : "size-3.5"} />
 				</button>
 			) : null}
 		</div>

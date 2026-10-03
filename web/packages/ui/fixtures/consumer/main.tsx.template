@@ -1,4 +1,4 @@
-import { Button, TextField } from "@violet/ui";
+import { Button, SearchInput, TextField } from "@violet/ui";
 import { buttonVariants } from "@violet/ui/variants";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -6,6 +6,8 @@ import "./style.css";
 
 function App() {
 	const [count, setCount] = useState(0);
+	const [searches, setSearches] = useState<string[]>([]);
+	const [keys, setKeys] = useState<string[]>([]);
 	return (
 		<main>
 			<h1>独立安装的 Violet UI</h1>
@@ -27,6 +29,14 @@ function App() {
 			</section>
 			<section className="preview-scope" aria-label="局部主题">
 				<Button id="scoped-button" variant="primary">局部主题</Button>
+			</section>
+			<section aria-label="搜索交互">
+				<h2>SearchInput</h2>
+				<SearchInput id="search-query" aria-label="搜索文章" defaultValue="violet" onKeyDown={(event) => setKeys((keys) => [...keys, event.key])} onSearch={(query) => setSearches((searches) => [...searches, query])} />
+				<output id="search-keys">{JSON.stringify(keys)}</output>
+				<output id="search-queries">{JSON.stringify(searches)}</output>
+				<SearchInput id="readonly-query" aria-label="只读搜索" readOnly defaultValue="保留文本" />
+				<SearchInput id="disabled-query" aria-label="禁用搜索" disabled defaultValue="保留文本" />
 			</section>
 		</main>
 	);
