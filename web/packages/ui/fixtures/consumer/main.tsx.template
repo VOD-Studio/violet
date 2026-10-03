@@ -1,0 +1,37 @@
+import { Button, TextField } from "@violet/ui";
+import { buttonVariants } from "@violet/ui/variants";
+import { useState } from "react";
+import { createRoot } from "react-dom/client";
+import "./style.css";
+
+function App() {
+	const [count, setCount] = useState(0);
+	return (
+		<main>
+			<h1>独立安装的 Violet UI</h1>
+			<section aria-label="React 组件">
+				<h2>React</h2>
+				<Button id="react-button" variant="primary" onClick={() => setCount(count + 1)}>
+					保存 {count}
+				</Button>
+				<TextField id="email" label="邮箱" description="用于发送更新" type="email" />
+				<TextField id="invalid-email" label="错误状态" invalid errorMessage="请输入正确邮箱" />
+			</section>
+			<section aria-label="纯 HTML 样式">
+				<h2>HTML</h2>
+				<button id="html-button" type="button" className={buttonVariants({ variant: "primary" })}>
+					保存
+				</button>
+				<label htmlFor="html-email" className="v-label">邮箱</label>
+				<input id="html-email" type="email" className="v-input" />
+			</section>
+			<section className="preview-scope" aria-label="局部主题">
+				<Button id="scoped-button" variant="primary">局部主题</Button>
+			</section>
+		</main>
+	);
+}
+
+const root = document.getElementById("root");
+if (!root) throw new Error("Consumer root is missing.");
+createRoot(root).render(<App />);

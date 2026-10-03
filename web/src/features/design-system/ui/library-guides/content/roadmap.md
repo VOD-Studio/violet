@@ -1,25 +1,24 @@
-## 发布节奏
+## 当前重建范围
 
-- **0.x 阶段**：能力随仓库演进按小版本推进，包版本记录在 `web/packages/ui/package.json`。
-- **分发形态**：站点经 `workspace:*` 消费源码；独立项目安装构建 tarball，npm 发布尚未执行。
-- **文档同步**：组件用法页与示例同源，版本落地时随代码同 commit 更新。
+2026 年 10 月 2 日的架构批次保持包名 `@violet/ui` 和现有根入口。包版本仍以 package.json 为准，文档日期不表示已经发布了新版本。
 
-## v0.1.0
+| 状态 | 单元 | 当前约束 |
+| --- | --- | --- |
+| foundation | Button、Input、Label、Textarea、TextField | 使用新组件单元、typed BEM recipe 与同源 CSS；补齐 native / ref / SSR / 消费契约 |
+| legacy | 清单中的其他组件，包括 Dialog、Tabs、Checkbox | 保留现有 API，目录统一；行为、视觉、双轨样式逐个迁移 |
 
-2026 年 9 月 28 日
+`web/packages/ui/component-manifest.json` 是单元状态与公开路径的事实源。`@violet/ui/legacy` 是兼容导出入口，组件实现仍放在各自的 `src/components/<name>/`，没有副本。
 
-首个成册版本：40+ 通用组件从站点公共层迁入 pnpm 工作区包，变体系统迁移到 `tailwind-variants`，语义主题（基础 token、Violet 色板、Tailwind 映射）随 `@violet/ui/styles.css` 入口随包分发；新增独立构建链，产出 ESM、类型声明与打包 CSS，可压成 tarball 在仓库外安装验证。营造法式同步改造为组件库文档站。
+本批次还建立清单派生入口、纯 recipe 导出、preserveModules ESM 和类型声明、按组件 CSS，以及构建后真实 tarball 的外部消费者流程。验证命令与边界见[组件设计方法](/design-system/guides/component-design)。
 
-- 新增构建产物三件套：`pnpm --filter @violet/ui build` 产出 dist 下的 ESM、类型声明与单文件主题 CSS。
-- 宿主解耦：Toaster 改为主题透传（不再依赖 next-themes），Segmented 移除 TanStack Router 耦合，OverlayScroll 与 chart 消除运行时 CSS 与 innerHTML 注入。
-- 文档站五卷成册：入门、纲纪准则、设计法度、构件陈列、智能体，正文按章节路由化并懒加载。
-- 组件用法页覆盖 Button、Badge、Checkbox、Dialog、Tabs、Input，见[组件目录](/design-system/specimens)。
+## 下一批如何迁移
 
-## 尚未开放
+按真实消费需要挑一个 legacy 单元。先记录现有调用与状态表，补键盘、焦点、事件、ref 及表单契约，再统一 recipe 与 CSS。用同源示例解释变化，构建并安装 tarball 后检查依赖图；达到验收条件才修改清单状态。
 
-- scoped npm registry 发布与版本化 CHANGELOG。
-- 专用的组件文档 MCP server。
-- 用于初始化与安装组件的专用 CLI。
-- Figma 组件资产。
+普通圆角、投影与动效按[布局规格](/design-system/layout)和[动效章程](/design-system/motion)收敛。第一批基础单元遵从这些约束，不代表全部 legacy 视觉已重建。
 
-需要这些能力时先补齐实际产物，再更新接入说明。
+## 分发与尚未交付的能力
+
+工作区消费源码，独立项目安装 tgz。npm 公开发布、版本化 CHANGELOG、专用安装 CLI、组件文档 MCP 和 Figma 资产尚未交付。需要这些能力时先完成产物与对应验证，再改变接入说明。
+
+早期 v0.1.0 已完成组件迁入工作区包、默认明暗主题、ESM / 类型 / CSS 构建入口和营造法式文档站。本批次在该基础上重建单元边界；旧组件的使用历史不计为新架构验收证据。

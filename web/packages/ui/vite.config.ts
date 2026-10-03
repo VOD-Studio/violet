@@ -1,30 +1,63 @@
-import { defineConfig } from "vite";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { defineConfig, type Plugin } from "vite";
+import manifest from "./component-manifest.json";
 import packageJson from "./package.json";
 
-// 打包时排除的依赖：dependencies/peerDependencies 由宿主自行安装。
+const packageRoot = dirname(fileURLToPath(import.meta.url));
+const sourceRoot = resolve(packageRoot, "src");
 const externalPackages = new Set([
 	...Object.keys(packageJson.dependencies),
 	...Object.keys(packageJson.peerDependencies),
 ]);
+const publicEntries = [
+	"src/index.ts",
+	"src/legacy.ts",
+	"src/variants.ts",
+	...manifest.components.map((component) => component.entry),
+	...manifest.additionalExports.map((item) => item.entry),
+];
+
+const preserveClientDirectives: Plugin = {
+	name: "violet-preserve-client-directives",
+	renderChunk(code, chunk) {
+		const needsDirective = chunk.moduleIds.some(
+			(id) =>
+				id.startsWith(sourceRoot) &&
+				/^\s*["']use client["'];/.test(readFileSync(id, "utf8")),
+		);
+		if (needsDirective && !/^\s*["']use client["'];/.test(code)) {
+			return { code: `"use client";\n${code}`, map: null };
+		}
+	},
+};
 
 export default defineConfig({
+	plugins: [preserveClientDirectives],
 	build: {
+		minify: false,
 		lib: {
-			entry: "src/index.ts",
+			entry: Object.fromEntries(
+				publicEntries.map((entry) => [
+					entry.replace(/^src\//, "").replace(/\.[jt]sx?$/, ""),
+					resolve(packageRoot, entry),
+				]),
+			),
 			formats: ["es"],
-			fileName: () => "index.js",
 		},
 		rolldownOptions: {
 			external: (id) => {
-				// @scope/pkg 取前两段，裸包名取第一段；相对路径与虚拟模块不外置。
 				const packageName = id.startsWith("@")
 					? id.split("/").slice(0, 2).join("/")
 					: id.split("/")[0];
 				return externalPackages.has(packageName);
 			},
 			output: {
-				// 单入口产物固定 index.js，供 exports 的 import 条件指向。
-				entryFileNames: "index.js",
+				entryFileNames: "[name].js",
+				chunkFileNames: "[name].js",
+				preserveModules: true,
+				preserveModulesRoot: sourceRoot,
 			},
 		},
 	},

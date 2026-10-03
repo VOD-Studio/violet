@@ -19,7 +19,6 @@ export default defineConfig({
 			"@entities": resolve(__dirname, "src/entities"),
 			"@shared": resolve(__dirname, "src/shared"),
 			"@server": resolve(__dirname, "src/shared/server"),
-			"@violet/ui": resolve(__dirname, "packages/ui/src"),
 			"@lib": resolve(__dirname, "src/shared/lib"),
 			"@config": resolve(__dirname, "src/shared/config"),
 			"@vendor/react-bits": resolve(__dirname, "src/shared/vendor/react-bits"),

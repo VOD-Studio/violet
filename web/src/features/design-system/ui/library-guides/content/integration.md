@@ -1,6 +1,6 @@
-## Vite（已验证）
+## Vite
 
-在 Vite 项目的全局 CSS 中先导入 Tailwind，再导入包样式，即可使用全部组件。以下路径在仓库外的独立 React 19 + Vite 8 项目实测通过：
+React 19 宿主可安装本包 tarball。Tailwind CSS v4 项目先导入 Tailwind，再导入完整包样式：
 
 ```ts
 // vite.config.ts
@@ -12,56 +12,48 @@ export default defineConfig({ plugins: [tailwindcss(), react()] });
 ```
 
 ```css
-/* src/styles.css */
 @import "tailwindcss";
 @import "@violet/ui/styles.css";
 ```
 
-## TanStack Start（已验证）
+不使用 Tailwind 时先导入 `@violet/ui/tokens.css`，再导入 `@violet/ui/classes.css`；按需可将后者换为 `@violet/ui/components/button.css`。组合组件的 CSS 包含真实子组件样式依赖，例如 TextField 带齐 Input 与 Label 的规则。完整入口保留 legacy 兼容样式，基础组件无需宿主扫描其 TSX 来生成外观。
 
-本站即宿主：通过 `workspace:*` 消费包，SSR 页面在根布局加载同一份全局样式，让首屏与客户端拿到同一套变量；把 `.dark` 挂在 html 或共同祖先，主题持久化由应用负责，见[深色模式](/design-system/guides/dark-mode)。
+包自带的 `consumer` 命令在工作区外安装真实 tgz，检查类型、SSR 与 Vite 构建；检查方法见[组件设计流程](/design-system/guides/component-design)。框架接入必须以实际执行的结果为准。
+
+## TanStack Start
+
+本站通过 `workspace:*` 消费源码。SSR 页面在根布局加载全局样式，首屏与客户端使用同一套变量；`.dark` 放在 html 或共同祖先，主题持久化由应用负责，见[深色模式](/design-system/guides/dark-mode)。
 
 ```bash
-# 安装（工作区）
 cd web
 pnpm install
 pnpm dev
 ```
 
+本站字体和装饰动效位于 `web/src/styles/site-theme.css`，在包样式之后导入。它们不进入独立消费者的默认主题。
+
 ## 纯 HTML 与非 React 框架
 
-不使用 React 的页面用两份 CSS 即可获得组件外观：`@violet/ui/tokens.css` 提供语义变量，`@violet/ui/classes.css` 提供预编译的 BEM 类（`.v-button` 等，`v-` 前缀避免与宿主类名冲突）。安装 tarball 后从 `node_modules/@violet/ui/dist/` 复制或引用这两份文件：
+安装 tarball 后可从 `node_modules/@violet/ui/dist/` 引用两份预编译 CSS：tokens 提供语义变量，classes 提供 `.v-button` 等 BEM 类。React 基础控件与 HTML 共用这些规则。
 
 ```html
 <!doctype html>
 <html lang="zh-CN">
-	<head>
-		<!-- 先 token 后组件类：classes.css 的颜色、圆角全部取自语义 token -->
-		<link rel="stylesheet" href="./tokens.css" />
-		<link rel="stylesheet" href="./classes.css" />
-	</head>
-	<body style="background: var(--background); color: var(--foreground)">
-		<button type="button" class="v-button v-button--primary">保存</button>
-		<a class="v-button v-button--outline" href="./docs.html">查看文档</a>
-	</body>
+  <head>
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./classes.css" />
+  </head>
+  <body style="background: var(--background); color: var(--foreground)">
+    <button type="button" class="v-button v-button--primary">保存</button>
+    <a class="v-button v-button--outline" href="./docs.html">查看文档</a>
+  </body>
 </html>
 ```
 
-给 html 加 `dark` 类可切换深色取值，与[深色模式](/design-system/guides/dark-mode)的规则一致。
+html 上的 `dark` 类切换明暗取值。CSS 提供外观与原生伪类反馈；原生 button 和 input 的键盘、提交等行为仍由浏览器提供。Dialog 焦点管理、集合导航等复合行为需要 React 实现，不能靠 CSS 获得。
 
-这些类覆盖颜色、尺寸与原生伪类状态（`:hover`、`:focus-visible`、`:disabled`），并保留 `[data-state]`、`[aria-*]` 属性形态；弹层开合、焦点管理、键盘导航等交互行为不在其中，仍由 React 组件提供。纯 HTML 场景适合展示型用途，交互密集的界面请使用 React 组件。
+## 方向、语言与其他框架
 
-## RTL 与国际化
+包未完成全库 RTL 验证；方向相关样式尚未全部切换为逻辑属性。文案、日期和数字格式由宿主处理，当前没有包级 I18nProvider。
 
-组件未在 RTL（从右到左书写）环境下验证，方向相关样式尚未全面切换为逻辑属性，阿拉伯语等 RTL 界面使用前需自行验证。包不提供 `I18nProvider` 或包级的区域设置配置，文案、日期与数字格式化由宿主应用处理。
-
-## 更多框架
-
-以下宿主尚未验证或暂无计划，先列出方向；开放后在此补充实测步骤：
-
-- **Next.js（App Router）**：SSR 布局导入验证中
-- **Remix**：暂未开放
-- **Astro**：暂未开放
-- **Storybook**：暂未开放
-
-没有 Vue/Svelte 原生组件；构建产物面向 React 19 宿主。
+尚未给 Next.js、Remix、Astro 或 Storybook 建立独立消费者检查，也没有 Vue/Svelte 原生实现。需要接入时先建立最小宿主，验证样式、SSR 与交互，再记录实际范围。

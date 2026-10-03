@@ -1,24 +1,30 @@
-## 构建与打包
+## 包内命令
 
-仓库没有独立的 `violet-ui` 安装 CLI。使用 pnpm 构建并打包 `@violet/ui`：
+在 violet 的 `web` 目录运行：
 
 ```bash
-cd web
-pnpm install --frozen-lockfile
+pnpm --filter @violet/ui sync
+pnpm --filter @violet/ui check
+pnpm --filter @violet/ui typecheck
+pnpm --filter @violet/ui test
 pnpm --filter @violet/ui build
-pnpm --filter @violet/ui pack --pack-destination /tmp
+pnpm --filter @violet/ui check:dist
+pnpm --filter @violet/ui consumer
 ```
 
-`build` 在 dist 下产出 ESM、类型声明与单文件主题 CSS；`pack` 产出可安装的 tarball（如 `violet-ui-0.1.0.tgz`）。发布到 scoped npm registry 是未来的人工操作，当前请安装 tarball，而非直接运行 `pnpm add @violet/ui`。
+`sync` 从组件清单更新派生入口；`check` 只读核对源码架构。`build` 生成 preserveModules ESM、声明文件与 CSS，`check:dist` 核对产物，`consumer` 在外部临时项目安装真实 tgz 并检查类型、SSR、Vite 构建与入口依赖图。新增组件按[组件设计方法](/design-system/guides/component-design)执行，不逐处手工维护出口。
 
-## 在独立项目安装
+## 交付 tarball
 
 ```bash
+pnpm --filter @violet/ui pack --pack-destination /tmp
+
+# 在目标项目安装实际 pack 结果
 pnpm add /tmp/violet-ui-0.1.0.tgz
 ```
 
-安装后在全局 CSS 中先导入 Tailwind、再导入 `@violet/ui/styles.css`，步骤见[快速入门](/design-system/guides/quick-start)；不用 Tailwind 的宿主可改导入 `tokens.css`，见[框架集成](/design-system/guides/integration)。
+版本与文件路径以 pack 输出为准。当前没有专用 `violet-ui` 安装 CLI，npm 发布尚未执行。安装后的样式接入见[快速入门](/design-system/guides/quick-start)。
 
-## 开发命令
+## 运行文档站
 
-开发站点使用 `pnpm dev`（web 目录）；命令定义以各 package.json 为准。整仓完整环境（PostgreSQL、Redis、API 与 Web）由根目录 Makefile 的 `make dev` 一键启动。
+`web` 目录的 `pnpm dev` 启动站点；整仓环境由根 Makefile 的 `make dev` 启动。站点检查使用 `make web-lint`、`make web-typecheck` 和 `make web-test`，具体脚本以 package.json 与 Makefile 为准。

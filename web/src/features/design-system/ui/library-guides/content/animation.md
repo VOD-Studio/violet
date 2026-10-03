@@ -1,87 +1,32 @@
-## 组件内置动效
+## 基础单元的反馈
 
-`@violet/ui` 的组件动效全部由 Tailwind 工具类承载：交互态走 `transition-[color,background-color,border-color,box-shadow,opacity,filter] duration-150 ease-out` 一类的显式属性清单，入场与循环动效走包内注册的 `--animate-*` token。当前包内可用的动画 token：
+新 Button 通过颜色、描边与透明度反馈状态，loading 使用静态占位与指示器，避免 scale、方向性位移或 grid 尺寸补间。CSS 负责 `prefers-reduced-motion` 降级。
 
-| Token | 效果 | 典型用途 |
+包内仍有 legacy 组件与既有动画，不能把基础单元的约束描述为全库已经统一。通用主题保留以下真实控件使用的动画：
+
+| 名称 | 用途 | 归属 |
 | --- | --- | --- |
-| `animate-caret-blink` | 1s 光标闪烁 | 输入类组件的插字符 |
-| `animate-diagram-enter` | 0.25s ease-out 淡入 | 图表/示意进入 |
-| `animate-tab-panel-in` | 0.2s ease-out 面板进入 | Tabs 面板切换 |
-| `animate-marquee` | 40s 线性循环 | 跑马灯横滚 |
-| `animate-blob` / `animate-nexus-shimmer` | 品牌氛围动效 | 站点装饰层 |
+| `caret-blink` | OTP 插字符 | 组件库 |
+| `nexus-shimmer` | Skeleton 指示加载 | 组件库 |
+| `tab-panel-in` | 仅透明度淡入 | 组件库 |
+| `blob`、`diagram-enter`、`marquee` | 站点装饰或内容展示 | `web/src/styles/site-theme.css` |
 
-交互反馈类过渡（悬停显现、复制回显、指示线滑动）不走 keyframes，统一引用 `--transition-feedback`（160ms ease-out，`@violet/ui/styles.css` 的 theme 层注册）。
-组件不暴露独立的动画状态属性（`data-entering` 之类）；进入/退出态由 Radix 的 `data-[state=open]` 等 Radix 状态选择器配合 `motion` 组件处理。
+站点字体与装饰动画由宿主加载，通用 CSS 不要求 Maple 字体或手写签名资源。
 
-## 用 Tailwind 写动画
+## 普通状态保持克制
 
-动画时长、缓动、延迟直接用 Tailwind v4 工具类表达，并成对提供减弱动态降级：
+常规 hover、选中、打开与关闭通过颜色、描边、软影和透明度表达。只有图片预览、画布缩放等交互本身表达缩放时才用 scale；只有明确空间来源或去向时才用方向性运动。完整判据见[动效章程](/design-system/motion)。
 
 ```tsx
-// 悬停脉冲，减弱动态时静止
-<Button className="hover:animate-pulse motion-reduce:animate-none">保存</Button>
-
-// 列表错峰入场
-<div className="space-y-2">
-	<Card className="animate-tab-panel-in motion-reduce:animate-none">第一项</Card>
-	<Card className="animate-tab-panel-in [animation-delay:100ms] motion-reduce:animate-none">
-		第二项
-	</Card>
-</div>
-```
-
-动效章程的底线：常规状态反馈用颜色、描边、阴影与透明度表达，非必要不使用 `scale`，非必要不使用方向性滑入滑出。完整判据见[动效章程](/design-system/motion)。
-
-## 与 motion 协作
-
-包与 `motion`（Framer Motion 后继）直接组合：
-
-```tsx
-import { motion } from "motion/react";
 import { Button } from "@violet/ui";
 
-const MotionButton = motion(Button);
-
-<MotionButton whileHover={{ opacity: 0.85 }} whileTap={{ opacity: 0.7 }}>
-	提交
-</MotionButton>
+<Button className="transition-opacity hover:opacity-85 motion-reduce:transition-none">
+  保存
+</Button>
 ```
 
-选中态的滑动指示器用共享布局实现——只在选中项内渲染 `motion.span` 并挂 `layoutId`，motion 会在项间弹簧搬运：
+调用方添加动画时也承担减弱动态。CSS 使用 `motion-reduce:transition-none` / `motion-reduce:animate-none`；JS 动画库需要读取偏好，组件 CSS 无法替它停下弹簧或循环。
 
-```tsx
-{isSelected && (
-	<motion.span
-		layoutId="category-pill"
-		className="absolute inset-0"
-		transition={{ type: "spring", stiffness: 420, damping: 38 }}
-	/>
-)}
-```
+## 校验实际状态
 
-`AnimatePresence` 用于卸载动画（抽屉、对话框退出）。
-
-## 尊重减弱动态
-
-三层配合：
-
-1. CSS 侧用 Tailwind 的 `motion-reduce:` 变体逐条降级（见上例）。
-2. `motion` 组件的弹簧动画不会被自动降级，须显式判断：
-
-```tsx
-import { useReducedMotion } from "motion/react";
-
-const shouldReduce = useReducedMotion();
-<motion.span
-	transition={shouldReduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 38 }}
-/>;
-```
-
-3. 基于雪碧图的逐帧动画停在末帧。
-
-## 性能要点
-
-- 只动画 `transform` 与 `opacity`；`left/top/width/height` 触发布局，改用 transform 合成。
-- FLIP 技术处理尺寸/位置变化：瞬时布局 + WAAPI transform 补间，避免逐帧 reflow。
-- `will-change` 只在动画进行时挂，动画结束移除；常驻 `will-change` 白占显存。
-- 长列表动画错峰用 `animation-delay`，不用 JS 逐项计时器。
+在浏览器切换减弱动态，检查加载与结束、聚焦与失焦、打开与关闭；指示内容仍须可识别。避免常驻 `will-change`，也不要为普通按钮反馈引入布局动画。动画状态与可访问状态分别检查，视觉淡出不能代替 disabled 或事件拦截。

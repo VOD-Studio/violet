@@ -1,6 +1,6 @@
-## 职责顺序
+## 让语义、布局与主题各归其位
 
-先通过组件的 `variant`/`size` 选择语义，再用 `className` 调整布局；主题级色值放在 CSS 变量。不要为单个按钮覆写变体色，让同一动作在不同方言下失去含义。
+先通过 `variant` / `size` 选择组件语义，再用工具类调整布局；主题级色值通过 CSS 变量改变。保留焦点、错误与禁用提示。
 
 ```tsx
 import { Button } from "@violet/ui";
@@ -8,125 +8,83 @@ import { Button } from "@violet/ui";
 <Button variant="primary" size="sm" className="w-full">保存</Button>
 ```
 
-Tailwind v4 间距以 4px 为单位，例如 88px 用 `w-22`。功能性圆角最大 `rounded-2xl`；浮起只用轻软影或边界描边。具体数值见[布局规格](/design-system/layout)。
+Tailwind v4 的 4px 倍数间距使用数字类，例如 88px 写 `w-22`。功能圆角最大 `rounded-2xl`，浮起只使用规范中的轻软影；具体刻度见[布局规格](/design-system/layout)。
 
-## className 与 style
+## React 与 HTML 使用同一份 CSS
 
-组件接受标准 `className` 与 `style` 属性：`className` 与变体类合并后落到根元素，`style` 透传为内联样式。布局与间距用 `className`，动态计算的数值（如跟随内容的宽度）用 `style`：
-
-```tsx
-<Button variant="primary" className="gap-3" style={{ minWidth: 120 }}>
-	保存
-</Button>
-```
-
-## 基于状态的样式
-
-每个组件根元素挂 `data-slot` 与 `data-variant` 属性，宿主 CSS 可用属性选择器按状态定制：
+基础单元的 `styles.ts` 只把参数映射为 BEM 类，视觉定义在组件 CSS。命名为块 `v-<name>`、元素 `v-<name>__<part>` 和修饰符 `v-<name>--<variant>`。
 
 ```css
-/* 应用全局 CSS */
-[data-slot="button"][data-variant="primary"] {
-	box-shadow: none;
-}
+/* Tailwind 宿主 */
+@import "tailwindcss";
+@import "@violet/ui/styles.css";
 ```
-
-优先用 `className` 组合（variants 已处理优先级），属性选择器留给无法通过组合表达的覆盖。
-
-## 条件样式
-
-组件不接受函数形式的 `className`（接收 props 返回类名的渲染属性）；按状态换类在调用点用条件表达式完成：
-
-```tsx
-<Button variant={isDanger ? "destructive" : "default"} className={pending ? "opacity-60" : undefined}>
-	提交
-</Button>
-```
-
-## 滚动条工具类
-
-包提供主题化滚动条工具类（标准 `scrollbar-width` / `scrollbar-color` 属性，不依赖 `::-webkit-scrollbar`）：
-
-| 工具类 | 属性模式 | 效果 |
-| --- | --- | --- |
-| `scrollbar-thin` | `data-scrollbar="thin"` | 纤细主题滑块（默认形态） |
-| `scrollbar-default` | `data-scrollbar="default"` | 原生滚动条 |
-| `scrollbar-none` | `data-scrollbar="none"` | 隐藏滚动条（内容仍可滚动） |
-
-属性模式可声明在元素自身或任意祖先上。滑块颜色与宽度变量（`--scrollbar-*`）的定制见[主题](/design-system/guides/theming)的「滚动条」一节。
-
-## BEM 类名
-
-不用 Tailwind 的宿主可以导入 `@violet/ui/classes.css`，获得核心组件的预编译类。命名遵循 BEM：块 `v-<name>`、元素 `v-<name>__<element>`、修饰符 `v-<name>--<modifier>`（如 `.v-button`、`.v-button--primary`、`.v-tabs__list`）。颜色与圆角全部取自语义 token，必须先导入 `tokens.css` 或 `styles.css`：
 
 ```css
+/* 只取一个组件的 CSS，不需要 Tailwind 扫描组件源码 */
 @import "@violet/ui/tokens.css";
-@import "@violet/ui/classes.css";
+@import "@violet/ui/components/button.css";
 ```
 
 ```html
 <button type="button" class="v-button v-button--primary">保存</button>
 ```
 
-React 组件与 BEM 类是两套并行入口：React 项目用组件与 variants，纯 HTML 或其他框架用 `classes.css`。
+`classes.css` 汇集组件 CSS，叶子入口从相同源文件构建。完整入口会加载完整规则，不会因为只渲染 Button 就自动裁掉其他 CSS。legacy 单元的 React recipe 与兼容 BEM 尚未逐个统一，成熟度见[重建进度](/design-system/guides/roadmap)。
 
-## 创建包装组件
+## className 落在哪个部件
 
-应用级按钮常是固定变体加尺寸的组合。从包根导出的 variants recipes（`buttonVariants`、`badgeVariants`、`checkboxVariants`、`tabsListVariants`）是 tailwind-variants 实例，用 `extend` 派生，不复制基类：
+Button、Input、Label、Textarea 的 `className` 与 `style` 落在其 DOM 元素上。TextField 是组合字段，这两个属性落在 input；外壳、label 与说明通过类型化 `classNames` 指定：
 
 ```tsx
-import { buttonVariants } from "@violet/ui";
-import { cn } from "cn";
-import type { ComponentProps } from "react";
+import { TextField } from "@violet/ui";
 
-const ctaButton = buttonVariants.extend({
-	base: "tracking-wide",
-	variants: {
-		size: {
-			cta: "h-12 px-8 text-base",
-		},
-	},
-	defaultVariants: {
-		variant: "primary",
-		size: "cta",
-	},
-});
+<TextField
+  label="邮箱"
+  type="email"
+  className="text-base"
+  classNames={{ root: "w-full max-w-sm", description: "text-xs" }}
+  description="用于接收回复通知"
+/>
+```
 
-export function CallToAction({ className, ...props }: ComponentProps<"button">) {
-	return <button type="button" className={cn(ctaButton(), className)} {...props} />;
+组件 CSS 位于 components layer，Tailwind utilities 可以覆盖布局或局部外观。改变整套配色应覆盖语义变量，避免在每个调用点重复设置颜色。
+
+## 用真实状态定制
+
+新 Button 暴露 `data-slot="button"`、`data-variant`、`data-size`、`data-loading` 与 `aria-busy`。Input 的错误状态使用 `aria-invalid`。legacy 的 Radix 控件仍使用实际提供的 `data-state`，不能假定所有组件拥有同一套属性。
+
+```css
+[data-slot="button"][data-loading="true"] {
+  cursor: progress;
 }
 ```
 
-`extend` 保留原有变体并叠加新值，上游调整基类样式时包装组件自动跟随。
+原生 `:disabled`、`:focus-visible` 和 ARIA 选择器提供状态反馈。普通样式覆盖不能改变事件、ref、表单和键盘契约。组件的 `className` 接收字符串；调用方需要条件样式时使用表达式。
 
-## 与 CSS-in-JS 一起用
+## 包装组件保留行为
 
-组件接受并转发 `className`，styled-components 可以直接包裹：
-
-```tsx
-import styled from "styled-components";
-import { Button } from "@violet/ui";
-
-const PromoButton = styled(Button)`
-	width: 100%;
-	margin-top: 1rem;
-`;
-```
-
-emotion 用 `css` 属性同理（`className` 经 jsx 运行时传入组件）：
+应用可以固定变体与尺寸，把其余公开属性透传给原组件：
 
 ```tsx
-/** @jsxImportSource @emotion/react */
-import { css } from "@emotion/react";
 import { Button } from "@violet/ui";
+import type { ComponentProps } from "react";
 
-<Button css={css`width: 100%;`}>保存</Button>
+export function SaveButton(props: ComponentProps<typeof Button>) {
+  return <Button variant="primary" size="sm" {...props} />;
+}
 ```
 
-样式优先级建议保持「变体 → 工具类 → CSS-in-JS」的层次，CSS-in-JS 只写局部布局微调，主题色仍走 CSS 变量。
+公开 recipes 从 `@violet/ui/variants` 读取，适合只计算类名的场景。新增通用变体时修改组件单元的 recipe 与 CSS，按[组件设计方法](/design-system/guides/component-design)补验证。
 
-## 相关资源
+## 滚动条工具类
 
-- [主题](/design-system/guides/theming)：token 层次与组件样式覆盖
-- [布局规格](/design-system/layout)：间距与圆角数值
-- [组合模式](/design-system/guides/composition)：asChild 与复合部件
+包提供标准 `scrollbar-width` / `scrollbar-color` 规则：
+
+| 工具类 | 属性模式 | 效果 |
+| --- | --- | --- |
+| `scrollbar-thin` | `data-scrollbar="thin"` | 纤细主题滑块 |
+| `scrollbar-default` | `data-scrollbar="default"` | 原生滚动条 |
+| `scrollbar-none` | `data-scrollbar="none"` | 隐藏滚动条，内容仍可滚动 |
+
+属性可写在元素或祖先。变量说明见[主题](/design-system/guides/theming)，组合语义见[组合](/design-system/guides/composition)。

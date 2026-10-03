@@ -1,3 +1,5 @@
+> 本文保留旧站点主题接入示例。新组件库规范以包内 `web/packages/ui/docs/architecture.md` 为准。
+
 ## 主题如何工作
 
 `@violet/ui` 的主题由三层 CSS 变量构成：
@@ -131,7 +133,7 @@ JS 侧是 ESM tree-shaking：`import { Button } from "@violet/ui"` 只打包用�
 
 ## 自定义组件样式
 
-组件样式没有独立 CSS 文件，定制走两条稳定 API：
+foundation 组件使用独立 BEM CSS；legacy 尚有兼容样式，定制走两条稳定 API：
 
 **1. `data-slot` / `data-variant` 属性**——每个组件根元素都挂语义化 data 属性，宿主 CSS 可精确覆盖：
 

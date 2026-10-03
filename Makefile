@@ -5,7 +5,7 @@
         migrate migrate-down migrate-version check-publications reset-db db-shell redis-shell \
         api api-build api-test api-lint \
         web web-build web-preview web-lint web-format web-typecheck \
-        web-test web-contract \
+        web-test web-contract ui-sync ui-check ui-build ui-test ui-pack ui-consumer \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
@@ -170,6 +170,25 @@ web-test: ## 运行前端单元测试 (Vitest)
 
 web-contract: ## 运行主题浏览器契约（Playwright，需先 web-build）
 	cd web && pnpm test:contract
+
+ui-sync: ## 同步组件清单生成的公开入口与样式入口
+	cd web && pnpm --filter @violet/ui sync
+
+ui-check: ## 检查组件库架构与类型
+	cd web && pnpm --filter @violet/ui check && pnpm --filter @violet/ui typecheck
+
+ui-build: ## 构建组件库 ESM、声明与 CSS 分发产物
+	cd web && pnpm --filter @violet/ui build
+
+ui-test: ## 运行组件库自含测试
+	cd web && pnpm --filter @violet/ui test
+
+UI_PACK_DEST ?= /tmp
+ui-pack: ## 打包独立组件库 tarball（UI_PACK_DEST 指定输出目录）
+	cd web && pnpm --filter @violet/ui pack --pack-destination "$(UI_PACK_DEST)"
+
+ui-consumer: ## 在独立项目安装 tarball 并验证类型、SSR 与按需构建
+	cd web && pnpm --filter @violet/ui consumer
 
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），

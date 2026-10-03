@@ -1,0 +1,25 @@
+@layer components {
+	.v-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--foreground);
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.5;
+	}
+
+	.v-label[data-disabled="true"],
+	.v-label:has(:disabled),
+	[data-disabled="true"] > .v-label,
+	.peer:disabled ~ .v-label {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	@media (forced-colors: active) {
+		.v-label {
+			color: CanvasText;
+		}
+	}
+}

@@ -109,7 +109,7 @@ export function CheckboxDocPage() {
 					<p className="text-xs text-muted-foreground">
 						源码{" "}
 						<code className="font-mono text-foreground">
-							web/packages/ui/src/checkbox/checkbox.tsx
+							web/packages/ui/src/components/checkbox/checkbox.tsx
 						</code>
 					</p>
 				</header>

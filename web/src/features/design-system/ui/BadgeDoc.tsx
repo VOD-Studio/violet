@@ -85,7 +85,7 @@ export function BadgeDocPage() {
 					<p className="text-xs text-muted-foreground">
 						源码{" "}
 						<code className="font-mono text-foreground">
-							web/packages/ui/src/badge/badge.tsx
+							web/packages/ui/src/components/badge/badge.tsx
 						</code>
 					</p>
 				</header>

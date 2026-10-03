@@ -6,6 +6,8 @@ import { lazy } from "react";
  */
 export const GUIDE_CONTENT = {
 	introduction: lazy(() => import("./introduction")),
+	architecture: lazy(() => import("./architecture")),
+	"component-design": lazy(() => import("./component-design")),
 	"quick-start": lazy(() => import("./quick-start")),
 	integration: lazy(() => import("./integration")),
 	cli: lazy(() => import("./cli")),

@@ -1,7 +1,5 @@
-/*
- * 纯变量子集入口（Headless / 无 Tailwind 场景）：语义 token（含滚动条变量）
- * + 默认 violet 主色源。不含 @theme inline 映射与 @source 扫描指令，
- * 需要完整产物（工具类映射、滚动条工具类）请用 styles.css。
- */
+/* Pure CSS variables; no Tailwind directives or reset. */
+@layer theme, base, components, utilities;
 @import "./styles/tokens.css";
 @import "./styles/palettes/violet.css";
+@import "./styles/foundation.css";

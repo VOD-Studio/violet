@@ -1,0 +1,93 @@
+@layer components {
+	.v-input {
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-inline-size: 0;
+		block-size: var(--v-control-height-md, 2.25rem);
+		padding: 0.25rem 0.75rem;
+		border: 1px solid var(--input);
+		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
+		background-color: transparent;
+		color: var(--foreground);
+		font-family: inherit;
+		font-size: 1rem;
+		line-height: 1.5;
+		transition:
+			border-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
+			background-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
+	}
+
+	.v-input:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+		border-color: var(--ring);
+	}
+
+	.v-input::placeholder {
+		color: var(--muted-foreground);
+	}
+
+	.v-input::selection {
+		background-color: var(--primary);
+		color: var(--primary-foreground);
+	}
+
+	.v-input::file-selector-button {
+		block-size: 1.75rem;
+		margin-inline-end: 0.5rem;
+		padding: 0 0.5rem;
+		border: 0;
+		background-color: transparent;
+		color: var(--foreground);
+		font: inherit;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.v-input:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"]) {
+		border-color: var(--destructive);
+	}
+
+	.v-input:is(
+		[aria-invalid="true"],
+		[aria-invalid="grammar"],
+		[aria-invalid="spelling"]
+	):focus-visible {
+		outline-color: var(--destructive);
+	}
+
+	@media (min-width: 48rem) {
+		.v-input {
+			font-size: 0.875rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-input {
+			transition: none;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-input {
+			border-color: ButtonText;
+			background-color: Canvas;
+			color: CanvasText;
+		}
+
+		.v-input:focus-visible {
+			outline-color: Highlight;
+		}
+
+		.v-input:disabled {
+			border-color: GrayText;
+			color: GrayText;
+			opacity: 1;
+		}
+	}
+}

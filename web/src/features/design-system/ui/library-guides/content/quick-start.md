@@ -1,12 +1,8 @@
-## 环境要求
+## 准备环境
 
-- React 19 及以上
-- react-dom 19 及以上
-- Tailwind CSS v4
+React 组件要求 React 19 与 react-dom 19。使用完整 `styles.css` 的宿主需要 Tailwind CSS v4；只使用 `tokens.css` 与组件 CSS 时不需要 Tailwind。
 
-## 安装
-
-工作区内开发无需安装动作：`web/package.json` 已用 `workspace:*` 声明 `@violet/ui`，装好依赖即可使用。
+工作区内 `web/package.json` 已声明 `workspace:*`：
 
 ```bash
 cd web
@@ -14,73 +10,71 @@ pnpm install
 pnpm dev
 ```
 
-独立项目安装构建产物：先打包 tarball，再在目标项目安装（当前未发布 npm）。
+## 在独立项目安装
+
+当前尚未发布 npm。先从 violet 的 `web` 目录构建并打包，再安装实际生成的 tgz：
 
 ```bash
-cd web
 pnpm --filter @violet/ui build
 pnpm --filter @violet/ui pack --pack-destination /tmp
 
-# 在目标项目根目录
-cp /tmp/violet-ui-<version>.tgz .
-pnpm add ./violet-ui-<version>.tgz
+# 在目标项目目录，路径以 pack 输出为准
+pnpm add /tmp/violet-ui-0.1.0.tgz
 ```
+
+源码入口与发布入口分别定义。独立消费者验收命令为 `pnpm --filter @violet/ui consumer`，步骤见[组件设计方法](/design-system/guides/component-design)。
 
 ## 导入样式
 
-将以下内容添加到应用的主 CSS 文件：
+Tailwind 宿主的全局 CSS：
 
 ```css
 @import "tailwindcss";
 @import "@violet/ui/styles.css";
 ```
 
-导入顺序很重要：务必先导入 `tailwindcss`。包样式中的 `@theme inline` 映射与 `@source` 组件类名扫描都依赖 Tailwind 先建立编译上下文。
+完整样式带语义变量、默认色板、Tailwind 映射与组件 CSS。基础组件的外观已编译为 BEM 规则；legacy recipe 仍由兼容扫描补充，消费方无需复制 token 或手写包源码扫描配置。
 
-## 使用组件
+只取基础组件外观时：
+
+```css
+@import "@violet/ui/tokens.css";
+@import "@violet/ui/components/button.css";
+@import "@violet/ui/components/input.css";
+@import "@violet/ui/components/label.css";
+@import "@violet/ui/components/text-field.css";
+```
+
+也可用 `classes.css` 加载全部预编译规则。CSS 不提供组件行为；纯 HTML 的 button 与 input 保留原生行为，复杂浮层使用 React / Radix 组件。
+
+## 运行第一个表单
 
 ```tsx
-import { Button } from "@violet/ui";
+import { Button, TextField } from "@violet/ui";
 import { useState } from "react";
 
-export function ButtonBasicDemo() {
-	const [clicks, setClicks] = useState(0);
-	return (
-		<div className="flex justify-center">
-			<Button type="button" onClick={() => setClicks((count) => count + 1)}>
-				已点击 {clicks} 次
-			</Button>
-		</div>
-	);
+export function ProfileForm() {
+  const [name, setName] = useState("");
+  return (
+    <form onSubmit={(event) => event.preventDefault()}>
+      <TextField
+        label="显示名称"
+        name="displayName"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        description="用于评论署名"
+        required
+      />
+      <Button type="submit">保存</Button>
+    </form>
+  );
 }
 ```
 
-```tsx
-import { Button } from "@violet/ui";
+Button 默认 `type="button"`；提交操作显式指定 `submit`。TextField 不内置校验规则，`onChange` 接收原生事件，ref 指向 input。组件与类型通常从根入口导入；按单元取用可用 `@violet/ui/button` 与 `@violet/ui/text-field`。
 
-export function SaveAction() {
-	return <Button type="button" onClick={() => console.log("saved")}>保存</Button>;
-}
-```
+## 确认使用范围
 
-按钮执行导航时用 `asChild` 包裹真实链接；纯图标按钮添加 `aria-label`。完整行为与加载态见 [Button 用法页](/design-system/specimens/button)。
+本批次的 foundation 单元是 Button、Input、Label、Textarea、TextField，其他单元为 legacy。用前查看[重建进度](/design-system/guides/roadmap)与对应[组件用法](/design-system/specimens)。主题由宿主管理，深色切换见[深色模式](/design-system/guides/dark-mode)。
 
-## 让 AI 代劳
-
-AI 编码助手可以代劳接入。把文档索引 `https://xunrua.top/llms.txt` 交给支持读取 URL 的助手，或直接发送下面这段提示词：
-
-```text
-请为当前项目接入 @violet/ui 组件库。先读取文档索引 https://xunrua.top/llms.txt ，
-按其中「快速入门」「主题」「组件目录」章节执行：
-1. 在全局 CSS 中先 @import "tailwindcss"，再 @import "@violet/ui/styles.css"；
-2. 组件与变体类型从 @violet/ui 根入口导入；
-3. 样式定制优先使用 variant / size 与语义工具类，不覆写组件内部实现类；
-4. 明暗切换由应用管理 html 的 dark 类。
-```
-
-## 下一步
-
-- [主题](/design-system/guides/theming)——通过 CSS 变量定制色板与语义 token。
-- [浏览组件](/design-system/specimens)——查看所有可用组件的用法与限制。
-- [学习样式](/design-system/guides/styling)——用变体与 Tailwind 工具类自定义外观。
-- [探索组合模式](/design-system/guides/composition)——掌握 asChild 与复合部件。
+编码助手可以从[文档索引](https://xunrua.top/llms.txt)读取指南；在仓库内也可直接读 `component-manifest.json`、同源示例与 `violet-ui` skill。新组件的结构和验收流程见[组件库架构](/design-system/guides/architecture)与[组件设计方法](/design-system/guides/component-design)。

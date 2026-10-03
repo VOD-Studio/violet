@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { Button, TextField } from "@violet/ui";
+import { Button as LeafButton } from "@violet/ui/button";
+import { buttonVariants } from "@violet/ui/variants";
+import { renderToString } from "react-dom/server";
+
+const root = renderToString(<Button variant="primary">保存</Button>);
+const leaf = renderToString(<LeafButton variant="primary">保存</LeafButton>);
+assert.equal(root, leaf);
+assert.match(root, /v-button--primary/);
+const field = renderToString(<TextField id="email" label="邮箱" description="用于发送更新" />);
+assert.match(field, /for="email"/);
+assert.match(field, /aria-describedby="email-description"/);
+assert.match(buttonVariants({ variant: "primary" }), /v-button--primary/);
+console.log("Independent root/leaf SSR and TextField semantics passed.");

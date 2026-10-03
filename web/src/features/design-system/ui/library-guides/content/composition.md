@@ -1,6 +1,6 @@
-## 保留元素语义
+## 以原生语义作为组合边界
 
-`Button asChild` 使用 Radix Slot 将外观传给唯一子元素。导航仍是链接，提交仍是原生按钮。不要把按钮外观等同于按钮行为。
+提交用 button，导航用链接。`Button asChild` 使用 Radix Slot 把样式、属性与 ref 交给唯一子元素：
 
 ```tsx
 import { Button } from "@violet/ui";
@@ -11,24 +11,63 @@ import { Link } from "@tanstack/react-router";
 </Button>
 ```
 
-## 按部件组合
+禁用或忙碌时，Button 阻止子元素的交互 handler；自定义链接必须透传属性与 ref。`asChild` 保留子元素内容，不插入 `leftIcon`、`rightIcon` 或 `loadingText`。需要这些内容时由子元素自己提供。
 
-Dialog 和 Tabs 导出可组合的根、触发器、内容部件。组合必须保留标题、焦点和键盘行为；完整用法看 [Dialog](/design-system/specimens/dialog) 与 [Tabs](/design-system/specimens/tabs) 的示例。
+## 组合字段保留 input 契约
 
-## 多态样式
-
-带变体的组件把样式函数从包根导出：`buttonVariants`、`badgeVariants`、`checkboxVariants`、`tabsListVariants`。给任意元素拼同一套外观，不必渲染组件本体：
+TextField 的值、原生事件和 ref 仍属于 input：
 
 ```tsx
-import { buttonVariants } from "@violet/ui";
+import { TextField } from "@violet/ui";
+import { useState } from "react";
+
+export function NameField() {
+  const [name, setName] = useState("");
+  return (
+    <TextField
+      label="显示名称"
+      value={name}
+      onChange={(event) => setName(event.target.value)}
+      description="公开显示在评论旁"
+      classNames={{ root: "max-w-sm" }}
+    />
+  );
+}
+```
+
+ID 未指定时由 `useId` 生成。label、description 与实际显示的 error 关联到同一 input。`className` 属于 input，外层布局使用 `classNames.root`。完整示例见[TextField](/design-system/specimens/text-field)。
+
+多行输入使用 Label 与 Textarea，手动保持关联：
+
+```tsx
+import { Label, Textarea } from "@violet/ui";
+import { useId } from "react";
+
+export function BiographyField() {
+  const id = useId();
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>简介</Label>
+      <Textarea id={id} name="biography" rows={4} />
+    </div>
+  );
+}
+```
+
+## 只取用样式 recipe
+
+需要同一外观而已时，从纯 recipe 入口计算类名：
+
+```tsx
+import { buttonVariants } from "@violet/ui/variants";
 
 <a href="/design-system" className={buttonVariants({ variant: "outline" })}>
-	组件文档
+  组件文档
 </a>
 ```
 
-## 与框架无关的样式
+它输出类名，不接管 disabled、loading、键盘或 ref；这些行为由实际元素与消费方负责。纯 HTML 直接使用同名 BEM 类，加载方式见[样式](/design-system/guides/styling)。
 
-变体函数基于 tailwind-variants，是返回类名字符串的普通函数：传参、拼类名、输出，不经过组件挂载，服务端渲染与测试里同样可用。参数与组件的 `variant` / `size` props 一致。
+## legacy 复合部件
 
-不用 React 的页面改用预编译类名：`@violet/ui/classes.css` 提供 `.v-button` 等 BEM 类，配合 `tokens.css` 使用，纯 HTML 示例见[框架集成](/design-system/guides/integration)。
+Dialog、Tabs 等继续保留可组合的根、触发器与内容部件，目前状态为 legacy。使用时保留标题、焦点和键盘语义；具体契约见 [Dialog](/design-system/specimens/dialog) 与 [Tabs](/design-system/specimens/tabs)。这些组件的目录已统一，行为和样式仍需按单元迁移。

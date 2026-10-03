@@ -1,0 +1,15 @@
+import { Input, Label, Textarea, type ButtonProps, type TextFieldProps } from "@violet/ui";
+import { Button } from "@violet/ui/button";
+import { Modal } from "@violet/ui/legacy";
+import { TextField } from "@violet/ui/text-field";
+import { buttonVariants, type ButtonVariantProps } from "@violet/ui/variants";
+
+const button: ButtonProps = { variant: "primary", onClick: (event) => event.currentTarget.focus() };
+const field: TextFieldProps = { label: "邮箱", type: "email", ref: (input) => input?.focus() };
+const recipe: ButtonVariantProps = { variant: "primary" };
+buttonVariants(recipe);
+buttonVariants({ variant: "primary", className: "consumer-class" });
+// @ts-expect-error Unsupported variants must stay compile-time errors.
+buttonVariants({ variant: "unknown" });
+export const example = <><Button {...button}>保存</Button><TextField {...field} /><Input /><Label>名称</Label><Textarea /></>;
+export const legacy = Modal;

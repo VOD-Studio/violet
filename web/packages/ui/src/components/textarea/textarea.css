@@ -1,0 +1,82 @@
+@layer components {
+	.v-textarea {
+		box-sizing: border-box;
+		display: block;
+		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: 5rem;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--input);
+		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
+		background-color: var(--background);
+		color: var(--foreground);
+		font-family: inherit;
+		font-size: 1rem;
+		line-height: 1.5;
+		transition:
+			border-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
+			background-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
+	}
+
+	.v-textarea:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+		border-color: var(--ring);
+	}
+
+	.v-textarea::placeholder {
+		color: var(--muted-foreground);
+	}
+
+	.v-textarea::selection {
+		background-color: var(--primary);
+		color: var(--primary-foreground);
+	}
+
+	.v-textarea:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-textarea:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"]) {
+		border-color: var(--destructive);
+	}
+
+	.v-textarea:is(
+		[aria-invalid="true"],
+		[aria-invalid="grammar"],
+		[aria-invalid="spelling"]
+	):focus-visible {
+		outline-color: var(--destructive);
+	}
+
+	@media (min-width: 48rem) {
+		.v-textarea {
+			font-size: 0.875rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-textarea {
+			transition: none;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-textarea {
+			border-color: ButtonText;
+			background-color: Canvas;
+			color: CanvasText;
+		}
+
+		.v-textarea:focus-visible {
+			outline-color: Highlight;
+		}
+
+		.v-textarea:disabled {
+			border-color: GrayText;
+			color: GrayText;
+			opacity: 1;
+		}
+	}
+}

@@ -1,17 +1,19 @@
 # 营造法式 / @violet/ui
 
-> React 19 + Tailwind CSS v4 组件库与用法文档。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。
+> React 19 组件库与用法文档；基础组件与 HTML 共用 BEM CSS，Tailwind utility 可用于布局和局部覆盖。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。
 
 ## 开始使用
 
 - [介绍](https://xunrua.top/design-system/guides/introduction): 包的使用范围与限制。
+- [架构指南](https://xunrua.top/design-system/guides/architecture): 原生语义、组件单元、单视觉源、清单成熟度与真实 tarball 验证。
+- [组件设计方法](https://xunrua.top/design-system/guides/component-design): 从消费场景到实现、清单、同源示例和独立消费者的操作流程。
 - [快速入门](https://xunrua.top/design-system/guides/quick-start): 工作区安装、CSS 导入和 Button 用法。
 - [设计原则](https://xunrua.top/design-system/principles): 站点设计判据。
-- [框架集成](https://xunrua.top/design-system/guides/integration): Vite 与 TanStack Start 已验证，更多框架暂未开放。
+- [框架集成](https://xunrua.top/design-system/guides/integration): Vite、TanStack Start 与普通 CSS 的接入边界。
 - [组件目录](https://xunrua.top/design-system/specimens): 组件示例与公开契约。
 
 - [命令行](https://xunrua.top/design-system/guides/cli): 构建与打包命令及专用 CLI 的边界。
-- [版本记录](https://xunrua.top/design-system/guides/roadmap): 当前版本的能力变更与发布节奏。
+- [重建进度](https://xunrua.top/design-system/guides/roadmap): 首批五个 foundation 与仍未重建的 legacy 范围。
 
 ## 设计指南
 
@@ -29,6 +31,7 @@
 - [Checkbox](https://xunrua.top/design-system/specimens/checkbox)
 - [Dialog](https://xunrua.top/design-system/specimens/dialog)
 - [Input](https://xunrua.top/design-system/specimens/input)
+- [TextField](https://xunrua.top/design-system/specimens/text-field)
 - [Tabs](https://xunrua.top/design-system/specimens/tabs)
 
 ## 智能体

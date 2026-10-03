@@ -107,6 +107,7 @@ import { Route as DesignSystemSpecimensCommentSectionRouteImport } from './route
 import { Route as DesignSystemSpecimensDialogRouteImport } from './routes/design-system.specimens.dialog'
 import { Route as DesignSystemSpecimensInputRouteImport } from './routes/design-system.specimens.input'
 import { Route as DesignSystemSpecimensTabsRouteImport } from './routes/design-system.specimens.tabs'
+import { Route as DesignSystemSpecimensTextFieldRouteImport } from './routes/design-system.specimens.text-field'
 import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 
 const IndexRoute = IndexRouteImport.update({
@@ -608,6 +609,12 @@ const DesignSystemSpecimensTabsRoute =
     path: '/tabs',
     getParentRoute: () => DesignSystemSpecimensRoute,
   } as any)
+const DesignSystemSpecimensTextFieldRoute =
+  DesignSystemSpecimensTextFieldRouteImport.update({
+    id: '/text-field',
+    path: '/text-field',
+    getParentRoute: () => DesignSystemSpecimensRoute,
+  } as any)
 const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
   id: '/tweets/topics/$tag',
   path: '/tweets/topics/$tag',
@@ -707,6 +714,7 @@ export interface FileRoutesByFullPath {
   '/design-system/specimens/dialog': typeof DesignSystemSpecimensDialogRoute
   '/design-system/specimens/input': typeof DesignSystemSpecimensInputRoute
   '/design-system/specimens/tabs': typeof DesignSystemSpecimensTabsRoute
+  '/design-system/specimens/text-field': typeof DesignSystemSpecimensTextFieldRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -800,6 +808,7 @@ export interface FileRoutesByTo {
   '/design-system/specimens/dialog': typeof DesignSystemSpecimensDialogRoute
   '/design-system/specimens/input': typeof DesignSystemSpecimensInputRoute
   '/design-system/specimens/tabs': typeof DesignSystemSpecimensTabsRoute
+  '/design-system/specimens/text-field': typeof DesignSystemSpecimensTextFieldRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
   '/admin/notes': typeof AdminNotesIndexRoute
@@ -902,6 +911,7 @@ export interface FileRoutesById {
   '/design-system/specimens/dialog': typeof DesignSystemSpecimensDialogRoute
   '/design-system/specimens/input': typeof DesignSystemSpecimensInputRoute
   '/design-system/specimens/tabs': typeof DesignSystemSpecimensTabsRoute
+  '/design-system/specimens/text-field': typeof DesignSystemSpecimensTextFieldRoute
   '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -1005,6 +1015,7 @@ export interface FileRouteTypes {
     | '/design-system/specimens/dialog'
     | '/design-system/specimens/input'
     | '/design-system/specimens/tabs'
+    | '/design-system/specimens/text-field'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1098,6 +1109,7 @@ export interface FileRouteTypes {
     | '/design-system/specimens/dialog'
     | '/design-system/specimens/input'
     | '/design-system/specimens/tabs'
+    | '/design-system/specimens/text-field'
     | '/tweets/topics/$tag'
     | '/admin/galleries'
     | '/admin/notes'
@@ -1199,6 +1211,7 @@ export interface FileRouteTypes {
     | '/design-system/specimens/dialog'
     | '/design-system/specimens/input'
     | '/design-system/specimens/tabs'
+    | '/design-system/specimens/text-field'
     | '/tweets/topics/$tag'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1940,6 +1953,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignSystemSpecimensTabsRouteImport
       parentRoute: typeof DesignSystemSpecimensRoute
     }
+    '/design-system/specimens/text-field': {
+      id: '/design-system/specimens/text-field'
+      path: '/text-field'
+      fullPath: '/design-system/specimens/text-field'
+      preLoaderRoute: typeof DesignSystemSpecimensTextFieldRouteImport
+      parentRoute: typeof DesignSystemSpecimensRoute
+    }
     '/tweets/topics/$tag': {
       id: '/tweets/topics/$tag'
       path: '/tweets/topics/$tag'
@@ -2107,6 +2127,7 @@ interface DesignSystemSpecimensRouteChildren {
   DesignSystemSpecimensDialogRoute: typeof DesignSystemSpecimensDialogRoute
   DesignSystemSpecimensInputRoute: typeof DesignSystemSpecimensInputRoute
   DesignSystemSpecimensTabsRoute: typeof DesignSystemSpecimensTabsRoute
+  DesignSystemSpecimensTextFieldRoute: typeof DesignSystemSpecimensTextFieldRoute
   DesignSystemSpecimensIndexRoute: typeof DesignSystemSpecimensIndexRoute
 }
 
@@ -2121,6 +2142,7 @@ const DesignSystemSpecimensRouteChildren: DesignSystemSpecimensRouteChildren = {
   DesignSystemSpecimensDialogRoute: DesignSystemSpecimensDialogRoute,
   DesignSystemSpecimensInputRoute: DesignSystemSpecimensInputRoute,
   DesignSystemSpecimensTabsRoute: DesignSystemSpecimensTabsRoute,
+  DesignSystemSpecimensTextFieldRoute: DesignSystemSpecimensTextFieldRoute,
   DesignSystemSpecimensIndexRoute: DesignSystemSpecimensIndexRoute,
 }
 

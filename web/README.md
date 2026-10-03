@@ -12,7 +12,7 @@
 | 路由 | TanStack Router（文件路由） |
 | 状态管理 | Zustand + TanStack Query v5 |
 | 样式 | Tailwind CSS v4 |
-| UI 组件 | `@violet/ui` 可打包组件库（Radix UI + Tailwind v4 主题） |
+| UI 组件 | `@violet/ui`（native / Radix 行为、typed BEM recipe 与同源 CSS） |
 | 表单 | React Hook Form + Zod |
 | 富文本 | TipTap v3 |
 | 代码高亮 | Shiki / lowlight |
@@ -44,7 +44,9 @@ web/src/
 └── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
 ```
 
-`web/packages/ui/` 是可独立构建并打包的 pnpm workspace 包：`@violet/ui` 根入口导出 ESM 与类型声明；`@violet/ui/styles.css` 导出带 Tailwind v4 `@source` 的打包 CSS，须在宿主的 Tailwind CSS v4 之后导入。运行 `pnpm --filter @violet/ui build`，再运行 `pnpm --filter @violet/ui pack --pack-destination /tmp` 可生成供外部 React 19 + Tailwind v4 项目安装的 tarball；npm 发布尚未执行。营造法式 `/design-system/guides/quick-start` 提供独立项目安装说明。
+`web/packages/ui/` 是单一 pnpm workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。第一批基础单元为 Button、Input、Label、Textarea、TextField，其他组件保留兼容 API 并逐个重建。
+
+`@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威；旧营造法式只暂时展示同一正文与 integration 示例。
 
 后台 `DataTable` 默认让未调整的列随容器伸缩；右固定列按行内容撑开，操作按钮增减无需维护 `width`。时间等需完整展示的非固定列可设置 `fitContent: true`；拖拽列宽后记录当时的列布局，重置列设置可恢复自适应。
 
@@ -110,7 +112,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/profile` | 个人资料 |
 | `/login`, `/register`, `/forgot-password` | 认证 |
 | `/changelog` | 更新日志 |
-| `/design-system` | 营造法式组件库文档：入门、设计规范、可运行示例与智能体索引 |
+| `/design-system` | 旧营造法式：临时展示包内规范与现有 integration 示例 |
 | `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、Bot 斜杠命令补全、未读、Web Push 设置、账号级聊天外观）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
 | `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
 | `/notes`, `/notes/:id` | 公开笔记流（游标分页 + 标签筛选）与详情，复用文章渲染管线 |
@@ -141,7 +143,7 @@ API 基础配置见 `src/shared/api/`。
 ## 样式
 
 - Tailwind CSS v4，`src/styles.css` 是全局入口；基础语义 token、默认色板和 Tailwind 映射归 `packages/ui/src/styles/`，站点视觉方言、基础行为和转场归 `src/styles/`。
-- 组件专属样式放组件旁 `*.module.css`；运行时 DOM 的规则由所属 feature 持有样式文件。
+- 通用组件的结构、recipe、CSS 与测试放 `packages/ui/src/components/<name>/`；站点 feature 样式放组件旁 `*.module.css`，运行时 DOM 规则由所属 feature 持有。
 - 主题 token 分层：组件库的基础语义与主色源在 `packages/ui/src/styles/`，站点方言在 `src/styles/dialects/`。公开页面主容器挂 `.dialect-public`、后台等工具界面挂 `.dialect-tool`、灯箱等沉浸舞台挂 `.dialect-immersive`；页面消费 semantic token，不直接绑定色值。
 - 支持 v4 任意值简写（如 `max-w-50`）。
 - 暗色/亮色主题通过 `next-themes` 管理。

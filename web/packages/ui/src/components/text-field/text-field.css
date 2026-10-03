@@ -1,0 +1,38 @@
+@import "../input/input.css";
+@import "../label/label.css";
+
+@layer components {
+	.v-text-field {
+		display: flex;
+		min-inline-size: 0;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.v-text-field__description,
+	.v-text-field__error {
+		margin: 0;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+	}
+
+	.v-text-field__description {
+		color: var(--muted-foreground);
+	}
+
+	.v-text-field__error {
+		color: var(--destructive);
+	}
+
+	.v-text-field:has(.v-input:disabled) > .v-label {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	@media (forced-colors: active) {
+		.v-text-field__description,
+		.v-text-field__error {
+			color: CanvasText;
+		}
+	}
+}

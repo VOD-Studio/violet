@@ -57,7 +57,7 @@ export function DialogDocPage() {
 					<p className="text-xs text-muted-foreground">
 						源码{" "}
 						<code className="font-mono text-foreground">
-							web/packages/ui/src/dialog/dialog.tsx
+							web/packages/ui/src/components/dialog/dialog.tsx
 						</code>
 					</p>
 				</header>

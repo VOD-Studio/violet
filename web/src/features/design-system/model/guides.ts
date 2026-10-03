@@ -54,9 +54,21 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 				to: "/design-system/guides/quick-start",
 			},
 			{
+				id: "architecture",
+				title: "组件库架构",
+				scope: "组件单元、CSS 单一真相、成熟度与独立消费边界。",
+				to: "/design-system/guides/architecture",
+			},
+			{
+				id: "component-design",
+				title: "组件设计方法",
+				scope: "从消费场景到清单登记、行为验证与 tarball 交付。",
+				to: "/design-system/guides/component-design",
+			},
+			{
 				id: "integration",
 				title: "框架集成",
-				scope: "Vite 与 TanStack Start 已验证，其他框架暂未开放。",
+				scope: "当前 Vite、TanStack Start 与普通 CSS 的接入边界。",
 				to: "/design-system/guides/integration",
 			},
 			{
@@ -67,8 +79,8 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 			},
 			{
 				id: "roadmap",
-				title: "版本记录",
-				scope: "当前版本的能力变更与发布节奏。",
+				title: "重建进度",
+				scope: "基础单元与 legacy 的迁移范围及分发状态。",
 				to: "/design-system/guides/roadmap",
 			},
 		],
@@ -201,6 +213,13 @@ export const DESIGN_SYSTEM_CATALOG: readonly CatalogGroup[] = [
 						title: "Input",
 						to: "/design-system/specimens/input",
 						description: "输入框 · 受控输入与表单状态",
+						category: "library",
+					},
+					{
+						id: "text-field",
+						title: "TextField",
+						to: "/design-system/specimens/text-field",
+						description: "文本字段 · 名称、说明、校验状态与原生表单",
 						category: "library",
 					},
 					{

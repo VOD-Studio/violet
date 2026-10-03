@@ -41,38 +41,39 @@ const BUTTON_PROPS: PropRow[] = [
 		name: "loading",
 		type: "boolean",
 		defaultValue: "false",
-		meaning: "内置加载中状态；自动禁用、打上 aria-busy 并平滑替换前置图标或展示指示器。",
+		meaning: "自动禁用并设置 aria-busy；指示器覆盖原有图标槽或正文区域，保留占位。",
 	},
 	{
 		name: "loadingText",
 		type: "ReactNode",
 		defaultValue: "—",
 		meaning:
-			"处于 loading 态时展示的文案；提供时替换正文，省略时保留正文并在前置位展示旋转动画。",
+			"原生按钮加载时替换正文，可改变自然宽度；省略时保留原文占位与可访问名称。asChild 不注入该文案。",
 	},
 	{
 		name: "leftIcon",
 		type: "ReactNode",
 		defaultValue: "—",
-		meaning: "按钮前置图标插槽；加载时平滑替换为加载指示器以杜绝页面布局跳变。",
+		meaning: "按钮前置图标；加载指示器覆盖该槽位，原图标保留占位。asChild 不注入图标。",
 	},
 	{
 		name: "rightIcon",
 		type: "ReactNode",
 		defaultValue: "—",
-		meaning: "按钮后置图标插槽。",
+		meaning: "按钮后置图标。asChild 模式由子元素提供自己的内容。",
 	},
 	{
 		name: "asChild",
 		type: "boolean",
 		defaultValue: "false",
-		meaning: "基于 Radix Slot 将样式与属性赋予唯一子元素；导航跳转场景传入 Link。",
+		meaning:
+			"基于 Radix Slot 合并到唯一子元素；禁用与加载拦截子元素交互，自定义 Link 需透传属性和 ref。",
 	},
 	{
 		name: "disabled",
 		type: "boolean",
 		defaultValue: "false",
-		meaning: "原生 button 禁用属性；同时阻止 active 物理微沉与点击事件。",
+		meaning: "原生 button 禁用；asChild 同时表达 aria-disabled 并阻止点击与键盘激活。",
 	},
 	{
 		name: "type",
@@ -84,7 +85,7 @@ const BUTTON_PROPS: PropRow[] = [
 		name: "onClick / className",
 		type: "原生 button 属性",
 		defaultValue: "—",
-		meaning: "标准事件回调与额外布局类名；严禁通过 className 覆盖 variant 的颜色语义。",
+		meaning: "标准事件与额外类名；布局和局部覆盖用 utility，基础外观由组件 CSS 维护。",
 	},
 ];
 
@@ -123,13 +124,13 @@ export function ButtonDocPage() {
 						Button 按钮
 					</h1>
 					<p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
-						触发操作时用按钮，导航时用链接。基于 Violet 语义 Token
-						与静穆物理层级打造：顶边细微内高光与底部轻触感阴影、纯光学明度吸收按压反馈（无位移颤抖与缩放）、平滑加载动画（正文持续留存，指示器平滑展开或原位淡入淡出）与首选图标插槽。
+						触发操作时用按钮，导航时用链接。这是首批 foundation 组件：原生语义、类型化
+						BEM 变体与同一份 CSS，状态反馈使用颜色、描边和透明度。
 					</p>
 					<p className="text-xs text-muted-foreground">
 						源码
 						<code className="font-mono text-foreground">
-							web/packages/ui/src/button/button.tsx
+							web/packages/ui/src/components/button/button.tsx
 						</code>
 					</p>
 				</header>
@@ -143,7 +144,7 @@ export function ButtonDocPage() {
 						用法
 					</AnchoredHeading>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						从项目公共组件导入。下方按钮是可操作的，点击可体验按压微沉手感与状态计数。
+						从 @violet/ui 导入。下方按钮可直接操作，点击会更新状态计数。
 					</p>
 					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={6}>
 						<ButtonBasicDemo />
@@ -158,8 +159,6 @@ export function ButtonDocPage() {
 					>
 						按能力选择示例
 					</AnchoredHeading>
-
-					{/* 视觉层级 */}
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
@@ -182,8 +181,6 @@ export function ButtonDocPage() {
 							<ButtonVariantsDemo />
 						</CodeCard>
 					</div>
-
-					{/* 尺寸规格 */}
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
@@ -200,8 +197,6 @@ export function ButtonDocPage() {
 							<ButtonSizesDemo />
 						</CodeCard>
 					</div>
-
-					{/* 图标扩展 */}
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
@@ -211,14 +206,12 @@ export function ButtonDocPage() {
 							图标插槽 (Icons)
 						</AnchoredHeading>
 						<p className="text-sm leading-relaxed text-muted-foreground">
-							原生支持 leftIcon 与 rightIcon 传参，间距与缩放按按钮尺寸自动协调。
+							原生按钮支持 leftIcon 与 rightIcon；图标尺寸与间距跟随按钮尺寸。
 						</p>
 						<CodeCard code={iconsSource} language="tsx" lineNumbers collapseLines={6}>
 							<ButtonIconsDemo />
 						</CodeCard>
 					</div>
-
-					{/* 状态与加载 */}
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
@@ -228,15 +221,14 @@ export function ButtonDocPage() {
 							状态与加载 (Loading)
 						</AnchoredHeading>
 						<p className="text-sm leading-relaxed text-muted-foreground">
-							内置 loading 支持：处于加载中时自动禁用并设置
-							aria-busy；正文持续在场留存，指示器平滑展开或在图标槽位无缝淡入淡出。
+							加载时自动禁用并设置
+							aria-busy；原内容保留占位。已有图标槽时覆盖该槽位，没有时在按钮中央显示指示器。显式
+							loadingText 可以改变宽度；减弱动态时停止旋转。
 						</p>
 						<CodeCard code={statesSource} language="tsx" lineNumbers collapseLines={6}>
 							<ButtonStatesDemo />
 						</CodeCard>
 					</div>
-
-					{/* 链接模式 */}
 					<div className="space-y-3">
 						<AnchoredHeading
 							as="h3"
@@ -246,8 +238,8 @@ export function ButtonDocPage() {
 							作为导航链接 (asChild)
 						</AnchoredHeading>
 						<p className="text-sm leading-relaxed text-muted-foreground">
-							跳转页面使用 Link；asChild
-							只复用按钮外观与物理触感，不改变链接语义与无障碍树结构。
+							跳转页面使用 Link；asChild 保留子元素内容和链接语义。disabled 或 loading
+							会阻止导航和子元素激活 handler。
 						</p>
 						<CodeCard code={linkSource} language="tsx" lineNumbers collapseLines={6}>
 							<ButtonLinkDemo />
@@ -292,8 +284,8 @@ export function ButtonDocPage() {
 							Button 默认 type="button"，表单内主提交操作请显式设置 type="submit"。
 						</li>
 						<li className="border-l-2 border-border pl-4">
-							asChild 包裹链接时不应传 disabled 禁止跳转；应由调用方在 JSX
-							逻辑中条件渲染纯文本或原生按钮。
+							asChild 的自定义组件必须把 DOM 属性、事件和 ref
+							透传到真实元素；此模式不注入 leftIcon、rightIcon 或 loadingText。
 						</li>
 					</ul>
 				</section>

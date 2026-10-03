@@ -57,7 +57,7 @@ export function InputDocPage() {
 					<p className="text-xs text-muted-foreground">
 						源码{" "}
 						<code className="font-mono text-foreground">
-							web/packages/ui/src/input/input.tsx
+							web/packages/ui/src/components/input/input.tsx
 						</code>
 					</p>
 				</header>

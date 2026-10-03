@@ -57,7 +57,7 @@ export function TabsDocPage() {
 					<p className="text-xs text-muted-foreground">
 						源码{" "}
 						<code className="font-mono text-foreground">
-							web/packages/ui/src/tabs/tabs.tsx
+							web/packages/ui/src/components/tabs/tabs.tsx
 						</code>
 					</p>
 				</header>
