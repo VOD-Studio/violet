@@ -93,6 +93,8 @@ component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清
 
 `Button asChild` 把属性与样式交给唯一子元素。导航仍用链接；禁用或忙碌时，组件同时拦截子元素的交互 handler。自定义路由链接必须透传属性和 ref。此模式保留子元素内容，不插入 `leftIcon`、`rightIcon` 或 `loadingText`。
 
+`asChild` 同时划定类型边界。原生模式保留 `HTMLButtonElement` 的 ref、事件与表单属性；`asChild={true}` 使用 `HTMLElement` 的通用属性、ref 和事件，可接收链接的 object/callback ref。`href`、`target` 等子元素专属属性放在子元素上；需要访问链接专属属性的事件也放在链接上。React 19 的 callback ref cleanup 继续参与 Slot 的引用合并与卸载清理。
+
 TextField 将 Input 与 Label 组合成有名称的字段。它不接管值、校验规则或请求状态：
 
 ```tsx

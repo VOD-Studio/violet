@@ -327,6 +327,45 @@ describe("Button", () => {
 			expect(buttonRef).toHaveBeenLastCalledWith(null);
 		});
 
+		it("链接 object ref 与子元素 ref 都指向 anchor，并在卸载时清理", () => {
+			const buttonRef = createRef<HTMLAnchorElement>();
+			const childRef = createRef<HTMLAnchorElement>();
+			const { unmount } = render(
+				<Button asChild ref={buttonRef}>
+					<a href="/settings" ref={childRef}>
+						链接引用
+					</a>
+				</Button>,
+			);
+			const link = screen.getByRole("link", { name: "链接引用" });
+			expect(buttonRef.current).toBe(link);
+			expect(childRef.current).toBe(link);
+			expect(buttonRef.current?.getAttribute("href")).toBe("/settings");
+			unmount();
+			expect(buttonRef.current).toBeNull();
+			expect(childRef.current).toBeNull();
+		});
+
+		it("链接 callback ref 保留 React 19 cleanup，并清理合并的子 ref", () => {
+			const cleanup = vi.fn();
+			const buttonRef = vi.fn((_element: HTMLAnchorElement | null) => cleanup);
+			const childRef = createRef<HTMLAnchorElement>();
+			const { unmount } = render(
+				<Button asChild ref={buttonRef}>
+					<a href="/settings" ref={childRef}>
+						回调引用
+					</a>
+				</Button>,
+			);
+			const link = screen.getByRole("link", { name: "回调引用" });
+			expect(buttonRef).toHaveBeenCalledExactlyOnceWith(link);
+			expect(childRef.current).toBe(link);
+			unmount();
+			expect(cleanup).toHaveBeenCalledOnce();
+			expect(buttonRef).toHaveBeenCalledOnce();
+			expect(childRef.current).toBeNull();
+		});
+
 		it("asChild 保留子元素内容，不把 loadingText 或图标注入链接", () => {
 			render(
 				<Button

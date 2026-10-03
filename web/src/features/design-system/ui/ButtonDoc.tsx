@@ -82,10 +82,18 @@ const BUTTON_PROPS: PropRow[] = [
 		meaning: "原生 button 类型；默认为安全防触发表单提交的 button 类型。",
 	},
 	{
-		name: "onClick / className",
-		type: "原生 button 属性",
+		name: "ref",
+		type: "Ref<HTMLButtonElement> | Ref<HTMLElement>",
 		defaultValue: "—",
-		meaning: "标准事件与额外类名；布局和局部覆盖用 utility，基础外观由组件 CSS 维护。",
+		meaning:
+			"原生模式指向 button；asChild 指向子元素，可传 anchor ref。保留 object ref 与 callback ref 的卸载清理。",
+	},
+	{
+		name: "onClick / className",
+		type: "button 属性 / HTMLElement 通用属性",
+		defaultValue: "—",
+		meaning:
+			"原生模式事件的 currentTarget 为 HTMLButtonElement，asChild 为 HTMLElement；额外类名用于布局与局部覆盖。",
 	},
 ];
 
@@ -241,6 +249,11 @@ export function ButtonDocPage() {
 							跳转页面使用 Link；asChild 保留子元素内容和链接语义。disabled 或 loading
 							会阻止导航和子元素激活 handler。
 						</p>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							asChild 的 ref 指向真实子元素，事件的 currentTarget 声明为
+							HTMLElement；href、target
+							等属性放在链接上。需要访问链接专属属性时，将事件 handler 也放在链接上。
+						</p>
 						<CodeCard code={linkSource} language="tsx" lineNumbers collapseLines={6}>
 							<ButtonLinkDemo />
 						</CodeCard>
@@ -253,11 +266,11 @@ export function ButtonDocPage() {
 						id="button-api"
 						className="text-xl font-bold text-foreground"
 					>
-						API 参考
+						API 契约
 					</AnchoredHeading>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						下表列出 Button 扩展属性与关键语义定义；其余标准 HTML button
-						属性均完全支持。
+						下表列出 Button 扩展属性与关键语义定义。原生模式支持标准 button
+						属性；asChild 模式使用 HTMLElement 的通用属性，子元素专属属性由子元素接收。
 					</p>
 					<ApiTable
 						title="Button Props"

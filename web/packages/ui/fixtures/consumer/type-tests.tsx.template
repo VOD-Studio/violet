@@ -3,8 +3,29 @@ import { Button } from "@violet/ui/button";
 import { Modal } from "@violet/ui/legacy";
 import { TextField } from "@violet/ui/text-field";
 import { buttonVariants, type ButtonVariantProps } from "@violet/ui/variants";
+import { createRef, type Ref } from "react";
 
-const button: ButtonProps = { variant: "primary", onClick: (event) => event.currentTarget.focus() };
+const button: ButtonProps = { variant: "primary", onClick: (event) => {
+	const target: HTMLButtonElement = event.currentTarget;
+	target.disabled = true;
+	// @ts-expect-error 原生按钮事件不能被放宽为 any 或链接事件。
+	event.currentTarget.href;
+} };
+const anchorRef = createRef<HTMLAnchorElement>();
+const callbackRef: Ref<HTMLAnchorElement> = (anchor) => { anchor?.focus(); };
+export const linkedButton = <Button asChild ref={anchorRef} onClick={(event) => {
+	const target: HTMLElement = event.currentTarget;
+	target.focus();
+	// @ts-expect-error asChild 不保证节点拥有 button 属性。
+	event.currentTarget.disabled;
+}}><a href="/settings">设置</a></Button>;
+const slottedProps: ButtonProps = { asChild: true, ref: callbackRef };
+export const callbackButton = <Button {...slottedProps}><a href="/settings">设置</a></Button>;
+// @ts-expect-error 原生模式拒绝 anchor ref。
+export const invalidNativeRef = <Button ref={anchorRef}>保存</Button>;
+// @ts-expect-error 子元素的 href 应写在子元素上。
+const invalidSlottedProps: ButtonProps = { asChild: true, href: "/settings" };
+void invalidSlottedProps;
 const field: TextFieldProps = { label: "邮箱", type: "email", ref: (input) => input?.focus() };
 const recipe: ButtonVariantProps = { variant: "primary" };
 buttonVariants(recipe);

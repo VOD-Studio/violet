@@ -48,6 +48,8 @@ web/packages/ui/src/components/<name>/
 
 复合组件先确定 ref 与 `className` 落在哪个元素。TextField 的两者都落 input，`classNames.root` 才是外壳。显式属性优先于组件内部默认值；事件合并要明确 `preventDefault` 是否取消内部行为。
 
+公开类型必须与这些 DOM 归属一致。Button 的原生模式使用 `HTMLButtonElement`，asChild 模式使用 `HTMLElement`，不能把链接事件声明为 button 事件。类型检查同时覆盖合法的 anchor ref 和应被拒绝的原生按钮 anchor ref；运行测试验证合并后的实际节点与卸载清理。
+
 功能圆角最大 16px；浮起只使用规定的软影。普通 hover、loading、面板切换通过颜色、描边、透明度反馈，遵守减弱动态。迁移一个 legacy 单元不等于其他旧组件也满足了这些规则。
 
 ## 登记公开入口

@@ -5,12 +5,7 @@ import type * as React from "react";
 import { Children, cloneElement, isValidElement } from "react";
 import { type ButtonVariantProps, buttonVariants } from "./styles";
 
-/**
- * 原生按钮属性与视觉配方；ref 指向原生 button，asChild 时由 Slot 转交子元素。
- */
-export interface ButtonProps extends React.ComponentProps<"button">, ButtonVariantProps {
-	/** 将属性与 ref 合并到唯一子元素；自定义组件必须透传属性与 ref。 */
-	asChild?: boolean;
+interface ButtonOptions extends ButtonVariantProps {
 	/** 加载时禁止激活并保留正文占位；asChild 保留子元素自己的内容。 */
 	loading?: boolean;
 	/** 原生按钮加载时替换正文；新文案的自然宽度可能不同。 */
@@ -18,6 +13,23 @@ export interface ButtonProps extends React.ComponentProps<"button">, ButtonVaria
 	leftIcon?: React.ReactNode;
 	rightIcon?: React.ReactNode;
 }
+
+interface NativeButtonProps extends React.ComponentProps<"button">, ButtonOptions {
+	asChild?: false;
+}
+
+interface AsChildButtonProps extends React.HTMLAttributes<HTMLElement>, ButtonOptions {
+	/** 将属性与 ref 合并到唯一子元素；自定义组件必须透传属性与 ref。 */
+	asChild: true;
+	ref?: React.Ref<HTMLElement>;
+	disabled?: boolean;
+	type?: "button" | "submit" | "reset";
+}
+
+/**
+ * 原生模式的 ref 与事件指向 button；asChild 模式指向子元素，公开 HTMLElement 契约。
+ */
+export type ButtonProps = NativeButtonProps | AsChildButtonProps;
 
 type SlottedButtonProps = React.HTMLAttributes<HTMLElement> & {
 	disabled?: boolean;
@@ -31,7 +43,7 @@ export function Button({
 	className,
 	variant = "default",
 	size = "default",
-	asChild = false,
+	asChild,
 	loading = false,
 	loadingText,
 	leftIcon,
@@ -92,22 +104,22 @@ export function Button({
 			onClickCapture: (event) => {
 				if (guardClick(event)) return;
 				child.props.onClickCapture?.(event);
-				onClickCapture?.(event as React.MouseEvent<HTMLButtonElement>);
+				onClickCapture?.(event);
 			},
 			onAuxClickCapture: (event) => {
 				if (guardClick(event)) return;
 				child.props.onAuxClickCapture?.(event);
-				onAuxClickCapture?.(event as React.MouseEvent<HTMLButtonElement>);
+				onAuxClickCapture?.(event);
 			},
 			onKeyDownCapture: (event) => {
 				if (guardKey(event)) return;
 				child.props.onKeyDownCapture?.(event);
-				onKeyDownCapture?.(event as React.KeyboardEvent<HTMLButtonElement>);
+				onKeyDownCapture?.(event);
 			},
 			onKeyUpCapture: (event) => {
 				if (guardKey(event)) return;
 				child.props.onKeyUpCapture?.(event);
-				onKeyUpCapture?.(event as React.KeyboardEvent<HTMLButtonElement>);
+				onKeyUpCapture?.(event);
 			},
 		});
 
