@@ -130,7 +130,7 @@ export function SpecimensIndex() {
 									<div className="space-y-1">
 										<AnchoredHeading
 											as="h3"
-											id="{section.title}"
+											id={section.title}
 											className="text-base font-semibold text-foreground"
 										>
 											{section.title}
@@ -165,7 +165,7 @@ export function SpecimensIndex() {
 									<div>
 										<AnchoredHeading
 											as="h3"
-											id="{section.name}"
+											id={section.name}
 											className="font-semibold text-foreground"
 										>
 											{section.name}
