@@ -23,6 +23,11 @@
 			<div class="preview-scope">
 				<button id="plain-scoped-button" type="button" class="v-button v-button--primary">局部主题</button>
 			</div>
+			<form id="plain-checkbox-form">
+				<label for="plain-checkbox" class="v-label">订阅更新</label>
+				<input id="plain-checkbox" type="checkbox" name="updates" value="weekly" checked class="v-checkbox v-checkbox--primary" />
+				<button type="reset" class="v-button">重置选择</button>
+			</form>
 		</main>
 	</body>
 </html>

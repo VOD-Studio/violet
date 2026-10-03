@@ -1,8 +1,9 @@
-import { Input, Label, Textarea, type ButtonProps, type TextFieldProps } from "@violet/ui";
+import { Input, Label, Textarea, type ButtonProps, type CheckboxProps, type TextFieldProps } from "@violet/ui";
 import { Button } from "@violet/ui/button";
+import { Checkbox } from "@violet/ui/checkbox";
 import { Modal } from "@violet/ui/legacy";
 import { TextField } from "@violet/ui/text-field";
-import { buttonVariants, type ButtonVariantProps } from "@violet/ui/variants";
+import { buttonVariants, checkboxVariants, type ButtonVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
 
 const button: ButtonProps = { variant: "primary", onClick: (event) => {
@@ -34,3 +35,23 @@ buttonVariants({ variant: "primary", className: "consumer-class" });
 buttonVariants({ variant: "unknown" });
 export const example = <><Button {...button}>保存</Button><TextField {...field} /><Input /><Label>名称</Label><Textarea /></>;
 export const legacy = Modal;
+
+const checkbox: CheckboxProps = {
+	ref: createRef<HTMLButtonElement>(), name: "updates", value: "weekly", required: true,
+	defaultChecked: "indeterminate", onCheckedChange: (checked) => {
+		const state: boolean | "indeterminate" = checked;
+		void state;
+	},
+};
+export const checkboxExample = <Checkbox {...checkbox} aria-label="订阅更新" />;
+checkboxVariants({ variant: "primary", size: "lg", className: "consumer-class" });
+// @ts-expect-error Checkbox 的 ref 指向 button。
+export const invalidCheckboxRef = <Checkbox ref={createRef<HTMLInputElement>()} />;
+// @ts-expect-error 指示器由组件维护，命名应使用 Label 或 aria-label。
+export const invalidCheckboxChildren = <Checkbox>更新</Checkbox>;
+// @ts-expect-error Checkbox 不提供 asChild。
+export const invalidCheckboxSlot = <Checkbox asChild />;
+// @ts-expect-error Checkbox 的激活不能提交外层表单。
+export const invalidCheckboxSubmit = <Checkbox type="submit" />;
+// @ts-expect-error Checkbox 不接受未定义的视觉变体。
+checkboxVariants({ variant: "unknown" });

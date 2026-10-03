@@ -6,7 +6,7 @@
 
 - 所有组件放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、唯一组件 CSS、入口和测试就近维护。`legacy.ts` 只汇总兼容导出，不放第二份实现。
 - `component-manifest.json` 是入口、CSS、文档与成熟度的清单。变更后执行 `sync`，再用只读 `check` 检查派生文件；不手工维护第二套导出列表。
-- 首批 foundation 为 Button、Input、Label、Textarea、TextField，其余标记 legacy。新架构组件只在 CSS 定义基础外观；有变体时的 `styles.ts` 只映射类型化 BEM 类名，无变体不建立空 recipe。旧组件迁移前仍有兼容样式，不宣称全库已经统一。
+- 成熟度以清单的 foundation / legacy 状态为准，不另维护组件列表。新架构组件只在 CSS 定义基础外观；有变体时的 `styles.ts` 只映射类型化 BEM 类名，无变体不建立空 recipe。旧组件迁移前仍有兼容样式，不宣称全库已经统一。
 - 组件使用原生控件或 Radix 的真实能力。原生属性、ref、表单行为、键盘行为与事件取消语义必须完整保留；增加抽象要有实际需求和消费方，不预建空 provider、engine 或层级目录。
 - `src/lib/` 只放真实复用。通用 token 与字体默认值在 `src/styles/`；站点字体、业务逻辑和装饰动效留在宿主。
 

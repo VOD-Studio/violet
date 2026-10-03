@@ -26,7 +26,7 @@ export function CheckboxTriStateDemo() {
 
 	return (
 		<div className="flex justify-center">
-			<div className="w-full max-w-sm space-y-3 rounded-xl border border-border/70 bg-card/60 p-4 shadow-xs">
+			<div className="w-full max-w-sm space-y-3 rounded-xl border border-border/70 bg-card/60 p-4">
 				<div className="flex items-center gap-2.5 border-b border-border/40 pb-3">
 					<Checkbox
 						id="select-all"

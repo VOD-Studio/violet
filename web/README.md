@@ -44,7 +44,7 @@ web/src/
 └── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
 ```
 
-`web/packages/ui/` 是单一 pnpm workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。第一批基础单元为 Button、Input、Label、Textarea、TextField，其他组件保留兼容 API 并逐个重建。
+`web/packages/ui/` 是单一 pnpm workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。当前基础单元为 Button、Checkbox、Input、Label、Textarea、TextField，其他组件保留兼容 API 并逐个重建。
 
 `@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威；旧营造法式只暂时展示同一正文与 integration 示例。
 

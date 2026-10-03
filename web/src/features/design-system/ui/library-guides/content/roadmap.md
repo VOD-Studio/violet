@@ -1,11 +1,11 @@
 ## 当前重建范围
 
-2026 年 10 月 2 日的架构批次保持包名 `@violet/ui` 和现有根入口。包版本仍以 package.json 为准，文档日期不表示已经发布了新版本。
+2026 年 10 月 3 日的进度保持包名 `@violet/ui` 和现有根入口。包版本仍以 package.json 为准，文档日期不表示已经发布了新版本。
 
 | 状态 | 单元 | 当前约束 |
 | --- | --- | --- |
-| foundation | Button、Input、Label、Textarea、TextField | 使用新组件单元、typed BEM recipe 与同源 CSS；补齐 native / ref / SSR / 消费契约 |
-| legacy | 清单中的其他组件，包括 Dialog、Tabs、Checkbox | 保留现有 API，目录统一；行为、视觉、双轨样式逐个迁移 |
+| foundation（6） | Button、Checkbox、Input、Label、Textarea、TextField | 使用新组件单元、typed BEM recipe 与同源 CSS；补齐 native / ref / SSR / 消费契约 |
+| legacy（36） | 清单中的其他组件，包括 Dialog、Tabs | 保留现有 API，目录统一；行为、视觉、双轨样式逐个迁移 |
 
 `web/packages/ui/component-manifest.json` 是单元状态与公开路径的事实源。`@violet/ui/legacy` 是兼容导出入口，组件实现仍放在各自的 `src/components/<name>/`，没有副本。
 
@@ -15,7 +15,7 @@
 
 按真实消费需要挑一个 legacy 单元。先记录现有调用与状态表，补键盘、焦点、事件、ref 及表单契约，再统一 recipe 与 CSS。用同源示例解释变化，构建并安装 tarball 后检查依赖图；达到验收条件才修改清单状态。
 
-普通圆角、投影与动效按[布局规格](/design-system/layout)和[动效章程](/design-system/motion)收敛。第一批基础单元遵从这些约束，不代表全部 legacy 视觉已重建。
+普通圆角、投影与动效按包内[组件设计流程](/design-system/guides/component-design)收敛。基础单元遵从这些约束，不代表全部 legacy 视觉已重建。
 
 ## 分发与尚未交付的能力
 

@@ -65,7 +65,7 @@ export function SpecimensIndex() {
 				<DesignSystemDocHeader
 					num="壹"
 					title="组件目录"
-					scope="从 @violet/ui 导出的组件可通过构建后的 tarball 安装到独立 React 项目；站点私有套件只供对应业务页面调用。首批 foundation 为 Button、Input、Label、Textarea、TextField，其余仍是 legacy。各用法页的预览与复制代码来自同一示例文件。"
+					scope="从 @violet/ui 导出的组件可通过构建后的 tarball 安装到独立 React 项目；站点私有套件只供对应业务页面调用。当前 foundation 为 Button、Checkbox、Input、Label、Textarea、TextField，其余仍是 legacy。各用法页的预览与复制代码来自同一示例文件。"
 				/>
 				<GuideTocContent>
 					<section aria-labelledby="package-components" className="space-y-5">

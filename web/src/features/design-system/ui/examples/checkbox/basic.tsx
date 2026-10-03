@@ -10,7 +10,7 @@ export function CheckboxBasicDemo() {
 				<Checkbox
 					id="basic-terms"
 					checked={checked}
-					onCheckedChange={(val) => setChecked(Boolean(val))}
+					onCheckedChange={(val) => setChecked(val === true)}
 				/>
 				<Label
 					htmlFor="basic-terms"

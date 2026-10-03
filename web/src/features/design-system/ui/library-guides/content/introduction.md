@@ -17,7 +17,7 @@ export function ProfileForm() {
 
 ## 先确认组件状态
 
-第一批重建单元是 Button、Input、Label、Textarea、TextField，清单中标记为 `foundation`。其余公开组件保留原 API 并标为 `legacy`；它们仍能被现有页面使用，行为与视觉需要逐个迁移。状态以 `web/packages/ui/component-manifest.json` 为准。
+当前 6 个重建单元是 Button、Checkbox、Input、Label、Textarea、TextField，清单中标记为 `foundation`。其余 36 个公开单元保留原 API 并标为 `legacy`；它们仍能被现有页面使用，行为与视觉需要逐个迁移。状态以 `web/packages/ui/component-manifest.json` 为准。
 
 新单元以 native 或 Radix 承担行为，typed recipe 选择 BEM 类，组件 CSS 表达视觉。React 与纯 HTML 复用同一份基础样式。legacy 单元保留原 recipe 与兼容 CSS，尚未完成这一统一。
 

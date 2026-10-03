@@ -2,7 +2,6 @@
 export * from "./components/badge/index";
 export * from "./components/card/index";
 export * from "./components/chart/index";
-export * from "./components/checkbox/index";
 export * from "./components/color-picker/index";
 export * from "./components/command/index";
 export * from "./components/confirm-dialog/index";

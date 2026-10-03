@@ -79,8 +79,8 @@ try {
 	assert.equal(ssr.status, 0, "Installed tarball SSR failed.");
 	const forbidden = /(?:^|\/)(?:motion|framer-motion|recharts|sonner|input-otp)(?:\/|@|$)/;
 	const graphs = {};
-	for (const [name, entry] of [["root-button", '@violet/ui'], ["leaf-button", '@violet/ui/button'], ["variants", '@violet/ui/variants']]) {
-		const code = name === "variants" ? `import { buttonVariants } from "${entry}"; console.log(buttonVariants({ variant: "primary" }));` : `import { Button } from "${entry}"; console.log(Button);`;
+	for (const [name, entry, symbol] of [["root-button", '@violet/ui', "Button"], ["leaf-button", '@violet/ui/button', "Button"], ["root-checkbox", '@violet/ui', "Checkbox"], ["leaf-checkbox", '@violet/ui/checkbox', "Checkbox"], ["variants", '@violet/ui/variants']]) {
+		const code = name === "variants" ? `import { buttonVariants, checkboxVariants } from "${entry}"; console.log(buttonVariants({ variant: "primary" }), checkboxVariants({ size: "lg" }));` : `import { ${symbol} } from "${entry}"; console.log(${symbol});`;
 		const result = await build({ absWorkingDir: consumerRoot, stdin: { contents: code, resolveDir: consumerRoot, sourcefile: `${name}.ts` }, bundle: true, treeShaking: true, minify: true, write: false, metafile: true, format: "esm", platform: "browser", logLevel: "silent" });
 		const reachableInputs = Object.values(result.metafile.outputs).flatMap((output) => Object.entries(output.inputs).filter(([, info]) => info.bytesInOutput > 0).map(([path]) => path));
 		assert.ok(!reachableInputs.some((path) => forbidden.test(path)), `${name} retains unrelated component dependencies.`);
@@ -91,7 +91,7 @@ try {
 	}
 	const css = {};
 	const cssText = {};
-	for (const [name, imports] of [["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["text-field", ["tokens.css", "components/text-field.css"]]]) {
+	for (const [name, imports] of [["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["checkbox", ["tokens.css", "components/checkbox.css"]], ["text-field", ["tokens.css", "components/text-field.css"]]]) {
 		const result = await build({ absWorkingDir: consumerRoot, stdin: { contents: imports.map((path) => `@import "@violet/ui/${path}";`).join("\n"), resolveDir: consumerRoot, loader: "css", sourcefile: `${name}.css` }, bundle: true, minify: true, write: false, logLevel: "silent" });
 		const output = result.outputFiles[0].contents;
 		assert.ok(!/@(?:theme|source|utility|apply)\b/.test(result.outputFiles[0].text), "Standalone CSS requires Tailwind processing.");
@@ -100,6 +100,9 @@ try {
 		writeFileSync(resolve(consumerRoot, `${name}.css`), output);
 	}
 	assert.ok(css.button.bytes < css.all.bytes, "Per-component CSS did not reduce the style payload.");
+	assert.ok(css.checkbox.bytes < css.all.bytes, "Checkbox CSS did not reduce the style payload.");
+	assert.match(cssText.checkbox, /\.v-checkbox\s*\{/);
+	assert.match(cssText.checkbox, /\.v-checkbox__indicator\s*\{/);
 	assert.ok(css["text-field"].bytes < css.all.bytes, "TextField CSS did not reduce the style payload.");
 	for (const className of ["v-input", "v-label", "v-text-field"]) {
 		const selector = new RegExp(`(?:^|[{};])\\s*\\.${className}\\s*\\{`, "g");

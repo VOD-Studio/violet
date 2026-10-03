@@ -5,7 +5,7 @@ description: 在 violet 仓库使用、扩展 @violet/ui 或编写包内规范�
 
 # 使用与扩展 @violet/ui
 
-1. 先读 `web/packages/ui/component-manifest.json`。Button、Input、Label、Textarea、TextField 是 foundation，其余组件是 legacy；兼容导出不代表已经重建。所有实现统一放在 `src/components/<name>/`，`legacy.ts` 只有导出汇总。
+1. 先读 `web/packages/ui/component-manifest.json`，按 status 区分 foundation 与 legacy，不另维护组件列表；兼容导出不代表已经重建。所有实现统一放在 `src/components/<name>/`，`legacy.ts` 只有导出汇总。
 2. 编辑前端代码前读 `frontend-conventions`；改 className 前读 `tailwind-canonical-classes`。先读 `web/packages/ui/docs/architecture.md` 与 `component-design.md`，从需求、原生语义与可验证契约确定设计；旧营造法式不作为规范依据。站点业务组件留在 feature，跨 feature 的通用组件才进入库。
 3. 从具体消费场景确定组件的 HTML 语义、属性归属、状态、键盘行为和组合方式。使用原生控件或 Radix；文件在组件目录就近维护。`lib` 只提取真实复用，不预建没有消费方的 provider、polymorphic engine 或空目录。
 4. foundation 有变体时的 `styles.ts` 只映射类型化 BEM 类名，无变体不建立空 recipe；基础外观只有一份组件 CSS，React 与 HTML 共用。Tailwind utility 用于布局和局部覆盖。旧组件迁移前保留兼容样式，避免把两套外观误称为已经统一。包使用系统字体默认值，站点字体和装饰动效留在 `web/src/styles/site-theme.css`。

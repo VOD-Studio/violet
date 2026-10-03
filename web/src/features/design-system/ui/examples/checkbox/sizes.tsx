@@ -1,6 +1,6 @@
 import { Checkbox, Label } from "@violet/ui";
 
-/** 复选框尺寸梯度：sm、default 与 lg 三档点击区域。 */
+/** sm、default 与 lg 提供三档盒面尺寸，标签也可触发切换。 */
 export function CheckboxSizesDemo() {
 	return (
 		<div className="flex flex-wrap items-center justify-center gap-8">

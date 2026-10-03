@@ -2,7 +2,7 @@
 @import "./components/badge/badge.css" layer(components);
 @import "./components/button/button.css";
 @import "./components/card/card.css" layer(components);
-@import "./components/checkbox/checkbox.css" layer(components);
+@import "./components/checkbox/checkbox.css";
 @import "./components/input/input.css";
 @import "./components/label/label.css";
 @import "./components/separator/separator.css" layer(components);

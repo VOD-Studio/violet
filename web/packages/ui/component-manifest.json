@@ -28,9 +28,10 @@
 		},
 		{
 			"name": "checkbox",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/checkbox/index.ts",
-			"css": "src/components/checkbox/checkbox.css"
+			"css": "src/components/checkbox/checkbox.css",
+			"documentation": "web/packages/ui/docs/components/checkbox.md"
 		},
 		{
 			"name": "color-picker",
@@ -255,6 +256,10 @@
 		{
 			"entry": "src/components/button/styles.ts",
 			"symbols": ["type ButtonVariantProps", "buttonVariants"]
+		},
+		{
+			"entry": "src/components/checkbox/styles.ts",
+			"symbols": ["type CheckboxVariantProps", "checkboxVariants"]
 		}
 	],
 	"styles": {

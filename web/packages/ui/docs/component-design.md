@@ -43,6 +43,7 @@ web/packages/ui/src/components/<name>/
 | Button 正常 / disabled | 调用方 | 原生 button 禁用；链接模式阻止交互并表达不可用 |
 | Button loading | 调用方 | `aria-busy`、`data-loading`；点击和子 handler 不触发 |
 | Input 输入 / readonly / required | 原生控件与调用方 | 保留值、事件、ref 和表单提交语义 |
+| Checkbox 选择与表单复位 | 组件或调用方 | 可见状态与 FormData 一致；尊重 reset 取消，校验焦点落可见控件 |
 | TextField invalid | 调用方 | `aria-invalid`；错误显示时才加入 describedby |
 | Dialog 打开 / 关闭 | Radix 或调用方 | 关闭语义、焦点回退和滚动边界按真实能力验收 |
 

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { Button, TextField } from "@violet/ui";
+import { Button, Checkbox, TextField } from "@violet/ui";
 import { Button as LeafButton } from "@violet/ui/button";
-import { buttonVariants } from "@violet/ui/variants";
+import { Checkbox as LeafCheckbox } from "@violet/ui/checkbox";
+import { buttonVariants, checkboxVariants } from "@violet/ui/variants";
 import { renderToString } from "react-dom/server";
 
 const root = renderToString(<Button variant="primary">保存</Button>);
@@ -16,4 +17,15 @@ const field = renderToString(<TextField id="email" label="邮箱" description="�
 assert.match(field, /for="email"/);
 assert.match(field, /aria-describedby="email-description"/);
 assert.match(buttonVariants({ variant: "primary" }), /v-button--primary/);
-console.log("Independent root/leaf SSR and TextField semantics passed.");
+const checkbox = renderToString(<form><Checkbox id="updates" name="updates" value="weekly" defaultChecked required aria-label="订阅更新" /></form>);
+assert.equal(checkbox, renderToString(<form><LeafCheckbox id="updates" name="updates" value="weekly" defaultChecked required aria-label="订阅更新" /></form>));
+assert.match(checkbox, /role="checkbox"/);
+assert.match(checkbox, /aria-checked="true"/);
+assert.match(checkbox, /name="updates"/);
+assert.match(checkbox, /value="weekly"/);
+const mixed = renderToString(<Checkbox defaultChecked="indeterminate" aria-label="选择全部" />);
+assert.match(mixed, /aria-checked="mixed"/);
+assert.match(checkboxVariants({ variant: "primary" }), /v-checkbox--primary/);
+const external = renderToString(<LeafCheckbox form="external" name="option" defaultChecked aria-label="表单外选择" />);
+assert.match(external, /<button\b[^>]*form="external"/);
+console.log("Independent root/leaf SSR, TextField and Checkbox semantics passed.");

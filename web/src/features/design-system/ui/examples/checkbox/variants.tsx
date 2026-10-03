@@ -1,6 +1,6 @@
 import { Checkbox, Label } from "@violet/ui";
 
-/** 复选框视觉变体：default 主要语义与 primary 固定主色。 */
+/** default 与 primary 使用两组可替换的语义 token。 */
 export function CheckboxVariantsDemo() {
 	return (
 		<div className="flex flex-wrap items-center justify-center gap-8">
@@ -13,7 +13,7 @@ export function CheckboxVariantsDemo() {
 			<div className="flex items-center gap-2.5">
 				<Checkbox id="demo-var-primary" variant="primary" defaultChecked />
 				<Label htmlFor="demo-var-primary" className="cursor-pointer select-none">
-					Primary 主色专属
+					Primary 品牌语义色
 				</Label>
 			</div>
 		</div>
