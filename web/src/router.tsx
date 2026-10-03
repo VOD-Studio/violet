@@ -61,13 +61,14 @@ export const getRouter = () => {
 
 				// 后台和「浏览」次级入口不做页面 View Transition：这些入口共享
 				// 同一个 Header 选中形态，内容切换不应把导航一起带入页面动画。
-				const isDs = (p?: string) => Boolean(p?.startsWith("/design-system"));
+				const isUiDocs = (path?: string) =>
+					path === "/ui" || Boolean(path?.startsWith("/ui/"));
 				if (
 					isAdminRoute(to) ||
 					(from && isAdminRoute(from)) ||
 					isSecondaryNavRoute(to) ||
 					(from && isSecondaryNavRoute(from)) ||
-					(isDs(to) && isDs(from))
+					(isUiDocs(to) && isUiDocs(from))
 				) {
 					return false;
 				}

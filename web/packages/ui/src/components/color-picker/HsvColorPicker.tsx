@@ -10,10 +10,7 @@ export interface HsvColorPickerProps {
 }
 
 /**
- * HsvColorPicker - 自绘 HSV 选色器（饱和度/明度面板 + 色相条 + hex 输入）。
- *
- * 不依赖原生 input[type=color]。营造法式色板生成器是第二个消费方，
- * 自 ColorSwatch 内部用法导出复用。
+ * 自绘 HSV 选色器，包含饱和度/明度面板、色相条与 hex 输入。
  */
 export function HsvColorPicker({ value, onChange }: HsvColorPickerProps) {
 	const [hsv, setHsv] = useState(() => hexToHsv(value));

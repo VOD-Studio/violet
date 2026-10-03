@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Archive,
 	BookOpen,
-	DraftingCompass,
+	Component,
 	FlaskConical,
 	FolderKanban,
 	House,
@@ -131,9 +131,9 @@ export const NAV_ITEMS: NavItem[] = [
 	},
 	{
 		type: "route",
-		label: "营造法式",
-		to: "/design-system",
-		icon: DraftingCompass,
-		description: "查阅站点的用色用料与营造章程",
+		label: "组件库",
+		to: "/ui",
+		icon: Component,
+		description: "查阅 violet/ui 组件用法与开发文档",
 	},
 ];

@@ -29,7 +29,7 @@ export interface TreeNavItem {
 export interface TreeNavGroup {
 	/** 分组唯一标识 */
 	id: string;
-	/** 分组标题（如 '卷一 · 纲纪准则'） */
+	/** 分组标题（如 '入门'） */
 	title: string;
 	/** 分组下的导航条目 */
 	items: TreeNavItem[];

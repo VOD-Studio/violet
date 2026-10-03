@@ -19,7 +19,7 @@
 
 ## 建立组件单元
 
-落笔前读取仓库的 `frontend-conventions` 与 `violet-ui` skill；写 Tailwind 类时读取 `tailwind-canonical-classes`。查重范围包括包内组件与真实消费方。组件语义、状态和视觉规范从需求与契约确定，不从旧站点案例反推。
+落笔前读取仓库的 `frontend-conventions` 与 `violet-ui` skill；写 Tailwind 类时读取 `tailwind-canonical-classes`。查重范围包括包内组件与真实消费方。组件语义、状态和视觉规范从需求与契约确定。
 
 ```text
 web/packages/ui/src/components/<name>/
@@ -30,7 +30,7 @@ web/packages/ui/src/components/<name>/
   __tests__/     行为与消费契约
 ```
 
-组件只有两三个文件时保持平铺，测试与实现共置；站点示例放 `web/src/features/design-system/ui/examples/<name>/`，不能把业务请求、路由和 validation schema 放进包。legacy 组件也放在 `src/components/<name>/`，迁移状态由清单表达，不另建一套目录。
+组件只有两三个文件时保持平铺，测试与实现共置；站点示例放 `web/src/features/ui-docs/ui/examples/<name>/`，不能把业务请求、路由和 validation schema 放进包。legacy 组件也放在 `src/components/<name>/`，迁移状态由清单表达，不另建一套目录。
 
 没有变体时直接使用稳定 BEM 类名，不建立空 recipe。需要 variant / size 时，recipe 负责选择 `.v-<name>`、`.v-<name>--<variant>` 等稳定类名。尺寸、色值、状态反馈统一写在组件 CSS，使用语义 token。组件 props 从原生属性或行为 primitive 推导，variant 类型从 recipe 推导，避免在 props、文档和样式中各维护一份枚举。
 
@@ -82,7 +82,7 @@ import basicSource from "./examples/text-field/basic.tsx?raw";
 
 示例必须有真实名称、初值和回调。只展示组件支持的能力；Input 不支持异步请求，就把请求状态留在示例消费方。Button 至少展示动作、禁用、loading 与链接；TextField 展示说明、错误、原生字段属性和受控值。
 
-文档的权威正文留在包内 `docs/`；旧站点需要暂时展示时，wrapper 直接 raw import 包文档，不能复制第二份正文。当前 integration 示例遵循已有 CodeCard 模式；未来更换文档宿主时，保留契约与同源示例，不依赖旧站点设施。
+文档的权威正文留在包内 `docs/`，`web/src/features/ui-docs/` 直接 raw import 包文档。指南发布在 `/ui/guides/<slug>`，组件 API 与示例发布在 `/ui/components/<name>`。预览与复制源码遵循同源 CodeCard 模式。
 
 ## 跑源码检查与真实消费者
 
@@ -111,7 +111,7 @@ pnpm add /tmp/violet-ui-0.1.0.tgz
 
 行为测试按组件能力取用：Button 检查 Enter/Space、disabled/loading、asChild 子 handler 和 object/callback ref；TextField 检查可访问名称、ID 去重、原生 onChange、FormData/reset、受控更新和 SSR hydration。真实浏览器检查明暗主题、焦点、错误与减弱动态；弹层增加焦点回退和点击外部。测试断言用户能观察的契约，避免只复述内部实现。
 
-当前 integration 宿主改动还要运行根 Makefile 的 `make web-lint`、`make web-typecheck` 和相关 `make web-test`。检查结果记录实际执行的命令与限制，由独立 reviewer/verifier 复核，作者不自行批准交付。
+组件库文档改动还要运行根 Makefile 的 `make web-lint`、`make web-typecheck` 和相关 `make web-test`。检查结果记录实际执行的命令与限制，由独立 reviewer/verifier 复核，作者不自行批准交付。
 
 ## 改完同步哪些文档
 

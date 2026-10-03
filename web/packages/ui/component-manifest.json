@@ -13,7 +13,7 @@
 			"status": "foundation",
 			"entry": "src/components/button/index.ts",
 			"css": "src/components/button/button.css",
-			"documentation": "web/src/features/design-system/ui/ButtonDoc.tsx"
+			"documentation": "web/src/features/ui-docs/ui/ButtonDoc.tsx"
 		},
 		{
 			"name": "card",
@@ -83,14 +83,14 @@
 			"status": "foundation",
 			"entry": "src/components/input/index.ts",
 			"css": "src/components/input/input.css",
-			"documentation": "web/src/features/design-system/ui/InputDoc.tsx"
+			"documentation": "web/src/features/ui-docs/ui/InputDoc.tsx"
 		},
 		{
 			"name": "label",
 			"status": "foundation",
 			"entry": "src/components/label/index.ts",
 			"css": "src/components/label/label.css",
-			"documentation": "web/src/features/design-system/ui/library-guides/content/composition.md"
+			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
 		},
 		{
 			"name": "modal",
@@ -212,7 +212,7 @@
 			"status": "foundation",
 			"entry": "src/components/text-field/index.ts",
 			"css": "src/components/text-field/text-field.css",
-			"documentation": "web/src/features/design-system/ui/TextFieldDoc.tsx"
+			"documentation": "web/src/features/ui-docs/ui/TextFieldDoc.tsx"
 		},
 		{
 			"name": "text-underline",
@@ -224,7 +224,7 @@
 			"status": "foundation",
 			"entry": "src/components/textarea/index.ts",
 			"css": "src/components/textarea/textarea.css",
-			"documentation": "web/src/features/design-system/ui/library-guides/content/composition.md"
+			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
 		},
 		{
 			"name": "tooltip",

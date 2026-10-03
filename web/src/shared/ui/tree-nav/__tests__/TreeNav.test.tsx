@@ -65,12 +65,12 @@ const mockFourLevelItems: TreeNavItem[] = [
 const mockGroups: TreeNavGroup[] = [
 	{
 		id: "group-1",
-		title: "测试卷目一",
+		title: "测试分组一",
 		items: mockFourLevelItems,
 	},
 	{
 		id: "group-2",
-		title: "测试卷目二",
+		title: "测试分组二",
 		items: [
 			{
 				id: "standalone",
@@ -84,8 +84,8 @@ const mockGroups: TreeNavGroup[] = [
 describe("TreeNav", () => {
 	it("正确渲染分组标题与一级节点", () => {
 		render(<TreeNav currentPath="/docs/standalone" groups={mockGroups} />);
-		expect(screen.getByText("测试卷目一")).toBeTruthy();
-		expect(screen.getByText("测试卷目二")).toBeTruthy();
+		expect(screen.getByText("测试分组一")).toBeTruthy();
+		expect(screen.getByText("测试分组二")).toBeTruthy();
 		expect(screen.getByText("一级目录")).toBeTruthy();
 		expect(screen.getByText("独立单项")).toBeTruthy();
 	});

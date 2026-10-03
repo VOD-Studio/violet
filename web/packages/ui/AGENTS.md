@@ -21,6 +21,6 @@
 
 - 实现契约、原生键盘、受控与非受控值、FormData/reset、ref、SSR ID 等行为需要有针对性的测试。源码检查、构建检查与真实 tarball 消费分别执行。
 - 运行 `pnpm --filter @violet/ui check`、`typecheck`、`test`、`build`、`check:dist`、`consumer`。`consumer` 在工作区外安装真实 tarball；不要把 workspace 成功视为发布形态已经正确。
-- 规范正文在包内 `docs/`，旧站点仅为临时 integration 展示。现有示例在 `web/src/features/design-system/ui/`。预览与复制源码来自同一个 `ui/examples/<component>/*.tsx`；新增页面同步 route、catalog、lazy registry 与 `web/public/llms.txt`。目录或边界变化按 `docs/agents/docs-map.md` 同步 README、AGENTS 与 skill。
-- 架构与设计流程以 `web/packages/ui/docs/architecture.md`、`component-design.md` 为权威，不从旧营造法式推导规范。作者 pass 与 verifier pass 分开，不在作者上下文自称批准。
+- 规范正文在包内 `docs/`，`web/src/features/ui-docs/` 读取同一份正文；指南路由为 `/ui/guides/<slug>`，组件路由为 `/ui/components/<name>`。预览与复制源码来自同一个 `ui/examples/<component>/*.tsx`；新增页面同步 route、catalog、lazy registry 与 `web/public/llms.txt`。目录或边界变化按 `docs/agents/docs-map.md` 同步 README、AGENTS 与 skill。
+- 架构与设计流程以 `web/packages/ui/docs/architecture.md`、`component-design.md` 为权威。作者 pass 与 verifier pass 分开，不在作者上下文自称批准。
 - npm 发布、专用 CLI、MCP 均未完成，不在文档中作完成承诺。遵循仓库中文 Conventional Commit 与仅本地提交规则。

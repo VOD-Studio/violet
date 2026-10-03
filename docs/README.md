@@ -16,7 +16,7 @@
 
 ## 组件库开发
 
-组件库规范留在包内，旧站点只暂时展示同一正文：
+组件库规范留在 `web/packages/ui/docs/`；`web/src/features/ui-docs/` 在 `/ui` 展示同一正文与组件用法：
 
 - [组件库架构](../web/packages/ui/docs/architecture.md)：组件单元、同源 CSS、成熟度与验证边界。
 - [组件设计方法](../web/packages/ui/docs/component-design.md)：消费场景、清单登记、同源示例与真实 tarball 验收。

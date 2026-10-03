@@ -43,7 +43,7 @@ web/packages/ui/
 | 语义 token、色板和 Tailwind 映射 | `web/packages/ui/src/styles/` | 组件消费 token 名，色值可替换 |
 | 字体、博客方言和站点装饰动画 | `web/src/styles/` | 宿主负责加载字体和装饰资源 |
 | 公开单元、状态、CSS、文档路径 | `component-manifest.json` | 派生入口通过同步命令生成 |
-| 当前站点 integration 示例 | `web/src/features/design-system/ui/` | 暂存真实预览与同源代码；不作为规范权威 |
+| 组件库文档与示例 | `web/src/features/ui-docs/` | 架构与设计规范读取包内正文，预览与复制代码使用同一 TSX 文件 |
 
 组件单元的依赖方向如下。结构、按需 recipe、CSS、导出与测试放在同一目录，修改一个组件时能看到它的完整契约。`src/legacy.ts` 只是兼容 barrel，不保存另一份组件实现。`lib/` 只接收已经被多个组件使用的能力。
 
@@ -116,7 +116,7 @@ import { TextField } from "@violet/ui";
 
 ## Violet 的设计规则
 
-这些规则针对现有库的维护问题，是否有效要由具体组件和消费验证证明。组件设计从需求和 DOM 契约推导，旧站点的品味、组件案例和命名不能代替依据。
+这些规则针对现有库的维护问题，是否有效要由具体组件和消费验证证明。组件设计从真实消费场景、需求和 DOM 契约推导。
 
 | 规则 | 解决的问题 | 验证方式与边界 |
 | --- | --- | --- |
@@ -140,7 +140,7 @@ import { TextField } from "@violet/ui";
   "status": "foundation",
   "entry": "src/components/text-field/index.ts",
   "css": "src/components/text-field/text-field.css",
-  "documentation": "web/src/features/design-system/ui/TextFieldDoc.tsx"
+  "documentation": "web/src/features/ui-docs/ui/TextFieldDoc.tsx"
 }
 ```
 

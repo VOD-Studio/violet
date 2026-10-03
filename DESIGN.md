@@ -1,7 +1,7 @@
 ---
 name: "Violet Public Frontend"
 description: "真实个人创作、安静但有生命力的公开内容索引"
-palettePolicy: "品牌色板为可插拔预设（种子色经生成算法推导，见 /design-system 色板生成器）；本文件色彩段记录当前服役预设的快照，界面契约是语义 token 名而非色值"
+palettePolicy: "品牌色板为可插拔预设；本文件色彩段记录当前服役预设的快照，界面契约是语义 token 名而非色值。组件库负责基础 token，站点 CSS 负责品牌、字体与视觉方言"
 colors:
   violet-light: "oklch(0.53 0.205 286)"
   on-violet-light: "oklch(0.99 0 0)"
