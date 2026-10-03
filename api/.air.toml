@@ -1,3 +1,8 @@
 [build]
   cmd = "go build -o ./tmp/main ./cmd/server"
-  bin = "tmp/main"
+  entrypoint = "tmp/main"
+  # fsnotify 的 kqueue 后端对每个被 watch 的文件持有一个 FD：
+  # uploads(3.5k+ 且随上传增长)、migrations 等不参与重编译的目录
+  # 若不排除，常驻句柄会撑爆系统级文件表(kern.maxfiles)，拖垮同机的
+  # vite dev 等 watcher（表现为随机 EMFILE）。
+  exclude_dir = [".git", "tmp", "uploads", "migrations", "backups", "bin", "scripts", "docs"]
