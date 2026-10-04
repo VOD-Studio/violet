@@ -1,7 +1,6 @@
 /**
  * 站点 CSS 变量探针与色值换算的共享底层：
  * 读任意明暗作用域的 CSS 变量、任意 CSS 颜色转 hex。
- * 消费方：mermaid 主题映射、营造法式 token 探针。
  */
 
 /**
@@ -48,11 +47,10 @@ let darkProbe: HTMLSpanElement | null = null;
  * custom property 的 computed value 原样透传 light-dark()/var()，不按域解析；
  * 探针显式设置 color-scheme，再把变量落到 background-color 上触发求值，
  * light-dark() 依探针的 color-scheme 取对应支。与 <html> 当前主题解耦。
- * 营造法式的 token 词典与 mermaid 主题映射复用此探针。
  */
 export function readSiteVar(name: string, isDark: boolean): string {
 	if (typeof window === "undefined" || typeof document === "undefined") return "";
-	// 探针常驻复用：循环调用(如 token 词典逐 token 读取)时避免上百次
+	// 探针常驻复用：循环读取 CSS 变量时避免上百次
 	// 「插入 → 强制样式计算 → 移除」阻塞主线程；断线(测试重建 DOM)则重建
 	let probe = isDark ? darkProbe : lightProbe;
 	if (!probe?.isConnected) {

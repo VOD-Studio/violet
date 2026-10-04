@@ -1,0 +1,272 @@
+{
+	"schemaVersion": 1,
+	"package": "@violet/ui",
+	"components": [
+		{
+			"name": "badge",
+			"status": "legacy",
+			"entry": "src/components/badge/index.ts",
+			"css": "src/components/badge/badge.css"
+		},
+		{
+			"name": "button",
+			"status": "foundation",
+			"entry": "src/components/button/index.ts",
+			"css": "src/components/button/button.css",
+			"documentation": "web/src/features/ui-docs/ui/ButtonDoc.tsx"
+		},
+		{
+			"name": "card",
+			"status": "legacy",
+			"entry": "src/components/card/index.ts",
+			"css": "src/components/card/card.css"
+		},
+		{
+			"name": "chart",
+			"status": "legacy",
+			"entry": "src/components/chart/index.ts"
+		},
+		{
+			"name": "checkbox",
+			"status": "foundation",
+			"entry": "src/components/checkbox/index.ts",
+			"css": "src/components/checkbox/checkbox.css",
+			"documentation": "web/packages/ui/docs/components/checkbox.md"
+		},
+		{
+			"name": "color-picker",
+			"status": "legacy",
+			"entry": "src/components/color-picker/index.ts"
+		},
+		{
+			"name": "command",
+			"status": "legacy",
+			"entry": "src/components/command/index.ts"
+		},
+		{
+			"name": "confirm-dialog",
+			"status": "legacy",
+			"entry": "src/components/confirm-dialog/index.ts"
+		},
+		{
+			"name": "context-menu",
+			"status": "legacy",
+			"entry": "src/components/context-menu/index.ts"
+		},
+		{
+			"name": "dialog",
+			"status": "legacy",
+			"entry": "src/components/dialog/index.ts"
+		},
+		{
+			"name": "dropdown-menu",
+			"status": "legacy",
+			"entry": "src/components/dropdown-menu/index.ts"
+		},
+		{
+			"name": "empty",
+			"status": "legacy",
+			"entry": "src/components/empty/index.ts"
+		},
+		{
+			"name": "icons",
+			"status": "legacy",
+			"entry": "src/components/icons/index.ts"
+		},
+		{
+			"name": "inline-error",
+			"status": "legacy",
+			"entry": "src/components/inline-error/index.ts"
+		},
+		{
+			"name": "input",
+			"status": "foundation",
+			"entry": "src/components/input/index.ts",
+			"css": "src/components/input/input.css",
+			"documentation": "web/src/features/ui-docs/ui/InputDoc.tsx"
+		},
+		{
+			"name": "label",
+			"status": "foundation",
+			"entry": "src/components/label/index.ts",
+			"css": "src/components/label/label.css",
+			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
+		},
+		{
+			"name": "modal",
+			"status": "legacy",
+			"entry": "src/components/modal/index.ts"
+		},
+		{
+			"name": "otp",
+			"status": "legacy",
+			"entry": "src/components/otp/index.ts"
+		},
+		{
+			"name": "overlay-scroll",
+			"status": "legacy",
+			"entry": "src/components/overlay-scroll/index.ts"
+		},
+		{
+			"name": "page-header",
+			"status": "legacy",
+			"entry": "src/components/page-header/index.ts"
+		},
+		{
+			"name": "page-shell",
+			"status": "legacy",
+			"entry": "src/components/page-shell/index.ts"
+		},
+		{
+			"name": "pagination",
+			"status": "legacy",
+			"entry": "src/components/pagination/index.ts"
+		},
+		{
+			"name": "popover",
+			"status": "legacy",
+			"entry": "src/components/popover/index.ts"
+		},
+		{
+			"name": "prompt-dialog",
+			"status": "legacy",
+			"entry": "src/components/prompt-dialog/index.ts"
+		},
+		{
+			"name": "resend-button",
+			"status": "legacy",
+			"entry": "src/components/resend-button/index.ts"
+		},
+		{
+			"name": "scroll-area",
+			"status": "legacy",
+			"entry": "src/components/scroll-area/index.ts"
+		},
+		{
+			"name": "search-input",
+			"status": "legacy",
+			"entry": "src/components/search-input/index.ts",
+			"documentation": "web/packages/ui/docs/components/search-input.md"
+		},
+		{
+			"name": "segmented",
+			"status": "legacy",
+			"entry": "src/components/segmented/index.ts"
+		},
+		{
+			"name": "select",
+			"status": "legacy",
+			"entry": "src/components/select/index.ts"
+		},
+		{
+			"name": "separator",
+			"status": "legacy",
+			"entry": "src/components/separator/index.ts",
+			"css": "src/components/separator/separator.css"
+		},
+		{
+			"name": "sheet",
+			"status": "legacy",
+			"entry": "src/components/sheet/index.ts"
+		},
+		{
+			"name": "shimmer-skeleton",
+			"status": "legacy",
+			"entry": "src/components/shimmer-skeleton/index.ts"
+		},
+		{
+			"name": "skeleton",
+			"status": "legacy",
+			"entry": "src/components/skeleton/index.ts",
+			"css": "src/components/skeleton/skeleton.css"
+		},
+		{
+			"name": "sonner",
+			"status": "legacy",
+			"entry": "src/components/sonner/index.ts"
+		},
+		{
+			"name": "steps",
+			"status": "legacy",
+			"entry": "src/components/steps/index.ts"
+		},
+		{
+			"name": "switch",
+			"status": "legacy",
+			"entry": "src/components/switch/index.ts",
+			"css": "src/components/switch/switch.css"
+		},
+		{
+			"name": "table",
+			"status": "legacy",
+			"entry": "src/components/table/index.ts"
+		},
+		{
+			"name": "tabs",
+			"status": "legacy",
+			"entry": "src/components/tabs/index.ts",
+			"css": "src/components/tabs/tabs.css"
+		},
+		{
+			"name": "text-field",
+			"status": "foundation",
+			"entry": "src/components/text-field/index.ts",
+			"css": "src/components/text-field/text-field.css",
+			"documentation": "web/src/features/ui-docs/ui/TextFieldDoc.tsx"
+		},
+		{
+			"name": "text-underline",
+			"status": "legacy",
+			"entry": "src/components/text-underline/index.ts"
+		},
+		{
+			"name": "textarea",
+			"status": "foundation",
+			"entry": "src/components/textarea/index.ts",
+			"css": "src/components/textarea/textarea.css",
+			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
+		},
+		{
+			"name": "tooltip",
+			"status": "legacy",
+			"entry": "src/components/tooltip/index.ts"
+		}
+	],
+	"additionalExports": [
+		{
+			"name": "use-debounced-callback",
+			"status": "legacy",
+			"entry": "src/lib/use-debounced-callback.ts",
+			"symbols": ["useDebouncedCallback"]
+		},
+		{
+			"name": "use-theme",
+			"status": "legacy",
+			"entry": "src/lib/use-theme.ts",
+			"symbols": ["type ThemeChoice", "type UseThemeResult", "useTheme"]
+		},
+		{
+			"name": "decrypted-text",
+			"status": "legacy",
+			"entry": "src/vendor/DecryptedText.tsx",
+			"symbols": ["default as DecryptedText"]
+		}
+	],
+	"recipes": [
+		{
+			"entry": "src/components/button/styles.ts",
+			"symbols": ["type ButtonVariantProps", "buttonVariants"]
+		},
+		{
+			"entry": "src/components/checkbox/styles.ts",
+			"symbols": ["type CheckboxVariantProps", "checkboxVariants"]
+		}
+	],
+	"styles": {
+		"theme": "src/styles/theme.css",
+		"tokens": "src/styles/tokens.css",
+		"foundation": "src/styles/foundation.css",
+		"utilities": ["src/styles/scrollbar.css"],
+		"palettes": ["src/styles/palettes/violet.css", "src/styles/palettes/coral.css"]
+	}
+}

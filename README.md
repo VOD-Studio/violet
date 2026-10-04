@@ -31,7 +31,7 @@
 - **系统面板**：数据库与服务器状态、受控 SQL 控制台、流式数据导出、手动及定时备份与数据库恢复
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
-- **组件库与营造法式**：`@violet/ui` 提供可构建打包的 React 组件、类型声明和明暗语义主题 CSS，可用 tarball 安装到独立项目（尚未发布 npm）；`/design-system` 提供入门、主题手册、可操作组件示例与智能体文档索引
+- **violet/ui 组件库**：`@violet/ui` 以组件清单管理公开入口与成熟度，基础单元共用 BEM CSS；`/ui` 提供安装、主题、组件 API 与同源交互示例，包内规范和真实 tarball 消费验证支持独立使用（尚未发布 npm）
 - **工程化**：DDD 四层架构、CQRS、事件驱动审计、release-please 自动发版、CI/CD 全自动部署（含迁移门禁与自动回滚）
 
 ## 技术栈
@@ -58,7 +58,7 @@
 | 构建 | Vite 8 |
 | 状态 | Zustand + TanStack Query v5 |
 | 样式 | Tailwind CSS v4 |
-| UI | `@violet/ui` 可打包组件库（Radix UI + Tailwind v4 主题） |
+| UI | `@violet/ui`（native / Radix 行为、typed BEM recipe、同源 CSS 与语义主题）；`features/ui-docs` 提供组件库文档 |
 | 富文本 | TipTap |
 | 检查/格式化 | Biome |
 

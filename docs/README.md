@@ -14,6 +14,14 @@
 | `prd/` | 产品需求文档（Product Requirements Documents）。 |
 | `superpowers/` | 被 `.gitignore` 忽略，不纳入版本控制。 |
 
+## 组件库开发
+
+组件库规范留在 `web/packages/ui/docs/`；`web/src/features/ui-docs/` 在 `/ui` 展示同一正文与组件用法：
+
+- [组件库架构](../web/packages/ui/docs/architecture.md)：组件单元、同源 CSS、成熟度与验证边界。
+- [组件设计方法](../web/packages/ui/docs/component-design.md)：消费场景、清单登记、同源示例与真实 tarball 验收。
+- [包内规范](../web/packages/ui/AGENTS.md)与[包 README](../web/packages/ui/README.md)：公开入口与当前可执行命令。
+
 ## 使用约定
 
 - PRD 主文件直接放在 `prd/` 根目录。

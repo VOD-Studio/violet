@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 
@@ -71,6 +73,13 @@ const config = defineConfig({
 				target: apiProxyTarget,
 				changeOrigin: true,
 			},
+		},
+		// SSR 模块图经 pnpm 符号链接解析到 ~/Library/pnpm/store 真实路径后，
+		// watcher 会对 store 里每个包目录建立 kqueue 监听（macOS 无 FSEvents 兜底），
+		// 单实例即持有数万 FD，多开或叠加 air 等进程会触顶系统级文件表（随机 EMFILE）。
+		// 依赖更新走 reinstall（动 node_modules 本身），无需监听 store 内容。
+		watch: {
+			ignored: ["**/node_modules/**", "**/.git/**", `${homedir()}/Library/pnpm/store/**`],
 		},
 	},
 	// TanStack Start 的 #tanstack-{router,start}-entry 是插件运行时注册的虚拟模块，

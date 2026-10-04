@@ -216,6 +216,14 @@ jobs:
         if: needs.changes.outputs.web == 'true'
         run: pnpm typecheck
 
+      - name: UI architecture and package tests
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm --filter @violet/ui check && pnpm --filter @violet/ui typecheck && pnpm --filter @violet/ui test
+
+      - name: UI independent tarball consumer
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm --filter @violet/ui consumer
+
       - name: Vitest
         if: needs.changes.outputs.web == 'true'
         run: pnpm test

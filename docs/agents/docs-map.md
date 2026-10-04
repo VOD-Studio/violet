@@ -11,6 +11,7 @@
 | 新增/变更 MCP server | `docs/guides/mcp-servers.md` | server 清单与能力描述 |
 | 部署/发版流程变化 | `docs/deploy/release-runbook.md` | 流程步骤与拓扑图 |
 | 新增面向开发者的指南 | `docs/README.md` | 文档索引登记 |
+| 组件库单元或开发流程变化 | 包 README / AGENTS.md、包内 docs 及 `violet-ui` skill | 清单状态、同源示例、构建与独立消费流程同步 |
 
 ## 下线功能
 
@@ -31,6 +32,7 @@
 | 做了难以逆转的技术选型,「为什么选 X 不选 Y」未来会被问 | ADR | `docs/adr/NNN-slug.md` | 决策一旦反悔成本高 |
 | 团队要反复遵守的代码约定 | guide | `docs/guides/` | 第三个人会写错的地方 |
 | 有人要照着执行的操作流程(部署/配置/联调) | guide/runbook | `docs/guides/` 或 `docs/deploy/` | 有明确步骤可照做 |
+| 组件库开发与消费方反复查阅的指南 | 包内指南 | `web/packages/ui/docs/` | 包内为唯一正文，组件库文档站只 raw import；docs 索引只链接 |
 | 功能开发前的需求拆解 | PRD + issues | `docs/prd/` + `docs/issues/` | 功能分支第一个 commit(见 AGENTS.md) |
 | 单个功能的对外说明 | README 一行 | 对应 README | 不为此建新文件 |
 

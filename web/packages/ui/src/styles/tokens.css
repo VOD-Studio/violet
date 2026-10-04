@@ -42,9 +42,8 @@
 	--accent-foreground: light-dark(oklch(0.22 0.02 286), oklch(0.95 0.008 286));
 	/* 状态色：固定语义，采用现代高级 OKLCH 感知色彩美学校准 */
 	--destructive: light-dark(oklch(0.58 0.195 20), oklch(0.69 0.18 18));
-	--destructive-foreground: light-dark(oklch(0.99 0 0), oklch(0.99 0 0));
-	/* 状态实色保证其前景满足 WCAG AA：info/success/destructive 前景恒白，
-	   实色明度压到白字 ≥4.5:1；警示琥珀保持鲜亮警示语义，前景改深字（白字仅 3.16:1）。 */
+	--destructive-foreground: light-dark(oklch(0.99 0 0), oklch(0.15 0.03 18));
+	/* 状态实色与前景成对定义；暗色主题的明亮填充搭配深色文字。 */
 	--warning: light-dark(oklch(0.66 0.155 60), oklch(0.77 0.15 65));
 	--warning-foreground: light-dark(oklch(0.16 0.03 60), oklch(0.16 0.03 75));
 	--success: light-dark(oklch(0.575 0.145 158), oklch(0.75 0.15 158));

@@ -14,6 +14,7 @@
 > 这是**代码组织原则**,不是 commit 拆分规则。规则 1(公共组件单独提交)管「commit 怎么拆」,本节管「代码该放哪一层」。两者分开理解。
 
 - **前端通用组件与站点公共层各归其位**。跨 feature 的通用 React 组件及基础语义 token 在 `web/packages/ui/`，从 `@violet/ui` 根入口使用组件；Tailwind v4 后导入 `@violet/ui/styles.css`。`web/src/styles/dialects/` 保留站点方言；`web/src/shared/` 只放站点级通用能力，以上两层均不夹带 `posts` / `comments` / `editor` 等 feature 业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)不允许向业务层反向依赖。
+- **组件库以单元组织并标记成熟度**。所有组件在 `web/packages/ui/src/components/<name>/`，结构、按需 typed recipe、CSS、导出与测试共置；`component-manifest.json` 是公开单元、入口、CSS、文档与 foundation / legacy 状态的事实源。`src/legacy.ts` 仅为兼容 barrel，不放实现副本。基础单元的 React 与 HTML 共用唯一 BEM CSS；其余 legacy 的样式逐个迁移。共享 `lib/` 只接收真实复用能力，字体、签名与站点装饰动画留在 `web/src/styles/site-theme.css`。组件库规范以 `web/packages/ui/docs/architecture.md` 与 `component-design.md` 为权威；`web/src/features/ui-docs/` 展示同一正文与同源组件示例，公开入口为 `/ui`；新增单元按包内规范执行清单同步、源码检查、构建与外部 tarball 消费验收。
 - **后端各层各司其职**:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`,HTTP 适配进 `interfaces`;`internal/middleware/` 只放通用横切中间件(auth/cors/csrf/ratelimit 等)。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
 - **判断「是否公共」看真实消费方**,不是位置。feature 私有逻辑被第二个 feature 复用时先上提；通用组件进 `web/packages/ui/`，站点专用基础能力进 `web/src/shared/`，有业务语义的实体逻辑进 `web/src/entities/`（提交规则见规则 1）。
 
@@ -32,7 +33,7 @@
 - **类型检查**: `make web-typecheck`
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
-- **前端动笔前读 skill**:新建或编辑前端代码(组件/hook/util/测试)前读 `frontend-conventions`,编辑 className 前读 `tailwind-canonical-classes`——触发即读,不凭记忆;写完对照 skill 关键规则自查(TSDoc 标签形态、canonical 类形态)。做 UI 设计决策(用色/间距/组件选型)前查站内「营造法式」页(`design-system` feature,源码即快速决策表与 token 词典)。
+- **前端动笔前读 skill**:新建或编辑前端代码(组件/hook/util/测试)前读 `frontend-conventions`,编辑 className 前读 `tailwind-canonical-classes`——触发即读,不凭记忆;写完对照 skill 关键规则自查(TSDoc 标签形态、canonical 类形态)。做 UI 设计决策前读 `web/packages/ui/docs/architecture.md` 与 `component-design.md`，从真实需求、原生语义和可验证契约推导。
 
 ## 分支命名
 
@@ -99,7 +100,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 
 - **功能性圆角上限 `rounded-2xl`（16px）。** 再大只是装饰、不作功能圆角；胶囊 `rounded-full` 是形态不是超限圆角。
 - **硬投影禁用。** 浮起感唯一配方是 `0 4px 24px / 0.05` 的轻微软影；`ring-1 ring-border` 只是描边分界，不产生浮起。暗色域软影弱，可加描边辅助分界。其余 box-shadow 一律不用。
-- 用色、间距与组件选型查站内「营造法式」页（`/design-system`，源码即决策表与 token 词典）；冷香紫罗兰色板为可插拔预设，界面只锁 token 名不锁色值。
+- 组件设计依据包内 `web/packages/ui/docs/` 规范；用色与间距按具体需求和语义 token 确定，品牌色板为可插拔预设，界面不锁色值。
 
 ## 提交流程规范
 

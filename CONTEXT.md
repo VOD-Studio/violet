@@ -476,8 +476,10 @@ _Avoid_: 公开分组 / 管理分组（未表达书册的正文附录隐喻）
 API 文档在站内的呈现形态——毛边纸面弹窗，与 `/docs` 全页共用同一个渲染器（分章浏览、端点展开、关键字过滤，不含接口试调）。
 _Avoid_: 文档弹层（未表达纸面材质语义）
 
-## 设计系统（Design System）
+## 组件库（Component Library）
 
-**营造法式（Design System Codex）**:
-站点视觉决策的正式典籍页（`/design-system`，「更多」菜单入口），名字典出宋代李诫《营造法式》——其「材份制」模数分级即历史上的设计 token。核心是**快速决策表**：按需求场景裁定「该用哪个 token」，查无此项时回设计原则推导。页面只锁 token 名、不锁色值——品牌色板可插拔，色值经运行时探针读取真实 CSS 变量，换色板时页面自动跟随。冷香紫罗兰色彩系统已废弃为非基准，不再是页面内容的锚点。
-_Avoid_: 设计文档（它首先是界面，不是文档）、风格指南（未体现典籍定位与「裁定」语义）、色彩规范（以偏概全，色彩之外还辖布局、组件与动效）
+**violet/ui**:
+公开包名为 `@violet/ui` 的 React 19 组件库，交付组件、CSS 与类型声明。组件单元、入口与 foundation / legacy 成熟度由 `web/packages/ui/component-manifest.json` 记录；架构和开发流程以包内 `docs/` 为规范正文。
+
+**组件库文档（Component Library Docs）**:
+`/ui` 提供安装、主题、组件 API 与可操作示例，由 `web/src/features/ui-docs/` 维护。指南位于 `/ui/guides/<slug>`，组件用法位于 `/ui/components/<name>`；架构与设计规范读取包内同一份正文，预览与复制源码来自同一份 TSX 示例。

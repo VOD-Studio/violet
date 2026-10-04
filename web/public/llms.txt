@@ -1,38 +1,39 @@
-# 营造法式 / @violet/ui
+# violet/ui
 
-> React 19 + Tailwind CSS v4 组件库与用法文档。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。
+> React 19 组件库与用法文档；基础组件与 HTML 共用 BEM CSS，Tailwind utility 可用于布局和局部覆盖。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。
 
 ## 开始使用
 
-- [介绍](https://xunrua.top/design-system/guides/introduction): 包的使用范围与限制。
-- [快速入门](https://xunrua.top/design-system/guides/quick-start): 工作区安装、CSS 导入和 Button 用法。
-- [设计原则](https://xunrua.top/design-system/principles): 站点设计判据。
-- [框架集成](https://xunrua.top/design-system/guides/integration): Vite 与 TanStack Start 已验证，更多框架暂未开放。
-- [组件目录](https://xunrua.top/design-system/specimens): 组件示例与公开契约。
+- [文档首页](https://xunrua.top/ui): 包的入口与文档目录。
+- [介绍](https://xunrua.top/ui/guides/introduction): 包的使用范围与限制。
+- [架构指南](https://xunrua.top/ui/guides/architecture): 原生语义、组件单元、单视觉源、清单成熟度与真实 tarball 验证。
+- [组件设计方法](https://xunrua.top/ui/guides/component-design): 从消费场景到实现、清单、同源示例和独立消费者的操作流程。
+- [快速入门](https://xunrua.top/ui/guides/quick-start): 工作区安装、CSS 导入和 Button 用法。
+- [框架集成](https://xunrua.top/ui/guides/integration): Vite、TanStack Start 与普通 CSS 的接入边界。
 
-- [命令行](https://xunrua.top/design-system/guides/cli): 构建与打包命令及专用 CLI 的边界。
-- [版本记录](https://xunrua.top/design-system/guides/roadmap): 当前版本的能力变更与发布节奏。
+- [命令行](https://xunrua.top/ui/guides/cli): 构建与打包命令及专用 CLI 的边界。
+- [重建进度](https://xunrua.top/ui/guides/roadmap): 以组件清单的 foundation / legacy 标记区分已重建与兼容单元。
 
 ## 设计指南
 
-- [颜色与语义 token](https://xunrua.top/design-system/tokens)
-- [主题](https://xunrua.top/design-system/guides/theming)
-- [深色模式](https://xunrua.top/design-system/guides/dark-mode)
-- [样式](https://xunrua.top/design-system/guides/styling)
-- [动画](https://xunrua.top/design-system/motion)
-- [组合](https://xunrua.top/design-system/guides/composition)
+- [主题与语义 token](https://xunrua.top/ui/guides/theming)
+- [深色模式](https://xunrua.top/ui/guides/dark-mode)
+- [样式](https://xunrua.top/ui/guides/styling)
+- [动画](https://xunrua.top/ui/guides/animation)
+- [组合](https://xunrua.top/ui/guides/composition)
 
 ## 组件用法
 
-- [Button](https://xunrua.top/design-system/specimens/button)
-- [Badge](https://xunrua.top/design-system/specimens/badge)
-- [Checkbox](https://xunrua.top/design-system/specimens/checkbox)
-- [Dialog](https://xunrua.top/design-system/specimens/dialog)
-- [Input](https://xunrua.top/design-system/specimens/input)
-- [Tabs](https://xunrua.top/design-system/specimens/tabs)
+- [Button](https://xunrua.top/ui/components/button)
+- [Badge](https://xunrua.top/ui/components/badge)
+- [Checkbox](https://xunrua.top/ui/components/checkbox)
+- [Dialog](https://xunrua.top/ui/components/dialog)
+- [Input](https://xunrua.top/ui/components/input)
+- [TextField](https://xunrua.top/ui/components/text-field)
+- [Tabs](https://xunrua.top/ui/components/tabs)
 
 ## 智能体
 
-- [Agent Skills](https://xunrua.top/design-system/guides/skills): 项目内技能入口。
-- [AGENTS.md](https://xunrua.top/design-system/guides/agents-md): 包的代理规范。
-- [MCP 服务器](https://xunrua.top/design-system/guides/mcp): 区分博客 MCP 与尚未提供的组件文档 MCP。
+- [Agent Skills](https://xunrua.top/ui/guides/skills): 项目内技能入口。
+- [AGENTS.md](https://xunrua.top/ui/guides/agents-md): 包的代理规范。
+- [MCP 服务器](https://xunrua.top/ui/guides/mcp): 区分博客 MCP 与尚未提供的组件文档 MCP。

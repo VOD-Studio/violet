@@ -1,8 +1,10 @@
-/* 消费方先导入 tailwindcss，再导入 @violet/ui/styles.css；方言与全局基础样式由应用持有。 */
+/* Import after tailwindcss; site dialects remain in the consuming application. */
 @import "./styles/theme.css";
 @import "./styles/tokens.css";
+@import "./styles/foundation.css";
 @import "./styles/scrollbar.css";
 @import "./styles/palettes/violet.css";
+@import "./classes.css";
 
-/* Tailwind v4 默认忽略 node_modules，显式扫描包内组件的完整工具类。 */
+/* Legacy components still use complete Tailwind utilities. */
 @source "./";

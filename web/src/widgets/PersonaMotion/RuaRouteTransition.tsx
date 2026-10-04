@@ -40,7 +40,9 @@ const RuaRouteTransition = () => {
 	const reduceMotion = useReducedMotion();
 	const visible = useDelayedRouteStatus(isLoading);
 	const enabled =
-		visible && !pathname.startsWith("/admin") && !pathname.startsWith("/design-system");
+		visible &&
+		!pathname.startsWith("/admin") &&
+		!(pathname === "/ui" || pathname.startsWith("/ui/"));
 
 	return (
 		<AnimatePresence>

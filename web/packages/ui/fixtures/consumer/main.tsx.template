@@ -1,0 +1,144 @@
+import { Button, Checkbox, Label, SearchInput, TextField } from "@violet/ui";
+import { buttonVariants } from "@violet/ui/variants";
+import checkboxCss from "@violet/ui/components/checkbox.css?raw";
+import { useEffect, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
+import "./style.css";
+
+function ShadowForm() {
+	const [cancelReset, setCancelReset] = useState(false);
+	return <form id="shadow-checkbox-form" onReset={(event) => {
+		if (cancelReset) event.preventDefault();
+	}}>
+		<Checkbox id="shadow-checkbox" name="shadow" defaultChecked aria-label="ShadowRoot 中的选择" />
+		<button id="shadow-checkbox-reset" type="reset">重置 ShadowRoot 选择</button>
+		<button id="cancel-shadow-checkbox-reset" type="button" onClick={() => setCancelReset(true)}>取消 ShadowRoot 重置</button>
+	</form>;
+}
+
+function ShadowPreview() {
+	const hostRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		const host = hostRef.current;
+		if (!host) return;
+		const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+		const style = document.createElement("style");
+		style.textContent = checkboxCss;
+		shadow.append(style);
+		const container = document.createElement("div");
+		shadow.append(container);
+		const root = createRoot(container);
+		root.render(<ShadowForm />);
+		return () => {
+			root.unmount();
+			style.remove();
+			container.remove();
+		};
+	}, []);
+	return <div id="shadow-checkbox-host" ref={hostRef} />;
+}
+
+function App() {
+	const [count, setCount] = useState(0);
+	const [submitted, setSubmitted] = useState("");
+	const [externalForm, setExternalForm] = useState("external-checkbox-form");
+	const [cancelledChanges, setCancelledChanges] = useState<string[]>([]);
+	const [lateFormVersion, setLateFormVersion] = useState<number | null>(null);
+	const [lateCancelledMounted, setLateCancelledMounted] = useState(false);
+	const [lateCancelledChanges, setLateCancelledChanges] = useState<string[]>([]);
+	const [controlledChecked, setControlledChecked] = useState(true);
+	const [controlledRequests, setControlledRequests] = useState<string[]>([]);
+	const [searches, setSearches] = useState<string[]>([]);
+	const [keys, setKeys] = useState<string[]>([]);
+	return (
+		<main>
+			<h1>独立安装的 Violet UI</h1>
+			<section aria-label="React 组件">
+				<h2>React</h2>
+				<Button id="react-button" variant="primary" onClick={() => setCount(count + 1)}>
+					保存 {count}
+				</Button>
+				<TextField id="email" label="邮箱" description="用于发送更新" type="email" />
+				<TextField id="invalid-email" label="错误状态" invalid errorMessage="请输入正确邮箱" />
+			</section>
+			<section aria-label="纯 HTML 样式">
+				<h2>HTML</h2>
+				<button id="html-button" type="button" className={buttonVariants({ variant: "primary" })}>
+					保存
+				</button>
+				<label htmlFor="html-email" className="v-label">邮箱</label>
+				<input id="html-email" type="email" className="v-input" />
+			</section>
+			<section className="preview-scope" aria-label="局部主题">
+				<Button id="scoped-button" variant="primary">局部主题</Button>
+			</section>
+			<section aria-label="复选框表单">
+				<h2>Checkbox</h2>
+				<form id="checkbox-form" onSubmit={(event) => {
+					event.preventDefault();
+					setSubmitted(JSON.stringify(Array.from(new FormData(event.currentTarget).entries())));
+				}}>
+					<div className="checkbox-row">
+						<Checkbox id="updates" name="updates" value="weekly" defaultChecked required variant="primary" />
+						<Label htmlFor="updates">订阅每周更新</Label>
+					</div>
+					<div className="checkbox-row">
+						<Checkbox id="all-items" defaultChecked="indeterminate" aria-label="选择全部" />
+						<Checkbox id="disabled-checkbox" defaultChecked disabled aria-label="不可用选择" />
+						<Checkbox id="invalid-checkbox" aria-invalid aria-label="无效选择" />
+					</div>
+					<Button id="checkbox-submit" type="submit">提交选择</Button>
+					<Button id="checkbox-reset" type="reset">重置选择</Button>
+				</form>
+				<output id="checkbox-submitted">{submitted}</output>
+				<form id="external-checkbox-form">
+					<Button id="external-checkbox-reset" type="reset">重置外部选择</Button>
+				</form>
+				<form id="second-checkbox-form">
+					<Button id="second-checkbox-reset" type="reset">重置第二表单</Button>
+				</form>
+				<Button id="reassign-checkbox" onClick={() => setExternalForm("second-checkbox-form")}>改变表单归属</Button>
+				<Checkbox id="external-checkbox" form={externalForm} name="external" value="enabled" defaultChecked aria-label="表单外选择" />
+				<form id="cancelled-checkbox-form" onReset={(event) => event.preventDefault()}>
+					<Checkbox id="cancelled-checkbox" name="retained" aria-label="取消重置的选择" onCheckedChange={(next) => setCancelledChanges((changes) => [...changes, String(next)])} />
+					<Button id="cancelled-checkbox-reset" type="reset">取消重置</Button>
+				</form>
+				<output id="cancelled-checkbox-changes">{JSON.stringify(cancelledChanges)}</output>
+				<div className="checkbox-row">
+					<Checkbox id="late-checkbox" form="late-checkbox-form" name="late" defaultChecked aria-label="稍后关联表单的选择" />
+					<Button id="mount-late-checkbox-form" onClick={() => setLateFormVersion((version) => version === null ? 0 : version + 1)}>挂载或替换表单</Button>
+				</div>
+				{lateFormVersion !== null && <form key={lateFormVersion} id="late-checkbox-form">
+					<Button id="late-checkbox-reset" type="reset">重置晚挂选择</Button>
+				</form>}
+				<div className="checkbox-row">
+					<Checkbox id="late-cancelled-checkbox" form="late-cancelled-checkbox-form" name="late-retained" defaultChecked aria-label="稍后关联取消重置表单的选择" onCheckedChange={(next) => setLateCancelledChanges((changes) => [...changes, String(next)])} />
+					<Button id="mount-late-cancelled-checkbox-form" onClick={() => setLateCancelledMounted(true)}>挂载取消重置表单</Button>
+				</div>
+				{lateCancelledMounted && <form id="late-cancelled-checkbox-form" onReset={(event) => event.preventDefault()}>
+					<Button id="late-cancelled-checkbox-reset" type="reset">取消晚挂重置</Button>
+				</form>}
+				<output id="late-cancelled-checkbox-changes">{JSON.stringify(lateCancelledChanges)}</output>
+				<form id="controlled-checkbox-form">
+					<Checkbox id="controlled-checkbox" checked={controlledChecked} name="controlled" aria-label="由宿主持有的选择" onCheckedChange={(next) => setControlledRequests((requests) => [...requests, String(next)])} />
+					<Button id="change-controlled-checkbox" onClick={() => setControlledChecked(false)}>更新受控值</Button>
+					<Button id="controlled-checkbox-reset" type="reset">请求复位受控值</Button>
+				</form>
+				<output id="controlled-checkbox-requests">{JSON.stringify(controlledRequests)}</output>
+				<ShadowPreview />
+			</section>
+			<section aria-label="搜索交互">
+				<h2>SearchInput</h2>
+				<SearchInput id="search-query" aria-label="搜索文章" defaultValue="violet" onKeyDown={(event) => setKeys((keys) => [...keys, event.key])} onSearch={(query) => setSearches((searches) => [...searches, query])} />
+				<output id="search-keys">{JSON.stringify(keys)}</output>
+				<output id="search-queries">{JSON.stringify(searches)}</output>
+				<SearchInput id="readonly-query" aria-label="只读搜索" readOnly defaultValue="保留文本" />
+				<SearchInput id="disabled-query" aria-label="禁用搜索" disabled defaultValue="保留文本" />
+			</section>
+		</main>
+	);
+}
+
+const root = document.getElementById("root");
+if (!root) throw new Error("Consumer root is missing.");
+createRoot(root).render(<App />);

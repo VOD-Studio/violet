@@ -1,0 +1,307 @@
+@layer components {
+	.v-button {
+		--v-button-bg: transparent;
+		--v-button-fg: var(--foreground);
+		--v-button-border: transparent;
+		--v-button-hover-bg: var(--accent);
+		--v-button-active-bg: var(--accent);
+		--v-button-padding-inline: 1rem;
+		--v-button-icon-size: 1rem;
+
+		box-sizing: border-box;
+		position: relative;
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		block-size: var(--v-control-height-md, 2.25rem);
+		padding: 0 var(--v-button-padding-inline);
+		border: 1px solid var(--v-button-border);
+		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
+		background-color: var(--v-button-bg);
+		color: var(--v-button-fg);
+		font-family: inherit;
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1;
+		text-align: center;
+		text-decoration: none;
+		white-space: nowrap;
+		user-select: none;
+		cursor: pointer;
+		transition:
+			color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
+			background-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
+			border-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
+			opacity var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
+	}
+
+	.v-button:where(:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"])):hover {
+		background-color: var(--v-button-hover-bg);
+	}
+
+	.v-button:where(
+		:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"])
+	):active {
+		background-color: var(--v-button-active-bg);
+	}
+
+	.v-button:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-button svg:not([class*="size-"]) {
+		inline-size: var(--v-button-icon-size);
+		block-size: var(--v-button-icon-size);
+	}
+
+	.v-button svg {
+		flex-shrink: 0;
+		pointer-events: none;
+	}
+
+	.v-button--default {
+		--v-button-bg: var(--primary);
+		--v-button-fg: var(--primary-foreground);
+		--v-button-hover-bg: color-mix(in oklab, var(--primary) 90%, var(--background));
+		--v-button-active-bg: color-mix(in oklab, var(--primary) 80%, var(--background));
+	}
+
+	.v-button--primary {
+		--v-button-bg: var(--primary-base);
+		--v-button-fg: var(--primary-base-foreground);
+		--v-button-hover-bg: var(--primary-base-hover);
+		--v-button-active-bg: color-mix(in oklab, var(--primary-base-hover) 90%, var(--foreground));
+	}
+
+	.v-button--secondary {
+		--v-button-bg: var(--secondary);
+		--v-button-fg: var(--secondary-foreground);
+		--v-button-hover-bg: color-mix(in oklab, var(--secondary) 85%, var(--foreground));
+		--v-button-active-bg: color-mix(in oklab, var(--secondary) 75%, var(--foreground));
+	}
+
+	.v-button--soft {
+		--v-button-bg: var(--primary-base-soft);
+		--v-button-fg: var(--primary-base-soft-foreground);
+		--v-button-hover-bg: color-mix(in oklab, var(--primary-base-soft) 85%, var(--primary-base));
+		--v-button-active-bg: color-mix(
+			in oklab,
+			var(--primary-base-soft) 75%,
+			var(--primary-base)
+		);
+	}
+
+	.v-button--outline {
+		--v-button-bg: var(--background);
+		--v-button-border: var(--border);
+	}
+
+	.v-button--link {
+		--v-button-fg: var(--primary);
+		--v-button-hover-bg: transparent;
+		--v-button-active-bg: transparent;
+		--v-button-padding-inline: 0;
+
+		block-size: auto;
+		text-underline-offset: 0.25rem;
+	}
+
+	.v-button--link:where(:not(:disabled):not([aria-disabled="true"])):hover {
+		text-decoration-line: underline;
+	}
+
+	.v-button--destructive {
+		--v-button-bg: var(--destructive);
+		--v-button-fg: var(--destructive-foreground);
+		--v-button-hover-bg: color-mix(in oklab, var(--destructive) 90%, var(--foreground));
+		--v-button-active-bg: color-mix(in oklab, var(--destructive) 80%, var(--foreground));
+	}
+
+	.v-button--xs,
+	.v-button--icon-xs {
+		--v-button-icon-size: 0.75rem;
+
+		block-size: 1.5rem;
+		gap: 0.25rem;
+		border-radius: min(max(calc(var(--radius) - 0.125rem), 0.125rem), 1rem);
+		font-size: 0.75rem;
+	}
+
+	.v-button--xs {
+		--v-button-padding-inline: 0.5rem;
+	}
+
+	.v-button--sm,
+	.v-button--icon-sm {
+		--v-button-icon-size: 0.875rem;
+
+		block-size: var(--v-control-height-sm, 2rem);
+		gap: 0.375rem;
+		font-size: 0.75rem;
+	}
+
+	.v-button--sm {
+		--v-button-padding-inline: 0.75rem;
+	}
+
+	.v-button--lg,
+	.v-button--icon-lg {
+		block-size: var(--v-control-height-lg, 2.5rem);
+	}
+
+	.v-button--lg {
+		--v-button-padding-inline: 1.25rem;
+		--v-button-icon-size: 1.125rem;
+	}
+
+	.v-button--xl {
+		--v-button-padding-inline: 1.5rem;
+		--v-button-icon-size: 1.25rem;
+
+		block-size: 2.75rem;
+		gap: 0.625rem;
+		border-radius: min(calc(var(--radius) + 0.125rem), 1rem);
+		font-size: 1rem;
+	}
+
+	.v-button--icon,
+	.v-button--icon-xs,
+	.v-button--icon-sm,
+	.v-button--icon-lg,
+	.v-button--icon-only {
+		--v-button-padding-inline: 0;
+
+		aspect-ratio: 1;
+	}
+
+	.v-button--icon {
+		inline-size: var(--v-control-height-md, 2.25rem);
+	}
+
+	.v-button--icon-xs {
+		inline-size: 1.5rem;
+	}
+
+	.v-button--icon-sm {
+		inline-size: var(--v-control-height-sm, 2rem);
+	}
+
+	.v-button--icon-lg {
+		--v-button-icon-size: 1.25rem;
+
+		inline-size: var(--v-control-height-lg, 2.5rem);
+	}
+
+	.v-button__label,
+	.v-button__icon,
+	.v-button__icon-content,
+	.v-button__end-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.v-button__icon,
+	.v-button__end-icon {
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	.v-button__spinner,
+	.v-button[data-loading="true"][data-indicator="overlay"]::after {
+		box-sizing: border-box;
+		position: absolute;
+		inset: 0;
+		inline-size: var(--v-button-icon-size);
+		block-size: var(--v-button-icon-size);
+		margin: auto;
+		border: 2px solid currentColor;
+		border-inline-end-color: transparent;
+		border-radius: 50%;
+		pointer-events: none;
+		animation: v-button-spin 700ms linear infinite;
+	}
+
+	.v-button[data-loading="true"][data-indicator="overlay"]::after {
+		content: "";
+		color: var(--v-button-fg);
+	}
+
+	.v-button__spinner--inline {
+		position: static;
+		flex-shrink: 0;
+		margin: 0;
+	}
+
+	.v-button[data-loading="true"] .v-button__icon-content,
+	.v-button[data-loading="true"][data-indicator="overlay"] .v-button__label,
+	.v-button[data-loading="true"][data-indicator="overlay"] .v-button__end-icon {
+		opacity: 0;
+	}
+
+	.v-button[data-loading="true"][data-as-child="true"] {
+		color: transparent;
+	}
+
+	.v-button[data-loading="true"][data-as-child="true"] > * {
+		opacity: 0;
+	}
+
+	.v-button:disabled,
+	.v-button[aria-disabled="true"],
+	.v-button[data-disabled="true"] {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-button[aria-invalid="true"] {
+		border-color: var(--destructive);
+	}
+
+	.v-button[aria-invalid="true"]:focus-visible {
+		outline-color: var(--destructive);
+	}
+
+	@keyframes v-button-spin {
+		to {
+			rotate: 360deg;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-button {
+			transition: none;
+		}
+
+		.v-button__spinner,
+		.v-button[data-loading="true"][data-indicator="overlay"]::after {
+			animation: none;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-button {
+			--v-button-bg: ButtonFace;
+			--v-button-fg: ButtonText;
+			--v-button-border: ButtonText;
+			--v-button-hover-bg: Highlight;
+			--v-button-active-bg: Highlight;
+		}
+
+		.v-button:focus-visible {
+			outline-color: Highlight;
+		}
+
+		.v-button:disabled,
+		.v-button[aria-disabled="true"],
+		.v-button[data-disabled="true"] {
+			--v-button-fg: GrayText;
+
+			border-color: GrayText;
+			opacity: 1;
+		}
+	}
+}

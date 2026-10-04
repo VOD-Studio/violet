@@ -8,18 +8,11 @@
  * 方言作用域覆盖失效（首页黑白回归的根因）。
  */
 @theme inline {
-	--animate-blob: blob 7s infinite;
 	--animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
 	--animate-caret-blink: caret-blink 1s ease infinite;
-	--font-sans:
-		"Maple Mono", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-monospace, sans-serif;
-	--font-mono:
-		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	--font-signature: "Alex Brush", cursive;
-	/* 宋体典籍面：营造法式等装帧页的正文与标目用 */
-	--font-serif: Georgia, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, serif;
-	--animate-diagram-enter: diagram-enter 0.25s ease-out;
+	--font-sans: ui-sans-serif, system-ui, sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	--font-serif: Georgia, "Times New Roman", serif;
 	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
 	/* 交互反馈统一过渡：160ms 缓出（悬停显现、复制回显、指示线滑动共用） */
 	--transition-feedback: 160ms ease-out;
@@ -70,20 +63,6 @@
 }
 
 /* —— 主题动画 token 引用的 keyframes（全局注册，随映射层一起维护）—— */
-@keyframes blob {
-	0% {
-		transform: translate(0px, 0px) scale(1);
-	}
-	33% {
-		transform: translate(30px, -50px) scale(1.1);
-	}
-	66% {
-		transform: translate(-20px, 20px) scale(0.9);
-	}
-	100% {
-		transform: translate(0px, 0px) scale(1);
-	}
-}
 
 @keyframes nexus-shimmer {
 	100% {
@@ -92,17 +71,6 @@
 }
 
 @keyframes tab-panel-in {
-	from {
-		opacity: 0;
-		transform: translateY(4px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-@keyframes diagram-enter {
 	from {
 		opacity: 0;
 	}
@@ -118,15 +86,5 @@
 	}
 	50% {
 		opacity: 0;
-	}
-}
-
-/* 速览带无缝横滚：内容渲染两遍，整体位移 -50% 循环 */
-@keyframes marquee {
-	from {
-		transform: translateX(0);
-	}
-	to {
-		transform: translateX(-50%);
 	}
 }

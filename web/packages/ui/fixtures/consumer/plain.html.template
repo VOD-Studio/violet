@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Violet UI 纯 CSS 消费</title>
+		<link rel="stylesheet" href="./all.css" />
+		<style>
+			body { margin: 2rem; background: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; }
+			main { max-width: 30rem; display: grid; gap: 1.5rem; }
+			.preview-scope { --radius: 0.25rem; --primary-base: oklch(0.5 0.12 160); }
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>原生 HTML 与纯 CSS</h1>
+			<button id="plain-button" type="button" class="v-button v-button--primary">保存</button>
+			<div class="v-text-field">
+				<label for="plain-input" class="v-label">邮箱</label>
+				<input id="plain-input" type="email" class="v-input" aria-describedby="plain-description" />
+				<p id="plain-description" class="v-text-field__description">样式无需 React 或 Tailwind 编译</p>
+			</div>
+			<div class="preview-scope">
+				<button id="plain-scoped-button" type="button" class="v-button v-button--primary">局部主题</button>
+			</div>
+			<form id="plain-checkbox-form">
+				<label for="plain-checkbox" class="v-label">订阅更新</label>
+				<input id="plain-checkbox" type="checkbox" name="updates" value="weekly" checked class="v-checkbox v-checkbox--primary" />
+				<button type="reset" class="v-button">重置选择</button>
+			</form>
+		</main>
+	</body>
+</html>
