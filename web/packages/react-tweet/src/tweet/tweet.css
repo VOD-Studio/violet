@@ -247,6 +247,30 @@
 	color: var(--_tweet-muted);
 	font-size: 14px;
 }
+.v-tweet__status-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+.v-tweet__retry {
+	appearance: none;
+	padding: 4px 12px;
+	border: 1px solid var(--_tweet-border);
+	border-radius: 6px;
+	background: transparent;
+	color: var(--_tweet-foreground);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+	transition:
+		border-color 140ms ease,
+		color 140ms ease;
+}
+.v-tweet__retry:hover {
+	border-color: var(--_tweet-accent);
+	color: var(--_tweet-accent);
+}
 
 @media (max-width: 480px) {
 	.v-tweet {
@@ -257,7 +281,8 @@
 	}
 }
 @media (prefers-reduced-motion: reduce) {
-	.v-tweet a {
+	.v-tweet a,
+	.v-tweet__retry {
 		transition: none;
 	}
 }

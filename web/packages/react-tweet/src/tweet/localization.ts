@@ -15,6 +15,21 @@ export interface TweetMessages {
 	 */
 	source: string;
 	/**
+	 * 异步加载提示。
+	 * @example "Loading post…"
+	 */
+	loading: string;
+	/**
+	 * 可重试的请求错误提示。
+	 * @example "This post could not be loaded."
+	 */
+	error: string;
+	/**
+	 * 手动重试按钮文字。
+	 * @example "Try again"
+	 */
+	retry: string;
+	/**
 	 * 原因不明的不可用提示。
 	 * @example "This post is unavailable."
 	 */
@@ -175,6 +190,9 @@ export interface TweetDisplayOptions {
 const english: TweetMessages = {
 	tweetLabel: "X post",
 	source: "View original on X",
+	loading: "Loading post…",
+	error: "This post could not be loaded.",
+	retry: "Try again",
 	unavailable: "This post is unavailable.",
 	deleted: "This post has been deleted.",
 	private: "This post is only visible to approved followers.",
@@ -205,6 +223,9 @@ const english: TweetMessages = {
 const chinese: TweetMessages = {
 	tweetLabel: "X 原文",
 	source: "在 X 查看原文",
+	loading: "正在加载推文…",
+	error: "暂时无法加载这条推文",
+	retry: "重试",
 	unavailable: "这条推文暂不可用",
 	deleted: "这条推文已删除",
 	private: "这条推文仅对获准的关注者可见",
