@@ -811,11 +811,19 @@ xychart-beta
 {"repo":"VOD-Studio/violet","description":"全栈博客平台 · Go 后端 + React 前端，内置 MCP server 供 AI agent 读写文章","language":"TypeScript","stars":3,"forks":0}
 ```
 
-### 10.3 链接、社交动态与链接组
+### 10.3 链接、X 推文与社交链接组
 
 ````markdown
 ```link-preview
 {"url":"https://example.com/story","title":"文章标题","description":"一段简短摘要。","image":"/uploads/cover.webp","site":"Example"}
+```
+
+```tweet
+{"id":"1728987032779694397"}
+```
+
+```tweet
+{"url":"https://x.com/GenshinImpact/status/1728987032779694397"}
 ```
 
 ```tweet
@@ -827,10 +835,71 @@ xychart-beta
 ```
 ````
 
-- `link-preview` 和 `tweet` 都是静态快照，不加载第三方脚本，也不会在读者访问时请求外站接口。
+- `tweet` 支持两种模式：只写 `id` 或 X / Twitter 原文 `url` 时，客户端通过同源服务加载 FxTwitter 完整正文，并补充 X 官方认证与组织关联信息；填写 `author`、`handle`、`text` 等完整字段时，直接展示随文章保存的快照，不请求来源接口。标识必须写成字符串，避免长 ID 丢失精度。
+- 动态引用支持原作者、正文链接、照片、视频、单层引用、发布时间与来源统计。点赞和回复在新标签页打开 X 的真实操作入口，不修改本站计数；姓名、账号和组织标识分别导航。来源加载失败时保留原文入口和手动重试；明确不可用、已删除或私密的结果不伪装成可阅读内容。
+- 可在 ID、URL 引用或保存快照中设置 `"maxTextLines": 6`，将正文初始显示限制为 6 行；超出时提供「展示更多／收起」，图片、视频、引用和统计保持展示。省略时展示全文；该值必须为正整数。
+- `link-preview` 保持静态快照。上述组件都不加载第三方脚本或 iframe，但配图与视频会请求其资源地址。动态推文的数据源是外部服务，受其可用性与限流影响；需要长期固定内容时使用快照模式。
 - 社交链接组支持 1–8 项；`icon` 可选 `github`、`x`、`email`、`website`、`rss` 或 `video`，省略时按链接推断。
 - 链接只接受站内路径、`http(s)`；社交链接额外接受 `mailto:`。图片只接受站内上传路径或 `http(s)`。
 - JSON 无效或字段不合规时，文章其余内容照常渲染，错误位置显示可读的配置提示。
+
+#### X 推文实际展示案例
+
+本组只选用 `@GenshinImpact`、`@thsottiaux` 与 `@NintendoAmerica` 三个账号的真实公开推文，嵌套引用也限于这三个账号。ID、作者、认证类型、正文和媒体已于 2026-10-05 通过 FxTwitter 接口核对。动态卡片读取来源当前结果，认证及组织关联标识以实际返回为准，不按账号名称猜测或补造。以下标题只描述已确认的内容类型。
+
+**短文本与个人认证：189 字符正文，无附件；引用作者自己的另一条无附件推文。**
+
+```tweet
+{"id":"2061106703446450392"}
+```
+
+**长文本与多段正文：1,808 字符，无附件；正文默认显示 6 行，可展开与收起。引用作者自己的另一条无附件推文保持展示。**
+
+```tweet
+{"id":"2071740419030053227","maxTextLines":6}
+```
+
+**较长多段正文：520 字符的公告，附 1 张图片。**
+
+```tweet
+{"id":"1949667378637214138"}
+```
+
+**单张图片：正文介绍配合 1 张角色图片。**
+
+```tweet
+{"id":"1376851698350751751"}
+```
+
+**四张图片：4 张壁纸组成的图片组。**
+
+```tweet
+{"id":"1728987032779694397"}
+```
+
+**三张图片：3 张图片组成的图片组。**
+
+```tweet
+{"id":"2070358391411642467"}
+```
+
+**视频：附 1 段约 142 秒的视频。**
+
+```tweet
+{"id":"1879879950854926422"}
+```
+
+**官方认证与正文链接：附 1 张图片及正文链接。**
+
+```tweet
+{"id":"1907788934874062911"}
+```
+
+**保存正文快照：固定保存另一条无附件推文的作者、完整正文、头像和 UTC 发布时间，不请求推文数据接口。** 头像仍是外部图片资源；此例不填写认证标记，来源当前的认证与组织信息请看动态案例。
+
+```tweet
+{"url":"https://x.com/thsottiaux/status/2062329981548802523","author":"Tibo","handle":"@thsottiaux","text":"Hi. Over the last 24 hours we had three separate small incidents that affected Codex reliability. Those are three too many and we are taking active steps for them to not reproduce.\n\nI have reset usage limits for Codex across all paid plans. May the tokens flow again.","avatar":"https://pbs.twimg.com/profile_images/2093807917833281537/2yBgpwVV_200x200.jpg","date":"2026-06-04 00:25:58 UTC"}
+```
 
 ### 10.4 文章末尾签名
 

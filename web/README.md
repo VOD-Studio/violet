@@ -44,11 +44,81 @@ web/src/
 └── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
 ```
 
-`web/packages/ui/` 是单一 pnpm workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。成熟度以清单的 foundation / legacy 标记为准，legacy 保留兼容 API 并逐个重建。
+`web/packages/ui/` 是通用 UI workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。成熟度以清单的 foundation / legacy 标记为准，legacy 保留兼容 API 并逐个重建。
 
 `@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威。`src/features/ui-docs/` 负责 `/ui` 组件库文档，架构与设计规范直接读取包内正文，组件预览与复制源码共用同一份示例文件。
 
 后台 `DataTable` 默认让未调整的列随容器伸缩；右固定列按行内容撑开，操作按钮增减无需维护 `width`。时间等需完整展示的非固定列可设置 `fitContent: true`；拖拽列宽后记录当时的列布局，重置列设置可恢复自适应。
+
+## 推文组件包
+
+`packages/react-tweet/` 提供独立的 `@violet/react-tweet`，不依赖本站别名、路由、状态管理或 Tailwind。
+
+```tsx
+import { fetchTweetReference } from "@shared/server/tweet-reference";
+import { EmbeddedTweet, Tweet, type TweetData } from "@violet/react-tweet";
+
+// 本站通过同源 server function 取数；其他宿主提供自己的 fetcher。
+// 默认入口自动加载样式，无需再导入 styles.css。
+<Tweet id="1728987032779694397" fetcher={fetchTweetReference} locale="zh-CN" timeZone="Asia/Shanghai" />;
+
+const saved: TweetData = {
+  url: "https://x.com/thsottiaux/status/2062329981548802523",
+  availability: "available",
+  snapshot: {
+    author: { name: "Tibo", handle: "thsottiaux" },
+    text: "Hi. Over the last 24 hours we had three separate small incidents that affected Codex reliability. Those are three too many and we are taking active steps for them to not reproduce.\n\nI have reset usage limits for Codex across all paid plans. May the tokens flow again.",
+  },
+};
+<EmbeddedTweet tweet={saved} locale="zh-CN" timeZone="Asia/Shanghai" />;
+```
+
+### 入口与运行环境
+
+| 入口 | 契约 |
+|------|------|
+| `@violet/react-tweet` | 组件与公开类型，自动导入 CSS；由支持 CSS 的浏览器构建工具消费 |
+| `@violet/react-tweet/unstyled` | 同一组件和类型，无 CSS 副作用；可直接用于 Node.js SSR 或自定义样式 |
+| `@violet/react-tweet/api` | `getTweet`、`parseTweetId`、`GetTweetOptions`；不依赖 React 或 CSS |
+| `@violet/react-tweet/styles.css` | 无样式入口需要默认外观时手动加载 |
+
+包使用 React 19、原生 ESM、现代浏览器 CSS 和标准 Fetch API。`Tweet` 在客户端挂载后调用宿主提供的 `fetcher`；需要 SSR 正文时，服务端调用 `getTweet` 后将结果交给 `EmbeddedTweet`。官方作者元数据不开放浏览器跨域访问，不能直接在浏览器中使用 `getTweet`；本站同源边界位于 `src/shared/server/tweet-reference.ts`。组件不加载第三方脚本或 iframe，但图片、视频仍会请求各自的资源地址。当前仅在 workspace 使用，尚未发布 npm。
+
+源码内部的 `.js` 相对导入由 TypeScript `NodeNext` 解析到对应 `.ts` / `.tsx` 文件，构建后保留为可直接执行的 ESM 路径。根入口与 `/unstyled` 共用无 CSS 的类型入口，调用方不需要为读取类型添加 CSS 模块声明。
+
+### 数据、扩展与本地化
+
+- `TweetData` 按 `availability` 判别：`available` 必须包含快照；`private`、`deleted`、`unavailable` 禁止携带正文与引用。本站服务端标记不可用的内容只展示来源入口，不向外站重新抓取。
+- 照片必须有原图地址；视频区分真实播放源与仅封面状态，不将图片 URL 当作视频。连续照片组成网格，照片与视频之间保持来源顺序；引用最多展开一层，更深层保留原文链接。
+- `Tweet.fetcher` 必填，可接入自建代理或缓存。加载时显示头像、作者、正文和底栏骨架，`messages.loading` 仅向屏幕阅读器报告状态；减少动态效果时骨架不播放动画。加载器接收 `AbortSignal`；ID、加载器变化或卸载时取消旧请求并丢弃迟到结果。暂时失败提供原文入口和手动重试，不自动重抓明确不可用内容。
+- `renderPhotos` 接收净化后的连续照片组；`renderVideo` 接收一项可播放或仅封面的媒体。可通过照片插槽接入图片灯箱，portal 键盘事件仍可到达宿主。
+- 组件保留原生 `article` 的 `ref`、`className`、`style`、ARIA、`data-*` 和事件；正文仍冒泡，链接与媒体独立交互。`children` 和 `dangerouslySetInnerHTML` 不开放；异步组件的 `id` 专用于来源标识。
+- `locale` 默认 `en-US`，`timeZone` 默认 `UTC`；不读取浏览器语言或服务器本地时区。内置英文、简体中文，`messages` 可覆盖所有界面文案与无障碍标签；其他语言可传入完整词典。原作者正文和宿主自由文本提示不翻译。
+- 外观可覆盖 `--tweet-background`、`--tweet-foreground`、`--tweet-muted`、`--tweet-border`、`--tweet-accent`、`--tweet-accent-hover`、`--tweet-like-hover`、`--tweet-reply-hover`、`--tweet-repost-hover`、`--tweet-verified`、`--tweet-surface`、`--tweet-focus`、`--tweet-font-family`、`--tweet-max-width` 和 `--tweet-radius`，功能圆角上限为 16px。支持 `.dark` / `.light`、`data-theme` 与系统色彩偏好。
+- 推文沿正文起点对齐，统计与发布时间共用紧凑底栏；窄屏按可用宽度换行。操作图标采用 X 同款轮廓，按点赞、回复、转发排列，悬停分别使用玫红、蓝色、绿色；暗色主题使用对应的亮色。点赞为未选中的空心状态。点赞与回复在新标签页打开 X 的真实操作入口，不在本站伪造计数变化；转发数仍是只读快照。右上角 X 标记与时间链接打开原文。
+- 普通链接悬停时提亮链接色，不切换为正文色。作者姓名、账号、头像与组织关联各自导航，不共用整行 hover。姓名悬停只显示下划线并保留原文字颜色，`@账号` 与操作入口仅改变颜色，不联动另一行。`author.verification` 区分 `individual` / `business` / `government`，显示对应的蓝色、金色、灰色认证徽章；`author.affiliation` 只显示来源明确提供的组织图片与链接，不根据账号猜测关系。
+- `maxTextLines={6}` 可选开启正文折叠：只在实际超过 6 行时显示「展示更多／收起」，不截断原始文字、链接或 emoji，不影响图片、视频、引用卡与底部操作。不传则完整展示；非正整数不启用折叠。`Tweet` 与 `EmbeddedTweet` 均支持，文案可通过 `messages.showMore` / `messages.showLess` 覆盖。SSR 保留全文，浏览器完成布局测量后折叠；宽度或字体改变会重新判断溢出。
+
+`getTweet` 在服务端读取 [FxTwitter Status Fetch API](https://github.com/FxEmbed/FxEmbed/wiki/Status-Fetch-API) 的完整正文与媒体，再由 X 官方 syndication 补充作者认证和组织关联，不用官方可能截断的正文覆盖长文。官方作者 ID、账号和推文 ID 必须与正文来源匹配；私密或墓碑状态不展示旧正文。外部服务可能限流或不可用，网络与协议错误交给宿主处理；请求固定来源、不携带凭证、不跟随重定向。普通推文与长推文的索引口径不同，适配器统一后再切片，避免中文与 emoji 截断。
+
+服务端运行环境必须能访问两处外部来源。若通过 `HTTP_PROXY` / `HTTPS_PROXY` 出网，使用支持内置代理的 Node.js 版本并启用 `NODE_USE_ENV_PROXY=1`，同时通过 `NO_PROXY` 排除本站 API；旧版 Node.js 的原生 `fetch` 不会仅因设置这些代理变量就自动使用代理。代理属于宿主运行环境配置，不进入浏览器组件。
+
+### 包内边界与验证
+
+- `src/data/`：数据、媒体、异步加载契约与 URL 校验，不依赖 React。
+- `src/fxtwitter/`：完整正文与媒体请求、规范化，以及作者元数据的合并。
+- `src/syndication/`：官方作者认证、组织关联和可见性校验。
+- `src/tweet/`：展示组件、私有加载 hook、本地化、媒体渲染接口与共置的主体/媒体 CSS。
+- `src/index.ts`、`src/unstyled.ts`、`src/api.ts`、`src/styles.css`：公开入口；内部模块直接引用具体文件，不反向依赖入口 barrel。测试与被测模块共置。
+
+```bash
+pnpm --filter @violet/react-tweet typecheck
+pnpm --filter @violet/react-tweet test
+pnpm --filter @violet/react-tweet build
+pnpm --dir packages/react-tweet pack --pack-destination /tmp
+```
+
+发布前还需在 workspace 外安装真实 tarball，验证 Node.js SSR、浏览器默认 CSS、纯 API 依赖边界与跨运行时水合，而非只检查源码路径。
 
 ## 开发环境
 
