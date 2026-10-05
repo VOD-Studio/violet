@@ -1,3 +1,4 @@
+import { parseTweetId } from "@violet/react-tweet/api";
 import { z } from "zod";
 import type { ArticleEmbedKind, ParsedArticleEmbed } from "./types";
 import { isSafeArticleHref, isSafeArticleImage } from "./url";
@@ -43,7 +44,9 @@ const linkPreviewSchema = z.object({
 	site: optionalText(120),
 });
 
-const tweetSchema = z.object({
+const maxTextLines = z.number().int().positive().optional();
+
+const tweetSnapshotSchema = z.object({
 	url: href,
 	author: text(100),
 	handle: text(100),
@@ -53,7 +56,20 @@ const tweetSchema = z.object({
 	imageAlt: optionalText(300),
 	date: optionalText(80),
 	verified: z.boolean().optional(),
+	maxTextLines,
 });
+
+const tweetSchema = z.union([
+	tweetSnapshotSchema,
+	z.object({ id: text(20).regex(/^[1-9]\d*$/u), maxTextLines }).strict(),
+	z
+		.object({
+			url: href.refine((value) => parseTweetId(value) !== null, "需要 X 或 Twitter 推文链接"),
+			maxTextLines,
+		})
+		.strict()
+		.transform(({ url, maxTextLines }) => ({ id: parseTweetId(url) as string, maxTextLines })),
+]);
 
 const socialLinksSchema = z.object({
 	links: z

@@ -95,8 +95,23 @@ export interface LinkPreviewEmbedConfig {
 	site?: string;
 }
 
+/** 通过来源接口加载内容的推文引用。 */
+export interface TweetReferenceConfig {
+	/**
+	 * X 推文的十进制字符串标识。
+	 *
+	 * 不转换为 number，避免长标识超过安全整数范围。
+	 *
+	 * @example
+	 * { id: "20" }
+	 */
+	id: string;
+	/** 正整数表示正文折叠行数；省略时展示全文，不折叠媒体。 */
+	maxTextLines?: number;
+}
+
 /** 作者随文章保存的推文快照，不触发来源接口请求。 */
-export interface TweetEmbedConfig {
+export interface TweetSnapshotConfig {
 	/** 原推文地址，供读者访问来源。 */
 	url: string;
 	/** 原作者的公开显示名称。 */
@@ -123,7 +138,12 @@ export interface TweetEmbedConfig {
 	date?: string;
 	/** 作者是否认证；未知时省略，不据此推断身份。 */
 	verified?: boolean;
+	/** 正整数表示正文折叠行数；省略时展示全文，不折叠媒体。 */
+	maxTextLines?: number;
 }
+
+/** 引用模式按 ID 加载；快照模式直接展示保存内容。 */
+export type TweetEmbedConfig = TweetReferenceConfig | TweetSnapshotConfig;
 
 /** 社交入口支持的图标名称。 */
 export type SocialLinkIcon = "github" | "x" | "email" | "website" | "rss" | "video";
