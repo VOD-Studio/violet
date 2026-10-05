@@ -1,0 +1,65 @@
+.shell {
+	--toc-rail-height: min(55vh, calc(100vh - 8rem));
+	--toc-reveal-duration: 320ms;
+	--toc-reveal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	height: var(--toc-rail-height);
+}
+
+.shell[data-toc-state="rail"] {
+	--toc-reveal-duration: 220ms;
+	--toc-reveal-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.directory {
+	/* 短目录比阅读轨矮时，起点取阅读位置在目录内的最近点。 */
+	--toc-reveal-origin: clamp(0px, calc(var(--toc-rail-height) * var(--toc-read-progress)), 100%);
+	opacity: 1;
+	clip-path: inset(0 0 0 0);
+	transition:
+		clip-path var(--toc-reveal-duration) var(--toc-reveal-ease),
+		opacity 180ms ease-out;
+}
+
+.shell[data-toc-state="rail"] .directory {
+	opacity: 0;
+	clip-path: inset(
+		var(--toc-reveal-origin) calc(100% - 0.5rem) calc(100% - var(--toc-reveal-origin)) 0
+	);
+}
+
+.shell [data-toc-rail] {
+	opacity: 0;
+	transition: opacity 160ms ease-out 80ms;
+}
+
+.shell[data-toc-state="rail"] [data-toc-rail] {
+	opacity: 1;
+	transition-duration: 180ms;
+	transition-delay: 40ms;
+}
+
+.shell [data-toc-rail-label] {
+	opacity: 0;
+	transition: opacity 100ms ease-out;
+}
+
+.shell[data-toc-state="rail"] [data-toc-rail-label] {
+	opacity: 1;
+	transition-duration: 160ms;
+	transition-delay: 60ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.directory,
+	.shell[data-toc-state="rail"] .directory {
+		clip-path: none;
+		transition: opacity 100ms ease-out;
+	}
+
+	.shell [data-toc-rail],
+	.shell[data-toc-state="rail"] [data-toc-rail],
+	.shell [data-toc-rail-label],
+	.shell[data-toc-state="rail"] [data-toc-rail-label] {
+		transition: opacity 100ms ease-out;
+	}
+}

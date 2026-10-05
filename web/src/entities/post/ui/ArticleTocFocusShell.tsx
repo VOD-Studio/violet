@@ -1,6 +1,13 @@
 import { cn } from "cn";
-import { type FocusEvent, type ReactNode, type RefObject, useLayoutEffect, useState } from "react";
-
+import {
+	type CSSProperties,
+	type FocusEvent,
+	type ReactNode,
+	type RefObject,
+	useLayoutEffect,
+	useState,
+} from "react";
+import styles from "./ArticleTocFocusShell.module.css";
 import { ArticleTocRail } from "./ArticleTocRail";
 import { type ArticleTocRailItem, useArticleReadPercent } from "./article-toc-rail-motion";
 
@@ -36,7 +43,7 @@ export function ArticleTocFocusShell({
 
 	return (
 		<div
-			data-toc-focus={railActive ? "" : undefined}
+			data-toc-state={railActive ? "rail" : "directory"}
 			role="group"
 			aria-label="文章目录；悬停或聚焦以展开完整目录"
 			onMouseEnter={() => setIsHovered(true)}
@@ -48,7 +55,8 @@ export function ArticleTocFocusShell({
 					setHasFocusWithin(false);
 				}
 			}}
-			className="relative h-[55vh] max-h-[calc(100vh-8rem)] w-[calc(100%+1.5rem)] rounded-xl"
+			className={cn(styles.shell, "relative w-[calc(100%+1.5rem)] rounded-xl")}
+			style={{ "--toc-read-progress": readPercent / 100 } as CSSProperties}
 		>
 			<button
 				type="button"
@@ -63,8 +71,9 @@ export function ArticleTocFocusShell({
 				aria-hidden={railActive}
 				inert={railActive}
 				className={cn(
-					"absolute inset-x-0 top-0 flex max-h-full flex-col px-2 motion-safe:transition-opacity motion-safe:duration-180 motion-safe:ease-out",
-					railActive ? "pointer-events-none opacity-0" : "opacity-100",
+					styles.directory,
+					"absolute inset-x-0 top-0 flex max-h-full flex-col px-2",
+					railActive && "pointer-events-none",
 				)}
 			>
 				{children(railActive)}

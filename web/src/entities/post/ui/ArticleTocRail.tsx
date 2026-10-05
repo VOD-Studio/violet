@@ -31,11 +31,7 @@ export function ArticleTocRail({
 			aria-hidden="true"
 			data-toc-rail
 			ref={containerRef}
-			className={cn(
-				"pointer-events-none absolute inset-y-0 left-0 w-12 motion-safe:transition-opacity motion-safe:duration-180 motion-safe:ease-out",
-				active ? "opacity-100" : "opacity-0",
-				className,
-			)}
+			className={cn("pointer-events-none absolute inset-y-0 left-0 w-12", className)}
 			style={{ "--toc-rail-accent": ARTICLE_TOC_RAIL_ACCENT } as CSSProperties}
 		>
 			<svg
