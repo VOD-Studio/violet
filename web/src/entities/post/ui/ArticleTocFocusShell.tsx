@@ -29,8 +29,8 @@ export function ArticleTocFocusShell({
 	children,
 }: ArticleTocFocusShellProps) {
 	const [isHovered, setIsHovered] = useState(false);
-	const [hasFocusWithin, setHasFocusWithin] = useState(false);
-	const railActive = !isHovered && !hasFocusWithin;
+	const [hasKeyboardFocusWithin, setHasKeyboardFocusWithin] = useState(false);
+	const railActive = !isHovered && !hasKeyboardFocusWithin;
 	useLayoutEffect(() => {
 		onRailActiveChange?.(railActive);
 	}, [onRailActiveChange, railActive]);
@@ -48,11 +48,18 @@ export function ArticleTocFocusShell({
 			aria-label="文章目录；悬停或聚焦以展开完整目录"
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
-			onFocusCapture={() => setHasFocusWithin(true)}
+			onPointerDownCapture={() => {
+				// 再次点击已聚焦的条目不会触发 focus，也需要解除键盘保持。
+				setHasKeyboardFocusWithin(false);
+			}}
+			onKeyDownCapture={() => setHasKeyboardFocusWithin(true)}
+			onFocusCapture={(event) =>
+				setHasKeyboardFocusWithin(event.target.matches(":focus-visible"))
+			}
 			onBlurCapture={(event: FocusEvent<HTMLDivElement>) => {
 				const nextTarget = event.relatedTarget;
 				if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
-					setHasFocusWithin(false);
+					setHasKeyboardFocusWithin(false);
 				}
 			}}
 			className={cn(styles.shell, "relative w-[calc(100%+1.5rem)] rounded-xl")}

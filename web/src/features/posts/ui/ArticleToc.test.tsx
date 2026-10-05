@@ -1,5 +1,5 @@
 import { SegmentedArticleToc } from "@entities/post/ui/SegmentedArticleToc";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import ArticleToc, { buildTree } from "./ArticleToc";
@@ -37,6 +37,14 @@ const items = [
 	{ level: 3 as const, id: "h3-2-1", text: "2.1 小节" },
 	{ level: 4 as const, id: "h4-2-1-1", text: "2.1.1 细节" },
 ];
+
+// jsdom 不把链接的键盘焦点标为 :focus-visible，输入方式另由真实浏览器验证。
+function mockKeyboardFocusVisible(element: HTMLElement) {
+	const matches = element.matches.bind(element);
+	vi.spyOn(element, "matches").mockImplementation(
+		(selector) => selector === ":focus-visible" || matches(selector),
+	);
+}
 
 describe("buildTree", () => {
 	it("从扁平标题构造完整层级树", () => {
@@ -95,7 +103,7 @@ describe("ArticleToc", () => {
 		expect(panel?.hasAttribute("inert")).toBe(true);
 	});
 
-	it("键盘焦点从入口移动到目录条目时保持展开，离开后收起", () => {
+	it("鼠标点击目录项产生的焦点不会在移出后保持展开", () => {
 		render(
 			<ArticleToc
 				items={items}
@@ -106,17 +114,76 @@ describe("ArticleToc", () => {
 		const shell = screen.getByRole("group", {
 			name: "文章目录；悬停或聚焦以展开完整目录",
 		});
+		const trigger = screen.getByRole("button", { name: "展开完整目录" });
+		fireEvent.mouseEnter(shell);
+		const link = screen.getByRole("link", { name: "第一章" });
+		fireEvent.pointerDown(link, { pointerType: "mouse" });
+		fireEvent.mouseDown(link);
+		act(() => link.focus());
+		fireEvent.click(link);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+		fireEvent.mouseLeave(shell);
+		expect(trigger.getAttribute("aria-expanded")).toBe("false");
+	});
+
+	it("键盘焦点从入口移动到目录条目时保持展开，离开后收起", () => {
+		render(
+			<>
+				<ArticleToc
+					items={items}
+					contentRef={createRef<HTMLElement>()}
+					isRailCollapsedAtRest
+				/>
+				<button type="button">离开目录</button>
+			</>,
+		);
+		const shell = screen.getByRole("group", {
+			name: "文章目录；悬停或聚焦以展开完整目录",
+		});
 		const panel = shell.querySelector("[data-toc-accordion]")?.parentElement;
 		const trigger = screen.getByRole("button", { name: "展开完整目录" });
-		fireEvent.focus(trigger);
+		fireEvent.keyDown(document.body, { key: "Tab" });
+		act(() => trigger.focus());
 		expect(panel?.hasAttribute("inert")).toBe(false);
 		const link = screen.getByRole("link", { name: "第一章" });
+		mockKeyboardFocusVisible(link);
 
-		fireEvent.blur(trigger, { relatedTarget: link });
-		fireEvent.focus(link);
+		fireEvent.keyDown(trigger, { key: "Tab" });
+		act(() => link.focus());
 		expect(panel?.hasAttribute("inert")).toBe(false);
 
-		fireEvent.blur(link, { relatedTarget: document.body });
+		act(() => screen.getByRole("button", { name: "离开目录" }).focus());
+		expect(panel?.hasAttribute("inert")).toBe(true);
+	});
+
+	it("键盘聚焦后改用鼠标点击同一条目，移出目录时不再常驻", () => {
+		render(
+			<ArticleToc
+				items={items}
+				contentRef={createRef<HTMLElement>()}
+				isRailCollapsedAtRest
+			/>,
+		);
+		const shell = screen.getByRole("group", {
+			name: "文章目录；悬停或聚焦以展开完整目录",
+		});
+		const trigger = screen.getByRole("button", { name: "展开完整目录" });
+		fireEvent.mouseEnter(shell);
+		const link = screen.getByRole("link", { name: "第一章" });
+		mockKeyboardFocusVisible(link);
+		fireEvent.keyDown(document.body, { key: "Tab" });
+		act(() => link.focus());
+		fireEvent.mouseLeave(shell);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+		fireEvent.mouseEnter(shell);
+		fireEvent.pointerDown(link, { pointerType: "mouse" });
+		fireEvent.click(link);
+		fireEvent.mouseLeave(shell);
+
+		expect(trigger.getAttribute("aria-expanded")).toBe("false");
+		const panel = shell.querySelector("[data-toc-accordion]")?.parentElement;
 		expect(panel?.hasAttribute("inert")).toBe(true);
 	});
 
