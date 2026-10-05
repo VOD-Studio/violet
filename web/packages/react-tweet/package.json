@@ -1,29 +1,53 @@
 {
 	"name": "@violet/react-tweet",
 	"version": "0.1.0",
-	"description": "Normalized tweet data with an independent FxTwitter API adapter",
+	"description": "Native React tweet embeds with standalone themes and an FxTwitter data adapter",
 	"license": "MIT",
 	"type": "module",
 	"files": [
 		"dist",
 		"LICENSE"
 	],
-	"sideEffects": false,
+	"sideEffects": [
+		"**/*.css"
+	],
 	"exports": {
+		".": {
+			"types": "./src/unstyled.ts",
+			"import": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./unstyled": {
+			"types": "./src/unstyled.ts",
+			"import": "./src/unstyled.ts",
+			"default": "./src/unstyled.ts"
+		},
 		"./api": {
 			"types": "./src/api.ts",
 			"import": "./src/api.ts",
 			"default": "./src/api.ts"
-		}
+		},
+		"./styles.css": "./src/styles.css"
 	},
 	"publishConfig": {
 		"access": "public",
 		"exports": {
+			".": {
+				"types": "./dist/unstyled.d.ts",
+				"import": "./dist/index.js",
+				"default": "./dist/index.js"
+			},
+			"./unstyled": {
+				"types": "./dist/unstyled.d.ts",
+				"import": "./dist/unstyled.js",
+				"default": "./dist/unstyled.js"
+			},
 			"./api": {
 				"types": "./dist/api.d.ts",
 				"import": "./dist/api.js",
 				"default": "./dist/api.js"
-			}
+			},
+			"./styles.css": "./dist/styles.css"
 		}
 	},
 	"scripts": {
@@ -32,7 +56,16 @@
 		"test": "vitest run --config vitest.config.ts",
 		"prepack": "pnpm build"
 	},
+	"peerDependencies": {
+		"react": "^19.0.0"
+	},
 	"devDependencies": {
+		"@testing-library/react": "^16.3.0",
+		"@types/react": "^19.2.0",
+		"@types/react-dom": "^19.2.0",
+		"jsdom": "^28.1.0",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
 		"typescript": "^7.0.2",
 		"vitest": "^4.1.5"
 	}

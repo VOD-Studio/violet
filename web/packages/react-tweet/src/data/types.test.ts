@@ -1,14 +1,16 @@
 import { expectTypeOf, it } from "vitest";
 
-import type { TweetAffiliation, TweetAuthor, TweetVerification } from "./author.js";
-import type { TweetMedia } from "./media.js";
 import type {
 	AvailableTweet,
+	TweetAffiliation,
+	TweetAuthor,
 	TweetData,
+	TweetMedia,
 	TweetSegment,
 	TweetSnapshot,
+	TweetVerification,
 	UnavailableTweet,
-} from "./types.js";
+} from "../unstyled.js";
 
 it("可用性决定快照的类型契约", () => {
 	expectTypeOf<TweetData>()

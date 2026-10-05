@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { rm } from "node:fs/promises";
+import { copyFile, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const root = new URL("../", import.meta.url);
@@ -11,3 +11,8 @@ const result = spawnSync("tsc", ["--project", "tsconfig.build.json"], {
 });
 if (result.error) throw result.error;
 if (result.status !== 0) process.exit(result.status ?? 1);
+await Promise.all(
+	["styles.css", "tweet/tweet.css", "tweet/media.css"].map((path) =>
+		copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root)),
+	),
+);

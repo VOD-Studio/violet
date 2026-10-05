@@ -1,23 +1,16 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"lib": [
-			"ES2022",
-			"DOM",
-			"DOM.Iterable"
-		],
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
+		"jsx": "react-jsx",
 		"strict": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 		"noEmit": true,
-		"types": []
+		"types": ["react"]
 	},
-	"include": [
-		"src"
-	],
-	"exclude": [
-		"dist"
-	]
+	"include": ["src"],
+	"exclude": ["dist"]
 }
