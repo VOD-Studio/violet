@@ -89,16 +89,14 @@ export async function getAuthorMetadata(
 	if (!tweet) throw new Error("X syndication returned an invalid response");
 	if (tweet.__typename === "TweetTombstone") return { unavailable: "unavailable" };
 	const user = record(tweet.user);
+	if (tweet.__typename !== "Tweet" || tweet.id_str !== id || !user || user.id_str !== authorId)
+		return;
+	if (user.protected === true) return { unavailable: "private" };
 	if (
-		tweet.__typename !== "Tweet" ||
-		tweet.id_str !== id ||
-		!user ||
-		user.id_str !== authorId ||
 		typeof user.screen_name !== "string" ||
 		user.screen_name.toLowerCase() !== handle.toLowerCase()
 	)
 		return;
-	if (user.protected === true) return { unavailable: "private" };
 	return {
 		verification: verificationFrom(user),
 		affiliation: affiliationFrom(user.highlighted_label),

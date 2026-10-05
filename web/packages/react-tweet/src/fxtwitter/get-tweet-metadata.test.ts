@@ -110,6 +110,13 @@ describe("FxTwitter 正文与官方作者元数据组合", () => {
 	it.each([
 		[{ __typename: "TweetTombstone" }, "unavailable"],
 		[{ ...officialTweet(), user: { ...officialTweet().user, protected: true } }, "private"],
+		[
+			{
+				...officialTweet(),
+				user: { ...officialTweet().user, screen_name: "renamed", protected: true },
+			},
+			"private",
+		],
 	] as const)("官方明确不可用时丢弃 FxTwitter 的旧正文与引用", async (official, availability) => {
 		const fetcher = respond({ ...fxTweet(), quote: fxTweet("21") }, official);
 		const result = await getTweet("20");
