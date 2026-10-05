@@ -1,12 +1,13 @@
 import type { TweetData, TweetNotice, TweetSnapshot } from "../data/types.js";
 import { canonicalUrl, parseTweetId, safeUrl } from "../data/urls.js";
+import { getAuthorMetadata } from "../syndication/author-metadata.js";
 import { normalizeMedia } from "./normalize-media.js";
 import { normalizeText, record } from "./normalize-text.js";
 
 /**
- * FxTwitter 推文请求选项。
+ * 推文请求选项，同时约束正文与官方作者元数据请求。
  *
- * 不允许覆盖请求源或注入认证信息。
+ * 不允许覆盖请求源或注入认证信息；自建数据源应使用 Tweet 的 fetcher。
  */
 export interface GetTweetOptions {
 	/**
@@ -109,10 +110,39 @@ function normalizeTweet(value: unknown, id: string, depth = 0): TweetData {
 	return result;
 }
 
+async function enrichAuthor(
+	tweet: TweetData,
+	source: unknown,
+	signal?: AbortSignal,
+): Promise<TweetData> {
+	if (tweet.availability !== "available" || !tweet.id) return tweet;
+	const raw = record(source);
+	const authorId = record(raw?.author)?.id;
+	if (typeof authorId === "string") {
+		const metadata = await getAuthorMetadata(
+			tweet.id,
+			authorId,
+			tweet.snapshot.author.handle,
+			signal,
+		);
+		if (metadata) {
+			if (metadata.unavailable)
+				return { id: tweet.id, url: tweet.url, availability: metadata.unavailable };
+			tweet.snapshot.author.verification = metadata.verification;
+			tweet.snapshot.author.affiliation = metadata.affiliation;
+		}
+	}
+	if (tweet.quotedTweet)
+		tweet.quotedTweet = await enrichAuthor(tweet.quotedTweet, raw?.quote, signal);
+	return tweet;
+}
+
 /**
- * 获取并规范化 FxTwitter 完整正文、作者信息与媒体。
+ * 获取 FxTwitter 完整正文，在服务端补充 X 官方作者认证与组织关联。
  *
  * 不加载脚本、携带凭证或跟随重定向；私密与删除状态不会补回正文。
+ * 官方元数据不开放浏览器 CORS，本函数应仅在服务端调用；
+ * 宿主通过同源 fetcher 将完整结果交给展示组件。
  * @param id - 十进制推文标识或规范 X/Twitter 原文地址。
  * @param options - 请求取消选项。
  * @returns 可用快照或明确的不可用状态。
@@ -143,6 +173,7 @@ export async function getTweet(id: string, options: GetTweetOptions = {}): Promi
 	}
 	if (envelope.code !== 200) throw new Error(`FxTwitter request failed (${envelope.code})`);
 	const tweet = normalizeTweet(envelope.tweet, parsed);
+	const enriched = await enrichAuthor(tweet, envelope.tweet, options.signal);
 	options.signal?.throwIfAborted();
-	return tweet;
+	return enriched;
 }

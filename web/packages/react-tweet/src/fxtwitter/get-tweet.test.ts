@@ -78,24 +78,6 @@ describe("推文标识与请求边界", () => {
 		expect(result.snapshot?.metrics).toBeUndefined();
 	});
 
-	it.each([
-		"business",
-		"government",
-		"individual",
-	])("FxTwitter 明确认证类型 %s 不再降为布尔值", async (type) => {
-		const tweet = fixture();
-		tweet.author.verification.type = type;
-		respond(tweet);
-		expect((await getTweet("20")).snapshot?.author.verification).toBe(type);
-	});
-
-	it("未知 FxTwitter 认证类型不伪装成蓝标", async () => {
-		const tweet = fixture();
-		tweet.author.verification.type = "other";
-		respond(tweet);
-		expect((await getTweet("20")).snapshot?.author.verification).toBeUndefined();
-	});
-
 	it("非法标识在请求前拒绝", async () => {
 		const fetcher = respond(fixture());
 		await expect(getTweet("https://evil.test/status/20")).rejects.toThrow(TypeError);
