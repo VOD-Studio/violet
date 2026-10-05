@@ -22,6 +22,8 @@ export type {
 	TweetTextSegment,
 	UnavailableTweet,
 } from "./data/types.ts";
+export type { TweetCardProps } from "./tweet/card.tsx";
+export { TweetCard } from "./tweet/card.tsx";
 export type { EmbeddedTweetProps } from "./tweet/embedded-tweet.tsx";
 export { EmbeddedTweet } from "./tweet/embedded-tweet.tsx";
 export type { TweetDisplayOptions, TweetMessages } from "./tweet/localization.ts";

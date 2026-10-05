@@ -5,6 +5,7 @@ import { useMemo } from "react";
 
 import type { TweetData, TweetNotice } from "../data/types.ts";
 import { safeUrl, tweetUrl } from "../data/urls.ts";
+import { TweetCard } from "./card.tsx";
 import { TweetFooter } from "./footer.tsx";
 import { TweetHeader } from "./header.tsx";
 import type { TweetDisplayOptions, TweetLocalization, TweetMessages } from "./localization.ts";
@@ -100,23 +101,24 @@ function TweetContent({
 }) {
 	const { messages } = localization;
 	const source = tweetUrl(tweet.url, tweet.id);
-	const classes = `not-prose v-tweet${compact ? " v-tweet--compact" : ""}${depth ? " v-tweet--quoted" : ""}${articleProps?.className ? ` ${articleProps.className}` : ""}`;
 	const label = articleProps?.["aria-label"] ?? messages.tweetLabel;
 	const unavailableState =
 		tweet.availability === "available" ? "unavailable" : tweet.availability;
 	if (tweet.availability !== "available" || !tweet.snapshot) {
 		return (
-			<article
+			<TweetCard
 				{...articleProps}
-				className={classes}
+				compact={compact}
+				isQuoted={depth > 0}
 				aria-label={label}
 				data-state={unavailableState}
-			>
-				<p className="v-tweet__notice">{messages[unavailableState]}</p>
-				<TweetLink href={source} className="v-tweet__source">
-					{messages.source}
-				</TweetLink>
-			</article>
+				contentSlot={<p className="v-tweet__notice">{messages[unavailableState]}</p>}
+				footerSlot={
+					<TweetLink href={source} className="v-tweet__source">
+						{messages.source}
+					</TweetLink>
+				}
+			/>
 		);
 	}
 	const { snapshot } = tweet;
@@ -130,28 +132,39 @@ function TweetContent({
 		...(snapshot.warnings ?? []),
 	];
 	return (
-		<article {...articleProps} className={classes} aria-label={label} data-state="available">
-			<TweetHeader author={snapshot.author} source={source} messages={messages} />
-			{(snapshot.text || !!snapshot.segments?.length) && (
-				<TweetText
-					key={`${source ?? ""}:${maxTextLines ?? ""}`}
-					text={snapshot.text}
-					segments={snapshot.segments}
-					maxTextLines={maxTextLines}
-					messages={messages}
-				/>
-			)}
-			{!!snapshot.media?.length && (
-				<TweetMediaContent
-					media={snapshot.media}
-					source={source}
-					renderPhotos={renderPhotos}
-					renderVideo={renderVideo}
-					localization={localization}
-				/>
-			)}
-			{tweet.quotedTweet && depth === 0 ? (
-				<div className="v-tweet__quote">
+		<TweetCard
+			{...articleProps}
+			compact={compact}
+			isQuoted={depth > 0}
+			aria-label={label}
+			data-state="available"
+			headerSlot={
+				<TweetHeader author={snapshot.author} source={source} messages={messages} />
+			}
+			contentSlot={
+				(snapshot.text || !!snapshot.segments?.length) && (
+					<TweetText
+						key={`${source ?? ""}:${maxTextLines ?? ""}`}
+						text={snapshot.text}
+						segments={snapshot.segments}
+						maxTextLines={maxTextLines}
+						messages={messages}
+					/>
+				)
+			}
+			mediaSlot={
+				!!snapshot.media?.length && (
+					<TweetMediaContent
+						media={snapshot.media}
+						source={source}
+						renderPhotos={renderPhotos}
+						renderVideo={renderVideo}
+						localization={localization}
+					/>
+				)
+			}
+			quoteSlot={
+				tweet.quotedTweet && depth === 0 ? (
 					<TweetContent
 						tweet={tweet.quotedTweet}
 						compact
@@ -160,27 +173,31 @@ function TweetContent({
 						localization={localization}
 						depth={1}
 					/>
-				</div>
-			) : (
-				quoteSource && (
-					<TweetLink href={quoteSource} className="v-tweet__quote-link">
-						{messages.quote}
-					</TweetLink>
+				) : (
+					quoteSource && (
+						<TweetLink href={quoteSource} className="v-tweet__quote-link">
+							{messages.quote}
+						</TweetLink>
+					)
 				)
-			)}
-			{warnings.length > 0 && (
-				<ul className="v-tweet__warnings">
-					{warnings.map((warning, index) => (
-						<li key={`${index}:${warning}`}>{warning}</li>
-					))}
-				</ul>
-			)}
-			<TweetFooter
-				snapshot={snapshot}
-				id={tweet.id}
-				source={source}
-				localization={localization}
-			/>
-		</article>
+			}
+			footerSlot={
+				<>
+					{warnings.length > 0 && (
+						<ul className="v-tweet__warnings">
+							{warnings.map((warning, index) => (
+								<li key={`${index}:${warning}`}>{warning}</li>
+							))}
+						</ul>
+					)}
+					<TweetFooter
+						snapshot={snapshot}
+						id={tweet.id}
+						source={source}
+						localization={localization}
+					/>
+				</>
+			}
+		/>
 	);
 }
