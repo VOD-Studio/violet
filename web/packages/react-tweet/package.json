@@ -1,0 +1,39 @@
+{
+	"name": "@violet/react-tweet",
+	"version": "0.1.0",
+	"description": "Normalized tweet data with an independent FxTwitter API adapter",
+	"license": "MIT",
+	"type": "module",
+	"files": [
+		"dist",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"exports": {
+		"./api": {
+			"types": "./src/api.ts",
+			"import": "./src/api.ts",
+			"default": "./src/api.ts"
+		}
+	},
+	"publishConfig": {
+		"access": "public",
+		"exports": {
+			"./api": {
+				"types": "./dist/api.d.ts",
+				"import": "./dist/api.js",
+				"default": "./dist/api.js"
+			}
+		}
+	},
+	"scripts": {
+		"build": "node scripts/build.mjs",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run --config vitest.config.ts",
+		"prepack": "pnpm build"
+	},
+	"devDependencies": {
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.5"
+	}
+}
