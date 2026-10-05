@@ -34,6 +34,27 @@ function respond(tweet: unknown, code = 200) {
 
 afterEach(() => vi.unstubAllGlobals());
 
+it.each(["response", "body"])("取消在 %s 返回后生效，不被误报为内容不可用", async (phase) => {
+	const controller = new AbortController();
+	const response = new Response(JSON.stringify({ code: 404 }), {
+		status: phase === "response" ? 404 : 200,
+		headers: { "content-type": "application/json" },
+	});
+	if (phase === "body") {
+		response.json = async () => {
+			controller.abort();
+			return { code: 404 };
+		};
+	}
+	vi.stubGlobal("fetch", async () => {
+		if (phase === "response") controller.abort();
+		return response;
+	});
+	await expect(getTweet("20", { signal: controller.signal })).rejects.toMatchObject({
+		name: "AbortError",
+	});
+});
+
 describe("推文标识与请求边界", () => {
 	it.each([
 		["20", "20"],

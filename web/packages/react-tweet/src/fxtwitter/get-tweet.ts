@@ -158,6 +158,7 @@ export async function getTweet(id: string, options: GetTweetOptions = {}): Promi
 		redirect: "error",
 		headers: { Accept: "application/json" },
 	});
+	options.signal?.throwIfAborted();
 	/** 404 不能证明已删除；私密与删除标记必须来自来源的明确数据。 */
 	if (response.status === 404 || response.status === 401 || response.status === 403) {
 		return { id: parsed, url: canonicalUrl(parsed), availability: "unavailable" };
@@ -166,6 +167,7 @@ export async function getTweet(id: string, options: GetTweetOptions = {}): Promi
 	if (!response.headers.get("content-type")?.toLowerCase().includes("application/json"))
 		throw new Error("FxTwitter returned a non-JSON response");
 	const envelope = record(await response.json());
+	options.signal?.throwIfAborted();
 	if (!envelope || typeof envelope.code !== "number")
 		throw new Error("FxTwitter returned an invalid response");
 	if (envelope.code === 404 || envelope.code === 401 || envelope.code === 403) {
