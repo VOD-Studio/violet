@@ -79,14 +79,15 @@ describe("FxTwitter 正文与官方作者元数据组合", () => {
 	});
 
 	it.each([
-		"business",
-		"government",
-		"individual",
-	])("FxTwitter 明确认证类型 %s 不再降为布尔值", async (type) => {
+		["organization", "business"],
+		["business", "business"],
+		["government", "government"],
+		["individual", "individual"],
+	])("FxTwitter 认证 %s 映射为 %s", async (type, expected) => {
 		const tweet = fxTweet();
 		tweet.author.verification.type = type;
 		respond(tweet, {});
-		expect((await getTweet("20")).snapshot?.author.verification).toBe(type);
+		expect((await getTweet("20")).snapshot?.author.verification).toBe(expected);
 	});
 
 	it("未知 FxTwitter 认证类型不伪装成蓝标", async () => {

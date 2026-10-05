@@ -46,7 +46,8 @@ function normalizeTweet(value: unknown, id: string, depth = 0): TweetData {
 	if (tweet.article != null) notices.push("article");
 	if (tweet.truncated === true) notices.push("truncated");
 	const verification = record(author.verification);
-	const verificationType = verification?.type;
+	const verificationType =
+		verification?.type === "organization" ? "business" : verification?.type;
 	const snapshot: TweetSnapshot = {
 		author: {
 			name: author.name,
