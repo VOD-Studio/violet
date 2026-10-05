@@ -15,7 +15,7 @@ export interface TweetMessages {
 	 */
 	source: string;
 	/**
-	 * 异步加载提示。
+	 * 骨架屏向屏幕阅读器提供的异步加载提示。
 	 * @example "Loading post…"
 	 */
 	loading: string;

@@ -277,6 +277,66 @@
 .v-tweet--compact {
 	padding: 14px;
 }
+.v-tweet__skeleton {
+	display: grid;
+	gap: 18px;
+	animation: v-tweet-pulse 1.4s ease-in-out infinite;
+}
+.v-tweet__skeleton span {
+	display: block;
+	height: 12px;
+	border-radius: 4px;
+	background: color-mix(in oklab, var(--_tweet-muted) 20%, var(--_tweet-background));
+}
+.v-tweet__skeleton-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.v-tweet__skeleton .v-tweet__skeleton-avatar {
+	flex: 0 0 40px;
+	height: 40px;
+	border-radius: 50%;
+}
+.v-tweet__skeleton-author {
+	display: grid;
+	flex: 1;
+	gap: 8px;
+}
+.v-tweet__skeleton-author span {
+	max-width: 120px;
+}
+.v-tweet__skeleton-author span:last-child {
+	max-width: 80px;
+}
+.v-tweet__skeleton .v-tweet__skeleton-brand {
+	width: 20px;
+	height: 20px;
+}
+.v-tweet__skeleton-body {
+	display: grid;
+	gap: 12px;
+}
+.v-tweet__skeleton-body span:last-child {
+	width: 68%;
+}
+.v-tweet__skeleton-footer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 14px;
+}
+.v-tweet__skeleton-footer span {
+	width: 36px;
+}
+.v-tweet__skeleton-footer span:last-child {
+	width: 100px;
+	margin-inline-start: auto;
+}
+@keyframes v-tweet-pulse {
+	50% {
+		opacity: 0.6;
+	}
+}
 .v-tweet .v-tweet__notice {
 	margin: 0 0 12px;
 	color: var(--_tweet-muted);
@@ -320,5 +380,8 @@
 	.v-tweet .v-tweet__metric,
 	.v-tweet__retry {
 		transition: none;
+	}
+	.v-tweet__skeleton {
+		animation: none;
 	}
 }

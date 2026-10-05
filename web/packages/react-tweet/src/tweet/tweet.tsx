@@ -81,17 +81,39 @@ export function Tweet({
 			aria-busy={loading}
 			data-state={result.status}
 		>
-			<p className="v-tweet__notice" role="status">
+			<p className={loading ? "v-tweet__sr-only" : "v-tweet__notice"} role="status">
 				{loading ? labels.loading : labels.error}
 			</p>
-			<div className="v-tweet__status-actions">
-				<TweetLink
-					href={parsedId ? canonicalUrl(parsedId) : undefined}
-					className="v-tweet__source"
-				>
-					{labels.source}
-				</TweetLink>
-				{!loading && (
+			{loading ? (
+				<div className="v-tweet__skeleton" aria-hidden="true">
+					<div className="v-tweet__skeleton-header">
+						<span className="v-tweet__skeleton-avatar" />
+						<div className="v-tweet__skeleton-author">
+							<span />
+							<span />
+						</div>
+						<span className="v-tweet__skeleton-brand" />
+					</div>
+					<div className="v-tweet__skeleton-body">
+						<span />
+						<span />
+						<span />
+					</div>
+					<div className="v-tweet__skeleton-footer">
+						<span />
+						<span />
+						<span />
+						<span />
+					</div>
+				</div>
+			) : (
+				<div className="v-tweet__status-actions">
+					<TweetLink
+						href={parsedId ? canonicalUrl(parsedId) : undefined}
+						className="v-tweet__source"
+					>
+						{labels.source}
+					</TweetLink>
 					<button
 						type="button"
 						className="v-tweet__retry"
@@ -104,8 +126,8 @@ export function Tweet({
 					>
 						{labels.retry}
 					</button>
-				)}
-			</div>
+				</div>
+			)}
 		</article>
 	);
 }
