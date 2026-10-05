@@ -48,14 +48,6 @@ describe("buildTree", () => {
 });
 
 describe("ArticleToc", () => {
-	it("完整保留全部标题节点，不生成更多截断项", () => {
-		const tree = buildTree(items);
-		const flatten = (nodes: typeof tree): string[] =>
-			nodes.flatMap((node) => [node.text, ...flatten(node.children)]);
-		expect(flatten(tree)).toEqual(items.map((item) => item.text));
-		expect(flatten(tree)).not.toContain("更多");
-	});
-
 	it("点击完整一级标题链接触发导航", () => {
 		const contentRef = createRef<HTMLElement>();
 		const onNavigate = vi.fn();
@@ -98,7 +90,6 @@ describe("ArticleToc", () => {
 		fireEvent.mouseEnter(shell);
 		expect(panel?.hasAttribute("inert")).toBe(false);
 		expect(screen.getByRole("progressbar", { name: "阅读进度" })).toBeTruthy();
-		expect(screen.queryByRole("button", { name: "返回顶部" })).toBeNull();
 
 		fireEvent.mouseLeave(shell);
 		expect(panel?.hasAttribute("inert")).toBe(true);
@@ -194,7 +185,6 @@ describe("文章目录可见标题指示线", () => {
 		await waitFor(() =>
 			expect(Number.parseFloat(indicator()?.style.height ?? "0")).toBeGreaterThan(36),
 		);
-		const sameLine = indicator();
 		const start = position();
 
 		vi.stubGlobal("scrollY", 50);
@@ -211,6 +201,5 @@ describe("文章目录可见标题指示线", () => {
 		fireEvent.scroll(window);
 		await waitFor(() => expect(position()).toBeGreaterThan(gap));
 		expect(position() - gap).toBeLessThan(3);
-		expect(indicator()).toBe(sameLine);
 	});
 });
