@@ -399,6 +399,9 @@
 	.v-tweet {
 		padding: 16px;
 	}
+	.v-tweet--compact {
+		padding: 14px;
+	}
 	.v-tweet--quoted {
 		padding: 12px;
 	}
