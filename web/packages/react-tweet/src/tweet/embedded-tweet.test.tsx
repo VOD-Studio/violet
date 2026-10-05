@@ -265,6 +265,22 @@ describe("本地化与服务端渲染", () => {
 		expect(view.container.querySelector("time")).not.toBeNull();
 	});
 
+	it.each([
+		"2026-10-06T01:02:03.123456Z",
+		"2026-10-06T01:02:03.123456789Z",
+	])("高精度时间 %s 保留 datetime 并按配置时区显示", (publishedAt) => {
+		const { container } = render(
+			<EmbeddedTweet
+				tweet={available({ publishedAt })}
+				locale="zh-CN"
+				timeZone="Asia/Shanghai"
+			/>,
+		);
+		const time = container.querySelector("time");
+		expect(time?.getAttribute("datetime")).toBe(publishedAt);
+		expect(time?.textContent).toContain("09:02");
+	});
+
 	it("显式地区和时区在 SSR 后水合，不产生可恢复错误", async () => {
 		const content = (
 			<EmbeddedTweet
