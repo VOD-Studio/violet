@@ -769,7 +769,7 @@ xychart-beta
 - 鼠标悬停或键盘聚焦时显示头像、角色定位和简介；点击资料卡进入 `/persona`。
 - 当前没有公开人设时降级为普通文字，不发起无意义的资料请求。
 
-### 10.2 对话与仓库
+### 10.2 对话与 GitHub 项目引用
 
 ````markdown
 ```dialogue
@@ -787,7 +787,29 @@ xychart-beta
 
 - `dialogue.profile` 取值 `active` 时复用当前公开人设；也可用 `speaker` 和 `avatar` 写独立角色。
 - `side` 只接受 `left` 或 `right`。
-- 仓库卡片是作者保存的展示快照；`description`、`language`、`stars`、`forks` 可省略，`href` 可覆盖默认 GitHub 地址。
+- `github` 使用项目专用引用：仓库所有者与名称、简介、语言和统计分别展示，不复用通用链接预览。它是作者保存的快照，不在阅读时请求 GitHub 元数据；`description`、`language`、`stars`、`forks` 可省略，统计值 `0` 正常展示。`href` 可覆盖默认 GitHub 地址。
+
+#### GitHub 实际展示案例
+
+以下围栏直接渲染为项目卡片，不是外层 Markdown 代码示意。元数据于 2026-10-05 从 GitHub 公开 API 读取；统计是保存时的快照，不代表实时数值。
+
+**基本引用：只提供仓库名称。**
+
+```github
+{"repo":"VOD-Studio/violet"}
+```
+
+**完整元数据：简介、语言、星标、派生数与显式链接。**
+
+```github
+{"repo":"VOD-Studio/violet","description":"全栈博客平台 · Go 后端 + React 前端，内置 MCP server 供 AI agent 读写文章","language":"TypeScript","stars":3,"forks":0,"href":"https://github.com/VOD-Studio/violet"}
+```
+
+**零统计边界：真实仓库的派生数为 0，仍应显示。**
+
+```github
+{"repo":"VOD-Studio/violet","description":"全栈博客平台 · Go 后端 + React 前端，内置 MCP server 供 AI agent 读写文章","language":"TypeScript","stars":3,"forks":0}
+```
 
 ### 10.3 链接、社交动态与链接组
 
