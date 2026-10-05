@@ -1,5 +1,5 @@
-import type { TweetSegment } from "../data/types.js";
-import { safeUrl } from "../data/urls.js";
+import type { TweetSegment } from "../data/types.ts";
+import { safeUrl } from "../data/urls.ts";
 
 export function record(value: unknown): Record<string, unknown> | undefined {
 	return value !== null && typeof value === "object" && !Array.isArray(value)

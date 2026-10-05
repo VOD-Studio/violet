@@ -3,7 +3,7 @@
 import type { ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 
-import { safeUrl } from "../data/urls.js";
+import { safeUrl } from "../data/urls.ts";
 
 export function stopInteraction(event: SyntheticEvent): void {
 	/** Portal 事件沿 React 树冒泡；不拦截 DOM 树外灯箱的键盘事件。 */

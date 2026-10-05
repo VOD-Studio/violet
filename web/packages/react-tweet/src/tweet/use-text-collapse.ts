@@ -1,6 +1,6 @@
 import { type RefObject, useLayoutEffect, useRef, useState } from "react";
 
-import type { TweetSegment } from "../data/types.js";
+import type { TweetSegment } from "../data/types.ts";
 
 interface TextCollapseOptions {
 	maxTextLines?: number;

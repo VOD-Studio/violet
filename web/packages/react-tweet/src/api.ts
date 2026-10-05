@@ -1,3 +1,3 @@
-export { parseTweetId } from "./data/urls.js";
-export type { GetTweetOptions } from "./fxtwitter/get-tweet.js";
-export { getTweet } from "./fxtwitter/get-tweet.js";
+export { parseTweetId } from "./data/urls.ts";
+export type { GetTweetOptions } from "./fxtwitter/get-tweet.ts";
+export { getTweet } from "./fxtwitter/get-tweet.ts";

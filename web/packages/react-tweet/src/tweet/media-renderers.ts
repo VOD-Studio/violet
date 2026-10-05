@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { TweetPhoto, TweetVideo } from "../data/media.js";
+import type { TweetPhoto, TweetVideo } from "../data/media.ts";
 
 /**
  * 媒体展示扩展点。

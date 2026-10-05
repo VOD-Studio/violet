@@ -3,16 +3,16 @@
 import type { ComponentPropsWithRef } from "react";
 import { useMemo } from "react";
 
-import type { TweetData, TweetNotice } from "../data/types.js";
-import { safeUrl, tweetUrl } from "../data/urls.js";
-import { TweetFooter } from "./footer.js";
-import { TweetHeader } from "./header.js";
-import type { TweetDisplayOptions, TweetLocalization, TweetMessages } from "./localization.js";
-import { resolveLocalization } from "./localization.js";
-import { TweetMediaContent } from "./media.js";
-import type { TweetMediaRenderers } from "./media-renderers.js";
-import { TweetLink } from "./primitives.js";
-import { TweetText } from "./text.js";
+import type { TweetData, TweetNotice } from "../data/types.ts";
+import { safeUrl, tweetUrl } from "../data/urls.ts";
+import { TweetFooter } from "./footer.tsx";
+import { TweetHeader } from "./header.tsx";
+import type { TweetDisplayOptions, TweetLocalization, TweetMessages } from "./localization.ts";
+import { resolveLocalization } from "./localization.ts";
+import { TweetMediaContent } from "./media.tsx";
+import type { TweetMediaRenderers } from "./media-renderers.ts";
+import { TweetLink } from "./primitives.tsx";
+import { TweetText } from "./text.tsx";
 
 /**
  * 原生推文快照的展示属性。

@@ -1,4 +1,4 @@
-import type { TweetData } from "./types.js";
+import type { TweetData } from "./types.ts";
 
 /**
  * 自定义加载器的取消选项。

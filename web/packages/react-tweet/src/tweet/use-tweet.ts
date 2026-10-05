@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import type { TweetFetcher } from "../data/fetcher.js";
-import type { TweetData } from "../data/types.js";
+import type { TweetFetcher } from "../data/fetcher.ts";
+import type { TweetData } from "../data/types.ts";
 
 type Result = { status: "loading" } | { status: "error" } | { status: "success"; tweet: TweetData };
 interface RequestState {

@@ -10,7 +10,7 @@ import type {
 	TweetSnapshot,
 	TweetVerification,
 	UnavailableTweet,
-} from "../unstyled.js";
+} from "../unstyled.ts";
 
 it("可用性决定快照的类型契约", () => {
 	expectTypeOf<TweetData>()

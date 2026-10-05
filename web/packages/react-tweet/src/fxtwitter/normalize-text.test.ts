@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { getTweet } from "./get-tweet.js";
+import { getTweet } from "./get-tweet.ts";
 
 function respond(rawText: unknown, isNoteTweet = false) {
 	vi.stubGlobal(

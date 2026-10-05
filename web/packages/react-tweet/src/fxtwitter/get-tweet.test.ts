@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseTweetId } from "../data/urls.js";
-import { getTweet } from "./get-tweet.js";
+import { parseTweetId } from "../data/urls.ts";
+import { getTweet } from "./get-tweet.ts";
 
 /** 字段形状取自实际 /status/20 响应；每个用例按行为覆盖特定字段。 */
 function fixture(overrides: Record<string, unknown> = {}) {

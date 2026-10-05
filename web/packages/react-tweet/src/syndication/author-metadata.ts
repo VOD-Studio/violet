@@ -1,6 +1,6 @@
-import type { TweetAffiliation, TweetVerification } from "../data/author.js";
-import { safeUrl } from "../data/urls.js";
-import { record } from "../fxtwitter/normalize-text.js";
+import type { TweetAffiliation, TweetVerification } from "../data/author.ts";
+import { safeUrl } from "../data/urls.ts";
+import { record } from "../fxtwitter/normalize-text.ts";
 
 // 与 vercel/react-tweet 的官方 syndication 请求保持一致，不向 FxTwitter 添加无效参数。
 const features = [

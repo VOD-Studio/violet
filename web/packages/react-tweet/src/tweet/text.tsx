@@ -2,11 +2,11 @@
 
 import { useId } from "react";
 
-import type { TweetSnapshot } from "../data/types.js";
-import { safeUrl } from "../data/urls.js";
-import type { TweetMessages } from "./localization.js";
-import { stopInteraction, TweetLink } from "./primitives.js";
-import { useTextCollapse } from "./use-text-collapse.js";
+import type { TweetSnapshot } from "../data/types.ts";
+import { safeUrl } from "../data/urls.ts";
+import type { TweetMessages } from "./localization.ts";
+import { stopInteraction, TweetLink } from "./primitives.tsx";
+import { useTextCollapse } from "./use-text-collapse.ts";
 
 interface TweetTextProps {
 	text: TweetSnapshot["text"];

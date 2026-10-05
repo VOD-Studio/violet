@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getAuthorMetadata } from "./author-metadata.js";
+import { getAuthorMetadata } from "./author-metadata.ts";
 
 const id = "2027424056291774541";
 const authorId = "2721275622";

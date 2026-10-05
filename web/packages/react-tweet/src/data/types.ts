@@ -1,5 +1,5 @@
-import type { TweetAuthor } from "./author.js";
-import type { TweetMedia } from "./media.js";
+import type { TweetAuthor } from "./author.ts";
+import type { TweetMedia } from "./media.ts";
 
 /**
  * 推文的内容可用性。

@@ -4,8 +4,8 @@ import { createPortal } from "react-dom";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AvailableTweet, TweetData, TweetPhoto, TweetVideo } from "../unstyled.js";
-import { EmbeddedTweet } from "../unstyled.js";
+import type { AvailableTweet, TweetData, TweetPhoto, TweetVideo } from "../unstyled.ts";
+import { EmbeddedTweet } from "../unstyled.ts";
 
 function available(overrides: Partial<AvailableTweet["snapshot"]> = {}): AvailableTweet {
 	return {

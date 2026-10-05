@@ -4,6 +4,8 @@
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
+		"allowImportingTsExtensions": true,
+		"rewriteRelativeImportExtensions": true,
 		"jsx": "react-jsx",
 		"strict": true,
 		"verbatimModuleSyntax": true,

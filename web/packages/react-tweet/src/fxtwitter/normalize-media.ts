@@ -1,7 +1,7 @@
-import type { TweetMedia } from "../data/media.js";
-import type { TweetNotice } from "../data/types.js";
-import { safeUrl } from "../data/urls.js";
-import { record } from "./normalize-text.js";
+import type { TweetMedia } from "../data/media.ts";
+import type { TweetNotice } from "../data/types.ts";
+import { safeUrl } from "../data/urls.ts";
+import { record } from "./normalize-text.ts";
 
 export function normalizeMedia(value: unknown, notices: TweetNotice[]): TweetMedia[] {
 	const media = record(value);

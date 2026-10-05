@@ -3,14 +3,14 @@
 import type { ComponentPropsWithRef } from "react";
 import { useMemo } from "react";
 
-import type { TweetFetcher } from "../data/fetcher.js";
-import { canonicalUrl, parseTweetId } from "../data/urls.js";
-import { EmbeddedTweet } from "./embedded-tweet.js";
-import type { TweetDisplayOptions } from "./localization.js";
-import { resolveLocalization } from "./localization.js";
-import type { TweetMediaRenderers } from "./media-renderers.js";
-import { stopInteraction, TweetLink } from "./primitives.js";
-import { useTweet } from "./use-tweet.js";
+import type { TweetFetcher } from "../data/fetcher.ts";
+import { canonicalUrl, parseTweetId } from "../data/urls.ts";
+import { EmbeddedTweet } from "./embedded-tweet.tsx";
+import type { TweetDisplayOptions } from "./localization.ts";
+import { resolveLocalization } from "./localization.ts";
+import type { TweetMediaRenderers } from "./media-renderers.ts";
+import { stopInteraction, TweetLink } from "./primitives.tsx";
+import { useTweet } from "./use-tweet.ts";
 
 /**
  * 异步推文组件属性。

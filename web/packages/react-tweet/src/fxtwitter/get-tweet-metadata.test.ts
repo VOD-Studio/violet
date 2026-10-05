@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getTweet } from "./get-tweet.js";
+import { getTweet } from "./get-tweet.ts";
 
 const fullText = `完整长文 😀 ${"保留全部正文。".repeat(80)}`;
 

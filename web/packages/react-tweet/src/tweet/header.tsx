@@ -1,8 +1,8 @@
-import type { TweetAuthor } from "../data/author.js";
-import { safeUrl } from "../data/urls.js";
-import type { TweetMessages } from "./localization.js";
-import { TweetImage, TweetLink } from "./primitives.js";
-import { VerifiedBadge } from "./verified-badge.js";
+import type { TweetAuthor } from "../data/author.ts";
+import { safeUrl } from "../data/urls.ts";
+import type { TweetMessages } from "./localization.ts";
+import { TweetImage, TweetLink } from "./primitives.tsx";
+import { VerifiedBadge } from "./verified-badge.tsx";
 
 export function TweetHeader({
 	author,

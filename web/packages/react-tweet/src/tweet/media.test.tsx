@@ -1,7 +1,7 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 
-import { EmbeddedTweet } from "../unstyled.js";
+import { EmbeddedTweet } from "../unstyled.ts";
 
 afterEach(cleanup);
 

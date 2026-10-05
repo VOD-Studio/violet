@@ -1,8 +1,8 @@
-import type { TweetData, TweetNotice, TweetSnapshot } from "../data/types.js";
-import { canonicalUrl, parseTweetId, safeUrl } from "../data/urls.js";
-import { getAuthorMetadata } from "../syndication/author-metadata.js";
-import { normalizeMedia } from "./normalize-media.js";
-import { normalizeText, record } from "./normalize-text.js";
+import type { TweetData, TweetNotice, TweetSnapshot } from "../data/types.ts";
+import { canonicalUrl, parseTweetId, safeUrl } from "../data/urls.ts";
+import { getAuthorMetadata } from "../syndication/author-metadata.ts";
+import { normalizeMedia } from "./normalize-media.ts";
+import { normalizeText, record } from "./normalize-text.ts";
 
 /**
  * 推文请求选项，同时约束正文与官方作者元数据请求。

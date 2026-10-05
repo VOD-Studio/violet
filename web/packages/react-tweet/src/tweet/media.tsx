@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 
-import type { TweetMedia, TweetPhoto, TweetVideo } from "../data/media.js";
-import { safeUrl } from "../data/urls.js";
-import type { TweetLocalization } from "./localization.js";
-import { formatMessage } from "./localization.js";
-import type { TweetMediaRenderers } from "./media-renderers.js";
-import { stopInteraction, TweetImage, TweetLink } from "./primitives.js";
+import type { TweetMedia, TweetPhoto, TweetVideo } from "../data/media.ts";
+import { safeUrl } from "../data/urls.ts";
+import type { TweetLocalization } from "./localization.ts";
+import { formatMessage } from "./localization.ts";
+import type { TweetMediaRenderers } from "./media-renderers.ts";
+import { stopInteraction, TweetImage, TweetLink } from "./primitives.tsx";
 
 function NativeTweetVideo({
 	media,

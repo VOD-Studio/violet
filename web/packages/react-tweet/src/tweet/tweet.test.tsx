@@ -1,8 +1,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { TweetData, TweetFetcher } from "../unstyled.js";
-import { Tweet } from "../unstyled.js";
+import type { TweetData, TweetFetcher } from "../unstyled.ts";
+import { Tweet } from "../unstyled.ts";
 
 function deferred<T>() {
 	let resolve!: (value: T) => void;
