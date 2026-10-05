@@ -4,30 +4,37 @@ import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
-import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
-import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
-import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
-import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { TweetCard as TweetCardLayout } from "@violet/react-tweet";
 import { ConfirmDialog, Modal } from "@violet/ui";
-import { AlertCircle, Heart, MessageCircle, Repeat2, Share2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle } from "lucide-react";
+import { type MouseEvent, useState } from "react";
 import { toast } from "sonner";
 import { ExternalTweetActions } from "./ExternalTweetActions";
+import { QuotedTweetCard } from "./QuotedTweetCard";
+import { TweetCardFooter } from "./TweetCardFooter";
+import { TweetCardHeader } from "./TweetCardHeader";
+import { TweetCardImages } from "./TweetCardImages";
 import TweetComposer from "./TweetComposer";
 import TweetContent from "./TweetContent";
+
+/** 本站推文的列表与详情展示形态。 */
 export type TweetCardVariant = "timeline" | "detail";
 
 /** 时间线、个人主页与详情共用；来源跳转、图片和互动保持独立操作。 */
 export interface TweetCardProps {
-	/** 推文数据 */
+	/** 推文数据。 */
 	tweet: Tweet;
-	/** 展示形态：timeline（默认，时间线/用户主页紧凑卡片）或 detail（详情页放大版） */
+	/**
+	 * 时间线卡片可整体导航，详情卡片不自我跳转。
+	 * @default "timeline"
+	 */
 	variant?: TweetCardVariant;
-	/** 删除成功后回调（详情页用以导航回时间线；时间线卡片可不传，缓存已自动联动） */
+	/** 删除成功后回调；列表缓存由 mutation 更新。 */
 	onDeleted?: (tweet: Tweet) => void;
 }
 
+/** 将本站内容和互动组合到来源无关的推文布局。 */
 const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) => {
 	const me = useMe();
 	const navigate = useNavigate();
@@ -36,10 +43,12 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 	const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 	const deleteTweet = useDeleteTweet(tweet.id);
 	const toggleLike = useToggleLikeTweet(tweet);
-	const openShareTweet = useShareTweetStore((s) => s.open);
+	const openShareTweet = useShareTweetStore((state) => state.open);
+	const isDetail = variant === "detail";
+	const canDelete = !!me.data && (me.data.id === tweet.author.id || canDeleteAny);
 
-	const handleLikeClick = (e: React.MouseEvent) => {
-		e.stopPropagation();
+	const handleLikeClick = (event: MouseEvent<HTMLButtonElement>) => {
+		event.stopPropagation();
 		if (!me.data) {
 			toast.info("请先登录后再点赞");
 			navigate({ to: "/login" });
@@ -48,8 +57,8 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 		toggleLike.mutate();
 	};
 
-	const handleQuoteClick = (e: React.MouseEvent) => {
-		e.stopPropagation();
+	const handleQuoteClick = (event: MouseEvent<HTMLButtonElement>) => {
+		event.stopPropagation();
 		if (!me.data) {
 			toast.info("请先登录后再引用转发");
 			navigate({ to: "/login" });
@@ -58,8 +67,8 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 		setQuoteModalOpen(true);
 	};
 
-	const handleShareClick = (e: React.MouseEvent) => {
-		e.stopPropagation();
+	const handleShareClick = (event: MouseEvent<HTMLButtonElement>) => {
+		event.stopPropagation();
 		if (!me.data) {
 			toast.info("请先登录后再分享到聊天");
 			navigate({ to: "/login" });
@@ -74,18 +83,6 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 			quotedTweet: tweet.quoted_tweet,
 		});
 	};
-	const hasContent = tweet.content.length > 0;
-	const isDetail = variant === "detail";
-
-	const gridImages: ImageGridImage[] = tweet.images.map((url) => ({
-		url,
-		// 网格用 400px 缩略图省带宽；原图留给 ImagePreview 点开加载
-		thumbnail: contentImageUrl(url, { width: 400 }),
-	}));
-
-	// 作者本人 或 持 tweet:delete-any 权限者可见删除按钮
-	const isAuthor = !!me.data && me.data.id === tweet.author.id;
-	const canDelete = !!me.data && (isAuthor || canDeleteAny);
 
 	const openDetail = () => {
 		navigate({ to: "/tweets/$id", params: { id: tweet.id } });
@@ -98,302 +95,88 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 				setConfirmOpen(false);
 				onDeleted?.(tweet);
 			},
-			onError: (err) => toast.error(err.message),
+			onError: (error) => toast.error(error.message),
 		});
 	};
 
 	return (
 		<>
-			<SpotlightCard
-				className={`group flex gap-3 p-4 sm:p-5 transition-colors ${
-					isDetail ? "flex-col" : "flex-row"
-				}`}
-				// 仅 timeline 形态整卡可点进详情；详情页不自我链接
-				role={isDetail ? undefined : "button"}
+			<TweetCardLayout
+				aria-label={`${tweet.author.username} 的推文`}
+				className={isDetail ? undefined : "cursor-pointer"}
 				tabIndex={isDetail ? undefined : 0}
-				onClick={isDetail ? undefined : openDetail}
+				onClick={
+					isDetail
+						? undefined
+						: (event) => {
+								if (event.currentTarget.contains(event.target as Node))
+									openDetail();
+							}
+				}
 				onKeyDown={
 					isDetail
 						? undefined
-						: (e) => {
+						: (event) => {
 								if (
-									e.target === e.currentTarget &&
-									(e.key === "Enter" || e.key === " ")
+									event.target === event.currentTarget &&
+									(event.key === "Enter" || event.key === " ")
 								) {
-									e.preventDefault();
+									event.preventDefault();
 									openDetail();
 								}
 							}
 				}
-			>
-				{/* 左侧头像（Timeline 视图） */}
-				{!isDetail && (
-					<Link
-						to="/users/$username"
-						params={{ username: tweet.author.username }}
-						onClick={(e) => e.stopPropagation()}
-						className="shrink-0 self-start"
-					>
-						<img
-							src={avatarUrl(tweet.author.avatar_url, tweet.author.username)}
-							alt=""
-							loading="lazy"
-							className="size-10 rounded-full object-cover transition-opacity hover:opacity-80"
-						/>
-					</Link>
-				)}
-
-				{/* 主体部分 */}
-				<div className="flex flex-1 min-w-0 flex-col gap-2.5">
-					{/* 头部：作者信息 + 时间 + 删除按钮 */}
-					<div className="flex items-center justify-between gap-2">
-						<div className="flex min-w-0 items-center gap-2">
-							{isDetail && (
-								<Link
-									to="/users/$username"
-									params={{ username: tweet.author.username }}
-									onClick={(e) => e.stopPropagation()}
-									className="shrink-0"
-								>
-									<img
-										src={avatarUrl(
-											tweet.author.avatar_url,
-											tweet.author.username,
-										)}
-										alt=""
-										loading="lazy"
-										className="size-12 rounded-full object-cover transition-opacity hover:opacity-80"
-									/>
-								</Link>
-							)}
-							<div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0">
-								<Link
-									to="/users/$username"
-									params={{ username: tweet.author.username }}
-									onClick={(e) => e.stopPropagation()}
-									className="truncate font-semibold text-foreground hover:underline text-sm sm:text-base"
-								>
-									{tweet.author.username}
-								</Link>
-								{!isDetail && (
-									<>
-										<span className="text-muted-foreground/50 select-none text-xs">
-											·
-										</span>
-										<time
-											className="shrink-0 text-xs text-muted-foreground hover:underline"
-											title={formatDateTime(tweet.created_at, "long")}
-										>
-											{formatRelativeTime(new Date(tweet.created_at))}
-										</time>
-									</>
-								)}
-							</div>
-						</div>
-						{/* 删除按钮 */}
-						{canDelete && (
-							<button
-								type="button"
-								aria-label="删除推文"
-								className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-								onClick={(e) => {
-									e.stopPropagation();
-									setConfirmOpen(true);
-								}}
-							>
-								<Trash2 className="size-4" />
-							</button>
-						)}
-					</div>
-
-					{/* 正文 */}
-					{hasContent && (
-						<TweetContent
-							content={tweet.content}
-							emote={tweet.emote}
-							className={
-								isDetail
-									? "text-base sm:text-lg leading-relaxed my-1"
-									: "text-sm sm:text-[15px] leading-relaxed"
-							}
-						/>
-					)}
-
-					{/* 图片网格 */}
-					{gridImages.length > 0 && (
-						<div
-							onClick={(e) => e.stopPropagation()}
-							onKeyDown={(e) => {
-								if (e.currentTarget.contains(e.target as Node)) e.stopPropagation();
-							}}
-							className="w-full my-0.5"
-						>
-							<ImageGrid images={gridImages} />
-						</div>
-					)}
-
-					{tweet.external_tweet && (
-						<>
-							<ExternalTweetCard tweet={tweet.external_tweet} />
-							{me.data && canDeleteAny && (
-								<ExternalTweetActions tweet={tweet.external_tweet} />
-							)}
-						</>
-					)}
-
-					{/* 嵌套引用推文 */}
-					{tweet.quoted_tweet && (
-						<div
-							onClick={(e) => {
-								e.stopPropagation();
-								if (tweet.quoted_tweet) {
-									navigate({
-										to: "/tweets/$id",
-										params: { id: tweet.quoted_tweet.id },
-									});
-								}
-							}}
-							onKeyDown={(e) => {
-								if (
-									e.target === e.currentTarget &&
-									(e.key === "Enter" || e.key === " ") &&
-									tweet.quoted_tweet
-								) {
-									e.preventDefault();
-									e.stopPropagation();
-									navigate({
-										to: "/tweets/$id",
-										params: { id: tweet.quoted_tweet.id },
-									});
-								}
-							}}
-							role="button"
-							tabIndex={0}
-							className="mt-1 rounded-xl border border-edge-hairline bg-muted/30 p-3 text-xs transition-colors hover:border-foreground/20 hover:bg-muted/50 cursor-pointer"
-						>
-							<div className="flex items-center gap-2 mb-1.5">
-								<img
-									src={avatarUrl(
-										tweet.quoted_tweet.author.avatar_url,
-										tweet.quoted_tweet.author.username,
+				headerSlot={
+					<TweetCardHeader
+						author={tweet.author}
+						tweetId={tweet.id}
+						createdAt={tweet.created_at}
+						isDetail={isDetail}
+						onDelete={canDelete ? () => setConfirmOpen(true) : undefined}
+					/>
+				}
+				contentSlot={
+					<TweetContent
+						content={tweet.content}
+						emote={tweet.emote}
+						className={
+							isDetail ? "text-base sm:text-lg leading-relaxed my-1" : undefined
+						}
+					/>
+				}
+				mediaSlot={<TweetCardImages images={tweet.images} />}
+				quoteSlot={
+					tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of ? (
+						<div className="space-y-2">
+							{tweet.external_tweet && (
+								<>
+									<ExternalTweetCard tweet={tweet.external_tweet} />
+									{me.data && canDeleteAny && (
+										<ExternalTweetActions tweet={tweet.external_tweet} />
 									)}
-									alt={tweet.quoted_tweet.author.username}
-									className="size-5 rounded-full object-cover shrink-0"
-								/>
-								<span className="font-semibold text-foreground truncate">
-									{tweet.quoted_tweet.author.username}
-								</span>
-								<span className="text-muted-foreground text-[11px]">
-									· {formatRelativeTime(new Date(tweet.quoted_tweet.created_at))}
-								</span>
-							</div>
-							{tweet.quoted_tweet.content && (
-								<TweetContent
-									content={tweet.quoted_tweet.content}
-									emote={tweet.quoted_tweet.emote}
-									className="line-clamp-3 text-xs leading-normal text-foreground/90"
-								/>
+								</>
 							)}
-							{tweet.quoted_tweet.images && tweet.quoted_tweet.images.length > 0 && (
-								<div
-									className="mt-2"
-									onClick={(e) => e.stopPropagation()}
-									onKeyDown={(e) => {
-										if (e.currentTarget.contains(e.target as Node))
-											e.stopPropagation();
-									}}
-									role="presentation"
-								>
-									<ImageGrid
-										images={tweet.quoted_tweet.images.map((url) => ({
-											url,
-											thumbnail: contentImageUrl(url, { width: 300 }),
-										}))}
-									/>
-								</div>
-							)}
-							{tweet.quoted_tweet.external_tweet && (
-								<div className="mt-2">
-									<ExternalTweetCard
-										tweet={tweet.quoted_tweet.external_tweet}
-										compact
-									/>
+							{tweet.quoted_tweet && <QuotedTweetCard tweet={tweet.quoted_tweet} />}
+							{tweet.quote_of && !tweet.quoted_tweet && (
+								<div className="flex items-center gap-2 rounded-xl border border-edge-hairline bg-muted/20 p-3 text-xs text-muted-foreground">
+									<AlertCircle className="size-4 shrink-0" />
+									<span>推文已删除</span>
 								</div>
 							)}
 						</div>
-					)}
-					{tweet.quote_of && !tweet.quoted_tweet && (
-						<div className="mt-1 flex items-center gap-2 rounded-xl border border-edge-hairline bg-muted/20 p-3 text-xs text-muted-foreground">
-							<AlertCircle className="size-4 shrink-0" />
-							<span>推文已删除</span>
-						</div>
-					)}
-
-					{/* 详情页特有：底部完整时间戳 */}
-					{isDetail && (
-						<time
-							className="block text-xs text-muted-foreground py-2 border-y border-edge-hairline my-1"
-							title={formatDateTime(tweet.created_at, "long")}
-						>
-							{formatDateTime(tweet.created_at)}
-						</time>
-					)}
-
-					{/* 底部互动操作栏 */}
-					<div
-						className={`flex items-center gap-8 pt-1 text-xs text-muted-foreground ${
-							isDetail ? "justify-around" : ""
-						}`}
-					>
-						{!isDetail && (
-							<div className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-blue/10 hover:text-neon-blue cursor-pointer">
-								<MessageCircle className="size-4" />
-								<span>{tweet.comment_count}</span>
-							</div>
-						)}
-						<button
-							type="button"
-							data-testid="quote-button"
-							aria-label="引用推文"
-							onClick={handleQuoteClick}
-							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-green/10 hover:text-neon-green"
-						>
-							<Repeat2 className="size-4" />
-							<span>{tweet.quote_count}</span>
-						</button>
-						<button
-							type="button"
-							data-testid="like-button"
-							aria-label={tweet.is_liked ? "取消点赞" : "点赞推文"}
-							onClick={handleLikeClick}
-							disabled={toggleLike.isPending}
-							className={`group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
-								tweet.is_liked
-									? "font-medium text-neon-pink hover:bg-neon-pink/10"
-									: "hover:bg-neon-pink/10 hover:text-neon-pink"
-							}`}
-						>
-							<Heart
-								className={`size-4 ${
-									tweet.is_liked ? "fill-current text-neon-pink" : ""
-								}`}
-							/>
-							<span>{tweet.like_count}</span>
-						</button>
-						<button
-							type="button"
-							data-testid="share-button"
-							aria-label="分享到聊天"
-							onClick={handleShareClick}
-							className="group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-neon-cyan/10 hover:text-neon-cyan"
-						>
-							<Share2 className="size-4" />
-						</button>
-					</div>
-				</div>
-			</SpotlightCard>
-
-			{/* 删除二次确认 */}
+					) : null
+				}
+				footerSlot={
+					<TweetCardFooter
+						tweet={tweet}
+						isDetail={isDetail}
+						isLikePending={toggleLike.isPending}
+						onLike={handleLikeClick}
+						onQuote={handleQuoteClick}
+						onShare={handleShareClick}
+					/>
+				}
+			/>
 			<ConfirmDialog
 				open={confirmOpen}
 				onOpenChange={setConfirmOpen}
@@ -403,7 +186,6 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 				loading={deleteTweet.isPending}
 				onConfirm={handleConfirmDelete}
 			/>
-			{/* 引用弹窗 */}
 			<Modal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} title="引用推文">
 				<TweetComposer quotedTweet={tweet} onSuccess={() => setQuoteModalOpen(false)} />
 			</Modal>

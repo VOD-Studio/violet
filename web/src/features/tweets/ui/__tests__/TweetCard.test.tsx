@@ -148,7 +148,7 @@ describe("TweetCard — 作者个人页链接", () => {
 		const tweet = makeTweet();
 		render(<TweetCard tweet={tweet} />);
 
-		const userLink = screen.getByRole("link", { name: new RegExp(tweet.author.username) });
+		const userLink = screen.getByRole("link", { name: tweet.author.username });
 		expect(userLink.getAttribute("href")).toBe(`/users/${tweet.author.username}`);
 
 		fireEvent.click(userLink);
