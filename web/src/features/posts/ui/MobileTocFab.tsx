@@ -1,11 +1,4 @@
-/**
- * MobileTocFab - 小屏目录浮动按钮 + 底部 Sheet
- *
- * 仅在 xl 以下屏幕显示（大屏已有左侧固定 TOC）。点击弹出底部 Sheet 展示
- * 图标节点树目录；选中条目后平滑滚动到对应 heading 并自动关闭 Sheet。
- *
- * 与 BackToTop 在详情页共享同一个 fixed 容器（flex-col 竖列），避免右下角重叠。
- */
+/** 小屏使用底部目录面板；跳转到标题后自动关闭。 */
 import ArticleToc, { type ArticleTocProps } from "@features/posts/ui/ArticleToc";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
 

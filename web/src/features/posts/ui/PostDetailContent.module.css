@@ -1,0 +1,13 @@
+.content p[class~="my-5"] {
+	margin-block: 1.5rem;
+}
+
+.content h2[class~="text-2xl"] {
+	margin-block: 1.4em 0.45em;
+	line-height: 1.25;
+}
+
+.content > p[class~="my-5"]:first-child,
+.content h2[class~="text-2xl"]:first-child {
+	margin-block-start: 0;
+}

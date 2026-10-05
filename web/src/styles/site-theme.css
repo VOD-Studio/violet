@@ -2,6 +2,9 @@
 @theme inline {
 	--font-sans:
 		"Maple Mono", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-monospace, sans-serif;
+	--font-reading:
+		system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC",
+		"Microsoft YaHei", sans-serif;
 	--font-mono:
 		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
