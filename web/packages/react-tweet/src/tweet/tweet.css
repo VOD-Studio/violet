@@ -10,6 +10,10 @@
 		color-mix(in oklab, var(--border, light-dark(#e5e5e5, #333333)) 75%, transparent)
 	);
 	--_tweet-accent: var(--tweet-accent, light-dark(#0866d9, #75b6ff));
+	--_tweet-accent-hover: var(
+		--tweet-accent-hover,
+		color-mix(in oklab, var(--_tweet-accent) 90%, white)
+	);
 	--_tweet-soft: var(--tweet-surface, var(--muted, light-dark(#fafafa, #171717)));
 	color-scheme: light dark;
 	box-sizing: border-box;
@@ -54,7 +58,7 @@
 		border-color 140ms ease;
 }
 .v-tweet a:hover {
-	color: var(--_tweet-foreground);
+	color: var(--_tweet-accent-hover);
 	text-decoration: underline;
 }
 .v-tweet :where(a, button, video):focus-visible {
@@ -113,13 +117,16 @@
 	color: var(--_tweet-foreground);
 	font-weight: 650;
 }
+.v-tweet .v-tweet__name:hover {
+	color: var(--_tweet-foreground);
+}
 .v-tweet .v-tweet__handle {
 	max-width: 100%;
 	color: var(--_tweet-muted);
 	font-size: 13px;
 }
 .v-tweet .v-tweet__handle:hover {
-	color: var(--_tweet-accent);
+	color: var(--_tweet-accent-hover);
 }
 .v-tweet :is(.v-tweet__handle, .v-tweet__avatar-link, .v-tweet__brand, .v-tweet__metric):hover,
 .v-tweet__affiliation a:hover {
@@ -235,9 +242,19 @@
 	gap: 5px;
 	white-space: nowrap;
 	color: inherit;
+	transition: color 140ms ease;
 }
-.v-tweet a.v-tweet__metric:hover {
-	color: var(--_tweet-accent);
+.v-tweet__metric--likes {
+	--_tweet-metric-hover: var(--tweet-like-hover, light-dark(#c41665, #ff69a8));
+}
+.v-tweet__metric--replies {
+	--_tweet-metric-hover: var(--tweet-reply-hover, light-dark(#0879be, #59b8f7));
+}
+.v-tweet__metric--reposts {
+	--_tweet-metric-hover: var(--tweet-repost-hover, light-dark(#008557, #42dba0));
+}
+.v-tweet .v-tweet__metric:is(:hover, :focus-visible) {
+	color: var(--_tweet-metric-hover);
 }
 .v-tweet__metric svg {
 	flex: none;
@@ -300,6 +317,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
 	.v-tweet a,
+	.v-tweet .v-tweet__metric,
 	.v-tweet__retry {
 		transition: none;
 	}

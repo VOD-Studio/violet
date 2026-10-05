@@ -22,7 +22,7 @@ export function TweetFooter({
 	source?: string;
 	localization: TweetLocalization;
 }) {
-	const metrics = (["replies", "reposts", "likes"] as const).flatMap((kind) => {
+	const metrics = (["likes", "replies", "reposts"] as const).flatMap((kind) => {
 		const count = snapshot.metrics?.[kind];
 		return typeof count === "number" && Number.isFinite(count) && count >= 0
 			? [{ kind, value: number.format(count) }]
@@ -37,7 +37,7 @@ export function TweetFooter({
 					{metrics.map(({ kind, value }) => (
 						<TweetLink
 							key={kind}
-							className="v-tweet__metric"
+							className={`v-tweet__metric v-tweet__metric--${kind}`}
 							href={
 								tweetId && kind === "likes"
 									? `https://twitter.com/intent/like?tweet_id=${tweetId}`
