@@ -8,11 +8,11 @@
 export type { EditorFeature, ResolvedFeatures } from "./lib/features";
 export { resolveFeatures } from "./lib/features";
 export { exportMarkdown, importMarkdownFile } from "./lib/markdown-utils";
-export {
-	type ImportUrlMeta,
-	type ImportUrlOpts,
-	type ImportUrlResult,
-	RichTextEditor,
-	type RichTextEditorHandle,
-	type RichTextEditorProps,
-} from "./RichTextEditor";
+export { RichTextEditor } from "./RichTextEditor";
+export type {
+	ImportUrlMeta,
+	ImportUrlOpts,
+	ImportUrlResult,
+	RichTextEditorHandle,
+	RichTextEditorProps,
+} from "./types";

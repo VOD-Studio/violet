@@ -11,74 +11,15 @@
 
 import type { Element, Nodes } from "hast";
 import { raw } from "hast-util-raw";
-import { defaultSchema, sanitize } from "hast-util-sanitize";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { Slugger } from "@/shared/lib/slug";
 import type { ArticleContentContext } from "../article-embeds/types";
 import { createMarkdownComponents } from "./components/markdown-components";
+import { sanitizeContent } from "./sanitize-content";
 
 // raw 节点（{ type: "raw"; value: html }）由 mdast-util-to-hast 全局扩展进 hast 的
 // RootContentMap，hast-util-raw 据此把 HTML 字符串解析为正式 hast 节点。
-
-/**
- * sanitize schema：在默认白名单基础上放宽，允许 class/style（shiki 高亮 + 排版所需）、
- * 以及常见文章元素（details/summary 等）。保持 script/iframe/event handler 等危险项被剥离。
- */
-const schema = {
-	...defaultSchema,
-	attributes: {
-		...defaultSchema.attributes,
-		// 允许 class/style，承载编辑器产出的颜色、对齐等 inline 样式
-		"*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class", "style", "id"],
-		// Highlight 多色高亮把颜色存在 data-color
-		mark: [...(defaultSchema.attributes?.mark ?? []), "dataColor"],
-		// 任务列表 checkbox：保留 input 的 type/checked/disabled
-		input: ["type", "checked", "disabled"],
-		// ul/li 的 dataType/dataChecked 用于识别任务列表结构
-		// hast-util-sanitize 用 property-information 属性名(camelCase)，不是 HTML 属性名
-		ul: [...(defaultSchema.attributes?.ul ?? []), "dataType"],
-		li: [...(defaultSchema.attributes?.li ?? []), "dataType", "dataChecked"],
-		// 浏览时渲染载体：span=行内公式、div=块级公式 + 图块（dataFormat/dataSource）
-		span: [...(defaultSchema.attributes?.span ?? []), "dataType", "dataLatex"],
-		div: [
-			...(defaultSchema.attributes?.div ?? []),
-			"dataType",
-			"dataLatex",
-			"dataFormat",
-			"dataSource",
-		],
-		// 可运行代码块（浏览时渲染载体）：pre 携带 runnable/lang/overrides/source
-		pre: [
-			...(defaultSchema.attributes?.pre ?? []),
-			"dataRunnable",
-			"dataLang",
-			"dataOverrides",
-			"dataSource",
-		],
-	},
-	// 允许 article 正文中常见的额外标签
-	// span：承载文本颜色；u：下划线；input/label：任务列表 checkbox；其余为编辑器/富文本常用元素
-	tagNames: [
-		...(defaultSchema.tagNames ?? []),
-		"img",
-		"figure",
-		"figcaption",
-		"details",
-		"summary",
-		"mark",
-		"kbd",
-		"abbr",
-		"span",
-		"u",
-		"input",
-		"label",
-	],
-	// 不给 id 加 user-content- 前缀：文章正文来自后台编辑器（非任意用户输入），
-	// heading 的 id 需与目录（extractToc 生成的 slug）一致，点击目录才能滚动到位。
-	// sanitize 白名单已剥离 script/iframe 等危险项，clobber 风险可控。
-	clobberPrefix: "",
-};
 
 /** HTML 字符串 → hast：包成 raw 节点交给 hast-util-raw 解析，纯 HTML 不经过 markdown */
 function htmlToHast(html: string): Nodes {
@@ -134,7 +75,7 @@ export interface HtmlContentProps {
 }
 
 export function HtmlContent({ html, className, context }: HtmlContentProps) {
-	const cleaned = ensureHeadingIds(sanitize(htmlToHast(html), schema));
+	const cleaned = ensureHeadingIds(sanitizeContent(htmlToHast(html)));
 	return (
 		<div className={className}>
 			{toJsxRuntime(cleaned, {

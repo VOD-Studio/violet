@@ -149,15 +149,21 @@ export const MarkdownSourceEditor = forwardRef<MarkdownSourceHandle, MarkdownSou
 				// 桌面：scrollTarget 机制 + 链式 measure 收敛（视口外行高估算偏差）
 				const scrollTo = () => {
 					view.dispatch({
-						effects: EditorView.scrollIntoView(pos, { y: "start" }),
+						effects: EditorView.scrollIntoView(Math.min(pos, view.state.doc.length), {
+							y: "start",
+						}),
 					});
 				};
 				const chain = (depth: number) => {
 					view.requestMeasure({
 						read: () => true,
 						write: () => {
-							scrollTo();
-							if (depth > 0) chain(depth - 1);
+							// measure 写阶段禁止派发事务，移到下一帧并跳过已卸载的实例。
+							requestAnimationFrame(() => {
+								if (viewRef.current !== view) return;
+								scrollTo();
+								if (depth > 0) chain(depth - 1);
+							});
 						},
 					});
 				};

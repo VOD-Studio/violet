@@ -16,7 +16,6 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
@@ -35,6 +34,9 @@ import { createDiagramBlockExtension } from "../ui/DiagramBlockView";
 import { createImageExtension } from "../ui/ImageView";
 import { createMathExtensions } from "../ui/MathView";
 import { CustomTaskItem } from "../ui/TaskItemView";
+import { Footnotes } from "./footnote-list";
+import { FootnoteDefinition, FootnoteReference } from "./footnotes";
+import { createMarkdownTable } from "./table";
 
 /** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
 const lowlight = createLowlight(common);
@@ -91,6 +93,8 @@ export function buildEditorExtensions(
 			// Tiptap v3 的 StarterKit 默认已包含 underline，
 			// 需显式关闭，避免与下方独立 Underline 扩展重复注册。
 			underline: false,
+			// 脚注区始终归并在文末，不能再由自动尾段与归一化相互追加事务。
+			trailingNode: { notAfter: ["footnotes"] },
 			// 保留：文档/段落/文本/标题/粗斜/删除线/行内代码/引用/分割线/
 			//       有序无序列表/列表项/历史/拖放/粘贴等
 		}),
@@ -125,13 +129,21 @@ export function buildEditorExtensions(
 		// —— 表格（可裁剪）——
 		...(features?.table === false
 			? []
-			: [Table.configure({ resizable: false }), TableRow, TableHeader, TableCell]),
+			: [
+					createMarkdownTable().configure({ resizable: false }),
+					TableRow,
+					TableHeader,
+					TableCell,
+				]),
 		// —— 代码块（高亮 + 语言下拉 nodeView）——
 		createCodeBlockExtension(lowlight),
 		// —— 数学公式（KaTeX 双态编辑，宏表与阅读端同源）——
 		...createMathExtensions(),
 		// —— 图块（Mermaid 流程图，atom 节点 + ```mermaid 围栏往返 + 弹层 NodeView）——
 		createDiagramBlockExtension(),
+		FootnoteReference,
+		FootnoteDefinition,
+		Footnotes,
 		// —— 占位符 ——
 		Placeholder.configure({ placeholder }),
 		// —— Markdown 双向序列化 ——

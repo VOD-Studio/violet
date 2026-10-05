@@ -6,7 +6,6 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
-import { Checkbox } from "@violet/ui";
 import { cn } from "cn";
 import { type CSSProperties, lazy, type ReactNode, Suspense } from "react";
 import type { Components } from "react-markdown";
@@ -20,6 +19,7 @@ import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // DiagramBlock/renderMermaid，把 mermaid 依赖树拉进文章正文主 chunk；直连仅注册
 // 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
 import { diagramRenderers } from "../../diagram/renderers";
+import { proseElements } from "./prose-elements";
 import { createRichCodeRenderer } from "./rich-code-renderer";
 
 /** 公式组件懒加载：KaTeX + 字体只在含公式的文章页拉取 */
@@ -125,6 +125,7 @@ function DiagramLoadingFallback({ source }: { source: string }) {
 	);
 }
 export const markdownComponents: Components = {
+	...proseElements,
 	h1: ({ children, style, className, id }) => (
 		<h1
 			id={id}
@@ -167,73 +168,15 @@ export const markdownComponents: Components = {
 			{children}
 		</ProseHeading>
 	),
-	p: ({ children, style, className }) => (
-		<p style={style} className={cn("my-5 text-foreground/90", className)}>
+	p: ({ children, style, className, id }) => (
+		<p id={id} style={style} className={cn("my-5 text-foreground/90", className)}>
 			{children}
 		</p>
 	),
-	ul: ({ children, ...props }) => {
-		const p = props as Record<string, unknown>;
-		// hast-util-to-jsx-runtime 对 data-* 属性传 HTML 属性名(连字符)
-		// sanitize schema 用 hast 属性名(camelCase)，但 toJsxRuntime 转回 info.attribute
-		if (p["data-type"] === "taskList") {
-			return (
-				<ul data-type="taskList" className="my-5 space-y-2 pl-0 [list-style:none]">
-					{children}
-				</ul>
-			);
-		}
-		return <ul className="my-5 list-disc space-y-2 pl-6 text-foreground/90">{children}</ul>;
-	},
-	ol: ({ children }) => (
-		<ol className="my-5 list-decimal space-y-2 pl-6 text-foreground/90">{children}</ol>
-	),
-	li: ({ children, ...props }) => {
-		const p = props as Record<string, unknown>;
-		// HTML 路径：Tiptap task item 带 data-type="taskItem"
-		if (p["data-type"] === "taskItem") {
-			return (
-				<li
-					data-checked={p["data-checked"] as string | undefined}
-					className="flex items-start gap-2"
-				>
-					{children}
-				</li>
-			);
-		}
-		// Markdown 路径：remark-gfm 的 checked 属性
-		const checked = p.checked as boolean | undefined;
-		if (checked !== undefined) {
-			return (
-				<li className="flex items-start gap-2">
-					<Checkbox checked={checked} disabled className="mt-1.5 shrink-0 opacity-100" />
-					<div className="flex-1 min-w-0 [&>p:first-child]:mt-0">{children}</div>
-				</li>
-			);
-		}
-		return <li>{children}</li>;
-	},
-	// HTML 路径的 input[type=checkbox] → 用项目 Checkbox 组件
-	input: ({ type, checked, ...rest }) => {
-		if (type === "checkbox") {
-			return <Checkbox checked={!!checked} disabled className="opacity-100" />;
-		}
-		return <input type={type} {...rest} />;
-	},
 	blockquote: ({ children }) => (
 		<blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 text-foreground/80">
 			{children}
 		</blockquote>
-	),
-	a: ({ children, href }) => (
-		<a
-			href={href}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="text-primary underline underline-offset-2 transition-opacity hover:opacity-80"
-		>
-			{children}
-		</a>
 	),
 	strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
 	em: ({ children }) => <em className="italic">{children}</em>,
@@ -245,14 +188,8 @@ export const markdownComponents: Components = {
 		</div>
 	),
 	thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
-	th: ({ children }) => (
-		<th className="border border-edge-hairline px-3 py-2 text-left font-semibold">
-			{children}
-		</th>
-	),
-	td: ({ children }) => <td className="border border-edge-hairline px-3 py-2">{children}</td>,
 	// HTML 路径：行内公式（编辑器产出的语义化标记，浏览时渲染）
-	span: ({ children, ...props }) => {
+	span: ({ children, style, id, ...props }) => {
 		const p = props as Record<string, unknown>;
 		if (p["data-type"] === "inline-math") {
 			const latex = String(p["data-latex"] ?? "");
@@ -262,12 +199,16 @@ export const markdownComponents: Components = {
 				</Suspense>
 			);
 		}
-		return <span>{children}</span>;
+		return (
+			<span id={id} style={style}>
+				{children}
+			</span>
+		);
 	},
 	// HTML 路径：图块（流程图）—— 走渲染器注册表分发，未注册格式降级为源码文本
 	// data-source 是 HTML 转义后的原始源码，DOM 解析时已自动反转义，无损提取。
 	// Suspense fallback / 未知格式 / 无 JS 均以源码 <pre> 降级（mermaid 源本身可读）。
-	div: ({ children, ...props }) => {
+	div: ({ children, id, role, className, ...props }) => {
 		const p = props as Record<string, unknown>;
 		if (p["data-type"] === "diagram-block") {
 			const format = String(p["data-format"] ?? "");
@@ -291,7 +232,11 @@ export const markdownComponents: Components = {
 				</Suspense>
 			);
 		}
-		return <div>{children}</div>;
+		return (
+			<div id={id} role={role} className={className}>
+				{children}
+			</div>
+		);
 	},
 	code: createRichCodeRenderer(),
 	// pre：可运行代码块（data-runnable="true"）渲染 CodeRunner，其余透传给 code 分支。

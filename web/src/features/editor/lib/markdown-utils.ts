@@ -26,14 +26,13 @@ export function importMarkdownFile(editor: Editor, file: File): Promise<void> {
 }
 
 /**
- * exportMarkdown - 将编辑器内容导出为 .md 文件并下载
+ * 下载当前可见内容的 Markdown，源码模式传入未经规范化的编辑文本。
  *
- * @param editor 源编辑器实例
- * @param filename 文件名（不含扩展名），默认 "article"
+ * @param markdown - 当前文档源码
+ * @param filename - 文件名，不含扩展名
  */
-export function exportMarkdown(editor: Editor, filename = "article"): void {
-	const md = editor.getMarkdown();
-	const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+export function exportMarkdown(markdown: string, filename = "article"): void {
+	const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;

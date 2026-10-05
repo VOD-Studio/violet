@@ -78,6 +78,10 @@ _Avoid_: 合作者（笼统，未说明与版本历史的关系）
 正文中的 LaTeX 公式，两种形态：**行内公式（Inline Math）** 嵌在段落文字流中，Markdown 源 `$...$`，HTML 载体 `<span data-type="inline-math" data-latex="...">`；**公式块（Block Math）** 独立成段，Markdown 源 `$$...$$`，HTML 载体 `<div data-type="block-math" data-latex="...">`。化学式与物理单位经 mhchem（`\ce{}` / `\pu{}`），物理宏包命令（`\dv` `\ket` 等）经共享宏表支持。
 _Avoid_: 算式（口语，未区分两种形态）
 
+**脚注（Footnote）**:
+由行内引用与文末可编辑正文组成。Markdown 使用 `[^label]` 与 `[^label]: 正文`；同一标识可重复引用。引用编号按首次出现顺序派生，每次引用具有独立 ID 与回链；定义保留源码次序，以原生 `li[value]` 显示对应编号。编辑器导入兼容 Goldmark 与 remark 的标准 HTML 脚注载体。
+_Avoid_: 尾注链接（未体现可编辑正文与重复引用关系）
+
 **浏览时渲染（View-time Rendering）**:
 content_html 对公式（及未来图块）只存**语义化标记**（data-type + data-latex），最终形态（KaTeX HTML / SVG）在读者浏览器渲染，保存时不烘焙。收益：content_html 体积、主题跟随、源文本可搜索可复制、升级渲染器不动存量数据。编辑端与阅读端共用同一渲染核心。渲染输出经 **hast 白名单管线**（解析 → sanitize 白名单 → React 元素）注入，不使用 dangerouslySetInnerHTML（见 ADR-0005）。
 _Avoid_: 烘焙渲染（已否决的保存时渲染路线，见 ADR-0004）
