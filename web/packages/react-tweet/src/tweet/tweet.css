@@ -210,16 +210,22 @@
 .v-tweet--quoted {
 	padding: 14px;
 	border-radius: 10px;
-	background: var(--_tweet-soft);
 	font-size: 14px;
 }
 .v-tweet--quoted .v-tweet__header {
-	margin-block-end: 12px;
+	margin-block-end: 8px;
 }
 .v-tweet--quoted .v-tweet__avatar {
-	width: 32px;
-	height: 32px;
-	flex-basis: 32px;
+	width: 28px;
+	height: 28px;
+	flex-basis: 28px;
+	font-size: 13px;
+}
+.v-tweet--quoted .v-tweet__author {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 2px 8px;
 }
 .v-tweet__quote-link {
 	display: inline-block;
