@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { type AvailableTweet, EmbeddedTweet } from "../unstyled.js";
 
@@ -16,32 +16,74 @@ const tweet: AvailableTweet = {
 		],
 	},
 };
+let fullHeight: number;
+const observers = new Set<() => void>();
 
-afterEach(cleanup);
-
-it("完整显示多行正文与安全链接，正文冒泡而链接不触发宿主导航", () => {
-	const navigate = vi.fn();
-	const { container } = render(<EmbeddedTweet tweet={tweet} onClick={navigate} />);
-	const body = container.querySelector(".v-tweet__text");
-	const link = screen.getByRole("link", { name: "链接" });
-	expect(body?.textContent).toBe(tweet.snapshot.text);
-	expect(body?.getAttribute("dir")).toBe("auto");
-	expect(body?.getAttribute("data-collapsed")).toBeNull();
-	expect(body?.getAttribute("style")).toBeNull();
-	expect(link.tabIndex).toBe(0);
-	expect(link.getAttribute("href")).toBe("https://example.com/story");
-	expect(screen.queryByRole("button")).toBeNull();
-	fireEvent.click(body as HTMLElement);
-	expect(navigate).toHaveBeenCalledTimes(1);
-	fireEvent.click(link);
-	expect(navigate).toHaveBeenCalledTimes(1);
+beforeEach(() => {
+	fullHeight = 288;
+	vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(() => fullHeight);
+	const computedStyle = window.getComputedStyle.bind(window);
+	vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+		const style = computedStyle(element);
+		Object.defineProperty(style, "lineHeight", { value: "24px" });
+		return style;
+	});
+	vi.stubGlobal(
+		"ResizeObserver",
+		class {
+			constructor(private readonly callback: () => void) {}
+			observe() {
+				observers.add(this.callback);
+			}
+			disconnect() {
+				observers.delete(this.callback);
+			}
+		},
+	);
 });
 
-it("没有分段时完整显示原文，不解释正文中的 HTML", () => {
-	const text = `${tweet.snapshot.text}\n<script>alert(1)</script>`;
-	const { container } = render(
-		<EmbeddedTweet tweet={{ ...tweet, snapshot: { ...tweet.snapshot, text, segments: [] } }} />,
+afterEach(() => {
+	cleanup();
+	observers.clear();
+	vi.restoreAllMocks();
+	vi.unstubAllGlobals();
+});
+
+it("展开与收起保留完整正文，裁切链接不进入 Tab 顺序，按钮不触发宿主导航", () => {
+	const navigate = vi.fn();
+	render(<EmbeddedTweet tweet={tweet} maxTextLines={4} locale="zh-CN" onClick={navigate} />);
+	const button = screen.getByRole("button", { name: "展示更多" });
+	const link = screen.getByRole("link", { name: "链接" });
+	const body = document.getElementById(button.getAttribute("aria-controls") ?? "");
+	expect(body?.textContent).toBe(tweet.snapshot.text);
+	expect(button.getAttribute("aria-expanded")).toBe("false");
+	expect(link.tabIndex).toBe(-1);
+	fireEvent.click(button);
+	expect(button.getAttribute("aria-expanded")).toBe("true");
+	expect(body?.getAttribute("data-collapsed")).toBeNull();
+	expect(link.tabIndex).toBe(0);
+	fireEvent.click(screen.getByRole("button", { name: "收起" }));
+	expect(button.getAttribute("aria-expanded")).toBe("false");
+	expect(body?.textContent).toBe(tweet.snapshot.text);
+	expect(navigate).not.toHaveBeenCalled();
+});
+
+it("换推文时恢复折叠，宽度改变后不再溢出的正文移除按钮", () => {
+	const view = render(<EmbeddedTweet tweet={tweet} maxTextLines={4} />);
+	fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+	view.rerender(
+		<EmbeddedTweet
+			tweet={{ ...tweet, id: "32", url: "https://x.com/example/status/32" }}
+			maxTextLines={4}
+		/>,
 	);
-	expect(container.querySelector(".v-tweet__text")?.textContent).toBe(text);
-	expect(container.querySelector("script")).toBeNull();
+	expect(screen.getByRole("button", { name: "Show more" }).getAttribute("aria-expanded")).toBe(
+		"false",
+	);
+	act(() => {
+		fullHeight = 72;
+		for (const callback of observers) callback();
+	});
+	expect(screen.queryByRole("button")).toBeNull();
+	expect(screen.getByRole("link", { name: "链接" }).tabIndex).toBe(0);
 });

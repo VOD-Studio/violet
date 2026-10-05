@@ -59,6 +59,10 @@ export interface TweetMessages {
 	likeAction: string;
 	/** 打开 X 回复编辑器的链接文字。 */
 	replyAction: string;
+	/** 展开被行数限制的正文。 */
+	showMore: string;
+	/** 将已展开的正文恢复到配置行数。 */
+	showLess: string;
 	/**
 	 * 超过展示深度或缺少引用内容时的链接文字。
 	 * @example "View quoted post"
@@ -163,6 +167,14 @@ export interface TweetMessages {
  */
 export interface TweetDisplayOptions {
 	/**
+	 * 正文折叠时的最大行数；实际溢出时显示展开与收起按钮。
+	 *
+	 * 仅影响本条正文，不折叠媒体或嵌套引用。非正整数按未配置处理。
+	 * @default undefined — 展示完整正文。
+	 * @example 6
+	 */
+	maxTextLines?: number;
+	/**
 	 * 日期、数字及内置消息使用的语言标签。
 	 *
 	 * 内置英文与简体中文；未知语言使用英文消息，非法标签安全回退。
@@ -202,6 +214,8 @@ const english: TweetMessages = {
 	affiliation: "Affiliated organization",
 	likeAction: "Like on X",
 	replyAction: "Reply on X",
+	showMore: "Show more",
+	showLess: "Show less",
 	quote: "View quoted post",
 	photo: "Post photo {index}",
 	viewPhoto: "View original photo {index}",
@@ -235,6 +249,8 @@ const chinese: TweetMessages = {
 	affiliation: "关联组织",
 	likeAction: "在 X 点赞",
 	replyAction: "在 X 回复",
+	showMore: "展示更多",
+	showLess: "收起",
 	quote: "查看引用推文",
 	photo: "推文图片 {index}",
 	viewPhoto: "查看图片 {index} 原图",

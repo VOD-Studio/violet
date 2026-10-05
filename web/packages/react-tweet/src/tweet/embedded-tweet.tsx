@@ -55,6 +55,7 @@ const noticeMessages: Record<TweetNotice, keyof TweetMessages> = {
 export function EmbeddedTweet({
 	tweet,
 	compact = false,
+	maxTextLines,
 	locale,
 	timeZone,
 	messages,
@@ -70,6 +71,7 @@ export function EmbeddedTweet({
 		<TweetContent
 			tweet={tweet}
 			compact={compact}
+			maxTextLines={maxTextLines}
 			localization={localization}
 			renderPhotos={renderPhotos}
 			renderVideo={renderVideo}
@@ -82,6 +84,7 @@ export function EmbeddedTweet({
 function TweetContent({
 	tweet,
 	compact,
+	maxTextLines,
 	localization,
 	renderPhotos,
 	renderVideo,
@@ -90,6 +93,7 @@ function TweetContent({
 }: TweetMediaRenderers & {
 	tweet: TweetData;
 	compact: boolean;
+	maxTextLines?: number;
 	localization: TweetLocalization;
 	articleProps?: Omit<ComponentPropsWithRef<"article">, "children" | "dangerouslySetInnerHTML">;
 	depth: number;
@@ -129,7 +133,13 @@ function TweetContent({
 		<article {...articleProps} className={classes} aria-label={label} data-state="available">
 			<TweetHeader author={snapshot.author} source={source} messages={messages} />
 			{(snapshot.text || !!snapshot.segments?.length) && (
-				<TweetText text={snapshot.text} segments={snapshot.segments} />
+				<TweetText
+					key={`${source ?? ""}:${maxTextLines ?? ""}`}
+					text={snapshot.text}
+					segments={snapshot.segments}
+					maxTextLines={maxTextLines}
+					messages={messages}
+				/>
 			)}
 			{!!snapshot.media?.length && (
 				<TweetMediaContent

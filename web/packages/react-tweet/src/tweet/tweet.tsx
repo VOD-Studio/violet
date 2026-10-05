@@ -44,6 +44,7 @@ export interface TweetProps
 export function Tweet({
 	id,
 	fetcher,
+	maxTextLines,
 	locale,
 	timeZone,
 	messages,
@@ -61,6 +62,7 @@ export function Tweet({
 			<EmbeddedTweet
 				{...articleProps}
 				tweet={result.tweet}
+				maxTextLines={maxTextLines}
 				locale={locale}
 				timeZone={timeZone}
 				messages={messages}
