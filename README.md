@@ -32,7 +32,7 @@
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
 - **violet/ui 组件库**：`@violet/ui` 以组件清单管理公开入口与成熟度，基础单元共用 BEM CSS；`/ui` 提供安装、主题、组件 API 与同源交互示例，包内规范和真实 tarball 消费验证支持独立使用（尚未发布 npm）
-- **原生推文组件**：`@violet/react-tweet` 提供独立数据获取与快照渲染，默认入口自带样式，支持多语言文案、媒体插槽、SSR 和不可用状态隔离；文章引用与本站保存的 X 原文共用组件（尚未发布 npm）
+- **原生推文组件**：文章引用与推文页面共用独立的 [`@violet/react-tweet`](web/packages/react-tweet/README.md)；使用与开发说明见包内文档（尚未发布 npm）
 - **工程化**：DDD 四层架构、CQRS、事件驱动审计、release-please 自动发版、CI/CD 全自动部署（含迁移门禁与自动回滚）
 
 ## 技术栈
