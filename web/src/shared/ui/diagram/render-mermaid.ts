@@ -103,7 +103,7 @@ async function loadMermaid(): Promise<typeof import("mermaid").default> {
 let renderSeq = 0;
 
 /**
- * renderMermaid - 渲染 mermaid 源码为经 DOMPurify 清理的 SVG 字符串
+ * 将 Mermaid 源码渲染为经 DOMPurify 清理的 SVG；支持 look 的图型默认使用手绘笔触。
  *
  * @param source mermaid 源码（可能含恶意 %%{init}%% 指令——由 DOMPurify 兜底）
  * @param theme  'light' | 'dark'，决定 themeVariables 明暗（默认 light）
@@ -119,6 +119,8 @@ export async function renderMermaid(
 		mermaid.initialize({
 			startOnLoad: false,
 			securityLevel: "strict",
+			look: "handDrawn",
+			handDrawnSeed: 1, // 固定笔触，主题切换和重新预览时不抖动。
 			// 明暗双主题：dark 用内置主题（深色节点 + 浅字全图配对），
 			// light 用 base + 站点框架色（保留默认彩色节点）
 			theme: theme === "dark" ? "dark" : "base",

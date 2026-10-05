@@ -707,6 +707,8 @@ xychart-beta
 ### 9.15 渲染与安全
 
 - **浏览时渲染**：content_html 只存语义化标记 `<div data-type="diagram-block" data-format="mermaid" data-source="...">`，最终 SVG 在读者浏览器渲染，不烘焙进 HTML（体积小、主题可跟随、源码可搜索可复制、升级渲染器不动存量数据）。
+- **默认手绘**：编辑器预览与阅读端共用 Mermaid 的 `handDrawn` 风格；固定笔触种子，重新预览或切换明暗主题时不重新随机画线。浅色描边与连线使用站点的 `muted-foreground`，节点填色保留 Mermaid 主题配色。
+- **手绘覆盖边界**：当前已验证流程图、类图、状态图（`stateDiagram-v2`）、ER 图与思维导图。时序图、甘特图、饼图、用户旅程图、时间线、Git 图、象限图与数值图表仍正常渲染，但 Mermaid 11.16 对这些图型不提供手绘笔触；配置 `handDrawn` 不会把它们转换为手绘图。
 - **双重 XSS 防线**：全局 `securityLevel: strict` + render 产物经 DOMPurify 二次清理。mermaid 支持 per-diagram `%%{init}%%` 指令覆盖全局 strict（docmost CVE-2026-23630 的存储型 XSS 攻击路径），第二道 DOMPurify 兜底剥除 `<script>`、`on*` 事件属性、`foreignObject` 可执行内容。
 - **主题重渲染**：mermaid 把颜色烘焙进 SVG，切主题需重新渲染（非 CSS 跟随）。组件持有 source，主题变化时重新 initialize + 重渲染所有可见图块。
 
