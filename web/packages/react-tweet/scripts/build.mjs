@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { copyFile, rm } from "node:fs/promises";
+import { copyFile, cp, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const root = new URL("../", import.meta.url);
@@ -16,3 +16,6 @@ await Promise.all(
 		copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root)),
 	),
 );
+await cp(new URL("src/tweet/icons/", root), new URL("dist/tweet/icons/", root), {
+	recursive: true,
+});

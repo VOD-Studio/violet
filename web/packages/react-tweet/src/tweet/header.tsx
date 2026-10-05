@@ -2,7 +2,6 @@ import type { TweetAuthor } from "../data/author.ts";
 import { safeUrl } from "../data/urls.ts";
 import type { TweetMessages } from "./localization.ts";
 import { TweetImage, TweetLink } from "./primitives.tsx";
-import { VerifiedBadge } from "./verified-badge.tsx";
 
 export function TweetHeader({
 	author,
@@ -39,7 +38,18 @@ export function TweetHeader({
 							{name}
 						</TweetLink>
 						{author.verification && (
-							<VerifiedBadge kind={author.verification} messages={messages} />
+							<span
+								className="v-tweet__icon v-tweet__verified"
+								data-kind={author.verification}
+								role="img"
+								aria-label={
+									author.verification === "business"
+										? messages.verifiedBusiness
+										: author.verification === "government"
+											? messages.verifiedGovernment
+											: messages.verified
+								}
+							/>
 						)}
 						{affiliation && safeUrl(affiliation.imageUrl) && (
 							<span className="v-tweet__affiliation" title={affiliationName}>
@@ -65,15 +75,7 @@ export function TweetHeader({
 				</div>
 			</div>
 			<TweetLink href={source} className="v-tweet__brand" label={messages.source}>
-				<svg
-					aria-hidden="true"
-					viewBox="0 0 24 24"
-					width="20"
-					height="20"
-					fill="currentColor"
-				>
-					<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817-5.966 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117Z" />
-				</svg>
+				<span className="v-tweet__icon v-tweet__brand-icon" aria-hidden="true" />
 			</TweetLink>
 		</header>
 	);

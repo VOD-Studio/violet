@@ -132,12 +132,27 @@
 .v-tweet__affiliation a:hover {
 	text-decoration: none;
 }
-.v-tweet__verified {
+.v-tweet__icon {
+	display: inline-block;
 	flex: none;
+	background-color: currentColor;
+	mask-position: center;
+	mask-size: contain;
+	mask-repeat: no-repeat;
+}
+.v-tweet__verified {
+	width: 18px;
+	height: 18px;
+	mask-image: url("./icons/verified.svg");
 	color: var(--tweet-verified, #1d9bf0);
 }
 .v-tweet__verified[data-kind="government"] {
 	color: #829aab;
+	mask-image: url("./icons/verified-government.svg");
+}
+.v-tweet__verified[data-kind="business"] {
+	mask-image: none;
+	background: url("./icons/verified-business.svg") center / contain no-repeat;
 }
 .v-tweet__affiliation {
 	display: inline-flex;
@@ -160,6 +175,11 @@
 	margin: -4px;
 	padding: 4px;
 	color: var(--_tweet-foreground);
+}
+.v-tweet__brand-icon {
+	width: 20px;
+	height: 20px;
+	mask-image: url("./icons/brand.svg");
 }
 .v-tweet .v-tweet__text {
 	white-space: pre-wrap;
@@ -256,10 +276,18 @@
 .v-tweet .v-tweet__metric:is(:hover, :focus-visible) {
 	color: var(--_tweet-metric-hover);
 }
-.v-tweet__metric svg {
-	flex: none;
+.v-tweet__metric-icon {
 	width: 14px;
 	height: 14px;
+}
+.v-tweet__metric--likes .v-tweet__metric-icon {
+	mask-image: url("./icons/like.svg");
+}
+.v-tweet__metric--replies .v-tweet__metric-icon {
+	mask-image: url("./icons/reply.svg");
+}
+.v-tweet__metric--reposts .v-tweet__metric-icon {
+	mask-image: url("./icons/repost.svg");
 }
 .v-tweet__sr-only {
 	position: absolute;
