@@ -4,8 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	markdown "blog-api/internal/application/markdown"
 )
 
 // TestHTMLToMarkdown 验证 HTML→Markdown 转换的各语义节点正确性。
@@ -66,4 +69,74 @@ func TestHTMLToMarkdown(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, strings.Contains(md, "- 一") || strings.Contains(md, "* 一"))
 	})
+}
+
+func TestHTMLToMarkdown_CarrierRoundTrip(t *testing.T) {
+	source := "$x_1$ and $y_2$.\n\n$$\nx_1 + y_2\n$$\n\n~~~~mermaid\ngraph TD\nA --> B\n~~~~\n\n```js runnable {\"timeout_secs\": 10}\nconsole.log('$x$')\n```\n\nFirst[^note], again[^note].\n\n[^note]: One **bold** paragraph.\n\n    Another paragraph.\n\n- [x] Checked\n\n==highlight=="
+	html, err := markdown.ToHTML(source)
+	require.NoError(t, err)
+	converted, err := htmlToMarkdown(html)
+	require.NoError(t, err)
+	for _, expected := range []string{
+		"$x_1$", "$y_2$", "x_1 + y_2", "```mermaid", "A --> B",
+		"node runnable", `"timeout_secs":10`, "console.log('$x$')",
+		"[^1]", "[^1]:", "Another paragraph.", "[x] Checked", "==highlight==",
+	} {
+		assert.Contains(t, converted, expected)
+	}
+	assert.Equal(t, 3, strings.Count(converted, "[^1]"))
+	roundTrip, err := markdown.ToHTML(converted)
+	require.NoError(t, err)
+	for _, expected := range []string{
+		`data-latex="x_1"`, `data-latex="y_2"`, `data-type="block-math"`,
+		`data-format="mermaid"`, `data-runnable="true"`, `data-checked="true"`,
+		`id="fnref1:1"`, "<mark>highlight</mark>",
+	} {
+		assert.Contains(t, roundTrip, expected)
+	}
+}
+
+func TestHTMLToMarkdown_FootnoteShapes(t *testing.T) {
+	for name, html := range map[string]string{
+		"remark": `<p>A<sup><a href="#user-content-fn-note" data-footnote-ref="">1</a></sup> B<sup><a href="#user-content-fn-note" data-footnote-ref="">1</a></sup></p><section data-footnotes=""><h2>Footnotes</h2><ol><li id="user-content-fn-note"><p>First</p><p>Second <a href="#ref" data-footnote-backref="">↩</a></p></li></ol></section>`,
+		"editor": `<p>A<sup><a href="#fn-note" data-footnote-ref="" data-footnote-label="note">1</a></sup></p><section data-footnotes="" role="doc-endnotes"><ol><li id="fn-note" data-footnote-label="note"><div><p>First</p><p>Second</p></div><a href="#ref" role="doc-backlink">↩</a></li></ol></section>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			md, err := htmlToMarkdown(html)
+			require.NoError(t, err)
+			assert.Contains(t, md, "A[^1]")
+			roundTrip, err := markdown.ToHTML(md)
+			require.NoError(t, err)
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(roundTrip))
+			require.NoError(t, err)
+			definition := doc.Find(".footnotes li").First()
+			definition.Find(`a[role="doc-backlink"]`).Remove()
+			paragraphs := definition.Find("p").Map(func(_ int, p *goquery.Selection) string {
+				return strings.TrimSpace(p.Text())
+			})
+			assert.Equal(t, []string{"First", "Second"}, paragraphs)
+			assert.NotContains(t, md, "Footnotes")
+			assert.NotContains(t, md, "↩")
+		})
+	}
+}
+
+func TestHTMLToMarkdown_CodeContainingFence(t *testing.T) {
+	source := "<pre data-runnable=\"true\" data-lang=\"python\"><code>print('```')</code></pre>"
+	md, err := htmlToMarkdown(source)
+	require.NoError(t, err)
+	assert.Contains(t, md, "````python runnable")
+	assert.Contains(t, md, "print('```')")
+}
+
+func TestHTMLToMarkdown_PreservesTableAttributes(t *testing.T) {
+	html := `<table><tr><td colspan="2" rowspan="3" data-colwidth="120,120">cell</td></tr></table>`
+	converted, err := htmlToMarkdown(html)
+	require.NoError(t, err)
+	for _, attribute := range []string{`colspan="2"`, `rowspan="3"`, `data-colwidth="120,120"`} {
+		assert.Contains(t, converted, attribute)
+	}
+	roundTrip, err := markdown.ToHTML(converted)
+	require.NoError(t, err)
+	assert.Contains(t, roundTrip, `colspan="2" rowspan="3" data-colwidth="120,120"`)
 }
