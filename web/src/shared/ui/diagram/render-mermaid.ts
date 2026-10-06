@@ -81,6 +81,32 @@ async function loadMermaid(): Promise<typeof import("mermaid").default> {
 	return mermaidLoader;
 }
 
+function fitGanttTickLabels(svg: SVGSVGElement): void {
+	for (const axis of svg.querySelectorAll(".grid")) {
+		const labels = Array.from(axis.querySelectorAll<SVGTextElement>(".tick text"), (text) => ({
+			text,
+			bounds: text.getBoundingClientRect(),
+		}));
+		const visible: typeof labels = [];
+		for (const [index, label] of labels.entries()) {
+			if (index === labels.length - 1) {
+				while (
+					visible.length &&
+					visible[visible.length - 1].bounds.right + 8 > label.bounds.left
+				) {
+					visible.pop()?.text.setAttribute("visibility", "hidden");
+				}
+			}
+			const previous = visible[visible.length - 1];
+			if (previous && previous.bounds.right + 8 > label.bounds.left) {
+				label.text.setAttribute("visibility", "hidden");
+			} else {
+				visible.push(label);
+			}
+		}
+	}
+}
+
 function centerCircularLabels(svg: SVGSVGElement): void {
 	for (const circle of svg.querySelectorAll<SVGCircleElement>("circle.label-container")) {
 		const label = circle.parentElement?.querySelector<SVGGElement>(":scope > .label");
@@ -120,7 +146,7 @@ export async function renderMermaid(
 			htmlLabels: false,
 			fontFamily: DIAGRAM_FONT_FAMILY,
 			altFontFamily: DIAGRAM_FONT_FAMILY,
-			themeCSS: `text, tspan, foreignObject, foreignObject * { font-family: ${DIAGRAM_FONT_FAMILY} !important; }`,
+			themeCSS: `text, tspan, foreignObject, foreignObject * { font-family: ${DIAGRAM_FONT_FAMILY} !important; } .grid .tick text { font-size: 12px !important; }`,
 			sequence: {
 				actorFontFamily: DIAGRAM_FONT_FAMILY,
 				messageFontFamily: DIAGRAM_FONT_FAMILY,
@@ -130,6 +156,15 @@ export async function renderMermaid(
 				taskFontFamily: DIAGRAM_FONT_FAMILY,
 				titleFontFamily: DIAGRAM_FONT_FAMILY,
 				textPlacement: "svg",
+			},
+			gantt: {
+				useWidth: 908, // 920px 正文宽度扣除两侧笔触边缘。
+				useMaxWidth: false,
+				fontSize: 14,
+				sectionFontSize: 14,
+				barHeight: 28,
+				barGap: 10,
+				topPadding: 64,
 			},
 			theme: theme === "dark" ? "dark" : "base",
 			themeVariables,
@@ -144,10 +179,11 @@ export async function renderMermaid(
 		container.setAttribute("aria-hidden", "true");
 		document.body.appendChild(container);
 		try {
-			const { svg } = await mermaid.render(id, source, container);
+			const { svg, diagramType } = await mermaid.render(id, source, container);
 			container.innerHTML = DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string;
 			const root = container.querySelector("svg");
 			if (!root) throw new Error("图表渲染未生成 SVG");
+			if (diagramType === "gantt") fitGanttTickLabels(root);
 			centerCircularLabels(root);
 			sketchSvg(root);
 			const viewBox = root.getAttribute("viewBox")?.trim().split(/\s+/).map(Number);

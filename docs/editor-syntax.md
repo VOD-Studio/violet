@@ -711,6 +711,7 @@ xychart-beta
 - **手写字体 CDN**：英文使用 Excalifont（Excalidraw 0.18.1 发布分片），中文使用小赖体（Xiaolai SC）。图块按需声明 `@font-face`，等待标签所需分片加载后再测量布局；中文分片来自[中文网字计划](https://chinese-font.netlify.app/zh-cn/cdn/)。首次加载需要可访问字体 CDN，字体未覆盖的字符使用系统回退字体。
 - **导出字体与许可**：SVG 文件内嵌实际标签所需的 WOFF2 分片、版权与完整 OFL 通知，不依赖站点样式或远端字体；PNG 由同一 SVG 栅格化。仓库保留两份手绘字体许可作为导出通知来源，不保存字体二进制副本。
 - **宽图**：保持自然字号，在图内横向滚动，不将整张图缩成小字。
+- **甘特图**：以 920px 自然宽度布局，任务字号 14px、日期字号 12px；只隐藏碰撞的日期文字，保留原始刻度、任务日期、时间格式与作者设置的刻度间隔。任务与日期轴之间保留独立间距，顶部日期轴和小时级项目使用同一避碰规则。
 - **双重 XSS 防线**：全局 `securityLevel: strict` + render 产物经 DOMPurify 二次清理。mermaid 支持 per-diagram `%%{init}%%` 指令覆盖全局 strict（docmost CVE-2026-23630 的存储型 XSS 攻击路径），第二道 DOMPurify 兜底剥除 `<script>`、`on*` 事件属性、`foreignObject` 可执行内容。
 - **主题重渲染**：mermaid 把颜色烘焙进 SVG，切主题需重新渲染（非 CSS 跟随）。组件持有 source，主题变化时重新 initialize + 重渲染所有可见图块。
 
