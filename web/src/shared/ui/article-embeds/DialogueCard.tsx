@@ -14,17 +14,22 @@ export function DialogueCard({ config, context }: DialogueCardProps) {
 	const avatar = config.avatar || profile?.avatarUrl;
 
 	return (
-		<figure className={styles.root} data-side={config.side}>
-			<div className={styles.speaker}>
-				{avatar ? (
-					<img src={articleEmbedImageUrl(avatar, 160)} alt="" className={styles.avatar} />
-				) : (
-					<span className={styles.avatarFallback} aria-hidden>
-						{speaker.slice(0, 1)}
-					</span>
-				)}
-				<figcaption>{speaker}</figcaption>
-			</div>
+		<figure className={`not-prose ${styles.root}`} data-side={config.side}>
+			{avatar ? (
+				<img
+					src={articleEmbedImageUrl(avatar, 160)}
+					alt=""
+					width={32}
+					height={32}
+					loading="lazy"
+					className={styles.avatar}
+				/>
+			) : (
+				<span className={styles.avatarFallback} aria-hidden>
+					{Array.from(speaker)[0]}
+				</span>
+			)}
+			<figcaption className={styles.speaker}>{speaker}</figcaption>
 			<blockquote className={styles.bubble}>
 				<p>{config.text}</p>
 			</blockquote>
