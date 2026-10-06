@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.57](https://github.com/VOD-Studio/violet/compare/v2.8.56...v2.8.57) (2026-10-06)
+
+
+### 修复
+
+* **react-tweet:** 保留生产构建的默认样式 ([#485](https://github.com/VOD-Studio/violet/issues/485)) ([5563720](https://github.com/VOD-Studio/violet/commit/55637209e801f198e519fd7dc41fcfdb62f901fc))
+
 ## [2.8.56](https://github.com/VOD-Studio/violet/compare/v2.8.55...v2.8.56) (2026-10-06)
 
 
