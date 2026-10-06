@@ -185,7 +185,7 @@ func renderFence(w util.BufWriter, source []byte, node ast.Node, entering bool) 
 	n := node.(*ast.FencedCodeBlock)
 	info := ""
 	if n.Info != nil {
-		info = string(n.Info.Text(source))
+		info = string(n.Info.Value(source))
 	}
 	lang, runnable, overrides := infracoderunner.ParseFenceInfo(info)
 	code := n.Lines().Value(source)
