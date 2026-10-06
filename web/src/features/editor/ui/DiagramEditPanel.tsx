@@ -63,7 +63,7 @@ export function DiagramEditPanel({
 					</p>
 				) : render.svg ? (
 					<div
-						className="diagram-preview flex justify-center [&>svg]:max-w-full [&>svg]:h-auto"
+						className="diagram-preview flex min-w-max justify-center"
 						// biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 清理：svg/svgFilters profile + foreignObject 内纯文本 HTML 白名单（div/span/p 等，无 href/src 能力）+ FORBID script/a + on* 事件属性与 CSS url() 剥除；PRD 决议 mermaid SVG 不走 hast 白名单
 						dangerouslySetInnerHTML={{ __html: render.svg }}
 					/>

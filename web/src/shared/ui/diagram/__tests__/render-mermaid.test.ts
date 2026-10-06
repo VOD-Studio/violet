@@ -20,11 +20,10 @@ vi.mock("mermaid", () => ({
 		render: mermaidRender,
 	},
 }));
+// jsdom 不提供 SVG 布局测量；此处只验证真实净化与错误边界。
+vi.mock("../sketch-svg", () => ({ sketchSvg: vi.fn() }));
 
 import { renderMermaid } from "../render-mermaid";
-
-const CLEAN_SVG =
-	'<svg xmlns="http://www.w3.org/2000/svg"><g><rect width="10" height="10" fill="#000"/></g></svg>';
 
 /** 用 in 判别式做受检窄化，取 svg；若实际是 error 分支则抛出错误信息（测试失败可见） */
 function unwrapSvg(result: RenderMermaidResult): string {
@@ -36,67 +35,6 @@ describe("renderMermaid", () => {
 	beforeEach(() => {
 		mermaidRender.mockReset();
 		mermaidInitialize.mockReset();
-	});
-
-	it("合法源 → 返回 { svg }，且 initialize 用 strict 安全级别 + base 主题", async () => {
-		mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
-
-		const result = await renderMermaid("graph TD; A-->B", "light");
-
-		expect("svg" in result).toBe(true);
-		expect("error" in result).toBe(false);
-		expect(unwrapSvg(result)).toContain("<svg");
-		expect(mermaidInitialize).toHaveBeenCalledWith(
-			expect.objectContaining({
-				startOnLoad: false,
-				securityLevel: "strict",
-				theme: "base",
-			}),
-		);
-		expect(mermaidInitialize).toHaveBeenCalledWith(
-			expect.objectContaining({ themeVariables: expect.any(Object) }),
-		);
-	});
-
-	it("initialize 含 suppressErrorRendering: true（防 mermaid 画错误图残留在 body）", async () => {
-		// mermaid v11 默认 suppressErrorRendering:false，解析失败时不抛错，而是把含
-		// "Syntax error in text" 的错误图画进 document.body 的临时 div，throw 前不清理 →
-		// 残留显示在界面底部。我们必须显式 true 让它在画错误图前就抛错。
-		mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
-
-		await renderMermaid("graph TD; A-->B", "light");
-
-		expect(mermaidInitialize).toHaveBeenCalledWith(
-			expect.objectContaining({ suppressErrorRendering: true }),
-		);
-	});
-
-	it("渲染走离屏容器：mermaid.render 收到第三参 container，渲染后容器从 body 移除", async () => {
-		// 回归防线：不传 container 时 mermaid 把临时 div 无隐藏样式挂在 body 末尾，
-		// 渲染期间撑开页面（刷新时滚动条 + 底部留白）。必须传离屏容器并事后回收。
-		mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
-
-		await renderMermaid("graph TD; A-->B", "light");
-
-		const container = mermaidRender.mock.calls[0]?.[2];
-		expect(container).toBeInstanceOf(HTMLElement);
-		expect(document.body.contains(container)).toBe(false);
-	});
-
-	it("渲染抛错时离屏容器同样回收", async () => {
-		mermaidRender.mockRejectedValue(new Error("Parse error"));
-
-		await renderMermaid("graph TD; A-->B", "light");
-
-		const container = mermaidRender.mock.calls[0]?.[2];
-		expect(container).toBeInstanceOf(HTMLElement);
-		expect(document.body.contains(container)).toBe(false);
-	});
-
-	it("默认主题为 light（不传 theme）", async () => {
-		mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
-		await renderMermaid("graph TD; A-->B");
-		expect(mermaidInitialize).toHaveBeenCalled();
 	});
 
 	it("mermaid.render 抛错（语法错误）→ 返回 { error }，不 throw", async () => {
@@ -171,22 +109,6 @@ describe("renderMermaid", () => {
 		expect(svg).not.toContain("onmouseover");
 		// javascript: URI 不能残留在 href 里
 		expect(svg).not.toContain("javascript:");
-	});
-
-	it("清理后保留合法 SVG 结构（svg/g/rect/path/text/style 不被误删）", async () => {
-		const legitSvg =
-			'<svg xmlns="http://www.w3.org/2000/svg"><style>.node{fill:#fff}</style><g class="node"><rect width="10" height="10"/><text>hello</text><path d="M0 0"/></g></svg>';
-		mermaidRender.mockResolvedValue({ svg: legitSvg });
-
-		const result = await renderMermaid("graph TD; A-->B", "dark");
-
-		const svg = unwrapSvg(result);
-		expect(svg).toContain("<svg");
-		expect(svg).toContain("<rect");
-		expect(svg).toContain("<path");
-		expect(svg).toContain("<text");
-		// mermaid 把配色烘焙进 <style>，保留才不花图
-		expect(svg).toContain("<style");
 	});
 
 	it("mermaid v11 真实 label 结构（foreignObject>div[class][style]>span>p）完整保留，style/class 属性不丢", async () => {

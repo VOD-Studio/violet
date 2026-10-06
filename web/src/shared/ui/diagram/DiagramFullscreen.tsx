@@ -19,6 +19,7 @@ import { motion } from "motion/react";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 
 import { exportPng, exportSvg as exportSvgFile } from "./export";
 import { FALLBACK_DIAGRAM_LABEL } from "./label";
@@ -163,7 +164,13 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 					<Button
 						variant="ghost"
 						size="icon-sm"
-						onClick={() => exportSvgFile(svg)}
+						onClick={() => {
+							exportSvgFile(svg).catch((error: unknown) => {
+								toast.error(
+									error instanceof Error ? error.message : "导出 SVG 失败",
+								);
+							});
+						}}
 						aria-label="导出 SVG"
 						title="导出 SVG"
 						className={BTN_CLS}
@@ -174,7 +181,11 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						variant="ghost"
 						size="icon-sm"
 						onClick={() => {
-							exportPng(svg).catch(() => {});
+							exportPng(svg).catch((error: unknown) => {
+								toast.error(
+									error instanceof Error ? error.message : "导出 PNG 失败",
+								);
+							});
 						}}
 						aria-label="导出 PNG"
 						title="导出 PNG"

@@ -26,6 +26,7 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { exportPng, exportSvg as exportSvgFile } from "./export";
@@ -208,7 +209,13 @@ export function DiagramViewport({
 										role="menuitem"
 										className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
 										onClick={() => {
-											exportSvgFile(exportSvg);
+											exportSvgFile(exportSvg).catch((error: unknown) => {
+												toast.error(
+													error instanceof Error
+														? error.message
+														: "导出 SVG 失败",
+												);
+											});
 											setExportMenuOpen(false);
 										}}
 									>
@@ -220,8 +227,12 @@ export function DiagramViewport({
 										role="menuitem"
 										className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
 										onClick={() => {
-											exportPng(exportSvg).catch(() => {
-												// PNG 转换失败（canvas 不可用/解码失败）：静默降级，不阻塞
+											exportPng(exportSvg).catch((error: unknown) => {
+												toast.error(
+													error instanceof Error
+														? error.message
+														: "导出 PNG 失败",
+												);
 											});
 											setExportMenuOpen(false);
 										}}

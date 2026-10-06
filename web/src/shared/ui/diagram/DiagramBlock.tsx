@@ -147,7 +147,7 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 						<div
 							ref={containerRef}
 							className={cn(
-								"flex min-h-64 w-full select-none justify-center",
+								"flex min-h-64 w-full min-w-max select-none justify-center",
 								hasRendered && "animate-diagram-enter",
 							)}
 							role="img"

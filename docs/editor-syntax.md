@@ -707,8 +707,10 @@ xychart-beta
 ### 9.15 渲染与安全
 
 - **浏览时渲染**：content_html 只存语义化标记 `<div data-type="diagram-block" data-format="mermaid" data-source="...">`，最终 SVG 在读者浏览器渲染，不烘焙进 HTML（体积小、主题可跟随、源码可搜索可复制、升级渲染器不动存量数据）。
-- **默认手绘**：编辑器预览与阅读端共用 Mermaid 的 `handDrawn` 风格；固定笔触种子，重新预览或切换明暗主题时不重新随机画线。浅色描边与连线使用站点的 `muted-foreground`，节点填色保留 Mermaid 主题配色。
-- **手绘覆盖边界**：当前已验证流程图、类图、状态图（`stateDiagram-v2`）、ER 图与思维导图。时序图、甘特图、饼图、用户旅程图、时间线、Git 图、象限图与数值图表仍正常渲染，但 Mermaid 11.16 对这些图型不提供手绘笔触；配置 `handDrawn` 不会把它们转换为手绘图。
+- **统一手绘**：Mermaid 负责语义与布局，净化后的 SVG 统一经 Rough.js 转换轮廓、填色与连线，不依赖 Mermaid 原生 `handDrawn` 的图型覆盖。编辑器预览与阅读端同源；相同几何使用固定笔触种子，文字和箭头保留原始语义。已验证本节全部 13 种示例图型。
+- **手写字体 CDN**：英文使用 Excalifont（Excalidraw 0.18.1 发布分片），中文使用小赖体（Xiaolai SC）。图块按需声明 `@font-face`，等待标签所需分片加载后再测量布局；中文分片来自[中文网字计划](https://chinese-font.netlify.app/zh-cn/cdn/)。首次加载需要可访问字体 CDN，字体未覆盖的字符使用系统回退字体。
+- **导出字体与许可**：SVG 文件内嵌实际标签所需的 WOFF2 分片、版权与完整 OFL 通知，不依赖站点样式或远端字体；PNG 由同一 SVG 栅格化。仓库保留两份手绘字体许可作为导出通知来源，不保存字体二进制副本。
+- **宽图**：保持自然字号，在图内横向滚动，不将整张图缩成小字。
 - **双重 XSS 防线**：全局 `securityLevel: strict` + render 产物经 DOMPurify 二次清理。mermaid 支持 per-diagram `%%{init}%%` 指令覆盖全局 strict（docmost CVE-2026-23630 的存储型 XSS 攻击路径），第二道 DOMPurify 兜底剥除 `<script>`、`on*` 事件属性、`foreignObject` 可执行内容。
 - **主题重渲染**：mermaid 把颜色烘焙进 SVG，切主题需重新渲染（非 CSS 跟随）。组件持有 source，主题变化时重新 initialize + 重渲染所有可见图块。
 

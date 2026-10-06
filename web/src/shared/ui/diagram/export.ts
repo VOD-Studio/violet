@@ -1,9 +1,9 @@
 /**
  * 图块导出纯函数（PRD-0012 §导出 SVG / PNG）
  *
- * 不引库：SVG 序列化注入 XML 声明 + 命名空间；PNG 走 Image + canvas。
- * blob URL 不会 taint canvas，安全。
+ * SVG 与 PNG 导出均内嵌实际标签所需的手写字体，不依赖站点样式或远端字体。
  */
+import { embedDiagramFonts } from "./sketch-fonts";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -45,35 +45,36 @@ export function parseViewBoxSize(svg: string): { width: number; height: number }
 }
 
 /**
- * SVG 字符串 → PNG Blob。Image + canvas 路径，blob URL 不 taint canvas。
+ * SVG 字符串 → PNG Blob；内嵌字体后通过 Image 与 canvas 栅格化。
  *
  * @param svg 原始 SVG 字符串（函数内部序列化，含命名空间）
  * @returns PNG Blob
  */
-export function svgToPngBlob(svg: string): Promise<Blob> {
+export async function svgToPngBlob(svg: string): Promise<Blob> {
 	const { width, height } = parseViewBoxSize(svg);
-	const svgString = serializeSvg(svg);
+	const svgString = await embedDiagramFonts(serializeSvg(svg));
 	const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
 	const url = URL.createObjectURL(svgBlob);
 
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		img.onload = () => {
-			const canvas = document.createElement("canvas");
-			canvas.width = width;
-			canvas.height = height;
-			const ctx = canvas.getContext("2d");
-			if (!ctx) {
+			try {
+				const canvas = document.createElement("canvas");
+				canvas.width = width;
+				canvas.height = height;
+				const ctx = canvas.getContext("2d");
+				if (!ctx) throw new Error("canvas 2d context 不可用");
+				ctx.drawImage(img, 0, 0, width, height);
+				canvas.toBlob((blob) => {
+					if (blob) resolve(blob);
+					else reject(new Error("canvas.toBlob 失败"));
+				}, "image/png");
+			} catch (error) {
+				reject(error);
+			} finally {
 				URL.revokeObjectURL(url);
-				reject(new Error("canvas 2d context 不可用"));
-				return;
 			}
-			ctx.drawImage(img, 0, 0, width, height);
-			URL.revokeObjectURL(url);
-			canvas.toBlob((blob) => {
-				if (blob) resolve(blob);
-				else reject(new Error("canvas.toBlob 失败"));
-			}, "image/png");
 		};
 		img.onerror = () => {
 			URL.revokeObjectURL(url);
@@ -100,8 +101,8 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /** 导出 SVG 文件 */
-export function exportSvg(svg: string, filename = "diagram.svg"): void {
-	const serialized = serializeSvg(svg);
+export async function exportSvg(svg: string, filename = "diagram.svg"): Promise<void> {
+	const serialized = await embedDiagramFonts(serializeSvg(svg));
 	const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
 	downloadBlob(blob, filename);
 }

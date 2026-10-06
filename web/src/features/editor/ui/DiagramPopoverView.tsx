@@ -164,7 +164,7 @@ export function DiagramPopoverView({ node, selected, editor, getPos }: NodeViewP
 			{/* 文档内渲染：与阅读端同核心（renderMermaid + DOMPurify 双重防线） */}
 			{render.svg ? (
 				<div
-					className="diagram-node-view__render [&>svg]:max-w-full [&>svg]:h-auto"
+					className="diagram-node-view__render overflow-x-auto"
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 清理：svg/svgFilters profile + foreignObject 内纯文本 HTML 白名单（div/span/p 等，无 href/src 能力）+ FORBID script/a + on* 事件属性与 CSS url() 剥除，与阅读端同防线；PRD 决议 mermaid SVG 不走 hast 白名单
 					dangerouslySetInnerHTML={{ __html: render.svg }}
 				/>

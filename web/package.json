@@ -113,6 +113,7 @@
 		"remark-breaks": "^4.0.0",
 		"remark-gfm": "^4.0.1",
 		"remark-math": "^6.0.0",
+		"roughjs": "4.6.6",
 		"shiki": "^4.3.0",
 		"sonner": "^2.0.7",
 		"srvx": "^0.11.20",

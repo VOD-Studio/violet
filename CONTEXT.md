@@ -95,7 +95,7 @@ _Avoid_: 自定义命令（未说明与 physics 宏包的对应关系）
 _Avoid_: 双态编辑（已否决的内联源码切换，见 ADR-0005）、弹窗编辑（模态对话框）
 
 **图块（Diagram Block）**:
-带 `format` 与 `source` 属性的通用图块节点，Markdown 载体为对应语言围栏块（如 ` ```mermaid `），渲染走浏览时渲染与渲染器注册表（`format → 渲染器`），编辑交互沿用弹层编辑。当前注册 Mermaid，编辑预览与阅读端共用默认手绘渲染；具体图型的手绘覆盖边界见 `docs/editor-syntax.md` 第 9 节。最终 SVG 不写回文章存储。
+带 `format` 与 `source` 属性的通用图块节点，Markdown 载体为对应语言围栏块（如 ` ```mermaid `），渲染走浏览时渲染与渲染器注册表（`format → 渲染器`），编辑交互沿用弹层编辑。当前注册 Mermaid，编辑预览与阅读端共用统一 SVG 手绘管线：Mermaid 布局、DOMPurify 清理、Rough.js 笔触与 CDN 手写字体。SVG 导出内嵌字体子集和许可通知；宽图保持自然字号。渲染行为见 `docs/editor-syntax.md` 第 9 节，最终 SVG 不写回文章存储。
 _Avoid_: MermaidNode（写死单一格式的命名，丧失多格式扩展性）
 
 ## 代码执行（Code Execution）

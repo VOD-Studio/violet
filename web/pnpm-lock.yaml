@@ -297,6 +297,9 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
+      roughjs:
+        specifier: 4.6.6
+        version: 4.6.6
       shiki:
         specifier: ^4.3.0
         version: 4.3.1
