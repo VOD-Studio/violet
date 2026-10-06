@@ -171,3 +171,5 @@ pnpm --dir packages/react-tweet pack --pack-destination /tmp
 ```
 
 发布前需在 workspace 外安装真实 tarball，验证 Node.js SSR、浏览器默认 CSS、全部 SVG 资源、容器宽度、纯 API 依赖边界与跨运行时水合，而非只检查源码路径。发布包包含构建产物、本文档与 MIT 许可证。
+
+根入口自动加载 CSS 依赖 `sideEffects` 同时保留源码入口 `src/index.ts`、发布入口 `dist/index.js` 与 CSS 文件；`/unstyled` 和 `/api` 不包含样式副作用。浏览器验收须使用生产构建，从根入口具名导入组件且不额外导入 CSS，确认头像、作者布局、卡片与媒体的默认样式生效。
