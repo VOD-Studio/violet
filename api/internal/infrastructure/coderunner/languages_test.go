@@ -106,6 +106,36 @@ func TestParseFenceInfo(t *testing.T) {
 			t.Errorf("overrides 解析错误: %+v", overrides)
 		}
 	})
+	t.Run("spaced JSON and unknown metadata", func(t *testing.T) {
+		t.Parallel()
+		lang, runnable, overrides := ParseFenceInfo(`JS title=example run {"timeout_secs": 10, "memory_mb": 64, "allow_network": true}`)
+		if lang != "node" || !runnable || overrides == nil {
+			t.Fatalf("got lang=%q runnable=%v overrides=%v", lang, runnable, overrides)
+		}
+		if overrides.TimeoutSecs != 10 || overrides.MemoryMB != 64 || !overrides.AllowNetwork {
+			t.Errorf("spaced overrides lost: %+v", overrides)
+		}
+	})
+	t.Run("JSON values are not runnable flags", func(t *testing.T) {
+		t.Parallel()
+		_, runnable, overrides := ParseFenceInfo(`python {"description": "run runnable", "timeout_secs": 5}`)
+		if runnable || overrides == nil || overrides.TimeoutSecs != 5 {
+			t.Errorf("got runnable=%v overrides=%v", runnable, overrides)
+		}
+	})
+	t.Run("invalid JSON does not apply partial overrides", func(t *testing.T) {
+		t.Parallel()
+		for _, info := range []string{
+			`python runnable {"timeout_secs": 10,}`,
+			`python runnable {"timeout_secs": "10"}`,
+			`python runnable {"timeout_secs": 10} trailing`,
+		} {
+			_, runnable, overrides := ParseFenceInfo(info)
+			if !runnable || overrides != nil {
+				t.Errorf("%q: got runnable=%v overrides=%v", info, runnable, overrides)
+			}
+		}
+	})
 	t.Run("别名归一为 canonical", func(t *testing.T) {
 		t.Parallel()
 		lang, runnable, _ := ParseFenceInfo("js runnable")

@@ -29,7 +29,7 @@ describe("ArticleContent rich nodes", () => {
 		expect(await screen.findByText(profile.description)).toBeTruthy();
 	});
 
-	it("从 HTML 主路径解析对话、仓库、链接、动态与社交卡片", async () => {
+	it("从 HTML 主路径解析对话、项目引用、链接、动态与社交卡片", async () => {
 		const html = [
 			fence("dialogue", {
 				text: "那个……要一起看球吗？",
@@ -68,14 +68,17 @@ describe("ArticleContent rich nodes", () => {
 		render(<ArticleContent content={html} context={{ profile }} />);
 
 		expect(await screen.findByText("那个……要一起看球吗？")).toBeTruthy();
+		expect((await screen.findByText("violet")).closest("a")?.getAttribute("href")).toBe(
+			"https://github.com/VOD-Studio/violet",
+		);
+		expect(screen.getByText("关于这座花园").closest("a")?.getAttribute("href")).toBe(
+			"https://example.com/about",
+		);
 		expect(
-			screen.getByRole("link", { name: "打开 GitHub 仓库 VOD-Studio/violet" }),
-		).toBeTruthy();
-		expect(screen.getByRole("link", { name: "打开链接：关于这座花园" })).toBeTruthy();
-		expect(screen.getByRole("article", { name: "Rua 发布的动态" })).toBeTruthy();
-		expect(
-			screen.getByRole("link", { name: "在 X 上查看 Rua 的动态" }).getAttribute("href"),
-		).toBe("https://x.com/example/status/1");
+			screen
+				.getAllByRole("link")
+				.some((link) => link.getAttribute("href") === "https://x.com/example/status/1"),
+		).toBe(true);
 		expect(screen.getByRole("navigation", { name: "社交链接" })).toBeTruthy();
 	});
 
@@ -90,11 +93,29 @@ describe("ArticleContent rich nodes", () => {
 		render(<ArticleContent content={markdown} context={{ profile }} />);
 
 		expect(await screen.findByRole("link", { name: "瑠爱" })).toBeTruthy();
-		expect(
-			await screen.findByRole("link", {
-				name: "打开 GitHub 仓库 VOD-Studio/violet",
-			}),
-		).toBeTruthy();
+		expect((await screen.findByText("violet")).closest("a")?.getAttribute("href")).toBe(
+			"https://github.com/VOD-Studio/violet",
+		);
+	});
+
+	it("零统计可打开 GitHub 原生操作，自定义项目链接不覆盖操作目标", async () => {
+		render(
+			<ArticleContent
+				content={fence("github", {
+					repo: "VOD-Studio/violet",
+					href: "https://example.com/project",
+					stars: 0,
+					forks: 0,
+				})}
+			/>,
+		);
+
+		const project = await screen.findByText("violet");
+		const star = screen.getByRole("link", { name: /0 个星标/u });
+		const fork = screen.getByRole("link", { name: /0 个 Fork/u });
+		expect(project.closest("a")?.getAttribute("href")).toBe("https://example.com/project");
+		expect(star.getAttribute("href")).toBe("https://github.com/VOD-Studio/violet");
+		expect(fork.getAttribute("href")).toBe("https://github.com/VOD-Studio/violet/fork");
 	});
 
 	it("拒绝危险链接并保留可诊断降级", async () => {
@@ -104,7 +125,7 @@ describe("ArticleContent rich nodes", () => {
 		});
 		render(<ArticleContent content={html} />);
 
-		expect(await screen.findByText("无法解析 link-preview 卡片配置")).toBeTruthy();
+		expect(await screen.findByRole("note")).toBeTruthy();
 		expect(screen.queryByRole("link", { name: /危险链接/u })).toBeNull();
 	});
 });

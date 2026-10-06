@@ -1,8 +1,8 @@
 import { AlertCircle } from "lucide-react";
 import styles from "./ArticleEmbed.module.css";
 import { DialogueCard } from "./DialogueCard";
+import { GitHubProjectReference } from "./GitHubProjectReference";
 import { LinkPreviewCard } from "./LinkPreviewCard";
-import { RepositoryCard } from "./RepositoryCard";
 import { SocialLinksCard } from "./SocialLinksCard";
 import { parseArticleEmbed } from "./schema";
 import { TweetEmbedCard } from "./TweetEmbedCard";
@@ -33,7 +33,7 @@ export function ArticleEmbed({ kind, source, context }: ArticleEmbedProps) {
 		case "dialogue":
 			return <DialogueCard config={parsed.config} context={context} />;
 		case "github":
-			return <RepositoryCard config={parsed.config} />;
+			return <GitHubProjectReference config={parsed.config} />;
 		case "link-preview":
 			return <LinkPreviewCard config={parsed.config} />;
 		case "tweet":

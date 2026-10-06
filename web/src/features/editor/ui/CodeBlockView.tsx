@@ -8,6 +8,7 @@
 
 import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { Fragment } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 // isTerminalStatus 是值（函数），与上面同属值导入
@@ -24,8 +25,10 @@ import type { createLowlight } from "lowlight";
 import { Play } from "lucide-react";
 import { useState } from "react";
 
+import { parseFenceInfo } from "@/shared/lib/markdown/fence-info";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { ensureLanguageRegistered } from "../extensions";
+import { renderCodeFence } from "../extensions/code-fence";
 
 /**
  * 代码块语言下拉选项。
@@ -156,6 +159,45 @@ export function resolveLanguageFromElement(element: Element): string | null {
  */
 export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowlight>) {
 	return CodeBlockLowlight.extend({
+		parseHTML() {
+			return [
+				{
+					tag: "pre",
+					preserveWhitespace: "full",
+					getContent: (element, schema) => {
+						const source =
+							(element instanceof Element
+								? element.getAttribute("data-source")
+								: null) ??
+							element.textContent ??
+							"";
+						return source ? Fragment.from(schema.text(source)) : Fragment.empty;
+					},
+				},
+			];
+		},
+		parseMarkdown(token, helpers) {
+			const info = parseFenceInfo(token.lang ?? "");
+			if (info.language === "mermaid") {
+				return helpers.createNode("diagramBlock", {
+					format: "mermaid",
+					source: token.text ?? "",
+				});
+			}
+			return helpers.createNode(
+				"codeBlock",
+				{ ...info, language: normalizeLang(info.language) },
+				token.text ? [helpers.createTextNode(token.text)] : [],
+			);
+		},
+		renderMarkdown(node) {
+			const source = node.content?.map((child) => child.text ?? "").join("") ?? "";
+			const language = node.attrs?.language ?? "";
+			const info = node.attrs?.runnable
+				? `${language} runnable${node.attrs.overrides ? ` ${node.attrs.overrides}` : ""}`
+				: language;
+			return renderCodeFence(source, info);
+		},
 		addNodeView() {
 			return ReactNodeViewRenderer(CodeBlockViewComponent);
 		},
@@ -164,6 +206,7 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 				...this.parent?.(),
 				language: {
 					default: null,
+					rendered: false,
 					parseHTML: (element: HTMLElement) => resolveLanguageFromElement(element),
 				},
 				// 可运行标记：true 时该代码块在阅读页渲染为 CodeRunner
@@ -191,7 +234,7 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 		}: {
 			node: {
 				attrs: { language?: string | null; runnable?: boolean; overrides?: string | null };
-				textOf?: () => string;
+				textContent: string;
 			};
 			HTMLAttributes: Record<string, unknown>;
 		}) {
@@ -208,11 +251,11 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 					],
 				] as const;
 			}
-			// 可运行块：输出 data-* 属性，data-source 由阅读页从 code 子节点取（避免双重存储）
 			const lang = node.attrs.language || "";
 			const extraAttrs: Record<string, string> = {
 				"data-runnable": "true",
 				"data-lang": lang,
+				"data-source": node.textContent,
 			};
 			if (node.attrs.overrides) extraAttrs["data-overrides"] = node.attrs.overrides;
 			return [

@@ -44,11 +44,23 @@ web/src/
 └── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
 ```
 
-`web/packages/ui/` 是单一 pnpm workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。成熟度以清单的 foundation / legacy 标记为准，legacy 保留兼容 API 并逐个重建。
+`web/packages/ui/` 是通用 UI workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。成熟度以清单的 foundation / legacy 标记为准，legacy 保留兼容 API 并逐个重建。
 
-`@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威。`src/features/ui-docs/` 负责 `/ui` 组件库文档，架构与设计规范直接读取包内正文，组件预览与复制源码共用同一份示例文件。
+`@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。Maple Mono 与 Alex Brush 使用 Fontsource 5.3.0 的 jsDelivr CDN，`@font-face` 在该文件声明，由 `src/styles.css` 引入，不再打包本地字体。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威。`src/features/ui-docs/` 负责 `/ui` 组件库文档，架构与设计规范直接读取包内正文，组件预览与复制源码共用同一份示例文件。
 
 后台 `DataTable` 默认让未调整的列随容器伸缩；右固定列按行内容撑开，操作按钮增减无需维护 `width`。时间等需完整展示的非固定列可设置 `fitContent: true`；拖拽列宽后记录当时的列布局，重置列设置可恢复自适应。
+
+## 文章编辑与阅读
+
+源码模式与富文本维护同一份文档，保存和 `.md` 导出无需先退出源码。编辑器支持脚注的新建、正文编辑与重复引用；普通表格保留转义和列对齐，合并单元格以 HTML 表格载体往返。阅读端保留安全的链接锚点、列表编号、文本样式与脚注回链，HTML 和 Markdown 的 Mermaid、可运行代码、任务列表及高亮共用阅读组件。语法和格式边界见[编辑器手册](../docs/editor-syntax.md)。
+
+Mermaid 图块统一使用手写字体与 Rough.js 笔触，编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
+
+## 推文组件包
+
+[`@violet/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
+
+本站的文章嵌入、已保存 X 快照、`/tweets` 时间线和详情共用该包；站内互动与权限由 `features/tweets` 管理，同源取数边界位于 `src/shared/server/tweet-reference.ts`。
 
 ## 开发环境
 
@@ -103,7 +115,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | 路由 | 说明 |
 |------|------|
 | `/` | 首页/文章列表 |
-| `/blog/:slug` | 文章详情（目录、批注、人物提及、语义内容卡片与可选作者落款） |
+| `/blog/:slug` | 文章详情（正文与目录整体居中、桌面阅读轨与完整目录围绕阅读位置原位展开收拢并支持减弱动态、窄屏浮动目录、批注、人物提及、语义内容卡片与可选作者落款） |
 | `/blog/archive` | 文章归档 |
 | `/announcements/:id` | 公告详情 |
 | `/projects` | 项目展示 |

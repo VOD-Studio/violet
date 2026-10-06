@@ -9,7 +9,7 @@ import { Extension } from "@tiptap/core";
 import { Suggestion, type SuggestionKeyDownProps, type SuggestionProps } from "@tiptap/suggestion";
 import { createRoot, type Root } from "react-dom/client";
 import { SlashMenuView } from "./SlashMenu";
-import type { SlashMenuItem } from "./slash-items";
+import { buildFootnoteReferenceItems, type SlashMenuItem } from "./slash-items";
 
 export interface SlashCommandOptions {
 	/** 图片插入回调 */
@@ -47,7 +47,10 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
 				startOfLine: false,
 				allowedPrefixes: [" ", ""],
 				items: ({ query }): SlashMenuItem[] => {
-					const all = options.items(options.onPickImage);
+					const all = [
+						...options.items(options.onPickImage),
+						...buildFootnoteReferenceItems(this.editor),
+					];
 					const q = query.toLowerCase().trim();
 					if (!q) return all;
 					return all.filter(

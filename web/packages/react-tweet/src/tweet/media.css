@@ -1,0 +1,70 @@
+.v-tweet__media {
+	display: grid;
+	gap: 8px;
+	margin-block: 12px;
+}
+.v-tweet__photos {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 4px;
+}
+.v-tweet__photos[data-count="1"] {
+	grid-template-columns: minmax(0, 1fr);
+}
+.v-tweet__photos[data-count="3"] > :first-child {
+	grid-row: span 2;
+}
+.v-tweet .v-tweet__photo {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	min-height: 100px;
+	aspect-ratio: 1;
+	overflow: hidden;
+	border-radius: 8px;
+	background: var(--_tweet-soft);
+	color: var(--_tweet-muted);
+}
+.v-tweet__photos[data-count="1"] .v-tweet__photo {
+	aspect-ratio: auto;
+}
+.v-tweet__photos[data-count="3"] .v-tweet__photo:first-child {
+	aspect-ratio: auto;
+}
+.v-tweet .v-tweet__photo img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+}
+.v-tweet__photos[data-count="1"] .v-tweet__photo img {
+	height: auto;
+	max-height: 520px;
+	object-fit: contain;
+}
+.v-tweet .v-tweet__video {
+	display: block;
+	width: 100%;
+	max-height: 520px;
+	border-radius: 8px;
+	background: #000;
+}
+.v-tweet__video-fallback {
+	overflow: hidden;
+	border-radius: 8px;
+	background: var(--_tweet-soft);
+}
+.v-tweet .v-tweet__video-fallback img {
+	display: block;
+	width: 100%;
+	max-height: 400px;
+	margin: 0;
+	object-fit: contain;
+}
+.v-tweet__media-link {
+	display: block;
+	padding: 10px 12px;
+	font-size: 13px;
+}

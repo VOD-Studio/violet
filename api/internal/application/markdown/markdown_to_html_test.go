@@ -63,7 +63,7 @@ func TestMarkdownToHTML_BlockMathCarrier(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out, `<div data-type="block-math" data-latex="\int_{0}^{1} x\,dx">`,
 		"块级公式须产出 block-math div carrier（而非嵌入 <p>）")
-	assert.NotContains(t, out, "<p>"+phPrefix)
+	assert.NotContains(t, out, "<p><div")
 }
 
 func TestMarkdownToHTML_MermaidDiagramBlockCarrier(t *testing.T) {
@@ -101,7 +101,7 @@ func TestMarkdownToHTML_DollarAmountNotMath(t *testing.T) {
 	// 美元金额不应被误判为公式
 	out, err := ToHTML("售价 $5 的商品")
 	require.NoError(t, err)
-	// $5 不满足 looksLikeLatex，原样保留
+	// 未配对美元金额应原样保留
 	assert.Contains(t, out, "$5")
 	assert.NotContains(t, out, "inline-math")
 }
@@ -173,4 +173,82 @@ func TestEnsureContentHTML_NoopWhenMDWhitespaceOnly(t *testing.T) {
 func TestEnsureContentHTML_NilPointerSafe(t *testing.T) {
 	// nil 指针不应 panic
 	assert.NotPanics(t, func() { EnsureHTML(nil, "## x") })
+}
+
+func TestMarkdownToHTML_SyntaxContext(t *testing.T) {
+	for name, source := range map[string]string{
+		"inline code":          "`$x$ $$y$$ ==mark==`",
+		"multiline code span":  "``$x$\n$$y$$ ==mark==``",
+		"backtick fence":       "````text\n$x$ $$y$$ ==mark==\n```\n````",
+		"tilde fence":          "~~~~text\n$x$ $$y$$ ==mark==\n~~~~",
+		"indented code":        "    $x$ $$y$$ ==mark==",
+		"escaped and currency": `\$x\$ costs $5 or $10 and US$20.`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			out, err := ToHTML(source)
+			require.NoError(t, err)
+			assert.NotContains(t, out, `data-type="inline-math"`)
+			assert.NotContains(t, out, `data-type="block-math"`)
+			assert.NotContains(t, out, "<mark>")
+		})
+	}
+	out, err := ToHTML("$x$ and $y$ ==**important**==\n\n> $$\n> x_1 + y_2\n> $$")
+	require.NoError(t, err)
+	assert.Contains(t, out, `data-latex="x"`)
+	assert.Contains(t, out, `data-latex="y"`)
+	assert.Contains(t, out, "<mark><strong>important</strong></mark>")
+	assert.Contains(t, out, "<blockquote>\n<div")
+	assert.Contains(t, out, `data-latex="x_1 + y_2"`)
+}
+
+func TestMarkdownToHTML_FenceVariants(t *testing.T) {
+	for _, source := range []string{
+		"````mermaid\ngraph TD\nA --> B\n`````",
+		"~~~~mermaid\ngraph TD\nA --> B\n~~~~",
+		"> ```mermaid\n> graph TD\n> A --> B\n> ```",
+		"- diagram\n\n  ~~~mermaid\n  graph TD\n  A --> B\n  ~~~",
+	} {
+		out, err := ToHTML(source)
+		require.NoError(t, err)
+		assert.Contains(t, out, `data-type="diagram-block"`)
+		assert.Contains(t, out, "graph TD\nA --&gt; B")
+		assert.NotContains(t, out, "language-mermaid")
+	}
+	out, err := ToHTML("> ~~~mermaid\ngraph TD\n~~~")
+	require.NoError(t, err)
+	assert.Contains(t, out, "<blockquote>")
+}
+
+func TestMarkdownToHTML_RunnableMetadata(t *testing.T) {
+	out, err := ToHTML("~~~~js run {\"timeout_secs\": 10, \"memory_mb\": 64}\nconsole.log('$x$')\n~~~~")
+	require.NoError(t, err)
+	assert.Contains(t, out, `data-runnable="true"`)
+	assert.Contains(t, out, `data-lang="node"`)
+	assert.Contains(t, out, `data-overrides="{`)
+	assert.Contains(t, out, `&#34;timeout_secs&#34;:10`)
+	assert.Contains(t, out, `&#34;memory_mb&#34;:64`)
+	assert.Contains(t, out, `data-source="console.log(&#39;$x$&#39;)"`)
+	assert.NotContains(t, out, "inline-math")
+}
+
+func TestMarkdownToHTML_Footnotes(t *testing.T) {
+	out, err := ToHTML("First[^note], again[^note].\n\n[^note]: First paragraph $x$.\n\n    Second paragraph **bold**.")
+	require.NoError(t, err)
+	for _, expected := range []string{
+		`id="fnref:1"`, `id="fnref1:1"`, `href="#fn:1"`, `id="fn:1"`,
+		`href="#fnref:1"`, `href="#fnref1:1"`, `role="doc-endnotes"`,
+		"First paragraph", "<p>Second paragraph <strong>bold</strong>",
+	} {
+		assert.Contains(t, out, expected)
+	}
+}
+
+func TestMarkdownToHTML_LooseTaskListsAndRawTable(t *testing.T) {
+	out, err := ToHTML("- [x] First\n\n  Second paragraph.\n\n- [ ] Next\n\n<table><tr><td colspan=\"2\" rowspan=\"3\">cell</td></tr></table>")
+	require.NoError(t, err)
+	assert.Contains(t, out, `data-type="taskList"`)
+	assert.Contains(t, out, `data-checked="true"`)
+	assert.Contains(t, out, `data-checked="false"`)
+	assert.NotContains(t, out, "<input")
+	assert.Contains(t, out, `colspan="2" rowspan="3"`)
 }

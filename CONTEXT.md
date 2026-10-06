@@ -38,7 +38,7 @@ _Avoid_: SSR 鉴权（混淆「探活」与「取完整用户信息」）
 ## 文章导航（Article Navigation）
 
 **TOC（Table of Contents）**:
-文章目录，从正文 H2/H3/H4 提取的层级导航列表。桌面端位于正文右侧，静止时显示阅读轨迹，悬停或键盘聚焦时展开当前视口标题的指示线和阅读进度；移动端通过浮动按钮呼出底部 Sheet。
+文章目录，从正文 H2/H3/H4 提取的层级导航列表。桌面端位于正文右侧，静止时显示阅读轨迹，悬停或键盘聚焦时展开当前视口标题的指示线和阅读进度。鼠标点击只定位标题，不锁定展开；鼠标移出且没有键盘焦点时收起。移动端通过浮动按钮呼出底部 Sheet。
 _Avoid_: 目录树（在本文档域内与文件树、分类树混淆）
 
 **Focus TOC**:
@@ -78,8 +78,12 @@ _Avoid_: 合作者（笼统，未说明与版本历史的关系）
 正文中的 LaTeX 公式，两种形态：**行内公式（Inline Math）** 嵌在段落文字流中，Markdown 源 `$...$`，HTML 载体 `<span data-type="inline-math" data-latex="...">`；**公式块（Block Math）** 独立成段，Markdown 源 `$$...$$`，HTML 载体 `<div data-type="block-math" data-latex="...">`。化学式与物理单位经 mhchem（`\ce{}` / `\pu{}`），物理宏包命令（`\dv` `\ket` 等）经共享宏表支持。
 _Avoid_: 算式（口语，未区分两种形态）
 
+**脚注（Footnote）**:
+由行内引用与文末可编辑正文组成。Markdown 使用 `[^label]` 与 `[^label]: 正文`；同一标识可重复引用。引用编号按首次出现顺序派生，每次引用具有独立 ID 与回链；定义保留源码次序，以原生 `li[value]` 显示对应编号。编辑器导入兼容 Goldmark 与 remark 的标准 HTML 脚注载体。
+_Avoid_: 尾注链接（未体现可编辑正文与重复引用关系）
+
 **浏览时渲染（View-time Rendering）**:
-content_html 对公式（及未来图块）只存**语义化标记**（data-type + data-latex），最终形态（KaTeX HTML / SVG）在读者浏览器渲染，保存时不烘焙。收益：content_html 体积、主题跟随、源文本可搜索可复制、升级渲染器不动存量数据。编辑端与阅读端共用同一渲染核心。渲染输出经 **hast 白名单管线**（解析 → sanitize 白名单 → React 元素）注入，不使用 dangerouslySetInnerHTML（见 ADR-0005）。
+content_html 对公式与图块只存**语义化标记**（`data-type` 与 `data-latex`，或 `data-format` / `data-source`），最终 KaTeX / SVG 在读者浏览器渲染，保存时不烘焙。编辑端与阅读端共用同一渲染核心；文章 HTML 经 hast 白名单管线映射为 React 元素，Mermaid 生成的 SVG 则经 DOMPurify 清理后写入图块容器。
 _Avoid_: 烘焙渲染（已否决的保存时渲染路线，见 ADR-0004）
 
 **物理宏表（Physics Macros）**:
@@ -87,11 +91,11 @@ _Avoid_: 烘焙渲染（已否决的保存时渲染路线，见 ADR-0004）
 _Avoid_: 自定义命令（未说明与 physics 宏包的对应关系）
 
 **弹层编辑（Popover Editing）**:
-公式节点的编辑交互：文档内永远只显示渲染结果，点击选中弹出跟随定位的浮层（源码输入 + 实时预览 + LaTeX 自动补全），Esc/点击外部关闭；行内与块级同一交互。图块未来沿用同一交互模型。
+公式与图块的编辑交互：文档内显示渲染结果，点击选中后弹出跟随定位的浮层，编辑源码并实时预览，Esc 或点击外部关闭；行内公式与块级公式共用编辑模型，图块使用同一弹层模式。
 _Avoid_: 双态编辑（已否决的内联源码切换，见 ADR-0005）、弹窗编辑（模态对话框）
 
-**图块（Diagram Block）—— 候选，下期实现**:
-预留领域概念：带 `format` 属性的通用图块节点（mermaid 等「文本→图」格式），Markdown 载体为对应语言围栏块（```mermaid），渲染走浏览时渲染 + 渲染器注册表（format → 渲染器），编辑交互沿用弹层编辑。本期仅记录决策，未实现。
+**图块（Diagram Block）**:
+带 `format` 与 `source` 属性的通用图块节点，Markdown 载体为对应语言围栏块（如 ` ```mermaid `），渲染走浏览时渲染与渲染器注册表（`format → 渲染器`），编辑交互沿用弹层编辑。当前注册 Mermaid，编辑预览与阅读端共用统一 SVG 手绘管线：Mermaid 布局、DOMPurify 清理、Rough.js 笔触与 CDN 手写字体。SVG 导出内嵌字体子集和许可通知；宽图保持自然字号。渲染行为见 `docs/editor-syntax.md` 第 9 节，最终 SVG 不写回文章存储。
 _Avoid_: MermaidNode（写死单一格式的命名，丧失多格式扩展性）
 
 ## 代码执行（Code Execution）

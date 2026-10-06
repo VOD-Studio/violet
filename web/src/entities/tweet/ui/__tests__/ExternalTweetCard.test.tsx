@@ -99,9 +99,8 @@ describe("ExternalTweetCard", () => {
 		expect(key).not.toHaveBeenCalled();
 	});
 
-	it("不可用时隐藏任何残留正文和媒体，不把暂不可用称作删除", () => {
+	it("不可用时保留原文入口且隐藏残留正文和媒体", () => {
 		render(<ExternalTweetCard tweet={externalFixture({ availability: "unavailable" })} />);
-		expect(screen.getByText("原文暂不可用")).toBeTruthy();
 		expect(screen.queryByText("Jack")).toBeNull();
 		expect(screen.queryByText(/中文 😀/)).toBeNull();
 		expect(screen.queryByRole("button")).toBeNull();
@@ -143,11 +142,14 @@ describe("ExternalTweetCard", () => {
 				file_id: "video1",
 			},
 		];
-		render(<ExternalTweetCard tweet={fixture} />);
-		expect(screen.getAllByLabelText("X 原文")).toHaveLength(2);
+		const { container } = render(<ExternalTweetCard tweet={fixture} />);
+		expect(screen.getAllByRole("article")).toHaveLength(2);
 		expect(screen.getByRole("img", { name: "视频封面" }).getAttribute("src")).toBe(
 			"/uploads/poster.png",
 		);
-		expect(screen.getByRole("link", { name: /视频 · 在 X 查看/ })).toBeTruthy();
+		expect(
+			screen.getByRole("img", { name: "视频封面" }).closest("a")?.getAttribute("href"),
+		).toBe(fixture.canonical_url);
+		expect(container.querySelector("video")).toBeNull();
 	});
 });

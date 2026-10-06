@@ -1,16 +1,12 @@
 /**
- * renderMermaid - mermaid 单图渲染（含 DOMPurify 双重防线）
- *
- * 动态 import mermaid → securityLevel:strict 初始化 → render 拿 SVG →
- * DOMPurify 二次清理。strict 是第一道防线（挡常规注入），DOMPurify 是第二道
- * 兜底——mermaid 支持 per-diagram `%%{init: {securityLevel: "loose"}}%%` 指令
- * 覆盖全局 strict（docmost CVE-2026-23630 / GHSA-r4hj-mc62-jmwj 的存储型 XSS
- * 攻击路径），第二道 DOMPurify 剥掉渲染产物里的 script、a、img、on* 事件属性
- * 等可执行/可导航内容，确保即使 strict 被绕过也无法落盘可执行 SVG。
+ * Mermaid 负责语义与布局，净化后的 SVG 统一使用手写字体与 Rough.js 笔触。
+ * strict 初始化与 DOMPurify 二次清理共同阻断图表源码中的可执行内容。
  *
  * 失败（语法错 / 渲染异常）返回 { error }，不抛出——阅读端据此走降级占位。
  */
 import DOMPurify, { type Config } from "dompurify";
+import { DIAGRAM_FONT_FAMILY, loadDiagramFonts } from "./sketch-fonts";
+import { sketchSvg } from "./sketch-svg";
 import { getThemeVariables, type MermaidThemeVariables } from "./theme-variables";
 
 export type DiagramTheme = "light" | "dark";
@@ -18,23 +14,9 @@ export type DiagramTheme = "light" | "dark";
 export type RenderMermaidResult = { svg: string } | { error: string };
 
 /**
- * DOMPurify 清理配置：SVG 子集 + foreignObject 内纯文本 HTML 白名单
- *
- * - USE_PROFILES svg/svgFilters：只放行 SVG 元素子集
- * - foreignObject 是 mermaid v11 渲染节点文字的载体（flowchart/classDiagram/
- *   stateDiagram/erDiagram/mindmap 的文字都在 <foreignObject><div><span><p>
- *   结构里），svg profile 默认连 foreignObject 一起剥掉导致这些图文字全丢，
- *   故显式放行 foreignObject 及其内部的纯布局/文本标签（div/span/p/br/b/i/
- *   em/strong/code/pre/ul/ol/li）——这些标签没有 href/src/事件属性，无执行能力
- * - foreignObject 是 HTML 规范定义的 HTML integration point（其内容按 HTML
- *   解析），DOMPurify 默认列表只含 annotation-xml，须经 HTML_INTEGRATION_POINTS
- *   声明，否则 foreignObject 内的 div/span/p 被命名空间检查拒绝
- * - FORBID_TAGS script/a：script 默认已剥但钉死防漂移；a 在 svg profile 白名单
- *   里（SVG <a> 可导航），节点 label 里写了链接宁可剥成纯文本
- * - img/iframe/body 等不在任何白名单，标签被剥留文本（DOMPurify 默认策略）
- * - ADD_ATTR class/style：mermaid label 布局依赖（table-cell 居中、white-space、
- *   max-width）；style 值由下方全局 hook 清洗（剥 url()/@import 等函数与 @ 规则）
- * - on* 事件属性：不在 DOMPurify 任何 allow list 中，默认即被剥除（无需列举）
+ * SVG 默认使用原生文字；作者启用 HTML 标签时仍保留安全文本与布局元素。
+ * foreignObject 是 HTML integration point，须显式声明才能保留其内部标签。
+ * style 属性由全局 hook 清理；脚本、导航链接与事件属性不进入最终 SVG。
  */
 const SANITIZE_CONFIG: Config = {
 	USE_PROFILES: { svg: true, svgFilters: true },
@@ -99,15 +81,55 @@ async function loadMermaid(): Promise<typeof import("mermaid").default> {
 	return mermaidLoader;
 }
 
-/** 渲染实例自增 id，保证多次调用互不撞 id */
-let renderSeq = 0;
+function fitGanttTickLabels(svg: SVGSVGElement): void {
+	for (const axis of svg.querySelectorAll(".grid")) {
+		const labels = Array.from(axis.querySelectorAll<SVGTextElement>(".tick text"), (text) => ({
+			text,
+			bounds: text.getBoundingClientRect(),
+		}));
+		const visible: typeof labels = [];
+		for (const [index, label] of labels.entries()) {
+			if (index === labels.length - 1) {
+				while (
+					visible.length &&
+					visible[visible.length - 1].bounds.right + 8 > label.bounds.left
+				) {
+					visible.pop()?.text.setAttribute("visibility", "hidden");
+				}
+			}
+			const previous = visible[visible.length - 1];
+			if (previous && previous.bounds.right + 8 > label.bounds.left) {
+				label.text.setAttribute("visibility", "hidden");
+			} else {
+				visible.push(label);
+			}
+		}
+	}
+}
+
+function centerCircularLabels(svg: SVGSVGElement): void {
+	for (const circle of svg.querySelectorAll<SVGCircleElement>("circle.label-container")) {
+		const label = circle.parentElement?.querySelector<SVGGElement>(":scope > .label");
+		if (!label || label.querySelector("foreignObject")) continue;
+		const transform = label.transform.baseVal.consolidate();
+		if (!transform) continue;
+		const box = label.getBBox();
+		const x = box.x + box.width / 2;
+		const y = box.y + box.height / 2;
+		const matrix = transform.matrix;
+		// Mermaid 的圆形 SVG 标签仍沿用 HTML 标签锚点，需按实际字框居中。
+		matrix.e = circle.cx.baseVal.value - matrix.a * x - matrix.c * y;
+		matrix.f = circle.cy.baseVal.value - matrix.b * x - matrix.d * y;
+		label.transform.baseVal.initialize(svg.createSVGTransformFromMatrix(matrix));
+	}
+}
 
 /**
- * renderMermaid - 渲染 mermaid 源码为经 DOMPurify 清理的 SVG 字符串
+ * 将 Mermaid 源码渲染为净化后的手绘 SVG；宽图保留自然字号供容器横向滚动。
  *
- * @param source mermaid 源码（可能含恶意 %%{init}%% 指令——由 DOMPurify 兜底）
- * @param theme  'light' | 'dark'，决定 themeVariables 明暗（默认 light）
- * @returns 成功 { svg }（已清理），失败 { error }（错误信息字符串）
+ * @param source Mermaid 源码；图内指令的渲染产物仍经 DOMPurify 清理
+ * @param theme 决定图表配色，不依赖页面当前明暗模式
+ * @returns 成功返回 SVG，失败返回可供界面展示的错误信息
  */
 export async function renderMermaid(
 	source: string,
@@ -115,38 +137,68 @@ export async function renderMermaid(
 ): Promise<RenderMermaidResult> {
 	try {
 		const mermaid = await loadMermaid();
+		await loadDiagramFonts(source);
 		const themeVariables: MermaidThemeVariables = getThemeVariables(theme === "dark");
 		mermaid.initialize({
 			startOnLoad: false,
 			securityLevel: "strict",
-			// 明暗双主题：dark 用内置主题（深色节点 + 浅字全图配对），
-			// light 用 base + 站点框架色（保留默认彩色节点）
+			look: "classic",
+			htmlLabels: false,
+			fontFamily: DIAGRAM_FONT_FAMILY,
+			altFontFamily: DIAGRAM_FONT_FAMILY,
+			themeCSS: `text, tspan, foreignObject, foreignObject * { font-family: ${DIAGRAM_FONT_FAMILY} !important; } .grid .tick text { font-size: 12px !important; }`,
+			sequence: {
+				actorFontFamily: DIAGRAM_FONT_FAMILY,
+				messageFontFamily: DIAGRAM_FONT_FAMILY,
+				noteFontFamily: DIAGRAM_FONT_FAMILY,
+			},
+			journey: {
+				taskFontFamily: DIAGRAM_FONT_FAMILY,
+				titleFontFamily: DIAGRAM_FONT_FAMILY,
+				textPlacement: "svg",
+			},
+			gantt: {
+				useWidth: 908, // 920px 正文宽度扣除两侧笔触边缘。
+				useMaxWidth: false,
+				fontSize: 14,
+				sectionFontSize: 14,
+				barHeight: 28,
+				barGap: 10,
+				topPadding: 64,
+			},
 			theme: theme === "dark" ? "dark" : "base",
 			themeVariables,
-			// suppressErrorRendering: true — mermaid v11 默认 false，解析失败时不抛错，
-			// 而是路由到内置 errorDiagram 把含 "Syntax error in text" + "mermaid version"
-			// 的错误图画进挂在 document.body 的临时 div，事后虽会 throw，但 throw 前不
-			// 清理该临时 div → 残留在页面底部（mermaid.esm.mjs:1670-1679 / 1718-1719）。
-			// 我们有自己的 DiagramError 占位降级，要 mermaid 在画错误图之前就抛错，
-			// 由下方 try/catch 捕获返回 { error }。
+			// 禁止 Mermaid 将解析错误画成挂在页面底部的 errorDiagram。
 			suppressErrorRendering: true,
 		});
-		const id = `diagram-render-${++renderSeq}`;
-		// 离屏容器：mermaid.render 不传 container 时会把临时 div 无隐藏样式地挂在
-		// document.body 末尾（mermaid.core.mjs render 的 else 分支），渲染期间撑开页面
-		// （刷新时出现滚动条 + 底部留白，渲染完删除后恢复）。传 container 后临时 div
-		// 进我们的容器。mermaid draw 依赖 getBBox 布局测量，display:none 无布局会渲染
-		// 失败，故用 absolute + 视口外 + visibility:hidden（可测量、不可见、不占文档流）。
+		const id = `diagram-render-${crypto.randomUUID()}`;
+		// opacity 不影响图内 visibility 判定；离屏容器仍可用于字体与 SVG 测量。
 		const container = document.createElement("div");
-		container.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;";
+		container.style.cssText =
+			"position:absolute;left:-9999px;top:0;width:920px;opacity:0;pointer-events:none;";
 		container.setAttribute("aria-hidden", "true");
 		document.body.appendChild(container);
 		try {
-			const { svg } = await mermaid.render(id, source, container);
-			return { svg: DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string };
+			const { svg, diagramType } = await mermaid.render(id, source, container);
+			container.innerHTML = DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string;
+			const root = container.querySelector("svg");
+			if (!root) throw new Error("图表渲染未生成 SVG");
+			if (diagramType === "gantt") fitGanttTickLabels(root);
+			centerCircularLabels(root);
+			sketchSvg(root);
+			const viewBox = root.getAttribute("viewBox")?.trim().split(/\s+/).map(Number);
+			if (viewBox?.length === 4) {
+				const [x, y, width, height] = viewBox;
+				// 为不规则笔触保留边缘，避免 SVG 视口裁掉轮廓。
+				root.setAttribute("viewBox", `${x - 6} ${y - 6} ${width + 12} ${height + 12}`);
+				root.setAttribute("width", String(width + 12));
+				root.setAttribute("height", String(height + 12));
+			}
+			root.style.maxWidth = "none";
+			root.style.flexShrink = "0";
+			return { svg: root.outerHTML };
 		} finally {
-			// 成功/失败都移除整个容器：mermaid 只清自己 append 的 #d{id} 内层 div，
-			// 传入的 container 由调用方回收。
+			// Mermaid 只回收内层临时节点，外层测量容器由调用方回收。
 			container.remove();
 		}
 	} catch (error) {

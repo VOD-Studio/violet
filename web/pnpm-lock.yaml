@@ -57,9 +57,6 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.8.0
         version: 1.8.0
-      '@fontsource/maple-mono':
-        specifier: ^5.2.6
-        version: 5.3.0
       '@hookform/resolvers':
         specifier: ^5.4.0
         version: 5.4.0(react-hook-form@7.80.0(react@19.2.7))
@@ -168,6 +165,9 @@ importers:
       '@violet/mascot':
         specifier: workspace:*
         version: link:packages/mascot
+      '@violet/react-tweet':
+        specifier: workspace:*
+        version: link:packages/react-tweet
       '@violet/ui':
         specifier: workspace:*
         version: link:packages/ui
@@ -249,6 +249,12 @@ importers:
       micromark-extension-gfm-strikethrough:
         specifier: ^2.1.0
         version: 2.1.0
+      micromark-util-classify-character:
+        specifier: ^2.0.1
+        version: 2.0.1
+      micromark-util-resolve-all:
+        specifier: ^2.0.1
+        version: 2.0.1
       motion:
         specifier: ^12.42.2
         version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -291,6 +297,9 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
+      roughjs:
+        specifier: 4.6.6
+        version: 4.6.6
       shiki:
         specifier: ^4.3.0
         version: 4.3.1
@@ -322,9 +331,6 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.2
         version: 2.5.2
-      '@fontsource/alex-brush':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -367,6 +373,12 @@ importers:
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
+      mdast-util-from-markdown:
+        specifier: ^2.0.3
+        version: 2.0.3
+      micromark-util-types:
+        specifier: ^2.0.2
+        version: 2.0.2
       remark-parse:
         specifier: 11.0.0
         version: 11.0.0
@@ -399,6 +411,33 @@ importers:
       '@violet/agent-status':
         specifier: workspace:*
         version: link:../agent-status
+
+  packages/react-tweet:
+    devDependencies:
+      '@testing-library/react':
+        specifier: ^16.3.0
+        version: 16.3.2(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.3.0(@types/react@19.2.17)
+      jsdom:
+        specifier: ^28.1.0
+        version: 28.1.0
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.9(@types/node@22.20.0)(jsdom@28.1.0)(vite@8.1.3(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0))
 
   packages/ui:
     dependencies:
@@ -994,12 +1033,6 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
-
-  '@fontsource/alex-brush@5.3.0':
-    resolution: {integrity: sha512-n3m2aZxsc8r748fBiYqfiVJ5l5iJe7ui5KPh2oBz07jsbr7zKynZ6F5MgXbR1iV8J0hPetmp6g5OwKYRZCDUcw==}
-
-  '@fontsource/maple-mono@5.3.0':
-    resolution: {integrity: sha512-8N3FVDWphO/971tZIig9D558j9jf09fWYIXFjgv7DKJEvDjtgfATx1ScWHdTCsf+tufFS5M1bAa4AumVBKPhSQ==}
 
   '@hono/node-server@1.19.14':
     resolution: {integrity: sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw==}
@@ -6646,10 +6679,6 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   '@floating-ui/utils@0.2.12': {}
-
-  '@fontsource/alex-brush@5.3.0': {}
-
-  '@fontsource/maple-mono@5.3.0': {}
 
   '@hono/node-server@1.19.14(hono@4.12.27)':
     dependencies:

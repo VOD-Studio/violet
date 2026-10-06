@@ -1,0 +1,422 @@
+.v-tweet {
+	--_tweet-background: var(--tweet-background, var(--card, light-dark(#ffffff, #0a0a0a)));
+	--_tweet-foreground: var(
+		--tweet-foreground,
+		var(--card-foreground, light-dark(#171717, #ededed))
+	);
+	--_tweet-muted: var(--tweet-muted, var(--muted-foreground, light-dark(#737373, #a3a3a3)));
+	--_tweet-border: var(
+		--tweet-border,
+		color-mix(in oklab, var(--border, light-dark(#e5e5e5, #333333)) 75%, transparent)
+	);
+	--_tweet-accent: var(--tweet-accent, light-dark(#0866d9, #75b6ff));
+	--_tweet-accent-hover: var(
+		--tweet-accent-hover,
+		color-mix(in oklab, var(--_tweet-accent) 90%, white)
+	);
+	--_tweet-soft: var(--tweet-surface, var(--muted, light-dark(#fafafa, #171717)));
+	color-scheme: light dark;
+	box-sizing: border-box;
+	width: 100%;
+	min-width: 0;
+	margin: 0;
+	padding: 16px 20px;
+	border: 1px solid var(--_tweet-border);
+	border-radius: min(var(--tweet-radius, 12px), 16px);
+	background: var(--_tweet-background);
+	color: var(--_tweet-foreground);
+	font-family: var(--tweet-font-family, ui-sans-serif, system-ui, sans-serif);
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 1.55;
+	text-align: start;
+	overflow-wrap: anywhere;
+}
+
+:where(.dark, [data-theme="dark"]) .v-tweet,
+.v-tweet[data-theme="dark"] {
+	color-scheme: dark;
+}
+:where(.light, [data-theme="light"]) .v-tweet,
+.v-tweet[data-theme="light"] {
+	color-scheme: light;
+}
+
+.v-tweet *,
+.v-tweet *::before,
+.v-tweet *::after {
+	box-sizing: border-box;
+}
+
+.v-tweet a {
+	color: var(--_tweet-accent);
+	text-decoration: none;
+	text-underline-offset: 3px;
+	transition:
+		color 140ms ease,
+		border-color 140ms ease;
+}
+.v-tweet a:hover {
+	color: var(--_tweet-accent-hover);
+	text-decoration: underline;
+}
+.v-tweet :where(a, button, video):focus-visible {
+	outline: 2px solid var(--tweet-focus, var(--ring, var(--_tweet-accent)));
+	outline-offset: 3px;
+}
+
+.v-tweet .v-tweet__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0 0 10px;
+}
+.v-tweet .v-tweet__identity {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	color: inherit;
+}
+.v-tweet__avatar-link {
+	flex: none;
+}
+.v-tweet .v-tweet__avatar {
+	display: flex;
+	flex: 0 0 40px;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	margin: 0;
+	border-radius: 50%;
+	background: var(--_tweet-soft);
+	color: var(--_tweet-muted);
+	object-fit: cover;
+	font-size: 18px;
+	font-weight: 600;
+}
+.v-tweet__author {
+	display: grid;
+	min-width: 0;
+	justify-items: start;
+	line-height: 1.35;
+	gap: 2px;
+}
+.v-tweet__name-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	max-width: 100%;
+}
+.v-tweet .v-tweet__name {
+	min-width: 0;
+	color: var(--_tweet-foreground);
+	font-weight: 650;
+}
+.v-tweet .v-tweet__name:hover {
+	color: var(--_tweet-foreground);
+}
+.v-tweet .v-tweet__handle {
+	max-width: 100%;
+	color: var(--_tweet-muted);
+	font-size: 13px;
+}
+.v-tweet .v-tweet__handle:hover {
+	color: var(--_tweet-accent-hover);
+}
+.v-tweet :is(.v-tweet__handle, .v-tweet__avatar-link, .v-tweet__brand, .v-tweet__metric):hover,
+.v-tweet__affiliation a:hover {
+	text-decoration: none;
+}
+.v-tweet__icon {
+	display: inline-block;
+	flex: none;
+	background-color: currentColor;
+	mask-position: center;
+	mask-size: contain;
+	mask-repeat: no-repeat;
+}
+.v-tweet__verified {
+	width: 18px;
+	height: 18px;
+	mask-image: url("./icons/verified.svg");
+	color: var(--tweet-verified, #1d9bf0);
+}
+.v-tweet__verified[data-kind="government"] {
+	color: #829aab;
+	mask-image: url("./icons/verified-government.svg");
+}
+.v-tweet__verified[data-kind="business"] {
+	mask-image: none;
+	background: url("./icons/verified-business.svg") center / contain no-repeat;
+}
+.v-tweet__affiliation {
+	display: inline-flex;
+	flex: none;
+}
+.v-tweet__affiliation :where(a, img) {
+	display: block;
+	width: 16px;
+	height: 16px;
+}
+.v-tweet__affiliation img {
+	margin: 0;
+	border-radius: 2px;
+	object-fit: contain;
+}
+.v-tweet .v-tweet__brand {
+	display: inline-flex;
+	flex: none;
+	align-self: center;
+	margin: -4px;
+	padding: 4px;
+	color: var(--_tweet-foreground);
+}
+.v-tweet__brand-icon {
+	width: 20px;
+	height: 20px;
+	mask-image: url("./icons/brand.svg");
+}
+.v-tweet .v-tweet__text {
+	white-space: pre-wrap;
+	margin: 0;
+	font-size: inherit;
+	line-height: 1.6;
+}
+.v-tweet__text[data-collapsed] {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.v-tweet__text-toggle {
+	appearance: none;
+	display: block;
+	border: 0;
+	padding: 4px 0;
+	background: transparent;
+	color: var(--_tweet-accent);
+	font: inherit;
+	cursor: pointer;
+}
+.v-tweet__text-toggle:hover {
+	text-decoration: underline;
+}
+.v-tweet__quote {
+	margin-block: 12px;
+}
+.v-tweet--quoted {
+	padding: 14px;
+	border-radius: 10px;
+	font-size: 14px;
+}
+.v-tweet--quoted .v-tweet__header {
+	margin-block-end: 8px;
+}
+.v-tweet--quoted .v-tweet__avatar {
+	width: 28px;
+	height: 28px;
+	flex-basis: 28px;
+	font-size: 13px;
+}
+.v-tweet--quoted .v-tweet__author {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 2px 8px;
+}
+.v-tweet__quote-link {
+	display: inline-block;
+	margin-block: 4px 12px;
+	font-size: 13px;
+}
+.v-tweet .v-tweet__warnings {
+	margin: 12px 0;
+	padding-inline-start: 18px;
+	color: var(--_tweet-muted);
+	font-size: 12px;
+}
+.v-tweet .v-tweet__warnings li {
+	margin: 0;
+}
+.v-tweet__footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 16px;
+	margin-block-start: 12px;
+	color: var(--_tweet-muted);
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+}
+.v-tweet .v-tweet__date {
+	margin-inline-start: auto;
+	color: var(--_tweet-muted);
+}
+.v-tweet__metrics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px;
+}
+.v-tweet .v-tweet__metric {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	white-space: nowrap;
+	color: inherit;
+	transition: color 140ms ease;
+}
+.v-tweet__metric--likes {
+	--_tweet-metric-hover: var(--tweet-like-hover, light-dark(#c41665, #ff69a8));
+}
+.v-tweet__metric--replies {
+	--_tweet-metric-hover: var(--tweet-reply-hover, light-dark(#0879be, #59b8f7));
+}
+.v-tweet__metric--reposts {
+	--_tweet-metric-hover: var(--tweet-repost-hover, light-dark(#008557, #42dba0));
+}
+.v-tweet .v-tweet__metric:is(:hover, :focus-visible) {
+	color: var(--_tweet-metric-hover);
+}
+.v-tweet__metric-icon {
+	width: 14px;
+	height: 14px;
+}
+.v-tweet__metric--likes .v-tweet__metric-icon {
+	mask-image: url("./icons/like.svg");
+}
+.v-tweet__metric--replies .v-tweet__metric-icon {
+	mask-image: url("./icons/reply.svg");
+}
+.v-tweet__metric--reposts .v-tweet__metric-icon {
+	mask-image: url("./icons/repost.svg");
+}
+.v-tweet__sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+.v-tweet__source {
+	font-size: 12px;
+}
+.v-tweet--compact {
+	padding: 14px;
+}
+.v-tweet__skeleton {
+	display: grid;
+	gap: 18px;
+	animation: v-tweet-pulse 1.4s ease-in-out infinite;
+}
+.v-tweet__skeleton span {
+	display: block;
+	height: 12px;
+	border-radius: 4px;
+	background: color-mix(in oklab, var(--_tweet-muted) 20%, var(--_tweet-background));
+}
+.v-tweet__skeleton-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.v-tweet__skeleton .v-tweet__skeleton-avatar {
+	flex: 0 0 40px;
+	height: 40px;
+	border-radius: 50%;
+}
+.v-tweet__skeleton-author {
+	display: grid;
+	flex: 1;
+	gap: 8px;
+}
+.v-tweet__skeleton-author span {
+	max-width: 120px;
+}
+.v-tweet__skeleton-author span:last-child {
+	max-width: 80px;
+}
+.v-tweet__skeleton .v-tweet__skeleton-brand {
+	width: 20px;
+	height: 20px;
+}
+.v-tweet__skeleton-body {
+	display: grid;
+	gap: 12px;
+}
+.v-tweet__skeleton-body span:last-child {
+	width: 68%;
+}
+.v-tweet__skeleton-footer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 14px;
+}
+.v-tweet__skeleton-footer span {
+	width: 36px;
+}
+.v-tweet__skeleton-footer span:last-child {
+	width: 100px;
+	margin-inline-start: auto;
+}
+@keyframes v-tweet-pulse {
+	50% {
+		opacity: 0.6;
+	}
+}
+.v-tweet .v-tweet__notice {
+	margin: 0 0 12px;
+	color: var(--_tweet-muted);
+	font-size: 14px;
+}
+.v-tweet__status-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+.v-tweet__retry {
+	appearance: none;
+	padding: 4px 12px;
+	border: 1px solid var(--_tweet-border);
+	border-radius: 6px;
+	background: transparent;
+	color: var(--_tweet-foreground);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+	transition:
+		border-color 140ms ease,
+		color 140ms ease;
+}
+.v-tweet__retry:hover {
+	border-color: var(--_tweet-accent);
+	color: var(--_tweet-accent);
+}
+
+@media (max-width: 480px) {
+	.v-tweet {
+		padding: 16px;
+	}
+	.v-tweet--compact {
+		padding: 14px;
+	}
+	.v-tweet--quoted {
+		padding: 12px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.v-tweet a,
+	.v-tweet .v-tweet__metric,
+	.v-tweet__retry {
+		transition: none;
+	}
+	.v-tweet__skeleton {
+		animation: none;
+	}
+}

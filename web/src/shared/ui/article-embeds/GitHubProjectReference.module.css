@@ -1,0 +1,202 @@
+.reference {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 34.375rem;
+	min-width: 0;
+	margin: 1.5rem auto;
+	border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+	border-radius: 0.75rem;
+	padding: 1rem 1.25rem;
+	background: var(--card);
+	color: var(--card-foreground);
+	font-family: var(--font-reading, ui-sans-serif, system-ui, sans-serif);
+	font-size: 0.9375rem;
+	font-weight: 400;
+	line-height: 1.55;
+	text-align: start;
+	overflow-wrap: anywhere;
+}
+
+.reference a {
+	color: inherit;
+	text-decoration: none;
+	text-underline-offset: 3px;
+	transition:
+		color 140ms ease-out,
+		background-color 140ms ease-out,
+		border-color 140ms ease-out;
+}
+
+.reference a:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 3px;
+}
+
+.header {
+	display: grid;
+	grid-template-columns: 2.5rem minmax(0, 1fr) 1.5rem;
+	align-items: center;
+	gap: 0.625rem;
+}
+
+.avatar {
+	position: relative;
+	display: grid;
+	width: 2.5rem;
+	height: 2.5rem;
+	place-items: center;
+	overflow: hidden;
+	border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+	border-radius: 0.5rem;
+	background: var(--muted);
+}
+
+.avatarFallback {
+	width: 1.5rem;
+	height: 1.5rem;
+	color: var(--muted-foreground);
+}
+
+.avatar img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+}
+
+.avatar img[hidden] {
+	display: none;
+}
+
+.repo {
+	display: grid;
+	gap: 0.125rem;
+	min-width: 0;
+	justify-items: start;
+	line-height: 1.35;
+}
+
+.reference .owner {
+	color: var(--muted-foreground);
+	font-size: 0.8125rem;
+}
+
+.name {
+	font-size: 1rem;
+	font-weight: 650;
+}
+
+.repo a:hover {
+	text-decoration: underline;
+}
+
+.brand {
+	display: grid;
+	width: 1.5rem;
+	height: 1.5rem;
+	place-items: center;
+}
+
+.brand svg {
+	width: 1.375rem;
+	height: 1.375rem;
+}
+
+.description {
+	margin: 1rem 0 0;
+	font-size: 1rem;
+	line-height: 1.6;
+	text-wrap: pretty;
+}
+
+.metadata {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 1.25rem;
+	margin-top: 1rem;
+	color: var(--muted-foreground);
+	font-size: 0.8125rem;
+	line-height: 1.5;
+}
+
+.language {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+	margin-right: auto;
+}
+
+.language::before {
+	width: 0.625rem;
+	height: 0.625rem;
+	border-radius: 50%;
+	background: var(--language-color, currentColor);
+	content: "";
+	flex: none;
+}
+
+.language[data-language="TypeScript"] {
+	--language-color: #3178c6;
+}
+
+.language[data-language="JavaScript"] {
+	--language-color: #f1e05a;
+}
+
+.language[data-language="Go"] {
+	--language-color: #00add8;
+}
+
+.metric {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.reference .metric {
+	color: var(--muted-foreground);
+}
+
+.reference .metric:hover {
+	color: var(--foreground);
+}
+
+.count {
+	color: var(--foreground);
+	font-weight: 550;
+}
+
+.metric svg {
+	width: 1rem;
+	height: 1rem;
+	flex: none;
+}
+
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (max-width: 30rem) {
+	.reference {
+		padding: 1rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reference a {
+		transition: none;
+	}
+}

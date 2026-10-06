@@ -1,97 +1,84 @@
 .root {
 	display: grid;
 	width: min(100%, 36rem);
-	margin: 2rem 0;
-	grid-template-columns: 2.75rem minmax(0, 1fr);
-	gap: 0.75rem;
-	align-items: end;
+	margin: 1.25rem 0;
+	grid-template-columns: 2rem minmax(0, 1fr);
+	column-gap: 0.625rem;
+	row-gap: 0.375rem;
+	align-items: start;
+	font-family: var(--font-reading, ui-sans-serif, system-ui, sans-serif);
 }
 
 .root[data-side="right"] {
 	margin-left: auto;
-	grid-template-columns: minmax(0, 1fr) 2.75rem;
+	grid-template-columns: minmax(0, 1fr) 2rem;
 }
 
 .speaker {
-	display: grid;
-	gap: 0.42rem;
-	justify-items: center;
-}
-
-.root[data-side="right"] .speaker {
 	grid-column: 2;
+	grid-row: 1;
+	min-width: 0;
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+	font-weight: 500;
+	line-height: 1.4;
 }
 
 .avatar,
 .avatarFallback {
-	display: flex;
-	width: 2.5rem;
-	height: 2.5rem;
-	align-items: center;
-	justify-content: center;
-	border-radius: 999px;
+	display: grid;
+	grid-column: 1;
+	grid-row: 1 / span 2;
+	width: 2rem;
+	height: 2rem;
+	place-items: center;
+	border-radius: 50%;
 	background: var(--muted);
 	object-fit: cover;
 }
 
 .avatarFallback {
 	color: var(--muted-foreground);
-	font-family: Georgia, "Times New Roman", serif;
-	font-size: 0.9rem;
-	font-style: italic;
-}
-
-.speaker figcaption {
-	max-width: 4.5rem;
-	overflow: hidden;
-	color: var(--muted-foreground);
-	font-size: 0.6rem;
-	line-height: 1.2;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	font-size: 0.8125rem;
+	font-weight: 600;
 }
 
 .bubble {
-	position: relative;
+	grid-column: 2;
+	grid-row: 2;
+	justify-self: start;
+	width: fit-content;
+	max-width: 100%;
+	min-width: 0;
 	margin: 0;
-	padding: 0.9rem 1rem;
-	border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
-	border-radius: 1rem 1rem 1rem 0.3rem;
+	padding: 0.625rem 0.875rem;
+	border: 0;
+	border-radius: 0.75rem;
 	background: color-mix(in oklab, var(--muted) 72%, var(--background));
-	box-shadow: 0 0.65rem 1.8rem color-mix(in oklab, var(--foreground) 5%, transparent);
 	color: var(--foreground);
 	font-style: normal;
 }
 
+.root[data-side="right"] :is(.avatar, .avatarFallback) {
+	grid-column: 2;
+}
+
+.root[data-side="right"] .speaker {
+	grid-column: 1;
+	justify-self: end;
+	text-align: end;
+}
+
 .root[data-side="right"] .bubble {
-	grid-row: 1;
-	border-radius: 1rem 1rem 0.3rem;
-	background: color-mix(in oklab, var(--primary) 11%, var(--background));
+	grid-column: 1;
+	justify-self: end;
+	background: color-mix(in oklab, var(--primary) 8%, var(--background));
 }
 
 .bubble p {
 	margin: 0;
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
-	font-size: 0.9rem;
-	line-height: 1.75;
+	font-size: 0.9375rem;
+	line-height: 1.65;
 	white-space: pre-wrap;
-}
-
-@media (max-width: 30rem) {
-	.root {
-		width: 100%;
-		grid-template-columns: 2.4rem minmax(0, 1fr);
-		gap: 0.55rem;
-	}
-
-	.root[data-side="right"] {
-		grid-template-columns: minmax(0, 1fr) 2.4rem;
-	}
-
-	.avatar,
-	.avatarFallback {
-		width: 2.2rem;
-		height: 2.2rem;
-	}
+	overflow-wrap: anywhere;
 }

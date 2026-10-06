@@ -96,10 +96,10 @@ var Languages = map[string]LanguageDef{
 // canonical key（python/node/go/rust/bun）不在表里——原样通过。
 // js/javascript→node、rs→rust、ts/typescript→bun。大小写不敏感。
 var langAliases = map[string]string{
-	"js":        "node",
+	"js":         "node",
 	"javascript": "node",
-	"rs":        "rust",
-	"ts":        "bun",
+	"rs":         "rust",
+	"ts":         "bun",
 	"typescript": "bun",
 }
 
@@ -139,9 +139,17 @@ func IsSupportedLang(lang string) bool {
 //
 // 格式：<lang> [runnable|run] [ {<ResourceLimits JSON>} ]
 // 返回 (lang, runnable, overrides)。lang 已经过 NormalizeLang 归一化。
-// 未知 token 静默忽略；JSON 解析失败时 overrides 为 nil。
+// 未知 token 静默忽略；末尾 JSON 可包含空白，解析失败时 overrides 为 nil。
 func ParseFenceInfo(info string) (lang string, runnable bool, overrides *domaincoderunner.ResourceLimits) {
-	tokens := strings.Fields(info)
+	metadata := info
+	if start := strings.IndexByte(info, '{'); start >= 0 {
+		metadata = info[:start]
+		var limits domaincoderunner.ResourceLimits
+		if err := json.Unmarshal([]byte(info[start:]), &limits); err == nil {
+			overrides = &limits
+		}
+	}
+	tokens := strings.Fields(metadata)
 	if len(tokens) == 0 {
 		return "", false, nil
 	}
@@ -149,11 +157,6 @@ func ParseFenceInfo(info string) (lang string, runnable bool, overrides *domainc
 	for _, tok := range tokens[1:] {
 		if tok == "runnable" || tok == "run" {
 			runnable = true
-		} else if strings.HasPrefix(tok, "{") {
-			var limits domaincoderunner.ResourceLimits
-			if err := json.Unmarshal([]byte(tok), &limits); err == nil {
-				overrides = &limits
-			}
 		}
 	}
 	return lang, runnable, overrides

@@ -20,6 +20,7 @@ import {
 	Quote,
 	Sigma,
 	SquareFunction,
+	Superscript,
 	Table as TableIcon,
 	Text,
 	Workflow,
@@ -235,6 +236,15 @@ export function buildSlashItems(
 					.run(),
 		},
 		{
+			id: "footnote",
+			title: "脚注",
+			description: "插入引用并在文末编辑脚注；点击引用可返回编辑",
+			keywords: ["footnote", "脚注", "注释"],
+			icon: Superscript,
+			group: "基础",
+			command: (e) => e.chain().focus().insertFootnote().run(),
+		},
+		{
 			id: IMAGE_ITEM_ID,
 			title: "图片",
 			description: "插入图片（上传/素材库）",
@@ -245,4 +255,23 @@ export function buildSlashItems(
 		},
 	];
 	return features?.table === false ? all.filter((item) => item.id !== "table") : all;
+}
+
+/** 为已有脚注生成引用入口，复用同一份可编辑正文。 */
+export function buildFootnoteReferenceItems(editor: Editor): SlashMenuItem[] {
+	const items: SlashMenuItem[] = [];
+	editor.state.doc.descendants((node) => {
+		if (node.type.name !== "footnoteDefinition") return;
+		const label = node.attrs.label as string;
+		items.push({
+			id: `footnote-reference-${label}`,
+			title: `引用脚注 ${label}`,
+			description: node.textContent || "空脚注",
+			keywords: ["footnote", "脚注", "引用", label, node.textContent],
+			icon: Superscript,
+			group: "脚注",
+			command: (e) => e.chain().focus().insertFootnote(label).run(),
+		});
+	});
+	return items;
 }

@@ -20,6 +20,8 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import type { ArticleContentContext } from "../article-embeds/types";
 import { createMarkdownComponents } from "./components/markdown-components";
+import { rehypeCodeCarriers } from "./rehype-code-carriers";
+import { remarkHighlight } from "./remark-highlight";
 
 /** 提取 hast 节点的纯文本（递归拼接子节点的 text） */
 function hastText(node: Nodes): string {
@@ -82,8 +84,8 @@ export function MarkdownContent({
 	return (
 		<div className={className}>
 			<ReactMarkdown
-				remarkPlugins={[remarkGfm, remarkMath]}
-				rehypePlugins={[rehypeSlugHeadings]}
+				remarkPlugins={[remarkGfm, remarkMath, remarkHighlight]}
+				rehypePlugins={[rehypeSlugHeadings, rehypeCodeCarriers]}
 				components={codeRenderer ? { ...components, code: codeRenderer } : components}
 			>
 				{content}

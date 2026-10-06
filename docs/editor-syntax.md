@@ -707,6 +707,11 @@ xychart-beta
 ### 9.15 渲染与安全
 
 - **浏览时渲染**：content_html 只存语义化标记 `<div data-type="diagram-block" data-format="mermaid" data-source="...">`，最终 SVG 在读者浏览器渲染，不烘焙进 HTML（体积小、主题可跟随、源码可搜索可复制、升级渲染器不动存量数据）。
+- **统一手绘**：Mermaid 负责语义与布局，净化后的 SVG 统一经 Rough.js 转换轮廓、填色与连线，不依赖 Mermaid 原生 `handDrawn` 的图型覆盖。编辑器预览与阅读端同源；相同几何使用固定笔触种子，文字和箭头保留原始语义。已验证本节全部 13 种示例图型。
+- **手写字体 CDN**：英文使用 Excalifont（Excalidraw 0.18.1 发布分片），中文使用小赖体（Xiaolai SC）。图块按需声明 `@font-face`，等待标签所需分片加载后再测量布局；中文分片来自[中文网字计划](https://chinese-font.netlify.app/zh-cn/cdn/)。首次加载需要可访问字体 CDN，字体未覆盖的字符使用系统回退字体。
+- **导出字体与许可**：SVG 文件内嵌实际标签所需的 WOFF2 分片、版权与完整 OFL 通知，不依赖站点样式或远端字体；PNG 由同一 SVG 栅格化。仓库保留两份手绘字体许可作为导出通知来源，不保存字体二进制副本。
+- **宽图**：保持自然字号，在图内横向滚动，不将整张图缩成小字。
+- **甘特图**：以 920px 自然宽度布局，任务字号 14px、日期字号 12px；只隐藏碰撞的日期文字，保留原始刻度、任务日期、时间格式与作者设置的刻度间隔。任务与日期轴之间保留独立间距，顶部日期轴和小时级项目使用同一避碰规则。
 - **双重 XSS 防线**：全局 `securityLevel: strict` + render 产物经 DOMPurify 二次清理。mermaid 支持 per-diagram `%%{init}%%` 指令覆盖全局 strict（docmost CVE-2026-23630 的存储型 XSS 攻击路径），第二道 DOMPurify 兜底剥除 `<script>`、`on*` 事件属性、`foreignObject` 可执行内容。
 - **主题重渲染**：mermaid 把颜色烘焙进 SVG，切主题需重新渲染（非 CSS 跟随）。组件持有 source，主题变化时重新 initialize + 重渲染所有可见图块。
 
@@ -769,7 +774,7 @@ xychart-beta
 - 鼠标悬停或键盘聚焦时显示头像、角色定位和简介；点击资料卡进入 `/persona`。
 - 当前没有公开人设时降级为普通文字，不发起无意义的资料请求。
 
-### 10.2 对话与仓库
+### 10.2 对话与 GitHub 项目引用
 
 ````markdown
 ```dialogue
@@ -777,7 +782,7 @@ xychart-beta
 ```
 
 ```dialogue
-{"speaker":"访客","avatar":"/uploads/example.webp","side":"right","text":"当然。"}
+{"speaker":"访客","side":"right","text":"当然。"}
 ```
 
 ```github
@@ -787,13 +792,50 @@ xychart-beta
 
 - `dialogue.profile` 取值 `active` 时复用当前公开人设；也可用 `speaker` 和 `avatar` 写独立角色。
 - `side` 只接受 `left` 或 `right`。
-- 仓库卡片是作者保存的展示快照；`description`、`language`、`stars`、`forks` 可省略，`href` 可覆盖默认 GitHub 地址。
+- `github` 使用项目专用引用：仓库名与所有者组成身份区，头像由 GitHub 提供；简介、语言与统计沿阅读顺序展示，不复用通用链接预览。它是作者保存的项目快照，不在阅读时请求 GitHub 元数据；`description`、`language`、`stars`、`forks` 可省略，统计值 `0` 正常展示。仓库名和右上角 GitHub 标识可打开项目，`href` 可覆盖默认地址。
+- 点击 Star 统计进入 GitHub 仓库页操作，点击 Fork 统计打开 GitHub 的创建 Fork 页面；登录与确认由 GitHub 完成，本站不读取读者的 GitHub token，不将保存的统计快照伪装成实时结果。
 
-### 10.3 链接、社交动态与链接组
+#### 对话实际展示案例
+
+以下两轮对话直接显示为左右气泡。左侧复用当前公开人设；右侧使用独立发言人，不提供头像时显示名字首字。
+
+```dialogue
+{"profile":"active","side":"left","text":"那个……要一起看球吗？"}
+```
+
+```dialogue
+{"speaker":"访客","side":"right","text":"当然。"}
+```
+
+#### GitHub 实际展示案例
+
+以下围栏直接渲染为项目卡片，不是外层 Markdown 代码示意。元数据于 2026-10-05 从 GitHub 公开 API 读取；统计是保存时的快照，不代表实时数值。
+
+**基本引用：只提供仓库名称。**
+
+```github
+{"repo":"VOD-Studio/violet"}
+```
+
+**完整引用：简介、语言、星标、派生数与显式链接；派生数为 0 时仍展示。**
+
+```github
+{"repo":"VOD-Studio/violet","description":"全栈博客平台 · Go 后端 + React 前端，内置 MCP server 供 AI agent 读写文章","language":"TypeScript","stars":3,"forks":0,"href":"https://github.com/VOD-Studio/violet"}
+```
+
+### 10.3 链接、X 推文与社交链接组
 
 ````markdown
 ```link-preview
 {"url":"https://example.com/story","title":"文章标题","description":"一段简短摘要。","image":"/uploads/cover.webp","site":"Example"}
+```
+
+```tweet
+{"id":"1728987032779694397"}
+```
+
+```tweet
+{"url":"https://x.com/GenshinImpact/status/1728987032779694397"}
 ```
 
 ```tweet
@@ -805,10 +847,71 @@ xychart-beta
 ```
 ````
 
-- `link-preview` 和 `tweet` 都是静态快照，不加载第三方脚本，也不会在读者访问时请求外站接口。
+- `tweet` 支持两种模式：只写 `id` 或 X / Twitter 原文 `url` 时，客户端通过同源服务加载 FxTwitter 完整正文，并补充 X 官方认证与组织关联信息；填写 `author`、`handle`、`text` 等完整字段时，直接展示随文章保存的快照，不请求来源接口。标识必须写成字符串，避免长 ID 丢失精度。
+- 动态引用支持原作者、正文链接、照片、视频、单层引用、发布时间与来源统计。点赞和回复在新标签页打开 X 的真实操作入口，不修改本站计数；姓名、账号和组织标识分别导航。来源加载失败时保留原文入口和手动重试；明确不可用、已删除或私密的结果不伪装成可阅读内容。
+- 可在 ID、URL 引用或保存快照中设置 `"maxTextLines": 6`，将正文初始显示限制为 6 行；超出时提供「展示更多／收起」，图片、视频、引用和统计保持展示。省略时展示全文；该值必须为正整数。
+- `link-preview` 保持静态快照。上述组件都不加载第三方脚本或 iframe，但配图与视频会请求其资源地址。动态推文的数据源是外部服务，受其可用性与限流影响；需要长期固定内容时使用快照模式。
 - 社交链接组支持 1–8 项；`icon` 可选 `github`、`x`、`email`、`website`、`rss` 或 `video`，省略时按链接推断。
 - 链接只接受站内路径、`http(s)`；社交链接额外接受 `mailto:`。图片只接受站内上传路径或 `http(s)`。
 - JSON 无效或字段不合规时，文章其余内容照常渲染，错误位置显示可读的配置提示。
+
+#### X 推文实际展示案例
+
+本组只选用 `@GenshinImpact`、`@thsottiaux` 与 `@NintendoAmerica` 三个账号的真实公开推文，嵌套引用也限于这三个账号。ID、作者、认证类型、正文和媒体已于 2026-10-05 通过 FxTwitter 接口核对。动态卡片读取来源当前结果，认证及组织关联标识以实际返回为准，不按账号名称猜测或补造。以下标题只描述已确认的内容类型。
+
+**短文本与个人认证：189 字符正文，无附件；引用作者自己的另一条无附件推文。**
+
+```tweet
+{"id":"2061106703446450392"}
+```
+
+**长文本与多段正文：1,808 字符，无附件；正文默认显示 6 行，可展开与收起。引用作者自己的另一条无附件推文保持展示。**
+
+```tweet
+{"id":"2071740419030053227","maxTextLines":6}
+```
+
+**较长多段正文：520 字符的公告，附 1 张图片。**
+
+```tweet
+{"id":"1949667378637214138"}
+```
+
+**单张图片：正文介绍配合 1 张角色图片。**
+
+```tweet
+{"id":"1376851698350751751"}
+```
+
+**四张图片：4 张壁纸组成的图片组。**
+
+```tweet
+{"id":"1728987032779694397"}
+```
+
+**三张图片：3 张图片组成的图片组。**
+
+```tweet
+{"id":"2070358391411642467"}
+```
+
+**视频：附 1 段约 142 秒的视频。**
+
+```tweet
+{"id":"1879879950854926422"}
+```
+
+**官方认证与正文链接：附 1 张图片及正文链接。**
+
+```tweet
+{"id":"1907788934874062911"}
+```
+
+**保存正文快照：固定保存另一条无附件推文的作者、完整正文、头像和 UTC 发布时间，不请求推文数据接口。** 头像仍是外部图片资源；此例不填写认证标记，来源当前的认证与组织信息请看动态案例。
+
+```tweet
+{"url":"https://x.com/thsottiaux/status/2062329981548802523","author":"Tibo","handle":"@thsottiaux","text":"Hi. Over the last 24 hours we had three separate small incidents that affected Codex reliability. Those are three too many and we are taking active steps for them to not reproduce.\n\nI have reset usage limits for Codex across all paid plans. May the tokens flow again.","avatar":"https://pbs.twimg.com/profile_images/2093807917833281537/2yBgpwVV_200x200.jpg","date":"2026-06-04 00:25:58 UTC"}
+```
 
 ### 10.4 文章末尾签名
 
@@ -836,22 +939,35 @@ xychart-beta
 
 ## 12. Slash 菜单
 
-任意位置输入 `/` 唤起，支持关键词/中文模糊搜索。共 15 项，按组：
+任意位置输入 `/` 唤起，支持关键词/中文模糊搜索，按组显示：
 
 - **基础**：正文、一/二/三级标题
 - **列表**：无序、有序、任务列表
-- **块**：引用、代码块、分割线、表格（3×3 带表头）
+- **块**：引用、代码块、可运行代码块、分割线、表格（3×3 带表头）
 - **媒体**：行内公式、公式块、图片、流程图
+
+「脚注」命令在当前位置插入引用，并将光标移到文末脚注正文；已有脚注会出现在「引用脚注」候选中，可再次引用同一正文。点击编辑器内的脚注引用可定位正文。阅读时每次引用都有独立 ID 和回链；插入、删除引用后编号与回链同步更新。
+
+```markdown
+第一次引用[^note]，再次引用同一脚注[^note]。
+
+[^note]: 可编辑的 **富文本正文**。
+
+    第二段正文，保留四空格缩进。
+```
 
 > H4–H6、对齐、颜色、链接、行内样式、撤销重做等不在 Slash 菜单——只在工具栏/气泡菜单。
 
 ## 13. 存储与有损说明（重要）
 
+- **源码直接保存**：源码输入实时同步文档，保存草稿或导出 `.md` 无需先切回富文本；源码模式导出保留当前输入的引用式链接等写法。
 - **content_html 是展示权威源**：下划线、文字颜色、高亮颜色、对齐这些 Markdown 表达不了的样式只存在这里，文章页始终正确。
-- **content_md 是有损的**：上述样式在 Markdown 导出/降级展示时会丢失（加粗/斜体/删除线/高亮标记保留）。公式、代码块、表格、任务列表、图片、图块和语义内容卡片的源码在两条路径间保留。
-- 旧 Markdown 文章走降级渲染路径（react-markdown + remark-math），公式渲染与主路径同一套 KaTeX 组件，视觉一致。
+- **content_md 仍有格式边界**：文字颜色、下划线等无原生 Markdown 表达的样式可能丢失。普通表格保留管道符转义、行内代码和列对齐；合并单元格、列宽等以 HTML 表格载体保留，不能强行降为普通 Markdown 表格。
+- 脚注、公式、任务勾选状态、高亮、图块和可运行代码源码可在编辑、保存与重新打开之间往返。脚注定义保留源码顺序，显示编号按首次引用顺序更新。
+- 编辑器使用 marked 的围栏解析规则，支持反引号或波浪号围栏；可运行围栏接受 `run` / `runnable` 与带空格的 JSON 资源参数。普通代码中的 `$...$`、`==...==` 和围栏示例不会被当作正文公式或高亮。
+- 旧 Markdown 文章使用 react-markdown、remark-gfm 和 remark-math 降级渲染；公式、Mermaid、可运行代码、任务列表和高亮复用主路径组件，链接锚点与脚注回链留在当前页。
 
 ## 14. 暂不支持
 
-- 脚注、上标下标（正文文本）、Wiki 链接、HTML 混排（降级路径不解析原始 HTML）。
+- 上标下标（正文文本）、Wiki 链接、HTML 混排（旧 Markdown 降级路径不解析原始 HTML；含合并单元格等 HTML 载体的文章应保留 `content_html`）。
 

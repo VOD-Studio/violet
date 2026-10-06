@@ -8,6 +8,8 @@ import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import { ArticleSignature } from "@features/posts/ui/ArticleSignature";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
+import readingStyles from "@features/posts/ui/PostDetailContent.module.css";
+import { PostDetailHeader } from "@features/posts/ui/PostDetailHeader";
 import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
 import { useChapterContext, useSeriesDetail } from "@features/series/api";
 import { ChapterNav, SeriesBelonging } from "@features/series/ui/ChapterNav";
@@ -18,22 +20,15 @@ import { SITE_URL } from "@shared/config/env";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/hooks/use-scroll-progress";
 import { extractToc } from "@shared/hooks/use-toc";
-import { formatDate } from "@shared/lib/date";
 import { extractMarkdownToc } from "@shared/lib/markdown/toc";
-import { AvatarGroup } from "@shared/ui/avatar-group";
-import { BackLink } from "@shared/ui/back-link";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { FloatingBack } from "@shared/ui/floating-back";
-import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Popover, PopoverContent, PopoverTrigger, TextUnderline } from "@violet/ui";
-import { ArrowLeft, Calendar, ExternalLink, Eye } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { cn } from "cn";
+import { ArrowLeft } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 
-/**
- * 评论相关组件懒加载：批注层 / 浮动工具条 / 评论区都在首屏可视区下方，
- * 且依赖较重（评论 API、表单、树结构等），拆出独立 chunk 不阻塞首屏正文渲染。
- */
+// 评论交互懒加载，不阻塞首屏正文。
 const AnnotationLayer = lazy(() =>
 	import("@features/comments/ui/AnnotationLayer").then((m) => ({
 		default: m.AnnotationLayer,
@@ -50,17 +45,6 @@ const CommentSection = lazy(() =>
 	})),
 );
 
-/**
- * /blog/$slug - 文章详情页
- *
- * loader SSR 预取文章（按 slug），组件读缓存。
- *
- * 正文按 content_html 优先、content_md 降级，复用统一安全渲染器；
- * 特殊围栏代码渲染为文章卡片，persona 行内标记按需接入当前人物档案。
- * TOC 分别从 HTML 或 Markdown 提取，并沿用项目统一 slug 规则。
- * 进入页面时调用 POST /posts/{id}/view 增加浏览量。
- * 路由 head 映射 SEO 字段（title/description/og:image）。
- */
 function BlogDetailPage() {
 	const { slug } = Route.useParams();
 	const { data: post, isLoading, error } = usePost(slug);
@@ -73,9 +57,7 @@ function BlogDetailPage() {
 	const { data: summary } = useAnnotationSummary(post?.id ?? "");
 	const me = useMe();
 	const isLoggedIn = !!me.data;
-	// 书籍上下文：归属标注 + 上下章导航（未挂书为 null，组件自渲染 null）
 	const { data: chapterCtx } = useChapterContext(slug);
-	// 全书目录（阅读器壳左层导航）：按归属书 slug 拉详情
 	const { data: seriesDetail } = useSeriesDetail(chapterCtx?.series.slug ?? "");
 	const { data: siteSettings } = useSettings();
 	const commentsEnabled = siteSettings?.comments_enabled ?? true;
@@ -128,13 +110,13 @@ function BlogDetailPage() {
 	}
 
 	// 正文渲染：content_html 为权威源（保颜色/对齐等 inline 样式），空则降级 content_md。
-	// ArticleContent 自动识别 HTML / Markdown 并正确渲染。
 	const body = post.content_html.trim() ? post.content_html : post.content_md;
 	const bodyIsHtml = /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span)\b[\s>]/i.test(
 		body,
 	);
 	const toc = bodyIsHtml ? extractToc(body) : extractMarkdownToc(body);
-	// 浏览量乐观显示 +1（本次访问）
+	const hasSidebarToc = toc.length > 1;
+	// 浏览量乐观显示 +1
 	const viewCount = post.view_count + 1;
 
 	return (
@@ -147,96 +129,81 @@ function BlogDetailPage() {
 				/>
 			</div>
 
-			<article className="container mx-auto px-6 py-16 xl:max-w-312">
-				<BackLink to="/blog" label="博客" className="mb-8" history />
-
-				{/* 文章头 */}
-				<header className="mb-12 max-w-4xl text-center">
-					{/* 标签 */}
-					{post.tags.length > 0 ? (
-						<div className="mb-4 flex flex-wrap justify-center gap-2">
-							{post.tags.map((tag) => (
-								<span
-									key={tag}
-									className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground"
-								>
-									#{tag}
-								</span>
-							))}
-						</div>
-					) : null}
-					{/* 系列书归属标注 */}
+			<article
+				className={cn(
+					"container mx-auto max-w-4xl px-6 py-16",
+					hasSidebarToc && "xl:max-w-308",
+				)}
+			>
+				<PostDetailHeader post={post} viewCount={viewCount}>
 					<SeriesBelonging context={chapterCtx ?? null} />
+				</PostDetailHeader>
 
-					<h1 className="mb-3 font-mono text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-						{post.title}
-					</h1>
-
-					{/* 转载来源（canonical_url 非空时显示，零设计成本的最小可见标记）。
-                        显示域名保持视觉简洁，链接 href 仍指完整 canonical_url（两全其美） */}
-					{post.canonical_url ? (
-						<a
-							href={post.canonical_url}
-							target="_blank"
-							rel="noopener noreferrer external"
-							className="mb-5 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
+				<div
+					className={cn(
+						"grid min-w-0 grid-cols-1",
+						hasSidebarToc && "xl:grid-cols-[minmax(0,1fr)_12.5rem] xl:gap-x-16",
+					)}
+				>
+					<div className="relative flex min-w-0 flex-col">
+						<main
+							ref={contentRef}
+							data-article-content
+							onClick={articleImages.bind.onClick}
+							onKeyDown={articleImages.bind.onKeyDown}
+							className="prose prose-neutral dark:prose-invert min-w-0 max-w-none flex-1 font-reading"
 						>
-							<ExternalLink className="size-3.5" />
-							转载自 · {sourceHostname(post.canonical_url)}
-						</a>
-					) : null}
+							<ArticleRichContent content={body} className={readingStyles.content} />
+							{post.show_signature && post.author ? (
+								<ArticleSignature name={post.author.username} />
+							) : null}
+						</main>
 
-					{/* 元信息 */}
-					<div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
-						{post.author ? (
-							<span className="inline-flex items-center gap-1.5">
-								<AvatarGroup
-									users={[post.author, ...(post.collaborators ?? [])]}
-									size="sm"
+						{chapterCtx ? (
+							<div className="relative mt-12 flex">
+								<div className="min-w-0 flex-1">
+									<ChapterNav context={chapterCtx} />
+								</div>
+							</div>
+						) : null}
+
+						{/* 批注角标按 summary 渲染，完整批注在点击后加载。 */}
+						{commentsEnabled && (
+							<Suspense fallback={null}>
+								<AnnotationLayer
+									contentRef={contentRef}
+									summary={summary ?? []}
+									postId={post.id}
+									isLoggedIn={isLoggedIn}
 								/>
-								<span>{post.author.username}</span>
-							</span>
-						) : null}
-						{post.published_at ? (
-							<span className="inline-flex items-center gap-1.5">
-								<Calendar className="size-3.5" />
-								<span>{formatDate(post.published_at, "long-date")}</span>
-								{post.edited_at ? <RevisionChip post={post} /> : null}
-							</span>
-						) : post.edited_at ? (
-							<span className="inline-flex items-center gap-1.5">
-								<Calendar className="size-3.5" />
-								<RevisionChip post={post} standalone />
-							</span>
-						) : null}
-						<span className="inline-flex items-center gap-1.5">
-							<Eye className="size-3.5" />
-							{viewCount} 次阅读
-						</span>
-					</div>
-				</header>
+							</Suspense>
+						)}
 
-				{/* 封面图 */}
-				{post.cover_image ? (
-					<div
-						className="mb-9 max-w-4xl overflow-hidden rounded-2xl"
-						style={{ viewTransitionName: "post-cover" }}
-					>
-						<CroppedImage
-							src={post.cover_image}
-							width={1400}
-							alt={post.title}
-							className="aspect-2/1 w-full"
-						/>
-					</div>
-				) : null}
+						{commentsEnabled && (
+							<Suspense fallback={null}>
+								<FloatingToolbar
+									contentRef={contentRef}
+									isLoggedIn={isLoggedIn}
+									postId={post.id}
+								/>
+							</Suspense>
+						)}
 
-				{/* 章内目录随正文和评论区保持粘性定位，到文章末尾让位给页脚。 */}
-				<div className="relative flex max-w-6xl flex-col">
-					{/* 章内目录：贴在正文右缘外 3rem，阅读轨静置，悬停后在同一位置展开目录。
-					    全书目录仍由右下角的 SeriesTocFab 承载。 */}
-					{toc.length > 1 ? (
-						<div className="absolute inset-y-0 left-[59rem] hidden w-64 xl:block">
+						{commentsEnabled && (
+							<div className="relative mt-16 flex">
+								<Suspense
+									fallback={
+										<div className="min-h-32 w-full animate-pulse rounded-lg bg-muted/40" />
+									}
+								>
+									<CommentSection postId={post.id} />
+								</Suspense>
+							</div>
+						)}
+					</div>
+
+					{hasSidebarToc ? (
+						<aside className="hidden min-w-0 xl:block">
 							<div className="sticky top-24">
 								<ArticleToc
 									items={toc}
@@ -244,71 +211,8 @@ function BlogDetailPage() {
 									isRailCollapsedAtRest
 								/>
 							</div>
-						</div>
+						</aside>
 					) : null}
-
-					{/*
-					 * 正文渲染：统一用 body（content_md 优先），
-					 * ArticleContent 自动识别 HTML / Markdown 并正确渲染。
-					 */}
-					<main
-						ref={contentRef}
-						data-article-content
-						onClick={articleImages.bind.onClick}
-						onKeyDown={articleImages.bind.onKeyDown}
-						className="prose prose-neutral dark:prose-invert min-w-0 max-w-4xl flex-1"
-					>
-						<ArticleRichContent content={body} />
-						{post.show_signature && post.author ? (
-							<ArticleSignature name={post.author.username} />
-						) : null}
-					</main>
-
-					{/* 上一章/下一章导航（挂书文章显示；与正文左对齐） */}
-					{chapterCtx ? (
-						<div className="relative mt-12 flex max-w-4xl">
-							<div className="min-w-0 max-w-4xl flex-1">
-								<ChapterNav context={chapterCtx} />
-							</div>
-						</div>
-					) : null}
-
-					{/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
-					{commentsEnabled && (
-						<Suspense fallback={null}>
-							<AnnotationLayer
-								contentRef={contentRef}
-								summary={summary ?? []}
-								postId={post?.id}
-								isLoggedIn={isLoggedIn}
-							/>
-						</Suspense>
-					)}
-
-					{/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
-					{post?.id && commentsEnabled && (
-						<Suspense fallback={null}>
-							<FloatingToolbar
-								contentRef={contentRef}
-								isLoggedIn={isLoggedIn}
-								postId={post.id}
-							/>
-						</Suspense>
-					)}
-
-					{/* 底部自由评论区：放在 article 内、正文容器之后，与正文左对齐
-                    （章内 TOC 与全书目录均不占布局列）。 */}
-					{post?.id && commentsEnabled && (
-						<div className="relative mt-16 flex max-w-4xl">
-							<Suspense
-								fallback={
-									<div className="min-h-32 w-full max-w-4xl animate-pulse rounded-lg bg-muted/40" />
-								}
-							>
-								<CommentSection postId={post.id} />
-							</Suspense>
-						</div>
-					)}
 				</div>
 			</article>
 
@@ -317,10 +221,9 @@ function BlogDetailPage() {
 			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
 			 */}
 			<FloatingBack to="/blog" label="返回博客" history />
-			{toc.length > 1 || seriesDetail ? (
+			{hasSidebarToc || seriesDetail ? (
 				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
-					{/* 章内目录：xl 及以上用侧边浮层，小屏用浮动按钮 */}
-					{toc.length > 1 ? (
+					{hasSidebarToc ? (
 						<div className="xl:hidden">
 							<MobileTocFab items={toc} contentRef={contentRef} />
 						</div>
@@ -336,102 +239,6 @@ function BlogDetailPage() {
 			)}
 		</>
 	);
-}
-
-export interface RevisionChipProps {
-	post: PostDetail;
-	/** 是否脱离发布日期独立渲染 */
-	standalone?: boolean;
-}
-
-/** 发布后修订提示：纯 hover 驱动轻量 Popover，结合纯净 1px TextUnderline 墨线动效。 */
-export function RevisionChip({ post, standalone }: RevisionChipProps) {
-	const [open, setOpen] = useState(false);
-	const closeTimer = useRef<number>(0);
-
-	const handleOpen = () => {
-		window.clearTimeout(closeTimer.current);
-		setOpen(true);
-	};
-
-	const handleClose = () => {
-		window.clearTimeout(closeTimer.current);
-		closeTimer.current = window.setTimeout(() => {
-			setOpen(false);
-		}, 120);
-	};
-
-	useEffect(() => () => window.clearTimeout(closeTimer.current), []);
-
-	const count = post.edited_version_count ?? 1;
-	const editedDate = post.edited_at ?? "";
-	if (!editedDate) return null;
-
-	const formattedEditDate = formatDate(editedDate, "long-date");
-
-	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<button
-					type="button"
-					className="inline-flex cursor-pointer items-center gap-1.5 select-none bg-transparent p-0 font-inherit text-inherit"
-					onMouseEnter={handleOpen}
-					onMouseLeave={handleClose}
-					onClick={(e) => e.preventDefault()}
-				>
-					{!standalone && <span className="text-muted-foreground/40">·</span>}
-					<TextUnderline
-						thickness={1}
-						color="var(--primary)"
-						className="text-xs text-muted-foreground/75 transition-colors hover:text-foreground"
-					>
-						{standalone ? `编辑于 ${formattedEditDate}` : "(已编辑)"}
-					</TextUnderline>
-				</button>
-			</PopoverTrigger>
-			<PopoverContent
-				side="top"
-				sideOffset={8}
-				align="center"
-				className="w-64 rounded-xl border border-border/80 bg-popover/95 p-3 text-popover-foreground shadow-[0_4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
-				onMouseEnter={handleOpen}
-				onMouseLeave={handleClose}
-			>
-				{/* 顶栏：简明小标题与修订次数 */}
-				<div className="flex items-center justify-between border-b border-border/50 pb-2">
-					<span className="font-sans text-xs font-medium text-foreground">修订记录</span>
-					<span className="font-mono text-[11px] text-muted-foreground">
-						共 {count} 次
-					</span>
-				</div>
-
-				{/* 时间事实两行：无冗余宣传模板 */}
-				<div className="mt-2.5 space-y-1.5 font-mono text-xs">
-					{post.published_at ? (
-						<div className="flex items-center justify-between text-muted-foreground">
-							<span>首次发布</span>
-							<span>{formatDate(post.published_at, "long-date")}</span>
-						</div>
-					) : null}
-					<div className="flex items-center justify-between text-foreground">
-						<span className="text-muted-foreground">最近编辑</span>
-						<span className="font-medium">{formattedEditDate}</span>
-					</div>
-				</div>
-			</PopoverContent>
-		</Popover>
-	);
-}
-
-// sourceHostname 从 canonical URL 提取 hostname 用于转载来源显示。
-// URL 非法或无 hostname 时回退到原始字符串（保证总是有可读内容）。
-function sourceHostname(canonicalUrl: string): string {
-	try {
-		const u = new URL(canonicalUrl);
-		return u.hostname || canonicalUrl;
-	} catch {
-		return canonicalUrl;
-	}
 }
 
 export const Route = createFileRoute("/blog/$slug")({

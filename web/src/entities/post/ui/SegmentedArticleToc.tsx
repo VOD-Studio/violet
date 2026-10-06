@@ -1,7 +1,7 @@
 import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
 import { useReducedMotion } from "motion/react";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
 import { CompactArticleToc } from "./CompactArticleToc";
@@ -85,10 +85,7 @@ export function SegmentedArticleToc({
 	const [railActive, setRailActive] = useState(true);
 
 	// 以正文标题的文档位置为锚，视口上下沿在相邻目录行间连续插值。
-	// railActive 进入依赖是刻意的：展开切换时重跑以重置 listTarget，
-	// 让目录滚回当前阅读位置；effect 体内无需直接读取该值。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 依赖为重跑触发器
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const body = contentRef?.current;
 		const list = listRef.current;
 		const indicator = indicatorRef.current;
@@ -112,6 +109,7 @@ export function SegmentedArticleToc({
 		let needsMeasure = false;
 		let listTarget: number | null = null;
 		let followFrame = 0;
+		let shouldSnapList = !railActive;
 		const followStep = () => {
 			followFrame = 0;
 			const scroll = scrollRef.current;
@@ -160,11 +158,11 @@ export function SegmentedArticleToc({
 				visibleCenter > scroll.clientHeight * 0.7
 			) {
 				listTarget = center - scroll.clientHeight / 2;
-				if (reduced) scroll.scrollTop = listTarget;
-				// 帧级 lerp 趋近：每帧向 target 收敛 16%，连续平滑且无动画重启；
-				// scrollTo(smooth) 在 target 逐帧变化时会反复重启，长距离点击表现为来回甩动。
+				if (shouldSnapList || reduced) scroll.scrollTop = listTarget;
+				// 目标持续更新，不反复重启浏览器的 smooth scroll。
 				else startFollow();
 			}
+			shouldSnapList = false;
 		};
 		measureAnchors();
 		update();
@@ -184,6 +182,7 @@ export function SegmentedArticleToc({
 		const onResize = () => schedule(true);
 		const resizeObserver = new ResizeObserver(onResize);
 		resizeObserver.observe(body);
+		resizeObserver.observe(list);
 		window.addEventListener("scroll", onScroll, { passive: true });
 		window.addEventListener("resize", onResize, { passive: true });
 		const listScroller = scrollRef.current;
@@ -220,7 +219,8 @@ export function SegmentedArticleToc({
 			ref={scrollRef}
 			className={cn(
 				"py-1",
-				isRailCollapsedAtRest && "scrollbar-none min-h-0 max-h-60 overflow-y-auto",
+				isRailCollapsedAtRest &&
+					"scrollbar-none min-h-0 max-h-[calc(55vh-4rem)] overflow-y-auto",
 			)}
 		>
 			<ul
@@ -247,7 +247,7 @@ export function SegmentedArticleToc({
 								aria-label={item.title}
 								aria-current={active ? "location" : undefined}
 								className={cn(
-									"block pr-2 leading-5 motion-safe:transition-colors",
+									"block pr-2 leading-5 wrap-break-word motion-safe:transition-colors",
 									isRailCollapsedAtRest ? "py-2 text-sm" : "py-1.5 text-xs",
 									item.depth === 0 ? "pl-3" : item.depth === 1 ? "pl-6" : "pl-9",
 									active

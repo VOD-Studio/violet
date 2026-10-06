@@ -1,6 +1,13 @@
 import { cn } from "cn";
-import { type FocusEvent, type ReactNode, type RefObject, useEffect, useState } from "react";
-
+import {
+	type CSSProperties,
+	type FocusEvent,
+	type ReactNode,
+	type RefObject,
+	useLayoutEffect,
+	useState,
+} from "react";
+import styles from "./ArticleTocFocusShell.module.css";
 import { ArticleTocRail } from "./ArticleTocRail";
 import { type ArticleTocRailItem, useArticleReadPercent } from "./article-toc-rail-motion";
 
@@ -22,9 +29,9 @@ export function ArticleTocFocusShell({
 	children,
 }: ArticleTocFocusShellProps) {
 	const [isHovered, setIsHovered] = useState(false);
-	const [hasFocusWithin, setHasFocusWithin] = useState(false);
-	const railActive = !isHovered && !hasFocusWithin;
-	useEffect(() => {
+	const [hasKeyboardFocusWithin, setHasKeyboardFocusWithin] = useState(false);
+	const railActive = !isHovered && !hasKeyboardFocusWithin;
+	useLayoutEffect(() => {
 		onRailActiveChange?.(railActive);
 	}, [onRailActiveChange, railActive]);
 	const activeIndex = Math.max(
@@ -36,23 +43,32 @@ export function ArticleTocFocusShell({
 
 	return (
 		<div
-			data-toc-focus={railActive ? "" : undefined}
+			data-toc-state={railActive ? "rail" : "directory"}
 			role="group"
 			aria-label="文章目录；悬停或聚焦以展开完整目录"
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
-			onFocusCapture={() => setHasFocusWithin(true)}
+			onPointerDownCapture={() => {
+				// 再次点击已聚焦的条目不会触发 focus，也需要解除键盘保持。
+				setHasKeyboardFocusWithin(false);
+			}}
+			onKeyDownCapture={() => setHasKeyboardFocusWithin(true)}
+			onFocusCapture={(event) =>
+				setHasKeyboardFocusWithin(event.target.matches(":focus-visible"))
+			}
 			onBlurCapture={(event: FocusEvent<HTMLDivElement>) => {
 				const nextTarget = event.relatedTarget;
 				if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
-					setHasFocusWithin(false);
+					setHasKeyboardFocusWithin(false);
 				}
 			}}
-			className="relative h-[55vh] max-h-[calc(100vh-8rem)] rounded-xl"
+			className={cn(styles.shell, "relative w-[calc(100%+1.5rem)] rounded-xl")}
+			style={{ "--toc-read-progress": readPercent / 100 } as CSSProperties}
 		>
 			<button
 				type="button"
 				aria-label="展开完整目录"
+				aria-expanded={!railActive}
 				className={cn(
 					"absolute inset-0 z-20 cursor-default rounded-xl bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4",
 					!railActive && "pointer-events-none",
@@ -62,10 +78,10 @@ export function ArticleTocFocusShell({
 				aria-hidden={railActive}
 				inert={railActive}
 				className={cn(
-					"absolute inset-x-0 top-0 flex max-h-full flex-col px-2 motion-safe:transition-[clip-path] motion-safe:duration-400 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+					styles.directory,
+					"absolute inset-x-0 top-0 flex max-h-full flex-col px-2",
 					railActive && "pointer-events-none",
 				)}
-				style={{ clipPath: railActive ? "inset(0 100% 0 0)" : "inset(0 0 0 0)" }}
 			>
 				{children(railActive)}
 				<div className="mt-4 shrink-0 pl-2">
@@ -78,10 +94,6 @@ export function ArticleTocFocusShell({
 						<path
 							d="M1 6 C21 0 41 0 61 6 S101 12 121 6 S161 0 181 6 S201 12 207 8"
 							fill="none"
-							pathLength={1}
-							strokeDasharray={1}
-							strokeDashoffset={railActive ? 1 : 0}
-							className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-500"
 							stroke="currentColor"
 							strokeWidth="1.5"
 						/>
@@ -113,7 +125,7 @@ export function ArticleTocFocusShell({
 								strokeWidth="2.5"
 								pathLength={100}
 								strokeDasharray={100}
-								strokeDashoffset={railActive ? 100 : 100 - readPercent}
+								strokeDashoffset={100 - readPercent}
 								strokeLinecap="round"
 								className="text-primary motion-safe:transition-[stroke-dashoffset] motion-safe:duration-300"
 							/>

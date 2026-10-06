@@ -4,7 +4,7 @@
  * 仅依赖项目内 Slugger + 正则，零重型依赖。刻意从 markdown barrel 中
  * 独立出来，避免 highlight.js / marked 等重依赖经此模块泄漏进文章详情页主 chunk。
  *
- * id 用项目统一 Slugger 生成，与 markdownToHtml / MarkdownContent 的
+ * id 用项目统一 Slugger 生成，与 MarkdownContent 的
  * rehypeSlugHeadings 渲染出的标题 id 一致。
  */
 import { Slugger } from "@shared/lib/slug";
