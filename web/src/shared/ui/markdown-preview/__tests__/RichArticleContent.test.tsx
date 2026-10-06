@@ -98,6 +98,26 @@ describe("ArticleContent rich nodes", () => {
 		);
 	});
 
+	it("零统计可打开 GitHub 原生操作，自定义项目链接不覆盖操作目标", async () => {
+		render(
+			<ArticleContent
+				content={fence("github", {
+					repo: "VOD-Studio/violet",
+					href: "https://example.com/project",
+					stars: 0,
+					forks: 0,
+				})}
+			/>,
+		);
+
+		const project = await screen.findByText("violet");
+		const star = screen.getByRole("link", { name: /0 个星标/u });
+		const fork = screen.getByRole("link", { name: /0 个 Fork/u });
+		expect(project.closest("a")?.getAttribute("href")).toBe("https://example.com/project");
+		expect(star.getAttribute("href")).toBe("https://github.com/VOD-Studio/violet");
+		expect(fork.getAttribute("href")).toBe("https://github.com/VOD-Studio/violet/fork");
+	});
+
 	it("拒绝危险链接并保留可诊断降级", async () => {
 		const html = fence("link-preview", {
 			url: "javascript:alert(1)",

@@ -1,77 +1,113 @@
 .reference {
 	box-sizing: border-box;
-	display: grid;
-	gap: 0.75rem;
 	width: 100%;
-	max-width: 32rem;
+	max-width: 34.375rem;
 	min-width: 0;
-	margin: 1.5rem 0;
-	border: 1px solid var(--border);
+	margin: 1.5rem auto;
+	border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
 	border-radius: 0.75rem;
-	padding: 1rem;
+	padding: 1rem 1.25rem;
 	background: var(--card);
-	color: var(--foreground);
-	font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
-	font-size: 0.875rem;
+	color: var(--card-foreground);
+	font-family: var(--font-reading, ui-sans-serif, system-ui, sans-serif);
+	font-size: 0.9375rem;
 	font-weight: 400;
-	line-height: 1.5;
+	line-height: 1.55;
 	text-align: start;
-	text-decoration: none;
 	overflow-wrap: anywhere;
+}
+
+.reference a {
+	color: inherit;
+	text-decoration: none;
+	text-underline-offset: 3px;
 	transition:
-		border-color 160ms ease-out,
-		background-color 160ms ease-out;
+		color 140ms ease-out,
+		background-color 140ms ease-out,
+		border-color 140ms ease-out;
 }
 
-.reference:is(:hover, :focus-visible) {
-	border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
-	background: color-mix(in oklab, var(--muted) 24%, var(--card));
-}
-
-.reference:focus-visible {
+.reference a:focus-visible {
 	outline: 2px solid var(--ring);
 	outline-offset: 3px;
 }
 
 .header {
 	display: grid;
-	grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
-	align-items: start;
+	grid-template-columns: 2.5rem minmax(0, 1fr) 1.5rem;
+	align-items: center;
 	gap: 0.625rem;
 }
 
-.mark {
-	width: 1.375rem;
-	height: 1.375rem;
-	margin-top: 0.0625rem;
+.avatar {
+	position: relative;
+	display: grid;
+	width: 2.5rem;
+	height: 2.5rem;
+	place-items: center;
+	overflow: hidden;
+	border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+	border-radius: 0.5rem;
+	background: var(--muted);
+}
+
+.avatarFallback {
+	width: 1.5rem;
+	height: 1.5rem;
+	color: var(--muted-foreground);
+}
+
+.avatar img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+}
+
+.avatar img[hidden] {
+	display: none;
 }
 
 .repo {
+	display: grid;
+	gap: 0.125rem;
 	min-width: 0;
-	font-size: 1rem;
-	line-height: 1.5;
+	justify-items: start;
+	line-height: 1.35;
 }
 
-.owner,
-.slash {
+.reference .owner {
 	color: var(--muted-foreground);
+	font-size: 0.8125rem;
 }
 
 .name {
-	color: var(--foreground);
+	font-size: 1rem;
 	font-weight: 650;
 }
 
-.arrow {
-	width: 1rem;
-	height: 1rem;
-	margin-top: 0.25rem;
-	color: var(--muted-foreground);
+.repo a:hover {
+	text-decoration: underline;
+}
+
+.brand {
+	display: grid;
+	width: 1.5rem;
+	height: 1.5rem;
+	place-items: center;
+}
+
+.brand svg {
+	width: 1.375rem;
+	height: 1.375rem;
 }
 
 .description {
-	color: var(--muted-foreground);
-	line-height: 1.65;
+	margin: 1rem 0 0;
+	font-size: 1rem;
+	line-height: 1.6;
 	text-wrap: pretty;
 }
 
@@ -79,27 +115,66 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 0.5rem 1rem;
+	gap: 0.5rem 1.25rem;
+	margin-top: 1rem;
 	color: var(--muted-foreground);
-	font-size: 0.75rem;
+	font-size: 0.8125rem;
 	line-height: 1.5;
 }
 
 .language {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
 	min-width: 0;
+	margin-right: auto;
+}
+
+.language::before {
+	width: 0.625rem;
+	height: 0.625rem;
+	border-radius: 50%;
+	background: var(--language-color, currentColor);
+	content: "";
+	flex: none;
+}
+
+.language[data-language="TypeScript"] {
+	--language-color: #3178c6;
+}
+
+.language[data-language="JavaScript"] {
+	--language-color: #f1e05a;
+}
+
+.language[data-language="Go"] {
+	--language-color: #00add8;
 }
 
 .metric {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.3rem;
+	gap: 0.375rem;
 	white-space: nowrap;
 	font-variant-numeric: tabular-nums;
 }
 
+.reference .metric {
+	color: var(--muted-foreground);
+}
+
+.reference .metric:hover {
+	color: var(--foreground);
+}
+
+.count {
+	color: var(--foreground);
+	font-weight: 550;
+}
+
 .metric svg {
-	width: 0.875rem;
-	height: 0.875rem;
+	width: 1rem;
+	height: 1rem;
 	flex: none;
 }
 
@@ -114,8 +189,14 @@
 	border: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 30rem) {
 	.reference {
+		padding: 1rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reference a {
 		transition: none;
 	}
 }

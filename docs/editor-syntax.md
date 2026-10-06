@@ -792,7 +792,8 @@ xychart-beta
 
 - `dialogue.profile` 取值 `active` 时复用当前公开人设；也可用 `speaker` 和 `avatar` 写独立角色。
 - `side` 只接受 `left` 或 `right`。
-- `github` 使用项目专用引用：仓库所有者与名称、简介、语言和统计分别展示，不复用通用链接预览。它是作者保存的快照，不在阅读时请求 GitHub 元数据；`description`、`language`、`stars`、`forks` 可省略，统计值 `0` 正常展示。`href` 可覆盖默认 GitHub 地址。
+- `github` 使用项目专用引用：仓库名与所有者组成身份区，头像由 GitHub 提供；简介、语言与统计沿阅读顺序展示，不复用通用链接预览。它是作者保存的项目快照，不在阅读时请求 GitHub 元数据；`description`、`language`、`stars`、`forks` 可省略，统计值 `0` 正常展示。仓库名和右上角 GitHub 标识可打开项目，`href` 可覆盖默认地址。
+- 点击 Star 统计进入 GitHub 仓库页操作，点击 Fork 统计打开 GitHub 的创建 Fork 页面；登录与确认由 GitHub 完成，本站不读取读者的 GitHub token，不将保存的统计快照伪装成实时结果。
 
 #### GitHub 实际展示案例
 
@@ -804,16 +805,10 @@ xychart-beta
 {"repo":"VOD-Studio/violet"}
 ```
 
-**完整元数据：简介、语言、星标、派生数与显式链接。**
+**完整引用：简介、语言、星标、派生数与显式链接；派生数为 0 时仍展示。**
 
 ```github
 {"repo":"VOD-Studio/violet","description":"全栈博客平台 · Go 后端 + React 前端，内置 MCP server 供 AI agent 读写文章","language":"TypeScript","stars":3,"forks":0,"href":"https://github.com/VOD-Studio/violet"}
-```
-
-**零统计边界：真实仓库的派生数为 0，仍应显示。**
-
-```github
-{"repo":"VOD-Studio/violet","description":"全栈博客平台 · Go 后端 + React 前端，内置 MCP server 供 AI agent 读写文章","language":"TypeScript","stars":3,"forks":0}
 ```
 
 ### 10.3 链接、X 推文与社交链接组
