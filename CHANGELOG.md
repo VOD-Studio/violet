@@ -7,6 +7,53 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.56](https://github.com/VOD-Studio/violet/compare/v2.8.55...v2.8.56) (2026-10-06)
+
+
+### 新增
+
+* **article-embeds:** 接入原生推文引用 ([9990c03](https://github.com/VOD-Studio/violet/commit/9990c03141be0e34ab40c66b5f7486a361f0c21c))
+* **article-embeds:** 添加 GitHub 项目原生操作入口 ([fa0fe55](https://github.com/VOD-Studio/violet/commit/fa0fe5510c462acf30c15d35da84bc59cab2b4d9))
+* **article-embeds:** 重建 GitHub 项目引用 ([e6010fb](https://github.com/VOD-Studio/violet/commit/e6010fb5357f8cf95dbb2f8fe93e15428555f7fd))
+* **diagram:** 启用 Mermaid 原生手绘风格 ([aa5fffb](https://github.com/VOD-Studio/violet/commit/aa5fffbc8a516e473e3ce865fd4ff2bd258dc95c))
+* **diagram:** 统一全图型手绘渲染 ([2515203](https://github.com/VOD-Studio/violet/commit/251520385ad4936cf8715e700251f5b08cf54b3a))
+* **posts:** 完善文章内容渲染与阅读体验 ([90a29d6](https://github.com/VOD-Studio/violet/commit/90a29d67c92c6a2edd4ec422e768d0aa3fac6cc8))
+* **posts:** 重设计阅读轨与目录切换动画 ([027de5e](https://github.com/VOD-Studio/violet/commit/027de5e2056f5d46560762d96b2660a42e746f9f))
+* **react-tweet:** 使用卡片骨架展示加载状态 ([2b63e03](https://github.com/VOD-Studio/violet/commit/2b63e032acc3ca17114de47d2ea18687d02272a5))
+* **react-tweet:** 提供来源无关的组合卡片 ([fb9e829](https://github.com/VOD-Studio/violet/commit/fb9e8293742dc204e0687a1f196bc5adddb82adf))
+* **react-tweet:** 提供独立推文数据接口 ([1759909](https://github.com/VOD-Studio/violet/commit/1759909956d6b86f78d3b4aace4ac52f8725b1cb))
+* **react-tweet:** 支持异步推文加载 ([b457ffa](https://github.com/VOD-Studio/violet/commit/b457ffa8eaec33798b01e3a5b79480c860be3b9b))
+* **react-tweet:** 支持按行折叠正文 ([b6f4a70](https://github.com/VOD-Studio/violet/commit/b6f4a70fae0db210be3993c32d2f1803d2dbe585))
+* **react-tweet:** 渲染原生推文快照 ([9f61b5a](https://github.com/VOD-Studio/violet/commit/9f61b5a7d8ce6b35c4d01a133619ae1ab965439d))
+* **react-tweet:** 补充官方作者元数据 ([6ccac62](https://github.com/VOD-Studio/violet/commit/6ccac62dbe94d561b5dc1f805fea31282c14a120))
+
+
+### 修复
+
+* **diagram:** 修复甘特图日期轴挤压 ([71817eb](https://github.com/VOD-Studio/violet/commit/71817eb96c0ba2a3f44baf0208660fa58b8fc8c7))
+* **editor:** 修复 Markdown 编辑与阅读往返 ([a508739](https://github.com/VOD-Studio/violet/commit/a50873980e603cf035ed6fedb5c2feef9a71cd8f))
+* **markdown:** 保留解析上下文与语义载体 ([93ee926](https://github.com/VOD-Studio/violet/commit/93ee926d8dabe43ff3cc8f19c61a65c77548162c))
+* **markdown:** 替换废弃的围栏信息读取方法 ([44f074d](https://github.com/VOD-Studio/violet/commit/44f074d6fdbbab1651493823c7362f2050566779))
+* **posts:** 修复鼠标点击后目录常驻 ([41355f2](https://github.com/VOD-Studio/violet/commit/41355f2c65f15cbdc34f5cb17acd23181c0caf1a))
+* **posts:** 调整文章页阅读排版 ([cebbd89](https://github.com/VOD-Studio/violet/commit/cebbd89d806ef5ef4c7d735562729f14317d600d))
+* **post:** 稳定阅读轨与目录切换 ([ec6af0f](https://github.com/VOD-Studio/violet/commit/ec6af0f0fed3eabc399a38d86717de3f9a2e0067))
+* **react-tweet:** 优先处理改名作者的私密状态 ([b033cb3](https://github.com/VOD-Studio/violet/commit/b033cb309a0d4e20f3b30ff2ec9671e320338b29))
+* **react-tweet:** 保留移动端紧凑间距 ([86ba34f](https://github.com/VOD-Studio/violet/commit/86ba34f7bc802451b015228b24e8861bd6131fcc))
+* **react-tweet:** 保留请求取消的错误语义 ([58cfa4d](https://github.com/VOD-Studio/violet/commit/58cfa4d174cc9821d46f244f1b109821a4f95a7f))
+* **react-tweet:** 映射来源企业认证类型 ([33d3209](https://github.com/VOD-Studio/violet/commit/33d320965d69c1258655009b21860272d066ad50))
+* **react-tweet:** 格式化高精度发布时间 ([c7a9195](https://github.com/VOD-Studio/violet/commit/c7a919592de020e39d9f68699f66953e3376414d))
+* **react-tweet:** 让卡片宽度跟随父容器 ([759d952](https://github.com/VOD-Studio/violet/commit/759d95282acf78b1d573477a3841366ad033369e))
+* **react-tweet:** 调整推文链接悬停反馈 ([c901502](https://github.com/VOD-Studio/violet/commit/c9015029583efe88e534c7081062a978c9a5c5bb))
+
+
+### 重构
+
+* **article-embeds:** 统一嵌入配置类型映射 ([0fe51de](https://github.com/VOD-Studio/violet/commit/0fe51ded7e2619a2f9eec390f5557cb2365373f1))
+* **react-tweet:** 使用独立 SVG 图标资源 ([a305691](https://github.com/VOD-Studio/violet/commit/a3056910f7006055491ba86b78480dd638c5d2ee))
+* **react-tweet:** 使用真实源码扩展名 ([e63d095](https://github.com/VOD-Studio/violet/commit/e63d09504261ab6d8c7f174760c501029275d178))
+* **tweets:** 使用公共推文卡片 ([12c0ede](https://github.com/VOD-Studio/violet/commit/12c0ede9ad331fbdf32bebe527ca4aa93dca0167))
+* **tweet:** 使用公共组件渲染外部推文 ([5234a12](https://github.com/VOD-Studio/violet/commit/5234a128b1129132660665f67bf3b80f02e77020))
+
 ## [2.8.55](https://github.com/VOD-Studio/violet/compare/v2.8.54...v2.8.55) (2026-10-02)
 
 
