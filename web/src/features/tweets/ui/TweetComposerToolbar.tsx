@@ -1,8 +1,11 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
-import { ImagePlus, Smile } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { ImagePlus, Link2, Send, Smile } from "lucide-react";
 import { useRef } from "react";
+import type { ExternalTweetPreviewState } from "../hooks/useExternalTweetPreview";
 import { MAX_TWEET_IMAGES, MAX_TWEET_LENGTH } from "../model/types";
+import { ExternalTweetPreviewPanel } from "./ExternalTweetPreviewPanel";
 import styles from "./TweetComposer.module.css";
 
 /** 发布器的媒体选择、字数与提交状态。 */
@@ -13,6 +16,11 @@ export interface TweetComposerToolbarProps {
 		onFiles: (files: FileList | File[] | null) => Promise<void>;
 	};
 	publishing: { pending: boolean; canSubmit: boolean };
+	external?: {
+		active: boolean;
+		state: ExternalTweetPreviewState;
+		onToggle: () => void;
+	};
 	charCount: number;
 	countId: string;
 	onEmojiSelect: (emoji: Emoji) => void;
@@ -21,6 +29,7 @@ export interface TweetComposerToolbarProps {
 export function TweetComposerToolbar({
 	images,
 	publishing,
+	external,
 	charCount,
 	countId,
 	onEmojiSelect,
@@ -28,7 +37,7 @@ export function TweetComposerToolbar({
 	const inputRef = useRef<HTMLInputElement>(null);
 	return (
 		<>
-			<div className="flex flex-wrap items-center justify-between gap-2">
+			<div className={styles.toolbar}>
 				<div className="flex items-center gap-1">
 					<input
 						ref={inputRef}
@@ -61,6 +70,45 @@ export function TweetComposerToolbar({
 							</span>
 						)}
 					</button>
+					{external && (
+						<Popover
+							open={external.active && !external.state.preview}
+							onOpenChange={(open) => {
+								if (open !== external.active) external.onToggle();
+							}}
+						>
+							<PopoverTrigger asChild>
+								<button
+									type="button"
+									className={styles.action}
+									aria-label={external.active ? "取消 X 转发" : "转发 X 推文"}
+									aria-pressed={external.active}
+									title={external.state.preview ? "移除 X 原文" : "转发 X 推文"}
+									disabled={publishing.pending}
+									onClick={(event) => {
+										if (external.state.preview) {
+											event.preventDefault();
+											external.onToggle();
+										}
+									}}
+								>
+									<Link2 className="size-4" />
+								</button>
+							</PopoverTrigger>
+							<PopoverContent
+								align="start"
+								sideOffset={6}
+								collisionPadding={16}
+								className={styles.sourcePopover}
+								aria-label="添加 X 原文"
+							>
+								<ExternalTweetPreviewPanel
+									state={external.state}
+									disabled={publishing.pending}
+								/>
+							</PopoverContent>
+						</Popover>
+					)}
 					<EmojiPicker
 						onSelect={onEmojiSelect}
 						align="start"
@@ -77,28 +125,28 @@ export function TweetComposerToolbar({
 							</button>
 						}
 					/>
-				</div>
-				<div className="flex items-center gap-3">
 					<span
 						id={countId}
-						className={`text-xs tabular-nums ${charCount > MAX_TWEET_LENGTH ? "font-medium text-destructive" : "text-muted-foreground"}`}
+						className={`${styles.counter} ${charCount > MAX_TWEET_LENGTH ? "text-destructive" : "text-muted-foreground"}`}
 					>
-						{charCount}/{MAX_TWEET_LENGTH}
+						{MAX_TWEET_LENGTH - charCount}
+						<span className="sr-only"> 字剩余</span>
 					</span>
-					<button
-						type="submit"
-						className={`${styles.action} ${styles.submit}`}
-						disabled={!publishing.canSubmit}
-						aria-busy={publishing.pending}
-					>
-						<span className={styles.submitLabel}>
-							{publishing.pending ? "发布中…" : "发布"}
-						</span>
-					</button>
 				</div>
+				<button
+					type="submit"
+					className={`${styles.action} ${styles.submit}`}
+					disabled={!publishing.canSubmit}
+					aria-busy={publishing.pending}
+				>
+					<span className={styles.submitLabel}>
+						<Send className="size-3.5" />
+						{publishing.pending ? "发布中…" : "发布"}
+					</span>
+				</button>
 			</div>
 			{images.uploading && (
-				<p role="status" className="text-xs text-muted-foreground">
+				<p role="status" className={`${styles.status} text-xs text-muted-foreground`}>
 					图片上传中，完成后即可发布。
 				</p>
 			)}

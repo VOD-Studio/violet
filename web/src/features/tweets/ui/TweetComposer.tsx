@@ -22,7 +22,7 @@ export interface TweetComposerProps {
 	onCancelQuote?: () => void;
 }
 
-/** 普通发文和 X 转发共用正文与附图草稿，切换模式仅清除来源凭证。 */
+/** 添加或移除 X 原文保留正文与附图，链接浮层仅管理来源凭证。 */
 export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetComposerProps = {}) {
 	const me = useMe();
 	const [content, setContent] = useState("");
@@ -96,109 +96,88 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 				quotedTweet ? `${styles.composer} ${styles.quotedComposer}` : styles.composer
 			}
 		>
-			<div className="mb-2 flex items-center justify-between gap-3">
-				{me.data && (
-					<div className="flex min-w-0 items-center gap-3">
-						<img
-							src={avatarUrl(me.data.avatar_url, me.data.username)}
-							alt=""
-							className="size-10 shrink-0 rounded-full object-cover"
-						/>
-						<span className="truncate text-sm font-semibold">{me.data.username}</span>
-					</div>
-				)}
-				{quotedTweet ? (
-					<span className="font-medium">引用推文</span>
-				) : (
-					<div
-						className="flex shrink-0 items-center gap-1"
-						role="group"
-						aria-label="发布模式"
-					>
-						<button
-							type="button"
-							className={styles.action}
-							aria-pressed={!externalMode}
-							disabled={submission.isPending}
-							onClick={() => changeMode("write")}
-						>
-							写推文
-						</button>
-						<button
-							type="button"
-							className={styles.action}
-							aria-label="转发 X 推文"
-							aria-pressed={externalMode}
-							disabled={submission.isPending}
-							onClick={() => changeMode("external")}
-						>
-							转发 X
-						</button>
-					</div>
-				)}
+			{me.data && (
+				<img
+					src={avatarUrl(me.data.avatar_url, me.data.username)}
+					alt={me.data.username}
+					className={styles.avatar}
+				/>
+			)}
+			<div className={styles.editor}>
+				<Label htmlFor={contentId} className="sr-only">
+					推文正文
+				</Label>
+				<Textarea
+					id={contentId}
+					ref={textareaRef}
+					value={content}
+					onChange={(event) => setContent(event.target.value)}
+					onPaste={handlePaste}
+					placeholder="有什么新鲜事？"
+					disabled={submission.isPending}
+					rows={2}
+					aria-invalid={overLimit || !!submission.error}
+					aria-describedby={`${countId}${overLimit || submission.error ? ` ${errorId}` : ""}`}
+					className={styles.field}
+					onKeyDown={(event) => {
+						if (
+							event.key === "Enter" &&
+							(event.metaKey || event.ctrlKey) &&
+							!event.nativeEvent.isComposing
+						) {
+							event.preventDefault();
+							submission.submit();
+						}
+					}}
+				/>
 			</div>
-			<div className="space-y-3">
-				{externalMode && (
-					<ExternalTweetPreviewPanel
-						state={external}
+			{externalMode && external.preview && (
+				<div className={styles.references}>
+					<ExternalTweetPreviewPanel state={external} disabled={submission.isPending} />
+				</div>
+			)}
+			{(media.images.length > 0 || quotedTweet) && (
+				<div className={styles.references}>
+					<TweetComposerAttachments
+						images={media.images}
+						quotedTweet={quotedTweet}
 						disabled={submission.isPending}
-						onCancel={() => changeMode("write")}
-					/>
-				)}
-				<div className="space-y-2">
-					<Label htmlFor={contentId} className="sr-only">
-						{externalMode ? "转发感想（可选）" : "推文正文"}
-					</Label>
-					<Textarea
-						id={contentId}
-						ref={textareaRef}
-						value={content}
-						onChange={(event) => setContent(event.target.value)}
-						onPaste={handlePaste}
-						placeholder={externalMode ? "添加你的感想…" : "有什么新鲜事？"}
-						disabled={submission.isPending}
-						rows={2}
-						aria-invalid={overLimit || !!submission.error}
-						aria-describedby={`${countId}${overLimit || submission.error ? ` ${errorId}` : ""}`}
-						className={content ? `${styles.field} ${styles.filled}` : styles.field}
-						onKeyDown={(event) => {
-							if (
-								event.key === "Enter" &&
-								(event.metaKey || event.ctrlKey) &&
-								!event.nativeEvent.isComposing
-							) {
-								event.preventDefault();
-								submission.submit();
-							}
-						}}
+						onRemoveImage={media.removeImage}
+						onCancelQuote={onCancelQuote}
 					/>
 				</div>
-				<TweetComposerAttachments
-					images={media.images}
-					quotedTweet={quotedTweet}
-					disabled={submission.isPending}
-					onRemoveImage={media.removeImage}
-					onCancelQuote={onCancelQuote}
-				/>
-				{(overLimit || submission.error) && (
-					<p id={errorId} role="alert" className="text-sm text-destructive">
-						{overLimit
-							? `正文不能超过 ${MAX_TWEET_LENGTH} 字，请精简后发布。`
-							: submission.error}
-					</p>
-				)}
-				<TweetComposerToolbar
-					images={{
-						count: media.images.length,
-						uploading: media.uploading,
-						onFiles: handleFiles,
-					}}
-					publishing={{ pending: submission.isPending, canSubmit: submission.canSubmit }}
-					charCount={charCount}
-					countId={countId}
-					onEmojiSelect={handleEmojiSelect}
-				/>
-			</div>
+			)}
+			{(overLimit || submission.error) && (
+				<p
+					id={errorId}
+					role="alert"
+					className={`${styles.status} text-sm text-destructive`}
+				>
+					{overLimit
+						? `正文不能超过 ${MAX_TWEET_LENGTH} 字，请精简后发布。`
+						: submission.error}
+				</p>
+			)}
+			<TweetComposerToolbar
+				images={{
+					count: media.images.length,
+					uploading: media.uploading,
+					onFiles: handleFiles,
+				}}
+				publishing={{ pending: submission.isPending, canSubmit: submission.canSubmit }}
+				external={
+					quotedTweet
+						? undefined
+						: {
+								active: externalMode,
+								state: external,
+								onToggle: () => changeMode(externalMode ? "write" : "external"),
+							}
+				}
+				charCount={charCount}
+				countId={countId}
+				onEmojiSelect={handleEmojiSelect}
+			/>
 		</form>
 	);
 }

@@ -1,11 +1,3 @@
-/**
- * TweetComposer 组件测试
- *
- * 验证：
- * - 渲染文本输入框、图片上传按钮、表情选择按钮、剩余字数
- * - 表情选择后插入 [name] 占位符至光标处并更新内容
- * - 纯文本/附图/引用的提交逻辑
- */
 import type { Emoji } from "@entities/emoji/model/types";
 import { ApiError } from "@shared/api/error";
 import {
@@ -293,7 +285,7 @@ describe("TweetComposer", () => {
 		expect(uploadFileMock).toHaveBeenCalledTimes(2);
 	});
 
-	it("预览失败和取消均保留感想，等待预览时不发布普通推文", async () => {
+	it("预览失败可以关闭链接浮层，正文仍可继续编辑", async () => {
 		previewPostMock.mockRejectedValueOnce(
 			new ApiError({ error: "EXTERNAL_MEDIA_FAILED", message: "图片准备失败", status: 400 }),
 		);
@@ -302,15 +294,25 @@ describe("TweetComposer", () => {
 		fireEvent.change(textarea, { target: { value: "保留我的感想" } });
 		await openExternalPreview();
 		expect(screen.getByRole("alert").textContent).toContain("图片准备失败");
-		expect(textarea.value).toBe("保留我的感想");
+		expect(
+			(screen.getByRole("textbox", { name: "推文正文" }) as HTMLTextAreaElement).value,
+		).toBe("保留我的感想");
 		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
 			true,
 		);
-		fireEvent.click(screen.getByRole("button", { name: "取消 X 转发" }));
-		expect(textarea.value).toBe("保留我的感想");
-		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
-			false,
+		fireEvent.keyDown(screen.getByRole("textbox", { name: "X 推文链接" }), {
+			key: "Escape",
+		});
+		await waitFor(() =>
+			expect(screen.queryByRole("textbox", { name: "X 推文链接" })).toBeNull(),
 		);
+		fireEvent.change(textarea, { target: { value: "继续编辑感想" } });
+		fireEvent.click(screen.getByRole("button", { name: "发布" }));
+		expect(mutateMock.mock.calls[0][0]).toEqual({
+			content: "继续编辑感想",
+			images: [],
+			quote_of: undefined,
+		});
 	});
 
 	it("纯转发只提交凭证，重复点击和网络重试沿用同一请求 ID", async () => {
@@ -357,16 +359,19 @@ describe("TweetComposer", () => {
 			),
 		);
 		expect(screen.getByRole("alert").textContent).toBe("请重新预览");
-		expect(textarea.value).toBe("感想草稿");
 		expect(
 			(screen.getByRole("textbox", { name: "X 推文链接" }) as HTMLInputElement).value,
 		).toBe("https://x.com/jack/status/20");
 		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
 			true,
 		);
+		await act(async () => fireEvent.click(screen.getByRole("button", { name: "预览原文" })));
+		expect(
+			(screen.getByRole("textbox", { name: "推文正文" }) as HTMLTextAreaElement).value,
+		).toBe("感想草稿");
 	});
 
-	it("切换模式和取消保留正文与已上传媒体，普通发布不夹带旧 X 凭证", async () => {
+	it("添加与移除原文保留正文和已上传媒体，普通发布不夹带旧 X 凭证", async () => {
 		previewPostMock.mockResolvedValue(previewFixture());
 		render(<TweetComposer />);
 		const textarea = screen.getByRole("textbox", { name: "推文正文" });
@@ -380,7 +385,7 @@ describe("TweetComposer", () => {
 			}),
 		);
 		await openExternalPreview();
-		fireEvent.click(screen.getByRole("button", { name: "写推文" }));
+		fireEvent.click(screen.getByRole("button", { name: "取消 X 转发" }));
 		expect(
 			(screen.getByRole("textbox", { name: "推文正文" }) as HTMLTextAreaElement).value,
 		).toBe("我的草稿");
