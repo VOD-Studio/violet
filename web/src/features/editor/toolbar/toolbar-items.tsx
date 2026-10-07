@@ -13,6 +13,7 @@ import {
 	AlignLeft,
 	AlignRight,
 	Bold,
+	ChevronsUpDown,
 	Code,
 	Code2,
 	Heading1,
@@ -29,6 +30,8 @@ import {
 	Quote,
 	Redo2,
 	Strikethrough,
+	Subscript,
+	Superscript,
 	Table as TableIcon,
 	Underline,
 	Undo2,
@@ -106,6 +109,22 @@ export const formatItems: ToolbarItem[] = [
 		run: (e) => e.chain().focus().toggleStrike().run(),
 		isActive: (e) => e.isActive("strike"),
 		canRun: (e) => e.can().toggleStrike(),
+	},
+	{
+		id: "subscript",
+		icon: Subscript,
+		title: "下标 (⌘,)",
+		run: (e) => e.chain().focus().toggleSubscript().run(),
+		isActive: (e) => e.isActive("subscript"),
+		canRun: (e) => e.isActive("superscript") || e.can().toggleSubscript(),
+	},
+	{
+		id: "superscript",
+		icon: Superscript,
+		title: "上标 (⌘.)",
+		run: (e) => e.chain().focus().toggleSuperscript().run(),
+		isActive: (e) => e.isActive("superscript"),
+		canRun: (e) => e.isActive("subscript") || e.can().toggleSuperscript(),
 	},
 	{
 		id: "code",
@@ -230,6 +249,17 @@ export const blockItems: ToolbarItem[] = [
 		run: (e) => e.chain().focus().toggleBlockquote().run(),
 		isActive: (e) => e.isActive("blockquote"),
 		canRun: (e) => e.can().toggleBlockquote(),
+	},
+	{
+		id: "details",
+		icon: ChevronsUpDown,
+		title: "折叠块 / 解除折叠",
+		run: (e) =>
+			e.isActive("details")
+				? e.chain().focus().unsetDetails().run()
+				: e.chain().focus().setDetails().updateAttributes("details", { open: true }).run(),
+		isActive: (e) => e.isActive("details"),
+		canRun: (e) => (e.isActive("details") ? e.can().unsetDetails() : e.can().setDetails()),
 	},
 	{
 		id: "codeBlock",

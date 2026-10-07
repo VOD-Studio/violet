@@ -7,6 +7,7 @@
 import type { Editor } from "@tiptap/react";
 import type { LucideIcon } from "lucide-react";
 import {
+	ChevronsUpDown,
 	Code2,
 	Heading1,
 	Heading2,
@@ -138,6 +139,16 @@ export function buildSlashItems(
 			icon: Quote,
 			group: "块",
 			command: (e) => e.chain().focus().toggleBlockquote().run(),
+		},
+		{
+			id: "details",
+			title: "折叠块",
+			description: "插入可编辑摘要和正文的折叠块；按钮控制默认展开状态",
+			keywords: ["details", "summary", "collapse", "折叠", "展开"],
+			icon: ChevronsUpDown,
+			group: "块",
+			command: (e) =>
+				e.chain().focus().setDetails().updateAttributes("details", { open: true }).run(),
 		},
 		{
 			id: "codeBlock",
