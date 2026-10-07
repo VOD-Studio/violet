@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { blockItems, formatItems } from "../toolbar/toolbar-items";
+import { ALERT_TYPES } from "./alert";
 import { buildEditorExtensions } from "./index";
 
 const editors: Editor[] = [];
@@ -120,6 +121,70 @@ describe("native subscript and superscript", () => {
 			"html",
 		);
 		expect(roundtrip(roundtrip(first)).getJSON()).toEqual(first.getJSON());
+	});
+});
+
+describe("GitHub alerts", () => {
+	it.each([" ", "  ", "\t"])("accepts trailing marker whitespace %j", (whitespace) => {
+		const first = editor(`> [!NOTE]${whitespace}\n> Body`);
+		expect(first.getJSON().content?.[0]).toMatchObject({
+			type: "alert",
+			attrs: { alertType: "NOTE" },
+		});
+		expect(first.state.doc.firstChild?.textContent).toBe("Body");
+		expect(roundtrip(first).getJSON()).toEqual(first.getJSON());
+	});
+
+	it.each(ALERT_TYPES)("roundtrips %s with paragraphs, lists and fenced code", (type) => {
+		const first = editor(
+			`> [!${type}]\n> First **bold** H<sub>2</sub>O\n>\n> Second paragraph.\n>\n> - One\n> - Two\n>\n> ~~~text\n> [!TIP] is code\n> ~~~`,
+		);
+		expect(first.getJSON().content?.[0]).toMatchObject({
+			type: "alert",
+			attrs: { alertType: type },
+		});
+		expect(first.getHTML()).toContain(`data-alert-type="${type}"`);
+		expect(first.state.doc.firstChild?.firstChild?.textContent).toBe("First bold H2O");
+		expect(first.view.dom.querySelector("code")?.textContent).toBe("[!TIP] is code");
+		expect(first.getMarkdown()).toContain(`> [!${type}]`);
+		expect(roundtrip(roundtrip(first)).getJSON()).toEqual(first.getJSON());
+	});
+
+	it.each([
+		"> \\[!NOTE]\n> Literal",
+		"> [!UNKNOWN]\n> Unknown",
+		"> `[!TIP]`\n> Code",
+		"> [!NOTE] same line",
+		"~~~markdown\n> [!WARNING]\n> Example\n~~~",
+	])("does not reinterpret escaped, unknown or code markers: %s", (source) => {
+		const first = editor(source);
+		expect(first.getJSON().content?.[0].type).not.toBe("alert");
+		expect(roundtrip(first).getJSON().content?.[0].type).toBe(
+			first.getJSON().content?.[0].type,
+		);
+	});
+
+	it("preserves unknown HTML types as ordinary quotations", () => {
+		const first = editor(
+			'<blockquote data-type="alert" data-alert-type="UNKNOWN"><p>Keep body</p></blockquote>',
+			"html",
+		);
+		expect(first.getJSON().content?.[0].type).toBe("blockquote");
+		expect(first.getText()).toContain("Keep body");
+	});
+
+	it("creates, changes and unwraps through public menu commands", () => {
+		const instance = editor("Editable body");
+		selectText(instance, "Editable body");
+		const items = buildSlashItems(() => {});
+		items.find((item) => item.id === "alert-note")?.command(instance);
+		expect(instance.isActive("alert", { alertType: "NOTE" })).toBe(true);
+		items.find((item) => item.id === "alert-warning")?.command(instance);
+		expect(instance.isActive("alert", { alertType: "WARNING" })).toBe(true);
+		blockItems.find((item) => item.id === "unsetAlert")?.run(instance);
+		expect(instance.getJSON().content?.[0].type).toBe("paragraph");
+		expect(instance.getText()).toContain("Editable body");
+		expect(instance.commands.undo()).toBe(true);
 	});
 });
 

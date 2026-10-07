@@ -27,6 +27,30 @@
 	margin-top: 0;
 }
 
+/* 提示标题为派生展示，不进入可编辑正文或 HTML/Markdown 序列化。 */
+.ProseMirror blockquote[data-type="alert"] {
+	font-weight: 400;
+	quotes: none;
+}
+.ProseMirror blockquote[data-type="alert"]::before {
+	content: attr(data-alert-type);
+	display: block;
+	margin-block-end: 0.5rem;
+	color: var(--foreground);
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+.ProseMirror blockquote[data-type="alert"] > :first-child {
+	margin-block-start: 0;
+}
+.ProseMirror blockquote[data-type="alert"] > :last-child {
+	margin-block-end: 0;
+}
+.ProseMirror blockquote[data-type="alert"] p::before,
+.ProseMirror blockquote[data-type="alert"] p::after {
+	content: none;
+}
+
 /* 官方 Details NodeView 保持正文可编辑；按钮同时设置保存后的默认 open。 */
 .ProseMirror div[data-type="details"] {
 	display: flex;

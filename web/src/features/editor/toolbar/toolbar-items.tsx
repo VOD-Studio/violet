@@ -251,6 +251,14 @@ export const blockItems: ToolbarItem[] = [
 		canRun: (e) => e.can().toggleBlockquote(),
 	},
 	{
+		id: "unsetAlert",
+		icon: Quote,
+		title: "解除提示块",
+		run: (e) => e.chain().focus().unsetAlert().run(),
+		isActive: (e) => e.isActive("alert"),
+		canRun: (e) => e.can().unsetAlert(),
+	},
+	{
 		id: "details",
 		icon: ChevronsUpDown,
 		title: "折叠块 / 解除折叠",

@@ -13,6 +13,7 @@ import {
 	Heading2,
 	Heading3,
 	Image as ImageIcon,
+	Info,
 	List,
 	ListOrdered,
 	ListTodo,
@@ -26,6 +27,7 @@ import {
 	Text,
 	Workflow,
 } from "lucide-react";
+import { ALERT_TYPES } from "../extensions/alert";
 import type { ResolvedFeatures } from "../lib/features";
 
 export interface SlashMenuItem {
@@ -140,6 +142,17 @@ export function buildSlashItems(
 			group: "块",
 			command: (e) => e.chain().focus().toggleBlockquote().run(),
 		},
+		...ALERT_TYPES.map(
+			(type): SlashMenuItem => ({
+				id: `alert-${type.toLowerCase()}`,
+				title: `${type} 提示块`,
+				description: `插入或切换为 ${type} 提示块`,
+				keywords: ["alert", "callout", "提示", "警告", type.toLowerCase()],
+				icon: Info,
+				group: "块",
+				command: (e) => e.chain().focus().setAlert(type).run(),
+			}),
+		),
 		{
 			id: "details",
 			title: "折叠块",

@@ -33,6 +33,7 @@ import { createDiagramBlockExtension } from "../ui/DiagramBlockView";
 import { createImageExtension } from "../ui/ImageView";
 import { createMathExtensions } from "../ui/MathView";
 import { CustomTaskItem } from "../ui/TaskItemView";
+import { Alert } from "./alert";
 import { Footnotes } from "./footnote-list";
 import { FootnoteDefinition, FootnoteReference } from "./footnotes";
 import {
@@ -110,6 +111,7 @@ export function buildEditorExtensions(
 		Highlight.configure({ multicolor: true }),
 		NativeSubscript,
 		NativeSuperscript,
+		Alert,
 		...createNativeDetails(),
 		// —— 文本对齐（可裁剪）——
 		...(features?.align === false
