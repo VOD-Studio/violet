@@ -1,3 +1,4 @@
+import { extractMarkdownToc } from "@shared/lib/markdown/toc";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -127,5 +128,96 @@ describe("ArticleContent rich nodes", () => {
 
 		expect(await screen.findByRole("note")).toBeTruthy();
 		expect(screen.queryByRole("link", { name: /危险链接/u })).toBeNull();
+	});
+
+	it("显式 Markdown 同时渲染标题、原生 HTML、加粗和可切换折叠块", async () => {
+		const { container } = render(
+			<ArticleContent
+				contentType="markdown"
+				content={
+					"## Title\n\n<p>H<sub>2</sub>O and x<sup>2</sup></p>\n\n**bold**\n\n<details><summary>More</summary><p>Details body</p></details>"
+				}
+			/>,
+		);
+
+		expect(await screen.findByRole("heading", { level: 2, name: "Title" })).toBeTruthy();
+		expect(container.querySelector("sub")?.textContent).toBe("2");
+		expect(container.querySelector("sup")?.textContent).toBe("2");
+		expect(container.querySelector("strong")?.textContent).toBe("bold");
+		const details = container.querySelector("details");
+		expect(details?.querySelector("p")?.textContent).toBe("Details body");
+		expect(details?.open).toBe(false);
+		fireEvent.click(screen.getByText("More"));
+		expect(details?.open).toBe(true);
+		fireEvent.click(screen.getByText("More"));
+		expect(details?.open).toBe(false);
+		expect(container.textContent).not.toContain("##");
+		expect(container.textContent).not.toContain("**bold**");
+	});
+
+	it.each([
+		"html",
+		"markdown",
+	] as const)("%s 来源保留完整旧 HTML 的颜色、对齐与原生内容", async (contentType) => {
+		const { container } = render(
+			<ArticleContent
+				contentType={contentType}
+				content={
+					'<h2>Saved HTML</h2><p style="text-align:right"><span style="color:#ff0000">Colored</span> H<sub>2</sub>O <strong>bold</strong></p><details open><summary>More</summary><p>Saved body</p></details>'
+				}
+			/>,
+		);
+
+		expect(await screen.findByRole("heading", { name: "Saved HTML" })).toBeTruthy();
+		expect(container.querySelector("p")?.style.textAlign).toBe("right");
+		expect(screen.getByText("Colored").style.color).toBe("rgb(255, 0, 0)");
+		expect(container.querySelector("sub")?.textContent).toBe("2");
+		expect(container.querySelector("strong")?.textContent).toBe("bold");
+		expect(container.querySelector("details")?.open).toBe(true);
+		expect(screen.getByText("Saved body")).toBeTruthy();
+	});
+
+	it("混合正文目录与渲染标题顺序和锚点一致，忽略代码及原生 HTML 块内字面标题", async () => {
+		const content = [
+			"## Title",
+			"",
+			"<p>H<sub>2</sub>O</p>",
+			"",
+			'<h3 id="saved">Saved HTML</h3>',
+			"",
+			"## Title",
+			"",
+			"<details><summary>Literal</summary>",
+			"## Raw literal",
+			"</details>",
+			"",
+			"<details><summary>Markdown</summary>",
+			"",
+			"### Nested title",
+			"",
+			"</details>",
+			"",
+			"```text",
+			"## Fenced literal",
+			"<h2>Fenced HTML</h2>",
+			"```",
+			"",
+			"<pre><code>## Native code literal</code></pre>",
+			"",
+			"\\## Escaped literal",
+		].join("\n");
+		const { container } = render(<ArticleContent content={content} contentType="markdown" />);
+		await screen.findByRole("heading", { name: "Saved HTML" });
+
+		const toc = extractMarkdownToc(content);
+		expect(toc).toEqual([
+			{ level: 2, id: "title", text: "Title" },
+			{ level: 3, id: "saved", text: "Saved HTML" },
+			{ level: 2, id: "title-1", text: "Title" },
+			{ level: 3, id: "nested-title", text: "Nested title" },
+		]);
+		expect(Array.from(container.querySelectorAll("h2,h3,h4"), (heading) => heading.id)).toEqual(
+			toc.map((heading) => heading.id),
+		);
 	});
 });

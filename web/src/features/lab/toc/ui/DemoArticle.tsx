@@ -49,7 +49,7 @@ function Section({
 
 			{/* 对齐生产正文页的 prose 容器形态（blog/$slug 同款段落字号与行高走生产样式） */}
 			<div className="prose prose-neutral dark:prose-invert max-w-none">
-				<ArticleContent content={sectionMarkdown(section)} />
+				<ArticleContent content={sectionMarkdown(section)} contentType="markdown" />
 			</div>
 
 			{section.children?.map((child, idx) => (

@@ -1,18 +1,3 @@
-/**
- * ArticleContent - 文章正文渲染（自动识别 Markdown / HTML）
- *
- * 编辑器内容格式可能有两种来源：
- * - 新文章（HTML 序列化）：content_md 含 HTML（保留颜色/对齐等 inline 样式）
- * - 旧文章（Markdown 序列化）：content_md 含原始 Markdown 文本
- *
- * 自动检测：内容含 HTML 标签（<p>、<h2>、<div> 等）→ HtmlContent 安全渲染；
- * 否则 → 懒加载 MarkdownContent（react-markdown + shiki 代码块渲染）。
- * 两条路径共用 markdownComponents。
- *
- * react-markdown 管线刻意懒加载：绝大多数文章走 content_html（HtmlContent，hast 管线），
- * react-markdown + remark-gfm + rehype-slug 仅旧 Markdown 文章降级时才需要，
- * 不应静态进入正文主包。
- */
 import { lazy, memo, Suspense } from "react";
 import type { ArticleContentContext } from "../article-embeds/types";
 import { HtmlContent } from "./HtmlContent";
@@ -23,6 +8,8 @@ const MarkdownContent = lazy(() =>
 );
 
 export interface ArticleContentProps {
+	/** 已知来源须显式指定；auto 仅兼容未标明格式的旧内容。 */
+	contentType?: "markdown" | "html" | "auto";
 	/** 文章内容（Markdown 或 HTML 字符串） */
 	content: string;
 	className?: string;
@@ -30,16 +17,20 @@ export interface ArticleContentProps {
 	context?: ArticleContentContext;
 }
 
-/** 检测内容是否为 HTML（含开闭标签，排除纯文本里的 < > 比较） */
+/** 仅为未知旧来源保留 HTML 标签启发式判断。 */
 function isHTML(content: string): boolean {
-	// 需同时含 <tag> 开标签且非行内代码块内的片段
 	return /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span|figure|section|article)\b[\s>]/i.test(
 		content,
 	);
 }
 
-function ArticleContent({ content, className, context }: ArticleContentProps) {
-	if (isHTML(content)) {
+function ArticleContent({
+	content,
+	contentType = "auto",
+	className,
+	context,
+}: ArticleContentProps) {
+	if (contentType === "html" || (contentType === "auto" && isHTML(content))) {
 		return <HtmlContent html={content} className={className} context={context} />;
 	}
 	return (

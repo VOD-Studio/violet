@@ -70,6 +70,7 @@ export function PersonaLocalizationEditor({
 					) : localization.content_html ? (
 						<ArticleContent
 							content={localization.content_html}
+							contentType="html"
 							className="prose prose-neutral max-w-none dark:prose-invert"
 						/>
 					) : (
