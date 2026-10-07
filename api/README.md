@@ -42,6 +42,8 @@ make api     # 启动 API
 
 文章仅提交 `content_md` 时由 `application/markdown` 的 Goldmark 解析器生成 HTML：公式和高亮遵守代码、转义与围栏边界；Mermaid 与可运行围栏生成保留源码的语义载体。可运行标记支持 `run` / `runnable`，资源参数允许含空格的 JSON。`application/post` 的 HTML 转 Markdown 保留脚注重复引用、多段正文、代码围栏及带属性的表格；具体格式见[编辑器手册](../docs/editor-syntax.md)。
 
+GitHub 提示块识别独占首行的 `[!NOTE]`、`[!TIP]`、`[!IMPORTANT]`、`[!WARNING]`、`[!CAUTION]`，普通引用和代码示例保持原义。
+
 ## 目录结构
 
 ```text

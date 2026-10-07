@@ -140,12 +140,41 @@ func (highlightParser) Parse(parent ast.Node, reader text.Reader, pc parser.Cont
 	return n
 }
 
+type alertParagraphTransformer struct{}
+
+func (alertParagraphTransformer) Transform(node *ast.Paragraph, reader text.Reader, _ parser.Context) {
+	parent := node.Parent()
+	if parent == nil || parent.Kind() != ast.KindBlockquote || parent.FirstChild() != node || node.Lines().Len() == 0 {
+		return
+	}
+	if _, exists := parent.AttributeString("data-alert-type"); exists {
+		return
+	}
+	first := node.Lines().At(0)
+	marker := strings.TrimSpace(string(first.Value(reader.Source())))
+	var kind string
+	switch marker {
+	case "[!NOTE]", "[!TIP]", "[!IMPORTANT]", "[!WARNING]", "[!CAUTION]":
+		kind = marker[2 : len(marker)-1]
+	default:
+		return
+	}
+	// Read the source before inline parsing: escaped markers and code stay ordinary quotes.
+	parent.SetAttributeString("data-type", "alert")
+	parent.SetAttributeString("data-alert-type", kind)
+	node.Lines().SetSliced(1, node.Lines().Len())
+	if node.Lines().Len() == 0 {
+		parent.RemoveChild(parent, node)
+	}
+}
+
 type carrierExtension struct{}
 
 func (carrierExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(
 		parser.WithBlockParsers(util.Prioritized(mathBlockParser{}, 700)),
 		parser.WithInlineParsers(util.Prioritized(mathInlineParser{}, 200), util.Prioritized(highlightParser{}, 500)),
+		parser.WithParagraphTransformers(util.Prioritized(alertParagraphTransformer{}, 50)),
 	)
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(carrierRenderer{}, 100)))
 }
