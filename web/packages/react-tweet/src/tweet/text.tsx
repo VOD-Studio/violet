@@ -23,7 +23,7 @@ export function TweetText({ text, segments, maxTextLines, messages }: TweetTextP
 		text,
 		segments,
 	});
-	const isCollapsed = hasOverflow && !isExpanded;
+	const isCollapsed = lines !== undefined && !isExpanded;
 	return (
 		<>
 			<p
@@ -40,7 +40,7 @@ export function TweetText({ text, segments, maxTextLines, messages }: TweetTextP
 								<TweetLink
 									key={`${index}:${segment.kind}`}
 									href={segment.url}
-									tabIndex={isCollapsed ? -1 : undefined}
+									tabIndex={hasOverflow && isCollapsed ? -1 : undefined}
 								>
 									{segment.text}
 								</TweetLink>

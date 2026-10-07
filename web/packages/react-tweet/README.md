@@ -119,7 +119,7 @@ export function QuotedPost() {
 - 照片必须有原图地址；视频区分真实播放源与仅封面状态，不将图片 URL 当作视频。连续照片组成网格，照片与视频之间保持来源顺序；引用最多展开一层，更深层保留原文链接。
 - `renderPhotos` 接收净化后的连续照片组；`renderVideo` 接收一项可播放或仅封面的媒体。照片插槽可以接入灯箱，portal 键盘事件仍可到达宿主。
 - 组件保留原生 `article` 的 `ref`、`className`、`style`、ARIA、`data-*` 和事件；正文仍冒泡，链接与媒体独立交互。`children` 和 `dangerouslySetInnerHTML` 不开放；异步组件的 `id` 专用于来源标识。
-- `maxTextLines={6}` 可选开启正文折叠：只在实际超过 6 行时显示「展示更多／收起」，不截断原始文字、链接或 emoji，不影响媒体、引用与操作。不传则完整展示；非正整数不启用。`Tweet` 与 `EmbeddedTweet` 均支持，文案通过 `messages.showMore` / `messages.showLess` 覆盖。SSR 保留全文，浏览器完成布局测量后折叠；宽度或字体改变会重新判断溢出。
+- `Tweet` 与 `EmbeddedTweet` 默认将正文限制为 6 行；外层与嵌套引用分别提供「展示更多／收起」，互不联动，不折叠媒体或操作。`maxTextLines` 可调整行数，`maxTextLines={0}` 展示全文；非正整数关闭折叠。SSR 保留完整文字与链接并直接应用折叠样式，浏览器测量后只为实际溢出的正文显示按钮；宽度或字体改变会重新判断。文案通过 `messages.showMore` / `messages.showLess` 覆盖。
 - X 快照的统计与发布时间共用底栏，按点赞、回复、转发排列。点赞与回复在新标签页打开 X 的真实操作入口，不伪造计数变化；转发数是只读快照。右上角 X 标记与时间链接打开原文。
 
 ## 本地化与外观

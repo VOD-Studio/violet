@@ -169,8 +169,8 @@ export interface TweetDisplayOptions {
 	/**
 	 * 正文折叠时的最大行数；实际溢出时显示展开与收起按钮。
 	 *
-	 * 仅影响本条正文，不折叠媒体或嵌套引用。非正整数按未配置处理。
-	 * @default undefined — 展示完整正文。
+	 * 同时应用于嵌套引用的正文；各条独立展开，不折叠媒体。非正整数关闭折叠。
+	 * @default 6
 	 * @example 6
 	 */
 	maxTextLines?: number;
