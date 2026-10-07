@@ -252,3 +252,65 @@ func TestMarkdownToHTML_LooseTaskListsAndRawTable(t *testing.T) {
 	assert.NotContains(t, out, "<input")
 	assert.Contains(t, out, `colspan="2" rowspan="3"`)
 }
+
+func TestMarkdownToHTML_Alerts(t *testing.T) {
+	for _, kind := range []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"} {
+		t.Run(kind, func(t *testing.T) {
+			source := "> [!" + kind + "]\n> First **paragraph**.\n>\n> Second paragraph.\n>\n> - One\n> - Two\n>\n> ```text\n> [!WARNING]\n> ```"
+			out, err := ToHTML(source)
+			require.NoError(t, err)
+			assert.Contains(t, out, `<blockquote data-type="alert" data-alert-type="`+kind+`">`)
+			assert.Contains(t, out, "<p>First <strong>paragraph</strong>.</p>")
+			assert.Contains(t, out, "<p>Second paragraph.</p>")
+			assert.Contains(t, out, "<li>One</li>")
+			assert.Contains(t, out, "<code class=\"language-text\">[!WARNING]\n</code>")
+		})
+	}
+}
+
+func TestMarkdownToHTML_AlertContext(t *testing.T) {
+	for name, source := range map[string]string{
+		"unknown":       "> [!UNKNOWN]\n> Body",
+		"escaped":       "> \\[!NOTE]\n> Body",
+		"escaped bang":  "> [\\!NOTE]\n> Body",
+		"inline code":   "> `[!NOTE]`\n> Body",
+		"fenced code":   "```md\n> [!NOTE]\n> Body\n```",
+		"indented code": "    > [!NOTE]\n    > Body",
+		"not first":     "> Intro\n>\n> [!NOTE]\n> Body",
+		"same line":     "> [!NOTE] Body",
+		"not quoted":    "[!NOTE]\nBody",
+		"encoded":       "> &#91;!NOTE]\n> Body",
+	} {
+		t.Run(name, func(t *testing.T) {
+			out, err := ToHTML(source)
+			require.NoError(t, err)
+			assert.NotContains(t, out, `data-type="alert"`)
+		})
+	}
+	for _, source := range []string{
+		"> [!NOTE]\n>\n> Body",
+		"> [!NOTE]",
+		"- Item\n\n  > [!NOTE]\n  > Body",
+		"> Quote\n>\n> > [!NOTE]\n> > Body",
+	} {
+		out, err := ToHTML(source)
+		require.NoError(t, err)
+		assert.Contains(t, out, `data-alert-type="NOTE"`)
+		assert.NotContains(t, out, "[!NOTE]")
+	}
+}
+
+func TestMarkdownToHTML_NativeInlineAndDetails(t *testing.T) {
+	source := "H<sub>2</sub>O x<sup>2</sup> ~deleted~ ~~also deleted~~\n\n" +
+		`<details open><summary>Read <strong>more</strong></summary><div data-type="detailsContent"><p>H<sub>2</sub>O</p><ul><li>One</li></ul><pre><code>&lt;tag&gt;</code></pre><details><summary>Nested</summary><p>Body</p></details></div></details>`
+	out, err := ToHTML(source)
+	require.NoError(t, err)
+	for _, expected := range []string{
+		"<sub>2</sub>", "<sup>2</sup>", "<del>deleted</del>", "<del>also deleted</del>",
+		`<details open="">`, "<summary>Read <strong>more</strong></summary>",
+		`<div data-type="detailsContent">`, "<li>One</li>", "<code>&lt;tag&gt;</code>",
+		"<details><summary>Nested</summary><p>Body</p></details>",
+	} {
+		assert.Contains(t, out, expected)
+	}
+}

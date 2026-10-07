@@ -105,6 +105,9 @@ describe("article reading integrity", () => {
 		expectNavigableFootnotes(container);
 		expect(container.querySelectorAll("a[data-footnote-ref]")).toHaveLength(2);
 		expect(container.querySelectorAll("a[data-footnote-backref]")).toHaveLength(2);
+		expect(container.querySelector("#user-content-fn-same")).not.toBeNull();
+		expect(container.querySelector("#user-content-fnref-same")).not.toBeNull();
+		expect(container.querySelector('[id^="user-content-user-content-"]')).toBeNull();
 		expect(
 			container.querySelector("a[data-footnote-ref]")?.getAttribute("aria-describedby"),
 		).toBe("footnote-label");

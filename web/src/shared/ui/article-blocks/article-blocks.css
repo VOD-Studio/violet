@@ -1,0 +1,83 @@
+blockquote[data-type="alert"] {
+	--article-alert-accent: var(--primary);
+	margin-block: 1.5rem;
+	border: 1px solid var(--border);
+	border-inline-start: 3px solid var(--article-alert-accent);
+	border-radius: 0.5rem;
+	padding: 1rem 1.25rem;
+	background: color-mix(in oklch, var(--article-alert-accent) 5%, var(--background));
+	color: var(--foreground);
+	font-style: normal;
+}
+
+blockquote[data-alert-type="TIP"] {
+	--article-alert-accent: var(--success);
+}
+
+blockquote[data-alert-type="WARNING"] {
+	--article-alert-accent: var(--warning);
+}
+
+blockquote[data-alert-type="CAUTION"] {
+	--article-alert-accent: var(--destructive);
+}
+
+.article-alert-title {
+	display: block;
+	margin-block-end: 0.5rem;
+	color: var(--foreground);
+	font-size: 0.875em;
+	font-weight: 650;
+	letter-spacing: 0.04em;
+}
+
+blockquote[data-type="alert"] > p:first-of-type {
+	margin-block-start: 0;
+}
+
+.article-details > :last-child,
+blockquote[data-type="alert"] > :last-child,
+.article-details > [data-type="detailsContent"] > :last-child {
+	margin-block-end: 0;
+}
+
+.article-details {
+	margin-block: 1.5rem;
+	border: 1px solid var(--border);
+	border-radius: 0.5rem;
+	padding: 1rem 1.25rem;
+	background: var(--background);
+	color: var(--foreground);
+}
+
+.article-details > summary {
+	display: list-item;
+	cursor: pointer;
+	font-weight: 600;
+	list-style: disclosure-closed inside;
+}
+
+.article-details[open] > summary {
+	margin-block-end: 1rem;
+	list-style-type: disclosure-open;
+}
+
+.article-details > summary::marker {
+	color: var(--muted-foreground);
+}
+
+.article-details > summary:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 4px;
+	border-radius: 0.25rem;
+}
+
+:where(
+	[data-footnotes] li[id],
+	[role="doc-endnotes"] li[id],
+	.footnotes li[id],
+	sup[id^="fnref"],
+	a[data-footnote-ref][id]
+) {
+	scroll-margin-top: 6rem;
+}

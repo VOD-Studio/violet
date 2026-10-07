@@ -1,28 +1,46 @@
-/**
- * extractMarkdownToc - 从 markdown 源码提取 H2/H3/H4 目录
- *
- * 仅依赖项目内 Slugger + 正则，零重型依赖。刻意从 markdown barrel 中
- * 独立出来，避免 highlight.js / marked 等重依赖经此模块泄漏进文章详情页主 chunk。
- *
- * id 用项目统一 Slugger 生成，与 MarkdownContent 的
- * rehypeSlugHeadings 渲染出的标题 id 一致。
- */
-import { Slugger } from "@shared/lib/slug";
+/** Markdown 与原生 HTML 标题按源码顺序共用 slug 去重，跳过代码中的标题示例。 */
+import { extractToc } from "@shared/hooks/use-toc";
 
 export function extractMarkdownToc(
 	md: string,
 ): Array<{ level: 2 | 3 | 4; text: string; id: string }> {
-	const slugger = new Slugger();
-	const lines = md.split("\n");
-	const out: Array<{ level: 2 | 3 | 4; text: string; id: string }> = [];
+	const lines = md.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "").split("\n");
+	const headings: string[] = [];
+	let fence: { marker: string; length: number } | undefined;
+	let htmlBlock = false;
 	for (const line of lines) {
-		const m = /^(#{2,4})\s+(.+?)\s*$/.exec(line);
-		if (!m) continue;
-		const level = m[1].length as 2 | 3 | 4;
-		const text = m[2].replace(/[*_`~]/g, "").trim();
-		if (text) out.push({ level, text, id: slugger.slug(text) });
+		const fenceMatch = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+		if (fence) {
+			if (
+				fenceMatch &&
+				fenceMatch[1][0] === fence.marker &&
+				fenceMatch[1].length >= fence.length &&
+				!fenceMatch[2].trim()
+			) {
+				fence = undefined;
+			}
+			continue;
+		}
+		// CommonMark 原生 HTML 块在空行后才重新启用 Markdown 标题。
+		if (!line.trim()) htmlBlock = false;
+		if (
+			/^ {0,3}<\/?(?:details|summary|blockquote|div|p|section|h[1-6])(?:\s|>|\/)/i.test(line)
+		) {
+			htmlBlock = true;
+		}
+		if (!htmlBlock && fenceMatch) {
+			fence = { marker: fenceMatch[1][0], length: fenceMatch[1].length };
+			continue;
+		}
+		const heading = !htmlBlock && /^(#{2,4})\s+(.+?)\s*$/.exec(line);
+		if (heading) {
+			const text = heading[2].replace(/[*_`~]/g, "").trim();
+			if (text) headings.push(`<h${heading[1].length}>${text}</h${heading[1].length}>`);
+		} else {
+			headings.push(line);
+		}
 	}
-	return out;
+	return extractToc(headings.join("\n"));
 }
 
 export type { TocItem } from "@shared/hooks/use-toc";

@@ -16,6 +16,19 @@ const schema: Schema = {
 			["role", "doc-noteref", "doc-backlink"],
 		],
 		section: ["dataFootnotes", ["role", "doc-endnotes"]],
+		blockquote: [
+			...(defaultSchema.attributes?.blockquote ?? []),
+			["dataType", "alert"],
+			["dataAlertType", "NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"],
+		],
+		details: [...(defaultSchema.attributes?.details ?? []), "open"],
+		code: [
+			...(defaultSchema.attributes?.code ?? []).filter(
+				(attribute) =>
+					(Array.isArray(attribute) ? attribute[0] : attribute) !== "className",
+			),
+			["className", /^language-./u, "math-inline", "math-display"],
+		],
 		mark: ["dataColor", "style"],
 		input: [["type", "checkbox"], "checked", "disabled"],
 		ul: [...(defaultSchema.attributes?.ul ?? []), "dataType"],

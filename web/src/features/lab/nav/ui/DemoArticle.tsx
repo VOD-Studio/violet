@@ -92,7 +92,10 @@ export function DemoHeader() {
 export function DemoBody() {
 	return (
 		<main className="prose prose-neutral dark:prose-invert mx-auto min-w-0 max-w-3xl px-6 md:px-10">
-			<ArticleContent content={[DEMO_MARKDOWN, DEMO_MARKDOWN, DEMO_MARKDOWN].join("\n\n")} />
+			<ArticleContent
+				content={[DEMO_MARKDOWN, DEMO_MARKDOWN, DEMO_MARKDOWN].join("\n\n")}
+				contentType="markdown"
+			/>
 		</main>
 	);
 }

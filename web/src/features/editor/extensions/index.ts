@@ -24,7 +24,6 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { Markdown } from "@tiptap/markdown";
-import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import type { ResolvedFeatures } from "../lib/features";
 import { SlashCommand } from "../slash-menu/SlashCommand";
@@ -34,8 +33,15 @@ import { createDiagramBlockExtension } from "../ui/DiagramBlockView";
 import { createImageExtension } from "../ui/ImageView";
 import { createMathExtensions } from "../ui/MathView";
 import { CustomTaskItem } from "../ui/TaskItemView";
+import { Alert } from "./alert";
 import { Footnotes } from "./footnote-list";
 import { FootnoteDefinition, FootnoteReference } from "./footnotes";
+import {
+	createNativeDetails,
+	createNativeSyntaxStarterKit,
+	NativeSubscript,
+	NativeSuperscript,
+} from "./native-syntax";
 import { createMarkdownTable } from "./table";
 
 /** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
@@ -86,7 +92,7 @@ export function buildEditorExtensions(
 	features?: ResolvedFeatures,
 ) {
 	return [
-		StarterKit.configure({
+		createNativeSyntaxStarterKit().configure({
 			// 关闭 StarterKit 内置项，改用下方独立扩展以获得更高定制性
 			codeBlock: false,
 			link: false,
@@ -103,6 +109,10 @@ export function buildEditorExtensions(
 		...(features?.underline === false ? [] : [Underline]),
 		...(features?.color === false ? [] : [Color]),
 		Highlight.configure({ multicolor: true }),
+		NativeSubscript,
+		NativeSuperscript,
+		Alert,
+		...createNativeDetails(),
 		// —— 文本对齐（可裁剪）——
 		...(features?.align === false
 			? []

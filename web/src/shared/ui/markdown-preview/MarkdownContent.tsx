@@ -14,6 +14,7 @@
 
 import { Slugger } from "@shared/lib/slug";
 import type { Element, Nodes, Root } from "hast";
+import { raw } from "hast-util-raw";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -21,7 +22,13 @@ import remarkMath from "remark-math";
 import type { ArticleContentContext } from "../article-embeds/types";
 import { createMarkdownComponents } from "./components/markdown-components";
 import { rehypeCodeCarriers } from "./rehype-code-carriers";
+import { remarkAlerts } from "./remark-alerts";
 import { remarkHighlight } from "./remark-highlight";
+import { sanitizeContent } from "./sanitize-content";
+
+function rehypeSafeHtml() {
+	return (tree: Root) => sanitizeContent(raw(tree)) as Root;
+}
 
 /** 提取 hast 节点的纯文本（递归拼接子节点的 text） */
 function hastText(node: Nodes): string {
@@ -84,8 +91,8 @@ export function MarkdownContent({
 	return (
 		<div className={className}>
 			<ReactMarkdown
-				remarkPlugins={[remarkGfm, remarkMath, remarkHighlight]}
-				rehypePlugins={[rehypeSlugHeadings, rehypeCodeCarriers]}
+				remarkPlugins={[remarkGfm, remarkMath, remarkHighlight, remarkAlerts]}
+				rehypePlugins={[rehypeCodeCarriers, rehypeSafeHtml, rehypeSlugHeadings]}
 				components={codeRenderer ? { ...components, code: codeRenderer } : components}
 			>
 				{content}

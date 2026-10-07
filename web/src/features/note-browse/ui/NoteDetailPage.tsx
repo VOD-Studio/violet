@@ -150,7 +150,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 								onClick={articleImages.bind.onClick}
 								onKeyDown={articleImages.bind.onKeyDown}
 							>
-								<ArticleContent content={note.content_html} />
+								<ArticleContent content={note.content_html} contentType="html" />
 							</div>
 
 							{/* 尾部验收签名章 */}

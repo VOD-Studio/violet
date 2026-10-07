@@ -80,6 +80,7 @@ function AnnouncementDetailPage() {
 	const status = statusOf(a);
 	const stamp = formatDateTime(a.created_at);
 	const body = a.content_html?.trim() ? a.content_html : a.content_md || a.content;
+	const contentType = a.content_html?.trim() ? "html" : a.content_md ? "markdown" : "auto";
 
 	const handleCopyId = async () => {
 		try {
@@ -132,7 +133,7 @@ function AnnouncementDetailPage() {
 					onClick={articleImages.bind.onClick}
 					onKeyDown={articleImages.bind.onKeyDown}
 				>
-					<ArticleContent content={body} />
+					<ArticleContent content={body} contentType={contentType} />
 				</div>
 			) : null}
 

@@ -362,6 +362,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 					>
 						<ArticleContent
 							content={persona.content_html}
+							contentType="html"
 							className={`${styles.article} prose prose-neutral max-w-none dark:prose-invert`}
 						/>
 					</div>

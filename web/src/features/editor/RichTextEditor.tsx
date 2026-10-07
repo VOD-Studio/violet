@@ -10,6 +10,7 @@ import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
 import { useEditorUpload } from "./hooks/useEditorUpload";
 import { useMarkdownSource } from "./hooks/useMarkdownSource";
 import { useWordCount } from "./hooks/useWordCount";
+import "../../shared/ui/article-blocks/article-blocks.css";
 import "./styles.css";
 import { buildEditorExtensions } from "./extensions";
 import { resolveFeatures } from "./lib/features";

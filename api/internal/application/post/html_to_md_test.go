@@ -140,3 +140,151 @@ func TestHTMLToMarkdown_PreservesTableAttributes(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, roundTrip, `colspan="2" rowspan="3" data-colwidth="120,120"`)
 }
+
+func TestHTMLToMarkdown_AlertRoundTrip(t *testing.T) {
+	for _, kind := range []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"} {
+		t.Run(kind, func(t *testing.T) {
+			source := "> [!" + kind + "]\n> First **paragraph**.\n>\n> Second paragraph.\n>\n> - One\n> - Two\n>\n> ```text\n> [!NOTE]\n> ```"
+			html, err := markdown.ToHTML(source)
+			require.NoError(t, err)
+			converted, err := htmlToMarkdown(html)
+			require.NoError(t, err)
+			assert.Contains(t, converted, "> [!"+kind+"]")
+			assert.Contains(t, converted, "> Second paragraph.")
+			assert.Contains(t, converted, "> ```text\n> [!NOTE]\n> ```")
+			roundTrip, err := markdown.ToHTML(converted)
+			require.NoError(t, err)
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(roundTrip))
+			require.NoError(t, err)
+			alert := doc.Find(`blockquote[data-type="alert"]`)
+			assert.Equal(t, 1, alert.Length())
+			assert.Equal(t, kind, alert.AttrOr("data-alert-type", ""))
+			assert.Equal(t, 2, alert.ChildrenFiltered("p").Length())
+			assert.Equal(t, 2, alert.Find("li").Length())
+			assert.Equal(t, "[!NOTE]\n", alert.Find("pre code").Text())
+		})
+	}
+}
+
+func TestHTMLToMarkdown_OrdinaryQuotesStayOrdinary(t *testing.T) {
+	for _, source := range []string{
+		"> \\[!NOTE]\n> Literal marker",
+		"> [!UNKNOWN]\n> Unknown marker",
+		"> `[!NOTE]`\n> Code marker",
+		"> Intro\n>\n> [!NOTE]\n> Later marker",
+	} {
+		html, err := markdown.ToHTML(source)
+		require.NoError(t, err)
+		converted, err := htmlToMarkdown(html)
+		require.NoError(t, err)
+		roundTrip, err := markdown.ToHTML(converted)
+		require.NoError(t, err)
+		assert.NotContains(t, roundTrip, `data-type="alert"`)
+		assert.Contains(t, roundTrip, "<blockquote>")
+	}
+	converted, err := htmlToMarkdown(`<blockquote data-type="alert" data-alert-type="UNKNOWN"><p>Body</p></blockquote>`)
+	require.NoError(t, err)
+	assert.Equal(t, "> Body", converted)
+}
+
+func TestHTMLToMarkdown_NativeInlineAndFootnotes(t *testing.T) {
+	source := `<p>H<sub><strong>2</strong></sub>O x<sup>2</sup> literal<sup>[^literal]</sup> A<sup><a href="#fn-note" data-footnote-ref="">1</a></sup></p><section data-footnotes=""><ol><li id="fn-note"><p>Definition</p></li></ol></section>`
+	converted, err := htmlToMarkdown(source)
+	require.NoError(t, err)
+	for _, expected := range []string{"<sub><strong>2</strong></sub>", "<sup>2</sup>", "<sup>&#91;^literal&#93;</sup>", "A[^1]", "[^1]: Definition"} {
+		assert.Contains(t, converted, expected)
+	}
+	roundTrip, err := markdown.ToHTML(converted)
+	require.NoError(t, err)
+	assert.Contains(t, roundTrip, "<sub><strong>2</strong></sub>")
+	assert.Contains(t, roundTrip, "<sup>2</sup>")
+	assert.Contains(t, roundTrip, "<sup>[^literal]</sup>")
+	assert.Contains(t, roundTrip, `href="#fn:1"`)
+}
+
+func TestHTMLToMarkdown_NativeInlineLiteralPunctuation(t *testing.T) {
+	source := `<p><sub>*literal* _text_</sub> <sup><strong>bold</strong> [!NOTE] $x$ ==plain==</sup></p>`
+	converted, err := htmlToMarkdown(source)
+	require.NoError(t, err)
+	roundTrip, err := markdown.ToHTML(converted)
+	require.NoError(t, err)
+	assert.Contains(t, roundTrip, "<sub>*literal* _text_</sub>")
+	assert.Contains(t, roundTrip, "<sup><strong>bold</strong> [!NOTE] $x$ ==plain==</sup>")
+	assert.NotContains(t, roundTrip, "<em>")
+	assert.NotContains(t, roundTrip, "<mark>")
+	assert.NotContains(t, roundTrip, `data-type="inline-math"`)
+}
+
+func TestHTMLToMarkdown_DetailsStayCompleteHTML(t *testing.T) {
+	for name, source := range map[string]string{
+		"canonical open": `<details open><summary>Read <strong>more</strong></summary><div data-type="detailsContent"><p>First H<sub>2</sub>O</p><p>Second x<sup>2</sup></p><ul><li>One</li><li>Two</li></ul><pre><code class="language-html">&lt;div&gt;
+
+&lt;/div&gt;</code></pre><details><summary>Nested</summary><p>Inner</p></details></div></details>`,
+		"native closed": `<details><summary>Read more</summary><p>First</p><p>Second</p><ul><li>One</li></ul></details>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			converted, err := htmlToMarkdown(source)
+			require.NoError(t, err)
+			assert.Contains(t, converted, "<summary>")
+			assert.Contains(t, converted, "<p>First")
+			assert.Contains(t, converted, "<ul><li>One</li>")
+			assert.NotContains(t, converted, "```")
+			roundTrip, err := markdown.ToHTML(converted)
+			require.NoError(t, err)
+			before, err := goquery.NewDocumentFromReader(strings.NewReader(source))
+			require.NoError(t, err)
+			after, err := goquery.NewDocumentFromReader(strings.NewReader(roundTrip))
+			require.NoError(t, err)
+			expected, err := goquery.OuterHtml(before.Find("details").First())
+			require.NoError(t, err)
+			actual, err := goquery.OuterHtml(after.Find("details").First())
+			require.NoError(t, err)
+			assert.Equal(t, expected, actual)
+		})
+	}
+}
+
+func TestHTMLToMarkdown_FootnotesInsideHTMLCarriers(t *testing.T) {
+	for name, carrier := range map[string]string{
+		"details": `<details open><summary>More</summary><p>Inside<sup><a id="ref-a" href="#fn-a" role="doc-noteref">1</a></sup></p><pre><code>first` + "\n\n" + `**literal**</code></pre></details>`,
+		"table":   `<table><tr><td colspan="2"><p>Inside<sup><a id="ref-a" href="#fn-a" role="doc-noteref">1</a></sup></p></td></tr></table>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			source := carrier + `<p>Outside<sup><a id="ref-b" href="#fn-a" role="doc-noteref">1</a></sup></p><section data-footnotes=""><ol><li id="fn-a"><p>Definition</p><a href="#ref-a" role="doc-backlink">Back</a><a href="#ref-b" role="doc-backlink">Back again</a></li></ol></section>`
+			for range 2 {
+				converted, err := htmlToMarkdown(source)
+				require.NoError(t, err)
+				source, err = markdown.ToHTML(converted)
+				require.NoError(t, err)
+				doc, err := goquery.NewDocumentFromReader(strings.NewReader(source))
+				require.NoError(t, err)
+				assert.Equal(t, 2, doc.Find(`[role="doc-noteref"]`).Length())
+				definitions := doc.Find(`[role="doc-endnotes"] li, [data-footnotes] li, .footnotes li`)
+				assert.Equal(t, 1, definitions.Length())
+				assert.Equal(t, "Definition", definitions.ChildrenFiltered("p").Text())
+				assert.Equal(t, 2, doc.Find(`[role="doc-backlink"]`).Length())
+				doc.Find(`[role="doc-noteref"], [role="doc-backlink"]`).Each(func(_ int, link *goquery.Selection) {
+					target := strings.TrimPrefix(link.AttrOr("href", ""), "#")
+					assert.Equal(t, 1, doc.Find(`[id="`+target+`"]`).Length(), target)
+				})
+				if name == "details" {
+					assert.Equal(t, "first\n\n**literal**", doc.Find("details pre code").Text())
+				}
+			}
+		})
+	}
+}
+
+func TestHTMLToMarkdown_FormattedFootnoteSup(t *testing.T) {
+	source := "<p>A<sup>\n<a href=\"#fn-n\">1</a>\n</sup></p><section data-footnotes><ol><li id=\"fn-n\"><p>Definition</p></li></ol></section>"
+	converted, err := htmlToMarkdown(source)
+	require.NoError(t, err)
+	assert.Contains(t, converted, "A[^1]")
+	assert.Contains(t, converted, "[^1]: Definition")
+	roundTrip, err := markdown.ToHTML(converted)
+	require.NoError(t, err)
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(roundTrip))
+	require.NoError(t, err)
+	assert.Equal(t, 1, doc.Find(`[role="doc-noteref"]`).Length())
+	assert.Contains(t, doc.Find(`[role="doc-endnotes"]`).Text(), "Definition")
+}

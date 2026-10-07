@@ -162,7 +162,7 @@ function VersionPreviewDialog({
 					) : (
 						<div className="prose prose-sm md:prose-base dark:prose-invert max-w-none animate-in fade-in slide-in-from-bottom-2 duration-500">
 							{data?.content_md ? (
-								<ArticleContent content={data.content_md} />
+								<ArticleContent content={data.content_md} contentType="markdown" />
 							) : (
 								<span className="italic text-muted-foreground">无内容</span>
 							)}

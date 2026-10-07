@@ -1,6 +1,7 @@
 import { Checkbox } from "@violet/ui";
 import type { CSSProperties } from "react";
 import type { Components } from "react-markdown";
+import "../../article-blocks/article-blocks.css";
 
 function cellAlignment(
 	align: string | undefined,
@@ -14,6 +15,30 @@ function cellAlignment(
 
 /** 保留阅读所需语义属性，不透传任意 DOM props。 */
 export const proseElements: Components = {
+	blockquote: ({ children, ...props }) => {
+		const p = props as Record<string, unknown>;
+		const type = p["data-alert-type"];
+		const isAlert =
+			p["data-type"] === "alert" &&
+			typeof type === "string" &&
+			/^(NOTE|TIP|IMPORTANT|WARNING|CAUTION)$/u.test(type);
+		return isAlert ? (
+			<blockquote data-type="alert" data-alert-type={type}>
+				<span className="article-alert-title">{type}</span>
+				{children}
+			</blockquote>
+		) : (
+			<blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 text-foreground/80">
+				{children}
+			</blockquote>
+		);
+	},
+	details: ({ children, open, id }) => (
+		<details id={id} open={open} className="article-details">
+			{children}
+		</details>
+	),
+	summary: ({ children, id }) => <summary id={id}>{children}</summary>,
 	ul: ({ children, ...props }) => {
 		const p = props as Record<string, unknown>;
 		const taskList =

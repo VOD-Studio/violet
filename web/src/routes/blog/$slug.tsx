@@ -110,11 +110,9 @@ function BlogDetailPage() {
 	}
 
 	// 正文渲染：content_html 为权威源（保颜色/对齐等 inline 样式），空则降级 content_md。
-	const body = post.content_html.trim() ? post.content_html : post.content_md;
-	const bodyIsHtml = /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span)\b[\s>]/i.test(
-		body,
-	);
-	const toc = bodyIsHtml ? extractToc(body) : extractMarkdownToc(body);
+	const contentType = post.content_html.trim() ? "html" : "markdown";
+	const body = contentType === "html" ? post.content_html : post.content_md;
+	const toc = contentType === "html" ? extractToc(body) : extractMarkdownToc(body);
 	const hasSidebarToc = toc.length > 1;
 	// 浏览量乐观显示 +1
 	const viewCount = post.view_count + 1;
@@ -153,7 +151,11 @@ function BlogDetailPage() {
 							onKeyDown={articleImages.bind.onKeyDown}
 							className="prose prose-neutral dark:prose-invert min-w-0 max-w-none flex-1 font-reading"
 						>
-							<ArticleRichContent content={body} className={readingStyles.content} />
+							<ArticleRichContent
+								content={body}
+								contentType={contentType}
+								className={readingStyles.content}
+							/>
 							{post.show_signature && post.author ? (
 								<ArticleSignature name={post.author.username} />
 							) : null}
