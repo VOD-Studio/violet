@@ -1,17 +1,9 @@
-/**
- * TweetTimeline - 全局时间线容器
- *
- * 组合：登录态显示 TweetComposer（匿名只见时间线）+ useTimeline 滚动加载
- * + 卡片列表 + 加载更多 / 骨架 / 空 / 错误态。
- *
- * 时间线对所有人公开（匿名可浏览），仅发布框按登录态门控。
- */
+/** 公开的全局或话题时间线，登录者可发布，所有人可按 cursor 加载更多。 */
 
 import { useMe } from "@features/auth/api/queries";
 import { useTimeline, useTopicTimeline } from "@features/tweets/api/queries";
 import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import TweetCard from "./TweetCard";
 import { TweetComposer } from "./TweetComposer";
 
@@ -35,14 +27,13 @@ export function TweetTimeline({ limit, tag }: TweetTimelineProps = {}) {
 
 	const tweets = data?.pages.flatMap((p) => p.data ?? []) ?? [];
 	return (
-		<div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-			{/* 发布框：仅登录态 */}
+		<div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
 			{isLoggedIn && <TweetComposer />}
 
 			{isLoading ? (
-				<div className="space-y-4">
+				<div className="flex flex-col gap-4">
 					{Array.from({ length: 3 }).map((_, i) => (
-						<ShimmerSkeleton key={i} className="h-40 w-full rounded-xl" />
+						<ShimmerSkeleton key={i} className="h-48 w-full rounded-2xl" />
 					))}
 				</div>
 			) : isError ? (
@@ -74,18 +65,12 @@ export function TweetTimeline({ limit, tag }: TweetTimelineProps = {}) {
 						<div className="flex justify-center py-2">
 							<Button
 								variant="outline"
-								size="sm"
+								loading={isFetchingNextPage}
+								loadingText="加载中…"
 								onClick={() => fetchNextPage()}
 								disabled={isFetchingNextPage}
 							>
-								{isFetchingNextPage ? (
-									<>
-										<Loader2 className="size-3.5 animate-spin" />
-										加载中…
-									</>
-								) : (
-									"加载更多"
-								)}
+								加载更多
 							</Button>
 						</div>
 					)}

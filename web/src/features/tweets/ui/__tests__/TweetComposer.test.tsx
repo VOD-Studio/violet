@@ -116,7 +116,7 @@ function previewFixture(): ExternalTweetPreview {
 
 async function openExternalPreview() {
 	fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
-	fireEvent.change(screen.getByPlaceholderText("https://x.com/用户名/status/推文ID"), {
+	fireEvent.change(screen.getByRole("textbox", { name: "X 推文链接" }), {
 		target: { value: "https://x.com/jack/status/20" },
 	});
 	await act(async () => {
@@ -135,15 +135,8 @@ describe("TweetComposer", () => {
 	});
 	afterEach(() => {
 		cleanup();
+		vi.useRealTimers();
 		vi.restoreAllMocks();
-	});
-
-	it("渲染输入框、图片按钮、表情按钮与发布按钮", () => {
-		render(<TweetComposer />);
-		expect(screen.getByPlaceholderText("有什么新鲜事？")).toBeTruthy();
-		expect(screen.getByLabelText("添加图片")).toBeTruthy();
-		expect(screen.getByLabelText("添加表情")).toBeTruthy();
-		expect(screen.getByRole("button", { name: /发布/ })).toBeTruthy();
 	});
 
 	it("选择表情后在输入框插入 [name] 占位符", () => {
@@ -190,20 +183,6 @@ describe("TweetComposer", () => {
 
 		expect(textarea.value).toBe("[mycat:00000000-0000-0000-0000-000000000001]");
 	});
-	it("提交推文调用 mutate", () => {
-		render(<TweetComposer />);
-		const textarea = screen.getByPlaceholderText("有什么新鲜事？");
-		fireEvent.change(textarea, { target: { value: "第一条推文 [doge]" } });
-
-		const submitBtn = screen.getByRole("button", { name: /发布/ });
-		fireEvent.click(submitBtn);
-
-		expect(mutateMock).toHaveBeenCalledWith(
-			{ content: "第一条推文 [doge]", images: [], quote_of: undefined },
-			expect.any(Object),
-		);
-	});
-
 	it("粘贴图片后上传并随推文提交，上传期间不可发布", async () => {
 		let finishUpload!: (result: { url: string }) => void;
 		uploadFileMock.mockReturnValueOnce(
@@ -335,7 +314,11 @@ describe("TweetComposer", () => {
 	});
 
 	it("纯转发只提交凭证，重复点击和网络重试沿用同一请求 ID", async () => {
-		previewPostMock.mockResolvedValue(previewFixture());
+		vi.useFakeTimers();
+		previewPostMock.mockResolvedValue({
+			...previewFixture(),
+			expires_at: new Date(Date.now() + 1000).toISOString(),
+		});
 		render(<TweetComposer />);
 		await openExternalPreview();
 		const submit = screen.getByRole("button", { name: "发布" });
@@ -351,6 +334,7 @@ describe("TweetComposer", () => {
 			client_request_id: expect.any(String),
 		});
 		act(() => mutateMock.mock.calls[0][1].onError(ApiError.network()));
+		act(() => vi.advanceTimersByTime(1100));
 		fireEvent.click(submit);
 		expect(mutateMock).toHaveBeenCalledTimes(2);
 		expect(mutateMock.mock.calls[1][0].client_request_id).toBe(first.client_request_id);
@@ -375,11 +359,77 @@ describe("TweetComposer", () => {
 		expect(screen.getByRole("alert").textContent).toBe("请重新预览");
 		expect(textarea.value).toBe("感想草稿");
 		expect(
-			(screen.getByPlaceholderText("https://x.com/用户名/status/推文ID") as HTMLInputElement)
-				.value,
+			(screen.getByRole("textbox", { name: "X 推文链接" }) as HTMLInputElement).value,
 		).toBe("https://x.com/jack/status/20");
 		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
 			true,
 		);
+	});
+
+	it("切换模式和取消保留正文与已上传媒体，普通发布不夹带旧 X 凭证", async () => {
+		previewPostMock.mockResolvedValue(previewFixture());
+		render(<TweetComposer />);
+		const textarea = screen.getByRole("textbox", { name: "推文正文" });
+		fireEvent.change(textarea, { target: { value: "我的草稿" } });
+		await act(async () =>
+			fireEvent.paste(textarea, {
+				clipboardData: {
+					files: [new File(["png"], "photo.png", { type: "image/png" })],
+					getData: () => "",
+				},
+			}),
+		);
+		await openExternalPreview();
+		fireEvent.click(screen.getByRole("button", { name: "写推文" }));
+		expect(
+			(screen.getByRole("textbox", { name: "推文正文" }) as HTMLTextAreaElement).value,
+		).toBe("我的草稿");
+		expect(screen.getByRole("button", { name: "移除图片" })).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
+		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
+			true,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "取消 X 转发" }));
+		fireEvent.click(screen.getByRole("button", { name: "发布" }));
+		expect(mutateMock.mock.calls[0][0]).toEqual({
+			content: "我的草稿",
+			images: ["/pasted.png"],
+			quote_of: undefined,
+		});
+	});
+
+	it("Ctrl/Cmd+Enter 仅从正文提交，X 链接输入只获取预览", async () => {
+		previewPostMock.mockResolvedValue(previewFixture());
+		render(<TweetComposer />);
+		fireEvent.change(screen.getByRole("textbox", { name: "推文正文" }), {
+			target: { value: "快捷发布" },
+		});
+		fireEvent.keyDown(screen.getByRole("textbox", { name: "推文正文" }), {
+			key: "Enter",
+			metaKey: true,
+		});
+		expect(mutateMock).toHaveBeenCalledTimes(1);
+		act(() => mutateMock.mock.calls[0][1].onError(ApiError.network()));
+		mutateMock.mockClear();
+		fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
+		const input = screen.getByRole("textbox", { name: "X 推文链接" });
+		fireEvent.change(input, { target: { value: "https://x.com/jack/status/20" } });
+		await act(async () => fireEvent.keyDown(input, { key: "Enter", ctrlKey: true }));
+		expect(previewPostMock).toHaveBeenCalledTimes(1);
+		expect(mutateMock).not.toHaveBeenCalled();
+	});
+
+	it("新预览已过期时禁止首次发布", async () => {
+		previewPostMock.mockResolvedValue({
+			...previewFixture(),
+			expires_at: new Date(Date.now() - 1000).toISOString(),
+		});
+		render(<TweetComposer />);
+		await openExternalPreview();
+		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
+			true,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "发布" }));
+		expect(mutateMock).not.toHaveBeenCalled();
 	});
 });

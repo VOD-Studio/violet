@@ -12,11 +12,13 @@ import { type MouseEvent, useState } from "react";
 import { toast } from "sonner";
 import { ExternalTweetActions } from "./ExternalTweetActions";
 import { QuotedTweetCard } from "./QuotedTweetCard";
+import styles from "./TweetCard.module.css";
 import { TweetCardFooter } from "./TweetCardFooter";
 import { TweetCardHeader } from "./TweetCardHeader";
 import { TweetCardImages } from "./TweetCardImages";
 import TweetComposer from "./TweetComposer";
 import TweetContent from "./TweetContent";
+import { TweetMoreMenu } from "./TweetMoreMenu";
 
 /** 本站推文的列表与详情展示形态。 */
 export type TweetCardVariant = "timeline" | "detail";
@@ -103,14 +105,26 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 		<>
 			<TweetCardLayout
 				aria-label={`${tweet.author.username} 的推文`}
-				className={isDetail ? undefined : "cursor-pointer"}
+				className={isDetail ? styles.card : `${styles.card} ${styles.interactive}`}
 				tabIndex={isDetail ? undefined : 0}
 				onClick={
 					isDetail
 						? undefined
 						: (event) => {
-								if (event.currentTarget.contains(event.target as Node))
-									openDetail();
+								const target = event.target;
+								if (
+									!(target instanceof Element) ||
+									!event.currentTarget.contains(target)
+								)
+									return;
+								if (
+									target.closest(
+										"a, button, input, textarea, select, video, audio, [role='button'], [role='menu'], [role='menuitem'], [contenteditable='true']",
+									)
+								)
+									return;
+								if (window.getSelection()?.toString()) return;
+								openDetail();
 							}
 				}
 				onKeyDown={
@@ -132,7 +146,16 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						tweetId={tweet.id}
 						createdAt={tweet.created_at}
 						isDetail={isDetail}
-						onDelete={canDelete ? () => setConfirmOpen(true) : undefined}
+						actionsSlot={
+							me.data && canDeleteAny && tweet.external_tweet ? (
+								<ExternalTweetActions
+									tweet={tweet.external_tweet}
+									onDelete={canDelete ? () => setConfirmOpen(true) : undefined}
+								/>
+							) : canDelete ? (
+								<TweetMoreMenu onDelete={() => setConfirmOpen(true)} />
+							) : undefined
+						}
 					/>
 				}
 				contentSlot={
@@ -149,12 +172,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of ? (
 						<div className="space-y-2">
 							{tweet.external_tweet && (
-								<>
-									<ExternalTweetCard tweet={tweet.external_tweet} />
-									{me.data && canDeleteAny && (
-										<ExternalTweetActions tweet={tweet.external_tweet} />
-									)}
-								</>
+								<ExternalTweetCard tweet={tweet.external_tweet} />
 							)}
 							{tweet.quoted_tweet && <QuotedTweetCard tweet={tweet.quoted_tweet} />}
 							{tweet.quote_of && !tweet.quoted_tweet && (

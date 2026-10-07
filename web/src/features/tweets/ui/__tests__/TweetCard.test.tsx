@@ -1,18 +1,6 @@
-/**
- * TweetCard 组件测试（T3：详情页导航与删除交互）
- *
- * 验证删除按钮可见性契约（对齐后端鉴权双重判定）：
- *   - 匿名（未登录）：无删除按钮
- *   - 登录但非作者、无权限：无删除按钮
- *   - 作者本人：可见删除按钮
- *   - 持 tweet:delete-any 权限：可见删除按钮（即使非作者）
- *
- * 验证删除确认流：点击删除 → 二次确认 → 调用 mutation.mutate。
- *
- * 范式参考 comments/ui/__tests__/ReactionBar.test.tsx（hook mock + render）。
- */
+/** 推文消费行为：管理权限、二次确认删除、本站互动与整卡导航边界。 */
 import type { Tweet } from "@entities/tweet/model/types";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // 当前用户态：每用例通过 meDataOverride 覆写
@@ -65,7 +53,7 @@ vi.mock("@violet/ui/confirm-dialog", () => ({
 
 // ImageGrid 含 ImagePreview（重），mock 掉避免 Radix portal 干扰
 vi.mock("@shared/ui/image-grid", () => ({
-	ImageGrid: () => <div data-testid="image-grid" />,
+	ImageGrid: () => <img src="/photo.png" alt="推文配图" />,
 }));
 
 import TweetCard from "../TweetCard";
@@ -83,6 +71,11 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		created_at: "2026-01-01T00:00:00Z",
 		...overrides,
 	};
+}
+
+async function openMoreMenu() {
+	fireEvent.keyDown(screen.getByRole("button", { name: "更多推文操作" }), { key: "Enter" });
+	await waitFor(() => expect(screen.getByRole("menu")).toBeTruthy());
 }
 
 describe("TweetCard — 删除按钮可见性", () => {
@@ -104,17 +97,19 @@ describe("TweetCard — 删除按钮可见性", () => {
 		expect(screen.queryByLabelText("删除推文")).toBeNull();
 	});
 
-	it("作者本人渲染删除按钮", () => {
+	it("作者本人可在更多菜单删除推文", async () => {
 		meDataOverride = { id: "u-author" };
 		render(<TweetCard tweet={makeTweet()} />);
-		expect(screen.getByLabelText("删除推文")).toBeTruthy();
+		await openMoreMenu();
+		expect(screen.getByRole("menuitem", { name: "删除推文" })).toBeTruthy();
 	});
 
-	it("持 tweet:delete-any 权限者（非作者）渲染删除按钮", () => {
+	it("持 tweet:delete-any 权限者（非作者）可在更多菜单删除推文", async () => {
 		meDataOverride = { id: "u-admin" };
 		hasDeleteAny = true;
 		render(<TweetCard tweet={makeTweet()} />);
-		expect(screen.getByLabelText("删除推文")).toBeTruthy();
+		await openMoreMenu();
+		expect(screen.getByRole("menuitem", { name: "删除推文" })).toBeTruthy();
 	});
 });
 
@@ -126,12 +121,12 @@ describe("TweetCard — 删除确认流", () => {
 	});
 	afterEach(() => cleanup());
 
-	it("点击删除 → 二次确认 → 调用 delete mutation", () => {
+	it("点击删除 → 二次确认 → 调用 delete mutation", async () => {
 		const onDeleted = vi.fn();
 		render(<TweetCard tweet={makeTweet({ id: "t-del" })} onDeleted={onDeleted} />);
 
-		// 点击删除按钮打开确认
-		fireEvent.click(screen.getByLabelText("删除推文"));
+		await openMoreMenu();
+		fireEvent.click(screen.getByRole("menuitem", { name: "删除推文" }));
 		expect(screen.getByTestId("confirm-btn")).toBeTruthy();
 
 		// 确认 → 触发 mutate（onSuccess/onDeleted 由调用方 mutation 控制态，
@@ -194,5 +189,62 @@ describe("TweetCard — 点赞交互", () => {
 		render(<TweetCard tweet={tweet} />);
 
 		expect(screen.getByTestId("like-button").getAttribute("aria-label")).toBe("取消点赞");
+	});
+});
+
+describe("TweetCard — 整卡导航边界", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		meDataOverride = null;
+		hasDeleteAny = false;
+	});
+	afterEach(() => {
+		window.getSelection()?.removeAllRanges();
+		cleanup();
+	});
+
+	it("正文点击及整卡 Enter/Space 导航，子链接键盘不重复导航", () => {
+		render(<TweetCard tweet={makeTweet()} />);
+		fireEvent.click(screen.getByText("hello world"));
+		const card = screen.getByLabelText("author 的推文");
+		fireEvent.keyDown(card, { key: "Enter" });
+		fireEvent.keyDown(card, { key: " " });
+		expect(navigateMock).toHaveBeenCalledTimes(3);
+		fireEvent.keyDown(screen.getByRole("link", { name: "author" }), { key: "Enter" });
+		expect(navigateMock).toHaveBeenCalledTimes(3);
+	});
+
+	it("选中文字后点击卡片不会离开时间线", () => {
+		render(<TweetCard tweet={makeTweet()} />);
+		const content = screen.getByText("hello world");
+		const range = document.createRange();
+		range.selectNodeContents(content);
+		window.getSelection()?.addRange(range);
+		fireEvent.click(content);
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("点击图片和更多菜单不会触发详情导航", async () => {
+		meDataOverride = { id: "u-author" };
+		render(<TweetCard tweet={makeTweet({ images: ["/photo.png"] })} />);
+		fireEvent.click(screen.getByRole("img", { name: "推文配图" }));
+		await openMoreMenu();
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("点击纯表情正文仍进入详情，不把内联表情当作独立配图", () => {
+		render(
+			<TweetCard
+				tweet={makeTweet({
+					content: "[doge]",
+					emote: { "[doge]": { url: "/doge.png" } },
+				})}
+			/>,
+		);
+		fireEvent.click(screen.getByRole("img", { name: "[doge]" }));
+		expect(navigateMock).toHaveBeenCalledWith({
+			to: "/tweets/$id",
+			params: { id: "t1" },
+		});
 	});
 });

@@ -1,0 +1,48 @@
+:is(.card, .references) {
+	--tweet-font-family: var(--font-reading);
+}
+
+.card {
+	--tweet-radius: 1rem;
+	--tweet-border: var(--edge-hairline);
+	padding: 1.25rem;
+	font-size: 1rem;
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+}
+
+:is(.card, .references) [class~="v-tweet"] {
+	border: 0;
+	background: color-mix(in oklch, var(--muted) 55%, var(--card));
+}
+
+:is(.card, .references) [class~="v-tweet--quoted"] {
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	background: var(--card);
+}
+
+.interactive {
+	cursor: pointer;
+	transition: border-color 160ms ease;
+}
+
+.interactive:hover {
+	border-color: var(--border);
+}
+
+.interactive:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 3px;
+}
+
+@media (width < 40rem) {
+	.card {
+		padding: 1rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.interactive {
+		transition: none;
+	}
+}

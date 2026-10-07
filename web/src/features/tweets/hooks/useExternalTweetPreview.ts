@@ -11,8 +11,21 @@ export interface ExternalTweetPreview {
 	warnings: string[] | null;
 }
 
+/** 发布器持有的链接、可发布凭证及请求生命周期。 */
+export interface ExternalTweetPreviewState {
+	url: string;
+	preview: ExternalTweetPreview | null;
+	loading: boolean;
+	error: string | null;
+	expired: boolean;
+	setUrl: (value: string) => void;
+	load: () => Promise<void>;
+	reset: () => void;
+	invalidate: (message?: string | null) => void;
+}
+
 /** 更换链接、取消或卸载均使旧请求失效，保留发布器自己的感想和图片。 */
-export function useExternalTweetPreview() {
+export function useExternalTweetPreview(): ExternalTweetPreviewState {
 	const [url, setInput] = useState("");
 	const [preview, setPreview] = useState<ExternalTweetPreview | null>(null);
 	const [loading, setLoading] = useState(false);

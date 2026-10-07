@@ -1,0 +1,119 @@
+.composer {
+	min-width: 0;
+	padding: 1.25rem;
+	border: 1px solid var(--edge-hairline);
+	border-radius: 1rem;
+	background: var(--card);
+	font-family: var(--font-reading);
+}
+
+.composer .field {
+	display: block;
+	width: 100%;
+	min-height: 4rem;
+	padding: 0.5rem 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	font-family: inherit;
+	font-size: 1rem;
+	line-height: 1.65;
+	resize: vertical;
+}
+
+.composer .field:focus,
+.composer .filled {
+	min-height: 6rem;
+}
+
+.composer .field:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 3px;
+}
+
+.quotedComposer {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+
+@media (width < 40rem) {
+	.composer {
+		padding: 1rem;
+	}
+
+	.quotedComposer {
+		padding: 0;
+	}
+}
+
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	padding: 0.25rem 0.5rem;
+	border: 0;
+	border-radius: 0.5rem;
+	background: transparent;
+	color: var(--muted-foreground);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: color 140ms ease;
+}
+
+.action[aria-pressed="true"],
+.action:hover:not(:disabled) {
+	color: var(--foreground);
+}
+
+.action[aria-pressed="true"] {
+	font-weight: 600;
+}
+
+.action:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+.action:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.submit {
+	padding: 0;
+}
+
+.submit:disabled {
+	opacity: 1;
+}
+
+.submitLabel {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 1.75rem;
+	padding: 0.25rem 0.75rem;
+	border-radius: 0.5rem;
+	background: var(--primary);
+	color: var(--primary-foreground);
+	font-weight: 600;
+	line-height: 1.25;
+}
+
+.submit:disabled:not([aria-busy="true"]) .submitLabel {
+	background: var(--muted);
+	color: var(--muted-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.action {
+		transition: none;
+	}
+}
