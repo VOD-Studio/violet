@@ -11,8 +11,6 @@ import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
  *
  * 匿名可访问。route loader 预取首屏（ensureQueryData），useTweetDetail 跟踪
  * 同一 queryKey 命中缓存。推文不存在/已删除 → 后端 404 → 友好兜底页。
- *
- * 结构上预留 P2 评论区、P3 转发链接落点（TweetCard 之下追加区域）。
  */
 function TweetDetailPage() {
 	const { id } = Route.useParams();
@@ -26,7 +24,7 @@ function TweetDetailPage() {
 	if (isLoading && !current) {
 		return (
 			<PageShell>
-				<div className="mx-auto w-full max-w-2xl">
+				<div className="mx-auto w-full max-w-3xl">
 					<ShimmerSkeleton className="h-48 w-full rounded-xl" />
 				</div>
 			</PageShell>
@@ -48,10 +46,10 @@ function TweetDetailPage() {
 
 	return (
 		<PageShell>
-			<div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+			<div className="mx-auto flex w-full max-w-3xl flex-col gap-6 font-reading">
 				<HistoryBack
 					fallbackTo="/tweets"
-					className="w-fit gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+					className="min-h-11 w-fit gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
 					返回时间线
 				</HistoryBack>
@@ -59,7 +57,6 @@ function TweetDetailPage() {
 				<TweetCard
 					tweet={current}
 					variant="detail"
-					// 删除成功后缓存已自动联动，详情页导航回时间线
 					onDeleted={() => navigate({ to: "/tweets" })}
 				/>
 

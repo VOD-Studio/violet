@@ -87,3 +87,47 @@ it("换推文时恢复折叠，宽度改变后不再溢出的正文移除按钮"
 	expect(screen.queryByRole("button")).toBeNull();
 	expect(screen.getByRole("link", { name: "链接" }).tabIndex).toBe(0);
 });
+
+it("长引用与外层正文分别折叠，展开引用不展开外层或触发导航", () => {
+	const navigate = vi.fn();
+	const quoted = {
+		...tweet,
+		id: "32",
+		url: "https://x.com/example/status/32",
+		snapshot: { ...tweet.snapshot, text: "引用的完整正文", segments: undefined },
+	};
+	render(
+		<EmbeddedTweet
+			tweet={{ ...tweet, quotedTweet: quoted }}
+			locale="zh-CN"
+			onClick={navigate}
+		/>,
+	);
+	const [outer, inner] = screen.getAllByRole("button", { name: "展示更多" });
+	expect(outer.getAttribute("aria-expanded")).toBe("false");
+	expect(inner.getAttribute("aria-expanded")).toBe("false");
+	fireEvent.click(inner);
+	expect(inner.getAttribute("aria-expanded")).toBe("true");
+	expect(outer.getAttribute("aria-expanded")).toBe("false");
+	expect(screen.getByRole("button", { name: "收起" })).toBe(inner);
+	fireEvent.click(inner);
+	expect(inner.getAttribute("aria-expanded")).toBe("false");
+	expect(screen.getByText("引用的完整正文")).toBeTruthy();
+	expect(navigate).not.toHaveBeenCalled();
+});
+
+it("显式关闭折叠时外层与引用均可直接访问全文链接", () => {
+	render(
+		<EmbeddedTweet
+			tweet={{
+				...tweet,
+				quotedTweet: { ...tweet, id: "32", url: "https://x.com/example/status/32" },
+			}}
+			maxTextLines={0}
+		/>,
+	);
+	expect(screen.queryByRole("button")).toBeNull();
+	for (const link of screen.getAllByRole("link", { name: "链接" })) {
+		expect(link.tabIndex).toBe(0);
+	}
+});

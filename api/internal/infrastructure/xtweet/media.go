@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	_ "golang.org/x/image/webp"
 	"golang.org/x/sync/errgroup"
 
@@ -89,16 +90,17 @@ func (s *MediaStore) Prepare(ctx context.Context, id, version string, snapshot *
 		return &apptweet.ExternalFetchError{Kind: "media_failed"}
 	}
 	if source := snapshot.Author.AvatarSourceURL; source != "" {
-		avatarURL, checkErr := mediaURL(source, false)
-		if checkErr == nil {
-			name, _, _, downloadErr := s.download(ctx, avatarURL, tmp, "avatar", total)
-			if downloadErr == nil {
+		avatarURL, avatarErr := mediaURL(source, false)
+		if avatarErr == nil {
+			var name string
+			name, _, _, avatarErr = s.download(ctx, avatarURL, tmp, "avatar", total)
+			if avatarErr == nil {
 				snapshot.Author.AvatarSourceURL = avatarURL
 				snapshot.Author.AvatarURL = s.assetURL(id, version, name)
 			}
 		}
-		if snapshot.Author.AvatarURL == "" {
-			snapshot.Warnings = append(snapshot.Warnings, "原作者头像暂不可用")
+		if avatarErr != nil {
+			log.Warn().Err(avatarErr).Str("external_tweet_id", id).Msg("保存 X 原作者头像失败，使用姓名占位")
 		}
 	}
 	if ctx.Err() != nil {

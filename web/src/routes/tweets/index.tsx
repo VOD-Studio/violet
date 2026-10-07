@@ -1,14 +1,15 @@
 import { TweetTimeline } from "@features/tweets/ui/TweetTimeline";
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader, PageShell } from "@violet/ui";
+import { PageShell } from "@violet/ui";
 
 /** /tweets - 全局推文时间线（公开）：登录态见发布框，匿名只见时间线，cursor 滚动加载 */
 function TweetsPage() {
 	return (
 		<PageShell>
-			{/* 页头随时间线同列对齐(话题页同构),避免贴宽容器左缘与内容错位 */}
-			<div className="mx-auto w-full max-w-2xl">
-				<PageHeader eyebrow="Timeline" title="推文" />
+			<div className="mx-auto w-full max-w-3xl">
+				<header className="mb-6 px-1">
+					<h1 className="font-mono text-3xl font-bold tracking-tight">推文</h1>
+				</header>
 				<TweetTimeline />
 			</div>
 		</PageShell>

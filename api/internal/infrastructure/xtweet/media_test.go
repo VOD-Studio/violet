@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"hash/crc32"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"io"
 	"net/http"
@@ -119,7 +121,7 @@ func TestMediaStoreOptionalAvatarAndCleanupProtectCurrentVersion(t *testing.T) {
 	var total int64
 	require.NoError(t, store.Prepare(context.Background(), id, version, snapshot, &total))
 	assert.Empty(t, snapshot.Author.AvatarURL)
-	assert.Contains(t, snapshot.Warnings, "原作者头像暂不可用")
+	assert.Empty(t, snapshot.Warnings)
 	files, err := os.ReadDir(filepath.Join(root, "external-tweets", id, version))
 	require.NoError(t, err)
 	assert.Empty(t, files)
@@ -133,4 +135,54 @@ func TestMediaStoreOptionalAvatarAndCleanupProtectCurrentVersion(t *testing.T) {
 	assert.True(t, os.IsNotExist(err))
 	_, err = os.Stat(filepath.Join(root, "external-tweets", id, version))
 	require.NoError(t, err)
+}
+
+func TestMediaStoreSavesJPEGAvatarAndMedia(t *testing.T) {
+	root, id, version := t.TempDir(), uuid.NewString(), uuid.NewString()
+	var body bytes.Buffer
+	require.NoError(t, jpeg.Encode(&body, image.NewRGBA(image.Rect(0, 0, 200, 200)), nil))
+	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return mediaResponse(body.Bytes(), "image/jpeg"), nil
+	})})
+	snapshot := &tweet.ExternalSnapshot{
+		Author: tweet.ExternalAuthor{AvatarSourceURL: "https://pbs.twimg.com/profile_images/avatar.jpg"},
+		Media:  []tweet.ExternalMedia{{Kind: "photo", SourceURL: "https://pbs.twimg.com/media/photo.jpg"}},
+	}
+	var total int64
+	require.NoError(t, store.Prepare(context.Background(), id, version, snapshot, &total))
+	assert.Equal(t, "/uploads/external-tweets/"+id+"/"+version+"/avatar.jpg", snapshot.Author.AvatarURL)
+	assert.Empty(t, snapshot.Warnings)
+	assert.Equal(t, int64(body.Len()*2), total)
+	for _, asset := range []string{snapshot.Author.AvatarURL, snapshot.Media[0].URL} {
+		file, err := os.Open(filepath.Join(root, strings.TrimPrefix(asset, "/uploads/")))
+		require.NoError(t, err)
+		decoded, format, decodeErr := image.Decode(file)
+		require.NoError(t, file.Close())
+		require.NoError(t, decodeErr)
+		assert.Equal(t, "jpeg", format)
+		assert.Equal(t, image.Rect(0, 0, 200, 200), decoded.Bounds())
+	}
+	require.NoError(t, store.DeleteVersion(context.Background(), id, version))
+	_, err := os.Stat(filepath.Join(root, "external-tweets", id, version))
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestMediaStoreUnavailableAvatarDoesNotHideContentWarnings(t *testing.T) {
+	for _, source := range []string{"", "https://evil.test/avatar.jpg", "https://pbs.twimg.com/profile_images/missing.jpg"} {
+		t.Run(source, func(t *testing.T) {
+			root := t.TempDir()
+			store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				return nil, errors.New("source unavailable")
+			})})
+			snapshot := &tweet.ExternalSnapshot{
+				Author:   tweet.ExternalAuthor{Name: "Original author", AvatarSourceURL: source},
+				Warnings: []string{"投票请在 X 查看"},
+			}
+			var total int64
+			require.NoError(t, store.Prepare(context.Background(), uuid.NewString(), uuid.NewString(), snapshot, &total))
+			assert.Empty(t, snapshot.Author.AvatarURL)
+			assert.Equal(t, []string{"投票请在 X 查看"}, snapshot.Warnings)
+			assert.Zero(t, total)
+		})
+	}
 }

@@ -2,9 +2,9 @@ import type { TweetAuthor } from "@entities/tweet/model/types";
 import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 
-/** 本站作者、发布时间及可选删除入口。 */
+/** 本站作者、发布时间及可选管理菜单。 */
 export interface TweetCardHeaderProps {
 	/** 本站作者资料。 */
 	author: TweetAuthor;
@@ -14,8 +14,8 @@ export interface TweetCardHeaderProps {
 	createdAt: string;
 	/** 详情卡在底部展示完整时间。 */
 	isDetail?: boolean;
-	/** 缺省时不显示删除入口，权限由调用方判定。 */
-	onDelete?: () => void;
+	/** 缺省时不显示管理菜单，权限由调用方判定。 */
+	actionsSlot?: ReactNode;
 }
 
 /** 复用推文包的作者布局，所有作者与时间链接留在本站。 */
@@ -24,7 +24,7 @@ export function TweetCardHeader({
 	tweetId,
 	createdAt,
 	isDetail = false,
-	onDelete,
+	actionsSlot,
 }: TweetCardHeaderProps) {
 	return (
 		<header className="v-tweet__header">
@@ -52,7 +52,15 @@ export function TweetCardHeader({
 					>
 						{author.username}
 					</Link>
-					{!isDetail && (
+					{isDetail ? (
+						<time
+							dateTime={createdAt}
+							title={formatDateTime(createdAt, "long")}
+							className="v-tweet__handle"
+						>
+							{formatDateTime(createdAt)}
+						</time>
+					) : (
 						<Link
 							to="/tweets/$id"
 							params={{ id: tweetId }}
@@ -66,19 +74,7 @@ export function TweetCardHeader({
 					)}
 				</div>
 			</div>
-			{onDelete && (
-				<button
-					type="button"
-					aria-label="删除推文"
-					className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-					onClick={(event) => {
-						event.stopPropagation();
-						onDelete();
-					}}
-				>
-					<Trash2 className="size-4" />
-				</button>
-			)}
+			{actionsSlot}
 		</header>
 	);
 }

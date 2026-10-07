@@ -226,7 +226,8 @@ func (s *ExternalService) saveFetched(ctx context.Context, ext *domaintweet.Exte
 	fingerprint := hex.EncodeToString(hash[:])
 	expected := ext.Version
 	prepared := false
-	if ext.Fingerprint != fingerprint || !ext.CanPublish() {
+	needsAvatar := ext.Snapshot != nil && ext.Snapshot.Author.AvatarURL == "" && fetched.Snapshot.Author.AvatarSourceURL != ""
+	if ext.Fingerprint != fingerprint || !ext.CanPublish() || needsAvatar {
 		ext.Version = uuid.NewString()
 		if err := s.media.Prepare(ctx, ext.ID.String(), ext.Version, fetched.Snapshot, total); err != nil {
 			return nil, &ExternalFetchError{Kind: "media_failed"}

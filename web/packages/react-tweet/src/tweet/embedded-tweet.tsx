@@ -56,7 +56,7 @@ const noticeMessages: Record<TweetNotice, keyof TweetMessages> = {
 export function EmbeddedTweet({
 	tweet,
 	compact = false,
-	maxTextLines,
+	maxTextLines = 6,
 	locale,
 	timeZone,
 	messages,
@@ -168,6 +168,7 @@ function TweetContent({
 					<TweetContent
 						tweet={tweet.quotedTweet}
 						compact
+						maxTextLines={maxTextLines}
 						renderPhotos={renderPhotos}
 						renderVideo={renderVideo}
 						localization={localization}

@@ -1,0 +1,200 @@
+.composer {
+	display: grid;
+	grid-template-columns: 2.5rem minmax(0, 1fr);
+	column-gap: 0.75rem;
+	row-gap: 0.25rem;
+	min-width: 0;
+	padding: 1.25rem 1.25rem 0.75rem;
+	border: 1px solid var(--border);
+	border-radius: 1rem;
+	background: color-mix(in oklab, var(--muted) 60%, var(--card));
+	font-family: var(--font-reading);
+}
+
+.composer:has(.field:focus-visible) {
+	border-color: var(--ring);
+}
+
+.avatar {
+	width: 2.5rem;
+	height: 2.5rem;
+	margin-top: 0.125rem;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.editor {
+	grid-column: 2;
+	min-width: 0;
+}
+
+.sourcePopover {
+	width: 20rem;
+	max-width: calc(100vw - 2rem);
+	padding: 0.75rem;
+	border-radius: 0.75rem;
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+	font-family: var(--font-reading);
+	animation: none;
+}
+
+.sourcePopover input:focus-visible {
+	border-color: transparent;
+	outline-offset: -1px;
+}
+
+.references {
+	grid-column: 1 / -1;
+	min-width: 0;
+	padding-block: 0.5rem;
+}
+
+.toolbar {
+	grid-column: 2;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.status {
+	grid-column: 1 / -1;
+}
+
+.counter {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.composer .field {
+	display: block;
+	width: 100%;
+	min-height: 4.5rem;
+	max-height: 18rem;
+	padding: 0.125rem 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	font-family: inherit;
+	font-size: 0.875rem;
+	line-height: 1.65;
+	caret-color: var(--primary);
+	field-sizing: content;
+	resize: none;
+}
+
+.composer .field:focus-visible {
+	outline: none;
+}
+
+.quotedComposer {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+
+.quotedComposer .field:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 3px;
+}
+
+@media (width < 40rem) {
+	.composer {
+		grid-template-columns: 2rem minmax(0, 1fr);
+		column-gap: 0.625rem;
+		padding: 1rem 1rem 0.75rem;
+	}
+
+	.avatar {
+		width: 2rem;
+		height: 2rem;
+	}
+
+	.toolbar {
+		grid-column: 1 / -1;
+	}
+
+	.composer .field {
+		font-size: 1rem;
+	}
+
+	.quotedComposer {
+		padding: 0;
+	}
+}
+
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	padding: 0.25rem 0.5rem;
+	border: 0;
+	border-radius: 0.5rem;
+	background: transparent;
+	color: var(--muted-foreground);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: color 150ms ease;
+}
+
+.action[aria-pressed="true"],
+.action:hover:not(:disabled),
+.action:active:not(:disabled) {
+	color: var(--primary);
+}
+
+.action:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+.action:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.submit {
+	padding: 0;
+}
+
+.submit:disabled {
+	opacity: 1;
+}
+
+.submitLabel {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	min-height: 2rem;
+	padding: 0.25rem 0.75rem;
+	border-radius: 0.5rem;
+	background: var(--primary);
+	color: var(--primary-foreground);
+	font-weight: 600;
+	line-height: 1.25;
+	transition: background-color 150ms ease;
+}
+
+.submit:disabled:not([aria-busy="true"]) .submitLabel {
+	background: color-mix(in oklab, var(--primary) 55%, var(--card));
+}
+
+.submit:hover:not(:disabled) .submitLabel {
+	background: color-mix(in oklab, var(--primary) 90%, var(--foreground));
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.action,
+	.submitLabel {
+		transition: none;
+	}
+}

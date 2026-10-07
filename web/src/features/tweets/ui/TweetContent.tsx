@@ -1,10 +1,3 @@
-/**
- * TweetContent - 推文正文组件
- *
- * 将正文中的 #话题# 解析为跳转到 /tweets/topics/$tag 的 Clickable Link，
- * 将正文中的 [name] 占位符解析为内联表情图片，阻止冒泡避免触发整卡点击进入详情页。
- */
-
 import type { TweetEmoteRef } from "@entities/tweet/model/types";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { Link } from "@tanstack/react-router";

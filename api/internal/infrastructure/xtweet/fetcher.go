@@ -30,11 +30,40 @@ func NewFetcher(client *http.Client) *Fetcher {
 	return &Fetcher{client: safeClient(client, "api.fxtwitter.com", "cdn.syndication.twimg.com"), cooldown: make(map[string]time.Time)}
 }
 
-func safeClient(client *http.Client, hosts ...string) *http.Client {
-	copy := http.Client{Transport: ssrf.NewSafeTransport()}
-	if client != nil {
-		copy.Transport = client.Transport
+type allowedTransport struct {
+	hosts   []string
+	direct  http.RoundTripper
+	proxied http.RoundTripper
+	proxy   func(*http.Request) (*url.URL, error)
+}
+
+func (t *allowedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if err := checkURL(req.URL, t.hosts...); err != nil {
+		return nil, err
 	}
+	if t.proxy != nil {
+		proxy, err := t.proxy(req)
+		if err != nil {
+			return nil, err
+		}
+		if proxy != nil {
+			return t.proxied.RoundTrip(req)
+		}
+	}
+	return t.direct.RoundTrip(req)
+}
+
+func safeClient(client *http.Client, hosts ...string) *http.Client {
+	transport := &allowedTransport{
+		hosts: hosts, direct: ssrf.NewSafeTransport(),
+		proxied: &http.Transport{Proxy: http.ProxyFromEnvironment},
+		proxy:   http.ProxyFromEnvironment,
+	}
+	if client != nil && client.Transport != nil {
+		transport.direct, transport.proxy = client.Transport, nil
+	}
+	// 部署配置的代理承担代理链路的网络隔离；NO_PROXY 仍逐请求走 SSRF 安全直连。
+	copy := http.Client{Transport: transport}
 	copy.Timeout = 6 * time.Second
 	copy.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 3 {
