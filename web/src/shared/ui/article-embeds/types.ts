@@ -106,7 +106,7 @@ export interface TweetReferenceConfig {
 	 * { id: "20" }
 	 */
 	id: string;
-	/** 正整数表示正文折叠行数；省略时展示全文，不折叠媒体。 */
+	/** 正整数表示正文折叠行数；省略时为 6 行，0 展示全文，不折叠媒体。 */
 	maxTextLines?: number;
 }
 
@@ -138,7 +138,7 @@ export interface TweetSnapshotConfig {
 	date?: string;
 	/** 作者是否认证；未知时省略，不据此推断身份。 */
 	verified?: boolean;
-	/** 正整数表示正文折叠行数；省略时展示全文，不折叠媒体。 */
+	/** 正整数表示正文折叠行数；省略时为 6 行，0 展示全文，不折叠媒体。 */
 	maxTextLines?: number;
 }
 

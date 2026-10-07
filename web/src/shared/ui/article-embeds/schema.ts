@@ -44,7 +44,7 @@ const linkPreviewSchema = z.object({
 	site: optionalText(120),
 });
 
-const maxTextLines = z.number().int().positive().optional();
+const maxTextLines = z.number().int().nonnegative().optional();
 
 const tweetSnapshotSchema = z.object({
 	url: href,
