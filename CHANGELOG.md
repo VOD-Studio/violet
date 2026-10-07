@@ -7,6 +7,29 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.58](https://github.com/VOD-Studio/violet/compare/v2.8.57...v2.8.58) (2026-10-07)
+
+
+### 新增
+
+* **article-embeds:** 支持推文全文展示配置 ([1c0f908](https://github.com/VOD-Studio/violet/commit/1c0f908bf798651086b722084ad4b4a1fb6871be))
+* **editor:** 保留原生文本与折叠结构 ([aa7cfb2](https://github.com/VOD-Studio/violet/commit/aa7cfb2a8d7da992931ecf3d0903c90f4c8a7d24))
+* **editor:** 完善原生文章语法 ([218d27c](https://github.com/VOD-Studio/violet/commit/218d27c2e62f3b37b3e1711f66c99654d28e473a))
+* **editor:** 编辑 GitHub 提示块 ([042efb3](https://github.com/VOD-Studio/violet/commit/042efb30f376a115d4054e6c142f6ccd27f1dc2d))
+* **markdown-preview:** 渲染原生文章语法 ([c671dc0](https://github.com/VOD-Studio/violet/commit/c671dc021f4636b5406e0eb2dd53560af5ceaa0f))
+* **markdown:** 解析 GitHub 提示块 ([ba2c5ee](https://github.com/VOD-Studio/violet/commit/ba2c5ee83bd6e6300e7991bb7030f153f113d7e2))
+* **post:** 保留原生内容的 Markdown 转换语义 ([efdace6](https://github.com/VOD-Studio/violet/commit/efdace6db9e45c5c85ca23264e6d4f99c6418a2b))
+* **react-tweet:** 默认折叠长推文正文 ([dd91acb](https://github.com/VOD-Studio/violet/commit/dd91acbb39978c6231eec816d7069c7617ef1ffc))
+* **tweets:** 完善推文浏览与发布 ([8f21001](https://github.com/VOD-Studio/violet/commit/8f21001e2087cb8ea7c0c170f7e48e36f1dea7df))
+* **tweets:** 重设计推文浏览与发布界面 ([2473373](https://github.com/VOD-Studio/violet/commit/24733737c0d3a390caf118d4dd6816bed6afab10))
+
+
+### 修复
+
+* **markdown-preview:** 按正文来源选择解析格式 ([ee19b4a](https://github.com/VOD-Studio/violet/commit/ee19b4a1b5af73bba76ba1a4fd875090162e6fc8))
+* **tweets:** 将原文链接输入收进浮层 ([6e4f1dc](https://github.com/VOD-Studio/violet/commit/6e4f1dc4d161a15f19efea31be04c99834143147))
+* **xtweet:** 修复原作者头像的代理下载 ([4357da9](https://github.com/VOD-Studio/violet/commit/4357da949c2b04a8c3b3ec9f594e9376d7aa0621))
+
 ## [2.8.57](https://github.com/VOD-Studio/violet/compare/v2.8.56...v2.8.57) (2026-10-06)
 
 
