@@ -173,11 +173,6 @@ export const markdownComponents: Components = {
 			{children}
 		</p>
 	),
-	blockquote: ({ children }) => (
-		<blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 text-foreground/80">
-			{children}
-		</blockquote>
-	),
 	strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
 	em: ({ children }) => <em className="italic">{children}</em>,
 	del: ({ children }) => <del className="text-muted-foreground line-through">{children}</del>,
@@ -233,7 +228,12 @@ export const markdownComponents: Components = {
 			);
 		}
 		return (
-			<div id={id} role={role} className={className}>
+			<div
+				id={id}
+				role={role}
+				className={className}
+				data-type={p["data-type"] === "detailsContent" ? "detailsContent" : undefined}
+			>
 				{children}
 			</div>
 		);
