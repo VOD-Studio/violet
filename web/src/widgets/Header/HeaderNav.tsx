@@ -1,130 +1,72 @@
-import type { NavRouteItem } from "@shared/config/nav";
-import { NAV_ITEMS } from "@shared/config/nav";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { NAV_ITEMS, resolveActiveNav } from "@shared/config/nav";
+import { useRouterState } from "@tanstack/react-router";
+import { DropdownGroup, Segmented, type SegmentedItem } from "@violet/ui";
+import { ChevronDown } from "lucide-react";
 
-import type { SegmentedItem } from "@violet/ui";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Segmented } from "@violet/ui";
-import { cn } from "cn";
-import { ChevronDown, LayoutGrid } from "lucide-react";
-import { useState } from "react";
+import HeaderNavCell from "./HeaderNavCell";
+import { useNavTitle } from "./use-nav-title";
 
-import HeaderNavItem from "./HeaderNavItem";
-
-/** 配置主导航非路由项的行为。 */
-export interface HeaderNavProps {
-	/** 触发非路由项时接收其动作标识。 */
-	onAction?: (action: string) => void;
-}
-
-/** 渲染主导航分段与次级页面菜单。 */
-const HeaderNav = ({ onAction }: HeaderNavProps) => {
-	const primaryItems = NAV_ITEMS.filter(
-		(item): item is NavRouteItem => item.type === "route" && Boolean(item.primary),
-	);
-	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
-	const [browseOpen, setBrowseOpen] = useState(false);
+/**
+ * 渲染主导航岛：悬停展开二级菜单，详情页在选中项上显示标题。
+ *
+ * 阅读态下整岛宽度不变，其余项收为图标，避免标题把导航撑宽造成抖动。
+ */
+const HeaderNav = () => {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
-	const navigate = useNavigate();
-	const activePrimary = primaryItems.find((item) => matchesRoute(pathname, item));
-	const activeSecondary = secondaryItems.find(
-		(item): item is NavRouteItem => item.type === "route" && matchesRoute(pathname, item),
-	);
+	const navTitle = useNavTitle();
 
-	const activeValue = activePrimary ? activePrimary.to : "";
+	const active = resolveActiveNav(pathname);
+	// location 先于 matches 更新：标题只在它所属页面仍是当前导航位置时生效
+	const title =
+		active && navTitle && resolveActiveNav(navTitle.path)?.item === active.item
+			? navTitle.title
+			: null;
+	const reading = title !== null;
 
-	const segments: SegmentedItem[] = primaryItems.map((item) => {
-		const Icon = item.icon;
+	const segments: SegmentedItem[] = NAV_ITEMS.map((item) => {
+		const current = active?.item === item;
+		const expanded = reading && current;
+		const Icon = expanded && active ? active.link.icon : item.icon;
 		return {
-			value: item.to,
-			label: (
-				<span className="flex items-center gap-1.5">
-					<Icon className="size-3.5 shrink-0" />
-					<span>{item.label}</span>
-				</span>
+			value: item.label,
+			// 带尾部箭头的分组项有两枚图标，加宽后内边距与其余项一致
+			weight: item.to === undefined ? 1.25 : 1,
+			icon: <Icon className="size-4 shrink-0" />,
+			label: expanded ? title : item.label,
+			trailing:
+				item.to === undefined ? (
+					<ChevronDown
+						aria-hidden="true"
+						className="size-3 transition-transform duration-300 group-data-[state=open]/item:rotate-180"
+					/>
+				) : undefined,
+			title: reading && !current ? item.label : undefined,
+			render: (segment) => (
+				<HeaderNavCell
+					item={item}
+					segment={segment}
+					current={current}
+					activeTo={active?.link.to}
+				/>
 			),
 		};
 	});
 
 	return (
-		<nav
-			aria-label="主导航"
-			className="pointer-events-auto relative hidden h-10 items-center gap-1 rounded-full border border-border/60 bg-background/80 px-0.75 py-1 shadow-xs backdrop-blur-md lg:flex dark:bg-card/85"
-		>
-			<Segmented
-				value={activeValue}
-				onValueChange={(to) => navigate({ to })}
-				segments={segments}
-				rounded="full"
-				size="sm"
-				indicatorClassName="bg-foreground shadow-none ring-0"
-				activeItemClassName="font-semibold text-background"
-				itemClassName="rounded-full px-3 text-xs transition-colors duration-150"
-			/>
-
-			{secondaryItems.length > 0 && (
-				<DropdownMenu open={browseOpen} onOpenChange={setBrowseOpen}>
-					<DropdownMenuTrigger asChild>
-						<button
-							type="button"
-							aria-label={
-								activeSecondary ? `${activeSecondary.label} 等更多页面` : "更多页面"
-							}
-							aria-current={activeSecondary ? "page" : undefined}
-							className={cn(
-								"group flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors",
-								activeSecondary || browseOpen
-									? "bg-foreground text-background shadow-xs"
-									: "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-							)}
-						>
-							{activeSecondary ? (
-								<>
-									<activeSecondary.icon className="size-3.5 shrink-0" />
-									<span>{activeSecondary.label}</span>
-								</>
-							) : (
-								<>
-									<LayoutGrid className="size-3.5 shrink-0" />
-									<span>更多</span>
-								</>
-							)}
-							<ChevronDown
-								className={cn(
-									"size-3 shrink-0 transition-transform duration-200",
-									browseOpen && "rotate-180",
-								)}
-							/>
-						</button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						align="center"
-						sideOffset={10}
-						className="w-88 rounded-2xl border border-border/80 bg-popover/95 p-2 shadow-xl backdrop-blur-md"
-					>
-						<div className="flex items-center justify-between px-2.5 py-1.5">
-							<span className="font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-								Explore / 探索
-							</span>
-						</div>
-						<div className="grid grid-cols-2 gap-1">
-							{secondaryItems.map((item) => (
-								<HeaderNavItem
-									key={item.label}
-									item={item}
-									onAction={onAction}
-									onNavigate={() => setBrowseOpen(false)}
-									detailed
-								/>
-							))}
-						</div>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			)}
+		<nav aria-label="主导航" className="pointer-events-auto hidden lg:block">
+			<DropdownGroup>
+				<Segmented
+					value={active?.item.label ?? ""}
+					segments={segments}
+					size="lg"
+					rounded="full"
+					itemSize="4.75rem"
+					expandSelected={reading}
+					itemClassName="group/item data-[state=open]:text-foreground"
+				/>
+			</DropdownGroup>
 		</nav>
 	);
 };
-
-const matchesRoute = (pathname: string, item: NavRouteItem) =>
-	item.exact ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
 
 export default HeaderNav;

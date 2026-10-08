@@ -1,5 +1,5 @@
-import type { NavRouteItem } from "@shared/config/nav";
-import { NAV_ITEMS } from "@shared/config/nav";
+import { NAV_ITEMS, resolveActiveNav } from "@shared/config/nav";
+import { useRouterState } from "@tanstack/react-router";
 import {
 	Sheet,
 	SheetContent,
@@ -12,25 +12,20 @@ import {
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
-import HeaderNavItem from "./HeaderNavItem";
+import HeaderNavRow from "./HeaderNavRow";
 
-export interface HeaderMobileProps {
-	onAction?: (action: string) => void;
-}
+const SECTION_LABEL =
+	"px-2 pb-1.5 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase";
 
 /**
  * HeaderMobile - 移动端抽屉导航
  *
- * 触发器对齐胶囊右侧圆形按钮，抽屉内分为主导航与更多探索两列。
- * 严禁 scale 变形。
+ * 触发器对齐胶囊右侧圆形按钮；带二级的项在抽屉里缩进展开，纯分组以小标题分段。
  */
-const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
+const HeaderMobile = () => {
 	const [open, setOpen] = useState(false);
-
-	const primaryItems = NAV_ITEMS.filter(
-		(item): item is NavRouteItem => item.type === "route" && Boolean(item.primary),
-	);
-	const secondaryItems = NAV_ITEMS.filter((item) => item.type !== "route" || !item.primary);
+	const pathname = useRouterState({ select: (state) => state.location.pathname });
+	const activeTo = resolveActiveNav(pathname)?.link.to;
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
@@ -83,48 +78,53 @@ const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
 					aria-label="移动端导航菜单"
 					className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4"
 				>
-					{/* 核心主导航 */}
-					<div>
-						<p className="px-2 pb-1.5 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-							Navigation / 主导航
-						</p>
-						<div className="flex flex-col gap-1">
-							{primaryItems.map((item) => (
-								<HeaderNavItem
-									key={item.label}
-									item={item}
-									detailed
-									onNavigate={() => setOpen(false)}
-									onAction={(action) => {
-										onAction?.(action);
-										setOpen(false);
-									}}
-								/>
-							))}
-						</div>
+					<div className="flex flex-col gap-1">
+						{NAV_ITEMS.filter((item) => item.to !== undefined).map((item) => {
+							const to = item.to as string;
+							// 与父项同一目标的二级项（如「博客 → 全部文章」）在抽屉里不重复列出
+							const children = (item.children ?? []).filter(
+								(child) => child.to !== to,
+							);
+							return (
+								<div key={item.label} className="flex flex-col gap-1">
+									<HeaderNavRow
+										link={{ ...item, to }}
+										current={activeTo === to}
+										onClick={() => setOpen(false)}
+									/>
+									{children.length > 0 && (
+										<div className="ml-6 flex flex-col gap-1 border-l border-border/60 pl-2">
+											{children.map((child) => (
+												<HeaderNavRow
+													key={child.to}
+													link={child}
+													current={activeTo === child.to}
+													onClick={() => setOpen(false)}
+												/>
+											))}
+										</div>
+									)}
+								</div>
+							);
+						})}
 					</div>
 
-					{/* 更多探索 */}
-					{secondaryItems.length > 0 && (
-						<div>
-							<p className="px-2 pb-1.5 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-								Explore / 更多探索
-							</p>
-							<div className="flex flex-col gap-1">
-								{secondaryItems.map((item) => (
-									<HeaderNavItem
-										key={item.label}
-										item={item}
-										detailed
-										onNavigate={() => setOpen(false)}
-										onAction={(action) => {
-											onAction?.(action);
-											setOpen(false);
-										}}
-									/>
-								))}
+					{NAV_ITEMS.filter((item) => item.to === undefined && item.children).map(
+						(group) => (
+							<div key={group.label}>
+								<p className={SECTION_LABEL}>{group.label}</p>
+								<div className="flex flex-col gap-1">
+									{group.children?.map((child) => (
+										<HeaderNavRow
+											key={child.to}
+											link={child}
+											current={activeTo === child.to}
+											onClick={() => setOpen(false)}
+										/>
+									))}
+								</div>
 							</div>
-						</div>
+						),
 					)}
 				</nav>
 			</SheetContent>
