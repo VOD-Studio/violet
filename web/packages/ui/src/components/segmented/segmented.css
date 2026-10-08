@@ -1,0 +1,401 @@
+@layer components {
+	/* 容器：几何与配色全部由自定义属性决定，变体、尺寸、方向只改这些属性。
+	   位移与尺寸统一使用物理属性（left/width/height），与 JS 测量和 translate 的坐标系一致 */
+	.v-segmented {
+		--v-segmented-duration: 420ms;
+		--v-segmented-ease: cubic-bezier(0.32, 0.72, 0, 1);
+		--v-segmented-fade: 200ms;
+		--v-segmented-tint: 280ms;
+		--v-segmented-reveal: 300ms;
+		--v-segmented-reveal-delay: 80ms;
+		--v-segmented-pad: 0.125rem;
+		--v-segmented-gap: 0.125rem;
+		--v-segmented-block: 2rem;
+		--v-segmented-font-size: 0.75rem;
+		--v-segmented-icon-size: 1rem;
+		--v-segmented-radius: min(var(--radius-lg), 1rem);
+		--v-segmented-item-radius: min(var(--radius-md), 1rem);
+		--v-segmented-indicator-radius: calc(var(--v-segmented-radius) - var(--v-segmented-pad));
+		--v-segmented-track: var(--muted);
+		--v-segmented-active-color: var(--foreground);
+		--v-segmented-item-pad: 0.75rem;
+		box-sizing: border-box;
+		position: relative;
+		display: inline-flex;
+		align-items: stretch;
+		width: fit-content;
+		padding: var(--v-segmented-pad);
+		border-radius: var(--v-segmented-radius);
+		background-color: var(--v-segmented-track);
+		color: var(--muted-foreground);
+		font-size: var(--v-segmented-font-size);
+	}
+
+	.v-segmented[data-size="default"] {
+		--v-segmented-block: 2.25rem;
+		--v-segmented-font-size: 0.875rem;
+	}
+
+	.v-segmented[data-size="lg"] {
+		--v-segmented-block: 2.5rem;
+		--v-segmented-font-size: 0.875rem;
+	}
+
+	.v-segmented[data-rounded="full"] {
+		--v-segmented-radius: 9999px;
+		--v-segmented-item-radius: 9999px;
+		--v-segmented-indicator-radius: 9999px;
+	}
+
+	.v-segmented[data-block="true"] {
+		display: flex;
+		width: 100%;
+	}
+
+	.v-segmented[data-orientation="horizontal"] {
+		height: var(--v-segmented-block);
+	}
+
+	.v-segmented[data-orientation="vertical"][data-block="true"] {
+		height: 100%;
+	}
+
+	/* 等尺寸布局的总长由 item-size 与 weight 决定，block 不再把容器拉宽，否则轨道右侧会留出空白 */
+	.v-segmented[data-layout="equal"][data-block="true"] {
+		display: inline-flex;
+		width: fit-content;
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="vertical"][data-block="true"] {
+		height: auto;
+	}
+
+	/* ink：实心前景色药丸，轨道底色由使用方决定 */
+	.v-segmented[data-variant="ink"] {
+		--v-segmented-track: transparent;
+		--v-segmented-item-radius: 9999px;
+		--v-segmented-indicator-radius: 9999px;
+		--v-segmented-active-color: var(--background);
+	}
+
+	/* line：无底色无内边距，2px 墨线标出当前项 */
+	.v-segmented[data-variant="line"] {
+		--v-segmented-track: transparent;
+		--v-segmented-pad: 0rem;
+		--v-segmented-radius: 0rem;
+		--v-segmented-item-radius: min(var(--radius-sm), 1rem);
+		--v-segmented-indicator-radius: 0rem;
+	}
+
+	/* 等尺寸布局：每项沿主轴恰好 item-size × weight；指示器位置与尺寸只由变量推出，不做测量。
+	   shift 是指示器的位移，thumb 是它的主轴尺寸 */
+	.v-segmented[data-layout="equal"] {
+		--v-segmented-expanded-size: calc(
+			var(--v-segmented-total) *
+			var(--v-segmented-item-size) -
+			(var(--v-segmented-count) - 1) *
+			var(--v-segmented-collapsed-size)
+		);
+		--v-segmented-thumb: calc(
+			var(--v-segmented-item-size) *
+			var(--v-segmented-active-weight, 1)
+		);
+		--v-segmented-shift: calc(var(--v-segmented-item-size) * var(--v-segmented-offset, 0));
+		--v-segmented-item-pad: 0rem;
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="vertical"] {
+		--v-segmented-item-pad: 0.75rem;
+	}
+
+	/* 展开选中项：其余项收为 collapsed-size，选中项吞下剩余长度，总长不变；无选中项时按权重排布 */
+	.v-segmented[data-layout="equal"][data-expanded="true"][data-has-active="true"] {
+		--v-segmented-slot: var(--v-segmented-collapsed-size);
+		--v-segmented-thumb: var(--v-segmented-expanded-size);
+		--v-segmented-shift: calc(var(--v-segmented-index) * var(--v-segmented-collapsed-size));
+		/* 收起时只剩一枚图标：内边距让图标恰好落在收起尺寸正中，选中时位置不变 */
+		--v-segmented-item-pad: max(
+			0rem,
+			calc((var(--v-segmented-collapsed-size) - var(--v-segmented-icon-size)) / 2)
+		);
+	}
+
+	.v-segmented__track {
+		position: relative;
+		display: flex;
+		flex: 1 1 auto;
+		align-items: stretch;
+		gap: var(--v-segmented-gap);
+	}
+
+	.v-segmented[data-orientation="vertical"] .v-segmented__track {
+		flex-direction: column;
+	}
+
+	.v-segmented[data-layout="equal"] .v-segmented__track {
+		gap: 0;
+	}
+
+	.v-segmented__item {
+		box-sizing: border-box;
+		position: relative;
+		z-index: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		margin: 0;
+		padding: 0 var(--v-segmented-item-pad);
+		border: 0;
+		border-radius: var(--v-segmented-item-radius);
+		background-color: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		font-weight: 500;
+		letter-spacing: inherit;
+		text-decoration: none;
+		white-space: nowrap;
+		cursor: pointer;
+		appearance: none;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			color var(--v-segmented-tint) ease,
+			background-color var(--v-segmented-tint) ease;
+	}
+
+	/* 组合内容用 margin 排布，收起时才能随尺寸平滑归零 */
+	.v-segmented__item:has(> .v-segmented__label) {
+		gap: 0;
+	}
+
+	.v-segmented__item[data-active="true"] {
+		color: var(--v-segmented-active-color);
+	}
+
+	.v-segmented__item:where(:not([data-active="true"]):not(:disabled):not([data-disabled])):hover {
+		color: var(--foreground);
+	}
+
+	/* 首次测量前指示器隐形，选中项自带底色，避免激活文字反色后消失 */
+	.v-segmented[data-measured="false"] .v-segmented__item[data-active="true"] {
+		background-color: var(--foreground);
+		color: var(--background);
+	}
+
+	.v-segmented[data-block="true"] .v-segmented__item {
+		flex: 1 1 0%;
+	}
+
+	.v-segmented[data-orientation="vertical"] .v-segmented__item {
+		justify-content: flex-start;
+		height: var(--v-segmented-block);
+	}
+
+	.v-segmented[data-orientation="vertical"] .v-segmented__item[data-icon-only] {
+		justify-content: center;
+	}
+
+	.v-segmented[data-orientation="vertical"][data-block="true"] .v-segmented__item {
+		height: auto;
+	}
+
+	.v-segmented[data-layout="equal"] .v-segmented__item {
+		flex: none;
+		overflow: hidden;
+		gap: 0;
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="horizontal"] .v-segmented__item {
+		width: var(
+			--v-segmented-slot,
+			calc(var(--v-segmented-item-size) * var(--v-segmented-weight, 1))
+		);
+		transition:
+			color var(--v-segmented-tint) ease,
+			background-color var(--v-segmented-tint) ease,
+			width var(--v-segmented-duration) var(--v-segmented-ease);
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="horizontal"]
+		.v-segmented__item[data-active="true"] {
+		width: var(--v-segmented-thumb);
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="vertical"] .v-segmented__item {
+		height: var(
+			--v-segmented-slot,
+			calc(var(--v-segmented-item-size) * var(--v-segmented-weight, 1))
+		);
+		transition:
+			color var(--v-segmented-tint) ease,
+			background-color var(--v-segmented-tint) ease,
+			height var(--v-segmented-duration) var(--v-segmented-ease);
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="vertical"]
+		.v-segmented__item[data-active="true"] {
+		height: var(--v-segmented-thumb);
+	}
+
+	.v-segmented[data-layout="equal"][data-expanded="true"][data-has-active="true"]
+		.v-segmented__item {
+		justify-content: flex-start;
+	}
+
+	.v-segmented__item:focus-visible {
+		z-index: 2;
+		outline: 2px solid var(--ring);
+		outline-offset: 0;
+	}
+
+	.v-segmented__item:disabled,
+	.v-segmented__item[data-disabled] {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-segmented__label,
+	.v-segmented__trailing {
+		flex: none;
+	}
+
+	.v-segmented__item > :not(.v-segmented__label) + .v-segmented__label,
+	.v-segmented__item > :not(.v-segmented__label) + .v-segmented__trailing,
+	.v-segmented__label + .v-segmented__trailing {
+		margin-inline-start: 0.375rem;
+	}
+
+	.v-segmented[data-layout="equal"] :is(.v-segmented__label, .v-segmented__trailing) {
+		overflow: hidden;
+		max-width: 4rem;
+		transition:
+			max-width var(--v-segmented-duration) var(--v-segmented-ease),
+			margin var(--v-segmented-duration) var(--v-segmented-ease),
+			opacity var(--v-segmented-tint) ease;
+	}
+
+	.v-segmented[data-layout="equal"][data-expanded="true"][data-has-active="true"]
+		.v-segmented__item:not([data-active="true"])
+		:is(.v-segmented__label, .v-segmented__trailing) {
+		max-width: 0;
+		margin-inline-start: 0;
+		opacity: 0;
+	}
+
+	.v-segmented[data-layout="equal"][data-expanded="true"][data-has-active="true"]
+		.v-segmented__item[data-active="true"]
+		.v-segmented__label {
+		flex: 1 1 0%;
+		min-width: 0;
+		max-width: none;
+		text-align: start;
+		text-overflow: ellipsis;
+		animation: v-segmented-label-in var(--v-segmented-reveal) ease
+			var(--v-segmented-reveal-delay) backwards;
+	}
+
+	/* 指示器：位移走合成层 transform，只有尺寸是布局过渡 */
+	.v-segmented__indicator {
+		position: absolute;
+		z-index: 0;
+		top: 0;
+		left: 0;
+		border-radius: var(--v-segmented-indicator-radius);
+		opacity: 0;
+		pointer-events: none;
+		will-change: transform;
+		transition: opacity var(--v-segmented-fade) ease;
+	}
+
+	.v-segmented[data-orientation="horizontal"] .v-segmented__indicator {
+		height: 100%;
+	}
+
+	.v-segmented[data-orientation="vertical"] .v-segmented__indicator {
+		width: 100%;
+	}
+
+	.v-segmented[data-has-active="true"]:not([data-measured="false"]) .v-segmented__indicator {
+		opacity: 1;
+	}
+
+	/* 测量模式首次定位不过渡，data-animated 出现后才启用滑动；等尺寸模式首帧即在终点，始终启用 */
+	.v-segmented[data-animated="true"][data-orientation="horizontal"] .v-segmented__indicator,
+	.v-segmented[data-layout="equal"][data-orientation="horizontal"] .v-segmented__indicator {
+		transition:
+			transform var(--v-segmented-duration) var(--v-segmented-ease),
+			width var(--v-segmented-duration) var(--v-segmented-ease),
+			opacity var(--v-segmented-fade) ease;
+	}
+
+	.v-segmented[data-animated="true"][data-orientation="vertical"] .v-segmented__indicator,
+	.v-segmented[data-layout="equal"][data-orientation="vertical"] .v-segmented__indicator {
+		transition:
+			transform var(--v-segmented-duration) var(--v-segmented-ease),
+			height var(--v-segmented-duration) var(--v-segmented-ease),
+			opacity var(--v-segmented-fade) ease;
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="horizontal"] .v-segmented__indicator {
+		width: var(--v-segmented-thumb);
+		transform: translate3d(var(--v-segmented-shift), 0, 0);
+	}
+
+	.v-segmented[data-layout="equal"][data-orientation="vertical"] .v-segmented__indicator {
+		height: var(--v-segmented-thumb);
+		transform: translate3d(0, var(--v-segmented-shift), 0);
+	}
+
+	.v-segmented[data-variant="soft"] .v-segmented__indicator {
+		background-color: var(--background);
+		box-shadow:
+			0 0 0 1px light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.1)),
+			0 4px 24px rgb(0 0 0 / 0.05);
+	}
+
+	.v-segmented[data-variant="ink"] .v-segmented__indicator,
+	.v-segmented[data-variant="line"] .v-segmented__indicator {
+		background-color: var(--foreground);
+	}
+
+	.v-segmented[data-variant="line"][data-orientation="horizontal"] .v-segmented__indicator {
+		top: auto;
+		bottom: 0;
+		height: 2px;
+	}
+
+	.v-segmented[data-variant="line"][data-orientation="vertical"] .v-segmented__indicator {
+		width: 2px;
+	}
+
+	@keyframes v-segmented-label-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-segmented {
+			--v-segmented-duration: 0s;
+			--v-segmented-fade: 0s;
+			--v-segmented-tint: 0s;
+			--v-segmented-reveal: 0s;
+			--v-segmented-reveal-delay: 0s;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-segmented__indicator {
+			background-color: Highlight;
+			forced-color-adjust: none;
+		}
+
+		.v-segmented__item[data-active="true"] {
+			color: HighlightText;
+			forced-color-adjust: none;
+		}
+	}
+}

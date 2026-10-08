@@ -100,6 +100,7 @@ import { Route as UiComponentsDialogRouteImport } from './routes/ui.components.d
 import { Route as UiComponentsDropdownRouteImport } from './routes/ui.components.dropdown'
 import { Route as UiComponentsImagePixelRevealRouteImport } from './routes/ui.components.image-pixel-reveal'
 import { Route as UiComponentsInputRouteImport } from './routes/ui.components.input'
+import { Route as UiComponentsSegmentedRouteImport } from './routes/ui.components.segmented'
 import { Route as UiComponentsTabsRouteImport } from './routes/ui.components.tabs'
 import { Route as UiComponentsTextFieldRouteImport } from './routes/ui.components.text-field'
 import { Route as UiComponentsUploadTileRouteImport } from './routes/ui.components.upload-tile'
@@ -561,6 +562,11 @@ const UiComponentsInputRoute = UiComponentsInputRouteImport.update({
   path: '/input',
   getParentRoute: () => UiComponentsRoute,
 } as any)
+const UiComponentsSegmentedRoute = UiComponentsSegmentedRouteImport.update({
+  id: '/segmented',
+  path: '/segmented',
+  getParentRoute: () => UiComponentsRoute,
+} as any)
 const UiComponentsTabsRoute = UiComponentsTabsRouteImport.update({
   id: '/tabs',
   path: '/tabs',
@@ -668,6 +674,7 @@ export interface FileRoutesByFullPath {
   '/ui/components/dropdown': typeof UiComponentsDropdownRoute
   '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
+  '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
@@ -757,6 +764,7 @@ export interface FileRoutesByTo {
   '/ui/components/dropdown': typeof UiComponentsDropdownRoute
   '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
+  '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
@@ -855,6 +863,7 @@ export interface FileRoutesById {
   '/ui/components/dropdown': typeof UiComponentsDropdownRoute
   '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
+  '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
@@ -954,6 +963,7 @@ export interface FileRouteTypes {
     | '/ui/components/dropdown'
     | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
+    | '/ui/components/segmented'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
     | '/ui/components/upload-tile'
@@ -1043,6 +1053,7 @@ export interface FileRouteTypes {
     | '/ui/components/dropdown'
     | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
+    | '/ui/components/segmented'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
     | '/ui/components/upload-tile'
@@ -1140,6 +1151,7 @@ export interface FileRouteTypes {
     | '/ui/components/dropdown'
     | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
+    | '/ui/components/segmented'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
     | '/ui/components/upload-tile'
@@ -1835,6 +1847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiComponentsInputRouteImport
       parentRoute: typeof UiComponentsRoute
     }
+    '/ui/components/segmented': {
+      id: '/ui/components/segmented'
+      path: '/segmented'
+      fullPath: '/ui/components/segmented'
+      preLoaderRoute: typeof UiComponentsSegmentedRouteImport
+      parentRoute: typeof UiComponentsRoute
+    }
     '/ui/components/tabs': {
       id: '/ui/components/tabs'
       path: '/tabs'
@@ -2022,6 +2041,7 @@ interface UiComponentsRouteChildren {
   UiComponentsDropdownRoute: typeof UiComponentsDropdownRoute
   UiComponentsImagePixelRevealRoute: typeof UiComponentsImagePixelRevealRoute
   UiComponentsInputRoute: typeof UiComponentsInputRoute
+  UiComponentsSegmentedRoute: typeof UiComponentsSegmentedRoute
   UiComponentsTabsRoute: typeof UiComponentsTabsRoute
   UiComponentsTextFieldRoute: typeof UiComponentsTextFieldRoute
   UiComponentsUploadTileRoute: typeof UiComponentsUploadTileRoute
@@ -2036,6 +2056,7 @@ const UiComponentsRouteChildren: UiComponentsRouteChildren = {
   UiComponentsDropdownRoute: UiComponentsDropdownRoute,
   UiComponentsImagePixelRevealRoute: UiComponentsImagePixelRevealRoute,
   UiComponentsInputRoute: UiComponentsInputRoute,
+  UiComponentsSegmentedRoute: UiComponentsSegmentedRoute,
   UiComponentsTabsRoute: UiComponentsTabsRoute,
   UiComponentsTextFieldRoute: UiComponentsTextFieldRoute,
   UiComponentsUploadTileRoute: UiComponentsUploadTileRoute,

@@ -14,6 +14,7 @@ import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaGridSkeleton } from "@features/admin-media/ui/MediaGridSkeleton";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
+import { type MediaViewMode, MediaViewSwitch } from "@features/admin-media/ui/MediaViewSwitch";
 import {
 	DataTable,
 	type DataTableColumn,
@@ -37,19 +38,15 @@ import {
 	ConfirmDialog,
 	Modal,
 	SearchInput,
-	Segmented,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	viewTypeSegments,
 } from "@violet/ui";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-
-type ViewMode = "grid" | "table";
 
 /**
  * /admin/media - 素材管理页
@@ -67,7 +64,7 @@ function AdminMediaPage() {
 	const [fileType, setFileType] = useState<string>("");
 	const isImageOnly = isImageOnlyPurpose(purpose);
 	const [keyword, setKeyword] = useState<string>("");
-	const [view, setView] = useState<ViewMode>("grid");
+	const [view, setView] = useState<MediaViewMode>("grid");
 	const pageSize = DEFAULT_PAGE_SIZE;
 
 	// 弹窗状态
@@ -313,12 +310,7 @@ function AdminMediaPage() {
 						/>
 					</div>
 
-					<Segmented
-						value={view}
-						onValueChange={(v) => setView(v as ViewMode)}
-						segments={viewTypeSegments()}
-						size="default"
-					/>
+					<MediaViewSwitch value={view} onValueChange={setView} />
 				</div>
 			}
 		>

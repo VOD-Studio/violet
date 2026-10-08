@@ -5,6 +5,7 @@ export * from "./components/dropdown/index";
 export * from "./components/image-pixel-reveal/index";
 export * from "./components/input/index";
 export * from "./components/label/index";
+export * from "./components/segmented/index";
 export * from "./components/text-field/index";
 export * from "./components/textarea/index";
 export * from "./components/upload-tile/index";

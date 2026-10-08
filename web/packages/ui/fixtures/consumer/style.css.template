@@ -92,3 +92,17 @@ section {
 	gap: 0.25rem;
 	padding: 0.5rem;
 }
+.segmented-page[data-narrow="true"] {
+	max-width: 20rem;
+}
+.segmented-stack {
+	display: grid;
+	gap: 1rem;
+	justify-items: start;
+	padding: 0.75rem 0;
+}
+.segmented-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.5rem;
+}
