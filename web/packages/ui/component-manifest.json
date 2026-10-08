@@ -74,6 +74,13 @@
 			"entry": "src/components/icons/index.ts"
 		},
 		{
+			"name": "image-pixel-reveal",
+			"status": "foundation",
+			"entry": "src/components/image-pixel-reveal/index.ts",
+			"css": "src/components/image-pixel-reveal/image-pixel-reveal.css",
+			"documentation": "web/src/features/ui-docs/ui/ImagePixelRevealDoc.tsx"
+		},
+		{
 			"name": "inline-error",
 			"status": "legacy",
 			"entry": "src/components/inline-error/index.ts"

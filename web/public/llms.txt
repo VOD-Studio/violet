@@ -31,6 +31,7 @@
 - [Input](https://xunrua.top/ui/components/input)
 - [TextField](https://xunrua.top/ui/components/text-field)
 - [Tabs](https://xunrua.top/ui/components/tabs)
+- [ImagePixelReveal](https://xunrua.top/ui/components/image-pixel-reveal): 静止原图、瓦片裁剪拼合、逐轮随机洗牌、悬停重播与减弱动态；自包含 SVG 同源示例。
 
 ## 智能体
 

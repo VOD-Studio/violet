@@ -97,6 +97,7 @@ import { Route as UiComponentsBadgeRouteImport } from './routes/ui.components.ba
 import { Route as UiComponentsButtonRouteImport } from './routes/ui.components.button'
 import { Route as UiComponentsCheckboxRouteImport } from './routes/ui.components.checkbox'
 import { Route as UiComponentsDialogRouteImport } from './routes/ui.components.dialog'
+import { Route as UiComponentsImagePixelRevealRouteImport } from './routes/ui.components.image-pixel-reveal'
 import { Route as UiComponentsInputRouteImport } from './routes/ui.components.input'
 import { Route as UiComponentsTabsRouteImport } from './routes/ui.components.tabs'
 import { Route as UiComponentsTextFieldRouteImport } from './routes/ui.components.text-field'
@@ -542,6 +543,12 @@ const UiComponentsDialogRoute = UiComponentsDialogRouteImport.update({
   path: '/dialog',
   getParentRoute: () => UiComponentsRoute,
 } as any)
+const UiComponentsImagePixelRevealRoute =
+  UiComponentsImagePixelRevealRouteImport.update({
+    id: '/image-pixel-reveal',
+    path: '/image-pixel-reveal',
+    getParentRoute: () => UiComponentsRoute,
+  } as any)
 const UiComponentsInputRoute = UiComponentsInputRouteImport.update({
   id: '/input',
   path: '/input',
@@ -646,6 +653,7 @@ export interface FileRoutesByFullPath {
   '/ui/components/button': typeof UiComponentsButtonRoute
   '/ui/components/checkbox': typeof UiComponentsCheckboxRoute
   '/ui/components/dialog': typeof UiComponentsDialogRoute
+  '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
@@ -732,6 +740,7 @@ export interface FileRoutesByTo {
   '/ui/components/button': typeof UiComponentsButtonRoute
   '/ui/components/checkbox': typeof UiComponentsCheckboxRoute
   '/ui/components/dialog': typeof UiComponentsDialogRoute
+  '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
@@ -827,6 +836,7 @@ export interface FileRoutesById {
   '/ui/components/button': typeof UiComponentsButtonRoute
   '/ui/components/checkbox': typeof UiComponentsCheckboxRoute
   '/ui/components/dialog': typeof UiComponentsDialogRoute
+  '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
@@ -923,6 +933,7 @@ export interface FileRouteTypes {
     | '/ui/components/button'
     | '/ui/components/checkbox'
     | '/ui/components/dialog'
+    | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
@@ -1009,6 +1020,7 @@ export interface FileRouteTypes {
     | '/ui/components/button'
     | '/ui/components/checkbox'
     | '/ui/components/dialog'
+    | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
@@ -1103,6 +1115,7 @@ export interface FileRouteTypes {
     | '/ui/components/button'
     | '/ui/components/checkbox'
     | '/ui/components/dialog'
+    | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
@@ -1777,6 +1790,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiComponentsDialogRouteImport
       parentRoute: typeof UiComponentsRoute
     }
+    '/ui/components/image-pixel-reveal': {
+      id: '/ui/components/image-pixel-reveal'
+      path: '/image-pixel-reveal'
+      fullPath: '/ui/components/image-pixel-reveal'
+      preLoaderRoute: typeof UiComponentsImagePixelRevealRouteImport
+      parentRoute: typeof UiComponentsRoute
+    }
     '/ui/components/input': {
       id: '/ui/components/input'
       path: '/input'
@@ -1961,6 +1981,7 @@ interface UiComponentsRouteChildren {
   UiComponentsButtonRoute: typeof UiComponentsButtonRoute
   UiComponentsCheckboxRoute: typeof UiComponentsCheckboxRoute
   UiComponentsDialogRoute: typeof UiComponentsDialogRoute
+  UiComponentsImagePixelRevealRoute: typeof UiComponentsImagePixelRevealRoute
   UiComponentsInputRoute: typeof UiComponentsInputRoute
   UiComponentsTabsRoute: typeof UiComponentsTabsRoute
   UiComponentsTextFieldRoute: typeof UiComponentsTextFieldRoute
@@ -1972,6 +1993,7 @@ const UiComponentsRouteChildren: UiComponentsRouteChildren = {
   UiComponentsButtonRoute: UiComponentsButtonRoute,
   UiComponentsCheckboxRoute: UiComponentsCheckboxRoute,
   UiComponentsDialogRoute: UiComponentsDialogRoute,
+  UiComponentsImagePixelRevealRoute: UiComponentsImagePixelRevealRoute,
   UiComponentsInputRoute: UiComponentsInputRoute,
   UiComponentsTabsRoute: UiComponentsTabsRoute,
   UiComponentsTextFieldRoute: UiComponentsTextFieldRoute,

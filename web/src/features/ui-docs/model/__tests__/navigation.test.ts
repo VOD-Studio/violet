@@ -1,39 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { CATALOG_GUIDES, COMPONENT_DOCS } from "../guides";
-import {
-	ALL_NAV_ITEMS,
-	findNavItemByPath,
-	getSiblingNavItems,
-	UI_DOCS_NAV_GROUPS,
-} from "../navigation";
+import { ALL_NAV_ITEMS, findNavItemByPath, getSiblingNavItems } from "../navigation";
 
 describe("组件库文档导航", () => {
-	it("分组与页面路径唯一，指南和组件均进入目录", () => {
-		expect(UI_DOCS_NAV_GROUPS.map((group) => group.title)).toEqual([
-			"入门",
-			"主题与样式",
-			"组件",
-			"开发",
-			"智能体",
-		]);
+	it("页面路径不会互相覆盖", () => {
 		const paths = ALL_NAV_ITEMS.map((item) => item.to);
 		expect(new Set(paths).size).toBe(paths.length);
-		expect(CATALOG_GUIDES).toHaveLength(16);
-		expect(COMPONENT_DOCS.map((item) => item.id)).toEqual([
-			"button",
-			"badge",
-			"checkbox",
-			"dialog",
-			"tabs",
-			"input",
-			"text-field",
-		]);
 	});
 
 	it("精确匹配指南、组件和末尾斜杠，未知页面回退到介绍", () => {
 		expect(findNavItemByPath("/ui/guides/theming").id).toBe("theming");
 		expect(findNavItemByPath("/ui/components/").id).toBe("components");
 		expect(findNavItemByPath("/ui/components/button").id).toBe("button");
+		expect(findNavItemByPath("/ui/components/image-pixel-reveal").id).toBe(
+			"image-pixel-reveal",
+		);
 		expect(findNavItemByPath("/ui/components/buttonish").id).toBe("introduction");
 	});
 

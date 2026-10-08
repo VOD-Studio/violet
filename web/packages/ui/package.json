@@ -92,6 +92,11 @@
 			"import": "./src/components/icons/index.ts",
 			"default": "./src/components/icons/index.ts"
 		},
+		"./image-pixel-reveal": {
+			"types": "./src/components/image-pixel-reveal/index.ts",
+			"import": "./src/components/image-pixel-reveal/index.ts",
+			"default": "./src/components/image-pixel-reveal/index.ts"
+		},
 		"./inline-error": {
 			"types": "./src/components/inline-error/index.ts",
 			"import": "./src/components/inline-error/index.ts",
@@ -259,6 +264,7 @@
 		"./components/button.css": "./src/components/button/button.css",
 		"./components/card.css": "./src/components/card/card.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
+		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/separator.css": "./src/components/separator/separator.css",
@@ -367,6 +373,11 @@
 				"types": "./dist/components/icons/index.d.ts",
 				"import": "./dist/components/icons/index.js",
 				"default": "./dist/components/icons/index.js"
+			},
+			"./image-pixel-reveal": {
+				"types": "./dist/components/image-pixel-reveal/index.d.ts",
+				"import": "./dist/components/image-pixel-reveal/index.js",
+				"default": "./dist/components/image-pixel-reveal/index.js"
 			},
 			"./inline-error": {
 				"types": "./dist/components/inline-error/index.d.ts",
@@ -535,6 +546,7 @@
 			"./components/button.css": "./dist/components/button.css",
 			"./components/card.css": "./dist/components/card.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
+			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/input.css": "./dist/components/input.css",
 			"./components/label.css": "./dist/components/label.css",
 			"./components/separator.css": "./dist/components/separator.css",
