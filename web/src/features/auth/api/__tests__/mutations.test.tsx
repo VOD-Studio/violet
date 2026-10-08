@@ -83,6 +83,12 @@ describe("auth mutations — 缓存副作用", () => {
 		// 预置缓存：登录态
 		qc.setQueryData<UserDTO>(authKeys.me(), makeUser());
 		qc.setQueryData<string>(authKeys.csrfToken(), "stale-token");
+		await qc.fetchQuery({
+			queryKey: ["private-profile"],
+			queryFn: async () => ({ secret: "alice-only" }),
+			meta: { sessionScoped: true },
+		});
+		qc.setQueryData(["public-catalog"], ["公开数据"]);
 		useSessionStore.setState({ sessionActive: true });
 
 		vi.mocked(apiPost).mockResolvedValue({ message: "ok" });
@@ -98,6 +104,8 @@ describe("auth mutations — 缓存副作用", () => {
 		expect(qc.getQueryData(authKeys.csrfToken())).toBeUndefined();
 		// 会话活跃标志清零
 		expect(useSessionStore.getState().sessionActive).toBe(false);
+		expect(qc.getQueryData(["private-profile"])).toBeUndefined();
+		expect(qc.getQueryData(["public-catalog"])).toEqual(["公开数据"]);
 	});
 
 	it("useLogin：失效 me 缓存并标记会话活跃", async () => {

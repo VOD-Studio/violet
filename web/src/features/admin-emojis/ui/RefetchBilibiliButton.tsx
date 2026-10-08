@@ -1,3 +1,4 @@
+import { emojiKeys } from "@features/emojis/api/keys";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, PromptDialog } from "@violet/ui";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -32,6 +33,7 @@ export const RefetchBilibiliButton = () => {
 	useEffect(() => {
 		if (isDone) {
 			qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupList() });
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 			toast.success("B站表情重新拉取完成");
 		}
 	}, [isDone, qc]);

@@ -151,6 +151,8 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 - **TanStack Query**：服务端状态（文章、评论、媒体等）缓存、失效、重试。
 - **Zustand**：客户端全局状态（播放器、主题、编辑器临时状态等）。
 
+表情目录与会话内个人表情由 TanStack Query 缓存，关闭浮层不丢弃列表。后台目录变更、个人表情增删收藏和后台下架会失效对应缓存；登出或收到 401 时取消并清除私有查询，重登弹窗打开期间暂停个人列表请求。
+
 ## API 与认证
 
 - 开发环境通过 Vite 反向代理将 `/api/*` 与 `/uploads/*` 转发到后端 `http://localhost:9090`，避免跨域与 CSRF 边界问题。

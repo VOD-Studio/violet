@@ -4,6 +4,7 @@
  * 均要求登录（调用方按登录态决定是否 enabled/挂载），成功后统一失效
  * 当前会话版本的 mine query——份额、owned/favorited 分组均从这一聚合数据派生。
  */
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { apiDelete, apiGet, apiPost } from "@shared/api/request";
 import { useSessionStore } from "@shared/api/session";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,19 +18,22 @@ import type {
 import { toMineCustomEmojis } from "../model/types";
 import { customEmojiKeys } from "./keys";
 
-const fetchMine = async (): Promise<MineCustomEmojis> => {
-	const raw = await apiGet<MineCustomEmojisRawDTO>("/custom-emojis/mine");
+const fetchMine = async (signal: AbortSignal): Promise<MineCustomEmojis> => {
+	const raw = await apiGet<MineCustomEmojisRawDTO>("/custom-emojis/mine", { signal });
 	return toMineCustomEmojis(raw);
 };
 
 /** 我的表情（自传+收藏）。enabled 由调用方按登录态传入，未登录不发请求。 */
 export const useMyCustomEmojis = (enabled: boolean) => {
 	const sessionVersion = useSessionStore((state) => state.sessionVersion);
+	const loginDialogOpen = useLoginDialogStore((state) => state.isOpen);
 	return useQuery({
 		queryKey: customEmojiKeys.mine(sessionVersion),
-		queryFn: fetchMine,
-		enabled,
-		gcTime: 0,
+		queryFn: ({ signal }) => fetchMine(signal),
+		enabled: enabled && !loginDialogOpen,
+		staleTime: 60_000,
+		gcTime: 5 * 60_000,
+		meta: { sessionScoped: true },
 	});
 };
 
