@@ -237,6 +237,13 @@
 			"name": "tooltip",
 			"status": "legacy",
 			"entry": "src/components/tooltip/index.ts"
+		},
+		{
+			"name": "upload-tile",
+			"status": "foundation",
+			"entry": "src/components/upload-tile/index.ts",
+			"css": "src/components/upload-tile/upload-tile.css",
+			"documentation": "web/src/features/ui-docs/ui/UploadTileDoc.tsx"
 		}
 	],
 	"additionalExports": [

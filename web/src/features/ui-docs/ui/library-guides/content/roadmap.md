@@ -4,7 +4,7 @@
 
 | 状态 | 单元 | 当前约束 |
 | --- | --- | --- |
-| foundation（7） | Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField | 使用新组件单元、按需 typed BEM recipe 与同源 CSS；补齐行为 / ref / SSR / 消费契约 |
+| foundation（8） | Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField、UploadTile | 使用新组件单元、按需 typed BEM recipe 与同源 CSS；补齐行为 / ref / SSR / 消费契约 |
 | legacy（36） | 清单中的其他组件，包括 Dialog、Tabs | 保留现有 API，目录统一；行为、视觉、双轨样式逐个迁移 |
 
 `web/packages/ui/component-manifest.json` 是单元状态与公开路径的事实源。`@violet/ui/legacy` 是兼容导出入口，组件实现仍放在各自的 `src/components/<name>/`，没有副本。

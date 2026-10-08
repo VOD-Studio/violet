@@ -79,7 +79,7 @@ try {
 	assert.equal(ssr.status, 0, "Installed tarball SSR failed.");
 	const forbidden = /(?:^|\/)(?:motion|framer-motion|recharts|sonner|input-otp)(?:\/|@|$)/;
 	const graphs = {};
-	for (const [name, entry, symbol] of [["root-button", '@violet/ui', "Button"], ["leaf-button", '@violet/ui/button', "Button"], ["root-checkbox", '@violet/ui', "Checkbox"], ["leaf-checkbox", '@violet/ui/checkbox', "Checkbox"], ["root-image-pixel-reveal", '@violet/ui', "ImagePixelReveal"], ["leaf-image-pixel-reveal", '@violet/ui/image-pixel-reveal', "ImagePixelReveal"], ["variants", '@violet/ui/variants']]) {
+	for (const [name, entry, symbol] of [["root-button", '@violet/ui', "Button"], ["leaf-button", '@violet/ui/button', "Button"], ["root-checkbox", '@violet/ui', "Checkbox"], ["leaf-checkbox", '@violet/ui/checkbox', "Checkbox"], ["root-image-pixel-reveal", '@violet/ui', "ImagePixelReveal"], ["leaf-image-pixel-reveal", '@violet/ui/image-pixel-reveal', "ImagePixelReveal"], ["root-upload-tile", '@violet/ui', "UploadTile"], ["leaf-upload-tile", '@violet/ui/upload-tile', "UploadTile"], ["variants", '@violet/ui/variants']]) {
 		const code = name === "variants" ? `import { buttonVariants, checkboxVariants } from "${entry}"; console.log(buttonVariants({ variant: "primary" }), checkboxVariants({ size: "lg" }));` : `import { ${symbol} } from "${entry}"; console.log(${symbol});`;
 		const result = await build({ absWorkingDir: consumerRoot, stdin: { contents: code, resolveDir: consumerRoot, sourcefile: `${name}.ts` }, bundle: true, treeShaking: true, minify: true, write: false, metafile: true, format: "esm", platform: "browser", logLevel: "silent" });
 		const reachableInputs = Object.values(result.metafile.outputs).flatMap((output) => Object.entries(output.inputs).filter(([, info]) => info.bytesInOutput > 0).map(([path]) => path));
@@ -92,7 +92,7 @@ try {
 	}
 	const css = {};
 	const cssText = {};
-	for (const [name, imports] of [["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["checkbox", ["tokens.css", "components/checkbox.css"]], ["text-field", ["tokens.css", "components/text-field.css"]], ["image-pixel-reveal", ["tokens.css", "components/image-pixel-reveal.css"]]]) {
+	for (const [name, imports] of [["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["checkbox", ["tokens.css", "components/checkbox.css"]], ["text-field", ["tokens.css", "components/text-field.css"]], ["image-pixel-reveal", ["tokens.css", "components/image-pixel-reveal.css"]], ["upload-tile", ["tokens.css", "components/upload-tile.css"]]]) {
 		const result = await build({ absWorkingDir: consumerRoot, stdin: { contents: imports.map((path) => `@import "@violet/ui/${path}";`).join("\n"), resolveDir: consumerRoot, loader: "css", sourcefile: `${name}.css` }, bundle: true, minify: true, write: false, logLevel: "silent" });
 		const output = result.outputFiles[0].contents;
 		assert.ok(!/@(?:theme|source|utility|apply)\b/.test(result.outputFiles[0].text), "Standalone CSS requires Tailwind processing.");
@@ -106,6 +106,9 @@ try {
 	assert.match(cssText.checkbox, /\.v-checkbox__indicator\s*\{/);
 	assert.ok(css["text-field"].bytes < css.all.bytes, "TextField CSS did not reduce the style payload.");
 	assert.ok(css["image-pixel-reveal"].bytes < css.all.bytes, "ImagePixelReveal CSS did not reduce the style payload.");
+	assert.ok(css["upload-tile"].bytes < css.all.bytes, "UploadTile CSS did not reduce the style payload.");
+	assert.match(cssText["upload-tile"], /\.v-upload-tile\s*\{/);
+	assert.match(cssText.all, /\.v-upload-tile\s*\{/);
 	for (const className of ["v-input", "v-label", "v-text-field"]) {
 		const selector = new RegExp(`(?:^|[{};])\\s*\\.${className}\\s*\\{`, "g");
 		const componentRules = Array.from(cssText["text-field"].matchAll(selector)).length;
@@ -117,7 +120,7 @@ try {
 	console.log(JSON.stringify({ consumerRoot, installedEntry, js: Object.fromEntries(Object.entries(graphs).map(([name, value]) => [name, { bytes: value.bytes, gzipBytes: value.gzipBytes }])), css }, null, 2));
 	if (keep) {
 		console.log(`Consumer retained for browser QA: ${consumerRoot}`);
-		console.log("Run pnpm exec vite --host 127.0.0.1 from that directory; open /?preview=image-pixel-reveal for first-load, hover, theme and reduced-motion QA.");
+		console.log("Run pnpm exec vite --host 127.0.0.1 from that directory; open /?preview=image-pixel-reveal for image QA or /?preview=upload-tile for click, keyboard, busy/disabled, theme and narrow-layout QA.");
 	}
 } finally {
 	if (!keep) rmSync(temporaryRoot, { recursive: true, force: true });

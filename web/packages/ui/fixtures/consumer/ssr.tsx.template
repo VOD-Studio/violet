@@ -5,6 +5,19 @@ import { Checkbox as LeafCheckbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal } from "@violet/ui/image-pixel-reveal";
 import { buttonVariants, checkboxVariants } from "@violet/ui/variants";
 import { renderToString } from "react-dom/server";
+import { UploadTile } from "@violet/ui";
+import { UploadTile as LeafUploadTile } from "@violet/ui/upload-tile";
+
+const uploadTile = renderToString(<UploadTile aria-label="添加图片" name="action" value="upload" />);
+assert.equal(uploadTile, renderToString(<LeafUploadTile aria-label="添加图片" name="action" value="upload" />));
+assert.match(uploadTile, /type="button"/);
+assert.match(uploadTile, /class="v-upload-tile"/);
+assert.match(uploadTile, /name="action"/);
+assert.match(uploadTile, /value="upload"/);
+const busyTile = renderToString(<LeafUploadTile busy aria-label="添加图片" />);
+assert.match(busyTile, /disabled=""/);
+assert.match(busyTile, /aria-busy="true"/);
+assert.match(renderToString(<UploadTile type="submit">添加图片</UploadTile>), /type="submit"/);
 
 const root = renderToString(<Button variant="primary">保存</Button>);
 const leaf = renderToString(<LeafButton variant="primary">保存</LeafButton>);
@@ -41,4 +54,4 @@ for (const variant of imageVariants) {
 const customImage = renderToString(<LeafImagePixelReveal src={imageSource}><figure><img src={imageSource} alt="自定义风景" width={360} height={240} /><figcaption>自定义内容</figcaption></figure></LeafImagePixelReveal>);
 assert.match(customImage, /<figure>/);
 assert.match(customImage, /<figcaption>自定义内容<\/figcaption>/);
-console.log("Independent root/leaf SSR, TextField, Checkbox and ImagePixelReveal semantics passed.");
+console.log("Independent root/leaf SSR, TextField, Checkbox, ImagePixelReveal and UploadTile semantics passed.");

@@ -6,4 +6,5 @@ export * from "./components/input/index";
 export * from "./components/label/index";
 export * from "./components/text-field/index";
 export * from "./components/textarea/index";
+export * from "./components/upload-tile/index";
 export * from "./legacy";

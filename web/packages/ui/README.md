@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField 是当前 7 个 `foundation` 单元；其余 36 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField、UploadTile 是当前 8 个 `foundation` 单元；其余 36 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -63,6 +63,8 @@ TextField 的 `className`、原生属性和 `ref` 属于 input；根布局通过
 Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-label`，表单字段由内部 input 桥接。三态、表单与纯 HTML 样式的边界见 [Checkbox 契约](docs/components/checkbox.md)。
 
 ImagePixelReveal 让图片瓦片逐块裁剪展开，原图始终静止；默认 random 每轮重新洗牌，悬停可重播完整拼合，减弱动态时直接显示。`className` 约束根容器尺寸，`imgClassName` 调整默认图片；`children` 可替换内容，`src` 改变时重新开始独立周期。组件从 `@violet/ui` 导入，按需 CSS 为 `@violet/ui/components/image-pixel-reveal.css`；[可操作示例与 API](https://xunrua.top/ui/components/image-pixel-reveal)提供同源 TSX 和内嵌 SVG 资源。
+
+UploadTile 是由父容器决定尺寸的方形原生按钮，默认加号，`busy` 显示加载指示并禁止激活，`disabled` 保留原生禁用行为。纯图标用法需提供 `aria-label`，ref、事件和表单属性直接落在 button；默认 `type="button"`。它不选择或上传文件，不依赖站点 API、会话或通知。从 `@violet/ui` 或 `@violet/ui/upload-tile` 导入；按需样式为 `@violet/ui/components/upload-tile.css`。[同源示例与 API](https://xunrua.top/ui/components/upload-tile)只记录按钮激活次数，独立 consumer 的 `?preview=upload-tile` 可操作忙碌、禁用、主题和窄屏状态。
 
 ## 开发与验证
 

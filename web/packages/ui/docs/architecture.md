@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 7 个基础单元是 Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField。其余 36 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 8 个基础单元是 Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField、UploadTile。其余 36 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/

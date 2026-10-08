@@ -101,6 +101,7 @@ import { Route as UiComponentsImagePixelRevealRouteImport } from './routes/ui.co
 import { Route as UiComponentsInputRouteImport } from './routes/ui.components.input'
 import { Route as UiComponentsTabsRouteImport } from './routes/ui.components.tabs'
 import { Route as UiComponentsTextFieldRouteImport } from './routes/ui.components.text-field'
+import { Route as UiComponentsUploadTileRouteImport } from './routes/ui.components.upload-tile'
 import { Route as UiGuidesSlugRouteImport } from './routes/ui.guides.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -564,6 +565,11 @@ const UiComponentsTextFieldRoute = UiComponentsTextFieldRouteImport.update({
   path: '/text-field',
   getParentRoute: () => UiComponentsRoute,
 } as any)
+const UiComponentsUploadTileRoute = UiComponentsUploadTileRouteImport.update({
+  id: '/upload-tile',
+  path: '/upload-tile',
+  getParentRoute: () => UiComponentsRoute,
+} as any)
 const UiGuidesSlugRoute = UiGuidesSlugRouteImport.update({
   id: '/guides/$slug',
   path: '/guides/$slug',
@@ -657,6 +663,7 @@ export interface FileRoutesByFullPath {
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
+  '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -744,6 +751,7 @@ export interface FileRoutesByTo {
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
+  '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
   '/admin/notes': typeof AdminNotesIndexRoute
@@ -840,6 +848,7 @@ export interface FileRoutesById {
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
+  '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -937,6 +946,7 @@ export interface FileRouteTypes {
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
+    | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1024,6 +1034,7 @@ export interface FileRouteTypes {
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
+    | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries'
     | '/admin/notes'
@@ -1119,6 +1130,7 @@ export interface FileRouteTypes {
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
+    | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1818,6 +1830,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiComponentsTextFieldRouteImport
       parentRoute: typeof UiComponentsRoute
     }
+    '/ui/components/upload-tile': {
+      id: '/ui/components/upload-tile'
+      path: '/upload-tile'
+      fullPath: '/ui/components/upload-tile'
+      preLoaderRoute: typeof UiComponentsUploadTileRouteImport
+      parentRoute: typeof UiComponentsRoute
+    }
     '/ui/guides/$slug': {
       id: '/ui/guides/$slug'
       path: '/guides/$slug'
@@ -1985,6 +2004,7 @@ interface UiComponentsRouteChildren {
   UiComponentsInputRoute: typeof UiComponentsInputRoute
   UiComponentsTabsRoute: typeof UiComponentsTabsRoute
   UiComponentsTextFieldRoute: typeof UiComponentsTextFieldRoute
+  UiComponentsUploadTileRoute: typeof UiComponentsUploadTileRoute
   UiComponentsIndexRoute: typeof UiComponentsIndexRoute
 }
 
@@ -1997,6 +2017,7 @@ const UiComponentsRouteChildren: UiComponentsRouteChildren = {
   UiComponentsInputRoute: UiComponentsInputRoute,
   UiComponentsTabsRoute: UiComponentsTabsRoute,
   UiComponentsTextFieldRoute: UiComponentsTextFieldRoute,
+  UiComponentsUploadTileRoute: UiComponentsUploadTileRoute,
   UiComponentsIndexRoute: UiComponentsIndexRoute,
 }
 

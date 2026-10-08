@@ -6,6 +6,27 @@ import { Modal } from "@violet/ui/legacy";
 import { TextField } from "@violet/ui/text-field";
 import { buttonVariants, checkboxVariants, type ButtonVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
+import { UploadTile, type UploadTileProps } from "@violet/ui";
+import { UploadTile as LeafUploadTile, type UploadTileProps as LeafUploadTileProps } from "@violet/ui/upload-tile";
+
+const uploadTileRef = createRef<HTMLButtonElement>();
+const uploadTileProps: UploadTileProps = {
+	ref: uploadTileRef,
+	busy: false,
+	type: "submit",
+	form: "upload-form",
+	name: "action",
+	value: "upload",
+	"aria-label": "添加图片",
+	onClick: (event) => {
+		const button: HTMLButtonElement = event.currentTarget;
+		button.focus();
+	},
+};
+const leafUploadTileProps: LeafUploadTileProps = uploadTileProps;
+export const uploadTileExamples = <><UploadTile {...uploadTileProps} /><LeafUploadTile {...leafUploadTileProps} /></>;
+// @ts-expect-error 上传入口不接受链接 ref。
+export const invalidUploadTileRef = <UploadTile ref={createRef<HTMLAnchorElement>()} />;
 
 const button: ButtonProps = { variant: "primary", onClick: (event) => {
 	const target: HTMLButtonElement = event.currentTarget;

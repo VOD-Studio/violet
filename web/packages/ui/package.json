@@ -242,6 +242,11 @@
 			"import": "./src/components/tooltip/index.ts",
 			"default": "./src/components/tooltip/index.ts"
 		},
+		"./upload-tile": {
+			"types": "./src/components/upload-tile/index.ts",
+			"import": "./src/components/upload-tile/index.ts",
+			"default": "./src/components/upload-tile/index.ts"
+		},
 		"./use-debounced-callback": {
 			"types": "./src/lib/use-debounced-callback.ts",
 			"import": "./src/lib/use-debounced-callback.ts",
@@ -273,6 +278,7 @@
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
 		"./components/text-field.css": "./src/components/text-field/text-field.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
+		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
 		"./palettes/violet.css": "./src/styles/palettes/violet.css",
 		"./palettes/coral.css": "./src/styles/palettes/coral.css",
 		"./component-manifest.json": "./component-manifest.json",
@@ -524,6 +530,11 @@
 				"import": "./dist/components/tooltip/index.js",
 				"default": "./dist/components/tooltip/index.js"
 			},
+			"./upload-tile": {
+				"types": "./dist/components/upload-tile/index.d.ts",
+				"import": "./dist/components/upload-tile/index.js",
+				"default": "./dist/components/upload-tile/index.js"
+			},
 			"./use-debounced-callback": {
 				"types": "./dist/lib/use-debounced-callback.d.ts",
 				"import": "./dist/lib/use-debounced-callback.js",
@@ -555,6 +566,7 @@
 			"./components/tabs.css": "./dist/components/tabs.css",
 			"./components/text-field.css": "./dist/components/text-field.css",
 			"./components/textarea.css": "./dist/components/textarea.css",
+			"./components/upload-tile.css": "./dist/components/upload-tile.css",
 			"./palettes/violet.css": "./dist/palettes/violet.css",
 			"./palettes/coral.css": "./dist/palettes/coral.css",
 			"./component-manifest.json": "./component-manifest.json",
