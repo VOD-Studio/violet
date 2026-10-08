@@ -1,4 +1,5 @@
 import { fetchSeriesBySlug, seriesKeys, useSeriesDetail } from "@features/series/api";
+import type { SeriesDetail } from "@features/series/model/types";
 import { SeriesDetailBody } from "@features/series/ui/SeriesDetailBody";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
@@ -52,16 +53,15 @@ function SeriesDetailPage() {
 }
 
 export const Route = createFileRoute("/series/$slug")({
-	loader: async ({ context, params }) => {
-		// SSR 预取详情；404（draft 书/不存在）不阻塞导航，组件读缓存判空渲染
-		await context.queryClient
+	// SSR 预取详情；404（draft 书/不存在）不阻塞导航，组件读缓存判空渲染
+	loader: ({ context, params }) =>
+		context.queryClient
 			.ensureQueryData({
 				queryKey: seriesKeys.detail(params.slug),
 				queryFn: () => fetchSeriesBySlug(params.slug),
 			})
-			.catch(() => null);
-		return null;
-	},
+			.catch(() => null),
+	staticData: { navTitle: (detail: SeriesDetail | null) => detail?.title },
 	head: ({ params }) => ({
 		meta: [{ title: `系列书 · ${params.slug}` }],
 	}),
