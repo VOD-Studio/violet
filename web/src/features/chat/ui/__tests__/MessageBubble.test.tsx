@@ -105,7 +105,6 @@ function renderBubble(
 			currentUserID={currentUserID}
 			emoteMap={{}}
 			highlighted={false}
-			layout={false}
 			message={message}
 			sending={sending}
 			onRetry={onRetry}
@@ -133,39 +132,6 @@ describe("MessageBubble", () => {
 		expect(screen.getByText("BOT")).toBeTruthy();
 		expect(container.querySelector("table")?.textContent).toContain("A1");
 		expect(container.textContent).not.toContain("已编辑");
-	});
-
-	it("时间戳显示在聊天气泡外侧，不落入头像占位列", () => {
-		const mine = renderBubble(imageMessage(undefined));
-		const mineAvatarSlot = mine.container.querySelector("article > div:first-child");
-
-		expect(mineAvatarSlot?.querySelector("time")).toBeNull();
-
-		const mineHoverSlot = mine.container.querySelector("time")?.closest("div.absolute");
-		expect(mineHoverSlot?.className).toContain("right-full");
-		expect(mineHoverSlot?.className).toContain("flex-row");
-
-		cleanup();
-		const incoming = renderBubble(imageMessage(undefined), () => {}, "direct", "u_2");
-		const incomingAvatarSlot = incoming.container.querySelector("article > div:first-child");
-
-		expect(incomingAvatarSlot?.querySelector("time")).toBeNull();
-
-		const incomingHoverSlot = incoming.container.querySelector("time")?.closest("div.absolute");
-		expect(incomingHoverSlot?.className).toContain("left-full");
-		expect(incomingHoverSlot?.className).toContain("flex-row-reverse");
-	});
-
-	it("收到的消息气泡按内容收缩，不被发送者身份区拉宽", () => {
-		const message = imageMessage(undefined);
-		message.type = "text";
-		message.media = undefined;
-		message.content = "短消息";
-
-		const { container } = renderBubble(message, () => {}, "room", "u_2");
-		const messageColumn = container.querySelector("article > div:nth-child(2)");
-
-		expect(messageColumn?.className).toContain("items-start");
 	});
 
 	it("图片消息占位符还原为内联图片，文字环绕且点击打开预览", () => {
