@@ -1,11 +1,11 @@
+import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
+import { useFileSelection } from "@features/upload/hooks/use-file-selection";
 import { imageUrl } from "@shared/lib/image-url";
 import { Button } from "@violet/ui";
 
 import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useChunkedUpload } from "../hooks/use-chunked-upload";
-import { matchesAcceptedFile } from "../lib/matches-accepted-file";
 
 /** 上传结果至少含可访问 url,列表缩略图据此预览;可选 thumbnail 为后端生成的缩略图 */
 export interface UploadResult {
@@ -26,20 +26,17 @@ interface UploadItem<T> {
 }
 
 interface UploaderProps<T extends UploadResult> {
-	/**
-	 * 自定义上传单文件函数（后门）。
-	 * 传了则用自定义逻辑（如表情/头像专用接口），不传则走默认分片上传（秒传+进度）。
-	 */
+	/** 自定义单文件上传；省略时使用默认分片上传。 */
 	upload?: (file: File, onProgress?: (percent: number) => void) => Promise<T>;
 	/** 单文件成功回调，调用方据此落库 */
 	onUploaded?: (result: T, file: File) => void;
 	/** 用途分类（仅默认分片上传模式生效），默认 material */
 	purpose?: string;
-	/** 接受的 MIME，逗号分隔 */
+	/** 接受的 MIME 或扩展名，逗号分隔。 */
 	accept?: string;
 	/** 单文件最大字节 */
 	maxSize?: number;
-	/** 最大文件数 */
+	/** 每次选择的最大文件数。 */
 	maxFiles?: number;
 	/** 拖拽区主文案 */
 	label?: string;
@@ -50,15 +47,7 @@ interface UploaderProps<T extends UploadResult> {
 
 const DEFAULT_MAX_SIZE = 10 * 1024 * 1024;
 
-/**
- * Uploader - 通用文件上传组件
- *
- * 拖拽与点击多选，支持两种模式：
- * - **默认分片上传**（不传 upload）：SHA-256 秒传 + 断点续传 + 分片进度条，适合大文件/通用素材
- * - **自定义上传**（传 upload）：调用方绑定具体接口（如表情上传），向后兼容
- *
- * 列表展示每项状态与进度，文件类型自动识别图标。
- */
+/** 支持点击与拖放上传，展示各文件状态与进度。 */
 export function Uploader<T extends UploadResult>({
 	upload: customUpload,
 	onUploaded,
@@ -70,12 +59,10 @@ export function Uploader<T extends UploadResult>({
 	hint,
 	className,
 }: UploaderProps<T>) {
-	const inputRef = useRef<HTMLInputElement>(null);
 	const idRef = useRef(0);
 	const [items, setItems] = useState<UploadItem<T>[]>([]);
 	const [isDragActive, setIsDragActive] = useState(false);
 
-	// 默认分片上传能力（customUpload 存在时不使用）
 	const { uploadFile: chunkedUpload } = useChunkedUpload({ purpose });
 
 	const updateItem = useCallback((id: string, updates: Partial<UploadItem<T>>) => {
@@ -110,19 +97,9 @@ export function Uploader<T extends UploadResult>({
 		[customUpload, chunkedUpload, updateItem, onUploaded],
 	);
 
-	const acceptFiles = useCallback(
-		(files: FileList | File[]) => {
-			const all = Array.from(files);
-			const accepted = all.filter((file) => matchesAcceptedFile(file, accept));
-			if (accepted.length < all.length) {
-				toast.warning("部分文件类型不受支持，已自动过滤");
-			}
-			const valid = accepted.filter((file) => file.size <= maxSize);
-			if (valid.length < accepted.length) {
-				toast.warning("部分文件超过大小限制，已自动过滤");
-			}
-			const slice = valid.slice(0, maxFiles);
-			const newItems: UploadItem<T>[] = slice.map((file) => ({
+	const uploadFiles = useCallback(
+		(files: File[]) => {
+			const newItems: UploadItem<T>[] = files.map((file) => ({
 				id: `upload-${idRef.current++}`,
 				file,
 				status: "uploading",
@@ -131,18 +108,19 @@ export function Uploader<T extends UploadResult>({
 			setItems((prev) => [...prev, ...newItems]);
 			for (const it of newItems) uploadOne(it);
 		},
-		[accept, maxSize, maxFiles, uploadOne],
+		[uploadOne],
 	);
+	const { inputProps, open, selectFiles } = useFileSelection({
+		accept,
+		maxSize,
+		maxFiles,
+		onSelect: uploadFiles,
+	});
 
 	const handleDrop = (e: React.DragEvent) => {
 		e.preventDefault();
 		setIsDragActive(false);
-		if (e.dataTransfer.files.length > 0) acceptFiles(e.dataTransfer.files);
-	};
-
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (e.target.files && e.target.files.length > 0) acceptFiles(e.target.files);
-		e.target.value = "";
+		selectFiles(e.dataTransfer.files);
 	};
 
 	const removeItem = (id: string) => {
@@ -157,6 +135,7 @@ export function Uploader<T extends UploadResult>({
 
 	return (
 		<div className={`space-y-4 ${className ?? ""}`}>
+			<input {...inputProps} className="hidden" />
 			<button
 				type="button"
 				onDrop={handleDrop}
@@ -165,21 +144,13 @@ export function Uploader<T extends UploadResult>({
 					setIsDragActive(true);
 				}}
 				onDragLeave={() => setIsDragActive(false)}
-				onClick={() => inputRef.current?.click()}
+				onClick={open}
 				className={`flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
 					isDragActive
 						? "border-primary bg-primary/5"
 						: "border-muted-foreground/25 hover:border-primary hover:bg-muted/50"
 				}`}
 			>
-				<input
-					ref={inputRef}
-					type="file"
-					accept={accept}
-					multiple
-					className="hidden"
-					onChange={handleInputChange}
-				/>
 				<Upload className="mb-1 size-6 text-muted-foreground" />
 				{isDragActive ? (
 					<p className="text-sm font-medium text-primary">松开鼠标上传</p>
