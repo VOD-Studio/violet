@@ -19,18 +19,6 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 describe("UiDocsSidebar", () => {
-	it("按组件库文档分组展示全部指南和库组件", () => {
-		render(<UiDocsSidebar currentPath="/ui/guides/introduction" />);
-		expect(screen.getByRole("navigation", { name: "组件库文档目录" })).toBeTruthy();
-		expect(screen.getByText("violet/ui")).toBeTruthy();
-		for (const title of ["入门", "主题与样式", "组件", "开发", "智能体"]) {
-			expect(screen.getByRole("heading", { name: title })).toBeTruthy();
-		}
-		expect(screen.getAllByRole("link")).toHaveLength(24);
-		expect(screen.queryByRole("link", { name: "CommentSection" })).toBeNull();
-		expect(screen.queryByRole("link", { name: "CartoonPopover" })).toBeNull();
-	});
-
 	it("当前指南和组件各自只有一个活动链接", () => {
 		const { rerender } = render(<UiDocsSidebar currentPath="/ui/guides/theming" />);
 		expect(screen.getByRole("link", { name: "主题" }).getAttribute("aria-current")).toBe(

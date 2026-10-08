@@ -116,10 +116,6 @@ export function ConversationPanel({
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const messageRefs = useRef<Record<string, HTMLElement | null>>({});
 
-	// 消息分组（Telegram 式连续同发送者一段，direct 与 room 统一）：
-	// 组 wrapper 内 absolute 头像列铺满组、column-reverse 贴组尾，CSS sticky
-	// 双向约束（top-0 / bottom-2）让头像贴可见范围底部随滚动、贴组尾、离场钉住。
-	// system 消息（日期等）断组且自成渲染单元。
 	const renderUnits = useMemo(() => {
 		const units: Array<
 			| { kind: "group"; headId: string; mine: boolean; messages: ChatMessage[] }
@@ -138,7 +134,7 @@ export function ConversationPanel({
 			} else {
 				open = {
 					kind: "group",
-					headId: message.id,
+					headId: message.client_message_id ?? message.id,
 					mine: message.sender.id === currentUserID,
 					messages: [message],
 				};
@@ -148,9 +144,7 @@ export function ConversationPanel({
 		return units;
 	}, [messages, currentUserID]);
 
-	// MessageBubble 公共 props 装配（组内/单条共用）；isHead 标记组首（控制名字行）
 	const bubbleProps = (message: ChatMessage, isHead: boolean) => ({
-		layout: (justBackfilled ? false : "position") as "position" | false,
 		animateIn: animateInIds.has(message.id),
 		conversationKind: conversation.kind,
 		currentUserID,
@@ -187,7 +181,6 @@ export function ConversationPanel({
 	const topSentinelRef = useRef<HTMLDivElement>(null);
 	const prependScrollAnchorRef = useRef<number | null>(null);
 	const latestKnownMessageTimeRef = useRef<number | null>(null);
-	const earliestKnownMessageTimeRef = useRef<number | null>(null);
 	const followLatestRef = useRef(true);
 	const lastScrollPositionRef = useRef({ top: 0, height: 0 });
 
@@ -219,7 +212,6 @@ export function ConversationPanel({
 		setHighlightedID(null);
 		prependScrollAnchorRef.current = null;
 		latestKnownMessageTimeRef.current = null;
-		earliestKnownMessageTimeRef.current = null;
 	}, [conversation.id]);
 
 	useLayoutEffect(() => {
@@ -381,19 +373,6 @@ export function ConversationPanel({
 		if (newest) latestKnownMessageTimeRef.current = new Date(newest).getTime();
 	}, [messages]);
 
-	// 往回翻页刚落地的这一次渲染：临时关闭 layout 位移动画。否则已有消息会被
-	// Framer Motion 的 FLIP 动画捕获成"被顶下去又滑回来"，和上面的滚动锚点回补打架，
-	// 表现为向上翻页加载历史后出现一个不该有的"滚回去"动画。
-	const justBackfilled =
-		earliestKnownMessageTimeRef.current !== null &&
-		messages.length > 0 &&
-		new Date(messages[0].created_at).getTime() < earliestKnownMessageTimeRef.current;
-
-	useEffect(() => {
-		const earliest = messages[0]?.created_at;
-		if (earliest) earliestKnownMessageTimeRef.current = new Date(earliest).getTime();
-	}, [messages]);
-
 	const emoteMap = useEmojiEmoteMap();
 
 	return (
@@ -515,7 +494,13 @@ export function ConversationPanel({
 												{...bubbleProps(unit.message, false)}
 											/>
 										) : (
-											<div key={unit.headId} className="relative space-y-4">
+											<div
+												key={unit.headId}
+												className="relative grid grid-cols-1"
+												style={{
+													gridTemplateRows: `repeat(${unit.messages.length * 2}, auto)`,
+												}}
+											>
 												{unit.messages.map((message) => (
 													<MessageBubble
 														key={
@@ -527,15 +512,13 @@ export function ConversationPanel({
 														)}
 													/>
 												))}
-												{/* Telegram 式组头像列：铺满组、贴组尾，sticky 双向约束
-												    让头像贴可见范围底部随滚动移动，组滚出视口前不消失 */}
+												{/* 每条消息占正文与状态两行，头像约束止于组尾正文。 */}
 												<div
 													className={cn(
-														"pointer-events-none absolute inset-y-0 flex w-10 flex-col-reverse",
+														"pointer-events-none absolute inset-y-0 row-start-1 -row-end-2 flex w-10 flex-col-reverse",
 														unit.mine ? "right-0" : "left-0",
 													)}
 												>
-													{/* sticky 贴滚动视口底（容器底 padding 移到列表内容上，避免 sticky 约束线被 padding 顶起） */}
 													<div className="pointer-events-auto sticky bottom-2 top-0">
 														<ChatAvatar
 															user={unit.messages[0].sender}

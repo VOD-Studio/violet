@@ -1,3 +1,4 @@
+/// <reference lib="es2024.promise" />
 /**
  * onSessionExpired 回归测试
  *
@@ -61,5 +62,36 @@ describe("onSessionExpired — 401 清空 auth 缓存", () => {
 
 		expect(clientQueryClient.getQueryData(authKeys.me())).toBeNull();
 		expect(clientQueryClient.getQueryData(authKeys.csrfToken())).toBeUndefined();
+	});
+
+	it("会话过期删除已卸载的私有缓存并取消在途请求，保留公共缓存", async () => {
+		await clientQueryClient.fetchQuery({
+			queryKey: ["private-profile"],
+			queryFn: async () => ({ secret: "alice-only" }),
+			meta: { sessionScoped: true },
+		});
+		clientQueryClient.setQueryData(["public-catalog"], ["公开数据"]);
+		const { promise: pendingResponse, resolve: finishPendingResponse } =
+			Promise.withResolvers<string>();
+		let signal: AbortSignal | undefined;
+		const request = clientQueryClient
+			.fetchQuery({
+				queryKey: ["private-pending"],
+				queryFn: (context) => {
+					signal = context.signal;
+					return pendingResponse;
+				},
+				meta: { sessionScoped: true },
+			})
+			.catch(() => undefined);
+
+		onSessionExpired();
+		expect(signal?.aborted).toBe(true);
+		expect(clientQueryClient.getQueryData(["private-profile"])).toBeUndefined();
+		expect(clientQueryClient.getQueryData(["public-catalog"])).toEqual(["公开数据"]);
+
+		finishPendingResponse("迟到的私有数据");
+		await request;
+		expect(clientQueryClient.getQueryData(["private-pending"])).toBeUndefined();
 	});
 });

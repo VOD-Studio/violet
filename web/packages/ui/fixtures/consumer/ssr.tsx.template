@@ -1,9 +1,23 @@
 import assert from "node:assert/strict";
-import { Button, Checkbox, TextField } from "@violet/ui";
+import { Button, Checkbox, ImagePixelReveal, TextField, type PixelRevealVariant } from "@violet/ui";
 import { Button as LeafButton } from "@violet/ui/button";
 import { Checkbox as LeafCheckbox } from "@violet/ui/checkbox";
+import { ImagePixelReveal as LeafImagePixelReveal } from "@violet/ui/image-pixel-reveal";
 import { buttonVariants, checkboxVariants } from "@violet/ui/variants";
 import { renderToString } from "react-dom/server";
+import { UploadTile } from "@violet/ui";
+import { UploadTile as LeafUploadTile } from "@violet/ui/upload-tile";
+
+const uploadTile = renderToString(<UploadTile aria-label="添加图片" name="action" value="upload" />);
+assert.equal(uploadTile, renderToString(<LeafUploadTile aria-label="添加图片" name="action" value="upload" />));
+assert.match(uploadTile, /type="button"/);
+assert.match(uploadTile, /class="v-upload-tile"/);
+assert.match(uploadTile, /name="action"/);
+assert.match(uploadTile, /value="upload"/);
+const busyTile = renderToString(<LeafUploadTile busy aria-label="添加图片" />);
+assert.match(busyTile, /disabled=""/);
+assert.match(busyTile, /aria-busy="true"/);
+assert.match(renderToString(<UploadTile type="submit">添加图片</UploadTile>), /type="submit"/);
 
 const root = renderToString(<Button variant="primary">保存</Button>);
 const leaf = renderToString(<LeafButton variant="primary">保存</LeafButton>);
@@ -28,4 +42,16 @@ assert.match(mixed, /aria-checked="mixed"/);
 assert.match(checkboxVariants({ variant: "primary" }), /v-checkbox--primary/);
 const external = renderToString(<LeafCheckbox form="external" name="option" defaultChecked aria-label="表单外选择" />);
 assert.match(external, /<button\b[^>]*form="external"/);
-console.log("Independent root/leaf SSR, TextField and Checkbox semantics passed.");
+const imageSource = "data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22360%22%20height=%22240%22%3E%3Crect%20width=%22360%22%20height=%22240%22%20fill=%22%23406c83%22/%3E%3C/svg%3E";
+const imageVariants: PixelRevealVariant[] = ["random", "ripple", "diagonal", "curtain"];
+for (const variant of imageVariants) {
+	const imageProps = { src: imageSource, alt: `${variant} 山间风景`, variant, replayOnHover: true, loading: "eager" as const };
+	const image = renderToString(<ImagePixelReveal {...imageProps} />);
+	assert.equal(image, renderToString(<LeafImagePixelReveal {...imageProps} />));
+	assert.match(image, /<img\b[^>]*alt="[^"]*山间风景"/);
+	assert.ok(image.includes(imageSource));
+}
+const customImage = renderToString(<LeafImagePixelReveal src={imageSource}><figure><img src={imageSource} alt="自定义风景" width={360} height={240} /><figcaption>自定义内容</figcaption></figure></LeafImagePixelReveal>);
+assert.match(customImage, /<figure>/);
+assert.match(customImage, /<figcaption>自定义内容<\/figcaption>/);
+console.log("Independent root/leaf SSR, TextField, Checkbox, ImagePixelReveal and UploadTile semantics passed.");

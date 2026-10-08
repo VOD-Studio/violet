@@ -1,0 +1,73 @@
+@layer components {
+	.v-upload-tile {
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		inline-size: 100%;
+		min-inline-size: 0;
+		aspect-ratio: 1;
+		padding: 0.5rem;
+		border: 1px dashed var(--border);
+		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
+		background: var(--muted);
+		color: var(--muted-foreground);
+		font: inherit;
+		font-size: 0.75rem;
+		cursor: pointer;
+		transition:
+			background-color var(--v-duration-fast, 150ms) ease-out,
+			color var(--v-duration-fast, 150ms) ease-out,
+			border-color var(--v-duration-fast, 150ms) ease-out;
+	}
+
+	.v-upload-tile:where(:not(:disabled)):hover {
+		border-color: var(--primary);
+		background: var(--accent);
+		color: var(--foreground);
+	}
+
+	.v-upload-tile:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-upload-tile:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-upload-tile[data-busy="true"] {
+		cursor: progress;
+	}
+
+	.v-upload-tile__icon,
+	.v-upload-tile__spinner {
+		inline-size: 1.25rem;
+		block-size: 1.25rem;
+		flex-shrink: 0;
+		pointer-events: none;
+	}
+
+	.v-upload-tile__spinner {
+		animation: v-upload-tile-spin 1s linear infinite;
+	}
+
+	@keyframes v-upload-tile-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-upload-tile {
+			transition: none;
+		}
+
+		.v-upload-tile__spinner {
+			animation: none;
+		}
+	}
+}

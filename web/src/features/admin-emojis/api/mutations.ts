@@ -1,3 +1,4 @@
+import { emojiKeys } from "@features/emojis/api/keys";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
@@ -19,6 +20,7 @@ export const useCreateEmojiGroup = () => {
 			apiPost<CreateResourceResult>("/admin/emojis/groups", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupList() });
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 		},
 	});
 };
@@ -30,7 +32,10 @@ export const useUpdateEmojiGroup = () => {
 		mutationFn: ({ id, body }: { id: number; body: UpdateEmojiGroupRequest; name?: string }) =>
 			apiPatch<null>(`/admin/emojis/groups/${id}`, body),
 		onSuccess: async () => {
-			await qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupList() });
+			await Promise.all([
+				qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupList() }),
+				qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() }),
+			]);
 		},
 	});
 };
@@ -43,6 +48,7 @@ export const useBatchUpdateGroupStatus = () => {
 			apiPatch<BatchUpdateResult>("/admin/emojis/groups/batch-status", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupList() });
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 		},
 	});
 };
@@ -54,6 +60,7 @@ export const useDeleteEmojiGroup = () => {
 		mutationFn: ({ id }: { id: number }) => apiDelete<null>(`/admin/emojis/groups/${id}`),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupList() });
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 		},
 	});
 };
@@ -66,6 +73,7 @@ export const useCreateEmoji = () => {
 			apiPost<CreateResourceResult>(`/admin/emojis/groups/${groupId}/emojis`, body),
 		onSuccess: (_data, { groupId }) => {
 			qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupEmojis(groupId) });
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 		},
 	});
 };
@@ -77,6 +85,7 @@ export const useUpdateEmoji = () => {
 		mutationFn: ({ id, body }: { id: number; groupId?: number; body: UpdateEmojiRequest }) =>
 			apiPatch<null>(`/admin/emojis/${id}`, body),
 		onSuccess: (_data, { groupId }) => {
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 			if (groupId) {
 				qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupEmojis(groupId) });
 			}
@@ -91,6 +100,7 @@ export const useDeleteEmoji = () => {
 		mutationFn: ({ id }: { id: number; groupId?: number }) =>
 			apiDelete<null>(`/admin/emojis/${id}`),
 		onSuccess: (_data, { groupId }) => {
+			qc.invalidateQueries({ queryKey: emojiKeys.publicGroups() });
 			if (groupId) {
 				qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupEmojis(groupId) });
 			}

@@ -134,6 +134,18 @@ export const UI_DOCS_CATALOG: readonly CatalogGroup[] = [
 						to: "/ui/components/text-field",
 						description: "文本字段 · 名称、说明与校验状态",
 					},
+					{
+						id: "image-pixel-reveal",
+						title: "ImagePixelReveal",
+						to: "/ui/components/image-pixel-reveal",
+						description: "图片揭示 · 静止原图与瓦片拼合",
+					},
+					{
+						id: "upload-tile",
+						title: "UploadTile",
+						to: "/ui/components/upload-tile",
+						description: "上传入口 · 方形按钮与忙碌状态",
+					},
 				],
 			},
 		],

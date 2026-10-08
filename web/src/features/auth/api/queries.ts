@@ -2,17 +2,27 @@ import type { UserDTO } from "@entities/user/model/types";
 import { clientQueryClient } from "@shared/api/query-client";
 import { apiGet } from "@shared/api/request";
 import { registerSessionExpiredHandler } from "@shared/api/session-expired";
-import { type QueryClient, type UseQueryResult, useQuery } from "@tanstack/react-query";
+import {
+	type QueryClient,
+	type QueryFilters,
+	type UseQueryResult,
+	useQuery,
+} from "@tanstack/react-query";
 import type { CsrfTokenResponse } from "../model/types";
 import { authKeys } from "./keys";
 
 /**
  * useLogout（主动登出）、LoginDialog 取消重登、401 拦截器（被动过期）共用：
- * me 写成 null 让 useMe 订阅者立即翻回未登录态，csrf 移除防陈旧命中。
- * 不能用 invalidate/remove——会触发 refetch，配合 useMe 的 staleTime: Infinity
+ * me 写成 null 让 useMe 订阅者立即翻回未登录态，csrf 与会话私有缓存移除。
+ * me 不能用 invalidate/remove——会触发 refetch；置 null 配合 staleTime: Infinity
  * 阻止自动重试。
  */
 export const clearAuthCache = (qc: QueryClient): void => {
+	const sessionQueries: QueryFilters = {
+		predicate: (query) => query.meta?.sessionScoped === true,
+	};
+	void qc.cancelQueries(sessionQueries);
+	qc.removeQueries(sessionQueries);
 	void qc.cancelQueries({ queryKey: authKeys.me() });
 	qc.setQueryData<UserDTO | null>(authKeys.me(), null);
 	qc.removeQueries({ queryKey: authKeys.csrfToken() });

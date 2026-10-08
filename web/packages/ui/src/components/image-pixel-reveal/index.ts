@@ -2,4 +2,4 @@ export {
 	ImagePixelReveal,
 	type ImagePixelRevealProps,
 	type PixelRevealVariant,
-} from "./ImagePixelReveal";
+} from "./image-pixel-reveal";

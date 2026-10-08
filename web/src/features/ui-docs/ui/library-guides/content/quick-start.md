@@ -75,6 +75,6 @@ Button 默认 `type="button"`；提交操作显式指定 `submit`。TextField �
 
 ## 确认使用范围
 
-当前的 foundation 单元是 Button、Checkbox、Input、Label、Textarea、TextField，其他单元为 legacy。用前查看[重建进度](/ui/guides/roadmap)与对应[组件用法](/ui/components)。主题由宿主管理，深色切换见[深色模式](/ui/guides/dark-mode)。
+当前 8 个 foundation 单元是 Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField、UploadTile，其余 36 个单元为 legacy。用前查看[重建进度](/ui/guides/roadmap)与对应[组件用法](/ui/components)。主题由宿主管理，深色切换见[深色模式](/ui/guides/dark-mode)。
 
 编码助手可以从[文档索引](https://xunrua.top/llms.txt)读取指南；在仓库内也可直接读 `component-manifest.json`、同源示例与 `violet-ui` skill。新组件的结构和验收流程见[组件库架构](/ui/guides/architecture)与[组件设计方法](/ui/guides/component-design)。

@@ -58,12 +58,10 @@ interface MessageBubbleProps {
 	onReply?: () => void;
 	onReplyTo?: () => void;
 	animateIn: boolean;
-	layout: "position" | false;
 }
 
 export function MessageBubble({
 	animateIn,
-	layout,
 	message,
 	sending,
 	onRetry,
@@ -170,257 +168,276 @@ export function MessageBubble({
 		<motion.article
 			ref={messageRef}
 			data-testid={`chat-message-${message.id}`}
-			layout={layout}
-			initial={
-				animateIn
-					? isBotReply
-						? { opacity: 0 }
-						: { opacity: 0, y: 12, scale: 0.98 }
-					: false
-			}
-			animate={isBotReply ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-			transition={{ type: "spring", stiffness: 450, damping: 28 }}
+			initial={animateIn ? { opacity: 0 } : false}
+			animate={{ opacity: 1 }}
+			transition={{ duration: 0.15 }}
 			onPointerDown={startLongPress}
 			onPointerLeave={clearLongPress}
 			onPointerCancel={clearLongPress}
 			onPointerUp={clearLongPress}
 			className={cn(
-				"group relative flex gap-2.5 transition-shadow duration-300",
-				mine && "flex-row-reverse",
-				!showSender && "mt-1",
+				"group relative col-start-1 row-span-2 grid min-w-0 grid-rows-subgrid transition-shadow duration-300",
+				!showSender && "mt-4",
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
-			{/* 头像占位列：头像本体在组层 sticky 列（见 ConversationPanel），此处仅保位 */}
-			<div className="mt-0.5 size-10 shrink-0" />
+			<div
+				className={cn(
+					"row-start-1 flex min-w-0 items-end gap-2.5",
+					mine && "flex-row-reverse",
+				)}
+			>
+				{/* 头像占位列：头像本体在组层 sticky 列（见 ConversationPanel），此处仅保位 */}
+				<div className="size-10 shrink-0" />
+				<div
+					className={cn(
+						isBotReply
+							? "relative flex min-w-0 w-full max-w-[min(82%,45rem)] flex-col"
+							: "relative flex max-w-[min(70%,36rem)] flex-col",
+						mine ? "items-end text-right" : "items-start",
+					)}
+				>
+					{showSender && !mine && showSenderName && !isBotReply && (
+						<span className="mb-0.5 flex items-center gap-1 self-start text-xs">
+							<button
+								aria-label={`提及 ${message.sender.display_name}`}
+								className="rounded px-0.5 text-left font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+								disabled={!onMention}
+								onClick={() => onMention?.(message.sender)}
+								type="button"
+							>
+								{message.sender.display_name}
+							</button>
+							<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
+						</span>
+					)}
+
+					{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
+				    的 min-content 会顶穿列的 max-w，须逐层夹住（气泡自身同理，见 BubbleShell）。 */}
+					<div
+						data-chat-message-body
+						className={cn("relative max-w-full", isBotReply && "w-full min-w-0")}
+					>
+						{message.reply_to && !isBotReply && (
+							<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
+						)}
+						{editing && !message.is_deleted ? (
+							<MessageEditComposer
+								conversationKind={conversationKind}
+								currentUserID={currentUserID}
+								message={message}
+								onClose={() => setEditing(false)}
+							/>
+						) : message.is_deleted ? (
+							<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
+								<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
+								消息已被管理员删除
+							</div>
+						) : isBotReply ? (
+							<BotReplyCard
+								message={message}
+								viewerID={currentUserID}
+								emote={mergedEmote}
+								onMention={onMention}
+								replyPreview={
+									message.reply_to ? (
+										<ReplyPreview
+											reference={message.reply_to}
+											onClick={onReplyTo}
+										/>
+									) : undefined
+								}
+							/>
+						) : message.type === "image" && message.media?.length ? (
+							<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
+								<ChatMessageContent
+									content={imageBubbleContent(message)}
+									emote={mergedEmote}
+									mentions={message.mentions}
+									viewerID={currentUserID}
+									inlineMedia={message.media}
+									onImage={onImage}
+								/>
+							</BubbleShell>
+						) : message.type === "tweet_share" ? (
+							<div className="flex flex-col gap-1.5">
+								{message.content && (
+									<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
+										<ChatMessageContent
+											content={message.content}
+											emote={mergedEmote}
+											mentions={message.mentions}
+											viewerID={currentUserID}
+										/>
+									</BubbleShell>
+								)}
+								<TweetShareCard
+									tweet={
+										message.shared_tweet ?? { id: message.id, is_deleted: true }
+									}
+								/>
+							</div>
+						) : (
+							<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
+								<ChatMessageContent
+									content={message.content ?? ""}
+									emote={mergedEmote}
+									mentions={message.mentions}
+									viewerID={currentUserID}
+								/>
+							</BubbleShell>
+						)}
+
+						{/* Hover 浮动微操作条与时间戳 */}
+						{!editing && (
+							<div
+								className={cn(
+									"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none",
+									touchActionsVisible && "opacity-100",
+									mine
+										? "right-full mr-1.5 flex-row"
+										: "left-full ml-1.5 flex-row-reverse",
+								)}
+							>
+								{!sending && !message.is_deleted && (
+									<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md">
+										<EmojiPicker
+											align={mine ? "start" : "end"}
+											onSelect={handleAddReaction}
+											selectedIds={selfReactionIds}
+											showMyEmojis={false}
+											trigger={
+												<button
+													aria-label={
+														selfReactionIds.size >= 3
+															? "消息表情数量已达上限"
+															: "添加消息表情"
+													}
+													className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+													disabled={
+														reactionBusy || selfReactionIds.size >= 3
+													}
+													type="button"
+												>
+													<Smile className="size-3.5" />
+												</button>
+											}
+										/>
+										{mine && (
+											<button
+												aria-label="编辑消息"
+												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+												onClick={() => setEditing(true)}
+												type="button"
+											>
+												<Pencil className="size-3.5" />
+											</button>
+										)}
+										{onReply && (
+											<button
+												aria-label="回复消息"
+												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+												onClick={onReply}
+												type="button"
+											>
+												<Reply className="size-3.5" />
+											</button>
+										)}
+										{message.type === "text" && (
+											<button
+												aria-label="复制消息"
+												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+												onClick={() => void copyText()}
+												type="button"
+											>
+												{copied ? (
+													<Check className="size-3.5 text-primary" />
+												) : (
+													<Copy className="size-3.5" />
+												)}
+											</button>
+										)}
+										{onDelete && (
+											<button
+												aria-label="删除违规消息"
+												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
+												onClick={onDelete}
+												type="button"
+											>
+												<Trash2 className="size-3.5" />
+											</button>
+										)}
+									</div>
+								)}
+								<BubbleTimestamp
+									forceVisible={touchActionsVisible}
+									time={message.created_at}
+									editedAt={isBotReply ? undefined : message.edited_at}
+									className="pointer-events-auto shrink-0 select-none text-center"
+								/>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
 			<div
 				className={cn(
 					isBotReply
-						? "relative flex min-w-0 w-full max-w-[min(82%,45rem)] flex-col"
-						: "relative flex max-w-[min(70%,36rem)] flex-col",
-					mine ? "items-end text-right" : "items-start",
+						? "row-start-2 flex min-w-0 w-full max-w-[min(82%,45rem)] flex-col"
+						: "row-start-2 flex max-w-[min(70%,36rem)] flex-col",
+					mine ? "mr-12.5 items-end justify-self-end text-right" : "ml-12.5 items-start",
 				)}
 			>
-				{showSender && !mine && showSenderName && !isBotReply && (
-					<span className="mb-0.5 flex items-center gap-1 self-start text-xs">
-						<button
-							aria-label={`提及 ${message.sender.display_name}`}
-							className="rounded px-0.5 text-left font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-							disabled={!onMention}
-							onClick={() => onMention?.(message.sender)}
-							type="button"
-						>
-							{message.sender.display_name}
-						</button>
-						<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
-					</span>
-				)}
-
-				{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
-				    的 min-content 会顶穿列的 max-w，须逐层夹住（气泡自身同理，见 BubbleShell）。 */}
-				<div className={cn("relative max-w-full", isBotReply && "w-full min-w-0")}>
-					{message.reply_to && !isBotReply && (
-						<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
-					)}
-					{editing && !message.is_deleted ? (
-						<MessageEditComposer
-							conversationKind={conversationKind}
-							currentUserID={currentUserID}
-							message={message}
-							onClose={() => setEditing(false)}
-						/>
-					) : message.is_deleted ? (
-						<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
-							<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
-							消息已被管理员删除
-						</div>
-					) : isBotReply ? (
-						<BotReplyCard
-							message={message}
-							viewerID={currentUserID}
-							emote={mergedEmote}
-							onMention={onMention}
-							replyPreview={
-								message.reply_to ? (
-									<ReplyPreview
-										reference={message.reply_to}
-										onClick={onReplyTo}
-									/>
-								) : undefined
-							}
-						/>
-					) : message.type === "image" && message.media?.length ? (
-						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-							<ChatMessageContent
-								content={imageBubbleContent(message)}
-								emote={mergedEmote}
-								mentions={message.mentions}
-								viewerID={currentUserID}
-								inlineMedia={message.media}
-								onImage={onImage}
-							/>
-						</BubbleShell>
-					) : message.type === "tweet_share" ? (
-						<div className="flex flex-col gap-1.5">
-							{message.content && (
-								<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-									<ChatMessageContent
-										content={message.content}
-										emote={mergedEmote}
-										mentions={message.mentions}
-										viewerID={currentUserID}
-									/>
-								</BubbleShell>
-							)}
-							<TweetShareCard
-								tweet={message.shared_tweet ?? { id: message.id, is_deleted: true }}
-							/>
-						</div>
-					) : (
-						<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-							<ChatMessageContent
-								content={message.content ?? ""}
-								emote={mergedEmote}
-								mentions={message.mentions}
-								viewerID={currentUserID}
-							/>
-						</BubbleShell>
-					)}
-
-					{/* Hover 浮动微操作条与时间戳 */}
-					{!editing && (
-						<div
-							className={cn(
-								"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none",
-								touchActionsVisible && "opacity-100",
-								mine
-									? "right-full mr-1.5 flex-row"
-									: "left-full ml-1.5 flex-row-reverse",
-							)}
-						>
-							{!sending && !message.is_deleted && (
-								<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md">
-									<EmojiPicker
-										align={mine ? "start" : "end"}
-										onSelect={handleAddReaction}
-										selectedIds={selfReactionIds}
-										showMyEmojis={false}
-										trigger={
-											<button
-												aria-label={
-													selfReactionIds.size >= 3
-														? "消息表情数量已达上限"
-														: "添加消息表情"
-												}
-												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-												disabled={reactionBusy || selfReactionIds.size >= 3}
-												type="button"
-											>
-												<Smile className="size-3.5" />
-											</button>
-										}
-									/>
-									{mine && (
-										<button
-											aria-label="编辑消息"
-											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-											onClick={() => setEditing(true)}
-											type="button"
-										>
-											<Pencil className="size-3.5" />
-										</button>
-									)}
-									{onReply && (
-										<button
-											aria-label="回复消息"
-											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-											onClick={onReply}
-											type="button"
-										>
-											<Reply className="size-3.5" />
-										</button>
-									)}
-									{message.type === "text" && (
-										<button
-											aria-label="复制消息"
-											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-											onClick={() => void copyText()}
-											type="button"
-										>
-											{copied ? (
-												<Check className="size-3.5 text-primary" />
-											) : (
-												<Copy className="size-3.5" />
-											)}
-										</button>
-									)}
-									{onDelete && (
-										<button
-											aria-label="删除违规消息"
-											className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
-											onClick={onDelete}
-											type="button"
-										>
-											<Trash2 className="size-3.5" />
-										</button>
-									)}
-								</div>
-							)}
-							<BubbleTimestamp
-								forceVisible={touchActionsVisible}
-								time={message.created_at}
-								editedAt={isBotReply ? undefined : message.edited_at}
-								className="pointer-events-auto shrink-0 select-none text-center"
-							/>
-						</div>
-					)}
-				</div>
-				{sending && (
-					<div
-						className="mt-1 flex max-w-full items-center gap-1.5 px-1 text-xs text-muted-foreground"
-						role="status"
-						aria-live="polite"
-					>
-						{sending.status === "failed" ? (
-							<>
-								<AlertTriangle className="size-3.5 shrink-0 text-destructive" />
-								<span className="wrap-anywhere text-destructive">
-									{sending.error}
-								</span>
-								<button
-									type="button"
-									className="shrink-0 rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
-									onClick={onRetry}
-								>
-									重试
-								</button>
-							</>
-						) : (
-							<>
-								<LoaderCircle
-									className="size-3.5 shrink-0 animate-spin"
-									aria-hidden="true"
-								/>
-								<span>
-									{sending.status === "uploading"
-										? `图片上传中 ${sending.progress}%`
-										: "发送中"}
-								</span>
-							</>
-						)}
-					</div>
-				)}
 				<ChatReactionBar
 					disabled={reactionBusy || Boolean(sending)}
 					onToggle={handleToggleReaction}
 					reactions={reactions}
 				/>
-				{mine && !sending && !message.is_deleted && (
-					<MessageReadReceipt
-						conversationKind={conversationKind}
-						message={message}
-						onMention={onMention}
-					/>
+				{(sending || (mine && !message.is_deleted)) && (
+					<div className="flex min-h-4 max-w-full items-center">
+						{sending && (
+							<div
+								className="flex max-w-full items-center gap-1.5 px-1 text-[11px] leading-4 text-muted-foreground"
+								role="status"
+								aria-live="polite"
+							>
+								{sending.status === "failed" ? (
+									<>
+										<AlertTriangle className="size-3.5 shrink-0 text-destructive" />
+										<span className="wrap-anywhere text-destructive">
+											{sending.error}
+										</span>
+										<button
+											type="button"
+											className="shrink-0 rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+											onClick={onRetry}
+										>
+											重试
+										</button>
+									</>
+								) : (
+									<>
+										<LoaderCircle
+											className="size-3.5 shrink-0 animate-spin"
+											aria-hidden="true"
+										/>
+										<span>
+											{sending.status === "uploading"
+												? `图片上传中 ${sending.progress}%`
+												: "发送中"}
+										</span>
+									</>
+								)}
+							</div>
+						)}
+						{mine && !sending && !message.is_deleted && (
+							<MessageReadReceipt
+								conversationKind={conversationKind}
+								message={message}
+								onMention={onMention}
+							/>
+						)}
+					</div>
 				)}
 			</div>
 		</motion.article>

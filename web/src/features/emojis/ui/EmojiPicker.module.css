@@ -1,0 +1,20 @@
+.panel {
+	animation: none;
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+}
+
+.preview {
+	z-index: 60;
+	max-width: calc(100vw - 1.5rem);
+	padding: 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: 0.5rem;
+	background: var(--popover);
+	color: var(--popover-foreground);
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+	animation: none;
+}
+
+.preview svg {
+	display: none;
+}

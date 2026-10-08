@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 6 个基础单元是 Button、Checkbox、Input、Label、Textarea、TextField。其余 36 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 8 个基础单元是 Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField、UploadTile。其余 36 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -113,6 +113,8 @@ import { TextField } from "@violet/ui";
 `className`、`style`、事件与 ref 继续属于 input；外层通过 `classNames.root` 调整布局。未传 `id` 时使用 `useId` 生成 SSR 稳定的关联标识。`aria-describedby` 合并宿主 ID 和实际存在的说明、错误节点；错误只在 invalid 时显示，内部 ID 只引用存在的节点；宿主提供的 aria-describedby ID 保留其语义，不因与内部 ID 重名而删除。
 
 状态有明确归属：原生属性表达 disabled、required 和 invalid；Button 的 `data-loading` 表达加载；Radix 控件沿用其 `data-state`。`data-slot` 标识结构部件。组件不得为每次 hover 创建全局状态，也不得用 CSS 外观冒充键盘行为。
+
+ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClassName` 属于默认图片，`children` 可替换默认内容。单一 BEM CSS 驱动 SVG 遮罩中的瓦片裁剪展开，原图和自定义内容保持静止，不复制图片背景或切换图像合成层。默认 random 每轮重新洗牌；单格 320ms，延迟跨度 380ms，悬停重播同样的瓦片拼合。根节点以 `data-state="loading|revealing|revealed"` 表达生命周期，`src` 改变开始独立周期；减弱动态直接显示，播放中开启该偏好也会完成当前周期。
 
 ## Violet 的设计规则
 

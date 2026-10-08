@@ -1,10 +1,32 @@
-import { Input, Label, Textarea, type ButtonProps, type CheckboxProps, type TextFieldProps } from "@violet/ui";
+import { ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type TextFieldProps } from "@violet/ui";
 import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
+import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
 import { Modal } from "@violet/ui/legacy";
 import { TextField } from "@violet/ui/text-field";
 import { buttonVariants, checkboxVariants, type ButtonVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
+import { UploadTile, type UploadTileProps } from "@violet/ui";
+import { UploadTile as LeafUploadTile, type UploadTileProps as LeafUploadTileProps } from "@violet/ui/upload-tile";
+
+const uploadTileRef = createRef<HTMLButtonElement>();
+const uploadTileProps: UploadTileProps = {
+	ref: uploadTileRef,
+	busy: false,
+	type: "submit",
+	form: "upload-form",
+	name: "action",
+	value: "upload",
+	"aria-label": "添加图片",
+	onClick: (event) => {
+		const button: HTMLButtonElement = event.currentTarget;
+		button.focus();
+	},
+};
+const leafUploadTileProps: LeafUploadTileProps = uploadTileProps;
+export const uploadTileExamples = <><UploadTile {...uploadTileProps} /><LeafUploadTile {...leafUploadTileProps} /></>;
+// @ts-expect-error 上传入口不接受链接 ref。
+export const invalidUploadTileRef = <UploadTile ref={createRef<HTMLAnchorElement>()} />;
 
 const button: ButtonProps = { variant: "primary", onClick: (event) => {
 	const target: HTMLButtonElement = event.currentTarget;
@@ -55,3 +77,29 @@ export const invalidCheckboxSlot = <Checkbox asChild />;
 export const invalidCheckboxSubmit = <Checkbox type="submit" />;
 // @ts-expect-error Checkbox 不接受未定义的视觉变体。
 checkboxVariants({ variant: "unknown" });
+
+const imageVariants: PixelRevealVariant[] = ["random", "ripple", "diagonal", "curtain"];
+const leafImageVariants: LeafPixelRevealVariant[] = imageVariants;
+const imageProps: ImagePixelRevealProps = {
+	src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240'/%3E",
+	alt: "山间风景",
+	variant: "ripple",
+	tileSize: 44,
+	maxTiles: 64,
+	duration: 0.18,
+	spreadMs: 220,
+	replayOnHover: true,
+	className: "consumer-image",
+	imgClassName: "consumer-image-content",
+	loading: "eager",
+	onError: () => {},
+	onRevealed: () => {},
+	children: <figure><figcaption>自定义内容</figcaption></figure>,
+};
+const leafImageProps: LeafImagePixelRevealProps = imageProps;
+export const imageExamples = imageVariants.map((variant) => <ImagePixelReveal key={variant} {...imageProps} variant={variant} />);
+export const leafImageExamples = leafImageVariants.map((variant) => <LeafImagePixelReveal key={variant} {...leafImageProps} variant={variant} />);
+// @ts-expect-error ImagePixelReveal 不接受未定义的揭示变体。
+export const invalidImageVariant = <ImagePixelReveal src={imageProps.src} variant="unknown" />;
+// @ts-expect-error 叶子入口保留相同的揭示变体约束。
+export const invalidLeafImageVariant = <LeafImagePixelReveal src={imageProps.src} variant="unknown" />;

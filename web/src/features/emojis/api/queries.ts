@@ -15,6 +15,8 @@ export const useAllEmojis = () =>
 	useQuery({
 		queryKey: emojiKeys.publicGroupList(),
 		queryFn: fetchAllEmojis,
+		staleTime: 5 * 60_000,
+		gcTime: 30 * 60_000,
 	});
 
 /**
@@ -31,4 +33,6 @@ export const useEmojiGroupByName = (name: string) =>
 		queryKey: emojiKeys.publicGroupByName(name),
 		queryFn: () => fetchEmojiGroupByName(name),
 		enabled: !!name,
+		staleTime: 5 * 60_000,
+		gcTime: 30 * 60_000,
 	});

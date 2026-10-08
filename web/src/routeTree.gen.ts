@@ -97,9 +97,11 @@ import { Route as UiComponentsBadgeRouteImport } from './routes/ui.components.ba
 import { Route as UiComponentsButtonRouteImport } from './routes/ui.components.button'
 import { Route as UiComponentsCheckboxRouteImport } from './routes/ui.components.checkbox'
 import { Route as UiComponentsDialogRouteImport } from './routes/ui.components.dialog'
+import { Route as UiComponentsImagePixelRevealRouteImport } from './routes/ui.components.image-pixel-reveal'
 import { Route as UiComponentsInputRouteImport } from './routes/ui.components.input'
 import { Route as UiComponentsTabsRouteImport } from './routes/ui.components.tabs'
 import { Route as UiComponentsTextFieldRouteImport } from './routes/ui.components.text-field'
+import { Route as UiComponentsUploadTileRouteImport } from './routes/ui.components.upload-tile'
 import { Route as UiGuidesSlugRouteImport } from './routes/ui.guides.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -542,6 +544,12 @@ const UiComponentsDialogRoute = UiComponentsDialogRouteImport.update({
   path: '/dialog',
   getParentRoute: () => UiComponentsRoute,
 } as any)
+const UiComponentsImagePixelRevealRoute =
+  UiComponentsImagePixelRevealRouteImport.update({
+    id: '/image-pixel-reveal',
+    path: '/image-pixel-reveal',
+    getParentRoute: () => UiComponentsRoute,
+  } as any)
 const UiComponentsInputRoute = UiComponentsInputRouteImport.update({
   id: '/input',
   path: '/input',
@@ -555,6 +563,11 @@ const UiComponentsTabsRoute = UiComponentsTabsRouteImport.update({
 const UiComponentsTextFieldRoute = UiComponentsTextFieldRouteImport.update({
   id: '/text-field',
   path: '/text-field',
+  getParentRoute: () => UiComponentsRoute,
+} as any)
+const UiComponentsUploadTileRoute = UiComponentsUploadTileRouteImport.update({
+  id: '/upload-tile',
+  path: '/upload-tile',
   getParentRoute: () => UiComponentsRoute,
 } as any)
 const UiGuidesSlugRoute = UiGuidesSlugRouteImport.update({
@@ -646,9 +659,11 @@ export interface FileRoutesByFullPath {
   '/ui/components/button': typeof UiComponentsButtonRoute
   '/ui/components/checkbox': typeof UiComponentsCheckboxRoute
   '/ui/components/dialog': typeof UiComponentsDialogRoute
+  '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
+  '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -732,9 +747,11 @@ export interface FileRoutesByTo {
   '/ui/components/button': typeof UiComponentsButtonRoute
   '/ui/components/checkbox': typeof UiComponentsCheckboxRoute
   '/ui/components/dialog': typeof UiComponentsDialogRoute
+  '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
+  '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
   '/admin/notes': typeof AdminNotesIndexRoute
@@ -827,9 +844,11 @@ export interface FileRoutesById {
   '/ui/components/button': typeof UiComponentsButtonRoute
   '/ui/components/checkbox': typeof UiComponentsCheckboxRoute
   '/ui/components/dialog': typeof UiComponentsDialogRoute
+  '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
   '/ui/components/text-field': typeof UiComponentsTextFieldRoute
+  '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
   '/admin/notes/': typeof AdminNotesIndexRoute
@@ -923,9 +942,11 @@ export interface FileRouteTypes {
     | '/ui/components/button'
     | '/ui/components/checkbox'
     | '/ui/components/dialog'
+    | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
+    | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1009,9 +1030,11 @@ export interface FileRouteTypes {
     | '/ui/components/button'
     | '/ui/components/checkbox'
     | '/ui/components/dialog'
+    | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
+    | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries'
     | '/admin/notes'
@@ -1103,9 +1126,11 @@ export interface FileRouteTypes {
     | '/ui/components/button'
     | '/ui/components/checkbox'
     | '/ui/components/dialog'
+    | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
     | '/ui/components/tabs'
     | '/ui/components/text-field'
+    | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
     | '/admin/notes/'
@@ -1777,6 +1802,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiComponentsDialogRouteImport
       parentRoute: typeof UiComponentsRoute
     }
+    '/ui/components/image-pixel-reveal': {
+      id: '/ui/components/image-pixel-reveal'
+      path: '/image-pixel-reveal'
+      fullPath: '/ui/components/image-pixel-reveal'
+      preLoaderRoute: typeof UiComponentsImagePixelRevealRouteImport
+      parentRoute: typeof UiComponentsRoute
+    }
     '/ui/components/input': {
       id: '/ui/components/input'
       path: '/input'
@@ -1796,6 +1828,13 @@ declare module '@tanstack/react-router' {
       path: '/text-field'
       fullPath: '/ui/components/text-field'
       preLoaderRoute: typeof UiComponentsTextFieldRouteImport
+      parentRoute: typeof UiComponentsRoute
+    }
+    '/ui/components/upload-tile': {
+      id: '/ui/components/upload-tile'
+      path: '/upload-tile'
+      fullPath: '/ui/components/upload-tile'
+      preLoaderRoute: typeof UiComponentsUploadTileRouteImport
       parentRoute: typeof UiComponentsRoute
     }
     '/ui/guides/$slug': {
@@ -1961,9 +2000,11 @@ interface UiComponentsRouteChildren {
   UiComponentsButtonRoute: typeof UiComponentsButtonRoute
   UiComponentsCheckboxRoute: typeof UiComponentsCheckboxRoute
   UiComponentsDialogRoute: typeof UiComponentsDialogRoute
+  UiComponentsImagePixelRevealRoute: typeof UiComponentsImagePixelRevealRoute
   UiComponentsInputRoute: typeof UiComponentsInputRoute
   UiComponentsTabsRoute: typeof UiComponentsTabsRoute
   UiComponentsTextFieldRoute: typeof UiComponentsTextFieldRoute
+  UiComponentsUploadTileRoute: typeof UiComponentsUploadTileRoute
   UiComponentsIndexRoute: typeof UiComponentsIndexRoute
 }
 
@@ -1972,9 +2013,11 @@ const UiComponentsRouteChildren: UiComponentsRouteChildren = {
   UiComponentsButtonRoute: UiComponentsButtonRoute,
   UiComponentsCheckboxRoute: UiComponentsCheckboxRoute,
   UiComponentsDialogRoute: UiComponentsDialogRoute,
+  UiComponentsImagePixelRevealRoute: UiComponentsImagePixelRevealRoute,
   UiComponentsInputRoute: UiComponentsInputRoute,
   UiComponentsTabsRoute: UiComponentsTabsRoute,
   UiComponentsTextFieldRoute: UiComponentsTextFieldRoute,
+  UiComponentsUploadTileRoute: UiComponentsUploadTileRoute,
   UiComponentsIndexRoute: UiComponentsIndexRoute,
 }
 
