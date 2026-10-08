@@ -77,6 +77,11 @@
 			"import": "./src/components/dialog/index.ts",
 			"default": "./src/components/dialog/index.ts"
 		},
+		"./dropdown": {
+			"types": "./src/components/dropdown/index.ts",
+			"import": "./src/components/dropdown/index.ts",
+			"default": "./src/components/dropdown/index.ts"
+		},
 		"./dropdown-menu": {
 			"types": "./src/components/dropdown-menu/index.ts",
 			"import": "./src/components/dropdown-menu/index.ts",
@@ -269,6 +274,7 @@
 		"./components/button.css": "./src/components/button/button.css",
 		"./components/card.css": "./src/components/card/card.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
+		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/label.css": "./src/components/label/label.css",
@@ -364,6 +370,11 @@
 				"types": "./dist/components/dialog/index.d.ts",
 				"import": "./dist/components/dialog/index.js",
 				"default": "./dist/components/dialog/index.js"
+			},
+			"./dropdown": {
+				"types": "./dist/components/dropdown/index.d.ts",
+				"import": "./dist/components/dropdown/index.js",
+				"default": "./dist/components/dropdown/index.js"
 			},
 			"./dropdown-menu": {
 				"types": "./dist/components/dropdown-menu/index.d.ts",
@@ -557,6 +568,7 @@
 			"./components/button.css": "./dist/components/button.css",
 			"./components/card.css": "./dist/components/card.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
+			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/input.css": "./dist/components/input.css",
 			"./components/label.css": "./dist/components/label.css",

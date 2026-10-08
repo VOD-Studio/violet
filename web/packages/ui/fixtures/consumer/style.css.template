@@ -77,3 +77,18 @@ section {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 0.75rem;
 }
+.dropdown-page[data-narrow="true"] {
+	max-width: 20rem;
+}
+.dropdown-nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1.5rem;
+	padding: 0.75rem 0;
+}
+.dropdown-panel {
+	display: grid;
+	gap: 0.25rem;
+	padding: 0.5rem;
+}

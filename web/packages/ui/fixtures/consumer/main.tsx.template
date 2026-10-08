@@ -1,9 +1,47 @@
-import { Button, Checkbox, ImagePixelReveal, Label, SearchInput, TextField, UploadTile, type PixelRevealVariant } from "@violet/ui";
+import { Button, Checkbox, Dropdown, DropdownContent, DropdownGroup, DropdownTrigger, ImagePixelReveal, Label, SearchInput, TextField, UploadTile, type PixelRevealVariant } from "@violet/ui";
 import { buttonVariants } from "@violet/ui/variants";
 import checkboxCss from "@violet/ui/components/checkbox.css?raw";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+
+function DropdownPreview() {
+	const [products, setProducts] = useState(false);
+	const [resources, setResources] = useState(false);
+	const [narrow, setNarrow] = useState(false);
+	const [dark, setDark] = useState(document.documentElement.classList.contains("dark"));
+	return <main className="dropdown-page" data-narrow={narrow}>
+		<h1>Dropdown · 独立安装包</h1>
+		<p>悬停或 Tab 聚焦触发器展开面板；点击不开合，Escape 收起，触屏不展开。两个菜单互斥，组内切换立即展开。</p>
+		<div className="image-reveal-controls">
+			<Label htmlFor="dropdown-narrow"><Checkbox id="dropdown-narrow" checked={narrow} onCheckedChange={(checked) => setNarrow(checked === true)} />窄屏</Label>
+			<Button id="dropdown-theme" onClick={() => {
+				document.documentElement.classList.toggle("dark", !dark);
+				setDark(!dark);
+			}}>{dark ? "切换浅色" : "切换深色"}</Button>
+		</div>
+		<nav className="dropdown-nav" aria-label="悬停菜单">
+			<DropdownGroup>
+				<Dropdown onOpenChange={setProducts}>
+					<DropdownTrigger id="dropdown-products">产品</DropdownTrigger>
+					<DropdownContent className="dropdown-panel" align="start">
+						<a href="#components">组件</a>
+						<a href="#tokens">设计令牌</a>
+						<a href="#themes">主题</a>
+					</DropdownContent>
+				</Dropdown>
+				<Dropdown onOpenChange={setResources}>
+					<DropdownTrigger asChild><a id="dropdown-resources" href="#resources">资源</a></DropdownTrigger>
+					<DropdownContent className="dropdown-panel" align="start">
+						<a href="#guides">指南</a>
+						<a href="#changelog">更新日志</a>
+					</DropdownContent>
+				</Dropdown>
+			</DropdownGroup>
+		</nav>
+		<output id="dropdown-state" aria-live="polite">产品：{products ? "展开" : "收起"}；资源：{resources ? "展开" : "收起"}</output>
+	</main>;
+}
 
 function UploadTilePreview() {
 	const [count, setCount] = useState(0);
@@ -239,4 +277,4 @@ function App() {
 const root = document.getElementById("root");
 if (!root) throw new Error("Consumer root is missing.");
 const preview = new URLSearchParams(window.location.search).get("preview");
-createRoot(root).render(preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : <App />);
+createRoot(root).render(preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : <App />);

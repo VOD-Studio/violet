@@ -117,6 +117,12 @@ export const UI_DOCS_CATALOG: readonly CatalogGroup[] = [
 						description: "弹窗 · 焦点管理与关闭语义",
 					},
 					{
+						id: "dropdown",
+						title: "Dropdown",
+						to: "/ui/components/dropdown",
+						description: "悬停下拉 · 指针与键盘展开的面板",
+					},
+					{
 						id: "tabs",
 						title: "Tabs",
 						to: "/ui/components/tabs",
