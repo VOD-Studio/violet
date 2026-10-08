@@ -37,7 +37,8 @@ vi.mock("@shared/ui/image-preview", () => ({
 	},
 }));
 
-vi.mock("@shared/ui/image-pixel-reveal", () => ({
+vi.mock("@violet/ui", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@violet/ui")>()),
 	ImagePixelReveal: (props: { src: string; alt?: string }) => (
 		<img data-testid="hero-reveal" src={props.src} alt={props.alt} />
 	),

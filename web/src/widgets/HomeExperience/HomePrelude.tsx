@@ -2,8 +2,7 @@ import type { PublicPersona } from "@entities/persona/model/types";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
-import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
-import { GithubIcon } from "@violet/ui";
+import { GithubIcon, ImagePixelReveal } from "@violet/ui";
 import { ArrowDown, ArrowRight, BookText, ExternalLink, Mail, Rss, Share2, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
@@ -99,11 +98,8 @@ export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 									<ImagePixelReveal
 										src={avatar}
 										alt={avatarAlt}
-										variant="random"
-										tileSize={40}
-										duration={0.32}
-										spreadMs={380}
 										replayOnHover
+										tileSize={40}
 										className="size-full"
 										onError={() => setFailedAvatar(avatarSource)}
 									/>

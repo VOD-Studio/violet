@@ -8,11 +8,11 @@ import {
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
 import { BackToTop } from "@shared/ui/back-to-top";
-import { ImagePixelReveal } from "@shared/ui/image-pixel-reveal";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { PhotoStack } from "@shared/ui/photo-stack";
+import { ImagePixelReveal } from "@violet/ui";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -118,11 +118,8 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 								<ImagePixelReveal
 									src={contentImageUrl(heroAsset.url, { width: 960 })}
 									alt={heroAlt}
-									variant="random"
-									tileSize={40}
-									duration={0.32}
-									spreadMs={380}
 									replayOnHover
+									tileSize={40}
 									className={styles.heroImageContainer}
 									imgClassName={styles.heroImage}
 									loading="eager"
