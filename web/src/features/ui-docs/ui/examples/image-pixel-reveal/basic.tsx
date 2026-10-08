@@ -1,5 +1,5 @@
-import { Button, ImagePixelReveal, type PixelRevealVariant } from "@violet/ui";
-import { useState } from "react";
+import { Button, Checkbox, ImagePixelReveal, Label, type PixelRevealVariant } from "@violet/ui";
+import { useId, useState } from "react";
 
 const ORDERS: { value: PixelRevealVariant; label: string }[] = [
 	{ value: "ripple", label: "中心扩散" },
@@ -19,6 +19,7 @@ const SCENES = [
 }));
 
 export function ImagePixelRevealBasicDemo() {
+	const id = useId();
 	const [variant, setVariant] = useState<PixelRevealVariant>("random");
 	const [replay, setReplay] = useState(0);
 	const [sceneIndex, setSceneIndex] = useState(0);
@@ -78,22 +79,22 @@ export function ImagePixelRevealBasicDemo() {
 				>
 					切换 src
 				</Button>
-				<label className="flex items-center gap-2 text-sm">
-					<input
-						type="checkbox"
+				<div className="flex items-center gap-2 text-sm">
+					<Checkbox
+						id={`${id}-hover`}
 						checked={replayOnHover}
-						onChange={(event) => setReplayOnHover(event.target.checked)}
+						onCheckedChange={(checked) => setReplayOnHover(checked === true)}
 					/>
-					悬停重播
-				</label>
-				<label className="flex items-center gap-2 text-sm">
-					<input
-						type="checkbox"
+					<Label htmlFor={`${id}-hover`}>悬停重播</Label>
+				</div>
+				<div className="flex items-center gap-2 text-sm">
+					<Checkbox
+						id={`${id}-content`}
 						checked={customContent}
-						onChange={(event) => setCustomContent(event.target.checked)}
+						onCheckedChange={(checked) => setCustomContent(checked === true)}
 					/>
-					自定义 children
-				</label>
+					<Label htmlFor={`${id}-content`}>自定义 children</Label>
+				</div>
 			</div>
 			<p className="text-sm text-muted-foreground">
 				图片瓦片逐块裁剪展开，原图不缩放；随机顺序每轮重新洗牌。 完整重播通过 key
