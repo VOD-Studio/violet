@@ -100,7 +100,7 @@ systemctl enable --now socat-v2ray@10.89.0.1.service socat-v2ray@10.89.1.1.servi
 ```
 
 验证：`curl -x http://10.89.0.1:20172 https://www.googleapis.com/` 秒回 404 即通。
-GitHub（`github.com` / `api.github.com`）国内直连可达，走分流端口同样直连不受影响。
+GitHub、GHCR 与 Actions 日志域名由服务器部署专用 balancer 处理；不能再假定分流端口访问 GitHub 时走直连。维护入口与验证命令见 [Runner 部署出网](runner-setup.md#部署出网)。
 
 
 ## 代码运行器（可运行代码块沙箱执行）

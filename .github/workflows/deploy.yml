@@ -181,28 +181,51 @@ jobs:
     permissions:
       contents: read
       packages: read
+    env:
+      HTTP_PROXY: http://127.0.0.1:20171
+      HTTPS_PROXY: http://127.0.0.1:20171
+      GIT_HTTP_LOW_SPEED_LIMIT: '1024'
+      GIT_HTTP_LOW_SPEED_TIME: '30'
     outputs:
       status: ${{ steps.deploy.outputs.status }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: needs.prepare.outputs.rollback != 'true'
+        timeout-minutes: 6
         with:
           ref: ${{ needs.prepare.outputs.revision }}
           path: release-source
           fetch-depth: 0
+          filter: blob:none
           persist-credentials: false
       - name: 登录镜像仓库
         if: needs.prepare.outputs.rollback != 'true'
+        timeout-minutes: 4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_ACTOR: ${{ github.actor }}
           REGISTRY_AUTH_FILE: ${{ runner.temp }}/violet-registry-auth.json
-          HTTPS_PROXY: http://127.0.0.1:20172
-          HTTP_PROXY: http://127.0.0.1:20172
-        run: printf '%s' "$GH_TOKEN" | podman login ghcr.io -u "$GH_ACTOR" --password-stdin
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            status=0
+            printf '%s' "$GH_TOKEN" |
+              timeout --kill-after=5s 60s podman login ghcr.io -u "$GH_ACTOR" --password-stdin ||
+              status=$?
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo '::error::GHCR 登录三次失败，未执行部署事务'
+              exit "$status"
+            fi
+            echo "::warning::GHCR 登录失败（退出码 ${status}），准备第 $((attempt + 1)) 次尝试"
+            sleep "$((attempt * 5))"
+          done
       - name: 执行部署事务
         id: deploy
         env:
@@ -213,9 +236,6 @@ jobs:
           ROLLBACK: ${{ needs.prepare.outputs.rollback }}
           COMPONENT: ${{ inputs.component || 'both' }}
           REGISTRY_AUTH_FILE: ${{ runner.temp }}/violet-registry-auth.json
-          HTTPS_PROXY: http://127.0.0.1:20172
-          HTTP_PROXY: http://127.0.0.1:20172
-          NO_PROXY: localhost,127.0.0.1,::1
         run: |
           set -euo pipefail
           if [ "$ROLLBACK" = true ]; then
