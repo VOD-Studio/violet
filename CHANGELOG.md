@@ -7,6 +7,28 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.59](https://github.com/VOD-Studio/violet/compare/v2.8.58...v2.8.59) (2026-10-08)
+
+
+### 新增
+
+* **emojis:** 优化收藏表情浏览 ([979f5ad](https://github.com/VOD-Studio/violet/commit/979f5ad3c82e4c9dac55970aae6af68ee7d293fd))
+* **upload-tile:** 添加网格上传入口 ([8d541ac](https://github.com/VOD-Studio/violet/commit/8d541ac65006122e9e02767e7fac7a969b0971fd))
+
+
+### 修复
+
+* **chat:** 稳定头像与消息的布局 ([2965216](https://github.com/VOD-Studio/violet/commit/2965216f1c850663c75e42cfb9094cd16080c6ca))
+* **emojis:** 保留目录缓存并清理过期会话 ([ce5d5f0](https://github.com/VOD-Studio/violet/commit/ce5d5f0b2efdfaaafe6ba7271ccb68d414a019cb))
+* **image-pixel-reveal:** 重设计随机瓦片展开效果 ([e26022d](https://github.com/VOD-Studio/violet/commit/e26022d68b21c216d70c07de141603d4fbef2808))
+* **web:** 优化媒体展示交互 ([96eaf4f](https://github.com/VOD-Studio/violet/commit/96eaf4f72d53003531e291181f605e50eb8a0be5))
+
+
+### 重构
+
+* **image-pixel-reveal:** 将站点切换至组件包 ([1ac4627](https://github.com/VOD-Studio/violet/commit/1ac4627ad6dcda27a988ed046b057f8fc3818b8b))
+* **upload:** 复用文件选择与校验 ([62ff464](https://github.com/VOD-Studio/violet/commit/62ff46436d1d91f4d6c28b83e4442b31417d86a9))
+
 ## [2.8.58](https://github.com/VOD-Studio/violet/compare/v2.8.57...v2.8.58) (2026-10-07)
 
 
