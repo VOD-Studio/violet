@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # 单构建阶段:go module 与编译缓存走 BuildKit cache mount,跨构建共享;
 # 不做 deps 阶段 COPY --from 传递(mount 内容不进镜像层,COPY 只能拿到空目录)
-FROM golang:1.26-alpine AS builder
+FROM golang:1.26.9-alpine AS builder
 
 # 临时：服务器在国内，用 goproxy.cn 加速 module 下载
 ENV GOPROXY=https://goproxy.cn,direct

@@ -6,7 +6,7 @@ Go 后端服务，为博客平台提供 RESTful API。采用 **DDD 四层架构*
 
 | 类别 | 技术 |
 |------|------|
-| 语言 | Go 1.26 |
+| 语言 | Go 1.26.9 |
 | Web 框架 | chi v5 |
 | ORM | GORM（仓储实现；生产表结构由 SQL 迁移管理） |
 | 数据库 | PostgreSQL 16 + golang-migrate（SQL 迁移） |

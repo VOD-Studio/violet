@@ -109,7 +109,7 @@ violet/
 
 ### 环境要求
 
-- Go 1.26+
+- Go 1.26.9+
 - Node.js 20+ 与 **pnpm**（前端包管理器，禁止 npm/yarn）
 - Docker & Docker Compose
 

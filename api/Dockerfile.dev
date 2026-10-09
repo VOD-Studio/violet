@@ -1,6 +1,6 @@
 # Dockerfile.dev - 开发环境 Go API 容器配置 (Air 热重载)
 # 源码由 docker compose watch sync 实时同步，依赖变更触发自动 rebuild
-FROM golang:1.26-alpine
+FROM golang:1.26.9-alpine
 
 ENV GOPROXY=https://goproxy.cn,direct
 
