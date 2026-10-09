@@ -7,6 +7,17 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.9.0](https://github.com/VOD-Studio/violet/compare/v2.8.59...v2.9.0) (2026-10-09)
+
+
+### 新增
+
+* **dropdown:** 新增悬停下拉面板 ([33d742a](https://github.com/VOD-Studio/violet/commit/33d742a89d312dbeeed60de8356af5f4ea48d289))
+* **header:** 主导航改用 Segmented 与 Dropdown ([ace5337](https://github.com/VOD-Studio/violet/commit/ace5337881058eca3b83b89ba7823f9f9dbcc802))
+* **header:** 重做主导航 ([9a96cc6](https://github.com/VOD-Studio/violet/commit/9a96cc64c8886661ea4eb860495c98fc2f077f5a))
+* **router:** 详情路由声明导航标题 ([a77c26d](https://github.com/VOD-Studio/violet/commit/a77c26d597da0a6f4be5192a86dab0d97c28cb06))
+* **segmented:** 重做分段控制器的方向与动效 ([b89b160](https://github.com/VOD-Studio/violet/commit/b89b1603c826e506fbb19bee248077152f8f2d1a))
+
 ## [2.8.59](https://github.com/VOD-Studio/violet/compare/v2.8.58...v2.8.59) (2026-10-08)
 
 
