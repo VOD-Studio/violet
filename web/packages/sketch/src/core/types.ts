@@ -111,6 +111,7 @@ export interface Hand {
 /** 笔：把笔画成形为渲染批次。 */
 export interface Pen {
 	readonly id: string;
+	/** @returns 新建的批次；生成器取得所有权并就地归一化 spans，不得返回缓存或共享的批次。 */
 	ink(strokes: readonly Stroke[], ctx: DrawContext, role: string): readonly InkBatch[];
 }
 
@@ -213,6 +214,8 @@ export interface DrawnItem {
 	readonly id: string;
 	/** 按叠放顺序：填充在下，描边在上。 */
 	readonly batches: readonly InkBatch[];
+	/** 该图元的自然落笔时长，弧长单位；batches 的 spans 是它的归一化。 */
+	readonly duration: number;
 	readonly transform?: Matrix;
 	readonly label?: Label;
 }

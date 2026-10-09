@@ -162,6 +162,7 @@ export function draw(scene: Scene, options: DrawOptions): Drawing {
 		return {
 			id: item.id,
 			batches,
+			duration: total,
 			transform: item.transform,
 			label: item.label,
 		};

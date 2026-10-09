@@ -1,3 +1,7 @@
+export type { Player, PlayerOptions } from "./animate/player.ts";
+export { createPlayer } from "./animate/player.ts";
+export type { Schedule, ScheduleMode, ScheduleOptions } from "./animate/schedule.ts";
+export { createSchedule, itemProgress } from "./animate/schedule.ts";
 export { cartoonHand, cartoonStyle } from "./cartoon.ts";
 export {
 	cartoonPalette,

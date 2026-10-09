@@ -1,8 +1,19 @@
+import { itemProgress, type Schedule } from "../animate/schedule.ts";
 import { CLOSE, CUBIC, type Drawing, type InkBatch, LINE, MOVE, type Path } from "../core/types.ts";
 import { type Palette, paint, type RenderOptions } from "./palette.ts";
+import { batchTracks, ease, ribbonPrefix, type Track, trackProgress } from "./tracks.ts";
+
+/** Canvas 绘制选项。 */
+export interface CanvasOptions extends RenderOptions {
+	/** 与 time 一起给出时按整图时间轴绘制，已落笔部分完整显示，进行中的笔画只显现前缀；缺省绘制完整画面。 */
+	schedule?: Schedule;
+	/** 整图时间轴上的时间，秒。 @default schedule 的总时长 */
+	time?: number;
+}
 
 const batchPaths = new WeakMap<InkBatch, Path2D>();
 const clipPaths = new WeakMap<Path, Path2D>();
+const trackPaths = new WeakMap<Track, Path2D>();
 
 function toPath2D(verbs: ArrayLike<number>, coords: ArrayLike<number>): Path2D {
 	const path = new Path2D();
@@ -45,7 +56,7 @@ export function drawCanvas(
 	drawing: Drawing,
 	canvas: HTMLCanvasElement,
 	palette: Palette,
-	options: RenderOptions = {},
+	options: CanvasOptions = {},
 ): void {
 	const bounds = canvas.getBoundingClientRect();
 	const cssWidth = bounds.width || drawing.width;
@@ -75,7 +86,11 @@ export function drawCanvas(
 	);
 	ctx.lineCap = "round";
 	ctx.lineJoin = "round";
-	for (const item of drawing.items) {
+	const { schedule } = options;
+	const time = options.time ?? schedule?.duration ?? 0;
+	drawing.items.forEach((item, index) => {
+		const u = schedule ? itemProgress(schedule, index, time) : 1;
+		if (u <= 0) return;
 		ctx.save();
 		if (item.transform) ctx.transform(...item.transform);
 		for (const batch of item.batches) {
@@ -88,19 +103,21 @@ export function drawCanvas(
 					clip.fillRule,
 				);
 			}
-			const path = cached(batchPaths, batch, () => toPath2D(batch.verbs, batch.coords));
 			const color = paint(palette, batch.role);
-			if (batch.mode === "fill") {
-				ctx.fillStyle = color;
-				ctx.fill(path, batch.fillRule ?? "nonzero");
-			} else {
+			if (batch.mode === "fill") ctx.fillStyle = color;
+			else {
 				ctx.strokeStyle = color;
 				ctx.lineWidth = batch.width ?? 1;
-				ctx.stroke(path);
 			}
+			if (u >= 1) {
+				const path = cached(batchPaths, batch, () => toPath2D(batch.verbs, batch.coords));
+				if (batch.mode === "fill") ctx.fill(path, batch.fillRule ?? "nonzero");
+				else ctx.stroke(path);
+			} else drawPartial(ctx, batch, u);
 			ctx.restore();
 		}
-		if (item.label) {
+		if (item.label && u > 0.75) {
+			ctx.globalAlpha = u >= 1 ? 1 : ease((u - 0.75) / 0.25);
 			ctx.fillStyle = paint(palette, "ink");
 			ctx.font = `${item.label.size ?? 14}px ${options.fontFamily ?? "system-ui, sans-serif"}`;
 			ctx.textAlign = "center";
@@ -108,6 +125,44 @@ export function drawCanvas(
 			ctx.fillText(item.label.text, item.label.x, item.label.y);
 		}
 		ctx.restore();
+	});
+}
+
+/** 进行中的图元：已完成的子路径整条绘制，当前子路径只显现前缀。 */
+function drawPartial(ctx: CanvasRenderingContext2D, batch: InkBatch, u: number): void {
+	const base = batch.opacity ?? 1;
+	for (const track of batchTracks(batch)) {
+		const p = trackProgress(track, u);
+		if (p <= 0) continue;
+		const full = () =>
+			cached(trackPaths, track, () =>
+				toPath2D(
+					batch.verbs.subarray(track.v0, track.v1),
+					batch.coords.subarray(track.c0, track.c1),
+				),
+			);
+		if (track.kind === "stroke") {
+			if (p >= 1) ctx.stroke(full());
+			else {
+				// 路径长度为近似值，虚线显现的末端可能有少量偏差，完成时改为整条绘制。
+				ctx.setLineDash([Math.max(1e-3, track.length * p), track.length * 4]);
+				ctx.stroke(full());
+				ctx.setLineDash([]);
+			}
+		} else if (track.kind === "ribbon") {
+			if (p >= 1) ctx.fill(full(), batch.fillRule ?? "nonzero");
+			else {
+				const xy = ribbonPrefix(batch.coords, track, p);
+				const path = new Path2D();
+				path.moveTo(xy[0], xy[1]);
+				for (let i = 2; i < xy.length; i += 2) path.lineTo(xy[i], xy[i + 1]);
+				path.closePath();
+				ctx.fill(path, batch.fillRule ?? "nonzero");
+			}
+		} else {
+			ctx.globalAlpha = base * ease(p);
+			ctx.fill(full(), batch.fillRule ?? "nonzero");
+		}
 	}
 }
 
