@@ -56,3 +56,64 @@ export function summarizeActivity(
 		partial: hasNextPage,
 	};
 }
+
+/** 热力图中的一天。 */
+export interface ActivityDay {
+	/** 日期 YYYY-MM-DD，按站点时区。 */
+	date: string;
+	/** 当天已加载的推文数。 */
+	count: number;
+	/** 晚于今天的格子，只为让最后一周补齐成整列。 */
+	future: boolean;
+}
+
+/** 近若干周的发文热力图，按列（周）优先排列，每列自周一到周日。 */
+export interface ActivityGrid {
+	days: ActivityDay[];
+	weeks: number;
+	/** 窗口内已加载的推文总数。 */
+	total: number;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const SITE_TIME_ZONE = "Asia/Shanghai";
+
+/**
+ * 统计近若干周每天的发文数，供热力图展示。
+ *
+ * 日期按站点时区换算，服务端与浏览器得到同一张网格，避免 hydration 不一致。
+ *
+ * @param tweets - 已加载的推文
+ * @param now - 当前时间，便于测试
+ * @param weeks - 展示的周数，包含本周
+ */
+export function buildActivityGrid(tweets: Tweet[], now = new Date(), weeks = 12): ActivityGrid {
+	const format = new Intl.DateTimeFormat("en-CA", {
+		timeZone: SITE_TIME_ZONE,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+	const key = (value: Date) => format.format(value);
+	const counts = new Map<string, number>();
+	for (const tweet of tweets) {
+		const created = new Date(tweet.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		counts.set(key(created), (counts.get(key(created)) ?? 0) + 1);
+	}
+	const today = key(now);
+	// 以 UTC 零点表示站点时区的日期，天数加减不受夏令时影响。
+	const todayUtc = Date.parse(`${today}T00:00:00Z`);
+	const weekday = (new Date(todayUtc).getUTCDay() + 6) % 7;
+	const start = todayUtc - (weekday + (weeks - 1) * 7) * DAY_MS;
+	const days: ActivityDay[] = [];
+	let total = 0;
+	for (let i = 0; i < weeks * 7; i++) {
+		const date = new Date(start + i * DAY_MS).toISOString().slice(0, 10);
+		const future = date > today;
+		const count = future ? 0 : (counts.get(date) ?? 0);
+		total += count;
+		days.push({ date, count, future });
+	}
+	return { days, weeks, total };
+}

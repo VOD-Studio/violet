@@ -7,16 +7,7 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
 import { differenceInDays } from "date-fns";
-import {
-	CalendarDays,
-	Check,
-	Copy,
-	Image as ImageIcon,
-	MessageCircle,
-	MessageSquareText,
-	PenSquare,
-	Share2,
-} from "lucide-react";
+import { CalendarDays, Check, Copy, MessageCircle, PenSquare, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +17,8 @@ export interface UserProfilePanelProps {
 	tweetCount: string;
 	/** 已加载推文中带图的条数。 */
 	mediaCount: number;
+	/** 已加载推文的累计点赞数；还有下一页时带「+」。 */
+	likeCount: string;
 }
 
 /** 注册至今的时长，用于资料行的补充说明。 */
@@ -54,7 +47,12 @@ async function copyText(text: string, message: string): Promise<boolean> {
  *
  * 本人显示「编辑资料」，访客显示「发起私聊」；未登录访客点击私聊会先去登录。
  */
-export function UserProfilePanel({ profile, tweetCount, mediaCount }: UserProfilePanelProps) {
+export function UserProfilePanel({
+	profile,
+	tweetCount,
+	mediaCount,
+	likeCount,
+}: UserProfilePanelProps) {
 	const navigate = useNavigate();
 	const { data: currentUser } = useMe();
 	const createChat = useCreateChatConversation();
@@ -89,12 +87,21 @@ export function UserProfilePanel({ profile, tweetCount, mediaCount }: UserProfil
 		}
 	};
 
+	const stats = [
+		{ label: "推文", value: tweetCount },
+		{ label: "含图", value: String(mediaCount) },
+		{ label: "获赞", value: likeCount },
+	];
+
 	return (
-		<section aria-label="用户资料" className="flex flex-col">
+		<section
+			aria-label="用户资料"
+			className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-[0_4px_24px_rgb(0_0_0/0.05)]"
+		>
 			<img
 				src={avatarUrl(profile.avatar_url, profile.username)}
 				alt={`${displayName} 的头像`}
-				className="size-28 shrink-0 rounded-full border border-border bg-muted object-cover ring-4 ring-background"
+				className="-mt-16 size-24 shrink-0 rounded-full border border-border bg-muted object-cover ring-4 ring-card"
 			/>
 
 			<h1 className="mt-4 truncate text-2xl font-bold tracking-tight">{displayName}</h1>
@@ -152,35 +159,22 @@ export function UserProfilePanel({ profile, tweetCount, mediaCount }: UserProfil
 				</Button>
 			</div>
 
-			<ul className="mt-6 flex flex-col gap-2.5 border-t border-border pt-5 text-sm text-muted-foreground">
-				<li className="flex items-center gap-2.5">
-					<MessageSquareText className="size-4 shrink-0" />
-					<span>
-						<span className="font-semibold text-foreground tabular-nums">
-							{tweetCount}
-						</span>{" "}
-						条推文
-					</span>
-				</li>
-				<li className="flex items-center gap-2.5">
-					<ImageIcon className="size-4 shrink-0" />
-					<span>
-						<span className="font-semibold text-foreground tabular-nums">
-							{mediaCount}
-						</span>{" "}
-						条含图
-					</span>
-				</li>
-				{profile.created_at && (
-					<li className="flex items-center gap-2.5">
-						<CalendarDays className="size-4 shrink-0" />
-						<span>
-							{formatDate(profile.created_at, "year-month")}加入 ·{" "}
-							{tenureOf(profile.created_at)}
-						</span>
+			<ul className="mt-6 grid grid-cols-3 divide-x divide-border rounded-xl bg-muted/60 py-3 text-center">
+				{stats.map(({ label, value }) => (
+					<li key={label}>
+						<span className="block text-lg font-semibold tabular-nums">{value}</span>
+						<span className="block text-xs text-muted-foreground">{label}</span>
 					</li>
-				)}
+				))}
 			</ul>
+
+			{profile.created_at && (
+				<p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+					<CalendarDays className="size-4 shrink-0" />
+					{formatDate(profile.created_at, "year-month")}加入 ·{" "}
+					{tenureOf(profile.created_at)}
+				</p>
+			)}
 		</section>
 	);
 }

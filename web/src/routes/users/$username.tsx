@@ -7,12 +7,14 @@ import {
 	useUserProfile,
 	useUserTimeline,
 } from "@features/tweets/api/queries";
-import { summarizeActivity } from "@features/tweets/model/profile-activity";
+import { buildActivityGrid, summarizeActivity } from "@features/tweets/model/profile-activity";
+import { UserProfileCover } from "@features/tweets/ui/profile/UserProfileCover";
 import { UserProfileFeed } from "@features/tweets/ui/profile/UserProfileFeed";
 import { UserProfileLayout } from "@features/tweets/ui/profile/UserProfileLayout";
 import { UserProfilePanel } from "@features/tweets/ui/profile/UserProfilePanel";
 import { UserProfileRail } from "@features/tweets/ui/profile/UserProfileRail";
 import type { PagedResponse } from "@shared/api/types";
+import { avatarUrl } from "@shared/lib/image-url";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Button, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useMemo } from "react";
@@ -40,6 +42,7 @@ function UserPublicProfilePage() {
 	);
 	const hasNextPage = Boolean(timeline.hasNextPage);
 	const activity = useMemo(() => summarizeActivity(tweets, hasNextPage), [tweets, hasNextPage]);
+	const grid = useMemo(() => buildActivityGrid(tweets), [tweets]);
 
 	if (isProfileLoading && !profile) {
 		return (
@@ -47,7 +50,7 @@ function UserPublicProfilePage() {
 				<div className="mx-auto w-full max-w-7xl">
 					<ShimmerSkeleton className="h-32 w-full rounded-2xl sm:h-40" />
 					<div className="grid gap-8 px-1 lg:grid-cols-[17rem_minmax(0,1fr)]">
-						<div className="-mt-14 space-y-3">
+						<div className="-mt-20 space-y-3">
 							<ShimmerSkeleton className="size-28 rounded-full" />
 							<ShimmerSkeleton className="h-8 w-40 rounded-lg" />
 							<ShimmerSkeleton className="h-4 w-24 rounded-lg" />
@@ -95,11 +98,15 @@ function UserPublicProfilePage() {
 	return (
 		<PageShell>
 			<UserProfileLayout
+				cover={
+					<UserProfileCover imageSrc={avatarUrl(profile.avatar_url, profile.username)} />
+				}
 				panel={
 					<UserProfilePanel
 						profile={profile}
 						tweetCount={tweetCount}
 						mediaCount={mediaCount}
+						likeCount={`${activity.likeCount}${hasNextPage ? "+" : ""}`}
 					/>
 				}
 				main={
@@ -113,7 +120,7 @@ function UserPublicProfilePage() {
 						isSelf={currentUser?.id === profile.id}
 					/>
 				}
-				rail={hasRail ? <UserProfileRail activity={activity} /> : undefined}
+				rail={hasRail ? <UserProfileRail activity={activity} grid={grid} /> : undefined}
 			/>
 		</PageShell>
 	);
