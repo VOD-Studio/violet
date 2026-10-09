@@ -33,7 +33,7 @@
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
 - **violet/ui 组件库**：`@violet/ui` 以组件清单管理公开入口与成熟度，基础单元共用 BEM CSS；`/ui` 提供安装、主题、组件 API 与同源交互示例，包内规范和真实 tarball 消费验证支持独立使用（尚未发布 npm）
 - **原生推文组件**：文章引用与推文页面共用独立的 [`@violet/react-tweet`](web/packages/react-tweet/README.md)；使用与开发说明见包内文档（尚未发布 npm）
-- **手绘绘图库**：[`@violet/sketch`](web/packages/sketch/README.md) 以手法、笔与填充组合生成手绘矢量图，提供七种填充与 SVG/Canvas 双后端；尚未替换正式 Mermaid 的 Rough.js 链路
+- **手绘绘图库**：[`@violet/sketch`](web/packages/sketch/README.md) 以手法、笔与填充组合生成手绘矢量图，提供压感笔、卡通风格、七种填充、整图绘制动画与 SVG/Canvas 双后端；尚未替换正式 Mermaid 的 Rough.js 链路
 - **工程化**：DDD 四层架构、CQRS、事件驱动审计、release-please 自动发版、CI/CD 全自动部署（含迁移门禁与自动回滚）
 
 ## 技术栈
