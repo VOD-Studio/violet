@@ -50,6 +50,7 @@ export function Tweet({
 	messages,
 	renderPhotos,
 	renderVideo,
+	onOpenPhoto,
 	...articleProps
 }: TweetProps) {
 	const { result, retry } = useTweet(id, fetcher);
@@ -68,6 +69,7 @@ export function Tweet({
 				messages={messages}
 				renderPhotos={renderPhotos}
 				renderVideo={renderVideo}
+				onOpenPhoto={onOpenPhoto}
 			/>
 		);
 	const labels = localization.messages;

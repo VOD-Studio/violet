@@ -44,6 +44,97 @@
 	max-height: 520px;
 	object-fit: contain;
 }
+/* 竖图为主的照片组：同高卡片横向滚动，宽度由各自宽高比决定。 */
+.v-tweet__photo-group {
+	container-type: inline-size;
+}
+.v-tweet__rail {
+	--_rail-height: clamp(220px, min(110cqw, 80svh), 640px);
+	position: relative;
+}
+.v-tweet__rail-track {
+	display: flex;
+	gap: 4px;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scroll-snap-type: x proximity;
+	scrollbar-width: none;
+	border-radius: 12px;
+}
+.v-tweet__rail-track::-webkit-scrollbar {
+	display: none;
+}
+.v-tweet__rail-track:focus-visible {
+	outline: 2px solid var(--_tweet-accent);
+	outline-offset: 2px;
+}
+.v-tweet .v-tweet__rail .v-tweet__photo {
+	flex: none;
+	min-height: 0;
+	height: var(--_rail-height);
+	max-width: 100%;
+	aspect-ratio: var(--_photo-ratio, 1);
+	border-radius: 12px;
+	scroll-snap-align: start;
+}
+.v-tweet__rail-button {
+	position: absolute;
+	inset-block: 0;
+	display: grid;
+	width: 36px;
+	height: 36px;
+	margin-block: auto;
+	padding: 0;
+	place-items: center;
+	border: 0;
+	border-radius: 50%;
+	background: color-mix(in oklab, #000 62%, transparent);
+	color: #fff;
+	cursor: pointer;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 140ms ease;
+}
+.v-tweet__rail-button[hidden] {
+	display: none;
+}
+.v-tweet__rail-button[data-direction="previous"] {
+	inset-inline-start: 8px;
+}
+.v-tweet__rail-button[data-direction="next"] {
+	inset-inline-end: 8px;
+}
+.v-tweet__rail-button path {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2.4;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.v-tweet__rail:hover .v-tweet__rail-button,
+.v-tweet__rail:focus-within .v-tweet__rail-button {
+	opacity: 1;
+	pointer-events: auto;
+}
+.v-tweet__rail-button:hover {
+	background: color-mix(in oklab, #000 78%, transparent);
+}
+.v-tweet__rail-button:focus-visible {
+	outline: 2px solid var(--_tweet-accent);
+	outline-offset: 2px;
+}
+/* 触屏没有悬停，按钮常驻；滑动仍是主要手势。 */
+@media (hover: none) {
+	.v-tweet__rail-button {
+		opacity: 1;
+		pointer-events: auto;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.v-tweet__rail-button {
+		transition: none;
+	}
+}
 .v-tweet .v-tweet__video {
 	display: block;
 	width: 100%;

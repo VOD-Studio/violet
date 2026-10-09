@@ -83,6 +83,23 @@ export interface TweetMessages {
 	 */
 	viewPhoto: string;
 	/**
+	 * 横向滚动的照片条的可访问名称。
+	 *
+	 * {count} 替换为已本地化的照片数量。
+	 * @example "Post photos, {count} in total. Scroll horizontally."
+	 */
+	photoRail: string;
+	/**
+	 * 照片条向前滚动按钮的可访问名称。
+	 * @example "Previous photos"
+	 */
+	previousPhotos: string;
+	/**
+	 * 照片条向后滚动按钮的可访问名称。
+	 * @example "Next photos"
+	 */
+	nextPhotos: string;
+	/**
 	 * 照片加载失败时的提示。
 	 * @example "Image unavailable"
 	 */
@@ -219,6 +236,9 @@ const english: TweetMessages = {
 	quote: "View quoted post",
 	photo: "Post photo {index}",
 	viewPhoto: "View original photo {index}",
+	photoRail: "Post photos, {count} in total. Scroll horizontally.",
+	previousPhotos: "Previous photos",
+	nextPhotos: "Next photos",
 	imageUnavailable: "Image unavailable",
 	videoPoster: "Video preview",
 	videoPosterUnavailable: "Video preview unavailable",
@@ -254,6 +274,9 @@ const chinese: TweetMessages = {
 	quote: "查看引用推文",
 	photo: "推文图片 {index}",
 	viewPhoto: "查看图片 {index} 原图",
+	photoRail: "推文图片，共 {count} 张，可左右滑动",
+	previousPhotos: "上一组图片",
+	nextPhotos: "下一组图片",
 	imageUnavailable: "图片不可用",
 	videoPoster: "视频封面",
 	videoPosterUnavailable: "视频封面不可用",

@@ -5,8 +5,8 @@ import { useState } from "react";
 import type { TweetMedia, TweetPhoto, TweetVideo } from "../data/media.ts";
 import { safeUrl } from "../data/urls.ts";
 import type { TweetLocalization } from "./localization.ts";
-import { formatMessage } from "./localization.ts";
 import type { TweetMediaRenderers } from "./media-renderers.ts";
+import { TweetPhotos } from "./photos.tsx";
 import { stopInteraction, TweetImage, TweetLink } from "./primitives.tsx";
 
 function NativeTweetVideo({
@@ -75,9 +75,10 @@ export function TweetMediaContent({
 	source,
 	renderPhotos,
 	renderVideo,
+	onOpenPhoto,
 	localization,
 }: TweetMediaContentProps) {
-	const { messages, number } = localization;
+	const { messages } = localization;
 	const groups: MediaGroup[] = [];
 	let unavailable = false;
 	for (const item of media) {
@@ -110,38 +111,11 @@ export function TweetMediaContent({
 						{renderPhotos ? (
 							renderPhotos(group.photos)
 						) : (
-							<div
-								className="v-tweet__photos"
-								data-count={Math.min(group.photos.length, 4)}
-							>
-								{group.photos.map((photo, index) => (
-									<TweetLink
-										key={`${photo.url}:${index}`}
-										href={photo.url}
-										className="v-tweet__photo"
-										label={formatMessage(
-											messages.viewPhoto,
-											"index",
-											number.format(index + 1),
-										)}
-									>
-										<TweetImage
-											src={photo.thumbnailUrl ?? photo.url}
-											alt={
-												photo.alt ??
-												formatMessage(
-													messages.photo,
-													"index",
-													number.format(index + 1),
-												)
-											}
-											width={photo.width}
-											height={photo.height}
-											fallback={photo.alt ?? messages.imageUnavailable}
-										/>
-									</TweetLink>
-								))}
-							</div>
+							<TweetPhotos
+								photos={group.photos}
+								localization={localization}
+								onOpenPhoto={onOpenPhoto}
+							/>
 						)}
 					</div>
 				) : (
