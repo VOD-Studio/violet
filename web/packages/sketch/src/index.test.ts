@@ -5,16 +5,19 @@ import {
 	CUBIC,
 	circle,
 	createHand,
+	curve,
 	type Drawing,
 	draw,
 	type Fill,
 	fills,
+	flatten,
 	type Hand,
 	type InkBatch,
 	line,
 	MOVE,
 	type Pen,
 	pathFromSvg,
+	polygon,
 	polylineContour,
 	rect,
 	type SceneItem,
@@ -172,6 +175,37 @@ describe("draw", () => {
 		expect(() => draw(scene(base), { style: styles.natural, maxStrokes: 1 })).toThrow(
 			BudgetExceeded,
 		);
+	});
+});
+
+describe("角点检测", () => {
+	const cornerCount = (path: ReturnType<typeof polygon>) =>
+		flatten(path, 0.25).contours.reduce((n, c) => n + c.corners.length, 0);
+
+	it("四角星的内凹顶点转角只有约 50°，也必须识别为角点，否则星形会退化成菱形", () => {
+		const points: [number, number][] = [];
+		for (let i = 0; i < 8; i++) {
+			const a = (Math.PI * i) / 4 - Math.PI / 2;
+			const d = i % 2 ? 9 : 24;
+			points.push([40 + d * Math.cos(a), 40 + d * Math.sin(a)]);
+		}
+		expect(cornerCount(polygon(points))).toBe(8);
+	});
+
+	it("光滑曲线、圆与圆角矩形不产生角点，直角矩形有四个", () => {
+		expect(cornerCount(circle(100, 100, 50))).toBe(0);
+		expect(cornerCount(rect(10, 10, 100, 60, 12))).toBe(0);
+		expect(cornerCount(rect(10, 10, 100, 60))).toBe(4);
+		expect(
+			cornerCount(
+				curve([
+					[0, 0],
+					[50, 40],
+					[100, 0],
+					[150, 40],
+				]),
+			),
+		).toBe(0);
 	});
 });
 

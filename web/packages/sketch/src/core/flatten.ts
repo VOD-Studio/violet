@@ -1,7 +1,7 @@
 import { CLOSE, type Contour, CUBIC, LINE, MOVE, type Path, type Skeleton } from "./types.ts";
 
 /** 相邻切线夹角超过该值的接合点视为角点。 */
-export const CORNER_ANGLE = (55 * Math.PI) / 180;
+export const CORNER_ANGLE = (28 * Math.PI) / 180;
 const CORNER_COS = Math.cos(CORNER_ANGLE);
 const MAX_POINTS = 1_000_000;
 const CACHE_LIMIT = 4;
