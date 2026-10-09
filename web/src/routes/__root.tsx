@@ -114,8 +114,7 @@ function RootComponent() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const isAdminRoute = pathname.startsWith("/admin");
 	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
-	const isUsersRoute = pathname.startsWith("/users/");
-	const isFullscreenRoute = isChatRoute || isUsersRoute;
+	const isFullscreenRoute = isChatRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
 	// 工具方言：个人中心与聊天已落地（.dialect-tool）；/lab 实验豁免保持根作用域
 	// 中性，实验样式不得反向改写正式页面 token
@@ -136,7 +135,7 @@ function RootComponent() {
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
 			) : (
-				// 前台路由：包含 Header/Footer 的标准布局（/chat 和 /users 隐藏 Footer 并锁定视口高度）
+				// 前台路由：包含 Header/Footer 的标准布局（/chat 隐藏 Footer 并锁定视口高度）
 				<div
 					className={cn(
 						"flex min-h-screen flex-col",

@@ -13,7 +13,7 @@ export interface UserProfileLayoutProps {
 /**
  * 公开用户页的版心：顶部淡色封面，下方三栏（资料 / 内容 / 概览）。
  *
- * 宽屏三栏并排；中等宽度概览栏落到资料栏下方；窄屏依次堆叠。资料栏头像压在封面下缘。
+ * 宽屏三栏并排且两侧栏吸顶，长推文流滚动时资料与概览仍在视野内；中等宽度概览栏落到资料栏下方；窄屏依次堆叠。资料栏头像压在封面下缘。
  * 封面目前是主题色渐变，以后接入用户自定义封面时只替换这一层。
  */
 export function UserProfileLayout({ panel, main, rail }: UserProfileLayoutProps) {
@@ -29,12 +29,22 @@ export function UserProfileLayout({ panel, main, rail }: UserProfileLayoutProps)
 					rail && "xl:grid-cols-[17rem_minmax(0,1fr)_16rem]",
 				)}
 			>
-				<aside className="-mt-14 lg:col-start-1 lg:row-start-1">{panel}</aside>
+				<aside
+					className={cn(
+						"-mt-14 lg:col-start-1 lg:row-start-1",
+						// 吸顶的元素要跨满整个网格区域才有滚动空间：三栏时资料栏跨两行，两栏时直接在 lg 吸顶。
+						rail
+							? "xl:sticky xl:top-24 xl:row-span-2 xl:self-start"
+							: "lg:sticky lg:top-24 lg:row-span-2 lg:self-start",
+					)}
+				>
+					{panel}
+				</aside>
 				<main className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-6">
 					{main}
 				</main>
 				{rail && (
-					<div className="lg:col-start-1 lg:row-start-2 xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:pt-6">
+					<div className="lg:col-start-1 lg:row-start-2 xl:sticky xl:top-24 xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:self-start xl:pt-6">
 						{rail}
 					</div>
 				)}
