@@ -210,6 +210,55 @@ describe("ImagePreview 尺寸与加载", () => {
 		expect(loadingFrame?.style.height).toBe("506.25px");
 	});
 
+	it("页面上的卡片显示缩略图时，非首张图也能按卡片图片的比例预留显示盒", async () => {
+		sizes.delete(images[1]);
+		render(
+			<article>
+				<button type="button">
+					<img src={thumbnails[0]} alt="卡片一" width={400} height={300} />
+				</button>
+				<img src={thumbnails[1]} alt="卡片二" width={900} height={1800} />
+			</article>,
+		);
+		render(
+			<ImagePreview
+				open
+				images={[images[0], images[1]]}
+				alts={["湖畔", "山峰"]}
+				thumbnails={[thumbnails[0], thumbnails[1]]}
+				triggerElement={screen.getByRole("button", { name: "卡片一" })}
+				onClose={() => {}}
+			/>,
+		);
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		await act(async () => {});
+		// 原图尚未到达：占位盒按卡片二的 1:2 比例铺满，而不是缩略图的自然尺寸。
+		const frames = document.querySelectorAll<HTMLElement>("[data-preview-frame]");
+		const current = frames[frames.length - 1];
+		expect(current.style.width).toBe("360px");
+		expect(current.style.height).toBe("720px");
+	});
+
+	it("页面上找不到对应图片时，用缩略图自身的比例预留显示盒，不按缩略图的小尺寸显示", async () => {
+		sizes.delete(images[1]);
+		sizes.set(thumbnails[1], { w: 150, h: 300 });
+		render(<Harness />);
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		await act(async () => {});
+		const frames = document.querySelectorAll<HTMLElement>("[data-preview-frame]");
+		const current = frames[frames.length - 1];
+		expect(current.tagName).toBe("DIV");
+		expect(current.style.width).toBe("360px");
+		expect(current.style.height).toBe("720px");
+
+		// 原图到达后改用原图尺寸，且不会塌回缩略图大小。
+		await act(async () => {
+			for (const request of requests.get(images[1]) ?? []) request.resolve(900, 1800);
+		});
+		const original = await image("山峰");
+		expect(original.parentElement?.style.height).toBe("720px");
+	});
+
 	it("原图解码前保留占位，解码完成后再展示原图", async () => {
 		render(<Harness />);
 		const original = await image("湖畔");

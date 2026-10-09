@@ -144,13 +144,18 @@ function ImagePreviewDialog({
 			.filter((image) => !image.closest('[aria-label="图片预览"]'))
 			.map((image) => ({ image, src: originalImageUrl(image.currentSrc || image.src) }));
 		const used = new Set<HTMLImageElement>(initialImage ? [initialImage] : []);
-		const sources = images.map((src, imageIndex) => {
-			if (imageIndex === currentIndex && initialImage) return initialImage;
-			const url = originalImageUrl(
+		const normalize = (src: string) =>
+			originalImageUrl(
 				URL.canParse(src, document.baseURI) ? new URL(src, document.baseURI).href : src,
 			);
+		const sources = images.map((src, imageIndex) => {
+			if (imageIndex === currentIndex && initialImage) return initialImage;
+			// 卡片里常显示独立生成的缩略图，地址与原图不同，两者都要能匹配到页面上的 <img>。
+			const urls = new Set([normalize(src)]);
+			const thumbnail = thumbnails?.[imageIndex];
+			if (thumbnail) urls.add(normalize(thumbnail));
 			const match = candidates.find(
-				(candidate) => candidate.src === url && !used.has(candidate.image),
+				(candidate) => urls.has(candidate.src) && !used.has(candidate.image),
 			);
 			if (match) used.add(match.image);
 			return match?.image;
