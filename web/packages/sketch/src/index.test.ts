@@ -152,12 +152,17 @@ describe("draw", () => {
 
 		const sides = subpathEnds(batchesOf(drawing, "r")[0]);
 		expect(sides).toHaveLength(4);
-		const outside = ([x, y]: [number, number]) =>
-			x < 49.9 || x > 150.1 || y < 49.9 || y > 110.1;
+		// 越界为线宽量级的随机值：端点不得缩进矩形内，且四条边累计必须有可见越界。
+		const beyond = ([x, y]: [number, number]) =>
+			Math.max(49.99 - x, x - 150.01, 49.99 - y, y - 110.01);
+		let total = 0;
 		for (const side of sides) {
-			expect(outside(side.start)).toBe(true);
-			expect(outside(side.end)).toBe(true);
+			for (const end of [side.start, side.end]) {
+				expect(beyond(end)).toBeGreaterThan(-0.05);
+				total += Math.max(0, beyond(end));
+			}
 		}
+		expect(total).toBeGreaterThan(1);
 	});
 
 	it("超出预算时抛出 BudgetExceeded 且不返回结果", () => {

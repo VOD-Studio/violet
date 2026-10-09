@@ -11,7 +11,7 @@ const LIFT_PAUSE = 30;
 const natural: HandOptions = {
 	roughness: 0.9,
 	bowing: 1,
-	breakChance: 0.6,
+	breakChance: 0.3,
 	overshoot: 1,
 	overlap: [0.04, 0.1],
 	maxStroke: 360,
@@ -46,12 +46,12 @@ export function createHand(options: Partial<HandOptions> = {}, id = "hand"): Han
 /** 内置手法预设。 */
 export const hands = {
 	/** 工整：低抖动，少断笔。 */
-	neat: createHand({ roughness: 0.35, bowing: 0.4, breakChance: 0.3, overshoot: 0.4 }, "neat"),
+	neat: createHand({ roughness: 0.35, bowing: 0.4, breakChance: 0.15, overshoot: 0.4 }, "neat"),
 	/** 自然：默认手法。 */
 	natural: createHand({}, "natural"),
 	/** 草稿：大幅抖动并复画一遍。 */
 	draft: createHand(
-		{ roughness: 1.8, bowing: 1.6, breakChance: 0.85, overshoot: 1.5, passes: 2 },
+		{ roughness: 1.8, bowing: 1.6, breakChance: 0.6, overshoot: 1.5, passes: 2 },
 		"draft",
 	),
 } as const;

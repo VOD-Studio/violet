@@ -61,11 +61,9 @@ export function planStrokes(
 	const plans: StrokePlan[] = [];
 	const w = ctx.width;
 	const maxStroke = options.maxStroke / ctx.pixelScale;
-	const overshoot = (key: number, segment: number) =>
-		Math.min(
-			6 * w,
-			(w * (0.5 + ctx.random(OVERSHOOT, key)) + 0.03 * segment) * options.overshoot,
-		);
+	// 越界只有线宽量级：再长就成了刻意的十字线头。
+	const overshoot = (key: number) =>
+		Math.min(2 * w, w * ctx.random(OVERSHOOT, key) * options.overshoot);
 
 	skeleton.contours.forEach((contour, ci) => {
 		const L = contour.length;
@@ -96,12 +94,11 @@ export function planStrokes(
 				const start = breaks[i];
 				let end = breaks[(i + 1) % breaks.length];
 				if (end <= start) end += L;
-				const segment = end - start;
 				ranges.push({
 					start,
 					end,
-					extendStart: overshoot(base + i * 2, segment),
-					extendEnd: overshoot(base + i * 2 + 1, segment),
+					extendStart: overshoot(base + i * 2),
+					extendEnd: overshoot(base + i * 2 + 1),
 					pinStart: false,
 					pinEnd: false,
 				});
@@ -113,14 +110,13 @@ export function planStrokes(
 				L,
 			];
 			for (let i = 0; i < cuts.length - 1; i++) {
-				const segment = cuts[i + 1] - cuts[i];
 				const first = i === 0;
 				const last = i === cuts.length - 2;
 				ranges.push({
 					start: cuts[i],
 					end: cuts[i + 1],
-					extendStart: first ? 0 : overshoot(base + i * 2, segment),
-					extendEnd: last ? 0 : overshoot(base + i * 2 + 1, segment),
+					extendStart: first ? 0 : overshoot(base + i * 2),
+					extendEnd: last ? 0 : overshoot(base + i * 2 + 1),
 					pinStart: first && ctx.pinEnds,
 					pinEnd: last && ctx.pinEnds,
 				});
