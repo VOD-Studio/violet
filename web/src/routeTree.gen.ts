@@ -59,7 +59,6 @@ import { Route as LabMascotRouteImport } from './routes/lab.mascot'
 import { Route as LabNavRouteImport } from './routes/lab.nav'
 import { Route as LabPaletteRouteImport } from './routes/lab.palette'
 import { Route as LabSeriesRouteImport } from './routes/lab.series'
-import { Route as LabSketchPrototypeRouteImport } from './routes/lab.sketch-prototype'
 import { Route as LabThemeRouteImport } from './routes/lab.theme'
 import { Route as LabTocTreeRouteImport } from './routes/lab.toc-tree'
 import { Route as NotesIndexRouteImport } from './routes/notes.index'
@@ -357,11 +356,6 @@ const LabSeriesRoute = LabSeriesRouteImport.update({
   path: '/lab/series',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LabSketchPrototypeRoute = LabSketchPrototypeRouteImport.update({
-  id: '/lab/sketch-prototype',
-  path: '/lab/sketch-prototype',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LabThemeRoute = LabThemeRouteImport.update({
   id: '/lab/theme',
   path: '/lab/theme',
@@ -640,7 +634,6 @@ export interface FileRoutesByFullPath {
   '/lab/nav': typeof LabNavRoute
   '/lab/palette': typeof LabPaletteRoute
   '/lab/series': typeof LabSeriesRoute
-  '/lab/sketch-prototype': typeof LabSketchPrototypeRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
@@ -732,7 +725,6 @@ export interface FileRoutesByTo {
   '/lab/nav': typeof LabNavRoute
   '/lab/palette': typeof LabPaletteRoute
   '/lab/series': typeof LabSeriesRoute
-  '/lab/sketch-prototype': typeof LabSketchPrototypeRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
@@ -831,7 +823,6 @@ export interface FileRoutesById {
   '/lab/nav': typeof LabNavRoute
   '/lab/palette': typeof LabPaletteRoute
   '/lab/series': typeof LabSeriesRoute
-  '/lab/sketch-prototype': typeof LabSketchPrototypeRoute
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
@@ -932,7 +923,6 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/palette'
     | '/lab/series'
-    | '/lab/sketch-prototype'
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
@@ -1024,7 +1014,6 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/palette'
     | '/lab/series'
-    | '/lab/sketch-prototype'
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
@@ -1122,7 +1111,6 @@ export interface FileRouteTypes {
     | '/lab/nav'
     | '/lab/palette'
     | '/lab/series'
-    | '/lab/sketch-prototype'
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
@@ -1201,7 +1189,6 @@ export interface RootRouteChildren {
   LabNavRoute: typeof LabNavRoute
   LabPaletteRoute: typeof LabPaletteRoute
   LabSeriesRoute: typeof LabSeriesRoute
-  LabSketchPrototypeRoute: typeof LabSketchPrototypeRoute
   LabThemeRoute: typeof LabThemeRoute
   LabTocTreeRoute: typeof LabTocTreeRoute
   NotesIdRoute: typeof NotesIdRoute
@@ -1571,13 +1558,6 @@ declare module '@tanstack/react-router' {
       path: '/lab/series'
       fullPath: '/lab/series'
       preLoaderRoute: typeof LabSeriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/sketch-prototype': {
-      id: '/lab/sketch-prototype'
-      path: '/lab/sketch-prototype'
-      fullPath: '/lab/sketch-prototype'
-      preLoaderRoute: typeof LabSketchPrototypeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/theme': {
@@ -2126,7 +2106,6 @@ const rootRouteChildren: RootRouteChildren = {
   LabNavRoute: LabNavRoute,
   LabPaletteRoute: LabPaletteRoute,
   LabSeriesRoute: LabSeriesRoute,
-  LabSketchPrototypeRoute: LabSketchPrototypeRoute,
   LabThemeRoute: LabThemeRoute,
   LabTocTreeRoute: LabTocTreeRoute,
   NotesIdRoute: NotesIdRoute,
