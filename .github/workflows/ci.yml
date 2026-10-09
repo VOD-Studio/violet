@@ -107,7 +107,7 @@ jobs:
         if: needs.changes.outputs.api == 'true'
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: "1.26"
+          go-version-file: api/go.mod
           check-latest: true
           cache-dependency-path: api/go.sum
 
@@ -293,7 +293,7 @@ jobs:
         if: needs.changes.outputs.api == 'true'
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: "1.26"
+          go-version-file: api/go.mod
           check-latest: true
           cache-dependency-path: api/go.sum
 
