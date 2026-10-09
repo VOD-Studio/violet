@@ -1,76 +1,84 @@
 # @violet/sketch
 
-与 React、站点和绘制后端解耦的矢量笔迹实验包。当前在 workspace 内使用，未发布 npm；它是 PRD-0035 的可运行验证实现，不表示已经通过正式替换 Rough.js 的验收。
+框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0，覆盖 M1：笔画规划、三档手法、签字笔与七种填充；压感、马克笔、卡通风格与动画在后续里程碑交付。
 
 ## 调用
 
 ```ts
-import {
-  createNaturalPen,
-  generateScene,
-  mountSvg,
-  rectangleGeometry,
-  updateSvgPalette,
-  updateSvgProgress,
-} from "@violet/sketch";
+import { draw, fills, rect, styles } from "@violet/sketch";
+import { mountSvg, updateSvgPalette } from "@violet/sketch/svg";
 
-const scene = {
-  width: 160,
-  height: 100,
-  items: [{
-    id: "card",
-    geometry: rectangleGeometry(10, 10, 140, 80, 8),
-    fillRole: "surface",
-    strokeRole: "ink",
-  }],
-};
+const drawing = draw(
+	{
+		width: 160,
+		height: 100,
+		items: [{ id: "card", path: rect(10, 10, 140, 80, 8), fillRole: "surface" }],
+	},
+	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
+);
 const palette = { paper: "#fff", ink: "#252332", surface: "#eadcf4" };
-const drawn = generateScene(scene, createNaturalPen(), { seed: 35, width: 2.2 });
-const svg = mountSvg(drawn, palette);
+const svg = mountSvg(drawing, palette);
 document.body.append(svg);
-updateSvgProgress(svg, drawn, 0.5, true);
 updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 ```
 
-`drawCanvas(drawn, canvas, palette, progress, sequential)` 使用同一个生成结果；Canvas 必须有非零 CSS 尺寸，函数按设备 DPR 调整 backing store。完整静态图的进度为 1。SVG 可直接用 `XMLSerializer` 序列化，不依赖站点 CSS、图片纹理或 JS 才能显示。文字使用系统字体，未嵌入字体文件。
+`@violet/sketch/canvas` 的 `drawCanvas(drawing, canvas, palette)` 渲染同一结果；`renderSvg` 不依赖 DOM，可在 Worker 或 Node 中输出 SVG 文本。
 
-## 模块归属
+## 概念
 
-| 模块 | 所有权 |
+| 维度 | 职责 | 内置 |
+| --- | --- | --- |
+| 手法 `Hand` | 骨架 → 笔画：断笔、越界、首尾重叠、抖动与复画 | `hands.neat` / `natural` / `draft` |
+| 笔 `Pen` | 笔画 → 渲染批次：笔尖、压力作用、墨 | `pens.fineliner` |
+| 填充 `Fill` | 区域 → 实色区域或图案骨架；图案再经手法与笔成形 | `fills` 中的七种，名称同 Rough.js |
+| 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft` |
+
+- **笔画**（`Stroke`）逐点携带 `[x, y, pressure, t]`，是各维度之间唯一的数据形态；渲染批次的 `spans` 记录每个子路径按图元归一化的落笔时间。
+- 颜色只以角色出现，换色不重新生成。
+- `pinEnds` 让开放路径首尾保持精确，用于连线与箭头锚点。
+- 相同输入、版本与 seed 输出逐位相同；随机由 `(seed, 图元 id, 通道, 序号)` 哈希派生，修改一个图元不影响其他图元。
+
+## 扩展
+
+任一维度都可以是包外的普通对象，直接放进 `Style`，无需注册，也不改核心与渲染器：
+
+```ts
+import { BatchBuilder, channel, type Pen } from "@violet/sketch";
+
+const WIDTH = channel("my-ribbon:width");
+export const ribbon: Pen = {
+	id: "ribbon",
+	ink(strokes, ctx, role) {
+		const batch = new BatchBuilder({ mode: "stroke", role, width: ctx.width * (2 + ctx.random(WIDTH, 0)), opacity: 0.5 });
+		for (const stroke of strokes) batch.stroke(stroke);
+		return batch.empty ? [] : [batch.build()];
+	},
+};
+```
+
+- 随机只能来自 `ctx.random` / `ctx.noise`；通道编号用 `channel()` 在创建时换算一次。
+- `Pen.ink` 必须返回新建的批次，生成器会就地归一化其 `spans`。
+- 输出顶点与笔画数由生成器统一计量；超过 `maxVertices` / `maxStrokes` 抛出 `BudgetExceeded`，不返回部分结果，也不自动降低细节。
+
+## 模块
+
+| 目录 | 内容 |
 | --- | --- |
-| `types.ts` | 几何、场景、笔迹、填充、预算和绘制结果的共享契约 |
-| `geometry.ts` | SVG path 解析、基础图元、离散采样与几何缓存 |
-| `generate.ts` | seed、按图元编排、预算累计；不选择具体笔迹 |
-| `pens/` | 自然曲线、铅笔纤维、椭圆笔尖压感和彩漫明暗层 |
-| `fills.ts` | solid、hachure、cross-hatch、zigzag、dots、dashed、zigzag-line |
-| `decorations.ts` | 路径端点箭头和波浪线几何 |
-| `renderers/` | SVG、Canvas，以及角色到颜色的解析 |
-| `index.ts` | 唯一公开入口 |
+| `core/` | 路径与图元、展平与角点、确定性随机、渲染批次构造 |
+| `hand/` | 笔画规划、最小 jerk 手法与预设 |
+| `pen/` | 签字笔 |
+| `fill/` | 扫描线与图案填充 |
+| `render/` | SVG、Canvas 与配色解析 |
 
-Mermaid 布局提取、Rough.js 对照、彩漫场景、播放时钟和 React 状态属于消费方，不进入包。包不维护浏览器播放循环；调用方传入进度，可以暂停、恢复、跳转或取消。示例配置不是封闭的笔迹枚举。
-
-## 外部笔迹与固定质量
-
-实现 `Pen` 的 `id` 和 `generate(geometry, context)` 即可接入；返回后端无关的 `InkLayer[]`，不注册到核心，也不修改渲染器。`Fill` 遵循同样的生成接口。真实外部例子在站点的 `sketch-prototype/external/ribbon.ts`，只导入包根入口。
-
-- `context.random(channel, index)` 提供按 seed 与图元 ID 派生的确定性随机数；换色和切换后端不重新生成笔墨。
-- `context.sample` 计量采样，`context.budget.addCommands` 必须在构造输出时累计命令。预算是协作式约定，不能抢占任意外部同步 JavaScript，也不限制插件自行分配的内存。
-- 默认命令预算 600000，采样预算 200000，采样 precision 为 0.3 场景单位。超限抛 `BudgetExceeded`，不返回半成品、不降密度、不放宽误差。
-- 铅笔默认 7 条纤维、颗粒密度 0.35。二者是显式造型参数，运行中不会自动调节；提高它们可能超预算。
-- 压感 profile 是宽度倍率，与笔尖旋转角度、长短轴比和颜色独立；默认曲线首尾提笔，闭合轮廓保持周期性。任意用户函数没有连续性/误差的全局数学保证。
-- `evenodd` / `nonzero` 孔洞规则保留在填充和裁剪中。`Geometry.closed` 表示包含闭合命令，不保证复合路径中的所有子路径都闭合。
-- `Geometry` 按不可变值使用；修改其 commands 或复用同一对象改变内容会使采样与 Path2D 缓存失效。
-
-详细参数、单位和失败边界见各导出符号的 TSDoc。没有声称完整支持所有 SVG 文档特性；几何输入支持 SVG path 命令，DOM 适配器只覆盖实验页使用的 Mermaid flowchart。
-
-## 构建与消费
+## 构建、测试与基准
 
 在 `web/` 下运行：
 
 ```sh
 pnpm --filter @violet/sketch typecheck
+pnpm exec vitest run packages/sketch
 pnpm --filter @violet/sketch build
-pnpm --filter @violet/sketch pack --pack-destination /tmp
+node packages/sketch/bench/compare-rough.ts
 ```
 
-源码使用显式 `.ts` 导入；TypeScript 开启 `allowImportingTsExtensions` 与 `rewriteRelativeImportExtensions`。Vite 生成 ESM，声明文件随 dist 交付，包的 `publishConfig.exports` 指向 dist。workspace 的源码导入通过不等于 tarball 消费已经验证。
+基准用 PRD-0035 Rough.js 基线的同一组场景对照生成与路径序列化耗时及输出字节，结果记录在 [M1 验收记录](../../../docs/research/sketch-m1-validation.md)。

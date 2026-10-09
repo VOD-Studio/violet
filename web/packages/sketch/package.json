@@ -1,8 +1,8 @@
 {
 	"name": "@violet/sketch",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"private": true,
-	"description": "Backend-independent vector ink with extensible pens and fixed-quality budgets",
+	"description": "Hand-drawn vector sketching with composable pens, hands and fills",
 	"type": "module",
 	"sideEffects": false,
 	"files": [
@@ -14,6 +14,16 @@
 			"types": "./src/index.ts",
 			"import": "./src/index.ts",
 			"default": "./src/index.ts"
+		},
+		"./svg": {
+			"types": "./src/render/svg.ts",
+			"import": "./src/render/svg.ts",
+			"default": "./src/render/svg.ts"
+		},
+		"./canvas": {
+			"types": "./src/render/canvas.ts",
+			"import": "./src/render/canvas.ts",
+			"default": "./src/render/canvas.ts"
 		}
 	},
 	"publishConfig": {
@@ -22,6 +32,16 @@
 				"types": "./dist/index.d.ts",
 				"import": "./dist/index.js",
 				"default": "./dist/index.js"
+			},
+			"./svg": {
+				"types": "./dist/render/svg.d.ts",
+				"import": "./dist/render/svg.js",
+				"default": "./dist/render/svg.js"
+			},
+			"./canvas": {
+				"types": "./dist/render/canvas.d.ts",
+				"import": "./dist/render/canvas.js",
+				"default": "./dist/render/canvas.js"
 			}
 		}
 	},

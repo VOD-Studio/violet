@@ -1,39 +1,51 @@
-export { arrowForPath, waveGeometry } from "./decorations.ts";
-export { fills } from "./fills.ts";
-export { BudgetExceeded, generateScene } from "./generate.ts";
+export { flatten, pointAt, polylineContour } from "./core/flatten.ts";
+export { BatchBuilder } from "./core/ir.ts";
 export {
-	circleGeometry,
-	geometryFromCommands,
-	geometryFromPath,
+	arc,
+	catmullRomToCubics,
+	circle,
+	createPath,
+	curve,
+	ellipse,
+	line,
+	PathBuilder,
+	pathFromSvg,
+	polygon,
 	polyline,
-	rectangleGeometry,
-	sampleGeometry,
-} from "./geometry.ts";
-export type { ComicOptions } from "./pens/comic.ts";
-export { createComicPen } from "./pens/comic.ts";
-export type { NaturalOptions } from "./pens/natural.ts";
-export { createNaturalPen } from "./pens/natural.ts";
-export type { PencilOptions } from "./pens/pencil.ts";
-export { createPencilPen } from "./pens/pencil.ts";
-export type { PressureOptions } from "./pens/pressure.ts";
-export { createPressurePen } from "./pens/pressure.ts";
-export { drawCanvas } from "./renderers/canvas.ts";
-export { mountSvg, updateSvgPalette, updateSvgProgress } from "./renderers/svg.ts";
+	rect,
+} from "./core/path.ts";
+export type { RandomSource } from "./core/rng.ts";
+export { channel, createRandom, hashString } from "./core/rng.ts";
 export type {
 	Bounds,
 	Budget,
-	Command,
 	Contour,
+	DrawContext,
+	Drawing,
 	DrawnItem,
-	DrawnScene,
+	DrawOptions,
 	Fill,
-	GenerateOptions,
-	Geometry,
-	InkLayer,
-	Palette,
+	FillOutput,
+	Hand,
+	InkBatch,
+	Label,
+	Matrix,
+	Path,
 	Pen,
-	PenContext,
-	Sample,
 	Scene,
 	SceneItem,
-} from "./types.ts";
+	Skeleton,
+	Stroke,
+	Style,
+} from "./core/types.ts";
+export { CLOSE, CUBIC, LINE, MOVE } from "./core/types.ts";
+export { BudgetExceeded, draw } from "./draw.ts";
+export type { PatternOptions } from "./fill/patterns.ts";
+export { createPatternFill, fills, solidFill } from "./fill/patterns.ts";
+export { minimumJerk } from "./hand/gesture.ts";
+export type { HandOptions } from "./hand/presets.ts";
+export { createHand, fillHands, hands } from "./hand/presets.ts";
+export type { FinelinerOptions } from "./pen/fineliner.ts";
+export { createFineliner, pens } from "./pen/fineliner.ts";
+export { styles } from "./presets.ts";
+export type { Palette, RenderOptions } from "./render/palette.ts";
