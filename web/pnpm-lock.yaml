@@ -177,6 +177,9 @@ importers:
       '@violet/react-tweet':
         specifier: workspace:*
         version: link:packages/react-tweet
+      '@violet/sketch':
+        specifier: workspace:*
+        version: link:packages/sketch
       '@violet/ui':
         specifier: workspace:*
         version: link:packages/ui

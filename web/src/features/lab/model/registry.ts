@@ -81,4 +81,11 @@ export const LABS = [
 			"流体轨道、典藏索表、贝塞尔树、晶体风琴与全景微地图——五种顶级目录树交互语言实测。",
 		meta: "方案 ×5 · 流体/索表/树/风琴/微地图",
 	},
+	{
+		to: "/lab/sketch-prototype",
+		en: "Sketch Drawing",
+		title: "可扩展手绘绘图库原型",
+		description: "完整彩漫与同几何笔迹对照，验证矢量压感、开放笔迹、填充及整图时间轴。",
+		meta: "笔迹 ×5 · SVG/Canvas · 固定质量",
+	},
 ] as const;

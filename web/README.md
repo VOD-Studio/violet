@@ -70,6 +70,14 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 Mermaid 图块统一使用手写字体与 Rough.js 笔触，编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
 
+## 手绘绘图库实验
+
+[`@violet/sketch`](packages/sketch/README.md) 的核心位于 `packages/sketch/`，不依赖 React、Mermaid 或 Rough.js。`/lab/sketch-prototype?variant=comic` 展示完整彩漫，`variant` 还可选择 `natural`、`draft`、`pencil`、`pressure`。在 `web/` 运行 `pnpm dev:sketch-prototype`，访问 `http://127.0.0.1:5174/lab/sketch-prototype`。
+
+实验页可切换基础图元、复合孔洞、真实 Mermaid 布局，比较同几何 Rough.js 输出，运行外部笔迹、七种填充、SVG/Canvas 与整图时间轴；铅笔纤维数和颗粒密度是显式配置，超预算不自动降质。性能按钮测量独立的固定场景，不把当前交互图的计时当成基准。正式文章渲染链路保持不变。
+
+实际验收与性能边界见[绘图库实验验证记录](../docs/research/sketch-package-validation.md)。自然线条与铅笔的分阶段原始样本一并保留，当前不宣称全场景 60FPS。
+
 ## 推文组件包
 
 [`@violet/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
