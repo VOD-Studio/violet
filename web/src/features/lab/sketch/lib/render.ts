@@ -1,12 +1,18 @@
 import type { BenchScene } from "@features/lab/sketch/model/scenes";
-import { type Drawing, draw, fills, type Palette, styles } from "@violet/sketch";
-import { drawCanvas } from "@violet/sketch/canvas";
+import {
+	createSchedule,
+	type Drawing,
+	draw,
+	fills,
+	type Palette,
+	type Schedule,
+	type ScheduleMode,
+	type Style,
+} from "@violet/sketch";
 import { mountSvg, pathData } from "@violet/sketch/svg";
 import rough from "roughjs";
 
 const NS = "http://www.w3.org/2000/svg";
-
-export type HandId = keyof typeof styles;
 
 /** 一侧渲染的度量：耗时含生成与 DOM 构建，字节为序列化后的 SVG。 */
 export interface PaneStats {
@@ -89,9 +95,8 @@ export function renderRough(scene: BenchScene, palette: Palette, { seed, width }
 	return { svg, stats: measure(svg, performance.now() - started) };
 }
 
-/** 按所选手法生成本库结果；图元的 fill 覆盖默认实色。 */
-export function drawSketch(scene: BenchScene, hand: HandId, { seed, width }: Options): Drawing {
-	const style = styles[hand];
+/** 按所选风格生成本库结果；图元的 fill 覆盖风格的默认填充。 */
+export function drawSketch(scene: BenchScene, style: Style, { seed, width }: Options): Drawing {
 	return draw(
 		{
 			width: scene.width,
@@ -105,30 +110,40 @@ export function drawSketch(scene: BenchScene, hand: HandId, { seed, width }: Opt
 	);
 }
 
-/** 生成并构建 SVG，耗时与 Rough.js 一侧同口径。 */
-export function renderSketchSvg(
-	scene: BenchScene,
-	hand: HandId,
-	palette: Palette,
-	options: Options,
-) {
-	const started = performance.now();
-	const drawing = drawSketch(scene, hand, options);
-	const svg = mountSvg(drawing, palette, { idPrefix: "bench" });
-	return { svg, drawing, stats: measure(svg, performance.now() - started) };
+export interface SketchSvgResult {
+	svg: SVGSVGElement;
+	drawing: Drawing;
+	schedule: Schedule;
+	stats: PaneStats;
 }
 
-/** 生成并绘制到 Canvas；字节与路径数按同一结果的 SVG 统计。 */
-export function renderSketchCanvas(
+/** 生成并构建带时间轴的 SVG，耗时与 Rough.js 一侧同口径。 */
+export function renderSketchSvg(
 	scene: BenchScene,
-	hand: HandId,
+	style: Style,
 	palette: Palette,
-	canvas: HTMLCanvasElement,
 	options: Options,
-): PaneStats {
+	mode: ScheduleMode,
+): SketchSvgResult {
 	const started = performance.now();
-	const drawing = drawSketch(scene, hand, options);
-	drawCanvas(drawing, canvas, palette);
-	const ms = performance.now() - started;
-	return { ...measure(mountSvg(drawing, palette), ms), ms };
+	const drawing = drawSketch(scene, style, options);
+	const schedule = createSchedule(drawing, { mode });
+	const svg = mountSvg(drawing, palette, { idPrefix: "bench", schedule });
+	return { svg, drawing, schedule, stats: measure(svg, performance.now() - started) };
+}
+
+/** 生成结果与首帧耗时；Canvas 之后按时间重绘同一结果。 */
+export function prepareSketchCanvas(
+	scene: BenchScene,
+	style: Style,
+	palette: Palette,
+	options: Options,
+	mode: ScheduleMode,
+) {
+	const started = performance.now();
+	const drawing = drawSketch(scene, style, options);
+	const schedule = createSchedule(drawing, { mode });
+	const generateMs = performance.now() - started;
+	const stats = measure(mountSvg(drawing, palette, { idPrefix: "stat" }), generateMs);
+	return { drawing, schedule, stats };
 }

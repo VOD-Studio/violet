@@ -86,7 +86,7 @@ export const LABS = [
 		en: "Sketch",
 		title: "手绘绘图库对照",
 		description:
-			"Rough.js 与 @violet/sketch 同几何、同 seed 并排：三档手法、七种填充、孔洞规则与真实 Mermaid 布局。",
-		meta: "M1 · 手法 ×3 · 填充 ×7 · SVG/Canvas",
+			"Rough.js 与 @violet/sketch 同几何、同 seed 并排：压感笔、卡通插画、七种填充、孔洞规则、真实 Mermaid 布局与整图时间轴。",
+		meta: "0.2.0 · 笔 ×5 · 填充 ×7 · 时间轴 · SVG/Canvas",
 	},
 ] as const;

@@ -74,7 +74,7 @@ Mermaid 图块统一使用手写字体与 Rough.js 笔触，编辑器预览与�
 
 [`@violet/sketch`](packages/sketch/README.md) 位于 `packages/sketch/`，不依赖 React、Mermaid 或 Rough.js。正式文章渲染链路仍使用 Rough.js。
 
-`/lab/sketch` 并排对照 Rough.js 与本库：同一几何与 seed，可切换基础图元、七种填充、孔洞规则与真实 Mermaid 布局，以及三档手法、1×/3× 缩放和 SVG/Canvas 后端。
+`/lab/sketch` 并排对照 Rough.js 与本库：同一几何与 seed，可切换卡通插画、基础图元、七种填充、孔洞规则与真实 Mermaid 布局，以及五种笔（签字笔、轻压感签字笔、压感钢笔、马克笔、卡通）、三档手法、1×/3× 缩放和 SVG/Canvas 后端。控制条提供整图时间轴：播放、暂停、重播、拖动进度、顺序/并行/交错编排与变速。
 
 ## 推文组件包
 
