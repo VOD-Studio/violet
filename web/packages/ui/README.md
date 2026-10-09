@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、ImagePixelReveal、Input、Label、Textarea、TextField、UploadTile 是当前 8 个 `foundation` 单元；其余 36 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、TextField、UploadTile 是当前 10 个 `foundation` 单元；其余 35 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -65,6 +65,10 @@ Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-
 ImagePixelReveal 让图片瓦片逐块裁剪展开，原图始终静止；默认 random 每轮重新洗牌，悬停可重播完整拼合，减弱动态时直接显示。`className` 约束根容器尺寸，`imgClassName` 调整默认图片；`children` 可替换内容，`src` 改变时重新开始独立周期。组件从 `@violet/ui` 导入，按需 CSS 为 `@violet/ui/components/image-pixel-reveal.css`；[可操作示例与 API](https://xunrua.top/ui/components/image-pixel-reveal)提供同源 TSX 和内嵌 SVG 资源。
 
 UploadTile 是由父容器决定尺寸的方形原生按钮，默认加号，`busy` 显示加载指示并禁止激活，`disabled` 保留原生禁用行为。纯图标用法需提供 `aria-label`，ref、事件和表单属性直接落在 button；默认 `type="button"`。它不选择或上传文件，不依赖站点 API、会话或通知。从 `@violet/ui` 或 `@violet/ui/upload-tile` 导入；按需样式为 `@violet/ui/components/upload-tile.css`。[同源示例与 API](https://xunrua.top/ui/components/upload-tile)只记录按钮激活次数，独立 consumer 的 `?preview=upload-tile` 可操作忙碌、禁用、主题和窄屏状态。
+
+Dropdown 是指针悬停与键盘聚焦展开的披露面板，不是点击菜单：鼠标与笔停留展开，键盘聚焦（`:focus-visible`）立即展开，Escape 收起；点击触发器或面板从不切换开合，触屏不会展开，需要触屏可达时由宿主提供等价入口。`DropdownGroup` 让并列面板互斥并即时切换；`DropdownTrigger` 默认是 button，`asChild` 可把行为合并到链接并保留其点击与 `href`；`DropdownContent` 紧随触发器渲染并由 Radix Popper 定位，空间不足时自动翻向对侧。从 `@violet/ui` 或 `@violet/ui/dropdown` 导入；按需样式为 `@violet/ui/components/dropdown.css`。[同源示例与 API](https://xunrua.top/ui/components/dropdown)展示链接与按钮两种触发器的同组切换。
+
+Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。指示器位移走 transform，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动焦点，不改变选中值；`aria-label` 让容器带 `role="group"`，默认按钮分段带 `aria-pressed`，`render` 可把属性展开到链接或 Dropdown 触发器上。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。[同源示例与 API](https://xunrua.top/ui/components/segmented)覆盖方向与变体、等尺寸收起和链接分段，独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
 
 ## 开发与验证
 

@@ -8,6 +8,7 @@ import { SITE_URL } from "@shared/config/env";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/notes/$id")({
+	staticData: { navTitle: (note: PublicNote | null) => note && noteTitle(note) },
 	loader: async ({ context, params }) => {
 		try {
 			return await context.queryClient.ensureQueryData({

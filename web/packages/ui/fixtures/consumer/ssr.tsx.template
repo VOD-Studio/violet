@@ -6,6 +6,10 @@ import { ImagePixelReveal as LeafImagePixelReveal } from "@violet/ui/image-pixel
 import { buttonVariants, checkboxVariants } from "@violet/ui/variants";
 import { renderToString } from "react-dom/server";
 import { UploadTile } from "@violet/ui";
+import { Dropdown, DropdownContent, DropdownGroup, DropdownTrigger } from "@violet/ui";
+import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, DropdownGroup as LeafDropdownGroup, DropdownTrigger as LeafDropdownTrigger } from "@violet/ui/dropdown";
+import { Segmented } from "@violet/ui";
+import { Segmented as LeafSegmented } from "@violet/ui/segmented";
 import { UploadTile as LeafUploadTile } from "@violet/ui/upload-tile";
 
 const uploadTile = renderToString(<UploadTile aria-label="添加图片" name="action" value="upload" />);
@@ -54,4 +58,36 @@ for (const variant of imageVariants) {
 const customImage = renderToString(<LeafImagePixelReveal src={imageSource}><figure><img src={imageSource} alt="自定义风景" width={360} height={240} /><figcaption>自定义内容</figcaption></figure></LeafImagePixelReveal>);
 assert.match(customImage, /<figure>/);
 assert.match(customImage, /<figcaption>自定义内容<\/figcaption>/);
-console.log("Independent root/leaf SSR, TextField, Checkbox, ImagePixelReveal and UploadTile semantics passed.");
+
+const dropdownTree = (Group: typeof DropdownGroup, Root: typeof Dropdown, Trigger: typeof DropdownTrigger, Content: typeof DropdownContent) => <Group>
+	<Root>
+		<Trigger>产品</Trigger>
+		<Content><a href="/docs">文档面板</a></Content>
+	</Root>
+	<Root>
+		<Trigger asChild><a href="/about">关于</a></Trigger>
+		<Content><a href="/team">团队面板</a></Content>
+	</Root>
+</Group>;
+const dropdown = renderToString(dropdownTree(DropdownGroup, Dropdown, DropdownTrigger, DropdownContent));
+assert.equal(dropdown, renderToString(dropdownTree(LeafDropdownGroup, LeafDropdown, LeafDropdownTrigger, LeafDropdownContent)));
+assert.match(dropdown, /<button\b[^>]*type="button"/);
+assert.match(dropdown, /aria-expanded="false"/);
+assert.doesNotMatch(dropdown, /aria-expanded="true"/);
+assert.match(dropdown, /<a\b[^>]*href="\/about"/);
+assert.match(dropdown, /data-state="closed"/);
+assert.doesNotMatch(dropdown, /文档面板|团队面板/);
+assert.doesNotMatch(dropdown, /v-dropdown__content/);
+const viewSegments = [{ value: "grid", label: "网格" }, { value: "table", label: "表格" }];
+const segmentedTree = (Root: typeof Segmented, equal: boolean) => <Root aria-label="视图" value="grid" segments={viewSegments} {...(equal ? { itemSize: "5rem" } : {})} />;
+const segmented = renderToString(segmentedTree(Segmented, false));
+assert.equal(segmented, renderToString(segmentedTree(LeafSegmented, false)));
+assert.match(segmented, /role="group"/);
+assert.match(segmented, /aria-pressed="true"/);
+assert.match(segmented, /aria-pressed="false"/);
+assert.doesNotMatch(segmented, /data-layout="equal"/);
+const segmentedEqual = renderToString(segmentedTree(Segmented, true));
+assert.equal(segmentedEqual, renderToString(segmentedTree(LeafSegmented, true)));
+assert.match(segmentedEqual, /data-layout="equal"/);
+assert.match(segmentedEqual, /--v-segmented-item-size:\s*5rem/);
+console.log("Independent root/leaf SSR, TextField, Checkbox, ImagePixelReveal, UploadTile, Dropdown and Segmented semantics passed.");

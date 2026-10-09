@@ -33,8 +33,7 @@ import type { ComponentType } from "react";
 /**
  * NavMenuItem - 后台导航项
  *
- * 仅路由型（后台导航全部是路由跳转，不像前台有 action 型）。
- * 对齐 @shared/config/nav.ts 的 NavRouteItem 模型。
+ * 仅路由型：后台导航全部是路由跳转。
  */
 export interface NavMenuItem {
 	/** 显示文案 */

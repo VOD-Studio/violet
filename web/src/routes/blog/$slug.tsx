@@ -244,6 +244,7 @@ function BlogDetailPage() {
 }
 
 export const Route = createFileRoute("/blog/$slug")({
+	staticData: { navTitle: (post: PostDetail | undefined) => post?.title },
 	pendingComponent: PostDetailSkeleton,
 	pendingMs: 0,
 	pendingMinMs: 200,

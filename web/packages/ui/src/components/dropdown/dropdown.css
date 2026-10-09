@@ -1,0 +1,134 @@
+@layer components {
+	.v-dropdown__content {
+		--v-dropdown-radius: 1rem;
+		--v-dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+		--v-dropdown-ease-in: cubic-bezier(0.5, 0, 0.75, 0);
+		/* 展开起点：贴着触发器一侧、宽度与触发器相同的一条细带；按对齐与方位决定带的位置 */
+		--v-dropdown-from-t: 0px;
+		--v-dropdown-from-b: calc(100% - 0.125rem);
+		--v-dropdown-from-l: calc((100% - var(--radix-popper-anchor-width, 100%)) / 2);
+		--v-dropdown-from-r: calc((100% - var(--radix-popper-anchor-width, 100%)) / 2);
+		box-sizing: border-box;
+		position: relative;
+		z-index: 50;
+		min-inline-size: 12rem;
+		max-inline-size: min(24rem, calc(100vw - 1rem));
+		padding: 0.375rem;
+		border-radius: min(var(--v-dropdown-radius), 1rem);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow:
+			0 0 0 1px color-mix(in oklab, var(--border) 70%, transparent),
+			0 4px 24px rgb(0 0 0 / 0.05);
+		outline: none;
+	}
+
+	.v-dropdown__content[data-side="top"] {
+		--v-dropdown-from-t: calc(100% - 0.125rem);
+		--v-dropdown-from-b: 0px;
+	}
+
+	.v-dropdown__content[data-align="start"] {
+		--v-dropdown-from-l: 0px;
+		--v-dropdown-from-r: calc(100% - var(--radix-popper-anchor-width, 100%));
+	}
+
+	.v-dropdown__content[data-align="end"] {
+		--v-dropdown-from-l: calc(100% - var(--radix-popper-anchor-width, 100%));
+		--v-dropdown-from-r: 0px;
+	}
+
+	.v-dropdown__inner {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	/* 透明桥：面板与触发器之间的间隙属于面板，指针穿过时不会触发收起 */
+	.v-dropdown__content::before {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		block-size: var(--v-dropdown-bridge, 0.5rem);
+	}
+
+	.v-dropdown__content[data-side="bottom"]::before {
+		inset-block-end: 100%;
+	}
+
+	.v-dropdown__content[data-side="top"]::before {
+		inset-block-start: 100%;
+	}
+
+	/* 展开：几何由脚本从触发器下缘与触发器等宽的细带舒展到完整尺寸（面板自己的边缘与软影随之长出），
+	   内容保持静止；这里只负责淡入，并作为无脚本动画时的兜底。收起沿原路折回触发器。 */
+	.v-dropdown__content[data-state="open"][data-motion="reveal"] {
+		animation: v-dropdown-fade-in 160ms ease-out backwards;
+	}
+
+	.v-dropdown__content[data-state="closed"] {
+		animation: v-dropdown-fold 220ms var(--v-dropdown-ease-in) both;
+	}
+
+	/* 组内接力：几何由脚本从上一块面板的位置与尺寸滑移变形而来；新面板垫在旧面板之下，
+	   旧面板立即让出外壳，只剩内容在其上淡出，新内容随后淡入 */
+	.v-dropdown__content[data-motion="morph"] {
+		z-index: 49;
+	}
+
+	.v-dropdown__content[data-state="open"][data-motion="morph"] .v-dropdown__inner {
+		animation: v-dropdown-fade-in 200ms ease-out 70ms backwards;
+	}
+
+	.v-dropdown__content[data-state="closed"][data-handoff="true"] {
+		background-color: transparent;
+		box-shadow: none;
+		animation: v-dropdown-fade-out 90ms linear both;
+	}
+
+	@keyframes v-dropdown-fold {
+		from {
+			opacity: 1;
+			clip-path: inset(-2.5rem -2rem -2.5rem -2rem round 1rem);
+		}
+
+		55% {
+			opacity: 1;
+		}
+
+		to {
+			opacity: 0;
+			clip-path: inset(
+				var(--v-dropdown-from-t) var(--v-dropdown-from-r) var(--v-dropdown-from-b)
+					var(--v-dropdown-from-l) round 1rem
+			);
+		}
+	}
+
+	@keyframes v-dropdown-fade-in {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes v-dropdown-fade-out {
+		from {
+			opacity: 1;
+		}
+
+		to {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-dropdown__content[data-state],
+		.v-dropdown__content[data-state] .v-dropdown__inner {
+			animation: none;
+		}
+	}
+}

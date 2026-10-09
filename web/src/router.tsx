@@ -96,4 +96,9 @@ declare module "@tanstack/react-router" {
 	interface Register {
 		router: ReturnType<typeof getRouter>;
 	}
+
+	interface StaticDataRouteOption {
+		/** 详情页在 Header 主导航里显示的标题；返回空值则保持常规标签。 */
+		navTitle?: (loaderData: never) => string | null | undefined;
+	}
 }

@@ -8,6 +8,7 @@ import { SITE_URL } from "@shared/config/env";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/galleries/$slug")({
+	staticData: { navTitle: (gallery: PublishedGallery | null) => gallery?.title },
 	loader: async ({ context, params }) => {
 		try {
 			return await context.queryClient.ensureQueryData({

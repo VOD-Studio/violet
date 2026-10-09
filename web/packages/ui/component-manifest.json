@@ -59,6 +59,13 @@
 			"entry": "src/components/dialog/index.ts"
 		},
 		{
+			"name": "dropdown",
+			"status": "foundation",
+			"entry": "src/components/dropdown/index.ts",
+			"css": "src/components/dropdown/dropdown.css",
+			"documentation": "web/src/features/ui-docs/ui/DropdownDoc.tsx"
+		},
+		{
 			"name": "dropdown-menu",
 			"status": "legacy",
 			"entry": "src/components/dropdown-menu/index.ts"
@@ -157,8 +164,10 @@
 		},
 		{
 			"name": "segmented",
-			"status": "legacy",
-			"entry": "src/components/segmented/index.ts"
+			"status": "foundation",
+			"entry": "src/components/segmented/index.ts",
+			"css": "src/components/segmented/segmented.css",
+			"documentation": "web/src/features/ui-docs/ui/SegmentedDoc.tsx"
 		},
 		{
 			"name": "select",

@@ -8,6 +8,10 @@ import { buttonVariants, checkboxVariants, type ButtonVariantProps } from "@viol
 import { createRef, type Ref } from "react";
 import { UploadTile, type UploadTileProps } from "@violet/ui";
 import { UploadTile as LeafUploadTile, type UploadTileProps as LeafUploadTileProps } from "@violet/ui/upload-tile";
+import { Dropdown, DropdownContent, DropdownGroup, DropdownTrigger, type DropdownContentProps, type DropdownGroupProps, type DropdownProps, type DropdownTriggerProps } from "@violet/ui";
+import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, DropdownGroup as LeafDropdownGroup, DropdownTrigger as LeafDropdownTrigger, type DropdownContentProps as LeafDropdownContentProps, type DropdownGroupProps as LeafDropdownGroupProps, type DropdownProps as LeafDropdownProps, type DropdownTriggerProps as LeafDropdownTriggerProps } from "@violet/ui/dropdown";
+import { Segmented, type SegmentedItem, type SegmentedProps } from "@violet/ui";
+import { Segmented as LeafSegmented, type SegmentedProps as LeafSegmentedProps } from "@violet/ui/segmented";
 
 const uploadTileRef = createRef<HTMLButtonElement>();
 const uploadTileProps: UploadTileProps = {
@@ -103,3 +107,59 @@ export const leafImageExamples = leafImageVariants.map((variant) => <LeafImagePi
 export const invalidImageVariant = <ImagePixelReveal src={imageProps.src} variant="unknown" />;
 // @ts-expect-error 叶子入口保留相同的揭示变体约束。
 export const invalidLeafImageVariant = <LeafImagePixelReveal src={imageProps.src} variant="unknown" />;
+
+const dropdownProps: DropdownProps = { defaultOpen: false, openDelay: 80, closeDelay: 140, onOpenChange: (open) => { const state: boolean = open; void state; }, children: null };
+const leafDropdownProps: LeafDropdownProps = dropdownProps;
+const dropdownGroupProps: DropdownGroupProps = { skipDelay: 400, children: null };
+const leafDropdownGroupProps: LeafDropdownGroupProps = dropdownGroupProps;
+const dropdownContentProps: DropdownContentProps = { side: "top", align: "start", sideOffset: 8, collisionPadding: 8, className: "consumer-dropdown" };
+const leafDropdownContentProps: LeafDropdownContentProps = dropdownContentProps;
+const dropdownNativeRef = createRef<HTMLButtonElement>();
+const dropdownLinkRef = createRef<HTMLAnchorElement>();
+const dropdownCallbackRef: Ref<HTMLElement> = (element) => { element?.focus(); };
+const nativeTrigger: DropdownTriggerProps = { ref: dropdownNativeRef, type: "button", onClick: (event) => { const target: HTMLButtonElement = event.currentTarget; target.focus(); } };
+const slottedTrigger: DropdownTriggerProps = { asChild: true, ref: dropdownCallbackRef };
+const leafTrigger: LeafDropdownTriggerProps = slottedTrigger;
+export const dropdownExamples = <DropdownGroup {...dropdownGroupProps}>
+	<Dropdown {...dropdownProps}>
+		<DropdownTrigger {...nativeTrigger}>产品</DropdownTrigger>
+		<DropdownContent {...dropdownContentProps}><a href="/docs">文档</a></DropdownContent>
+	</Dropdown>
+	<Dropdown>
+		<DropdownTrigger asChild ref={dropdownLinkRef}><a href="/about">关于</a></DropdownTrigger>
+		<DropdownContent side="bottom" align="end"><a href="/team">团队</a></DropdownContent>
+	</Dropdown>
+</DropdownGroup>;
+export const leafDropdownExamples = <LeafDropdownGroup {...leafDropdownGroupProps}>
+	<LeafDropdown {...leafDropdownProps}>
+		<LeafDropdownTrigger {...leafTrigger}><a href="/docs">文档</a></LeafDropdownTrigger>
+		<LeafDropdownContent {...leafDropdownContentProps} />
+	</LeafDropdown>
+</LeafDropdownGroup>;
+// @ts-expect-error DropdownContent 只支持 bottom 与 top。
+export const invalidDropdownSide = <DropdownContent side="left" />;
+// @ts-expect-error 原生触发器的 ref 指向 button，不接受 anchor ref。
+export const invalidDropdownNativeRef = <DropdownTrigger ref={dropdownLinkRef}>产品</DropdownTrigger>;
+// @ts-expect-error asChild 模式下 href 应写在子元素上。
+export const invalidDropdownSlotHref = <DropdownTrigger asChild href="/about"><a>关于</a></DropdownTrigger>;
+// @ts-expect-error 叶子入口保留相同的方位约束。
+export const invalidLeafDropdownAlign = <LeafDropdownContent align="left" />;
+
+const segments: SegmentedItem[] = [
+	{ value: "a", label: "甲", icon: null, trailing: null, title: "甲", disabled: false },
+	{ value: "b", label: "乙", render: (props, state) => { const active: boolean = state.active; return <a {...props} href="/b" aria-current={active ? "page" : undefined} />; } },
+];
+const segmentedProps: SegmentedProps = { value: "a", onValueChange: (value) => { const next: string = value; void next; }, segments, orientation: "vertical", variant: "line", size: "lg", block: true, rounded: "full", disabled: false, itemSize: "6rem", collapsedSize: "2rem", expandSelected: true, "aria-label": "示例", className: "consumer-segmented", indicatorClassName: "i", itemClassName: "t", activeItemClassName: "a" };
+const leafSegmentedProps: LeafSegmentedProps = segmentedProps;
+export const segmentedExamples = <>
+	<Segmented value="a" segments={segments} />
+	<Segmented {...segmentedProps} />
+	{(["soft", "ink", "line"] as const).map((variant) => <Segmented key={variant} value="x" variant={variant} orientation="horizontal" segments={segments} />)}
+</>;
+export const leafSegmentedExamples = <LeafSegmented {...leafSegmentedProps} segments={segments} />;
+// @ts-expect-error Segmented 只支持 horizontal 与 vertical。
+export const invalidSegmentedOrientation = <Segmented value="a" segments={segments} orientation="diagonal" />;
+// @ts-expect-error Segmented 不接受未定义的变体。
+export const invalidSegmentedVariant = <Segmented value="a" segments={segments} variant="solid" />;
+// @ts-expect-error 叶子入口保留相同的方向约束。
+export const invalidLeafSegmentedOrientation = <LeafSegmented value="a" segments={segments} orientation="diagonal" />;

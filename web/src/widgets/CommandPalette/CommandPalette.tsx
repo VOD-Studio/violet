@@ -1,6 +1,6 @@
 import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
 import { useSearchPosts } from "@features/posts/api/queries";
-import { NAV_ITEMS, type NavItem } from "@shared/config/nav";
+import { flattenNavLinks } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandList } from "@violet/ui";
@@ -64,10 +64,7 @@ const CommandPalette = () => {
 	// 本地命令：导航 + 主题（经 filterCommands 子串过滤）
 	const localCommands: CmdItem[] = useMemo(
 		() => [
-			// 导航：仅取 route 项（action 项由 Header 解释，面板不承接）
-			...NAV_ITEMS.filter(
-				(item): item is Extract<NavItem, { type: "route" }> => item.type === "route",
-			).map((item) => ({
+			...flattenNavLinks().map((item) => ({
 				id: `nav-${item.to}`,
 				label: item.label,
 				group: "navigation",

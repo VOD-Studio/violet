@@ -22,7 +22,7 @@ const renderItem = (item: NavMenuItem, onNavigate?: () => void, collapsed = fals
  * NavMenu - 后台侧边栏导航菜单主体
  *
  * 桌面 Sidebar 与移动 MobileNav 共用。激活态用 TanStack Router 的
- * activeProps/activeOptions（对齐前台 HeaderNavItem），废弃旧的 [&.active] CSS hack。
+ * activeProps/activeOptions，废弃旧的 [&.active] CSS hack。
  *
  * 菜单按 group 字段分组渲染（概览等顶级项在分组之上），空分组整体隐藏；
  * collapsed 时组标题退化为分隔线。菜单项按 permissions 字段过滤：满足任一权限
