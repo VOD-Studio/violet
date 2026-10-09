@@ -123,7 +123,7 @@ describe("UserPublicProfilePage rendering", () => {
 		});
 	});
 
-	it("renders user profile bento card and empty state properly", async () => {
+	it("renders the profile header, handle, bio and empty state", async () => {
 		const mockProfile: UserProfile = {
 			id: "u2",
 			username: "dfy",
@@ -154,7 +154,8 @@ describe("UserPublicProfilePage rendering", () => {
 		expect(await screen.findByText("DFY")).toBeTruthy();
 		expect(screen.getByText("@dfy")).toBeTruthy();
 		expect(screen.getByText("前端工程师，热爱开源")).toBeTruthy();
-		expect(await screen.findByText("静候发声")).toBeTruthy();
+		expect(await screen.findByText("还没有推文")).toBeTruthy();
+		expect(screen.getByText("这位用户还没有发布推文。")).toBeTruthy();
 		expect(screen.getByText("发起私聊")).toBeTruthy();
 		// 测试发起私聊跳转
 		mockCreateChatMutateAsync.mockResolvedValueOnce({ id: "conv_123" });
