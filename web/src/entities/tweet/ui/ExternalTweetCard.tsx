@@ -1,4 +1,4 @@
-import { ImageGrid } from "@shared/ui/image-grid";
+import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import {
 	EmbeddedTweet,
 	type TweetData,
@@ -21,14 +21,28 @@ export interface ExternalTweetCardProps {
 }
 
 export function ExternalTweetCard({ tweet, compact = false }: ExternalTweetCardProps) {
+	const preview = useImagePreview();
 	return (
-		<EmbeddedTweet
-			tweet={toEmbeddedTweet(tweet)}
-			locale="zh-CN"
-			timeZone="Asia/Shanghai"
-			compact={compact}
-			renderPhotos={renderPhotos}
-		/>
+		<>
+			<EmbeddedTweet
+				tweet={toEmbeddedTweet(tweet)}
+				locale="zh-CN"
+				timeZone="Asia/Shanghai"
+				compact={compact}
+				onOpenPhoto={(photos, index, trigger) =>
+					openPhoto(preview.openPreview, photos, index, trigger)
+				}
+			/>
+			<ImagePreview
+				open={preview.open}
+				images={preview.images}
+				thumbnails={preview.thumbnails}
+				currentIndex={preview.currentIndex}
+				triggerElement={preview.triggerElement}
+				onClose={preview.closePreview}
+				onIndexChange={preview.setCurrentIndex}
+			/>
+		</>
 	);
 }
 
@@ -81,23 +95,19 @@ function toEmbeddedTweet(tweet: ExternalTweet, nested = false): TweetData {
 	};
 }
 
-function renderPhotos(photos: TweetPhoto[]) {
-	return (
-		<div
-			onClick={(event) => event.stopPropagation()}
-			onKeyDown={(event) => {
-				if (event.currentTarget.contains(event.target as Node)) event.stopPropagation();
-			}}
-		>
-			<ImageGrid
-				images={photos.map((media) => ({
-					url: media.url,
-					thumbnail: media.thumbnailUrl,
-					width: media.width,
-					height: media.height,
-					alt: media.alt,
-				}))}
-			/>
-		</div>
+/** 图片布局由推文包决定（竖图为主时是横向滚动条），点击统一交给本站灯箱。 */
+function openPhoto(
+	openPreview: ReturnType<typeof useImagePreview>["openPreview"],
+	photos: TweetPhoto[],
+	index: number,
+	trigger: HTMLElement,
+) {
+	const thumbnails = photos.map((photo) => photo.thumbnailUrl);
+	// 缩略图与原图一一对应才传给预览：飞入占位与底部导航条不必拉取原图。
+	openPreview(
+		photos.map((photo) => photo.url),
+		index,
+		trigger,
+		thumbnails.every((url): url is string => !!url) ? thumbnails : undefined,
 	);
 }
