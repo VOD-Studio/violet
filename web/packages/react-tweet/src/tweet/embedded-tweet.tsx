@@ -62,6 +62,7 @@ export function EmbeddedTweet({
 	messages,
 	renderPhotos,
 	renderVideo,
+	onOpenPhoto,
 	...articleProps
 }: EmbeddedTweetProps) {
 	const localization = useMemo(
@@ -76,6 +77,7 @@ export function EmbeddedTweet({
 			localization={localization}
 			renderPhotos={renderPhotos}
 			renderVideo={renderVideo}
+			onOpenPhoto={onOpenPhoto}
 			articleProps={articleProps}
 			depth={0}
 		/>
@@ -89,6 +91,7 @@ function TweetContent({
 	localization,
 	renderPhotos,
 	renderVideo,
+	onOpenPhoto,
 	articleProps,
 	depth,
 }: TweetMediaRenderers & {
@@ -159,6 +162,7 @@ function TweetContent({
 						source={source}
 						renderPhotos={renderPhotos}
 						renderVideo={renderVideo}
+						onOpenPhoto={onOpenPhoto}
 						localization={localization}
 					/>
 				)
@@ -171,6 +175,7 @@ function TweetContent({
 						maxTextLines={maxTextLines}
 						renderPhotos={renderPhotos}
 						renderVideo={renderVideo}
+						onOpenPhoto={onOpenPhoto}
 						localization={localization}
 						depth={1}
 					/>

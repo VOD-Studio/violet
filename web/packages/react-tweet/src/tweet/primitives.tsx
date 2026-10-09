@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, SyntheticEvent } from "react";
+import type { CSSProperties, MouseEvent, ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 
 import { safeUrl } from "../data/urls.ts";
@@ -17,12 +17,17 @@ export function TweetLink({
 	className,
 	label,
 	tabIndex,
+	style,
+	onActivate,
 }: {
 	href?: string;
 	children: ReactNode;
 	className?: string;
 	label?: string;
 	tabIndex?: number;
+	style?: CSSProperties;
+	/** 在阻止冒泡之后调用；可 preventDefault 以接管跳转。 */
+	onActivate?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
 	const url = safeUrl(href);
 	if (!url) return <span className={className}>{children}</span>;
@@ -34,7 +39,11 @@ export function TweetLink({
 			className={className}
 			aria-label={label}
 			tabIndex={tabIndex}
-			onClick={stopInteraction}
+			style={style}
+			onClick={(event) => {
+				stopInteraction(event);
+				onActivate?.(event);
+			}}
 			onKeyDown={stopInteraction}
 			onPointerDown={stopInteraction}
 		>

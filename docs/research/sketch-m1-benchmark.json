@@ -1,0 +1,157 @@
+{
+  "runtime": "v23.10.0",
+  "rough": "4.6.6",
+  "platform": "darwin",
+  "arch": "arm64",
+  "samples": 21,
+  "warmupBatches": 5,
+  "measurement": "Generation and SVG path data serialization only; no DOM, layout or paint",
+  "style": "sketch: natural hand + fineliner, width 1.25; rough: baseline recipe",
+  "results": [
+    {
+      "name": "line",
+      "shapes": 1000,
+      "rough": {
+        "generateMedianMs": 1.387,
+        "generateP95Ms": 2.185,
+        "serializeMedianMs": 0.927,
+        "serializeP95Ms": 1.651,
+        "pathCharsPerShape": 176
+      },
+      "sketch": {
+        "generateMedianMs": 3.144,
+        "generateP95Ms": 4.568,
+        "serializeMedianMs": 1.061,
+        "serializeP95Ms": 1.903,
+        "pathCharsPerShape": 83
+      }
+    },
+    {
+      "name": "rect solid",
+      "shapes": 1000,
+      "rough": {
+        "generateMedianMs": 4.301,
+        "generateP95Ms": 5.271,
+        "serializeMedianMs": 7.505,
+        "serializeP95Ms": 8.963,
+        "pathCharsPerShape": 867
+      },
+      "sketch": {
+        "generateMedianMs": 10.829,
+        "generateP95Ms": 11.592,
+        "serializeMedianMs": 7.908,
+        "serializeP95Ms": 8.238,
+        "pathCharsPerShape": 716
+      }
+    },
+    {
+      "name": "rounded path solid",
+      "shapes": 1000,
+      "rough": {
+        "generateMedianMs": 41.397,
+        "generateP95Ms": 48.722,
+        "serializeMedianMs": 17.257,
+        "serializeP95Ms": 18.246,
+        "pathCharsPerShape": 2152
+      },
+      "sketch": {
+        "generateMedianMs": 28.894,
+        "generateP95Ms": 31.163,
+        "serializeMedianMs": 11.913,
+        "serializeP95Ms": 12.499,
+        "pathCharsPerShape": 1182
+      }
+    },
+    {
+      "name": "rounded path stroke only",
+      "shapes": 1000,
+      "rough": {
+        "generateMedianMs": 25.674,
+        "generateP95Ms": 31.062,
+        "serializeMedianMs": 11.572,
+        "serializeP95Ms": 13.266,
+        "pathCharsPerShape": 1470
+      },
+      "sketch": {
+        "generateMedianMs": 28.145,
+        "generateP95Ms": 30.745,
+        "serializeMedianMs": 11.191,
+        "serializeP95Ms": 11.531,
+        "pathCharsPerShape": 1065
+      }
+    },
+    {
+      "name": "rounded path stroke only / single",
+      "shapes": 1000,
+      "rough": {
+        "generateMedianMs": 23.374,
+        "generateP95Ms": 26.888,
+        "serializeMedianMs": 5.384,
+        "serializeP95Ms": 6.087,
+        "pathCharsPerShape": 735
+      },
+      "sketch": {
+        "generateMedianMs": 28.079,
+        "generateP95Ms": 30.57,
+        "serializeMedianMs": 11.107,
+        "serializeP95Ms": 12.186,
+        "pathCharsPerShape": 1065
+      }
+    },
+    {
+      "name": "128-cubic path stroke only",
+      "shapes": 100,
+      "rough": {
+        "generateMedianMs": 71.317,
+        "generateP95Ms": 75.786,
+        "serializeMedianMs": 16.015,
+        "serializeP95Ms": 18.188,
+        "pathCharsPerShape": 31855
+      },
+      "sketch": {
+        "generateMedianMs": 57.202,
+        "generateP95Ms": 60.029,
+        "serializeMedianMs": 15.696,
+        "serializeP95Ms": 16.264,
+        "pathCharsPerShape": 17237
+      }
+    },
+    {
+      "name": "rect hachure gap 4",
+      "shapes": 100,
+      "rough": {
+        "generateMedianMs": 3.803,
+        "generateP95Ms": 4.606,
+        "serializeMedianMs": 4.716,
+        "serializeP95Ms": 6.59,
+        "pathCharsPerShape": 10822
+      },
+      "sketch": {
+        "generateMedianMs": 6.733,
+        "generateP95Ms": 8.073,
+        "serializeMedianMs": 2.244,
+        "serializeP95Ms": 2.864,
+        "pathCharsPerShape": 2134
+      }
+    },
+    {
+      "name": "rect hachure gap 1",
+      "shapes": 100,
+      "rough": {
+        "generateMedianMs": 10.557,
+        "generateP95Ms": 11.829,
+        "serializeMedianMs": 19.446,
+        "serializeP95Ms": 23.308,
+        "pathCharsPerShape": 41040
+      },
+      "sketch": {
+        "generateMedianMs": 21.398,
+        "generateP95Ms": 24.532,
+        "serializeMedianMs": 7.077,
+        "serializeP95Ms": 7.383,
+        "pathCharsPerShape": 6490
+      }
+    }
+  ],
+  "sink": 532199954
+}

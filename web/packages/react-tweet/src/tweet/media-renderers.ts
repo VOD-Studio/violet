@@ -17,6 +17,16 @@ export interface TweetMediaRenderers {
 	 */
 	renderPhotos?: (photos: TweetPhoto[]) => ReactNode;
 	/**
+	 * 接管照片的打开方式（如灯箱），保留默认的横向滚动或网格布局。
+	 *
+	 * 提供后，普通点击不再另页打开原图，而是调用本回调；按住修饰键或中键点击仍按链接打开。
+	 * 同时提供 renderPhotos 时由 renderPhotos 全权负责，本回调不会被调用。
+	 * @param photos - 被点击照片所在的连续照片组，保留原始顺序。
+	 * @param index - 被点击照片在组内的序号。
+	 * @param trigger - 被点击的链接元素，灯箱可据此做飞入动画并在关闭后还原焦点。
+	 */
+	onOpenPhoto?: (photos: TweetPhoto[], index: number, trigger: HTMLElement) => void;
+	/**
 	 * 用宿主播放器或预览替换单项视频展示。
 	 *
 	 * 没有播放源的媒体只携带 thumbnailUrl，不能假定始终存在 url。

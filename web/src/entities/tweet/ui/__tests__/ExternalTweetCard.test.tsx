@@ -4,21 +4,28 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExternalTweet } from "../../model/types";
 import { ExternalTweetCard } from "../ExternalTweetCard";
 
-const preview = vi.hoisted(() => ({ portal: false }));
+const preview = vi.hoisted(() => ({ portal: false, openPreview: vi.fn() }));
 
-vi.mock("@shared/ui/image-grid", () => ({
-	ImageGrid: ({ images }: { images: { url: string }[] }) => (
-		<>
-			<button type="button">预览 {images[0].url}</button>
-			{preview.portal &&
-				createPortal(
+vi.mock("@shared/ui/image-preview", () => ({
+	useImagePreview: () => ({
+		open: false,
+		images: [],
+		thumbnails: undefined,
+		currentIndex: 0,
+		triggerElement: null,
+		openPreview: preview.openPreview,
+		closePreview: vi.fn(),
+		setCurrentIndex: vi.fn(),
+	}),
+	ImagePreview: () =>
+		preview.portal
+			? createPortal(
 					<div role="dialog" tabIndex={-1}>
 						图片灯箱
 					</div>,
 					document.body,
-				)}
-		</>
-	),
+				)
+			: null,
 }));
 
 function externalFixture(overrides: Partial<ExternalTweet> = {}): ExternalTweet {
@@ -63,6 +70,7 @@ function externalFixture(overrides: Partial<ExternalTweet> = {}): ExternalTweet 
 afterEach(() => {
 	cleanup();
 	preview.portal = false;
+	preview.openPreview.mockClear();
 });
 
 describe("ExternalTweetCard", () => {
@@ -74,10 +82,55 @@ describe("ExternalTweetCard", () => {
 		expect(screen.getByRole("link", { name: "#标签" }).getAttribute("href")).toContain(
 			"https://x.com/hashtag/",
 		);
-		expect(
-			screen.getByRole("button", { name: "预览 /uploads/external-tweets/photo.png" }),
-		).toBeTruthy();
-		expect(screen.queryByRole("img")).toBeNull();
+		const photo = screen.getByRole("link", { name: "查看图片 1 原图" });
+		expect(photo.getAttribute("href")).toBe("/uploads/external-tweets/photo.png");
+		expect(screen.getByRole("img", { name: "配图" })).toBeTruthy();
+	});
+
+	it("点击图片交给本站灯箱，带上整组原图、序号与触发元素", () => {
+		const fixture = externalFixture();
+		if (!fixture.snapshot) throw new Error("fixture has no snapshot");
+		fixture.snapshot.media = ["a", "b", "c", "d"].map((name) => ({
+			kind: "photo" as const,
+			url: `/uploads/${name}.png`,
+			thumbnail_url: `/uploads/${name}-small.png`,
+			width: 900,
+			height: 2000,
+			alt: name,
+			file_id: name,
+		}));
+		render(<ExternalTweetCard tweet={fixture} />);
+		const second = screen.getByRole("link", { name: "查看图片 2 原图" });
+		fireEvent.click(second);
+		expect(preview.openPreview).toHaveBeenCalledWith(
+			["/uploads/a.png", "/uploads/b.png", "/uploads/c.png", "/uploads/d.png"],
+			1,
+			second,
+			[
+				"/uploads/a-small.png",
+				"/uploads/b-small.png",
+				"/uploads/c-small.png",
+				"/uploads/d-small.png",
+			],
+		);
+	});
+
+	it("竖图为主的多张图片用横向滚动条展示，与 X 原帖一致", () => {
+		const fixture = externalFixture();
+		if (!fixture.snapshot) throw new Error("fixture has no snapshot");
+		fixture.snapshot.media = ["a", "b", "c", "d"].map((name) => ({
+			kind: "photo" as const,
+			url: `/uploads/${name}.png`,
+			thumbnail_url: "",
+			width: 900,
+			height: 2000,
+			alt: name,
+			file_id: name,
+		}));
+		const { container } = render(<ExternalTweetCard tweet={fixture} />);
+		expect(container.querySelector(".v-tweet__rail")).not.toBeNull();
+		expect(container.querySelector(".v-tweet__photos")).toBeNull();
+		expect(container.querySelectorAll(".v-tweet__photo")).toHaveLength(4);
 	});
 
 	it("正文点击交给本站卡片，链接与图片的点击和键盘事件独立", () => {
@@ -93,8 +146,9 @@ describe("ExternalTweetCard", () => {
 		const original = screen.getByRole("link", { name: "在 X 查看原文" });
 		fireEvent.click(original);
 		fireEvent.keyDown(original, { key: "Enter" });
-		fireEvent.click(screen.getByRole("button", { name: /预览/ }));
-		fireEvent.keyDown(screen.getByRole("button", { name: /预览/ }), { key: " " });
+		const photo = screen.getByRole("link", { name: /原图/ });
+		fireEvent.click(photo);
+		fireEvent.keyDown(photo, { key: " " });
 		expect(navigate).toHaveBeenCalledTimes(1);
 		expect(key).not.toHaveBeenCalled();
 	});
@@ -104,6 +158,7 @@ describe("ExternalTweetCard", () => {
 		expect(screen.queryByText("Jack")).toBeNull();
 		expect(screen.queryByText(/中文 😀/)).toBeNull();
 		expect(screen.queryByRole("button")).toBeNull();
+		expect(screen.queryByRole("link", { name: /原图/ })).toBeNull();
 		expect(screen.getByRole("link", { name: "在 X 查看原文" })).toBeTruthy();
 	});
 
@@ -113,7 +168,7 @@ describe("ExternalTweetCard", () => {
 		window.addEventListener("keydown", keyboard);
 		try {
 			render(<ExternalTweetCard tweet={externalFixture()} />);
-			fireEvent.keyDown(screen.getByRole("button", { name: /预览/ }), { key: "Enter" });
+			fireEvent.keyDown(screen.getByRole("link", { name: /原图/ }), { key: "Enter" });
 			expect(keyboard).not.toHaveBeenCalled();
 			fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
 			fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });

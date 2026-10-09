@@ -133,6 +133,25 @@ export function ImagePreviewImage({
 		};
 	}, [src, initialNaturalSize]);
 
+	// 页面上找不到对应的 <img> 时，缩略图自身的比例是最可靠的占位依据；
+	// 否则原图未到之前缩略图会按它的自然尺寸显示，等原图到了才突然变大。
+	const [thumbnailRatio, setThumbnailRatio] = useState<number | null>(null);
+	useEffect(() => {
+		if (!thumbnail || initialNaturalSize) return;
+		const probe = new Image();
+		const handleRatio = () => {
+			if (probe.naturalWidth > 0 && probe.naturalHeight > 0) {
+				setThumbnailRatio(probe.naturalWidth / probe.naturalHeight);
+			}
+		};
+		probe.onload = handleRatio;
+		probe.src = thumbnail;
+		if (probe.complete) handleRatio();
+		return () => {
+			probe.onload = null;
+		};
+	}, [thumbnail, initialNaturalSize]);
+
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage || !isPresent) return;
@@ -156,6 +175,7 @@ export function ImagePreviewImage({
 
 	const fallbackAspectRatio =
 		placeholderAspectRatio ??
+		thumbnailRatio ??
 		(triggerRect && triggerRect.width > 0 && triggerRect.height > 0
 			? triggerRect.width / triggerRect.height
 			: null);

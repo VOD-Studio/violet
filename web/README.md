@@ -70,11 +70,17 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 Mermaid 图块统一使用手写字体与 Rough.js 笔触，编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
 
+## 手绘绘图库
+
+[`@violet/sketch`](packages/sketch/README.md) 位于 `packages/sketch/`，不依赖 React、Mermaid 或 Rough.js。正式文章渲染链路仍使用 Rough.js。
+
+`/lab/sketch` 并排对照 Rough.js 与本库：同一几何与 seed，可切换卡通插画、基础图元、七种填充、孔洞规则与真实 Mermaid 布局，以及五种笔（签字笔、轻压感签字笔、压感钢笔、马克笔、卡通）、三档手法、1×/3× 缩放和 SVG/Canvas 后端。控制条提供整图时间轴：播放、暂停、重播、拖动进度、顺序/并行/交错编排与变速。
+
 ## 推文组件包
 
 [`@violet/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
 
-本站的文章嵌入、已保存 X 快照、`/tweets` 时间线和详情共用该包；站内互动与权限由 `features/tweets` 管理，同源取数边界位于 `src/shared/server/tweet-reference.ts`。
+本站的文章嵌入、已保存 X 快照、`/tweets` 时间线和详情共用该包；多张竖图按 X 原帖的方式横向滚动展示，点击仍打开本站灯箱；站内互动与权限由 `features/tweets` 管理，同源取数边界位于 `src/shared/server/tweet-reference.ts`。
 
 `/tweets` 使用单列独立卡片，时间线与详情的宽度上限统一为 768px；引用以底色和留白区分，不逐层叠加边框。发布区让头像与正文并排，正文和底部工具栏在添加 X 原文时保持常驻；工具栏集中图片、X 转发、表情和剩余字数，发布按钮保留小色块与纸飞机，不单独显示作者栏或顶部模式按钮。X 转发通过链接图标打开 `@violet/ui` 的 Popover，浮层仅有链接输入与预览；`Enter` 获取原文，成功后自动收起并在正文下方显示原文。`Esc` 或点击外部取消链接输入，添加或移除原文不清空正文与附图。控件保留触控目标与键盘焦点，移动端工具栏占满一行，链接浮层与视口边缘至少间隔 16px。图片上传完成后再发布，正文内支持 `Ctrl/Cmd+Enter`。评论、引用、点赞与聊天分享位于卡片底部，详情的完整发布时间位于作者行，不单独添加分隔栏；刷新共享原文、下架和删除收在更多菜单，下架与删除仍需确认。X 正文默认折叠为六行，嵌套引用独立展开；文章嵌入可用 `maxTextLines: 0` 展示全文。
 

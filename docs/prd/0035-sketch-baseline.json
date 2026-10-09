@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "roughjs-historical-baseline",
+  "scope": "Existing Rough.js only; not a performance result for the planned library",
+  "workingDirectory": "web",
+  "benchmark": {
+    "runtime": "v24.15.0",
+    "version": "4.6.6",
+    "platform": "darwin",
+    "arch": "arm64",
+    "samples": 21,
+    "warmupBatches": 5,
+    "measurement": "Generator and d serialization only; no DOM, layout, paint, cache or worker",
+    "results": [
+      {
+        "name": "line / current",
+        "shapes": 1000,
+        "generateMedianMs": 1.594,
+        "generateP95Ms": 3.19,
+        "serializeMedianMs": 2.259,
+        "operationsPerShape": 4,
+        "layersPerShape": 1,
+        "pathCharsPerShape": 176
+      },
+      {
+        "name": "rect solid / current",
+        "shapes": 1000,
+        "generateMedianMs": 2.545,
+        "generateP95Ms": 10.154,
+        "serializeMedianMs": 6.581,
+        "operationsPerShape": 20,
+        "layersPerShape": 2,
+        "pathCharsPerShape": 867
+      },
+      {
+        "name": "rounded path solid / current",
+        "shapes": 1000,
+        "generateMedianMs": 30.019,
+        "generateP95Ms": 31.366,
+        "serializeMedianMs": 12.99,
+        "operationsPerShape": 46,
+        "layersPerShape": 2,
+        "pathCharsPerShape": 2152
+      },
+      {
+        "name": "rounded path stroke only / current",
+        "shapes": 1000,
+        "generateMedianMs": 17.71,
+        "generateP95Ms": 18.653,
+        "serializeMedianMs": 8.718,
+        "operationsPerShape": 36,
+        "layersPerShape": 1,
+        "pathCharsPerShape": 1470
+      },
+      {
+        "name": "rounded path stroke only / single",
+        "shapes": 1000,
+        "generateMedianMs": 16.583,
+        "generateP95Ms": 22.817,
+        "serializeMedianMs": 4.359,
+        "operationsPerShape": 18,
+        "layersPerShape": 1,
+        "pathCharsPerShape": 735
+      },
+      {
+        "name": "128-cubic path stroke only",
+        "shapes": 100,
+        "generateMedianMs": 47.704,
+        "generateP95Ms": 49.754,
+        "serializeMedianMs": 12.247,
+        "operationsPerShape": 512,
+        "layersPerShape": 1,
+        "pathCharsPerShape": 31855
+      },
+      {
+        "name": "rect hachure gap 4",
+        "shapes": 100,
+        "generateMedianMs": 2.201,
+        "generateP95Ms": 2.963,
+        "serializeMedianMs": 3.732,
+        "operationsPerShape": 152,
+        "layersPerShape": 2,
+        "pathCharsPerShape": 10822
+      },
+      {
+        "name": "rect hachure gap 1",
+        "shapes": 100,
+        "generateMedianMs": 6.776,
+        "generateP95Ms": 8.162,
+        "serializeMedianMs": 14.286,
+        "operationsPerShape": 548,
+        "layersPerShape": 2,
+        "pathCharsPerShape": 41040
+      }
+    ],
+    "sink": 289233519
+  },
+  "program": "\nimport { createRequire } from 'node:module';\nimport { performance } from 'node:perf_hooks';\nconst require = createRequire(process.cwd() + '/package.json');\nconst rough = require('roughjs');\nconst version = require('roughjs/package.json').version;\nconst g = rough.generator();\nconst recipe = { roughness: 2.2, maxRandomnessOffset: 2, bowing: 1.2, preserveVertices: true, disableMultiStroke: false, fillStyle: 'solid', fillShapeRoughnessGain: 0, stroke: '#222', strokeWidth: 1.25 };\nconst rounded = 'M8 0H112A8 8 0 0 1 120 8V56A8 8 0 0 1 112 64H8A8 8 0 0 1 0 56V8A8 8 0 0 1 8 0Z';\nlet complex = 'M0 0';\nfor (let j = 0; j < 128; j++) complex += 'C' + [j*4+1, Math.sin(j)*30, j*4+3, Math.cos(j)*30, j*4+4, Math.sin(j+1)*30].join(' ');\nconst scenarios = [\n  ['line / current', 1000, i => g.line(0,0,120,64,{...recipe,seed:i+1})],\n  ['rect solid / current', 1000, i => g.rectangle(0,0,120,64,{...recipe,fill:'#ddd',seed:i+1})],\n  ['rounded path solid / current', 1000, i => g.path(rounded,{...recipe,fill:'#ddd',seed:i+1})],\n  ['rounded path stroke only / current', 1000, i => g.path(rounded,{...recipe,seed:i+1})],\n  ['rounded path stroke only / single', 1000, i => g.path(rounded,{...recipe,disableMultiStroke:true,seed:i+1})],\n  ['128-cubic path stroke only', 100, i => g.path(complex,{...recipe,seed:i+1})],\n  ['rect hachure gap 4', 100, i => g.rectangle(0,0,120,64,{...recipe,fill:'#ddd',fillStyle:'hachure',hachureGap:4,seed:i+1})],\n  ['rect hachure gap 1', 100, i => g.rectangle(0,0,120,64,{...recipe,fill:'#ddd',fillStyle:'hachure',hachureGap:1,seed:i+1})]\n];\nconst pct = (a,p) => [...a].sort((x,y)=>x-y)[Math.ceil(a.length*p)-1];\nlet sink = 0;\nconst results = [];\nfor (const [name,n,fn] of scenarios) {\n  for(let warm=0;warm<5;warm++) for(let i=0;i<n;i++) sink += fn(i).sets.length;\n  const generate=[], serialize=[];\n  let count=0, layers=0, bytes=0;\n  for(let sample=0;sample<21;sample++) {\n    const drawables = new Array(n);\n    let t=performance.now();\n    for(let i=0;i<n;i++) drawables[i]=fn(i);\n    generate.push(performance.now()-t);\n    t=performance.now();\n    let b=0;\n    for(const d of drawables) for(const p of g.toPaths(d)) b += p.d.length;\n    serialize.push(performance.now()-t); sink+=b;\n    if(sample===20) {bytes=b;for(const d of drawables){layers+=d.sets.length;for(const s of d.sets) count+=s.ops.length;}}\n  }\n  results.push({name,shapes:n,generateMedianMs:+pct(generate,.5).toFixed(3),generateP95Ms:+pct(generate,.95).toFixed(3),serializeMedianMs:+pct(serialize,.5).toFixed(3),operationsPerShape:count/n,layersPerShape:layers/n,pathCharsPerShape:Math.round(bytes/n)});\n}\nconsole.log(JSON.stringify({runtime:process.version,version,platform:process.platform,arch:process.arch,samples:21,warmupBatches:5,measurement:'Generator and d serialization only; no DOM, layout, paint, cache or worker',results,sink},null,2));\n"
+}
