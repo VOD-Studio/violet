@@ -3,9 +3,9 @@ import { channel } from "../core/rng.ts";
 import type { Contour, DrawContext, Fill, Skeleton } from "../core/types.ts";
 import { scanSpans } from "./scan.ts";
 
-const ROW = channel("sketch:fill:row");
-const TILT = channel("sketch:fill:tilt");
-const DOT = channel("sketch:fill:dot");
+const ROW = /* @__PURE__ */ channel("sketch:fill:row");
+const TILT = /* @__PURE__ */ channel("sketch:fill:tilt");
+const DOT = /* @__PURE__ */ channel("sketch:fill:dot");
 
 /** 图案填充参数。 */
 export interface PatternOptions {
@@ -126,7 +126,7 @@ function patternFill(id: Pattern, options: PatternOptions = {}): Fill {
 export const solidFill: Fill = {
 	id: "solid",
 	generate(_region, _ctx: DrawContext, source) {
-		return { areas: [source] };
+		return { areas: [{ path: source }] };
 	},
 };
 

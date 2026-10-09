@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+	cartoonPalette,
+	cartoonStyle,
+	circle,
 	createHand,
 	createInkPen,
 	createMarker,
@@ -7,11 +10,14 @@ import {
 	draw,
 	type InkBatch,
 	line,
+	parseColor,
 	pens,
 	rect,
 	type SceneItem,
+	shadeOf,
 	styles,
 } from "./index.ts";
+import { renderSvg } from "./render/svg.ts";
 
 const scene = (items: SceneItem[]) => ({ width: 400, height: 300, items });
 
@@ -94,6 +100,64 @@ describe("压感与笔", () => {
 		const [batch] = drawing.items[0].batches;
 		expect(batch.verbs[batch.verbs.length - 1]).toBe(3);
 		expect(batch.ribbons?.[1]).toBeGreaterThan(0);
+	});
+});
+
+describe("卡通风格", () => {
+	const base = { paper: "#fffdf7", ink: "#2b2836", sky: "#b9dbea", sun: "#f2d38f" };
+
+	it("阴影、高光与线色从基础色派生，不叠黑", () => {
+		const palette = cartoonPalette(base);
+		for (const role of ["sky", "sun"]) {
+			expect(palette[`${role}:shade`]).toBeDefined();
+			expect(palette[`${role}:light`]).toBeDefined();
+			expect(palette[`${role}:line`]).toBeDefined();
+		}
+		expect(palette["paper:shade"]).toBeUndefined();
+		// 阴影偏冷：色相更靠近蓝紫（285°）；明度下降且仍是同族颜色而非灰黑。
+		const away = (h: number) => Math.abs(((((h - 285) % 360) + 540) % 360) - 180);
+		const before = parseColor(base.sun);
+		const after = parseColor(shadeOf(base.sun));
+		expect(away(after.h)).toBeLessThan(away(before.h));
+		expect(after.l).toBeLessThan(before.l);
+		expect(after.c).toBeGreaterThan(before.c * 0.9);
+	});
+
+	it("填充输出底色、阴影与高光三层，线条取派生线色", () => {
+		const drawing = draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), {
+			style: cartoonStyle,
+			width: 3,
+		});
+		const roles = drawing.items[0].batches.map((b) => b.role);
+		expect(roles).toEqual(["sky", "sky:shade", "sky:light", "sky:line"]);
+		const svg = renderSvg(drawing, cartoonPalette(base));
+		expect(svg).toContain('data-role="sky:shade"');
+	});
+
+	it("阴影形状由几何推导：大小随图形变化且被裁剪在图形内", () => {
+		const shadowOf = (r: number) =>
+			draw(scene([{ id: "c", path: circle(200, 150, r), fillRole: "sky" }]), {
+				style: cartoonStyle,
+			}).items[0].batches.find((b) => b.role === "sky:shade");
+		const big = shadowOf(90);
+		const small = shadowOf(30);
+		expect(big?.clip).toBeDefined();
+		expect(small?.clip).toBeDefined();
+		expect(big?.coords.length).toBeGreaterThan(0);
+		// 小于 14 的图形只上底色。
+		expect(shadowOf(5)).toBeUndefined();
+	});
+
+	it("线宽可按图元覆盖", () => {
+		const drawing = draw(
+			scene([
+				{ id: "thick", path: line(20, 50, 380, 50), lineWidth: 6 },
+				{ id: "thin", path: line(20, 100, 380, 100), lineWidth: 1 },
+			]),
+			{ style: styles.natural },
+		);
+		expect(drawing.items[0].batches[0].width).toBe(6);
+		expect(drawing.items[1].batches[0].width).toBe(1);
 	});
 });
 

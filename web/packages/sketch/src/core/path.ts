@@ -270,3 +270,39 @@ export function catmullRomToCubics(
 		emit(control, i);
 	}
 }
+
+/** 对路径施加仿射矩阵 [a, b, c, d, e, f]（同 SVG matrix），返回新路径。 */
+export function transformPath(
+	path: Path,
+	m: readonly [number, number, number, number, number, number],
+): Path {
+	const coords = new Float64Array(path.coords.length);
+	for (let i = 0; i < coords.length; i += 2) {
+		const x = path.coords[i];
+		const y = path.coords[i + 1];
+		coords[i] = m[0] * x + m[2] * y + m[4];
+		coords[i + 1] = m[1] * x + m[3] * y + m[5];
+	}
+	return createPath(path.verbs, coords, path.fillRule);
+}
+
+/** 把多条路径的子路径合并为一条，使用给定的填充规则。 */
+export function mergePaths(paths: readonly Path[], fillRule: Path["fillRule"]): Path {
+	let nv = 0;
+	let nc = 0;
+	for (const p of paths) {
+		nv += p.verbs.length;
+		nc += p.coords.length;
+	}
+	const verbs = new Uint8Array(nv);
+	const coords = new Float64Array(nc);
+	let v = 0;
+	let c = 0;
+	for (const p of paths) {
+		verbs.set(p.verbs, v);
+		coords.set(p.coords, c);
+		v += p.verbs.length;
+		c += p.coords.length;
+	}
+	return createPath(verbs, coords, fillRule);
+}

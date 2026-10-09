@@ -13,7 +13,7 @@ import type {
 } from "./core/types.ts";
 import { solidFill } from "./fill/patterns.ts";
 
-const FILL_SCOPE = channel("sketch:scope:fill");
+const FILL_SCOPE = /* @__PURE__ */ channel("sketch:scope:fill");
 // 描边结束到开始填充之间的停顿，与笔画时间同为弧长单位。
 const FILL_PAUSE = 40;
 
@@ -81,73 +81,90 @@ export function draw(scene: Scene, options: DrawOptions): Drawing {
 	let vertices = 0;
 	let strokeCount = 0;
 
-	const context = (random: RandomSource, w: number, pinEnds: boolean): DrawContext => ({
+	const context = (random: RandomSource, w: number, item: SceneItem): DrawContext => ({
 		...random,
 		width: w,
 		precision,
 		pixelScale,
-		pinEnds,
+		pinEnds: item.pinEnds ?? false,
+		fillRole: item.fillRole,
 		flatten: (path) => flatten(path, precision),
 	});
 
 	const drawItem = (item: SceneItem): DrawnItem => {
 		const style = item.style ?? options.style;
 		const random = createRandom(seed, hashString(item.id));
-		const ctx = context(random, width, item.pinEnds ?? false);
+		const lineWidth = item.lineWidth ?? width;
+		const ctx = context(random, lineWidth, item);
 		const skeleton = flatten(item.path, precision);
-		const strokeRole = item.strokeRole ?? "ink";
+		const strokeRole = item.strokeRole ?? style.lineRole?.(item.fillRole) ?? "ink";
 
 		const outline = strokeRole === "none" ? [] : style.hand.strokes(skeleton, ctx);
 		const outlineEnd = lastTime(outline);
 
-		const fillBatches: InkBatch[] = [];
+		// 每个批次的 spans 以 offset 平移后再按图元总时长归一化。
+		const timed: { batch: InkBatch; offset: number }[] = [];
 		let fillStrokes: readonly Stroke[] = [];
 		const fillStart = outline.length ? outlineEnd + FILL_PAUSE : 0;
 		let fillEnd = fillStart;
 		if (item.fillRole && skeleton.contours.some((c) => c.closed)) {
 			const fillCtx = context(
 				random.scope(FILL_SCOPE),
-				width * (style.fillWeight ?? 0.5),
-				false,
+				lineWidth * (style.fillWeight ?? 0.5),
+				item,
 			);
 			const output = (style.fill ?? solidFill).generate(skeleton, fillCtx, item.path);
 			if (output.guides) {
 				fillStrokes = (style.fillHand ?? style.hand).strokes(output.guides, fillCtx);
 				fillEnd = fillStart + lastTime(fillStrokes);
 			}
-			if (output.areas?.length) {
-				// 实色区域与图案笔画共用填充时段；没有图案时给出与描边相称的时长。
-				if (fillEnd === fillStart) fillEnd = fillStart + Math.max(outlineEnd * 0.25, 1);
-				const area = new BatchBuilder({
-					mode: "fill",
-					role: item.fillRole,
-					fillRule: item.path.fillRule,
+			const areas = output.areas ?? [];
+			if (areas.length) {
+				// 区域依次淡入；没有图案笔画时，填充时段取与描边相称的长度。
+				const span =
+					fillEnd > fillStart ? fillEnd - fillStart : Math.max(outlineEnd * 0.35, 60);
+				fillEnd = fillStart + span;
+				areas.forEach((area, i) => {
+					const t0 = fillStart + (span * i) / areas.length;
+					const t1 = fillStart + (span * (i + 1)) / areas.length;
+					timed.push({
+						batch: new BatchBuilder({
+							mode: "fill",
+							role: area.role ?? (item.fillRole as string),
+							fillRule: area.path.fillRule,
+							opacity: area.opacity,
+							clip: area.clip === true ? item.path : area.clip || undefined,
+						})
+							.path(area.path, t0, t1)
+							.build(),
+						offset: 0,
+					});
 				});
-				for (const path of output.areas) area.path(path, fillStart, fillEnd);
-				fillBatches.push(area.build());
 			}
 			for (const batch of (style.fillPen ?? style.pen).ink(
 				fillStrokes,
 				fillCtx,
 				item.fillRole,
 			))
-				fillBatches.push({ ...batch, clip: item.path });
+				timed.push({ batch: { ...batch, clip: item.path }, offset: fillStart });
 		}
-
-		// 实色区域的 spans 已是绝对时间；填充笔画的时间从 0 起算，需平移到填充时段。
-		const total = Math.max(fillEnd, outlineEnd, 1e-9);
-		const batches: InkBatch[] = [];
-		for (const batch of fillBatches)
-			batches.push(retime(batch, batch.clip ? fillStart : 0, total));
 		for (const batch of style.pen.ink(outline, ctx, strokeRole))
-			batches.push(retime(batch, 0, total));
+			timed.push({ batch, offset: 0 });
+
+		const total = Math.max(fillEnd, outlineEnd, 1e-9);
+		const batches = timed.map(({ batch, offset }) => retime(batch, offset, total));
 
 		strokeCount += outline.length + fillStrokes.length;
 		if (strokeCount > maxStrokes) throw new BudgetExceeded("strokes", strokeCount, maxStrokes);
 		for (const batch of batches) vertices += batch.coords.length / 2;
 		if (vertices > maxVertices) throw new BudgetExceeded("vertices", vertices, maxVertices);
 
-		return { id: item.id, batches, transform: item.transform, label: item.label };
+		return {
+			id: item.id,
+			batches,
+			transform: item.transform,
+			label: item.label,
+		};
 	};
 
 	const items = scene.items.map(drawItem);

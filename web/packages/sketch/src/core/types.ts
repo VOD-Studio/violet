@@ -96,6 +96,8 @@ export interface DrawContext extends RandomSource {
 	readonly pixelScale: number;
 	/** 开放路径首尾是否保持精确。 */
 	readonly pinEnds: boolean;
+	/** 当前图元的填充颜色角色；风格据此推导阴影、高光等派生角色。 */
+	readonly fillRole?: string;
 	/** 按当前 precision 展平任意路径，命中共享缓存。 */
 	flatten(path: Path): Skeleton;
 }
@@ -109,14 +111,23 @@ export interface Hand {
 /** 笔：把笔画成形为渲染批次。 */
 export interface Pen {
 	readonly id: string;
-	/** @returns 新建的批次；生成器取得所有权并就地归一化 spans，不得返回缓存或共享的批次。 */
 	ink(strokes: readonly Stroke[], ctx: DrawContext, role: string): readonly InkBatch[];
 }
 
 /** 填充：返回直接上色的区域，或交给手法与笔描绘的图案骨架。 */
+/** 直接上色的区域。 */
+export interface Area {
+	readonly path: Path;
+	/** 颜色角色；缺省为图元的 fillRole。 */
+	readonly role?: string;
+	readonly opacity?: number;
+	/** 裁剪范围：true 为图元原路径，也可指定任意路径。 */
+	readonly clip?: boolean | Path;
+}
+
 export interface FillOutput {
-	/** 实色区域，按自身填充规则上色，不经过笔。 */
-	readonly areas?: readonly Path[];
+	/** 实色区域，按自身填充规则上色，不经过笔；按数组顺序叠放。 */
+	readonly areas?: readonly Area[];
 	/** 图案骨架；由填充手法转为笔画，再由填充笔成形，并裁剪到原区域。 */
 	readonly guides?: Skeleton;
 }
@@ -142,6 +153,8 @@ export interface Style {
 	readonly fillPen?: Pen;
 	/** 填充笔相对名义线宽的倍率。 @default 0.5 */
 	readonly fillWeight?: number;
+	/** 图元未指定 strokeRole 时，由填充角色推导描边角色；缺省为 ink。 */
+	readonly lineRole?: (fillRole: string | undefined) => string;
 }
 
 /** SVG/Canvas 顺序的 [a, b, c, d, e, f] 仿射矩阵。 */
@@ -168,6 +181,8 @@ export interface SceneItem {
 	fillRole?: string;
 	/** 开放路径首尾保持精确，用于连线与箭头锚点。 */
 	pinEnds?: boolean;
+	/** 该图元的名义线宽，场景单位；缺省取 draw 选项的 width。 */
+	lineWidth?: number;
 	transform?: Matrix;
 	label?: Label;
 }

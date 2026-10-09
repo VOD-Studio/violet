@@ -1,3 +1,12 @@
+export { cartoonHand, cartoonStyle } from "./cartoon.ts";
+export {
+	cartoonPalette,
+	formatColor,
+	lightOf,
+	lineOf,
+	parseColor,
+	shadeOf,
+} from "./core/color.ts";
 export { flatten, pointAt, polylineContour } from "./core/flatten.ts";
 export { BatchBuilder } from "./core/ir.ts";
 export {
@@ -8,15 +17,18 @@ export {
 	curve,
 	ellipse,
 	line,
+	mergePaths,
 	PathBuilder,
 	pathFromSvg,
 	polygon,
 	polyline,
 	rect,
+	transformPath,
 } from "./core/path.ts";
 export type { RandomSource } from "./core/rng.ts";
 export { channel, createRandom, hashString } from "./core/rng.ts";
 export type {
+	Area,
 	Bounds,
 	Budget,
 	Contour,
@@ -40,6 +52,8 @@ export type {
 } from "./core/types.ts";
 export { CLOSE, CUBIC, LINE, MOVE } from "./core/types.ts";
 export { BudgetExceeded, draw } from "./draw.ts";
+export type { CartoonOptions } from "./fill/cartoon.ts";
+export { createCartoonFill } from "./fill/cartoon.ts";
 export type { PatternOptions } from "./fill/patterns.ts";
 export { createPatternFill, fills, solidFill } from "./fill/patterns.ts";
 export { minimumJerk } from "./hand/gesture.ts";
