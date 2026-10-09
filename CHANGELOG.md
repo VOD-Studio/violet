@@ -7,6 +7,35 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.9.2](https://github.com/VOD-Studio/violet/compare/v2.9.1...v2.9.2) (2026-10-09)
+
+
+### 新增
+
+* **ExternalTweetCard:** 外部推文图片采用推文包的滚动展示 ([15bfd98](https://github.com/VOD-Studio/violet/commit/15bfd9891d38a826ee6cb085adbc84693e16e022))
+* **lab:** 对照页增加压感笔、卡通插画与整图时间轴 ([a4c3f8f](https://github.com/VOD-Studio/violet/commit/a4c3f8f15cf9dc026376ae92446d6e5f6d0f3175))
+* **lab:** 新增 Rough.js 与手绘绘图库并排对照页 ([9569114](https://github.com/VOD-Studio/violet/commit/95691145530651b22e3c87109a698afe1153e015))
+* **react-tweet:** 竖图为主的多张照片横向滚动展示 ([7c44da4](https://github.com/VOD-Studio/violet/commit/7c44da4a96fe3fe4c034f874d7af30b087206294))
+* **sketch-prototype:** 接入手绘绘图库交互实验 ([0f32705](https://github.com/VOD-Studio/violet/commit/0f327059d9e29116a95bdf33cb5da6e8a4c774c7))
+* **sketch:** 以手法、笔与填充组合重写绘图库 0.2.0 ([5a52d79](https://github.com/VOD-Studio/violet/commit/5a52d795b51ab15f3a0ad685c3a2484c6c523dfa))
+* **sketch:** 增加卡通风格 ([9bc0789](https://github.com/VOD-Studio/violet/commit/9bc0789b77ff93b83698603b3aa7aba03c1aff61))
+* **sketch:** 增加整图时间轴 ([b0cf1c8](https://github.com/VOD-Studio/violet/commit/b0cf1c88ecdc4a86650d18c1fd1027a1b4878eab))
+* **sketch:** 增加逐点压力与变宽笔 ([2e424c0](https://github.com/VOD-Studio/violet/commit/2e424c03ddeb20d4d5ca47c33be99ad82759b2b4))
+* **sketch:** 提供可扩展矢量笔迹实验包 ([b171a37](https://github.com/VOD-Studio/violet/commit/b171a375a1ae9e9f0134e68e89613ec4b22b6c3f))
+* **sketch:** 提供组合式矢量绘图库 ([d068c4e](https://github.com/VOD-Studio/violet/commit/d068c4eb943ba3a2358f071c79b3b4dc6c449c94))
+
+
+### 修复
+
+* **image-preview:** 切换图片时按缩略图比例预留显示盒 ([46684e1](https://github.com/VOD-Studio/violet/commit/46684e1ce5992ff64e88935766042fc2c0a903e2))
+* **sketch:** 缩短断笔越界并减少角点断笔 ([1e98222](https://github.com/VOD-Studio/violet/commit/1e98222fff177a2915723adcd11eb097d5c66e05))
+* **sketch:** 识别转角较小的凹角点 ([08f0c79](https://github.com/VOD-Studio/violet/commit/08f0c79cfa9d9e079a8937e5f13e4b163398ce3f))
+
+
+### 重构
+
+* **lab:** 移除手绘绘图原型实验页 ([821a85a](https://github.com/VOD-Studio/violet/commit/821a85ab56d466dd91162b8c2e9bb7a1a136756c))
+
 ## [2.9.1](https://github.com/VOD-Studio/violet/compare/v2.9.0...v2.9.1) (2026-10-09)
 
 
