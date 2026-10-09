@@ -81,4 +81,12 @@ export const LABS = [
 			"流体轨道、典藏索表、贝塞尔树、晶体风琴与全景微地图——五种顶级目录树交互语言实测。",
 		meta: "方案 ×5 · 流体/索表/树/风琴/微地图",
 	},
+	{
+		to: "/lab/sketch",
+		en: "Sketch",
+		title: "手绘绘图库对照",
+		description:
+			"Rough.js 与 @violet/sketch 同几何、同 seed 并排：三档手法、七种填充、孔洞规则与真实 Mermaid 布局。",
+		meta: "M1 · 手法 ×3 · 填充 ×7 · SVG/Canvas",
+	},
 ] as const;

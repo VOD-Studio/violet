@@ -74,6 +74,8 @@ Mermaid 图块统一使用手写字体与 Rough.js 笔触，编辑器预览与�
 
 [`@violet/sketch`](packages/sketch/README.md) 位于 `packages/sketch/`，不依赖 React、Mermaid 或 Rough.js。正式文章渲染链路仍使用 Rough.js。
 
+`/lab/sketch` 并排对照 Rough.js 与本库：同一几何与 seed，可切换基础图元、七种填充、孔洞规则与真实 Mermaid 布局，以及三档手法、1×/3× 缩放和 SVG/Canvas 后端。
+
 ## 推文组件包
 
 [`@violet/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
