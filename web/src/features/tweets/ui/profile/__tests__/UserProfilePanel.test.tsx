@@ -2,7 +2,7 @@ import type { UserProfile } from "@entities/user/model/types";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { UserProfileHeader } from "../UserProfileHeader";
+import { UserProfilePanel } from "../UserProfilePanel";
 
 const navigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
@@ -44,9 +44,9 @@ afterEach(() => {
 	vi.clearAllMocks();
 });
 
-describe("UserProfileHeader", () => {
+describe("UserProfilePanel", () => {
 	it("显示名回退用户名，空简介给出提示，资料行展示推文数与含图数", () => {
-		render(<UserProfileHeader profile={profile} tweetCount="12+" mediaCount={3} />);
+		render(<UserProfilePanel profile={profile} tweetCount="12+" mediaCount={3} />);
 		expect(screen.getByRole("heading", { name: "alice" })).toBeTruthy();
 		expect(screen.getByText("@alice")).toBeTruthy();
 		expect(screen.getByText("还没有留下简介。")).toBeTruthy();
@@ -56,7 +56,7 @@ describe("UserProfileHeader", () => {
 
 	it("本人看到编辑资料而不是私聊", () => {
 		me.current = { id: "u1" };
-		render(<UserProfileHeader profile={profile} tweetCount="0" mediaCount={0} />);
+		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} />);
 		expect(screen.getByRole("link", { name: /编辑资料/ }).getAttribute("href")).toBe(
 			"/profile",
 		);
@@ -64,7 +64,7 @@ describe("UserProfileHeader", () => {
 	});
 
 	it("未登录访客点击私聊先去登录，不创建会话", () => {
-		render(<UserProfileHeader profile={profile} tweetCount="0" mediaCount={0} />);
+		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} />);
 		fireEvent.click(screen.getByRole("button", { name: /发起私聊/ }));
 		expect(createChat).not.toHaveBeenCalled();
 		expect(navigate).toHaveBeenCalledWith(
@@ -78,7 +78,7 @@ describe("UserProfileHeader", () => {
 	it("登录访客发起私聊后进入会话；创建失败时留在原页", async () => {
 		me.current = { id: "me" };
 		createChat.mockResolvedValueOnce({ id: "c1" });
-		render(<UserProfileHeader profile={profile} tweetCount="0" mediaCount={0} />);
+		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} />);
 		fireEvent.click(screen.getByRole("button", { name: /发起私聊/ }));
 		await waitFor(() =>
 			expect(navigate).toHaveBeenCalledWith({ to: "/chat", search: { c: "c1" } }),
@@ -93,7 +93,7 @@ describe("UserProfileHeader", () => {
 	});
 
 	it("复制用户名与主页链接", async () => {
-		render(<UserProfileHeader profile={profile} tweetCount="0" mediaCount={0} />);
+		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} />);
 		fireEvent.click(screen.getByRole("button", { name: "复制用户名" }));
 		await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith("@alice"));
 		fireEvent.click(screen.getByRole("button", { name: "复制主页链接" }));

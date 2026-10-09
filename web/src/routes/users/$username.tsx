@@ -7,21 +7,20 @@ import {
 	useUserProfile,
 	useUserTimeline,
 } from "@features/tweets/api/queries";
+import { summarizeActivity } from "@features/tweets/model/profile-activity";
 import { UserProfileFeed } from "@features/tweets/ui/profile/UserProfileFeed";
-import { UserProfileHeader } from "@features/tweets/ui/profile/UserProfileHeader";
+import { UserProfileLayout } from "@features/tweets/ui/profile/UserProfileLayout";
+import { UserProfilePanel } from "@features/tweets/ui/profile/UserProfilePanel";
+import { UserProfileRail } from "@features/tweets/ui/profile/UserProfileRail";
 import type { PagedResponse } from "@shared/api/types";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Button, PageShell, ShimmerSkeleton } from "@violet/ui";
-
-/** 与推文广场同宽的单列版心，让两页之间切换时阅读节奏一致。 */
-function Column({ children }: { children: React.ReactNode }) {
-	return <div className="mx-auto w-full max-w-3xl">{children}</div>;
-}
+import { useMemo } from "react";
 
 /**
  * /users/$username - 公开用户主页（公开）
  *
- * 身份区加推文流的单列布局；推文按 cursor 滚动加载。
+ * 封面加三栏：资料栏、推文内容、动态概览；推文按 cursor 滚动加载。
  */
 function UserPublicProfilePage() {
 	const { username } = Route.useParams();
@@ -35,25 +34,32 @@ function UserPublicProfilePage() {
 	const timeline = useUserTimeline(username);
 
 	const profile = profileData ?? initialProfile;
+	const tweets: Tweet[] = useMemo(
+		() => timeline.data?.pages.flatMap((page) => page.data) ?? [],
+		[timeline.data],
+	);
+	const hasNextPage = Boolean(timeline.hasNextPage);
+	const activity = useMemo(() => summarizeActivity(tweets, hasNextPage), [tweets, hasNextPage]);
 
 	if (isProfileLoading && !profile) {
 		return (
 			<PageShell>
-				<Column>
-					<div className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:gap-6">
-						<ShimmerSkeleton className="size-24 shrink-0 rounded-full" />
-						<div className="flex-1 space-y-3">
-							<ShimmerSkeleton className="h-8 w-48 rounded-lg" />
-							<ShimmerSkeleton className="h-4 w-28 rounded-lg" />
-							<ShimmerSkeleton className="h-12 w-full max-w-prose rounded-lg" />
+				<div className="mx-auto w-full max-w-7xl">
+					<ShimmerSkeleton className="h-32 w-full rounded-2xl sm:h-40" />
+					<div className="grid gap-8 px-1 lg:grid-cols-[17rem_minmax(0,1fr)]">
+						<div className="-mt-14 space-y-3">
+							<ShimmerSkeleton className="size-28 rounded-full" />
+							<ShimmerSkeleton className="h-8 w-40 rounded-lg" />
+							<ShimmerSkeleton className="h-4 w-24 rounded-lg" />
+							<ShimmerSkeleton className="h-16 w-full rounded-lg" />
+						</div>
+						<div className="flex flex-col gap-4 lg:pt-6">
+							{Array.from({ length: 2 }).map((_, index) => (
+								<ShimmerSkeleton key={index} className="h-48 w-full rounded-2xl" />
+							))}
 						</div>
 					</div>
-					<div className="mt-8 flex flex-col gap-4">
-						{Array.from({ length: 2 }).map((_, index) => (
-							<ShimmerSkeleton key={index} className="h-48 w-full rounded-2xl" />
-						))}
-					</div>
-				</Column>
+				</div>
 			</PageShell>
 		);
 	}
@@ -82,28 +88,33 @@ function UserPublicProfilePage() {
 		);
 	}
 
-	const tweets: Tweet[] = timeline.data?.pages.flatMap((page) => page.data) ?? [];
 	const mediaCount = tweets.filter((tweet) => tweet.images && tweet.images.length > 0).length;
-	const tweetCount = timeline.hasNextPage ? `${tweets.length}+` : String(tweets.length);
+	const tweetCount = hasNextPage ? `${tweets.length}+` : String(tweets.length);
+	const hasRail = activity.latestAt !== undefined || activity.topics.length > 0;
 
 	return (
 		<PageShell>
-			<Column>
-				<UserProfileHeader
-					profile={profile}
-					tweetCount={tweetCount}
-					mediaCount={mediaCount}
-				/>
-				<UserProfileFeed
-					tweets={tweets}
-					isLoading={timeline.isLoading}
-					error={timeline.isError ? (timeline.error as Error) : null}
-					hasNextPage={Boolean(timeline.hasNextPage)}
-					isFetchingNextPage={timeline.isFetchingNextPage}
-					onLoadMore={() => timeline.fetchNextPage()}
-					isSelf={currentUser?.id === profile.id}
-				/>
-			</Column>
+			<UserProfileLayout
+				panel={
+					<UserProfilePanel
+						profile={profile}
+						tweetCount={tweetCount}
+						mediaCount={mediaCount}
+					/>
+				}
+				main={
+					<UserProfileFeed
+						tweets={tweets}
+						isLoading={timeline.isLoading}
+						error={timeline.isError ? (timeline.error as Error) : null}
+						hasNextPage={hasNextPage}
+						isFetchingNextPage={timeline.isFetchingNextPage}
+						onLoadMore={() => timeline.fetchNextPage()}
+						isSelf={currentUser?.id === profile.id}
+					/>
+				}
+				rail={hasRail ? <UserProfileRail activity={activity} /> : undefined}
+			/>
 		</PageShell>
 	);
 }

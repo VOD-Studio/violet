@@ -7,11 +7,20 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
 import { differenceInDays } from "date-fns";
-import { Check, Copy, MessageCircle, PenSquare, Share2 } from "lucide-react";
+import {
+	CalendarDays,
+	Check,
+	Copy,
+	Image as ImageIcon,
+	MessageCircle,
+	MessageSquareText,
+	PenSquare,
+	Share2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export interface UserProfileHeaderProps {
+export interface UserProfilePanelProps {
 	profile: UserProfile;
 	/** 已加载的推文数；还有下一页时带「+」。 */
 	tweetCount: string;
@@ -41,11 +50,11 @@ async function copyText(text: string, message: string): Promise<boolean> {
 }
 
 /**
- * 公开用户页的身份区：头像、名称、简介、资料行与操作。
+ * 公开用户页左侧的资料栏：头像、名称、简介、操作与资料行。
  *
  * 本人显示「编辑资料」，访客显示「发起私聊」；未登录访客点击私聊会先去登录。
  */
-export function UserProfileHeader({ profile, tweetCount, mediaCount }: UserProfileHeaderProps) {
+export function UserProfilePanel({ profile, tweetCount, mediaCount }: UserProfilePanelProps) {
 	const navigate = useNavigate();
 	const { data: currentUser } = useMe();
 	const createChat = useCreateChatConversation();
@@ -81,103 +90,97 @@ export function UserProfileHeader({ profile, tweetCount, mediaCount }: UserProfi
 	};
 
 	return (
-		<header className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:gap-6">
+		<section aria-label="用户资料" className="flex flex-col">
 			<img
 				src={avatarUrl(profile.avatar_url, profile.username)}
 				alt={`${displayName} 的头像`}
-				className="size-20 shrink-0 rounded-full border border-border bg-muted object-cover sm:size-24"
+				className="size-28 shrink-0 rounded-full border border-border bg-muted object-cover ring-4 ring-background"
 			/>
 
-			<div className="min-w-0 flex-1">
-				<div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-					<div className="min-w-0">
-						<h1 className="truncate text-2xl font-bold tracking-tight">
-							{displayName}
-						</h1>
-						<div className="mt-1 flex items-center gap-1">
-							<span className="font-mono text-sm text-muted-foreground">
-								@{profile.username}
-							</span>
-							<Button
-								variant="ghost"
-								size="icon-xs"
-								aria-label="复制用户名"
-								onClick={async () => {
-									if (
-										await copyText(
-											`@${profile.username}`,
-											`已复制 @${profile.username}`,
-										)
-									)
-										flashCopied("handle");
-								}}
-							>
-								{copied === "handle" ? (
-									<Check className="size-3.5" />
-								) : (
-									<Copy className="size-3.5 text-muted-foreground" />
-								)}
-							</Button>
-						</div>
-					</div>
+			<h1 className="mt-4 truncate text-2xl font-bold tracking-tight">{displayName}</h1>
+			<div className="mt-1 flex items-center gap-1">
+				<span className="font-mono text-sm text-muted-foreground">@{profile.username}</span>
+				<Button
+					variant="ghost"
+					size="icon-xs"
+					aria-label="复制用户名"
+					onClick={async () => {
+						if (await copyText(`@${profile.username}`, `已复制 @${profile.username}`))
+							flashCopied("handle");
+					}}
+				>
+					{copied === "handle" ? (
+						<Check className="size-3.5" />
+					) : (
+						<Copy className="size-3.5 text-muted-foreground" />
+					)}
+				</Button>
+			</div>
 
-					<div className="flex items-center gap-2">
-						{isSelf ? (
-							<Button variant="outline" size="sm" asChild>
-								<Link to="/profile">
-									<PenSquare className="size-4" />
-									编辑资料
-								</Link>
-							</Button>
-						) : (
-							<Button size="sm" onClick={startChat} loading={starting}>
-								<MessageCircle className="size-4" />
-								发起私聊
-							</Button>
-						)}
-						<Button
-							variant="outline"
-							size="icon-sm"
-							aria-label="复制主页链接"
-							onClick={async () => {
-								if (await copyText(window.location.href, "主页链接已复制"))
-									flashCopied("link");
-							}}
-						>
-							{copied === "link" ? (
-								<Check className="size-4" />
-							) : (
-								<Share2 className="size-4 text-muted-foreground" />
-							)}
-						</Button>
-					</div>
-				</div>
+			<p className="mt-4 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground">
+				{bio || "还没有留下简介。"}
+			</p>
 
-				<p className="mt-4 max-w-prose text-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground">
-					{bio || "还没有留下简介。"}
-				</p>
+			<div className="mt-5 flex items-center gap-2">
+				{isSelf ? (
+					<Button variant="outline" className="flex-1" asChild>
+						<Link to="/profile">
+							<PenSquare className="size-4" />
+							编辑资料
+						</Link>
+					</Button>
+				) : (
+					<Button className="flex-1" onClick={startChat} loading={starting}>
+						<MessageCircle className="size-4" />
+						发起私聊
+					</Button>
+				)}
+				<Button
+					variant="outline"
+					size="icon"
+					aria-label="复制主页链接"
+					onClick={async () => {
+						if (await copyText(window.location.href, "主页链接已复制"))
+							flashCopied("link");
+					}}
+				>
+					{copied === "link" ? (
+						<Check className="size-4" />
+					) : (
+						<Share2 className="size-4 text-muted-foreground" />
+					)}
+				</Button>
+			</div>
 
-				<ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-					<li>
+			<ul className="mt-6 flex flex-col gap-2.5 border-t border-border pt-5 text-sm text-muted-foreground">
+				<li className="flex items-center gap-2.5">
+					<MessageSquareText className="size-4 shrink-0" />
+					<span>
 						<span className="font-semibold text-foreground tabular-nums">
 							{tweetCount}
 						</span>{" "}
 						条推文
-					</li>
-					<li>
+					</span>
+				</li>
+				<li className="flex items-center gap-2.5">
+					<ImageIcon className="size-4 shrink-0" />
+					<span>
 						<span className="font-semibold text-foreground tabular-nums">
 							{mediaCount}
 						</span>{" "}
 						条含图
-					</li>
-					{profile.created_at && (
-						<li>
+					</span>
+				</li>
+				{profile.created_at && (
+					<li className="flex items-center gap-2.5">
+						<CalendarDays className="size-4 shrink-0" />
+						<span>
 							{formatDate(profile.created_at, "year-month")}加入 ·{" "}
 							{tenureOf(profile.created_at)}
-						</li>
-					)}
-				</ul>
-			</div>
-		</header>
+						</span>
+					</li>
+				)}
+			</ul>
+		</section>
 	);
 }

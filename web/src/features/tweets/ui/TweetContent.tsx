@@ -3,7 +3,7 @@ import { EmojiText } from "@shared/ui/emoji-text";
 import { Link } from "@tanstack/react-router";
 import type React from "react";
 
-const HASHTAG_REGEX = /#([^#\r\n]{1,50})#/g;
+export const HASHTAG_REGEX = /#([^#\r\n]{1,50})#/g;
 
 export interface TweetContentProps {
 	/** 推文正文 */

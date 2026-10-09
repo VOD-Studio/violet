@@ -56,7 +56,7 @@ export function UserProfileFeed({
 	const visible = tab === "media" ? media : tweets;
 
 	return (
-		<section aria-label="推文动态" className="pt-2">
+		<section aria-label="推文动态">
 			<Segmented
 				variant="line"
 				value={tab}
