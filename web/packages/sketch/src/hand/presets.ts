@@ -16,6 +16,9 @@ const natural: HandOptions = {
 	overlap: [0.04, 0.1],
 	maxStroke: 360,
 	passes: 1,
+	taper: 10,
+	tip: 0.25,
+	pressureNoise: 0.1,
 };
 
 /**

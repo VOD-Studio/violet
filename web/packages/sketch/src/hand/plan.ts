@@ -1,11 +1,11 @@
 import { channel } from "../core/rng.ts";
 import type { Contour, DrawContext, Skeleton } from "../core/types.ts";
 
-const PHASE = channel("sketch:plan:phase");
-const OVERLAP = channel("sketch:plan:overlap");
-const BREAK = channel("sketch:plan:break");
-const BREAK_PICK = channel("sketch:plan:break-pick");
-const OVERSHOOT = channel("sketch:plan:overshoot");
+const PHASE = /* @__PURE__ */ channel("sketch:plan:phase");
+const OVERLAP = /* @__PURE__ */ channel("sketch:plan:overlap");
+const BREAK = /* @__PURE__ */ channel("sketch:plan:break");
+const BREAK_PICK = /* @__PURE__ */ channel("sketch:plan:break-pick");
+const OVERSHOOT = /* @__PURE__ */ channel("sketch:plan:overshoot");
 
 /** 笔画规划参数。 */
 export interface PlanOptions {

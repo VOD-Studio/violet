@@ -3,12 +3,13 @@ import { channel } from "../core/rng.ts";
 import type { DrawContext, Stroke } from "../core/types.ts";
 import type { StrokePlan } from "./plan.ts";
 
-const LOW = channel("sketch:gesture:low");
-const LOW_OFFSET = channel("sketch:gesture:low-offset");
-const HIGH = channel("sketch:gesture:high");
-const BOW = channel("sketch:gesture:bow");
-const END = channel("sketch:gesture:end");
-const RETRACE = channel("sketch:gesture:retrace");
+const LOW = /* @__PURE__ */ channel("sketch:gesture:low");
+const LOW_OFFSET = /* @__PURE__ */ channel("sketch:gesture:low-offset");
+const HIGH = /* @__PURE__ */ channel("sketch:gesture:high");
+const BOW = /* @__PURE__ */ channel("sketch:gesture:bow");
+const END = /* @__PURE__ */ channel("sketch:gesture:end");
+const RETRACE = /* @__PURE__ */ channel("sketch:gesture:retrace");
+const PRESSURE = /* @__PURE__ */ channel("sketch:gesture:pressure");
 
 /** 单笔运动参数。 */
 export interface GestureOptions {
@@ -16,6 +17,12 @@ export interface GestureOptions {
 	roughness: number;
 	/** 整笔弯曲幅度的倍率。 */
 	bowing: number;
+	/** 起落笔压力渐变的长度，单位为名义线宽。 */
+	taper: number;
+	/** 笔画两端的压力，[0, 1]；中段压力为 1。 */
+	tip: number;
+	/** 压力随机起伏的幅度，[0, 1)。 */
+	pressureNoise: number;
 }
 
 // 控制点间切线夹角超过该值时细分，避免 Catmull-Rom 抹圆原有曲线。
@@ -136,6 +143,15 @@ export function traceStroke(
 	const endNormal = jitter * (ctx.random(END, endKey + 2) * 2 - 1);
 	const endTangent = jitter * (ctx.random(END, endKey + 3) * 2 - 1);
 
+	// 压力：两端按 smoothstep 从 tip 升到 1，叠加沿笔画的低频起伏。
+	const rampLength = Math.min(options.taper * w, total * 0.45) || 1;
+	const pressureAt = (u: number, index: number) => {
+		const edge = Math.min(u, total - u) / rampLength;
+		const taper = options.tip + (1 - options.tip) * smoothstep(edge);
+		const wobble = 1 + options.pressureNoise * ctx.noise(PRESSURE ^ strokeKey, index * 0.7);
+		return Math.max(0, Math.min(1, taper * wobble));
+	};
+
 	const count = samples.length / S;
 	const points = new Float32Array(count * 4);
 	for (let i = 0; i < count; i++) {
@@ -163,7 +179,7 @@ export function traceStroke(
 		tangent *= envelope;
 		points[i * 4] = px - ty * d + tx * tangent;
 		points[i * 4 + 1] = py + tx * d + ty * tangent;
-		points[i * 4 + 2] = 1;
+		points[i * 4 + 2] = pressureAt(u, i);
 		points[i * 4 + 3] = time + tau * total;
 	}
 	return { points, curve: true, closed: false, pass: plan.pass };

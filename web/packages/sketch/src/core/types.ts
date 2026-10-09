@@ -71,6 +71,11 @@ export interface InkBatch {
 	readonly coords: Float32Array;
 	/** 每个子路径的落笔时间 [t0, t1]，按图元归一化到 [0, 1]。 */
 	readonly spans: Float32Array;
+	/**
+	 * 变宽笔画的条带结构，每个子路径两项 [n, c]；非条带子路径为 [0, 0]。
+	 * 条带子路径依次为：左侧 n 个点、末端帽 c 个点、右侧 n 个点（自末向首）、起端帽 c 个点，供动画按前缀显现。
+	 */
+	readonly ribbons?: Uint32Array;
 	/** 按该路径自身的填充规则裁剪。 */
 	readonly clip?: Path;
 }
