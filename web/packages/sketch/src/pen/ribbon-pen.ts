@@ -26,6 +26,15 @@ export interface RibbonPenOptions {
 }
 
 /**
+ * 压感强度换算为压力为 0 时的宽度倍率；保留一线宽度，避免条带退化成零宽。
+ *
+ * @param pressure - 压感强度，[0, 1]
+ */
+export function pressureFloor(pressure: number): number {
+	return Math.max(0.02, 1 - Math.min(1, Math.max(0, pressure)));
+}
+
+/**
  * 创建沿笔画求扫掠轮廓的变宽笔：每条笔画输出一个带圆帽的条带多边形。
  *
  * @remarks 条带保留左右点结构，动画可按前缀显现；返回的批次归生成器所有。

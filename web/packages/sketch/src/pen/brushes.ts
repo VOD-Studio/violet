@@ -1,5 +1,5 @@
 import type { Pen } from "../core/types.ts";
-import { createRibbonPen } from "./ribbon-pen.ts";
+import { createRibbonPen, pressureFloor } from "./ribbon-pen.ts";
 
 /**
  * 创建压感钢笔：圆笔尖，线宽随压力在约 0.1 到 1.25 倍之间变化，起笔收笔自然收尖。
@@ -26,6 +26,8 @@ export interface MarkerOptions {
 	aspect?: number;
 	/** 笔墨不透明度；笔画重叠处叠色加深。 @default 0.78 */
 	opacity?: number;
+	/** 压力对线宽的影响，[0, 1]：0 为恒宽，越大起收笔越细。 @default 0.15 */
+	pressure?: number;
 }
 
 /**
@@ -42,7 +44,7 @@ export function createMarker(options: MarkerOptions = {}): Pen {
 		weight: options.weight ?? 4,
 		angle: options.angle ?? -35,
 		aspect: options.aspect ?? 0.28,
-		minScale: 0.85,
+		minScale: pressureFloor(options.pressure ?? 0.15),
 		maxScale: 1,
 		opacity: options.opacity ?? 0.78,
 		layered: true,

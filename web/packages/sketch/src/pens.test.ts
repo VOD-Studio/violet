@@ -93,6 +93,20 @@ describe("压感与笔", () => {
 		for (const b of batches) expect(b.verbs.filter((v) => v === 0)).toHaveLength(1);
 	});
 
+	it("马克笔的压感强度可调：越大起收笔越细", () => {
+		const ratio = (pressure?: number) => {
+			const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+				style: { hand: ruler, pen: createMarker({ pressure }) },
+				width: 3,
+			});
+			const [batch] = drawing.items[0].batches;
+			return widthAt(batch, 0, 0.01) / widthAt(batch, 0, 0.5);
+		};
+		expect(ratio()).toBeGreaterThan(0.8);
+		expect(ratio(0)).toBeCloseTo(1, 2);
+		expect(ratio(0.9)).toBeLessThan(0.4);
+	});
+
 	it("条带两端有圆帽，轮廓闭合", () => {
 		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
 			style: inkpen,
