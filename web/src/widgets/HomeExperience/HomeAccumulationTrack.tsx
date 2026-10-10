@@ -26,11 +26,7 @@ export function HomeAccumulationTrack({
 	return (
 		<div className="relative h-16">
 			<div className="absolute inset-x-0 top-6 h-px">
-				<div
-					aria-hidden
-					style={{ right: `${100 - todayPosition}%` }}
-					className="absolute inset-y-0 left-0 bg-border/70"
-				/>
+				<div aria-hidden className="absolute inset-0 bg-border/70" />
 				<motion.div
 					aria-hidden
 					variants={{
