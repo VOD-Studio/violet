@@ -273,7 +273,9 @@ function buildSeasonSegments(months: AccumulationMonth[]): AccumulationSeasonSeg
 				? String(segment.firstYear)
 				: `${segment.firstYear}–${String(segment.lastYear).slice(2)}`,
 		count: months
-			.filter((month) => month.startsAt >= segment.startsAt && month.startsAt < segment.endsAt)
+			.filter(
+				(month) => month.startsAt >= segment.startsAt && month.startsAt < segment.endsAt,
+			)
 			.reduce((total, month) => total + month.count, 0),
 	}));
 }

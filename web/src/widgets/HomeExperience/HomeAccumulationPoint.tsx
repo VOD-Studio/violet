@@ -2,13 +2,17 @@ import { cn } from "cn";
 import { motion } from "motion/react";
 
 import { type AccumulationPoint, formatPointPeriod } from "./home-accumulation-model";
-import { revealDelay, revealVariants } from "./home-accumulation-motion";
+import { revealVariants } from "./home-accumulation-motion";
 
 interface HomeAccumulationPointProps {
 	point: AccumulationPoint;
 	reduceMotion: boolean | null;
-	/** 轴线终点位置，用于换算随线条显现的延迟。 */
-	todayPosition: number;
+	/** 节点在所在轨道内的百分比位置。 */
+	position: number;
+	/** 轨道线条抵达该位置、节点开始显现的延迟秒数。 */
+	revealAt: number;
+	/** 选中环的共享布局标识；桌面与窄屏两套轨道各用一个，互不牵连。 */
+	ringId: string;
 	selected: boolean;
 	/** 悬停、聚焦或点击时选中本节点，详情在时间线下方展示。 */
 	onSelect: () => void;
@@ -18,7 +22,9 @@ interface HomeAccumulationPointProps {
 export function HomeAccumulationPoint({
 	point,
 	reduceMotion,
-	todayPosition,
+	position,
+	revealAt,
+	ringId,
 	selected,
 	onSelect,
 }: HomeAccumulationPointProps) {
@@ -32,12 +38,12 @@ export function HomeAccumulationPoint({
 	return (
 		<motion.div
 			variants={revealVariants}
-			custom={reduceMotion ? 0 : revealDelay(point.position, todayPosition)}
+			custom={reduceMotion ? 0 : revealAt}
 			className={cn(
 				"absolute top-1/2 -translate-x-1/2 -translate-y-1/2",
 				selected ? "z-20" : "z-10",
 			)}
-			style={{ left: `${point.position}%` }}
+			style={{ left: `${position}%` }}
 		>
 			<button
 				type="button"
@@ -48,12 +54,12 @@ export function HomeAccumulationPoint({
 				}}
 				onFocus={onSelect}
 				onClick={onSelect}
-				className="relative flex size-8 touch-manipulation items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:size-6"
+				className="relative flex size-7 touch-manipulation items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:size-6"
 			>
 				{selected && (
 					<motion.span
 						aria-hidden
-						layoutId="home-accumulation-ring"
+						layoutId={ringId}
 						transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
 						style={{ width: ringSize, height: ringSize }}
 						className="absolute inset-0 m-auto rounded-full ring-1 ring-primary/50"
