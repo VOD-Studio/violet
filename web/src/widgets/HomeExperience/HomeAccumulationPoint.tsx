@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
-import type { AccumulationPoint } from "./home-accumulation-model";
+import { type AccumulationPoint, dropDelay } from "./home-accumulation-model";
 import { HOME_KIND_LABEL } from "./home-content";
 
 interface HomeAccumulationPointProps {
@@ -51,7 +51,15 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 			: `查看 ${periodLabel} 的 ${point.items.length} 项发布`;
 
 	return (
-		<div
+		<motion.div
+			initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+			whileInView={{ opacity: 1, y: 0 }}
+			viewport={{ once: true, amount: 0.6 }}
+			transition={{
+				duration: reduceMotion ? 0 : 0.45,
+				delay: reduceMotion ? 0 : dropDelay(point.position),
+				ease: [0.22, 1, 0.36, 1],
+			}}
 			className={cn(
 				"absolute top-1/2 -translate-x-1/2 -translate-y-1/2",
 				open ? "z-20" : "z-10",
@@ -154,7 +162,7 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 					</motion.div>
 				</PopoverContent>
 			</Popover>
-		</div>
+		</motion.div>
 	);
 }
 

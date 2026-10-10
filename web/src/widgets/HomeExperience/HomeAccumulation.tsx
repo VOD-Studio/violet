@@ -4,7 +4,12 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { HomeAccumulationPoint } from "./HomeAccumulationPoint";
 import { HomeContentLink } from "./HomeContentLink";
-import { type AccumulationMonth, buildAccumulationTimeline } from "./home-accumulation-model";
+import {
+	type AccumulationMonth,
+	buildAccumulationTimeline,
+	dropDelay,
+	LINE_DRAW_SECONDS,
+} from "./home-accumulation-model";
 import type { HomePublicationItem } from "./types";
 
 interface HomeAccumulationProps {
@@ -64,7 +69,10 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 								initial={reduceMotion ? false : { scaleX: 0 }}
 								whileInView={{ scaleX: 1 }}
 								viewport={{ once: true, amount: 0.6 }}
-								transition={{ duration: reduceMotion ? 0 : 0.82, ease: EASE_OUT }}
+								transition={{
+									duration: reduceMotion ? 0 : LINE_DRAW_SECONDS,
+									ease: EASE_OUT,
+								}}
 								style={{ right: `${100 - todayPosition}%` }}
 								className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
 							/>
@@ -101,14 +109,22 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 						</div>
 
 						{seasonLabels.map((season) => (
-							<span
+							<motion.span
 								key={season.key}
 								aria-hidden
+								initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								viewport={{ once: true, amount: 0.6 }}
+								transition={{
+									duration: reduceMotion ? 0 : 0.5,
+									delay: reduceMotion ? 0 : dropDelay(season.position, 0.12),
+									ease: EASE_OUT,
+								}}
 								style={{ left: `${season.position}%` }}
 								className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
 							>
 								{season.label}
-							</span>
+							</motion.span>
 						))}
 					</div>
 

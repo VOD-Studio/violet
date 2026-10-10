@@ -44,6 +44,14 @@ export interface AccumulationTimeline {
 export const PUBLICATION_MARKER_MIN_SIZE = 5;
 export const PUBLICATION_MARKER_MAX_SIZE = 10;
 
+/** 轴线自左向右绘制的时长，节点与季节的落入延迟以此为基准。 */
+export const LINE_DRAW_SECONDS = 0.82;
+
+/** 元素随轴线绘制依次落入：按所在位置（百分比）换算延迟秒数。 */
+export function dropDelay(position: number, offset = 0): number {
+	return offset + (position / 100) * LINE_DRAW_SECONDS;
+}
+
 const DAY_IN_MILLISECONDS = 86_400_000;
 const TIMELINE_MONTH_COUNT = 12;
 const AGGREGATION_DEFAULT_DAYS = 7;
