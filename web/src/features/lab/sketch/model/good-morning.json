@@ -1,6 +1,12 @@
 {
 	"width": 979,
 	"height": 1298,
+	"palette": {
+		"hair": "#d1a3a0",
+		"skin": "#fce9ea",
+		"blouse": "#e2e3f2",
+		"petal": "#efc7d4"
+	},
 	"colors": [
 		{
 			"role": "hair",

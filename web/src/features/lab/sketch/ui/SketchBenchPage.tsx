@@ -14,12 +14,12 @@ import {
 } from "@features/lab/sketch/lib/styles";
 import { loadMermaidScene } from "@features/lab/sketch/model/mermaid";
 import {
+	artworkScene,
 	type BenchScene,
 	FILL_LABELS,
 	type FillId,
 	fillsScene,
 	holesScene,
-	illustrationScene,
 	palette,
 	primitivesScene,
 	type SceneKey,
@@ -37,6 +37,7 @@ type Zoom = "1" | "3";
 
 const SCENES: { value: SceneKey; label: string }[] = [
 	{ value: "illustration", label: "插画" },
+	{ value: "portrait", label: "人像" },
 	{ value: "primitives", label: "图元" },
 	{ value: "fills", label: "填充" },
 	{ value: "holes", label: "孔洞" },
@@ -157,11 +158,13 @@ export function SketchBenchPage() {
 		setFill(nextFill);
 	};
 
+	const isArtwork = sceneKey === "illustration" || sceneKey === "portrait";
+
 	const switchScene = (next: SceneKey) => {
 		setSceneKey(next);
-		// 插画默认线稿淡彩；离开插画时回到签字笔、自然手法与排线填充
 		if (next === "illustration") applyPreset("gpen", "inking", "wash");
-		else if (sceneKey === "illustration") applyPreset("fineliner", "natural", "hachure");
+		else if (next === "portrait") applyPreset("gpen", "inking", "solid");
+		else if (isArtwork) applyPreset("fineliner", "natural", "hachure");
 	};
 
 	useEffect(() => {
@@ -186,7 +189,8 @@ export function SketchBenchPage() {
 		if (sceneKey === "primitives") return primitivesScene(fill);
 		if (sceneKey === "fills") return fillsScene();
 		if (sceneKey === "holes") return holesScene(fill);
-		if (sceneKey === "illustration") return illustrationScene(fill);
+		if (sceneKey === "illustration" || sceneKey === "portrait")
+			return artworkScene(sceneKey, fill);
 		return mermaid;
 	}, [sceneKey, fill, mermaid]);
 
@@ -277,8 +281,7 @@ export function SketchBenchPage() {
 	};
 
 	const ratio = scene ? `${scene.width} / ${scene.height}` : "3 / 2";
-	const pickFill =
-		sceneKey === "primitives" || sceneKey === "holes" || sceneKey === "illustration";
+	const pickFill = sceneKey === "primitives" || sceneKey === "holes" || isArtwork;
 	const penLabel = PENS.find((entry) => entry.value === pen)?.label;
 	const handLabel = HANDS.find((entry) => entry.value === hand)?.label;
 

@@ -1,4 +1,5 @@
-import { goodMorningScene } from "@features/lab/sketch/model/illustration";
+import { goodMorningScene, illustrationPalette } from "@features/lab/sketch/model/illustration";
+import { portraitDrawing, portraitPalette } from "@features/lab/sketch/model/portrait";
 import {
 	arc,
 	circle,
@@ -22,7 +23,7 @@ export interface BenchItem extends Omit<SceneItem, "style"> {
 	fill?: FillId;
 }
 
-export type SceneKey = "primitives" | "fills" | "holes" | "illustration" | "mermaid";
+export type SceneKey = "primitives" | "fills" | "holes" | "illustration" | "portrait" | "mermaid";
 
 export interface BenchScene {
 	width: number;
@@ -50,10 +51,8 @@ export const palette: Palette = {
 	mint: "#bfdcc4",
 	lilac: "#d4c8ec",
 	sun: "#f2d38f",
-	hair: "#d1a3a0",
-	skin: "#fce9ea",
-	blouse: "#e2e3f2",
-	petal: "#efc7d4",
+	...illustrationPalette,
+	...portraitPalette,
 };
 
 const tones = ["sky", "rose", "mint", "lilac", "sun"] as const;
@@ -172,11 +171,12 @@ export function holesScene(fill: FillId): BenchScene {
 	};
 }
 
-/** 人物举牌插画，保留参考图的竖幅比例与手写牌面。 */
-export function illustrationScene(fill: FillId): BenchScene {
+/** 插画与人像共用填充切换，墨色实心区域不随填充选项改变。 */
+export function artworkScene(key: "illustration" | "portrait", fill: FillId): BenchScene {
+	const scene = key === "illustration" ? goodMorningScene : portraitDrawing;
 	return {
-		...goodMorningScene,
-		items: goodMorningScene.items.map((item) =>
+		...scene,
+		items: scene.items.map((item) =>
 			item.fillRole && item.fillRole !== "ink" ? { ...item, fill } : item,
 		),
 	};
