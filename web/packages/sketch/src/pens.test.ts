@@ -4,6 +4,7 @@ import {
 	circle,
 	createAnimeStyle,
 	createFineliner,
+	createGPen,
 	createHand,
 	createInkPen,
 	createMarker,
@@ -131,14 +132,27 @@ describe("压感与笔", () => {
 	});
 
 	it("内置笔以 pressure 标明压感强度，工厂按同一参数调节", () => {
-		expect([pens.fineliner, pens.inkpen, pens.marker].map((pen) => pen.pressure)).toEqual([
-			0, 0.92, 0.15,
-		]);
-		const factories: PenFactory[] = [createFineliner, createInkPen, createMarker];
+		expect(Object.values(pens).map((pen) => pen.pressure)).toEqual([0, 0.92, 0.15, 0.95]);
+		const factories: PenFactory[] = [createFineliner, createInkPen, createMarker, createGPen];
 		for (const factory of factories) {
 			expect(factory().pressure).toBeTypeOf("number");
 			expect(factory({ pressure: 0.5 }).pressure).toBe(0.5);
 		}
+	});
+
+	it("G 笔的粗细对比强于钢笔：轻压更细，重压更粗", () => {
+		const widths = (pen: ReturnType<PenFactory>) => {
+			const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+				style: { hand: ruler, pen },
+				width: 3,
+			});
+			const [batch] = drawing.items[0].batches;
+			return { thin: widthAt(batch, 0, 0.03), full: widthAt(batch, 0, 0.5) };
+		};
+		const g = widths(createGPen({ weight: 1 }));
+		const ink = widths(createInkPen({ weight: 1, pressure: 0.95 }));
+		expect(g.full).toBeGreaterThan(ink.full);
+		expect(g.thin / g.full).toBeLessThan(ink.thin / ink.full);
 	});
 
 	it("扩展的条带笔自动响应压感强度，0 时恒宽", () => {

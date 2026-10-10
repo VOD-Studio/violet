@@ -28,6 +28,30 @@ export function createInkPen(options: InkPenOptions = {}): Pen {
 	});
 }
 
+/** G 笔参数。 */
+export interface GPenOptions extends PenOptions {
+	/** 压力为 1 时的线宽倍率，满压时再放大至 1.6 倍。 @default 0.6 */
+	weight?: number;
+	/** 压感强度，[0, 1]：0 为恒宽，越大粗细对比越强。 @default 0.95 */
+	pressure?: number;
+}
+
+/**
+ * 创建 G 笔：漫画勾线用的软尖蘸水笔，轻压是发丝线，重压明显变粗，起收笔收得极尖。
+ *
+ * @remarks 与钢笔同为圆笔尖，区别在压力曲线：满压放大到 1.6 倍，指数 1.8 让线条在重压时才变粗。
+ */
+export function createGPen(options: GPenOptions = {}): Pen {
+	return createRibbonPen({
+		id: "gpen",
+		weight: options.weight ?? 0.6,
+		minScale: 0,
+		maxScale: 1.6,
+		gamma: 1.8,
+		pressure: options.pressure ?? 0.95,
+	});
+}
+
 /** 马克笔参数。 */
 export interface MarkerOptions extends PenOptions {
 	/** 笔尖长轴的全宽，相对名义线宽的倍率。 @default 4 */
@@ -66,6 +90,9 @@ export function createMarker(options: MarkerOptions = {}): Pen {
 
 /** 默认钢笔。 */
 export const inkpen = /* @__PURE__ */ createInkPen();
+
+/** 默认 G 笔。 */
+export const gpen = /* @__PURE__ */ createGPen();
 
 /** 默认马克笔。 */
 export const marker = /* @__PURE__ */ createMarker();
