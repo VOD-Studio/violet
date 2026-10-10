@@ -1,4 +1,5 @@
 import { catmullRomToCubics } from "../core/path.ts";
+import { simplifyIndices } from "../core/simplify.ts";
 import type { Stroke } from "../core/types.ts";
 
 /** 椭圆笔尖：长轴方向与短长轴比；圆笔尖的 aspect 为 1。 */
@@ -177,7 +178,8 @@ export function strokeRibbon(stroke: Stroke, o: RibbonOptions): Ribbon | null {
 		}
 		emit(i, nx, ny);
 	}
-	const keep = simplifyPairs(left, right, o.precision);
+	// 两侧成对精简：同一下标同去同留，左右点数保持一致，供动画按前缀显现
+	const keep = simplifyIndices([left, right], o.precision);
 	const n = keep.length;
 
 	// 笔帽点数随半径缩放：收尖到弦高误差以内的笔帽只是一条短边
@@ -211,56 +213,4 @@ export function strokeRibbon(stroke: Stroke, o: RibbonOptions): Ribbon | null {
 	}
 	for (let i = 0; i < startCap.length; i++) points[w++] = startCap[i];
 	return { points, n, c: capPoints };
-}
-
-/** 点 i 到线段 a–b 的距离；xy 为交错坐标。 */
-function segmentDistance(xy: readonly number[], i: number, a: number, b: number): number {
-	const ax = xy[a * 2];
-	const ay = xy[a * 2 + 1];
-	const dx = xy[b * 2] - ax;
-	const dy = xy[b * 2 + 1] - ay;
-	const px = xy[i * 2] - ax;
-	const py = xy[i * 2 + 1] - ay;
-	const len2 = dx * dx + dy * dy;
-	const t = len2 > 0 ? Math.max(0, Math.min(1, (px * dx + py * dy) / len2)) : 0;
-	return Math.hypot(px - t * dx, py - t * dy);
-}
-
-/**
- * 左右两侧成对精简（Douglas–Peucker 1973）：同一下标在两侧同去同留，偏差取两侧较大者，
- * 保持条带左右点数一致，供动画按前缀显现。
- *
- * @returns 升序的保留下标
- */
-function simplifyPairs(
-	left: readonly number[],
-	right: readonly number[],
-	tolerance: number,
-): number[] {
-	const n = left.length / 2;
-	if (n <= 2) return n === 2 ? [0, 1] : [0];
-	const keep = new Uint8Array(n);
-	keep[0] = 1;
-	keep[n - 1] = 1;
-	const stack = [0, n - 1];
-	while (stack.length) {
-		const b = stack.pop() as number;
-		const a = stack.pop() as number;
-		let worst = tolerance;
-		let index = -1;
-		for (let i = a + 1; i < b; i++) {
-			const d = Math.max(segmentDistance(left, i, a, b), segmentDistance(right, i, a, b));
-			if (d > worst) {
-				worst = d;
-				index = i;
-			}
-		}
-		if (index >= 0) {
-			keep[index] = 1;
-			stack.push(a, index, index, b);
-		}
-	}
-	const kept: number[] = [];
-	for (let i = 0; i < n; i++) if (keep[i]) kept.push(i);
-	return kept;
 }

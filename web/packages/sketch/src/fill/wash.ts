@@ -1,6 +1,7 @@
 import { polylineContour } from "../core/flatten.ts";
 import { PathBuilder, transformPath } from "../core/path.ts";
 import { channel } from "../core/rng.ts";
+import { simplifyIndices } from "../core/simplify.ts";
 import type { Contour, Fill } from "../core/types.ts";
 import { scanSpans } from "./scan.ts";
 
@@ -63,16 +64,26 @@ export function createWashFill(options: WashOptions = {}): Fill {
 				if (!contour.closed || n < 3) return;
 				const wavelength = Math.max(16, Math.min(70, contour.length / 6));
 				const edge = EDGE ^ Math.imul(ci + 1, 0x9e3779b1);
-				for (let i = 0; i < n; i++) {
-					const prev = ((i - 1 + n) % n) * 2;
-					const next = ((i + 1) % n) * 2;
+				// 起点补到末尾当作首尾重合的折线精简，抖动只加在保留的点上
+				const ring = new Float64Array(p.length + 2);
+				ring.set(p);
+				ring[p.length] = p[0];
+				ring[p.length + 1] = p[1];
+				const kept = simplifyIndices([ring], ctx.precision);
+				kept.pop();
+				const m = kept.length;
+				if (m < 3) return;
+				for (let k = 0; k < m; k++) {
+					const i = kept[k];
+					const prev = kept[(k - 1 + m) % m] * 2;
+					const next = kept[(k + 1) % m] * 2;
 					const tx = p[next] - p[prev];
 					const ty = p[next + 1] - p[prev + 1];
 					const length = Math.hypot(tx, ty) || 1;
 					const offset = amplitude * ctx.noise(edge, contour.arc[i] / wavelength);
 					const x = p[i * 2] - ux * d - (ty / length) * offset;
 					const y = p[i * 2 + 1] - uy * d + (tx / length) * offset;
-					if (i) wash.lineTo(x, y);
+					if (k) wash.lineTo(x, y);
 					else wash.moveTo(x, y);
 				}
 				wash.close();
