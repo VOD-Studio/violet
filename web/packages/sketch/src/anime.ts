@@ -61,8 +61,6 @@ export function createAnimeStyle(options: AnimeOptions = {}): Style {
 		pen,
 		fill: createWashFill(),
 		fillHand: hatchHand,
-		// 生成器以填充角色调用填充笔；排线与线稿同墨，改写为 ink。
-		fillPen: { id: "anime-hatch", ink: (strokes, ctx) => pen.ink(strokes, ctx, "ink") },
 		fillWeight: 0.75,
 		lineRole: () => "ink",
 	};

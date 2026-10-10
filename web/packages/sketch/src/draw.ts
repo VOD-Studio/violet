@@ -144,7 +144,7 @@ export function draw(scene: Scene, options: DrawOptions): Drawing {
 			for (const batch of (style.fillPen ?? style.pen).ink(
 				fillStrokes,
 				fillCtx,
-				item.fillRole,
+				output.guideRole ?? item.fillRole,
 			))
 				timed.push({ batch: { ...batch, clip: item.path }, offset: fillStart });
 		}

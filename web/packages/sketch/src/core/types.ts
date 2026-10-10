@@ -142,6 +142,8 @@ export interface FillOutput {
 	readonly areas?: readonly Area[];
 	/** 图案骨架；由填充手法转为笔画，再由填充笔成形，并裁剪到原区域。 */
 	readonly guides?: Skeleton;
+	/** 图案骨架的颜色角色；缺省为图元的填充角色。 */
+	readonly guideRole?: string;
 }
 
 export interface Fill {

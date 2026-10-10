@@ -9,6 +9,7 @@ import {
 	createInkPen,
 	createMarker,
 	createRibbonPen,
+	createWashFill,
 	type Drawing,
 	draw,
 	type InkBatch,
@@ -207,6 +208,14 @@ describe("动漫风格", () => {
 		// 光来自左上，色块整体右下移，左上缘离开线稿
 		expect(minX).toBeGreaterThan(120.5);
 		expect(minY).toBeGreaterThan(70.5);
+	});
+
+	it("淡彩填充自带排线颜色，换哪支笔排线都取 ink", () => {
+		const drawing = draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), {
+			style: { ...styles.natural, fill: createWashFill() },
+			width: 3,
+		});
+		expect(drawing.items[0].batches.map((b) => b.role)).toEqual(["sky", "ink", "ink"]);
 	});
 
 	it("较小的图形只上色不画排线", () => {

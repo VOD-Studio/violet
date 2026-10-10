@@ -25,6 +25,8 @@ export interface WashOptions {
 	hatchGap?: number;
 	/** 排线角度，度。 @default 58 */
 	hatchAngle?: number;
+	/** 排线的颜色角色，与线稿同墨。 @default "ink" */
+	hatchRole?: string;
 }
 
 const contains = (region: Skeleton, x: number, y: number): boolean => {
@@ -48,7 +50,7 @@ const contains = (region: Skeleton, x: number, y: number): boolean => {
 };
 
 /**
- * 创建淡彩填充：浅色平涂朝背光侧错位，朝光一侧露出宽窄不一的纸白，背光侧加成簇的短排线。
+ * 创建淡彩填充：浅色平涂朝背光侧错位，朝光一侧露出宽窄不一的纸白，背光侧加成簇的墨色短排线。
  *
  * 色块边缘沿法向随噪声起伏并裁剪到原形状，留白宽度因此时宽时窄；排线是交给填充手法与填充笔描绘的骨架，
  * 只落在背光侧的条带内，按噪声成簇出现。
@@ -132,9 +134,12 @@ export function createWashFill(options: WashOptions = {}): Fill {
 					);
 				},
 			);
-			return contours.length
-				? { areas, guides: { contours, fillRule: "nonzero" } }
-				: { areas };
+			if (!contours.length) return { areas };
+			return {
+				areas,
+				guides: { contours, fillRule: "nonzero" },
+				guideRole: options.hatchRole ?? "ink",
+			};
 		},
 	};
 }
