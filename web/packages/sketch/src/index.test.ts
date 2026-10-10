@@ -168,6 +168,35 @@ describe("draw", () => {
 		expect(total).toBeGreaterThan(1);
 	});
 
+	it("随机分笔时长线由多段短笔接成，笔间按间距留白且末尾不留碎笔", () => {
+		const segmented = {
+			...styles.natural,
+			hand: createHand({
+				roughness: 0,
+				bowing: 0,
+				breakChance: 0,
+				segment: [40, 60],
+				gap: [2, 2],
+			}),
+		};
+		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+			style: segmented,
+		});
+		const pieces = subpathEnds(batchesOf(drawing, "l")[0]).sort(
+			(a, b) => a.start[0] - b.start[0],
+		);
+		expect(pieces.length).toBeGreaterThanOrEqual(6);
+		expect(pieces.length).toBeLessThanOrEqual(9);
+		expect(pieces[0].start[0]).toBeCloseTo(20, 1);
+		expect(pieces[pieces.length - 1].end[0]).toBeCloseTo(380, 1);
+		for (let i = 1; i < pieces.length; i++) {
+			// 默认线宽 2，间距 2 倍线宽
+			expect(pieces[i].start[0] - pieces[i - 1].end[0]).toBeCloseTo(4, 1);
+		}
+		const tail = pieces[pieces.length - 1];
+		expect(tail.end[0] - tail.start[0]).toBeGreaterThanOrEqual(20);
+	});
+
 	it("超出预算时抛出 BudgetExceeded 且不返回结果", () => {
 		expect(() => draw(scene(base), { style: styles.natural, maxVertices: 10 })).toThrow(
 			BudgetExceeded,

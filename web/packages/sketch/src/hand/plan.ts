@@ -6,6 +6,8 @@ const OVERLAP = /* @__PURE__ */ channel("sketch:plan:overlap");
 const BREAK = /* @__PURE__ */ channel("sketch:plan:break");
 const BREAK_PICK = /* @__PURE__ */ channel("sketch:plan:break-pick");
 const OVERSHOOT = /* @__PURE__ */ channel("sketch:plan:overshoot");
+const SEGMENT = /* @__PURE__ */ channel("sketch:plan:segment");
+const GAP = /* @__PURE__ */ channel("sketch:plan:gap");
 
 /** 笔画规划参数。 */
 export interface PlanOptions {
@@ -13,10 +15,16 @@ export interface PlanOptions {
 	breakChance: number;
 	/** 断笔处越界长度的倍率；0 表示不越界。 */
 	overshoot: number;
+	/** 越界长度的上限，单位为名义线宽。 @default 2 */
+	overshootLimit?: number;
 	/** 闭合曲线末端越过起点的比例区间 [min, max]，相对周长。 */
 	overlap: readonly [number, number];
 	/** 一笔的最长长度，CSS 像素；超过时拆成多笔。 */
 	maxStroke: number;
+	/** 按随机长度分笔的区间 [min, max]，CSS 像素；给出时取代 maxStroke 等分，长线由多段短笔接成。 */
+	segment?: readonly [number, number];
+	/** 随机分笔时相邻两笔的间距区间 [min, max]，单位为名义线宽；正值留白，负值交叠。 @default [0, 0] */
+	gap?: readonly [number, number];
 	/** 复画遍数，1 为单遍。 */
 	passes: number;
 }
@@ -49,7 +57,8 @@ interface Range {
 }
 
 /**
- * 把骨架拆成笔画：大转角按概率断笔并交叉越界，闭合曲线首尾错开重叠，超长路径分笔。
+ * 把骨架拆成笔画：大转角按概率断笔并交叉越界，闭合曲线首尾错开重叠，超长路径分笔；
+ * 给出 segment 时按随机长度分笔，笔间按 gap 留白或交叠。
  *
  * @returns 按落笔顺序排列；复画紧跟在各自主笔之后
  */
@@ -62,8 +71,9 @@ export function planStrokes(
 	const w = ctx.width;
 	const maxStroke = options.maxStroke / ctx.pixelScale;
 	// 越界只有线宽量级：再长就成了刻意的十字线头。
+	const overshootLimit = (options.overshootLimit ?? 2) * w;
 	const overshoot = (key: number) =>
-		Math.min(2 * w, w * ctx.random(OVERSHOOT, key) * options.overshoot);
+		Math.min(overshootLimit, w * ctx.random(OVERSHOOT, key) * options.overshoot);
 
 	skeleton.contours.forEach((contour, ci) => {
 		const L = contour.length;
@@ -124,7 +134,43 @@ export function planStrokes(
 		}
 
 		let key = base;
+		const push = (range: Range, start: number, end: number, first: boolean, last: boolean) => {
+			const piece = {
+				contour,
+				contourIndex: ci,
+				start,
+				end,
+				extendStart: first ? range.extendStart : 0,
+				extendEnd: last ? range.extendEnd : 0,
+				pinStart: first && range.pinStart,
+				pinEnd: last && range.pinEnd,
+				key: key++,
+			};
+			for (let pass = 0; pass < options.passes; pass++) plans.push({ ...piece, pass });
+		};
 		for (const range of ranges) {
+			if (options.segment) {
+				const [shortest, longest] = options.segment;
+				const [tightest, widest] = options.gap ?? [0, 0];
+				const min = Math.max(w, shortest / ctx.pixelScale);
+				const spread = Math.max(0, longest - shortest) / ctx.pixelScale;
+				let start = range.start;
+				for (let first = true; ; first = false) {
+					let end = start + min + spread * ctx.random(SEGMENT, key);
+					// 交叠不超过半段，保证下一笔起点前进。
+					const next = Math.max(
+						start + min * 0.5,
+						end + w * (tightest + (widest - tightest) * ctx.random(GAP, key)),
+					);
+					// 剩余不足半段时并入本笔，免得末尾留下碎笔。
+					const last = range.end - Math.max(end, next) < min * 0.5;
+					if (last) end = range.end;
+					push(range, start, end, first, last);
+					if (last) break;
+					start = next;
+				}
+				continue;
+			}
 			const length = range.end - range.start;
 			const pieces = Math.max(1, Math.ceil(length / maxStroke));
 			// 分笔接缝两侧各重叠半个线宽，避免出现缝隙。
@@ -132,18 +178,13 @@ export function planStrokes(
 			for (let p = 0; p < pieces; p++) {
 				const first = p === 0;
 				const last = p === pieces - 1;
-				const piece = {
-					contour,
-					contourIndex: ci,
-					start: range.start + (length * p) / pieces - (first ? 0 : seam),
-					end: range.start + (length * (p + 1)) / pieces + (last ? 0 : seam),
-					extendStart: first ? range.extendStart : 0,
-					extendEnd: last ? range.extendEnd : 0,
-					pinStart: first && range.pinStart,
-					pinEnd: last && range.pinEnd,
-					key: key++,
-				};
-				for (let pass = 0; pass < options.passes; pass++) plans.push({ ...piece, pass });
+				push(
+					range,
+					range.start + (length * p) / pieces - (first ? 0 : seam),
+					range.start + (length * (p + 1)) / pieces + (last ? 0 : seam),
+					first,
+					last,
+				);
 			}
 		}
 	});
