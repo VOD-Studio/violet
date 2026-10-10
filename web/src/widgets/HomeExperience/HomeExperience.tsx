@@ -59,7 +59,7 @@ export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperien
 	const lead = selectHomeLead(recentPublications);
 
 	return (
-		<div className="overflow-clip bg-background text-foreground">
+		<div className="overflow-clip text-foreground">
 			<HomePrelude identity={identity} lead={lead} persona={persona} />
 			<HomeIndex
 				items={recentPublications}
