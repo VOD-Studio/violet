@@ -2,6 +2,7 @@ import { fetchSeries, seriesKeys, useSeries } from "@features/series/api";
 import type { SeriesSummary } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
 import { formatDate } from "@shared/lib/date";
+import { markSharedSource, SERIES_SCOPE, SharedElement } from "@shared/lib/view-transition";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
@@ -14,9 +15,12 @@ function ShelfCard({ book }: { book: SeriesSummary }) {
 		<Link
 			to="/series/$slug"
 			params={{ slug: book.slug }}
+			onClick={() => markSharedSource("cover", book.slug, SERIES_SCOPE)}
 			className="mx-auto block w-full max-w-56 focus-visible:outline-2"
 		>
-			<BookCover book={book} className="w-full" />
+			<SharedElement name="cover" id={book.slug}>
+				<BookCover book={book} className="w-full" />
+			</SharedElement>
 			<h3 className="mt-4 line-clamp-1 font-semibold">{book.title}</h3>
 			<p className="text-muted-foreground mt-1 line-clamp-1 text-sm">
 				{book.chapter_count > 0 ? `${book.chapter_count} 章` : "尚未挂章"}
