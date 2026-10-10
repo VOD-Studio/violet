@@ -21,6 +21,8 @@ export interface GestureOptions {
 	taper: number;
 	/** 笔画两端的压力，[0, 1]；中段压力为 1。 */
 	tip: number;
+	/** 起收笔渐变各自最多占笔长的比例；越小短笔越保留实在的笔身。 @default 0.45 */
+	taperShare?: number;
 	/** 压力随机起伏的幅度，[0, 1)。 */
 	pressureNoise: number;
 }
@@ -146,7 +148,7 @@ export function traceStroke(
 	const endTangent = jitter * (ctx.random(END, endKey + 3) * 2 - 1);
 
 	// 压力：两端按 smoothstep 从 tip 升到 1，叠加沿笔画的低频起伏。
-	const rampLength = Math.min(options.taper * w, total * 0.45) || 1;
+	const rampLength = Math.min(options.taper * w, total * (options.taperShare ?? 0.45)) || 1;
 	const pressureAt = (u: number, index: number) => {
 		const edge = Math.min(u, total - u) / rampLength;
 		const taper = options.tip + (1 - options.tip) * smoothstep(edge);

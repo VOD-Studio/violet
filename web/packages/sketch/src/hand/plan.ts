@@ -72,8 +72,10 @@ export function planStrokes(
 	const maxStroke = options.maxStroke / ctx.pixelScale;
 	// 越界只有线宽量级：再长就成了刻意的十字线头。
 	const overshootLimit = (options.overshootLimit ?? 2) * w;
-	const overshoot = (key: number) =>
-		Math.min(overshootLimit, w * ctx.random(OVERSHOOT, key) * options.overshoot);
+	// 越界随所在笔段变短而按比例收缩：短笔段拖出长线头会成为毛刺
+	const overshoot = (key: number, length: number) =>
+		Math.min(overshootLimit, w * ctx.random(OVERSHOOT, key) * options.overshoot) *
+		Math.min(1, length / (4 * overshootLimit));
 
 	skeleton.contours.forEach((contour, ci) => {
 		const L = contour.length;
@@ -107,8 +109,8 @@ export function planStrokes(
 				ranges.push({
 					start,
 					end,
-					extendStart: overshoot(base + i * 2),
-					extendEnd: overshoot(base + i * 2 + 1),
+					extendStart: overshoot(base + i * 2, end - start),
+					extendEnd: overshoot(base + i * 2 + 1, end - start),
 					pinStart: false,
 					pinEnd: false,
 				});
@@ -125,8 +127,8 @@ export function planStrokes(
 				ranges.push({
 					start: cuts[i],
 					end: cuts[i + 1],
-					extendStart: first ? 0 : overshoot(base + i * 2),
-					extendEnd: last ? 0 : overshoot(base + i * 2 + 1),
+					extendStart: first ? 0 : overshoot(base + i * 2, cuts[i + 1] - cuts[i]),
+					extendEnd: last ? 0 : overshoot(base + i * 2 + 1, cuts[i + 1] - cuts[i]),
 					pinStart: first && ctx.pinEnds,
 					pinEnd: last && ctx.pinEnds,
 				});

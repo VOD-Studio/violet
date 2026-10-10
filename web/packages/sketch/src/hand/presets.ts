@@ -58,8 +58,8 @@ export const hands = {
 		"draft",
 	),
 	/**
-	 * 勾线：漫画式线稿，线条稳而少抖；长线由多段短笔接成，笔间多留白，
-	 * 转角多断笔并交叉越界，起收笔压力降到 0。
+	 * 勾线：漫画式线稿，线条稳而少抖；长线由几段笔接成，笔间时而留白时而交叠，
+	 * 转角多断笔并交叉越界，起收笔收尖而短笔保留笔身。
 	 */
 	inking: createHand(
 		{
@@ -69,9 +69,10 @@ export const hands = {
 			overshoot: 2.2,
 			overshootLimit: 6,
 			overlap: [-0.04, 0.03],
-			segment: [24, 95],
-			gap: [0.6, 5.5],
+			segment: [45, 160],
+			gap: [-1, 3.5],
 			taper: 9,
+			taperShare: 0.22,
 			tip: 0,
 			pressureNoise: 0.16,
 		},
