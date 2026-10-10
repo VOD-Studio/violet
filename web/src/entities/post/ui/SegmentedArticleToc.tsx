@@ -148,9 +148,13 @@ export function SegmentedArticleToc({
 			indicator.style.transform = `translateY(${start}px)`;
 			indicator.style.height = `${Math.max(0, end - start)}px`;
 			indicator.style.opacity = "1";
+			const snap = shouldSnapList;
+			shouldSnapList = false;
 			const scroll = scrollRef.current;
 			if (!isRailCollapsedAtRest || !scroll || scroll.scrollHeight <= scroll.clientHeight)
 				return;
+			// 展开后只在进入瞬间对齐一次，之后让位给用户滚动，否则页面滚动会把列表拉回阅读位置。
+			if (!railActive && !snap) return;
 			const center = (start + end) / 2;
 			const visibleCenter = center - scroll.scrollTop;
 			if (
@@ -158,11 +162,10 @@ export function SegmentedArticleToc({
 				visibleCenter > scroll.clientHeight * 0.7
 			) {
 				listTarget = center - scroll.clientHeight / 2;
-				if (shouldSnapList || reduced) scroll.scrollTop = listTarget;
+				if (snap || reduced) scroll.scrollTop = listTarget;
 				// 目标持续更新，不反复重启浏览器的 smooth scroll。
 				else startFollow();
 			}
-			shouldSnapList = false;
 		};
 		measureAnchors();
 		update();
