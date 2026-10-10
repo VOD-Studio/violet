@@ -183,11 +183,17 @@ describe("动漫风格", () => {
 		expect(outline.verbs.filter((v) => v === 0).length).toBeGreaterThanOrEqual(4);
 	});
 
-	it("压感强度可调，0 时线稿恒宽", () => {
-		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
-			style: createAnimeStyle({ pressure: 0 }),
-		});
-		expect(drawing.items[0].batches[0].mode).toBe("stroke");
+	it("线稿用钢笔，压感强度可调，0 时恒宽", () => {
+		const taper = (pressure?: number) => {
+			const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+				style: createAnimeStyle({ pressure }),
+				width: 3,
+			});
+			const [outline] = drawing.items[0].batches;
+			return widthAt(outline, 0, 0.02) / widthAt(outline, 0, 0.5);
+		};
+		expect(taper()).toBeLessThan(0.4);
+		expect(taper(0)).toBeCloseTo(1, 2);
 	});
 });
 

@@ -1,7 +1,7 @@
 import type { Style } from "./core/types.ts";
 import { createWashFill } from "./fill/wash.ts";
 import { createHand } from "./hand/presets.ts";
-import { createFineliner } from "./pen/fineliner.ts";
+import { createInkPen } from "./pen/brushes.ts";
 
 /**
  * 动漫勾线手法：线条稳而少抖，长线由多段短笔接成，笔间时而留白时而交叠；
@@ -45,7 +45,7 @@ export interface AnimeOptions {
 }
 
 /**
- * 创建动漫风格（线稿淡彩）：细墨线稿配浅色平涂，朝光侧留纸白，背光侧以短排线代替阴影色块。
+ * 创建动漫风格（线稿淡彩）：钢笔细墨线稿配浅色平涂，朝光侧留纸白，背光侧以短排线代替阴影色块。
  * 线稿与排线取 `ink`，平涂取图元的填充角色，不需要派生色。
  *
  * @example
@@ -54,7 +54,8 @@ export interface AnimeOptions {
  * ```
  */
 export function createAnimeStyle(options: AnimeOptions = {}): Style {
-	const pen = createFineliner({ weight: 0.7, pressure: options.pressure ?? 0.95 });
+	// 漫画勾线的 G 笔本是蘸水钢笔：起收笔收尖、中段饱满
+	const pen = createInkPen({ weight: 0.57, pressure: options.pressure ?? 0.95 });
 	return {
 		hand: animeHand,
 		pen,
