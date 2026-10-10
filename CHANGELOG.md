@@ -7,6 +7,22 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.9.4](https://github.com/VOD-Studio/violet/compare/v2.9.3...v2.9.4) (2026-10-10)
+
+
+### 新增
+
+* **profile:** 接入可管理的主页封面 ([ff125b6](https://github.com/VOD-Studio/violet/commit/ff125b691b7789196d2fc5bd79b2a1e6713b4660))
+* **profile:** 支持独立主页封面管理 ([68b2472](https://github.com/VOD-Studio/violet/commit/68b2472fec3724660b6b609c6b04c065ec4d26aa))
+* **user:** 扩展主页封面资料契约 ([c41325f](https://github.com/VOD-Studio/violet/commit/c41325f597b412b7006740eebc19a3d266b327a0))
+* **user:** 提供独立主页封面字段 ([c3e9497](https://github.com/VOD-Studio/violet/commit/c3e9497749b8795af75b4af1e6edcb5c69399535))
+
+
+### 修复
+
+* **crop-upload:** 修复裁剪上传会话生命周期 ([0debcf0](https://github.com/VOD-Studio/violet/commit/0debcf0fe16f29222921ca625691a4fc5c9f814b))
+* **upload:** 修复缺失文件仍命中秒传 ([9a797b3](https://github.com/VOD-Studio/violet/commit/9a797b37763674b609484d1698e72e936a8c9a0f))
+
 ## [2.9.3](https://github.com/VOD-Studio/violet/compare/v2.9.2...v2.9.3) (2026-10-10)
 
 
