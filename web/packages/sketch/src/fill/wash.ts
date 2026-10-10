@@ -1,7 +1,7 @@
 import { polylineContour } from "../core/flatten.ts";
-import { mergePaths, PathBuilder, transformPath } from "../core/path.ts";
+import { PathBuilder, transformPath } from "../core/path.ts";
 import { channel } from "../core/rng.ts";
-import type { Contour, Fill, Skeleton } from "../core/types.ts";
+import type { Contour, Fill } from "../core/types.ts";
 import { scanSpans } from "./scan.ts";
 
 const SHIFT = /* @__PURE__ */ channel("sketch:wash:shift");
@@ -28,26 +28,6 @@ export interface WashOptions {
 	/** 排线的颜色角色，与线稿同墨。 @default "ink" */
 	hatchRole?: string;
 }
-
-const contains = (region: Skeleton, x: number, y: number): boolean => {
-	let winding = 0;
-	let crossings = 0;
-	for (const { points } of region.contours) {
-		const n = points.length / 2;
-		for (let i = 0, j = n - 1; i < n; j = i++) {
-			const yi = points[i * 2 + 1];
-			const yj = points[j * 2 + 1];
-			if (yi > y === yj > y) continue;
-			const xi = points[i * 2];
-			const xj = points[j * 2];
-			if (x < xi + ((y - yi) * (xj - xi)) / (yj - yi)) {
-				crossings++;
-				winding += yj > yi ? 1 : -1;
-			}
-		}
-	}
-	return region.fillRule === "evenodd" ? crossings % 2 === 1 : winding !== 0;
-};
 
 /**
  * 创建淡彩填充：浅色平涂朝背光侧错位，朝光一侧露出宽窄不一的纸白，背光侧加成簇的墨色短排线。
@@ -102,38 +82,46 @@ export function createWashFill(options: WashOptions = {}): Fill {
 			];
 			if (hatch <= 0 || size < 36) return { areas };
 
-			// 排线：原形状与朝光源平移的副本取异或，扫描线落在原形状内的部分即背光侧条带。
+			// 排线：同一组扫描线分别切原形状与朝光源平移的副本，逐行相减剩下的区间即背光侧条带。
 			const band = Math.max(4, Math.min(22, size * hatch));
-			const toward = transformPath(source, [1, 0, 0, 1, ux * band, uy * band]);
-			const crescent = ctx.flatten(mergePaths([source, toward], "evenodd"));
+			const toward = ctx.flatten(transformPath(source, [1, 0, 0, 1, ux * band, uy * band]));
 			const gap = (options.hatchGap ?? 2.6) * ctx.width;
+			const rowY = (row: number) => row * gap;
 			const c = Math.cos(angle);
 			const s = Math.sin(angle);
+			const covered = new Map<number, number[]>();
+			scanSpans(toward, angle, gap, rowY, (left, right, _y, row) => {
+				const spans = covered.get(row);
+				if (spans) spans.push(left, right);
+				else covered.set(row, [left, right]);
+			});
 			const contours: Contour[] = [];
-			scanSpans(
-				crescent,
-				angle,
-				gap,
-				(row) => row * gap,
-				(left, right, y, row) => {
-					const span = right - left;
-					// 噪声成簇：只保留一部分行，排线一丛一丛出现而不是均匀铺满
-					if (span > band * 2.4 || span < ctx.width * 2) return;
-					if (ctx.noise(PATCH, row * 0.3) < 0.12) return;
-					const middle = (left + right) / 2;
-					if (!contains(region, c * middle - s * y, s * middle + c * y)) return;
-					const trim = span * 0.35 * ctx.random(TRIM, row);
-					const a = left + trim;
-					contours.push(
-						polylineContour([
-							c * a - s * y,
-							s * a + c * y,
-							c * right - s * y,
-							s * right + c * y,
-						]),
-					);
-				},
-			);
+			const emit = (left: number, right: number, y: number, row: number) => {
+				const span = right - left;
+				if (span > band * 2.4 || span < ctx.width * 2) return;
+				const a = left + span * 0.35 * ctx.random(TRIM, row);
+				contours.push(
+					polylineContour([
+						c * a - s * y,
+						s * a + c * y,
+						c * right - s * y,
+						s * right + c * y,
+					]),
+				);
+			};
+			scanSpans(region, angle, gap, rowY, (left, right, y, row) => {
+				// 噪声成簇：只保留一部分行，排线一丛一丛出现而不是均匀铺满
+				if (ctx.noise(PATCH, row * 0.3) < 0.12) return;
+				const spans = covered.get(row) ?? [];
+				let from = left;
+				// 同一行的区间按 x 升序回调
+				for (let i = 0; i < spans.length && spans[i] < right; i += 2) {
+					if (spans[i + 1] <= from) continue;
+					if (spans[i] > from) emit(from, spans[i], y, row);
+					from = Math.max(from, spans[i + 1]);
+				}
+				if (from < right) emit(from, right, y, row);
+			});
 			if (!contours.length) return { areas };
 			return {
 				areas,
