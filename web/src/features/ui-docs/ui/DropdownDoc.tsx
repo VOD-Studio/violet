@@ -122,10 +122,10 @@ export function DropdownDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						从 @violet/ui 或 @violet/ui/dropdown 导入
 						Dropdown、DropdownGroup、DropdownTrigger 与 DropdownContent。示例中
-						DropdownGroup 包住两个 Dropdown：指针在它们之间移动时只展开一个，
-						后一个立即展开；第一个触发器用 asChild
-						渲染成链接，第二个是默认按钮。面板内容紧随触发器渲染， 不入 Portal，Tab
-						顺序从触发器自然进入面板。
+						DropdownGroup 包住两个向下展开的 Dropdown：指针在它们之间移动时只展开一个，
+						后一个立即展开；第一个触发器用 asChild 渲染成链接，第二个是默认按钮。
+						“向上展开”是组外的独立面板。同组面板使用相同的 side，不混用上下方向。
+						面板内容紧随触发器渲染，不入 Portal，Tab 顺序从触发器自然进入面板。
 					</p>
 					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={12}>
 						<DropdownBasicDemo />
@@ -206,9 +206,10 @@ export function DropdownDocPage() {
 						用法；面板内的项目样式由宿主决定。
 					</p>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						展开的是面板本身：它带着自己的边缘与柔和阴影，从与触发器等宽的细条出发，沿触发器边缘向下、向外长到完整尺寸，内容保持不动，由面板的盒子逐步揭开；收起时沿同样的路径收回。在
-						DropdownGroup
-						内的并列下拉之间移动时，只有一个面板盒子：它从上一个面板的位置与尺寸滑向下一个，内容交叉淡入淡出。启用减弱动态时所有动效关闭，面板直接出现与消失。
+						下方面板从顶部向下揭开，上方面板从底部向上揭开，关闭时反向收拢；空间不足翻转时，动画跟随实际方位。
+						开合不改变透明度，内部文字与图标不做独立动画。 DropdownGroup
+						只在同方向面板之间接力，保留位置与尺寸变形，内容按最终宽度静态排版；实际方位不同时各自开合，不做跨方向接力。
+						启用减弱动态时所有动效关闭，面板直接出现与消失。
 					</p>
 				</section>
 			</article>

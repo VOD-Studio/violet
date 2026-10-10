@@ -38,7 +38,7 @@ export function DropdownBasicDemo() {
 								指南
 							</DocLink>
 						</DropdownTrigger>
-						<DropdownContent align="start">
+						<DropdownContent side="bottom" align="start">
 							{GUIDE_LINKS.map((label, index) => (
 								<DocLink
 									key={label}
@@ -52,7 +52,7 @@ export function DropdownBasicDemo() {
 					</Dropdown>
 					<Dropdown onOpenChange={setMoreOpen}>
 						<DropdownTrigger className={TRIGGER_CLASS}>更多</DropdownTrigger>
-						<DropdownContent align="start">
+						<DropdownContent side="bottom" align="start">
 							{ACTIONS.map((label, index) => (
 								<DocLink
 									key={label}
@@ -66,6 +66,20 @@ export function DropdownBasicDemo() {
 					</Dropdown>
 				</nav>
 			</DropdownGroup>
+			<Dropdown>
+				<DropdownTrigger className={TRIGGER_CLASS}>向上展开</DropdownTrigger>
+				<DropdownContent side="top" align="start">
+					{ACTIONS.map((label, index) => (
+						<DocLink
+							key={label}
+							href={`#upward-action-${index + 1}`}
+							className={ITEM_CLASS}
+						>
+							{label}
+						</DocLink>
+					))}
+				</DropdownContent>
+			</Dropdown>
 			<p className="text-sm text-muted-foreground" aria-live="polite">
 				指南面板：{guideOpen ? "展开" : "收起"}；更多面板：{moreOpen ? "展开" : "收起"}。
 			</p>
