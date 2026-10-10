@@ -43,7 +43,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 				>
 					积微成著
 				</h2>
-				<figure className="mt-10 sm:mt-12">
+				<figure className="mt-10 sm:mt-14">
 					<p className="sr-only">
 						{months
 							.map((month) => `${month.year}年${month.month}月 ${month.count} 项`)
@@ -73,7 +73,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 						</div>
 					</motion.div>
 
-					<div className="mt-8 sm:mt-10">
+					<div className="mt-8 sm:mt-9">
 						<HomeAccumulationDetail
 							point={selectedPoint}
 							isLatest={selectedPoint.isLatest}
@@ -81,7 +81,7 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 							reduceMotion={reduceMotion}
 						/>
 					</div>
-					<p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
+					<p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
 						<span className="font-serif text-[13px] italic text-muted-foreground/80">
 							今年落笔 {yearCount} 篇
 						</span>

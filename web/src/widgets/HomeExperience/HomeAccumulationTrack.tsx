@@ -24,8 +24,8 @@ export function HomeAccumulationTrack({
 	const hasTodayPoint = points.some((point) => point.includesToday);
 
 	return (
-		<div className="relative h-20">
-			<div className="absolute inset-x-0 top-8 h-px">
+		<div className="relative h-16">
+			<div className="absolute inset-x-0 top-6 h-px">
 				<div
 					aria-hidden
 					style={{ right: `${100 - todayPosition}%` }}
@@ -43,15 +43,24 @@ export function HomeAccumulationTrack({
 					style={{ right: `${100 - todayPosition}%` }}
 					className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
 				/>
-				{monthTicks.map((position) => (
+				{monthTicks.map(({ position, year }) => (
 					<motion.span
 						key={position}
 						aria-hidden
 						variants={revealVariants}
 						custom={reduceMotion ? 0 : revealDelay(position, todayPosition)}
 						style={{ left: `${position}%` }}
-						className="absolute top-0 h-1.5 w-px -translate-y-1/2 bg-border"
-					/>
+						className={cn(
+							"absolute top-0 w-px -translate-y-1/2 bg-border",
+							year ? "h-3" : "h-1.5",
+						)}
+					>
+						{year && (
+							<span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground/60 tabular-nums">
+								{year}
+							</span>
+						)}
+					</motion.span>
 				))}
 				{points.map((point) => (
 					<HomeAccumulationPoint
@@ -75,7 +84,7 @@ export function HomeAccumulationTrack({
 						aria-hidden
 						className={cn(
 							"absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary",
-							hasTodayPoint ? "-top-6" : "-top-4",
+							hasTodayPoint ? "-top-5.5" : "-top-4",
 						)}
 					>
 						今
@@ -91,7 +100,7 @@ export function HomeAccumulationTrack({
 					variants={revealVariants}
 					custom={reduceMotion ? 0 : revealDelay(season.position, todayPosition)}
 					style={{ left: `${season.position}%` }}
-					className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
+					className="absolute top-11 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
 				>
 					{season.label}
 				</motion.span>
@@ -100,13 +109,14 @@ export function HomeAccumulationTrack({
 	);
 }
 
-/** 各月起点（不含首月）在时间线上的百分比位置。 */
-function buildMonthTicks(months: AccumulationMonth[]): number[] {
+/** 各月起点（不含首月）在时间线上的百分比位置；一月刻度带年份。 */
+function buildMonthTicks(months: AccumulationMonth[]): { position: number; year: number | null }[] {
 	const first = months[0];
 	const last = months.at(-1);
 	if (!first || !last) return [];
 	const end = Date.UTC(last.year, last.month, 1);
-	return months
-		.slice(1)
-		.map((month) => ((month.startsAt - first.startsAt) / (end - first.startsAt)) * 100);
+	return months.slice(1).map((month) => ({
+		position: ((month.startsAt - first.startsAt) / (end - first.startsAt)) * 100,
+		year: month.month === 1 ? month.year : null,
+	}));
 }

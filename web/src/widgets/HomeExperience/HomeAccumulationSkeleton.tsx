@@ -20,8 +20,8 @@ export function HomeAccumulationSkeleton() {
 				</h2>
 
 				<figure className="mt-10 sm:mt-12">
-					<div aria-hidden className="relative hidden h-20 sm:block">
-						<div className="absolute inset-x-0 top-8 h-px bg-border/70">
+					<div aria-hidden className="relative hidden h-16 sm:block">
+						<div className="absolute inset-x-0 top-6 h-px bg-border/70">
 							{Array.from({ length: MONTH_TICK_COUNT }, (_, index) => (
 								<span
 									key={index}
@@ -57,7 +57,7 @@ export function HomeAccumulationSkeleton() {
 							</li>
 						))}
 					</ol>
-					<div aria-hidden className="mt-8 h-44 sm:mt-10">
+					<div aria-hidden className="mt-8 h-44 sm:mt-9 sm:h-32">
 						<Skeleton className="mx-auto h-3.5 w-32 rounded" />
 						<div className="mx-auto mt-3 max-w-md divide-y divide-border/50">
 							<div className="flex items-center justify-between gap-4 py-3">
