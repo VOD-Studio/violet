@@ -57,9 +57,29 @@ export const hands = {
 		{ roughness: 1.8, bowing: 1.6, breakChance: 0.6, overshoot: 1.5, passes: 2 },
 		"draft",
 	),
+	/**
+	 * 勾线：漫画式线稿，线条稳而少抖；长线由多段短笔接成，笔间多留白，
+	 * 转角多断笔并交叉越界，起收笔压力降到 0。
+	 */
+	inking: createHand(
+		{
+			roughness: 0.4,
+			bowing: 0.5,
+			breakChance: 0.8,
+			overshoot: 2.2,
+			overshootLimit: 6,
+			overlap: [-0.04, 0.03],
+			segment: [24, 95],
+			gap: [0.6, 5.5],
+			taper: 9,
+			tip: 0,
+			pressureNoise: 0.16,
+		},
+		"inking",
+	),
 } as const;
 
-/** 与各手法预设配套的填充手法：粗糙度减半，不断笔、不越界、不复画。 */
+/** 与各手法预设配套的填充手法：粗糙度减半，不断笔、不越界、不复画；勾线配短直的排线。 */
 export const fillHands = {
 	neat: createHand({ roughness: 0.2, bowing: 0.3, breakChance: 0, overshoot: 0 }, "neat-fill"),
 	natural: createHand(
@@ -67,4 +87,16 @@ export const fillHands = {
 		"natural-fill",
 	),
 	draft: createHand({ roughness: 0.9, bowing: 1, breakChance: 0, overshoot: 0 }, "draft-fill"),
+	inking: createHand(
+		{
+			roughness: 0.15,
+			bowing: 0.3,
+			breakChance: 0,
+			overshoot: 0,
+			taper: 2.5,
+			tip: 0.05,
+			pressureNoise: 0.1,
+		},
+		"inking-fill",
+	),
 } as const;

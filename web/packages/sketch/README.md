@@ -28,10 +28,10 @@ updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 
 | 维度 | 职责 | 内置 |
 | --- | --- | --- |
-| 手法 `Hand` | 骨架 → 笔画：断笔、越界、首尾重叠、抖动、复画与逐点压力 | `hands.neat` / `natural` / `draft`、`animeHand` |
+| 手法 `Hand` | 骨架 → 笔画：断笔、越界、首尾重叠、抖动、复画与逐点压力 | `hands.neat` / `natural` / `draft` / `inking`、`animeHand` |
 | 笔 `Pen` | 笔画 → 渲染批次：笔尖、压力的用途、墨与叠色 | `fineliner`、`inkpen`、`marker`、`gpen` |
 | 填充 `Fill` | 区域 → 直接上色的区域，或交给手法与笔成形的图案骨架 | `fills` 中的七种，名称同 Rough.js；`createWashFill` |
-| 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft`、`animeStyle` / `createAnimeStyle` |
+| 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft`、`lineWashStyle`、`animeStyle` / `createAnimeStyle` |
 
 - **笔画**（`Stroke`）逐点携带 `[x, y, pressure, t]`，是各维度之间唯一的数据形态。**压感是每支笔的属性**：手法产生压力，笔决定它影响粗细、浓淡还是透明度；压感强度由工厂的 `pressure` 参数调节，笔以 `Pen.pressure` 标明当前强度，未声明的笔不响应压感。
 - 笔与动漫风格以具名导出提供，未用到的不会进入打包结果；`pens` 对象一次引入全部四支笔。

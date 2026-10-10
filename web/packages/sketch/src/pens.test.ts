@@ -12,12 +12,15 @@ import {
 	createWashFill,
 	type Drawing,
 	draw,
+	hands,
 	type InkBatch,
 	line,
+	lineWashStyle,
 	type PenFactory,
 	pens,
 	rect,
 	type SceneItem,
+	type Style,
 	styles,
 } from "./index.ts";
 import { renderSvg } from "./render/svg.ts";
@@ -241,6 +244,34 @@ describe("动漫风格", () => {
 		};
 		expect(taper()).toBeLessThan(0.4);
 		expect(taper(0)).toBeCloseTo(1, 2);
+	});
+});
+
+describe("线稿淡彩", () => {
+	const fill = (style: Style) =>
+		draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), { style, width: 3 })
+			.items[0].batches;
+
+	it("勾线手法、G 笔与淡彩填充，排线与线稿同墨", () => {
+		const batches = fill(lineWashStyle);
+		expect(batches.map((b) => b.role)).toEqual(["sky", "ink", "ink"]);
+		expect(batches[2].ribbons).toBeDefined();
+	});
+
+	it("换笔即调压感：排线随同一支笔变化", () => {
+		const constant = fill({ ...lineWashStyle, pen: createGPen({ pressure: 0 }) });
+		const [, hatch, outline] = constant;
+		for (const batch of [hatch, outline])
+			expect(widthAt(batch, 0, 0.02) / widthAt(batch, 0, 0.5)).toBeCloseTo(1, 2);
+	});
+
+	it("勾线手法把长线拆成多段短笔", () => {
+		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+			style: { ...styles.natural, hand: hands.inking },
+		});
+		expect(
+			drawing.items[0].batches[0].verbs.filter((v) => v === 0).length,
+		).toBeGreaterThanOrEqual(4);
 	});
 });
 
