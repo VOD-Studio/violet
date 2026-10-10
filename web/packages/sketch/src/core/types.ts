@@ -108,12 +108,23 @@ export interface Hand {
 	strokes(skeleton: Skeleton, ctx: DrawContext): readonly Stroke[];
 }
 
+/** 各笔工厂共有的参数；具体的笔在此基础上扩展。 */
+export interface PenOptions {
+	/** 压感强度，[0, 1]：0 为恒宽，1 为这支笔完整的压力曲线；不响应压感的笔忽略。 */
+	pressure?: number;
+}
+
 /** 笔：把笔画成形为渲染批次。 */
 export interface Pen {
 	readonly id: string;
+	/** 当前压感强度；缺省表示这支笔不响应压感，使用方据此决定是否提供调节。 */
+	readonly pressure?: number;
 	/** @returns 新建的批次；生成器取得所有权并就地归一化 spans，不得返回缓存或共享的批次。 */
 	ink(strokes: readonly Stroke[], ctx: DrawContext, role: string): readonly InkBatch[];
 }
+
+/** 笔的工厂：以新的压感强度重新调用即得到同款笔，扩展的笔按此约定提供。 */
+export type PenFactory = (options?: PenOptions) => Pen;
 
 /** 填充：返回直接上色的区域，或交给手法与笔描绘的图案骨架。 */
 /** 直接上色的区域。 */

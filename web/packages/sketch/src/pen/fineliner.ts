@@ -1,12 +1,12 @@
 import { BatchBuilder } from "../core/ir.ts";
-import type { InkBatch, Pen } from "../core/types.ts";
-import { createRibbonPen, pressureFloor } from "./ribbon-pen.ts";
+import type { InkBatch, Pen, PenOptions } from "../core/types.ts";
+import { createRibbonPen } from "./ribbon-pen.ts";
 
 /** 签字笔参数。 */
-export interface FinelinerOptions {
+export interface FinelinerOptions extends PenOptions {
 	/** 相对名义线宽的倍率。 @default 1 */
 	weight?: number;
-	/** 压力对线宽的影响，[0, 1]：0 为恒宽，走原生描边快速路径；大于 0 时线宽在 `1 − pressure` 到 1 之间随压力变化。 @default 0 */
+	/** 压感强度，[0, 1]：0 为恒宽，走原生描边快速路径；大于 0 时线宽在 `1 − pressure` 到 1 之间随压力变化。 @default 0 */
 	pressure?: number;
 	/** 草稿复线相对主线的线宽倍率。 @default 0.75 */
 	retraceWeight?: number;
@@ -25,8 +25,9 @@ export function createFineliner(options: FinelinerOptions = {}): Pen {
 		return createRibbonPen({
 			id: "fineliner",
 			weight: options.weight ?? 1,
-			minScale: pressureFloor(pressure),
+			minScale: 0,
 			maxScale: 1,
+			pressure,
 			retraceWeight: options.retraceWeight ?? 0.75,
 			retraceOpacity: options.retraceOpacity ?? 0.7,
 		});
@@ -37,10 +38,11 @@ export function createFineliner(options: FinelinerOptions = {}): Pen {
 	);
 }
 
-/** 恒宽签字笔，单独成函数以便默认笔不依赖条带实现。 */
+/** 恒宽签字笔：原生描边，不生成条带；单独成函数，默认笔因此不依赖条带实现。 */
 function constantFineliner(weight: number, retraceWeight: number, retraceOpacity: number): Pen {
 	return {
 		id: "fineliner",
+		pressure: 0,
 		ink(strokes, ctx, role) {
 			const width = ctx.width * weight;
 			const main = new BatchBuilder({ mode: "stroke", role, width });

@@ -1,16 +1,16 @@
-import type { Pen } from "../core/types.ts";
-import { createRibbonPen, pressureFloor } from "./ribbon-pen.ts";
+import type { Pen, PenOptions } from "../core/types.ts";
+import { createRibbonPen } from "./ribbon-pen.ts";
 
 /** 钢笔参数。 */
-export interface InkPenOptions {
+export interface InkPenOptions extends PenOptions {
 	/** 压力为 1 时的线宽倍率。 @default 1.6 */
 	weight?: number;
-	/** 压力对线宽的影响，[0, 1]：0 为恒宽，越大起收笔越细。 @default 0.92 */
+	/** 压感强度，[0, 1]：0 为恒宽，越大起收笔越细。 @default 0.92 */
 	pressure?: number;
 }
 
 /**
- * 创建钢笔：圆笔尖，线宽随压力起伏，满压时比名义线宽略粗（`1 + 0.25 × pressure` 倍），起笔收笔自然收尖。
+ * 创建钢笔：圆笔尖，线宽随压力起伏，满压时比名义线宽略粗，起笔收笔自然收尖。
  *
  * @example
  * ```ts
@@ -18,19 +18,18 @@ export interface InkPenOptions {
  * ```
  */
 export function createInkPen(options: InkPenOptions = {}): Pen {
-	const pressure = Math.min(1, Math.max(0, options.pressure ?? 0.92));
 	return createRibbonPen({
 		id: "inkpen",
 		weight: options.weight ?? 1.6,
-		minScale: pressureFloor(pressure),
-		// 满压加粗也随压感强度缩放，强度为 0 时才是恒宽
-		maxScale: 1 + 0.25 * pressure,
+		minScale: 0,
+		maxScale: 1.25,
 		gamma: 1.5,
+		pressure: options.pressure ?? 0.92,
 	});
 }
 
 /** 马克笔参数。 */
-export interface MarkerOptions {
+export interface MarkerOptions extends PenOptions {
 	/** 笔尖长轴的全宽，相对名义线宽的倍率。 @default 4 */
 	weight?: number;
 	/** 笔尖长轴角度，度。 @default -35 */
@@ -39,7 +38,7 @@ export interface MarkerOptions {
 	aspect?: number;
 	/** 笔墨不透明度；笔画重叠处叠色加深。 @default 0.78 */
 	opacity?: number;
-	/** 压力对线宽的影响，[0, 1]：0 为恒宽，越大起收笔越细。 @default 0.15 */
+	/** 压感强度，[0, 1]：0 为恒宽，越大起收笔越细。 @default 0.15 */
 	pressure?: number;
 }
 
@@ -57,8 +56,9 @@ export function createMarker(options: MarkerOptions = {}): Pen {
 		weight: options.weight ?? 4,
 		angle: options.angle ?? -35,
 		aspect: options.aspect ?? 0.28,
-		minScale: pressureFloor(options.pressure ?? 0.15),
+		minScale: 0,
 		maxScale: 1,
+		pressure: options.pressure ?? 0.15,
 		opacity: options.opacity ?? 0.78,
 		layered: true,
 	});

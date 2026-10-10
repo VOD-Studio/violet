@@ -33,7 +33,7 @@ updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 | 填充 `Fill` | 区域 → 直接上色的区域，或交给手法与笔成形的图案骨架 | `fills` 中的七种，名称同 Rough.js；`createWashFill` |
 | 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft`、`animeStyle` / `createAnimeStyle` |
 
-- **笔画**（`Stroke`）逐点携带 `[x, y, pressure, t]`，是各维度之间唯一的数据形态。**压感是每支笔的属性**：手法产生压力，笔决定它影响粗细、浓淡还是透明度。
+- **笔画**（`Stroke`）逐点携带 `[x, y, pressure, t]`，是各维度之间唯一的数据形态。**压感是每支笔的属性**：手法产生压力，笔决定它影响粗细、浓淡还是透明度；压感强度由工厂的 `pressure` 参数调节，笔以 `Pen.pressure` 标明当前强度，未声明的笔不响应压感。
 - 笔与动漫风格以具名导出提供，未用到的不会进入打包结果；`pens` 对象一次引入全部三支笔。
 - 颜色只以角色出现，换色不重新生成。`pinEnds` 让开放路径首尾保持精确，用于连线与箭头锚点；`lineWidth` 按图元覆盖线宽。
 - 相同输入、版本与 seed 输出逐位相同；随机由 `(seed, 图元 id, 通道, 序号)` 哈希派生，修改一个图元不影响其他图元。
@@ -54,7 +54,16 @@ const light = { ...styles.natural, pen: createFineliner({ pressure: 0.4 }) };
 | `inkpen` | 圆笔尖，压感强度缺省 0.92，起收笔收尖、满压略粗；`createInkPen({ pressure })` 调节 |
 | `marker` | 扁笔尖（角度 −35°，短长轴比 0.28），半透明，不同笔画重叠处叠色加深；压感强度缺省 0.15，`createMarker({ pressure })` 调节 |
 
-自定义变宽笔用 `createRibbonPen`：给出笔尖角度与短长轴比、压力到宽度的映射和是否分笔叠色即可。
+自定义变宽笔用 `createRibbonPen`：给出笔尖角度与短长轴比、压感强度为 1 时的压力曲线和是否分笔叠色即可，`pressure` 参数在恒宽与这条曲线之间插值。扩展的笔按 `PenFactory` 约定提供工厂，使用方就能像调节内置笔一样调节它的压感：
+
+```ts
+import { createRibbonPen, type PenFactory } from "@violet/sketch";
+
+export const createBrush: PenFactory = ({ pressure = 0.8 } = {}) =>
+	createRibbonPen({ id: "brush", weight: 2, minScale: 0.1, maxScale: 1.4, gamma: 1.5, pressure });
+
+createBrush({ pressure: 0.3 }).pressure;   // 0.3
+```
 
 ## 动漫风格
 

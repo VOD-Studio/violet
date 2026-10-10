@@ -7,10 +7,12 @@ import {
 	createHand,
 	createInkPen,
 	createMarker,
+	createRibbonPen,
 	type Drawing,
 	draw,
 	type InkBatch,
 	line,
+	type PenFactory,
 	pens,
 	rect,
 	type SceneItem,
@@ -126,6 +128,28 @@ describe("压感与笔", () => {
 		};
 		expect(ratio(0)).toBeCloseTo(1, 2);
 		expect(ratio()).toBeLessThan(0.4);
+	});
+
+	it("内置笔以 pressure 标明压感强度，工厂按同一参数调节", () => {
+		expect([pens.fineliner, pens.inkpen, pens.marker].map((pen) => pen.pressure)).toEqual([
+			0, 0.92, 0.15,
+		]);
+		const factories: PenFactory[] = [createFineliner, createInkPen, createMarker];
+		for (const factory of factories) {
+			expect(factory().pressure).toBeTypeOf("number");
+			expect(factory({ pressure: 0.5 }).pressure).toBe(0.5);
+		}
+	});
+
+	it("扩展的条带笔自动响应压感强度，0 时恒宽", () => {
+		const brush = (pressure?: number) =>
+			createRibbonPen({ id: "brush", weight: 2, minScale: 0.1, maxScale: 1.4, pressure });
+		expect(brush().pressure).toBe(1);
+		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+			style: { hand: ruler, pen: brush(0) },
+		});
+		const [batch] = drawing.items[0].batches;
+		expect(widthAt(batch, 0, 0.01) / widthAt(batch, 0, 0.5)).toBeCloseTo(1, 2);
 	});
 
 	it("条带两端有圆帽，轮廓闭合", () => {

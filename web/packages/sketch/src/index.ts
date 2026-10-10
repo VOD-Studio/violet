@@ -41,6 +41,8 @@ export type {
 	Matrix,
 	Path,
 	Pen,
+	PenFactory,
+	PenOptions,
 	Scene,
 	SceneItem,
 	Skeleton,
