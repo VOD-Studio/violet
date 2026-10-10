@@ -70,7 +70,7 @@ export function renderRough(scene: BenchScene, palette: Palette, { seed, width }
 					preserveVertices: true,
 					disableMultiStroke: false,
 					fillShapeRoughnessGain: 0,
-					strokeWidth: width,
+					strokeWidth: item.lineWidth ?? width,
 					stroke:
 						item.strokeRole === "none"
 							? "none"
