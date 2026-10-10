@@ -62,7 +62,10 @@ export function HomeAccumulationSeasons({
 						</motion.div>
 						<div className="relative mt-1 h-7">
 							<div className="absolute inset-x-0 top-1/2 h-px">
-								<div aria-hidden className="absolute inset-0 bg-border/70" />
+								<div
+									aria-hidden
+									className="absolute inset-0 bg-linear-to-r from-border/40 via-border to-border/40"
+								/>
 								<motion.div
 									aria-hidden
 									variants={{
@@ -79,7 +82,9 @@ export function HomeAccumulationSeasons({
 									style={{ right: `${100 - todayRatio}%` }}
 									className={cn(
 										"absolute inset-y-0 left-0 origin-left",
-										isCurrent ? "bg-primary/40" : "bg-foreground/25",
+										isCurrent
+											? "bg-linear-to-r from-foreground/10 to-primary/60"
+											: "bg-linear-to-r from-foreground/10 via-foreground/25 to-foreground/10",
 									)}
 								/>
 								{isCurrent && (

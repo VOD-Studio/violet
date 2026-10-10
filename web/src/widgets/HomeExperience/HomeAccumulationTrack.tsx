@@ -26,7 +26,10 @@ export function HomeAccumulationTrack({
 	return (
 		<div className="relative h-16">
 			<div className="absolute inset-x-0 top-6 h-px">
-				<div aria-hidden className="absolute inset-0 bg-border/70" />
+				<div
+					aria-hidden
+					className="absolute inset-0 bg-linear-to-r from-transparent via-border to-border/30"
+				/>
 				<motion.div
 					aria-hidden
 					variants={{
@@ -37,7 +40,7 @@ export function HomeAccumulationTrack({
 						},
 					}}
 					style={{ right: `${100 - todayPosition}%` }}
-					className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
+					className="absolute inset-y-0 left-0 origin-left bg-linear-to-r from-transparent via-foreground/25 to-primary/60"
 				/>
 				{monthTicks.map(({ position, year }) => (
 					<motion.span
