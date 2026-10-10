@@ -20,5 +20,4 @@ export const lineWashStyle: Style = /* @__PURE__ */ {
 	pen: gpen,
 	fill: /* @__PURE__ */ createWashFill(),
 	fillWeight: 0.55,
-	lineRole: () => "ink",
 };

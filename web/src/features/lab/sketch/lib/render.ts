@@ -1,6 +1,7 @@
 import type { BenchScene } from "@features/lab/sketch/model/scenes";
 import {
 	createSchedule,
+	createWashFill,
 	type Drawing,
 	draw,
 	fills,
@@ -75,7 +76,8 @@ export function renderRough(scene: BenchScene, palette: Palette, { seed, width }
 							? "none"
 							: color(palette, item.strokeRole ?? "ink"),
 					fill: item.fillRole ? color(palette, item.fillRole) : undefined,
-					fillStyle: item.fill ?? "solid",
+					// 淡彩没有 Rough.js 对应画法，按实色对照
+					fillStyle: item.fill === "wash" || !item.fill ? "solid" : item.fill,
 				}),
 			);
 		if (item.label) {
@@ -95,6 +97,8 @@ export function renderRough(scene: BenchScene, palette: Palette, { seed, width }
 	return { svg, stats: measure(svg, performance.now() - started) };
 }
 
+const washFill = createWashFill();
+
 /** 按所选风格生成本库结果；图元的 fill 覆盖风格的默认填充。 */
 export function drawSketch(scene: BenchScene, style: Style, { seed, width }: Options): Drawing {
 	return draw(
@@ -103,7 +107,9 @@ export function drawSketch(scene: BenchScene, style: Style, { seed, width }: Opt
 			height: scene.height,
 			items: scene.items.map(({ fill, ...item }) => ({
 				...item,
-				style: fill ? { ...style, fill: fills[fill] } : undefined,
+				style: fill
+					? { ...style, fill: fill === "wash" ? washFill : fills[fill] }
+					: undefined,
 			})),
 		},
 		{ style, seed, width },

@@ -4,10 +4,16 @@ import {
 	renderRough,
 	renderSketchSvg,
 } from "@features/lab/sketch/lib/render";
-import { buildStyle, HANDS, type HandId, PENS, type PenId } from "@features/lab/sketch/lib/styles";
+import {
+	buildStyle,
+	defaultPressure,
+	HANDS,
+	type HandId,
+	PENS,
+	type PenId,
+} from "@features/lab/sketch/lib/styles";
 import { loadMermaidScene } from "@features/lab/sketch/model/mermaid";
 import {
-	animePalette,
 	type BenchScene,
 	FILL_LABELS,
 	type FillId,
@@ -111,12 +117,13 @@ function Pane({ title, note, stats, zoom, scrollRef, onScroll, status, children 
 
 const formatTime = (seconds: number) => seconds.toFixed(2).padStart(5, "0");
 
-/** Rough.js 与 @violet/sketch 同几何、同 seed 的并排对照，含笔、压感、动漫插画与整图时间轴。 */
+/** Rough.js 与 @violet/sketch 同几何、同 seed 的并排对照，含笔、压感、线稿淡彩插画与整图时间轴。 */
 export function SketchBenchPage() {
 	const [sceneKey, setSceneKey] = useState<SceneKey>("illustration");
-	const [pen, setPen] = useState<PenId>("anime");
-	const [hand, setHand] = useState<HandId>("natural");
-	const [fill, setFill] = useState<FillId>("hachure");
+	const [pen, setPen] = useState<PenId>("gpen");
+	const [pressure, setPressure] = useState(() => defaultPressure("gpen"));
+	const [hand, setHand] = useState<HandId>("inking");
+	const [fill, setFill] = useState<FillId>("wash");
 	const [seed, setSeed] = useState(7);
 	const [zoom, setZoom] = useState<Zoom>("1");
 	const [backend, setBackend] = useState<Backend>("svg");
@@ -139,11 +146,22 @@ export function SketchBenchPage() {
 	const clockRef = useRef<HTMLSpanElement>(null);
 	const durationRef = useRef(0);
 
+	const switchPen = (next: PenId) => {
+		setPen(next);
+		setPressure(defaultPressure(next));
+	};
+
+	const applyPreset = (nextPen: PenId, nextHand: HandId, nextFill: FillId) => {
+		switchPen(nextPen);
+		setHand(nextHand);
+		setFill(nextFill);
+	};
+
 	const switchScene = (next: SceneKey) => {
 		setSceneKey(next);
-		// 插画默认用动漫风格；离开插画时退回签字笔，普通图元不套用淡彩。
-		if (next === "illustration") setPen("anime");
-		else if (pen === "anime") setPen("fineliner");
+		// 插画默认线稿淡彩；离开插画时回到签字笔、自然手法与排线填充
+		if (next === "illustration") applyPreset("gpen", "inking", "wash");
+		else if (sceneKey === "illustration") applyPreset("fineliner", "natural", "hachure");
 	};
 
 	useEffect(() => {
@@ -168,7 +186,7 @@ export function SketchBenchPage() {
 		if (sceneKey === "primitives") return primitivesScene(fill);
 		if (sceneKey === "fills") return fillsScene();
 		if (sceneKey === "holes") return holesScene(fill);
-		if (sceneKey === "illustration") return illustrationScene();
+		if (sceneKey === "illustration") return illustrationScene(fill);
 		return mermaid;
 	}, [sceneKey, fill, mermaid]);
 
@@ -184,17 +202,16 @@ export function SketchBenchPage() {
 		const sketchNode = sketchHost.current;
 		if (!scene || !roughNode || !sketchNode) return;
 		const options = { seed, width: STROKE_WIDTH };
-		const style = buildStyle(pen, hand);
-		const colors = pen === "anime" ? animePalette : palette;
+		const style = buildStyle(pen, pressure, hand);
 		let seek: (time: number) => void = () => {};
 		let duration = 0;
 		try {
-			const rough = renderRough(scene, colors, options);
+			const rough = renderRough(scene, palette, options);
 			rough.svg.setAttribute("style", "display:block;width:100%;height:auto");
 			roughNode.replaceChildren(rough.svg);
 			setRoughStats(rough.stats);
 			if (backend === "svg") {
-				const sketch = renderSketchSvg(scene, style, colors, options, mode);
+				const sketch = renderSketchSvg(scene, style, palette, options, mode);
 				sketchNode.replaceChildren(sketch.svg);
 				setSketchStats(sketch.stats);
 				duration = sketch.schedule.duration;
@@ -203,11 +220,11 @@ export function SketchBenchPage() {
 				sketchNode.replaceChildren();
 				const canvas = canvasRef.current;
 				if (canvas) {
-					const prepared = prepareSketchCanvas(scene, style, colors, options, mode);
+					const prepared = prepareSketchCanvas(scene, style, palette, options, mode);
 					setSketchStats(prepared.stats);
 					duration = prepared.schedule.duration;
 					seek = (time) =>
-						drawCanvas(prepared.drawing, canvas, colors, {
+						drawCanvas(prepared.drawing, canvas, palette, {
 							schedule: prepared.schedule,
 							time,
 						});
@@ -239,7 +256,7 @@ export function SketchBenchPage() {
 			next.cancel();
 			if (player.current === next) player.current = null;
 		};
-	}, [scene, pen, hand, seed, backend, mode, zoom]);
+	}, [scene, pen, pressure, hand, seed, backend, mode, zoom]);
 
 	const sync = (from: RefObject<HTMLDivElement | null>, to: RefObject<HTMLDivElement | null>) => {
 		if (syncing.current || !from.current || !to.current) return;
@@ -260,10 +277,10 @@ export function SketchBenchPage() {
 	};
 
 	const ratio = scene ? `${scene.width} / ${scene.height}` : "3 / 2";
-	const pickFill = sceneKey === "primitives" || sceneKey === "holes";
+	const pickFill =
+		sceneKey === "primitives" || sceneKey === "holes" || sceneKey === "illustration";
 	const penLabel = PENS.find((entry) => entry.value === pen)?.label;
-	const handLabel =
-		pen === "anime" ? "" : ` · ${HANDS.find((entry) => entry.value === hand)?.label}`;
+	const handLabel = HANDS.find((entry) => entry.value === hand)?.label;
 
 	return (
 		<div className="mx-auto w-full max-w-360 px-4 pt-8 pb-32 text-foreground sm:px-8">
@@ -284,17 +301,34 @@ export function SketchBenchPage() {
 					<div className="max-w-full overflow-x-auto">
 						<Segmented
 							value={pen}
-							onValueChange={setPen}
-							segments={PENS}
+							onValueChange={switchPen}
+							segments={PENS.map(({ value, label }) => ({ value, label }))}
 							aria-label="笔"
 						/>
+					</div>
+				</Field>
+				<Field label="Pressure">
+					<div className="flex h-9 items-center gap-3">
+						<input
+							type="range"
+							min={0}
+							max={1}
+							step={0.01}
+							value={pressure}
+							aria-label="压感强度"
+							className="h-1 w-32 cursor-pointer accent-foreground"
+							onChange={(event) => setPressure(Number(event.target.value))}
+						/>
+						<span className="w-10 font-mono text-sm tabular-nums">
+							{pressure.toFixed(2)}
+						</span>
 					</div>
 				</Field>
 				<Field label="Hand">
 					<Segmented
 						value={hand}
 						onValueChange={setHand}
-						segments={HANDS.map((entry) => ({ ...entry, disabled: pen === "anime" }))}
+						segments={HANDS}
 						aria-label="手法"
 					/>
 				</Field>
@@ -363,7 +397,7 @@ export function SketchBenchPage() {
 				</Pane>
 				<Pane
 					title="@violet/sketch"
-					note={`0.2.0 · ${penLabel}${handLabel}`}
+					note={`0.2.0 · ${penLabel} · 压感 ${pressure.toFixed(2)} · ${handLabel}`}
 					stats={sketchStats}
 					zoom={zoom}
 					scrollRef={sketchScroll}

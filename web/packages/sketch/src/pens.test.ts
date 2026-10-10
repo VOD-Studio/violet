@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-	animeStyle,
 	circle,
-	createAnimeStyle,
 	createFineliner,
 	createGPen,
 	createHand,
@@ -180,27 +178,29 @@ describe("压感与笔", () => {
 	});
 });
 
-describe("动漫风格", () => {
-	const plain = { paper: "#fffdf7", ink: "#4a3431", sky: "#b9dbea" };
-	const ring = (r: number) =>
-		draw(scene([{ id: "c", path: circle(200, 150, r), fillRole: "sky" }]), {
-			style: animeStyle,
-			width: 3,
-		}).items[0].batches;
+describe("线稿淡彩", () => {
+	const fill = (style: Style) =>
+		draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), { style, width: 3 })
+			.items[0].batches;
 
-	it("平涂取填充角色，排线与线稿同墨，不依赖派生色", () => {
-		const batches = ring(80);
+	it("勾线手法、G 笔与淡彩填充，排线与线稿同墨", () => {
+		const batches = fill(lineWashStyle);
 		expect(batches.map((b) => b.role)).toEqual(["sky", "ink", "ink"]);
-		expect(batches[0].opacity).toBeUndefined();
-		// 配色只给基础色即可渲染，缺少角色时 paint 会抛错
+		expect(batches[2].ribbons).toBeDefined();
+	});
+
+	it("平涂取填充角色，只给基础色即可渲染", () => {
+		const plain = { paper: "#fffdf7", ink: "#4a3431", sky: "#b9dbea" };
 		const drawing = draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), {
-			style: animeStyle,
+			style: lineWashStyle,
 		});
+		expect(drawing.items[0].batches[0].opacity).toBeUndefined();
+		// 缺少颜色角色时 paint 会抛错
 		expect(renderSvg(drawing, plain)).toContain('data-role="sky"');
 	});
 
 	it("平涂朝背光侧错位并裁剪到原形状，朝光侧露出纸白", () => {
-		const [wash] = ring(80);
+		const [wash] = fill(lineWashStyle);
 		expect(wash.clip).toBeDefined();
 		let minX = Number.POSITIVE_INFINITY;
 		let minY = Number.POSITIVE_INFINITY;
@@ -214,48 +214,15 @@ describe("动漫风格", () => {
 	});
 
 	it("淡彩填充自带排线颜色，换哪支笔排线都取 ink", () => {
-		const drawing = draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), {
-			style: { ...styles.natural, fill: createWashFill() },
-			width: 3,
-		});
-		expect(drawing.items[0].batches.map((b) => b.role)).toEqual(["sky", "ink", "ink"]);
+		const roles = fill({ ...styles.natural, fill: createWashFill() }).map((b) => b.role);
+		expect(roles).toEqual(["sky", "ink", "ink"]);
 	});
 
 	it("较小的图形只上色不画排线", () => {
-		expect(ring(15).map((b) => b.role)).toEqual(["sky", "ink"]);
-	});
-
-	it("长线由多段短笔接成", () => {
-		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
-			style: animeStyle,
+		const drawing = draw(scene([{ id: "c", path: circle(200, 150, 15), fillRole: "sky" }]), {
+			style: lineWashStyle,
 		});
-		const [outline] = drawing.items[0].batches;
-		expect(outline.verbs.filter((v) => v === 0).length).toBeGreaterThanOrEqual(4);
-	});
-
-	it("线稿用钢笔，压感强度可调，0 时恒宽", () => {
-		const taper = (pressure?: number) => {
-			const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
-				style: createAnimeStyle({ pressure }),
-				width: 3,
-			});
-			const [outline] = drawing.items[0].batches;
-			return widthAt(outline, 0, 0.02) / widthAt(outline, 0, 0.5);
-		};
-		expect(taper()).toBeLessThan(0.4);
-		expect(taper(0)).toBeCloseTo(1, 2);
-	});
-});
-
-describe("线稿淡彩", () => {
-	const fill = (style: Style) =>
-		draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), { style, width: 3 })
-			.items[0].batches;
-
-	it("勾线手法、G 笔与淡彩填充，排线与线稿同墨", () => {
-		const batches = fill(lineWashStyle);
-		expect(batches.map((b) => b.role)).toEqual(["sky", "ink", "ink"]);
-		expect(batches[2].ribbons).toBeDefined();
+		expect(drawing.items[0].batches.map((b) => b.role)).toEqual(["sky", "ink"]);
 	});
 
 	it("换笔即调压感：排线随同一支笔变化", () => {

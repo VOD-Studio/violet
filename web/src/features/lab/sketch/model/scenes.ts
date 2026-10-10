@@ -3,7 +3,7 @@ import {
 	circle,
 	curve,
 	ellipse,
-	fills,
+	type fills,
 	line,
 	type Palette,
 	pathFromSvg,
@@ -13,8 +13,8 @@ import {
 	type SceneItem,
 } from "@violet/sketch";
 
-/** 内置填充名，同时是 Rough.js 的 fillStyle。 */
-export type FillId = keyof typeof fills;
+/** 内置填充名，前七种同时是 Rough.js 的 fillStyle；淡彩在 Rough.js 一侧按实色对照。 */
+export type FillId = keyof typeof fills | "wash";
 
 /** 对照场景中的图元：fill 同时决定两侧的填充方式。 */
 export interface BenchItem extends Omit<SceneItem, "style"> {
@@ -37,12 +37,13 @@ export const FILL_LABELS: Record<FillId, string> = {
 	zigzag: "往返",
 	"zigzag-line": "锯齿",
 	dots: "点阵",
+	wash: "淡彩",
 };
 
-/** 全部场景共用的基础色。 */
+/** 全部场景共用的基础色；暖棕墨贴近线稿淡彩的墨色。 */
 export const palette: Palette = {
 	paper: "#fffdf7",
-	ink: "#2b2836",
+	ink: "#4a3431",
 	sky: "#b9dbea",
 	rose: "#f4c1c7",
 	mint: "#bfdcc4",
@@ -63,9 +64,6 @@ export const palette: Palette = {
 	leaf: "#78c28c",
 	leafDeep: "#5fae7c",
 };
-
-/** 动漫风格的线稿用暖棕墨，两侧对照同用这套配色。 */
-export const animePalette: Palette = { ...palette, ink: "#4a3431" };
 
 const tones = ["sky", "rose", "mint", "lilac", "sun"] as const;
 export const tone = (i: number) => tones[i % tones.length];
@@ -133,12 +131,12 @@ export function primitivesScene(fill: FillId): BenchScene {
 	};
 }
 
-/** 七种填充：方块与圆各一行。 */
+/** 全部填充：方块与圆各一行。 */
 export function fillsScene(): BenchScene {
-	const ids = Object.keys(fills) as FillId[];
+	const ids = Object.keys(FILL_LABELS) as FillId[];
 	const items: BenchItem[] = [];
 	ids.forEach((id, i) => {
-		const x = 30 + i * 125;
+		const x = 25 + i * 122;
 		items.push(
 			{
 				id: `${id}-square`,
@@ -150,7 +148,7 @@ export function fillsScene(): BenchScene {
 			{ id: `${id}-circle`, path: circle(x + 50, 230, 50), fillRole: tone(i + 2), fill: id },
 		);
 	});
-	return { width: 900, height: 300, items };
+	return { width: 1000, height: 300, items };
 }
 
 /** 复合路径的三种孔洞情形。 */
@@ -194,8 +192,8 @@ function star(cx: number, cy: number, r: number) {
 	return polygon(points);
 }
 
-/** 夜晚小屋：动漫风格的完整插画，覆盖大小形状与外轮廓、细节的线宽层次。 */
-export function illustrationScene(): BenchScene {
+/** 夜晚小屋：线稿淡彩的完整插画，覆盖大小形状与外轮廓、细节的线宽层次。 */
+export function illustrationScene(fill: FillId): BenchScene {
 	const big = 2.6;
 	const mid = 2;
 	const fine = 1.1;
@@ -204,7 +202,7 @@ export function illustrationScene(): BenchScene {
 		path: BenchItem["path"],
 		fillRole: string,
 		lineWidth: number,
-	): BenchItem => ({ id, path, fillRole, lineWidth });
+	): BenchItem => ({ id, path, fillRole, lineWidth, fill });
 	return {
 		width: 900,
 		height: 600,

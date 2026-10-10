@@ -1,6 +1,6 @@
 # @violet/sketch
 
-框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0：笔画规划与三档手法、逐点压力与四支笔（签字笔、钢笔、马克笔、G 笔，压感强度均可调）、七种填充、动漫风格，以及整图时间轴（顺序、并行、交错）。
+框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0：笔画规划与三档手法、逐点压力与四支笔（签字笔、钢笔、马克笔、G 笔，压感强度均可调）、七种填充与淡彩、线稿淡彩风格，以及整图时间轴（顺序、并行、交错）。
 
 ## 调用
 
@@ -28,13 +28,13 @@ updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 
 | 维度 | 职责 | 内置 |
 | --- | --- | --- |
-| 手法 `Hand` | 骨架 → 笔画：断笔、越界、首尾重叠、抖动、复画与逐点压力 | `hands.neat` / `natural` / `draft` / `inking`、`animeHand` |
+| 手法 `Hand` | 骨架 → 笔画：断笔、越界、首尾重叠、抖动、复画与逐点压力 | `hands.neat` / `natural` / `draft` / `inking` |
 | 笔 `Pen` | 笔画 → 渲染批次：笔尖、压力的用途、墨与叠色 | `fineliner`、`inkpen`、`marker`、`gpen` |
-| 填充 `Fill` | 区域 → 直接上色的区域，或交给手法与笔成形的图案骨架 | `fills` 中的七种，名称同 Rough.js；`createWashFill` |
-| 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft`、`lineWashStyle`、`animeStyle` / `createAnimeStyle` |
+| 填充 `Fill` | 区域 → 直接上色的区域，或交给手法与笔成形的图案骨架 | `fills` 中的七种，名称同 Rough.js；淡彩 `createWashFill` |
+| 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft`、`lineWashStyle` |
 
 - **笔画**（`Stroke`）逐点携带 `[x, y, pressure, t]`，是各维度之间唯一的数据形态。**压感是每支笔的属性**：手法产生压力，笔决定它影响粗细、浓淡还是透明度；压感强度由工厂的 `pressure` 参数调节，笔以 `Pen.pressure` 标明当前强度，未声明的笔不响应压感。
-- 笔与动漫风格以具名导出提供，未用到的不会进入打包结果；`pens` 对象一次引入全部四支笔。
+- 笔与线稿淡彩以具名导出提供，未用到的不会进入打包结果；`pens` 对象一次引入全部四支笔。
 - 颜色只以角色出现，换色不重新生成。`pinEnds` 让开放路径首尾保持精确，用于连线与箭头锚点；`lineWidth` 按图元覆盖线宽。
 - 相同输入、版本与 seed 输出逐位相同；随机由 `(seed, 图元 id, 通道, 序号)` 哈希派生，修改一个图元不影响其他图元。
 
@@ -66,20 +66,20 @@ export const createBrush: PenFactory = ({ pressure = 0.8 } = {}) =>
 createBrush({ pressure: 0.3 }).pressure;   // 0.3
 ```
 
-## 动漫风格
+## 线稿淡彩
 
 ```ts
-import { animeStyle, circle, createAnimeStyle, draw } from "@violet/sketch";
+import { circle, createGPen, draw, lineWashStyle } from "@violet/sketch";
 
 const palette = { paper: "#fffdf7", ink: "#4a3431", moon: "#f7e6a1" };
 const drawing = draw(
 	{ width: 200, height: 200, items: [{ id: "moon", path: circle(100, 100, 60), fillRole: "moon", lineWidth: 2.6 }] },
-	{ style: animeStyle, seed: 3 },
+	{ style: lineWashStyle, seed: 3 },
 );
-const steady = createAnimeStyle({ pressure: 0.4 });   // 压感强度，0 为恒宽
+const softer = { ...lineWashStyle, pen: createGPen({ pressure: 0.5 }) };   // 换笔即调压感，排线一并生效
 ```
 
-线稿淡彩：线稿与排线用钢笔、取 `ink`，长线由多段短笔接成，转角断笔交叉越界；淡彩平涂取图元的填充角色，朝背光侧错位并裁剪，朝光一侧留出宽窄不一的纸白；较大的图形在背光侧加成簇的短排线。配色只需基础色，不派生阴影色。
+`lineWashStyle` 是勾线手法（`hands.inking`）、G 笔与淡彩填充的组合，三者都能单独与其他笔、手法、填充搭配。勾线把长线拆成多段短笔，转角断笔交叉越界；淡彩平涂取图元的填充角色，朝背光侧错位并裁剪，朝光一侧留出宽窄不一的纸白，较大的图形在背光侧加成簇的短排线，排线与线稿同取 `ink`。配色只需基础色，不派生阴影色。
 
 ## 整图时间轴
 

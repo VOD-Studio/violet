@@ -2,8 +2,6 @@ export type { Player, PlayerOptions } from "./animate/player.ts";
 export { createPlayer } from "./animate/player.ts";
 export type { Schedule, ScheduleMode, ScheduleOptions } from "./animate/schedule.ts";
 export { createSchedule, itemProgress } from "./animate/schedule.ts";
-export type { AnimeOptions } from "./anime.ts";
-export { animeHand, animeStyle, createAnimeStyle } from "./anime.ts";
 export { flatten, pointAt, polylineContour } from "./core/flatten.ts";
 export { BatchBuilder } from "./core/ir.ts";
 export {
