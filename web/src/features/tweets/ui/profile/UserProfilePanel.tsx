@@ -1,0 +1,187 @@
+import { getDisplayName } from "@entities/user/model/display-name";
+import type { UserProfile } from "@entities/user/model/types";
+import { useMe } from "@features/auth/api/queries";
+import { useCreateChatConversation } from "@features/chat/api/queries";
+import { formatDate } from "@shared/lib/date";
+import { avatarUrl } from "@shared/lib/image-url";
+import { useSharedElement } from "@shared/lib/view-transition";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@violet/ui";
+import { cn } from "cn";
+import { differenceInDays } from "date-fns";
+import { CalendarDays, Check, Copy, MessageCircle, PenSquare, Share2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+export interface UserProfilePanelProps {
+	profile: UserProfile;
+	/** 已加载的推文数；还有下一页时带「+」。 */
+	tweetCount: string;
+	/** 已加载推文中带图的条数。 */
+	mediaCount: number;
+	/** 已加载推文的累计点赞数；还有下一页时带「+」。 */
+	likeCount: string;
+}
+
+/** 注册至今的时长，用于资料行的补充说明。 */
+function tenureOf(createdAt: string): string {
+	const days = differenceInDays(new Date(), new Date(createdAt));
+	if (days <= 0) return "今天加入";
+	if (days < 30) return `${days} 天`;
+	if (days < 365) return `${Math.floor(days / 30)} 个月`;
+	return `${(days / 365).toFixed(1).replace(/\.0$/, "")} 年`;
+}
+
+/** 复制文本并给出反馈；返回是否成功。 */
+async function copyText(text: string, message: string): Promise<boolean> {
+	try {
+		await navigator.clipboard.writeText(text);
+		toast.success(message);
+		return true;
+	} catch {
+		toast.error("复制失败");
+		return false;
+	}
+}
+
+/**
+ * 公开用户页左侧的资料栏：头像、名称、简介、操作与资料行。
+ *
+ * 本人显示「编辑资料」，访客显示「发起私聊」；未登录访客点击私聊会先去登录。
+ */
+export function UserProfilePanel({
+	profile,
+	tweetCount,
+	mediaCount,
+	likeCount,
+}: UserProfilePanelProps) {
+	const navigate = useNavigate();
+	const { data: currentUser } = useMe();
+	const createChat = useCreateChatConversation();
+	const [copied, setCopied] = useState<"handle" | "link" | null>(null);
+	const [starting, setStarting] = useState(false);
+
+	const sharedAvatar = useSharedElement({ name: "avatar", id: profile.id });
+	const displayName = getDisplayName(profile);
+	const isSelf = currentUser?.id === profile.id;
+	const bio = profile.bio?.trim();
+
+	const flashCopied = (kind: "handle" | "link") => {
+		setCopied(kind);
+		setTimeout(() => setCopied(null), 2000);
+	};
+
+	const startChat = async () => {
+		if (!currentUser) {
+			navigate({ to: "/login", search: { redirect: window.location.href } });
+			return;
+		}
+		setStarting(true);
+		try {
+			const conversation = await createChat.mutateAsync({
+				kind: "direct",
+				participant_ids: [profile.id],
+			});
+			navigate({ to: "/chat", search: { c: conversation.id } });
+		} catch {
+			toast.error("无法发起私聊，请稍后重试");
+		} finally {
+			setStarting(false);
+		}
+	};
+
+	const stats = [
+		{ label: "推文", value: tweetCount },
+		{ label: "含图", value: String(mediaCount) },
+		{ label: "获赞", value: likeCount },
+	];
+
+	return (
+		<section
+			aria-label="用户资料"
+			className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-[0_4px_24px_rgb(0_0_0/0.05)]"
+		>
+			<img
+				src={avatarUrl(profile.avatar_url, profile.username)}
+				alt={`${displayName} 的头像`}
+				className={cn(
+					"-mt-16 size-24 shrink-0 rounded-full border border-border bg-muted object-cover ring-4 ring-card",
+					sharedAvatar.className,
+				)}
+				style={sharedAvatar.style}
+			/>
+
+			<h1 className="mt-4 truncate text-2xl font-bold tracking-tight">{displayName}</h1>
+			<div className="mt-1 flex items-center gap-1">
+				<span className="font-mono text-sm text-muted-foreground">@{profile.username}</span>
+				<Button
+					variant="ghost"
+					size="icon-xs"
+					aria-label="复制用户名"
+					onClick={async () => {
+						if (await copyText(`@${profile.username}`, `已复制 @${profile.username}`))
+							flashCopied("handle");
+					}}
+				>
+					{copied === "handle" ? (
+						<Check className="size-3.5" />
+					) : (
+						<Copy className="size-3.5 text-muted-foreground" />
+					)}
+				</Button>
+			</div>
+
+			<p className="mt-4 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground">
+				{bio || "还没有留下简介。"}
+			</p>
+
+			<div className="mt-5 flex items-center gap-2">
+				{isSelf ? (
+					<Button variant="outline" className="flex-1" asChild>
+						<Link to="/profile">
+							<PenSquare className="size-4" />
+							编辑资料
+						</Link>
+					</Button>
+				) : (
+					<Button className="flex-1" onClick={startChat} loading={starting}>
+						<MessageCircle className="size-4" />
+						发起私聊
+					</Button>
+				)}
+				<Button
+					variant="outline"
+					size="icon"
+					aria-label="复制主页链接"
+					onClick={async () => {
+						if (await copyText(window.location.href, "主页链接已复制"))
+							flashCopied("link");
+					}}
+				>
+					{copied === "link" ? (
+						<Check className="size-4" />
+					) : (
+						<Share2 className="size-4 text-muted-foreground" />
+					)}
+				</Button>
+			</div>
+
+			<ul className="mt-6 grid grid-cols-3 divide-x divide-border rounded-xl bg-muted/60 py-3 text-center">
+				{stats.map(({ label, value }) => (
+					<li key={label}>
+						<span className="block text-lg font-semibold tabular-nums">{value}</span>
+						<span className="block text-xs text-muted-foreground">{label}</span>
+					</li>
+				))}
+			</ul>
+
+			{profile.created_at && (
+				<p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+					<CalendarDays className="size-4 shrink-0" />
+					{formatDate(profile.created_at, "year-month")}加入 ·{" "}
+					{tenureOf(profile.created_at)}
+				</p>
+			)}
+		</section>
+	);
+}

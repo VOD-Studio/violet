@@ -5,6 +5,7 @@ import { BackLink } from "@shared/ui/back-link";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Calendar, ExternalLink, Eye } from "lucide-react";
 import type { ReactNode } from "react";
+import { SharedElement } from "@/shared/lib/view-transition";
 import { RevisionChip } from "./RevisionChip";
 
 export interface PostDetailHeaderProps {
@@ -76,9 +77,10 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 				</div>
 			</header>
 			{post.cover_image ? (
-				<div
+				<SharedElement
+					name="cover"
+					id={post.slug}
 					className="mb-9 overflow-hidden rounded-2xl"
-					style={{ viewTransitionName: "post-cover" }}
 				>
 					<CroppedImage
 						src={post.cover_image}
@@ -86,7 +88,7 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 						alt={post.title}
 						className="aspect-2/1 w-full"
 					/>
-				</div>
+				</SharedElement>
 			) : null}
 		</div>
 	);

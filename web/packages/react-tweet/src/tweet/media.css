@@ -69,7 +69,8 @@
 	outline-offset: 2px;
 }
 .v-tweet .v-tweet__rail .v-tweet__photo {
-	flex: none;
+	/* 放得下时卡片按比例分摊余量撑满整行，略微裁切；放不下时保持自然宽度并滚动。 */
+	flex: 1 0 auto;
 	min-height: 0;
 	height: var(--_rail-height);
 	max-width: 100%;
