@@ -38,12 +38,13 @@ type User struct {
 	Email        string `gorm:"type:varchar(255);not null" json:"email"`
 	PasswordHash string `gorm:"type:varchar(255);not null" json:"-"`
 	AvatarURL    string `gorm:"type:text" json:"avatar_url"`
+	CoverURL     string `gorm:"type:text;not null;default:''" json:"cover_url"`
 	Bio          string `gorm:"type:text" json:"bio"`
 	Role         string `gorm:"type:varchar(32);not null;default:'user'" json:"role"`
 	// IsRoot root 用户标志位，区分 root 与被委派超管
-	IsRoot bool `gorm:"column:is_root;not null;default:false" json:"is_root"`
-	EmailVerified       bool   `gorm:"not null;default:false" json:"email_verified"`
-	IsActive            bool   `gorm:"not null;default:false" json:"is_active"`
+	IsRoot        bool `gorm:"column:is_root;not null;default:false" json:"is_root"`
+	EmailVerified bool `gorm:"not null;default:false" json:"email_verified"`
+	IsActive      bool `gorm:"not null;default:false" json:"is_active"`
 	// GoogleID/GithubID/Email/Username 的唯一性由 migration 部分唯一索引保证
 	// （WHERE deleted_at IS NULL，注销即释放身份），模型不带 unique tag 防 AutoMigrate 重建全量索引
 	GoogleID    *string `gorm:"type:varchar(255)" json:"google_id"`

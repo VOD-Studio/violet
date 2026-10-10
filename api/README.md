@@ -102,6 +102,14 @@ api/
 
 `/auth/session` 为 SSR 只读端点：读 cookie → 查 Redis → 返回 claims，**不续期、不写 cookie**。这是避免 TanStack Start server function 无法透传 `Set-Cookie` 的根因方案。
 
+### 主页封面
+
+- `POST /uploads` 接受 `purpose: "cover"`，使用既有分片上传与秒传链路。
+- `PATCH /auth/profile` 接受可选的 `cover_url`：省略时保留原值，空串移除封面；不改变头像或简介。
+- `GET /auth/me` 与 `GET /users/{username}` 返回 `cover_url`，未设置时为空串。
+- GIF 保留原文件与动画，URL 的 `crop=x,y,width,height` 表示归一化展示选区；静态图片可使用裁剪后的文件。
+- 数据库迁移 `133_add_user_cover` 为既有用户提供空封面默认值。
+
 ## 业务模块
 
 每个模块在四层各有对应目录，命名一致：

@@ -35,6 +35,7 @@ func registerAuthPaths(t *openapi3.T) {
 		"username":   optStr("用户名（3-32 字符）"),
 		"bio":        optStr("个人简介（最多 500 字）"),
 		"avatar_url": optStr("头像 URL（最多 2048 字符）"),
+		"cover_url":  optStr("主页封面 URL（最多 2048 字符），省略保留，空串移除；保留 GIF 裁剪坐标"),
 	})
 
 	registerSchema(t, "ChangePasswordRequest", openapi3.Schemas{
@@ -49,6 +50,7 @@ func registerAuthPaths(t *openapi3.T) {
 		"username":         reqStr("用户名"),
 		"email":            reqStr("邮箱"),
 		"avatar_url":       optStr("头像 URL"),
+		"cover_url":        reqStr("主页封面 URL，未设置时为空串"),
 		"bio":              optStr("个人简介"),
 		"role":             reqStr("角色"),
 		"role_description": optStr("角色描述（来自 roles 表）"),
@@ -77,6 +79,7 @@ func registerAuthPaths(t *openapi3.T) {
 		"username":   reqStr("用户名"),
 		"email":      reqStr("邮箱"),
 		"avatar_url": optStr("头像 URL"),
+		"cover_url":  reqStr("主页封面 URL，未设置时为空串"),
 		"bio":        optStr("个人简介"),
 		"role":       strEnum("角色", "user", "admin", "superadmin"),
 	})
@@ -277,8 +280,8 @@ func registerAuthPaths(t *openapi3.T) {
 		"password":   reqStr("该邮箱账号的密码"),
 	}, "link_token", "password")
 	post(t, "/auth/link/confirm", &openapi3.Operation{
-		Tags:        []string{"认证"},
-		Summary:     "OAuth 绑定确认",
+		Tags:    []string{"认证"},
+		Summary: "OAuth 绑定确认",
 		Description: "OAuth 登录 email 匹配到已有账号且未绑定该 provider 时（409 LINK_CONFIRMATION_REQUIRED），" +
 			"输入账号密码确认后绑定 provider 身份并创建 session。密码错 5 次作废 link_token。",
 		Parameters:  openapi3.Parameters{csrfHeaderParam()},
@@ -350,8 +353,8 @@ func registerAuthPaths(t *openapi3.T) {
 	})
 
 	registerSchema(t, "OAuthCredentialsRequest", openapi3.Schemas{
-		"google_client_id":    optStr("Google client ID（缺省=不更新）"),
-		"github_client_id":    optStr("GitHub client ID（缺省=不更新）"),
+		"google_client_id":     optStr("Google client ID（缺省=不更新）"),
+		"github_client_id":     optStr("GitHub client ID（缺省=不更新）"),
 		"github_client_secret": optStr("GitHub client secret（缺省=不更新）"),
 	})
 

@@ -25,23 +25,23 @@ import (
 
 // Handler auth HTTP 处理器（DDD 版）
 type Handler struct {
-	register      *authcmd.RegisterUserHandler  // 注册用例
-	login         *authcmd.LoginHandler         // 账号密码登录用例
-	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
-	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
-	confirmLink   *authcmd.ConfirmLinkHandler    // OAuth 首次匹配密码确认绑定用例
-	bindProvider  *authcmd.BindProviderHandler    // 设置页绑定 OAuth 用例
+	register       *authcmd.RegisterUserHandler   // 注册用例
+	login          *authcmd.LoginHandler          // 账号密码登录用例
+	google         *authcmd.GoogleLoginHandler    // Google OAuth 登录用例
+	github         *authcmd.GithubLoginHandler    // GitHub OAuth 登录用例
+	confirmLink    *authcmd.ConfirmLinkHandler    // OAuth 首次匹配密码确认绑定用例
+	bindProvider   *authcmd.BindProviderHandler   // 设置页绑定 OAuth 用例
 	unbindProvider *authcmd.UnbindProviderHandler // 设置页解绑 OAuth 用例
-	logout        *authcmd.LogoutHandler        // 登出用例
-	createSession *authcmd.CreateSessionHandler // session 创建用例，登录后下发 cookie
-	verify        *authcmd.VerifyEmailHandler   // 邮箱验证用例
-	forgot        *authcmd.ForgotPasswordHandler // 忘记密码用例，发送重置码
-	reset         *authcmd.ResetPasswordHandler  // 重置密码用例
-	updatePf      *authcmd.UpdateProfileHandler   // 更新个人资料用例
-	changePwd     *authcmd.ChangePasswordHandler  // 修改密码用例
-	getMe         *authquery.GetMeHandler          // 获取当前用户信息用例
-	settings      *appsettings.Service             // 站点设置服务，OAuth 启用判断
-	oauthCreds    *authcmd.OAuthCredentials        // OAuth 凭据运行时存储（后台可写）
+	logout         *authcmd.LogoutHandler         // 登出用例
+	createSession  *authcmd.CreateSessionHandler  // session 创建用例，登录后下发 cookie
+	verify         *authcmd.VerifyEmailHandler    // 邮箱验证用例
+	forgot         *authcmd.ForgotPasswordHandler // 忘记密码用例，发送重置码
+	reset          *authcmd.ResetPasswordHandler  // 重置密码用例
+	updatePf       *authcmd.UpdateProfileHandler  // 更新个人资料用例
+	changePwd      *authcmd.ChangePasswordHandler // 修改密码用例
+	getMe          *authquery.GetMeHandler        // 获取当前用户信息用例
+	settings       *appsettings.Service           // 站点设置服务，OAuth 启用判断
+	oauthCreds     *authcmd.OAuthCredentials      // OAuth 凭据运行时存储（后台可写）
 
 	validate  *validator.Validate  // 请求体校验器
 	cookieCfg config.CookieConfig  // session cookie 配置（名/域/Secure/SameSite）
@@ -77,12 +77,12 @@ func NewHandler(
 		register: register, login: login, google: google, github: github, confirmLink: confirmLink, logout: logout,
 		bindProvider: bindProvider, unbindProvider: unbindProvider,
 		createSession: createSession,
-		verify: verify, forgot: forgot, reset: reset,
+		verify:        verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
 		oauthCreds: oauthCreds,
 		validate:   validator.New(),
-		cookieCfg: cookieCfg,
-		session:   session,
+		cookieCfg:  cookieCfg,
+		session:    session,
 	}
 }
 
@@ -479,9 +479,9 @@ func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, map[string]any{
-		"user_id":                userID,
-		"role":                   interfacesmw.GetUserRoleFromContext(r),
-		"email":                  interfacesmw.GetUserEmailFromContext(r),
+		"user_id": userID,
+		"role":    interfacesmw.GetUserRoleFromContext(r),
+		"email":   interfacesmw.GetUserEmailFromContext(r),
 		"is_root": interfacesmw.GetUserIsRootFromContext(r),
 	})
 }
@@ -581,10 +581,11 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
-		Username   *string `json:"username" validate:"omitempty,min=3,max=32"`
+		Username    *string `json:"username" validate:"omitempty,min=3,max=32"`
 		DisplayName *string `json:"display_name" validate:"omitempty,max=32"`
-		Bio        *string `json:"bio" validate:"omitempty,max=500"`
-		AvatarURL  *string `json:"avatar_url" validate:"omitempty,max=2048"`
+		Bio         *string `json:"bio" validate:"omitempty,max=500"`
+		AvatarURL   *string `json:"avatar_url" validate:"omitempty,max=2048"`
+		CoverURL    *string `json:"cover_url" validate:"omitempty,max=2048"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -596,20 +597,21 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u, err := h.updatePf.Handle(r.Context(), authcmd.UpdateProfileInput{
-		UserID: userID, Username: req.Username, DisplayName: req.DisplayName, Bio: req.Bio, AvatarURL: req.AvatarURL,
+		UserID: userID, Username: req.Username, DisplayName: req.DisplayName, Bio: req.Bio, AvatarURL: req.AvatarURL, CoverURL: req.CoverURL,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondOK(w, map[string]any{
-		"id":         u.GetID().String(),
-		"username":   u.Username().String(),
+		"id":           u.GetID().String(),
+		"username":     u.Username().String(),
 		"display_name": u.DisplayName().String(),
-		"email":      u.Email().String(),
-		"avatar_url": u.AvatarURL(),
-		"bio":        u.Bio(),
-		"role":       string(u.Role()),
+		"email":        u.Email().String(),
+		"avatar_url":   u.AvatarURL(),
+		"cover_url":    u.CoverURL(),
+		"bio":          u.Bio(),
+		"role":         string(u.Role()),
 	})
 }
 

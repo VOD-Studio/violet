@@ -63,6 +63,7 @@ func registerTweetPaths(t *openapi3.T) {
 		"username":     reqStr("用户名"),
 		"display_name": reqStr("显示名"),
 		"avatar_url":   reqStr("头像 URL"),
+		"cover_url":    reqStr("主页封面 URL，未设置时为空串"),
 		"bio":          reqStr("个人简介"),
 		"created_at":   reqStr("注册时间（RFC3339）"),
 	})

@@ -24,7 +24,7 @@ func TestChangePassword_RevokesAllSessions(t *testing.T) {
 	// 预先用真实 bcrypt 哈希旧密码，使 Compare 通过
 	oldHash, err := hasher.Hash("old-pass-123")
 	require.NoError(t, err)
-	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime,)
+	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", "", domainuser.RoleUser, nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime)
 
 	repo.On("FindByID", mock.Anything, uid).Return(u, nil)
 	repo.On("Save", mock.Anything, mock.Anything).Return(nil)
@@ -50,7 +50,7 @@ func TestChangePassword_WrongOldPasswordSkipsRevoke(t *testing.T) {
 	uid, _ := domainshared.ParseID(testUserID)
 	oldHash, err := hasher.Hash("correct-old")
 	require.NoError(t, err)
-	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime,)
+	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", "", domainuser.RoleUser, nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime)
 	repo.On("FindByID", mock.Anything, uid).Return(u, nil)
 
 	err = h.Handle(context.Background(), ChangePasswordInput{
@@ -74,7 +74,7 @@ func TestResetPassword_RevokesAllSessions(t *testing.T) {
 	uid, _ := domainshared.ParseID(testUserID)
 	oldHash, err := hasher.Hash("irrelevant")
 	require.NoError(t, err)
-	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", domainuser.RoleUser, nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime,)
+	u := domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, oldHash, "", "", "", domainuser.RoleUser, nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime)
 
 	// 重置码校验通过
 	codeStore.On("Verify", mock.Anything, "reset", "u@example.com", mock.Anything).Return(true, nil)
@@ -90,4 +90,50 @@ func TestResetPassword_RevokesAllSessions(t *testing.T) {
 	})
 	require.NoError(t, err)
 	store.AssertNumberOfCalls(t, "DeleteByUser", 1)
+}
+
+func TestUpdateProfile_CoverPartialUpdate(t *testing.T) {
+	const originalCover = "https://example.com/original.gif?crop=1,2,300,100"
+	const croppedCover = "https://example.com/cover.gif?crop=12,24,640,240"
+	for _, tc := range []struct {
+		name  string
+		cover *string
+		want  string
+	}{
+		{name: "省略保留封面", want: originalCover},
+		{name: "空串移除封面", cover: new(""), want: ""},
+		{name: "保留 GIF 裁剪坐标", cover: new(croppedCover), want: croppedCover},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			u := testUser()
+			u.UpdateProfile("https://example.com/avatar.png", "原简介")
+			u.UpdateCoverURL(originalCover)
+			repo := new(mocks.MockUserRepository)
+			repo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
+			repo.On("Save", mock.Anything, mock.MatchedBy(func(saved *domainuser.User) bool {
+				return saved.CoverURL() == tc.want &&
+					saved.AvatarURL() == "https://example.com/avatar.png" &&
+					saved.Bio() == "原简介"
+			})).Return(nil).Once()
+			_, err := NewUpdateProfileHandler(repo).Handle(context.Background(), UpdateProfileInput{
+				UserID: testUserID, CoverURL: tc.cover,
+			})
+			require.NoError(t, err)
+			repo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestUpdateProfile_CoverSaveFailure(t *testing.T) {
+	u := testUser()
+	repo := new(mocks.MockUserRepository)
+	repo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
+	saveErr := domainshared.Internal("保存用户失败", nil)
+	repo.On("Save", mock.Anything, u).Return(saveErr).Once()
+	updated, err := NewUpdateProfileHandler(repo).Handle(context.Background(), UpdateProfileInput{
+		UserID: testUserID, CoverURL: new("https://example.com/cover.gif?crop=12,24,640,240"),
+	})
+	require.ErrorIs(t, err, saveErr)
+	require.Nil(t, updated)
+	repo.AssertExpectations(t)
 }
