@@ -4,20 +4,14 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { HomeAccumulationPoint } from "./HomeAccumulationPoint";
 import { HomeContentLink } from "./HomeContentLink";
-import {
-	type AccumulationMonth,
-	buildAccumulationTimeline,
-	dropDelay,
-	LINE_DRAW_SECONDS,
-} from "./home-accumulation-model";
+import { type AccumulationMonth, buildAccumulationTimeline } from "./home-accumulation-model";
+import { LINE_DRAW_SECONDS, revealDelay, revealVariants } from "./home-accumulation-motion";
 import type { HomePublicationItem } from "./types";
 
 interface HomeAccumulationProps {
 	publications: HomePublicationItem[];
 	aggregationDays: number;
 }
-
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 /** 在连续时间线上呈现最近十二个月的公开发布节点。 */
 export function HomeAccumulation({ publications, aggregationDays }: HomeAccumulationProps) {
@@ -52,13 +46,13 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 							.join("；")}
 					</p>
 
-					<div className="relative h-20">
+					<motion.div
+						className="relative h-20"
+						initial={reduceMotion ? "shown" : "hidden"}
+						whileInView="shown"
+						viewport={{ once: true, amount: 0.6 }}
+					>
 						<div className="absolute inset-x-0 top-8 h-px">
-							<div
-								aria-hidden
-								style={{ left: `${todayPosition}%` }}
-								className="absolute inset-y-0 right-0 border-t border-dashed border-border/70"
-							/>
 							<div
 								aria-hidden
 								style={{ right: `${100 - todayPosition}%` }}
@@ -66,20 +60,22 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 							/>
 							<motion.div
 								aria-hidden
-								initial={reduceMotion ? false : { scaleX: 0 }}
-								whileInView={{ scaleX: 1 }}
-								viewport={{ once: true, amount: 0.6 }}
-								transition={{
-									duration: reduceMotion ? 0 : LINE_DRAW_SECONDS,
-									ease: EASE_OUT,
+								variants={{
+									hidden: { scaleX: 0 },
+									shown: {
+										scaleX: 1,
+										transition: { duration: LINE_DRAW_SECONDS, ease: "linear" },
+									},
 								}}
 								style={{ right: `${100 - todayPosition}%` }}
 								className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
 							/>
 							{monthTicks.map((position) => (
-								<span
+								<motion.span
 									key={position}
 									aria-hidden
+									variants={revealVariants}
+									custom={reduceMotion ? 0 : revealDelay(position, todayPosition)}
 									style={{ left: `${position}%` }}
 									className="absolute top-0 h-1.5 w-px -translate-y-1/2 bg-border"
 								/>
@@ -89,44 +85,45 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 									key={point.key}
 									point={point}
 									reduceMotion={reduceMotion}
+									todayPosition={todayPosition}
 								/>
 							))}
-							<div
+							<motion.div
+								variants={revealVariants}
+								custom={reduceMotion ? 0 : LINE_DRAW_SECONDS}
 								style={{ left: `${todayPosition}%` }}
-								className={cn(
-									"absolute top-1/2 -translate-x-1/2 -translate-y-1/2",
-									hasTodayPoint ? "z-0" : "z-10",
-								)}
+								className="absolute top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
 							>
 								<span
 									aria-hidden
-									className="absolute -top-4 left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary"
+									className={cn(
+										"absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary",
+										hasTodayPoint ? "-top-6" : "-top-4",
+									)}
 								>
 									今
 								</span>
-								<span aria-hidden className="block h-3.5 w-px bg-primary" />
-							</div>
+								{!hasTodayPoint && (
+									<span aria-hidden className="block h-3.5 w-px bg-primary" />
+								)}
+							</motion.div>
 						</div>
 
 						{seasonLabels.map((season) => (
 							<motion.span
 								key={season.key}
 								aria-hidden
-								initial={reduceMotion ? false : { opacity: 0, y: -6 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								viewport={{ once: true, amount: 0.6 }}
-								transition={{
-									duration: reduceMotion ? 0 : 0.5,
-									delay: reduceMotion ? 0 : dropDelay(season.position, 0.12),
-									ease: EASE_OUT,
-								}}
+								variants={revealVariants}
+								custom={
+									reduceMotion ? 0 : revealDelay(season.position, todayPosition)
+								}
 								style={{ left: `${season.position}%` }}
 								className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
 							>
 								{season.label}
 							</motion.span>
 						))}
-					</div>
+					</motion.div>
 
 					<div className="mt-12 sm:mt-14 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
 						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">

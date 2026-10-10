@@ -7,16 +7,23 @@ import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
-import { type AccumulationPoint, dropDelay } from "./home-accumulation-model";
+import type { AccumulationPoint } from "./home-accumulation-model";
+import { revealDelay, revealVariants } from "./home-accumulation-motion";
 import { HOME_KIND_LABEL } from "./home-content";
 
 interface HomeAccumulationPointProps {
 	point: AccumulationPoint;
 	reduceMotion: boolean | null;
+	/** 轴线终点位置，用于换算随线条显现的延迟。 */
+	todayPosition: number;
 }
 
 /** 提供鼠标、键盘与触屏均可访问的发布节点浮层。 */
-export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationPointProps) {
+export function HomeAccumulationPoint({
+	point,
+	reduceMotion,
+	todayPosition,
+}: HomeAccumulationPointProps) {
 	const [open, setOpen] = useState(false);
 	const closeTimer = useRef<number | null>(null);
 	const periodLabel = formatPointPeriod(point.startsAt, point.endsAt);
@@ -52,14 +59,8 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 
 	return (
 		<motion.div
-			initial={reduceMotion ? false : { opacity: 0, y: -8 }}
-			whileInView={{ opacity: 1, y: 0 }}
-			viewport={{ once: true, amount: 0.6 }}
-			transition={{
-				duration: reduceMotion ? 0 : 0.45,
-				delay: reduceMotion ? 0 : dropDelay(point.position),
-				ease: [0.22, 1, 0.36, 1],
-			}}
+			variants={revealVariants}
+			custom={reduceMotion ? 0 : revealDelay(point.position, todayPosition)}
 			className={cn(
 				"absolute top-1/2 -translate-x-1/2 -translate-y-1/2",
 				open ? "z-20" : "z-10",
