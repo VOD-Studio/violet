@@ -2,7 +2,7 @@ import { withCrop } from "@shared/lib/crop-url";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { Button, Modal } from "@violet/ui";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
 import { type CropRect, cropImageToBlob } from "@/features/upload/lib/crop-image";
@@ -24,7 +24,7 @@ export interface CropUploadDialogProps {
 	fileNameBase?: string;
 	open: boolean;
 	onOpenChange: (v: boolean) => void;
-	onConfirm: (result: CropUploadResult) => void;
+	onConfirm: (result: CropUploadResult) => void | Promise<void>;
 }
 
 /**
@@ -54,21 +54,19 @@ export function CropUploadDialog({
 	const [busy, setBusy] = useState(false);
 	const { uploadFile } = useChunkedUpload({ purpose });
 
-	// 预览源:优先本地文件 object URL,其次已有素材 URL
-	const previewSrc = useMemo(
-		() => (file ? URL.createObjectURL(file) : (srcUrl ?? "")),
-		[file, srcUrl],
-	);
+	const [previewSrc, setPreviewSrc] = useState(srcUrl ?? "");
 	const isGif =
 		file?.type === "image/gif" || srcUrl?.split("?")[0].toLowerCase().endsWith(".gif");
 
-	// 仅本地文件产生的 object URL 需释放(srcUrl 是外部资源不归本组件释放)
 	useEffect(() => {
-		if (!file) return;
-		return () => {
-			URL.revokeObjectURL(previewSrc);
-		};
-	}, [file, previewSrc]);
+		if (!file) {
+			setPreviewSrc(srcUrl ?? "");
+			return;
+		}
+		const objectUrl = URL.createObjectURL(file);
+		setPreviewSrc(objectUrl);
+		return () => URL.revokeObjectURL(objectUrl);
+	}, [file, srcUrl]);
 
 	const handleConfirm = useCallback(async () => {
 		if (!previewSrc) {
@@ -85,7 +83,9 @@ export function CropUploadDialog({
 					url = result.url;
 				}
 				if (!url) throw new Error("GIF 上传未返回 URL");
-				onConfirm(rect ? { kind: "gif", url: withCrop(url, rect) } : { kind: "gif", url });
+				await onConfirm(
+					rect ? { kind: "gif", url: withCrop(url, rect) } : { kind: "gif", url },
+				);
 			} else if (rect) {
 				// 静态图有选区:canvas 重编码 WebP 上传
 				const blob = await cropImageToBlob(previewSrc, rect);
@@ -93,14 +93,14 @@ export function CropUploadDialog({
 					type: "image/webp",
 				});
 				const result = await uploadFile(croppedFile);
-				onConfirm({ kind: "static", url: result.url });
+				await onConfirm({ kind: "static", url: result.url });
 			} else if (file) {
 				// 无选区:直接上传原文件
 				const result = await uploadFile(file);
-				onConfirm({ kind: "static", url: result.url });
+				await onConfirm({ kind: "static", url: result.url });
 			} else if (srcUrl) {
 				// 已有素材无选区:直接用原 URL
-				onConfirm({ kind: "static", url: srcUrl });
+				await onConfirm({ kind: "static", url: srcUrl });
 			}
 			onOpenChange(false);
 		} catch (e) {
@@ -113,7 +113,9 @@ export function CropUploadDialog({
 	return (
 		<Modal
 			open={open}
-			onOpenChange={onOpenChange}
+			onOpenChange={(nextOpen) => {
+				if (!busy) onOpenChange(nextOpen);
+			}}
 			title={isGif ? "选区(GIF 保留动画)" : "裁剪上传"}
 			size="md"
 			footer={
