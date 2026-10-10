@@ -18,6 +18,8 @@ export interface AccumulationPoint {
 	endsAt: number;
 	markerSize: number;
 	isLatest: boolean;
+	/** 节点包含当天发布的内容；位置已吸附到今日刻度。 */
+	includesToday: boolean;
 	order: number;
 }
 
@@ -33,6 +35,10 @@ export interface AccumulationTimeline {
 	points: AccumulationPoint[];
 	seasonLabels: AccumulationSeasonLabel[];
 	latest: HomePublicationItem | null;
+	/** 今日刻度在时间线上的百分比位置，之后为尚未到来的部分。 */
+	todayPosition: number;
+	/** 窗口内最新发布物是否发布于今天。 */
+	latestIsToday: boolean;
 }
 
 export const PUBLICATION_MARKER_MIN_SIZE = 5;
@@ -101,6 +107,16 @@ export function buildAccumulationTimeline(
 		AGGREGATION_MIN_DAYS,
 		AGGREGATION_MAX_DAYS,
 	);
+	const today = Date.UTC(
+		referenceDate.getUTCFullYear(),
+		referenceDate.getUTCMonth(),
+		referenceDate.getUTCDate(),
+	);
+	const todayPosition = clamp(
+		((today + DAY_IN_MILLISECONDS / 2 - rangeStart) / timelineDuration) * 100,
+		0.5,
+		99.5,
+	);
 	const windowDuration = safeAggregationDays * DAY_IN_MILLISECONDS;
 	const monthByKey = new Map(months.map((month) => [month.key, month]));
 	const buckets = new Map<number, PublicationBucket>();
@@ -135,14 +151,18 @@ export function buildAccumulationTimeline(
 				.sort((left, right) => right.day - left.day)
 				.map((entry) => entry.item);
 			const midpoint = bucket.startsAt + (bucket.endsAt - bucket.startsAt) / 2;
+			const includesToday = bucket.entries.some((entry) => entry.day === today);
 			return {
 				key: `window-${bucket.index}`,
-				position: clamp(((midpoint - rangeStart) / timelineDuration) * 100, 0.5, 99.5),
+				position: includesToday
+					? todayPosition
+					: clamp(((midpoint - rangeStart) / timelineDuration) * 100, 0.5, 99.5),
 				items,
 				startsAt: bucket.startsAt,
 				endsAt: bucket.endsAt - DAY_IN_MILLISECONDS,
 				markerSize: markerSizeForCount(items.length),
 				isLatest: items.some((item) => item.id === latestEntry?.item.id),
+				includesToday,
 				order,
 			};
 		});
@@ -152,6 +172,8 @@ export function buildAccumulationTimeline(
 		points,
 		seasonLabels: buildSeasonLabels(months, rangeStart, timelineDuration),
 		latest: latestEntry?.item ?? null,
+		todayPosition,
+		latestIsToday: latestEntry?.day === today,
 	};
 }
 
@@ -272,7 +294,14 @@ function parsePublicationDay(value: string): number | null {
 }
 
 function emptyTimeline(): AccumulationTimeline {
-	return { months: [], points: [], seasonLabels: [], latest: null };
+	return {
+		months: [],
+		points: [],
+		seasonLabels: [],
+		latest: null,
+		todayPosition: 100,
+		latestIsToday: false,
+	};
 }
 
 function monthAfter(month: AccumulationMonth): number {

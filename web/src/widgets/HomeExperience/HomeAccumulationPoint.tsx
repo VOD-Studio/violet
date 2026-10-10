@@ -15,8 +15,6 @@ interface HomeAccumulationPointProps {
 	reduceMotion: boolean | null;
 }
 
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
-
 /** 提供鼠标、键盘与触屏均可访问的发布节点浮层。 */
 export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationPointProps) {
 	const [open, setOpen] = useState(false);
@@ -75,15 +73,15 @@ export function HomeAccumulationPoint({ point, reduceMotion }: HomeAccumulationP
 						onBlur={scheduleClose}
 						className="relative flex size-6 touch-manipulation items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
-						<motion.span
+						<span
 							aria-hidden
-							animate={{ scale: reduceMotion ? 1 : open ? 1.3 : 1 }}
-							transition={{ duration: reduceMotion ? 0 : 0.18, ease: EASE_OUT }}
 							style={{ width: point.markerSize, height: point.markerSize }}
 							className={cn(
-								"block rounded-full bg-muted-foreground ring-1 ring-background transition-colors duration-150",
+								"block rounded-full bg-muted-foreground ring-1 ring-background transition-[background-color,box-shadow] duration-150",
 								point.isLatest && "bg-primary",
-								open && "bg-primary ring-4 ring-primary/10",
+								point.includesToday &&
+									"ring-4 ring-primary/15 motion-safe:animate-pulse",
+								open && "bg-primary ring-4 ring-primary/15",
 							)}
 						/>
 					</motion.button>

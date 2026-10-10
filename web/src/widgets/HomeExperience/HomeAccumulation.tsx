@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { motion, useReducedMotion } from "motion/react";
 
 import { HomeAccumulationPoint } from "./HomeAccumulationPoint";
 import { HomeContentLink } from "./HomeContentLink";
-import { buildAccumulationTimeline } from "./home-accumulation-model";
+import { type AccumulationMonth, buildAccumulationTimeline } from "./home-accumulation-model";
 import type { HomePublicationItem } from "./types";
 
 interface HomeAccumulationProps {
@@ -16,12 +17,12 @@ const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 /** 在连续时间线上呈现最近十二个月的公开发布节点。 */
 export function HomeAccumulation({ publications, aggregationDays }: HomeAccumulationProps) {
 	const reduceMotion = useReducedMotion();
-	const { months, points, seasonLabels, latest } = buildAccumulationTimeline(
-		publications,
-		aggregationDays,
-	);
+	const { months, points, seasonLabels, latest, todayPosition, latestIsToday } =
+		buildAccumulationTimeline(publications, aggregationDays);
 	if (!latest || points.length === 0) return null;
 
+	const monthTicks = buildMonthTicks(months);
+	const hasTodayPoint = points.some((point) => point.includesToday);
 	const currentYear = new Date().getFullYear();
 	const yearCount = publications.filter((publication) => {
 		const publishedAt = new Date(publication.published_at);
@@ -48,15 +49,33 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 
 					<div className="relative h-20">
 						<div className="absolute inset-x-0 top-8 h-px">
-							<div aria-hidden className="absolute inset-0 bg-border/70" />
+							<div
+								aria-hidden
+								style={{ left: `${todayPosition}%` }}
+								className="absolute inset-y-0 right-0 border-t border-dashed border-border/70"
+							/>
+							<div
+								aria-hidden
+								style={{ right: `${100 - todayPosition}%` }}
+								className="absolute inset-y-0 left-0 bg-border/70"
+							/>
 							<motion.div
 								aria-hidden
 								initial={reduceMotion ? false : { scaleX: 0 }}
 								whileInView={{ scaleX: 1 }}
 								viewport={{ once: true, amount: 0.6 }}
 								transition={{ duration: reduceMotion ? 0 : 0.82, ease: EASE_OUT }}
-								className="absolute inset-0 origin-left bg-foreground/30"
+								style={{ right: `${100 - todayPosition}%` }}
+								className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
 							/>
+							{monthTicks.map((position) => (
+								<span
+									key={position}
+									aria-hidden
+									style={{ left: `${position}%` }}
+									className="absolute top-0 h-1.5 w-px -translate-y-1/2 bg-border"
+								/>
+							))}
 							{points.map((point) => (
 								<HomeAccumulationPoint
 									key={point.key}
@@ -64,10 +83,16 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 									reduceMotion={reduceMotion}
 								/>
 							))}
-							<div className="absolute top-1/2 right-0 z-10 -translate-y-1/2">
+							<div
+								style={{ left: `${todayPosition}%` }}
+								className={cn(
+									"absolute top-1/2 -translate-x-1/2 -translate-y-1/2",
+									hasTodayPoint ? "z-0" : "z-10",
+								)}
+							>
 								<span
 									aria-hidden
-									className="absolute -top-4 -right-1 text-[11px] font-medium text-primary"
+									className="absolute -top-4 left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary"
 								>
 									今
 								</span>
@@ -85,42 +110,18 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 								{season.label}
 							</span>
 						))}
-
-						<div aria-hidden className="pointer-events-none absolute inset-0">
-							<svg
-								aria-hidden="true"
-								className="absolute -top-3 left-[15%] size-3 text-amber-500/40 dark:text-amber-300/35"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
-							</svg>
-							<span className="absolute top-12 left-[32%] size-1.5 rotate-45 bg-amber-500/25 dark:bg-amber-300/20" />
-							<span className="absolute -top-1 right-[26%] h-px w-5 bg-amber-500/30 dark:bg-amber-300/25" />
-							<svg
-								aria-hidden="true"
-								className="absolute top-2 right-[10%] size-2.5 text-amber-500/35 dark:text-amber-300/30"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
-							</svg>
-							<span className="absolute top-14 left-[64%] size-1 rotate-45 bg-amber-500/35 dark:bg-amber-300/30" />
-							<svg
-								aria-hidden="true"
-								className="absolute bottom-2 left-[5%] size-2 text-amber-500/30 dark:text-amber-300/25"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
-							</svg>
-							<span className="absolute -bottom-1 right-[18%] size-1.5 rotate-45 bg-amber-500/25 dark:bg-amber-300/20" />
-						</div>
 					</div>
 
 					<div className="mt-12 sm:mt-14 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
 						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">
-							<span className="shrink-0 text-muted-foreground/75">新篇 ·</span>
+							<span
+								className={cn(
+									"shrink-0 text-muted-foreground/75",
+									latestIsToday && "text-primary",
+								)}
+							>
+								{latestIsToday ? "今日新篇 ·" : "新篇 ·"}
+							</span>
 							<HomeContentLink
 								item={latest}
 								className="min-w-0 truncate font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -147,4 +148,15 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 			</div>
 		</section>
 	);
+}
+
+/** 各月起点（不含首月）在时间线上的百分比位置。 */
+function buildMonthTicks(months: AccumulationMonth[]): number[] {
+	const first = months[0];
+	const last = months.at(-1);
+	if (!first || !last) return [];
+	const end = Date.UTC(last.year, last.month, 1);
+	return months
+		.slice(1)
+		.map((month) => ((month.startsAt - first.startsAt) / (end - first.startsAt)) * 100);
 }

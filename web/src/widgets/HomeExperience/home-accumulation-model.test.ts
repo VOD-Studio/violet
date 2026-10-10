@@ -115,3 +115,31 @@ describe("buildAccumulationTimeline", () => {
 		]);
 	});
 });
+
+describe("今日发布", () => {
+	it("当天发布的节点吸附到今日刻度并标记最新为今天", () => {
+		const today = Date.UTC(2026, 9, 10);
+		const timeline = buildAccumulationTimeline(
+			[publication(today, 0), publication(Date.UTC(2026, 8, 1), 1)],
+			7,
+			new Date("2026-10-10T08:00:00Z"),
+		);
+		const todayPoint = timeline.points.find((point) => point.includesToday);
+
+		expect(timeline.latestIsToday).toBe(true);
+		expect(todayPoint?.position).toBe(timeline.todayPosition);
+		expect(timeline.points.filter((point) => point.includesToday)).toHaveLength(1);
+	});
+
+	it("今天没有发布时不吸附也不标记", () => {
+		const timeline = buildAccumulationTimeline(
+			[publication(Date.UTC(2026, 9, 8), 0)],
+			7,
+			new Date("2026-10-10T08:00:00Z"),
+		);
+
+		expect(timeline.latestIsToday).toBe(false);
+		expect(timeline.points.some((point) => point.includesToday)).toBe(false);
+		expect(timeline.todayPosition).toBeLessThan(100);
+	});
+});
