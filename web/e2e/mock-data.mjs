@@ -72,6 +72,7 @@ const ADMIN_USER = {
 	display_name: "Contract",
 	email: "contract@local",
 	avatar_url: "",
+	cover_url: "",
 	bio: "",
 	role: "root",
 	is_root: true,

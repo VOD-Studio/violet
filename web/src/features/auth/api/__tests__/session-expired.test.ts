@@ -35,6 +35,7 @@ function makeUser(): UserDTO {
 		display_name: "",
 		email: "alice@example.com",
 		avatar_url: "",
+		cover_url: "",
 		bio: "",
 		role: "user",
 		is_root: false,

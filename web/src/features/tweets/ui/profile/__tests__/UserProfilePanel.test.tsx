@@ -31,6 +31,7 @@ const profile: UserProfile = {
 	username: "alice",
 	display_name: "",
 	avatar_url: "",
+	cover_url: "",
 	bio: "",
 	created_at: "2026-01-01T00:00:00Z",
 };
