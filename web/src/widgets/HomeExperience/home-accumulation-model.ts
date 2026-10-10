@@ -315,3 +315,16 @@ function formatMonthKey(year: number, month: number): string {
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
 }
+
+/** 节点覆盖的日期范围，如 `8.01—07`；单日只显示起点。 */
+export function formatPointPeriod(startsAt: number, endsAt: number): string {
+	const start = new Date(startsAt);
+	const end = new Date(endsAt);
+	const startLabel = `${start.getUTCMonth() + 1}.${String(start.getUTCDate()).padStart(2, "0")}`;
+	if (startsAt === endsAt) return startLabel;
+	const endLabel =
+		start.getUTCMonth() === end.getUTCMonth()
+			? String(end.getUTCDate()).padStart(2, "0")
+			: `${end.getUTCMonth() + 1}.${String(end.getUTCDate()).padStart(2, "0")}`;
+	return `${startLabel}—${endLabel}`;
+}

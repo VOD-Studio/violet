@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
+import { HomeAccumulationDetail } from "./HomeAccumulationDetail";
 import { HomeAccumulationPoint } from "./HomeAccumulationPoint";
-import { HomeContentLink } from "./HomeContentLink";
 import { type AccumulationMonth, buildAccumulationTimeline } from "./home-accumulation-model";
 import { LINE_DRAW_SECONDS, revealDelay, revealVariants } from "./home-accumulation-motion";
 import type { HomePublicationItem } from "./types";
@@ -17,37 +17,19 @@ interface HomeAccumulationProps {
 /** 在连续时间线上呈现最近十二个月的公开发布节点。 */
 export function HomeAccumulation({ publications, aggregationDays }: HomeAccumulationProps) {
 	const reduceMotion = useReducedMotion();
-	const [activeKey, setActiveKey] = useState<string | null>(null);
-	const closeTimer = useRef<number | null>(null);
-	const cancelClose = () => {
-		if (closeTimer.current === null) return;
-		window.clearTimeout(closeTimer.current);
-		closeTimer.current = null;
-	};
-	const activate = (key: string) => {
-		cancelClose();
-		setActiveKey(key);
-	};
-	const release = (key: string) => {
-		cancelClose();
-		closeTimer.current = window.setTimeout(() => {
-			closeTimer.current = null;
-			setActiveKey((current) => (current === key ? null : current));
-		}, 180);
-	};
-	const dismiss = (key: string) => {
-		cancelClose();
-		setActiveKey((current) => (current === key ? null : current));
-	};
-	useEffect(
-		() => () => {
-			if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-		},
-		[],
-	);
+	const [selectedKey, setSelectedKey] = useState<string | null>(null);
+	const scrollerRef = useRef<HTMLDivElement>(null);
+	// 窄屏时间线可横向滑动，初始停在「今」一端
+	useLayoutEffect(() => {
+		const scroller = scrollerRef.current;
+		if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+	}, []);
 	const { months, points, seasonLabels, latest, todayPosition, latestIsToday } =
 		buildAccumulationTimeline(publications, aggregationDays);
 	if (!latest || points.length === 0) return null;
+
+	const latestPoint = points.find((point) => point.isLatest) ?? points[points.length - 1];
+	const selectedPoint = points.find((point) => point.key === selectedKey) ?? latestPoint;
 
 	const monthTicks = buildMonthTicks(months);
 	const hasTodayPoint = points.some((point) => point.includesToday);
@@ -76,120 +58,128 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 					</p>
 
 					<motion.div
-						className="relative h-20"
 						initial={reduceMotion ? "shown" : "hidden"}
 						whileInView="shown"
 						viewport={{ once: true, amount: 0.6 }}
 					>
-						<div className="absolute inset-x-0 top-8 h-px">
-							<div
-								aria-hidden
-								style={{ right: `${100 - todayPosition}%` }}
-								className="absolute inset-y-0 left-0 bg-border/70"
-							/>
-							<motion.div
-								aria-hidden
-								variants={{
-									hidden: { scaleX: 0 },
-									shown: {
-										scaleX: 1,
-										transition: { duration: LINE_DRAW_SECONDS, ease: "linear" },
-									},
-								}}
-								style={{ right: `${100 - todayPosition}%` }}
-								className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
-							/>
-							{monthTicks.map((position) => (
-								<motion.span
-									key={position}
-									aria-hidden
-									variants={revealVariants}
-									custom={reduceMotion ? 0 : revealDelay(position, todayPosition)}
-									style={{ left: `${position}%` }}
-									className="absolute top-0 h-1.5 w-px -translate-y-1/2 bg-border"
-								/>
-							))}
-							{points.map((point) => (
-								<HomeAccumulationPoint
-									key={point.key}
-									point={point}
-									reduceMotion={reduceMotion}
-									todayPosition={todayPosition}
-									open={activeKey === point.key}
-									onActivate={() => activate(point.key)}
-									onRelease={() => release(point.key)}
-									onDismiss={() => dismiss(point.key)}
-								/>
-							))}
-							<motion.div
-								variants={revealVariants}
-								custom={reduceMotion ? 0 : LINE_DRAW_SECONDS}
-								style={{ left: `${todayPosition}%` }}
-								className="absolute top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
-							>
-								<span
-									aria-hidden
-									className={cn(
-										"absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary",
-										hasTodayPoint ? "-top-6" : "-top-4",
-									)}
-								>
-									今
-								</span>
-								{!hasTodayPoint && (
-									<span aria-hidden className="block h-3.5 w-px bg-primary" />
-								)}
-							</motion.div>
-						</div>
+						<div
+							ref={scrollerRef}
+							className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1rem),transparent)] sm:mx-0 sm:px-0 sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+						>
+							<div className="relative h-20 min-w-160 sm:min-w-0">
+								<div className="absolute inset-x-0 top-8 h-px">
+									<div
+										aria-hidden
+										style={{ right: `${100 - todayPosition}%` }}
+										className="absolute inset-y-0 left-0 bg-border/70"
+									/>
+									<motion.div
+										aria-hidden
+										variants={{
+											hidden: { scaleX: 0 },
+											shown: {
+												scaleX: 1,
+												transition: {
+													duration: LINE_DRAW_SECONDS,
+													ease: "linear",
+												},
+											},
+										}}
+										style={{ right: `${100 - todayPosition}%` }}
+										className="absolute inset-y-0 left-0 origin-left bg-foreground/30"
+									/>
+									{monthTicks.map((position) => (
+										<motion.span
+											key={position}
+											aria-hidden
+											variants={revealVariants}
+											custom={
+												reduceMotion
+													? 0
+													: revealDelay(position, todayPosition)
+											}
+											style={{ left: `${position}%` }}
+											className="absolute top-0 h-1.5 w-px -translate-y-1/2 bg-border"
+										/>
+									))}
+									{points.map((point) => (
+										<HomeAccumulationPoint
+											key={point.key}
+											point={point}
+											reduceMotion={reduceMotion}
+											todayPosition={todayPosition}
+											selected={selectedPoint?.key === point.key}
+											onSelect={() => setSelectedKey(point.key)}
+										/>
+									))}
+									<motion.div
+										variants={revealVariants}
+										custom={reduceMotion ? 0 : LINE_DRAW_SECONDS}
+										style={{ left: `${todayPosition}%` }}
+										className="absolute top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
+									>
+										<span
+											aria-hidden
+											className={cn(
+												"absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary",
+												hasTodayPoint ? "-top-6" : "-top-4",
+											)}
+										>
+											今
+										</span>
+										{!hasTodayPoint && (
+											<span
+												aria-hidden
+												className="block h-3.5 w-px bg-primary"
+											/>
+										)}
+									</motion.div>
+								</div>
 
-						{seasonLabels.map((season) => (
-							<motion.span
-								key={season.key}
-								aria-hidden
-								variants={revealVariants}
-								custom={
-									reduceMotion ? 0 : revealDelay(season.position, todayPosition)
-								}
-								style={{ left: `${season.position}%` }}
-								className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
-							>
-								{season.label}
-							</motion.span>
-						))}
+								{seasonLabels.map((season) => (
+									<motion.span
+										key={season.key}
+										aria-hidden
+										variants={revealVariants}
+										custom={
+											reduceMotion
+												? 0
+												: revealDelay(season.position, todayPosition)
+										}
+										style={{ left: `${season.position}%` }}
+										className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
+									>
+										{season.label}
+									</motion.span>
+								))}
+							</div>
+						</div>
 					</motion.div>
 
-					<div className="mt-12 sm:mt-14 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
-						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">
-							<span
-								className={cn(
-									"shrink-0 text-muted-foreground/75",
-									latestIsToday && "text-primary",
-								)}
-							>
-								{latestIsToday ? "今日新篇 ·" : "新篇 ·"}
-							</span>
-							<HomeContentLink
-								item={latest}
-								className="min-w-0 truncate font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-							>
-								{latest.title}
-							</HomeContentLink>
+					{selectedPoint && (
+						<div className="mt-8 sm:mt-10">
+							<HomeAccumulationDetail
+								point={selectedPoint}
+								isLatest={selectedPoint.isLatest}
+								latestIsToday={latestIsToday}
+								reduceMotion={reduceMotion}
+							/>
 						</div>
-						<p className="mt-3 sm:mt-3.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
-							<span className="font-serif text-[13px] italic text-muted-foreground/80">
-								今年落笔 {yearCount} 篇
-							</span>
-							<span aria-hidden className="text-muted-foreground/40">
-								·
-							</span>
-							<Link
-								to="/blog/archive"
-								className="font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-							>
-								尽览年表 →
-							</Link>
-						</p>
-					</div>
+					)}
+					<p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
+						<span className="font-serif text-[13px] italic text-muted-foreground/80">
+							今年落笔 {yearCount} 篇
+						</span>
+						<span aria-hidden className="text-muted-foreground/40">
+							·
+						</span>
+						<Link
+							to="/blog/archive"
+							className="font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+						>
+							尽览年表 →
+						</Link>
+					</p>
 				</figure>
 			</div>
 		</section>
