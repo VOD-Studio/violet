@@ -2,9 +2,7 @@ import { formatDate } from "@shared/lib/date";
 import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 
 import { cn } from "cn";
-import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
 
 import { HomeContentLink } from "./HomeContentLink";
 import type { AccumulationPoint } from "./home-accumulation-model";
@@ -16,6 +14,14 @@ interface HomeAccumulationPointProps {
 	reduceMotion: boolean | null;
 	/** 轴线终点位置，用于换算随线条显现的延迟。 */
 	todayPosition: number;
+	/** 当前节点的浮层是否展开；由时间线统一保证同一时间只展开一个。 */
+	open: boolean;
+	/** 悬停、聚焦或点击时请求展开本节点，并取消待执行的关闭。 */
+	onActivate: () => void;
+	/** 指针或焦点离开后请求延迟关闭。 */
+	onRelease: () => void;
+	/** 立即关闭，用于 Esc 与点击外部。 */
+	onDismiss: () => void;
 }
 
 /** 提供鼠标、键盘与触屏均可访问的发布节点浮层。 */
@@ -23,35 +29,12 @@ export function HomeAccumulationPoint({
 	point,
 	reduceMotion,
 	todayPosition,
+	open,
+	onActivate,
+	onRelease,
+	onDismiss,
 }: HomeAccumulationPointProps) {
-	const [open, setOpen] = useState(false);
-	const closeTimer = useRef<number | null>(null);
 	const periodLabel = formatPointPeriod(point.startsAt, point.endsAt);
-
-	const cancelClose = () => {
-		if (closeTimer.current === null) return;
-		window.clearTimeout(closeTimer.current);
-		closeTimer.current = null;
-	};
-	const showPoint = () => {
-		cancelClose();
-		setOpen(true);
-	};
-	const scheduleClose = () => {
-		cancelClose();
-		closeTimer.current = window.setTimeout(() => {
-			closeTimer.current = null;
-			setOpen(false);
-		}, 180);
-	};
-
-	useEffect(
-		() => () => {
-			if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-		},
-		[],
-	);
-
 	const label =
 		point.items.length === 1
 			? `查看发布：${point.items[0]?.title}`
@@ -67,19 +50,19 @@ export function HomeAccumulationPoint({
 			)}
 			style={{ left: `${point.position}%` }}
 		>
-			<Popover open={open} onOpenChange={setOpen}>
+			<Popover open={open} onOpenChange={(next) => (next ? onActivate() : onDismiss())}>
 				<PopoverTrigger asChild>
-					<motion.button
+					<button
 						type="button"
 						aria-label={label}
 						onPointerEnter={(event) => {
-							if (event.pointerType === "mouse") showPoint();
+							if (event.pointerType === "mouse") onActivate();
 						}}
 						onPointerLeave={(event) => {
-							if (event.pointerType === "mouse") scheduleClose();
+							if (event.pointerType === "mouse") onRelease();
 						}}
-						onFocus={showPoint}
-						onBlur={scheduleClose}
+						onFocus={onActivate}
+						onBlur={onRelease}
 						className="relative flex size-6 touch-manipulation items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
 						<span
@@ -88,79 +71,49 @@ export function HomeAccumulationPoint({
 							className={cn(
 								"block rounded-full bg-muted-foreground ring-1 ring-background transition-[background-color,box-shadow] duration-150",
 								point.isLatest && "bg-primary",
-								point.includesToday &&
-									"ring-4 ring-primary/15 motion-safe:animate-pulse",
-								open && "bg-primary ring-4 ring-primary/15",
+								(point.includesToday || open) &&
+									"bg-primary ring-primary/50 ring-offset-[3px] ring-offset-background",
 							)}
 						/>
-					</motion.button>
+					</button>
 				</PopoverTrigger>
 				<PopoverContent
-					asChild
 					side="top"
-					sideOffset={10}
+					sideOffset={12}
 					collisionPadding={12}
 					onOpenAutoFocus={(event) => event.preventDefault()}
 					onCloseAutoFocus={(event) => event.preventDefault()}
-					onPointerEnter={showPoint}
-					onPointerLeave={scheduleClose}
-					onFocusCapture={showPoint}
-					onBlurCapture={scheduleClose}
-					className="w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border/70 bg-popover/95 p-3.5 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] backdrop-blur-xl dark:border-border/50 dark:shadow-[0_24px_50px_-16px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)] data-[state=closed]:duration-150! data-[state=closed]:zoom-out-95! data-[state=open]:animate-none!"
+					onPointerEnter={onActivate}
+					onPointerLeave={onRelease}
+					onFocusCapture={onActivate}
+					onBlurCapture={onRelease}
+					className="w-72 max-w-[calc(100vw-1.5rem)] rounded-xl border-0 bg-popover p-1.5 shadow-[0_4px_24px_rgb(0_0_0/0.05)] ring-1 ring-border data-[side=top]:slide-in-from-bottom-0 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100 data-[state=closed]:duration-100 data-[state=open]:duration-150"
 				>
-					<motion.div
-						initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 8 }}
-						animate={{ opacity: 1, scale: 1, y: 0 }}
-						transition={{
-							duration: reduceMotion ? 0 : 0.22,
-							ease: [0.16, 1, 0.3, 1],
-						}}
-						style={{
-							transformOrigin:
-								"var(--radix-popover-content-transform-origin, 50% 100%)",
-						}}
-					>
-						<div className="flex items-center justify-between pb-2.5">
-							<span className="inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] font-medium tracking-tight text-foreground/85">
-								<span className="size-1 rounded-full bg-primary/75" />
-								<span className="tabular-nums">{periodLabel}</span>
-							</span>
-							<span className="text-[11px] font-medium text-muted-foreground tabular-nums">
-								{point.items.length} 篇内容
-							</span>
-						</div>
-						<div className="max-h-48 space-y-0.5 overflow-x-hidden overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent]">
-							{point.items.map((item) => (
+					<div className="flex items-baseline justify-between px-2.5 pt-1.5 pb-1 text-[11px] text-muted-foreground tabular-nums">
+						<span className="font-medium text-foreground/80">{periodLabel}</span>
+						<span>{point.items.length} 篇</span>
+					</div>
+					<ul className="max-h-60 overflow-y-auto overscroll-contain [scrollbar-width:thin]">
+						{point.items.map((item) => (
+							<li key={item.id}>
 								<HomeContentLink
-									key={item.id}
 									item={item}
-									className="group flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all duration-150 hover:bg-muted/70 active:scale-[0.985] focus-visible:bg-muted/70 focus-visible:outline-2 focus-visible:outline-primary"
+									className="group block rounded-lg px-2.5 py-2 transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 focus-visible:outline-2 focus-visible:outline-primary"
 								>
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-xs font-medium text-foreground transition-colors group-hover:text-primary">
-											{item.title}
-										</p>
-										<div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-											<span className="font-normal text-muted-foreground/90">
-												{HOME_KIND_LABEL[item.kind]}
-											</span>
-											<span
-												aria-hidden
-												className="size-0.5 rounded-full bg-border"
-											/>
-											<time
-												dateTime={item.published_at}
-												className="tabular-nums"
-											>
-												{formatDate(item.published_at, "dotted-date")}
-											</time>
-										</div>
-									</div>
-									<ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/30 transition-all duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
+									<p className="truncate text-[13px] font-medium text-foreground transition-colors group-hover:text-primary">
+										{item.title}
+									</p>
+									<p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+										<span>{HOME_KIND_LABEL[item.kind]}</span>
+										<span aria-hidden>·</span>
+										<time dateTime={item.published_at} className="tabular-nums">
+											{formatDate(item.published_at, "dotted-date")}
+										</time>
+									</p>
 								</HomeContentLink>
-							))}
-						</div>
-					</motion.div>
+							</li>
+						))}
+					</ul>
 				</PopoverContent>
 			</Popover>
 		</motion.div>

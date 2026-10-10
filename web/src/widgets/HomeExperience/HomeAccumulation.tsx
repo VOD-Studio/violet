@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 
 import { HomeAccumulationPoint } from "./HomeAccumulationPoint";
 import { HomeContentLink } from "./HomeContentLink";
@@ -16,6 +17,34 @@ interface HomeAccumulationProps {
 /** 在连续时间线上呈现最近十二个月的公开发布节点。 */
 export function HomeAccumulation({ publications, aggregationDays }: HomeAccumulationProps) {
 	const reduceMotion = useReducedMotion();
+	const [activeKey, setActiveKey] = useState<string | null>(null);
+	const closeTimer = useRef<number | null>(null);
+	const cancelClose = () => {
+		if (closeTimer.current === null) return;
+		window.clearTimeout(closeTimer.current);
+		closeTimer.current = null;
+	};
+	const activate = (key: string) => {
+		cancelClose();
+		setActiveKey(key);
+	};
+	const release = (key: string) => {
+		cancelClose();
+		closeTimer.current = window.setTimeout(() => {
+			closeTimer.current = null;
+			setActiveKey((current) => (current === key ? null : current));
+		}, 180);
+	};
+	const dismiss = (key: string) => {
+		cancelClose();
+		setActiveKey((current) => (current === key ? null : current));
+	};
+	useEffect(
+		() => () => {
+			if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+		},
+		[],
+	);
 	const { months, points, seasonLabels, latest, todayPosition, latestIsToday } =
 		buildAccumulationTimeline(publications, aggregationDays);
 	if (!latest || points.length === 0) return null;
@@ -86,6 +115,10 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 									point={point}
 									reduceMotion={reduceMotion}
 									todayPosition={todayPosition}
+									open={activeKey === point.key}
+									onActivate={() => activate(point.key)}
+									onRelease={() => release(point.key)}
+									onDismiss={() => dismiss(point.key)}
 								/>
 							))}
 							<motion.div
