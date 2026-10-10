@@ -1,17 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-	cartoonStyle,
 	circle,
 	createHand,
 	createPlayer,
 	createSchedule,
 	type Drawing,
 	draw,
+	type Fill,
 	itemProgress,
 	line,
+	mergePaths,
 	pens,
 	rect,
 	styles,
+	transformPath,
 } from "./index.ts";
 import { drawCanvas } from "./render/canvas.ts";
 import { mountSvg, seekSvg } from "./render/svg.ts";
@@ -219,28 +221,33 @@ describe("SVG 按时间显现", () => {
 	});
 
 	it("合成区域（如 evenodd 月牙）整体作为一个元素，不按子路径拆开", () => {
+		const crescent: Fill = {
+			id: "crescent",
+			generate: (_region, _ctx, source) => ({
+				areas: [
+					{
+						path: mergePaths(
+							[source, transformPath(source, [1, 0, 0, 1, 24, 0])],
+							"evenodd",
+						),
+						clip: true,
+					},
+				],
+			}),
+		};
 		const drawing = draw(
 			{
 				width: 400,
 				height: 300,
 				items: [{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }],
 			},
-			{ style: cartoonStyle, seed: 3 },
+			{ style: { ...styles.natural, fill: crescent }, seed: 3 },
 		);
 		const schedule = createSchedule(drawing);
-		const svg = mountSvg(
-			drawing,
-			{
-				...palette,
-				"sky:shade": "#00f",
-				"sky:light": "#fff",
-				"sky:line": "#000",
-				sky: "#9cf",
-			},
-			{ schedule },
-		);
+		const svg = mountSvg(drawing, { ...palette, sky: "#9cf" }, { schedule });
 		const areas = drawing.items[0].batches.filter((b) => b.mode === "fill" && !b.ribbons);
-		expect(areas.length).toBeGreaterThanOrEqual(3);
+		expect(areas).toHaveLength(1);
+		expect(areas[0].verbs.filter((v) => v === 0)).toHaveLength(2);
 		const areaRoles = new Set(areas.map((b) => b.role));
 		const filled = Array.from(svg.querySelectorAll("[data-trk][data-paint='fill']")).filter(
 			(el) => areaRoles.has(el.getAttribute("data-role") ?? ""),

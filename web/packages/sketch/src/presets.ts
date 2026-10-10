@@ -4,7 +4,7 @@ import { fineliner } from "./pen/fineliner.ts";
 
 /**
  * 内置风格：签字笔配三档手法，填充缺省为实色，可用 `{ ...styles.natural, fill }` 替换。
- * 卡通风格见 {@link import("./cartoon.ts").cartoonStyle}。
+ * 动漫风格见 {@link import("./anime.ts").createAnimeStyle}。
  */
 export const styles = {
 	neat: { hand: hands.neat, fillHand: fillHands.neat, pen: fineliner, fillPen: fineliner },

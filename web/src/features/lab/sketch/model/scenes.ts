@@ -1,6 +1,5 @@
 import {
 	arc,
-	cartoonPalette,
 	circle,
 	curve,
 	ellipse,
@@ -40,8 +39,8 @@ export const FILL_LABELS: Record<FillId, string> = {
 	dots: "点阵",
 };
 
-/** 全部场景共用的基础色；卡通风格需要的阴影、高光与线色由 cartoonPalette 派生。 */
-export const palette: Palette = cartoonPalette({
+/** 全部场景共用的基础色。 */
+export const palette: Palette = {
 	paper: "#fffdf7",
 	ink: "#2b2836",
 	sky: "#b9dbea",
@@ -63,7 +62,10 @@ export const palette: Palette = cartoonPalette({
 	trunk: "#a67c5b",
 	leaf: "#78c28c",
 	leafDeep: "#5fae7c",
-});
+};
+
+/** 动漫风格的线稿用暖棕墨，两侧对照同用这套配色。 */
+export const animePalette: Palette = { ...palette, ink: "#4a3431" };
 
 const tones = ["sky", "rose", "mint", "lilac", "sun"] as const;
 export const tone = (i: number) => tones[i % tones.length];
@@ -192,7 +194,7 @@ function star(cx: number, cy: number, r: number) {
 	return polygon(points);
 }
 
-/** 夜晚小屋：卡通风格的完整插画，覆盖大小形状、色线与分层明暗。 */
+/** 夜晚小屋：动漫风格的完整插画，覆盖大小形状与外轮廓、细节的线宽层次。 */
 export function illustrationScene(): BenchScene {
 	const big = 2.6;
 	const mid = 2;
