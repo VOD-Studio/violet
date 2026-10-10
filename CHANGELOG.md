@@ -7,6 +7,30 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.9.3](https://github.com/VOD-Studio/violet/compare/v2.9.2...v2.9.3) (2026-10-10)
+
+
+### 新增
+
+* **series:** 书架书封与详情书封共享元素变形 ([f50b905](https://github.com/VOD-Studio/violet/commit/f50b9055fc15bd87754636232c65601b72fb1cee))
+* **sketch:** 手绘绘图库 0.2.0 与前台页面转场重构 ([3f9f495](https://github.com/VOD-Studio/violet/commit/3f9f49548e312ae7b347e49a9fdd9f383e985bb6))
+* **tweets:** 推文作者头像与用户主页头像共享元素变形 ([b44a092](https://github.com/VOD-Studio/violet/commit/b44a092c85d0fa1d282f8daaa0eef45cd14d994d))
+* **view-transition:** 新增页面转场规则与共享元素模块 ([df10ead](https://github.com/VOD-Studio/violet/commit/df10ead90beaa7d84aa7025e7a3ce3fafb96fb18))
+
+
+### 修复
+
+* **react-tweet:** 竖图横条放得下时撑满整行 ([b39dc6a](https://github.com/VOD-Studio/violet/commit/b39dc6ad7c7a572d6765a273ce9c4bf489b8328f))
+* **users:** 用户主页恢复整页滚动并固定两侧栏 ([1e01147](https://github.com/VOD-Studio/violet/commit/1e01147f5861218fd3ef9164421c3a67a0f6f127))
+
+
+### 重构
+
+* **users:** 公开用户主页改为封面加三栏布局 ([3005ad1](https://github.com/VOD-Studio/violet/commit/3005ad1db05e86a73d768f2461bc9d3c9795ef51))
+* **users:** 用户主页封面与两侧栏加强设计 ([8f13e2d](https://github.com/VOD-Studio/violet/commit/8f13e2d36a36975ea07942c16f313e6770626c42))
+* **users:** 重新设计公开用户主页 ([0b1c3d7](https://github.com/VOD-Studio/violet/commit/0b1c3d7de8f68849edab2850601d07c36742c647))
+* **view-transition:** 推翻整页翻页动画，改用淡入淡出与共享元素变形 ([b643981](https://github.com/VOD-Studio/violet/commit/b64398107618685509eedf09203b88dfc80524c4))
+
 ## [2.9.2](https://github.com/VOD-Studio/violet/compare/v2.9.1...v2.9.2) (2026-10-09)
 
 
