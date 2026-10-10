@@ -33,6 +33,8 @@ const MAX_CONTROLS = 256;
 // 压力在控制点之间线性插值：至少四段，起收笔渐变才不会被两端的低压抹平成整笔细线。
 const MIN_PIECES = 4;
 const INCOMING = 1e-6;
+// 复线在各段中部偏离主线的幅度，相对该段的粗糙度位移。
+const RETRACE_SPREAD = 2.2;
 
 /** 最小 jerk 位置曲线：τ∈[0,1] 时从 0 平滑到 1，两端速度与加速度为 0。 */
 export function minimumJerk(t: number): number {
@@ -99,6 +101,8 @@ export function traceStroke(
 		// 闭合轮廓的笔画可越过起点，再检查一圈后的同一角点。
 		if (contour.closed && c + contour.length < total) cornerU.push(c + contour.length);
 	}
+	cornerU.sort((a, b) => a - b);
+	const bounds = [0, ...cornerU, total];
 	const hasCorner = (a: number, b: number) => cornerU.some((c) => c > a && c < b);
 	const base = Math.max(MIN_PIECES, Math.ceil(total / spacing(total)));
 	for (let i = 0; i <= base; i++) insert(samples.length, i / base, minimumJerk(i / base) * total);
@@ -113,19 +117,30 @@ export function traceStroke(
 			insert(i + S, tau, minimumJerk(tau) * total);
 		} else i += S;
 	}
+	const insertAt = (u: number) => {
+		let j = S;
+		while (j < samples.length && samples[j + 1] < u) j += S;
+		const u0 = samples[j - S + 1];
+		const u1 = samples[j + 1];
+		if (Math.abs(u - u0) < 0.3 * w || Math.abs(u1 - u) < 0.3 * w) return;
+		const tau = samples[j - S] + ((samples[j] - samples[j - S]) * (u - u0)) / (u1 - u0);
+		insert(j, tau, u);
+	};
 	// 角点前后各加一个近邻控制点，保持转角锐利。
 	for (const c of cornerU) {
 		for (let k = -1; k <= 1; k++) {
 			const u = c + k * 1.2 * w;
-			if (u <= 0 || u >= total) continue;
-			let j = S;
-			while (j < samples.length && samples[j + 1] < u) j += S;
-			const u0 = samples[j - S + 1];
-			const u1 = samples[j + 1];
-			if (Math.abs(u - u0) < 0.3 * w || Math.abs(u1 - u) < 0.3 * w) continue;
-			const tau = samples[j - S] + ((samples[j] - samples[j - S]) * (u - u0)) / (u1 - u0);
-			insert(j, tau, u);
+			if (u > 0 && u < total) insertAt(u);
 		}
+	}
+	// 弯曲按角点分段取 sin 形，段中部没有控制点时补一个，否则这一段画不出弯曲。
+	for (let k = 0; k + 1 < bounds.length; k++) {
+		const a = bounds[k];
+		const b = bounds[k + 1];
+		let inner = false;
+		for (let i = 1; i < samples.length && !inner; i += S)
+			inner = samples[i] > a + (b - a) / 4 && samples[i] < b - (b - a) / 4;
+		if (!inner) insertAt((a + b) / 2);
 	}
 
 	const key = plan.key;
@@ -134,9 +149,24 @@ export function traceStroke(
 	const lowOffset = ctx.random(LOW_OFFSET, plan.contourIndex) * 1000;
 	const amplitude = options.roughness * Math.min(1.4, Math.max(0.35, Math.sqrt(total / 120)));
 	const lambda = Math.min(260, Math.max(60, total * 0.6));
-	const bow =
-		options.bowing * (ctx.random(BOW, strokeKey) * 2 - 1) * Math.min(total, 300) * 0.008;
-	const retrace = plan.pass ? amplitude * 0.6 * (ctx.random(RETRACE, strokeKey) * 2 - 1) : 0;
+	// 弯曲与复线偏离按角点分段，各段两端归零：转角是轨迹的途经点（Flash & Hogan 1985），
+	// 整笔弯曲或整体平移会把转角磨圆，复线也会成为一圈等距的同心轮廓。
+	const bend = new Float64Array(bounds.length - 1);
+	for (let k = 0; k < bend.length; k++) {
+		const length = bounds[k + 1] - bounds[k];
+		const salt = Math.imul(k, 0x9e3779b1);
+		bend[k] =
+			options.bowing *
+			(ctx.random(BOW ^ salt, strokeKey) * 2 - 1) *
+			Math.min(length, 300) *
+			0.008;
+		if (plan.pass)
+			bend[k] +=
+				options.roughness *
+				Math.min(1.4, Math.max(0.35, Math.sqrt(length / 120))) *
+				RETRACE_SPREAD *
+				(ctx.random(RETRACE ^ salt, strokeKey) * 2 - 1);
+	}
 	const pinLength = Math.min(12 * w, 0.2 * total);
 	// 起落笔误差在端部一段距离内平滑衰减，只加在端点会因首尾控制点密集而形成钩子。
 	const jitter = options.roughness * w * 0.4;
@@ -158,7 +188,7 @@ export function traceStroke(
 
 	const count = samples.length / S;
 	const points = new Float32Array(count * 4);
-	for (let i = 0; i < count; i++) {
+	for (let i = 0, side = 0; i < count; i++) {
 		const tau = samples[i * S];
 		const u = samples[i * S + 1];
 		const px = samples[i * S + 2];
@@ -168,11 +198,12 @@ export function traceStroke(
 		const s = start + u - e0;
 		const head = 1 - smoothstep(u / ramp);
 		const tail = 1 - smoothstep((total - u) / ramp);
+		while (u > bounds[side + 1] && side < bend.length - 1) side++;
+		const along = (u - bounds[side]) / (bounds[side + 1] - bounds[side]);
 		let d =
 			amplitude * ctx.noise(lowChannel, s / lambda + lowOffset) +
 			amplitude * 0.3 * ctx.noise(HIGH ^ strokeKey, u / (lambda * 0.25)) +
-			bow * Math.sin(Math.PI * minimumJerk(tau)) +
-			retrace +
+			bend[side] * Math.sin(Math.PI * along) +
 			startNormal * head +
 			endNormal * tail;
 		let tangent = startTangent * head + endTangent * tail;

@@ -21,6 +21,7 @@ import {
 	polylineContour,
 	rect,
 	type SceneItem,
+	type Stroke,
 	styles,
 } from "./index.ts";
 import { drawCanvas } from "./render/canvas.ts";
@@ -166,6 +167,56 @@ describe("draw", () => {
 			}
 		}
 		expect(total).toBeGreaterThan(1);
+	});
+
+	it("一笔连画多条边时弯曲按边分段，主线与复线都经过角点", () => {
+		const strokes: Stroke[] = [];
+		const capture: Pen = {
+			id: "capture",
+			ink(drawn) {
+				strokes.push(...drawn);
+				return [];
+			},
+		};
+		const hand = createHand({
+			roughness: 0,
+			bowing: 3,
+			breakChance: 0,
+			maxStroke: 1000,
+			passes: 2,
+		});
+		draw(scene([{ id: "r", path: rect(50, 50, 200, 120) }]), {
+			style: { hand, pen: capture },
+		});
+		const corners = [
+			[50, 50],
+			[250, 50],
+			[250, 170],
+			[50, 170],
+		];
+		expect(strokes.map((s) => s.pass)).toEqual([0, 1]);
+		for (const { points } of strokes) {
+			const xy = Array.from({ length: points.length / 4 }, (_, i) => [
+				points[i * 4],
+				points[i * 4 + 1],
+			]);
+			// 断笔的那个角是笔画起止处，其余三个角在笔画内部，必须有控制点落在角上。
+			const hit = corners.filter(([cx, cy]) =>
+				xy.some(([x, y]) => Math.hypot(x - cx, y - cy) < 1e-3),
+			);
+			expect(hit.length).toBeGreaterThanOrEqual(3);
+			const bulge = Math.max(
+				...xy.map(([x, y]) =>
+					Math.min(
+						Math.abs(x - 50),
+						Math.abs(x - 250),
+						Math.abs(y - 50),
+						Math.abs(y - 170),
+					),
+				),
+			);
+			expect(bulge).toBeGreaterThan(0.5);
+		}
 	});
 
 	it("随机分笔时长线由多段短笔接成，笔间按间距留白且末尾不留碎笔", () => {
