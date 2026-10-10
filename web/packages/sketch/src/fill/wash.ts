@@ -2,7 +2,7 @@ import { polylineContour } from "../core/flatten.ts";
 import { PathBuilder, transformPath } from "../core/path.ts";
 import { channel } from "../core/rng.ts";
 import { simplifyIndices } from "../core/simplify.ts";
-import type { Contour, Fill } from "../core/types.ts";
+import type { Contour, Fill, Skeleton } from "../core/types.ts";
 import { scanSpans } from "./scan.ts";
 
 const SHIFT = /* @__PURE__ */ channel("sketch:wash:shift");
@@ -14,13 +14,13 @@ const TRIM = /* @__PURE__ */ channel("sketch:wash:trim");
 export interface WashOptions {
 	/** 指向光源的方向向量，场景坐标（y 向下）；会被归一化。 @default [-0.55, -0.83] 光来自左上 */
 	light?: readonly [number, number];
-	/** 朝光一侧纸白留白的平均宽度，相对图形较短边的比例；0 表示色块贴满线稿。 @default 0.06 */
+	/** 朝光一侧纸白留白的平均宽度，相对图形厚度的比例，至多 7；0 表示色块贴满线稿。 @default 0.1 */
 	highlight?: number;
 	/** 色块边缘的起伏幅度，相对留白宽度的比例。 @default 0.9 */
 	bleed?: number;
 	/** 色块不透明度；小于 1 时前后图元互相透色。 @default 1 */
 	opacity?: number;
-	/** 背光侧排线带的宽度，相对较短边的比例；0 表示不画排线。 @default 0.16 */
+	/** 背光侧排线带的宽度，相对图形厚度的比例；0 表示不画排线。 @default 0.35 */
 	hatch?: number;
 	/** 排线间距，单位为填充线宽。 @default 2.6 */
 	hatchGap?: number;
@@ -30,32 +30,51 @@ export interface WashOptions {
 	hatchRole?: string;
 }
 
+/** 图形厚度：面积最大的闭合子轮廓的 2 × 面积 / 周长；细长条约等于宽度，圆即半径。 */
+function thickness(region: Skeleton): number {
+	let area = 0;
+	let perimeter = 0;
+	for (const contour of region.contours) {
+		if (!contour.closed) continue;
+		const p = contour.points;
+		const n = p.length / 2;
+		let twice = 0;
+		for (let i = 0, j = n - 1; i < n; j = i++)
+			twice += p[j * 2] * p[i * 2 + 1] - p[i * 2] * p[j * 2 + 1];
+		if (Math.abs(twice) / 2 > area) {
+			area = Math.abs(twice) / 2;
+			perimeter = contour.length;
+		}
+	}
+	return perimeter > 0 ? (2 * area) / perimeter : 0;
+}
+
 /**
  * 创建淡彩填充：浅色平涂朝背光侧错位，朝光一侧露出宽窄不一的纸白，背光侧加成簇的墨色短排线。
  *
  * 色块边缘沿法向随噪声起伏并裁剪到原形状，留白宽度因此时宽时窄；排线是交给填充手法与填充笔描绘的骨架，
- * 只落在背光侧的条带内，按噪声成簇出现。
+ * 只落在背光侧的条带内，按噪声成簇出现。留白与排线都按图形厚度（2 × 面积 / 周长）换算，
+ * 斜向的细长色块不会因包围盒较大而被留白吃掉。
  *
- * @remarks 较短边小于 36 的图形不画排线。
+ * @remarks 厚度小于 20 的图形不画排线。
  */
 export function createWashFill(options: WashOptions = {}): Fill {
 	const [lx, ly] = options.light ?? [-0.55, -0.83];
 	const norm = Math.hypot(lx, ly) || 1;
 	const ux = lx / norm;
 	const uy = ly / norm;
-	const highlight = options.highlight ?? 0.06;
+	const highlight = options.highlight ?? 0.1;
 	const bleed = options.bleed ?? 0.9;
-	const hatch = options.hatch ?? 0.16;
+	const hatch = options.hatch ?? 0.35;
 	const angle = ((options.hatchAngle ?? 58) * Math.PI) / 180;
 	return {
 		id: "wash",
 		generate(region, ctx, source) {
 			if (!ctx.fillRole) return {};
-			const size = Math.min(source.bounds.width, source.bounds.height);
+			const t = thickness(region);
 
 			// 色块：整体朝背光侧平移 d，边缘沿法向起伏，裁剪后朝光侧留白在 (1 ± bleed)·d 之间变化。
-			const d =
-				Math.max(1.2, Math.min(7, size * highlight)) * (0.7 + 0.6 * ctx.random(SHIFT, 0));
+			const d = Math.min(7, t * highlight) * (0.7 + 0.6 * ctx.random(SHIFT, 0));
 			const amplitude = d * bleed;
 			const wash = new PathBuilder();
 			region.contours.forEach((contour, ci) => {
@@ -91,10 +110,10 @@ export function createWashFill(options: WashOptions = {}): Fill {
 			const areas = [
 				{ path: wash.build(region.fillRule), opacity: options.opacity, clip: true },
 			];
-			if (hatch <= 0 || size < 36) return { areas };
+			if (hatch <= 0 || t < 20) return { areas };
 
 			// 排线：同一组扫描线分别切原形状与朝光源平移的副本，逐行相减剩下的区间即背光侧条带。
-			const band = Math.max(4, Math.min(22, size * hatch));
+			const band = Math.max(3, Math.min(22, t * hatch));
 			const toward = ctx.flatten(transformPath(source, [1, 0, 0, 1, ux * band, uy * band]));
 			const gap = (options.hatchGap ?? 2.6) * ctx.width;
 			const rowY = (row: number) => row * gap;
