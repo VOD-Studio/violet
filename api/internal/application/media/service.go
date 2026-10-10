@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"image"
 	"os"
 	"path/filepath"
@@ -898,7 +899,13 @@ func (s *UploadService) InitSession(ctx context.Context, in InitSessionInput) (*
 	// 秒传检查(仅命中自己上传过的文件,防越权秒传他人文件)
 	if in.FileHash != "" {
 		if f, err := s.fileRepo.FindByHash(ctx, in.FileHash, uid); err == nil && f != nil {
-			return &InitSessionResult{Instant: true, FileID: f.ID().String(), URL: f.URL()}, nil
+			available, err := s.isStoredFileAvailable(ctx, f)
+			if err != nil {
+				return nil, err
+			}
+			if available {
+				return &InitSessionResult{Instant: true, FileID: f.ID().String(), URL: f.URL()}, nil
+			}
 		}
 	}
 
@@ -1184,8 +1191,25 @@ func (s *UploadService) CheckInstantUpload(ctx context.Context, hash, callerID s
 		}
 		return nil, false, err
 	}
+	available, err := s.isStoredFileAvailable(ctx, f)
+	if err != nil || !available {
+		return nil, false, err
+	}
 	dto := fileToDTO(f)
 	return &dto, true, nil
+}
+
+func (s *UploadService) isStoredFileAvailable(ctx context.Context, file *domainupload.File) (bool, error) {
+	if _, err := s.storage.FileSize(file.Path()); err == nil {
+		return true, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, shared.Internal("读取已上传文件失败", err)
+	}
+	file.MarkFailed()
+	if err := s.fileRepo.Save(ctx, file); err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 // ListByOwner 分页列出某用户上传的文件。
