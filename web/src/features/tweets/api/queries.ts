@@ -1,6 +1,7 @@
 /** tweets feature 查询层（cursor 分页时间线） */
 
 import type { Tweet, TweetComment } from "@entities/tweet/model/types";
+import { userKeys } from "@entities/user/api/keys";
 import type { UserProfile } from "@entities/user/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
@@ -85,7 +86,7 @@ export const fetchUserProfile = (username: string): Promise<UserProfile> =>
  */
 export const useUserProfile = (username: string) =>
 	useQuery({
-		queryKey: tweetKeys.userProfile(username),
+		queryKey: userKeys.profile(username),
 		queryFn: () => fetchUserProfile(username),
 		enabled: !!username,
 	});

@@ -31,8 +31,6 @@ export const tweetKeys = {
 	/** 话题推文列表维度（按 tag 与 limit 区分） */
 	topicTimelineOf: (tag: string, limit: number = TIMELINE_PAGE_SIZE) =>
 		[...tweetsRoot, "topicTimeline", tag, { limit }] as const,
-	/** 用户公开资料卡维度（按 username 区分） */
-	userProfile: (username: string) => [...tweetsRoot, "userProfile", username] as const,
 	/** 推文评论列表维度（按 tweetId 聚合，含 page 维度） */
 	commentList: (tweetId: string) => [...tweetsRoot, "comments", "list", tweetId] as const,
 	/** 推文评论某顶层评论下的回复维度（按 commentId 聚合，含 page 维度） */

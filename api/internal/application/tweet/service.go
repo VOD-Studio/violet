@@ -94,6 +94,7 @@ type UserProfileDTO struct {
 	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 	AvatarURL   string `json:"avatar_url"`
+	CoverURL    string `json:"cover_url"`
 	Bio         string `json:"bio"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
@@ -412,6 +413,7 @@ func (s *Service) GetUserProfile(ctx context.Context, username string) (UserProf
 		Username:    u.Username().String(),
 		DisplayName: u.DisplayName().String(),
 		AvatarURL:   u.AvatarURL(),
+		CoverURL:    u.CoverURL(),
 		Bio:         u.Bio(),
 		CreatedAt:   u.CreatedAt().Format(time.RFC3339),
 	}, nil
@@ -934,7 +936,7 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 }
 
 // deletedAuthorUsername 已注销作者在推文/推文评论作者位的占位名
-//（与评论域 DeletedUserName 同值；本地定义避免跨 feature 依赖）。
+// （与评论域 DeletedUserName 同值；本地定义避免跨 feature 依赖）。
 const deletedAuthorUsername = "已注销用户"
 
 // deletedAuthorDTO 已注销作者的占位资料卡：名字占位、无头像无角标无主页，

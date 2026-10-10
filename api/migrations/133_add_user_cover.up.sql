@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN cover_url TEXT NOT NULL DEFAULT '';

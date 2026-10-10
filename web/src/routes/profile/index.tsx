@@ -4,19 +4,12 @@ import { useMe } from "@features/auth/api/queries";
 import { AccountInfoSection } from "@features/profile/ui/AccountInfoSection";
 import { ConnectionsSection } from "@features/profile/ui/ConnectionsSection";
 import { PasswordSection } from "@features/profile/ui/PasswordSection";
+import { ProfileCoverSection } from "@features/profile/ui/ProfileCoverSection";
 import { ProfileInfoSection } from "@features/profile/ui/ProfileInfoSection";
 import { ProfileShell } from "@features/profile/ui/ProfileShell";
 import { isSessionActive } from "@shared/api/session";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-/**
- * ProfilePage - 个人中心
- *
- * 布局：ProfileShell 接管（侧栏头像卡 + 两个 Tab）。
- * Tab 内容：
- *   - profile：个人资料（用户名 / 显示名 / 简介）
- *   - security：账户与安全（账号信息 / 登录方式 / 密码）
- */
 const ProfilePage = () => {
 	const { data: user } = useMe();
 
@@ -27,7 +20,12 @@ const ProfilePage = () => {
 	return (
 		<ProfileShell
 			user={user}
-			profile={<ProfileInfoSection user={user} />}
+			profile={
+				<div className="space-y-6">
+					<ProfileInfoSection user={user} />
+					<ProfileCoverSection user={user} />
+				</div>
+			}
 			security={
 				<div className="space-y-6">
 					<AccountInfoSection user={user} />

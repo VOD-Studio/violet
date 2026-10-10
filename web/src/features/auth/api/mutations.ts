@@ -1,3 +1,4 @@
+import { userKeys } from "@entities/user/api/keys";
 import type { UserDTO } from "@entities/user/model/types";
 import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
@@ -267,19 +268,23 @@ export const useLogout = () => {
 };
 
 /**
- * useUpdateProfile - 更新当前用户资料
- *
- * 所有字段 omitempty，仅传需要更新的字段。返回更新后的用户字段子集，
- * onSuccess 同步更新 me 缓存避免额外请求。
- *
- * @returns PATCH /auth/profile，返回更新后的用户资料
+ * 省略的字段保留原值；成功后合并当前用户缓存并刷新对应公开资料。
  */
 export const useUpdateProfile = () => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (body: UpdateProfileRequest) => apiPatch<UpdatedProfile>("/auth/profile", body),
-		onSuccess: (data) => {
-			qc.setQueryData<UserDTO>(authKeys.me(), (old) => (old ? { ...old, ...data } : old));
+		onSuccess: async (data) => {
+			const previousUsername = qc.getQueryData<UserDTO | null>(authKeys.me())?.username;
+			qc.setQueryData<UserDTO | null>(authKeys.me(), (old) =>
+				old ? { ...old, ...data } : old,
+			);
+			if (previousUsername && previousUsername !== data.username) {
+				const oldProfileKey = userKeys.profile(previousUsername);
+				await qc.cancelQueries({ queryKey: oldProfileKey, exact: true });
+				qc.removeQueries({ queryKey: oldProfileKey, exact: true });
+			}
+			await qc.invalidateQueries({ queryKey: userKeys.profile(data.username), exact: true });
 		},
 	});
 };

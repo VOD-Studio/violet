@@ -83,7 +83,7 @@ export interface ResetPasswordRequest {
 /**
  * UpdateProfileRequest - PATCH /auth/profile 请求体
  *
- * 所有字段均可选，omitempty 校验，仅传需要更新的字段。
+ * 所有字段均可选，省略表示保留原值，仅传需要更新的字段。
  */
 export interface UpdateProfileRequest {
 	/** 用户名，3 到 32 字符 */
@@ -94,6 +94,8 @@ export interface UpdateProfileRequest {
 	bio?: string;
 	/** 头像 URL，最多 2048 字符 */
 	avatar_url?: string;
+	/** 主页封面 URL，最多 2048 字符；省略保留，空串清除 */
+	cover_url?: string;
 }
 
 /**
@@ -113,6 +115,8 @@ export interface UpdatedProfile {
 	email: string;
 	/** 头像 URL */
 	avatar_url: string;
+	/** 主页封面 URL，空串表示未设置 */
+	cover_url: string;
 	/** 个人简介 */
 	bio: string;
 	/** 角色，复用 entities 的 UserRole 联合类型 */

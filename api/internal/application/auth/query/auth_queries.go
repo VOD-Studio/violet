@@ -12,18 +12,19 @@ import (
 
 // UserDTO 用户读模型（query 返回，供 HTTP handler 序列化）
 type UserDTO struct {
-	ID              string `json:"id"`
-	Username        string `json:"username"`
-	DisplayName     string `json:"display_name"`
-	Email           string `json:"email"`
-	AvatarURL       string `json:"avatar_url"`
-	Bio             string `json:"bio"`
-	Role            string `json:"role"`
-	RoleDescription string `json:"role_description"`
-	IsRoot          bool   `json:"is_root"`
-	EmailVerified   bool   `json:"email_verified"`
-	IsActive        bool   `json:"is_active"`
-	CreatedAt       string `json:"created_at"`
+	ID              string   `json:"id"`
+	Username        string   `json:"username"`
+	DisplayName     string   `json:"display_name"`
+	Email           string   `json:"email"`
+	AvatarURL       string   `json:"avatar_url"`
+	CoverURL        string   `json:"cover_url"`
+	Bio             string   `json:"bio"`
+	Role            string   `json:"role"`
+	RoleDescription string   `json:"role_description"`
+	IsRoot          bool     `json:"is_root"`
+	EmailVerified   bool     `json:"email_verified"`
+	IsActive        bool     `json:"is_active"`
+	CreatedAt       string   `json:"created_at"`
 	Permissions     []string `json:"permissions,omitempty"`
 	// HasPassword 是否设置了密码（false=仅 OAuth 登录，OAuth 建号存空哈希）。
 	// 存量 OAuth 用户建号时被写入随机哈希、无法与真密码区分，会误报 true，
@@ -88,6 +89,7 @@ func toUserDTO(u *user.User, permissions []string, roleDescription string) UserD
 		DisplayName:     u.DisplayName().String(),
 		Email:           u.Email().String(),
 		AvatarURL:       u.AvatarURL(),
+		CoverURL:        u.CoverURL(),
 		Bio:             u.Bio(),
 		Role:            string(u.Role()),
 		RoleDescription: roleDescription,

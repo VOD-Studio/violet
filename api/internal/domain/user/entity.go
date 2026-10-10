@@ -267,6 +267,7 @@ const (
 //   - Username 全局唯一（由 repository 保证）
 //   - EmailVerified 由可信创建入口或验证码流程置为 true
 //   - 禁用用户不能登录（IsActive=false）
+//
 // 聚合根方法只做纯领域逻辑，不访问 DB；
 // 持久化由应用层通过 UserRepository 完成。
 type User struct {
@@ -282,6 +283,8 @@ type User struct {
 	passwordHash PasswordHash
 	// avatarURL 头像地址
 	avatarURL string
+	// coverURL 主页封面地址，空串表示未设置
+	coverURL string
 	// bio 个人简介
 	bio string
 	// role 角色
@@ -352,6 +355,7 @@ func ReconstructUser(
 	displayName DisplayName,
 	passwordHash PasswordHash,
 	avatarURL string,
+	coverURL string,
 	bio string,
 	role Role,
 	googleID *string,
@@ -365,20 +369,21 @@ func ReconstructUser(
 	updatedAt time.Time,
 ) *User {
 	u := &User{
-		email:          email,
-		username:       username,
-		displayName:    displayName,
-		passwordHash:   passwordHash,
-		avatarURL:      avatarURL,
-		bio:            bio,
-		role:           role,
-		googleID:       googleID,
-		githubID:       githubID,
-		githubLogin:    githubLogin,
-		isRoot:         isRoot,
-		emailVerified:  emailVerified,
-		isActive:       isActive,
-		deletedAt:      deletedAt,
+		email:         email,
+		username:      username,
+		displayName:   displayName,
+		passwordHash:  passwordHash,
+		avatarURL:     avatarURL,
+		coverURL:      coverURL,
+		bio:           bio,
+		role:          role,
+		googleID:      googleID,
+		githubID:      githubID,
+		githubLogin:   githubLogin,
+		isRoot:        isRoot,
+		emailVerified: emailVerified,
+		isActive:      isActive,
+		deletedAt:     deletedAt,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -436,6 +441,7 @@ func (u *User) ChangeEmail(email Email) {
 	u.email = email
 	u.RecordEvent(NewUserEmailChanged(u.GetID(), old, email.String()))
 }
+
 // ChangeRole 修改角色
 //
 // 校验角色合法性，保证聚合内 role 始终是有效枚举值。
@@ -554,6 +560,11 @@ func (u *User) UpdateAvatarURL(url string) {
 	u.avatarURL = url
 }
 
+// UpdateCoverURL 仅更新主页封面地址
+func (u *User) UpdateCoverURL(url string) {
+	u.coverURL = url
+}
+
 // UpdateBio 仅更新个人简介
 func (u *User) UpdateBio(bio string) {
 	u.bio = bio
@@ -589,7 +600,6 @@ func (u *User) MatchPassword(_ string) bool {
 	return false // 占位：实际比较在 infrastructure/auth 包
 }
 
-
 // ============================================================
 // 访问器（只读，保证聚合状态不被外部随意修改）
 // ============================================================
@@ -603,6 +613,8 @@ func (u *User) DisplayName() DisplayName { return u.displayName }
 func (u *User) PasswordHash() PasswordHash { return u.passwordHash }
 
 func (u *User) AvatarURL() string { return u.avatarURL }
+
+func (u *User) CoverURL() string { return u.coverURL }
 
 func (u *User) Bio() string { return u.bio }
 
@@ -642,7 +654,7 @@ func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }
 //
 // 区别于 IsSuperAdmin：被委派超管也是 superadmin 角色，但 isRoot=false。
 // 授权权、不可降级/删除等主权都以此为准。
-func (u *User) IsRoot() bool { return u.isRoot }
+func (u *User) IsRoot() bool        { return u.isRoot }
 func (u *User) EmailVerified() bool { return u.emailVerified }
 
 func (u *User) IsActive() bool { return u.isActive }

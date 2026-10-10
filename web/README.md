@@ -58,9 +58,13 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 文件选择与拖放共用 `features/upload/hooks/use-file-selection` 的类型、大小和数量校验；取消后可重新选择同一个文件。`Uploader` 保留默认分片上传和自定义上传策略，表情继续使用公共 `useUploadEmoji` 的专用端点，避免改变 GIF 文件与表情 URL 的契约。
 
+`CropUploadDialog` 的确认回调支持异步保存；上传或保存期间保持当前会话，失败时保留图片与选区供重试。本地预览 URL 与当前文件绑定，在更换或关闭时释放，避免开发模式重复挂载导致预览失效。
+
 评论、推文与聊天共用表情选择器：爱心收藏入口排第一项并随分组滚动，上传与收藏合并在同一网格，加号占第一格；左右箭头直接切换相邻分组，关闭重开保留浏览位置。图片在网格与悬停、键盘聚焦的大图预览中均优先使用 GIF，个人条目保留右键删除与移出收藏的权限标识。
 
 聊天消息按正文与状态两行布局，连续消息共用粘性头像，头像对齐组尾正文。新消息仅淡入；发送中与已读回执共用至少 16px 高的状态槽，发送确认后回执尚未到达时保留空槽，避免切换状态改变布局。
+
+用户资料 DTO 定义在 `entities/user/model/types.ts`；`entities/user/api/keys.ts` 提供按用户名区分的公开资料查询键 `userKeys.profile(username)`。
 
 ## 文章编辑与阅读
 
@@ -143,7 +147,8 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/projects` | 项目展示 |
 | `/friends` | 友链页 |
 | `/about` | 关于页 |
-| `/profile` | 个人资料 |
+| `/profile`、`/profile/security` | 本人资料、主页封面与账户安全设置 |
+| `/users/:username` | 公开主页（个人资料、主页封面与推文） |
 | `/login`, `/register`, `/forgot-password` | 认证 |
 | `/changelog` | 更新日志 |
 | `/ui`、`/ui/guides/:slug`、`/ui/components/:name` | violet/ui 组件库文档、接入指南与组件 API 示例 |
@@ -157,6 +162,8 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
+
+个人设置与公开主页共用 `max-w-7xl` 版心，公开页保留资料、推文与概览的原有布局。封面管理复用文件选择、UploadTile 与 CropUploadDialog，接受任意原图比例和自由选区，GIF 保留动画；更换与移除使用封面角落的小图标。未设置或移除封面时，公开页保留原头像模糊背景。资料保存只刷新对应用户的公开资料缓存，改名后清除旧用户名缓存。
 
 ## 状态管理
 

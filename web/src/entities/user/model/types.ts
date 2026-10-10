@@ -15,6 +15,8 @@ export interface UserDTO {
 	email: string;
 	/** 头像 URL */
 	avatar_url: string;
+	/** 主页封面 URL，空串表示未设置 */
+	cover_url: string;
 	/** 个人简介 */
 	bio: string;
 	/** 角色 */
@@ -57,7 +59,7 @@ export interface SessionClaims {
 /**
  * UserProfile - 公开用户资料卡
  *
- * 对接后端 GET /api/v1/users/{username}。只包含公开字段（头像/显示名/用户名/简介/注册时间）。
+ * 对接后端 GET /api/v1/users/{username}，只包含公开资料。
  */
 export interface UserProfile {
 	/** 用户 ID */
@@ -68,6 +70,8 @@ export interface UserProfile {
 	display_name: string;
 	/** 头像 URL */
 	avatar_url: string;
+	/** 主页封面 URL，空串表示未设置 */
+	cover_url: string;
 	/** 个人简介 */
 	bio: string;
 	/** 注册时间（RFC3339） */

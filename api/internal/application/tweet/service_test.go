@@ -659,6 +659,12 @@ func TestService_GetUserProfile(t *testing.T) {
 	assert.Equal(t, "alice", profile.Username)
 	assert.Equal(t, "Alice", profile.DisplayName)
 	assert.NotEmpty(t, profile.CreatedAt)
+	assert.Empty(t, profile.CoverURL)
+
+	author.UpdateCoverURL("https://example.com/cover.gif?crop=12,24,640,240")
+	profile, err = svc.GetUserProfile(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com/cover.gif?crop=12,24,640,240", profile.CoverURL)
 
 	_, err = svc.GetUserProfile(context.Background(), "ghost_user")
 	require.ErrorIs(t, err, domainuser.ErrNotFound)

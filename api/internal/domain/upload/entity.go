@@ -14,6 +14,7 @@ import (
 // 文件用途
 const (
 	PurposeAvatar   = "avatar"
+	PurposeCover    = "cover"
 	PurposePost     = "post"
 	PurposeEmoji    = "emoji"
 	PurposeMaterial = "material"
@@ -38,7 +39,7 @@ const (
 	SessionExpired   = "expired"
 )
 
-var purposePattern = regexp.MustCompile(`^(avatar|post|emoji|material|comment|tweet|chat)$`)
+var purposePattern = regexp.MustCompile(`^(avatar|cover|post|emoji|material|comment|tweet|chat)$`)
 
 // IsValidPurpose 校验用途合法性
 func IsValidPurpose(p string) bool { return purposePattern.MatchString(p) }
@@ -54,7 +55,7 @@ type File struct {
 	id shared.ID
 	// ownerID 上传者用户 ID（隔离 owner 维度，秒传仅命中本人文件）
 	ownerID shared.ID
-	// purpose 文件用途分类（avatar/post/emoji/material/comment/tweet，由 purposePattern 校验）
+	// purpose 文件用途分类，由 purposePattern 限定取值
 	purpose string
 	// originalName 用户上传时的原始文件名（可选重命名，见 UpdateMetadata）
 	originalName string

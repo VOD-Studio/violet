@@ -63,6 +63,7 @@ describe("/users/$username Route.loader", () => {
 			username: "大鸟哥",
 			display_name: "大鸟哥",
 			avatar_url: "",
+			cover_url: "",
 			bio: "Hello bio",
 			created_at: "2026-01-01T00:00:00Z",
 		};
@@ -129,6 +130,7 @@ describe("UserPublicProfilePage rendering", () => {
 			username: "dfy",
 			display_name: "DFY",
 			avatar_url: "",
+			cover_url: "",
 			bio: "前端工程师，热爱开源",
 			created_at: "2026-08-01T00:00:00Z",
 		};
@@ -179,6 +181,7 @@ describe("UserPublicProfilePage rendering", () => {
 			username: "alice",
 			display_name: "Alice",
 			avatar_url: "",
+			cover_url: "",
 			bio: "",
 			created_at: "2026-01-01T00:00:00Z",
 		};

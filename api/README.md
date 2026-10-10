@@ -102,6 +102,14 @@ api/
 
 `/auth/session` 为 SSR 只读端点：读 cookie → 查 Redis → 返回 claims，**不续期、不写 cookie**。这是避免 TanStack Start server function 无法透传 `Set-Cookie` 的根因方案。
 
+### 主页封面
+
+- `POST /uploads` 接受 `purpose: "cover"`，使用既有分片上传与秒传链路。
+- `PATCH /auth/profile` 接受可选的 `cover_url`：省略时保留原值，空串移除封面；不改变头像或简介。
+- `GET /auth/me` 与 `GET /users/{username}` 返回 `cover_url`，未设置时为空串。
+- GIF 保留原文件与动画，URL 的 `crop=x,y,width,height` 表示归一化展示选区；静态图片可使用裁剪后的文件。
+- 数据库迁移 `133_add_user_cover` 为既有用户提供空封面默认值。
+
 ## 业务模块
 
 每个模块在四层各有对应目录，命名一致：
@@ -147,6 +155,8 @@ api/
 | **siteimpression** | siteimpression | siteimpression | 首页匿名设备印记：HMAC 令牌去重、私有状态查询与限流写入（`GET/POST /site-impressions`） |
 
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
+
+`POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
 
 ## 基础设施适配器
 

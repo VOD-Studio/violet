@@ -17,9 +17,9 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	"blog-api/internal/application/mocks"
 	domainsession "blog-api/internal/domain/session"
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	domainshared "blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	"blog-api/internal/middleware"
 )
 
@@ -43,7 +43,7 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 	uid, _ := domainshared.ParseID("00000000-0000-0000-0000-000000000001")
 	email, _ := domainuser.ParseEmail("u@example.com")
 	username, _ := domainuser.ParseUsername("alice")
-	return domainuser.ReconstructUser(uid, email, username, domainuser.DisplayName{}, hash, "", "", domainuser.RoleUser,
+	return domainuser.ReconstructUser(uid, email, username, domainuser.DisplayName{}, hash, "", "", "", domainuser.RoleUser,
 		nil, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
 }
 
@@ -257,4 +257,51 @@ func TestRespondLoginError_LinkConfirmation(t *testing.T) {
 	assert.Equal(t, "x***@gmail.com", body["email"])
 	assert.Equal(t, true, body["has_password"])
 	assert.Equal(t, "GitHub", body["provider"])
+}
+
+func TestUpdateProfile_CoverContract(t *testing.T) {
+	const originalCover = "https://example.com/original.gif?crop=1,2,300,100"
+	const croppedCover = "https://example.com/cover.gif?crop=12,24,640,240"
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+	}{
+		{name: "省略封面仅更新简介", body: `{"bio":"新简介"}`, want: originalCover},
+		{name: "清除封面", body: `{"cover_url":""}`, want: ""},
+		{name: "保存 GIF 坐标", body: `{"cover_url":"` + croppedCover + `"}`, want: croppedCover},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			u := hashedTestUser(t, "pass-word-123")
+			u.UpdateProfile("https://example.com/avatar.png", "原简介")
+			u.UpdateCoverURL(originalCover)
+			repo := new(mocks.MockUserRepository)
+			repo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
+			repo.On("Save", mock.Anything, u).Return(nil).Once()
+			h := NewHandler(
+				nil, nil, nil, nil, nil, nil, nil, nil, nil,
+				nil, nil, nil, authcmd.NewUpdateProfileHandler(repo), nil, nil, nil,
+				authcmd.NewOAuthCredentials("", "", ""),
+				testCookieCfg(),
+				config.SessionConfig{IdleTTL: time.Hour},
+			)
+			ctx := context.WithValue(context.Background(), middleware.UserIDKey, u.GetID().String())
+			req := httptest.NewRequest(http.MethodPatch, "/auth/profile", strings.NewReader(tc.body)).WithContext(ctx)
+			rec := httptest.NewRecorder()
+			h.UpdateProfile(rec, req)
+			require.Equal(t, http.StatusOK, rec.Code)
+			var env struct {
+				Data map[string]any `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &env))
+			assert.Equal(t, tc.want, env.Data["cover_url"])
+			assert.Equal(t, "https://example.com/avatar.png", env.Data["avatar_url"])
+			if tc.body == `{"bio":"新简介"}` {
+				assert.Equal(t, "新简介", env.Data["bio"])
+			} else {
+				assert.Equal(t, "原简介", env.Data["bio"])
+			}
+			repo.AssertExpectations(t)
+		})
+	}
 }

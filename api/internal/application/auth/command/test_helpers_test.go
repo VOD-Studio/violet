@@ -16,8 +16,8 @@ var zeroTime time.Time
 // testUser 构造一个最小可用的 *User，供 FindByID mock 返回。
 func testUser() *domainuser.User {
 	uid, _ := domainshared.ParseID(testUserID)
-	return domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, domainuser.NewPasswordHash("hashed"), "", "", domainuser.RoleUser,
-		nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime,)
+	return domainuser.ReconstructUser(uid, mustEmail("u@example.com"), mustUsername("alice"), domainuser.DisplayName{}, domainuser.NewPasswordHash("hashed"), "", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, zeroTime, zeroTime, zeroTime)
 }
 
 // mustEmail 解析邮箱，解析失败 panic（测试固定值，不会失败）。
@@ -37,4 +37,3 @@ func mustUsername(s string) domainuser.Username {
 	}
 	return u
 }
-

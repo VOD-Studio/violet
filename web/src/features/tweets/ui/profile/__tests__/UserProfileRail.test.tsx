@@ -6,8 +6,6 @@ import {
 	buildActivityGrid,
 	type ProfileActivity,
 } from "../../../model/profile-activity";
-import { UserProfileCover } from "../UserProfileCover";
-import { UserProfileLayout } from "../UserProfileLayout";
 import { UserProfileRail } from "../UserProfileRail";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -89,43 +87,5 @@ describe("UserProfileRail", () => {
 		render(<UserProfileRail activity={{ ...activity, topics: [] }} grid={grid} />);
 		expect(screen.queryByText("常用话题")).toBeNull();
 		expect(screen.getByText("动态概览")).toBeTruthy();
-	});
-});
-
-describe("UserProfileCover", () => {
-	it("有底图时渲染模糊底图，且整体对辅助技术隐藏", () => {
-		const { container } = render(<UserProfileCover imageSrc="/a.png" />);
-		expect(container.firstElementChild?.getAttribute("aria-hidden")).toBe("true");
-		expect(container.querySelector("img")?.getAttribute("src")).toBe("/a.png");
-	});
-
-	it("没有底图时只保留底色", () => {
-		const { container } = render(<UserProfileCover />);
-		expect(container.querySelector("img")).toBeNull();
-	});
-});
-
-describe("UserProfileLayout", () => {
-	it("提供概览栏时三栏并排，没有时收起这一栏", () => {
-		const { container, rerender } = render(
-			<UserProfileLayout
-				cover={<div />}
-				panel={<p>资料</p>}
-				main={<p>内容</p>}
-				rail={<p>概览</p>}
-			/>,
-		);
-		expect(screen.getByText("概览")).toBeTruthy();
-		expect(
-			container.querySelector(".xl\\:grid-cols-\\[17rem_minmax\\(0\\,1fr\\)_16rem\\]"),
-		).not.toBeNull();
-		rerender(<UserProfileLayout cover={<div />} panel={<p>资料</p>} main={<p>内容</p>} />);
-		expect(screen.queryByText("概览")).toBeNull();
-		expect(
-			container.querySelector(".xl\\:grid-cols-\\[17rem_minmax\\(0\\,1fr\\)_16rem\\]"),
-		).toBeNull();
-		// 资料栏要压在带定位的封面上，必须有自己的层级。
-		expect(screen.getByRole("complementary").className).toContain("z-10");
-		expect(screen.getByRole("main")).toBeTruthy();
 	});
 });

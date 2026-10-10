@@ -58,13 +58,13 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	ghName, _ := domainuser.ParseUsername("alice")
 	ghID, ghLogin := "12345", "octocat"
 	ghUser := domainuser.ReconstructUser(ghUID, ghEmail, ghName, domainuser.DisplayName{},
-		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
 		nil, &ghID, &ghLogin, false, true, true, time.Time{}, time.Time{}, time.Time{})
 	gEmail, _ := domainuser.ParseEmail("g@example.com")
 	gName, _ := domainuser.ParseUsername("bob")
 	gSub := "google-sub-1"
 	gUser := domainuser.ReconstructUser(gUID, gEmail, gName, domainuser.DisplayName{},
-		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
 		&gSub, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
 
 	postID, ghCID, gCID, anonCID := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
@@ -119,7 +119,7 @@ func TestEnrichOAuthIdentities_DeletedAuthorPlaceholder(t *testing.T) {
 	dName, _ := domainuser.ParseUsername("gone")
 	ghID := "42"
 	deletedUser := domainuser.ReconstructUser(dUID, dEmail, dName, domainuser.DisplayName{},
-		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
 		nil, &ghID, nil, false, true, true, time.Now(), time.Time{}, time.Time{})
 	deletedUser.Delete(time.Now())
 
@@ -128,7 +128,7 @@ func TestEnrichOAuthIdentities_DeletedAuthorPlaceholder(t *testing.T) {
 	aEmail, _ := domainuser.ParseEmail("alive@example.com")
 	aName, _ := domainuser.ParseUsername("alive")
 	aliveUser := domainuser.ReconstructUser(aUID, aEmail, aName, domainuser.DisplayName{},
-		domainuser.NewPasswordHash(""), "", "", domainuser.RoleUser,
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
 		nil, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
 
 	postID, dCID := shared.NewID(), shared.NewID()
