@@ -2,7 +2,7 @@
  * 页面转场 View Transitions 与主题切换扩散动画。
  *
  * 动画作用于 root（视口尺寸快照），而非整页命名元素，快照始终是视口大小，
- * 长文章页面也不会因此卡顿。Header 与顶部公告条单独命名并保持静止，不参与页面动画。
+ * 长文章页面也不会因此卡顿。Header、顶部公告条与固定背景点缀单独命名并保持静止，不参与页面动画。
  *
  * 三种 VT type（由 router.tsx 通过 shared/lib/view-transition 的规则表设置）：
  * - fade   默认：旧页快速淡出、新页稍后淡入，错峰避免半透明的双重曝光；
@@ -62,14 +62,20 @@
 	}
 }
 
-/* Header 与顶部公告条保持静止，不跟随内容滑动。Header 内部导航滑块仍需
+/* Header、顶部公告条与固定背景点缀保持静止，不跟随内容滑动。Header 内部导航滑块仍需
  * 在新快照中完成 Motion 布局动画，因此只隐藏旧快照，避免旧当前态残留。 */
 ::view-transition-group(site-header),
-::view-transition-group(announcement-bar) {
+::view-transition-group(announcement-bar),
+::view-transition-group(site-backdrop) {
 	animation: none;
 }
-::view-transition-old(site-header) {
+::view-transition-old(site-header),
+::view-transition-old(site-backdrop) {
 	opacity: 0;
+}
+/* 背景点缀的新快照是实时画面，直接满不透明度显示，细胞演化不被转场打断 */
+::view-transition-new(site-backdrop) {
+	animation: none;
 }
 
 /* 旧页淡出后到新页淡入之前，露出的是页面背景色而不是浏览器默认的画布色。 */
