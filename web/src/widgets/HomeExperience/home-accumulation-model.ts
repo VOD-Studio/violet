@@ -30,6 +30,24 @@ export interface AccumulationSeasonLabel {
 	position: number;
 }
 
+export interface AccumulationSeasonSegment {
+	key: string;
+	name: AccumulationSeasonName;
+	label: string;
+	/** 起点（含）与终点（不含），UTC 毫秒。 */
+	startsAt: number;
+	endsAt: number;
+	/** 跨年的冬季显示为 `2025–26`。 */
+	yearLabel: string;
+	count: number;
+}
+
+export interface AccumulationSegmentPoint {
+	point: AccumulationPoint;
+	/** 在所属季节行内的百分比位置。 */
+	position: number;
+}
+
 export interface AccumulationTimeline {
 	months: AccumulationMonth[];
 	points: AccumulationPoint[];
@@ -37,6 +55,10 @@ export interface AccumulationTimeline {
 	latest: HomePublicationItem | null;
 	/** 今日刻度在时间线上的百分比位置，之后为尚未到来的部分。 */
 	todayPosition: number;
+	/** 连续同季月份合并后的季节段，按时间升序。 */
+	seasonSegments: AccumulationSeasonSegment[];
+	/** 今天 0 点，UTC 毫秒。 */
+	todayAt: number;
 	/** 窗口内最新发布物是否发布于今天。 */
 	latestIsToday: boolean;
 }
@@ -73,6 +95,8 @@ interface SeasonSegment {
 	name: AccumulationSeasonName;
 	startsAt: number;
 	endsAt: number;
+	firstYear: number;
+	lastYear: number;
 }
 
 /**
@@ -173,6 +197,8 @@ export function buildAccumulationTimeline(
 		seasonLabels: buildSeasonLabels(months, rangeStart, timelineDuration),
 		latest: latestEntry?.item ?? null,
 		todayPosition,
+		seasonSegments: buildSeasonSegments(months),
+		todayAt: today,
 		latestIsToday: latestEntry?.day === today,
 	};
 }
@@ -213,17 +239,14 @@ function buildMonths(anchorDate: Date): AccumulationMonth[] {
 	});
 }
 
-function buildSeasonLabels(
-	months: AccumulationMonth[],
-	rangeStart: number,
-	timelineDuration: number,
-): AccumulationSeasonLabel[] {
+function groupSeasonSegments(months: AccumulationMonth[]): SeasonSegment[] {
 	const segments: SeasonSegment[] = [];
 	for (const month of months) {
 		const name = seasonForMonth(month.month);
 		const previous = segments.at(-1);
 		if (previous?.name === name) {
 			previous.endsAt = monthAfter(month);
+			previous.lastYear = month.year;
 			continue;
 		}
 		segments.push({
@@ -231,8 +254,36 @@ function buildSeasonLabels(
 			name,
 			startsAt: month.startsAt,
 			endsAt: monthAfter(month),
+			firstYear: month.year,
+			lastYear: month.year,
 		});
 	}
+	return segments;
+}
+
+function buildSeasonSegments(months: AccumulationMonth[]): AccumulationSeasonSegment[] {
+	return groupSeasonSegments(months).map((segment) => ({
+		key: segment.key,
+		name: segment.name,
+		label: SEASON_LABELS[segment.name],
+		startsAt: segment.startsAt,
+		endsAt: segment.endsAt,
+		yearLabel:
+			segment.firstYear === segment.lastYear
+				? String(segment.firstYear)
+				: `${segment.firstYear}–${String(segment.lastYear).slice(2)}`,
+		count: months
+			.filter((month) => month.startsAt >= segment.startsAt && month.startsAt < segment.endsAt)
+			.reduce((total, month) => total + month.count, 0),
+	}));
+}
+
+function buildSeasonLabels(
+	months: AccumulationMonth[],
+	rangeStart: number,
+	timelineDuration: number,
+): AccumulationSeasonLabel[] {
+	const segments = groupSeasonSegments(months);
 
 	const longestSegmentBySeason = new Map<AccumulationSeasonName, SeasonSegment>();
 	for (const segment of segments) {
@@ -300,6 +351,8 @@ function emptyTimeline(): AccumulationTimeline {
 		seasonLabels: [],
 		latest: null,
 		todayPosition: 100,
+		seasonSegments: [],
+		todayAt: 0,
 		latestIsToday: false,
 	};
 }
@@ -327,4 +380,32 @@ export function formatPointPeriod(startsAt: number, endsAt: number): string {
 			? String(end.getUTCDate()).padStart(2, "0")
 			: `${end.getUTCMonth() + 1}.${String(end.getUTCDate()).padStart(2, "0")}`;
 	return `${startLabel}—${endLabel}`;
+}
+
+/**
+ * 把节点按时间归入季节段，供窄屏分行展示。
+ *
+ * @param todayAt 今天 0 点；包含今天的节点以今日位置为准。
+ * @returns 以季节段 key 为索引的节点及其行内位置。
+ */
+export function assignPointsToSegments(
+	points: AccumulationPoint[],
+	segments: AccumulationSeasonSegment[],
+	todayAt: number,
+): Map<string, AccumulationSegmentPoint[]> {
+	const result = new Map<string, AccumulationSegmentPoint[]>(
+		segments.map((segment) => [segment.key, []]),
+	);
+	for (const point of points) {
+		const midpoint = point.includesToday
+			? todayAt + DAY_IN_MILLISECONDS / 2
+			: point.startsAt + (point.endsAt + DAY_IN_MILLISECONDS - point.startsAt) / 2;
+		const segment = segments.find(
+			(candidate) => midpoint >= candidate.startsAt && midpoint < candidate.endsAt,
+		);
+		if (!segment) continue;
+		const ratio = (midpoint - segment.startsAt) / (segment.endsAt - segment.startsAt);
+		result.get(segment.key)?.push({ point, position: clamp(ratio * 100, 3, 97) });
+	}
+	return result;
 }
