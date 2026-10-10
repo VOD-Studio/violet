@@ -67,6 +67,19 @@ export function HomeAccumulationDetail({
 								{text}
 							</span>
 						))}
+						{hiddenCount > 0 && (
+							<span className="hidden items-center gap-2 sm:flex">
+								<span aria-hidden className="text-muted-foreground/40">
+									·
+								</span>
+								<Link
+									to="/blog/archive"
+									className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								>
+									另 {hiddenCount} 篇 →
+								</Link>
+							</span>
+						)}
 					</p>
 
 					<ul className="mx-auto mt-3 min-h-0 w-full max-w-md flex-1 divide-y divide-border/50 overflow-y-auto overscroll-contain [scrollbar-width:none] sm:hidden">
@@ -85,12 +98,12 @@ export function HomeAccumulationDetail({
 						))}
 					</ul>
 
-					<ul className="mx-auto mt-5 hidden w-full max-w-4xl flex-1 grid-flow-col auto-cols-fr divide-x divide-border/60 sm:grid">
+					<ul className="mx-auto mt-6 hidden w-full flex-1 justify-center gap-14 sm:flex">
 						{wideItems.map((item, index) => (
 							<motion.li
 								key={item.id}
 								{...reveal(index, reduceMotion)}
-								className="min-w-0 px-8 first:pl-0 last:pr-0"
+								className="w-60 min-w-0 shrink-0"
 							>
 								<HomeContentLink
 									item={item}
@@ -103,19 +116,6 @@ export function HomeAccumulationDetail({
 								</HomeContentLink>
 							</motion.li>
 						))}
-						{hiddenCount > 0 && (
-							<motion.li
-								{...reveal(wideItems.length, reduceMotion)}
-								className="flex min-w-0 items-center justify-center px-8 last:pr-0"
-							>
-								<Link
-									to="/blog/archive"
-									className="text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-								>
-									另 {hiddenCount} 篇 →
-								</Link>
-							</motion.li>
-						)}
 					</ul>
 				</motion.div>
 			</AnimatePresence>

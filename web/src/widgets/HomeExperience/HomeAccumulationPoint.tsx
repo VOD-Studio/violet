@@ -62,14 +62,16 @@ export function HomeAccumulationPoint({
 						layoutId={ringId}
 						transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
 						style={{ width: ringSize, height: ringSize }}
-						className="absolute inset-0 m-auto rounded-full bg-[color-mix(in_oklab,var(--color-primary)_16%,var(--color-background))]"
-					/>
+						className="absolute inset-0 m-auto overflow-hidden rounded-full bg-background"
+					>
+						<span className="absolute inset-0 bg-primary/15" />
+					</motion.span>
 				)}
 				<span
 					aria-hidden
 					style={{ width: point.markerSize, height: point.markerSize }}
 					className={cn(
-						"block rounded-full bg-muted-foreground ring-1 ring-background transition-colors duration-200",
+						"relative block rounded-full bg-muted-foreground ring-1 ring-background transition-colors duration-200",
 						(point.isLatest || selected) && "bg-primary",
 					)}
 				/>
