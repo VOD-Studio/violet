@@ -1,4 +1,5 @@
 import type { Tweet } from "@entities/tweet/model/types";
+import { userKeys } from "@entities/user/api/keys";
 import { useMe } from "@features/auth/api/queries";
 import { tweetKeys } from "@features/tweets/api/keys";
 import {
@@ -99,7 +100,10 @@ function UserPublicProfilePage() {
 		<PageShell>
 			<UserProfileLayout
 				cover={
-					<UserProfileCover imageSrc={avatarUrl(profile.avatar_url, profile.username)} />
+					<UserProfileCover
+						avatarSrc={avatarUrl(profile.avatar_url, profile.username)}
+						coverSrc={profile.cover_url}
+					/>
 				}
 				panel={
 					<UserProfilePanel
@@ -132,7 +136,7 @@ export const Route = createFileRoute("/users/$username")({
 			// 并行预取资料卡与首页推文
 			const [profile] = await Promise.all([
 				context.queryClient.ensureQueryData({
-					queryKey: tweetKeys.userProfile(params.username),
+					queryKey: userKeys.profile(params.username),
 					queryFn: () => fetchUserProfile(params.username),
 				}),
 				context.queryClient
@@ -157,8 +161,8 @@ export const Route = createFileRoute("/users/$username")({
 		const name = profile?.username ?? params.username;
 		return {
 			meta: [
-				{ title: `${name} 的个人推文主页` },
-				{ name: "description", content: profile?.bio || `${name} 的全站个人推文主页` },
+				{ title: `${name} 的个人主页` },
+				{ name: "description", content: profile?.bio || `${name} 的个人主页` },
 			],
 		};
 	},

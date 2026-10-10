@@ -4,13 +4,14 @@
  * 验证登录/登出/改资料/改密码的 onSuccess 缓存副作用：
  *   - useLogout：cancelQueries + me 置 null + 移除 csrf-token 缓存 + clearSessionActive
  *   - useLogin：invalidate me + markSessionActive
- *   - useUpdateProfile：setQueryData 合并更新 me
+ *   - useUpdateProfile：合并 me，刷新公开资料，改名后清除旧主页缓存
  *   - useChangePassword：invalidate me
  *
  * 范式复制 comments/api/__tests__/useCreateComment.test.tsx。
  */
-import type { UserDTO } from "@entities/user/model/types";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { userKeys } from "@entities/user/api/keys";
+import type { UserDTO, UserProfile } from "@entities/user/model/types";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +31,8 @@ vi.mock("@shared/api/csrf", () => ({
 	getCSRFToken: vi.fn(() => ""),
 }));
 
-import { apiPatch, apiPost } from "@shared/api/request";
+import type { UpdatedProfile } from "@features/auth/model/types";
+import { apiGet, apiPatch, apiPost } from "@shared/api/request";
 import { useSessionStore } from "@shared/api/session";
 import { authKeys } from "../keys";
 import { useChangePassword, useLogin, useLogout, useUpdateProfile } from "../mutations";
@@ -58,6 +60,33 @@ function makeUser(overrides: Partial<UserDTO> = {}): UserDTO {
 		google_bound: false,
 		github_bound: false,
 		permissions: [],
+		...overrides,
+	};
+}
+
+function makeUpdatedProfile(overrides: Partial<UpdatedProfile> = {}): UpdatedProfile {
+	return {
+		id: "u1",
+		username: "alice",
+		display_name: "",
+		email: "alice@example.com",
+		avatar_url: "",
+		cover_url: "",
+		bio: "",
+		role: "user",
+		...overrides,
+	};
+}
+
+function makePublicProfile(overrides: Partial<UserProfile> = {}): UserProfile {
+	return {
+		id: "u1",
+		username: "alice",
+		display_name: "",
+		avatar_url: "",
+		cover_url: "",
+		bio: "",
+		created_at: "2026-01-01T00:00:00Z",
 		...overrides,
 	};
 }
@@ -125,23 +154,68 @@ describe("auth mutations — 缓存副作用", () => {
 		expect(useSessionStore.getState().sessionActive).toBe(true);
 	});
 
-	it("useUpdateProfile：返回字段合并进 me 缓存", async () => {
+	it("useUpdateProfile：改名后合并 me，旧用户名不再命中新资料缓存", async () => {
 		const initial = makeUser({ username: "old-name", bio: "old-bio" });
 		qc.setQueryData<UserDTO>(authKeys.me(), initial);
-
-		// 后端返回更新后的字段子集（omitempty：只含被改的字段）
-		vi.mocked(apiPatch).mockResolvedValue({ username: "new-name" });
+		qc.setQueryData(userKeys.profile("old-name"), makePublicProfile({ username: "old-name" }));
+		const response = makeUpdatedProfile({ username: "new-name", bio: "old-bio" });
+		vi.mocked(apiPatch).mockResolvedValue(response);
 
 		const { result } = renderHook(() => useUpdateProfile(), { wrapper: createWrapper(qc) });
 		await result.current.mutateAsync({ username: "new-name" });
 
-		await waitFor(() => {
-			const updated = qc.getQueryData<UserDTO>(authKeys.me());
-			// 新 username 被合并
-			expect(updated?.username).toBe("new-name");
-			// 未改的字段保留
-			expect(updated?.bio).toBe("old-bio");
+		const updated = qc.getQueryData<UserDTO>(authKeys.me());
+		expect(updated?.username).toBe("new-name");
+		expect(updated?.bio).toBe("old-bio");
+		expect(qc.getQueryData(userKeys.profile("old-name"))).toBeUndefined();
+	});
+
+	it.each([
+		{ operation: "保存", cover: "https://images.example/cover.gif?crop=0.1,0.2,0.8,0.6" },
+		{ operation: "移除", cover: "" },
+	])("useUpdateProfile：$operation封面后重新打开主页获取新资料", async ({ cover }) => {
+		qc.setQueryData(authKeys.me(), makeUser({ cover_url: "https://images.example/old.jpg" }));
+		qc.setQueryData(
+			userKeys.profile("alice"),
+			makePublicProfile({ cover_url: "https://images.example/old.jpg" }),
+		);
+		const otherUser = makePublicProfile({
+			id: "u2",
+			username: "bob",
+			cover_url: "https://images.example/bob.jpg",
 		});
+		qc.setQueryData(userKeys.profile("bob"), otherUser);
+		vi.mocked(apiPatch).mockResolvedValue(makeUpdatedProfile({ cover_url: cover }));
+		vi.mocked(apiGet).mockImplementation(async (path) =>
+			path === "/users/bob"
+				? makePublicProfile({
+						...otherUser,
+						cover_url: "https://images.example/bob-new.jpg",
+					})
+				: makePublicProfile({ cover_url: cover }),
+		);
+
+		const mutation = renderHook(() => useUpdateProfile(), { wrapper: createWrapper(qc) });
+		await mutation.result.current.mutateAsync({ cover_url: cover });
+
+		const homepage = renderHook(
+			() => ({
+				profile: useQuery({
+					queryKey: userKeys.profile("alice"),
+					queryFn: () => apiGet<UserProfile>("/users/alice"),
+				}),
+				otherProfile: useQuery({
+					queryKey: userKeys.profile("bob"),
+					queryFn: () => apiGet<UserProfile>("/users/bob"),
+				}),
+			}),
+			{ wrapper: createWrapper(qc) },
+		);
+		await waitFor(() => expect(homepage.result.current.profile.data?.cover_url).toBe(cover));
+		expect(qc.getQueryData<UserDTO>(authKeys.me())?.cover_url).toBe(cover);
+		expect(homepage.result.current.otherProfile.data).toEqual(otherUser);
+		homepage.unmount();
+		mutation.unmount();
 	});
 
 	it("useChangePassword：失效 me 缓存（引导上层跳转登录页）", async () => {

@@ -147,7 +147,8 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/projects` | 项目展示 |
 | `/friends` | 友链页 |
 | `/about` | 关于页 |
-| `/profile` | 个人资料 |
+| `/profile`、`/profile/security` | 本人资料、主页封面与账户安全设置 |
+| `/users/:username` | 公开主页（个人资料、主页封面与推文） |
 | `/login`, `/register`, `/forgot-password` | 认证 |
 | `/changelog` | 更新日志 |
 | `/ui`、`/ui/guides/:slug`、`/ui/components/:name` | violet/ui 组件库文档、接入指南与组件 API 示例 |
@@ -161,6 +162,8 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
+
+个人设置与公开主页共用 `max-w-7xl` 版心，公开页保留资料、推文与概览的原有布局。封面管理复用文件选择、UploadTile 与 CropUploadDialog，接受任意原图比例和自由选区，GIF 保留动画；更换与移除使用封面角落的小图标。未设置或移除封面时，公开页保留原头像模糊背景。资料保存只刷新对应用户的公开资料缓存，改名后清除旧用户名缓存。
 
 ## 状态管理
 

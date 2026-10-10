@@ -3,10 +3,11 @@ import type { UserDTO } from "@entities/user/model/types";
 import { useUpdateProfile } from "@features/auth/api/mutations";
 import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/CropUploadDialog";
 import { avatarUrl } from "@shared/lib/image-url";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
+import { Link } from "@tanstack/react-router";
+import { Button, PageShell, Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
 
 import { cn } from "cn";
-import { Camera, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Camera, ExternalLink, ShieldCheck, User as UserIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -46,27 +47,29 @@ export const ProfileShell = ({
 			orientation="vertical"
 			className="gap-0"
 		>
-			<div className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
-				<div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr] md:gap-8">
-					<aside className="md:sticky md:top-24 md:self-start">
-						<ProfileSidebar user={user} activeTab={tab} />
-					</aside>
-					<div className="min-w-0">
-						<TabsContent
-							value="profile"
-							className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
-						>
-							{profile}
-						</TabsContent>
-						<TabsContent
-							value="security"
-							className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
-						>
-							{security}
-						</TabsContent>
+			<PageShell>
+				<div className="mx-auto w-full max-w-7xl">
+					<div className="grid grid-cols-1 gap-6 px-1 md:grid-cols-[17rem_minmax(0,1fr)] md:gap-8">
+						<aside className="md:sticky md:top-24 md:self-start">
+							<ProfileSidebar user={user} activeTab={tab} />
+						</aside>
+						<div className="min-w-0">
+							<TabsContent
+								value="profile"
+								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+							>
+								{profile}
+							</TabsContent>
+							<TabsContent
+								value="security"
+								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+							>
+								{security}
+							</TabsContent>
+						</div>
 					</div>
 				</div>
-			</div>
+			</PageShell>
 		</Tabs>
 	);
 };
@@ -86,8 +89,7 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 	};
 
 	return (
-		<div className="rounded-xl border bg-card p-5 shadow-sm">
-			{/* 头像 + 用户信息 */}
+		<div className="rounded-xl border bg-card p-5 shadow-[0_4px_24px_rgb(0_0_0/0.05)]">
 			<div className="flex flex-col items-center text-center md:items-start md:text-left">
 				<label className="group/avatar relative cursor-pointer">
 					<img
@@ -131,6 +133,13 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 					{user.is_root ? "root" : user.role_description || user.role}
 				</p>
 			</div>
+
+			<Button asChild variant="outline" size="sm" className="mt-5 w-full">
+				<Link to="/users/$username" params={{ username: user.username }}>
+					<ExternalLink className="size-3.5" />
+					查看公开主页
+				</Link>
+			</Button>
 
 			{/* Tab 列表：default 分段式（自带激活态过渡），移动端横排可滚动 */}
 			<TabsList
