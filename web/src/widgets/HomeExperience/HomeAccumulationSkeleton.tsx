@@ -44,7 +44,7 @@ export function HomeAccumulationSkeleton() {
 						</div>
 					</div>
 
-					<div aria-hidden className="mt-8 min-h-36 sm:mt-10">
+					<div aria-hidden className="mt-8 h-44 sm:mt-10">
 						<Skeleton className="mx-auto h-3.5 w-32 rounded" />
 						<div className="mx-auto mt-3 max-w-md divide-y divide-border/50">
 							<div className="flex items-center justify-between gap-4 py-3">

@@ -16,7 +16,11 @@ interface HomeAccumulationDetailProps {
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-/** 时间线下方的节点详情，切换节点时整体淡入淡出，条目依次浮现。 */
+/**
+ * 时间线下方的节点详情，切换节点时整体淡入淡出，条目依次浮现。
+ *
+ * @remarks 高度固定（可容纳三条），条目更多时区内滚动，避免切换节点引起页面布局跳动。
+ */
 export function HomeAccumulationDetail({
 	point,
 	isLatest,
@@ -25,10 +29,11 @@ export function HomeAccumulationDetail({
 }: HomeAccumulationDetailProps) {
 	const tag = isLatest ? (latestIsToday ? "今日新篇" : "新篇") : null;
 	return (
-		<div className="min-h-36">
+		<div className="h-44">
 			<AnimatePresence mode="wait" initial={false}>
 				<motion.div
 					key={point.key}
+					className="flex h-full flex-col"
 					initial={reduceMotion ? false : { opacity: 0 }}
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
@@ -51,7 +56,7 @@ export function HomeAccumulationDetail({
 						</span>
 						<span>{point.items.length} 篇</span>
 					</p>
-					<ul className="mx-auto mt-3 max-h-52 max-w-md divide-y divide-border/50 overflow-y-auto overscroll-contain [scrollbar-width:none]">
+					<ul className="mx-auto mt-3 min-h-0 w-full max-w-md flex-1 divide-y divide-border/50 overflow-y-auto overscroll-contain [scrollbar-width:none]">
 						{point.items.map((item, index) => (
 							<motion.li
 								key={item.id}
