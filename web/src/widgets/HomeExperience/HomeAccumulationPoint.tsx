@@ -18,7 +18,7 @@ interface HomeAccumulationPointProps {
 	onSelect: () => void;
 }
 
-/** 时间线上的发布节点；选中描边环在节点之间滑动。 */
+/** 时间线上的发布节点；选中的淡色圆盘在节点之间滑动。 */
 export function HomeAccumulationPoint({
 	point,
 	reduceMotion,
@@ -33,7 +33,7 @@ export function HomeAccumulationPoint({
 		point.items.length === 1
 			? `查看发布：${point.items[0]?.title}`
 			: `查看 ${periodLabel} 的 ${point.items.length} 项发布`;
-	const ringSize = point.markerSize + 10;
+	const ringSize = point.markerSize + 12;
 
 	return (
 		<motion.div
@@ -62,7 +62,7 @@ export function HomeAccumulationPoint({
 						layoutId={ringId}
 						transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
 						style={{ width: ringSize, height: ringSize }}
-						className="absolute inset-0 m-auto rounded-full ring-1 ring-primary/50"
+						className="absolute inset-0 m-auto rounded-full bg-[color-mix(in_oklab,var(--color-primary)_16%,var(--color-background))]"
 					/>
 				)}
 				<span
