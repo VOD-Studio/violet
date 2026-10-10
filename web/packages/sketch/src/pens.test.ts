@@ -93,6 +93,15 @@ describe("压感与笔", () => {
 		for (const b of batches) expect(b.verbs.filter((v) => v === 0)).toHaveLength(1);
 	});
 
+	it("短直线也有起收笔渐变，中段不被两端的低压抹平", () => {
+		const drawing = draw(scene([{ id: "l", path: line(20, 100, 80, 100) }]), {
+			style: inkpen,
+			width: 3,
+		});
+		const [batch] = drawing.items[0].batches;
+		expect(widthAt(batch, 0, 0.5)).toBeGreaterThan(widthAt(batch, 0, 0.02) * 2.5);
+	});
+
 	it("马克笔的压感强度可调：越大起收笔越细", () => {
 		const ratio = (pressure?: number) => {
 			const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {

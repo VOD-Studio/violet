@@ -28,6 +28,8 @@ export interface GestureOptions {
 // 控制点间切线夹角超过该值时细分，避免 Catmull-Rom 抹圆原有曲线。
 const REFINE_COS = Math.cos((30 * Math.PI) / 180);
 const MAX_CONTROLS = 256;
+// 压力在控制点之间线性插值：至少四段，起收笔渐变才不会被两端的低压抹平成整笔细线。
+const MIN_PIECES = 4;
 const INCOMING = 1e-6;
 
 /** 最小 jerk 位置曲线：τ∈[0,1] 时从 0 平滑到 1，两端速度与加速度为 0。 */
@@ -96,7 +98,7 @@ export function traceStroke(
 		if (contour.closed && c + contour.length < total) cornerU.push(c + contour.length);
 	}
 	const hasCorner = (a: number, b: number) => cornerU.some((c) => c > a && c < b);
-	const base = Math.max(1, Math.ceil(total / spacing(total)));
+	const base = Math.max(MIN_PIECES, Math.ceil(total / spacing(total)));
 	for (let i = 0; i <= base; i++) insert(samples.length, i / base, minimumJerk(i / base) * total);
 	for (let i = 0; i + S < samples.length && samples.length < MAX_CONTROLS * S; ) {
 		const turn = samples[i + 4] * samples[i + S + 4] + samples[i + 5] * samples[i + S + 5];
