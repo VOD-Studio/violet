@@ -1,7 +1,13 @@
 import type { TweetAuthor } from "@entities/tweet/model/types";
 import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
+import {
+	markSharedSource,
+	TWEET_AUTHOR_SCOPE,
+	useSharedElement,
+} from "@shared/lib/view-transition";
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 /** 本站作者、发布时间及可选管理菜单。 */
@@ -26,13 +32,18 @@ export function TweetCardHeader({
 	isDetail = false,
 	actionsSlot,
 }: TweetCardHeaderProps) {
+	// 同一作者的多条推文各有头像，用推文 id 指定被点击的那一个。
+	const shared = useSharedElement({ name: "avatar", id: author.id, instance: tweetId });
 	return (
 		<header className="v-tweet__header">
 			<div className="v-tweet__identity">
 				<Link
 					to="/users/$username"
 					params={{ username: author.username }}
-					onClick={(event) => event.stopPropagation()}
+					onClick={(event) => {
+						event.stopPropagation();
+						markSharedSource("avatar", author.id, TWEET_AUTHOR_SCOPE, tweetId);
+					}}
 					className="v-tweet__avatar-link"
 					aria-label={`${author.username} 的个人主页`}
 				>
@@ -40,7 +51,8 @@ export function TweetCardHeader({
 						src={avatarUrl(author.avatar_url, author.username)}
 						alt=""
 						loading="lazy"
-						className="v-tweet__avatar"
+						className={cn("v-tweet__avatar", shared.className)}
+						style={shared.style}
 					/>
 				</Link>
 				<div className="v-tweet__author">

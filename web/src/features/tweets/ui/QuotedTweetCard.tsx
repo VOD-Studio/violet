@@ -1,5 +1,6 @@
 import type { QuotedTweet } from "@entities/tweet/model/types";
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
+import { NoSharedElements } from "@shared/lib/view-transition";
 import { useNavigate } from "@tanstack/react-router";
 import { TweetCard } from "@violet/react-tweet";
 import { TweetCardHeader } from "./TweetCardHeader";
@@ -34,11 +35,14 @@ export function QuotedTweetCard({ tweet }: { tweet: QuotedTweet }) {
 				}
 			}}
 			headerSlot={
-				<TweetCardHeader
-					author={tweet.author}
-					tweetId={tweet.id}
-					createdAt={tweet.created_at}
-				/>
+				// 同一条被引用的推文可能出现在多张卡片里，嵌套的头像不参与共享元素转场。
+				<NoSharedElements>
+					<TweetCardHeader
+						author={tweet.author}
+						tweetId={tweet.id}
+						createdAt={tweet.created_at}
+					/>
+				</NoSharedElements>
 			}
 			contentSlot={
 				<TweetContent

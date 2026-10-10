@@ -1,4 +1,5 @@
 import type { Tweet } from "@entities/tweet/model/types";
+import { NoSharedElements } from "@shared/lib/view-transition";
 import { Link } from "@tanstack/react-router";
 import { Button, Segmented, ShimmerSkeleton } from "@violet/ui";
 import { useState } from "react";
@@ -109,23 +110,25 @@ export function UserProfileFeed({
 						}
 					/>
 				) : (
-					<div className="flex flex-col gap-4">
-						{visible.map((tweet) => (
-							<TweetCard key={tweet.id} tweet={tweet} />
-						))}
-						{hasNextPage && (
-							<div className="flex justify-center py-2">
-								<Button
-									variant="outline"
-									loading={isFetchingNextPage}
-									loadingText="加载中…"
-									onClick={onLoadMore}
-								>
-									加载更多
-								</Button>
-							</div>
-						)}
-					</div>
+					<NoSharedElements>
+						<div className="flex flex-col gap-4">
+							{visible.map((tweet) => (
+								<TweetCard key={tweet.id} tweet={tweet} />
+							))}
+							{hasNextPage && (
+								<div className="flex justify-center py-2">
+									<Button
+										variant="outline"
+										loading={isFetchingNextPage}
+										loadingText="加载中…"
+										onClick={onLoadMore}
+									>
+										加载更多
+									</Button>
+								</div>
+							)}
+						</div>
+					</NoSharedElements>
 				)}
 			</div>
 		</section>

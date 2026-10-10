@@ -4,8 +4,10 @@ import { useMe } from "@features/auth/api/queries";
 import { useCreateChatConversation } from "@features/chat/api/queries";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
+import { useSharedElement } from "@shared/lib/view-transition";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
+import { cn } from "cn";
 import { differenceInDays } from "date-fns";
 import { CalendarDays, Check, Copy, MessageCircle, PenSquare, Share2 } from "lucide-react";
 import { useState } from "react";
@@ -59,6 +61,7 @@ export function UserProfilePanel({
 	const [copied, setCopied] = useState<"handle" | "link" | null>(null);
 	const [starting, setStarting] = useState(false);
 
+	const sharedAvatar = useSharedElement({ name: "avatar", id: profile.id });
 	const displayName = getDisplayName(profile);
 	const isSelf = currentUser?.id === profile.id;
 	const bio = profile.bio?.trim();
@@ -101,7 +104,11 @@ export function UserProfilePanel({
 			<img
 				src={avatarUrl(profile.avatar_url, profile.username)}
 				alt={`${displayName} 的头像`}
-				className="-mt-16 size-24 shrink-0 rounded-full border border-border bg-muted object-cover ring-4 ring-card"
+				className={cn(
+					"-mt-16 size-24 shrink-0 rounded-full border border-border bg-muted object-cover ring-4 ring-card",
+					sharedAvatar.className,
+				)}
+				style={sharedAvatar.style}
 			/>
 
 			<h1 className="mt-4 truncate text-2xl font-bold tracking-tight">{displayName}</h1>
