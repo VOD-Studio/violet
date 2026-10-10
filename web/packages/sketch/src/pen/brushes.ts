@@ -30,7 +30,7 @@ export function createInkPen(options: InkPenOptions = {}): Pen {
 
 /** G 笔参数。 */
 export interface GPenOptions extends PenOptions {
-	/** 压力为 1 时的线宽倍率，满压时再放大至 1.6 倍。 @default 0.6 */
+	/** 线宽倍率；常用压力下笔身约为名义线宽，满压时约 1.2 倍。 @default 0.75 */
 	weight?: number;
 	/** 压感强度，[0, 1]：0 为恒宽，越大粗细对比越强。 @default 0.95 */
 	pressure?: number;
@@ -44,7 +44,7 @@ export interface GPenOptions extends PenOptions {
 export function createGPen(options: GPenOptions = {}): Pen {
 	return createRibbonPen({
 		id: "gpen",
-		weight: options.weight ?? 0.6,
+		weight: options.weight ?? 0.75,
 		minScale: 0,
 		maxScale: 1.6,
 		gamma: 1.8,
