@@ -1,6 +1,6 @@
 # @violet/sketch
 
-框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0：笔画规划与三档手法、逐点压力与三支笔（签字笔、压感钢笔、马克笔）、七种填充、动漫风格，以及整图时间轴（顺序、并行、交错）。
+框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0：笔画规划与三档手法、逐点压力与三支笔（签字笔、钢笔、马克笔，压感强度均可调）、七种填充、动漫风格，以及整图时间轴（顺序、并行、交错）。
 
 ## 调用
 
@@ -43,7 +43,7 @@ updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 ```ts
 import { createFineliner, createMarker, inkpen, styles } from "@violet/sketch";
 
-const writing = { ...styles.natural, pen: inkpen };                    // 压感钢笔
+const writing = { ...styles.natural, pen: inkpen };                    // 钢笔
 const marker = { ...styles.natural, pen: createMarker({ weight: 7, opacity: 0.45 }) };
 const light = { ...styles.natural, pen: createFineliner({ pressure: 0.4 }) };
 ```
@@ -51,8 +51,8 @@ const light = { ...styles.natural, pen: createFineliner({ pressure: 0.4 }) };
 | 笔 | 笔尖与压力 |
 | --- | --- |
 | `fineliner` | 圆笔尖，默认恒宽并走原生描边；`createFineliner({ pressure })` 让线宽随压力变化 |
-| `inkpen` | 圆笔尖，线宽 0.08 到 1.25 倍随压力变化，起收笔收尖 |
-| `marker` | 扁笔尖（角度 −35°，短长轴比 0.28），半透明，不同笔画重叠处叠色加深 |
+| `inkpen` | 圆笔尖，压感强度缺省 0.92，起收笔收尖、满压略粗；`createInkPen({ pressure })` 调节 |
+| `marker` | 扁笔尖（角度 −35°，短长轴比 0.28），半透明，不同笔画重叠处叠色加深；压感强度缺省 0.15，`createMarker({ pressure })` 调节 |
 
 自定义变宽笔用 `createRibbonPen`：给出笔尖角度与短长轴比、压力到宽度的映射和是否分笔叠色即可。
 
@@ -113,7 +113,7 @@ export const ribbon: Pen = {
 | --- | --- |
 | `core/` | 路径与图元、展平与角点、确定性随机、渲染批次构造 |
 | `hand/` | 笔画规划、最小 jerk 手法、压力与预设 |
-| `pen/` | 条带轮廓、签字笔、压感钢笔、马克笔 |
+| `pen/` | 条带轮廓、签字笔、钢笔、马克笔 |
 | `fill/` | 扫描线、图案填充与淡彩填充 |
 | `animate/` | 编排与播放器 |
 | `render/` | SVG、Canvas、显现轨迹与配色解析 |

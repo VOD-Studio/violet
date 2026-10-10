@@ -56,7 +56,7 @@ export { createWashFill } from "./fill/wash.ts";
 export { minimumJerk } from "./hand/gesture.ts";
 export type { HandOptions } from "./hand/presets.ts";
 export { createHand, fillHands, hands } from "./hand/presets.ts";
-export type { MarkerOptions } from "./pen/brushes.ts";
+export type { InkPenOptions, MarkerOptions } from "./pen/brushes.ts";
 export { createInkPen, createMarker, inkpen, marker } from "./pen/brushes.ts";
 export type { FinelinerOptions } from "./pen/fineliner.ts";
 export { createFineliner, fineliner } from "./pen/fineliner.ts";

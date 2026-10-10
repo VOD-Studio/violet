@@ -3,6 +3,7 @@ import {
 	animeStyle,
 	circle,
 	createAnimeStyle,
+	createFineliner,
 	createHand,
 	createInkPen,
 	createMarker,
@@ -36,7 +37,7 @@ const ruler = createHand({ roughness: 0, bowing: 0, breakChance: 0, overshoot: 0
 describe("压感与笔", () => {
 	const inkpen = { hand: ruler, pen: pens.inkpen };
 
-	it("压感钢笔的线宽随压力变化：两端收尖、中段最宽", () => {
+	it("钢笔的线宽随压力变化：两端收尖、中段最宽", () => {
 		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
 			style: inkpen,
 			width: 3,
@@ -56,7 +57,7 @@ describe("压感与笔", () => {
 		expect(plain.items[0].batches[0].mode).toBe("stroke");
 		expect(plain.items[0].batches[0].ribbons).toBeUndefined();
 		const pressed = draw(scene(items), {
-			style: { hand: ruler, pen: styles.natural.pen && createInkPen(1) },
+			style: { hand: ruler, pen: createFineliner({ pressure: 0.5 }) },
 		});
 		expect(pressed.items[0].batches[0].ribbons).toBeDefined();
 	});
@@ -112,6 +113,19 @@ describe("压感与笔", () => {
 		expect(ratio()).toBeGreaterThan(0.8);
 		expect(ratio(0)).toBeCloseTo(1, 2);
 		expect(ratio(0.9)).toBeLessThan(0.4);
+	});
+
+	it("钢笔的压感强度可调：0 时恒宽，缺省时起收笔收尖", () => {
+		const ratio = (pressure?: number) => {
+			const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+				style: { hand: ruler, pen: createInkPen({ pressure }) },
+				width: 3,
+			});
+			const [batch] = drawing.items[0].batches;
+			return widthAt(batch, 0, 0.01) / widthAt(batch, 0, 0.5);
+		};
+		expect(ratio(0)).toBeCloseTo(1, 2);
+		expect(ratio()).toBeLessThan(0.4);
 	});
 
 	it("条带两端有圆帽，轮廓闭合", () => {

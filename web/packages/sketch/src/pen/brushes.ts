@@ -1,17 +1,30 @@
 import type { Pen } from "../core/types.ts";
 import { createRibbonPen, pressureFloor } from "./ribbon-pen.ts";
 
+/** 钢笔参数。 */
+export interface InkPenOptions {
+	/** 压力为 1 时的线宽倍率。 @default 1.6 */
+	weight?: number;
+	/** 压力对线宽的影响，[0, 1]：0 为恒宽，越大起收笔越细。 @default 0.92 */
+	pressure?: number;
+}
+
 /**
- * 创建压感钢笔：圆笔尖，线宽随压力在约 0.1 到 1.25 倍之间变化，起笔收笔自然收尖。
+ * 创建钢笔：圆笔尖，线宽随压力起伏，满压时比名义线宽略粗（`1 + 0.25 × pressure` 倍），起笔收笔自然收尖。
  *
- * @param weight - 压力为 1 时的线宽倍率 @default 1.6
+ * @example
+ * ```ts
+ * const gentle = createInkPen({ pressure: 0.5 });
+ * ```
  */
-export function createInkPen(weight = 1.6): Pen {
+export function createInkPen(options: InkPenOptions = {}): Pen {
+	const pressure = Math.min(1, Math.max(0, options.pressure ?? 0.92));
 	return createRibbonPen({
 		id: "inkpen",
-		weight,
-		minScale: 0.08,
-		maxScale: 1.25,
+		weight: options.weight ?? 1.6,
+		minScale: pressureFloor(pressure),
+		// 满压加粗也随压感强度缩放，强度为 0 时才是恒宽
+		maxScale: 1 + 0.25 * pressure,
 		gamma: 1.5,
 	});
 }
@@ -51,7 +64,7 @@ export function createMarker(options: MarkerOptions = {}): Pen {
 	});
 }
 
-/** 默认压感钢笔。 */
+/** 默认钢笔。 */
 export const inkpen = /* @__PURE__ */ createInkPen();
 
 /** 默认马克笔。 */
