@@ -5,8 +5,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
-import { getNavDirection, isAdminRoute } from "./shared/lib/nav-direction";
-import { useViewTransitionStore } from "./shared/lib/view-transition-store";
+import { reconcileIntent, resolveViewTransitionTypes } from "./shared/lib/view-transition";
 
 /**
  * RouterContext - 全路由共享的上下文
@@ -47,33 +46,17 @@ export const getRouter = () => {
 		defaultErrorComponent: RouteError,
 		defaultPendingMs: 180,
 		defaultPendingMinMs: 360,
+		// 转场规则见 shared/lib/view-transition：默认淡入淡出，共享元素意图覆盖两端时 morph。
 		defaultViewTransition: {
 			types: ({ fromLocation, toLocation, pathChanged }) => {
-				if (!pathChanged) return false;
-				const to = toLocation.pathname;
 				const from = fromLocation?.pathname;
-
-				// 离开博客段时清零共享封面状态
-				const isBlog = (p?: string) => p === "/blog" || p?.startsWith("/blog/");
-				if (!isBlog(to) || !isBlog(from)) {
-					useViewTransitionStore.getState().setSharedCoverSlug(null);
-				}
-
-				// 后台和「浏览」次级入口不做页面 View Transition：这些入口共享
-				// 同一个 Header 选中形态，内容切换不应把导航一起带入页面动画。
-				const isUiDocs = (path?: string) =>
-					path === "/ui" || Boolean(path?.startsWith("/ui/"));
-				if (
-					isAdminRoute(to) ||
-					(from && isAdminRoute(from)) ||
-					isSecondaryNavRoute(to) ||
-					(from && isSecondaryNavRoute(from)) ||
-					(isUiDocs(to) && isUiDocs(from))
-				) {
-					return false;
-				}
-				const dir = getNavDirection(from, to);
-				return dir ? [dir] : ["fade"];
+				const to = toLocation.pathname;
+				return resolveViewTransitionTypes({
+					from,
+					to,
+					pathChanged,
+					intent: reconcileIntent(from, to),
+				});
 			},
 		},
 		context: {
@@ -86,12 +69,6 @@ export const getRouter = () => {
 	return router;
 };
 
-const SECONDARY_NAV_PREFIXES = ["/blog/archive", "/chat", "/projects", "/friends", "/about"];
-
-const isSecondaryNavRoute = (pathname: string) =>
-	SECONDARY_NAV_PREFIXES.some(
-		(prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-	);
 declare module "@tanstack/react-router" {
 	interface Register {
 		router: ReturnType<typeof getRouter>;
