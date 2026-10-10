@@ -5,9 +5,12 @@ import {
 	useActiveHeading,
 	useTocNavigation,
 } from "@shared/hooks/use-toc";
+import { scrollToElement } from "@shared/lib/smooth-scroll";
 import { act, render, renderHook } from "@testing-library/react";
 import { createElement, createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@shared/lib/smooth-scroll", () => ({ scrollToElement: vi.fn() }));
 
 describe("extractToc", () => {
 	it("extracts h2/h3/h4 with explicit ids", () => {
@@ -244,11 +247,8 @@ describe("useTocNavigation", () => {
 		const items = extractDomToc(root);
 		const first = root.querySelector<HTMLElement>("#first");
 		const second = root.querySelector<HTMLElement>("#second");
-		const firstScroll = vi.fn();
-		const secondScroll = vi.fn();
 		if (!first || !second) throw new Error("missing headings");
-		first.scrollIntoView = firstScroll;
-		second.scrollIntoView = secondScroll;
+		vi.mocked(scrollToElement).mockClear();
 		const media = { matches: false };
 		vi.stubGlobal("matchMedia", () => media);
 
@@ -256,19 +256,18 @@ describe("useTocNavigation", () => {
 		await act(async () => {
 			await result.current.navigateTo("first");
 		});
-		expect(firstScroll).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+		expect(scrollToElement).toHaveBeenLastCalledWith(first, false);
 		expect(result.current.activeId).toBe("first");
 
 		media.matches = true;
 		await act(async () => {
 			await result.current.navigateTo("second");
 		});
-		expect(secondScroll).toHaveBeenCalledWith({ behavior: "instant", block: "start" });
+		expect(scrollToElement).toHaveBeenLastCalledWith(second, true);
 		await act(async () => {
 			await result.current.navigateTo("not-in-content");
 		});
-		expect(firstScroll).toHaveBeenCalledTimes(1);
-		expect(secondScroll).toHaveBeenCalledTimes(1);
+		expect(scrollToElement).toHaveBeenCalledTimes(2);
 		unmount();
 		root.remove();
 	});
