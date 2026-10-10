@@ -49,7 +49,8 @@ describe("压感与笔", () => {
 		});
 		const [batch] = drawing.items[0].batches;
 		expect(batch.mode).toBe("fill");
-		expect(batch.ribbons?.[0]).toBeGreaterThan(10);
+		// 恒宽的中段精简到首尾，两端渐变处各保留采样
+		expect(batch.ribbons?.[0]).toBeGreaterThanOrEqual(4);
 		const ends = widthAt(batch, 0, 0.01);
 		const middle = widthAt(batch, 0, 0.5);
 		expect(middle).toBeGreaterThan(ends * 2.5);

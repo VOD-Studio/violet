@@ -122,19 +122,33 @@ export function ease(p: number): number {
 }
 
 /**
- * 取条带前缀多边形的点序（交错 x、y）：左侧前 k 点，接右侧前 k 点（自 k−1 回到 0），不含圆帽。
+ * 取条带前缀多边形的点序（交错 x、y）：沿中心线弧长截到比例 p，左侧点接右侧点（自截点回到起点），不含圆帽。
  *
  * @param p - 显现比例，(0, 1)
+ * @remarks 截点在相邻采样之间插值，条带经过精简、采样疏密不一时显现仍然连续。
  */
 export function ribbonPrefix(coords: ArrayLike<number>, track: Track, p: number): number[] {
 	const { c0, n, c } = track;
-	const k = Math.max(2, Math.min(n, Math.ceil(p * n)));
-	const out: number[] = [];
-	for (let i = 0; i < k; i++) out.push(coords[c0 + i * 2], coords[c0 + i * 2 + 1]);
-	// 右侧点自末向首存放：第 n + c + j 点对应右侧第 n−1−j 点。
-	for (let j = n - k; j < n; j++) {
-		const index = n + c + j;
-		out.push(coords[c0 + index * 2], coords[c0 + index * 2 + 1]);
+	// 右侧点自末向首存放：右侧第 i 点是第 n + c + (n − 1 − i) 点。
+	const lx = (i: number) => coords[c0 + i * 2];
+	const ly = (i: number) => coords[c0 + i * 2 + 1];
+	const rx = (i: number) => coords[c0 + (2 * n + c - 1 - i) * 2];
+	const ry = (i: number) => coords[c0 + (2 * n + c - 1 - i) * 2 + 1];
+	const cumulative = [0];
+	for (let i = 1; i < n; i++) {
+		const dx = lx(i) + rx(i) - lx(i - 1) - rx(i - 1);
+		const dy = ly(i) + ry(i) - ly(i - 1) - ry(i - 1);
+		cumulative.push(cumulative[i - 1] + Math.hypot(dx, dy) / 2);
 	}
+	const target = p * cumulative[n - 1];
+	let k = 1;
+	while (k < n - 1 && cumulative[k] < target) k++;
+	const span = cumulative[k] - cumulative[k - 1];
+	const t = span > 0 ? Math.max(0, Math.min(1, (target - cumulative[k - 1]) / span)) : 1;
+	const out: number[] = [];
+	for (let i = 0; i < k; i++) out.push(lx(i), ly(i));
+	out.push(lx(k - 1) + (lx(k) - lx(k - 1)) * t, ly(k - 1) + (ly(k) - ly(k - 1)) * t);
+	out.push(rx(k - 1) + (rx(k) - rx(k - 1)) * t, ry(k - 1) + (ry(k) - ry(k - 1)) * t);
+	for (let i = k - 1; i >= 0; i--) out.push(rx(i), ry(i));
 	return out;
 }

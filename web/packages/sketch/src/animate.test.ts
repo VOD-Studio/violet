@@ -17,6 +17,7 @@ import {
 } from "./index.ts";
 import { drawCanvas } from "./render/canvas.ts";
 import { mountSvg, seekSvg } from "./render/svg.ts";
+import { batchTracks, ribbonPrefix } from "./render/tracks.ts";
 
 const palette = { paper: "#fff", ink: "#222", a: "#fc9", b: "#9cf" };
 
@@ -150,6 +151,23 @@ describe("播放器", () => {
 });
 
 describe("SVG 按时间显现", () => {
+	it("条带前缀按弧长截取：精简后只剩少量采样的长直线，进度一半时截在中点", () => {
+		const drawing = draw(
+			{ width: 400, height: 300, items: [{ id: "l", path: line(20, 150, 380, 150) }] },
+			{
+				style: {
+					hand: createHand({ roughness: 0, bowing: 0, breakChance: 0 }),
+					pen: pens.inkpen,
+				},
+			},
+		);
+		const [batch] = drawing.items[0].batches;
+		expect(batch.ribbons?.[0]).toBeLessThan(12);
+		const [track] = batchTracks(batch);
+		const xy = ribbonPrefix(batch.coords, track, 0.5);
+		expect(Math.max(...xy.filter((_, i) => i % 2 === 0))).toBeCloseTo(200, 0);
+	});
+
 	const hidden = (svg: SVGSVGElement) =>
 		Array.from(svg.querySelectorAll("[data-trk]")).filter(
 			(el) => el.getAttribute("display") === "none",
