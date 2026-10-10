@@ -56,6 +56,21 @@ const light = { ...styles.natural, pen: createFineliner({ pressure: 0.4 }) };
 
 自定义变宽笔用 `createRibbonPen`：给出笔尖角度与短长轴比、压力到宽度的映射和是否分笔叠色即可。
 
+## 动漫风格
+
+```ts
+import { animeStyle, circle, createAnimeStyle, draw } from "@violet/sketch";
+
+const palette = { paper: "#fffdf7", ink: "#4a3431", moon: "#f7e6a1" };
+const drawing = draw(
+	{ width: 200, height: 200, items: [{ id: "moon", path: circle(100, 100, 60), fillRole: "moon", lineWidth: 2.6 }] },
+	{ style: animeStyle, seed: 3 },
+);
+const steady = createAnimeStyle({ pressure: 0.4 });   // 压感强度，0 为恒宽
+```
+
+线稿淡彩：线稿与排线取 `ink`，长线由多段短笔接成，转角断笔交叉越界；淡彩平涂取图元的填充角色，朝背光侧错位并裁剪，朝光一侧留出宽窄不一的纸白；较大的图形在背光侧加成簇的短排线。配色只需基础色，不派生阴影色。
+
 ## 卡通风格
 
 ```ts

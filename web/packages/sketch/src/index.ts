@@ -2,6 +2,8 @@ export type { Player, PlayerOptions } from "./animate/player.ts";
 export { createPlayer } from "./animate/player.ts";
 export type { Schedule, ScheduleMode, ScheduleOptions } from "./animate/schedule.ts";
 export { createSchedule, itemProgress } from "./animate/schedule.ts";
+export type { AnimeOptions } from "./anime.ts";
+export { animeHand, animeStyle, createAnimeStyle } from "./anime.ts";
 export { cartoonHand, cartoonStyle } from "./cartoon.ts";
 export {
 	cartoonPalette,
@@ -60,6 +62,8 @@ export type { CartoonOptions } from "./fill/cartoon.ts";
 export { createCartoonFill } from "./fill/cartoon.ts";
 export type { PatternOptions } from "./fill/patterns.ts";
 export { createPatternFill, fills, solidFill } from "./fill/patterns.ts";
+export type { WashOptions } from "./fill/wash.ts";
+export { createWashFill } from "./fill/wash.ts";
 export { minimumJerk } from "./hand/gesture.ts";
 export type { HandOptions } from "./hand/presets.ts";
 export { createHand, fillHands, hands } from "./hand/presets.ts";

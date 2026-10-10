@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+	animeStyle,
 	cartoonPalette,
 	cartoonStyle,
 	circle,
+	createAnimeStyle,
 	createHand,
 	createInkPen,
 	createMarker,
@@ -123,6 +125,59 @@ describe("压感与笔", () => {
 		const [batch] = drawing.items[0].batches;
 		expect(batch.verbs[batch.verbs.length - 1]).toBe(3);
 		expect(batch.ribbons?.[1]).toBeGreaterThan(0);
+	});
+});
+
+describe("动漫风格", () => {
+	const plain = { paper: "#fffdf7", ink: "#4a3431", sky: "#b9dbea" };
+	const ring = (r: number) =>
+		draw(scene([{ id: "c", path: circle(200, 150, r), fillRole: "sky" }]), {
+			style: animeStyle,
+			width: 3,
+		}).items[0].batches;
+
+	it("平涂取填充角色，排线与线稿同墨，不依赖派生色", () => {
+		const batches = ring(80);
+		expect(batches.map((b) => b.role)).toEqual(["sky", "ink", "ink"]);
+		expect(batches[0].opacity).toBeUndefined();
+		// 配色只给基础色即可渲染，缺少角色时 paint 会抛错
+		const drawing = draw(scene([{ id: "c", path: circle(200, 150, 80), fillRole: "sky" }]), {
+			style: animeStyle,
+		});
+		expect(renderSvg(drawing, plain)).toContain('data-role="sky"');
+	});
+
+	it("平涂朝背光侧错位并裁剪到原形状，朝光侧露出纸白", () => {
+		const [wash] = ring(80);
+		expect(wash.clip).toBeDefined();
+		let minX = Number.POSITIVE_INFINITY;
+		let minY = Number.POSITIVE_INFINITY;
+		for (let i = 0; i < wash.coords.length; i += 2) {
+			minX = Math.min(minX, wash.coords[i]);
+			minY = Math.min(minY, wash.coords[i + 1]);
+		}
+		// 光来自左上，色块整体右下移，左上缘离开线稿
+		expect(minX).toBeGreaterThan(120.5);
+		expect(minY).toBeGreaterThan(70.5);
+	});
+
+	it("较小的图形只上色不画排线", () => {
+		expect(ring(15).map((b) => b.role)).toEqual(["sky", "ink"]);
+	});
+
+	it("长线由多段短笔接成", () => {
+		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+			style: animeStyle,
+		});
+		const [outline] = drawing.items[0].batches;
+		expect(outline.verbs.filter((v) => v === 0).length).toBeGreaterThanOrEqual(4);
+	});
+
+	it("压感强度可调，0 时线稿恒宽", () => {
+		const drawing = draw(scene([{ id: "l", path: line(20, 100, 380, 100) }]), {
+			style: createAnimeStyle({ pressure: 0 }),
+		});
+		expect(drawing.items[0].batches[0].mode).toBe("stroke");
 	});
 });
 
