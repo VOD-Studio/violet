@@ -35,6 +35,8 @@ const MIN_PIECES = 4;
 const INCOMING = 1e-6;
 // 复线在各段中部偏离主线的幅度，相对该段的粗糙度位移。
 const RETRACE_SPREAD = 2.2;
+// 复线偏离的最长分段：约为图表节点一条边的长度，复线每隔一段就回到主线附近。
+const RETRACE_SPAN = 120;
 
 /** 最小 jerk 位置曲线：τ∈[0,1] 时从 0 平滑到 1，两端速度与加速度为 0。 */
 export function minimumJerk(t: number): number {
@@ -103,6 +105,15 @@ export function traceStroke(
 	}
 	cornerU.sort((a, b) => a - b);
 	const bounds = [0, ...cornerU, total];
+	// 复线的偏离另按长度细分：没有角点的长段（圆角矩形、圆）整段偏向一侧，会和主线形成等距的双轮廓
+	const spans = plan.pass ? [0] : bounds;
+	if (plan.pass)
+		for (let k = 1; k < bounds.length; k++) {
+			const from = bounds[k - 1];
+			const pieces = Math.ceil((bounds[k] - from) / RETRACE_SPAN);
+			for (let p = 1; p < pieces; p++) spans.push(from + ((bounds[k] - from) * p) / pieces);
+			spans.push(bounds[k]);
+		}
 	const hasCorner = (a: number, b: number) => cornerU.some((c) => c > a && c < b);
 	const base = Math.max(MIN_PIECES, Math.ceil(total / spacing(total)));
 	for (let i = 0; i <= base; i++) insert(samples.length, i / base, minimumJerk(i / base) * total);
@@ -133,10 +144,10 @@ export function traceStroke(
 			if (u > 0 && u < total) insertAt(u);
 		}
 	}
-	// 弯曲按角点分段取 sin 形，段中部没有控制点时补一个，否则这一段画不出弯曲。
-	for (let k = 0; k + 1 < bounds.length; k++) {
-		const a = bounds[k];
-		const b = bounds[k + 1];
+	// 弯曲与复线偏离按段取 sin 形，段中部没有控制点时补一个，否则这一段画不出弯曲。
+	for (let k = 0; k + 1 < spans.length; k++) {
+		const a = spans[k];
+		const b = spans[k + 1];
 		let inner = false;
 		for (let i = 1; i < samples.length && !inner; i += S)
 			inner = samples[i] > a + (b - a) / 4 && samples[i] < b - (b - a) / 4;
@@ -149,23 +160,25 @@ export function traceStroke(
 	const lowOffset = ctx.random(LOW_OFFSET, plan.contourIndex) * 1000;
 	const amplitude = options.roughness * Math.min(1.4, Math.max(0.35, Math.sqrt(total / 120)));
 	const lambda = Math.min(260, Math.max(60, total * 0.6));
-	// 弯曲与复线偏离按角点分段，各段两端归零：转角是轨迹的途经点（Flash & Hogan 1985），
+	// 弯曲与复线偏离分段，各段两端归零：转角是轨迹的途经点（Flash & Hogan 1985），
 	// 整笔弯曲或整体平移会把转角磨圆，复线也会成为一圈等距的同心轮廓。
 	const bend = new Float64Array(bounds.length - 1);
 	for (let k = 0; k < bend.length; k++) {
 		const length = bounds[k + 1] - bounds[k];
-		const salt = Math.imul(k, 0x9e3779b1);
 		bend[k] =
 			options.bowing *
-			(ctx.random(BOW ^ salt, strokeKey) * 2 - 1) *
+			(ctx.random(BOW ^ Math.imul(k, 0x9e3779b1), strokeKey) * 2 - 1) *
 			Math.min(length, 300) *
 			0.008;
-		if (plan.pass)
-			bend[k] +=
-				options.roughness *
-				Math.min(1.4, Math.max(0.35, Math.sqrt(length / 120))) *
-				RETRACE_SPREAD *
-				(ctx.random(RETRACE ^ salt, strokeKey) * 2 - 1);
+	}
+	const drift = new Float64Array(plan.pass ? spans.length - 1 : 0);
+	for (let k = 0; k < drift.length; k++) {
+		const length = spans[k + 1] - spans[k];
+		drift[k] =
+			options.roughness *
+			Math.min(1.4, Math.max(0.35, Math.sqrt(length / 120))) *
+			RETRACE_SPREAD *
+			(ctx.random(RETRACE ^ Math.imul(k, 0x9e3779b1), strokeKey) * 2 - 1);
 	}
 	const pinLength = Math.min(12 * w, 0.2 * total);
 	// 起落笔误差在端部一段距离内平滑衰减，只加在端点会因首尾控制点密集而形成钩子。
@@ -189,7 +202,7 @@ export function traceStroke(
 
 	const count = samples.length / S;
 	const points = new Float32Array(count * 4);
-	for (let i = 0, side = 0; i < count; i++) {
+	for (let i = 0, side = 0, span = 0; i < count; i++) {
 		const tau = samples[i * S];
 		const u = samples[i * S + 1];
 		const px = samples[i * S + 2];
@@ -201,10 +214,17 @@ export function traceStroke(
 		const tail = 1 - smoothstep((total - u) / ramp);
 		while (u > bounds[side + 1] && side < bend.length - 1) side++;
 		const along = (u - bounds[side]) / (bounds[side + 1] - bounds[side]);
+		let retrace = 0;
+		if (drift.length) {
+			while (u > spans[span + 1] && span < drift.length - 1) span++;
+			const t = (u - spans[span]) / (spans[span + 1] - spans[span]);
+			retrace = drift[span] * Math.sin(Math.PI * t);
+		}
 		let d =
 			amplitude * ctx.noise(lowChannel, s / lambda + lowOffset) +
 			amplitude * 0.3 * ctx.noise(HIGH ^ strokeKey, u / (lambda * 0.25)) +
 			bend[side] * Math.sin(Math.PI * along) +
+			retrace +
 			startNormal * head +
 			endNormal * tail;
 		let tangent = startTangent * head + endTangent * tail;

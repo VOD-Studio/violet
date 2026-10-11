@@ -220,6 +220,51 @@ describe("draw", () => {
 		}
 	});
 
+	it("没有角点的长笔画，复线隔一段就回到主线附近，不形成等距的双轮廓", () => {
+		const longestDrift = (seed: number) => {
+			const strokes: Stroke[] = [];
+			const capture: Pen = {
+				id: "capture",
+				ink(drawn) {
+					strokes.push(...drawn);
+					return [];
+				},
+			};
+			draw(scene([{ id: "o", path: circle(200, 150, 100) }]), {
+				style: {
+					hand: createHand({ roughness: 1.8, bowing: 0, maxStroke: 1000, passes: 2 }),
+					pen: capture,
+				},
+				seed,
+			});
+			const [main, retrace] = strokes.map(({ points }) =>
+				Array.from({ length: points.length / 4 }, (_, i) => ({
+					angle: Math.atan2(points[i * 4 + 1] - 150, points[i * 4] - 200),
+					radius: Math.hypot(points[i * 4] - 200, points[i * 4 + 1] - 150),
+				})),
+			);
+			const radiusAt = (angle: number) =>
+				main.reduce((best, p) =>
+					Math.abs(Math.sin((p.angle - angle) / 2)) <
+					Math.abs(Math.sin((best.angle - angle) / 2))
+						? p
+						: best,
+				).radius;
+			// 复线偏离主线超过 1 的最长连续弧长
+			let run = 0;
+			let longest = 0;
+			for (let i = 1; i < retrace.length; i++) {
+				const step =
+					100 * Math.abs(Math.sin((retrace[i].angle - retrace[i - 1].angle) / 2)) * 2;
+				run = Math.abs(retrace[i].radius - radiusAt(retrace[i].angle)) > 1 ? run + step : 0;
+				longest = Math.max(longest, run);
+			}
+			return longest;
+		};
+		for (let seed = 1; seed <= 8; seed++)
+			expect(longestDrift(seed), `seed ${seed}`).toBeLessThan(200);
+	});
+
 	it("短笔的起落笔抖动不会让笔画沿切向折回成钩子", () => {
 		for (let seed = 1; seed <= 20; seed++) {
 			const strokes: Stroke[] = [];
