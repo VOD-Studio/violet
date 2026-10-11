@@ -15,6 +15,7 @@
 import { useCreateComment } from "@features/comments/api/mutations";
 import { toCreateCommentAnchor } from "@features/comments/lib/anchor-mapper";
 import { findBlockElement } from "@features/comments/lib/extract-blocks";
+import { clearMarks, wrapRange } from "@features/comments/lib/range-marks";
 import {
 	clearSelection,
 	isSelectionInUnannotatableContainer,
@@ -29,8 +30,8 @@ import { toast } from "sonner";
 import "./annotations.css";
 import { AnnotationComposer } from "./AnnotationComposer";
 
-/** 草稿批注临时高亮 class（展开输入区时标记选中块，区别于已提交批注的 .annotation-highlight）。 */
-const DRAFT_HIGHLIGHT_CLASS = "annotation-draft-highlight";
+/** 草稿划线 mark 的 class：展开输入区时用暖色荧光笔标出正在批注的文字。 */
+const DRAFT_MARK_CLASS = "annotation-draft-mark";
 
 export interface FloatingToolbarProps {
 	/** 正文容器 ref（选区必须在此容器内才显示工具条） */
@@ -166,27 +167,22 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 		};
 	}, [contentRef, showInput]);
 
-	/** 给选中块加草稿高亮（让用户在写批注时看到「我选中了哪段」，不依赖浏览器选区视觉）。 */
-	const addDraftHighlight = async (blockId: string) => {
+	/** 把选区文字标成草稿划线（textarea 获得焦点后浏览器选区视觉会淡化，需要持续可见）。 */
+	const addDraftMark = async (target: Anchor) => {
 		const root = contentRef.current;
 		if (!root) return;
-		const el = await findBlockElement(root, blockId);
-		el?.classList.add(DRAFT_HIGHLIGHT_CLASS);
+		const el = await findBlockElement(root, target.blockId);
+		if (el)
+			wrapRange(el, { start: target.startOffset, end: target.endOffset }, DRAFT_MARK_CLASS);
 	};
 
-	/** 清除草稿高亮（提交/取消时调用）。 */
-	const clearDraftHighlight = () => {
-		contentRef.current?.querySelectorAll(`.${DRAFT_HIGHLIGHT_CLASS}`).forEach((el) => {
-			el.classList.remove(DRAFT_HIGHLIGHT_CLASS);
-		});
+	/** 清除草稿划线（提交/取消时调用）。 */
+	const clearDraftMark = () => {
+		if (contentRef.current) clearMarks(contentRef.current, DRAFT_MARK_CLASS);
 	};
 
 	/** 点「划线批注」：登录展开输入区；未登录弹登录窗 */
 	const handleAnnotate = () => {
-		if (!isLoggedIn) {
-			openLogin();
-			return;
-		}
 		if (!anchor || isCrossBlock) return;
 		// 重新定位到选区下方（输入区高度大，放上方会被视口顶部裁剪）。
 		// 此时选区因 onMouseDown preventDefault 仍保留，可重新测量。
@@ -207,9 +203,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 				});
 			}
 		}
-		// 标记选中块：textarea 获得焦点后浏览器选区视觉会淡化，
-		// 用草稿高亮让用户持续看到「正在批注的位置」。
-		void addDraftHighlight(anchor.blockId);
+		if (isLoggedIn) void addDraftMark(anchor);
 		setShowInput(true);
 		setBody("");
 	};
@@ -224,7 +218,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 					toast.success(
 						created.status === "pending" ? "批注已提交，等待审核" : "批注已提交",
 					);
-					clearDraftHighlight();
+					clearDraftMark();
 					setShowInput(false);
 					setBody("");
 					setPos(null);
@@ -241,7 +235,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
 	/** 取消输入 */
 	const handleCancel = () => {
-		clearDraftHighlight();
+		clearDraftMark();
 		setShowInput(false);
 		setBody("");
 		setPos(null);
@@ -269,10 +263,15 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 					onSubmit={handleSubmit}
 					onCancel={handleCancel}
 					pending={createComment.isPending}
+					loginRequired={!isLoggedIn}
+					onLogin={() => {
+						handleCancel();
+						openLogin();
+					}}
 				/>
 			) : (
 				/* 浮动工具条（划线批注按钮） */
-				<div className="flex items-center rounded-full border border-edge-hairline bg-surface-glass px-2 py-1 shadow-md backdrop-blur">
+				<div className="annotation-pop flex items-center rounded-full bg-card/90 px-1.5 py-1 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10">
 					<button
 						type="button"
 						onClick={handleAnnotate}

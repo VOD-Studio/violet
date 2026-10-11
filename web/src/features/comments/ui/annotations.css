@@ -1,90 +1,208 @@
 /*
- * 文章批注高亮与段评角标（comments feature 持有）。
- * extract-blocks 等按固定 class 名生成运行时 DOM，用功能持有全局选择器而非 CSS Module。
+ * 文章批注：划线荧光笔、段评入口、评论者头像角标与批注气泡（comments feature 持有）。
+ * 运行时 DOM 由 range-marks 与 AnnotationLayer 按固定 class 名生成，用功能持有的全局选择器而非 CSS Module。
+ * 动效只用透明度与模糊，不缩放、不位移。
  */
 
-/* AnnotationLayer 批注高亮块：主题色淡底 + 虚线描边的圆角框。
-   只用 background、box-shadow、outline 外扩出「内边距」观感，不改盒模型，
-   批注数据到达时正文不位移。 */
-.annotation-highlight,
-.annotation-draft-highlight {
-	--annotation-accent: var(--primary);
-	border-radius: 0.5rem;
-	background-color: color-mix(in oklch, var(--annotation-accent) 7%, transparent);
-	box-shadow: 0 0 0 0.35em color-mix(in oklch, var(--annotation-accent) 7%, transparent);
-	outline: 1.5px dashed color-mix(in oklch, var(--annotation-accent) 35%, transparent);
-	outline-offset: 0.35em;
-	transition:
-		background-color 0.2s,
-		box-shadow 0.2s,
-		outline-color 0.2s;
-	scroll-margin-top: 80px;
+/* 划线批注高亮：不规则的手绘荧光笔笔触。
+   形状由 mask 里的毛边 SVG 提供（两种交替，避免笔触一模一样），颜色取自背景；
+   box-decoration-break: clone 让折行的每一段各自套一次形状。内边距与等量负外边距相抵，不改变行内排版。
+   与选区（紫色平涂）区分：已保存的划线是绿色，写批注时的草稿是琥珀色。 */
+.annotation-mark,
+.annotation-draft-mark {
+	--annotation-accent: var(--success);
+	--annotation-stroke-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M1.5 6.5C2 3 6 2.2 14 2.8S34 1.6 52 2.4 84 1.8 95 2.6c4 .3 5 3 4.6 7.2-.4 4.6-.9 7.4-5.2 7.8C80 18.4 62 18.9 44 18.3S14 19 5.5 18.2C1.6 17.8 1.2 14.5 1.4 11z'/%3E%3C/svg%3E");
+	--annotation-stroke-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M2.4 4.2C6 1.8 20 3 38 2.2S72 3.4 90 2.4c5-.3 8.6 1.6 9 6.4.3 4.4-.6 8.6-4.6 9.4-8 1.4-26-.4-44 .6S12 19.4 5 17.6C1 16.6 .8 12 1.2 8.6c.2-1.8.4-3.2 1.2-4.4z'/%3E%3C/svg%3E");
+	margin-inline: -0.2em;
+	padding-inline: 0.2em;
+	background-color: color-mix(in oklch, var(--annotation-accent) 42%, transparent);
+	-webkit-mask: var(--annotation-stroke-a) 0 0 / 100% 100% no-repeat;
+	mask: var(--annotation-stroke-a) 0 0 / 100% 100% no-repeat;
+	color: inherit;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	animation: annotation-wash-in 0.3s ease-out;
 }
-.annotation-highlight:hover {
-	background-color: color-mix(in oklch, var(--annotation-accent) 12%, transparent);
-	box-shadow: 0 0 0 0.35em color-mix(in oklch, var(--annotation-accent) 12%, transparent);
-	outline-color: color-mix(in oklch, var(--annotation-accent) 60%, transparent);
+.annotation-mark:nth-of-type(even),
+.annotation-draft-mark:nth-of-type(even) {
+	-webkit-mask-image: var(--annotation-stroke-b);
+	mask-image: var(--annotation-stroke-b);
+}
+.annotation-mark:hover {
+	background-color: color-mix(in oklch, var(--annotation-accent) 62%, transparent);
+}
+.annotation-draft-mark {
+	--annotation-accent: var(--warning);
+	cursor: text;
 }
 
-/* 草稿批注临时高亮：展开输入区时标记选中块，比已提交批注更醒目（暖色区分） */
+/* 段评草稿：整段写批注时淡淡铺一层暖色，只用 background 与 box-shadow 外扩，不改盒模型 */
 .annotation-draft-highlight {
 	--annotation-accent: var(--warning);
-	background-color: color-mix(in oklch, var(--annotation-accent) 14%, transparent);
-	box-shadow: 0 0 0 0.35em color-mix(in oklch, var(--annotation-accent) 14%, transparent);
-	outline-style: solid;
-	outline-color: color-mix(in oklch, var(--annotation-accent) 60%, transparent);
+	border-radius: 0.5rem;
+	background-color: color-mix(in oklch, var(--annotation-accent) 10%, transparent);
+	box-shadow: 0 0 0 0.5em color-mix(in oklch, var(--annotation-accent) 10%, transparent);
+	scroll-margin-top: 80px;
+	animation: annotation-wash-in 0.3s ease-out;
 }
 
-/* 段评角标：正文右侧边距里的绝对定位覆盖层，lg 以上落在正文栏外，
+/* 引言：被批注的原文，荧光笔底色而非斜体加竖线 */
+.annotation-quote {
+	padding-inline: 0.25em;
+	border-radius: 0.3em;
+	background-color: color-mix(in oklch, var(--primary) 16%, transparent);
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+
+/* 悬停段落时右侧边距的段评入口：常驻挂载，靠透明度显隐，换段时纵向平滑滑到新位置 */
+.annotation-trigger {
+	left: calc(100% + 0.5rem);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: 0.75rem;
+	background-color: color-mix(in oklch, var(--primary) 8%, transparent);
+	color: color-mix(in oklch, var(--primary) 75%, transparent);
+	cursor: pointer;
+	opacity: 0;
+	pointer-events: none;
+	transition:
+		top 0.2s ease,
+		opacity 0.2s ease,
+		background-color 0.15s,
+		color 0.15s;
+}
+.annotation-trigger[data-show="true"] {
+	opacity: 1;
+	pointer-events: auto;
+}
+.annotation-trigger:hover {
+	background-color: color-mix(in oklch, var(--primary) 16%, transparent);
+	color: var(--primary);
+}
+.annotation-trigger:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+@media (max-width: 1023.98px) {
+	.annotation-trigger {
+		display: none;
+	}
+}
+
+/* 评论者头像角标：正文右侧边距里的绝对定位覆盖层，lg 以上落在正文栏外，
    窄屏退到栏右缘的细槽内。不进入正文流，因此不影响排版。 */
 .annotation-marker {
 	left: calc(100% + 0.5rem);
 	display: flex;
 	align-items: center;
-	padding: 0;
-	border: 0;
-	background: transparent;
-	cursor: pointer;
-	opacity: 0.9;
-	transition: opacity 0.15s;
+	animation: annotation-fade-in 0.25s ease-out;
 }
 @media (max-width: 1023.98px) {
 	.annotation-marker {
 		left: calc(100% + 2px);
 	}
+	.annotation-marker .annotation-avatar:nth-child(n + 2) {
+		display: none;
+	}
 }
-.annotation-marker:hover,
-.annotation-marker[data-active="true"] {
-	opacity: 1;
-}
-.annotation-marker:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 2px;
-	border-radius: 9999px;
-}
-.annotation-marker span {
-	background-color: color-mix(in oklch, var(--primary) 18%, var(--card));
-	color: var(--primary);
-	font-weight: 600;
-	box-shadow: 0 0 0 2px var(--background);
-}
-.annotation-marker[data-active="true"] span {
-	box-shadow: 0 0 0 2px var(--primary);
-}
-
-/* 无评论者信息时的回退：评论数小圆标 */
-.annotation-marker-count {
+.annotation-avatar {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 1.25rem;
+	width: 1.25rem;
 	height: 1.25rem;
-	padding-inline: 0.25rem;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
 	border-radius: 9999px;
-	background-color: color-mix(in oklch, var(--primary) 15%, transparent);
+	background-color: color-mix(in oklch, var(--primary) 18%, var(--card));
+	box-shadow: 0 0 0 2px var(--background);
 	color: var(--primary);
-	font-size: 0.6875rem;
+	font-size: 0.5625rem;
 	font-weight: 600;
+	cursor: pointer;
+	transition:
+		box-shadow 0.2s,
+		opacity 0.2s;
+}
+.annotation-avatar + .annotation-avatar {
+	margin-inline-start: -0.25rem;
+}
+.annotation-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.annotation-marker:hover .annotation-avatar:not(:hover) {
+	opacity: 0.7;
+}
+.annotation-avatar:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+.annotation-avatar[data-active="true"] {
+	box-shadow:
+		0 0 0 2px var(--background),
+		0 0 0 4px var(--primary);
+}
+
+/* 批注气泡：靠透明度与模糊淡入淡出，不缩放、不位移 */
+.annotation-popover {
+	opacity: 0;
+	filter: blur(6px);
+	transition:
+		opacity 0.18s ease,
+		filter 0.18s ease;
+}
+.annotation-popover[data-state="open"] {
+	opacity: 1;
+	filter: blur(0);
+}
+
+/* 输入面板与工具条挂载时的淡入 */
+.annotation-pop {
+	animation: annotation-fade-in 0.2s ease-out;
+}
+
+@keyframes annotation-fade-in {
+	from {
+		opacity: 0;
+		filter: blur(6px);
+	}
+	to {
+		opacity: 1;
+		filter: blur(0);
+	}
+}
+
+@keyframes annotation-wash-in {
+	from {
+		background-color: transparent;
+		box-shadow: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.annotation-mark,
+	.annotation-draft-mark,
+	.annotation-draft-highlight,
+	.annotation-marker,
+	.annotation-pop {
+		animation: none;
+	}
+	.annotation-popover,
+	.annotation-trigger {
+		transition: none;
+	}
 }
 
 /* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */

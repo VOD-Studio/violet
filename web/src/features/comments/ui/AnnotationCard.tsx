@@ -1,27 +1,21 @@
 /**
- * AnnotationCard - 批注卡片（侧边栏 / 行内气泡共用）。
+ * AnnotationCard - 批注卡片（气泡面板内使用）。
  *
  * 与 CommentItem 的差异：
- *   - 顶部多一个「引言区」（selectedText 高亮展示），点明批注锚定的原文
- *   - 支持点击触发滚动回高亮（onClick）
- *   - 支持 active 态（当前高亮对应的卡片亮起，severity 边框加重）
- *   - 批注回复也两层扁平，继承父锚点（子批注共享同一高亮区）
- *
- * 复用：BorderGlow 外壳 + severity 配色（lib/severity.ts）+ PendingBadge。
+ *   - 顶部引言区用荧光笔底色标出批注锚定的原文
+ *   - 回复两层扁平，继承父锚点（子批注共享同一高亮区）
  */
 import type { Comment } from "@entities/comment/model/types";
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
-import { type CommentToneCfg, getCommentToneCfg } from "@shared/ui/comment-section/tone";
 import { EmojiText } from "@shared/ui/emoji-text";
 import PendingBadge from "@shared/ui/pending-badge";
-import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
 import { CommentForm } from "./CommentForm";
 
-/** 批注面板空间小，回复折叠阈值比评论区更紧 */
+/** 气泡空间小，回复折叠阈值比评论区更紧 */
 const REPLIES_PREVIEW_COUNT = 2;
 
 export interface AnnotationCardProps {
@@ -29,28 +23,19 @@ export interface AnnotationCardProps {
 	node: CommentTreeNode;
 	/** 选中原文（引言区展示）。同一 block 的批注共享锚点。 */
 	selectedText: string;
-	/** 是否为当前滚动激活的批注（影响边框高亮） */
-	active?: boolean;
-	/** 点击卡片回调（通常滚动到正文高亮） */
-	onClick?: () => void;
-	/** 文章 id（回复表单提交用）。不传则不显示回复按钮（如未登录） */
+	/** 文章 id（回复表单提交用）。不传则不显示回复按钮 */
 	postId?: string;
-	/** 是否登录（决定是否显示回复按钮；仅登录可回复） */
+	/** 是否登录（仅登录可回复） */
 	isLoggedIn?: boolean;
 }
 
 export function AnnotationCard({
 	node,
 	selectedText,
-	active = false,
-	onClick,
 	postId,
 	isLoggedIn = false,
 }: AnnotationCardProps) {
 	const { comment, replies } = node;
-	const sev = getCommentToneCfg(comment.is_author ? "author" : "default");
-	const isPending = comment.status === "pending";
-
 	const [replying, setReplying] = useState(false);
 	const [repliesExpanded, setRepliesExpanded] = useState(false);
 	const [pendingReplies, setPendingReplies] = useState<Comment[]>([]);
@@ -65,52 +50,31 @@ export function AnnotationCard({
 	const hiddenCount = allReplies.length - REPLIES_PREVIEW_COUNT;
 
 	return (
-		<div className="w-full">
-			<SpotlightCard
-				className={`flex gap-2 p-3 ${active ? "ring-2 ring-primary/40" : ""}`}
-				onClick={onClick}
-				role={onClick ? "button" : undefined}
-				tabIndex={onClick ? 0 : undefined}
-				onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
-				{...(onClick ? { "aria-label": `批注：${comment.body.slice(0, 30)}` } : {})}
-			>
-				<div className={`w-1 shrink-0 rounded-full ${sev.bar}`} aria-hidden />
+		<article className="rounded-2xl bg-muted/40 p-3.5">
+			<p className="mb-2.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+				<span className="annotation-quote">{selectedText}</span>
+			</p>
 
-				<div className="min-w-0 flex-1">
-					<div className="mb-2 border-l-2 border-edge-hairline pl-2 text-xs italic text-muted-foreground line-clamp-2">
-						{selectedText}
-					</div>
+			<CommentMeta comment={comment} time={formatTimeAgo(comment.created_at)} />
 
-					<CommentMeta comment={comment} sev={sev} isPending={isPending} />
+			<p className="mt-1.5 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
+				<EmojiText text={comment.body} emote={comment.emote} />
+			</p>
 
-					<p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground">
-						<EmojiText text={comment.body} emote={comment.emote} />
-					</p>
+			{isLoggedIn && postId && (
+				<button
+					type="button"
+					onClick={() => setReplying((v) => !v)}
+					className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+					aria-label={replying ? "取消回复" : "回复批注"}
+				>
+					<MessageCircle className="size-3" />
+					<span>回复</span>
+				</button>
+			)}
 
-					<time className="mt-1 block font-mono text-[10px] tabular-nums text-muted-foreground">
-						{formatTimeAgo(comment.created_at)}
-					</time>
-
-					{isLoggedIn && postId && (
-						<button
-							type="button"
-							onClick={(e) => {
-								e.stopPropagation();
-								setReplying((v) => !v);
-							}}
-							className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-							aria-label={replying ? "取消回复" : "回复批注"}
-						>
-							<MessageCircle className="size-3" />
-							<span>回复</span>
-						</button>
-					)}
-				</div>
-			</SpotlightCard>
-
-			{/* 内嵌回复表单 */}
 			{replying && postId && (
-				<div className="mt-2 px-3">
+				<div className="mt-2">
 					<CommentForm
 						postId={postId}
 						parentId={comment.id}
@@ -125,79 +89,69 @@ export function AnnotationCard({
 				</div>
 			)}
 
-			{/* 回复列表（两层扁平，继承同一锚点） */}
 			{allReplies.length > 0 && (
-				<div className="mt-1 space-y-1 border-l border-edge-hairline pl-2">
+				<div className="mt-3 space-y-2">
 					{visibleReplies.map((reply) => (
-						<AnnotationReply key={reply.comment.id} comment={reply.comment} sev={sev} />
+						<AnnotationReply key={reply.comment.id} comment={reply.comment} />
 					))}
 					{hiddenCount > 0 && (
 						<button
 							type="button"
-							onClick={(e) => {
-								e.stopPropagation();
-								setRepliesExpanded((v) => !v);
-							}}
-							className="text-[11px] text-primary hover:underline"
+							onClick={() => setRepliesExpanded((v) => !v)}
+							className="text-xs text-primary hover:underline"
 						>
 							{repliesExpanded ? "收起" : `展开剩余 ${hiddenCount} 条`}
 						</button>
 					)}
 				</div>
 			)}
-		</div>
+		</article>
 	);
 }
 
-/** CommentMeta 批注元信息：头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + 审批中徽章 */
-function CommentMeta({
-	comment,
-	sev,
-	isPending,
-}: {
-	comment: Comment;
-	sev: CommentToneCfg;
-	isPending: boolean;
-}) {
+/** CommentMeta 批注元信息：头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间 */
+function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 	return (
-		<div className="mb-1 flex flex-wrap items-center gap-1.5">
+		<div className="flex items-center gap-2">
 			{comment.avatar_url ? (
 				<img
 					src={avatarUrl(comment.avatar_url)}
 					alt={comment.author_name}
-					className="size-5 rounded-full object-cover"
+					className="size-6 rounded-full object-cover"
 					loading="lazy"
 				/>
 			) : (
-				<span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+				<span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
 					{comment.author_name.slice(0, 1).toUpperCase()}
 				</span>
 			)}
-			<span className="max-w-32 truncate text-xs font-medium text-foreground sm:max-w-[10rem]">
+			<span className="max-w-32 truncate text-sm font-medium text-foreground">
 				{comment.author_name}
 			</span>
 			{comment.reply_to_name && (
-				<span className="text-[10px] text-muted-foreground">
+				<span className="text-xs text-muted-foreground">
 					回复 <span className="text-primary">@{comment.reply_to_name}</span>
 				</span>
 			)}
 			{comment.is_author && (
-				<span className={`rounded px-1 text-[10px] ${sev.badge}`}>作者</span>
+				<span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+					作者
+				</span>
 			)}
-			<PendingBadge show={isPending} />
+			<PendingBadge show={comment.status === "pending"} />
+			<time className="ml-auto shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+				{time}
+			</time>
 		</div>
 	);
 }
 
-/**
- * AnnotationReply 批注的扁平回复（不再嵌回复表单，两层结构到顶）。
- * 比 AnnotationCard 更紧凑：无引言区、无 BorderGlow 外壳。
- */
-function AnnotationReply({ comment, sev }: { comment: Comment; sev: CommentToneCfg }) {
+/** AnnotationReply 批注的扁平回复：更紧凑，无引言区 */
+function AnnotationReply({ comment }: { comment: Comment }) {
 	return (
-		<div className="rounded-md bg-muted/30 p-2">
-			<CommentMeta comment={comment} sev={sev} isPending={comment.status === "pending"} />
-			<p className="mt-0.5 whitespace-pre-wrap wrap-break-word text-xs text-foreground">
+		<div className="rounded-xl bg-background/60 p-2.5">
+			<CommentMeta comment={comment} time={formatTimeAgo(comment.created_at)} />
+			<p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-relaxed text-foreground">
 				<EmojiText text={comment.body} emote={comment.emote} />
 			</p>
 		</div>

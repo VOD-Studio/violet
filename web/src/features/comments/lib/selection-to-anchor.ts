@@ -77,6 +77,21 @@ function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: numbe
 	return range.toString().length;
 }
 
+/**
+ * 悬停目标所属的可批注块；落在正文外或不可批注容器内返回 null。
+ * 供「悬停段评入口」判断鼠标当前指向哪一段。
+ */
+export function closestAnnotatableBlock(
+	target: EventTarget | null,
+	root: HTMLElement,
+): HTMLElement | null {
+	if (!(target instanceof Node)) return null;
+	const block = findClosestBlock(target);
+	if (!block || !root.contains(block)) return null;
+	if (block.closest(UNANNOTATABLE_SELECTOR)) return null;
+	return block;
+}
+
 export interface SelectionToAnchorOptions {
 	/** 选区所在正文容器（用于校验选区在正文内） */
 	root: HTMLElement;

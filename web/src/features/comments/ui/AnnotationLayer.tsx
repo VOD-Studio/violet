@@ -1,45 +1,47 @@
 /**
- * AnnotationLayer - 正文批注角标 + 气泡面板（懒加载版）。
+ * AnnotationLayer - 正文批注角标 + 头像气泡（懒加载版）。
  *
- * 角标是正文右侧边距里的绝对定位覆盖层（评论者头像组），不注入段落 DOM，
+ * 角标是正文右侧边距里的绝对定位覆盖层（评论者头像），不注入段落 DOM，
  * 不改变正文流式布局，加载批注与图片撑高页面都不会让文字位移。
  *
- * 面板方案：点击角标展开批注列表面板，fixed 钉视口右侧（2xl+）或居中（lg 以下），
- * 不占文档流、不挤压正文。面板内容按 block_id 懒加载（含 replies 预览）。
- *
- * AnnotationLayer 也负责给批注块加高亮 class（视觉标记「这段有批注」）。
+ * 点击某位评论者的头像（或正文里的划线高亮），在该处淡入气泡，列出对应批注；
+ * 气泡内容按 block_id 懒加载（含 replies 预览）。
  */
-import { AvatarGroup } from "@shared/ui/avatar-group";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlockAnnotations } from "../api/queries";
-import { extractCandidateBlocks, findBlockElement } from "../lib/extract-blocks";
-import type { BlockCount } from "../model/types";
-import { AnnotationCard } from "./AnnotationCard";
+import { avatarUrl } from "@shared/lib/image-url";
+import { cn } from "cn";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { extractCandidateBlocks, findBlockElement, getBlockText } from "../lib/extract-blocks";
+import { clearMarks, wrapRange } from "../lib/range-marks";
+import type { BlockAuthor, BlockCount } from "../model/types";
+import { AnnotationPopover, type AnnotationPopoverTarget } from "./AnnotationPopover";
+import { BlockCommentTrigger } from "./BlockCommentTrigger";
 import "./annotations.css";
 
-/** 高亮块的 class（淡底 + 虚线描边） */
-const HIGHLIGHT_CLASS = "annotation-highlight";
-/** 角标按钮的 data 属性，值为 blockId（面板定位时反查角标位置） */
+/** 划线高亮 mark 的 class（荧光笔底色） */
+const MARK_CLASS = "annotation-mark";
+/** 角标容器的 data 属性，值为 blockId（外部点击判定与高亮点击反查角标） */
 const MARKER_DATA_BLOCKID = "data-annotation-blockid";
 /** 角标纵向对齐块首行的偏移，px */
 const MARKER_TOP_OFFSET_PX = 2;
-/** 角标头像组最多显示的头像数 */
+/** 角标最多并排显示的头像数，其余折叠为 +N */
 const MARKER_AVATAR_MAX = 3;
-/**
- * STICKY_TOP_PX 面板粘性钉视口时的 top 偏移（与顶部阅读进度条/导航栏留白）。
- * 当角标向上滚出视口、其 rect.top 小于此值时，面板从「跟随角标」切换为「钉住」。
- */
-const STICKY_TOP_PX = 96;
 
 export interface AnnotationLayerProps {
 	/** 正文容器 ref */
 	contentRef: React.RefObject<HTMLElement | null>;
 	/** 批注按块聚合计数（轻量，不含正文） */
 	summary: BlockCount[];
-	/** 文章 id（透传给 AnnotationCard 的回复表单） */
+	/** 文章 id（透传给气泡内的回复表单） */
 	postId?: string;
-	/** 是否登录（透传给 AnnotationCard，决定是否显示回复按钮） */
+	/** 是否登录（决定回复入口与段评入口） */
 	isLoggedIn?: boolean;
+}
+
+/** 当前展开气泡的选择：块 + 评论者筛选，触发元素用于定位 */
+interface ActivePopover {
+	blockId: string;
+	author: string | null;
+	anchorEl: HTMLElement;
 }
 
 export function AnnotationLayer({
@@ -48,34 +50,29 @@ export function AnnotationLayer({
 	postId,
 	isLoggedIn = false,
 }: AnnotationLayerProps) {
-	const [, forceRender] = useState(0);
-	const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-	const [panelVisible, setPanelVisible] = useState(false);
-	/** 面板当前 top（视口坐标，px）。null 表示用默认 sticky 顶部。 */
-	const [panelTop, setPanelTop] = useState<number | null>(null);
+	const [active, setActive] = useState<ActivePopover | null>(null);
+	/** 关闭动画期间气泡仍需内容，保留最近一次的选择 */
+	const lastActive = useRef<ActivePopover | null>(null);
+	if (active) lastActive.current = active;
 	/** 有批注的 blockId → 正文块 DOM 元素 */
 	const [markerMap, setMarkerMap] = useState<Map<string, HTMLElement>>(new Map());
 	/** blockId → 角标相对覆盖层的纵向位置（px） */
 	const [positions, setPositions] = useState<Map<string, number>>(new Map());
 	const layerRef = useRef<HTMLDivElement>(null);
+	const annotatedBlocks = useMemo(() => new Set(markerMap.values()), [markerMap]);
 
-	// 1. 按 summary 中的 block_id 找对应 DOM 元素并加高亮 class。
+	// 1. 按 summary 中的 block_id 找对应 DOM 元素并给划线区间涂荧光笔。
 	useEffect(() => {
 		const root = contentRef.current;
 		if (!root) {
 			setMarkerMap(new Map());
-			forceRender((n) => n + 1);
 			return;
 		}
 
-		// 清理旧高亮
-		root.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => {
-			el.classList.remove(HIGHLIGHT_CLASS);
-		});
+		clearMarks(root, MARK_CLASS);
 
 		if (summary.length === 0) {
 			setMarkerMap(new Map());
-			forceRender((n) => n + 1);
 			return;
 		}
 
@@ -87,24 +84,26 @@ export function AnnotationLayer({
 			if (cancelled) return;
 
 			const nextMap = new Map<string, HTMLElement>();
-			for (const { block_id } of summary) {
+			for (const { block_id, ranges } of summary) {
 				if (cancelled) return;
 				const el = await findBlockElement(root, block_id);
 				if (el && !cancelled) {
-					el.classList.add(HIGHLIGHT_CLASS);
+					// 覆盖全块的区间是整段评论，由头像角标表示，不再整段涂色
+					const length = getBlockText(el).length;
+					for (const range of ranges ?? []) {
+						if (range.start <= 0 && range.end >= length) continue;
+						wrapRange(el, range, MARK_CLASS, { annotationBlock: block_id });
+					}
 					nextMap.set(block_id, el);
 				}
 			}
 			if (cancelled) return;
 			setMarkerMap(nextMap);
-			forceRender((n) => n + 1);
 		})();
 
 		return () => {
 			cancelled = true;
-			root.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => {
-				el.classList.remove(HIGHLIGHT_CLASS);
-			});
+			clearMarks(root, MARK_CLASS);
 		};
 	}, [contentRef, summary]);
 
@@ -143,238 +142,175 @@ export function AnnotationLayer({
 		};
 	}, [contentRef, markerMap]);
 
-	/** 读取指定 blockId 对应角标的视口位置，更新 panelTop */
-	const updatePanelTopForBlock = useCallback((blockId: string) => {
-		const markerEl = layerRef.current?.querySelector(`[${MARKER_DATA_BLOCKID}="${blockId}"]`);
-		if (!markerEl) return;
-		const rect = markerEl.getBoundingClientRect();
-		setPanelTop(rect.top > STICKY_TOP_PX ? rect.top : STICKY_TOP_PX);
+	const close = useCallback(() => setActive(null), []);
+
+	/** 点击头像或高亮：同一目标再点一次收起，否则切换到新目标 */
+	const toggle = useCallback((blockId: string, author: string | null, anchorEl: HTMLElement) => {
+		setActive((cur) =>
+			cur && cur.blockId === blockId && cur.author === author && cur.anchorEl === anchorEl
+				? null
+				: { blockId, author, anchorEl },
+		);
 	}, []);
 
-	/** 点击角标：展开/收起面板。展开瞬间把面板顶部对齐到角标水平线。 */
-	const handleMarkerClickById = useCallback(
-		(blockId: string) => {
-			setActiveBlockId((cur) => {
-				const next = cur === blockId ? null : blockId;
-				setPanelVisible(next !== null);
-				// 初次展开：面板 top 跟随角标（同一水平线）；收起时复位为 null。
-				if (next !== null) {
-					// 在下一帧读取 marker 元素位置（此时 markerMap 可能尚未更新到最新渲染）
-					requestAnimationFrame(() => {
-						updatePanelTopForBlock(next);
-					});
-				} else {
-					setPanelTop(null);
-				}
-				return next;
-			});
-		},
-		[updatePanelTopForBlock],
-	);
-
-	// 滚动跟随：角标在视口内时面板 top 跟角标同水平线；
-	// 角标滚到 STICKY_TOP_PX 以上（即将滚出顶部）时面板粘性钉住；
-	// 角标滚出视口底部时面板也粘性钉住（避免面板跟着飞下去）。
-	// 用 rAF 节流，避免 scroll 高频触发 setState。
+	// 点击划线高亮：打开该块的批注气泡，贴着该块的角标头像定位
 	useEffect(() => {
-		if (!activeBlockId || !panelVisible) return;
-		const markerEl = layerRef.current?.querySelector(
-			`[${MARKER_DATA_BLOCKID}="${activeBlockId}"]`,
-		);
-		if (!markerEl) return;
+		const root = contentRef.current;
+		if (!root) return;
+		const onClick = (event: MouseEvent) => {
+			const mark = (event.target as Element | null)?.closest<HTMLElement>(
+				`mark.${MARK_CLASS}`,
+			);
+			const blockId = mark?.dataset.annotationBlock;
+			if (!mark || !blockId) return;
+			const marker = layerRef.current?.querySelector<HTMLElement>(
+				`[${MARKER_DATA_BLOCKID}="${blockId}"] button`,
+			);
+			toggle(blockId, null, marker ?? mark);
+		};
+		root.addEventListener("click", onClick);
+		return () => root.removeEventListener("click", onClick);
+	}, [contentRef, toggle]);
 
-		let rafId = 0;
-		const update = () => {
-			rafId = 0;
-			const rect = markerEl.getBoundingClientRect();
-			setPanelTop(rect.top > STICKY_TOP_PX ? rect.top : STICKY_TOP_PX);
-		};
-		const onScroll = () => {
-			if (rafId === 0) rafId = requestAnimationFrame(update);
-		};
-		window.addEventListener("scroll", onScroll, { passive: true });
-		update(); // 立即同步一次，避免首帧闪烁
-		return () => {
-			window.removeEventListener("scroll", onScroll);
-			if (rafId !== 0) cancelAnimationFrame(rafId);
-		};
-	}, [activeBlockId, panelVisible]);
-
-	// 当前展开块的批注计数（用于 header 标题）
-	const activeCount = activeBlockId
-		? (summary.find((s) => s.block_id === activeBlockId)?.count ?? 0)
-		: 0;
+	const summaryByBlock = useMemo(() => new Map(summary.map((b) => [b.block_id, b])), [summary]);
+	const target = active ?? lastActive.current;
+	const block = target ? summaryByBlock.get(target.blockId) : undefined;
+	const popoverTarget: AnnotationPopoverTarget | null =
+		target && block
+			? {
+					blockId: target.blockId,
+					author: target.author,
+					anchorEl: target.anchorEl,
+					authors: block.authors ?? [],
+					count: block.count,
+				}
+			: null;
 
 	return (
 		<>
 			<div ref={layerRef} className="pointer-events-none absolute inset-x-0 top-0 h-0">
-				{summary.map((block) => {
-					const top = positions.get(block.block_id);
+				<BlockCommentTrigger
+					contentRef={contentRef}
+					layerRef={layerRef}
+					annotatedBlocks={annotatedBlocks}
+					isLoggedIn={isLoggedIn}
+					postId={postId ?? ""}
+				/>
+				{summary.map((item) => {
+					const top = positions.get(item.block_id);
 					if (top === undefined) return null;
 					return (
 						<AnnotationMarker
-							key={block.block_id}
-							block={block}
+							key={item.block_id}
+							block={item}
 							top={top}
-							active={activeBlockId === block.block_id}
-							onClick={() => handleMarkerClickById(block.block_id)}
+							activeAuthor={
+								active?.blockId === item.block_id ? active.author : undefined
+							}
+							onSelect={(author, el) => toggle(item.block_id, author, el)}
 						/>
 					);
 				})}
 			</div>
-			{/* 批注列表面板：点角标后展开。
-                定位策略（与角标同水平线起跳 + 顶部粘性）：
-                  - panelTop 状态由滚动监听更新：角标 rect.top > STICKY_TOP_PX 时跟随角标顶部；
-                    角标滚到 STICKY_TOP_PX 以上时钉住，避免面板跟着滚出视口。
-                  - 2xl+ 钉右侧空白区（right-4），lg 以下居中（translate-x-1/2）。
-                  - top 用 inline style（优先级覆盖 Tailwind 断点），左右用 Tailwind 断点。 */}
-			{activeBlockId && panelVisible && (
-				<AnnotationPanel
-					postId={postId ?? ""}
-					blockId={activeBlockId}
-					count={activeCount}
-					isLoggedIn={isLoggedIn}
-					panelTop={panelTop ?? STICKY_TOP_PX}
-					onClose={() => {
-						setActiveBlockId(null);
-						setPanelVisible(false);
-					}}
-				/>
-			)}
+			<AnnotationPopover
+				open={active !== null}
+				target={popoverTarget}
+				postId={postId ?? ""}
+				isLoggedIn={isLoggedIn}
+				onFilter={(author) => setActive((cur) => (cur ? { ...cur, author } : cur))}
+				onClose={close}
+			/>
 		</>
 	);
 }
 
 /**
- * AnnotationPanel - 批注面板（懒加载内容）
+ * AnnotationMarker - 段落右侧的批注角标：评论者头像，逐个可点。
  *
- * 外层 div 设 max-h + overflow-hidden，header 用 sticky，内容区 overflow-y-auto。
- * 这样只有内容区滚动，header 固定。
- */
-function AnnotationPanel({
-	postId,
-	blockId,
-	count,
-	isLoggedIn,
-	panelTop,
-	onClose,
-}: {
-	postId: string;
-	blockId: string;
-	count: number;
-	isLoggedIn: boolean;
-	panelTop: number;
-	onClose: () => void;
-}) {
-	const blockQuery = useBlockAnnotations(postId, blockId);
-
-	return (
-		<div
-			style={{ top: panelTop }}
-			className={
-				"fixed right-4 left-auto z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card pt-3 shadow-xl " +
-				"max-h-[calc(100vh-7.5rem)]"
-			}
-		>
-			{/* sticky header */}
-			<div className="flex shrink-0 items-center justify-between px-3 pb-2">
-				<span className="text-xs font-medium text-muted-foreground">{count} 条批注</span>
-				<button
-					type="button"
-					onClick={onClose}
-					className="text-muted-foreground hover:text-foreground"
-					aria-label="关闭"
-				>
-					×
-				</button>
-			</div>
-			{/* 可滚动内容区：pl-3 左留白，pr-2 + scrollbar-gutter(4px) = 右留白 12px，左右对称 */}
-			<div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pb-3 pl-3 pr-2 pt-0.5">
-				{blockQuery.isLoading && <AnnotationSkeleton />}
-				{blockQuery.data?.data.map((comment) => (
-					<AnnotationCard
-						key={comment.id}
-						node={{
-							comment,
-							replies: (comment.replies ?? []).map((r) => ({
-								comment: r,
-								replies: [],
-							})),
-						}}
-						selectedText={comment.anchor?.selected_text ?? ""}
-						postId={postId}
-						isLoggedIn={isLoggedIn}
-					/>
-				))}
-			</div>
-		</div>
-	);
-}
-
-/** AnnotationSkeleton 骨架屏：简单的灰色卡片占位 */
-function AnnotationSkeleton() {
-	return (
-		<div className="space-y-2">
-			{[1, 2].map((i) => (
-				<div key={i} className="rounded-xl border border-edge-hairline p-3">
-					<div className="mb-2 h-3 w-2/3 animate-pulse rounded bg-muted" />
-					<div className="mb-1 h-2 w-1/2 animate-pulse rounded bg-muted" />
-					<div className="h-2 w-full animate-pulse rounded bg-muted" />
-				</div>
-			))}
-		</div>
-	);
-}
-
-/**
- * AnnotationMarker - 段落右侧的批注角标：评论者头像组。
- *
- * lg 以上落在正文右侧边距，最多 3 位头像叠放；窄屏边距只有一条细槽，
- * 退化为首位评论者的单枚头像。无评论者信息时回退为带评论数的气泡图标。
+ * lg 以上落在正文右侧边距，最多并排 3 位头像，其余折叠为 +N；窄屏边距只有一条细槽，
+ * 退化为首位评论者的单枚头像。无评论者信息时回退为带评论数的圆标。
  */
 function AnnotationMarker({
 	block,
 	top,
-	active,
-	onClick,
+	activeAuthor,
+	onSelect,
 }: {
 	block: BlockCount;
 	top: number;
-	active: boolean;
-	onClick: () => void;
+	/** undefined：该块气泡未展开；null：展开且显示全部；string：展开且只看该评论者 */
+	activeAuthor: string | null | undefined;
+	onSelect: (author: string | null, anchorEl: HTMLElement) => void;
 }) {
-	const users = (block.authors ?? []).map((a) => ({
-		username: a.name,
-		avatar_url: a.avatar_url,
-	}));
+	const authors = block.authors ?? [];
+	const shown = authors.slice(0, MARKER_AVATAR_MAX);
+	const extra = authors.length - shown.length;
 	const label = `${block.count} 条批注`;
+	return (
+		<div
+			{...{ [MARKER_DATA_BLOCKID]: block.block_id }}
+			style={{ top }}
+			className="annotation-marker pointer-events-auto absolute"
+		>
+			{authors.length === 0 ? (
+				<button
+					type="button"
+					aria-label={label}
+					title={label}
+					onClick={(e) => onSelect(null, e.currentTarget)}
+					className="annotation-avatar"
+					data-active={activeAuthor !== undefined ? "true" : undefined}
+				>
+					{block.count}
+				</button>
+			) : (
+				shown.map((author) => (
+					<MarkerAvatar
+						key={author.name}
+						author={author}
+						active={activeAuthor === author.name}
+						onClick={(el) => onSelect(author.name, el)}
+					/>
+				))
+			)}
+			{extra > 0 && (
+				<button
+					type="button"
+					aria-label={label}
+					title={label}
+					onClick={(e) => onSelect(null, e.currentTarget)}
+					className="annotation-avatar"
+					data-active={activeAuthor === null ? "true" : undefined}
+				>
+					+{extra}
+				</button>
+			)}
+		</div>
+	);
+}
+
+function MarkerAvatar({
+	author,
+	active,
+	onClick,
+}: {
+	author: BlockAuthor;
+	active: boolean;
+	onClick: (anchorEl: HTMLElement) => void;
+}) {
 	return (
 		<button
 			type="button"
-			{...{ [MARKER_DATA_BLOCKID]: block.block_id }}
-			aria-label={label}
-			aria-expanded={active}
-			title={label}
-			style={{ top }}
-			onClick={(e) => {
-				e.stopPropagation();
-				onClick();
-			}}
-			className="annotation-marker pointer-events-auto absolute"
+			aria-label={`${author.name} 的批注`}
+			title={author.name}
+			onClick={(e) => onClick(e.currentTarget)}
+			className={cn("annotation-avatar")}
 			data-active={active ? "true" : undefined}
 		>
-			{users.length > 0 ? (
-				<>
-					<AvatarGroup users={users.slice(0, 1)} size="xs" className="lg:hidden" />
-					<AvatarGroup
-						users={users}
-						size="xs"
-						max={MARKER_AVATAR_MAX}
-						className="hidden lg:flex"
-					/>
-				</>
+			{author.avatar_url ? (
+				<img src={avatarUrl(author.avatar_url, author.name)} alt="" loading="lazy" />
 			) : (
-				<span className="annotation-marker-count">{block.count}</span>
+				author.name.slice(0, 1).toUpperCase()
 			)}
 		</button>
 	);
