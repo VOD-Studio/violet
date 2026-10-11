@@ -54,17 +54,36 @@ function strokesByBlock(range: Range, root: HTMLElement): Map<HTMLElement, Strok
 	return result;
 }
 
+/** 笔触两端圆头的固定宽度，px；只有中段随行宽拉伸，圆头才不会被拉成尖角 */
+const CAP_PX = 7;
+
 function paint(block: HTMLElement, strokes: Stroke[]): void {
-	const images = strokes.map((_, i) => `var(--annotation-select-${i % 2 === 0 ? "a" : "b"})`);
+	const images: string[] = [];
+	const sizes: string[] = [];
+	const positions: string[] = [];
+	strokes.forEach((s, i) => {
+		const v = i % 2 === 0 ? "a" : "b";
+		const cap = Math.min(CAP_PX, s.width / 2);
+		const mid = Math.max(0, s.width - 2 * cap);
+		images.push(
+			`var(--annotation-select-capl-${v})`,
+			`var(--annotation-select-mid-${v})`,
+			`var(--annotation-select-capr-${v})`,
+		);
+		sizes.push(
+			`${cap}px ${s.height}px`,
+			`${mid + 1}px ${s.height}px`,
+			`${cap}px ${s.height}px`,
+		);
+		positions.push(
+			`${s.x}px ${s.y}px`,
+			`${s.x + cap}px ${s.y}px`,
+			`${s.x + s.width - cap}px ${s.y}px`,
+		);
+	});
 	block.style.setProperty("background-image", images.join(","));
-	block.style.setProperty(
-		"background-size",
-		strokes.map((s) => `${s.width}px ${s.height}px`).join(","),
-	);
-	block.style.setProperty(
-		"background-position",
-		strokes.map((s) => `${s.x}px ${s.y}px`).join(","),
-	);
+	block.style.setProperty("background-size", sizes.join(","));
+	block.style.setProperty("background-position", positions.join(","));
 	block.style.setProperty("background-repeat", "no-repeat");
 }
 

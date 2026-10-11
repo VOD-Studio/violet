@@ -5,47 +5,88 @@
  */
 
 /* 划线批注高亮：不规则的手绘荧光笔笔触。
-   形状与颜色一并画在背景 SVG 里（两种形状交替，避免笔触一模一样），文字本身不被遮罩；
+   笔触拆成左端、中段、右端三层背景：两端固定宽度保持圆润，只有中段随文字长度拉伸，
+   整条拉伸会把圆头拉成尖角。形状与颜色画在背景 SVG 里（两种形状交替避免一模一样），文字不被遮罩；
    box-decoration-break: clone 让折行的每一段各自铺一次背景。内边距与等量负外边距相抵，不改变行内排版。
-   三态用色区分：选区淡紫（SelectionHighlight 以块背景图层绘制，同款笔触）、已保存的划线绿色、写批注时的草稿琥珀色。 */
+   三态用色区分：选区淡紫（SelectionHighlight 以块背景图层绘制，同款笔触）、已保存的划线绿色、
+   写批注时的草稿琥珀色。 */
 :root {
-	--annotation-saved-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M1.5 6.5C2 3 6 2.2 14 2.8S34 1.6 52 2.4 84 1.8 95 2.6c4 .3 5 3 4.6 7.2-.4 4.6-.9 7.4-5.2 7.8C80 18.4 62 18.9 44 18.3S14 19 5.5 18.2C1.6 17.8 1.2 14.5 1.4 11z'/%3E%3C/svg%3E");
-	--annotation-saved-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M2.4 4.2C6 1.8 20 3 38 2.2S72 3.4 90 2.4c5-.3 8.6 1.6 9 6.4.3 4.4-.6 8.6-4.6 9.4-8 1.4-26-.4-44 .6S12 19.4 5 17.6C1 16.6 .8 12 1.2 8.6c.2-1.8.4-3.2 1.2-4.4z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M1.5 6.5C2 3 6 2.2 14 2.8S34 1.6 52 2.4 84 1.8 95 2.6c4 .3 5 3 4.6 7.2-.4 4.6-.9 7.4-5.2 7.8C80 18.4 62 18.9 44 18.3S14 19 5.5 18.2C1.6 17.8 1.2 14.5 1.4 11z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M2.4 4.2C6 1.8 20 3 38 2.2S72 3.4 90 2.4c5-.3 8.6 1.6 9 6.4.3 4.4-.6 8.6-4.6 9.4-8 1.4-26-.4-44 .6S12 19.4 5 17.6C1 16.6 .8 12 1.2 8.6c.2-1.8.4-3.2 1.2-4.4z'/%3E%3C/svg%3E");
-	--annotation-draft-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M1.5 6.5C2 3 6 2.2 14 2.8S34 1.6 52 2.4 84 1.8 95 2.6c4 .3 5 3 4.6 7.2-.4 4.6-.9 7.4-5.2 7.8C80 18.4 62 18.9 44 18.3S14 19 5.5 18.2C1.6 17.8 1.2 14.5 1.4 11z'/%3E%3C/svg%3E");
-	--annotation-draft-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M2.4 4.2C6 1.8 20 3 38 2.2S72 3.4 90 2.4c5-.3 8.6 1.6 9 6.4.3 4.4-.6 8.6-4.6 9.4-8 1.4-26-.4-44 .6S12 19.4 5 17.6C1 16.6 .8 12 1.2 8.6c.2-1.8.4-3.2 1.2-4.4z'/%3E%3C/svg%3E");
-	--annotation-select-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M1.5 6.5C2 3 6 2.2 14 2.8S34 1.6 52 2.4 84 1.8 95 2.6c4 .3 5 3 4.6 7.2-.4 4.6-.9 7.4-5.2 7.8C80 18.4 62 18.9 44 18.3S14 19 5.5 18.2C1.6 17.8 1.2 14.5 1.4 11z'/%3E%3C/svg%3E");
-	--annotation-select-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M2.4 4.2C6 1.8 20 3 38 2.2S72 3.4 90 2.4c5-.3 8.6 1.6 9 6.4.3 4.4-.6 8.6-4.6 9.4-8 1.4-26-.4-44 .6S12 19.4 5 17.6C1 16.6 .8 12 1.2 8.6c.2-1.8.4-3.2 1.2-4.4z'/%3E%3C/svg%3E");
+	--annotation-cap: 0.5em;
+	--annotation-saved-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-hover-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-hover-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-hover-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-hover-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-hover-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-saved-hover-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-draft-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-draft-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-draft-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-draft-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-draft-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-draft-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-select-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-select-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
+	--annotation-select-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-select-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-select-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
+	--annotation-select-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
 }
 
 .annotation-mark,
 .annotation-draft-mark {
 	margin-inline: -0.2em;
 	padding-inline: 0.2em;
-	background: var(--annotation-saved-a) 0 0 / 100% 100% no-repeat;
+	/* 压掉 <mark> 浏览器默认的纯黄底，颜色只来自背景图 */
+	background-color: transparent;
+	background-image:
+		var(--annotation-saved-capl-a), var(--annotation-saved-mid-a),
+		var(--annotation-saved-capr-a);
+	background-size:
+		var(--annotation-cap) 100%,
+		calc(100% - 2 * var(--annotation-cap) + 2px) 100%,
+		var(--annotation-cap) 100%;
+	background-position:
+		left top,
+		var(--annotation-cap) top,
+		right top;
+	background-repeat: no-repeat;
 	color: inherit;
 	-webkit-box-decoration-break: clone;
 	box-decoration-break: clone;
 	cursor: pointer;
-	transition: background-image 0.2s;
 	animation: annotation-wash-in 0.3s ease-out;
 }
 .annotation-mark:nth-of-type(even) {
-	background-image: var(--annotation-saved-b);
+	background-image:
+		var(--annotation-saved-capl-b), var(--annotation-saved-mid-b),
+		var(--annotation-saved-capr-b);
 }
 .annotation-mark:hover {
-	background-image: var(--annotation-saved-hover-a);
+	background-image:
+		var(--annotation-saved-hover-capl-a), var(--annotation-saved-hover-mid-a),
+		var(--annotation-saved-hover-capr-a);
 }
 .annotation-mark:nth-of-type(even):hover {
-	background-image: var(--annotation-saved-hover-b);
+	background-image:
+		var(--annotation-saved-hover-capl-b), var(--annotation-saved-hover-mid-b),
+		var(--annotation-saved-hover-capr-b);
 }
 .annotation-draft-mark {
-	background-image: var(--annotation-draft-a);
+	background-image:
+		var(--annotation-draft-capl-a), var(--annotation-draft-mid-a),
+		var(--annotation-draft-capr-a);
 	cursor: text;
 }
 .annotation-draft-mark:nth-of-type(even) {
-	background-image: var(--annotation-draft-b);
+	background-image:
+		var(--annotation-draft-capl-b), var(--annotation-draft-mid-b),
+		var(--annotation-draft-capr-b);
 }
 
 /* 段评草稿：整段写批注时淡淡铺一层暖色，只用 background 与 box-shadow 外扩，不改盒模型 */
