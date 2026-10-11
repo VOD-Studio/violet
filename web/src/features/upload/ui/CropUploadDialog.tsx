@@ -1,6 +1,7 @@
 import { withCrop } from "@shared/lib/crop-url";
 import { CropPreview } from "@shared/ui/image-cropper/CropPreview";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
+import { ImageFramer } from "@shared/ui/image-cropper/ImageFramer";
 import { Button, Modal } from "@violet/ui";
 import { TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -206,19 +207,27 @@ export function CropUploadDialog({
 			{previewSrc ? (
 				<div className="flex flex-col gap-4">
 					<div className="rounded-xl bg-muted/40 p-3 ring-1 ring-border ring-inset">
-						<ImageCropper
-							src={previewSrc}
-							aspect={aspect}
-							rect={rect}
-							onChange={setRect}
-							onImageSize={setNaturalSize}
-						/>
+						{aspect === undefined ? (
+							<ImageCropper
+								src={previewSrc}
+								rect={rect}
+								onChange={setRect}
+								onImageSize={setNaturalSize}
+							/>
+						) : (
+							<ImageFramer
+								src={previewSrc}
+								aspect={aspect}
+								round={previews?.some((preview) => preview.round)}
+								onChange={setRect}
+								onImageSize={setNaturalSize}
+							/>
+						)}
 					</div>
 					{smallShare && rect && (
 						<p className="flex items-start gap-1.5 text-xs text-muted-foreground">
 							<TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
-							选区只占原图的 {Math.round(rect.w * rect.h * 100)}%
-							，这张图比例与横幅差别较大，可换一张更宽的图，或不设封面、使用头像背景。
+							{`选区只占原图的 ${Math.round(rect.w * rect.h * 100)}%，这张图比例与横幅差别较大，可换一张更宽的图，或不设封面、使用头像背景。`}
 						</p>
 					)}
 					{previews && previews.length > 0 && (

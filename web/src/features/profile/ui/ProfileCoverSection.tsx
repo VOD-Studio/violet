@@ -135,7 +135,7 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 				purpose="cover"
 				fileNameBase="profile-cover"
 				title="调整主页封面"
-				description="拖动选框取景，重要内容放在中间，窄屏会裁掉左右两侧。"
+				description="拖动图片取景，窄屏会裁掉左右两侧，重要内容放在中间。"
 				confirmLabel="使用此封面"
 				previews={COVER_PREVIEWS}
 				outputMaxWidth={COVER_OUTPUT_WIDTH}
