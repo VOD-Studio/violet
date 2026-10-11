@@ -157,14 +157,12 @@ it("有动图时网格和聚焦预览都显示动图，方向键只切换导航�
 	await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
 });
 
-it("收藏入口位于首项，自传与收藏合并显示，上传先命名确认再加入网格", async () => {
+it("收藏入口位于首项，自传与收藏合并显示，选好图片直接以文件名加入网格", async () => {
 	useSessionStore.setState({ sessionActive: true, sessionVersion: 1 });
 	mine = {
 		owned: [{ id: "owned", name: "自传猫", url: "/owned.gif" }],
 		favorited: [{ id: "favorite", name: "收藏狗", url: "/favorite.gif" }],
 	};
-	vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:emoji-preview");
-	const revoke = vi.spyOn(URL, "revokeObjectURL");
 	const onSelect = vi.fn();
 	render(
 		<QueryClientProvider client={queryClient}>
@@ -184,23 +182,12 @@ it("收藏入口位于首项，自传与收藏合并显示，上传先命名确�
 	fireEvent.change(input, {
 		target: { files: [new File(["gif"], "my_cat.gif", { type: "image/gif" })] },
 	});
-	const name = screen.getByRole<HTMLInputElement>("textbox", { name: "表情名称" });
-	expect(name.value).toBe("mycat");
-	expect(uploadedNames).toEqual([]);
-
-	fireEvent.change(name, { target: { value: "手绘_猫" } });
-	fireEvent.click(screen.getByRole("button", { name: "确认添加" }));
-	expect(uploadedNames).toEqual([]);
-	expect(screen.getByRole("textbox", { name: "表情名称" })).toBe(name);
-	fireEvent.change(name, { target: { value: "手绘猫" } });
-	fireEvent.click(screen.getByRole("button", { name: "确认添加" }));
-	const created = await screen.findByRole("button", { name: "手绘猫" });
-	expect(uploadedNames).toEqual(["my_cat.gif"]);
-	expect(revoke).toHaveBeenCalledWith("blob:emoji-preview");
 	expect(screen.queryByRole("textbox", { name: "表情名称" })).toBeNull();
+	const created = await screen.findByRole("button", { name: "mycat" });
+	expect(uploadedNames).toEqual(["my_cat.gif"]);
 	fireEvent.click(created);
 	expect(onSelect).toHaveBeenCalledWith(
-		expect.objectContaining({ name: "手绘猫", custom_emoji_id: "created", relation: "owned" }),
+		expect.objectContaining({ name: "mycat", custom_emoji_id: "created", relation: "owned" }),
 	);
 });
 
@@ -224,9 +211,8 @@ it("仅系统表情的回应入口不显示个人分组，已选表情不可再�
 it.each([
 	"/uploads/emoji",
 	"/custom-emojis",
-])("%s失败后保留命名和文件，用户可重新确认", async (endpoint) => {
+])("%s失败后不留中间状态，重新选择文件即可重试", async (endpoint) => {
 	useSessionStore.setState({ sessionActive: true, sessionVersion: 1 });
-	vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:emoji-preview");
 	render(
 		<QueryClientProvider client={queryClient}>
 			<EmojiPicker onSelect={vi.fn()} />
@@ -234,23 +220,20 @@ it.each([
 	);
 	fireEvent.click(screen.getByRole("button", { name: "添加表情" }));
 	await screen.findByRole("button", { name: "上传表情" });
+	failEndpoint = endpoint;
 	fireEvent.change(screen.getByLabelText("选择表情图片"), {
 		target: { files: [new File(["gif"], "保留动图.gif", { type: "image/gif" })] },
 	});
-	const name = screen.getByRole<HTMLInputElement>("textbox", { name: "表情名称" });
-	fireEvent.change(name, { target: { value: "确认后的名字" } });
-	failEndpoint = endpoint;
-	fireEvent.click(screen.getByRole("button", { name: "确认添加" }));
 	await waitFor(() => expect(failedRequests).toEqual([endpoint]));
 	await waitFor(() =>
-		expect(screen.getByRole("button", { name: "确认添加" }).hasAttribute("disabled")).toBe(
+		expect(screen.getByRole("button", { name: "上传表情" }).hasAttribute("disabled")).toBe(
 			false,
 		),
 	);
-	expect(name.value).toBe("确认后的名字");
-	expect(screen.getByAltText("待上传的表情").getAttribute("src")).toBe("blob:emoji-preview");
-	failEndpoint = null;
-	fireEvent.click(screen.getByRole("button", { name: "确认添加" }));
-	await screen.findByRole("button", { name: "确认后的名字" });
 	expect(screen.queryByRole("textbox", { name: "表情名称" })).toBeNull();
+	failEndpoint = null;
+	fireEvent.change(screen.getByLabelText("选择表情图片"), {
+		target: { files: [new File(["gif"], "保留动图.gif", { type: "image/gif" })] },
+	});
+	await screen.findByRole("button", { name: "保留动图" });
 });

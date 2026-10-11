@@ -56,8 +56,16 @@ export function EmojiTile({ emoji, selected = false, onSelect }: EmojiTileProps)
 				collisionPadding={12}
 				className={styles.preview}
 			>
-				<img src={imageUrl} alt={`${emoji.name}预览`} className="size-36 object-contain" />
-				<p className="mt-2 max-w-36 wrap-break-word text-center text-xs">{emoji.name}</p>
+				<div className={styles.previewImage}>
+					<img
+						src={imageUrl}
+						alt={`${emoji.name}预览`}
+						className="size-28 object-contain"
+					/>
+				</div>
+				<p className="mt-1.5 max-w-36 truncate px-1 text-center text-xs text-muted-foreground">
+					{emoji.name}
+				</p>
 			</TooltipContent>
 		</Tooltip>
 	);
