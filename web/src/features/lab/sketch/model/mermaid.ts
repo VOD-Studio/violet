@@ -8,7 +8,7 @@ import {
 	polygon,
 	polyline,
 	rect,
-} from "@violet/sketch";
+} from "@violetjs/inkline";
 import DOMPurify from "dompurify";
 import mermaid from "mermaid";
 import { type BenchItem, type BenchScene, tone } from "./scenes";
@@ -132,10 +132,15 @@ export async function loadMermaidScene(nodes = 24): Promise<BenchScene> {
 				}
 				continue;
 			}
+			// classic 外观的胶囊等节点由内置 Rough.js（粗糙度 0）输出：一条未闭合的填充轮廓（stroke="none"），
+			// 加一条把每段拆开并画两遍的描边（fill="none"）。合成一个闭合图形，丢掉拆碎的描边。
+			const roughPair = element.parentElement?.classList.contains("outer-path") ?? false;
+			if (roughPair && element.getAttribute("fill") === "none") continue;
+			const outline = roughPair && element.getAttribute("stroke") === "none";
 			let path: Path;
 			if (tag === "path")
 				path = pathFromSvg(
-					element.getAttribute("d") ?? "",
+					`${element.getAttribute("d") ?? ""}${outline ? "Z" : ""}`,
 					element.getAttribute("fill-rule") === "evenodd" ? "evenodd" : "nonzero",
 				);
 			else if (tag === "rect")
@@ -172,7 +177,7 @@ export async function loadMermaidScene(nodes = 24): Promise<BenchScene> {
 				path,
 				transform,
 				fillRole: filled && closed ? (isNode ? tone(node++) : "paper") : undefined,
-				strokeRole: style.stroke === "none" ? "none" : "ink",
+				strokeRole: style.stroke === "none" && !outline ? "none" : "ink",
 				// 连线锚定在节点边缘，端点不能被手法扰动。
 				pinEnds: !closed,
 			});

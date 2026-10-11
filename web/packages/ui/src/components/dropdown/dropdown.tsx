@@ -143,7 +143,7 @@ export function Dropdown({
 	const dismissed = useRef(false);
 	const triggerRef = useRef<HTMLElement>(null);
 	const contentRef = useRef<HTMLElement>(null);
-	/** 被同组另一块面板接替后置位：本面板的壳立即退场，只留内容淡出。 */
+	/** 同方向接力确认后，旧面板外壳立即让位。 */
 	const [handoff, setHandoff] = useState(false);
 
 	useEffect(() => {
@@ -167,11 +167,7 @@ export function Dropdown({
 		if (state.active && state.active.id !== id) state.active.close();
 		state.active = {
 			id,
-			// 被同组另一块面板接替：外壳立即让位，不再走折回动画，避免两块面板同时可见
-			close: () => {
-				setHandoff(true);
-				setOpen(false);
-			},
+			close: () => setOpen(false),
 		};
 		return () => {
 			if (state.active?.id !== id) return;
@@ -359,8 +355,9 @@ export interface DropdownContentProps extends React.ComponentProps<"div"> {
 /**
  * 悬停面板。内容紧随触发器渲染（不入 Portal），Tab 顺序从触发器自然进入面板。
  *
- * 单独展开时从触发器一侧以圆形晕开，直接子元素依次淡入；同组内从上一块面板移来时，
- * 面板从它的位置与尺寸平滑滑移变形到自己的，内容淡入淡出。动画不缩放，减弱动态时直接显示。
+ * 单个面板按实际上下方位裁剪展开与收拢，不改变透明度。
+ * 同组仅在相同方位间接力；内部内容不做独立动画。
+ * 动画不缩放，减弱动态时直接显示。
  */
 export function DropdownContent({ ref, ...props }: DropdownContentProps) {
 	const context = useDropdown("DropdownContent");
@@ -378,29 +375,6 @@ interface DropdownContentImplProps extends DropdownContentProps {
 const prefersReducedMotion = () =>
 	window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-/** 单独展开的起点：贴着触发器一侧、与触发器等宽的细带，面板从这里向下、向两侧舒展。 */
-function unfoldOrigin(
-	anchor: DOMRect,
-	to: DOMRect,
-	align: "start" | "center" | "end",
-	flipped: boolean,
-) {
-	const width = Math.min(anchor.width, to.width);
-	const left =
-		align === "start"
-			? anchor.left
-			: align === "end"
-				? anchor.right - width
-				: anchor.left + (anchor.width - width) / 2;
-	const height = 2;
-	return new DOMRect(
-		Math.min(Math.max(left, to.left), to.right - width),
-		flipped ? to.bottom - height : to.top,
-		width,
-		height,
-	);
-}
-
 function DropdownContentImpl({
 	className,
 	side = "bottom",
@@ -417,6 +391,7 @@ function DropdownContentImpl({
 	const group = use(GroupContext);
 	const elementRef = useRef<HTMLDivElement>(null);
 	const innerRef = useRef<HTMLDivElement>(null);
+	const morphAnimationRef = useRef<Animation | null>(null);
 	const composedRef = useComposedRefs<HTMLDivElement>(
 		ref,
 		contentRef,
@@ -428,29 +403,30 @@ function DropdownContentImpl({
 	const takeover = () => {
 		const previous = group?.current.surface;
 		if (!previous || previous.id === id || !previous.element.isConnected) return null;
-		return { rect: previous.element.getBoundingClientRect(), release: previous.release };
+		return {
+			rect: previous.element.getBoundingClientRect(),
+			side: previous.element.dataset.side,
+			release: previous.release,
+		};
 	};
 	const [from, setFrom] = useState(takeover);
 	const placed = useRef(false);
 
 	const play = (source: ReturnType<typeof takeover>) => {
 		const element = elementRef.current;
-		if (!element) return;
-		source?.release();
+		if (!element || !source) return;
+		if (source.side !== element.dataset.side) {
+			setFrom(null);
+			return;
+		}
+		source.release();
 		if (typeof element.animate !== "function" || prefersReducedMotion()) return;
 		const to = element.getBoundingClientRect();
-		const anchor = context.triggerRef.current?.getBoundingClientRect();
-		const start =
-			source?.rect ??
-			(anchor && unfoldOrigin(anchor, to, align, element.dataset.side === "top"));
-		if (!start) return;
+		const start = source.rect;
 		const inner = innerRef.current;
 		const innerWidth = inner?.getBoundingClientRect().width;
-		// 接力用缓入缓出的滑移，单独展开用缓出的舒展
-		const timing = source
-			? { duration: 380, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
-			: { duration: 420, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
-		element.animate(
+		const timing = { duration: 380, easing: "cubic-bezier(0.45, 0, 0.2, 1)" };
+		const animation = element.animate(
 			[
 				{
 					transform: `translate(${start.left - to.left}px, ${start.top - to.top}px)`,
@@ -467,9 +443,17 @@ function DropdownContentImpl({
 			],
 			timing,
 		);
+		morphAnimationRef.current = animation;
 		// 内容按最终宽度排版，面板变形期间文字不重排
 		if (inner && innerWidth) {
-			inner.animate([{ width: `${innerWidth}px` }, { width: `${innerWidth}px` }], timing);
+			inner.style.width = `${innerWidth}px`;
+			const restoreWidth = () => {
+				if (morphAnimationRef.current !== animation) return;
+				inner.style.removeProperty("width");
+				morphAnimationRef.current = null;
+			};
+			animation.addEventListener("finish", restoreWidth, { once: true });
+			animation.addEventListener("cancel", restoreWidth, { once: true });
 		}
 	};
 

@@ -8,8 +8,10 @@ import { MessageSquare } from "lucide-react";
 import type { ReactNode } from "react";
 
 export interface CommentSectionProps {
-	/** 标题（feature 拼好，如「评论 (12)」） */
+	/** 标题（如「评论」；旧调用方可自行拼计数） */
 	title: ReactNode;
+	/** 评论总数，显示为标题旁的小圆标；缺省不显示（匿名黑洞模式看不到总数） */
+	count?: number;
 	/** 顶部表单（feature 提供） */
 	form: ReactNode;
 	/** 是否登录 */
@@ -24,6 +26,7 @@ export interface CommentSectionProps {
 
 export function CommentSection({
 	title,
+	count,
 	form,
 	isLoggedIn,
 	blackhole = false,
@@ -35,6 +38,11 @@ export function CommentSection({
 			<header className="mb-6 flex items-center gap-2">
 				<MessageSquare className="size-5 text-muted-foreground" />
 				<h2 className="text-lg font-semibold text-foreground">{title}</h2>
+				{count !== undefined && (
+					<span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-xs font-medium text-primary tabular-nums">
+						{count}
+					</span>
+				)}
 			</header>
 
 			{blackhole && !isLoggedIn && banner}

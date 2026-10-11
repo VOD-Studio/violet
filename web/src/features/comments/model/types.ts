@@ -75,6 +75,24 @@ export interface CommentListQuery extends PageQuery {
 export interface BlockCount {
 	block_id: string;
 	count: number;
+	/** 该块批注的评论者，按首次批注先后去重；缺省或空数组时角标回退为计数 */
+	authors?: BlockAuthor[];
+	/** 各条批注划线的块内字符区间；整块评论的区间覆盖全块 */
+	ranges?: BlockRange[];
+}
+
+/** BlockRange - 批注划线在块内的字符区间 */
+export interface BlockRange {
+	start: number;
+	/** exclusive */
+	end: number;
+}
+
+/** BlockAuthor - 批注块上的评论者 */
+export interface BlockAuthor {
+	name: string;
+	/** 空串表示未设置头像，头像组回退首字母 */
+	avatar_url: string;
 }
 
 /** 回复排序方式。asc=最早优先（默认），desc=最新优先。

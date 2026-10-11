@@ -5,7 +5,7 @@ export function HomePreludeSkeleton() {
 	return (
 		<section
 			aria-label="正在加载个人简介"
-			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden bg-background text-foreground"
+			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden text-foreground"
 		>
 			{/* 核心内容骨架：居中展台 */}
 			<div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-8 sm:px-8 lg:px-12">

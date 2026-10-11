@@ -13,24 +13,9 @@ import type { CandidateBlock } from "./relocate";
 /** 块级元素选择器：批注可锚定的元素类型。 */
 const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
 
-/** 角标 class——计算 blockId 时需排除角标的 textContent（SVG <text> 含数字会污染哈希）。 */
-const MARKER_CLASS = "annotation-marker-inline";
-
-/**
- * getBlockText 读取块的纯文本，排除已注入的批注角标。
- *
- * 角标 SVG 内的 <text> 元素含计数字符（如 "1"、"99+"），
- * 会让 computeBlockId 在角标注入前后算出不同哈希，破坏 block_id 一致性。
- */
+/** getBlockText 读取块的纯文本，是 computeBlockId 与选区锚点共用的取文本口径。 */
 export function getBlockText(el: HTMLElement): string {
-	if (!el.querySelector(`.${MARKER_CLASS}`)) {
-		return el.textContent ?? "";
-	}
-	const clone = el.cloneNode(true) as HTMLElement;
-	clone.querySelectorAll(`.${MARKER_CLASS}`).forEach((m) => {
-		m.remove();
-	});
-	return clone.textContent ?? "";
+	return el.textContent ?? "";
 }
 
 /**

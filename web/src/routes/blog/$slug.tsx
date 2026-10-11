@@ -26,7 +26,7 @@ import { FloatingBack } from "@shared/ui/floating-back";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { ArrowLeft } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 // 评论交互懒加载，不阻塞首屏正文。
 const AnnotationLayer = lazy(() =>
@@ -38,6 +38,12 @@ const FloatingToolbar = lazy(() =>
 	import("@features/comments/ui/FloatingToolbar").then((m) => ({
 		default: m.FloatingToolbar,
 	})),
+);
+const CommentDrawer = lazy(() =>
+	import("@features/comments/ui/CommentDrawer").then((m) => ({ default: m.CommentDrawer })),
+);
+const CommentDockButton = lazy(() =>
+	import("@features/comments/ui/CommentDrawer").then((m) => ({ default: m.CommentDockButton })),
 );
 const CommentSection = lazy(() =>
 	import("@features/comments/ui/CommentSection").then((m) => ({
@@ -59,6 +65,7 @@ function BlogDetailPage() {
 	const isLoggedIn = !!me.data;
 	const { data: chapterCtx } = useChapterContext(slug);
 	const { data: seriesDetail } = useSeriesDetail(chapterCtx?.series.slug ?? "");
+	const [commentsOpen, setCommentsOpen] = useState(false);
 	const { data: siteSettings } = useSettings();
 	const commentsEnabled = siteSettings?.comments_enabled ?? true;
 
@@ -149,7 +156,7 @@ function BlogDetailPage() {
 							data-article-content
 							onClick={articleImages.bind.onClick}
 							onKeyDown={articleImages.bind.onKeyDown}
-							className="prose prose-neutral dark:prose-invert min-w-0 max-w-none flex-1 font-reading"
+							className="prose prose-neutral dark:prose-invert min-w-0 max-w-none flex-1 font-article"
 						>
 							<ArticleRichContent
 								content={body}
@@ -211,6 +218,16 @@ function BlogDetailPage() {
 									items={toc}
 									contentRef={contentRef}
 									isRailCollapsedAtRest
+									footer={
+										commentsEnabled ? (
+											<Suspense fallback={null}>
+												<CommentDockButton
+													variant="menu"
+													onClick={() => setCommentsOpen(true)}
+												/>
+											</Suspense>
+										) : null
+									}
 								/>
 							</div>
 						</aside>
@@ -223,21 +240,35 @@ function BlogDetailPage() {
 			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
 			 */}
 			<FloatingBack to="/blog" label="返回博客" history />
-			{hasSidebarToc || seriesDetail ? (
-				<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3">
-					{hasSidebarToc ? (
-						<div className="xl:hidden">
-							<MobileTocFab items={toc} contentRef={contentRef} />
-						</div>
-					) : null}
-					{/* 全书目录：悬浮面板单一入口，全宽度可用（不占正文布局列） */}
-					{seriesDetail ? (
-						<SeriesTocFab detail={seriesDetail} currentSlug={slug} />
-					) : null}
-					<BackToTop className="relative" />
-				</div>
-			) : (
-				<BackToTop />
+			<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3 max-lg:bottom-24">
+				{hasSidebarToc ? (
+					<div className="xl:hidden">
+						<MobileTocFab items={toc} contentRef={contentRef} />
+					</div>
+				) : null}
+				{/* 全书目录：悬浮面板单一入口，全宽度可用（不占正文布局列） */}
+				{seriesDetail ? <SeriesTocFab detail={seriesDetail} currentSlug={slug} /> : null}
+				{commentsEnabled ? (
+					<div className={cn(hasSidebarToc && "xl:hidden")}>
+						<Suspense fallback={null}>
+							<CommentDockButton
+								variant="fab"
+								onClick={() => setCommentsOpen(true)}
+							/>
+						</Suspense>
+					</div>
+				) : null}
+				<BackToTop className="relative" />
+			</div>
+
+			{commentsEnabled && (
+				<Suspense fallback={null}>
+					<CommentDrawer
+						open={commentsOpen}
+						onClose={() => setCommentsOpen(false)}
+						postId={post.id}
+					/>
+				</Suspense>
 			)}
 		</>
 	);

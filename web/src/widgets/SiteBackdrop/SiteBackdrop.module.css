@@ -1,0 +1,131 @@
+/*
+ * 网点纸：前台固定背景点缀。颜色全部取自主色源、人设金与前景色，跟随 palette 与明暗主题。
+ */
+
+.backdrop {
+	--orn-dot: light-dark(
+		color-mix(in oklch, var(--foreground) 15%, transparent),
+		color-mix(in oklch, var(--foreground) 11%, transparent)
+	);
+	--orn-lit: color-mix(in oklch, var(--primary-base) 80%, transparent);
+	--orn-gold: var(--persona-gold);
+	/* 阅读区居中，点阵与指针点亮都从视口中心向边缘渐显 */
+	--orn-edge: radial-gradient(ellipse 62% 68% at 50% 46%, transparent 34%, #000 96%);
+	--orn-lit-edge: radial-gradient(ellipse 62% 68% at 50% 46%, rgb(0 0 0 / 28%) 34%, #000 96%);
+
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+	contain: strict;
+	/* 页面转场时保持静止，见 styles/transitions.css */
+	view-transition-name: site-backdrop;
+}
+
+/* —— 角落天光：主色压右上，人设金托左下 —— */
+.wash {
+	position: absolute;
+	inset: 0;
+}
+
+.washSky {
+	background: radial-gradient(
+		54rem 40rem at 100% 0%,
+		light-dark(
+			color-mix(in oklch, var(--primary-base) 10%, transparent),
+			color-mix(in oklch, var(--primary-base) 17%, transparent)
+		),
+		transparent 72%
+	);
+}
+
+.washEmber {
+	background: radial-gradient(
+		48rem 34rem at 0% 100%,
+		light-dark(
+			color-mix(in oklch, var(--orn-gold) 13%, transparent),
+			color-mix(in oklch, var(--orn-gold) 8%, transparent)
+		),
+		transparent 72%
+	);
+}
+
+/* —— 点阵：24px 网点纸，视口中心留白 —— */
+.grid {
+	position: absolute;
+	inset: 0;
+	background-image: radial-gradient(circle, var(--orn-dot) 1px, transparent 1.5px);
+	background-size: 24px 24px;
+	mask-image: var(--orn-edge);
+}
+
+/* 窄屏正文贴边，点阵只留在视口上下两端 */
+@media (max-width: 47.99rem) {
+	.backdrop {
+		--orn-edge: radial-gradient(ellipse 95% 62% at 50% 50%, transparent 48%, #000 100%);
+		--orn-lit-edge: radial-gradient(
+			ellipse 95% 62% at 50% 50%,
+			rgb(0 0 0 / 28%) 48%,
+			#000 100%
+		);
+	}
+}
+
+/* 指针点亮层：位置与背景偏移由 SiteBackdrop 逐帧写入 */
+.lit {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 20rem;
+	height: 20rem;
+	opacity: 0;
+	transition: opacity 0.6s ease;
+	background-image: radial-gradient(circle, var(--orn-lit) 1.5px, transparent 2px);
+	background-size: 24px 24px;
+	mask-image: radial-gradient(circle closest-side, #000, transparent), var(--orn-lit-edge);
+	mask-size:
+		100% 100%,
+		100vw 100vh;
+	mask-repeat: no-repeat;
+	mask-composite: intersect;
+	will-change: transform;
+}
+
+.lit[data-active] {
+	opacity: 1;
+}
+
+/* —— 生命游戏：活细胞落在网点上，与点阵同用中心留白遮罩 —— */
+.life {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	/* useLifeCanvas 读取这两个计算值作稳定细胞与新生细胞的颜色 */
+	color: light-dark(
+		color-mix(in oklch, var(--primary-base) 50%, transparent),
+		color-mix(in oklch, var(--primary-base) 62%, transparent)
+	);
+	/* 人设金在浅色纸面上发褐，浅色主题的新生细胞改用饱满主色 */
+	outline-color: light-dark(
+		color-mix(in oklch, var(--primary-base) 92%, transparent),
+		color-mix(in oklch, var(--orn-gold) 80%, transparent)
+	);
+	mask-image: var(--orn-edge);
+}
+
+/* —— 纸纹：噪点作遮罩，颜色随明暗翻转 —— */
+.grain {
+	position: absolute;
+	inset: 0;
+	background: light-dark(rgb(0 0 0 / 4.5%), rgb(255 255 255 / 5%));
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.4 -0.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	mask-size: 180px 180px;
+}
+
+@media print {
+	.backdrop {
+		display: none;
+	}
+}

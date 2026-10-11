@@ -1,7 +1,7 @@
 import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
 import { useReducedMotion } from "motion/react";
-import { type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
 import { CompactArticleToc } from "./CompactArticleToc";
@@ -18,6 +18,8 @@ export interface SegmentedArticleTocProps {
 	onNavigate: (id: string) => void;
 	compact?: boolean;
 	isRailCollapsedAtRest?: boolean;
+	/** 展开菜单里阅读进度下方的操作位，仅 isRailCollapsedAtRest 形态使用 */
+	footer?: ReactNode;
 	contentRef?: RefObject<HTMLElement | null>;
 }
 
@@ -65,6 +67,7 @@ export function SegmentedArticleToc({
 	onNavigate,
 	compact = false,
 	isRailCollapsedAtRest = false,
+	footer,
 	contentRef,
 }: SegmentedArticleTocProps) {
 	const flatItems = useMemo(() => flattenNodes(nodes), [nodes]);
@@ -148,9 +151,13 @@ export function SegmentedArticleToc({
 			indicator.style.transform = `translateY(${start}px)`;
 			indicator.style.height = `${Math.max(0, end - start)}px`;
 			indicator.style.opacity = "1";
+			const snap = shouldSnapList;
+			shouldSnapList = false;
 			const scroll = scrollRef.current;
 			if (!isRailCollapsedAtRest || !scroll || scroll.scrollHeight <= scroll.clientHeight)
 				return;
+			// 展开后只在进入瞬间对齐一次，之后让位给用户滚动，否则页面滚动会把列表拉回阅读位置。
+			if (!railActive && !snap) return;
 			const center = (start + end) / 2;
 			const visibleCenter = center - scroll.scrollTop;
 			if (
@@ -158,11 +165,10 @@ export function SegmentedArticleToc({
 				visibleCenter > scroll.clientHeight * 0.7
 			) {
 				listTarget = center - scroll.clientHeight / 2;
-				if (shouldSnapList || reduced) scroll.scrollTop = listTarget;
+				if (snap || reduced) scroll.scrollTop = listTarget;
 				// 目标持续更新，不反复重启浏览器的 smooth scroll。
 				else startFollow();
 			}
-			shouldSnapList = false;
 		};
 		measureAnchors();
 		update();
@@ -278,6 +284,7 @@ export function SegmentedArticleToc({
 			activeId={activeId}
 			contentRef={contentRef}
 			onRailActiveChange={setRailActive}
+			footer={footer}
 		>
 			{renderTocList}
 		</ArticleTocFocusShell>

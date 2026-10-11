@@ -161,18 +161,16 @@ describe("Dropdown", () => {
 		const more = screen.getByRole("link", { name: "更多" });
 		hover(blog);
 		advance(80);
-		expect(panel("博客")?.getAttribute("data-motion")).toBe("reveal");
 		unhover(blog);
 		advance(30);
 
 		hover(more);
 		advance(0);
 		expect(panel("更多")).not.toBeNull();
-		expect(panel("更多")?.getAttribute("data-motion")).toBe("morph");
 		expect(panel("博客")).toBeNull();
 	});
 
-	it("组内来回快速切换时同一时刻只有一块面板，折返的面板同样接力展开", () => {
+	it("组内快速折返仍只展开最后进入的面板", () => {
 		render(
 			<DropdownGroup>
 				<Menu label="博客" />
@@ -196,7 +194,6 @@ describe("Dropdown", () => {
 			advance(0);
 			expect(openPanels()).toBe(1);
 		}
-		expect(panel("博客")?.getAttribute("data-motion")).toBe("morph");
 		expect(panel("更多")).toBeNull();
 	});
 

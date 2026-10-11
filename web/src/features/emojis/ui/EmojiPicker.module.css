@@ -3,18 +3,47 @@
 	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
 }
 
+/* 表情悬停预览：无边框无箭头的柔和卡片，只用透明度与模糊淡入，不缩放不位移 */
 .preview {
 	z-index: 60;
 	max-width: calc(100vw - 1.5rem);
 	padding: 0.5rem;
-	border: 1px solid var(--border);
-	border-radius: 0.5rem;
-	background: var(--popover);
+	border: 0;
+	border-radius: 1rem;
+	background: color-mix(in oklch, var(--popover) 92%, transparent);
 	color: var(--popover-foreground);
 	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+	backdrop-filter: blur(12px);
+	animation: emoji-preview-in 0.16s ease-out;
+}
+
+.preview[data-state="closed"] {
 	animation: none;
 }
 
-.preview svg {
+/* Radix 箭头外层 span：预览是图片卡片，不需要指向箭头 */
+.preview > span {
 	display: none;
+}
+
+.previewImage {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+	border-radius: 0.75rem;
+	background: color-mix(in oklch, var(--muted) 55%, transparent);
+}
+
+@keyframes emoji-preview-in {
+	from {
+		opacity: 0;
+		filter: blur(6px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.preview {
+		animation: none;
+	}
 }

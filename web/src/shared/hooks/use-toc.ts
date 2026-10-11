@@ -1,4 +1,5 @@
 import { Slugger } from "@shared/lib/slug";
+import { scrollToElement } from "@shared/lib/smooth-scroll";
 import { useRouter } from "@tanstack/react-router";
 import { type MouseEvent, useCallback, useEffect, useState } from "react";
 
@@ -215,7 +216,7 @@ export function useTocNavigation(
 			if (!target || !containerRef.current?.contains(target)) return;
 			setManualActiveId(id);
 			const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-			target.scrollIntoView({ behavior: reduced ? "instant" : "smooth", block: "start" });
+			scrollToElement(target, Boolean(reduced));
 		},
 		[containerRef, router],
 	);

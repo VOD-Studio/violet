@@ -1,5 +1,5 @@
 import { fetchTweetReference } from "@shared/server/tweet-reference";
-import { EmbeddedTweet, Tweet, type TweetData } from "@violet/react-tweet";
+import { EmbeddedTweet, Tweet, type TweetData } from "@violetjs/react-tweet";
 
 import type { TweetEmbedConfig } from "./types";
 import { articleEmbedImageUrl } from "./url";

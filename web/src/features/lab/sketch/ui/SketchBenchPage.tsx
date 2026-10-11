@@ -4,24 +4,31 @@ import {
 	renderRough,
 	renderSketchSvg,
 } from "@features/lab/sketch/lib/render";
-import { buildStyle, HANDS, type HandId, PENS, type PenId } from "@features/lab/sketch/lib/styles";
+import {
+	buildStyle,
+	defaultPressure,
+	HANDS,
+	type HandId,
+	PENS,
+	type PenId,
+} from "@features/lab/sketch/lib/styles";
 import { loadMermaidScene } from "@features/lab/sketch/model/mermaid";
 import {
+	artworkScene,
 	type BenchScene,
 	FILL_LABELS,
 	type FillId,
 	fillsScene,
 	holesScene,
-	illustrationScene,
 	palette,
 	primitivesScene,
 	type SceneKey,
 } from "@features/lab/sketch/model/scenes";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import { createPlayer, type Player, type ScheduleMode } from "@violet/sketch";
-import { drawCanvas } from "@violet/sketch/canvas";
-import { seekSvg } from "@violet/sketch/svg";
 import { Button, Segmented } from "@violet/ui";
+import { createPlayer, type Player, type ScheduleMode } from "@violetjs/inkline";
+import { drawCanvas } from "@violetjs/inkline/canvas";
+import { seekSvg } from "@violetjs/inkline/svg";
 import { Pause, Play, RotateCcw, Shuffle } from "lucide-react";
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 
@@ -30,6 +37,7 @@ type Zoom = "1" | "3";
 
 const SCENES: { value: SceneKey; label: string }[] = [
 	{ value: "illustration", label: "插画" },
+	{ value: "portrait", label: "人像" },
 	{ value: "primitives", label: "图元" },
 	{ value: "fills", label: "填充" },
 	{ value: "holes", label: "孔洞" },
@@ -110,12 +118,13 @@ function Pane({ title, note, stats, zoom, scrollRef, onScroll, status, children 
 
 const formatTime = (seconds: number) => seconds.toFixed(2).padStart(5, "0");
 
-/** Rough.js 与 @violet/sketch 同几何、同 seed 的并排对照，含笔、压感、卡通插画与整图时间轴。 */
+/** Rough.js 与 @violetjs/inkline 同几何、同 seed 的并排对照，含笔、压感、插画、人像与整图时间轴。 */
 export function SketchBenchPage() {
 	const [sceneKey, setSceneKey] = useState<SceneKey>("illustration");
-	const [pen, setPen] = useState<PenId>("cartoon");
-	const [hand, setHand] = useState<HandId>("natural");
-	const [fill, setFill] = useState<FillId>("hachure");
+	const [pen, setPen] = useState<PenId>("gpen");
+	const [pressure, setPressure] = useState(() => defaultPressure("gpen"));
+	const [hand, setHand] = useState<HandId>("inking");
+	const [fill, setFill] = useState<FillId>("solid");
 	const [seed, setSeed] = useState(7);
 	const [zoom, setZoom] = useState<Zoom>("1");
 	const [backend, setBackend] = useState<Backend>("svg");
@@ -138,11 +147,23 @@ export function SketchBenchPage() {
 	const clockRef = useRef<HTMLSpanElement>(null);
 	const durationRef = useRef(0);
 
+	const switchPen = (next: PenId) => {
+		setPen(next);
+		setPressure(defaultPressure(next));
+	};
+
+	const applyPreset = (nextPen: PenId, nextHand: HandId, nextFill: FillId) => {
+		switchPen(nextPen);
+		setHand(nextHand);
+		setFill(nextFill);
+	};
+
+	const isArtwork = sceneKey === "illustration" || sceneKey === "portrait";
+
 	const switchScene = (next: SceneKey) => {
 		setSceneKey(next);
-		// 插画默认用卡通；离开插画时卡通退回签字笔，避免普通图元套用色线。
-		if (next === "illustration") setPen("cartoon");
-		else if (pen === "cartoon") setPen("fineliner");
+		if (next === "illustration" || next === "portrait") applyPreset("gpen", "inking", "solid");
+		else if (isArtwork) applyPreset("fineliner", "natural", "hachure");
 	};
 
 	useEffect(() => {
@@ -167,7 +188,8 @@ export function SketchBenchPage() {
 		if (sceneKey === "primitives") return primitivesScene(fill);
 		if (sceneKey === "fills") return fillsScene();
 		if (sceneKey === "holes") return holesScene(fill);
-		if (sceneKey === "illustration") return illustrationScene();
+		if (sceneKey === "illustration" || sceneKey === "portrait")
+			return artworkScene(sceneKey, fill);
 		return mermaid;
 	}, [sceneKey, fill, mermaid]);
 
@@ -183,7 +205,7 @@ export function SketchBenchPage() {
 		const sketchNode = sketchHost.current;
 		if (!scene || !roughNode || !sketchNode) return;
 		const options = { seed, width: STROKE_WIDTH };
-		const style = buildStyle(pen, hand);
+		const style = buildStyle(pen, pressure, hand);
 		let seek: (time: number) => void = () => {};
 		let duration = 0;
 		try {
@@ -237,7 +259,7 @@ export function SketchBenchPage() {
 			next.cancel();
 			if (player.current === next) player.current = null;
 		};
-	}, [scene, pen, hand, seed, backend, mode, zoom]);
+	}, [scene, pen, pressure, hand, seed, backend, mode, zoom]);
 
 	const sync = (from: RefObject<HTMLDivElement | null>, to: RefObject<HTMLDivElement | null>) => {
 		if (syncing.current || !from.current || !to.current) return;
@@ -258,10 +280,9 @@ export function SketchBenchPage() {
 	};
 
 	const ratio = scene ? `${scene.width} / ${scene.height}` : "3 / 2";
-	const pickFill = sceneKey === "primitives" || sceneKey === "holes";
+	const pickFill = sceneKey === "primitives" || sceneKey === "holes" || isArtwork;
 	const penLabel = PENS.find((entry) => entry.value === pen)?.label;
-	const handLabel =
-		pen === "cartoon" ? "" : ` · ${HANDS.find((entry) => entry.value === hand)?.label}`;
+	const handLabel = HANDS.find((entry) => entry.value === hand)?.label;
 
 	return (
 		<div className="mx-auto w-full max-w-360 px-4 pt-8 pb-32 text-foreground sm:px-8">
@@ -282,17 +303,34 @@ export function SketchBenchPage() {
 					<div className="max-w-full overflow-x-auto">
 						<Segmented
 							value={pen}
-							onValueChange={setPen}
-							segments={PENS}
+							onValueChange={switchPen}
+							segments={PENS.map(({ value, label }) => ({ value, label }))}
 							aria-label="笔"
 						/>
+					</div>
+				</Field>
+				<Field label="Pressure">
+					<div className="flex h-9 items-center gap-3">
+						<input
+							type="range"
+							min={0}
+							max={1}
+							step={0.01}
+							value={pressure}
+							aria-label="压感强度"
+							className="h-1 w-32 cursor-pointer accent-foreground"
+							onChange={(event) => setPressure(Number(event.target.value))}
+						/>
+						<span className="w-10 font-mono text-sm tabular-nums">
+							{pressure.toFixed(2)}
+						</span>
 					</div>
 				</Field>
 				<Field label="Hand">
 					<Segmented
 						value={hand}
 						onValueChange={setHand}
-						segments={HANDS.map((entry) => ({ ...entry, disabled: pen === "cartoon" }))}
+						segments={HANDS}
 						aria-label="手法"
 					/>
 				</Field>
@@ -350,7 +388,7 @@ export function SketchBenchPage() {
 			<div className="mt-8 grid gap-8 lg:grid-cols-2">
 				<Pane
 					title="Rough.js"
-					note="线上 Mermaid 配方 · 无压感与动画"
+					note="原线上 Mermaid 配方 · 无压感与动画"
 					stats={roughStats}
 					zoom={zoom}
 					scrollRef={roughScroll}
@@ -360,8 +398,8 @@ export function SketchBenchPage() {
 					<div ref={roughHost} style={{ aspectRatio: ratio }} />
 				</Pane>
 				<Pane
-					title="@violet/sketch"
-					note={`0.2.0 · ${penLabel}${handLabel}`}
+					title="@violetjs/inkline"
+					note={`0.2.0 · ${penLabel} · 压感 ${pressure.toFixed(2)} · ${handLabel}`}
 					stats={sketchStats}
 					zoom={zoom}
 					scrollRef={sketchScroll}
@@ -448,7 +486,7 @@ export function SketchBenchPage() {
 			<p className="mt-6 text-sm text-muted-foreground">
 				两侧使用同一几何、线宽与 seed。耗时为单次生成加 DOM
 				构建，会随设备与负载波动；可重放的基准见
-				<code className="mx-1 font-mono text-xs">packages/sketch/bench</code>
+				<code className="mx-1 font-mono text-xs">packages/inkline/bench</code>
 				。时间轴只作用于本库一侧，暂停、跳转与倒放不重新生成笔画。
 			</p>
 		</div>

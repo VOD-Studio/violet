@@ -1,0 +1,198 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { inkSvg } from "./dom/index.ts";
+import type { Pen } from "./index.ts";
+import { gpen, styles } from "./index.ts";
+
+// G 笔的轮廓是填充出的条带，部分断言依赖这一点
+const inked = { style: { ...styles.draft, pen: gpen } };
+
+function mount(content: string): SVGSVGElement {
+	const container = document.createElement("div");
+	container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">${content}</svg>`;
+	document.body.appendChild(container);
+	return container.firstElementChild as SVGSVGElement;
+}
+
+afterEach(() => {
+	document.body.replaceChildren();
+});
+
+describe("inkSvg", () => {
+	it("keeps transparent label placeholders invisible and leaves definition geometry intact", () => {
+		const svg = mount(`
+			<defs><clipPath id="clip"><rect width="80" height="40"/></clipPath></defs>
+			<mask id="mask"><circle cx="20" cy="20" r="15"/></mask>
+			<rect id="placeholder" width="80" height="40" style="fill:rgba(0,0,0,0);stroke:none"/>
+			<rect id="opacity-placeholder" width="80" height="40" style="fill:red;fill-opacity:0;stroke:none"/>
+			<rect id="empty-label" width="0" height="0" style="fill:black;stroke:none"/>
+			<path d="M0 20L80 20" style="fill:none;stroke:red;clip-path:url(#clip);mask:url(#mask)"/>
+		`);
+		const definitions = svg.querySelector("defs");
+		const mask = svg.querySelector("mask");
+		const placeholder = svg.querySelector("#placeholder");
+		const opacityPlaceholder = svg.querySelector("#opacity-placeholder");
+		const emptyLabel = svg.querySelector("#empty-label");
+		inkSvg(svg);
+		expect(svg.querySelector("defs")).toBe(definitions);
+		expect(svg.querySelector("mask")).toBe(mask);
+		expect(svg.querySelector("#placeholder")).toBe(placeholder);
+		expect(svg.querySelector("#opacity-placeholder")).toBe(opacityPlaceholder);
+		expect(svg.querySelector("#empty-label")).toBe(emptyLabel);
+		const outlined = svg.querySelector("g");
+		expect(outlined?.style.getPropertyValue("clip-path")).toContain("#clip");
+		expect(outlined?.style.getPropertyValue("mask")).toContain("#mask");
+	});
+
+	it("retains one exact marker carrier and applies dashed paint only to the sketch", () => {
+		const originalPath = "M10 30 L130 30 L130 80";
+		const svg = mount(`
+			<marker id="arrow" orient="auto" markerWidth="10" markerHeight="10"><path d="M0 0L10 5L0 10Z"/></marker>
+			<path id="edge" d="${originalPath}" style="fill:none;stroke:rgb(255,0,0);stroke-width:2;stroke-dasharray:5 3;stroke-dashoffset:2;marker-end:url(#arrow)"/>
+		`);
+		const marker = svg.querySelector("marker");
+		inkSvg(svg);
+		expect(svg.querySelector("marker")).toBe(marker);
+		const paths = Array.from(svg.querySelectorAll<SVGPathElement>("#edge > path"));
+		const carrier = paths.find((path) => path.getAttribute("d") === originalPath);
+		const outline = paths.find((path) => path !== carrier);
+		expect(carrier?.style.getPropertyValue("stroke")).toBe("none");
+		expect(Number.parseFloat(carrier?.style.getPropertyValue("stroke-width") ?? "")).toBe(2);
+		expect(carrier?.style.getPropertyValue("marker-end")).toContain("#arrow");
+		expect(outline?.style.getPropertyValue("marker-end")).toBe("none");
+		expect(outline?.style.getPropertyValue("stroke-dasharray")).toBe("5 3");
+		expect(outline?.style.getPropertyValue("stroke-dashoffset")).toBe("2");
+		expect(outline?.style.getPropertyValue("stroke")).not.toBe("none");
+	});
+
+	it("outlines fill-only colored nodes in their fill color without restoring a transparent stroke", () => {
+		const svg = mount(
+			'<circle cx="70" cy="50" r="20" style="fill:rgb(255,0,0);stroke:transparent;opacity:.6;fill-opacity:.7"/>',
+		);
+		inkSvg(svg, inked);
+		const paths = Array.from(svg.querySelectorAll("path"));
+		// 填色一层，G 笔主线与草稿复线各一层；G 笔轮廓是填充出的条带
+		expect(paths.length).toBeGreaterThanOrEqual(3);
+		for (const path of paths) {
+			expect(path.style.getPropertyValue("fill")).toBe("rgb(255, 0, 0)");
+			expect(path.style.getPropertyValue("stroke")).toBe("none");
+			expect(path.style.getPropertyValue("opacity")).toBe("1");
+		}
+		expect(svg.querySelector("g")?.style.getPropertyValue("opacity")).toBe("0.6");
+	});
+
+	it("merges Mermaid's Rough.js fill and doubled outline into one closed sketched node", () => {
+		const svg = mount(`
+			<g class="outer-path">
+				<path id="fill" d="M10 10 L90 10 L90 50 L10 50" stroke="none" style="fill:rgb(238,238,238);stroke:none"/>
+				<path id="outline" d="M10 10 L90 10 M10 10 L90 10 M90 10 L90 50 M90 10 L90 50" fill="none" style="fill:none;stroke:rgb(0,0,255);stroke-width:2"/>
+			</g>
+		`);
+		inkSvg(svg, inked);
+		expect(svg.querySelector("#outline")).toBeNull();
+		const paths = Array.from(svg.querySelectorAll<SVGPathElement>("#fill > path"));
+		const [area, ...ink] = paths;
+		expect(area.style.getPropertyValue("fill")).toBe("rgb(238, 238, 238)");
+		expect(area.getAttribute("d")).toMatch(/Z$/);
+		expect(ink.length).toBeGreaterThanOrEqual(2);
+		for (const path of ink) expect(path.style.getPropertyValue("fill")).toBe("rgb(0, 0, 255)");
+	});
+
+	it("keeps tight text backings unframed while still sketching their solid fill", () => {
+		const svg = mount(
+			'<g><rect x="20" y="30" width="54" height="20" style="fill:#fff;stroke:none"/><text x="22" y="46">Label</text></g>',
+		);
+		const rect = svg.querySelector("rect");
+		const text = svg.querySelector("text");
+		Object.defineProperty(rect, "getBBox", {
+			value: () => ({ x: 20, y: 30, width: 54, height: 20 }),
+		});
+		Object.defineProperty(text, "getBBox", {
+			value: () => ({ x: 22, y: 32, width: 50, height: 16 }),
+		});
+		inkSvg(svg);
+		const paths = Array.from(svg.querySelectorAll("path"));
+		expect(paths[0].style.getPropertyValue("stroke")).toBe("none");
+		expect(svg.querySelector("text")).toBe(text);
+	});
+
+	it("keeps textPath lettering on an exact invisible centerline and retains accessible names", () => {
+		const d = "M10 30 C40 0 70 0 100 30";
+		const svg = mount(`
+			<path id="curve" d="${d}" transform="translate(5 10)" aria-label="Curve" style="fill:none;stroke:#234"><title>Curve description</title></path>
+			<text><textPath href="#curve">Curved label</textPath></text>
+		`);
+		const text = svg.querySelector("text");
+		inkSvg(svg);
+		const textPath = svg.querySelector("textPath");
+		const referencedId = textPath?.getAttribute("href")?.slice(1);
+		const centerline = document.getElementById(referencedId ?? "");
+		expect(centerline?.localName).toBe("path");
+		expect(centerline?.getAttribute("d")).toBe(d);
+		expect(centerline?.parentElement?.getAttribute("transform")).toBe("translate(5 10)");
+		expect(svg.querySelector("#curve")?.getAttribute("aria-label")).toBe("Curve");
+		expect(svg.querySelector("#curve title")?.textContent).toBe("Curve description");
+		expect(svg.querySelector("text")).toBe(text);
+	});
+
+	it("uses the same pen geometry after rerendering or changing only theme colors", () => {
+		const light = mount(
+			'<circle cx="60" cy="50" r="20" style="fill:#fff;stroke:#123"/><line x1="10" y1="100" x2="120" y2="100" style="fill:none;stroke:#123"/>',
+		);
+		const repeated = light.cloneNode(true) as SVGSVGElement;
+		const dark = mount(
+			'<circle cx="60" cy="50" r="20" style="fill:#123;stroke:#fff"/><line x1="10" y1="100" x2="120" y2="100" style="fill:none;stroke:#fff"/>',
+		);
+		document.body.appendChild(repeated);
+		for (const svg of [light, repeated, dark]) inkSvg(svg);
+		const lightPaths = Array.from(light.querySelectorAll("path"), (path) =>
+			path.getAttribute("d"),
+		);
+		expect(
+			Array.from(repeated.querySelectorAll("path"), (path) => path.getAttribute("d")),
+		).toEqual(lightPaths);
+		expect(Array.from(dark.querySelectorAll("path"), (path) => path.getAttribute("d"))).toEqual(
+			lightPaths,
+		);
+	});
+
+	it("draws outlines as native strokes with the default fineliner style", () => {
+		const svg = mount(
+			'<rect x="10" y="10" width="80" height="40" style="fill:none;stroke:rgb(0,0,0)"/>',
+		);
+		inkSvg(svg);
+		const [outline] = Array.from(svg.querySelectorAll<SVGPathElement>("path"));
+		expect(outline.style.getPropertyValue("fill")).toBe("none");
+		expect(outline.style.getPropertyValue("stroke")).toBe("rgb(0, 0, 0)");
+		expect(
+			Number.parseFloat(outline.style.getPropertyValue("stroke-width")),
+		).toBeGreaterThanOrEqual(1.6);
+	});
+
+	it("skips shapes it has already converted, so calling it twice draws one layer", () => {
+		const svg = mount(
+			'<rect x="10" y="10" width="80" height="40" style="fill:rgb(200,200,200);stroke:rgb(0,0,0)"/><line x1="10" y1="80" x2="90" y2="80" style="stroke:rgb(0,0,0)"/>',
+		);
+		inkSvg(svg, inked);
+		const once = svg.innerHTML;
+		inkSvg(svg, inked);
+		expect(svg.innerHTML).toBe(once);
+		expect(svg.querySelectorAll("[data-inkline]")).toHaveLength(2);
+	});
+
+	it("inks thick lines with thickPen and thinner lines with the style's pen", () => {
+		const used: string[] = [];
+		const spy = (id: string): Pen => ({
+			id,
+			ink() {
+				used.push(id);
+				return [];
+			},
+		});
+		const svg = mount(
+			'<line x1="10" y1="20" x2="200" y2="20" style="stroke:rgb(0,0,0);stroke-width:8"/><line x1="10" y1="60" x2="200" y2="60" style="stroke:rgb(0,0,0);stroke-width:1"/>',
+		);
+		inkSvg(svg, { style: { ...styles.natural, pen: spy("base") }, thickPen: spy("thick") });
+		expect(used).toContain("thick");
+		expect(used).toContain("base");
+	});
+});

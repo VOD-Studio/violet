@@ -47,6 +47,32 @@ type BlockCount struct {
 	BlockID string
 	// Count 该块上的批注数量（仅 depth=0 顶层批注）
 	Count int64
+	// Authors 该块批注的评论者，按首次批注先后去重，至多 BlockAuthorLimit 位
+	Authors []BlockAuthor
+	// Ranges 该块各条批注划线的块内字符区间，按批注先后排列，至多 BlockRangeLimit 条
+	Ranges []BlockRange
+}
+
+// BlockRangeLimit 每个批注块返回的划线区间上限；超出的批注仍计入 Count，只是不再单独高亮。
+const BlockRangeLimit = 20
+
+// BlockRange 批注划线在块内的字符区间
+type BlockRange struct {
+	// Start 起始偏移（块内字符位，0-based）
+	Start int
+	// End 结束偏移（块内字符位，exclusive）
+	End int
+}
+
+// BlockAuthorLimit 每个批注块返回的评论者上限；前端头像组只需展示前几位。
+const BlockAuthorLimit = 5
+
+// BlockAuthor 批注块上的评论者展示信息
+type BlockAuthor struct {
+	// Name 评论者展示名（评论发出时的快照）
+	Name string
+	// AvatarURL 评论者头像地址，未设置头像时为空串
+	AvatarURL string
 }
 
 // PostCommentStat 按文章聚合的评论统计（MCP comment_stats 读模型）。

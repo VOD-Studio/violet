@@ -11,7 +11,6 @@ import { type CSSProperties, lazy, type ReactNode, Suspense } from "react";
 import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { AnchoredHeading } from "@/shared/ui/anchored-heading";
-
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import type { ArticleContentContext } from "../../article-embeds/types";
 import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
@@ -19,6 +18,7 @@ import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // DiagramBlock/renderMermaid，把 mermaid 依赖树拉进文章正文主 chunk；直连仅注册
 // 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
 import { diagramRenderers } from "../../diagram/renderers";
+import { SketchFrame } from "../../sketch-frame/SketchFrame";
 import { proseElements } from "./prose-elements";
 import { createRichCodeRenderer } from "./rich-code-renderer";
 
@@ -141,7 +141,7 @@ export const markdownComponents: Components = {
 			id={id}
 			style={style}
 			className={cn(
-				"mb-4 mt-10 border-b border-edge-hairline pb-2 text-2xl font-bold tracking-tight first:mt-0",
+				"article-h2 mb-4 mt-12 text-2xl font-bold tracking-wide first:mt-0",
 				className,
 			)}
 		>
@@ -153,7 +153,10 @@ export const markdownComponents: Components = {
 			as="h3"
 			id={id}
 			style={style}
-			className={cn("mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0", className)}
+			className={cn(
+				"mb-3 mt-9 text-xl font-semibold tracking-wide first:mt-0 before:mr-2 before:font-mono before:text-primary/60 before:content-['#']",
+				className,
+			)}
 		>
 			{children}
 		</ProseHeading>
@@ -169,20 +172,28 @@ export const markdownComponents: Components = {
 		</ProseHeading>
 	),
 	p: ({ children, style, className, id }) => (
-		<p id={id} style={style} className={cn("my-5 text-foreground/90", className)}>
+		<p id={id} style={style} className={cn("my-5 text-foreground/90 text-justify", className)}>
 			{children}
 		</p>
 	),
-	strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+	strong: ({ children }) => (
+		<strong className="bg-linear-to-t from-primary/20 to-transparent to-45% bg-no-repeat font-semibold text-foreground">
+			{children}
+		</strong>
+	),
 	em: ({ children }) => <em className="italic">{children}</em>,
 	del: ({ children }) => <del className="text-muted-foreground line-through">{children}</del>,
-	hr: () => <hr className="my-8 border-edge-hairline" />,
+	hr: () => <hr className="article-rule" />,
 	table: ({ children }) => (
-		<div className="my-6 overflow-x-auto">
-			<table className="w-full border-collapse text-sm">{children}</table>
-		</div>
+		<SketchFrame className="my-8" radius={18}>
+			<div className="overflow-x-auto rounded-2xl bg-card/60 backdrop-blur-sm">
+				<table className="w-full border-collapse text-[0.9375em] leading-relaxed">
+					{children}
+				</table>
+			</div>
+		</SketchFrame>
 	),
-	thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
+	thead: ({ children }) => <thead className="bg-primary/8">{children}</thead>,
 	// HTML 路径：行内公式（编辑器产出的语义化标记，浏览时渲染）
 	span: ({ children, style, id, ...props }) => {
 		const p = props as Record<string, unknown>;
@@ -285,14 +296,25 @@ export const markdownComponents: Components = {
 		<img
 			src={typeof src === "string" ? contentImageUrl(src, { width: 1200 }) : undefined}
 			alt={alt ?? ""}
-			className="my-6 max-w-full rounded-lg"
+			className="my-8 max-w-full rounded-2xl ring-1 ring-border shadow-[0_4px_24px_rgb(0_0_0/0.05)]"
 			loading="lazy"
 		/>
 	),
 };
 
-/** 为单篇内容注入可选人物档案，同时复用其余稳定节点映射。 */
+const contextComponents = new WeakMap<ArticleContentContext, Components>();
+
+/**
+ * 为单篇内容注入可选人物档案，同时复用其余稳定节点映射。
+ *
+ * @remarks 按 context 对象缓存：每次新建 code 渲染器会让 React 把全部代码块当作新组件类型重挂载。
+ */
 export function createMarkdownComponents(context?: ArticleContentContext): Components {
 	if (!context) return markdownComponents;
-	return { ...markdownComponents, code: createRichCodeRenderer(context) };
+	let components = contextComponents.get(context);
+	if (!components) {
+		components = { ...markdownComponents, code: createRichCodeRenderer(context) };
+		contextComponents.set(context, components);
+	}
+	return components;
 }

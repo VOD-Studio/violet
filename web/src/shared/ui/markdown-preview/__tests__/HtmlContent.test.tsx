@@ -7,6 +7,7 @@
  */
 import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { createMarkdownComponents } from "../components/markdown-components";
 import { HtmlContent } from "../HtmlContent";
 
 // 屏蔽异步 shiki：CodeBlock 走降级 pre/code，便于同步断言代码块结构
@@ -66,10 +67,10 @@ describe("HtmlContent", () => {
 		const html = "<pre><code>const a = 1;\nconst b = 2;</code></pre>";
 		const { container } = render(<HtmlContent html={html} />);
 
-		// 应有围栏代码块外层容器，而非行内代码的 bg-muted 样式
-		expect(container.querySelector(".bg-\\[\\#24292e\\]")).toBeTruthy();
+		// 应有围栏代码块外层卡片，而非行内代码的 bg-primary/10 胶囊样式
+		expect(container.querySelector(".bg-card")).toBeTruthy();
 		expect(container.querySelector("pre")).toBeTruthy();
-		expect(container.querySelector(".bg-muted")).toBeNull();
+		expect(container.querySelector("code.bg-primary\\/10")).toBeNull();
 	});
 
 	it("正文图片走 w=1200 缩略(webp),原图只在预览时加载", () => {
@@ -171,5 +172,21 @@ describe("HtmlContent 图块（流程图，浏览时渲染）", () => {
 
 		expect(container.querySelector('div[role="img"]')).toBeNull();
 		expect(container.querySelector("pre")?.textContent).toContain("graph TD");
+	});
+
+	it("仅 className 变化时复用已渲染节点，不重建 DOM", () => {
+		const html = "<p>stable</p><ul><li>a</li></ul>";
+		const { container, rerender } = render(<HtmlContent html={html} />);
+		const paragraph = container.querySelector("p");
+		rerender(<HtmlContent html={html} className="x" />);
+		expect(container.querySelector("p")).toBe(paragraph);
+	});
+
+	it("同一 context 复用同一组件映射，避免代码块被重挂载", () => {
+		const context = { profile: { name: "a", href: "/persona" } };
+		expect(createMarkdownComponents(context)).toBe(createMarkdownComponents(context));
+		expect(createMarkdownComponents({ ...context })).not.toBe(
+			createMarkdownComponents(context),
+		);
 	});
 });

@@ -15,6 +15,7 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { RuaRouteTransition } from "@widgets/PersonaMotion";
+import SiteBackdrop from "@widgets/SiteBackdrop";
 import { cn } from "cn";
 import { useEffect } from "react";
 import { ApiDocsDialog } from "@/features/api-docs";
@@ -121,6 +122,9 @@ function RootComponent() {
 	const isLabRoute = pathname.startsWith("/lab");
 	const shellDialect =
 		isProfileRoute || isChatRoute ? "dialect-tool" : isLabRoute ? null : "dialect-public";
+	// 组件库文档的示例需要中性画布，星图点缀只铺在公开内容页
+	const isUiDocsRoute = pathname === "/ui" || pathname.startsWith("/ui/");
+	const showBackdrop = shellDialect === "dialect-public" && !isUiDocsRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -143,8 +147,11 @@ function RootComponent() {
 						// 公开壳层挂 Public Content 方言；/profile 与 /chat 挂 Tool 方言；
 						// /admin 独立布局不经过这里
 						shellDialect,
+						// 独立层叠上下文让背景点缀的负 z-index 落在壳层画布之上
+						showBackdrop && "isolate",
 					)}
 				>
+					{showBackdrop && <SiteBackdrop />}
 					<AnnouncementBar />
 					<Header isAuthenticated={auth.isAuthenticated} />
 					<main

@@ -9,7 +9,11 @@
  * 通过 isSelectionInUnannotatableContainer 在 selectionToAnchor 入口拦截。
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { isSelectionInUnannotatableContainer, selectionToAnchor } from "../selection-to-anchor";
+import {
+	closestAnnotatableBlock,
+	isSelectionInUnannotatableContainer,
+	selectionToAnchor,
+} from "../selection-to-anchor";
 
 /** 在 root 内构造 DOM 并模拟选中 [startNode, startOff] → [endNode, endOff]。 */
 function selectRange(startNode: Node, startOff: number, endNode: Node, endOff: number) {
@@ -165,5 +169,24 @@ describe("isSelectionInUnannotatableContainer", () => {
 		const inline = byId("inline-math-text");
 		selectRange(firstChild(inline), 0, firstChild(inline), 1);
 		expect(isSelectionInUnannotatableContainer(currentRange())).toBe(false);
+	});
+});
+
+describe("closestAnnotatableBlock", () => {
+	it("返回悬停目标所在的段落，正文外与代码块内返回 null", () => {
+		const root = document.createElement("main");
+		root.innerHTML = "<p>para <strong>bold</strong></p><pre><code>code</code></pre>";
+		const outside = document.createElement("p");
+		document.body.append(root, outside);
+		try {
+			const paragraph = root.querySelector("p") as HTMLElement;
+			expect(closestAnnotatableBlock(root.querySelector("strong"), root)).toBe(paragraph);
+			expect(closestAnnotatableBlock(root.querySelector("code"), root)).toBeNull();
+			expect(closestAnnotatableBlock(outside, root)).toBeNull();
+			expect(closestAnnotatableBlock(null, root)).toBeNull();
+		} finally {
+			root.remove();
+			outside.remove();
+		}
 	});
 });

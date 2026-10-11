@@ -12,6 +12,7 @@
 import type { Element, Nodes } from "hast";
 import { raw } from "hast-util-raw";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { Slugger } from "@/shared/lib/slug";
 import type { ArticleContentContext } from "../article-embeds/types";
@@ -65,6 +66,31 @@ function ensureHeadingIds(tree: Nodes): Nodes {
 	return tree;
 }
 
+/** 解析结果缓存容量；命中省去一次完整的解析、清洗与标题 id 补全。 */
+const PARSED_CACHE_LIMIT = 12;
+const parsedCache = new Map<string, Nodes>();
+
+/**
+ * HTML → 已清洗且标题带 id 的 hast，按 html 全文缓存（LRU）。
+ *
+ * @remarks 缓存的树只读：toJsxRuntime 不修改节点，调用方不得就地改写。
+ */
+function parseArticleHtml(html: string): Nodes {
+	const hit = parsedCache.get(html);
+	if (hit) {
+		parsedCache.delete(html);
+		parsedCache.set(html, hit);
+		return hit;
+	}
+	const tree = ensureHeadingIds(sanitizeContent(htmlToHast(html)));
+	parsedCache.set(html, tree);
+	if (parsedCache.size > PARSED_CACHE_LIMIT) {
+		const oldest = parsedCache.keys().next().value;
+		if (oldest !== undefined) parsedCache.delete(oldest);
+	}
+	return tree;
+}
+
 export interface HtmlContentProps {
 	/** HTML 字符串 */
 	html: string;
@@ -75,15 +101,15 @@ export interface HtmlContentProps {
 }
 
 export function HtmlContent({ html, className, context }: HtmlContentProps) {
-	const cleaned = ensureHeadingIds(sanitizeContent(htmlToHast(html)));
-	return (
-		<div className={className}>
-			{toJsxRuntime(cleaned, {
+	const content = useMemo(
+		() =>
+			toJsxRuntime(parseArticleHtml(html), {
 				Fragment,
 				jsx,
 				jsxs,
 				components: createMarkdownComponents(context),
-			})}
-		</div>
+			}),
+		[html, context],
 	);
+	return <div className={className}>{content}</div>;
 }

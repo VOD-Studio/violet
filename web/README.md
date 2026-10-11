@@ -66,23 +66,31 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 用户资料 DTO 定义在 `entities/user/model/types.ts`；`entities/user/api/keys.ts` 提供按用户名区分的公开资料查询键 `userKeys.profile(username)`。
 
+移动端导航展开时是居中的短胶囊，只有当前入口显示文字；透镜边界与图标连续过渡，旧标签先退出，新标签随后出现，鼠标靠近相邻项时有轻微吸附。动画交给浏览器原生执行，不由 JS 逐帧更新。向下滚动收成右侧圆钮，向上滚动或点击恢复居中。访问快捷入口以外的页面时，最后一项和收起圆钮使用当前菜单的图标，最后一项同时显示菜单名称，点击仍展开全部导航。「更多」保留原有面板形变、模糊渐显与逐项展开动画。首页、博客、系列、图集四个快捷入口不启动整页截图转场；其余链接沿用原转场。减弱动态时直接切换，聊天页隐藏以避开输入栏。
+
+滑块在明暗主题下均使用白色表面与深色文字，轻微软影随透镜轮廓移动。阴影绘制在裁剪层外，展开轨道不裁剪阴影与焦点环；「更多」面板维持原有裁剪和动效。
+
+## 首页时间轴
+
+`widgets/HomeExperience` 的发布积累区在宽屏显示连续单轴，窄屏按季节分行。今日刻度使用完整的「今天」标注，与紫色发布节点区分；当天有发布时节点与今日位置对齐。没有当天发布且聚合窗口尚未结束时，节点按已过去的窗口部分定位，不借用未来空白日期计算中点；桌面与分季视图共用这一时间定位规则。
+
 ## 文章编辑与阅读
 
 源码模式与富文本维护同一份文档，保存和 `.md` 导出无需先退出源码。编辑器支持脚注的新建、正文编辑与重复引用；普通表格保留转义和列对齐，合并单元格以 HTML 表格载体往返。阅读端保留安全的链接锚点、列表编号、文本样式与脚注回链，HTML 和 Markdown 的 Mermaid、可运行代码、任务列表及高亮共用阅读组件。语法和格式边界见[编辑器手册](../docs/editor-syntax.md)。
 
 正文上下标使用 `<sub>/<sup>`，工具栏可互相切换；GitHub 五类提示块和原生折叠块支持 Slash 插入、正文编辑与源码往返。折叠内容保存默认展开状态，阅读端保留原生键盘交互。HTML 载体内部包含脚注时，导出整篇 HTML 保留统一引用与回链；其他文档继续使用 Markdown。已知 Markdown 来源显式选择解析链路，版本预览和文章目录支持混合 HTML，不再由正文里任意一个标签决定整篇格式。
 
-Mermaid 图块统一使用手写字体与 Rough.js 笔触，编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
+Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、草稿手法），编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
 
 ## 手绘绘图库
 
-[`@violet/sketch`](packages/sketch/README.md) 位于 `packages/sketch/`，不依赖 React、Mermaid 或 Rough.js。正式文章渲染链路仍使用 Rough.js。
+[`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染；Rough.js 只留给实验室对照页与基准脚本。
 
-`/lab/sketch` 并排对照 Rough.js 与本库：同一几何与 seed，可切换卡通插画、基础图元、七种填充、孔洞规则与真实 Mermaid 布局，以及五种笔（签字笔、轻压感签字笔、压感钢笔、马克笔、卡通）、三档手法、1×/3× 缩放和 SVG/Canvas 后端。控制条提供整图时间轴：播放、暂停、重播、拖动进度、顺序/并行/交错编排与变速。
+`/lab/sketch` 并排对照 Rough.js 与本库：同一几何、线宽与 seed，可切换咖啡少女插画、人像、基础图元、填充、孔洞规则与真实 Mermaid 布局，并调节笔、压感、手法、1×/3× 缩放和 SVG/Canvas 后端。插画保留 1088×1445 的比例、微笑、眼镜、白花发饰、猫咪杯与手写 “Good morning”；采用少量角色色面、连续中心线与分级线宽，短唇线及瞳孔等点状细节使用独立实墨区域，不以逐色像素碎片叠加还原。插画播放先完成轮廓与细节，再上色；顺序、并行、交错均在阶段内编排，色面在渲染时始终位于线稿下方。人像去掉截图工具栏与边框，以较细的明暗色面保留五官、眼镜、手势与衣褶，沿用原有播放顺序。两种画稿默认 G 笔勾线与实色填充，可切换淡彩；均为矢量，不嵌入位图。控制条提供整图时间轴：播放、暂停、重播、拖动进度、顺序/并行/交错编排与变速。
 
 ## 推文组件包
 
-[`@violet/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
+[`@violetjs/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
 
 本站的文章嵌入、已保存 X 快照、`/tweets` 时间线和详情共用该包；多张竖图按 X 原帖的方式横向滚动展示，点击仍打开本站灯箱；站内互动与权限由 `features/tweets` 管理，同源取数边界位于 `src/shared/server/tweet-reference.ts`。
 

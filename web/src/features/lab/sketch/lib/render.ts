@@ -1,6 +1,7 @@
 import type { BenchScene } from "@features/lab/sketch/model/scenes";
 import {
 	createSchedule,
+	createWashFill,
 	type Drawing,
 	draw,
 	fills,
@@ -8,8 +9,8 @@ import {
 	type Schedule,
 	type ScheduleMode,
 	type Style,
-} from "@violet/sketch";
-import { mountSvg, pathData } from "@violet/sketch/svg";
+} from "@violetjs/inkline";
+import { mountSvg, pathData } from "@violetjs/inkline/svg";
 import rough from "roughjs";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -41,9 +42,9 @@ function measure(svg: SVGSVGElement, ms: number): PaneStats {
 }
 
 /**
- * 用站点 Mermaid 线上配方渲染 Rough.js 对照。
+ * 用站点改用本库之前的 Mermaid 配方渲染 Rough.js 对照。
  *
- * @remarks 与线上一致：roughness 2.2、bowing 1.2、双笔复画；同一 seed 按图元序号偏移。
+ * @remarks 配方同旧版：roughness 2.2、bowing 1.2、双笔复画；同一 seed 按图元序号偏移。
  */
 export function renderRough(scene: BenchScene, palette: Palette, { seed, width }: Options) {
 	const started = performance.now();
@@ -69,13 +70,14 @@ export function renderRough(scene: BenchScene, palette: Palette, { seed, width }
 					preserveVertices: true,
 					disableMultiStroke: false,
 					fillShapeRoughnessGain: 0,
-					strokeWidth: width,
+					strokeWidth: item.lineWidth ?? width,
 					stroke:
 						item.strokeRole === "none"
 							? "none"
 							: color(palette, item.strokeRole ?? "ink"),
 					fill: item.fillRole ? color(palette, item.fillRole) : undefined,
-					fillStyle: item.fill ?? "solid",
+					// 淡彩没有 Rough.js 对应画法，按实色对照
+					fillStyle: item.fill === "wash" || !item.fill ? "solid" : item.fill,
 				}),
 			);
 		if (item.label) {
@@ -95,6 +97,8 @@ export function renderRough(scene: BenchScene, palette: Palette, { seed, width }
 	return { svg, stats: measure(svg, performance.now() - started) };
 }
 
+const washFill = createWashFill();
+
 /** 按所选风格生成本库结果；图元的 fill 覆盖风格的默认填充。 */
 export function drawSketch(scene: BenchScene, style: Style, { seed, width }: Options): Drawing {
 	return draw(
@@ -103,11 +107,34 @@ export function drawSketch(scene: BenchScene, style: Style, { seed, width }: Opt
 			height: scene.height,
 			items: scene.items.map(({ fill, ...item }) => ({
 				...item,
-				style: fill ? { ...style, fill: fills[fill] } : undefined,
+				style: fill
+					? { ...style, fill: fill === "wash" ? washFill : fills[fill] }
+					: undefined,
 			})),
 		},
 		{ style, seed, width },
 	);
+}
+
+function scheduleScene(scene: BenchScene, drawing: Drawing, mode: ScheduleMode): Schedule {
+	if (!scene.animationPhases) return createSchedule(drawing, { mode });
+
+	const start = new Float32Array(drawing.items.length);
+	const end = new Float32Array(drawing.items.length);
+	let duration = 0;
+	for (const indices of scene.animationPhases) {
+		if (indices.length === 0) continue;
+		const phase = createSchedule(
+			{ ...drawing, items: indices.map((index) => drawing.items[index]) },
+			{ mode },
+		);
+		indices.forEach((index, position) => {
+			start[index] = duration + phase.start[position];
+			end[index] = duration + phase.end[position];
+		});
+		duration += phase.duration;
+	}
+	return { mode, start, end, duration };
 }
 
 export interface SketchSvgResult {
@@ -127,7 +154,7 @@ export function renderSketchSvg(
 ): SketchSvgResult {
 	const started = performance.now();
 	const drawing = drawSketch(scene, style, options);
-	const schedule = createSchedule(drawing, { mode });
+	const schedule = scheduleScene(scene, drawing, mode);
 	const svg = mountSvg(drawing, palette, { idPrefix: "bench", schedule });
 	return { svg, drawing, schedule, stats: measure(svg, performance.now() - started) };
 }
@@ -142,7 +169,7 @@ export function prepareSketchCanvas(
 ) {
 	const started = performance.now();
 	const drawing = drawSketch(scene, style, options);
-	const schedule = createSchedule(drawing, { mode });
+	const schedule = scheduleScene(scene, drawing, mode);
 	const generateMs = performance.now() - started;
 	const stats = measure(mountSvg(drawing, palette, { idPrefix: "stat" }), generateMs);
 	return { drawing, schedule, stats };

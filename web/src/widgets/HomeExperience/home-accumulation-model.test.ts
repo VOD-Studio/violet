@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	assignPointsToSegments,
 	buildAccumulationTimeline,
 	PUBLICATION_MARKER_MAX_SIZE,
 	PUBLICATION_MARKER_MIN_SIZE,
@@ -113,5 +114,85 @@ describe("buildAccumulationTimeline", () => {
 			"article:1",
 			"article:2",
 		]);
+	});
+});
+
+describe("今日发布", () => {
+	it("当天发布的节点吸附到今日刻度并标记最新为今天", () => {
+		const today = Date.UTC(2026, 9, 10);
+		const timeline = buildAccumulationTimeline(
+			[publication(today, 0), publication(Date.UTC(2026, 8, 1), 1)],
+			7,
+			new Date("2026-10-10T08:00:00Z"),
+		);
+		const todayPoint = timeline.points.find((point) => point.includesToday);
+
+		expect(timeline.latestIsToday).toBe(true);
+		expect(todayPoint?.position).toBe(timeline.todayPosition);
+		expect(timeline.points.filter((point) => point.includesToday)).toHaveLength(1);
+	});
+
+	it("今天没有发布时不吸附也不标记", () => {
+		const timeline = buildAccumulationTimeline(
+			[publication(Date.UTC(2026, 9, 8), 0)],
+			7,
+			new Date("2026-10-10T08:00:00Z"),
+		);
+
+		expect(timeline.latestIsToday).toBe(false);
+		expect(timeline.points.some((point) => point.includesToday)).toBe(false);
+		expect(timeline.todayPosition).toBeLessThan(100);
+	});
+
+	it("尚未结束的聚合窗口不会把历史文章排到今天之后", () => {
+		const timeline = buildAccumulationTimeline(
+			[publication(Date.UTC(2026, 9, 10), 0)],
+			7,
+			new Date("2026-10-11T12:00:00Z"),
+		);
+		expect(timeline.points[0].position).toBeLessThan(timeline.todayPosition);
+		expect(timeline.points[0].includesToday).toBe(false);
+
+		const current = timeline.seasonSegments[timeline.seasonSegments.length - 1];
+		const grouped = assignPointsToSegments(
+			timeline.points,
+			timeline.seasonSegments,
+			timeline.todayAt,
+		);
+		const todayRatio =
+			((timeline.todayAt + DAY_IN_MILLISECONDS / 2 - current.startsAt) /
+				(current.endsAt - current.startsAt)) *
+			100;
+		expect(grouped.get(current.key)?.[0].position).toBeLessThan(todayRatio);
+	});
+});
+
+describe("季节分段", () => {
+	it("按连续同季合并并把全部节点归入对应季节", () => {
+		const timeline = buildAccumulationTimeline(
+			[
+				publication(Date.UTC(2025, 10, 5), 0),
+				publication(Date.UTC(2026, 0, 15), 1),
+				publication(Date.UTC(2026, 9, 10), 2),
+			],
+			7,
+			new Date("2026-10-10T08:00:00Z"),
+		);
+		const grouped = assignPointsToSegments(
+			timeline.points,
+			timeline.seasonSegments,
+			timeline.todayAt,
+		);
+
+		expect(timeline.seasonSegments.map((segment) => segment.name)).toEqual([
+			"autumn",
+			"winter",
+			"spring",
+			"summer",
+			"autumn",
+		]);
+		expect(timeline.seasonSegments[1]?.yearLabel).toBe("2025–26");
+		expect([...grouped.values()].flat()).toHaveLength(timeline.points.length);
+		expect(timeline.seasonSegments.map((segment) => segment.count)).toEqual([1, 1, 0, 0, 1]);
 	});
 });

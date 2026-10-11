@@ -2,8 +2,8 @@ import { useSessionStore } from "@shared/api/session";
 import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
+import HeaderIsland from "./HeaderIsland";
 import HeaderLogo from "./HeaderLogo";
-import HeaderMobile from "./HeaderMobile";
 import HeaderNav from "./HeaderNav";
 
 interface HeaderProps {
@@ -41,13 +41,14 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 					<HeaderNav />
 				</div>
 
-				{/* 右段：工具与鉴权操作胶囊（内嵌移动端抽屉触发器） */}
+				{/* 右段：工具与鉴权操作胶囊 */}
 				<div className="flex shrink-0 items-center justify-end">
-					<HeaderActions user={user}>
-						<HeaderMobile />
-					</HeaderActions>
+					<HeaderActions user={user} />
 				</div>
 			</div>
+
+			{/* 移动端底部灵动岛导航（portal 到 body，lg 以上隐藏） */}
+			<HeaderIsland />
 		</header>
 	);
 };

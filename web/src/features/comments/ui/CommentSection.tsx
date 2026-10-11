@@ -12,13 +12,13 @@
  * 每页 20 条。回复走 useReplies 按需拉（comment-config 内懒加载）。
  */
 import { useMe } from "@features/auth/api/queries";
+import { InlineLogin } from "@features/auth/ui/InlineLogin";
 import { fetchComments } from "@features/comments/api/queries";
-import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { CommentList, CommentSection as CommentSectionShell } from "@shared/ui/comment-section";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Button } from "@violet/ui";
-import { LogIn } from "lucide-react";
-import { useMemo } from "react";
+import { Button, GithubIcon, GoogleIcon } from "@violet/ui";
+import { ChevronDown } from "lucide-react";
+import { useMemo, useState } from "react";
 import { CommentForm } from "./CommentForm";
 import { buildArticleCommentConfig } from "./comment-config";
 import { ReactionProvider } from "./ReactionProvider";
@@ -34,7 +34,6 @@ export interface CommentSectionProps {
 export function CommentSection({ postId }: CommentSectionProps) {
 	const me = useMe();
 	const isLoggedIn = !!me.data;
-	const openLogin = useLoginDialogStore((s) => s.open);
 
 	// 滚动加载顶层评论：type=free（仅自由评论）+ top_level=true（仅 depth=0）。
 	// 回复走 useReplies 按需拉，避免 1000×1000 量级一次性拉崩。
@@ -67,19 +66,18 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
 	return (
 		<CommentSectionShell
-			title={`评论 (${total})`}
-			form={<CommentForm postId={postId} isLoggedIn={isLoggedIn} />}
+			title="评论"
+			count={isLoggedIn ? total : undefined}
+			form={
+				isLoggedIn ? (
+					<CommentForm postId={postId} isLoggedIn />
+				) : (
+					<AnonymousComposer postId={postId} />
+				)
+			}
 			isLoggedIn={isLoggedIn}
 			blackhole
-			banner={
-				<div className="mb-6 flex items-center justify-between rounded-lg border border-edge-hairline bg-muted/30 px-4 py-3">
-					<p className="text-sm text-muted-foreground">登录后查看评论并参与完整讨论</p>
-					<Button variant="outline" size="sm" onClick={() => openLogin()}>
-						<LogIn className="size-4" />
-						登录
-					</Button>
-				</div>
-			}
+			banner={<JoinDiscussionCard />}
 		>
 			<ReactionProvider commentIds={commentIds}>
 				<CommentList
@@ -92,6 +90,72 @@ export function CommentSection({ postId }: CommentSectionProps) {
 				/>
 			</ReactionProvider>
 		</CommentSectionShell>
+	);
+}
+
+/** 未登录引导：登录区就地展开，不弹窗；登录成功后 me 查询刷新，评论区自动切换为已登录视图 */
+function JoinDiscussionCard() {
+	const [open, setOpen] = useState(false);
+	return (
+		<div className="mb-4 rounded-2xl bg-primary/6 px-5 py-4">
+			<div className="flex items-center gap-4">
+				<div className="flex shrink-0 -space-x-2" aria-hidden>
+					<span className="flex size-9 items-center justify-center rounded-full bg-background ring-2 ring-primary/6">
+						<GithubIcon className="size-4" />
+					</span>
+					<span className="flex size-9 items-center justify-center rounded-full bg-background ring-2 ring-primary/6">
+						<GoogleIcon className="size-4" />
+					</span>
+				</div>
+				<div className="min-w-0 flex-1">
+					<p className="text-sm font-medium text-foreground">加入讨论</p>
+					<p className="text-xs text-muted-foreground">
+						登录后可查看全部评论，并参与完整讨论
+					</p>
+				</div>
+				{!open && (
+					<Button size="sm" onClick={() => setOpen(true)}>
+						登录
+					</Button>
+				)}
+			</div>
+			{open && (
+				<InlineLogin
+					className="annotation-pop mt-4 bg-background/60"
+					onSuccess={() => setOpen(false)}
+				/>
+			)}
+		</div>
+	);
+}
+
+/** 匿名留言：默认收起，展开后才出现昵称、邮箱与验证码，避免登录引导旁堆一屏表单 */
+function AnonymousComposer({ postId }: { postId: string }) {
+	const [open, setOpen] = useState(false);
+	return (
+		<div>
+			<button
+				type="button"
+				onClick={() => setOpen((v) => !v)}
+				aria-expanded={open}
+				className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+			>
+				不想登录？匿名留言
+				<ChevronDown
+					className={`size-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+				/>
+			</button>
+			<div
+				className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+			>
+				{/* -m-1 p-1：折叠需要 overflow-hidden，给聚焦环留 4px 外扩空间，否则输入框的光环会被裁掉 */}
+				<div className="-m-1 overflow-hidden p-1">
+					<div className="pt-3">
+						<CommentForm postId={postId} isLoggedIn={false} />
+					</div>
+				</div>
+			</div>
+		</div>
 	);
 }
 

@@ -140,9 +140,19 @@ func registerPostPaths(t *openapi3.T) {
 	})
 
 	// 批注块计数（/posts/{postId}/annotations/summary）
+	registerSchema(t, "AnnotationBlockAuthorDTO", openapi3.Schemas{
+		"name":       reqStr("评论者展示名"),
+		"avatar_url": reqStr("头像地址；空串表示未设置"),
+	})
+	registerSchema(t, "AnnotationBlockRangeDTO", openapi3.Schemas{
+		"start": optInt("起始偏移（块内字符位，0-based）"),
+		"end":   optInt("结束偏移（块内字符位，exclusive）"),
+	})
 	registerSchema(t, "AnnotationBlockCountDTO", openapi3.Schemas{
 		"block_id": reqStr("块 ID（对应正文的锚点块）"),
 		"count":    optInt64("该块批注数"),
+		"authors":  refArray("该块批注评论者（按首次批注先后去重，至多 5 位）", "AnnotationBlockAuthorDTO"),
+		"ranges":   refArray("该块各条批注划线的块内字符区间（至多 20 条）", "AnnotationBlockRangeDTO"),
 	})
 
 	// 批量操作请求

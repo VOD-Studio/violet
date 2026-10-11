@@ -22,6 +22,12 @@
 - [组件设计方法](../web/packages/ui/docs/component-design.md)：消费场景、清单登记、同源示例与真实 tarball 验收。
 - [包内规范](../web/packages/ui/AGENTS.md)与[包 README](../web/packages/ui/README.md)：公开入口与当前可执行命令。
 
+## 独立 npm 包
+
+- [发布步骤](./deploy/release-runbook.md#npm-独立包发布)：发布权限、双包独立验收和显式手动发布。
+- [Inkline 开发说明](../web/packages/inkline/DEVELOPMENT.md)：示例图、双语 README 同步和 tarball 消费验证。
+- [React Tweet 开发说明](../web/packages/react-tweet/DEVELOPMENT.md)：推文示例生成、样式入口和独立消费验证。
+
 ## 使用约定
 
 - PRD 主文件直接放在 `prd/` 根目录。

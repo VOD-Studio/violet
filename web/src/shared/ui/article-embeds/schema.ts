@@ -1,4 +1,4 @@
-import { parseTweetId } from "@violet/react-tweet/api";
+import { parseTweetId } from "@violetjs/react-tweet/api";
 import { z } from "zod";
 import type { ArticleEmbedKind, ParsedArticleEmbed } from "./types";
 import { isSafeArticleHref, isSafeArticleImage } from "./url";

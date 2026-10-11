@@ -18,6 +18,8 @@ export interface AccumulationPoint {
 	endsAt: number;
 	markerSize: number;
 	isLatest: boolean;
+	/** 节点包含当天发布的内容；位置已吸附到今日刻度。 */
+	includesToday: boolean;
 	order: number;
 }
 
@@ -28,11 +30,37 @@ export interface AccumulationSeasonLabel {
 	position: number;
 }
 
+export interface AccumulationSeasonSegment {
+	key: string;
+	name: AccumulationSeasonName;
+	label: string;
+	/** 起点（含）与终点（不含），UTC 毫秒。 */
+	startsAt: number;
+	endsAt: number;
+	/** 跨年的冬季显示为 `2025–26`。 */
+	yearLabel: string;
+	count: number;
+}
+
+export interface AccumulationSegmentPoint {
+	point: AccumulationPoint;
+	/** 在所属季节行内的百分比位置。 */
+	position: number;
+}
+
 export interface AccumulationTimeline {
 	months: AccumulationMonth[];
 	points: AccumulationPoint[];
 	seasonLabels: AccumulationSeasonLabel[];
 	latest: HomePublicationItem | null;
+	/** 今日刻度在时间线上的百分比位置，之后为尚未到来的部分。 */
+	todayPosition: number;
+	/** 连续同季月份合并后的季节段，按时间升序。 */
+	seasonSegments: AccumulationSeasonSegment[];
+	/** 今天 0 点，UTC 毫秒。 */
+	todayAt: number;
+	/** 窗口内最新发布物是否发布于今天。 */
+	latestIsToday: boolean;
 }
 
 export const PUBLICATION_MARKER_MIN_SIZE = 5;
@@ -67,6 +95,8 @@ interface SeasonSegment {
 	name: AccumulationSeasonName;
 	startsAt: number;
 	endsAt: number;
+	firstYear: number;
+	lastYear: number;
 }
 
 /**
@@ -101,6 +131,16 @@ export function buildAccumulationTimeline(
 		AGGREGATION_MIN_DAYS,
 		AGGREGATION_MAX_DAYS,
 	);
+	const today = Date.UTC(
+		referenceDate.getUTCFullYear(),
+		referenceDate.getUTCMonth(),
+		referenceDate.getUTCDate(),
+	);
+	const todayPosition = clamp(
+		((today + DAY_IN_MILLISECONDS / 2 - rangeStart) / timelineDuration) * 100,
+		0.5,
+		99.5,
+	);
 	const windowDuration = safeAggregationDays * DAY_IN_MILLISECONDS;
 	const monthByKey = new Map(months.map((month) => [month.key, month]));
 	const buckets = new Map<number, PublicationBucket>();
@@ -134,15 +174,24 @@ export function buildAccumulationTimeline(
 			const items = bucket.entries
 				.sort((left, right) => right.day - left.day)
 				.map((entry) => entry.item);
-			const midpoint = bucket.startsAt + (bucket.endsAt - bucket.startsAt) / 2;
+			const includesToday = bucket.entries.some((entry) => entry.day === today);
+			const midpoint = pointPositionTime(
+				bucket.startsAt,
+				bucket.endsAt,
+				today,
+				includesToday,
+			);
 			return {
 				key: `window-${bucket.index}`,
-				position: clamp(((midpoint - rangeStart) / timelineDuration) * 100, 0.5, 99.5),
+				position: includesToday
+					? todayPosition
+					: clamp(((midpoint - rangeStart) / timelineDuration) * 100, 0.5, 99.5),
 				items,
 				startsAt: bucket.startsAt,
 				endsAt: bucket.endsAt - DAY_IN_MILLISECONDS,
 				markerSize: markerSizeForCount(items.length),
 				isLatest: items.some((item) => item.id === latestEntry?.item.id),
+				includesToday,
 				order,
 			};
 		});
@@ -152,6 +201,10 @@ export function buildAccumulationTimeline(
 		points,
 		seasonLabels: buildSeasonLabels(months, rangeStart, timelineDuration),
 		latest: latestEntry?.item ?? null,
+		todayPosition,
+		seasonSegments: buildSeasonSegments(months),
+		todayAt: today,
+		latestIsToday: latestEntry?.day === today,
 	};
 }
 
@@ -191,17 +244,14 @@ function buildMonths(anchorDate: Date): AccumulationMonth[] {
 	});
 }
 
-function buildSeasonLabels(
-	months: AccumulationMonth[],
-	rangeStart: number,
-	timelineDuration: number,
-): AccumulationSeasonLabel[] {
+function groupSeasonSegments(months: AccumulationMonth[]): SeasonSegment[] {
 	const segments: SeasonSegment[] = [];
 	for (const month of months) {
 		const name = seasonForMonth(month.month);
 		const previous = segments.at(-1);
 		if (previous?.name === name) {
 			previous.endsAt = monthAfter(month);
+			previous.lastYear = month.year;
 			continue;
 		}
 		segments.push({
@@ -209,8 +259,38 @@ function buildSeasonLabels(
 			name,
 			startsAt: month.startsAt,
 			endsAt: monthAfter(month),
+			firstYear: month.year,
+			lastYear: month.year,
 		});
 	}
+	return segments;
+}
+
+function buildSeasonSegments(months: AccumulationMonth[]): AccumulationSeasonSegment[] {
+	return groupSeasonSegments(months).map((segment) => ({
+		key: segment.key,
+		name: segment.name,
+		label: SEASON_LABELS[segment.name],
+		startsAt: segment.startsAt,
+		endsAt: segment.endsAt,
+		yearLabel:
+			segment.firstYear === segment.lastYear
+				? String(segment.firstYear)
+				: `${segment.firstYear}–${String(segment.lastYear).slice(2)}`,
+		count: months
+			.filter(
+				(month) => month.startsAt >= segment.startsAt && month.startsAt < segment.endsAt,
+			)
+			.reduce((total, month) => total + month.count, 0),
+	}));
+}
+
+function buildSeasonLabels(
+	months: AccumulationMonth[],
+	rangeStart: number,
+	timelineDuration: number,
+): AccumulationSeasonLabel[] {
+	const segments = groupSeasonSegments(months);
 
 	const longestSegmentBySeason = new Map<AccumulationSeasonName, SeasonSegment>();
 	for (const segment of segments) {
@@ -272,7 +352,16 @@ function parsePublicationDay(value: string): number | null {
 }
 
 function emptyTimeline(): AccumulationTimeline {
-	return { months: [], points: [], seasonLabels: [], latest: null };
+	return {
+		months: [],
+		points: [],
+		seasonLabels: [],
+		latest: null,
+		todayPosition: 100,
+		seasonSegments: [],
+		todayAt: 0,
+		latestIsToday: false,
+	};
 }
 
 function monthAfter(month: AccumulationMonth): number {
@@ -285,4 +374,60 @@ function formatMonthKey(year: number, month: number): string {
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
+}
+
+/** 节点覆盖的日期范围，如 `8.01—07`；单日只显示起点。 */
+export function formatPointPeriod(startsAt: number, endsAt: number): string {
+	const start = new Date(startsAt);
+	const end = new Date(endsAt);
+	const startLabel = `${start.getUTCMonth() + 1}.${String(start.getUTCDate()).padStart(2, "0")}`;
+	if (startsAt === endsAt) return startLabel;
+	const endLabel =
+		start.getUTCMonth() === end.getUTCMonth()
+			? String(end.getUTCDate()).padStart(2, "0")
+			: `${end.getUTCMonth() + 1}.${String(end.getUTCDate()).padStart(2, "0")}`;
+	return `${startLabel}—${endLabel}`;
+}
+
+/**
+ * 把节点按时间归入季节段，供窄屏分行展示。
+ *
+ * @param todayAt 今天 0 点；包含今天的节点以今日位置为准。
+ * @returns 以季节段 key 为索引的节点及其行内位置。
+ */
+export function assignPointsToSegments(
+	points: AccumulationPoint[],
+	segments: AccumulationSeasonSegment[],
+	todayAt: number,
+): Map<string, AccumulationSegmentPoint[]> {
+	const result = new Map<string, AccumulationSegmentPoint[]>(
+		segments.map((segment) => [segment.key, []]),
+	);
+	for (const point of points) {
+		const midpoint = pointPositionTime(
+			point.startsAt,
+			point.endsAt + DAY_IN_MILLISECONDS,
+			todayAt,
+			point.includesToday,
+		);
+		const segment = segments.find(
+			(candidate) => midpoint >= candidate.startsAt && midpoint < candidate.endsAt,
+		);
+		if (!segment) continue;
+		const ratio = (midpoint - segment.startsAt) / (segment.endsAt - segment.startsAt);
+		result.get(segment.key)?.push({ point, position: clamp(ratio * 100, 3, 97) });
+	}
+	return result;
+}
+
+function pointPositionTime(
+	start: number,
+	end: number,
+	today: number,
+	includesToday: boolean,
+): number {
+	if (includesToday) return today + DAY_IN_MILLISECONDS / 2;
+	// 当前聚合窗口尚未结束，不能用未来的空白日期把历史节点推过今日刻度。
+	const elapsedEnd = start < today ? Math.min(end, today) : end;
+	return start + (elapsedEnd - start) / 2;
 }

@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
+import { useState } from "react";
 
-import { HomeAccumulationPoint } from "./HomeAccumulationPoint";
-import { HomeContentLink } from "./HomeContentLink";
+import { HomeAccumulationDetail } from "./HomeAccumulationDetail";
+import { HomeAccumulationSeasons } from "./HomeAccumulationSeasons";
+import { HomeAccumulationTrack } from "./HomeAccumulationTrack";
 import { buildAccumulationTimeline } from "./home-accumulation-model";
 import type { HomePublicationItem } from "./types";
 
@@ -11,22 +13,24 @@ interface HomeAccumulationProps {
 	aggregationDays: number;
 }
 
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
-
-/** 在连续时间线上呈现最近十二个月的公开发布节点。 */
+/** 呈现最近十二个月的公开发布节点：宽屏单轴，窄屏按季节分行。 */
 export function HomeAccumulation({ publications, aggregationDays }: HomeAccumulationProps) {
 	const reduceMotion = useReducedMotion();
-	const { months, points, seasonLabels, latest } = buildAccumulationTimeline(
-		publications,
-		aggregationDays,
-	);
+	const [selectedKey, setSelectedKey] = useState<string | null>(null);
+	const timeline = buildAccumulationTimeline(publications, aggregationDays);
+	const { months, points, latest, latestIsToday } = timeline;
 	if (!latest || points.length === 0) return null;
+
+	const latestPoint = points.find((point) => point.isLatest) ?? points[points.length - 1];
+	const selectedPoint = points.find((point) => point.key === selectedKey) ?? latestPoint;
+	if (!selectedPoint) return null;
 
 	const currentYear = new Date().getFullYear();
 	const yearCount = publications.filter((publication) => {
 		const publishedAt = new Date(publication.published_at);
 		return !Number.isNaN(publishedAt.getTime()) && publishedAt.getFullYear() === currentYear;
 	}).length;
+
 	return (
 		<section
 			aria-labelledby="home-accumulation-title"
@@ -39,110 +43,58 @@ export function HomeAccumulation({ publications, aggregationDays }: HomeAccumula
 				>
 					积微成著
 				</h2>
-				<figure className="mt-10 sm:mt-12">
+				<figure className="mt-10 sm:mt-14">
 					<p className="sr-only">
 						{months
 							.map((month) => `${month.year}年${month.month}月 ${month.count} 项`)
 							.join("；")}
 					</p>
 
-					<div className="relative h-20">
-						<div className="absolute inset-x-0 top-8 h-px">
-							<div aria-hidden className="absolute inset-0 bg-border/70" />
-							<motion.div
-								aria-hidden
-								initial={reduceMotion ? false : { scaleX: 0 }}
-								whileInView={{ scaleX: 1 }}
-								viewport={{ once: true, amount: 0.6 }}
-								transition={{ duration: reduceMotion ? 0 : 0.82, ease: EASE_OUT }}
-								className="absolute inset-0 origin-left bg-foreground/30"
+					<motion.div
+						initial={reduceMotion ? "shown" : "hidden"}
+						whileInView="shown"
+						viewport={{ once: true, amount: 0.3 }}
+					>
+						<div className="hidden sm:block">
+							<HomeAccumulationTrack
+								timeline={timeline}
+								selectedKey={selectedPoint.key}
+								onSelect={setSelectedKey}
+								reduceMotion={reduceMotion}
 							/>
-							{points.map((point) => (
-								<HomeAccumulationPoint
-									key={point.key}
-									point={point}
-									reduceMotion={reduceMotion}
-								/>
-							))}
-							<div className="absolute top-1/2 right-0 z-10 -translate-y-1/2">
-								<span
-									aria-hidden
-									className="absolute -top-4 -right-1 text-[11px] font-medium text-primary"
-								>
-									今
-								</span>
-								<span aria-hidden className="block h-3.5 w-px bg-primary" />
-							</div>
 						</div>
-
-						{seasonLabels.map((season) => (
-							<span
-								key={season.key}
-								aria-hidden
-								style={{ left: `${season.position}%` }}
-								className="absolute top-14 -translate-x-1/2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/75"
-							>
-								{season.label}
-							</span>
-						))}
-
-						<div aria-hidden className="pointer-events-none absolute inset-0">
-							<svg
-								aria-hidden="true"
-								className="absolute -top-3 left-[15%] size-3 text-amber-500/40 dark:text-amber-300/35"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
-							</svg>
-							<span className="absolute top-12 left-[32%] size-1.5 rotate-45 bg-amber-500/25 dark:bg-amber-300/20" />
-							<span className="absolute -top-1 right-[26%] h-px w-5 bg-amber-500/30 dark:bg-amber-300/25" />
-							<svg
-								aria-hidden="true"
-								className="absolute top-2 right-[10%] size-2.5 text-amber-500/35 dark:text-amber-300/30"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
-							</svg>
-							<span className="absolute top-14 left-[64%] size-1 rotate-45 bg-amber-500/35 dark:bg-amber-300/30" />
-							<svg
-								aria-hidden="true"
-								className="absolute bottom-2 left-[5%] size-2 text-amber-500/30 dark:text-amber-300/25"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
-							</svg>
-							<span className="absolute -bottom-1 right-[18%] size-1.5 rotate-45 bg-amber-500/25 dark:bg-amber-300/20" />
+						<div className="sm:hidden">
+							<HomeAccumulationSeasons
+								timeline={timeline}
+								selectedKey={selectedPoint.key}
+								onSelect={setSelectedKey}
+								reduceMotion={reduceMotion}
+							/>
 						</div>
+					</motion.div>
+
+					<div className="mt-8 sm:mt-9">
+						<HomeAccumulationDetail
+							point={selectedPoint}
+							isLatest={selectedPoint.isLatest}
+							latestIsToday={latestIsToday}
+							reduceMotion={reduceMotion}
+						/>
 					</div>
-
-					<div className="mt-12 sm:mt-14 text-center font-[system-ui,-apple-system,'PingFang_SC','Noto_Sans_SC','Microsoft_YaHei',sans-serif]">
-						<div className="flex min-w-0 items-baseline justify-center gap-1.5 text-[13.5px] text-foreground/85">
-							<span className="shrink-0 text-muted-foreground/75">新篇 ·</span>
-							<HomeContentLink
-								item={latest}
-								className="min-w-0 truncate font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-							>
-								{latest.title}
-							</HomeContentLink>
-						</div>
-						<p className="mt-3 sm:mt-3.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
-							<span className="font-serif text-[13px] italic text-muted-foreground/80">
-								今年落笔 {yearCount} 篇
-							</span>
-							<span aria-hidden className="text-muted-foreground/40">
-								·
-							</span>
-							<Link
-								to="/blog/archive"
-								className="font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-							>
-								尽览年表 →
-							</Link>
-						</p>
-					</div>
+					<p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/75">
+						<span className="font-serif text-[13px] italic text-muted-foreground/80">
+							今年落笔 {yearCount} 篇
+						</span>
+						<span aria-hidden className="text-muted-foreground/40">
+							·
+						</span>
+						<Link
+							to="/blog/archive"
+							className="font-medium text-primary transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+						>
+							尽览年表 →
+						</Link>
+					</p>
 				</figure>
 			</div>
 		</section>

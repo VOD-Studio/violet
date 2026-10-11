@@ -21,7 +21,7 @@ vi.mock("mermaid", () => ({
 	},
 }));
 // jsdom 不提供 SVG 布局测量；此处只验证真实净化与错误边界。
-vi.mock("../sketch-svg", () => ({ sketchSvg: vi.fn() }));
+vi.mock("@violetjs/inkline/dom", () => ({ inkSvg: vi.fn() }));
 
 import { renderMermaid } from "../render-mermaid";
 

@@ -1,15 +1,22 @@
 /**
- * Mermaid 负责语义与布局，净化后的 SVG 统一使用手写字体与 Rough.js 笔触。
+ * Mermaid 负责语义与布局，净化后的 SVG 统一使用手写字体与 @violetjs/inkline 笔触（G 笔、草稿手法）。
  * strict 初始化与 DOMPurify 二次清理共同阻断图表源码中的可执行内容。
  *
  * 失败（语法错 / 渲染异常）返回 { error }，不抛出——阅读端据此走降级占位。
  */
+import { createGPen, gpen, styles } from "@violetjs/inkline";
+import { inkSvg } from "@violetjs/inkline/dom";
 import DOMPurify, { type Config } from "dompurify";
 import { DIAGRAM_FONT_FAMILY, loadDiagramFonts } from "./sketch-fonts";
-import { sketchSvg } from "./sketch-svg";
 import { getThemeVariables, type MermaidThemeVariables } from "./theme-variables";
 
 export type DiagramTheme = "light" | "dark";
+
+// G 笔配草稿手法；分支、导图连线等粗线用低压感 G 笔，两端只收到 75% 宽，不至于收成梭形
+const INK_OPTIONS = {
+	style: { ...styles.draft, pen: gpen, fillPen: gpen },
+	thickPen: createGPen({ pressure: 0.25 }),
+};
 
 export type RenderMermaidResult = { svg: string } | { error: string };
 
@@ -185,7 +192,7 @@ export async function renderMermaid(
 			if (!root) throw new Error("图表渲染未生成 SVG");
 			if (diagramType === "gantt") fitGanttTickLabels(root);
 			centerCircularLabels(root);
-			sketchSvg(root);
+			inkSvg(root, INK_OPTIONS);
 			const viewBox = root.getAttribute("viewBox")?.trim().split(/\s+/).map(Number);
 			if (viewBox?.length === 4) {
 				const [x, y, width, height] = viewBox;

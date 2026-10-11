@@ -42,7 +42,7 @@ export function BackToTop({ threshold = 400, className }: BackToTopProps) {
 			className={cn(
 				"group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur-md transition-all duration-300",
 				"hover:bg-background/95 hover:text-foreground active:scale-90",
-				className ?? "fixed bottom-8 right-8 z-40",
+				className ?? "fixed bottom-8 right-8 z-40 max-lg:bottom-24",
 				visible
 					? "translate-y-0 scale-100 opacity-100"
 					: "pointer-events-none translate-y-4 scale-75 opacity-0",

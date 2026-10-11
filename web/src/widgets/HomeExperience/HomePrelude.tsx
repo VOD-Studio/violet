@@ -63,7 +63,7 @@ export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 	return (
 		<section
 			aria-label="首页序章"
-			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden bg-background text-foreground"
+			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden text-foreground"
 		>
 			<div
 				aria-hidden
@@ -76,9 +76,9 @@ export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 						className="size-full object-cover object-center opacity-35 dark:opacity-20"
 					/>
 				) : (
-					<div className="relative size-full">
+					// 遮罩而非叠一层背景色渐变：边缘透明才能露出全站背景点缀
+					<div className="relative size-full mask-radial-from-25% mask-radial-to-80%">
 						<div className="absolute top-1/3 left-1/2 h-115 w-180 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/4 blur-[130px] dark:bg-primary/8" />
-						<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,var(--color-background)_80%)]" />
 					</div>
 				)}
 			</div>

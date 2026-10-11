@@ -1,30 +1,40 @@
-import { cartoonStyle, createFineliner, inkpen, marker, type Style, styles } from "@violet/sketch";
+import {
+	createFineliner,
+	createGPen,
+	createInkPen,
+	createMarker,
+	lineWashStyle,
+	type PenFactory,
+	type Style,
+	styles,
+} from "@violetjs/inkline";
 
-export type PenId = "fineliner" | "pressure" | "inkpen" | "marker" | "cartoon";
-export type HandId = "neat" | "natural" | "draft";
+export type PenId = "fineliner" | "inkpen" | "marker" | "gpen";
+export type HandId = "neat" | "natural" | "draft" | "inking";
 
-export const PENS: { value: PenId; label: string }[] = [
-	{ value: "fineliner", label: "签字笔" },
-	{ value: "pressure", label: "签字笔·压感" },
-	{ value: "inkpen", label: "压感钢笔" },
-	{ value: "marker", label: "马克笔" },
-	{ value: "cartoon", label: "卡通" },
+export const PENS: { value: PenId; label: string; create: PenFactory }[] = [
+	{ value: "fineliner", label: "签字笔", create: createFineliner },
+	{ value: "inkpen", label: "钢笔", create: createInkPen },
+	{ value: "marker", label: "马克笔", create: createMarker },
+	{ value: "gpen", label: "G 笔", create: createGPen },
 ];
 
 export const HANDS: { value: HandId; label: string }[] = [
 	{ value: "neat", label: "工整" },
 	{ value: "natural", label: "自然" },
 	{ value: "draft", label: "草稿" },
+	{ value: "inking", label: "勾线" },
 ];
 
-const pressureFineliner = createFineliner({ pressure: 0.45 });
+const penFactory = (pen: PenId) =>
+	PENS.find((entry) => entry.value === pen)?.create ?? createFineliner;
 
-/** 笔与手法的组合；卡通风格自带手法，忽略手法选择。 */
-export function buildStyle(pen: PenId, hand: HandId): Style {
-	if (pen === "cartoon") return cartoonStyle;
-	const base = styles[hand];
-	if (pen === "pressure") return { ...base, pen: pressureFineliner };
-	if (pen === "inkpen") return { ...base, pen: inkpen };
-	if (pen === "marker") return { ...base, pen: marker };
-	return base;
+/** 笔的缺省压感强度；切换笔时压感回到这里。 */
+export const defaultPressure = (pen: PenId) => penFactory(pen)().pressure ?? 0;
+
+/** 笔、压感与手法的组合；填充排线沿用所选的笔，勾线取线稿淡彩预设的排线手法与填充线宽。 */
+export function buildStyle(pen: PenId, pressure: number, hand: HandId): Style {
+	const ink = penFactory(pen)({ pressure });
+	const base = hand === "inking" ? lineWashStyle : styles[hand];
+	return { ...base, pen: ink, fillPen: ink };
 }

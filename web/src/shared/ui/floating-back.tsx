@@ -42,7 +42,7 @@ export function FloatingBack({
 					// reduce 时不做出场动画,AnimatePresence 直隐
 					exit={reduce ? undefined : { opacity: 0, scale: 0.8, y: 8 }}
 					transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-					className="fixed bottom-8 left-8 z-40"
+					className="fixed bottom-8 left-8 z-40 max-lg:bottom-24"
 				>
 					{history ? (
 						<HistoryBack

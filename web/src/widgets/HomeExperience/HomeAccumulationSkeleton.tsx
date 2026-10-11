@@ -1,47 +1,76 @@
 import { Skeleton } from "@violet/ui";
 
-/** 首页积微成著时间线专属骨架屏（与正式 HomeAccumulation 1:1 几何高度对齐）。 */
+const MONTH_TICK_COUNT = 11;
+const PLACEHOLDER_NODES = [18, 41, 57, 79] as const;
+
+/** 首页积微成著时间线骨架：标题为静态文案直接呈现，轴线只表达月度结构，不预设季节与发布数据。 */
 export function HomeAccumulationSkeleton() {
 	return (
 		<section
-			aria-label="正在加载发布足迹"
+			aria-busy="true"
+			aria-labelledby="home-accumulation-title"
 			className="mx-auto max-w-7xl px-5 pt-20 sm:px-8 sm:pt-24 lg:px-12 lg:pt-28"
 		>
 			<div className="mx-auto max-w-6xl">
-				<Skeleton className="mx-auto h-8 w-36 rounded-lg sm:h-9 sm:w-44" />
+				<h2
+					id="home-accumulation-title"
+					className="text-center text-2xl font-normal tracking-[0.08em] text-foreground/90 sm:text-3xl"
+				>
+					积微成著
+				</h2>
 
 				<figure className="mt-10 sm:mt-12">
-					<div className="relative h-20">
-						<div className="absolute inset-x-0 top-8 h-px bg-border/60">
-							{/* 模拟时间轴上的静态节点点缀 */}
-							<span className="absolute top-1/2 left-[12%] size-1.5 -translate-y-1/2 rounded-full bg-muted-foreground/30" />
-							<span className="absolute top-1/2 left-[28%] size-1.5 -translate-y-1/2 rounded-full bg-muted-foreground/30" />
-							<span className="absolute top-1/2 left-[52%] size-2 -translate-y-1/2 rounded-full bg-muted-foreground/30" />
-							<span className="absolute top-1/2 left-[74%] size-1.5 -translate-y-1/2 rounded-full bg-muted-foreground/30" />
-							<span className="absolute top-1/2 left-[88%] size-2.5 -translate-y-1/2 rounded-full bg-primary/40" />
+					<div aria-hidden className="relative hidden h-16 sm:block">
+						<div className="absolute inset-x-0 top-6 h-px bg-border/70">
+							{Array.from({ length: MONTH_TICK_COUNT }, (_, index) => (
+								<span
+									key={index}
+									style={{
+										left: `${((index + 1) / (MONTH_TICK_COUNT + 1)) * 100}%`,
+									}}
+									className="absolute top-0 h-1.5 w-px -translate-y-1/2 bg-border"
+								/>
+							))}
+							{PLACEHOLDER_NODES.map((position, index) => (
+								<span
+									key={position}
+									style={{
+										left: `${position}%`,
+										animationDelay: `${index * 240}ms`,
+									}}
+									className="absolute top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground/30 motion-safe:animate-pulse"
+								/>
+							))}
+						</div>
+					</div>
 
-							{/* 右端终点红色刻度线与今 */}
-							<div className="absolute top-1/2 right-0 z-10 -translate-y-1/2">
-								<span className="absolute -top-4 -right-1 text-[11px] font-medium text-primary/50">
-									今
-								</span>
-								<span className="block h-3.5 w-px bg-primary/50" />
+					<ol aria-hidden className="space-y-5 sm:hidden">
+						{[0, 1, 2, 3, 4].map((row) => (
+							<li key={row}>
+								<div className="flex items-center justify-between">
+									<Skeleton className="h-4 w-16 rounded" />
+									<Skeleton className="h-3.5 w-8 rounded" />
+								</div>
+								<div className="relative mt-1 h-7">
+									<div className="absolute inset-x-0 top-1/2 h-px bg-border/70" />
+								</div>
+							</li>
+						))}
+					</ol>
+					<div aria-hidden className="mt-8 h-44 sm:mt-9 sm:h-32">
+						<Skeleton className="mx-auto h-3.5 w-32 rounded" />
+						<div className="mx-auto mt-3 max-w-md divide-y divide-border/50">
+							<div className="flex items-center justify-between gap-4 py-3">
+								<Skeleton className="h-4 w-48 max-w-[60%] rounded" />
+								<Skeleton className="h-3 w-20 rounded" />
+							</div>
+							<div className="flex items-center justify-between gap-4 py-3">
+								<Skeleton className="h-4 w-36 max-w-[50%] rounded" />
+								<Skeleton className="h-3 w-20 rounded" />
 							</div>
 						</div>
-
-						{/* 四季刻度占位 */}
-						<div className="absolute top-14 inset-x-0 flex justify-around px-8 text-xs font-medium text-muted-foreground/40">
-							<span>秋</span>
-							<span>冬</span>
-							<span>春</span>
-							<span>夏</span>
-						</div>
 					</div>
-
-					<div className="mt-12 sm:mt-14 space-y-3.5 pt-5 text-center">
-						<Skeleton className="mx-auto h-4 w-72 rounded" />
-						<Skeleton className="mx-auto h-3.5 w-48 rounded" />
-					</div>
+					<Skeleton className="mx-auto mt-6 h-3.5 w-40 rounded" />
 				</figure>
 			</div>
 		</section>

@@ -2,6 +2,7 @@ import { Checkbox } from "@violet/ui";
 import type { CSSProperties } from "react";
 import type { Components } from "react-markdown";
 import "../../article-blocks/article-blocks.css";
+import { SketchFrame } from "../../sketch-frame/SketchFrame";
 
 function cellAlignment(
 	align: string | undefined,
@@ -28,9 +29,11 @@ export const proseElements: Components = {
 				{children}
 			</blockquote>
 		) : (
-			<blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 text-foreground/80">
-				{children}
-			</blockquote>
+			<SketchFrame className="my-8" radius={18}>
+				<blockquote className="relative rounded-2xl border-0 bg-primary/5 px-6 py-4 pl-14 text-foreground/85 before:absolute before:left-4 before:top-1 before:font-serif before:text-5xl before:leading-none before:text-primary/40 before:content-['“'] [&>p]:my-3 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
+					{children}
+				</blockquote>
+			</SketchFrame>
 		);
 	},
 	details: ({ children, open, id }) => (
@@ -50,7 +53,7 @@ export const proseElements: Components = {
 				className={
 					taskList
 						? "my-5 space-y-2 pl-0 list-none"
-						: "my-5 list-disc space-y-2 pl-6 text-foreground/90"
+						: "my-5 list-disc space-y-2 pl-6 text-foreground/90 marker:text-primary"
 				}
 			>
 				{children}
@@ -58,7 +61,10 @@ export const proseElements: Components = {
 		);
 	},
 	ol: ({ children, start }) => (
-		<ol start={start} className="my-5 list-decimal space-y-2 pl-6 text-foreground/90">
+		<ol
+			start={start}
+			className="my-5 list-decimal space-y-2 pl-6 text-foreground/90 marker:font-semibold marker:text-primary"
+		>
 			{children}
 		</ol>
 	),
@@ -112,7 +118,7 @@ export const proseElements: Components = {
 				data-footnote-label={p["data-footnote-label"] as string | undefined}
 				target={external ? "_blank" : undefined}
 				rel={external ? "noopener noreferrer" : undefined}
-				className="text-primary underline underline-offset-2 transition-opacity hover:opacity-80"
+				className="text-primary underline decoration-primary/30 decoration-2 underline-offset-4 transition-colors hover:decoration-primary"
 			>
 				{children}
 			</a>
@@ -124,7 +130,7 @@ export const proseElements: Components = {
 			colSpan={colSpan}
 			rowSpan={rowSpan}
 			style={cellAlignment(align, style)}
-			className="border border-edge-hairline px-3 py-2 text-left font-semibold"
+			className="border-b border-dashed border-primary/30 px-4 py-2.5 text-left font-semibold whitespace-nowrap text-primary"
 		>
 			{children}
 		</th>
@@ -135,7 +141,7 @@ export const proseElements: Components = {
 			colSpan={colSpan}
 			rowSpan={rowSpan}
 			style={cellAlignment(align, style)}
-			className="border border-edge-hairline px-3 py-2"
+			className="border-b border-dashed border-edge-hairline px-4 py-2.5 align-top"
 		>
 			{children}
 		</td>

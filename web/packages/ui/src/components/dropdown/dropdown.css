@@ -1,13 +1,7 @@
 @layer components {
 	.v-dropdown__content {
 		--v-dropdown-radius: 1rem;
-		--v-dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
-		--v-dropdown-ease-in: cubic-bezier(0.5, 0, 0.75, 0);
-		/* 展开起点：贴着触发器一侧、宽度与触发器相同的一条细带；按对齐与方位决定带的位置 */
-		--v-dropdown-from-t: 0px;
-		--v-dropdown-from-b: calc(100% - 0.125rem);
-		--v-dropdown-from-l: calc((100% - var(--radix-popper-anchor-width, 100%)) / 2);
-		--v-dropdown-from-r: calc((100% - var(--radix-popper-anchor-width, 100%)) / 2);
+		--v-dropdown-collapsed-clip: inset(0 -2rem 100% -2rem round var(--v-dropdown-radius));
 		box-sizing: border-box;
 		position: relative;
 		z-index: 50;
@@ -24,18 +18,7 @@
 	}
 
 	.v-dropdown__content[data-side="top"] {
-		--v-dropdown-from-t: calc(100% - 0.125rem);
-		--v-dropdown-from-b: 0px;
-	}
-
-	.v-dropdown__content[data-align="start"] {
-		--v-dropdown-from-l: 0px;
-		--v-dropdown-from-r: calc(100% - var(--radix-popper-anchor-width, 100%));
-	}
-
-	.v-dropdown__content[data-align="end"] {
-		--v-dropdown-from-l: calc(100% - var(--radix-popper-anchor-width, 100%));
-		--v-dropdown-from-r: 0px;
+		--v-dropdown-collapsed-clip: inset(100% -2rem 0 -2rem round var(--v-dropdown-radius));
 	}
 
 	.v-dropdown__inner {
@@ -60,24 +43,17 @@
 		inset-block-start: 100%;
 	}
 
-	/* 展开：几何由脚本从触发器下缘与触发器等宽的细带舒展到完整尺寸（面板自己的边缘与软影随之长出），
-	   内容保持静止；这里只负责淡入，并作为无脚本动画时的兜底。收起沿原路折回触发器。 */
 	.v-dropdown__content[data-state="open"][data-motion="reveal"] {
-		animation: v-dropdown-fade-in 160ms ease-out backwards;
+		animation: v-dropdown-unfold 260ms ease-in-out both;
 	}
 
 	.v-dropdown__content[data-state="closed"] {
-		animation: v-dropdown-fold 220ms var(--v-dropdown-ease-in) both;
+		animation: v-dropdown-fold 180ms ease-in-out both;
 	}
 
-	/* 组内接力：几何由脚本从上一块面板的位置与尺寸滑移变形而来；新面板垫在旧面板之下，
-	   旧面板立即让出外壳，只剩内容在其上淡出，新内容随后淡入 */
+	/* 接力时旧外壳立即让位，旧面板整体退场。 */
 	.v-dropdown__content[data-motion="morph"] {
 		z-index: 49;
-	}
-
-	.v-dropdown__content[data-state="open"][data-motion="morph"] .v-dropdown__inner {
-		animation: v-dropdown-fade-in 200ms ease-out 70ms backwards;
 	}
 
 	.v-dropdown__content[data-state="closed"][data-handoff="true"] {
@@ -86,32 +62,23 @@
 		animation: v-dropdown-fade-out 90ms linear both;
 	}
 
-	@keyframes v-dropdown-fold {
+	@keyframes v-dropdown-unfold {
 		from {
-			opacity: 1;
-			clip-path: inset(-2.5rem -2rem -2.5rem -2rem round 1rem);
-		}
-
-		55% {
-			opacity: 1;
+			clip-path: var(--v-dropdown-collapsed-clip);
 		}
 
 		to {
-			opacity: 0;
-			clip-path: inset(
-				var(--v-dropdown-from-t) var(--v-dropdown-from-r) var(--v-dropdown-from-b)
-					var(--v-dropdown-from-l) round 1rem
-			);
+			clip-path: inset(-2rem -2rem -2rem -2rem round var(--v-dropdown-radius));
 		}
 	}
 
-	@keyframes v-dropdown-fade-in {
+	@keyframes v-dropdown-fold {
 		from {
-			opacity: 0;
+			clip-path: inset(-2rem -2rem -2rem -2rem round var(--v-dropdown-radius));
 		}
 
 		to {
-			opacity: 1;
+			clip-path: var(--v-dropdown-collapsed-clip);
 		}
 	}
 
@@ -126,8 +93,7 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.v-dropdown__content[data-state],
-		.v-dropdown__content[data-state] .v-dropdown__inner {
+		.v-dropdown__content[data-state][data-motion] {
 			animation: none;
 		}
 	}

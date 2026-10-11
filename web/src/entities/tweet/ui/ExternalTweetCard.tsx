@@ -5,7 +5,7 @@ import {
 	type TweetMedia,
 	type TweetPhoto,
 	type TweetSegment,
-} from "@violet/react-tweet";
+} from "@violetjs/react-tweet";
 import type { ExternalTweet } from "../model/types";
 
 /** 原文状态由本站服务端决定，不向外站重新加载被撤回或不可用的内容。 */
