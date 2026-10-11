@@ -89,6 +89,8 @@ export interface Comment {
 	author_provider?: "github" | "google";
 	/** 作者第三方主页 URL；仅 GitHub 有，存量账号未回填 github_login 时省略 */
 	author_profile_url?: string;
+	/** 作者站内用户名，昵称链到 /users/{username}；匿名评论与已注销作者省略 */
+	author_username?: string;
 	/** 评论正文 */
 	body: string;
 	/** 附件图片列表，无图为空数组 */

@@ -11,6 +11,7 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { AUTHOR_TIER } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import PendingBadge from "@shared/ui/pending-badge";
+import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { Crown, MessageCircle } from "lucide-react";
 import { useState } from "react";
@@ -118,6 +119,7 @@ export function AnnotationCard({
 
 /** CommentMeta 批注元信息：头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间 */
 function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
+	const nameClass = comment.is_author ? AUTHOR_TIER.name : "font-medium text-foreground";
 	const avatar = comment.avatar_url ? (
 		<img
 			src={avatarUrl(comment.avatar_url)}
@@ -146,14 +148,19 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 					avatar
 				)}
 			</div>
-			<span
-				className={cn(
-					"max-w-32 truncate text-sm",
-					comment.is_author ? AUTHOR_TIER.name : "font-medium text-foreground",
-				)}
-			>
-				{comment.author_name}
-			</span>
+			{comment.author_username ? (
+				<Link
+					to="/users/$username"
+					params={{ username: comment.author_username }}
+					className={cn("max-w-32 truncate text-sm hover:underline", nameClass)}
+				>
+					{comment.author_name}
+				</Link>
+			) : (
+				<span className={cn("max-w-32 truncate text-sm", nameClass)}>
+					{comment.author_name}
+				</span>
+			)}
 			{comment.reply_to_name && (
 				<span className="text-xs text-muted-foreground">
 					回复 <span className="text-primary">@{comment.reply_to_name}</span>
