@@ -17,7 +17,7 @@ import type { BlockCount } from "../model/types";
 import { AnnotationCard } from "./AnnotationCard";
 import "./annotations.css";
 
-/** 高亮块的 class（背景 + 左色条） */
+/** 高亮块的 class（淡底 + 虚线描边） */
 const HIGHLIGHT_CLASS = "annotation-highlight";
 /** 注入到段落 DOM 末尾的角标元素 class */
 const MARKER_CLASS = "annotation-marker-inline";
