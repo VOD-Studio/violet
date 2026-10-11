@@ -7,6 +7,43 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.10.1](https://github.com/VOD-Studio/violet/compare/v2.10.0...v2.10.1) (2026-10-11)
+
+
+### 新增
+
+* **chat:** 分享推文改为摘要卡与引用小卡片 ([f73a076](https://github.com/VOD-Studio/violet/commit/f73a0763b302ca23f5d1046896faa9a4505d48a0))
+* **comments:** 评论昵称链接到作者个人空间 ([2492826](https://github.com/VOD-Studio/violet/commit/24928268b5e4372d0ac5eaf22c5d556a4adee58e))
+* **comment:** 评论 DTO 返回作者站内用户名 ([9f1cf81](https://github.com/VOD-Studio/violet/commit/9f1cf819d53b29b625daed8b85ae886443594b2f))
+* **image-cropper:** 新增固定取景框的拖动与缩放组件 ([c12391a](https://github.com/VOD-Studio/violet/commit/c12391aaf87ad81d5f1a5b00e9610b218965b385))
+* **image-cropper:** 锁定比例时自动居中选区并支持实时取景预览 ([2f34684](https://github.com/VOD-Studio/violet/commit/2f3468412cb48384499e0602f9862b0651446c65))
+* **mcp:** 文章 server 新增 upload_image 配图上传 ([df6af64](https://github.com/VOD-Studio/violet/commit/df6af649e99267f4bd8d9faf0b1cad05f1af13cb))
+* **posts:** 接入统一内置签名识别 ([48a7c49](https://github.com/VOD-Studio/violet/commit/48a7c492f44e582a2c3e86f28c6c122f27347512))
+* **profile-cover:** 封面图层随鼠标带阻尼移动 ([1e7f387](https://github.com/VOD-Studio/violet/commit/1e7f387f5b93701645c957f45208bf7dc247af6c))
+* **profile:** 主页封面统一 3:1 取景并增加加载与遮罩效果 ([7121774](https://github.com/VOD-Studio/violet/commit/712177408aaf1a139b61f7b09a0d20573296d0ec))
+* **profile:** 封面裁剪放宽为 2:1 并移除比例与分辨率提示 ([e545bb7](https://github.com/VOD-Studio/violet/commit/e545bb784b40b85ebb39e78fdaeac955b6d2265f))
+* **react-tweet:** EmbeddedTweet 支持 quoted 引用小卡片模式 ([9c8578c](https://github.com/VOD-Studio/violet/commit/9c8578c949a2b5cd8bb3b434a1f7b85e9143b5e6))
+* **react-tweet:** 引用推文改为带方形缩略图的小卡片 ([bc2a634](https://github.com/VOD-Studio/violet/commit/bc2a63498a49fe0ecaf8a4a741a2ee6059f66d5b))
+* **signature:** 内置水月系列手写签名 ([064af52](https://github.com/VOD-Studio/violet/commit/064af52f1a04db9051efd2b216236a4c97f338e5))
+* **tweets:** 推文详情页改为左图右文分栏 ([de924b3](https://github.com/VOD-Studio/violet/commit/de924b365ec58a82deb2c3dbdc396668b8c5c40e))
+* **tweets:** 时间线宽屏三栏，两侧增加话题、作者与图片墙 ([2b0ce44](https://github.com/VOD-Studio/violet/commit/2b0ce440633a067dc84def7f8b283a5507ea09d4))
+* **tweets:** 被引用的本站推文改为小拼图引用卡片 ([626c68d](https://github.com/VOD-Studio/violet/commit/626c68df5c029827801f0decc8f02e0989fcdd75))
+* **upload:** 重做裁剪上传弹窗 ([24dd114](https://github.com/VOD-Studio/violet/commit/24dd114af209ad54e64a89b0dbd92afe7b3ea088))
+* **upload:** 锁定比例的裁剪改为拖动图片取景 ([b42f569](https://github.com/VOD-Studio/violet/commit/b42f569d05fbfa4f8ef49518a7b1d98b3001137c))
+* 作者签名及推文、封面界面改进 ([#508](https://github.com/VOD-Studio/violet/issues/508)) ([c5861f2](https://github.com/VOD-Studio/violet/commit/c5861f2be8f5e4bcc0dfcd792f58d70d24955065))
+
+
+### 修复
+
+* **comment-section:** 登录来源角标固定在头像右下角 ([460fffc](https://github.com/VOD-Studio/violet/commit/460fffcc54382046ea254e2665b97528010b4b39))
+* **comments:** 所有评论框支持 ⌘/Ctrl+Enter 提交 ([5e6c9d9](https://github.com/VOD-Studio/violet/commit/5e6c9d9e5fd9bf724b11908f68c157f3742acfd1))
+* **react-tweet:** 同步示例产物哈希清单 ([81a536e](https://github.com/VOD-Studio/violet/commit/81a536ea9ff0617639b413c2a30f9f979732f2ca))
+
+
+### 内部维护
+
+* 指定本批次发布补丁版本 2.10.1 ([7787fe6](https://github.com/VOD-Studio/violet/commit/7787fe6b70941a2d147883a375e1ab8104f239d5))
+
 ## [2.10.0](https://github.com/VOD-Studio/violet/compare/v2.9.4...v2.10.0) (2026-10-11)
 
 
