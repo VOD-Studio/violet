@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"blog-api/internal/domain/comment"
@@ -243,30 +244,70 @@ func applyCommentFilters(db *gorm.DB, ctx context.Context, query *gorm.DB, filte
 	return query, nil
 }
 
-// CountAnnotationsByBlock 按块聚合统计批注数量（仅 depth=0 顶层批注）。
+// CountAnnotationsByBlock 按块聚合统计批注数量（仅 depth=0 顶层批注），并附带各块评论者。
 // viewerUserID 非空时返回 approved ∪ 自己 pending；nil 时仅 approved。
 func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID) ([]comment.BlockCount, error) {
-	query := r.db.WithContext(ctx).Model(&model.Comment{}).
-		Where("post_id = ?", postID.UUID()).
-		Where("anchor_block_id IS NOT NULL").
-		Where("depth = 0")
-
-	if viewerUserID != nil {
-		query = query.Where("status = ? OR (status = ? AND created_by = ?)", status, comment.StatusPending, viewerUserID.UUID())
-	} else if status != "" {
-		query = query.Where("status = ?", status)
+	scope := func() *gorm.DB {
+		query := r.db.WithContext(ctx).Model(&model.Comment{}).
+			Where("post_id = ?", postID.UUID()).
+			Where("anchor_block_id IS NOT NULL").
+			Where("depth = 0")
+		if viewerUserID != nil {
+			return query.Where("status = ? OR (status = ? AND created_by = ?)", status, comment.StatusPending, viewerUserID.UUID())
+		}
+		if status != "" {
+			return query.Where("status = ?", status)
+		}
+		return query
 	}
 
 	var results []comment.BlockCount
-	err := query.Select("anchor_block_id AS block_id, COUNT(*) AS count").
+	err := scope().Select("anchor_block_id AS block_id, COUNT(*) AS count").
 		Group("anchor_block_id").
 		Find(&results).Error
 	if err != nil {
 		return nil, domainshared.Internal("统计批注按块聚合失败", err)
 	}
+	if len(results) == 0 {
+		return results, nil
+	}
+
+	var rows []struct {
+		BlockID    string     `gorm:"column:block_id"`
+		CreatedBy  *uuid.UUID `gorm:"column:created_by"`
+		AuthorName string     `gorm:"column:author_name"`
+		AvatarURL  string     `gorm:"column:avatar_url"`
+	}
+	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url").
+		Order("created_at ASC").
+		Find(&rows).Error
+	if err != nil {
+		return nil, domainshared.Internal("查询批注块评论者失败", err)
+	}
+
+	index := make(map[string]int, len(results))
+	for i, b := range results {
+		index[b.BlockID] = i
+	}
+	seen := make(map[string]struct{}, len(rows))
+	for _, row := range rows {
+		i, ok := index[row.BlockID]
+		if !ok || len(results[i].Authors) >= comment.BlockAuthorLimit {
+			continue
+		}
+		// 登录评论者按 user id 去重；匿名无 id，按展示名区分
+		identity := row.BlockID + "|" + row.AuthorName
+		if row.CreatedBy != nil {
+			identity = row.BlockID + "|" + row.CreatedBy.String()
+		}
+		if _, dup := seen[identity]; dup {
+			continue
+		}
+		seen[identity] = struct{}{}
+		results[i].Authors = append(results[i].Authors, comment.BlockAuthor{Name: row.AuthorName, AvatarURL: row.AvatarURL})
+	}
 	return results, nil
 }
-
 
 // CountPending 统计待审核评论数量
 func (r *CommentRepository) CountPending(ctx context.Context) (int64, error) {

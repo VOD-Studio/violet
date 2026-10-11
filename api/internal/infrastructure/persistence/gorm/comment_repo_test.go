@@ -496,3 +496,39 @@ func TestSave_RoundTripPictures(t *testing.T) {
 	assert.Equal(t, 100, got.Pictures()[0].Width)
 	assert.Equal(t, int64(1024), got.Pictures()[0].Size)
 }
+
+func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	alice, bob := uuid.New(), uuid.New()
+	base := time.Now().Add(-time.Hour)
+	add := func(blockID, name, avatar string, by *uuid.UUID, offset time.Duration) {
+		start, end, sel, hash := 0, 3, "选中", "h"
+		require.NoError(t, db.Create(&model.Comment{
+			ID: uuid.New(), PostID: fixedPostID.UUID(), Path: uuid.NewString() + "/",
+			CreatedBy: by, AuthorName: name, AvatarURL: avatar, Body: "hi", Pictures: []byte("[]"),
+			Status:        domaincomment.StatusApproved,
+			AnchorBlockID: &blockID, AnchorStartOffset: &start, AnchorEndOffset: &end,
+			AnchorSelectedText: &sel, AnchorBlockTextHash: &hash,
+			CreatedAt: base.Add(offset),
+		}).Error)
+	}
+	add("b1", "Alice", "a.png", &alice, 0)
+	add("b1", "Bob", "", &bob, time.Minute)
+	add("b1", "Alice", "a.png", &alice, 2*time.Minute)
+	add("b2", "Alice", "a.png", &alice, 3*time.Minute)
+
+	got, err := repo.CountAnnotationsByBlock(context.Background(), fixedPostID, domaincomment.StatusApproved, nil)
+	require.NoError(t, err)
+
+	byBlock := map[string]domaincomment.BlockCount{}
+	for _, b := range got {
+		byBlock[b.BlockID] = b
+	}
+	assert.Equal(t, int64(3), byBlock["b1"].Count)
+	assert.Equal(t, []domaincomment.BlockAuthor{
+		{Name: "Alice", AvatarURL: "a.png"},
+		{Name: "Bob", AvatarURL: ""},
+	}, byBlock["b1"].Authors)
+	assert.Equal(t, []domaincomment.BlockAuthor{{Name: "Alice", AvatarURL: "a.png"}}, byBlock["b2"].Authors)
+}

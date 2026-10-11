@@ -63,6 +63,15 @@ type AnchorDTO struct {
 type BlockCountDTO struct {
 	BlockID string `json:"block_id"`
 	Count   int64  `json:"count"`
+	// Authors 该块批注的评论者，按首次批注先后去重；前端据此渲染头像组
+	Authors []BlockAuthorDTO `json:"authors"`
+}
+
+// BlockAuthorDTO 批注块上的评论者
+type BlockAuthorDTO struct {
+	Name string `json:"name"`
+	// AvatarURL 空串表示未设置头像，前端回退为首字母头像
+	AvatarURL string `json:"avatar_url"`
 }
 
 // EmojiRef 表情映射值（emote map 的 value）。
@@ -255,7 +264,11 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 	}
 	dtos := make([]BlockCountDTO, 0, len(blocks))
 	for _, b := range blocks {
-		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count})
+		authors := make([]BlockAuthorDTO, 0, len(b.Authors))
+		for _, a := range b.Authors {
+			authors = append(authors, BlockAuthorDTO{Name: a.Name, AvatarURL: a.AvatarURL})
+		}
+		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors})
 	}
 	return dtos, nil
 }
