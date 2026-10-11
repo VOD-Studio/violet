@@ -96,4 +96,38 @@ describe("EmojiText", () => {
 		expect(container.querySelector("img")).toBeNull();
 		expect(container.textContent).toContain("(╯°□°）╯︵ ┻━┻");
 	});
+
+	describe("表情尺寸", () => {
+		const custom = { url: "/c.png", custom_emoji_id: "c1" };
+		const system = { url: "/s.png" };
+
+		it("自定义表情内联时比系统表情大", () => {
+			const { container } = render(
+				<EmojiText
+					text="看[cat]和[smile]"
+					emote={{ "[cat]": custom, "[smile]": system }}
+				/>,
+			);
+			const [cat, smile] = container.querySelectorAll("img");
+			expect(cat.className).toContain("size-9");
+			expect(smile.className).toContain("size-5");
+		});
+
+		it("整条只由表情组成时放大成表情包，大表情再放大一档", () => {
+			const { container } = render(
+				<EmojiText text="[cat]" emote={{ "[cat]": { ...custom, size: 2 } }} />,
+			);
+			expect(container.querySelector("img")?.className).toContain("size-24");
+			const small = render(<EmojiText text="[cat]" emote={{ "[cat]": custom }} />);
+			expect(small.container.querySelector("img")?.className).toContain("size-16");
+		});
+
+		it("表情夹在文字里或超过 4 个时不按表情包放大", () => {
+			const emote = { "[cat]": custom };
+			const mixed = render(<EmojiText text="好[cat]" emote={emote} />);
+			expect(mixed.container.querySelector("img")?.className).toContain("size-9");
+			const many = render(<EmojiText text="[cat][cat][cat][cat][cat]" emote={emote} />);
+			expect(many.container.querySelector("img")?.className).toContain("size-9");
+		});
+	});
 });
