@@ -163,7 +163,13 @@ function RootComponent() {
 					>
 						<Outlet />
 					</main>
-					{!isFullscreenRoute && <Footer />}
+					{!isFullscreenRoute && (
+						<>
+							<Footer />
+							{/* 给移动端底部灵动岛留位，避免页脚末行被盖住 */}
+							<div aria-hidden="true" className="h-20 shrink-0 lg:hidden" />
+						</>
+					)}
 				</div>
 			)}
 			<MusicPlayer />

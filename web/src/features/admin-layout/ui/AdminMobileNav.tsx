@@ -16,7 +16,7 @@ import { NavMenu } from "./nav-menu/NavMenu";
 /**
  * AdminMobileNav - 移动端抽屉导航
  *
- * md:hidden，桌面侧隐藏。复用 Sheet（side="left"）与 HeaderMobile 同款模式，
+ * md:hidden，桌面侧隐藏。复用 Sheet（side="left"），
  * 点击导航项后通过 onNavigate 关闭抽屉。
  */
 export function AdminMobileNav() {
