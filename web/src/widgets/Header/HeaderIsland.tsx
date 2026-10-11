@@ -1,27 +1,27 @@
-import { NAV_ITEMS, type NavItem, type NavLink, resolveActiveNav } from "@shared/config/nav";
+import {
+	flattenNavLinks,
+	NAV_ITEMS,
+	type NavItem,
+	type NavLink,
+	resolveActiveNav,
+} from "@shared/config/nav";
+import { useReducedMotion } from "@shared/lib/motion";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "cn";
 import { LayoutGrid, X } from "lucide-react";
-import {
-	AnimatePresence,
-	animate,
-	motion,
-	useMotionValue,
-	useReducedMotion,
-	useTransform,
-} from "motion/react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** 收起时常驻的主要入口，其余收进「更多」展开的面板 */
 const PRIMARY_TAB_COUNT = 4;
 /** 槽位数：主要入口加「更多」 */
 const SLOT_COUNT = PRIMARY_TAB_COUNT + 1;
-const COLLAPSED_HEIGHT = 56;
-const COLLAPSED_MAX_WIDTH = 336;
+const COLLAPSED_HEIGHT = 52;
 const EXPANDED_MAX_WIDTH = 400;
 const SIDE_GAP = 16;
-const TRACK_PADDING = 8;
+const TRACK_PADDING = 4;
+const ISLAND_LINKS = flattenNavLinks();
 /** 向下滚动超过此距离才会收成小圆标 */
 const COMPACT_AFTER_PX = 80;
 /** 单次滚动方向判定的最小位移，过滤抖动 */
@@ -31,8 +31,21 @@ const COMPACT_SIZE = 44;
 const EXPANDED_RADIUS = 16;
 
 const SPRING = { type: "spring", stiffness: 340, damping: 32, mass: 0.9 } as const;
-/** 药丸在槽位间滑动用的弹簧，略带回弹 */
-const SLIDE_SPRING = { type: "spring", stiffness: 520, damping: 38, mass: 0.7 } as const;
+const SLIDE_EASING = `linear(${Array.from({ length: 30 }, (_, index) =>
+	springProgress((index / 29) * 0.48),
+).join(",")})`;
+const SLIDE_TRANSITION = `transform 480ms ${SLIDE_EASING}`;
+
+function springProgress(seconds: number): number {
+	if (seconds <= 0) return 0;
+	if (seconds >= 0.48) return 1;
+	const frequency = Math.sqrt(96);
+	return (
+		1 -
+		Math.exp(-18 * seconds) *
+			(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
+	);
+}
 const BLUR_OUT = { opacity: 0, filter: "blur(6px)" };
 const BLUR_IN = { opacity: 1, filter: "blur(0px)" };
 
@@ -91,9 +104,8 @@ function useScrollCompact(): [boolean, (value: boolean) => void] {
 /**
  * HeaderIsland - 移动端底部灵动岛导航。
  *
- * 三种形态：平时是带主要入口的悬浮胶囊；向下滚动收成只显示当前页图标的小圆标，向上滚动或点击恢复；
- * 点「更多」向上展开成完整导航面板。形变直接动画宽、高与圆角（不做缩放变换），内容以透明度加模糊
- * 淡入淡出。通过 portal 挂在 body 上，不受头部定位上下文影响；lg 以上由顶部胶囊导航承担，此处隐藏。
+ * 展开时居中，向下滚动收成右侧圆钮；选中入口显示文字，透镜内显示实心图标。
+ * 导航独立于页面转场快照，不随正文淡入淡出。
  */
 const HeaderIsland = () => {
 	const [mounted, setMounted] = useState(false);
@@ -110,9 +122,15 @@ function Island() {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const routedTo = resolveActiveNav(pathname)?.link.to;
 	const activeTo = optimisticTo ?? routedTo;
+	const currentLink = ISLAND_LINKS.find((link) => link.to === activeTo);
+	// 站点菜单均为全角中文：text-sm 字宽加图标与文字间的留白。
+	const labelWidth = (currentLink?.label.length ?? 2) * 14 + 12;
 	const reduced = useReducedMotion();
 	const viewport = useViewportWidth();
-	const collapsedWidth = Math.min(viewport - SIDE_GAP * 2, COLLAPSED_MAX_WIDTH);
+	const collapsedWidth = Math.min(
+		viewport - SIDE_GAP * 2,
+		SLOT_COUNT * 44 + labelWidth + TRACK_PADDING * 2,
+	);
 	const expandedWidth = Math.min(viewport - SIDE_GAP * 1.5, EXPANDED_MAX_WIDTH);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 路径变化即视为导航完成，需要收起面板并清掉乐观高亮
@@ -174,9 +192,18 @@ function Island() {
 			<motion.nav
 				aria-label="移动端导航"
 				initial={false}
-				animate={size}
+				animate={{
+					...size,
+					x: mode === "compact" ? (viewport - SIDE_GAP * 2 - COMPACT_SIZE) / 2 : 0,
+				}}
+				style={{ viewTransitionName: "site-island" }}
 				transition={spring}
-				className="pointer-events-auto relative overflow-hidden bg-card/85 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-xl dark:ring-1 dark:ring-white/10"
+				className={cn(
+					"pointer-events-auto relative overflow-hidden",
+					mode === "tabs"
+						? "bg-muted"
+						: "bg-card/85 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-xl dark:ring-1 dark:ring-white/10",
+				)}
 			>
 				<AnimatePresence initial={false} mode="popLayout">
 					{mode === "panel" ? (
@@ -184,7 +211,7 @@ function Island() {
 							<Panel
 								activeTo={activeTo}
 								onClose={() => setOpen(false)}
-								reduced={!!reduced}
+								reduced={reduced}
 							/>
 						</motion.div>
 					) : mode === "compact" ? (
@@ -203,6 +230,8 @@ function Island() {
 						<motion.div key="tabs" {...content}>
 							<Tabs
 								activeTo={activeTo}
+								currentLink={currentLink}
+								labelWidth={labelWidth}
 								width={collapsedWidth}
 								reduced={!!reduced}
 								onSelect={(to) => setOptimisticTo(to)}
@@ -216,10 +245,10 @@ function Island() {
 	);
 }
 
-/** 小圆标里显示当前页图标；当前页不在主要入口时用「更多」图标 */
+/** 收起圆钮沿用当前菜单图标，未命中导航时显示全部菜单入口。 */
 function ActiveGlyph({ activeTo }: { activeTo: string | undefined }) {
-	const current = ROUTABLE_ITEMS.find((item) => item.to === activeTo);
-	const Icon = current && PRIMARY_TABS.includes(current) ? current.icon : LayoutGrid;
+	const current = ISLAND_LINKS.find((item) => item.to === activeTo);
+	const Icon = current?.icon ?? LayoutGrid;
 	return <Icon className="size-5" />;
 }
 
@@ -241,83 +270,156 @@ const SLOTS: Slot[] = [
 	{ key: "more", label: "更多", icon: LayoutGrid },
 ];
 
-/**
- * 收起态入口条：药丸是叠在上面的一层反色副本，用 clip-path 裁成药丸形状，位置由弹簧驱动。
- * 药丸经过哪个入口，那里的图标与文字就在药丸范围内即时反色；整个过程只改 clip-path，不触发布局。
- */
+/** 透镜与反向平移的实心副本相互抵消位移，只在透镜经过处反色。 */
 function Tabs({
 	activeTo,
+	currentLink,
+	labelWidth,
 	width,
 	reduced,
 	onSelect,
 	onMore,
 }: {
 	activeTo: string | undefined;
+	currentLink: NavLink | undefined;
+	labelWidth: number;
 	width: number;
 	reduced: boolean;
 	onSelect: (to: string) => void;
 	onMore: () => void;
 }) {
 	const trackWidth = width - TRACK_PADDING * 2;
-	const slotWidth = trackWidth / SLOT_COUNT;
+	const slotWidth = (trackWidth - labelWidth) / SLOT_COUNT;
 	const primaryIndex = PRIMARY_TABS.findIndex((item) => item.to === activeTo);
 	// 当前页不在主要入口（如笔记）时药丸落在「更多」上，提示它在更多里；没有命中任何页面则隐藏
 	const activeIndex =
 		activeTo === undefined ? -1 : primaryIndex >= 0 ? primaryIndex : SLOT_COUNT - 1;
+	const slots = SLOTS.map((slot) =>
+		slot.key === "more" && activeIndex === SLOT_COUNT - 1 && currentLink
+			? { ...slot, label: currentLink.label, icon: currentLink.icon }
+			: slot,
+	);
 
-	const left = useMotionValue(Math.max(0, activeIndex) * slotWidth);
-	const visible = useMotionValue(activeIndex < 0 ? 0 : 1);
-	useEffect(() => {
-		const target = Math.max(0, activeIndex) * slotWidth;
-		const config = reduced ? { duration: 0 } : SLIDE_SPRING;
-		const controls = [
-			animate(left, target, config),
-			animate(visible, activeIndex < 0 ? 0 : 1, { duration: 0.15 }),
-		];
-		return () => {
-			for (const control of controls) control.stop();
-		};
-	}, [activeIndex, slotWidth, reduced, left, visible]);
+	const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+	const left = Math.max(0, activeIndex) * slotWidth;
+	const right = left + slotWidth + labelWidth;
+	const clipPath = `inset(0px ${trackWidth - right}px 0px ${left}px round 22px)`;
+	const lensRef = useRef<HTMLDivElement>(null);
+	const previousClip = useRef(clipPath);
+	const shapeAnimation = useRef<Animation | null>(null);
+	useLayoutEffect(() => {
+		const lens = lensRef.current;
+		if (!lens) return;
+		const fromClip =
+			shapeAnimation.current?.playState === "running"
+				? getComputedStyle(lens).clipPath
+				: previousClip.current;
+		previousClip.current = clipPath;
+		shapeAnimation.current?.cancel();
+		if (fromClip === clipPath || reduced || activeIndex < 0) return;
+		const insets = fromClip
+			.slice(6)
+			.split("round")[0]
+			.trim()
+			.split(/\s+/)
+			.map(Number.parseFloat);
+		const fromLeft = insets[3] ?? insets[1] ?? insets[0];
+		const fromRight = trackWidth - (insets[1] ?? insets[0]);
+		const distance = left - fromLeft;
+		const edgeDelay = Math.min(0.08, (labelWidth / Math.max(1, Math.abs(distance))) * 0.08);
+		const keyframes = Array.from({ length: 35 }, (_, index) => {
+			const seconds = (index / 34) * 0.56;
+			const l =
+				fromLeft +
+				(left - fromLeft) * springProgress(seconds - (distance < 0 ? edgeDelay : 0));
+			const r =
+				fromRight +
+				(right - fromRight) * springProgress(seconds - (distance > 0 ? edgeDelay : 0));
+			return { clipPath: `inset(0px ${trackWidth - r}px 0px ${l}px round 22px)` };
+		});
+		shapeAnimation.current = lens.animate?.(keyframes, { duration: 560 }) ?? null;
+	}, [activeIndex, clipPath, labelWidth, left, reduced, right, trackWidth]);
+	useEffect(() => () => shapeAnimation.current?.cancel(), []);
 
-	const clipPath = useTransform([left, visible], ([x, v]: number[]) => {
-		const lens = slotWidth * v;
-		const inset = (slotWidth - lens) / 2;
-		const l = x + inset;
-		const r = trackWidth - x - slotWidth + inset;
-		return `inset(0px ${r}px 0px ${l}px round ${ROW_HEIGHT / 2}px)`;
-	});
+	const lean =
+		reduced || hoveredIndex === null
+			? 0
+			: Math.max(-4, Math.min(4, (hoveredIndex - activeIndex) * 4));
+	const transition = reduced ? "none" : SLIDE_TRANSITION;
 
 	return (
-		<div className="p-2" style={{ width }}>
+		<div
+			className="p-1"
+			style={{ width }}
+			onPointerOver={(event) => {
+				if (event.pointerType !== "mouse" || !(event.target instanceof Element)) return;
+				const slot = event.target.closest<HTMLElement>("[data-nav-index]");
+				if (slot) setHoveredIndex(Number(slot.dataset.navIndex));
+			}}
+			onPointerLeave={() => setHoveredIndex(null)}
+		>
 			<div className="relative" style={{ height: ROW_HEIGHT }}>
-				<div
-					className="grid h-full"
-					style={{ gridTemplateColumns: `repeat(${SLOT_COUNT}, 1fr)` }}
-				>
-					{SLOTS.map((slot) => (
+				<div className="relative h-full">
+					{slots.map((slot, index) => (
 						<SlotButton
 							key={slot.key}
 							slot={slot}
-							active={slot.to === activeTo}
+							active={index === activeIndex}
+							index={index}
+							offset={
+								index * slotWidth +
+								(activeIndex >= 0 && index > activeIndex ? labelWidth : 0)
+							}
+							width={slotWidth}
+							labelWidth={labelWidth}
+							reduced={reduced}
 							onSelect={onSelect}
 							onMore={onMore}
 						/>
 					))}
 				</div>
-				<motion.div
+				<div
+					ref={lensRef}
 					aria-hidden="true"
-					className="pointer-events-none absolute inset-0 bg-foreground text-background"
-					style={{ clipPath }}
+					className="pointer-events-none absolute top-0 left-0 h-full overflow-hidden rounded-full bg-foreground text-background"
+					style={{
+						width: trackWidth,
+						transform: `translateX(${lean}px)`,
+						transition,
+						opacity: activeIndex < 0 ? 0 : 1,
+						clipPath,
+						willChange: "transform, clip-path",
+					}}
 				>
 					<div
-						className="grid h-full"
-						style={{ gridTemplateColumns: `repeat(${SLOT_COUNT}, 1fr)` }}
+						className="relative h-full"
+						style={{
+							width: trackWidth,
+							transform: `translateX(${-lean}px)`,
+							transition,
+						}}
 					>
-						{SLOTS.map((slot) => (
-							<SlotFace key={slot.key} slot={slot} />
+						{slots.map((slot, index) => (
+							<span
+								key={slot.key}
+								className="absolute top-0 left-0 h-full"
+								style={{
+									transform: `translateX(${index * slotWidth + (activeIndex >= 0 && index > activeIndex ? labelWidth : 0)}px)`,
+									transition,
+								}}
+							>
+								<SlotFace
+									slot={slot}
+									active={index === activeIndex}
+									width={slotWidth}
+									labelWidth={labelWidth}
+									reduced={reduced}
+									filled
+								/>
+							</span>
 						))}
 					</div>
-				</motion.div>
+				</div>
 			</div>
 		</div>
 	);
@@ -325,12 +427,38 @@ function Tabs({
 
 const ROW_HEIGHT = COLLAPSED_HEIGHT - TRACK_PADDING * 2;
 
-function SlotFace({ slot }: { slot: Slot }) {
+interface SlotFaceProps {
+	slot: Slot;
+	active: boolean;
+	width: number;
+	labelWidth: number;
+	reduced: boolean;
+	filled?: boolean;
+}
+
+function SlotFace({ slot, active, width, labelWidth, reduced, filled = false }: SlotFaceProps) {
 	const Icon = slot.icon;
 	return (
-		<span className="flex h-full flex-col items-center justify-center gap-0.5">
-			<Icon className="size-[18px]" />
-			<span className="text-[10px] leading-none font-medium">{slot.label}</span>
+		<span
+			className="pointer-events-none relative block h-full"
+			style={{ width: width + labelWidth }}
+		>
+			<span
+				className="absolute inset-y-0 left-0 flex items-center justify-center"
+				style={{ width }}
+			>
+				<Icon className="size-5" fill={filled ? "currentColor" : "none"} />
+			</span>
+			<span
+				className="absolute inset-y-0 flex items-center whitespace-nowrap text-sm leading-none font-medium"
+				style={{
+					left: width - 4,
+					opacity: active ? 1 : 0,
+					transition: reduced ? "none" : `opacity 100ms ${active ? "180ms" : "0ms"}`,
+				}}
+			>
+				{slot.label}
+			</span>
 		</span>
 	);
 }
@@ -338,25 +466,46 @@ function SlotFace({ slot }: { slot: Slot }) {
 function SlotButton({
 	slot,
 	active,
+	width,
+	labelWidth,
+	reduced,
+	offset,
+	index,
 	onSelect,
 	onMore,
-}: {
-	slot: Slot;
-	active: boolean;
+}: SlotFaceProps & {
+	offset: number;
+	index: number;
 	onSelect: (to: string) => void;
 	onMore: () => void;
 }) {
 	const face = (
-		<span className="flex h-full flex-col items-center justify-center gap-0.5 text-muted-foreground">
-			<slot.icon className="size-[18px]" />
-			<span className="text-[10px] leading-none font-medium">{slot.label}</span>
-		</span>
+		<SlotFace
+			slot={slot}
+			active={active}
+			width={width}
+			labelWidth={labelWidth}
+			reduced={reduced}
+		/>
 	);
 	const className =
-		"block h-full rounded-full transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+		"absolute top-0 left-0 block h-full rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+	const style = {
+		width: width + (active ? labelWidth : 0),
+		transform: `translateX(${offset}px)`,
+		transition: reduced ? "none" : SLIDE_TRANSITION,
+	};
 	if (slot.to === undefined) {
 		return (
-			<button type="button" aria-label="展开全部导航" onClick={onMore} className={className}>
+			<button
+				type="button"
+				aria-label={active ? `${slot.label}，展开全部导航` : "展开全部导航"}
+				aria-current={active ? "page" : undefined}
+				onClick={onMore}
+				className={className}
+				style={style}
+				data-nav-index={index}
+			>
 				{face}
 			</button>
 		);
@@ -364,10 +513,23 @@ function SlotButton({
 	return (
 		<Link
 			to={slot.to}
+			viewTransition={false}
 			aria-label={slot.label}
 			aria-current={active ? "page" : undefined}
-			onClick={() => onSelect(slot.to as string)}
+			data-nav-index={index}
+			onClick={(event) => {
+				if (
+					event.button === 0 &&
+					!event.metaKey &&
+					!event.ctrlKey &&
+					!event.shiftKey &&
+					!event.altKey
+				) {
+					onSelect(slot.to as string);
+				}
+			}}
 			className={className}
+			style={style}
 		>
 			{face}
 		</Link>

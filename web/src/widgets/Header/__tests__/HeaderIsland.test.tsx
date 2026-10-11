@@ -22,7 +22,7 @@ function renderAt(path: string) {
 	const empty = () => null;
 	const router = createRouter({
 		routeTree: root.addChildren(
-			["/", "/blog", "/series", "/galleries", "/chat"].map((p) =>
+			["/", "/blog", "/blog/archive", "/series", "/galleries", "/lab", "/chat"].map((p) =>
 				createRoute({ getParentRoute: () => root, path: p, component: empty }),
 			),
 		),
@@ -64,6 +64,19 @@ describe("HeaderIsland", () => {
 			await router.navigate({ to: "/blog" });
 		});
 		await waitFor(() => expect(screen.queryByText("Violet · 浏览本站")).toBeNull());
+	});
+
+	it.each([
+		["/lab", "实验室"],
+		["/blog/archive", "归档"],
+	])("在 %s 用当前菜单替代更多入口，并仍可展开全部导航", async (path, label) => {
+		renderAt(path);
+		const more = await screen.findByRole("button", { name: `${label}，展开全部导航` });
+		expect(more.getAttribute("aria-current")).toBe("page");
+		expect(more.textContent).toBe(label);
+		fireEvent.click(more);
+		const selected = await screen.findByRole("link", { name: label });
+		expect(selected.getAttribute("aria-current")).toBe("page");
 	});
 
 	it("聊天全屏页不显示，避免盖住输入栏", async () => {
