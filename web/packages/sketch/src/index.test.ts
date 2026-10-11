@@ -13,6 +13,7 @@ import {
 	flatten,
 	type Hand,
 	type InkBatch,
+	LINE,
 	line,
 	MOVE,
 	type Pen,
@@ -25,7 +26,7 @@ import {
 	styles,
 } from "./index.ts";
 import { drawCanvas } from "./render/canvas.ts";
-import { renderSvg } from "./render/svg.ts";
+import { pathData, renderSvg } from "./render/svg.ts";
 
 const palette = { paper: "#fff", ink: "#222", a: "#fc9", b: "#9cf" };
 
@@ -255,6 +256,31 @@ describe("draw", () => {
 		expect(() => draw(scene(base), { style: styles.natural, maxStrokes: 1 })).toThrow(
 			BudgetExceeded,
 		);
+	});
+});
+
+describe("SVG 序列化", () => {
+	it("坐标按定点小数输出，舍入为 0 时不带负号，文本按 UTF-8 转义输出", () => {
+		expect(
+			pathData(
+				[MOVE, LINE, CUBIC, 3],
+				[0, -0.004, 12.5, -3.1, 100, 0.05, -1234.567, 7, 0.1, 1e-9],
+			),
+		).toBe("M0 0L12.5 -3.1C100 0.05 -1234.57 7 0.1 0Z");
+		const drawing = draw(
+			scene([
+				{
+					id: "标签<1>",
+					path: line(0, 0, 10, 10),
+					strokeRole: "none",
+					label: { text: "你好 & <再见>", x: 5, y: 5 },
+				},
+			]),
+			{ style: styles.natural },
+		);
+		const svg = renderSvg(drawing, palette);
+		expect(svg).toContain('data-item="标签&lt;1&gt;"');
+		expect(svg).toContain(">你好 &amp; &lt;再见&gt;</text>");
 	});
 });
 

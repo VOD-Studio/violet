@@ -1,6 +1,7 @@
 import { itemProgress, type Schedule } from "../animate/schedule.ts";
 import { CLOSE, CUBIC, type Drawing, type InkBatch, LINE, MOVE, type Path } from "../core/types.ts";
 import { type Palette, paint, type RenderOptions } from "./palette.ts";
+import { TextWriter } from "./text-writer.ts";
 import { batchTracks, ease, ribbonPrefix, type Track, trackProgress } from "./tracks.ts";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -29,29 +30,35 @@ interface TrackRef {
 	baseOpacity: number;
 }
 
-// 定点格式化：整数运算拼接，避免浮点 toString 在大量坐标上的开销。
-function formatter(decimals: number): (v: number) => string {
-	const f = 10 ** decimals;
-	return (v) => {
-		let k = Math.round(v * f);
-		if (k === 0) return "0";
-		let sign = "";
-		if (k < 0) {
-			sign = "-";
-			k = -k;
-		}
-		const whole = Math.floor(k / f);
-		let frac = k - whole * f;
-		if (!frac) return sign + whole;
-		let digits = decimals;
-		while (frac % 10 === 0) {
-			frac /= 10;
-			digits--;
-		}
-		let tail = `${frac}`;
-		while (tail.length < digits) tail = `0${tail}`;
-		return `${sign}${whole}.${tail}`;
-	};
+function writePath(
+	w: TextWriter,
+	verbs: ArrayLike<number>,
+	coords: ArrayLike<number>,
+	v0: number,
+	v1: number,
+	c0: number,
+): void {
+	let c = c0;
+	for (let i = v0; i < v1; i++) {
+		const verb = verbs[i];
+		if (verb === MOVE) w.char(77).num(coords[c++]).char(32).num(coords[c++]);
+		else if (verb === LINE) w.char(76).num(coords[c++]).char(32).num(coords[c++]);
+		else if (verb === CUBIC) {
+			w.char(67)
+				.num(coords[c])
+				.char(32)
+				.num(coords[c + 1])
+				.char(32)
+				.num(coords[c + 2]);
+			w.char(32)
+				.num(coords[c + 3])
+				.char(32)
+				.num(coords[c + 4])
+				.char(32)
+				.num(coords[c + 5]);
+			c += 6;
+		} else if (verb === CLOSE) w.char(90);
+	}
 }
 
 /**
@@ -64,19 +71,9 @@ export function pathData(
 	coords: ArrayLike<number>,
 	decimals = 2,
 ): string {
-	const n = formatter(decimals);
-	let d = "";
-	let c = 0;
-	for (let i = 0; i < verbs.length; i++) {
-		const verb = verbs[i];
-		if (verb === MOVE) d += `M${n(coords[c++])} ${n(coords[c++])}`;
-		else if (verb === LINE) d += `L${n(coords[c++])} ${n(coords[c++])}`;
-		else if (verb === CUBIC) {
-			d += `C${n(coords[c])} ${n(coords[c + 1])} ${n(coords[c + 2])} ${n(coords[c + 3])} ${n(coords[c + 4])} ${n(coords[c + 5])}`;
-			c += 6;
-		} else if (verb === CLOSE) d += "Z";
-	}
-	return d;
+	const w = new TextWriter(decimals, verbs.length + coords.length * 8);
+	writePath(w, verbs, coords, 0, verbs.length, 0);
+	return w.toString();
 }
 
 function escapeXml(text: string): string {
@@ -96,21 +93,32 @@ function buildSvg(
 	const id = `${options.idPrefix ?? "sketch"}-${++serial}`;
 	const clips = new Map<Path, string>();
 	const refs: TrackRef[] = [];
-	let defs = "";
-	let body = "";
+	let estimate = 256;
+	for (const item of drawing.items)
+		for (const batch of item.batches)
+			estimate += batch.verbs.length + batch.coords.length * 8 + 256;
+	const defs = new TextWriter(decimals);
+	const body = new TextWriter(decimals, estimate);
 	const background = options.background === undefined ? "paper" : options.background;
 	if (background)
-		body += `<rect width="${drawing.width}" height="${drawing.height}" fill="${paint(palette, background)}" data-role="${background}" data-paint="fill"/>`;
+		body.text(
+			`<rect width="${drawing.width}" height="${drawing.height}" fill="${paint(palette, background)}" data-role="${background}" data-paint="fill"/>`,
+		);
 	drawing.items.forEach((item, itemIndex) => {
-		body += `<g data-item="${escapeXml(item.id)}"${item.transform ? ` transform="matrix(${item.transform.join(" ")})"` : ""}>`;
+		body.text(
+			`<g data-item="${escapeXml(item.id)}"${item.transform ? ` transform="matrix(${item.transform.join(" ")})"` : ""}>`,
+		);
 		for (const batch of item.batches) {
 			let clipAttr = "";
 			if (batch.clip) {
 				let clipId = clips.get(batch.clip);
 				if (!clipId) {
+					const { verbs, coords, fillRule } = batch.clip;
 					clipId = `${id}-c${clips.size}`;
 					clips.set(batch.clip, clipId);
-					defs += `<clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><path d="${pathData(batch.clip.verbs, batch.clip.coords, decimals)}" clip-rule="${batch.clip.fillRule}"/></clipPath>`;
+					defs.text(`<clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><path d="`);
+					writePath(defs, verbs, coords, 0, verbs.length, 0);
+					defs.text(`" clip-rule="${fillRule}"/></clipPath>`);
 				}
 				clipAttr = ` clip-path="url(#${clipId})"`;
 			}
@@ -121,30 +129,34 @@ function buildSvg(
 				batch.mode === "fill"
 					? `fill="${color}" fill-rule="${batch.fillRule ?? "nonzero"}"`
 					: `fill="none" stroke="${color}" stroke-width="${batch.width ?? 1}" stroke-linecap="round" stroke-linejoin="round"`;
-			const tail = `${look}${opacity}${clipAttr} data-role="${escapeXml(batch.role)}" data-paint="${batch.mode}"`;
+			const tail = `" ${look}${opacity}${clipAttr} data-role="${escapeXml(batch.role)}" data-paint="${batch.mode}"`;
 			if (!split) {
-				body += `<path d="${pathData(batch.verbs, batch.coords, decimals)}" ${tail}/>`;
+				body.text('<path d="');
+				writePath(body, batch.verbs, batch.coords, 0, batch.verbs.length, 0);
+				body.text(tail).text("/>");
 				continue;
 			}
 			for (const track of batchTracks(batch)) {
 				refs.push({ item: itemIndex, track, batch, baseOpacity });
-				const d = pathData(
-					batch.verbs.subarray(track.v0, track.v1),
-					batch.coords.subarray(track.c0, track.c1),
-					decimals,
+				body.text('<path d="');
+				writePath(body, batch.verbs, batch.coords, track.v0, track.v1, track.c0);
+				body.text(tail).text(
+					track.kind === "stroke" ? ' data-trk="1" pathLength="1"/>' : ' data-trk="1"/>',
 				);
-				body += `<path d="${d}" ${tail} data-trk="1"${track.kind === "stroke" ? ' pathLength="1"' : ""}/>`;
 			}
 		}
 		if (item.label) {
 			const { text, x, y, size } = item.label;
-			body += `<text x="${x}" y="${y}" fill="${paint(palette, "ink")}" font-size="${size ?? 14}" font-family="${escapeXml(options.fontFamily ?? "system-ui, sans-serif")}" text-anchor="middle" dominant-baseline="middle" data-role="ink" data-paint="fill" data-lbl="${itemIndex}">${escapeXml(text)}</text>`;
+			body.text(
+				`<text x="${x}" y="${y}" fill="${paint(palette, "ink")}" font-size="${size ?? 14}" font-family="${escapeXml(options.fontFamily ?? "system-ui, sans-serif")}" text-anchor="middle" dominant-baseline="middle" data-role="ink" data-paint="fill" data-lbl="${itemIndex}">${escapeXml(text)}</text>`,
+			);
 		}
-		body += "</g>";
+		body.text("</g>");
 	});
 	const title = options.title ? `<title>${escapeXml(options.title)}</title>` : "";
+	const clipDefs = clips.size ? `<defs>${defs}</defs>` : "";
 	return {
-		svg: `<svg xmlns="${NS}" viewBox="0 0 ${drawing.width} ${drawing.height}" width="${drawing.width}" height="${drawing.height}" role="img">${title}${defs ? `<defs>${defs}</defs>` : ""}${body}</svg>`,
+		svg: `<svg xmlns="${NS}" viewBox="0 0 ${drawing.width} ${drawing.height}" width="${drawing.width}" height="${drawing.height}" role="img">${title}${clipDefs}${body}</svg>`,
 		refs,
 	};
 }
