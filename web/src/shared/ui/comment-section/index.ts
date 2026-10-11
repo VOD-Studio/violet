@@ -6,12 +6,12 @@
 
 export { CommentItem } from "./CommentItem";
 export { CommentList } from "./CommentList";
-export { CommentMeta } from "./CommentMeta";
+export { CommentAvatar, CommentMeta } from "./CommentMeta";
 export { CommentRepliesBlock } from "./CommentRepliesBlock";
 export { CommentSection } from "./CommentSection";
 export { ExpandedReplies } from "./ExpandedReplies";
 export type { CommentToneCfg } from "./tone";
-export { COMMENT_TONES, getCommentToneCfg } from "./tone";
+export { AUTHOR_TIER, COMMENT_TONES, getCommentToneCfg } from "./tone";
 export type {
 	CommentDisplayItem,
 	CommentRaw,

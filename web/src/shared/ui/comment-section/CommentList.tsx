@@ -35,8 +35,8 @@ export function CommentList<T extends CommentRaw>({
 	if (isLoading) {
 		return (
 			<div className="space-y-3">
-				<ShimmerSkeleton className="h-24 w-full rounded-xl" />
-				<ShimmerSkeleton className="h-24 w-full rounded-xl" />
+				<ShimmerSkeleton className="h-20 w-full rounded-2xl" />
+				<ShimmerSkeleton className="h-20 w-full rounded-2xl" />
 			</div>
 		);
 	}
@@ -46,7 +46,7 @@ export function CommentList<T extends CommentRaw>({
 	}
 
 	return (
-		<div className="space-y-3">
+		<div className="space-y-7">
 			{comments.map((raw) => (
 				<CommentItem
 					key={raw.id}

@@ -59,7 +59,7 @@ export function CommentRepliesBlock<T extends CommentRaw>({
 	);
 
 	return (
-		<div className="mt-2 space-y-2 border-l border-edge-hairline pl-3">
+		<div className="relative mt-4 space-y-4 before:absolute before:-left-7.5 before:top-0 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary/15">
 			{/* 预览回复（preview 模式，位置不动） */}
 			{previewReplies.map(renderReply)}
 
