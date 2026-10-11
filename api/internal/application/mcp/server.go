@@ -52,11 +52,11 @@ var NotesServerMeta = &mcp.Implementation{
 // 告知本 server 只管笔记；文章毛坯走 violet-posts 的 create_post（只建草稿）。
 const notesInstructions = `本 server 是知识笔记的写入通道（AI 会话沉淀与手工记录共用）。安全约束：status=published 需要额外的 notes:publish scope——仅在用户明确选择直接发布时使用，默认一律 draft。文章级内容（完整功能毛坯）请用 violet-posts 的 create_post（只建草稿）。沉淀前先 list_notes 查重，同主题用 update_note 补充。`
 
-// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 2 个标签 tool + 1 个编排 prompt。
+// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 2 个标签 tool + 1 个配图 tool + 1 个编排 prompt。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
 // prompts 提供 polish_draft 编排 prompt（PAT posts:read）。
-func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, tagTools *TagTools, seriesTools *SeriesTools) *mcp.Server {
+func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, tagTools *TagTools, seriesTools *SeriesTools, imageTools *ImageTools) *mcp.Server {
 	s := mcp.NewServer(ServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -88,6 +88,13 @@ func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, 
 		Name:        "create_tag",
 		Description: "为当前用户创建标签（幂等：同名已存在则返回已存在）。需 posts:write 权限。抓取带标签文章时先用此 tool 建标签，再 create_post 带 tags。",
 	}, tagTools.CreateTag)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "upload_image",
+		Description: "上传文章配图（png/jpeg/gif/webp，≤4MiB，base64 传入），返回站内 url/width/height。" +
+			"把 url 写进 content_md 的 ![alt](url) 或 cover_image。需 posts:write 权限。" +
+			"大图先本地压缩（如转 webp）再传，base64 会占用上下文。",
+	}, imageTools.UploadImage)
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_tags",

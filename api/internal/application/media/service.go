@@ -1588,15 +1588,34 @@ func (s *UploadService) SaveBotMedia(ctx context.Context, in SaveBotMediaInput) 
 	if !ok {
 		return BotMediaDTO{}, shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
 	}
-	mimeType := imageMIMEByExt[ext]
-	if in.MIMEType != mimeType {
+	if in.MIMEType != imageMIMEByExt[ext] {
 		return BotMediaDTO{}, shared.BadRequest("图片 MIME 类型与文件内容不一致")
 	}
-	originalName := strings.TrimSpace(in.OriginalName)
+	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeChat, in.OriginalName, ext, in.Data)
+}
+
+// SavePostImageInput 是 MCP 为文章上传配图的用例入参。
+type SavePostImageInput struct {
+	OwnerID      shared.ID
+	OriginalName string
+	Data         []byte
+}
+
+// SavePostImage 校验并保存文章配图，MIME 以内容嗅探为准。
+func (s *UploadService) SavePostImage(ctx context.Context, in SavePostImageInput) (BotMediaDTO, error) {
+	ext, ok := SniffImageExt(in.Data)
+	if !ok {
+		return BotMediaDTO{}, shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
+	}
+	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposePost, in.OriginalName, ext, in.Data)
+}
+
+func (s *UploadService) saveImageDTO(ctx context.Context, ownerID shared.ID, purpose, originalName, ext string, data []byte) (BotMediaDTO, error) {
+	originalName = strings.TrimSpace(originalName)
 	if originalName == "" {
 		originalName = "image." + ext
 	}
-	f, err := s.saveWholeImage(ctx, in.OwnerID, domainupload.PurposeChat, originalName, mimeType, ext, in.Data)
+	f, err := s.saveWholeImage(ctx, ownerID, purpose, originalName, imageMIMEByExt[ext], ext, data)
 	if err != nil {
 		return BotMediaDTO{}, err
 	}
