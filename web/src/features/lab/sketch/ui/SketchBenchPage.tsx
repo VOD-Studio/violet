@@ -25,9 +25,9 @@ import {
 	type SceneKey,
 } from "@features/lab/sketch/model/scenes";
 import { LabHeader } from "@features/lab/ui/LabHeader";
-import { createPlayer, type Player, type ScheduleMode } from "@violet/sketch";
-import { drawCanvas } from "@violet/sketch/canvas";
-import { seekSvg } from "@violet/sketch/svg";
+import { createPlayer, type Player, type ScheduleMode } from "@violet/inkline";
+import { drawCanvas } from "@violet/inkline/canvas";
+import { seekSvg } from "@violet/inkline/svg";
 import { Button, Segmented } from "@violet/ui";
 import { Pause, Play, RotateCcw, Shuffle } from "lucide-react";
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
@@ -118,7 +118,7 @@ function Pane({ title, note, stats, zoom, scrollRef, onScroll, status, children 
 
 const formatTime = (seconds: number) => seconds.toFixed(2).padStart(5, "0");
 
-/** Rough.js 与 @violet/sketch 同几何、同 seed 的并排对照，含笔、压感、线稿淡彩插画与整图时间轴。 */
+/** Rough.js 与 @violet/inkline 同几何、同 seed 的并排对照，含笔、压感、线稿淡彩插画与整图时间轴。 */
 export function SketchBenchPage() {
 	const [sceneKey, setSceneKey] = useState<SceneKey>("illustration");
 	const [pen, setPen] = useState<PenId>("gpen");
@@ -399,7 +399,7 @@ export function SketchBenchPage() {
 					<div ref={roughHost} style={{ aspectRatio: ratio }} />
 				</Pane>
 				<Pane
-					title="@violet/sketch"
+					title="@violet/inkline"
 					note={`0.2.0 · ${penLabel} · 压感 ${pressure.toFixed(2)} · ${handLabel}`}
 					stats={sketchStats}
 					zoom={zoom}
@@ -487,7 +487,7 @@ export function SketchBenchPage() {
 			<p className="mt-6 text-sm text-muted-foreground">
 				两侧使用同一几何、线宽与 seed。耗时为单次生成加 DOM
 				构建，会随设备与负载波动；可重放的基准见
-				<code className="mx-1 font-mono text-xs">packages/sketch/bench</code>
+				<code className="mx-1 font-mono text-xs">packages/inkline/bench</code>
 				。时间轴只作用于本库一侧，暂停、跳转与倒放不重新生成笔画。
 			</p>
 		</div>

@@ -180,9 +180,6 @@ importers:
       '@violet/react-tweet':
         specifier: workspace:*
         version: link:packages/react-tweet
-      '@violet/sketch':
-        specifier: workspace:@violet/inkline@*
-        version: link:packages/inkline
       '@violet/ui':
         specifier: workspace:*
         version: link:packages/ui

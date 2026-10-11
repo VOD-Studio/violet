@@ -1,5 +1,5 @@
 import type { BenchScene } from "@features/lab/sketch/model/scenes";
-import { type Palette, pathFromSvg } from "@violet/sketch";
+import { type Palette, pathFromSvg } from "@violet/inkline";
 
 interface VectorArtwork {
 	width: number;
