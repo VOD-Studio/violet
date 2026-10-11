@@ -1,12 +1,12 @@
-# @violet/inkline
+# @violetjs/inkline
 
 框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0：笔画规划与三档手法、逐点压力与四支笔（签字笔、钢笔、马克笔、G 笔，压感强度均可调）、七种填充与淡彩、线稿淡彩风格，以及整图时间轴（顺序、并行、交错）。
 
 ## 调用
 
 ```ts
-import { draw, fills, rect, styles } from "@violet/inkline";
-import { mountSvg, updateSvgPalette } from "@violet/inkline/svg";
+import { draw, fills, rect, styles } from "@violetjs/inkline";
+import { mountSvg, updateSvgPalette } from "@violetjs/inkline/svg";
 
 const drawing = draw(
 	{
@@ -22,7 +22,7 @@ document.body.append(svg);
 updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 ```
 
-`@violet/inkline/canvas` 的 `drawCanvas(drawing, canvas, palette)` 渲染同一结果；`renderSvg` 不依赖 DOM，可在 Worker 或 Node 中输出 SVG 文本。
+`@violetjs/inkline/canvas` 的 `drawCanvas(drawing, canvas, palette)` 渲染同一结果；`renderSvg` 不依赖 DOM，可在 Worker 或 Node 中输出 SVG 文本。
 
 ## 概念
 
@@ -41,7 +41,7 @@ updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
 ## 笔
 
 ```ts
-import { createFineliner, createMarker, inkpen, styles } from "@violet/inkline";
+import { createFineliner, createMarker, inkpen, styles } from "@violetjs/inkline";
 
 const writing = { ...styles.natural, pen: inkpen };                    // 钢笔
 const marker = { ...styles.natural, pen: createMarker({ weight: 7, opacity: 0.45 }) };
@@ -58,7 +58,7 @@ const light = { ...styles.natural, pen: createFineliner({ pressure: 0.4 }) };
 自定义变宽笔用 `createRibbonPen`：给出笔尖角度与短长轴比、压感强度为 1 时的压力曲线和是否分笔叠色即可，`pressure` 参数在恒宽与这条曲线之间插值。扩展的笔按 `PenFactory` 约定提供工厂，使用方就能像调节内置笔一样调节它的压感：
 
 ```ts
-import { createRibbonPen, type PenFactory } from "@violet/inkline";
+import { createRibbonPen, type PenFactory } from "@violetjs/inkline";
 
 export const createBrush: PenFactory = ({ pressure = 0.8 } = {}) =>
 	createRibbonPen({ id: "brush", weight: 2, minScale: 0.1, maxScale: 1.4, gamma: 1.5, pressure });
@@ -69,7 +69,7 @@ createBrush({ pressure: 0.3 }).pressure;   // 0.3
 ## 线稿淡彩
 
 ```ts
-import { circle, createGPen, draw, lineWashStyle } from "@violet/inkline";
+import { circle, createGPen, draw, lineWashStyle } from "@violetjs/inkline";
 
 const palette = { paper: "#fffdf7", ink: "#4a3431", moon: "#f7e6a1" };
 const drawing = draw(
@@ -84,8 +84,8 @@ const softer = { ...lineWashStyle, pen: createGPen({ pressure: 0.5 }) };   // �
 ## 整图时间轴
 
 ```ts
-import { createPlayer, createSchedule } from "@violet/inkline";
-import { mountSvg, seekSvg } from "@violet/inkline/svg";
+import { createPlayer, createSchedule } from "@violetjs/inkline";
+import { mountSvg, seekSvg } from "@violetjs/inkline/svg";
 
 const schedule = createSchedule(drawing, { mode: "stagger" });   // "sequential" | "parallel" | "stagger"
 const svg = mountSvg(drawing, palette, { schedule });
@@ -100,7 +100,7 @@ Canvas 用 `drawCanvas(drawing, canvas, palette, { schedule, time })` 在每帧�
 任一维度都可以是包外的普通对象，直接放进 `Style`，无需注册，也不改核心与渲染器：
 
 ```ts
-import { BatchBuilder, channel, type Pen } from "@violet/inkline";
+import { BatchBuilder, channel, type Pen } from "@violetjs/inkline";
 
 const WIDTH = channel("my-ribbon:width");
 export const ribbon: Pen = {
@@ -133,9 +133,9 @@ export const ribbon: Pen = {
 在 `web/` 下运行：
 
 ```sh
-pnpm --filter @violet/inkline typecheck
+pnpm --filter @violetjs/inkline typecheck
 pnpm exec vitest run packages/inkline
-pnpm --filter @violet/inkline build
+pnpm --filter @violetjs/inkline build
 node packages/inkline/bench/compare-rough.ts
 ```
 

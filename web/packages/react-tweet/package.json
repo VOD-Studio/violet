@@ -1,5 +1,5 @@
 {
-	"name": "@violet/react-tweet",
+	"name": "@violetjs/react-tweet",
 	"version": "0.1.0",
 	"description": "Native React tweet embeds with standalone themes and an FxTwitter data adapter",
 	"license": "MIT",

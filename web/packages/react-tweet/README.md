@@ -1,4 +1,4 @@
-# @violet/react-tweet
+# @violetjs/react-tweet
 
 原生 React 推文组件，包含快照渲染、异步加载、来源无关的组合卡片和服务端数据适配器。不依赖 Violet 站点、路由、状态管理或 Tailwind，不加载第三方脚本或 iframe；图片、视频仍会请求各自的资源地址。
 
@@ -9,15 +9,15 @@
 ```bash
 pnpm --dir packages/react-tweet pack --pack-destination /tmp
 # 在消费项目执行；React 19 由宿主提供。
-pnpm add /tmp/violet-react-tweet-0.1.0.tgz
+pnpm add /tmp/violetjs-react-tweet-0.1.0.tgz
 ```
 
 | 入口 | 契约 |
 | --- | --- |
-| `@violet/react-tweet` | 组件与公开类型，自动导入 CSS；由支持 CSS 的浏览器构建工具消费 |
-| `@violet/react-tweet/unstyled` | 同一组件和类型，无 CSS 副作用；可直接用于 Node.js SSR 或自定义样式 |
-| `@violet/react-tweet/api` | `getTweet`、`parseTweetId`、`GetTweetOptions`；不依赖 React 或 CSS |
-| `@violet/react-tweet/styles.css` | 无样式入口需要默认外观时手动加载 |
+| `@violetjs/react-tweet` | 组件与公开类型，自动导入 CSS；由支持 CSS 的浏览器构建工具消费 |
+| `@violetjs/react-tweet/unstyled` | 同一组件和类型，无 CSS 副作用；可直接用于 Node.js SSR 或自定义样式 |
+| `@violetjs/react-tweet/api` | `getTweet`、`parseTweetId`、`GetTweetOptions`；不依赖 React 或 CSS |
+| `@violetjs/react-tweet/styles.css` | 无样式入口需要默认外观时手动加载 |
 
 运行环境需要 React 19、原生 ESM、现代浏览器 CSS 和标准 Fetch API。根入口与 `/unstyled` 共用无 CSS 的类型入口，读取类型不需要额外声明 CSS 模块。
 
@@ -26,7 +26,7 @@ pnpm add /tmp/violet-react-tweet-0.1.0.tgz
 `EmbeddedTweet` 不发起数据请求，适合宿主已保存的快照和服务端渲染。
 
 ```tsx
-import { EmbeddedTweet, type TweetData } from "@violet/react-tweet";
+import { EmbeddedTweet, type TweetData } from "@violetjs/react-tweet";
 
 const saved: TweetData = {
   url: "https://x.com/thsottiaux/status/2062329981548802523",
@@ -49,7 +49,7 @@ export function SavedTweet() {
 `Tweet.fetcher` 必填，接入方式由宿主决定，可使用同源端点、server function 或缓存。下面的包装组件接收宿主已经实现的加载器，不假定端点路径或响应封装：
 
 ```tsx
-import { Tweet, type TweetFetcher } from "@violet/react-tweet";
+import { Tweet, type TweetFetcher } from "@violetjs/react-tweet";
 
 export function RemoteTweet({ fetcher }: { fetcher: TweetFetcher }) {
   return (
@@ -69,8 +69,8 @@ export function RemoteTweet({ fetcher }: { fetcher: TweetFetcher }) {
 
 ```tsx
 import { renderToStaticMarkup } from "react-dom/server";
-import { getTweet } from "@violet/react-tweet/api";
-import { EmbeddedTweet } from "@violet/react-tweet/unstyled";
+import { getTweet } from "@violetjs/react-tweet/api";
+import { EmbeddedTweet } from "@violetjs/react-tweet/unstyled";
 
 const tweet = await getTweet("1728987032779694397");
 const html = renderToStaticMarkup(
@@ -78,7 +78,7 @@ const html = renderToStaticMarkup(
 );
 ```
 
-该示例使用 `/unstyled` 避免 Node.js 直接加载 CSS；浏览器页面需另行加载 `@violet/react-tweet/styles.css`。
+该示例使用 `/unstyled` 避免 Node.js 直接加载 CSS；浏览器页面需另行加载 `@violetjs/react-tweet/styles.css`。
 
 官方作者元数据不开放浏览器跨域访问，**不要在浏览器中直接调用 `getTweet`**。
 
@@ -87,7 +87,7 @@ const html = renderToStaticMarkup(
 `TweetCard` 只负责外观和内容顺序，不要求 X 标识，也不添加外站品牌、链接或操作。通过 `headerSlot`、`contentSlot`、`mediaSlot`、`quoteSlot`、`footerSlot` 组合宿主内容。`EmbeddedTweet` 内部复用同一个布局。
 
 ```tsx
-import { TweetCard } from "@violet/react-tweet";
+import { TweetCard } from "@violetjs/react-tweet";
 
 export function QuotedPost() {
   return (
@@ -166,9 +166,9 @@ SVG 图标位于 `src/tweet/icons/*.svg`。品牌、操作和单色徽章通过 
 在 workspace 的 `web/` 目录执行：
 
 ```bash
-pnpm --filter @violet/react-tweet typecheck
-pnpm --filter @violet/react-tweet test
-pnpm --filter @violet/react-tweet build
+pnpm --filter @violetjs/react-tweet typecheck
+pnpm --filter @violetjs/react-tweet test
+pnpm --filter @violetjs/react-tweet build
 pnpm --dir packages/react-tweet pack --pack-destination /tmp
 ```
 

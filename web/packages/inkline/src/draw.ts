@@ -62,7 +62,7 @@ function retime(batch: InkBatch, offset: number, total: number): InkBatch {
  *
  * @example
  * ```ts
- * import { draw, rect, styles } from "@violet/inkline";
+ * import { draw, rect, styles } from "@violetjs/inkline";
  *
  * const drawing = draw(
  *   { width: 160, height: 100, items: [{ id: "card", path: rect(10, 10, 140, 80, 8), fillRole: "surface" }] },
