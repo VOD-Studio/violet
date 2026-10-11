@@ -220,6 +220,26 @@ describe("draw", () => {
 		}
 	});
 
+	it("短笔的起落笔抖动不会让笔画沿切向折回成钩子", () => {
+		for (let seed = 1; seed <= 20; seed++) {
+			const strokes: Stroke[] = [];
+			const capture: Pen = {
+				id: "capture",
+				ink(drawn) {
+					strokes.push(...drawn);
+					return [];
+				},
+			};
+			draw(scene([{ id: "tick", path: line(100, 100, 103, 100) }]), {
+				style: { hand: createHand({ roughness: 1.8, passes: 2 }), pen: capture },
+				seed,
+			});
+			for (const { points } of strokes)
+				for (let i = 4; i < points.length; i += 4)
+					expect(points[i], `seed ${seed}`).toBeGreaterThanOrEqual(points[i - 4]);
+		}
+	});
+
 	it("随机分笔时长线由多段短笔接成，笔间按间距留白且末尾不留碎笔", () => {
 		const segmented = {
 			...styles.natural,

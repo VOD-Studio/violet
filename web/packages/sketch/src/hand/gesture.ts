@@ -169,8 +169,9 @@ export function traceStroke(
 	}
 	const pinLength = Math.min(12 * w, 0.2 * total);
 	// 起落笔误差在端部一段距离内平滑衰减，只加在端点会因首尾控制点密集而形成钩子。
-	const jitter = options.roughness * w * 0.4;
 	const ramp = Math.min(0.3 * total, 40);
+	// 抖动超过渐变长度的一半时，短笔的端部会沿切向折回成钩子
+	const jitter = Math.min(options.roughness * w * 0.4, ramp * 0.5);
 	const endKey = strokeKey * 4;
 	const startNormal = jitter * (ctx.random(END, endKey) * 2 - 1);
 	const startTangent = jitter * (ctx.random(END, endKey + 1) * 2 - 1);
