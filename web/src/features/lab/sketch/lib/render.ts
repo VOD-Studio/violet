@@ -42,9 +42,9 @@ function measure(svg: SVGSVGElement, ms: number): PaneStats {
 }
 
 /**
- * 用站点 Mermaid 线上配方渲染 Rough.js 对照。
+ * 用站点改用本库之前的 Mermaid 配方渲染 Rough.js 对照。
  *
- * @remarks 与线上一致：roughness 2.2、bowing 1.2、双笔复画；同一 seed 按图元序号偏移。
+ * @remarks 配方同旧版：roughness 2.2、bowing 1.2、双笔复画；同一 seed 按图元序号偏移。
  */
 export function renderRough(scene: BenchScene, palette: Palette, { seed, width }: Options) {
 	const started = performance.now();

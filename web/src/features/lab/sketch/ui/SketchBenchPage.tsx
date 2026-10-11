@@ -389,7 +389,7 @@ export function SketchBenchPage() {
 			<div className="mt-8 grid gap-8 lg:grid-cols-2">
 				<Pane
 					title="Rough.js"
-					note="线上 Mermaid 配方 · 无压感与动画"
+					note="原线上 Mermaid 配方 · 无压感与动画"
 					stats={roughStats}
 					zoom={zoom}
 					scrollRef={roughScroll}
