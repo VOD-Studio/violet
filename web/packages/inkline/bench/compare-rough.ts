@@ -1,5 +1,5 @@
 // 用 PRD-0035 Rough.js 基线的同一组场景对照新库的生成与路径序列化耗时。
-// 在 web/ 下运行：node packages/sketch/bench/compare-rough.ts
+// 在 web/ 下运行：node packages/inkline/bench/compare-rough.ts
 import { createRequire } from "node:module";
 import { performance } from "node:perf_hooks";
 import {
@@ -137,7 +137,7 @@ function measure(run: () => number): { generate: number[]; serialize: number[]; 
 let lastBuild: () => () => number = () => () => 0;
 
 const results = [];
-for (const [name, n, roughMake, sketchMake, style] of scenarios) {
+for (const [name, n, roughMake, inklineMake, style] of scenarios) {
 	lastBuild = () => {
 		const drawables = Array.from({ length: n }, (_, i) => roughMake(i));
 		return () => {
@@ -149,7 +149,7 @@ for (const [name, n, roughMake, sketchMake, style] of scenarios) {
 	const r = measure(() => lastBuild()());
 	lastBuild = () => {
 		const drawing: Drawing = draw(
-			{ width: 600, height: 400, items: Array.from({ length: n }, (_, i) => sketchMake(i)) },
+			{ width: 600, height: 400, items: Array.from({ length: n }, (_, i) => inklineMake(i)) },
 			{ style, width: 1.25, seed: 1 },
 		);
 		return () => {
@@ -170,7 +170,7 @@ for (const [name, n, roughMake, sketchMake, style] of scenarios) {
 			serializeP95Ms: round(pct(r.serialize, 0.95)),
 			pathCharsPerShape: Math.round(r.chars / n),
 		},
-		sketch: {
+		inkline: {
 			generateMedianMs: round(pct(k.generate, 0.5)),
 			generateP95Ms: round(pct(k.generate, 0.95)),
 			serializeMedianMs: round(pct(k.serialize, 0.5)),
@@ -189,7 +189,7 @@ console.log(
 			samples: SAMPLES,
 			warmupBatches: WARMUP,
 			measurement: "Generation and SVG path data serialization only; no DOM, layout or paint",
-			style: "sketch: natural hand + fineliner, width 1.25; rough: baseline recipe",
+			style: "inkline: natural hand + fineliner, width 1.25; rough: baseline recipe",
 			results,
 			sink,
 		},

@@ -11,7 +11,7 @@ let serial = 0;
 export interface SvgOptions extends RenderOptions {
 	/** 坐标保留的小数位数。 @default 2 */
 	decimals?: number;
-	/** 内部 clipPath id 前缀；会追加实例序号以免同页冲突。 @default "sketch" */
+	/** 内部 clipPath id 前缀；会追加实例序号以免同页冲突。 @default "inkline" */
 	idPrefix?: string;
 	/** 无障碍名称。 */
 	title?: string;
@@ -90,7 +90,7 @@ function buildSvg(
 	split: boolean,
 ): { svg: string; refs: TrackRef[] } {
 	const decimals = options.decimals ?? 2;
-	const id = `${options.idPrefix ?? "sketch"}-${++serial}`;
+	const id = `${options.idPrefix ?? "inkline"}-${++serial}`;
 	const clips = new Map<Path, string>();
 	const refs: TrackRef[] = [];
 	let estimate = 256;

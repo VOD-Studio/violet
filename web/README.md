@@ -72,11 +72,11 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 正文上下标使用 `<sub>/<sup>`，工具栏可互相切换；GitHub 五类提示块和原生折叠块支持 Slash 插入、正文编辑与源码往返。折叠内容保存默认展开状态，阅读端保留原生键盘交互。HTML 载体内部包含脚注时，导出整篇 HTML 保留统一引用与回链；其他文档继续使用 Markdown。已知 Markdown 来源显式选择解析链路，版本预览和文章目录支持混合 HTML，不再由正文里任意一个标签决定整篇格式。
 
-Mermaid 图块统一使用手写字体与 `@violet/sketch` 笔触（G 笔、草稿手法），编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
+Mermaid 图块统一使用手写字体与 `@violet/inkline` 笔触（G 笔、草稿手法），编辑器预览与阅读端同源，覆盖手册第 9 节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
 
 ## 手绘绘图库
 
-[`@violet/sketch`](packages/sketch/README.md) 位于 `packages/sketch/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染；Rough.js 只留给实验室对照页与基准脚本。
+[`@violet/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染；Rough.js 只留给实验室对照页与基准脚本。
 
 `/lab/sketch` 并排对照 Rough.js 与本库：同一几何、线宽与 seed，可切换人物举牌插画、人像、基础图元、填充、孔洞规则与真实 Mermaid 布局，并调节笔、压感、手法、1×/3× 缩放和 SVG/Canvas 后端。插画保留 979×1298 的比例、手写牌面与服装花纹，默认淡彩；人像去掉截图工具栏与边框，以较细的明暗色面保留五官、眼镜、手势与衣褶，默认 G 笔勾线与实色填充。两种画稿均为矢量，不嵌入位图。控制条提供整图时间轴：播放、暂停、重播、拖动进度、顺序/并行/交错编排与变速。
 
