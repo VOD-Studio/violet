@@ -54,6 +54,11 @@
 			"import": "./src/render/canvas.ts",
 			"default": "./src/render/canvas.ts"
 		},
+		"./dom": {
+			"types": "./src/dom/index.ts",
+			"import": "./src/dom/index.ts",
+			"default": "./src/dom/index.ts"
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -76,6 +81,11 @@
 				"import": "./dist/render/canvas.js",
 				"default": "./dist/render/canvas.js"
 			},
+			"./dom": {
+				"types": "./dist/dom/index.d.ts",
+				"import": "./dist/dom/index.js",
+				"default": "./dist/dom/index.js"
+			},
 			"./package.json": "./package.json"
 		}
 	},
@@ -85,8 +95,8 @@
 		"prepack": "pnpm build",
 		"test": "vitest run --root ../.. packages/inkline",
 		"consumer": "node scripts/consumer-smoke.mjs",
-		"examples": "node scripts/render-examples.ts --artwork ../../src/features/lab/sketch/model/coffee-morning.json && node scripts/sync-readme.mjs",
-		"examples:check": "node scripts/render-examples.ts --artwork ../../src/features/lab/sketch/model/coffee-morning.json --check && node scripts/sync-readme.mjs --check"
+		"examples": "node scripts/render-examples.ts --artwork ../../src/features/lab/sketch/model/coffee-morning.json && node scripts/render-mermaid.mjs && node scripts/sync-readme.mjs",
+		"examples:check": "node scripts/render-examples.ts --artwork ../../src/features/lab/sketch/model/coffee-morning.json --check && node scripts/render-mermaid.mjs --check && node scripts/sync-readme.mjs --check"
 	},
 	"dependencies": {
 		"path-data-parser": "0.1.0"
@@ -94,6 +104,7 @@
 	"devDependencies": {
 		"@types/node": "^22.10.2",
 		"esbuild": "^0.28.1",
+		"mermaid": "^11.16.0",
 		"typescript": "^7.0.2",
 		"vite": "^8.0.0"
 	}

@@ -12,6 +12,7 @@
 - **像画出来的，而不是加了抖动。** 转角处断笔并交叉越界，长线分几笔画完，闭合图形在起笔处首尾重叠。
 - **带压感的笔。** 内置签字笔、钢笔、马克笔与 G 笔，每支笔的压感强度都可调，也可以自己写笔。
 - **填充与淡彩。** 七种图案填充，外加一种水彩感的淡彩：朝光一侧留出纸白，背光侧加短排线。
+- **直接用于现有图表。** 用 `inkSvg` 原地重画 Mermaid、Graphviz 或 D3 的输出，布局、文字与颜色都保留。
 - **绘制动画。** 整幅图按笔画依次、同时或交错重放；跳转、暂停和倒放都不重新生成。
 - **结果确定。** 相同输入与 seed 总是得到相同输出，修改一个图形不会影响其他图形。
 - **体积小，不绑定框架。** 默认笔加 SVG 渲染器打包后约 10 KB（gzip），只有一个依赖。
@@ -51,7 +52,7 @@ const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f
 
 ## 样例
 
-每段代码都摘自 [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples) 中的文件，省略了导入与渲染。图形样例展示的是传给 `draw` 的 `style` 与 `items`，调用与渲染同[快速上手](#快速上手)；上方的图就是该文件的输出，图形顺序与代码行一致。
+每段代码都摘自 [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples) 中的文件，上方的图就是该文件的输出。图形样例只展示传给 `draw` 的 `style` 与 `items`，调用与渲染同[快速上手](#快速上手)，图形顺序与代码行一致。
 
 ### 笔
 
@@ -230,7 +231,36 @@ const items: SceneItem[] = [
 
 <!-- /example -->
 
-节点与连线可以用任何引擎排版，比如 Mermaid 输出的 SVG 或你自己的布局，再把几何传进来。`label` 以给定点为中心绘制文字；`pinEnds: true` 让连线端点精确落在给定位置，箭头才能对齐。
+用自己的布局画图时，把节点与连线的几何传进来即可；Mermaid 等现成的 SVG 见 [Mermaid 与其他 SVG](#mermaid-与其他-svg)。`label` 以给定点为中心绘制文字；`pinEnds: true` 让连线端点精确落在给定位置，箭头才能对齐。
+
+### Mermaid 与其他 SVG
+
+![用 G 笔与草稿手法重画的 Mermaid 流程图](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/mermaid.svg)
+
+<!-- example: mermaid -->
+
+```ts
+import { gpen, styles } from "@violetjs/inkline";
+import { inkSvg } from "@violetjs/inkline/dom";
+import mermaid from "mermaid";
+
+const source = `flowchart LR
+	idea([Idea]) --> draft[Draft] --> review{Review?}
+	review -- yes --> publish[Publish]
+	review -- no --> draft`;
+
+mermaid.initialize({ startOnLoad: false, theme: "neutral" });
+const { svg } = await mermaid.render("flow", source);
+
+const host = document.querySelector("#diagram") as HTMLElement;
+host.innerHTML = svg;
+// inkSvg reads computed styles and sizes, so the SVG must already be in the document.
+inkSvg(host.querySelector("svg") as SVGSVGElement, { style: { ...styles.draft, pen: gpen } });
+```
+
+<!-- /example -->
+
+`@violetjs/inkline/dom` 中的 `inkSvg` 把页面上已经渲染好的 SVG（比如 Mermaid、Graphviz 或 D3 的输出）原地重画：图形换成 inkline 的笔触，布局、文字、箭头标记和颜色都保留。虚线保留虚线样式，紧贴文字的背景不加框，对同一张 SVG 重复调用不会画出两层。它要读取实际样式和尺寸，所以需要浏览器 DOM。参数见 [`inkSvg`](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.zh-CN.md#inksvgsvg-options)。
 
 ### 勾画矢量画稿
 
@@ -348,11 +378,12 @@ export function animateCard(host: HTMLElement) {
 | `@violetjs/inkline` | `draw`、几何函数（`rect`、`circle`、`ellipse`、`line`、`polyline`、`polygon`、`curve`、`arc`、`pathFromSvg`）、风格、手法、笔、填充、动画编排与扩展接口 |
 | `@violetjs/inkline/svg` | `renderSvg`、`mountSvg`、`seekSvg`、`updateSvgPalette`、`pathData` |
 | `@violetjs/inkline/canvas` | `drawCanvas` |
+| `@violetjs/inkline/dom` | `inkSvg` |
 
 ## 运行环境
 
 - ES2022 与原生 ES 模块：2022 年及以后发布的浏览器；`renderSvg` 需要 Node.js 18 及以上。
-- `mountSvg`、`seekSvg` 与 `drawCanvas` 需要浏览器 DOM。
+- `mountSvg`、`seekSvg`、`drawCanvas` 与 `inkSvg` 需要浏览器 DOM。
 - 自带的类型声明需要 TypeScript 5 及以上。
 
 ## 许可证

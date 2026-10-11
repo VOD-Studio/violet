@@ -12,6 +12,7 @@ Hand-drawn vector inking for SVG and Canvas. Give it shapes or SVG paths and it 
 - **Strokes that look drawn, not jittered.** Corners break and cross, long lines are drawn in several strokes, and closed shapes overlap where the pen started.
 - **Pens with pressure.** Fineliner, ink pen, marker and G pen are built in. Every pen's pressure strength is adjustable, and you can write your own pens.
 - **Fills and wash.** Seven pattern fills, plus a watercolor-like wash that leaves paper-white highlights and hatches the shadow side.
+- **Works with your diagrams.** Redraw Mermaid, Graphviz or D3 output in place with `inkSvg`, keeping its layout, text and colors.
 - **Draw-on animation.** Replay a drawing stroke by stroke, in sequence, in parallel or staggered. Seek, pause and reverse without redrawing.
 - **Deterministic.** The same input and seed always give the same output, and editing one shape never changes the others.
 - **Small and framework-agnostic.** About 10 KB gzipped with the default pen and the SVG renderer, and only one dependency.
@@ -51,7 +52,7 @@ A scene is a list of items. Each item has a stable `id`, a `path`, and optional 
 
 ## Examples
 
-Every snippet comes from a file in [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples), with imports and rendering left out. The shape examples show the `style` and `items` passed to `draw`, set up and rendered as in [Quick start](#quick-start); the image above each one is that file's output, with shapes in the same order as the lines.
+Every snippet comes from a file in [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples), and the image above it is that file's output. The shape examples show only the `style` and `items` passed to `draw`, set up and rendered as in [Quick start](#quick-start), with shapes in the same order as the lines.
 
 ### Pens
 
@@ -230,7 +231,36 @@ const items: SceneItem[] = [
 
 <!-- /example -->
 
-Lay out nodes and edges with any engine, such as Mermaid's SVG output or your own layout, then pass in the geometry. A `label` is drawn as text centered on the given point, and `pinEnds: true` keeps a connector's endpoints exactly where you put them so arrowheads line up.
+Build diagrams from your own layout by passing in the geometry; for Mermaid or other ready-made SVG, see [Mermaid and other SVG](#mermaid-and-other-svg). A `label` is drawn as text centered on the given point, and `pinEnds: true` keeps a connector's endpoints exactly where you put them so arrowheads line up.
+
+### Mermaid and other SVG
+
+![A Mermaid flowchart redrawn with the G pen and the draft hand](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/mermaid.svg)
+
+<!-- example: mermaid -->
+
+```ts
+import { gpen, styles } from "@violetjs/inkline";
+import { inkSvg } from "@violetjs/inkline/dom";
+import mermaid from "mermaid";
+
+const source = `flowchart LR
+	idea([Idea]) --> draft[Draft] --> review{Review?}
+	review -- yes --> publish[Publish]
+	review -- no --> draft`;
+
+mermaid.initialize({ startOnLoad: false, theme: "neutral" });
+const { svg } = await mermaid.render("flow", source);
+
+const host = document.querySelector("#diagram") as HTMLElement;
+host.innerHTML = svg;
+// inkSvg reads computed styles and sizes, so the SVG must already be in the document.
+inkSvg(host.querySelector("svg") as SVGSVGElement, { style: { ...styles.draft, pen: gpen } });
+```
+
+<!-- /example -->
+
+`inkSvg` from `@violetjs/inkline/dom` redraws an SVG that is already on the page, such as Mermaid, Graphviz or D3 output: shapes get inkline strokes while layout, text, arrow markers and colors stay as they are. Dashed lines keep their dash pattern, tight label backgrounds stay unframed, and calling it again on the same SVG does nothing. It needs a browser DOM because it reads computed styles and sizes. See [`inkSvg`](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.md#inksvgsvg-options) for its options.
 
 ### Ink vector artwork
 
@@ -348,11 +378,12 @@ The [API reference](https://github.com/VOD-Studio/violet/blob/release/2.0/web/pa
 | `@violetjs/inkline` | `draw`, geometry (`rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `curve`, `arc`, `pathFromSvg`), styles, hands, pens, fills, animation timing, and the extension API |
 | `@violetjs/inkline/svg` | `renderSvg`, `mountSvg`, `seekSvg`, `updateSvgPalette`, `pathData` |
 | `@violetjs/inkline/canvas` | `drawCanvas` |
+| `@violetjs/inkline/dom` | `inkSvg` |
 
 ## Requirements
 
 - ES2022 and native ES modules: browsers released in 2022 or later, or Node.js 18 or later for `renderSvg`.
-- `mountSvg`, `seekSvg` and `drawCanvas` need a browser DOM.
+- `mountSvg`, `seekSvg`, `drawCanvas` and `inkSvg` need a browser DOM.
 - TypeScript 5 or later for the bundled type definitions.
 
 ## License

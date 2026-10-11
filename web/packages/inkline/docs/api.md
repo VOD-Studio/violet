@@ -9,6 +9,7 @@ English | [简体中文](./api.zh-CN.md)
 - [Pens](#pens): `fineliner`, `inkpen`, `gpen`, `marker`, their factories, `createRibbonPen`
 - [Fills](#fills): `fills`, `createPatternFill`, `createWashFill`
 - [Rendering](#rendering): `renderSvg`, `mountSvg`, `seekSvg`, `updateSvgPalette`, `pathData`, `drawCanvas`
+- [Existing SVG](#existing-svg): `inkSvg`
 - [Animation](#animation): `createSchedule`, `itemProgress`, `createPlayer`
 - [Extension API](#extension-api): `Hand`, `Pen`, `Fill`, `DrawContext`, `BatchBuilder` and helpers
 
@@ -258,6 +259,36 @@ Serializes path commands to SVG path data.
 ### `drawCanvas(drawing, canvas, palette, options?)`
 
 From `@violetjs/inkline/canvas`. Paints the drawing onto a canvas, sizing the backing store to the canvas's CSS size times `devicePixelRatio`. Pass `schedule` and `time` to paint a frame of the animation.
+
+## Existing SVG
+
+### `inkSvg(svg, options?)`
+
+From `@violetjs/inkline/dom`. Redraws an SVG that is already attached to the page, such as Mermaid, Graphviz or D3 output, in place: every visible shape (`rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `path`) is replaced by inkline strokes and fills, while layout, text, images, arrow markers and colors are kept. Requires a browser DOM, because it reads computed styles and sizes.
+
+```ts
+import mermaid from "mermaid";
+import { gpen, styles } from "@violetjs/inkline";
+import { inkSvg } from "@violetjs/inkline/dom";
+
+const { svg } = await mermaid.render("flow", "flowchart LR; A --> B");
+host.innerHTML = svg;
+inkSvg(host.querySelector("svg") as SVGSVGElement, { style: { ...styles.draft, pen: gpen } });
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `style` | `styles.natural` | Style used to draw the shapes. |
+| `seed` | `1` | The same SVG and seed always give the same strokes, so re-rendering or switching themes does not make them jump. |
+| `minWidth` | `1.6` | Thinner strokes in the SVG are drawn at this nominal width. |
+| `thickPen` | `style.pen` | Pen for lines 4 units wide or more, such as git branches or mind-map edges. Pens that taper strongly turn short thick lines into spindles; a pen with low pressure, such as `createGPen({ pressure: 0.25 })`, keeps them solid. |
+
+- Colors, opacity, fill rules, transforms, filters and clip paths come from the SVG's computed styles, so dark themes work unchanged.
+- Dashed strokes are drawn with the fineliner so that `stroke-dasharray` still applies; variable-width pens are filled outlines and cannot be dashed.
+- Shapes with only a fill get an outline in their fill color. Rectangles that tightly back a text label keep their fill and get no outline.
+- Arrow markers and `textPath` references move to an invisible copy of the original path, so arrowheads and curved labels stay exact.
+- Mermaid's classic-look node shapes that its built-in Rough.js draws as a fill plus a doubled outline are merged into one closed shape.
+- Converted shapes are marked with `data-inkline`; calling `inkSvg` again on the same SVG skips them instead of drawing a second layer.
 
 ## Animation
 

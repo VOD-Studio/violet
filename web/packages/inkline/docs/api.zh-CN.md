@@ -9,6 +9,7 @@
 - [笔](#笔)：`fineliner`、`inkpen`、`gpen`、`marker` 及其工厂函数、`createRibbonPen`
 - [填充](#填充)：`fills`、`createPatternFill`、`createWashFill`
 - [渲染](#渲染)：`renderSvg`、`mountSvg`、`seekSvg`、`updateSvgPalette`、`pathData`、`drawCanvas`
+- [现有 SVG](#现有-svg)：`inkSvg`
 - [动画](#动画)：`createSchedule`、`itemProgress`、`createPlayer`
 - [扩展接口](#扩展接口)：`Hand`、`Pen`、`Fill`、`DrawContext`、`BatchBuilder` 与辅助函数
 
@@ -258,6 +259,36 @@ const drawing = draw(
 ### `drawCanvas(drawing, canvas, palette, options?)`
 
 从 `@violetjs/inkline/canvas` 导入。把图画到 Canvas 上，像素尺寸取 Canvas 的 CSS 尺寸乘以 `devicePixelRatio`。传入 `schedule` 与 `time` 可以绘制动画中的某一帧。
+
+## 现有 SVG
+
+### `inkSvg(svg, options?)`
+
+从 `@violetjs/inkline/dom` 导入。把已经挂在页面上的 SVG（比如 Mermaid、Graphviz 或 D3 的输出）原地重画：每个可见图形（`rect`、`circle`、`ellipse`、`line`、`polyline`、`polygon`、`path`）换成 inkline 的笔触与填充，布局、文字、图片、箭头标记和颜色都保留。它要读取实际样式与尺寸，所以需要浏览器 DOM。
+
+```ts
+import mermaid from "mermaid";
+import { gpen, styles } from "@violetjs/inkline";
+import { inkSvg } from "@violetjs/inkline/dom";
+
+const { svg } = await mermaid.render("flow", "flowchart LR; A --> B");
+host.innerHTML = svg;
+inkSvg(host.querySelector("svg") as SVGSVGElement, { style: { ...styles.draft, pen: gpen } });
+```
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `style` | `styles.natural` | 描绘图形用的风格。 |
+| `seed` | `1` | 同一张 SVG、同一 seed 总是得到相同笔触，重新渲染或切换主题时线条不会跳。 |
+| `minWidth` | `1.6` | SVG 中更细的描边按这个名义线宽绘制。 |
+| `thickPen` | `style.pen` | 名义线宽 4 及以上的粗线（如 git 分支、思维导图连线）使用的笔。收尖明显的笔会把短粗线画成梭形，换成低压感的笔（如 `createGPen({ pressure: 0.25 })`）可保持实线。 |
+
+- 颜色、不透明度、填充规则、变换、滤镜与裁剪都取自 SVG 的计算样式，暗色主题无需改动。
+- 虚线改用签字笔绘制，`stroke-dasharray` 才能继续生效；变宽笔的轮廓是填充出来的，套不上虚线。
+- 只有填充的图形以填充色补描边；紧贴文字标签的背景矩形保留填充、不加框。
+- 箭头标记与 `textPath` 引用改挂到原路径的一份不可见副本上，箭头和沿路径排列的文字位置保持精确。
+- Mermaid classic 外观下由其内置 Rough.js 画成「填充轮廓加双画描边」的节点，会合成一个闭合图形。
+- 已转换的图形带有 `data-inkline` 标记；对同一张 SVG 再次调用 `inkSvg` 会跳过它们，不会画出第二层。
 
 ## 动画
 

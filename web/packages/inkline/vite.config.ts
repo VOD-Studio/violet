@@ -10,6 +10,7 @@ export default defineConfig({
 				index: entry("./src/index.ts"),
 				"render/svg": entry("./src/render/svg.ts"),
 				"render/canvas": entry("./src/render/canvas.ts"),
+				"dom/index": entry("./src/dom/index.ts"),
 			},
 			formats: ["es"],
 		},

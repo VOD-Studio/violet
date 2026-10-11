@@ -16,5 +16,6 @@ First public release.
 - `lineWashStyle`, combining the inking hand, the G pen and the wash fill.
 - SVG rendering with `renderSvg`, `mountSvg`, `updateSvgPalette` and `seekSvg`; Canvas rendering with `drawCanvas`.
 - Draw-on animation with `createSchedule` and `createPlayer`.
+- `inkSvg` from `@violetjs/inkline/dom` redraws an SVG already on the page, such as Mermaid, Graphviz or D3 output, keeping its layout, text, markers and colors.
 - English and Simplified Chinese guides and API references, with runnable examples and matching vector illustrations.
 - Public ESM entry points with TypeScript declarations for Node.js and browser bundlers.

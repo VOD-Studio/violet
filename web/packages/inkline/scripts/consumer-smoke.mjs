@@ -69,6 +69,8 @@ try {
 		"dist/render/svg.d.ts",
 		"dist/render/canvas.js",
 		"dist/render/canvas.d.ts",
+		"dist/dom/index.js",
+		"dist/dom/index.d.ts",
 	])
 		assert.ok(files.includes(required), `Tarball is missing ${required}.`);
 	for (const path of files)
@@ -117,13 +119,15 @@ try {
 		`import { createGPen, createPlayer, createSchedule, draw, fills, gpen, lineWashStyle, rect, styles, type Drawing, type Pen, type SceneItem, type Style } from "${packageJson.name}";
 import { mountSvg, renderSvg, seekSvg, updateSvgPalette } from "${packageJson.name}/svg";
 import { drawCanvas } from "${packageJson.name}/canvas";
+import { inkSvg, type InkSvgOptions } from "${packageJson.name}/dom";
 
 const item: SceneItem = { id: "card", path: rect(0, 0, 40, 30, 4), fillRole: "surface" };
 const style: Style = { ...styles.natural, fill: fills.hachure, pen: createGPen({ pressure: 0.5 }) };
 const drawing: Drawing = draw({ width: 40, height: 30, items: [item] }, { style, seed: 1 });
 const markup: string = renderSvg(drawing, { paper: "#fff", ink: "#000", surface: "#ccc" });
 const pen: Pen = gpen;
-export const checks = [markup, pen, lineWashStyle, mountSvg, seekSvg, updateSvgPalette, drawCanvas, createSchedule, createPlayer];
+const inkOptions: InkSvgOptions = { style, seed: 2, minWidth: 1.2, thickPen: createGPen({ pressure: 0.25 }) };
+export const checks = [markup, pen, lineWashStyle, mountSvg, seekSvg, updateSvgPalette, drawCanvas, createSchedule, createPlayer, inkSvg, inkOptions];
 `,
 	);
 	const compilerOptions = {
