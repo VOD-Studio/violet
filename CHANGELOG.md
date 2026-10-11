@@ -7,6 +7,110 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.10.0](https://github.com/VOD-Studio/violet/compare/v2.9.4...v2.10.0) (2026-10-11)
+
+
+### 新增
+
+* **auth:** 新增内嵌登录组件并抽出共用登录流程 ([40f7ee1](https://github.com/VOD-Studio/violet/commit/40f7ee19820f5d7ffc2304059e0a169b0ddcbef4))
+* **comment-section:** 评论改为对话气泡布局并新增作者尊贵档样式 ([b4d8e8f](https://github.com/VOD-Studio/violet/commit/b4d8e8f72c84969441f6b590edd5d61d0c8dad50))
+* **comments:** 批注与评论区改用内嵌登录并新增评论抽屉入口 ([b4cd9c6](https://github.com/VOD-Studio/violet/commit/b4cd9c6f2a3182e64bcd2ad59c7a4a86fdd2adea))
+* **comments:** 批注改为点击头像淡入气泡与手绘荧光笔划线 ([900bf8d](https://github.com/VOD-Studio/violet/commit/900bf8dc0d9cdebc1e953e44b31ccd01461a302f))
+* **comments:** 段评角标改为右侧边距的评论者头像组 ([58c38df](https://github.com/VOD-Studio/violet/commit/58c38df64bacc984ed25f4489fe7c2c686515eca))
+* **comments:** 评论区新增加入讨论卡片并折叠匿名留言 ([4b3c411](https://github.com/VOD-Studio/violet/commit/4b3c411ed605162436d75ec099316ba3aa32dc5b))
+* **comments:** 选区荧光笔与批注浮层互斥,重做输入面板与作者批注样式 ([32c3b82](https://github.com/VOD-Studio/violet/commit/32c3b82170425c00ce52d7bee72302d70bc863ad))
+* **comment:** 批注块计数附带划线区间 ([09ce9ab](https://github.com/VOD-Studio/violet/commit/09ce9ab54a3b0c77ac49b2154e324db92e8dc68c))
+* **comment:** 批注块计数附带评论者列表 ([54d57ec](https://github.com/VOD-Studio/violet/commit/54d57ec07172ed2084bda19ffd5c568837b373fb))
+* **diagram:** 图块手绘改用 @violet/sketch 的 G 笔草稿手法 ([0b79248](https://github.com/VOD-Studio/violet/commit/0b79248b7c7deefc311874e17a3ba3eb94ae78a9))
+* **emoji-text:** 自定义表情放大并支持单发表情包展示 ([dcce6c6](https://github.com/VOD-Studio/violet/commit/dcce6c601893cdee88f2b342d6d589c71d4003af))
+* **emojis:** 添加表情改为直接使用文件名并重做悬停预览 ([f2f7069](https://github.com/VOD-Studio/violet/commit/f2f7069c962294d1e0c6eb331874a781223a2f67))
+* **header:** 灵动岛药丸滑动切换并在向下滚动时收成小圆标 ([357b109](https://github.com/VOD-Studio/violet/commit/357b109a77fbb90717c5f75d636c876d9dd0ecad))
+* **header:** 移动端导航改为底部灵动岛 ([aefb90a](https://github.com/VOD-Studio/violet/commit/aefb90aadd5d2d25a9d45bf17e685e1685bb2869))
+* **home:** 时间轴模型输出季节分段与节点归属 ([c6edcf0](https://github.com/VOD-Studio/violet/commit/c6edcf0a65e59b49763ca0a7f37e7b037c514fb7))
+* **home:** 积微成著窄屏改为按季节分行 ([343bc2a](https://github.com/VOD-Studio/violet/commit/343bc2aed5ccaa022b20a21d80da3563ecbda3cf))
+* **home:** 积微成著节点与季节随轴线依次落入 ([805caf3](https://github.com/VOD-Studio/violet/commit/805caf31ec57d7551cff1898d45efcd0b7002928))
+* **inkline:** 新增 inkSvg 原地重画已渲染的 SVG ([0ebf487](https://github.com/VOD-Studio/violet/commit/0ebf487bfdcbe2f1aacdae5f2fff44d0324c0825))
+* **posts:** 文章正文改为手绘风格排版 ([ea779b7](https://github.com/VOD-Studio/violet/commit/ea779b769f5feb93258cc731eb7112226a454230))
+* **posts:** 重做文章正文排版,默认宋体并改版表格与引用 ([29df261](https://github.com/VOD-Studio/violet/commit/29df261966f3509093518f8782b9c31f7b466618))
+* **post:** 目录悬停菜单支持在阅读进度下方放置操作位 ([dd3b18f](https://github.com/VOD-Studio/violet/commit/dd3b18f51e6a0a047644bdaf2d61e50901363658))
+* **site-backdrop:** 新增点阵生命游戏背景点缀 ([1272149](https://github.com/VOD-Studio/violet/commit/1272149dc383b0c726c09dfdba6e7bf7209c2562))
+* **sketch-frame:** 新增随尺寸重绘的手绘外框组件 ([3d3804f](https://github.com/VOD-Studio/violet/commit/3d3804f0faae2aa58c84479260974cd6fc092a7c))
+* **sketch:** 增加参考照片人像场景 ([3b03b0b](https://github.com/VOD-Studio/violet/commit/3b03b0bb47f762df5bacb95e11c7f737ab8023e2))
+* **sketch:** 手法支持随机分段与笔间留白 ([e784709](https://github.com/VOD-Studio/violet/commit/e784709f2d241cda3703ccfeccd1dec6fd99970a))
+* **sketch:** 新增 G 笔 ([a8e0f33](https://github.com/VOD-Studio/violet/commit/a8e0f332659df4fcc745bc460b1d98c4a393cef2))
+* **sketch:** 新增勾线手法与线稿淡彩预设 ([d48367d](https://github.com/VOD-Studio/violet/commit/d48367d378a41ecbd2aba37d8002da2c983a06f4))
+* **sketch:** 新增线稿淡彩动漫风格 ([c2b0f69](https://github.com/VOD-Studio/violet/commit/c2b0f69843ed299f5c2876f8557f4d260aeb82ca))
+* **sketch:** 替换人物举牌插画场景 ([94bfd08](https://github.com/VOD-Studio/violet/commit/94bfd08720b635fcdd472ff1144bb93151dbd659))
+* **sketch:** 替换咖啡少女插画场景 ([e715068](https://github.com/VOD-Studio/violet/commit/e71506866b6662aabf6a9d77e79dacc6b529c49e))
+* **sketch:** 钢笔支持压感强度调节 ([1a9f9ec](https://github.com/VOD-Studio/violet/commit/1a9f9ecbfab0468a549f99063d236f310b90f0fa))
+* **sketch:** 马克笔支持压感强度调节 ([7e21c4d](https://github.com/VOD-Studio/violet/commit/7e21c4dc6d70c7f224cb6f3d49a6ee31ce2ecb75))
+* 完善博客前台阅读交互体验 ([fcc15e7](https://github.com/VOD-Studio/violet/commit/fcc15e745de0dc6f1d9ef34a1eac10b046821bc5))
+
+
+### 修复
+
+* **code-block:** 修复代码块加载占位发黑与文字不可见 ([2fb707a](https://github.com/VOD-Studio/violet/commit/2fb707a4e86ae1b9ea7563cf8e17625f67f5c199))
+* **comments:** 提交提示按评论实际审核状态显示 ([5ce648d](https://github.com/VOD-Studio/violet/commit/5ce648d05382963b3a73b0414ad25c3032585de5))
+* **comments:** 荧光笔笔触两端保持圆润不随长度变尖 ([d85dff5](https://github.com/VOD-Studio/violet/commit/d85dff55f99f4e88932e47177811d66d512e9b9d))
+* **comments:** 选区笔触后面不再露出原生直角色块 ([3b9ba14](https://github.com/VOD-Studio/violet/commit/3b9ba14fca9bc1ffa3c24f2875d6706724380470))
+* **dropdown:** 调整上下方向的面板开合动效 ([0ffa823](https://github.com/VOD-Studio/violet/commit/0ffa82348b6ec75f39ab2c1ec423c1d65f3e9ff8))
+* **header:** 修正移动导航的液态切换 ([0d3fdea](https://github.com/VOD-Studio/violet/commit/0d3fdea242cc4c8a785338eae18c259a6ff620ca))
+* **header:** 补全移动导航的页面接入 ([01e5576](https://github.com/VOD-Studio/violet/commit/01e557600bd013c4e27a00eed48a13ba3759abc8))
+* **home-accumulation:** 修正今日刻度显示与定位 ([e769e0a](https://github.com/VOD-Studio/violet/commit/e769e0a94b6f0c78b797a02c47d0226eaafc2f0e))
+* **home:** 修正选中圆盘遮住节点并简化宽屏条目布局 ([39bc78f](https://github.com/VOD-Studio/violet/commit/39bc78fb423c35ad5962370d7d50d7faa31af7f4))
+* **home:** 固定积微成著详情区高度避免切换抖动 ([bae00bf](https://github.com/VOD-Studio/violet/commit/bae00bf7546954099b33138e703110a1e0faa21e))
+* **home:** 积微成著宽屏底线恢复通栏等长 ([642b228](https://github.com/VOD-Studio/violet/commit/642b228b1b3c15337b860aa1c3b1222e4595a2e5))
+* **home:** 积微成著浮层同一时间只展开一个并简化样式 ([9f2ded4](https://github.com/VOD-Studio/violet/commit/9f2ded4957dbe3b905ac9d537db8f4a0cfffb0a7))
+* **inkline:** 发布产物按源文件分模块输出 ([150fda7](https://github.com/VOD-Studio/violet/commit/150fda7198ff2b9f63c99c86eae9e32a15449796))
+* **inkline:** 错误信息改为英文 ([1ab87fa](https://github.com/VOD-Studio/violet/commit/1ab87fa9484e870f0568204c155e6919804146c8))
+* **posts:** 收紧正文表格行高并去除引用斜体 ([8d232d8](https://github.com/VOD-Studio/violet/commit/8d232d84ed115dac194b5534d6e4f10e282cce2a))
+* **react-tweet:** 构建产物排除测试辅助文件 ([775d177](https://github.com/VOD-Studio/violet/commit/775d1776ec309e32f86163f28bfcd0cd38b95d44))
+* **segmented:** 首次测量前的选中底色与指示器形态一致 ([3235a3a](https://github.com/VOD-Studio/violet/commit/3235a3ab07b9dedab1fe440fc4a1508927467cdc))
+* **sketch:** G 笔笔身对齐名义线宽 ([f94844b](https://github.com/VOD-Studio/violet/commit/f94844b7cd9a6dc6c71bb8abc501a97408919153))
+* **sketch:** Mermaid 胶囊节点合并为单个闭合图形 ([dd2b15a](https://github.com/VOD-Studio/violet/commit/dd2b15a9ca907bded85f38c4b3e415c430f90cc5))
+* **sketch:** 对照页的 Rough.js 一栏改称原线上配方 ([73b25cb](https://github.com/VOD-Studio/violet/commit/73b25cbd86072827f29545f126e674e375cb5b0a))
+* **sketch:** 淡彩按图形厚度留白与排线 ([f8f100e](https://github.com/VOD-Studio/violet/commit/f8f100e3776c60ad531283c87c0c116c88186fe6))
+* **sketch:** 短笔保留笔身并收缩短笔段越界 ([a9542c4](https://github.com/VOD-Studio/violet/commit/a9542c479a49d74fc94aea0c6028143814fdcfe8))
+* **sketch:** 短笔画保留起收笔压力渐变 ([6c51964](https://github.com/VOD-Studio/violet/commit/6c519643dce21db32254d7b7390410e5f5698db4))
+* **sketch:** 短笔起落笔抖动按笔长封顶 ([f79da93](https://github.com/VOD-Studio/violet/commit/f79da93c0fdd7963201e693f24cc1d9804deb801))
+* **sketch:** 草稿复线偏离按长度分段 ([dceb0d3](https://github.com/VOD-Studio/violet/commit/dceb0d34d54e6192458f350dcca65ec1cf4f99de))
+* **sketch:** 草稿复线按边偏离并在角点汇合 ([6b48292](https://github.com/VOD-Studio/violet/commit/6b482925769722e7f3341580b4de66331723bf5f))
+* **toc:** 目录展开后不再被阅读位置拉回 ([73ac43d](https://github.com/VOD-Studio/violet/commit/73ac43d1574c90001d08e52e43d0bde52f0fcbc1))
+* **toc:** 目录点击滚动改为自定义缓动 ([225daf0](https://github.com/VOD-Studio/violet/commit/225daf045ea0e8af152a5137a4cb2fd95a8d7c53))
+
+
+### 性能优化
+
+* **markdown-preview:** 缓存文章 HTML 解析结果并复用渲染节点 ([fbc1f83](https://github.com/VOD-Studio/violet/commit/fbc1f8362244aac0efc8b9475442f4349eda1664))
+* **sketch:** SVG 序列化改为写入字节缓冲区 ([886c887](https://github.com/VOD-Studio/violet/commit/886c887db9eab0534e3b7364e8c210c0e1c28f90))
+* **sketch:** SVG 挂载改用 HTML 解析器 ([e001fd4](https://github.com/VOD-Studio/violet/commit/e001fd49d0ca40f2f83a0175bb9fd1739d19778b))
+* **sketch:** 减少生成热路径中的重复计算 ([f2d839c](https://github.com/VOD-Studio/violet/commit/f2d839cb3cca2004def984735a7cfb834e68652b))
+* **sketch:** 条带轮廓成对精简顶点 ([c411f54](https://github.com/VOD-Studio/violet/commit/c411f544e06d5f78aae9fb9386d32399b2eed50f))
+* **sketch:** 淡彩排线改用逐行区间相减 ([6e0425c](https://github.com/VOD-Studio/violet/commit/6e0425cf19fbfeb9d168bbe46d294d8fdd636b99))
+* **sketch:** 淡彩色块轮廓精简并共用折线精简 ([fb2c4da](https://github.com/VOD-Studio/violet/commit/fb2c4da0f2f04914583ffcf8df81347c844d76a5))
+
+
+### 重构
+
+* **comments:** 抽出批注输入面板组件 ([9f34ae9](https://github.com/VOD-Studio/violet/commit/9f34ae97a827c830876267c29304dd26c5fb1c9b))
+* **diagram:** 图块改用 inkline 的 inkSvg 重画 ([4b4fbb8](https://github.com/VOD-Studio/violet/commit/4b4fbb878ec2f6d9dc1189ab093c7b72a57cdacf))
+* **home:** 优化积微成著宽屏版式 ([f6b60e7](https://github.com/VOD-Studio/violet/commit/f6b60e794ee6d6ed86383c6996b1b174ed5f5e84))
+* **home:** 优化积微成著时间轴并处理今日发布 ([281fe90](https://github.com/VOD-Studio/violet/commit/281fe90e83604998f9e1cc109518fa36fbb06029))
+* **home:** 积微成著改为节点详情区并适配移动端 ([a3cbabe](https://github.com/VOD-Studio/violet/commit/a3cbabed671c37b7580c3d91bcbb898a61653d5d))
+* **home:** 积微成著显现节奏跟随轴线并简化今日节点 ([d06476c](https://github.com/VOD-Studio/violet/commit/d06476cd23bb7ae4e480b106a89aec45727e17c4))
+* **home:** 积微成著选中节点改为淡色圆盘 ([d10e03c](https://github.com/VOD-Studio/violet/commit/d10e03ce287c822ca78f017b68eee56736d81e95))
+* **home:** 重做积微成著加载骨架 ([cb53c5d](https://github.com/VOD-Studio/violet/commit/cb53c5d61610fa87ef12193402e489841376aecd))
+* **inkline:** 消费方改从 @violet/inkline 导入 ([88388c8](https://github.com/VOD-Studio/violet/commit/88388c86b3118ec112cc3fe949851d27909af02b))
+* **inkline:** 绘图库包更名为 @violet/inkline ([f54b6a3](https://github.com/VOD-Studio/violet/commit/f54b6a3b1a1d84d09c758f0af8d834a472e818da))
+* **sketch:** 动漫风格线稿改用钢笔 ([0e1de18](https://github.com/VOD-Studio/violet/commit/0e1de184b78501ead45159f74b4865820014f32e))
+* **sketch:** 压感强度纳入笔的契约 ([aad0996](https://github.com/VOD-Studio/violet/commit/aad0996c60aa6da7a3b67843fc854dfa69318da1))
+* **sketch:** 填充可指定排线的颜色角色 ([39a4906](https://github.com/VOD-Studio/violet/commit/39a4906a0f5b6f610b0b12d9566f4dc0bdc4d6e5))
+* **sketch:** 对照页按笔、压感、手法与填充组合 ([e526d5c](https://github.com/VOD-Studio/violet/commit/e526d5ca3dab46f2cfbf00cf01ed1a556a0df42a))
+* **sketch:** 对照页改用动漫风格并移除赛璐璐卡通 ([0d5c7d3](https://github.com/VOD-Studio/violet/commit/0d5c7d3f7ea6c3cbc8c8330b6670e44d352637ab))
+* **sketch:** 按线稿上色流程重建插画 ([af4f276](https://github.com/VOD-Studio/violet/commit/af4f2769ebd203638ade1b239a55804bf5f13dad))
+* 消费方改从 [@violetjs](https://github.com/violetjs) 作用域导入 ([5a0b18e](https://github.com/VOD-Studio/violet/commit/5a0b18e9213a4f9529e80ab4981dafe46ebd4aac))
+* 绘图库与推文组件迁到 [@violetjs](https://github.com/violetjs) 作用域 ([8d8a25a](https://github.com/VOD-Studio/violet/commit/8d8a25a15a1b3b77a47a3ac44d43502a8a2c7911))
+
 ## [2.9.4](https://github.com/VOD-Studio/violet/compare/v2.9.3...v2.9.4) (2026-10-10)
 
 
