@@ -83,7 +83,7 @@ GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdow
 
 ### Blog writing
 
-会话收尾使用 `.agents/skills/blog-writing/` 轻量筛选值得解释的工程发现，按读者问题写文章或按检索场景写笔记；不以功能规模分级，不默认上传。显式 `/blog-writing` 可写作、改稿、保存或发布，沿用用户已有授权。文章质量与出版操作分开，草稿可供完整审阅。术语见 CONTEXT.md「笔记(Notes)」节，部署见 `docs/guides/mcp-servers.md`。
+`.agents/skills/blog-writing/` 仅在用户主动要求时使用（不在会话结束时自动触发）：写文章、改稿、写笔记、保存或发布，沿用用户已有授权。文章分发现型与讲解型，写作须有实际运行的输出或对比，不以功能规模分级，不默认上传。文章质量与出版操作分开，草稿可供完整审阅。术语见 CONTEXT.md「笔记(Notes)」节，部署见 `docs/guides/mcp-servers.md`。
 
 ### Domain docs
 
