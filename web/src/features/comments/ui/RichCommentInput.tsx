@@ -609,9 +609,9 @@ export function RichCommentInput({
 		return (
 			<div
 				className={cn(
-					"relative rounded-2xl border border-edge-hairline bg-background px-2 py-1.5",
-					"focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
-					"transition-all",
+					"relative rounded-2xl bg-muted/40 px-2 py-1.5",
+					"focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/25",
+					"transition-[background-color,box-shadow]",
 					disabled && "opacity-50",
 					className,
 				)}
@@ -635,9 +635,9 @@ export function RichCommentInput({
 	return (
 		<div
 			className={cn(
-				"relative rounded-lg border border-edge-hairline bg-background",
-				"focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
-				"transition-all",
+				"relative rounded-2xl bg-muted/40",
+				"focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/25",
+				"transition-[background-color,box-shadow]",
 				disabled && "opacity-50",
 				className,
 			)}
@@ -647,7 +647,7 @@ export function RichCommentInput({
 			{fileInput}
 			{editor}
 			{thumbnails}
-			<div className="flex items-center justify-between border-t border-edge-hairline px-2 py-1">
+			<div className="flex items-center justify-between px-2 py-1.5">
 				<div className="flex items-center gap-1">
 					{emojiButton}
 					{imageButton}

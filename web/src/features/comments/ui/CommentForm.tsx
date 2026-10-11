@@ -16,10 +16,9 @@
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
-import { useLoginDialogStore } from "@shared/api/login-dialog-store";
-import { Button, Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
+import { Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
 
-import { Loader2, LogIn, MailCheck, Send } from "lucide-react";
+import { Loader2, MailCheck, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type PictureInput, RichCommentInput } from "./RichCommentInput";
@@ -58,7 +57,6 @@ export function CommentForm({
 	const [code, setCode] = useState("");
 	const [codeSent, setCodeSent] = useState(false);
 
-	const openLogin = useLoginDialogStore((s) => s.open);
 	const sendCode = useSendCommentCode(postId);
 	const createComment = useCreateComment(postId);
 
@@ -120,7 +118,7 @@ export function CommentForm({
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className={`space-y-3 ${compact ? "" : "rounded-xl border border-edge-hairline p-4"}`}
+			className={`space-y-3 ${compact ? "" : "rounded-2xl bg-muted/20 p-4"}`}
 		>
 			{/* 匿名两步流：昵称 + 邮箱 + 验证码 */}
 			{!isLoggedIn && (
@@ -193,16 +191,9 @@ export function CommentForm({
 				toolbarEnd={
 					<>
 						{!isLoggedIn && (
-							<Button
-								type="button"
-								variant="link"
-								size="sm"
-								className="px-0 text-muted-foreground"
-								onClick={() => openLogin()}
-							>
-								<LogIn className="size-3" />
-								登录参与完整讨论
-							</Button>
+							<span className="mr-auto text-xs text-muted-foreground">
+								匿名留言需邮箱验证码，审核通过后登录可见
+							</span>
 						)}
 						<button
 							type="submit"
@@ -213,7 +204,7 @@ export function CommentForm({
 							}
 							title="发送"
 							aria-label="发送"
-							className="inline-flex size-7 items-center justify-center rounded bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{createComment.isPending ? (
 								<Loader2 className="size-3.5 animate-spin" />

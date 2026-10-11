@@ -3,7 +3,7 @@
  *
  * 验证双模式切换（PRD-0001）：
  *   - 登录态：直接渲染输入框，不渲染昵称/邮箱/验证码输入
- *   - 匿名态：渲染昵称 + 邮箱 + 「发送验证码」按钮 + 登录引导
+ *   - 匿名态：渲染昵称 + 邮箱 + 「发送验证码」按钮 + 验证码提示
  *
  * mock 范式复制 admin-posts/ui/__tests__/PostEditorLayout.test.tsx；
  * 断言风格跟随项目惯例（.length/.toBeNull/.toBeTruthy，无 jest-dom）。
@@ -48,14 +48,14 @@ describe("CommentForm", () => {
 		expect(screen.queryByText("登录参与完整讨论")).toBeNull();
 	});
 
-	it("匿名态：渲染昵称/邮箱输入 + 发送验证码 + 登录引导", () => {
+	it("匿名态：渲染昵称/邮箱输入 + 发送验证码 + 验证码提示", () => {
 		const { container } = render(<CommentForm postId="p1" isLoggedIn={false} />);
 		expect(screen.queryByPlaceholderText("昵称 *")).toBeTruthy();
 		expect(screen.queryByPlaceholderText("邮箱 *")).toBeTruthy();
 		const buttons = container.querySelectorAll("button");
 		const sendBtn = Array.from(buttons).find((b) => b.textContent === "发送验证码");
 		expect(sendBtn).toBeTruthy();
-		expect(screen.queryByText("登录参与完整讨论")).toBeTruthy();
+		expect(screen.queryByText("匿名留言需邮箱验证码，审核通过后登录可见")).toBeTruthy();
 		const editor = screen.getByRole("textbox", { name: "评论内容" });
 		expect(editor.getAttribute("data-placeholder")).toMatch(/写下你的留言/);
 	});
