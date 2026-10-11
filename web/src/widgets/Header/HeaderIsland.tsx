@@ -199,10 +199,10 @@ function Island() {
 				style={{ viewTransitionName: "site-island" }}
 				transition={spring}
 				className={cn(
-					"pointer-events-auto relative overflow-hidden",
+					"pointer-events-auto relative",
 					mode === "tabs"
-						? "bg-muted"
-						: "bg-card/85 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-xl dark:ring-1 dark:ring-white/10",
+						? "overflow-visible bg-muted"
+						: "overflow-hidden bg-card/85 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-xl dark:ring-1 dark:ring-white/10",
 				)}
 			>
 				<AnimatePresence initial={false} mode="popLayout">
@@ -378,46 +378,48 @@ function Tabs({
 						/>
 					))}
 				</div>
-				<div
-					ref={lensRef}
-					aria-hidden="true"
-					className="pointer-events-none absolute top-0 left-0 h-full overflow-hidden rounded-full bg-foreground text-background"
-					style={{
-						width: trackWidth,
-						transform: `translateX(${lean}px)`,
-						transition,
-						opacity: activeIndex < 0 ? 0 : 1,
-						clipPath,
-						willChange: "transform, clip-path",
-					}}
-				>
+				<div className="pointer-events-none absolute inset-0 drop-shadow-[0_4px_24px_rgb(0_0_0/0.05)]">
 					<div
-						className="relative h-full"
+						ref={lensRef}
+						aria-hidden="true"
+						className="pointer-events-none absolute top-0 left-0 h-full overflow-hidden rounded-full bg-white text-neutral-950"
 						style={{
 							width: trackWidth,
-							transform: `translateX(${-lean}px)`,
+							transform: `translateX(${lean}px)`,
 							transition,
+							opacity: activeIndex < 0 ? 0 : 1,
+							clipPath,
+							willChange: "transform, clip-path",
 						}}
 					>
-						{slots.map((slot, index) => (
-							<span
-								key={slot.key}
-								className="absolute top-0 left-0 h-full"
-								style={{
-									transform: `translateX(${index * slotWidth + (activeIndex >= 0 && index > activeIndex ? labelWidth : 0)}px)`,
-									transition,
-								}}
-							>
-								<SlotFace
-									slot={slot}
-									active={index === activeIndex}
-									width={slotWidth}
-									labelWidth={labelWidth}
-									reduced={reduced}
-									filled
-								/>
-							</span>
-						))}
+						<div
+							className="relative h-full"
+							style={{
+								width: trackWidth,
+								transform: `translateX(${-lean}px)`,
+								transition,
+							}}
+						>
+							{slots.map((slot, index) => (
+								<span
+									key={slot.key}
+									className="absolute top-0 left-0 h-full"
+									style={{
+										transform: `translateX(${index * slotWidth + (activeIndex >= 0 && index > activeIndex ? labelWidth : 0)}px)`,
+										transition,
+									}}
+								>
+									<SlotFace
+										slot={slot}
+										active={index === activeIndex}
+										width={slotWidth}
+										labelWidth={labelWidth}
+										reduced={reduced}
+										filled
+									/>
+								</span>
+							))}
+						</div>
 					</div>
 				</div>
 			</div>
