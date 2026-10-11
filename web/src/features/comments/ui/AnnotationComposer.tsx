@@ -38,6 +38,8 @@ export function AnnotationComposer({
 }: AnnotationComposerProps) {
 	const [showLogin, setShowLogin] = useState(false);
 	const submit = () => {
+		// ⌘/Ctrl+Enter 直接调用，需与按钮禁用条件一致
+		if (pending || !body.trim()) return;
 		if (loginRequired) setShowLogin(true);
 		else onSubmit();
 	};
@@ -71,28 +73,23 @@ export function AnnotationComposer({
 				disabled={pending}
 				placeholder={placeholder}
 				toolbarEnd={
-					<div className="flex items-center gap-2">
-						<span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">
-							⌘/Ctrl + Enter
-						</span>
-						<button
-							type="button"
-							onClick={submit}
-							disabled={pending || !body.trim()}
-							title={loginRequired ? "登录并发送" : "提交批注"}
-							aria-label="提交批注"
-							className="inline-flex h-7 items-center gap-1 rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{pending ? (
-								<Loader2 className="size-3.5 animate-spin" />
-							) : loginRequired ? (
-								<LogIn className="size-3.5" />
-							) : (
-								<Send className="size-3.5" />
-							)}
-							{loginRequired ? "登录并发送" : "发送"}
-						</button>
-					</div>
+					<button
+						type="button"
+						onClick={submit}
+						disabled={pending || !body.trim()}
+						title={loginRequired ? "登录并发送" : "提交批注"}
+						aria-label="提交批注"
+						className="inline-flex h-7 items-center gap-1 rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{pending ? (
+							<Loader2 className="size-3.5 animate-spin" />
+						) : loginRequired ? (
+							<LogIn className="size-3.5" />
+						) : (
+							<Send className="size-3.5" />
+						)}
+						{loginRequired ? "登录并发送" : "发送"}
+					</button>
 				}
 			/>
 			{loginRequired && showLogin && (

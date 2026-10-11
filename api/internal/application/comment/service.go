@@ -120,8 +120,11 @@ type CommentDTO struct {
 	// AuthorProfileURL 第三方主页链接，目前仅 GitHub 有；存量账号未回填
 	// github_login 时省略（角标只显图标不可跳）。Google 无公开个人主页恒省略。
 	AuthorProfileURL string `json:"author_profile_url,omitempty"`
-	Body        string           `json:"body"`
-	Pictures    []domain.Picture `json:"pictures"`
+	// AuthorUsername 评论者站内用户名，前端拼 /users/{username} 个人空间链接；
+	// 匿名评论与已注销作者省略。
+	AuthorUsername string           `json:"author_username,omitempty"`
+	Body           string           `json:"body"`
+	Pictures       []domain.Picture `json:"pictures"`
 	// Emote 表情映射表。key 为 [name]（含方括号），value 为表情图片 URL。
 	// toDTO 后由 enrichEmotes 批量填充。body 中没有 [name] 时为 nil（JSON 省略）。
 	Emote map[string]EmojiRef `json:"emote,omitempty"`
@@ -940,14 +943,14 @@ func (s *Service) enrichEmotes(ctx context.Context, dtos []CommentDTO) error {
 	return nil
 }
 
-// oauthIdent 评论作者的第三方登录身份（User.OAuthIdentity 的搬运形态）。
-type oauthIdent struct{ provider, profileURL string }
+// authorIdent 评论作者的展示身份：第三方登录角标（User.OAuthIdentity）与站内用户名。
+type authorIdent struct{ provider, profileURL, username string }
 
-// enrichOAuthIdentities 批量填充作者展示信息：OAuth 角标 + 注销占位。
+// enrichOAuthIdentities 批量填充作者展示信息：OAuth 角标、站内用户名与注销占位。
 //
 // 按 comments 的 user_id 去重后一次 FindByIDsForDisplay 查 users（含已注销，
 // 与登录路径的排除查询分野），再按 commentID 回填（含嵌套 Replies）：
-//   - 活跃作者：填 AuthorProvider/AuthorProfileURL（角标），快照名照常
+//   - 活跃作者：填 AuthorProvider/AuthorProfileURL（角标）与 AuthorUsername，快照名照常
 //   - 已注销作者：覆盖快照为「已注销用户」占位（名字占位、头像清空、无角标），
 //     其被回复引用（reply_to_name）同样替换
 // 匿名评论（user_id 空）不填。userRepo 未注入（测试）时跳过。
@@ -972,7 +975,7 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 	if err != nil {
 		return err
 	}
-	identByUser := make(map[string]oauthIdent, len(users))
+	identByUser := make(map[string]authorIdent, len(users))
 	deletedByUser := make(map[string]bool, len(users))
 	for _, u := range users {
 		if u.IsDeleted() {
@@ -980,7 +983,9 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 			continue // 已注销不填角标，走占位
 		}
 		provider, profileURL := u.OAuthIdentity()
-		identByUser[u.GetID().String()] = oauthIdent{provider: provider, profileURL: profileURL}
+		identByUser[u.GetID().String()] = authorIdent{
+			provider: provider, profileURL: profileURL, username: u.Username().String(),
+		}
 	}
 
 	// commentID → 作者/父评论作者是否已注销
@@ -1002,7 +1007,7 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 			}
 		}
 	}
-	identByComment := make(map[string]oauthIdent, len(comments))
+	identByComment := make(map[string]authorIdent, len(comments))
 	for _, c := range comments {
 		if c.UserID() == nil {
 			continue
@@ -1017,9 +1022,11 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 			d.AvatarURL = ""
 			d.AuthorProvider = ""
 			d.AuthorProfileURL = ""
+			d.AuthorUsername = ""
 		} else if ident, ok := identByComment[d.ID]; ok {
 			d.AuthorProvider = ident.provider
 			d.AuthorProfileURL = ident.profileURL
+			d.AuthorUsername = ident.username
 		}
 		if parentAuthorDeleted[d.ID] {
 			d.ReplyToName = DeletedUserName

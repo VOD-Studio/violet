@@ -6,7 +6,7 @@ import type { TweetMedia, TweetPhoto, TweetVideo } from "../data/media.ts";
 import { safeUrl } from "../data/urls.ts";
 import type { TweetLocalization } from "./localization.ts";
 import type { TweetMediaRenderers } from "./media-renderers.ts";
-import { TweetPhotos } from "./photos.tsx";
+import { TweetPhotos, TweetThumbnails } from "./photos.tsx";
 import { stopInteraction, TweetImage, TweetLink } from "./primitives.tsx";
 
 function NativeTweetVideo({
@@ -59,7 +59,30 @@ function NativeTweetVideo({
 	);
 }
 
+function VideoThumbnail({
+	media,
+	source,
+	localization: { messages },
+}: {
+	media: TweetVideo;
+	source?: string;
+	localization: TweetLocalization;
+}) {
+	return (
+		<TweetLink href={source} className="v-tweet__video-thumb" label={messages.viewVideo}>
+			<TweetImage
+				src={media.thumbnailUrl}
+				alt={media.alt ?? messages.videoPoster}
+				fallback={messages.videoPosterUnavailable}
+			/>
+			<span className="v-tweet__play" aria-hidden="true" />
+		</TweetLink>
+	);
+}
+
 interface TweetMediaContentProps extends TweetMediaRenderers {
+	/** 引用卡片：照片用小缩略图，视频只显示封面并链接到来源。 */
+	thumbnails?: boolean;
 	/** 来源给出的有序媒体列表。 */
 	media: TweetMedia[];
 	/** 媒体不可播放时可访问的原文地址。 */
@@ -73,6 +96,7 @@ type MediaGroup = { kind: "photos"; photos: TweetPhoto[] } | { kind: "video"; vi
 export function TweetMediaContent({
 	media,
 	source,
+	thumbnails,
 	renderPhotos,
 	renderVideo,
 	onOpenPhoto,
@@ -110,6 +134,12 @@ export function TweetMediaContent({
 					<div key={`photos:${groupIndex}`} className="v-tweet__photo-group">
 						{renderPhotos ? (
 							renderPhotos(group.photos)
+						) : thumbnails ? (
+							<TweetThumbnails
+								photos={group.photos}
+								localization={localization}
+								onOpenPhoto={onOpenPhoto}
+							/>
 						) : (
 							<TweetPhotos
 								photos={group.photos}
@@ -122,6 +152,12 @@ export function TweetMediaContent({
 					<div key={`video:${group.video.url ?? group.video.thumbnailUrl}:${groupIndex}`}>
 						{renderVideo ? (
 							renderVideo(group.video)
+						) : thumbnails && group.video.thumbnailUrl ? (
+							<VideoThumbnail
+								media={group.video}
+								source={source}
+								localization={localization}
+							/>
 						) : (
 							<NativeTweetVideo
 								media={group.video}

@@ -96,6 +96,10 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	assert.Empty(t, dtos[1].AuthorProfileURL)
 	assert.Empty(t, dtos[2].AuthorProvider)
 	assert.Empty(t, dtos[2].AuthorProfileURL)
+	assert.Equal(t, "alice", dtos[0].AuthorUsername)
+	assert.Equal(t, "alice", dtos[0].Replies[0].AuthorUsername)
+	assert.Equal(t, "bob", dtos[1].AuthorUsername)
+	assert.Empty(t, dtos[2].AuthorUsername, "匿名评论无站内主页")
 	userRepo.AssertExpectations(t)
 }
 
@@ -154,8 +158,10 @@ func TestEnrichOAuthIdentities_DeletedAuthorPlaceholder(t *testing.T) {
 	assert.Equal(t, DeletedUserName, dtos[0].AuthorName)
 	assert.Empty(t, dtos[0].AvatarURL)
 	assert.Empty(t, dtos[0].AuthorProvider)
+	assert.Empty(t, dtos[0].AuthorUsername, "注销作者不暴露主页链接")
 	// 活跃回复者：快照照常，reply_to 指向注销者 → 占位替换
 	assert.Equal(t, "alive", dtos[0].Replies[0].AuthorName)
+	assert.Equal(t, "alive", dtos[0].Replies[0].AuthorUsername)
 	assert.Equal(t, DeletedUserName, dtos[0].Replies[0].ReplyToName)
 	userRepo.AssertExpectations(t)
 }

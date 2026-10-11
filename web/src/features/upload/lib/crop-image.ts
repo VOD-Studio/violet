@@ -18,8 +18,14 @@ import type { CropRect } from "@shared/ui/image-cropper/types";
  * @param src 图片源(object URL 或远程 URL)
  * @param rect 归一化选区(0~1)
  * @param quality WebP 质量 0~1,默认 0.9
+ * @param maxWidth 输出宽度上限(px),超过则等比缩小;不传保持选区原始像素
  */
-export async function cropImageToBlob(src: string, rect: CropRect, quality = 0.9): Promise<Blob> {
+export async function cropImageToBlob(
+	src: string,
+	rect: CropRect,
+	quality = 0.9,
+	maxWidth?: number,
+): Promise<Blob> {
 	const img = await loadImage(src);
 	const sx = rect.x * img.naturalWidth;
 	const sy = rect.y * img.naturalHeight;
@@ -27,8 +33,9 @@ export async function cropImageToBlob(src: string, rect: CropRect, quality = 0.9
 	const sh = rect.h * img.naturalHeight;
 
 	const canvas = document.createElement("canvas");
-	canvas.width = Math.round(sw);
-	canvas.height = Math.round(sh);
+	const scale = maxWidth && sw > maxWidth ? maxWidth / sw : 1;
+	canvas.width = Math.round(sw * scale);
+	canvas.height = Math.round(sh * scale);
 	const ctx = canvas.getContext("2d");
 	if (!ctx) throw new Error("无法创建 canvas 2D 上下文");
 

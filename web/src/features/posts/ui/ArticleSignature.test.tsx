@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { ArticleSignature } from "./ArticleSignature";
 
 describe("ArticleSignature", () => {
-	it("uses the authored vector strokes for a supported author", () => {
-		const { container } = render(<ArticleSignature name="xunrua" />);
+	it("uses the built-in signature for the author's account alias", () => {
+		const { container } = render(<ArticleSignature name="Mizuki_Miru" />);
 
 		expect(container.querySelector("[data-vector-signature]")).not.toBeNull();
-		expect(screen.getByText("xunrua")).toBeDefined();
+		expect(screen.getByText("Mizuki_Miru")).toBeDefined();
 	});
 
 	it("shows an honest text signature when no vector preset exists", () => {

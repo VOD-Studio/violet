@@ -208,7 +208,7 @@ interface TweetMediaRenderers {
 
 Callbacks receive sanitized media URLs. `renderPhotos` replaces a **consecutive group** of photos, preserving the order relative to videos. With it present, `onOpenPhoto` is not called. `renderVideo` replaces one playable or poster-only video; check `media.url` before assuming playback is possible. The host owns accessibility and interaction for custom renderers.
 
-Without a renderer, photos preserve their original links. A group with known dimensions and a portrait majority uses a horizontal rail (aspect ratios clamped to 0.4–1.8); other groups use a grid, and one photo preserves its ratio. The focusable rail supports native keyboard scrolling, snap alignment, previous/next controls, and reduced-motion scrolling. `onOpenPhoto` intercepts an ordinary primary click while keeping the default layout. Modified/middle clicks still open links; `trigger` allows focus restoration when your lightbox closes.
+Without a renderer, photos preserve their original links. A group with known dimensions and a portrait majority uses a horizontal rail (aspect ratios clamped to 0.4–1.8); other groups use a grid, and one photo preserves its ratio. The focusable rail supports native keyboard scrolling, snap alignment, previous/next controls, and reduced-motion scrolling. A quoted tweet is a compact card: its photos become a fixed-size square mosaic beside the text (1, 2, 3 or 4 tiles, `+N` when there are more) and its video shows only the poster linking to the source; the lightbox still receives every photo. `onOpenPhoto` intercepts an ordinary primary click while keeping the default layout. Modified/middle clicks still open links; `trigger` allows focus restoration when your lightbox closes.
 
 ## Server API
 

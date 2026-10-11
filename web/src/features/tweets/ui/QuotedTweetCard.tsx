@@ -3,8 +3,8 @@ import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { NoSharedElements } from "@shared/lib/view-transition";
 import { useNavigate } from "@tanstack/react-router";
 import { TweetCard } from "@violetjs/react-tweet";
+import { QuotedTweetThumbs } from "./QuotedTweetThumbs";
 import { TweetCardHeader } from "./TweetCardHeader";
-import { TweetCardImages } from "./TweetCardImages";
 import TweetContent from "./TweetContent";
 
 /** 使用共享推文卡片展示本站引用，外部快照继续走独立渲染链。 */
@@ -51,7 +51,7 @@ export function QuotedTweetCard({ tweet }: { tweet: QuotedTweet }) {
 					className="line-clamp-3 text-sm leading-relaxed"
 				/>
 			}
-			mediaSlot={<TweetCardImages images={tweet.images} />}
+			mediaSlot={<QuotedTweetThumbs images={tweet.images} />}
 			quoteSlot={
 				tweet.external_tweet && <ExternalTweetCard tweet={tweet.external_tweet} compact />
 			}

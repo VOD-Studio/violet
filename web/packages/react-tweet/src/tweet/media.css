@@ -160,3 +160,117 @@
 	padding: 10px 12px;
 	font-size: 13px;
 }
+
+/* 引用卡片：右侧固定大小的方形缩略图，卡片高度由文字决定。 */
+.v-tweet--quoted:has(> .v-tweet__media) {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) var(--_thumb-size);
+	column-gap: 12px;
+	align-items: start;
+}
+.v-tweet--quoted:has(> .v-tweet__media) > * {
+	grid-column: 1;
+}
+.v-tweet--quoted:has(> .v-tweet__media) > .v-tweet__header {
+	grid-column: 1 / -1;
+}
+.v-tweet--quoted:has(> .v-tweet__media) > .v-tweet__media {
+	grid-column: 2;
+	grid-row: 2 / span 2;
+	margin: 0;
+}
+.v-tweet--quoted {
+	--_thumb-size: 96px;
+}
+.v-tweet__thumbs {
+	display: grid;
+	width: var(--_thumb-size);
+	height: var(--_thumb-size);
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-rows: repeat(2, minmax(0, 1fr));
+	gap: 2px;
+	overflow: hidden;
+	border-radius: 8px;
+	background: var(--_tweet-soft);
+}
+.v-tweet__thumbs[data-count="1"] {
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
+}
+.v-tweet__thumbs[data-count="2"] {
+	grid-template-rows: minmax(0, 1fr);
+}
+.v-tweet__thumbs[data-count="3"] > :first-child {
+	grid-row: span 2;
+}
+.v-tweet .v-tweet__thumbs .v-tweet__photo {
+	position: relative;
+	display: block;
+	min-width: 0;
+	min-height: 0;
+	aspect-ratio: auto;
+	overflow: hidden;
+	color: var(--_tweet-muted);
+}
+.v-tweet .v-tweet__thumbs .v-tweet__photo img,
+.v-tweet .v-tweet__thumbs .v-tweet__photo > span:first-child {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+	object-position: 50% 25%;
+}
+.v-tweet__more {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	background: color-mix(in oklab, #000 52%, transparent);
+	color: #fff;
+	font-size: 16px;
+	font-weight: 600;
+}
+.v-tweet .v-tweet__video-thumb {
+	position: relative;
+	display: block;
+	width: var(--_thumb-size);
+	height: var(--_thumb-size);
+	overflow: hidden;
+	border-radius: 8px;
+	background: var(--_tweet-soft);
+}
+.v-tweet .v-tweet__video-thumb img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+}
+.v-tweet__play {
+	position: absolute;
+	inset: 0;
+	width: 28px;
+	height: 28px;
+	margin: auto;
+	border-radius: 50%;
+	background: color-mix(in oklab, #000 62%, transparent);
+}
+.v-tweet__play::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	width: 0;
+	height: 0;
+	margin: auto;
+	border-block: 5px solid transparent;
+	border-inline-start: 9px solid #fff;
+	translate: 2px 0;
+}
+@media (max-width: 480px) {
+	.v-tweet--quoted {
+		--_thumb-size: 80px;
+	}
+}

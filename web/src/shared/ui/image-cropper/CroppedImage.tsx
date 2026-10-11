@@ -27,6 +27,8 @@ export interface CroppedImageProps {
 	alt?: string;
 	/** img loading,默认不设 */
 	loading?: "lazy" | "eager";
+	/** 图片加载完成回调（用于淡入等加载态效果） */
+	onLoad?: () => void;
 	/** 加载失败回调(组件自身仍渲染占位);调用方可用它做退化排版 */
 	onError?: () => void;
 }
@@ -54,6 +56,7 @@ export function CroppedImage({
 	imgClassName,
 	alt = "",
 	loading,
+	onLoad,
 	onError,
 }: CroppedImageProps) {
 	const rect = useMemo(() => parseCrop(src), [src]);
@@ -125,6 +128,7 @@ export function CroppedImage({
 					src={displaySrc}
 					alt={alt}
 					loading={loading}
+					onLoad={onLoad}
 					onError={() => {
 						setFailedFor(displaySrc);
 						onError?.();
@@ -146,12 +150,13 @@ export function CroppedImage({
 				src={displaySrc}
 				alt={alt}
 				loading={loading}
-				onLoad={(e) =>
+				onLoad={(e) => {
 					setNatural({
 						w: e.currentTarget.naturalWidth,
 						h: e.currentTarget.naturalHeight,
-					})
-				}
+					});
+					onLoad?.();
+				}}
 				onError={() => {
 					setFailedFor(displaySrc);
 					onError?.();

@@ -7,6 +7,7 @@ import (
 
 	appcomment "blog-api/internal/application/comment"
 	appmcp "blog-api/internal/application/mcp"
+	appmedia "blog-api/internal/application/media"
 	appnote "blog-api/internal/application/note"
 	apppost "blog-api/internal/application/post"
 	appseries "blog-api/internal/application/series"
@@ -36,7 +37,7 @@ type MCPContainer struct {
 //
 // tokenLookup 来自 PAT 模块（apiTokenContainer.TokenLookup），
 // postSvc/tagSvc/subSvc/commentSvc 来自各域模块。
-func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, tagSvc *apptag.Service, subSvc *appsub.Service, commentSvc *appcomment.Service, seriesSvc *appseries.Service, noteSvc *appnote.Service) *MCPContainer {
+func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, tagSvc *apptag.Service, subSvc *appsub.Service, commentSvc *appcomment.Service, seriesSvc *appseries.Service, noteSvc *appnote.Service, uploadSvc *appmedia.UploadService) *MCPContainer {
 	verifier := inframcp.NewPATVerifier(tokenLookup)
 	robots := inframcp.NewRobotsChecker()
 
@@ -46,7 +47,7 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 	promptTools := appmcp.NewPromptTools(postSvc)
 	tagTools := appmcp.NewTagTools(tagSvc)
 	seriesTools := appmcp.NewSeriesTools(seriesSvc)
-	postServer := appmcp.NewPostServer(postTools, searchTools, promptTools, tagTools, seriesTools)
+	postServer := appmcp.NewPostServer(postTools, searchTools, promptTools, tagTools, seriesTools, appmcp.NewImageTools(uploadSvc))
 	// 抓取 server（scrape_url + 7 个 subscription tool）
 	scraperTools := appmcp.NewScraperTools(postSvc, robots, subSvc)
 	scraperServer := appmcp.NewScraperServer(scraperTools)

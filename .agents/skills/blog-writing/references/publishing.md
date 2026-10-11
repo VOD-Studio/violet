@@ -4,7 +4,7 @@
 
 ## 1. 定位目标与授权
 
-- 区分交付文章、保存草稿、更新指定内容、发布。已有明确授权直接沿用，不重复确认；要求写文章不自动等于要求公开发布。自动捕获没有写入授权时，只提供候选或本地稿件；无回复也不写远端、不猜测授权。
+- 区分交付文章、保存草稿、更新指定内容、发布。已有明确授权直接沿用，不重复确认；要求写文章不自动等于要求公开发布。没有写入授权时，只提供本地稿件；无回复也不写远端、不猜测授权。
 - 写入只走 `violet-posts` / `violet-notes` MCP。调用前读取实际工具 schema；工具可见不代表当前 PAT 具备所需 scope。MCP 不可用时保留可读稿件，不改用 HTTP、数据库，不读取凭证或扩权。
 - 已有文章先按 ID 调用 `get_post`；无 ID 时通过 `search_posts` 定位，并核对标题、作者、正文及状态。检索支持分页，单页没有命中不能证明不存在。新建前也检查同主题候选，改稿沿用原 ID。
 - 笔记先用 `list_notes` 查找本人条目，按 `total` 与分页结果继续查找必要页面，再对候选 `get_note`。更新、删除或恢复使用的 ID 必须先核对来自本人列表；不能把单次 `get_note` 成功视为所有权证明。这是客户端防误操作，后端目前的按 ID 工具缺少所有权校验，并未因此修复。
@@ -27,6 +27,8 @@ python3 .agents/skills/blog-writing/scripts/scan-sensitive.py <稿件路径>
 ### 文章
 
 新建前用 `list_tags` / `create_tag` 补齐缺失标签，后者按标签名幂等。`create_post` 保存草稿；至少提供标题、slug 与正文，按实际 schema 补元数据，成功后立即记录返回 ID。
+
+正文引用本地图片时，先用 `upload_image` 上传（png/jpeg/gif/webp，≤4MiB；SVG 先转 png，大图先压成 webp，因为 base64 要经过上下文），把返回的 `url` 替换进 Markdown 或 `cover_image`，再 `create_post`。本地相对路径不会在线上解析；没有 `upload_image` 时交付带图的本地稿并说明图片未入库。
 
 更新先读取当前文章，构造完整可编辑内容：标题、slug、正文、摘要、封面、标签、`canonical_url`、`show_signature`。这些字段不能按 PATCH 理解：省略 canonical URL 会清回原创，省略签名设置会变为 false。Markdown 改稿只传新 `content_md`，不同时传旧 `content_html`；HTML 优先于 Markdown，会掩盖正文修改。
 

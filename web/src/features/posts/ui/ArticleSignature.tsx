@@ -1,4 +1,4 @@
-import { Signature } from "@shared/ui/signature";
+import { hasSignaturePreset, Signature } from "@shared/ui/signature";
 import { cn } from "cn";
 import { useInView } from "motion/react";
 import { useRef } from "react";
@@ -9,14 +9,11 @@ interface ArticleSignatureProps {
 	name: string;
 }
 
-const vectorSignatureNames = new Set(["xunrua", "violet", "alan turing", "turing"]);
-
 /** 在文章进入视口时写下作者落款；无矢量笔迹的用户名以文字签名降级。 */
 export function ArticleSignature({ name }: ArticleSignatureProps) {
 	const rootRef = useRef<HTMLElement>(null);
 	const isInView = useInView(rootRef, { once: true, margin: "0px 0px -12% 0px" });
-	const normalizedName = name.trim().toLowerCase();
-	const hasVectorSignature = vectorSignatureNames.has(normalizedName);
+	const hasVectorSignature = hasSignaturePreset(name);
 
 	return (
 		<footer

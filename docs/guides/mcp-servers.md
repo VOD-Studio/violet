@@ -75,6 +75,7 @@ MCP server 在 `.omp/mcp.json` 声明：
 | `update_post` | 改自己文章内容 |
 | `create_tag` | 建标签（幂等，同名已存在则返回已存在）。`create_post` 带 `tags` 前需先建标签——后端校验标签必须先存在 |
 | `list_tags` | 列出所有标签 |
+| `upload_image` | 上传配图（base64，png/jpeg/gif/webp，≤4MiB，需 `posts:write`），返回站内 `url`，写进 `content_md` 的 `![alt](url)` 或 `cover_image`。不支持 SVG；大图先压缩，base64 会占用上下文 |
 | `search_posts` | 全文检索自己的文章（含草稿），写作前查重/找可引用旧文 |
 | `search_code_blocks` | 按语言/内容搜自己文章的代码块，写作时复用 |
 | `search_formulas` | 按 LaTeX 源码片段搜公式，看「哪篇用过某表达式」 |
@@ -101,7 +102,7 @@ MCP server 在 `.omp/mcp.json` 声明：
 
 ### violet-notes — 知识笔记写入（AI 会话沉淀）
 
-会话收尾使用 `.agents/skills/blog-writing/` 从可解释的工程发现选题：需要展开因果或机制时写文章，一个触发条件和修法已足够时写笔记，同主题有新增材料时更新，只有过程记录时不写。文章围绕具体读者问题组织；稿件完成并经过独立审读后，可交付全文或本地文件供审阅。保存、发布与写作分开，自动捕获不默认上传，用户明确的保存或发布授权不重复确认。
+用户主动要求写作时使用 `.agents/skills/blog-writing/`（不在会话结束时自动触发）：需要展开因果、机制或讲解一个库时写文章，一个触发条件和修法已足够时写笔记，同主题有新增材料时更新。文章围绕具体读者问题组织，并包含实际运行得到的输出或对比；稿件完成并经过独立审读后，可交付全文或本地文件供审阅。保存、发布与写作分开，不默认上传，用户明确的保存或发布授权不重复确认。
 
 | 工具 | 用途 |
 |------|------|
@@ -134,5 +135,6 @@ MCP 不可用时仍可完成本地稿件。保存或发布失败保留同一稿�
 
 - 2026-07-30: 初始版本，记录 reader/comments/posts/scraper 四个 server 的定位与工具清单
 - 2026-08-07: 新增 `create_tag` / `list_tags`（violet-posts），补全标签创建能力——此前 `create_post` 带未创建的标签会失败
+- 2026-10-11: 新增 `upload_image`（violet-posts），文章配图经 MCP 入库，不再需要后台手动上传
 - 2026-09-03: 新增 `violet-notes`（PRD-0024 AI 会话沉淀）：5 个笔记工具、`notes:read/write/publish` scope、会话捕获 skill 部署步骤
 - 2026-09-07: 功能级文章调整为源码驱动的工程长文；新增 MCP 不可用时经用户确认保存并提交项目恢复稿，在连接恢复入库后提交删除

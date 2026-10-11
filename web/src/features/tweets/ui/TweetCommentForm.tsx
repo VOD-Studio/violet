@@ -16,7 +16,7 @@ import { ApiError } from "@shared/api/error";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
 import { Loader2, LogIn, Send } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateTweetComment } from "../api/mutations";
 import { type CreateTweetCommentInput, MAX_TWEET_COMMENT_LENGTH } from "../model/types";
@@ -47,6 +47,8 @@ export function TweetCommentForm({
 	const [pictures, setPictures] = useState<PictureInput[]>([]);
 	const [isUploading, setIsUploading] = useState(false);
 	const [resetNonce, setResetNonce] = useState(0);
+	// ⌘/Ctrl+Enter 经提交按钮 click()：按钮禁用时不触发
+	const submitRef = useRef<HTMLButtonElement>(null);
 
 	// rune 计数（按 Unicode 码点，对齐后端 utf8.RuneCountInString）
 	const overLimit = [...body].length > MAX_TWEET_COMMENT_LENGTH;
@@ -104,9 +106,11 @@ export function TweetCommentForm({
 				resetNonce={resetNonce}
 				onImagesChange={setPictures}
 				onUploadingChange={setIsUploading}
+				onSubmit={() => submitRef.current?.click()}
 				placeholder={compact ? "写下你的回复…" : "写下你的评论…"}
 				toolbarEnd={
 					<Button
+						ref={submitRef}
 						type="submit"
 						size="sm"
 						disabled={createComment.isPending || isUploading || overLimit}

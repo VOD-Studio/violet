@@ -59,6 +59,7 @@ export function buildArticleCommentConfig({
 			authorAvatarUrl: c.avatar_url,
 			authorProvider: c.author_provider,
 			authorProfileUrl: c.author_profile_url,
+			authorHref: c.author_username ? `/users/${c.author_username}` : undefined,
 			isAuthor: c.is_author,
 			isPending: c.status === "pending",
 			body: c.body,

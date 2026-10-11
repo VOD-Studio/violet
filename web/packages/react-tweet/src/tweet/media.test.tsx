@@ -159,3 +159,57 @@ it("同时提供 renderPhotos 时由它全权负责，onOpenPhoto 不会被调�
 	expect(open).not.toHaveBeenCalled();
 	expect(document.querySelector(".v-tweet__rail")).toBeNull();
 });
+
+function quoting(media: TweetPhoto[] | TweetMediaVideo[], text = "被引用的推文") {
+	return {
+		url: "https://x.com/jack/status/20",
+		availability: "available" as const,
+		snapshot: { author: { name: "Jack", handle: "jack" }, text: "转发" },
+		quotedTweet: {
+			url: "https://x.com/amy/status/21",
+			availability: "available" as const,
+			snapshot: { author: { name: "Amy", handle: "amy" }, text, media },
+		},
+	};
+}
+type TweetMediaVideo = { kind: "video"; url: string; thumbnailUrl: string };
+
+it("引用推文里的照片是固定大小的小拼图，最多 4 张并以 +N 提示其余", () => {
+	const open = vi.fn();
+	const photos = ["a", "b", "c", "d", "e"].map(portrait);
+	const { container } = render(<EmbeddedTweet tweet={quoting(photos)} onOpenPhoto={open} />);
+	const quote = container.querySelector(".v-tweet--quoted") as HTMLElement;
+	expect(quote.querySelector(".v-tweet__photos")).toBeNull();
+	const links = quote.querySelectorAll<HTMLAnchorElement>(".v-tweet__thumbs a.v-tweet__photo");
+	expect(links).toHaveLength(4);
+	expect(links[3].querySelector(".v-tweet__more")?.textContent).toBe("+1");
+	fireEvent.click(links[3]);
+	expect(open.mock.calls[0][0]).toHaveLength(5);
+	expect(open.mock.calls[0][1]).toBe(3);
+	// 一级推文的照片布局不受影响。
+	const top = render(<EmbeddedTweet tweet={tweetWith([portrait("a"), portrait("b")])} />);
+	expect(top.container.querySelector(".v-tweet__thumbs")).toBeNull();
+});
+
+it("引用推文里的视频只显示封面并链接到来源，不内联播放器", () => {
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={quoting([{ kind: "video", url: "/v.mp4", thumbnailUrl: "/poster.jpg" }])}
+		/>,
+	);
+	const quote = container.querySelector(".v-tweet--quoted") as HTMLElement;
+	expect(quote.querySelector("video")).toBeNull();
+	expect(quote.querySelector("a.v-tweet__video-thumb img")?.getAttribute("src")).toBe(
+		"/poster.jpg",
+	);
+});
+
+it("quoted 属性把顶层推文渲染为引用小卡片，照片用缩略图", () => {
+	const { container } = render(
+		<EmbeddedTweet tweet={tweetWith([portrait("a"), portrait("b")])} quoted />,
+	);
+	const card = container.querySelector(".v-tweet") as HTMLElement;
+	expect(card.classList.contains("v-tweet--quoted")).toBe(true);
+	expect(container.querySelector(".v-tweet__thumbs")).not.toBeNull();
+	expect(container.querySelector(".v-tweet__photos")).toBeNull();
+});

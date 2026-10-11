@@ -71,6 +71,27 @@ func TestSaveGeneratedCover_PersistsMaterialFile(t *testing.T) {
 	}
 }
 
+// TestSavePostImage_PersistsPostFile 嗅探 PNG，落 purpose=post，URL 指向 /uploads/post/，非位图被拒。
+func TestSavePostImage_PersistsPostFile(t *testing.T) {
+	tmp := t.TempDir()
+	repo := &recordingFileRepo{fakeFileRepo: fakeFileRepo{ownerID: domainshared.NewID()}}
+	svc := NewUploadService(repo, nil, storage.NewLocalStorage(tmp, "/uploads/"), nil, filepath.Join(tmp, "chunks"), tmp, "/uploads/")
+
+	dto, err := svc.SavePostImage(context.Background(), SavePostImageInput{OwnerID: domainshared.NewID(), OriginalName: "cards.png", Data: validPNG(t)})
+	if err != nil {
+		t.Fatalf("SavePostImage() error = %v", err)
+	}
+	if !strings.HasPrefix(dto.URL, "/uploads/post/") || dto.MIMEType != "image/png" || dto.Width != 1 {
+		t.Fatalf("unexpected dto: %+v", dto)
+	}
+	if len(repo.saved) != 1 || repo.saved[0].purpose != domainupload.PurposePost {
+		t.Fatalf("saved = %+v", repo.saved)
+	}
+	if _, err := svc.SavePostImage(context.Background(), SavePostImageInput{OwnerID: domainshared.NewID(), Data: []byte("<svg/>")}); err == nil {
+		t.Fatal("非位图应被拒绝")
+	}
+}
+
 // TestSaveGeneratedCover_RejectsNonImageBytes 嗅探自治：processor 未注入
 // 时 magic bytes 校验依然生效，任意字节不得落盘（评审修复）。
 func TestSaveGeneratedCover_RejectsNonImageBytes(t *testing.T) {

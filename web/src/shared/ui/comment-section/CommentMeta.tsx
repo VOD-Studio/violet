@@ -45,7 +45,8 @@ export function CommentAvatar<T extends CommentRaw>({
 		</div>
 	);
 	return (
-		<div className="relative shrink-0">
+		// self-start：父级 flex 行默认 stretch 会把容器拉到整条评论高，角标随之掉到底部
+		<div className="relative shrink-0 self-start">
 			{item.isAuthor ? (
 				<div className={AUTHOR_TIER.avatarRing}>
 					<div className="rounded-full bg-background p-px">{avatar}</div>

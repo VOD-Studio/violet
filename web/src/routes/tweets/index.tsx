@@ -6,12 +6,13 @@ import { PageShell } from "@violet/ui";
 function TweetsPage() {
 	return (
 		<PageShell>
-			<div className="mx-auto w-full max-w-3xl">
-				<header className="mb-6 px-1">
-					<h1 className="font-mono text-3xl font-bold tracking-tight">推文</h1>
-				</header>
-				<TweetTimeline />
-			</div>
+			<TweetTimeline
+				header={
+					<header className="px-1">
+						<h1 className="font-mono text-3xl font-bold tracking-tight">推文</h1>
+					</header>
+				}
+			/>
 		</PageShell>
 	);
 }

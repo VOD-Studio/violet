@@ -64,6 +64,10 @@ export function AvatarUploader({ user }: AvatarUploaderProps) {
 				aspect={1}
 				purpose="avatar"
 				fileNameBase="avatar"
+				title="调整头像"
+				confirmLabel="使用此头像"
+				previews={[{ label: "头像", aspect: 1, round: true }]}
+				outputMaxWidth={1024}
 				open={cropOpen}
 				onOpenChange={setCropOpen}
 				onConfirm={handleConfirm}

@@ -18,9 +18,19 @@ export interface ExternalTweetCardProps {
 	 * @default false
 	 */
 	compact?: boolean;
+	/**
+	 * 渲染为引用小卡片，用于嵌进聊天等别的内容里。
+	 *
+	 * @default false
+	 */
+	quoted?: boolean;
 }
 
-export function ExternalTweetCard({ tweet, compact = false }: ExternalTweetCardProps) {
+export function ExternalTweetCard({
+	tweet,
+	compact = false,
+	quoted = false,
+}: ExternalTweetCardProps) {
 	const preview = useImagePreview();
 	return (
 		<>
@@ -29,6 +39,7 @@ export function ExternalTweetCard({ tweet, compact = false }: ExternalTweetCardP
 				locale="zh-CN"
 				timeZone="Asia/Shanghai"
 				compact={compact}
+				quoted={quoted}
 				onOpenPhoto={(photos, index, trigger) =>
 					openPhoto(preview.openPreview, photos, index, trigger)
 				}
