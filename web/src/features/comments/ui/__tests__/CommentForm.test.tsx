@@ -8,12 +8,14 @@
  * mock 范式复制 admin-posts/ui/__tests__/PostEditorLayout.test.tsx；
  * 断言风格跟随项目惯例（.length/.toBeNull/.toBeTruthy，无 jest-dom）。
  */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const { createMutate } = vi.hoisted(() => ({ createMutate: vi.fn() }));
 
 // vi.mock 必须在 import 被测模块前（hoist）
 vi.mock("@features/comments/api/mutations", () => ({
-	useCreateComment: () => ({ mutate: vi.fn(), isPending: false }),
+	useCreateComment: () => ({ mutate: createMutate, isPending: false }),
 	useSendCommentCode: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("@shared/api/login-dialog-store", () => ({
@@ -72,5 +74,25 @@ describe("CommentForm", () => {
 		const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement;
 		expect(submitBtn).toBeTruthy();
 		expect(submitBtn.disabled).toBe(false);
+	});
+
+	it("⌘/Ctrl+Enter 提交评论，且不显示快捷键提示", () => {
+		render(<CommentForm postId="p1" isLoggedIn={true} parentId="c0" />);
+		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		editor.textContent = "你好";
+		fireEvent.input(editor);
+		fireEvent.keyDown(editor, { key: "Enter", ctrlKey: true });
+		expect(createMutate).toHaveBeenCalledTimes(1);
+		expect(createMutate.mock.calls[0][0]).toMatchObject({ body: "你好", parent_id: "c0" });
+		expect(screen.queryByText(/Ctrl \+ Enter/)).toBeNull();
+	});
+
+	it("提交按钮禁用时 ⌘/Ctrl+Enter 不提交", () => {
+		render(<CommentForm postId="p1" isLoggedIn={false} />);
+		const editor = screen.getByRole("textbox", { name: "评论内容" });
+		editor.textContent = "匿名留言";
+		fireEvent.input(editor);
+		fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
+		expect(createMutate).not.toHaveBeenCalled();
 	});
 });

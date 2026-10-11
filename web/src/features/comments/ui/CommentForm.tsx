@@ -19,7 +19,7 @@ import { ApiError } from "@shared/api/error";
 import { Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
 
 import { Loader2, MailCheck, Send } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { type PictureInput, RichCommentInput } from "./RichCommentInput";
 
@@ -51,6 +51,8 @@ export function CommentForm({
 	const [pictures, setPictures] = useState<PictureInput[]>([]);
 	const [isUploading, setIsUploading] = useState(false);
 	const [resetNonce, setResetNonce] = useState(0);
+	// ⌘/Ctrl+Enter 经提交按钮 click()：按钮禁用时不触发，并保留原生 required 校验
+	const submitRef = useRef<HTMLButtonElement>(null);
 	// 匿名字段
 	const [authorName, setAuthorName] = useState("");
 	const [email, setEmail] = useState("");
@@ -184,6 +186,7 @@ export function CommentForm({
 				resetNonce={resetNonce}
 				onImagesChange={setPictures}
 				onUploadingChange={setIsUploading}
+				onSubmit={() => submitRef.current?.click()}
 				placeholder={isLoggedIn ? "写下你的评论…" : "写下你的留言（登录后可见他人评论）…"}
 				toolbarEnd={
 					<>
@@ -193,6 +196,7 @@ export function CommentForm({
 							</span>
 						)}
 						<button
+							ref={submitRef}
 							type="submit"
 							disabled={
 								createComment.isPending ||
