@@ -2,9 +2,12 @@ import { tweetKeys } from "@features/tweets/api/keys";
 import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
+import { TweetDetailMedia } from "@features/tweets/ui/TweetDetailMedia";
+import { TweetDetailSources } from "@features/tweets/ui/TweetDetailSources";
 import { HistoryBack } from "@shared/ui/history-back";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { cn } from "cn";
 
 /**
  * /tweets/$id - 单条推文详情页（公开）
@@ -44,9 +47,18 @@ function TweetDetailPage() {
 		);
 	}
 
+	const hasImages = current.images.length > 0;
+	const hasSources = !!(current.external_tweet || current.quoted_tweet || current.quote_of);
+	const split = hasImages || hasSources;
+
 	return (
 		<PageShell>
-			<div className="mx-auto flex w-full max-w-3xl flex-col gap-6 font-reading">
+			<div
+				className={cn(
+					"mx-auto flex w-full flex-col gap-6 font-reading",
+					split ? "max-w-6xl" : "max-w-3xl",
+				)}
+			>
 				<HistoryBack
 					fallbackTo="/tweets"
 					className="min-h-11 w-fit gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -54,13 +66,37 @@ function TweetDetailPage() {
 					返回时间线
 				</HistoryBack>
 
-				<TweetCard
-					tweet={current}
-					variant="detail"
-					onDeleted={() => navigate({ to: "/tweets" })}
-				/>
-
-				<TweetCommentSection tweetId={current.id} tweetAuthorId={current.author.id} />
+				<div
+					className={cn(
+						"grid gap-6",
+						split && "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start",
+					)}
+				>
+					{split && (
+						<div
+							className={cn(
+								"flex min-w-0 flex-col gap-4",
+								// 只有图片时固定在视口里，右侧评论滚动时大图不离开；带转发原文时内容可能很高，不固定。
+								hasImages && !hasSources && "lg:sticky lg:top-24",
+							)}
+						>
+							<TweetDetailMedia images={current.images} />
+							<TweetDetailSources tweet={current} />
+						</div>
+					)}
+					<div className="flex min-w-0 flex-col gap-6">
+						<TweetCard
+							tweet={current}
+							variant="detail"
+							detachMedia={split}
+							onDeleted={() => navigate({ to: "/tweets" })}
+						/>
+						<TweetCommentSection
+							tweetId={current.id}
+							tweetAuthorId={current.author.id}
+						/>
+					</div>
+				</div>
 			</div>
 		</PageShell>
 	);

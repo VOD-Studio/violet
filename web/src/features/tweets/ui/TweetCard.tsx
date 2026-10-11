@@ -34,10 +34,20 @@ export interface TweetCardProps {
 	variant?: TweetCardVariant;
 	/** 删除成功后回调；列表缓存由 mutation 更新。 */
 	onDeleted?: (tweet: Tweet) => void;
+	/**
+	 * 不渲染图片与引用，由调用方单独摆放（详情页的左右分栏）。
+	 * @default false
+	 */
+	detachMedia?: boolean;
 }
 
 /** 将本站内容和互动组合到来源无关的推文布局。 */
-const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) => {
+const TweetCard = ({
+	tweet,
+	variant = "timeline",
+	onDeleted,
+	detachMedia = false,
+}: TweetCardProps) => {
 	const me = useMe();
 	const navigate = useNavigate();
 	const canDeleteAny = useHasPermission("tweet:delete-any");
@@ -167,9 +177,10 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						}
 					/>
 				}
-				mediaSlot={<TweetCardImages images={tweet.images} />}
+				mediaSlot={detachMedia ? undefined : <TweetCardImages images={tweet.images} />}
 				quoteSlot={
-					tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of ? (
+					!detachMedia &&
+					(tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of) ? (
 						<div className="space-y-2">
 							{tweet.external_tweet && (
 								<ExternalTweetCard tweet={tweet.external_tweet} />
