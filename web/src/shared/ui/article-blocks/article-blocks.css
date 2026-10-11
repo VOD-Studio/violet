@@ -3,7 +3,7 @@ blockquote[data-type="alert"] {
 	margin-block: 1.5rem;
 	border: 1px solid var(--border);
 	border-inline-start: 3px solid var(--article-alert-accent);
-	border-radius: 0.5rem;
+	border-radius: 1rem;
 	padding: 1rem 1.25rem;
 	background: color-mix(in oklch, var(--article-alert-accent) 5%, var(--background));
 	color: var(--foreground);
@@ -44,7 +44,7 @@ blockquote[data-type="alert"] > :last-child,
 .article-details {
 	margin-block: 1.5rem;
 	border: 1px solid var(--border);
-	border-radius: 0.5rem;
+	border-radius: 1rem;
 	padding: 1rem 1.25rem;
 	background: var(--background);
 	color: var(--foreground);
@@ -80,4 +80,32 @@ blockquote[data-type="alert"] > :last-child,
 	a[data-footnote-ref][id]
 ) {
 	scroll-margin-top: 6rem;
+}
+
+/* 手绘波浪线：mask 取形、背景取色，颜色随主题 token 变化。 */
+.article-rule,
+.article-h2::after {
+	--sketch-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='12' viewBox='0 0 48 12'%3E%3Cpath d='M0 6C8 2 14 10 24 6S40 3 48 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+	background: color-mix(in oklch, var(--primary) 55%, transparent);
+	mask: var(--sketch-wave) repeat-x center / 48px 12px;
+}
+
+.article-rule {
+	height: 12px;
+	margin-block: 2.5rem;
+	border: 0;
+}
+
+.article-h2 {
+	position: relative;
+	padding-block-end: 0.9rem;
+}
+
+.article-h2::after {
+	content: "";
+	position: absolute;
+	inset-inline-start: 0;
+	inset-block-end: 0;
+	width: 5rem;
+	height: 12px;
 }

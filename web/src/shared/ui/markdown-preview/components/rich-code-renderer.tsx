@@ -98,7 +98,7 @@ export function createRichCodeRenderer(
 				);
 			}
 			return (
-				<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
+				<code className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
 					{children}
 				</code>
 			);

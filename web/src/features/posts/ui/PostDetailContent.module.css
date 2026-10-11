@@ -55,3 +55,8 @@
 .content table {
 	margin-block: 0;
 }
+
+.content blockquote:not([data-type="alert"]) p::before,
+.content blockquote:not([data-type="alert"]) p::after {
+	content: none;
+}
