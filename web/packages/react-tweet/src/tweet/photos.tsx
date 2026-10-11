@@ -48,7 +48,13 @@ function PhotoLink({
 	localization,
 	onOpenPhoto,
 	style,
-}: TweetPhotosProps & { index: number; style?: CSSProperties }) {
+	hiddenCount = 0,
+}: TweetPhotosProps & {
+	index: number;
+	style?: CSSProperties;
+	/** 折叠在这一格之后的照片数量，大于 0 时显示「+N」。 */
+	hiddenCount?: number;
+}) {
 	const { messages, number } = localization;
 	const photo = photos[index];
 	const activate = onOpenPhoto
@@ -82,6 +88,11 @@ function PhotoLink({
 				height={photo.height}
 				fallback={photo.alt ?? messages.imageUnavailable}
 			/>
+			{hiddenCount > 0 && (
+				<span className="v-tweet__more" aria-hidden="true">
+					+{number.format(hiddenCount)}
+				</span>
+			)}
 		</TweetLink>
 	);
 }
@@ -173,6 +184,31 @@ function PhotoRail(props: TweetPhotosProps) {
 					<path d="M5 12h14M12 5l7 7-7 7" />
 				</svg>
 			</button>
+		</div>
+	);
+}
+
+/** 引用卡片缩略图最多展示的张数，其余折叠为最后一格上的「+N」。 */
+const THUMB_MAX_VISIBLE = 4;
+
+/**
+ * 引用卡片里的照片：固定大小的方形小拼图（1 张整格、2 张并排、3 张一大两小、4 张四宫格），
+ * 超过 4 张时最后一格显示「+N」。点击行为与默认展示一致，灯箱仍包含全部照片。
+ */
+export function TweetThumbnails(props: TweetPhotosProps) {
+	const { photos } = props;
+	const visible = Math.min(photos.length, THUMB_MAX_VISIBLE);
+	const hidden = photos.length - visible;
+	return (
+		<div className="v-tweet__thumbs" data-count={visible}>
+			{photos.slice(0, visible).map((photo, index) => (
+				<PhotoLink
+					key={`${photo.url}:${index}`}
+					{...props}
+					index={index}
+					hiddenCount={index === visible - 1 ? hidden : 0}
+				/>
+			))}
 		</div>
 	);
 }

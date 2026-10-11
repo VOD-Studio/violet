@@ -207,26 +207,6 @@
 .v-tweet__quote {
 	margin-block: 12px;
 }
-.v-tweet--quoted {
-	padding: 14px;
-	border-radius: 10px;
-	font-size: 14px;
-}
-.v-tweet--quoted .v-tweet__header {
-	margin-block-end: 8px;
-}
-.v-tweet--quoted .v-tweet__avatar {
-	width: 28px;
-	height: 28px;
-	flex-basis: 28px;
-	font-size: 13px;
-}
-.v-tweet--quoted .v-tweet__author {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 2px 8px;
-}
 .v-tweet__quote-link {
 	display: inline-block;
 	margin-block: 4px 12px;
@@ -308,6 +288,57 @@
 }
 .v-tweet--compact {
 	padding: 14px;
+}
+/* 引用推文是一张小卡片：头像缩小、去掉品牌与互动数，媒体用缩略图。 */
+.v-tweet--quoted {
+	padding: 10px 12px;
+	border-radius: 10px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+.v-tweet--quoted .v-tweet__header {
+	margin-block-end: 4px;
+}
+.v-tweet--quoted .v-tweet__identity {
+	gap: 6px;
+}
+.v-tweet--quoted .v-tweet__avatar {
+	width: 20px;
+	height: 20px;
+	flex-basis: 20px;
+	font-size: 11px;
+}
+.v-tweet--quoted .v-tweet__author {
+	display: flex;
+	min-width: 0;
+	flex-wrap: nowrap;
+	align-items: baseline;
+	gap: 6px;
+}
+.v-tweet--quoted .v-tweet__name-row {
+	min-width: 0;
+}
+.v-tweet--quoted .v-tweet__name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.v-tweet--quoted .v-tweet__handle {
+	overflow: hidden;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.v-tweet--quoted .v-tweet__brand,
+.v-tweet--quoted .v-tweet__metrics {
+	display: none;
+}
+.v-tweet--quoted .v-tweet__footer {
+	margin-block-start: 6px;
+	font-size: 12px;
+}
+.v-tweet--quoted .v-tweet__date {
+	margin-inline-start: 0;
 }
 .v-tweet__skeleton {
 	display: grid;

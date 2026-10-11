@@ -84,6 +84,9 @@ export function EmbeddedTweet({
 	);
 }
 
+/** 引用卡片的正文折叠行数上限。 */
+const QUOTE_TEXT_LINES = 4;
+
 function TweetContent({
 	tweet,
 	compact,
@@ -160,6 +163,7 @@ function TweetContent({
 					<TweetMediaContent
 						media={snapshot.media}
 						source={source}
+						thumbnails={depth > 0}
 						renderPhotos={renderPhotos}
 						renderVideo={renderVideo}
 						onOpenPhoto={onOpenPhoto}
@@ -172,7 +176,11 @@ function TweetContent({
 					<TweetContent
 						tweet={tweet.quotedTweet}
 						compact
-						maxTextLines={maxTextLines}
+						maxTextLines={
+							maxTextLines === 0
+								? 0
+								: Math.min(maxTextLines ?? QUOTE_TEXT_LINES, QUOTE_TEXT_LINES)
+						}
 						renderPhotos={renderPhotos}
 						renderVideo={renderVideo}
 						onOpenPhoto={onOpenPhoto}
