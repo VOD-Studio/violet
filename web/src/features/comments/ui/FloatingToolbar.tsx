@@ -23,11 +23,11 @@ import {
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
-import { Highlighter, Loader2, LogIn, Send, X } from "lucide-react";
+import { Highlighter, LogIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import "./annotations.css";
-import { RichCommentInput } from "./RichCommentInput";
+import { AnnotationComposer } from "./AnnotationComposer";
 
 /** 草稿批注临时高亮 class（展开输入区时标记选中块，区别于已提交批注的 .annotation-highlight）。 */
 const DRAFT_HIGHLIGHT_CLASS = "annotation-draft-highlight";
@@ -261,50 +261,15 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 			aria-label="批注工具"
 		>
 			{showInput && anchor ? (
-				/* 展开的输入区（选中原文为引言 + textarea + 提交/取消） */
-				<div className="w-80 rounded-lg border border-edge-hairline bg-surface-glass p-3 shadow-lg backdrop-blur">
-					<div className="mb-2 flex items-center justify-between">
-						<span className="text-xs font-medium text-muted-foreground">划线批注</span>
-						<button
-							type="button"
-							onClick={handleCancel}
-							className="text-muted-foreground hover:text-foreground"
-							aria-label="取消"
-						>
-							<X className="size-3.5" />
-						</button>
-					</div>
-					{/* 引言区：选中原文 */}
-					<blockquote className="mb-2 border-l-2 border-primary/40 pl-2 text-xs italic text-muted-foreground line-clamp-2">
-						{anchor.selectedText}
-					</blockquote>
-					<RichCommentInput
-						value={body}
-						onChange={setBody}
-						onSubmit={handleSubmit}
-						compact
-						enableEmoji
-						enableImage={false}
-						disabled={createComment.isPending}
-						placeholder="写下你的批注…"
-						toolbarEnd={
-							<button
-								type="button"
-								onClick={handleSubmit}
-								disabled={createComment.isPending || !body.trim()}
-								title="提交批注"
-								aria-label="提交批注"
-								className="inline-flex size-7 items-center justify-center rounded bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								{createComment.isPending ? (
-									<Loader2 className="size-3.5 animate-spin" />
-								) : (
-									<Send className="size-3.5" />
-								)}
-							</button>
-						}
-					/>
-				</div>
+				<AnnotationComposer
+					title="划线批注"
+					quote={anchor.selectedText}
+					body={body}
+					onBodyChange={setBody}
+					onSubmit={handleSubmit}
+					onCancel={handleCancel}
+					pending={createComment.isPending}
+				/>
 			) : (
 				/* 浮动工具条（划线批注按钮） */
 				<div className="flex items-center rounded-full border border-edge-hairline bg-surface-glass px-2 py-1 shadow-md backdrop-blur">
