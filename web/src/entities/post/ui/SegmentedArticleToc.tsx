@@ -1,7 +1,7 @@
 import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
 import { useReducedMotion } from "motion/react";
-import { type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
 import { CompactArticleToc } from "./CompactArticleToc";
@@ -18,6 +18,8 @@ export interface SegmentedArticleTocProps {
 	onNavigate: (id: string) => void;
 	compact?: boolean;
 	isRailCollapsedAtRest?: boolean;
+	/** 展开菜单里阅读进度下方的操作位，仅 isRailCollapsedAtRest 形态使用 */
+	footer?: ReactNode;
 	contentRef?: RefObject<HTMLElement | null>;
 }
 
@@ -65,6 +67,7 @@ export function SegmentedArticleToc({
 	onNavigate,
 	compact = false,
 	isRailCollapsedAtRest = false,
+	footer,
 	contentRef,
 }: SegmentedArticleTocProps) {
 	const flatItems = useMemo(() => flattenNodes(nodes), [nodes]);
@@ -281,6 +284,7 @@ export function SegmentedArticleToc({
 			activeId={activeId}
 			contentRef={contentRef}
 			onRailActiveChange={setRailActive}
+			footer={footer}
 		>
 			{renderTocList}
 		</ArticleTocFocusShell>

@@ -17,6 +17,8 @@ interface ArticleTocFocusShellProps {
 	contentRef?: RefObject<HTMLElement | null>;
 	/** 展开态切换通知；收起(true)→展开(false)时目录列表需滚回当前阅读位置。 */
 	onRailActiveChange?: (active: boolean) => void;
+	/** 展开菜单里阅读进度下方的操作位（如评论入口）；只在展开态可点 */
+	footer?: ReactNode;
 	children: (railActive: boolean) => ReactNode;
 }
 
@@ -26,6 +28,7 @@ export function ArticleTocFocusShell({
 	activeId,
 	contentRef,
 	onRailActiveChange,
+	footer,
 	children,
 }: ArticleTocFocusShellProps) {
 	const [isHovered, setIsHovered] = useState(false);
@@ -132,6 +135,7 @@ export function ArticleTocFocusShell({
 						</svg>
 						<span className="tabular-nums">{readPercent}%</span>
 					</div>
+					{footer ? <div className="mt-3">{footer}</div> : null}
 				</div>
 			</div>
 			<ArticleTocRail

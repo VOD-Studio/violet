@@ -1,6 +1,6 @@
 import { SegmentedArticleToc, type SegmentedTocNode } from "@entities/post/ui/SegmentedArticleToc";
 import { type TocItem, useTocNavigation } from "@shared/hooks/use-toc";
-import { useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 export interface ArticleTocProps {
 	items: TocItem[];
@@ -12,6 +12,8 @@ export interface ArticleTocProps {
 	hideTitle?: boolean;
 	/** 大屏静止时显示阅读轨迹，悬停或聚焦后展开完整目录 */
 	isRailCollapsedAtRest?: boolean;
+	/** 展开菜单里阅读进度下方的操作位（如评论入口） */
+	footer?: ReactNode;
 }
 
 export interface TocNode extends TocItem {
@@ -48,6 +50,7 @@ const ArticleToc = ({
 	onNavigate,
 	hideTitle,
 	isRailCollapsedAtRest,
+	footer,
 }: ArticleTocProps) => {
 	const { activeId: observedActiveId, navigateTo } = useTocNavigation(contentRef, items);
 	const nodes = useMemo(() => buildTree(items).map(toSegmentedNode), [items]);
@@ -75,6 +78,7 @@ const ArticleToc = ({
 				activeId={activeId}
 				onNavigate={handleNavigate}
 				isRailCollapsedAtRest={isRailCollapsedAtRest}
+				footer={footer}
 				contentRef={contentRef}
 			/>
 		</nav>
