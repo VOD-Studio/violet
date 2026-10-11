@@ -3,10 +3,32 @@
 	"version": "0.1.0",
 	"description": "Native React tweet embeds with standalone themes and an FxTwitter data adapter",
 	"license": "MIT",
+	"keywords": [
+		"react",
+		"tweet",
+		"twitter",
+		"x",
+		"embed",
+		"ssr",
+		"fxtwitter"
+	],
+	"homepage": "https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/react-tweet#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/VOD-Studio/violet.git",
+		"directory": "web/packages/react-tweet"
+	},
+	"bugs": {
+		"url": "https://github.com/VOD-Studio/violet/issues"
+	},
+	"main": "./src/index.ts",
+	"types": "./src/unstyled.ts",
 	"type": "module",
 	"files": [
 		"dist",
 		"README.md",
+		"README.zh-CN.md",
+		"CHANGELOG.md",
 		"LICENSE"
 	],
 	"sideEffects": [
@@ -30,10 +52,13 @@
 			"import": "./src/api.ts",
 			"default": "./src/api.ts"
 		},
-		"./styles.css": "./src/styles.css"
+		"./styles.css": "./src/styles.css",
+		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"access": "public",
+		"main": "./dist/index.js",
+		"types": "./dist/unstyled.d.ts",
 		"exports": {
 			".": {
 				"types": "./dist/unstyled.d.ts",
@@ -50,22 +75,28 @@
 				"import": "./dist/api.js",
 				"default": "./dist/api.js"
 			},
-			"./styles.css": "./dist/styles.css"
+			"./styles.css": "./dist/styles.css",
+			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {
 		"build": "node scripts/build.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run --config vitest.config.ts",
+		"examples": "node scripts/sync-readme.mjs && node scripts/render-examples.mjs",
+		"examples:check": "node scripts/sync-readme.mjs --check && node scripts/render-examples.mjs --check",
+		"consumer": "node scripts/consumer-smoke.mjs",
 		"prepack": "pnpm build"
 	},
 	"peerDependencies": {
 		"react": "^19.0.0"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.63.0",
 		"@testing-library/react": "^16.3.0",
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
+		"esbuild": "^0.28.1",
 		"jsdom": "^28.1.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
