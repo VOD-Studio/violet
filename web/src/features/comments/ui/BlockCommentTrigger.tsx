@@ -7,16 +7,17 @@ import { closestAnnotatableBlock } from "@features/comments/lib/selection-to-anc
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { MessageSquareText } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AnnotationComposer } from "./AnnotationComposer";
+import { useExclusivePanel } from "./use-exclusive-panel";
 
 /** 鼠标离开正文后入口延迟隐藏的时间，留给指针移向入口按钮。 */
 const HIDE_DELAY_MS = 200;
 /** 入口纵向对齐块首行的偏移，px */
 const TOP_OFFSET_PX = 2;
-/** 输入面板宽度（w-80）的一半，用于水平夹紧到视口内 */
-const COMPOSER_HALF_WIDTH_PX = 160;
+/** 输入面板与所批注段落底边的间距，px */
+const COMPOSER_GAP_PX = 8;
 const DRAFT_CLASS = "annotation-draft-highlight";
 
 export interface BlockCommentTriggerProps {
@@ -44,9 +45,8 @@ export function BlockCommentTrigger({
 }: BlockCommentTriggerProps) {
 	const [hovered, setHovered] = useState<HTMLElement | null>(null);
 	const [top, setTop] = useState(0);
-	const [composer, setComposer] = useState<{ block: HTMLElement; x: number; y: number } | null>(
-		null,
-	);
+	/** 面板挂在覆盖层里，随页面一起滚动；top 是相对覆盖层的纵向位置 */
+	const [composer, setComposer] = useState<{ block: HTMLElement; top: number } | null>(null);
 	const [body, setBody] = useState("");
 	const hideTimer = useRef<number | undefined>(undefined);
 	const openLogin = useLoginDialogStore((s) => s.open);
@@ -89,14 +89,16 @@ export function BlockCommentTrigger({
 		);
 	}, [visibleBlock, layerRef]);
 
-	const close = () => {
-		composer?.block.classList.remove(DRAFT_CLASS);
-		setComposer(null);
+	const close = useCallback(() => {
+		setComposer((cur) => {
+			cur?.block.classList.remove(DRAFT_CLASS);
+			return null;
+		});
 		setBody("");
-	};
+	}, []);
+	useExclusivePanel("block", composer !== null, close);
 
 	// Esc 关闭输入面板
-	// biome-ignore lint/correctness/useExhaustiveDependencies: close 只读 composer，composer 变化时已重新登记
 	useEffect(() => {
 		if (!composer) return;
 		const onKey = (event: KeyboardEvent) => {
@@ -104,19 +106,18 @@ export function BlockCommentTrigger({
 		};
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
-	}, [composer]);
+	}, [composer, close]);
 
-	const open = (event: React.MouseEvent<HTMLButtonElement>) => {
-		if (!hovered) return;
-		const rect = event.currentTarget.getBoundingClientRect();
+	const open = () => {
+		const layer = layerRef.current;
+		if (!hovered || !layer) return;
 		if (isLoggedIn) hovered.classList.add(DRAFT_CLASS);
 		setComposer({
 			block: hovered,
-			x: Math.max(
-				COMPOSER_HALF_WIDTH_PX,
-				Math.min(rect.left + rect.width / 2, window.innerWidth - COMPOSER_HALF_WIDTH_PX),
-			),
-			y: rect.bottom + 8,
+			top:
+				hovered.getBoundingClientRect().bottom -
+				layer.getBoundingClientRect().top +
+				COMPOSER_GAP_PX,
 		});
 	};
 
@@ -170,11 +171,12 @@ export function BlockCommentTrigger({
 			</button>
 			{composer && (
 				<div
-					className="pointer-events-auto fixed z-50 -translate-x-1/2"
-					style={{ top: composer.y, left: composer.x }}
+					className="pointer-events-auto absolute right-0 z-50 max-w-full"
+					style={{ top: composer.top }}
 				>
 					<AnnotationComposer
 						title="段评"
+						icon={<MessageSquareText className="size-4" />}
 						quote={getBlockText(composer.block)}
 						body={body}
 						onBodyChange={setBody}

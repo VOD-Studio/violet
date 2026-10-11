@@ -15,6 +15,7 @@ import { clearMarks, wrapRange } from "../lib/range-marks";
 import type { BlockAuthor, BlockCount } from "../model/types";
 import { AnnotationPopover, type AnnotationPopoverTarget } from "./AnnotationPopover";
 import { BlockCommentTrigger } from "./BlockCommentTrigger";
+import { useExclusivePanel } from "./use-exclusive-panel";
 import "./annotations.css";
 
 /** 划线高亮 mark 的 class（荧光笔底色） */
@@ -143,6 +144,7 @@ export function AnnotationLayer({
 	}, [contentRef, markerMap]);
 
 	const close = useCallback(() => setActive(null), []);
+	useExclusivePanel("popover", active !== null, close);
 
 	/** 点击头像或高亮：同一目标再点一次收起，否则切换到新目标 */
 	const toggle = useCallback((blockId: string, author: string | null, anchorEl: HTMLElement) => {

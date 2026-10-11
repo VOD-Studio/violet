@@ -8,9 +8,11 @@
 import type { Comment } from "@entities/comment/model/types";
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
+import { AUTHOR_TIER } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import PendingBadge from "@shared/ui/pending-badge";
-import { MessageCircle } from "lucide-react";
+import { cn } from "cn";
+import { Crown, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
 import { CommentForm } from "./CommentForm";
@@ -50,7 +52,12 @@ export function AnnotationCard({
 	const hiddenCount = allReplies.length - REPLIES_PREVIEW_COUNT;
 
 	return (
-		<article className="rounded-2xl bg-muted/40 p-3.5">
+		<article
+			className={cn(
+				"rounded-2xl p-3.5",
+				comment.is_author ? AUTHOR_TIER.bubble : "bg-muted/40",
+			)}
+		>
 			<p className="mb-2.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
 				<span className="annotation-quote">{selectedText}</span>
 			</p>
@@ -111,21 +118,40 @@ export function AnnotationCard({
 
 /** CommentMeta 批注元信息：头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间 */
 function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
+	const avatar = comment.avatar_url ? (
+		<img
+			src={avatarUrl(comment.avatar_url)}
+			alt={comment.author_name}
+			className="size-6 rounded-full object-cover"
+			loading="lazy"
+		/>
+	) : (
+		<span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
+			{comment.author_name.slice(0, 1).toUpperCase()}
+		</span>
+	);
 	return (
 		<div className="flex items-center gap-2">
-			{comment.avatar_url ? (
-				<img
-					src={avatarUrl(comment.avatar_url)}
-					alt={comment.author_name}
-					className="size-6 rounded-full object-cover"
-					loading="lazy"
-				/>
-			) : (
-				<span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
-					{comment.author_name.slice(0, 1).toUpperCase()}
-				</span>
-			)}
-			<span className="max-w-32 truncate text-sm font-medium text-foreground">
+			<div className="relative shrink-0">
+				{comment.is_author ? (
+					<>
+						<div className={AUTHOR_TIER.avatarRing}>
+							<div className="rounded-full bg-background p-px">{avatar}</div>
+						</div>
+						<span className={cn(AUTHOR_TIER.crown, "size-3.5")} aria-hidden="true">
+							<Crown className="size-2" fill="currentColor" />
+						</span>
+					</>
+				) : (
+					avatar
+				)}
+			</div>
+			<span
+				className={cn(
+					"max-w-32 truncate text-sm",
+					comment.is_author ? AUTHOR_TIER.name : "font-medium text-foreground",
+				)}
+			>
 				{comment.author_name}
 			</span>
 			{comment.reply_to_name && (
@@ -134,7 +160,8 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 				</span>
 			)}
 			{comment.is_author && (
-				<span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+				<span className={AUTHOR_TIER.badge}>
+					<Crown className="size-2.5" fill="currentColor" />
 					作者
 				</span>
 			)}

@@ -9,7 +9,7 @@ import { usePresence } from "./use-presence";
 
 /** 与 annotations.css 中 .annotation-popover 的 transition 时长一致 */
 const EXIT_MS = 180;
-const WIDTH_PX = 352;
+const WIDTH_PX = 448;
 const EDGE_PX = 16;
 const GAP_PX = 10;
 /** 气泡至少要给内容留出的视口高度，px */

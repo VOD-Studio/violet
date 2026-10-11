@@ -29,6 +29,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import "./annotations.css";
 import { AnnotationComposer } from "./AnnotationComposer";
+import { SelectionHighlight } from "./SelectionHighlight";
+import { useExclusivePanel } from "./use-exclusive-panel";
 
 /** 草稿划线 mark 的 class：展开输入区时用暖色荧光笔标出正在批注的文字。 */
 const DRAFT_MARK_CLASS = "annotation-draft-mark";
@@ -76,7 +78,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 			});
 		} else {
 			// below 模式（输入面板展开时）：水平 clamp 到 [160, vw-160] 防气泡溢出
-			const halfWidth = 160;
+			const halfWidth = 208;
 			const left = Math.max(
 				halfWidth,
 				Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth),
@@ -192,7 +194,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 			if (rect.width > 0 || rect.height > 0) {
 				// 水平 clamp：气泡宽 320（w-80），居中需 left 在 [160, vw-160] 范围，
 				// 否则 translate-x-1/2 会让气泡溢出视口左/右边界。
-				const halfWidth = 160;
+				const halfWidth = 208;
 				const left = Math.max(
 					halfWidth,
 					Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth),
@@ -243,61 +245,66 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 		clearSelection();
 	};
 
-	// 无选区或输入区关闭 → 不渲染
-	if (!pos) return null;
+	useExclusivePanel("selection", showInput, handleCancel);
+
+	// 无选区或输入区关闭 → 只保留选区笔触覆盖层
+	if (!pos) return <SelectionHighlight contentRef={contentRef} />;
 
 	return (
-		<div
-			ref={toolbarRef}
-			className="fixed z-50 -translate-x-1/2"
-			style={{ top: pos.top, left: pos.left }}
-			role="toolbar"
-			aria-label="批注工具"
-		>
-			{showInput && anchor ? (
-				<AnnotationComposer
-					title="划线批注"
-					quote={anchor.selectedText}
-					body={body}
-					onBodyChange={setBody}
-					onSubmit={handleSubmit}
-					onCancel={handleCancel}
-					pending={createComment.isPending}
-					loginRequired={!isLoggedIn}
-					onLogin={() => {
-						handleCancel();
-						openLogin();
-					}}
-				/>
-			) : (
-				/* 浮动工具条（划线批注按钮） */
-				<div className="annotation-pop flex items-center rounded-full bg-card/90 px-1.5 py-1 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10">
-					<button
-						type="button"
-						onClick={handleAnnotate}
-						// preventDefault 防止 mousedown 破坏选区——
-						// 否则点击瞬间选区被清，selectionchange 触发把 pos 清空，
-						// 展开的输入气泡就丢失了「紧贴选区」的定位。
-						onMouseDown={(e) => e.preventDefault()}
-						disabled={isCrossBlock}
-						title={isCrossBlock ? "请在同一段落内选择" : "划线批注"}
-						className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isLoggedIn ? (
-							<>
-								<Highlighter className="size-3.5" />
-								划线批注
-							</>
-						) : (
-							<>
-								<LogIn className="size-3.5" />
-								登录后批注
-							</>
-						)}
-					</button>
-				</div>
-			)}
-		</div>
+		<>
+			<SelectionHighlight contentRef={contentRef} />
+			<div
+				ref={toolbarRef}
+				className="fixed z-50 -translate-x-1/2"
+				style={{ top: pos.top, left: pos.left }}
+				role="toolbar"
+				aria-label="批注工具"
+			>
+				{showInput && anchor ? (
+					<AnnotationComposer
+						title="划线批注"
+						quote={anchor.selectedText}
+						body={body}
+						onBodyChange={setBody}
+						onSubmit={handleSubmit}
+						onCancel={handleCancel}
+						pending={createComment.isPending}
+						loginRequired={!isLoggedIn}
+						onLogin={() => {
+							handleCancel();
+							openLogin();
+						}}
+					/>
+				) : (
+					/* 浮动工具条（划线批注按钮） */
+					<div className="annotation-pop flex items-center rounded-full bg-card/90 px-1.5 py-1 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10">
+						<button
+							type="button"
+							onClick={handleAnnotate}
+							// preventDefault 防止 mousedown 破坏选区——
+							// 否则点击瞬间选区被清，selectionchange 触发把 pos 清空，
+							// 展开的输入气泡就丢失了「紧贴选区」的定位。
+							onMouseDown={(e) => e.preventDefault()}
+							disabled={isCrossBlock}
+							title={isCrossBlock ? "请在同一段落内选择" : "划线批注"}
+							className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							{isLoggedIn ? (
+								<>
+									<Highlighter className="size-3.5" />
+									划线批注
+								</>
+							) : (
+								<>
+									<LogIn className="size-3.5" />
+									登录后批注
+								</>
+							)}
+						</button>
+					</div>
+				)}
+			</div>
+		</>
 	);
 }
 
