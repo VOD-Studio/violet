@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-/** 选区笔触落在文字所属的块上；td/th 也算块，表格内的选区同样有笔触 */
-const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, td, th";
+/** 选区笔触落在文字所属的最近块上；td/th/div 等也算块，避免这些位置的选区没有任何底色 */
+const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, td, th, div, figcaption, summary";
 /** 笔触比文字行框略宽，两端留出一点呼吸，px */
 const BLEED_PX = 3;
 /** 写在块 inline style 上的背景属性，清理时逐个移除 */
