@@ -6,7 +6,7 @@ import styles from "./Signature.module.css";
 import { DEFAULT_SIGNATURE_NAME, getSignaturePreset } from "./signature-presets";
 
 export interface SignatureProps extends HTMLAttributes<HTMLSpanElement> {
-	/** 签名名字（支持 xunrua / Violet 专属笔顺，以及任意自定义名字，默认 xunrua） */
+	/** 内置签名名称或账号别名；省略或未命中时显示默认签名。 */
 	name?: string;
 	/** 尺寸档位：sm (38px 高) | md (52px 高) | lg (68px 高)，默认 'md' */
 	size?: "sm" | "md" | "lg";

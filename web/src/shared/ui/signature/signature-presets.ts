@@ -1,9 +1,6 @@
-/**
- * 站点作者手写签名笔画预置数据
- *
- * 遵循数据与渲染分离规范：所有名字的真实矢量笔画、viewBox 与书写时序
- * 集中在此文件统一定义。未来更换或新增手写签名，只需在此增改对应条目。
- */
+import mizukiKana from "./mizuki-kana.json";
+import mizukiKanji from "./mizuki-kanji.json";
+import mizukiMiru from "./mizuki-miru.json";
 
 export interface StrokeData {
 	/** SVG 矢量笔画路径数据（M/C 曲线） */
@@ -17,7 +14,7 @@ export interface StrokeData {
 }
 
 export interface SignaturePreset {
-	/** 标识名字（全小写规范化） */
+	/** 签名作品的展示名称，不要求与登录账号相同。 */
 	name: string;
 	/** SVG 视口尺寸 */
 	viewBox: string;
@@ -36,6 +33,9 @@ export const DEFAULT_SIGNATURE_NAME = "xunrua";
  * 预置手写签名笔画配置表
  */
 export const SIGNATURE_PRESETS: Record<string, SignaturePreset> = {
+	"mizuki miru": mizukiMiru,
+	水月みる: mizukiKana,
+	水月见: mizukiKanji,
 	xunrua: {
 		name: "xunrua",
 		viewBox: "0 0 380 110",
@@ -219,12 +219,25 @@ export const SIGNATURE_PRESETS: Record<string, SignaturePreset> = {
 	},
 };
 
+function signatureKey(name: string): string {
+	const key = name.trim().toLowerCase();
+	if (key === "turing") return "alan turing";
+	if (key === "mizuki_miru") return "mizuki miru";
+	return key;
+}
+
+/** 判断是否有该名字的内置笔迹，不将默认回退视为命中。 */
+export function hasSignaturePreset(name: string): boolean {
+	return Object.hasOwn(SIGNATURE_PRESETS, signatureKey(name));
+}
+
 /**
  * 根据名字解析匹配的签名预置数据，若未命中则回退默认预置
  */
 export function getSignaturePreset(name?: string): SignaturePreset {
 	if (!name) return SIGNATURE_PRESETS[DEFAULT_SIGNATURE_NAME];
-	const key = name.trim().toLowerCase();
-	if (key === "alan turing" || key === "turing") return SIGNATURE_PRESETS["alan turing"];
-	return SIGNATURE_PRESETS[key] || SIGNATURE_PRESETS[DEFAULT_SIGNATURE_NAME];
+	const key = signatureKey(name);
+	return Object.hasOwn(SIGNATURE_PRESETS, key)
+		? SIGNATURE_PRESETS[key]
+		: SIGNATURE_PRESETS[DEFAULT_SIGNATURE_NAME];
 }

@@ -48,6 +48,8 @@ web/src/
 
 `@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。Maple Mono 与 Alex Brush 使用 Fontsource 5.3.0 的 jsDelivr CDN，`@font-face` 在该文件声明，由 `src/styles.css` 引入，不再打包本地字体。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威。`src/features/ui-docs/` 负责 `/ui` 组件库文档，架构与设计规范直接读取包内正文，组件预览与复制源码共用同一份示例文件。
 
+站点 `Signature` 内置 Mizuki Miru、水月みる、水月见三款笔迹，按名字、月牙、下划线顺序书写；`Mizuki_Miru` 账号名与 `Mizuki Miru` 共用同一款，笔画 JSON 与组件共置。
+
 ImagePixelReveal 已归入 `@violet/ui`，通过瓦片裁剪展开拼合始终静止的原图或自定义内容；默认随机顺序每轮重新洗牌，悬停可完整重播，减弱动态直接显示。`/ui/components/image-pixel-reveal` 提供四种顺序、完整重播、切换图片和 children 的同源示例，资源使用内嵌 SVG，不依赖站点头像配置。
 
 UploadTile 提供与图片网格等大的加号入口，支持原生键盘激活、禁用和忙碌状态；文件选择与网络上传由消费方负责。`/ui/components/upload-tile` 的演示与复制源码同源，使用包内 Checkbox 控制状态，外部 tarball 消费验收覆盖根入口、叶子入口和普通 CSS。
