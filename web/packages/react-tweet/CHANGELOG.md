@@ -1,8 +1,10 @@
 # Changelog
 
-## 0.1.0
+All notable changes to `@violetjs/react-tweet` are documented here. Versions follow [Semantic Versioning](https://semver.org/); before 1.0.0, a minor version may include breaking changes.
 
-Initial package release contents. This entry describes the version in the package manifest; it is not a claim that the version has already been published to npm.
+## 0.1.0 - Unreleased
+
+First public release.
 
 - Render saved snapshots with `EmbeddedTweet`, load through a host-provided `TweetFetcher` with `Tweet`, or compose source-independent content with `TweetCard`.
 - Include standalone light/dark styling, explicit locale/timezone formatting, English and Simplified Chinese messages, and CSS variable customization.

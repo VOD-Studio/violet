@@ -120,7 +120,7 @@ Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发
 
 ### 发布前验收
 
-开发脚本使用 Node.js 22.18+，CI 使用 Node.js 22 与 pnpm 10。先更新目标包自己的版本和 CHANGELOG；npm 同名同版本不能覆盖。README 为用户文档，开发说明和发布记录分别留在包内 DEVELOPMENT 与 CHANGELOG。
+开发脚本使用 Node.js 22.18+，CI 使用 Node.js 22 与 pnpm 10。先更新目标包自己的版本，并把 CHANGELOG 中该版本的 `Unreleased` 改为发布日期；npm 同名同版本不能覆盖。README 为用户文档，开发说明和发布记录分别留在包内 DEVELOPMENT 与 CHANGELOG。
 
 ```bash
 make inkline-check inkline-test inkline-consumer
