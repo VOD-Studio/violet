@@ -59,21 +59,37 @@ describe("sketchSvg geometry boundaries", () => {
 		expect(outline?.style.getPropertyValue("stroke")).not.toBe("none");
 	});
 
-	it("outlines fill-only colored nodes without restoring a transparent stroke", () => {
+	it("outlines fill-only colored nodes in their fill color without restoring a transparent stroke", () => {
 		const svg = mount(
 			'<circle cx="70" cy="50" r="20" style="fill:rgb(255,0,0);stroke:transparent;opacity:.6;fill-opacity:.7"/>',
 		);
 		sketchSvg(svg);
 		const paths = Array.from(svg.querySelectorAll("path"));
-		expect(
-			paths.some(
-				(path) =>
-					path.style.getPropertyValue("fill") === "none" &&
-					path.style.getPropertyValue("stroke") !== "none",
-			),
-		).toBe(true);
+		// 填色一层，G 笔主线与草稿复线各一层；G 笔轮廓是填充出的条带
+		expect(paths.length).toBeGreaterThanOrEqual(3);
+		for (const path of paths) {
+			expect(path.style.getPropertyValue("fill")).toBe("rgb(255, 0, 0)");
+			expect(path.style.getPropertyValue("stroke")).toBe("none");
+			expect(path.style.getPropertyValue("opacity")).toBe("1");
+		}
 		expect(svg.querySelector("g")?.style.getPropertyValue("opacity")).toBe("0.6");
-		for (const path of paths) expect(path.style.getPropertyValue("opacity")).toBe("1");
+	});
+
+	it("merges Mermaid's Rough.js fill and doubled outline into one closed sketched node", () => {
+		const svg = mount(`
+			<g class="outer-path">
+				<path id="fill" d="M10 10 L90 10 L90 50 L10 50" stroke="none" style="fill:rgb(238,238,238);stroke:none"/>
+				<path id="outline" d="M10 10 L90 10 M10 10 L90 10 M90 10 L90 50 M90 10 L90 50" fill="none" style="fill:none;stroke:rgb(0,0,255);stroke-width:2"/>
+			</g>
+		`);
+		sketchSvg(svg);
+		expect(svg.querySelector("#outline")).toBeNull();
+		const paths = Array.from(svg.querySelectorAll<SVGPathElement>("#fill > path"));
+		const [area, ...ink] = paths;
+		expect(area.style.getPropertyValue("fill")).toBe("rgb(238, 238, 238)");
+		expect(area.getAttribute("d")).toMatch(/Z$/);
+		expect(ink.length).toBeGreaterThanOrEqual(2);
+		for (const path of ink) expect(path.style.getPropertyValue("fill")).toBe("rgb(0, 0, 255)");
 	});
 
 	it("keeps tight text backings unframed while still sketching their solid fill", () => {
