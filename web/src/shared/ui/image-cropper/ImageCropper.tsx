@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import ReactCrop, { type Crop, type PercentCrop } from "react-image-crop";
+import ReactCrop, {
+	type Crop,
+	centerCrop,
+	makeAspectCrop,
+	type PercentCrop,
+} from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import type { CropRect } from "./types";
 
@@ -12,6 +17,8 @@ export interface ImageCropperProps {
 	rect?: CropRect | undefined;
 	/** 选区变化回调(归一化坐标 0~1) */
 	onChange: (rect: CropRect | undefined) => void;
+	/** 图片加载完成，给出原图像素尺寸（用于分辨率提示）。 */
+	onImageSize?: (size: { w: number; h: number }) => void;
 }
 
 /**
@@ -23,7 +30,7 @@ export interface ImageCropperProps {
  *
  * 选区清除:父组件将 rect 设为 undefined,内部同步清除 react-image-crop 选区。
  */
-export function ImageCropper({ src, aspect, rect, onChange }: ImageCropperProps) {
+export function ImageCropper({ src, aspect, rect, onChange, onImageSize }: ImageCropperProps) {
 	const [crop, setCrop] = useState<Crop>();
 
 	// aspect 变化时清空已有选区,避免比例对不上
@@ -56,6 +63,30 @@ export function ImageCropper({ src, aspect, rect, onChange }: ImageCropperProps)
 		[onChange],
 	);
 
+	// 锁定比例时给出居中的最大选区：未动手也「所见即所得」，不会退化成整图居中硬裁。
+	const handleImageLoad = useCallback(
+		(event: React.SyntheticEvent<HTMLImageElement>) => {
+			const { naturalWidth, naturalHeight, width, height } = event.currentTarget;
+			onImageSize?.({ w: naturalWidth, h: naturalHeight });
+			if (aspect === undefined || width === 0 || height === 0) return;
+			// 高度不超过图片：宽度占比 ≤ aspect × 高 ÷ 宽
+			const widthPercent = Math.min(100, ((aspect * height) / width) * 100);
+			const initial = centerCrop(
+				makeAspectCrop({ unit: "%", width: widthPercent }, aspect, width, height),
+				width,
+				height,
+			);
+			setCrop(initial);
+			onChange({
+				x: initial.x / 100,
+				y: initial.y / 100,
+				w: initial.width / 100,
+				h: initial.height / 100,
+			});
+		},
+		[aspect, onChange, onImageSize],
+	);
+
 	return (
 		// ReactCrop 是 display:inline-block 会收缩到图片宽度并左对齐,
 		// 外层用 flex 居中让裁剪区在容器里水平居中,避免窄图贴左留大片空白。
@@ -71,7 +102,8 @@ export function ImageCropper({ src, aspect, rect, onChange }: ImageCropperProps)
 					src={src}
 					alt="待裁剪"
 					crossOrigin="anonymous"
-					style={{ maxHeight: "60vh", maxWidth: "100%" }}
+					onLoad={handleImageLoad}
+					style={{ maxHeight: "40vh", maxWidth: "100%" }}
 				/>
 			</ReactCrop>
 		</div>
