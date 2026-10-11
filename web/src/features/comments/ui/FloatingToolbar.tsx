@@ -220,8 +220,10 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 		createComment.mutate(
 			{ body: body.trim(), anchor: toCreateCommentAnchor(anchor) },
 			{
-				onSuccess: () => {
-					toast.success("批注已提交，等待审核");
+				onSuccess: (created) => {
+					toast.success(
+						created.status === "pending" ? "批注已提交，等待审核" : "批注已提交",
+					);
 					clearDraftHighlight();
 					setShowInput(false);
 					setBody("");

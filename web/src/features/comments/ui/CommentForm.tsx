@@ -97,8 +97,12 @@ export function CommentForm({
 		}
 		createComment.mutate(payload, {
 			onSuccess: (newComment) => {
-				if (!isLoggedIn) {
-					toast.success("已提交，管理员审核通过后登录可见");
+				if (newComment.status === "pending") {
+					toast.success(
+						isLoggedIn ? "已提交，等待审核" : "已提交，管理员审核通过后登录可见",
+					);
+				} else if (!isLoggedIn) {
+					toast.success("已提交，登录后可见");
 				}
 				setBody("");
 				setPictures([]);
