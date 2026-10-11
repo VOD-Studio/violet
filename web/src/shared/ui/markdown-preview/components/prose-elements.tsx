@@ -28,7 +28,7 @@ export const proseElements: Components = {
 				{children}
 			</blockquote>
 		) : (
-			<blockquote className="my-8 border-l-2 border-foreground/25 py-1 pl-6 text-muted-foreground [&>p]:my-3 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
+			<blockquote className="my-8 border-l-2 border-foreground/40 py-1 pl-6 text-muted-foreground [&>p]:my-3 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
 				{children}
 			</blockquote>
 		);
@@ -124,7 +124,7 @@ export const proseElements: Components = {
 			colSpan={colSpan}
 			rowSpan={rowSpan}
 			style={cellAlignment(align, style)}
-			className="border-b border-foreground/40 px-4 py-2.5 text-left font-semibold whitespace-nowrap"
+			className="border-b border-foreground/40 px-4 py-2 text-left font-semibold whitespace-nowrap"
 		>
 			{children}
 		</th>
@@ -135,7 +135,7 @@ export const proseElements: Components = {
 			colSpan={colSpan}
 			rowSpan={rowSpan}
 			style={cellAlignment(align, style)}
-			className="border-b border-edge-hairline px-4 py-2.5 align-top"
+			className="border-b border-edge-hairline px-4 py-2 align-top"
 		>
 			{children}
 		</td>
