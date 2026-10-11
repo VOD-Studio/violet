@@ -1,0 +1,135 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 要验收或发布的包
+        type: choice
+        required: true
+        options: [inkline, react-tweet]
+      version:
+        description: 必须与所选提交的 package.json 版本完全一致
+        type: string
+        required: true
+      dist_tag:
+        description: npm 分发标签，预发布版本只能使用 next
+        type: choice
+        default: latest
+        options: [latest, next]
+      publish:
+        description: 实际发布（默认关闭，仅验收与 dry-run）
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-${{ inputs.package }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Verify and publish ${{ inputs.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: web
+    env:
+      PACKAGE: ${{ inputs.package }}
+      EXPECTED_VERSION: ${{ inputs.version }}
+      DIST_TAG: ${{ inputs.dist_tag }}
+      SHOULD_PUBLISH: ${{ inputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate package and release intent
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const { PACKAGE, EXPECTED_VERSION, DIST_TAG, SHOULD_PUBLISH, GITHUB_REF } = process.env;
+          assert(['inkline', 'react-tweet'].includes(PACKAGE), 'Unsupported package.');
+          assert(['latest', 'next'].includes(DIST_TAG), 'Unsupported dist-tag.');
+          assert(['true', 'false'].includes(SHOULD_PUBLISH), 'Invalid publish flag.');
+          const manifest = JSON.parse(readFileSync(`packages/${PACKAGE}/package.json`, 'utf8'));
+          assert.equal(manifest.name, `@violetjs/${PACKAGE}`);
+          assert.equal(manifest.version, EXPECTED_VERSION, 'Version differs from package.json.');
+          assert.notEqual(manifest.private, true, 'The package is private.');
+          if (manifest.version.includes('-')) assert.equal(DIST_TAG, 'next', 'Prereleases require next.');
+          if (SHOULD_PUBLISH === 'true') {
+            assert.equal(GITHUB_REF, 'refs/heads/release/2.0', 'Publish only from release/2.0.');
+          }
+          console.log(`${manifest.name}@${manifest.version}: ${SHOULD_PUBLISH === 'true' ? 'publish' : 'dry-run'} (${DIST_TAG})`);
+          JS
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check package source
+        run: |
+          pnpm exec biome check "packages/$PACKAGE"
+          pnpm --filter "@violetjs/$PACKAGE" typecheck
+          pnpm --filter "@violetjs/$PACKAGE" test
+
+      - name: Verify independent tarball consumer
+        run: pnpm --filter "@violetjs/$PACKAGE" consumer
+
+      - name: Pack release artifact
+        id: pack
+        run: |
+          destination="$RUNNER_TEMP/npm-package"
+          mkdir -p "$destination"
+          pnpm --dir "packages/$PACKAGE" pack --pack-destination "$destination"
+          tarballs=("$destination"/*.tgz)
+          test "${#tarballs[@]}" -eq 1
+          test -f "${tarballs[0]}"
+          printf 'tarball=%s\n' "${tarballs[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Preview publication
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: pnpm publish "$TARBALL" --dry-run --access public --tag "$DIST_TAG" --no-git-checks
+
+      - name: Publish verified package
+        if: inputs.publish
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          test -n "$NODE_AUTH_TOKEN" || { echo 'Configure NPM_TOKEN in the npm environment.'; exit 1; }
+          pnpm publish "$TARBALL" --access public --tag "$DIST_TAG" --provenance --no-git-checks
+
+      - name: Record result
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: |
+          {
+            printf '## @violetjs/%s@%s\n\n' "$PACKAGE" "$EXPECTED_VERSION"
+            printf -- '- Commit: %s\n' "$GITHUB_SHA"
+            printf -- '- Dist-tag: %s\n' "$DIST_TAG"
+            printf -- '- Published: %s\n' "$SHOULD_PUBLISH"
+            printf -- '- Tarball SHA-256: %s\n' "$(sha256sum "$TARBALL" | cut -d ' ' -f 1)"
+          } >> "$GITHUB_STEP_SUMMARY"

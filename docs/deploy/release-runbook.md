@@ -107,6 +107,56 @@ Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发
 
 配置 `APIFOX_ACCESS_TOKEN`，账号须有目标项目管理员权限；未配置则跳过并告警。同步使用 `deleteUnmatchedResources=true`，手工增加但不在代码中的接口会被删除。
 
+## npm 独立包发布
+
+`@violetjs/inkline` 与 `@violetjs/react-tweet` 使用各自 `web/packages/<包>/package.json` 的版本，不跟随站点 release-please，也不因合并或站点 tag 自动发布。`publish-npm.yml` 仅接受手动触发，默认执行验收和 dry-run；正式发布限定 `release/2.0`。
+
+### 首次配置
+
+1. 确认 npm 账号拥有 `@violetjs` 作用域及目标包的发布权限。未验证账号权限前，本地打包通过不代表能发布。
+2. 在 GitHub 创建 `npm` environment，限制发布分支为 `release/2.0`，按需设置 required reviewers。
+3. 在该 environment 添加 `NPM_TOKEN`：使用仅授权这两个包或对应作用域的 granular access token，开启自动化发布所需的 bypass 2FA 权限，记录有效期并及时轮换。不要把 token 放进仓库或 README。
+4. 将发布配置、示例图和文档合入公开的 `release/2.0`。两包 README 的在线图片/API 链接指向该分支；未合入时，新文件不会出现在 npm 页面引用的地址上。
+
+### 发布前验收
+
+开发脚本使用 Node.js 22.18+，CI 使用 Node.js 22 与 pnpm 10。先更新目标包自己的版本和 CHANGELOG；npm 同名同版本不能覆盖。README 为用户文档，开发说明和发布记录分别留在包内 DEVELOPMENT 与 CHANGELOG。
+
+```bash
+make inkline-check inkline-test inkline-consumer
+make react-tweet-check react-tweet-test react-tweet-consumer
+```
+
+`consumer` 会校验 README 与示例源码，再打包并在工作区外安装 tarball，验证公开类型和实际消费。修改示例后，分别执行 `make inkline-examples`、`make react-tweet-examples` 重新生成图片并同步双语 README；推文截图需要 Playwright Chromium。生成物随所属包提交。
+
+需要单独检查分发文件时：
+
+```bash
+make inkline-pack NPM_PACK_DEST=/tmp
+make react-tweet-pack NPM_PACK_DEST=/tmp
+```
+
+### 手动发布
+
+先 dry-run，`version` 必须与所选提交的包版本完全一致：
+
+```bash
+gh workflow run publish-npm.yml --ref release/2.0 \
+  -f package=inkline -f version=0.2.0 -f dist_tag=latest -f publish=false
+```
+
+核对运行中的测试、独立消费结果、tarball 文件清单和目标版本。确认后用同一已审核版本显式发布：
+
+```bash
+gh workflow run publish-npm.yml --ref release/2.0 \
+  -f package=inkline -f version=0.2.0 -f dist_tag=latest -f publish=true
+```
+
+推文组件将 `package` 改为 `react-tweet`，`version` 改成其实际版本（初始为 `0.1.0`）。上面的数字只是当前版本示例，不是自动计算的下一个版本；预发布版本使用 `dist_tag=next`。工作流会重新检查并发布所选提交，不自动改版本、创建 tag 或推送代码。正式发布携带 provenance；token 只注入实际发布步骤。
+
+发布后用 `pnpm view @violetjs/inkline@0.2.0 version dist.integrity`（或对应推文包与版本）核对 registry 结果，并在全新消费项目安装验证。失败时先看是否已经成功写入 npm：已写入的版本不能重发，需修正后递增版本；未写入的鉴权失败先修复环境 token/权限，不以改包名绕过。
+
+
 ## Release notes 改写规范
 
 release-please 的 CHANGELOG 粒度 = commit：功能/修复 PR 用 merge commit 合并时,分支上每个发版型 commit 都平铺进段落（v2.4.0 曾 25 条流水账上线,读者视角全是噪音）。因此 **release PR 合并前,先把新段落改写为功能聚合风格**（在 release PR 分支上 commit,squash 合并后段落即为最终态;Release body 由 release-please 从 CHANGELOG 段落生成,自动一致）。

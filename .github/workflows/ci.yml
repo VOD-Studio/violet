@@ -62,6 +62,7 @@ jobs:
             'web':
               - 'web/**'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/publish-npm.yml'
 
   # ============================================================
   # 后端检查（Go）
@@ -223,6 +224,20 @@ jobs:
       - name: UI independent tarball consumer
         if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @violet/ui consumer
+
+      - name: Public library types and tests
+        if: needs.changes.outputs.web == 'true'
+        run: |
+          pnpm --filter @violetjs/inkline typecheck
+          pnpm --filter @violetjs/inkline test
+          pnpm --filter @violetjs/react-tweet typecheck
+          pnpm --filter @violetjs/react-tweet test
+
+      - name: Public library independent tarball consumers
+        if: needs.changes.outputs.web == 'true'
+        run: |
+          pnpm --filter @violetjs/inkline consumer
+          pnpm --filter @violetjs/react-tweet consumer
 
       - name: Vitest
         if: needs.changes.outputs.web == 'true'

@@ -6,6 +6,8 @@
         api api-build api-test api-lint \
         web web-build web-preview web-lint web-format web-typecheck \
         web-test web-contract ui-sync ui-check ui-build ui-test ui-pack ui-consumer \
+        inkline-check inkline-build inkline-test inkline-pack inkline-consumer inkline-examples \
+        react-tweet-check react-tweet-build react-tweet-test react-tweet-pack react-tweet-consumer react-tweet-examples \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
@@ -189,6 +191,44 @@ ui-pack: ## 打包独立组件库 tarball（UI_PACK_DEST 指定输出目录）
 
 ui-consumer: ## 在独立项目安装 tarball 并验证类型、SSR 与按需构建
 	cd web && pnpm --filter @violet/ui consumer
+
+NPM_PACK_DEST ?= /tmp
+
+inkline-check: ## 检查独立绘图库类型
+	cd web && pnpm --filter @violetjs/inkline typecheck
+
+inkline-build: ## 构建独立绘图库 ESM 与声明
+	cd web && pnpm --filter @violetjs/inkline build
+
+inkline-test: ## 运行独立绘图库行为测试
+	cd web && pnpm --filter @violetjs/inkline test
+
+inkline-pack: ## 打包绘图库（NPM_PACK_DEST 指定输出目录）
+	cd web && pnpm --dir packages/inkline pack --pack-destination "$(NPM_PACK_DEST)"
+
+inkline-consumer: ## 安装绘图库 tarball 验证外部类型、运行与打包
+	cd web && pnpm --filter @violetjs/inkline consumer
+
+inkline-examples: ## 生成绘图库示例图并同步双语 README
+	cd web && pnpm --filter @violetjs/inkline examples
+
+react-tweet-check: ## 检查独立推文组件类型
+	cd web && pnpm --filter @violetjs/react-tweet typecheck
+
+react-tweet-build: ## 构建独立推文组件 ESM、声明与样式
+	cd web && pnpm --filter @violetjs/react-tweet build
+
+react-tweet-test: ## 运行独立推文组件行为测试
+	cd web && pnpm --filter @violetjs/react-tweet test
+
+react-tweet-pack: ## 打包推文组件（NPM_PACK_DEST 指定输出目录）
+	cd web && pnpm --dir packages/react-tweet pack --pack-destination "$(NPM_PACK_DEST)"
+
+react-tweet-consumer: ## 安装推文 tarball 验证外部类型、SSR 与样式
+	cd web && pnpm --filter @violetjs/react-tweet consumer
+
+react-tweet-examples: ## 生成推文示例图并同步双语 README
+	cd web && pnpm --filter @violetjs/react-tweet examples
 
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），
