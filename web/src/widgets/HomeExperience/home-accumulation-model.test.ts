@@ -143,6 +143,28 @@ describe("今日发布", () => {
 		expect(timeline.points.some((point) => point.includesToday)).toBe(false);
 		expect(timeline.todayPosition).toBeLessThan(100);
 	});
+
+	it("尚未结束的聚合窗口不会把历史文章排到今天之后", () => {
+		const timeline = buildAccumulationTimeline(
+			[publication(Date.UTC(2026, 9, 10), 0)],
+			7,
+			new Date("2026-10-11T12:00:00Z"),
+		);
+		expect(timeline.points[0].position).toBeLessThan(timeline.todayPosition);
+		expect(timeline.points[0].includesToday).toBe(false);
+
+		const current = timeline.seasonSegments[timeline.seasonSegments.length - 1];
+		const grouped = assignPointsToSegments(
+			timeline.points,
+			timeline.seasonSegments,
+			timeline.todayAt,
+		);
+		const todayRatio =
+			((timeline.todayAt + DAY_IN_MILLISECONDS / 2 - current.startsAt) /
+				(current.endsAt - current.startsAt)) *
+			100;
+		expect(grouped.get(current.key)?.[0].position).toBeLessThan(todayRatio);
+	});
 });
 
 describe("季节分段", () => {

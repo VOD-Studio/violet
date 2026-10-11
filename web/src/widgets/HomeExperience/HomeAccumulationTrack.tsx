@@ -77,18 +77,17 @@ export function HomeAccumulationTrack({
 					variants={revealVariants}
 					custom={reduceMotion ? 0 : LINE_DRAW_SECONDS}
 					style={{ left: `${todayPosition}%` }}
-					className="absolute top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
+					className="pointer-events-none absolute top-0"
 				>
-					<span
-						aria-hidden
-						className={cn(
-							"absolute left-1/2 -translate-x-1/2 text-[11px] font-medium text-primary",
-							hasTodayPoint ? "-top-5.5" : "-top-4",
-						)}
-					>
-						今
+					<span className="absolute -top-7 left-0 -translate-x-1/2 text-xs leading-4 whitespace-nowrap text-muted-foreground">
+						今天
 					</span>
-					{!hasTodayPoint && <span aria-hidden className="block h-3.5 w-px bg-primary" />}
+					{!hasTodayPoint && (
+						<span
+							aria-hidden
+							className="absolute -top-1.5 left-0 h-3 w-px bg-muted-foreground/60"
+						/>
+					)}
 				</motion.div>
 			</div>
 

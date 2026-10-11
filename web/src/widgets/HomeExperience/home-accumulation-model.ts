@@ -174,8 +174,13 @@ export function buildAccumulationTimeline(
 			const items = bucket.entries
 				.sort((left, right) => right.day - left.day)
 				.map((entry) => entry.item);
-			const midpoint = bucket.startsAt + (bucket.endsAt - bucket.startsAt) / 2;
 			const includesToday = bucket.entries.some((entry) => entry.day === today);
+			const midpoint = pointPositionTime(
+				bucket.startsAt,
+				bucket.endsAt,
+				today,
+				includesToday,
+			);
 			return {
 				key: `window-${bucket.index}`,
 				position: includesToday
@@ -399,9 +404,12 @@ export function assignPointsToSegments(
 		segments.map((segment) => [segment.key, []]),
 	);
 	for (const point of points) {
-		const midpoint = point.includesToday
-			? todayAt + DAY_IN_MILLISECONDS / 2
-			: point.startsAt + (point.endsAt + DAY_IN_MILLISECONDS - point.startsAt) / 2;
+		const midpoint = pointPositionTime(
+			point.startsAt,
+			point.endsAt + DAY_IN_MILLISECONDS,
+			todayAt,
+			point.includesToday,
+		);
 		const segment = segments.find(
 			(candidate) => midpoint >= candidate.startsAt && midpoint < candidate.endsAt,
 		);
@@ -410,4 +418,16 @@ export function assignPointsToSegments(
 		result.get(segment.key)?.push({ point, position: clamp(ratio * 100, 3, 97) });
 	}
 	return result;
+}
+
+function pointPositionTime(
+	start: number,
+	end: number,
+	today: number,
+	includesToday: boolean,
+): number {
+	if (includesToday) return today + DAY_IN_MILLISECONDS / 2;
+	// 当前聚合窗口尚未结束，不能用未来的空白日期把历史节点推过今日刻度。
+	const elapsedEnd = start < today ? Math.min(end, today) : end;
+	return start + (elapsedEnd - start) / 2;
 }
