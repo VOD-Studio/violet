@@ -28,6 +28,8 @@ python3 .agents/skills/blog-writing/scripts/scan-sensitive.py <稿件路径>
 
 新建前用 `list_tags` / `create_tag` 补齐缺失标签，后者按标签名幂等。`create_post` 保存草稿；至少提供标题、slug 与正文，按实际 schema 补元数据，成功后立即记录返回 ID。
 
+正文引用本地图片时，先用 `upload_image` 上传（png/jpeg/gif/webp，≤4MiB；SVG 先转 png，大图先压成 webp，因为 base64 要经过上下文），把返回的 `url` 替换进 Markdown 或 `cover_image`，再 `create_post`。本地相对路径不会在线上解析；没有 `upload_image` 时交付带图的本地稿并说明图片未入库。
+
 更新先读取当前文章，构造完整可编辑内容：标题、slug、正文、摘要、封面、标签、`canonical_url`、`show_signature`。这些字段不能按 PATCH 理解：省略 canonical URL 会清回原创，省略签名设置会变为 false。Markdown 改稿只传新 `content_md`，不同时传旧 `content_html`；HTML 优先于 Markdown，会掩盖正文修改。
 
 **当前更新接口存在不可无损保留的字段**：`update_post` 未暴露 SEO 标题、SEO 描述和精选标记，但底层更新会重置它们。若当前文章具有这些值，停止 MCP 覆盖，交付已完成的稿件并说明需要支持保留元数据的编辑入口或接口修复；不能宣称已保留全部元数据，也不绕过 MCP 写入。以当前实际 schema 与实现为准，不能靠传未声明字段规避。
