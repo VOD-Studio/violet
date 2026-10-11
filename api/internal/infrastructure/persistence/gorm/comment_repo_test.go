@@ -531,4 +531,6 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 		{Name: "Bob", AvatarURL: ""},
 	}, byBlock["b1"].Authors)
 	assert.Equal(t, []domaincomment.BlockAuthor{{Name: "Alice", AvatarURL: "a.png"}}, byBlock["b2"].Authors)
+	assert.Len(t, byBlock["b1"].Ranges, 3)
+	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3}, byBlock["b1"].Ranges[0])
 }

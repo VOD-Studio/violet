@@ -65,6 +65,16 @@ type BlockCountDTO struct {
 	Count   int64  `json:"count"`
 	// Authors 该块批注的评论者，按首次批注先后去重；前端据此渲染头像组
 	Authors []BlockAuthorDTO `json:"authors"`
+	// Ranges 各条批注划线的块内字符区间；整块评论的区间覆盖全块，前端据此不再单独高亮
+	Ranges []BlockRangeDTO `json:"ranges"`
+}
+
+// BlockRangeDTO 批注划线在块内的字符区间
+type BlockRangeDTO struct {
+	// Start 起始偏移（块内字符位，0-based）
+	Start int `json:"start"`
+	// End 结束偏移（块内字符位，exclusive）
+	End int `json:"end"`
 }
 
 // BlockAuthorDTO 批注块上的评论者
@@ -268,7 +278,11 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 		for _, a := range b.Authors {
 			authors = append(authors, BlockAuthorDTO{Name: a.Name, AvatarURL: a.AvatarURL})
 		}
-		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors})
+		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
+		for _, r := range b.Ranges {
+			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End})
+		}
+		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors, Ranges: ranges})
 	}
 	return dtos, nil
 }

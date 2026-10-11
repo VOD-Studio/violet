@@ -273,12 +273,14 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 	}
 
 	var rows []struct {
-		BlockID    string     `gorm:"column:block_id"`
-		CreatedBy  *uuid.UUID `gorm:"column:created_by"`
-		AuthorName string     `gorm:"column:author_name"`
-		AvatarURL  string     `gorm:"column:avatar_url"`
+		BlockID     string     `gorm:"column:block_id"`
+		CreatedBy   *uuid.UUID `gorm:"column:created_by"`
+		AuthorName  string     `gorm:"column:author_name"`
+		AvatarURL   string     `gorm:"column:avatar_url"`
+		StartOffset *int       `gorm:"column:anchor_start_offset"`
+		EndOffset   *int       `gorm:"column:anchor_end_offset"`
 	}
-	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url").
+	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url, anchor_start_offset, anchor_end_offset").
 		Order("created_at ASC").
 		Find(&rows).Error
 	if err != nil {
@@ -292,7 +294,13 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 	seen := make(map[string]struct{}, len(rows))
 	for _, row := range rows {
 		i, ok := index[row.BlockID]
-		if !ok || len(results[i].Authors) >= comment.BlockAuthorLimit {
+		if !ok {
+			continue
+		}
+		if row.StartOffset != nil && row.EndOffset != nil && len(results[i].Ranges) < comment.BlockRangeLimit {
+			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{Start: *row.StartOffset, End: *row.EndOffset})
+		}
+		if len(results[i].Authors) >= comment.BlockAuthorLimit {
 			continue
 		}
 		// 登录评论者按 user id 去重；匿名无 id，按展示名区分
