@@ -1,13 +1,42 @@
 {
 	"name": "@violetjs/inkline",
 	"version": "0.2.0",
-	"private": true,
-	"description": "Hand-drawn vector inking with composable pens, hands and fills",
+	"description": "Hand-drawn vector inking for SVG and Canvas: pens with pressure, human-like strokes, fills, line-and-wash style and draw-on animation.",
+	"keywords": [
+		"hand-drawn",
+		"sketchy",
+		"rough",
+		"inking",
+		"svg",
+		"canvas",
+		"pen",
+		"pressure",
+		"diagram",
+		"mermaid",
+		"animation",
+		"drawing"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/VOD-Studio/violet.git",
+		"directory": "web/packages/inkline"
+	},
+	"bugs": {
+		"url": "https://github.com/VOD-Studio/violet/issues"
+	},
 	"type": "module",
 	"sideEffects": false,
+	"engines": {
+		"node": ">=18"
+	},
 	"files": [
 		"dist",
-		"README.md"
+		"README.md",
+		"README.zh-CN.md",
+		"CHANGELOG.md",
+		"LICENSE"
 	],
 	"exports": {
 		".": {
@@ -24,9 +53,13 @@
 			"types": "./src/render/canvas.ts",
 			"import": "./src/render/canvas.ts",
 			"default": "./src/render/canvas.ts"
-		}
+		},
+		"./package.json": "./package.json"
 	},
 	"publishConfig": {
+		"access": "public",
+		"main": "./dist/index.js",
+		"types": "./dist/index.d.ts",
 		"exports": {
 			".": {
 				"types": "./dist/index.d.ts",
@@ -42,19 +75,25 @@
 				"types": "./dist/render/canvas.d.ts",
 				"import": "./dist/render/canvas.js",
 				"default": "./dist/render/canvas.js"
-			}
+			},
+			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {
 		"build": "vite build && tsc -p tsconfig.build.json",
 		"typecheck": "tsc --noEmit",
-		"prepack": "pnpm build"
+		"prepack": "pnpm build",
+		"test": "vitest run --root ../.. packages/inkline",
+		"consumer": "node scripts/consumer-smoke.mjs",
+		"examples": "node scripts/render-examples.ts --artwork ../../src/features/lab/sketch/model/coffee-morning.json && node scripts/sync-readme.mjs",
+		"examples:check": "node scripts/render-examples.ts --artwork ../../src/features/lab/sketch/model/coffee-morning.json --check && node scripts/sync-readme.mjs --check"
 	},
 	"dependencies": {
 		"path-data-parser": "0.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.2",
+		"esbuild": "^0.28.1",
 		"typescript": "^7.0.2",
 		"vite": "^8.0.0"
 	}

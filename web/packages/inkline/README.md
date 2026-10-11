@@ -1,142 +1,376 @@
 # @violetjs/inkline
 
-框架无关的手绘矢量绘图库：输入图形或 SVG path，输出像真人用某支笔画出的矢量笔墨，SVG 与 Canvas 共用同一份生成结果。需求与规格见 [PRD-0035](../../../docs/prd/0035-可扩展手绘绘图库.md) 与 [M1 规格](../../../docs/prd/0035-手绘绘图库M1规格.md)。当前为 0.2.0：笔画规划与三档手法、逐点压力与四支笔（签字笔、钢笔、马克笔、G 笔，压感强度均可调）、七种填充与淡彩、线稿淡彩风格，以及整图时间轴（顺序、并行、交错）。
+English | [简体中文](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/README.zh-CN.md)
 
-## 调用
+Hand-drawn vector inking for SVG and Canvas. Give it shapes or SVG paths and it draws them the way a person would: it plans the strokes, moves the hand, presses the pen and fills the shapes. One result renders to both SVG and Canvas.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/illustration.svg" width="460" alt="A girl holding a coffee mug, inked with the G pen">
+</p>
+<p align="center"><sub>Plain vector data, centerlines and flat color regions, inked with the G pen. See <a href="#ink-vector-artwork">Ink vector artwork</a>.</sub></p>
+
+- **Strokes that look drawn, not jittered.** Corners break and cross, long lines are drawn in several strokes, and closed shapes overlap where the pen started.
+- **Pens with pressure.** Fineliner, ink pen, marker and G pen are built in. Every pen's pressure strength is adjustable, and you can write your own pens.
+- **Fills and wash.** Seven pattern fills, plus a watercolor-like wash that leaves paper-white highlights and hatches the shadow side.
+- **Draw-on animation.** Replay a drawing stroke by stroke, in sequence, in parallel or staggered. Seek, pause and reverse without redrawing.
+- **Deterministic.** The same input and seed always give the same output, and editing one shape never changes the others.
+- **Small and framework-agnostic.** About 10 KB gzipped with the default pen and the SVG renderer, and only one dependency.
+
+## Install
+
+```sh
+npm install @violetjs/inkline
+```
+
+## Quick start
+
+![A rounded card with hachure fill](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/quick-start.svg)
+
+<!-- example: quick-start -->
 
 ```ts
 import { draw, fills, rect, styles } from "@violetjs/inkline";
-import { mountSvg, updateSvgPalette } from "@violetjs/inkline/svg";
+import { renderSvg } from "@violetjs/inkline/svg";
 
 const drawing = draw(
 	{
-		width: 160,
-		height: 100,
-		items: [{ id: "card", path: rect(10, 10, 140, 80, 8), fillRole: "surface" }],
+		width: 240,
+		height: 150,
+		items: [{ id: "card", path: rect(20, 20, 200, 110, 12), fillRole: "surface" }],
 	},
 	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
 );
-const palette = { paper: "#fff", ink: "#252332", surface: "#eadcf4" };
-const svg = mountSvg(drawing, palette);
-document.body.append(svg);
-updateSvgPalette(svg, { ...palette, surface: "#c3dfe7" });
+
+// renderSvg returns SVG markup; in the browser, mountSvg returns an <svg> element instead.
+export const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
 ```
 
-`@violetjs/inkline/canvas` 的 `drawCanvas(drawing, canvas, palette)` 渲染同一结果；`renderSvg` 不依赖 DOM，可在 Worker 或 Node 中输出 SVG 文本。
+<!-- /example -->
 
-## 概念
+A scene is a list of items. Each item has a stable `id`, a `path`, and optional color roles: `fillRole` and `strokeRole`, which defaults to `ink`. Roles are resolved against a palette when you render, so you can recolor a drawing without generating it again.
 
-| 维度 | 职责 | 内置 |
-| --- | --- | --- |
-| 手法 `Hand` | 骨架 → 笔画：断笔、越界、首尾重叠、抖动、复画与逐点压力 | `hands.neat` / `natural` / `draft` / `inking` |
-| 笔 `Pen` | 笔画 → 渲染批次：笔尖、压力的用途、墨与叠色 | `fineliner`、`inkpen`、`marker`、`gpen` |
-| 填充 `Fill` | 区域 → 直接上色的区域，或交给手法与笔成形的图案骨架 | `fills` 中的七种，名称同 Rough.js；淡彩 `createWashFill` |
-| 风格 `Style` | 三者组合 | `styles.neat` / `natural` / `draft`、`lineWashStyle` |
+## Examples
 
-- **笔画**（`Stroke`）逐点携带 `[x, y, pressure, t]`，是各维度之间唯一的数据形态。**压感是每支笔的属性**：手法产生压力，笔决定它影响粗细、浓淡还是透明度；压感强度由工厂的 `pressure` 参数调节，笔以 `Pen.pressure` 标明当前强度，未声明的笔不响应压感。
-- 笔与线稿淡彩以具名导出提供，未用到的不会进入打包结果；`pens` 对象一次引入全部四支笔。
-- 颜色只以角色出现，换色不重新生成。`pinEnds` 让开放路径首尾保持精确，用于连线与箭头锚点；`lineWidth` 按图元覆盖线宽。
-- 相同输入、版本与 seed 输出逐位相同；随机由 `(seed, 图元 id, 通道, 序号)` 哈希派生，修改一个图元不影响其他图元。
+Each snippet below is the `style` and `items` passed to `draw`, set up and rendered as in [Quick start](#quick-start). Every snippet comes from a runnable file in [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples), and the image above it is that file's output, shapes in the same order as the lines.
 
-## 笔
+### Pens
+
+![The same shapes drawn with four pens](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/pens.svg)
+
+<!-- example: pens -->
 
 ```ts
-import { createFineliner, createMarker, inkpen, styles } from "@violetjs/inkline";
-
-const writing = { ...styles.natural, pen: inkpen };                    // 钢笔
-const marker = { ...styles.natural, pen: createMarker({ weight: 7, opacity: 0.45 }) };
-const light = { ...styles.natural, pen: createFineliner({ pressure: 0.4 }) };
+const style = styles.natural;
+const items: SceneItem[] = [
+	{ id: "a", path: rect(20, 20, 100, 80), style: { ...style, pen: fineliner } }, // constant width
+	{ id: "b", path: rect(150, 20, 100, 80), style: { ...style, pen: inkpen } }, // tapers at both ends
+	{ id: "c", path: rect(280, 20, 100, 80), style: { ...style, pen: marker } }, // translucent chisel nib
+	{ id: "d", path: rect(410, 20, 100, 80), style: { ...style, pen: gpen } }, // hairline to bold
+];
 ```
 
-| 笔 | 笔尖与压力 |
-| --- | --- |
-| `fineliner` | 圆笔尖，默认恒宽并走原生描边；`createFineliner({ pressure })` 让线宽随压力变化 |
-| `inkpen` | 圆笔尖，压感强度缺省 0.92，起收笔收尖、满压略粗；`createInkPen({ pressure })` 调节 |
-| `gpen` | G 笔：漫画勾线的软尖蘸水笔，压感强度缺省 0.95，轻压发丝线、重压粗至 1.6 倍；`createGPen({ pressure })` 调节 |
-| `marker` | 扁笔尖（角度 −35°，短长轴比 0.28），半透明，不同笔画重叠处叠色加深；压感强度缺省 0.15，`createMarker({ pressure })` 调节 |
+<!-- /example -->
 
-自定义变宽笔用 `createRibbonPen`：给出笔尖角度与短长轴比、压感强度为 1 时的压力曲线和是否分笔叠色即可，`pressure` 参数在恒宽与这条曲线之间插值。扩展的笔按 `PenFactory` 约定提供工厂，使用方就能像调节内置笔一样调节它的压感：
+`fineliner` is the default pen: a round nib with constant width, rendered as a native stroke. `inkpen` tapers at both ends of a stroke, `marker` is a translucent chisel nib whose overlapping strokes get darker, and `gpen` is a flexible comic-inking nib that goes from hairline to bold with pressure. Change a pen's options with its factory, such as `createGPen({ pressure: 0.5 })`; pressure strength runs from 0 (constant width) to 1.
+
+### Hands
+
+![The same shapes drawn with four hands](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/hands.svg)
+
+<!-- example: hands -->
 
 ```ts
-import { createRibbonPen, type PenFactory } from "@violetjs/inkline";
-
-export const createBrush: PenFactory = ({ pressure = 0.8 } = {}) =>
-	createRibbonPen({ id: "brush", weight: 2, minScale: 0.1, maxScale: 1.4, gamma: 1.5, pressure });
-
-createBrush({ pressure: 0.3 }).pressure;   // 0.3
+const style = styles.natural;
+const items: SceneItem[] = [
+	{ id: "a", path: rect(20, 20, 100, 80), fillRole: "card", style: styles.neat },
+	{ id: "b", path: rect(150, 20, 100, 80), fillRole: "card", style: styles.natural },
+	{ id: "c", path: rect(280, 20, 100, 80), fillRole: "card", style: styles.draft }, // every stroke twice
+	{
+		id: "d",
+		path: rect(410, 20, 100, 80),
+		fillRole: "card",
+		style: { ...style, hand: hands.inking },
+	},
+];
 ```
 
-## 线稿淡彩
+<!-- /example -->
+
+A hand turns geometry into strokes. From left to right: `neat` and `natural` suit diagrams and interfaces, `draft` draws every stroke twice like a quick sketch, and `inking` lifts the pen at corners and crosses the lines, like comic line art. `createHand` builds a hand with your own settings.
+
+### Fills
+
+![Eight fills](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/fills.svg)
+
+<!-- example: fills -->
 
 ```ts
-import { circle, createGPen, draw, lineWashStyle } from "@violetjs/inkline";
-
-const palette = { paper: "#fffdf7", ink: "#4a3431", moon: "#f7e6a1" };
-const drawing = draw(
-	{ width: 200, height: 200, items: [{ id: "moon", path: circle(100, 100, 60), fillRole: "moon", lineWidth: 2.6 }] },
-	{ style: lineWashStyle, seed: 3 },
-);
-const softer = { ...lineWashStyle, pen: createGPen({ pressure: 0.5 }) };   // 换笔即调压感，排线一并生效
+const style = styles.natural;
+const items: SceneItem[] = [
+	{
+		id: "a",
+		path: rect(20, 20, 100, 80),
+		fillRole: "sky",
+		style: { ...style, fill: fills.hachure },
+	},
+	{
+		id: "b",
+		path: rect(150, 20, 100, 80),
+		fillRole: "rose",
+		style: { ...style, fill: fills["cross-hatch"] },
+	},
+	{
+		id: "c",
+		path: rect(280, 20, 100, 80),
+		fillRole: "mint",
+		style: { ...style, fill: fills.dots },
+	},
+	{
+		id: "d",
+		path: rect(410, 20, 100, 80),
+		fillRole: "sun",
+		style: { ...style, fill: fills.solid },
+	},
+	{
+		id: "e",
+		path: rect(20, 130, 100, 80),
+		fillRole: "sky",
+		style: { ...style, fill: createPatternFill("hachure", { gap: 10, angle: 60 }) }, // wider gap, steeper lines
+	},
+	{
+		id: "f",
+		path: rect(150, 130, 100, 80),
+		fillRole: "rose",
+		style: { ...style, fill: fills.zigzag },
+	},
+	{
+		id: "g",
+		path: rect(280, 130, 100, 80),
+		fillRole: "mint",
+		style: { ...style, fill: fills.dashed },
+	},
+	{
+		id: "h",
+		path: rect(410, 130, 100, 80),
+		fillRole: "sun",
+		style: { ...lineWashStyle, fill: createWashFill() },
+	}, // wash
+];
 ```
 
-`lineWashStyle` 是勾线手法（`hands.inking`）、G 笔与淡彩填充的组合，三者都能单独与其他笔、手法、填充搭配。勾线把长线拆成多段短笔，转角断笔交叉越界；淡彩平涂取图元的填充角色，朝背光侧错位并裁剪，朝光一侧留出宽窄不一的纸白，较大的图形在背光侧加成簇的短排线，排线与线稿同取 `ink`。配色只需基础色，不派生阴影色。
+<!-- /example -->
 
-## 整图时间轴
+`fills` has `hachure`, `cross-hatch`, `zigzag`, `zigzag-line`, `dashed`, `dots` and `solid`; `createPatternFill` changes a pattern's spacing and angle, and `createWashFill` is the watercolor-like wash. Pattern lines are drawn by the same hand and pen as outlines, and holes stay empty under both `evenodd` and `nonzero` fill rules.
+
+### Line and wash
+
+![A house and sun in line-and-wash style](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/line-wash.svg)
+
+<!-- example: line-wash -->
 
 ```ts
-import { createPlayer, createSchedule } from "@violetjs/inkline";
+const style = lineWashStyle;
+const items: SceneItem[] = [
+	{ id: "hill", path: pathFromSvg("M0 230C120 180 260 190 400 236V280H0Z"), fillRole: "grass" },
+	{ id: "sun", path: circle(330, 70, 34), fillRole: "sun" },
+	{ id: "wall", path: rect(110, 140, 140, 96), fillRole: "wall" },
+	{
+		id: "roof",
+		path: polygon([
+			[94, 146],
+			[180, 80],
+			[266, 146],
+		]),
+		fillRole: "roof",
+	},
+	{ id: "door", path: rect(134, 176, 36, 60, 4), fillRole: "door" },
+	{ id: "window", path: rect(192, 168, 38, 34), fillRole: "glass" },
+];
+```
+
+<!-- /example -->
+
+`lineWashStyle` combines the inking hand, the G pen and the wash fill. Give each shape one base color: the wash shifts away from the light, leaves a paper-white edge on the lit side and adds short hatching in the shadow of larger shapes.
+
+### Diagrams
+
+![A flowchart drawn with the G pen and the draft hand](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/diagram.svg)
+
+<!-- example: diagram -->
+
+```ts
+const style = { ...styles.draft, pen: gpen };
+const items: SceneItem[] = [
+	{
+		id: "draft",
+		path: rect(20, 30, 120, 50, 8),
+		fillRole: "sky",
+		label: { text: "Draft", x: 80, y: 55 },
+	},
+	{
+		id: "review",
+		path: polygon([
+			[270, 10],
+			[340, 55],
+			[270, 100],
+			[200, 55],
+		]),
+		fillRole: "lilac",
+		label: { text: "Review?", x: 270, y: 55 },
+	},
+	{ id: "edge", path: line(140, 55, 200, 55), pinEnds: true }, // ends stay on the node edges
+	{
+		id: "head",
+		path: polygon([
+			[200, 55],
+			[189, 50],
+			[189, 60],
+		]),
+		fillRole: "ink",
+		strokeRole: "none",
+		style: { ...style, fill: fills.solid },
+	},
+];
+```
+
+<!-- /example -->
+
+Lay out nodes and edges with any engine, such as Mermaid's SVG output or your own layout, then pass in the geometry. A `label` is drawn as text centered on the given point, and `pinEnds: true` keeps a connector's endpoints exactly where you put them so arrowheads line up.
+
+### Ink vector artwork
+
+The original coffee-girl illustration at the top of this page is the output of `inkArtwork` below, given the artwork as color-region paths, ink-area paths and traced centerlines with their widths. The renderer takes plain JSON data and does not depend on an application or framework.
+
+<!-- example: artwork -->
+
+```ts
+import {
+	draw,
+	fills,
+	gpen,
+	lineWashStyle,
+	type Palette,
+	pathFromSvg,
+	rect,
+	type SceneItem,
+} from "@violetjs/inkline";
+import { renderSvg } from "@violetjs/inkline/svg";
+
+/** Vector artwork: flat color regions under solid ink areas and centerlines with their own widths. */
+export interface Artwork {
+	width: number;
+	height: number;
+	palette: Palette;
+	/** Fill role for a full-size background rectangle. */
+	paperRole?: string;
+	/** Color role for ink areas and centerlines without their own role. */
+	inkRole: string;
+	colors: { role: string; paths: string[] }[];
+	ink: { path: string; role?: string }[];
+	strokes: { width: number; path: string; role?: string }[];
+}
+
+export function inkArtwork(art: Artwork): string {
+	const items: SceneItem[] = [
+		...(art.paperRole
+			? [
+					{
+						id: "paper",
+						path: rect(0, 0, art.width, art.height),
+						strokeRole: "none",
+						fillRole: art.paperRole,
+					},
+				]
+			: []),
+		...art.colors.flatMap(({ role, paths }) =>
+			paths.map(
+				(d, i): SceneItem => ({
+					id: `${role}-${i}`,
+					path: pathFromSvg(d, "evenodd"),
+					strokeRole: "none",
+					fillRole: role,
+				}),
+			),
+		),
+		...art.ink.map(
+			({ path, role }, i): SceneItem => ({
+				id: `ink-${i}`,
+				path: pathFromSvg(path, "evenodd"),
+				strokeRole: "none",
+				fillRole: role ?? art.inkRole,
+			}),
+		),
+		// Each centerline keeps the width it was traced with; the G pen tapers it by pressure.
+		...art.strokes.map(
+			({ width, path, role }, i): SceneItem => ({
+				id: `stroke-${i}`,
+				path: pathFromSvg(path),
+				lineWidth: width,
+				strokeRole: role ?? art.inkRole,
+			}),
+		),
+	];
+	const style = { ...lineWashStyle, pen: gpen, fill: fills.solid };
+	const drawing = draw(
+		{ width: art.width, height: art.height, items },
+		{ style, seed: 7, width: 1.6 },
+	);
+	// One decimal place is plenty for a large drawing and keeps the markup smaller.
+	return renderSvg(drawing, art.palette, { decimals: 1, background: false });
+}
+```
+
+<!-- /example -->
+
+### Animation
+
+Animation needs a DOM, so this example has no image.
+
+<!-- example: animation -->
+
+```ts
+import { createPlayer, createSchedule, draw, rect, styles } from "@violetjs/inkline";
 import { mountSvg, seekSvg } from "@violetjs/inkline/svg";
 
-const schedule = createSchedule(drawing, { mode: "stagger" });   // "sequential" | "parallel" | "stagger"
-const svg = mountSvg(drawing, palette, { schedule });
-const player = createPlayer({ duration: schedule.duration, onFrame: (t) => seekSvg(svg, t) });
-player.play();   // pause()、seek(t)、restart()、cancel()、rate
+/** Call in a browser; cancel the returned player when removing the host. */
+export function animateCard(host: HTMLElement) {
+	const drawing = draw(
+		{ width: 240, height: 150, items: [{ id: "card", path: rect(20, 20, 200, 110, 12) }] },
+		{ style: styles.natural, seed: 35 },
+	);
+	const palette = { paper: "#fffdf7", ink: "#252332" };
+	const schedule = createSchedule(drawing, { mode: "stagger" });
+	const svg = mountSvg(drawing, palette, { schedule });
+	host.append(svg);
+	const player = createPlayer({
+		duration: schedule.duration,
+		onFrame: (time) => seekSvg(svg, time),
+	});
+	player.play();
+	return player;
+}
 ```
 
-Canvas 用 `drawCanvas(drawing, canvas, palette, { schedule, time })` 在每帧重绘。动画只改变显现范围，使用已生成的笔画：恒宽描边用虚线偏移，变宽条带显现前缀多边形，区域填充整体淡入，不使用遮罩、缩放或滑入。暂停、跳转与倒放不重新生成；取消与重播会使旧的完成回调失效。
+<!-- /example -->
 
-## 扩展
+Strokes are revealed along their path, variable-width strokes grow from the start, and fills fade in. Animation only changes what is visible and never redraws. On a canvas, call `drawCanvas(drawing, canvas, palette, { schedule, time })` on every frame.
 
-任一维度都可以是包外的普通对象，直接放进 `Style`，无需注册，也不改核心与渲染器：
+## API
 
-```ts
-import { BatchBuilder, channel, type Pen } from "@violetjs/inkline";
+The [API reference](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.md) documents every export and option. The main entry points are:
 
-const WIDTH = channel("my-ribbon:width");
-export const ribbon: Pen = {
-	id: "ribbon",
-	ink(strokes, ctx, role) {
-		const batch = new BatchBuilder({ mode: "stroke", role, width: ctx.width * (2 + ctx.random(WIDTH, 0)), opacity: 0.5 });
-		for (const stroke of strokes) batch.stroke(stroke);
-		return batch.empty ? [] : [batch.build()];
-	},
-};
-```
-
-- 随机只能来自 `ctx.random` / `ctx.noise`；通道编号用 `channel()` 在创建时换算一次。
-- `Pen.ink` 必须返回新建的批次，生成器会就地归一化其 `spans`。
-- 输出顶点与笔画数由生成器统一计量；超过 `maxVertices` / `maxStrokes` 抛出 `BudgetExceeded`，不返回部分结果，也不自动降低细节。
-
-## 模块
-
-| 目录 | 内容 |
+| Import | Exports |
 | --- | --- |
-| `core/` | 路径与图元、展平与角点、确定性随机、渲染批次构造 |
-| `hand/` | 笔画规划、最小 jerk 手法、压力与预设 |
-| `pen/` | 条带轮廓、签字笔、钢笔、马克笔、G 笔 |
-| `fill/` | 扫描线、图案填充与淡彩填充 |
-| `animate/` | 编排与播放器 |
-| `render/` | SVG、Canvas、显现轨迹与配色解析 |
+| `@violetjs/inkline` | `draw`, geometry (`rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `curve`, `arc`, `pathFromSvg`), styles, hands, pens, fills, animation timing, and the extension API |
+| `@violetjs/inkline/svg` | `renderSvg`, `mountSvg`, `seekSvg`, `updateSvgPalette`, `pathData` |
+| `@violetjs/inkline/canvas` | `drawCanvas` |
 
-## 构建、测试与基准
+## Requirements
 
-在 `web/` 下运行：
+- ES2022 and native ES modules: browsers released in 2022 or later, or Node.js 18 or later for `renderSvg`.
+- `mountSvg`, `seekSvg` and `drawCanvas` need a browser DOM.
+- TypeScript 5 or later for the bundled type definitions.
 
-```sh
-pnpm --filter @violetjs/inkline typecheck
-pnpm exec vitest run packages/inkline
-pnpm --filter @violetjs/inkline build
-node packages/inkline/bench/compare-rough.ts
-```
+## License
 
-基准用 PRD-0035 Rough.js 基线的同一组场景对照生成与路径序列化耗时及输出字节，结果记录在 [0.2.0 验收记录](../../../docs/research/sketch-m1-validation.md)。
+[MIT](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/LICENSE)
