@@ -3,7 +3,6 @@ import { CropPreview } from "@shared/ui/image-cropper/CropPreview";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { ImageFramer } from "@shared/ui/image-cropper/ImageFramer";
 import { Button, Modal } from "@violet/ui";
-import { TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
@@ -43,10 +42,6 @@ export interface CropUploadDialogProps {
 	previews?: readonly CropPreviewSpec[];
 	/** 静态图输出宽度上限(px)，超过则等比缩小后上传 */
 	outputMaxWidth?: number;
-	/** 选区原图像素宽度低于该值时提示分辨率偏低 */
-	minSelectionWidth?: number;
-	/** 选区面积占原图比例低于该值时提示比例差异大（锁定比例时才有意义） */
-	minSelectionShare?: number;
 	open: boolean;
 	onOpenChange: (v: boolean) => void;
 	onConfirm: (result: CropUploadResult) => void | Promise<void>;
@@ -76,15 +71,12 @@ export function CropUploadDialog({
 	confirmLabel = "确认",
 	previews,
 	outputMaxWidth,
-	minSelectionWidth,
-	minSelectionShare,
 	open,
 	onOpenChange,
 	onConfirm,
 }: CropUploadDialogProps) {
 	const [rect, setRect] = useState<CropRect | undefined>(undefined);
 	const [busy, setBusy] = useState(false);
-	const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | undefined>();
 	const { uploadFile } = useChunkedUpload({ purpose });
 
 	const [previewSrc, setPreviewSrc] = useState(srcUrl ?? "");
@@ -154,15 +146,6 @@ export function CropUploadDialog({
 		onOpenChange,
 	]);
 
-	const selectionPx =
-		rect && naturalSize
-			? { w: Math.round(rect.w * naturalSize.w), h: Math.round(rect.h * naturalSize.h) }
-			: undefined;
-	const smallShare =
-		!!(rect && minSelectionShare && aspect !== undefined) &&
-		rect.w * rect.h < (minSelectionShare ?? 0);
-	const lowResolution = !!(selectionPx && minSelectionWidth && selectionPx.w < minSelectionWidth);
-
 	return (
 		<Modal
 			open={open}
@@ -176,20 +159,7 @@ export function CropUploadDialog({
 			size="lg"
 			footer={
 				<div className="flex w-full items-center gap-3">
-					<p
-						className={
-							lowResolution
-								? "mr-auto flex min-w-0 items-center gap-1.5 text-xs text-warning"
-								: "mr-auto min-w-0 truncate text-xs text-muted-foreground tabular-nums"
-						}
-					>
-						{lowResolution && <TriangleAlert className="size-3.5 shrink-0" />}
-						{selectionPx
-							? lowResolution
-								? `选区仅 ${selectionPx.w}×${selectionPx.h}px，在大屏上可能偏糊`
-								: `选区 ${selectionPx.w}×${selectionPx.h}px`
-							: null}
-					</p>
+					<span className="mr-auto" />
 					<Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
 						取消
 					</Button>
@@ -208,28 +178,16 @@ export function CropUploadDialog({
 				<div className="flex flex-col gap-4">
 					<div className="rounded-xl bg-muted/40 p-3 ring-1 ring-border ring-inset">
 						{aspect === undefined ? (
-							<ImageCropper
-								src={previewSrc}
-								rect={rect}
-								onChange={setRect}
-								onImageSize={setNaturalSize}
-							/>
+							<ImageCropper src={previewSrc} rect={rect} onChange={setRect} />
 						) : (
 							<ImageFramer
 								src={previewSrc}
 								aspect={aspect}
 								round={previews?.some((preview) => preview.round)}
 								onChange={setRect}
-								onImageSize={setNaturalSize}
 							/>
 						)}
 					</div>
-					{smallShare && rect && (
-						<p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-							<TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
-							{`选区只占原图的 ${Math.round(rect.w * rect.h * 100)}%，这张图比例与横幅差别较大，可换一张更宽的图，或不设封面、使用头像背景。`}
-						</p>
-					)}
 					{previews && previews.length > 0 && (
 						<div className="flex flex-col gap-2">
 							<span className="text-xs font-medium text-muted-foreground">

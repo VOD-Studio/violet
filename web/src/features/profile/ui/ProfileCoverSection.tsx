@@ -5,12 +5,10 @@ import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/Cro
 import {
 	COVER_ASPECT,
 	COVER_FRAME_CLASS,
-	COVER_MIN_SHARE,
-	COVER_MIN_WIDTH,
 	COVER_OUTPUT_WIDTH,
 	COVER_PREVIEWS,
 } from "@shared/lib/profile-cover";
-import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
+import { UserProfileCover } from "@shared/ui/profile-cover/UserProfileCover";
 import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { ImagePlus, Loader2, Trash2 } from "lucide-react";
@@ -60,18 +58,8 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 			description="显示在公开主页顶部；未设置时用头像生成背景。推荐 1500×500 以上。"
 		>
 			{user.cover_url ? (
-				<div
-					className={cn(
-						"relative overflow-hidden rounded-xl bg-muted ring-1 ring-border ring-inset",
-						COVER_FRAME_CLASS,
-					)}
-				>
-					<CroppedImage
-						src={user.cover_url}
-						fillContainer
-						className="absolute inset-0"
-						alt="当前主页封面"
-					/>
+				<div className="relative">
+					<UserProfileCover coverSrc={user.cover_url} className="rounded-xl" />
 					<div className="absolute right-3 bottom-3 flex gap-2">
 						<Button
 							variant="secondary"
@@ -135,12 +123,10 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 				purpose="cover"
 				fileNameBase="profile-cover"
 				title="调整主页封面"
-				description="拖动图片取景，窄屏会裁掉左右两侧，重要内容放在中间。"
+				description="拖动图片取景。主页上封面会随鼠标轻微移动，窄屏只显示中间部分。"
 				confirmLabel="使用此封面"
 				previews={COVER_PREVIEWS}
 				outputMaxWidth={COVER_OUTPUT_WIDTH}
-				minSelectionWidth={COVER_MIN_WIDTH}
-				minSelectionShare={COVER_MIN_SHARE}
 				open={open}
 				onOpenChange={(nextOpen) => {
 					setOpen(nextOpen);
