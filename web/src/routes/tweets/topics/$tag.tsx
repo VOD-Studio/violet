@@ -9,28 +9,31 @@ function TopicTimelinePage() {
 
 	return (
 		<PageShell>
-			<div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-				<button
-					type="button"
-					onClick={() => navigate({ to: "/tweets" })}
-					className="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-				>
-					<ArrowLeft className="size-3.5" />
-					返回时间线
-				</button>
+			<TweetTimeline
+				tag={tag}
+				header={
+					<div className="flex flex-col gap-4">
+						<button
+							type="button"
+							onClick={() => navigate({ to: "/tweets" })}
+							className="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+						>
+							<ArrowLeft className="size-3.5" />
+							返回时间线
+						</button>
 
-				<header className="mb-4 flex items-center gap-3">
-					<div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-						<Hash className="size-5" />
+						<header className="flex items-center gap-3">
+							<div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+								<Hash className="size-5" />
+							</div>
+							<div>
+								<h1 className="font-mono text-2xl font-bold">#{tag}#</h1>
+								<p className="text-xs text-muted-foreground">话题聚合时间线</p>
+							</div>
+						</header>
 					</div>
-					<div>
-						<h1 className="font-mono text-2xl font-bold">#{tag}#</h1>
-						<p className="text-xs text-muted-foreground">话题聚合时间线</p>
-					</div>
-				</header>
-
-				<TweetTimeline tag={tag} />
-			</div>
+				}
+			/>
 		</PageShell>
 	);
 }

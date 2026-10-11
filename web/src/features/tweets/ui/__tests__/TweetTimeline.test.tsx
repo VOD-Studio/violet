@@ -1,11 +1,28 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const fixture = (id: string, over: Record<string, unknown> = {}) => ({
+	id,
+	author: { id: `author-${id}`, username: `user-${id}`, avatar_url: "" },
+	content: "",
+	images: [],
+	...over,
+});
+
 let loggedIn = false;
 const globalNext = vi.fn();
 const topicNext = vi.fn();
 const globalQuery = {
-	data: { pages: [{ data: [{ id: "global-one" }] }, { data: [{ id: "global-two" }] }] },
+	data: {
+		pages: [
+			{
+				data: [
+					fixture("global-one", { content: "#开发# 今天", images: ["/uploads/a.png"] }),
+				],
+			},
+			{ data: [fixture("global-two", { content: "#开发# 再来" })] },
+		],
+	},
 	isLoading: false,
 	isError: false,
 	error: null,
@@ -15,7 +32,7 @@ const globalQuery = {
 };
 const topicQuery = {
 	...globalQuery,
-	data: { pages: [{ data: [{ id: "topic-one" }] }] },
+	data: { pages: [{ data: [fixture("topic-one")] }] },
 	fetchNextPage: topicNext,
 };
 vi.mock("@features/auth/api/queries", () => ({
@@ -24,6 +41,21 @@ vi.mock("@features/auth/api/queries", () => ({
 vi.mock("@features/tweets/api/queries", () => ({
 	useTimeline: () => globalQuery,
 	useTopicTimeline: () => topicQuery,
+}));
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({
+		children,
+		to,
+		"aria-label": label,
+	}: {
+		children: React.ReactNode;
+		to: string;
+		"aria-label"?: string;
+	}) => (
+		<a href={to} aria-label={label}>
+			{children}
+		</a>
+	),
 }));
 vi.mock("../TweetCard", () => ({
 	default: ({ tweet }: { tweet: { id: string } }) => <article aria-label={`推文 ${tweet.id}`} />,
@@ -65,5 +97,20 @@ describe("公开推文信息流", () => {
 		fireEvent.click(screen.getByRole("button", { name: "加载更多" }));
 		expect(topicNext).toHaveBeenCalledTimes(1);
 		expect(globalNext).not.toHaveBeenCalled();
+	});
+
+	it("两侧栏由已加载的推文汇总出话题、作者与图片墙；推文仍是单列", () => {
+		render(<TweetTimeline />);
+		expect(screen.getAllByRole("article")).toHaveLength(2);
+		expect(screen.getByText("近期话题")).toBeTruthy();
+		expect(screen.getAllByText("#开发#").length).toBeGreaterThan(0);
+		expect(screen.getByText("活跃作者")).toBeTruthy();
+		expect(screen.getByText("最近的图片")).toBeTruthy();
+		expect(screen.getAllByRole("link", { name: "查看这张图片所在的推文" })).toHaveLength(1);
+	});
+
+	it("header 与推文同在中间一栏", () => {
+		render(<TweetTimeline header={<h1>推文</h1>} />);
+		expect(screen.getByRole("heading", { name: "推文" })).toBeTruthy();
 	});
 });

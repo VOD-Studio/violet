@@ -17,7 +17,7 @@ const LEVELS = [
 const level = (count: number) => Math.min(count, LEVELS.length - 1);
 
 /** 概览栏中的一个卡片；没有内容的卡片由调用方不渲染。 */
-function RailCard({
+export function RailCard({
 	title,
 	aside,
 	children,
