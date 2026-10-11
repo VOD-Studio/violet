@@ -14,7 +14,7 @@ import { gpen } from "./pen/brushes.ts";
  * const softer = { ...lineWashStyle, pen: createGPen({ pressure: 0.6 }) };
  * ```
  */
-export const lineWashStyle: Style = /* @__PURE__ */ {
+export const lineWashStyle: Style = {
 	hand: hands.inking,
 	fillHand: fillHands.inking,
 	pen: gpen,
