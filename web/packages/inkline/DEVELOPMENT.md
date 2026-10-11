@@ -44,6 +44,6 @@ pnpm examples:check # 重新计算 SVG 并逐字节比较现有图，同时检�
 
 ## 发布
 
-流程见 [npm 包发布指南](../../../docs/guides/package-publishing.md)。
+流程见[发布手册的 npm 独立包发布一节](../../../docs/deploy/release-runbook.md#npm-独立包发布)。
 
 维护时先生成示例，再运行类型、测试与独立消费检查。`prepack` 自动构建，不发布；只能使用 pnpm 打包，以便将 `publishConfig` 中的 `dist` 入口写入发布清单。包内不分发源码、脚本、API 文档和示例图片；README 使用公开 GitHub 文档链接与 raw 图片链接，这些文件须在公开的 `release/2.0` 分支存在后再发布 npm 包。

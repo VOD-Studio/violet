@@ -41,8 +41,8 @@ const drawing = draw(
 	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
 );
 
-// renderSvg returns SVG markup; in the browser, mountSvg returns an <svg> element instead.
-export const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
+// SVG markup as a string. In the browser, mountSvg(drawing, palette) returns an <svg> element.
+const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
 ```
 
 <!-- /example -->
@@ -51,7 +51,7 @@ A scene is a list of items. Each item has a stable `id`, a `path`, and optional 
 
 ## Examples
 
-Each snippet below is the `style` and `items` passed to `draw`, set up and rendered as in [Quick start](#quick-start). Every snippet comes from a runnable file in [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples), and the image above it is that file's output, shapes in the same order as the lines.
+Every snippet comes from a file in [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples), with imports and rendering left out. The shape examples show the `style` and `items` passed to `draw`, set up and rendered as in [Quick start](#quick-start); the image above each one is that file's output, with shapes in the same order as the lines.
 
 ### Pens
 
@@ -149,12 +149,7 @@ const items: SceneItem[] = [
 		fillRole: "mint",
 		style: { ...style, fill: fills.dashed },
 	},
-	{
-		id: "h",
-		path: rect(410, 130, 100, 80),
-		fillRole: "sun",
-		style: { ...lineWashStyle, fill: createWashFill() },
-	}, // wash
+	{ id: "h", path: rect(410, 130, 100, 80), fillRole: "sun", style: lineWashStyle }, // wash
 ];
 ```
 
@@ -244,18 +239,6 @@ The original coffee-girl illustration at the top of this page is the output of `
 <!-- example: artwork -->
 
 ```ts
-import {
-	draw,
-	fills,
-	gpen,
-	lineWashStyle,
-	type Palette,
-	pathFromSvg,
-	rect,
-	type SceneItem,
-} from "@violetjs/inkline";
-import { renderSvg } from "@violetjs/inkline/svg";
-
 /** Vector artwork: flat color regions under solid ink areas and centerlines with their own widths. */
 export interface Artwork {
 	width: number;
@@ -310,7 +293,8 @@ export function inkArtwork(art: Artwork): string {
 			}),
 		),
 	];
-	const style = { ...lineWashStyle, pen: gpen, fill: fills.solid };
+	// lineWashStyle already uses the G pen; flat colors instead of the wash keep the artwork's own shading
+	const style = { ...lineWashStyle, fill: fills.solid };
 	const drawing = draw(
 		{ width: art.width, height: art.height, items },
 		{ style, seed: 7, width: 1.6 },

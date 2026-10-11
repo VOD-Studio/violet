@@ -41,8 +41,8 @@ const drawing = draw(
 	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
 );
 
-// renderSvg returns SVG markup; in the browser, mountSvg returns an <svg> element instead.
-export const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
+// SVG markup as a string. In the browser, mountSvg(drawing, palette) returns an <svg> element.
+const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
 ```
 
 <!-- /example -->
@@ -51,7 +51,7 @@ export const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surfac
 
 ## 样例
 
-下面每段代码是传给 `draw` 的 `style` 与 `items`，导入、调用与渲染同[快速上手](#快速上手)。每段代码都摘自 [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples) 中一个可运行的文件，上方的图就是该文件的输出，图形顺序与代码行一致。
+每段代码都摘自 [`examples/`](https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/inkline/examples) 中的文件，省略了导入与渲染。图形样例展示的是传给 `draw` 的 `style` 与 `items`，调用与渲染同[快速上手](#快速上手)；上方的图就是该文件的输出，图形顺序与代码行一致。
 
 ### 笔
 
@@ -149,12 +149,7 @@ const items: SceneItem[] = [
 		fillRole: "mint",
 		style: { ...style, fill: fills.dashed },
 	},
-	{
-		id: "h",
-		path: rect(410, 130, 100, 80),
-		fillRole: "sun",
-		style: { ...lineWashStyle, fill: createWashFill() },
-	}, // wash
+	{ id: "h", path: rect(410, 130, 100, 80), fillRole: "sun", style: lineWashStyle }, // wash
 ];
 ```
 
@@ -244,18 +239,6 @@ const items: SceneItem[] = [
 <!-- example: artwork -->
 
 ```ts
-import {
-	draw,
-	fills,
-	gpen,
-	lineWashStyle,
-	type Palette,
-	pathFromSvg,
-	rect,
-	type SceneItem,
-} from "@violetjs/inkline";
-import { renderSvg } from "@violetjs/inkline/svg";
-
 /** Vector artwork: flat color regions under solid ink areas and centerlines with their own widths. */
 export interface Artwork {
 	width: number;
@@ -310,7 +293,8 @@ export function inkArtwork(art: Artwork): string {
 			}),
 		),
 	];
-	const style = { ...lineWashStyle, pen: gpen, fill: fills.solid };
+	// lineWashStyle already uses the G pen; flat colors instead of the wash keep the artwork's own shading
+	const style = { ...lineWashStyle, fill: fills.solid };
 	const drawing = draw(
 		{ width: art.width, height: art.height, items },
 		{ style, seed: 7, width: 1.6 },

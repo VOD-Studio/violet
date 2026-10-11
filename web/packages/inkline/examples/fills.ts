@@ -1,6 +1,5 @@
 import {
 	createPatternFill,
-	createWashFill,
 	draw,
 	fills,
 	lineWashStyle,
@@ -55,12 +54,7 @@ const items: SceneItem[] = [
 		fillRole: "mint",
 		style: { ...style, fill: fills.dashed },
 	},
-	{
-		id: "h",
-		path: rect(410, 130, 100, 80),
-		fillRole: "sun",
-		style: { ...lineWashStyle, fill: createWashFill() },
-	}, // wash
+	{ id: "h", path: rect(410, 130, 100, 80), fillRole: "sun", style: lineWashStyle }, // wash
 ];
 // #endregion
 

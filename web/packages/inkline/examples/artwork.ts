@@ -1,7 +1,6 @@
 import {
 	draw,
 	fills,
-	gpen,
 	lineWashStyle,
 	type Palette,
 	pathFromSvg,
@@ -10,6 +9,7 @@ import {
 } from "@violetjs/inkline";
 import { renderSvg } from "@violetjs/inkline/svg";
 
+// #region readme
 /** Vector artwork: flat color regions under solid ink areas and centerlines with their own widths. */
 export interface Artwork {
 	width: number;
@@ -64,7 +64,8 @@ export function inkArtwork(art: Artwork): string {
 			}),
 		),
 	];
-	const style = { ...lineWashStyle, pen: gpen, fill: fills.solid };
+	// lineWashStyle already uses the G pen; flat colors instead of the wash keep the artwork's own shading
+	const style = { ...lineWashStyle, fill: fills.solid };
 	const drawing = draw(
 		{ width: art.width, height: art.height, items },
 		{ style, seed: 7, width: 1.6 },
@@ -72,3 +73,4 @@ export function inkArtwork(art: Artwork): string {
 	// One decimal place is plenty for a large drawing and keeps the markup smaller.
 	return renderSvg(drawing, art.palette, { decimals: 1, background: false });
 }
+// #endregion

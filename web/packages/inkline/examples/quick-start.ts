@@ -1,3 +1,4 @@
+// #region readme
 import { draw, fills, rect, styles } from "@violetjs/inkline";
 import { renderSvg } from "@violetjs/inkline/svg";
 
@@ -10,5 +11,9 @@ const drawing = draw(
 	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
 );
 
-// renderSvg returns SVG markup; in the browser, mountSvg returns an <svg> element instead.
-export const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
+// SVG markup as a string. In the browser, mountSvg(drawing, palette) returns an <svg> element.
+const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
+
+// #endregion
+
+export { svg };
