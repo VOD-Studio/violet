@@ -118,13 +118,13 @@ function Pane({ title, note, stats, zoom, scrollRef, onScroll, status, children 
 
 const formatTime = (seconds: number) => seconds.toFixed(2).padStart(5, "0");
 
-/** Rough.js 与 @violetjs/inkline 同几何、同 seed 的并排对照，含笔、压感、线稿淡彩插画与整图时间轴。 */
+/** Rough.js 与 @violetjs/inkline 同几何、同 seed 的并排对照，含笔、压感、插画、人像与整图时间轴。 */
 export function SketchBenchPage() {
 	const [sceneKey, setSceneKey] = useState<SceneKey>("illustration");
 	const [pen, setPen] = useState<PenId>("gpen");
 	const [pressure, setPressure] = useState(() => defaultPressure("gpen"));
 	const [hand, setHand] = useState<HandId>("inking");
-	const [fill, setFill] = useState<FillId>("wash");
+	const [fill, setFill] = useState<FillId>("solid");
 	const [seed, setSeed] = useState(7);
 	const [zoom, setZoom] = useState<Zoom>("1");
 	const [backend, setBackend] = useState<Backend>("svg");
@@ -162,8 +162,7 @@ export function SketchBenchPage() {
 
 	const switchScene = (next: SceneKey) => {
 		setSceneKey(next);
-		if (next === "illustration") applyPreset("gpen", "inking", "wash");
-		else if (next === "portrait") applyPreset("gpen", "inking", "solid");
+		if (next === "illustration" || next === "portrait") applyPreset("gpen", "inking", "solid");
 		else if (isArtwork) applyPreset("fineliner", "natural", "hachure");
 	};
 

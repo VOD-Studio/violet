@@ -1,4 +1,4 @@
-import { goodMorningScene, illustrationPalette } from "@features/lab/sketch/model/illustration";
+import { illustrationDrawing, illustrationPalette } from "@features/lab/sketch/model/illustration";
 import { portraitDrawing, portraitPalette } from "@features/lab/sketch/model/portrait";
 import {
 	arc,
@@ -171,13 +171,13 @@ export function holesScene(fill: FillId): BenchScene {
 	};
 }
 
-/** 插画与人像共用填充切换，墨色实心区域不随填充选项改变。 */
+/** 插画与人像共用填充切换，指定实色的底纸与墨区不随填充选项改变。 */
 export function artworkScene(key: "illustration" | "portrait", fill: FillId): BenchScene {
-	const scene = key === "illustration" ? goodMorningScene : portraitDrawing;
+	const scene = key === "illustration" ? illustrationDrawing : portraitDrawing;
 	return {
 		...scene,
 		items: scene.items.map((item) =>
-			item.fillRole && item.fillRole !== "ink" ? { ...item, fill } : item,
+			item.fillRole && item.fill === undefined ? { ...item, fill } : item,
 		),
 	};
 }

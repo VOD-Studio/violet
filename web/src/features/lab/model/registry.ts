@@ -86,7 +86,7 @@ export const LABS = [
 		en: "Sketch",
 		title: "手绘绘图库对照",
 		description:
-			"Rough.js 与 @violetjs/inkline 同几何、同 seed 并排：四支笔与压感调节、线稿淡彩插画、人像、八种填充、孔洞规则、真实 Mermaid 布局与整图时间轴。",
+			"Rough.js 与 @violetjs/inkline 同几何、同 seed 并排：四支笔与压感调节、咖啡少女插画、人像、八种填充、孔洞规则、真实 Mermaid 布局与整图时间轴。",
 		meta: "0.2.0 · 笔 ×4 · 填充 ×8 · 时间轴 · SVG/Canvas",
 	},
 ] as const;
