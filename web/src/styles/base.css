@@ -33,6 +33,12 @@ button {
 	font-feature-settings: "liga", "calt";
 }
 
+/* 正文选区：荧光笔式淡色底，沿用文字原色；划线批注的高亮与它同色系 */
+[data-article-content] ::selection {
+	background-color: color-mix(in oklch, var(--primary) 26%, transparent);
+	color: inherit;
+}
+
 .prose {
 	line-height: 1.75;
 	/*
