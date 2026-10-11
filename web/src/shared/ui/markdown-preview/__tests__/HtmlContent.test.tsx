@@ -67,10 +67,10 @@ describe("HtmlContent", () => {
 		const html = "<pre><code>const a = 1;\nconst b = 2;</code></pre>";
 		const { container } = render(<HtmlContent html={html} />);
 
-		// 应有围栏代码块外层容器，而非行内代码的 bg-muted 样式
-		expect(container.querySelector(".bg-\\[\\#24292e\\]")).toBeTruthy();
+		// 应有围栏代码块外层卡片，而非行内代码的 bg-primary/10 胶囊样式
+		expect(container.querySelector(".bg-card")).toBeTruthy();
 		expect(container.querySelector("pre")).toBeTruthy();
-		expect(container.querySelector(".bg-muted")).toBeNull();
+		expect(container.querySelector("code.bg-primary\\/10")).toBeNull();
 	});
 
 	it("正文图片走 w=1200 缩略(webp),原图只在预览时加载", () => {

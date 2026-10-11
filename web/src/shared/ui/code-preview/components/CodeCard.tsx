@@ -61,7 +61,7 @@ interface CardSkin {
 
 const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 	dark: {
-		root: "code-card-dark group relative overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]",
+		root: "not-prose code-card-dark group relative overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]",
 		demoBorder: "border-white/10",
 		barBorder: "border-white/10",
 		title: "text-white/70",
@@ -73,7 +73,7 @@ const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 		plain: "text-white/90",
 	},
 	light: {
-		root: "code-card-light group relative overflow-hidden rounded-xl border border-slate-200 bg-white",
+		root: "not-prose code-card-light group relative overflow-hidden rounded-xl border border-slate-200 bg-white",
 		demoBorder: "border-slate-200",
 		barBorder: "border-slate-200",
 		title: "text-slate-500",
@@ -85,7 +85,7 @@ const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 		plain: "text-slate-900",
 	},
 	auto: {
-		root: "group relative overflow-hidden rounded-xl border border-border/60 bg-card",
+		root: "not-prose group relative overflow-hidden rounded-xl border border-border/60 bg-card",
 		demoBorder: "border-border/60",
 		barBorder: "border-border/60",
 		title: "text-muted-foreground",

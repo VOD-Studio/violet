@@ -107,11 +107,16 @@ export function createRichCodeRenderer(
 		return (
 			<Suspense
 				fallback={
-					<pre
-						className={`${codeScrollbar.scrollbar} my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90`}
-					>
-						<code>{code}</code>
-					</pre>
+					<div className="not-prose my-6 overflow-hidden rounded-xl border border-border/60 bg-card">
+						<div className="border-b border-border/60 px-3 py-1.5 font-mono text-xs text-muted-foreground">
+							{language || "text"}
+						</div>
+						<pre
+							className={`${codeScrollbar.scrollbar} overflow-x-auto px-4 py-3 text-sm leading-relaxed text-foreground`}
+						>
+							<code>{code}</code>
+						</pre>
+					</div>
 				}
 			>
 				<LazyCodeCard code={code} language={language} className="my-6" />
