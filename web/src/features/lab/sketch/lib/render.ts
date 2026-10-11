@@ -116,6 +116,27 @@ export function drawSketch(scene: BenchScene, style: Style, { seed, width }: Opt
 	);
 }
 
+function scheduleScene(scene: BenchScene, drawing: Drawing, mode: ScheduleMode): Schedule {
+	if (!scene.animationPhases) return createSchedule(drawing, { mode });
+
+	const start = new Float32Array(drawing.items.length);
+	const end = new Float32Array(drawing.items.length);
+	let duration = 0;
+	for (const indices of scene.animationPhases) {
+		if (indices.length === 0) continue;
+		const phase = createSchedule(
+			{ ...drawing, items: indices.map((index) => drawing.items[index]) },
+			{ mode },
+		);
+		indices.forEach((index, position) => {
+			start[index] = duration + phase.start[position];
+			end[index] = duration + phase.end[position];
+		});
+		duration += phase.duration;
+	}
+	return { mode, start, end, duration };
+}
+
 export interface SketchSvgResult {
 	svg: SVGSVGElement;
 	drawing: Drawing;
@@ -133,7 +154,7 @@ export function renderSketchSvg(
 ): SketchSvgResult {
 	const started = performance.now();
 	const drawing = drawSketch(scene, style, options);
-	const schedule = createSchedule(drawing, { mode });
+	const schedule = scheduleScene(scene, drawing, mode);
 	const svg = mountSvg(drawing, palette, { idPrefix: "bench", schedule });
 	return { svg, drawing, schedule, stats: measure(svg, performance.now() - started) };
 }
@@ -148,7 +169,7 @@ export function prepareSketchCanvas(
 ) {
 	const started = performance.now();
 	const drawing = drawSketch(scene, style, options);
-	const schedule = createSchedule(drawing, { mode });
+	const schedule = scheduleScene(scene, drawing, mode);
 	const generateMs = performance.now() - started;
 	const stats = measure(mountSvg(drawing, palette, { idPrefix: "stat" }), generateMs);
 	return { drawing, schedule, stats };

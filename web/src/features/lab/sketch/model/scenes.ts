@@ -29,6 +29,8 @@ export interface BenchScene {
 	width: number;
 	height: number;
 	items: readonly BenchItem[];
+	/** 每组全部完成后才进入下一组；组内沿用所选编排，索引对应 items 的叠放顺序。 */
+	animationPhases?: readonly (readonly number[])[];
 }
 
 export const FILL_LABELS: Record<FillId, string> = {
