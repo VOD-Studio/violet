@@ -140,10 +140,7 @@ export const markdownComponents: Components = {
 			as="h2"
 			id={id}
 			style={style}
-			className={cn(
-				"mb-4 mt-10 border-b border-edge-hairline pb-2 text-2xl font-bold tracking-tight first:mt-0",
-				className,
-			)}
+			className={cn("mb-4 mt-12 text-2xl font-bold tracking-wide first:mt-0", className)}
 		>
 			{children}
 		</ProseHeading>
@@ -153,7 +150,7 @@ export const markdownComponents: Components = {
 			as="h3"
 			id={id}
 			style={style}
-			className={cn("mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0", className)}
+			className={cn("mb-3 mt-9 text-xl font-semibold tracking-wide first:mt-0", className)}
 		>
 			{children}
 		</ProseHeading>
@@ -169,7 +166,7 @@ export const markdownComponents: Components = {
 		</ProseHeading>
 	),
 	p: ({ children, style, className, id }) => (
-		<p id={id} style={style} className={cn("my-5 text-foreground/90", className)}>
+		<p id={id} style={style} className={cn("my-5 text-foreground/90 text-justify", className)}>
 			{children}
 		</p>
 	),
@@ -178,11 +175,13 @@ export const markdownComponents: Components = {
 	del: ({ children }) => <del className="text-muted-foreground line-through">{children}</del>,
 	hr: () => <hr className="my-8 border-edge-hairline" />,
 	table: ({ children }) => (
-		<div className="my-6 overflow-x-auto">
-			<table className="w-full border-collapse text-sm">{children}</table>
+		<div className="my-8 overflow-x-auto border-y-2 border-foreground/70">
+			<table className="w-full border-collapse text-[0.9375em] leading-relaxed">
+				{children}
+			</table>
 		</div>
 	),
-	thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
+	thead: ({ children }) => <thead>{children}</thead>,
 	// HTML 路径：行内公式（编辑器产出的语义化标记，浏览时渲染）
 	span: ({ children, style, id, ...props }) => {
 		const p = props as Record<string, unknown>;

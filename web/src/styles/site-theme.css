@@ -5,6 +5,9 @@
 	--font-reading:
 		system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC",
 		"Microsoft YaHei", sans-serif;
+	--font-article:
+		"Songti SC", "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", STSong, SimSun,
+		"宋体", serif;
 	--font-mono:
 		"Maple Mono", "Noto Sans SC", "PingFang SC", SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
