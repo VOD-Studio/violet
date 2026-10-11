@@ -65,7 +65,8 @@ export function scanSpans(
 			row = Math.max(row + 1, Math.floor(edges[next].minY / gap) - 1);
 			continue;
 		}
-		if (++scanned > MAX_ROWS) throw new RangeError("填充超过 100000 条扫描线；未降低密度");
+		if (++scanned > MAX_ROWS)
+			throw new RangeError("The fill needs more than 100000 scan lines; use a larger gap.");
 		// 半开区间让共享顶点只计一次。
 		active = active.filter((edge) => edge.maxY > y);
 		while (next < edges.length && edges[next].minY <= y) {

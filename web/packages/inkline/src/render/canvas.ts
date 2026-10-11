@@ -67,7 +67,7 @@ export function drawCanvas(
 	if (canvas.width !== width) canvas.width = width;
 	if (canvas.height !== height) canvas.height = height;
 	const ctx = canvas.getContext("2d");
-	if (!ctx) throw new Error("Canvas 2D 不可用");
+	if (!ctx) throw new Error("The canvas has no 2D context.");
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, width, height);
 	const background = options.background === undefined ? "paper" : options.background;

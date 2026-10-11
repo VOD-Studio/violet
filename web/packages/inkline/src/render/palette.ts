@@ -12,6 +12,6 @@ export interface RenderOptions {
 /** 解析颜色角色；缺失时明确失败，不以默认色掩盖配置遗漏。 */
 export function paint(palette: Palette, role: string): string {
 	const color = palette[role];
-	if (color === undefined) throw new Error(`未配置绘制颜色：${role}`);
+	if (color === undefined) throw new Error(`The palette has no color for role "${role}".`);
 	return color;
 }

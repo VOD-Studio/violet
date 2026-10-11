@@ -29,7 +29,7 @@ export class BudgetExceeded extends Error {
 
 	constructor(kind: "vertices" | "strokes", actual: number, limit: number) {
 		super(
-			`${kind === "vertices" ? "输出顶点" : "笔画"}超限：${actual} / ${limit}；未自动降低质量`,
+			`Too many ${kind === "vertices" ? "output vertices" : "strokes"}: ${actual} > ${limit}. Raise the limit or simplify the scene; detail is never reduced automatically.`,
 		);
 		this.name = "BudgetExceeded";
 		this.kind = kind;

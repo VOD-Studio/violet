@@ -27,7 +27,10 @@ class ContourWriter {
 		const n = this.points.length;
 		if (n && Math.abs(this.points[n - 2] - x) < 1e-9 && Math.abs(this.points[n - 1] - y) < 1e-9)
 			return;
-		if (n >= MAX_POINTS * 2) throw new RangeError("展平点数超过 1000000；未放宽精度");
+		if (n >= MAX_POINTS * 2)
+			throw new RangeError(
+				"Flattening produced more than 1000000 points; use a larger precision.",
+			);
 		this.points.push(x, y);
 	}
 
@@ -171,7 +174,7 @@ function buildContour(
  */
 export function polylineContour(xy: ArrayLike<number>, closed = false): Contour {
 	const contour = buildContour(xy, null, closed);
-	if (!contour) throw new RangeError("轮廓至少需要一个点");
+	if (!contour) throw new RangeError("A contour needs at least one point.");
 	return contour;
 }
 
