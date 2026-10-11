@@ -302,8 +302,19 @@ export const markdownComponents: Components = {
 	),
 };
 
-/** 为单篇内容注入可选人物档案，同时复用其余稳定节点映射。 */
+const contextComponents = new WeakMap<ArticleContentContext, Components>();
+
+/**
+ * 为单篇内容注入可选人物档案，同时复用其余稳定节点映射。
+ *
+ * @remarks 按 context 对象缓存：每次新建 code 渲染器会让 React 把全部代码块当作新组件类型重挂载。
+ */
 export function createMarkdownComponents(context?: ArticleContentContext): Components {
 	if (!context) return markdownComponents;
-	return { ...markdownComponents, code: createRichCodeRenderer(context) };
+	let components = contextComponents.get(context);
+	if (!components) {
+		components = { ...markdownComponents, code: createRichCodeRenderer(context) };
+		contextComponents.set(context, components);
+	}
+	return components;
 }

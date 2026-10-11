@@ -7,6 +7,7 @@
  */
 import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { createMarkdownComponents } from "../components/markdown-components";
 import { HtmlContent } from "../HtmlContent";
 
 // 屏蔽异步 shiki：CodeBlock 走降级 pre/code，便于同步断言代码块结构
@@ -171,5 +172,21 @@ describe("HtmlContent 图块（流程图，浏览时渲染）", () => {
 
 		expect(container.querySelector('div[role="img"]')).toBeNull();
 		expect(container.querySelector("pre")?.textContent).toContain("graph TD");
+	});
+
+	it("仅 className 变化时复用已渲染节点，不重建 DOM", () => {
+		const html = "<p>stable</p><ul><li>a</li></ul>";
+		const { container, rerender } = render(<HtmlContent html={html} />);
+		const paragraph = container.querySelector("p");
+		rerender(<HtmlContent html={html} className="x" />);
+		expect(container.querySelector("p")).toBe(paragraph);
+	});
+
+	it("同一 context 复用同一组件映射，避免代码块被重挂载", () => {
+		const context = { profile: { name: "a", href: "/persona" } };
+		expect(createMarkdownComponents(context)).toBe(createMarkdownComponents(context));
+		expect(createMarkdownComponents({ ...context })).not.toBe(
+			createMarkdownComponents(context),
+		);
 	});
 });

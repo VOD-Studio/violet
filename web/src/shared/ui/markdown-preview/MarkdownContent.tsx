@@ -15,6 +15,7 @@
 import { Slugger } from "@shared/lib/slug";
 import type { Element, Nodes, Root } from "hast";
 import { raw } from "hast-util-raw";
+import { useMemo } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -87,13 +88,19 @@ export function MarkdownContent({
 	context,
 	codeRenderer,
 }: MarkdownContentProps) {
-	const components = createMarkdownComponents(context);
+	const components = useMemo(
+		() =>
+			codeRenderer
+				? { ...createMarkdownComponents(context), code: codeRenderer }
+				: createMarkdownComponents(context),
+		[context, codeRenderer],
+	);
 	return (
 		<div className={className}>
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm, remarkMath, remarkHighlight, remarkAlerts]}
 				rehypePlugins={[rehypeCodeCarriers, rehypeSafeHtml, rehypeSlugHeadings]}
-				components={codeRenderer ? { ...components, code: codeRenderer } : components}
+				components={components}
 			>
 				{content}
 			</ReactMarkdown>
