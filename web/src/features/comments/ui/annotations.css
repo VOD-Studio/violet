@@ -3,23 +3,26 @@
  * extract-blocks 等按固定 class 名生成运行时 DOM，用功能持有全局选择器而非 CSS Module。
  */
 
-/* AnnotationLayer 批注高亮块：主题色淡底 + 虚线描边的圆角框，与正文表格、引用的手绘语汇一致。
-   负外边距抵消内边距，文字仍与正文对齐。 */
+/* AnnotationLayer 批注高亮块：主题色淡底 + 虚线描边的圆角框。
+   只用 background、box-shadow、outline 外扩出「内边距」观感，不改盒模型，
+   批注数据到达时正文不位移。 */
 .annotation-highlight,
 .annotation-draft-highlight {
 	--annotation-accent: var(--primary);
-	margin-inline: -0.75em;
-	padding: 0.25em 0.75em;
-	border-radius: 0.75rem;
+	border-radius: 0.5rem;
 	background-color: color-mix(in oklch, var(--annotation-accent) 7%, transparent);
+	box-shadow: 0 0 0 0.35em color-mix(in oklch, var(--annotation-accent) 7%, transparent);
 	outline: 1.5px dashed color-mix(in oklch, var(--annotation-accent) 35%, transparent);
+	outline-offset: 0.35em;
 	transition:
 		background-color 0.2s,
+		box-shadow 0.2s,
 		outline-color 0.2s;
 	scroll-margin-top: 80px;
 }
 .annotation-highlight:hover {
 	background-color: color-mix(in oklch, var(--annotation-accent) 12%, transparent);
+	box-shadow: 0 0 0 0.35em color-mix(in oklch, var(--annotation-accent) 12%, transparent);
 	outline-color: color-mix(in oklch, var(--annotation-accent) 60%, transparent);
 }
 
@@ -27,36 +30,61 @@
 .annotation-draft-highlight {
 	--annotation-accent: var(--warning);
 	background-color: color-mix(in oklch, var(--annotation-accent) 14%, transparent);
+	box-shadow: 0 0 0 0.35em color-mix(in oklch, var(--annotation-accent) 14%, transparent);
 	outline-style: solid;
 	outline-color: color-mix(in oklch, var(--annotation-accent) 60%, transparent);
 }
 
-/* 段评角标：段落末尾的 inline SVG（气泡 + 评论数），主题色描边加淡底填充 */
-.annotation-marker-inline {
+/* 段评角标：正文右侧边距里的绝对定位覆盖层，lg 以上落在正文栏外，
+   窄屏退到栏右缘的细槽内。不进入正文流，因此不影响排版。 */
+.annotation-marker {
+	left: calc(100% + 0.5rem);
+	display: flex;
+	align-items: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	opacity: 0.9;
+	transition: opacity 0.15s;
+}
+@media (max-width: 1023.98px) {
+	.annotation-marker {
+		left: calc(100% + 2px);
+	}
+}
+.annotation-marker:hover,
+.annotation-marker[data-active="true"] {
+	opacity: 1;
+}
+.annotation-marker:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+	border-radius: 9999px;
+}
+.annotation-marker span {
+	background-color: color-mix(in oklch, var(--primary) 18%, var(--card));
+	color: var(--primary);
+	font-weight: 600;
+	box-shadow: 0 0 0 2px var(--background);
+}
+.annotation-marker[data-active="true"] span {
+	box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* 无评论者信息时的回退：评论数小圆标 */
+.annotation-marker-count {
 	display: inline-flex;
 	align-items: center;
-	margin-left: 0.4em;
-	vertical-align: text-bottom;
-	cursor: pointer;
-	border: none;
-	background: transparent;
-	padding: 0;
-	user-select: none;
+	justify-content: center;
+	min-width: 1.25rem;
+	height: 1.25rem;
+	padding-inline: 0.25rem;
+	border-radius: 9999px;
+	background-color: color-mix(in oklch, var(--primary) 15%, transparent);
 	color: var(--primary);
-	transition: color 0.15s;
-}
-.annotation-marker-inline .annotation-marker-svg {
-	height: 1.5em;
-	width: auto;
-	display: block;
-	overflow: visible;
-}
-.annotation-marker-svg path {
-	fill: color-mix(in oklch, var(--primary) 14%, transparent);
-	transition: fill 0.15s;
-}
-.annotation-marker-inline:hover .annotation-marker-svg path {
-	fill: color-mix(in oklch, var(--primary) 28%, transparent);
+	font-size: 0.6875rem;
+	font-weight: 600;
 }
 
 /* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
