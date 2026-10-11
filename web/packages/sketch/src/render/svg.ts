@@ -160,7 +160,8 @@ export function renderSvg(drawing: Drawing, palette: Palette, options: SvgOption
 }
 
 interface ItemModel {
-	refs: { ref: TrackRef; el: SVGElement; full: string; last: number }[];
+	/** full 为条带的完整路径数据，首次显现前缀时才读取。 */
+	refs: { ref: TrackRef; el: SVGElement; full?: string; last: number }[];
 	label?: SVGElement;
 	/** 0 尚未开始，1 进行中，2 已完成。 */
 	state: 0 | 1 | 2;
@@ -185,15 +186,17 @@ export function mountSvg(
 	options: SvgOptions = {},
 ): SVGSVGElement {
 	const { svg: text, refs } = buildSvg(drawing, palette, options, Boolean(options.schedule));
-	const doc = new DOMParser().parseFromString(text, "image/svg+xml");
-	const svg = document.importNode(doc.documentElement, true) as unknown as SVGSVGElement;
+	// HTML 解析器比 DOMParser 的 XML 解析快数倍；template 在惰性文档中解析，再整棵移入当前文档
+	const template = document.createElement("template");
+	template.innerHTML = text;
+	const svg = document.adoptNode(template.content.firstElementChild as SVGSVGElement);
 	svg.setAttribute("style", "width:100%;height:auto;display:block");
 	if (options.schedule) {
 		const items: ItemModel[] = drawing.items.map(() => ({ refs: [], state: 2 }));
 		const nodes = svg.querySelectorAll<SVGElement>("[data-trk]");
 		refs.forEach((ref, i) => {
 			const el = nodes[i];
-			items[ref.item].refs.push({ ref, el, full: el.getAttribute("d") ?? "", last: 1 });
+			items[ref.item].refs.push({ ref, el, last: 1 });
 		});
 		for (const label of svg.querySelectorAll<SVGElement>("[data-lbl]"))
 			items[Number(label.getAttribute("data-lbl"))].label = label;
@@ -205,7 +208,7 @@ export function mountSvg(
 function showTrack(model: SvgModel, entry: ItemModel["refs"][number], p: number): void {
 	if (p === entry.last) return;
 	entry.last = p;
-	const { el, ref, full } = entry;
+	const { el, ref } = entry;
 	if (p <= 0) {
 		el.setAttribute("display", "none");
 		return;
@@ -221,8 +224,10 @@ function showTrack(model: SvgModel, entry: ItemModel["refs"][number], p: number)
 			el.setAttribute("stroke-dashoffset", String(1 - p));
 		}
 	} else if (kind === "ribbon") {
-		if (p >= 1) el.setAttribute("d", full);
-		else {
+		if (p >= 1) {
+			if (entry.full !== undefined) el.setAttribute("d", entry.full);
+		} else {
+			entry.full ??= el.getAttribute("d") ?? "";
 			const xy = ribbonPrefix(ref.batch.coords, ref.track, p);
 			const f = 10 ** model.decimals;
 			let d = "";
