@@ -20,11 +20,6 @@ vi.mock("@tanstack/react-router", () => ({
 	),
 }));
 
-// ImageGrid 含 ImagePreview（重），mock 掉避免 Radix portal 干扰
-vi.mock("@shared/ui/image-grid", () => ({
-	ImageGrid: () => <div data-testid="image-grid" />,
-}));
-
 import { TweetShareCard } from "../TweetShareCard";
 
 function makeSharedTweet(overrides: Partial<SharedTweet> = {}): SharedTweet {
@@ -57,9 +52,21 @@ describe("TweetShareCard — 分享的推文存在", () => {
 		expect(navigateMock).toHaveBeenCalledWith({ to: "/tweets/$id", params: { id: "tweet-1" } });
 	});
 
-	it("有图片时渲染 ImageGrid", () => {
-		render(<TweetShareCard tweet={makeSharedTweet({ images: ["/uploads/a.png"] })} />);
-		expect(screen.getByTestId("image-grid")).toBeTruthy();
+	it("图片是固定大小的小拼图，最多 4 格并以 +N 提示其余，不展开大图", () => {
+		const urls = ["a", "b", "c", "d", "e", "f"].map((n) => `/uploads/${n}.png`);
+		const { container } = render(<TweetShareCard tweet={makeSharedTweet({ images: urls })} />);
+		const thumbs = container.querySelector("[data-count]");
+		expect(thumbs?.getAttribute("data-count")).toBe("4");
+		expect(thumbs?.querySelectorAll("img")).toHaveLength(4);
+		expect(screen.getByText("+2")).toBeTruthy();
+	});
+
+	it("点击缩略图区域同样进入详情页", () => {
+		const { container } = render(
+			<TweetShareCard tweet={makeSharedTweet({ images: ["/uploads/a.png"] })} />,
+		);
+		fireEvent.click(container.querySelector("[data-count]") as HTMLElement);
+		expect(navigateMock).toHaveBeenCalledWith({ to: "/tweets/$id", params: { id: "tweet-1" } });
 	});
 });
 
