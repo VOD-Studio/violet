@@ -9,13 +9,13 @@ import {
 	useUserTimeline,
 } from "@features/tweets/api/queries";
 import { buildActivityGrid, summarizeActivity } from "@features/tweets/model/profile-activity";
-import { UserProfileCover } from "@features/tweets/ui/profile/UserProfileCover";
 import { UserProfileFeed } from "@features/tweets/ui/profile/UserProfileFeed";
 import { UserProfileLayout } from "@features/tweets/ui/profile/UserProfileLayout";
 import { UserProfilePanel } from "@features/tweets/ui/profile/UserProfilePanel";
 import { UserProfileRail } from "@features/tweets/ui/profile/UserProfileRail";
 import type { PagedResponse } from "@shared/api/types";
 import { avatarUrl } from "@shared/lib/image-url";
+import { UserProfileCover } from "@shared/ui/profile-cover/UserProfileCover";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Button, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useMemo } from "react";
