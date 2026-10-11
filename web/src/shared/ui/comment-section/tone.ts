@@ -48,6 +48,6 @@ export const AUTHOR_TIER = {
 	name: "bg-linear-to-r from-[oklch(0.58_0.13_70)] to-persona-violet bg-clip-text font-semibold text-transparent",
 	/** 作者徽章 */
 	badge: "inline-flex items-center gap-0.5 rounded-full bg-linear-to-r from-persona-gold to-persona-gold/75 px-1.5 py-0.5 text-[10px] font-medium text-white",
-	/** 气泡底色 */
-	bubble: "bg-linear-to-br from-persona-gold/18 via-persona-gold/6 to-persona-violet/12 shadow-[0_4px_24px_rgb(0_0_0/0.05)]",
+	/** 气泡底色：纯淡金，不叠渐变与阴影，文字对比更干净 */
+	bubble: "bg-persona-gold/14",
 } as const;
