@@ -13,7 +13,7 @@ import {
 	polyline,
 	rect,
 	type SceneItem,
-} from "@violet/inkline";
+} from "@violetjs/inkline";
 
 /** 内置填充名，前七种同时是 Rough.js 的 fillStyle；淡彩在 Rough.js 一侧按实色对照。 */
 export type FillId = keyof typeof fills | "wash";

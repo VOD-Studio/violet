@@ -17,8 +17,8 @@ import {
 	type SceneItem,
 	type Style,
 	styles,
-} from "@violet/inkline";
-import { pathData } from "@violet/inkline/svg";
+} from "@violetjs/inkline";
+import { pathData } from "@violetjs/inkline/svg";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const XLINK_NS = "http://www.w3.org/1999/xlink";

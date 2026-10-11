@@ -9,8 +9,8 @@ import {
 	type Schedule,
 	type ScheduleMode,
 	type Style,
-} from "@violet/inkline";
-import { mountSvg, pathData } from "@violet/inkline/svg";
+} from "@violetjs/inkline";
+import { mountSvg, pathData } from "@violetjs/inkline/svg";
 import rough from "roughjs";
 
 const NS = "http://www.w3.org/2000/svg";

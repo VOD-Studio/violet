@@ -1,5 +1,5 @@
 /**
- * Mermaid 负责语义与布局，净化后的 SVG 统一使用手写字体与 @violet/inkline 笔触（G 笔、草稿手法）。
+ * Mermaid 负责语义与布局，净化后的 SVG 统一使用手写字体与 @violetjs/inkline 笔触（G 笔、草稿手法）。
  * strict 初始化与 DOMPurify 二次清理共同阻断图表源码中的可执行内容。
  *
  * 失败（语法错 / 渲染异常）返回 { error }，不抛出——阅读端据此走降级占位。

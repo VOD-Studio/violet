@@ -2,7 +2,7 @@ import type { QuotedTweet } from "@entities/tweet/model/types";
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { NoSharedElements } from "@shared/lib/view-transition";
 import { useNavigate } from "@tanstack/react-router";
-import { TweetCard } from "@violet/react-tweet";
+import { TweetCard } from "@violetjs/react-tweet";
 import { TweetCardHeader } from "./TweetCardHeader";
 import { TweetCardImages } from "./TweetCardImages";
 import TweetContent from "./TweetContent";

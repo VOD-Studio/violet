@@ -8,7 +8,7 @@ import {
 	polygon,
 	polyline,
 	rect,
-} from "@violet/inkline";
+} from "@violetjs/inkline";
 import DOMPurify from "dompurify";
 import mermaid from "mermaid";
 import { type BenchItem, type BenchScene, tone } from "./scenes";

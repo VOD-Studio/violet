@@ -7,7 +7,7 @@ import {
 	type PenFactory,
 	type Style,
 	styles,
-} from "@violet/inkline";
+} from "@violetjs/inkline";
 
 export type PenId = "fineliner" | "inkpen" | "marker" | "gpen";
 export type HandId = "neat" | "natural" | "draft" | "inking";

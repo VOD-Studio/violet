@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import type { TweetFetcher } from "@violet/react-tweet";
-import { getTweet, parseTweetId } from "@violet/react-tweet/api";
+import type { TweetFetcher } from "@violetjs/react-tweet";
+import { getTweet, parseTweetId } from "@violetjs/react-tweet/api";
 
 /**
  * 在服务端读取公开推文及作者关联信息。

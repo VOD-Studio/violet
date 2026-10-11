@@ -171,15 +171,9 @@ importers:
       '@violet/agent-status':
         specifier: workspace:*
         version: link:packages/agent-status
-      '@violet/inkline':
-        specifier: workspace:@violetjs/inkline@*
-        version: link:packages/inkline
       '@violet/mascot':
         specifier: workspace:*
         version: link:packages/mascot
-      '@violet/react-tweet':
-        specifier: workspace:@violetjs/react-tweet@*
-        version: link:packages/react-tweet
       '@violet/ui':
         specifier: workspace:*
         version: link:packages/ui
