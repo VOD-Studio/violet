@@ -203,3 +203,13 @@ it("引用推文里的视频只显示封面并链接到来源，不内联播放�
 		"/poster.jpg",
 	);
 });
+
+it("quoted 属性把顶层推文渲染为引用小卡片，照片用缩略图", () => {
+	const { container } = render(
+		<EmbeddedTweet tweet={tweetWith([portrait("a"), portrait("b")])} quoted />,
+	);
+	const card = container.querySelector(".v-tweet") as HTMLElement;
+	expect(card.classList.contains("v-tweet--quoted")).toBe(true);
+	expect(container.querySelector(".v-tweet__thumbs")).not.toBeNull();
+	expect(container.querySelector(".v-tweet__photos")).toBeNull();
+});

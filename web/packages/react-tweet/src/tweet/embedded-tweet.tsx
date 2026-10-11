@@ -35,6 +35,12 @@ export interface EmbeddedTweetProps
 	 * @default false
 	 */
 	compact?: boolean;
+	/**
+	 * 渲染为引用小卡片：缩小头像与字号，隐藏品牌与互动数，媒体用方形缩略图。
+	 * 用于把一条推文嵌进别的内容（如聊天消息）。
+	 * @default false
+	 */
+	quoted?: boolean;
 }
 
 const noticeMessages: Record<TweetNotice, keyof TweetMessages> = {
@@ -56,6 +62,7 @@ const noticeMessages: Record<TweetNotice, keyof TweetMessages> = {
 export function EmbeddedTweet({
 	tweet,
 	compact = false,
+	quoted = false,
 	maxTextLines = 6,
 	locale,
 	timeZone,
@@ -73,13 +80,17 @@ export function EmbeddedTweet({
 		<TweetContent
 			tweet={tweet}
 			compact={compact}
-			maxTextLines={maxTextLines}
+			maxTextLines={
+				quoted && maxTextLines !== 0
+					? Math.min(maxTextLines, QUOTE_TEXT_LINES)
+					: maxTextLines
+			}
 			localization={localization}
 			renderPhotos={renderPhotos}
 			renderVideo={renderVideo}
 			onOpenPhoto={onOpenPhoto}
 			articleProps={articleProps}
-			depth={0}
+			depth={quoted ? 1 : 0}
 		/>
 	);
 }
