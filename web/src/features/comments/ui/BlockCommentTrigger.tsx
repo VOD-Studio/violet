@@ -5,7 +5,6 @@ import { getBlockText } from "@features/comments/lib/extract-blocks";
 import { buildAnchorFromRange } from "@features/comments/lib/range-to-anchor";
 import { closestAnnotatableBlock } from "@features/comments/lib/selection-to-anchor";
 import { ApiError } from "@shared/api/error";
-import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { MessageSquareText } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -49,7 +48,6 @@ export function BlockCommentTrigger({
 	const [composer, setComposer] = useState<{ block: HTMLElement; top: number } | null>(null);
 	const [body, setBody] = useState("");
 	const hideTimer = useRef<number | undefined>(undefined);
-	const openLogin = useLoginDialogStore((s) => s.open);
 	const createComment = useCreateComment(postId);
 
 	useEffect(() => {
@@ -185,10 +183,7 @@ export function BlockCommentTrigger({
 						pending={createComment.isPending}
 						placeholder="写下你对这一段的想法…"
 						loginRequired={!isLoggedIn}
-						onLogin={() => {
-							close();
-							openLogin();
-						}}
+						onLoggedIn={submit}
 					/>
 				</div>
 			)}

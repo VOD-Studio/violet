@@ -116,10 +116,7 @@ export function CommentForm({
 	};
 
 	return (
-		<form
-			onSubmit={handleSubmit}
-			className={`space-y-3 ${compact ? "" : "rounded-2xl bg-muted/20 p-4"}`}
-		>
+		<form onSubmit={handleSubmit} className="space-y-3">
 			{/* 匿名两步流：昵称 + 邮箱 + 验证码 */}
 			{!isLoggedIn && (
 				<div className="space-y-2">

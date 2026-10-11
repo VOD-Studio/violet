@@ -260,3 +260,29 @@
 .annotation-scroll {
 	scrollbar-gutter: stable;
 }
+
+/* 评论抽屉：透明度加模糊淡入淡出，不位移不缩放 */
+.comment-drawer,
+.comment-drawer-backdrop {
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+.comment-drawer {
+	filter: blur(6px);
+	transition:
+		opacity 0.2s ease,
+		filter 0.2s ease;
+}
+.comment-drawer[data-state="open"],
+.comment-drawer-backdrop[data-state="open"] {
+	opacity: 1;
+}
+.comment-drawer[data-state="open"] {
+	filter: blur(0);
+}
+@media (prefers-reduced-motion: reduce) {
+	.comment-drawer,
+	.comment-drawer-backdrop {
+		transition: none;
+	}
+}

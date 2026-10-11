@@ -23,7 +23,6 @@ import {
 } from "@features/comments/lib/selection-to-anchor";
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
-import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { Highlighter, LogIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -57,7 +56,6 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 	const [showInput, setShowInput] = useState(false);
 	const [body, setBody] = useState("");
 	const toolbarRef = useRef<HTMLDivElement>(null);
-	const openLogin = useLoginDialogStore((s) => s.open);
 	const createComment = useCreateComment(postId);
 
 	// 缓存最近一次有效选区的 Range，用于滚动时重新定位（滚动不触发 selectionchange）。
@@ -270,10 +268,6 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 						onCancel={handleCancel}
 						pending={createComment.isPending}
 						loginRequired={!isLoggedIn}
-						onLogin={() => {
-							handleCancel();
-							openLogin();
-						}}
 					/>
 				) : (
 					/* 浮动工具条（划线批注按钮） */
