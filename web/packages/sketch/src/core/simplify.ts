@@ -24,14 +24,19 @@ export function simplifyIndices(lines: readonly ArrayLike<number>[], tolerance: 
 			const dx = xy[b * 2] - ax;
 			const dy = xy[b * 2 + 1] - ay;
 			const len2 = dx * dx + dy * dy;
+			const inv = len2 > 0 ? 1 / len2 : 0;
 			for (let i = a + 1; i < b; i++) {
 				const px = xy[i * 2] - ax;
 				const py = xy[i * 2 + 1] - ay;
-				// 到线段（而非直线）的平方距离；首尾重合时即到该点的距离
-				const t = len2 > 0 ? Math.max(0, Math.min(1, (px * dx + py * dy) / len2)) : 0;
-				const ex = px - t * dx;
-				const ey = py - t * dy;
-				const d = ex * ex + ey * ey;
+				// 到线段（而非直线）的平方距离：投影落在两端之外时取到端点的距离，首尾重合时即到该点的距离
+				const dot = px * dx + py * dy;
+				let d: number;
+				if (dot <= 0 || inv === 0) d = px * px + py * py;
+				else if (dot >= len2) d = (px - dx) * (px - dx) + (py - dy) * (py - dy);
+				else {
+					const cross = px * dy - py * dx;
+					d = cross * cross * inv;
+				}
 				if (d > worst) {
 					worst = d;
 					index = i;

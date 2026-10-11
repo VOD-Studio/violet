@@ -1,5 +1,5 @@
 import { polylineContour } from "../core/flatten.ts";
-import { PathBuilder, transformPath } from "../core/path.ts";
+import { PathBuilder } from "../core/path.ts";
 import { channel } from "../core/rng.ts";
 import { simplifyIndices } from "../core/simplify.ts";
 import type { Contour, Fill, Skeleton } from "../core/types.ts";
@@ -69,7 +69,7 @@ export function createWashFill(options: WashOptions = {}): Fill {
 	const angle = ((options.hatchAngle ?? 58) * Math.PI) / 180;
 	return {
 		id: "wash",
-		generate(region, ctx, source) {
+		generate(region, ctx) {
 			if (!ctx.fillRole) return {};
 			const t = thickness(region);
 
@@ -114,7 +114,18 @@ export function createWashFill(options: WashOptions = {}): Fill {
 
 			// 排线：同一组扫描线分别切原形状与朝光源平移的副本，逐行相减剩下的区间即背光侧条带。
 			const band = Math.max(3, Math.min(22, t * hatch));
-			const toward = ctx.flatten(transformPath(source, [1, 0, 0, 1, ux * band, uy * band]));
+			// 直接平移已展平的轮廓，免得把原路径平移后再展平一遍
+			const toward: Skeleton = {
+				fillRule: region.fillRule,
+				contours: region.contours.map((contour) => {
+					const points = new Float64Array(contour.points.length);
+					for (let i = 0; i < points.length; i += 2) {
+						points[i] = contour.points[i] + ux * band;
+						points[i + 1] = contour.points[i + 1] + uy * band;
+					}
+					return { ...contour, points };
+				}),
+			};
 			const gap = (options.hatchGap ?? 2.6) * ctx.width;
 			const rowY = (row: number) => row * gap;
 			const c = Math.cos(angle);

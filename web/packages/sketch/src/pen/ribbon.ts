@@ -33,6 +33,7 @@ export interface Ribbon {
 const CAP_POINTS = 6;
 // 相邻切线夹角超过该值时在外侧补圆弧，避免条带出现缺口。
 const JOIN_STEP = 0.35;
+const JOIN_COS = /* @__PURE__ */ Math.cos(JOIN_STEP);
 // 压力沿笔画变化，直线段也至少每隔该长度取一个样本。
 const MAX_GAP = 6;
 
@@ -138,8 +139,14 @@ export function strokeRibbon(stroke: Stroke, o: RibbonOptions): Ribbon | null {
 	const scaleAt = (pressure: number) =>
 		o.minScale + (o.maxScale - o.minScale) * Math.max(0, pressure) ** o.gamma;
 
-	// 笔尖在单位方向 (nx, ny) 上的支撑点相对笔尖中心的偏移。
+	const round = o.nib.aspect === 1;
+	// 笔尖在单位方向 (nx, ny) 上的支撑点相对笔尖中心的偏移；圆笔尖即沿该方向的半径。
 	const support = (nx: number, ny: number, r: number, out: [number, number]) => {
+		if (round) {
+			out[0] = r * nx;
+			out[1] = r * ny;
+			return;
+		}
 		const lx = nx * cos + ny * sin;
 		const ly = -nx * sin + ny * cos;
 		const a = r;
@@ -163,11 +170,10 @@ export function strokeRibbon(stroke: Stroke, o: RibbonOptions): Ribbon | null {
 	for (let i = 0; i < count; i++) {
 		const nx = -ty[i];
 		const ny = tx[i];
-		if (i > 0) {
-			const turn = Math.atan2(
-				tx[i - 1] * ty[i] - ty[i - 1] * tx[i],
-				tx[i - 1] * tx[i] + ty[i - 1] * ty[i],
-			);
+		const dot = i > 0 ? tx[i - 1] * tx[i] + ty[i - 1] * ty[i] : 1;
+		// 转角不足一个补点步长时不补点，也就不必求角度
+		if (dot < JOIN_COS) {
+			const turn = Math.atan2(tx[i - 1] * ty[i] - ty[i - 1] * tx[i], dot);
 			const steps = Math.floor(Math.abs(turn) / JOIN_STEP);
 			// 在同一位置插入旋转中的法向，使左右两侧点数保持一致。
 			const a0 = Math.atan2(tx[i - 1], -ty[i - 1]);

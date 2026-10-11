@@ -39,15 +39,17 @@ export interface RandomSource {
 export function createRandom(seed: number, key: number): RandomSource {
 	const root = pcg((seed | 0) ^ pcg(key >>> 0));
 	// 两轮 PCG：先把通道并入根，再与序号混合；序号相邻的输出仍互不相关。
-	const random = (ch: number, index: number) =>
-		pcg((pcg(root ^ ch) + Math.imul(index | 0, 0x9e3779b1)) | 0) / 4294967296;
+	const mix = (base: number, index: number) =>
+		pcg((base + Math.imul(index | 0, 0x9e3779b1)) | 0) / 4294967296;
 	return {
-		random,
+		random: (ch, index) => mix(pcg(root ^ ch), index),
 		noise(ch, x) {
 			const i = Math.floor(x);
 			const f = x - i;
-			const g0 = random(ch, i) * 2 - 1;
-			const g1 = random(ch, i + 1) * 2 - 1;
+			// 相邻两个格点共用同一通道的第一轮哈希
+			const base = pcg(root ^ ch);
+			const g0 = mix(base, i) * 2 - 1;
+			const g1 = mix(base, i + 1) * 2 - 1;
 			const u = f * f * f * (f * (f * 6 - 15) + 10);
 			// 两端梯度贡献的理论峰值约为 0.5，乘 2 使取值接近 [-1, 1]。
 			return 2 * (g0 * f + (g1 * (f - 1) - g0 * f) * u);
