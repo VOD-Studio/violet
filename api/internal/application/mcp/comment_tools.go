@@ -119,12 +119,15 @@ func withCommentWriteScope(req *mcp.CallToolRequest) *mcp.CallToolResult {
 	return nil
 }
 
-// resolvePublishedPost 解析已发布文章：显式 post_id 优先；否则用 slug。
+// resolvePublishedPost 解析已发布文章：post_id 与 slug 互斥，恰好提供其一。
 func (t *CommentTools) resolvePublishedPost(ctx context.Context, postID, slug string) (apppost.PostDTO, error) {
 	postID = strings.TrimSpace(postID)
 	slug = strings.TrimSpace(slug)
 	if postID == "" && slug == "" {
 		return apppost.PostDTO{}, fmt.Errorf("必须提供 post_id 或 slug 之一")
+	}
+	if postID != "" && slug != "" {
+		return apppost.PostDTO{}, fmt.Errorf("post_id 与 slug 互斥，请只提供其一")
 	}
 	if t.posts == nil {
 		return apppost.PostDTO{}, fmt.Errorf("未配置文章查找，无法解析文章")

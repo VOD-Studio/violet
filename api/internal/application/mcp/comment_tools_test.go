@@ -422,6 +422,22 @@ func TestCreateAnnotation_MarkdownOnlyPostFallsBackToHTML(t *testing.T) {
 	assert.Equal(t, "hello", w.got.Anchor.SelectedText)
 }
 
+func TestCreateComment_RejectsBothPostIDAndSlug(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	posts := &fakeCommentPostLookup{
+		byID:   map[string]apppost.PostDTO{"p1": {ID: "p1"}},
+		bySlug: map[string]apppost.PostDTO{"s1": {ID: "other"}},
+	}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createCommentArgs{PostID: "p1", Slug: "s1", Body: "hi"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Contains(t, textOf(t, res), "互斥")
+	assert.Equal(t, 0, w.calls)
+}
+
 // 编译期断言：fakeCommentSearchService 实现 CommentSearchService 接口。
 var _ CommentSearchService = (*fakeCommentSearchService)(nil)
 var _ CommentWriteService = (*fakeCommentWriteService)(nil)
