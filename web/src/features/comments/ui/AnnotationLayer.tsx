@@ -144,7 +144,7 @@ export function AnnotationLayer({
 
 		const mo = new MutationObserver((mutations) => {
 			if (cancelled) return;
-			const formulaDomChanged = mutations.some((m) => {
+			const carrierDomChanged = mutations.some((m) => {
 				for (const n of [...m.addedNodes, ...m.removedNodes]) {
 					if (!(n instanceof Element)) continue;
 					if (n.classList.contains(MARK_CLASS) || n.tagName === "MARK") continue;
@@ -153,14 +153,16 @@ export function AnnotationLayer({
 						n.classList.contains("katex-display") ||
 						n.querySelector(".katex, .katex-display") ||
 						n.getAttribute("data-type") === "inline-math" ||
-						n.getAttribute("data-type") === "block-math"
+						n.getAttribute("data-type") === "block-math" ||
+						n.getAttribute("data-runnable") === "true" ||
+						n.querySelector("[data-runnable='true']")
 					) {
 						return true;
 					}
 				}
 				return false;
 			});
-			if (!formulaDomChanged) return;
+			if (!carrierDomChanged) return;
 			if (applyingMarks) {
 				pendingFormulaMutation = true;
 				return;
