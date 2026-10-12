@@ -200,6 +200,7 @@ API 基础配置见 `src/shared/api/`。
 - 主题 token 分层：组件库的基础语义与主色源在 `packages/ui/src/styles/`，站点方言在 `src/styles/dialects/`。公开页面主容器挂 `.dialect-public`、后台等工具界面挂 `.dialect-tool`、灯箱等沉浸舞台挂 `.dialect-immersive`；页面消费 semantic token，不直接绑定色值。
 - 支持 v4 任意值简写（如 `max-w-50`）。
 - 暗色/亮色主题通过 `next-themes` 管理。
+- 根布局挂载 `@violet/ui` 的 `DocumentScrollbar`，文档滚动条覆盖内容、不占版心宽度；仍使用 `window` 滚动，SSR 首帧通过 `html[data-scrollbar="none"]` 取消原生占位。限高区域继续使用 `OverlayScroll`，不把整页改为内部滚动容器。
 
 ## 测试
 

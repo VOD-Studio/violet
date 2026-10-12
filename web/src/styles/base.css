@@ -3,7 +3,7 @@
  * 只放跨页面共享的基础规则；组件专属样式归组件旁的 CSS Module。
  */
 
-/* 全局滚动条：细条半透明，不使用 ::-webkit-scrollbar（会强制经典模式占空间） */
+/* thin 不保证覆盖模式；文档使用 DocumentScrollbar 避免原生滚动条占宽。 */
 * {
 	scrollbar-width: thin;
 	scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
