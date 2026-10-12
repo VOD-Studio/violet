@@ -8,8 +8,11 @@
  *   - renderReplyForm：CommentForm（匿名两步流 / 富文本在表单内部）
  *   - renderExpandedReplies：包装 useReplies（展开时才挂载 → 懒加载）
  */
+import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import type { Comment } from "@entities/comment/model/types";
 import { AIBadge } from "@entities/comment/ui/AIBadge";
+import { AICommentProfile } from "@entities/comment/ui/AICommentProfile";
+import { CommentAuthorAvatar } from "@entities/comment/ui/CommentAuthorAvatar";
 import { useReplies } from "@features/comments/api/queries";
 import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import {
@@ -52,31 +55,53 @@ export function buildArticleCommentConfig({
 	isLoggedIn,
 }: BuildArticleCommentConfigArgs): CommentSectionConfig<Comment> {
 	const config: CommentSectionConfig<Comment> = {
-		map: (c) => ({
-			id: c.id,
-			depth: c.depth,
-			parentId: c.parent_id,
-			replyToName: c.reply_to_name,
-			authorName: c.author_name,
-			authorAvatarUrl: c.avatar_url,
-			authorProvider: c.author_provider,
-			authorProfileUrl: c.author_profile_url,
-			authorHref: c.author_username ? `/users/${c.author_username}` : undefined,
-			isAuthor: c.is_author,
-			isPending: c.status === "pending",
-			body: c.body,
-			createdAt: c.created_at,
-			repliesTotal: c.replies_total,
-			repliesPreview: c.replies,
-			tone: c.is_author
-				? "author"
-				: c.replies && c.replies.length > 0
-					? "discussion"
-					: "default",
-			raw: c,
-		}),
+		map: (c) => {
+			const author = getCommentAuthorPresentation(c);
+			return {
+				id: c.id,
+				depth: c.depth,
+				parentId: c.parent_id,
+				replyToName: c.reply_to_name,
+				authorName: author.displayName,
+				authorAvatarUrl: author.avatarUrl,
+				authorProvider: c.is_ai ? undefined : c.author_provider,
+				authorProfileUrl: c.is_ai ? undefined : c.author_profile_url,
+				authorHref:
+					!c.is_ai && c.author_username ? `/users/${c.author_username}` : undefined,
+				isAuthor: !c.is_ai && c.is_author,
+				isPending: c.status === "pending",
+				body: c.body,
+				createdAt: c.created_at,
+				repliesTotal: c.replies_total,
+				repliesPreview: c.replies,
+				tone:
+					!c.is_ai && c.is_author
+						? "author"
+						: c.replies && c.replies.length > 0
+							? "discussion"
+							: "default",
+				raw: c,
+			};
+		},
 		repliesMode: "preview",
-		renderMetaBadges: (item) => <AIBadge show={!!item.raw.is_ai} />,
+		renderAuthorName: (item) =>
+			item.raw.is_ai ? (
+				<AICommentProfile name={item.raw.author_name}>{item.authorName}</AICommentProfile>
+			) : undefined,
+		renderAvatar: (item, { size }) =>
+			item.raw.is_ai ? (
+				<AICommentProfile
+					name={item.raw.author_name}
+					className="shrink-0 self-start rounded-full"
+				>
+					<CommentAuthorAvatar
+						name={item.raw.author_name}
+						isAI
+						className={size === "md" ? "size-9 text-sm" : "size-7 text-xs"}
+					/>
+				</AICommentProfile>
+			) : undefined,
+		renderMetaBadges: (item) => <AIBadge show={!!item.raw.is_ai} name={item.raw.author_name} />,
 		renderBody: (item) => (
 			<>
 				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">

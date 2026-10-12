@@ -23,7 +23,7 @@ export function PostDetailSkeleton() {
 					</div>
 				</header>
 				<div className="mb-9 aspect-2/1 rounded-2xl bg-muted/70" />
-				<div className="space-y-4">
+				<div className="space-y-4 md:mr-32 xl:mx-16">
 					{LINE_WIDTHS.map((width) => (
 						<div
 							key={width}

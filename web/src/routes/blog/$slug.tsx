@@ -150,23 +150,47 @@ function BlogDetailPage() {
 						hasSidebarToc && "xl:grid-cols-[minmax(0,1fr)_12.5rem] xl:gap-x-16",
 					)}
 				>
-					<div className="relative flex min-w-0 flex-col">
-						<main
-							ref={contentRef}
-							data-article-content
-							onClick={articleImages.bind.onClick}
-							onKeyDown={articleImages.bind.onKeyDown}
-							className="prose prose-neutral dark:prose-invert min-w-0 max-w-none flex-1 font-article"
-						>
-							<ArticleRichContent
-								content={body}
-								contentType={contentType}
-								className={readingStyles.content}
-							/>
-							{post.show_signature && post.author ? (
-								<ArticleSignature name={post.author.username} />
-							) : null}
-						</main>
+					<div className="flex min-w-0 flex-col">
+						<div className="relative flex min-w-0 flex-col md:mr-32 xl:mx-16">
+							<main
+								ref={contentRef}
+								data-article-content
+								onClick={articleImages.bind.onClick}
+								onKeyDown={articleImages.bind.onKeyDown}
+								className="prose prose-neutral dark:prose-invert min-w-0 max-w-none flex-1 font-article"
+							>
+								<ArticleRichContent
+									content={body}
+									contentType={contentType}
+									className={readingStyles.content}
+								/>
+								{post.show_signature && post.author ? (
+									<ArticleSignature name={post.author.username} />
+								) : null}
+							</main>
+
+							{/* 批注角标按 summary 渲染，完整批注在点击后加载。 */}
+							{commentsEnabled && (
+								<Suspense fallback={null}>
+									<AnnotationLayer
+										contentRef={contentRef}
+										summary={summary ?? []}
+										postId={post.id}
+										isLoggedIn={isLoggedIn}
+									/>
+								</Suspense>
+							)}
+
+							{commentsEnabled && (
+								<Suspense fallback={null}>
+									<FloatingToolbar
+										contentRef={contentRef}
+										isLoggedIn={isLoggedIn}
+										postId={post.id}
+									/>
+								</Suspense>
+							)}
+						</div>
 
 						{chapterCtx ? (
 							<div className="relative mt-12 flex">
@@ -175,28 +199,6 @@ function BlogDetailPage() {
 								</div>
 							</div>
 						) : null}
-
-						{/* 批注角标按 summary 渲染，完整批注在点击后加载。 */}
-						{commentsEnabled && (
-							<Suspense fallback={null}>
-								<AnnotationLayer
-									contentRef={contentRef}
-									summary={summary ?? []}
-									postId={post.id}
-									isLoggedIn={isLoggedIn}
-								/>
-							</Suspense>
-						)}
-
-						{commentsEnabled && (
-							<Suspense fallback={null}>
-								<FloatingToolbar
-									contentRef={contentRef}
-									isLoggedIn={isLoggedIn}
-									postId={post.id}
-								/>
-							</Suspense>
-						)}
 
 						{commentsEnabled && (
 							<div className="relative mt-16 flex">

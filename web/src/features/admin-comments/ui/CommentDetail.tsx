@@ -1,8 +1,9 @@
 import { AIBadge } from "@entities/comment/ui/AIBadge";
 import type { AdminComment } from "@features/admin-comments/model/types";
-import { avatarUrl, imageUrl } from "@shared/lib/image-url";
+import { imageUrl } from "@shared/lib/image-url";
 import { Quote } from "lucide-react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
+import { AdminCommentAvatar, AdminCommentName } from "./CommentAuthor";
 
 interface CommentDetailProps {
 	row: AdminComment;
@@ -20,19 +21,13 @@ export function CommentDetail({ row }: CommentDetailProps) {
 
 	return (
 		<div className="flex gap-3">
-			{/* 作者头像 */}
-			<img
-				src={avatarUrl(row.avatar_url, row.author_name)}
-				alt={row.author_name}
-				className="size-9 shrink-0 rounded-full object-cover"
-				loading="lazy"
-			/>
+			<AdminCommentAvatar row={row} className="size-9 text-sm" />
 
 			{/* 气泡内容 */}
 			<div className="min-w-0 flex-1 space-y-2">
 				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-sm font-medium text-foreground">{row.author_name}</span>
-					<AIBadge show={!!row.is_ai} />
+					<AdminCommentName row={row} className="text-sm font-medium text-foreground" />
+					<AIBadge show={!!row.is_ai} name={row.author_name} />
 				</div>
 				{/* 批注锚定原文 */}
 				{row.anchor?.selected_text && (

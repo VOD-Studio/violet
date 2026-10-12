@@ -86,18 +86,20 @@ export interface BlockRange {
 	start: number;
 	/** exclusive */
 	end: number;
+	is_ai: boolean;
+	author_name: string;
 }
 
 /** BlockAuthor - 批注块上的评论者 */
 export interface BlockAuthor {
 	name: string;
-	/** 空串表示未设置头像，头像组回退首字母 */
+	/** 空串表示未设置头像，AI 形象由实体展示层决定。 */
 	avatar_url: string;
-	/** MCP/AI agent；展示可信 AI 标记 */
+	/** MCP/AI agent 的自行署名。 */
 	is_ai?: boolean;
 }
 
-/** 批注气泡按评论者筛选；含 is_ai 以区分同名真人与 Violet AI */
+/** 批注气泡按原始署名与 is_ai 筛选，区分同名真人与 AI。 */
 export type AnnotationAuthorFilter = { name: string; is_ai: boolean } | null;
 
 /** 回复排序方式。asc=最早优先（默认），desc=最新优先。
