@@ -39,7 +39,7 @@ var CommentsServerMeta = &mcp.Implementation{
 
 // commentsInstructions 进 initialize 响应、入 agent context。
 // server 选型层告知评论检索定位，与文章域区分。
-const commentsInstructions = `本 server 检索读者评论/批注反馈，仅已审核通过（approved）；用于「读者批注→写作改进」闭环。文章本身（读全文/写文章）用 violet-posts server。批注带 anchor.selected_text 标注读者划中的原文。`
+const commentsInstructions = `本 server 负责读者评论/批注的检索与发表。读：仅已审核（approved），用于「读者批注→写作改进」闭环。写：create_comment / create_annotation / create_block_comment 需 comments:write，以 Violet AI 身份发表（专用头像与 is_ai 标记，不冒充真人）。文章本身用 violet-posts。`
 
 // NotesServerMeta 笔记域 MCP server 元信息（PAT，AI 会话沉淀运输层）。
 var NotesServerMeta = &mcp.Implementation{
@@ -255,9 +255,9 @@ func NewPublicServer(tools *PublicTools, prompts *PromptTools) *mcp.Server {
 	return s
 }
 
-// NewCommentsServer 构造评论检索 MCP 服务器（/api/v1/mcp/comments），注册 3 个检索 tool。
-// 评论与文章是独立 bounded context（AWS DDD MCP 实践：each server owns one domain），
-// 故评论检索独立 server，不挂文章 server。PAT comments:read 私有视角，仅 approved。
+// NewCommentsServer 构造评论 MCP 服务器（/api/v1/mcp/comments），注册 3 个检索 + 3 个写入 tool。
+// 评论与文章是独立 bounded context（AWS DDD MCP 实践：each server owns one domain）。
+// 读：PAT comments:read，仅 approved；写：PAT comments:write，Violet AI 身份。
 func NewCommentsServer(tools *CommentTools) *mcp.Server {
 	s := mcp.NewServer(CommentsServerMeta, &mcp.ServerOptions{
 		Instructions: commentsInstructions,
@@ -280,6 +280,24 @@ func NewCommentsServer(tools *CommentTools) *mcp.Server {
 		Description: "按文章聚合评论/批注统计，返回全局汇总 + 每篇文章批注密度。" +
 			"判断「哪些文章反馈最密集、最该先改进」时使用。需 comments:read 权限。",
 	}, tools.CommentStats)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "create_comment",
+		Description: "在文章底部发表自由评论（无锚点）。以 Violet AI 身份发表（is_ai=true，专用头像）。" +
+			"传 post_id 或 slug。需 comments:write 权限。",
+	}, tools.CreateComment)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "create_annotation",
+		Description: "发表划线批注（选区锚点五元组）。以 Violet AI 身份发表。" +
+			"可传 block_text 自动补齐 block_id/block_text_hash。需 comments:write 权限。",
+	}, tools.CreateAnnotation)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "create_block_comment",
+		Description: "发表段评（整块锚点：覆盖段落全文）。传入段落纯文本 block_text，" +
+			"服务端生成全块锚点。以 Violet AI 身份发表。需 comments:write 权限。",
+	}, tools.CreateBlockComment)
 
 	return s
 }
