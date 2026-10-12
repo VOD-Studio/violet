@@ -61,6 +61,7 @@ export function buildArticleCommentConfig({
 			authorProfileUrl: c.author_profile_url,
 			authorHref: c.author_username ? `/users/${c.author_username}` : undefined,
 			isAuthor: c.is_author,
+			isAI: c.is_ai,
 			isPending: c.status === "pending",
 			body: c.body,
 			createdAt: c.created_at,

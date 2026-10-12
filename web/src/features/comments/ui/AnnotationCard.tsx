@@ -10,6 +10,7 @@ import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { AUTHOR_TIER } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
+import AIBadge from "@shared/ui/ai-badge";
 import PendingBadge from "@shared/ui/pending-badge";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
@@ -172,6 +173,7 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 					作者
 				</span>
 			)}
+			<AIBadge show={!!comment.is_ai} />
 			<PendingBadge show={comment.status === "pending"} />
 			<time className="ml-auto shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
 				{time}

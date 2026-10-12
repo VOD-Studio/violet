@@ -42,6 +42,13 @@ describe("serversForScopes", () => {
 			"violet-comments",
 		]);
 	});
+
+	it("comments:write 命中评论 server（reader 恒并入）", () => {
+		expect(serversForScopes(["comments:write"]).map((s) => s.key)).toEqual([
+			"violet-reader",
+			"violet-comments",
+		]);
+	});
 });
 
 describe("MCP_CLIENTS 配置生成", () => {
@@ -248,6 +255,6 @@ describe("violet-comments 评论 server 配置", () => {
 		// violet-comments 是 PAT server（非 anonymous），serversForScopes 推导得到
 		const servers = serversForScopes(["comments:read"]);
 		expect(servers.some((s) => s.key === "violet-comments")).toBe(true);
-		expect(servers.find((s) => s.key === "violet-comments")?.scopes).toEqual(["comments:read"]);
+		expect(servers.find((s) => s.key === "violet-comments")?.scopes).toEqual(["comments:read", "comments:write"]);
 	});
 });

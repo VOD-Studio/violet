@@ -100,6 +100,8 @@ export interface Comment {
 	emote?: Record<string, CommentEmoteRef>;
 	/** 是否由文章 Owner 本人发出（运行时 created_by==post.author_id，作者高亮用） */
 	is_author: boolean;
+	/** 是否由 MCP/AI agent 发表；true 时展示 AI 徽章与专用头像（非真人 Google 头像） */
+	is_ai?: boolean;
 	/** 选区批注锚点；自由评论为 undefined，批注非空 */
 	anchor?: CommentAnchor;
 	/** 状态 */
