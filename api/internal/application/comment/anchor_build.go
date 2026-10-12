@@ -13,7 +13,6 @@ import (
 
 // ComputeBlockID 计算块纯文本的 block_id（SHA-256 前 8 位 hex）。
 // 与前端 web/src/features/comments/lib/block-id.ts 一致：先 TrimSpace，空文本返回错误。
-// 领域注释仍写 SHA-1，前端因 Web Crypto 限制改用 SHA-256；MCP/服务端对齐前端。
 func ComputeBlockID(text string) (string, error) {
 	trimmed := strings.TrimSpace(text)
 	if trimmed == "" {

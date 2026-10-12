@@ -20,8 +20,12 @@ import { getBlockText, measureCarrierText } from "./extract-blocks";
 import { buildAnchorFromRange } from "./range-to-anchor";
 import type { Anchor } from "./types";
 
-/** 块级元素选择器（与 extractCandidateBlocks 保持一致）。 */
-const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']";
+/**
+ * 交互选区/段评用的块选择器。
+ * 不含 [data-runnable]：可运行块仍由 extract-blocks 定位历史锚点，但不可作为新批注目标
+ * （UI 文案与 data-source 坐标系不一致）。
+ */
+const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
 
 /**
  * 不可批注容器选择器：命中即拒绝批注。
@@ -29,12 +33,12 @@ const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='
  * 这些块的渲染产物是矢量图/排版结构/可编辑代码，无稳定可寻址文本流：
  * - `pre`：围栏代码块（shiki 输出 pre.shiki、降级 pre、图块错误态的源码 pre）。
  * - `.katex-display`：块级公式 KaTeX display 产物（外层 div 已无 data-type，认渲染产物更鲁棒）
- * - `.cm-editor`：可运行代码块 CodeMirror 6（防御；当前其外层 div 已不命中 BLOCK_SELECTOR）
+ * - `.cm-editor` / `[data-runnable]`：可运行代码块（CodeMirror 或 CodeRunner 根）
  * - `[data-type="diagram-block"]`、`[data-type="block-math"]`：防御性，防组件实现把
  *   data-type 保留到 DOM 时漏网
  */
 const UNANNOTATABLE_SELECTOR =
-	"pre, .katex-display, .cm-editor, [data-type='diagram-block'], [data-type='block-math']";
+	"pre, .katex-display, .cm-editor, [data-runnable='true'], [data-type='diagram-block'], [data-type='block-math']";
 
 /**
  * 判断选区是否落在不可批注容器内。
