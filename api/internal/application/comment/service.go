@@ -644,6 +644,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		if err != nil {
 			return CommentDTO{}, err
 		}
+		// 跨文章回复非法：parent 必须与当前评论同属一篇文章（对齐推文评论 CreateComment）
+		if parent.PostID() != postID {
+			return CommentDTO{}, shared.BadRequest("父评论不属于该文章")
+		}
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err
 		}
@@ -1035,15 +1039,15 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 		}
 	}
 	fill := func(d *CommentDTO) {
-		if authorDeleted[d.ID] {
-			d.AuthorName = DeletedUserName
-			d.AvatarURL = ""
+		if d.IsAI {
+			// AI 评论优先保留专用昵称/头像快照（即使 PAT 持有人已软删也不覆写为「已注销用户」），
+			// 且不挂 GitHub/Google 角标与站内主页链接，避免看起来像真人留言。
 			d.AuthorProvider = ""
 			d.AuthorProfileURL = ""
 			d.AuthorUsername = ""
-		} else if d.IsAI {
-			// AI 评论保留专用昵称/头像快照，不挂 GitHub/Google 角标与站内主页链接，
-			// 避免看起来像 PAT 持有人本人在留言。
+		} else if authorDeleted[d.ID] {
+			d.AuthorName = DeletedUserName
+			d.AvatarURL = ""
 			d.AuthorProvider = ""
 			d.AuthorProfileURL = ""
 			d.AuthorUsername = ""

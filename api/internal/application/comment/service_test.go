@@ -526,3 +526,59 @@ func TestCreate_ModerationOn_StaysPending(t *testing.T) {
 	assert.Equal(t, "pending", dto.Status)
 	repo.AssertExpectations(t)
 }
+
+// TestCreate_ParentDifferentPost_Rejected 跨文章回复应拒绝（Codex P2）。
+func TestCreate_ParentDifferentPost_Rejected(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	uid := shared.NewID()
+	postID := shared.NewID()
+	otherPostID := shared.NewID()
+	parentID := shared.NewID()
+	zero := time.Time{}
+	parent := domain.ReconstructComment(parentID, otherPostID, &uid, nil, parentID.String()+"/", 0, nil,
+		"alice", "", "", "", "parent on other post", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(parent, nil).Once()
+	repo.AssertNotCalled(t, "Save")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "bob", AuthorEmail: "bob@x.com", Body: "cross-post reply",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "父评论不属于该文章")
+	repo.AssertExpectations(t)
+}
+
+// TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted AI 评论在作者软删后仍保留 Violet AI 名/头像。
+func TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted(t *testing.T) {
+	userRepo := new(mocks.MockUserRepository)
+	svc := &Service{userRepo: userRepo}
+
+	dUID := shared.NewID()
+	dEmail, _ := domainuser.ParseEmail("gone@example.com")
+	dName, _ := domainuser.ParseUsername("gone")
+	deletedUser := domainuser.ReconstructUser(dUID, dEmail, dName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Now(), time.Time{}, time.Time{})
+	deletedUser.Delete(time.Now())
+
+	postID, cID := shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	aiComment := domain.ReconstructComment(cID, postID, &dUID, nil, cID.String()+"/", 0, nil,
+		"Violet AI", "/logo.png", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
+
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{deletedUser}, nil).Once()
+
+	dtos := []CommentDTO{{
+		ID: cID.String(), AuthorName: "Violet AI", AvatarURL: "/logo.png", IsAI: true,
+	}}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{aiComment})
+	assert.NoError(t, err)
+	assert.Equal(t, "Violet AI", dtos[0].AuthorName, "软删后仍保留 Violet AI 展示名")
+	assert.Equal(t, "/logo.png", dtos[0].AvatarURL, "软删后仍保留专用头像")
+	assert.Empty(t, dtos[0].AuthorProvider)
+	assert.Empty(t, dtos[0].AuthorUsername)
+	userRepo.AssertExpectations(t)
+}

@@ -221,10 +221,10 @@ _Avoid_: 把评论检索塞进文章 server（评论是独立 bounded context）
 
 **violet-scraper（抓取域 server）**:`/api/v1/mcp/scraper`，PAT `posts:scrape`+`subscriptions:read/write`。scrape_url + 7 个订阅 tool。高风险 SSRF 域，独立限流。
 
-**violet-comments（评论检索 server）**:`/api/v1/mcp/comments`，PAT `comments:read`。检索读者评论/批注反馈（S3：search_comments / list_recent_comments / comment_stats）。评论与文章是独立 bounded context——有独立聚合根/仓储/审核流程/HTTP 权限，故评论检索独立 server，不挂文章 server。用于「读者批注→写作改进」闭环。
-_Avoid_: 评论 server（未点明检索/反馈语义）
+**violet-comments（评论检索与发表 server）**:`/api/v1/mcp/comments`，PAT `comments:read` / `comments:write`。读：检索已审核读者评论/批注反馈（S3：search_comments / list_recent_comments / comment_stats）。写：create_comment / create_annotation / create_block_comment（需 `comments:write`），一律以 **Violet AI** 身份发表（`is_ai=true`，专用头像 `/logo.png`）。评论与文章是独立 bounded context——有独立聚合根/仓储/审核流程/HTTP 权限，故独立 server，不挂文章 server。用于「读者批注→写作改进」闭环。
+_Avoid_: 评论 server（未点明检索/反馈语义）；把写入写成「冒充 PAT 持有人」
 
-**写作改进闭环（S1+S2+S3 组合）**:读者批注/评论 → S3 检索反馈（含锚点选区原文 `anchor.selected_text`）→ agent 理解"读者对原文 X 的反馈是 Y"→ S1 get_post 读草稿 / S2 reader 读已发布全文 → agent 起草改进 → update_post 写回。S3 是闭环的"反馈数据接入"环，纯读不越界（评论写操作/审核归后台 UI）。
+**写作改进闭环（S1+S2+S3 组合）**:读者批注/评论 → S3 检索反馈（含锚点选区原文 `anchor.selected_text`）→ agent 理解"读者对原文 X 的反馈是 Y"→ S1 get_post 读草稿 / S2 reader 读已发布全文 → agent 起草改进 → update_post 写回；亦可经 S3 写入工具以 Violet AI 身份回复读者。S3 是闭环的"反馈数据接入 + AI 回复"环（人工审核仍归后台 UI）。
 
 **MCP status 可见性分工**:approved 评论 ≈ published 文章（都是"已审阅有效内容"），MCP 检索仅消费 approved/published。pending 评论 ≈ draft 文章（未审阅），前者进后台审核 UI、后者进 PAT 私有检索——**pending 不进 MCP agent 上下文**（避免未审阅内容/垃圾污染写作建议）。
 

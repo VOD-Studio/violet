@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,4 +50,16 @@ func TestParseExpiry_RejectsInvalidFormat(t *testing.T) {
 		_, err := parseExpiry(s, now)
 		assert.Error(t, err, "%q 非法格式应拒绝", s)
 	}
+}
+
+func TestCreateTokenRequest_AcceptsCommentsWrite(t *testing.T) {
+	v := validator.New()
+	err := v.Struct(createTokenRequest{Name: "mcp", Scopes: []string{"comments:write"}})
+	assert.NoError(t, err, "comments:write 应通过 HTTP oneof 校验")
+}
+
+func TestCreateTokenRequest_RejectsUnknownScope(t *testing.T) {
+	v := validator.New()
+	err := v.Struct(createTokenRequest{Name: "mcp", Scopes: []string{"comments:admin"}})
+	assert.Error(t, err, "未知 scope 应被 oneof 拒绝")
 }
