@@ -62,9 +62,13 @@ func ResolveAnnotationAnchor(blockID string, start, end int, selectedText, block
 		}
 		if blockID == "" {
 			blockID = id
+		} else if blockID != id {
+			return nil, shared.BadRequest(fmt.Sprintf("block_id=%q 与 block_text 推导值 %q 不一致", blockID, id))
 		}
 		if blockHash == "" {
 			blockHash = id
+		} else if blockHash != id {
+			return nil, shared.BadRequest(fmt.Sprintf("block_text_hash=%q 与 block_text 推导值 %q 不一致", blockHash, id))
 		}
 		units := utf16.Encode([]rune(blockText))
 		if start < 0 || end <= start || end > len(units) {

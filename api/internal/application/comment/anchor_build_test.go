@@ -61,3 +61,16 @@ func TestResolveAnnotationAnchor_UTF16Offsets(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "中文", a.SelectedText)
 }
+
+func TestResolveAnnotationAnchor_RejectsMismatchedBlockIDOrHash(t *testing.T) {
+	id, err := ComputeBlockID("hello world")
+	require.NoError(t, err)
+	_, err = ResolveAnnotationAnchor("deadbeef", 0, 5, "hello", "", "hello world")
+	assert.Error(t, err)
+	_, err = ResolveAnnotationAnchor("", 0, 5, "hello", "deadbeef", "hello world")
+	assert.Error(t, err)
+	a, err := ResolveAnnotationAnchor(id, 0, 5, "hello", id, "hello world")
+	require.NoError(t, err)
+	assert.Equal(t, id, a.BlockID)
+	assert.Equal(t, id, a.BlockHashSync)
+}
