@@ -47,7 +47,10 @@ describe("HeaderIsland", () => {
 
 	it("点「更多」展开全部导航，Esc 收起", async () => {
 		renderAt("/");
-		fireEvent.click(await screen.findByRole("button", { name: "展开全部导航" }));
+		const more = await screen.findByRole("button", { name: "展开全部导航" });
+		// 等挂载期 effect 跑完再点，避免与「路径变化收起」首轮 effect 竞态
+		await act(async () => {});
+		fireEvent.click(more);
 		await screen.findByText("Violet · 浏览本站");
 		expect(screen.getByRole("link", { name: "实验室" })).toBeTruthy();
 
@@ -57,7 +60,9 @@ describe("HeaderIsland", () => {
 
 	it("导航后自动收起面板", async () => {
 		const router = renderAt("/");
-		fireEvent.click(await screen.findByRole("button", { name: "展开全部导航" }));
+		const more = await screen.findByRole("button", { name: "展开全部导航" });
+		await act(async () => {});
+		fireEvent.click(more);
 		await screen.findByText("Violet · 浏览本站");
 
 		await act(async () => {

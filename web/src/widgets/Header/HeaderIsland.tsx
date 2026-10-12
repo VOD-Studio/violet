@@ -132,9 +132,12 @@ function Island() {
 		SLOT_COUNT * 44 + labelWidth + TRACK_PADDING * 2,
 	);
 	const expandedWidth = Math.min(viewport - SIDE_GAP * 1.5, EXPANDED_MAX_WIDTH);
+	/** 仅在路径真正变化时收起；挂载时的 effect 不能冲掉同步打开的面板（测试/极速点击） */
+	const prevPathnameRef = useRef(pathname);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 路径变化即视为导航完成，需要收起面板并清掉乐观高亮
 	useEffect(() => {
+		if (prevPathnameRef.current === pathname) return;
+		prevPathnameRef.current = pathname;
 		setOpen(false);
 		setOptimisticTo(null);
 	}, [pathname]);
