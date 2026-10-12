@@ -31,6 +31,11 @@ export function getLegacyBlockText(el: HTMLElement): string {
 	return el.textContent ?? "";
 }
 
+/** 与 getBlockText 相同的 carrier 口径，可用于 DocumentFragment（选区前缀测长）。 */
+export function measureCarrierText(root: Node): string {
+	return carrierAwareTextContent(root);
+}
+
 function carrierAwareTextContent(root: Node): string {
 	const parts: string[] = [];
 	const walk = (node: Node) => {

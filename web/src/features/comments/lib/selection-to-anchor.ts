@@ -14,12 +14,12 @@
  */
 
 import { computeBlockId } from "./block-id";
-import { getBlockText } from "./extract-blocks";
+import { getBlockText, measureCarrierText } from "./extract-blocks";
 import { buildAnchorFromRange } from "./range-to-anchor";
 import type { Anchor } from "./types";
 
 /** 块级元素选择器（与 extractCandidateBlocks 保持一致）。 */
-const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
+const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']";
 
 /**
  * 不可批注容器选择器：命中即拒绝批注。
@@ -61,9 +61,31 @@ function findClosestBlock(node: Node | null): HTMLElement | null {
 	return (current as HTMLElement | null)?.closest<HTMLElement>(BLOCK_SELECTOR) ?? null;
 }
 
+/** 公式/图块/可运行块 carrier：选区落在内部时吸附到 carrier 边界，与 getBlockText 同口径。 */
+const CARRIER_SELECTOR =
+	"[data-type='inline-math'], [data-type='block-math'], [data-type='diagram-block'], [data-runnable='true']";
+
+function snapOutsideCarrier(
+	blockEl: HTMLElement,
+	node: Node,
+	offset: number,
+	edge: "start" | "end",
+): { node: Node; offset: number } {
+	const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+	if (!el) return { node, offset };
+	const carrier = el.closest(CARRIER_SELECTOR) as HTMLElement | null;
+	if (!carrier || carrier === blockEl || !blockEl.contains(carrier)) return { node, offset };
+	const parent = carrier.parentNode;
+	if (!parent) return { node, offset };
+	const index = Array.prototype.indexOf.call(parent.childNodes, carrier);
+	if (index < 0) return { node, offset };
+	if (edge === "start") return { node: parent, offset: index };
+	return { node: parent, offset: index + 1 };
+}
+
 /**
- * 算「块首 → 选区端点」之间的文本长度（即块内字符 offset）。
- * 用 Range.toString().length 把 DOM 节点级 offset 转块文本级 offset。
+ * 算「块首 → 端点」的 carrier 口径字符 offset（与 getBlockText / wrapRange 一致）。
+ * 调用方须先 snapOutsideCarrier；公式按 data-latex 计长，不用 KaTeX textContent。
  */
 function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: number): number {
 	const range = document.createRange();
@@ -71,10 +93,9 @@ function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: numbe
 	try {
 		range.setEnd(endNode, endOffset);
 	} catch {
-		// endNode 不在 blockEl 内（跨块），返回 -1 表示无效
 		return -1;
 	}
-	return range.toString().length;
+	return measureCarrierText(range.cloneContents()).length;
 }
 
 /**
@@ -125,9 +146,16 @@ export async function selectionToAnchor(opts: SelectionToAnchorOptions): Promise
 	const blockId = await computeBlockId(blockText);
 	if (blockId === null) return null;
 
-	// 算块内 startOffset / endOffset
-	const startOffset = offsetWithinBlock(startBlock, range.startContainer, range.startOffset);
-	const endOffset = offsetWithinBlock(startBlock, range.endContainer, range.endOffset);
+	// 算块内 startOffset / endOffset（carrier 口径；落在公式内则吸附到边界）
+	const startSnap = snapOutsideCarrier(
+		startBlock,
+		range.startContainer,
+		range.startOffset,
+		"start",
+	);
+	const endSnap = snapOutsideCarrier(startBlock, range.endContainer, range.endOffset, "end");
+	const startOffset = offsetWithinBlock(startBlock, startSnap.node, startSnap.offset);
+	const endOffset = offsetWithinBlock(startBlock, endSnap.node, endSnap.offset);
 	if (startOffset < 0 || endOffset < 0 || startOffset >= endOffset) return null;
 
 	return buildAnchorFromRange({

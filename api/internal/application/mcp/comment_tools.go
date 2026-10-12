@@ -286,7 +286,8 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	if err := appcomment.EnsureAnchorMatchesArticle(post.ContentHTML, anchor); err != nil {
+	html := appcomment.ResolveArticleHTML(post.ContentHTML, post.ContentMD)
+	if err := appcomment.EnsureAnchorMatchesArticle(html, anchor); err != nil {
 		return errResult(err), nil, nil
 	}
 	return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, anchor, false, false)
@@ -306,7 +307,8 @@ func (t *CommentTools) CreateBlockComment(ctx context.Context, req *mcp.CallTool
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	if err := appcomment.EnsureAnchorMatchesArticle(post.ContentHTML, anchor); err != nil {
+	html := appcomment.ResolveArticleHTML(post.ContentHTML, post.ContentMD)
+	if err := appcomment.EnsureAnchorMatchesArticle(html, anchor); err != nil {
 		return errResult(err), nil, nil
 	}
 	return t.createAsPAT(ctx, req, post.ID, args.Body, "", anchor, false, false)

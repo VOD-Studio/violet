@@ -399,6 +399,25 @@ func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
 	assert.False(t, w.got.RejectAnchoredParent)
 }
 
+
+func TestCreateAnnotation_MarkdownOnlyPostFallsBackToHTML(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"md1": {ID: "md1", ContentMD: "hello world", ContentHTML: ""},
+	}}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "md1", Body: "批注", SelectedText: "hello",
+			StartOffset: intPtr(0), EndOffset: intPtr(5), BlockText: "hello world",
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError, "content_html 空时应降级用 content_md 渲染再校验")
+	require.NotNil(t, w.got.Anchor)
+	assert.Equal(t, "hello", w.got.Anchor.SelectedText)
+}
+
 // 编译期断言：fakeCommentSearchService 实现 CommentSearchService 接口。
 var _ CommentSearchService = (*fakeCommentSearchService)(nil)
 var _ CommentWriteService = (*fakeCommentWriteService)(nil)

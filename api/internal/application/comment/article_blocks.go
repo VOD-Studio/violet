@@ -8,6 +8,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
 
+	"blog-api/internal/application/markdown"
 	domain "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/shared"
 )
@@ -95,6 +96,24 @@ func attr(n *html.Node, key string) string {
 		}
 	}
 	return ""
+}
+
+
+// ResolveArticleHTML 锚点校验用正文 HTML：优先 ContentHTML；空且 ContentMD 非空时降级渲染
+//（与阅读端 blog/$slug content_html 空则用 content_md 一致）。渲染失败返回空串。
+func ResolveArticleHTML(contentHTML, contentMD string) string {
+	if h := strings.TrimSpace(contentHTML); h != "" {
+		return h
+	}
+	md := strings.TrimSpace(contentMD)
+	if md == "" {
+		return ""
+	}
+	generated, err := markdown.ToHTML(md)
+	if err != nil || strings.TrimSpace(generated) == "" {
+		return ""
+	}
+	return generated
 }
 
 // EnsureAnchorMatchesArticle 校验锚点 block_id 对应正文完整渲染块，并用该块全文重验 offset/selected_text。

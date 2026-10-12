@@ -40,6 +40,15 @@ describe("wrapRange", () => {
 		const [mark] = wrapRange(el, { start: 0, end: 2 }, "m", { annotationBlock: "b1" });
 		expect(mark.dataset.annotationBlock).toBe("b1");
 	});
+
+	it("inline-math carrier 按 data-latex 计长，不按 KaTeX textContent", () => {
+		const el = block(
+			'前<span data-type="inline-math" data-latex="E=mc^2"><span class="katex">E=mc2E=mc^2E=mc2</span></span>后',
+		);
+		// carrier 文本「前E=mc^2后」：选「后」→ start=7 end=8
+		const marks = wrapRange(el, { start: 7, end: 8 }, "m");
+		expect(marks.map((m) => m.textContent)).toEqual(["后"]);
+	});
 });
 
 describe("clearMarks", () => {

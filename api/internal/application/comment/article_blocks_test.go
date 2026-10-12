@@ -90,3 +90,26 @@ func TestEnsureAnchorMatchesArticle_AcceptsMathNormalizedBlock(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, EnsureAnchorMatchesArticle(html, a))
 }
+
+func TestResolveArticleHTML_PrefersHTML(t *testing.T) {
+	got := ResolveArticleHTML("<p>from html</p>", "# md")
+	assert.Equal(t, "<p>from html</p>", got)
+}
+
+func TestResolveArticleHTML_FallsBackToMarkdown(t *testing.T) {
+	got := ResolveArticleHTML("", "质能方程 $E=mc^2$ 成立")
+	require.NotEmpty(t, got)
+	assert.Contains(t, got, "质能方程")
+	assert.Contains(t, got, `data-type="inline-math"`)
+	blocks, err := ExtractArticleBlocks(got)
+	require.NoError(t, err)
+	require.NotEmpty(t, blocks)
+}
+
+func TestEnsureAnchorMatchesArticle_MarkdownFallbackBody(t *testing.T) {
+	html := ResolveArticleHTML("", "hello world")
+	require.NotEmpty(t, html)
+	a, err := ResolveAnnotationAnchor("", 0, 5, "hello", "", "hello world")
+	require.NoError(t, err)
+	require.NoError(t, EnsureAnchorMatchesArticle(html, a))
+}
