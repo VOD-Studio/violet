@@ -12,15 +12,24 @@ import (
 	userdomain "blog-api/internal/domain/user"
 )
 
-// fakePublishedSlugRepo 覆盖 FindBySlug，按 slug 返回预设文章（或 ErrNotFound）。
+// fakePublishedSlugRepo 覆盖 FindBySlug / FindActiveByID，按预设返回文章（或 ErrNotFound）。
 // 其余方法继承 fakeSlugRepo（panic），保证测试范围不越界。
 type fakePublishedSlugRepo struct {
 	fakeSlugRepo
 	bySlug map[string]*domain.Post
+	byID   map[string]*domain.Post // FindActiveByID；不含软删除行
 }
 
 func (f *fakePublishedSlugRepo) FindBySlug(_ context.Context, slug string) (*domain.Post, error) {
 	p, ok := f.bySlug[slug]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	return p, nil
+}
+
+func (f *fakePublishedSlugRepo) FindActiveByID(_ context.Context, id shared.ID) (*domain.Post, error) {
+	p, ok := f.byID[id.String()]
 	if !ok {
 		return nil, domain.ErrNotFound
 	}
@@ -45,11 +54,13 @@ func (s *authorLookupStub) FindByIDs(context.Context, []shared.ID) ([]*userdomai
 }
 
 func newPublishedSlugTestService(posts ...*domain.Post) *Service {
-	m := make(map[string]*domain.Post, len(posts))
+	bySlug := make(map[string]*domain.Post, len(posts))
+	byID := make(map[string]*domain.Post, len(posts))
 	for _, p := range posts {
-		m[p.Slug()] = p
+		bySlug[p.Slug()] = p
+		byID[p.ID().String()] = p
 	}
-	return &Service{repo: &fakePublishedSlugRepo{bySlug: m}}
+	return &Service{repo: &fakePublishedSlugRepo{bySlug: bySlug, byID: byID}}
 }
 
 func TestService_GetPublishedBySlug_Published(t *testing.T) {
@@ -126,6 +137,39 @@ func TestService_GetPublishedBySlug_NotFoundIndistinguishable(t *testing.T) {
 func getErr(svc *Service, slug string) error {
 	_, err := svc.GetPublishedBySlug(context.Background(), slug)
 	return err
+}
+
+func TestService_GetPublishedByID_Published(t *testing.T) {
+	p := mustReconstructPost(t, "by-id", "按 ID", "正文", "摘要")
+	svc := newPublishedSlugTestService(p)
+
+	dto, err := svc.GetPublishedByID(context.Background(), p.ID().String())
+	require.NoError(t, err)
+	assert.Equal(t, p.ID().String(), dto.ID)
+	assert.Equal(t, domain.StatusPublished, dto.Status)
+}
+
+func TestService_GetPublishedByID_DraftReturnsNotFound(t *testing.T) {
+	p := reconstructPostWithStatus(t, "draft-id", "草稿", domain.StatusDraft)
+	svc := newPublishedSlugTestService(p)
+
+	_, err := svc.GetPublishedByID(context.Background(), p.ID().String())
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestService_GetPublishedByID_SoftDeletedReturnsNotFound(t *testing.T) {
+	// 软删除行不在 FindActiveByID 索引中（模拟 GORM 作用域过滤）；
+	// Unscoped FindByID 仍会命中，但公开/MCP 写路径不得写入回收站文章。
+	p := mustReconstructPost(t, "trashed", "已删", "正文", "摘要")
+	svc := newPublishedSlugTestService()
+	_, err := svc.GetPublishedByID(context.Background(), p.ID().String())
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestService_GetPublishedByID_InvalidIDReturnsNotFound(t *testing.T) {
+	svc := newPublishedSlugTestService()
+	_, err := svc.GetPublishedByID(context.Background(), "not-a-uuid")
+	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
 // reconstructPostWithStatus 构造指定状态的 Post（mustReconstructPost 固定 published）。

@@ -10,6 +10,9 @@ import (
 // PostRepository 文章仓储接口
 type PostRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Post, error)
+	// FindActiveByID 按 ID 查活跃文章（自动排除软删除）；与 FindBySlug 同过滤语义。
+	// 公开只读/MCP 写路径用此方法；FindByID 为 Unscoped（含回收站）。
+	FindActiveByID(ctx context.Context, id shared.ID) (*Post, error)
 	FindBySlug(ctx context.Context, slug string) (*Post, error)
 	// FindPage 分页列出文章（统一入口，筛选与排序语义见 ListFilter 字段注释）。
 	//

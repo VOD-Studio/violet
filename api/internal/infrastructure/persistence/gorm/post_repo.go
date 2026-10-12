@@ -74,6 +74,18 @@ func (r *PostRepository) FindByID(ctx context.Context, id domainshared.ID) (*pos
 	return postToDomain(po)
 }
 
+// FindActiveByID 按 ID 查活跃文章；GORM DeletedAt 自动过滤软删除行（与 FindBySlug 一致）。
+func (r *PostRepository) FindActiveByID(ctx context.Context, id domainshared.ID) (*post.Post, error) {
+	var po model.Post
+	if err := r.db.WithContext(ctx).Preload("Tags").First(&po, "id = ?", id.UUID()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, post.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询文章失败", err)
+	}
+	return postToDomain(po)
+}
+
 func (r *PostRepository) FindBySlug(ctx context.Context, slug string) (*post.Post, error) {
 	var po model.Post
 	if err := r.db.WithContext(ctx).Preload("Tags").First(&po, "slug = ?", slug).Error; err != nil {

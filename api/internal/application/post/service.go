@@ -212,13 +212,14 @@ func (s *Service) GetBySlugForAuthor(ctx context.Context, slug string) (PostDTO,
 	}
 	return s.detailDTO(ctx, p), nil
 }
-// GetPublishedByID 按 ID 获取已发布文章；draft/archived/不存在统一 ErrNotFound（与 GetPublishedBySlug 同语义）。
+// GetPublishedByID 按 ID 获取已发布文章；draft/archived/软删除/不存在统一 ErrNotFound（与 GetPublishedBySlug 同语义）。
 func (s *Service) GetPublishedByID(ctx context.Context, id string) (PostDTO, error) {
 	pid, err := shared.ParseID(id)
 	if err != nil {
 		return PostDTO{}, domain.ErrNotFound
 	}
-	p, err := s.repo.FindByID(ctx, pid)
+	// FindActiveByID（非 Unscoped）排除回收站行；FindByID 会把软删除已发布文仍当 published。
+	p, err := s.repo.FindActiveByID(ctx, pid)
 	if err != nil {
 		return PostDTO{}, err
 	}

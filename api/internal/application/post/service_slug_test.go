@@ -26,6 +26,9 @@ func (f *fakeSlugRepo) ExistsBySlug(_ context.Context, slug string) (bool, error
 func (f *fakeSlugRepo) FindByID(context.Context, shared.ID) (*domain.Post, error) {
 	panic("not implemented")
 }
+func (f *fakeSlugRepo) FindActiveByID(context.Context, shared.ID) (*domain.Post, error) {
+	panic("not implemented")
+}
 func (f *fakeSlugRepo) FindBySlug(context.Context, string) (*domain.Post, error) {
 	panic("not implemented")
 }
