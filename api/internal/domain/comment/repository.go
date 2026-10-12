@@ -73,6 +73,8 @@ type BlockAuthor struct {
 	Name string
 	// AvatarURL 评论者头像地址，未设置头像时为空串
 	AvatarURL string
+	// IsAI 是否 MCP/AI agent 发表（与 comments.is_ai 一致）
+	IsAI bool
 }
 
 // PostCommentStat 按文章聚合的评论统计（MCP comment_stats 读模型）。
@@ -153,7 +155,7 @@ type ListFilter struct {
 	// DepthFilter 按 depth 列过滤（顶层 / 回复），nil = 不过滤；
 	// 仅按文章列评论场景有意义，ParentID 回复链场景勿设
 	DepthFilter *DepthFilter
-	PostID *shared.ID
+	PostID      *shared.ID
 	// ParentID 按顶层评论拉全部扁平回复（path 前缀，排除自身），配合 Sort
 	ParentID *shared.ID
 	// BlockID 批注按块精确过滤（懒加载），仅 PostID 场景有意义
@@ -163,7 +165,6 @@ type ListFilter struct {
 	// Query body 全文检索（空格分词多关键词 AND），仅 FindPageWithPost 支持
 	Query string
 }
-
 
 // PostRef 所属文章只读视图（评论列表/详情需要展示文章来源）
 type PostRef struct {

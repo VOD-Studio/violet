@@ -188,6 +188,7 @@ func commentPageOrder(filter comment.ListFilter) string {
 	}
 	return "c.created_at DESC, c.id DESC"
 }
+
 // applyCommentFilters 把 ListFilter 的正交筛选维度组装到 query。
 //
 // 入参 query 必须是 Table("comments c") 别名形态（列名一律 c. 前缀），
@@ -277,10 +278,11 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		CreatedBy   *uuid.UUID `gorm:"column:created_by"`
 		AuthorName  string     `gorm:"column:author_name"`
 		AvatarURL   string     `gorm:"column:avatar_url"`
+		IsAI        bool       `gorm:"column:is_ai"`
 		StartOffset *int       `gorm:"column:anchor_start_offset"`
 		EndOffset   *int       `gorm:"column:anchor_end_offset"`
 	}
-	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url, anchor_start_offset, anchor_end_offset").
+	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url, is_ai, anchor_start_offset, anchor_end_offset").
 		Order("created_at ASC").
 		Find(&rows).Error
 	if err != nil {
@@ -303,16 +305,19 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {
 			continue
 		}
-		// 登录评论者按 user id 去重；匿名无 id，按展示名区分
+		// 登录评论者按 user id 去重；匿名无 id，按展示名区分；AI 与真人同 user 时分开
 		identity := row.BlockID + "|" + row.AuthorName
 		if row.CreatedBy != nil {
 			identity = row.BlockID + "|" + row.CreatedBy.String()
+		}
+		if row.IsAI {
+			identity += "|ai"
 		}
 		if _, dup := seen[identity]; dup {
 			continue
 		}
 		seen[identity] = struct{}{}
-		results[i].Authors = append(results[i].Authors, comment.BlockAuthor{Name: row.AuthorName, AvatarURL: row.AvatarURL})
+		results[i].Authors = append(results[i].Authors, comment.BlockAuthor{Name: row.AuthorName, AvatarURL: row.AvatarURL, IsAI: row.IsAI})
 	}
 	return results, nil
 }

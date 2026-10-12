@@ -93,6 +93,8 @@ export interface BlockAuthor {
 	name: string;
 	/** 空串表示未设置头像，头像组回退首字母 */
 	avatar_url: string;
+	/** MCP/AI agent；展示可信 AI 标记 */
+	is_ai?: boolean;
 }
 
 /** 回复排序方式。asc=最早优先（默认），desc=最新优先。

@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -13,6 +14,8 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
 )
+
+var htmlTagRe = regexp.MustCompile(`(?s)<[^>]*>`)
 
 // CommentSearchService 评论检索 MCP tool 依赖的服务端口。
 // application/comment.Service 实现之；抽接口便于单测 fake 替换（与 SearchService 同 seam 模式）。
@@ -119,30 +122,52 @@ func withCommentWriteScope(req *mcp.CallToolRequest) *mcp.CallToolResult {
 	return nil
 }
 
-// resolvePostID 解析文章 ID：显式 post_id 优先；否则用 slug 查已发布文章。
-func (t *CommentTools) resolvePostID(ctx context.Context, postID, slug string) (string, error) {
+// blockTextAppearsInPost 粗检 block_text 是否出现在已发布文章正文（HTML 去标签或 Markdown）。
+// 防止 agent 幻觉选区写入后前端 findBlockElement 找不到块、反馈不可见。
+func blockTextAppearsInPost(dto apppost.PostDTO, blockText string) bool {
+	blockText = strings.TrimSpace(blockText)
+	if blockText == "" {
+		return false
+	}
+	if strings.Contains(dto.ContentMD, blockText) {
+		return true
+	}
+	// 粗暴去标签后再比：覆盖多数 textContent 与 HTML 源不一致但仍同文的情况
+	plain := htmlTagRe.ReplaceAllString(dto.ContentHTML, "")
+	return strings.Contains(plain, blockText)
+}
+
+// resolvePublishedPost 解析已发布文章：显式 post_id 优先；否则用 slug。
+func (t *CommentTools) resolvePublishedPost(ctx context.Context, postID, slug string) (apppost.PostDTO, error) {
 	postID = strings.TrimSpace(postID)
 	slug = strings.TrimSpace(slug)
 	if postID == "" && slug == "" {
-		return "", fmt.Errorf("必须提供 post_id 或 slug 之一")
+		return apppost.PostDTO{}, fmt.Errorf("必须提供 post_id 或 slug 之一")
 	}
 	if t.posts == nil {
-		return "", fmt.Errorf("未配置文章查找，无法解析文章")
+		return apppost.PostDTO{}, fmt.Errorf("未配置文章查找，无法解析文章")
 	}
 	if postID != "" {
-		// post_id 同样只允许已发布文章，防止向草稿/归档文章写评论。
 		dto, err := t.posts.GetPublishedByID(ctx, postID)
 		if err != nil {
-			return "", fmt.Errorf("按 post_id 查找已发布文章失败（post_id=%s）: %w", postID, err)
+			return apppost.PostDTO{}, fmt.Errorf("按 post_id 查找已发布文章失败（post_id=%s）: %w", postID, err)
 		}
-		return dto.ID, nil
+		return dto, nil
 	}
 	dto, err := t.posts.GetPublishedBySlug(ctx, slug)
 	if err != nil {
-		return "", fmt.Errorf("按 slug 查找已发布文章失败（slug=%s）: %w", slug, err)
+		return apppost.PostDTO{}, fmt.Errorf("按 slug 查找已发布文章失败（slug=%s）: %w", slug, err)
 	}
 	if dto.ID == "" {
-		return "", fmt.Errorf("文章 ID 为空（slug=%s）", slug)
+		return apppost.PostDTO{}, fmt.Errorf("文章 ID 为空（slug=%s）", slug)
+	}
+	return dto, nil
+}
+
+func (t *CommentTools) resolvePostID(ctx context.Context, postID, slug string) (string, error) {
+	dto, err := t.resolvePublishedPost(ctx, postID, slug)
+	if err != nil {
+		return "", err
 	}
 	return dto.ID, nil
 }
@@ -162,12 +187,12 @@ func (t *CommentTools) createAsPAT(ctx context.Context, req *mcp.CallToolRequest
 	}
 	// AI 身份：专用昵称 + 站点 logo 头像 + is_ai，不用 PAT 持有人的 Google/GitHub 头像。
 	dto, err := t.writer.Create(ctx, appcomment.CreateInput{
-		PostID:     postID,
-		ParentID:   strings.TrimSpace(parentID),
-		UserID:     userID,
-		AuthorName: brand.MCPAgentDisplayName,
-		AvatarURL:  brand.MCPAgentAvatarURL,
-		Body:       body,
+		PostID:              postID,
+		ParentID:            strings.TrimSpace(parentID),
+		UserID:              userID,
+		AuthorName:          brand.MCPAgentDisplayName,
+		AvatarURL:           brand.MCPAgentAvatarURL,
+		Body:                body,
 		Anchor:              anchor,
 		IsAI:                true,
 		RequireParentAnchor: requireParentAnchor,
@@ -256,16 +281,19 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	if errRes := withCommentWriteScope(req); errRes != nil {
 		return errRes, nil, nil
 	}
-	postID, err := t.resolvePostID(ctx, args.PostID, args.Slug)
+	post, err := t.resolvePublishedPost(ctx, args.PostID, args.Slug)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
 	// 回复批注：子评继承父锚点（comment.Service 对 parent 有 anchor 的回复要求 anchor 为 nil），忽略调用方的选区参数。
 	if strings.TrimSpace(args.ParentID) != "" {
-		return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, nil, true)
+		return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, nil, true)
 	}
 	if args.StartOffset == nil || args.EndOffset == nil || strings.TrimSpace(args.SelectedText) == "" {
 		return errResult(fmt.Errorf("顶级批注需要 start_offset、end_offset 与 selected_text")), nil, nil
+	}
+	if bt := strings.TrimSpace(args.BlockText); bt != "" && !blockTextAppearsInPost(post, bt) {
+		return errResult(fmt.Errorf("block_text 未出现在目标已发布文章正文中，无法锚定")), nil, nil
 	}
 	anchor, err := appcomment.ResolveAnnotationAnchor(
 		strings.TrimSpace(args.BlockID),
@@ -278,7 +306,7 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, anchor, false)
+	return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, anchor, false)
 }
 
 // CreateBlockComment 发表段评（整块锚点；需 comments:write）。
@@ -287,13 +315,16 @@ func (t *CommentTools) CreateBlockComment(ctx context.Context, req *mcp.CallTool
 	if errRes := withCommentWriteScope(req); errRes != nil {
 		return errRes, nil, nil
 	}
-	postID, err := t.resolvePostID(ctx, args.PostID, args.Slug)
+	post, err := t.resolvePublishedPost(ctx, args.PostID, args.Slug)
 	if err != nil {
 		return errResult(err), nil, nil
+	}
+	if !blockTextAppearsInPost(post, args.BlockText) {
+		return errResult(fmt.Errorf("block_text 未出现在目标已发布文章正文中，无法段评")), nil, nil
 	}
 	anchor, err := appcomment.BuildFullBlockAnchor(args.BlockText)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	return t.createAsPAT(ctx, req, postID, args.Body, "", anchor, false)
+	return t.createAsPAT(ctx, req, post.ID, args.Body, "", anchor, false)
 }

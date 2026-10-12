@@ -82,6 +82,8 @@ type BlockAuthorDTO struct {
 	Name string `json:"name"`
 	// AvatarURL 空串表示未设置头像，前端回退为首字母头像
 	AvatarURL string `json:"avatar_url"`
+	// IsAI 是否 MCP/AI agent；前端批注角标/气泡头据此展示可信 AI 标记
+	IsAI bool `json:"is_ai"`
 }
 
 // EmojiRef 表情映射值（emote map 的 value）。
@@ -110,10 +112,10 @@ type CommentDTO struct {
 	ParentID string `json:"parent_id,omitempty"`
 	// ReplyToName 被回复者的昵称。只有回复节点有，前端显示「回复 @yyy」用。
 	// toDTO 时查 parent 的 author_name 填进来，前端直接读不自己转换。顶层评论省略。
-	ReplyToName string           `json:"reply_to_name,omitempty"`
-	Depth       int16            `json:"depth"`
-	AuthorName  string           `json:"author_name"`
-	AvatarURL   string           `json:"avatar_url"`
+	ReplyToName string `json:"reply_to_name,omitempty"`
+	Depth       int16  `json:"depth"`
+	AuthorName  string `json:"author_name"`
+	AvatarURL   string `json:"avatar_url"`
 	// AuthorProvider 评论者第三方登录方式（头像角标）："github" / "google"；
 	// 密码注册与匿名评论省略。双绑定时 GitHub 优先（见 user.User.OAuthIdentity）。
 	AuthorProvider string `json:"author_provider,omitempty"`
@@ -130,10 +132,10 @@ type CommentDTO struct {
 	Emote map[string]EmojiRef `json:"emote,omitempty"`
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
-	IsAuthor   bool       `json:"is_author"`
+	IsAuthor bool `json:"is_author"`
 	// IsAI 是否由 MCP/AI agent 发表。true 时前端展示 AI 徽章与专用头像，不与真人混淆。
-	IsAI       bool       `json:"is_ai"`
-	Anchor     *AnchorDTO `json:"anchor,omitempty"`
+	IsAI      bool       `json:"is_ai"`
+	Anchor    *AnchorDTO `json:"anchor,omitempty"`
 	Status    string     `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
 	CreatedAt string     `json:"created_at"`
 	// Replies 顶层评论下的回复预览（前 N 条）。仅顶层 DTO 带，回复节点省略。
@@ -172,6 +174,7 @@ type SitePolicy interface {
 func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
 	return &Service{commentRepo: repo, userRepo: userRepo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
 }
+
 // 黑洞模式（PRD-0001）：匿名 viewer（viewerUserID 为空字符串）直接返回空数组，
 // 看不到任何评论（含自己刚提交的）；登录 viewer 返回 approved ∪ 自己的 pending。
 //
@@ -281,7 +284,7 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 	for _, b := range blocks {
 		authors := make([]BlockAuthorDTO, 0, len(b.Authors))
 		for _, a := range b.Authors {
-			authors = append(authors, BlockAuthorDTO{Name: a.Name, AvatarURL: a.AvatarURL})
+			authors = append(authors, BlockAuthorDTO{Name: a.Name, AvatarURL: a.AvatarURL, IsAI: a.IsAI})
 		}
 		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
 		for _, r := range b.Ranges {
@@ -982,6 +985,7 @@ type authorIdent struct{ provider, profileURL, username string }
 //   - 活跃作者：填 AuthorProvider/AuthorProfileURL（角标）与 AuthorUsername，快照名照常
 //   - 已注销作者：覆盖快照为「已注销用户」占位（名字占位、头像清空、无角标），
 //     其被回复引用（reply_to_name）同样替换
+//
 // 匿名评论（user_id 空）不填。userRepo 未注入（测试）时跳过。
 func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, comments []*domain.Comment) error {
 	if s.userRepo == nil || len(dtos) == 0 || len(comments) == 0 {

@@ -1,3 +1,4 @@
+import { AIBadge } from "@entities/comment/ui/AIBadge";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "cn";
 import { X } from "lucide-react";
@@ -134,6 +135,7 @@ function PopoverHeader({
 	return (
 		<div className="flex shrink-0 items-center gap-2 px-4 pt-3 pb-2">
 			<span className="text-xs font-medium text-muted-foreground">{target.count} 条批注</span>
+			{target.authors.some((a) => a.is_ai) ? <AIBadge show /> : null}
 			{target.authors.length > 1 && (
 				<div className="ml-1 flex items-center gap-1">
 					{target.authors.map((author) => {

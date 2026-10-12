@@ -222,9 +222,15 @@ func (f *fakeCommentPostLookup) GetPublishedByID(_ context.Context, id string) (
 	return dto, nil
 }
 
-// publishedP1 默认把 p1 视为已发布文章。
+// publishedP1 默认把 p1 视为已发布文章（含正文供 block_text 校验）。
 func publishedP1() *fakeCommentPostLookup {
-	return &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{"p1": {ID: "p1"}}}
+	return &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"p1": {
+			ID:          "p1",
+			ContentMD:   "hello world\n\n整段段落文本",
+			ContentHTML: "<p>hello world</p><p>整段段落文本</p>",
+		},
+	}}
 }
 
 func (f *fakeCommentPostLookup) GetPublishedBySlug(_ context.Context, slug string) (apppost.PostDTO, error) {
@@ -318,6 +324,20 @@ func TestCreateComment_RejectsUnpublishedPostID(t *testing.T) {
 		createCommentArgs{PostID: "draft-post", Body: "hi"})
 	require.NoError(t, err)
 	assert.True(t, res.IsError, "草稿/不存在的 post_id 应拒绝")
+	assert.Equal(t, 0, w.calls)
+}
+
+func TestCreateAnnotation_RejectsBlockTextNotInPost(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "nope",
+			StartOffset: intPtr(0), EndOffset: intPtr(4), BlockText: "not in article",
+		})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
 	assert.Equal(t, 0, w.calls)
 }
 

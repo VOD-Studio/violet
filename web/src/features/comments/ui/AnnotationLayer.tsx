@@ -7,6 +7,7 @@
  * 点击某位评论者的头像（或正文里的划线高亮），在该处淡入气泡，列出对应批注；
  * 气泡内容按 block_id 懒加载（含 replies 预览）。
  */
+import { AIBadge } from "@entities/comment/ui/AIBadge";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -300,20 +301,27 @@ function MarkerAvatar({
 	active: boolean;
 	onClick: (anchorEl: HTMLElement) => void;
 }) {
+	const label = author.is_ai ? `${author.name}（AI）的批注` : `${author.name} 的批注`;
 	return (
 		<button
 			type="button"
-			aria-label={`${author.name} 的批注`}
-			title={author.name}
+			aria-label={label}
+			title={label}
 			onClick={(e) => onClick(e.currentTarget)}
-			className={cn("annotation-avatar")}
+			className={cn("annotation-avatar", "relative")}
 			data-active={active ? "true" : undefined}
+			data-ai={author.is_ai ? "true" : undefined}
 		>
 			{author.avatar_url ? (
 				<img src={avatarUrl(author.avatar_url, author.name)} alt="" loading="lazy" />
 			) : (
 				author.name.slice(0, 1).toUpperCase()
 			)}
+			{author.is_ai ? (
+				<span className="pointer-events-none absolute -right-0.5 -bottom-0.5 scale-75">
+					<AIBadge show />
+				</span>
+			) : null}
 		</button>
 	);
 }
