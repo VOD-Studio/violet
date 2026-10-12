@@ -644,3 +644,27 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	});
 	await expect(content).toHaveCount(0);
 });
+
+test("Header 博客二级菜单只标记精确命中的当前页", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	for (const route of [
+		{ path: "/blog/archive", current: "归档", inactive: "全部文章" },
+		{ path: "/blog", current: "全部文章", inactive: "归档" },
+	]) {
+		await page.goto(route.path);
+		await page.waitForLoadState("networkidle");
+		await page
+			.getByRole("navigation", { name: "主导航" })
+			.getByRole("link", { name: "博客", exact: true })
+			.hover();
+		const panel = page.getByRole("group", { name: "博客二级菜单" });
+		await expect(
+			panel.getByRole("link", { name: new RegExp(`^${route.current}`) }),
+		).toHaveAttribute("aria-current", "page");
+		await expect(
+			panel.getByRole("link", { name: new RegExp(`^${route.inactive}`) }),
+		).not.toHaveAttribute("aria-current");
+	}
+});

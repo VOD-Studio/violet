@@ -15,6 +15,7 @@ const HeaderNavRow = ({ link, current, className, ...props }: HeaderNavRowProps)
 	return (
 		<Link
 			to={link.to}
+			activeOptions={{ exact: link.exact }}
 			aria-current={current ? "page" : undefined}
 			className={cn(
 				"group/row flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors duration-200 not-data-[slot=dropdown-item]:outline-none not-data-[slot=dropdown-item]:hover:bg-foreground/5 not-data-[slot=dropdown-item]:focus-visible:bg-foreground/5",
