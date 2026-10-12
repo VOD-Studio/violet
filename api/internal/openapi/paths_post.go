@@ -146,9 +146,10 @@ func registerPostPaths(t *openapi3.T) {
 		"is_ai":      optBool("是否 MCP/AI agent；与同名真人区分，前端角标/气泡筛选键"),
 	})
 	registerSchema(t, "AnnotationBlockRangeDTO", openapi3.Schemas{
-		"start": optInt("起始偏移（块内字符位，0-based）"),
-		"end":   optInt("结束偏移（块内字符位，exclusive）"),
-		"is_ai": optBool("是否为 AI 自署名批注"),
+		"start":       optInt("起始偏移（块内字符位，0-based）"),
+		"end":         optInt("结束偏移（块内字符位，exclusive）"),
+		"is_ai":       optBool("是否为 AI 自署名批注"),
+		"author_name": reqStr("发表时的原始署名；AI 用于对应模型展示颜色，不代表身份已验证"),
 	})
 	registerSchema(t, "AnnotationBlockCountDTO", openapi3.Schemas{
 		"block_id": reqStr("块 ID（对应正文的锚点块）"),

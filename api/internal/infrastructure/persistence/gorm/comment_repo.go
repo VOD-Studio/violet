@@ -307,7 +307,9 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 			continue
 		}
 		if row.StartOffset != nil && row.EndOffset != nil && len(results[i].Ranges) < comment.BlockRangeLimit {
-			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI})
+			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{
+				Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI, AuthorName: row.AuthorName,
+			})
 		}
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {
 			continue

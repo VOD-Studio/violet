@@ -61,8 +61,11 @@ type BlockRange struct {
 	// Start 起始偏移（块内字符位，0-based）
 	Start int
 	// End 结束偏移（块内字符位，exclusive）
-	End  int
+	End int
+	// IsAI 是否由 AI 自署名发表
 	IsAI bool
+	// AuthorName 发表时的原始署名；AI 用于对应独立角色颜色，不表示来源已验证
+	AuthorName string
 }
 
 // BlockAuthorLimit 每个批注块返回的评论者上限；前端头像组只需展示前几位。

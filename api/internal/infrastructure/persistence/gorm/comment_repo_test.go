@@ -541,7 +541,7 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	}, byBlock["b1"].Authors)
 	assert.Equal(t, []domaincomment.BlockAuthor{{Name: "Alice", AvatarURL: "a.png"}}, byBlock["b2"].Authors)
 	assert.Len(t, byBlock["b1"].Ranges, 3)
-	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3}, byBlock["b1"].Ranges[0])
+	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3, AuthorName: "Alice"}, byBlock["b1"].Ranges[0])
 }
 
 func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
@@ -585,8 +585,10 @@ func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
 	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", IsAI: true}, got[0].Authors[1])
 	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", AvatarURL: "a.png", IsAI: false}, got[0].Authors[2])
 	require.Len(t, got[0].Ranges, 4)
-	assert.True(t, got[0].Ranges[0].IsAI)
-	assert.True(t, got[0].Ranges[1].IsAI)
-	assert.True(t, got[0].Ranges[2].IsAI)
-	assert.False(t, got[0].Ranges[3].IsAI)
+	assert.Equal(t, []domaincomment.BlockRange{
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "Claude"},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
+		{Start: 0, End: 3, IsAI: false, AuthorName: "Claude"},
+	}, got[0].Ranges)
 }

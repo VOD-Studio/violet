@@ -75,8 +75,9 @@ type BlockRangeDTO struct {
 	// Start 起始偏移（块内字符位，0-based）
 	Start int `json:"start"`
 	// End 结束偏移（块内字符位，exclusive）
-	End  int  `json:"end"`
-	IsAI bool `json:"is_ai"`
+	End        int    `json:"end"`
+	IsAI       bool   `json:"is_ai"`
+	AuthorName string `json:"author_name"`
 }
 
 // BlockAuthorDTO 批注块上的评论者
@@ -84,7 +85,7 @@ type BlockAuthorDTO struct {
 	Name string `json:"name"`
 	// AvatarURL 空串表示未设置头像，前端回退为首字母头像
 	AvatarURL string `json:"avatar_url"`
-	// IsAI 是否 MCP/AI agent；前端批注角标/气泡头据此展示可信 AI 标记
+	// IsAI 是否由 AI 通过 MCP 发表；不代表署名已经验证
 	IsAI bool `json:"is_ai"`
 }
 
@@ -290,7 +291,7 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 		}
 		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
 		for _, r := range b.Ranges {
-			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI})
+			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI, AuthorName: r.AuthorName})
 		}
 		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors, Ranges: ranges})
 	}
