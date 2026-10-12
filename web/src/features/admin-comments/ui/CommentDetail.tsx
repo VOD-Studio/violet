@@ -1,5 +1,5 @@
+import { AIBadge } from "@entities/comment/ui/AIBadge";
 import type { AdminComment } from "@features/admin-comments/model/types";
-import { AIBadge } from "@features/comments/ui/AIBadge";
 import { avatarUrl, imageUrl } from "@shared/lib/image-url";
 import { Quote } from "lucide-react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";

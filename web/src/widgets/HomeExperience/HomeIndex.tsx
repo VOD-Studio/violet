@@ -1,6 +1,6 @@
 import type { AdminComment } from "@entities/comment/model/types";
+import { AIBadge } from "@entities/comment/ui/AIBadge";
 import type { Tweet } from "@entities/tweet/model/types";
-import { AIBadge } from "@features/comments/ui/AIBadge";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { EmojiText } from "@shared/ui/emoji-text";

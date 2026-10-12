@@ -9,6 +9,7 @@
  *   - renderExpandedReplies：包装 useReplies（展开时才挂载 → 懒加载）
  */
 import type { Comment } from "@entities/comment/model/types";
+import { AIBadge } from "@entities/comment/ui/AIBadge";
 import { useReplies } from "@features/comments/api/queries";
 import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import {
@@ -18,7 +19,6 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
-import { AIBadge } from "./AIBadge";
 import { CommentForm } from "./CommentForm";
 import { ReactionBar } from "./ReactionBar";
 

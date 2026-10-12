@@ -190,6 +190,8 @@ func TestCommentStats_EmptyResultHint(t *testing.T) {
 
 // ---- create_comment / create_annotation / create_block_comment ----
 
+func intPtr(v int) *int { return &v }
+
 type fakeCommentWriteService struct {
 	got   appcomment.CreateInput
 	dto   appcomment.CommentDTO
@@ -283,7 +285,7 @@ func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
 		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
 		createAnnotationArgs{
 			PostID: "p1", Body: "批注", SelectedText: "hello",
-			StartOffset: 0, EndOffset: 5, BlockText: "hello world",
+			StartOffset: intPtr(0), EndOffset: intPtr(5), BlockText: "hello world",
 		})
 	require.NoError(t, err)
 	require.False(t, res.IsError)
@@ -319,6 +321,17 @@ func TestCreateComment_RejectsUnpublishedPostID(t *testing.T) {
 	assert.Equal(t, 0, w.calls)
 }
 
+func TestCreateAnnotation_RequiresSelectionWithoutParent(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{PostID: "p1", Body: "批注"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Equal(t, 0, w.calls)
+}
+
 func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
 	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c2"}}
 	tools := NewCommentTools(nil, w, publishedP1())
@@ -326,7 +339,6 @@ func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
 		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
 		createAnnotationArgs{
 			PostID: "p1", Body: "回复", ParentID: "parent-1",
-			SelectedText: "other", StartOffset: 0, EndOffset: 5, BlockText: "hello world",
 		})
 	require.NoError(t, err)
 	require.False(t, res.IsError)

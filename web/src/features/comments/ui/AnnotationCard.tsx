@@ -6,6 +6,7 @@
  *   - 回复两层扁平，继承父锚点（子批注共享同一高亮区）
  */
 import type { Comment } from "@entities/comment/model/types";
+import { AIBadge } from "@entities/comment/ui/AIBadge";
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { AUTHOR_TIER } from "@shared/ui/comment-section";
@@ -16,7 +17,6 @@ import { cn } from "cn";
 import { Crown, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
-import { AIBadge } from "./AIBadge";
 import { CommentForm } from "./CommentForm";
 
 /** 气泡空间小，回复折叠阈值比评论区更紧 */

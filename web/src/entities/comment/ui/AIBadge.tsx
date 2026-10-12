@@ -4,8 +4,8 @@
  * MCP/agent 发表的评论与批注带 is_ai=true，用此徽章与真人评论区分；
  * 头像为 Violet AI 专用形象（/logo.png），不使用 PAT 持有人的 Google/GitHub 头像。
  *
- * 归属 features/comments：评论域 AI 身份 UI，不进 shared。
- * 消费方：文章评论（renderMetaBadges）、批注卡、首页尺素、后台审核列表/详情。
+ * 归属 entities/comment：评论域共享展示件，供 features/widgets 消费，不进 shared。
+ * 消费方：文章评论、批注卡、首页尺素、后台审核列表/详情。
  */
 import { Sparkles } from "lucide-react";
 

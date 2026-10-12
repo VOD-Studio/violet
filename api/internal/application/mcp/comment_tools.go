@@ -74,9 +74,9 @@ type createAnnotationArgs struct {
 	Body          string `json:"body" jsonschema:"批注正文"`
 	ParentID      string `json:"parent_id,omitempty" jsonschema:"父评论 ID；回复批注时传入，子评继承父锚点，此时忽略选区参数"`
 	BlockID       string `json:"block_id,omitempty" jsonschema:"块标识（块纯文本 SHA-256 前 8 位 hex）；缺省且提供 block_text 时自动计算"`
-	StartOffset   int    `json:"start_offset" jsonschema:"选区起始偏移（块内字符位，0-based，与浏览器 string.length/UTF-16 一致）"`
-	EndOffset     int    `json:"end_offset" jsonschema:"选区结束偏移（exclusive，必须大于 start_offset）"`
-	SelectedText  string `json:"selected_text" jsonschema:"选中的原文（fuzzy 重定位锚；必填）"`
+	StartOffset   *int   `json:"start_offset,omitempty" jsonschema:"选区起始偏移（块内字符位，0-based，与浏览器 string.length/UTF-16 一致）；顶级批注必填，回复可省略"`
+	EndOffset     *int   `json:"end_offset,omitempty" jsonschema:"选区结束偏移（exclusive，必须大于 start_offset）；顶级批注必填，回复可省略"`
+	SelectedText  string `json:"selected_text,omitempty" jsonschema:"选中的原文（fuzzy 重定位锚）；顶级批注必填，回复可省略"`
 	BlockTextHash string `json:"block_text_hash,omitempty" jsonschema:"创建时块内容快照（SHA-256 前 8 位）；缺省且提供 block_text 时自动计算"`
 	BlockText     string `json:"block_text,omitempty" jsonschema:"所在块纯文本；用于自动补齐 block_id / block_text_hash（与前端 computeBlockId 一致）"`
 }
@@ -263,10 +263,13 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	if strings.TrimSpace(args.ParentID) != "" {
 		return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, nil)
 	}
+	if args.StartOffset == nil || args.EndOffset == nil || strings.TrimSpace(args.SelectedText) == "" {
+		return errResult(fmt.Errorf("顶级批注需要 start_offset、end_offset 与 selected_text")), nil, nil
+	}
 	anchor, err := appcomment.ResolveAnnotationAnchor(
 		strings.TrimSpace(args.BlockID),
-		args.StartOffset,
-		args.EndOffset,
+		*args.StartOffset,
+		*args.EndOffset,
 		args.SelectedText,
 		strings.TrimSpace(args.BlockTextHash),
 		args.BlockText,
