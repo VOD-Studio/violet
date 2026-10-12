@@ -467,6 +467,7 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 		return rect ? Math.abs(rect.y - y) : Infinity;
 	};
 	await first.hover();
+	await expect(first).toHaveAttribute("data-highlighted", "");
 	const firstRect = await first.boundingBox();
 	const thirdRect = await third.boundingBox();
 	if (!firstRect || !thirdRect) throw new Error("菜单行缺少可见几何");
@@ -516,6 +517,9 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	const secondRect = await second.boundingBox();
 	if (!secondRect) throw new Error("目标行缺少可见几何");
 	await expect.poll(() => offsetFrom(secondRect.y)).toBeLessThan(1);
+	await expect(second).toHaveAttribute("data-highlighted", "");
+	await expect(first).not.toHaveAttribute("data-highlighted");
+	await expect(third).not.toHaveAttribute("data-highlighted");
 	expect(await first.boundingBox()).toEqual(firstRect);
 	expect(await third.boundingBox()).toEqual(thirdRect);
 	await trigger.focus();
@@ -523,9 +527,13 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	await expect(first).toBeFocused();
 	await expect.poll(() => offsetFrom(firstRect.y)).toBeLessThan(1);
 	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect(first).toHaveAttribute("data-highlighted", "");
+	await expect(second).not.toHaveAttribute("data-highlighted");
 	await page.keyboard.press("Tab");
 	await expect(second).toBeFocused();
 	await expect.poll(() => offsetFrom(secondRect.y)).toBeLessThan(1);
+	await expect(second).toHaveAttribute("data-highlighted", "");
+	await expect(first).not.toHaveAttribute("data-highlighted");
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -554,6 +562,7 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	expect(await highlight.evaluate((element) => element.getAnimations().length)).toBe(0);
 	await third.evaluate((element) => element.setAttribute("aria-disabled", "true"));
 	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect(third).not.toHaveAttribute("data-highlighted");
 	await first.hover();
 	await third.hover();
 	await expect(highlight).toHaveCSS("opacity", "0");
@@ -563,6 +572,7 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	await expect(highlight).toHaveCSS("opacity", "1");
 	await first.evaluate((element) => element.setAttribute("aria-disabled", "true"));
 	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect(first).not.toHaveAttribute("data-highlighted");
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -596,11 +606,14 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	expect(secondRect.y).toBeGreaterThan(firstBottom);
 	await page.mouse.move(firstRect.x + firstRect.width / 2, (firstBottom + secondRect.y) / 2);
 	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect(first).toHaveAttribute("data-highlighted", "");
 	expect(await highlight.boundingBox()).toEqual(firstRect);
 	await page.mouse.move((panelRect.x + firstRect.x) / 2, firstRect.y + firstRect.height / 2);
 	await expect(highlight).toHaveCSS("opacity", "1");
 	expect(await highlight.boundingBox()).toEqual(firstRect);
 	await second.hover();
+	await expect(second).toHaveAttribute("data-highlighted", "");
+	await expect(first).not.toHaveAttribute("data-highlighted");
 	await expect(highlight).toHaveCSS("opacity", "1");
 	expect(await highlight.boundingBox()).toEqual(secondRect);
 	const triggerBottom = triggerRect.y + triggerRect.height;
@@ -608,6 +621,7 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	await page.mouse.move(triggerRect.x + triggerRect.width / 2, (triggerBottom + panelRect.y) / 2);
 	await trigger.hover();
 	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect(second).toHaveAttribute("data-highlighted", "");
 	expect(await highlight.boundingBox()).toEqual(secondRect);
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -624,6 +638,7 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	await expect(content).toHaveAttribute("data-state", "closed");
 	await expect(content).toHaveCount(1);
 	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect(second).not.toHaveAttribute("data-highlighted");
 	await content.evaluate((element) => {
 		for (const animation of element.getAnimations()) animation.play();
 	});

@@ -76,10 +76,14 @@ export function useDropdownHighlight(innerRef: RefObject<HTMLDivElement | null>)
 		}
 		const next = hovered.current ?? focused.current;
 		if (active.current === next) return;
-		if (active.current) observerRef.current?.unobserve(active.current);
+		if (active.current) {
+			active.current.removeAttribute("data-highlighted");
+			observerRef.current?.unobserve(active.current);
+		}
 		attributeObserverRef.current?.disconnect();
 		active.current = next;
 		if (next) {
+			next.setAttribute("data-highlighted", "");
 			observerRef.current?.observe(next);
 			attributeObserverRef.current?.observe(next, {
 				attributes: true,
@@ -158,6 +162,7 @@ export function useDropdownHighlight(innerRef: RefObject<HTMLDivElement | null>)
 		attributeObserverRef.current = attributes;
 		observer.observe(inner);
 		if (active.current) {
+			active.current.setAttribute("data-highlighted", "");
 			observer.observe(active.current);
 			attributes.observe(active.current, {
 				attributes: true,
@@ -165,6 +170,7 @@ export function useDropdownHighlight(innerRef: RefObject<HTMLDivElement | null>)
 			});
 		}
 		return () => {
+			active.current?.removeAttribute("data-highlighted");
 			observer.disconnect();
 			attributes.disconnect();
 			observerRef.current = null;

@@ -111,6 +111,11 @@ const ITEM_ROWS: PropRow[] = [
 			"禁用项不参与共享高亮；disabled 保留 button 的原生禁用，链接的禁用激活由宿主管理。",
 	},
 	{
+		name: "data-highlighted",
+		type: "自动设置",
+		meaning: "标记当前共享高亮的目标项；经过空隙时保留，可用于同步图标或文字的强调样式。",
+	},
+	{
 		name: "ref / className / style / 事件",
 		type: "原生 button 或 asChild 子元素属性",
 		meaning: "全部落在菜单行；点击不关闭面板，Tab 仍沿原生焦点顺序移动。",
