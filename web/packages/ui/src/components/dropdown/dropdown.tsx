@@ -5,7 +5,6 @@ import { Slot } from "radix-ui";
 import {
 	composeEventHandlers,
 	Popper,
-	Presence,
 	useComposedRefs,
 	useControllableState,
 } from "radix-ui/internal";
@@ -17,9 +16,11 @@ import {
 	useCallback,
 	useEffect,
 	useId,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
+import { prefersReducedMotion, useDropdownMotion } from "./use-dropdown-motion";
 
 interface GroupState {
 	skipDelay: number;
@@ -30,33 +31,38 @@ interface GroupState {
 	surface: { id: string; element: HTMLElement; release: () => void } | null;
 }
 
+interface DropdownSurfaceSnapshot {
+	rect: DOMRect;
+	side: string | undefined;
+	release: () => void;
+}
+
 const GroupContext = createContext<RefObject<GroupState> | null>(null);
 
-/** 指针是否仍在触发器、面板或两者之间的间隙内；矩形内缩 1px，边缘上的离开不算在内。 */
-function insideSafeArea(
-	point: { x: number; y: number },
-	trigger: HTMLElement | null,
-	content: HTMLElement | null,
-) {
-	const t = trigger?.getBoundingClientRect();
-	const c = content?.getBoundingClientRect();
-	const within = (rect: DOMRect | undefined) =>
+function insideRect(rect: DOMRect | undefined, x: number, y: number) {
+	return (
 		rect !== undefined &&
-		point.x > rect.left + 1 &&
-		point.x < rect.right - 1 &&
-		point.y > rect.top + 1 &&
-		point.y < rect.bottom - 1;
-	if (within(t) || within(c)) return true;
-	// 未参与布局的矩形（宽高为零）没有间隙可言
-	if (!t || !c || t.width === 0 || c.width === 0) return false;
+		rect.width > 0 &&
+		rect.height > 0 &&
+		x >= rect.left &&
+		x <= rect.right &&
+		y >= rect.top &&
+		y <= rect.bottom
+	);
+}
+
+/** 触发器、面板与上下间隙共同组成闭合安全区。 */
+function insideSafeArea(x: number, y: number, t: DOMRect | undefined, c: DOMRect | undefined) {
+	if (insideRect(t, x, y) || insideRect(c, x, y)) return true;
+	if (!t || !c || !t.width || !t.height || !c.width || !c.height) return false;
 	const below = c.top >= t.bottom;
 	const above = c.bottom <= t.top;
 	if (!below && !above) return false;
 	return (
-		point.y >= (below ? t.bottom : c.bottom) &&
-		point.y <= (below ? c.top : t.top) &&
-		point.x >= Math.min(t.left, c.left) &&
-		point.x <= Math.max(t.right, c.right)
+		y >= (below ? t.bottom : c.bottom) &&
+		y <= (below ? c.top : t.top) &&
+		x >= Math.min(t.left, c.left) &&
+		x <= Math.max(t.right, c.right)
 	);
 }
 
@@ -138,28 +144,71 @@ export function Dropdown({
 		onChange: onOpenChange,
 	});
 	const timer = useRef(0);
+	const timerTarget = useRef<boolean | null>(null);
 	const hovering = useRef(false);
 	/** Escape 收起后，指针需先离开再进入才会重新展开。 */
 	const dismissed = useRef(false);
 	const triggerRef = useRef<HTMLElement>(null);
 	const contentRef = useRef<HTMLElement>(null);
+	const geometryRef = useRef<{
+		trigger: DOMRect | undefined;
+		content: DOMRect | undefined;
+	} | null>(null);
+	const geometryFrame = useRef(0);
+	const isInside = useCallback((x: number, y: number) => {
+		let geometry = geometryRef.current;
+		if (!geometry) {
+			geometry = {
+				trigger: triggerRef.current?.getBoundingClientRect(),
+				content: contentRef.current?.getBoundingClientRect(),
+			};
+			geometryRef.current = geometry;
+			if (!geometryFrame.current) {
+				geometryFrame.current = requestAnimationFrame(() => {
+					geometryRef.current = null;
+					geometryFrame.current = 0;
+				});
+			}
+		}
+		return insideSafeArea(x, y, geometry.trigger, geometry.content);
+	}, []);
 	/** 同方向接力确认后，旧面板外壳立即让位。 */
 	const [handoff, setHandoff] = useState(false);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (open) setHandoff(false);
 	}, [open]);
 
 	const schedule = useCallback(
 		(next: boolean, delay: number) => {
 			window.clearTimeout(timer.current);
+			timerTarget.current = null;
 			if (delay <= 0) setOpen(next);
-			else timer.current = window.setTimeout(() => setOpen(next), delay);
+			else {
+				timerTarget.current = next;
+				timer.current = window.setTimeout(() => {
+					timer.current = 0;
+					timerTarget.current = null;
+					setOpen(next);
+				}, delay);
+			}
 		},
 		[setOpen],
 	);
+	const cancelClose = useCallback(() => {
+		if (timerTarget.current !== false) return;
+		window.clearTimeout(timer.current);
+		timer.current = 0;
+		timerTarget.current = null;
+	}, []);
 
-	useEffect(() => () => window.clearTimeout(timer.current), []);
+	useEffect(
+		() => () => {
+			window.clearTimeout(timer.current);
+			cancelAnimationFrame(geometryFrame.current);
+		},
+		[],
+	);
 
 	useEffect(() => {
 		if (!open || !group) return;
@@ -195,44 +244,51 @@ export function Dropdown({
 		const warm =
 			state !== undefined &&
 			(state.active !== null || performance.now() - state.lastClosedAt < state.skipDelay);
-		schedule(true, warm ? 0 : openDelay);
+		schedule(true, contentRef.current || warm ? 0 : openDelay);
 	}, [group, openDelay, schedule]);
 
 	const pointerLeave = useCallback(
 		(point: PointerPoint) => {
-			// 页面转场的快照层会截走指针，浏览器随之派发的 leave 并非真的离开：指针仍在安全区内就忽略。
-			// 被忽略的 leave 之后不会再有对应事件，真正的离开交给下面的 pointermove 兜底
-			if (insideSafeArea(point, triggerRef.current, contentRef.current)) return;
-			hovering.current = false;
-			dismissed.current = false;
-			schedule(false, closeDelay);
-		},
-		[closeDelay, schedule],
-	);
-
-	// 展开期间按指针位置判定是否离开，不依赖 enter/leave 事件：
-	// 页面转场、面板变形或重新挂载都可能让浏览器漏发 leave，面板就会一直挂在那里
-	useEffect(() => {
-		if (!open) return;
-		const onPointerMove = (event: PointerEvent) => {
-			if (event.pointerType === "touch" || !hovering.current) return;
-			if (
-				insideSafeArea(
-					{ x: event.clientX, y: event.clientY },
-					triggerRef.current,
-					contentRef.current,
-				)
-			) {
-				window.clearTimeout(timer.current);
+			// 转场快照或裁剪动画可能派发 leave，但坐标仍在面板与间隙内。
+			geometryRef.current = null;
+			if (isInside(point.x, point.y)) {
+				hovering.current = true;
+				cancelClose();
 				return;
 			}
 			hovering.current = false;
 			dismissed.current = false;
 			schedule(false, closeDelay);
+		},
+		[cancelClose, closeDelay, isInside, schedule],
+	);
+
+	// 转场快照可能吞掉 leave；Escape 后也须确认指针真正移出安全区。
+	useEffect(() => {
+		if (!open && !dismissed.current) return;
+		const onPointerMove = (event: PointerEvent) => {
+			if (!open && !dismissed.current) {
+				document.removeEventListener("pointermove", onPointerMove);
+				return;
+			}
+			if (event.pointerType === "touch") return;
+			if (isInside(event.clientX, event.clientY)) {
+				hovering.current = true;
+				cancelClose();
+				return;
+			}
+			if (!hovering.current && !dismissed.current) return;
+			hovering.current = false;
+			dismissed.current = false;
+			if (open) schedule(false, closeDelay);
+			else {
+				cancelClose();
+				document.removeEventListener("pointermove", onPointerMove);
+			}
 		};
 		document.addEventListener("pointermove", onPointerMove);
 		return () => document.removeEventListener("pointermove", onPointerMove);
-	}, [open, closeDelay, schedule]);
+	}, [open, cancelClose, closeDelay, isInside, schedule]);
 
 	const focusIn = useCallback(() => {
 		if (!dismissed.current) schedule(true, 0);
@@ -361,19 +417,20 @@ export interface DropdownContentProps extends React.ComponentProps<"div"> {
  */
 export function DropdownContent({ ref, ...props }: DropdownContentProps) {
 	const context = useDropdown("DropdownContent");
-	return (
-		<Presence.Presence present={context.open}>
-			<DropdownContentImpl {...props} contentRef={ref} />
-		</Presence.Presence>
-	);
+	const [present, setPresent] = useState(context.open);
+	const onExitComplete = useCallback(() => setPresent(false), []);
+	useLayoutEffect(() => {
+		if (context.open) setPresent(true);
+	}, [context.open]);
+	return context.open || present ? (
+		<DropdownContentImpl {...props} contentRef={ref} onExitComplete={onExitComplete} />
+	) : null;
 }
 
 interface DropdownContentImplProps extends DropdownContentProps {
 	contentRef?: React.Ref<HTMLDivElement>;
+	onExitComplete: () => void;
 }
-
-const prefersReducedMotion = () =>
-	window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 function DropdownContentImpl({
 	className,
@@ -385,6 +442,7 @@ function DropdownContentImpl({
 	children,
 	ref,
 	contentRef,
+	onExitComplete,
 	...props
 }: DropdownContentImplProps) {
 	const context = useDropdown("DropdownContent");
@@ -399,8 +457,20 @@ function DropdownContentImpl({
 		elementRef,
 	);
 	const { id, setHandoff } = context;
+	const cancelMorph = useCallback(() => {
+		const animation = morphAnimationRef.current;
+		morphAnimationRef.current = null;
+		animation?.cancel();
+		innerRef.current?.style.removeProperty("width");
+	}, []);
+	const { reveal, fade, cancel } = useDropdownMotion({
+		elementRef,
+		open: context.open,
+		onExitComplete,
+		onReducedMotion: cancelMorph,
+	});
 	// 接力：组内上一块面板仍留在 DOM 里（展开中或正在退场）时，从它的位置与尺寸变形而来
-	const takeover = () => {
+	const takeover = (): DropdownSurfaceSnapshot | null => {
 		const previous = group?.current.surface;
 		if (!previous || previous.id === id || !previous.element.isConnected) return null;
 		return {
@@ -412,20 +482,24 @@ function DropdownContentImpl({
 	const [from, setFrom] = useState(takeover);
 	const placed = useRef(false);
 
-	const play = (source: ReturnType<typeof takeover>) => {
+	const play = (source: DropdownSurfaceSnapshot | null) => {
 		const element = elementRef.current;
-		if (!element || !source) return;
+		if (!element) return false;
+		cancelMorph();
+		if (!source) return false;
 		if (source.side !== element.dataset.side) {
 			setFrom(null);
-			return;
+			return false;
 		}
 		source.release();
-		if (typeof element.animate !== "function" || prefersReducedMotion()) return;
+		cancel();
+		if (typeof element.animate !== "function" || prefersReducedMotion()) return true;
 		const to = element.getBoundingClientRect();
 		const start = source.rect;
 		const inner = innerRef.current;
 		const innerWidth = inner?.getBoundingClientRect().width;
-		const timing = { duration: 380, easing: "cubic-bezier(0.45, 0, 0.2, 1)" };
+		// 内容按最终宽度排版，面板变形期间文字不重排。
+		if (inner && innerWidth) inner.style.width = `${innerWidth}px`;
 		const animation = element.animate(
 			[
 				{
@@ -441,47 +515,56 @@ function DropdownContentImpl({
 					overflow: "hidden",
 				},
 			],
-			timing,
+			{ duration: 380, easing: "cubic-bezier(0.45, 0, 0.2, 1)", fill: "both" },
 		);
 		morphAnimationRef.current = animation;
-		// 内容按最终宽度排版，面板变形期间文字不重排
-		if (inner && innerWidth) {
-			inner.style.width = `${innerWidth}px`;
-			const restoreWidth = () => {
-				if (morphAnimationRef.current !== animation) return;
-				inner.style.removeProperty("width");
-				morphAnimationRef.current = null;
-			};
-			animation.addEventListener("finish", restoreWidth, { once: true });
-			animation.addEventListener("cancel", restoreWidth, { once: true });
-		}
+		const restoreWidth = () => {
+			if (morphAnimationRef.current !== animation) return;
+			morphAnimationRef.current = null;
+			inner?.style.removeProperty("width");
+			animation.cancel();
+		};
+		animation.addEventListener("finish", restoreWidth, { once: true });
+		animation.addEventListener("cancel", restoreWidth, { once: true });
+		return true;
 	};
 
 	const handlePlaced = () => {
+		if (placed.current) return;
 		placed.current = true;
-		play(from);
+		if (!context.open || !play(from)) reveal(context.open);
 	};
 
-	// 同一块面板在退场中被指针折返打断、再次展开时并未重新挂载：在这里补上接力
 	const wasOpen = useRef(context.open);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 只在展开状态翻转时接力
-	useEffect(() => {
-		if (context.open && !wasOpen.current && placed.current) {
+	// biome-ignore lint/correctness/useExhaustiveDependencies: 定位更新不重启动画，仅在开合或接力状态改变时调度。
+	useLayoutEffect(() => {
+		if (!context.open) {
+			if (context.handoff) fade();
+			else reveal(false);
+		} else if (!wasOpen.current && placed.current) {
 			const next = takeover();
 			setFrom(next);
-			play(next);
+			if (!play(next)) reveal(true);
 		}
 		wasOpen.current = context.open;
-	}, [context.open]);
+	}, [context.open, context.handoff, fade, reveal]);
 
 	// 展开时登记为组内最新的面板；必须排在接力取值之后。退场中的面板仍保持登记，供下一块接力
 	useEffect(() => {
 		const state = group?.current;
 		const element = elementRef.current;
 		if (!state || !element || !context.open) return;
-		state.surface = { id, element, release: () => setHandoff(true) };
+		state.surface = {
+			id,
+			element,
+			release: () => {
+				morphAnimationRef.current?.pause();
+				setHandoff(true);
+			},
+		};
 	}, [group, id, setHandoff, context.open]);
 
+	useLayoutEffect(() => cancelMorph, [cancelMorph]);
 	useEffect(() => {
 		const state = group?.current;
 		const element = elementRef.current;

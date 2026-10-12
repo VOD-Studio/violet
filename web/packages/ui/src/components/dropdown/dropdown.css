@@ -9,6 +9,7 @@
 		max-inline-size: min(24rem, calc(100vw - 1rem));
 		padding: 0.375rem;
 		border-radius: min(var(--v-dropdown-radius), 1rem);
+		clip-path: inset(-2rem round var(--v-dropdown-radius));
 		background-color: var(--popover);
 		color: var(--popover-foreground);
 		box-shadow:
@@ -43,14 +44,6 @@
 		inset-block-start: 100%;
 	}
 
-	.v-dropdown__content[data-state="open"][data-motion="reveal"] {
-		animation: v-dropdown-unfold 260ms ease-in-out both;
-	}
-
-	.v-dropdown__content[data-state="closed"] {
-		animation: v-dropdown-fold 180ms ease-in-out both;
-	}
-
 	/* 接力时旧外壳立即让位，旧面板整体退场。 */
 	.v-dropdown__content[data-motion="morph"] {
 		z-index: 49;
@@ -59,42 +52,12 @@
 	.v-dropdown__content[data-state="closed"][data-handoff="true"] {
 		background-color: transparent;
 		box-shadow: none;
-		animation: v-dropdown-fade-out 90ms linear both;
+		pointer-events: none;
 	}
 
-	@keyframes v-dropdown-unfold {
-		from {
-			clip-path: var(--v-dropdown-collapsed-clip);
-		}
-
-		to {
-			clip-path: inset(-2rem -2rem -2rem -2rem round var(--v-dropdown-radius));
-		}
-	}
-
-	@keyframes v-dropdown-fold {
-		from {
-			clip-path: inset(-2rem -2rem -2rem -2rem round var(--v-dropdown-radius));
-		}
-
-		to {
-			clip-path: var(--v-dropdown-collapsed-clip);
-		}
-	}
-
-	@keyframes v-dropdown-fade-out {
-		from {
-			opacity: 1;
-		}
-
-		to {
-			opacity: 0;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.v-dropdown__content[data-state][data-motion] {
-			animation: none;
-		}
+	[data-radix-popper-content-wrapper]:has(
+		> .v-dropdown__content[data-state="closed"][data-handoff="true"]
+	) {
+		pointer-events: none;
 	}
 }

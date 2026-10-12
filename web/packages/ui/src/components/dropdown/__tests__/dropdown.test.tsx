@@ -79,6 +79,20 @@ describe("Dropdown", () => {
 		expect(panel("博客")).toBeNull();
 	});
 
+	it("首次展开等待期间收到安全区内 leave，仍在原 openDelay 期限展开", () => {
+		render(<Menu label="博客" />);
+		const trigger = screen.getByRole("link", { name: "博客" });
+		vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 40, 80, 32));
+		hover(trigger);
+		advance(30);
+		fireEvent.pointerLeave(trigger, { pointerType: "mouse", clientX: 140, clientY: 56 });
+		advance(49);
+		expect(panel("博客")).toBeNull();
+		advance(1);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
+		expect(panel("博客")).not.toBeNull();
+	});
+
 	it("leave 被忽略后不会再有对应事件：指针之后移出安全区仍会收起", () => {
 		render(<Menu label="博客" />);
 		const trigger = screen.getByRole("link", { name: "博客" });
@@ -115,6 +129,38 @@ describe("Dropdown", () => {
 		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 330, clientY: 77 });
 		advance(140);
 		expect(panel("博客")).toBeNull();
+	});
+
+	it("慢速进入面板上沿后停留，不会把面板内的边缘当作离开", () => {
+		render(<Menu label="博客" />);
+		const trigger = screen.getByRole("link", { name: "博客" });
+		vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 40, 80, 32));
+		hover(trigger);
+		advance(80);
+		const content = screen.getByLabelText("博客菜单");
+		vi.spyOn(content, "getBoundingClientRect").mockReturnValue(new DOMRect(60, 82, 200, 100));
+
+		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 140, clientY: 83 });
+		advance(500);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
+		expect(panel("博客")).toBe(content);
+	});
+
+	it("关闭宽限期内移回间隙，即使没有新的 enter 事件也会取消关闭", () => {
+		render(<Menu label="博客" />);
+		const trigger = screen.getByRole("link", { name: "博客" });
+		vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 40, 80, 32));
+		hover(trigger);
+		advance(80);
+		const content = screen.getByLabelText("博客菜单");
+		vi.spyOn(content, "getBoundingClientRect").mockReturnValue(new DOMRect(60, 82, 200, 100));
+
+		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 330, clientY: 77 });
+		advance(100);
+		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 140, clientY: 77 });
+		advance(500);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
+		expect(panel("博客")).toBe(content);
 	});
 
 	it("指针从触发器移进面板不会收起，离开面板后才收起", () => {
@@ -307,6 +353,20 @@ describe("Dropdown", () => {
 		hover(trigger);
 		advance(80);
 		expect(panel("博客")).not.toBeNull();
+	});
+
+	it("Escape 后从安全区边界继续移出，再进入时恢复悬停展开", () => {
+		render(<Menu label="博客" />);
+		const trigger = screen.getByRole("link", { name: "博客" });
+		vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 40, 80, 32));
+		hover(trigger);
+		advance(80);
+		fireEvent.keyDown(document, { key: "Escape" });
+		fireEvent.pointerLeave(trigger, { pointerType: "mouse", clientX: 180, clientY: 56 });
+		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 200, clientY: 56 });
+		hover(trigger);
+		advance(80);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
 	});
 
 	it("受控 open 只请求变化，由宿主决定是否展开", () => {
