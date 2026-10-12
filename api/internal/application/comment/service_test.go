@@ -671,3 +671,25 @@ func TestCreate_RequireParentAnchor_InheritsAnnotationParent(t *testing.T) {
 	}
 	repo.AssertExpectations(t)
 }
+
+// TestCreate_RejectAnchoredParent_RejectsAnnotationParent create_comment 不得回复划线批注。
+func TestCreate_RejectAnchoredParent_RejectsAnnotationParent(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	postID, parentID, uid := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "abc12345"}
+	parent := domain.ReconstructComment(parentID, postID, &uid, nil, parentID.String()+"/", 0, anchor,
+		"human", "", "", "", "annot", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(parent, nil).Once()
+	repo.AssertNotCalled(t, "Save")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "Violet AI", AuthorEmail: "a@x.com", Body: "reply",
+		RejectAnchoredParent: true, IsAI: true,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "自由评论不能回复划线批注")
+	repo.AssertExpectations(t)
+}

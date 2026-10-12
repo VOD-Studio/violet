@@ -268,6 +268,8 @@ func TestCreateComment_AsAIIdentity(t *testing.T) {
 	assert.Equal(t, uid, w.got.UserID)
 	assert.Equal(t, "hi", w.got.Body)
 	assert.Nil(t, w.got.Anchor)
+	assert.True(t, w.got.RejectAnchoredParent, "create_comment 不得继承批注锚点")
+	assert.False(t, w.got.RequireParentAnchor)
 }
 
 func TestCreateComment_ResolvesSlug(t *testing.T) {
@@ -394,6 +396,7 @@ func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
 	assert.Equal(t, "parent-1", w.got.ParentID)
 	assert.Nil(t, w.got.Anchor, "回复不带自身锚点，由父评论继承")
 	assert.True(t, w.got.RequireParentAnchor, "批注回复须校验父评论带锚点")
+	assert.False(t, w.got.RejectAnchoredParent)
 }
 
 // 编译期断言：fakeCommentSearchService 实现 CommentSearchService 接口。

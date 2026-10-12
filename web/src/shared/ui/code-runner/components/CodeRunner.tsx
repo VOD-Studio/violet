@@ -126,7 +126,12 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
 	};
 
 	return (
-		<div className="my-6 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]">
+		<div
+			className="my-6 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]"
+			data-runnable="true"
+			data-source={source}
+			data-lang={language}
+		>
 			{/* 顶栏：语言标签 + Vim 切换 + 运行按钮 */}
 			<div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
 				<span className="font-mono text-xs text-white/70">{language}</span>

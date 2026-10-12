@@ -13,7 +13,7 @@ import (
 )
 
 // 与前端 extract-blocks.ts BLOCK_SELECTOR 一致。
-const articleBlockSelector = "p, h2, h3, h4, h5, li, pre, blockquote"
+const articleBlockSelector = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']"
 
 // ArticleBlock 正文中的一个可锚定块（id = SHA-256(TrimSpace(text))[:8]）。
 type ArticleBlock struct {
@@ -48,9 +48,35 @@ func nodeTextContent(n *html.Node) string {
 	if n == nil {
 		return ""
 	}
+	// 可运行 pre：与 HtmlContent/CodeRunner 一致，data-source 为权威源码（非高亮子树）。
+	if n.Type == html.ElementNode && n.Data == "pre" && attr(n, "data-runnable") == "true" {
+		if src := attr(n, "data-source"); src != "" {
+			return src
+		}
+	}
 	var b strings.Builder
 	var walk func(*html.Node)
 	walk = func(node *html.Node) {
+		if node == nil {
+			return
+		}
+		if node.Type == html.ElementNode {
+			switch attr(node, "data-type") {
+			case "inline-math", "block-math":
+				// 与阅读端 carrier 一致：用 data-latex 参与块文本（空 span 无子文本）。
+				b.WriteString(attr(node, "data-latex"))
+				return
+			case "diagram-block":
+				b.WriteString(attr(node, "data-source"))
+				return
+			}
+			if node.Data == "pre" && attr(node, "data-runnable") == "true" {
+				if src := attr(node, "data-source"); src != "" {
+					b.WriteString(src)
+					return
+				}
+			}
+		}
 		if node.Type == html.TextNode {
 			b.WriteString(node.Data)
 		}
@@ -60,6 +86,15 @@ func nodeTextContent(n *html.Node) string {
 	}
 	walk(n)
 	return b.String()
+}
+
+func attr(n *html.Node, key string) string {
+	for _, a := range n.Attr {
+		if a.Key == key {
+			return a.Val
+		}
+	}
+	return ""
 }
 
 // EnsureAnchorMatchesArticle 校验锚点 block_id 对应正文完整渲染块，并用该块全文重验 offset/selected_text。

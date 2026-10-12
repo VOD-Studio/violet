@@ -155,7 +155,7 @@ func (t *CommentTools) resolvePostID(ctx context.Context, postID, slug string) (
 }
 
 // createAsPAT 以 PAT 持有人身份创建评论（登录路径；author_* 由 comment.Service 从 user 资料补齐）。
-func (t *CommentTools) createAsPAT(ctx context.Context, req *mcp.CallToolRequest, postID, body, parentID string, anchor *domaincomment.Anchor, requireParentAnchor bool) (*mcp.CallToolResult, any, error) {
+func (t *CommentTools) createAsPAT(ctx context.Context, req *mcp.CallToolRequest, postID, body, parentID string, anchor *domaincomment.Anchor, requireParentAnchor, rejectAnchoredParent bool) (*mcp.CallToolResult, any, error) {
 	if t.writer == nil {
 		return errResult(fmt.Errorf("未配置评论写入服务")), nil, nil
 	}
@@ -176,8 +176,9 @@ func (t *CommentTools) createAsPAT(ctx context.Context, req *mcp.CallToolRequest
 		AvatarURL:           brand.MCPAgentAvatarURL,
 		Body:                body,
 		Anchor:              anchor,
-		IsAI:                true,
-		RequireParentAnchor: requireParentAnchor,
+		IsAI:                 true,
+		RequireParentAnchor:  requireParentAnchor,
+		RejectAnchoredParent: rejectAnchoredParent,
 	})
 	if err != nil {
 		return errResult(err), nil, nil
@@ -254,7 +255,7 @@ func (t *CommentTools) CreateComment(ctx context.Context, req *mcp.CallToolReque
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, nil, false)
+	return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, nil, false, true)
 }
 
 // CreateAnnotation 发表划线批注（选区锚点五元组；需 comments:write）。
@@ -269,7 +270,7 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	}
 	// 回复批注：子评继承父锚点（comment.Service 对 parent 有 anchor 的回复要求 anchor 为 nil），忽略调用方的选区参数。
 	if strings.TrimSpace(args.ParentID) != "" {
-		return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, nil, true)
+		return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, nil, true, false)
 	}
 	if args.StartOffset == nil || args.EndOffset == nil || strings.TrimSpace(args.SelectedText) == "" {
 		return errResult(fmt.Errorf("顶级批注需要 start_offset、end_offset 与 selected_text")), nil, nil
@@ -288,7 +289,7 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	if err := appcomment.EnsureAnchorMatchesArticle(post.ContentHTML, anchor); err != nil {
 		return errResult(err), nil, nil
 	}
-	return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, anchor, false)
+	return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, anchor, false, false)
 }
 
 // CreateBlockComment 发表段评（整块锚点；需 comments:write）。
@@ -308,5 +309,5 @@ func (t *CommentTools) CreateBlockComment(ctx context.Context, req *mcp.CallTool
 	if err := appcomment.EnsureAnchorMatchesArticle(post.ContentHTML, anchor); err != nil {
 		return errResult(err), nil, nil
 	}
-	return t.createAsPAT(ctx, req, post.ID, args.Body, "", anchor, false)
+	return t.createAsPAT(ctx, req, post.ID, args.Body, "", anchor, false, false)
 }

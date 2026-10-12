@@ -15,11 +15,19 @@ import { renderKatexElement } from "./katex-element";
 /** 行内公式（段落文字流内） */
 export function InlineMathFormula({ latex }: { latex: string }) {
 	const node = useMemo(() => renderKatexElement(latex, false), [latex]);
-	return <span>{node}</span>;
+	return (
+		<span data-type="inline-math" data-latex={latex}>
+			{node}
+		</span>
+	);
 }
 
 /** 公式块（独立成段，可横向滚动防溢出） */
 export function BlockMathFormula({ latex }: { latex: string }) {
 	const node = useMemo(() => renderKatexElement(latex, true), [latex]);
-	return <div className="my-6 overflow-x-auto">{node}</div>;
+	return (
+		<div className="my-6 overflow-x-auto" data-type="block-math" data-latex={latex}>
+			{node}
+		</div>
+	);
 }

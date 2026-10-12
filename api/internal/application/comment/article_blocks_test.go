@@ -63,3 +63,30 @@ func TestEnsureAnchorMatchesArticle_RejectsUnknownBlockID(t *testing.T) {
 	err := EnsureAnchorMatchesArticle(html, a)
 	assert.Error(t, err)
 }
+
+func TestExtractArticleBlocks_InlineMathUsesDataLatex(t *testing.T) {
+	html := `<p>质能方程 <span data-type="inline-math" data-latex="E=mc^2"></span> 成立</p>`
+	blocks, err := ExtractArticleBlocks(html)
+	require.NoError(t, err)
+	require.Len(t, blocks, 1)
+	assert.Equal(t, "质能方程 E=mc^2 成立", blocks[0].Text)
+	id, err := ComputeBlockID("质能方程 E=mc^2 成立")
+	require.NoError(t, err)
+	assert.Equal(t, id, blocks[0].ID)
+}
+
+func TestExtractArticleBlocks_RunnablePreUsesDataSource(t *testing.T) {
+	html := `<pre data-runnable="true" data-lang="python" data-source="print(1)"><code class="hljs">print(<span>1</span>)</code></pre>`
+	blocks, err := ExtractArticleBlocks(html)
+	require.NoError(t, err)
+	require.Len(t, blocks, 1)
+	assert.Equal(t, "print(1)", blocks[0].Text)
+}
+
+func TestEnsureAnchorMatchesArticle_AcceptsMathNormalizedBlock(t *testing.T) {
+	html := `<p>见 <span data-type="inline-math" data-latex="x^2"></span></p>`
+	blockText := "见 x^2"
+	a, err := ResolveAnnotationAnchor("", 0, 1, "见", "", blockText)
+	require.NoError(t, err)
+	require.NoError(t, EnsureAnchorMatchesArticle(html, a))
+}

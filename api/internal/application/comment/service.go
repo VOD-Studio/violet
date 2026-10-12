@@ -551,6 +551,9 @@ type CreateInput struct {
 	// RequireParentAnchor 为 true 时，parent 必须是划线批注（有 anchor）；
 	// MCP create_annotation 回复路径使用，避免对自由评论回复后 silently 变成自由回复。
 	RequireParentAnchor bool
+	// RejectAnchoredParent 为 true 时，parent 不得带锚点（须为底部自由评论）。
+	// MCP create_comment 使用，避免回复批注时静默继承锚点进入批注流。
+	RejectAnchoredParent bool
 }
 
 // Create 创建评论。
@@ -656,6 +659,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		}
 		if in.RequireParentAnchor && parent.Anchor() == nil {
 			return CommentDTO{}, shared.BadRequest("回复批注要求父评论为划线批注（含选区锚点）")
+		}
+		if in.RejectAnchoredParent && parent.Anchor() != nil {
+			return CommentDTO{}, shared.BadRequest("自由评论不能回复划线批注；请使用 create_annotation")
 		}
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err

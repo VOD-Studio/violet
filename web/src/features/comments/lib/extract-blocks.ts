@@ -2,20 +2,58 @@
  * extract-blocks —— 从正文 DOM 提取候选块列表（relocate 的输入）。
  *
  * 遍历 [data-article-content] 容器内的块级元素（p/h2/h3/h4/li/pre/blockquote），
- * 对每个取 textContent 调 computeBlockId 算 id，组装 CandidateBlock[]。
+ * 对每个取 getBlockText 调 computeBlockId 算 id，组装 CandidateBlock[]。
  *
- * 这是「DOM → relocate 输入」的桥接，让 relocate 纯函数不碰 DOM。
+ * getBlockText 对语义 carrier（inline-math / runnable data-source）与阅读端
+ * HtmlContent 渲染口径对齐，供 MCP 服务端 ExtractArticleBlocks 同源校验。
  */
 
 import { computeBlockId } from "./block-id";
 import type { CandidateBlock } from "./relocate";
 
 /** 块级元素选择器：批注可锚定的元素类型。 */
-const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
+const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']";
 
-/** getBlockText 读取块的纯文本，是 computeBlockId 与选区锚点共用的取文本口径。 */
+/**
+ * getBlockText 读取块的纯文本，是 computeBlockId 与选区锚点共用的取文本口径。
+ * 可运行块优先 data-source；行内/块公式用 data-latex（避免 KaTeX DOM 与空 carrier 不一致）。
+ */
 export function getBlockText(el: HTMLElement): string {
-	return el.textContent ?? "";
+	if (el.dataset.runnable === "true" && el.dataset.source != null && el.dataset.source !== "") {
+		return el.dataset.source;
+	}
+	return carrierAwareTextContent(el);
+}
+
+function carrierAwareTextContent(root: Node): string {
+	const parts: string[] = [];
+	const walk = (node: Node) => {
+		if (node.nodeType === Node.ELEMENT_NODE) {
+			const el = node as HTMLElement;
+			const dataType = el.getAttribute("data-type");
+			if (dataType === "inline-math" || dataType === "block-math") {
+				parts.push(el.getAttribute("data-latex") ?? "");
+				return;
+			}
+			if (dataType === "diagram-block") {
+				parts.push(el.getAttribute("data-source") ?? "");
+				return;
+			}
+			if (el.dataset.runnable === "true" && el.dataset.source) {
+				parts.push(el.dataset.source);
+				return;
+			}
+		}
+		if (node.nodeType === Node.TEXT_NODE) {
+			parts.push(node.textContent ?? "");
+			return;
+		}
+		for (const child of Array.from(node.childNodes)) {
+			walk(child);
+		}
+	};
+	walk(root);
+	return parts.join("");
 }
 
 /**
