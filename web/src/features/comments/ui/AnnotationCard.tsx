@@ -8,7 +8,6 @@
 import type { Comment } from "@entities/comment/model/types";
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
-import { AIBadge } from "./AIBadge";
 import { AUTHOR_TIER } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import PendingBadge from "@shared/ui/pending-badge";
@@ -17,6 +16,7 @@ import { cn } from "cn";
 import { Crown, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
+import { AIBadge } from "./AIBadge";
 import { CommentForm } from "./CommentForm";
 
 /** 气泡空间小，回复折叠阈值比评论区更紧 */
