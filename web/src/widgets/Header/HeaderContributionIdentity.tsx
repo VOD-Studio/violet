@@ -86,7 +86,7 @@ export function HeaderContributionIdentity({
 							target="_blank"
 							rel="noreferrer"
 							aria-label="GitHub 主页"
-							className="flex size-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-border hover:bg-muted/70 hover:text-foreground"
+							className="flex size-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
 							<GithubIcon className="size-3.5" />
 						</a>
@@ -95,7 +95,7 @@ export function HeaderContributionIdentity({
 						<a
 							href={`mailto:${email}`}
 							aria-label="发送邮件"
-							className="flex size-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-border hover:bg-muted/70 hover:text-foreground"
+							className="flex size-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
 							<Mail className="size-3.5" />
 						</a>
@@ -104,7 +104,7 @@ export function HeaderContributionIdentity({
 						to="/about"
 						onClick={onNavigate}
 						aria-label="关于站长"
-						className="flex size-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-border hover:bg-muted/70 hover:text-foreground"
+						className="flex size-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 					>
 						<Sparkles className="size-3.5" />
 					</Link>

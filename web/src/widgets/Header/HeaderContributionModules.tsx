@@ -39,16 +39,16 @@ export function HeaderContributionModules({ onNavigate }: HeaderContributionModu
 							key={item.id}
 							to={item.to}
 							onClick={onNavigate}
-							className="group flex w-full items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-foreground/30 hover:bg-muted/50 active:scale-[0.99]"
+							className="group flex w-full items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors duration-200 hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
 							<div className="flex items-center gap-2">
-								<span className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+								<span className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
 									<Icon className="size-3" aria-hidden="true" />
 								</span>
 								<span>{item.name}</span>
 							</div>
 							<ArrowUpRight
-								className="size-3 text-muted-foreground/40 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
+								className="size-3 text-muted-foreground/40 transition-colors duration-200 group-hover:text-primary"
 								aria-hidden="true"
 							/>
 						</Link>

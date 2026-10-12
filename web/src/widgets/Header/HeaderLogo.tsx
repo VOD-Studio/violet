@@ -1,18 +1,13 @@
 import { useActivePersona } from "@entities/persona/api/queries";
 import { useSettings } from "@features/settings/api/queries";
-import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { Dropdown, DropdownContent, DropdownTrigger } from "@violet/ui";
 
 import { cn } from "cn";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { HeaderContributionCard } from "./HeaderContributionCard";
 
-/**
- * HeaderLogo - 悬浮品牌 Logo 胶囊与开源贡献档案触发器
- *
- * 点击展开站长开源贡献热力图、时光倒计时与个人档案卡片。
- * 严禁 scale 变形，纯色/边框过渡。
- */
+/** 站点品牌入口与悬停档案面板。 */
 const HeaderLogo = () => {
 	const { data: settings } = useSettings();
 	const { data: persona } = useActivePersona();
@@ -22,13 +17,12 @@ const HeaderLogo = () => {
 	const personaAvatar = persona?.avatar.thumbnail || persona?.avatar.url;
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
+		<Dropdown open={open} onOpenChange={setOpen}>
+			<DropdownTrigger asChild>
 				<button
 					type="button"
 					aria-label={`${siteName} 站长开源档案与简介`}
-					aria-expanded={open}
-					className="group pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 shadow-xs backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
+					className="dialect-public group pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
 				>
 					<span
 						aria-hidden="true"
@@ -63,19 +57,21 @@ const HeaderLogo = () => {
 						)}
 					/>
 				</button>
-			</PopoverTrigger>
+			</DropdownTrigger>
 
-			<PopoverContent
+			<DropdownContent
+				role="region"
+				aria-label="站长开源档案与简介"
 				align="start"
 				sideOffset={10}
-				className="w-auto overflow-hidden rounded-2xl border-border/80 bg-popover/95 p-4 shadow-2xl backdrop-blur-xl"
+				className="dialect-public pointer-events-auto w-121 max-w-[calc(100vw-1rem)] border-border/80 bg-popover/95 p-4 backdrop-blur-xl"
 			>
 				<HeaderContributionCard
 					persona={persona ?? undefined}
 					onNavigate={() => setOpen(false)}
 				/>
-			</PopoverContent>
-		</Popover>
+			</DropdownContent>
+		</Dropdown>
 	);
 };
 

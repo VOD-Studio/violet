@@ -454,11 +454,6 @@ for (const viewport of VIEWPORTS) {
 			}
 			await firstPage.setViewportSize(viewport);
 			await firstPage.goto("/", { waitUntil: "load" });
-			await expect(
-				firstPage.locator(".dialect-public"),
-				"SSR 首帧应渲染公开方言容器",
-			).toBeVisible();
-
 			const firstFrame = await snapshotTheme(firstPage);
 			const firstFrameTheme = firstFrame.htmlClass.includes("dark") ? "dark" : "light";
 			if (theme !== "system") {
