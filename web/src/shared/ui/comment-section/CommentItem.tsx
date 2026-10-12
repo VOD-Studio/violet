@@ -80,10 +80,16 @@ export function CommentItem<T extends CommentRaw>({
 
 	return (
 		<div className="flex gap-3">
-			<CommentAvatar item={item} size={level === 0 ? "md" : "sm"} />
+			{config.renderAvatar?.(item, { size: level === 0 ? "md" : "sm" }) ?? (
+				<CommentAvatar item={item} size={level === 0 ? "md" : "sm"} />
+			)}
 
 			<div className="min-w-0 flex-1">
-				<CommentMeta item={item} badges={config.renderMetaBadges?.(item)} />
+				<CommentMeta
+					item={item}
+					badges={config.renderMetaBadges?.(item)}
+					authorName={config.renderAuthorName?.(item)}
+				/>
 
 				<div
 					className={cn(

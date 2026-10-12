@@ -21,6 +21,8 @@ export interface CommentMetaProps<T extends CommentRaw> {
 	item: CommentDisplayItem<T>;
 	/** feature 注入的额外徽章（如 AI），shared 不解读业务字段 */
 	badges?: ReactNode;
+	/** 替代默认昵称或主页链接，不影响回复对象及徽章。 */
+	authorName?: ReactNode;
 }
 
 const AVATAR_SIZE = { md: "size-9 text-sm", sm: "size-7 text-xs" } as const;
@@ -74,20 +76,25 @@ export function CommentAvatar<T extends CommentRaw>({
 }
 
 /** CommentMeta 评论标题行：昵称 +「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间 */
-export function CommentMeta<T extends CommentRaw>({ item, badges }: CommentMetaProps<T>) {
+export function CommentMeta<T extends CommentRaw>({
+	item,
+	badges,
+	authorName,
+}: CommentMetaProps<T>) {
 	const nameClass = item.isAuthor ? AUTHOR_TIER.name : "font-medium text-foreground";
 	return (
 		<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-			{item.authorHref ? (
-				<Link
-					to={item.authorHref}
-					className={cn("truncate text-sm hover:underline", nameClass)}
-				>
-					{item.authorName}
-				</Link>
-			) : (
-				<span className={cn("truncate text-sm", nameClass)}>{item.authorName}</span>
-			)}
+			{authorName ??
+				(item.authorHref ? (
+					<Link
+						to={item.authorHref}
+						className={cn("truncate text-sm hover:underline", nameClass)}
+					>
+						{item.authorName}
+					</Link>
+				) : (
+					<span className={cn("truncate text-sm", nameClass)}>{item.authorName}</span>
+				))}
 			{item.replyToName && (
 				<span className="text-xs text-muted-foreground">
 					回复 <span className="text-primary">@{item.replyToName}</span>
