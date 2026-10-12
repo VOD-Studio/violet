@@ -1,0 +1,60 @@
+@import "../../styles/scrollbar.css";
+
+.v-overlay-scrollbars {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.v-overlay-scrollbars--document {
+	position: fixed;
+	z-index: 50;
+}
+
+.v-overlay-scrollbars__track {
+	position: absolute;
+}
+
+.v-overlay-scrollbars__track--vertical {
+	inset: 2px 2px 2px auto;
+	width: 6px;
+}
+
+.v-overlay-scrollbars__track--horizontal {
+	inset: auto 2px 2px 2px;
+	height: 6px;
+}
+
+.v-overlay-scrollbars__thumb {
+	position: absolute;
+	inset: 0 auto auto 0;
+	border-radius: 9999px;
+	background-color: var(--scrollbar-thumb);
+	opacity: 0;
+	cursor: pointer;
+	pointer-events: auto;
+	touch-action: none;
+	will-change: transform;
+	transition:
+		opacity 150ms,
+		background-color 150ms;
+}
+
+.v-overlay-scrollbars__track--vertical .v-overlay-scrollbars__thumb {
+	width: 100%;
+}
+
+.v-overlay-scrollbars__track--horizontal .v-overlay-scrollbars__thumb {
+	height: 100%;
+}
+
+.v-overlay-scrollbars__thumb:hover {
+	background-color: color-mix(in oklab, var(--foreground) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.v-overlay-scrollbars__thumb {
+		transition: none;
+	}
+}

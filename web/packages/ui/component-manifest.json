@@ -119,7 +119,8 @@
 		{
 			"name": "overlay-scroll",
 			"status": "legacy",
-			"entry": "src/components/overlay-scroll/index.ts"
+			"entry": "src/components/overlay-scroll/index.ts",
+			"css": "src/components/overlay-scroll/overlay-scroll.css"
 		},
 		{
 			"name": "page-header",
