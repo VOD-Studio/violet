@@ -160,7 +160,8 @@
 	.annotation-marker {
 		left: calc(100% + 2px);
 	}
-	.annotation-marker .annotation-avatar:nth-child(n + 2) {
+	.annotation-marker .annotation-avatar-wrap:nth-child(n + 2),
+	.annotation-marker > .annotation-avatar:nth-child(n + 2) {
 		display: none;
 	}
 }
@@ -185,6 +186,7 @@
 		box-shadow 0.2s,
 		opacity 0.2s;
 }
+.annotation-avatar-wrap + .annotation-avatar-wrap,
 .annotation-avatar + .annotation-avatar {
 	margin-inline-start: -0.25rem;
 }
@@ -193,6 +195,7 @@
 	height: 100%;
 	object-fit: cover;
 }
+.annotation-marker:hover .annotation-avatar-wrap:not(:hover) .annotation-avatar,
 .annotation-marker:hover .annotation-avatar:not(:hover) {
 	opacity: 0.7;
 }

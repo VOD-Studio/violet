@@ -9,7 +9,6 @@
  */
 import { AIBadge } from "@entities/comment/ui/AIBadge";
 import { avatarUrl } from "@shared/lib/image-url";
-import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { computeBlockId } from "../lib/block-id";
 import { extractCandidateBlocks, findBlockElement, getBlockText } from "../lib/extract-blocks";
@@ -385,26 +384,29 @@ function MarkerAvatar({
 }) {
 	const label = author.is_ai ? `${author.name}（AI）的批注` : `${author.name} 的批注`;
 	return (
-		<button
-			type="button"
-			aria-label={label}
-			title={label}
-			onClick={(e) => onClick(e.currentTarget)}
-			className={cn("annotation-avatar", "relative")}
-			data-active={active ? "true" : undefined}
-			data-ai={author.is_ai ? "true" : undefined}
-		>
-			{author.avatar_url ? (
-				<img src={avatarUrl(author.avatar_url, author.name)} alt="" loading="lazy" />
-			) : (
-				author.name.slice(0, 1).toUpperCase()
-			)}
+		<span className="annotation-avatar-wrap relative inline-flex shrink-0">
+			<button
+				type="button"
+				aria-label={label}
+				title={label}
+				onClick={(e) => onClick(e.currentTarget)}
+				className="annotation-avatar"
+				data-active={active ? "true" : undefined}
+				data-ai={author.is_ai ? "true" : undefined}
+			>
+				{author.avatar_url ? (
+					<img src={avatarUrl(author.avatar_url, author.name)} alt="" loading="lazy" />
+				) : (
+					author.name.slice(0, 1).toUpperCase()
+				)}
+			</button>
+			{/* AI 徽章放在 overflow:hidden 的圆形头像外，避免被裁切 */}
 			{author.is_ai ? (
-				<span className="pointer-events-none absolute -right-0.5 -bottom-0.5 scale-75">
+				<span className="pointer-events-none absolute -right-0.5 -bottom-0.5 z-10 scale-75">
 					<AIBadge show />
 				</span>
 			) : null}
-		</button>
+		</span>
 	);
 }
 
