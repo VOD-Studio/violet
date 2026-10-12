@@ -12,12 +12,7 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { computeBlockId } from "../lib/block-id";
-import {
-	extractCandidateBlocks,
-	findBlockElement,
-	getBlockText,
-	getLegacyBlockText,
-} from "../lib/extract-blocks";
+import { extractCandidateBlocks, findBlockElement, getBlockText } from "../lib/extract-blocks";
 import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../lib/range-marks";
 import type { BlockAuthor, BlockCount } from "../model/types";
 import { AnnotationPopover, type AnnotationPopoverTarget } from "./AnnotationPopover";
@@ -70,6 +65,8 @@ export function AnnotationLayer({
 	const annotatedBlocks = useMemo(() => new Set(markerMap.values()), [markerMap]);
 
 	// 1. 按 summary 中的 block_id 找对应 DOM 元素并给划线区间涂荧光笔。
+	// KaTeX 懒加载会先走 Suspense 纯 LaTeX fallback，此时 textContent===carrier，
+	// 历史 KaTeX hash 无法命中；公式 chunk 挂载后再跑一轮（MutationObserver）。
 	useEffect(() => {
 		const root = contentRef.current;
 		if (!root) {
@@ -77,25 +74,30 @@ export function AnnotationLayer({
 			return;
 		}
 
-		clearMarks(root, MARK_CLASS);
-
 		if (summary.length === 0) {
+			clearMarks(root, MARK_CLASS);
 			setMarkerMap(new Map());
 			return;
 		}
 
 		let cancelled = false;
-		(async () => {
-			// 先确保 DOM 元素有 blockId（extractCandidateBlocks 做 hash 计算，
-			// findBlockElement 同样靠 hash 定位）
+		let applyingMarks = false;
+		let debounceTimer = 0;
+		let runGeneration = 0;
+
+		const applyMarks = async () => {
+			const generation = ++runGeneration;
 			await extractCandidateBlocks(root);
-			if (cancelled) return;
+			if (cancelled || generation !== runGeneration) return;
 
 			const nextMap = new Map<string, HTMLElement>();
-			for (const { block_id, ranges } of summary) {
-				if (cancelled) return;
-				const el = await findBlockElement(root, block_id);
-				if (el && !cancelled) {
+			applyingMarks = true;
+			try {
+				clearMarks(root, MARK_CLASS);
+				for (const { block_id, ranges } of summary) {
+					if (cancelled || generation !== runGeneration) return;
+					const el = await findBlockElement(root, block_id);
+					if (!el || cancelled || generation !== runGeneration) continue;
 					const carrier = getBlockText(el);
 					const carrierId = await computeBlockId(carrier);
 					// block_id 命中 legacyId 时，摘要区间仍是旧 textContent 坐标，先按 DOM 映射到 carrier
@@ -108,13 +110,50 @@ export function AnnotationLayer({
 					}
 					nextMap.set(block_id, el);
 				}
+			} finally {
+				queueMicrotask(() => {
+					applyingMarks = false;
+				});
 			}
-			if (cancelled) return;
+			if (cancelled || generation !== runGeneration) return;
 			setMarkerMap(nextMap);
-		})();
+		};
+
+		const scheduleApply = () => {
+			window.clearTimeout(debounceTimer);
+			debounceTimer = window.setTimeout(() => {
+				void applyMarks();
+			}, 50);
+		};
+
+		void applyMarks();
+
+		const mo = new MutationObserver((mutations) => {
+			if (cancelled || applyingMarks) return;
+			const formulaDomChanged = mutations.some((m) => {
+				for (const n of [...m.addedNodes, ...m.removedNodes]) {
+					if (!(n instanceof Element)) continue;
+					if (n.classList.contains(MARK_CLASS) || n.tagName === "MARK") continue;
+					if (
+						n.classList.contains("katex") ||
+						n.classList.contains("katex-display") ||
+						n.querySelector(".katex, .katex-display") ||
+						n.getAttribute("data-type") === "inline-math" ||
+						n.getAttribute("data-type") === "block-math"
+					) {
+						return true;
+					}
+				}
+				return false;
+			});
+			if (formulaDomChanged) scheduleApply();
+		});
+		mo.observe(root, { childList: true, subtree: true });
 
 		return () => {
 			cancelled = true;
+			window.clearTimeout(debounceTimer);
+			mo.disconnect();
 			clearMarks(root, MARK_CLASS);
 		};
 	}, [contentRef, summary]);

@@ -200,7 +200,13 @@ export const markdownComponents: Components = {
 		if (p["data-type"] === "inline-math") {
 			const latex = String(p["data-latex"] ?? "");
 			return (
-				<Suspense fallback={<span>{latex}</span>}>
+				<Suspense
+					fallback={
+						<span data-type="inline-math" data-latex={latex}>
+							{latex}
+						</span>
+					}
+				>
 					<LazyInlineMathFormula latex={latex} />
 				</Suspense>
 			);
@@ -233,7 +239,13 @@ export const markdownComponents: Components = {
 		if (p["data-type"] === "block-math") {
 			const latex = String(p["data-latex"] ?? "");
 			return (
-				<Suspense fallback={<div>{latex}</div>}>
+				<Suspense
+					fallback={
+						<div data-type="block-math" data-latex={latex}>
+							{latex}
+						</div>
+					}
+				>
 					<LazyBlockMathFormula latex={latex} />
 				</Suspense>
 			);
