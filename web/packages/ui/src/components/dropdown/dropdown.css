@@ -2,6 +2,7 @@
 	.v-dropdown__content {
 		--v-dropdown-radius: 1rem;
 		--v-dropdown-collapsed-clip: inset(0 -2rem 100% -2rem round var(--v-dropdown-radius));
+		--v-dropdown-item-highlight: var(--muted);
 		box-sizing: border-box;
 		position: relative;
 		z-index: 50;
@@ -9,6 +10,7 @@
 		max-inline-size: min(24rem, calc(100vw - 1rem));
 		padding: 0.375rem;
 		border-radius: min(var(--v-dropdown-radius), 1rem);
+		clip-path: inset(-2rem round var(--v-dropdown-radius));
 		background-color: var(--popover);
 		color: var(--popover-foreground);
 		box-shadow:
@@ -22,9 +24,66 @@
 	}
 
 	.v-dropdown__inner {
+		position: relative;
+		isolation: isolate;
 		display: flex;
 		flex-direction: column;
 		gap: 0.125rem;
+	}
+
+	.v-dropdown__item {
+		position: relative;
+		z-index: 1;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		inline-size: 100%;
+		min-inline-size: 0;
+		padding: 0.5rem 0.75rem;
+		border: 0;
+		border-radius: min(var(--radius-md, 0.5rem), 1rem);
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		text-align: start;
+		text-decoration: none;
+	}
+
+	.v-dropdown__item:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-dropdown__item:is(:disabled, [aria-disabled="true"], [data-disabled]) {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-dropdown__highlight {
+		position: absolute;
+		z-index: 0;
+		top: 0;
+		left: 0;
+		pointer-events: none;
+		background: var(--v-dropdown-item-highlight);
+		opacity: 0;
+		transition: opacity 120ms ease;
+	}
+
+	.v-dropdown__highlight[data-visible="true"] {
+		opacity: 1;
+		will-change: transform;
+	}
+
+	.v-dropdown__highlight[data-animated="true"] {
+		transition:
+			transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+			width 280ms cubic-bezier(0.32, 0.72, 0, 1),
+			height 280ms cubic-bezier(0.32, 0.72, 0, 1),
+			opacity 120ms ease;
 	}
 
 	/* 透明桥：面板与触发器之间的间隙属于面板，指针穿过时不会触发收起 */
@@ -43,14 +102,6 @@
 		inset-block-start: 100%;
 	}
 
-	.v-dropdown__content[data-state="open"][data-motion="reveal"] {
-		animation: v-dropdown-unfold 260ms ease-in-out both;
-	}
-
-	.v-dropdown__content[data-state="closed"] {
-		animation: v-dropdown-fold 180ms ease-in-out both;
-	}
-
 	/* 接力时旧外壳立即让位，旧面板整体退场。 */
 	.v-dropdown__content[data-motion="morph"] {
 		z-index: 49;
@@ -59,42 +110,19 @@
 	.v-dropdown__content[data-state="closed"][data-handoff="true"] {
 		background-color: transparent;
 		box-shadow: none;
-		animation: v-dropdown-fade-out 90ms linear both;
+		pointer-events: none;
 	}
 
-	@keyframes v-dropdown-unfold {
-		from {
-			clip-path: var(--v-dropdown-collapsed-clip);
-		}
-
-		to {
-			clip-path: inset(-2rem -2rem -2rem -2rem round var(--v-dropdown-radius));
-		}
-	}
-
-	@keyframes v-dropdown-fold {
-		from {
-			clip-path: inset(-2rem -2rem -2rem -2rem round var(--v-dropdown-radius));
-		}
-
-		to {
-			clip-path: var(--v-dropdown-collapsed-clip);
-		}
-	}
-
-	@keyframes v-dropdown-fade-out {
-		from {
-			opacity: 1;
-		}
-
-		to {
-			opacity: 0;
-		}
+	[data-radix-popper-content-wrapper]:has(
+		> .v-dropdown__content[data-state="closed"][data-handoff="true"]
+	) {
+		pointer-events: none;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.v-dropdown__content[data-state][data-motion] {
-			animation: none;
+		.v-dropdown__highlight,
+		.v-dropdown__highlight[data-animated] {
+			transition: none;
 		}
 	}
 }

@@ -31,12 +31,12 @@ const DROPDOWN_ROWS: PropRow[] = [
 	{
 		name: "openDelay",
 		type: "number",
-		meaning: "指针进入触发器后展开前的等待毫秒数，默认 80。",
+		meaning: "面板完全收起后，首次悬停展开前的等待毫秒数，默认 80；关闭中重入不等待。",
 	},
 	{
 		name: "closeDelay",
 		type: "number",
-		meaning: "指针离开触发器与面板后收起前的宽限毫秒数，默认 140，足够指针穿过两者的间隙。",
+		meaning: "指针离开触发器、面板及两者间隙后的收起宽限毫秒数，默认 140。",
 	},
 ];
 
@@ -97,6 +97,31 @@ const CONTENT_ROWS: PropRow[] = [
 	},
 ];
 
+const ITEM_ROWS: PropRow[] = [
+	{
+		name: "asChild",
+		type: "boolean",
+		meaning:
+			"默认原生 button；启用后把属性与 ref 合并到子元素，链接的 href 与激活行为留给链接本身。",
+	},
+	{
+		name: "disabled / aria-disabled",
+		type: "原生属性",
+		meaning:
+			"禁用项不参与共享高亮；disabled 保留 button 的原生禁用，链接的禁用激活由宿主管理。",
+	},
+	{
+		name: "data-highlighted",
+		type: "自动设置",
+		meaning: "标记当前共享高亮的目标项；经过空隙时保留，可用于同步图标或文字的强调样式。",
+	},
+	{
+		name: "ref / className / style / 事件",
+		type: "原生 button 或 asChild 子元素属性",
+		meaning: "全部落在菜单行；点击不关闭面板，Tab 仍沿原生焦点顺序移动。",
+	},
+];
+
 /** 展示悬停与键盘展开的下拉面板，及其与点击型菜单的边界。 */
 export function DropdownDocPage() {
 	return (
@@ -121,11 +146,13 @@ export function DropdownDocPage() {
 					</AnchoredHeading>
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						从 @violet/ui 或 @violet/ui/dropdown 导入
-						Dropdown、DropdownGroup、DropdownTrigger 与 DropdownContent。示例中
-						DropdownGroup 包住两个向下展开的 Dropdown：指针在它们之间移动时只展开一个，
-						后一个立即展开；第一个触发器用 asChild 渲染成链接，第二个是默认按钮。
+						Dropdown、DropdownGroup、DropdownTrigger、DropdownContent 与
+						DropdownItem。示例中 DropdownGroup 包住两个向下展开的
+						Dropdown：指针在它们之间移动时只展开一个， 后一个立即展开；第一个触发器用
+						asChild 渲染成链接，第二个是默认按钮。
 						“向上展开”是组外的独立面板。同组面板使用相同的 side，不混用上下方向。
-						面板内容紧随触发器渲染，不入 Portal，Tab 顺序从触发器自然进入面板。
+						面板内容紧随触发器渲染，不入 Portal，Tab 顺序从触发器自然进入面板。 用
+						DropdownItem 声明参与跟随高亮的行；asChild 保留链接元素、href 与点击行为。
 					</p>
 					<CodeCard code={basicSource} language="tsx" lineNumbers collapseLines={12}>
 						<DropdownBasicDemo />
@@ -163,9 +190,17 @@ export function DropdownDocPage() {
 						rows={CONTENT_ROWS}
 						rowKey={(row) => row.name}
 					/>
+					<ApiTable
+						title="DropdownItemProps"
+						columns={COLUMNS}
+						rows={ITEM_ROWS}
+						rowKey={(row) => row.name}
+					/>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						鼠标与笔悬停触发器超过 openDelay 后展开，离开触发器与面板超过 closeDelay
-						后收起。键盘聚焦触发器 （:focus-visible）立即展开，Tab
+						鼠标与笔悬停触发器超过 openDelay 后展开；离开触发器、面板及两者间隙超过
+						closeDelay
+						后收起，宽限期内返回会取消关闭。关闭完成前重新进入会立即从当前进度续开，不再等待
+						openDelay。键盘聚焦触发器（:focus-visible）立即展开，Tab
 						可继续进入面板，焦点移出两者后收起；点按聚焦不会展开。点击触发器或面板内容
 						都不会切换或关闭面板，链接跳转等激活行为完全留给触发元素自身。Escape
 						收起面板；焦点在面板内时回到触发器，
@@ -201,15 +236,18 @@ export function DropdownDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						Tailwind v4 宿主在 Tailwind 后加载 @violet/ui/styles.css；普通 CSS
 						宿主先加载 @violet/ui/tokens.css，再加载
-						@violet/ui/components/dropdown.css。组件只提供 .v-dropdown__content
-						面板样式，行为依赖 JavaScript， 没有脱离 React 的纯 HTML
-						用法；面板内的项目样式由宿主决定。
+						@violet/ui/components/dropdown.css。面板、菜单项与共享高亮使用同一份 BEM
+						CSS， 布局与配色可由宿主覆盖。行为依赖 JavaScript，不提供脱离 React 的纯
+						HTML 菜单。
 					</p>
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						下方面板从顶部向下揭开，上方面板从底部向上揭开，关闭时反向收拢；空间不足翻转时，动画跟随实际方位。
-						开合不改变透明度，内部文字与图标不做独立动画。 DropdownGroup
+						开合不改变透明度，文字与图标保持静止。DropdownItem 共用一块随 hover
+						与键盘焦点平滑移动的底色，快速折返从当前位置续接。指针经过项间空隙、面板留白或触发器间隙时保留上一项，
+						进入下一项才移动，真正离开安全区后才隐藏；可通过 --v-dropdown-item-highlight
+						覆盖高亮颜色。DropdownGroup
 						只在同方向面板之间接力，保留位置与尺寸变形，内容按最终宽度静态排版；实际方位不同时各自开合，不做跨方向接力。
-						启用减弱动态时所有动效关闭，面板直接出现与消失。
+						启用减弱动态时面板直接出现与消失；播放中开启该偏好会立即结束当前动效。
 					</p>
 				</section>
 			</article>

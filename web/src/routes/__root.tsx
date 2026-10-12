@@ -9,6 +9,7 @@ import {
 	Scripts,
 	useRouterState,
 } from "@tanstack/react-router";
+import { DocumentScrollbar } from "@violet/ui";
 import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
@@ -27,7 +28,6 @@ import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
 import { getAuthSession } from "../shared/server/session";
 import { getSSRTheme } from "../shared/server/theme";
-
 import appCss from "../styles.css?url";
 
 /**
@@ -166,6 +166,7 @@ function RootComponent() {
 					{!isFullscreenRoute && <Footer />}
 				</div>
 			)}
+			<DocumentScrollbar />
 			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
@@ -187,7 +188,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	// color-scheme 不内联注入：light-dark() 的取值开关由 tokens 的
 	// .dark 规则驱动，内联会永远压过它
 	return (
-		<html className={theme} lang="zh-CN" suppressHydrationWarning>
+		<html className={theme} lang="zh-CN" data-scrollbar="none" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>

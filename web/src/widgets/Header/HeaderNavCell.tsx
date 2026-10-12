@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import {
 	Dropdown,
 	DropdownContent,
+	DropdownItem,
 	DropdownTrigger,
 	type SegmentedItemRenderProps,
 } from "@violet/ui";
@@ -44,7 +45,9 @@ const HeaderNavCell = ({ item, segment, current, activeTo }: HeaderNavCellProps)
 				sideOffset={10}
 			>
 				{item.children.map((child) => (
-					<HeaderNavRow key={child.to} link={child} current={activeTo === child.to} />
+					<DropdownItem asChild key={child.to}>
+						<HeaderNavRow link={child} current={activeTo === child.to} />
+					</DropdownItem>
 				))}
 			</DropdownContent>
 		</Dropdown>

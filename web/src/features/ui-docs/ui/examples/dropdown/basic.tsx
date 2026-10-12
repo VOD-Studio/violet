@@ -1,10 +1,14 @@
-import { Dropdown, DropdownContent, DropdownGroup, DropdownTrigger } from "@violet/ui";
+import {
+	Dropdown,
+	DropdownContent,
+	DropdownGroup,
+	DropdownItem,
+	DropdownTrigger,
+} from "@violet/ui";
 import { type ComponentProps, useState } from "react";
 
 const TRIGGER_CLASS =
 	"inline-flex h-9 items-center rounded-full px-4 text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted";
-const ITEM_CLASS =
-	"block rounded-lg px-3 py-2 text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted";
 
 const GUIDE_LINKS = ["快速入门", "设计原则", "版本记录"];
 const ACTIONS = ["复制链接", "查看源码"];
@@ -40,13 +44,9 @@ export function DropdownBasicDemo() {
 						</DropdownTrigger>
 						<DropdownContent side="bottom" align="start">
 							{GUIDE_LINKS.map((label, index) => (
-								<DocLink
-									key={label}
-									href={`#guide-${index + 1}`}
-									className={ITEM_CLASS}
-								>
-									{label}
-								</DocLink>
+								<DropdownItem asChild key={label}>
+									<DocLink href={`#guide-${index + 1}`}>{label}</DocLink>
+								</DropdownItem>
 							))}
 						</DropdownContent>
 					</Dropdown>
@@ -54,13 +54,9 @@ export function DropdownBasicDemo() {
 						<DropdownTrigger className={TRIGGER_CLASS}>更多</DropdownTrigger>
 						<DropdownContent side="bottom" align="start">
 							{ACTIONS.map((label, index) => (
-								<DocLink
-									key={label}
-									href={`#action-${index + 1}`}
-									className={ITEM_CLASS}
-								>
-									{label}
-								</DocLink>
+								<DropdownItem asChild key={label}>
+									<DocLink href={`#action-${index + 1}`}>{label}</DocLink>
+								</DropdownItem>
 							))}
 						</DropdownContent>
 					</Dropdown>
@@ -70,13 +66,9 @@ export function DropdownBasicDemo() {
 				<DropdownTrigger className={TRIGGER_CLASS}>向上展开</DropdownTrigger>
 				<DropdownContent side="top" align="start">
 					{ACTIONS.map((label, index) => (
-						<DocLink
-							key={label}
-							href={`#upward-action-${index + 1}`}
-							className={ITEM_CLASS}
-						>
-							{label}
-						</DocLink>
+						<DropdownItem asChild key={label}>
+							<DocLink href={`#upward-action-${index + 1}`}>{label}</DocLink>
+						</DropdownItem>
 					))}
 				</DropdownContent>
 			</Dropdown>

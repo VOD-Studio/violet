@@ -15,21 +15,17 @@ const HeaderNavRow = ({ link, current, className, ...props }: HeaderNavRowProps)
 	return (
 		<Link
 			to={link.to}
+			activeOptions={{ exact: link.exact }}
 			aria-current={current ? "page" : undefined}
 			className={cn(
-				"group/row flex w-full items-center gap-3 rounded-xl p-2 text-left outline-none transition-colors duration-200 hover:bg-foreground/5 focus-visible:bg-foreground/5",
+				"group/row flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors duration-200 not-data-[slot=dropdown-item]:outline-none not-data-[slot=dropdown-item]:hover:bg-foreground/5 not-data-[slot=dropdown-item]:focus-visible:bg-foreground/5",
 				className,
 			)}
 			{...props}
 		>
 			<span
 				aria-hidden="true"
-				className={cn(
-					"flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-200",
-					current
-						? "bg-foreground text-background"
-						: "bg-muted/70 text-muted-foreground group-hover/row:text-foreground",
-				)}
+				className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors duration-200 group-data-[highlighted]/row:text-primary-base group-aria-[current=page]/row:text-primary-base motion-reduce:transition-none"
 			>
 				<Icon className="size-4" />
 			</span>

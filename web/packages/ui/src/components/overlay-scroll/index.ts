@@ -1,1 +1,1 @@
-export { OverlayScroll } from "./OverlayScroll";
+export { DocumentScrollbar, OverlayScroll } from "./OverlayScroll";
