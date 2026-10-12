@@ -37,6 +37,8 @@ export interface CommentDisplayItem<T extends CommentRaw = CommentRaw> {
 	authorProfileUrl?: string;
 	/** 是否作者本人（作者徽章） */
 	isAuthor?: boolean;
+	/** 是否 AI/MCP agent 发表（「AI」徽章；专用头像） */
+	isAI?: boolean;
 	/** 是否待审核（「审批中」徽章；推文即发即出恒 false） */
 	isPending?: boolean;
 	/** 正文纯文本 */

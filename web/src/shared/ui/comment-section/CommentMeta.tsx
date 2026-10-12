@@ -8,6 +8,7 @@
 
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
+import AIBadge from "@shared/ui/ai-badge";
 import PendingBadge from "@shared/ui/pending-badge";
 import { Link } from "@tanstack/react-router";
 import { GithubIcon, GoogleIcon } from "@violet/ui";
@@ -96,6 +97,7 @@ export function CommentMeta<T extends CommentRaw>({ item }: CommentMetaProps<T>)
 					作者
 				</span>
 			)}
+			<AIBadge show={!!item.isAI} />
 			<PendingBadge show={!!item.isPending} />
 			<time className="shrink-0 text-xs text-muted-foreground" title={item.createdAt}>
 				{formatTimeAgo(item.createdAt)}
