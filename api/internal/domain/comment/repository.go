@@ -61,7 +61,8 @@ type BlockRange struct {
 	// Start 起始偏移（块内字符位，0-based）
 	Start int
 	// End 结束偏移（块内字符位，exclusive）
-	End int
+	End  int
+	IsAI bool
 }
 
 // BlockAuthorLimit 每个批注块返回的评论者上限；前端头像组只需展示前几位。

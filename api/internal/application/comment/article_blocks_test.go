@@ -132,10 +132,10 @@ func TestExtractArticleBlocks_SkipsSanitizedAwayScriptText(t *testing.T) {
 	assert.Contains(t, err.Error(), "未匹配文章中任何完整渲染块")
 }
 
-func TestExtractArticleBlocks_SkipsStyleSubtree(t *testing.T) {
-	html := `<p>ab<style>.x{}</style>cd</p>`
+func TestExtractArticleBlocks_UnwrapsUnsupportedTagsLikeReader(t *testing.T) {
+	html := `<p>ab<custom-tag>visible</custom-tag><style>.x{}</style>cd</p>`
 	blocks, err := ExtractArticleBlocks(html)
 	require.NoError(t, err)
 	require.Len(t, blocks, 1)
-	assert.Equal(t, "abcd", blocks[0].Text)
+	assert.Equal(t, "abvisible.x{}cd", blocks[0].Text)
 }

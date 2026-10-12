@@ -9,25 +9,25 @@ import "github.com/getkin/kin-openapi/openapi3"
 func registerPostPaths(t *openapi3.T) {
 	// ---- schema ----
 	registerSchema(t, "PostDTO", openapi3.Schemas{
-		"id":              reqStr("文章 ID（UUID）"),
-		"title":           reqStr("标题"),
-		"slug":            reqStr("URL slug"),
-		"content_md":      optStr("Markdown 原文"),
-		"content_html":    optStr("渲染后 HTML"),
-		"excerpt":         optStr("摘要"),
-		"cover_image":     optStr("封面图 URL"),
-		"status":          strEnum("状态", "draft", "published", "archived"),
-		"author_id":       reqStr("作者 ID（UUID）"),
-		"view_count":      optInt("浏览数"),
-		"is_featured":     optBool("是否精选"),
-		"seo_title":       optStr("SEO 标题"),
-		"seo_description": optStr("SEO 描述"),
-		"published_at":    optStr("发布时间（RFC3339，可空）"),
-		"edited_at":       optStr("发布后最近一次版本快照时间（RFC3339，可空）；缺省=发布后未编辑过"),
+		"id":                   reqStr("文章 ID（UUID）"),
+		"title":                reqStr("标题"),
+		"slug":                 reqStr("URL slug"),
+		"content_md":           optStr("Markdown 原文"),
+		"content_html":         optStr("渲染后 HTML"),
+		"excerpt":              optStr("摘要"),
+		"cover_image":          optStr("封面图 URL"),
+		"status":               strEnum("状态", "draft", "published", "archived"),
+		"author_id":            reqStr("作者 ID（UUID）"),
+		"view_count":           optInt("浏览数"),
+		"is_featured":          optBool("是否精选"),
+		"seo_title":            optStr("SEO 标题"),
+		"seo_description":      optStr("SEO 描述"),
+		"published_at":         optStr("发布时间（RFC3339，可空）"),
+		"edited_at":            optStr("发布后最近一次版本快照时间（RFC3339，可空）；缺省=发布后未编辑过"),
 		"edited_version_count": optInt("发布后版本快照数；缺省=发布后未编辑过"),
-		"tags":            strArray("标签 slug 列表"),
-		"created_at":      optStr("创建时间（RFC3339）"),
-		"updated_at":      optStr("更新时间（RFC3339）"),
+		"tags":                 strArray("标签 slug 列表"),
+		"created_at":           optStr("创建时间（RFC3339）"),
+		"updated_at":           optStr("更新时间（RFC3339）"),
 	})
 
 	// 文章列表项（不含正文，避免响应过大）。ListPublished 与 ListAll 共用。
@@ -148,6 +148,7 @@ func registerPostPaths(t *openapi3.T) {
 	registerSchema(t, "AnnotationBlockRangeDTO", openapi3.Schemas{
 		"start": optInt("起始偏移（块内字符位，0-based）"),
 		"end":   optInt("结束偏移（块内字符位，exclusive）"),
+		"is_ai": optBool("是否为 AI 自署名批注"),
 	})
 	registerSchema(t, "AnnotationBlockCountDTO", openapi3.Schemas{
 		"block_id": reqStr("块 ID（对应正文的锚点块）"),
@@ -240,8 +241,8 @@ func registerPostPaths(t *openapi3.T) {
 	})
 
 	get(t, "/posts/{postId}/annotations/summary", &openapi3.Operation{
-		Tags:        []string{"评论"},
-		Summary:     "批注块计数",
+		Tags:    []string{"评论"},
+		Summary: "批注块计数",
 		Description: "按块聚合的锚点批注计数（OptionalAuth：匿名返回空列表，" +
 			"登录返回带 viewer 视角的数据）。",
 		Parameters: openapi3.Parameters{pathStrParam("postId", "文章 ID（UUID）")},

@@ -3,6 +3,7 @@ package comment
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -230,6 +231,42 @@ func TestCreate_LoggedIn_FillsAuthorFromUserRepo(t *testing.T) {
 	assert.Equal(t, "https://avatar.example/bob.png", dto.AvatarURL)
 	userRepo.AssertExpectations(t)
 	repo.AssertExpectations(t)
+}
+
+func TestCreate_AISignatureDoesNotBecomePATProfile(t *testing.T) {
+	for _, signature := range []string{"", " \t ", "  independent model  ", strings.Repeat("模", 100)} {
+		t.Run(signature, func(t *testing.T) {
+			repo := new(mocks.MockCommentRepository)
+			users := new(mocks.MockUserRepository)
+			users.On("FindByIDsForDisplay", mock.Anything, mock.Anything).Return([]*domainuser.User{}, nil)
+			repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+			svc := NewService(repo, users, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory())
+			dto, err := svc.Create(context.Background(), CreateInput{
+				PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+				AuthorName: signature, AvatarURL: "/owner.png", IsAI: true, Body: "comment",
+			})
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.True(t, dto.IsAI)
+			assert.Empty(t, dto.AvatarURL)
+			assert.NotEmpty(t, dto.AuthorName)
+			if strings.TrimSpace(signature) != "" {
+				assert.Equal(t, strings.TrimSpace(signature), dto.AuthorName)
+			}
+			users.AssertNotCalled(t, "FindByID", mock.Anything, mock.Anything)
+		})
+	}
+}
+
+func TestCreate_RejectsAISignatureBeyondStorageBoundary(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+		AuthorName: strings.Repeat("模", 101), IsAI: true, Body: "comment",
+	})
+	assert.Error(t, err)
+	repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
 }
 
 func TestCreate_Anon_ValidCode_NoQuota_Succeeds(t *testing.T) {
@@ -550,7 +587,7 @@ func TestCreate_ParentDifferentPost_Rejected(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-// TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted AI 评论在作者软删后仍保留 Violet AI 名/头像。
+// AI 署名不随审计 actor 注销而变成真人注销占位。
 func TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted(t *testing.T) {
 	userRepo := new(mocks.MockUserRepository)
 	svc := &Service{userRepo: userRepo}
@@ -566,18 +603,18 @@ func TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted(t *testing.T) {
 	postID, cID := shared.NewID(), shared.NewID()
 	zero := time.Time{}
 	aiComment := domain.ReconstructComment(cID, postID, &dUID, nil, cID.String()+"/", 0, nil,
-		"Violet AI", "/logo.png", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
+		"independent model", "", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
 
 	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
 		Return([]*domainuser.User{deletedUser}, nil).Once()
 
 	dtos := []CommentDTO{{
-		ID: cID.String(), AuthorName: "Violet AI", AvatarURL: "/logo.png", IsAI: true,
+		ID: cID.String(), AuthorName: aiComment.AuthorName(), IsAI: true,
 	}}
 	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{aiComment})
 	assert.NoError(t, err)
-	assert.Equal(t, "Violet AI", dtos[0].AuthorName, "软删后仍保留 Violet AI 展示名")
-	assert.Equal(t, "/logo.png", dtos[0].AvatarURL, "软删后仍保留专用头像")
+	assert.Equal(t, aiComment.AuthorName(), dtos[0].AuthorName)
+	assert.Empty(t, dtos[0].AvatarURL)
 	assert.Empty(t, dtos[0].AuthorProvider)
 	assert.Empty(t, dtos[0].AuthorUsername)
 	userRepo.AssertExpectations(t)
@@ -588,14 +625,14 @@ func TestToDTO_AIIsNeverAuthor(t *testing.T) {
 	uid, postID, cID := shared.NewID(), shared.NewID(), shared.NewID()
 	zero := time.Time{}
 	ai := domain.ReconstructComment(cID, postID, &uid, nil, cID.String()+"/", 0, nil,
-		"Violet AI", "/logo.png", "", "", "ai", nil, domain.StatusApproved, "", "", true, zero, zero)
+		"independent model", "", "", "", "ai", nil, domain.StatusApproved, "", "", true, zero, zero)
 	human := domain.ReconstructComment(cID, postID, &uid, nil, cID.String()+"/", 0, nil,
 		"me", "", "", "", "me", nil, domain.StatusApproved, "", "", false, zero, zero)
 	assert.False(t, toDTO(ai, &uid, "").IsAuthor)
 	assert.True(t, toDTO(human, &uid, "").IsAuthor)
 }
 
-// TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName 回复 AI 评论（PAT 持有人已软删）仍显示 Violet AI。
+// AI 被回复者的署名不随审计 actor 注销而替换。
 func TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName(t *testing.T) {
 	userRepo := new(mocks.MockUserRepository)
 	svc := &Service{userRepo: userRepo}
@@ -611,7 +648,7 @@ func TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName(t *testing.T) {
 	postID, aiID, rID := shared.NewID(), shared.NewID(), shared.NewID()
 	zero := time.Time{}
 	aiComment := domain.ReconstructComment(aiID, postID, &dUID, nil, aiID.String()+"/", 0, nil,
-		"Violet AI", "/logo.png", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
+		"independent model", "", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
 	reply := domain.ReconstructComment(rID, postID, nil, &aiID, aiID.String()+"/"+rID.String()+"/", 1, nil,
 		"guest", "", "g@x.com", "", "reply", nil, domain.StatusApproved, "", "", false, zero, zero)
 
@@ -619,14 +656,13 @@ func TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName(t *testing.T) {
 		Return([]*domainuser.User{deletedUser}, nil).Once()
 
 	dtos := []CommentDTO{{
-		ID: aiID.String(), AuthorName: "Violet AI", IsAI: true,
-		Replies: []CommentDTO{{ID: rID.String(), ParentID: aiID.String(), ReplyToName: "Violet AI", AuthorName: "guest"}},
+		ID: aiID.String(), AuthorName: aiComment.AuthorName(), IsAI: true,
+		Replies: []CommentDTO{{ID: rID.String(), ParentID: aiID.String(), ReplyToName: aiComment.AuthorName(), AuthorName: "guest"}},
 	}}
 	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{aiComment, reply})
 	assert.NoError(t, err)
-	assert.Equal(t, "Violet AI", dtos[0].Replies[0].ReplyToName)
+	assert.Equal(t, aiComment.AuthorName(), dtos[0].Replies[0].ReplyToName)
 }
-
 
 // TestCreate_RequireParentAnchor_RejectsFreeParent create_annotation 回复自由评论应拒绝。
 func TestCreate_RequireParentAnchor_RejectsFreeParent(t *testing.T) {
@@ -641,7 +677,7 @@ func TestCreate_RequireParentAnchor_RejectsFreeParent(t *testing.T) {
 
 	_, err := svc.Create(context.Background(), CreateInput{
 		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
-		AuthorName: "Violet AI", AuthorEmail: "a@x.com", Body: "reply",
+		AuthorName: "independent model", AuthorEmail: "a@x.com", Body: "reply",
 		RequireParentAnchor: true, IsAI: true,
 	})
 	assert.Error(t, err)
@@ -663,7 +699,7 @@ func TestCreate_RequireParentAnchor_InheritsAnnotationParent(t *testing.T) {
 
 	dto, err := svc.Create(context.Background(), CreateInput{
 		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
-		AuthorName: "Violet AI", AuthorEmail: "a@x.com", Body: "reply",
+		AuthorName: "independent model", AuthorEmail: "a@x.com", Body: "reply",
 		RequireParentAnchor: true, IsAI: true,
 	})
 	if assert.NoError(t, err) && assert.NotNil(t, dto.Anchor) {
@@ -686,7 +722,7 @@ func TestCreate_RejectAnchoredParent_RejectsAnnotationParent(t *testing.T) {
 
 	_, err := svc.Create(context.Background(), CreateInput{
 		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
-		AuthorName: "Violet AI", AuthorEmail: "a@x.com", Body: "reply",
+		AuthorName: "independent model", AuthorEmail: "a@x.com", Body: "reply",
 		RejectAnchoredParent: true, IsAI: true,
 	})
 	assert.Error(t, err)

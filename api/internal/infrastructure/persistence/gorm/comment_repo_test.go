@@ -544,32 +544,32 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3}, byBlock["b1"].Ranges[0])
 }
 
-func TestCountAnnotationsByBlock_CollapsesAIAuthors(t *testing.T) {
+func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
 	db := setupCommentTestDB(t)
 	repo := NewCommentRepository(db)
 	pat1, pat2 := uuid.New(), uuid.New()
 	base := time.Now().Add(-time.Hour)
-	addAI := func(by uuid.UUID, offset time.Duration) {
+	addAI := func(by uuid.UUID, name string, offset time.Duration) {
 		start, end, sel, hash := 0, 3, "选中", "h"
 		blockID := "b-ai"
 		require.NoError(t, db.Create(&model.Comment{
 			ID: uuid.New(), PostID: fixedPostID.UUID(), Path: uuid.NewString() + "/",
-			CreatedBy: &by, AuthorName: "Violet AI", AvatarURL: "/logo.png", Body: "ai", Pictures: []byte("[]"),
+			CreatedBy: &by, AuthorName: name, Body: "ai", Pictures: []byte("[]"),
 			Status: domaincomment.StatusApproved, IsAI: true,
 			AnchorBlockID: &blockID, AnchorStartOffset: &start, AnchorEndOffset: &end,
 			AnchorSelectedText: &sel, AnchorBlockTextHash: &hash,
 			CreatedAt: base.Add(offset),
 		}).Error)
 	}
-	addAI(pat1, 0)
-	addAI(pat2, time.Minute)
-	// 真人同块仍独立
+	addAI(pat1, "GPT", 0)
+	addAI(pat2, "Claude", time.Minute)
+	addAI(pat2, "GPT", 90*time.Second)
 	start, end, sel, hash := 0, 3, "选中", "h"
 	blockID := "b-ai"
 	human := uuid.New()
 	require.NoError(t, db.Create(&model.Comment{
 		ID: uuid.New(), PostID: fixedPostID.UUID(), Path: uuid.NewString() + "/",
-		CreatedBy: &human, AuthorName: "Alice", AvatarURL: "a.png", Body: "hi", Pictures: []byte("[]"),
+		CreatedBy: &human, AuthorName: "Claude", AvatarURL: "a.png", Body: "hi", Pictures: []byte("[]"),
 		Status: domaincomment.StatusApproved, IsAI: false,
 		AnchorBlockID: &blockID, AnchorStartOffset: &start, AnchorEndOffset: &end,
 		AnchorSelectedText: &sel, AnchorBlockTextHash: &hash,
@@ -579,10 +579,14 @@ func TestCountAnnotationsByBlock_CollapsesAIAuthors(t *testing.T) {
 	got, err := repo.CountAnnotationsByBlock(context.Background(), fixedPostID, domaincomment.StatusApproved, nil)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
-	assert.Equal(t, int64(3), got[0].Count)
-	require.Len(t, got[0].Authors, 2)
-	assert.True(t, got[0].Authors[0].IsAI)
-	assert.Equal(t, "Violet AI", got[0].Authors[0].Name)
-	assert.False(t, got[0].Authors[1].IsAI)
-	assert.Equal(t, "Alice", got[0].Authors[1].Name)
+	assert.Equal(t, int64(4), got[0].Count)
+	require.Len(t, got[0].Authors, 3)
+	assert.Equal(t, domaincomment.BlockAuthor{Name: "GPT", IsAI: true}, got[0].Authors[0])
+	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", IsAI: true}, got[0].Authors[1])
+	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", AvatarURL: "a.png", IsAI: false}, got[0].Authors[2])
+	require.Len(t, got[0].Ranges, 4)
+	assert.True(t, got[0].Ranges[0].IsAI)
+	assert.True(t, got[0].Ranges[1].IsAI)
+	assert.True(t, got[0].Ranges[2].IsAI)
+	assert.False(t, got[0].Ranges[3].IsAI)
 }

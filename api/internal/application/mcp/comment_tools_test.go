@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -256,7 +257,7 @@ func TestCreateComment_RequiresWriteScope(t *testing.T) {
 }
 
 func TestCreateComment_AsAIIdentity(t *testing.T) {
-	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", Body: "hi", IsAI: true, AuthorName: "Violet AI"}}
+	w := &fakeCommentWriteService{}
 	tools := NewCommentTools(nil, w, publishedP1())
 	uid := uuidUser()
 	res, _, err := tools.CreateComment(context.Background(),
@@ -266,8 +267,6 @@ func TestCreateComment_AsAIIdentity(t *testing.T) {
 	require.False(t, res.IsError)
 	assert.Equal(t, 1, w.calls)
 	assert.True(t, w.got.IsAI)
-	assert.Equal(t, "Violet AI", w.got.AuthorName)
-	assert.Equal(t, "/logo.png", w.got.AvatarURL)
 	assert.Equal(t, uid, w.got.UserID)
 	assert.Equal(t, "hi", w.got.Body)
 	assert.Nil(t, w.got.Anchor)
@@ -305,7 +304,6 @@ func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
 	require.NotNil(t, w.got.Anchor)
 	assert.Equal(t, "hello", w.got.Anchor.SelectedText)
 	assert.True(t, w.got.IsAI)
-	assert.Equal(t, "Violet AI", w.got.AuthorName)
 }
 
 func TestCreateBlockComment_FullBlockAnchor(t *testing.T) {
@@ -442,3 +440,72 @@ func TestCreateComment_RejectsBothPostIDAndSlug(t *testing.T) {
 var _ CommentSearchService = (*fakeCommentSearchService)(nil)
 var _ CommentWriteService = (*fakeCommentWriteService)(nil)
 var _ CommentPostLookup = (*fakeCommentPostLookup)(nil)
+
+func TestListAnnotationBlocks_ReadWriteScopesAndUTF16Pagination(t *testing.T) {
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"p1": {ID: "p1", ContentHTML: "<p>A😀中<script>hidden</script></p><p>next</p>"},
+	}}
+	for _, scope := range []string{domainapitoken.ScopeCommentsRead, domainapitoken.ScopeCommentsWrite} {
+		t.Run(scope, func(t *testing.T) {
+			tools := NewCommentTools(nil, nil, posts)
+			res, _, err := tools.ListAnnotationBlocks(context.Background(), reqWithToken([]string{scope}, uuidUser()),
+				listAnnotationBlocksArgs{PostID: "p1", Limit: 1})
+			require.NoError(t, err)
+			require.False(t, res.IsError)
+			var page annotationBlocksResult
+			require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+			require.Len(t, page.Blocks, 1)
+			assert.Equal(t, "A😀中", page.Blocks[0].BlockText)
+			assert.Equal(t, 4, page.Blocks[0].UTF16Length)
+			assert.Equal(t, 2, page.Total)
+			assert.True(t, page.HasMore)
+			assert.Equal(t, 1, page.NextOffset)
+			anchor, err := appcomment.BuildFullBlockAnchor(page.Blocks[0].BlockText)
+			require.NoError(t, err)
+			assert.Equal(t, anchor.BlockID, page.Blocks[0].BlockID)
+			assert.Equal(t, anchor.BlockHashSync, page.Blocks[0].BlockTextHash)
+			assert.Equal(t, anchor.EndOffset, page.Blocks[0].UTF16Length)
+			require.NoError(t, appcomment.EnsureAnchorMatchesArticle(posts.byID["p1"].ContentHTML, anchor))
+
+			res, _, err = tools.ListAnnotationBlocks(context.Background(), reqWithToken([]string{scope}, uuidUser()),
+				listAnnotationBlocksArgs{PostID: "p1", Limit: 1, Offset: page.NextOffset})
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+			require.Len(t, page.Blocks, 1)
+			assert.Equal(t, "next", page.Blocks[0].BlockText)
+			assert.False(t, page.HasMore)
+		})
+	}
+}
+
+func TestListAnnotationBlocks_RejectsMissingScopeAndUnpublishedArticle(t *testing.T) {
+	tools := NewCommentTools(nil, nil, publishedP1())
+	for _, tc := range []struct {
+		scopes []string
+		args   listAnnotationBlocksArgs
+	}{
+		{nil, listAnnotationBlocksArgs{PostID: "p1"}},
+		{[]string{domainapitoken.ScopeCommentsRead}, listAnnotationBlocksArgs{PostID: "draft"}},
+		{[]string{domainapitoken.ScopeCommentsWrite}, listAnnotationBlocksArgs{PostID: "p1", Slug: "p1"}},
+	} {
+		res, _, err := tools.ListAnnotationBlocks(context.Background(), reqWithToken(tc.scopes, uuidUser()), tc.args)
+		require.NoError(t, err)
+		assert.True(t, res.IsError)
+	}
+}
+
+func TestListAnnotationBlocks_ClampsPageAndReturnsEmptyArrayPastEnd(t *testing.T) {
+	tools := NewCommentTools(nil, nil, publishedP1())
+	res, _, err := tools.ListAnnotationBlocks(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		listAnnotationBlocksArgs{PostID: "p1", Limit: 999, Offset: 999})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	var page annotationBlocksResult
+	require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+	assert.Equal(t, 50, page.Limit)
+	assert.Equal(t, 999, page.Offset)
+	assert.NotNil(t, page.Blocks)
+	assert.Empty(t, page.Blocks)
+	assert.False(t, page.HasMore)
+}

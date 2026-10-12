@@ -262,12 +262,19 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		return query
 	}
 
-	var results []comment.BlockCount
+	var counts []struct {
+		BlockID string `gorm:"column:block_id"`
+		Count   int64  `gorm:"column:count"`
+	}
 	err := scope().Select("anchor_block_id AS block_id, COUNT(*) AS count").
 		Group("anchor_block_id").
-		Find(&results).Error
+		Find(&counts).Error
 	if err != nil {
 		return nil, domainshared.Internal("统计批注按块聚合失败", err)
+	}
+	results := make([]comment.BlockCount, 0, len(counts))
+	for _, row := range counts {
+		results = append(results, comment.BlockCount{BlockID: row.BlockID, Count: row.Count})
 	}
 	if len(results) == 0 {
 		return results, nil
@@ -283,7 +290,7 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		EndOffset   *int       `gorm:"column:anchor_end_offset"`
 	}
 	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url, is_ai, anchor_start_offset, anchor_end_offset").
-		Order("created_at ASC").
+		Order("created_at ASC, id ASC").
 		Find(&rows).Error
 	if err != nil {
 		return nil, domainshared.Internal("查询批注块评论者失败", err)
@@ -300,20 +307,19 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 			continue
 		}
 		if row.StartOffset != nil && row.EndOffset != nil && len(results[i].Ranges) < comment.BlockRangeLimit {
-			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{Start: *row.StartOffset, End: *row.EndOffset})
+			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI})
 		}
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {
 			continue
 		}
-		// AI 批注对外统一为 Violet AI 身份：同块多个 PAT 持有人折叠为一个头像。
-		// 真人：登录按 user id 去重，匿名按展示名。
+		// AI 按自署名、真人按登录 ID 或匿名名分别去重，身份类别互不碰撞。
 		var identity string
 		if row.IsAI {
-			identity = row.BlockID + "|ai"
+			identity = row.BlockID + "|ai|" + row.AuthorName
 		} else if row.CreatedBy != nil {
-			identity = row.BlockID + "|" + row.CreatedBy.String()
+			identity = row.BlockID + "|user|" + row.CreatedBy.String()
 		} else {
-			identity = row.BlockID + "|" + row.AuthorName
+			identity = row.BlockID + "|anon|" + row.AuthorName
 		}
 		if _, dup := seen[identity]; dup {
 			continue

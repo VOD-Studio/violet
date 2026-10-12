@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rs/zerolog/log"
 
@@ -74,7 +75,8 @@ type BlockRangeDTO struct {
 	// Start 起始偏移（块内字符位，0-based）
 	Start int `json:"start"`
 	// End 结束偏移（块内字符位，exclusive）
-	End int `json:"end"`
+	End  int  `json:"end"`
+	IsAI bool `json:"is_ai"`
 }
 
 // BlockAuthorDTO 批注块上的评论者
@@ -288,7 +290,7 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 		}
 		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
 		for _, r := range b.Ranges {
-			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End})
+			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI})
 		}
 		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors, Ranges: ranges})
 	}
@@ -582,6 +584,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		return CommentDTO{}, err
 	}
 
+	if in.IsAI {
+		in.AuthorName = strings.TrimSpace(in.AuthorName)
+		if in.AuthorName == "" {
+			in.AuthorName = "未知模型"
+		}
+		if utf8.RuneCountInString(in.AuthorName) > 100 {
+			return CommentDTO{}, shared.BadRequest("AI 署名不能超过 100 个字符")
+		}
+		in.AvatarURL = ""
+	}
 	isAnon := in.UserID == ""
 	var userIDPtr *shared.ID
 	if !isAnon {
@@ -595,9 +607,8 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 				return CommentDTO{}, err
 			}
 		}
-		// 登录态未填 author_* 时从 user 资料补齐（MCP / 内部调用可只传 UserID）。
-		// HTTP handler 仍显式填充；此处兜底避免调用方遗漏导致「昵称不能为空」。
-		if in.AuthorName == "" && s.userRepo != nil {
+		// 真人登录态缺少作者快照时从用户资料补齐；AI 自署名不读取持有人资料。
+		if !in.IsAI && in.AuthorName == "" && s.userRepo != nil {
 			u, err := s.userRepo.FindByID(ctx, *userIDPtr)
 			if err != nil {
 				return CommentDTO{}, err
@@ -1045,7 +1056,7 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 			authorDeleted[c.ID().String()] = true
 		}
 		if c.ParentID() != nil {
-			// 父评论为 AI 时保留「Violet AI」作为被回复者名，不因 PAT 持有人注销被替换。
+			// AI 被回复者保留署名，不随 PAT 持有人注销改名。
 			if puid, ok := authorIDByComment[c.ParentID().String()]; ok && deletedByUser[puid] && !aiComment[c.ParentID().String()] {
 				parentAuthorDeleted[c.ID().String()] = true
 			}
@@ -1062,7 +1073,7 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 	}
 	fill := func(d *CommentDTO) {
 		if d.IsAI {
-			// AI 评论优先保留专用昵称/头像快照（即使 PAT 持有人已软删也不覆写为「已注销用户」），
+			// AI 评论保留自署名快照，即使 PAT 持有人已软删也不改名，
 			// 且不挂 GitHub/Google 角标与站内主页链接，避免看起来像真人留言。
 			d.AuthorProvider = ""
 			d.AuthorProfileURL = ""

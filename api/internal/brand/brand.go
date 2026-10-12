@@ -34,9 +34,4 @@ const (
 	MCPCommentsServerName = "violet-comments"
 	// MCPNotesServerName 笔记域 MCP server 标识（PAT，AI 会话沉淀运输层）。
 	MCPNotesServerName = "violet-notes"
-
-	// MCPAgentDisplayName MCP 发表评论时的展示昵称（与真人评论区分）。
-	MCPAgentDisplayName = "Violet AI"
-	// MCPAgentAvatarURL MCP/AI 评论专用头像（站点 logo，不用 PAT 持有人的 Google/GitHub 头像）。
-	MCPAgentAvatarURL = "/logo.png"
 )

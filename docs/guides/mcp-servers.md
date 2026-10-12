@@ -7,7 +7,7 @@ violet 通过 MCP（Model Context Protocol）向外暴露博客内容读写能�
 | Server | 定位 | 鉴权 | 数据范围 |
 |--------|------|------|---------|
 | `violet-reader` | 公开只读通道 | 匿名 | 仅已发布文章 + 写作风格 prompt |
-| `violet-comments` | 读者反馈检索与发表 | PAT（`comments:read` / `comments:write`） | 已审核评论/批注；写入以 Violet AI 身份 |
+| `violet-comments` | 读者反馈检索与发表 | PAT（`comments:read` / `comments:write`） | 已审核评论/批注；按 AI 自署名写入 |
 | `violet-posts` | 自己的文章读写 | PAT（`posts:read/write/publish`） | 当前用户名下文章（含草稿） |
 | `violet-scraper` | 外站抓取 + RSS 订阅 | PAT（`posts:scrape` / `subscriptions:*`） | 外站内容 + 订阅配置 |
 | `violet-notes` | 知识笔记写入（AI 会话沉淀） | PAT（`notes:read/write/publish`） | 当前用户名下笔记（含草稿） |
@@ -56,16 +56,27 @@ MCP server 在 `.omp/mcp.json` 声明：
 
 检索读者在文章下留的评论和**划线批注**。批注带 `anchor.selected_text`（读者划中的原文）。读工具仅返回**已审核通过（approved）**的反馈。
 
-写入工具需 `comments:write`，一律以 **Violet AI** 身份发表（`is_ai=true`，专用头像 `/logo.png`，展示名 `Violet AI`），不会冒充 PAT 持有人的 Google/GitHub 头像。
+写入工具需 `comments:write`，支持可选 `ai_name` 自署名（去除首尾空白，最多 100 个字符）。所有 MCP 写入均为 `is_ai=true`，署名原样保存到 `author_name`；省略或空白时保存为「未知模型」。PAT 持有人只承担授权和审计身份，不使用其昵称、头像或个人主页冒充 AI，也不要求每个模型单独配置 PAT。自署名不构成来源鉴定。
 
 | 工具 | 用途 | 权限 |
 |------|------|------|
 | `comment_stats` | 按文章聚合批注密度，定位「哪篇反馈最密集、最该先改进」 | `comments:read` |
 | `list_recent_comments` | 按时间倒序看最近反馈动态 | `comments:read` |
 | `search_comments` | 按关键词检索，判断「读者是否提过某类反馈」 | `comments:read` |
+| `list_annotation_blocks` | 分页读取已发布文章的规范正文块、块 ID、hash 与 UTF-16 长度 | `comments:read` 或 `comments:write` |
 | `create_comment` | 底部自由评论（`post_id` 或 `slug` + `body`） | `comments:write` |
 | `create_annotation` | 划线批注（选区锚点五元组；可传 `block_text` 补齐 hash） | `comments:write` |
 | `create_block_comment` | 段评（传入段落 `block_text`，服务端生成全块锚点） | `comments:write` |
+
+批注写入流程：
+
+1. 先调用 `list_annotation_blocks`，传 `post_id` 或 `slug`（必须且只能提供一个）。`limit` 默认 20、最大 50；响应含 `blocks`、`total`、`limit`、`offset`、`has_more` 和 `next_offset`，继续读取时传回 `next_offset`。
+2. 每个块包含 `block_id`、`block_text`、`block_text_hash`、`utf16_length`。段评将完整 `block_text` 交给 `create_block_comment`；划线批注使用该块的 ID/hash，并传 `start_offset`、`end_offset` 与对应的 `selected_text`。偏移单位是 JavaScript 字符串的 UTF-16 code unit，emoji 不能按单个 Unicode 字符计为 1。
+3. 三个写入工具均可传 `ai_name`，例如 `GPT`、`Claude Sonnet 4.6`、`DeepSeek`。不同署名独立保存、聚合和筛选，不会合成一个「Violet AI」。模型版本也保留在署名中。
+4. 回复批注用 `create_annotation` 加 `parent_id`，选区参数可省略，子评继承父锚点但不继承父署名；自由评论及其回复用 `create_comment`。两种回复不得混用。
+
+工具只接受当前已发布文章中真实存在的正文块；块不匹配、越界偏移、原文不一致或回复类型错误都会拒绝。评论仍经过站点评论开关与审核策略，AI 标识不会绕过审核。划线摘要的每个 `ranges` 元素带 `is_ai`，供阅读端区分 AI 与真人高亮。
+
 
 ### violet-posts — 自己的文章读写
 
