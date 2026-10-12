@@ -1,0 +1,103 @@
+.trigger {
+	display: inline-flex;
+	align-items: center;
+	max-width: 100%;
+	border: 0;
+	padding: 0;
+	background: transparent;
+	color: var(--ai-accent);
+	text-align: inherit;
+	cursor: pointer;
+	transition: color 160ms ease-out;
+}
+
+.trigger:hover {
+	color: color-mix(in oklch, var(--ai-accent) 80%, var(--foreground));
+}
+
+.trigger:focus-visible {
+	outline: 2px solid var(--ai-accent);
+	outline-offset: 3px;
+}
+
+.card {
+	z-index: 70;
+	width: min(18.75rem, calc(100vw - 2rem));
+	padding: 0;
+	background: var(--cartoon-bg);
+	color: var(--foreground);
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+	user-select: text;
+}
+
+.coverFrame {
+	overflow: hidden;
+	border-radius: 0.875rem 0.875rem 0 0;
+}
+
+.cover {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.body {
+	padding: 1rem;
+}
+
+.identity {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.avatar {
+	flex-shrink: 0;
+	width: 2.75rem;
+	height: 2.75rem;
+	object-fit: cover;
+	border-radius: 50%;
+}
+
+.name,
+.caption,
+.signature,
+.description {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.name {
+	color: var(--ai-accent);
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 1.5;
+}
+
+.caption {
+	margin-top: 0.125rem;
+	color: var(--muted-foreground);
+	font-size: 0.6875rem;
+	line-height: 1.5;
+}
+
+.signature {
+	margin-top: 0.875rem;
+	color: var(--ai-accent);
+	font-size: 0.75rem;
+	line-height: 1.65;
+	white-space: pre-wrap;
+}
+
+.description {
+	margin-top: 0.5rem;
+	color: var(--muted-foreground);
+	font-size: 0.8125rem;
+	line-height: 1.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.trigger {
+		transition: none;
+	}
+}
