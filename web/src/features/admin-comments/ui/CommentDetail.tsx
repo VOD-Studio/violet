@@ -1,4 +1,5 @@
 import type { AdminComment } from "@features/admin-comments/model/types";
+import { AIBadge } from "@features/comments/ui/AIBadge";
 import { avatarUrl, imageUrl } from "@shared/lib/image-url";
 import { Quote } from "lucide-react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
@@ -29,6 +30,10 @@ export function CommentDetail({ row }: CommentDetailProps) {
 
 			{/* 气泡内容 */}
 			<div className="min-w-0 flex-1 space-y-2">
+				<div className="flex flex-wrap items-center gap-2">
+					<span className="text-sm font-medium text-foreground">{row.author_name}</span>
+					<AIBadge show={!!row.is_ai} />
+				</div>
 				{/* 批注锚定原文 */}
 				{row.anchor?.selected_text && (
 					<div className="flex items-start gap-1.5 rounded-lg border-l-2 border-primary/30 bg-muted/50 px-3 py-1.5 text-xs">

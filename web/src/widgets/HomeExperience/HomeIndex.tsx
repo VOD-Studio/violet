@@ -1,5 +1,6 @@
 import type { AdminComment } from "@entities/comment/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
+import { AIBadge } from "@features/comments/ui/AIBadge";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { EmojiText } from "@shared/ui/emoji-text";
@@ -297,20 +298,23 @@ export function HomeIndex({
 													{comment.author_name.slice(0, 1).toUpperCase()}
 												</span>
 											)}
-											<span className="min-w-0 truncate">
-												{comment.author_name}
-												{comment.post_slug ? (
-													<>
-														{" · "}
-														<Link
-															to="/blog/$slug"
-															params={{ slug: comment.post_slug }}
-															className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-														>
-															《{comment.post_title}》
-														</Link>
-													</>
-												) : null}
+											<span className="flex min-w-0 items-center gap-1.5">
+												<span className="min-w-0 truncate">
+													{comment.author_name}
+													{comment.post_slug ? (
+														<>
+															{" · "}
+															<Link
+																to="/blog/$slug"
+																params={{ slug: comment.post_slug }}
+																className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+															>
+																《{comment.post_title}》
+															</Link>
+														</>
+													) : null}
+												</span>
+												<AIBadge show={!!comment.is_ai} />
 											</span>
 										</p>
 									</article>

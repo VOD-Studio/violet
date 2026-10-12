@@ -19,6 +19,7 @@ import {
 	usePagedQuery,
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { AIBadge } from "@features/comments/ui/AIBadge";
 import { formatDateTime } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -141,6 +142,7 @@ function AdminCommentsPage() {
 						loading="lazy"
 					/>
 					<span className="text-sm">{row.author_name}</span>
+					<AIBadge show={!!row.is_ai} />
 				</div>
 			),
 		},
