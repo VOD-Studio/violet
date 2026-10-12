@@ -7,7 +7,7 @@ violet 通过 MCP（Model Context Protocol）向外暴露博客内容读写能�
 | Server | 定位 | 鉴权 | 数据范围 |
 |--------|------|------|---------|
 | `violet-reader` | 公开只读通道 | 匿名 | 仅已发布文章 + 写作风格 prompt |
-| `violet-comments` | 读者反馈检索 | PAT（`comments:read`） | 已审核通过的评论/批注 |
+| `violet-comments` | 读者反馈检索与发表 | PAT（`comments:read` / `comments:write`） | 已审核评论/批注；写入以 Violet AI 身份 |
 | `violet-posts` | 自己的文章读写 | PAT（`posts:read/write/publish`） | 当前用户名下文章（含草稿） |
 | `violet-scraper` | 外站抓取 + RSS 订阅 | PAT（`posts:scrape` / `subscriptions:*`） | 外站内容 + 订阅配置 |
 | `violet-notes` | 知识笔记写入（AI 会话沉淀） | PAT（`notes:read/write/publish`） | 当前用户名下笔记（含草稿） |
@@ -52,15 +52,20 @@ MCP server 在 `.omp/mcp.json` 声明：
 - **访问方式**：MCP resources（`blog://posts`）与 prompts（写作风格指南），AI 按需自动拉取，不通过显式工具调用。
 - **典型场景**：让 agent「按博客既有风格写一篇文章」时，先读 reader 的风格 prompt 再动笔。
 
-### violet-comments — 读者反馈检索
+### violet-comments — 读者反馈检索与发表
 
-检索读者在文章下留的评论和**划线批注**。批注带 `anchor.selected_text`（读者划中的原文）。仅返回**已审核通过（approved）**的反馈。
+检索读者在文章下留的评论和**划线批注**。批注带 `anchor.selected_text`（读者划中的原文）。读工具仅返回**已审核通过（approved）**的反馈。
 
-| 工具 | 用途 |
-|------|------|
-| `comment_stats` | 按文章聚合批注密度，定位「哪篇反馈最密集、最该先改进」 |
-| `list_recent_comments` | 按时间倒序看最近反馈动态 |
-| `search_comments` | 按关键词检索，判断「读者是否提过某类反馈」 |
+写入工具需 `comments:write`，一律以 **Violet AI** 身份发表（`is_ai=true`，专用头像 `/logo.png`，展示名 `Violet AI`），不会冒充 PAT 持有人的 Google/GitHub 头像。
+
+| 工具 | 用途 | 权限 |
+|------|------|------|
+| `comment_stats` | 按文章聚合批注密度，定位「哪篇反馈最密集、最该先改进」 | `comments:read` |
+| `list_recent_comments` | 按时间倒序看最近反馈动态 | `comments:read` |
+| `search_comments` | 按关键词检索，判断「读者是否提过某类反馈」 | `comments:read` |
+| `create_comment` | 底部自由评论（`post_id` 或 `slug` + `body`） | `comments:write` |
+| `create_annotation` | 划线批注（选区锚点五元组；可传 `block_text` 补齐 hash） | `comments:write` |
+| `create_block_comment` | 段评（传入段落 `block_text`，服务端生成全块锚点） | `comments:write` |
 
 ### violet-posts — 自己的文章读写
 
