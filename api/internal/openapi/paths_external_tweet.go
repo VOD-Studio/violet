@@ -13,7 +13,7 @@ func registerExternalTweetPaths(t *openapi3.T) {
 	})
 	registerSchema(t, "ExternalTweetMedia", openapi3.Schemas{
 		"kind": reqStr("photo、video 或 animated_gif"), "source_url": reqStr("图片或封面来源"),
-		"url": reqStr("本站保存的图片或封面"), "thumbnail_url": optStr("本站缩略图"),
+		"url": reqStr("本站保存的图片或封面"), "video_url": optStr("video.twimg.com 的 mp4 播放源；仅视频与 GIF 可能有"), "thumbnail_url": optStr("本站缩略图"),
 		"width": optInt("实际像素宽度"), "height": optInt("实际像素高度"), "alt": reqStr("替代文本"), "file_id": reqStr("共享文件标识"),
 	})
 	registerSchema(t, "ExternalTweetSnapshot", openapi3.Schemas{

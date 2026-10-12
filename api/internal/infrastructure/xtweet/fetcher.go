@@ -332,7 +332,11 @@ func normalizeFX(raw *fxTweet, depth int) (*apptweet.ExternalFetchResult, error)
 		if kind == "gif" {
 			kind = "animated_gif"
 		}
-		snapshot.Media = append(snapshot.Media, tweet.ExternalMedia{Kind: kind, SourceURL: source, Width: m.Width, Height: m.Height, Alt: m.Alt})
+		item := tweet.ExternalMedia{Kind: kind, SourceURL: source, Width: m.Width, Height: m.Height, Alt: m.Alt}
+		if kind != "photo" {
+			item.VideoURL = videoSourceURL(m.URL)
+		}
+		snapshot.Media = append(snapshot.Media, item)
 	}
 	if nonNull(raw.Poll) {
 		snapshot.Warnings = append(snapshot.Warnings, "投票请在 X 查看")
@@ -354,6 +358,16 @@ func normalizeFX(raw *fxTweet, depth int) (*apptweet.ExternalFetchResult, error)
 		}
 	}
 	return result, nil
+}
+
+// videoSourceURL 仅接受 video.twimg.com 上的 https mp4，其余来源返回空串。
+func videoSourceURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || checkURL(u, "video.twimg.com") != nil || !strings.HasSuffix(u.Path, ".mp4") {
+		return ""
+	}
+	u.Fragment = ""
+	return u.String()
 }
 
 func nonNull(value json.RawMessage) bool {

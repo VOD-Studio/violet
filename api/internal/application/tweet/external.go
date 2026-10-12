@@ -99,7 +99,7 @@ func (s *ExternalService) Preview(ctx context.Context, userID, rawURL string) (E
 	}
 	warnings := append([]string{}, dto.Snapshot.Warnings...)
 	for _, media := range dto.Snapshot.Media {
-		if media.Kind != "photo" {
+		if media.Kind != "photo" && media.VideoURL == "" {
 			warnings = append(warnings, "视频与 GIF 请在 X 查看")
 			break
 		}
