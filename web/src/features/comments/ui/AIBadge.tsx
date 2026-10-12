@@ -4,7 +4,9 @@
  * MCP/agent 发表的评论与批注带 is_ai=true，用此徽章与真人评论区分；
  * 头像为 Violet AI 专用形象（/logo.png），不使用 PAT 持有人的 Google/GitHub 头像。
  *
- * 文章评论（CommentMeta）与批注卡片（AnnotationCard）共用。
+ * 归属 features/comments：仅文章评论 / 批注使用，不进 shared。
+ * 文章评论经 CommentSectionConfig.renderMetaBadges 注入 shared CommentMeta；
+ * 批注卡片直接引用。
  */
 import { Sparkles } from "lucide-react";
 

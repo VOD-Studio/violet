@@ -2,6 +2,7 @@
  * buildArticleCommentConfig - 文章评论的 shared 展示层适配配置
  *
  * 把后端 Comment 归一化为 CommentDisplayItem，注入文章专属插槽：
+ *   - renderMetaBadges：AI 身份徽章（feature 专属，不进 shared）
  *   - renderBody：EmojiText 表情 + 图片网格（ImageGrid）
  *   - renderActions：ReactionBar（评论反应）
  *   - renderReplyForm：CommentForm（匿名两步流 / 富文本在表单内部）
@@ -17,6 +18,7 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
+import { AIBadge } from "./AIBadge";
 import { CommentForm } from "./CommentForm";
 import { ReactionBar } from "./ReactionBar";
 
@@ -61,7 +63,6 @@ export function buildArticleCommentConfig({
 			authorProfileUrl: c.author_profile_url,
 			authorHref: c.author_username ? `/users/${c.author_username}` : undefined,
 			isAuthor: c.is_author,
-			isAI: c.is_ai,
 			isPending: c.status === "pending",
 			body: c.body,
 			createdAt: c.created_at,
@@ -75,6 +76,7 @@ export function buildArticleCommentConfig({
 			raw: c,
 		}),
 		repliesMode: "preview",
+		renderMetaBadges: (item) => <AIBadge show={!!item.raw.is_ai} />,
 		renderBody: (item) => (
 			<>
 				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
