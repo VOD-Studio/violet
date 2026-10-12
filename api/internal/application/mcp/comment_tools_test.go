@@ -327,10 +327,21 @@ func TestCreateComment_RejectsUnpublishedPostID(t *testing.T) {
 	assert.Equal(t, 0, w.calls)
 }
 
-func TestCreateAnnotation_RejectsBlockTextNotInPost(t *testing.T) {
+func TestCreateAnnotation_RejectsSubstringOrUnknownBlock(t *testing.T) {
 	w := &fakeCommentWriteService{}
 	tools := NewCommentTools(nil, w, publishedP1())
+	// 子串不是完整渲染块
 	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "hello",
+			StartOffset: intPtr(0), EndOffset: intPtr(5), BlockText: "hello",
+		})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Equal(t, 0, w.calls)
+	// 完全不存在的块
+	res, _, err = tools.CreateAnnotation(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
 		createAnnotationArgs{
 			PostID: "p1", Body: "批注", SelectedText: "nope",
@@ -339,6 +350,24 @@ func TestCreateAnnotation_RejectsBlockTextNotInPost(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, res.IsError)
 	assert.Equal(t, 0, w.calls)
+}
+
+func TestCreateAnnotation_FiveTupleAgainstArticle(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	tools := NewCommentTools(nil, w, publishedP1())
+	id, err := appcomment.ComputeBlockID("hello world")
+	require.NoError(t, err)
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "world",
+			StartOffset: intPtr(6), EndOffset: intPtr(11),
+			BlockID: id, BlockTextHash: id,
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotNil(t, w.got.Anchor)
+	assert.Equal(t, id, w.got.Anchor.BlockID)
 }
 
 func TestCreateAnnotation_RequiresSelectionWithoutParent(t *testing.T) {

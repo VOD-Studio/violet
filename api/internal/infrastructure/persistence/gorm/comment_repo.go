@@ -305,13 +305,15 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {
 			continue
 		}
-		// 登录评论者按 user id 去重；匿名无 id，按展示名区分；AI 与真人同 user 时分开
-		identity := row.BlockID + "|" + row.AuthorName
-		if row.CreatedBy != nil {
-			identity = row.BlockID + "|" + row.CreatedBy.String()
-		}
+		// AI 批注对外统一为 Violet AI 身份：同块多个 PAT 持有人折叠为一个头像。
+		// 真人：登录按 user id 去重，匿名按展示名。
+		var identity string
 		if row.IsAI {
-			identity += "|ai"
+			identity = row.BlockID + "|ai"
+		} else if row.CreatedBy != nil {
+			identity = row.BlockID + "|" + row.CreatedBy.String()
+		} else {
+			identity = row.BlockID + "|" + row.AuthorName
 		}
 		if _, dup := seen[identity]; dup {
 			continue

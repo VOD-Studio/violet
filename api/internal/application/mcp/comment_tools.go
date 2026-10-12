@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -14,8 +13,6 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
 )
-
-var htmlTagRe = regexp.MustCompile(`(?s)<[^>]*>`)
 
 // CommentSearchService 评论检索 MCP tool 依赖的服务端口。
 // application/comment.Service 实现之；抽接口便于单测 fake 替换（与 SearchService 同 seam 模式）。
@@ -120,21 +117,6 @@ func withCommentWriteScope(req *mcp.CallToolRequest) *mcp.CallToolResult {
 		return errResult(err)
 	}
 	return nil
-}
-
-// blockTextAppearsInPost 粗检 block_text 是否出现在已发布文章正文（HTML 去标签或 Markdown）。
-// 防止 agent 幻觉选区写入后前端 findBlockElement 找不到块、反馈不可见。
-func blockTextAppearsInPost(dto apppost.PostDTO, blockText string) bool {
-	blockText = strings.TrimSpace(blockText)
-	if blockText == "" {
-		return false
-	}
-	if strings.Contains(dto.ContentMD, blockText) {
-		return true
-	}
-	// 粗暴去标签后再比：覆盖多数 textContent 与 HTML 源不一致但仍同文的情况
-	plain := htmlTagRe.ReplaceAllString(dto.ContentHTML, "")
-	return strings.Contains(plain, blockText)
 }
 
 // resolvePublishedPost 解析已发布文章：显式 post_id 优先；否则用 slug。
@@ -292,9 +274,6 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	if args.StartOffset == nil || args.EndOffset == nil || strings.TrimSpace(args.SelectedText) == "" {
 		return errResult(fmt.Errorf("顶级批注需要 start_offset、end_offset 与 selected_text")), nil, nil
 	}
-	if bt := strings.TrimSpace(args.BlockText); bt != "" && !blockTextAppearsInPost(post, bt) {
-		return errResult(fmt.Errorf("block_text 未出现在目标已发布文章正文中，无法锚定")), nil, nil
-	}
 	anchor, err := appcomment.ResolveAnnotationAnchor(
 		strings.TrimSpace(args.BlockID),
 		*args.StartOffset,
@@ -304,6 +283,9 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 		args.BlockText,
 	)
 	if err != nil {
+		return errResult(err), nil, nil
+	}
+	if err := appcomment.EnsureAnchorMatchesArticle(post.ContentHTML, anchor); err != nil {
 		return errResult(err), nil, nil
 	}
 	return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, anchor, false)
@@ -319,11 +301,11 @@ func (t *CommentTools) CreateBlockComment(ctx context.Context, req *mcp.CallTool
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	if !blockTextAppearsInPost(post, args.BlockText) {
-		return errResult(fmt.Errorf("block_text 未出现在目标已发布文章正文中，无法段评")), nil, nil
-	}
 	anchor, err := appcomment.BuildFullBlockAnchor(args.BlockText)
 	if err != nil {
+		return errResult(err), nil, nil
+	}
+	if err := appcomment.EnsureAnchorMatchesArticle(post.ContentHTML, anchor); err != nil {
 		return errResult(err), nil, nil
 	}
 	return t.createAsPAT(ctx, req, post.ID, args.Body, "", anchor, false)
