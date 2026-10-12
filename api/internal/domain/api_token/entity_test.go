@@ -38,6 +38,12 @@ func TestNewPAT_AcceptsCommentsReadScope(t *testing.T) {
 	assert.True(t, p.HasScope(ScopeCommentsRead))
 }
 
+func TestNewPAT_AcceptsCommentsWriteScope(t *testing.T) {
+	p, _, err := NewPAT("u-1", "x", []string{ScopeCommentsWrite}, time.Time{}, time.Now())
+	assert.NoError(t, err, "comments:write 是合法 scope")
+	assert.True(t, p.HasScope(ScopeCommentsWrite))
+}
+
 func TestNewPAT_RejectsEmptyScopes(t *testing.T) {
 	_, _, err := NewPAT("u-1", "x", nil, time.Time{}, time.Now())
 	assert.Error(t, err, "至少要有一个 scope")

@@ -6,7 +6,7 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// PAT scope 枚举。固定十分：文章读/写/发布、抓取、订阅读/写、评论读、笔记读/写/发布，创建时多选。
+// PAT scope 枚举。固定十一个：文章读/写/发布、抓取、订阅读/写、评论读/写、笔记读/写/发布，创建时多选。
 const (
 	ScopePostsRead          = "posts:read"
 	ScopePostsWrite         = "posts:write"
@@ -15,6 +15,7 @@ const (
 	ScopeSubscriptionsRead  = "subscriptions:read"  // 列/查订阅源
 	ScopeSubscriptionsWrite = "subscriptions:write" // 增删改订阅源、暂停/恢复
 	ScopeCommentsRead       = "comments:read"       // 评论/批注检索（MCP violet-comments server）
+	ScopeCommentsWrite      = "comments:write"      // 以 PAT 持有人身份发表评论/回复（MCP create_comment）
 	ScopeNotesRead          = "notes:read"          // 列/查自己的笔记含草稿（MCP violet-notes server）
 	ScopeNotesWrite         = "notes:write"         // 创建/编辑/删除自己的笔记
 	ScopeNotesPublish       = "notes:publish"       // 以 published 状态建笔记（直发；draft 不需要）
@@ -30,6 +31,7 @@ var validScopes = map[string]struct{}{
 	ScopeSubscriptionsRead:  {},
 	ScopeSubscriptionsWrite: {},
 	ScopeCommentsRead:       {},
+	ScopeCommentsWrite:      {},
 	ScopeNotesRead:          {},
 	ScopeNotesWrite:         {},
 	ScopeNotesPublish:       {},
