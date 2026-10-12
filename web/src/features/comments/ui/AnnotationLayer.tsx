@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { computeBlockId } from "../lib/block-id";
 import { extractCandidateBlocks, findBlockElement, getBlockText } from "../lib/extract-blocks";
 import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../lib/range-marks";
-import type { BlockAuthor, BlockCount } from "../model/types";
+import type { AnnotationAuthorFilter, BlockAuthor, BlockCount } from "../model/types";
 import { AnnotationPopover, type AnnotationPopoverTarget } from "./AnnotationPopover";
 import { BlockCommentTrigger } from "./BlockCommentTrigger";
 import { useExclusivePanel } from "./use-exclusive-panel";
@@ -40,10 +40,19 @@ export interface AnnotationLayerProps {
 	isLoggedIn?: boolean;
 }
 
+function sameAuthorFilter(a: AnnotationAuthorFilter, b: AnnotationAuthorFilter): boolean {
+	if (a === null || b === null) return a === b;
+	return a.name === b.name && a.is_ai === b.is_ai;
+}
+
+function authorIdentityKey(a: { name: string; is_ai?: boolean }): string {
+	return `${a.is_ai ? "ai" : "user"}:${a.name}`;
+}
+
 /** 当前展开气泡的选择：块 + 评论者筛选，触发元素用于定位 */
 interface ActivePopover {
 	blockId: string;
-	author: string | null;
+	author: AnnotationAuthorFilter;
 	anchorEl: HTMLElement;
 }
 
@@ -82,6 +91,7 @@ export function AnnotationLayer({
 
 		let cancelled = false;
 		let applyingMarks = false;
+		let pendingFormulaMutation = false;
 		let debounceTimer = 0;
 		let runGeneration = 0;
 
@@ -113,6 +123,10 @@ export function AnnotationLayer({
 			} finally {
 				queueMicrotask(() => {
 					applyingMarks = false;
+					if (pendingFormulaMutation && !cancelled) {
+						pendingFormulaMutation = false;
+						scheduleApply();
+					}
 				});
 			}
 			if (cancelled || generation !== runGeneration) return;
@@ -129,7 +143,7 @@ export function AnnotationLayer({
 		void applyMarks();
 
 		const mo = new MutationObserver((mutations) => {
-			if (cancelled || applyingMarks) return;
+			if (cancelled) return;
 			const formulaDomChanged = mutations.some((m) => {
 				for (const n of [...m.addedNodes, ...m.removedNodes]) {
 					if (!(n instanceof Element)) continue;
@@ -146,7 +160,12 @@ export function AnnotationLayer({
 				}
 				return false;
 			});
-			if (formulaDomChanged) scheduleApply();
+			if (!formulaDomChanged) return;
+			if (applyingMarks) {
+				pendingFormulaMutation = true;
+				return;
+			}
+			scheduleApply();
 		});
 		mo.observe(root, { childList: true, subtree: true });
 
@@ -197,13 +216,19 @@ export function AnnotationLayer({
 	useExclusivePanel("popover", active !== null, close);
 
 	/** 点击头像或高亮：同一目标再点一次收起，否则切换到新目标 */
-	const toggle = useCallback((blockId: string, author: string | null, anchorEl: HTMLElement) => {
-		setActive((cur) =>
-			cur && cur.blockId === blockId && cur.author === author && cur.anchorEl === anchorEl
-				? null
-				: { blockId, author, anchorEl },
-		);
-	}, []);
+	const toggle = useCallback(
+		(blockId: string, author: AnnotationAuthorFilter, anchorEl: HTMLElement) => {
+			setActive((cur) =>
+				cur &&
+				cur.blockId === blockId &&
+				sameAuthorFilter(cur.author, author) &&
+				cur.anchorEl === anchorEl
+					? null
+					: { blockId, author, anchorEl },
+			);
+		},
+		[],
+	);
 
 	// 点击划线高亮：打开该块的批注气泡，贴着该块的角标头像定位
 	useEffect(() => {
@@ -290,9 +315,9 @@ function AnnotationMarker({
 }: {
 	block: BlockCount;
 	top: number;
-	/** undefined：该块气泡未展开；null：展开且显示全部；string：展开且只看该评论者 */
-	activeAuthor: string | null | undefined;
-	onSelect: (author: string | null, anchorEl: HTMLElement) => void;
+	/** undefined：该块气泡未展开；null：展开且显示全部；对象：展开且只看该身份 */
+	activeAuthor: AnnotationAuthorFilter | undefined;
+	onSelect: (author: AnnotationAuthorFilter, anchorEl: HTMLElement) => void;
 }) {
 	const authors = block.authors ?? [];
 	const shown = authors.slice(0, MARKER_AVATAR_MAX);
@@ -318,10 +343,16 @@ function AnnotationMarker({
 			) : (
 				shown.map((author) => (
 					<MarkerAvatar
-						key={author.name}
+						key={authorIdentityKey(author)}
 						author={author}
-						active={activeAuthor === author.name}
-						onClick={(el) => onSelect(author.name, el)}
+						active={
+							activeAuthor != null &&
+							sameAuthorFilter(activeAuthor, {
+								name: author.name,
+								is_ai: !!author.is_ai,
+							})
+						}
+						onClick={(el) => onSelect({ name: author.name, is_ai: !!author.is_ai }, el)}
 					/>
 				))
 			)}

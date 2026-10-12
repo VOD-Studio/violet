@@ -4,7 +4,7 @@ import { cn } from "cn";
 import { X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useBlockAnnotations } from "../api/queries";
-import type { BlockAuthor } from "../model/types";
+import type { AnnotationAuthorFilter, BlockAuthor } from "../model/types";
 import { AnnotationCard } from "./AnnotationCard";
 import { usePresence } from "./use-presence";
 
@@ -18,8 +18,8 @@ const MIN_ROOM_PX = 200;
 
 export interface AnnotationPopoverTarget {
 	blockId: string;
-	/** 只看某位评论者的批注；null 为全部 */
-	author: string | null;
+	/** 只看某位评论者的批注（含 is_ai）；null 为全部 */
+	author: AnnotationAuthorFilter;
 	/** 触发它的头像或高亮，气泡贴着它定位 */
 	anchorEl: HTMLElement;
 	/** 该块批注的评论者，用于顶部筛选头像 */
@@ -33,7 +33,7 @@ export interface AnnotationPopoverProps {
 	target: AnnotationPopoverTarget | null;
 	postId: string;
 	isLoggedIn: boolean;
-	onFilter: (author: string | null) => void;
+	onFilter: (author: AnnotationAuthorFilter) => void;
 	onClose: () => void;
 }
 
@@ -129,25 +129,31 @@ function PopoverHeader({
 	onClose,
 }: {
 	target: AnnotationPopoverTarget;
-	onFilter: (author: string | null) => void;
+	onFilter: (author: AnnotationAuthorFilter) => void;
 	onClose: () => void;
 }) {
+	const showAiBadge =
+		target.author === null ? target.authors.some((a) => a.is_ai) : target.author.is_ai;
 	return (
 		<div className="flex shrink-0 items-center gap-2 px-4 pt-3 pb-2">
 			<span className="text-xs font-medium text-muted-foreground">{target.count} 条批注</span>
-			{target.authors.some((a) => a.is_ai) ? <AIBadge show /> : null}
+			{showAiBadge ? <AIBadge show /> : null}
 			{target.authors.length > 1 && (
 				<div className="ml-1 flex items-center gap-1">
 					{target.authors.map((author) => {
-						const selected = target.author === author.name;
+						const identity = { name: author.name, is_ai: !!author.is_ai };
+						const selected =
+							target.author !== null &&
+							target.author.name === identity.name &&
+							target.author.is_ai === identity.is_ai;
 						return (
 							<button
-								key={author.name}
+								key={`${identity.is_ai ? "ai" : "user"}:${identity.name}`}
 								type="button"
-								title={author.name}
-								aria-label={`只看 ${author.name}`}
+								title={author.is_ai ? `${author.name}（AI）` : author.name}
+								aria-label={`只看 ${author.is_ai ? `${author.name}（AI）` : author.name}`}
 								aria-pressed={selected}
-								onClick={() => onFilter(selected ? null : author.name)}
+								onClick={() => onFilter(selected ? null : identity)}
 								className={cn(
 									"inline-flex size-6 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-[11px] font-semibold text-primary transition-opacity",
 									target.author && !selected && "opacity-40 hover:opacity-80",
@@ -194,7 +200,9 @@ function PopoverBody({
 	const comments = useMemo(
 		() =>
 			(query.data?.data ?? []).filter(
-				(c) => target.author === null || c.author_name === target.author,
+				(c) =>
+					target.author === null ||
+					(c.author_name === target.author.name && !!c.is_ai === target.author.is_ai),
 			),
 		[query.data, target.author],
 	);

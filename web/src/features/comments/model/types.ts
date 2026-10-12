@@ -97,6 +97,9 @@ export interface BlockAuthor {
 	is_ai?: boolean;
 }
 
+/** 批注气泡按评论者筛选；含 is_ai 以区分同名真人与 Violet AI */
+export type AnnotationAuthorFilter = { name: string; is_ai: boolean } | null;
+
 /** 回复排序方式。asc=最早优先（默认），desc=最新优先。
  *  「热门」需 reaction_count 冗余，本期未实现。 */
 export type ReplySort = "asc" | "desc";

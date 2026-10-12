@@ -4,8 +4,10 @@
  * buildAnchorFromRange 是纯函数（输入规范化数据），selectionToAnchor 是它的 DOM 包装：
  * 从 Selection 取 Range，定位所在块级元素，算 blockId + 块内 offset，调纯函数。
  *
- * 块内 offset 计算：用 Range API 创建「块首 → 选区起点」的 Range，其 toString().length
- * 即 startOffset（DOM 节点级 offset 转块文本级 offset 的标准技巧）。
+ * 块内 offset：对「块首 → 选区端点」做 Range.cloneContents()，再用 measureCarrierText
+ * 按与 getBlockText 相同的 carrier 口径计长（公式用 data-latex、可运行块用 data-source），
+ * 不用 Range.toString()（后者含 KaTeX DOM 文本，会与锚点哈希坐标系错位）。
+ * 选区落在 carrier 内部时先吸附到 carrier 边界。
  *
  * 跨块判定：选区起点和终点所在块不同 → buildAnchorFromRange 返回 null。
  *
