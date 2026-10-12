@@ -143,6 +143,7 @@ func registerPostPaths(t *openapi3.T) {
 	registerSchema(t, "AnnotationBlockAuthorDTO", openapi3.Schemas{
 		"name":       reqStr("评论者展示名"),
 		"avatar_url": reqStr("头像地址；空串表示未设置"),
+		"is_ai":      optBool("是否 MCP/AI agent；与同名真人区分，前端角标/气泡筛选键"),
 	})
 	registerSchema(t, "AnnotationBlockRangeDTO", openapi3.Schemas{
 		"start": optInt("起始偏移（块内字符位，0-based）"),
