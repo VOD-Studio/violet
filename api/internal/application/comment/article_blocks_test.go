@@ -113,3 +113,29 @@ func TestEnsureAnchorMatchesArticle_MarkdownFallbackBody(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, EnsureAnchorMatchesArticle(html, a))
 }
+
+func TestExtractArticleBlocks_SkipsSanitizedAwayScriptText(t *testing.T) {
+	html := `<p>Hello<script>secret</script>world</p>`
+	blocks, err := ExtractArticleBlocks(html)
+	require.NoError(t, err)
+	require.Len(t, blocks, 1)
+	assert.Equal(t, "Helloworld", blocks[0].Text)
+
+	visible, err := ResolveAnnotationAnchor("", 0, 10, "Helloworld", "", "Helloworld")
+	require.NoError(t, err)
+	require.NoError(t, EnsureAnchorMatchesArticle(html, visible))
+
+	rawSecret, err := ResolveAnnotationAnchor("", 0, 16, "Hellosecretworld", "", "Hellosecretworld")
+	require.NoError(t, err)
+	err = EnsureAnchorMatchesArticle(html, rawSecret)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "未匹配文章中任何完整渲染块")
+}
+
+func TestExtractArticleBlocks_SkipsStyleSubtree(t *testing.T) {
+	html := `<p>ab<style>.x{}</style>cd</p>`
+	blocks, err := ExtractArticleBlocks(html)
+	require.NoError(t, err)
+	require.Len(t, blocks, 1)
+	assert.Equal(t, "abcd", blocks[0].Text)
+}

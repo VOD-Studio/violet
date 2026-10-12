@@ -16,13 +16,29 @@ import (
 // 与前端 extract-blocks.ts BLOCK_SELECTOR 一致。
 const articleBlockSelector = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']"
 
+// readerAllowedTags 对齐阅读端 sanitize-content.ts（hast-util-sanitize defaultSchema + 站点扩展）。
+// 未列出的元素整棵丢弃，避免 ContentHTML 中的 script/style 等进入块文本而与浏览器可见 DOM 分叉。
+var readerAllowedTags = map[string]struct{}{
+	"a": {}, "abbr": {}, "b": {}, "blockquote": {}, "br": {}, "code": {},
+	"dd": {}, "del": {}, "details": {}, "div": {}, "dl": {}, "dt": {},
+	"em": {}, "figcaption": {}, "figure": {}, "h1": {}, "h2": {}, "h3": {},
+	"h4": {}, "h5": {}, "h6": {}, "hr": {}, "i": {}, "img": {}, "input": {},
+	"ins": {}, "kbd": {}, "label": {}, "li": {}, "mark": {}, "ol": {},
+	"p": {}, "picture": {}, "pre": {}, "q": {}, "rp": {}, "rt": {},
+	"ruby": {}, "s": {}, "samp": {}, "section": {}, "source": {}, "span": {},
+	"strike": {}, "strong": {}, "sub": {}, "summary": {}, "sup": {},
+	"table": {}, "tbody": {}, "td": {}, "tfoot": {}, "th": {}, "thead": {},
+	"tr": {}, "tt": {}, "u": {}, "ul": {}, "var": {},
+}
+
 // ArticleBlock 正文中的一个可锚定块（id = SHA-256(TrimSpace(text))[:8]）。
 type ArticleBlock struct {
 	ID   string
 	Text string // 对应 DOM textContent，供 offset 校验
 }
 
-// ExtractArticleBlocks 从文章 ContentHTML 提取候选块，对齐前端 extractCandidateBlocks。
+// ExtractArticleBlocks 从文章 ContentHTML 提取候选块，对齐前端 extractCandidateBlocks；
+// 块文本跳过阅读端 sanitize 会丢弃的标签子树（如 script），与可见 DOM 一致。
 func ExtractArticleBlocks(contentHTML string) ([]ArticleBlock, error) {
 	contentHTML = strings.TrimSpace(contentHTML)
 	if contentHTML == "" {
@@ -62,6 +78,9 @@ func nodeTextContent(n *html.Node) string {
 			return
 		}
 		if node.Type == html.ElementNode {
+			if _, ok := readerAllowedTags[node.Data]; !ok {
+				return // 阅读端 sanitize 会整棵移除
+			}
 			switch attr(node, "data-type") {
 			case "inline-math", "block-math":
 				// 与阅读端 carrier 一致：用 data-latex 参与块文本（空 span 无子文本）。
