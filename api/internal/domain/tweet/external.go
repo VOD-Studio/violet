@@ -156,6 +156,19 @@ type ExternalTweet struct {
 	TakenDown bool
 }
 
+// MissingVideoSource 报告快照中是否有视频或 GIF 缺少播放源，旧版本快照只保存了封面。
+func (s *ExternalSnapshot) MissingVideoSource() bool {
+	if s == nil {
+		return false
+	}
+	for _, media := range s.Media {
+		if media.Kind != "photo" && media.VideoURL == "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *ExternalTweet) CanPublish() bool {
 	return t != nil && !t.TakenDown && t.Availability == ExternalAvailable && t.Snapshot != nil && t.Snapshot.Completeness == TextComplete
 }

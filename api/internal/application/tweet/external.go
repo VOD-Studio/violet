@@ -145,7 +145,7 @@ func (s *ExternalService) load(ctx context.Context, sourceID string, force bool)
 			return nil, &ExternalFetchError{Kind: "restricted", StopFallback: true}
 		}
 		needsQuote := ext.Snapshot != nil && ext.Snapshot.QuoteURL != "" && ext.QuotedID == nil
-		if !force && ext.CanPublish() && !needsQuote && s.now().Sub(ext.FetchedAt) < time.Hour {
+		if !force && ext.CanPublish() && !needsQuote && !ext.Snapshot.MissingVideoSource() && s.now().Sub(ext.FetchedAt) < time.Hour {
 			return ext, nil
 		}
 		failure, err := s.previews.GetFailure(workCtx, sourceID)
