@@ -6,6 +6,7 @@
  *
  * getBlockText 对语义 carrier（inline-math / runnable data-source）与阅读端
  * HtmlContent 渲染口径对齐，供 MCP 服务端 ExtractArticleBlocks 同源校验。
+ * findBlockElement / extract 另算 legacy textContent hash，兼容历史公式批注。
  */
 
 import { computeBlockId } from "./block-id";
@@ -23,6 +24,11 @@ export function getBlockText(el: HTMLElement): string {
 		return el.dataset.source;
 	}
 	return carrierAwareTextContent(el);
+}
+
+/** 旧口径：DOM textContent（含 KaTeX 渲染文本），仅用于历史锚点 hash 回退。 */
+export function getLegacyBlockText(el: HTMLElement): string {
+	return el.textContent ?? "";
 }
 
 function carrierAwareTextContent(root: Node): string {
@@ -56,6 +62,18 @@ function carrierAwareTextContent(root: Node): string {
 	return parts.join("");
 }
 
+async function legacyIdIfDifferent(
+	canonicalText: string,
+	el: HTMLElement,
+): Promise<string | undefined> {
+	const legacyText = getLegacyBlockText(el);
+	if (legacyText.trim() === "" || legacyText === canonicalText) return undefined;
+	const legacyId = await computeBlockId(legacyText);
+	const canonicalId = await computeBlockId(canonicalText);
+	if (legacyId === null || legacyId === canonicalId) return undefined;
+	return legacyId;
+}
+
 /**
  * extractCandidateBlocks 从正文容器提取候选块列表。
  *
@@ -70,7 +88,8 @@ export async function extractCandidateBlocks(root: HTMLElement): Promise<Candida
 		const text = getBlockText(el);
 		const id = await computeBlockId(text);
 		if (id !== null) {
-			blocks.push({ id, text });
+			const legacyId = await legacyIdIfDifferent(text, el);
+			blocks.push(legacyId !== undefined ? { id, text, legacyId } : { id, text });
 		}
 	}
 	return blocks;
@@ -78,7 +97,7 @@ export async function extractCandidateBlocks(root: HTMLElement): Promise<Candida
 
 /**
  * 找到 blockId 对应的 DOM 元素（用于滚动定位）。
- * 重新遍历算 id 匹配——DOM 没有 data-block-id 属性，靠文本 hash 定位。
+ * 先匹配现行 carrier hash，再回退旧 textContent hash（历史公式批注）。
  */
 export async function findBlockElement(
 	root: HTMLElement,
@@ -89,6 +108,8 @@ export async function findBlockElement(
 		const text = getBlockText(el);
 		const id = await computeBlockId(text);
 		if (id === blockId) return el;
+		const legacyId = await legacyIdIfDifferent(text, el);
+		if (legacyId === blockId) return el;
 	}
 	return null;
 }

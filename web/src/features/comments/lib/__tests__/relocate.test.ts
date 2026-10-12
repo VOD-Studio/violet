@@ -176,3 +176,29 @@ const _checkUnion = (r: RelocateResult) => {
 	}
 };
 void _checkUnion;
+
+describe("relocate — legacyId 兼容历史公式 hash", () => {
+	it("blockTextHash 命中 legacyId 且 selectedText 在现行 text 中 → located", async () => {
+		const anchor = makeAnchor({
+			blockId: "legacy01",
+			blockTextHash: "legacy01",
+			startOffset: 0,
+			endOffset: 4,
+			selectedText: "质能方程",
+		});
+		const blocks = [
+			{
+				id: "canon001",
+				text: "质能方程 E=mc^2 成立",
+				legacyId: "legacy01",
+			},
+		];
+		const result = await relocate(anchor, blocks);
+		expect(result.kind).toBe("located");
+		if (result.kind !== "located") return;
+		expect(result.blockId).toBe("canon001");
+		expect(result.selectedText).toBe("质能方程");
+		expect(result.startOffset).toBe(0);
+		expect(result.fuzzy).toBe(false);
+	});
+});
