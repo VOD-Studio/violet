@@ -112,6 +112,28 @@ describe("Dropdown", () => {
 		expect(panel("博客")).toBeNull();
 	});
 
+	it("动画帧暂停时，面板完成定位后慢速移入仍保持展开", () => {
+		let now = 0;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
+		render(<Menu label="博客" />);
+		const trigger = screen.getByRole("link", { name: "博客" });
+		vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 40, 80, 32));
+		hover(trigger);
+		advance(80);
+		const content = screen.getByLabelText("博客菜单");
+		const bounds = vi.spyOn(content, "getBoundingClientRect");
+		bounds.mockReturnValue(new DOMRect(0, -1000, 200, 100));
+		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 140, clientY: 56 });
+		bounds.mockReturnValue(new DOMRect(60, 82, 200, 100));
+		now = 40;
+		hover(content);
+		fireEvent.pointerMove(document, { pointerType: "mouse", clientX: 140, clientY: 100 });
+		advance(500);
+		expect(trigger.getAttribute("aria-expanded")).toBe("true");
+		expect(panel("博客")).toBe(content);
+	});
+
 	it("触发器与面板之间的间隙属于安全区，移出间隙才收起", () => {
 		render(<Menu label="博客" />);
 		const trigger = screen.getByRole("link", { name: "博客" });

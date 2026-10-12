@@ -231,15 +231,16 @@ export function DropdownDocPage() {
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						Tailwind v4 宿主在 Tailwind 后加载 @violet/ui/styles.css；普通 CSS
 						宿主先加载 @violet/ui/tokens.css，再加载
-						@violet/ui/components/dropdown.css。组件只提供 .v-dropdown__content
-						面板样式，行为依赖 JavaScript， 没有脱离 React 的纯 HTML
-						用法；面板内的项目样式由宿主决定。
+						@violet/ui/components/dropdown.css。面板、菜单项与共享高亮使用同一份 BEM
+						CSS， 布局与配色可由宿主覆盖。行为依赖 JavaScript，不提供脱离 React 的纯
+						HTML 菜单。
 					</p>
 					<p className="text-sm leading-relaxed text-muted-foreground">
 						下方面板从顶部向下揭开，上方面板从底部向上揭开，关闭时反向收拢；空间不足翻转时，动画跟随实际方位。
 						开合不改变透明度，文字与图标保持静止。DropdownItem 共用一块随 hover
-						与键盘焦点平滑移动的底色， 快速折返从当前位置续接；可通过
-						--v-dropdown-item-highlight 覆盖高亮颜色。DropdownGroup
+						与键盘焦点平滑移动的底色，快速折返从当前位置续接。指针经过项间空隙、面板留白或触发器间隙时保留上一项，
+						进入下一项才移动，真正离开安全区后才隐藏；可通过 --v-dropdown-item-highlight
+						覆盖高亮颜色。DropdownGroup
 						只在同方向面板之间接力，保留位置与尺寸变形，内容按最终宽度静态排版；实际方位不同时各自开合，不做跨方向接力。
 						启用减弱动态时面板直接出现与消失；播放中开启该偏好会立即结束当前动效。
 					</p>

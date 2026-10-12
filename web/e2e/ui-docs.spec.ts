@@ -565,3 +565,67 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	await expect(highlight).toHaveCSS("opacity", "0");
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
+
+test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开后才清理", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 1000 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await page.goto("/ui/components/dropdown");
+	await page.waitForLoadState("networkidle");
+	const trigger = page
+		.getByRole("navigation", { name: "Dropdown 示例" })
+		.getByRole("link", { name: "指南", exact: true });
+	await trigger.hover();
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+	const contentId = await trigger.getAttribute("aria-controls");
+	if (!contentId) throw new Error("指南面板缺少关联");
+	const content = page.locator(`[id="${contentId}"]`);
+	const first = content.getByRole("link", { name: "快速入门", exact: true });
+	const second = content.getByRole("link", { name: "设计原则", exact: true });
+	const highlight = content.locator('[data-slot="dropdown-highlight"]');
+	await first.hover();
+	await expect(highlight).toHaveCSS("opacity", "1");
+	const firstRect = await first.boundingBox();
+	const secondRect = await second.boundingBox();
+	const panelRect = await content.boundingBox();
+	const triggerRect = await trigger.boundingBox();
+	if (!firstRect || !secondRect || !panelRect || !triggerRect) {
+		throw new Error("菜单缺少可见几何");
+	}
+	const firstBottom = firstRect.y + firstRect.height;
+	expect(secondRect.y).toBeGreaterThan(firstBottom);
+	await page.mouse.move(firstRect.x + firstRect.width / 2, (firstBottom + secondRect.y) / 2);
+	await expect(highlight).toHaveCSS("opacity", "1");
+	expect(await highlight.boundingBox()).toEqual(firstRect);
+	await page.mouse.move((panelRect.x + firstRect.x) / 2, firstRect.y + firstRect.height / 2);
+	await expect(highlight).toHaveCSS("opacity", "1");
+	expect(await highlight.boundingBox()).toEqual(firstRect);
+	await second.hover();
+	await expect(highlight).toHaveCSS("opacity", "1");
+	expect(await highlight.boundingBox()).toEqual(secondRect);
+	const triggerBottom = triggerRect.y + triggerRect.height;
+	expect(panelRect.y).toBeGreaterThan(triggerBottom);
+	await page.mouse.move(triggerRect.x + triggerRect.width / 2, (triggerBottom + panelRect.y) / 2);
+	await trigger.hover();
+	await expect(highlight).toHaveCSS("opacity", "1");
+	expect(await highlight.boundingBox()).toEqual(secondRect);
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+	await page.emulateMedia({ reducedMotion: "no-preference" });
+	await content.evaluate((element) => {
+		const observer = new MutationObserver(() => {
+			if (element.getAttribute("data-state") === "closed") {
+				for (const animation of element.getAnimations()) animation.pause();
+				observer.disconnect();
+			}
+		});
+		observer.observe(element, { attributes: true, attributeFilter: ["data-state"] });
+	});
+	await page.mouse.move(1300, 800);
+	await expect(content).toHaveAttribute("data-state", "closed");
+	await expect(content).toHaveCount(1);
+	await expect(highlight).toHaveCSS("opacity", "0");
+	await content.evaluate((element) => {
+		for (const animation of element.getAnimations()) animation.play();
+	});
+	await expect(content).toHaveCount(0);
+});

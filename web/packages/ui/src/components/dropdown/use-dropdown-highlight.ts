@@ -111,20 +111,24 @@ export function useDropdownHighlight(innerRef: RefObject<HTMLDivElement | null>)
 				!hovered.current.matches(DISABLED_SELECTOR)
 			)
 				return;
-			hovered.current = findItem(event.target);
+			const item = findItem(event.target);
+			if (!item) {
+				const candidate =
+					event.target instanceof Element
+						? event.target.closest(".v-dropdown__item")
+						: null;
+				if (candidate?.closest(".v-dropdown__inner") !== innerRef.current) return;
+			}
+			hovered.current = item;
 			update();
 		},
-		[findItem, update],
+		[findItem, innerRef, update],
 	);
 
-	const leave = useCallback(
-		(event: React.PointerEvent<HTMLDivElement>) => {
-			if (event.pointerType === "touch") return;
-			hovered.current = null;
-			update();
-		},
-		[update],
-	);
+	const leave = useCallback(() => {
+		hovered.current = null;
+		update();
+	}, [update]);
 
 	const focus = useCallback(
 		(event: React.FocusEvent<HTMLDivElement>) => {

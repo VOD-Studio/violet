@@ -80,6 +80,7 @@ interface DropdownContextValue {
 	setHandoff: (handoff: boolean) => void;
 	triggerRef: RefObject<HTMLElement | null>;
 	contentRef: RefObject<HTMLElement | null>;
+	pointerExitRef: RefObject<(() => void) | null>;
 	pointerEnter: () => void;
 	pointerLeave: (point: PointerPoint) => void;
 	focusIn: () => void;
@@ -151,19 +152,24 @@ export function Dropdown({
 	const dismissed = useRef(false);
 	const triggerRef = useRef<HTMLElement>(null);
 	const contentRef = useRef<HTMLElement>(null);
+	const pointerExitRef = useRef<(() => void) | null>(null);
 	const geometryRef = useRef<{
 		trigger: DOMRect | undefined;
 		content: DOMRect | undefined;
 	} | null>(null);
 	const geometryFrame = useRef(0);
+	const geometryCapturedAt = useRef(0);
 	const isInside = useCallback((x: number, y: number) => {
 		let geometry = geometryRef.current;
-		if (!geometry) {
+		const now = performance.now();
+		// 后台 rAF 可能暂停，不能无限复用定位前的矩形。
+		if (!geometry || now - geometryCapturedAt.current >= 16) {
 			geometry = {
 				trigger: triggerRef.current?.getBoundingClientRect(),
 				content: contentRef.current?.getBoundingClientRect(),
 			};
 			geometryRef.current = geometry;
+			geometryCapturedAt.current = now;
 			if (!geometryFrame.current) {
 				geometryFrame.current = requestAnimationFrame(() => {
 					geometryRef.current = null;
@@ -259,6 +265,7 @@ export function Dropdown({
 			}
 			hovering.current = false;
 			dismissed.current = false;
+			pointerExitRef.current?.();
 			schedule(false, closeDelay);
 		},
 		[cancelClose, closeDelay, isInside, schedule],
@@ -281,6 +288,7 @@ export function Dropdown({
 			if (!hovering.current && !dismissed.current) return;
 			hovering.current = false;
 			dismissed.current = false;
+			pointerExitRef.current?.();
 			if (open) schedule(false, closeDelay);
 			else {
 				cancelClose();
@@ -318,6 +326,7 @@ export function Dropdown({
 					setHandoff,
 					triggerRef,
 					contentRef,
+					pointerExitRef,
 					pointerEnter,
 					pointerLeave,
 					focusIn,
@@ -460,6 +469,13 @@ function DropdownContentImpl({
 	const innerRef = useRef<HTMLDivElement>(null);
 	const morphAnimationRef = useRef<Animation | null>(null);
 	const highlight = useDropdownHighlight(innerRef);
+	useLayoutEffect(() => {
+		const exitRef = context.pointerExitRef;
+		exitRef.current = highlight.leave;
+		return () => {
+			if (exitRef.current === highlight.leave) exitRef.current = null;
+		};
+	}, [context.pointerExitRef, highlight.leave]);
 	const composedRef = useComposedRefs<HTMLDivElement>(
 		ref,
 		contentRef,
@@ -607,10 +623,7 @@ function DropdownContentImpl({
 			onPointerMove={composeEventHandlers(props.onPointerMove, highlight.pointer)}
 			onPointerLeave={composeEventHandlers(
 				props.onPointerLeave,
-				(event: React.PointerEvent<HTMLDivElement>) => {
-					hoverOnly(context.pointerLeave)(event);
-					highlight.leave(event);
-				},
+				hoverOnly(context.pointerLeave),
 			)}
 			onFocus={composeEventHandlers(
 				props.onFocus,
