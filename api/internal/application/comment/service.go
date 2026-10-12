@@ -876,7 +876,8 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) Comme
 		dto.ParentID = c.ParentID().String()
 	}
 	// is_author：仅当提供了 postAuthorID 且评论者登录态（created_by 非空）且二者相等时为 true
-	if postAuthorID != nil && c.UserID() != nil && *c.UserID() == *postAuthorID {
+	// AI 评论即便由作者 PAT 发表也不算作者本人（无皇冠/高亮）。
+	if !c.IsAI() && postAuthorID != nil && c.UserID() != nil && *c.UserID() == *postAuthorID {
 		dto.IsAuthor = true
 	}
 	// anchor：批注才有，转成 DTO 形态（snake_case）
@@ -1014,7 +1015,11 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 	authorDeleted := make(map[string]bool, len(comments))
 	parentAuthorDeleted := make(map[string]bool, len(comments))
 	authorIDByComment := make(map[string]string, len(comments))
+	aiComment := make(map[string]bool, len(comments))
 	for _, c := range comments {
+		if c.IsAI() {
+			aiComment[c.ID().String()] = true
+		}
 		if c.UserID() != nil {
 			authorIDByComment[c.ID().String()] = c.UserID().String()
 		}
@@ -1024,7 +1029,8 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 			authorDeleted[c.ID().String()] = true
 		}
 		if c.ParentID() != nil {
-			if puid, ok := authorIDByComment[c.ParentID().String()]; ok && deletedByUser[puid] {
+			// 父评论为 AI 时保留「Violet AI」作为被回复者名，不因 PAT 持有人注销被替换。
+			if puid, ok := authorIDByComment[c.ParentID().String()]; ok && deletedByUser[puid] && !aiComment[c.ParentID().String()] {
 				parentAuthorDeleted[c.ID().String()] = true
 			}
 		}

@@ -45,3 +45,19 @@ func TestResolveAnnotationAnchor_RequiresSelectedText(t *testing.T) {
 	_, err := ResolveAnnotationAnchor("abc12345", 0, 5, "", "abc12345", "")
 	assert.Error(t, err)
 }
+
+func TestResolveAnnotationAnchor_RejectsOffsetMismatch(t *testing.T) {
+	_, err := ResolveAnnotationAnchor("", 0, 5, "world", "", "hello world")
+	assert.Error(t, err)
+	_, err = ResolveAnnotationAnchor("", 6, 20, "world", "", "hello world")
+	assert.Error(t, err, "越界")
+	_, err = ResolveAnnotationAnchor("", 6, 11, "world", "", "hello world")
+	assert.NoError(t, err)
+}
+
+func TestResolveAnnotationAnchor_UTF16Offsets(t *testing.T) {
+	// 😀 占 2 个 UTF-16 code unit
+	a, err := ResolveAnnotationAnchor("", 3, 5, "中文", "", "a😀中文b")
+	require.NoError(t, err)
+	assert.Equal(t, "中文", a.SelectedText)
+}

@@ -3,6 +3,7 @@ package comment
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"unicode/utf16"
 
@@ -65,7 +66,13 @@ func ResolveAnnotationAnchor(blockID string, start, end int, selectedText, block
 		if blockHash == "" {
 			blockHash = id
 		}
-		// 未给 selected_text 时本函数已要求非空；有 block_text 且 offset 合法时可校验切片，但不强制覆盖。
+		units := utf16.Encode([]rune(blockText))
+		if start < 0 || end <= start || end > len(units) {
+			return nil, shared.BadRequest(fmt.Sprintf("offset 越界：start_offset=%d end_offset=%d，block_text 长度（UTF-16）=%d", start, end, len(units)))
+		}
+		if got := string(utf16.Decode(units[start:end])); got != selectedText {
+			return nil, shared.BadRequest(fmt.Sprintf("selected_text 与 block_text[%d:%d]（UTF-16）不一致：实际为 %q", start, end, got))
+		}
 	}
 	a := &domain.Anchor{
 		BlockID:       blockID,

@@ -30,6 +30,7 @@ type CommentWriteService interface {
 // CommentPostLookup 按 slug 解析已发布文章，供 create_* 接受 slug 入参。
 type CommentPostLookup interface {
 	GetPublishedBySlug(ctx context.Context, slug string) (apppost.PostDTO, error)
+	GetPublishedByID(ctx context.Context, id string) (apppost.PostDTO, error)
 }
 
 // CommentTools 评论检索 + 写入 tool 集合，挂在 violet-comments server（/api/v1/mcp/comments）。
@@ -71,7 +72,7 @@ type createAnnotationArgs struct {
 	PostID        string `json:"post_id,omitempty" jsonschema:"文章 ID；与 slug 二选一"`
 	Slug          string `json:"slug,omitempty" jsonschema:"文章 slug；与 post_id 二选一"`
 	Body          string `json:"body" jsonschema:"批注正文"`
-	ParentID      string `json:"parent_id,omitempty" jsonschema:"父评论 ID；回复批注时传入，子评会继承父锚点"`
+	ParentID      string `json:"parent_id,omitempty" jsonschema:"父评论 ID；回复批注时传入，子评继承父锚点，此时忽略选区参数"`
 	BlockID       string `json:"block_id,omitempty" jsonschema:"块标识（块纯文本 SHA-256 前 8 位 hex）；缺省且提供 block_text 时自动计算"`
 	StartOffset   int    `json:"start_offset" jsonschema:"选区起始偏移（块内字符位，0-based，与浏览器 string.length/UTF-16 一致）"`
 	EndOffset     int    `json:"end_offset" jsonschema:"选区结束偏移（exclusive，必须大于 start_offset）"`
@@ -122,14 +123,19 @@ func withCommentWriteScope(req *mcp.CallToolRequest) *mcp.CallToolResult {
 func (t *CommentTools) resolvePostID(ctx context.Context, postID, slug string) (string, error) {
 	postID = strings.TrimSpace(postID)
 	slug = strings.TrimSpace(slug)
-	if postID != "" {
-		return postID, nil
-	}
-	if slug == "" {
+	if postID == "" && slug == "" {
 		return "", fmt.Errorf("必须提供 post_id 或 slug 之一")
 	}
 	if t.posts == nil {
-		return "", fmt.Errorf("未配置文章查找，无法按 slug 解析")
+		return "", fmt.Errorf("未配置文章查找，无法解析文章")
+	}
+	if postID != "" {
+		// post_id 同样只允许已发布文章，防止向草稿/归档文章写评论。
+		dto, err := t.posts.GetPublishedByID(ctx, postID)
+		if err != nil {
+			return "", fmt.Errorf("按 post_id 查找已发布文章失败（post_id=%s）: %w", postID, err)
+		}
+		return dto.ID, nil
 	}
 	dto, err := t.posts.GetPublishedBySlug(ctx, slug)
 	if err != nil {
@@ -252,6 +258,10 @@ func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRe
 	postID, err := t.resolvePostID(ctx, args.PostID, args.Slug)
 	if err != nil {
 		return errResult(err), nil, nil
+	}
+	// 回复批注：子评继承父锚点（comment.Service 对 parent 有 anchor 的回复要求 anchor 为 nil），忽略调用方的选区参数。
+	if strings.TrimSpace(args.ParentID) != "" {
+		return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, nil)
 	}
 	anchor, err := appcomment.ResolveAnnotationAnchor(
 		strings.TrimSpace(args.BlockID),

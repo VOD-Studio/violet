@@ -205,7 +205,24 @@ func (f *fakeCommentWriteService) Create(_ context.Context, in appcomment.Create
 
 type fakeCommentPostLookup struct {
 	bySlug map[string]apppost.PostDTO
+	byID   map[string]apppost.PostDTO // 仅已发布文章
 	err    error
+}
+
+func (f *fakeCommentPostLookup) GetPublishedByID(_ context.Context, id string) (apppost.PostDTO, error) {
+	if f.err != nil {
+		return apppost.PostDTO{}, f.err
+	}
+	dto, ok := f.byID[id]
+	if !ok {
+		return apppost.PostDTO{}, fmt.Errorf("not found")
+	}
+	return dto, nil
+}
+
+// publishedP1 默认把 p1 视为已发布文章。
+func publishedP1() *fakeCommentPostLookup {
+	return &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{"p1": {ID: "p1"}}}
 }
 
 func (f *fakeCommentPostLookup) GetPublishedBySlug(_ context.Context, slug string) (apppost.PostDTO, error) {
@@ -229,7 +246,7 @@ func TestCreateComment_RequiresWriteScope(t *testing.T) {
 
 func TestCreateComment_AsAIIdentity(t *testing.T) {
 	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", Body: "hi", IsAI: true, AuthorName: "Violet AI"}}
-	tools := NewCommentTools(nil, w, nil)
+	tools := NewCommentTools(nil, w, publishedP1())
 	uid := uuidUser()
 	res, _, err := tools.CreateComment(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uid),
@@ -261,7 +278,7 @@ func TestCreateComment_ResolvesSlug(t *testing.T) {
 
 func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
 	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
-	tools := NewCommentTools(nil, w, nil)
+	tools := NewCommentTools(nil, w, publishedP1())
 	res, _, err := tools.CreateAnnotation(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
 		createAnnotationArgs{
@@ -278,7 +295,7 @@ func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
 
 func TestCreateBlockComment_FullBlockAnchor(t *testing.T) {
 	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
-	tools := NewCommentTools(nil, w, nil)
+	tools := NewCommentTools(nil, w, publishedP1())
 	text := "整段段落文本"
 	res, _, err := tools.CreateBlockComment(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
@@ -289,6 +306,32 @@ func TestCreateBlockComment_FullBlockAnchor(t *testing.T) {
 	assert.Equal(t, 0, w.got.Anchor.StartOffset)
 	assert.Equal(t, text, w.got.Anchor.SelectedText)
 	assert.True(t, w.got.IsAI)
+}
+
+func TestCreateComment_RejectsUnpublishedPostID(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createCommentArgs{PostID: "draft-post", Body: "hi"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "草稿/不存在的 post_id 应拒绝")
+	assert.Equal(t, 0, w.calls)
+}
+
+func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c2"}}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "回复", ParentID: "parent-1",
+			SelectedText: "other", StartOffset: 0, EndOffset: 5, BlockText: "hello world",
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	assert.Equal(t, "parent-1", w.got.ParentID)
+	assert.Nil(t, w.got.Anchor, "回复不带自身锚点，由父评论继承")
 }
 
 // 编译期断言：fakeCommentSearchService 实现 CommentSearchService 接口。

@@ -582,3 +582,47 @@ func TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted(t *testing.T) {
 	assert.Empty(t, dtos[0].AuthorUsername)
 	userRepo.AssertExpectations(t)
 }
+
+// TestToDTO_AIIsNeverAuthor 作者 PAT 发表的 AI 评论不标记 is_author。
+func TestToDTO_AIIsNeverAuthor(t *testing.T) {
+	uid, postID, cID := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	ai := domain.ReconstructComment(cID, postID, &uid, nil, cID.String()+"/", 0, nil,
+		"Violet AI", "/logo.png", "", "", "ai", nil, domain.StatusApproved, "", "", true, zero, zero)
+	human := domain.ReconstructComment(cID, postID, &uid, nil, cID.String()+"/", 0, nil,
+		"me", "", "", "", "me", nil, domain.StatusApproved, "", "", false, zero, zero)
+	assert.False(t, toDTO(ai, &uid, "").IsAuthor)
+	assert.True(t, toDTO(human, &uid, "").IsAuthor)
+}
+
+// TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName 回复 AI 评论（PAT 持有人已软删）仍显示 Violet AI。
+func TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName(t *testing.T) {
+	userRepo := new(mocks.MockUserRepository)
+	svc := &Service{userRepo: userRepo}
+
+	dUID := shared.NewID()
+	dEmail, _ := domainuser.ParseEmail("gone@example.com")
+	dName, _ := domainuser.ParseUsername("gone")
+	deletedUser := domainuser.ReconstructUser(dUID, dEmail, dName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Now(), time.Time{}, time.Time{})
+	deletedUser.Delete(time.Now())
+
+	postID, aiID, rID := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	aiComment := domain.ReconstructComment(aiID, postID, &dUID, nil, aiID.String()+"/", 0, nil,
+		"Violet AI", "/logo.png", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
+	reply := domain.ReconstructComment(rID, postID, nil, &aiID, aiID.String()+"/"+rID.String()+"/", 1, nil,
+		"guest", "", "g@x.com", "", "reply", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{deletedUser}, nil).Once()
+
+	dtos := []CommentDTO{{
+		ID: aiID.String(), AuthorName: "Violet AI", IsAI: true,
+		Replies: []CommentDTO{{ID: rID.String(), ParentID: aiID.String(), ReplyToName: "Violet AI", AuthorName: "guest"}},
+	}}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{aiComment, reply})
+	assert.NoError(t, err)
+	assert.Equal(t, "Violet AI", dtos[0].Replies[0].ReplyToName)
+}
