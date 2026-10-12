@@ -23,6 +23,8 @@ func registerCommentPaths(t *openapi3.T) {
 		"avatar_url":  optStr("评论者头像 URL"),
 		"body":        reqStr("评论内容"),
 		"pictures":    refArray("附图列表", "CommentPicture"),
+		"is_author":   optBool("是否文章作者本人"),
+		"is_ai":       optBool("是否 MCP/AI agent 发表（专用头像与 AI 徽章）"),
 		"status":      strEnum("状态", "pending", "approved", "spam", "deleted"),
 		"created_at":  optStr("创建时间（RFC3339）"),
 	})
@@ -37,6 +39,8 @@ func registerCommentPaths(t *openapi3.T) {
 		"avatar_url":  optStr("评论者头像 URL"),
 		"body":        reqStr("评论内容"),
 		"pictures":    refArray("附图列表", "CommentPicture"),
+		"is_author":   optBool("是否文章作者本人"),
+		"is_ai":       optBool("是否 MCP/AI agent 发表（专用头像与 AI 徽章）"),
 		"status":      strEnum("状态", "pending", "approved", "spam", "deleted"),
 		"created_at":  optStr("创建时间（RFC3339）"),
 		"post_title":  optStr("所属文章标题"),

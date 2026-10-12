@@ -131,6 +131,8 @@ type CommentDTO struct {
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
 	IsAuthor   bool       `json:"is_author"`
+	// IsAI 是否由 MCP/AI agent 发表。true 时前端展示 AI 徽章与专用头像，不与真人混淆。
+	IsAI       bool       `json:"is_ai"`
 	Anchor     *AnchorDTO `json:"anchor,omitempty"`
 	Status    string     `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
 	CreatedAt string     `json:"created_at"`
@@ -541,6 +543,8 @@ type CreateInput struct {
 	// 匿名评论的 per-post 配额依赖此字段；登录评论也填（反垃圾元数据统一）。
 	IPHash    string
 	UserAgent string
+	// IsAI MCP/AI agent 发表标记。MCP create_* tool 恒 true；前台 HTTP 创建恒 false。
+	IsAI bool
 }
 
 // Create 创建评论。
@@ -582,6 +586,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 				return CommentDTO{}, err
 			}
 		}
+		// 登录态未填 author_* 时从 user 资料补齐（MCP / 内部调用可只传 UserID）。
+		// HTTP handler 仍显式填充；此处兜底避免调用方遗漏导致「昵称不能为空」。
+		if in.AuthorName == "" && s.userRepo != nil {
+			u, err := s.userRepo.FindByID(ctx, *userIDPtr)
+			if err != nil {
+				return CommentDTO{}, err
+			}
+			in.AuthorName = u.Username().String()
+			in.AuthorEmail = u.Email().String()
+			if in.AvatarURL == "" {
+				in.AvatarURL = u.AvatarURL()
+			}
+		}
 	}
 
 	// 匿名路径：校验验证码 + 配额。
@@ -604,6 +621,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		AuthorURL:   in.AuthorURL,
 		AvatarURL:   in.AvatarURL,
 		Body:        in.Body,
+		IsAI:        in.IsAI,
 	})
 	if err != nil {
 		return CommentDTO{}, err
@@ -847,7 +865,7 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) Comme
 		ReplyToName: replyToName,
 		Depth:       c.Depth(), AuthorName: c.AuthorName(),
 		AvatarURL: c.AvatarURL(), Body: c.Body(),
-		Pictures: c.Pictures(), Status: c.Status(),
+		Pictures: c.Pictures(), Status: c.Status(), IsAI: c.IsAI(),
 		CreatedAt: c.CreatedAt().Format(time.RFC3339),
 	}
 	if c.ParentID() != nil {
@@ -1020,6 +1038,12 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 		if authorDeleted[d.ID] {
 			d.AuthorName = DeletedUserName
 			d.AvatarURL = ""
+			d.AuthorProvider = ""
+			d.AuthorProfileURL = ""
+			d.AuthorUsername = ""
+		} else if d.IsAI {
+			// AI 评论保留专用昵称/头像快照，不挂 GitHub/Google 角标与站内主页链接，
+			// 避免看起来像 PAT 持有人本人在留言。
 			d.AuthorProvider = ""
 			d.AuthorProfileURL = ""
 			d.AuthorUsername = ""

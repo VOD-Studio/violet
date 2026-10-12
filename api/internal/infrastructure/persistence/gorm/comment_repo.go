@@ -39,7 +39,7 @@ func commentToPO(c *comment.Comment) (model.Comment, error) {
 		AuthorName: c.AuthorName(), AuthorEmail: c.AuthorEmail(),
 		AuthorURL: c.AuthorURL(), AvatarURL: c.AvatarURL(),
 		Body: c.Body(), Pictures: picturesJSON,
-		Status: c.Status(), IPHash: c.IPHash(), UserAgent: c.UserAgent(),
+		Status: c.Status(), IPHash: c.IPHash(), UserAgent: c.UserAgent(), IsAI: c.IsAI(),
 	}
 	po.PostID = c.PostID().UUID()
 	if p := c.ParentID(); p != nil {
@@ -107,7 +107,7 @@ func commentToDomain(po model.Comment) (*comment.Comment, error) {
 		parentID, po.Path, po.Depth,
 		anchor,
 		po.AuthorName, po.AuthorEmail, po.AuthorURL, po.AvatarURL,
-		po.Body, pictures, po.Status, po.IPHash, po.UserAgent,
+		po.Body, pictures, po.Status, po.IPHash, po.UserAgent, po.IsAI,
 		po.CreatedAt, po.UpdatedAt,
 	), nil
 }

@@ -70,11 +70,11 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	postID, ghCID, gCID, anonCID := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
 	zero := time.Time{}
 	ghComment := domain.ReconstructComment(ghCID, postID, &ghUID, nil, ghCID.String()+"/", 0, nil,
-		"alice", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"alice", "", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 	gComment := domain.ReconstructComment(gCID, postID, &gUID, nil, gCID.String()+"/", 0, nil,
-		"bob", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"bob", "", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 	anonComment := domain.ReconstructComment(anonCID, postID, nil, nil, anonCID.String()+"/", 0, nil,
-		"carol", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"carol", "", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 
 	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
 		Return([]*domainuser.User{ghUser, gUser}, nil).Once()
@@ -139,10 +139,10 @@ func TestEnrichOAuthIdentities_DeletedAuthorPlaceholder(t *testing.T) {
 	zero := time.Time{}
 	// 顶层：注销作者（快照名 "gone"）；回复：活跃作者回复注销者（reply_to 指向注销顶层）
 	topComment := domain.ReconstructComment(dCID, postID, &dUID, nil, dCID.String()+"/", 0, nil,
-		"gone", "https://cdn/avatar.png", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"gone", "https://cdn/avatar.png", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 	replyCID := shared.NewID()
 	replyComment := domain.ReconstructComment(replyCID, postID, &aUID, &dCID, dCID.String()+replyCID.String()+"/", 1, nil,
-		"alive", "", "", "", "reply", nil, domain.StatusApproved, "gone", "", zero, zero)
+		"alive", "", "", "", "reply", nil, domain.StatusApproved, "gone", "", false, zero, zero)
 
 	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
 		Return([]*domainuser.User{deletedUser, aliveUser}, nil).Once()
@@ -202,6 +202,33 @@ func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "bob", dto.AuthorName)
+	repo.AssertExpectations(t)
+}
+
+func TestCreate_LoggedIn_FillsAuthorFromUserRepo(t *testing.T) {
+	repo := new(mocks.MockCommentRepository)
+	userRepo := new(mocks.MockUserRepository)
+	svc := NewService(repo, userRepo, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory())
+	uid := shared.NewID()
+	email, _ := domainuser.ParseEmail("bob@x.com")
+	name, _ := domainuser.ParseUsername("bob")
+	u := domainuser.ReconstructUser(uid, email, name, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "https://avatar.example/bob.png", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
+
+	userRepo.On("FindByID", mock.Anything, uid).Return(u, nil).Once()
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{u}, nil).Once()
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: uid.String(),
+		Body: "hi from mcp",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "bob", dto.AuthorName)
+	assert.Equal(t, "https://avatar.example/bob.png", dto.AvatarURL)
+	userRepo.AssertExpectations(t)
 	repo.AssertExpectations(t)
 }
 
@@ -454,7 +481,7 @@ func newDomainComment(id, postID shared.ID, author, status string) (*domain.Comm
 	}
 	zero := time.Time{}
 	c := domain.ReconstructComment(id, postID, nil, nil, id.String()+"/", 0, nil,
-		author, "", "", "", "body", nil, status, "", "", zero, zero)
+		author, "", "", "", "body", nil, status, "", "", false, zero, zero)
 	return c, nil
 }
 

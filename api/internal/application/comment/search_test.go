@@ -111,7 +111,7 @@ func mustReconstructComment(t *testing.T, body string) *domain.Comment {
 	return domain.ReconstructComment(
 		shared.NewID(), shared.NewID(), nil, nil, "", 0,
 		nil, "tester", "t@x.com", "", "", body, nil,
-		domain.StatusApproved, "iph", "ua", time.Now(), time.Now(),
+		domain.StatusApproved, "iph", "ua", false, time.Now(), time.Now(),
 	)
 }
 
