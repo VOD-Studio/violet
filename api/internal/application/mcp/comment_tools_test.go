@@ -13,6 +13,7 @@ import (
 	apppost "blog-api/internal/application/post"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
+	"blog-api/internal/middleware"
 )
 
 // textOf 提取 CallToolResult 首条内容的文本（okResult/errResult 都是 TextContent）。
@@ -193,15 +194,17 @@ func TestCommentStats_EmptyResultHint(t *testing.T) {
 func intPtr(v int) *int { return &v }
 
 type fakeCommentWriteService struct {
-	got   appcomment.CreateInput
-	dto   appcomment.CommentDTO
-	err   error
-	calls int
+	got    appcomment.CreateInput
+	gotCtx context.Context
+	dto    appcomment.CommentDTO
+	err    error
+	calls  int
 }
 
-func (f *fakeCommentWriteService) Create(_ context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error) {
+func (f *fakeCommentWriteService) Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error) {
 	f.calls++
 	f.got = in
+	f.gotCtx = ctx
 	return f.dto, f.err
 }
 
@@ -270,6 +273,8 @@ func TestCreateComment_AsAIIdentity(t *testing.T) {
 	assert.Nil(t, w.got.Anchor)
 	assert.True(t, w.got.RejectAnchoredParent, "create_comment 不得继承批注锚点")
 	assert.False(t, w.got.RequireParentAnchor)
+	op, _ := w.gotCtx.Value(middleware.UserIDKey).(string)
+	assert.Equal(t, uid, op, "Create ctx 须带 PAT 持有人 UserIDKey（审计 actor）")
 }
 
 func TestCreateComment_ResolvesSlug(t *testing.T) {
@@ -398,7 +403,6 @@ func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
 	assert.True(t, w.got.RequireParentAnchor, "批注回复须校验父评论带锚点")
 	assert.False(t, w.got.RejectAnchoredParent)
 }
-
 
 func TestCreateAnnotation_MarkdownOnlyPostFallsBackToHTML(t *testing.T) {
 	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}

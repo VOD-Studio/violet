@@ -168,14 +168,15 @@ func (t *CommentTools) createAsPAT(ctx context.Context, req *mcp.CallToolRequest
 		return errResult(fmt.Errorf("body 不能为空")), nil, nil
 	}
 	// AI 身份：专用昵称 + 站点 logo 头像 + is_ai，不用 PAT 持有人的 Google/GitHub 头像。
-	dto, err := t.writer.Create(ctx, appcomment.CreateInput{
-		PostID:              postID,
-		ParentID:            strings.TrimSpace(parentID),
-		UserID:              userID,
-		AuthorName:          brand.MCPAgentDisplayName,
-		AvatarURL:           brand.MCPAgentAvatarURL,
-		Body:                body,
-		Anchor:              anchor,
+	// 注入 UserIDKey：免审自动通过时审计订阅从 ctx 读 actor（与 MCP post 写路径一致）。
+	dto, err := t.writer.Create(ctxWithOperator(ctx, userID), appcomment.CreateInput{
+		PostID:               postID,
+		ParentID:             strings.TrimSpace(parentID),
+		UserID:               userID,
+		AuthorName:           brand.MCPAgentDisplayName,
+		AvatarURL:            brand.MCPAgentAvatarURL,
+		Body:                 body,
+		Anchor:               anchor,
 		IsAI:                 true,
 		RequireParentAnchor:  requireParentAnchor,
 		RejectAnchoredParent: rejectAnchoredParent,
