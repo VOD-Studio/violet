@@ -626,3 +626,48 @@ func TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Violet AI", dtos[0].Replies[0].ReplyToName)
 }
+
+
+// TestCreate_RequireParentAnchor_RejectsFreeParent create_annotation 回复自由评论应拒绝。
+func TestCreate_RequireParentAnchor_RejectsFreeParent(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	postID, parentID, uid := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	freeParent := domain.ReconstructComment(parentID, postID, &uid, nil, parentID.String()+"/", 0, nil,
+		"human", "", "", "", "free", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(freeParent, nil).Once()
+	repo.AssertNotCalled(t, "Save")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "Violet AI", AuthorEmail: "a@x.com", Body: "reply",
+		RequireParentAnchor: true, IsAI: true,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "划线批注")
+	repo.AssertExpectations(t)
+}
+
+// TestCreate_RequireParentAnchor_InheritsAnnotationParent 批注父评论可回复并继承锚点。
+func TestCreate_RequireParentAnchor_InheritsAnnotationParent(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(&fakeSitePolicy{enabled: true, moderation: false})
+	postID, parentID, uid := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "abc12345"}
+	parent := domain.ReconstructComment(parentID, postID, &uid, nil, parentID.String()+"/", 0, anchor,
+		"human", "", "", "", "annot", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(parent, nil).Once()
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "Violet AI", AuthorEmail: "a@x.com", Body: "reply",
+		RequireParentAnchor: true, IsAI: true,
+	})
+	if assert.NoError(t, err) && assert.NotNil(t, dto.Anchor) {
+		assert.Equal(t, "hello", dto.Anchor.SelectedText)
+	}
+	repo.AssertExpectations(t)
+}

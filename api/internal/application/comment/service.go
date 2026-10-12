@@ -545,6 +545,9 @@ type CreateInput struct {
 	UserAgent string
 	// IsAI MCP/AI agent 发表标记。MCP create_* tool 恒 true；前台 HTTP 创建恒 false。
 	IsAI bool
+	// RequireParentAnchor 为 true 时，parent 必须是划线批注（有 anchor）；
+	// MCP create_annotation 回复路径使用，避免对自由评论回复后 silently 变成自由回复。
+	RequireParentAnchor bool
 }
 
 // Create 创建评论。
@@ -647,6 +650,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		// 跨文章回复非法：parent 必须与当前评论同属一篇文章（对齐推文评论 CreateComment）
 		if parent.PostID() != postID {
 			return CommentDTO{}, shared.BadRequest("父评论不属于该文章")
+		}
+		if in.RequireParentAnchor && parent.Anchor() == nil {
+			return CommentDTO{}, shared.BadRequest("回复批注要求父评论为划线批注（含选区锚点）")
 		}
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err

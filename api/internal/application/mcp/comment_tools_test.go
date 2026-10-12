@@ -344,6 +344,7 @@ func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
 	require.False(t, res.IsError)
 	assert.Equal(t, "parent-1", w.got.ParentID)
 	assert.Nil(t, w.got.Anchor, "回复不带自身锚点，由父评论继承")
+	assert.True(t, w.got.RequireParentAnchor, "批注回复须校验父评论带锚点")
 }
 
 // 编译期断言：fakeCommentSearchService 实现 CommentSearchService 接口。
