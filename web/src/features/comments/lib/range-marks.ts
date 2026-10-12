@@ -105,26 +105,76 @@ export function clearMarks(root: HTMLElement, className: string): void {
 }
 
 /**
- * 把历史 textContent（KaTeX）坐标区间映射到现行 carrier 坐标。
- * 优先用区间切片在 carrier 文本中定位；找不到则按长度截断。
+ * 构建 legacy textContent 偏移 → carrier 偏移的边界表。
+ * map[i] = 消费 i 个 legacy 字符后的 carrier 偏移（map.length === legacyLen+1）。
  */
-export function mapLegacyRangeToCarrier(
-	legacyText: string,
-	carrierText: string,
-	range: MarkRange,
-): MarkRange {
-	if (legacyText === carrierText) return range;
-	const start = Math.max(0, Math.min(range.start, legacyText.length));
-	const end = Math.max(start, Math.min(range.end, legacyText.length));
-	const selected = legacyText.slice(start, end);
-	if (selected) {
-		const idx = carrierText.indexOf(selected);
-		if (idx >= 0) {
-			return { start: idx, end: idx + selected.length };
+function buildLegacyToCarrierMap(block: HTMLElement): number[] {
+	const map: number[] = [0];
+	let carrier = 0;
+
+	const consumeText = (text: string) => {
+		for (let i = 0; i < text.length; i++) {
+			carrier += 1;
+			map.push(carrier);
 		}
-	}
-	const len = carrierText.length;
-	const cs = Math.max(0, Math.min(start, len));
-	const ce = Math.max(cs, Math.min(end, len));
-	return { start: cs, end: ce };
+	};
+
+	/** legacy 子树长度映射到 carrierLen 个 carrier 字符（公式等）。 */
+	const consumeCarrierSpan = (legacyLen: number, carrierLen: number) => {
+		const c0 = carrier;
+		carrier += carrierLen;
+		if (legacyLen <= 0) return;
+		for (let i = 1; i <= legacyLen; i++) {
+			map.push(c0 + Math.round((i / legacyLen) * carrierLen));
+		}
+		map[map.length - 1] = carrier;
+	};
+
+	const walk = (node: Node) => {
+		if (node.nodeType === Node.ELEMENT_NODE) {
+			const el = node as HTMLElement;
+			const dataType = el.getAttribute("data-type");
+			if (dataType && MATH_TYPES.has(dataType)) {
+				consumeCarrierSpan(
+					(el.textContent ?? "").length,
+					(el.getAttribute("data-latex") ?? "").length,
+				);
+				return;
+			}
+			if (dataType === "diagram-block") {
+				consumeCarrierSpan(
+					(el.textContent ?? "").length,
+					(el.getAttribute("data-source") ?? "").length,
+				);
+				return;
+			}
+			if (el.dataset.runnable === "true") {
+				consumeCarrierSpan((el.textContent ?? "").length, (el.dataset.source ?? "").length);
+				return;
+			}
+			for (const child of Array.from(el.childNodes)) walk(child);
+			return;
+		}
+		if (node.nodeType === Node.TEXT_NODE) {
+			consumeText(node.textContent ?? "");
+		}
+	};
+
+	for (const child of Array.from(block.childNodes)) walk(child);
+	return map;
+}
+
+/**
+ * 把历史 textContent（KaTeX）坐标区间映射到现行 carrier 坐标。
+ * 按 DOM 双轨推进偏移，重复子串（如 foo ⟨公式⟩ foo）保留原始位置对应的 occurrence。
+ */
+export function mapLegacyRangeToCarrier(block: HTMLElement, range: MarkRange): MarkRange {
+	const map = buildLegacyToCarrierMap(block);
+	if (map.length <= 1) return { start: 0, end: 0 };
+	const max = map.length - 1;
+	const start = Math.max(0, Math.min(range.start, max));
+	const end = Math.max(start, Math.min(range.end, max));
+	const cs = map[start] ?? 0;
+	const ce = map[end] ?? cs;
+	return { start: cs, end: Math.max(cs, ce) };
 }

@@ -98,14 +98,11 @@ export function AnnotationLayer({
 				if (el && !cancelled) {
 					const carrier = getBlockText(el);
 					const carrierId = await computeBlockId(carrier);
-					// block_id 命中 legacyId 时，摘要区间仍是旧 textContent 坐标，先映射到 carrier
+					// block_id 命中 legacyId 时，摘要区间仍是旧 textContent 坐标，先按 DOM 映射到 carrier
 					const legacyMatch = carrierId !== null && carrierId !== block_id;
-					const legacy = legacyMatch ? getLegacyBlockText(el) : carrier;
 					const length = carrier.length;
 					for (const range of ranges ?? []) {
-						const mapped = legacyMatch
-							? mapLegacyRangeToCarrier(legacy, carrier, range)
-							: range;
+						const mapped = legacyMatch ? mapLegacyRangeToCarrier(el, range) : range;
 						if (mapped.start <= 0 && mapped.end >= length) continue;
 						wrapRange(el, mapped, MARK_CLASS, { annotationBlock: block_id });
 					}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getBlockText, getLegacyBlockText } from "../extract-blocks";
 import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../range-marks";
 
 function block(html: string): HTMLElement {
@@ -71,22 +72,40 @@ describe("clearMarks", () => {
 });
 
 describe("mapLegacyRangeToCarrier", () => {
-	it("用区间切片在 carrier 文本中重定位", () => {
-		const legacy = "质能方程 E=mc2E=mc^2E=mc2 成立";
-		const carrier = "质能方程 E=mc^2 成立";
-		// 「成立」在 legacy 末尾
+	it("无公式时 legacy 与 carrier 同坐标", () => {
+		const el = block("abc");
+		expect(mapLegacyRangeToCarrier(el, { start: 1, end: 2 })).toEqual({ start: 1, end: 2 });
+	});
+
+	it("公式后文本：legacy textContent 偏移映射到 carrier", () => {
+		const el = block(
+			'质能方程 <span data-type="inline-math" data-latex="E=mc^2"><span class="katex">E=mc2E=mc^2E=mc2</span></span> 成立',
+		);
+		const legacy = getLegacyBlockText(el);
+		const carrier = getBlockText(el);
+		expect(legacy).not.toBe(carrier);
 		const start = legacy.indexOf("成立");
-		const mapped = mapLegacyRangeToCarrier(legacy, carrier, {
-			start,
-			end: start + 2,
-		});
+		const mapped = mapLegacyRangeToCarrier(el, { start, end: start + 2 });
 		expect(carrier.slice(mapped.start, mapped.end)).toBe("成立");
 	});
 
-	it("文本相同则原样返回", () => {
-		expect(mapLegacyRangeToCarrier("abc", "abc", { start: 1, end: 2 })).toEqual({
-			start: 1,
-			end: 2,
-		});
+	it("重复子串选第二次出现：保留位置而非 indexOf 第一次", () => {
+		// carrier: "foo x foo"；legacy katex 文本更长，两边仍各有 foo
+		const el = block(
+			'foo <span data-type="inline-math" data-latex="x"><span class="katex">XXXX</span></span> foo',
+		);
+		const legacy = getLegacyBlockText(el);
+		const carrier = getBlockText(el);
+		expect(carrier).toBe("foo x foo");
+		const first = legacy.indexOf("foo");
+		const second = legacy.indexOf("foo", first + 1);
+		expect(second).toBeGreaterThan(first);
+
+		const mappedFirst = mapLegacyRangeToCarrier(el, { start: first, end: first + 3 });
+		const mappedSecond = mapLegacyRangeToCarrier(el, { start: second, end: second + 3 });
+		expect(carrier.slice(mappedFirst.start, mappedFirst.end)).toBe("foo");
+		expect(carrier.slice(mappedSecond.start, mappedSecond.end)).toBe("foo");
+		expect(mappedSecond.start).toBeGreaterThan(mappedFirst.start);
+		expect(mappedSecond.start).toBe(carrier.lastIndexOf("foo"));
 	});
 });
