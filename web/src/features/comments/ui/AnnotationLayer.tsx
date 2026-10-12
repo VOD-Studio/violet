@@ -11,8 +11,14 @@ import { AIBadge } from "@entities/comment/ui/AIBadge";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { extractCandidateBlocks, findBlockElement, getBlockText } from "../lib/extract-blocks";
-import { clearMarks, wrapRange } from "../lib/range-marks";
+import { computeBlockId } from "../lib/block-id";
+import {
+	extractCandidateBlocks,
+	findBlockElement,
+	getBlockText,
+	getLegacyBlockText,
+} from "../lib/extract-blocks";
+import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../lib/range-marks";
 import type { BlockAuthor, BlockCount } from "../model/types";
 import { AnnotationPopover, type AnnotationPopoverTarget } from "./AnnotationPopover";
 import { BlockCommentTrigger } from "./BlockCommentTrigger";
@@ -90,11 +96,18 @@ export function AnnotationLayer({
 				if (cancelled) return;
 				const el = await findBlockElement(root, block_id);
 				if (el && !cancelled) {
-					// 覆盖全块的区间是整段评论，由头像角标表示，不再整段涂色
-					const length = getBlockText(el).length;
+					const carrier = getBlockText(el);
+					const carrierId = await computeBlockId(carrier);
+					// block_id 命中 legacyId 时，摘要区间仍是旧 textContent 坐标，先映射到 carrier
+					const legacyMatch = carrierId !== null && carrierId !== block_id;
+					const legacy = legacyMatch ? getLegacyBlockText(el) : carrier;
+					const length = carrier.length;
 					for (const range of ranges ?? []) {
-						if (range.start <= 0 && range.end >= length) continue;
-						wrapRange(el, range, MARK_CLASS, { annotationBlock: block_id });
+						const mapped = legacyMatch
+							? mapLegacyRangeToCarrier(legacy, carrier, range)
+							: range;
+						if (mapped.start <= 0 && mapped.end >= length) continue;
+						wrapRange(el, mapped, MARK_CLASS, { annotationBlock: block_id });
 					}
 					nextMap.set(block_id, el);
 				}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clearMarks, wrapRange } from "../range-marks";
+import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../range-marks";
 
 function block(html: string): HTMLElement {
 	const el = document.createElement("p");
@@ -41,6 +41,15 @@ describe("wrapRange", () => {
 		expect(mark.dataset.annotationBlock).toBe("b1");
 	});
 
+	it("可运行块根不向子树套 mark", () => {
+		const el = document.createElement("div");
+		el.dataset.runnable = "true";
+		el.dataset.source = "print(1)";
+		el.innerHTML = "<button>运行</button><pre>print(1)</pre>";
+		expect(wrapRange(el, { start: 0, end: 7 }, "m")).toEqual([]);
+		expect(el.querySelector("mark")).toBeNull();
+	});
+
 	it("inline-math carrier 按 data-latex 计长，不按 KaTeX textContent", () => {
 		const el = block(
 			'前<span data-type="inline-math" data-latex="E=mc^2"><span class="katex">E=mc2E=mc^2E=mc2</span></span>后',
@@ -58,5 +67,26 @@ describe("clearMarks", () => {
 		clearMarks(el, "m");
 		expect(el.innerHTML).toBe("ab<strong>cd</strong>ef");
 		expect(el.firstChild?.nodeValue).toBe("ab");
+	});
+});
+
+describe("mapLegacyRangeToCarrier", () => {
+	it("用区间切片在 carrier 文本中重定位", () => {
+		const legacy = "质能方程 E=mc2E=mc^2E=mc2 成立";
+		const carrier = "质能方程 E=mc^2 成立";
+		// 「成立」在 legacy 末尾
+		const start = legacy.indexOf("成立");
+		const mapped = mapLegacyRangeToCarrier(legacy, carrier, {
+			start,
+			end: start + 2,
+		});
+		expect(carrier.slice(mapped.start, mapped.end)).toBe("成立");
+	});
+
+	it("文本相同则原样返回", () => {
+		expect(mapLegacyRangeToCarrier("abc", "abc", { start: 1, end: 2 })).toEqual({
+			start: 1,
+			end: 2,
+		});
 	});
 });

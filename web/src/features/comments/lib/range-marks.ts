@@ -14,8 +14,18 @@ export interface MarkRange {
 
 const MATH_TYPES = new Set(["inline-math", "block-math"]);
 
+function isCarrierRoot(el: HTMLElement): boolean {
+	const dataType = el.getAttribute("data-type");
+	if (dataType && MATH_TYPES.has(dataType)) return true;
+	if (dataType === "diagram-block") return true;
+	return el.dataset.runnable === "true";
+}
+
 /**
  * 把块内 [start, end) 区间的文本包进带 className 的 <mark>。
+ *
+ * 块根若本身是 carrier（可运行 CodeRunner / 块级公式等），不向子树套 mark，
+ * 避免把 source 偏移误应用到工具栏/编辑器 DOM。
  *
  * @returns 新建的 mark 元素；区间为空或仅落在 carrier/KaTeX 内时可能为空数组
  */
@@ -26,6 +36,9 @@ export function wrapRange(
 	dataset: Record<string, string> = {},
 ): HTMLElement[] {
 	if (end <= start) return [];
+	// 整块即 carrier：无可划线文本流（段评靠角标），禁止改子树
+	if (isCarrierRoot(block)) return [];
+
 	const marks: HTMLElement[] = [];
 	let offset = 0;
 
@@ -89,4 +102,29 @@ export function clearMarks(root: HTMLElement, className: string): void {
 		parents.add(parent);
 	}
 	for (const parent of parents) parent.normalize();
+}
+
+/**
+ * 把历史 textContent（KaTeX）坐标区间映射到现行 carrier 坐标。
+ * 优先用区间切片在 carrier 文本中定位；找不到则按长度截断。
+ */
+export function mapLegacyRangeToCarrier(
+	legacyText: string,
+	carrierText: string,
+	range: MarkRange,
+): MarkRange {
+	if (legacyText === carrierText) return range;
+	const start = Math.max(0, Math.min(range.start, legacyText.length));
+	const end = Math.max(start, Math.min(range.end, legacyText.length));
+	const selected = legacyText.slice(start, end);
+	if (selected) {
+		const idx = carrierText.indexOf(selected);
+		if (idx >= 0) {
+			return { start: idx, end: idx + selected.length };
+		}
+	}
+	const len = carrierText.length;
+	const cs = Math.max(0, Math.min(start, len));
+	const ce = Math.max(cs, Math.min(end, len));
+	return { start: cs, end: ce };
 }
