@@ -8,8 +8,8 @@ import { buttonVariants, checkboxVariants, type ButtonVariantProps } from "@viol
 import { createRef, type Ref } from "react";
 import { UploadTile, type UploadTileProps } from "@violet/ui";
 import { UploadTile as LeafUploadTile, type UploadTileProps as LeafUploadTileProps } from "@violet/ui/upload-tile";
-import { Dropdown, DropdownContent, DropdownGroup, DropdownTrigger, type DropdownContentProps, type DropdownGroupProps, type DropdownProps, type DropdownTriggerProps } from "@violet/ui";
-import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, DropdownGroup as LeafDropdownGroup, DropdownTrigger as LeafDropdownTrigger, type DropdownContentProps as LeafDropdownContentProps, type DropdownGroupProps as LeafDropdownGroupProps, type DropdownProps as LeafDropdownProps, type DropdownTriggerProps as LeafDropdownTriggerProps } from "@violet/ui/dropdown";
+import { Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger, type DropdownContentProps, type DropdownGroupProps, type DropdownItemProps, type DropdownProps, type DropdownTriggerProps } from "@violet/ui";
+import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, DropdownGroup as LeafDropdownGroup, DropdownItem as LeafDropdownItem, DropdownTrigger as LeafDropdownTrigger, type DropdownContentProps as LeafDropdownContentProps, type DropdownGroupProps as LeafDropdownGroupProps, type DropdownItemProps as LeafDropdownItemProps, type DropdownProps as LeafDropdownProps, type DropdownTriggerProps as LeafDropdownTriggerProps } from "@violet/ui/dropdown";
 import { Segmented, type SegmentedItem, type SegmentedProps } from "@violet/ui";
 import { Segmented as LeafSegmented, type SegmentedProps as LeafSegmentedProps } from "@violet/ui/segmented";
 
@@ -120,20 +120,23 @@ const dropdownCallbackRef: Ref<HTMLElement> = (element) => { element?.focus(); }
 const nativeTrigger: DropdownTriggerProps = { ref: dropdownNativeRef, type: "button", onClick: (event) => { const target: HTMLButtonElement = event.currentTarget; target.focus(); } };
 const slottedTrigger: DropdownTriggerProps = { asChild: true, ref: dropdownCallbackRef };
 const leafTrigger: LeafDropdownTriggerProps = slottedTrigger;
+const nativeItem: DropdownItemProps = { ref: dropdownNativeRef, type: "submit", form: "settings", disabled: false, onClick: (event) => { const target: HTMLButtonElement = event.currentTarget; target.focus(); } };
+const slottedItem: DropdownItemProps = { asChild: true, ref: dropdownLinkRef };
+const leafItem: LeafDropdownItemProps = slottedItem;
 export const dropdownExamples = <DropdownGroup {...dropdownGroupProps}>
 	<Dropdown {...dropdownProps}>
 		<DropdownTrigger {...nativeTrigger}>产品</DropdownTrigger>
-		<DropdownContent {...dropdownContentProps}><a href="/docs">文档</a></DropdownContent>
+		<DropdownContent {...dropdownContentProps}><DropdownItem {...nativeItem}>保存</DropdownItem></DropdownContent>
 	</Dropdown>
 	<Dropdown>
 		<DropdownTrigger asChild ref={dropdownLinkRef}><a href="/about">关于</a></DropdownTrigger>
-		<DropdownContent side="bottom" align="end"><a href="/team">团队</a></DropdownContent>
+		<DropdownContent side="bottom" align="end"><DropdownItem {...slottedItem}><a href="/team">团队</a></DropdownItem></DropdownContent>
 	</Dropdown>
 </DropdownGroup>;
 export const leafDropdownExamples = <LeafDropdownGroup {...leafDropdownGroupProps}>
 	<LeafDropdown {...leafDropdownProps}>
 		<LeafDropdownTrigger {...leafTrigger}><a href="/docs">文档</a></LeafDropdownTrigger>
-		<LeafDropdownContent {...leafDropdownContentProps} />
+		<LeafDropdownContent {...leafDropdownContentProps}><LeafDropdownItem {...leafItem}><a href="/docs">文档</a></LeafDropdownItem></LeafDropdownContent>
 	</LeafDropdown>
 </LeafDropdownGroup>;
 // @ts-expect-error DropdownContent 只支持 bottom 与 top。
@@ -144,6 +147,10 @@ export const invalidDropdownNativeRef = <DropdownTrigger ref={dropdownLinkRef}>�
 export const invalidDropdownSlotHref = <DropdownTrigger asChild href="/about"><a>关于</a></DropdownTrigger>;
 // @ts-expect-error 叶子入口保留相同的方位约束。
 export const invalidLeafDropdownAlign = <LeafDropdownContent align="left" />;
+// @ts-expect-error 原生菜单项的 ref 指向 button，不接受 anchor ref。
+export const invalidDropdownItemRef = <DropdownItem ref={dropdownLinkRef}>保存</DropdownItem>;
+// @ts-expect-error asChild 的链接属性应写在子元素上。
+export const invalidDropdownItemHref = <DropdownItem asChild href="/team"><a>团队</a></DropdownItem>;
 
 const segments: SegmentedItem[] = [
 	{ value: "a", label: "甲", icon: null, trailing: null, title: "甲", disabled: false },

@@ -443,3 +443,125 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 	await page.mouse.move(1300, 50);
 	await expect(content).toHaveCount(0);
 });
+
+test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保持静止", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 1000 });
+	await page.emulateMedia({ reducedMotion: "no-preference" });
+	await page.goto("/ui/components/dropdown");
+	await page.waitForLoadState("networkidle");
+	const trigger = page
+		.getByRole("navigation", { name: "Dropdown 示例" })
+		.getByRole("link", { name: "指南", exact: true });
+	await trigger.hover();
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+	const contentId = await trigger.getAttribute("aria-controls");
+	if (!contentId) throw new Error("指南面板缺少关联");
+	const content = page.locator(`[id="${contentId}"]`);
+	const first = content.getByRole("link", { name: "快速入门", exact: true });
+	const second = content.getByRole("link", { name: "设计原则", exact: true });
+	const third = content.getByRole("link", { name: "版本记录", exact: true });
+	const highlight = content.locator('[data-slot="dropdown-highlight"]');
+	const offsetFrom = async (y: number) => {
+		const rect = await highlight.boundingBox();
+		return rect ? Math.abs(rect.y - y) : Infinity;
+	};
+	await first.hover();
+	const firstRect = await first.boundingBox();
+	const thirdRect = await third.boundingBox();
+	if (!firstRect || !thirdRect) throw new Error("菜单行缺少可见几何");
+	await expect.poll(() => offsetFrom(firstRect.y)).toBeLessThan(1);
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	);
+	await third.hover();
+	await highlight.evaluate((element) => {
+		const movement = element
+			.getAnimations()
+			.find(
+				(animation) =>
+					animation.effect instanceof KeyframeEffect &&
+					animation.effect.getKeyframes().some((frame) => "transform" in frame),
+			);
+		if (!movement?.effect) throw new Error("项切换缺少跟随动画");
+		movement.pause();
+		movement.currentTime = Number(movement.effect.getComputedTiming().duration) / 2;
+	});
+	const middle = await highlight.boundingBox();
+	if (!middle) throw new Error("共享高亮缺少可见几何");
+	expect(middle.y).toBeGreaterThan(firstRect.y + 1);
+	expect(middle.y).toBeLessThan(thirdRect.y - 1);
+	await second.hover();
+	await highlight.evaluate((element) => {
+		const movement = element
+			.getAnimations()
+			.find(
+				(animation) =>
+					animation.effect instanceof KeyframeEffect &&
+					animation.effect.getKeyframes().some((frame) => "transform" in frame),
+			);
+		if (!movement) throw new Error("折返缺少续接动画");
+		movement.pause();
+		movement.currentTime = 0;
+	});
+	const resumed = await highlight.boundingBox();
+	if (!resumed) throw new Error("折返高亮缺少可见几何");
+	expect(Math.abs(resumed.y - middle.y)).toBeLessThan(1);
+	await highlight.evaluate((element) => {
+		for (const animation of element.getAnimations()) animation.play();
+	});
+	const secondRect = await second.boundingBox();
+	if (!secondRect) throw new Error("目标行缺少可见几何");
+	await expect.poll(() => offsetFrom(secondRect.y)).toBeLessThan(1);
+	expect(await first.boundingBox()).toEqual(firstRect);
+	expect(await third.boundingBox()).toEqual(thirdRect);
+	await trigger.focus();
+	await page.keyboard.press("Tab");
+	await expect(first).toBeFocused();
+	await expect.poll(() => offsetFrom(firstRect.y)).toBeLessThan(1);
+	await expect(highlight).toHaveCSS("opacity", "1");
+	await page.keyboard.press("Tab");
+	await expect(second).toBeFocused();
+	await expect.poll(() => offsetFrom(secondRect.y)).toBeLessThan(1);
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+});
+
+test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({ page, context }) => {
+	await loadClient(context);
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await page.goto("/ui/components/dropdown");
+	await page.waitForLoadState("networkidle");
+	const trigger = page
+		.getByRole("navigation", { name: "Dropdown 示例" })
+		.getByRole("link", { name: "指南", exact: true });
+	await trigger.hover();
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+	const contentId = await trigger.getAttribute("aria-controls");
+	if (!contentId) throw new Error("指南面板缺少关联");
+	const content = page.locator(`[id="${contentId}"]`);
+	const first = content.getByRole("link", { name: "快速入门", exact: true });
+	const third = content.getByRole("link", { name: "版本记录", exact: true });
+	const highlight = content.locator('[data-slot="dropdown-highlight"]');
+	await first.hover();
+	await third.hover();
+	const row = await third.boundingBox();
+	const background = await highlight.boundingBox();
+	if (!row || !background) throw new Error("高亮缺少可见几何");
+	expect(Math.abs(row.y - background.y)).toBeLessThan(1);
+	expect(await highlight.evaluate((element) => element.getAnimations().length)).toBe(0);
+	await third.evaluate((element) => element.setAttribute("aria-disabled", "true"));
+	await expect(highlight).toHaveCSS("opacity", "0");
+	await first.hover();
+	await third.hover();
+	await expect(highlight).toHaveCSS("opacity", "0");
+	await trigger.focus();
+	await page.keyboard.press("Tab");
+	await expect(first).toBeFocused();
+	await expect(highlight).toHaveCSS("opacity", "1");
+	await first.evaluate((element) => element.setAttribute("aria-disabled", "true"));
+	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+});

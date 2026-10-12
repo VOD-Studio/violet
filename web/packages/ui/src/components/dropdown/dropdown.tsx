@@ -20,6 +20,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { isKeyboardFocus, useDropdownHighlight } from "./use-dropdown-highlight";
 import { prefersReducedMotion, useDropdownMotion } from "./use-dropdown-motion";
 
 interface GroupState {
@@ -347,15 +348,6 @@ const hoverOnly = (handler: (point: PointerPoint) => void) => (event: React.Poin
 	if (event.pointerType !== "touch") handler({ x: event.clientX, y: event.clientY });
 };
 
-/** 点按聚焦不展开，只有键盘（:focus-visible）聚焦才展开。 */
-const isKeyboardFocus = (element: Element) => {
-	try {
-		return element.matches(":focus-visible");
-	} catch {
-		return true;
-	}
-};
-
 /**
  * 面板的锚点与悬停热区。点击不改变展开状态，激活行为（如链接跳转）完全留给触发元素自身。
  */
@@ -396,6 +388,23 @@ export function DropdownTrigger({ asChild, ref, ...props }: DropdownTriggerProps
 				)}
 			/>
 		</Popper.Anchor>
+	);
+}
+
+/** 原生模式保留 button 表单属性；asChild 的 ref 与事件指向子元素。 */
+export type DropdownItemProps = NativeTriggerProps | AsChildTriggerProps;
+
+/** 声明参与共享高亮的交互行，不改变点击与 Tab 语义。 */
+export function DropdownItem({ asChild, ref, className, ...props }: DropdownItemProps) {
+	const Component = asChild ? Slot.Root : "button";
+	return (
+		<Component
+			type={asChild ? undefined : "button"}
+			{...(props as React.HTMLAttributes<HTMLElement>)}
+			data-slot="dropdown-item"
+			ref={ref as React.Ref<HTMLButtonElement>}
+			className={cn("v-dropdown__item", className)}
+		/>
 	);
 }
 
@@ -450,6 +459,7 @@ function DropdownContentImpl({
 	const elementRef = useRef<HTMLDivElement>(null);
 	const innerRef = useRef<HTMLDivElement>(null);
 	const morphAnimationRef = useRef<Animation | null>(null);
+	const highlight = useDropdownHighlight(innerRef);
 	const composedRef = useComposedRefs<HTMLDivElement>(
 		ref,
 		contentRef,
@@ -593,16 +603,48 @@ function DropdownContentImpl({
 				props.onPointerEnter,
 				hoverOnly(context.pointerEnter),
 			)}
+			onPointerOver={composeEventHandlers(props.onPointerOver, highlight.pointer)}
+			onPointerMove={composeEventHandlers(props.onPointerMove, highlight.pointer)}
 			onPointerLeave={composeEventHandlers(
 				props.onPointerLeave,
-				hoverOnly(context.pointerLeave),
+				(event: React.PointerEvent<HTMLDivElement>) => {
+					hoverOnly(context.pointerLeave)(event);
+					highlight.leave(event);
+				},
 			)}
-			onFocus={composeEventHandlers(props.onFocus, context.focusIn)}
-			onBlur={composeEventHandlers(props.onBlur, (event: React.FocusEvent<HTMLDivElement>) =>
-				context.focusOut(event.relatedTarget),
+			onFocus={composeEventHandlers(
+				props.onFocus,
+				(event: React.FocusEvent<HTMLDivElement>) => {
+					context.focusIn();
+					highlight.focus(event);
+				},
+			)}
+			onBlur={composeEventHandlers(
+				props.onBlur,
+				(event: React.FocusEvent<HTMLDivElement>) => {
+					context.focusOut(event.relatedTarget);
+					highlight.blur(event);
+				},
 			)}
 		>
 			<div ref={innerRef} className="v-dropdown__inner">
+				<span
+					aria-hidden="true"
+					data-slot="dropdown-highlight"
+					data-visible={highlight.geometry?.visible || undefined}
+					data-animated={highlight.animated || undefined}
+					className="v-dropdown__highlight"
+					style={
+						highlight.geometry
+							? {
+									transform: `translate3d(${highlight.geometry.x}px, ${highlight.geometry.y}px, 0)`,
+									width: highlight.geometry.width,
+									height: highlight.geometry.height,
+									borderRadius: highlight.geometry.radius,
+								}
+							: undefined
+					}
+				/>
 				{children}
 			</div>
 		</Popper.Content>
