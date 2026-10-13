@@ -1,0 +1,12 @@
+[package]
+name = "pet-cli"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+pet-core = { path = "../pet-core" }
+pet-term = { path = "../pet-term" }
+crossterm = "0.29"
+signal-hook = "0.3"
+serde_json = "1"

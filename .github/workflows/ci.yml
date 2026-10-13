@@ -64,17 +64,23 @@ jobs:
               - '.github/workflows/ci.yml'
               - '.github/workflows/publish-npm.yml'
 
+  # 优先使用自托管 runner 216，不可用时退回官方 runner（见 pick-runner.yml）。
+  runner:
+    name: Pick runner
+    uses: ./.github/workflows/pick-runner.yml
+    secrets: inherit
+
   # ============================================================
   # 后端检查（Go）
   # ============================================================
   backend:
     name: Backend (Go)
-    needs: changes
+    needs: [changes, runner]
     timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -167,12 +173,12 @@ jobs:
   # ============================================================
   frontend:
     name: Frontend (React)
-    needs: changes
+    needs: [changes, runner]
     timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;同 backend job
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     defaults:
       run:
         working-directory: web
@@ -282,10 +288,10 @@ jobs:
   # ============================================================
   security:
     name: Dependency Security
-    needs: [changes, infrastructure]
+    needs: [changes, infrastructure, runner]
     if: always()
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
 
     steps:
       - name: Enforce infrastructure and change detection
@@ -357,7 +363,8 @@ jobs:
 
   infrastructure:
     name: Infrastructure
-    runs-on: ubuntu-latest
+    needs: runner
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -399,7 +406,7 @@ jobs:
         env:
           PYTHONPATH: ${{ runner.temp }}/workflow-python
         run: |
-          printf 'self-hosted-runner:\n  labels: [rua]\n' > "$RUNNER_TEMP/actionlint.yaml"
+          printf 'self-hosted-runner:\n  labels: [rua, omarchy]\n' > "$RUNNER_TEMP/actionlint.yaml"
           actionlint -config-file "$RUNNER_TEMP/actionlint.yaml" -oneline
           python3 - <<'PY'
           import os

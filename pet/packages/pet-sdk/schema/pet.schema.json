@@ -1,0 +1,703 @@
+{
+  "$defs": {
+    "Action": {
+      "enum": [
+        "feed",
+        "rest",
+        "play",
+        "heal",
+        "wait"
+      ],
+      "type": "string"
+    },
+    "Birth": {
+      "properties": {
+        "genes": {
+          "items": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "minItems": 8,
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "pet": {
+          "$ref": "#/$defs/Pet"
+        },
+        "rarity": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "species": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "rarity",
+        "species",
+        "genes",
+        "pet"
+      ],
+      "type": "object"
+    },
+    "BirthInput": {
+      "properties": {
+        "born_at": {
+          "type": "string"
+        },
+        "client_seed": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "server_seed": {
+          "description": "服务端承诺并揭示的随机材料,64 位十六进制。",
+          "type": "string"
+        },
+        "world": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "world",
+        "request_id",
+        "server_seed",
+        "client_seed",
+        "born_at"
+      ],
+      "type": "object"
+    },
+    "BirthResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/Birth"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Capability": {
+      "description": "一项可调用能力。能力发现、CLI 帮助与文档都由这张表产出,新增命令必须在此登记。",
+      "properties": {
+        "errors": {
+          "description": "该能力可能返回的业务错误分类。",
+          "items": {
+            "$ref": "#/$defs/ErrorCode"
+          },
+          "type": "array"
+        },
+        "mutates_state": {
+          "description": "是否产生需要持久化的状态变化(调用方负责提交,核心不写存储)。",
+          "type": "boolean"
+        },
+        "op": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "summary",
+        "mutates_state",
+        "errors"
+      ],
+      "type": "object"
+    },
+    "CapabilityCatalog": {
+      "properties": {
+        "capabilities": {
+          "items": {
+            "$ref": "#/$defs/Capability"
+          },
+          "type": "array"
+        },
+        "rules_version": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rules_version",
+        "capabilities"
+      ],
+      "type": "object"
+    },
+    "CapabilityCatalogResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/CapabilityCatalog"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Certificate": {
+      "properties": {
+        "accept_sig": {
+          "description": "服务端承诺在先、接受客户端随机在后的签名收据。",
+          "type": "string"
+        },
+        "client_seed": {
+          "type": "string"
+        },
+        "commit_sig": {
+          "type": "string"
+        },
+        "commitment": {
+          "description": "先于客户端随机材料公布。",
+          "type": "string"
+        },
+        "context": {
+          "$ref": "#/$defs/Context"
+        },
+        "id": {
+          "type": "string"
+        },
+        "rarity": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "server_seed": {
+          "type": "string"
+        },
+        "species": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "context",
+        "commitment",
+        "commit_sig",
+        "client_seed",
+        "accept_sig",
+        "server_seed",
+        "id",
+        "rarity",
+        "species"
+      ],
+      "type": "object"
+    },
+    "Charset": {
+      "enum": [
+        "ascii",
+        "unicode"
+      ],
+      "type": "string"
+    },
+    "Command": {
+      "description": "线上命令:`op` 为判别字段。",
+      "oneOf": [
+        {
+          "properties": {
+            "op": {
+              "const": "capabilities",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/BirthInput",
+          "properties": {
+            "op": {
+              "const": "birth",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/FrameInput",
+          "properties": {
+            "op": {
+              "const": "frame",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "certificate": {
+              "$ref": "#/$defs/Certificate"
+            },
+            "issuer_pub": {
+              "type": "string"
+            },
+            "op": {
+              "const": "verify_birth",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "certificate",
+            "issuer_pub"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/Action"
+            },
+            "now": {
+              "type": "string"
+            },
+            "op": {
+              "const": "act",
+              "type": "string"
+            },
+            "pet": {
+              "$ref": "#/$defs/Pet"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "pet",
+            "action",
+            "now",
+            "request_id"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Context": {
+      "description": "本次领取固定的上下文:世界、发行者、请求、资格与规则摘要。",
+      "properties": {
+        "eligibility": {
+          "description": "领取资格摘要,不含账号标识或原始活动。",
+          "type": "string"
+        },
+        "issuer": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "rules_version": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "world": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "world",
+        "issuer",
+        "request_id",
+        "eligibility",
+        "rules_version"
+      ],
+      "type": "object"
+    },
+    "ErrorBody": {
+      "description": "失败响应信封。",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ok",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "ErrorCode": {
+      "description": "业务错误分类。调用方按此分支处理,`message` 仅供人读。",
+      "oneOf": [
+        {
+          "const": "bad_input",
+          "description": "输入无法解析或字段非法。",
+          "type": "string"
+        },
+        {
+          "const": "dead",
+          "description": "宠物已死亡,任何照料动作都被拒绝。",
+          "type": "string"
+        },
+        {
+          "const": "no_food",
+          "description": "库存没有食物。",
+          "type": "string"
+        },
+        {
+          "const": "no_medicine",
+          "description": "库存没有药品。",
+          "type": "string"
+        },
+        {
+          "const": "not_sick",
+          "description": "宠物未处于生病阶段,无需治疗。",
+          "type": "string"
+        },
+        {
+          "const": "too_tired",
+          "description": "精力不足以玩耍。",
+          "type": "string"
+        },
+        {
+          "const": "time_backwards",
+          "description": "`now` 早于宠物记录的 `last_tick`。",
+          "type": "string"
+        }
+      ]
+    },
+    "Frame": {
+      "properties": {
+        "colors": {
+          "description": "与 rows 逐字符对应的 256 色索引;0 表示不着色。",
+          "items": {
+            "items": {
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "h": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "rows": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "w": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "w",
+        "h",
+        "rows",
+        "colors"
+      ],
+      "type": "object"
+    },
+    "FrameInput": {
+      "description": "帧合成输入:投影字段 + 呈现时钟。呈现时钟只影响动作相位,不影响任何养成结果。",
+      "properties": {
+        "charset": {
+          "$ref": "#/$defs/Charset"
+        },
+        "genes": {
+          "items": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "minItems": 8,
+          "type": "array"
+        },
+        "h": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "pose": {
+          "$ref": "#/$defs/Pose"
+        },
+        "species": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "t": {
+          "type": "string"
+        },
+        "w": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "species",
+        "genes",
+        "pose",
+        "charset",
+        "w",
+        "h",
+        "t"
+      ],
+      "type": "object"
+    },
+    "FrameResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/Frame"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Outcome": {
+      "properties": {
+        "pet": {
+          "$ref": "#/$defs/Pet"
+        },
+        "phase": {
+          "$ref": "#/$defs/Phase"
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pet",
+        "phase",
+        "replayed"
+      ],
+      "type": "object"
+    },
+    "OutcomeResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/Outcome"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Pet": {
+      "properties": {
+        "energy": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "food": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_request": {
+          "type": "string"
+        },
+        "last_tick": {
+          "type": "string"
+        },
+        "medicine": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "neglect": {
+          "description": "持续失养的逻辑时间,决定预警、生病与死亡。",
+          "type": "string"
+        },
+        "satiety": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "satiety",
+        "energy",
+        "food",
+        "medicine",
+        "neglect",
+        "last_tick",
+        "last_request"
+      ],
+      "type": "object"
+    },
+    "Phase": {
+      "enum": [
+        "healthy",
+        "warned",
+        "sick",
+        "dead"
+      ],
+      "type": "string"
+    },
+    "Pose": {
+      "enum": [
+        "idle",
+        "sick",
+        "sleep"
+      ],
+      "type": "string"
+    },
+    "Verdict": {
+      "enum": [
+        "valid",
+        "unsupported_rules",
+        "bad_encoding",
+        "commit_signature",
+        "commitment_mismatch",
+        "accept_signature",
+        "result_mismatch"
+      ],
+      "type": "string"
+    },
+    "VerdictResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/Verdict"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pet wire protocol",
+  "x-capabilities": {
+    "capabilities": [
+      {
+        "errors": [
+          "bad_input"
+        ],
+        "mutates_state": true,
+        "op": "birth",
+        "summary": "由出生输入派生个体身份、稀有度、物种与基因"
+      },
+      {
+        "errors": [
+          "bad_input",
+          "dead",
+          "no_food",
+          "no_medicine",
+          "not_sick",
+          "too_tired",
+          "time_backwards"
+        ],
+        "mutates_state": true,
+        "op": "act",
+        "summary": "对宠物执行喂食、休息、玩耍、治疗或等待,按逻辑时间结算病程"
+      },
+      {
+        "errors": [
+          "bad_input"
+        ],
+        "mutates_state": false,
+        "op": "frame",
+        "summary": "将姿态与呈现时钟合成为字符单元网格"
+      },
+      {
+        "errors": [
+          "bad_input"
+        ],
+        "mutates_state": false,
+        "op": "verify_birth",
+        "summary": "核验出生证书的来源签名、承诺揭示与结果重算"
+      },
+      {
+        "errors": [],
+        "mutates_state": false,
+        "op": "capabilities",
+        "summary": "列出当前实现的全部能力与错误分类"
+      }
+    ],
+    "rules_version": 1
+  },
+  "x-op-results": {
+    "act": "OutcomeResult",
+    "birth": "BirthResult",
+    "capabilities": "CapabilityCatalogResult",
+    "frame": "FrameResult",
+    "verify_birth": "VerdictResult"
+  }
+}

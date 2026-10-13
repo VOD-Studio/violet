@@ -1,0 +1,13 @@
+import fs from "node:fs";
+const t0 = performance.now();
+const { initSync, execute } = await import("../target/pkg-web/pet_wasm.js");
+initSync({ module: fs.readFileSync(new URL("../target/pkg-web/pet_wasm_bg.wasm", import.meta.url)) });
+const t1 = performance.now();
+const birth = JSON.stringify({ op: "birth", world: "w1", request_id: "r1", server_seed: "aa".repeat(32), client_seed: "bb".repeat(32), born_at: "0" });
+const pet = JSON.parse(execute(birth)).value.pet;
+const act = JSON.stringify({ op: "act", pet, action: "wait", now: "100", request_id: "x" });
+const N = 20000; const t2 = performance.now();
+for (let i = 0; i < N; i++) execute(act);
+const t3 = performance.now();
+const b0 = performance.now(); for (let i = 0; i < 2000; i++) execute(birth); const b1 = performance.now();
+console.log(`instantiate ${(t1 - t0).toFixed(1)}ms; act ${((t3 - t2) / N * 1000).toFixed(1)}us/call; birth ${((b1 - b0) / 2000 * 1000).toFixed(1)}us/call`);

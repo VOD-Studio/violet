@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = ["crates/pet-core", "crates/pet-wasm", "crates/pet-cli", "crates/pet-store", "crates/pet-term", "crates/pet-schema", "crates/pet-issuer"]
+
+[workspace.package]
+edition = "2021"
+version = "0.0.0"
+publish = false
+
+[workspace.dependencies]
+sha2 = { version = "0.10", default-features = false }
+hmac = { version = "0.12", default-features = false }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+
+[workspace.lints.clippy]
+float_arithmetic = "deny"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
