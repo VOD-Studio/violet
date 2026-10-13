@@ -1,0 +1,106 @@
+name: Pet
+
+# 电子宠物切片（pet/）的独立检查；仅在相关路径变化时运行。
+on:
+  push:
+    branches: [release/2.0]
+    paths: ["pet/**", ".github/workflows/pet.yml"]
+  pull_request:
+    branches: [release/2.0]
+    paths: ["pet/**", ".github/workflows/pet.yml"]
+
+concurrency:
+  group: pet-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  WASM_BINDGEN_VERSION: 0.2.129
+
+jobs:
+  core:
+    name: Core, storage and schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: pet
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: pet
+          POSTGRES_DB: pet
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pet"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pet
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@${{ env.WASM_BINDGEN_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests (SQLite and Postgres contract)
+        env:
+          PET_TEST_PG_URL: host=127.0.0.1 port=5432 user=postgres password=pet dbname=pet
+        run: cargo test --workspace -- --include-ignored
+      - name: Native, Node and web WebAssembly agree
+        run: ./scripts/three-end.sh
+      - name: Schema, types and docs match the Rust types
+        working-directory: pet/packages/pet-sdk
+        run: |
+          pnpm install --frozen-lockfile
+          ./scripts/check-schema.sh
+      - name: Real TTY behavior
+        run: python3 scenario/tty_test.py
+
+  consumers:
+    name: External consumption
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: pet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pet
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@${{ env.WASM_BINDGEN_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+        working-directory: pet/packages/pet-sdk
+      - name: TanStack Start SSR and hydration
+        env:
+          CHROME: google-chrome
+        run: ./consumers/tanstack-start/run.sh
+      - name: npm per-platform CLI
+        run: ./consumers/npm-cli.sh
+      - name: Node terminal embedding
+        run: ./consumers/node-embed.sh
