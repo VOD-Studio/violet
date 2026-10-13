@@ -1,0 +1,12 @@
+[package]
+name = "pet-term"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

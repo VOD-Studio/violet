@@ -5,6 +5,7 @@ version.workspace = true
 publish.workspace = true
 
 [dependencies]
+pet-term = { path = "../pet-term" }
 sha2 = { workspace = true }
 hmac = { workspace = true }
 serde = { workspace = true }

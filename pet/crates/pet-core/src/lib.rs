@@ -21,6 +21,7 @@ pub const RULES_VERSION: u32 = 1;
 #[serde(tag = "op", rename_all = "snake_case")]
 enum Command {
     Birth(BirthInput),
+    Frame(pet_term::FrameInput),
     VerifyBirth {
         certificate: proof::Certificate,
         issuer_pub: String,
@@ -42,6 +43,7 @@ pub fn execute(input: &str) -> String {
             Ok(v) => codec::ok(&v),
             Err(e) => codec::error("bad_input", e),
         },
+        Ok(Command::Frame(f)) => codec::ok(&pet_term::render(&f)),
         Ok(Command::VerifyBirth { certificate, issuer_pub }) => {
             match codec::unhex(&issuer_pub).and_then(|v| <[u8; 32]>::try_from(v).ok()) {
                 Some(k) => codec::ok(&proof::verify(&certificate, &k)),
