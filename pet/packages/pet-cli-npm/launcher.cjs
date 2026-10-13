@@ -4,9 +4,9 @@ const { spawn } = require("node:child_process");
 const key = `${process.platform}-${process.arch}`;
 let bin;
 try {
-  bin = require.resolve(`@violet/pet-cli-${key}/bin/pet-cli`);
+  bin = require.resolve(`@violetjs/pet-cli-${key}/bin/pet-cli`);
 } catch {
-  console.error(`pet-cli: no prebuilt binary for ${key}. Supported: see optionalDependencies of @violet/pet-cli; build from source with cargo otherwise.`);
+  console.error(`pet-cli: no prebuilt binary for ${key}. Supported: see optionalDependencies of @violetjs/pet-cli; build from source with cargo otherwise.`);
   process.exit(1);
 }
 const child = spawn(bin, process.argv.slice(2), { stdio: "inherit" });

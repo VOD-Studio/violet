@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { initPet, execute } from "@violet/pet-sdk";
+import { initPet, execute } from "@violetjs/pet";
 import { useEffect, useState } from "react";
 
 const birth = JSON.stringify({ op: "birth", world: "w1", request_id: "r1", server_seed: "aa".repeat(32), client_seed: "bb".repeat(32), born_at: "0" });

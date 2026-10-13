@@ -8,15 +8,15 @@ KEY=$("$HERE/../packages/pet-cli-npm/build.sh" "$WORK/pkg")
 # 本地验证用 tarball 代替 registry:把主包的该平台依赖指向本地文件。
 node -e "
 const fs=require('fs');const p='$WORK/pkg/main/package.json';const j=JSON.parse(fs.readFileSync(p));
-const t=fs.readdirSync('$WORK').find(f=>f.startsWith('violet-pet-cli-')&&f.endsWith('.tgz'));
+const t=fs.readdirSync('$WORK').find(f=>f.startsWith('violetjs-pet-cli-')&&f.endsWith('.tgz'));
 for(const k of Object.keys(j.optionalDependencies)) if(k.endsWith('-$KEY')) j.optionalDependencies[k]='file:$WORK/'+t; else delete j.optionalDependencies[k];
 fs.writeFileSync(p,JSON.stringify(j));"
 (cd "$WORK/pkg/main" && pnpm pack --pack-destination "$WORK" >/dev/null)
 mkdir "$WORK/app" && cd "$WORK/app" && echo '{"name":"c","private":true}' > package.json
 CLEAN=$(echo "$PATH" | tr ':' '\n' | grep -v cargo | paste -sd: -)
-env PATH="$CLEAN" pnpm add -s "$WORK"/violet-pet-cli-0.0.0.tgz >/dev/null 2>&1 || env PATH="$CLEAN" pnpm add -s "$(ls "$WORK"/*.tgz | grep -v 'cli-'"$KEY" | head -1)"
+env PATH="$CLEAN" pnpm add -s "$WORK"/violetjs-pet-cli-0.0.0.tgz >/dev/null 2>&1 || env PATH="$CLEAN" pnpm add -s "$(ls "$WORK"/*.tgz | grep -v 'cli-'"$KEY" | head -1)"
 env PATH="$CLEAN" sh -c 'command -v cargo >/dev/null && { echo "FAIL: cargo visible"; exit 1; }; true'
-PLAT=$(find node_modules/.pnpm -type d -path "*node_modules/@violet/pet-cli-$KEY" | head -1)
+PLAT=$(find node_modules/.pnpm -type d -path "*node_modules/@violetjs/pet-cli-$KEY" | head -1)
 test -x "$PLAT/bin/pet-cli" || { echo "FAIL: platform package not installed"; exit 1; }
 OUT=$(echo '{"op":"frame","species":1,"genes":[1,2,3,4,5,6,7,8],"pose":"idle","charset":"ascii","w":10,"h":3,"t":"0"}' | env PATH="$CLEAN" pnpm exec pet-cli exec)
 echo "$OUT" | grep -q '"ok":true' || { echo "FAIL: exec via launcher: $OUT"; exit 1; }
@@ -29,7 +29,7 @@ plat = sys.argv[1]
 def run(action):
     pid, fd = pty.fork()
     if pid == 0:
-        os.execvp("node", ["node", "node_modules/@violet/pet-cli/bin/pet-cli.cjs", "live"])
+        os.execvp("node", ["node", "node_modules/@violetjs/pet-cli/bin/pet-cli.cjs", "live"])
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 12, 40, 0, 0))
     buf = b""
     def pump(s):
@@ -60,6 +60,6 @@ for name, act in [("Ctrl+C", lambda p, fd: os.write(fd, b"\x03")), ("SIGTERM", l
 PY
 # 缺少平台包时的错误
 rm -rf "$PLAT"
-ERR=$(env PATH="$CLEAN" node node_modules/@violet/pet-cli/bin/pet-cli.cjs exec 2>&1 </dev/null || true)
+ERR=$(env PATH="$CLEAN" node node_modules/@violetjs/pet-cli/bin/pet-cli.cjs exec 2>&1 </dev/null || true)
 echo "$ERR" | grep -q "no prebuilt binary" || { echo "FAIL: missing-platform message: $ERR"; exit 1; }
 echo "PASS: tarball-only install on $KEY runs exec and live(non-tty); missing platform package gives actionable error"

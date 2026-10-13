@@ -1,10 +1,10 @@
 // 最小宿主:一个自带输入循环的 REPL,把右上角 4 行留给宠物。
 import fs from "node:fs";
 import readline from "node:readline";
-import { initPet } from "@violet/pet-sdk";
-import { mountTerminalPet } from "@violet/pet-sdk/terminal";
+import { initPet } from "@violetjs/pet";
+import { mountTerminalPet } from "@violetjs/pet/terminal";
 
-const wasm = fs.readFileSync(new URL("./node_modules/@violet/pet-sdk/dist/pet_wasm_bg.wasm", import.meta.url));
+const wasm = fs.readFileSync(new URL("./node_modules/@violetjs/pet/dist/pet_wasm_bg.wasm", import.meta.url));
 await initPet(wasm);
 
 const rows = process.stdout.rows ?? 24;
