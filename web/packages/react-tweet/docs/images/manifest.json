@@ -61,6 +61,7 @@
 		"dist/unstyled.d.ts": "72e2aa4b3de7a6bf22a2ef885e9451a345db8fa530c3d324273552847664b5d5",
 		"dist/unstyled.js": "c9f73ea0438a8964b1df77d2d11f4760c39d2bc2f80bc752faacbc7f689205f6",
 		"examples/card.tsx": "d10e890156d77b36e08dc65cb5444520cac7fbf3af4e62cee446e7577a7a43fa",
+		"examples/quoted.tsx": "b48bf255d795f16c3d8d767b053953c008b1c556b946b3bbea08307dfcf731c2",
 		"examples/remote.tsx": "a5a65c54c9c601ed371264db3c407d8308df62eb9ba9fd511e1fd5d09549c1b5",
 		"examples/server.tsx": "b47f94df9888b1896f83c93914e88af4543104399dd3047b9028a9c2c15251b4",
 		"examples/snapshot.tsx": "0da32361eb326402be987f6e2a416b14c13b45a6ef2932f37fe26829dc82e78b",

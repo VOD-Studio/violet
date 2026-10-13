@@ -63,6 +63,23 @@ export function Themes({ locale = "en-US" }: { locale?: string }) {
 
 Without an override, the theme follows the system. Ancestor `.light` / `.dark` classes and `data-theme="light"` / `"dark"` are supported. Override `--tweet-background`, `--tweet-foreground`, `--tweet-accent`, and other [CSS variables](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/react-tweet/docs/api.md#styling) to match your site.
 
+## Embed a compact quote
+
+Use `quoted` to render a saved post as a small card in a message or another piece of content. Save the first example as `snapshot.tsx`.
+
+<!-- example:quoted:start -->
+```tsx
+import { EmbeddedTweet } from "@violetjs/react-tweet";
+import { saved } from "./snapshot";
+
+export function QuotedPost() {
+	return <EmbeddedTweet tweet={saved} quoted />;
+}
+```
+<!-- example:quoted:end -->
+
+The card uses a smaller avatar and type, hides X branding and engagement counts, and limits the body to four lines before expansion. `maxTextLines={0}` keeps the full body visible. Photos become a square thumbnail mosaic; videos with a poster link to the original post. Nested quotes use the same layout automatically. `compact` only changes padding; `quoted` selects this layout.
+
 ## Load through your own server
 
 Supply a stable `TweetFetcher` from your application's API client, cache, or server function. It receives `(id, { signal })` and resolves to `TweetData`; your endpoint and authentication stay under your control.
@@ -98,6 +115,8 @@ export async function renderPost(id: string, signal?: AbortSignal) {
 
 `getTweet` fetches full text and media from FxTwitter and supplements author metadata using X syndication. **Run it on your server**, not directly in a browser: the metadata service does not allow browser CORS. Both services must be reachable; failures and rate limits must be handled by your application. There is no built-in cache or automatic retry. Saved data can instead come from any source matching `TweetData`.
 
+Fetching data on the server does not proxy its media URLs. Direct `video.twimg.com` sources can fail in a browser when it sends a third-party `Referer`; playback then falls back to the poster and “Watch on X”. For playback, provide a browser-accessible media URL through your server's proxy, or use `renderVideo` to connect your own player and media delivery. The package does not provide a media proxy.
+
 ## Compose your own card
 
 `TweetCard` provides layout without adding X branding, links, or actions.
@@ -132,8 +151,10 @@ export function Note() {
 ## Display and interaction
 
 - `locale="en-US"` and `timeZone="UTC"` are deterministic defaults. Built-in English and Simplified Chinese UI strings can be overridden with `messages`; source text is never translated.
-- Body text defaults to six lines. Use `maxTextLines={0}` to disable collapsing; quotes expand independently. SSR retains the full text.
-- Photos use a grid or a horizontal rail for portrait-heavy groups. `onOpenPhoto` connects your lightbox without replacing the layout; `renderPhotos` and `renderVideo` replace media rendering entirely.
+- Body text defaults to six lines; quoted cards use at most four. Use `maxTextLines={0}` to disable collapsing; quotes expand independently. SSR retains the full text.
+- A single photo keeps its aspect ratio and aligns to the start. Multiple photos use a grid or a horizontal rail for portrait-heavy groups. Rail buttons advance one card at a time.
+- Videos show a poster and play button, then native controls after starting. Duration appears when metadata is available. GIFs loop muted and can play automatically while visible; reduced-motion preferences and manual pauses are respected. Consecutive videos and GIFs share a rail.
+- `onOpenPhoto` connects your lightbox without replacing the layout; `renderPhotos` and `renderVideo` replace media rendering entirely.
 - Quotes expand one level. Unavailable content never reveals a stale snapshot. Links and media URLs are sanitized, not interpreted as HTML.
 - Native article attributes, `ref`, styles, and events are preserved. Like and reply links open real X actions; displayed counts are snapshots, not locally simulated engagement.
 

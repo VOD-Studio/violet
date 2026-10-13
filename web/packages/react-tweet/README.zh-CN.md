@@ -63,6 +63,23 @@ export function Themes({ locale = "en-US" }: { locale?: string }) {
 
 不指定时跟随系统，也支持祖先的 `.light` / `.dark`、`data-theme="light"` / `"dark"`。可覆盖 `--tweet-background`、`--tweet-foreground`、`--tweet-accent` 等 [CSS 变量](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/react-tweet/docs/api.zh-CN.md#样式)适配自己的站点。
 
+## 嵌入引用小卡片
+
+用 `quoted` 把已保存推文放进聊天消息或其他内容中。先把第一个示例保存为 `snapshot.tsx`。
+
+<!-- example:quoted:start -->
+```tsx
+import { EmbeddedTweet } from "@violetjs/react-tweet";
+import { saved } from "./snapshot";
+
+export function QuotedPost() {
+	return <EmbeddedTweet tweet={saved} quoted />;
+}
+```
+<!-- example:quoted:end -->
+
+小卡片缩小头像和字号，隐藏 X 标识与互动数，正文超过四行时可展开。`maxTextLines={0}` 保持全文可见。照片显示为方形缩略图拼图，有封面的视频链接到原文。嵌套引用自动使用相同布局。`compact` 只调整内边距，`quoted` 选择小卡片布局。
+
 ## 通过自己的服务端加载
 
 由宿主 API client、缓存或 server function 提供稳定的 `TweetFetcher`。签名是 `(id, { signal }) => Promise<TweetData>`；端点和认证由宿主决定。
@@ -98,6 +115,8 @@ export async function renderPost(id: string, signal?: AbortSignal) {
 
 `getTweet` 从 FxTwitter 获取完整正文和媒体，再用 X syndication 补充作者元数据。**只在服务端调用**：官方元数据服务不开放浏览器 CORS。运行环境必须能访问两个来源；宿主处理失败与限流。包不内置缓存或自动重试，也可直接用任意来源适配成 `TweetData`。
 
+服务端获取数据不会代理媒体地址。浏览器发送第三方 `Referer` 时，直接请求 `video.twimg.com` 的播放源可能失败；组件会回退到封面与「在 X 查看视频」。需要播放时，由自己的服务端代理提供浏览器可访问的媒体地址，或用 `renderVideo` 接入宿主播放器与媒体服务。包不提供媒体代理。
+
 ## 组合自己的卡片
 
 `TweetCard` 只提供布局，不添加 X 品牌、来源链接或操作。
@@ -132,8 +151,10 @@ export function Note() {
 ## 展示与交互
 
 - `locale="en-US"`、`timeZone="UTC"` 是确定性默认值。内置英文和简体中文，`messages` 可覆盖；不翻译作者正文。
-- 正文默认折叠到六行；`maxTextLines={0}` 关闭折叠，引用独立展开。SSR 保留完整文字。
-- 照片使用网格或竖图为主时的横向照片条；`onOpenPhoto` 保留布局并接入灯箱，`renderPhotos` / `renderVideo` 完全替换媒体展示。
+- 正文默认折叠为六行，引用小卡片最多四行。`maxTextLines={0}` 关闭折叠；引用独立展开，SSR 保留全文。
+- 单张照片按自身比例靠起始侧对齐，多张使用网格或竖图横条。横条按钮逐张切换。
+- 视频先展示封面与播放按钮，开始后显示原生控件；读取到元数据时显示时长。GIF 静音循环，可见时可自动播放，尊重减少动态效果偏好和手动暂停。连续视频与 GIF 共用横条。
+- `onOpenPhoto` 接入灯箱并保留布局，`renderPhotos` / `renderVideo` 完全替换媒体展示。
 - 引用展开一层；不可用内容不泄露残留快照。链接和媒体地址经过净化，正文不作为 HTML 解析。
 - 保留原生 article 属性、`ref`、样式和事件。点赞、回复打开 X 的真实操作入口，计数是快照，不伪造站内交互结果。
 
