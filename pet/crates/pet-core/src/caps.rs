@@ -29,7 +29,7 @@ pub const CAPABILITIES: &[Capability] = &[
         op: "act",
         summary: "对宠物执行喂食、休息、玩耍、治疗或等待,按逻辑时间结算病程",
         mutates_state: true,
-        errors: &[BadInput, Dead, NoFood, NoMedicine, NotSick, TooTired, TimeBackwards],
+        errors: &[BadInput, Dead, NoFood, NoMedicine, NotSick, TooTired, TimeBackwards, UnsupportedRules],
     },
     Capability { op: "frame", summary: "将姿态与呈现时钟合成为字符单元网格", mutates_state: false, errors: &[BadInput] },
     Capability { op: "verify_birth", summary: "核验出生证书的来源签名、承诺揭示与结果重算", mutates_state: false, errors: &[BadInput] },

@@ -29,6 +29,8 @@ pub enum ErrorCode {
     TooTired,
     /// `now` 早于宠物记录的 `last_tick`。
     TimeBackwards,
+    /// 宠物保存时的规则版本不被当前实现支持,拒绝结算而不是猜测迁移。
+    UnsupportedRules,
 }
 
 /// 失败响应信封。

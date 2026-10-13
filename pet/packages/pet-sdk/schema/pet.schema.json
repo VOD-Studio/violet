@@ -397,6 +397,11 @@
           "const": "time_backwards",
           "description": "`now` 早于宠物记录的 `last_tick`。",
           "type": "string"
+        },
+        {
+          "const": "unsupported_rules",
+          "description": "宠物保存时的规则版本不被当前实现支持,拒绝结算而不是猜测迁移。",
+          "type": "string"
         }
       ]
     },
@@ -585,6 +590,13 @@
           "description": "持续失养的逻辑时间,决定预警、生病与死亡。",
           "type": "string"
         },
+        "rules_version": {
+          "default": 1,
+          "description": "个体出生时所用的规则版本。缺省为 1，兼容该字段出现之前保存的个体。",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
         "satiety": {
           "format": "uint8",
           "maximum": 255,
@@ -678,7 +690,8 @@
           "no_medicine",
           "not_sick",
           "too_tired",
-          "time_backwards"
+          "time_backwards",
+          "unsupported_rules"
         ],
         "mutates_state": true,
         "op": "act",

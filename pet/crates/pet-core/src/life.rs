@@ -1,4 +1,5 @@
 use crate::codec::{u64_string, ErrorCode};
+use crate::RULES_VERSION;
 use alloc::string::String;
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +31,9 @@ pub enum Phase {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Pet {
     pub id: String,
+    /// 个体出生时所用的规则版本。缺省为 1，兼容该字段出现之前保存的个体。
+    #[serde(default = "first_rules_version")]
+    pub rules_version: u32,
     pub satiety: u8,
     pub energy: u8,
     pub food: u32,
@@ -50,9 +54,13 @@ pub struct Pet {
     pub last_request: String,
 }
 
+fn first_rules_version() -> u32 {
+    1
+}
+
 impl Pet {
     pub fn newborn(id: String, at: u64) -> Self {
-        Self { id, satiety: 80, energy: 80, food: 5, medicine: 1, satiety_rem: 0, energy_rem: 0, neglect: 0, last_tick: at, last_request: String::new() }
+        Self { id, rules_version: RULES_VERSION, satiety: 80, energy: 80, food: 5, medicine: 1, satiety_rem: 0, energy_rem: 0, neglect: 0, last_tick: at, last_request: String::new() }
     }
 
     pub fn phase(&self) -> Phase {
@@ -92,6 +100,7 @@ pub enum ActError {
     NotSick,
     TooTired,
     TimeBackwards,
+    UnsupportedRules,
 }
 
 impl ActError {
@@ -103,6 +112,7 @@ impl ActError {
             Self::NotSick => ErrorCode::NotSick,
             Self::TooTired => ErrorCode::TooTired,
             Self::TimeBackwards => ErrorCode::TimeBackwards,
+            Self::UnsupportedRules => ErrorCode::UnsupportedRules,
         }
     }
 
@@ -114,6 +124,7 @@ impl ActError {
             Self::NotSick => "pet is not sick",
             Self::TooTired => "energy too low to play",
             Self::TimeBackwards => "now is before last_tick",
+            Self::UnsupportedRules => "pet was saved with a rules version this build cannot settle",
         }
     }
 }
@@ -155,6 +166,9 @@ pub fn act(mut pet: Pet, action: Action, now: u64, request_id: &str) -> Result<O
     if !pet.last_request.is_empty() && pet.last_request == request_id {
         let phase = pet.phase();
         return Ok(Outcome { pet, phase, replayed: true });
+    }
+    if pet.rules_version != RULES_VERSION {
+        return Err(ActError::UnsupportedRules);
     }
     advance(&mut pet, now)?;
     if pet.phase() == Phase::Dead {

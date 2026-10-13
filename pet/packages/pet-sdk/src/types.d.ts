@@ -11,7 +11,8 @@ export type Action = "feed" | "rest" | "play" | "heal" | "wait";
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "ErrorCode".
  */
-export type ErrorCode = "bad_input" | "dead" | "no_food" | "no_medicine" | "not_sick" | "too_tired" | "time_backwards";
+export type ErrorCode =
+  "bad_input" | "dead" | "no_food" | "no_medicine" | "not_sick" | "too_tired" | "time_backwards" | "unsupported_rules";
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Charset".
@@ -102,6 +103,10 @@ export interface Pet {
    * 持续失养的逻辑时间,决定预警、生病与死亡。
    */
   neglect: string;
+  /**
+   * 个体出生时所用的规则版本。缺省为 1，兼容该字段出现之前保存的个体。
+   */
+  rules_version?: number;
   satiety: number;
   /**
    * 饱食衰减的余数刻度,保证结算频率不影响总衰减量。
