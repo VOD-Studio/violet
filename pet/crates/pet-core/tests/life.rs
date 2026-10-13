@@ -1,5 +1,9 @@
 use pet_core::{act, Action, Phase, Pet};
 
+fn code(r: Result<pet_core::Outcome, pet_core::ActError>) -> pet_core::ErrorCode {
+    r.err().expect("action must be rejected").code()
+}
+
 fn wait(p: Pet, now: u64, id: &str) -> Pet {
     act(p, Action::Wait, now, id).expect("alive pet accepts wait").pet
 }
@@ -85,4 +89,39 @@ fn medicine_is_the_way_back_from_sick() {
     assert_eq!(fed.phase(), Phase::Sick, "food alone does not cure");
     let healed = act(fed, Action::Heal, 100 * 24 * 60 + 2, "heal").unwrap();
     assert_ne!(healed.phase, Phase::Sick);
+}
+
+#[test]
+fn rejected_actions_report_a_distinct_code_and_produce_no_state() {
+    use pet_core::ErrorCode::*;
+    let base = Pet::newborn("p".into(), 0);
+
+    let mut no_food = base.clone();
+    no_food.food = 0;
+    assert_eq!(code(act(no_food, Action::Feed, 1, "a")), NoFood);
+
+    let mut no_medicine = wait(base.clone(), 100 * 24 * 60, "away");
+    no_medicine.medicine = 0;
+    let t = no_medicine.last_tick;
+    assert_eq!(code(act(no_medicine, Action::Heal, t, "b")), NoMedicine);
+
+    assert_eq!(code(act(base.clone(), Action::Heal, 1, "c")), NotSick);
+
+    let mut tired = base.clone();
+    tired.energy = 19;
+    assert_eq!(code(act(tired, Action::Play, 0, "d")), TooTired);
+
+    assert!(act(base.clone(), Action::Wait, 0, "e").is_ok());
+    let mut later = base;
+    later.last_tick = 100;
+    assert_eq!(code(act(later, Action::Wait, 50, "f")), TimeBackwards);
+}
+
+#[test]
+fn dead_pet_rejects_every_action() {
+    let mut p = Pet::newborn("p".into(), 0);
+    p.neglect = 7200;
+    for (i, a) in [Action::Feed, Action::Rest, Action::Play, Action::Heal, Action::Wait].into_iter().enumerate() {
+        assert_eq!(code(act(p.clone(), a, 0, &format!("d{i}"))), pet_core::ErrorCode::Dead);
+    }
 }
