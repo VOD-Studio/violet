@@ -8,7 +8,7 @@ ajv.addSchema(schema, "pet");
 const check = (name) => ajv.getSchema(`pet#/$defs/${name}`);
 
 const transcript = fs.readFileSync(new URL("../../../target/out-native.txt", import.meta.url), "utf8").trim().split("\n");
-const ops = ["birth", ...JSON.parse(fs.readFileSync(new URL("../../../scenario/steps.json", import.meta.url))).map(() => "act"), "verify_birth", "verify_birth", "verify_birth", ...Array(5).fill("frame")];
+const ops = ["birth", ...JSON.parse(fs.readFileSync(new URL("../../../scenario/steps.json", import.meta.url))).map(() => "act"), "verify_birth", "verify_birth", "verify_birth", ...Array(5).fill("frame"), "capabilities"];
 if (ops.length !== transcript.length) throw new Error(`op count ${ops.length} != transcript ${transcript.length}`);
 
 let n = 0;
@@ -25,6 +25,7 @@ const fx = JSON.parse(fs.readFileSync(new URL("../../../scenario/cert.json", imp
 const inputs = [
   { op: "birth", world: "w1", request_id: "r1", server_seed: "aa".repeat(32), client_seed: "bb".repeat(32), born_at: "0" },
   { op: "verify_birth", ...fx },
+  { op: "capabilities" },
   { op: "frame", species: 5, genes: [1, 2, 3, 4, 5, 6, 7, 8], pose: "idle", charset: "ascii", w: 10, h: 4, t: "0" },
 ];
 for (const c of inputs) if (!cmd(c)) throw new Error(`${c.op} input violates Command: ${ajv.errorsText(cmd.errors)}`);

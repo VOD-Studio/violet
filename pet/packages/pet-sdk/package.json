@@ -5,7 +5,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "schema"
+    "schema",
+    "docs"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

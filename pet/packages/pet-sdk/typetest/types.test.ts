@@ -24,3 +24,11 @@ run({ op: "birth" });
 // 未知 op
 // @ts-expect-error unknown op
 run({ op: "teleport" });
+
+// 错误码是封闭联合,不是 string
+import type { ErrorCode } from "../src/index";
+assert<Equal<ErrorBody["code"], ErrorCode>>();
+// @ts-expect-error not a known error code
+const bad: ErrorCode = "oops";
+const good: ErrorCode = "no_food";
+void bad; void good;
