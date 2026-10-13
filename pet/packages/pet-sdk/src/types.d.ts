@@ -77,7 +77,7 @@ export type Command =
     })
   | {
       certificate: Certificate;
-      issuer_pub: string;
+      issuer_keys: IssuerKey[];
       op: "verify_birth";
     }
   | {
@@ -109,13 +109,18 @@ export type Phase = "healthy" | "warned" | "sick" | "dead";
  * via the `definition` "Verdict".
  */
 export type Verdict =
-  | "valid"
-  | "unsupported_rules"
-  | "bad_encoding"
-  | "commit_signature"
-  | "commitment_mismatch"
-  | "accept_signature"
-  | "result_mismatch";
+  | (
+      | "valid"
+      | "unsupported_rules"
+      | "bad_encoding"
+      | "commit_signature"
+      | "commitment_mismatch"
+      | "accept_signature"
+      | "result_mismatch"
+    )
+  | "unknown_key"
+  | "key_not_valid"
+  | "key_revoked";
 
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
@@ -332,7 +337,16 @@ export interface Context {
    * 领取资格摘要,不含账号标识或原始活动。
    */
   eligibility: string;
+  /**
+   * 签发方声称的签发时间(逻辑时间)。它由签名保护但由签发方自报,
+   * 所以撤销被盗密钥时应取最早可能的泄露时间,见 pet/docs/birth-protocol.md。
+   */
+  issued_at: string;
   issuer: string;
+  /**
+   * 签名密钥标识。验证方按它在密钥集中选择公钥,从而支持轮换。
+   */
+  kid: string;
   request_id: string;
   rules_version: number;
   world: string;
@@ -379,6 +393,31 @@ export interface FrameInput {
   species: number;
   t: string;
   w: number;
+}
+/**
+ * 验证方信任的一把签发公钥及其有效期。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "IssuerKey".
+ */
+export interface IssuerKey {
+  kid: string;
+  /**
+   * 轮换后旧钥的结束时间(含);缺省表示仍在使用。已签发的旧证书在窗口内仍然有效。
+   */
+  not_after?: string | null;
+  /**
+   * 自该时间起签发的证书有效(含)。
+   */
+  not_before: string;
+  /**
+   * Ed25519 公钥,64 位十六进制。
+   */
+  public_key: string;
+  /**
+   * 撤销时间:自该时间起(含)签发的证书无效,之前的证书不受影响。
+   */
+  revoked_at?: string | null;
 }
 /**
  * 失败响应信封。

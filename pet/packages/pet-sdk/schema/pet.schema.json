@@ -379,8 +379,11 @@
             "certificate": {
               "$ref": "#/$defs/Certificate"
             },
-            "issuer_pub": {
-              "type": "string"
+            "issuer_keys": {
+              "items": {
+                "$ref": "#/$defs/IssuerKey"
+              },
+              "type": "array"
             },
             "op": {
               "const": "verify_birth",
@@ -390,7 +393,7 @@
           "required": [
             "op",
             "certificate",
-            "issuer_pub"
+            "issuer_keys"
           ],
           "type": "object"
         },
@@ -431,7 +434,15 @@
           "description": "领取资格摘要,不含账号标识或原始活动。",
           "type": "string"
         },
+        "issued_at": {
+          "description": "签发方声称的签发时间(逻辑时间)。它由签名保护但由签发方自报,\n所以撤销被盗密钥时应取最早可能的泄露时间,见 pet/docs/birth-protocol.md。",
+          "type": "string"
+        },
         "issuer": {
+          "type": "string"
+        },
+        "kid": {
+          "description": "签名密钥标识。验证方按它在密钥集中选择公钥,从而支持轮换。",
           "type": "string"
         },
         "request_id": {
@@ -449,9 +460,11 @@
       "required": [
         "world",
         "issuer",
+        "kid",
         "request_id",
         "eligibility",
-        "rules_version"
+        "rules_version",
+        "issued_at"
       ],
       "type": "object"
     },
@@ -769,6 +782,44 @@
       ],
       "type": "object"
     },
+    "IssuerKey": {
+      "description": "验证方信任的一把签发公钥及其有效期。",
+      "properties": {
+        "kid": {
+          "type": "string"
+        },
+        "not_after": {
+          "default": null,
+          "description": "轮换后旧钥的结束时间(含);缺省表示仍在使用。已签发的旧证书在窗口内仍然有效。",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "not_before": {
+          "description": "自该时间起签发的证书有效(含)。",
+          "type": "string"
+        },
+        "public_key": {
+          "description": "Ed25519 公钥,64 位十六进制。",
+          "type": "string"
+        },
+        "revoked_at": {
+          "default": null,
+          "description": "撤销时间:自该时间起(含)签发的证书无效,之前的证书不受影响。",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "kid",
+        "public_key",
+        "not_before"
+      ],
+      "type": "object"
+    },
     "Missing": {
       "description": "未满足的进化条件:还差多少。",
       "properties": {
@@ -1038,16 +1089,35 @@
       "type": "object"
     },
     "Verdict": {
-      "enum": [
-        "valid",
-        "unsupported_rules",
-        "bad_encoding",
-        "commit_signature",
-        "commitment_mismatch",
-        "accept_signature",
-        "result_mismatch"
-      ],
-      "type": "string"
+      "oneOf": [
+        {
+          "enum": [
+            "valid",
+            "unsupported_rules",
+            "bad_encoding",
+            "commit_signature",
+            "commitment_mismatch",
+            "accept_signature",
+            "result_mismatch"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "unknown_key",
+          "description": "密钥集中没有证书所标明的 kid。",
+          "type": "string"
+        },
+        {
+          "const": "key_not_valid",
+          "description": "签发时间不在该密钥的有效窗口内。",
+          "type": "string"
+        },
+        {
+          "const": "key_revoked",
+          "description": "签发时间不早于该密钥的撤销时间。",
+          "type": "string"
+        }
+      ]
     },
     "VerdictResult": {
       "description": "成功响应信封。",

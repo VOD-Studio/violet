@@ -1,7 +1,7 @@
 //! 出生承诺—揭示:承诺、接受收据、证书的签发与验证。
 //! 本模块只含验证所需的数据结构与纯函数;签名密钥与签发在 pet-issuer,不进入核心。
 use crate::birth::{derive_birth, BirthInput};
-use crate::codec::unhex;
+use crate::codec::{u64_string, unhex};
 use crate::RULES_VERSION;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -31,10 +31,17 @@ fn digest(domain: &str, parts: &[&[u8]]) -> [u8; 32] {
 pub struct Context {
     pub world: String,
     pub issuer: String,
+    /// 签名密钥标识。验证方按它在密钥集中选择公钥,从而支持轮换。
+    pub kid: String,
     pub request_id: String,
     /// 领取资格摘要,不含账号标识或原始活动。
     pub eligibility: String,
     pub rules_version: u32,
+    /// 签发方声称的签发时间(逻辑时间)。它由签名保护但由签发方自报,
+    /// 所以撤销被盗密钥时应取最早可能的泄露时间,见 pet/docs/birth-protocol.md。
+    #[serde(with = "u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "String"))]
+    pub issued_at: u64,
 }
 
 impl Context {
@@ -42,10 +49,54 @@ impl Context {
         framed(&[
             self.world.as_bytes(),
             self.issuer.as_bytes(),
+            self.kid.as_bytes(),
             self.request_id.as_bytes(),
             self.eligibility.as_bytes(),
             &self.rules_version.to_be_bytes(),
+            &self.issued_at.to_be_bytes(),
         ])
+    }
+}
+
+/// 验证方信任的一把签发公钥及其有效期。
+#[derive(Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct IssuerKey {
+    pub kid: String,
+    /// Ed25519 公钥,64 位十六进制。
+    pub public_key: String,
+    /// 自该时间起签发的证书有效(含)。
+    #[serde(with = "u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "String"))]
+    pub not_before: u64,
+    /// 轮换后旧钥的结束时间(含);缺省表示仍在使用。已签发的旧证书在窗口内仍然有效。
+    #[serde(default, with = "opt_u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "Option<String>"))]
+    pub not_after: Option<u64>,
+    /// 撤销时间:自该时间起(含)签发的证书无效,之前的证书不受影响。
+    #[serde(default, with = "opt_u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "Option<String>"))]
+    pub revoked_at: Option<u64>,
+}
+
+mod opt_u64_string {
+    use alloc::string::{String, ToString};
+    use serde::{de::Error, Deserialize, Deserializer, Serializer};
+
+    // schemars 要求 with 模块成对提供 serialize;只有启用 schema feature 时才会被引用。
+    #[cfg_attr(not(feature = "schema"), allow(dead_code))]
+    pub fn serialize<S: Serializer>(v: &Option<u64>, s: S) -> Result<S::Ok, S::Error> {
+        match v {
+            Some(n) => s.serialize_some(&n.to_string()),
+            None => s.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<u64>, D::Error> {
+        match Option::<String>::deserialize(d)? {
+            None => Ok(None),
+            Some(s) => s.parse().map(Some).map_err(D::Error::custom),
+        }
     }
 }
 
@@ -90,6 +141,12 @@ pub enum Verdict {
     CommitmentMismatch,
     AcceptSignature,
     ResultMismatch,
+    /// 密钥集中没有证书所标明的 kid。
+    UnknownKey,
+    /// 签发时间不在该密钥的有效窗口内。
+    KeyNotValid,
+    /// 签发时间不早于该密钥的撤销时间。
+    KeyRevoked,
 }
 
 fn sig(s: &str) -> Option<Signature> {
@@ -98,12 +155,23 @@ fn sig(s: &str) -> Option<Signature> {
 }
 
 /// 验证:来源签名、承诺与揭示一致、客户端随机在先被接受、结果可重算。
-pub fn verify(cert: &Certificate, issuer_pub: &[u8; 32]) -> Verdict {
+pub fn verify(cert: &Certificate, keys: &[IssuerKey]) -> Verdict {
     if cert.context.rules_version != RULES_VERSION {
         return Verdict::UnsupportedRules;
     }
-    let (Ok(vk), Some(ss), Some(cs), Some(cm)) = (
-        VerifyingKey::from_bytes(issuer_pub),
+    let Some(key) = keys.iter().find(|k| k.kid == cert.context.kid) else {
+        return Verdict::UnknownKey;
+    };
+    let at = cert.context.issued_at;
+    if at < key.not_before || key.not_after.is_some_and(|end| at > end) {
+        return Verdict::KeyNotValid;
+    }
+    if key.revoked_at.is_some_and(|r| at >= r) {
+        return Verdict::KeyRevoked;
+    }
+    let pubkey: Option<[u8; 32]> = unhex(&key.public_key).and_then(|v| v.try_into().ok());
+    let (Some(Ok(vk)), Some(ss), Some(cs), Some(cm)) = (
+        pubkey.map(|k| VerifyingKey::from_bytes(&k)),
         unhex(&cert.server_seed),
         unhex(&cert.client_seed),
         unhex(&cert.commitment),
