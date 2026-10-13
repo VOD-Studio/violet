@@ -48,7 +48,7 @@ export const AI_PERSONAS = {
 		coverHeight: 720,
 		avatarUrl: "/ai-personas/grok-avatar.webp",
 		initials: "GR",
-		match: /^grok(?:[- .]\d[\w. -]*)?$/i,
+		match: /^grok(?:[- .](?:\d[\w. -]*|bot))?$/i,
 	},
 	deepseek: {
 		name: "大肥鱼",
