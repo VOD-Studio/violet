@@ -108,6 +108,7 @@ type TweetFetcher = (id: string, options: TweetFetcherOptions) => Promise<TweetD
 | `video` | 原生视频播放器名称。 |
 | `animation` | 原生动图播放器名称。 |
 | `viewVideo` | 视频来源链接/播放失败回退。 |
+| `playVideo` | 视频播放按钮名称，后接视频名称。 |
 | `replies` | 回复统计名称，`{count}`。 |
 | `reposts` | 转发统计名称，`{count}`。 |
 | `likes` | 点赞统计名称，`{count}`。 |

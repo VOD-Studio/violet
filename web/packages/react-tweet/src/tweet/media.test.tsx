@@ -228,3 +228,139 @@ it("quoted 属性把顶层推文渲染为引用小卡片，照片用缩略图", 
 	expect(container.querySelector(".v-tweet__thumbs")).not.toBeNull();
 	expect(container.querySelector(".v-tweet__photos")).toBeNull();
 });
+
+it("GIF 静音循环且无原生控件、带 GIF 角标，普通视频点击播放按钮后才出现控件", () => {
+	const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "动图与视频",
+					media: [
+						{ kind: "animated_gif", url: "/a.mp4", thumbnailUrl: "/a.jpg" },
+						{ kind: "video", url: "/v.mp4", thumbnailUrl: "/v.jpg" },
+					],
+				},
+			}}
+		/>,
+	);
+	const [gif, video] = Array.from(container.querySelectorAll("video"));
+	expect([gif.muted, gif.loop, gif.controls]).toEqual([true, true, false]);
+	expect(container.querySelector(".v-tweet__gif-badge")?.textContent).toBe("GIF");
+	expect([video.autoplay, video.loop, video.controls]).toEqual([false, false, false]);
+
+	fireEvent.click(screen.getByRole("button", { name: /^Play video: / }));
+	expect(video.controls).toBe(true);
+	expect(play).toHaveBeenCalledTimes(1);
+	expect(screen.queryByRole("button", { name: /^Play video: / })).toBeNull();
+});
+
+it("已知宽高的单个视频按比例预留尺寸，避免封面与视频尺寸不同时跳变", () => {
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "竖版视频",
+					media: [
+						{
+							kind: "video",
+							url: "/v.mp4",
+							thumbnailUrl: "/v.jpg",
+							width: 720,
+							height: 960,
+						},
+					],
+				},
+			}}
+		/>,
+	);
+	const player = container.querySelector<HTMLElement>(".v-tweet__player");
+	expect(player?.hasAttribute("data-sized")).toBe(true);
+	expect(player?.style.getPropertyValue("--_media-ratio")).toBe("0.75");
+});
+
+it("滚动条里只播放可见度最高的 GIF，并列时取靠前的一张", () => {
+	const callbacks = new Map<Element, IntersectionObserverCallback>();
+	vi.stubGlobal(
+		"IntersectionObserver",
+		class {
+			constructor(private callback: IntersectionObserverCallback) {}
+			observe(target: Element) {
+				callbacks.set(target, this.callback);
+			}
+			disconnect() {}
+		},
+	);
+	const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+	const pause = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "三个 GIF",
+					media: ["a", "b", "c"].map((name) => ({
+						kind: "animated_gif" as const,
+						url: `/${name}.mp4`,
+						width: 1,
+						height: 1,
+					})),
+				},
+			}}
+		/>,
+	);
+	const videos = Array.from(container.querySelectorAll("video"));
+	const show = (video: HTMLVideoElement, ratio: number) =>
+		callbacks.get(video)?.(
+			[{ intersectionRatio: ratio } as IntersectionObserverEntry],
+			{} as IntersectionObserver,
+		);
+	const playing = () => play.mock.contexts.at(-1);
+
+	// 第二张完全显示、第三张露出六成：只播放第二张。
+	show(videos[0], 0.05);
+	show(videos[2], 0.62);
+	show(videos[1], 1);
+	expect(playing()).toBe(videos[1]);
+	expect(pause.mock.contexts).toContain(videos[2]);
+
+	// 两张都完全显示时取靠前的一张。
+	show(videos[2], 1);
+	expect(playing()).toBe(videos[1]);
+
+	// 第二张滑出后轮到第三张。
+	show(videos[1], 0.3);
+	expect(playing()).toBe(videos[2]);
+	vi.unstubAllGlobals();
+});
+
+it("连续多个视频与 GIF 合并为同一个横向滚动条", () => {
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "四个 GIF",
+					media: ["a", "b", "c"].map((name) => ({
+						kind: "animated_gif" as const,
+						thumbnailUrl: `/${name}.jpg`,
+						width: 1,
+						height: 1,
+					})),
+				},
+			}}
+		/>,
+	);
+	expect(container.querySelectorAll(".v-tweet__rail")).toHaveLength(1);
+	expect(container.querySelectorAll(".v-tweet__rail-item")).toHaveLength(3);
+});
