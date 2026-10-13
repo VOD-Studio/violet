@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | `tweet` | `TweetData` | 必填：快照或明确不可用状态。 |
 | `compact` | `boolean` | `false`；紧凑内边距。 |
+| `quoted` | `boolean` | `false`；把当前推文渲染为引用小卡片。 |
 | `locale`、`timeZone`、`messages`、`maxTextLines` | `TweetDisplayOptions` | 见展示配置。 |
 | `renderPhotos`、`renderVideo`、`onOpenPhoto` | `TweetMediaRenderers` | 见媒体扩展。 |
 | 原生 article 属性 | `Omit<ComponentPropsWithRef<"article">, "children" \| "dangerouslySetInnerHTML">` | 包括 `id`、`ref`、`className`、`style`、ARIA、data 属性和事件。 |
@@ -21,6 +22,8 @@
 根节点为 `article`。正文点击冒泡；链接与媒体独立处理交互，不吞掉宿主 portal 中的事件。`aria-label` 可覆盖本地化默认名称。`data-state` 为 `available`、`unavailable`、`deleted` 或 `private`。
 
 不可用状态不展示正文和引用，即使外部非法数据带有残留快照。引用最多展开一层，更深层仅保留来源链接。底栏按来源数据显示点赞、回复、转发和发布时间；点赞/回复在新标签页打开真实 X 操作入口，转发为只读计数，不伪造本地互动结果。
+
+`quoted` 使用嵌套引用的小卡片布局：缩小头像与字号，隐藏 X 标识和互动数，媒体改用缩略图。正文超过四行时可展开，`maxTextLines={0}` 关闭折叠；卡片中的下一层引用只保留来源链接。`compact` 只调整内边距，不选择引用布局。见[可运行示例](../examples/quoted.tsx)。
 
 ### `Tweet(props: TweetProps)`
 
@@ -33,7 +36,7 @@
 | 展示与媒体属性 | `TweetDisplayOptions & TweetMediaRenderers` | 与 `EmbeddedTweet` 相同。 |
 | 原生 article 属性 | `Omit<ComponentPropsWithRef<"article">, "children" \| "dangerouslySetInnerHTML" \| "id">` | 透传到加载/错误节点或成功卡片。 |
 
-`Tweet` **不接受** `compact`。挂载、ID/fetcher 改变、手动重试时发起请求。替换请求或卸载会取消 signal；即使加载器忽略取消，迟到结果也会被丢弃。加载新请求时立即隐藏旧内容。异常展示来源链接与重试按钮，明确不可用的结果不自动重试。加载/错误根节点带 `data-state="loading"` / `"error"`、`aria-busy` 与 `role="status"` 状态文案，骨架尊重减少动态效果偏好。
+`Tweet` **不接受** `compact` 或 `quoted`。挂载、ID/fetcher 改变、手动重试时发起请求。替换请求或卸载会取消 signal；即使加载器忽略取消，迟到结果也会被丢弃。加载新请求时立即隐藏旧内容。异常展示来源链接与重试按钮，明确不可用的结果不自动重试。加载/错误根节点带 `data-state="loading"` / `"error"`、`aria-busy` 与 `role="status"` 状态文案，骨架尊重减少动态效果偏好。
 
 ```ts
 interface TweetFetcherOptions { signal: AbortSignal }
@@ -72,7 +75,7 @@ type TweetFetcher = (id: string, options: TweetFetcherOptions) => Promise<TweetD
 
 内置英文与简体中文。其他有效 locale 仍格式化对应语言的数字日期，但未覆盖的消息使用英文。非法语言标签安全回退。不读取服务器本地时区或浏览器语言；水合两侧使用相同 locale、timeZone、数据和消息覆盖。
 
-外层与引用正文独立折叠，不折叠媒体/操作。SSR 保留完整正文与链接并应用折叠样式，挂载测量后仅为实际溢出内容增加展开按钮；窗口和字体变化会重新测量。作者原文和 `warnings` 不被翻译，也不按 HTML 解析。
+外层与引用正文独立折叠，不折叠媒体/操作。引用正文取正整数 `maxTextLines` 与四行中的较小值，`maxTextLines={0}` 同时关闭两者的折叠。SSR 保留完整正文与链接并应用折叠样式，挂载测量后仅为实际溢出内容增加展开按钮；窗口和字体变化会重新测量。作者原文和 `warnings` 不被翻译，也不按 HTML 解析。
 
 ### `TweetMessages`
 
@@ -195,7 +198,11 @@ type TweetSegment = TweetTextSegment | TweetLinkSegment;
 | `TweetVideo` | `PlayableTweetVideo \| TweetVideoPoster`。 |
 | `TweetMedia` | `TweetPhoto \| TweetVideo`。 |
 
-不能把封面写成视频 URL。仅封面媒体展示封面与来源链接；animated_gif 使用静音循环视频，不强制自动播放。播放失败仍保留封面/来源入口。
+不能把封面写成视频 URL。已知尺寸时提供 `width` 与 `height`，默认播放器会预留对应比例，避免视频加载后封面区域跳变。时长来自浏览器读取的媒体元数据，不是 `TweetMedia` 字段。
+
+- 普通视频先展示封面与播放按钮，读取到元数据时显示时长；激活按钮后开始播放并显示原生控件，不自动播放。
+- `animated_gif` 使用静音循环视频，带 GIF 角标，不显示原生控件。有 `IntersectionObserver` 时，可见比例达到 60% 后尝试自动播放；横条内只播放可见度最高的一项，并列时取靠前的一项，离开该可见阈值即暂停。点击、Enter 或空格切换播放；手动暂停后，再次进入视口不会强行恢复。减少动态效果偏好会关闭自动播放，浏览器的自动播放策略仍然生效。
+- 仅封面媒体与播放失败的媒体保留封面和来源链接，使用 `viewVideo` 文案。既无可用播放源也无封面的媒体被省略，并显示媒体不可用提示。
 
 ### `TweetMediaRenderers`
 
@@ -207,9 +214,13 @@ interface TweetMediaRenderers {
 }
 ```
 
-回调收到已净化的媒体 URL。`renderPhotos` 替换一组**连续照片**，与视频的来源顺序不变；提供后不调用 `onOpenPhoto`。`renderVideo` 替换单个可播放/仅封面视频，使用前先判断 `media.url`。自定义渲染的无障碍和交互由宿主负责。
+回调收到已净化的媒体 URL。`renderPhotos` 替换一组**连续照片**，与视频的来源顺序不变；提供后不调用 `onOpenPhoto`。`renderVideo` 替换单个可播放/仅封面视频，此时不使用默认视频/GIF 横条，使用前先判断 `media.url`。自定义渲染的无障碍和交互由宿主负责。
 
-默认照片保留原图链接。尺寸均已知且过半竖图的多图组使用横向照片条（宽高比限制在 0.4–1.8），其余使用网格，单张保留比例。照片条可聚焦，支持原生键盘滚动、吸附、前后按钮及减少动态效果。`onOpenPhoto` 只接管普通主键点击并保留默认布局；修饰键/中键仍打开链接，`trigger` 可供灯箱关闭后还原焦点。
+默认照片保留原图链接。单张按自身比例靠起始侧对齐，宽度受容器限制。尺寸均已知且过半竖图的多图组使用横向照片条（宽高比限制在 0.4–1.8），其余使用网格。连续两个或更多视频/GIF 也使用横条。横条卡片露出相邻内容，前后按钮逐张切换；横条可聚焦，支持原生键盘滚动、吸附及减少动态效果。
+
+引用小卡片的照片显示为正文旁固定大小的方形拼图，最多四格，超出时显示 `+N`；灯箱仍接收该组全部照片。有封面的视频/GIF 用缩略图链接到来源，没有封面时使用默认播放器。`onOpenPhoto` 只接管普通主键点击并保留默认布局；修饰键/中键仍打开链接，`trigger` 可供灯箱关闭后还原焦点。
+
+服务端抓取数据不保证媒体能在浏览器播放。浏览器携带第三方 `Referer` 时，直接请求 `video.twimg.com` 播放源可能被拒绝，默认播放器会回退到封面与来源链接。由宿主媒体代理提供浏览器可访问的地址，或用 `renderVideo` 接入自己的播放器和媒体服务；`getTweet` 与组件均不提供媒体代理。
 
 ## 服务端 API
 

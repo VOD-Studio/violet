@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 const root = new URL("../", import.meta.url);
 const check = process.argv.includes("--check");
-const names = ["snapshot", "themes", "remote", "server", "card"];
+const names = ["snapshot", "themes", "quoted", "remote", "server", "card"];
 for (const name of ["README.md", "README.zh-CN.md"]) {
 	const path = new URL(name, root);
 	const current = readFileSync(path, "utf8");

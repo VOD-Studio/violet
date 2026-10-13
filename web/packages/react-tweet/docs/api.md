@@ -14,6 +14,7 @@ Renders a saved `TweetData` value without fetching post data, scripts, or iframe
 | --- | --- | --- |
 | `tweet` | `TweetData` | Required; snapshot or explicit unavailable state. |
 | `compact` | `boolean` | `false`; smaller padding. |
+| `quoted` | `boolean` | `false`; render the post itself as a small quoted card. |
 | `locale`, `timeZone`, `messages`, `maxTextLines` | `TweetDisplayOptions` | See display options below. |
 | `renderPhotos`, `renderVideo`, `onOpenPhoto` | `TweetMediaRenderers` | See media extensions below. |
 | Native article props | `Omit<ComponentPropsWithRef<"article">, "children" \| "dangerouslySetInnerHTML">` | Includes `id`, `ref`, `className`, `style`, ARIA, data attributes, and events. |
@@ -21,6 +22,8 @@ Renders a saved `TweetData` value without fetching post data, scripts, or iframe
 The root is an `article`. Body clicks bubble; native descendant links and media manage their own interaction without swallowing events from host portals. `aria-label` overrides the default localized label. `data-state` is `available`, `unavailable`, `deleted`, or `private`.
 
 Unavailable states never show snapshot/quote content, even if malformed external data contains it. Quotes expand at most one level; deeper quotes retain a source link. The footer displays likes, replies, reposts, and publication time when provided. Like/reply links open actual X intent pages in a new tab; repost counts are read-only. No engagement is simulated locally.
+
+`quoted` selects the same small-card layout as a nested quote: a smaller avatar and type, hidden X branding and engagement counts, and thumbnail media. Its body is limited to at most four lines before expansion; `maxTextLines={0}` disables collapsing. A quote inside this card stays a source link. `compact` changes padding without selecting the quoted layout. See the [executable example](../examples/quoted.tsx).
 
 ### `Tweet(props: TweetProps)`
 
@@ -33,7 +36,7 @@ Client-side loading component. During server rendering it outputs a loading skel
 | Display and media props | `TweetDisplayOptions & TweetMediaRenderers` | Same behavior as `EmbeddedTweet`. |
 | Native article props | `Omit<ComponentPropsWithRef<"article">, "children" \| "dangerouslySetInnerHTML" \| "id">` | Passed to the loading/error article or loaded card. |
 
-`Tweet` does **not** accept `compact`. On mount, ID/fetcher change, and manual retry it starts a request. Replacing a request or unmounting aborts its signal. Late results are ignored even if the fetcher ignores cancellation. Old content is hidden while a new request loads. Errors show a source link and retry button; known unavailable results are rendered without automatic retries. Loading/error roots use `data-state="loading"` / `"error"`, `aria-busy`, and a `role="status"` message. Skeleton animation respects reduced motion.
+`Tweet` does **not** accept `compact` or `quoted`. On mount, ID/fetcher change, and manual retry it starts a request. Replacing a request or unmounting aborts its signal. Late results are ignored even if the fetcher ignores cancellation. Old content is hidden while a new request loads. Errors show a source link and retry button; known unavailable results are rendered without automatic retries. Loading/error roots use `data-state="loading"` / `"error"`, `aria-busy`, and a `role="status"` message. Skeleton animation respects reduced motion.
 
 ```ts
 interface TweetFetcherOptions { signal: AbortSignal }
@@ -72,7 +75,7 @@ Slots render in the order listed. Every slot is optional. `isQuoted` marks an ac
 
 English and Simplified Chinese UI messages are built in. Other valid locales still format dates/numbers for that locale but use English messages unless overridden. Invalid locale tags safely fall back. Neither server local time nor browser language is consulted. For hydration use the same `locale`, `timeZone`, data, and message overrides on both sides.
 
-Text collapse applies independently to outer and quoted bodies, never to media/actions. SSR retains full text and links with clamping styles; after mounting, measurement adds the expand button only when necessary. Resize and font changes trigger remeasurement. Original post text and `warnings` are never translated or parsed as HTML.
+Text collapse applies independently to outer and quoted bodies, never to media/actions. Quoted bodies use the smaller of a positive `maxTextLines` and four; `maxTextLines={0}` disables collapsing for both. SSR retains full text and links with clamping styles; after mounting, measurement adds the expand button only when necessary. Resize and font changes trigger remeasurement. Original post text and `warnings` are never translated or parsed as HTML.
 
 ### `TweetMessages`
 
@@ -195,7 +198,11 @@ Preserve the entire text in ordered segments, including plain spaces/newlines. L
 | `TweetVideo` | `PlayableTweetVideo \| TweetVideoPoster`. |
 | `TweetMedia` | `TweetPhoto \| TweetVideo`. |
 
-Never put a poster image in a video's `url`. Poster-only media displays its poster and source link. Animated GIF media uses a muted looping video, without forcing autoplay. Failed playback retains poster/source access.
+Never put a poster image in a video's `url`. Provide `width` and `height` when known: the default player reserves that aspect ratio so loading the video does not resize its poster area. Duration is read from browser metadata, not a `TweetMedia` field.
+
+- Ordinary videos show their poster and play button before starting, plus duration when metadata is available. Activating the button starts playback and reveals native controls; ordinary videos do not autoplay.
+- `animated_gif` uses a muted looping video with a GIF badge and no native controls. With `IntersectionObserver`, it attempts autoplay when at least 60% visible. Only the most visible GIF in a rail plays, with the earlier item winning ties. Leaving that visibility threshold pauses it. Click, Enter, or Space toggles playback; a manual pause is retained when it re-enters view. Reduced-motion preferences disable automatic playback, and browser autoplay policies still apply.
+- Poster-only media and failed playback retain a poster/source link with the `viewVideo` message. Media without either a usable source or poster is omitted with an unavailable-media notice.
 
 ### `TweetMediaRenderers`
 
@@ -207,9 +214,13 @@ interface TweetMediaRenderers {
 }
 ```
 
-Callbacks receive sanitized media URLs. `renderPhotos` replaces a **consecutive group** of photos, preserving the order relative to videos. With it present, `onOpenPhoto` is not called. `renderVideo` replaces one playable or poster-only video; check `media.url` before assuming playback is possible. The host owns accessibility and interaction for custom renderers.
+Callbacks receive sanitized media URLs. `renderPhotos` replaces a **consecutive group** of photos, preserving the order relative to videos. With it present, `onOpenPhoto` is not called. `renderVideo` replaces one playable or poster-only video and bypasses the default video/GIF rail; check `media.url` before assuming playback is possible. The host owns accessibility and interaction for custom renderers.
 
-Without a renderer, photos preserve their original links. A group with known dimensions and a portrait majority uses a horizontal rail (aspect ratios clamped to 0.4–1.8); other groups use a grid, and one photo preserves its ratio. The focusable rail supports native keyboard scrolling, snap alignment, previous/next controls, and reduced-motion scrolling. A quoted tweet is a compact card: its photos become a fixed-size square mosaic beside the text (1, 2, 3 or 4 tiles, `+N` when there are more) and its video shows only the poster linking to the source; the lightbox still receives every photo. `onOpenPhoto` intercepts an ordinary primary click while keeping the default layout. Modified/middle clicks still open links; `trigger` allows focus restoration when your lightbox closes.
+Without a renderer, photos preserve their original links. A single photo keeps its aspect ratio, aligns to the start, and is constrained by the container width. A group with known dimensions and a portrait majority uses a horizontal rail (aspect ratios clamped to 0.4–1.8); other groups use a grid. Consecutive groups of two or more videos/GIFs also use a rail. Rail cards leave adjacent content visible; previous/next buttons advance one card at a time. The focusable rail supports native keyboard scrolling, snap alignment, and reduced-motion scrolling.
+
+Quoted cards use a fixed-size square photo mosaic beside the text (1, 2, 3 or 4 tiles, `+N` when there are more); the lightbox still receives every photo in the group. Videos/GIFs with a poster show a thumbnail linking to the source; without a poster, they use the default player. `onOpenPhoto` intercepts an ordinary primary click while keeping the default layout. Modified/middle clicks still open links; `trigger` allows focus restoration when your lightbox closes.
+
+Fetching on the server does not make media browser-playable. Direct `video.twimg.com` URLs may reject a browser request carrying a third-party `Referer`; the default player then falls back to the poster/source link. Supply a browser-accessible URL through your host's media proxy, or connect your own player and delivery with `renderVideo`. Neither `getTweet` nor the components provide a media proxy.
 
 ## Server API
 
