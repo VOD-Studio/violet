@@ -13,3 +13,7 @@ export function execute(input) {
   if (!ready) throw new Error("pet-sdk: call initPet() first");
   return rawExecute(input);
 }
+
+export function run(command) {
+  return JSON.parse(execute(JSON.stringify(command)));
+}

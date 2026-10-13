@@ -3,8 +3,22 @@
   "version": "0.0.0",
   "type": "module",
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "schema"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema.json": "./schema/pet.schema.json"
+  },
+  "devDependencies": {
+    "ajv": "^8",
+    "json-schema-to-typescript": "^16",
+    "typescript": "^5"
+  }
 }
