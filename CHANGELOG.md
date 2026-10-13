@@ -7,6 +7,73 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.10.2](https://github.com/VOD-Studio/violet/compare/v2.10.1...v2.10.2) (2026-10-13)
+
+
+### 新增
+
+* **api_token:** 新增 comments:write scope ([01e6ae3](https://github.com/VOD-Studio/violet/commit/01e6ae3fa63fe8698e8529ff7c5806ed84e95219))
+* **comment-section:** 展示 AI 评论身份徽章 ([48320f7](https://github.com/VOD-Studio/violet/commit/48320f7282368eb21e2201d891cb4bc4485ccce4))
+* **comment-section:** 开放作者展示插槽 ([0f53b1c](https://github.com/VOD-Studio/violet/commit/0f53b1c6585e0c71c7edda86864e42fe6f450061))
+* **comments:** 批注卡与 PAT 接入 AI 身份与 write scope ([496629f](https://github.com/VOD-Studio/violet/commit/496629f20aa3ed18f424a6cd95dd163a2f789664))
+* **comments:** 接入分角色批注展示 ([0cb1623](https://github.com/VOD-Studio/violet/commit/0cb16239e1b88cc9586efb16c67d2134988b6557))
+* **comment:** 保留批注划线的作者署名 ([f4d17eb](https://github.com/VOD-Studio/violet/commit/f4d17eb4399d0eb1f075e0531874e98ef2a1535d))
+* **comment:** 展示独立 AI 角色资料卡 ([e324733](https://github.com/VOD-Studio/violet/commit/e3247337f4c5e2d6c55710539a2cbbca8adbcd2c))
+* **comment:** 展示跨页面的 AI 评论标记 ([cc948e9](https://github.com/VOD-Studio/violet/commit/cc948e92c535d04fcb32c89c5fdc35bf924fd966))
+* **comment:** 支持 AI 身份标记与锚点构建 ([8f98ffb](https://github.com/VOD-Studio/violet/commit/8f98ffbb486caf40f694423f09d7a22b149aa2b6))
+* **dropdown:** 提供菜单项跟随高亮 ([a708ac3](https://github.com/VOD-Studio/violet/commit/a708ac378147cfd044b1779f7a9ba32d2b2421f3))
+* **dropdown:** 暴露共享高亮的目标状态 ([1e28b46](https://github.com/VOD-Studio/violet/commit/1e28b46ebebdd614d79040d4d20f983064b61aa1))
+* **header:** 将品牌档案接入项目主题下拉面板 ([afce75e](https://github.com/VOD-Studio/violet/commit/afce75e04806bc6740b0726c6c28c55270296d26))
+* **header:** 接入下拉菜单跟随高亮 ([56b838b](https://github.com/VOD-Studio/violet/commit/56b838bbdd714e0725e2001676faf3ea109b33a4))
+* **mcp:** violet-comments 增加发表评论工具 ([c84bdf1](https://github.com/VOD-Studio/violet/commit/c84bdf1d946a5dab05878160a89ae66539fc349a))
+* **mcp:** violet-comments 支持发表评论/批注/段评（AI 身份） ([1442386](https://github.com/VOD-Studio/violet/commit/1442386ace18cb8e0b4473f398e03b614c2b76dd))
+* **mcp:** 支持 AI 自署名批注 ([99a5b06](https://github.com/VOD-Studio/violet/commit/99a5b06befdc554f57540e532097d819c51bcbe8))
+* **overlay-scroll:** 支持文档级覆盖式滚动条 ([4c3edf0](https://github.com/VOD-Studio/violet/commit/4c3edf01935a595caa901b5abe6d859a302ed935))
+* **react-tweet:** 重做视频与 GIF 的播放展示 ([348007b](https://github.com/VOD-Studio/violet/commit/348007ba9aeb65c9fcb1e9af8323343549d38dec))
+* **tweet:** 代理外部推文的视频与 GIF 播放源 ([32936f8](https://github.com/VOD-Studio/violet/commit/32936f88c68ae83fb8fd6bddc2eba8437320d3cb))
+* **tweet:** 外部推文快照保留视频播放源 ([9541069](https://github.com/VOD-Studio/violet/commit/9541069754caac411a4498dbcb8249943be4417a))
+* **tweet:** 外部推文经本站代理播放视频与 GIF ([46a4652](https://github.com/VOD-Studio/violet/commit/46a46525dd237752b808fd7fc1683c8fa229a147))
+
+
+### 修复
+
+* **annotation-layer:** 稳定批注层的异步更新 ([892fb9c](https://github.com/VOD-Studio/violet/commit/892fb9c3a8691b59b5327200a20c7e4bf3289a15))
+* **annotation-layer:** 避免头像边界裁剪 AI 徽章 ([3697e98](https://github.com/VOD-Studio/violet/commit/3697e98badbdf0a8e159b8bca1e3af2edb63d499))
+* **annotation-layer:** 重新定位公式加载后的批注 ([99f5422](https://github.com/VOD-Studio/violet/commit/99f54225f2d1db8664b5e8a59ebb52ea6574db05))
+* **annotation-layer:** 重新绑定异步加载的代码块批注 ([49135f5](https://github.com/VOD-Studio/violet/commit/49135f58a05c8aab6db4603e3a663d54123b61b4))
+* **comments:** 保留历史公式批注的正文定位 ([a4c2663](https://github.com/VOD-Studio/violet/commit/a4c26631e77f7a6b836f51dfa62b534b57ac1aea))
+* **comments:** 修正含公式正文的高亮区间 ([fcabf84](https://github.com/VOD-Studio/violet/commit/fcabf84df9a2c7901f515bb46c2d226914bf290d))
+* **comments:** 按实际位置映射历史批注区间 ([d59849c](https://github.com/VOD-Studio/violet/commit/d59849c1fc04c469b208da2ad6c88fb8f09f7c0b))
+* **comments:** 禁止从可运行代码块创建交互批注 ([9108e61](https://github.com/VOD-Studio/violet/commit/9108e61da64a8d90cc4a3244f22f430578b3c914))
+* **comments:** 统一公式批注的选区坐标 ([c1f9592](https://github.com/VOD-Studio/violet/commit/c1f9592f35034f766e4541236f54cbcfb90bad89))
+* **comment:** 修正 MCP 评论的授权与身份边界 ([ddcf8a8](https://github.com/VOD-Studio/violet/commit/ddcf8a822e5391abf74da0b9cf0ae01bb709e24e))
+* **comment:** 完善 AI 批注的锚点摘要 ([3962eeb](https://github.com/VOD-Studio/violet/commit/3962eeb234d4de58b1cf3572aeb5366b1ab411b4))
+* **comment:** 完善 MCP 评论的发表校验 ([6d46940](https://github.com/VOD-Studio/violet/commit/6d46940b468c314035b293b464d9dfc291a6bc79))
+* **comment:** 对齐批注使用的正文载体文本 ([d883053](https://github.com/VOD-Studio/violet/commit/d8830535b0af8e8cc29bb107f9e4666309f89e83))
+* **comment:** 拒绝与正文块不一致的批注标识 ([f44254e](https://github.com/VOD-Studio/violet/commit/f44254e47d269f7e4aed5704096e6fc69d193f6e))
+* **comment:** 按阅读正文校验批注锚点 ([759bdf3](https://github.com/VOD-Studio/violet/commit/759bdf33ff363ae77fa1f60b1f58295b90d180df))
+* **comment:** 过滤非阅读白名单的标签文本 ([4e4cfe2](https://github.com/VOD-Studio/violet/commit/4e4cfe27ab335bcd085c603d765ed069b777fbe0))
+* **dropdown:** 保持安全区内的悬停高亮 ([b8d10f1](https://github.com/VOD-Studio/violet/commit/b8d10f17a81fd3cf2311a665ffbf0245f7427218))
+* **dropdown:** 修复悬停面板的开合生命周期 ([8a64630](https://github.com/VOD-Studio/violet/commit/8a64630e1eb82b750c49c848b66579d288808648))
+* **header-island:** 避免初始化时误收起导航面板 ([d416efe](https://github.com/VOD-Studio/violet/commit/d416efe80d66274c4b04a3f8c651998bfa1f5916))
+* **header:** 修正二级导航的精确匹配 ([03e9815](https://github.com/VOD-Studio/violet/commit/03e9815a2c77f37e1c6d954bdeeb864df2b8f19c))
+* **header:** 统一导航图标的高亮反馈 ([9024de9](https://github.com/VOD-Studio/violet/commit/9024de9ad34bf7cb33be4d1b80341c4ea0b0d928))
+* **mcp:** 保留评论写入的令牌操作者身份 ([1a4a971](https://github.com/VOD-Studio/violet/commit/1a4a9718a3125c4a0d1b966bb2c6d6a3c6dfb1bf))
+* **mcp:** 拒绝冲突的文章定位参数 ([9be34be](https://github.com/VOD-Studio/violet/commit/9be34be0a69cddfbc69e0eb4cd2e130ca7a99980))
+* **mcp:** 禁止向自由评论发表批注回复 ([9086f7d](https://github.com/VOD-Studio/violet/commit/9086f7d75bcd3e3db87bb8dde752524fd9432868))
+* **post:** 禁止向回收站文章发表评论 ([399ed6f](https://github.com/VOD-Studio/violet/commit/399ed6f5bd5ffc72c2c2cf5871cfe3be4214ab01))
+* **react-tweet:** 单张照片按自身比例左对齐 ([4cfeaaf](https://github.com/VOD-Studio/violet/commit/4cfeaaf658a2904c261e307f39b245d6693360f7))
+* **react-tweet:** 滚动条卡片限宽并逐张对齐 ([da26ac3](https://github.com/VOD-Studio/violet/commit/da26ac375a7aba2dec75b17598b982264d74fb01))
+* **root:** 消除文档滚动条的宽度占位 ([aa2bb38](https://github.com/VOD-Studio/violet/commit/aa2bb38fed5a2a74c3348fef0547fa8a5a719f35))
+* **tweet:** 缺少视频播放源的快照绕过缓存重新抓取 ([28c3287](https://github.com/VOD-Studio/violet/commit/28c3287e29b63887b97dd482e2c15d1cee394e40))
+* **ui:** 稳定站点悬浮控件的交互 ([83e8431](https://github.com/VOD-Studio/violet/commit/83e84312f7116fea785c7921706de3fb97809ba9))
+
+
+### 重构
+
+* **comment-section:** 解耦通用评论区的 AI 徽章 ([8c81e8e](https://github.com/VOD-Studio/violet/commit/8c81e8e6a4f6be27727bb3a42a2e77c737501261))
+* **comment:** 统一 AI 评论身份展示 ([3745171](https://github.com/VOD-Studio/violet/commit/3745171388aea914886886dd2c46a7c59b529049))
+
 ## [2.10.1](https://github.com/VOD-Studio/violet/compare/v2.10.0...v2.10.1) (2026-10-11)
 
 
