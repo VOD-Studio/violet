@@ -3,6 +3,7 @@ name = "pet-store"
 edition.workspace = true
 version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 pet-core = { path = "../pet-core" }

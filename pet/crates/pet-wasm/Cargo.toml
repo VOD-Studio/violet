@@ -3,6 +3,7 @@ name = "pet-wasm"
 edition.workspace = true
 version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
