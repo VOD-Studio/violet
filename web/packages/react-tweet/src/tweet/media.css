@@ -9,7 +9,7 @@
 	gap: 4px;
 }
 .v-tweet__photos[data-count="1"] {
-	grid-template-columns: minmax(0, 1fr);
+	display: flex;
 }
 .v-tweet__photos[data-count="3"] > :first-child {
 	grid-row: span 2;
@@ -26,8 +26,15 @@
 	background: var(--_tweet-soft);
 	color: var(--_tweet-muted);
 }
-.v-tweet__photos[data-count="1"] .v-tweet__photo {
+/* 单图按自身比例左对齐，窄图不拉伸、不居中，圆角落在图片本身。 */
+.v-tweet .v-tweet__photos[data-count="1"] .v-tweet__photo {
+	display: block;
+	width: fit-content;
+	max-width: 100%;
+	min-height: 0;
 	aspect-ratio: auto;
+	border-radius: 12px;
+	background: none;
 }
 .v-tweet__photos[data-count="3"] .v-tweet__photo:first-child {
 	aspect-ratio: auto;
@@ -39,9 +46,12 @@
 	margin: 0;
 	object-fit: cover;
 }
-.v-tweet__photos[data-count="1"] .v-tweet__photo img {
+.v-tweet .v-tweet__photos[data-count="1"] .v-tweet__photo img {
+	width: auto;
+	max-width: 100%;
 	height: auto;
 	max-height: 520px;
+	border-radius: 12px;
 	object-fit: contain;
 }
 /* 竖图为主的照片组：同高卡片横向滚动，宽度由各自宽高比决定。 */
