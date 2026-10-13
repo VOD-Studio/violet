@@ -37,7 +37,8 @@
 | WebAssembly（浏览器、Node） | 已验证：Chrome、Node 22/23、TanStack Start 生产构建 |
 | darwin-arm64 | 已验证（本机） |
 | linux-x64 | 已验证（官方 runner 上的 CI） |
-| darwin-x64、linux-arm64、win32-x64 | 计划，尚未交叉编译，也没有验证。Windows 的终端处理（备用屏、信号、resize）与 Unix 不同，需要单独实现与验证 |
+| linux-arm64、darwin-arm64（官方 runner） | CI 矩阵已配置（测试、真实 TTY、Rust 宿主嵌入），首次运行结果以 CI 为准 |
+| darwin-x64、win32-x64 | 计划，没有验证。Windows 的终端处理（备用屏、信号、resize）与 Unix 不同，需要单独实现；darwin-x64 的官方 runner 在退役，需另选 |
 
 缺少对应平台包时，启动器给出可操作的错误并提示从源码构建；不静默回退。
 
