@@ -14,7 +14,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./schema.json": "./schema/pet.schema.json"
+    "./schema.json": "./schema/pet.schema.json",
+    "./terminal": {
+      "types": "./dist/terminal.d.ts",
+      "default": "./dist/terminal.js"
+    }
   },
   "devDependencies": {
     "ajv": "^8",

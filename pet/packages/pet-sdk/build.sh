@@ -8,3 +8,4 @@ wasm-bindgen --target web --out-dir dist ../../target/wasm32-unknown-unknown/rel
 cp src/index.js dist/index.js
 cp src/index.d.ts dist/index.d.ts
 cp src/types.d.ts dist/types.d.ts
+cp src/terminal.js src/terminal.d.ts dist/
