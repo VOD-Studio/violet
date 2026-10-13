@@ -10,7 +10,7 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn key(&self) -> String {
+    pub(crate) fn key(&self) -> String {
         format!("{}\u{1f}{}", self.world, self.owner)
     }
 }
@@ -39,20 +39,32 @@ pub enum Commit {
 
 #[derive(Debug)]
 pub enum StoreError {
-    Db(rusqlite::Error),
+    Sqlite(rusqlite::Error),
+    Postgres(postgres::Error),
+    /// 版本冲突重试耗尽。
+    ConflictRetriesExhausted,
 }
 
 impl From<rusqlite::Error> for StoreError {
     fn from(e: rusqlite::Error) -> Self {
-        Self::Db(e)
+        Self::Sqlite(e)
+    }
+}
+
+impl From<postgres::Error> for StoreError {
+    fn from(e: postgres::Error) -> Self {
+        Self::Postgres(e)
     }
 }
 
 /// 存储契约:读取版本 + 单次原子提交。不暴露事务回调。
 pub trait Store {
-    fn load(&self, scope: &Scope) -> Result<Option<Versioned>, StoreError>;
+    fn load(&mut self, scope: &Scope) -> Result<Option<Versioned>, StoreError>;
     fn commit(&mut self, scope: &Scope, expected: u64, request_id: &str, cs: &Changeset) -> Result<Commit, StoreError>;
 }
+
+mod pg;
+pub use pg::PgStore;
 
 pub struct SqliteStore {
     conn: Connection,
@@ -76,7 +88,7 @@ impl SqliteStore {
 }
 
 impl Store for SqliteStore {
-    fn load(&self, scope: &Scope) -> Result<Option<Versioned>, StoreError> {
+    fn load(&mut self, scope: &Scope) -> Result<Option<Versioned>, StoreError> {
         Ok(self
             .conn
             .query_row("SELECT version, state FROM pets WHERE scope=?1", [scope.key()], |r| {
@@ -151,7 +163,7 @@ pub fn run_act<S: Store>(store: &mut S, scope: &Scope, action: Action, action_na
             Commit::Conflict { .. } => continue,
         }
     }
-    Err(ExecError::Store(StoreError::Db(rusqlite::Error::InvalidQuery)))
+    Err(ExecError::Store(StoreError::ConflictRetriesExhausted))
 }
 
 /// 正式领取:以版本 0 提交,已有宠物则冲突。
