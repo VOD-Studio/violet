@@ -100,30 +100,45 @@ it("横图为主、单张或缺少尺寸时保持方格或原比例，不使用�
 	}
 });
 
-it("滚动条的前后按钮只在对应方向还有内容时出现，点击按一张卡片的宽度加列间距滚动", () => {
+it("滚动条的前后按钮只在对应方向还有内容时出现，点击逐张对齐到卡片起点", () => {
 	vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(1200);
 	vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(400);
-	vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(180);
-	const scrollBy = vi.fn();
-	HTMLElement.prototype.scrollBy = scrollBy;
-	render(<EmbeddedTweet tweet={tweetWith([portrait("a"), portrait("b"), portrait("c")])} />);
+	const scrollTo = vi.fn();
+	HTMLElement.prototype.scrollTo = scrollTo;
+	render(
+		<EmbeddedTweet
+			tweet={tweetWith([portrait("a"), landscape("b"), portrait("c"), portrait("d")])}
+		/>,
+	);
 	const track = screen.getByRole("group");
+	// 卡片宽度不一：起点分别在 0、184、600、784。
+	const starts = [0, 184, 600, 784];
+	vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+		this: HTMLElement,
+	) {
+		const index = Array.prototype.indexOf.call(track.children, this);
+		const left = index < 0 ? 0 : starts[index] - track.scrollLeft;
+		return { left } as DOMRect;
+	});
 	const next = screen.getByRole("button", { name: /下一组|Next/ });
 	expect(screen.queryByRole("button", { name: /上一组|Previous/ })).toBeNull();
 
 	fireEvent.click(next);
-	expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: 180 }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 184 }));
 
-	// 滚到中段：两个方向都可用；滚到末尾：只剩向前。
-	track.scrollLeft = 300;
+	// 停在第二张起点：向后到第三张，而不是按第一张宽度只前进 184。
+	track.scrollLeft = 184;
 	fireEvent.scroll(track);
-	expect(screen.getByRole("button", { name: /上一组|Previous/ })).not.toBeNull();
-	expect(screen.getByRole("button", { name: /下一组|Next/ })).not.toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: /下一组|Next/ }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 600 }));
+	fireEvent.click(screen.getByRole("button", { name: /上一组|Previous/ }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 0 }));
+
 	track.scrollLeft = 800;
 	fireEvent.scroll(track);
 	expect(screen.queryByRole("button", { name: /下一组|Next/ })).toBeNull();
 	fireEvent.click(screen.getByRole("button", { name: /上一组|Previous/ }));
-	expect(scrollBy).toHaveBeenLastCalledWith(expect.objectContaining({ left: -180 }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 784 }));
 });
 
 it("onOpenPhoto 接管普通点击，修饰键点击仍按链接打开，renderPhotos 优先", () => {
