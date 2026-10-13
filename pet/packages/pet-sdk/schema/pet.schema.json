@@ -1016,12 +1016,35 @@
       "type": "string"
     },
     "Pose": {
-      "enum": [
-        "idle",
-        "sick",
-        "sleep"
-      ],
-      "type": "string"
+      "description": "姿态。眨眼由呈现时钟自动产生,不单独设姿态;移动随身体结构变化(见 `Body`)。",
+      "oneOf": [
+        {
+          "enum": [
+            "eat",
+            "play",
+            "sleep",
+            "startled",
+            "sick",
+            "evolve"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "idle",
+          "description": "待机并随结构移动。",
+          "type": "string"
+        },
+        {
+          "const": "observe",
+          "description": "注视前方并停下。",
+          "type": "string"
+        },
+        {
+          "const": "end",
+          "description": "生命终结(纪念形象):灰色、静止。",
+          "type": "string"
+        }
+      ]
     },
     "Reward": {
       "description": "经服务裁决后发放的奖励。核心只校验单次上限,不决定谁有资格(见 ADR-0021)。",

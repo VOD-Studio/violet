@@ -88,10 +88,12 @@ export type Command =
       request_id: string;
     };
 /**
+ * 姿态。眨眼由呈现时钟自动产生,不单独设姿态;移动随身体结构变化(见 `Body`)。
+ *
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Pose".
  */
-export type Pose = "idle" | "sick" | "sleep";
+export type Pose = ("eat" | "play" | "sleep" | "startled" | "sick" | "evolve") | "idle" | "observe" | "end";
 /**
  * 短期情绪,由身体状态派生,不存储,所以不会成为永久状态。
  *

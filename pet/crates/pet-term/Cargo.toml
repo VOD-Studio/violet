@@ -13,5 +13,8 @@ serde_json = { workspace = true }
 [features]
 schema = ["dep:schemars"]
 
+[dev-dependencies]
+serde_json = { workspace = true, features = ["std"] }
+
 [lints]
 workspace = true

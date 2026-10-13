@@ -58,14 +58,14 @@ impl Drop for TermGuard {
     }
 }
 
-fn input(w: u16, h: u16, t: u64, pose: Pose, cs: Charset) -> FrameInput {
+fn input(species: u8, w: u16, h: u16, t: u64, pose: Pose, cs: Charset) -> FrameInput {
     // 切片:固定演示个体;账号模式下由投影提供 species / genes。
-    FrameInput { species: 1, genes: [37, 0, 0, 0, 0, 0, 0, 0], pose, charset: cs, w, h, t }
+    FrameInput { species, genes: [37, 0, 0, 0, 0, 0, 0, 0], pose, charset: cs, w, h, t }
 }
 
 /// 非 TTY:输出一行可读 JSON 状态后退出,不含任何控制码。
 fn non_tty() -> i32 {
-    let f = render(&input(24, 4, 0, Pose::Idle, Charset::Ascii));
+    let f = render(&input(1, 24, 4, 0, Pose::Idle, Charset::Ascii));
     println!("{}", serde_json::json!({ "pose": "idle", "frame": f.rows }));
     0
 }
@@ -96,12 +96,13 @@ pub fn run() -> i32 {
     };
     let (mode, cs) = (color_mode(), charset());
     let mut pose = Pose::Idle;
+    let mut species = 1u8;
     let mut t = 0u64;
     let mut out = std::io::stdout();
 
     while !stop.load(Ordering::Relaxed) {
         let (w, h) = terminal::size().unwrap_or((40, 10));
-        let f = render(&input(w, h.saturating_sub(1), t, pose, cs));
+        let f = render(&input(species, w, h.saturating_sub(1), t, pose, cs));
         let _ = queue!(out, cursor::MoveTo(0, 0));
         for (y, row) in f.rows.iter().enumerate() {
             let _ = queue!(out, cursor::MoveTo(0, y as u16));
@@ -120,7 +121,7 @@ pub fn run() -> i32 {
                 }
             }
         }
-        let _ = queue!(out, cursor::MoveTo(0, h.saturating_sub(1)), ResetColor, Print("q/Ctrl+C quit  s sleep  i idle  k sick"));
+        let _ = queue!(out, cursor::MoveTo(0, h.saturating_sub(1)), ResetColor, Print("q quit  i idle o look e eat p play s sleep ! scare k sick v evolve x end  n next species"));
         let _ = out.flush();
 
         if poll(Duration::from_millis(100)).unwrap_or(false) {
@@ -132,6 +133,16 @@ pub fn run() -> i32 {
                         KeyCode::Char('s') => pose = Pose::Sleep,
                         KeyCode::Char('i') => pose = Pose::Idle,
                         KeyCode::Char('k') => pose = Pose::Sick,
+                        KeyCode::Char('o') => pose = Pose::Observe,
+                        KeyCode::Char('e') => pose = Pose::Eat,
+                        KeyCode::Char('p') => pose = Pose::Play,
+                        KeyCode::Char('!') => pose = Pose::Startled,
+                        KeyCode::Char('v') => pose = Pose::Evolve,
+                        KeyCode::Char('x') => pose = Pose::End,
+                        KeyCode::Char('n') => {
+                            // 切换物种,便于逐个检查形象。
+                            species = (species + 1) % pet_term::SPECIES_COUNT;
+                        }
                         _ => {}
                     }
                 }
