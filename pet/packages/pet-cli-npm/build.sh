@@ -10,13 +10,15 @@ cargo build --release -q -p pet-cli --manifest-path "$HERE/../../Cargo.toml"
 rm -rf "$OUT/main" "$OUT/platform" && mkdir -p "$OUT/main/bin" "$OUT/platform/bin"
 cp "$HERE/../../target/release/pet-cli" "$OUT/platform/bin/pet-cli"
 cat > "$OUT/platform/package.json" <<JSON
-{"name":"@violetjs/pet-cli-$KEY","version":"0.0.0","os":["$OS"],"cpu":["$ARCH"],"bin":{"pet-cli-native":"bin/pet-cli"},"files":["bin"]}
+{"name":"@violetjs/pet-cli-$KEY","version":"0.0.0","license":"MIT","os":["$OS"],"cpu":["$ARCH"],"bin":{"pet-cli-native":"bin/pet-cli"},"files":["bin","LICENSE"]}
 JSON
+cp "$HERE/../../../LICENSE" "$OUT/platform/LICENSE"
 cp "$HERE/launcher.cjs" "$OUT/main/bin/pet-cli.cjs"
 cat > "$OUT/main/package.json" <<JSON
-{"name":"@violetjs/pet-cli","version":"0.0.0","bin":{"pet-cli":"bin/pet-cli.cjs"},"files":["bin"],
+{"name":"@violetjs/pet-cli","version":"0.0.0","license":"MIT","bin":{"pet-cli":"bin/pet-cli.cjs"},"files":["bin","LICENSE"],
  "optionalDependencies":{
   "@violetjs/pet-cli-darwin-arm64":"0.0.0","@violetjs/pet-cli-darwin-x64":"0.0.0",
   "@violetjs/pet-cli-linux-x64":"0.0.0","@violetjs/pet-cli-linux-arm64":"0.0.0","@violetjs/pet-cli-win32-x64":"0.0.0"}}
 JSON
+cp "$HERE/../../../LICENSE" "$OUT/main/LICENSE"
 echo "$KEY"

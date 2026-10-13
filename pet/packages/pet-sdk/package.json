@@ -4,9 +4,10 @@
   "type": "module",
   "sideEffects": false,
   "files": [
+    "LICENSE",
     "dist",
-    "schema",
-    "docs"
+    "docs",
+    "schema"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,5 +26,6 @@
     "ajv": "^8",
     "json-schema-to-typescript": "^16",
     "typescript": "^5"
-  }
+  },
+  "license": "MIT"
 }

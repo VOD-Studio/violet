@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "note": "素材清单。结构、动作覆盖与许可由 crates/pet-term/tests/catalog.rs 校验；声明为 ready 的画风必须真有实现。",
+  "required_actions": [
+    "idle",
+    "blink",
+    "move",
+    "observe",
+    "eat",
+    "play",
+    "sleep",
+    "startled",
+    "sick",
+    "evolve",
+    "end"
+  ],
+  "species": [
+    {
+      "id": 0,
+      "key": "ember-fox",
+      "name": "余烬狐",
+      "category": "fantasy",
+      "body": "walker",
+      "identity_cues": [
+        "尖耳",
+        "四足行走"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 1,
+      "key": "cloud-wisp",
+      "name": "云絮",
+      "category": "fantasy",
+      "body": "floater",
+      "identity_cues": [
+        "云状身体",
+        "没有脚，漂移"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 2,
+      "key": "house-cat",
+      "name": "家猫",
+      "category": "real_pet",
+      "body": "walker",
+      "identity_cues": [
+        "须与尖耳",
+        "尾巴"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 3,
+      "key": "house-dog",
+      "name": "家犬",
+      "category": "real_pet",
+      "body": "walker",
+      "identity_cues": [
+        "垂耳",
+        "四足行走"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 4,
+      "key": "boxy-bot",
+      "name": "方块机器人",
+      "category": "mechanical",
+      "body": "walker",
+      "identity_cues": [
+        "方形头",
+        "双足"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 5,
+      "key": "hover-drone",
+      "name": "悬浮无人机",
+      "category": "mechanical",
+      "body": "floater",
+      "identity_cues": [
+        "双旋翼",
+        "没有脚，悬浮"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 6,
+      "key": "sprout",
+      "name": "芽苗",
+      "category": "nature",
+      "body": "rooted",
+      "identity_cues": [
+        "叶冠",
+        "扎根，原地摇摆"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": 7,
+      "key": "ember-sprite",
+      "name": "余火",
+      "category": "nature",
+      "body": "walker",
+      "identity_cues": [
+        "火冠",
+        "四足行走"
+      ],
+      "styles": {
+        "terminal": "ready",
+        "pixel": "planned",
+        "fine": "planned"
+      },
+      "actions": {
+        "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ]
+      },
+      "source": "original",
+      "author": "violet",
+      "license": "CC-BY-4.0"
+    }
+  ]
+}

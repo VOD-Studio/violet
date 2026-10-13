@@ -115,3 +115,32 @@ jobs:
         run: ./consumers/npm-cli.sh
       - name: Node terminal embedding
         run: ./consumers/node-embed.sh
+      - name: Rust host embedding
+        run: ./consumers/rust-host.sh
+
+  platforms:
+    name: Platform (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # 官方 runner 上可用的 Unix 目标；Windows 需要单独实现终端处理，尚未纳入。
+        os: [ubuntu-24.04-arm, macos-14]
+    defaults:
+      run:
+        working-directory: pet
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: pet
+      - name: Tests (SQLite contract, rules, protocol)
+        run: cargo test --workspace
+      - name: Release binary and real TTY behavior
+        run: |
+          cargo build --release -p pet-cli
+          python3 scenario/tty_test.py
+      - name: Rust host embedding
+        run: ./consumers/rust-host.sh

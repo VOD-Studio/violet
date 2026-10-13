@@ -6,6 +6,7 @@ members = ["crates/pet-core", "crates/pet-wasm", "crates/pet-cli", "crates/pet-s
 edition = "2021"
 version = "0.0.0"
 publish = false
+license = "MIT"
 
 [workspace.dependencies]
 sha2 = { version = "0.10", default-features = false }

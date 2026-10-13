@@ -1,0 +1,434 @@
+[
+  {
+    "client_seed": "0707070707070707070707070707070707070707070707070707070707070707",
+    "expect": {
+      "base_traits": [
+        467,
+        496,
+        405
+      ],
+      "genes": [
+        165,
+        187,
+        136,
+        123,
+        13,
+        167,
+        196,
+        105
+      ],
+      "id": "5ecba3824251a303a7889e0c7f3f70c4",
+      "rarity": 0,
+      "species": 0
+    },
+    "request_id": "request-0",
+    "rules_version": 1,
+    "server_seed": "0101010101010101010101010101010101010101010101010101010101010101",
+    "world": "world-0"
+  },
+  {
+    "client_seed": "2424242424242424242424242424242424242424242424242424242424242424",
+    "expect": {
+      "base_traits": [
+        370,
+        517,
+        382
+      ],
+      "genes": [
+        95,
+        115,
+        133,
+        25,
+        154,
+        70,
+        217,
+        82
+      ],
+      "id": "e2aadce5467c1146c4cef074a41fec7e",
+      "rarity": 1,
+      "species": 0
+    },
+    "request_id": "request-1",
+    "rules_version": 1,
+    "server_seed": "1212121212121212121212121212121212121212121212121212121212121212",
+    "world": "world-1"
+  },
+  {
+    "client_seed": "4141414141414141414141414141414141414141414141414141414141414141",
+    "expect": {
+      "base_traits": [
+        452,
+        406,
+        533
+      ],
+      "genes": [
+        169,
+        229,
+        128,
+        226,
+        146,
+        152,
+        106,
+        233
+      ],
+      "id": "537aabed7c5ad931ea6088a18aa1f1c2",
+      "rarity": 1,
+      "species": 3
+    },
+    "request_id": "request-2",
+    "rules_version": 1,
+    "server_seed": "2323232323232323232323232323232323232323232323232323232323232323",
+    "world": "world-2"
+  },
+  {
+    "client_seed": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+    "expect": {
+      "base_traits": [
+        408,
+        498,
+        346
+      ],
+      "genes": [
+        9,
+        63,
+        83,
+        77,
+        65,
+        108,
+        198,
+        46
+      ],
+      "id": "167db9d1330205081cb9dd44245b5605",
+      "rarity": 2,
+      "species": 1
+    },
+    "request_id": "request-3",
+    "rules_version": 1,
+    "server_seed": "3434343434343434343434343434343434343434343434343434343434343434",
+    "world": "world-0"
+  },
+  {
+    "client_seed": "7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b",
+    "expect": {
+      "base_traits": [
+        511,
+        516,
+        303
+      ],
+      "genes": [
+        35,
+        173,
+        13,
+        89,
+        203,
+        211,
+        216,
+        3
+      ],
+      "id": "89f70a8c4377f5996088b0bb57413c33",
+      "rarity": 0,
+      "species": 7
+    },
+    "request_id": "request-4",
+    "rules_version": 1,
+    "server_seed": "4545454545454545454545454545454545454545454545454545454545454545",
+    "world": "world-1"
+  },
+  {
+    "client_seed": "9898989898989898989898989898989898989898989898989898989898989898",
+    "expect": {
+      "base_traits": [
+        539,
+        453,
+        402
+      ],
+      "genes": [
+        242,
+        43,
+        10,
+        176,
+        22,
+        239,
+        153,
+        102
+      ],
+      "id": "3729d48deb0cee26247b2cebe275a67e",
+      "rarity": 0,
+      "species": 0
+    },
+    "request_id": "request-5",
+    "rules_version": 1,
+    "server_seed": "5656565656565656565656565656565656565656565656565656565656565656",
+    "world": "world-2"
+  },
+  {
+    "client_seed": "b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5",
+    "expect": {
+      "base_traits": [
+        549,
+        516,
+        310
+      ],
+      "genes": [
+        159,
+        177,
+        165,
+        74,
+        30,
+        249,
+        216,
+        10
+      ],
+      "id": "6376c72f973bea62e2c2c300c07f5f19",
+      "rarity": 1,
+      "species": 1
+    },
+    "request_id": "request-6",
+    "rules_version": 1,
+    "server_seed": "6767676767676767676767676767676767676767676767676767676767676767",
+    "world": "world-0"
+  },
+  {
+    "client_seed": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+    "expect": {
+      "base_traits": [
+        555,
+        390,
+        303
+      ],
+      "genes": [
+        150,
+        43,
+        86,
+        8,
+        106,
+        255,
+        90,
+        3
+      ],
+      "id": "dd8b5a5f2977beabf457947664dc92cb",
+      "rarity": 0,
+      "species": 4
+    },
+    "request_id": "request-7",
+    "rules_version": 1,
+    "server_seed": "7878787878787878787878787878787878787878787878787878787878787878",
+    "world": "world-1"
+  },
+  {
+    "client_seed": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+    "expect": {
+      "base_traits": [
+        347,
+        522,
+        495
+      ],
+      "genes": [
+        162,
+        168,
+        177,
+        120,
+        60,
+        47,
+        222,
+        195
+      ],
+      "id": "8aea0a762e502e5fd8fb4096cf802d1e",
+      "rarity": 0,
+      "species": 3
+    },
+    "request_id": "request-8",
+    "rules_version": 1,
+    "server_seed": "8989898989898989898989898989898989898989898989898989898989898989",
+    "world": "world-2"
+  },
+  {
+    "client_seed": "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+    "expect": {
+      "base_traits": [
+        435,
+        397,
+        365
+      ],
+      "genes": [
+        113,
+        108,
+        244,
+        225,
+        254,
+        135,
+        97,
+        65
+      ],
+      "id": "e871ffb9efcc9d836b3b2aab8f54812c",
+      "rarity": 0,
+      "species": 0
+    },
+    "request_id": "request-9",
+    "rules_version": 1,
+    "server_seed": "9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+    "world": "world-0"
+  },
+  {
+    "client_seed": "2929292929292929292929292929292929292929292929292929292929292929",
+    "expect": {
+      "base_traits": [
+        384,
+        509,
+        542
+      ],
+      "genes": [
+        231,
+        192,
+        57,
+        80,
+        157,
+        84,
+        209,
+        242
+      ],
+      "id": "3989c1022d5a7e236e8a23c690841cdc",
+      "rarity": 0,
+      "species": 7
+    },
+    "request_id": "request-10",
+    "rules_version": 1,
+    "server_seed": "abababababababababababababababababababababababababababababababab",
+    "world": "world-1"
+  },
+  {
+    "client_seed": "4646464646464646464646464646464646464646464646464646464646464646",
+    "expect": {
+      "base_traits": [
+        374,
+        359,
+        390
+      ],
+      "genes": [
+        92,
+        181,
+        250,
+        252,
+        182,
+        74,
+        59,
+        90
+      ],
+      "id": "47d9fa6db0548b8cf20de99ead03b232",
+      "rarity": 0,
+      "species": 2
+    },
+    "request_id": "request-11",
+    "rules_version": 1,
+    "server_seed": "bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc",
+    "world": "world-2"
+  },
+  {
+    "client_seed": "6363636363636363636363636363636363636363636363636363636363636363",
+    "expect": {
+      "base_traits": [
+        462,
+        342,
+        338
+      ],
+      "genes": [
+        218,
+        190,
+        20,
+        202,
+        138,
+        162,
+        42,
+        38
+      ],
+      "id": "945d9da88cda90089b12170201af6398",
+      "rarity": 2,
+      "species": 4
+    },
+    "request_id": "request-12",
+    "rules_version": 1,
+    "server_seed": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+    "world": "world-0"
+  },
+  {
+    "client_seed": "8080808080808080808080808080808080808080808080808080808080808080",
+    "expect": {
+      "base_traits": [
+        412,
+        373,
+        303
+      ],
+      "genes": [
+        107,
+        216,
+        219,
+        201,
+        94,
+        112,
+        73,
+        3
+      ],
+      "id": "968e70d390e5fc6b521fd03c9f2fb06d",
+      "rarity": 1,
+      "species": 0
+    },
+    "request_id": "request-13",
+    "rules_version": 1,
+    "server_seed": "dededededededededededededededededededededededededededededededede",
+    "world": "world-1"
+  },
+  {
+    "client_seed": "9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d",
+    "expect": {
+      "base_traits": [
+        365,
+        542,
+        325
+      ],
+      "genes": [
+        43,
+        37,
+        197,
+        103,
+        177,
+        65,
+        242,
+        25
+      ],
+      "id": "0616a33648199679c89072cc37517efb",
+      "rarity": 0,
+      "species": 3
+    },
+    "request_id": "request-14",
+    "rules_version": 1,
+    "server_seed": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+    "world": "world-2"
+  },
+  {
+    "client_seed": "babababababababababababababababababababababababababababababababa",
+    "expect": {
+      "base_traits": [
+        555,
+        466,
+        384
+      ],
+      "genes": [
+        64,
+        120,
+        215,
+        240,
+        203,
+        255,
+        166,
+        84
+      ],
+      "id": "bbb55e97379abec29b33a1933fa84191",
+      "rarity": 2,
+      "species": 3
+    },
+    "request_id": "request-15",
+    "rules_version": 1,
+    "server_seed": "0000000000000000000000000000000000000000000000000000000000000000",
+    "world": "world-0"
+  }
+]

@@ -6,14 +6,16 @@ extern crate alloc;
 mod birth;
 mod caps;
 mod codec;
+pub mod growth;
 mod life;
 pub mod proof;
 mod rng;
 
 pub use birth::{derive_birth, Birth, BirthInput};
-pub use life::{act, Action, ActError, Outcome, Pet, Phase};
+pub use life::{act, grant, Action, ActError, Mood, Outcome, Pet, Phase, Reward};
 
 use alloc::string::String;
+use alloc::vec::Vec;
 use serde::Deserialize;
 
 pub use caps::{catalog, Capability, CapabilityCatalog, CAPABILITIES};
@@ -27,11 +29,22 @@ pub const RULES_VERSION: u32 = 1;
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Command {
     Capabilities,
+    Grant {
+        pet: Pet,
+        reward: Reward,
+        #[serde(with = "codec::u64_string")]
+        #[cfg_attr(feature = "schema", schemars(with = "String"))]
+        now: u64,
+        request_id: String,
+    },
+    EvolutionOptions {
+        pet: Pet,
+    },
     Birth(BirthInput),
     Frame(pet_term::FrameInput),
     VerifyBirth {
         certificate: proof::Certificate,
-        issuer_pub: String,
+        issuer_keys: Vec<proof::IssuerKey>,
     },
     Act {
         pet: Pet,
@@ -51,14 +64,14 @@ pub fn execute(input: &str) -> String {
             Ok(v) => codec::ok(&v),
             Err(e) => codec::error(ErrorCode::BadInput, e),
         },
+        Ok(Command::Grant { pet, reward, now, request_id }) => match grant(pet, &reward, now, &request_id) {
+            Ok(v) => codec::ok(&v),
+            Err(e) => codec::error(e.code(), e.message()),
+        },
+        Ok(Command::EvolutionOptions { pet }) => codec::ok(&growth::evolution_options(&pet.growth, pet.food)),
         Ok(Command::Capabilities) => codec::ok(&catalog()),
         Ok(Command::Frame(f)) => codec::ok(&pet_term::render(&f)),
-        Ok(Command::VerifyBirth { certificate, issuer_pub }) => {
-            match codec::unhex(&issuer_pub).and_then(|v| <[u8; 32]>::try_from(v).ok()) {
-                Some(k) => codec::ok(&proof::verify(&certificate, &k)),
-                None => codec::error(ErrorCode::BadInput, "issuer_pub must be 32 bytes hex"),
-            }
-        }
+        Ok(Command::VerifyBirth { certificate, issuer_keys }) => codec::ok(&proof::verify(&certificate, &issuer_keys)),
         Ok(Command::Act { pet, action, now, request_id }) => {
             match act(pet, action, now, &request_id) {
                 Ok(v) => codec::ok(&v),
