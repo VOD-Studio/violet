@@ -39,7 +39,9 @@ fn replay_and_request_reuse<S: Store>(f: &Factory<S>) {
     let again = run_act(&mut s, &sc, Action::Feed, "feed", 10, "r1").unwrap();
     assert_eq!(first, again);
     assert_eq!(load_pet(&mut s, &sc).1.food, 2, "replay must not charge twice");
-    assert!(matches!(run_act(&mut s, &sc, Action::Feed, "feed", 99, "r1"), Err(ExecError::RequestIdReused)));
+    assert!(matches!(run_act(&mut s, &sc, Action::Rest, "rest", 10, "r1"), Err(ExecError::RequestIdReused)), "same id with another action is rejected");
+    let later = run_act(&mut s, &sc, Action::Feed, "feed", 99, "r1").unwrap();
+    assert_eq!(first, later, "a retry that crosses a time boundary still replays the stored result");
 }
 
 fn failed_commit_rolls_back<S: Store>(f: &Factory<S>) {
