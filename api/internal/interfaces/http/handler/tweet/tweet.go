@@ -7,7 +7,9 @@ package tweet
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"strings"
 
 	apptweet "blog-api/internal/application/tweet"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
@@ -110,6 +112,35 @@ func (h *Handler) RefreshExternal(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	response.RespondOK(w, dto)
+}
+
+// ExternalVideo 代理原文视频与 GIF（公开）：GET /tweets/external/{externalId}/media/{index}/video
+func (h *Handler) ExternalVideo(w http.ResponseWriter, r *http.Request) {
+	stream, err := h.svc.OpenExternalVideo(r.Context(), r.PathValue("externalId"), r.PathValue("index"), r.Header.Get("Range"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	defer stream.Body.Close()
+	header := w.Header()
+	contentType := stream.ContentType
+	if !strings.HasPrefix(contentType, "video/") {
+		contentType = "application/octet-stream"
+	}
+	header.Set("Content-Type", contentType)
+	for name, value := range map[string]string{
+		"Content-Length": stream.ContentLength, "Content-Range": stream.ContentRange,
+		"ETag": stream.ETag, "Last-Modified": stream.LastModified,
+	} {
+		if value != "" {
+			header.Set(name, value)
+		}
+	}
+	header.Set("Accept-Ranges", "bytes")
+	header.Set("Cache-Control", "public, max-age=86400")
+	header.Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(stream.Status)
+	_, _ = io.Copy(w, stream.Body)
 }
 
 // Get 推文详情（公开）：GET /tweets/{id}

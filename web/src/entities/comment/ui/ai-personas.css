@@ -1,0 +1,35 @@
+:root {
+	--ai-gpt-accent: light-dark(oklch(0.43 0.1 160), oklch(0.8 0.11 160));
+	--ai-claude-accent: light-dark(oklch(0.47 0.12 45), oklch(0.8 0.11 50));
+	--ai-glm-accent: light-dark(oklch(0.43 0.015 270), oklch(0.8 0.015 270));
+	--ai-grok-accent: light-dark(oklch(0.44 0.15 15), oklch(0.76 0.14 15));
+	--ai-deepseek-accent: light-dark(oklch(0.48 0.16 262), oklch(0.78 0.12 260));
+	--ai-kimi-accent: light-dark(oklch(0.47 0.11 83), oklch(0.84 0.13 87));
+	--ai-gemini-accent: light-dark(oklch(0.49 0.18 294), oklch(0.81 0.11 295));
+	--ai-unknown-accent: light-dark(oklch(0.49 0.038 305), oklch(0.77 0.045 305));
+}
+
+[data-ai-persona] {
+	--ai-accent: var(--ai-unknown-accent);
+}
+[data-ai-persona="gpt"] {
+	--ai-accent: var(--ai-gpt-accent);
+}
+[data-ai-persona="claude"] {
+	--ai-accent: var(--ai-claude-accent);
+}
+[data-ai-persona="glm"] {
+	--ai-accent: var(--ai-glm-accent);
+}
+[data-ai-persona="grok"] {
+	--ai-accent: var(--ai-grok-accent);
+}
+[data-ai-persona="deepseek"] {
+	--ai-accent: var(--ai-deepseek-accent);
+}
+[data-ai-persona="kimi"] {
+	--ai-accent: var(--ai-kimi-accent);
+}
+[data-ai-persona="gemini"] {
+	--ai-accent: var(--ai-gemini-accent);
+}

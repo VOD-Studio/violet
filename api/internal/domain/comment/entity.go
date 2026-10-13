@@ -196,6 +196,9 @@ type Comment struct {
 	status    string // 审核状态：pending/approved/spam/deleted，默认 pending（人工审核）
 	ipHash    string // 评论者 IP 的 SHA256（防伪造，由 handler 用 middleware.GetClientIP 算）。匿名配额依赖。
 	userAgent string // 评论者 User-Agent（反垃圾元数据）
+	// isAI 是否由 MCP/AI agent 发表。true 时展示 AI 身份徽章与专用头像，
+	// 不得与真人评论混淆（created_by 仍指向 PAT 持有人便于追溯）。
+	isAI bool
 
 	timestamps shared.Timestamps // 创建/更新时间
 }
@@ -225,6 +228,8 @@ type CreateParams struct {
 	AvatarURL string
 	// Body 评论正文（纯文本 + emoji 语法，无 Markdown）
 	Body string
+	// IsAI 是否 MCP/AI agent 发表（写入 is_ai；配套专用昵称/头像由调用方填）
+	IsAI bool
 }
 
 // NewComment 创建新评论。
@@ -254,7 +259,7 @@ func NewComment(p CreateParams) (*Comment, error) {
 		id: p.ID, postID: p.PostID, userID: p.UserID, anchor: p.Anchor,
 		authorName: p.AuthorName, authorEmail: normalizeEmail(p.AuthorEmail),
 		authorURL: p.AuthorURL, avatarURL: p.AvatarURL,
-		body: p.Body, status: StatusPending,
+		body: p.Body, status: StatusPending, isAI: p.IsAI,
 		pictures: []Picture{},
 	}, nil
 }
@@ -270,7 +275,7 @@ func normalizeEmail(s string) string {
 // userID / anchor 为可空：匿名评论 userID 为 nil，自由评论 anchor 为 nil。
 func ReconstructComment(id, postID shared.ID, userID *shared.ID, parentID *shared.ID, path string, depth int16,
 	anchor *Anchor, authorName, authorEmail, authorURL, avatarURL, body string, pictures []Picture,
-	status, ipHash, userAgent string, createdAt, updatedAt time.Time) *Comment {
+	status, ipHash, userAgent string, isAI bool, createdAt, updatedAt time.Time) *Comment {
 	if pictures == nil {
 		pictures = []Picture{}
 	}
@@ -280,7 +285,7 @@ func ReconstructComment(id, postID shared.ID, userID *shared.ID, parentID *share
 		authorName: authorName, authorEmail: authorEmail,
 		authorURL: authorURL, avatarURL: avatarURL,
 		body: body, pictures: pictures, status: status,
-		ipHash: ipHash, userAgent: userAgent,
+		ipHash: ipHash, userAgent: userAgent, isAI: isAI,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
@@ -373,6 +378,7 @@ func (c *Comment) Pictures() []Picture          { return c.pictures }
 func (c *Comment) Status() string               { return c.status }
 func (c *Comment) IPHash() string               { return c.ipHash }
 func (c *Comment) UserAgent() string            { return c.userAgent }
+func (c *Comment) IsAI() bool                   { return c.isAI }
 func (c *Comment) CreatedAt() time.Time         { return c.timestamps.CreatedAt }
 func (c *Comment) UpdatedAt() time.Time         { return c.timestamps.UpdatedAt }
 

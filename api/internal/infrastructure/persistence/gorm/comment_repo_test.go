@@ -107,7 +107,7 @@ func TestCountByPostAndAnon_DifferentIdentityNotCounted(t *testing.T) {
 	pid := fixedPostID
 
 	saveComment(t, db, domaincomment.StatusApproved, "ip1", "alice@x.com", nil, false)
-	saveComment(t, db, domaincomment.StatusApproved, "ip1", "bob@x.com", nil, false) // 不同 email
+	saveComment(t, db, domaincomment.StatusApproved, "ip1", "bob@x.com", nil, false)   // 不同 email
 	saveComment(t, db, domaincomment.StatusApproved, "ip2", "alice@x.com", nil, false) // 不同 ip
 
 	// alice@x.com + ip1 应只见 1 条
@@ -308,7 +308,10 @@ func TestFindReplies_ReturnsRepliesUnderTopLevel(t *testing.T) {
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "c@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
 
-	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter { id := domainshared.MustParseID(topID.String()); return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: nil, Sort: "asc"} }(), domainshared.PageQuery{Page: 1, Limit: 50})
+	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter {
+		id := domainshared.MustParseID(topID.String())
+		return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: nil, Sort: "asc"}
+	}(), domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), result.Total, "应返回 2 条回复（排除父自身）")
 	for _, c := range result.Items {
@@ -345,7 +348,10 @@ func TestFindReplies_SortDesc(t *testing.T) {
 	require.NoError(t, db.Create(&oldReply).Error)
 	require.NoError(t, db.Create(&newReply).Error)
 
-	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter { id := domainshared.MustParseID(topID.String()); return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: nil, Sort: "desc"} }(), domainshared.PageQuery{Page: 1, Limit: 50})
+	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter {
+		id := domainshared.MustParseID(topID.String())
+		return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: nil, Sort: "desc"}
+	}(), domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
 	require.Len(t, result.Items, 2)
 	assert.Equal(t, "new", result.Items[0].Body(), "desc 排序：最新的在前")
@@ -381,7 +387,10 @@ func TestFindReplies_ViewerFilter_ExcludesOtherPending(t *testing.T) {
 	saveCommentWithDepth(t, db, domaincomment.StatusPending, "ip", "bob@x.com", &bobStr, false, 1, topPath+uuid.New().String()+"/")
 
 	aliceViewer := domainshared.MustParseID(aliceStr)
-	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter { id := domainshared.MustParseID(topID.String()); return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: &aliceViewer, Sort: "asc"} }(), domainshared.PageQuery{Page: 1, Limit: 50})
+	result, err := repo.FindPage(ctx, func() domaincomment.ListFilter {
+		id := domainshared.MustParseID(topID.String())
+		return domaincomment.ListFilter{ParentID: &id, Status: domaincomment.StatusApproved, ViewerUserID: &aliceViewer, Sort: "asc"}
+	}(), domainshared.PageQuery{Page: 1, Limit: 50})
 	require.NoError(t, err)
 	// alice 应见 approved(1) + 自己 pending(1) = 2，bob 的 pending 不计入
 	assert.Equal(t, int64(2), result.Total, "viewer 不应看到他人的 pending 回复被计入 total")
@@ -394,7 +403,7 @@ func saveCommentWithDepth(t *testing.T, db *gorm.DB, status, ipHash, email strin
 	t.Helper()
 	c := model.Comment{
 		ID: uuid.New(), PostID: fixedPostID.UUID(),
-		Path: path,
+		Path:  path,
 		Depth: depth, AuthorName: "tester", AuthorEmail: email,
 		Body: "hi", Pictures: []byte("[]"), Status: status, IPHash: ipHash,
 	}
@@ -532,5 +541,54 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	}, byBlock["b1"].Authors)
 	assert.Equal(t, []domaincomment.BlockAuthor{{Name: "Alice", AvatarURL: "a.png"}}, byBlock["b2"].Authors)
 	assert.Len(t, byBlock["b1"].Ranges, 3)
-	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3}, byBlock["b1"].Ranges[0])
+	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3, AuthorName: "Alice"}, byBlock["b1"].Ranges[0])
+}
+
+func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	pat1, pat2 := uuid.New(), uuid.New()
+	base := time.Now().Add(-time.Hour)
+	addAI := func(by uuid.UUID, name string, offset time.Duration) {
+		start, end, sel, hash := 0, 3, "选中", "h"
+		blockID := "b-ai"
+		require.NoError(t, db.Create(&model.Comment{
+			ID: uuid.New(), PostID: fixedPostID.UUID(), Path: uuid.NewString() + "/",
+			CreatedBy: &by, AuthorName: name, Body: "ai", Pictures: []byte("[]"),
+			Status: domaincomment.StatusApproved, IsAI: true,
+			AnchorBlockID: &blockID, AnchorStartOffset: &start, AnchorEndOffset: &end,
+			AnchorSelectedText: &sel, AnchorBlockTextHash: &hash,
+			CreatedAt: base.Add(offset),
+		}).Error)
+	}
+	addAI(pat1, "GPT", 0)
+	addAI(pat2, "Claude", time.Minute)
+	addAI(pat2, "GPT", 90*time.Second)
+	start, end, sel, hash := 0, 3, "选中", "h"
+	blockID := "b-ai"
+	human := uuid.New()
+	require.NoError(t, db.Create(&model.Comment{
+		ID: uuid.New(), PostID: fixedPostID.UUID(), Path: uuid.NewString() + "/",
+		CreatedBy: &human, AuthorName: "Claude", AvatarURL: "a.png", Body: "hi", Pictures: []byte("[]"),
+		Status: domaincomment.StatusApproved, IsAI: false,
+		AnchorBlockID: &blockID, AnchorStartOffset: &start, AnchorEndOffset: &end,
+		AnchorSelectedText: &sel, AnchorBlockTextHash: &hash,
+		CreatedAt: base.Add(2 * time.Minute),
+	}).Error)
+
+	got, err := repo.CountAnnotationsByBlock(context.Background(), fixedPostID, domaincomment.StatusApproved, nil)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, int64(4), got[0].Count)
+	require.Len(t, got[0].Authors, 3)
+	assert.Equal(t, domaincomment.BlockAuthor{Name: "GPT", IsAI: true}, got[0].Authors[0])
+	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", IsAI: true}, got[0].Authors[1])
+	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", AvatarURL: "a.png", IsAI: false}, got[0].Authors[2])
+	require.Len(t, got[0].Ranges, 4)
+	assert.Equal(t, []domaincomment.BlockRange{
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "Claude"},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
+		{Start: 0, End: 3, IsAI: false, AuthorName: "Claude"},
+	}, got[0].Ranges)
 }

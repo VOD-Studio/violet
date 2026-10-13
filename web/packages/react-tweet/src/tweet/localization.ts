@@ -130,6 +130,11 @@ export interface TweetMessages {
 	 */
 	viewVideo: string;
 	/**
+	 * 视频播放按钮的可访问名称，后接视频名称。
+	 * @example "Play video"
+	 */
+	playVideo: string;
+	/**
 	 * 回复统计的无障碍说明模板。
 	 *
 	 * {count} 替换为已本地化的数字。
@@ -245,6 +250,7 @@ const english: TweetMessages = {
 	video: "Post video",
 	animation: "Post animation",
 	viewVideo: "Watch on X",
+	playVideo: "Play video",
 	replies: "Replies: {count}",
 	reposts: "Reposts: {count}",
 	likes: "Likes: {count}",
@@ -283,6 +289,7 @@ const chinese: TweetMessages = {
 	video: "推文视频",
 	animation: "推文动图",
 	viewVideo: "在 X 查看视频",
+	playVideo: "播放视频",
 	replies: "{count} 回复",
 	reposts: "{count} 转发",
 	likes: "{count} 赞",

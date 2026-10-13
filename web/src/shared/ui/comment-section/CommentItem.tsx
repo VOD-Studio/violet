@@ -4,7 +4,8 @@
  * 文章评论与推文评论共用：头像 + 标题行 + 气泡正文插槽 + 操作插槽 + 内联回复表单插槽。深度 1 的回复不再嵌套回复区（两层扁平）。
  *
  * feature 差异经 CommentSectionConfig 注入（正文 / 操作 / 回复表单是插槽），
- * 能力开关走 CommentDisplayItem 字段（isAuthor / isPending / repliesTotal / repliesPreview）。
+ * 能力开关走 CommentDisplayItem 字段（isAuthor / isPending / repliesTotal / repliesPreview）；
+ * AI 等业务徽章经 config.renderMetaBadges 注入，shared 不解读 is_ai。
  */
 import { cn } from "cn";
 import { MessageCircle } from "lucide-react";
@@ -79,10 +80,16 @@ export function CommentItem<T extends CommentRaw>({
 
 	return (
 		<div className="flex gap-3">
-			<CommentAvatar item={item} size={level === 0 ? "md" : "sm"} />
+			{config.renderAvatar?.(item, { size: level === 0 ? "md" : "sm" }) ?? (
+				<CommentAvatar item={item} size={level === 0 ? "md" : "sm"} />
+			)}
 
 			<div className="min-w-0 flex-1">
-				<CommentMeta item={item} />
+				<CommentMeta
+					item={item}
+					badges={config.renderMetaBadges?.(item)}
+					authorName={config.renderAuthorName?.(item)}
+				/>
 
 				<div
 					className={cn(

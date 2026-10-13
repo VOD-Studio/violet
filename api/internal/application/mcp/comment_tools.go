@@ -3,10 +3,13 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"strings"
+	"unicode/utf16"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	appcomment "blog-api/internal/application/comment"
+	apppost "blog-api/internal/application/post"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
 )
@@ -19,15 +22,27 @@ type CommentSearchService interface {
 	CommentStats(ctx context.Context) (*appcomment.CommentStatsResult, error)
 }
 
-// CommentTools 评论检索 tool 集合，挂在 violet-comments server（/api/v1/mcp/comments）。
-// PAT comments:read 私有视角，仅 approved；用于"读者批注→agent 检索反馈→改进文章"闭环。
-type CommentTools struct {
-	comments CommentSearchService
+// CommentWriteService 评论写入端口（自由评论 / 划线批注 / 段评共用 Create）。
+type CommentWriteService interface {
+	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 }
 
-// NewCommentTools 构造评论检索 tool 集合。
-func NewCommentTools(comments CommentSearchService) *CommentTools {
-	return &CommentTools{comments: comments}
+// CommentPostLookup 按 ID 或 slug 读取已发布文章，供正文块检索与评论写入使用。
+type CommentPostLookup interface {
+	GetPublishedBySlug(ctx context.Context, slug string) (apppost.PostDTO, error)
+	GetPublishedByID(ctx context.Context, id string) (apppost.PostDTO, error)
+}
+
+// CommentTools 以 PAT 授权检索和写入；AI 自署名与授权者账号资料分离。
+type CommentTools struct {
+	comments CommentSearchService
+	writer   CommentWriteService
+	posts    CommentPostLookup
+}
+
+// NewCommentTools 的 posts 为正文块检索及写入提供已发布文章；纯评论检索可不传 writer/posts。
+func NewCommentTools(comments CommentSearchService, writer CommentWriteService, posts CommentPostLookup) *CommentTools {
+	return &CommentTools{comments: comments, writer: writer, posts: posts}
 }
 
 // --- tool 参数结构（jsonschema 由结构体 tag 推导） ---
@@ -43,6 +58,95 @@ type listRecentCommentsArgs struct {
 	Type   string `json:"type,omitempty" jsonschema:"评论类型：all / annotation / free（默认 all）"`
 	Limit  int    `json:"limit,omitempty" jsonschema:"每页条数（默认 20，上限 50）"`
 	Offset int    `json:"offset,omitempty" jsonschema:"分页偏移（默认 0；翻页传上一响应的 next_offset）"`
+}
+
+type createCommentArgs struct {
+	PostID   string `json:"post_id,omitempty" jsonschema:"文章 ID；与 slug 二选一"`
+	Slug     string `json:"slug,omitempty" jsonschema:"文章 slug（如 react-tweet-intro-native-react-card）；与 post_id 二选一"`
+	Body     string `json:"body" jsonschema:"评论正文（纯文本，可含 [emoji] 占位）"`
+	ParentID string `json:"parent_id,omitempty" jsonschema:"父评论 ID；非空表示回复自由评论，仍以 AI 自署名发表"`
+	AIName   string `json:"ai_name,omitempty" jsonschema:"AI 自署名（最多 100 个字符，不代表已验证身份）；未传或空白时显示未知模型"`
+}
+
+type createAnnotationArgs struct {
+	PostID        string `json:"post_id,omitempty" jsonschema:"文章 ID；与 slug 二选一"`
+	Slug          string `json:"slug,omitempty" jsonschema:"文章 slug；与 post_id 二选一"`
+	Body          string `json:"body" jsonschema:"批注正文"`
+	ParentID      string `json:"parent_id,omitempty" jsonschema:"父评论 ID；回复批注时传入，子评继承父锚点，此时忽略选区参数"`
+	BlockID       string `json:"block_id,omitempty" jsonschema:"块标识（块纯文本 SHA-256 前 8 位 hex）；缺省且提供 block_text 时自动计算"`
+	StartOffset   *int   `json:"start_offset,omitempty" jsonschema:"选区起始偏移（块内字符位，0-based，与浏览器 string.length/UTF-16 一致）；顶级批注必填，回复可省略"`
+	EndOffset     *int   `json:"end_offset,omitempty" jsonschema:"选区结束偏移（exclusive，必须大于 start_offset）；顶级批注必填，回复可省略"`
+	SelectedText  string `json:"selected_text,omitempty" jsonschema:"选中的原文（fuzzy 重定位锚）；顶级批注必填，回复可省略"`
+	BlockTextHash string `json:"block_text_hash,omitempty" jsonschema:"创建时块内容快照（SHA-256 前 8 位）；缺省且提供 block_text 时自动计算"`
+	BlockText     string `json:"block_text,omitempty" jsonschema:"所在块纯文本；用于自动补齐 block_id / block_text_hash（与前端 computeBlockId 一致）"`
+	AIName        string `json:"ai_name,omitempty" jsonschema:"AI 自署名（最多 100 个字符，不代表已验证身份）；未传或空白时显示未知模型"`
+}
+
+type createBlockCommentArgs struct {
+	PostID    string `json:"post_id,omitempty" jsonschema:"文章 ID；与 slug 二选一"`
+	Slug      string `json:"slug,omitempty" jsonschema:"文章 slug；与 post_id 二选一"`
+	Body      string `json:"body" jsonschema:"段评正文"`
+	BlockText string `json:"block_text" jsonschema:"目标段落的纯文本（与正文渲染后的 textContent 一致）；服务端据此生成覆盖全块的锚点"`
+	AIName    string `json:"ai_name,omitempty" jsonschema:"AI 自署名（最多 100 个字符，不代表已验证身份）；未传或空白时显示未知模型"`
+}
+
+type listAnnotationBlocksArgs struct {
+	PostID string `json:"post_id,omitempty" jsonschema:"已发布文章 ID；与 slug 二选一"`
+	Slug   string `json:"slug,omitempty" jsonschema:"已发布文章 slug；与 post_id 二选一"`
+	Limit  int    `json:"limit,omitempty" jsonschema:"每页块数（默认 20，上限 50）"`
+	Offset int    `json:"offset,omitempty" jsonschema:"分页偏移（默认 0）"`
+}
+
+type annotationBlockDTO struct {
+	BlockID       string `json:"block_id"`
+	BlockText     string `json:"block_text"`
+	BlockTextHash string `json:"block_text_hash"`
+	UTF16Length   int    `json:"utf16_length"`
+}
+
+type annotationBlocksResult struct {
+	Blocks     []annotationBlockDTO `json:"blocks"`
+	Total      int                  `json:"total"`
+	Limit      int                  `json:"limit"`
+	Offset     int                  `json:"offset"`
+	HasMore    bool                 `json:"has_more"`
+	NextOffset int                  `json:"next_offset"`
+}
+
+// ListAnnotationBlocks 返回与阅读端锚点一致的正文块、哈希和 UTF-16 长度。
+func (t *CommentTools) ListAnnotationBlocks(ctx context.Context, req *mcp.CallToolRequest, args listAnnotationBlocksArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireScope(req, domainapitoken.ScopeCommentsRead); err != nil {
+		if writeErr := requireScope(req, domainapitoken.ScopeCommentsWrite); writeErr != nil {
+			return errResult(fmt.Errorf("需要 comments:read 或 comments:write 权限: %w", err)), nil, nil
+		}
+	}
+	post, err := t.resolvePublishedPost(ctx, args.PostID, args.Slug)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	blocks, err := appcomment.ExtractArticleBlocks(appcomment.ResolveArticleHTML(post.ContentHTML, post.ContentMD))
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	limit, offset := normalizePage(args.Limit, args.Offset)
+	start := min(offset, len(blocks))
+	end := start + min(limit, len(blocks)-start)
+	result := annotationBlocksResult{
+		Blocks: make([]annotationBlockDTO, 0, end-start),
+		Total:  len(blocks), Limit: limit, Offset: offset,
+		HasMore: end < len(blocks), NextOffset: end,
+	}
+	for _, block := range blocks[start:end] {
+		length := 0
+		for _, r := range block.Text {
+			length += utf16.RuneLen(r)
+		}
+		result.Blocks = append(result.Blocks, annotationBlockDTO{
+			BlockID: block.ID, BlockText: block.Text, BlockTextHash: block.ID,
+			UTF16Length: length,
+		})
+	}
+	return okResult(result), nil, nil
 }
 
 // parseCommentType 把 tool 参数的 type 字符串解析为仓储 AnchorFilter。
@@ -61,12 +165,88 @@ func parseCommentType(s string) (domaincomment.AnchorFilter, error) {
 }
 
 // withCommentScope 评论检索 tool 门禁：comments:read scope 校验。
-// 评论含读者个人信息，需 PAT 登录（与文章公开 reader 通道对照）。
 func withCommentScope(req *mcp.CallToolRequest) *mcp.CallToolResult {
 	if err := requireScope(req, domainapitoken.ScopeCommentsRead); err != nil {
 		return errResult(err)
 	}
 	return nil
+}
+
+// withCommentWriteScope 评论写入 tool 门禁：comments:write scope 校验。
+func withCommentWriteScope(req *mcp.CallToolRequest) *mcp.CallToolResult {
+	if err := requireScope(req, domainapitoken.ScopeCommentsWrite); err != nil {
+		return errResult(err)
+	}
+	return nil
+}
+
+// resolvePublishedPost 解析已发布文章：post_id 与 slug 互斥，恰好提供其一。
+func (t *CommentTools) resolvePublishedPost(ctx context.Context, postID, slug string) (apppost.PostDTO, error) {
+	postID = strings.TrimSpace(postID)
+	slug = strings.TrimSpace(slug)
+	if postID == "" && slug == "" {
+		return apppost.PostDTO{}, fmt.Errorf("必须提供 post_id 或 slug 之一")
+	}
+	if postID != "" && slug != "" {
+		return apppost.PostDTO{}, fmt.Errorf("post_id 与 slug 互斥，请只提供其一")
+	}
+	if t.posts == nil {
+		return apppost.PostDTO{}, fmt.Errorf("未配置文章查找，无法解析文章")
+	}
+	if postID != "" {
+		dto, err := t.posts.GetPublishedByID(ctx, postID)
+		if err != nil {
+			return apppost.PostDTO{}, fmt.Errorf("按 post_id 查找已发布文章失败（post_id=%s）: %w", postID, err)
+		}
+		return dto, nil
+	}
+	dto, err := t.posts.GetPublishedBySlug(ctx, slug)
+	if err != nil {
+		return apppost.PostDTO{}, fmt.Errorf("按 slug 查找已发布文章失败（slug=%s）: %w", slug, err)
+	}
+	if dto.ID == "" {
+		return apppost.PostDTO{}, fmt.Errorf("文章 ID 为空（slug=%s）", slug)
+	}
+	return dto, nil
+}
+
+func (t *CommentTools) resolvePostID(ctx context.Context, postID, slug string) (string, error) {
+	dto, err := t.resolvePublishedPost(ctx, postID, slug)
+	if err != nil {
+		return "", err
+	}
+	return dto.ID, nil
+}
+
+// PAT 持有人保留为审计 actor；展示身份由 AI 自署名决定。
+func (t *CommentTools) createAsPAT(ctx context.Context, req *mcp.CallToolRequest, postID, body, parentID, aiName string, anchor *domaincomment.Anchor, requireParentAnchor, rejectAnchoredParent bool) (*mcp.CallToolResult, any, error) {
+	if t.writer == nil {
+		return errResult(fmt.Errorf("未配置评论写入服务")), nil, nil
+	}
+	userID := operatorUserID(req)
+	if userID == "" {
+		return errResult(fmt.Errorf("未认证：缺少访问令牌")), nil, nil
+	}
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return errResult(fmt.Errorf("body 不能为空")), nil, nil
+	}
+	// 注入 UserIDKey：免审自动通过时审计订阅从 ctx 读 actor（与 MCP post 写路径一致）。
+	dto, err := t.writer.Create(ctxWithOperator(ctx, userID), appcomment.CreateInput{
+		PostID:               postID,
+		ParentID:             strings.TrimSpace(parentID),
+		UserID:               userID,
+		AuthorName:           strings.TrimSpace(aiName),
+		Body:                 body,
+		Anchor:               anchor,
+		IsAI:                 true,
+		RequireParentAnchor:  requireParentAnchor,
+		RejectAnchoredParent: rejectAnchoredParent,
+	})
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	return okResult(dto), nil, nil
 }
 
 // SearchComments 按关键词检索已审核评论/批注（需 comments:read）。
@@ -126,4 +306,73 @@ func (t *CommentTools) CommentStats(ctx context.Context, req *mcp.CallToolReques
 		return okResult("暂无已审核评论反馈。"), nil, nil
 	}
 	return okResult(res), nil, nil
+}
+
+// CreateComment 发表底部自由评论（无锚点；需 comments:write）。
+// 以 PAT 持有人身份登录发表；站点开启审核时 status=pending，否则 approved。
+func (t *CommentTools) CreateComment(ctx context.Context, req *mcp.CallToolRequest, args createCommentArgs) (*mcp.CallToolResult, any, error) {
+	if errRes := withCommentWriteScope(req); errRes != nil {
+		return errRes, nil, nil
+	}
+	postID, err := t.resolvePostID(ctx, args.PostID, args.Slug)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	return t.createAsPAT(ctx, req, postID, args.Body, args.ParentID, args.AIName, nil, false, true)
+}
+
+// CreateAnnotation 发表划线批注（选区锚点五元组；需 comments:write）。
+// 批注强制登录；可传 block_text 让服务端补齐 block_id / block_text_hash。
+func (t *CommentTools) CreateAnnotation(ctx context.Context, req *mcp.CallToolRequest, args createAnnotationArgs) (*mcp.CallToolResult, any, error) {
+	if errRes := withCommentWriteScope(req); errRes != nil {
+		return errRes, nil, nil
+	}
+	post, err := t.resolvePublishedPost(ctx, args.PostID, args.Slug)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	// 回复批注：子评继承父锚点（comment.Service 对 parent 有 anchor 的回复要求 anchor 为 nil），忽略调用方的选区参数。
+	if strings.TrimSpace(args.ParentID) != "" {
+		return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, args.AIName, nil, true, false)
+	}
+	if args.StartOffset == nil || args.EndOffset == nil || strings.TrimSpace(args.SelectedText) == "" {
+		return errResult(fmt.Errorf("顶级批注需要 start_offset、end_offset 与 selected_text")), nil, nil
+	}
+	anchor, err := appcomment.ResolveAnnotationAnchor(
+		strings.TrimSpace(args.BlockID),
+		*args.StartOffset,
+		*args.EndOffset,
+		args.SelectedText,
+		strings.TrimSpace(args.BlockTextHash),
+		args.BlockText,
+	)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	html := appcomment.ResolveArticleHTML(post.ContentHTML, post.ContentMD)
+	if err := appcomment.EnsureAnchorMatchesArticle(html, anchor); err != nil {
+		return errResult(err), nil, nil
+	}
+	return t.createAsPAT(ctx, req, post.ID, args.Body, args.ParentID, args.AIName, anchor, false, false)
+}
+
+// CreateBlockComment 发表段评（整块锚点；需 comments:write）。
+// 传入段落纯文本 block_text，服务端生成覆盖全块的锚点（与前端段评入口一致）。
+func (t *CommentTools) CreateBlockComment(ctx context.Context, req *mcp.CallToolRequest, args createBlockCommentArgs) (*mcp.CallToolResult, any, error) {
+	if errRes := withCommentWriteScope(req); errRes != nil {
+		return errRes, nil, nil
+	}
+	post, err := t.resolvePublishedPost(ctx, args.PostID, args.Slug)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	anchor, err := appcomment.BuildFullBlockAnchor(args.BlockText)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	html := appcomment.ResolveArticleHTML(post.ContentHTML, post.ContentMD)
+	if err := appcomment.EnsureAnchorMatchesArticle(html, anchor); err != nil {
+		return errResult(err), nil, nil
+	}
+	return t.createAsPAT(ctx, req, post.ID, args.Body, "", args.AIName, anchor, false, false)
 }

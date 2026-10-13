@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clearMarks, wrapRange } from "../range-marks";
+import { getBlockText, getLegacyBlockText } from "../extract-blocks";
+import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../range-marks";
 
 function block(html: string): HTMLElement {
 	const el = document.createElement("p");
@@ -40,6 +41,24 @@ describe("wrapRange", () => {
 		const [mark] = wrapRange(el, { start: 0, end: 2 }, "m", { annotationBlock: "b1" });
 		expect(mark.dataset.annotationBlock).toBe("b1");
 	});
+
+	it("可运行块根不向子树套 mark", () => {
+		const el = document.createElement("div");
+		el.dataset.runnable = "true";
+		el.dataset.source = "print(1)";
+		el.innerHTML = "<button>运行</button><pre>print(1)</pre>";
+		expect(wrapRange(el, { start: 0, end: 7 }, "m")).toEqual([]);
+		expect(el.querySelector("mark")).toBeNull();
+	});
+
+	it("inline-math carrier 按 data-latex 计长，不按 KaTeX textContent", () => {
+		const el = block(
+			'前<span data-type="inline-math" data-latex="E=mc^2"><span class="katex">E=mc2E=mc^2E=mc2</span></span>后',
+		);
+		// carrier 文本「前E=mc^2后」：选「后」→ start=7 end=8
+		const marks = wrapRange(el, { start: 7, end: 8 }, "m");
+		expect(marks.map((m) => m.textContent)).toEqual(["后"]);
+	});
 });
 
 describe("clearMarks", () => {
@@ -49,5 +68,44 @@ describe("clearMarks", () => {
 		clearMarks(el, "m");
 		expect(el.innerHTML).toBe("ab<strong>cd</strong>ef");
 		expect(el.firstChild?.nodeValue).toBe("ab");
+	});
+});
+
+describe("mapLegacyRangeToCarrier", () => {
+	it("无公式时 legacy 与 carrier 同坐标", () => {
+		const el = block("abc");
+		expect(mapLegacyRangeToCarrier(el, { start: 1, end: 2 })).toEqual({ start: 1, end: 2 });
+	});
+
+	it("公式后文本：legacy textContent 偏移映射到 carrier", () => {
+		const el = block(
+			'质能方程 <span data-type="inline-math" data-latex="E=mc^2"><span class="katex">E=mc2E=mc^2E=mc2</span></span> 成立',
+		);
+		const legacy = getLegacyBlockText(el);
+		const carrier = getBlockText(el);
+		expect(legacy).not.toBe(carrier);
+		const start = legacy.indexOf("成立");
+		const mapped = mapLegacyRangeToCarrier(el, { start, end: start + 2 });
+		expect(carrier.slice(mapped.start, mapped.end)).toBe("成立");
+	});
+
+	it("重复子串选第二次出现：保留位置而非 indexOf 第一次", () => {
+		// carrier: "foo x foo"；legacy katex 文本更长，两边仍各有 foo
+		const el = block(
+			'foo <span data-type="inline-math" data-latex="x"><span class="katex">XXXX</span></span> foo',
+		);
+		const legacy = getLegacyBlockText(el);
+		const carrier = getBlockText(el);
+		expect(carrier).toBe("foo x foo");
+		const first = legacy.indexOf("foo");
+		const second = legacy.indexOf("foo", first + 1);
+		expect(second).toBeGreaterThan(first);
+
+		const mappedFirst = mapLegacyRangeToCarrier(el, { start: first, end: first + 3 });
+		const mappedSecond = mapLegacyRangeToCarrier(el, { start: second, end: second + 3 });
+		expect(carrier.slice(mappedFirst.start, mappedFirst.end)).toBe("foo");
+		expect(carrier.slice(mappedSecond.start, mappedSecond.end)).toBe("foo");
+		expect(mappedSecond.start).toBeGreaterThan(mappedFirst.start);
+		expect(mappedSecond.start).toBe(carrier.lastIndexOf("foo"));
 	});
 });

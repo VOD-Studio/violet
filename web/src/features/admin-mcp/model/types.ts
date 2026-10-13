@@ -7,6 +7,7 @@ export const PAT_SCOPES = [
 	"subscriptions:read",
 	"subscriptions:write",
 	"comments:read",
+	"comments:write",
 	"notes:read",
 	"notes:write",
 	"notes:publish",
@@ -59,8 +60,8 @@ export const MCP_SERVERS: MCPServerSpec[] = [
 		key: "violet-comments",
 		label: "评论",
 		endpoint: "/api/v1/mcp/comments",
-		description: "评论/批注检索 tool，读读者反馈改进文章",
-		scopes: ["comments:read"],
+		description: "评论/批注检索与发表（自由评论、划线批注、段评）",
+		scopes: ["comments:read", "comments:write"],
 	},
 	{
 		key: "violet-notes",

@@ -20,6 +20,6 @@ func TestNewServers_RegisterAllToolsWithoutPanic(t *testing.T) {
 	reader := NewPublicServer(NewPublicTools(nil, nil), NewPromptTools(nil))
 	require.NotNil(t, reader, "公开只读 server 应构造成功（2 Resource + 1 prompt 注册无 panic）")
 
-	comments := NewCommentsServer(NewCommentTools(nil))
-	require.NotNil(t, comments, "评论 server 应构造成功（3 tool 注册无 panic）")
+	comments := NewCommentsServer(NewCommentTools(nil, nil, nil))
+	require.NotNil(t, comments, "评论 server 应构造成功（7 tool 注册无 panic）")
 }

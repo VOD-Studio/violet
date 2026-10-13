@@ -57,6 +57,11 @@ export function ExternalTweetCard({
 	);
 }
 
+/** video.twimg.com 拒绝站外 Referer，播放统一经本站代理。 */
+function externalVideoUrl(id: string, index: number) {
+	return `/api/v1/tweets/external/${encodeURIComponent(id)}/media/${index}/video`;
+}
+
 function toEmbeddedTweet(tweet: ExternalTweet, nested = false): TweetData {
 	if (tweet.availability !== "available" || !tweet.snapshot) {
 		return {
@@ -87,16 +92,23 @@ function toEmbeddedTweet(tweet: ExternalTweet, nested = false): TweetData {
 						: { kind: "text", text: segment.text },
 			),
 			publishedAt: snapshot.published_at,
-			media: snapshot.media?.map((media): TweetMedia => {
-				const metadata = {
-					width: media.width,
-					height: media.height,
-					alt: media.alt,
-					thumbnailUrl: media.thumbnail_url ? media.thumbnail_url : media.url,
+			media: snapshot.media?.map((media, index): TweetMedia => {
+				const metadata = { width: media.width, height: media.height, alt: media.alt };
+				if (media.kind === "photo") {
+					return {
+						...metadata,
+						kind: "photo",
+						url: media.url,
+						thumbnailUrl: media.thumbnail_url ? media.thumbnail_url : media.url,
+					};
+				}
+				// 视频封面按卡片尺寸铺满，用原图而不是小缩略图。
+				return {
+					...metadata,
+					kind: media.kind,
+					thumbnailUrl: media.url,
+					url: media.video_url ? externalVideoUrl(tweet.id, index) : undefined,
 				};
-				return media.kind === "photo"
-					? { ...metadata, kind: "photo", url: media.url }
-					: { ...metadata, kind: media.kind };
 			}),
 			quoteUrl: snapshot.quote_url ?? tweet.quoted_tweet?.canonical_url,
 			warnings: snapshot.warnings,

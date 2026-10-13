@@ -1,9 +1,9 @@
 "use client";
 
-import type { CSSProperties, MouseEvent } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { TweetPhoto } from "../data/media.ts";
+import type { TweetMediaMetadata, TweetPhoto } from "../data/media.ts";
 import type { TweetLocalization } from "./localization.ts";
 import { formatMessage } from "./localization.ts";
 import { TweetImage, TweetLink } from "./primitives.tsx";
@@ -22,7 +22,7 @@ interface TweetPhotosProps {
 const MIN_RATIO = 0.4;
 const MAX_RATIO = 1.8;
 
-function ratioOf(photo: TweetPhoto): number {
+export function ratioOf(photo: TweetMediaMetadata): number {
 	if (!photo.width || !photo.height) return 1;
 	return Math.min(MAX_RATIO, Math.max(MIN_RATIO, photo.width / photo.height));
 }
@@ -97,8 +97,21 @@ function PhotoLink({
 	);
 }
 
-function PhotoRail(props: TweetPhotosProps) {
-	const { photos, localization } = props;
+/**
+ * 同高卡片的横向滚动条，边缘按钮与键盘滚动由本组件负责，卡片内容由 children 提供。
+ *
+ * 子元素需带 `v-tweet__rail-item` 类，并可用 `--_photo-ratio` 指定宽高比。
+ */
+export function MediaRail({
+	count,
+	localization,
+	children,
+}: {
+	/** 卡片数量，用于无障碍标签。 */
+	count: number;
+	localization: TweetLocalization;
+	children: ReactNode;
+}) {
 	const { messages, number } = localization;
 	const track = useRef<HTMLDivElement>(null);
 	const [edge, setEdge] = useState({ start: true, end: true });
@@ -124,11 +137,21 @@ function PhotoRail(props: TweetPhotosProps) {
 
 	const scroll = useCallback((direction: 1 | -1) => {
 		const element = track.current;
-		const card = element?.firstElementChild as HTMLElement | null;
-		if (!element || !card) return;
-		const gap = Number.parseFloat(getComputedStyle(element).columnGap) || 0;
-		element.scrollBy({
-			left: direction * (card.offsetWidth + gap),
+		if (!element) return;
+		// 卡片宽度不一，按各卡片的吸附位置逐张前进，而不是按固定步长滚动。
+		const padding = Number.parseFloat(getComputedStyle(element).scrollPaddingInlineStart) || 0;
+		const origin = element.getBoundingClientRect().left - element.scrollLeft;
+		const stops = Array.from(
+			element.children,
+			(card) => card.getBoundingClientRect().left - origin - padding,
+		);
+		const current = element.scrollLeft;
+		const target =
+			direction === 1
+				? stops.find((stop) => stop > current + 1)
+				: stops.filter((stop) => stop < current - 1).at(-1);
+		element.scrollTo({
+			left: Math.max(0, target ?? (direction === 1 ? element.scrollWidth : 0)),
 			behavior:
 				typeof matchMedia === "function" &&
 				matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -145,20 +168,9 @@ function PhotoRail(props: TweetPhotosProps) {
 				// biome-ignore lint/a11y/noNoninteractiveTabindex: 可滚动区域必须可聚焦，键盘用户才能用方向键横向滚动。
 				tabIndex={0}
 				role="group"
-				aria-label={formatMessage(
-					messages.photoRail,
-					"count",
-					number.format(photos.length),
-				)}
+				aria-label={formatMessage(messages.photoRail, "count", number.format(count))}
 			>
-				{photos.map((photo, index) => (
-					<PhotoLink
-						key={`${photo.url}:${index}`}
-						{...props}
-						index={index}
-						style={{ "--_photo-ratio": ratioOf(photo) } as CSSProperties}
-					/>
-				))}
+				{children}
 			</div>
 			<button
 				type="button"
@@ -185,6 +197,22 @@ function PhotoRail(props: TweetPhotosProps) {
 				</svg>
 			</button>
 		</div>
+	);
+}
+
+function PhotoRail(props: TweetPhotosProps) {
+	const { photos, localization } = props;
+	return (
+		<MediaRail count={photos.length} localization={localization}>
+			{photos.map((photo, index) => (
+				<PhotoLink
+					key={`${photo.url}:${index}`}
+					{...props}
+					index={index}
+					style={{ "--_photo-ratio": ratioOf(photo) } as CSSProperties}
+				/>
+			))}
+		</MediaRail>
 	);
 }
 

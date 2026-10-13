@@ -122,10 +122,12 @@ export interface ExternalTweetSegment {
 	url?: string;
 }
 
-/** 外部媒体已落盘；视频和 GIF 的 url 仅指向本站封面。 */
+/** 外部媒体已落盘；视频和 GIF 的 url 仅指向本站封面，有 video_url 时经本站代理播放。 */
 export interface ExternalTweetMedia {
 	kind: "photo" | "video" | "animated_gif";
 	url: string;
+	/** X 的 mp4 播放源，浏览器不能直连（站外 Referer 返回 403）；缺失时只展示封面。 */
+	video_url?: string;
 	thumbnail_url: string;
 	width: number;
 	height: number;

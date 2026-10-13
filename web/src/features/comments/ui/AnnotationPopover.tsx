@@ -1,25 +1,29 @@
-import { avatarUrl } from "@shared/lib/image-url";
+import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
+import { AIBadge } from "@entities/comment/ui/AIBadge";
+import { CommentAuthorAvatar } from "@entities/comment/ui/CommentAuthorAvatar";
 import { cn } from "cn";
 import { X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useBlockAnnotations } from "../api/queries";
-import type { BlockAuthor } from "../model/types";
+import type { AnnotationAuthorFilter, BlockAuthor } from "../model/types";
 import { AnnotationCard } from "./AnnotationCard";
 import { usePresence } from "./use-presence";
 
 /** 与 annotations.css 中 .annotation-popover 的 transition 时长一致 */
 const EXIT_MS = 180;
-const WIDTH_PX = 448;
+const WIDTH_PX = 400;
 const EDGE_PX = 16;
 const GAP_PX = 10;
 /** 气泡至少要给内容留出的视口高度，px */
 const MIN_ROOM_PX = 200;
+const HEADER_PX = 56;
+const BODY_PX = 416;
 
 export interface AnnotationPopoverTarget {
 	blockId: string;
-	/** 只看某位评论者的批注；null 为全部 */
-	author: string | null;
-	/** 触发它的头像或高亮，气泡贴着它定位 */
+	/** 只看某位评论者的批注（含 is_ai）；null 为全部 */
+	author: AnnotationAuthorFilter;
+	/** 固定尺寸的角标组或划线；不跟随组内头像的展开位移。 */
 	anchorEl: HTMLElement;
 	/** 该块批注的评论者，用于顶部筛选头像 */
 	authors: BlockAuthor[];
@@ -32,7 +36,7 @@ export interface AnnotationPopoverProps {
 	target: AnnotationPopoverTarget | null;
 	postId: string;
 	isLoggedIn: boolean;
-	onFilter: (author: string | null) => void;
+	onFilter: (author: AnnotationAuthorFilter) => void;
 	onClose: () => void;
 }
 
@@ -65,12 +69,16 @@ export function AnnotationPopover({
 				onClose();
 				return;
 			}
+			const width = Math.min(WIDTH_PX, window.innerWidth - EDGE_PX * 2);
 			const left = Math.max(
 				EDGE_PX,
-				Math.min(rect.right - WIDTH_PX, window.innerWidth - WIDTH_PX - EDGE_PX),
+				Math.min(rect.right - width, window.innerWidth - width - EDGE_PX),
 			);
-			const top = Math.min(rect.bottom + GAP_PX, window.innerHeight - MIN_ROOM_PX - EDGE_PX);
-			setPos({ top, left, maxHeight: window.innerHeight - top - EDGE_PX });
+			const top = Math.max(
+				EDGE_PX,
+				Math.min(rect.bottom + GAP_PX, window.innerHeight - MIN_ROOM_PX - EDGE_PX),
+			);
+			setPos({ top, left, maxHeight: Math.max(0, window.innerHeight - top - EDGE_PX) });
 		};
 		const schedule = () => {
 			if (frame === 0) frame = requestAnimationFrame(place);
@@ -95,7 +103,7 @@ export function AnnotationPopover({
 			onClose();
 		};
 		const onKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") onClose();
+			if (event.key === "Escape" && !event.defaultPrevented) onClose();
 		};
 		document.addEventListener("pointerdown", onPointerDown);
 		document.addEventListener("keydown", onKey);
@@ -113,8 +121,13 @@ export function AnnotationPopover({
 			role="dialog"
 			aria-label="段落批注"
 			data-state={visible ? "open" : "closed"}
-			style={{ top: pos.top, left: pos.left, maxHeight: pos.maxHeight, width: WIDTH_PX }}
-			className="annotation-popover fixed z-50 flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl bg-surface-glass shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10"
+			style={{
+				top: pos.top,
+				left: pos.left,
+				height: Math.min(HEADER_PX + BODY_PX, pos.maxHeight),
+				width: WIDTH_PX,
+			}}
+			className="annotation-popover fixed z-50 flex max-w-[calc(100vw-2rem)] flex-col rounded-2xl bg-surface-glass shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10"
 		>
 			<PopoverHeader target={target} onFilter={onFilter} onClose={onClose} />
 			<PopoverBody target={target} postId={postId} isLoggedIn={isLoggedIn} />
@@ -128,40 +141,60 @@ function PopoverHeader({
 	onClose,
 }: {
 	target: AnnotationPopoverTarget;
-	onFilter: (author: string | null) => void;
+	onFilter: (author: AnnotationAuthorFilter) => void;
 	onClose: () => void;
 }) {
+	const showAiBadge =
+		target.author === null ? target.authors.some((a) => a.is_ai) : target.author.is_ai;
 	return (
-		<div className="flex shrink-0 items-center gap-2 px-4 pt-3 pb-2">
-			<span className="text-xs font-medium text-muted-foreground">{target.count} 条批注</span>
+		<div className="grid h-14 shrink-0 grid-cols-[auto_3rem_minmax(0,1fr)_1.5rem] items-center gap-2 px-4 py-2">
+			<span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+				{target.count} 条批注
+			</span>
+			<span
+				className={cn("inline-flex h-6 items-center", !showAiBadge && "invisible")}
+				aria-hidden={!showAiBadge}
+			>
+				<AIBadge show name={target.author?.name} />
+			</span>
 			{target.authors.length > 1 && (
-				<div className="ml-1 flex items-center gap-1">
+				<div className="col-start-3 flex h-10 min-w-0 items-center gap-2 overflow-x-auto p-1 [scrollbar-width:none]">
 					{target.authors.map((author) => {
-						const selected = target.author === author.name;
+						const identity = { name: author.name, is_ai: !!author.is_ai };
+						const { displayName, personaId } = getCommentAuthorPresentation({
+							author_name: author.name,
+							avatar_url: author.avatar_url,
+							is_ai: author.is_ai,
+						});
+						const label = author.is_ai ? `${displayName}（AI）` : displayName;
+						const selected =
+							target.author !== null &&
+							target.author.name === identity.name &&
+							target.author.is_ai === identity.is_ai;
 						return (
 							<button
-								key={author.name}
+								key={`${identity.is_ai ? "ai" : "user"}:${identity.name}`}
 								type="button"
-								title={author.name}
-								aria-label={`只看 ${author.name}`}
+								title={label}
+								aria-label={`只看 ${label}`}
 								aria-pressed={selected}
-								onClick={() => onFilter(selected ? null : author.name)}
+								data-ai={author.is_ai ? "true" : undefined}
+								data-ai-persona={personaId}
+								onClick={() => onFilter(selected ? null : identity)}
 								className={cn(
-									"inline-flex size-6 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-[11px] font-semibold text-primary transition-opacity",
+									"annotation-filter-avatar inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 									target.author && !selected && "opacity-40 hover:opacity-80",
+									selected && "ring-2 ring-offset-2 ring-offset-card",
 									selected &&
-										"ring-2 ring-primary ring-offset-2 ring-offset-card",
+										(author.is_ai ? "ring-(--ai-accent)" : "ring-primary"),
 								)}
 							>
-								{author.avatar_url ? (
-									<img
-										src={avatarUrl(author.avatar_url, author.name)}
-										alt=""
-										className="size-full object-cover"
-									/>
-								) : (
-									author.name.slice(0, 1).toUpperCase()
-								)}
+								<CommentAuthorAvatar
+									name={author.name}
+									avatarUrl={author.avatar_url}
+									isAI={!!author.is_ai}
+									className="size-full bg-transparent"
+								/>
 							</button>
 						);
 					})}
@@ -170,7 +203,7 @@ function PopoverHeader({
 			<button
 				type="button"
 				onClick={onClose}
-				className="ml-auto text-muted-foreground transition-colors hover:text-foreground"
+				className="col-start-4 row-start-1 inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 				aria-label="关闭"
 			>
 				<X className="size-4" />
@@ -192,13 +225,15 @@ function PopoverBody({
 	const comments = useMemo(
 		() =>
 			(query.data?.data ?? []).filter(
-				(c) => target.author === null || c.author_name === target.author,
+				(c) =>
+					target.author === null ||
+					(c.author_name === target.author.name && !!c.is_ai === target.author.is_ai),
 			),
 		[query.data, target.author],
 	);
 
 	return (
-		<div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3 pb-3">
+		<div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3 pt-1 pb-3">
 			{query.isLoading && <PopoverSkeleton />}
 			{comments.map((comment) => (
 				<AnnotationCard

@@ -207,4 +207,29 @@ describe("ExternalTweetCard", () => {
 		).toBe(fixture.canonical_url);
 		expect(container.querySelector("video")).toBeNull();
 	});
+
+	it("有 video_url 的视频与 GIF 经本站代理播放，GIF 静音循环", () => {
+		const fixture = externalFixture();
+		if (!fixture.snapshot) throw new Error("fixture has no snapshot");
+		fixture.snapshot.media = (["video", "animated_gif"] as const).map((kind) => ({
+			kind,
+			url: "/uploads/poster.png",
+			video_url: `https://video.twimg.com/${kind}.mp4`,
+			thumbnail_url: "/uploads/poster_thumb.png",
+			width: 100,
+			height: 100,
+			alt: kind,
+			file_id: kind,
+		}));
+		const { container } = render(<ExternalTweetCard tweet={fixture} />);
+		const [video, gif] = Array.from(container.querySelectorAll("video"));
+		expect(video.getAttribute("src")).toBe(
+			`/api/v1/tweets/external/${fixture.id}/media/0/video`,
+		);
+		expect(video.getAttribute("poster")).toBe("/uploads/poster.png");
+		expect(video.loop).toBe(false);
+		expect(gif.getAttribute("src")).toBe(`/api/v1/tweets/external/${fixture.id}/media/1/video`);
+		expect(gif.loop).toBe(true);
+		expect(gif.muted).toBe(true);
+	});
 });

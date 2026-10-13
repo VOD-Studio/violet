@@ -100,30 +100,45 @@ it("横图为主、单张或缺少尺寸时保持方格或原比例，不使用�
 	}
 });
 
-it("滚动条的前后按钮只在对应方向还有内容时出现，点击按一张卡片的宽度加列间距滚动", () => {
+it("滚动条的前后按钮只在对应方向还有内容时出现，点击逐张对齐到卡片起点", () => {
 	vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(1200);
 	vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(400);
-	vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(180);
-	const scrollBy = vi.fn();
-	HTMLElement.prototype.scrollBy = scrollBy;
-	render(<EmbeddedTweet tweet={tweetWith([portrait("a"), portrait("b"), portrait("c")])} />);
+	const scrollTo = vi.fn();
+	HTMLElement.prototype.scrollTo = scrollTo;
+	render(
+		<EmbeddedTweet
+			tweet={tweetWith([portrait("a"), landscape("b"), portrait("c"), portrait("d")])}
+		/>,
+	);
 	const track = screen.getByRole("group");
+	// 卡片宽度不一：起点分别在 0、184、600、784。
+	const starts = [0, 184, 600, 784];
+	vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+		this: HTMLElement,
+	) {
+		const index = Array.prototype.indexOf.call(track.children, this);
+		const left = index < 0 ? 0 : starts[index] - track.scrollLeft;
+		return { left } as DOMRect;
+	});
 	const next = screen.getByRole("button", { name: /下一组|Next/ });
 	expect(screen.queryByRole("button", { name: /上一组|Previous/ })).toBeNull();
 
 	fireEvent.click(next);
-	expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: 180 }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 184 }));
 
-	// 滚到中段：两个方向都可用；滚到末尾：只剩向前。
-	track.scrollLeft = 300;
+	// 停在第二张起点：向后到第三张，而不是按第一张宽度只前进 184。
+	track.scrollLeft = 184;
 	fireEvent.scroll(track);
-	expect(screen.getByRole("button", { name: /上一组|Previous/ })).not.toBeNull();
-	expect(screen.getByRole("button", { name: /下一组|Next/ })).not.toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: /下一组|Next/ }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 600 }));
+	fireEvent.click(screen.getByRole("button", { name: /上一组|Previous/ }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 0 }));
+
 	track.scrollLeft = 800;
 	fireEvent.scroll(track);
 	expect(screen.queryByRole("button", { name: /下一组|Next/ })).toBeNull();
 	fireEvent.click(screen.getByRole("button", { name: /上一组|Previous/ }));
-	expect(scrollBy).toHaveBeenLastCalledWith(expect.objectContaining({ left: -180 }));
+	expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 784 }));
 });
 
 it("onOpenPhoto 接管普通点击，修饰键点击仍按链接打开，renderPhotos 优先", () => {
@@ -212,4 +227,140 @@ it("quoted 属性把顶层推文渲染为引用小卡片，照片用缩略图", 
 	expect(card.classList.contains("v-tweet--quoted")).toBe(true);
 	expect(container.querySelector(".v-tweet__thumbs")).not.toBeNull();
 	expect(container.querySelector(".v-tweet__photos")).toBeNull();
+});
+
+it("GIF 静音循环且无原生控件、带 GIF 角标，普通视频点击播放按钮后才出现控件", () => {
+	const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "动图与视频",
+					media: [
+						{ kind: "animated_gif", url: "/a.mp4", thumbnailUrl: "/a.jpg" },
+						{ kind: "video", url: "/v.mp4", thumbnailUrl: "/v.jpg" },
+					],
+				},
+			}}
+		/>,
+	);
+	const [gif, video] = Array.from(container.querySelectorAll("video"));
+	expect([gif.muted, gif.loop, gif.controls]).toEqual([true, true, false]);
+	expect(container.querySelector(".v-tweet__gif-badge")?.textContent).toBe("GIF");
+	expect([video.autoplay, video.loop, video.controls]).toEqual([false, false, false]);
+
+	fireEvent.click(screen.getByRole("button", { name: /^Play video: / }));
+	expect(video.controls).toBe(true);
+	expect(play).toHaveBeenCalledTimes(1);
+	expect(screen.queryByRole("button", { name: /^Play video: / })).toBeNull();
+});
+
+it("已知宽高的单个视频按比例预留尺寸，避免封面与视频尺寸不同时跳变", () => {
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "竖版视频",
+					media: [
+						{
+							kind: "video",
+							url: "/v.mp4",
+							thumbnailUrl: "/v.jpg",
+							width: 720,
+							height: 960,
+						},
+					],
+				},
+			}}
+		/>,
+	);
+	const player = container.querySelector<HTMLElement>(".v-tweet__player");
+	expect(player?.hasAttribute("data-sized")).toBe(true);
+	expect(player?.style.getPropertyValue("--_media-ratio")).toBe("0.75");
+});
+
+it("滚动条里只播放可见度最高的 GIF，并列时取靠前的一张", () => {
+	const callbacks = new Map<Element, IntersectionObserverCallback>();
+	vi.stubGlobal(
+		"IntersectionObserver",
+		class {
+			constructor(private callback: IntersectionObserverCallback) {}
+			observe(target: Element) {
+				callbacks.set(target, this.callback);
+			}
+			disconnect() {}
+		},
+	);
+	const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+	const pause = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "三个 GIF",
+					media: ["a", "b", "c"].map((name) => ({
+						kind: "animated_gif" as const,
+						url: `/${name}.mp4`,
+						width: 1,
+						height: 1,
+					})),
+				},
+			}}
+		/>,
+	);
+	const videos = Array.from(container.querySelectorAll("video"));
+	const show = (video: HTMLVideoElement, ratio: number) =>
+		callbacks.get(video)?.(
+			[{ intersectionRatio: ratio } as IntersectionObserverEntry],
+			{} as IntersectionObserver,
+		);
+	const playing = () => play.mock.contexts.at(-1);
+
+	// 第二张完全显示、第三张露出六成：只播放第二张。
+	show(videos[0], 0.05);
+	show(videos[2], 0.62);
+	show(videos[1], 1);
+	expect(playing()).toBe(videos[1]);
+	expect(pause.mock.contexts).toContain(videos[2]);
+
+	// 两张都完全显示时取靠前的一张。
+	show(videos[2], 1);
+	expect(playing()).toBe(videos[1]);
+
+	// 第二张滑出后轮到第三张。
+	show(videos[1], 0.3);
+	expect(playing()).toBe(videos[2]);
+	vi.unstubAllGlobals();
+});
+
+it("连续多个视频与 GIF 合并为同一个横向滚动条", () => {
+	const { container } = render(
+		<EmbeddedTweet
+			tweet={{
+				url: "https://x.com/jack/status/20",
+				availability: "available",
+				snapshot: {
+					author: { name: "Jack", handle: "jack" },
+					text: "四个 GIF",
+					media: ["a", "b", "c"].map((name) => ({
+						kind: "animated_gif" as const,
+						thumbnailUrl: `/${name}.jpg`,
+						width: 1,
+						height: 1,
+					})),
+				},
+			}}
+		/>,
+	);
+	expect(container.querySelectorAll(".v-tweet__rail")).toHaveLength(1);
+	expect(container.querySelectorAll(".v-tweet__rail-item")).toHaveLength(3);
 });

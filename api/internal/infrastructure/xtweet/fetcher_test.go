@@ -209,3 +209,14 @@ func TestQuoteDepthAndPrivateQuote(t *testing.T) {
 	require.Equal(t, tweet.ExternalPrivate, result.Quote.Availability)
 	require.Equal(t, tweet.ExternalAvailable, result.Availability)
 }
+
+func TestVideoSourceURLAcceptsOnlyTwitterMP4(t *testing.T) {
+	require.Equal(t, "https://video.twimg.com/tweet_video/a.mp4", videoSourceURL("https://video.twimg.com/tweet_video/a.mp4#x"))
+	require.Equal(t, "https://video.twimg.com/ext_tw_video/1/vid/a.mp4?tag=12", videoSourceURL("https://video.twimg.com/ext_tw_video/1/vid/a.mp4?tag=12"))
+	for _, raw := range []string{
+		"", "http://video.twimg.com/a.mp4", "https://evil.example/a.mp4", "https://pbs.twimg.com/a.mp4",
+		"https://video.twimg.com/a.m3u8", "https://video.twimg.com:8443/a.mp4", "https://u@video.twimg.com/a.mp4",
+	} {
+		require.Empty(t, videoSourceURL(raw), raw)
+	}
+}

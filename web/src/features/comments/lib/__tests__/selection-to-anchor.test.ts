@@ -189,4 +189,26 @@ describe("closestAnnotatableBlock", () => {
 			outside.remove();
 		}
 	});
+
+	it("可运行块根（data-runnable）不可批注、不可作段评目标", () => {
+		const root = document.createElement("main");
+		root.innerHTML =
+			'<p>ok</p><div data-runnable="true" data-source="print(1)"><button>运行</button><span>print(1)</span></div>';
+		document.body.append(root);
+		try {
+			const runner = root.querySelector("[data-runnable]") as HTMLElement;
+			const btn = root.querySelector("button") as HTMLElement;
+			expect(closestAnnotatableBlock(btn, root)).toBeNull();
+			expect(closestAnnotatableBlock(runner, root)).toBeNull();
+			expect(closestAnnotatableBlock(root.querySelector("p"), root)).not.toBeNull();
+
+			const text = runner.querySelector("span")!.firstChild as Text;
+			const range = document.createRange();
+			range.setStart(text, 0);
+			range.setEnd(text, 4);
+			expect(isSelectionInUnannotatableContainer(range)).toBe(true);
+		} finally {
+			root.remove();
+		}
+	});
 });

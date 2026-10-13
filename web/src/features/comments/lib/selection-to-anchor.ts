@@ -4,8 +4,10 @@
  * buildAnchorFromRange 是纯函数（输入规范化数据），selectionToAnchor 是它的 DOM 包装：
  * 从 Selection 取 Range，定位所在块级元素，算 blockId + 块内 offset，调纯函数。
  *
- * 块内 offset 计算：用 Range API 创建「块首 → 选区起点」的 Range，其 toString().length
- * 即 startOffset（DOM 节点级 offset 转块文本级 offset 的标准技巧）。
+ * 块内 offset：对「块首 → 选区端点」做 Range.cloneContents()，再用 measureCarrierText
+ * 按与 getBlockText 相同的 carrier 口径计长（公式用 data-latex、可运行块用 data-source），
+ * 不用 Range.toString()（后者含 KaTeX DOM 文本，会与锚点哈希坐标系错位）。
+ * 选区落在 carrier 内部时先吸附到 carrier 边界。
  *
  * 跨块判定：选区起点和终点所在块不同 → buildAnchorFromRange 返回 null。
  *
@@ -14,11 +16,15 @@
  */
 
 import { computeBlockId } from "./block-id";
-import { getBlockText } from "./extract-blocks";
+import { getBlockText, measureCarrierText } from "./extract-blocks";
 import { buildAnchorFromRange } from "./range-to-anchor";
 import type { Anchor } from "./types";
 
-/** 块级元素选择器（与 extractCandidateBlocks 保持一致）。 */
+/**
+ * 交互选区/段评用的块选择器。
+ * 不含 [data-runnable]：可运行块仍由 extract-blocks 定位历史锚点，但不可作为新批注目标
+ * （UI 文案与 data-source 坐标系不一致）。
+ */
 const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
 
 /**
@@ -27,12 +33,12 @@ const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
  * 这些块的渲染产物是矢量图/排版结构/可编辑代码，无稳定可寻址文本流：
  * - `pre`：围栏代码块（shiki 输出 pre.shiki、降级 pre、图块错误态的源码 pre）。
  * - `.katex-display`：块级公式 KaTeX display 产物（外层 div 已无 data-type，认渲染产物更鲁棒）
- * - `.cm-editor`：可运行代码块 CodeMirror 6（防御；当前其外层 div 已不命中 BLOCK_SELECTOR）
+ * - `.cm-editor` / `[data-runnable]`：可运行代码块（CodeMirror 或 CodeRunner 根）
  * - `[data-type="diagram-block"]`、`[data-type="block-math"]`：防御性，防组件实现把
  *   data-type 保留到 DOM 时漏网
  */
 const UNANNOTATABLE_SELECTOR =
-	"pre, .katex-display, .cm-editor, [data-type='diagram-block'], [data-type='block-math']";
+	"pre, .katex-display, .cm-editor, [data-runnable='true'], [data-type='diagram-block'], [data-type='block-math']";
 
 /**
  * 判断选区是否落在不可批注容器内。
@@ -61,9 +67,31 @@ function findClosestBlock(node: Node | null): HTMLElement | null {
 	return (current as HTMLElement | null)?.closest<HTMLElement>(BLOCK_SELECTOR) ?? null;
 }
 
+/** 公式/图块/可运行块 carrier：选区落在内部时吸附到 carrier 边界，与 getBlockText 同口径。 */
+const CARRIER_SELECTOR =
+	"[data-type='inline-math'], [data-type='block-math'], [data-type='diagram-block'], [data-runnable='true']";
+
+function snapOutsideCarrier(
+	blockEl: HTMLElement,
+	node: Node,
+	offset: number,
+	edge: "start" | "end",
+): { node: Node; offset: number } {
+	const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+	if (!el) return { node, offset };
+	const carrier = el.closest(CARRIER_SELECTOR) as HTMLElement | null;
+	if (!carrier || carrier === blockEl || !blockEl.contains(carrier)) return { node, offset };
+	const parent = carrier.parentNode;
+	if (!parent) return { node, offset };
+	const index = Array.prototype.indexOf.call(parent.childNodes, carrier);
+	if (index < 0) return { node, offset };
+	if (edge === "start") return { node: parent, offset: index };
+	return { node: parent, offset: index + 1 };
+}
+
 /**
- * 算「块首 → 选区端点」之间的文本长度（即块内字符 offset）。
- * 用 Range.toString().length 把 DOM 节点级 offset 转块文本级 offset。
+ * 算「块首 → 端点」的 carrier 口径字符 offset（与 getBlockText / wrapRange 一致）。
+ * 调用方须先 snapOutsideCarrier；公式按 data-latex 计长，不用 KaTeX textContent。
  */
 function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: number): number {
 	const range = document.createRange();
@@ -71,10 +99,9 @@ function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: numbe
 	try {
 		range.setEnd(endNode, endOffset);
 	} catch {
-		// endNode 不在 blockEl 内（跨块），返回 -1 表示无效
 		return -1;
 	}
-	return range.toString().length;
+	return measureCarrierText(range.cloneContents()).length;
 }
 
 /**
@@ -125,9 +152,16 @@ export async function selectionToAnchor(opts: SelectionToAnchorOptions): Promise
 	const blockId = await computeBlockId(blockText);
 	if (blockId === null) return null;
 
-	// 算块内 startOffset / endOffset
-	const startOffset = offsetWithinBlock(startBlock, range.startContainer, range.startOffset);
-	const endOffset = offsetWithinBlock(startBlock, range.endContainer, range.endOffset);
+	// 算块内 startOffset / endOffset（carrier 口径；落在公式内则吸附到边界）
+	const startSnap = snapOutsideCarrier(
+		startBlock,
+		range.startContainer,
+		range.startOffset,
+		"start",
+	);
+	const endSnap = snapOutsideCarrier(startBlock, range.endContainer, range.endOffset, "end");
+	const startOffset = offsetWithinBlock(startBlock, startSnap.node, startSnap.offset);
+	const endOffset = offsetWithinBlock(startBlock, endSnap.node, endSnap.offset);
 	if (startOffset < 0 || endOffset < 0 || startOffset >= endOffset) return null;
 
 	return buildAnchorFromRange({

@@ -86,12 +86,14 @@ type ExternalSegment struct {
 }
 
 type ExternalMedia struct {
-	// Kind photo、video 或 animated_gif；后两者只保存封面。
+	// Kind photo、video 或 animated_gif；后两者只保存封面，播放源见 VideoURL。
 	Kind string `json:"kind"`
 	// SourceURL 经白名单校验后下载的图片或封面地址。
 	SourceURL string `json:"source_url"`
 	// URL 本站文件地址。
 	URL string `json:"url"`
+	// VideoURL video.twimg.com 上的 mp4 播放源，不落盘；缺失或未通过白名单校验时为空。
+	VideoURL string `json:"video_url,omitempty"`
 	// ThumbnailURL 本站缩略图地址，未生成时为空。
 	ThumbnailURL string `json:"thumbnail_url,omitempty"`
 	// Width 实际解码后的像素宽度。
@@ -152,6 +154,19 @@ type ExternalTweet struct {
 	ProtectedUntil time.Time
 	// TakenDown 已确认撤回的来源不允许自动重新导入或被嵌入引用恢复。
 	TakenDown bool
+}
+
+// MissingVideoSource 报告快照中是否有视频或 GIF 缺少播放源，旧版本快照只保存了封面。
+func (s *ExternalSnapshot) MissingVideoSource() bool {
+	if s == nil {
+		return false
+	}
+	for _, media := range s.Media {
+		if media.Kind != "photo" && media.VideoURL == "" {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *ExternalTweet) CanPublish() bool {

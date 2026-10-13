@@ -1,5 +1,5 @@
 /**
- * CommentMeta - 评论元信息（头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间）
+ * CommentMeta - 评论元信息（头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + feature badges 插槽 + 审批中徽章 + 时间）
  *
  * 文章评论与推文评论共用：头像空时首字母兜底；authorHref 存在时昵称渲染为链接
  * （推文 /users/$username；文章匿名评论无主页）。头像右下角带第三方登录角标
@@ -13,11 +13,16 @@ import { Link } from "@tanstack/react-router";
 import { GithubIcon, GoogleIcon } from "@violet/ui";
 import { cn } from "cn";
 import { Crown } from "lucide-react";
+import type { ReactNode } from "react";
 import { AUTHOR_TIER } from "./tone";
 import type { CommentDisplayItem, CommentRaw } from "./types";
 
 export interface CommentMetaProps<T extends CommentRaw> {
 	item: CommentDisplayItem<T>;
+	/** feature 注入的额外徽章（如 AI），shared 不解读业务字段 */
+	badges?: ReactNode;
+	/** 替代默认昵称或主页链接，不影响回复对象及徽章。 */
+	authorName?: ReactNode;
 }
 
 const AVATAR_SIZE = { md: "size-9 text-sm", sm: "size-7 text-xs" } as const;
@@ -71,20 +76,25 @@ export function CommentAvatar<T extends CommentRaw>({
 }
 
 /** CommentMeta 评论标题行：昵称 +「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间 */
-export function CommentMeta<T extends CommentRaw>({ item }: CommentMetaProps<T>) {
+export function CommentMeta<T extends CommentRaw>({
+	item,
+	badges,
+	authorName,
+}: CommentMetaProps<T>) {
 	const nameClass = item.isAuthor ? AUTHOR_TIER.name : "font-medium text-foreground";
 	return (
 		<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-			{item.authorHref ? (
-				<Link
-					to={item.authorHref}
-					className={cn("truncate text-sm hover:underline", nameClass)}
-				>
-					{item.authorName}
-				</Link>
-			) : (
-				<span className={cn("truncate text-sm", nameClass)}>{item.authorName}</span>
-			)}
+			{authorName ??
+				(item.authorHref ? (
+					<Link
+						to={item.authorHref}
+						className={cn("truncate text-sm hover:underline", nameClass)}
+					>
+						{item.authorName}
+					</Link>
+				) : (
+					<span className={cn("truncate text-sm", nameClass)}>{item.authorName}</span>
+				))}
 			{item.replyToName && (
 				<span className="text-xs text-muted-foreground">
 					回复 <span className="text-primary">@{item.replyToName}</span>
@@ -96,6 +106,7 @@ export function CommentMeta<T extends CommentRaw>({ item }: CommentMetaProps<T>)
 					作者
 				</span>
 			)}
+			{badges}
 			<PendingBadge show={!!item.isPending} />
 			<time className="shrink-0 text-xs text-muted-foreground" title={item.createdAt}>
 				{formatTimeAgo(item.createdAt)}

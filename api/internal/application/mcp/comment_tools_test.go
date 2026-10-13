@@ -2,6 +2,8 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -9,8 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	appcomment "blog-api/internal/application/comment"
+	apppost "blog-api/internal/application/post"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
+	"blog-api/internal/middleware"
 )
 
 // textOf 提取 CallToolResult 首条内容的文本（okResult/errResult 都是 TextContent）。
@@ -57,7 +61,7 @@ func oneCommentResult() *appcomment.SearchCommentsResult {
 
 func TestSearchComments_DelegatesWithReadScope(t *testing.T) {
 	svc := &fakeCommentSearchService{searchRes: oneCommentResult()}
-	tools := NewCommentTools(svc)
+	tools := NewCommentTools(svc, nil, nil)
 
 	res, _, err := tools.SearchComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()), searchCommentsArgs{Query: "公式"})
@@ -69,7 +73,7 @@ func TestSearchComments_DelegatesWithReadScope(t *testing.T) {
 }
 
 func TestSearchComments_RejectedWithoutScope(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{})
+	tools := NewCommentTools(&fakeCommentSearchService{}, nil, nil)
 
 	res, _, _ := tools.SearchComments(context.Background(),
 		reqWithToken(nil, uuidUser()), searchCommentsArgs{Query: "x"})
@@ -77,7 +81,7 @@ func TestSearchComments_RejectedWithoutScope(t *testing.T) {
 }
 
 func TestSearchComments_EmptyQueryIsToolError(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{})
+	tools := NewCommentTools(&fakeCommentSearchService{}, nil, nil)
 
 	res, _, _ := tools.SearchComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()), searchCommentsArgs{})
@@ -85,7 +89,7 @@ func TestSearchComments_EmptyQueryIsToolError(t *testing.T) {
 }
 
 func TestSearchComments_InvalidType(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{})
+	tools := NewCommentTools(&fakeCommentSearchService{}, nil, nil)
 
 	res, _, _ := tools.SearchComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()),
@@ -95,7 +99,7 @@ func TestSearchComments_InvalidType(t *testing.T) {
 
 func TestSearchComments_AnnotationFilter(t *testing.T) {
 	svc := &fakeCommentSearchService{searchRes: oneCommentResult()}
-	tools := NewCommentTools(svc)
+	tools := NewCommentTools(svc, nil, nil)
 
 	_, _, _ = tools.SearchComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()),
@@ -105,7 +109,7 @@ func TestSearchComments_AnnotationFilter(t *testing.T) {
 
 func TestSearchComments_LimitClampedTo50(t *testing.T) {
 	svc := &fakeCommentSearchService{searchRes: oneCommentResult()}
-	tools := NewCommentTools(svc)
+	tools := NewCommentTools(svc, nil, nil)
 
 	_, _, _ = tools.SearchComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()),
@@ -114,7 +118,7 @@ func TestSearchComments_LimitClampedTo50(t *testing.T) {
 }
 
 func TestSearchComments_EmptyResultHint(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{searchRes: &appcomment.SearchCommentsResult{}})
+	tools := NewCommentTools(&fakeCommentSearchService{searchRes: &appcomment.SearchCommentsResult{}}, nil, nil)
 
 	res, _, err := tools.SearchComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()),
@@ -128,7 +132,7 @@ func TestSearchComments_EmptyResultHint(t *testing.T) {
 
 func TestListRecentComments_DelegatesWithScope(t *testing.T) {
 	svc := &fakeCommentSearchService{searchRes: oneCommentResult()}
-	tools := NewCommentTools(svc)
+	tools := NewCommentTools(svc, nil, nil)
 
 	res, _, err := tools.ListRecentComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()), listRecentCommentsArgs{})
@@ -139,7 +143,7 @@ func TestListRecentComments_DelegatesWithScope(t *testing.T) {
 }
 
 func TestListRecentComments_RejectedWithoutScope(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{})
+	tools := NewCommentTools(&fakeCommentSearchService{}, nil, nil)
 
 	res, _, _ := tools.ListRecentComments(context.Background(),
 		reqWithToken(nil, uuidUser()), listRecentCommentsArgs{})
@@ -147,7 +151,7 @@ func TestListRecentComments_RejectedWithoutScope(t *testing.T) {
 }
 
 func TestListRecentComments_EmptyResultHint(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{searchRes: &appcomment.SearchCommentsResult{}})
+	tools := NewCommentTools(&fakeCommentSearchService{searchRes: &appcomment.SearchCommentsResult{}}, nil, nil)
 
 	res, _, err := tools.ListRecentComments(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()), listRecentCommentsArgs{})
@@ -161,7 +165,7 @@ func TestListRecentComments_EmptyResultHint(t *testing.T) {
 func TestCommentStats_DelegatesWithScope(t *testing.T) {
 	svc := &fakeCommentSearchService{statsRes: &appcomment.CommentStatsResult{}}
 	svc.statsRes.Summary.TotalAnnotations = 5
-	tools := NewCommentTools(svc)
+	tools := NewCommentTools(svc, nil, nil)
 
 	res, _, err := tools.CommentStats(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()), struct{}{})
@@ -170,7 +174,7 @@ func TestCommentStats_DelegatesWithScope(t *testing.T) {
 }
 
 func TestCommentStats_RejectedWithoutScope(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{})
+	tools := NewCommentTools(&fakeCommentSearchService{}, nil, nil)
 
 	res, _, _ := tools.CommentStats(context.Background(),
 		reqWithToken(nil, uuidUser()), struct{}{})
@@ -178,7 +182,7 @@ func TestCommentStats_RejectedWithoutScope(t *testing.T) {
 }
 
 func TestCommentStats_EmptyResultHint(t *testing.T) {
-	tools := NewCommentTools(&fakeCommentSearchService{statsRes: &appcomment.CommentStatsResult{}})
+	tools := NewCommentTools(&fakeCommentSearchService{statsRes: &appcomment.CommentStatsResult{}}, nil, nil)
 
 	res, _, err := tools.CommentStats(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()), struct{}{})
@@ -186,5 +190,322 @@ func TestCommentStats_EmptyResultHint(t *testing.T) {
 	assert.Contains(t, textOf(t, res), "暂无")
 }
 
+// ---- create_comment / create_annotation / create_block_comment ----
+
+func intPtr(v int) *int { return &v }
+
+type fakeCommentWriteService struct {
+	got    appcomment.CreateInput
+	gotCtx context.Context
+	dto    appcomment.CommentDTO
+	err    error
+	calls  int
+}
+
+func (f *fakeCommentWriteService) Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error) {
+	f.calls++
+	f.got = in
+	f.gotCtx = ctx
+	return f.dto, f.err
+}
+
+type fakeCommentPostLookup struct {
+	bySlug map[string]apppost.PostDTO
+	byID   map[string]apppost.PostDTO // 仅已发布文章
+	err    error
+}
+
+func (f *fakeCommentPostLookup) GetPublishedByID(_ context.Context, id string) (apppost.PostDTO, error) {
+	if f.err != nil {
+		return apppost.PostDTO{}, f.err
+	}
+	dto, ok := f.byID[id]
+	if !ok {
+		return apppost.PostDTO{}, fmt.Errorf("not found")
+	}
+	return dto, nil
+}
+
+// publishedP1 默认把 p1 视为已发布文章（含正文供 block_text 校验）。
+func publishedP1() *fakeCommentPostLookup {
+	return &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"p1": {
+			ID:          "p1",
+			ContentMD:   "hello world\n\n整段段落文本",
+			ContentHTML: "<p>hello world</p><p>整段段落文本</p>",
+		},
+	}}
+}
+
+func (f *fakeCommentPostLookup) GetPublishedBySlug(_ context.Context, slug string) (apppost.PostDTO, error) {
+	if f.err != nil {
+		return apppost.PostDTO{}, f.err
+	}
+	dto, ok := f.bySlug[slug]
+	if !ok {
+		return apppost.PostDTO{}, fmt.Errorf("not found")
+	}
+	return dto, nil
+}
+
+func TestCreateComment_RequiresWriteScope(t *testing.T) {
+	tools := NewCommentTools(nil, &fakeCommentWriteService{}, nil)
+	res, _, _ := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()),
+		createCommentArgs{PostID: "p1", Body: "hi"})
+	assert.True(t, res.IsError, "仅 comments:read 应拒绝写入")
+}
+
+func TestCreateComment_AsAIIdentity(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	uid := uuidUser()
+	res, _, err := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uid),
+		createCommentArgs{PostID: "p1", Body: "  hi  "})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	assert.Equal(t, 1, w.calls)
+	assert.True(t, w.got.IsAI)
+	assert.Equal(t, uid, w.got.UserID)
+	assert.Equal(t, "hi", w.got.Body)
+	assert.Nil(t, w.got.Anchor)
+	assert.True(t, w.got.RejectAnchoredParent, "create_comment 不得继承批注锚点")
+	assert.False(t, w.got.RequireParentAnchor)
+	op, _ := w.gotCtx.Value(middleware.UserIDKey).(string)
+	assert.Equal(t, uid, op, "Create ctx 须带 PAT 持有人 UserIDKey（审计 actor）")
+}
+
+func TestCreateComment_ResolvesSlug(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1"}}
+	posts := &fakeCommentPostLookup{bySlug: map[string]apppost.PostDTO{
+		"react-tweet": {ID: "post-uuid-1", Slug: "react-tweet"},
+	}}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createCommentArgs{Slug: "react-tweet", Body: "nice"})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	assert.Equal(t, "post-uuid-1", w.got.PostID)
+}
+
+func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "hello",
+			StartOffset: intPtr(0), EndOffset: intPtr(5), BlockText: "hello world",
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotNil(t, w.got.Anchor)
+	assert.Equal(t, "hello", w.got.Anchor.SelectedText)
+	assert.True(t, w.got.IsAI)
+}
+
+func TestCreateBlockComment_FullBlockAnchor(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	tools := NewCommentTools(nil, w, publishedP1())
+	text := "整段段落文本"
+	res, _, err := tools.CreateBlockComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createBlockCommentArgs{PostID: "p1", Body: "段评", BlockText: text})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotNil(t, w.got.Anchor)
+	assert.Equal(t, 0, w.got.Anchor.StartOffset)
+	assert.Equal(t, text, w.got.Anchor.SelectedText)
+	assert.True(t, w.got.IsAI)
+}
+
+func TestCreateComment_RejectsUnpublishedPostID(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createCommentArgs{PostID: "draft-post", Body: "hi"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "草稿/不存在的 post_id 应拒绝")
+	assert.Equal(t, 0, w.calls)
+}
+
+func TestCreateAnnotation_RejectsSubstringOrUnknownBlock(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	// 子串不是完整渲染块
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "hello",
+			StartOffset: intPtr(0), EndOffset: intPtr(5), BlockText: "hello",
+		})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Equal(t, 0, w.calls)
+	// 完全不存在的块
+	res, _, err = tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "nope",
+			StartOffset: intPtr(0), EndOffset: intPtr(4), BlockText: "not in article",
+		})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Equal(t, 0, w.calls)
+}
+
+func TestCreateAnnotation_FiveTupleAgainstArticle(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	tools := NewCommentTools(nil, w, publishedP1())
+	id, err := appcomment.ComputeBlockID("hello world")
+	require.NoError(t, err)
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "批注", SelectedText: "world",
+			StartOffset: intPtr(6), EndOffset: intPtr(11),
+			BlockID: id, BlockTextHash: id,
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotNil(t, w.got.Anchor)
+	assert.Equal(t, id, w.got.Anchor.BlockID)
+}
+
+func TestCreateAnnotation_RequiresSelectionWithoutParent(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{PostID: "p1", Body: "批注"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Equal(t, 0, w.calls)
+}
+
+func TestCreateAnnotation_ReplyInheritsParentAnchor(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c2"}}
+	tools := NewCommentTools(nil, w, publishedP1())
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "p1", Body: "回复", ParentID: "parent-1",
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	assert.Equal(t, "parent-1", w.got.ParentID)
+	assert.Nil(t, w.got.Anchor, "回复不带自身锚点，由父评论继承")
+	assert.True(t, w.got.RequireParentAnchor, "批注回复须校验父评论带锚点")
+	assert.False(t, w.got.RejectAnchoredParent)
+}
+
+func TestCreateAnnotation_MarkdownOnlyPostFallsBackToHTML(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"md1": {ID: "md1", ContentMD: "hello world", ContentHTML: ""},
+	}}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "md1", Body: "批注", SelectedText: "hello",
+			StartOffset: intPtr(0), EndOffset: intPtr(5), BlockText: "hello world",
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError, "content_html 空时应降级用 content_md 渲染再校验")
+	require.NotNil(t, w.got.Anchor)
+	assert.Equal(t, "hello", w.got.Anchor.SelectedText)
+}
+
+func TestCreateComment_RejectsBothPostIDAndSlug(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	posts := &fakeCommentPostLookup{
+		byID:   map[string]apppost.PostDTO{"p1": {ID: "p1"}},
+		bySlug: map[string]apppost.PostDTO{"s1": {ID: "other"}},
+	}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createCommentArgs{PostID: "p1", Slug: "s1", Body: "hi"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Contains(t, textOf(t, res), "互斥")
+	assert.Equal(t, 0, w.calls)
+}
+
 // 编译期断言：fakeCommentSearchService 实现 CommentSearchService 接口。
 var _ CommentSearchService = (*fakeCommentSearchService)(nil)
+var _ CommentWriteService = (*fakeCommentWriteService)(nil)
+var _ CommentPostLookup = (*fakeCommentPostLookup)(nil)
+
+func TestListAnnotationBlocks_ReadWriteScopesAndUTF16Pagination(t *testing.T) {
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"p1": {ID: "p1", ContentHTML: "<p>A😀中<script>hidden</script></p><p>next</p>"},
+	}}
+	for _, scope := range []string{domainapitoken.ScopeCommentsRead, domainapitoken.ScopeCommentsWrite} {
+		t.Run(scope, func(t *testing.T) {
+			tools := NewCommentTools(nil, nil, posts)
+			res, _, err := tools.ListAnnotationBlocks(context.Background(), reqWithToken([]string{scope}, uuidUser()),
+				listAnnotationBlocksArgs{PostID: "p1", Limit: 1})
+			require.NoError(t, err)
+			require.False(t, res.IsError)
+			var page annotationBlocksResult
+			require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+			require.Len(t, page.Blocks, 1)
+			assert.Equal(t, "A😀中", page.Blocks[0].BlockText)
+			assert.Equal(t, 4, page.Blocks[0].UTF16Length)
+			assert.Equal(t, 2, page.Total)
+			assert.True(t, page.HasMore)
+			assert.Equal(t, 1, page.NextOffset)
+			anchor, err := appcomment.BuildFullBlockAnchor(page.Blocks[0].BlockText)
+			require.NoError(t, err)
+			assert.Equal(t, anchor.BlockID, page.Blocks[0].BlockID)
+			assert.Equal(t, anchor.BlockHashSync, page.Blocks[0].BlockTextHash)
+			assert.Equal(t, anchor.EndOffset, page.Blocks[0].UTF16Length)
+			require.NoError(t, appcomment.EnsureAnchorMatchesArticle(posts.byID["p1"].ContentHTML, anchor))
+
+			res, _, err = tools.ListAnnotationBlocks(context.Background(), reqWithToken([]string{scope}, uuidUser()),
+				listAnnotationBlocksArgs{PostID: "p1", Limit: 1, Offset: page.NextOffset})
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+			require.Len(t, page.Blocks, 1)
+			assert.Equal(t, "next", page.Blocks[0].BlockText)
+			assert.False(t, page.HasMore)
+		})
+	}
+}
+
+func TestListAnnotationBlocks_RejectsMissingScopeAndUnpublishedArticle(t *testing.T) {
+	tools := NewCommentTools(nil, nil, publishedP1())
+	for _, tc := range []struct {
+		scopes []string
+		args   listAnnotationBlocksArgs
+	}{
+		{nil, listAnnotationBlocksArgs{PostID: "p1"}},
+		{[]string{domainapitoken.ScopeCommentsRead}, listAnnotationBlocksArgs{PostID: "draft"}},
+		{[]string{domainapitoken.ScopeCommentsWrite}, listAnnotationBlocksArgs{PostID: "p1", Slug: "p1"}},
+	} {
+		res, _, err := tools.ListAnnotationBlocks(context.Background(), reqWithToken(tc.scopes, uuidUser()), tc.args)
+		require.NoError(t, err)
+		assert.True(t, res.IsError)
+	}
+}
+
+func TestListAnnotationBlocks_ClampsPageAndReturnsEmptyArrayPastEnd(t *testing.T) {
+	tools := NewCommentTools(nil, nil, publishedP1())
+	res, _, err := tools.ListAnnotationBlocks(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		listAnnotationBlocksArgs{PostID: "p1", Limit: 999, Offset: 999})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	var page annotationBlocksResult
+	require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+	assert.Equal(t, 50, page.Limit)
+	assert.Equal(t, 999, page.Offset)
+	assert.NotNil(t, page.Blocks)
+	assert.Empty(t, page.Blocks)
+	assert.False(t, page.HasMore)
+}

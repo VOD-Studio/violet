@@ -43,7 +43,7 @@ func NewTweetContainer(
 		gormrepo.NewExternalTweetRepository(db), xtweet.NewFetcher(nil),
 		xtweet.NewMediaStore(cfg.UploadDir, cfg.UploadPathPrefix, infraimage.NewProcessor(cfg.UploadDir, cfg.UploadPathPrefix), nil),
 		xtweet.NewPreviewStore(redisClient),
-	)
+	).WithVideoSource(xtweet.NewVideoSource(nil))
 	svc := apptweet.NewService(
 		tweetRepo,
 		commentRepo,

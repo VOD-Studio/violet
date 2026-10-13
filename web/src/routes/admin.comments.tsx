@@ -10,6 +10,7 @@ import type {
 	CommentStatus,
 	CommentType,
 } from "@features/admin-comments/model/types";
+import { CommentAuthor } from "@features/admin-comments/ui/CommentAuthor";
 import { CommentCell } from "@features/admin-comments/ui/CommentCell";
 import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
@@ -20,7 +21,6 @@ import {
 } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
-import { avatarUrl } from "@shared/lib/image-url";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge, Button, ConfirmDialog, Segmented, type SegmentedItem } from "@violet/ui";
 import { Ban, Check, Trash2 } from "lucide-react";
@@ -132,17 +132,7 @@ function AdminCommentsPage() {
 		{
 			key: "author_name",
 			header: "作者",
-			cell: (row) => (
-				<div className="flex items-center gap-2">
-					<img
-						src={avatarUrl(row.avatar_url, row.author_name)}
-						alt={row.author_name}
-						className="size-6 shrink-0 rounded-full object-cover"
-						loading="lazy"
-					/>
-					<span className="text-sm">{row.author_name}</span>
-				</div>
-			),
+			cell: (row) => <CommentAuthor row={row} />,
 		},
 		{
 			key: "post_title",

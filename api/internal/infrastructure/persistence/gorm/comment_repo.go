@@ -39,7 +39,7 @@ func commentToPO(c *comment.Comment) (model.Comment, error) {
 		AuthorName: c.AuthorName(), AuthorEmail: c.AuthorEmail(),
 		AuthorURL: c.AuthorURL(), AvatarURL: c.AvatarURL(),
 		Body: c.Body(), Pictures: picturesJSON,
-		Status: c.Status(), IPHash: c.IPHash(), UserAgent: c.UserAgent(),
+		Status: c.Status(), IPHash: c.IPHash(), UserAgent: c.UserAgent(), IsAI: c.IsAI(),
 	}
 	po.PostID = c.PostID().UUID()
 	if p := c.ParentID(); p != nil {
@@ -107,7 +107,7 @@ func commentToDomain(po model.Comment) (*comment.Comment, error) {
 		parentID, po.Path, po.Depth,
 		anchor,
 		po.AuthorName, po.AuthorEmail, po.AuthorURL, po.AvatarURL,
-		po.Body, pictures, po.Status, po.IPHash, po.UserAgent,
+		po.Body, pictures, po.Status, po.IPHash, po.UserAgent, po.IsAI,
 		po.CreatedAt, po.UpdatedAt,
 	), nil
 }
@@ -188,6 +188,7 @@ func commentPageOrder(filter comment.ListFilter) string {
 	}
 	return "c.created_at DESC, c.id DESC"
 }
+
 // applyCommentFilters 把 ListFilter 的正交筛选维度组装到 query。
 //
 // 入参 query 必须是 Table("comments c") 别名形态（列名一律 c. 前缀），
@@ -261,12 +262,19 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		return query
 	}
 
-	var results []comment.BlockCount
+	var counts []struct {
+		BlockID string `gorm:"column:block_id"`
+		Count   int64  `gorm:"column:count"`
+	}
 	err := scope().Select("anchor_block_id AS block_id, COUNT(*) AS count").
 		Group("anchor_block_id").
-		Find(&results).Error
+		Find(&counts).Error
 	if err != nil {
 		return nil, domainshared.Internal("统计批注按块聚合失败", err)
+	}
+	results := make([]comment.BlockCount, 0, len(counts))
+	for _, row := range counts {
+		results = append(results, comment.BlockCount{BlockID: row.BlockID, Count: row.Count})
 	}
 	if len(results) == 0 {
 		return results, nil
@@ -277,11 +285,12 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 		CreatedBy   *uuid.UUID `gorm:"column:created_by"`
 		AuthorName  string     `gorm:"column:author_name"`
 		AvatarURL   string     `gorm:"column:avatar_url"`
+		IsAI        bool       `gorm:"column:is_ai"`
 		StartOffset *int       `gorm:"column:anchor_start_offset"`
 		EndOffset   *int       `gorm:"column:anchor_end_offset"`
 	}
-	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url, anchor_start_offset, anchor_end_offset").
-		Order("created_at ASC").
+	err = scope().Select("anchor_block_id AS block_id, created_by, author_name, avatar_url, is_ai, anchor_start_offset, anchor_end_offset").
+		Order("created_at ASC, id ASC").
 		Find(&rows).Error
 	if err != nil {
 		return nil, domainshared.Internal("查询批注块评论者失败", err)
@@ -298,21 +307,27 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 			continue
 		}
 		if row.StartOffset != nil && row.EndOffset != nil && len(results[i].Ranges) < comment.BlockRangeLimit {
-			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{Start: *row.StartOffset, End: *row.EndOffset})
+			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{
+				Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI, AuthorName: row.AuthorName,
+			})
 		}
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {
 			continue
 		}
-		// 登录评论者按 user id 去重；匿名无 id，按展示名区分
-		identity := row.BlockID + "|" + row.AuthorName
-		if row.CreatedBy != nil {
-			identity = row.BlockID + "|" + row.CreatedBy.String()
+		// AI 按自署名、真人按登录 ID 或匿名名分别去重，身份类别互不碰撞。
+		var identity string
+		if row.IsAI {
+			identity = row.BlockID + "|ai|" + row.AuthorName
+		} else if row.CreatedBy != nil {
+			identity = row.BlockID + "|user|" + row.CreatedBy.String()
+		} else {
+			identity = row.BlockID + "|anon|" + row.AuthorName
 		}
 		if _, dup := seen[identity]; dup {
 			continue
 		}
 		seen[identity] = struct{}{}
-		results[i].Authors = append(results[i].Authors, comment.BlockAuthor{Name: row.AuthorName, AvatarURL: row.AvatarURL})
+		results[i].Authors = append(results[i].Authors, comment.BlockAuthor{Name: row.AuthorName, AvatarURL: row.AvatarURL, IsAI: row.IsAI})
 	}
 	return results, nil
 }

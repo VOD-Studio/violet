@@ -3,6 +3,7 @@ package comment
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -70,11 +71,11 @@ func TestEnrichOAuthIdentities_FillsProviderAndURL(t *testing.T) {
 	postID, ghCID, gCID, anonCID := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
 	zero := time.Time{}
 	ghComment := domain.ReconstructComment(ghCID, postID, &ghUID, nil, ghCID.String()+"/", 0, nil,
-		"alice", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"alice", "", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 	gComment := domain.ReconstructComment(gCID, postID, &gUID, nil, gCID.String()+"/", 0, nil,
-		"bob", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"bob", "", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 	anonComment := domain.ReconstructComment(anonCID, postID, nil, nil, anonCID.String()+"/", 0, nil,
-		"carol", "", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"carol", "", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 
 	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
 		Return([]*domainuser.User{ghUser, gUser}, nil).Once()
@@ -139,10 +140,10 @@ func TestEnrichOAuthIdentities_DeletedAuthorPlaceholder(t *testing.T) {
 	zero := time.Time{}
 	// 顶层：注销作者（快照名 "gone"）；回复：活跃作者回复注销者（reply_to 指向注销顶层）
 	topComment := domain.ReconstructComment(dCID, postID, &dUID, nil, dCID.String()+"/", 0, nil,
-		"gone", "https://cdn/avatar.png", "", "", "body", nil, domain.StatusApproved, "", "", zero, zero)
+		"gone", "https://cdn/avatar.png", "", "", "body", nil, domain.StatusApproved, "", "", false, zero, zero)
 	replyCID := shared.NewID()
 	replyComment := domain.ReconstructComment(replyCID, postID, &aUID, &dCID, dCID.String()+replyCID.String()+"/", 1, nil,
-		"alive", "", "", "", "reply", nil, domain.StatusApproved, "gone", "", zero, zero)
+		"alive", "", "", "", "reply", nil, domain.StatusApproved, "gone", "", false, zero, zero)
 
 	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
 		Return([]*domainuser.User{deletedUser, aliveUser}, nil).Once()
@@ -203,6 +204,69 @@ func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "bob", dto.AuthorName)
 	repo.AssertExpectations(t)
+}
+
+func TestCreate_LoggedIn_FillsAuthorFromUserRepo(t *testing.T) {
+	repo := new(mocks.MockCommentRepository)
+	userRepo := new(mocks.MockUserRepository)
+	svc := NewService(repo, userRepo, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory())
+	uid := shared.NewID()
+	email, _ := domainuser.ParseEmail("bob@x.com")
+	name, _ := domainuser.ParseUsername("bob")
+	u := domainuser.ReconstructUser(uid, email, name, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "https://avatar.example/bob.png", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Time{}, time.Time{}, time.Time{})
+
+	userRepo.On("FindByID", mock.Anything, uid).Return(u, nil).Once()
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{u}, nil).Once()
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: uid.String(),
+		Body: "hi from mcp",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "bob", dto.AuthorName)
+	assert.Equal(t, "https://avatar.example/bob.png", dto.AvatarURL)
+	userRepo.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}
+
+func TestCreate_AISignatureDoesNotBecomePATProfile(t *testing.T) {
+	for _, signature := range []string{"", " \t ", "  independent model  ", strings.Repeat("模", 100)} {
+		t.Run(signature, func(t *testing.T) {
+			repo := new(mocks.MockCommentRepository)
+			users := new(mocks.MockUserRepository)
+			users.On("FindByIDsForDisplay", mock.Anything, mock.Anything).Return([]*domainuser.User{}, nil)
+			repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+			svc := NewService(repo, users, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory())
+			dto, err := svc.Create(context.Background(), CreateInput{
+				PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+				AuthorName: signature, AvatarURL: "/owner.png", IsAI: true, Body: "comment",
+			})
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.True(t, dto.IsAI)
+			assert.Empty(t, dto.AvatarURL)
+			assert.NotEmpty(t, dto.AuthorName)
+			if strings.TrimSpace(signature) != "" {
+				assert.Equal(t, strings.TrimSpace(signature), dto.AuthorName)
+			}
+			users.AssertNotCalled(t, "FindByID", mock.Anything, mock.Anything)
+		})
+	}
+}
+
+func TestCreate_RejectsAISignatureBeyondStorageBoundary(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+		AuthorName: strings.Repeat("模", 101), IsAI: true, Body: "comment",
+	})
+	assert.Error(t, err)
+	repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
 }
 
 func TestCreate_Anon_ValidCode_NoQuota_Succeeds(t *testing.T) {
@@ -454,7 +518,7 @@ func newDomainComment(id, postID shared.ID, author, status string) (*domain.Comm
 	}
 	zero := time.Time{}
 	c := domain.ReconstructComment(id, postID, nil, nil, id.String()+"/", 0, nil,
-		author, "", "", "", "body", nil, status, "", "", zero, zero)
+		author, "", "", "", "body", nil, status, "", "", false, zero, zero)
 	return c, nil
 }
 
@@ -497,5 +561,171 @@ func TestCreate_ModerationOn_StaysPending(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "pending", dto.Status)
+	repo.AssertExpectations(t)
+}
+
+// TestCreate_ParentDifferentPost_Rejected 跨文章回复应拒绝（Codex P2）。
+func TestCreate_ParentDifferentPost_Rejected(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	uid := shared.NewID()
+	postID := shared.NewID()
+	otherPostID := shared.NewID()
+	parentID := shared.NewID()
+	zero := time.Time{}
+	parent := domain.ReconstructComment(parentID, otherPostID, &uid, nil, parentID.String()+"/", 0, nil,
+		"alice", "", "", "", "parent on other post", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(parent, nil).Once()
+	repo.AssertNotCalled(t, "Save")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "bob", AuthorEmail: "bob@x.com", Body: "cross-post reply",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "父评论不属于该文章")
+	repo.AssertExpectations(t)
+}
+
+// AI 署名不随审计 actor 注销而变成真人注销占位。
+func TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted(t *testing.T) {
+	userRepo := new(mocks.MockUserRepository)
+	svc := &Service{userRepo: userRepo}
+
+	dUID := shared.NewID()
+	dEmail, _ := domainuser.ParseEmail("gone@example.com")
+	dName, _ := domainuser.ParseUsername("gone")
+	deletedUser := domainuser.ReconstructUser(dUID, dEmail, dName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Now(), time.Time{}, time.Time{})
+	deletedUser.Delete(time.Now())
+
+	postID, cID := shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	aiComment := domain.ReconstructComment(cID, postID, &dUID, nil, cID.String()+"/", 0, nil,
+		"independent model", "", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
+
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{deletedUser}, nil).Once()
+
+	dtos := []CommentDTO{{
+		ID: cID.String(), AuthorName: aiComment.AuthorName(), IsAI: true,
+	}}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{aiComment})
+	assert.NoError(t, err)
+	assert.Equal(t, aiComment.AuthorName(), dtos[0].AuthorName)
+	assert.Empty(t, dtos[0].AvatarURL)
+	assert.Empty(t, dtos[0].AuthorProvider)
+	assert.Empty(t, dtos[0].AuthorUsername)
+	userRepo.AssertExpectations(t)
+}
+
+// TestToDTO_AIIsNeverAuthor 作者 PAT 发表的 AI 评论不标记 is_author。
+func TestToDTO_AIIsNeverAuthor(t *testing.T) {
+	uid, postID, cID := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	ai := domain.ReconstructComment(cID, postID, &uid, nil, cID.String()+"/", 0, nil,
+		"independent model", "", "", "", "ai", nil, domain.StatusApproved, "", "", true, zero, zero)
+	human := domain.ReconstructComment(cID, postID, &uid, nil, cID.String()+"/", 0, nil,
+		"me", "", "", "", "me", nil, domain.StatusApproved, "", "", false, zero, zero)
+	assert.False(t, toDTO(ai, &uid, "").IsAuthor)
+	assert.True(t, toDTO(human, &uid, "").IsAuthor)
+}
+
+// AI 被回复者的署名不随审计 actor 注销而替换。
+func TestEnrichOAuthIdentities_ReplyToDeletedAIKeepsName(t *testing.T) {
+	userRepo := new(mocks.MockUserRepository)
+	svc := &Service{userRepo: userRepo}
+
+	dUID := shared.NewID()
+	dEmail, _ := domainuser.ParseEmail("gone@example.com")
+	dName, _ := domainuser.ParseUsername("gone")
+	deletedUser := domainuser.ReconstructUser(dUID, dEmail, dName, domainuser.DisplayName{},
+		domainuser.NewPasswordHash(""), "", "", "", domainuser.RoleUser,
+		nil, nil, nil, false, true, true, time.Now(), time.Time{}, time.Time{})
+	deletedUser.Delete(time.Now())
+
+	postID, aiID, rID := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	aiComment := domain.ReconstructComment(aiID, postID, &dUID, nil, aiID.String()+"/", 0, nil,
+		"independent model", "", "", "", "ai body", nil, domain.StatusApproved, "", "", true, zero, zero)
+	reply := domain.ReconstructComment(rID, postID, nil, &aiID, aiID.String()+"/"+rID.String()+"/", 1, nil,
+		"guest", "", "g@x.com", "", "reply", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	userRepo.On("FindByIDsForDisplay", mock.Anything, mock.AnythingOfType("[]shared.ID")).
+		Return([]*domainuser.User{deletedUser}, nil).Once()
+
+	dtos := []CommentDTO{{
+		ID: aiID.String(), AuthorName: aiComment.AuthorName(), IsAI: true,
+		Replies: []CommentDTO{{ID: rID.String(), ParentID: aiID.String(), ReplyToName: aiComment.AuthorName(), AuthorName: "guest"}},
+	}}
+	err := svc.enrichOAuthIdentities(context.Background(), dtos, []*domain.Comment{aiComment, reply})
+	assert.NoError(t, err)
+	assert.Equal(t, aiComment.AuthorName(), dtos[0].Replies[0].ReplyToName)
+}
+
+// TestCreate_RequireParentAnchor_RejectsFreeParent create_annotation 回复自由评论应拒绝。
+func TestCreate_RequireParentAnchor_RejectsFreeParent(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	postID, parentID, uid := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	freeParent := domain.ReconstructComment(parentID, postID, &uid, nil, parentID.String()+"/", 0, nil,
+		"human", "", "", "", "free", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(freeParent, nil).Once()
+	repo.AssertNotCalled(t, "Save")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "independent model", AuthorEmail: "a@x.com", Body: "reply",
+		RequireParentAnchor: true, IsAI: true,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "划线批注")
+	repo.AssertExpectations(t)
+}
+
+// TestCreate_RequireParentAnchor_InheritsAnnotationParent 批注父评论可回复并继承锚点。
+func TestCreate_RequireParentAnchor_InheritsAnnotationParent(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(&fakeSitePolicy{enabled: true, moderation: false})
+	postID, parentID, uid := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "abc12345"}
+	parent := domain.ReconstructComment(parentID, postID, &uid, nil, parentID.String()+"/", 0, anchor,
+		"human", "", "", "", "annot", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(parent, nil).Once()
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "independent model", AuthorEmail: "a@x.com", Body: "reply",
+		RequireParentAnchor: true, IsAI: true,
+	})
+	if assert.NoError(t, err) && assert.NotNil(t, dto.Anchor) {
+		assert.Equal(t, "hello", dto.Anchor.SelectedText)
+	}
+	repo.AssertExpectations(t)
+}
+
+// TestCreate_RejectAnchoredParent_RejectsAnnotationParent create_comment 不得回复划线批注。
+func TestCreate_RejectAnchoredParent_RejectsAnnotationParent(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	postID, parentID, uid := shared.NewID(), shared.NewID(), shared.NewID()
+	zero := time.Time{}
+	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "abc12345"}
+	parent := domain.ReconstructComment(parentID, postID, &uid, nil, parentID.String()+"/", 0, anchor,
+		"human", "", "", "", "annot", nil, domain.StatusApproved, "", "", false, zero, zero)
+
+	repo.On("FindByID", mock.Anything, parentID).Return(parent, nil).Once()
+	repo.AssertNotCalled(t, "Save")
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(), ParentID: parentID.String(),
+		AuthorName: "independent model", AuthorEmail: "a@x.com", Body: "reply",
+		RejectAnchoredParent: true, IsAI: true,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "自由评论不能回复划线批注")
 	repo.AssertExpectations(t)
 }

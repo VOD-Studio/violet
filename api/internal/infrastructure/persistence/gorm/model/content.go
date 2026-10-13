@@ -111,6 +111,8 @@ type Comment struct {
 	Status    string    `gorm:"type:varchar(20);default:pending" json:"status"`
 	IPHash    string    `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
 	UserAgent string    `gorm:"type:text;column:user_agent" json:"user_agent"`
+	// IsAI MCP/AI agent 发表标记（comments.is_ai）；展示专用头像与 AI 徽章。
+	IsAI      bool      `gorm:"column:is_ai;not null;default:false" json:"is_ai"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }

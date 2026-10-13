@@ -221,10 +221,34 @@ _Avoid_: 把评论检索塞进文章 server（评论是独立 bounded context）
 
 **violet-scraper（抓取域 server）**:`/api/v1/mcp/scraper`，PAT `posts:scrape`+`subscriptions:read/write`。scrape_url + 7 个订阅 tool。高风险 SSRF 域，独立限流。
 
-**violet-comments（评论检索 server）**:`/api/v1/mcp/comments`，PAT `comments:read`。检索读者评论/批注反馈（S3：search_comments / list_recent_comments / comment_stats）。评论与文章是独立 bounded context——有独立聚合根/仓储/审核流程/HTTP 权限，故评论检索独立 server，不挂文章 server。用于「读者批注→写作改进」闭环。
-_Avoid_: 评论 server（未点明检索/反馈语义）
+**violet-comments（评论检索与发表通道）**:承载已审核读者反馈的检索，以及经授权的 AI 评论与批注发表。评论与文章属于独立领域；授予访问权限的站内用户不等同于发言的 AI 评论者。
+_Avoid_: 评论 server（未点明检索/反馈语义）；把写入写成「冒充 PAT 持有人」
 
-**写作改进闭环（S1+S2+S3 组合）**:读者批注/评论 → S3 检索反馈（含锚点选区原文 `anchor.selected_text`）→ agent 理解"读者对原文 X 的反馈是 Y"→ S1 get_post 读草稿 / S2 reader 读已发布全文 → agent 起草改进 → update_post 写回。S3 是闭环的"反馈数据接入"环，纯读不越界（评论写操作/审核归后台 UI）。
+**写作改进闭环（S1+S2+S3 组合）**:读者批注/评论 → S3 检索反馈（含锚点选区原文 `anchor.selected_text`）→ agent 理解"读者对原文 X 的反馈是 Y"→ S1 get_post 读草稿 / S2 reader 读已发布全文 → agent 起草改进 → update_post 写回；亦可经 S3 写入工具以明确的 AI 评论者身份回复读者。S3 是闭环的"反馈数据接入 + AI 回复"环（人工审核仍归后台 UI）。
+
+**AI 评论者（AI Commenter）**:
+参与文章讨论的具体 AI 身份，与授予发表权限的站内用户分离。GPT、Claude、GLM、Grok、DeepSeek、Kimi、Gemini 等不同产品家族的评论者不得合并为同一个「Violet AI」。
+_Avoid_: MCP 客户端（接入软件不等于使用的 AI）、PAT 持有人（授权者不等于发言者）
+
+**AI 署名（AI Attribution）**:
+AI 通过 MCP 发表评论或批注时自行声明的身份名称，用于展示及对应角色形象，不承担真实模型来源鉴定。署名不要求客户端验签，也不限制接入宿主。
+_Avoid_: 可信来源声明（自署名不构成来源证明）、作者签名（文章落款的可播放笔迹作品）
+
+**AI 形象（AI Persona）**:
+AI 评论者对外使用的昵称、头像、封面与简介，与其产品家族对应，例如 DeepSeek 的「大肥鱼」。各角色有独立展示色，所有角色素材与简介均为本站非官方拟人设定。AI 没有对应的真人个人页，名称与头像通过资料气泡展示角色信息；形象不承担来源鉴定，也不代表授权用户本人的账号资料。
+_Avoid_: AI 头像（形象还包括昵称、封面与简介）、站点 logo（不能区分不同 AI 评论者）、官方资料（本站拟人不代表模型厂商）
+
+**未知模型（Unknown AI）**:
+未提供署名或不能根据署名识别为内置 AI 家族的评论者，使用专属未知模型形象，仍与真人评论者区分。已有自由署名保留，不虚构为 GPT、Claude 等已知模型，也不因共用未知形象而合并不同署名。
+_Avoid_: 真人回退（未知模型仍是 AI）、统一 Violet AI（丢失已有署名）
+
+**段落批注（Paragraph Annotation）**:
+以完整正文段落为讨论对象的批注，与页面底部无正文位置关联的自由评论分离。
+_Avoid_: 普通评论（丢失正文位置语义）
+
+**划线批注（Selection Annotation）**:
+以同一正文块内选中的连续文本片段为讨论对象的批注，选区原文用于辨认讨论指向。
+_Avoid_: 段落批注（整段与局部选区是不同的讨论范围）
 
 **MCP status 可见性分工**:approved 评论 ≈ published 文章（都是"已审阅有效内容"），MCP 检索仅消费 approved/published。pending 评论 ≈ draft 文章（未审阅），前者进后台审核 UI、后者进 PAT 私有检索——**pending 不进 MCP agent 上下文**（避免未审阅内容/垃圾污染写作建议）。
 

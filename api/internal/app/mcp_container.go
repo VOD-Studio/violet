@@ -22,7 +22,7 @@ import (
 // PostHandler 挂 /api/v1/mcp（文章 CRUD + 检索，PAT 鉴权，低风险），
 // ScraperHandler 挂 /api/v1/mcp/scraper（抓取 + 订阅，PAT 鉴权，高风险，可独立限流），
 // PublicHandler 挂 /api/v1/mcp/reader（匿名只读已发布文章，不套 PAT 鉴权），
-// CommentsHandler 挂 /api/v1/mcp/comments（评论检索，PAT comments:read，评论独立 bounded context）。
+// CommentsHandler 挂 /api/v1/mcp/comments（评论检索+写入，PAT comments:read/write，评论独立 bounded context）。
 // NotesHandler 挂 /api/v1/mcp/notes（笔记写入，PAT notes:read/write/publish，AI 会话沉淀运输层）。
 // 四个 PAT handler 用 auth.RequireBearerToken 包裹；PublicHandler 裸 handler（匿名）。
 type MCPContainer struct {
@@ -54,8 +54,8 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 	// 公开只读 server（2 个 Resource + 1 个匿名 prompt，仅已发布文章）
 	publicTools := appmcp.NewPublicTools(postSvc, seriesSvc)
 	publicServer := appmcp.NewPublicServer(publicTools, promptTools)
-	// 评论检索 server（3 个 tool，评论独立 bounded context）
-	commentTools := appmcp.NewCommentTools(commentSvc)
+	// 评论 server（3 读 + 3 写 tool；写操作用 postSvc 按 slug 解析已发布文章）
+	commentTools := appmcp.NewCommentTools(commentSvc, commentSvc, postSvc)
 	commentsServer := appmcp.NewCommentsServer(commentTools)
 	// 笔记 server（5 个 tool，AI 会话沉淀运输层，标签放行自动创建）
 	noteTools := appmcp.NewNoteTools(noteSvc, tagSvc)

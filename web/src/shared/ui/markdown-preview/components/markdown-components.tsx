@@ -200,7 +200,13 @@ export const markdownComponents: Components = {
 		if (p["data-type"] === "inline-math") {
 			const latex = String(p["data-latex"] ?? "");
 			return (
-				<Suspense fallback={<span>{latex}</span>}>
+				<Suspense
+					fallback={
+						<span data-type="inline-math" data-latex={latex}>
+							{latex}
+						</span>
+					}
+				>
 					<LazyInlineMathFormula latex={latex} />
 				</Suspense>
 			);
@@ -233,7 +239,13 @@ export const markdownComponents: Components = {
 		if (p["data-type"] === "block-math") {
 			const latex = String(p["data-latex"] ?? "");
 			return (
-				<Suspense fallback={<div>{latex}</div>}>
+				<Suspense
+					fallback={
+						<div data-type="block-math" data-latex={latex}>
+							{latex}
+						</div>
+					}
+				>
 					<LazyBlockMathFormula latex={latex} />
 				</Suspense>
 			);
@@ -272,6 +284,9 @@ export const markdownComponents: Components = {
 				<Suspense
 					fallback={
 						<pre
+							data-runnable="true"
+							data-source={source}
+							data-lang={lang}
 							className={cn(
 								codeScrollbar.scrollbar,
 								"my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90",

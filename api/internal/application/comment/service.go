@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rs/zerolog/log"
 
@@ -74,7 +75,9 @@ type BlockRangeDTO struct {
 	// Start 起始偏移（块内字符位，0-based）
 	Start int `json:"start"`
 	// End 结束偏移（块内字符位，exclusive）
-	End int `json:"end"`
+	End        int    `json:"end"`
+	IsAI       bool   `json:"is_ai"`
+	AuthorName string `json:"author_name"`
 }
 
 // BlockAuthorDTO 批注块上的评论者
@@ -82,6 +85,8 @@ type BlockAuthorDTO struct {
 	Name string `json:"name"`
 	// AvatarURL 空串表示未设置头像，前端回退为首字母头像
 	AvatarURL string `json:"avatar_url"`
+	// IsAI 是否由 AI 通过 MCP 发表；不代表署名已经验证
+	IsAI bool `json:"is_ai"`
 }
 
 // EmojiRef 表情映射值（emote map 的 value）。
@@ -110,10 +115,10 @@ type CommentDTO struct {
 	ParentID string `json:"parent_id,omitempty"`
 	// ReplyToName 被回复者的昵称。只有回复节点有，前端显示「回复 @yyy」用。
 	// toDTO 时查 parent 的 author_name 填进来，前端直接读不自己转换。顶层评论省略。
-	ReplyToName string           `json:"reply_to_name,omitempty"`
-	Depth       int16            `json:"depth"`
-	AuthorName  string           `json:"author_name"`
-	AvatarURL   string           `json:"avatar_url"`
+	ReplyToName string `json:"reply_to_name,omitempty"`
+	Depth       int16  `json:"depth"`
+	AuthorName  string `json:"author_name"`
+	AvatarURL   string `json:"avatar_url"`
 	// AuthorProvider 评论者第三方登录方式（头像角标）："github" / "google"；
 	// 密码注册与匿名评论省略。双绑定时 GitHub 优先（见 user.User.OAuthIdentity）。
 	AuthorProvider string `json:"author_provider,omitempty"`
@@ -130,8 +135,10 @@ type CommentDTO struct {
 	Emote map[string]EmojiRef `json:"emote,omitempty"`
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
-	IsAuthor   bool       `json:"is_author"`
-	Anchor     *AnchorDTO `json:"anchor,omitempty"`
+	IsAuthor bool `json:"is_author"`
+	// IsAI 是否由 MCP/AI agent 发表。true 时前端展示 AI 徽章与专用头像，不与真人混淆。
+	IsAI      bool       `json:"is_ai"`
+	Anchor    *AnchorDTO `json:"anchor,omitempty"`
 	Status    string     `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
 	CreatedAt string     `json:"created_at"`
 	// Replies 顶层评论下的回复预览（前 N 条）。仅顶层 DTO 带，回复节点省略。
@@ -170,6 +177,7 @@ type SitePolicy interface {
 func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
 	return &Service{commentRepo: repo, userRepo: userRepo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
 }
+
 // 黑洞模式（PRD-0001）：匿名 viewer（viewerUserID 为空字符串）直接返回空数组，
 // 看不到任何评论（含自己刚提交的）；登录 viewer 返回 approved ∪ 自己的 pending。
 //
@@ -279,11 +287,11 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 	for _, b := range blocks {
 		authors := make([]BlockAuthorDTO, 0, len(b.Authors))
 		for _, a := range b.Authors {
-			authors = append(authors, BlockAuthorDTO{Name: a.Name, AvatarURL: a.AvatarURL})
+			authors = append(authors, BlockAuthorDTO{Name: a.Name, AvatarURL: a.AvatarURL, IsAI: a.IsAI})
 		}
 		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
 		for _, r := range b.Ranges {
-			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End})
+			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI, AuthorName: r.AuthorName})
 		}
 		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors, Ranges: ranges})
 	}
@@ -541,6 +549,14 @@ type CreateInput struct {
 	// 匿名评论的 per-post 配额依赖此字段；登录评论也填（反垃圾元数据统一）。
 	IPHash    string
 	UserAgent string
+	// IsAI MCP/AI agent 发表标记。MCP create_* tool 恒 true；前台 HTTP 创建恒 false。
+	IsAI bool
+	// RequireParentAnchor 为 true 时，parent 必须是划线批注（有 anchor）；
+	// MCP create_annotation 回复路径使用，避免对自由评论回复后 silently 变成自由回复。
+	RequireParentAnchor bool
+	// RejectAnchoredParent 为 true 时，parent 不得带锚点（须为底部自由评论）。
+	// MCP create_comment 使用，避免回复批注时静默继承锚点进入批注流。
+	RejectAnchoredParent bool
 }
 
 // Create 创建评论。
@@ -569,6 +585,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		return CommentDTO{}, err
 	}
 
+	if in.IsAI {
+		in.AuthorName = strings.TrimSpace(in.AuthorName)
+		if in.AuthorName == "" {
+			in.AuthorName = "未知模型"
+		}
+		if utf8.RuneCountInString(in.AuthorName) > 100 {
+			return CommentDTO{}, shared.BadRequest("AI 署名不能超过 100 个字符")
+		}
+		in.AvatarURL = ""
+	}
 	isAnon := in.UserID == ""
 	var userIDPtr *shared.ID
 	if !isAnon {
@@ -580,6 +606,18 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		if validator, ok := s.emojiLookup.(appshared.CustomEmojiContentValidator); ok {
 			if err := validator.ValidateContent(ctx, in.Body, *userIDPtr); err != nil {
 				return CommentDTO{}, err
+			}
+		}
+		// 真人登录态缺少作者快照时从用户资料补齐；AI 自署名不读取持有人资料。
+		if !in.IsAI && in.AuthorName == "" && s.userRepo != nil {
+			u, err := s.userRepo.FindByID(ctx, *userIDPtr)
+			if err != nil {
+				return CommentDTO{}, err
+			}
+			in.AuthorName = u.Username().String()
+			in.AuthorEmail = u.Email().String()
+			if in.AvatarURL == "" {
+				in.AvatarURL = u.AvatarURL()
 			}
 		}
 	}
@@ -604,6 +642,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		AuthorURL:   in.AuthorURL,
 		AvatarURL:   in.AvatarURL,
 		Body:        in.Body,
+		IsAI:        in.IsAI,
 	})
 	if err != nil {
 		return CommentDTO{}, err
@@ -625,6 +664,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		parent, err := s.commentRepo.FindByID(ctx, parentID)
 		if err != nil {
 			return CommentDTO{}, err
+		}
+		// 跨文章回复非法：parent 必须与当前评论同属一篇文章（对齐推文评论 CreateComment）
+		if parent.PostID() != postID {
+			return CommentDTO{}, shared.BadRequest("父评论不属于该文章")
+		}
+		if in.RequireParentAnchor && parent.Anchor() == nil {
+			return CommentDTO{}, shared.BadRequest("回复批注要求父评论为划线批注（含选区锚点）")
+		}
+		if in.RejectAnchoredParent && parent.Anchor() != nil {
+			return CommentDTO{}, shared.BadRequest("自由评论不能回复划线批注；请使用 create_annotation")
 		}
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err
@@ -847,14 +896,15 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) Comme
 		ReplyToName: replyToName,
 		Depth:       c.Depth(), AuthorName: c.AuthorName(),
 		AvatarURL: c.AvatarURL(), Body: c.Body(),
-		Pictures: c.Pictures(), Status: c.Status(),
+		Pictures: c.Pictures(), Status: c.Status(), IsAI: c.IsAI(),
 		CreatedAt: c.CreatedAt().Format(time.RFC3339),
 	}
 	if c.ParentID() != nil {
 		dto.ParentID = c.ParentID().String()
 	}
 	// is_author：仅当提供了 postAuthorID 且评论者登录态（created_by 非空）且二者相等时为 true
-	if postAuthorID != nil && c.UserID() != nil && *c.UserID() == *postAuthorID {
+	// AI 评论即便由作者 PAT 发表也不算作者本人（无皇冠/高亮）。
+	if !c.IsAI() && postAuthorID != nil && c.UserID() != nil && *c.UserID() == *postAuthorID {
 		dto.IsAuthor = true
 	}
 	// anchor：批注才有，转成 DTO 形态（snake_case）
@@ -953,6 +1003,7 @@ type authorIdent struct{ provider, profileURL, username string }
 //   - 活跃作者：填 AuthorProvider/AuthorProfileURL（角标）与 AuthorUsername，快照名照常
 //   - 已注销作者：覆盖快照为「已注销用户」占位（名字占位、头像清空、无角标），
 //     其被回复引用（reply_to_name）同样替换
+//
 // 匿名评论（user_id 空）不填。userRepo 未注入（测试）时跳过。
 func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, comments []*domain.Comment) error {
 	if s.userRepo == nil || len(dtos) == 0 || len(comments) == 0 {
@@ -992,7 +1043,11 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 	authorDeleted := make(map[string]bool, len(comments))
 	parentAuthorDeleted := make(map[string]bool, len(comments))
 	authorIDByComment := make(map[string]string, len(comments))
+	aiComment := make(map[string]bool, len(comments))
 	for _, c := range comments {
+		if c.IsAI() {
+			aiComment[c.ID().String()] = true
+		}
 		if c.UserID() != nil {
 			authorIDByComment[c.ID().String()] = c.UserID().String()
 		}
@@ -1002,7 +1057,8 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 			authorDeleted[c.ID().String()] = true
 		}
 		if c.ParentID() != nil {
-			if puid, ok := authorIDByComment[c.ParentID().String()]; ok && deletedByUser[puid] {
+			// AI 被回复者保留署名，不随 PAT 持有人注销改名。
+			if puid, ok := authorIDByComment[c.ParentID().String()]; ok && deletedByUser[puid] && !aiComment[c.ParentID().String()] {
 				parentAuthorDeleted[c.ID().String()] = true
 			}
 		}
@@ -1017,7 +1073,13 @@ func (s *Service) enrichOAuthIdentities(ctx context.Context, dtos []CommentDTO, 
 		}
 	}
 	fill := func(d *CommentDTO) {
-		if authorDeleted[d.ID] {
+		if d.IsAI {
+			// AI 评论保留自署名快照，即使 PAT 持有人已软删也不改名，
+			// 且不挂 GitHub/Google 角标与站内主页链接，避免看起来像真人留言。
+			d.AuthorProvider = ""
+			d.AuthorProfileURL = ""
+			d.AuthorUsername = ""
+		} else if authorDeleted[d.ID] {
 			d.AuthorName = DeletedUserName
 			d.AvatarURL = ""
 			d.AuthorProvider = ""

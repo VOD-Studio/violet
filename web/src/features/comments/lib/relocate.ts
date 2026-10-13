@@ -44,6 +44,11 @@ export type RelocateResult =
 export interface CandidateBlock {
 	id: string;
 	text: string;
+	/**
+	 * 旧口径 hash：块 el.textContent（含 KaTeX 渲染文本）的 SHA-256[:8]。
+	 * 与 id（carrier / data-latex 口径）不同时填入，供历史公式批注回退匹配。
+	 */
+	legacyId?: string;
 }
 
 /**
@@ -61,9 +66,26 @@ export async function relocate(anchor: Anchor, blocks: CandidateBlock[]): Promis
 	// anchor.blockTextHash 是创建时块的 hash；现在重新算每个候选块的 hash，找匹配。
 	// 注：候选块的 id 是「运行时块 hash」，anchor.blockTextHash 是「创建时块 hash」；
 	// 二者匹配说明该块未改 → 直接用 anchor 的 offset。
+	// legacyId：历史公式批注按 textContent（KaTeX）hash；命中后在现行 text 上按 selectedText 落点。
 	for (const block of blocks) {
-		if (block.id === anchor.blockTextHash) {
-			// hash 匹配：offset 直接复用（截断到当前块长度防越界）
+		const legacyHit =
+			block.legacyId !== undefined &&
+			block.legacyId === anchor.blockTextHash &&
+			block.legacyId !== block.id;
+		if (block.id === anchor.blockTextHash || legacyHit) {
+			if (legacyHit) {
+				const hit = fuzzyFind(anchor.selectedText, block.text);
+				if (hit !== null) {
+					return {
+						kind: "located",
+						blockId: block.id,
+						startOffset: hit.start,
+						endOffset: hit.end,
+						selectedText: block.text.slice(hit.start, hit.end),
+						fuzzy: false,
+					};
+				}
+			}
 			const len = block.text.length;
 			const start = Math.max(0, Math.min(anchor.startOffset, len));
 			const end = Math.max(start + 1, Math.min(anchor.endOffset, len));
@@ -101,9 +123,9 @@ export async function relocate(anchor: Anchor, blocks: CandidateBlock[]): Promis
 
 /** orderBlocksForFuzzy 把 anchor.blockId 对应的块排在最前（如果存在）。 */
 function orderBlocksForFuzzy(anchor: Anchor, blocks: CandidateBlock[]): CandidateBlock[] {
-	const preferred = blocks.find((b) => b.id === anchor.blockId);
+	const preferred = blocks.find((b) => b.id === anchor.blockId || b.legacyId === anchor.blockId);
 	if (preferred) {
-		return [preferred, ...blocks.filter((b) => b.id !== anchor.blockId)];
+		return [preferred, ...blocks.filter((b) => b.id !== preferred.id)];
 	}
 	return blocks;
 }

@@ -1,13 +1,12 @@
 import type { AdminComment } from "@entities/comment/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
-import { avatarUrl } from "@shared/lib/image-url";
-import { EmojiText } from "@shared/ui/emoji-text";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
 import { HomeContentLink } from "./HomeContentLink";
+import { HomeMissives } from "./HomeMissives";
 import { HOME_KIND_LABEL } from "./home-content";
 import type { HomePublicationItem } from "./types";
 
@@ -241,98 +240,7 @@ export function HomeIndex({
 
 					<hr className="my-8 border-0 border-t border-border/40" />
 
-					<div>
-						<div className="mb-5">
-							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-								MISSIVES
-							</p>
-							<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
-								尺素
-							</h2>
-						</div>
-
-						{missivesLoading ? (
-							<article
-								aria-live="polite"
-								className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground"
-							>
-								<p>正在收拢来信…</p>
-							</article>
-						) : missives.length > 0 ? (
-							<div className="space-y-5">
-								{missives.map((comment, index) => (
-									<article
-										key={comment.id}
-										className={
-											index === 0
-												? "relative pl-6"
-												: "relative border-t border-border/25 pt-4 pl-6"
-										}
-									>
-										<span
-											aria-hidden
-											className={`absolute left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none ${
-												index === 0 ? "-top-3" : "top-1"
-											}`}
-										>
-											“
-										</span>
-										<p className="line-clamp-3 text-xs leading-relaxed text-foreground/80">
-											<EmojiText text={comment.body} emote={comment.emote} />
-										</p>
-										<p className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground/75">
-											<span aria-hidden>—</span>
-											{comment.avatar_url ? (
-												<img
-													src={avatarUrl(comment.avatar_url)}
-													alt=""
-													className="size-4 shrink-0 rounded-full object-cover"
-													loading="lazy"
-												/>
-											) : (
-												<span
-													aria-hidden
-													className="flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground"
-												>
-													{comment.author_name.slice(0, 1).toUpperCase()}
-												</span>
-											)}
-											<span className="min-w-0 truncate">
-												{comment.author_name}
-												{comment.post_slug ? (
-													<>
-														{" · "}
-														<Link
-															to="/blog/$slug"
-															params={{ slug: comment.post_slug }}
-															className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-														>
-															《{comment.post_title}》
-														</Link>
-													</>
-												) : null}
-											</span>
-										</p>
-									</article>
-								))}
-							</div>
-						) : (
-							<article className="relative pl-6">
-								<span
-									aria-hidden
-									className="absolute -top-3 left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none"
-								>
-									“
-								</span>
-								<p className="text-xs leading-relaxed text-foreground/80">
-									一纸相闻，落笔为记。欢迎通过邮件，或在文章与推文下方留言。
-								</p>
-								<p className="mt-2 text-right text-[11px] text-muted-foreground/75">
-									— 站长回笺
-								</p>
-							</article>
-						)}
-					</div>
+					<HomeMissives missives={missives} isLoading={missivesLoading} />
 				</motion.div>
 			</div>
 		</section>

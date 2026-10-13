@@ -9,7 +9,7 @@
 	gap: 4px;
 }
 .v-tweet__photos[data-count="1"] {
-	grid-template-columns: minmax(0, 1fr);
+	display: flex;
 }
 .v-tweet__photos[data-count="3"] > :first-child {
 	grid-row: span 2;
@@ -26,8 +26,15 @@
 	background: var(--_tweet-soft);
 	color: var(--_tweet-muted);
 }
-.v-tweet__photos[data-count="1"] .v-tweet__photo {
+/* 单图按自身比例左对齐，窄图不拉伸、不居中，圆角落在图片本身。 */
+.v-tweet .v-tweet__photos[data-count="1"] .v-tweet__photo {
+	display: block;
+	width: fit-content;
+	max-width: 100%;
+	min-height: 0;
 	aspect-ratio: auto;
+	border-radius: 12px;
+	background: none;
 }
 .v-tweet__photos[data-count="3"] .v-tweet__photo:first-child {
 	aspect-ratio: auto;
@@ -39,9 +46,12 @@
 	margin: 0;
 	object-fit: cover;
 }
-.v-tweet__photos[data-count="1"] .v-tweet__photo img {
+.v-tweet .v-tweet__photos[data-count="1"] .v-tweet__photo img {
+	width: auto;
+	max-width: 100%;
 	height: auto;
 	max-height: 520px;
+	border-radius: 12px;
 	object-fit: contain;
 }
 /* 竖图为主的照片组：同高卡片横向滚动，宽度由各自宽高比决定。 */
@@ -58,6 +68,8 @@
 	overflow-x: auto;
 	overscroll-behavior-x: contain;
 	scroll-snap-type: x proximity;
+	/* 吸附后左侧露出上一张的边缘，提示可以回滑。 */
+	scroll-padding-inline: 24px;
 	scrollbar-width: none;
 	border-radius: 12px;
 }
@@ -68,15 +80,29 @@
 	outline: 2px solid var(--_tweet-accent);
 	outline-offset: 2px;
 }
-.v-tweet .v-tweet__rail .v-tweet__photo {
+.v-tweet .v-tweet__rail .v-tweet__photo,
+.v-tweet .v-tweet__rail .v-tweet__rail-item {
 	/* 放得下时卡片按比例分摊余量撑满整行，略微裁切；放不下时保持自然宽度并滚动。 */
+	position: relative;
 	flex: 1 0 auto;
+	overflow: hidden;
 	min-height: 0;
 	height: var(--_rail-height);
-	max-width: 100%;
+	/* 横图同样限宽裁切，保证始终露出下一张。 */
+	max-width: 80%;
 	aspect-ratio: var(--_photo-ratio, 1);
 	border-radius: 12px;
 	scroll-snap-align: start;
+}
+/*
+ * 视频与 GIF 轮播按 X 的比例：高约为内容宽的 0.675，上限 384px；
+ * 卡片宽不超过高的 1.18 倍与整行的 80%，横图裁切并露出相邻卡片。
+ */
+.v-tweet__photo-group:has(.v-tweet__video, .v-tweet__video-fallback) .v-tweet__rail {
+	--_rail-height: clamp(200px, 67.5cqw, 384px);
+}
+.v-tweet__photo-group:has(.v-tweet__video, .v-tweet__video-fallback) .v-tweet__rail-item {
+	max-width: min(80%, calc(var(--_rail-height) * 1.18));
 }
 .v-tweet__rail-button {
 	position: absolute;
@@ -138,27 +164,146 @@
 }
 .v-tweet .v-tweet__video {
 	display: block;
-	width: 100%;
+	width: auto;
+	max-width: 100%;
+	height: auto;
 	max-height: 520px;
-	border-radius: 8px;
+	border-radius: 12px;
 	background: #000;
 }
+.v-tweet__gif,
+.v-tweet__player {
+	position: relative;
+	width: fit-content;
+	max-width: 100%;
+	border-radius: 12px;
+}
+.v-tweet .v-tweet__video[data-kind="animated_gif"] {
+	cursor: pointer;
+}
+.v-tweet__gif-badge,
+.v-tweet__duration {
+	position: absolute;
+	inset-block-end: 8px;
+	inset-inline-start: 8px;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 4px;
+	background: color-mix(in oklab, #000 62%, transparent);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	pointer-events: none;
+}
+.v-tweet__gif-badge path {
+	fill: currentColor;
+}
+/* 播放前整块封面可点，点击后交给原生控件。 */
+.v-tweet__play-button {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 0;
+	border-radius: inherit;
+	background: transparent;
+	color: #fff;
+	cursor: pointer;
+}
+.v-tweet__play-button::before {
+	content: "";
+	grid-area: 1 / 1;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	background: color-mix(in oklab, #000 62%, transparent);
+	transition: background-color 140ms ease;
+}
+.v-tweet__play-button:hover::before {
+	background: color-mix(in oklab, #000 78%, transparent);
+}
+.v-tweet__play-button svg {
+	grid-area: 1 / 1;
+	translate: 2px 0;
+}
+.v-tweet__play-button path {
+	fill: currentColor;
+}
+/* 滚动条卡片会裁切溢出，聚焦环画在内侧。 */
+.v-tweet__play-button:focus-visible {
+	outline: 2px solid var(--_tweet-accent);
+	outline-offset: -4px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.v-tweet__play-button::before {
+		transition: none;
+	}
+}
+/* 缺少播放源的封面：与单图一致左对齐，「在 X 查看」作为角标叠在封面上。 */
 .v-tweet__video-fallback {
+	display: flex;
+}
+.v-tweet .v-tweet__video-fallback a {
+	position: relative;
+	display: block;
+	width: fit-content;
+	max-width: 100%;
 	overflow: hidden;
-	border-radius: 8px;
+	border-radius: 12px;
 	background: var(--_tweet-soft);
 }
 .v-tweet .v-tweet__video-fallback img {
 	display: block;
-	width: 100%;
-	max-height: 400px;
+	width: auto;
+	max-width: 100%;
+	height: auto;
+	max-height: 520px;
 	margin: 0;
 	object-fit: contain;
 }
 .v-tweet__media-link {
-	display: block;
-	padding: 10px 12px;
-	font-size: 13px;
+	position: absolute;
+	inset-block-end: 8px;
+	inset-inline-start: 8px;
+	padding: 2px 10px;
+	border-radius: 9999px;
+	background: color-mix(in oklab, #000 62%, transparent);
+	color: #fff;
+	font-size: 12px;
+}
+/* 已知宽高的单个视频、GIF 与封面：按比例预留尺寸，高不超过 520px，宽不超过整行。 */
+.v-tweet__gif[data-sized],
+.v-tweet__player[data-sized],
+.v-tweet .v-tweet__video-fallback[data-sized] a {
+	width: min(100%, calc(520px * var(--_media-ratio)));
+	aspect-ratio: var(--_media-ratio);
+}
+.v-tweet__gif[data-sized] > .v-tweet__video,
+.v-tweet__player[data-sized] > .v-tweet__video,
+.v-tweet .v-tweet__video-fallback[data-sized] img {
+	width: 100%;
+	height: 100%;
+	max-height: none;
+	object-fit: cover;
+}
+/* 滚动条里的视频卡片：封面或画面铺满卡片。 */
+.v-tweet .v-tweet__rail-item > .v-tweet__gif,
+.v-tweet .v-tweet__rail-item > .v-tweet__gif > .v-tweet__video,
+.v-tweet .v-tweet__rail-item > .v-tweet__player,
+.v-tweet .v-tweet__rail-item > .v-tweet__player > .v-tweet__video,
+.v-tweet .v-tweet__rail-item > .v-tweet__video,
+.v-tweet .v-tweet__rail-item > .v-tweet__video-fallback,
+.v-tweet .v-tweet__rail-item > .v-tweet__video-fallback a,
+.v-tweet .v-tweet__rail-item > .v-tweet__video-fallback img {
+	width: 100%;
+	max-width: none;
+	height: 100%;
+	max-height: none;
+	border-radius: inherit;
+	object-fit: cover;
 }
 
 /* 引用卡片：右侧固定大小的方形缩略图，卡片高度由文字决定。 */

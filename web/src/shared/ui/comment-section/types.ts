@@ -84,6 +84,12 @@ export interface CommentSectionConfig<T extends CommentRaw = CommentRaw> {
 	}) => ReactNode;
 	/** 正文插槽（文章 EmojiText+图片；缺省渲染纯文本） */
 	renderBody?: (item: CommentDisplayItem<T>) => ReactNode;
+	/** 作者名插槽；返回 undefined 时保留默认昵称与主页链接。 */
+	renderAuthorName?: (item: CommentDisplayItem<T>) => ReactNode;
+	/** 头像插槽；返回 undefined 时保留默认头像与第三方登录角标。 */
+	renderAvatar?: (item: CommentDisplayItem<T>, opts: { size: "md" | "sm" }) => ReactNode;
+	/** 标题行额外徽章（文章 AI 身份等 feature 专属；shared 不感知业务语义） */
+	renderMetaBadges?: (item: CommentDisplayItem<T>) => ReactNode;
 	/** 操作插槽（文章 ReactionBar；推文删除按钮） */
 	renderActions?: (item: CommentDisplayItem<T>) => ReactNode;
 	/** 回复表单插槽（点「回复」后内联展开；提交成功后调用 onSuccess(raw)） */

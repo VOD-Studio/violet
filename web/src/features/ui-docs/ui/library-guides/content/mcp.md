@@ -7,7 +7,7 @@
 | Server | 能力 | 鉴权 |
 | --- | --- | --- |
 | `violet-reader` | 读取已发布文章与写作风格指南 | 匿名 |
-| `violet-comments` | 检索已审核的读者评论与划线批注 | PAT（`comments:read`） |
+| `violet-comments` | 检索/发表评论、划线批注与段评（AI 身份） | PAT（`comments:read` / `comments:write`） |
 | `violet-posts` | 当前用户名下文章的读写、发布、标签与检索 | PAT（`posts:read/write/publish`） |
 | `violet-scraper` | 抓取外站文章、管理 RSS 订阅 | PAT（`posts:scrape` / `subscriptions:*`） |
 | `violet-notes` | 会话知识笔记的写入与检索 | PAT（`notes:read/write/publish`） |

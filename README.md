@@ -31,7 +31,7 @@
 - **平台能力**：RBAC 角色权限（内置超管 + 委派超管）、登录态审计、操作日志（事件驱动 append-only）、用户/媒体/订阅管理
 - **系统面板**：数据库与服务器状态、受控 SQL 控制台、流式数据导出、手动及定时备份与数据库恢复
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
-- **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
+- **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/RSS 抓取/评论检索与 AI 自署名发表，支持正文块发现、段落批注和划线批注，最小权限拆分）
 - **violet/ui 组件库**：`@violet/ui` 以组件清单管理公开入口与成熟度，基础单元共用 BEM CSS；`/ui` 提供安装、主题、组件 API 与同源交互示例，包内规范和真实 tarball 消费验证支持独立使用（尚未发布 npm）
 - **原生推文组件**：文章引用与推文页面共用独立的 [`@violetjs/react-tweet`](web/packages/react-tweet/README.md)；使用与开发说明见包内文档（尚未发布 npm）
 - **手绘绘图库**：[`@violetjs/inkline`](web/packages/inkline/README.md) 以手法、笔与填充组合生成手绘矢量图，提供压感笔、线稿淡彩风格、七种填充与淡彩、整图绘制动画与 SVG/Canvas 双后端；文章 Mermaid 图块以 G 笔草稿手法经它渲染

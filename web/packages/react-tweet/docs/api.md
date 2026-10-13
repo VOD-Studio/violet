@@ -108,6 +108,7 @@ Every field is a `string`. Supply `Partial<TweetMessages>` for overrides or a co
 | `video` | Native video player label. |
 | `animation` | Native animation player label. |
 | `viewVideo` | Video source link / playback fallback. |
+| `playVideo` | Video play button label, followed by the video name. |
 | `replies` | Reply metric label; `{count}`. |
 | `reposts` | Repost metric label; `{count}`. |
 | `likes` | Like metric label; `{count}`. |
