@@ -369,6 +369,8 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth, middleware.RateLimitByUser("x-preview-minute", d.Redis, time.Minute, 5), middleware.RateLimitByUser("x-preview-day", d.Redis, 24*time.Hour, 50)).Post("/external/preview", tweetH.PreviewExternal)
 		r.With(d.SessionAuth).Delete("/external/{externalId}", tweetH.WithdrawExternal)
 		r.With(d.SessionAuth, middleware.RateLimitByUser("x-refresh", d.Redis, time.Minute, 5)).Post("/external/{externalId}/refresh", tweetH.RefreshExternal)
+		// 拖动进度会产生连续 Range 请求，限额按单 IP 放宽。
+		r.With(middleware.RateLimit("x-video", d.Redis, time.Minute, 600)).Get("/external/{externalId}/media/{index}/video", tweetH.ExternalVideo)
 		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
 		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
 		r.With(d.OptionalAuth).Get("/topics/{tag}", tweetH.ListByTopic)

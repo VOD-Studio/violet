@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,6 +46,7 @@ type ExternalService struct {
 	fetcher  ExternalFetcher
 	media    ExternalMediaStore
 	previews ExternalPreviewStore
+	videos   ExternalVideoSource
 	group    singleflight.Group
 	slots    chan struct{}
 	now      func() time.Time
@@ -52,6 +54,36 @@ type ExternalService struct {
 
 func NewExternalService(repo domaintweet.ExternalRepository, fetcher ExternalFetcher, media ExternalMediaStore, previews ExternalPreviewStore) *ExternalService {
 	return &ExternalService{repo: repo, fetcher: fetcher, media: media, previews: previews, slots: make(chan struct{}, 4), now: time.Now}
+}
+
+// WithVideoSource 注入视频代理上游；未注入时视频接口一律返回不存在。
+func (s *ExternalService) WithVideoSource(videos ExternalVideoSource) *ExternalService {
+	s.videos = videos
+	return s
+}
+
+// OpenVideo 打开快照中第 index 个媒体的播放源，只代理快照记录的地址。
+func (s *ExternalService) OpenVideo(ctx context.Context, id string, index int, byteRange string) (*ExternalVideoStream, error) {
+	idValue, err := shared.ParseID(id)
+	if err != nil {
+		return nil, shared.BadRequest("非法的原文 ID")
+	}
+	if s.videos == nil {
+		return nil, shared.NotFound("视频")
+	}
+	ext, err := s.repo.FindByID(ctx, idValue)
+	if err != nil {
+		return nil, err
+	}
+	if ext.TakenDown || ext.Availability != domaintweet.ExternalAvailable || ext.Snapshot == nil ||
+		index < 0 || index >= len(ext.Snapshot.Media) || ext.Snapshot.Media[index].VideoURL == "" {
+		return nil, shared.NotFound("视频")
+	}
+	stream, err := s.videos.Open(ctx, ext.Snapshot.Media[index].VideoURL, byteRange)
+	if err != nil {
+		return nil, shared.NewError("EXTERNAL_TEMPORARY", "视频暂时无法加载，请在 X 查看")
+	}
+	return stream, nil
 }
 
 func (s *ExternalService) Preview(ctx context.Context, userID, rawURL string) (ExternalPreviewDTO, error) {
@@ -416,6 +448,17 @@ func (s *Service) WithdrawExternal(ctx context.Context, id string) error {
 		return err
 	}
 	return s.external.withdraw(ctx, idValue, domaintweet.ExternalUnavailable)
+}
+
+func (s *Service) OpenExternalVideo(ctx context.Context, id, index, byteRange string) (*ExternalVideoStream, error) {
+	position, err := strconv.Atoi(index)
+	if err != nil {
+		return nil, shared.BadRequest("非法的媒体序号")
+	}
+	if s.external == nil {
+		return nil, shared.NotFound("视频")
+	}
+	return s.external.OpenVideo(ctx, id, position, byteRange)
 }
 
 func (s *Service) RefreshExternal(ctx context.Context, id string) (ExternalTweetDTO, error) {

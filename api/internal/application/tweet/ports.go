@@ -2,6 +2,7 @@ package tweet
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"blog-api/internal/domain/shared"
@@ -52,6 +53,23 @@ type ExternalMediaStore interface {
 	DeleteVersion(context.Context, string, string) error
 	DeleteAll(context.Context, string) error
 	Sweep(context.Context, map[string]string, time.Time) error
+}
+
+// ExternalVideoStream 上游视频响应，调用方负责关闭 Body。
+type ExternalVideoStream struct {
+	// Status 200、206 或 416。
+	Status        int
+	ContentType   string
+	ContentLength string
+	ContentRange  string
+	ETag          string
+	LastModified  string
+	Body          io.ReadCloser
+}
+
+// ExternalVideoSource 以不带 Referer 的请求打开 X 视频播放源，透传单段 Range。
+type ExternalVideoSource interface {
+	Open(ctx context.Context, url, byteRange string) (*ExternalVideoStream, error)
 }
 
 type ExternalPreviewStore interface {

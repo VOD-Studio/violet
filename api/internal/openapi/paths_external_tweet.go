@@ -46,6 +46,25 @@ func registerExternalTweetPaths(t *openapi3.T) {
 		Description: "需 tweet:delete-any 或内置超管权限；临时失败保留有效快照，明确删除或私密状态撤回全部展示。",
 		Responses:   responses(200, dataResponse("ExternalTweetDTO", "当前原文", 200), 400, errorResponse("数据源或媒体暂时失败"), 403, errorResponse("无权刷新"), 404, errorResponse("原文不存在")),
 	})
+	videoResponse := func(desc string) *openapi3.ResponseRef {
+		return &openapi3.ResponseRef{Value: &openapi3.Response{
+			Description: strPtr(desc),
+			Content: openapi3.Content{
+				"video/mp4": {Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{
+					Type: &openapi3.Types{openapi3.TypeString}, Format: "binary",
+				}}},
+			},
+		}}
+	}
+	get(t, "/tweets/external/{externalId}/media/{index}/video", &openapi3.Operation{
+		Tags: []string{"推文"}, Summary: "播放共享 X 原文的视频或 GIF",
+		Parameters:  openapi3.Parameters{pathStrParam("externalId", "共享原文 UUID"), pathStrParam("index", "快照 media 数组中的序号，从 0 开始")},
+		Description: "公开。video.twimg.com 拒绝站外 Referer，服务端以无 Referer 请求代理快照记录的 video_url，透传单段 Range，不落盘。每 IP 每分钟 600 次。",
+		Responses: responses(
+			200, videoResponse("完整视频"), 206, videoResponse("Range 片段"),
+			400, errorResponse("非法 ID 或序号 / EXTERNAL_TEMPORARY 上游暂时不可用"), 404, errorResponse("原文不可用或该媒体没有播放源"), 429, errorResponse("请求过于频繁"),
+		),
+	})
 	del(t, "/tweets/external/{externalId}", &openapi3.Operation{
 		Tags: []string{"推文"}, Summary: "主动下架共享 X 原文", Security: securityCookie(), Parameters: openapi3.Parameters{pathStrParam("externalId", "共享原文 UUID"), csrfHeaderParam()},
 		Description: "需 tweet:delete-any 或内置超管权限；撤回正文和所有版本媒体，保留各条本站转发与讨论，阻止自动重新导入。",
