@@ -2,7 +2,7 @@
 
 All notable changes to `@violetjs/react-tweet` are documented here. Versions follow [Semantic Versioning](https://semver.org/); before 1.0.0, a minor version may include breaking changes.
 
-## 0.2.0 - Unreleased
+## 0.2.0 - 2026-10-13
 
 ### Added
 
