@@ -4,7 +4,28 @@
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Action".
  */
-export type Action = "feed" | "rest" | "play" | "heal" | "wait";
+export type Action =
+  | ("feed" | "rest" | "play" | "heal" | "wait")
+  | {
+      evolve: {
+        branch: Branch;
+      };
+    };
+/**
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Branch".
+ */
+export type Branch = ("curious" | "gentle" | "steady" | "sage" | "guardian" | "wanderer") | "radiant";
+/**
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Stage".
+ */
+export type Stage = "baby" | "young" | "adult";
+/**
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "MissingKind".
+ */
+export type MissingKind = "level" | "curious" | "affection" | "calm" | "topic" | "topic_variety" | "food";
 /**
  * 业务错误分类。调用方按此分支处理,`message` 仅供人读。
  *
@@ -12,7 +33,16 @@ export type Action = "feed" | "rest" | "play" | "heal" | "wait";
  * via the `definition` "ErrorCode".
  */
 export type ErrorCode =
-  "bad_input" | "dead" | "no_food" | "no_medicine" | "not_sick" | "too_tired" | "time_backwards" | "unsupported_rules";
+  | "bad_input"
+  | "dead"
+  | "no_food"
+  | "no_medicine"
+  | "not_sick"
+  | "too_tired"
+  | "time_backwards"
+  | "unsupported_rules"
+  | "not_eligible"
+  | "invalid_reward";
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Charset".
@@ -27,6 +57,17 @@ export type Charset = "ascii" | "unicode";
 export type Command =
   | {
       op: "capabilities";
+    }
+  | {
+      now: string;
+      op: "grant";
+      pet: Pet;
+      request_id: string;
+      reward: Reward;
+    }
+  | {
+      op: "evolution_options";
+      pet: Pet;
     }
   | (BirthInput & {
       op: "birth";
@@ -51,6 +92,13 @@ export type Command =
  * via the `definition` "Pose".
  */
 export type Pose = "idle" | "sick" | "sleep";
+/**
+ * 短期情绪,由身体状态派生,不存储,所以不会成为永久状态。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Mood".
+ */
+export type Mood = "sick" | "hungry" | "tired" | "happy" | "content";
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Phase".
@@ -95,6 +143,7 @@ export interface Pet {
    */
   energy_rem?: number;
   food: number;
+  growth?: Growth;
   id: string;
   last_request: string;
   last_tick: string;
@@ -112,6 +161,63 @@ export interface Pet {
    * 饱食衰减的余数刻度,保证结算频率不影响总衰减量。
    */
   satiety_rem?: number;
+}
+/**
+ * 成长状态:经验、阶段、性格、主题倾向。缺省为初始值,兼容没有该字段的旧存档。
+ */
+export interface Growth {
+  /**
+   * 后天罕见形态:0 无,1 为 Radiant。与出生稀有度无关,出生档位不变。
+   */
+  acquired_rarity: number;
+  /**
+   * 出生底色,由基因决定,创建后不变。当前性格最多偏离底色 +200。
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  base_traits: [number, number, number];
+  /**
+   * 性格漂移预算所属的天(逻辑时间 / 1440)。
+   */
+  drift_day: string;
+  /**
+   * 当天各维度已使用的漂移点数。
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  drift_used: [number, number, number];
+  /**
+   * 累计经验,至多 1500。
+   */
+  exp: number;
+  /**
+   * 已选择的进化分支,按发生顺序。出生身份与基因不随进化改变。
+   */
+  lineage: Branch[];
+  stage: Stage;
+  /**
+   * 主题倾向,至多 8 项。
+   */
+  topics: TopicCount[];
+  /**
+   * 当前性格:好奇、亲和、沉稳,各 0 到 1000。
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  traits: [number, number, number];
+}
+/**
+ * 主题倾向:接入方映射后的主题标签及累计次数。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "TopicCount".
+ */
+export interface TopicCount {
+  count: number;
+  topic: string;
 }
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
@@ -136,6 +242,27 @@ export interface BirthInput {
 export interface BirthResult {
   ok: boolean;
   value: Birth;
+}
+/**
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "BranchOption".
+ */
+export interface BranchOption {
+  branch: Branch;
+  eligible: boolean;
+  missing: Missing[];
+  to_stage: Stage;
+}
+/**
+ * 未满足的进化条件:还差多少。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Missing".
+ */
+export interface Missing {
+  have: number;
+  kind: MissingKind;
+  need: number;
 }
 /**
  * 一项可调用能力。能力发现、CLI 帮助与文档都由这张表产出,新增命令必须在此登记。
@@ -211,6 +338,30 @@ export interface Context {
   world: string;
 }
 /**
+ * 经服务裁决后发放的奖励。核心只校验单次上限,不决定谁有资格(见 ADR-0021)。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Reward".
+ */
+export interface Reward {
+  /**
+   * 经验,单次至多 100。
+   */
+  exp: number;
+  /**
+   * 食物,单次至多 10。
+   */
+  food: number;
+  /**
+   * 药品,单次至多 3。
+   */
+  medicine: number;
+  /**
+   * 接入方映射后的主题标签,至多 32 字节;缺省则不记录主题。
+   */
+  topic?: string | null;
+}
+/**
  * 帧合成输入:投影字段 + 呈现时钟。呈现时钟只影响动作相位,不影响任何养成结果。
  *
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
@@ -242,6 +393,25 @@ export interface ErrorBody {
 }
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "EvolutionOptions".
+ */
+export interface EvolutionOptions {
+  level: number;
+  options: BranchOption[];
+  stage: Stage;
+}
+/**
+ * 成功响应信封。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "EvolutionOptionsResult".
+ */
+export interface EvolutionOptionsResult {
+  ok: boolean;
+  value: EvolutionOptions;
+}
+/**
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Frame".
  */
 export interface Frame {
@@ -264,10 +434,61 @@ export interface FrameResult {
   value: Frame;
 }
 /**
+ * 成长状态。所有字段有默认值,保证没有该结构的旧存档仍可加载。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Growth".
+ */
+export interface Growth1 {
+  /**
+   * 后天罕见形态:0 无,1 为 Radiant。与出生稀有度无关,出生档位不变。
+   */
+  acquired_rarity: number;
+  /**
+   * 出生底色,由基因决定,创建后不变。当前性格最多偏离底色 +200。
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  base_traits: [number, number, number];
+  /**
+   * 性格漂移预算所属的天(逻辑时间 / 1440)。
+   */
+  drift_day: string;
+  /**
+   * 当天各维度已使用的漂移点数。
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  drift_used: [number, number, number];
+  /**
+   * 累计经验,至多 1500。
+   */
+  exp: number;
+  /**
+   * 已选择的进化分支,按发生顺序。出生身份与基因不随进化改变。
+   */
+  lineage: Branch[];
+  stage: Stage;
+  /**
+   * 主题倾向,至多 8 项。
+   */
+  topics: TopicCount[];
+  /**
+   * 当前性格:好奇、亲和、沉稳,各 0 到 1000。
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  traits: [number, number, number];
+}
+/**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Outcome".
  */
 export interface Outcome {
+  mood: Mood;
   pet: Pet;
   phase: Phase;
   replayed: boolean;
@@ -297,7 +518,9 @@ export interface OpResults {
   act: OutcomeResult;
   birth: BirthResult;
   capabilities: CapabilityCatalogResult;
+  evolution_options: EvolutionOptionsResult;
   frame: FrameResult;
+  grant: OutcomeResult;
   verify_birth: VerdictResult;
 }
 export type ResultOf<C extends Command> = OpResults[C["op"]] | ErrorBody;

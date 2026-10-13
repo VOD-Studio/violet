@@ -1,4 +1,5 @@
 use crate::codec::{u64_string, ErrorCode};
+use crate::growth::{self, Branch, Growth, MAX_TOPIC_LEN, AFFECTION, CALM, CURIOUS};
 use crate::RULES_VERSION;
 use alloc::string::String;
 use serde::{Deserialize, Serialize};
@@ -52,6 +53,9 @@ pub struct Pet {
     #[cfg_attr(feature = "schema", schemars(with = "String"))]
     pub last_tick: u64,
     pub last_request: String,
+    /// 成长状态:经验、阶段、性格、主题倾向。缺省为初始值,兼容没有该字段的旧存档。
+    #[serde(default)]
+    pub growth: Growth,
 }
 
 fn first_rules_version() -> u32 {
@@ -60,7 +64,11 @@ fn first_rules_version() -> u32 {
 
 impl Pet {
     pub fn newborn(id: String, at: u64) -> Self {
-        Self { id, rules_version: RULES_VERSION, satiety: 80, energy: 80, food: 5, medicine: 1, satiety_rem: 0, energy_rem: 0, neglect: 0, last_tick: at, last_request: String::new() }
+        Self::newborn_with(id, at, Growth::default())
+    }
+
+    pub fn newborn_with(id: String, at: u64, growth: Growth) -> Self {
+        Self { id, rules_version: RULES_VERSION, satiety: 80, energy: 80, food: 5, medicine: 1, satiety_rem: 0, energy_rem: 0, neglect: 0, last_tick: at, last_request: String::new(), growth }
     }
 
     pub fn phase(&self) -> Phase {
@@ -82,6 +90,50 @@ pub enum Action {
     Play,
     Heal,
     Wait,
+    /// 进化到指定分支。永不自动发生,需要主人选择。
+    Evolve { branch: Branch },
+}
+
+/// 短期情绪,由身体状态派生,不存储,所以不会成为永久状态。
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum Mood {
+    Sick,
+    Hungry,
+    Tired,
+    Happy,
+    Content,
+}
+
+impl Pet {
+    pub fn mood(&self) -> Mood {
+        if self.phase() == Phase::Sick {
+            Mood::Sick
+        } else if self.satiety < 20 {
+            Mood::Hungry
+        } else if self.energy < 20 {
+            Mood::Tired
+        } else if self.satiety >= 70 && self.energy >= 70 {
+            Mood::Happy
+        } else {
+            Mood::Content
+        }
+    }
+}
+
+/// 经服务裁决后发放的奖励。核心只校验单次上限,不决定谁有资格(见 ADR-0021)。
+#[derive(Clone, Debug, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct Reward {
+    /// 经验,单次至多 100。
+    pub exp: u16,
+    /// 食物,单次至多 10。
+    pub food: u8,
+    /// 药品,单次至多 3。
+    pub medicine: u8,
+    /// 接入方映射后的主题标签,至多 32 字节;缺省则不记录主题。
+    pub topic: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -89,6 +141,7 @@ pub enum Action {
 pub struct Outcome {
     pub pet: Pet,
     pub phase: Phase,
+    pub mood: Mood,
     pub replayed: bool,
 }
 
@@ -101,6 +154,8 @@ pub enum ActError {
     TooTired,
     TimeBackwards,
     UnsupportedRules,
+    NotEligible,
+    InvalidReward,
 }
 
 impl ActError {
@@ -113,6 +168,8 @@ impl ActError {
             Self::TooTired => ErrorCode::TooTired,
             Self::TimeBackwards => ErrorCode::TimeBackwards,
             Self::UnsupportedRules => ErrorCode::UnsupportedRules,
+            Self::NotEligible => ErrorCode::NotEligible,
+            Self::InvalidReward => ErrorCode::InvalidReward,
         }
     }
 
@@ -125,6 +182,8 @@ impl ActError {
             Self::TooTired => "energy too low to play",
             Self::TimeBackwards => "now is before last_tick",
             Self::UnsupportedRules => "pet was saved with a rules version this build cannot settle",
+            Self::NotEligible => "evolution conditions are not met",
+            Self::InvalidReward => "reward is outside the allowed bounds",
         }
     }
 }
@@ -164,8 +223,8 @@ fn advance(p: &mut Pet, now: u64) -> Result<(), ActError> {
 
 pub fn act(mut pet: Pet, action: Action, now: u64, request_id: &str) -> Result<Outcome, ActError> {
     if !pet.last_request.is_empty() && pet.last_request == request_id {
-        let phase = pet.phase();
-        return Ok(Outcome { pet, phase, replayed: true });
+        let (phase, mood) = (pet.phase(), pet.mood());
+        return Ok(Outcome { pet, phase, mood, replayed: true });
     }
     if pet.rules_version != RULES_VERSION {
         return Err(ActError::UnsupportedRules);
@@ -185,13 +244,20 @@ pub fn act(mut pet: Pet, action: Action, now: u64, request_id: &str) -> Result<O
             if pet.phase() != Phase::Sick {
                 pet.neglect = 0;
             }
+            pet.growth.add_exp(1);
+            pet.growth.drift(AFFECTION, 6, now);
         }
-        Action::Rest => pet.energy = (pet.energy as u16 + REST_GAIN).min(100) as u8,
+        Action::Rest => {
+            pet.energy = (pet.energy as u16 + REST_GAIN).min(100) as u8;
+            pet.growth.drift(CALM, 6, now);
+        }
         Action::Play => {
             if pet.energy < 20 {
                 return Err(ActError::TooTired);
             }
             pet.energy -= 20;
+            pet.growth.add_exp(2);
+            pet.growth.drift(CURIOUS, 6, now);
         }
         Action::Heal => {
             if pet.phase() != Phase::Sick {
@@ -202,9 +268,40 @@ pub fn act(mut pet: Pet, action: Action, now: u64, request_id: &str) -> Result<O
             }
             pet.medicine -= 1;
             pet.neglect = WARN_AT - 1;
+            pet.growth.drift(AFFECTION, 10, now);
         }
+        Action::Evolve { branch } => growth::evolve(&mut pet.growth, &mut pet.food, branch)?,
     }
     pet.last_request = request_id.into();
-    let phase = pet.phase();
-    Ok(Outcome { pet, phase, replayed: false })
+    let (phase, mood) = (pet.phase(), pet.mood());
+    Ok(Outcome { pet, phase, mood, replayed: false })
+}
+
+/// 发放奖励。与 `act` 同样先按逻辑时间结算,幂等键为 `request_id`,死亡个体拒绝。
+pub fn grant(mut pet: Pet, reward: &Reward, now: u64, request_id: &str) -> Result<Outcome, ActError> {
+    if !pet.last_request.is_empty() && pet.last_request == request_id {
+        let (phase, mood) = (pet.phase(), pet.mood());
+        return Ok(Outcome { pet, phase, mood, replayed: true });
+    }
+    if pet.rules_version != RULES_VERSION {
+        return Err(ActError::UnsupportedRules);
+    }
+    let topic_ok = reward.topic.as_deref().is_none_or(|t| !t.is_empty() && t.len() <= MAX_TOPIC_LEN);
+    if reward.exp > 100 || reward.food > 10 || reward.medicine > 3 || !topic_ok {
+        return Err(ActError::InvalidReward);
+    }
+    advance(&mut pet, now)?;
+    if pet.phase() == Phase::Dead {
+        return Err(ActError::Dead);
+    }
+    pet.growth.add_exp(reward.exp as u32);
+    pet.food = (pet.food + reward.food as u32).min(99);
+    pet.medicine = (pet.medicine + reward.medicine as u32).min(9);
+    if let Some(topic) = reward.topic.as_deref() {
+        pet.growth.add_topic(topic);
+        pet.growth.drift(CURIOUS, 4, now);
+    }
+    pet.last_request = request_id.into();
+    let (phase, mood) = (pet.phase(), pet.mood());
+    Ok(Outcome { pet, phase, mood, replayed: false })
 }

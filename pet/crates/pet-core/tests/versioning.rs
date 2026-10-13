@@ -24,6 +24,8 @@ fn golden_births_never_change() {
         assert_eq!(u64::from(b.species), e["species"].as_u64().unwrap());
         let genes: Vec<u64> = e["genes"].as_array().unwrap().iter().map(|g| g.as_u64().unwrap()).collect();
         assert_eq!(b.genes.iter().map(|g| u64::from(*g)).collect::<Vec<_>>(), genes);
+        let base: Vec<u64> = e["base_traits"].as_array().unwrap().iter().map(|g| g.as_u64().unwrap()).collect();
+        assert_eq!(b.pet.growth.base_traits.iter().map(|g| u64::from(*g)).collect::<Vec<_>>(), base);
     }
 }
 

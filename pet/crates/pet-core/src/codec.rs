@@ -31,6 +31,10 @@ pub enum ErrorCode {
     TimeBackwards,
     /// 宠物保存时的规则版本不被当前实现支持,拒绝结算而不是猜测迁移。
     UnsupportedRules,
+    /// 进化条件未满足;缺项说明用 evolution_options 查询。
+    NotEligible,
+    /// 奖励超出单次允许的范围。
+    InvalidReward,
 }
 
 /// 失败响应信封。

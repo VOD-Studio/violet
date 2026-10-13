@@ -16,7 +16,7 @@ fn main() {
             "rules_version": 1,
             "world": input.world, "request_id": input.request_id,
             "server_seed": input.server_seed, "client_seed": input.client_seed,
-            "expect": { "id": b.id, "rarity": b.rarity, "species": b.species, "genes": b.genes },
+            "expect": { "id": b.id, "rarity": b.rarity, "species": b.species, "genes": b.genes, "base_traits": b.pet.growth.base_traits },
         }));
     }
     println!("{}", serde_json::to_string_pretty(&out).unwrap());

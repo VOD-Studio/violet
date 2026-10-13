@@ -27,5 +27,10 @@ const bad2 = structuredClone(fx); bad2.certificate.client_seed = "00".repeat(32)
 out.push(exec(JSON.stringify({ op: "verify_birth", ...bad2 })));
 for (const [w, h, t, pose, cs] of [[40, 8, "0", "idle", "unicode"], [40, 8, "37", "idle", "ascii"], [20, 5, "1000003", "sick", "ascii"], [3, 2, "5", "sleep", "unicode"], [200, 60, "99", "idle", "ascii"]])
   out.push(exec(JSON.stringify({ op: "frame", species: 5, genes: [37, 1, 2, 3, 4, 5, 6, 7], pose, charset: cs, w, h, t })));
+const grantRes = exec(JSON.stringify({ op: "grant", pet, reward: { exp: 60, food: 2, medicine: 0, topic: "rust" }, now: "9000000000000000010", request_id: "g1" }));
+out.push(grantRes);
+pet = JSON.parse(grantRes).value.pet;
+out.push(exec(JSON.stringify({ op: "evolution_options", pet })));
+out.push(exec(JSON.stringify({ op: "act", pet, action: { evolve: { branch: "steady" } }, now: "9000000000000000011", request_id: "e1" })));
 out.push(exec(JSON.stringify({ op: "capabilities" })));
 console.log(out.join("\n"));

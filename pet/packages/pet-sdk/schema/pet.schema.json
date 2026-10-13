@@ -1,14 +1,39 @@
 {
   "$defs": {
     "Action": {
-      "enum": [
-        "feed",
-        "rest",
-        "play",
-        "heal",
-        "wait"
-      ],
-      "type": "string"
+      "oneOf": [
+        {
+          "enum": [
+            "feed",
+            "rest",
+            "play",
+            "heal",
+            "wait"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "description": "进化到指定分支。永不自动发生,需要主人选择。",
+          "properties": {
+            "evolve": {
+              "properties": {
+                "branch": {
+                  "$ref": "#/$defs/Branch"
+                }
+              },
+              "required": [
+                "branch"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "evolve"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "Birth": {
       "properties": {
@@ -92,6 +117,52 @@
       "required": [
         "ok",
         "value"
+      ],
+      "type": "object"
+    },
+    "Branch": {
+      "oneOf": [
+        {
+          "enum": [
+            "curious",
+            "gentle",
+            "steady",
+            "sage",
+            "guardian",
+            "wanderer"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "radiant",
+          "description": "后天罕见形态:不改变出生稀有度,只记录在 acquired_rarity。",
+          "type": "string"
+        }
+      ]
+    },
+    "BranchOption": {
+      "properties": {
+        "branch": {
+          "$ref": "#/$defs/Branch"
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "missing": {
+          "items": {
+            "$ref": "#/$defs/Missing"
+          },
+          "type": "array"
+        },
+        "to_stage": {
+          "$ref": "#/$defs/Stage"
+        }
+      },
+      "required": [
+        "branch",
+        "to_stage",
+        "eligible",
+        "missing"
       ],
       "type": "object"
     },
@@ -230,6 +301,50 @@
           },
           "required": [
             "op"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "now": {
+              "type": "string"
+            },
+            "op": {
+              "const": "grant",
+              "type": "string"
+            },
+            "pet": {
+              "$ref": "#/$defs/Pet"
+            },
+            "request_id": {
+              "type": "string"
+            },
+            "reward": {
+              "$ref": "#/$defs/Reward"
+            }
+          },
+          "required": [
+            "op",
+            "pet",
+            "reward",
+            "now",
+            "request_id"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "evolution_options",
+              "type": "string"
+            },
+            "pet": {
+              "$ref": "#/$defs/Pet"
+            }
+          },
+          "required": [
+            "op",
+            "pet"
           ],
           "type": "object"
         },
@@ -402,8 +517,59 @@
           "const": "unsupported_rules",
           "description": "宠物保存时的规则版本不被当前实现支持,拒绝结算而不是猜测迁移。",
           "type": "string"
+        },
+        {
+          "const": "not_eligible",
+          "description": "进化条件未满足;缺项说明用 evolution_options 查询。",
+          "type": "string"
+        },
+        {
+          "const": "invalid_reward",
+          "description": "奖励超出单次允许的范围。",
+          "type": "string"
         }
       ]
+    },
+    "EvolutionOptions": {
+      "properties": {
+        "level": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/BranchOption"
+          },
+          "type": "array"
+        },
+        "stage": {
+          "$ref": "#/$defs/Stage"
+        }
+      },
+      "required": [
+        "stage",
+        "level",
+        "options"
+      ],
+      "type": "object"
+    },
+    "EvolutionOptionsResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/EvolutionOptions"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
     },
     "Frame": {
       "properties": {
@@ -516,8 +682,145 @@
       ],
       "type": "object"
     },
+    "Growth": {
+      "description": "成长状态。所有字段有默认值,保证没有该结构的旧存档仍可加载。",
+      "properties": {
+        "acquired_rarity": {
+          "description": "后天罕见形态:0 无,1 为 Radiant。与出生稀有度无关,出生档位不变。",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "base_traits": {
+          "description": "出生底色,由基因决定,创建后不变。当前性格最多偏离底色 +200。",
+          "items": {
+            "format": "uint16",
+            "maximum": 65535,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "drift_day": {
+          "description": "性格漂移预算所属的天(逻辑时间 / 1440)。",
+          "type": "string"
+        },
+        "drift_used": {
+          "description": "当天各维度已使用的漂移点数。",
+          "items": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "exp": {
+          "description": "累计经验,至多 1500。",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lineage": {
+          "description": "已选择的进化分支,按发生顺序。出生身份与基因不随进化改变。",
+          "items": {
+            "$ref": "#/$defs/Branch"
+          },
+          "type": "array"
+        },
+        "stage": {
+          "$ref": "#/$defs/Stage"
+        },
+        "topics": {
+          "description": "主题倾向,至多 8 项。",
+          "items": {
+            "$ref": "#/$defs/TopicCount"
+          },
+          "type": "array"
+        },
+        "traits": {
+          "description": "当前性格:好奇、亲和、沉稳,各 0 到 1000。",
+          "items": {
+            "format": "uint16",
+            "maximum": 65535,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "exp",
+        "stage",
+        "lineage",
+        "traits",
+        "base_traits",
+        "drift_day",
+        "drift_used",
+        "acquired_rarity",
+        "topics"
+      ],
+      "type": "object"
+    },
+    "Missing": {
+      "description": "未满足的进化条件:还差多少。",
+      "properties": {
+        "have": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/MissingKind"
+        },
+        "need": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "have",
+        "need"
+      ],
+      "type": "object"
+    },
+    "MissingKind": {
+      "enum": [
+        "level",
+        "curious",
+        "affection",
+        "calm",
+        "topic",
+        "topic_variety",
+        "food"
+      ],
+      "type": "string"
+    },
+    "Mood": {
+      "description": "短期情绪,由身体状态派生,不存储,所以不会成为永久状态。",
+      "enum": [
+        "sick",
+        "hungry",
+        "tired",
+        "happy",
+        "content"
+      ],
+      "type": "string"
+    },
     "Outcome": {
       "properties": {
+        "mood": {
+          "$ref": "#/$defs/Mood"
+        },
         "pet": {
           "$ref": "#/$defs/Pet"
         },
@@ -531,6 +834,7 @@
       "required": [
         "pet",
         "phase",
+        "mood",
         "replayed"
       ],
       "type": "object"
@@ -571,6 +875,33 @@
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
+        },
+        "growth": {
+          "$ref": "#/$defs/Growth",
+          "default": {
+            "acquired_rarity": 0,
+            "base_traits": [
+              500,
+              500,
+              500
+            ],
+            "drift_day": "0",
+            "drift_used": [
+              0,
+              0,
+              0
+            ],
+            "exp": 0,
+            "lineage": [],
+            "stage": "baby",
+            "topics": [],
+            "traits": [
+              500,
+              500,
+              500
+            ]
+          },
+          "description": "成长状态:经验、阶段、性格、主题倾向。缺省为初始值,兼容没有该字段的旧存档。"
         },
         "id": {
           "type": "string"
@@ -641,6 +972,71 @@
       ],
       "type": "string"
     },
+    "Reward": {
+      "description": "经服务裁决后发放的奖励。核心只校验单次上限,不决定谁有资格(见 ADR-0021)。",
+      "properties": {
+        "exp": {
+          "description": "经验,单次至多 100。",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "food": {
+          "description": "食物,单次至多 10。",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "medicine": {
+          "description": "药品,单次至多 3。",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "topic": {
+          "description": "接入方映射后的主题标签,至多 32 字节;缺省则不记录主题。",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "exp",
+        "food",
+        "medicine"
+      ],
+      "type": "object"
+    },
+    "Stage": {
+      "enum": [
+        "baby",
+        "young",
+        "adult"
+      ],
+      "type": "string"
+    },
+    "TopicCount": {
+      "description": "主题倾向:接入方映射后的主题标签及累计次数。",
+      "properties": {
+        "count": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "topic": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic",
+        "count"
+      ],
+      "type": "object"
+    },
     "Verdict": {
       "enum": [
         "valid",
@@ -691,11 +1087,32 @@
           "not_sick",
           "too_tired",
           "time_backwards",
-          "unsupported_rules"
+          "unsupported_rules",
+          "not_eligible"
         ],
         "mutates_state": true,
         "op": "act",
         "summary": "对宠物执行喂食、休息、玩耍、治疗或等待,按逻辑时间结算病程"
+      },
+      {
+        "errors": [
+          "bad_input",
+          "dead",
+          "invalid_reward",
+          "time_backwards",
+          "unsupported_rules"
+        ],
+        "mutates_state": true,
+        "op": "grant",
+        "summary": "发放经服务裁决后的奖励(经验、食物、药品、主题倾向);核心只校验单次上限"
+      },
+      {
+        "errors": [
+          "bad_input"
+        ],
+        "mutates_state": false,
+        "op": "evolution_options",
+        "summary": "列出当前阶段的进化分支,以及每个分支的缺项说明"
       },
       {
         "errors": [
@@ -726,7 +1143,9 @@
     "act": "OutcomeResult",
     "birth": "BirthResult",
     "capabilities": "CapabilityCatalogResult",
+    "evolution_options": "EvolutionOptionsResult",
     "frame": "FrameResult",
+    "grant": "OutcomeResult",
     "verify_birth": "VerdictResult"
   }
 }

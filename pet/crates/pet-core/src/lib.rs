@@ -6,12 +6,13 @@ extern crate alloc;
 mod birth;
 mod caps;
 mod codec;
+pub mod growth;
 mod life;
 pub mod proof;
 mod rng;
 
 pub use birth::{derive_birth, Birth, BirthInput};
-pub use life::{act, Action, ActError, Outcome, Pet, Phase};
+pub use life::{act, grant, Action, ActError, Mood, Outcome, Pet, Phase, Reward};
 
 use alloc::string::String;
 use serde::Deserialize;
@@ -27,6 +28,17 @@ pub const RULES_VERSION: u32 = 1;
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Command {
     Capabilities,
+    Grant {
+        pet: Pet,
+        reward: Reward,
+        #[serde(with = "codec::u64_string")]
+        #[cfg_attr(feature = "schema", schemars(with = "String"))]
+        now: u64,
+        request_id: String,
+    },
+    EvolutionOptions {
+        pet: Pet,
+    },
     Birth(BirthInput),
     Frame(pet_term::FrameInput),
     VerifyBirth {
@@ -51,6 +63,11 @@ pub fn execute(input: &str) -> String {
             Ok(v) => codec::ok(&v),
             Err(e) => codec::error(ErrorCode::BadInput, e),
         },
+        Ok(Command::Grant { pet, reward, now, request_id }) => match grant(pet, &reward, now, &request_id) {
+            Ok(v) => codec::ok(&v),
+            Err(e) => codec::error(e.code(), e.message()),
+        },
+        Ok(Command::EvolutionOptions { pet }) => codec::ok(&growth::evolution_options(&pet.growth, pet.food)),
         Ok(Command::Capabilities) => codec::ok(&catalog()),
         Ok(Command::Frame(f)) => codec::ok(&pet_term::render(&f)),
         Ok(Command::VerifyBirth { certificate, issuer_pub }) => {

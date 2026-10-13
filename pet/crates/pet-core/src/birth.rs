@@ -1,4 +1,5 @@
 use crate::codec::{hex, u64_string, unhex};
+use crate::growth::Growth;
 use crate::life::Pet;
 use crate::rng::{hkdf, Channel};
 use crate::RULES_VERSION;
@@ -66,5 +67,5 @@ pub fn derive_birth(i: &BirthInput) -> Result<Birth, &'static str> {
     h.update(&root);
     let id = hex(&h.finalize()[..16]);
 
-    Ok(Birth { id: id.clone(), rarity, species, genes, pet: Pet::newborn(id, i.born_at) })
+    Ok(Birth { id: id.clone(), rarity, species, genes, pet: Pet::newborn_with(id, i.born_at, Growth::with_base(Growth::base_from_genes(&genes))) })
 }
