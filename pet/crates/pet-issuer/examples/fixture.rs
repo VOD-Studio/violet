@@ -1,6 +1,7 @@
 //! 生成验证场景的证书夹具(固定测试密钥,仅用于一致性测试)。
 use ed25519_dalek::SigningKey;
 use pet_core::proof::*;
+use pet_issuer::issue_certificate;
 
 fn main() {
     let key = SigningKey::from_bytes(&[7u8; 32]);

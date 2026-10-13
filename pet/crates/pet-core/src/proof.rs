@@ -1,11 +1,11 @@
 //! 出生承诺—揭示:承诺、接受收据、证书的签发与验证。
-//! 签发只给服务端与测试使用;验证器是纯函数,不读时钟、不访问网络。
+//! 本模块只含验证所需的数据结构与纯函数;签名密钥与签发在 pet-issuer,不进入核心。
 use crate::birth::{derive_birth, BirthInput};
-use crate::codec::{hex, unhex};
+use crate::codec::unhex;
 use crate::RULES_VERSION;
 use alloc::string::String;
 use alloc::vec::Vec;
-use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+use ed25519_dalek::{Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -69,48 +69,14 @@ pub struct Certificate {
     pub species: u8,
 }
 
-fn commit_msg(ctx: &Context, c: &[u8]) -> [u8; 32] {
+/// 承诺收据的待签消息。
+pub fn commit_msg(ctx: &Context, c: &[u8]) -> [u8; 32] {
     digest("pet/receipt/commit/v1", &[&ctx.bytes(), c])
 }
 
-fn accept_msg(ctx: &Context, c: &[u8], client_seed: &[u8]) -> [u8; 32] {
+/// 接受收据的待签消息。
+pub fn accept_msg(ctx: &Context, c: &[u8], client_seed: &[u8]) -> [u8; 32] {
     digest("pet/receipt/accept/v1", &[&ctx.bytes(), c, client_seed])
-}
-
-/// 第一步:服务端对承诺签名并公布。
-pub fn issue_commit(key: &SigningKey, ctx: &Context, server_seed: &[u8]) -> (String, String) {
-    let c = commitment(ctx, server_seed);
-    (hex(&c), hex(&key.sign(&commit_msg(ctx, &c)).to_bytes()))
-}
-
-/// 第二步:服务端持久固定客户端随机材料后签发接受收据。
-pub fn issue_accept(key: &SigningKey, ctx: &Context, server_seed: &[u8], client_seed: &[u8]) -> String {
-    let c = commitment(ctx, server_seed);
-    hex(&key.sign(&accept_msg(ctx, &c, client_seed)).to_bytes())
-}
-
-/// 第三步:揭示并装配证书。
-pub fn issue_certificate(key: &SigningKey, ctx: &Context, server_seed: &[u8], client_seed: &[u8]) -> Result<Certificate, &'static str> {
-    let (c, commit_sig) = issue_commit(key, ctx, server_seed);
-    let accept_sig = issue_accept(key, ctx, server_seed, client_seed);
-    let b = derive_birth(&BirthInput {
-        world: ctx.world.clone(),
-        request_id: ctx.request_id.clone(),
-        server_seed: hex(server_seed),
-        client_seed: hex(client_seed),
-        born_at: 0,
-    })?;
-    Ok(Certificate {
-        context: ctx.clone(),
-        commitment: c,
-        commit_sig,
-        client_seed: hex(client_seed),
-        accept_sig,
-        server_seed: hex(server_seed),
-        id: b.id,
-        rarity: b.rarity,
-        species: b.species,
-    })
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]

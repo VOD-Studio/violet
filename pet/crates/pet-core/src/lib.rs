@@ -15,7 +15,7 @@ pub use life::{act, Action, ActError, Outcome, Pet, Phase};
 use alloc::string::String;
 use serde::Deserialize;
 
-pub use codec::{ErrorBody, OkBody};
+pub use codec::{hex, ErrorBody, OkBody};
 
 pub const RULES_VERSION: u32 = 1;
 

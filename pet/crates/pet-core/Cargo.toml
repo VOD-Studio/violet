@@ -19,5 +19,3 @@ schema = ["dep:schemars", "pet-term/schema"]
 [lints]
 workspace = true
 
-[dev-dependencies]
-ed25519-dalek = { version = "2", default-features = false, features = ["alloc", "fast"] }

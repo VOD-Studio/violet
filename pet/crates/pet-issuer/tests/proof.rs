@@ -1,5 +1,6 @@
 use ed25519_dalek::SigningKey;
 use pet_core::proof::*;
+use pet_issuer::issue_certificate;
 
 fn key() -> SigningKey {
     SigningKey::from_bytes(&[7u8; 32])
