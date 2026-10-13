@@ -1,0 +1,8 @@
+[package]
+name = "pet-cli"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+pet-core = { path = "../pet-core" }
