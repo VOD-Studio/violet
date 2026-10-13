@@ -2,23 +2,40 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde::Serialize;
 
+/// 成功响应信封。
+#[derive(Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema), schemars(rename = "{T}Result"))]
+pub struct OkBody<T> {
+    pub ok: bool,
+    pub value: T,
+}
+
+/// 失败响应信封;`code` 取值见各动作的错误分类。
+#[derive(Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ErrorBody {
+    pub ok: bool,
+    pub code: String,
+    pub message: String,
+}
+
 pub fn ok<T: Serialize>(v: &T) -> String {
     #[derive(Serialize)]
-    struct Ok<'a, T> {
+    struct Borrowed<'a, T> {
         ok: bool,
         value: &'a T,
     }
-    serde_json::to_string(&Ok { ok: true, value: v }).unwrap_or_default()
+    serde_json::to_string(&Borrowed { ok: true, value: v }).unwrap_or_default()
 }
 
 pub fn error(code: &str, message: &str) -> String {
     #[derive(Serialize)]
-    struct Err<'a> {
+    struct Borrowed<'a> {
         ok: bool,
         code: &'a str,
         message: &'a str,
     }
-    serde_json::to_string(&Err { ok: false, code, message }).unwrap_or_default()
+    serde_json::to_string(&Borrowed { ok: false, code, message }).unwrap_or_default()
 }
 
 pub fn hex(bytes: &[u8]) -> String {

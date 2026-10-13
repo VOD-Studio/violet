@@ -15,11 +15,15 @@ pub use life::{act, Action, ActError, Outcome, Pet, Phase};
 use alloc::string::String;
 use serde::Deserialize;
 
+pub use codec::{ErrorBody, OkBody};
+
 pub const RULES_VERSION: u32 = 1;
 
+/// 线上命令:`op` 为判别字段。
 #[derive(Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "op", rename_all = "snake_case")]
-enum Command {
+pub enum Command {
     Birth(BirthInput),
     Frame(pet_term::FrameInput),
     VerifyBirth {
@@ -30,6 +34,7 @@ enum Command {
         pet: Pet,
         action: Action,
         #[serde(with = "codec::u64_string")]
+        #[cfg_attr(feature = "schema", schemars(with = "String"))]
         now: u64,
         request_id: String,
     },

@@ -11,6 +11,7 @@ const DEAD_AT: u64 = 360;
 const DORMANT_AFTER: u64 = 720;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
     Healthy,
@@ -20,6 +21,7 @@ pub enum Phase {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Pet {
     pub id: String,
     pub satiety: u8,
@@ -28,8 +30,10 @@ pub struct Pet {
     pub medicine: u32,
     /// 持续失养的逻辑时间,决定预警、生病与死亡。
     #[serde(with = "u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "String"))]
     pub neglect: u64,
     #[serde(with = "u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "String"))]
     pub last_tick: u64,
     pub last_request: String,
 }
@@ -50,6 +54,7 @@ impl Pet {
 }
 
 #[derive(Clone, Copy, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Action {
     Feed,
@@ -60,6 +65,7 @@ pub enum Action {
 }
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Outcome {
     pub pet: Pet,
     pub phase: Phase,

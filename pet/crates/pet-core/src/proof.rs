@@ -27,6 +27,7 @@ fn digest(domain: &str, parts: &[&[u8]]) -> [u8; 32] {
 
 /// 本次领取固定的上下文:世界、发行者、请求、资格与规则摘要。
 #[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Context {
     pub world: String,
     pub issuer: String,
@@ -53,6 +54,7 @@ pub fn commitment(ctx: &Context, server_seed: &[u8]) -> [u8; 32] {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Certificate {
     pub context: Context,
     /// 先于客户端随机材料公布。
@@ -112,6 +114,7 @@ pub fn issue_certificate(key: &SigningKey, ctx: &Context, server_seed: &[u8], cl
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Verdict {
     Valid,

@@ -12,6 +12,7 @@ const RARITY_BP: [u64; 5] = [6000, 2500, 1000, 400, 100];
 const SPECIES: u64 = 8;
 
 #[derive(Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct BirthInput {
     pub world: String,
     pub request_id: String,
@@ -19,10 +20,12 @@ pub struct BirthInput {
     pub server_seed: String,
     pub client_seed: String,
     #[serde(with = "u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "String"))]
     pub born_at: u64,
 }
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Birth {
     pub id: String,
     pub rarity: u8,

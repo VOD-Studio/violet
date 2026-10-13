@@ -11,6 +11,7 @@ const SPRITE_W: u16 = 7;
 const SPRITE_H: u16 = 3;
 
 #[derive(Clone, Copy, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Pose {
     Idle,
@@ -19,6 +20,7 @@ pub enum Pose {
 }
 
 #[derive(Clone, Copy, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Charset {
     Ascii,
@@ -27,6 +29,7 @@ pub enum Charset {
 
 /// 帧合成输入:投影字段 + 呈现时钟。呈现时钟只影响动作相位,不影响任何养成结果。
 #[derive(Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[allow(missing_docs)]
 pub struct FrameInput {
     pub species: u8,
@@ -36,10 +39,12 @@ pub struct FrameInput {
     pub w: u16,
     pub h: u16,
     #[serde(with = "u64_string")]
+    #[cfg_attr(feature = "schema", schemars(with = "String"))]
     pub t: u64,
 }
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Frame {
     pub w: u16,
     pub h: u16,
