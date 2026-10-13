@@ -11,7 +11,12 @@ cd "$WORK/app"
 pnpm add -s @tanstack/react-start@^1.168.56 @tanstack/react-router@^1.170.38 react@^19.2.0 react-dom@^19.2.0 vite@^8.0.0 @vitejs/plugin-react@^6.0.1 "$WORK"/violet-pet-sdk-*.tgz
 pnpm exec vite build >/dev/null
 node serve.mjs >/dev/null 2>&1 & SRV=$!
-sleep 2
+i=0
+until curl -sf localhost:4174/ >/dev/null 2>&1; do
+  i=$((i + 1))
+  [ "$i" -gt 50 ] && { echo "FAIL: server did not start within 10s"; exit 1; }
+  sleep 0.2
+done
 SSR=$(curl -s localhost:4174/)
 echo "$SSR" | grep -q '<p id="probe">not-initialised</p>' || { echo "FAIL: SSR rendered after init"; exit 1; }
 echo "$SSR" | grep -q 'pet_wasm' && { echo "FAIL: SSR HTML references wasm"; exit 1; }
