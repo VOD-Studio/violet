@@ -1,4 +1,4 @@
-use crate::codec::u64_string;
+use crate::codec::{u64_string, ErrorCode};
 use alloc::string::String;
 use serde::{Deserialize, Serialize};
 
@@ -83,14 +83,14 @@ pub enum ActError {
 }
 
 impl ActError {
-    pub fn code(&self) -> &'static str {
+    pub fn code(&self) -> ErrorCode {
         match self {
-            Self::Dead => "dead",
-            Self::NoFood => "no_food",
-            Self::NoMedicine => "no_medicine",
-            Self::NotSick => "not_sick",
-            Self::TooTired => "too_tired",
-            Self::TimeBackwards => "time_backwards",
+            Self::Dead => ErrorCode::Dead,
+            Self::NoFood => ErrorCode::NoFood,
+            Self::NoMedicine => ErrorCode::NoMedicine,
+            Self::NotSick => ErrorCode::NotSick,
+            Self::TooTired => ErrorCode::TooTired,
+            Self::TimeBackwards => ErrorCode::TimeBackwards,
         }
     }
 

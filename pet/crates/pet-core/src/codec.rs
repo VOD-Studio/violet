@@ -10,12 +10,33 @@ pub struct OkBody<T> {
     pub value: T,
 }
 
-/// 失败响应信封;`code` 取值见各动作的错误分类。
+/// 业务错误分类。调用方按此分支处理,`message` 仅供人读。
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorCode {
+    /// 输入无法解析或字段非法。
+    BadInput,
+    /// 宠物已死亡,任何照料动作都被拒绝。
+    Dead,
+    /// 库存没有食物。
+    NoFood,
+    /// 库存没有药品。
+    NoMedicine,
+    /// 宠物未处于生病阶段,无需治疗。
+    NotSick,
+    /// 精力不足以玩耍。
+    TooTired,
+    /// `now` 早于宠物记录的 `last_tick`。
+    TimeBackwards,
+}
+
+/// 失败响应信封。
 #[derive(Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ErrorBody {
     pub ok: bool,
-    pub code: String,
+    pub code: ErrorCode,
     pub message: String,
 }
 
@@ -28,11 +49,11 @@ pub fn ok<T: Serialize>(v: &T) -> String {
     serde_json::to_string(&Borrowed { ok: true, value: v }).unwrap_or_default()
 }
 
-pub fn error(code: &str, message: &str) -> String {
+pub fn error(code: ErrorCode, message: &str) -> String {
     #[derive(Serialize)]
     struct Borrowed<'a> {
         ok: bool,
-        code: &'a str,
+        code: ErrorCode,
         message: &'a str,
     }
     serde_json::to_string(&Borrowed { ok: false, code, message }).unwrap_or_default()

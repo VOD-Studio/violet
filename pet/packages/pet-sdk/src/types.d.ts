@@ -6,6 +6,13 @@
  */
 export type Action = "feed" | "rest" | "play" | "heal" | "wait";
 /**
+ * 业务错误分类。调用方按此分支处理,`message` 仅供人读。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "ErrorCode".
+ */
+export type ErrorCode = "bad_input" | "dead" | "no_food" | "no_medicine" | "not_sick" | "too_tired" | "time_backwards";
+/**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Charset".
  */
@@ -17,6 +24,9 @@ export type Charset = "ascii" | "unicode";
  * via the `definition` "Command".
  */
 export type Command =
+  | {
+      op: "capabilities";
+    }
   | (BirthInput & {
       op: "birth";
     })
@@ -115,6 +125,42 @@ export interface BirthResult {
   value: Birth;
 }
 /**
+ * 一项可调用能力。能力发现、CLI 帮助与文档都由这张表产出,新增命令必须在此登记。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Capability".
+ */
+export interface Capability {
+  /**
+   * 该能力可能返回的业务错误分类。
+   */
+  errors: ErrorCode[];
+  /**
+   * 是否产生需要持久化的状态变化(调用方负责提交,核心不写存储)。
+   */
+  mutates_state: boolean;
+  op: string;
+  summary: string;
+}
+/**
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "CapabilityCatalog".
+ */
+export interface CapabilityCatalog {
+  capabilities: Capability[];
+  rules_version: number;
+}
+/**
+ * 成功响应信封。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "CapabilityCatalogResult".
+ */
+export interface CapabilityCatalogResult {
+  ok: boolean;
+  value: CapabilityCatalog;
+}
+/**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "Certificate".
  */
@@ -171,13 +217,13 @@ export interface FrameInput {
   w: number;
 }
 /**
- * 失败响应信封;`code` 取值见各动作的错误分类。
+ * 失败响应信封。
  *
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
  * via the `definition` "ErrorBody".
  */
 export interface ErrorBody {
-  code: string;
+  code: ErrorCode;
   message: string;
   ok: boolean;
 }
@@ -237,6 +283,7 @@ export interface VerdictResult {
 export interface OpResults {
   act: OutcomeResult;
   birth: BirthResult;
+  capabilities: CapabilityCatalogResult;
   frame: FrameResult;
   verify_birth: VerdictResult;
 }
