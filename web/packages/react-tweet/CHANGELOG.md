@@ -2,7 +2,27 @@
 
 All notable changes to `@violetjs/react-tweet` are documented here. Versions follow [Semantic Versioning](https://semver.org/); before 1.0.0, a minor version may include breaking changes.
 
-## 0.1.0 - Unreleased
+## 0.2.0 - Unreleased
+
+### Added
+
+- Animated GIFs play muted on a loop with a GIF badge. Inside a rail only the most visible GIF plays, and a manual pause is respected.
+- Videos show their poster, a play button and the duration before playback, and switch to native controls once started.
+- Consecutive videos and GIFs share a horizontal rail sized like X: about 0.675 of the content width tall, at most 384px, with cards no wider than 1.18 times their height.
+- `playVideo` message for the video play button.
+
+### Changed
+
+- A single photo keeps its own aspect ratio and aligns to the start instead of being centered on a filled background.
+- Rail cards are capped at 80% of the row so the next card always peeks, and the rail buttons step card by card.
+- Videos and GIFs with known dimensions reserve their aspect ratio, so swapping the poster for the video no longer resizes them.
+- Media without a playable source shows "Watch on X" as a badge on the poster.
+
+### Notes
+
+- `video.twimg.com` rejects requests with a third-party `Referer`, and browsers send one for `<video>`. Video URLs from the FxTwitter adapter therefore fall back to the poster in browsers; serve them through your own proxy or `renderVideo` to play them.
+
+## 0.1.0 - 2026-10-11
 
 First public release.
 
