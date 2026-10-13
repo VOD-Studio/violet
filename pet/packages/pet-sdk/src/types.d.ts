@@ -89,6 +89,10 @@ export interface Birth {
  */
 export interface Pet {
   energy: number;
+  /**
+   * 精力衰减的余数刻度。
+   */
+  energy_rem?: number;
   food: number;
   id: string;
   last_request: string;
@@ -99,6 +103,10 @@ export interface Pet {
    */
   neglect: string;
   satiety: number;
+  /**
+   * 饱食衰减的余数刻度,保证结算频率不影响总衰减量。
+   */
+  satiety_rem?: number;
 }
 /**
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema

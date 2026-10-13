@@ -2,13 +2,19 @@ use crate::codec::{u64_string, ErrorCode};
 use alloc::string::String;
 use serde::{Deserialize, Serialize};
 
-const SATIETY_DECAY_TICKS: u64 = 6;
-const ENERGY_DECAY_TICKS: u64 = 10;
-const WARN_AT: u64 = 60;
-const SICK_AT: u64 = 120;
-const DEAD_AT: u64 = 360;
-/// 超过该间隔视为休眠回归:最多推进到生病,不结算死亡。
-const DORMANT_AFTER: u64 = 720;
+// 逻辑时间单位:1 刻度 = 1 分钟。默认值依据 pet/docs/parameters.md 的快进体验记录。
+/// 饱食每降 1 点所需刻度(100 点 40 小时耗尽,一次喂食恰好抵一天的消耗)。
+const SATIETY_DECAY_TICKS: u64 = 24;
+const ENERGY_DECAY_TICKS: u64 = 30;
+/// 饱食耗尽后持续失养多久进入预警 / 生病 / 死亡(24 小时 / 48 小时 / 120 小时)。
+const WARN_AT: u64 = 1440;
+const SICK_AT: u64 = 2880;
+const DEAD_AT: u64 = 7200;
+/// 两次结算间隔超过该值视为「离开」:失养最多把宠物推到生病,绝不越过死亡线。
+/// 死亡时钟只在被观察的时间里前进,所以页面或 CLI 在线时须至少每隔该间隔结算一次。
+const AWAY_AFTER: u64 = 30;
+const FEED_GAIN: u16 = 60;
+const REST_GAIN: u16 = 40;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -28,6 +34,12 @@ pub struct Pet {
     pub energy: u8,
     pub food: u32,
     pub medicine: u32,
+    /// 饱食衰减的余数刻度,保证结算频率不影响总衰减量。
+    #[serde(default)]
+    pub satiety_rem: u8,
+    /// 精力衰减的余数刻度。
+    #[serde(default)]
+    pub energy_rem: u8,
     /// 持续失养的逻辑时间,决定预警、生病与死亡。
     #[serde(with = "u64_string")]
     #[cfg_attr(feature = "schema", schemars(with = "String"))]
@@ -40,7 +52,7 @@ pub struct Pet {
 
 impl Pet {
     pub fn newborn(id: String, at: u64) -> Self {
-        Self { id, satiety: 80, energy: 80, food: 5, medicine: 1, neglect: 0, last_tick: at, last_request: String::new() }
+        Self { id, satiety: 80, energy: 80, food: 5, medicine: 1, satiety_rem: 0, energy_rem: 0, neglect: 0, last_tick: at, last_request: String::new() }
     }
 
     pub fn phase(&self) -> Phase {
@@ -106,16 +118,32 @@ impl ActError {
     }
 }
 
+/// 带余数的整数衰减:`value` 每 `period` 刻度降 1,余数在两次结算间保留。
+fn decay(value: u8, rem: u8, dt: u64, period: u64) -> (u8, u8) {
+    let total = rem as u64 + dt;
+    let drop = total / period;
+    if drop >= value as u64 {
+        (0, 0)
+    } else {
+        (value - drop as u8, (total % period) as u8)
+    }
+}
+
 fn advance(p: &mut Pet, now: u64) -> Result<(), ActError> {
     if now < p.last_tick {
         return Err(ActError::TimeBackwards);
     }
     let dt = now - p.last_tick;
-    let starving_at = p.satiety as u64 * SATIETY_DECAY_TICKS;
-    p.satiety = (p.satiety as u64).saturating_sub(dt / SATIETY_DECAY_TICKS) as u8;
-    p.energy = (p.energy as u64).saturating_sub(dt / ENERGY_DECAY_TICKS) as u8;
-    let mut neglect = p.neglect + dt.saturating_sub(starving_at);
-    if dt > DORMANT_AFTER {
+    // 饱食耗尽前剩余的刻度,用于计算本次结算中真正处于失养的时长。
+    let until_empty = (p.satiety as u64 * SATIETY_DECAY_TICKS).saturating_sub(p.satiety_rem as u64);
+    let (satiety, satiety_rem) = decay(p.satiety, p.satiety_rem, dt, SATIETY_DECAY_TICKS);
+    let (energy, energy_rem) = decay(p.energy, p.energy_rem, dt, ENERGY_DECAY_TICKS);
+    p.satiety = satiety;
+    p.satiety_rem = satiety_rem;
+    p.energy = energy;
+    p.energy_rem = energy_rem;
+    let mut neglect = p.neglect + dt.saturating_sub(until_empty);
+    if dt > AWAY_AFTER {
         neglect = neglect.min(p.neglect.max(SICK_AT));
     }
     p.neglect = neglect;
@@ -139,12 +167,12 @@ pub fn act(mut pet: Pet, action: Action, now: u64, request_id: &str) -> Result<O
                 return Err(ActError::NoFood);
             }
             pet.food -= 1;
-            pet.satiety = (pet.satiety as u16 + 30).min(100) as u8;
+            pet.satiety = (pet.satiety as u16 + FEED_GAIN).min(100) as u8;
             if pet.phase() != Phase::Sick {
                 pet.neglect = 0;
             }
         }
-        Action::Rest => pet.energy = (pet.energy as u16 + 40).min(100) as u8,
+        Action::Rest => pet.energy = (pet.energy as u16 + REST_GAIN).min(100) as u8,
         Action::Play => {
             if pet.energy < 20 {
                 return Err(ActError::TooTired);
