@@ -19,4 +19,10 @@ for (const [, s] of steps) {
   const j = JSON.parse(r);
   if (j.ok) pet = j.value.pet;
 }
+const fx = JSON.parse(fs.readFileSync(new URL("./cert.json", import.meta.url)));
+out.push(exec(JSON.stringify({ op: "verify_birth", ...fx })));
+const bad = structuredClone(fx); bad.certificate.rarity = (bad.certificate.rarity + 1) % 5;
+out.push(exec(JSON.stringify({ op: "verify_birth", ...bad })));
+const bad2 = structuredClone(fx); bad2.certificate.client_seed = "00".repeat(32);
+out.push(exec(JSON.stringify({ op: "verify_birth", ...bad2 })));
 console.log(out.join("\n"));

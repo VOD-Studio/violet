@@ -6,6 +6,7 @@ extern crate alloc;
 mod birth;
 mod codec;
 mod life;
+pub mod proof;
 mod rng;
 
 pub use birth::{derive_birth, Birth, BirthInput};
@@ -20,6 +21,10 @@ pub const RULES_VERSION: u32 = 1;
 #[serde(tag = "op", rename_all = "snake_case")]
 enum Command {
     Birth(BirthInput),
+    VerifyBirth {
+        certificate: proof::Certificate,
+        issuer_pub: String,
+    },
     Act {
         pet: Pet,
         action: Action,
@@ -37,6 +42,12 @@ pub fn execute(input: &str) -> String {
             Ok(v) => codec::ok(&v),
             Err(e) => codec::error("bad_input", e),
         },
+        Ok(Command::VerifyBirth { certificate, issuer_pub }) => {
+            match codec::unhex(&issuer_pub).and_then(|v| <[u8; 32]>::try_from(v).ok()) {
+                Some(k) => codec::ok(&proof::verify(&certificate, &k)),
+                None => codec::error("bad_input", "issuer_pub must be 32 bytes hex"),
+            }
+        }
         Ok(Command::Act { pet, action, now, request_id }) => {
             match act(pet, action, now, &request_id) {
                 Ok(v) => codec::ok(&v),

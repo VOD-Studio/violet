@@ -9,6 +9,10 @@ sha2 = { workspace = true }
 hmac = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+ed25519-dalek = { version = "2", default-features = false, features = ["alloc", "fast"] }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+ed25519-dalek = { version = "2", default-features = false, features = ["alloc", "fast"] }
