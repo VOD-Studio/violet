@@ -21,6 +21,8 @@ SSR=$(curl -s localhost:4174/)
 echo "$SSR" | grep -q '<p id="probe">not-initialised</p>' || { echo "FAIL: SSR rendered after init"; exit 1; }
 echo "$SSR" | grep -q 'pet_wasm' && { echo "FAIL: SSR HTML references wasm"; exit 1; }
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
-DOM=$("$CHROME" --headless=new --disable-gpu --virtual-time-budget=8000 --dump-dom http://localhost:4174/ 2>/dev/null)
+# CHROME_FLAGS 供 CI 注入（例如 --no-sandbox）；本机默认为空。
+# shellcheck disable=SC2086
+DOM=$("$CHROME" --headless=new --disable-gpu ${CHROME_FLAGS:-} --virtual-time-budget=8000 --dump-dom http://localhost:4174/ 2>/dev/null)
 echo "$DOM" | grep -q '<p id="pet">c5e7c006764443ae6dc69000f29bf4aa</p>' || { echo "FAIL: client did not hydrate to expected id"; exit 1; }
 echo "PASS: SSR not-initialised, no wasm in SSR HTML, hydrated id matches native"
