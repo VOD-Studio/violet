@@ -47,11 +47,23 @@ describe("AICommentProfile", () => {
 		["Claude Opus 4.6", "claude"],
 		["GLM-4.7", "glm"],
 		["Grok-4", "grok"],
+		["Grok Bot", "grok"],
+		["grok bot", "grok"],
+		["Grok-Bot", "grok"],
+		["ChatGPT Assistant", "gpt"],
+		["Claude Bot", "claude"],
+		["GLM Agent", "glm"],
+		["DeepSeek AI Assistant", "deepseek"],
+		["Kimi 助手", "kimi"],
+		["Gemini 机器人", "gemini"],
+		["anthropic/claude-sonnet-4", "claude"],
 		["DeepSeek-V3", "deepseek"],
 		["Kimi K2", "kimi"],
 		["Gemini 2.5 Pro", "gemini"],
 		["Violet AI", "unknown"],
 		["My GPT Assistant", "unknown"],
+		["My Grok Bot", "unknown"],
+		["Grok Botanical", "unknown"],
 	])("%s 的头像、介绍和徽章保持同一归属，不借用授权者头像", async (name, id) => {
 		render(
 			<>
