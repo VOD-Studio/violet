@@ -10,6 +10,7 @@ interface AIPersona {
 	/** 仅影响展示，不替换用于筛选的原始署名。 */
 	nickname?: string;
 	match?: RegExp;
+	namespaces?: readonly string[];
 }
 
 /** 用户提供的非官方拟人形象；未知署名不借用任何已知模型形象。 */
@@ -21,7 +22,8 @@ export const AI_PERSONAS = {
 		coverHeight: 720,
 		avatarUrl: "/ai-personas/gpt-avatar.webp",
 		initials: "GP",
-		match: /^(?:gpt|chatgpt)(?:[- .]\d[\w.-]*)?$/i,
+		match: /^(?:(?:gpt|chatgpt)(?:[- .]?(?:\d[\w. -]*|oss[- .]\d[\w. -]*|latest))?|o\d+(?:[- .][\w. -]+)?|codex(?:[- .](?:\d[\w. -]*|mini(?:[- .][\w. -]+)?))?)$/i,
+		namespaces: ["openai"],
 	},
 	claude: {
 		name: "Claude",
@@ -30,7 +32,8 @@ export const AI_PERSONAS = {
 		coverHeight: 720,
 		avatarUrl: "/ai-personas/claude-avatar.webp",
 		initials: "CL",
-		match: /^claude(?:[- .](?:opus|sonnet|haiku|\d)[\w. -]*)?$/i,
+		match: /^claude(?:[- .]?(?:\d[\w. -]*|(?:opus|sonnet|haiku)(?:[- .]?\d[\w. -]*|[- .]latest)?|code|latest))?$/i,
+		namespaces: ["anthropic"],
 	},
 	glm: {
 		name: "GLM",
@@ -39,7 +42,8 @@ export const AI_PERSONAS = {
 		coverHeight: 719,
 		avatarUrl: "/ai-personas/glm-avatar.webp",
 		initials: "GL",
-		match: /^glm(?:[- .]\d[\w.-]*)?$/i,
+		match: /^glm(?:[- .]?(?:\d[\w. -]*|latest))?$/i,
+		namespaces: ["z-ai", "zhipu", "zhipuai"],
 	},
 	grok: {
 		name: "Grok",
@@ -48,7 +52,8 @@ export const AI_PERSONAS = {
 		coverHeight: 720,
 		avatarUrl: "/ai-personas/grok-avatar.webp",
 		initials: "GR",
-		match: /^grok(?:[- .](?:\d[\w. -]*|bot))?$/i,
+		match: /^grok(?:[- .]?(?:\d[\w. -]*|(?:code|build)(?:[- .][\w. -]+)?|latest))?$/i,
+		namespaces: ["x-ai", "xai"],
 	},
 	deepseek: {
 		name: "大肥鱼",
@@ -58,7 +63,8 @@ export const AI_PERSONAS = {
 		avatarUrl: "/ai-personas/deepseek-avatar.webp",
 		initials: "鱼",
 		nickname: "大肥鱼",
-		match: /^deepseek(?:[- .](?:[vr]?\d|chat|coder|reasoner)[\w. -]*)?$/i,
+		match: /^deepseek(?:[- .]?(?:[vr]?\d[\w. -]*|(?:chat|coder|reasoner)(?:[- .][\w. -]+)?|latest))?$/i,
+		namespaces: ["deepseek"],
 	},
 	kimi: {
 		name: "Kimi",
@@ -67,7 +73,8 @@ export const AI_PERSONAS = {
 		coverHeight: 720,
 		avatarUrl: "/ai-personas/kimi-avatar.webp",
 		initials: "KI",
-		match: /^kimi(?:[- .](?:k?\d|thinking)[\w. -]*)?$/i,
+		match: /^kimi(?:[- .]?(?:k?\d[\w. -]*|thinking(?:[- .][\w. -]+)?|latest))?$/i,
+		namespaces: ["moonshot", "moonshotai"],
 	},
 	gemini: {
 		name: "Gemini",
@@ -76,7 +83,8 @@ export const AI_PERSONAS = {
 		coverHeight: 720,
 		avatarUrl: "/ai-personas/gemini-avatar.webp",
 		initials: "GE",
-		match: /^gemini(?:[- .](?:\d|pro|flash|ultra|nano)[\w. -]*)?$/i,
+		match: /^gemini(?:[- .]?(?:\d[\w. -]*|(?:pro|flash|ultra|nano)(?:[- .][\w. -]+)?|latest))?$/i,
+		namespaces: ["google"],
 	},
 	unknown: {
 		name: "未知模型",
@@ -100,6 +108,17 @@ type CommentAuthor = Pick<Comment, "author_name" | "is_ai"> & Partial<Pick<Comme
 
 const knownPersonas = Object.entries(AI_PERSONAS) as [keyof typeof AI_PERSONAS, AIPersona][];
 
+function normalizeModelSignature(signature: string): string {
+	return signature
+		.normalize("NFKC")
+		.toLowerCase()
+		.replace(/[\u2010-\u2015\u2212_]/g, "-")
+		.replace(/\s*-\s*/g, "-")
+		.replace(/\s+/g, " ")
+		.trim()
+		.replace(/(?:[ .-]+(?:ai|bot|assistant|agent|助手|机器人))+$/i, "");
+}
+
 /** 依据 AI 自署名选择角色，不代表模型身份已经验证；真人不参与模型匹配。 */
 export function getCommentAuthorPresentation(author: CommentAuthor): CommentAuthorPresentation {
 	if (!author.is_ai) {
@@ -112,8 +131,16 @@ export function getCommentAuthorPresentation(author: CommentAuthor): CommentAuth
 	}
 
 	const signature = author.author_name.trim();
+	const normalizedSignature = normalizeModelSignature(signature);
+	const slashIndex = normalizedSignature.indexOf("/");
+	const namespace =
+		slashIndex === -1 ? undefined : normalizedSignature.slice(0, slashIndex).trim();
+	const modelName =
+		slashIndex === -1 ? normalizedSignature : normalizedSignature.slice(slashIndex + 1).trim();
 	const [personaId, persona]: [keyof typeof AI_PERSONAS, AIPersona] = knownPersonas.find(
-		([, candidate]) => candidate.match?.test(signature),
+		([, candidate]) =>
+			candidate.match?.test(modelName) &&
+			(namespace === undefined || candidate.namespaces?.includes(namespace)),
 	) ?? ["unknown", AI_PERSONAS.unknown];
 	return {
 		displayName:
