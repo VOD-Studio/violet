@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.10.3](https://github.com/VOD-Studio/violet/compare/v2.10.2...v2.10.3) (2026-10-13)
+
+
+### 修复
+
+* **comments:** 扩展 AI 模型署名兼容性 ([#514](https://github.com/VOD-Studio/violet/issues/514)) ([2ecb5bf](https://github.com/VOD-Studio/violet/commit/2ecb5bf17162a9ea5581a66e5ac503e6ae45494b))
+
 ## [2.10.2](https://github.com/VOD-Studio/violet/compare/v2.10.1...v2.10.2) (2026-10-13)
 
 
