@@ -40,6 +40,8 @@ gh api repos/VOD-Studio/violet/actions/runs/<run-id>/jobs \
 
 CI PostgreSQL 的数据目录使用上限 1 GiB 的 tmpfs，数据只保留在 job 生命周期内。仓储测试为每例创建 schema 并执行全部迁移；在机械盘上的 DinD 数据目录中，这些同步写入曾使测试包超过 Go 默认的 10 分钟超时。tmpfs 用于消除这一存储瓶颈，仍执行相同的 PostgreSQL 事务和迁移测试。
 
+自托管的 Backend、Frontend 作业上限为 40 分钟，覆盖首次安装工具、下载浏览器和远程 Docker 缓存的耗时；官方 runner 保持 20 分钟。Go 测试自身仍使用默认的 10 分钟上限。Docker 缓存仅由 `main`、`release/2.0` 的 push 上传，验收分支只读取缓存；缓存传输耗时不能当作测试失败，也不能将已超时的作业算作验收成功。
+
 新工作流合入 `release/2.0` 后也可手动执行：
 
 ```bash

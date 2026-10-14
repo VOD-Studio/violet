@@ -82,7 +82,7 @@ jobs:
   backend:
     name: Backend (Go)
     needs: [changes, runner]
-    timeout-minutes: 20
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 40 || 20 }}
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
@@ -173,7 +173,7 @@ jobs:
           # scope 与 deploy.yml 构建一致:发版时 deploy 直接命中 CI 已构建的层;
           # PR 分支命中率低,仅主干 push 写缓存
           cache-from: type=gha,scope=violet-api
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-api' || '' }}
+          cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-api' || '' }}
 
   # ============================================================
   # 前端检查（TypeScript）
@@ -181,7 +181,7 @@ jobs:
   frontend:
     name: Frontend (React)
     needs: [changes, runner]
-    timeout-minutes: 20
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 40 || 20 }}
     permissions:
       actions: write   # buildx type=gha 缓存读写;同 backend job
       contents: read
@@ -289,7 +289,7 @@ jobs:
           push: false
           tags: violet-web:ci
           cache-from: type=gha,scope=violet-web
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-web' || '' }}
+          cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-web' || '' }}
 
   # ============================================================
   # 依赖漏洞扫描
