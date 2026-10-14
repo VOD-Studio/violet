@@ -1,6 +1,30 @@
-# rua self-hosted Runner 安装指南
+# 自托管 Runner 运维指南
 
-CI 检查跑在 GitHub-hosted runner；生产部署跑在 rua 上的 self-hosted runner。本指南记录 rua 上一次性接入与日常维护。
+CI 默认使用 GitHub-hosted runner，`SELF_HOSTED_RUNNER=true` 时可选择 Omarchy runner；生产部署固定使用 rua runner。两者的注册信息、工作目录和 Docker 状态独立。
+
+## Omarchy CI 镜像
+
+镜像和 Compose 的源码在 `deploy/github-runner/`，本机部署目录为 `/run/media/xfy/WDC4TB/srv/github-runner`。从仓库根目录构建并检查：
+
+```bash
+make runner-image
+make runner-check
+```
+
+系统依赖在 Dockerfile 构建阶段安装，Go、Node 与 pnpm 版本由工作流声明。Chromium 的系统库清单对应 [Playwright 1.63.0 的 Ubuntu 24.04 tools/chromium 依赖](https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/registry/nativeDeps.ts)，升级 Playwright 后需重新验收浏览器契约测试。镜像中的 `/etc/violet-runner-packages.txt` 保存实际安装版本。
+
+更新部署前确认 runner 空闲，备份现有 Dockerfile、Compose、脚本和 `.env`，记录旧镜像 ID。仅同步受版本管理的源码，保留 `.env`、`.secrets` 和已有命名卷；在 `.env` 中将 `RUNNER_IMAGE` 设为新镜像 ID，然后在部署目录执行：
+
+```bash
+docker compose config --quiet
+docker compose up -d --no-deps --wait --wait-timeout 180 runner
+docker compose exec -T runner runner-check-environment
+docker compose exec -T runner bash -s < scripts/docker-smoke-test.sh
+```
+
+`--no-deps` 保留 DinD 和已有镜像缓存。回滚时恢复 `.env` 中的旧镜像 ID，再执行同一个 `up` 命令；不要删除 runner-home、runner-work 或 docker-data 卷。系统库位于镜像的 `/usr`，已有 `/home/runner` 卷不会遮挡这些依赖。基础检查和 Docker smoke test 通过后，仍须执行完整 GitHub CI 才能启用自托管。
+
+## rua 部署 Runner
 
 ## 前置条件
 

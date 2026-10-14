@@ -1,0 +1,103 @@
+name: vod-github-runner
+
+x-runner: &runner
+  image: ${RUNNER_IMAGE:-vod-github-runner:2.337.0-docker29.7.2-ci1}
+  build:
+    context: .
+  platform: linux/amd64
+  user: "1001:1001"
+  group_add: ["123"]
+  init: true
+  entrypoint: ["/usr/local/bin/runner-entrypoint.sh"]
+  environment: &runner-environment
+    RUNNER_URL: ${RUNNER_URL:-https://github.com/VOD-Studio}
+    RUNNER_NAME: ${RUNNER_NAME:-vod-omarchy-docker-01}
+    RUNNER_GROUP: ${RUNNER_GROUP:-Default}
+    RUNNER_LABELS: ${RUNNER_LABELS:-docker,compose,omarchy}
+    RUNNER_TOOL_CACHE: /home/runner/_work/_tool
+    DOCKER_HOST: unix:///var/run/docker.sock
+    ACTIONS_RUNNER_PRINT_LOG_TO_STDOUT: "0"
+  volumes:
+    - runner-home:/home/runner
+    - runner-work:/home/runner/_work
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  logging: &logging
+    driver: local
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  # One-shot registration reads a short-lived token from stdin.
+  # The long-running service never receives this token.
+  register:
+    <<: *runner
+    profiles: [setup]
+    command: [register]
+    stdin_open: true
+    restart: "no"
+
+  docker:
+    image: docker:29.7.2-dind@sha256:3ef33f2e220b79ed3ef3b99d81746f06f306cd6340e2cb7331d17ae996e74cb6
+    platform: linux/amd64
+    privileged: true
+    restart: unless-stopped
+    # Explicit dockerd invocation avoids opening a TCP API listener.
+    command:
+      - dockerd
+      - --host=unix:///var/run/docker.sock
+      - --group=123
+      - --storage-driver=overlay2
+      - --bip=${DIND_BRIDGE_CIDR:-172.30.0.1/24}
+      - --default-address-pool=base=${DIND_NETWORK_POOL:-172.31.0.0/16},size=24
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - docker-runtime:/var/run
+      - docker-data:/var/lib/docker
+      # Same paths are required by GitHub's container actions/job containers.
+      - runner-home:/home/runner:ro
+      - runner-work:/home/runner/_work
+    healthcheck:
+      test: [CMD, docker, info]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: ${DIND_MEMORY:-16g}
+    pids_limit: 2048
+    stop_grace_period: 2m
+    logging: *logging
+
+  runner:
+    <<: *runner
+    command: [run]
+    restart: unless-stopped
+    # Share DinD's network namespace so published service ports reach localhost.
+    network_mode: service:docker
+    depends_on:
+      docker:
+        condition: service_healthy
+        restart: true
+    volumes:
+      - runner-home:/home/runner
+      - runner-work:/home/runner/_work
+      - docker-runtime:/var/run:ro
+    mem_limit: ${RUNNER_MEMORY:-8g}
+    pids_limit: 512
+    stop_grace_period: 5m
+    healthcheck:
+      test: [CMD, /usr/local/bin/runner-healthcheck.sh]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  runner-home:
+  runner-work:
+  docker-runtime:
+  docker-data:

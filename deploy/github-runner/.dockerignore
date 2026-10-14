@@ -1,0 +1,7 @@
+.git
+.env
+.secrets
+backups
+README.md
+examples
+*.log
