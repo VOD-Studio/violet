@@ -1,10 +1,14 @@
 name: Pick runner
 
-# 优先使用 org 自托管 runner 216；它离线、忙碌、不可信事件或无法查询时退回 GitHub 官方 runner。
-# 仓库变量 SELF_HOSTED_RUNNER 必须为 true 才启用；runner 的工具链就绪前保持关闭，作业全部走官方 runner。
+# 日常选择允许回退；验收绕过启用开关，但 runner 不可用时必须失败。
 # 调用方：jobs.<id>.runs-on: ${{ fromJSON(needs.<runner>.outputs.labels) }}
 on:
   workflow_call:
+    inputs:
+      require_self_hosted:
+        description: 强制自托管验收，禁止回退官方 runner
+        type: boolean
+        default: false
     secrets:
       RUNNER_STATUS_TOKEN:
         description: 只读「Self-hosted runners」组织权限的 token；缺省时一律使用官方 runner。
@@ -14,7 +18,8 @@ on:
         description: runs-on 标签的 JSON 数组
         value: ${{ jobs.pick.outputs.labels }}
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   pick:
@@ -24,8 +29,10 @@ jobs:
     outputs:
       labels: ${{ steps.pick.outputs.labels }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - id: pick
         env:
+          REQUIRE_SELF_HOSTED: ${{ inputs.require_self_hosted }}
           ENABLED: ${{ vars.SELF_HOSTED_RUNNER }}
           TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
           EVENT: ${{ github.event_name }}
@@ -33,37 +40,4 @@ jobs:
           REPO: ${{ github.repository }}
           RUNNER_ID: "216"
           ORG: VOD-Studio
-        run: |
-          fallback='["ubuntu-latest"]'
-          preferred='["self-hosted","Linux","X64","omarchy"]'
-
-          if [ "$ENABLED" != "true" ]; then
-            echo "reason=SELF_HOSTED_RUNNER is not true" >> "$GITHUB_STEP_SUMMARY"
-            echo "labels=$fallback" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # 公开仓库：fork 的 PR 代码绝不能落到自托管 runner 上。
-          if [ "$EVENT" = "pull_request" ] && [ "$HEAD_REPO" != "$REPO" ]; then
-            echo "reason=fork pull request" >> "$GITHUB_STEP_SUMMARY"
-            echo "labels=$fallback" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ -z "$TOKEN" ]; then
-            echo "reason=RUNNER_STATUS_TOKEN not set" >> "$GITHUB_STEP_SUMMARY"
-            echo "labels=$fallback" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          info=$(curl -fsS --max-time 10 \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/orgs/$ORG/actions/runners/$RUNNER_ID" 2>/dev/null) || info=""
-
-          if [ -n "$info" ] && [ "$(jq -r '.status == "online" and .busy == false' <<<"$info")" = "true" ]; then
-            echo "reason=runner $RUNNER_ID online and idle" >> "$GITHUB_STEP_SUMMARY"
-            echo "labels=$preferred" >> "$GITHUB_OUTPUT"
-          else
-            echo "reason=runner $RUNNER_ID busy, offline or unreachable" >> "$GITHUB_STEP_SUMMARY"
-            echo "labels=$fallback" >> "$GITHUB_OUTPUT"
-          fi
+        run: bash scripts/pick-ci-runner.sh

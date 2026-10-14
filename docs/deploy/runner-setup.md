@@ -24,6 +24,34 @@ docker compose exec -T runner bash -s < scripts/docker-smoke-test.sh
 
 `--no-deps` 保留 DinD 和已有镜像缓存。回滚时恢复 `.env` 中的旧镜像 ID，再执行同一个 `up` 命令；不要删除 runner-home、runner-work 或 docker-data 卷。系统库位于镜像的 `/usr`，已有 `/home/runner` 卷不会遮挡这些依赖。基础检查和 Docker smoke test 通过后，仍须执行完整 GitHub CI 才能启用自托管。
 
+## 完整 CI 验收与启用
+
+更新镜像期间保持仓库变量 `SELF_HOSTED_RUNNER=false`。新分支修改 runner 源码或相关工作流并推送后，`Runner acceptance` 自动调用同一份 `ci.yml`，固定当前 SHA、强制双侧检查和双侧镜像构建。它允许在线但忙碌的 runner 排队；离线、查询失败、缺少状态 token 或不可信触发事件会失败，不回退官方 runner。
+
+```bash
+branch=$(git branch --show-current)
+gh run list --workflow runner-acceptance.yml --branch "$branch"
+gh run view <run-id> --json headSha,status,conclusion,jobs
+gh api repos/VOD-Studio/violet/actions/runs/<run-id>/jobs \
+  --jq '.jobs[] | {name, runner_name, conclusion, steps: [.steps[] | {name, conclusion}]}'
+```
+
+验收要求 Backend、Frontend、Infrastructure、Dependency Security 均由 `vod-omarchy-docker-01` 实际执行成功；变更检测和选择 runner 的控制作业仍在官方 runner 上。核对 Go 单元与迁移测试、浏览器契约测试、双侧 Docker 构建均执行，不能把 skip 或官方 runner 重跑结果作为验收。前端 `pnpm audit` 沿用既有 advisory 规则。
+
+新工作流合入 `release/2.0` 后也可手动执行：
+
+```bash
+gh workflow run runner-acceptance.yml --ref release/2.0
+```
+
+启用前先合入已通过验收的工作流，再设置：
+
+```bash
+gh variable set SELF_HOSTED_RUNNER --body true
+```
+
+旧工作流的 `playwright install --with-deps` 会尝试 sudo，而 runner 启用了 `no-new-privileges`；仅更新镜像不能解决这个调用。新版自托管路径只下载 Chromium，系统库由镜像提供。停用时将变量设回 `false`；已排队或运行的作业不会因此迁移到官方 runner。日常选择的在线/空闲检查不预留容量。
+
 ## rua 部署 Runner
 
 ## 前置条件

@@ -1,0 +1,32 @@
+name: Runner acceptance
+
+on:
+  push:
+    branches-ignore: [main, release/2.0]
+    paths:
+      - deploy/github-runner/**
+      - .github/workflows/runner-acceptance.yml
+      - .github/workflows/ci.yml
+      - .github/workflows/pick-runner.yml
+      - scripts/pick-ci-runner.sh
+      - scripts/tests/test_pick_ci_runner.py
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: runner-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ github.sha }}
+      full: true
+      build_images: true
+      require_self_hosted: true
+    secrets: inherit

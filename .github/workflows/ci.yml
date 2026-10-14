@@ -19,6 +19,10 @@ on:
         description: 是否额外验证 Docker 镜像构建
         type: boolean
         default: false
+      require_self_hosted:
+        description: 强制自托管验收，禁止回退官方 runner
+        type: boolean
+        default: false
 
 # PR 取消旧检查；主干与部署调用按提交隔离，后续 push 不取消待发布提交的检查。
 concurrency:
@@ -68,6 +72,8 @@ jobs:
   runner:
     name: Pick runner
     uses: ./.github/workflows/pick-runner.yml
+    with:
+      require_self_hosted: ${{ inputs.require_self_hosted || false }}
     secrets: inherit
 
   # ============================================================
@@ -255,7 +261,14 @@ jobs:
 
       - name: Install Chromium
         if: needs.changes.outputs.web == 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+            pnpm exec playwright install chromium
+          else
+            pnpm exec playwright install --with-deps chromium
+          fi
 
       - name: Browser contracts
         if: needs.changes.outputs.web == 'true'
@@ -289,7 +302,7 @@ jobs:
   security:
     name: Dependency Security
     needs: [changes, infrastructure, runner]
-    if: always()
+    if: always() && needs.runner.result == 'success'
     timeout-minutes: 10
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
 
@@ -372,6 +385,10 @@ jobs:
           ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
           filter: blob:none
+
+      - name: Check self-hosted environment
+        if: runner.environment == 'self-hosted'
+        run: bash deploy/github-runner/scripts/check-environment.sh
 
       - name: Check release version intent
         if: github.event_name == 'pull_request' && !inputs.ref
