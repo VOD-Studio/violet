@@ -1,0 +1,62 @@
+/* 蛋的三个姿态按固定节奏逐帧切换,没有插值,与像素画一致。 */
+.frame {
+	opacity: 0;
+	animation: hatch-frame 2.4s steps(1, end) infinite;
+}
+.rest {
+	animation-name: hatch-rest;
+}
+.left {
+	animation-name: hatch-left;
+}
+.right {
+	animation-name: hatch-right;
+}
+.crack {
+	opacity: 0;
+	animation: hatch-crack 2.4s steps(1, end) infinite;
+}
+
+@keyframes hatch-rest {
+	0%,
+	40%,
+	100% {
+		opacity: 1;
+	}
+	45%,
+	95% {
+		opacity: 0;
+	}
+}
+@keyframes hatch-left {
+	45%,
+	60% {
+		opacity: 1;
+	}
+}
+@keyframes hatch-right {
+	65%,
+	80% {
+		opacity: 1;
+	}
+	85%,
+	90% {
+		opacity: 0;
+	}
+}
+@keyframes hatch-crack {
+	85%,
+	95% {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.frame,
+	.crack {
+		animation: none;
+	}
+	.rest {
+		opacity: 1;
+	}
+}

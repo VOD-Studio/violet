@@ -42,6 +42,7 @@ pub enum Command {
     },
     Birth(BirthInput),
     Frame(pet_term::FrameInput),
+    Sprite(pet_term::PixelInput),
     VerifyBirth {
         certificate: proof::Certificate,
         issuer_keys: Vec<proof::IssuerKey>,
@@ -71,6 +72,7 @@ pub fn execute(input: &str) -> String {
         Ok(Command::EvolutionOptions { pet }) => codec::ok(&growth::evolution_options(&pet.growth, pet.food)),
         Ok(Command::Capabilities) => codec::ok(&catalog()),
         Ok(Command::Frame(f)) => codec::ok(&pet_term::render(&f)),
+        Ok(Command::Sprite(s)) => codec::ok(&pet_term::render_pixels(&s)),
         Ok(Command::VerifyBirth { certificate, issuer_keys }) => codec::ok(&proof::verify(&certificate, &issuer_keys)),
         Ok(Command::Act { pet, action, now, request_id }) => {
             match act(pet, action, now, &request_id) {

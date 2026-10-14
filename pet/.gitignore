@@ -1,3 +1,4 @@
 target/
 node_modules/
 packages/pet-sdk/LICENSE
+/.dev/

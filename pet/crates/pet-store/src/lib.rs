@@ -148,7 +148,8 @@ impl From<StoreError> for ExecError {
 /// 动作执行外层:load → 规则核心 → 原子 commit;版本冲突时重读重试。
 pub fn run_act<S: Store>(store: &mut S, scope: &Scope, action: Action, action_name: &str, now: u64, request_id: &str) -> Result<String, ExecError> {
     use sha2::{Digest, Sha256};
-    let params_hash = format!("{:x}", Sha256::digest(format!("{action_name}:{now}")));
+    // 指纹只覆盖调用方可控的参数；时间由服务端决定，不能让重试因为跨过分钟边界而被判为请求标识复用。
+    let params_hash = format!("{:x}", Sha256::digest(action_name));
     for _ in 0..16 {
         let cur = store.load(scope)?.ok_or(ExecError::NoPet)?;
         let pet: Pet = serde_json::from_str(&cur.state).map_err(|_| ExecError::Corrupt)?;

@@ -82,3 +82,4 @@ docs/superpowers/
 routeTree.gen.ts
 # Python deployment tooling
 __pycache__/
+web/src/features/pet-demo/sdk/

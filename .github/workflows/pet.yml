@@ -68,6 +68,20 @@ jobs:
         run: cargo test --workspace -- --include-ignored
       - name: Native, Node and web WebAssembly agree
         run: ./scripts/three-end.sh
+      - name: Service end to end (SQLite and Postgres)
+        env:
+          PET_TEST_PG_URL: host=127.0.0.1 port=${{ job.services.postgres.ports['5432'] }} user=postgres password=pet dbname=pet
+        run: ./consumers/service-e2e.sh
+      - name: Service image builds and answers
+        run: |
+          docker build -f Dockerfile.service -t pet-service:ci .
+          docker run -d --name pet-svc -p 18787:8787 \
+            -e PET_DB=/data/pet.db -e PET_WORLD=ci -e PET_AUDIENCE=ci -e PET_ISSUER_NAME=ci -e PET_KID=p1 \
+            -e PET_SIGNING_SEED="$(openssl rand -hex 32)" -e PET_TOKEN_SECRET="$(openssl rand -hex 32)" \
+            -e PET_ELIGIBILITY_SECRET="$(openssl rand -hex 32)" -e PET_TRUSTED_ISSUERS='[]' pet-service:ci
+          for _ in $(seq 30); do curl -sf localhost:18787/healthz && break; sleep 1; done
+          curl -sf localhost:18787/v1/capabilities | grep -q '"op":"act"'
+          docker rm -f pet-svc
       - name: Schema, types and docs match the Rust types
         working-directory: pet/packages/pet-sdk
         run: |

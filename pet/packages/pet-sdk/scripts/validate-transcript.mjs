@@ -8,7 +8,7 @@ ajv.addSchema(schema, "pet");
 const check = (name) => ajv.getSchema(`pet#/$defs/${name}`);
 
 const transcript = fs.readFileSync(new URL("../../../target/out-native.txt", import.meta.url), "utf8").trim().split("\n");
-const ops = ["birth", ...JSON.parse(fs.readFileSync(new URL("../../../scenario/steps.json", import.meta.url))).map(() => "act"), "verify_birth", "verify_birth", "verify_birth", ...Array(5).fill("frame"), "grant", "evolution_options", "act", "capabilities"];
+const ops = ["birth", ...JSON.parse(fs.readFileSync(new URL("../../../scenario/steps.json", import.meta.url))).map(() => "act"), "verify_birth", "verify_birth", "verify_birth", ...Array(5).fill("frame"), ...Array(6).fill("sprite"), "grant", "evolution_options", "act", "capabilities"];
 if (ops.length !== transcript.length) throw new Error(`op count ${ops.length} != transcript ${transcript.length}`);
 
 let n = 0;
@@ -28,8 +28,11 @@ const inputs = [
   { op: "capabilities" },
   { op: "evolution_options", pet: JSON.parse(transcript[0]).value.pet },
   { op: "frame", species: 5, genes: [1, 2, 3, 4, 5, 6, 7, 8], pose: "idle", charset: "ascii", w: 10, h: 4, t: "0" },
+  { op: "sprite", species: 5, genes: [1, 2, 3, 4, 5, 6, 7, 8], pose: "idle", stage: 1, w: 14, h: 16, t: "0" },
 ];
 for (const c of inputs) if (!cmd(c)) throw new Error(`${c.op} input violates Command: ${ajv.errorsText(cmd.errors)}`);
 const bad = { op: "frame", species: 5, genes: [1], pose: "idle", charset: "ascii", w: 10, h: 4, t: 0 };
 if (cmd(bad)) throw new Error("Command schema accepted an invalid frame input");
+const badSprite = { op: "sprite", species: 5, genes: [1, 2, 3, 4, 5, 6, 7, 8], pose: "idle", stage: "adult", w: 14, h: 16, t: "0" };
+if (cmd(badSprite)) throw new Error("Command schema accepted a non-numeric sprite stage");
 console.log(`schema OK: ${n} responses and ${inputs.length} inputs validated; invalid input rejected`);

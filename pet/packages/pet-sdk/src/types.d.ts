@@ -75,6 +75,9 @@ export type Command =
   | (FrameInput & {
       op: "frame";
     })
+  | (PixelInput & {
+      op: "sprite";
+    })
   | {
       certificate: Certificate;
       issuer_keys: IssuerKey[];
@@ -397,6 +400,25 @@ export interface FrameInput {
   w: number;
 }
 /**
+ * 像素帧输入。`stage` 为 0 幼体、1 少年、2 成年;更大的值按成年处理。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "PixelInput".
+ */
+export interface PixelInput {
+  /**
+   * @minItems 8
+   * @maxItems 8
+   */
+  genes: [number, number, number, number, number, number, number, number];
+  h: number;
+  pose: Pose;
+  species: number;
+  stage: number;
+  t: string;
+  w: number;
+}
+/**
  * 验证方信任的一把签发公钥及其有效期。
  *
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
@@ -545,6 +567,33 @@ export interface OutcomeResult {
   value: Outcome;
 }
 /**
+ * 像素网格。`rows` 的每个字符是 `palette` 的键,`.` 表示透明。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "Pixels".
+ */
+export interface Pixels {
+  h: number;
+  /**
+   * 键为单个字符,值为 `#rrggbb`。
+   */
+  palette: {
+    [k: string]: string;
+  };
+  rows: string[];
+  w: number;
+}
+/**
+ * 成功响应信封。
+ *
+ * This interface was referenced by `PetWireProtocol`'s JSON-Schema
+ * via the `definition` "PixelsResult".
+ */
+export interface PixelsResult {
+  ok: boolean;
+  value: Pixels;
+}
+/**
  * 成功响应信封。
  *
  * This interface was referenced by `PetWireProtocol`'s JSON-Schema
@@ -562,6 +611,7 @@ export interface OpResults {
   evolution_options: EvolutionOptionsResult;
   frame: FrameResult;
   grant: OutcomeResult;
+  sprite: PixelsResult;
   verify_birth: VerdictResult;
 }
 export type ResultOf<C extends Command> = OpResults[C["op"]] | ErrorBody;

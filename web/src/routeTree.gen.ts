@@ -18,6 +18,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PersonaRouteImport } from './routes/persona'
+import { Route as PetRouteImport } from './routes/pet'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as UiRouteImport } from './routes/ui'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
@@ -150,6 +151,11 @@ const LoginRoute = LoginRouteImport.update({
 const PersonaRoute = PersonaRouteImport.update({
   id: '/persona',
   path: '/persona',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PetRoute = PetRouteImport.update({
+  id: '/pet',
+  path: '/pet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -604,6 +610,7 @@ export interface FileRoutesByFullPath {
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
+  '/pet': typeof PetRoute
   '/register': typeof RegisterRoute
   '/ui': typeof UiRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
@@ -702,6 +709,7 @@ export interface FileRoutesByTo {
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
+  '/pet': typeof PetRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/chat-bots': typeof AdminChatBotsRoute
@@ -795,6 +803,7 @@ export interface FileRoutesById {
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
+  '/pet': typeof PetRoute
   '/register': typeof RegisterRoute
   '/ui': typeof UiRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
@@ -896,6 +905,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/login'
     | '/persona'
+    | '/pet'
     | '/register'
     | '/ui'
     | '/admin/announcements'
@@ -994,6 +1004,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/login'
     | '/persona'
+    | '/pet'
     | '/register'
     | '/admin/announcements'
     | '/admin/chat-bots'
@@ -1086,6 +1097,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/login'
     | '/persona'
+    | '/pet'
     | '/register'
     | '/ui'
     | '/admin/announcements'
@@ -1186,6 +1198,7 @@ export interface RootRouteChildren {
   FriendsRoute: typeof FriendsRoute
   LoginRoute: typeof LoginRoute
   PersonaRoute: typeof PersonaRoute
+  PetRoute: typeof PetRoute
   RegisterRoute: typeof RegisterRoute
   UiRoute: typeof UiRouteWithChildren
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
@@ -1284,6 +1297,13 @@ declare module '@tanstack/react-router' {
       path: '/persona'
       fullPath: '/persona'
       preLoaderRoute: typeof PersonaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pet': {
+      id: '/pet'
+      path: '/pet'
+      fullPath: '/pet'
+      preLoaderRoute: typeof PetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -2111,6 +2131,7 @@ const rootRouteChildren: RootRouteChildren = {
   FriendsRoute: FriendsRoute,
   LoginRoute: LoginRoute,
   PersonaRoute: PersonaRoute,
+  PetRoute: PetRoute,
   RegisterRoute: RegisterRoute,
   UiRoute: UiRouteWithChildren,
   AnnouncementsIdRoute: AnnouncementsIdRoute,
