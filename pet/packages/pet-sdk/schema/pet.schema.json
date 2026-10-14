@@ -375,6 +375,19 @@
           "type": "object"
         },
         {
+          "$ref": "#/$defs/PixelInput",
+          "properties": {
+            "op": {
+              "const": "sprite",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "type": "object"
+        },
+        {
           "properties": {
             "certificate": {
               "$ref": "#/$defs/Certificate"
@@ -1015,6 +1028,115 @@
       ],
       "type": "string"
     },
+    "PixelInput": {
+      "description": "像素帧输入。`stage` 为 0 幼体、1 少年、2 成年;更大的值按成年处理。",
+      "properties": {
+        "genes": {
+          "items": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "minItems": 8,
+          "type": "array"
+        },
+        "h": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "pose": {
+          "$ref": "#/$defs/Pose"
+        },
+        "species": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "stage": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "t": {
+          "type": "string"
+        },
+        "w": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "species",
+        "genes",
+        "pose",
+        "stage",
+        "w",
+        "h",
+        "t"
+      ],
+      "type": "object"
+    },
+    "Pixels": {
+      "description": "像素网格。`rows` 的每个字符是 `palette` 的键,`.` 表示透明。",
+      "properties": {
+        "h": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "palette": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "键为单个字符,值为 `#rrggbb`。",
+          "type": "object"
+        },
+        "rows": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "w": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "w",
+        "h",
+        "rows",
+        "palette"
+      ],
+      "type": "object"
+    },
+    "PixelsResult": {
+      "description": "成功响应信封。",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/Pixels"
+        }
+      },
+      "required": [
+        "ok",
+        "value"
+      ],
+      "type": "object"
+    },
     "Pose": {
       "description": "姿态。眨眼由呈现时钟自动产生,不单独设姿态;移动随身体结构变化(见 `Body`)。",
       "oneOf": [
@@ -1220,6 +1342,14 @@
           "bad_input"
         ],
         "mutates_state": false,
+        "op": "sprite",
+        "summary": "将姿态、成长阶段与呈现时钟合成为像素画调色板与网格"
+      },
+      {
+        "errors": [
+          "bad_input"
+        ],
+        "mutates_state": false,
         "op": "verify_birth",
         "summary": "核验出生证书的来源签名、承诺揭示与结果重算"
       },
@@ -1239,6 +1369,7 @@
     "evolution_options": "EvolutionOptionsResult",
     "frame": "FrameResult",
     "grant": "OutcomeResult",
+    "sprite": "PixelsResult",
     "verify_birth": "VerdictResult"
   }
 }

@@ -34,6 +34,7 @@ pub const CAPABILITIES: &[Capability] = &[
     Capability { op: "grant", summary: "发放经服务裁决后的奖励(经验、食物、药品、主题倾向);核心只校验单次上限", mutates_state: true, errors: &[BadInput, Dead, InvalidReward, TimeBackwards, UnsupportedRules] },
     Capability { op: "evolution_options", summary: "列出当前阶段的进化分支,以及每个分支的缺项说明", mutates_state: false, errors: &[BadInput] },
     Capability { op: "frame", summary: "将姿态与呈现时钟合成为字符单元网格", mutates_state: false, errors: &[BadInput] },
+    Capability { op: "sprite", summary: "将姿态、成长阶段与呈现时钟合成为像素画调色板与网格", mutates_state: false, errors: &[BadInput] },
     Capability { op: "verify_birth", summary: "核验出生证书的来源签名、承诺揭示与结果重算", mutates_state: false, errors: &[BadInput] },
     Capability { op: "capabilities", summary: "列出当前实现的全部能力与错误分类", mutates_state: false, errors: &[] },
 ];

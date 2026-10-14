@@ -7,6 +7,9 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
+mod pixel;
+pub use pixel::{render_pixels, PixelInput, Pixels, PIXEL_H, PIXEL_W};
+
 const SPRITE_W: u16 = 7;
 const SPRITE_H: u16 = 3;
 

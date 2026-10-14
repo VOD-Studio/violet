@@ -11,6 +11,9 @@ declare const pet: Pet;
 const acted = run({ op: "act", pet, action: "feed", now: "1", request_id: "r" });
 assert<Equal<typeof acted, OutcomeResult | ErrorBody>>();
 assert<Equal<ResultOf<Extract<Command, { op: "frame" }>>["ok"], boolean>>();
+type SpriteOk = Extract<ResultOf<Extract<Command, { op: "sprite" }>>, { value: unknown }>;
+assert<Equal<SpriteOk["value"]["palette"], { [k: string]: string }>>();
+assert<Equal<SpriteOk["value"]["rows"], string[]>>();
 
 // u64 必须是字符串,不能是 number
 // @ts-expect-error now 以字符串编码

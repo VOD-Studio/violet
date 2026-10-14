@@ -27,11 +27,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -61,11 +74,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -95,11 +121,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -129,11 +168,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -163,11 +215,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -197,11 +262,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -231,11 +309,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",
@@ -265,11 +356,24 @@
       ],
       "styles": {
         "terminal": "ready",
-        "pixel": "planned",
+        "pixel": "ready",
         "fine": "planned"
       },
       "actions": {
         "terminal": [
+          "idle",
+          "blink",
+          "move",
+          "observe",
+          "eat",
+          "play",
+          "sleep",
+          "startled",
+          "sick",
+          "evolve",
+          "end"
+        ],
+        "pixel": [
           "idle",
           "blink",
           "move",

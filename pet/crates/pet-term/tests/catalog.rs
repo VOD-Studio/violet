@@ -69,9 +69,9 @@ fn ready_styles_declare_full_action_coverage_and_planned_ones_declare_none() {
                 other => panic!("unknown status {other}"),
             }
         }
-        // 当前只有终端画风有实现；其余必须保持 planned，直到真有实现。
+        // 终端与像素画风有实现；精细画风必须保持 planned，直到真有实现。
         assert_eq!(s["styles"]["terminal"], "ready");
-        assert_eq!(s["styles"]["pixel"], "planned");
+        assert_eq!(s["styles"]["pixel"], "ready");
         assert_eq!(s["styles"]["fine"], "planned");
     }
 }

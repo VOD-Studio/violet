@@ -1,16 +1,17 @@
 use pet_core::{growth::EvolutionOptions, proof::Verdict, Birth, CapabilityCatalog, Command, ErrorBody, OkBody, Outcome};
-use pet_term::Frame;
+use pet_term::{Frame, Pixels};
 use schemars::generate::SchemaSettings;
 use serde_json::{json, Value};
 
 /// 每个 op 对应的成功响应类型;命令变体与此表的一致性由测试保证。
-const OP_RESULTS: [(&str, &str); 7] = [
+const OP_RESULTS: [(&str, &str); 8] = [
     ("grant", "OutcomeResult"),
     ("evolution_options", "EvolutionOptionsResult"),
     ("capabilities", "CapabilityCatalogResult"),
     ("birth", "BirthResult"),
     ("act", "OutcomeResult"),
     ("frame", "FrameResult"),
+    ("sprite", "PixelsResult"),
     ("verify_birth", "VerdictResult"),
 ];
 
@@ -20,6 +21,7 @@ fn bundle() -> Value {
     g.subschema_for::<OkBody<Birth>>();
     g.subschema_for::<OkBody<Outcome>>();
     g.subschema_for::<OkBody<Frame>>();
+    g.subschema_for::<OkBody<Pixels>>();
     g.subschema_for::<OkBody<Verdict>>();
     g.subschema_for::<OkBody<CapabilityCatalog>>();
     g.subschema_for::<OkBody<EvolutionOptions>>();
