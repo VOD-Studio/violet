@@ -179,7 +179,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、Bot 斜杠命令补全、未读、Web Push 设置、账号级聊天外观）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
 | `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
 | `/notes`, `/notes/:id` | 公开笔记流（游标分页 + 标签筛选）与详情，复用文章渲染管线 |
-| `/pet` | 独立电子宠物演示（规则核心以 WebAssembly 在浏览器内运行，不联网；含像素画风图鉴）。需先在 `web/` 执行 `pnpm pet:sync` 构建并同步 SDK，产物不入库 |
+| `/pet` | 独立电子宠物演示（规则核心以 WebAssembly 在浏览器内运行，不联网；含像素画风图鉴）。需把 [kodama](https://github.com/VOD-Studio/kodama) 与本仓库并排检出，再在 `web/` 执行 `pnpm pet:sync` 构建并同步 SDK（`PET_REPO` 可指向其他位置），产物不入库 |
 | `/persona` | 当前人设的多语言公开档案、完整设定正文与有序设定图 |
 | `/admin/personas` | 多份人设档案及语言版本管理、完整文档编辑与当前人设切换 |
 | `/admin/galleries` | 图集管理（作者与状态筛选、自动保存、更新发布、撤回与永久删除、他人作品审核处置） |
