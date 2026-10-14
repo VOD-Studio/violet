@@ -63,6 +63,7 @@ PET_TRUSTED_ISSUERS='[{"iss":"violet","keys":[{"kid":"v1","public_key":"<64 位�
 - 证书可由独立的 WebAssembly 验证器核验。
 - 动作：状态、库存与命令结果原子提交；重放返回原结果，且跨过一分钟边界的重试不会被误判为请求标识复用；12 个并发喂食请求恰好只花掉 5 份库存。
 - 账号之间、世界之间互相不可见，猜测出生标识没有任何权限。
+- 同一次领取的并发请求都得到相同的结果，而不是被当作“已有主宠”（该缺陷在 CI 上暴露，本地复现 8/60，修复后 120 次 0 失败，撤掉修复 40 次全部失败）。
 
 ## 已知限制（这个增量刻意没做）
 
@@ -84,7 +85,7 @@ PET_TRUSTED_ISSUERS='[{"iss":"violet","keys":[{"kid":"v1","public_key":"<64 位�
 
 ## 镜像
 
-`Dockerfile.service` 是多阶段构建（构建阶段编译，运行阶段为非 root 用户），数据放在 `/data` 卷。**本机因 Docker 磁盘已满没有验证过构建**，由 CI 构建并做一次冒烟检查。
+`Dockerfile.service` 是多阶段构建（构建阶段编译，运行阶段为非 root 用户），数据放在 `/data` 卷。CI 会构建该镜像、以非 root 用户启动并检查 `/healthz` 与能力目录（首次通过：PR #541）。本机因 Docker 磁盘已满没有本地构建过。
 
 ```sh
 docker build -f Dockerfile.service -t pet-service pet
