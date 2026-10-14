@@ -15,6 +15,7 @@
 			"**/*.json",
 			"**/*.css",
 			"!src/shared/vendor",
+			"!src/features/pet-demo/sdk",
 			"!packages/ui/src/vendor",
 			"!**/*.gen.ts",
 			"!**/*.gen.tsx",
