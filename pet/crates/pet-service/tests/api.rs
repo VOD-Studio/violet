@@ -318,7 +318,7 @@ async fn racing_accepts_with_the_same_seed_create_exactly_one_pet() {
         tasks.push(tokio::spawn(async move { call(&app, "POST", &format!("/v1/births/{id}/accept"), Some(&t), Some(json!({"client_seed": seed(5)}))).await }));
     }
     let results: Vec<_> = futures_join(tasks).await;
-    assert!(results.iter().all(|(s, _)| *s == StatusCode::OK), "{results:?}");
+    assert!(results.iter().all(|(s, _)| *s == StatusCode::OK), "{:?}", results.iter().map(|(s, v)| (s.as_u16(), v["code"].as_str().unwrap_or("").to_string())).collect::<Vec<_>>());
     let certs: std::collections::BTreeSet<String> = results.iter().map(|(_, v)| v["value"]["certificate"]["id"].to_string()).collect();
     assert_eq!(certs.len(), 1, "every racer sees the same individual");
 }

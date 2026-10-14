@@ -305,21 +305,6 @@ fn accept<S: Store>(st: &AppState<S>, store: &mut S, who: &Subject, id: &str, cl
     }
 
     let ticks = st.ticks();
-    let pet_scope = pet_scope(&st.cfg, who);
-    let existing = store.load(&pet_scope)?;
-    let mut expected = 0;
-    if let Some(v) = &existing {
-        let old: Pet = serde_json::from_str(&v.state).map_err(ApiError::internal)?;
-        if !is_dead(&old, ticks) {
-            return Err(ApiError::conflict("already_has_pet", "this world already has a living main pet for the account"));
-        }
-        // 已逝去的个体先归档为纪念，再被新个体替换；纪念保留名字、形象与经历。
-        let memorial = scope(&st.cfg, who, &format!("memorial:{}", old.id));
-        let cs = Changeset { state: v.state.clone(), result: "archived".into(), params_hash: "archive".into() };
-        store.commit(&memorial, 0, "archive", &cs)?;
-        expected = v.version;
-    }
-
     let server_seed = unhex(&rec.server_seed);
     let client_bytes = unhex(client_seed);
     let cert = pet_issuer::issue_certificate(&st.signing, &rec.context, &server_seed, &client_bytes).map_err(|e| ApiError::bad_request("bad_input", e))?;
@@ -332,19 +317,41 @@ fn accept<S: Store>(st: &AppState<S>, store: &mut S, who: &Subject, id: &str, cl
     })
     .map_err(|e| ApiError::bad_request("bad_input", e))?;
 
-    let pet_json = serde_json::to_string(&birth.pet).map_err(ApiError::internal)?;
-    let cs = Changeset { state: pet_json.clone(), result: pet_json, params_hash: "adopt".into() };
-    match store.commit(&pet_scope, expected, &format!("adopt:{id}"), &cs)? {
-        Commit::Committed { .. } | Commit::Replayed { .. } => {}
-        Commit::Conflict { .. } => {
-            // 并发或重试：如果落库的正是这次出生的个体就继续，否则说明另一次领取先赢了。
-            let now = store.load(&pet_scope)?.ok_or_else(|| ApiError::internal("pet vanished"))?;
-            let p: Pet = serde_json::from_str(&now.state).map_err(ApiError::internal)?;
-            if p.id != birth.id {
-                return Err(ApiError::conflict("already_has_pet", "another adoption completed first"));
-            }
+    let pet_scope = pet_scope(&st.cfg, who);
+    let existing = store.load(&pet_scope)?;
+    let mut expected = 0;
+    let mut already_created = false;
+    if let Some(v) = &existing {
+        let old: Pet = serde_json::from_str(&v.state).map_err(ApiError::internal)?;
+        if old.id == birth.id {
+            // 这次领取已经由另一个并发请求或上一次尝试完成了宠物的创建：幂等地继续，而不是当成“已有主宠”。
+            already_created = true;
+        } else if !is_dead(&old, ticks) {
+            return Err(ApiError::conflict("already_has_pet", "this world already has a living main pet for the account"));
+        } else {
+            // 已逝去的个体先归档为纪念，再被新个体替换；纪念保留名字、形象与经历。
+            let memorial = scope(&st.cfg, who, &format!("memorial:{}", old.id));
+            let cs = Changeset { state: v.state.clone(), result: "archived".into(), params_hash: "archive".into() };
+            store.commit(&memorial, 0, "archive", &cs)?;
+            expected = v.version;
         }
-        Commit::RequestIdReused => return Err(ApiError::conflict("request_conflict", "adoption request id was reused")),
+    }
+
+    if !already_created {
+        let pet_json = serde_json::to_string(&birth.pet).map_err(ApiError::internal)?;
+        let cs = Changeset { state: pet_json.clone(), result: pet_json, params_hash: "adopt".into() };
+        match store.commit(&pet_scope, expected, &format!("adopt:{id}"), &cs)? {
+            Commit::Committed { .. } | Commit::Replayed { .. } => {}
+            Commit::Conflict { .. } => {
+                // 提交的瞬间另一个请求先写入了：落库的若正是这次出生的个体就继续，否则说明另一次领取先赢了。
+                let now = store.load(&pet_scope)?.ok_or_else(|| ApiError::internal("pet vanished"))?;
+                let p: Pet = serde_json::from_str(&now.state).map_err(ApiError::internal)?;
+                if p.id != birth.id {
+                    return Err(ApiError::conflict("already_has_pet", "another adoption completed first"));
+                }
+            }
+            Commit::RequestIdReused => return Err(ApiError::conflict("request_conflict", "adoption request id was reused")),
+        }
     }
 
     rec.accepted = true;
