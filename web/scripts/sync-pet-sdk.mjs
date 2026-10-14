@@ -1,4 +1,4 @@
-// 构建 pet-sdk 并同步到 src/features/pet-demo/sdk,供 /pet 演示页经 import.meta.glob 加载。
+// 构建 kodama 仓库的 pet-sdk 并同步到 src/features/pet-demo/sdk,供 /pet 演示页经 import.meta.glob 加载。
 // 需要 cargo、wasm32-unknown-unknown 目标与 wasm-bindgen;产物已在 .gitignore,不入库。
 //
 //   pnpm pet:sync                         构建并同步一次
@@ -11,7 +11,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const repo = resolve(process.env.PET_REPO ?? resolve(here, "../../pet"));
+const repo = resolve(process.env.PET_REPO ?? resolve(here, "../../../kodama"));
 const sdk = resolve(repo, "packages/pet-sdk");
 const dist = process.env.PET_SDK_DIST ? resolve(process.env.PET_SDK_DIST) : resolve(sdk, "dist");
 const target = resolve(here, "../src/features/pet-demo/sdk");
@@ -20,7 +20,7 @@ const FILES = ["index.js", "pet_wasm.js", "pet_wasm_bg.wasm"];
 function sync() {
 	if (!process.env.PET_SDK_DIST) {
 		if (!existsSync(resolve(sdk, "build.sh"))) {
-			console.error(`找不到 ${sdk}/build.sh;用 PET_REPO 指向 pet 仓库的检出`);
+			console.error(`找不到 ${sdk}/build.sh。先 git clone https://github.com/VOD-Studio/kodama 与本仓库并排,或用 PET_REPO 指向它的检出`);
 			return false;
 		}
 		const build = spawnSync("sh", [resolve(sdk, "build.sh")], { stdio: "inherit" });
