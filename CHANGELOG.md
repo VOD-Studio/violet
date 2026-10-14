@@ -7,6 +7,29 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.11.0](https://github.com/VOD-Studio/violet/compare/v2.10.3...v2.11.0) (2026-10-14)
+
+
+### 新增
+
+* **pet-demo:** 添加电子宠物演示页 ([6b0528b](https://github.com/VOD-Studio/violet/commit/6b0528b7c27fa168f7cf339e308fd56dbe7de168))
+* **pet:** 出生证书支持密钥轮换与撤销 ([27d2dfe](https://github.com/VOD-Studio/violet/commit/27d2dfe153f43c5e5829c50aec620a0474545010))
+* **pet:** 添加像素画风与 sprite 命令 ([4dbfab4](https://github.com/VOD-Studio/violet/commit/4dbfab41a9a3d97d73baf7beb3a83344713166de))
+* **pet:** 添加成长规则：经验、性格漂移与进化分支 ([92878c1](https://github.com/VOD-Studio/violet/commit/92878c18326172712040eea1a7349db3bd64d196))
+* **pet:** 添加服务镜像与部署说明 ([048d3db](https://github.com/VOD-Studio/violet/commit/048d3db54bc3a2f60feab88005bb5b3faedc86f1))
+* **pet:** 添加独立宠物服务 ([95d9c95](https://github.com/VOD-Studio/violet/commit/95d9c953d8625b8d5a6d966e4a090b9d32e5e39e))
+* **pet:** 添加独立宠物服务 ([f3d46ec](https://github.com/VOD-Studio/violet/commit/f3d46ec786a0823427870dac1492f15f4f86b005))
+* **pet:** 添加规则版本字段与黄金出生向量 ([f2d3a24](https://github.com/VOD-Studio/violet/commit/f2d3a24b50831fb3e7bc3a2a7512fd1bd3f0555c))
+* **pet:** 电子宠物 PRD 与 Rust 切片评审证据 ([#516](https://github.com/VOD-Studio/violet/issues/516)) ([a02e976](https://github.com/VOD-Studio/violet/commit/a02e9761b420f65489747b7da100182442b470e9))
+* **pet:** 终端画风补齐八个物种与全部姿态 ([eb66831](https://github.com/VOD-Studio/violet/commit/eb668310c152ff723a8a9f3d3c3a08fd33193741))
+
+
+### 修复
+
+* **pet:** 修正离开后回来即死亡与高频结算冻结衰减 ([d659588](https://github.com/VOD-Studio/violet/commit/d65958867ac7b9aef8763e2c0c38d92737b667ad))
+* **pet:** 动作请求的幂等指纹不再包含时间 ([012cd78](https://github.com/VOD-Studio/violet/commit/012cd787aa3ddd5664038238cab685aabca375d1))
+* **pet:** 并发的同一次领取不再被当作已有主宠 ([244c75c](https://github.com/VOD-Studio/violet/commit/244c75c83506feb872db019d910fa6cdcb3c18e7))
+
 ## [2.10.3](https://github.com/VOD-Studio/violet/compare/v2.10.2...v2.10.3) (2026-10-13)
 
 
