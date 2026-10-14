@@ -42,6 +42,8 @@ CI PostgreSQL 的数据目录使用上限 1 GiB 的 tmpfs，数据只保留在 j
 
 自托管的 Backend、Frontend 作业上限为 40 分钟，覆盖首次安装工具、下载浏览器和远程 Docker 缓存的耗时；官方 runner 保持 20 分钟。Go 测试自身仍使用默认的 10 分钟上限。Docker 缓存仅由 `main`、`release/2.0` 的 push 上传，验收分支只读取缓存；缓存传输耗时不能当作测试失败，也不能将已超时的作业算作验收成功。
 
+基础设施检查每次在 `RUNNER_TEMP` 创建唯一的 Python 虚拟环境并安装固定版本 PyYAML。不要复用固定的 `pip --target` 目录：runner 清理后可能留下空目录，pip 会跳过已有包目录并报安装成功，随后导入却缺少 `safe_load` 等成员。
+
 新工作流合入 `release/2.0` 后也可手动执行：
 
 ```bash
