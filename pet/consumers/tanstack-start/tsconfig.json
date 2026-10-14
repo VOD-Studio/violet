@@ -1,1 +1,0 @@
-{"compilerOptions":{"jsx":"react-jsx","module":"ESNext","moduleResolution":"Bundler","target":"ES2022","skipLibCheck":true,"strict":true,"types":["vite/client"]}}
