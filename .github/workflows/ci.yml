@@ -97,6 +97,7 @@ jobs:
         ports:
           - 5432/tcp
         options: >-
+          --tmpfs /var/lib/postgresql/data:rw,size=1073741824
           --health-cmd "pg_isready -U violet_ci -d violet_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:

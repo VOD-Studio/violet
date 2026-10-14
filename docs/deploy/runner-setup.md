@@ -38,6 +38,8 @@ gh api repos/VOD-Studio/violet/actions/runs/<run-id>/jobs \
 
 验收要求 Backend、Frontend、Infrastructure、Dependency Security 均由 `vod-omarchy-docker-01` 实际执行成功；变更检测和选择 runner 的控制作业仍在官方 runner 上。核对 Go 单元与迁移测试、浏览器契约测试、双侧 Docker 构建均执行，不能把 skip 或官方 runner 重跑结果作为验收。前端 `pnpm audit` 沿用既有 advisory 规则。
 
+CI PostgreSQL 的数据目录使用上限 1 GiB 的 tmpfs，数据只保留在 job 生命周期内。仓储测试为每例创建 schema 并执行全部迁移；在机械盘上的 DinD 数据目录中，这些同步写入曾使测试包超过 Go 默认的 10 分钟超时。tmpfs 用于消除这一存储瓶颈，仍执行相同的 PostgreSQL 事务和迁移测试。
+
 新工作流合入 `release/2.0` 后也可手动执行：
 
 ```bash
