@@ -19,6 +19,10 @@ on:
         description: 是否额外验证 Docker 镜像构建
         type: boolean
         default: false
+      require_self_hosted:
+        description: 强制自托管验收，禁止回退官方 runner
+        type: boolean
+        default: false
 
 # PR 取消旧检查；主干与部署调用按提交隔离，后续 push 不取消待发布提交的检查。
 concurrency:
@@ -68,6 +72,8 @@ jobs:
   runner:
     name: Pick runner
     uses: ./.github/workflows/pick-runner.yml
+    with:
+      require_self_hosted: ${{ inputs.require_self_hosted || false }}
     secrets: inherit
 
   # ============================================================
@@ -76,7 +82,7 @@ jobs:
   backend:
     name: Backend (Go)
     needs: [changes, runner]
-    timeout-minutes: 20
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 40 || 20 }}
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
@@ -91,6 +97,7 @@ jobs:
         ports:
           - 5432/tcp
         options: >-
+          --tmpfs /var/lib/postgresql/data:rw,size=1073741824
           --health-cmd "pg_isready -U violet_ci -d violet_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:
@@ -166,7 +173,7 @@ jobs:
           # scope 与 deploy.yml 构建一致:发版时 deploy 直接命中 CI 已构建的层;
           # PR 分支命中率低,仅主干 push 写缓存
           cache-from: type=gha,scope=violet-api
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-api' || '' }}
+          cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-api' || '' }}
 
   # ============================================================
   # 前端检查（TypeScript）
@@ -174,7 +181,7 @@ jobs:
   frontend:
     name: Frontend (React)
     needs: [changes, runner]
-    timeout-minutes: 20
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 40 || 20 }}
     permissions:
       actions: write   # buildx type=gha 缓存读写;同 backend job
       contents: read
@@ -255,7 +262,14 @@ jobs:
 
       - name: Install Chromium
         if: needs.changes.outputs.web == 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+            pnpm exec playwright install chromium
+          else
+            pnpm exec playwright install --with-deps chromium
+          fi
 
       - name: Browser contracts
         if: needs.changes.outputs.web == 'true'
@@ -275,7 +289,7 @@ jobs:
           push: false
           tags: violet-web:ci
           cache-from: type=gha,scope=violet-web
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-web' || '' }}
+          cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-web' || '' }}
 
   # ============================================================
   # 依赖漏洞扫描
@@ -289,7 +303,7 @@ jobs:
   security:
     name: Dependency Security
     needs: [changes, infrastructure, runner]
-    if: always()
+    if: always() && needs.runner.result == 'success'
     timeout-minutes: 10
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
 
@@ -373,6 +387,10 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      - name: Check self-hosted environment
+        if: runner.environment == 'self-hosted'
+        run: bash deploy/github-runner/scripts/check-environment.sh
+
       - name: Check release version intent
         if: github.event_name == 'pull_request' && !inputs.ref
         env:
@@ -400,11 +418,12 @@ jobs:
           echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $tool_dir/shellcheck.tar.xz" | sha256sum -c -
           tar -xJf "$tool_dir/shellcheck.tar.xz" -C "$tool_dir" --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
           echo "$tool_dir" >> "$GITHUB_PATH"
-          python3 -m pip install --disable-pip-version-check --target "$RUNNER_TEMP/workflow-python" PyYAML==6.0.3
+          python_env=$(mktemp -d "$RUNNER_TEMP/workflow-python.XXXXXX")
+          python3 -m venv "$python_env"
+          "$python_env/bin/python" -m pip install --disable-pip-version-check PyYAML==6.0.3
+          echo "$python_env/bin" >> "$GITHUB_PATH"
 
       - name: Validate workflows and composite actions
-        env:
-          PYTHONPATH: ${{ runner.temp }}/workflow-python
         run: |
           printf 'self-hosted-runner:\n  labels: [rua, omarchy]\n' > "$RUNNER_TEMP/actionlint.yaml"
           actionlint -config-file "$RUNNER_TEMP/actionlint.yaml" -oneline

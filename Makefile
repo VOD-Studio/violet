@@ -19,8 +19,18 @@
         check
 
 # 默认目标
+RUNNER_IMAGE ?= vod-github-runner:2.337.0-docker29.7.2-ci1
+
 help: ## 显示帮助信息
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: runner-image runner-check
+runner-image: ## 构建自托管 CI runner 镜像
+	docker build --tag "$(RUNNER_IMAGE)" deploy/github-runner
+
+runner-check: ## 以非 root 用户验收 runner 镜像基础依赖
+	docker run --rm --security-opt no-new-privileges --cap-drop ALL \
+		--entrypoint /usr/local/bin/runner-check-environment "$(RUNNER_IMAGE)"
 
 # ==================== 开发环境 ====================
 

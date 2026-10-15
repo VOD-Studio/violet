@@ -1,6 +1,64 @@
-# rua self-hosted Runner 安装指南
+# 自托管 Runner 运维指南
 
-CI 检查跑在 GitHub-hosted runner；生产部署跑在 rua 上的 self-hosted runner。本指南记录 rua 上一次性接入与日常维护。
+CI 默认使用 GitHub-hosted runner，`SELF_HOSTED_RUNNER=true` 时可选择 Omarchy runner；生产部署固定使用 rua runner。两者的注册信息、工作目录和 Docker 状态独立。
+
+## Omarchy CI 镜像
+
+镜像和 Compose 的源码在 `deploy/github-runner/`，本机部署目录为 `/run/media/xfy/WDC4TB/srv/github-runner`。从仓库根目录构建并检查：
+
+```bash
+make runner-image
+make runner-check
+```
+
+系统依赖在 Dockerfile 构建阶段安装，Go、Node 与 pnpm 版本由工作流声明。Chromium 的系统库清单对应 [Playwright 1.63.0 的 Ubuntu 24.04 tools/chromium 依赖](https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/registry/nativeDeps.ts)，升级 Playwright 后需重新验收浏览器契约测试。镜像中的 `/etc/violet-runner-packages.txt` 保存实际安装版本。
+
+更新部署前确认 runner 空闲，备份现有 Dockerfile、Compose、脚本和 `.env`，记录旧镜像 ID。仅同步受版本管理的源码，保留 `.env`、`.secrets` 和已有命名卷；在 `.env` 中将 `RUNNER_IMAGE` 设为新镜像 ID，然后在部署目录执行：
+
+```bash
+docker compose config --quiet
+docker compose up -d --no-deps --wait --wait-timeout 180 runner
+docker compose exec -T runner runner-check-environment
+docker compose exec -T runner bash -s < scripts/docker-smoke-test.sh
+```
+
+`--no-deps` 保留 DinD 和已有镜像缓存。回滚时恢复 `.env` 中的旧镜像 ID，再执行同一个 `up` 命令；不要删除 runner-home、runner-work 或 docker-data 卷。系统库位于镜像的 `/usr`，已有 `/home/runner` 卷不会遮挡这些依赖。基础检查和 Docker smoke test 通过后，仍须执行完整 GitHub CI 才能启用自托管。
+
+## 完整 CI 验收与启用
+
+更新镜像期间保持仓库变量 `SELF_HOSTED_RUNNER=false`。新分支修改 runner 源码或相关工作流并推送后，`Runner acceptance` 自动调用同一份 `ci.yml`，固定当前 SHA、强制双侧检查和双侧镜像构建。它允许在线但忙碌的 runner 排队；离线、查询失败、缺少状态 token 或不可信触发事件会失败，不回退官方 runner。
+
+```bash
+branch=$(git branch --show-current)
+gh run list --workflow runner-acceptance.yml --branch "$branch"
+gh run view <run-id> --json headSha,status,conclusion,jobs
+gh api repos/VOD-Studio/violet/actions/runs/<run-id>/jobs \
+  --jq '.jobs[] | {name, runner_name, conclusion, steps: [.steps[] | {name, conclusion}]}'
+```
+
+验收要求 Backend、Frontend、Infrastructure、Dependency Security 均由 `vod-omarchy-docker-01` 实际执行成功；变更检测和选择 runner 的控制作业仍在官方 runner 上。核对 Go 单元与迁移测试、浏览器契约测试、双侧 Docker 构建均执行，不能把 skip 或官方 runner 重跑结果作为验收。前端 `pnpm audit` 沿用既有 advisory 规则。
+
+CI PostgreSQL 的数据目录使用上限 1 GiB 的 tmpfs，数据只保留在 job 生命周期内。仓储测试为每例创建 schema 并执行全部迁移；在机械盘上的 DinD 数据目录中，这些同步写入曾使测试包超过 Go 默认的 10 分钟超时。tmpfs 用于消除这一存储瓶颈，仍执行相同的 PostgreSQL 事务和迁移测试。
+
+自托管的 Backend、Frontend 作业上限为 40 分钟，覆盖首次安装工具、下载浏览器和远程 Docker 缓存的耗时；官方 runner 保持 20 分钟。Go 测试自身仍使用默认的 10 分钟上限。Docker 缓存仅由 `main`、`release/2.0` 的 push 上传，验收分支只读取缓存；缓存传输耗时不能当作测试失败，也不能将已超时的作业算作验收成功。
+
+基础设施检查每次在 `RUNNER_TEMP` 创建唯一的 Python 虚拟环境并安装固定版本 PyYAML。不要复用固定的 `pip --target` 目录：runner 清理后可能留下空目录，pip 会跳过已有包目录并报安装成功，随后导入却缺少 `safe_load` 等成员。
+
+新工作流合入 `release/2.0` 后也可手动执行：
+
+```bash
+gh workflow run runner-acceptance.yml --ref release/2.0
+```
+
+启用前先合入已通过验收的工作流，再设置：
+
+```bash
+gh variable set SELF_HOSTED_RUNNER --body true
+```
+
+旧工作流的 `playwright install --with-deps` 会尝试 sudo，而 runner 启用了 `no-new-privileges`；仅更新镜像不能解决这个调用。新版自托管路径只下载 Chromium，系统库由镜像提供。停用时将变量设回 `false`；已排队或运行的作业不会因此迁移到官方 runner。日常选择的在线/空闲检查不预留容量。
+
+## rua 部署 Runner
 
 ## 前置条件
 
