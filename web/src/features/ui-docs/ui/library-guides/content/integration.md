@@ -16,7 +16,7 @@ export default defineConfig({ plugins: [tailwindcss(), react()] });
 @import "@violet/ui/styles.css";
 ```
 
-不使用 Tailwind 时先导入 `@violet/ui/tokens.css`，再导入 `@violet/ui/classes.css`；按需可将后者换为 `@violet/ui/components/button.css`。组合组件的 CSS 包含真实子组件样式依赖，例如 TextField 带齐 Input 与 Label 的规则。完整入口保留 legacy 兼容样式，基础组件无需宿主扫描其 TSX 来生成外观。
+不使用 Tailwind 时先导入 `@violet/ui/tokens.css`，再导入 `@violet/ui/classes.css`；按需可将后者换为 `@violet/ui/components/button.css`。Input 的叶子 CSS 包含输入控件、可选标签与说明的规则。完整入口保留 legacy 兼容样式，基础组件无需宿主扫描其 TSX 来生成外观。
 
 包自带的 `consumer` 命令在工作区外安装真实 tgz，检查类型、SSR 与 Vite 构建；检查方法见[组件设计流程](/ui/guides/component-design)。框架接入必须以实际执行的结果为准。
 

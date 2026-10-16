@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、TextField、UploadTile 是当前 10 个 `foundation` 单元；其余 35 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、UploadTile 是当前 9 个 `foundation` 单元；其余 35 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -44,21 +44,23 @@ Tailwind CSS v4 宿主在全局 CSS 中导入完整入口：
 ## 使用
 
 ```tsx
-import { Button, TextField } from "@violet/ui";
+import { Button, Input } from "@violet/ui";
 
 export function ProfileForm() {
   return (
     <form>
-      <TextField label="昵称" name="nickname" description="公开展示的名字" />
+      <Input label="昵称" name="nickname" clearable />
       <Button type="submit">保存</Button>
     </form>
   );
 }
 ```
 
-也可以从 `@violet/ui/button`、`@violet/ui/text-field` 等组件入口导入。`@violet/ui/variants` 只导出类名 recipe，不依赖 React；`@violet/ui/legacy` 提供存量兼容入口。
+也可以从 `@violet/ui/button`、`@violet/ui/input` 等组件入口导入。`@violet/ui/variants` 只导出类名 recipe，不依赖 React；`@violet/ui/legacy` 提供存量兼容入口。
 
-TextField 的 `className`、原生属性和 `ref` 属于 input；根布局通过 `classNames.root` 设置。Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；`/ui/components/<name>` 提供可操作的示例与对应源码。
+Input 的 `className`、`style`、原生属性、事件和 `ref` 属于 input；根布局通过 `classNames.root` 设置，视觉外壳通过 `classNames.control` 设置。可选 `label`、`description`、`errorMessage` 与 `invalid` 提供字段关联，不接管值或校验。`variant` 支持 outline / soft / ghost / underline，`controlSize` 支持 sm / md / lg，原生 `size` 仍是数字。`clearable` 产生真实输入事件，`passwordToggle` 仅用于密码输入；内部按钮共享控件焦点，不重播波纹。保留 FormData、reset、受控/非受控及 SSR ID 语义。[同源示例与 API](https://xunrua.top/ui/components/input)提供四变体、尺寸、错误、清除、密码和表单操作。
+
+Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；`/ui/components/<name>` 提供可操作的示例与对应源码。
 
 Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-label`，表单字段由内部 input 桥接。三态、表单与纯 HTML 样式的边界见 [Checkbox 契约](docs/components/checkbox.md)。
 

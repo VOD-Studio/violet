@@ -21,4 +21,4 @@ import { SearchInput } from "@violet/ui";
 
 `ref`、原生键盘与焦点事件、`style`、`name`、`form` 等属性作用于真实 input；文本编辑通过 `onValueChange` 接收值。object ref 与 callback ref 均可使用，callback 返回的清理函数在卸载或 ref 更换时执行。`className` 作用于外壳。尺寸 `default` 为 36px，`sm` 为 32px。
 
-这个组件的文本由 React 状态管理，尚未提供非受控原生表单 reset 契约。需要依赖浏览器 reset 的字段应使用 Input 或 TextField；搜索表单可以由调用方在 `onReset` 回写受控值。
+这个组件的文本由 React 状态管理，尚未提供非受控原生表单 reset 契约。需要依赖浏览器 reset 的字段应使用 Input；搜索表单可以由调用方在 `onReset` 回写受控值。

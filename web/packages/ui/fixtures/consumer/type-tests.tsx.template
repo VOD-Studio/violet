@@ -1,10 +1,10 @@
-import { ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type TextFieldProps } from "@violet/ui";
+import { ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type InputProps } from "@violet/ui";
 import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
 import { Modal } from "@violet/ui/legacy";
-import { TextField } from "@violet/ui/text-field";
-import { buttonVariants, checkboxVariants, type ButtonVariantProps } from "@violet/ui/variants";
+import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
+import { buttonVariants, checkboxVariants, inputVariants, type ButtonVariantProps, type InputVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
 import { UploadTile, type UploadTileProps } from "@violet/ui";
 import { UploadTile as LeafUploadTile, type UploadTileProps as LeafUploadTileProps } from "@violet/ui/upload-tile";
@@ -53,13 +53,31 @@ export const invalidNativeRef = <Button ref={anchorRef}>保存</Button>;
 // @ts-expect-error 子元素的 href 应写在子元素上。
 const invalidSlottedProps: ButtonProps = { asChild: true, href: "/settings" };
 void invalidSlottedProps;
-const field: TextFieldProps = { label: "邮箱", type: "email", ref: (input) => input?.focus() };
+const field: InputProps = {
+	label: "邮箱", description: "接收通知", type: "email", size: 24, controlSize: "lg",
+	variant: "soft", clearable: true, leading: <span>@</span>, trailing: <span>.com</span>,
+	ref: (input) => { input?.focus(); },
+	onChange: (event) => {
+		const target: HTMLInputElement = event.currentTarget;
+		void target.value;
+	},
+	classNames: { root: "field-layout", control: "field-surface" },
+};
+const leafField: LeafInputProps = field;
+const inputRecipe: InputVariantProps = { variant: "underline", controlSize: "sm" };
+inputVariants(inputRecipe);
+// @ts-expect-error 原生 size 仍表示字符宽度。
+export const invalidInputSize = <Input size="lg" />;
+// @ts-expect-error 输入框不能接收 button ref。
+export const invalidInputRef = <Input ref={createRef<HTMLButtonElement>()} />;
+// @ts-expect-error 视觉变体限定为公开的四种。
+inputVariants({ variant: "unknown" });
 const recipe: ButtonVariantProps = { variant: "primary" };
 buttonVariants(recipe);
 buttonVariants({ variant: "primary", className: "consumer-class" });
 // @ts-expect-error Unsupported variants must stay compile-time errors.
 buttonVariants({ variant: "unknown" });
-export const example = <><Button {...button}>保存</Button><TextField {...field} /><Input /><Label>名称</Label><Textarea /></>;
+export const example = <><Button {...button}>保存</Button><Input {...field} /><LeafInput {...leafField} /><Input /><Label>名称</Label><Textarea /></>;
 export const legacy = Modal;
 
 const checkbox: CheckboxProps = {

@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { Button, Checkbox, ImagePixelReveal, TextField, type PixelRevealVariant } from "@violet/ui";
+import { Button, Checkbox, ImagePixelReveal, Input, type PixelRevealVariant } from "@violet/ui";
 import { Button as LeafButton } from "@violet/ui/button";
 import { Checkbox as LeafCheckbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal } from "@violet/ui/image-pixel-reveal";
+import { Input as LeafInput } from "@violet/ui/input";
 import { buttonVariants, checkboxVariants } from "@violet/ui/variants";
 import { renderToString } from "react-dom/server";
 import { UploadTile } from "@violet/ui";
@@ -31,7 +32,8 @@ const link = renderToString(<LeafButton asChild><a href="/settings">设置</a></
 assert.match(link, /^<a /);
 assert.match(link, /href="\/settings"/);
 assert.doesNotMatch(link, /<button/);
-const field = renderToString(<TextField id="email" label="邮箱" description="用于发送更新" />);
+const field = renderToString(<Input id="email" label="邮箱" description="用于发送更新" />);
+assert.equal(field, renderToString(<LeafInput id="email" label="邮箱" description="用于发送更新" />));
 assert.match(field, /for="email"/);
 assert.match(field, /aria-describedby="email-description"/);
 assert.match(buttonVariants({ variant: "primary" }), /v-button--primary/);
@@ -90,4 +92,4 @@ const segmentedEqual = renderToString(segmentedTree(Segmented, true));
 assert.equal(segmentedEqual, renderToString(segmentedTree(LeafSegmented, true)));
 assert.match(segmentedEqual, /data-layout="equal"/);
 assert.match(segmentedEqual, /--v-segmented-item-size:\s*5rem/);
-console.log("Independent root/leaf SSR, TextField, Checkbox, ImagePixelReveal, UploadTile, Dropdown and Segmented semantics passed.");
+console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown and Segmented semantics passed.");

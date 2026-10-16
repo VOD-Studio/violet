@@ -15,27 +15,26 @@ import { Link } from "@tanstack/react-router";
 
 ## 组合字段保留 input 契约
 
-TextField 的值、原生事件和 ref 仍属于 input：
+Input 可选地组合标签、说明和错误，值、原生事件和 ref 仍属于 input：
 
 ```tsx
-import { TextField } from "@violet/ui";
+import { Input } from "@violet/ui";
 import { useState } from "react";
 
 export function NameField() {
   const [name, setName] = useState("");
   return (
-    <TextField
+    <Input
       label="显示名称"
       value={name}
       onChange={(event) => setName(event.target.value)}
-      description="公开显示在评论旁"
       classNames={{ root: "max-w-sm" }}
     />
   );
 }
 ```
 
-ID 未指定时由 `useId` 生成。label、description 与实际显示的 error 关联到同一 input。`className` 属于 input，外层布局使用 `classNames.root`。完整示例见[TextField](/ui/components/text-field)。
+ID 未指定时由 `useId` 生成。label、description 与实际显示的 error 关联到同一 input。`className` 属于 input，外层布局使用 `classNames.root`，视觉外壳使用 `classNames.control`。这些可选内容不会替换真实 input；完整示例见 [Input](/ui/components/input)。
 
 多行输入使用 Label 与 Textarea，手动保持关联：
 

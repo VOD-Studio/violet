@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 10 个基础单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、TextField、UploadTile。其余 35 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 9 个基础单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、UploadTile。其余 35 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -15,7 +15,7 @@ web/packages/ui/
         styles.ts
         index.ts
         __tests__/
-      text-field/
+      input/
       ...
     styles/
       palettes/
@@ -95,22 +95,21 @@ component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清
 
 `asChild` 同时划定类型边界。原生模式保留 `HTMLButtonElement` 的 ref、事件与表单属性；`asChild={true}` 使用 `HTMLElement` 的通用属性、ref 和事件，可接收链接的 object/callback ref。`href`、`target` 等子元素专属属性放在子元素上；需要访问链接专属属性的事件也放在链接上。React 19 的 callback ref cleanup 继续参与 Slot 的引用合并与卸载清理。
 
-TextField 将 Input 与 Label 组合成有名称的字段。它不接管值、校验规则或请求状态：
+Input 可选地组合名称、说明和错误信息。它不接管值、校验规则或请求状态：
 
 ```tsx
-import { TextField } from "@violet/ui";
+import { Input } from "@violet/ui";
 
-<TextField
+<Input
   label="邮箱"
   name="email"
   type="email"
   autoComplete="email"
-  description="用于接收回复通知"
   required
 />
 ```
 
-`className`、`style`、事件与 ref 继续属于 input；外层通过 `classNames.root` 调整布局。未传 `id` 时使用 `useId` 生成 SSR 稳定的关联标识。`aria-describedby` 合并宿主 ID 和实际存在的说明、错误节点；错误只在 invalid 时显示，内部 ID 只引用存在的节点；宿主提供的 aria-describedby ID 保留其语义，不因与内部 ID 重名而删除。
+`className`、`style`、事件与 ref 继续属于 input；外层通过 `classNames.root` 调整布局，视觉外壳使用 `classNames.control`。未传 `id` 时使用 `useId` 生成 SSR 稳定的关联标识。`aria-describedby` 合并并去重宿主 ID 和实际存在的说明、错误节点；错误只在 invalid 时显示。`variant` 与 `controlSize` 由 typed recipe 推导，原生 `size` 仍为数字。清除与密码显隐按钮属于同一个复合焦点范围，不因焦点在内部转移而重播聚焦反馈；hover 仅在该范围没有焦点时生效。
 
 状态有明确归属：原生属性表达 disabled、required 和 invalid；Button 的 `data-loading` 表达加载；Radix 控件沿用其 `data-state`。`data-slot` 标识结构部件。组件不得为每次 hover 创建全局状态，也不得用 CSS 外观冒充键盘行为。
 
@@ -122,15 +121,15 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 
 | 规则 | 解决的问题 | 验证方式与边界 |
 | --- | --- | --- |
-| 原生语义优先 | 封装后丢失 ref、表单提交或键盘行为 | Input 保留原生属性；TextField 的 className/ref 属于 input，关联 ID 可在 SSR 水合后保持一致。复合浮层使用 Radix 的真实能力 |
+| 原生语义优先 | 封装后丢失 ref、表单提交或键盘行为 | Input 的 className/ref 属于 input，保留受控与非受控、FormData/reset；关联 ID 在 SSR 水合后保持一致。复合浮层使用 Radix 的真实能力 |
 | 单视觉源 | React 与 HTML 外观各维护一套，改一次漂移一次 | foundation 的 BEM CSS 同时供两种消费；recipe 只选类名，utility 在宿主做局部覆盖。legacy 尚未全部迁移 |
-| 组合样式依赖闭合 | 只引入 TextField 样式却缺 Input/Label 外观 | TextField 的 CSS 引入它真实依赖的 Input 与 Label CSS；宿主先导入 tokens，之后组件 CSS 自带内部依赖 |
+| 组合样式依赖闭合 | 按需加载后字段标签或说明缺少样式 | Input 的叶子 CSS 包含字段外层、视觉控件、标签与信息规则；宿主先导入 tokens，不猜测内部依赖 |
 | 清单追踪成熟度 | 一个新组件让整库看起来已经重建 | 清单区分 foundation 与 legacy，派生入口保持兼容；成熟度升级要有行为、视觉、文档与消费证据 |
 | 源码与安装包分开验证 | 工作区源码能跑，打包后却缺文件、类型或样式 | 真实 tarball 安装到工作区外，再检查类型、SSR、Vite 和入口模块可达性；不能用构建目录存在代替消费者成功 |
 
 用户直接提出的约束继续生效：常规交互不用 scale 或方向性滑入滑出，功能圆角不超过 16px，浮起只用 `0 4px 24px / 0.05` 软影。通用主题保持系统字体与可覆盖的语义 token，宿主的品牌预设不成为基础控件依赖。
 
-能力由实际需求推动：Button 需要变体，所以有 `styles.ts`；Input 与 TextField 只有固定基础结构时直接使用稳定类名。出现多个真实复用方后再提取 lib，避免让首期架构承担尚不存在的状态和场景。
+能力由实际需求推动：Button 与 Input 需要变体，所以有 `styles.ts`；Label 等无变体单元直接使用稳定类名。出现多个真实复用方后再提取 lib，避免让架构承担尚不存在的状态和场景。
 
 ## 清单如何防止入口漂移
 
@@ -138,11 +137,11 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 
 ```json
 {
-  "name": "text-field",
+  "name": "input",
   "status": "foundation",
-  "entry": "src/components/text-field/index.ts",
-  "css": "src/components/text-field/text-field.css",
-  "documentation": "web/src/features/ui-docs/ui/TextFieldDoc.tsx"
+  "entry": "src/components/input/index.ts",
+  "css": "src/components/input/input.css",
+  "documentation": "web/src/features/ui-docs/ui/InputDoc.tsx"
 }
 ```
 

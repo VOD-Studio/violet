@@ -1,26 +1,101 @@
 @layer components {
-	.v-input {
-		box-sizing: border-box;
+	.v-input-field {
+		--v-input-accent: var(--primary);
+		display: flex;
 		inline-size: 100%;
 		min-inline-size: 0;
-		block-size: var(--v-control-height-md, 2.25rem);
-		padding: 0.25rem 0.75rem;
-		border: 1px solid var(--input);
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.v-input-field:has(.v-input:is([type="hidden"], [hidden])) {
+		display: none;
+	}
+
+	.v-input-field:has(
+		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+	) {
+		--v-input-accent: var(--destructive);
+	}
+
+	.v-input-field__label {
+		color: var(--foreground);
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.5;
+		transition: color 320ms ease;
+	}
+
+	.v-input-field:has(.v-input-control:focus-within) > .v-input-field__label,
+	.v-input-field:has(
+			.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+		)
+		> .v-input-field__label {
+		color: var(--v-input-accent);
+	}
+
+	.v-input-field__description,
+	.v-input-field__error {
+		margin: 0;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+	}
+
+	.v-input-field__description {
+		color: var(--muted-foreground);
+	}
+
+	.v-input-field__error {
+		color: var(--destructive);
+	}
+
+	.v-input-control {
+		position: relative;
+		display: flex;
+		box-sizing: border-box;
+		align-items: center;
+		gap: 0.5rem;
+		inline-size: 100%;
+		min-inline-size: 0;
+		block-size: var(--v-input-height-md, 2.5rem);
+		padding-inline: 0.75rem;
+		border: 1px solid transparent;
 		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
 		background-color: transparent;
+		color: var(--muted-foreground);
+		transition:
+			border-color 320ms ease,
+			background-color 320ms ease,
+			color 320ms ease;
+	}
+
+	.v-input-control--sm {
+		block-size: var(--v-input-height-sm, 2rem);
+		padding-inline: 0.625rem;
+	}
+
+	.v-input-control--lg {
+		block-size: var(--v-input-height-lg, 3rem);
+		padding-inline: 0.875rem;
+	}
+
+	.v-input {
+		display: block;
+		box-sizing: border-box;
+		flex: 1 1 auto;
+		inline-size: 100%;
+		min-inline-size: 0;
+		block-size: 100%;
+		padding: 0;
+		border: 0;
+		border-radius: inherit;
+		outline: none;
+		background-color: transparent;
 		color: var(--foreground);
+		caret-color: var(--v-input-accent, var(--primary));
 		font-family: inherit;
 		font-size: 1rem;
 		line-height: 1.5;
-		transition:
-			border-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
-			background-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
-	}
-
-	.v-input:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-		border-color: var(--ring);
 	}
 
 	.v-input::placeholder {
@@ -44,21 +119,172 @@
 		cursor: pointer;
 	}
 
-	.v-input:disabled {
+	.v-input-control__leading,
+	.v-input-control__trailing,
+	.v-input-control__action {
+		display: inline-flex;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		color: inherit;
+	}
+
+	.v-input-control__action {
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		padding: 0;
+		border: 0;
+		border-radius: 0.375rem;
+		background-color: transparent;
+		font: inherit;
+		cursor: pointer;
+		transition: color 320ms ease;
+	}
+
+	.v-input-control__action:focus-visible {
+		outline: 2px solid var(--v-input-accent, var(--primary));
+		outline-offset: 1px;
+	}
+
+	.v-input-control__action:disabled {
+		cursor: not-allowed;
+	}
+
+	.v-input-control__leading svg,
+	.v-input-control__trailing svg,
+	.v-input-control__action svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+		stroke-width: 2px;
+		opacity: 1;
+	}
+
+	.v-input-control:focus-within,
+	.v-input-control:has(
+		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+	) {
+		color: var(--v-input-accent, var(--primary));
+	}
+
+	.v-input-control--outline {
+		border-color: var(--input);
+	}
+
+	.v-input-control--outline::before,
+	.v-input-control--outline::after {
+		position: absolute;
+		inset: -1px;
+		border-radius: inherit;
+		pointer-events: none;
+		content: "";
+	}
+
+	.v-input-control--outline::before {
+		box-shadow: 0 0 4px 2px
+			color-mix(in oklab, var(--v-input-accent, var(--primary)) 10%, transparent);
+		opacity: 0;
+		transition: opacity 320ms ease;
+	}
+
+	.v-input-control--outline::after {
+		opacity: 0;
+	}
+
+	.v-input-control--outline:focus-within {
+		border-color: var(--v-input-accent, var(--primary));
+	}
+
+	.v-input-control--outline:focus-within::before {
+		opacity: 1;
+	}
+
+	.v-input-control--outline:focus-within::after {
+		animation: v-input-ripple 620ms ease-out both;
+	}
+
+	.v-input-control--outline:has(.v-input[readonly])::after {
+		animation: none;
+	}
+
+	.v-input-control--outline:has(
+		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+	) {
+		border-color: var(--v-input-accent, var(--destructive));
+	}
+
+	.v-input-control--soft {
+		background-color: var(--muted);
+	}
+
+	.v-input-control--soft:focus-within,
+	.v-input-control--soft:has(
+		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+	) {
+		background-color: color-mix(
+			in oklab,
+			var(--v-input-accent, var(--primary)) 6%,
+			var(--muted)
+		);
+	}
+
+	.v-input-control--underline {
+		border: 0;
+		border-block-end: 1px solid var(--input);
+		border-radius: 0;
+	}
+
+	.v-input-control--underline::after {
+		position: absolute;
+		inset-inline: 0;
+		inset-block-end: -1px;
+		block-size: 2px;
+		background-color: var(--v-input-accent, var(--primary));
+		clip-path: inset(0 100% 0 0);
+		pointer-events: none;
+		content: "";
+		transition:
+			clip-path 560ms cubic-bezier(0.22, 1, 0.36, 1),
+			background-color 320ms ease;
+	}
+
+	.v-input-control--underline:focus-within::after,
+	.v-input-control--underline:has(
+		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+	)::after {
+		clip-path: inset(0);
+	}
+
+	.v-input-control:has(.v-input:disabled),
+	.v-input-field:has(.v-input:disabled) > .v-input-field__label {
 		cursor: not-allowed;
 		opacity: 0.5;
 	}
 
-	.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"]) {
-		border-color: var(--destructive);
+	.v-input:disabled {
+		cursor: not-allowed;
 	}
 
-	.v-input:is(
-		[aria-invalid="true"],
-		[aria-invalid="grammar"],
-		[aria-invalid="spelling"]
-	):focus-visible {
-		outline-color: var(--destructive);
+	@media (hover: hover) {
+		.v-input-control:not(:focus-within):not(:has(.v-input:disabled)):hover {
+			color: var(--v-input-accent, var(--primary));
+		}
+
+		.v-input-control--outline:not(:focus-within):not(:has(.v-input:disabled)):hover,
+		.v-input-control--underline:not(:focus-within):not(:has(.v-input:disabled)):hover {
+			border-color: color-mix(
+				in oklab,
+				var(--v-input-accent, var(--primary)) 45%,
+				var(--input)
+			);
+		}
+
+		.v-input-control--soft:not(:focus-within):not(:has(.v-input:disabled)):hover {
+			background-color: color-mix(
+				in oklab,
+				var(--v-input-accent, var(--primary)) 6%,
+				var(--muted)
+			);
+		}
 	}
 
 	@media (min-width: 48rem) {
@@ -68,26 +294,44 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.v-input {
+		.v-input-field__label,
+		.v-input-control,
+		.v-input-control::before,
+		.v-input-control::after,
+		.v-input-control__action,
+		.v-input-control--outline:focus-within::after {
+			animation: none;
 			transition: none;
 		}
 	}
 
 	@media (forced-colors: active) {
-		.v-input {
+		.v-input-control {
 			border-color: ButtonText;
 			background-color: Canvas;
 			color: CanvasText;
 		}
 
-		.v-input:focus-visible {
-			outline-color: Highlight;
+		.v-input-control:focus-within {
+			outline: 2px solid Highlight;
+			outline-offset: 2px;
 		}
 
-		.v-input:disabled {
+		.v-input-control:has(.v-input:disabled) {
 			border-color: GrayText;
 			color: GrayText;
 			opacity: 1;
 		}
+	}
+}
+
+@keyframes v-input-ripple {
+	from {
+		box-shadow: 0 0 0 0 var(--v-input-accent, var(--primary));
+		opacity: 0.32;
+	}
+	to {
+		box-shadow: 0 0 0 8px var(--v-input-accent, var(--primary));
+		opacity: 0;
 	}
 }

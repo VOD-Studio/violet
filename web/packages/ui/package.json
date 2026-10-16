@@ -227,11 +227,6 @@
 			"import": "./src/components/tabs/index.ts",
 			"default": "./src/components/tabs/index.ts"
 		},
-		"./text-field": {
-			"types": "./src/components/text-field/index.ts",
-			"import": "./src/components/text-field/index.ts",
-			"default": "./src/components/text-field/index.ts"
-		},
 		"./text-underline": {
 			"types": "./src/components/text-underline/index.ts",
 			"import": "./src/components/text-underline/index.ts",
@@ -284,7 +279,6 @@
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
 		"./components/switch.css": "./src/components/switch/switch.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
-		"./components/text-field.css": "./src/components/text-field/text-field.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
 		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
 		"./palettes/violet.css": "./src/styles/palettes/violet.css",
@@ -523,11 +517,6 @@
 				"import": "./dist/components/tabs/index.js",
 				"default": "./dist/components/tabs/index.js"
 			},
-			"./text-field": {
-				"types": "./dist/components/text-field/index.d.ts",
-				"import": "./dist/components/text-field/index.js",
-				"default": "./dist/components/text-field/index.js"
-			},
 			"./text-underline": {
 				"types": "./dist/components/text-underline/index.d.ts",
 				"import": "./dist/components/text-underline/index.js",
@@ -580,7 +569,6 @@
 			"./components/skeleton.css": "./dist/components/skeleton.css",
 			"./components/switch.css": "./dist/components/switch.css",
 			"./components/tabs.css": "./dist/components/tabs.css",
-			"./components/text-field.css": "./dist/components/text-field.css",
 			"./components/textarea.css": "./dist/components/textarea.css",
 			"./components/upload-tile.css": "./dist/components/upload-tile.css",
 			"./palettes/violet.css": "./dist/palettes/violet.css",

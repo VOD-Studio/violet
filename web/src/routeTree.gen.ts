@@ -104,7 +104,6 @@ import { Route as UiComponentsImagePixelRevealRouteImport } from './routes/ui.co
 import { Route as UiComponentsInputRouteImport } from './routes/ui.components.input'
 import { Route as UiComponentsSegmentedRouteImport } from './routes/ui.components.segmented'
 import { Route as UiComponentsTabsRouteImport } from './routes/ui.components.tabs'
-import { Route as UiComponentsTextFieldRouteImport } from './routes/ui.components.text-field'
 import { Route as UiComponentsUploadTileRouteImport } from './routes/ui.components.upload-tile'
 import { Route as UiGuidesSlugRouteImport } from './routes/ui.guides.$slug'
 
@@ -584,11 +583,6 @@ const UiComponentsTabsRoute = UiComponentsTabsRouteImport.update({
   path: '/tabs',
   getParentRoute: () => UiComponentsRoute,
 } as any)
-const UiComponentsTextFieldRoute = UiComponentsTextFieldRouteImport.update({
-  id: '/text-field',
-  path: '/text-field',
-  getParentRoute: () => UiComponentsRoute,
-} as any)
 const UiComponentsUploadTileRoute = UiComponentsUploadTileRouteImport.update({
   id: '/upload-tile',
   path: '/upload-tile',
@@ -690,7 +684,6 @@ export interface FileRoutesByFullPath {
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
-  '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
@@ -782,7 +775,6 @@ export interface FileRoutesByTo {
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
-  '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
@@ -883,7 +875,6 @@ export interface FileRoutesById {
   '/ui/components/input': typeof UiComponentsInputRoute
   '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
-  '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
@@ -985,7 +976,6 @@ export interface FileRouteTypes {
     | '/ui/components/input'
     | '/ui/components/segmented'
     | '/ui/components/tabs'
-    | '/ui/components/text-field'
     | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
@@ -1077,7 +1067,6 @@ export interface FileRouteTypes {
     | '/ui/components/input'
     | '/ui/components/segmented'
     | '/ui/components/tabs'
-    | '/ui/components/text-field'
     | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries'
@@ -1177,7 +1166,6 @@ export interface FileRouteTypes {
     | '/ui/components/input'
     | '/ui/components/segmented'
     | '/ui/components/tabs'
-    | '/ui/components/text-field'
     | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
@@ -1901,13 +1889,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiComponentsTabsRouteImport
       parentRoute: typeof UiComponentsRoute
     }
-    '/ui/components/text-field': {
-      id: '/ui/components/text-field'
-      path: '/text-field'
-      fullPath: '/ui/components/text-field'
-      preLoaderRoute: typeof UiComponentsTextFieldRouteImport
-      parentRoute: typeof UiComponentsRoute
-    }
     '/ui/components/upload-tile': {
       id: '/ui/components/upload-tile'
       path: '/upload-tile'
@@ -2083,7 +2064,6 @@ interface UiComponentsRouteChildren {
   UiComponentsInputRoute: typeof UiComponentsInputRoute
   UiComponentsSegmentedRoute: typeof UiComponentsSegmentedRoute
   UiComponentsTabsRoute: typeof UiComponentsTabsRoute
-  UiComponentsTextFieldRoute: typeof UiComponentsTextFieldRoute
   UiComponentsUploadTileRoute: typeof UiComponentsUploadTileRoute
   UiComponentsIndexRoute: typeof UiComponentsIndexRoute
 }
@@ -2098,7 +2078,6 @@ const UiComponentsRouteChildren: UiComponentsRouteChildren = {
   UiComponentsInputRoute: UiComponentsInputRoute,
   UiComponentsSegmentedRoute: UiComponentsSegmentedRoute,
   UiComponentsTabsRoute: UiComponentsTabsRoute,
-  UiComponentsTextFieldRoute: UiComponentsTextFieldRoute,
   UiComponentsUploadTileRoute: UiComponentsUploadTileRoute,
   UiComponentsIndexRoute: UiComponentsIndexRoute,
 }
