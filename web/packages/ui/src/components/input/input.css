@@ -107,6 +107,12 @@
 		color: var(--primary-foreground);
 	}
 
+	/* type=search 的原生清除按钮无法使用主题 token 定制，清空能力由 clearable 提供 */
+	.v-input::-webkit-search-cancel-button,
+	.v-input::-webkit-search-decoration {
+		appearance: none;
+	}
+
 	.v-input::file-selector-button {
 		block-size: 1.75rem;
 		margin-inline-end: 0.5rem;
