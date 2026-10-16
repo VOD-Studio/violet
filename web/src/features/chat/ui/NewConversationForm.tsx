@@ -1,4 +1,4 @@
-import { Button } from "@violet/ui";
+import { Button, Input } from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, LoaderCircle, Search, Users, X } from "lucide-react";
@@ -87,17 +87,16 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 			</header>
 
 			<div className="px-4 pb-2">
-				<div className="relative">
-					<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-					<input
-						aria-label="搜索成员"
-						className="h-10 w-full rounded-full border-none bg-secondary pl-10 pr-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
-						onChange={(event) => setMemberSearch(event.target.value)}
-						placeholder="搜索用户名或展示名"
-						ref={searchRef}
-						value={memberSearch}
-					/>
-				</div>
+				<Input
+					aria-label="搜索成员"
+					leading={<Search />}
+					classNames={{ control: "rounded-full" }}
+					onChange={(event) => setMemberSearch(event.target.value)}
+					placeholder="搜索用户名或展示名"
+					ref={searchRef}
+					value={memberSearch}
+					variant="soft"
+				/>
 			</div>
 
 			<AnimatePresence>
@@ -182,12 +181,13 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 
 			<div className="shrink-0 border-t border-border p-3">
 				{isRoom && (
-					<input
+					<Input
 						aria-label="群聊名称"
-						className="mb-2 h-11 w-full rounded-xl border-none bg-secondary px-4 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
+						classNames={{ root: "mb-2" }}
 						onChange={(event) => setTitle(event.target.value)}
 						placeholder="群聊名称（可选）"
 						value={title}
+						variant="soft"
 					/>
 				)}
 				<Button

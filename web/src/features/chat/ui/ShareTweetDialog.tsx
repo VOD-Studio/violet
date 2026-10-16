@@ -16,7 +16,7 @@ import {
 } from "@features/chat/api/queries";
 import type { ChatUser } from "@features/chat/model/types";
 import { useNavigate } from "@tanstack/react-router";
-import { Modal } from "@violet/ui";
+import { Input, Modal } from "@violet/ui";
 import { LoaderCircle, Search } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
@@ -90,15 +90,14 @@ export function ShareTweetDialog() {
 		>
 			<div className="space-y-3">
 				{tweet && queriesEnabled && <TweetSharingPreview id={tweet.id} />}
-				<div className="relative">
-					<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-					<input
-						className="w-full rounded-lg border border-input/70 bg-secondary/40 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-neon-cyan/50"
-						onChange={(e) => setSearch(e.target.value)}
-						placeholder="搜索会话或用户"
-						value={search}
-					/>
-				</div>
+				<Input
+					aria-label="搜索会话或用户"
+					leading={<Search />}
+					onChange={(e) => setSearch(e.target.value)}
+					placeholder="搜索会话或用户"
+					value={search}
+					variant="soft"
+				/>
 				<div className="max-h-80 space-y-1 overflow-y-auto">
 					{conversationsLoading ? (
 						<ChatContactSkeleton />

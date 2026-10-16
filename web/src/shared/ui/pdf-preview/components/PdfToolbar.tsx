@@ -4,7 +4,7 @@
  * 包含：上一页/页码/下一页、缩放（- / 比例 / + / 重置）、下载。
  */
 
-import { Button } from "@violet/ui";
+import { Button, Input } from "@violet/ui";
 import { ChevronLeft, ChevronRight, Download, Maximize, Minus, Plus } from "lucide-react";
 
 interface PdfToolbarProps {
@@ -47,14 +47,18 @@ export function PdfToolbar({
 				<ChevronLeft className="size-4" />
 			</Button>
 			<div className="flex items-center gap-1 text-xs text-muted-foreground">
-				<input
+				<Input
 					type="number"
-					min={1}
-					max={numPages || 1}
-					value={currentPage}
-					onChange={(e) => onGoToPage(Number(e.target.value))}
-					className="h-6 w-10 rounded border bg-background px-1 text-center text-xs tabular-nums"
 					aria-label="当前页码"
+					controlSize="sm"
+					classNames={{
+						control: "h-6 w-10.5 rounded px-1",
+						input: "text-center text-xs tabular-nums",
+					}}
+					max={numPages || 1}
+					min={1}
+					onChange={(e) => onGoToPage(Number(e.target.value))}
+					value={currentPage}
 				/>
 				<span>/ {numPages || "-"}</span>
 			</div>
