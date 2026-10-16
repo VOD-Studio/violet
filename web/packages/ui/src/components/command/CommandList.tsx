@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Dialog, DialogContent } from "../dialog";
 import Empty from "../empty";
+import { Input } from "../input";
 import { ShimmerSkeleton } from "../shimmer-skeleton";
 
 export interface CommandListProps {
@@ -53,12 +54,16 @@ function CommandList({
 				showCloseButton={false}
 				className="overflow-hidden border-edge-hairline bg-card p-0 dark:bg-surface-glass/70 dark:backdrop-blur-2xl"
 			>
-				<input
+				<Input
 					autoFocus
+					variant="underline"
+					classNames={{
+						control: "h-auto px-4 py-3",
+						input: "font-mono text-sm",
+					}}
 					value={query}
 					onChange={(e) => onQueryChange(e.target.value)}
 					placeholder="搜索文章或页面…"
-					className="w-full border-b border-edge-hairline bg-transparent px-4 py-3 font-mono text-sm placeholder:text-muted-foreground focus:outline-none"
 				/>
 				<div className="max-h-80 overflow-y-auto p-2">
 					{loading && items.length === 0 ? (

@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "cn";
 import { Loader2, Search, X } from "lucide-react";
 import { type ComponentProps, useCallback, useId, useRef, useState } from "react";
 import { useDebouncedCallback } from "../../lib/use-debounced-callback";
+import { Input } from "./input";
 
 /** 防抖搜索保留 input 的原生属性、键盘事件和 ref；className 作用于外壳。 */
 export interface SearchInputProps
@@ -20,21 +20,11 @@ export interface SearchInputProps
 	delay?: number;
 	/** 是否显示加载中 spinner（覆盖清除按钮） */
 	loading?: boolean;
-	/** 尺寸，default 对应 h-9，sm 对应 h-8 */
+	/** 尺寸,default 为 36px,sm 为 32px */
 	size?: "default" | "sm";
 	/** 清除回调（点击 × 时额外触发，onSearch("") 仍会调用） */
 	onClear?: () => void;
 }
-
-const sizeMap = {
-	default: "h-9 text-sm pl-9 pr-9",
-	sm: "h-8 text-xs pl-7 pr-8",
-};
-
-const iconSizeMap = {
-	default: "size-4",
-	sm: "size-3.5",
-};
 
 /** 调用方的 onKeyDown 先执行，preventDefault 可取消内部的回车搜索。 */
 export function SearchInput({
@@ -127,22 +117,8 @@ export function SearchInput({
 	const showClear = !loading && currentValue.length > 0;
 
 	return (
-		<div
-			role="search"
-			className={cn(
-				"relative flex items-center",
-				size === "sm" ? "text-xs" : "text-sm",
-				className,
-			)}
-		>
-			<Search
-				className={cn(
-					"pointer-events-none absolute left-2.5 text-muted-foreground",
-					iconSizeMap[size],
-				)}
-				aria-hidden="true"
-			/>
-			<input
+		<div role="search" className={className}>
+			<Input
 				{...rest}
 				ref={attachRef}
 				id={rest.id ?? `search-${reactId}`}
@@ -153,39 +129,28 @@ export function SearchInput({
 				disabled={disabled}
 				readOnly={readOnly}
 				placeholder={placeholder ?? "搜索…"}
-				className={cn(
-					"w-full rounded-md border border-input bg-background text-foreground",
-					"ring-offset-background placeholder:text-muted-foreground",
-					"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-					"disabled:cursor-not-allowed disabled:opacity-50",
-					sizeMap[size],
-				)}
+				variant="outline"
+				leading={<Search aria-hidden="true" />}
+				trailing={
+					loading ? (
+						<Loader2 aria-hidden="true" className="v-input-control__search-loading" />
+					) : showClear ? (
+						<button
+							type="button"
+							onClick={handleClear}
+							className="v-input-control__search-action"
+							aria-label="清除搜索"
+							disabled={disabled || readOnly}
+						>
+							<X aria-hidden="true" />
+						</button>
+					) : undefined
+				}
+				classNames={{
+					control:
+						size === "sm" ? "v-input-control--search-sm" : "v-input-control--search",
+				}}
 			/>
-			{loading ? (
-				<Loader2
-					className={cn(
-						"absolute right-2.5 animate-spin text-muted-foreground motion-reduce:animate-none",
-						iconSizeMap[size],
-					)}
-					aria-hidden="true"
-				/>
-			) : showClear ? (
-				<button
-					type="button"
-					onClick={handleClear}
-					className={cn(
-						"absolute right-2 flex items-center justify-center rounded-full",
-						"text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-						"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-						"disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
-						size === "sm" ? "size-5" : "size-6",
-					)}
-					aria-label="清除搜索"
-					disabled={disabled || readOnly}
-				>
-					<X aria-hidden="true" className={size === "sm" ? "size-3" : "size-3.5"} />
-				</button>
-			) : null}
 		</div>
 	);
 }

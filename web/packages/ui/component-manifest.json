@@ -158,12 +158,6 @@
 			"entry": "src/components/scroll-area/index.ts"
 		},
 		{
-			"name": "search-input",
-			"status": "legacy",
-			"entry": "src/components/search-input/index.ts",
-			"documentation": "web/packages/ui/docs/components/search-input.md"
-		},
-		{
 			"name": "segmented",
 			"status": "foundation",
 			"entry": "src/components/segmented/index.ts",

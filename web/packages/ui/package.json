@@ -167,11 +167,6 @@
 			"import": "./src/components/scroll-area/index.ts",
 			"default": "./src/components/scroll-area/index.ts"
 		},
-		"./search-input": {
-			"types": "./src/components/search-input/index.ts",
-			"import": "./src/components/search-input/index.ts",
-			"default": "./src/components/search-input/index.ts"
-		},
 		"./segmented": {
 			"types": "./src/components/segmented/index.ts",
 			"import": "./src/components/segmented/index.ts",
@@ -456,11 +451,6 @@
 				"types": "./dist/components/scroll-area/index.d.ts",
 				"import": "./dist/components/scroll-area/index.js",
 				"default": "./dist/components/scroll-area/index.js"
-			},
-			"./search-input": {
-				"types": "./dist/components/search-input/index.d.ts",
-				"import": "./dist/components/search-input/index.js",
-				"default": "./dist/components/search-input/index.js"
 			},
 			"./segmented": {
 				"types": "./dist/components/segmented/index.d.ts",

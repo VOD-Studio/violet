@@ -21,7 +21,6 @@ export * from "./components/popover/index";
 export * from "./components/prompt-dialog/index";
 export * from "./components/resend-button/index";
 export * from "./components/scroll-area/index";
-export * from "./components/search-input/index";
 export * from "./components/select/index";
 export * from "./components/separator/index";
 export * from "./components/sheet/index";

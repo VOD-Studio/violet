@@ -1,6 +1,6 @@
 # SearchInput
 
-SearchInput 管理搜索文本与防抖时序；查询请求、结果和加载状态由调用方管理。它目前仍是 `legacy` 单元，视觉样式尚未迁入纯 CSS 组件契约。
+SearchInput 隶属 `input` 单元（`src/components/input/SearchInput.tsx`），基于 Input 组合渲染。它管理搜索文本与防抖时序；查询请求、结果和加载状态由调用方管理。
 
 ```tsx
 import { SearchInput } from "@violet/ui";
