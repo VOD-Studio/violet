@@ -7,6 +7,22 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.11.1](https://github.com/VOD-Studio/violet/compare/v2.11.0...v2.11.1) (2026-10-15)
+
+
+### 修复
+
+* **ci:** 为自托管冷启动保留构建时间 ([f7d6a72](https://github.com/VOD-Studio/violet/commit/f7d6a72d9bc2b1c6e3bae6b04364df01a10965d3))
+* **ci:** 修复自托管 runner 环境 ([a14dd30](https://github.com/VOD-Studio/violet/commit/a14dd30e3b6553fcc69b18502be94979125d7130))
+* **ci:** 增加强制自托管的全量验收 ([d65eba3](https://github.com/VOD-Studio/violet/commit/d65eba36a3165a84b077bbe1e24a3e53bf3f37f8))
+* **ci:** 隔离工作流检查的 Python 环境 ([fb55e9b](https://github.com/VOD-Studio/violet/commit/fb55e9b3d0daf3e5c401a7bd8b31566a9628c5dc))
+* **runner:** 补齐自托管镜像的构建依赖 ([5f4e082](https://github.com/VOD-Studio/violet/commit/5f4e0820d8f6b8f59076b09d9a52376973ebc985))
+
+
+### 性能优化
+
+* **ci:** 将测试数据库数据放入限额内存盘 ([aeaba45](https://github.com/VOD-Studio/violet/commit/aeaba45de101272db372e498b0ec332f813a15ed))
+
 ## [2.11.0](https://github.com/VOD-Studio/violet/compare/v2.10.3...v2.11.0) (2026-10-14)
 
 
