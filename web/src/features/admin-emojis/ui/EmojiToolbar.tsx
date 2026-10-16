@@ -111,14 +111,14 @@ export function EmojiToolbar({
 						placeholder="名称"
 						disabled={isAddingText}
 						aria-invalid={!!errors.name}
-						className="h-9 w-32"
+						classNames={{ root: "w-32", control: "h-9" }}
 						{...register("name")}
 					/>
 					<Input
 						placeholder="文本内容，如 (・∀・)"
 						disabled={isAddingText}
 						aria-invalid={!!errors.textContent}
-						className="h-9 flex-1"
+						classNames={{ root: "min-w-0 flex-1", control: "h-9" }}
 						{...register("textContent")}
 					/>
 					<Button className="h-9 shrink-0" type="submit" disabled={isAddingText}>

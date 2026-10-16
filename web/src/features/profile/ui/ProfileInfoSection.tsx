@@ -138,17 +138,15 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 			editor={
 				<>
 					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-						<div className="relative flex-1">
-							<AtSign className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-							<Input
-								value={value}
-								onChange={(e) => setValue(e.target.value)}
-								className="pl-9"
-								placeholder="请输入用户名"
-								aria-invalid={!!error}
-								autoFocus
-							/>
-						</div>
+						<Input
+							value={value}
+							onChange={(e) => setValue(e.target.value)}
+							leading={<AtSign className="size-3.5" />}
+							classNames={{ root: "min-w-0 flex-1" }}
+							placeholder="请输入用户名"
+							aria-invalid={!!error}
+							autoFocus
+						/>
 						<div className="flex shrink-0 items-center gap-2">
 							<Button
 								size="sm"
@@ -233,7 +231,7 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 				<>
 					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
 						<Input
-							className="flex-1"
+							classNames={{ root: "min-w-0 flex-1" }}
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
 							placeholder="留空显示用户名"

@@ -425,7 +425,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 							value={initialData?.title ?? ""}
 							readOnly
 							placeholder="文章标题…"
-							className="h-12 border-none bg-transparent px-4 text-2xl font-bold shadow-none focus-visible:ring-0"
+							variant="ghost"
+							controlSize="lg"
+							className="text-2xl font-bold"
+							classNames={{ control: "px-4" }}
 						/>
 						<div className="mx-4 flex items-center gap-1.5 text-sm text-muted-foreground">
 							<span className="shrink-0 select-none font-mono">/blog/</span>
@@ -433,7 +436,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 								value={initialData?.slug ?? ""}
 								readOnly
 								placeholder="url-slug"
-								className="h-8 flex-1 border-none bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0"
+								variant="ghost"
+								controlSize="sm"
+								className="font-mono text-sm"
+								classNames={{ root: "min-w-0 flex-1", control: "px-0" }}
 							/>
 						</div>
 						<div className="min-h-0 flex-1">
@@ -504,7 +510,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 							},
 						})}
 						placeholder="文章标题…"
-						className="h-12 border-none bg-transparent px-4 text-2xl font-bold shadow-none focus-visible:ring-0"
+						variant="ghost"
+						controlSize="lg"
+						className="text-2xl font-bold"
+						classNames={{ control: "px-4" }}
 					/>
 					{errors.title ? (
 						<p className="px-4 text-sm text-destructive">{errors.title.message}</p>
@@ -522,7 +531,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 										field.onChange(e.target.value);
 									}}
 									placeholder="url-slug"
-									className="h-8 flex-1 border-none bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0"
+									variant="ghost"
+									controlSize="sm"
+									className="font-mono text-sm"
+									classNames={{ root: "min-w-0 flex-1", control: "px-0" }}
 								/>
 							)}
 						/>

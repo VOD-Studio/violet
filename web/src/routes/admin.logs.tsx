@@ -189,7 +189,7 @@ function AdminLogsPage() {
 						</SelectContent>
 					</Select>
 					<Input
-						className="h-9 w-48"
+						classNames={{ root: "w-48", control: "h-9" }}
 						placeholder="操作人 UUID"
 						value={actor}
 						onChange={(e) => {

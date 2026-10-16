@@ -91,7 +91,9 @@ export function NoteEditorSidebar({
 								}
 							}}
 							placeholder="输入标签按回车…"
-							className="h-8 text-xs"
+							controlSize="sm"
+							className="text-xs"
+							classNames={{ root: "min-w-0 flex-1" }}
 						/>
 						<button
 							type="button"

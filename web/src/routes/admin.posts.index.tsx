@@ -678,7 +678,7 @@ function TagFilter({
 						placeholder="搜索标签..."
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						className="h-8"
+						controlSize="sm"
 					/>
 				</div>
 				<div className="max-h-60 overflow-y-auto p-1">

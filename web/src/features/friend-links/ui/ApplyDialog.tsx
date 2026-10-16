@@ -282,7 +282,7 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 													onChange={(e) =>
 														set("contact_email")(e.target.value)
 													}
-													className="flex-1"
+													classNames={{ root: "min-w-0 flex-1" }}
 												/>
 												<ResendButton
 													variant="outline"

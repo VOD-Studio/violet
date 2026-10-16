@@ -236,7 +236,10 @@ export function CreatePermissionDialog({
 							</span>
 							<Input
 								id="code"
-								className="rounded-l-none"
+								classNames={{
+									root: "min-w-0 flex-1",
+									control: "rounded-l-none",
+								}}
 								disabled={isBuiltin || pending || !parentCode}
 								placeholder={parentCode ? "如 create" : "请先选择所属分组"}
 								{...register("code")}

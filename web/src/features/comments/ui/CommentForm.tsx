@@ -132,6 +132,7 @@ export function CommentForm({
 						<div className="flex gap-2">
 							<Input
 								type="email"
+								classNames={{ root: "min-w-0 flex-1" }}
 								placeholder="邮箱 *"
 								value={email}
 								onChange={(e) => {

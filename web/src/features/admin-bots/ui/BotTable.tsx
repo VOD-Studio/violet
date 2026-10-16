@@ -281,7 +281,8 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 			autoFocus
 			maxLength={BOT_NAME_MAX}
 			value={draft}
-			className="h-7 w-40 text-sm font-medium"
+			className="text-sm font-medium"
+			classNames={{ root: "w-40", control: "h-7" }}
 			onFocus={(e) => e.currentTarget.select()}
 			onChange={(e) => setDraft(e.target.value)}
 			onKeyDown={(e) => {
