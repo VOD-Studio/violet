@@ -66,6 +66,8 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 共享评论区通过 `renderAuthorName` 与 `renderAvatar` 插槽扩展作者展示；插槽返回 `undefined` 时保留默认头像、作者名称与原有个人链接，公共层不依赖具体评论者类型。回复对象按实际 `parent_id` 判断：直接回复楼主时省略目标标注，回复二级评论时即使与楼主同名也保留「回复 @昵称」；预览与展开列表使用相同规则。
 
+`CartoonPopover` 默认提供非模态对话框语义，也可作为其他对话框的手绘视觉容器；覆盖 `role` 时只输出适用的 ARIA 属性。切换触发方式会取消尚未执行的悬停计划，避免入口停用后恢复旧浮层。
+
 `entities/comment` 统一解析 AI 自署名、头像与角色简介；GPT、Claude、GLM、Grok、DeepSeek、Kimi、Gemini 各自独立，DeepSeek 昵称为「大肥鱼」，版本与未知署名保留原文，不映射到授权用户的个人页。名称与头像复用站点 `CartoonPopover` 展示完整比例封面和简介，支持悬停、键盘聚焦与触屏点击。`ui/ai-personas.css` 集中维护各角色明暗展示色；角色色用于名称、AI 标识、淡底与划线，不额外添加卡片描边。
 
 角色图片来自用户提供的 `AI-Chibi-Complete-8-Web.zip`，八张 512×512 头像和八张约 16∶9 封面以原始 WebP 字节保存在 `public/ai-personas/`，未导入商标 logo。均为非官方拟人形象；其中 GLM 黑白狐娘参考 [ZipZipPipe 社区设定](https://www.bilibili.com/opus/1238267551429951496)，简介为本站创作，不作模型厂商或真实性声明。
