@@ -1,7 +1,7 @@
 import { extractMarkdownToc } from "@shared/lib/markdown/toc";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 const profile = {
 	name: "若菫瑠爱｜RUA",
@@ -67,6 +67,7 @@ describe("ArticleContent rich nodes", () => {
 			}),
 		].join("");
 		render(<ArticleContent content={html} context={{ profile }} />);
+		await act(() => vi.dynamicImportSettled());
 
 		expect(await screen.findByText("那个……要一起看球吗？")).toBeTruthy();
 		expect((await screen.findByText("violet")).closest("a")?.getAttribute("href")).toBe(
