@@ -54,10 +54,10 @@ export function ExpandedReplies<T extends CommentRaw>({
 					item={{
 						...reply,
 						replyToName:
-							reply.replyToName ??
-							(reply.parentId && reply.parentId !== topLevelId
-								? authorById.get(reply.parentId)
-								: undefined),
+							reply.parentId === topLevelId
+								? undefined
+								: (reply.replyToName ??
+									(reply.parentId ? authorById.get(reply.parentId) : undefined)),
 					}}
 					level={1}
 					isLoggedIn={isLoggedIn}
