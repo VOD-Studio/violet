@@ -148,6 +148,7 @@ export function PersonaLocaleBar({
 							<div className="flex gap-2">
 								<Input
 									id="persona-custom-locale"
+									classNames={{ root: "min-w-0 flex-1" }}
 									value={customLocale}
 									placeholder="例如 fr-FR"
 									aria-invalid={Boolean(customError)}

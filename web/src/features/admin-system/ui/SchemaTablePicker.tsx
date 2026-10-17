@@ -1,7 +1,7 @@
-import { Button, Popover, PopoverContent, PopoverTrigger, SearchInput } from "@violet/ui";
+import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 
 import { cn } from "cn";
-import { Check, ChevronsUpDown, TableProperties } from "lucide-react";
+import { Check, ChevronsUpDown, Search, TableProperties } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DatabaseSchemaTableDTO } from "../model/types";
 import { schemaTableKey } from "./schema-graph-layout";
@@ -69,12 +69,17 @@ export function SchemaTablePicker({
 				className="w-(--radix-popover-trigger-width) min-w-72 p-0 data-[state=closed]:animate-none! data-[state=open]:animate-none!"
 			>
 				<div className="border-b p-2">
-					<SearchInput
+					<Input
+						type="search"
+						variant="ghost"
+						aria-label="搜索 schema 或数据表名称"
+						leading={<Search className="size-4" />}
+						clearable
 						autoFocus
 						value={query}
-						onValueChange={setQuery}
+						onChange={(event) => setQuery(event.target.value)}
 						placeholder="搜索 schema 或表名"
-						size="sm"
+						controlSize="sm"
 					/>
 				</div>
 				<div

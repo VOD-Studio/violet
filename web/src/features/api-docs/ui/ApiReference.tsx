@@ -1,4 +1,4 @@
-import { OverlayScroll } from "@violet/ui";
+import { Input, OverlayScroll } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -83,21 +83,22 @@ export function ApiReference() {
 		model.appendix.reduce((sum, c) => sum + c.operations.length, 0);
 	const searchBlock = (
 		<div className="py-2">
-			<label className="flex items-center gap-3 border-b border-border/70 pb-2.5 transition-colors focus-within:border-primary/60">
-				<Search className="size-4 shrink-0 text-muted-foreground/50" />
-				<input
-					type="search"
-					value={query}
-					onChange={(e) => setQuery(e.target.value)}
-					placeholder="过滤端点、摘要或标签……"
-					className="w-full bg-transparent font-mono text-sm outline-none placeholder:text-muted-foreground/45"
-				/>
-				<span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums">
-					{filtering
-						? `${countMatches(model, query)} / ${totalEndpoints}`
-						: `${totalEndpoints} 端点`}
-				</span>
-			</label>
+			<Input
+				type="search"
+				leading={<Search />}
+				trailing={
+					<span className="font-mono text-[11px] tabular-nums">
+						{filtering
+							? `${countMatches(model, query)} / ${totalEndpoints}`
+							: `${totalEndpoints} 端点`}
+					</span>
+				}
+				classNames={{ input: "font-mono text-sm" }}
+				onChange={(e) => setQuery(e.target.value)}
+				placeholder="过滤端点、摘要或标签……"
+				value={query}
+				variant="underline"
+			/>
 		</div>
 	);
 

@@ -65,6 +65,9 @@ export function EmojiToolbar({
 			<div className="mb-4 flex shrink-0 items-center gap-2 px-1 pt-1">
 				<div className="flex-1">
 					<SearchInput
+						variant="soft"
+						controlSize="sm"
+						aria-label="搜索表情名称"
 						placeholder="搜索表情名称..."
 						defaultValue={searchQuery}
 						onSearch={onSearchChange}
@@ -108,17 +111,21 @@ export function EmojiToolbar({
 					className="mb-4 flex shrink-0 items-center gap-2 rounded-lg border bg-muted/50 p-3"
 				>
 					<Input
+						controlSize="sm"
+						aria-label="表情名称"
 						placeholder="名称"
 						disabled={isAddingText}
 						aria-invalid={!!errors.name}
-						className="h-9 w-32"
+						classNames={{ root: "w-32" }}
 						{...register("name")}
 					/>
 					<Input
+						controlSize="sm"
+						aria-label="表情文本内容"
 						placeholder="文本内容，如 (・∀・)"
 						disabled={isAddingText}
 						aria-invalid={!!errors.textContent}
-						className="h-9 flex-1"
+						classNames={{ root: "min-w-0 flex-1" }}
 						{...register("textContent")}
 					/>
 					<Button className="h-9 shrink-0" type="submit" disabled={isAddingText}>

@@ -2,7 +2,7 @@
  * 会话详情抽屉：成员管理、邀请、通知设置与离开会话。
  */
 
-import { Button } from "@violet/ui";
+import { Button, Input } from "@violet/ui";
 
 import { Bell, BellOff, LoaderCircle, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
 import { motion } from "motion/react";
@@ -98,12 +98,13 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						</div>
 					</div>
 					{conversation.kind === "room" && isOwner && (
-						<input
+						<Input
 							aria-label="房间名称"
-							className="mt-2 h-9 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
+							classNames={{ root: "mt-2" }}
 							onBlur={() => void saveTitle()}
 							onChange={(event) => setTitle(event.target.value)}
 							value={title}
+							variant="underline"
 						/>
 					)}
 				</div>
@@ -157,9 +158,9 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 					<div className="rounded-2xl border border-dashed border-border p-3.5">
 						<p className="mb-2 text-xs text-muted-foreground">邀请成员</p>
 						<div className="flex gap-2">
-							<input
+							<Input
 								aria-label="邀请用户名"
-								className="h-9 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
+								classNames={{ root: "min-w-0 flex-1" }}
 								onChange={(event) => setInviteUsername(event.target.value)}
 								onKeyDown={(event) => event.key === "Enter" && void inviteUser()}
 								placeholder="username"
@@ -169,7 +170,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 								disabled={invite.isPending}
 								onClick={() => void inviteUser()}
 								size="icon-sm"
-								className="size-9 rounded-xl"
+								className="size-10 rounded-xl"
 							>
 								<Plus className="size-4" />
 							</Button>

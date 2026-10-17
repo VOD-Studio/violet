@@ -105,12 +105,6 @@ vi.mock("@features/persona-editor/api/queries", () => ({
 	useAdminPersonas: (query: Record<string, unknown>) => listQuery(query),
 }));
 
-vi.mock("@violet/ui/search-input", () => ({
-	SearchInput: ({ onSearch }: { onSearch: (value: string) => void }) => (
-		<input aria-label="搜索人设" onChange={(event) => onSearch(event.target.value)} />
-	),
-}));
-
 vi.mock("@tanstack/react-router", () => ({
 	useNavigate: () => navigate,
 }));
@@ -139,9 +133,9 @@ describe("PersonaListPage", () => {
 
 	it("角色名称搜索回到第一页并进入服务端查询", () => {
 		render(<PersonaListPage />);
-		fireEvent.change(screen.getByRole("textbox", { name: "搜索人设" }), {
-			target: { value: "  RUA  " },
-		});
+		const searchInput = screen.getByRole("searchbox", { name: "搜索人设" });
+		fireEvent.change(searchInput, { target: { value: "  RUA  " } });
+		fireEvent.keyDown(searchInput, { key: "Enter" });
 
 		expect(setPage).toHaveBeenCalledWith(1);
 		expect(listQuery).toHaveBeenLastCalledWith(

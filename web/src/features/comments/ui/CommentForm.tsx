@@ -124,6 +124,7 @@ export function CommentForm({
 				<div className="space-y-2">
 					<div className="grid gap-2 sm:grid-cols-2">
 						<Input
+							aria-label="昵称"
 							placeholder="昵称 *"
 							value={authorName}
 							onChange={(e) => setAuthorName(e.target.value)}
@@ -132,6 +133,8 @@ export function CommentForm({
 						<div className="flex gap-2">
 							<Input
 								type="email"
+								aria-label="邮箱"
+								classNames={{ root: "min-w-0 flex-1" }}
 								placeholder="邮箱 *"
 								value={email}
 								onChange={(e) => {

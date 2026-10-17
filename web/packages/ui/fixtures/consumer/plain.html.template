@@ -15,10 +15,12 @@
 		<main>
 			<h1>原生 HTML 与纯 CSS</h1>
 			<button id="plain-button" type="button" class="v-button v-button--primary">保存</button>
-			<div class="v-text-field">
-				<label for="plain-input" class="v-label">邮箱</label>
-				<input id="plain-input" type="email" class="v-input" aria-describedby="plain-description" />
-				<p id="plain-description" class="v-text-field__description">样式无需 React 或 Tailwind 编译</p>
+			<div class="v-input-field">
+				<label for="plain-input" class="v-label v-input-field__label">邮箱</label>
+				<div class="v-input-control v-input-control--outline v-input-control--md">
+					<input id="plain-input" type="email" class="v-input" aria-describedby="plain-description" />
+				</div>
+				<p id="plain-description" class="v-input-field__description">样式无需 React 或 Tailwind 编译</p>
 			</div>
 			<div class="preview-scope">
 				<button id="plain-scoped-button" type="button" class="v-button v-button--primary">局部主题</button>

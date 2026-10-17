@@ -260,8 +260,10 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								{...register("title")}
 								placeholder="无标题笔记（可留空）…"
 								aria-label="笔记标题"
+								variant="ghost"
+								classNames={{ control: "px-0" }}
 								className={cn(
-									"h-10 border-none bg-transparent px-0 text-xl font-bold tracking-tight shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0 md:text-2xl",
+									"text-xl font-bold tracking-tight placeholder:text-muted-foreground/40 md:text-2xl",
 									errors.title && "text-destructive",
 								)}
 							/>
@@ -310,6 +312,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								<div className="space-y-2 pt-1">
 									<div className="flex items-center gap-1.5">
 										<Input
+											controlSize="sm"
 											value={tagInput}
 											onChange={(e) => setTagInput(e.target.value)}
 											onKeyDown={(e) => {
@@ -319,7 +322,8 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 												}
 											}}
 											placeholder="输入标签名按回车…"
-											className="h-7.5 bg-background text-xs"
+											className="text-xs"
+											classNames={{ root: "min-w-0 flex-1" }}
 										/>
 										<Button
 											type="button"

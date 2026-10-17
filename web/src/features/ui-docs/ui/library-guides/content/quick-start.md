@@ -42,7 +42,6 @@ Tailwind 宿主的全局 CSS：
 @import "@violet/ui/components/button.css";
 @import "@violet/ui/components/input.css";
 @import "@violet/ui/components/label.css";
-@import "@violet/ui/components/text-field.css";
 ```
 
 也可用 `classes.css` 加载全部预编译规则。CSS 不提供组件行为；纯 HTML 的 button 与 input 保留原生行为，复杂浮层使用 React / Radix 组件。
@@ -50,19 +49,18 @@ Tailwind 宿主的全局 CSS：
 ## 运行第一个表单
 
 ```tsx
-import { Button, TextField } from "@violet/ui";
+import { Button, Input } from "@violet/ui";
 import { useState } from "react";
 
 export function ProfileForm() {
   const [name, setName] = useState("");
   return (
     <form onSubmit={(event) => event.preventDefault()}>
-      <TextField
+      <Input
         label="显示名称"
         name="displayName"
         value={name}
         onChange={(event) => setName(event.target.value)}
-        description="用于评论署名"
         required
       />
       <Button type="submit">保存</Button>
@@ -71,10 +69,10 @@ export function ProfileForm() {
 }
 ```
 
-Button 默认 `type="button"`；提交操作显式指定 `submit`。TextField 不内置校验规则，`onChange` 接收原生事件，ref 指向 input。组件与类型通常从根入口导入；按单元取用可用 `@violet/ui/button` 与 `@violet/ui/text-field`。
+Button 默认 `type="button"`；提交操作显式指定 `submit`。Input 的标签、说明和错误信息均可选，不内置校验规则；`onChange` 接收原生事件，ref 指向 input。组件与类型通常从根入口导入；按单元取用可用 `@violet/ui/button` 与 `@violet/ui/input`。
 
 ## 确认使用范围
 
-当前 10 个 foundation 单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、TextField、UploadTile，其余 35 个单元为 legacy。用前查看[重建进度](/ui/guides/roadmap)与对应[组件用法](/ui/components)。主题由宿主管理，深色切换见[深色模式](/ui/guides/dark-mode)。
+当前 10 个 foundation 单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、SearchInput、Segmented、Textarea、UploadTile，其余 34 个单元为 legacy。用前查看[重建进度](/ui/guides/roadmap)与对应[组件用法](/ui/components)。主题由宿主管理，深色切换见[深色模式](/ui/guides/dark-mode)。
 
 编码助手可以从[文档索引](https://xunrua.top/llms.txt)读取指南；在仓库内也可直接读 `component-manifest.json`、同源示例与 `violet-ui` skill。新组件的结构和验收流程见[组件库架构](/ui/guides/architecture)与[组件设计方法](/ui/guides/component-design)。

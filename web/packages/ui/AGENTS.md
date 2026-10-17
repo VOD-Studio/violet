@@ -14,7 +14,7 @@
 
 - 根入口与组件入口在工作区指向源码；pack 后由 `publishConfig` 指向 dist 的 ESM、声明与 CSS。`@violet/ui/variants` 保持不依赖 React，JS 按需加载与 CSS 按需加载分别验证。
 - Tailwind v4 宿主在 Tailwind 之后导入 `@violet/ui/styles.css`。普通 CSS 宿主先导入 `tokens.css`，再导入 `classes.css` 或某个 `components/<name>.css`。
-- TextField 的 `className`、style、ref 与原生属性属于 input；根布局用 `classNames.root`。描述和错误的 ID 只关联实际 DOM；错误只在 invalid 状态显示。
+- Input 的 `className`、style、ref 与原生属性属于 input；根布局用 `classNames.root`，视觉外壳用 `classNames.control`。label、description、errorMessage 是可选能力，关联 ID 只指向实际 DOM；错误只在 invalid 状态显示。
 - Button 的 asChild 必须保留子 DOM，禁用与加载状态拦截子元素交互，自定义 Link 要透传 DOM 属性和 ref。事件组合尊重 `defaultPrevented`。
 
 ## 文档与验证

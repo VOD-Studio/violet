@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { Input } from "../input";
 import { hexToHsv, hsvToHex } from "./hsv";
 
 export interface HsvColorPickerProps {
@@ -113,8 +114,14 @@ export function HsvColorPicker({ value, onChange }: HsvColorPickerProps) {
 					className="size-7 shrink-0 rounded-md border border-edge-hairline"
 					style={{ backgroundColor: currentHex }}
 				/>
-				<input
-					type="text"
+				<Input
+					aria-label="十六进制颜色值"
+					variant="soft"
+					controlSize="sm"
+					classNames={{
+						root: "min-w-0 flex-1",
+						input: "font-mono text-xs uppercase",
+					}}
 					value={currentHex}
 					onChange={(e) => {
 						const hex = e.target.value;
@@ -123,7 +130,6 @@ export function HsvColorPicker({ value, onChange }: HsvColorPickerProps) {
 							onChange(hex);
 						}
 					}}
-					className="h-7 w-full rounded-md border border-edge-hairline bg-transparent px-2 font-mono text-xs uppercase outline-none focus:border-primary"
 					maxLength={7}
 				/>
 			</div>

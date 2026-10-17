@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SearchInput } from "../SearchInput";
+import { SearchInput } from "../search-input";
 
 describe("SearchInput", () => {
 	beforeEach(() => vi.useFakeTimers());
@@ -11,7 +11,7 @@ describe("SearchInput", () => {
 		const search = vi.fn();
 		const change = vi.fn();
 		render(<SearchInput defaultValue="初值" onValueChange={change} onSearch={search} />);
-		const input = screen.getByRole("textbox") as HTMLInputElement;
+		const input = screen.getByRole("searchbox") as HTMLInputElement;
 		act(() => vi.advanceTimersByTime(300));
 		expect(search).not.toHaveBeenCalled();
 		fireEvent.change(input, { target: { value: "vio" } });
@@ -28,7 +28,7 @@ describe("SearchInput", () => {
 		const order: string[] = [];
 		const search = vi.fn((value: string) => order.push(`search:${value}`));
 		render(<SearchInput onKeyDown={(event) => order.push(event.key)} onSearch={search} />);
-		const input = screen.getByRole("textbox");
+		const input = screen.getByRole("searchbox");
 		fireEvent.change(input, { target: { value: "violet" } });
 		expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
 		expect(order).toEqual(["Enter", "search:violet"]);
@@ -39,14 +39,14 @@ describe("SearchInput", () => {
 	it("没有挂起调用时回车仍搜索当前文本", () => {
 		const search = vi.fn();
 		render(<SearchInput defaultValue="violet" onSearch={search} />);
-		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+		fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
 		expect(search.mock.calls).toEqual([["violet"]]);
 	});
 
 	it("preventDefault 取消回车动作，已排队的尾随搜索继续执行", () => {
 		const search = vi.fn();
 		render(<SearchInput onKeyDown={(event) => event.preventDefault()} onSearch={search} />);
-		const input = screen.getByRole("textbox");
+		const input = screen.getByRole("searchbox");
 		fireEvent.change(input, { target: { value: "violet" } });
 		fireEvent.keyDown(input, { key: "Enter" });
 		expect(search).not.toHaveBeenCalled();
@@ -61,7 +61,7 @@ describe("SearchInput", () => {
 		const search = vi.fn();
 		const keyDown = vi.fn();
 		render(<SearchInput onKeyDown={keyDown} onSearch={search} />);
-		const input = screen.getByRole("textbox");
+		const input = screen.getByRole("searchbox");
 		fireEvent.change(input, { target: { value: "紫罗兰" } });
 		expect(fireEvent.keyDown(input, { key: "Enter", ...composition })).toBe(true);
 		expect(keyDown).toHaveBeenCalledOnce();
@@ -73,7 +73,7 @@ describe("SearchInput", () => {
 	it("没有 onSearch 时保留回车默认行为", () => {
 		const keyDown = vi.fn();
 		render(<SearchInput onKeyDown={keyDown} />);
-		expect(fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" })).toBe(true);
+		expect(fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" })).toBe(true);
 		expect(keyDown).toHaveBeenCalledOnce();
 	});
 
@@ -93,7 +93,7 @@ describe("SearchInput", () => {
 		const button = screen.getByRole("button", { name: "清除搜索" }) as HTMLButtonElement;
 		expect(button.disabled).toBe(true);
 		fireEvent.click(button);
-		expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("保留文本");
+		expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("保留文本");
 		expect(change).not.toHaveBeenCalled();
 		expect(search).not.toHaveBeenCalled();
 		expect(clear).not.toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe("SearchInput", () => {
 		const change = vi.fn();
 		const clear = vi.fn();
 		render(<SearchInput ref={ref} onValueChange={change} onSearch={search} onClear={clear} />);
-		const input = screen.getByRole("textbox") as HTMLInputElement;
+		const input = screen.getByRole("searchbox") as HTMLInputElement;
 		expect(ref.current).toBe(input);
 		fireEvent.change(input, { target: { value: "violet" } });
 		const button = screen.getByRole("button", { name: "清除搜索" }) as HTMLButtonElement;
@@ -127,9 +127,9 @@ describe("SearchInput", () => {
 		const { rerender } = render(<SearchInput value="violet" onValueChange={change} />);
 		fireEvent.click(screen.getByRole("button", { name: "清除搜索" }));
 		expect(change).toHaveBeenCalledWith("");
-		expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("violet");
+		expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("violet");
 		rerender(<SearchInput value="" onValueChange={change} />);
-		expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("");
+		expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("");
 	});
 
 	it("object ref 卸载归零，原生属性与 style 落在 input", () => {
@@ -144,7 +144,7 @@ describe("SearchInput", () => {
 				style={{ color: "red" }}
 			/>,
 		);
-		const input = screen.getByRole("textbox") as HTMLInputElement;
+		const input = screen.getByRole("searchbox") as HTMLInputElement;
 		expect(ref.current).toBe(input);
 		expect(input.id).toBe("query");
 		expect(input.name).toBe("query");
@@ -159,7 +159,7 @@ describe("SearchInput", () => {
 		const cleanup = vi.fn();
 		const ref = vi.fn((_input: HTMLInputElement | null) => cleanup);
 		const { unmount } = render(<SearchInput ref={ref} defaultValue="violet" />);
-		const input = screen.getByRole("textbox");
+		const input = screen.getByRole("searchbox");
 		expect(ref).toHaveBeenCalledWith(input);
 		fireEvent.click(screen.getByRole("button", { name: "清除搜索" }));
 		expect(document.activeElement).toBe(input);
@@ -172,7 +172,7 @@ describe("SearchInput", () => {
 	it("没有 cleanup 的 callback ref 在卸载时收到 null", () => {
 		const ref = vi.fn((_input: HTMLInputElement | null) => {});
 		const { unmount } = render(<SearchInput ref={ref} />);
-		expect(ref).toHaveBeenCalledWith(screen.getByRole("textbox"));
+		expect(ref).toHaveBeenCalledWith(screen.getByRole("searchbox"));
 		unmount();
 		expect(ref).toHaveBeenLastCalledWith(null);
 	});
@@ -180,7 +180,7 @@ describe("SearchInput", () => {
 	it("卸载取消挂起查询", () => {
 		const search = vi.fn();
 		const { unmount } = render(<SearchInput onSearch={search} />);
-		fireEvent.change(screen.getByRole("textbox"), { target: { value: "violet" } });
+		fireEvent.change(screen.getByRole("searchbox"), { target: { value: "violet" } });
 		unmount();
 		act(() => vi.advanceTimersByTime(300));
 		expect(search).not.toHaveBeenCalled();

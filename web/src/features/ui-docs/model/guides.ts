@@ -138,13 +138,13 @@ export const UI_DOCS_CATALOG: readonly CatalogGroup[] = [
 						id: "input",
 						title: "Input",
 						to: "/ui/components/input",
-						description: "输入框 · 原生输入与表单状态",
+						description: "输入框 · 四种外观、可选字段信息与原生表单",
 					},
 					{
-						id: "text-field",
-						title: "TextField",
-						to: "/ui/components/text-field",
-						description: "文本字段 · 名称、说明与校验状态",
+						id: "search-input",
+						title: "SearchInput",
+						to: "/ui/components/search-input",
+						description: "搜索输入 · 组合 Input 外观与防抖查询",
 					},
 					{
 						id: "image-pixel-reveal",

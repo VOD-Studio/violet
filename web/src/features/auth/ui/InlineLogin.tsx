@@ -112,6 +112,7 @@ export function InlineLogin({ onSuccess, description, className }: InlineLoginPr
 					>
 						<Input
 							type="text"
+							aria-label="用户名或邮箱"
 							placeholder="用户名或邮箱"
 							value={identifier}
 							onChange={(e) => setIdentifier(e.target.value)}
@@ -120,6 +121,7 @@ export function InlineLogin({ onSuccess, description, className }: InlineLoginPr
 						/>
 						<Input
 							type="password"
+							aria-label="密码"
 							placeholder="密码（至少 8 位）"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}

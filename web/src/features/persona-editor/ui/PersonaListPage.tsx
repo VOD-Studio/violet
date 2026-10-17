@@ -207,6 +207,9 @@ export function PersonaListPage() {
 				sticky={
 					<div className="max-w-80 pt-1">
 						<SearchInput
+							aria-label="搜索人设"
+							variant="soft"
+							controlSize="sm"
 							defaultValue=""
 							placeholder="按角色名称搜索…"
 							onSearch={(value) => {

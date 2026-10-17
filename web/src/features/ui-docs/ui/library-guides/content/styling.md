@@ -34,17 +34,16 @@ Tailwind v4 的 4px 倍数间距使用数字类，例如 88px 写 `w-22`。组�
 
 ## className 落在哪个部件
 
-Button、Input、Label、Textarea 的 `className` 与 `style` 落在其 DOM 元素上。TextField 是组合字段，这两个属性落在 input；外壳、label 与说明通过类型化 `classNames` 指定：
+Button、Label、Textarea 的 `className` 与 `style` 落在其 DOM 元素上。Input 的这两个属性始终落在真实 input；外层布局、视觉控件、标签与说明通过类型化 `classNames` 指定：
 
 ```tsx
-import { TextField } from "@violet/ui";
+import { Input } from "@violet/ui";
 
-<TextField
+<Input
   label="邮箱"
   type="email"
   className="text-base"
-  classNames={{ root: "w-full max-w-sm", description: "text-xs" }}
-  description="用于接收回复通知"
+  classNames={{ root: "w-full max-w-sm", control: "rounded-md" }}
 />
 ```
 
@@ -52,7 +51,7 @@ import { TextField } from "@violet/ui";
 
 ## 用真实状态定制
 
-新 Button 暴露 `data-slot="button"`、`data-variant`、`data-size`、`data-loading` 与 `aria-busy`。Input 的错误状态使用 `aria-invalid`。legacy 的 Radix 控件仍使用实际提供的 `data-state`，不能假定所有组件拥有同一套属性。
+新 Button 暴露 `data-slot="button"`、`data-variant`、`data-size`、`data-loading` 与 `aria-busy`。Input 提供 `input-field`、`input-control` 与 `input` 数据槽，错误状态使用 `invalid` 或 `aria-invalid`，尺寸使用 `controlSize` 而非原生 `size`。legacy 的 Radix 控件仍使用实际提供的 `data-state`，不能假定所有组件拥有同一套属性。
 
 ```css
 [data-slot="button"][data-loading="true"] {

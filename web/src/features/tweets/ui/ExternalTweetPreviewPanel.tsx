@@ -57,7 +57,7 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 					onChange={(e) => state.setUrl(e.target.value)}
 					disabled={disabled}
 					placeholder="粘贴 X 推文链接"
-					className="h-11 min-w-0 flex-1 rounded-lg"
+					classNames={{ root: "min-w-0 flex-1", control: "h-11 rounded-lg" }}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.nativeEvent.isComposing) {
 							e.preventDefault();

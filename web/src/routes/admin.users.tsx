@@ -417,6 +417,9 @@ function AdminUsers() {
 					<div className="flex flex-wrap items-center gap-3 pt-1">
 						<div className="min-w-50 max-w-80 flex-1">
 							<SearchInput
+								variant="soft"
+								controlSize="sm"
+								aria-label="搜索用户名或邮箱"
 								defaultValue=""
 								placeholder="搜索用户名 / 邮箱..."
 								onSearch={(v) => {

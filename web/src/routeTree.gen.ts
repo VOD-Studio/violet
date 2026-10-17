@@ -102,9 +102,9 @@ import { Route as UiComponentsDialogRouteImport } from './routes/ui.components.d
 import { Route as UiComponentsDropdownRouteImport } from './routes/ui.components.dropdown'
 import { Route as UiComponentsImagePixelRevealRouteImport } from './routes/ui.components.image-pixel-reveal'
 import { Route as UiComponentsInputRouteImport } from './routes/ui.components.input'
+import { Route as UiComponentsSearchInputRouteImport } from './routes/ui.components.search-input'
 import { Route as UiComponentsSegmentedRouteImport } from './routes/ui.components.segmented'
 import { Route as UiComponentsTabsRouteImport } from './routes/ui.components.tabs'
-import { Route as UiComponentsTextFieldRouteImport } from './routes/ui.components.text-field'
 import { Route as UiComponentsUploadTileRouteImport } from './routes/ui.components.upload-tile'
 import { Route as UiGuidesSlugRouteImport } from './routes/ui.guides.$slug'
 
@@ -574,6 +574,11 @@ const UiComponentsInputRoute = UiComponentsInputRouteImport.update({
   path: '/input',
   getParentRoute: () => UiComponentsRoute,
 } as any)
+const UiComponentsSearchInputRoute = UiComponentsSearchInputRouteImport.update({
+  id: '/search-input',
+  path: '/search-input',
+  getParentRoute: () => UiComponentsRoute,
+} as any)
 const UiComponentsSegmentedRoute = UiComponentsSegmentedRouteImport.update({
   id: '/segmented',
   path: '/segmented',
@@ -582,11 +587,6 @@ const UiComponentsSegmentedRoute = UiComponentsSegmentedRouteImport.update({
 const UiComponentsTabsRoute = UiComponentsTabsRouteImport.update({
   id: '/tabs',
   path: '/tabs',
-  getParentRoute: () => UiComponentsRoute,
-} as any)
-const UiComponentsTextFieldRoute = UiComponentsTextFieldRouteImport.update({
-  id: '/text-field',
-  path: '/text-field',
   getParentRoute: () => UiComponentsRoute,
 } as any)
 const UiComponentsUploadTileRoute = UiComponentsUploadTileRouteImport.update({
@@ -688,9 +688,9 @@ export interface FileRoutesByFullPath {
   '/ui/components/dropdown': typeof UiComponentsDropdownRoute
   '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
+  '/ui/components/search-input': typeof UiComponentsSearchInputRoute
   '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
-  '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
@@ -780,9 +780,9 @@ export interface FileRoutesByTo {
   '/ui/components/dropdown': typeof UiComponentsDropdownRoute
   '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
+  '/ui/components/search-input': typeof UiComponentsSearchInputRoute
   '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
-  '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries': typeof AdminGalleriesIndexRoute
@@ -881,9 +881,9 @@ export interface FileRoutesById {
   '/ui/components/dropdown': typeof UiComponentsDropdownRoute
   '/ui/components/image-pixel-reveal': typeof UiComponentsImagePixelRevealRoute
   '/ui/components/input': typeof UiComponentsInputRoute
+  '/ui/components/search-input': typeof UiComponentsSearchInputRoute
   '/ui/components/segmented': typeof UiComponentsSegmentedRoute
   '/ui/components/tabs': typeof UiComponentsTabsRoute
-  '/ui/components/text-field': typeof UiComponentsTextFieldRoute
   '/ui/components/upload-tile': typeof UiComponentsUploadTileRoute
   '/ui/guides/$slug': typeof UiGuidesSlugRoute
   '/admin/galleries/': typeof AdminGalleriesIndexRoute
@@ -983,9 +983,9 @@ export interface FileRouteTypes {
     | '/ui/components/dropdown'
     | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
+    | '/ui/components/search-input'
     | '/ui/components/segmented'
     | '/ui/components/tabs'
-    | '/ui/components/text-field'
     | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
@@ -1075,9 +1075,9 @@ export interface FileRouteTypes {
     | '/ui/components/dropdown'
     | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
+    | '/ui/components/search-input'
     | '/ui/components/segmented'
     | '/ui/components/tabs'
-    | '/ui/components/text-field'
     | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries'
@@ -1175,9 +1175,9 @@ export interface FileRouteTypes {
     | '/ui/components/dropdown'
     | '/ui/components/image-pixel-reveal'
     | '/ui/components/input'
+    | '/ui/components/search-input'
     | '/ui/components/segmented'
     | '/ui/components/tabs'
-    | '/ui/components/text-field'
     | '/ui/components/upload-tile'
     | '/ui/guides/$slug'
     | '/admin/galleries/'
@@ -1887,6 +1887,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiComponentsInputRouteImport
       parentRoute: typeof UiComponentsRoute
     }
+    '/ui/components/search-input': {
+      id: '/ui/components/search-input'
+      path: '/search-input'
+      fullPath: '/ui/components/search-input'
+      preLoaderRoute: typeof UiComponentsSearchInputRouteImport
+      parentRoute: typeof UiComponentsRoute
+    }
     '/ui/components/segmented': {
       id: '/ui/components/segmented'
       path: '/segmented'
@@ -1899,13 +1906,6 @@ declare module '@tanstack/react-router' {
       path: '/tabs'
       fullPath: '/ui/components/tabs'
       preLoaderRoute: typeof UiComponentsTabsRouteImport
-      parentRoute: typeof UiComponentsRoute
-    }
-    '/ui/components/text-field': {
-      id: '/ui/components/text-field'
-      path: '/text-field'
-      fullPath: '/ui/components/text-field'
-      preLoaderRoute: typeof UiComponentsTextFieldRouteImport
       parentRoute: typeof UiComponentsRoute
     }
     '/ui/components/upload-tile': {
@@ -2081,9 +2081,9 @@ interface UiComponentsRouteChildren {
   UiComponentsDropdownRoute: typeof UiComponentsDropdownRoute
   UiComponentsImagePixelRevealRoute: typeof UiComponentsImagePixelRevealRoute
   UiComponentsInputRoute: typeof UiComponentsInputRoute
+  UiComponentsSearchInputRoute: typeof UiComponentsSearchInputRoute
   UiComponentsSegmentedRoute: typeof UiComponentsSegmentedRoute
   UiComponentsTabsRoute: typeof UiComponentsTabsRoute
-  UiComponentsTextFieldRoute: typeof UiComponentsTextFieldRoute
   UiComponentsUploadTileRoute: typeof UiComponentsUploadTileRoute
   UiComponentsIndexRoute: typeof UiComponentsIndexRoute
 }
@@ -2096,9 +2096,9 @@ const UiComponentsRouteChildren: UiComponentsRouteChildren = {
   UiComponentsDropdownRoute: UiComponentsDropdownRoute,
   UiComponentsImagePixelRevealRoute: UiComponentsImagePixelRevealRoute,
   UiComponentsInputRoute: UiComponentsInputRoute,
+  UiComponentsSearchInputRoute: UiComponentsSearchInputRoute,
   UiComponentsSegmentedRoute: UiComponentsSegmentedRoute,
   UiComponentsTabsRoute: UiComponentsTabsRoute,
-  UiComponentsTextFieldRoute: UiComponentsTextFieldRoute,
   UiComponentsUploadTileRoute: UiComponentsUploadTileRoute,
   UiComponentsIndexRoute: UiComponentsIndexRoute,
 }

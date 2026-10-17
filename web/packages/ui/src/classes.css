@@ -8,11 +8,11 @@
 @import "./components/input/input.css";
 @import "./components/label/label.css";
 @import "./components/overlay-scroll/overlay-scroll.css" layer(components);
+@import "./components/search-input/search-input.css";
 @import "./components/segmented/segmented.css";
 @import "./components/separator/separator.css" layer(components);
 @import "./components/skeleton/skeleton.css" layer(components);
 @import "./components/switch/switch.css" layer(components);
 @import "./components/tabs/tabs.css" layer(components);
-@import "./components/text-field/text-field.css";
 @import "./components/textarea/textarea.css";
 @import "./components/upload-tile/upload-tile.css";

@@ -159,9 +159,10 @@
 		},
 		{
 			"name": "search-input",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/search-input/index.ts",
-			"documentation": "web/packages/ui/docs/components/search-input.md"
+			"css": "src/components/search-input/search-input.css",
+			"documentation": "web/src/features/ui-docs/ui/SearchInputDoc.tsx"
 		},
 		{
 			"name": "segmented",
@@ -225,13 +226,6 @@
 			"css": "src/components/tabs/tabs.css"
 		},
 		{
-			"name": "text-field",
-			"status": "foundation",
-			"entry": "src/components/text-field/index.ts",
-			"css": "src/components/text-field/text-field.css",
-			"documentation": "web/src/features/ui-docs/ui/TextFieldDoc.tsx"
-		},
-		{
 			"name": "text-underline",
 			"status": "legacy",
 			"entry": "src/components/text-underline/index.ts"
@@ -284,6 +278,10 @@
 		{
 			"entry": "src/components/checkbox/styles.ts",
 			"symbols": ["type CheckboxVariantProps", "checkboxVariants"]
+		},
+		{
+			"entry": "src/components/input/styles.ts",
+			"symbols": ["type InputVariantProps", "inputVariants"]
 		}
 	],
 	"styles": {

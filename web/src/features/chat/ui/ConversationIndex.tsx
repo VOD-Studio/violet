@@ -2,10 +2,10 @@
  * 会话索引侧栏：标题、搜索、会话列表与搜索结果（含发起私聊）。
  */
 
-import { Button } from "@violet/ui";
+import { Button, Input } from "@violet/ui";
 
 import { cn } from "cn";
-import { LoaderCircle, MessageCircle, Plus, Search, X } from "lucide-react";
+import { LoaderCircle, MessageCircle, Plus, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useDeferredValue, useState } from "react";
 import { toast } from "sonner";
@@ -79,26 +79,17 @@ export function ConversationIndex({
 					</Button>
 				</div>
 				<div className="px-1 pb-1">
-					<div className="relative">
-						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-						<input
-							aria-label="搜索会话、用户或群聊"
-							className="h-10 w-full rounded-full border-none bg-secondary pl-10 pr-8 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
-							onChange={(event) => onSearch(event.target.value)}
-							placeholder="搜索"
-							value={search}
-						/>
-						{search && (
-							<button
-								aria-label="清空搜索"
-								className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
-								onClick={() => onSearch("")}
-								type="button"
-							>
-								<X className="size-4" />
-							</button>
-						)}
-					</div>
+					<Input
+						aria-label="搜索会话、用户或群聊"
+						type="search"
+						clearable
+						clearLabel="清空搜索"
+						leading={<Search />}
+						onChange={(event) => onSearch(event.target.value)}
+						placeholder="搜索"
+						value={search}
+						variant="soft"
+					/>
 				</div>
 			</header>
 
