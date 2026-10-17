@@ -93,6 +93,7 @@ export function MergeUsersDialog({ open, onOpenChange, user }: MergeUsersDialogP
 						id="merge-primary-search"
 						type="search"
 						variant="soft"
+						controlSize="sm"
 						value={keyword}
 						onChange={(e) => {
 							setKeyword(e.target.value);

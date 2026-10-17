@@ -76,6 +76,7 @@ export function PostPickerDialog({
 				</DialogHeader>
 				<SearchInput
 					variant="soft"
+					controlSize="sm"
 					aria-label="搜索可挂入的文章标题"
 					value={keyword}
 					onValueChange={setKeyword}

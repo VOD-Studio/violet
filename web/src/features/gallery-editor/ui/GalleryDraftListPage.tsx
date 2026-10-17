@@ -234,6 +234,7 @@ export function GalleryDraftListPage() {
 							<SearchInput
 								aria-label="按作者用户名筛选图集"
 								variant="soft"
+								controlSize="sm"
 								defaultValue=""
 								placeholder="按作者用户名筛选..."
 								onSearch={(value) => {

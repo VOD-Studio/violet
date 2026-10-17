@@ -209,6 +209,7 @@ export function PersonaListPage() {
 						<SearchInput
 							aria-label="搜索人设"
 							variant="soft"
+							controlSize="sm"
 							defaultValue=""
 							placeholder="按角色名称搜索…"
 							onSearch={(value) => {
