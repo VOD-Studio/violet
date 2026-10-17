@@ -8,7 +8,6 @@
 import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import type { Comment } from "@entities/comment/model/types";
 import { AIBadge } from "@entities/comment/ui/AIBadge";
-import { AICommentProfile } from "@entities/comment/ui/AICommentProfile";
 import { CommentAuthorAvatar } from "@entities/comment/ui/CommentAuthorAvatar";
 import { formatRelativeTime } from "@shared/lib/date";
 import { AUTHOR_TIER } from "@shared/ui/comment-section";
@@ -19,6 +18,7 @@ import { cn } from "cn";
 import { Crown, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
+import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
 import { CommentForm } from "./CommentForm";
 
 /** 气泡空间小，回复折叠阈值比评论区更紧 */
@@ -145,9 +145,12 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 		<div className="flex min-w-0 flex-wrap items-center gap-2">
 			<div className="relative shrink-0">
 				{comment.is_ai ? (
-					<AICommentProfile name={comment.author_name} className="shrink-0 rounded-full">
+					<AnnotationAuthorProfile
+						name={comment.author_name}
+						className="shrink-0 rounded-full"
+					>
 						{avatar}
-					</AICommentProfile>
+					</AnnotationAuthorProfile>
 				) : isAuthor ? (
 					<>
 						<div className={AUTHOR_TIER.avatarRing}>
@@ -162,12 +165,12 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 				)}
 			</div>
 			{comment.is_ai ? (
-				<AICommentProfile
+				<AnnotationAuthorProfile
 					name={comment.author_name}
 					className={cn("min-w-0 max-w-32 truncate text-sm", nameClass)}
 				>
 					{displayName}
-				</AICommentProfile>
+				</AnnotationAuthorProfile>
 			) : comment.author_username ? (
 				<Link
 					to="/users/$username"

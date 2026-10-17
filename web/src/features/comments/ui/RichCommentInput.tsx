@@ -29,6 +29,7 @@ import {
 	type ReactNode,
 	type Ref,
 	useCallback,
+	useContext,
 	useEffect,
 	useImperativeHandle,
 	useMemo,
@@ -40,6 +41,7 @@ import {
 	type ImageNodeStatus,
 	useRichTextInput,
 } from "../hooks/use-rich-text-input";
+import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { type MentionCandidate, MentionSuggestions } from "./MentionSuggestions";
 
 /** 候选浮层最多展示的候选数：超出部分靠继续输入收窄，不指望滚动翻找。 */
@@ -143,6 +145,7 @@ export function RichCommentInput({
 	className,
 	inputClassName,
 }: RichCommentInputProps) {
+	const overlayActive = useContext(AnnotationOverlayContext);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { uploadFile } = useChunkedUpload({ purpose: uploadPurpose });
 	const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
@@ -483,6 +486,7 @@ export function RichCommentInput({
 			onSelect={handleEmojiSelect}
 			align="start"
 			closeOnSelect={false}
+			disabled={disabled || !overlayActive}
 			trigger={
 				isInline ? (
 					<button
@@ -515,7 +519,7 @@ export function RichCommentInput({
 	const editor = (
 		<div
 			ref={contentRef}
-			contentEditable={!disabled}
+			contentEditable={!disabled && overlayActive}
 			onInput={handleInput}
 			onPaste={handlePaste}
 			onKeyDown={(event) => {

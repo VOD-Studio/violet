@@ -1,17 +1,3 @@
-/**
- * FloatingToolbar - 选区浮动工具条（划线批注创建入口）。
- *
- * 高频路径，体感关键（PRD-0001 Issue-0006）。零跳转、所见即所得。
- *
- * 行为：
- *   - 监听 mouseup/selectionchange（防抖），选区非空时浮在选区正上方
- *   - 单块判定（selectionToAnchor）：单块 → 启用「划线批注」；跨块 → 置灰 + tooltip「请在同一段落内选择」
- *   - 已登录：点「划线批注」→ 弹出内联输入区（选中原文为引言）→ 提交（带 anchor）→ 高亮落定
- *   - 未登录：按钮变「登录后批注」，点击 login-dialog-store.open()
- *
- * 视觉：bg-surface-glass 毛玻璃 + 描边 + neon 强调。
- */
-
 import { useCreateComment } from "@features/comments/api/mutations";
 import { toCreateCommentAnchor } from "@features/comments/lib/anchor-mapper";
 import { findBlockElement } from "@features/comments/lib/extract-blocks";
@@ -24,10 +10,12 @@ import {
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
 import { Highlighter, LogIn } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import "./annotations.css";
 import { AnnotationComposer } from "./AnnotationComposer";
+import { AnnotationPortal } from "./AnnotationPortal";
+import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { SelectionHighlight } from "./SelectionHighlight";
 import { useExclusivePanel } from "./use-exclusive-panel";
 
@@ -47,6 +35,7 @@ export interface FloatingToolbarProps {
 interface ToolbarPos {
 	top: number;
 	left: number;
+	offscreen: boolean;
 }
 
 export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingToolbarProps) {
@@ -60,36 +49,39 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
 	// 缓存最近一次有效选区的 Range，用于滚动时重新定位（滚动不触发 selectionchange）。
 	const lastRangeRef = useRef<Range | null>(null);
+	const draftAnchorRef = useRef<Anchor | null>(null);
 
-	/** 用缓存的 Range 重新算工具条视口位置（fixed 定位用视口坐标，滚动后需更新）。 */
-	const updatePosFromRange = (range: Range, mode: "above" | "below" = "above") => {
+	const updatePosFromRange = useCallback((range: Range, mode: "above" | "below" = "above") => {
 		const rect = range.getBoundingClientRect();
-		// 选区已滚出视口（width/height 0 或在视口外）→ 隐藏工具条
-		if (rect.width === 0 && rect.height === 0) {
-			setPos(null);
-			return;
+		const offscreen =
+			(rect.width === 0 && rect.height === 0) ||
+			rect.bottom < 0 ||
+			rect.top > window.innerHeight;
+		if (offscreen && toolbarRef.current?.contains(document.activeElement)) {
+			(document.activeElement as HTMLElement).blur();
 		}
-		if (mode === "above") {
-			setPos({
-				top: rect.top - 48, // 选区上方 48px
-				left: rect.left + rect.width / 2,
-			});
-		} else {
-			// below 模式（输入面板展开时）：水平 clamp 到 [160, vw-160] 防气泡溢出
-			const halfWidth = 208;
-			const left = Math.max(
-				halfWidth,
-				Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth),
-			);
-			setPos({
-				top: rect.bottom + 8,
-				left,
-			});
-		}
-	};
+		const halfWidth = Math.min(208, (window.innerWidth - 32) / 2);
+		const panelHeight = Math.min(
+			toolbarRef.current?.offsetHeight || 320,
+			window.innerHeight - 32,
+		);
+		setPos({
+			top:
+				mode === "above"
+					? Math.max(16, rect.top - 48)
+					: Math.max(
+							16,
+							Math.min(rect.bottom + 8, window.innerHeight - panelHeight - 16),
+						),
+			left: Math.max(
+				halfWidth + 16,
+				Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth - 16),
+			),
+			offscreen,
+		});
+	}, []);
 
 	// 监听选区变化 + 滚动跟随。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 故意只依赖 [contentRef, showInput]——updatePosFromRange 是无状态的工具函数（只读 pos state），不需要进 deps；scroll handler 通过 closure 捕获最新 showInput。
 	useEffect(() => {
 		let rafId = 0;
 		const handleSelectionChange = () => {
@@ -160,49 +152,49 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
 		document.addEventListener("selectionchange", handleSelectionChange);
 		window.addEventListener("scroll", handleScroll, { passive: true, capture: true });
+		window.addEventListener("resize", handleScroll);
 		return () => {
 			document.removeEventListener("selectionchange", handleSelectionChange);
 			window.removeEventListener("scroll", handleScroll, { capture: true });
+			window.removeEventListener("resize", handleScroll);
 			cancelAnimationFrame(rafId);
 		};
-	}, [contentRef, showInput]);
+	}, [contentRef, showInput, updatePosFromRange]);
 
 	/** 把选区文字标成草稿划线（textarea 获得焦点后浏览器选区视觉会淡化，需要持续可见）。 */
 	const addDraftMark = async (target: Anchor) => {
 		const root = contentRef.current;
 		if (!root) return;
 		const el = await findBlockElement(root, target.blockId);
-		if (el)
-			wrapRange(el, { start: target.startOffset, end: target.endOffset }, DRAFT_MARK_CLASS);
+		if (!el || draftAnchorRef.current !== target) return;
+		const marks = wrapRange(
+			el,
+			{ start: target.startOffset, end: target.endOffset },
+			DRAFT_MARK_CLASS,
+		);
+		const first = marks[0];
+		const last = marks.at(-1);
+		if (first && last) {
+			// 包装文字会重定向旧 Range 的端点，定位必须重新绑定到草稿标记。
+			const range = document.createRange();
+			range.setStartBefore(first);
+			range.setEndAfter(last);
+			lastRangeRef.current = range;
+			updatePosFromRange(range, "below");
+		}
 	};
 
 	/** 清除草稿划线（提交/取消时调用）。 */
 	const clearDraftMark = () => {
+		draftAnchorRef.current = null;
 		if (contentRef.current) clearMarks(contentRef.current, DRAFT_MARK_CLASS);
 	};
 
 	/** 点「划线批注」：登录展开输入区；未登录弹登录窗 */
 	const handleAnnotate = () => {
 		if (!anchor || isCrossBlock) return;
-		// 重新定位到选区下方（输入区高度大，放上方会被视口顶部裁剪）。
-		// 此时选区因 onMouseDown preventDefault 仍保留，可重新测量。
-		const selection = window.getSelection();
-		if (selection && selection.rangeCount > 0) {
-			const rect = selection.getRangeAt(0).getBoundingClientRect();
-			if (rect.width > 0 || rect.height > 0) {
-				// 水平 clamp：气泡宽 320（w-80），居中需 left 在 [160, vw-160] 范围，
-				// 否则 translate-x-1/2 会让气泡溢出视口左/右边界。
-				const halfWidth = 208;
-				const left = Math.max(
-					halfWidth,
-					Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth),
-				);
-				setPos({
-					top: rect.bottom + 8, // 选区下方 8px
-					left,
-				});
-			}
-		}
+		if (lastRangeRef.current) updatePosFromRange(lastRangeRef.current, "below");
+		draftAnchorRef.current = anchor;
 		if (isLoggedIn) void addDraftMark(anchor);
 		setShowInput(true);
 		setBody("");
@@ -245,59 +237,76 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
 	useExclusivePanel("selection", showInput, handleCancel);
 
+	useEffect(() => {
+		if (!showInput) return;
+		const onKey = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && !event.defaultPrevented) handleCancel();
+		};
+		document.addEventListener("keydown", onKey);
+		return () => document.removeEventListener("keydown", onKey);
+	});
+
 	// 无选区或输入区关闭 → 只保留选区笔触覆盖层
 	if (!pos) return <SelectionHighlight contentRef={contentRef} />;
 
 	return (
 		<>
 			<SelectionHighlight contentRef={contentRef} />
-			<div
-				ref={toolbarRef}
-				className="fixed z-50 -translate-x-1/2"
-				style={{ top: pos.top, left: pos.left }}
-				role="toolbar"
-				aria-label="批注工具"
-			>
-				{showInput && anchor ? (
-					<AnnotationComposer
-						title="划线批注"
-						quote={anchor.selectedText}
-						body={body}
-						onBodyChange={setBody}
-						onSubmit={handleSubmit}
-						onCancel={handleCancel}
-						pending={createComment.isPending}
-						loginRequired={!isLoggedIn}
-					/>
-				) : (
-					/* 浮动工具条（划线批注按钮） */
-					<div className="annotation-pop flex items-center rounded-full bg-card/90 px-1.5 py-1 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10">
-						<button
-							type="button"
-							onClick={handleAnnotate}
-							// preventDefault 防止 mousedown 破坏选区——
-							// 否则点击瞬间选区被清，selectionchange 触发把 pos 清空，
-							// 展开的输入气泡就丢失了「紧贴选区」的定位。
-							onMouseDown={(e) => e.preventDefault()}
-							disabled={isCrossBlock}
-							title={isCrossBlock ? "请在同一段落内选择" : "划线批注"}
-							className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{isLoggedIn ? (
-								<>
-									<Highlighter className="size-3.5" />
-									划线批注
-								</>
-							) : (
-								<>
-									<LogIn className="size-3.5" />
-									登录后批注
-								</>
-							)}
-						</button>
-					</div>
-				)}
-			</div>
+			<AnnotationPortal>
+				<div
+					ref={toolbarRef}
+					className="annotation-selection-toolbar fixed z-50 -translate-x-1/2"
+					style={{ top: pos.top, left: pos.left }}
+					inert={pos.offscreen}
+					aria-hidden={pos.offscreen || undefined}
+					data-offscreen={pos.offscreen ? "true" : undefined}
+					role="toolbar"
+					aria-label="批注工具"
+				>
+					<AnnotationOverlayContext value={!pos.offscreen}>
+						{showInput && anchor ? (
+							<AnnotationComposer
+								title="划线批注"
+								quote={anchor.selectedText}
+								body={body}
+								onBodyChange={setBody}
+								onSubmit={handleSubmit}
+								onCancel={handleCancel}
+								pending={createComment.isPending}
+								loginRequired={!isLoggedIn}
+								onLoggedIn={handleSubmit}
+							/>
+						) : (
+							/* 浮动工具条（划线批注按钮） */
+							<div className="annotation-pop flex items-center rounded-full bg-card/90 px-1.5 py-1 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10">
+								<button
+									type="button"
+									onClick={handleAnnotate}
+									// preventDefault 防止 mousedown 破坏选区——
+									// 否则点击瞬间选区被清，selectionchange 触发把 pos 清空，
+									// 展开的输入气泡就丢失了「紧贴选区」的定位。
+									onMouseDown={(e) => e.preventDefault()}
+									disabled={isCrossBlock}
+									title={isCrossBlock ? "请在同一段落内选择" : "划线批注"}
+									className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									{isLoggedIn ? (
+										<>
+											<Highlighter className="size-3.5" />
+											划线批注
+										</>
+									) : (
+										<>
+											<LogIn className="size-3.5" />
+											登录后批注
+										</>
+									)}
+								</button>
+							</div>
+						)}
+					</AnnotationOverlayContext>
+				</div>
+			</AnnotationPortal>
 		</>
 	);
 }

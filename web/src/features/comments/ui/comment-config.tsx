@@ -11,7 +11,6 @@
 import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import type { Comment } from "@entities/comment/model/types";
 import { AIBadge } from "@entities/comment/ui/AIBadge";
-import { AICommentProfile } from "@entities/comment/ui/AICommentProfile";
 import { CommentAuthorAvatar } from "@entities/comment/ui/CommentAuthorAvatar";
 import { useReplies } from "@features/comments/api/queries";
 import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
@@ -22,6 +21,7 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
+import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
 import { CommentForm } from "./CommentForm";
 import { ReactionBar } from "./ReactionBar";
 
@@ -86,11 +86,13 @@ export function buildArticleCommentConfig({
 		repliesMode: "preview",
 		renderAuthorName: (item) =>
 			item.raw.is_ai ? (
-				<AICommentProfile name={item.raw.author_name}>{item.authorName}</AICommentProfile>
+				<AnnotationAuthorProfile name={item.raw.author_name}>
+					{item.authorName}
+				</AnnotationAuthorProfile>
 			) : undefined,
 		renderAvatar: (item, { size }) =>
 			item.raw.is_ai ? (
-				<AICommentProfile
+				<AnnotationAuthorProfile
 					name={item.raw.author_name}
 					className="shrink-0 self-start rounded-full"
 				>
@@ -99,7 +101,7 @@ export function buildArticleCommentConfig({
 						isAI
 						className={size === "md" ? "size-9 text-sm" : "size-7 text-xs"}
 					/>
-				</AICommentProfile>
+				</AnnotationAuthorProfile>
 			) : undefined,
 		renderMetaBadges: (item) => <AIBadge show={!!item.raw.is_ai} name={item.raw.author_name} />,
 		renderBody: (item) => (

@@ -15,7 +15,7 @@ const MARK_CLASS = "annotation-mark";
 const MARKER_DATA_BLOCKID = "data-annotation-blockid";
 /** 角标纵向对齐块首行的偏移，px */
 const MARKER_TOP_OFFSET_PX = 2;
-const MARKER_MOBILE_HEIGHT_PX = 32;
+const MARKER_MOBILE_HEIGHT_PX = 40;
 
 export interface AnnotationLayerProps {
 	/** 正文容器 ref */
@@ -36,6 +36,7 @@ function sameAuthorFilter(a: AnnotationAuthorFilter, b: AnnotationAuthorFilter):
 /** 当前展开气泡的选择：块 + 评论者筛选，触发元素用于定位 */
 interface ActivePopover {
 	blockId: string;
+	sessionId: number;
 	author: AnnotationAuthorFilter;
 	anchorEl: HTMLElement;
 }
@@ -47,6 +48,7 @@ export function AnnotationLayer({
 	isLoggedIn = false,
 }: AnnotationLayerProps) {
 	const [active, setActive] = useState<ActivePopover | null>(null);
+	const sessionCounter = useRef(0);
 	/** 关闭动画期间气泡仍需内容，保留最近一次的选择 */
 	const lastActive = useRef<ActivePopover | null>(null);
 	if (active) lastActive.current = active;
@@ -106,13 +108,14 @@ export function AnnotationLayer({
 	/** 点击头像或高亮：同一目标再点一次收起，否则切换到新目标 */
 	const toggle = useCallback(
 		(blockId: string, author: AnnotationAuthorFilter, anchorEl: HTMLElement) => {
+			const sessionId = ++sessionCounter.current;
 			setActive((cur) =>
 				cur &&
 				cur.blockId === blockId &&
 				sameAuthorFilter(cur.author, author) &&
 				cur.anchorEl === anchorEl
 					? null
-					: { blockId, author, anchorEl },
+					: { blockId, author, anchorEl, sessionId: cur?.sessionId ?? sessionId },
 			);
 		},
 		[],
@@ -144,8 +147,10 @@ export function AnnotationLayer({
 		target && block
 			? {
 					blockId: target.blockId,
+					sessionId: target.sessionId,
 					author: target.author,
 					anchorEl: target.anchorEl,
+					blockEl: markerMap.get(target.blockId) ?? null,
 					authors: block.authors ?? [],
 					count: block.count,
 				}
