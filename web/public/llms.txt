@@ -29,6 +29,7 @@
 - [Checkbox](https://xunrua.top/ui/components/checkbox)
 - [Dialog](https://xunrua.top/ui/components/dialog)
 - [Input](https://xunrua.top/ui/components/input): 四种变体、三种尺寸、清除与密码显隐、可选标签/说明/错误及原生 FormData/reset；预览和复制代码同源。
+- [SearchInput](https://xunrua.top/ui/components/search-input): 独立组合 Input 的搜索单元，复用四变体、尺寸与样式槽；防抖、回车立即搜索、清除与加载反馈。
 - [Tabs](https://xunrua.top/ui/components/tabs)
 - [ImagePixelReveal](https://xunrua.top/ui/components/image-pixel-reveal): 静止原图、瓦片裁剪拼合、逐轮随机洗牌、悬停重播与减弱动态；自包含 SVG 同源示例。
 - [UploadTile](https://xunrua.top/ui/components/upload-tile): 方形原生按钮、busy/disabled、原生 ref 与键盘；同源示例只记录激活次数，文件选择和上传由宿主负责。

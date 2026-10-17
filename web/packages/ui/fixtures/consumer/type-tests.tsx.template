@@ -4,6 +4,8 @@ import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
 import { Modal } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
+import { SearchInput, type SearchInputProps } from "@violet/ui/search-input";
+import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/search-input";
 import { buttonVariants, checkboxVariants, inputVariants, type ButtonVariantProps, type InputVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
 import { UploadTile, type UploadTileProps } from "@violet/ui";
@@ -72,6 +74,19 @@ export const invalidInputSize = <Input size="lg" />;
 export const invalidInputRef = <Input ref={createRef<HTMLButtonElement>()} />;
 // @ts-expect-error 视觉变体限定为公开的四种。
 inputVariants({ variant: "unknown" });
+const search: SearchInputProps = {
+	label: "搜索文章", name: "query", size: 24, controlSize: "sm", variant: "soft",
+	defaultValue: "violet", classNames: { root: "search-layout", control: "search-surface" },
+	ref: (input) => { input?.select(); },
+	onValueChange: (value) => { const query: string = value; void query; },
+	onSearch: (value) => { const query: string = value; void query; },
+};
+const leafSearch: LeafSearchInputProps = search;
+export const searchExamples = <><SearchInput {...search} /><LeafSearchInput {...leafSearch} /></>;
+// @ts-expect-error 搜索输入的原生 size 仍表示字符宽度。
+export const invalidSearchSize = <SearchInput size="sm" />;
+// @ts-expect-error 搜索输入的 ref 仍指向真实 input。
+export const invalidSearchRef = <SearchInput ref={createRef<HTMLButtonElement>()} />;
 const recipe: ButtonVariantProps = { variant: "primary" };
 buttonVariants(recipe);
 buttonVariants({ variant: "primary", className: "consumer-class" });

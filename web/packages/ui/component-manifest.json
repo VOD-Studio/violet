@@ -158,6 +158,14 @@
 			"entry": "src/components/scroll-area/index.ts"
 		},
 		{
+			"name": "search-input",
+			"status": "foundation",
+			"symbols": [],
+			"entry": "src/components/search-input/index.ts",
+			"css": "src/components/search-input/search-input.css",
+			"documentation": "web/src/features/ui-docs/ui/SearchInputDoc.tsx"
+		},
+		{
 			"name": "segmented",
 			"status": "foundation",
 			"entry": "src/components/segmented/index.ts",

@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 9 个基础单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、Segmented、Textarea、UploadTile。其余 35 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 10 个基础单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、SearchInput、Segmented、Textarea、UploadTile。其余 34 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -110,6 +110,17 @@ import { Input } from "@violet/ui";
 ```
 
 `className`、`style`、事件与 ref 继续属于 input；外层通过 `classNames.root` 调整布局，视觉外壳使用 `classNames.control`。未传 `id` 时使用 `useId` 生成 SSR 稳定的关联标识。`aria-describedby` 合并并去重宿主 ID 和实际存在的说明、错误节点；错误只在 invalid 时显示。`variant` 与 `controlSize` 由 typed recipe 推导，原生 `size` 仍为数字。清除与密码显隐按钮属于同一个复合焦点范围，不因焦点在内部转移而重播聚焦反馈；hover 仅在该范围没有焦点时生效。
+
+SearchInput 是独立的 `search-input` 组合单元，依赖 `input`，不反向把搜索状态或样式塞入基础单元。它复用 Input 的变体、尺寸、字段信息和样式槽，仅增加防抖、回车搜索、清除时序与加载反馈；查询请求仍由调用方管理。搜索单元的叶子 CSS 引入 Input CSS，基础 Input 的叶子入口不包含搜索行为或样式。只有图标或即时本地筛选时，使用 `Input type="search"`，不引入 SearchInput 的调度。
+
+| 输入场景 | 外观选择 |
+| --- | --- |
+| 独立表单、账号、配置及确认字段 | 默认 outline，保留明确字段边界 |
+| 列表工具栏筛选、聊天搜索 | soft；紧凑工具栏使用 controlSize="sm" |
+| 已有容器边界的弹层搜索、大标题编辑、页码 | ghost，避免重复描边 |
+| 用户资料或表格中的行内改名 | underline，编辑线与展示内容衔接 |
+
+外观不决定状态所有权：即时过滤仍可用 Input，防抖搜索使用 SearchInput。文件选择、range、checkbox、OTP 及行为 primitive 自己管理的输入，不套文本 Input 的外壳。
 
 状态有明确归属：原生属性表达 disabled、required 和 invalid；Button 的 `data-loading` 表达加载；Radix 控件沿用其 `data-state`。`data-slot` 标识结构部件。组件不得为每次 hover 创建全局状态，也不得用 CSS 外观冒充键盘行为。
 

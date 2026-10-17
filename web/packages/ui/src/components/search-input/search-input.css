@@ -1,0 +1,56 @@
+@import "../input/input.css";
+
+@layer components {
+	.v-search-input__clear {
+		display: inline-flex;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		padding: 0;
+		border: 0;
+		border-radius: 0.375rem;
+		background-color: transparent;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+		transition:
+			color 320ms ease,
+			background-color 320ms ease;
+	}
+
+	.v-search-input__clear:hover:not(:disabled) {
+		background-color: var(--muted);
+		color: var(--foreground);
+	}
+
+	.v-search-input__clear:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 1px;
+	}
+
+	.v-search-input__clear:disabled {
+		cursor: not-allowed;
+	}
+
+	.v-search-input__loading {
+		animation: v-search-input-spin 1s linear infinite;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-search-input__clear {
+			transition: none;
+		}
+
+		.v-search-input__loading {
+			animation: none;
+		}
+	}
+}
+
+@keyframes v-search-input-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}

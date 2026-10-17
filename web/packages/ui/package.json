@@ -167,6 +167,11 @@
 			"import": "./src/components/scroll-area/index.ts",
 			"default": "./src/components/scroll-area/index.ts"
 		},
+		"./search-input": {
+			"types": "./src/components/search-input/index.ts",
+			"import": "./src/components/search-input/index.ts",
+			"default": "./src/components/search-input/index.ts"
+		},
 		"./segmented": {
 			"types": "./src/components/segmented/index.ts",
 			"import": "./src/components/segmented/index.ts",
@@ -269,6 +274,7 @@
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
+		"./components/search-input.css": "./src/components/search-input/search-input.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
 		"./components/separator.css": "./src/components/separator/separator.css",
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
@@ -452,6 +458,11 @@
 				"import": "./dist/components/scroll-area/index.js",
 				"default": "./dist/components/scroll-area/index.js"
 			},
+			"./search-input": {
+				"types": "./dist/components/search-input/index.d.ts",
+				"import": "./dist/components/search-input/index.js",
+				"default": "./dist/components/search-input/index.js"
+			},
 			"./segmented": {
 				"types": "./dist/components/segmented/index.d.ts",
 				"import": "./dist/components/segmented/index.js",
@@ -554,6 +565,7 @@
 			"./components/input.css": "./dist/components/input.css",
 			"./components/label.css": "./dist/components/label.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
+			"./components/search-input.css": "./dist/components/search-input.css",
 			"./components/segmented.css": "./dist/components/segmented.css",
 			"./components/separator.css": "./dist/components/separator.css",
 			"./components/skeleton.css": "./dist/components/skeleton.css",

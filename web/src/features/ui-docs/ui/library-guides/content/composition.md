@@ -36,6 +36,8 @@ export function NameField() {
 
 ID 未指定时由 `useId` 生成。label、description 与实际显示的 error 关联到同一 input。`className` 属于 input，外层布局使用 `classNames.root`，视觉外壳使用 `classNames.control`。这些可选内容不会替换真实 input；完整示例见 [Input](/ui/components/input)。
 
+SearchInput 与 Input 是两个单元，通过组合复用外观。需要防抖或回车搜索时使用 [SearchInput](/ui/components/search-input)，它沿用 Input 的变体、`controlSize` 和样式槽，额外管理搜索时序；即时本地过滤只需 `Input type="search"`。不要在 Input 内添加搜索状态，也不要在基础输入 CSS 中维护搜索专属形态。
+
 多行输入使用 Label 与 Textarea，手动保持关联：
 
 ```tsx

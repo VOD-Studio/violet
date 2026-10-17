@@ -141,6 +141,12 @@ export const UI_DOCS_CATALOG: readonly CatalogGroup[] = [
 						description: "输入框 · 四种外观、可选字段信息与原生表单",
 					},
 					{
+						id: "search-input",
+						title: "SearchInput",
+						to: "/ui/components/search-input",
+						description: "搜索输入 · 组合 Input 外观与防抖查询",
+					},
+					{
 						id: "image-pixel-reveal",
 						title: "ImagePixelReveal",
 						to: "/ui/components/image-pixel-reveal",

@@ -31,7 +31,8 @@ const ROWS: PropRow[] = [
 	{
 		name: "variant",
 		type: '"outline" | "soft" | "ghost" | "underline"',
-		meaning: "默认 outline。四种外观共用原生输入与焦点语义。",
+		meaning:
+			"默认 outline 用于独立表单；soft 用于工具栏筛选；ghost 用于已有容器内的输入；underline 用于行内编辑。",
 	},
 	{
 		name: "controlSize",
