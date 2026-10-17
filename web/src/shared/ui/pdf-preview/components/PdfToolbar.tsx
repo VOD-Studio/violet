@@ -50,9 +50,11 @@ export function PdfToolbar({
 				<Input
 					type="number"
 					aria-label="当前页码"
+					variant="ghost"
 					controlSize="sm"
 					classNames={{
-						control: "h-6 w-10.5 rounded px-1",
+						root: "w-10.5",
+						control: "px-1",
 						input: "text-center text-xs tabular-nums",
 					}}
 					max={numPages || 1}
