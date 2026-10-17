@@ -13,9 +13,9 @@ import (
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/announcement"
 	domaincomment "blog-api/internal/domain/comment"
-	domainsession "blog-api/internal/domain/session"
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
+	domainsession "blog-api/internal/domain/session"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 )
@@ -343,6 +343,14 @@ func (m *MockCommentRepository) FindByID(ctx context.Context, id shared.ID) (*do
 	return args.Get(0).(*domaincomment.Comment), args.Error(1)
 }
 
+func (m *MockCommentRepository) FindByIDs(ctx context.Context, ids []shared.ID) ([]*domaincomment.Comment, error) {
+	args := m.Called(ctx, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domaincomment.Comment), args.Error(1)
+}
+
 func (m *MockCommentRepository) FindPage(ctx context.Context, filter domaincomment.ListFilter, q shared.PageQuery) (shared.PageResult[*domaincomment.Comment], error) {
 	args := m.Called(ctx, filter, q)
 	if args.Get(0) == nil {
@@ -440,10 +448,10 @@ func (m *MockCommentEmailSender) SendVerificationCode(ctx context.Context, email
 
 // 编译期断言
 var (
-	_ appshared.EventBus                    = (*MockEventBus)(nil)
-	_ appshared.SessionStore                = (*MockSessionStore)(nil)
-	_ appshared.CodeStore                   = (*MockCommentCodeStore)(nil)
-	_ domainuser.UserRepository             = (*MockUserRepository)(nil)
-	_ announcement.AnnouncementRepository   = (*MockAnnouncementRepository)(nil)
-	_ domaincomment.CommentRepository       = (*MockCommentRepository)(nil)
+	_ appshared.EventBus                  = (*MockEventBus)(nil)
+	_ appshared.SessionStore              = (*MockSessionStore)(nil)
+	_ appshared.CodeStore                 = (*MockCommentCodeStore)(nil)
+	_ domainuser.UserRepository           = (*MockUserRepository)(nil)
+	_ announcement.AnnouncementRepository = (*MockAnnouncementRepository)(nil)
+	_ domaincomment.CommentRepository     = (*MockCommentRepository)(nil)
 )

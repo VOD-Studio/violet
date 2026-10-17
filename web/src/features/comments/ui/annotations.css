@@ -177,6 +177,8 @@
 	animation: annotation-fade-in 0.25s ease-out;
 }
 .annotation-avatar {
+	--annotation-avatar-accent: var(--primary);
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -196,7 +198,14 @@
 	cursor: pointer;
 	transition:
 		box-shadow 0.2s,
-		opacity 0.2s;
+		opacity 0.2s,
+		background-color 0.15s;
+}
+.annotation-filter-avatar {
+	--annotation-avatar-accent: var(--primary);
+	position: relative;
+	background-color: var(--muted);
+	color: var(--muted-foreground);
 }
 .annotation-marker > :is(.annotation-avatar-wrap, .annotation-avatar) {
 	transition:
@@ -214,6 +223,18 @@
 .annotation-marker > .annotation-marker-mobile + :is(.annotation-avatar-wrap, .annotation-avatar) {
 	margin-inline-start: 0;
 }
+.annotation-avatar::after,
+.annotation-filter-avatar::after {
+	content: "";
+	position: absolute;
+	bottom: -4px;
+	left: calc(50% - 5px);
+	width: 10px;
+	height: 2px;
+	border-radius: 9999px;
+	background: var(--annotation-avatar-accent);
+	opacity: 0;
+}
 .annotation-marker-mobile {
 	display: none;
 	align-items: center;
@@ -229,6 +250,7 @@
 }
 .annotation-marker-mobile[data-active="true"] {
 	color: var(--foreground);
+	background-color: color-mix(in oklch, var(--primary) 8%, transparent);
 }
 .annotation-marker-mobile:focus-visible {
 	outline: 2px solid var(--ring);
@@ -255,41 +277,56 @@
 	height: 100%;
 	object-fit: cover;
 }
-.annotation-avatar:focus-visible {
+.annotation-avatar:focus-visible,
+.annotation-filter-avatar:focus-visible {
 	outline: 2px solid var(--ring);
 	outline-offset: 2px;
 }
-.annotation-avatar[data-active="true"] {
-	box-shadow:
-		0 0 0 2px var(--background),
-		0 0 0 4px var(--primary);
-}
-.annotation-avatar[data-ai="true"][data-active="true"] {
-	box-shadow:
-		0 0 0 2px var(--background),
-		0 0 0 4px var(--ai-accent);
-}
-.annotation-filter-avatar {
-	background-color: var(--muted);
-	color: var(--muted-foreground);
-}
 .annotation-avatar[data-ai="true"],
 .annotation-filter-avatar[data-ai="true"] {
+	--annotation-avatar-accent: var(--ai-accent);
 	background-color: color-mix(in oklch, var(--ai-accent) 12%, var(--card));
 	color: var(--ai-accent);
 }
+.annotation-avatar[data-active="true"],
+.annotation-filter-avatar[data-active="true"] {
+	background-color: color-mix(in oklch, var(--annotation-avatar-accent) 10%, transparent);
+}
+.annotation-avatar[data-active="true"]::after,
+.annotation-filter-avatar[data-active="true"]::after {
+	opacity: 1;
+}
 
-/* 批注气泡：靠透明度与模糊淡入淡出，不缩放、不位移 */
+/* Radix 管理嵌套浮层与离场挂载；关闭尾帧和离屏内容不再参与交互。 */
 .annotation-popover {
-	opacity: 0;
-	filter: blur(6px);
-	transition:
-		opacity 0.18s ease,
-		filter 0.18s ease;
+	height: min(472px, var(--radix-popover-content-available-height));
 }
 .annotation-popover[data-state="open"] {
-	opacity: 1;
-	filter: blur(0);
+	animation: annotation-fade-in 0.18s ease;
+}
+.annotation-popover[data-state="closed"] {
+	pointer-events: none;
+	animation: annotation-fade-out 0.18s ease;
+}
+.annotation-popover[data-offscreen="true"] {
+	visibility: hidden;
+	pointer-events: none;
+}
+.annotation-block-composer[data-offscreen="true"],
+.annotation-selection-toolbar[data-offscreen="true"] {
+	visibility: hidden;
+	pointer-events: none;
+}
+
+@keyframes annotation-fade-out {
+	from {
+		opacity: 1;
+		filter: blur(0);
+	}
+	to {
+		opacity: 0;
+		filter: blur(6px);
+	}
 }
 
 /* 输入面板与工具条挂载时的淡入 */
@@ -319,6 +356,7 @@
 	.annotation-mark,
 	.annotation-draft-mark,
 	.annotation-draft-highlight,
+	.annotation-popover[data-state],
 	.annotation-marker,
 	.annotation-pop {
 		animation: none;

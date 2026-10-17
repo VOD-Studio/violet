@@ -12,6 +12,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CommentItem } from "../CommentItem";
 import { CommentRepliesBlock } from "../CommentRepliesBlock";
+import { ExpandedReplies } from "../ExpandedReplies";
 import type { CommentDisplayItem, CommentSectionConfig } from "../types";
 
 /** 测试用原始评论（仅需 id 的最小约束） */
@@ -139,6 +140,39 @@ describe("CommentItem", () => {
 
 describe("CommentRepliesBlock", () => {
 	afterEach(() => cleanup());
+
+	it.each([
+		{ name: "直接回复楼主", parentId: "top", expected: 0 },
+		{ name: "回复与楼主同名的二级评论", parentId: "target-outside-preview", expected: 2 },
+	])("$name：即时回复与分页回复按实际目标一致展示标注", ({ parentId, expected }) => {
+		const reply = mk("new", { depth: 1, parentId, replyToName: "Alice" });
+		const config = stubConfig({ repliesMode: "preview", map: () => reply });
+		render(
+			<>
+				<CommentRepliesBlock
+					comment={mk("top", { authorName: "Alice", repliesTotal: 1 })}
+					isLoggedIn={false}
+					config={config}
+					pendingReplies={[reply]}
+					onReplyAdded={() => {}}
+				/>
+				<ExpandedReplies
+					topLevelId="top"
+					replies={[reply.raw]}
+					hasNextPage={false}
+					fetchNextPage={() => {}}
+					isFetchingNextPage={false}
+					isLoading={false}
+					excludeIds={new Set()}
+					knownReplies={[]}
+					config={config}
+					isLoggedIn={false}
+					onReplyAdded={() => {}}
+				/>
+			</>,
+		);
+		expect(screen.queryAllByText("@Alice")).toHaveLength(expected);
+	});
 
 	it("toggle 模式：默认显示「查看回复」，点击后挂载懒加载区并显示「收起回复」", () => {
 		const renderExpanded = vi.fn(() => <div>expanded-content</div>);

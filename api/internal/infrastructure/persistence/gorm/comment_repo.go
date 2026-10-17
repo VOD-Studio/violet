@@ -139,6 +139,29 @@ func (r *CommentRepository) FindByID(ctx context.Context, id domainshared.ID) (*
 	return commentToDomain(po)
 }
 
+func (r *CommentRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*comment.Comment, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	uuids := make([]uuid.UUID, len(ids))
+	for i, id := range ids {
+		uuids[i] = id.UUID()
+	}
+	var pos []model.Comment
+	if err := r.db.WithContext(ctx).Where("id IN ?", uuids).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("批量查询评论失败", err)
+	}
+	comments := make([]*comment.Comment, 0, len(pos))
+	for _, po := range pos {
+		c, err := commentToDomain(po)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, c)
+	}
+	return comments, nil
+}
+
 // FindPage 分页列出评论（统一入口；筛选与排序语义见 comment.ListFilter）。
 //
 // 表引用统一走 Table("comments c") 别名形态，与 FindPageWithPost 的 JOIN 场景

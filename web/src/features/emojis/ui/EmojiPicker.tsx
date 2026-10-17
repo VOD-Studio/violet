@@ -27,6 +27,8 @@ export interface EmojiPickerProps {
 	closeOnSelect?: boolean;
 	/** 回应只接受系统表情时关闭。 */
 	showMyEmojis?: boolean;
+	/** 禁用入口并关闭已打开的选择器。 */
+	disabled?: boolean;
 }
 
 type GroupKey = number | "mine";
@@ -47,6 +49,7 @@ function EmojiPickerSession({
 	selectedIds,
 	closeOnSelect = true,
 	showMyEmojis = true,
+	disabled = false,
 }: EmojiPickerProps) {
 	const [open, setOpen] = useState(false);
 	const [selectedGroup, setSelectedGroup] = useState<GroupKey | null>(null);
@@ -67,15 +70,15 @@ function EmojiPickerSession({
 	const stripRef = useRef<HTMLDivElement>(null);
 	const activeButtonRef = useRef<HTMLButtonElement>(null);
 	const scrollPositions = useRef(new Map<GroupKey, number>());
-
 	useEffect(() => {
+		if (disabled) return setOpen(false);
 		if (!open || activeKey === undefined) return;
 		const strip = stripRef.current;
 		const button = activeButtonRef.current;
 		if (strip && button) {
 			strip.scrollLeft = button.offsetLeft - (strip.clientWidth - button.offsetWidth) / 2;
 		}
-	}, [open, activeKey]);
+	}, [open, activeKey, disabled]);
 
 	const handleSelect = (emoji: Emoji) => {
 		onSelect(emoji);
@@ -118,8 +121,8 @@ function EmojiPickerSession({
 	};
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
+		<Popover open={open && !disabled} onOpenChange={setOpen}>
+			<PopoverTrigger asChild disabled={disabled}>
 				{trigger ?? (
 					<Button
 						type="button"
@@ -136,6 +139,8 @@ function EmojiPickerSession({
 				align={align}
 				sideOffset={4}
 				aria-label="表情选择器"
+				inert={disabled || !open}
+				aria-hidden={disabled || !open ? true : undefined}
 				className={cn("w-85 max-w-[calc(100vw-2rem)] p-0", styles.panel)}
 				onOpenAutoFocus={(event) => event.preventDefault()}
 				onFocusOutside={(event) => {

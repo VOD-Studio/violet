@@ -110,8 +110,9 @@ export function CartoonPopover({
 	}, [triggerMode, clearTimers, closeDelay, isControlled, onOpenChange]);
 
 	useEffect(() => {
+		if (triggerMode === "click") clearTimers();
 		return () => clearTimers();
-	}, [clearTimers]);
+	}, [clearTimers, triggerMode]);
 
 	return (
 		<CartoonPopoverContext.Provider
@@ -235,7 +236,7 @@ export function CartoonPopoverTrigger({
 }
 
 /**
- * CartoonPopoverContent 气泡浮层主体。
+ * 手绘气泡浮层，默认非模态 dialog；可覆盖 role 作为其他对话框的视觉容器。
  */
 export function CartoonPopoverContent({
 	side = "bottom",
@@ -254,6 +255,7 @@ export function CartoonPopoverContent({
 	container,
 	className,
 	style,
+	role = "dialog",
 	children,
 	onMouseEnter,
 	onMouseLeave,
@@ -380,8 +382,8 @@ export function CartoonPopoverContent({
 				}
 			}}
 			id={popoverId}
-			role="dialog"
-			aria-modal="false"
+			role={role}
+			{...(role === "dialog" ? { "aria-modal": false } : {})}
 			aria-hidden={!open}
 			inert={!open}
 			data-slot="cartoon-popover-content"

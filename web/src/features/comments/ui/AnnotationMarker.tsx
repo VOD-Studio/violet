@@ -27,6 +27,7 @@ export function AnnotationMarker({ block, top, activeAuthor, onSelect }: Annotat
 			<button
 				type="button"
 				aria-label={label}
+				aria-pressed={activeAuthor !== undefined}
 				title={label}
 				onClick={(event) => onSelect(null, event.currentTarget)}
 				className="annotation-marker-mobile"
@@ -49,6 +50,7 @@ export function AnnotationMarker({ block, top, activeAuthor, onSelect }: Annotat
 				<button
 					type="button"
 					aria-label={label}
+					aria-pressed={activeAuthor !== undefined}
 					title={label}
 					onClick={(event) => onSelect(null, event.currentTarget)}
 					className="annotation-avatar"
@@ -77,6 +79,7 @@ export function AnnotationMarker({ block, top, activeAuthor, onSelect }: Annotat
 				<button
 					type="button"
 					aria-label={label}
+					aria-pressed={activeAuthor === null}
 					title={label}
 					onClick={(event) => onSelect(null, event.currentTarget)}
 					className="annotation-avatar"
@@ -111,10 +114,15 @@ function MarkerAvatar({ author, index, isActive, onClick }: MarkerAvatarProps) {
 			<button
 				type="button"
 				aria-label={label}
+				aria-pressed={isActive}
 				title={label}
 				onClick={(event) => onClick(event.currentTarget)}
 				className="annotation-avatar"
 				data-active={isActive ? "true" : undefined}
+				data-annotation-author={JSON.stringify({
+					name: author.name,
+					is_ai: !!author.is_ai,
+				})}
 				data-ai={author.is_ai ? "true" : undefined}
 				data-ai-persona={personaId}
 			>

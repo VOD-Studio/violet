@@ -99,6 +99,8 @@ type PostCommentStat struct {
 // CommentRepository 评论仓储接口
 type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
+	// FindByIDs 批量读取回复目标，缺失的 ID 不返回；不受评论分页范围影响。
+	FindByIDs(ctx context.Context, ids []shared.ID) ([]*Comment, error)
 	// FindPage 分页列出评论（统一入口，筛选维度由 ListFilter 正交组合）。
 	//
 	// Status 是「所有人可见的基准状态」，空串 = 不过滤；前台固定传 StatusApproved。

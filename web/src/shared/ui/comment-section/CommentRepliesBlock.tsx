@@ -47,15 +47,11 @@ export function CommentRepliesBlock<T extends CommentRaw>({
 	// 已可见回复（预览 + pending），供「回复 @yyy」按 parentId 推导
 	const knownReplies = [...previewReplies, ...visiblePending];
 
-	// 回复串里对楼主本人的「回复 @楼主」是冗余信息，只保留回复其他人的标注
+	// 只省略直接回复楼主的标注，同名作者不代表同一评论。
 	const renderReply = (reply: CommentDisplayItem<T>) => (
 		<CommentItem
 			key={reply.id}
-			item={
-				reply.replyToName === comment.authorName
-					? { ...reply, replyToName: undefined }
-					: reply
-			}
+			item={reply.parentId === comment.id ? { ...reply, replyToName: undefined } : reply}
 			level={1}
 			isLoggedIn={isLoggedIn}
 			config={config}

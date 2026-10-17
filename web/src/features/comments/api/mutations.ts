@@ -15,18 +15,8 @@ import type {
 import { commentKeys } from "./keys";
 
 /**
- * useCreateComment - 调后端 POST /posts/{postId}/comments 提交评论
- *
- * 双轨认证（PRD-0001）：
- *   - 登录态：body 仅需 body 字段，author_name/author_email/code 由后端忽略
- *   - 匿名态：body 需含 author_name/author_email/code（邮箱验证码两步流）
- *
- * 新评论默认 pending 状态，需审核后才在前台公开（登录提交者本人立即可见带「审批中」徽章）。
- *
- * 乐观更新（提交后立即显示，不等重拉）：
- *   - 顶层评论：直接 invalidate list 缓存重拉（顶层条目少，重拉开销小且数据新鲜）
- *   - 回复（parent_id 非空）：乐观追加到 useReplies 缓存（展开态立即看到），
- *     同时手动递增顶层列表里父评论的 replies_total（不触发重拉，避免批注 relocate 重算导致角标消失）
+ * 回复提交后直接更新所属顶层线程的缓存，不重拉顶层列表，保持批注角标稳定。
+ * 待审核回复立即对提交者显示，其他访问者仍遵循服务端审核可见性。
  */
 export const useCreateComment = (postId: string) => {
 	const qc = useQueryClient();
@@ -35,8 +25,10 @@ export const useCreateComment = (postId: string) => {
 		onSuccess: (newComment, variables) => {
 			try {
 				if (variables.parent_id) {
-					optimisticAppendReply(qc, variables.parent_id, newComment);
-					bumpRepliesTotalInList(qc, postId, variables.parent_id);
+					const threadRootId = newComment.thread_root_id;
+					if (!threadRootId) throw new Error("回复响应缺少所属线程");
+					optimisticAppendReply(qc, threadRootId, newComment);
+					bumpRepliesTotalInList(qc, postId, threadRootId);
 					// 失效按块懒加载的批注详情查询（面板内容刷新），不影响 summary（角标稳定）
 					qc.invalidateQueries({
 						predicate: (query) => {

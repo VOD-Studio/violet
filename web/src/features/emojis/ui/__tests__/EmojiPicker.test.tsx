@@ -133,6 +133,39 @@ it("左右切组不回绕，选择表情后重开仍保留刚浏览的分组", a
 	await screen.findByRole("button", { name: "赞" });
 });
 
+it.each([
+	false,
+	true,
+])("禁用入口会关闭已打开的浮层，重新启用不自动复活（自定义入口：%s）", async (custom) => {
+	const onSelect = vi.fn();
+	const trigger = custom ? <button type="button">选择自定义表情</button> : undefined;
+	const name = custom ? "选择自定义表情" : "添加表情";
+	const { rerender } = render(
+		<QueryClientProvider client={queryClient}>
+			<EmojiPicker onSelect={onSelect} trigger={trigger} />
+		</QueryClientProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name }));
+	await screen.findByRole("button", { name: "赞" });
+	rerender(
+		<QueryClientProvider client={queryClient}>
+			<EmojiPicker onSelect={onSelect} trigger={trigger} disabled />
+		</QueryClientProvider>,
+	);
+	await waitFor(() => expect(screen.queryByRole("dialog", { name: "表情选择器" })).toBeNull());
+	expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
+	fireEvent.click(screen.getByRole("button", { name }));
+	expect(onSelect).not.toHaveBeenCalled();
+	rerender(
+		<QueryClientProvider client={queryClient}>
+			<EmojiPicker onSelect={onSelect} trigger={trigger} />
+		</QueryClientProvider>,
+	);
+	expect(screen.queryByRole("dialog", { name: "表情选择器" })).toBeNull();
+	fireEvent.click(screen.getByRole("button", { name }));
+	await screen.findByRole("button", { name: "赞" });
+});
+
 it("有动图时网格和聚焦预览都显示动图，方向键只切换导航中的分组", async () => {
 	render(
 		<QueryClientProvider client={queryClient}>

@@ -74,10 +74,12 @@ export interface Comment {
 	id: string;
 	/** 所属文章 ID */
 	post_id: string;
-	/** 父评论 ID，顶级评论省略 */
+	/** 实际被回复评论 ID，顶级评论省略；不等于所属线程根 ID */
 	parent_id?: string;
-	/** 被回复者的昵称。回复节点才有，前端显示「回复 @yyy」用。
-	 *  后端 toDTO 时填好，前端直接读，不自己转换。顶层评论没这个字段。 */
+	/** 所属顶层线程 ID，仅回复携带，用于更新扁平回复列表 */
+	thread_root_id?: string;
+	/** 实际被回复者的昵称，由后端按访问者可见性填充，不依赖目标所在分页。
+	 *  顶层评论或当前访问者不可见的回复目标省略。 */
 	reply_to_name?: string;
 	/** 嵌套深度，0 为顶级 */
 	depth: number;

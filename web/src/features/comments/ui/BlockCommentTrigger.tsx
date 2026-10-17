@@ -1,14 +1,11 @@
-import { useCreateComment } from "@features/comments/api/mutations";
-import { toCreateCommentAnchor } from "@features/comments/lib/anchor-mapper";
-import { computeBlockId } from "@features/comments/lib/block-id";
-import { getBlockText } from "@features/comments/lib/extract-blocks";
-import { buildAnchorFromRange } from "@features/comments/lib/range-to-anchor";
 import { closestAnnotatableBlock } from "@features/comments/lib/selection-to-anchor";
-import { ApiError } from "@shared/api/error";
 import { MessageSquareText } from "lucide-react";
+import { Popover } from "radix-ui";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { AnnotationComposer } from "./AnnotationComposer";
+import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
+import { AnnotationPortal } from "./AnnotationPortal";
+import { AnnotationOverlayContext } from "./annotation-overlay-context";
+import { BlockAnnotationComposer } from "./BlockAnnotationComposer";
 import { useExclusivePanel } from "./use-exclusive-panel";
 
 /** 鼠标离开正文后入口延迟隐藏的时间，留给指针移向入口按钮。 */
@@ -23,7 +20,7 @@ export interface BlockCommentTriggerProps {
 	contentRef: React.RefObject<HTMLElement | null>;
 	/** 覆盖层元素：入口的纵向坐标相对它计算 */
 	layerRef: React.RefObject<HTMLElement | null>;
-	/** 已有批注的块元素；这些块由头像角标承担入口，不再显示新建入口 */
+	/** 已有批注的块在批注面板中提供独立段评入口，避免侧栏入口与头像重叠。 */
 	annotatedBlocks: ReadonlySet<HTMLElement>;
 	isLoggedIn: boolean;
 	postId: string;
@@ -44,11 +41,9 @@ export function BlockCommentTrigger({
 }: BlockCommentTriggerProps) {
 	const [hovered, setHovered] = useState<HTMLElement | null>(null);
 	const [top, setTop] = useState(0);
-	/** 面板挂在覆盖层里，随页面一起滚动；top 是相对覆盖层的纵向位置 */
-	const [composer, setComposer] = useState<{ block: HTMLElement; top: number } | null>(null);
-	const [body, setBody] = useState("");
+	const [composerBlock, setComposerBlock] = useState<HTMLElement | null>(null);
 	const hideTimer = useRef<number | undefined>(undefined);
-	const createComment = useCreateComment(postId);
+	const composerVisible = useAnnotationAnchorVisible(composerBlock, composerBlock !== null);
 
 	useEffect(() => {
 		const root = contentRef.current;
@@ -76,7 +71,7 @@ export function BlockCommentTrigger({
 		};
 	}, [contentRef]);
 
-	const visibleBlock = composer?.block ?? hovered;
+	const visibleBlock = composerBlock ?? hovered;
 	useEffect(() => {
 		const layer = layerRef.current;
 		if (!visibleBlock || !layer) return;
@@ -88,63 +83,17 @@ export function BlockCommentTrigger({
 	}, [visibleBlock, layerRef]);
 
 	const close = useCallback(() => {
-		setComposer((cur) => {
-			cur?.block.classList.remove(DRAFT_CLASS);
+		setComposerBlock((cur) => {
+			cur?.classList.remove(DRAFT_CLASS);
 			return null;
 		});
-		setBody("");
 	}, []);
-	useExclusivePanel("block", composer !== null, close);
-
-	// Esc 关闭输入面板
-	useEffect(() => {
-		if (!composer) return;
-		const onKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") close();
-		};
-		document.addEventListener("keydown", onKey);
-		return () => document.removeEventListener("keydown", onKey);
-	}, [composer, close]);
+	useExclusivePanel("block", composerBlock !== null, close);
 
 	const open = () => {
-		const layer = layerRef.current;
-		if (!hovered || !layer) return;
+		if (!hovered) return;
 		if (isLoggedIn) hovered.classList.add(DRAFT_CLASS);
-		setComposer({
-			block: hovered,
-			top:
-				hovered.getBoundingClientRect().bottom -
-				layer.getBoundingClientRect().top +
-				COMPOSER_GAP_PX,
-		});
-	};
-
-	const submit = async () => {
-		if (!composer || !body.trim()) return;
-		const text = getBlockText(composer.block);
-		const blockId = await computeBlockId(text);
-		const anchor = await buildAnchorFromRange({
-			blockId,
-			blockText: text,
-			startOffset: 0,
-			endOffset: text.length,
-		});
-		if (!anchor) {
-			toast.error("这一段暂不支持段评");
-			return;
-		}
-		createComment.mutate(
-			{ body: body.trim(), anchor: toCreateCommentAnchor(anchor) },
-			{
-				onSuccess: (created) => {
-					toast.success(
-						created.status === "pending" ? "段评已提交，等待审核" : "段评已提交",
-					);
-					close();
-				},
-				onError: (err) => toast.error(err instanceof ApiError ? err.message : "提交失败"),
-			},
-		);
+		setComposerBlock(hovered);
 	};
 
 	const showTrigger = Boolean(visibleBlock && !annotatedBlocks.has(visibleBlock));
@@ -167,25 +116,35 @@ export function BlockCommentTrigger({
 			>
 				<MessageSquareText className="size-4" />
 			</button>
-			{composer && (
-				<div
-					className="pointer-events-auto absolute right-0 z-50 max-w-full"
-					style={{ top: composer.top }}
-				>
-					<AnnotationComposer
-						title="段评"
-						icon={<MessageSquareText className="size-4" />}
-						quote={getBlockText(composer.block)}
-						body={body}
-						onBodyChange={setBody}
-						onSubmit={submit}
-						onCancel={close}
-						pending={createComment.isPending}
-						placeholder="写下你对这一段的想法…"
-						loginRequired={!isLoggedIn}
-						onLoggedIn={submit}
-					/>
-				</div>
+			{composerBlock && (
+				<Popover.Root open onOpenChange={(next) => !next && close()}>
+					<Popover.Anchor virtualRef={{ current: composerBlock }} />
+					<AnnotationPortal>
+						<Popover.Content
+							className="annotation-block-composer pointer-events-auto z-50 max-w-[calc(100vw-2rem)] rounded-2xl outline-none"
+							align="end"
+							side="bottom"
+							sideOffset={COMPOSER_GAP_PX}
+							collisionPadding={16}
+							onOpenAutoFocus={(event) => event.preventDefault()}
+							onCloseAutoFocus={(event) => event.preventDefault()}
+							onInteractOutside={(event) => event.preventDefault()}
+							inert={!composerVisible}
+							aria-hidden={!composerVisible || undefined}
+							data-offscreen={!composerVisible ? "true" : undefined}
+							aria-label="发表段评"
+						>
+							<AnnotationOverlayContext value={composerVisible}>
+								<BlockAnnotationComposer
+									block={composerBlock}
+									postId={postId}
+									isLoggedIn={isLoggedIn}
+									onClose={close}
+								/>
+							</AnnotationOverlayContext>
+						</Popover.Content>
+					</AnnotationPortal>
+				</Popover.Root>
 			)}
 		</>
 	);
