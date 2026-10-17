@@ -7,6 +7,39 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.11.2](https://github.com/VOD-Studio/violet/compare/v2.11.1...v2.11.2) (2026-10-17)
+
+
+### 新增
+
+* **input:** 统一输入控件及聚焦交互 ([aac1eb4](https://github.com/VOD-Studio/violet/commit/aac1eb406a79ae168e5bde64bb89b7f3fd1033f1))
+
+
+### 修复
+
+* **ai-comment-profile:** 跟随外层会话停用简介 ([7a9f3dd](https://github.com/VOD-Studio/violet/commit/7a9f3dd1674d7cba6db88c95078de2d6908ddfa9))
+* **annotations:** 保留批注浮层的编辑会话 ([7e7ab63](https://github.com/VOD-Studio/violet/commit/7e7ab63f3e8a4b64788b302cd9058662c3a5c5d7))
+* **cartoon-popover:** 支持嵌套浮层的独立语义 ([7f1608a](https://github.com/VOD-Studio/violet/commit/7f1608a4473fceaa92fac10661fa318382f3c422))
+* **comment-section:** 按实际回复目标展示同名标注 ([f0af8aa](https://github.com/VOD-Studio/violet/commit/f0af8aaa073f3eba78f9fa08a4835f0034ad5418))
+* **comments:** 修复批注浮层交互 ([e7a320b](https://github.com/VOD-Studio/violet/commit/e7a320bf4cb3f5b3d2315c90319406625d99e4fe))
+* **comments:** 按顶层线程更新新增回复缓存 ([20a2fb4](https://github.com/VOD-Studio/violet/commit/20a2fb426cf5adf10edddcedaa8cf63541812785))
+* **comment:** 保留实际回复对象与所属线程 ([498d93c](https://github.com/VOD-Studio/violet/commit/498d93c562857b77e24331899439461f66013353))
+* **emoji-picker:** 关闭不可用会话的表情浮层 ([6b35ac2](https://github.com/VOD-Studio/violet/commit/6b35ac27581d6061b727cc56d7fc9d76e73eaebe))
+* **input:** 统一后台搜索控件尺寸 ([3370655](https://github.com/VOD-Studio/violet/commit/337065552770a7aa8f9b079197697d6ae645bf88))
+* **input:** 统一输入控件交互与场景形态 ([5bb1594](https://github.com/VOD-Studio/violet/commit/5bb15947a8f5f85a618e97dfe114d880278c126f))
+* **input:** 隐藏搜索型原生清除按钮 ([b1cd898](https://github.com/VOD-Studio/violet/commit/b1cd89882d8f742bd1d12023ee6b4eade85b9992))
+
+
+### 重构
+
+* **color-picker:** 采用紧凑填色输入形态 ([009677d](https://github.com/VOD-Studio/violet/commit/009677dcf3a3a0adb7d24b35cca7210a96748099))
+* **input:** SearchInput 并入 input 单元并统一内部实现 ([ab2f358](https://github.com/VOD-Studio/violet/commit/ab2f35817c2b9d640d0c17ebabc4055facac7b7a))
+* **input:** 按场景迁移站点输入控件 ([9b37cfb](https://github.com/VOD-Studio/violet/commit/9b37cfba5a3bdfd46a5ebd0b418c17f47005de95))
+* **input:** 迁移站点原生输入到统一组件 ([944f121](https://github.com/VOD-Studio/violet/commit/944f121cf92ab0511177ca6a01c08e29a1d4ba90))
+* **input:** 迁移站点输入框外层布局 ([89f3def](https://github.com/VOD-Studio/violet/commit/89f3defb99d89aa7c6ab4a2fa5bf3a71da355b13))
+* **pdf-preview:** 统一页码输入的紧凑形态 ([78b3af0](https://github.com/VOD-Studio/violet/commit/78b3af05527bf2096c6ea91bbf142b3b4303c680))
+* **search-input:** 拆出独立搜索组合单元 ([30cce0b](https://github.com/VOD-Studio/violet/commit/30cce0b24f3069e89da101934201b8353dfe8a92))
+
 ## [2.11.1](https://github.com/VOD-Studio/violet/compare/v2.11.0...v2.11.1) (2026-10-15)
 
 
