@@ -116,6 +116,38 @@ func TestCountByPostAndAnon_DifferentIdentityNotCounted(t *testing.T) {
 	assert.Equal(t, int64(1), n, "不同 email 或 ip 应算不同身份")
 }
 
+func TestFindByIDs_ResolvesReplyTargetOutsidePage(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	rootID, targetID := domainshared.NewID(), domainshared.NewID()
+	root, err := domaincomment.NewComment(domaincomment.CreateParams{
+		ID: rootID, PostID: fixedPostID, AuthorName: "楼主", Body: "一级评论",
+	})
+	require.NoError(t, err)
+	require.NoError(t, root.SetParent(nil))
+	root.Approve()
+	require.NoError(t, repo.Save(ctx, root))
+	target, err := domaincomment.NewComment(domaincomment.CreateParams{
+		ID: targetID, PostID: fixedPostID, AuthorName: "二级目标作者", Body: "被回复的评论",
+	})
+	require.NoError(t, err)
+	require.NoError(t, target.SetParent(root))
+	target.Approve()
+	require.NoError(t, repo.Save(ctx, target))
+
+	items, err := repo.FindByIDs(ctx, []domainshared.ID{targetID, domainshared.NewID()})
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, targetID, items[0].ID())
+	assert.Equal(t, "二级目标作者", items[0].AuthorName())
+	assert.Equal(t, rootID.String()+"/"+targetID.String()+"/", items[0].Path())
+	assert.Equal(t, &rootID, items[0].ParentID())
+	empty, err := repo.FindByIDs(ctx, nil)
+	require.NoError(t, err)
+	assert.Empty(t, empty)
+}
+
 // TestFindByPost_LoggedInViewer_IncludesOwnPending 登录 viewer 看到 approved ∪ 自己 pending。
 func TestFindByPost_LoggedInViewer_IncludesOwnPending(t *testing.T) {
 	db := setupCommentTestDB(t)

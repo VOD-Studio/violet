@@ -113,8 +113,9 @@ type CommentDTO struct {
 	ID       string `json:"id"`
 	PostID   string `json:"post_id"`
 	ParentID string `json:"parent_id,omitempty"`
-	// ReplyToName 被回复者的昵称。只有回复节点有，前端显示「回复 @yyy」用。
-	// toDTO 时查 parent 的 author_name 填进来，前端直接读不自己转换。顶层评论省略。
+	// ThreadRootID 所属顶层线程，与 ParentID 指向的实际回复目标分开；顶层评论省略。
+	ThreadRootID string `json:"thread_root_id,omitempty"`
+	// ReplyToName 实际被回复评论的作者昵称，不依赖目标是否位于当前分页或预览中。
 	ReplyToName string `json:"reply_to_name,omitempty"`
 	Depth       int16  `json:"depth"`
 	AuthorName  string `json:"author_name"`
@@ -218,17 +219,11 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 			authorID = &aid
 		}
 	}
-	// 建 parent_id → author_name 索引，批量填 reply_to_name（避免每条回复单独查 DB）
-	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
 	// 顶层 + 回复预览实体平铺，供 enrichOAuthIdentities 一次批量富化角标
 	flat := make([]*domain.Comment, 0, len(items)+replyPreviewLimit*len(items))
 	for _, c := range items {
-		name := ""
-		if c.ParentID() != nil {
-			name = parentNames[c.ParentID().String()]
-		}
-		dto := toDTO(c, authorID, name)
+		dto := toDTO(c, authorID, "")
 		// 顶层评论列表：补回复预览（前 3 条）+ 回复总数。
 		// 「查看全部」走独立接口 GET /comments/{id}/replies 分页。
 		// 仅 depthFilter=TopLevel 时补（避免 depthFilter=All 重复填充）。
@@ -241,20 +236,18 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 				return nil, 0, err
 			}
 			dto.RepliesTotal = replies.Total
-			// 回复预览也走 toDTO，填 reply_to_name（parentNames 已含顶层 id）
 			dto.Replies = make([]CommentDTO, 0, len(replies.Items))
-			replyNameMap := buildParentNameMap(append(items, replies.Items...))
 			for _, r := range replies.Items {
-				rName := ""
-				if r.ParentID() != nil {
-					rName = replyNameMap[r.ParentID().String()]
-				}
-				dto.Replies = append(dto.Replies, toDTO(r, authorID, rName))
+				dto.Replies = append(dto.Replies, toDTO(r, authorID, ""))
 			}
 			flat = append(flat, replies.Items...)
 		}
 		dtos = append(dtos, dto)
 		flat = append(flat, c)
+	}
+	flat, err = s.resolveReplyTargets(ctx, dtos, flat, viewerUserID)
+	if err != nil {
+		return nil, 0, err
 	}
 	if err := s.enrichOAuthIdentities(ctx, dtos, flat); err != nil {
 		return nil, 0, err
@@ -447,15 +440,13 @@ func (s *Service) ListReplies(ctx context.Context, parentID, viewerUserID, sort 
 		return nil, 0, err
 	}
 	items := result.Items
-	// 建 parent_id → author_name 索引：回复链上的中间节点可能也在这批里
-	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
 	for _, c := range items {
-		name := ""
-		if c.ParentID() != nil {
-			name = parentNames[c.ParentID().String()]
-		}
-		dtos = append(dtos, toDTO(c, nil, name))
+		dtos = append(dtos, toDTO(c, nil, ""))
+	}
+	items, err = s.resolveReplyTargets(ctx, dtos, items, viewerUserID)
+	if err != nil {
+		return nil, 0, err
 	}
 	if err := s.enrichOAuthIdentities(ctx, dtos, items); err != nil {
 		return nil, 0, err
@@ -656,6 +647,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 
 	// 设置父评论（回复）。同时记录被回复者昵称，给 toDTO 填 reply_to_name。
 	var replyToName string
+	related := []*domain.Comment{c}
 	if in.ParentID != "" {
 		parentID, err := shared.ParseID(in.ParentID)
 		if err != nil {
@@ -678,7 +670,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err
 		}
-		replyToName = parent.AuthorName()
+		if canReadReplyTarget(parent, in.UserID) {
+			replyToName = parent.AuthorName()
+			related = append(related, parent)
+		}
 		// 回复批注时，子评论自动继承父的 anchor。这样回复还在同一高亮区里，
 		// 前端不用为回复单独锚定选区。仅当当前评论没传 anchor 时继承（避免覆盖显式传入）。
 		if c.Anchor() == nil && parent.Anchor() != nil {
@@ -702,7 +697,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		s.publish(ctx, domain.NewCommentSubmitted(c.ID()))
 	}
 	dtos := []CommentDTO{toDTO(c, nil, replyToName)}
-	if err := s.enrichOAuthIdentities(ctx, dtos, []*domain.Comment{c}); err != nil {
+	if err := s.enrichOAuthIdentities(ctx, dtos, related); err != nil {
 		return CommentDTO{}, err
 	}
 	dto := dtos[0]
@@ -901,6 +896,7 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) Comme
 	}
 	if c.ParentID() != nil {
 		dto.ParentID = c.ParentID().String()
+		dto.ThreadRootID, _, _ = strings.Cut(c.Path(), "/")
 	}
 	// is_author：仅当提供了 postAuthorID 且评论者登录态（created_by 非空）且二者相等时为 true
 	// AI 评论即便由作者 PAT 发表也不算作者本人（无皇冠/高亮）。
@@ -920,20 +916,57 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) Comme
 	return dto
 }
 
-// buildParentNameMap 从一批 comments 建「parent_id → author_name」索引。
-//
-// 回复节点的 reply_to_name 要查 parent 的 author_name。批量列表场景里，
-// parent 往往就在同一批返回结果中（ListByPost 返回 approved ∪ 自己 pending），
-// 先建索引再传给 toDTO，避免每条回复单独查 DB。
-//
-// 若 parent 不在这批里（被折叠到上一页、或状态不在查询范围），name 取不到，
-// reply_to_name 留空——前端容错（不显示「回复 @yyy」，只显示昵称）。
+// buildParentNameMap 从已加载的评论建立作者昵称索引。
 func buildParentNameMap(items []*domain.Comment) map[string]string {
 	m := make(map[string]string, len(items))
 	for _, c := range items {
 		m[c.ID().String()] = c.AuthorName()
 	}
 	return m
+}
+
+func (s *Service) resolveReplyTargets(ctx context.Context, dtos []CommentDTO, comments []*domain.Comment, viewerUserID string) ([]*domain.Comment, error) {
+	names := buildParentNameMap(comments)
+	missing := make([]shared.ID, 0)
+	seen := make(map[shared.ID]struct{})
+	for _, c := range comments {
+		parentID := c.ParentID()
+		if parentID == nil {
+			continue
+		}
+		if _, ok := names[parentID.String()]; ok {
+			continue
+		}
+		if _, ok := seen[*parentID]; ok {
+			continue
+		}
+		seen[*parentID] = struct{}{}
+		missing = append(missing, *parentID)
+	}
+	if len(missing) > 0 {
+		parents, err := s.commentRepo.FindByIDs(ctx, missing)
+		if err != nil {
+			return nil, err
+		}
+		for _, parent := range parents {
+			if canReadReplyTarget(parent, viewerUserID) {
+				names[parent.ID().String()] = parent.AuthorName()
+				comments = append(comments, parent)
+			}
+		}
+	}
+	for i := range dtos {
+		dtos[i].ReplyToName = names[dtos[i].ParentID]
+		for j := range dtos[i].Replies {
+			reply := &dtos[i].Replies[j]
+			reply.ReplyToName = names[reply.ParentID]
+		}
+	}
+	return comments, nil
+}
+
+func canReadReplyTarget(c *domain.Comment, viewerUserID string) bool {
+	return c.IsApproved() || (c.Status() == domain.StatusPending && c.UserID() != nil && c.UserID().String() == viewerUserID)
 }
 
 // emojiBodyPattern 匹配 body 中的 [name] 表情占位符（含方括号）。

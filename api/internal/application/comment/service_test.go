@@ -587,6 +587,146 @@ func TestCreate_ParentDifferentPost_Rejected(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+func TestCreate_ReplyKeepsTargetAndThreadAcrossReads(t *testing.T) {
+	for _, nested := range []bool{false, true} {
+		name := "直接回复一级"
+		if nested {
+			name = "回复二级且目标不在当前页"
+		}
+		t.Run(name, func(t *testing.T) {
+			svc, repo, _, _ := newServiceWithMocks(nil)
+			postID, viewer := shared.NewID(), shared.NewID()
+			root, err := newDomainComment(shared.NewID(), postID, "同名作者", domain.StatusApproved)
+			if !assert.NoError(t, err) {
+				return
+			}
+			target := root
+			if nested {
+				target, err = newDomainComment(shared.NewID(), postID, "同名作者", domain.StatusApproved)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.NoError(t, target.SetParent(root))
+			}
+			repo.On("FindByID", mock.Anything, target.ID()).Return(target, nil).Once()
+			var saved *domain.Comment
+			repo.On("Save", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				saved = args.Get(1).(*domain.Comment)
+			}).Return(nil).Once()
+
+			created, err := svc.Create(context.Background(), CreateInput{
+				PostID: postID.String(), UserID: viewer.String(), ParentID: target.ID().String(),
+				AuthorName: "新回复作者", Body: "立即显示的回复",
+			})
+			if !assert.NoError(t, err) || !assert.NotNil(t, saved) {
+				return
+			}
+			assert.Equal(t, target.ID().String(), created.ParentID)
+			assert.Equal(t, root.ID().String(), created.ThreadRootID)
+			assert.Equal(t, "同名作者", created.ReplyToName)
+			assert.Equal(t, int16(1), created.Depth)
+			assert.Equal(t, domain.StatusPending, created.Status)
+
+			repo.On("FindPage", mock.Anything, mock.MatchedBy(func(filter domain.ListFilter) bool {
+				return filter.ParentID != nil && *filter.ParentID == root.ID() &&
+					filter.ViewerUserID != nil && *filter.ViewerUserID == viewer &&
+					filter.Status == domain.StatusApproved
+			}), mock.Anything).Return(shared.PageResult[*domain.Comment]{
+				Items: []*domain.Comment{saved}, Total: 1,
+			}, nil).Once()
+			repo.On("FindByIDs", mock.Anything, []shared.ID{target.ID()}).
+				Return([]*domain.Comment{target}, nil).Once()
+
+			replies, total, err := svc.ListReplies(context.Background(), root.ID().String(), viewer.String(), "asc", 1, 10)
+			if !assert.NoError(t, err) || !assert.Len(t, replies, 1) {
+				return
+			}
+			assert.Equal(t, int64(1), total)
+			assert.Equal(t, created, replies[0])
+			repo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestListByPost_ReplyPreviewResolvesTargetOutsidePreview(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	postID, viewer := shared.NewID(), shared.NewID()
+	root, err := newDomainComment(shared.NewID(), postID, "楼主", domain.StatusApproved)
+	if !assert.NoError(t, err) {
+		return
+	}
+	target, err := newDomainComment(shared.NewID(), postID, "预览外的目标", domain.StatusApproved)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.NoError(t, target.SetParent(root))
+	reply, err := newDomainComment(shared.NewID(), postID, "回复者", domain.StatusApproved)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.NoError(t, reply.SetParent(target))
+	repo.On("FindPage", mock.Anything, mock.MatchedBy(func(filter domain.ListFilter) bool {
+		return filter.ParentID == nil
+	}), mock.Anything).Return(shared.PageResult[*domain.Comment]{Items: []*domain.Comment{root}, Total: 1}, nil).Once()
+	repo.On("FindPage", mock.Anything, mock.MatchedBy(func(filter domain.ListFilter) bool {
+		return filter.ParentID != nil && *filter.ParentID == root.ID()
+	}), mock.Anything).Return(shared.PageResult[*domain.Comment]{Items: []*domain.Comment{reply}, Total: 4}, nil).Once()
+	repo.On("FindByIDs", mock.Anything, []shared.ID{target.ID()}).Return([]*domain.Comment{target}, nil).Once()
+
+	items, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterFree, domain.DepthFilterTopLevel, "", 1, 10)
+	if !assert.NoError(t, err) || !assert.Len(t, items, 1) || !assert.Len(t, items[0].Replies, 1) {
+		return
+	}
+	assert.Empty(t, items[0].ThreadRootID)
+	assert.Equal(t, int64(4), items[0].RepliesTotal)
+	assert.Equal(t, target.ID().String(), items[0].Replies[0].ParentID)
+	assert.Equal(t, root.ID().String(), items[0].Replies[0].ThreadRootID)
+	assert.Equal(t, "预览外的目标", items[0].Replies[0].ReplyToName)
+	repo.AssertExpectations(t)
+}
+
+func TestListReplies_TargetNameRespectsViewerVisibility(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		status string
+		self   bool
+		want   string
+	}{
+		{name: "已审核目标", status: domain.StatusApproved, want: "目标作者"},
+		{name: "自己的待审核目标", status: domain.StatusPending, self: true, want: "目标作者"},
+		{name: "他人的待审核目标", status: domain.StatusPending},
+		{name: "已删除目标", status: domain.StatusDeleted, self: true},
+		{name: "垃圾评论目标", status: domain.StatusSpam, self: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, repo, _, _ := newServiceWithMocks(nil)
+			postID, rootID, targetID, viewer, author := shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID(), shared.NewID()
+			if tc.self {
+				author = viewer
+			}
+			target := domain.ReconstructComment(targetID, postID, &author, &rootID, rootID.String()+"/"+targetID.String()+"/", 1, nil,
+				"目标作者", "", "", "", "不可泄露的目标正文", nil, tc.status, "", "", false, time.Time{}, time.Time{})
+			reply, err := newDomainComment(shared.NewID(), postID, "回复作者", domain.StatusApproved)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.NoError(t, reply.SetParent(target))
+			repo.On("FindPage", mock.Anything, mock.Anything, mock.Anything).
+				Return(shared.PageResult[*domain.Comment]{Items: []*domain.Comment{reply}, Total: 1}, nil).Once()
+			repo.On("FindByIDs", mock.Anything, []shared.ID{targetID}).Return([]*domain.Comment{target}, nil).Once()
+
+			items, total, err := svc.ListReplies(context.Background(), rootID.String(), viewer.String(), "asc", 1, 10)
+			if !assert.NoError(t, err) || !assert.Len(t, items, 1) {
+				return
+			}
+			assert.Equal(t, int64(1), total)
+			assert.Equal(t, tc.want, items[0].ReplyToName)
+			assert.Equal(t, reply.ID().String(), items[0].ID)
+			repo.AssertExpectations(t)
+		})
+	}
+}
+
 // AI 署名不随审计 actor 注销而变成真人注销占位。
 func TestEnrichOAuthIdentities_AIKeepsNameWhenAuthorDeleted(t *testing.T) {
 	userRepo := new(mocks.MockUserRepository)
