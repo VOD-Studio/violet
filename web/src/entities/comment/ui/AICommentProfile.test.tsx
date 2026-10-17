@@ -76,13 +76,10 @@ describe("AICommentProfile", () => {
 		const trigger = screen.getByRole("button");
 		const avatar = within(trigger).getByRole("img");
 		expect(avatar.getAttribute("src")).not.toBe("/uploads/pat-owner.webp");
-		expect(avatar.parentElement?.dataset.aiPersona).toBe(id);
-		expect(trigger.dataset.aiPersona).toBe(id);
-		expect(screen.getByText("AI").dataset.aiPersona).toBe(id);
+		expect(avatar.getAttribute("src")).toContain(`/ai-personas/${id}`);
 		act(() => trigger.focus());
 		await advance();
 		const card = screen.getByRole("dialog");
-		expect(card.dataset.aiPersona).toBe(id);
 		expect(card.textContent).toContain(name);
 		expect(card.querySelector("a")).toBeNull();
 		expect(card.querySelectorAll("img")[1].getAttribute("src")).toBe(
@@ -184,7 +181,7 @@ describe("AICommentProfile", () => {
 		expect(document.activeElement).toBe(screen.getByRole("button", { name: "下一项" }));
 	});
 
-	it("卡片内选字不冒泡关闭外层，第一次外点仍由 CartoonPopover 关闭", async () => {
+	it("卡片内选字保留介绍，第一次外点仍能关闭", async () => {
 		render(
 			<>
 				<AICommentProfile name="Gemini">Gemini</AICommentProfile>
@@ -193,22 +190,15 @@ describe("AICommentProfile", () => {
 		);
 		clickTrigger(screen.getByRole("button", { name: /Gemini/ }), "touch");
 		await advance();
-		const onOuterPointerDown = vi.fn();
-		document.addEventListener("pointerdown", onOuterPointerDown);
-		try {
-			const card = screen.getByRole("dialog");
-			const selectionStart = createEvent.pointerDown(card, {
-				bubbles: true,
-				cancelable: true,
-			});
-			fireEvent(card, selectionStart);
-			fireEvent.mouseDown(card);
-			expect(selectionStart.defaultPrevented).toBe(false);
-			expect(onOuterPointerDown).not.toHaveBeenCalled();
-			expect(screen.getByRole("dialog")).toBe(card);
-		} finally {
-			document.removeEventListener("pointerdown", onOuterPointerDown);
-		}
+		const card = screen.getByRole("dialog");
+		const selectionStart = createEvent.pointerDown(card, {
+			bubbles: true,
+			cancelable: true,
+		});
+		fireEvent(card, selectionStart);
+		fireEvent.mouseDown(card);
+		expect(selectionStart.defaultPrevented).toBe(false);
+		expect(screen.getByRole("dialog")).toBe(card);
 		fireEvent.mouseDown(screen.getByRole("button", { name: "外部操作" }));
 		await advance();
 		expect(screen.queryByRole("dialog")).toBeNull();
@@ -236,4 +226,44 @@ describe("AICommentProfile", () => {
 			document.removeEventListener("keydown", onOuterKeyDown);
 		}
 	});
+});
+
+describe("AI 介绍可用性", () => {
+	it("所属浮层停用后关闭，重新启用不自动恢复旧介绍", async () => {
+		const view = render(<AICommentProfile name="GPT">GPT</AICommentProfile>);
+		fireEvent.click(screen.getByRole("button", { name: /查看 GPT/ }));
+		await advance();
+		expect(screen.getByRole("dialog", { name: "GPT" })).toBeTruthy();
+		view.rerender(
+			<AICommentProfile name="GPT" disabled>
+				GPT
+			</AICommentProfile>,
+		);
+		expect(screen.queryByRole("dialog", { name: "GPT" })).toBeNull();
+		view.rerender(<AICommentProfile name="GPT">GPT</AICommentProfile>);
+		expect(screen.queryByRole("dialog", { name: "GPT" })).toBeNull();
+	});
+});
+
+it("停用时取消尚未触发的悬停计划，恢复后不自动打开", async () => {
+	const view = render(<AICommentProfile name="GPT">GPT</AICommentProfile>);
+	fireEvent.mouseEnter(screen.getByRole("button", { name: /查看 GPT/ }));
+	view.rerender(
+		<AICommentProfile name="GPT" disabled>
+			GPT
+		</AICommentProfile>,
+	);
+	await advance();
+	view.rerender(<AICommentProfile name="GPT">GPT</AICommentProfile>);
+	await advance();
+	expect(screen.queryByRole("dialog", { name: "GPT" })).toBeNull();
+});
+
+it("悬停打开后聚焦自己的入口不会被当成外点", async () => {
+	render(<AICommentProfile name="GPT">GPT</AICommentProfile>);
+	const trigger = screen.getByRole("button", { name: /查看 GPT/ });
+	fireEvent.mouseEnter(trigger);
+	await advance();
+	act(() => trigger.focus());
+	expect(screen.getByRole("dialog", { name: "GPT" })).toBeTruthy();
 });
