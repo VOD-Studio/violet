@@ -919,7 +919,7 @@ describe("ChatWorkspace", () => {
 	it("从统一搜索结果发起私聊", () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		fireEvent.change(screen.getByRole("textbox", { name: "搜索会话、用户或群聊" }), {
+		fireEvent.change(screen.getByRole("searchbox", { name: "搜索会话、用户或群聊" }), {
 			target: { value: "alice" },
 		});
 
@@ -938,7 +938,7 @@ describe("ChatWorkspace", () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
 		fireEvent.click(screen.getByRole("button", { name: "新建会话" }));
-		fireEvent.change(screen.getByRole("textbox", { name: "搜索成员" }), {
+		fireEvent.change(screen.getByRole("searchbox", { name: "搜索成员" }), {
 			target: { value: "a" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: "选择 Alice" }));

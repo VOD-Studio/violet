@@ -75,6 +75,8 @@ export function PostPickerDialog({
 					<DialogDescription>点选顺序即挂入顺序；只能挂自己的文章</DialogDescription>
 				</DialogHeader>
 				<SearchInput
+					variant="soft"
+					aria-label="搜索可挂入的文章标题"
 					value={keyword}
 					onValueChange={setKeyword}
 					onSearch={(v) => {

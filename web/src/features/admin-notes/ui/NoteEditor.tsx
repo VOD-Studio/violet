@@ -192,7 +192,8 @@ export function NoteEditor({ id }: NoteEditorProps) {
 						placeholder="无标题笔记（可留空）…"
 						aria-label="笔记标题"
 						variant="ghost"
-						classNames={{ control: "h-11 px-2" }}
+						controlSize="lg"
+						classNames={{ control: "px-2" }}
 						className={cn(
 							"text-2xl font-bold tracking-tight placeholder:text-muted-foreground/40 md:text-3xl",
 							errors.title && "text-destructive",

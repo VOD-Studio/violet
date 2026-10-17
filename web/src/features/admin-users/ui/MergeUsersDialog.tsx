@@ -91,6 +91,8 @@ export function MergeUsersDialog({ open, onOpenChange, user }: MergeUsersDialogP
 					<Label htmlFor="merge-primary-search">搜索主账号</Label>
 					<Input
 						id="merge-primary-search"
+						type="search"
+						variant="soft"
 						value={keyword}
 						onChange={(e) => {
 							setKeyword(e.target.value);

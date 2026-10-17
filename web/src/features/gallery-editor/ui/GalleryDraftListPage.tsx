@@ -232,6 +232,8 @@ export function GalleryDraftListPage() {
 					<div className="flex flex-wrap items-center gap-3 pt-1">
 						<div className="min-w-50 max-w-80 flex-1">
 							<SearchInput
+								aria-label="按作者用户名筛选图集"
+								variant="soft"
 								defaultValue=""
 								placeholder="按作者用户名筛选..."
 								onSearch={(value) => {

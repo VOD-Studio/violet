@@ -104,7 +104,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 							onBlur={() => void saveTitle()}
 							onChange={(event) => setTitle(event.target.value)}
 							value={title}
-							variant="outline"
+							variant="underline"
 						/>
 					)}
 				</div>
@@ -165,7 +165,6 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 								onKeyDown={(event) => event.key === "Enter" && void inviteUser()}
 								placeholder="username"
 								value={inviteUsername}
-								variant="outline"
 							/>
 							<Button
 								disabled={invite.isPending}

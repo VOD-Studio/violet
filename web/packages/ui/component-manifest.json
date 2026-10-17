@@ -160,7 +160,6 @@
 		{
 			"name": "search-input",
 			"status": "foundation",
-			"symbols": [],
 			"entry": "src/components/search-input/index.ts",
 			"css": "src/components/search-input/search-input.css",
 			"documentation": "web/src/features/ui-docs/ui/SearchInputDoc.tsx"

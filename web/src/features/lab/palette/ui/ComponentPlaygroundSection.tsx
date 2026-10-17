@@ -2,6 +2,7 @@ import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import {
 	Badge,
 	Button,
+	Input,
 	PhysicalSteps,
 	Tabs,
 	TabsContent,
@@ -226,10 +227,9 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 							<h4 className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
 								Tab 焦点环与输入轮廓
 							</h4>
-							<input
-								type="text"
-								placeholder="点击测试输入框 --primary-base-ring 焦点环..."
-								className="w-full rounded-lg border border-input bg-background px-3.5 py-2 text-sm transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+							<Input
+								aria-label="焦点轮廓演练"
+								placeholder="点击体验 Input 聚焦反馈"
 							/>
 							<Textarea
 								placeholder="点击测试多行文本域选区与焦点轮廓..."

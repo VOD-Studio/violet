@@ -277,12 +277,14 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 
 	return (
 		<Input
+			variant="underline"
+			controlSize="sm"
 			aria-label={`改名 ${name}`}
 			autoFocus
 			maxLength={BOT_NAME_MAX}
 			value={draft}
 			className="text-sm font-medium"
-			classNames={{ root: "w-40", control: "h-7" }}
+			classNames={{ root: "w-40" }}
 			onFocus={(e) => e.currentTarget.select()}
 			onChange={(e) => setDraft(e.target.value)}
 			onKeyDown={(e) => {

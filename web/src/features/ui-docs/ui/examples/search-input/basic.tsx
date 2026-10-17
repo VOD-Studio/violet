@@ -1,4 +1,4 @@
-import { SearchInput } from "@violet/ui/search-input";
+import { SearchInput } from "@violet/ui";
 import { useState } from "react";
 
 /** 实时编辑与提交的查询分离，回车或清除会立即提交。 */

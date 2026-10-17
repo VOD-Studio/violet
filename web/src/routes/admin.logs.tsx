@@ -189,7 +189,10 @@ function AdminLogsPage() {
 						</SelectContent>
 					</Select>
 					<Input
-						classNames={{ root: "w-48", control: "h-9" }}
+						variant="soft"
+						controlSize="sm"
+						classNames={{ root: "w-48" }}
+						aria-label="按操作人 UUID 筛选日志"
 						placeholder="操作人 UUID"
 						value={actor}
 						onChange={(e) => {

@@ -139,6 +139,8 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 				<>
 					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
 						<Input
+							aria-label="用户名"
+							variant="underline"
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
 							leading={<AtSign className="size-3.5" />}
@@ -231,6 +233,8 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 				<>
 					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
 						<Input
+							aria-label="显示名"
+							variant="underline"
 							classNames={{ root: "min-w-0 flex-1" }}
 							value={value}
 							onChange={(e) => setValue(e.target.value)}

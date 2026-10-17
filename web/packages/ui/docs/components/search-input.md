@@ -3,7 +3,7 @@
 SearchInput 是独立的 `search-input` 单元，组合 Input，不是 Input 的视觉变体。它管理搜索文本与防抖时序；查询请求、结果和加载状态由调用方管理。只需要搜索图标或即时本地筛选时，使用 `Input type="search"`，不额外引入搜索调度。
 
 ```tsx
-import { SearchInput } from "@violet/ui/search-input";
+import { SearchInput } from "@violet/ui";
 
 <SearchInput
   aria-label="搜索文章"
@@ -25,6 +25,6 @@ import { SearchInput } from "@violet/ui/search-input";
 
 `variant` 与 `controlSize` 直接沿用 Input：outline / soft / ghost / underline，以及 sm / md / lg（32 / 40 / 48px）。默认 outline / md；原生 `size` 仍是数字字符宽度。工具栏通常选 soft，已有边界的容器内可选 ghost，不维护搜索专属高度或另一套输入框样式。
 
-独立单元从 `@violet/ui/search-input` 导入；根入口的 SearchInput 保留原有接口，供尚未切换的站点调用。按需 CSS 使用 `@violet/ui/components/search-input.css`，该入口包含 Input 的样式依赖。
+React 从 `@violet/ui` 或 `@violet/ui/search-input` 导入。按需 CSS 使用 `@violet/ui/components/search-input.css`，该入口包含 Input 的样式依赖；基础 Input 的 CSS 不反向包含搜索样式。
 
 这个组件的文本由 React 状态管理，尚未提供非受控原生表单 reset 契约。需要依赖浏览器 reset 的字段应使用 Input；搜索表单可以由调用方在 `onReset` 回写受控值。

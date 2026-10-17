@@ -28,10 +28,6 @@ export interface MathEditPanelProps {
 	onDelete?: () => void;
 }
 
-/** 输入区样式：等宽、无边框聚焦感，靠弹层容器提供边界 */
-const FIELD_CLASS =
-	"w-full resize-none rounded-md border border-edge-hairline bg-transparent px-2 py-1.5 font-mono text-sm leading-6 outline-none focus:border-ring";
-
 export function MathEditPanel({
 	latex,
 	displayMode,
@@ -48,7 +44,7 @@ export function MathEditPanel({
 				displayMode={displayMode}
 				onChange={onChange}
 				onClose={onClose}
-				className={FIELD_CLASS}
+				className="font-mono text-sm leading-6"
 			/>
 			{/* 实时预览：跟随正文排版（块级居中），溢出可滚动 */}
 			<div

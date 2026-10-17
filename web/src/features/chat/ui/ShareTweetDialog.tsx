@@ -92,6 +92,7 @@ export function ShareTweetDialog() {
 				{tweet && queriesEnabled && <TweetSharingPreview id={tweet.id} />}
 				<Input
 					aria-label="搜索会话或用户"
+					type="search"
 					leading={<Search />}
 					onChange={(e) => setSearch(e.target.value)}
 					placeholder="搜索会话或用户"

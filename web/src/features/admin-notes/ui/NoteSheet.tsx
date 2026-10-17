@@ -312,6 +312,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								<div className="space-y-2 pt-1">
 									<div className="flex items-center gap-1.5">
 										<Input
+											controlSize="sm"
 											value={tagInput}
 											onChange={(e) => setTagInput(e.target.value)}
 											onKeyDown={(e) => {
@@ -322,10 +323,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 											}}
 											placeholder="输入标签名按回车…"
 											className="text-xs"
-											classNames={{
-												root: "min-w-0 flex-1",
-												control: "h-7.5 bg-background",
-											}}
+											classNames={{ root: "min-w-0 flex-1" }}
 										/>
 										<Button
 											type="button"

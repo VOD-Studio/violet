@@ -60,7 +60,7 @@ export function ProfileForm() {
 
 Input 的 `className`、`style`、原生属性、事件和 `ref` 属于 input；根布局通过 `classNames.root` 设置，视觉外壳通过 `classNames.control` 设置。可选 `label`、`description`、`errorMessage` 与 `invalid` 提供字段关联，不接管值或校验。`variant` 支持 outline / soft / ghost / underline，`controlSize` 支持 sm / md / lg，原生 `size` 仍是数字。`clearable` 产生真实输入事件，`passwordToggle` 仅用于密码输入；内部按钮共享控件焦点，不重播波纹。保留 FormData、reset、受控/非受控及 SSR ID 语义。[同源示例与 API](https://xunrua.top/ui/components/input)提供四变体、尺寸、错误、清除、密码和表单操作。
 
-SearchInput 独立单元组合 Input，复用其 `variant`、`controlSize`、字段信息和 `classNames`，只增加防抖、回车搜索、清除与加载反馈。独立单元从 `@violet/ui/search-input` 导入；根入口的 SearchInput 保留原有接口，供尚未切换的站点调用。仅需即时筛选时使用 `Input type="search"`。按需样式为 `@violet/ui/components/search-input.css`，包含 Input CSS 依赖。[搜索契约](docs/components/search-input.md)与[同源示例](https://xunrua.top/ui/components/search-input)说明独立单元的属性和时序。
+SearchInput 是独立单元，组合 Input 并复用其 `variant`、`controlSize`、字段信息和 `classNames`，只增加防抖、回车搜索、清除与加载反馈；基础 Input 不依赖搜索单元。`className` 仍属于真实 input，布局使用 `classNames.root`。仅需即时筛选时使用 `Input type="search"`。从 `@violet/ui` 或 `@violet/ui/search-input` 导入，按需样式为 `@violet/ui/components/search-input.css`，包含 Input CSS 依赖。[搜索契约](docs/components/search-input.md)与[同源示例](https://xunrua.top/ui/components/search-input)说明时序和样式归属。
 
 Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；`/ui/components/<name>` 提供可操作的示例与对应源码。
 

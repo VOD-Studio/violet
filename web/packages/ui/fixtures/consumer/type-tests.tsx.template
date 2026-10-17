@@ -4,7 +4,7 @@ import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
 import { Modal } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
-import { SearchInput, type SearchInputProps } from "@violet/ui/search-input";
+import { SearchInput, type SearchInputProps } from "@violet/ui";
 import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/search-input";
 import { buttonVariants, checkboxVariants, inputVariants, type ButtonVariantProps, type InputVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";

@@ -300,7 +300,9 @@ function AdminMediaPage() {
 
 					<div className="min-w-40 max-w-72 flex-1">
 						<SearchInput
-							size="sm"
+							variant="soft"
+							controlSize="sm"
+							aria-label="搜索媒体文件名"
 							defaultValue=""
 							placeholder="搜索文件名…"
 							onSearch={(v) => {

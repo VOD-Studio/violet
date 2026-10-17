@@ -22,13 +22,13 @@ import {
 	CardContent,
 	ConfirmDialog,
 	Empty,
-	SearchInput,
+	Input,
 	Tabs,
 	TabsContent,
 	TabsList,
 	TabsTrigger,
 } from "@violet/ui";
-import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff } from "lucide-react";
+import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -275,10 +275,16 @@ function EmojisPage() {
 				!isEmpty && (
 					<div className="flex flex-wrap items-center gap-3 pt-1">
 						<div className="min-w-50 max-w-100 flex-1">
-							<SearchInput
+							<Input
+								type="search"
+								variant="soft"
+								controlSize="sm"
+								aria-label="搜索表情分组名称"
+								leading={<Search className="size-4" />}
+								clearable
 								placeholder="搜索分组名称..."
 								value={searchQuery}
-								onValueChange={setSearchQuery}
+								onChange={(event) => setSearchQuery(event.target.value)}
 							/>
 						</div>
 

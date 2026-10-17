@@ -89,8 +89,8 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 			<div className="px-4 pb-2">
 				<Input
 					aria-label="搜索成员"
+					type="search"
 					leading={<Search />}
-					classNames={{ control: "rounded-full" }}
 					onChange={(event) => setMemberSearch(event.target.value)}
 					placeholder="搜索用户名或展示名"
 					ref={searchRef}
@@ -187,7 +187,6 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 						onChange={(event) => setTitle(event.target.value)}
 						placeholder="群聊名称（可选）"
 						value={title}
-						variant="soft"
 					/>
 				)}
 				<Button

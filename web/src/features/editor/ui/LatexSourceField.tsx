@@ -6,6 +6,8 @@
  * 接受后替换 `\query` 为模板，光标落在第一个占位符内。
  * 行内单行 input / 块级多行 textarea 由 displayMode 决定。
  */
+import { Input } from "@violet/ui";
+import { cn } from "cn";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
 	applyCompletion,
@@ -25,7 +27,7 @@ export interface LatexSourceFieldProps {
 	onChange: (latex: string) => void;
 	/** Esc（下拉已关闭时）/ 行内 Enter 请求关闭弹层 */
 	onClose: () => void;
-	/** 输入框附加样式（等宽、边框等由调用方给） */
+	/** 输入节点的字体等样式；单行外观由 Input 管理。 */
 	className?: string;
 }
 
@@ -112,6 +114,7 @@ export function LatexSourceField({
 	const sharedProps = {
 		ref: fieldRef as React.Ref<HTMLInputElement & HTMLTextAreaElement>,
 		className,
+		"aria-label": "LaTeX 源码",
 		value: latex,
 		spellCheck: false,
 		onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -128,10 +131,14 @@ export function LatexSourceField({
 			{displayMode ? (
 				<textarea
 					{...sharedProps}
+					className={cn(
+						"w-full resize-none rounded-md border border-edge-hairline bg-transparent px-2 py-1.5 outline-none focus:border-ring",
+						className,
+					)}
 					rows={Math.min(8, Math.max(2, latex.split("\n").length))}
 				/>
 			) : (
-				<input {...sharedProps} />
+				<Input {...sharedProps} variant="soft" controlSize="sm" />
 			)}
 			{open && (
 				<LatexSuggestionList

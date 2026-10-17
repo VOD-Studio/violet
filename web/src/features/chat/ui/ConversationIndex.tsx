@@ -81,10 +81,10 @@ export function ConversationIndex({
 				<div className="px-1 pb-1">
 					<Input
 						aria-label="搜索会话、用户或群聊"
+						type="search"
 						clearable
 						clearLabel="清空搜索"
 						leading={<Search />}
-						classNames={{ control: "rounded-full" }}
 						onChange={(event) => onSearch(event.target.value)}
 						placeholder="搜索"
 						value={search}

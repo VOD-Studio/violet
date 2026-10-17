@@ -6,11 +6,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	Input,
 	OverlayScroll,
-	SearchInput,
 	Segmented,
 } from "@violet/ui";
-import { Grid2X2 } from "lucide-react";
+import { Grid2X2, Search } from "lucide-react";
 import { useState } from "react";
 
 import type { MascotGroupFilter } from "../hooks/useMascotExhibit";
@@ -65,12 +65,18 @@ function LibraryFilters({
 				</p>
 			</div>
 
-			<SearchInput
+			<Input
+				type="search"
+				leading={<Search aria-hidden="true" />}
+				clearable
+				clearLabel="清除搜索"
+				variant="soft"
+				controlSize="sm"
 				value={query}
-				onValueChange={onQueryChange}
+				onChange={(event) => onQueryChange(event.target.value)}
 				placeholder="搜索表情、状态或编号"
 				aria-label="搜索表情、状态或编号"
-				className="mt-2.5"
+				classNames={{ root: "mt-2.5" }}
 			/>
 		</>
 	);
