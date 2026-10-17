@@ -115,9 +115,11 @@ export function HsvColorPicker({ value, onChange }: HsvColorPickerProps) {
 					style={{ backgroundColor: currentHex }}
 				/>
 				<Input
-					variant="outline"
+					aria-label="十六进制颜色值"
+					variant="soft"
+					controlSize="sm"
 					classNames={{
-						control: "h-7 px-2",
+						root: "min-w-0 flex-1",
 						input: "font-mono text-xs uppercase",
 					}}
 					value={currentHex}
