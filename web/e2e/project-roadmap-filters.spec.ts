@@ -409,7 +409,7 @@ test.describe("路线图筛选", () => {
 			await expect(notice).toBeVisible();
 			await page.getByRole("button", { name: "清除筛选", exact: true }).click();
 			await expect(notice).toHaveCount(0);
-			// T20 尚未接入移动，本轮只验证清除后移除禁拖提示。
+			await expect(card(page, 1)).toHaveAttribute("data-draggable", "true");
 		});
 	}
 

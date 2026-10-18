@@ -22,13 +22,15 @@ export declare const PROJECTS_FIXTURE: Array<{
 
 /** 路线图契约用详情：计划中 3、进行中 2、已完成 12 条，顺序同后端。 */
 export declare const ROADMAP_FIXTURE: {
-	project: { title: string; slug: string; description: string; url: string; github_url: string; tech_stack: string[] };
+	project: { id: string; title: string; slug: string; description: string; url: string; github_url: string; tech_stack: string[] };
 	items: Array<{
 		id: string;
 		number: number;
 		title: string;
 		description: string;
 		stage: "planned" | "in_progress" | "completed";
+		/** 分数索引排序键 */
+		position: string;
 		tags: string[];
 		links: Array<{ label: string; url: string }>;
 		checklist: Array<{ text: string; done: boolean }>;

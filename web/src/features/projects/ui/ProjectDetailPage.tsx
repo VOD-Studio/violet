@@ -1,5 +1,7 @@
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useRef, useState } from "react";
+import { useMoveRoadmapItem } from "../api/mutations";
 import { useProjectRoadmap } from "../api/queries";
 import type { RoadmapFilters } from "../lib/roadmap-filter";
 import type { RoadmapDetail, RoadmapItem } from "../model/roadmap";
@@ -23,6 +25,9 @@ export function ProjectDetailPage({
 	onFiltersChange,
 }: ProjectDetailPageProps) {
 	const { data } = useProjectRoadmap(slug, initialData);
+	// 只有能更新项目的人才能拖动；后端同样按 project:update 拒绝
+	const canEdit = useHasPermission("project:update");
+	const moveItem = useMoveRoadmapItem(slug, data?.project.id ?? "");
 	const [openId, setOpenId] = useState<string | null>(null);
 	const opener = useRef<HTMLElement | null>(null);
 	// 条目随重新拉取更新；被删除时弹窗随之关闭，淡出期间沿用最后一次的内容
@@ -59,6 +64,7 @@ export function ProjectDetailPage({
 					relations={data.relations}
 					filters={filters}
 					onFiltersChange={onFiltersChange}
+					onMove={canEdit ? moveItem : undefined}
 					onOpenItem={(item, trigger) => {
 						opener.current = trigger;
 						setOpenId(item.id);

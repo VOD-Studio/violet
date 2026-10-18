@@ -110,3 +110,8 @@
 .roadmap-board .v-kanban .v-kanban__relation[data-state="active"][data-line="blocker"] {
 	color: var(--destructive);
 }
+
+/* 筛选时禁拖的说明由筛选栏统一给出（画布外、紧挨着筛选控件）；看板自带的同一句不再重复显示 */
+.roadmap-board .v-kanban .v-kanban__filter-hint {
+	display: none;
+}

@@ -1,5 +1,6 @@
 import { Button, Checkbox } from "@violet/ui";
 import { Canvas } from "@violetjs/kanban/canvas";
+import type { BoardMove } from "@violetjs/kanban/core";
 import { Board, ResponsiveLayout, type ResponsiveLayoutKind } from "@violetjs/kanban/unstyled";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
@@ -32,6 +33,11 @@ export interface RoadmapBoardProps {
 	onOpenItem: (item: RoadmapItem, trigger: HTMLElement) => void;
 	filters: RoadmapFilters;
 	onFiltersChange: (filters: RoadmapFilters) => void;
+	/**
+	 * 保存一次移动；给出时看板可编辑（指针、键盘与「移到…」菜单），不给是只读。
+	 * 返回的 Promise 被拒绝时看板把卡片放回原位并提示。
+	 */
+	onMove?: (move: BoardMove) => Promise<void>;
 }
 
 /**
@@ -46,6 +52,7 @@ export function RoadmapBoard({
 	onOpenItem,
 	filters,
 	onFiltersChange,
+	onMove,
 }: RoadmapBoardProps) {
 	const [expanded, setExpanded] = useState(false);
 	// 显示的阶段由这里持有：宽窄布局切换会重新挂载看板，不持有就回到第一个阶段
@@ -99,6 +106,7 @@ export function RoadmapBoard({
 		order: board.order,
 		relations: boardRelations,
 		filter,
+		onMove,
 		locale: "zh-CN" as const,
 		getCardLabel: (item: RoadmapItem) => `#${item.number} ${item.title}`,
 		renderCard: (item: RoadmapItem) => (
