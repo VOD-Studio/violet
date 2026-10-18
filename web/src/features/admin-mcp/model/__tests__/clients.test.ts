@@ -43,6 +43,17 @@ describe("serversForScopes", () => {
 		]);
 	});
 
+	it("roadmap:read 与 roadmap:write 各自命中路线图 server（reader 恒并入）", () => {
+		expect(serversForScopes(["roadmap:read"]).map((s) => s.key)).toEqual([
+			"violet-reader",
+			"violet-roadmap",
+		]);
+		expect(serversForScopes(["roadmap:write"]).map((s) => s.key)).toEqual([
+			"violet-reader",
+			"violet-roadmap",
+		]);
+	});
+
 	it("comments:write 命中评论 server（reader 恒并入）", () => {
 		expect(serversForScopes(["comments:write"]).map((s) => s.key)).toEqual([
 			"violet-reader",
@@ -57,8 +68,8 @@ describe("MCP_CLIENTS 配置生成", () => {
 		if (view.kind !== "commands") {
 			throw new Error("expect commands");
 		}
-		// 5 个 server（violet-posts / scraper / reader / comments / notes）各一条命令
-		expect(view.commands).toHaveLength(5);
+		// 6 个 server（violet-posts / scraper / reader / comments / notes / roadmap）各一条命令
+		expect(view.commands).toHaveLength(6);
 		expect(view.commands[0]).toContain(
 			"claude mcp add --transport http violet-posts https://blog.example.com/api/v1/mcp",
 		);
@@ -146,8 +157,8 @@ describe("MCP_CLIENTS 配置生成", () => {
 		if (view.kind !== "deeplinks") {
 			throw new Error("expect deeplinks");
 		}
-		// 5 个 server 各一个 deeplink
-		expect(view.links).toHaveLength(5);
+		// 6 个 server 各一个 deeplink
+		expect(view.links).toHaveLength(6);
 		const url = new URL(view.links[0].href.replace("cursor://", "https://deeplink/"));
 		const config = JSON.parse(atob(url.searchParams.get("config") ?? ""));
 		expect(config.url).toBe("https://blog.example.com/api/v1/mcp");

@@ -11,6 +11,8 @@ export const PAT_SCOPES = [
 	"notes:read",
 	"notes:write",
 	"notes:publish",
+	"roadmap:read",
+	"roadmap:write",
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
@@ -69,6 +71,14 @@ export const MCP_SERVERS: MCPServerSpec[] = [
 		endpoint: "/api/v1/mcp/notes",
 		description: "AI 会话沉淀笔记写入 tool（create/update/list/get/delete）",
 		scopes: ["notes:read", "notes:write", "notes:publish"],
+	},
+	{
+		key: "violet-roadmap",
+		label: "路线图",
+		endpoint: "/api/v1/mcp/roadmap",
+		description:
+			"项目路线图读写 tool（条目、阶段、关系，可批量创建；写入还需账号有项目更新权限）",
+		scopes: ["roadmap:read", "roadmap:write"],
 	},
 ];
 
