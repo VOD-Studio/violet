@@ -12,6 +12,7 @@
 | 部署/发版流程变化 | `docs/deploy/release-runbook.md` | 流程步骤与拓扑图 |
 | 新增面向开发者的指南 | `docs/README.md` | 文档索引登记 |
 | 组件库单元或开发流程变化 | 包 README / AGENTS.md、包内 docs 及 `violet-ui` skill | 清单状态、同源示例、构建与独立消费流程同步 |
+| 独立可复用包或其交付流程变化 | 包内 README / API / 开发说明、`web/README.md` 与 `docs/README.md` | 公开入口、同源示例、tarball 独立消费与发布前检查同步 |
 
 ## 下线功能
 
@@ -33,6 +34,7 @@
 | 团队要反复遵守的代码约定 | guide | `docs/guides/` | 第三个人会写错的地方 |
 | 有人要照着执行的操作流程(部署/配置/联调) | guide/runbook | `docs/guides/` 或 `docs/deploy/` | 有明确步骤可照做 |
 | 组件库开发与消费方反复查阅的指南 | 包内指南 | `web/packages/ui/docs/` | 包内为唯一正文，组件库文档站只 raw import；docs 索引只链接 |
+| 独立可复用包的消费与维护指南 | 包内 API / 开发说明 | 对应 `web/packages/<name>/docs/api.md` 与 `DEVELOPMENT.md` | README 放使用入口；可执行示例同源校验，文档索引只链接 |
 | 功能开发前的需求拆解 | PRD + issues | `docs/prd/` + `docs/issues/` | 功能分支第一个 commit(见 AGENTS.md) |
 | 单个功能的对外说明 | README 一行 | 对应 README | 不为此建新文件 |
 
