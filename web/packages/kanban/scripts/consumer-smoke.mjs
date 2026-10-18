@@ -112,7 +112,7 @@ try {
 	write(
 		"types.tsx",
 		`import { Board, InlineEdit, createPointerController, type InlineEditMessages, type NewCard, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
-import { Board as Unstyled, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
+import { Board as Unstyled, ResponsiveLayout, DEFAULT_NARROW_BREAKPOINT, type ResponsiveLayoutKind, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
 import { createHistory, invertMove, fitViewport, zoomAt, DEFAULT_SCALE_LIMITS, type Viewport } from "${metadata.name}/core";
 import { Canvas, type CanvasHandle, type CanvasMessages } from "${metadata.name}/canvas";
 import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
@@ -138,6 +138,11 @@ export const nodes = [
 		collapsible collapsedColumns={["todo"]} defaultCollapsedColumns={[]} onCollapsedColumnsChange={(ids: string[]) => ids.length}
 		onAddCard={async (card: NewCard) => { await Promise.resolve(card.columnId + card.title); }} onAddCardError={(error, card) => console.error(error, card.title)}
 		filter={(task) => task.title.includes("A")} />,
+	<ResponsiveLayout breakpoint={DEFAULT_NARROW_BREAKPOINT} onLayoutChange={(next: ResponsiveLayoutKind) => console.log(next)}
+		narrow={<Board columns={stages} cards={tasks} order={{ todo: ["a"] }} renderCard={(task) => task.title}
+			layout="switcher" activeColumn="todo" defaultActiveColumn="todo" onActiveColumnChange={(id: string) => id.length} />}>
+		<Board columns={stages} cards={tasks} order={{ todo: ["a"] }} renderCard={(task) => task.title} layout="columns" />
+	</ResponsiveLayout>,
 ];
 const inlineMessages: Partial<InlineEditMessages> = { saveFailed: "no" };
 export const props: BoardProps<Task, Stage>["order"] = {};
@@ -177,7 +182,7 @@ export const bad = <Board columns={stages} cards={[{ title: "no id" }]} order={{
 		`import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { Board } from "${metadata.name}/unstyled";
+import { Board, ResponsiveLayout } from "${metadata.name}/unstyled";
 import { createMove, applyMove, resolveBoard, createHistory } from "${metadata.name}/core";
 import { HistoryButtons } from "${metadata.name}/unstyled";
 import { Canvas } from "${metadata.name}/canvas";
@@ -205,6 +210,11 @@ assert.match(editable, /data-draggable="true"/);
 assert.match(editable, /tabindex="0"/);
 assert.match(editable, /aria-describedby=/);
 assert.match(editable, /Move to…/);
+const switcher = renderToString(createElement(Board, { ...props, layout: "switcher" }));
+assert.equal(renderToString(createElement(Board, { ...props, layout: "switcher" })), switcher, "Switcher SSR output must be deterministic.");
+assert.match(switcher, /role="tablist"/);
+assert.ok(switcher.includes("Second") && !switcher.includes("Done</h3>"), "Only the active column renders in the switcher layout.");
+assert.match(renderToString(createElement(ResponsiveLayout, { narrow: createElement("p", null, "narrow") }, createElement("p", null, "wide"))), /wide/, "ResponsiveLayout renders the wide content on the server.");
 assert.ok(!/data-draggable/.test(html), "Read-only boards must not advertise dragging.");
 assert.ok(!/<script|<style/.test(html));
 assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);

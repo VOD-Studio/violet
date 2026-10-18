@@ -31,3 +31,11 @@ export { useHistoryAnnouncement } from "./history/use-history-announcement.ts";
 export type { HistoryShortcutsOptions } from "./history/use-history-shortcuts.ts";
 export { useHistoryShortcuts } from "./history/use-history-shortcuts.ts";
 export { useHistoryState } from "./history/use-history-state.ts";
+export type {
+	ResponsiveLayoutKind,
+	ResponsiveLayoutProps,
+} from "./responsive/responsive-layout.tsx";
+export {
+	DEFAULT_NARROW_BREAKPOINT,
+	ResponsiveLayout,
+} from "./responsive/responsive-layout.tsx";
