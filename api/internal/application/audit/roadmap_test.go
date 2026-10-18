@@ -41,3 +41,24 @@ func TestSubscriber_RoadmapItemContent(t *testing.T) {
 		assert.Contains(t, entry.Summary, "#12")
 	}
 }
+
+func TestSubscriber_RoadmapStageChangeExcludesReorder(t *testing.T) {
+	store := &fakeStore{}
+	subscriber := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor", "admin@example.com", "127.0.0.1", "test")
+	item, err := roadmap.NewItem(shared.NewID(), shared.NewID(), 1, roadmap.Content{Title: "Flow"}, roadmap.Planned, "V", time.Now())
+	require.NoError(t, err)
+	item.PullEvents()
+	require.NoError(t, item.Move(roadmap.Planned, "W", nil, "", time.Now()))
+	for _, event := range item.PullEvents() {
+		require.NoError(t, subscriber.Handle(ctx, event))
+	}
+	assert.Empty(t, store.appended)
+	require.NoError(t, item.Move(roadmap.Completed, "W", nil, "v1", time.Now()))
+	for _, event := range item.PullEvents() {
+		require.NoError(t, subscriber.Handle(ctx, event))
+	}
+	require.Len(t, store.appended, 1)
+	assert.Equal(t, domainaudit.ActionUpdate, store.appended[0].Action)
+	assert.Equal(t, []domainaudit.FieldChange{{Field: "stage", From: "planned", To: "completed"}}, store.appended[0].Changes)
+}

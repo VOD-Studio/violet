@@ -24,6 +24,12 @@ func mapRoadmapEvent(actor domainaudit.Actor, event shared.DomainEvent) (domaina
 		for _, change := range e.Changes {
 			entry.Changes = append(entry.Changes, domainaudit.FieldChange{Field: change.Field, From: change.From, To: change.To})
 		}
+	case roadmap.ItemStageChanged:
+		entry.Action = domainaudit.ActionUpdate
+		entry.Resource = domainaudit.ResourceRef{Type: "roadmap_item", ID: e.AggregateID().String(), Name: roadmapResourceName(e.Title)}
+		entry.Metadata = map[string]any{"project_id": e.ProjectID.String(), "number": e.Number}
+		entry.Summary = fmt.Sprintf("变更路线图条目 #%d %s 的阶段", e.Number, e.Title)
+		entry.Changes = []domainaudit.FieldChange{{Field: "stage", From: string(e.From), To: string(e.To)}}
 	default:
 		return domainaudit.AuditEvent{}, false
 	}

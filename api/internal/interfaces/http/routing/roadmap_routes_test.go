@@ -24,6 +24,7 @@ func TestRoadmapRoutesRequireProjectUpdate(t *testing.T) {
 	for _, request := range []struct{ method, path string }{
 		{http.MethodPost, "/p/roadmap/items"},
 		{http.MethodPut, "/p/roadmap/items/i"},
+		{http.MethodPost, "/p/roadmap/items/i/move"},
 	} {
 		t.Run(request.method+request.path, func(t *testing.T) {
 			checker := &roadmapRouteChecker{}
@@ -45,8 +46,9 @@ func TestRoadmapSpecDocumentsReadAndWriteContracts(t *testing.T) {
 	require.NotNil(t, read.Get)
 	assert.Empty(t, read.Get.Security)
 	for path, method := range map[string]string{
-		"/admin/projects/{projectID}/roadmap/items":      http.MethodPost,
-		"/admin/projects/{projectID}/roadmap/items/{id}": http.MethodPut,
+		"/admin/projects/{projectID}/roadmap/items":           http.MethodPost,
+		"/admin/projects/{projectID}/roadmap/items/{id}":      http.MethodPut,
+		"/admin/projects/{projectID}/roadmap/items/{id}/move": http.MethodPost,
 	} {
 		operation := spec.Paths.Find(path).GetOperation(method)
 		require.NotNil(t, operation)
