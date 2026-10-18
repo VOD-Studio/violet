@@ -3,6 +3,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Relation } from "../core/index.ts";
 import { Board, type BoardColumn, type BoardProps } from "./board.tsx";
+import { RelationList } from "./relations/relation-list.tsx";
 
 interface Task {
 	id: string;
@@ -200,6 +201,7 @@ describe("关系线", () => {
 		renderBoard({ hideRelations: true });
 
 		expect(layer()).toBeNull();
+		expect(within(card("a")).getByText(/Relations:/)).toBeTruthy();
 	});
 
 	it("没有关系时不渲染叠加层", () => {
@@ -385,5 +387,66 @@ describe("选中与高亮", () => {
 
 		expect(card("a").hasAttribute("tabindex")).toBe(false);
 		expect(card("a").hasAttribute("data-selected")).toBe(false);
+	});
+});
+
+describe("文本等价", () => {
+	it("每张有关系的卡片带一段读屏文字：出向用类型文字，入向用反向文字", () => {
+		renderBoard();
+
+		expect(within(card("d")).getByText(/Relations:/).textContent).toBe(
+			"Relations: is extended by Alpha; is fixed by Beta",
+		);
+		expect(within(card("a")).getByText(/Relations:/).textContent).toBe(
+			"Relations: extends Delta",
+		);
+		expect(within(card("c")).getByText(/Relations:/).textContent).toBe(
+			"Relations: is blocked by Epsilon",
+		);
+	});
+
+	it("没有关系的卡片没有这段文字", () => {
+		renderBoard({ relations: [relations[0]] });
+
+		expect(within(card("b")).queryByText(/Relations:/)).toBeNull();
+	});
+
+	it("zh-CN", () => {
+		renderBoard({ locale: "zh-CN" });
+
+		expect(within(card("d")).getByText(/关系：/).textContent).toBe(
+			"关系：被扩展 Alpha；被修复 Beta",
+		);
+	});
+
+	it("RelationList 把关系读成「来源 类型 目标」的列表，可限定到一张卡片", () => {
+		render(
+			<RelationList
+				relations={relations}
+				cards={tasks}
+				getCardLabel={(task) => task.title}
+			/>,
+		);
+
+		expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+			"Alpha extends Delta",
+			"Beta fixes Delta",
+			"Epsilon blocks Gamma",
+		]);
+	});
+
+	it("RelationList 限定到一张卡片时包含出入两个方向；没有关系时显示提示", () => {
+		const { rerender } = render(
+			<RelationList
+				relations={relations}
+				cards={tasks}
+				cardId="d"
+				getCardLabel={(task) => task.title}
+			/>,
+		);
+		expect(screen.getAllByRole("listitem")).toHaveLength(2);
+
+		rerender(<RelationList relations={[]} cards={tasks} locale="zh-CN" />);
+		expect(screen.getByText("暂无关系")).toBeTruthy();
 	});
 });

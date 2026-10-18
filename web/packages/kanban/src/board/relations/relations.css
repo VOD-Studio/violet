@@ -54,6 +54,16 @@
 	opacity: 0.4;
 }
 
+/* 文本等价的关系列表：可以放在看板之外，所以不依赖 .v-kanban 祖先与它的变量 */
+.v-kanban__relation-list {
+	margin: 0;
+	padding-left: 1.25em;
+}
+.v-kanban__relation-empty {
+	margin: 0;
+	color: var(--kanban-muted, light-dark(#737373, #a3a3a3));
+}
+
 @media (forced-colors: active) {
 	.v-kanban .v-kanban__relation {
 		color: CanvasText;

@@ -111,6 +111,11 @@ describe("关系线样式", () => {
 		}
 	});
 
+	it("关系列表的样式不依赖 .v-kanban 祖先", () => {
+		expect(relations).toMatch(/^\.v-kanban__relation-list \{/m);
+		expect(relations).toMatch(/^\.v-kanban__relation-empty \{/m);
+	});
+
 	it("强制颜色模式下用系统色，减弱动态下不加过渡", () => {
 		expect(relations).toMatch(/@media \(forced-colors: active\)/);
 		expect(relations).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);

@@ -25,7 +25,7 @@ import { useMoveMenu } from "./drag/use-move-menu.ts";
 import { BoardLocaleContext } from "./locale-context.ts";
 import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
 import { RelationLayer } from "./relations/relation-layer.tsx";
-import { type RelationTypeStyle, resolveRelationTypes } from "./relations/types.ts";
+import { type RelationTypeStyle, relationStyle, resolveRelationTypes } from "./relations/types.ts";
 import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
 
@@ -302,6 +302,19 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const selectedId =
 		selectedCardId !== null && cardsById.has(selectedCardId) ? selectedCardId : null;
 	const neighborIds = selectedId === null ? null : new Set(adjacency.neighbors(selectedId));
+	const relationsText = (id: string) => {
+		const list = adjacency.of(id).map((relation) => {
+			const style = relationStyle(relationTypes, relation.type);
+			return relation.sourceId === id
+				? `${style.label} ${cardLabel(relation.targetId)}`
+				: `${style.inverseLabel} ${cardLabel(relation.sourceId)}`;
+		});
+		return list.length > 0
+			? formatMessage(messages.relationsSummary, {
+					list: list.join(messages.relationsSeparator),
+				})
+			: undefined;
+	};
 	const showRelationLines = !hideRelations && knownRelations.length > 0;
 	const relationRects = useRelationGeometry({
 		scrollerRef,
@@ -412,6 +425,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 											selectedId === card.id ? null : card.id,
 										)
 									}
+									relationsText={relationsText(card.id)}
 									hintId={hintId}
 									selectHintId={
 										moves.editable && isDraggable?.(card) !== false

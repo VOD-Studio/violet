@@ -144,6 +144,11 @@ export interface BoardMessages {
 	 */
 	addCardFailed: string;
 	/**
+	 * 卡片上给读屏的关系描述，{list} 替换为「类型 卡片」的列表，用分号连接。
+	 * @example "Relations: {list}"
+	 */
+	relationsSummary: string;
+	/**
 	 * 可选中的卡片（不可拖）上的键盘说明。
 	 * @example "Press Enter or Space to select this card and highlight its relations."
 	 */
@@ -153,6 +158,16 @@ export interface BoardMessages {
 	 * @example "Press Alt+Enter to select this card and highlight its relations."
 	 */
 	selectHintDraggable: string;
+	/**
+	 * 关系描述里各项之间的分隔。
+	 * @example "; "
+	 */
+	relationsSeparator: string;
+	/**
+	 * 关系列表为空时的提示。
+	 * @example "No relations"
+	 */
+	relationListEmpty: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -186,8 +201,11 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		addCardSubmit: "Add",
 		addCardCancel: "Cancel",
 		addCardFailed: "The card couldn't be saved. Try again.",
+		relationsSummary: "Relations: {list}",
 		selectHint: "Press Enter or Space to select this card and highlight its relations.",
 		selectHintDraggable: "Press Alt+Enter to select this card and highlight its relations.",
+		relationsSeparator: "; ",
+		relationListEmpty: "No relations",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -217,8 +235,11 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		addCardSubmit: "添加",
 		addCardCancel: "取消",
 		addCardFailed: "卡片未能保存，请重试",
+		relationsSummary: "关系：{list}",
 		selectHint: "按回车或空格选中这张卡片，并高亮它的关系。",
 		selectHintDraggable: "按 Alt 加回车选中这张卡片，并高亮它的关系。",
+		relationsSeparator: "；",
+		relationListEmpty: "暂无关系",
 	},
 };
 

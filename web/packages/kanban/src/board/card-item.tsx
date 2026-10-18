@@ -27,6 +27,8 @@ export interface CardItemProps {
 	/** 点击或键盘可以选中这张卡片；不可拖的卡片因此可聚焦。 */
 	selectable?: boolean;
 	onSelect?(): void;
+	/** 关系的文字描述，给读屏；没有关系时不提供。 */
+	relationsText?: string;
 	/** 键盘操作说明元素的 id（可拖的卡片拿起用）。 */
 	hintId: string;
 	/** 选中说明元素的 id：可选中的卡片据此知道怎么用键盘选中。 */
@@ -58,6 +60,7 @@ export function CardItem({
 	faded,
 	selectable,
 	onSelect,
+	relationsText,
 	hintId,
 	selectHintId,
 	menu,
@@ -106,6 +109,7 @@ export function CardItem({
 		>
 			{children}
 			{dimmed ? <span className="v-kanban__sr-only">{dimmedText}</span> : null}
+			{relationsText ? <span className="v-kanban__sr-only">{relationsText}</span> : null}
 			{draggable && menu ? (
 				<MoveMenu
 					label={menu.label}
