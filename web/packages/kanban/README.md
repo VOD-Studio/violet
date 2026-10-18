@@ -10,8 +10,9 @@ This is a workspace package and is **not published to npm**. This README covers 
 | --- | --- |
 | `@violetjs/kanban` | `Board`, `ResponsiveLayout`, `InlineEdit`, `RelationList`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
 | `@violetjs/kanban/unstyled` | The same exports without any CSS |
-| `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history, viewport math |
-| `@violetjs/kanban/canvas` | `Canvas`, a pannable and zoomable viewport for the board (import the stylesheet once) |
+| `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history, relation rules, graph layout and subgraph, viewport math |
+| `@violetjs/kanban/canvas` | `Canvas`, a pannable and zoomable viewport for the board or the graph (import the stylesheet once) |
+| `@violetjs/kanban/graph` | `RelationGraph`, a read-only relation graph (import the stylesheet once) |
 | `@violetjs/kanban/styles.css` | The default stylesheet on its own |
 
 The package does not depend on `@violet/ui` or any site module. React 19 is a peer dependency.
@@ -190,7 +191,7 @@ import { Canvas } from "@violetjs/kanban/canvas";
 - `Ctrl` or `⌘` with the mouse wheel zooms around the pointer, anywhere on the canvas including the control bar (and stops the browser from zooming the page). A plain wheel is never intercepted, so the page keeps scrolling. A trackpad pinch in Safari zooms the canvas too. On touch screens two fingers zoom and pan; one finger on the canvas pans it instead of scrolling the page (`touch-action: none` on everything inside).
 - The scale stays between 0.3 and 2 (`scaleLimits`). The buttons, `+` and `-` zoom in steps of 1.25 around the centre.
 - It fits the window on mount and when the window or content resizes, until you pan or zoom. Fitting never goes below 0.8 (`fit.minScale`) or above 1: content that is still too large is placed at the top left and reached by panning.
-- Focus the viewport (`Tab`) and use the arrow keys (`Shift` for bigger steps) to pan, `+` `-` to zoom and `0` to fit. Focusing something outside the visible area pans just far enough to show it, so focus rings are never clipped. Every control is a real button, so everything works from the keyboard.
+- Focus the viewport (`Tab`) and use the arrow keys (`Shift` for bigger steps) to pan, `+` `-` to zoom and `0` to fit. Focusing something outside the visible area pans just far enough to show it, so focus rings are never clipped, and the page doesn't jump (a browser would otherwise scroll the page to where the clipped element sits). Every control is a real button, so everything works from the keyboard.
 - The full-screen button fills the window with the canvas, locks page scrolling and makes the rest of the page `inert`, so `Tab` and screen readers stay inside the canvas. It is CSS, not the browser Fullscreen API, so `Esc` is handled by the page: it exits full screen unless a drag or a keyboard pick-up already claimed that `Esc`. Don't put the canvas inside an element with a `transform`, which would break the fixed layout. The canvas ignores an inline `height` while full screen.
 - Zoom changes animate over 200ms for the buttons, keys and fit, and not at all for the wheel, drag and pinch; both are off under `prefers-reduced-motion: reduce`.
 - A `ref` gives `fit()`, `zoomIn()`, `zoomOut()`, `setViewport()` and `getViewport()`; `onViewportChange` reports every change. `@violetjs/kanban/core` has the underlying pure functions (`fitViewport`, `zoomAt`, `pinchViewport`, `revealRect`, …).
@@ -220,6 +221,27 @@ const board = { columns, cards, order, renderCard, onMove, relations /* … */ }
 - **Moving cards.** Only one column is on screen, so a pointer drag reorders within the column and cannot cross columns; the "Move to…" menu is shown on every card (`moveMenu: "none"` still turns it off) and the arrow keys still move a picked-up card across columns. The visible column follows the card, so focus goes with it; cancelling a pick-up or a failed save brings the visible column back to where the card came from.
 - **Relation markers.** There are no lines. Each card with relations gets a button per relation, read from the card's side: "extends Delta", "is blocked by Epsilon" (the other card's `getCardLabel`; long text is cut with an ellipsis and kept whole in `title`). A blocked marker is tinted with `--kanban-danger`, but the words already say it. The button's name is "{text}, go to that card"; the screen-reader summary is dropped because the buttons replace it. Pressing one switches to the other card's column, focuses it, scrolls it to the middle of the screen (instantly under `prefers-reduced-motion`) and tints its border for about 1.8 seconds so the eye finds it. The other card has the inverse marker, so the way back is one press. Cards with markers can be focused by script (`tabindex="-1"`) but stay out of the `Tab` order. `hideRelations` only hides lines, so markers stay. Markers are not drag handles and don't select the card.
 - Collapsing columns and relation lines do not apply in this layout. Filtering, the quick-add row and inline editing work as usual. Texts: `switcherLabel` and `relationJump` in `messages`.
+
+## Relation graph
+
+`RelationGraph` from `@violetjs/kanban/graph` shows the relations between cards as a read-only graph. It takes the same data as a board, lays the cards out in columns (a roadmap's stages) and joins them with the board's relation lines. Put it in a `Canvas` to pan, zoom and go full screen; it needs the stylesheet (`@violetjs/kanban/styles.css`, or the root entry).
+
+```tsx
+import { Canvas } from "@violetjs/kanban/canvas";
+import { RelationGraph } from "@violetjs/kanban/graph";
+
+<Canvas style={{ height: 480 }}>
+  <RelationGraph columns={columns} cards={cards} order={order} relations={relations}
+    renderCard={(card) => card.title} />
+</Canvas>
+```
+
+- **Same props as `Board`** for `columns`, `cards`, `order`, `relations`, `relationTypes`, `getCardLabel`, `selectedCardId` / `onSelectedCardChange`, `locale` and `messages`, so one set of data feeds both. `order` says which column each card belongs to and the order they start in. There is no editing: nothing is draggable and there are no `onMove` or menus.
+- **The layout is computed from the input, never stored.** `layoutGraph` (in `/core`) lays columns out left to right at equal height and cards top to bottom at a fixed size (`cardSize`, default 220×72; the card body clips what doesn't fit, so limit your own lines). The same input, in the same order, always gives the same layout, and it never measures the DOM, so it also renders on the server. Within a column the order starts from `order`, then a few sweeps move each card toward the middle of its neighbours in other columns to cut crossings. Cards with no relation to another column keep their place, and relations inside one column don't affect the order. `DEFAULT_GRAPH_LAYOUT` lists the spacing options.
+- **Lines.** The same lines as the board (see Relations), drawn on top of the cards. A line between columns that aren't next to each other passes over the cards in between; select a card to follow its lines.
+- **Subgraph.** `rootId` shows only the cards connected to that card, and the root gets `data-root`. `subgraph` narrows it: `{ direction: "in" }` follows relations that point at the root (what extends it), `"out"` follows what it points at, the default `"both"` takes everything connected; `depth` limits the steps; `types` limits the relation types. A root that isn't in the graph shows the empty message. `relatedSubgraph` in `/core` does the same without React.
+- **Selecting and reading.** Same as the board: with `onSelectedCardChange`, a click or `Enter` / `Space` on a focused card selects it, the neighbours stay clear and the rest fades; clicks on buttons and links inside a card don't count. Each column is a labelled group, each card a list item in it, and a card with relations carries the screen-reader sentence. Empty data shows `graphEmpty`.
+- **Size.** 600 cards with 900 relations open, pan, zoom and select smoothly in Chromium (the browser tests record the timings), and laying out 1200 cards takes well under a second.
 
 ## Slots and messages
 
@@ -257,4 +279,4 @@ make kanban-browser
 make kanban-consumer
 ```
 
-`kanban-browser` runs the drag tests and the narrow-screen tests (390px and desktop width) in real Chromium (install it with `pnpm exec playwright install chromium`); touch is simulated there, so touch dragging, long press and tapping the switcher still need a check on a real device. `kanban-consumer` packs the package, installs the tarball in a temporary project outside the workspace, and checks the published types, server rendering and entry dependency graph. It never publishes.
+`kanban-browser` runs the drag tests, the narrow-screen tests (390px and desktop width) and the relation graph tests in real Chromium (install it with `pnpm exec playwright install chromium`); touch is simulated there, so touch dragging, long press and tapping the switcher still need a check on a real device. `kanban-consumer` packs the package, installs the tarball in a temporary project outside the workspace, and checks the published types, server rendering and entry dependency graph. It never publishes.
