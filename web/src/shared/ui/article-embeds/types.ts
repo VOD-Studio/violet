@@ -1,3 +1,5 @@
+import type { ComponentType } from "react";
+
 /** 文章行内人物提及所需的公开档案。 */
 export interface ArticleProfile {
 	/** 人物的公开显示名称。 */
@@ -166,7 +168,8 @@ export interface SocialLinksEmbedConfig {
 	links: ArticleSocialLink[];
 }
 
-interface ArticleEmbedConfigMap {
+/** 内置嵌入的种类与配置类型的对应。 */
+export interface ArticleEmbedConfigMap {
 	/** 单轮对话使用的配置。 */
 	dialogue: DialogueEmbedConfig;
 	/** GitHub 项目引用使用的配置。 */
@@ -179,15 +182,37 @@ interface ArticleEmbedConfigMap {
 	"social-links": SocialLinksEmbedConfig;
 }
 
-/** 文章解析器支持的内容种类，与配置映射保持一致。 */
+/** 内置嵌入的种类，与配置映射保持一致。 */
 export type ArticleEmbedKind = keyof ArticleEmbedConfigMap;
 
-/** 按内容种类关联配置类型，避免种类与字段不匹配。 */
-export type ParsedArticleEmbed = {
-	[Kind in ArticleEmbedKind]: {
-		/** 已通过解析的内容种类。 */
-		kind: Kind;
-		/** 与该种类对应的有效配置。 */
-		config: ArticleEmbedConfigMap[Kind];
-	};
-}[ArticleEmbedKind];
+/**
+ * 一种嵌入的实现：把围栏块里的 JSON 解析成配置，再渲染成卡片。
+ *
+ * 按需加载，不进文章正文的首包；解析失败返回 null，由宿主显示可读的降级提示。
+ *
+ * @typeParam Config - 解析后的配置类型
+ */
+export interface ArticleEmbedModule<Config = unknown> {
+	/** 校验 `JSON.parse` 之后的值；无效时返回 null。 */
+	parse(input: unknown): Config | null;
+	Component: ComponentType<{ config: Config; context?: ArticleContentContext }>;
+}
+
+/**
+ * 登记一种文章嵌入：识别哪些围栏语言，以及如何按需加载它的实现。
+ *
+ * @typeParam Config - 解析后的配置类型
+ * @example
+ * registerArticleEmbed({
+ *   kind: "roadmap",
+ *   languages: ["roadmap"],
+ *   load: () => import("./roadmap-embed").then((module) => module.roadmapEmbed),
+ * });
+ */
+export interface ArticleEmbedDefinition<Config = unknown> {
+	/** 种类名，出现在配置无效的提示里。 */
+	kind: string;
+	/** 识别的围栏语言，不区分大小写；同一种语言只能属于一种嵌入。 */
+	languages: readonly string[];
+	load(): Promise<ArticleEmbedModule<Config>>;
+}

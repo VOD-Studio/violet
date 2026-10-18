@@ -1,6 +1,10 @@
-import { articleEmbedKind } from "@shared/ui/article-embeds/language";
-import type { ArticleContentContext } from "@shared/ui/article-embeds/types";
-import type { ReactElement, ReactNode } from "react";
+import { ArticleEmbed } from "@shared/ui/article-embeds/ArticleEmbed";
+import { findArticleEmbed } from "@shared/ui/article-embeds/registry";
+import type {
+	ArticleContentContext,
+	ArticleEmbedDefinition,
+} from "@shared/ui/article-embeds/types";
+import type { ComponentType, LazyExoticComponent, ReactElement, ReactNode } from "react";
 import { lazy, Suspense } from "react";
 import type { Components } from "react-markdown";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
@@ -20,11 +24,33 @@ const LazyBlockMathFormula = lazy(() =>
 		default: module.BlockMathFormula,
 	})),
 );
-const LazyArticleEmbed = lazy(() =>
-	import("../../article-embeds/ArticleEmbed").then((module) => ({
-		default: module.ArticleEmbed,
-	})),
-);
+type EmbedProps = { source: string; context?: ArticleContentContext };
+
+/** 每种嵌入一个懒加载组件，按定义缓存，渲染之间保持同一个组件身份。 */
+const lazyEmbeds = new WeakMap<
+	ArticleEmbedDefinition,
+	LazyExoticComponent<ComponentType<EmbedProps>>
+>();
+
+function lazyEmbed(definition: ArticleEmbedDefinition) {
+	let component = lazyEmbeds.get(definition);
+	if (!component) {
+		component = lazy(() =>
+			definition.load().then((module) => ({
+				default: ({ source, context }: EmbedProps) => (
+					<ArticleEmbed
+						kind={definition.kind}
+						module={module}
+						source={source}
+						context={context}
+					/>
+				),
+			})),
+		);
+		lazyEmbeds.set(definition, component);
+	}
+	return component;
+}
 const LazyProfileMention = lazy(() =>
 	import("../../article-embeds/ProfileMention").then((module) => ({
 		default: module.ProfileMention,
@@ -55,15 +81,16 @@ export function createRichCodeRenderer(
 		const cls = className || "";
 		const code = nodeToText(children).replace(/\n$/, "");
 		const language = /language-(\S+)/u.exec(cls)?.[1] ?? "";
-		const embedKind = articleEmbedKind(language);
-		if (embedKind) {
+		const embed = findArticleEmbed(language);
+		if (embed) {
+			const LazyEmbed = lazyEmbed(embed);
 			return (
 				<Suspense
 					fallback={
 						<div className="my-6 min-h-24 animate-pulse rounded-xl border border-edge-hairline bg-muted/40" />
 					}
 				>
-					<LazyArticleEmbed kind={embedKind} source={code} context={context} />
+					<LazyEmbed source={code} context={context} />
 				</Suspense>
 			);
 		}
