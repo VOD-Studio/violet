@@ -12,7 +12,7 @@ func registerRoadmapPublicRoutes(projects chi.Router, handler *roadmaphttp.Handl
 	projects.Get("/by-slug/{slug}/roadmap", handler.GetBySlug)
 }
 
-func registerAdminRoadmapRoutes(projects chi.Router, handler *roadmaphttp.Handler, checker middleware.PermissionChecker) {
+func registerAdminRoadmapRoutes(projects chi.Router, handler *roadmaphttp.Handler, relations *roadmaphttp.RelationHandler, checker middleware.PermissionChecker) {
 	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
 		Post("/{projectID}/roadmap/items", handler.Create)
 	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
@@ -23,4 +23,8 @@ func registerAdminRoadmapRoutes(projects chi.Router, handler *roadmaphttp.Handle
 		Delete("/{projectID}/roadmap/items/{id}", handler.Delete)
 	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
 		Post("/{projectID}/roadmap/items/{id}/restore", handler.Restore)
+	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
+		Post("/{projectID}/roadmap/relations", relations.Create)
+	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
+		Delete("/{projectID}/roadmap/relations/{relationID}", relations.Delete)
 }

@@ -41,6 +41,16 @@ func mapRoadmapEvent(actor domainaudit.Actor, event shared.DomainEvent) (domaina
 		entry.Metadata = map[string]any{"project_id": e.ProjectID.String(), "number": e.Number}
 		entry.Summary = fmt.Sprintf("恢复路线图条目 #%d %s", e.Number, e.Title)
 		entry.Changes = []domainaudit.FieldChange{{Field: "deleted", From: true, To: false}}
+	case roadmap.RelationCreated:
+		entry.Action = domainaudit.ActionCreate
+		entry.Resource = domainaudit.ResourceRef{Type: "roadmap_relation", ID: e.AggregateID().String(), Name: string(e.Type)}
+		entry.Metadata = map[string]any{"project_id": e.ProjectID.String(), "source_id": e.SourceID.String(), "target_id": e.TargetID.String(), "type": string(e.Type)}
+		entry.Summary = fmt.Sprintf("建立路线图关系 %s：%s → %s", e.Type, e.SourceID, e.TargetID)
+	case roadmap.RelationDeleted:
+		entry.Action = domainaudit.ActionDelete
+		entry.Resource = domainaudit.ResourceRef{Type: "roadmap_relation", ID: e.AggregateID().String(), Name: string(e.Type)}
+		entry.Metadata = map[string]any{"project_id": e.ProjectID.String(), "source_id": e.SourceID.String(), "target_id": e.TargetID.String(), "type": string(e.Type)}
+		entry.Summary = fmt.Sprintf("删除路线图关系 %s：%s → %s", e.Type, e.SourceID, e.TargetID)
 	default:
 		return domainaudit.AuditEvent{}, false
 	}

@@ -43,6 +43,7 @@ func (s *Service) Restore(ctx context.Context, projectID, itemID string) (ItemDT
 		return ItemDTO{}, err
 	}
 	var item *domain.Item
+	var dto ItemDTO
 	err = s.repo.WithinProject(ctx, pid, func(repo domain.Repository) error {
 		var err error
 		item, err = findProjectItem(ctx, repo, pid, id, true)
@@ -50,14 +51,17 @@ func (s *Service) Restore(ctx context.Context, projectID, itemID string) (ItemDT
 			return err
 		}
 		item.Restore(s.now())
-		if !item.HasEvents() {
-			return nil
+		if item.HasEvents() {
+			if err := repo.Save(ctx, item); err != nil {
+				return err
+			}
 		}
-		return repo.Save(ctx, item)
+		dto, err = toBlockedDTO(ctx, repo, item)
+		return err
 	})
 	if err != nil {
 		return ItemDTO{}, err
 	}
 	s.publishEvents(ctx, item)
-	return toDTO(item), nil
+	return dto, nil
 }

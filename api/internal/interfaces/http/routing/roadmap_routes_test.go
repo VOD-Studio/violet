@@ -27,11 +27,13 @@ func TestRoadmapRoutesRequireProjectUpdate(t *testing.T) {
 		{http.MethodPost, "/p/roadmap/items/i/move"},
 		{http.MethodDelete, "/p/roadmap/items/i"},
 		{http.MethodPost, "/p/roadmap/items/i/restore"},
+		{http.MethodPost, "/p/roadmap/relations"},
+		{http.MethodDelete, "/p/roadmap/relations/r"},
 	} {
 		t.Run(request.method+request.path, func(t *testing.T) {
 			checker := &roadmapRouteChecker{}
 			router := chi.NewRouter()
-			registerAdminRoadmapRoutes(router, nil, checker)
+			registerAdminRoadmapRoutes(router, nil, nil, checker)
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, httptest.NewRequest(request.method, request.path, nil))
 			require.Equal(t, http.StatusForbidden, response.Code)

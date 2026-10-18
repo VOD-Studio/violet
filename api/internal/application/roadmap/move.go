@@ -44,6 +44,7 @@ func (s *Service) Move(ctx context.Context, projectID, itemID string, in MoveInp
 		completionDate = &date
 	}
 	var item *domain.Item
+	var dto ItemDTO
 	err = s.repo.WithinProject(ctx, pid, func(repo domain.Repository) error {
 		var err error
 		item, err = findProjectItem(ctx, repo, pid, id, false)
@@ -62,16 +63,19 @@ func (s *Service) Move(ctx context.Context, projectID, itemID string, in MoveInp
 		if err := item.Move(stage, position, completionDate, in.DeliveredVersion, s.now().In(siteLocation)); err != nil {
 			return err
 		}
-		if previousStage == item.Stage() && previousPosition == item.Position() {
-			return nil
+		if previousStage != item.Stage() || previousPosition != item.Position() {
+			if err := repo.Save(ctx, item); err != nil {
+				return err
+			}
 		}
-		return repo.Save(ctx, item)
+		dto, err = toBlockedDTO(ctx, repo, item)
+		return err
 	})
 	if err != nil {
 		return ItemDTO{}, err
 	}
 	s.publishEvents(ctx, item)
-	return toDTO(item), nil
+	return dto, nil
 }
 
 func movePosition(items []*domain.Item, stage domain.Stage, itemID shared.ID, beforeID, afterID string) (string, error) {

@@ -41,9 +41,10 @@ type ProgressDTO struct {
 }
 
 type DetailDTO struct {
-	Project  appproject.ProjectDTO `json:"project"`
-	Items    []ItemDTO             `json:"items"`
-	Progress ProgressDTO           `json:"progress"`
+	Project   appproject.ProjectDTO `json:"project"`
+	Items     []ItemDTO             `json:"items"`
+	Relations []RelationDTO         `json:"relations"`
+	Progress  ProgressDTO           `json:"progress"`
 }
 
 type CreateInput struct {

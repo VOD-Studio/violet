@@ -84,3 +84,30 @@ func TestSubscriber_RoadmapDeletionAndRestore(t *testing.T) {
 	assert.Contains(t, store.appended[1].Summary, "恢复")
 	assert.Equal(t, []domainaudit.FieldChange{{Field: "deleted", From: true, To: false}}, store.appended[1].Changes)
 }
+
+func TestSubscriber_RoadmapRelationLifecycle(t *testing.T) {
+	store := &fakeStore{}
+	subscriber := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor", "admin@example.com", "127.0.0.1", "test")
+	projectID, sourceID, targetID := shared.NewID(), shared.NewID(), shared.NewID()
+	relation, err := roadmap.NewRelation(shared.NewID(), projectID, sourceID, targetID, roadmap.RelationBlocks, time.Now())
+	require.NoError(t, err)
+	for _, event := range relation.PullEvents() {
+		require.NoError(t, subscriber.Handle(ctx, event))
+	}
+	relation.MarkDeleted()
+	for _, event := range relation.PullEvents() {
+		require.NoError(t, subscriber.Handle(ctx, event))
+	}
+	require.Len(t, store.appended, 2)
+	assert.Equal(t, domainaudit.ActionCreate, store.appended[0].Action)
+	assert.Equal(t, domainaudit.ActionDelete, store.appended[1].Action)
+	for _, entry := range store.appended {
+		assert.Equal(t, "roadmap_relation", entry.Resource.Type)
+		assert.Equal(t, relation.ID().String(), entry.Resource.ID)
+		assert.Equal(t, projectID.String(), entry.Metadata["project_id"])
+		assert.Equal(t, sourceID.String(), entry.Metadata["source_id"])
+		assert.Equal(t, targetID.String(), entry.Metadata["target_id"])
+		assert.Equal(t, "blocks", entry.Metadata["type"])
+	}
+}

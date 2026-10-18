@@ -18,15 +18,20 @@ import (
 var siteLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
 
 type Service struct {
-	repo     domain.Repository
-	projects domainproject.ProjectRepository
-	checker  PermissionChecker
-	bus      appshared.EventBus
-	now      func() time.Time
+	repo      domain.Repository
+	projects  domainproject.ProjectRepository
+	checker   PermissionChecker
+	bus       appshared.EventBus
+	now       func() time.Time
+	relations RelationReader
 }
 
-func NewService(repo domain.Repository, projects domainproject.ProjectRepository, checker PermissionChecker, bus appshared.EventBus) *Service {
-	return &Service{repo: repo, projects: projects, checker: checker, bus: bus, now: time.Now}
+func NewService(repo domain.Repository, projects domainproject.ProjectRepository, checker PermissionChecker, bus appshared.EventBus, options ...Option) *Service {
+	service := &Service{repo: repo, projects: projects, checker: checker, bus: bus, now: time.Now}
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 // GetBySlug 公开读取项目、全部未删除条目与同一口径的进度概览。
@@ -46,7 +51,15 @@ func (s *Service) GetBySlug(ctx context.Context, slug string) (DetailDTO, error)
 	for _, item := range items {
 		dtos = append(dtos, toDTO(item))
 	}
-	return DetailDTO{Project: appproject.ToDTO(project), Items: dtos, Progress: progressOf(items)}, nil
+	relations := make([]RelationDTO, 0)
+	if s.relations != nil {
+		relations, err = s.relations.List(ctx, project.ID().String())
+		if err != nil {
+			return DetailDTO{}, err
+		}
+	}
+	relations = EnrichRelations(dtos, relations)
+	return DetailDTO{Project: appproject.ToDTO(project), Items: dtos, Relations: relations, Progress: progressOf(items)}, nil
 }
 
 func (s *Service) Create(ctx context.Context, projectID string, in CreateInput) (ItemDTO, error) {
@@ -106,6 +119,7 @@ func (s *Service) Update(ctx context.Context, projectID, itemID string, in Updat
 		return ItemDTO{}, err
 	}
 	var item *domain.Item
+	var dto ItemDTO
 	err = s.repo.WithinProject(ctx, pid, func(repo domain.Repository) error {
 		item, err = findProjectItem(ctx, repo, pid, id, false)
 		if err != nil {
@@ -117,16 +131,19 @@ func (s *Service) Update(ctx context.Context, projectID, itemID string, in Updat
 		if err := item.UpdateContent(content, s.now().In(siteLocation)); err != nil {
 			return err
 		}
-		if !item.HasEvents() {
-			return nil
+		if item.HasEvents() {
+			if err := repo.Save(ctx, item); err != nil {
+				return err
+			}
 		}
-		return repo.Save(ctx, item)
+		dto, err = toBlockedDTO(ctx, repo, item)
+		return err
 	})
 	if err != nil {
 		return ItemDTO{}, err
 	}
 	s.publishEvents(ctx, item)
-	return toDTO(item), nil
+	return dto, nil
 }
 
 func requireProjectUpdate(ctx context.Context, checker PermissionChecker) error {

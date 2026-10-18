@@ -37,10 +37,11 @@ func registerRoadmapPaths(t *openapi3.T) {
 		"updated_at":        reqStr("最近更新时间，RFC3339"),
 	}, "id", "project_id", "number", "title", "description", "stage", "position", "tags", "links", "completion_date", "delivered_version", "blocked", "created_at", "updated_at")
 	registerSchema(t, "RoadmapDetailDTO", openapi3.Schemas{
-		"project":  optRef("所属项目", "ProjectDTO"),
-		"items":    refArray("全部未删除条目；已完成按完成日期倒序，同日按编号倒序", "RoadmapItemDTO"),
-		"progress": optRef("当前进度概览", "RoadmapProgressDTO"),
-	}, "project", "items", "progress")
+		"project":   optRef("所属项目", "ProjectDTO"),
+		"items":     refArray("全部未删除条目；已完成按完成日期倒序，同日按编号倒序", "RoadmapItemDTO"),
+		"progress":  optRef("当前进度概览", "RoadmapProgressDTO"),
+		"relations": refArray("两端均未删除的条目关系", "RoadmapRelationDTO"),
+	}, "project", "items", "progress", "relations")
 	contentFields := openapi3.Schemas{
 		"title":             reqStr("必填标题，去空白后不能为空"),
 		"description":       optStr("纯文本简介；空串清空"),

@@ -87,6 +87,7 @@ type Deps struct {
 	Auth                *authhttp.Handler
 	Content             *contenthttp.Handler
 	Roadmap             *roadmaphttp.Handler
+	RoadmapRelations    *roadmaphttp.RelationHandler
 	Comment             *commenthttp.Handler
 	CommentReaction     *crhttp.Handler
 	Media               *mediahttp.Handler

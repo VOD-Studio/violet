@@ -165,14 +165,18 @@ api/
 
 | 方法与路径 | 行为 |
 | --- | --- |
-| `GET /projects/by-slug/{slug}/roadmap` | 公开返回项目、全部未删除条目与进度概览 |
+| `GET /projects/by-slug/{slug}/roadmap` | 公开返回项目、全部未删除条目、关系与进度概览 |
 | `POST /admin/projects/{projectID}/roadmap/items` | 创建条目，分配项目内不复用的编号 |
 | `PUT /admin/projects/{projectID}/roadmap/items/{id}` | 全量编辑内容；未传完成日期时保留原值 |
 | `POST /admin/projects/{projectID}/roadmap/items/{id}/move` | 按目标阶段与邻居移动；邻居失效时追加末尾，已完成阶段拒绝手动重排 |
 | `DELETE /admin/projects/{projectID}/roadmap/items/{id}` | 标记软删除，返回 204 |
 | `POST /admin/projects/{projectID}/roadmap/items/{id}/restore` | 恢复原条目，保留编号、位置和内容 |
+| `POST /admin/projects/{projectID}/roadmap/relations` | 建立项目内扩展、修复或阻塞关系 |
+| `DELETE /admin/projects/{projectID}/roadmap/relations/{relationID}` | 显式删除关系 |
 
 阶段固定为 `planned`、`in_progress`、`completed`。进度为已完成数除以未删除条目总数，四舍五入为整数百分比，空路线图为 0。完成日期格式为 `YYYY-MM-DD`，默认取 `Asia/Shanghai` 当天；仅已完成条目持有完成日期与交付版本，离开已完成时两者一并清空。阶段变更记录操作日志，同阶段排序不记录。
+
+关系按 `extends`、`fixes`、`blocks` 分别校验无环，不允许自指、同类型重复或跨项目。软删除条目只隐藏关系，恢复时保留同一关系；环校验仍包含隐藏关系。显式删除关系后，恢复条目不会重建该关系。`blocked` 由未完成且未删除的阻塞前置条目派生，不改变阶段。
 
 ## 基础设施适配器
 

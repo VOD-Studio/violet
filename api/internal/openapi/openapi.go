@@ -89,6 +89,7 @@ func build() (*openapi3.T, error) {
 	registerRoadmapPaths(t)
 	registerRoadmapMovePath(t)
 	registerRoadmapDeletionPaths(t)
+	registerRoadmapRelationPaths(t)
 	registerSiteIdentityPaths(t)
 	registerSiteImpressionPaths(t)
 	registerAuthPaths(t)
