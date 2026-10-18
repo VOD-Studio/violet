@@ -52,7 +52,7 @@ export interface CanvasGestureOptions {
 }
 
 /**
- * 画布的指针手势：Ctrl/⌘ 加滚轮与触控板捏合缩放（普通滚轮不拦截）、拖动背景平移、触屏双指缩放与平移。
+ * 画布的指针手势：Ctrl/⌘ 加滚轮与触控板捏合缩放（普通滚轮平时不拦截，全屏时平移）、拖动背景平移、触屏双指缩放与平移。
  *
  * 用原生监听：React 的 wheel 是被动监听，无法阻止浏览器自己的页面缩放。
  */
@@ -75,9 +75,16 @@ export function useCanvasGestures(options: CanvasGestureOptions) {
 		};
 
 		const onWheel = (event: WheelEvent) => {
-			if (!event.ctrlKey && !event.metaKey) return;
-			event.preventDefault();
 			const lines = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
+			if (!event.ctrlKey && !event.metaKey) {
+				// 平时普通滚轮交给页面；全屏时页面滚动被锁住，普通滚轮改为平移画布
+				if (root.getAttribute("data-fullscreen") !== "true") return;
+				event.preventDefault();
+				const { getViewport, setViewport } = live.current;
+				setViewport(panBy(getViewport(), -event.deltaX * lines, -event.deltaY * lines));
+				return;
+			}
+			event.preventDefault();
 			const factor = Math.exp(-event.deltaY * lines * WHEEL_SENSITIVITY);
 			const { getViewport, setViewport } = live.current;
 			setViewport(zoomByFactor(getViewport(), local(event), factor, limits));

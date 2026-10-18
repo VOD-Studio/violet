@@ -703,6 +703,26 @@ test.describe("画布视口", () => {
 		expect(await transform()).toBe(pageView);
 	});
 
+	test("全屏时普通滚轮平移画布", async ({ page }) => {
+		await openCanvas(page);
+		await page.getByRole("button", { name: "Enter full screen" }).click();
+		const before = await page
+			.locator(".v-kanban-canvas__content")
+			.evaluate((node) => node.style.transform);
+		const view = await root(page).boundingBox();
+		if (!view) throw new Error("canvas is not visible");
+
+		await page.mouse.move(view.x + view.width / 2, view.y + view.height / 2);
+		await page.mouse.wheel(0, 200);
+
+		await expect
+			.poll(() =>
+				page.locator(".v-kanban-canvas__content").evaluate((node) => node.style.transform),
+			)
+			.not.toBe(before);
+		expect(await page.evaluate(() => scrollY)).toBe(0);
+	});
+
 	test("全屏：铺满窗口并锁住页面滚动，Esc 退出", async ({ page }) => {
 		await openCanvas(page);
 

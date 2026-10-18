@@ -640,6 +640,23 @@ describe("全屏", () => {
 		restore();
 	});
 
+	it("全屏时普通滚轮平移画布并阻止页面滚动；不在全屏时不拦截", () => {
+		render(
+			<Canvas defaultViewport={{ scale: 1, x: 0, y: 0 }}>
+				<div>content</div>
+			</Canvas>,
+		);
+		const outside = wheel({ deltaY: 100 });
+		expect(outside.defaultPrevented).toBe(false);
+		expect(shown()).toMatchObject({ x: 0, y: 0 });
+
+		fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
+		const inside = wheel({ deltaX: 30, deltaY: 100 });
+
+		expect(inside.defaultPrevented).toBe(true);
+		expect(shown()).toMatchObject({ scale: 1, x: -30, y: -100 });
+	});
+
 	it("全屏与页面里的视口互不影响：页面里缩放过，全屏仍从适应窗口开始；全屏里的调整不带回页面", () => {
 		const restore = stubSizes([1000, 600], [500, 300]);
 		vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (

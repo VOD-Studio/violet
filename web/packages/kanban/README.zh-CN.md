@@ -210,7 +210,7 @@ export function CanvasBoard() {
 ```
 <!-- example:canvas:end -->
 
-Canvas 可拖动背景平移，通过 Ctrl/⌘+滚轮、双指、按钮或键盘缩放；普通滚轮仍交给页面滚动。应设置高度，默认 `32rem`。默认缩放范围 0.3–2，初始适应窗口范围 0.8–1。`defaultViewport` 只是初值，并不存在受控 `viewport` 属性；可通过 ref 和 `onViewportChange` 接入视口保存。
+Canvas 可拖动背景平移，通过 Ctrl/⌘+滚轮、双指、按钮或键盘缩放；普通滚轮平时交给页面滚动，全屏时改为平移画布。应设置高度，默认 `32rem`。默认缩放范围 0.3–2，初始适应窗口范围 0.8–1。`defaultViewport` 只是初值，并不存在受控 `viewport` 属性；可通过 ref 和 `onViewportChange` 接入视口保存。
 
 ResponsiveLayout 测量自身容器，不是窗口；默认阈值为 768px。一次只挂载一个分支。服务端和客户端首次渲染均为宽屏分支，测量后才可能切换。隐藏且宽度为零时保持当前布局；没有 ResizeObserver 的环境不会观察后续尺寸变化。页面可设置稳定滚动条槽位，避免布局改变滚动条后反复跨越阈值。
 

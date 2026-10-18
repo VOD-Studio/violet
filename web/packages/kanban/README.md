@@ -210,7 +210,7 @@ export function CanvasBoard() {
 ```
 <!-- example:canvas:end -->
 
-Canvas pans its background and zooms with Ctrl/⌘+wheel, touch pinch, buttons or keys; ordinary wheel scrolling remains page scrolling. Give it a height (default `32rem`). Its scale defaults to 0.3–2; initial fitting stops at 0.8–1. `defaultViewport` is initial state, not a controlled `viewport` prop. Use its ref and `onViewportChange` to integrate viewport persistence.
+Canvas pans its background and zooms with Ctrl/⌘+wheel, touch pinch, buttons or keys; ordinary wheel scrolling stays with the page, except in full screen where it pans the canvas. Give it a height (default `32rem`). Its scale defaults to 0.3–2; initial fitting stops at 0.8–1. `defaultViewport` is initial state, not a controlled `viewport` prop. Use its ref and `onViewportChange` to integrate viewport persistence.
 
 ResponsiveLayout measures its container, not the window, with a default breakpoint of 768px. Only one branch is mounted. Server rendering and the first client render use the wide branch, then measurement may switch it. A hidden zero-width container keeps the previous layout; environments without ResizeObserver do not observe later resizes. A stable page scrollbar gutter prevents layout-induced breakpoint oscillation.
 

@@ -146,7 +146,7 @@ switcher 只渲染活动列，标签条是 tablist；左右键循环切换，Hom
 
 `CanvasHandle`：`fit(): void`、`zoomIn(): void`、`zoomOut(): void`、`setViewport(viewport: Viewport): void`、`getViewport(): Viewport`。fit 同时恢复随尺寸变化自动适应。外部视口会规整：scale 收敛到范围，非有限平移归零。
 
-背景拖动平移；Ctrl/⌘+滚轮围绕指针缩放，普通滚轮不拦截。双指缩放/平移，Safari 触控板手势有对应处理。触屏画布使用 touch-action none，单指背景操作平移而不是滚动页面；可编辑卡片快速滑动平移，长按后拖卡。
+背景拖动平移；Ctrl/⌘+滚轮围绕指针缩放，普通滚轮平时不拦截、全屏时平移画布（页面滚动已被锁住）。双指缩放/平移，Safari 触控板手势有对应处理。触屏画布使用 touch-action none，单指背景操作平移而不是滚动页面；可编辑卡片快速滑动平移，长按后拖卡。
 
 视口聚焦后方向键每次平移 48px，Shift 四倍；+/− 按 1.25 倍步进，0 适应。聚焦离屏控件会露出其焦点区域。拖卡时视口边缘自动平移，越靠边越快，内容到边时停止；离开视口无落点。
 
