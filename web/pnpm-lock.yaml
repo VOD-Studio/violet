@@ -180,6 +180,9 @@ importers:
       '@violetjs/inkline':
         specifier: workspace:*
         version: link:packages/inkline
+      '@violetjs/kanban':
+        specifier: workspace:*
+        version: link:packages/kanban
       '@violetjs/react-tweet':
         specifier: workspace:*
         version: link:packages/react-tweet

@@ -1,0 +1,16 @@
+/*
+ * 站点语义 token → @violetjs/kanban 的 --kanban-* 变量。
+ * 包只认自己的变量，不回退到站点变量名；在组件根上取值，才能跟随所在方言容器里重映射过的语义色。
+ */
+.v-kanban,
+.v-kanban-canvas {
+	--kanban-foreground: var(--foreground);
+	--kanban-muted: var(--muted-foreground);
+	--kanban-border: var(--border);
+	--kanban-column-background: var(--muted);
+	--kanban-card-background: var(--card);
+	--kanban-canvas-background: var(--background);
+	--kanban-danger: var(--destructive);
+	--kanban-focus: var(--ring);
+	--kanban-radius: var(--radius);
+}
