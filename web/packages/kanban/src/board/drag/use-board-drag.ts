@@ -1,40 +1,26 @@
-import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
 	type AutoSortEntry,
-	applyMove,
 	type BoardMove,
 	type BoardPosition,
-	type BoardState,
 	createMove,
 	isNoopMove,
 	locateCard,
 	type Point,
 	resolveDropTarget,
-	violatesAutoSort,
 } from "../../core/index.ts";
-import type { BoardMessages } from "../messages.ts";
 import { CARD_SELECTOR, findCard, measureColumns } from "./dom.ts";
-import { MOTION_EASING, MOTION_MS, prefersReducedMotion, useFlip } from "./motion.ts";
+import { MOTION_EASING, MOTION_MS, prefersReducedMotion } from "./motion.ts";
 import { createPointerController } from "./pointer-controller.ts";
 import type { DragController, DragHost } from "./types.ts";
+import type { BoardMoves } from "./use-board-moves.ts";
 
-/** `canMove` 的裁决：允许，或拒绝并给出原因。 */
-export type MoveDecision = { allowed: true } | { allowed: false; reason?: string };
-
-/** `useBoardDrag` 的输入：看板的数据、规则回调与 DOM 引用。 */
+/** `useBoardDrag` 的输入：DOM 引用与共用的移动逻辑。 */
 export interface BoardDragOptions {
 	rootRef: RefObject<HTMLElement | null>;
-	scrollerRef: RefObject<HTMLElement | null>;
-	columnIds: readonly string[];
-	/** 使用方给出的顺序。 */
-	order: BoardState["order"];
+	moves: BoardMoves;
 	autoSort: (columnId: string) => AutoSortEntry | undefined;
-	onMove?: (move: BoardMove) => void | Promise<void>;
-	canMove?: (move: BoardMove) => MoveDecision;
-	onMoveError?: (error: unknown, move: BoardMove) => void;
-	readOnly?: boolean;
 	controller?: DragController;
-	messages: BoardMessages;
 }
 
 interface Size {
@@ -59,16 +45,14 @@ export interface DragView extends Grabbed {
 
 /** `useBoardDrag` 给看板渲染用的状态。 */
 export interface BoardDrag {
-	editable: boolean;
-	/** 当前显示的顺序：使用方的 `order` 加上尚未完成的移动。 */
-	order: BoardState["order"];
 	dragging: DragView | null;
 	/** 正在落位的卡片，其位置已确定但要等浮起卡片飞到才显现。 */
 	settlingId: string | null;
 	/** 浮起卡片：拖拽与落位期间存在。 */
 	ghost: Grabbed | null;
 	ghostRef: RefObject<HTMLDivElement | null>;
-	notice: string;
+	/** 会引起其余卡片位置变化的拖拽状态指纹，供位移过渡使用。 */
+	layoutKey: string;
 }
 
 type Session = ({ phase: "dragging" } & DragView) | ({ phase: "settling" } & Grabbed);
@@ -92,9 +76,6 @@ const defaultController = createPointerController();
 const NO_DRAG_SELECTOR =
 	'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-kanban-no-drag]';
 
-/** 提示停留的时间（ms），够读完一句话。 */
-const NOTICE_MS = 4000;
-
 function placeGhost(ghost: HTMLElement | null, run: Runtime) {
 	if (!ghost || !run.ghostReady) return;
 	const x = run.pointer.x - run.grab.x - run.ghostOffset.x;
@@ -102,83 +83,28 @@ function placeGhost(ghost: HTMLElement | null, run: Runtime) {
 	ghost.style.transform = `translate(${x}px, ${y}px)`;
 }
 
-function useNotice() {
-	const [text, setText] = useState("");
-	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-	const mounted = useRef(false);
-	useEffect(() => {
-		mounted.current = true;
-		return () => {
-			mounted.current = false;
-			clearTimeout(timer.current);
-		};
-	}, []);
-	const show = useCallback((message: string) => {
-		if (!mounted.current) return;
-		clearTimeout(timer.current);
-		setText(message);
-		timer.current = setTimeout(() => setText(""), NOTICE_MS);
-	}, []);
-	return [text, show] as const;
-}
-
 /**
- * 看板的拖拽编排：把控制器的拖拽指令变成落点、占位、浮起卡片、位置过渡与移动事件。
- *
- * 看板由使用方控制：放下后先按新顺序显示，直到 `onMove` 完成；失败则回滚。
- * 完成之后只认使用方的 `order`，所以使用方要在 `onMove` 完成前更新它。
+ * 指针拖拽编排：把控制器的拖拽指令变成落点、占位、浮起卡片与移动事件。
  */
 export function useBoardDrag(options: BoardDragOptions): BoardDrag {
-	const { rootRef, scrollerRef, columnIds, order, controller = defaultController } = options;
-	const editable = Boolean(options.onMove) && !options.readOnly;
+	const { rootRef, moves, controller = defaultController } = options;
+	const { editable, state, decide, commit, showNotice } = moves;
 
-	const [pending, setPending] = useState<Array<{ token: number; move: BoardMove }>>([]);
 	const [session, setSession] = useState<Session | null>(null);
-	const [notice, showNotice] = useNotice();
-	const effectiveOrder = pending.reduce<BoardState["order"]>(
-		(current, { move }) => applyMove({ columns: columnIds, order: current }, move).order,
-		order,
-	);
-
-	const live = useRef({ options, columnIds, effectiveOrder });
+	const live = useRef(options);
 	useLayoutEffect(() => {
-		live.current = { options, columnIds, effectiveOrder };
+		live.current = options;
 	});
 	const run = useRef<Runtime | null>(null);
 	const ghostRef = useRef<HTMLDivElement | null>(null);
-	const tokens = useRef(0);
 
 	useEffect(() => {
 		const root = rootRef.current;
 		if (!root || !editable) return;
 
-		const state = (): BoardState => ({
-			columns: live.current.columnIds,
-			order: live.current.effectiveOrder,
-		});
-
-		const decide = (move: BoardMove): MoveDecision => {
-			const { options: current } = live.current;
-			if (isNoopMove(move)) return { allowed: true };
-			if (violatesAutoSort(move, (id) => current.autoSort(id) !== undefined))
-				return { allowed: false, reason: current.messages.autoSorted };
-			try {
-				const verdict = current.canMove?.(move);
-				if (verdict && !verdict.allowed)
-					return {
-						allowed: false,
-						reason: verdict.reason ?? current.messages.moveRejected,
-					};
-			} catch {
-				// 使用方的规则出错时按拒绝处理，拖拽本身不能因此中断
-				return { allowed: false, reason: current.messages.moveRejected };
-			}
-			return { allowed: true };
-		};
-
 		/** @param force - 放下时强制按当前指针与布局重新求值 */
 		const resolveTarget = (current: Runtime, force: boolean) => {
-			const layout = measureColumns(root, live.current.options.autoSort, current.cardId);
+			const layout = measureColumns(root, live.current.autoSort, current.cardId);
 			const target = resolveDropTarget(layout, current.pointer, {
 				originColumnId: current.origin.columnId,
 			});
@@ -220,26 +146,6 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 			setSession((previous) =>
 				previous?.phase === "settling" && previous.cardId === cardId ? null : previous,
 			);
-		};
-
-		const commit = (move: BoardMove) => {
-			const { options: current } = live.current;
-			const token = ++tokens.current;
-			setPending((list) => [...list, { token, move }]);
-			let result: void | Promise<void>;
-			try {
-				result = current.onMove?.(move);
-			} catch (error) {
-				result = Promise.reject(error);
-			}
-			const settle = () =>
-				setPending((list) => list.filter((entry) => entry.token !== token));
-			Promise.resolve(result).then(settle, (error: unknown) => {
-				settle();
-				endSettling(move.cardId);
-				current.onMoveError?.(error, move);
-				showNotice(current.messages.moveFailed);
-			});
 		};
 
 		const host: DragHost = {
@@ -291,7 +197,8 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 				const current = run.current;
 				if (!current) return;
 				resolveTarget(current, true);
-				if (current.move && !isNoopMove(current.move)) commit(current.move);
+				if (current.move && !isNoopMove(current.move))
+					commit(current.move, () => endSettling(current.cardId));
 				else if (current.reason) showNotice(current.reason);
 				startSettling(current);
 			},
@@ -301,7 +208,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 			},
 		};
 		return controller.attach(host);
-	}, [editable, controller, rootRef, showNotice]);
+	}, [editable, controller, rootRef, state, decide, commit, showNotice]);
 
 	// 浮起卡片挂载后：测出祖先 transform 造成的偏差并定位到指针
 	useLayoutEffect(() => {
@@ -352,25 +259,19 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 		return () => animation.cancel();
 	}, [session, rootRef]);
 
-	const flipKey = [
-		JSON.stringify(columnIds.map((id) => [id, effectiveOrder[id] ?? []])),
-		session?.phase,
-		session?.cardId,
-		session?.phase === "dragging"
-			? `${session.placeholder.columnId}:${session.placeholder.index}`
-			: "",
-	].join("|");
-	useFlip(scrollerRef, flipKey, editable);
-
 	return {
-		editable,
-		order: effectiveOrder,
 		dragging: session?.phase === "dragging" ? session : null,
 		settlingId: session?.phase === "settling" ? session.cardId : null,
 		ghost: session
 			? { cardId: session.cardId, origin: session.origin, size: session.size }
 			: null,
 		ghostRef,
-		notice,
+		layoutKey: [
+			session?.phase,
+			session?.cardId,
+			session?.phase === "dragging"
+				? `${session.placeholder.columnId}:${session.placeholder.index}`
+				: "",
+		].join(":"),
 	};
 }

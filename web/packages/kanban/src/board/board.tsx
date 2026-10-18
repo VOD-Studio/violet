@@ -7,8 +7,10 @@ import {
 	resolveBoard,
 } from "../core/index.ts";
 import { cardFlipId, PLACEHOLDER_FLIP_ID } from "./drag/dom.ts";
+import { useFlip } from "./drag/motion.ts";
 import type { DragController } from "./drag/types.ts";
-import { type MoveDecision, useBoardDrag } from "./drag/use-board-drag.ts";
+import { useBoardDrag } from "./drag/use-board-drag.ts";
+import { type MoveDecision, useBoardMoves } from "./drag/use-board-moves.ts";
 import {
 	type BoardLocale,
 	type BoardMessages,
@@ -113,20 +115,24 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 
 	const rootRef = useRef<HTMLDivElement>(null);
 	const scrollerRef = useRef<HTMLDivElement>(null);
-	const drag = useBoardDrag({
-		rootRef,
-		scrollerRef,
+	const autoSort = (id: string) => definitions.get(id)?.autoSort;
+	const moves = useBoardMoves({
 		columnIds,
 		order,
-		autoSort: (id) => definitions.get(id)?.autoSort,
+		autoSort,
 		onMove,
 		canMove,
 		onMoveError,
 		readOnly,
-		controller: dragController,
 		messages,
 	});
-	const resolved = resolveBoard({ columns: columnIds, order: drag.order }, cards);
+	const drag = useBoardDrag({ rootRef, moves, autoSort, controller: dragController });
+	const resolved = resolveBoard({ columns: columnIds, order: moves.order }, cards);
+	useFlip(
+		scrollerRef,
+		`${JSON.stringify(columnIds.map((id) => [id, moves.order[id] ?? []]))}|${drag.layoutKey}`,
+		moves.editable,
+	);
 	const ghostCard = drag.ghost ? cardsById.get(drag.ghost.cardId) : undefined;
 
 	return (
@@ -172,7 +178,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 								data-flip={isOrigin ? undefined : cardFlipId(card.id)}
 								data-origin={isOrigin ? "true" : undefined}
 								data-draggable={
-									drag.editable && isDraggable?.(card) !== false
+									moves.editable && isDraggable?.(card) !== false
 										? "true"
 										: undefined
 								}
@@ -241,9 +247,9 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 			<div
 				role="status"
 				className="v-kanban__notice"
-				data-empty={drag.notice ? undefined : "true"}
+				data-empty={moves.notice ? undefined : "true"}
 			>
-				{drag.notice}
+				{moves.notice}
 			</div>
 		</div>
 	);
