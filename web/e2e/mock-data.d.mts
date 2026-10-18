@@ -46,3 +46,6 @@ export declare const ROADMAP_FIXTURE: {
 	}>;
 	progress: { planned: number; in_progress: number; completed: number; total: number; percent: number };
 };
+
+/** 文章嵌入契约用文章：正文里有条目卡片、项目卡片与不存在的条目。 */
+export declare const ROADMAP_EMBED_POST: { title: string; slug: string; content_html: string };

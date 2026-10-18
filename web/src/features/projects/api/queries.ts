@@ -1,3 +1,4 @@
+import { ApiError } from "@shared/api/error";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse, PageQuery } from "@shared/api/types";
 import { queryOptions, useQuery } from "@tanstack/react-query";
@@ -109,3 +110,28 @@ export const projectRoadmapQueryOptions = (slug: string) =>
  */
 export const useProjectRoadmap = (slug: string, initialData?: RoadmapDetail) =>
 	useQuery({ ...projectRoadmapQueryOptions(slug), initialData });
+
+/** 文章嵌入读到的路线图：项目不存在（或已删除）与读取出错都作为结果返回，由卡片显示占位说明。 */
+export type RoadmapEmbedResult =
+	| { status: "ok"; detail: RoadmapDetail }
+	| { status: "missing" }
+	| { status: "error" };
+
+/**
+ * 文章嵌入的路线图查询：读阅读时的当前公开数据，不抛错，文章其余部分不受影响。
+ *
+ * @remarks 同一篇文章里引用同一个项目的嵌入共用这一份缓存。
+ */
+export const roadmapEmbedQueryOptions = (slug: string) =>
+	queryOptions({
+		queryKey: projectKeys.roadmapEmbed(slug),
+		queryFn: async (): Promise<RoadmapEmbedResult> => {
+			try {
+				return { status: "ok", detail: await fetchProjectRoadmap(slug) };
+			} catch (error) {
+				if (error instanceof ApiError && error.status === 404) return { status: "missing" };
+				return { status: "error" };
+			}
+		},
+		staleTime: 60_000,
+	});

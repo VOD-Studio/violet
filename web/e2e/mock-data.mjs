@@ -241,6 +241,38 @@ const ROADMAP_EMPTY = {
 
 const ROADMAPS = { "roadmap-contract": ROADMAP_FIXTURE, "roadmap-empty": ROADMAP_EMPTY };
 
+const roadmapFence = (config) =>
+	`<pre><code class="language-roadmap">${JSON.stringify(config)}</code></pre>`;
+
+/** 文章嵌入契约用文章：条目卡片、项目卡片与不存在的条目各一张。 */
+export const ROADMAP_EMBED_POST = {
+	id: "32000000-0000-0000-0000-000000000001",
+	title: "路线图嵌入契约文章",
+	slug: "roadmap-embeds",
+	content_md: "",
+	content_html: [
+		"<p>文章开头的一段话。</p>",
+		roadmapFence({ project: "roadmap-contract", item: 2, display: "card" }),
+		"<p>中间的一段话。</p>",
+		roadmapFence({ project: "roadmap-contract", display: "card" }),
+		roadmapFence({ project: "roadmap-contract", item: 99 }),
+		"<p>文章结尾的一段话。</p>",
+	].join(""),
+	excerpt: "",
+	cover_image: "",
+	status: "published",
+	author_id: "30000000-0000-0000-0000-000000000001",
+	view_count: 1,
+	is_featured: false,
+	show_signature: false,
+	seo_title: "",
+	seo_description: "",
+	published_at: "2026-10-18T10:00:00Z",
+	created_at: "2026-10-18T10:00:00Z",
+	updated_at: "2026-10-18T10:00:00Z",
+	tags: [],
+};
+
 const summarize = (progress, inProgress, latestCompleted) => ({
 	progress,
 	in_progress: inProgress,
@@ -370,6 +402,8 @@ export function handle(method, pathname, search, cookie = "") {
 	if (pathname === "/api/v1/settings") return { status: 200, body: envelope({}) };
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
 	if (pathname === "/api/v1/projects") return { status: 200, body: envelope(PROJECTS_FIXTURE) };
+	if (pathname === `/api/v1/posts/${ROADMAP_EMBED_POST.slug}`)
+		return { status: 200, body: envelope(ROADMAP_EMBED_POST) };
 	const roadmap = /^\/api\/v1\/projects\/by-slug\/([^/]+)\/roadmap$/.exec(pathname);
 	if (roadmap) {
 		const detail = ROADMAPS[decodeURIComponent(roadmap[1])];
