@@ -14,6 +14,7 @@ import {
 	NotebookText,
 	Rss,
 	Sparkles,
+	SquarePen,
 	Users,
 } from "lucide-react";
 
@@ -137,6 +138,12 @@ export const NAV_ITEMS: NavItem[] = [
 				to: "/ui",
 				icon: Component,
 				description: "查阅 violet/ui 组件用法与开发文档",
+			},
+			{
+				label: "编辑器手册",
+				to: "/editor-guide",
+				icon: SquarePen,
+				description: "查阅文章编辑器语法与功能手册",
 			},
 		],
 	},

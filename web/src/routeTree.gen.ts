@@ -48,6 +48,8 @@ import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
+import { Route as EditorGuideIndexRouteImport } from './routes/editor-guide.index'
+import { Route as EditorGuideChapterRouteImport } from './routes/editor-guide.$chapter'
 import { Route as GalleriesIndexRouteImport } from './routes/galleries.index'
 import { Route as GalleriesSlugRouteImport } from './routes/galleries.$slug'
 import { Route as LabIndexRouteImport } from './routes/lab.index'
@@ -301,6 +303,16 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
 const BlogArchiveRoute = BlogArchiveRouteImport.update({
   id: '/blog/archive',
   path: '/blog/archive',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorGuideIndexRoute = EditorGuideIndexRouteImport.update({
+  id: '/editor-guide/',
+  path: '/editor-guide/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorGuideChapterRoute = EditorGuideChapterRouteImport.update({
+  id: '/editor-guide/$chapter',
+  path: '/editor-guide/$chapter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleriesIndexRoute = GalleriesIndexRouteImport.update({
@@ -637,6 +649,7 @@ export interface FileRoutesByFullPath {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/editor-guide/$chapter': typeof EditorGuideChapterRoute
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -658,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/editor-guide/': typeof EditorGuideIndexRoute
   '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
   '/notes/': typeof NotesIndexRoute
@@ -730,6 +744,7 @@ export interface FileRoutesByTo {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/editor-guide/$chapter': typeof EditorGuideChapterRoute
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -750,6 +765,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
+  '/editor-guide': typeof EditorGuideIndexRoute
   '/galleries': typeof GalleriesIndexRoute
   '/lab': typeof LabIndexRoute
   '/notes': typeof NotesIndexRoute
@@ -830,6 +846,7 @@ export interface FileRoutesById {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/editor-guide/$chapter': typeof EditorGuideChapterRoute
   '/galleries/$slug': typeof GalleriesSlugRoute
   '/lab/announcement': typeof LabAnnouncementRoute
   '/lab/blog': typeof LabBlogRoute
@@ -851,6 +868,7 @@ export interface FileRoutesById {
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/editor-guide/': typeof EditorGuideIndexRoute
   '/galleries/': typeof GalleriesIndexRoute
   '/lab/': typeof LabIndexRoute
   '/notes/': typeof NotesIndexRoute
@@ -932,6 +950,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/editor-guide/$chapter'
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
@@ -953,6 +972,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/editor-guide/'
     | '/galleries/'
     | '/lab/'
     | '/notes/'
@@ -1025,6 +1045,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/editor-guide/$chapter'
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
@@ -1045,6 +1066,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/blog'
+    | '/editor-guide'
     | '/galleries'
     | '/lab'
     | '/notes'
@@ -1124,6 +1146,7 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/editor-guide/$chapter'
     | '/galleries/$slug'
     | '/lab/announcement'
     | '/lab/blog'
@@ -1145,6 +1168,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/editor-guide/'
     | '/galleries/'
     | '/lab/'
     | '/notes/'
@@ -1204,6 +1228,7 @@ export interface RootRouteChildren {
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogArchiveRoute: typeof BlogArchiveRoute
+  EditorGuideChapterRoute: typeof EditorGuideChapterRoute
   GalleriesSlugRoute: typeof GalleriesSlugRoute
   LabAnnouncementRoute: typeof LabAnnouncementRoute
   LabBlogRoute: typeof LabBlogRoute
@@ -1223,6 +1248,7 @@ export interface RootRouteChildren {
   UsersUsernameRoute: typeof UsersUsernameRoute
   AboutIndexRoute: typeof AboutIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  EditorGuideIndexRoute: typeof EditorGuideIndexRoute
   GalleriesIndexRoute: typeof GalleriesIndexRoute
   LabIndexRoute: typeof LabIndexRoute
   NotesIndexRoute: typeof NotesIndexRoute
@@ -1507,6 +1533,20 @@ declare module '@tanstack/react-router' {
       path: '/blog/archive'
       fullPath: '/blog/archive'
       preLoaderRoute: typeof BlogArchiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor-guide/': {
+      id: '/editor-guide/'
+      path: '/editor-guide'
+      fullPath: '/editor-guide/'
+      preLoaderRoute: typeof EditorGuideIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor-guide/$chapter': {
+      id: '/editor-guide/$chapter'
+      path: '/editor-guide/$chapter'
+      fullPath: '/editor-guide/$chapter'
+      preLoaderRoute: typeof EditorGuideChapterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/galleries/': {
@@ -2137,6 +2177,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsIdRoute: AnnouncementsIdRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogArchiveRoute: BlogArchiveRoute,
+  EditorGuideChapterRoute: EditorGuideChapterRoute,
   GalleriesSlugRoute: GalleriesSlugRoute,
   LabAnnouncementRoute: LabAnnouncementRoute,
   LabBlogRoute: LabBlogRoute,
@@ -2156,6 +2197,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersUsernameRoute: UsersUsernameRoute,
   AboutIndexRoute: AboutIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
+  EditorGuideIndexRoute: EditorGuideIndexRoute,
   GalleriesIndexRoute: GalleriesIndexRoute,
   LabIndexRoute: LabIndexRoute,
   NotesIndexRoute: NotesIndexRoute,
@@ -2169,12 +2211,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
