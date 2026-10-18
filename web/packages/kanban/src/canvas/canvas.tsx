@@ -37,7 +37,6 @@ import { useInertOutside } from "./use-inert-outside.ts";
 const KEY_PAN = 48;
 /** 聚焦的元素离视口边缘至少留出多少 px，容得下聚焦环。 */
 const REVEAL_MARGIN = 8;
-
 /** `Canvas` 的命令式句柄。 */
 export interface CanvasHandle {
 	/** 适应窗口，并恢复随窗口尺寸变化自动适应。 */
@@ -361,6 +360,29 @@ export function Canvas({
 	}, []);
 
 	useInertOutside(rootRef, fullscreen);
+
+	// 全屏与页面里各用各的视口：进入全屏时记下页面里的视口，全屏从适应窗口开始；
+	// 退出时放回去，全屏里的平移缩放不带回页面。都在绘制前完成，
+	// 等尺寸观察器的话，它触发的更新排在绘制之后，会先画出一帧停在旧位置的内容再跳过去
+	const wasFullscreen = useRef(fullscreen);
+	const inline = useRef<{ viewport: Viewport; adjusted: boolean } | null>(null);
+	useLayoutEffect(() => {
+		if (wasFullscreen.current === fullscreen) return;
+		wasFullscreen.current = fullscreen;
+		if (fullscreen) {
+			inline.current = { viewport: latest.current.viewport, adjusted: adjusted.current };
+			refit();
+			return;
+		}
+		const saved = inline.current;
+		inline.current = null;
+		if (saved?.adjusted) {
+			adjusted.current = true;
+			apply(saved.viewport);
+		} else {
+			refit();
+		}
+	}, [apply, fullscreen, refit]);
 
 	// 全屏：锁住页面滚动；Esc 退出（已被拖拽或键盘拿起接管的 Esc 不会走到这里）
 	useEffect(() => {

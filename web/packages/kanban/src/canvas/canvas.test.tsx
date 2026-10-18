@@ -616,6 +616,57 @@ describe("拖动背景平移", () => {
 });
 
 describe("全屏", () => {
+	it("进入与退出全屏时在同一次提交里重新适应，不等尺寸观察器，也就不会先画一帧旧位置", () => {
+		const restore = stubSizes([1000, 600], [500, 300]);
+		// 视口宽度随全屏变化；这里不触发尺寸观察器的回调，只有同步重新适应才会让位置跟上
+		vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (
+			this: HTMLElement,
+		) {
+			if (!this.classList.contains("v-kanban-canvas__viewport")) return 0;
+			return this.closest("[data-fullscreen]") ? 1600 : 1000;
+		});
+		render(
+			<Canvas>
+				<div>content</div>
+			</Canvas>,
+		);
+		expect(shown().x).toBe(250);
+
+		fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
+		expect(shown().x).toBe(550);
+
+		fireEvent.click(screen.getByRole("button", { name: "Exit full screen" }));
+		expect(shown().x).toBe(250);
+		restore();
+	});
+
+	it("全屏与页面里的视口互不影响：页面里缩放过，全屏仍从适应窗口开始；全屏里的调整不带回页面", () => {
+		const restore = stubSizes([1000, 600], [500, 300]);
+		vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (
+			this: HTMLElement,
+		) {
+			if (!this.classList.contains("v-kanban-canvas__viewport")) return 0;
+			return this.closest("[data-fullscreen]") ? 1600 : 1000;
+		});
+		render(
+			<Canvas>
+				<div>content</div>
+			</Canvas>,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+		const pageView = shown();
+		expect(pageView.scale).toBeGreaterThan(1);
+
+		fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
+		expect(shown()).toMatchObject({ scale: 1, x: 550 });
+		fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+		expect(shown().scale).toBeLessThan(1);
+
+		fireEvent.click(screen.getByRole("button", { name: "Exit full screen" }));
+		expect(shown()).toEqual(pageView);
+		restore();
+	});
+
 	it("按钮进入与退出全屏：标记、按钮名称、播报与页面滚动锁定同步", () => {
 		const { container } = renderCanvas();
 

@@ -614,6 +614,55 @@ test.describe("画布视口", () => {
 		expect(await shownTransform(page)).toEqual(after);
 	});
 
+	test("进入全屏的第一帧内容就在重新适应后的位置，不会先停在旧位置再跳过去", async ({ page }) => {
+		await openCanvas(page);
+
+		const frames = await page.evaluate(
+			() =>
+				new Promise<{ before: string; frames: string[] }>((resolve) => {
+					const content = document.querySelector(
+						".v-kanban-canvas__content",
+					) as HTMLElement;
+					const button = document.querySelector(
+						'button[aria-label="Enter full screen"]',
+					) as HTMLButtonElement;
+					const before = content.style.transform;
+					button.click();
+					const frames: string[] = [];
+					const sample = () => {
+						frames.push(content.style.transform);
+						if (frames.length < 6) requestAnimationFrame(sample);
+						else resolve({ before, frames });
+					};
+					requestAnimationFrame(sample);
+				}),
+		);
+
+		expect(frames.frames[0]).not.toBe(frames.before);
+		expect(new Set(frames.frames).size, JSON.stringify(frames)).toBe(1);
+	});
+
+	test("全屏与页面里的视口互不影响", async ({ page }) => {
+		await openCanvas(page);
+		const transform = () =>
+			page.locator(".v-kanban-canvas__content").evaluate((node) => node.style.transform);
+		const initialZoom = (await page.locator(".v-kanban-canvas__zoom").textContent()) ?? "";
+		await page.getByRole("button", { name: "Zoom in" }).click();
+		await expect(page.locator(".v-kanban-canvas__zoom")).not.toHaveText(initialZoom);
+		const pageZoom = await page.locator(".v-kanban-canvas__zoom").textContent();
+		const pageView = await transform();
+
+		await page.getByRole("button", { name: "Enter full screen" }).click();
+		await expect.poll(transform).not.toBe(pageView);
+		await page.getByRole("button", { name: "Zoom out" }).click();
+		await page.mouse.wheel(0, 300);
+
+		await page.getByRole("button", { name: "Exit full screen" }).click();
+		await expect(root(page)).not.toHaveAttribute("data-fullscreen", "true");
+		await expect(page.locator(".v-kanban-canvas__zoom")).toHaveText(pageZoom ?? "");
+		expect(await transform()).toBe(pageView);
+	});
+
 	test("全屏：铺满窗口并锁住页面滚动，Esc 退出", async ({ page }) => {
 		await openCanvas(page);
 
