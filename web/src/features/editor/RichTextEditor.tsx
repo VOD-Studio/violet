@@ -1,5 +1,6 @@
 /** HTML/Markdown 受控编辑器；源码输入、富文本与命令式取值共享当前文档。 */
 
+import type { ArticleEmbedDefinition } from "@shared/ui/article-embeds";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Button, PromptDialog } from "@violet/ui";
 import { cn } from "cn";
@@ -16,10 +17,11 @@ import { buildEditorExtensions } from "./extensions";
 import { resolveFeatures } from "./lib/features";
 import { exportMarkdown, importMarkdownFile } from "./lib/markdown-utils";
 import { SlashCommand } from "./slash-menu/SlashCommand";
-import { buildSlashItems } from "./slash-menu/slash-items";
+import { buildEmbedSlashItems, buildSlashItems } from "./slash-menu/slash-items";
 import { EditorToolbar } from "./toolbar/EditorToolbar";
 import { TableToolbar } from "./toolbar/TableToolbar";
 import type { ImportUrlOpts, RichTextEditorHandle, RichTextEditorProps } from "./types";
+import { EmbedInsertDialog } from "./ui/EmbedInsertDialog";
 import { ImportUrlButton } from "./ui/ImportUrlButton";
 import { MarkdownSourceEditor } from "./ui/MarkdownSourceEditor";
 
@@ -49,6 +51,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		// 使其在自定义 overflow 容器滚动时也能跟随选区更新位置
 		const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
 		const features = useMemo(() => resolveFeatures(disabledFeatures), [disabledFeatures]);
+		// Slash 菜单选中的文章嵌入，非 null 时打开它的选择弹层
+		const [embedPick, setEmbedPick] = useState<ArticleEmbedDefinition | null>(null);
 
 		const handlePickImage = useCallback(() => {
 			if (onPickImageRef.current) {
@@ -66,7 +70,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				),
 				SlashCommand.configure({
 					onPickImage: handlePickImage,
-					items: (cb) => buildSlashItems(cb, features),
+					items: (cb) => [
+						...buildSlashItems(cb, features),
+						...buildEmbedSlashItems(setEmbedPick),
+					],
 				}),
 			],
 			content: value,
@@ -244,6 +251,23 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 						) : null}
 					</div>
 				</div>
+				<EmbedInsertDialog
+					definition={embedPick}
+					onSubmit={(source) => {
+						if (!editor || !embedPick) return;
+						// 弹层还开着，不在这里抢焦点；关闭后 returnFocus 把焦点还给插入处
+						editor
+							.chain()
+							.insertContent({
+								type: "codeBlock",
+								attrs: { language: embedPick.languages[0] },
+								content: [{ type: "text", text: source }],
+							})
+							.run();
+					}}
+					onClose={() => setEmbedPick(null)}
+					returnFocus={() => editor?.commands.focus()}
+				/>
 				{/* 链接输入弹窗 */}
 				<PromptDialog
 					open={linkDialogOpen}

@@ -4,6 +4,7 @@
  * 每个项描述：图标 / 标题 / 描述 / 关键词 / 执行命令（操作编辑器）。
  * SlashMenu 组件按 query 过滤 title/keywords 后渲染，选中后调 command。
  */
+import { type ArticleEmbedDefinition, listArticleEmbeds } from "@shared/ui/article-embeds";
 import type { Editor } from "@tiptap/react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -298,4 +299,29 @@ export function buildFootnoteReferenceItems(editor: Editor): SlashMenuItem[] {
 		});
 	});
 	return items;
+}
+
+/**
+ * 声明了插入入口的文章嵌入，每种一项；选中后由宿主打开选择弹层。
+ *
+ * @param onPick - 打开弹层；斜杠与查询已经删掉，插入位置就是当前选区
+ */
+export function buildEmbedSlashItems(
+	onPick: (definition: ArticleEmbedDefinition) => void,
+): SlashMenuItem[] {
+	return listArticleEmbeds().flatMap((definition): SlashMenuItem[] => {
+		const inserter = definition.inserter;
+		if (!inserter) return [];
+		return [
+			{
+				id: `embed-${definition.kind}`,
+				title: inserter.title,
+				description: inserter.description,
+				keywords: [...inserter.keywords, ...definition.languages],
+				icon: inserter.icon,
+				group: "嵌入",
+				command: () => onPick(definition),
+			},
+		];
+	});
 }
