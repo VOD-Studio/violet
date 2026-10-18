@@ -183,6 +183,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/blog/archive` | 文章归档 |
 | `/announcements/:id` | 公告详情 |
 | `/projects` | 项目展示 |
+| `/projects/:slug` | 项目详情：头部（技术栈、演示与源码、进度概览）加三阶段只读路线图，宽屏是可平移缩放全屏的画布、窄屏是阶段切换器；已完成阶段默认显示最近 10 条；条目详情为淡入淡出的弹窗；窗口重新聚焦时重新拉取；未知 slug 返回 404 |
 | `/friends` | 友链页 |
 | `/about` | 关于页 |
 | `/profile`、`/profile/security` | 本人资料、主页封面与账户安全设置 |

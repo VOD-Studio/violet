@@ -67,6 +67,7 @@ import { Route as NotesIndexRouteImport } from './routes/notes.index'
 import { Route as NotesIdRouteImport } from './routes/notes.$id'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as SeriesIndexRouteImport } from './routes/series.index'
 import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
 import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
@@ -398,6 +399,11 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
+  id: '/projects/$slug',
+  path: '/projects/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SeriesIndexRoute = SeriesIndexRouteImport.update({
   id: '/series/',
   path: '/series/',
@@ -651,6 +657,7 @@ export interface FileRoutesByFullPath {
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/ui/components': typeof UiComponentsRouteWithChildren
@@ -744,6 +751,7 @@ export interface FileRoutesByTo {
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -844,6 +852,7 @@ export interface FileRoutesById {
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/ui/components': typeof UiComponentsRouteWithChildren
@@ -946,6 +955,7 @@ export interface FileRouteTypes {
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
+    | '/projects/$slug'
     | '/series/$slug'
     | '/tweets/$id'
     | '/ui/components'
@@ -1039,6 +1049,7 @@ export interface FileRouteTypes {
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
+    | '/projects/$slug'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -1138,6 +1149,7 @@ export interface FileRouteTypes {
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
+    | '/projects/$slug'
     | '/series/$slug'
     | '/tweets/$id'
     | '/ui/components'
@@ -1218,6 +1230,7 @@ export interface RootRouteChildren {
   LabThemeRoute: typeof LabThemeRoute
   LabTocTreeRoute: typeof LabTocTreeRoute
   NotesIdRoute: typeof NotesIdRoute
+  ProjectsSlugRoute: typeof ProjectsSlugRoute
   SeriesSlugRoute: typeof SeriesSlugRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
@@ -1640,6 +1653,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$slug': {
+      id: '/projects/$slug'
+      path: '/projects/$slug'
+      fullPath: '/projects/$slug'
+      preLoaderRoute: typeof ProjectsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/series/': {
@@ -2151,6 +2171,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabThemeRoute: LabThemeRoute,
   LabTocTreeRoute: LabTocTreeRoute,
   NotesIdRoute: NotesIdRoute,
+  ProjectsSlugRoute: ProjectsSlugRoute,
   SeriesSlugRoute: SeriesSlugRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,

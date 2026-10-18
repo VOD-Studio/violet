@@ -1,6 +1,7 @@
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse, PageQuery } from "@shared/api/types";
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import type { RoadmapDetail } from "../model/roadmap";
 import type { Project, ProjectListQuery } from "../model/types";
 import { projectKeys } from "./keys";
 
@@ -61,3 +62,47 @@ export const useProject = (id: string) =>
 		queryFn: () => fetchProject(id),
 		enabled: id.length > 0,
 	});
+
+/**
+ * fetchProjectRoadmap - 调后端 GET /projects/by-slug/{slug}/roadmap 读取公开路线图
+ *
+ * 未知 slug 后端返回 404（ApiError）。条目的 tags 与 links 在这里规整为数组，调用方不再判空。
+ *
+ * @param slug 项目 slug
+ */
+export const fetchProjectRoadmap = async (slug: string): Promise<RoadmapDetail> => {
+	const detail = await apiGet<RoadmapDetail>(
+		`/projects/by-slug/${encodeURIComponent(slug)}/roadmap`,
+	);
+	return {
+		...detail,
+		items: (detail.items ?? []).map((item) => ({
+			...item,
+			tags: item.tags ?? [],
+			links: item.links ?? [],
+		})),
+		relations: detail.relations ?? [],
+	};
+};
+
+/**
+ * projectRoadmapQueryOptions - 路线图查询配置，loader 预取与 hook 共用
+ *
+ * @remarks 路线图随时可能被管理员改动，所以窗口重新聚焦时无论新旧都重新拉取。
+ */
+export const projectRoadmapQueryOptions = (slug: string) =>
+	queryOptions({
+		queryKey: projectKeys.roadmap(slug),
+		queryFn: () => fetchProjectRoadmap(slug),
+		refetchOnWindowFocus: "always",
+	});
+
+/**
+ * useProjectRoadmap - 项目路线图 hook
+ *
+ * @param slug 项目 slug
+ * @param initialData 路由 loader 已取到的数据：客户端的查询缓存不随 SSR 传递，不给它首帧没有数据，
+ * 与服务端直出的 HTML 对不上
+ */
+export const useProjectRoadmap = (slug: string, initialData?: RoadmapDetail) =>
+	useQuery({ ...projectRoadmapQueryOptions(slug), initialData });

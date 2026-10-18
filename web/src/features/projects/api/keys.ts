@@ -25,4 +25,12 @@ export const projectKeys = {
 	 * @param id 项目 ID
 	 */
 	detail: (id: string) => [...projectKeys.details(), id] as const,
+	/** 路线图维度 */
+	roadmaps: () => [...projectKeys.all, "roadmap"] as const,
+	/**
+	 * 某个项目的路线图
+	 *
+	 * @param slug 项目 slug
+	 */
+	roadmap: (slug: string) => [...projectKeys.roadmaps(), slug] as const,
 };
