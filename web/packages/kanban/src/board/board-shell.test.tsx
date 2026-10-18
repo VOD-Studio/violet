@@ -254,3 +254,130 @@ describe("列折叠", () => {
 		expect(within(column("Todo")).getByRole("button", { name: "折叠 Todo" })).toBeTruthy();
 	});
 });
+
+describe("筛选", () => {
+	const filter = (task: Task) => task.id === "a" || task.id === "d";
+
+	it("不匹配的卡片淡化并保持原位；读屏得到文字提示，匹配的不受影响", () => {
+		renderBoard({ filter });
+
+		expect(card("b").getAttribute("data-dimmed")).toBe("true");
+		expect(card("c").getAttribute("data-dimmed")).toBe("true");
+		expect(card("a").hasAttribute("data-dimmed")).toBe(false);
+		expect(within(card("b")).getByText("Doesn't match the filter")).toBeTruthy();
+		expect(within(card("a")).queryByText("Doesn't match the filter")).toBeNull();
+		const ids = [...column("Todo").querySelectorAll("[data-card-id]")].map((item) =>
+			item.getAttribute("data-card-id"),
+		);
+		expect(ids).toEqual(["a", "b", "c"]);
+	});
+
+	it("列头计数显示匹配数与总数", () => {
+		renderBoard({ filter });
+
+		expect(within(column("Todo")).getByText("Cards: 1 of 3")).toBeTruthy();
+		expect(within(column("Todo")).getByText("1/3")).toBeTruthy();
+		expect(within(column("Done")).getByText("0/1")).toBeTruthy();
+	});
+
+	it("没有筛选时不淡化、计数不变", () => {
+		renderBoard();
+
+		expect(document.querySelector("[data-dimmed]")).toBeNull();
+		expect(within(column("Todo")).getByText("Cards: 3")).toBeTruthy();
+	});
+
+	it("筛选生效时整板禁用拖动并提示：卡片不可拖、不可聚焦、没有移动菜单，按下后移动也拖不起", () => {
+		renderBoard({ filter, onMove: () => {}, moveMenu: "always" });
+
+		expect(card("a").hasAttribute("data-draggable")).toBe(false);
+		expect(card("a").hasAttribute("tabindex")).toBe(false);
+		expect(screen.queryByRole("button", { name: /Move Alpha/ })).toBeNull();
+		const hint = document.querySelector(".v-kanban__filter-hint");
+		expect(hint?.textContent).toBe(
+			"A filter is on, so cards can't be moved. Clear it to move cards.",
+		);
+		expect(hint?.getAttribute("role")).toBe("status");
+
+		fireEvent.pointerDown(card("a"), {
+			pointerId: 1,
+			pointerType: "mouse",
+			isPrimary: true,
+			button: 0,
+			clientX: 10,
+			clientY: 10,
+		});
+		fireEvent.pointerMove(document, {
+			pointerId: 1,
+			pointerType: "mouse",
+			clientX: 80,
+			clientY: 80,
+		});
+		expect(document.querySelector(".v-kanban__ghost")).toBeNull();
+	});
+
+	it("筛选生效时键盘也拿不起卡片", () => {
+		renderBoard({ filter, onMove: () => {} });
+
+		fireEvent.keyDown(card("a"), { key: "Enter" });
+
+		expect(document.querySelector("[data-lifted]")).toBeNull();
+	});
+
+	it("清除筛选后恢复拖动，提示消失", () => {
+		const { rerender } = renderBoard({ filter, onMove: () => {} });
+		expect(document.querySelector(".v-kanban__filter-hint")?.textContent).not.toBe("");
+
+		rerender(
+			<Board
+				columns={columns}
+				cards={tasks}
+				order={order}
+				renderCard={(task) => <span>{task.title}</span>}
+				onMove={() => {}}
+			/>,
+		);
+
+		expect(card("a").getAttribute("data-draggable")).toBe("true");
+		// 提示所在的 live 区域留在文档里，之后再出现提示时读屏才会播报
+		const hint = document.querySelector(".v-kanban__filter-hint");
+		expect(hint?.textContent).toBe("");
+		expect(hint?.getAttribute("data-empty")).toBe("true");
+		expect(document.querySelector("[data-dimmed]")).toBeNull();
+	});
+
+	it("本来就只读的看板筛选时不显示「拖动已禁用」的提示", () => {
+		renderBoard({ filter });
+
+		expect(document.querySelector(".v-kanban__filter-hint")).toBeNull();
+	});
+
+	it("筛选谓词抛错时该卡片按匹配处理，不弄坏整板", () => {
+		renderBoard({
+			filter: (task) => {
+				if (task.id === "b") throw new Error("bad predicate");
+				return false;
+			},
+		});
+
+		expect(card("b").hasAttribute("data-dimmed")).toBe(false);
+		expect(card("a").getAttribute("data-dimmed")).toBe("true");
+	});
+
+	it("每张卡片每次渲染只调用一次筛选谓词，卡片淡化与列计数共用结果", () => {
+		const predicate = vi.fn((task: Task) => task.id !== "b");
+
+		renderBoard({ filter: predicate });
+
+		expect(predicate).toHaveBeenCalledTimes(tasks.length);
+	});
+
+	it("zh-CN 文案", () => {
+		renderBoard({ filter, onMove: () => {}, locale: "zh-CN" });
+
+		expect(document.querySelector(".v-kanban__filter-hint")?.textContent).toBe(
+			"筛选生效中，不能拖动卡片。清除筛选后再试。",
+		);
+		expect(within(card("b")).getByText("不符合筛选条件")).toBeTruthy();
+	});
+});

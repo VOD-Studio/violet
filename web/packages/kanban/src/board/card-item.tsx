@@ -10,6 +10,10 @@ export interface CardItemProps {
 	draggable: boolean;
 	lifted: boolean;
 	settling: boolean;
+	/** 筛选生效且这张卡片不匹配：淡化显示，位置不变。 */
+	dimmed?: boolean;
+	/** 淡化的卡片上给读屏的提示。 */
+	dimmedText?: string;
 	/** 键盘操作说明元素的 id。 */
 	hintId: string;
 	/** 「移到…」菜单；不提供则不显示。 */
@@ -32,6 +36,8 @@ export function CardItem({
 	draggable,
 	lifted,
 	settling,
+	dimmed,
+	dimmedText,
 	hintId,
 	menu,
 	onKeyDown,
@@ -41,11 +47,13 @@ export function CardItem({
 		<li
 			className="v-kanban__card"
 			{...cardAttributes({ cardId, origin, draggable, lifted, settling })}
+			data-dimmed={dimmed ? "true" : undefined}
 			tabIndex={draggable ? 0 : undefined}
 			aria-describedby={draggable ? hintId : undefined}
 			onKeyDown={draggable ? onKeyDown : undefined}
 		>
 			{children}
+			{dimmed ? <span className="v-kanban__sr-only">{dimmedText}</span> : null}
 			{draggable && menu ? (
 				<MoveMenu
 					label={menu.label}

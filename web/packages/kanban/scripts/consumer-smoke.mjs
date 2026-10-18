@@ -134,7 +134,7 @@ export const nodes = [
 	<Board columns={[{ id: "todo", title: "Todo", collapsible: false }]} cards={tasks} order={{ todo: ["a"] }}
 		renderCard={(task) => task.title}
 		collapsible collapsedColumns={["todo"]} defaultCollapsedColumns={[]} onCollapsedColumnsChange={(ids: string[]) => ids.length}
-		/>,
+		filter={(task) => task.title.includes("A")} />,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
 const viewport: Viewport = fitViewport({ width: 800, height: 600 }, { width: 400, height: 300 });
@@ -189,9 +189,11 @@ assert.ok(html.indexOf("Todo") < html.indexOf("Done"));
 assert.ok(html.indexOf("Second") < html.indexOf("First"), "Card order must follow the order prop.");
 assert.match(html, /No cards/);
 assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" })), /暂无卡片/);
-const shell = renderToString(createElement(Board, { ...props, collapsible: true, onMove: () => {} }));
-assert.equal(renderToString(createElement(Board, { ...props, collapsible: true, onMove: () => {} })), shell, "Shell SSR output must be deterministic.");
+const shell = renderToString(createElement(Board, { ...props, collapsible: true, filter: (card) => card.id === "a", onMove: () => {} }));
+assert.equal(renderToString(createElement(Board, { ...props, collapsible: true, filter: (card) => card.id === "a", onMove: () => {} })), shell, "Shell SSR output must be deterministic.");
 assert.match(shell, /aria-expanded="true"/);
+assert.match(shell, /data-dimmed="true"/);
+assert.match(shell, /A filter is on/);
 const editable = renderToString(createElement(Board, { ...props, onMove: () => {} }));
 assert.equal(renderToString(createElement(Board, { ...props, onMove: () => {} })), editable, "Editable SSR output must be deterministic.");
 assert.match(editable, /data-draggable="true"/);

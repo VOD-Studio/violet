@@ -98,6 +98,21 @@ export interface BoardMessages {
 	 * @example "Expand {column}"
 	 */
 	expandColumn: string;
+	/**
+	 * 筛选生效时列内卡片数量，读屏朗读：{matched} 是匹配的数量，{count} 是总数。
+	 * @example "Cards: {matched} of {count}"
+	 */
+	cardCountFiltered: string;
+	/**
+	 * 筛选生效时，不匹配的卡片上给读屏的提示。
+	 * @example "Doesn't match the filter"
+	 */
+	filteredOut: string;
+	/**
+	 * 筛选生效、拖动被禁用时看板上的提示。
+	 * @example "A filter is on, so cards can't be moved. Clear it to move cards."
+	 */
+	filterDragDisabled: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -122,6 +137,9 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		moveToLabel: "Move {card} to another column",
 		collapseColumn: "Collapse {column}",
 		expandColumn: "Expand {column}",
+		cardCountFiltered: "Cards: {matched} of {count}",
+		filteredOut: "Doesn't match the filter",
+		filterDragDisabled: "A filter is on, so cards can't be moved. Clear it to move cards.",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -142,6 +160,9 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		moveToLabel: "把 {card} 移到其他列",
 		collapseColumn: "折叠 {column}",
 		expandColumn: "展开 {column}",
+		cardCountFiltered: "卡片数：匹配 {matched}，共 {count}",
+		filteredOut: "不符合筛选条件",
+		filterDragDisabled: "筛选生效中，不能拖动卡片。清除筛选后再试。",
 	},
 };
 

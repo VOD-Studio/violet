@@ -7,6 +7,8 @@ export interface ColumnViewProps {
 	title: string;
 	/** 列内卡片总数。 */
 	count: number;
+	/** 筛选生效时匹配的卡片数；没有筛选为 null。 */
+	matched: number | null;
 	/** 使用方的列头渲染，取代默认的标题与计数；返回 `null` 就不显示列头。 */
 	renderHeader?: () => ReactNode;
 	/** 显示折叠按钮。 */
@@ -27,6 +29,7 @@ export function ColumnView({
 	id,
 	title,
 	count,
+	matched,
 	renderHeader,
 	collapsible,
 	collapsed,
@@ -41,9 +44,11 @@ export function ColumnView({
 		<header className="v-kanban__column-header">
 			<h3 className="v-kanban__column-title">{title}</h3>
 			<span className="v-kanban__count">
-				<span aria-hidden="true">{count}</span>
+				<span aria-hidden="true">{matched === null ? count : `${matched}/${count}`}</span>
 				<span className="v-kanban__sr-only">
-					{formatMessage(messages.cardCount, { count })}
+					{matched === null
+						? formatMessage(messages.cardCount, { count })
+						: formatMessage(messages.cardCountFiltered, { matched, count })}
 				</span>
 			</span>
 		</header>

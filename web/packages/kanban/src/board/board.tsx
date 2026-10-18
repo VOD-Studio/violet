@@ -60,7 +60,10 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	 */
 	renderCard: (card: TCard, context: { column: TColumn; index: number }) => ReactNode;
 	/** 取代默认列头（标题与卡片数）。`title` 仍作为列分组的可访问名称。 */
-	renderColumnHeader?: (column: TColumn, context: { count: number }) => ReactNode;
+	renderColumnHeader?: (
+		column: TColumn,
+		context: { count: number; matched: number | null },
+	) => ReactNode;
 	/** 取代列内没有卡片时的默认提示；返回 `null` 则不显示任何提示。 */
 	renderEmpty?: (column: TColumn) => ReactNode;
 	/**
@@ -104,6 +107,11 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	defaultCollapsedColumns?: readonly string[];
 	/** 折叠状态变化时调用，参数是完整的折叠列 id。卡片被移到折叠的列时，该列会自动展开并通知。 */
 	onCollapsedColumnsChange?: (collapsed: string[]) => void;
+	/**
+	 * 筛选谓词：不匹配的卡片淡化并保持原位。提供它即表示筛选生效，此时整板禁用移动
+	 * （拖拽、键盘、「移到…」菜单）并给出提示；不筛选时传 `undefined`。谓词抛错的卡片按匹配处理。
+	 */
+	filter?: (card: TCard) => boolean;
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -138,6 +146,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	collapsedColumns,
 	defaultCollapsedColumns,
 	onCollapsedColumnsChange,
+	filter,
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -166,6 +175,20 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		defaultCollapsed: defaultCollapsedColumns,
 		onChange: onCollapsedColumnsChange,
 	});
+	const filterActive = filter !== undefined;
+	// 每张卡片每次渲染只问一次谓词；淡化与列计数共用这份结果。谓词抛错的卡片按匹配处理
+	const matchedIds = filter
+		? new Set(
+				cards.flatMap((card) => {
+					try {
+						return filter(card) ? [card.id] : [];
+					} catch {
+						return [card.id];
+					}
+				}),
+			)
+		: null;
+	const matches = (card: TCard) => matchedIds === null || matchedIds.has(card.id);
 	/** 用户在看板里操作：外层画布不再随内容尺寸变化自动适应。 */
 	const engage = () => {
 		if (rootRef.current) notifyEditing(rootRef.current);
@@ -183,9 +206,10 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 			}),
 		canMove,
 		onMoveError,
-		readOnly,
+		readOnly: readOnly || filterActive,
 		messages,
 	});
+	const showFilterHint = filterActive && Boolean(onMove) && !readOnly;
 	const focus = useFocusRequest(rootRef);
 	const { announcement, announce } = useAnnouncer({ moves, cardLabel, columnTitle, messages });
 	const keyboard = useKeyboardMove({
@@ -223,6 +247,19 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 			data-dragging={drag.dragging ? "true" : undefined}
 			{...rest}
 		>
+			{onMove && !readOnly ? (
+				<p
+					role="status"
+					className={
+						showFilterHint
+							? "v-kanban__filter-hint"
+							: "v-kanban__filter-hint v-kanban__sr-only"
+					}
+					data-empty={showFilterHint ? undefined : "true"}
+				>
+					{showFilterHint ? messages.filterDragDisabled : ""}
+				</p>
+			) : null}
 			<div ref={scrollerRef} className="v-kanban__scroller">
 				{resolved.map(({ id, cards: columnCards }) => {
 					const column = definitions.get(id) as TColumn;
@@ -258,6 +295,8 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 								draggable={moves.editable && isDraggable?.(card) !== false}
 								lifted={keyboard.liftedId === card.id}
 								settling={card.id === drag.settlingId}
+								dimmed={filterActive && !matches(card)}
+								dimmedText={messages.filteredOut}
 								hintId={hintId}
 								menu={
 									moveMenu === "none"
@@ -283,6 +322,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 					if (placeholderNode && shown === placeholder?.index)
 						items.push(placeholderNode);
 					const hasVisible = shown > 0 || placeholderNode !== null;
+					const matched = filterActive ? columnCards.filter(matches).length : null;
 					// 折叠列表只对可折叠的列起作用：否则列被藏起来，又没有按钮可以展开
 					const columnCollapsible = collapsible && column.collapsible !== false;
 					return (
@@ -291,11 +331,13 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							id={id}
 							title={title}
 							count={columnCards.length}
+							matched={matched}
 							renderHeader={
 								renderColumnHeader
 									? () =>
 											renderColumnHeader(column, {
 												count: columnCards.length,
+												matched,
 											})
 									: undefined
 							}

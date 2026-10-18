@@ -81,3 +81,17 @@
 		transition: none;
 	}
 }
+
+/* 筛选：不匹配的卡片淡化，位置不变；仍可点击与聚焦 */
+.v-kanban .v-kanban__card[data-dimmed="true"] {
+	opacity: 0.4;
+}
+.v-kanban .v-kanban__filter-hint {
+	margin: 0 0 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: calc(var(--_kanban-radius) - 2px);
+	background: color-mix(in oklab, var(--_kanban-muted) 8%, var(--_kanban-card));
+	color: var(--_kanban-muted);
+	font-size: 13px;
+}
