@@ -70,7 +70,24 @@ var _ domainann.AnnouncementRepository = (*stubAnnRepo)(nil)
 type stubProjRepo struct {
 	items   []*domainproj.Project
 	canned  *domainproj.Project
+	saved   *domainproj.Project
+	saveErr error
 	findErr error // 非 nil 时 FindByID 返回此错误
+}
+
+func (s *stubProjRepo) FindBySlug(_ context.Context, slug string) (*domainproj.Project, error) {
+	if s.findErr != nil {
+		return nil, s.findErr
+	}
+	if s.canned != nil && s.canned.Slug() == slug {
+		return s.canned, nil
+	}
+	for _, p := range s.items {
+		if p.Slug() == slug {
+			return p, nil
+		}
+	}
+	return nil, domainproj.ErrNotFound
 }
 
 func (s *stubProjRepo) FindByID(context.Context, domainshared.ID) (*domainproj.Project, error) {
@@ -95,8 +112,11 @@ func (s *stubProjRepo) FindPage(ctx context.Context, q domainshared.PageQuery) (
 	return domainshared.NewPageResult(q, s.items[start:end], int64(len(s.items))), nil
 }
 
-func (s *stubProjRepo) Save(context.Context, *domainproj.Project) error { return nil }
-func (s *stubProjRepo) Delete(context.Context, domainshared.ID) error   { return nil }
+func (s *stubProjRepo) Save(_ context.Context, p *domainproj.Project) error {
+	s.saved = p
+	return s.saveErr
+}
+func (s *stubProjRepo) Delete(context.Context, domainshared.ID) error { return nil }
 
 var _ domainproj.ProjectRepository = (*stubProjRepo)(nil)
 
@@ -150,7 +170,7 @@ func TestListActiveAnnouncements_Returns200(t *testing.T) {
 
 func TestListProjects_Returns200(t *testing.T) {
 	proj := domainproj.ReconstructProject(
-		domainshared.NewID(), "我的项目", "描述", "https://example.com", "", "",
+		domainshared.NewID(), "我的项目", "my-project", "描述", "https://example.com", "", "",
 		[]string{"Go"}, 0, time.Now(), time.Now(),
 	)
 	repo := &stubProjRepo{items: []*domainproj.Project{proj}}
@@ -174,7 +194,7 @@ func TestListProjects_Returns200(t *testing.T) {
 
 func TestGetProject_Returns200(t *testing.T) {
 	proj := domainproj.ReconstructProject(
-		domainshared.NewID(), "详情项目", "描述", "", "", "", nil, 0, time.Now(), time.Now(),
+		domainshared.NewID(), "详情项目", "project", "描述", "", "", "", nil, 0, time.Now(), time.Now(),
 	)
 	repo := &stubProjRepo{canned: proj}
 	h := NewHandler(nil, appproj.NewService(repo))
@@ -272,4 +292,83 @@ func TestCreateProject_MissingTitle_Returns400(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "VALIDATION_ERROR", decodeBody(t, w)["error"])
+}
+
+func TestGetProjectBySlug(t *testing.T) {
+	p, err := domainproj.NewProject(domainshared.NewID(), "Violet", "")
+	require.NoError(t, err)
+	h := NewHandler(nil, appproj.NewService(&stubProjRepo{canned: p}))
+	for _, tc := range []struct {
+		slug string
+		code int
+	}{
+		{"violet", http.StatusOK},
+		{"missing", http.StatusNotFound},
+		{"Bad Slug", http.StatusNotFound},
+	} {
+		t.Run(tc.slug, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/projects/by-slug/example", nil)
+			r.SetPathValue("slug", tc.slug)
+			w := httptest.NewRecorder()
+			h.GetProjectBySlug(w, r)
+			require.Equal(t, tc.code, w.Code)
+			if tc.code == http.StatusOK {
+				data := decodeBody(t, w)["data"].(map[string]any)
+				assert.Equal(t, "violet", data["slug"])
+				assert.Equal(t, p.ID().String(), data["id"])
+			}
+		})
+	}
+}
+
+func TestCreateProject_SlugValidation(t *testing.T) {
+	existing, err := domainproj.NewProject(domainshared.NewID(), "Taken", "")
+	require.NoError(t, err)
+	for _, tc := range []struct {
+		body string
+		code int
+	}{
+		{`{"title":"Violet","slug":"custom-violet"}`, http.StatusCreated},
+		{`{"title":"Violet","slug":"Bad Slug"}`, http.StatusBadRequest},
+		{`{"title":"Violet","slug":"taken"}`, http.StatusConflict},
+	} {
+		t.Run(tc.body, func(t *testing.T) {
+			repo := &stubProjRepo{items: []*domainproj.Project{existing}}
+			h := NewHandler(nil, appproj.NewService(repo))
+			w := httptest.NewRecorder()
+			h.CreateProject(w, newJSONRequest(http.MethodPost, "/admin/projects", tc.body))
+			require.Equal(t, tc.code, w.Code)
+			if tc.code == http.StatusCreated {
+				require.NotNil(t, repo.saved)
+				assert.Equal(t, "custom-violet", repo.saved.Slug())
+			} else {
+				assert.Nil(t, repo.saved)
+			}
+		})
+	}
+}
+
+func TestUpdateProject_SlugField(t *testing.T) {
+	for _, tc := range []struct {
+		body string
+		code int
+		want string
+	}{
+		{`{"title":"New title","slug":"new-violet"}`, http.StatusOK, "new-violet"},
+		{`{"title":"New title"}`, http.StatusOK, "violet"},
+		{`{"title":"New title","slug":""}`, http.StatusBadRequest, "violet"},
+	} {
+		t.Run(tc.body, func(t *testing.T) {
+			p, err := domainproj.NewProject(domainshared.MustParseID(validUUID), "Violet", "")
+			require.NoError(t, err)
+			repo := &stubProjRepo{canned: p}
+			h := NewHandler(nil, appproj.NewService(repo))
+			r := newJSONRequest(http.MethodPut, "/admin/projects/"+validUUID, tc.body)
+			r.SetPathValue("id", validUUID)
+			w := httptest.NewRecorder()
+			h.UpdateProject(w, r)
+			require.Equal(t, tc.code, w.Code)
+			assert.Equal(t, tc.want, p.Slug())
+		})
+	}
 }

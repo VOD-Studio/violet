@@ -24,6 +24,7 @@ type Container struct {
 	SiteImpression  *SiteImpressionContainer
 	Auth            *AuthContainer
 	Content         *ContentContainer
+	Roadmap         *RoadmapContainer
 	Comment         *CommentContainer
 	Post            *PostContainer
 	Tag             *TagContainer
@@ -96,6 +97,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	}
 
 	content := NewContentContainer(db, bus)
+	roadmap := NewRoadmapContainer(db, permissionChecker, bus)
 	comment := NewCommentContainer(db, rdb, emailSender, settings.Service, customEmoji.Service, bus)
 	post := NewPostContainer(db, permissionChecker, settings.Store, bus)
 	tag := NewTagContainer(db)
@@ -128,7 +130,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	chat.ChatService.WithTweetReader(tweet.TweetService)
 
 	c := &Container{
-		Role: role, Settings: settings, SiteIdentity: siteIdentity, SiteImpression: siteImpression, Auth: auth, Content: content, Comment: comment,
+		Role: role, Settings: settings, SiteIdentity: siteIdentity, SiteImpression: siteImpression, Auth: auth, Content: content, Roadmap: roadmap, Comment: comment,
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,

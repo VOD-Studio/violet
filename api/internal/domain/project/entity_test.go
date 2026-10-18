@@ -49,7 +49,7 @@ func TestReconstructProject_PreservesAllFields(t *testing.T) {
 	updated := created.Add(48 * time.Hour)
 
 	p := ReconstructProject(
-		id, "标题", "简介",
+		id, "标题", "title", "简介",
 		"https://example.com", "https://github.com/x/y", "https://cdn/x.png",
 		[]string{"Go", "React"}, 5,
 		created, updated,
@@ -70,7 +70,7 @@ func TestReconstructProject_PreservesAllFields(t *testing.T) {
 func TestReconstructProject_NilTechStackBecomesEmpty(t *testing.T) {
 	// Reconstruct 不校验，但从持久化重建时 nil techStack 归一化为空切片
 	p := ReconstructProject(
-		domainshared.NewID(), "t", "d",
+		domainshared.NewID(), "t", "t", "d",
 		"", "", "", nil, 0,
 		time.Time{}, time.Time{},
 	)

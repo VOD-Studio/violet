@@ -164,7 +164,7 @@ func NewProjectRepository(db *gorm.DB) *ProjectRepository {
 
 func projectToPO(p *project.Project) model.Project {
 	po := model.Project{
-		ID: p.ID().UUID(), Title: p.Title(), Description: p.Description(),
+		ID: p.ID().UUID(), Title: p.Title(), Slug: p.Slug(), Description: p.Description(),
 		URL: p.URL(), GithubURL: p.GithubURL(), ImageURL: p.ImageURL(),
 		TechStack: pq.StringArray(p.TechStack()), SortOrder: p.SortOrder(),
 	}
@@ -182,7 +182,7 @@ func projectToPO(p *project.Project) model.Project {
 func projectPOToDomain(po model.Project) *project.Project {
 	return project.ReconstructProject(
 		domainshared.MustParseID(po.ID.String()),
-		po.Title, po.Description, po.URL, po.GithubURL, po.ImageURL,
+		po.Title, po.Slug, po.Description, po.URL, po.GithubURL, po.ImageURL,
 		[]string(po.TechStack), po.SortOrder, po.CreatedAt, po.UpdatedAt,
 	)
 }
@@ -190,6 +190,17 @@ func projectPOToDomain(po model.Project) *project.Project {
 func (r *ProjectRepository) FindByID(ctx context.Context, id domainshared.ID) (*project.Project, error) {
 	var po model.Project
 	if err := r.db.WithContext(ctx).First(&po, "id = ?", id.UUID()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, project.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询项目失败", err)
+	}
+	return projectPOToDomain(po), nil
+}
+
+func (r *ProjectRepository) FindBySlug(ctx context.Context, slug string) (*project.Project, error) {
+	var po model.Project
+	if err := r.db.WithContext(ctx).First(&po, "slug = ?", slug).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, project.ErrNotFound
 		}
@@ -229,6 +240,10 @@ func (r *ProjectRepository) FindPage(ctx context.Context, q domainshared.PageQue
 func (r *ProjectRepository) Save(ctx context.Context, p *project.Project) error {
 	po := projectToPO(p)
 	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+		var state interface{ SQLState() string }
+		if errors.Is(err, gorm.ErrDuplicatedKey) || (errors.As(err, &state) && state.SQLState() == "23505") {
+			return project.ErrSlugConflict
+		}
 		return domainshared.Internal("保存项目失败", err)
 	}
 	return nil

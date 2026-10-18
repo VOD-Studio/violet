@@ -86,6 +86,10 @@ func build() (*openapi3.T, error) {
 
 	// 各模块 path 注册（paths_*.go）。随各 Task 完成逐步放开。
 	registerPublicPaths(t)
+	registerRoadmapPaths(t)
+	registerRoadmapMovePath(t)
+	registerRoadmapDeletionPaths(t)
+	registerRoadmapRelationPaths(t)
 	registerSiteIdentityPaths(t)
 	registerSiteImpressionPaths(t)
 	registerAuthPaths(t)

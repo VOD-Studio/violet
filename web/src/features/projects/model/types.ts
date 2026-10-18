@@ -17,6 +17,7 @@ export interface Project {
 	id: string;
 	/** 项目标题 */
 	title: string;
+	slug: string;
 	/** 项目描述 */
 	description: string;
 	/** 项目主页 URL */

@@ -36,6 +36,7 @@ import { Controller, useForm } from "react-hook-form";
 /** 创建/编辑表单初值 */
 const EMPTY: CreateProject = {
 	title: "",
+	slug: "",
 	description: "",
 	url: "",
 	github_url: "",
@@ -253,11 +254,17 @@ function ProjectDialog({
 	const { data: projects = [] } = useProjects();
 	const editing = isEditing ? projects.find((p) => p.id === editingId) : undefined;
 
-	const { register, handleSubmit, control } = useForm<CreateProject>({
+	const {
+		register,
+		handleSubmit,
+		control,
+		formState: { errors },
+	} = useForm<CreateProject>({
 		values:
 			isEditing && editing
 				? {
 						title: editing.title,
+						slug: editing.slug,
 						description: editing.description,
 						url: editing.url,
 						github_url: editing.github_url,
@@ -300,6 +307,28 @@ function ProjectDialog({
 					</label>
 					<Input id="project-title" {...register("title", { required: true })} />
 				</div>
+				<Input
+					id="project-slug"
+					label="网址标识"
+					placeholder="violet"
+					description={
+						isEditing
+							? "仅限小写字母、数字和单连字符；修改后原网址将失效。"
+							: "仅限小写字母、数字和单连字符；留空按标题生成。"
+					}
+					maxLength={255}
+					required={isEditing}
+					pattern="[a-z0-9]+(-[a-z0-9]+)*"
+					invalid={!!errors.slug}
+					errorMessage={errors.slug?.message}
+					{...register("slug", {
+						required: isEditing ? "请输入网址标识" : false,
+						pattern: {
+							value: /^[a-z0-9]+(-[a-z0-9]+)*$/,
+							message: "仅限小写字母、数字和单连字符",
+						},
+					})}
+				/>
 				<div className="space-y-1.5">
 					<label htmlFor="project-desc" className="text-sm font-medium">
 						描述

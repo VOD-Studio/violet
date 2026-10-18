@@ -79,6 +79,8 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 项目 / 公告（公开）
 		v1.Route("/projects", func(r chi.Router) {
 			r.Get("/", d.Content.ListProjects)
+			registerRoadmapPublicRoutes(r, d.Roadmap)
+			r.Get("/by-slug/{slug}", d.Content.GetProjectBySlug)
 			r.Get("/{id}", d.Content.GetProject)
 		})
 		v1.Route("/announcements", func(r chi.Router) {
