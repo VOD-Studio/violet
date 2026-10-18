@@ -12,6 +12,12 @@ type LinkDTO struct {
 	URL   string `json:"url"`
 }
 
+// ChecklistItemDTO 条目的一个子项；只展示推进细节，不改变阶段，也不计入项目进度。
+type ChecklistItemDTO struct {
+	Text string `json:"text"`
+	Done bool   `json:"done"`
+}
+
 type ItemDTO struct {
 	ID          string    `json:"id"`
 	ProjectID   string    `json:"project_id"`
@@ -22,6 +28,8 @@ type ItemDTO struct {
 	Position    string    `json:"position"`
 	Tags        []string  `json:"tags"`
 	Links       []LinkDTO `json:"links"`
+	// Checklist 有序子项，没有时是空数组而不是 null。
+	Checklist []ChecklistItemDTO `json:"checklist"`
 	// CompletionDate nil 表示未完成，非空为 YYYY-MM-DD，不携带时区或时间。
 	CompletionDate   *string `json:"completion_date"`
 	DeliveredVersion string  `json:"delivered_version"`
@@ -54,6 +62,8 @@ type CreateInput struct {
 	Stage string
 	Tags  []string
 	Links []LinkDTO
+	// Checklist 有序子项，省略为没有子项。
+	Checklist []ChecklistItemDTO
 	// CompletionDate YYYY-MM-DD；创建到 completed 时 nil 默认上海时区当天。
 	CompletionDate   *string
 	DeliveredVersion string
@@ -64,6 +74,8 @@ type UpdateInput struct {
 	Description string
 	Tags        []string
 	Links       []LinkDTO
+	// Checklist 全量替换；省略或空数组清空子项。
+	Checklist []ChecklistItemDTO
 	// CompletionDate YYYY-MM-DD；nil 保留旧日期，非空替换。阶段只通过移动改变。
 	CompletionDate   *string
 	DeliveredVersion string
@@ -74,9 +86,13 @@ func toDTO(item *domain.Item) ItemDTO {
 	for _, link := range item.Links() {
 		links = append(links, LinkDTO{Label: link.Label, URL: link.URL})
 	}
+	checklist := make([]ChecklistItemDTO, 0, len(item.Checklist()))
+	for _, entry := range item.Checklist() {
+		checklist = append(checklist, ChecklistItemDTO{Text: entry.Text, Done: entry.Done})
+	}
 	dto := ItemDTO{ID: item.ID().String(), ProjectID: item.ProjectID().String(), Number: item.Number(),
 		Title: item.Title(), Description: item.Description(), Stage: string(item.Stage()), Position: item.Position(),
-		Tags: item.Tags(), Links: links, DeliveredVersion: item.DeliveredVersion(),
+		Tags: item.Tags(), Links: links, Checklist: checklist, DeliveredVersion: item.DeliveredVersion(),
 		CreatedAt: item.CreatedAt().Format(time.RFC3339), UpdatedAt: item.UpdatedAt().Format(time.RFC3339)}
 	if date := item.CompletionDate(); date != nil {
 		formatted := date.Format(time.DateOnly)

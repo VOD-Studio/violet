@@ -74,7 +74,7 @@ func (s *Service) Create(ctx context.Context, projectID string, in CreateInput) 
 	if stage == "" {
 		stage = domain.Planned
 	}
-	content, err := makeContent(in.Title, in.Description, in.Tags, in.Links, in.CompletionDate, in.DeliveredVersion)
+	content, err := makeContent(in.Title, in.Description, in.Tags, in.Links, in.Checklist, in.CompletionDate, in.DeliveredVersion)
 	if err != nil {
 		return ItemDTO{}, err
 	}
@@ -114,7 +114,7 @@ func (s *Service) Update(ctx context.Context, projectID, itemID string, in Updat
 	if err != nil {
 		return ItemDTO{}, err
 	}
-	content, err := makeContent(in.Title, in.Description, in.Tags, in.Links, in.CompletionDate, in.DeliveredVersion)
+	content, err := makeContent(in.Title, in.Description, in.Tags, in.Links, in.Checklist, in.CompletionDate, in.DeliveredVersion)
 	if err != nil {
 		return ItemDTO{}, err
 	}
@@ -173,11 +173,15 @@ func parseIDs(projectID, itemID string) (shared.ID, shared.ID, error) {
 	return pid, id, err
 }
 
-func makeContent(title, description string, tags []string, links []LinkDTO, date *string, version string) (domain.Content, error) {
+func makeContent(title, description string, tags []string, links []LinkDTO, checklist []ChecklistItemDTO, date *string, version string) (domain.Content, error) {
 	content := domain.Content{Title: title, Description: description, Tags: tags, DeliveredVersion: version,
 		Links: make([]domain.Link, 0, len(links))}
 	for _, link := range links {
 		content.Links = append(content.Links, domain.Link{Label: link.Label, URL: link.URL})
+	}
+	content.Checklist = make([]domain.ChecklistItem, 0, len(checklist))
+	for _, entry := range checklist {
+		content.Checklist = append(content.Checklist, domain.ChecklistItem{Text: entry.Text, Done: entry.Done})
 	}
 	if date != nil {
 		parsed, err := time.Parse(time.DateOnly, *date)

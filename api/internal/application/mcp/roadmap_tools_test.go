@@ -135,6 +135,7 @@ func item(number int64, stage string) approadmap.ItemDTO {
 		ID: fmt.Sprintf("item-%d", number), ProjectID: projectUUID, Number: number, Stage: stage,
 		Title: fmt.Sprintf("条目 %d", number), Description: fmt.Sprintf("简介 %d", number),
 		Tags: []string{"a", "b"}, Links: []approadmap.LinkDTO{{Label: "文档", URL: "https://example.com"}},
+		Checklist:        []approadmap.ChecklistItemDTO{{Text: "设计", Done: true}, {Text: "实现"}},
 		DeliveredVersion: "v1",
 	}
 }
@@ -277,8 +278,26 @@ func TestRoadmapTools_UpdateOnlyChangesTheGivenFields(t *testing.T) {
 	assert.Equal(t, approadmap.UpdateInput{
 		Title: "只改标题", Description: "简介 1", Tags: []string{"a", "b"},
 		Links:            []approadmap.LinkDTO{{Label: "文档", URL: "https://example.com"}},
+		Checklist:        []approadmap.ChecklistItemDTO{{Text: "设计", Done: true}, {Text: "实现"}},
 		DeliveredVersion: "v1",
 	}, f.roadmap.updated, "没给的字段沿用原值，不能被全量替换清空")
+}
+
+func TestRoadmapTools_UpdateReplacesOrClearsTheWholeChecklist(t *testing.T) {
+	f := newRoadmapFixture()
+	ctx, req := writeReq(t)
+
+	res, _, _ := f.tools.UpdateItem(ctx, req, updateItemArgs{Project: "violet", Number: number(1),
+		Checklist: []roadmapChecklistArg{{Text: "设计", Done: true}, {Text: "实现", Done: true}, {Text: "验收"}}})
+	require.False(t, res.IsError)
+	assert.Equal(t, []approadmap.ChecklistItemDTO{{Text: "设计", Done: true}, {Text: "实现", Done: true}, {Text: "验收"}},
+		f.roadmap.updated.Checklist, "整体替换")
+	assert.Equal(t, "简介 1", f.roadmap.updated.Description, "其余字段不受影响")
+
+	res, _, _ = f.tools.UpdateItem(ctx, req, updateItemArgs{Project: "violet", Number: number(1),
+		Checklist: []roadmapChecklistArg{}})
+	require.False(t, res.IsError)
+	assert.Empty(t, f.roadmap.updated.Checklist, "空数组清空")
 }
 
 func TestRoadmapTools_UpdateCanClearWithEmptyValues(t *testing.T) {
@@ -400,7 +419,8 @@ func TestRoadmapTools_CreateItemsBuildsItemsThenRelationsByRef(t *testing.T) {
 	res, _, _ := f.tools.CreateItems(ctx, req, createItemsArgs{
 		Project: "violet",
 		Items: []batchItemArg{
-			{Ref: "api", Title: "后端接口", Stage: "completed", CompletionDate: &done, DeliveredVersion: "v1"},
+			{Ref: "api", Title: "后端接口", Stage: "completed", CompletionDate: &done, DeliveredVersion: "v1",
+				Checklist: []roadmapChecklistArg{{Text: "接口", Done: true}, {Text: "文档"}}},
 			{Ref: "ui", Title: "前端页面", Stage: "in_progress", Tags: []string{"web"}},
 			{Title: "没有 ref 的条目"},
 		},
@@ -415,6 +435,7 @@ func TestRoadmapTools_CreateItemsBuildsItemsThenRelationsByRef(t *testing.T) {
 	require.Len(t, f.roadmap.created, 3)
 	assert.Equal(t, []string{"后端接口", "前端页面", "没有 ref 的条目"}, []string{f.roadmap.created[0].Title, f.roadmap.created[1].Title, f.roadmap.created[2].Title}, "按数组顺序创建")
 	assert.Equal(t, "completed", f.roadmap.created[0].Stage)
+	assert.Equal(t, []approadmap.ChecklistItemDTO{{Text: "接口", Done: true}, {Text: "文档"}}, f.roadmap.created[0].Checklist)
 	assert.Equal(t, []approadmap.CreateRelationInput{
 		{SourceID: "new-102", TargetID: "new-101", Type: "extends"},
 		{SourceID: "new-102", TargetID: "item-3", Type: "blocks"},
@@ -505,4 +526,16 @@ func TestNewRoadmapServer_RegistersAllToolsWithoutPanic(t *testing.T) {
 
 	require.NotNil(t, server, "10 个 tool 的参数 schema 推导不应 panic")
 	assert.True(t, strings.Contains(roadmapInstructions, "roadmap:write"))
+}
+
+func TestRoadmapTools_CreateItemPassesTheChecklistThrough(t *testing.T) {
+	f := newRoadmapFixture()
+	ctx, req := writeReq(t)
+
+	res, _, _ := f.tools.CreateItem(ctx, req, createItemArgs{Project: "violet", Title: "带子项",
+		Checklist: []roadmapChecklistArg{{Text: "拆分", Done: true}, {Text: "实现"}}})
+
+	require.False(t, res.IsError, textOf(t, res))
+	require.Len(t, f.roadmap.created, 1)
+	assert.Equal(t, []approadmap.ChecklistItemDTO{{Text: "拆分", Done: true}, {Text: "实现"}}, f.roadmap.created[0].Checklist)
 }

@@ -256,3 +256,44 @@ func TestServiceRejectsCrossProjectEdit(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 	assert.Equal(t, "Other", repo.items[other.ID()].Title())
 }
+
+func TestServiceChecklistRoundTripAndReplacement(t *testing.T) {
+	svc, repo, bus, ctx := testService(t)
+	created, err := svc.Create(ctx, repo.project.String(), CreateInput{Title: "With steps",
+		Checklist: []ChecklistItemDTO{{Text: "  design  ", Done: true}, {Text: "build"}}})
+	require.NoError(t, err)
+	assert.Equal(t, []ChecklistItemDTO{{Text: "design", Done: true}, {Text: "build"}}, created.Checklist)
+
+	plain, err := svc.Create(ctx, repo.project.String(), CreateInput{Title: "Plain"})
+	require.NoError(t, err)
+	assert.NotNil(t, plain.Checklist, "没有子项时是空数组而不是 null")
+	assert.Empty(t, plain.Checklist)
+
+	updated, err := svc.Update(ctx, repo.project.String(), created.ID, UpdateInput{Title: "With steps",
+		Checklist: []ChecklistItemDTO{{Text: "design", Done: true}, {Text: "build", Done: true}}})
+	require.NoError(t, err)
+	assert.Equal(t, []ChecklistItemDTO{{Text: "design", Done: true}, {Text: "build", Done: true}}, updated.Checklist)
+	last := bus.events[len(bus.events)-1].(domain.ItemUpdated)
+	require.Len(t, last.Changes, 1)
+	assert.Equal(t, "checklist", last.Changes[0].Field)
+
+	cleared, err := svc.Update(ctx, repo.project.String(), created.ID, UpdateInput{Title: "With steps"})
+	require.NoError(t, err)
+	assert.Empty(t, cleared.Checklist, "全量替换：省略子项即清空")
+
+	detail, err := svc.GetBySlug(ctx, "roadmap")
+	require.NoError(t, err)
+	for _, item := range detail.Items {
+		assert.NotNil(t, item.Checklist)
+	}
+}
+
+func TestServiceRejectsInvalidChecklist(t *testing.T) {
+	svc, repo, _, ctx := testService(t)
+	_, err := svc.Create(ctx, repo.project.String(), CreateInput{Title: "Bad", Checklist: []ChecklistItemDTO{{Text: "  "}}})
+	assert.True(t, shared.IsDomainError(err, shared.CodeBadRequest))
+	item, err := svc.Create(ctx, repo.project.String(), CreateInput{Title: "Good"})
+	require.NoError(t, err)
+	_, err = svc.Update(ctx, repo.project.String(), item.ID, UpdateInput{Title: "Good", Checklist: []ChecklistItemDTO{{Text: ""}}})
+	assert.True(t, shared.IsDomainError(err, shared.CodeBadRequest))
+}

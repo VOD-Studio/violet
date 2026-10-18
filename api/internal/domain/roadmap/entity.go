@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"blog-api/internal/domain/shared"
 )
@@ -28,6 +29,23 @@ type Link struct {
 	URL string `json:"url"`
 }
 
+const (
+	// MaxChecklistItems 单个条目最多的子项数；更细的拆分应当另建条目。
+	MaxChecklistItems = 100
+	// MaxChecklistTextRunes 单个子项文字的字符数上限。
+	MaxChecklistTextRunes = 500
+)
+
+// ChecklistItem 条目里的一个子项。
+//
+// 子项只展示条目的推进细节：不改变阶段，不计入项目进度，条目完成也不会勾选子项。
+type ChecklistItem struct {
+	// Text 必填的纯文本，不作 Markdown 或 HTML 解释。
+	Text string `json:"text"`
+	// Done 子项是否已完成。
+	Done bool `json:"done"`
+}
+
 type Content struct {
 	// Title 必填的纯文本标题。
 	Title string
@@ -37,6 +55,8 @@ type Content struct {
 	Tags []string
 	// Links 仅供跳转的关联网址，不同步外部状态。
 	Links []Link
+	// Checklist 有序子项，条目的推进细节；空切片表示没有子项。
+	Checklist []ChecklistItem
 	// CompletionDate 已完成条目的日历日期；创建时 nil 表示当天，编辑时由应用层保留旧值。
 	CompletionDate *time.Time
 	// DeliveredVersion 自由文本版本号，仅已完成阶段允许非空。
@@ -128,6 +148,7 @@ func (i *Item) Stage() Stage               { return i.state.Stage }
 func (i *Item) Position() string           { return i.state.Position }
 func (i *Item) Tags() []string             { return slices.Clone(i.state.Content.Tags) }
 func (i *Item) Links() []Link              { return slices.Clone(i.state.Content.Links) }
+func (i *Item) Checklist() []ChecklistItem { return slices.Clone(i.state.Content.Checklist) }
 func (i *Item) CompletionDate() *time.Time { return cloneTime(i.state.Content.CompletionDate) }
 func (i *Item) DeliveredVersion() string   { return i.state.Content.DeliveredVersion }
 func (i *Item) DeletedAt() *time.Time      { return cloneTime(i.state.DeletedAt) }
@@ -149,6 +170,11 @@ func normalizeContent(c Content, stage Stage, now time.Time) (Content, error) {
 			return Content{}, shared.BadRequest("路线图关联链接必须是 http(s) 网址或站内路径")
 		}
 	}
+	checklist, err := normalizeChecklist(c.Checklist)
+	if err != nil {
+		return Content{}, err
+	}
+	c.Checklist = checklist
 	if stage != Completed {
 		if c.CompletionDate != nil || c.DeliveredVersion != "" {
 			return Content{}, shared.BadRequest("完成日期与交付版本仅用于已完成条目")
@@ -175,6 +201,24 @@ func normalizeTags(tags []string) []string {
 		}
 	}
 	return out
+}
+
+func normalizeChecklist(items []ChecklistItem) ([]ChecklistItem, error) {
+	if len(items) > MaxChecklistItems {
+		return nil, shared.BadRequest("路线图子项最多 100 项，更细的拆分请另建条目")
+	}
+	out := make([]ChecklistItem, 0, len(items))
+	for _, item := range items {
+		text := strings.TrimSpace(item.Text)
+		if text == "" {
+			return nil, shared.BadRequest("路线图子项内容不能为空")
+		}
+		if utf8.RuneCountInString(text) > MaxChecklistTextRunes {
+			return nil, shared.BadRequest("路线图子项内容最多 500 个字符")
+		}
+		out = append(out, ChecklistItem{Text: text, Done: item.Done})
+	}
+	return out, nil
 }
 
 func validLink(raw string) bool {
@@ -208,12 +252,16 @@ func cloneContent(c Content) Content {
 	if c.Links == nil {
 		c.Links = []Link{}
 	}
+	c.Checklist = slices.Clone(c.Checklist)
+	if c.Checklist == nil {
+		c.Checklist = []ChecklistItem{}
+	}
 	c.CompletionDate = cloneTime(c.CompletionDate)
 	return c
 }
 
 func contentChanges(before, after Content) []Change {
-	changes := make([]Change, 0, 6)
+	changes := make([]Change, 0, 7)
 	add := func(field, from, to string) {
 		if from != to {
 			changes = append(changes, Change{Field: field, From: from, To: to})
@@ -227,6 +275,9 @@ func contentChanges(before, after Content) []Change {
 	beforeLinks, _ := json.Marshal(before.Links)
 	afterLinks, _ := json.Marshal(after.Links)
 	add("links", string(beforeLinks), string(afterLinks))
+	beforeChecklist, _ := json.Marshal(before.Checklist)
+	afterChecklist, _ := json.Marshal(after.Checklist)
+	add("checklist", string(beforeChecklist), string(afterChecklist))
 	add("completion_date", formatDate(before.CompletionDate), formatDate(after.CompletionDate))
 	add("delivered_version", before.DeliveredVersion, after.DeliveredVersion)
 	return changes

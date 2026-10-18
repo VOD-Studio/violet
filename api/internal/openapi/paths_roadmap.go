@@ -13,6 +13,10 @@ func registerRoadmapPaths(t *openapi3.T) {
 		"label": optStr("链接标题；省略或空串时显示 URL"),
 		"url":   reqStr("HTTP(S) 地址或站内绝对路径"),
 	}, "url")
+	registerSchema(t, "RoadmapChecklistItem", openapi3.Schemas{
+		"text": reqStr("子项内容，纯文本，去空白后不能为空，最多 500 个字符"),
+		"done": optBool("是否已完成；省略为 false"),
+	}, "text")
 	registerSchema(t, "RoadmapProgressDTO", openapi3.Schemas{
 		"planned":     optInt("未删除的规划中条目数"),
 		"in_progress": optInt("未删除的开发中条目数"),
@@ -30,12 +34,13 @@ func registerRoadmapPaths(t *openapi3.T) {
 		"position":          reqStr("按字节序排列的分数索引；已完成阶段不使用此键排序"),
 		"tags":              strArray("项目内自由文本条目标签"),
 		"links":             refArray("关联链接", "RoadmapLinkDTO"),
+		"checklist":         refArray("有序子项清单，没有时为空数组；只展示推进细节，不改变阶段也不计入项目进度", "RoadmapChecklistItem"),
 		"completion_date":   completionDate,
 		"delivered_version": reqStr("交付版本；未完成或未填写时为空串"),
 		"blocked":           optBool("是否存在未完成且未删除的阻塞前置条目，不改变阶段"),
 		"created_at":        reqStr("创建时间，RFC3339"),
 		"updated_at":        reqStr("最近更新时间，RFC3339"),
-	}, "id", "project_id", "number", "title", "description", "stage", "position", "tags", "links", "completion_date", "delivered_version", "blocked", "created_at", "updated_at")
+	}, "id", "project_id", "number", "title", "description", "stage", "position", "tags", "links", "checklist", "completion_date", "delivered_version", "blocked", "created_at", "updated_at")
 	registerSchema(t, "RoadmapDetailDTO", openapi3.Schemas{
 		"project":   optRef("所属项目", "ProjectDTO"),
 		"items":     refArray("全部未删除条目；已完成按完成日期倒序，同日按编号倒序", "RoadmapItemDTO"),
@@ -47,6 +52,7 @@ func registerRoadmapPaths(t *openapi3.T) {
 		"description":       optStr("纯文本简介；空串清空"),
 		"tags":              strArray("自由文本条目标签；空数组清空"),
 		"links":             refArray("关联链接；空数组清空", "RoadmapLinkRequest"),
+		"checklist":         refArray("有序子项清单，最多 100 项；整体替换，省略或空数组清空", "RoadmapChecklistItem"),
 		"completion_date":   completionDate,
 		"delivered_version": optStr("交付版本；只在已完成阶段允许非空，空串清空"),
 	}

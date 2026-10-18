@@ -23,13 +23,14 @@ func (h *Handler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 type itemRequest struct {
-	Title            string               `json:"title"`
-	Description      string               `json:"description"`
-	Stage            string               `json:"stage"`
-	Tags             []string             `json:"tags"`
-	Links            []approadmap.LinkDTO `json:"links"`
-	CompletionDate   *string              `json:"completion_date"`
-	DeliveredVersion string               `json:"delivered_version"`
+	Title            string                        `json:"title"`
+	Description      string                        `json:"description"`
+	Stage            string                        `json:"stage"`
+	Tags             []string                      `json:"tags"`
+	Links            []approadmap.LinkDTO          `json:"links"`
+	Checklist        []approadmap.ChecklistItemDTO `json:"checklist"`
+	CompletionDate   *string                       `json:"completion_date"`
+	DeliveredVersion string                        `json:"delivered_version"`
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +41,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	dto, err := h.svc.Create(r.Context(), r.PathValue("projectID"), approadmap.CreateInput{
 		Title: req.Title, Description: req.Description, Stage: req.Stage, Tags: req.Tags, Links: req.Links,
-		CompletionDate: req.CompletionDate, DeliveredVersion: req.DeliveredVersion,
+		Checklist: req.Checklist, CompletionDate: req.CompletionDate, DeliveredVersion: req.DeliveredVersion,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -61,7 +62,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	dto, err := h.svc.Update(r.Context(), r.PathValue("projectID"), r.PathValue("id"), approadmap.UpdateInput{
 		Title: req.Title, Description: req.Description, Tags: req.Tags, Links: req.Links,
-		CompletionDate: req.CompletionDate, DeliveredVersion: req.DeliveredVersion,
+		Checklist: req.Checklist, CompletionDate: req.CompletionDate, DeliveredVersion: req.DeliveredVersion,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

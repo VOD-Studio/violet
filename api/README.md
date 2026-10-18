@@ -169,7 +169,7 @@ api/
 | --- | --- |
 | `GET /projects/by-slug/{slug}/roadmap` | 公开返回项目、全部未删除条目、关系与进度概览 |
 | `POST /admin/projects/{projectID}/roadmap/items` | 创建条目，分配项目内不复用的编号 |
-| `PUT /admin/projects/{projectID}/roadmap/items/{id}` | 全量编辑内容；未传完成日期时保留原值 |
+| `PUT /admin/projects/{projectID}/roadmap/items/{id}` | 全量编辑内容（含有序子项 `checklist`，整体替换）；未传完成日期时保留原值 |
 | `POST /admin/projects/{projectID}/roadmap/items/{id}/move` | 按目标阶段与邻居移动；邻居失效时追加末尾，已完成阶段拒绝手动重排 |
 | `DELETE /admin/projects/{projectID}/roadmap/items/{id}` | 标记软删除，返回 204 |
 | `POST /admin/projects/{projectID}/roadmap/items/{id}/restore` | 恢复原条目，保留编号、位置和内容 |

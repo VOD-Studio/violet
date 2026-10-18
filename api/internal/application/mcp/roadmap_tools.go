@@ -81,26 +81,33 @@ type roadmapLinkArg struct {
 	URL   string `json:"url" jsonschema:"链接地址"`
 }
 
+type roadmapChecklistArg struct {
+	Text string `json:"text" jsonschema:"子项内容，纯文本，最多 500 字"`
+	Done bool   `json:"done,omitempty" jsonschema:"是否已完成，默认 false"`
+}
+
 type createItemArgs struct {
-	Project          string           `json:"project" jsonschema:"项目 slug"`
-	Title            string           `json:"title" jsonschema:"条目标题（必填，一句话说清要做什么或做了什么）"`
-	Description      string           `json:"description,omitempty" jsonschema:"纯文本简介，可含换行"`
-	Stage            string           `json:"stage,omitempty" jsonschema:"阶段：planned（默认）、in_progress、completed"`
-	Tags             []string         `json:"tags,omitempty" jsonschema:"条目标签，自由文本，仅属于这个项目"`
-	Links            []roadmapLinkArg `json:"links,omitempty" jsonschema:"关联链接（设计稿、PR、发布说明等）"`
-	CompletionDate   *string          `json:"completion_date,omitempty" jsonschema:"完成日期 YYYY-MM-DD，仅 stage=completed 时有效；省略则取今天（上海时区）"`
-	DeliveredVersion string           `json:"delivered_version,omitempty" jsonschema:"交付版本，自由文本，仅 stage=completed 时有效"`
+	Project          string                `json:"project" jsonschema:"项目 slug"`
+	Title            string                `json:"title" jsonschema:"条目标题（必填，一句话说清要做什么或做了什么）"`
+	Description      string                `json:"description,omitempty" jsonschema:"纯文本简介，可含换行"`
+	Stage            string                `json:"stage,omitempty" jsonschema:"阶段：planned（默认）、in_progress、completed"`
+	Tags             []string              `json:"tags,omitempty" jsonschema:"条目标签，自由文本，仅属于这个项目"`
+	Links            []roadmapLinkArg      `json:"links,omitempty" jsonschema:"关联链接（设计稿、PR、发布说明等）"`
+	Checklist        []roadmapChecklistArg `json:"checklist,omitempty" jsonschema:"子项清单：这个条目内的待办步骤，按顺序，最多 100 项；只展示推进细节，不改变阶段也不计入进度。不要把子项写进 description"`
+	CompletionDate   *string               `json:"completion_date,omitempty" jsonschema:"完成日期 YYYY-MM-DD，仅 stage=completed 时有效；省略则取今天（上海时区）"`
+	DeliveredVersion string                `json:"delivered_version,omitempty" jsonschema:"交付版本，自由文本，仅 stage=completed 时有效"`
 }
 
 type batchItemArg struct {
-	Ref              string           `json:"ref,omitempty" jsonschema:"本批内的引用名，供 relations 指向；本批内唯一"`
-	Title            string           `json:"title" jsonschema:"条目标题（必填）"`
-	Description      string           `json:"description,omitempty" jsonschema:"纯文本简介"`
-	Stage            string           `json:"stage,omitempty" jsonschema:"阶段：planned（默认）、in_progress、completed"`
-	Tags             []string         `json:"tags,omitempty" jsonschema:"条目标签"`
-	Links            []roadmapLinkArg `json:"links,omitempty" jsonschema:"关联链接"`
-	CompletionDate   *string          `json:"completion_date,omitempty" jsonschema:"完成日期 YYYY-MM-DD，仅 completed"`
-	DeliveredVersion string           `json:"delivered_version,omitempty" jsonschema:"交付版本，仅 completed"`
+	Ref              string                `json:"ref,omitempty" jsonschema:"本批内的引用名，供 relations 指向；本批内唯一"`
+	Title            string                `json:"title" jsonschema:"条目标题（必填）"`
+	Description      string                `json:"description,omitempty" jsonschema:"纯文本简介"`
+	Stage            string                `json:"stage,omitempty" jsonschema:"阶段：planned（默认）、in_progress、completed"`
+	Tags             []string              `json:"tags,omitempty" jsonschema:"条目标签"`
+	Links            []roadmapLinkArg      `json:"links,omitempty" jsonschema:"关联链接"`
+	Checklist        []roadmapChecklistArg `json:"checklist,omitempty" jsonschema:"子项清单，按顺序，最多 100 项"`
+	CompletionDate   *string               `json:"completion_date,omitempty" jsonschema:"完成日期 YYYY-MM-DD，仅 completed"`
+	DeliveredVersion string                `json:"delivered_version,omitempty" jsonschema:"交付版本，仅 completed"`
 }
 
 type batchRelationArg struct {
@@ -116,15 +123,16 @@ type createItemsArgs struct {
 }
 
 type updateItemArgs struct {
-	Project          string           `json:"project" jsonschema:"项目 slug"`
-	Number           *int64           `json:"number,omitempty" jsonschema:"条目编号（#N 的 N），与 item_id 二选一"`
-	ItemID           string           `json:"item_id,omitempty" jsonschema:"条目 ID（UUID），与 number 二选一"`
-	Title            *string          `json:"title,omitempty" jsonschema:"新标题；省略则不改"`
-	Description      *string          `json:"description,omitempty" jsonschema:"新简介；空串清除，省略则不改"`
-	Tags             []string         `json:"tags,omitempty" jsonschema:"新标签（整体替换）；空数组清除，省略则不改"`
-	Links            []roadmapLinkArg `json:"links,omitempty" jsonschema:"新链接（整体替换）；空数组清除，省略则不改"`
-	CompletionDate   *string          `json:"completion_date,omitempty" jsonschema:"新完成日期 YYYY-MM-DD，仅已完成条目；省略则不改"`
-	DeliveredVersion *string          `json:"delivered_version,omitempty" jsonschema:"新交付版本，仅已完成条目；空串清除，省略则不改"`
+	Project          string                `json:"project" jsonschema:"项目 slug"`
+	Number           *int64                `json:"number,omitempty" jsonschema:"条目编号（#N 的 N），与 item_id 二选一"`
+	ItemID           string                `json:"item_id,omitempty" jsonschema:"条目 ID（UUID），与 number 二选一"`
+	Title            *string               `json:"title,omitempty" jsonschema:"新标题；省略则不改"`
+	Description      *string               `json:"description,omitempty" jsonschema:"新简介；空串清除，省略则不改"`
+	Tags             []string              `json:"tags,omitempty" jsonschema:"新标签（整体替换）；空数组清除，省略则不改"`
+	Links            []roadmapLinkArg      `json:"links,omitempty" jsonschema:"新链接（整体替换）；空数组清除，省略则不改"`
+	Checklist        []roadmapChecklistArg `json:"checklist,omitempty" jsonschema:"新子项清单（整体替换，勾选某一项也要把整张清单连同其余项一起传回）；空数组清除，省略则不改"`
+	CompletionDate   *string               `json:"completion_date,omitempty" jsonschema:"新完成日期 YYYY-MM-DD，仅已完成条目；省略则不改"`
+	DeliveredVersion *string               `json:"delivered_version,omitempty" jsonschema:"新交付版本，仅已完成条目；空串清除，省略则不改"`
 }
 
 type moveItemArgs struct {
@@ -232,6 +240,14 @@ func (v roadmapView) item(number *int64, itemID string) (approadmap.ItemDTO, err
 	return approadmap.ItemDTO{}, fmt.Errorf("需要 number 或 item_id 指定条目")
 }
 
+func toChecklist(entries []roadmapChecklistArg) []approadmap.ChecklistItemDTO {
+	out := make([]approadmap.ChecklistItemDTO, 0, len(entries))
+	for _, entry := range entries {
+		out = append(out, approadmap.ChecklistItemDTO{Text: entry.Text, Done: entry.Done})
+	}
+	return out
+}
+
 func toLinks(links []roadmapLinkArg) []approadmap.LinkDTO {
 	out := make([]approadmap.LinkDTO, 0, len(links))
 	for _, link := range links {
@@ -280,7 +296,8 @@ func (t *RoadmapTools) CreateItem(ctx context.Context, req *mcp.CallToolRequest,
 	}
 	dto, err := t.roadmaps.Create(ctx, view.detail.Project.ID, approadmap.CreateInput{
 		Title: args.Title, Description: args.Description, Stage: args.Stage, Tags: args.Tags,
-		Links: toLinks(args.Links), CompletionDate: args.CompletionDate, DeliveredVersion: args.DeliveredVersion,
+		Links: toLinks(args.Links), Checklist: toChecklist(args.Checklist),
+		CompletionDate: args.CompletionDate, DeliveredVersion: args.DeliveredVersion,
 	})
 	if err != nil {
 		return errResult(err), nil, nil
@@ -360,7 +377,8 @@ func (t *RoadmapTools) CreateItems(ctx context.Context, req *mcp.CallToolRequest
 	for index, item := range args.Items {
 		dto, err := t.roadmaps.Create(ctx, view.detail.Project.ID, approadmap.CreateInput{
 			Title: item.Title, Description: item.Description, Stage: item.Stage, Tags: item.Tags,
-			Links: toLinks(item.Links), CompletionDate: item.CompletionDate, DeliveredVersion: item.DeliveredVersion,
+			Links: toLinks(item.Links), Checklist: toChecklist(item.Checklist),
+			CompletionDate: item.CompletionDate, DeliveredVersion: item.DeliveredVersion,
 		})
 		if err != nil {
 			numbers := make([]string, 0, len(created))
@@ -413,7 +431,7 @@ func (t *RoadmapTools) UpdateItem(ctx context.Context, req *mcp.CallToolRequest,
 	}
 	input := approadmap.UpdateInput{
 		Title: item.Title, Description: item.Description, Tags: item.Tags, Links: item.Links,
-		DeliveredVersion: item.DeliveredVersion,
+		Checklist: item.Checklist, DeliveredVersion: item.DeliveredVersion,
 	}
 	if args.Title != nil {
 		input.Title = *args.Title
@@ -426,6 +444,9 @@ func (t *RoadmapTools) UpdateItem(ctx context.Context, req *mcp.CallToolRequest,
 	}
 	if args.Links != nil {
 		input.Links = toLinks(args.Links)
+	}
+	if args.Checklist != nil {
+		input.Checklist = toChecklist(args.Checklist)
 	}
 	if args.DeliveredVersion != nil {
 		input.DeliveredVersion = *args.DeliveredVersion

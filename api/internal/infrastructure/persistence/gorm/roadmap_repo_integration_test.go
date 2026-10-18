@@ -113,3 +113,35 @@ func TestRoadmapRepositoryIntegrationOrderingAndCounterRetention(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, deleted.DeletedAt())
 }
+
+func TestRoadmapRepositoryIntegrationChecklistRoundTrip(t *testing.T) {
+	db := setupIntegrationDB(t)
+	pid := seedRoadmapProject(t, db)
+	repo := NewRoadmapRepository(db)
+	ctx := context.Background()
+	now := time.Now()
+	item, err := domain.NewItem(shared.NewID(), pid, 1, domain.Content{Title: "Steps",
+		Checklist: []domain.ChecklistItem{{Text: "design", Done: true}, {Text: "build"}}}, domain.Planned, "V", now)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, item))
+
+	found, err := repo.FindByID(ctx, item.ID(), false)
+	require.NoError(t, err)
+	assert.Equal(t, []domain.ChecklistItem{{Text: "design", Done: true}, {Text: "build"}}, found.Checklist())
+
+	require.NoError(t, found.UpdateContent(domain.Content{Title: "Steps",
+		Checklist: []domain.ChecklistItem{{Text: "design", Done: true}, {Text: "build", Done: true}}}, now.Add(time.Minute)))
+	require.NoError(t, repo.Save(ctx, found))
+	items, err := repo.FindByProject(ctx, pid)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, []domain.ChecklistItem{{Text: "design", Done: true}, {Text: "build", Done: true}}, items[0].Checklist())
+
+	plain, err := domain.NewItem(shared.NewID(), pid, 2, domain.Content{Title: "Plain"}, domain.Planned, "W", now)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, plain))
+	reloaded, err := repo.FindByID(ctx, plain.ID(), false)
+	require.NoError(t, err)
+	assert.NotNil(t, reloaded.Checklist())
+	assert.Empty(t, reloaded.Checklist())
+}

@@ -82,17 +82,18 @@ func (r *RoadmapRepository) NextNumber(ctx context.Context, projectID shared.ID)
 func (r *RoadmapRepository) Save(ctx context.Context, item *domain.Item) error {
 	tags, _ := json.Marshal(item.Tags())
 	links, _ := json.Marshal(item.Links())
+	checklist, _ := json.Marshal(item.Checklist())
 	po := model.RoadmapItem{
 		BaseModel: model.BaseModel{ID: item.ID().UUID(), CreatedAt: item.CreatedAt(), UpdatedAt: item.UpdatedAt()},
 		ProjectID: item.ProjectID().UUID(), Number: item.Number(), Title: item.Title(),
 		Description: item.Description(), Stage: string(item.Stage()), Position: item.Position(),
-		Tags: string(tags), Links: string(links), CompletionDate: item.CompletionDate(),
+		Tags: string(tags), Links: string(links), Checklist: string(checklist), CompletionDate: item.CompletionDate(),
 		DeliveredVersion: item.DeliveredVersion(), DeletedAt: item.DeletedAt(),
 	}
 	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"title", "description", "stage", "position", "tags", "links",
-			"completion_date", "delivered_version", "deleted_at", "updated_at"}),
+			"checklist", "completion_date", "delivered_version", "deleted_at", "updated_at"}),
 	}).Create(&po).Error; err != nil {
 		return shared.Internal("保存路线图条目失败", err)
 	}
@@ -102,16 +103,20 @@ func (r *RoadmapRepository) Save(ctx context.Context, item *domain.Item) error {
 func roadmapPOToDomain(po model.RoadmapItem) (*domain.Item, error) {
 	var tags []string
 	var links []domain.Link
+	var checklist []domain.ChecklistItem
 	if err := json.Unmarshal([]byte(po.Tags), &tags); err != nil {
 		return nil, shared.Internal("读取路线图条目标签失败", err)
 	}
 	if err := json.Unmarshal([]byte(po.Links), &links); err != nil {
 		return nil, shared.Internal("读取路线图关联链接失败", err)
 	}
+	if err := json.Unmarshal([]byte(po.Checklist), &checklist); err != nil {
+		return nil, shared.Internal("读取路线图子项失败", err)
+	}
 	return domain.ReconstructItem(domain.ItemState{
 		ID: shared.IDFromUUID(po.ID), ProjectID: shared.IDFromUUID(po.ProjectID), Number: po.Number,
 		Content: domain.Content{Title: po.Title, Description: po.Description, Tags: tags, Links: links,
-			CompletionDate: po.CompletionDate, DeliveredVersion: po.DeliveredVersion},
+			Checklist: checklist, CompletionDate: po.CompletionDate, DeliveredVersion: po.DeliveredVersion},
 		Stage: domain.Stage(po.Stage), Position: po.Position, DeletedAt: po.DeletedAt,
 		CreatedAt: po.CreatedAt, UpdatedAt: po.UpdatedAt,
 	}), nil
