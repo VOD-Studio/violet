@@ -12,6 +12,14 @@ describe("NAV_ITEMS 组件库入口", () => {
 	});
 });
 
+describe("NAV_ITEMS 看板入口", () => {
+	it("更多菜单提供看板文档与演示入口，/kanban 归它", () => {
+		const more = NAV_ITEMS.find((item) => item.label === "更多");
+		expect(more?.children?.find((link) => link.to === "/kanban")?.label).toBe("看板");
+		expect(resolveActiveNav("/kanban")?.link.label).toBe("看板");
+	});
+});
+
 describe("resolveActiveNav", () => {
 	it("详情页仍归属其列表项", () => {
 		const active = resolveActiveNav("/blog/my-first-post");
@@ -51,5 +59,6 @@ describe("flattenNavLinks", () => {
 		expect(new Set(targets).size).toBe(targets.length);
 		expect(targets).toContain("/blog/archive");
 		expect(targets).toContain("/ui");
+		expect(targets).toContain("/kanban");
 	});
 });

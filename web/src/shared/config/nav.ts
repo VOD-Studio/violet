@@ -14,6 +14,7 @@ import {
 	NotebookText,
 	Rss,
 	Sparkles,
+	SquareKanban,
 	Users,
 } from "lucide-react";
 
@@ -137,6 +138,12 @@ export const NAV_ITEMS: NavItem[] = [
 				to: "/ui",
 				icon: Component,
 				description: "查阅 violet/ui 组件用法与开发文档",
+			},
+			{
+				label: "看板",
+				to: "/kanban",
+				icon: SquareKanban,
+				description: "试玩 @violetjs/kanban 并查阅安装与 API",
 			},
 		],
 	},

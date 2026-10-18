@@ -122,7 +122,7 @@ Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、�
 
 ## 看板组件包
 
-[`@violetjs/kanban`](packages/kanban/README.zh-CN.md) 是独立的受控看板组件包（尚未发布 npm），不依赖 `@violet/ui` 与站点模块。提供看板、可平移缩放的画布、关系图、容器响应式列切换、键盘移动与撤销重做；`/core` 不依赖 React。站点内暂无使用方。
+[`@violetjs/kanban`](packages/kanban/README.zh-CN.md) 是独立的受控看板组件包（尚未发布 npm），不依赖 `@violet/ui` 与站点模块。提供看板、可平移缩放的画布、关系图、容器响应式列切换、键盘移动与撤销重做；`/core` 不依赖 React。站点的项目路线图与文章里的路线图画布使用它；`src/features/kanban-docs/` 负责 `/kanban` 文档与演示，演示原样渲染包内 `examples/`、预览与复制源码同源，API 正文直接读取包内 `docs/api.md`。站点在 Vite 里把根入口 `@violetjs/kanban` 指向 `/unstyled`，默认样式只由 `src/styles.css` 引入一次，再由 `src/styles/kanban.css` 映射站点 token。
 
 使用契约见[双语 README](packages/kanban/README.md)与 [API 文档](packages/kanban/docs/api.md)；[开发说明](packages/kanban/DEVELOPMENT.md)维护同源示例校验、全入口 tarball 消费验收和发布前清单。本次不接入 npm 发布工作流。
 
@@ -191,6 +191,7 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 | `/login`, `/register`, `/forgot-password` | 认证 |
 | `/changelog` | 更新日志 |
 | `/ui`、`/ui/guides/:slug`、`/ui/components/:name` | violet/ui 组件库文档、接入指南与组件 API 示例 |
+| `/kanban` | @violetjs/kanban 文档与演示：四个包内示例的可交互预览（只用本地状态）与同源源码、安装说明（包未发布 npm，按 workspace 依赖或 tarball 安装）、与包内 API 文档同一份的正文及宽屏目录；入口在导航「更多」 |
 | `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、Bot 斜杠命令补全、未读、Web Push 设置、账号级聊天外观）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
 | `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
 | `/notes`, `/notes/:id` | 公开笔记流（游标分页 + 标签筛选）与详情，复用文章渲染管线 |
@@ -245,6 +246,7 @@ pnpm test
 - setup：`src/test/setup.ts`
 - 主题浏览器契约（Playwright，需先 `pnpm build`）：`pnpm test:contract`，或仓库根 `make web-contract`
 - 组件库文档契约检查实际导航、按钮响应、复选框键盘操作与代码展开/收起，不固定组件目录数量、链接清单或示例源码文本。
+- 看板文档契约：`pnpm test:contract e2e/kanban-docs.spec.ts`，覆盖导航入口、服务端直出、同源源码、API 目录跳转、演示的拖拽与键盘移动、撤销重做与暗色。
 - 编辑器路线图入口契约：`pnpm test:contract e2e/editor-roadmap-embed.spec.ts`，覆盖 Slash 选择与预览、插入后的编辑区预览、代码块上的编辑与手写围栏块。
 - 路线图筛选契约：`pnpm test:contract e2e/project-roadmap-filters.spec.ts`，覆盖搜索与标签组合、原位淡化、清除、URL 直入和刷新、收起条目计数、管理员禁拖提示及窄屏键盘操作。
 

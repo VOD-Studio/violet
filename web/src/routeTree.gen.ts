@@ -16,6 +16,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PersonaRouteImport } from './routes/persona'
 import { Route as PetRouteImport } from './routes/pet'
@@ -142,6 +143,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const FriendsRoute = FriendsRouteImport.update({
   id: '/friends',
   path: '/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KanbanRoute = KanbanRouteImport.update({
+  id: '/kanban',
+  path: '/kanban',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -614,6 +620,7 @@ export interface FileRoutesByFullPath {
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/pet': typeof PetRoute
@@ -714,6 +721,7 @@ export interface FileRoutesByTo {
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/pet': typeof PetRoute
@@ -809,6 +817,7 @@ export interface FileRoutesById {
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/pet': typeof PetRoute
@@ -912,6 +921,7 @@ export interface FileRouteTypes {
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
+    | '/kanban'
     | '/login'
     | '/persona'
     | '/pet'
@@ -1012,6 +1022,7 @@ export interface FileRouteTypes {
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
+    | '/kanban'
     | '/login'
     | '/persona'
     | '/pet'
@@ -1106,6 +1117,7 @@ export interface FileRouteTypes {
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
+    | '/kanban'
     | '/login'
     | '/persona'
     | '/pet'
@@ -1208,6 +1220,7 @@ export interface RootRouteChildren {
   FeedDotxmlRoute: typeof FeedDotxmlRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
+  KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
   PersonaRoute: typeof PersonaRoute
   PetRoute: typeof PetRoute
@@ -1296,6 +1309,13 @@ declare module '@tanstack/react-router' {
       path: '/friends'
       fullPath: '/friends'
       preLoaderRoute: typeof FriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kanban': {
+      id: '/kanban'
+      path: '/kanban'
+      fullPath: '/kanban'
+      preLoaderRoute: typeof KanbanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -2149,6 +2169,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedDotxmlRoute: FeedDotxmlRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
+  KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
   PersonaRoute: PersonaRoute,
   PetRoute: PetRoute,
