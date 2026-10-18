@@ -4,6 +4,8 @@ export type { PointerControllerOptions } from "./board/drag/pointer-controller.t
 export { createPointerController } from "./board/drag/pointer-controller.ts";
 export type { DragController, DragHost } from "./board/drag/types.ts";
 export type { MoveDecision } from "./board/drag/use-board-moves.ts";
+export type { InlineEditMessages, InlineEditProps } from "./board/inline-edit.tsx";
+export { InlineEdit } from "./board/inline-edit.tsx";
 export type { BoardLocale, BoardMessages } from "./board/messages.ts";
 export type {
 	BoardCard,

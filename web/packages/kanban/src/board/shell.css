@@ -162,3 +162,49 @@
 	color: var(--_kanban-muted);
 	font-size: 13px;
 }
+/* 标题内联编辑 */
+.v-kanban .v-kanban__inline {
+	display: block;
+	min-width: 0;
+}
+.v-kanban .v-kanban__inline-trigger {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	overflow-wrap: anywhere;
+	cursor: text;
+}
+.v-kanban .v-kanban__inline-trigger[data-empty="true"] {
+	color: var(--_kanban-muted);
+}
+.v-kanban .v-kanban__inline-input {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 2px 6px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: 6px;
+	background: var(--_kanban-card);
+	color: inherit;
+	font: inherit;
+}
+.v-kanban .v-kanban__inline-input[aria-invalid="true"] {
+	border-color: var(--_kanban-danger);
+}
+.v-kanban .v-kanban__inline-error {
+	display: block;
+	margin-top: 4px;
+	color: var(--_kanban-danger);
+	font-size: 12px;
+}
+.v-kanban .v-kanban__inline-trigger:focus-visible,
+.v-kanban .v-kanban__inline-input:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: 2px;
+}

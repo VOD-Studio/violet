@@ -20,6 +20,7 @@ import { type MoveDecision, useBoardMoves } from "./drag/use-board-moves.ts";
 import { useFocusRequest } from "./drag/use-focus-request.ts";
 import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import { useMoveMenu } from "./drag/use-move-menu.ts";
+import { BoardLocaleContext } from "./locale-context.ts";
 import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
 
@@ -260,181 +261,183 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const ghostCard = drag.ghost ? cardsById.get(drag.ghost.cardId) : undefined;
 
 	return (
-		<div
-			ref={rootRef}
-			role="group"
-			aria-label={messages.boardLabel}
-			className={className ? `v-kanban ${className}` : "v-kanban"}
-			data-dragging={drag.dragging ? "true" : undefined}
-			{...rest}
-		>
-			{onMove && !readOnly ? (
-				<p
-					role="status"
-					className={
-						showFilterHint
-							? "v-kanban__filter-hint"
-							: "v-kanban__filter-hint v-kanban__sr-only"
-					}
-					data-empty={showFilterHint ? undefined : "true"}
-				>
-					{showFilterHint ? messages.filterDragDisabled : ""}
-				</p>
-			) : null}
-			<div ref={scrollerRef} className="v-kanban__scroller">
-				{resolved.map(({ id, cards: columnCards }) => {
-					const column = definitions.get(id) as TColumn;
-					const title = column.title ?? column.id;
-					const placeholder = drag.dragging?.placeholder;
-					const dragged = drag.dragging?.cardId;
-					const placeholderNode =
-						drag.dragging && placeholder?.columnId === id ? (
-							<li
-								// 随位置变化的 key：占位移动时 React 只增删它自己，不会挪动被按下的卡片节点
-								key={`placeholder-${placeholder.index}`}
-								aria-hidden="true"
-								className="v-kanban__placeholder"
-								data-placeholder="true"
-								data-flip={PLACEHOLDER_FLIP_ID}
-								data-invalid={drag.dragging.invalid ? "true" : undefined}
-								style={{ height: drag.dragging.size.height }}
-							/>
-						) : null;
-					const items: ReactNode[] = [];
-					let shown = 0;
-					for (const [index, card] of columnCards.entries()) {
-						// 被拖卡片留在原处隐藏：触屏手势的后续事件固定发给按下时的节点，节点一脱离文档就收不到了
-						const isOrigin = card.id === dragged;
-						if (!isOrigin && shown === placeholder?.index && placeholderNode)
+		<BoardLocaleContext value={locale}>
+			<div
+				ref={rootRef}
+				role="group"
+				aria-label={messages.boardLabel}
+				className={className ? `v-kanban ${className}` : "v-kanban"}
+				data-dragging={drag.dragging ? "true" : undefined}
+				{...rest}
+			>
+				{onMove && !readOnly ? (
+					<p
+						role="status"
+						className={
+							showFilterHint
+								? "v-kanban__filter-hint"
+								: "v-kanban__filter-hint v-kanban__sr-only"
+						}
+						data-empty={showFilterHint ? undefined : "true"}
+					>
+						{showFilterHint ? messages.filterDragDisabled : ""}
+					</p>
+				) : null}
+				<div ref={scrollerRef} className="v-kanban__scroller">
+					{resolved.map(({ id, cards: columnCards }) => {
+						const column = definitions.get(id) as TColumn;
+						const title = column.title ?? column.id;
+						const placeholder = drag.dragging?.placeholder;
+						const dragged = drag.dragging?.cardId;
+						const placeholderNode =
+							drag.dragging && placeholder?.columnId === id ? (
+								<li
+									// 随位置变化的 key：占位移动时 React 只增删它自己，不会挪动被按下的卡片节点
+									key={`placeholder-${placeholder.index}`}
+									aria-hidden="true"
+									className="v-kanban__placeholder"
+									data-placeholder="true"
+									data-flip={PLACEHOLDER_FLIP_ID}
+									data-invalid={drag.dragging.invalid ? "true" : undefined}
+									style={{ height: drag.dragging.size.height }}
+								/>
+							) : null;
+						const items: ReactNode[] = [];
+						let shown = 0;
+						for (const [index, card] of columnCards.entries()) {
+							// 被拖卡片留在原处隐藏：触屏手势的后续事件固定发给按下时的节点，节点一脱离文档就收不到了
+							const isOrigin = card.id === dragged;
+							if (!isOrigin && shown === placeholder?.index && placeholderNode)
+								items.push(placeholderNode);
+							items.push(
+								<CardItem
+									key={card.id}
+									cardId={card.id}
+									columnId={id}
+									origin={isOrigin}
+									draggable={moves.editable && isDraggable?.(card) !== false}
+									lifted={keyboard.liftedId === card.id}
+									settling={card.id === drag.settlingId}
+									dimmed={filterActive && !matches(card)}
+									dimmedText={messages.filteredOut}
+									hintId={hintId}
+									menu={
+										moveMenu === "none"
+											? undefined
+											: {
+													mode: moveMenu,
+													label: formatMessage(messages.moveToLabel, {
+														card: cardLabel(card.id),
+													}),
+													triggerText: messages.moveTo,
+													targets,
+													onSelect: (columnId) =>
+														moveToColumn(card.id, columnId),
+												}
+									}
+									onKeyDown={(event) => keyboard.onCardKeyDown(event, card.id)}
+								>
+									{renderCard(card, { column, index })}
+								</CardItem>,
+							);
+							if (!isOrigin) shown += 1;
+						}
+						if (placeholderNode && shown === placeholder?.index)
 							items.push(placeholderNode);
-						items.push(
-							<CardItem
-								key={card.id}
-								cardId={card.id}
-								columnId={id}
-								origin={isOrigin}
-								draggable={moves.editable && isDraggable?.(card) !== false}
-								lifted={keyboard.liftedId === card.id}
-								settling={card.id === drag.settlingId}
-								dimmed={filterActive && !matches(card)}
-								dimmedText={messages.filteredOut}
-								hintId={hintId}
-								menu={
-									moveMenu === "none"
-										? undefined
-										: {
-												mode: moveMenu,
-												label: formatMessage(messages.moveToLabel, {
-													card: cardLabel(card.id),
-												}),
-												triggerText: messages.moveTo,
-												targets,
-												onSelect: (columnId) =>
-													moveToColumn(card.id, columnId),
-											}
+						const hasVisible = shown > 0 || placeholderNode !== null;
+						const matched = filterActive ? columnCards.filter(matches).length : null;
+						// 折叠列表只对可折叠的列起作用：否则列被藏起来，又没有按钮可以展开
+						const columnCollapsible = collapsible && column.collapsible !== false;
+						return (
+							<ColumnView
+								key={id}
+								id={id}
+								title={title}
+								count={columnCards.length}
+								matched={matched}
+								renderHeader={
+									renderColumnHeader
+										? () =>
+												renderColumnHeader(column, {
+													count: columnCards.length,
+													matched,
+												})
+										: undefined
 								}
-								onKeyDown={(event) => keyboard.onCardKeyDown(event, card.id)}
+								collapsible={columnCollapsible}
+								collapsed={columnCollapsible && collapse.isCollapsed(id)}
+								onToggle={() => {
+									engage();
+									collapse.toggle(id);
+								}}
+								quickAdd={
+									onAddCard && !readOnly && column.quickAdd !== false
+										? {
+												onSubmit: (cardTitle) =>
+													onAddCard({ columnId: id, title: cardTitle }),
+												onError: (error, cardTitle) =>
+													onAddCardError?.(error, {
+														columnId: id,
+														title: cardTitle,
+													}),
+												onOpen: engage,
+											}
+										: undefined
+								}
+								messages={messages}
 							>
-								{renderCard(card, { column, index })}
-							</CardItem>,
+								{items.length > 0 ? (
+									// biome-ignore lint/a11y/noRedundantRoles: 显式 role：list-style: none 会让 Safari 丢弃列表语义
+									<ul role="list" className="v-kanban__cards">
+										{items}
+									</ul>
+								) : null}
+								{hasVisible ? null : renderEmpty ? (
+									renderEmpty(column)
+								) : (
+									<p className="v-kanban__empty">{messages.emptyColumn}</p>
+								)}
+							</ColumnView>
 						);
-						if (!isOrigin) shown += 1;
-					}
-					if (placeholderNode && shown === placeholder?.index)
-						items.push(placeholderNode);
-					const hasVisible = shown > 0 || placeholderNode !== null;
-					const matched = filterActive ? columnCards.filter(matches).length : null;
-					// 折叠列表只对可折叠的列起作用：否则列被藏起来，又没有按钮可以展开
-					const columnCollapsible = collapsible && column.collapsible !== false;
-					return (
-						<ColumnView
-							key={id}
-							id={id}
-							title={title}
-							count={columnCards.length}
-							matched={matched}
-							renderHeader={
-								renderColumnHeader
-									? () =>
-											renderColumnHeader(column, {
-												count: columnCards.length,
-												matched,
-											})
-									: undefined
-							}
-							collapsible={columnCollapsible}
-							collapsed={columnCollapsible && collapse.isCollapsed(id)}
-							onToggle={() => {
-								engage();
-								collapse.toggle(id);
-							}}
-							quickAdd={
-								onAddCard && !readOnly && column.quickAdd !== false
-									? {
-											onSubmit: (cardTitle) =>
-												onAddCard({ columnId: id, title: cardTitle }),
-											onError: (error, cardTitle) =>
-												onAddCardError?.(error, {
-													columnId: id,
-													title: cardTitle,
-												}),
-											onOpen: engage,
-										}
-									: undefined
-							}
-							messages={messages}
-						>
-							{items.length > 0 ? (
-								// biome-ignore lint/a11y/noRedundantRoles: 显式 role：list-style: none 会让 Safari 丢弃列表语义
-								<ul role="list" className="v-kanban__cards">
-									{items}
-								</ul>
-							) : null}
-							{hasVisible ? null : renderEmpty ? (
-								renderEmpty(column)
-							) : (
-								<p className="v-kanban__empty">{messages.emptyColumn}</p>
-							)}
-						</ColumnView>
-					);
-				})}
-			</div>
-			{drag.ghost && ghostCard ? (
-				<div
-					ref={drag.ghostRef}
-					aria-hidden="true"
-					inert
-					className="v-kanban__card v-kanban__ghost"
-					style={{ width: drag.ghost.size.width, height: drag.ghost.size.height }}
-				>
-					{renderCard(ghostCard, {
-						column: definitions.get(drag.ghost.origin.columnId) as TColumn,
-						index: drag.ghost.origin.index,
 					})}
 				</div>
-			) : null}
-			{moves.editable ? (
-				<>
-					<span id={hintId} className="v-kanban__sr-only">
-						{messages.keyboardHint}
-					</span>
+				{drag.ghost && ghostCard ? (
 					<div
-						role="status"
-						aria-live="polite"
-						aria-atomic="true"
-						className="v-kanban__sr-only v-kanban__announcer"
+						ref={drag.ghostRef}
+						aria-hidden="true"
+						inert
+						className="v-kanban__card v-kanban__ghost"
+						style={{ width: drag.ghost.size.width, height: drag.ghost.size.height }}
 					>
-						<span key={announcement.seq}>{announcement.text}</span>
+						{renderCard(ghostCard, {
+							column: definitions.get(drag.ghost.origin.columnId) as TColumn,
+							index: drag.ghost.origin.index,
+						})}
 					</div>
-				</>
-			) : null}
-			<div
-				role="status"
-				className="v-kanban__notice"
-				data-empty={moves.notice ? undefined : "true"}
-			>
-				<span key={moves.noticeSeq}>{moves.notice}</span>
+				) : null}
+				{moves.editable ? (
+					<>
+						<span id={hintId} className="v-kanban__sr-only">
+							{messages.keyboardHint}
+						</span>
+						<div
+							role="status"
+							aria-live="polite"
+							aria-atomic="true"
+							className="v-kanban__sr-only v-kanban__announcer"
+						>
+							<span key={announcement.seq}>{announcement.text}</span>
+						</div>
+					</>
+				) : null}
+				<div
+					role="status"
+					className="v-kanban__notice"
+					data-empty={moves.notice ? undefined : "true"}
+				>
+					<span key={moves.noticeSeq}>{moves.notice}</span>
+				</div>
 			</div>
-		</div>
+		</BoardLocaleContext>
 	);
 }

@@ -109,7 +109,7 @@ try {
 	// 公开类型：泛型卡片只要求 id，使用方自己的列类型贯穿插槽；缺 id 的卡片必须被拒绝。
 	write(
 		"types.tsx",
-		`import { Board, createPointerController, type NewCard, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
+		`import { Board, InlineEdit, createPointerController, type InlineEditMessages, type NewCard, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
 import { Board as Unstyled, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
 import { createHistory, invertMove, fitViewport, zoomAt, DEFAULT_SCALE_LIMITS, type Viewport } from "${metadata.name}/core";
 import { Canvas, type CanvasHandle, type CanvasMessages } from "${metadata.name}/canvas";
@@ -132,11 +132,12 @@ export const nodes = [
 		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} moveMenu="always" />,
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
 	<Board columns={[{ id: "todo", title: "Todo", collapsible: false, quickAdd: false }]} cards={tasks} order={{ todo: ["a"] }}
-		renderCard={(task) => task.title}
+		renderCard={(task) => <InlineEdit value={task.title} label="Title" onSave={async (next) => { await Promise.resolve(next.length); }} allowEmpty={false} maxLength={80} locale="zh-CN" messages={inlineMessages} />}
 		collapsible collapsedColumns={["todo"]} defaultCollapsedColumns={[]} onCollapsedColumnsChange={(ids: string[]) => ids.length}
 		onAddCard={async (card: NewCard) => { await Promise.resolve(card.columnId + card.title); }} onAddCardError={(error, card) => console.error(error, card.title)}
 		filter={(task) => task.title.includes("A")} />,
 ];
+const inlineMessages: Partial<InlineEditMessages> = { saveFailed: "no" };
 export const props: BoardProps<Task, Stage>["order"] = {};
 const viewport: Viewport = fitViewport({ width: 800, height: 600 }, { width: 400, height: 300 });
 export const zoomed: Viewport = zoomAt(viewport, { x: 0, y: 0 }, 1.5, DEFAULT_SCALE_LIMITS);
