@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Canvas } from "../src/canvas/index.ts";
+import type { Relation } from "../src/core/index.ts";
 import { applyMove, invertMove } from "../src/core/index.ts";
 import {
 	Board,
@@ -225,7 +226,64 @@ function ShellDemo() {
 	);
 }
 
+const demoRelations: Relation[] = [
+	{ sourceId: "a", targetId: "d", type: "extends" },
+	{ sourceId: "b", targetId: "d", type: "fixes" },
+	{ sourceId: "e", targetId: "c", type: "blocks" },
+	{ sourceId: "a", targetId: "c", type: "extends" },
+];
+
+/** 关系视图：带关系线的可编辑看板，`canvas` 参数把它放进画布，`narrow` 参数让看板出现横向滚动。 */
+function RelationsDemo() {
+	const [order, setOrder] = useState(initial);
+	const [selected, setSelected] = useState<string | null>(null);
+	const [hidden, setHidden] = useState(false);
+	const board = (
+		<Board
+			columns={columns}
+			cards={tasks}
+			order={order}
+			locale="en"
+			relations={demoRelations}
+			hideRelations={hidden}
+			selectedCardId={selected}
+			onSelectedCardChange={setSelected}
+			getCardLabel={(task) => task.title}
+			renderCard={(task) => <span>{task.title}</span>}
+			onMove={async (move) => {
+				window.__moves.push(move);
+				await sleep(30);
+				setOrder(
+					(previous) => applyMove({ columns: columnIds, order: previous }, move).order,
+				);
+			}}
+		/>
+	);
+	return (
+		<div style={{ width: params.has("narrow") ? 600 : 1000, padding: 24 }}>
+			<label>
+				<input
+					id="hide-relations"
+					type="checkbox"
+					checked={hidden}
+					onChange={(event) => setHidden(event.target.checked)}
+				/>{" "}
+				hide relations
+			</label>
+			{params.has("canvas") ? <Canvas style={{ height: 420 }}>{board}</Canvas> : board}
+		</div>
+	);
+}
+
 const view = params.get("view");
 createRoot(document.getElementById("root") as HTMLElement).render(
-	view === "canvas" ? <CanvasDemo /> : view === "shell" ? <ShellDemo /> : <App />,
+	view === "canvas" ? (
+		<CanvasDemo />
+	) : view === "shell" ? (
+		<ShellDemo />
+	) : view === "relations" ? (
+		<RelationsDemo />
+	) : (
+		<App />
+	),
 );
