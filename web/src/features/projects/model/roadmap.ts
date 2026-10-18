@@ -4,6 +4,7 @@
  * 字段来源 application/roadmap 的 DetailDTO、ItemDTO、RelationDTO，snake_case。
  * 写接口的请求体随后续票补充。
  */
+import type { RoadmapProgress } from "./roadmap-summary";
 import type { Project } from "./types";
 
 /** 条目所处阶段；阶段只由管理员手动设置，关系不会改变它。 */
@@ -58,16 +59,6 @@ export interface RoadmapRelation {
 	target_id: string;
 	type: RoadmapRelationType;
 	created_at: string;
-}
-
-/** RoadmapProgress - 进度概览，只统计未删除条目 */
-export interface RoadmapProgress {
-	planned: number;
-	in_progress: number;
-	completed: number;
-	total: number;
-	/** 已完成占比，0–100 的整数（四舍五入）；空路线图为 0 */
-	percent: number;
 }
 
 /** RoadmapDetail - 公开路线图详情：项目、全部条目、关系与进度 */

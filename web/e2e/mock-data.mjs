@@ -204,6 +204,72 @@ const ROADMAP_EMPTY = {
 
 const ROADMAPS = { "roadmap-contract": ROADMAP_FIXTURE, "roadmap-empty": ROADMAP_EMPTY };
 
+const summarize = (progress, inProgress, latestCompleted) => ({
+	progress,
+	in_progress: inProgress,
+	latest_completed: latestCompleted,
+});
+
+/**
+ * 项目列表契约用数据（GET /projects）。顺序是站主设定的展示顺序，故意既不按标题也不按时间排：
+ * 路线图契约项目有完整摘要与可用封面；Zeta 工具封面失效、没有进行中与已完成；
+ * 空路线图项目有摘要但没有条目；Alpha 读不到摘要。
+ */
+export const PROJECTS_FIXTURE = [
+	{
+		...ROADMAP_PROJECT,
+		image_url: "/assets/contract-cover.png",
+		created_at: "2026-08-01T00:00:00Z",
+		roadmap: summarize(
+			ROADMAP_FIXTURE.progress,
+			ROADMAP_ITEMS.filter((item) => item.stage === "in_progress").map((item) => ({
+				id: item.id,
+				number: item.number,
+				title: item.title,
+				completion_date: null,
+			})),
+			{
+				id: ROADMAP_ITEMS[5].id,
+				number: ROADMAP_ITEMS[5].number,
+				title: ROADMAP_ITEMS[5].title,
+				completion_date: ROADMAP_ITEMS[5].completion_date,
+			},
+		),
+	},
+	{
+		id: "40000000-0000-0000-0000-000000000003",
+		title: "Zeta 工具",
+		slug: "zeta-tool",
+		description: "封面失效的项目，只有计划中的条目。",
+		url: "",
+		github_url: "",
+		image_url: "/uploads/missing-cover.png",
+		tech_stack: ["TypeScript"],
+		sort_order: 2,
+		created_at: "2026-09-01T00:00:00Z",
+		roadmap: summarize({ planned: 2, in_progress: 0, completed: 0, total: 2, percent: 0 }, [], null),
+	},
+	{
+		...ROADMAP_EMPTY.project,
+		image_url: "",
+		sort_order: 3,
+		created_at: "2026-07-01T00:00:00Z",
+		roadmap: summarize({ planned: 0, in_progress: 0, completed: 0, total: 0, percent: 0 }, [], null),
+	},
+	{
+		id: "40000000-0000-0000-0000-000000000004",
+		title: "Alpha 无摘要",
+		slug: "alpha",
+		description: "后端没有附带路线图摘要的项目。",
+		url: "",
+		github_url: "",
+		image_url: "",
+		tech_stack: [],
+		sort_order: 4,
+		created_at: "2026-10-01T00:00:00Z",
+	},
+];
+
 /** 与后端 envelope 语义一致的只读路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
 export function handle(method, pathname, search, cookie = "") {
@@ -266,6 +332,7 @@ export function handle(method, pathname, search, cookie = "") {
 	}
 	if (pathname === "/api/v1/settings") return { status: 200, body: envelope({}) };
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
+	if (pathname === "/api/v1/projects") return { status: 200, body: envelope(PROJECTS_FIXTURE) };
 	const roadmap = /^\/api\/v1\/projects\/by-slug\/([^/]+)\/roadmap$/.exec(pathname);
 	if (roadmap) {
 		const detail = ROADMAPS[decodeURIComponent(roadmap[1])];

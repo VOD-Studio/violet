@@ -1,7 +1,7 @@
 import { BackLink } from "@shared/ui/back-link";
 import { Badge, Button } from "@violet/ui";
 import { Code, ExternalLink } from "lucide-react";
-import type { RoadmapProgress as RoadmapProgressData } from "../model/roadmap";
+import type { RoadmapProgress as RoadmapProgressData } from "../model/roadmap-summary";
 import type { Project } from "../model/types";
 import { RoadmapProgress } from "./RoadmapProgress";
 

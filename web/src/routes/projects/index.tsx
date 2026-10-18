@@ -1,51 +1,18 @@
 import { projectKeys } from "@features/projects/api/keys";
-import { fetchProjects, useProjects } from "@features/projects/api/queries";
-import { ProjectCard } from "@features/projects/ui/ProjectCard";
-import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
-import { TiltedCard } from "@shared/ui/tilted-card";
+import { fetchProjects } from "@features/projects/api/queries";
+import { ProjectsPage } from "@features/projects/ui/ProjectsPage";
 import { createFileRoute } from "@tanstack/react-router";
-import { Empty, PageHeader, PageShell } from "@violet/ui";
-
-const ProjectsPage = () => {
-	// 列表数据由 loader 预取并脱水合，这里复用缓存
-	const { data: projects = [], isLoading, error } = useProjects();
-
-	if (error) {
-		return <PageShell className="text-muted-foreground">加载失败</PageShell>;
-	}
-
-	return (
-		<PageShell>
-			<PageHeader eyebrow="All Projects" title="项目" />
-			{isLoading ? (
-				<ProjectsSkeleton />
-			) : projects.length === 0 ? (
-				<Empty
-					title="暂无项目"
-					description="还没有发布任何项目"
-					className="py-20"
-					size="lg"
-				/>
-			) : (
-				<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-					{projects.map((p) => (
-						<TiltedCard key={p.id}>
-							<ProjectCard project={p} />
-						</TiltedCard>
-					))}
-				</div>
-			)}
-		</PageShell>
-	);
-};
 
 export const Route = createFileRoute("/projects/")({
-	// SSR 预取项目列表，脱水合后首屏直出
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData({
+	// SSR 预取项目列表，首屏直出；列表同时作为组件的首帧数据
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData({
 			queryKey: projectKeys.list({}),
 			queryFn: () => fetchProjects({}),
-		});
-	},
-	component: ProjectsPage,
+		}),
+	component: ProjectsRoute,
 });
+
+function ProjectsRoute() {
+	return <ProjectsPage initialData={Route.useLoaderData()} />;
+}

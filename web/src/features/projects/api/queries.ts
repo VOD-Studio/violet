@@ -24,14 +24,17 @@ export const fetchProjectsPaged = async (query: PageQuery): Promise<PagedRespons
 /**
  * useProjects - 项目列表 hook
  *
- * 缓存 key 由 query 参数决定。后端返回全量列表，前端可自行排序与切片。
+ * 缓存 key 由 query 参数决定。后端返回全量列表，顺序是站主设定的展示顺序，前端不要重排。
  *
  * @param query 预留分页参数
+ * @param initialData 路由 loader 已取到的列表：客户端的查询缓存不随 SSR 传递，不给它首帧没有数据，
+ * 与服务端直出的 HTML 对不上
  */
-export const useProjects = (query: ProjectListQuery = {}) =>
+export const useProjects = (query: ProjectListQuery = {}, initialData?: Project[]) =>
 	useQuery({
 		queryKey: projectKeys.list(query),
 		queryFn: () => fetchProjects(query),
+		initialData,
 	});
 
 /**

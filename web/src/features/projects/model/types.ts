@@ -7,6 +7,8 @@
  * 字段来源 application/project/service.go 的 ProjectDTO，snake_case。
  */
 
+import type { ProjectRoadmapSummary } from "./roadmap-summary";
+
 /**
  * Project - 项目读模型
  *
@@ -32,6 +34,8 @@ export interface Project {
 	sort_order: number;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
+	/** 路线图摘要，仅公开项目列表附带；没有这个字段按没有路线图处理 */
+	roadmap?: ProjectRoadmapSummary;
 }
 
 /**
