@@ -144,6 +144,8 @@ describe("拿起、移动、放下", () => {
 			to: { columnId: "doing", index: 0 },
 			previousId: null,
 			nextId: "d",
+			fromPreviousId: null,
+			fromNextId: "b",
 		});
 		expect(announced()).toBe("Dropped Task A. In progress, position 1 of 2.");
 		expect(card("a").hasAttribute("data-lifted")).toBe(false);

@@ -3,11 +3,13 @@ import {
 	applyMove,
 	type ColumnLayout,
 	createMove,
+	invertMove,
 	isNoopMove,
 	locateCard,
 	resolveDropTarget,
 	violatesAutoSort,
 } from "./moves.ts";
+import type { BoardState } from "./state.ts";
 
 const state = {
 	columns: ["todo", "doing", "done"],
@@ -31,6 +33,8 @@ describe("createMove", () => {
 			to: { columnId: "todo", index: 1 },
 			previousId: "b",
 			nextId: "c",
+			fromPreviousId: null,
+			fromNextId: "b",
 		});
 	});
 
@@ -52,6 +56,8 @@ describe("createMove", () => {
 			to: { columnId: "doing", index: 0 },
 			previousId: null,
 			nextId: "d",
+			fromPreviousId: "a",
+			fromNextId: "c",
 		});
 		expect(createMove(state, "b", { columnId: "done", index: 0 })).toMatchObject({
 			previousId: null,
@@ -67,6 +73,28 @@ describe("createMove", () => {
 	it("卡片或目标列不存在时不产生移动", () => {
 		expect(createMove(state, "missing", { columnId: "todo", index: 0 })).toBeNull();
 		expect(createMove(state, "a", { columnId: "ghost", index: 0 })).toBeNull();
+	});
+});
+
+describe("createMove：出发处的相邻卡片", () => {
+	it("记录卡片出发时上下的卡片，位于列首或列尾时对应一侧为 null", () => {
+		expect(createMove(state, "c", { columnId: "doing", index: 0 })).toMatchObject({
+			fromPreviousId: "b",
+			fromNextId: null,
+		});
+		expect(createMove(state, "d", { columnId: "todo", index: 0 })).toMatchObject({
+			fromPreviousId: null,
+			fromNextId: null,
+		});
+	});
+
+	it("同列移动时取自移动之前的排列", () => {
+		expect(createMove(state, "a", { columnId: "todo", index: 2 })).toMatchObject({
+			previousId: "c",
+			nextId: null,
+			fromPreviousId: null,
+			fromNextId: "b",
+		});
 	});
 });
 
@@ -247,5 +275,57 @@ describe("violatesAutoSort", () => {
 		});
 
 		expect(back && violatesAutoSort(back, isAuto)).toBe(false);
+	});
+});
+
+describe("invertMove", () => {
+	const make = (
+		cardId: string,
+		target: { columnId: string; index: number },
+		from: BoardState = state,
+	) => createMove(from, cardId, target) as NonNullable<ReturnType<typeof createMove>>;
+
+	it("反向移动从目标回到出发位置，相邻卡片取自出发处，不需要看板状态", () => {
+		const inverse = invertMove(make("a", { columnId: "doing", index: 1 }));
+
+		expect(inverse).toEqual({
+			cardId: "a",
+			from: { columnId: "doing", index: 1 },
+			to: { columnId: "todo", index: 0 },
+			previousId: null,
+			nextId: "b",
+			fromPreviousId: "d",
+			fromNextId: null,
+		});
+	});
+
+	it("先移动再反向移动，回到原来的状态", () => {
+		for (const target of [
+			{ columnId: "todo", index: 2 },
+			{ columnId: "doing", index: 0 },
+			{ columnId: "done", index: 0 },
+		]) {
+			const move = make("b", target);
+
+			expect(applyMove(applyMove(state, move), invertMove(move)).order).toEqual(state.order);
+		}
+	});
+
+	it("反向两次得到原来的移动", () => {
+		const move = make("c", { columnId: "doing", index: 0 });
+
+		expect(invertMove(invertMove(move))).toEqual(move);
+	});
+
+	it("相邻卡片取自移动发生时的状态：中间还有别的移动也不会指错卡片", () => {
+		// 先把 a 移到「开发中」，再基于这个新状态把 c 移到「开发中」末尾
+		const afterFirst = applyMove(state, make("a", { columnId: "doing", index: 1 }));
+		const second = make("c", { columnId: "doing", index: 2 }, afterFirst);
+		const afterSecond = applyMove(afterFirst, second);
+
+		const restored = applyMove(afterSecond, invertMove(second));
+
+		expect(restored.order).toEqual(afterFirst.order);
+		expect(invertMove(second)).toMatchObject({ previousId: "b", nextId: null });
 	});
 });

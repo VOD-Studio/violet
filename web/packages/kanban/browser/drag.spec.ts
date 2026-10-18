@@ -84,6 +84,8 @@ test.describe("指针拖拽", () => {
 			to: { columnId: "doing", index: 1 },
 			previousId: "d",
 			nextId: null,
+			fromPreviousId: null,
+			fromNextId: "b",
 		});
 		expect(await idsIn(page, "doing")).toEqual(["d", "a"]);
 		await expect(page.locator('[data-card-id="a"]')).toBeVisible();

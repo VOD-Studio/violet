@@ -10,7 +10,7 @@ This is a workspace package and is **not published to npm**. This README covers 
 | --- | --- |
 | `@violetjs/kanban` | `Board`, `createPointerController` and types, with the default stylesheet |
 | `@violetjs/kanban/unstyled` | `Board` without any CSS |
-| `@violetjs/kanban/core` | React-free board state, move creation and application, drop-target resolution, auto-sort rule |
+| `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history |
 | `@violetjs/kanban/styles.css` | The default stylesheet on its own |
 
 The package does not depend on `@violet/ui` or any site module. React 19 is a peer dependency.
@@ -76,7 +76,7 @@ Pass `onMove` and the board becomes editable: users drag cards within a column o
 />
 ```
 
-- A move reports the card, where it came from, where it goes (`to.index` counts the column without the dragged card), and the neighbouring card ids (`previousId`, `nextId`) so you can store a position by updating one row.
+- A move reports the card, where it came from, where it goes (`to.index` counts the column without the dragged card), and the neighbouring card ids at the destination (`previousId`, `nextId`) and at the origin (`fromPreviousId`, `fromNextId`) so you can store a position by updating one row.
 - Dropping a card shows the new order until the `onMove` call finishes. If it throws or its promise rejects, the card goes back, `onMoveError` is called and a notice is shown. Once the call has finished only `order` counts, so update it before then: optimistically inside `onMove`, or after saving and before returning. Moves still pending are applied on top of `order`, in the order they were dropped.
 - `canMove` runs when the target changes and again on drop with the final move; a throw counts as a rejection. A rejected target shows a dashed red placeholder; on drop the card returns and the reason is shown (`messages.moveRejected` when you give none).
 - `autoSort` marks a column whose order is yours to decide: cards entering from another column appear at that end, and manually reordering inside it is rejected with `messages.autoSorted`.
@@ -84,9 +84,8 @@ Pass `onMove` and the board becomes editable: users drag cards within a column o
 - While a card is dragged, `renderCard` runs once more for the floating copy (hidden from assistive technology and inert), so don't rely on unique DOM ids or one-shot effects inside it.
 - Dragging starts after the pointer moves 4px (before that it is a click) and the click that follows a drag is suppressed. `Esc`, moving the pointer away from the board, or the window losing focus cancels it. On touch screens, press and hold for 250ms; moving earlier scrolls the page.
 - Motion is a 200ms position transition (displacement and landing), turned off under `prefers-reduced-motion: reduce`. There is no scaling.
-- Undo is not available yet.
 
-`@violetjs/kanban/core` exposes the same logic without React: `createMove`, `applyMove`, `isNoopMove`, `locateCard`, `resolveDropTarget` and `violatesAutoSort`.
+`@violetjs/kanban/core` exposes the same logic without React: `createMove`, `applyMove`, `invertMove`, `isNoopMove`, `locateCard`, `resolveDropTarget`, `violatesAutoSort`, `stepTarget` and `createHistory`.
 
 ### Keyboard and the "Move to…" menu
 
@@ -102,6 +101,32 @@ Editable cards are focusable (`Tab`). Press `Space` or `Enter` on the card itsel
 ### Replacing the drag controller
 
 `dragController` takes any `DragController` (keep its identity stable, for example at module level: a new one re-attaches and cancels a drag in progress): an object with `attach(host)` that turns input into `host.start`, `host.move`, `host.drop` and `host.cancel` calls and returns a cleanup function. The default is `createPointerController({ threshold, touchHoldDelay, touchTolerance })`.
+
+## Undo and redo
+
+`createHistory()` (also in `@violetjs/kanban/core`) is a plain command history that lives for the current session. It does not know what a command does: each command carries its own forward and backward actions, so moves, additions, deletions and edits all fit.
+
+```tsx
+const history = useMemo(() => createHistory(), []);
+
+<Board
+  onMove={async (move) => {
+    await save(move);
+    history.push({
+      label: `Move ${move.cardId}`,
+      undo: () => save(invertMove(move)), // from "@violetjs/kanban/core"
+      redo: () => save(move),
+    });
+  }}
+  /* … */
+/>
+```
+
+- `push` records a step that has already happened, so push after the save succeeded. It clears the redo stack. Only the most recent steps are kept (`limit`); a reload starts empty.
+- Undo and redo are real operations: `undo()` / `redo()` run your action and wait for it. If it throws or rejects, that step is discarded for good (`onError` is called) and the rest of the history stays usable. Only one step runs at a time; calls made meanwhile are ignored.
+- A step whose forward action changed fields on the server (for example clearing a completion date) can capture them in its closure and restore them in `undo`.
+- `invertMove(move)` returns the move that puts the card back. A move records the cards next to its origin, so the inverse needs no board state and stays correct when other moves happened in between.
+- An error thrown by a subscriber or by `onError` never corrupts the history; it is rethrown asynchronously so it still reaches your error reporting.
 
 ## Slots and messages
 

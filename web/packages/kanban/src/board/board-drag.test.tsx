@@ -136,6 +136,8 @@ describe("拖拽移动", () => {
 			to: { columnId: "doing", index: 1 },
 			previousId: "d",
 			nextId: null,
+			fromPreviousId: null,
+			fromNextId: "b",
 		});
 		expect(cardIds("规划中")).toEqual(["b", "c"]);
 		expect(cardIds("开发中")).toEqual(["d", "a"]);

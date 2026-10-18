@@ -34,6 +34,10 @@ export interface BoardMove {
 	previousId: string | null;
 	/** 目标位置下方的卡片，位于列尾时为 null。 */
 	nextId: string | null;
+	/** 卡片出发时上方的卡片，位于列首时为 null；反向移动据此放回原处。 */
+	fromPreviousId: string | null;
+	/** 卡片出发时下方的卡片，位于列尾时为 null。 */
+	fromNextId: string | null;
 }
 
 /** 自动排序列让别的列的卡片进入时先落在哪一端。 */
@@ -86,12 +90,15 @@ export function createMove(
 	if (!from || !targetOrder) return null;
 	const remaining = targetOrder.filter((id) => id !== cardId);
 	const index = clamp(target.index, 0, remaining.length);
+	const origin = normalized.order[from.columnId];
 	return {
 		cardId,
 		from,
 		to: { columnId: target.columnId, index },
 		previousId: remaining[index - 1] ?? null,
 		nextId: remaining[index] ?? null,
+		fromPreviousId: origin[from.index - 1] ?? null,
+		fromNextId: origin[from.index + 1] ?? null,
 	};
 }
 
@@ -166,4 +173,21 @@ export function violatesAutoSort(
 	return (
 		move.from.columnId === move.to.columnId && isAutoSort(move.to.columnId) && !isNoopMove(move)
 	);
+}
+
+/**
+ * 一次移动的反向移动：把卡片放回出发位置。
+ *
+ * 出发处的相邻卡片已记录在移动里，所以不需要看板状态，也不会因为中间发生过别的移动而指错卡片。
+ */
+export function invertMove(move: BoardMove): BoardMove {
+	return {
+		cardId: move.cardId,
+		from: move.to,
+		to: move.from,
+		previousId: move.fromPreviousId,
+		nextId: move.fromNextId,
+		fromPreviousId: move.previousId,
+		fromNextId: move.nextId,
+	};
 }

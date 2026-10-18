@@ -1,4 +1,13 @@
 export type {
+	CommandHistory,
+	HistoryCommand,
+	HistoryOptions,
+	HistoryOutcome,
+	HistoryResult,
+	HistoryState,
+} from "./history.ts";
+export { createHistory } from "./history.ts";
+export type {
 	AutoSortEntry,
 	BoardMove,
 	BoardPosition,
@@ -10,6 +19,7 @@ export {
 	applyMove,
 	createMove,
 	entryIndex,
+	invertMove,
 	isNoopMove,
 	locateCard,
 	resolveDropTarget,
