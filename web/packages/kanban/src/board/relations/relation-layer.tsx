@@ -10,6 +10,8 @@ export interface RelationLayerProps {
 	/** 各卡片在滚动层内容坐标系里的矩形。 */
 	rects: ReadonlyMap<string, Rect>;
 	types: Readonly<Record<string, RelationTypeStyle>>;
+	/** 选中的卡片；有选中时与它无关的线淡化。 */
+	selectedId: string | null;
 	cardLabel(id: string): string;
 }
 
@@ -17,7 +19,13 @@ export interface RelationLayerProps {
  * 关系线叠加层：一块 1×1 的 SVG 放在滚动层内容的左上角，线画在它的溢出区域里，
  * 所以随横向滚动，也随画布一起缩放平移。叠加层对读屏隐藏，文字等价由卡片上的关系描述提供。
  */
-export function RelationLayer({ relations, rects, types, cardLabel }: RelationLayerProps) {
+export function RelationLayer({
+	relations,
+	rects,
+	types,
+	selectedId,
+	cardLabel,
+}: RelationLayerProps) {
 	return (
 		<svg
 			className="v-kanban__relations"
@@ -40,6 +48,12 @@ export function RelationLayer({ relations, rects, types, cardLabel }: RelationLa
 				if (!from || !to) return null;
 				const style = relationStyle(types, relation.type);
 				const route = routeEdge(from, to);
+				const state =
+					selectedId === null
+						? undefined
+						: relation.sourceId === selectedId || relation.targetId === selectedId
+							? "active"
+							: "faded";
 				return (
 					<g
 						// 数据里可能有重复的关系，id 也可能带冒号：用位置当 key
@@ -49,6 +63,7 @@ export function RelationLayer({ relations, rects, types, cardLabel }: RelationLa
 						data-line={style.line}
 						data-source={relation.sourceId}
 						data-target={relation.targetId}
+						data-state={state}
 					>
 						<title>{`${cardLabel(relation.sourceId)} ${style.label} ${cardLabel(relation.targetId)}`}</title>
 						<path className="v-kanban__relation-line" d={route.d} />

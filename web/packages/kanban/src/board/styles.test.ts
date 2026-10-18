@@ -102,16 +102,18 @@ describe("关系线样式", () => {
 		);
 	});
 
+	it("淡化只作用在卡片内容上，不给整个 li 加 opacity（否则固定定位的菜单与聚焦环会被一起拖淡）", () => {
+		for (const css of [relations, shell]) {
+			expect(css).not.toMatch(/\[data-(faded|dimmed)="true"\]\s*\{[^}]*opacity/);
+			expect(css).toMatch(
+				/\[data-(faded|dimmed)="true"\][\s\S]*?> :not\(\.v-kanban__card-tools/,
+			);
+		}
+	});
+
 	it("强制颜色模式下用系统色，减弱动态下不加过渡", () => {
 		expect(relations).toMatch(/@media \(forced-colors: active\)/);
 		expect(relations).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
-	});
-});
-
-describe("筛选淡化", () => {
-	it("淡化只作用在卡片内容上，不给整个 li 加 opacity（否则固定定位的菜单与聚焦环会被一起拖淡）", () => {
-		expect(shell).not.toMatch(/\[data-dimmed="true"\]\s*\{[^}]*opacity/);
-		expect(shell).toMatch(/\[data-dimmed="true"\][\s\S]*?> :not\(\.v-kanban__card-tools/);
 	});
 });
 

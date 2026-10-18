@@ -143,6 +143,16 @@ export interface BoardMessages {
 	 * @example "The card couldn't be saved. Try again."
 	 */
 	addCardFailed: string;
+	/**
+	 * 可选中的卡片（不可拖）上的键盘说明。
+	 * @example "Press Enter or Space to select this card and highlight its relations."
+	 */
+	selectHint: string;
+	/**
+	 * 可拖的卡片上追加的选中说明：这类卡片的 Enter 与空格是拿起。
+	 * @example "Press Alt+Enter to select this card and highlight its relations."
+	 */
+	selectHintDraggable: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -176,6 +186,8 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		addCardSubmit: "Add",
 		addCardCancel: "Cancel",
 		addCardFailed: "The card couldn't be saved. Try again.",
+		selectHint: "Press Enter or Space to select this card and highlight its relations.",
+		selectHintDraggable: "Press Alt+Enter to select this card and highlight its relations.",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -205,6 +217,8 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		addCardSubmit: "添加",
 		addCardCancel: "取消",
 		addCardFailed: "卡片未能保存，请重试",
+		selectHint: "按回车或空格选中这张卡片，并高亮它的关系。",
+		selectHintDraggable: "按 Alt 加回车选中这张卡片，并高亮它的关系。",
 	},
 };
 

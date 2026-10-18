@@ -4,6 +4,7 @@ import {
 	type BoardCard,
 	type BoardMove,
 	type BoardState,
+	createAdjacency,
 	type Relation,
 	resolveBoard,
 } from "../core/index.ts";
@@ -27,6 +28,10 @@ import { RelationLayer } from "./relations/relation-layer.tsx";
 import { type RelationTypeStyle, resolveRelationTypes } from "./relations/types.ts";
 import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
+
+/** 点击这些元素是点在空白处：用来取消选中。 */
+const EMPTY_SPACE =
+	".v-kanban__column, .v-kanban__column-body, .v-kanban__column-body-inner, .v-kanban__cards, .v-kanban__empty";
 
 /** 列定义。`title` 同时是列分组的可访问名称。 */
 export interface BoardColumn {
@@ -151,6 +156,16 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	 * @default false
 	 */
 	hideRelations?: boolean;
+	/**
+	 * 选中的卡片：它和直接相连的卡片保持清晰，其余卡片与关系线淡化。受控，给出后点击只通过
+	 * `onSelectedCardChange` 通知。
+	 */
+	selectedCardId?: string | null;
+	/**
+	 * 选中变化：点击卡片（再点一次取消，点空白处取消）；不可拖的卡片可聚焦，用 Enter 或空格；
+	 * 可拖的卡片用 Alt+Enter。点击卡片里的按钮、链接、输入框不算。提供它即启用选中。
+	 */
+	onSelectedCardChange?: (cardId: string | null) => void;
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -191,6 +206,8 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	relations,
 	relationTypes: relationTypeOverrides,
 	hideRelations = false,
+	selectedCardId = null,
+	onSelectedCardChange,
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -214,6 +231,8 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const activity = useRef<Activity>(null);
 	const hintId = useId();
+	const selectHintId = useId();
+	const selectHintDragId = useId();
 	const collapse = useCollapsedColumns({
 		collapsed: collapsedColumns,
 		defaultCollapsed: defaultCollapsedColumns,
@@ -279,6 +298,10 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const knownRelations = (relations ?? []).filter(
 		(relation) => cardsById.has(relation.sourceId) && cardsById.has(relation.targetId),
 	);
+	const adjacency = createAdjacency(knownRelations);
+	const selectedId =
+		selectedCardId !== null && cardsById.has(selectedCardId) ? selectedCardId : null;
+	const neighborIds = selectedId === null ? null : new Set(adjacency.neighbors(selectedId));
 	const showRelationLines = !hideRelations && knownRelations.length > 0;
 	const relationRects = useRelationGeometry({
 		scrollerRef,
@@ -326,11 +349,19 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						{showFilterHint ? messages.filterDragDisabled : ""}
 					</p>
 				) : null}
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: 点击空白处取消选中只是鼠标的便利，键盘有 Alt+Enter 与再次切换 */}
 				<div
 					ref={scrollerRef}
 					className="v-kanban__scroller"
 					// 关系线叠加层以滚动层为定位参照；写在行内，不依赖样式表
 					style={showRelationLines ? { position: "relative" } : undefined}
+					onClick={(event) => {
+						if (selectedId === null || !onSelectedCardChange) return;
+						// 只有点在空白处才取消：列头、按钮、卡片都有自己的点击含义
+						const target = event.target as Element;
+						if (target === event.currentTarget || target.matches(EMPTY_SPACE))
+							onSelectedCardChange(null);
+					}}
 				>
 					{resolved.map(({ id, cards: columnCards }) => {
 						const column = definitions.get(id) as TColumn;
@@ -368,7 +399,25 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 									settling={card.id === drag.settlingId}
 									dimmed={filterActive && !matches(card)}
 									dimmedText={messages.filteredOut}
+									selected={selectedId === card.id}
+									related={neighborIds?.has(card.id) ?? false}
+									faded={
+										selectedId !== null &&
+										selectedId !== card.id &&
+										!neighborIds?.has(card.id)
+									}
+									selectable={onSelectedCardChange !== undefined}
+									onSelect={() =>
+										onSelectedCardChange?.(
+											selectedId === card.id ? null : card.id,
+										)
+									}
 									hintId={hintId}
+									selectHintId={
+										moves.editable && isDraggable?.(card) !== false
+											? selectHintDragId
+											: selectHintId
+									}
 									menu={
 										moveMenu === "none"
 											? undefined
@@ -453,6 +502,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							relations={knownRelations}
 							rects={relationRects}
 							types={relationTypes}
+							selectedId={selectedId}
 							cardLabel={cardLabel}
 						/>
 					) : null}
@@ -470,6 +520,16 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							index: drag.ghost.origin.index,
 						})}
 					</div>
+				) : null}
+				{onSelectedCardChange ? (
+					<>
+						<span id={selectHintId} className="v-kanban__sr-only">
+							{messages.selectHint}
+						</span>
+						<span id={selectHintDragId} className="v-kanban__sr-only">
+							{messages.selectHintDraggable}
+						</span>
+					</>
 				) : null}
 				{moves.editable ? (
 					<>

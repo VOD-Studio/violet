@@ -29,6 +29,31 @@
 	stroke-linecap: round;
 }
 
+/* 选中时：相关的线加粗，其余淡化 */
+.v-kanban .v-kanban__relation[data-state="active"] .v-kanban__relation-line {
+	stroke-width: 2.5;
+}
+.v-kanban .v-kanban__relation[data-state="active"] .v-kanban__relation-bar {
+	stroke-width: 4;
+}
+.v-kanban .v-kanban__relation[data-state="faded"] {
+	opacity: 0.2;
+}
+
+/* 选中卡片与相关卡片：选中的描边，其余清晰；无关的淡化 */
+.v-kanban .v-kanban__card[data-selected="true"] {
+	border-color: var(--_kanban-focus);
+}
+/* 淡化的是卡片的内容与描边，而不是整个 li：li 上的 opacity 会生成层叠上下文，
+   把固定定位的「移到…」菜单和聚焦环一起拖淡 */
+.v-kanban .v-kanban__card[data-faded="true"] {
+	border-color: color-mix(in oklab, var(--_kanban-border) 40%, transparent);
+	background: color-mix(in oklab, var(--_kanban-card) 40%, transparent);
+}
+.v-kanban .v-kanban__card[data-faded="true"] > :not(.v-kanban__card-tools, .v-kanban__sr-only) {
+	opacity: 0.4;
+}
+
 @media (forced-colors: active) {
 	.v-kanban .v-kanban__relation {
 		color: CanvasText;

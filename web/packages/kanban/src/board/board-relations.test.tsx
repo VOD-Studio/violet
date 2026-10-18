@@ -238,3 +238,152 @@ describe("关系线", () => {
 		expect(startOf(line("a", "d"))).toEqual({ x: 170, y: 135 });
 	});
 });
+
+describe("选中与高亮", () => {
+	it("选中卡片：它和直接相连的卡片保持清晰，其余淡化；相关的线加粗，其余淡化", () => {
+		renderBoard({ selectedCardId: "d" });
+
+		expect(card("d").getAttribute("data-selected")).toBe("true");
+		expect(card("d").getAttribute("aria-current")).toBe("true");
+		expect(card("a").getAttribute("data-related")).toBe("true");
+		expect(card("b").getAttribute("data-related")).toBe("true");
+		expect(card("c").getAttribute("data-faded")).toBe("true");
+		expect(card("e").getAttribute("data-faded")).toBe("true");
+		expect(card("a").hasAttribute("data-faded")).toBe(false);
+		expect(line("a", "d").getAttribute("data-state")).toBe("active");
+		expect(line("e", "c").getAttribute("data-state")).toBe("faded");
+	});
+
+	it("没有选中时没有任何淡化", () => {
+		renderBoard({ selectedCardId: null });
+
+		expect(document.querySelector("[data-faded]")).toBeNull();
+		expect(document.querySelector("[data-state]")).toBeNull();
+	});
+
+	it("选中一张没有任何关系的卡片：其余都淡化，没有线高亮", () => {
+		renderBoard({ selectedCardId: "c", relations: [relations[0]] });
+
+		expect(card("a").getAttribute("data-faded")).toBe("true");
+		expect(card("c").getAttribute("data-selected")).toBe("true");
+		expect(line("a", "d").getAttribute("data-state")).toBe("faded");
+	});
+
+	it("点击卡片选中，再点同一张取消；点击卡片里的按钮、链接或输入框不算", () => {
+		const onSelect = vi.fn();
+		function Harness() {
+			const [selected, setSelected] = useState<string | null>(null);
+			return (
+				<Board
+					columns={columns}
+					cards={tasks}
+					order={order}
+					relations={relations}
+					selectedCardId={selected}
+					onSelectedCardChange={(id) => {
+						onSelect(id);
+						setSelected(id);
+					}}
+					renderCard={(task) => (
+						<>
+							<span>{task.title}</span>
+							<button type="button">open {task.id}</button>
+						</>
+					)}
+				/>
+			);
+		}
+		render(<Harness />);
+
+		fireEvent.click(card("d"));
+		expect(onSelect).toHaveBeenLastCalledWith("d");
+		expect(card("d").getAttribute("data-selected")).toBe("true");
+
+		fireEvent.click(card("d"));
+		expect(onSelect).toHaveBeenLastCalledWith(null);
+
+		onSelect.mockClear();
+		fireEvent.click(screen.getByRole("button", { name: "open a" }));
+		expect(onSelect).not.toHaveBeenCalled();
+	});
+
+	it("点击看板的空白处取消选中；点列标题、列头按钮等不算", () => {
+		const onSelect = vi.fn();
+		renderBoard({
+			selectedCardId: "d",
+			onSelectedCardChange: onSelect,
+			collapsible: true,
+			onAddCard: () => {},
+		});
+
+		fireEvent.click(document.querySelector(".v-kanban__scroller") as HTMLElement);
+		expect(onSelect).toHaveBeenCalledTimes(1);
+		expect(onSelect).toHaveBeenLastCalledWith(null);
+		fireEvent.click(document.querySelector('[data-column-id="todo"]') as HTMLElement);
+		expect(onSelect).toHaveBeenCalledTimes(2);
+
+		onSelect.mockClear();
+		fireEvent.click(screen.getByRole("heading", { name: "Todo" }));
+		fireEvent.click(screen.getByRole("button", { name: "Collapse Todo" }));
+		fireEvent.click(
+			within(document.querySelector('[data-column-id="todo"]') as HTMLElement).getByRole(
+				"button",
+				{ name: "Add card" },
+			),
+		);
+		expect(onSelect).not.toHaveBeenCalled();
+	});
+
+	it("不可拖的卡片可以聚焦，Enter 或空格切换选中", () => {
+		const onSelect = vi.fn();
+		renderBoard({ onSelectedCardChange: onSelect });
+
+		expect(card("a").getAttribute("tabindex")).toBe("0");
+		fireEvent.keyDown(card("a"), { key: "Enter" });
+		expect(onSelect).toHaveBeenLastCalledWith("a");
+		fireEvent.keyDown(card("b"), { key: " " });
+		expect(onSelect).toHaveBeenLastCalledWith("b");
+	});
+
+	it("可拖的卡片 Enter 仍是拿起，Alt+Enter 切换选中", () => {
+		const onSelect = vi.fn();
+		renderBoard({ onSelectedCardChange: onSelect, onMove: () => {} });
+
+		fireEvent.keyDown(card("a"), { key: "Enter" });
+		expect(card("a").getAttribute("data-lifted")).toBe("true");
+		expect(onSelect).not.toHaveBeenCalled();
+		fireEvent.keyDown(card("a"), { key: "Escape" });
+
+		fireEvent.keyDown(card("b"), { key: "Enter", altKey: true });
+		expect(onSelect).toHaveBeenCalledWith("b");
+		expect(document.querySelector("[data-lifted]")).toBeNull();
+	});
+
+	it("可聚焦的卡片说明怎么选中：不可拖的说 Enter 或空格，可拖的说 Alt+Enter，并保留拿起的说明", () => {
+		const { unmount } = renderBoard({ onSelectedCardChange: () => {} });
+		const describedBy = (id: string) =>
+			(card(id).getAttribute("aria-describedby") ?? "")
+				.split(" ")
+				.map((ref) => document.getElementById(ref)?.textContent ?? "");
+
+		expect(describedBy("a")).toEqual([
+			"Press Enter or Space to select this card and highlight its relations.",
+		]);
+		unmount();
+
+		renderBoard({ onSelectedCardChange: () => {}, onMove: () => {} });
+		const texts = describedBy("a");
+		expect(texts).toHaveLength(2);
+		expect(texts[0]).toMatch(/pick up/i);
+		expect(texts[1]).toBe("Press Alt+Enter to select this card and highlight its relations.");
+	});
+
+	it("没有给 onSelectedCardChange 时点击不选中，卡片也不会变成可聚焦", () => {
+		renderBoard();
+
+		fireEvent.click(card("a"));
+
+		expect(card("a").hasAttribute("tabindex")).toBe(false);
+		expect(card("a").hasAttribute("data-selected")).toBe(false);
+	});
+});
