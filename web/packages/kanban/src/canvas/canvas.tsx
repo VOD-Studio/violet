@@ -323,10 +323,31 @@ export function Canvas({
 				},
 				REVEAL_MARGIN,
 			);
+			// 浏览器聚焦时按元素原本的布局位置滚动页面，可它已被视口裁剪、很快又被我们平移走，页面只会无故跳开：
+			// 下一帧撤回这次滚动，再按平移之后的位置做让它露出的最小滚动
+			const { x, y } = known;
 			apply(next, { user: true });
+			frame = requestAnimationFrame(() => {
+				if (window.scrollX !== x || window.scrollY !== y)
+					window.scrollTo({ left: x, top: y, behavior: "instant" });
+				element.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+			});
 		};
+		// 浏览器先滚动页面、再触发 focusin，这时 window.scrollY 已经是被滚走的位置；
+		// scroll 事件要到下一帧才触发，所以这里记下的是滚走之前的位置
+		const known = { x: window.scrollX, y: window.scrollY };
+		const onScroll = () => {
+			known.x = window.scrollX;
+			known.y = window.scrollY;
+		};
+		let frame = 0;
+		window.addEventListener("scroll", onScroll, { passive: true });
 		target.addEventListener("focusin", onFocusIn);
-		return () => target.removeEventListener("focusin", onFocusIn);
+		return () => {
+			cancelAnimationFrame(frame);
+			window.removeEventListener("scroll", onScroll);
+			target.removeEventListener("focusin", onFocusIn);
+		};
 	}, [apply, measure]);
 
 	const changeFullscreen = useCallback((next: boolean) => {

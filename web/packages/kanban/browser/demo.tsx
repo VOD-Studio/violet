@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Canvas } from "../src/canvas/index.ts";
 import type { Relation } from "../src/core/index.ts";
 import { applyMove, invertMove } from "../src/core/index.ts";
+import { RelationGraph } from "../src/graph/index.ts";
 import {
 	Board,
 	type BoardMove,
@@ -365,6 +366,78 @@ function ResponsiveDemo() {
 	);
 }
 
+/** 一大片卡片：四列、每列 `count / 4` 张，关系线按固定步长连出去。 */
+function manyGraph(count: number) {
+	const names = ["c0", "c1", "c2", "c3"];
+	const cards = Array.from({ length: count }, (_, index) => ({
+		id: `n${index}`,
+		title: `Node ${index}`,
+	}));
+	const manyColumns = names.map((id) => ({ id, title: id.toUpperCase() }));
+	const manyOrder = Object.fromEntries(
+		names.map((name, at) => [
+			name,
+			cards.filter((_, index) => index % 4 === at).map((card) => card.id),
+		]),
+	);
+	const links: Relation[] = Array.from({ length: Math.floor(count * 1.5) }, (_, index) => ({
+		sourceId: `n${(index * 7) % count}`,
+		targetId: `n${(index * 11 + 3) % count}`,
+		type: ["extends", "fixes", "blocks"][index % 3],
+	}));
+	return { cards, columns: manyColumns, order: manyOrder, relations: links };
+}
+
+/**
+ * 关系图视图：关系图放进画布，画布下面有一大块页面，用来验证滚轮不被劫持。
+ * `root` 参数只显示该卡片的子图（`depth` 限制步数），`many` 参数换成指定张数的大图。
+ */
+function GraphDemo() {
+	const [selected, setSelected] = useState<string | null>(null);
+	const [opened, setOpened] = useState<string[]>([]);
+	const count = Number(params.get("many") ?? 0);
+	const data = count > 0 ? manyGraph(count) : null;
+	return (
+		<div style={{ width: 900, padding: 24 }}>
+			<p id="opened">opened: {opened.join(",")}</p>
+			<button type="button" id="outside-before">
+				outside before
+			</button>
+			<Canvas style={{ height: 420 }} locale="en">
+				<RelationGraph
+					columns={data?.columns ?? columns}
+					cards={data?.cards ?? tasks}
+					order={data?.order ?? initial}
+					relations={data?.relations ?? demoRelations}
+					rootId={params.get("root") ?? undefined}
+					subgraph={
+						params.has("depth") ? { depth: Number(params.get("depth")) } : undefined
+					}
+					selectedCardId={selected}
+					onSelectedCardChange={setSelected}
+					locale="en"
+					getCardLabel={(card) => card.title}
+					renderCard={(card) => (
+						<button
+							type="button"
+							style={{ all: "unset", display: "block", width: "100%" }}
+							onClick={() => setOpened((previous) => [...previous, card.id])}
+						>
+							{card.title}
+						</button>
+					)}
+				/>
+			</Canvas>
+			<button type="button" id="outside-after">
+				outside after
+			</button>
+			<div id="spacer" style={{ height: 2400 }}>
+				page keeps scrolling
+			</div>
+		</div>
+	);
+}
+
 const view = params.get("view");
 createRoot(document.getElementById("root") as HTMLElement).render(
 	view === "canvas" ? (
@@ -377,6 +450,8 @@ createRoot(document.getElementById("root") as HTMLElement).render(
 		<SwitcherDemo />
 	) : view === "responsive" ? (
 		<ResponsiveDemo />
+	) : view === "graph" ? (
+		<GraphDemo />
 	) : (
 		<App />
 	),
