@@ -47,6 +47,8 @@ export interface RoadmapBoardProps {
 	history?: CommandHistory;
 	/** 在阶段末尾新建条目；给出时每列列底有「添加卡片」。失败时抛出，看板保留草稿并提示。 */
 	onAddItem?: (card: { columnId: string; title: string }) => Promise<void>;
+	/** 保存新标题；给出时卡片标题可以点开就地修改。 */
+	onRenameItem?: (item: RoadmapItem, title: string) => Promise<void>;
 }
 
 /**
@@ -64,6 +66,7 @@ export function RoadmapBoard({
 	onMove,
 	history,
 	onAddItem,
+	onRenameItem,
 }: RoadmapBoardProps) {
 	const [expanded, setExpanded] = useState(false);
 	// 显示的阶段由这里持有：宽窄布局切换会重新挂载看板，不持有就回到第一个阶段
@@ -124,6 +127,7 @@ export function RoadmapBoard({
 		renderCard: (item: RoadmapItem) => (
 			<RoadmapCardContent
 				item={item}
+				onRename={onRenameItem}
 				onOpen={(opened, trigger) => {
 					// 打开详情的同时选中：弹窗关闭后，画布上就是这条的脉络
 					setSelectedId(opened.id);

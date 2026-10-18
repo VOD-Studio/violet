@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { RoadmapItem } from "../../model/roadmap";
 import { RoadmapCardContent } from "../RoadmapCardContent";
@@ -132,5 +132,30 @@ describe("RoadmapCardContent", () => {
 		render(<RoadmapCardContent item={item({ blocked: true, tags: [] })} onOpen={() => {}} />);
 
 		expect(screen.getByText("被阻塞")).toBeTruthy();
+	});
+});
+
+describe("RoadmapCardContent 可编辑时", () => {
+	it("标题点开就地修改，保存新标题；标题以下的区域打开详情", async () => {
+		const onRename = vi.fn().mockResolvedValue(undefined);
+		const onOpen = vi.fn();
+		const data = item({ tags: ["a"] });
+		render(<RoadmapCardContent item={data} onOpen={onOpen} onRename={onRename} />);
+
+		fireEvent.click(screen.getByRole("button", { name: "支持离线阅读" }));
+		const input = screen.getByRole("textbox", { name: "#12 的标题" });
+		fireEvent.change(input, { target: { value: "支持离线阅读与同步" } });
+		fireEvent.keyDown(input, { key: "Enter" });
+
+		await waitFor(() => expect(onRename).toHaveBeenCalledWith(data, "支持离线阅读与同步"));
+		const details = screen.getByRole("button", { name: "查看 #12 支持离线阅读 的详情" });
+		fireEvent.click(details);
+		expect(onOpen).toHaveBeenCalledWith(data, details);
+	});
+
+	it("没有标签与阻塞时不留空行，编号仍在详情按钮里", () => {
+		render(<RoadmapCardContent item={item()} onOpen={() => {}} onRename={async () => {}} />);
+
+		expect(screen.getByRole("button", { name: /的详情$/ }).textContent).toBe("#12");
 	});
 });

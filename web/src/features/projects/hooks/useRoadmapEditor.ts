@@ -13,7 +13,9 @@ import {
 	deleteRoadmapItem,
 	moveRoadmapItem,
 	restoreRoadmapItem,
+	updateRoadmapItem,
 } from "../api/mutations";
+import { contentOf, type RoadmapContentInput } from "../lib/roadmap-content";
 import {
 	keepCompletion,
 	type RoadmapMoveInput,
@@ -30,6 +32,8 @@ export interface RoadmapEditor {
 	move: (move: BoardMove) => Promise<void>;
 	/** 在某个阶段末尾新建只有标题的条目并记入历史；失败时抛出，看板保留草稿并提示。 */
 	add: (card: { columnId: string; title: string }) => Promise<void>;
+	/** 只改标题；其余内容照旧整体提交。失败时抛出，编辑框留着草稿并提示。 */
+	rename: (item: RoadmapItem, title: string) => Promise<void>;
 }
 
 /**
@@ -78,6 +82,21 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 		const persistRestore = async (itemId: string) => {
 			settle(await restoreRoadmapItem(projectId(), itemId));
 		};
+		const persistUpdate = async (itemId: string, content: RoadmapContentInput) => {
+			settle(await updateRoadmapItem(projectId(), itemId, content));
+		};
+		// 编辑是整体替换：撤销时用编辑之前的内容再整体提交一次
+		const update = async (item: RoadmapItem, next: RoadmapContentInput, label: string) => {
+			const previous = contentOf(item);
+			await persistUpdate(item.id, next);
+			history.push({
+				label,
+				undo: () => persistUpdate(item.id, previous),
+				redo: () => persistUpdate(item.id, next),
+			});
+		};
+		const rename = (item: RoadmapItem, title: string) =>
+			update(item, { ...contentOf(item), title }, `重命名 #${item.number}`);
 
 		const move = async (boardMove: BoardMove) => {
 			const before = latest.current?.items.find((item) => item.id === boardMove.cardId);
@@ -112,6 +131,6 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 			});
 		};
 
-		return { history, move, add };
+		return { history, move, add, rename };
 	}, [history, queryClient, slug]);
 }

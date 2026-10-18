@@ -106,8 +106,7 @@ test.describe("管理员拖动条目", () => {
 		await openEditable(page);
 
 		await card(page, 1)
-			.getByRole("button", { name: new RegExp(titleOf(1)) })
-			.first()
+			.getByRole("button", { name: `查看 #1 ${titleOf(1)} 的详情` })
 			.click();
 
 		await expect(page.getByRole("dialog", { name: titleOf(1) })).toBeVisible();
@@ -330,5 +329,64 @@ test.describe("管理员编辑条目", () => {
 			document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
 		);
 		await expect(column(page, "planned")).toContainText("第二个标签页的条目");
+	});
+
+	async function rename(page: Page, number: number, from: string, to: string) {
+		await card(page, number).getByRole("button", { name: from, exact: true }).click();
+		await page.getByRole("textbox", { name: `#${number} 的标题` }).fill(to);
+		await page.keyboard.press("Enter");
+	}
+
+	test("点击标题就地改名：其余内容照旧整体提交；Ctrl/⌘+Z 撤销回原标题", async ({
+		page,
+		context,
+	}) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+
+		await rename(page, 1, titleOf(1), "改过的标题");
+
+		await expect.poll(() => writes.length).toBe(1);
+		const original = ROADMAP_FIXTURE.items.find((entry) => entry.number === 1);
+		expect(writes[0]).toMatchObject({
+			action: "update",
+			itemId: idOf(1),
+			body: {
+				title: "改过的标题",
+				description: original?.description,
+				tags: original?.tags,
+				links: original?.links,
+				checklist: original?.checklist,
+				delivered_version: "",
+			},
+		});
+		expect(writes[0].body).not.toHaveProperty("completion_date");
+		await expect(card(page, 1)).toContainText("改过的标题");
+
+		await undoReady(page);
+		await page.keyboard.press("ControlOrMeta+z");
+		await expect.poll(() => writes.length).toBe(2);
+		expect(writes[1].body).toMatchObject({ title: titleOf(1) });
+		await expect(card(page, 1)).toContainText(titleOf(1));
+	});
+
+	test("两个标签页先后修改同一个标题，以最后写入为准", async ({ page, context }) => {
+		const { writes } = await roadmapBackend(context);
+		const other = await context.newPage();
+		await openEditable(page);
+		await openEditable(other);
+
+		await rename(page, 2, titleOf(2), "第一个标签页改的");
+		await expect.poll(() => writes.length).toBe(1);
+		// 第二个标签页还停在旧数据上
+		await rename(other, 2, titleOf(2), "第二个标签页改的");
+		await expect.poll(() => writes.length).toBe(2);
+
+		await expect(card(other, 2)).toContainText("第二个标签页改的");
+		await page.bringToFront();
+		await page.evaluate(() =>
+			document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
+		);
+		await expect(card(page, 2)).toContainText("第二个标签页改的");
 	});
 });

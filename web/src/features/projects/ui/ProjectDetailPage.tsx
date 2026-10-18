@@ -70,6 +70,7 @@ export function ProjectDetailPage({
 					onMove={canEdit ? editor.move : undefined}
 					history={canEdit ? editor.history : undefined}
 					onAddItem={canEdit ? editor.add : undefined}
+					onRenameItem={canEdit ? editor.rename : undefined}
 					onOpenItem={(item, trigger) => {
 						opener.current = trigger;
 						setOpenId(item.id);
