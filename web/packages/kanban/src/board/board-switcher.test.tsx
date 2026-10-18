@@ -230,6 +230,21 @@ describe("列切换布局里不适用的功能", () => {
 		expect(panelCards()).toEqual(["a", "b", "c"]);
 	});
 
+	it("列底快速添加仍在当前列里，提交时带着当前列的 id", async () => {
+		const onAddCard = vi.fn();
+		renderBoard({ onAddCard });
+
+		fireEvent.click(tab(/^In progress/));
+		fireEvent.click(
+			within(screen.getByRole("tabpanel")).getByRole("button", { name: "Add card" }),
+		);
+		fireEvent.change(screen.getByRole("textbox"), { target: { value: "New one" } });
+		fireEvent.submit(screen.getByRole("textbox").closest("form") as HTMLFormElement);
+		await settle();
+
+		expect(onAddCard).toHaveBeenCalledExactlyOnceWith({ columnId: "doing", title: "New one" });
+	});
+
 	it("不画关系线", () => {
 		renderBoard({ relations: [{ sourceId: "a", targetId: "b", type: "extends" }] });
 
