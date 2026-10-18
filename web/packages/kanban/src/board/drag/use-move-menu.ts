@@ -11,6 +11,8 @@ export interface MoveMenuOptions {
 	autoSort: (columnId: string) => AutoSortEntry | undefined;
 	announce: ReturnType<typeof useAnnouncer>["announce"];
 	focus: ReturnType<typeof useFocusRequest>;
+	/** 卡片的位置进入一列时调用：移过去之前，以及保存失败回到出发的列时。 */
+	onEnterColumn?: (columnId: string) => void;
 }
 
 /**
@@ -22,7 +24,7 @@ export function useMoveMenu(options: MoveMenuOptions) {
 	const live = useLatest(options);
 	return useCallback(
 		(cardId: string, columnId: string) => {
-			const { moves, autoSort, announce, focus } = live.current;
+			const { moves, autoSort, announce, focus, onEnterColumn } = live.current;
 			const base = moves.state();
 			const origin = locateCard(base, cardId);
 			if (!origin || origin.columnId === columnId) return;
@@ -35,7 +37,11 @@ export function useMoveMenu(options: MoveMenuOptions) {
 			if (!move) return;
 			const verdict = moves.decide(move);
 			if (!verdict.allowed) return moves.showNotice(verdict.reason);
-			moves.commit(move, () => focus.restore(cardId));
+			onEnterColumn?.(columnId);
+			moves.commit(move, () => {
+				onEnterColumn?.(origin.columnId);
+				focus.restore(cardId);
+			});
 			announce("movedByMenu", cardId, move.to);
 			focus.request(cardId);
 		},

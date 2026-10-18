@@ -1,5 +1,6 @@
 import { type ReactNode, useId } from "react";
 import { formatMessage } from "../locale.ts";
+import { CountBadge } from "./count-badge.tsx";
 import type { BoardMessages } from "./messages.ts";
 import { QuickAdd, type QuickAddProps } from "./quick-add.tsx";
 
@@ -18,6 +19,11 @@ export interface ColumnViewProps {
 	onToggle(): void;
 	/** 列底快速添加；不提供则不显示。 */
 	quickAdd?: Pick<QuickAddProps, "onSubmit" | "onError" | "onOpen">;
+	/**
+	 * 列切换布局里这一列是切换器的面板：标题与计数由对应的标签显示，列头不再重复，
+	 * 面板以标签为名称。
+	 */
+	panel?: { id: string; labelledBy: string };
 	messages: BoardMessages;
 	/** 卡片列表或空状态。 */
 	children: ReactNode;
@@ -38,30 +44,25 @@ export function ColumnView({
 	collapsed,
 	onToggle,
 	quickAdd,
+	panel,
 	messages,
 	children,
 }: ColumnViewProps) {
 	const bodyId = useId();
 	const heading = renderHeader ? (
 		renderHeader()
-	) : (
+	) : panel ? null : (
 		<header className="v-kanban__column-header">
 			<h3 className="v-kanban__column-title">{title}</h3>
-			<span className="v-kanban__count">
-				<span aria-hidden="true">{matched === null ? count : `${matched}/${count}`}</span>
-				<span className="v-kanban__sr-only">
-					{matched === null
-						? formatMessage(messages.cardCount, { count })
-						: formatMessage(messages.cardCountFiltered, { matched, count })}
-				</span>
-			</span>
+			<CountBadge count={count} matched={matched} messages={messages} />
 		</header>
 	);
 	return (
 		<div
-			role="group"
+			{...(panel
+				? { role: "tabpanel", id: panel.id, "aria-labelledby": panel.labelledBy }
+				: { role: "group", "aria-label": title })}
 			className="v-kanban__column"
-			aria-label={title}
 			data-column-id={id}
 			data-collapsed={collapsed ? "true" : undefined}
 		>

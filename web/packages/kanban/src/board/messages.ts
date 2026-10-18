@@ -168,6 +168,11 @@ export interface BoardMessages {
 	 * @example "No relations"
 	 */
 	relationListEmpty: string;
+	/**
+	 * 列切换布局里标签条的可访问名称。
+	 * @example "Columns"
+	 */
+	switcherLabel: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -206,6 +211,7 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		selectHintDraggable: "Press Alt+Enter to select this card and highlight its relations.",
 		relationsSeparator: "; ",
 		relationListEmpty: "No relations",
+		switcherLabel: "Columns",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -240,6 +246,7 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		selectHintDraggable: "按 Alt 加回车选中这张卡片，并高亮它的关系。",
 		relationsSeparator: "；",
 		relationListEmpty: "暂无关系",
+		switcherLabel: "切换列",
 	},
 };
 

@@ -36,8 +36,9 @@ export interface KeyboardMoveOptions {
 	announce: ReturnType<typeof useAnnouncer>["announce"];
 	focus: ReturnType<typeof useFocusRequest>;
 	/**
-	 * 预览位置进入一列时调用，在显示新位置之前。折叠的列体不能聚焦，要在同一次渲染里展开，
-	 * 焦点才能跟着卡片进去。
+	 * 卡片的位置进入一列时调用，在显示新位置之前：预览走到这一列，或取消、保存失败后回到出发的列。
+	 * 折叠的列体不能聚焦，一次只显示一列的布局里别的列根本不在文档里，都要在同一次渲染里
+	 * 让这一列可见，焦点才能跟着卡片进去。
 	 */
 	onEnterColumn?: (columnId: string) => void;
 }
@@ -100,6 +101,7 @@ export function useKeyboardMove(options: KeyboardMoveOptions): KeyboardMove {
 		(refocus = true) => {
 			const { options: current, lifted: held } = live.current;
 			if (!held) return;
+			current.onEnterColumn?.(held.origin.columnId);
 			finish(held.cardId, refocus);
 			current.announce("keyboardCancelled", held.cardId, held.origin);
 		},
@@ -161,7 +163,10 @@ export function useKeyboardMove(options: KeyboardMoveOptions): KeyboardMove {
 			board.showNotice(verdict.reason);
 			return announce("keyboardCancelled", held.cardId, held.origin);
 		}
-		board.commit(move, () => focus.restore(held.cardId));
+		board.commit(move, () => {
+			current.onEnterColumn?.(held.origin.columnId);
+			focus.restore(held.cardId);
+		});
 		announce("keyboardDropped", held.cardId, move.to);
 	}, [live, finish, cancel]);
 

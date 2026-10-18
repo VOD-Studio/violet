@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const board = read("./board.css");
 const shell = read("./shell.css");
+const switcher = read("./switcher.css");
 const relations = read("./relations/relations.css");
 const history = read("../history/history.css");
 const canvas = read("../canvas/canvas.css");
@@ -84,6 +85,37 @@ describe("看板外壳样式", () => {
 	});
 });
 
+describe("列切换布局样式", () => {
+	it("横向滚动的标签条留出聚焦环空间：内边距不少于 4px，并以等量负外边距抵消", () => {
+		const list = rule(switcher, ".v-kanban .v-kanban__switcher");
+
+		expect(list).toMatch(/overflow-x:\s*auto/);
+		const padding = Number(/padding:\s*(\d+)px/.exec(list)?.[1]);
+		const margin = Number(/margin:\s*-(\d+)px/.exec(list)?.[1]);
+		expect(padding).toBeGreaterThanOrEqual(4);
+		expect(margin).toBe(padding);
+	});
+
+	it("选中的标签有描边与背景两处区别，不只靠颜色", () => {
+		const active = rule(switcher, '.v-kanban .v-kanban__tab[data-active="true"]');
+
+		expect(active).toMatch(/border-color:/);
+		expect(active).toMatch(/background:/);
+	});
+
+	it("标签的触控高度不小于 40px", () => {
+		expect(
+			Number(/min-height:\s*(\d+)px/.exec(rule(switcher, ".v-kanban .v-kanban__tab"))?.[1]),
+		).toBeGreaterThanOrEqual(40);
+	});
+
+	it("一次只显示的列占满宽度", () => {
+		expect(rule(switcher, '.v-kanban[data-layout="switcher"] .v-kanban__column')).toMatch(
+			/flex:\s*1 1 100%/,
+		);
+	});
+});
+
 describe("关系线样式", () => {
 	it("线型本身区分类型，不靠颜色：虚线有 dasharray，挡条与箭头是不同的终点标记", () => {
 		expect(
@@ -140,6 +172,7 @@ describe("画布样式", () => {
 describe.each([
 	["board.css", board],
 	["shell.css", shell],
+	["switcher.css", switcher],
 	["relations.css", relations],
 	["history.css", history],
 	["canvas.css", canvas],

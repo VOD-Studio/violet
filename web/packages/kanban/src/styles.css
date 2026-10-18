@@ -1,5 +1,6 @@
 @import "./board/board.css";
 @import "./board/shell.css";
+@import "./board/switcher.css";
 @import "./board/relations/relations.css";
 @import "./history/history.css";
 @import "./canvas/canvas.css";

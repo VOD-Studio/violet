@@ -12,6 +12,7 @@ import { formatMessage } from "../locale.ts";
 import { notifyEditing } from "../pan-region.ts";
 import { CardItem } from "./card-item.tsx";
 import { ColumnView } from "./column.tsx";
+import { ColumnSwitcher, switcherTabId } from "./column-switcher.tsx";
 import type { Activity } from "./drag/activity.ts";
 import { PLACEHOLDER_FLIP_ID } from "./drag/dom.ts";
 import { useFlip } from "./drag/motion.ts";
@@ -27,6 +28,7 @@ import { type BoardLocale, type BoardMessages, resolveMessages } from "./message
 import { RelationLayer } from "./relations/relation-layer.tsx";
 import { type RelationTypeStyle, relationStyle, resolveRelationTypes } from "./relations/types.ts";
 import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
+import { useActiveColumn } from "./use-active-column.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
 
 /** 点击这些元素是点在空白处：用来取消选中。 */
@@ -166,6 +168,22 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	 * 可拖的卡片用 Alt+Enter。点击卡片里的按钮、链接、输入框不算。提供它即启用选中。
 	 */
 	onSelectedCardChange?: (cardId: string | null) => void;
+	/**
+	 * 布局。`"columns"` 把各列并排；`"switcher"` 为窄屏准备：顶部是列切换器，一次只显示一列，
+	 * 不画关系线，折叠不适用，「移到…」菜单常显，因为跨列移动只能走菜单或键盘。
+	 * 按容器宽度自动切换见 `ResponsiveLayout`。
+	 * @default "columns"
+	 */
+	layout?: "columns" | "switcher";
+	/** 列切换布局当前显示的列 id；受控，给出后点击标签只通过 `onActiveColumnChange` 通知。 */
+	activeColumn?: string;
+	/**
+	 * 非受控时列切换布局初始显示的列 id。
+	 * @default undefined 第一列
+	 */
+	defaultActiveColumn?: string;
+	/** 列切换布局显示的列变化时调用，包括点击标签，以及移动卡片后切到卡片所在的列。 */
+	onActiveColumnChange?: (columnId: string) => void;
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -208,6 +226,10 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	hideRelations = false,
 	selectedCardId = null,
 	onSelectedCardChange,
+	layout = "columns",
+	activeColumn,
+	defaultActiveColumn,
+	onActiveColumnChange,
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -238,6 +260,15 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		defaultCollapsed: defaultCollapsedColumns,
 		onChange: onCollapsedColumnsChange,
 	});
+	const switcher = layout === "switcher";
+	const active = useActiveColumn({
+		columnIds,
+		active: activeColumn,
+		defaultActive: defaultActiveColumn,
+		onChange: onActiveColumnChange,
+	});
+	// 卡片的位置进入一列：折叠的列展开，一次只显示一列的布局切到这一列，焦点才能跟着卡片进去
+	const enterColumn = switcher ? active.select : collapse.expand;
 	const filterActive = filter !== undefined;
 	// 每张卡片每次渲染只问一次谓词；淡化与列计数共用这份结果。谓词抛错的卡片按匹配处理
 	const matchedIds = filter
@@ -260,11 +291,11 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		columnIds,
 		order,
 		autoSort,
-		// 移到折叠的列时先把它展开，免得卡片落进看不见的地方
+		// 移到折叠的列时先把它展开，免得卡片落进看不见的地方；列切换布局没有折叠
 		onMove:
 			onMove &&
 			((move) => {
-				collapse.expand(move.to.columnId);
+				if (!switcher) collapse.expand(move.to.columnId);
 				return onMove(move);
 			}),
 		canMove,
@@ -284,10 +315,16 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		activity,
 		announce,
 		focus,
-		onEnterColumn: collapse.expand,
+		onEnterColumn: enterColumn,
 	});
 	const drag = useBoardDrag({ rootRef, moves, autoSort, controller: dragController, activity });
-	const moveToColumn = useMoveMenu({ moves, autoSort, announce, focus });
+	const moveToColumn = useMoveMenu({
+		moves,
+		autoSort,
+		announce,
+		focus,
+		onEnterColumn: switcher ? active.select : undefined,
+	});
 
 	const resolved = resolveBoard({ columns: columnIds, order: keyboard.order }, cards);
 	const layoutVersion = `${JSON.stringify(columnIds.map((id) => [id, keyboard.order[id] ?? []]))}|${drag.layoutKey}`;
@@ -315,7 +352,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 				})
 			: undefined;
 	};
-	const showRelationLines = !hideRelations && knownRelations.length > 0;
+	const showRelationLines = !switcher && !hideRelations && knownRelations.length > 0;
 	const relationRects = useRelationGeometry({
 		scrollerRef,
 		ids: showRelationLines
@@ -338,6 +375,9 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		title: column.title ?? column.id,
 	}));
 	const ghostCard = drag.ghost ? cardsById.get(drag.ghost.cardId) : undefined;
+	const switcherId = useId();
+	const panelId = `${switcherId}-panel`;
+	const shown = switcher ? resolved.filter(({ id }) => id === active.current) : resolved;
 
 	return (
 		<BoardLocaleContext value={locale}>
@@ -346,6 +386,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 				role="group"
 				aria-label={messages.boardLabel}
 				className={className ? `v-kanban ${className}` : "v-kanban"}
+				data-layout={switcher ? "switcher" : undefined}
 				data-dragging={drag.dragging ? "true" : undefined}
 				{...rest}
 			>
@@ -362,6 +403,21 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						{showFilterHint ? messages.filterDragDisabled : ""}
 					</p>
 				) : null}
+				{switcher && active.current !== undefined ? (
+					<ColumnSwitcher
+						columns={resolved.map(({ id, cards: columnCards }) => ({
+							id,
+							title: columnTitle(id),
+							count: columnCards.length,
+							matched: filterActive ? columnCards.filter(matches).length : null,
+						}))}
+						activeId={active.current}
+						onSelect={active.select}
+						panelId={panelId}
+						idPrefix={switcherId}
+						messages={messages}
+					/>
+				) : null}
 				{/* biome-ignore lint/a11y/useKeyWithClickEvents: 点击空白处取消选中只是鼠标的便利，键盘有 Alt+Enter 与再次切换 */}
 				<div
 					ref={scrollerRef}
@@ -376,7 +432,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							onSelectedCardChange(null);
 					}}
 				>
-					{resolved.map(({ id, cards: columnCards }) => {
+					{shown.map(({ id, cards: columnCards }) => {
 						const column = definitions.get(id) as TColumn;
 						const title = column.title ?? column.id;
 						const placeholder = drag.dragging?.placeholder;
@@ -436,7 +492,11 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 										moveMenu === "none"
 											? undefined
 											: {
-													mode: moveMenu,
+													// 一次只显示一列时跨列移动只能走菜单，悬停才出现会让它难以发现
+													mode:
+														switcher && moveMenu === "hover"
+															? "always"
+															: moveMenu,
 													label: formatMessage(messages.moveToLabel, {
 														card: cardLabel(card.id),
 													}),
@@ -458,7 +518,8 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						const hasVisible = shown > 0 || placeholderNode !== null;
 						const matched = filterActive ? columnCards.filter(matches).length : null;
 						// 折叠列表只对可折叠的列起作用：否则列被藏起来，又没有按钮可以展开
-						const columnCollapsible = collapsible && column.collapsible !== false;
+						const columnCollapsible =
+							!switcher && collapsible && column.collapsible !== false;
 						return (
 							<ColumnView
 								key={id}
@@ -493,6 +554,11 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 													}),
 												onOpen: engage,
 											}
+										: undefined
+								}
+								panel={
+									switcher
+										? { id: panelId, labelledBy: switcherTabId(switcherId, id) }
 										: undefined
 								}
 								messages={messages}

@@ -50,6 +50,7 @@ try {
 		"dist/styles.css",
 		"dist/board/board.css",
 		"dist/board/shell.css",
+		"dist/board/switcher.css",
 		"dist/board/relations/relations.css",
 		"dist/history/history.css",
 	])

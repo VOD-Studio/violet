@@ -1,0 +1,47 @@
+/* 列切换布局：窄屏一次只显示一列，顶部是标签条 */
+.v-kanban .v-kanban__switcher {
+	position: relative;
+	display: flex;
+	gap: 6px;
+	/* 标签条放不下时横向滚动，会裁掉标签的聚焦环（外扩 2px 线宽加 2px 偏移）：内边距留 6px，负外边距抵消。 */
+	margin: -6px -6px 4px;
+	padding: 6px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.v-kanban .v-kanban__switcher::-webkit-scrollbar {
+	display: none;
+}
+.v-kanban .v-kanban__tab {
+	display: inline-flex;
+	flex: 1 0 auto;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 40px;
+	padding: 4px 14px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--_kanban-muted);
+	font: inherit;
+	font-weight: 500;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.v-kanban .v-kanban__tab:hover {
+	background: color-mix(in oklab, var(--_kanban-muted) 8%, transparent);
+}
+.v-kanban .v-kanban__tab[data-active="true"] {
+	border-color: var(--_kanban-foreground);
+	background: var(--_kanban-card);
+	color: var(--_kanban-foreground);
+}
+.v-kanban .v-kanban__tab:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: 2px;
+}
+.v-kanban[data-layout="switcher"] .v-kanban__column {
+	flex: 1 1 100%;
+	width: auto;
+}
