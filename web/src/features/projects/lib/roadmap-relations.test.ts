@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoadmapItem, RoadmapRelation, RoadmapRelationType } from "../model/roadmap";
-import { relationGroups } from "./roadmap-relations";
+import { RELATION_KINDS, relationGroups, relationInput } from "./roadmap-relations";
 
 const item = (id: string): RoadmapItem => ({
 	id,
@@ -38,7 +38,9 @@ describe("relationGroups", () => {
 			relation("b2", "d4", "blocks"),
 		]);
 
-		expect(groups.map((group) => [group.label, group.items.map((other) => other.id)])).toEqual([
+		expect(
+			groups.map((group) => [group.label, group.entries.map((entry) => entry.item.id)]),
+		).toEqual([
 			["被阻塞", ["a1"]],
 			["阻塞", ["d4"]],
 			["被扩展", ["d4"]],
@@ -52,7 +54,11 @@ describe("relationGroups", () => {
 			relation("a1", "b2", "blocks"),
 		]);
 
-		expect(groups[0].items.map((other) => other.id)).toEqual(["d4", "b2"]);
+		expect(groups[0].entries.map((entry) => entry.item.id)).toEqual(["d4", "b2"]);
+		expect(groups[0].entries.map((entry) => entry.relation.id)).toEqual([
+			"a1-blocks-d4",
+			"a1-blocks-b2",
+		]);
 	});
 
 	it("另一端不在条目里的关系（例如已删除的条目）不列出，整个类别也随之消失", () => {
@@ -62,5 +68,27 @@ describe("relationGroups", () => {
 	it("与这个条目无关的关系不算，没有关系就是空的", () => {
 		expect(relationGroups("a1", items, [relation("b2", "c3", "blocks")])).toEqual([]);
 		expect(relationGroups("a1", items, [])).toEqual([]);
+	});
+});
+
+describe("relationInput", () => {
+	const kind = (key: string) => {
+		const found = RELATION_KINDS.find((entry) => entry.key === key);
+		if (!found) throw new Error(`unknown relation kind ${key}`);
+		return found;
+	};
+
+	it("这个条目是来源时连出去，是目标时连进来", () => {
+		expect(relationInput("a1", kind("blocks:out"), "b2")).toEqual({
+			source_id: "a1",
+			target_id: "b2",
+			type: "blocks",
+		});
+		expect(relationInput("a1", kind("blocks:in"), "b2")).toEqual({
+			source_id: "b2",
+			target_id: "a1",
+			type: "blocks",
+		});
+		expect(relationInput("a1", kind("fixes:in"), "b2")).toMatchObject({ type: "fixes" });
 	});
 });

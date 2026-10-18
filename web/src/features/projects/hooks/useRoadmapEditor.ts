@@ -10,7 +10,9 @@ import { toast } from "sonner";
 import { projectKeys } from "../api/keys";
 import {
 	createRoadmapItem,
+	createRoadmapRelation,
 	deleteRoadmapItem,
+	deleteRoadmapRelation,
 	moveRoadmapItem,
 	restoreRoadmapItem,
 	updateRoadmapItem,
@@ -23,7 +25,13 @@ import {
 	toMoveInput,
 	upsertItem,
 } from "../lib/roadmap-move";
-import type { RoadmapDetail, RoadmapItem, RoadmapStage } from "../model/roadmap";
+import type {
+	RoadmapDetail,
+	RoadmapItem,
+	RoadmapRelation,
+	RoadmapRelationType,
+	RoadmapStage,
+} from "../model/roadmap";
 
 export interface RoadmapEditor {
 	/** 本页会话内的撤销重做历史；每一步撤销与重做都是一次真实的保存。 */
@@ -41,7 +49,13 @@ export interface RoadmapEditor {
 	 * 失败时抛出，条目留在原处。
 	 */
 	remove: (item: RoadmapItem) => Promise<void>;
+	/** 建立关系并记入历史；被拒绝（自指、重复、成环）时抛出，错误信息说明原因。 */
+	relate: (input: RelationInput) => Promise<void>;
+	/** 删除关系并记入历史；撤销时重新建立。 */
+	unrelate: (relation: RoadmapRelation) => Promise<void>;
 }
+
+type RelationInput = { source_id: string; target_id: string; type: RoadmapRelationType };
 
 /**
  * 管理员编辑路线图：保存、写回缓存与撤销重做。
@@ -154,6 +168,64 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 			});
 		};
 
-		return { history, move, add, rename, save, remove };
+		const refreshRelations = (change: (relations: RoadmapRelation[]) => RoadmapRelation[]) => {
+			queryClient.setQueryData<RoadmapDetail>(key, (current) =>
+				current ? { ...current, relations: change(current.relations) } : current,
+			);
+			// 阻塞关系会改变被阻塞标记，由下一次拉取对账
+			void queryClient.invalidateQueries({ queryKey: key, exact: true });
+		};
+		const persistRelate = async (input: RelationInput) => {
+			const created = await createRoadmapRelation(projectId(), input);
+			refreshRelations((relations) => [...relations, created]);
+			return created;
+		};
+		const persistUnrelate = async (relationId: string) => {
+			await deleteRoadmapRelation(projectId(), relationId);
+			refreshRelations((relations) => relations.filter((entry) => entry.id !== relationId));
+		};
+		const numberOf = (id: string) =>
+			latest.current?.items.find((item) => item.id === id)?.number ?? "?";
+		const relationLabel = (input: RelationInput) =>
+			`#${numberOf(input.source_id)} 与 #${numberOf(input.target_id)} 的关系`;
+		// 重新建立的关系是一条新记录、ID 会变：撤销与重做之间要跟着最新的 ID 走
+		const track = (input: RelationInput, initialId: string | null) => {
+			let currentId = initialId;
+			return {
+				create: async () => {
+					currentId = (await persistRelate(input)).id;
+				},
+				delete: async () => {
+					if (currentId) await persistUnrelate(currentId);
+					currentId = null;
+				},
+			};
+		};
+
+		const relate = async (input: RelationInput) => {
+			const created = await persistRelate(input);
+			const step = track(input, created.id);
+			history.push({
+				label: `建立${relationLabel(input)}`,
+				undo: step.delete,
+				redo: step.create,
+			});
+		};
+		const unrelate = async (relation: RoadmapRelation) => {
+			const input = {
+				source_id: relation.source_id,
+				target_id: relation.target_id,
+				type: relation.type,
+			};
+			await persistUnrelate(relation.id);
+			const step = track(input, null);
+			history.push({
+				label: `删除${relationLabel(input)}`,
+				undo: step.create,
+				redo: step.delete,
+			});
+		};
+
+		return { history, move, add, rename, save, remove, relate, unrelate };
 	}, [history, queryClient, slug]);
 }

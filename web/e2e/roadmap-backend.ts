@@ -11,18 +11,37 @@ export type MoveBody = {
 	delivered_version?: string;
 };
 
-/** 一次写请求：方法、条目 ID（新建时为空串）与请求体。 */
+/** 一次写请求：方法、条目或关系的 ID（新建时为空串）与请求体。 */
 export interface RoadmapWrite {
 	method: string;
-	action: "create" | "update" | "move" | "delete" | "restore";
+	action: "create" | "update" | "move" | "delete" | "restore" | "relate" | "unrelate";
 	itemId: string;
 	body: Record<string, unknown> | null;
 }
 
+type Relation = (typeof ROADMAP_FIXTURE.relations)[number];
+
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const ITEMS =
 	/\/api\/v1\/admin\/projects\/[^/]+\/roadmap\/items(?:\/([^/]+))?(?:\/(move|restore))?$/;
+const RELATIONS = /\/api\/v1\/admin\/projects\/[^/]+\/roadmap\/relations(?:\/([^/]+))?$/;
 const RANK: Record<string, number> = { planned: 0, in_progress: 1, completed: 2 };
+
+/** 同一类型里从 from 能否走到 to：建立 to→from 之前用它判断会不会成环。 */
+function reaches(relations: Relation[], type: string, from: string, to: string): boolean {
+	const seen = new Set<string>();
+	const stack = [from];
+	while (stack.length > 0) {
+		const current = stack.pop() as string;
+		if (current === to) return true;
+		if (seen.has(current)) continue;
+		seen.add(current);
+		for (const relation of relations)
+			if (relation.type === type && relation.source_id === current)
+				stack.push(relation.target_id);
+	}
+	return false;
+}
 
 /** 后端的展示顺序：已完成按完成日期倒序、同日按编号倒序，其余阶段按位置（字节序）。 */
 function sortItems(items: RoadmapFixtureItem[]) {
@@ -54,14 +73,59 @@ function positionBetween(items: RoadmapFixtureItem[], beforeId: string, afterId:
  */
 export async function roadmapBackend(context: BrowserContext, options: { fail?: boolean } = {}) {
 	const items: RoadmapFixtureItem[] = structuredClone(ROADMAP_FIXTURE.items);
+	const relations: Relation[] = structuredClone(ROADMAP_FIXTURE.relations);
+	let nextRelation = 1;
 	const deleted: RoadmapFixtureItem[] = [];
 	const writes: RoadmapWrite[] = [];
 	const moves: Array<{ itemId: string; body: MoveBody }> = [];
 	let nextNumber = Math.max(...items.map((item) => item.number)) + 1;
 
-	await context.route(`**/api/v1/projects/by-slug/${SLUG}/roadmap`, (route) =>
-		route.fulfill({ json: { data: { ...ROADMAP_FIXTURE, items } } }),
-	);
+	await context.route(`**/api/v1/projects/by-slug/${SLUG}/roadmap`, (route) => {
+		// 两端都还在的关系才返回，与后端一致
+		const alive = new Set(items.map((item) => item.id));
+		const visible = relations.filter(
+			(relation) => alive.has(relation.source_id) && alive.has(relation.target_id),
+		);
+		return route.fulfill({ json: { data: { ...ROADMAP_FIXTURE, items, relations: visible } } });
+	});
+	await context.route(RELATIONS, (route) => {
+		const request = route.request();
+		const [, relationId = ""] = request.url().match(RELATIONS) ?? [];
+		const body = request.postData() ? (request.postDataJSON() as Record<string, string>) : null;
+		const action = request.method() === "DELETE" ? "unrelate" : "relate";
+		writes.push({ method: request.method(), action, itemId: relationId, body });
+		if (options.fail)
+			return route.fulfill({ status: 500, json: { error: "INTERNAL", message: "保存失败" } });
+		if (action === "unrelate") {
+			const index = relations.findIndex((relation) => relation.id === relationId);
+			if (index >= 0) relations.splice(index, 1);
+			return route.fulfill({ json: { message: "条目关系已删除" } });
+		}
+		const { source_id, target_id, type } = body ?? {};
+		const reject = (status: number, message: string) =>
+			route.fulfill({ status, json: { error: "BAD_REQUEST", message } });
+		if (source_id === target_id) return reject(400, "条目关系不能指向自身");
+		if (
+			relations.some(
+				(relation) =>
+					relation.type === type &&
+					relation.source_id === source_id &&
+					relation.target_id === target_id,
+			)
+		)
+			return reject(409, "同类型的条目关系已存在");
+		if (reaches(relations, type, target_id, source_id))
+			return reject(400, "该关系会形成同类型的环");
+		const created: Relation = {
+			...structuredClone(ROADMAP_FIXTURE.relations[0]),
+			id: `43000000-0000-0000-0000-${String(nextRelation++).padStart(12, "0")}`,
+			source_id,
+			target_id,
+			type: type as Relation["type"],
+		};
+		relations.push(created);
+		return route.fulfill({ status: 201, json: { data: created } });
+	});
 	await context.route(ITEMS, (route) => {
 		const request = route.request();
 		const [, itemId = "", suffix] = request.url().match(ITEMS) ?? [];
@@ -150,5 +214,5 @@ export async function roadmapBackend(context: BrowserContext, options: { fail?: 
 		sortItems(items);
 		return route.fulfill({ json: { data: item } });
 	});
-	return { items, writes, moves };
+	return { items, relations, writes, moves };
 }

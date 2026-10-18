@@ -489,7 +489,7 @@ test.describe("管理员编辑条目", () => {
 		await openEditable(page);
 		const dialog = await openDetails(page, 2);
 
-		await dialog.getByRole("button", { name: "删除" }).click();
+		await dialog.getByRole("button", { name: "删除", exact: true }).click();
 
 		await expect(dialog).toHaveCount(0);
 		await expect.poll(() => writes.map((write) => write.action)).toEqual(["delete"]);
@@ -510,7 +510,7 @@ test.describe("管理员编辑条目", () => {
 		const { writes } = await roadmapBackend(context);
 		await openEditable(page);
 		const dialog = await openDetails(page, 3);
-		await dialog.getByRole("button", { name: "删除" }).click();
+		await dialog.getByRole("button", { name: "删除", exact: true }).click();
 		await expect(card(page, 3)).toHaveCount(0);
 
 		await undoReady(page);
@@ -527,9 +527,103 @@ test.describe("管理员编辑条目", () => {
 		await openEditable(page);
 		const dialog = await openDetails(page, 3);
 
-		await dialog.getByRole("button", { name: "删除" }).click();
+		await dialog.getByRole("button", { name: "删除", exact: true }).click();
 
 		await expect(page.locator("[data-sonner-toast]")).toContainText("删除未能完成");
 		await expect(card(page, 3)).toBeVisible();
+	});
+});
+
+test.describe("管理员维护条目关系", () => {
+	test.use({ viewport: { width: 1440, height: 1200 } });
+
+	test.beforeEach(async ({ context }) => {
+		await loadClient(context);
+		await authenticated(context, ["project:update"]);
+	});
+
+	async function openDetails(page: Page, number: number) {
+		await card(page, number)
+			.getByRole("button", { name: `查看 #${number} ${titleOf(number)} 的详情` })
+			.click();
+		const dialog = page.getByRole("dialog", { name: titleOf(number) });
+		await expect(dialog).toBeVisible();
+		return dialog;
+	}
+
+	async function relate(page: Page, number: number, kind: string, query: string, target: number) {
+		const dialog = await openDetails(page, number);
+		await dialog.getByRole("combobox", { name: "关系类型" }).click();
+		await page.getByRole("option", { name: kind, exact: true }).click();
+		await dialog.getByRole("searchbox", { name: "搜索要关联的条目" }).fill(query);
+		await dialog
+			.getByRole("list", { name: "可关联的条目" })
+			.getByRole("button", { name: new RegExp(`#${target}\\s*${titleOf(target)}`) })
+			.click();
+		return dialog;
+	}
+
+	const relationsSection = (page: Page) =>
+		page.getByRole("dialog").getByRole("region", { name: "关系" });
+
+	test("选关系类型、搜索并点选目标即建立；列在关系里，关闭弹窗后可撤销", async ({
+		page,
+		context,
+	}) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+
+		await relate(page, 5, "阻塞", "第三", 3);
+
+		await expect.poll(() => writes.length).toBe(1);
+		expect(writes[0]).toMatchObject({
+			action: "relate",
+			body: { source_id: idOf(5), target_id: idOf(3), type: "blocks" },
+		});
+		await expect(relationsSection(page).locator("dt")).toHaveText(["阻塞"]);
+		await expect(relationsSection(page).getByRole("listitem").first()).toContainText(
+			titleOf(3),
+		);
+
+		await page.keyboard.press("Escape");
+		await expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
+		await page.keyboard.press("ControlOrMeta+z");
+		await expect
+			.poll(() => writes.map((write) => write.action))
+			.toEqual(["relate", "unrelate"]);
+	});
+
+	test("删除关系：点 ×，关系消失；撤销重新建立同一条关系", async ({ page, context }) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 2);
+
+		await dialog.getByRole("button", { name: `删除关系：被阻塞 #4 ${titleOf(4)}` }).click();
+
+		await expect.poll(() => writes.map((write) => write.action)).toEqual(["unrelate"]);
+		await expect(relationsSection(page).locator("dt")).toHaveCount(0);
+
+		await page.keyboard.press("Escape");
+		await expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
+		await page.keyboard.press("ControlOrMeta+z");
+		await expect.poll(() => writes.length).toBe(2);
+		expect(writes[1]).toMatchObject({
+			action: "relate",
+			body: { source_id: idOf(4), target_id: idOf(2), type: "blocks" },
+		});
+	});
+
+	test("会形成同类型的环时被拒绝并说明原因；搜索不会列出自己", async ({ page, context }) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+
+		// 已有 #4 扩展 #1，再让 #1 扩展 #4 就成环
+		const dialog = await relate(page, 1, "扩展", "进行中的第一项", 4);
+
+		await expect(dialog.getByRole("alert")).toHaveText("该关系会形成同类型的环");
+		expect(writes.map((write) => write.action)).toEqual(["relate"]);
+
+		await dialog.getByRole("searchbox", { name: "搜索要关联的条目" }).fill("#1");
+		await expect(dialog.getByText("没有匹配的条目")).toBeVisible();
 	});
 });

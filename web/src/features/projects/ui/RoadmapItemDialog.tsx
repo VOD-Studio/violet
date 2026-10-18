@@ -7,14 +7,15 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@violet/ui";
-import { ExternalLink, Lock, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, Lock, Pencil, Trash2, X } from "lucide-react";
 import { useId, useState } from "react";
 import { ROADMAP_STAGE_LABELS } from "../lib/roadmap-board";
 import type { RoadmapContentInput } from "../lib/roadmap-content";
 import { relationGroups } from "../lib/roadmap-relations";
-import type { RoadmapItem, RoadmapRelation } from "../model/roadmap";
+import type { RoadmapItem, RoadmapRelation, RoadmapRelationType } from "../model/roadmap";
 import { RoadmapChecklist } from "./RoadmapChecklist";
 import { RoadmapItemForm } from "./RoadmapItemForm";
+import { RoadmapRelationForm } from "./RoadmapRelationForm";
 
 export interface RoadmapItemDialogProps {
 	/** 要显示的条目；关闭的淡出期间仍要给着它，内容才不会先消失。 */
@@ -30,6 +31,14 @@ export interface RoadmapItemDialogProps {
 	onSave?: (item: RoadmapItem, content: RoadmapContentInput) => Promise<void>;
 	/** 删除条目；给出时弹窗底部有「删除」，不再二次确认，由调用方提供撤销。 */
 	onDelete?: (item: RoadmapItem) => void;
+	/** 建立关系；给出时「关系」区可以搜索条目来建立。被拒绝时抛出，错误信息说明原因。 */
+	onRelate?: (input: {
+		source_id: string;
+		target_id: string;
+		type: RoadmapRelationType;
+	}) => Promise<void>;
+	/** 删除关系；给出时每条关系旁有删除按钮。 */
+	onUnrelate?: (relation: RoadmapRelation) => void;
 }
 
 /**
@@ -45,6 +54,8 @@ export function RoadmapItemDialog({
 	returnFocusTo,
 	onSave,
 	onDelete,
+	onRelate,
+	onUnrelate,
 }: RoadmapItemDialogProps) {
 	const relationsHeadingId = useId();
 	const groups = item ? relationGroups(item.id, items, relations) : [];
@@ -110,7 +121,7 @@ export function RoadmapItemDialog({
 								checklist={item.checklist}
 							/>
 						) : null}
-						{!editing && groups.length > 0 ? (
+						{!editing && (groups.length > 0 || onRelate) ? (
 							<section aria-labelledby={relationsHeadingId} className="space-y-2">
 								<h3
 									id={relationsHeadingId}
@@ -118,30 +129,66 @@ export function RoadmapItemDialog({
 								>
 									关系
 								</h3>
-								<dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
-									{groups.map((group) => (
-										<div key={group.key} className="contents">
-											<dt className="whitespace-nowrap text-muted-foreground">
-												{group.label}
-											</dt>
-											<dd>
-												<ul className="space-y-1">
-													{group.items.map((other) => (
-														<li key={other.id} className="font-reading">
-															<span className="mr-1.5 font-mono text-xs text-muted-foreground">
-																#{other.number}
-															</span>
-															{other.title}
-															<span className="ml-2 text-xs text-muted-foreground">
-																{ROADMAP_STAGE_LABELS[other.stage]}
-															</span>
-														</li>
-													))}
-												</ul>
-											</dd>
-										</div>
-									))}
-								</dl>
+								{groups.length > 0 ? (
+									<dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
+										{groups.map((group) => (
+											<div key={group.key} className="contents">
+												<dt className="whitespace-nowrap text-muted-foreground">
+													{group.label}
+												</dt>
+												<dd>
+													<ul className="space-y-1">
+														{group.entries.map(
+															({ item: other, relation }) => (
+																<li
+																	key={relation.id}
+																	className="flex items-baseline gap-1 font-reading"
+																>
+																	<span className="min-w-0 flex-1">
+																		<span className="mr-1.5 font-mono text-xs text-muted-foreground">
+																			#{other.number}
+																		</span>
+																		{other.title}
+																		<span className="ml-2 text-xs text-muted-foreground">
+																			{
+																				ROADMAP_STAGE_LABELS[
+																					other.stage
+																				]
+																			}
+																		</span>
+																	</span>
+																	{onUnrelate ? (
+																		<Button
+																			type="button"
+																			variant="ghost"
+																			size="icon-xs"
+																			aria-label={`删除关系：${group.label} #${other.number} ${other.title}`}
+																			onClick={() =>
+																				onUnrelate(relation)
+																			}
+																		>
+																			<X
+																				className="size-3.5"
+																				aria-hidden="true"
+																			/>
+																		</Button>
+																	) : null}
+																</li>
+															),
+														)}
+													</ul>
+												</dd>
+											</div>
+										))}
+									</dl>
+								) : null}
+								{onRelate ? (
+									<RoadmapRelationForm
+										item={item}
+										items={items}
+										onRelate={onRelate}
+									/>
+								) : null}
 							</section>
 						) : null}
 						{!editing && item.tags.length > 0 ? (

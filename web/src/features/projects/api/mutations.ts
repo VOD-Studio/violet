@@ -1,7 +1,12 @@
 import { apiDelete, apiPost, apiPut } from "@shared/api/request";
 import type { RoadmapContentInput } from "../lib/roadmap-content";
 import type { RoadmapMoveInput } from "../lib/roadmap-move";
-import type { RoadmapItem, RoadmapStage } from "../model/roadmap";
+import type {
+	RoadmapItem,
+	RoadmapRelation,
+	RoadmapRelationType,
+	RoadmapStage,
+} from "../model/roadmap";
 
 const items = (projectId: string) => `/admin/projects/${projectId}/roadmap/items`;
 
@@ -24,3 +29,12 @@ export const deleteRoadmapItem = (projectId: string, itemId: string) =>
 
 export const restoreRoadmapItem = (projectId: string, itemId: string) =>
 	apiPost<RoadmapItem>(`${items(projectId)}/${itemId}/restore`);
+
+/** 自指、重复与同类型成环会被拒绝，错误信息说明原因。 */
+export const createRoadmapRelation = (
+	projectId: string,
+	input: { source_id: string; target_id: string; type: RoadmapRelationType },
+) => apiPost<RoadmapRelation>(`/admin/projects/${projectId}/roadmap/relations`, input);
+
+export const deleteRoadmapRelation = (projectId: string, relationId: string) =>
+	apiDelete<void>(`/admin/projects/${projectId}/roadmap/relations/${relationId}`);

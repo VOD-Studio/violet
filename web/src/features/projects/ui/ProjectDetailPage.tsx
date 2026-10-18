@@ -85,6 +85,20 @@ export function ProjectDetailPage({
 				open={openItem !== null}
 				returnFocusTo={() => opener.current}
 				onSave={canEdit ? editor.save : undefined}
+				onRelate={canEdit ? editor.relate : undefined}
+				onUnrelate={
+					canEdit
+						? (relation) => {
+								editor.unrelate(relation).catch((error: unknown) => {
+									toast.error(
+										error instanceof Error && error.message
+											? `删除关系未能完成：${error.message}`
+											: "删除关系未能完成，请重试",
+									);
+								});
+							}
+						: undefined
+				}
 				onDelete={
 					canEdit
 						? (item) => {
