@@ -90,26 +90,33 @@ function App() {
 	);
 }
 
-/** 画布视图：一块比窗口宽的只读看板放进画布，画布下面有一大块页面，用来验证滚轮不被劫持。 */
+const tall = Array.from({ length: 10 }, (_, index) => ({
+	id: `l${index + 1}`,
+	title: `Later ${index + 1}`,
+}));
+const canvasTasks = [...tasks, { id: "f", title: "Task F" }, ...tall];
+const wide = [
+	...columns,
+	{ id: "c4", title: "Later" },
+	{ id: "c5", title: "Backlog" },
+	{ id: "c6", title: "Ideas" },
+];
+// c4 很高、c6 在最右：默认适应窗口后，底部与右侧的卡片都在视口之外
+const wideOrder: BoardState["order"] = {
+	...initial,
+	c4: tall.map((task) => task.id),
+	c5: [],
+	c6: ["f"],
+};
+const wideIds = wide.map((column) => column.id);
+
+/**
+ * 画布视图：一块比窗口宽的看板放进画布，画布下面有一大块页面，用来验证滚轮不被劫持。
+ * 带 `edit` 参数时看板可编辑，移动记录在 `window.__moves`。
+ */
 function CanvasDemo() {
-	const tall = Array.from({ length: 10 }, (_, index) => ({
-		id: `l${index + 1}`,
-		title: `Later ${index + 1}`,
-	}));
-	const canvasTasks = [...tasks, { id: "f", title: "Task F" }, ...tall];
-	const wide = [
-		...columns,
-		{ id: "c4", title: "Later" },
-		{ id: "c5", title: "Backlog" },
-		{ id: "c6", title: "Ideas" },
-	];
-	// c4 很高、c6 在最右：默认适应窗口后，底部与右侧的卡片都在视口之外
-	const wideOrder: BoardState["order"] = {
-		...initial,
-		c4: tall.map((task) => task.id),
-		c5: [],
-		c6: ["f"],
-	};
+	const editable = params.has("edit");
+	const [order, setOrder] = useState(wideOrder);
 	return (
 		<div style={{ width: 900, padding: 24 }}>
 			<p id="before">above the canvas</p>
@@ -120,7 +127,7 @@ function CanvasDemo() {
 				<Board
 					columns={wide}
 					cards={canvasTasks}
-					order={wideOrder}
+					order={order}
 					getCardLabel={(task) => task.title}
 					renderCard={(task) => (
 						<button
@@ -130,6 +137,19 @@ function CanvasDemo() {
 							{task.title}
 						</button>
 					)}
+					onMove={
+						editable
+							? async (move) => {
+									window.__moves.push(move);
+									await new Promise((resolve) => setTimeout(resolve, 30));
+									setOrder(
+										(previous) =>
+											applyMove({ columns: wideIds, order: previous }, move)
+												.order,
+									);
+								}
+							: undefined
+					}
 				/>
 			</Canvas>
 			<button type="button" id="outside-after">

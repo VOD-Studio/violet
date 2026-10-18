@@ -670,9 +670,6 @@ test.describe("画布视口", () => {
 			box.y + box.height <= viewportBox.y + viewportBox.height
 		);
 	};
-	/** 过渡与动画都结束。 */
-	const settled = (page: Page) =>
-		page.waitForFunction(() => document.getAnimations().length === 0);
 	const nativeScroll = (page: Page) =>
 		viewportEl(page).evaluate((element) => [element.scrollLeft, element.scrollTop]);
 
@@ -750,6 +747,227 @@ test.describe("画布视口", () => {
 		);
 		expect(reduced).toBe("0s");
 	});
+
+	async function openEditable(page: Page) {
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=canvas&edit`);
+		await expect(viewportEl(page)).toBeVisible();
+		await expect(page.locator('[data-card-id="a"]')).toBeVisible();
+	}
+	const readout = (page: Page) => page.locator(".v-kanban-canvas__zoom").innerText();
+	const zoom = async (page: Page, name: "Zoom in" | "Zoom out", times: number) => {
+		for (let i = 0; i < times; i += 1) {
+			await page.getByRole("button", { name }).click();
+			await settled(page);
+		}
+	};
+	const moves = (page: Page) => page.evaluate(() => window.__moves);
+
+	for (const [label, name, times, expected] of [
+		["约 51%", "Zoom out", 2, "51%"],
+		["100%", "Zoom in", 1, "100%"],
+	] as const) {
+		test(`缩放${label}：跨列拖动落在指针下的列与位置，浮起卡片和原卡片一样大`, async ({
+			page,
+		}) => {
+			await openEditable(page);
+			await zoom(page, name, times);
+			expect(await readout(page)).toBe(expected);
+			// 卡片被视口边缘遮住一部分时，按下会聚焦它并先把它露出来；先露出，目标位置才不会过期
+			await page.locator('[data-card-id="a"] button').first().focus();
+			await settled(page);
+			const original = await page.locator('[data-card-id="a"]').boundingBox();
+			const target = await belowLastCard(page, "doing");
+
+			await pickUp(page, "a", target);
+
+			const ghost = page.locator(".v-kanban__ghost");
+			const box = await ghost.boundingBox();
+			expect(Math.abs((box?.x ?? 0) + (box?.width ?? 0) / 2 - target.x)).toBeLessThan(2);
+			expect(Math.abs((box?.y ?? 0) + (box?.height ?? 0) / 2 - target.y)).toBeLessThan(2);
+			expect(Math.abs((box?.width ?? 0) - (original?.width ?? 0))).toBeLessThan(1.5);
+			expect(Math.abs((box?.height ?? 0) - (original?.height ?? 0))).toBeLessThan(1.5);
+			await page.mouse.up();
+
+			await expect.poll(async () => (await moves(page)).length).toBe(1);
+			expect((await moves(page))[0]).toMatchObject({
+				cardId: "a",
+				from: { columnId: "todo", index: 0 },
+				to: { columnId: "doing", index: 1 },
+			});
+			await settled(page);
+			expect(await idsIn(page, "doing")).toEqual(["d", "a"]);
+		});
+	}
+
+	test("画布平移之后拖动：落点仍按屏幕上看到的位置", async ({ page }) => {
+		await openEditable(page);
+		await zoom(page, "Zoom out", 2);
+		await viewportEl(page).focus();
+		await page.keyboard.press("ArrowLeft");
+		await page.keyboard.press("ArrowDown");
+		const target = await belowLastCard(page, "doing");
+
+		await pickUp(page, "b", target);
+		await page.mouse.up();
+
+		await expect.poll(async () => (await moves(page)).length).toBe(1);
+		expect((await moves(page))[0]).toMatchObject({
+			cardId: "b",
+			to: { columnId: "doing", index: 1 },
+		});
+	});
+
+	test("指针在画布视口之外放下没有落点：即使正下方是一列伸出视口的内容", async ({ page }) => {
+		await openEditable(page);
+		const viewportBox = await viewportEl(page).boundingBox();
+		const tallColumn = await page.locator('[data-column-id="c4"]').boundingBox();
+		if (!viewportBox || !tallColumn) throw new Error("not visible");
+		// c4 有 10 张卡片，伸出视口底部；视口下沿以下的部分是被裁掉看不见的
+		expect(tallColumn.y + tallColumn.height).toBeGreaterThan(
+			viewportBox.y + viewportBox.height + 40,
+		);
+
+		await pickUp(page, "a", {
+			x: tallColumn.x + tallColumn.width / 2,
+			y: viewportBox.y + viewportBox.height + 20,
+		});
+		await expect(page.locator(".v-kanban__ghost")).toBeVisible();
+		await page.mouse.up();
+		await settled(page);
+
+		expect(await moves(page)).toEqual([]);
+		expect(await idsIn(page, "todo")).toEqual(["a", "b", "c"]);
+	});
+
+	test("拖到右边缘停留：画布自动平移，平移期间占位始终在指针下的列，到内容尽头停下", async ({
+		page,
+	}) => {
+		await openEditable(page);
+		const viewportBox = await viewportEl(page).boundingBox();
+		if (!viewportBox) throw new Error("viewport not visible");
+		const before = await shownTransform(page);
+		const pointer = {
+			x: viewportBox.x + viewportBox.width - 20,
+			y: viewportBox.y + 60,
+		};
+
+		await pickUp(page, "a", pointer);
+
+		/** 占位所在的列，与水平方向上离指针最近的列（落点解析的规则）。 */
+		const snapshot = () =>
+			page.evaluate((point) => {
+				const placeholder = document
+					.querySelector("[data-placeholder]")
+					?.closest("[data-column-id]")
+					?.getAttribute("data-column-id");
+				const columns = [...document.querySelectorAll("[data-column-id]")].map(
+					(element) => {
+						const box = element.getBoundingClientRect();
+						const gap = Math.max(box.left - point.x, point.x - box.right, 0);
+						return {
+							id: element.getAttribute("data-column-id"),
+							gap,
+							inside: gap === 0,
+						};
+					},
+				);
+				const nearest = columns.reduce((best, column) =>
+					column.gap < best.gap ? column : best,
+				);
+				return { placeholder, under: nearest.id, inside: nearest.inside };
+			}, pointer);
+
+		const seen = new Set<string>();
+		for (let i = 0; i < 8; i += 1) {
+			await page.waitForTimeout(150);
+			const sample = await snapshot();
+			if (sample.inside) expect(sample.placeholder).toBe(sample.under);
+			if (sample.placeholder) seen.add(sample.placeholder);
+		}
+		const panned = await shownTransform(page);
+		expect(panned.x).toBeLessThan(before.x - 100);
+		expect(seen.size).toBeGreaterThan(1);
+
+		// 一直停着：内容的右端停在离视口右缘 24px 附近，不再继续平移
+		await page.waitForTimeout(2500);
+		const stopped = await shownTransform(page);
+		await page.waitForTimeout(400);
+		expect((await shownTransform(page)).x).toBe(stopped.x);
+		const board = await page.locator(".v-kanban").boundingBox();
+		expect(
+			Math.abs(
+				(board?.x ?? 0) + (board?.width ?? 0) - (viewportBox.x + viewportBox.width - 24),
+			),
+		).toBeLessThan(10);
+
+		const sample = await snapshot();
+		await page.mouse.up();
+		await expect.poll(async () => (await moves(page)).length).toBe(1);
+		expect((await moves(page))[0].to.columnId).toBe(sample.under);
+	});
+
+	test("拖拽结束后不再自动平移", async ({ page }) => {
+		await openEditable(page);
+		const viewportBox = await viewportEl(page).boundingBox();
+		if (!viewportBox) throw new Error("viewport not visible");
+
+		await pickUp(page, "a", {
+			x: viewportBox.x + viewportBox.width - 20,
+			y: viewportBox.y + 60,
+		});
+		await page.waitForTimeout(300);
+		await page.mouse.up();
+		await settled(page);
+		const stopped = await shownTransform(page);
+		await page.waitForTimeout(400);
+
+		expect(await shownTransform(page)).toEqual(stopped);
+	});
+
+	test.describe("全屏里的 Esc", () => {
+		const enterFullscreen = async (page: Page) => {
+			await openEditable(page);
+			await page.getByRole("button", { name: "Enter full screen" }).click();
+			await expect(root(page)).toHaveAttribute("data-fullscreen", "true");
+			await settled(page);
+		};
+
+		test("指针拖拽中：Esc 取消拖拽，全屏保持；没有拖拽时 Esc 退出全屏", async ({ page }) => {
+			await enterFullscreen(page);
+			const target = await belowLastCard(page, "doing");
+
+			await pickUp(page, "a", target);
+			await expect(page.locator(".v-kanban__ghost")).toBeVisible();
+			await page.keyboard.press("Escape");
+
+			await expect(page.locator(".v-kanban__ghost")).toHaveCount(0);
+			await expect(root(page)).toHaveAttribute("data-fullscreen", "true");
+			await page.mouse.up();
+			await settled(page);
+			expect(await moves(page)).toEqual([]);
+			expect(await idsIn(page, "todo")).toEqual(["a", "b", "c"]);
+			await expect(root(page)).toHaveAttribute("data-fullscreen", "true");
+
+			await page.keyboard.press("Escape");
+
+			await expect(root(page)).not.toHaveAttribute("data-fullscreen", "true");
+		});
+
+		test("键盘拿起中：Esc 放回卡片，全屏保持", async ({ page }) => {
+			await enterFullscreen(page);
+			await page.locator('[data-card-id="a"]').focus();
+
+			await page.keyboard.press("Enter");
+			await expect(page.locator('[data-card-id="a"]')).toHaveAttribute("data-lifted", "true");
+			await page.keyboard.press("Escape");
+
+			await expect(page.locator('[data-card-id="a"]')).not.toHaveAttribute(
+				"data-lifted",
+				"true",
+			);
+			await expect(root(page)).toHaveAttribute("data-fullscreen", "true");
+		});
+	});
 });
 
 test.describe("画布视口（触屏模拟）", () => {
@@ -814,5 +1032,52 @@ test.describe("画布视口（触屏模拟）", () => {
 		await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 
 		expect(Math.round(before - (await transformX()))).toBe(120);
+	});
+
+	test("可拖卡片上：快速滑动平移画布，长按后再移动是拖卡片", async ({ page, context }) => {
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=canvas&edit`);
+		await expect(page.locator('[data-card-id="a"]')).toBeVisible();
+		const cdp = await context.newCDPSession(page);
+		const send = (
+			type: "touchStart" | "touchMove" | "touchEnd",
+			touchPoints: Array<{ x: number; y: number }>,
+		) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints });
+		const transformX = () =>
+			page.locator(".v-kanban-canvas__content").evaluate((element) => {
+				const match = /translate\(([-\d.e]+)px/.exec(
+					(element as HTMLElement).style.transform,
+				);
+				return Number(match?.[1]);
+			});
+
+		// 快速滑动：卡片还没等到长按，画布先动
+		const card = await cardCenter(page, "a");
+		const before = await transformX();
+		await send("touchStart", [card]);
+		for (let step = 1; step <= 6; step += 1)
+			await send("touchMove", [{ x: card.x + step * 20, y: card.y }]);
+		await send("touchEnd", []);
+		expect(Math.round((await transformX()) - before)).toBe(120);
+		expect(await page.evaluate(() => window.__moves.length)).toBe(0);
+
+		// 长按：250ms 后起拖，画布不动，卡片被拖到 doing 列末尾
+		const from = await cardCenter(page, "a");
+		const target = await belowLastCard(page, "doing");
+		await send("touchStart", [from]);
+		await page.waitForTimeout(400);
+		// 按下会聚焦卡片并在需要时露出它；长按之后的移动不应再让画布动
+		const held = await transformX();
+		for (let step = 1; step <= 10; step += 1)
+			await send("touchMove", [
+				{
+					x: from.x + ((target.x - from.x) * step) / 10,
+					y: from.y + ((target.y - from.y) * step) / 10,
+				},
+			]);
+		await send("touchEnd", []);
+
+		await expect.poll(() => page.evaluate(() => window.__moves.length)).toBe(1);
+		expect(await page.evaluate(() => window.__moves[0].to.columnId)).toBe("doing");
+		expect(await transformX()).toBe(held);
 	});
 });
