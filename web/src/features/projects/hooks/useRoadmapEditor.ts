@@ -8,20 +8,28 @@ import {
 import { useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { projectKeys } from "../api/keys";
-import { moveRoadmapItem } from "../api/mutations";
 import {
-	applyMovedItem,
+	createRoadmapItem,
+	deleteRoadmapItem,
+	moveRoadmapItem,
+	restoreRoadmapItem,
+} from "../api/mutations";
+import {
 	keepCompletion,
 	type RoadmapMoveInput,
+	removeItem,
 	toMoveInput,
+	upsertItem,
 } from "../lib/roadmap-move";
-import type { RoadmapDetail, RoadmapItem } from "../model/roadmap";
+import type { RoadmapDetail, RoadmapItem, RoadmapStage } from "../model/roadmap";
 
 export interface RoadmapEditor {
 	/** 本页会话内的撤销重做历史；每一步撤销与重做都是一次真实的保存。 */
 	history: CommandHistory;
 	/** 保存看板上的一次移动并记入历史；失败时抛出，看板据此回滚并提示。 */
 	move: (move: BoardMove) => Promise<void>;
+	/** 在某个阶段末尾新建只有标题的条目并记入历史；失败时抛出，看板保留草稿并提示。 */
+	add: (card: { columnId: string; title: string }) => Promise<void>;
 }
 
 /**
@@ -51,13 +59,24 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 		const projectId = () => latest.current?.project.id ?? "";
 		const settle = (item: RoadmapItem) => {
 			queryClient.setQueryData<RoadmapDetail>(key, (current) =>
-				current ? applyMovedItem(current, item) : current,
+				current ? upsertItem(current, item) : current,
 			);
 			void queryClient.invalidateQueries({ queryKey: key, exact: true });
 			void queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
 		};
 		const persistMove = async (itemId: string, input: RoadmapMoveInput) => {
 			settle(await moveRoadmapItem(projectId(), itemId, input));
+		};
+		const persistDelete = async (itemId: string) => {
+			await deleteRoadmapItem(projectId(), itemId);
+			queryClient.setQueryData<RoadmapDetail>(key, (current) =>
+				current ? removeItem(current, itemId) : current,
+			);
+			void queryClient.invalidateQueries({ queryKey: key, exact: true });
+			void queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+		};
+		const persistRestore = async (itemId: string) => {
+			settle(await restoreRoadmapItem(projectId(), itemId));
 		};
 
 		const move = async (boardMove: BoardMove) => {
@@ -79,6 +98,20 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 			});
 		};
 
-		return { history, move };
+		// 撤销新建就是删除；重做是恢复同一个条目（同编号、同位置），而不是再建一个
+		const add = async ({ columnId, title }: { columnId: string; title: string }) => {
+			const created = await createRoadmapItem(projectId(), {
+				title,
+				stage: columnId as RoadmapStage,
+			});
+			settle(created);
+			history.push({
+				label: `新增 #${created.number}`,
+				undo: () => persistDelete(created.id),
+				redo: () => persistRestore(created.id),
+			});
+		};
+
+		return { history, move, add };
 	}, [history, queryClient, slug]);
 }

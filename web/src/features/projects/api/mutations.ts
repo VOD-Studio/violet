@@ -1,6 +1,21 @@
-import { apiPost } from "@shared/api/request";
+import { apiDelete, apiPost } from "@shared/api/request";
 import type { RoadmapMoveInput } from "../lib/roadmap-move";
-import type { RoadmapItem } from "../model/roadmap";
+import type { RoadmapItem, RoadmapStage } from "../model/roadmap";
+
+const items = (projectId: string) => `/admin/projects/${projectId}/roadmap/items`;
 
 export const moveRoadmapItem = (projectId: string, itemId: string, input: RoadmapMoveInput) =>
-	apiPost<RoadmapItem>(`/admin/projects/${projectId}/roadmap/items/${itemId}/move`, input);
+	apiPost<RoadmapItem>(`${items(projectId)}/${itemId}/move`, input);
+
+/** 新条目追加到所在阶段末尾；进入已完成时完成日期取后端当天。 */
+export const createRoadmapItem = (
+	projectId: string,
+	input: { title: string; stage: RoadmapStage },
+) => apiPost<RoadmapItem>(items(projectId), input);
+
+/** 软删除；编号、位置、内容与关系保留，恢复后原样回来。 */
+export const deleteRoadmapItem = (projectId: string, itemId: string) =>
+	apiDelete<void>(`${items(projectId)}/${itemId}`);
+
+export const restoreRoadmapItem = (projectId: string, itemId: string) =>
+	apiPost<RoadmapItem>(`${items(projectId)}/${itemId}/restore`);

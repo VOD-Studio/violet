@@ -1,15 +1,7 @@
-import { type BrowserContext, expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
+import { roadmapBackend } from "./roadmap-backend.ts";
 import { authenticated, collectDiagnostics, loadClient } from "./support.ts";
-
-type Item = (typeof ROADMAP_FIXTURE.items)[number];
-type MoveBody = {
-	stage: string;
-	before_id: string;
-	after_id: string;
-	completion_date?: string;
-	delivered_version?: string;
-};
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const idOf = (number: number) =>
@@ -22,70 +14,6 @@ const column = (page: Page, stage: string) =>
 const card = (page: Page, number: number) =>
 	page.locator(`.v-kanban-canvas [data-card-id="${idOf(number)}"]`);
 const notice = (page: Page) => page.locator(".v-kanban-canvas .v-kanban__notice");
-
-/** 移动之后的位置：落在两侧条目的位置之间，与后端的分数索引同一种字节序。 */
-function positionBetween(items: Item[], beforeId: string, afterId: string) {
-	const before = items.find((item) => item.id === beforeId);
-	const after = items.find((item) => item.id === afterId);
-	if (before) return `${before.position}V`;
-	if (after) return `0${after.position}`;
-	return "V";
-}
-
-/**
- * 路线图的「后端」：浏览器里的路线图请求返回当前状态，移动接口按请求改状态并返回条目。
- * 服务端渲染仍由 mock 服务应答原始数据；移动之后的重新拉取经过这里。
- */
-async function roadmapBackend(context: BrowserContext, options: { fail?: boolean } = {}) {
-	const items: Item[] = structuredClone(ROADMAP_FIXTURE.items);
-	const moves: Array<{ itemId: string; body: MoveBody }> = [];
-	await context.route(`**/api/v1/projects/by-slug/${SLUG}/roadmap`, (route) =>
-		route.fulfill({ json: { data: { ...ROADMAP_FIXTURE, items } } }),
-	);
-	await context.route(
-		/\/api\/v1\/admin\/projects\/[^/]+\/roadmap\/items\/[^/]+\/move$/,
-		(route) => {
-			const itemId = route.request().url().split("/").at(-2) ?? "";
-			const body = route.request().postDataJSON() as MoveBody;
-			moves.push({ itemId, body });
-			if (options.fail)
-				return route.fulfill({
-					status: 500,
-					json: { error: "INTERNAL", message: "保存失败" },
-				});
-			const index = items.findIndex((item) => item.id === itemId);
-			const [moved] = items.splice(index, 1);
-			const completed = body.stage === "completed";
-			Object.assign(moved, {
-				stage: body.stage,
-				position: positionBetween(items, body.before_id, body.after_id),
-				completion_date: completed
-					? (body.completion_date ?? moved.completion_date ?? "2026-10-21")
-					: null,
-				delivered_version: completed
-					? (body.delivered_version ?? moved.delivered_version)
-					: "",
-			});
-			// 按后端的展示顺序放回：已完成按完成日期倒序，其余阶段按位置
-			const rank = { planned: 0, in_progress: 1, completed: 2 } as Record<string, number>;
-			items.push(moved);
-			items.sort((a, b) =>
-				a.stage !== b.stage
-					? rank[a.stage] - rank[b.stage]
-					: a.stage === "completed"
-						? (b.completion_date ?? "").localeCompare(a.completion_date ?? "") ||
-							b.number - a.number
-						: a.position < b.position
-							? -1
-							: a.position > b.position
-								? 1
-								: a.number - b.number,
-			);
-			return route.fulfill({ json: { data: moved } });
-		},
-	);
-	return moves;
-}
 
 async function openEditable(page: Page) {
 	await page.goto(`/projects/${SLUG}`);
@@ -151,7 +79,7 @@ test.describe("管理员拖动条目", () => {
 		page,
 		context,
 	}) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		const diagnostics = collectDiagnostics(page);
 		await openEditable(page);
 
@@ -186,7 +114,7 @@ test.describe("管理员拖动条目", () => {
 	});
 
 	test("键盘：拿起进行中的条目，方向键移到计划中，放下后保存", async ({ page, context }) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		await openEditable(page);
 
 		await card(page, 5).focus();
@@ -201,7 +129,7 @@ test.describe("管理员拖动条目", () => {
 	});
 
 	test("「移到…」已完成：放到最上，完成日期以接口返回值为准", async ({ page, context }) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		await openEditable(page);
 
 		await card(page, 2).hover();
@@ -219,7 +147,7 @@ test.describe("管理员拖动条目", () => {
 		page,
 		context,
 	}) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		await openEditable(page);
 
 		await drag(page, card(page, 17), await belowLast(page, "completed"));
@@ -233,7 +161,7 @@ test.describe("管理员拖动条目", () => {
 	});
 
 	test("保存失败：卡片回到原位并提示", async ({ page, context }) => {
-		const moves = await roadmapBackend(context, { fail: true });
+		const { moves } = await roadmapBackend(context, { fail: true });
 		await openEditable(page);
 
 		await card(page, 3).hover();
@@ -249,7 +177,7 @@ test.describe("管理员拖动条目", () => {
 	});
 
 	test("画布缩小之后拖动，落点仍然准确", async ({ page, context }) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		await openEditable(page);
 		await page.getByRole("button", { name: "缩小" }).click();
 		await expect(page.locator(".v-kanban-canvas__zoom")).not.toHaveText("100%");
@@ -266,7 +194,7 @@ test.describe("管理员拖动条目", () => {
 		page,
 		context,
 	}) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		await openEditable(page);
 
 		await card(page, 3).hover();
@@ -302,7 +230,7 @@ test.describe("管理员拖动条目", () => {
 	});
 
 	test("撤销「移出已完成」时带回原来的完成日期与交付版本", async ({ page, context }) => {
-		const moves = await roadmapBackend(context);
+		const { moves } = await roadmapBackend(context);
 		await openEditable(page);
 
 		await card(page, 17).hover();
@@ -325,5 +253,82 @@ test.describe("管理员拖动条目", () => {
 		const first = column(page, "completed").locator("[data-card-id]").first();
 		await expect(first).toHaveAttribute("data-card-id", idOf(17));
 		await expect(first).toContainText("v2.17.0 · 2026-10-20");
+	});
+});
+
+test.describe("管理员编辑条目", () => {
+	test.use({ viewport: { width: 1440, height: 1200 } });
+
+	test.beforeEach(async ({ context }) => {
+		await loadClient(context);
+		await authenticated(context, ["project:update"]);
+	});
+
+	/** 等这一步记进历史：保存的响应回来之后「撤销」才可用。 */
+	const undoReady = (page: Page) =>
+		expect(page.getByRole("button", { name: "撤销" })).toHaveAttribute(
+			"aria-disabled",
+			"false",
+		);
+
+	async function quickAdd(page: Page, stage: string, label: string, title: string) {
+		await column(page, stage).getByRole("button", { name: "添加卡片" }).click();
+		await page.getByRole("textbox", { name: `${label} 中的新卡片标题` }).fill(title);
+		await page.keyboard.press("Enter");
+	}
+
+	test("列底快速添加：只填标题，新条目排在该列末尾；撤销即删除，重做恢复同一个编号", async ({
+		page,
+		context,
+	}) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+
+		await quickAdd(page, "planned", "计划中", "快速记下的想法");
+
+		await expect.poll(() => writes.length).toBe(1);
+		expect(writes[0]).toMatchObject({
+			action: "create",
+			body: { title: "快速记下的想法", stage: "planned" },
+		});
+		const added = column(page, "planned").locator("[data-card-id]").last();
+		await expect(added).toContainText("快速记下的想法");
+		await expect(added).toContainText("#18");
+
+		// 添加后输入框留着方便连续添加；输入框里的 Ctrl/⌘+Z 归输入框自己，先收起
+		await page.keyboard.press("Escape");
+		await undoReady(page);
+		await page.keyboard.press("ControlOrMeta+z");
+		await expect.poll(() => writes.map((write) => write.action)).toEqual(["create", "delete"]);
+		await expect(page.getByText("快速记下的想法")).toHaveCount(0);
+
+		await page.getByRole("button", { name: "重做" }).click();
+		await expect
+			.poll(() => writes.map((write) => write.action))
+			.toEqual(["create", "delete", "restore"]);
+		await expect(column(page, "planned").locator("[data-card-id]").last()).toContainText("#18");
+	});
+
+	test("两个标签页各自添加，彼此的条目都不会丢", async ({ page, context }) => {
+		const { writes } = await roadmapBackend(context);
+		const other = await context.newPage();
+		await openEditable(page);
+		await openEditable(other);
+
+		await quickAdd(page, "planned", "计划中", "第一个标签页的条目");
+		await expect(column(page, "planned")).toContainText("第一个标签页的条目");
+		await quickAdd(other, "planned", "计划中", "第二个标签页的条目");
+		await expect.poll(() => writes.length).toBe(2);
+
+		// 第二个标签页保存后重新拉取，看到两条
+		await expect(column(other, "planned")).toContainText("第一个标签页的条目");
+		await expect(column(other, "planned")).toContainText("第二个标签页的条目");
+		// 第一个标签页回到前台时重新拉取，也看到两条
+		await page.bringToFront();
+		// TanStack Query 的聚焦监听只认冒泡的 visibilitychange
+		await page.evaluate(() =>
+			document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
+		);
+		await expect(column(page, "planned")).toContainText("第二个标签页的条目");
 	});
 });

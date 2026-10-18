@@ -65,13 +65,26 @@ function progressOf(items: readonly RoadmapItem[]): RoadmapProgress {
 }
 
 /**
- * 把移动接口返回的条目写回路线图：阶段、位置、完成日期与交付版本以接口为准，
- * 条目按后端的展示顺序重新排列，进度概览随之重算。其他条目的被阻塞标记要等下一次拉取。
+ * 把写接口返回的条目写回路线图：已有的整条替换（阶段、位置、完成日期与交付版本以接口为准），
+ * 没有的（新建或恢复）加进来；条目按后端的展示顺序重新排列，进度概览随之重算。
+ * 其他条目的被阻塞标记要等下一次拉取。
  */
-export function applyMovedItem(detail: RoadmapDetail, moved: RoadmapItem): RoadmapDetail {
-	if (!detail.items.some((item) => item.id === moved.id)) return detail;
-	const items = detail.items
-		.map((item) => (item.id === moved.id ? moved : item))
-		.sort(compareItems);
+export function upsertItem(detail: RoadmapDetail, saved: RoadmapItem): RoadmapDetail {
+	const exists = detail.items.some((item) => item.id === saved.id);
+	const items = (
+		exists
+			? detail.items.map((item) => (item.id === saved.id ? saved : item))
+			: [...detail.items, saved]
+	).sort(compareItems);
 	return { ...detail, items, progress: progressOf(items) };
+}
+
+/** 去掉一个已删除的条目和它的关系，进度概览随之重算；恢复时关系随下一次拉取回来。 */
+export function removeItem(detail: RoadmapDetail, itemId: string): RoadmapDetail {
+	const items = detail.items.filter((item) => item.id !== itemId);
+	if (items.length === detail.items.length) return detail;
+	const relations = detail.relations.filter(
+		(relation) => relation.source_id !== itemId && relation.target_id !== itemId,
+	);
+	return { ...detail, items, relations, progress: progressOf(items) };
 }

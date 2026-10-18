@@ -45,6 +45,8 @@ export interface RoadmapBoardProps {
 	onMove?: (move: BoardMove) => Promise<void>;
 	/** 撤销重做历史；给出时工具栏显示撤销与重做按钮。 */
 	history?: CommandHistory;
+	/** 在阶段末尾新建条目；给出时每列列底有「添加卡片」。失败时抛出，看板保留草稿并提示。 */
+	onAddItem?: (card: { columnId: string; title: string }) => Promise<void>;
 }
 
 /**
@@ -61,6 +63,7 @@ export function RoadmapBoard({
 	onFiltersChange,
 	onMove,
 	history,
+	onAddItem,
 }: RoadmapBoardProps) {
 	const [expanded, setExpanded] = useState(false);
 	// 显示的阶段由这里持有：宽窄布局切换会重新挂载看板，不持有就回到第一个阶段
@@ -115,6 +118,7 @@ export function RoadmapBoard({
 		relations: boardRelations,
 		filter,
 		onMove,
+		onAddCard: onAddItem,
 		locale: "zh-CN" as const,
 		getCardLabel: (item: RoadmapItem) => `#${item.number} ${item.title}`,
 		renderCard: (item: RoadmapItem) => (

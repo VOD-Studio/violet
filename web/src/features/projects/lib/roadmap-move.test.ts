@@ -1,7 +1,7 @@
 import type { BoardMove } from "@violetjs/kanban/core";
 import { describe, expect, it } from "vitest";
 import type { RoadmapDetail, RoadmapItem, RoadmapStage } from "../model/roadmap";
-import { applyMovedItem, keepCompletion, toMoveInput } from "./roadmap-move";
+import { keepCompletion, removeItem, toMoveInput, upsertItem } from "./roadmap-move";
 
 const item = (
 	number: number,
@@ -59,11 +59,11 @@ describe("toMoveInput", () => {
 	});
 });
 
-describe("applyMovedItem", () => {
+describe("upsertItem", () => {
 	it("同阶段内按新位置重排，位置相同时按编号", () => {
 		const before = detail([item(1, "planned"), item(2, "planned"), item(3, "planned")]);
 
-		const after = applyMovedItem(before, item(1, "planned", { position: "a25" }));
+		const after = upsertItem(before, item(1, "planned", { position: "a25" }));
 
 		expect(after.items.map((entry) => entry.number)).toEqual([2, 1, 3]);
 	});
@@ -75,7 +75,7 @@ describe("applyMovedItem", () => {
 			item(3, "completed", { completion_date: "2026-10-05" }),
 		]);
 
-		const after = applyMovedItem(
+		const after = upsertItem(
 			before,
 			item(1, "completed", { completion_date: "2026-10-19", delivered_version: "v1.2.0" }),
 		);
@@ -104,7 +104,7 @@ describe("applyMovedItem", () => {
 			item(1, "completed", { delivered_version: "v1" }),
 		]);
 
-		const after = applyMovedItem(before, item(1, "planned", { position: "a" }));
+		const after = upsertItem(before, item(1, "planned", { position: "a" }));
 
 		expect(after.items.map((entry) => entry.number)).toEqual([1, 2]);
 		expect(after.items[0]).toMatchObject({ completion_date: null, delivered_version: "" });
@@ -116,18 +116,18 @@ describe("applyMovedItem", () => {
 			item(1, "planned"),
 		]);
 
-		const after = applyMovedItem(
-			before,
-			item(1, "completed", { completion_date: "2026-10-10" }),
-		);
+		const after = upsertItem(before, item(1, "completed", { completion_date: "2026-10-10" }));
 
 		expect(after.items.map((entry) => entry.number)).toEqual([5, 1]);
 	});
 
-	it("缓存里没有这个条目（例如已被删除）时原样返回", () => {
-		const before = detail([item(1, "planned")]);
+	it("缓存里没有的条目（新建或恢复）加进来，并排到所在阶段的位置", () => {
+		const before = detail([item(1, "planned", { position: "a" }), item(2, "in_progress")]);
 
-		expect(applyMovedItem(before, item(9, "completed"))).toBe(before);
+		const after = upsertItem(before, item(9, "planned", { position: "b" }));
+
+		expect(after.items.map((entry) => entry.number)).toEqual([1, 9, 2]);
+		expect(after.progress.total).toBe(3);
 	});
 });
 
@@ -150,5 +150,29 @@ describe("keepCompletion", () => {
 		const planned = { ...input, stage: "planned" as const };
 		expect(keepCompletion(planned, item(1, "completed"))).toBe(planned);
 		expect(keepCompletion(input, item(1, "planned"))).toBe(input);
+	});
+});
+
+describe("removeItem", () => {
+	it("去掉条目与它两端的关系，进度重算；没有这个条目时原样返回", () => {
+		const relation = (source: string, target: string) => ({
+			id: `${source}-${target}`,
+			project_id: "p",
+			source_id: source,
+			target_id: target,
+			type: "blocks" as const,
+			created_at: "2026-10-01T00:00:00Z",
+		});
+		const before = {
+			...detail([item(1, "planned"), item(2, "planned"), item(3, "completed")]),
+			relations: [relation("i1", "i2"), relation("i2", "i3")],
+		};
+
+		const after = removeItem(before, "i1");
+
+		expect(after.items.map((entry) => entry.number)).toEqual([2, 3]);
+		expect(after.relations.map((entry) => entry.id)).toEqual(["i2-i3"]);
+		expect(after.progress).toMatchObject({ planned: 1, completed: 1, total: 2, percent: 50 });
+		expect(removeItem(before, "missing")).toBe(before);
 	});
 });
