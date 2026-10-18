@@ -8,7 +8,7 @@ This is a workspace package and is **not published to npm**. This README covers 
 
 | Import | Contents |
 | --- | --- |
-| `@violetjs/kanban` | `Board`, `InlineEdit`, `RelationList`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
+| `@violetjs/kanban` | `Board`, `ResponsiveLayout`, `InlineEdit`, `RelationList`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
 | `@violetjs/kanban/unstyled` | The same exports without any CSS |
 | `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history, viewport math |
 | `@violetjs/kanban/canvas` | `Canvas`, a pannable and zoomable viewport for the board (import the stylesheet once) |
@@ -198,6 +198,29 @@ import { Canvas } from "@violetjs/kanban/canvas";
 - Dragging within 48px of the viewport edge pans the canvas each frame (faster closer to the edge, up to 1000px/s) until the content's edge is 24px from the viewport; the placeholder keeps following the column under the pointer while it pans. `Esc` during a drag or a keyboard pick-up cancels that first, so full screen stays; `Esc` with nothing picked up exits full screen. On touch screens a quick swipe starting on a card pans the canvas; hold for 250ms and the card is dragged instead.
 - Viewports passed in (`defaultViewport`, `setViewport`) are corrected: the scale is clamped into the limits and non-finite numbers become 0.
 
+## Narrow screens
+
+On a phone a canvas makes text too small to read. `ResponsiveLayout` picks between two layouts by the width of its own container: the board in a canvas when there is room, and a switcher showing one column at a time when there isn't.
+
+```tsx
+import { Board, ResponsiveLayout } from "@violetjs/kanban";
+import { Canvas } from "@violetjs/kanban/canvas";
+
+const board = { columns, cards, order, renderCard, onMove, relations /* … */ };
+
+<ResponsiveLayout narrow={<Board {...board} layout="switcher" />}>
+  <Canvas style={{ height: 480 }}>
+    <Board {...board} />
+  </Canvas>
+</ResponsiveLayout>
+```
+
+- **`ResponsiveLayout`** measures the container, not the window, so it is right inside a sidebar or a dialog too. Narrow means narrower than `breakpoint` (default 768px, also exported as `DEFAULT_NARROW_BREAKPOINT`). Only one of the two is ever mounted, so switching remounts the content: keep state you want to survive (the selected card, the visible column) in the page and pass it back as controlled props. `onLayoutChange` reports the change. A container with no width (`display: none`) keeps the current layout. Server rendering and the first client render use the wide content, then switch as soon as the width is known. If a page scrollbar that appears or disappears with the layout pushes the width across the breakpoint, the layout would flip back and forth; `scrollbar-gutter: stable` on the page prevents it.
+- **`layout="switcher"`** puts a tab strip above the board and renders only the active column. It is a real tablist: the arrow keys move focus and switch at once (wrapping), `Home` and `End` jump to the ends, only the selected tab is in the `Tab` order, and the column is the tab panel named by its tab. The tab shows the column title and count ("matched/total" while filtering). A strip that doesn't fit scrolls sideways and keeps the selected tab in view. `activeColumn` (controlled), `defaultActiveColumn` and `onActiveColumnChange` choose the column; an unknown id falls back to the first column.
+- **Moving cards.** Only one column is on screen, so a pointer drag reorders within the column and cannot cross columns; the "Move to…" menu is shown on every card (`moveMenu: "none"` still turns it off) and the arrow keys still move a picked-up card across columns. The visible column follows the card, so focus goes with it; cancelling a pick-up or a failed save brings the visible column back to where the card came from.
+- **Relation markers.** There are no lines. Each card with relations gets a button per relation, read from the card's side: "extends Delta", "is blocked by Epsilon" (the other card's `getCardLabel`; long text is cut with an ellipsis and kept whole in `title`). A blocked marker is tinted with `--kanban-danger`, but the words already say it. The button's name is "{text}, go to that card"; the screen-reader summary is dropped because the buttons replace it. Pressing one switches to the other card's column, focuses it, scrolls it to the middle of the screen (instantly under `prefers-reduced-motion`) and tints its border for about 1.8 seconds so the eye finds it. The other card has the inverse marker, so the way back is one press. Cards with markers can be focused by script (`tabindex="-1"`) but stay out of the `Tab` order. `hideRelations` only hides lines, so markers stay. Markers are not drag handles and don't select the card.
+- Collapsing columns and relation lines do not apply in this layout. Filtering, the quick-add row and inline editing work as usual. Texts: `switcherLabel` and `relationJump` in `messages`.
+
 ## Slots and messages
 
 - `renderCard(card, { column, index })` renders the card content. The board draws the card surface.
@@ -218,7 +241,7 @@ The default stylesheet reads only `--kanban-*` variables, with light and dark de
 | `--kanban-gap`, `--kanban-column-width`, `--kanban-card-padding` | Spacing and column width |
 | `--kanban-font-family` | Font; inherits from the host by default |
 
-The board scrolls horizontally when columns overflow. Its scroll container keeps 6px of padding, offset by a negative margin, so focus rings of focusable card content are not clipped.
+The board scrolls horizontally when columns overflow. Its scroll container keeps 6px of padding, offset by a negative margin, so focus rings of focusable card content are not clipped. The switcher's tab strip does the same. Both therefore reach 6px past the board's box: keep at least 6px of page margin on each side, or a board flush with the window edge makes the page scroll sideways.
 
 ## Server rendering
 
@@ -234,4 +257,4 @@ make kanban-browser
 make kanban-consumer
 ```
 
-`kanban-browser` runs the drag tests in real Chromium (install it with `pnpm exec playwright install chromium`); touch is simulated there, so touch dragging still needs a check on a real device. `kanban-consumer` packs the package, installs the tarball in a temporary project outside the workspace, and checks the published types, server rendering and entry dependency graph. It never publishes.
+`kanban-browser` runs the drag tests and the narrow-screen tests (390px and desktop width) in real Chromium (install it with `pnpm exec playwright install chromium`); touch is simulated there, so touch dragging, long press and tapping the switcher still need a check on a real device. `kanban-consumer` packs the package, installs the tarball in a temporary project outside the workspace, and checks the published types, server rendering and entry dependency graph. It never publishes.
