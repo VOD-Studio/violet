@@ -27,6 +27,7 @@
 - [发布步骤](./deploy/release-runbook.md#npm-独立包发布)：发布权限、双包独立验收和显式手动发布。
 - [Inkline 开发说明](../web/packages/inkline/DEVELOPMENT.md)：示例图、双语 README 同步和 tarball 消费验证。
 - [React Tweet 开发说明](../web/packages/react-tweet/DEVELOPMENT.md)：推文示例生成、样式入口和独立消费验证。
+- [Kanban 使用说明](../web/packages/kanban/README.zh-CN.md)、[API 文档](../web/packages/kanban/docs/api.md)与[开发说明](../web/packages/kanban/DEVELOPMENT.md)：同源示例、全入口 tarball 消费验收和发布前清单；尚未发布 npm。
 
 ## 使用约定
 

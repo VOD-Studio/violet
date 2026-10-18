@@ -8,7 +8,7 @@
         web-test web-contract ui-sync ui-check ui-build ui-test ui-pack ui-consumer \
         inkline-check inkline-build inkline-test inkline-pack inkline-consumer inkline-examples \
         react-tweet-check react-tweet-build react-tweet-test react-tweet-pack react-tweet-consumer react-tweet-examples \
-        kanban-check kanban-build kanban-test kanban-browser kanban-pack kanban-consumer \
+        kanban-check kanban-build kanban-test kanban-browser kanban-pack kanban-consumer kanban-examples \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
@@ -242,6 +242,7 @@ react-tweet-examples: ## 生成推文示例图并同步双语 README
 	cd web && pnpm --filter @violetjs/react-tweet examples
 
 kanban-check: ## 检查独立看板组件类型
+	cd web && pnpm --filter @violetjs/kanban examples:check
 	cd web && pnpm --filter @violetjs/kanban typecheck
 
 kanban-build: ## 构建独立看板组件 ESM、声明与样式
@@ -258,6 +259,9 @@ kanban-pack: ## 打包看板组件（NPM_PACK_DEST 指定输出目录）
 
 kanban-consumer: ## 安装看板 tarball 验证外部类型、SSR 与样式
 	cd web && pnpm --filter @violetjs/kanban consumer
+
+kanban-examples: ## 同步看板示例源码到双语 README
+	cd web && pnpm --filter @violetjs/kanban examples
 
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），

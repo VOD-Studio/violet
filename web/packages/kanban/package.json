@@ -25,6 +25,10 @@
 	"files": [
 		"dist",
 		"README.md",
+		"README.zh-CN.md",
+		"DEVELOPMENT.md",
+		"docs/api.md",
+		"examples",
 		"LICENSE"
 	],
 	"sideEffects": [
@@ -100,8 +104,10 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run --config vitest.config.ts",
 		"browser": "playwright test --config browser/playwright.config.ts",
+		"examples": "node scripts/sync-readme.mjs",
+		"examples:check": "node scripts/sync-readme.mjs --check",
 		"consumer": "node scripts/consumer-smoke.mjs",
-		"prepack": "pnpm build"
+		"prepack": "pnpm examples:check && pnpm build"
 	},
 	"peerDependencies": {
 		"react": "^19.0.0"

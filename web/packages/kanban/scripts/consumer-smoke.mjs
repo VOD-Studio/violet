@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { writeSSRFixture, writeTypeFixture } from "./consumer-fixtures.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const metadata = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -23,8 +24,16 @@ const run = (command, args, cwd, capture = false) => {
 };
 const write = (name, value) => writeFileSync(resolve(consumer, name), value);
 const installedVersion = (name) => JSON.parse(readFileSync(require.resolve(`${name}/package.json`), "utf8")).version;
+const examples = [
+	["quick-start", "QuickStart", "快速开始"],
+	["editable", "EditableBoard", "可编辑看板"],
+	["canvas", "CanvasBoard", "画布"],
+	["graph", "Graph", "关系图"],
+];
 
 try {
+	console.log("检查 README 与示例同步状态。");
+	run(process.execPath, ["scripts/sync-readme.mjs", "--check"], root);
 	run("pnpm", ["pack", "--pack-destination", temporary], root);
 	const tarballs = readdirSync(temporary).filter((name) => name.endsWith(".tgz"));
 	assert.equal(tarballs.length, 1);
@@ -38,6 +47,10 @@ try {
 	for (const name of [
 		"package.json",
 		"README.md",
+		"README.zh-CN.md",
+		"docs/api.md",
+		"DEVELOPMENT.md",
+		...examples.map(([name]) => `examples/${name}.tsx`),
 		"LICENSE",
 		"dist/index.js",
 		"dist/unstyled.js",
@@ -60,7 +73,7 @@ try {
 		assert.ok(files.includes(name), `Missing packed file: ${name}`);
 	for (const name of files)
 		assert.ok(
-			/^(?:package\.json|README\.md|LICENSE|dist\/.+)$/.test(name) && !/\.test\.|^dist\/test\//.test(name),
+			/^(?:package\.json|README(?:\.zh-CN)?\.md|DEVELOPMENT\.md|docs\/api\.md|examples\/(?:quick-start|editable|canvas|graph)\.tsx|LICENSE|dist\/.+)$/.test(name) && !/\.test\.|^dist\/test\/|(?:^|\/)src\/|\.map$/.test(name),
 			`Unexpected packed file: ${name}`,
 		);
 
@@ -80,6 +93,15 @@ try {
 		assert.equal(packed.exports[entry].types, `./dist/${types}.d.ts`);
 	}
 	assert.equal(packed.exports["./styles.css"], "./dist/styles.css");
+	assert.deepEqual(packed.exports, metadata.publishConfig.exports, "压缩包必须保留全部公开入口及条件。");
+	for (const [subpath, conditions] of Object.entries(packed.exports)) {
+		const targets = typeof conditions === "string" ? [conditions] : Object.values(conditions);
+		for (const target of targets) {
+			assert.ok(target === "./package.json" || /^\.\/dist\/[^.][^\\]*$/.test(target), `${subpath} 指向非发布文件：${target}`);
+			assert.ok(!target.split("/").includes("..") && files.includes(target.slice(2)), `${subpath} 缺少目标：${target}`);
+		}
+	}
+	console.log("真实 tarball 文件白名单、文档、示例与全部 exports 检查通过。");
 	assert.ok(packed.sideEffects.includes("./dist/index.js") && packed.sideEffects.includes("**/*.css"));
 	assert.deepEqual(packed.dependencies ?? {}, {}, "Runtime must not gain hidden dependencies.");
 	assert.deepEqual(Object.keys(packed.peerDependencies ?? {}), ["react"]);
@@ -95,7 +117,6 @@ try {
 				devDependencies: {
 					typescript: installedVersion("typescript"),
 					"@types/react": installedVersion("@types/react"),
-					"@types/react-dom": installedVersion("@types/react-dom"),
 				},
 			},
 			null,
@@ -111,159 +132,98 @@ try {
 		entry.startsWith(`${consumer}${sep}`) && entry.endsWith(`${sep}dist${sep}index.js`),
 		"Consumer must resolve the installed dist, not workspace source.",
 	);
+	const installedRoot = realpathSync(resolve(consumerRequire.resolve(`${metadata.name}/package.json`), ".."));
+	assert.ok(installedRoot.startsWith(`${consumer}${sep}`), "安装包必须位于外部 consumer 内。");
+	for (const [subpath, conditions] of Object.entries(packed.exports)) {
+		const specifier = subpath === "." ? metadata.name : `${metadata.name}${subpath.slice(1)}`;
+		const target = typeof conditions === "string" ? conditions : conditions.import;
+		assert.equal(realpathSync(consumerRequire.resolve(specifier)), realpathSync(resolve(installedRoot, target)), `${specifier} 必须解析到声明的安装产物。`);
+		for (const value of typeof conditions === "string" ? [conditions] : Object.values(conditions)) {
+			assert.ok(realpathSync(resolve(installedRoot, value)).startsWith(`${installedRoot}${sep}`), `${specifier} 的目标不能逃离安装包。`);
+		}
+	}
+	mkdirSync(resolve(consumer, "examples"));
+	for (const [name] of examples) copyFileSync(resolve(installedRoot, "examples", `${name}.tsx`), resolve(consumer, "examples", `${name}.tsx`));
+	console.log("外部安装全部入口路径与隔离检查通过，已复制 tarball 内四个示例。");
 
-	// 公开类型：泛型卡片只要求 id，使用方自己的列类型贯穿插槽；缺 id 的卡片必须被拒绝。
-	write(
-		"types.tsx",
-		`import { Board, InlineEdit, createPointerController, type InlineEditMessages, type NewCard, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
-import { Board as Unstyled, ResponsiveLayout, DEFAULT_NARROW_BREAKPOINT, type ResponsiveLayoutKind, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
-import { createHistory, invertMove, fitViewport, zoomAt, DEFAULT_SCALE_LIMITS, type Viewport } from "${metadata.name}/core";
-import { Canvas, type CanvasHandle, type CanvasMessages } from "${metadata.name}/canvas";
-import { RelationGraph, type RelationGraphProps } from "${metadata.name}/graph";
-import { layoutGraph, relatedSubgraph, DEFAULT_GRAPH_LAYOUT, type GraphLayout, type Subgraph } from "${metadata.name}/core";
-import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
-interface Task extends BoardCard { title: string }
-interface Stage extends BoardColumn { hint: string }
-const canMove = (move: BoardMove): MoveDecision => move.to.columnId === "done" ? { allowed: false, reason: "no" } : { allowed: true };
-const controller: DragController = { attach: (host: DragHost) => { host.root.focus(); return () => {}; } };
-export const defaultController: DragController = createPointerController({ threshold: 6 });
-const tasks: Task[] = [{ id: "a", title: "A" }];
-const stages: Stage[] = [{ id: "todo", title: "Todo", hint: "next" }];
-const locale: BoardLocale = "zh-CN";
-const messages: Partial<BoardMessages> = { emptyColumn: "none" };
-export const nodes = [
-	<Board columns={stages} cards={tasks} order={{ todo: ["a"] }} locale={locale} messages={messages}
-		renderCard={(task, { column, index }) => <span>{task.title}{column.hint}{index}</span>}
-		renderColumnHeader={(stage, { count }) => <b>{stage.hint}{count}</b>}
-		renderEmpty={(stage) => <i>{stage.hint}</i>}
-		onMove={async (move) => { await Promise.resolve(move.cardId); }} canMove={canMove} onMoveError={(error, move) => console.error(error, move.previousId)}
-		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} moveMenu="always" />,
-	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
-	<Board columns={[{ id: "todo", title: "Todo", collapsible: false, quickAdd: false }]} cards={tasks} order={{ todo: ["a"] }}
-		renderCard={(task) => <InlineEdit value={task.title} label="Title" onSave={async (next) => { await Promise.resolve(next.length); }} allowEmpty={false} maxLength={80} locale="zh-CN" messages={inlineMessages} />}
-		collapsible collapsedColumns={["todo"]} defaultCollapsedColumns={[]} onCollapsedColumnsChange={(ids: string[]) => ids.length}
-		onAddCard={async (card: NewCard) => { await Promise.resolve(card.columnId + card.title); }} onAddCardError={(error, card) => console.error(error, card.title)}
-		filter={(task) => task.title.includes("A")} />,
-	<ResponsiveLayout breakpoint={DEFAULT_NARROW_BREAKPOINT} onLayoutChange={(next: ResponsiveLayoutKind) => console.log(next)}
-		narrow={<Board columns={stages} cards={tasks} order={{ todo: ["a"] }} renderCard={(task) => task.title}
-			layout="switcher" activeColumn="todo" defaultActiveColumn="todo" onActiveColumnChange={(id: string) => id.length} />}>
-		<Board columns={stages} cards={tasks} order={{ todo: ["a"] }} renderCard={(task) => task.title} layout="columns" />
-	</ResponsiveLayout>,
-];
-const inlineMessages: Partial<InlineEditMessages> = { saveFailed: "no" };
-export const props: BoardProps<Task, Stage>["order"] = {};
-const viewport: Viewport = fitViewport({ width: 800, height: 600 }, { width: 400, height: 300 });
-export const zoomed: Viewport = zoomAt(viewport, { x: 0, y: 0 }, 1.5, DEFAULT_SCALE_LIMITS);
-const canvasMessages: Partial<CanvasMessages> = { fit: "Fit" };
-export const canvas = <Canvas defaultViewport={zoomed} onViewportChange={(next) => console.log(next.scale)} fit={{ minScale: 0.5 }} controls locale="zh-CN" messages={canvasMessages} ref={(handle: CanvasHandle | null) => handle?.fit()}><div /></Canvas>;
-const graphProps: RelationGraphProps<Task, Stage> = {
-	columns: stages, cards: tasks, order: { todo: ["a"] }, relations: [{ sourceId: "a", targetId: "a", type: "extends" }],
-	renderCard: (task, { column }) => <span>{task.title}{column.hint}</span>, rootId: "a", subgraph: { direction: "in", depth: 2, types: ["extends"] },
-	cardSize: { width: 200, height: 64 }, getCardLabel: (task) => task.title, relationTypes: {}, selectedCardId: null,
-	onSelectedCardChange: (id: string | null) => id?.length, locale: "zh-CN", messages: { graphEmpty: "none" },
-};
-export const graph = <RelationGraph {...graphProps} />;
-export const laidOut: GraphLayout = layoutGraph({ columns: ["todo"], cards: [{ id: "a", columnId: "todo", width: DEFAULT_GRAPH_LAYOUT.cardWidth }], relations: [] }, { sweeps: 2 });
-export const related: Subgraph = relatedSubgraph([{ sourceId: "a", targetId: "b", type: "extends" }], "a", { direction: "out" });
-const command: HistoryCommand = { label: "move", undo: async () => {}, redo: () => {} };
-const history: CommandHistory = createHistory({ limit: 10, onError: (error, failed) => console.error(error, failed.label) });
-history.push(command);
-export function Controls() {
-	useHistoryShortcuts(history, { enabled: true });
-	const state = useHistoryState(history);
-	const announcement = useHistoryAnnouncement(history, { locale: "zh-CN" });
-	return <HistoryButtons history={history} locale="zh-CN" messages={{ undo: String(state.canUndo) + announcement.text }} />;
-}
-const state: BoardState = { columns: ["todo"], order: { todo: ["a"] } };
-export const resolved: ResolvedColumn<Task>[] = resolveBoard(state, tasks);
-export const normalized: BoardState = normalizeBoardState(state);
-const move: BoardMove | null = createMove(state, "a", { columnId: "todo", index: 0 });
-export const inverse: BoardMove | null = move && invertMove(move);
-const layout: ColumnLayout[] = [{ id: "todo", rect: { left: 0, top: 0, right: 1, bottom: 1 }, cards: [] }];
-export const moves = [move && applyMove(state, move), move && isNoopMove(move), move && violatesAutoSort(move, () => false), locateCard(state, "a"), resolveDropTarget(layout, { x: 0, y: 0 })];
-// @ts-expect-error 卡片必须有 id
-export const bad = <Board columns={stages} cards={[{ title: "no id" }]} order={{}} renderCard={() => null} />;
-`,
-	);
+	writeTypeFixture(write, metadata);
 	const compilerOptions = { target: "ES2022", lib: ["ES2022", "DOM", "DOM.Iterable"], strict: true, noEmit: true, skipLibCheck: false, jsx: "react-jsx" };
-	write("tsconfig.json", JSON.stringify({ compilerOptions: { ...compilerOptions, module: "ESNext", moduleResolution: "Bundler" }, include: ["types.tsx"] }));
-	write("tsconfig.nodenext.json", JSON.stringify({ compilerOptions: { ...compilerOptions, module: "NodeNext", moduleResolution: "NodeNext" }, files: ["types.tsx"] }));
+	write("tsconfig.json", JSON.stringify({ compilerOptions: { ...compilerOptions, module: "ESNext", moduleResolution: "Bundler" }, include: ["types.tsx", "examples/*.tsx"] }));
+	write("tsconfig.nodenext.json", JSON.stringify({ compilerOptions: { ...compilerOptions, module: "NodeNext", moduleResolution: "NodeNext" }, include: ["types.tsx", "examples/*.tsx"] }));
 	run("pnpm", ["exec", "tsc", "-p", "tsconfig.json"], consumer);
 	run("pnpm", ["exec", "tsc", "-p", "tsconfig.nodenext.json"], consumer);
+	console.log("公开类型与四个发布示例的 Bundler / NodeNext 类型检查通过。");
 
-	// Node 服务端渲染：不带样式入口可直接使用，输出确定，列与卡片顺序正确。
-	write(
-		"ssr.mjs",
-		`import assert from "node:assert/strict";
+	writeSSRFixture(write, metadata);
+	run(process.execPath, ["ssr.mjs"], consumer);
+
+	const exampleImports = examples.map(([name, component]) => `import { ${component} } from "./examples/${name}.js";`).join("\n");
+	write("example-ssr.tsx", `import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { Board, ResponsiveLayout } from "${metadata.name}/unstyled";
-import { createMove, applyMove, resolveBoard, createHistory } from "${metadata.name}/core";
-import { HistoryButtons } from "${metadata.name}/unstyled";
-import { Canvas } from "${metadata.name}/canvas";
-import { RelationGraph } from "${metadata.name}/graph";
-import { layoutGraph, relatedSubgraph } from "${metadata.name}/core";
-const props = {
-	columns: [{ id: "todo", title: "Todo" }, { id: "done", title: "Done" }],
-	cards: [{ id: "a", title: "First" }, { id: "b", title: "Second" }],
-	order: { todo: ["b", "a"], done: [] },
-	renderCard: (card) => card.title,
-};
-const html = renderToString(createElement(Board, props));
-assert.equal(renderToString(createElement(Board, props)), html, "SSR output must be deterministic.");
-assert.ok(html.indexOf("Todo") < html.indexOf("Done"));
-assert.ok(html.indexOf("Second") < html.indexOf("First"), "Card order must follow the order prop.");
-assert.match(html, /No cards/);
-assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" })), /暂无卡片/);
-const shell = renderToString(createElement(Board, { ...props, collapsible: true, onAddCard: () => {}, filter: (card) => card.id === "a", onMove: () => {} }));
-assert.equal(renderToString(createElement(Board, { ...props, collapsible: true, onAddCard: () => {}, filter: (card) => card.id === "a", onMove: () => {} })), shell, "Shell SSR output must be deterministic.");
-assert.match(shell, /aria-expanded="true"/);
-assert.match(shell, /Add card/);
-assert.match(shell, /data-dimmed="true"/);
-assert.match(shell, /A filter is on/);
-const editable = renderToString(createElement(Board, { ...props, onMove: () => {} }));
-assert.equal(renderToString(createElement(Board, { ...props, onMove: () => {} })), editable, "Editable SSR output must be deterministic.");
-assert.match(editable, /data-draggable="true"/);
-assert.match(editable, /tabindex="0"/);
-assert.match(editable, /aria-describedby=/);
-assert.match(editable, /Move to…/);
-const switcher = renderToString(createElement(Board, { ...props, layout: "switcher" }));
-assert.equal(renderToString(createElement(Board, { ...props, layout: "switcher" })), switcher, "Switcher SSR output must be deterministic.");
-assert.match(switcher, /role="tablist"/);
-assert.ok(switcher.includes("Second") && !switcher.includes("Done</h3>"), "Only the active column renders in the switcher layout.");
-assert.match(renderToString(createElement(ResponsiveLayout, { narrow: createElement("p", null, "narrow") }, createElement("p", null, "wide"))), /wide/, "ResponsiveLayout renders the wide content on the server.");
-assert.ok(!/data-draggable/.test(html), "Read-only boards must not advertise dragging.");
-assert.ok(!/<script|<style/.test(html));
-assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);
-const moved = applyMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, createMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, "a", { columnId: "done", index: 0 }));
-assert.deepEqual(moved.order, { todo: ["b"], done: ["a"] });
-const canvasHtml = renderToString(createElement(Canvas, { defaultViewport: { scale: 1, x: 0, y: 0 } }, createElement('p', null, 'Canvas content')));
-assert.match(canvasHtml, /Canvas content/);
-assert.ok(canvasHtml.includes('translate(0px, 0px) scale(1)'));
-assert.match(canvasHtml, /aria-label="Zoom in"/);
-const graphProps = {
-	columns: props.columns, cards: props.cards, order: { todo: ["a"], done: ["b"] },
-	relations: [{ sourceId: "a", targetId: "b", type: "extends" }, { sourceId: "b", targetId: "a", type: "fixes" }],
-	renderCard: (card) => card.title,
-};
-const graphHtml = renderToString(createElement(RelationGraph, graphProps));
-assert.equal(renderToString(createElement(RelationGraph, graphProps)), graphHtml, "Graph SSR output must be deterministic.");
-assert.ok(graphHtml.indexOf("Todo") < graphHtml.indexOf("Done") && graphHtml.includes("First") && graphHtml.includes("Second"));
-assert.match(graphHtml, /v-kanban__relation/);
-assert.match(graphHtml, /Relations: extends b; is fixed by b/, "The card text names related cards by id when no label is given.");
-assert.match(renderToString(createElement(RelationGraph, { ...graphProps, cards: [] })), /Nothing to show/);
-assert.deepEqual(layoutGraph({ columns: ["todo"], cards: [{ id: "a", columnId: "todo" }], relations: [] }).cards.map((entry) => entry.id), ["a"]);
-assert.deepEqual(relatedSubgraph([{ sourceId: "a", targetId: "b", type: "extends" }], "b", { direction: "in" }).ids, ["b", "a"]);
-const controls = renderToString(createElement(HistoryButtons, { history: createHistory() }));
-assert.equal((controls.match(/aria-disabled="true"/g) ?? []).length, 2);
-assert.ok(controls.includes('aria-keyshortcuts="Control+Z Meta+Z"'));
-const history = createHistory();
-history.push({ undo: () => {}, redo: () => {} });
-assert.equal(history.getState().canUndo, true);
-console.log("Installed tarball: SSR and core contracts passed.");
-`,
-	);
-	run(process.execPath, ["ssr.mjs"], consumer);
+${exampleImports}
+const quick = renderToString(createElement(QuickStart));
+assert.ok(quick.indexOf("Write the specification") >= 0 && quick.indexOf("Write the specification") < quick.indexOf("Build the prototype"), "只读示例保留卡片与列顺序");
+assert.doesNotMatch(quick, /data-draggable=/, "只读示例不提供移动入口");
+const editable = renderToString(createElement(EditableBoard));
+assert.equal((editable.match(/data-draggable="true"/g) ?? []).length, 2, "编辑示例中的两张卡片可移动");
+assert.equal((editable.match(/aria-disabled="true"/g) ?? []).length, 2, "编辑示例首次渲染没有可撤销或重做的命令");
+const responsive = renderToString(createElement(CanvasBoard));
+assert.ok(responsive.includes("Write the specification") && responsive.includes("Build the prototype"), "画布示例服务端保留所有列中的卡片");
+assert.doesNotMatch(responsive, /role="tablist"/, "响应式示例服务端渲染宽布局，留待客户端测量");
+const graph = renderToString(createElement(Graph));
+assert.match(graph, /<li>Build the prototype extends Write the specification<\\/li>/, "关系图提供扩展关系的文本等价");
+assert.match(graph, /<li>Build the prototype blocks Ship the package<\\/li>/, "关系图提供阻塞关系的文本等价");
+console.log("tarball 内四个完整示例的 Node SSR 通过。");
+`);
+	const assertIsolated = (result) => {
+		for (const input of Object.keys(result.metafile.inputs)) {
+			if (input === "<stdin>") continue;
+			assert.ok(realpathSync(resolve(consumer, input)).startsWith(`${consumer}${sep}`), `生产构建泄漏工作区输入：${input}`);
+			assert.ok(!/(?:@shared|@features|@entities|@violet\/ui)(?:\/|$)/.test(input), `生产构建包含站点私有依赖：${input}`);
+		}
+	};
+	const exampleSSR = await build({
+		absWorkingDir: consumer,
+		entryPoints: ["example-ssr.tsx"],
+		outfile: "example-ssr.mjs",
+		bundle: true,
+		platform: "node",
+		format: "esm",
+		jsx: "automatic",
+		external: ["react", "react/*", "react-dom", "react-dom/*"],
+		loader: { ".css": "empty" },
+		metafile: true,
+	});
+	assertIsolated(exampleSSR);
+	run(process.execPath, ["example-ssr.mjs"], consumer);
+
+	write("preview.tsx", `import { createRoot } from "react-dom/client";
+${exampleImports}
+function Preview() {
+	return <main><h1>Kanban 发布包示例</h1>${examples.map(([name, component, title]) => `<section id="${name}" aria-labelledby="${name}-title"><h2 id="${name}-title">${title}</h2><${component} /></section>`).join("")}</main>;
+}
+const root = document.getElementById("root");
+if (!root) throw new Error("Missing preview root");
+createRoot(root).render(<Preview />);
+`);
+	const preview = await build({
+		absWorkingDir: consumer,
+		entryPoints: ["preview.tsx"],
+		outdir: "preview",
+		bundle: true,
+		minify: true,
+		format: "esm",
+		platform: "browser",
+		jsx: "automatic",
+		metafile: true,
+		define: { "process.env.NODE_ENV": '"production"' },
+	});
+	assertIsolated(preview);
+	assert.ok(Object.keys(preview.metafile.outputs).some((path) => path.endsWith(".css")), "完整示例生产构建必须保留根入口样式。");
+	write("preview/index.html", `<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Kanban 真实发布包验收</title><link rel="stylesheet" href="./preview.css"><style>body{margin:0;padding:24px;font-family:system-ui,sans-serif}main{max-width:1200px;margin:auto}section{margin:32px 0;padding:20px;border:1px solid #8886;border-radius:12px;min-width:0}h2{margin-top:0}</style></head><body><div id="root"></div><script type="module" src="./preview.js"></script></body></html>`);
+	console.log("四个 tarball 示例的生产浏览器构建通过，包含独立可见分区与根入口样式。");
 
 	// 入口依赖图：带样式根入口在生产摇树后仍保留 CSS；无样式入口无 CSS；/core 不含 React 与 CSS。
 	const bundle = (contents, platform) =>
@@ -283,8 +243,13 @@ console.log("Installed tarball: SSR and core contracts passed.");
 		`import { createElement } from "react"; import { createRoot } from "react-dom/client"; import { Board } from "${metadata.name}"; createRoot(document.getElementById("root")).render(createElement(Board, { columns: [], cards: [], order: {}, renderCard: () => null }));`,
 		"browser",
 	);
+	assertIsolated(styled);
 	const css = styled.outputFiles.find((file) => file.path.endsWith(".css"));
 	assert.ok(css, "A named root import must preserve automatic CSS under production tree shaking.");
+	const explicitStyles = await bundle(`import "${metadata.name}/styles.css"; import manifest from "${metadata.name}/package.json"; console.log(manifest.name);`, "browser");
+	assertIsolated(explicitStyles);
+	assert.ok(explicitStyles.outputFiles.some((file) => file.path.endsWith(".css") && file.text.includes(".v-kanban")), "公开 CSS 入口必须能在生产构建中消费。");
+	assert.ok(explicitStyles.outputFiles.some((file) => file.path.endsWith(".js") && file.text.includes(packed.name)), "公开 package.json 入口必须能在生产构建中消费。");
 	assert.ok(css.text.includes(".v-kanban") && css.text.includes("light-dark"));
 	for (const [name, contents] of [
 		["unstyled", `export { Board } from "${metadata.name}/unstyled";`],
@@ -293,13 +258,14 @@ console.log("Installed tarball: SSR and core contracts passed.");
 		["graph", `export { RelationGraph } from "${metadata.name}/graph";`],
 	]) {
 		const result = await bundle(contents, "node");
+		assertIsolated(result);
 		const inputs = Object.keys(result.metafile.inputs);
 		assert.ok(!inputs.some((path) => path.endsWith(".css")), `${name} must not load CSS.`);
 		if (name === "core")
 			assert.ok(!inputs.some((path) => /node_modules\/(react|react-dom)\//.test(path)), "/core must not pull in React.");
 	}
-	console.log(`${metadata.name}@${metadata.version} independent consumer passed.`);
+	console.log(`${metadata.name}@${metadata.version} 全部真实 tarball 消费验收通过。`);
 } finally {
-	if (keep) console.log(`Kept ${temporary}`);
+	if (keep) console.log(`保留外部消费验收目录：${temporary}\n浏览器预览目录：${resolve(consumer, "preview")}\n请使用静态 HTTP 服务打开该目录中的 index.html。`);
 	else rmSync(temporary, { recursive: true, force: true });
 }
