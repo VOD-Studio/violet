@@ -1,0 +1,112 @@
+/*
+ * 路线图看板的外观（柔和卡片），只作用在 .roadmap-board 里：
+ * 列是浅色圆角面板，进行中一列带品牌淡色；卡片是无边框的白卡加一层软影；已完成的卡片退到背景。
+ * 画布不再画框，面板直接落在页面上。
+ */
+/*
+ * 三列铺满页面里的容器宽度：减去两道列间距（48px）、画布两侧留白（RoadmapBoard 的 FIT_PADDING，8px）与 2px 余量，再三等分；
+ * 太窄时不小于 17rem，由画布缩放兜底。全屏沿用同样的列宽，不再拉宽。
+ * 列间距要宽：同列关系的弧线从卡片右缘绕出、跨列的线从这里穿过，太窄就会挤在一起。
+ */
+.roadmap-board {
+	container-type: inline-size;
+	--kanban-column-width: max(17rem, calc((100cqw - 2 * 48px - 2 * 8px - 2px) / 3));
+}
+.roadmap-board .v-kanban {
+	--kanban-gap: 48px;
+}
+.roadmap-board .v-kanban-canvas {
+	--kanban-canvas-background: transparent;
+	border-color: transparent;
+}
+/* 全屏盖在页面上，背景必须不透明，否则下面的页面会透出来 */
+.roadmap-board .v-kanban-canvas[data-fullscreen="true"] {
+	--kanban-canvas-background: var(--background);
+}
+
+/* 列：短的列不拉伸成一整块空面板；留一点最小高度，方便以后往里拖 */
+.roadmap-board .v-kanban .v-kanban__scroller {
+	align-items: flex-start;
+}
+.roadmap-board .v-kanban .v-kanban__column {
+	min-height: 10rem;
+	padding: 14px;
+	border: 0;
+	border-radius: 16px;
+	background: color-mix(in oklab, var(--muted) 70%, transparent);
+}
+.roadmap-board .v-kanban [data-column-id="in_progress"] {
+	background: var(--accent);
+}
+.roadmap-board .v-kanban .v-kanban__column-header {
+	padding: 2px 4px 4px;
+}
+.roadmap-board .v-kanban .v-kanban__column-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 700;
+}
+.roadmap-board .v-kanban .v-kanban__count {
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+.roadmap-board .v-kanban .v-kanban__cards {
+	gap: 10px;
+}
+
+/* 阶段标记：空心圈是计划，品牌色实心点是进行中，成功色实心点是已完成 */
+.roadmap-board .v-kanban .v-kanban__column-title::before {
+	content: "";
+	flex: none;
+	box-sizing: border-box;
+	width: 10px;
+	height: 10px;
+	border-radius: 9999px;
+}
+.roadmap-board .v-kanban [data-column-id="planned"] .v-kanban__column-title::before {
+	border: 1.5px solid var(--muted-foreground);
+}
+.roadmap-board .v-kanban [data-column-id="in_progress"] .v-kanban__column-title::before {
+	background: var(--primary);
+}
+.roadmap-board .v-kanban [data-column-id="completed"] .v-kanban__column-title::before {
+	background: var(--success);
+}
+
+/* 卡片：没有描边，靠软影浮起（站点唯一的浮起配方）；选中时外描品牌色 */
+.roadmap-board .v-kanban .v-kanban__card {
+	padding: 14px 16px;
+	border-color: transparent;
+	border-radius: 12px;
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+}
+.roadmap-board .v-kanban .v-kanban__card[data-selected="true"] {
+	border-color: transparent;
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+.roadmap-board .v-kanban .v-kanban__card[data-faded="true"] {
+	border-color: transparent;
+	box-shadow: none;
+}
+
+/* 已完成：去掉软影、底色变淡，标题退成次要色 */
+.roadmap-board .v-kanban
+	[data-column-id="completed"]
+	.v-kanban__card:not([data-selected="true"], [data-faded="true"]) {
+	box-shadow: none;
+	background: color-mix(in oklab, var(--card) 55%, transparent);
+	color: color-mix(in oklab, var(--foreground) 70%, transparent);
+}
+
+/* 选中后相关的线着色：阻塞用警示色，其余用品牌色 */
+.roadmap-board .v-kanban .v-kanban__relation[data-state="active"] {
+	color: var(--primary);
+}
+.roadmap-board .v-kanban .v-kanban__relation[data-state="active"][data-line="blocker"] {
+	color: var(--destructive);
+}

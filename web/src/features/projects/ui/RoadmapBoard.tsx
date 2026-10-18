@@ -1,7 +1,7 @@
 import { Button, Checkbox } from "@violet/ui";
 import { Canvas } from "@violetjs/kanban/canvas";
 import { Board, ResponsiveLayout, type ResponsiveLayoutKind } from "@violetjs/kanban/unstyled";
-import { type CSSProperties, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
 	buildRoadmapBoard,
 	COMPLETED_PREVIEW_LIMIT,
@@ -13,9 +13,15 @@ import { createRoadmapFilter, type RoadmapFilters } from "../lib/roadmap-filter"
 import type { RoadmapItem, RoadmapRelation } from "../model/roadmap";
 import { RoadmapCardContent } from "./RoadmapCardContent";
 import { RoadmapFilterBar } from "./RoadmapFilterBar";
+import "./roadmap-board.css";
 
-/** 比包里默认的 18rem 宽：标题多半一两行放得下，卡片不挤。 */
-const COLUMN_WIDTH = { "--kanban-column-width": "21rem" } as CSSProperties;
+/**
+ * 画布里内容与边缘的间距（px）：只留够选中卡片的外描边，三列按 roadmap-board.css 的算法正好铺满宽度。
+ * 改它要同步改 CSS 里的列宽算式。
+ */
+const FIT_PADDING = 8;
+/** 量到看板高度之前（服务端渲染与水合的首帧）画布用的高度。 */
+const FALLBACK_HEIGHT = "min(80dvh, 52rem)";
 
 export interface RoadmapBoardProps {
 	/** 后端按展示顺序给出的全部条目。 */
@@ -49,6 +55,19 @@ export function RoadmapBoard({
 	// 与 ResponsiveLayout 的首次渲染一致：服务端与水合时是宽屏，量到宽度后才可能变窄
 	const [layout, setLayout] = useState<ResponsiveLayoutKind>("wide");
 	const toggleId = useId();
+	// 画布高度跟着看板走：整块按 100% 显示，不缩小，多出的高度交给页面滚动
+	const content = useRef<HTMLDivElement>(null);
+	const [contentHeight, setContentHeight] = useState<number | null>(null);
+	useEffect(() => {
+		const node = content.current;
+		if (layout !== "wide" || !node) return;
+		const update = () => setContentHeight(node.offsetHeight);
+		update();
+		if (typeof ResizeObserver === "undefined") return;
+		const observer = new ResizeObserver(update);
+		observer.observe(node);
+		return () => observer.disconnect();
+	}, [layout]);
 	const filter = useMemo(() => createRoadmapFilter(filters), [filters]);
 	const board = useMemo(
 		() => buildRoadmapBoard(items, { expandCompleted: expanded }),
@@ -155,7 +174,7 @@ export function RoadmapBoard({
 				trailing={lineControls}
 			/>
 			<ResponsiveLayout
-				style={COLUMN_WIDTH}
+				className="roadmap-board"
 				onLayoutChange={setLayout}
 				narrow={
 					<Board
@@ -166,13 +185,25 @@ export function RoadmapBoard({
 					/>
 				}
 			>
-				<Canvas locale="zh-CN" style={{ height: "min(80dvh, 52rem)" }}>
-					<Board
-						{...shared}
-						hideRelations={linesHidden}
-						selectedCardId={selected?.id ?? null}
-						onSelectedCardChange={setSelectedId}
-					/>
+				<Canvas
+					locale="zh-CN"
+					fit={{ padding: FIT_PADDING, maxScale: 1 }}
+					style={{
+						height:
+							contentHeight === null
+								? FALLBACK_HEIGHT
+								: contentHeight + 2 * FIT_PADDING,
+					}}
+				>
+					{/* 顶部留一条给画布的缩放按钮，不压住列头 */}
+					<div ref={content} className="pt-11">
+						<Board
+							{...shared}
+							hideRelations={linesHidden}
+							selectedCardId={selected?.id ?? null}
+							onSelectedCardChange={setSelectedId}
+						/>
+					</div>
 				</Canvas>
 			</ResponsiveLayout>
 		</div>
