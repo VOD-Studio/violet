@@ -8,11 +8,14 @@ import {
 	type BoardState,
 	createHistory,
 	HistoryButtons,
+	InlineEdit,
 	useHistoryShortcuts,
 } from "../src/index.ts";
 
 declare global {
 	interface Window {
+		__added: Array<{ columnId: string; title: string }>;
+		__saved: Array<{ id: string; title: string }>;
 		__moves: BoardMove[];
 		__animateCalls: number;
 		__pageKeys: string[];
@@ -39,6 +42,8 @@ const params = new URLSearchParams(location.search);
 const failMoves = params.has("fail");
 
 window.__moves = [];
+window.__added = [];
+window.__saved = [];
 // 页面级快捷键的替身：拿起期间不该收到看板接管的按键
 window.__pageKeys = [];
 window.addEventListener("keydown", (event) => window.__pageKeys.push(event.key));
@@ -162,6 +167,65 @@ function CanvasDemo() {
 	);
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** 外壳视图：折叠、列底添加、标题内联编辑与筛选（`filter` 参数）。 */
+function ShellDemo() {
+	const [titles, setTitles] = useState<Record<string, string>>(
+		Object.fromEntries(tasks.map((task) => [task.id, task.title])),
+	);
+	const [added, setAdded] = useState<Task[]>([]);
+	const [order, setOrder] = useState(initial);
+	const cards = [...tasks, ...added].map((task) => ({
+		...task,
+		title: titles[task.id] ?? task.title,
+	}));
+	return (
+		<div style={{ width: 1000, padding: 24 }}>
+			<Board
+				columns={columns}
+				cards={cards}
+				order={order}
+				locale="en"
+				collapsible
+				filter={params.has("filter") ? (task) => /[ab]$/i.test(task.title) : undefined}
+				getCardLabel={(task) => task.title}
+				renderCard={(task) => (
+					<InlineEdit
+						value={task.title}
+						label="Card title"
+						onSave={async (title) => {
+							window.__saved.push({ id: task.id, title });
+							await sleep(20);
+							setTitles((previous) => ({ ...previous, [task.id]: title }));
+						}}
+					/>
+				)}
+				onAddCard={async ({ columnId, title }) => {
+					window.__added.push({ columnId, title });
+					await sleep(20);
+					const id = `n${added.length + 1}`;
+					setAdded((previous) => [...previous, { id, title }]);
+					setTitles((previous) => ({ ...previous, [id]: title }));
+					setOrder((previous) => ({
+						...previous,
+						[columnId]: [...previous[columnId], id],
+					}));
+				}}
+				onMove={async (move) => {
+					window.__moves.push(move);
+					await sleep(30);
+					setOrder(
+						(previous) =>
+							applyMove({ columns: columnIds, order: previous }, move).order,
+					);
+				}}
+			/>
+		</div>
+	);
+}
+
+const view = params.get("view");
 createRoot(document.getElementById("root") as HTMLElement).render(
-	params.get("view") === "canvas" ? <CanvasDemo /> : <App />,
+	view === "canvas" ? <CanvasDemo /> : view === "shell" ? <ShellDemo /> : <App />,
 );
