@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { BrowserContext, Page } from "@playwright/test";
+import { handle } from "./mock-data.mjs";
 
 const CLIENT_DIR = join(import.meta.dirname, "..", "dist", "client");
 
@@ -43,4 +44,24 @@ export function collectDiagnostics(page: Page) {
 		}
 	});
 	return diagnostics;
+}
+
+/**
+ * 以契约后台操作者登录，并把 `/auth/me` 返回的权限换成 `permissions`。
+ * Cookie 建立 SSR 会话；客户端 useMe 仍独立读取实际权限。
+ */
+export async function authenticated(context: BrowserContext, permissions: string[]) {
+	await context.addCookies([
+		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
+	]);
+	await context.route("**/api/v1/auth/me", async (route) => {
+		const response = handle("GET", "/api/v1/auth/me", "", "contract_admin=1");
+		const body = JSON.parse(response.body);
+		body.data.permissions = permissions;
+		await route.fulfill({
+			status: response.status,
+			contentType: "application/json",
+			json: body,
+		});
+	});
 }

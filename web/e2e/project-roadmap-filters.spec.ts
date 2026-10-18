@@ -1,6 +1,6 @@
-import { type BrowserContext, expect, type Page, test } from "@playwright/test";
-import { handle, ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { expect, type Page, test } from "@playwright/test";
+import { ROADMAP_FIXTURE } from "./mock-data.mjs";
+import { authenticated, collectDiagnostics, loadClient } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const PATH = `/projects/${SLUG}`;
@@ -108,23 +108,6 @@ function expectSameLayout(
 		for (const key of ["x", "y", "width", "height"] as const)
 			expect(Math.abs(entry[key] - before[index][key])).toBeLessThanOrEqual(1);
 	}
-}
-
-async function authenticated(context: BrowserContext, permissions: string[]) {
-	// Cookie 建立 SSR 会话；客户端 useMe 仍独立读取实际权限。
-	await context.addCookies([
-		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
-	]);
-	await context.route("**/api/v1/auth/me", async (route) => {
-		const response = handle("GET", "/api/v1/auth/me", "", "contract_admin=1");
-		const body = JSON.parse(response.body);
-		body.data.permissions = permissions;
-		await route.fulfill({
-			status: response.status,
-			contentType: "application/json",
-			json: body,
-		});
-	});
 }
 
 test.describe("路线图筛选", () => {
