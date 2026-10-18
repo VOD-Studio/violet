@@ -4,6 +4,7 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Viewport } from "../core/index.ts";
+import { notifyEditing, requestPan } from "../pan-region.ts";
 import { Canvas, type CanvasHandle } from "./canvas.tsx";
 
 const identity: Viewport = { scale: 1, x: 0, y: 0 };
@@ -35,6 +36,8 @@ function stubSizes(container: [number, number], content: [number, number]) {
 		vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(client(1)),
 		vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(scroll(0)),
 		vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(scroll(1)),
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(scroll(0)),
+		vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(scroll(1)),
 	];
 	return () => {
 		for (const spy of spies) spy.mockRestore();
@@ -457,10 +460,9 @@ describe("拖动背景平移", () => {
 		expect(dragFrom(screen.getByTestId("child"), "mouse")).toEqual({ scale: 1, x: 80, y: 0 });
 	});
 
-	it("触屏没有别的滚动手段：可以从按钮上起手平移；可拖卡片、输入框与 data-kanban-no-pan 仍归自己", () => {
+	it("触屏没有别的滚动手段：可以从按钮上起手平移；输入框与 data-kanban-no-pan 仍归自己", () => {
 		renderCanvas();
 		for (const target of [
-			screen.getByTestId("draggable"),
 			screen.getByTestId("no-pan"),
 			screen.getByRole("textbox", { name: "field" }),
 		]) {
@@ -471,6 +473,98 @@ describe("拖动背景平移", () => {
 			scale: 1,
 			x: 80,
 			y: 0,
+		});
+	});
+
+	describe("触屏从可拖卡片上起手", () => {
+		const touchMove = (target: Element, id: number, x: number) =>
+			act(
+				() =>
+					void target.dispatchEvent(
+						pointer("pointermove", {
+							pointerId: id,
+							pointerType: "touch",
+							clientX: x,
+							clientY: 0,
+						}),
+					),
+			);
+		const touchDown = (target: Element, id: number, x = 0) =>
+			act(
+				() =>
+					void target.dispatchEvent(
+						pointer("pointerdown", {
+							pointerId: id,
+							pointerType: "touch",
+							clientX: x,
+							clientY: 0,
+						}),
+					),
+			);
+
+		it("看板在等长按（data-kanban-holding）时不平移；看板放弃长按之后才平移，从按下处算起", () => {
+			renderCanvas();
+			const draggable = screen.getByTestId("draggable");
+			const content = document.querySelector(".v-kanban-canvas__content") as HTMLElement;
+			touchDown(draggable, 1);
+			content.setAttribute("data-kanban-holding", "true");
+
+			touchMove(draggable, 1, 8);
+			touchMove(draggable, 1, 40);
+			expect(shown()).toEqual(identity);
+
+			content.removeAttribute("data-kanban-holding");
+			touchMove(draggable, 1, 50);
+			expect(shown()).toEqual({ scale: 1, x: 50, y: 0 });
+		});
+
+		it("没有长按在等：移动超过一般的平移阈值就平移", () => {
+			renderCanvas();
+			const draggable = screen.getByTestId("draggable");
+
+			touchDown(draggable, 1);
+			touchMove(draggable, 1, 2);
+			expect(shown()).toEqual(identity);
+			touchMove(draggable, 1, 12);
+
+			expect(shown()).toEqual({ scale: 1, x: 12, y: 0 });
+		});
+
+		it("看板正在拖拽时，新落下的手指不开始任何手势", () => {
+			renderCanvas();
+			const background = screen.getByTestId("background");
+			const draggable = screen.getByTestId("draggable");
+			touchDown(draggable, 1);
+			document
+				.querySelector(".v-kanban-canvas__content")
+				?.setAttribute("data-dragging", "true");
+
+			touchDown(background, 2, 100);
+			touchMove(background, 2, 300);
+			touchMove(draggable, 1, 0);
+
+			expect(shown()).toEqual(identity);
+		});
+
+		it("看板已经开始拖拽：画布让出这根手指，不再平移", () => {
+			renderCanvas();
+			const draggable = screen.getByTestId("draggable");
+			touchDown(draggable, 1);
+
+			document
+				.querySelector(".v-kanban-canvas__content")
+				?.setAttribute("data-dragging", "true");
+			touchMove(draggable, 1, 80);
+			touchMove(draggable, 1, 120);
+
+			expect(shown()).toEqual(identity);
+			expect(viewport().hasAttribute("data-panning")).toBe(false);
+		});
+
+		it("鼠标从可拖卡片上按下仍归卡片", () => {
+			renderCanvas();
+
+			expect(dragFrom(screen.getByTestId("draggable"), "mouse")).toEqual(identity);
 		});
 	});
 
@@ -677,6 +771,144 @@ describe("聚焦露出", () => {
 
 		expect(seen).toEqual(["none"]);
 		expect(content.style.transition).toBe("");
+		restore();
+	});
+});
+
+describe("看板请求平移", () => {
+	it("视口带有可平移区域标记，里面的看板据此找到它", () => {
+		renderCanvas();
+
+		expect(viewport().hasAttribute("data-kanban-pan-region")).toBe(true);
+	});
+
+	it("按请求平移，并在事件派发返回前画面就已更新（看板紧接着要量位置）", () => {
+		const restore = stubSizes([800, 600], [2000, 1500]);
+		renderCanvas();
+		let during: Viewport | null = null;
+
+		act(() => {
+			requestPan(screen.getByTestId("background"), -100, -50);
+			during = shown();
+		});
+
+		expect(during).toEqual({ scale: 1, x: -100, y: -50 });
+		expect(shown()).toEqual({ scale: 1, x: -100, y: -50 });
+		restore();
+	});
+
+	it("平移到内容尽头就停：起始边离容器 24px，末边也是", () => {
+		const restore = stubSizes([800, 600], [2000, 1500]);
+		renderCanvas();
+
+		act(() => requestPan(screen.getByTestId("background"), 500, 500));
+		expect(shown()).toEqual({ scale: 1, x: 24, y: 24 });
+
+		act(() => requestPan(screen.getByTestId("background"), -5000, -5000));
+		expect(shown()).toEqual({ scale: 1, x: -1224, y: -924 });
+		restore();
+	});
+
+	it("算作用户调整：之后窗口尺寸变化不再自动适应；onViewportChange 被调用", () => {
+		const restore = stubSizes([800, 600], [2000, 1500]);
+		const onViewportChange = vi.fn();
+		render(
+			<Canvas onViewportChange={onViewportChange}>
+				<p data-testid="background">background</p>
+			</Canvas>,
+		);
+		onViewportChange.mockClear();
+
+		act(() => requestPan(screen.getByTestId("background"), -10, 0));
+		const panned = shown();
+		act(() => {
+			for (const callback of resizeCallbacks) callback();
+		});
+
+		expect(onViewportChange).toHaveBeenCalledWith(expect.objectContaining({ x: panned.x }));
+		expect(shown()).toEqual(panned);
+		restore();
+	});
+
+	it("requestPan 返回画布是否真的动了：到内容尽头再请求就是 false", () => {
+		const restore = stubSizes([800, 600], [2000, 1500]);
+		renderCanvas();
+		const background = screen.getByTestId("background");
+		let moved: boolean[] = [];
+
+		act(() => {
+			moved = [
+				requestPan(background, -100, 0),
+				requestPan(background, 0, 0),
+				requestPan(background, 5000, 0),
+				requestPan(background, 100, 0),
+			];
+		});
+
+		expect(moved).toEqual([true, false, true, false]);
+		restore();
+	});
+
+	it("没有画布时 requestPan 返回 false", () => {
+		const element = document.createElement("div");
+
+		expect(requestPan(element, 10, 0)).toBe(false);
+	});
+
+	it("看板里开始编辑（拖拽）之后，窗口或内容尺寸变化不再自动适应", () => {
+		const restore = stubSizes([800, 600], [500, 300]);
+		render(
+			<Canvas>
+				<p data-testid="background">background</p>
+			</Canvas>,
+		);
+		const fitted = shown();
+
+		notifyEditing(screen.getByTestId("background"));
+		restore();
+		const restoreBigger = stubSizes([800, 600], [2000, 1500]);
+		act(() => {
+			for (const callback of resizeCallbacks) callback();
+		});
+
+		expect(shown()).toEqual(fitted);
+		restoreBigger();
+	});
+
+	it("没有开始编辑时，内容尺寸变化仍然重新适应", () => {
+		const restore = stubSizes([800, 600], [500, 300]);
+		render(
+			<Canvas>
+				<p>content</p>
+			</Canvas>,
+		);
+		const fitted = shown();
+		restore();
+		const restoreBigger = stubSizes([800, 600], [2000, 1500]);
+
+		act(() => {
+			for (const callback of resizeCallbacks) callback();
+		});
+
+		expect(shown()).not.toEqual(fitted);
+		restoreBigger();
+	});
+
+	it("内层画布先处理，不再冒泡给外层", () => {
+		const restore = stubSizes([800, 600], [2000, 1500]);
+		render(
+			<Canvas defaultViewport={identity}>
+				<Canvas defaultViewport={identity}>
+					<p data-testid="inner">inner</p>
+				</Canvas>
+			</Canvas>,
+		);
+		const [outer, inner] = [...document.querySelectorAll(".v-kanban-canvas__content")];
+
+		act(() => requestPan(screen.getByTestId("inner"), -30, 0));
+
+		expect((outer as HTMLElement).style.transform).toContain("translate(0px, 0px)");
+		expect((inner as HTMLElement).style.transform).toContain("translate(-30px");
 		restore();
 	});
 });

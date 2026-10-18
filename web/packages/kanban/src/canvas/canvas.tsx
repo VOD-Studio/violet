@@ -13,12 +13,14 @@ import {
 	useState,
 } from "react";
 import {
+	DEFAULT_FIT_PADDING,
 	DEFAULT_SCALE_LIMITS,
 	type FitOptions,
 	fitViewport,
 	IDENTITY_VIEWPORT,
 	normalizeViewport,
 	panBy,
+	panWithin,
 	revealRect,
 	type ScaleLimits,
 	stepScale,
@@ -26,6 +28,7 @@ import {
 	zoomAt,
 } from "../core/index.ts";
 import type { Locale } from "../locale.ts";
+import { EDITING_EVENT, PAN_EVENT, type PanRequest } from "../pan-region.ts";
 import { type CanvasMessages, resolveCanvasMessages, zoomStatusText } from "./messages.ts";
 import { useCanvasGestures } from "./use-canvas-gestures.ts";
 import { useInertOutside } from "./use-inert-outside.ts";
@@ -75,6 +78,9 @@ export interface CanvasProps extends Omit<HTMLAttributes<HTMLDivElement>, "child
 
 const sameViewport = (a: Viewport, b: Viewport) =>
 	a.scale === b.scale && a.x === b.x && a.y === b.y;
+
+const transformOf = (viewport: Viewport) =>
+	`translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
 
 function Icon({ children }: { children: ReactNode }) {
 	return (
@@ -166,6 +172,8 @@ export function Canvas({
 		return {
 			container: { width: viewportElement.clientWidth, height: viewportElement.clientHeight },
 			content: { width: contentElement.scrollWidth, height: contentElement.scrollHeight },
+			// 布局尺寸，不含溢出：拖拽中的浮起卡片是溢出的，不能撑大平移范围
+			bounds: { width: contentElement.offsetWidth, height: contentElement.offsetHeight },
 		};
 	}, []);
 
@@ -249,6 +257,46 @@ export function Canvas({
 		observer.observe(contentElement);
 		return () => observer.disconnect();
 	}, [refit]);
+
+	// 看板拖到边缘时请求平移：同步更新画面，看板紧接着就要按新位置量落点；开始编辑后不再随内容尺寸自动适应
+	useEffect(() => {
+		const root = rootRef.current;
+		if (!root) return;
+		const onPan = (event: Event) => {
+			event.stopPropagation();
+			const { dx, dy } = (event as CustomEvent<PanRequest>).detail;
+			const sizes = measure();
+			const content = contentRef.current;
+			if (!sizes || !content) return;
+			const margin = latest.current.fitOptions?.padding ?? DEFAULT_FIT_PADDING;
+			const next = panWithin(
+				latest.current.viewport,
+				sizes.container,
+				sizes.bounds,
+				dx,
+				dy,
+				margin,
+			);
+			if (sameViewport(latest.current.viewport, next)) return;
+			event.preventDefault();
+			apply(next, { user: true });
+			// 不等 React 提交；先挂起过渡，免得上一次按钮缩放留下的过渡把这一帧拖慢
+			content.style.transition = "none";
+			content.style.transform = transformOf(next);
+			content.getBoundingClientRect();
+			content.style.transition = "";
+		};
+		const onEditing = (event: Event) => {
+			event.stopPropagation();
+			adjusted.current = true;
+		};
+		root.addEventListener(PAN_EVENT, onPan);
+		root.addEventListener(EDITING_EVENT, onEditing);
+		return () => {
+			root.removeEventListener(PAN_EVENT, onPan);
+			root.removeEventListener(EDITING_EVENT, onEditing);
+		};
+	}, [apply, measure]);
 
 	// 聚焦到视口之外的元素：平移到刚好露出，聚焦环不被视口边缘裁剪
 	useEffect(() => {
@@ -348,6 +396,7 @@ export function Canvas({
 			<div
 				ref={viewportRef}
 				role="group"
+				data-kanban-pan-region=""
 				aria-label={messages.canvasLabel}
 				aria-describedby={hintId}
 				// biome-ignore lint/a11y/noNoninteractiveTabindex: 可平移缩放的视口要能聚焦，才能用方向键平移、+ 与 - 缩放
@@ -360,7 +409,7 @@ export function Canvas({
 					className="v-kanban-canvas__content"
 					data-animate={animate ? "true" : undefined}
 					style={{
-						transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
+						transform: transformOf(viewport),
 					}}
 				>
 					{children}

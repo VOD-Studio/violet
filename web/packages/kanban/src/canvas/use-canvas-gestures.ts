@@ -9,15 +9,25 @@ import {
 	zoomByFactor,
 } from "../core/index.ts";
 import { EDITABLE_SELECTOR } from "../editable.ts";
+import { HOLD_PENDING_ATTRIBUTE } from "../pan-region.ts";
 
-/** 在这些元素上按下不平移：它们有自己的指针语义（输入、拖卡片）。 */
-const NO_PAN_SELECTOR = `[data-draggable="true"], ${EDITABLE_SELECTOR}, [data-kanban-no-pan]`;
+/** 在这些元素上按下不平移：它们有自己的指针语义（输入）。 */
+const NO_PAN_SELECTOR = `${EDITABLE_SELECTOR}, [data-kanban-no-pan]`;
+
+/** 可拖的卡片：鼠标按下是为了拖卡片，触屏要长按才拖，更早的移动属于画布。 */
+const DRAGGABLE_SELECTOR = '[data-draggable="true"]';
 
 /** 鼠标在按钮与链接上按下是为了点击；触屏没有别的滚动手段，从它们上面起手也要能平移。 */
-const NO_MOUSE_PAN_SELECTOR = "a, button";
+const NO_MOUSE_PAN_SELECTOR = `${DRAGGABLE_SELECTOR}, a, button`;
 
 /** 移动超过多少 px 才算平移，之前仍是点击。 */
 const PAN_THRESHOLD = 3;
+
+/** 看板在等触屏长按：这根手指还没判定是拖卡片还是滑动，画布先不动。 */
+const HOLD_PENDING_SELECTOR = `[${HOLD_PENDING_ATTRIBUTE}]`;
+
+/** 看板拖拽进行中的标记。 */
+const DRAGGING_SELECTOR = '[data-dragging="true"]';
 
 /** 滚轮缩放的灵敏度：每滚动 1 个 delta 单位的指数系数。 */
 const WHEEL_SENSITIVITY = 0.002;
@@ -74,7 +84,14 @@ export function useCanvasGestures(options: CanvasGestureOptions) {
 		};
 
 		const pointers = new Map<number, Point>();
-		let pan: { id: number; start: Point; origin: Viewport; active: boolean } | null = null;
+		let pan: {
+			id: number;
+			start: Point;
+			origin: Viewport;
+			active: boolean;
+			/** 起手在可拖卡片上：看板一旦开始拖拽，这根手指就归看板。 */
+			yieldsToDrag: boolean;
+		} | null = null;
 		let pinch: { ids: [number, number]; from: [Point, Point]; origin: Viewport } | null = null;
 
 		const setPanning = (active: boolean) => {
@@ -86,7 +103,11 @@ export function useCanvasGestures(options: CanvasGestureOptions) {
 			if (event.pointerType === "mouse" && event.button !== 0) return;
 			const source = event.target as Element | null;
 			if (source?.closest?.(NO_PAN_SELECTOR)) return;
-			if (event.pointerType !== "touch" && source?.closest?.(NO_MOUSE_PAN_SELECTOR)) return;
+			const touch = event.pointerType === "touch";
+			if (!touch && source?.closest?.(NO_MOUSE_PAN_SELECTOR)) return;
+			const onCard = Boolean(source?.closest?.(DRAGGABLE_SELECTOR));
+			// 看板正在拖卡片：新落下的手指属于看板这次拖拽，画布不开始任何手势
+			if (target.querySelector(DRAGGING_SELECTOR)) return;
 			if (pointers.size === 0) box = target.getBoundingClientRect();
 			const point = local(event);
 			pointers.set(event.pointerId, point);
@@ -96,6 +117,7 @@ export function useCanvasGestures(options: CanvasGestureOptions) {
 					start: point,
 					origin: live.current.getViewport(),
 					active: false,
+					yieldsToDrag: onCard,
 				};
 			} else if (pointers.size === 2) {
 				const [first, second] = [...pointers.entries()];
@@ -124,9 +146,17 @@ export function useCanvasGestures(options: CanvasGestureOptions) {
 				return;
 			}
 			if (!pan || pan.id !== event.pointerId) return;
+			if (pan.yieldsToDrag && target.querySelector(DRAGGING_SELECTOR)) {
+				pointers.delete(event.pointerId);
+				pan = null;
+				setPanning(false);
+				if (pointers.size === 0) box = null;
+				return;
+			}
 			const dx = point.x - pan.start.x;
 			const dy = point.y - pan.start.y;
 			if (!pan.active && Math.hypot(dx, dy) <= PAN_THRESHOLD) return;
+			if (pan.yieldsToDrag && target.querySelector(HOLD_PENDING_SELECTOR)) return;
 			if (!pan.active) {
 				pan.active = true;
 				setPanning(true);
