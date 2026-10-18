@@ -12,12 +12,17 @@ const TITLES = PROJECTS_FIXTURE.map((project) => project.title);
 const unexpected = (diagnostics: string[]) =>
 	diagnostics.filter((entry) => !entry.includes("missing-cover.png"));
 
-/** 可用的封面返回图片，失效的封面返回 404。 */
+/**
+ * 可用的封面返回图片，失效的封面返回 404。
+ * 离开页面时还没应答的请求已被浏览器取消，这时再应答会抛错，忽略即可。
+ */
 async function routeCovers(context: BrowserContext) {
 	await context.route(/contract-cover\.png/, (route) =>
-		route.fulfill({ contentType: "image/png", body: PNG }),
+		route.fulfill({ contentType: "image/png", body: PNG }).catch(() => {}),
 	);
-	await context.route(/missing-cover\.png/, (route) => route.fulfill({ status: 404 }));
+	await context.route(/missing-cover\.png/, (route) =>
+		route.fulfill({ status: 404 }).catch(() => {}),
+	);
 }
 
 const row = (page: Page, title: string) =>
