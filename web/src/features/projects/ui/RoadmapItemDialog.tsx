@@ -1,17 +1,20 @@
 import {
 	Badge,
+	Button,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from "@violet/ui";
-import { ExternalLink, Lock } from "lucide-react";
-import { useId } from "react";
+import { ExternalLink, Lock, Pencil } from "lucide-react";
+import { useId, useState } from "react";
 import { ROADMAP_STAGE_LABELS } from "../lib/roadmap-board";
+import type { RoadmapContentInput } from "../lib/roadmap-content";
 import { relationGroups } from "../lib/roadmap-relations";
 import type { RoadmapItem, RoadmapRelation } from "../model/roadmap";
 import { RoadmapChecklist } from "./RoadmapChecklist";
+import { RoadmapItemForm } from "./RoadmapItemForm";
 
 export interface RoadmapItemDialogProps {
 	/** 要显示的条目；关闭的淡出期间仍要给着它，内容才不会先消失。 */
@@ -23,9 +26,14 @@ export interface RoadmapItemDialogProps {
 	onOpenChange: (open: boolean) => void;
 	/** 弹窗关闭后焦点还给谁；Radix 只会还给 DialogTrigger，受控的弹窗要自己处理。 */
 	returnFocusTo?: () => HTMLElement | null;
+	/** 保存编辑后的内容；给出时弹窗底部有「编辑」。失败时抛出，表单留着草稿并显示原因。 */
+	onSave?: (item: RoadmapItem, content: RoadmapContentInput) => Promise<void>;
 }
 
-/** 条目的只读详情弹窗：简介、子项清单、关系、标签、交付信息与关联链接，淡入淡出。 */
+/**
+ * 条目的详情弹窗：简介、子项清单、关系、标签、交付信息与关联链接，淡入淡出。
+ * 有编辑权限时可切换成编辑表单，保存后回到详情。
+ */
 export function RoadmapItemDialog({
 	item,
 	items,
@@ -33,14 +41,25 @@ export function RoadmapItemDialog({
 	open,
 	onOpenChange,
 	returnFocusTo,
+	onSave,
 }: RoadmapItemDialogProps) {
 	const relationsHeadingId = useId();
 	const groups = item ? relationGroups(item.id, items, relations) : [];
+	// 记的是正在编辑哪个条目：换了条目或关掉弹窗都回到详情
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const editing = Boolean(onSave) && item !== null && editingId === item.id;
+	const described = Boolean(item?.description) && !editing;
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog
+			open={open}
+			onOpenChange={(next) => {
+				if (!next) setEditingId(null);
+				onOpenChange(next);
+			}}
+		>
 			<DialogContent
 				// 没有简介时没有可关联的描述，显式声明免得 Radix 警告
-				{...(item?.description ? {} : { "aria-describedby": undefined })}
+				{...(described ? {} : { "aria-describedby": undefined })}
 				className="max-h-[calc(100dvh-4rem)] gap-6 overflow-y-auto sm:max-w-xl"
 				onCloseAutoFocus={(event) => {
 					const target = returnFocusTo?.();
@@ -58,26 +77,37 @@ export function RoadmapItemDialog({
 							<DialogTitle className="font-reading text-xl leading-snug">
 								{item.title}
 							</DialogTitle>
-							{item.blocked ? (
+							{item.blocked && !editing ? (
 								<p className="flex items-center gap-1.5 text-sm text-destructive">
 									<Lock className="size-3.5 shrink-0" aria-hidden="true" />
 									被阻塞：还有未完成的前置条目
 								</p>
 							) : null}
-							{item.description ? (
+							{described ? (
 								<DialogDescription className="font-reading leading-relaxed whitespace-pre-wrap text-foreground/80">
 									{item.description}
 								</DialogDescription>
 							) : null}
 						</DialogHeader>
-						{item.checklist.length > 0 ? (
+						{editing && onSave ? (
+							<RoadmapItemForm
+								key={item.id}
+								item={item}
+								onSave={async (content) => {
+									await onSave(item, content);
+									setEditingId(null);
+								}}
+								onCancel={() => setEditingId(null)}
+							/>
+						) : null}
+						{!editing && item.checklist.length > 0 ? (
 							<RoadmapChecklist
 								// 换一个条目就重新开始：上一个条目的「隐藏已完成」不该带过来
 								key={item.id}
 								checklist={item.checklist}
 							/>
 						) : null}
-						{groups.length > 0 ? (
+						{!editing && groups.length > 0 ? (
 							<section aria-labelledby={relationsHeadingId} className="space-y-2">
 								<h3
 									id={relationsHeadingId}
@@ -111,7 +141,7 @@ export function RoadmapItemDialog({
 								</dl>
 							</section>
 						) : null}
-						{item.tags.length > 0 ? (
+						{!editing && item.tags.length > 0 ? (
 							<ul className="flex flex-wrap gap-1.5" aria-label="条目标签">
 								{item.tags.map((tag) => (
 									<li key={tag}>
@@ -120,7 +150,7 @@ export function RoadmapItemDialog({
 								))}
 							</ul>
 						) : null}
-						{item.delivered_version || item.completion_date ? (
+						{!editing && (item.delivered_version || item.completion_date) ? (
 							<dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
 								{item.delivered_version ? (
 									<>
@@ -136,7 +166,7 @@ export function RoadmapItemDialog({
 								) : null}
 							</dl>
 						) : null}
-						{item.links.length > 0 ? (
+						{!editing && item.links.length > 0 ? (
 							<ul className="space-y-1.5 text-sm" aria-label="关联链接">
 								{item.links.map((link) => (
 									<li key={`${link.label}\u0000${link.url}`}>
@@ -152,6 +182,19 @@ export function RoadmapItemDialog({
 									</li>
 								))}
 							</ul>
+						) : null}
+						{onSave && !editing ? (
+							<div className="flex justify-end gap-2 border-t border-border/60 pt-4">
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									onClick={() => setEditingId(item.id)}
+								>
+									<Pencil className="size-4" aria-hidden="true" />
+									编辑
+								</Button>
+							</div>
 						) : null}
 					</>
 				) : null}

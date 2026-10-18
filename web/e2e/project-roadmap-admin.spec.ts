@@ -389,4 +389,101 @@ test.describe("管理员编辑条目", () => {
 		);
 		await expect(card(page, 2)).toContainText("第二个标签页改的");
 	});
+
+	async function openDetails(page: Page, number: number) {
+		await card(page, number)
+			.getByRole("button", { name: `查看 #${number} ${titleOf(number)} 的详情` })
+			.click();
+		const dialog = page.getByRole("dialog", { name: titleOf(number) });
+		await expect(dialog).toBeVisible();
+		return dialog;
+	}
+
+	test("在弹窗里编辑简介、标签、链接与子项；保存后回到详情，关闭后可撤销", async ({
+		page,
+		context,
+	}) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 1);
+
+		await dialog.getByRole("button", { name: "编辑" }).click();
+		await dialog.getByRole("textbox", { name: "简介" }).fill("新的简介");
+		await dialog.getByRole("textbox", { name: "标签" }).fill("性能，画布");
+		await dialog.getByRole("button", { name: "添加链接" }).click();
+		await dialog.getByRole("textbox", { name: "链接 2 的名称" }).fill("讨论");
+		await dialog
+			.getByRole("textbox", { name: "链接 2 的地址" })
+			.fill("https://example.com/talk");
+		await dialog.getByRole("checkbox", { name: "子项 2 已完成" }).click();
+		await dialog.getByRole("button", { name: "添加子项" }).click();
+		await dialog.getByRole("textbox", { name: "子项 4", exact: true }).fill("补文档");
+		await dialog.getByRole("button", { name: "保存" }).click();
+
+		await expect.poll(() => writes.length).toBe(1);
+		expect(writes[0]).toMatchObject({
+			action: "update",
+			itemId: idOf(1),
+			body: {
+				title: titleOf(1),
+				description: "新的简介",
+				tags: ["性能", "画布"],
+				links: [
+					{ label: "设计稿", url: "https://example.com/design" },
+					{ label: "讨论", url: "https://example.com/talk" },
+				],
+				checklist: [
+					{ text: "梳理现有画布的交互", done: true },
+					{ text: "补键盘操作", done: true },
+					{ text: "补读屏说明", done: false },
+					{ text: "补文档", done: false },
+				],
+			},
+		});
+		await expect(dialog.getByRole("button", { name: "编辑" })).toBeVisible();
+		await expect(dialog).toContainText("新的简介");
+		await expect(card(page, 1)).toContainText("2/4");
+
+		await page.keyboard.press("Escape");
+		await expect(dialog).toHaveCount(0);
+		await undoReady(page);
+		await page.keyboard.press("ControlOrMeta+z");
+		await expect.poll(() => writes.length).toBe(2);
+		expect(writes[1].body).toMatchObject({ description: "第一行说明\n第二行说明" });
+		await expect(card(page, 1)).toContainText("1/3");
+	});
+
+	test("已完成条目可改交付版本与完成日期；保存失败时留在表单里并显示原因", async ({
+		page,
+		context,
+	}) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 17);
+
+		await dialog.getByRole("button", { name: "编辑" }).click();
+		await dialog.getByRole("textbox", { name: "交付版本" }).fill("v3.0.0");
+		await dialog.getByLabel("完成日期").fill("2026-10-25");
+		await dialog.getByRole("button", { name: "保存" }).click();
+
+		await expect.poll(() => writes.length).toBe(1);
+		expect(writes[0].body).toMatchObject({
+			delivered_version: "v3.0.0",
+			completion_date: "2026-10-25",
+		});
+		await expect(dialog).toContainText("v3.0.0");
+	});
+
+	test("保存失败：表单留着草稿并显示原因", async ({ page, context }) => {
+		await roadmapBackend(context, { fail: true });
+		await openEditable(page);
+		const dialog = await openDetails(page, 3);
+
+		await dialog.getByRole("button", { name: "编辑" }).click();
+		await dialog.getByRole("textbox", { name: "简介" }).fill("保存不了的简介");
+		await dialog.getByRole("button", { name: "保存" }).click();
+
+		await expect(dialog.getByRole("alert")).toHaveText("保存失败");
+		await expect(dialog.getByRole("textbox", { name: "简介" })).toHaveValue("保存不了的简介");
+	});
 });

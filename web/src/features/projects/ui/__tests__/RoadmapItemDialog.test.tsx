@@ -255,3 +255,61 @@ describe("RoadmapItemDialog", () => {
 		});
 	});
 });
+
+describe("RoadmapItemDialog 编辑", () => {
+	it("没有 onSave 时没有「编辑」", () => {
+		render(<Dialog item={item()} open onOpenChange={() => {}} />);
+
+		expect(screen.queryByRole("button", { name: "编辑" })).toBeNull();
+	});
+
+	it("「编辑」打开表单，保存整理好的内容后回到详情", async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const data = item({ tags: ["a"], checklist: [{ text: "一步", done: false }] });
+		render(<Dialog item={data} open onOpenChange={() => {}} onSave={onSave} />);
+
+		fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+		fireEvent.change(screen.getByRole("textbox", { name: "标签" }), {
+			target: { value: "a，b" },
+		});
+		fireEvent.click(screen.getByRole("checkbox", { name: "子项 1 已完成" }));
+		fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+		await waitFor(() =>
+			expect(onSave).toHaveBeenCalledWith(
+				data,
+				expect.objectContaining({
+					tags: ["a", "b"],
+					checklist: [{ text: "一步", done: true }],
+				}),
+			),
+		);
+		await waitFor(() => expect(screen.getByRole("button", { name: "编辑" })).toBeTruthy());
+	});
+
+	it("保存失败时留在表单里并显示原因；标题为空时不提交", async () => {
+		const onSave = vi
+			.fn()
+			.mockRejectedValue(new Error("路线图关联链接必须是 http(s) 网址或站内路径"));
+		render(<Dialog item={item()} open onOpenChange={() => {}} onSave={onSave} />);
+		fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+
+		fireEvent.change(screen.getByRole("textbox", { name: "标题" }), {
+			target: { value: "  " },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "保存" }));
+		expect(onSave).not.toHaveBeenCalled();
+		expect(screen.getByText("标题不能为空")).toBeTruthy();
+
+		fireEvent.change(screen.getByRole("textbox", { name: "标题" }), {
+			target: { value: "新标题" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+		expect(await screen.findByRole("alert")).toHaveProperty(
+			"textContent",
+			"路线图关联链接必须是 http(s) 网址或站内路径",
+		);
+		expect(screen.getByRole("button", { name: "保存" })).toBeTruthy();
+	});
+});

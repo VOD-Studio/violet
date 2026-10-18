@@ -34,6 +34,8 @@ export interface RoadmapEditor {
 	add: (card: { columnId: string; title: string }) => Promise<void>;
 	/** 只改标题；其余内容照旧整体提交。失败时抛出，编辑框留着草稿并提示。 */
 	rename: (item: RoadmapItem, title: string) => Promise<void>;
+	/** 整体保存条目内容并记入历史；失败时抛出，表单留着草稿并显示原因。 */
+	save: (item: RoadmapItem, content: RoadmapContentInput) => Promise<void>;
 }
 
 /**
@@ -131,6 +133,9 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 			});
 		};
 
-		return { history, move, add, rename };
+		const save = (item: RoadmapItem, content: RoadmapContentInput) =>
+			update(item, content, `编辑 #${item.number}`);
+
+		return { history, move, add, rename, save };
 	}, [history, queryClient, slug]);
 }

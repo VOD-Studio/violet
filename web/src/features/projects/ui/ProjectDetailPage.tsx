@@ -83,6 +83,7 @@ export function ProjectDetailPage({
 				relations={data.relations}
 				open={openItem !== null}
 				returnFocusTo={() => opener.current}
+				onSave={canEdit ? editor.save : undefined}
 				onOpenChange={(open) => {
 					if (!open) setOpenId(null);
 				}}
