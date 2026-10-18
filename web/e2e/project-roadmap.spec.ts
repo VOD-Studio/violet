@@ -10,6 +10,9 @@ const itemTitle = (number: number) =>
 const column = (page: Page, name: string) => page.getByRole("group", { name, exact: true });
 const cardButton = (page: Page, title: string) =>
 	page.getByRole("button", { name: new RegExp(title) });
+const idOf = (number: number) =>
+	ROADMAP_FIXTURE.items.find((item) => item.number === number)?.id ?? "";
+const card = (page: Page, number: number) => page.locator(`[data-card-id="${idOf(number)}"]`);
 
 async function open(page: Page, slug = SLUG) {
 	const response = await page.goto(`/projects/${slug}`);
@@ -372,5 +375,102 @@ test.describe("窄屏（390px）", () => {
 		);
 		expect(overflow).toBeLessThanOrEqual(0);
 		expect(diagnostics).toEqual([]);
+	});
+
+	test("已完成显示真实总数，可展开全部再收起", async ({ page, context }) => {
+		await loadClient(context);
+		const diagnostics = collectDiagnostics(page);
+		await open(page);
+		const doneTab = page.getByRole("tab", { name: /已完成/ });
+		await expect(doneTab).toContainText("12");
+
+		await doneTab.click();
+		const panel = page.getByRole("tabpanel");
+		await expect(panel.getByRole("listitem")).toHaveCount(10);
+
+		const more = panel.getByRole("button", { name: "展开更多（还有 2 条）" });
+		await more.scrollIntoViewIfNeeded();
+		await more.click();
+
+		await expect(panel.getByRole("listitem")).toHaveCount(12);
+		await expect(
+			card(page, completed[10].number).getByRole("button", { name: /^#\d+/ }),
+		).toBeFocused();
+		await expect(doneTab).toHaveAttribute("aria-selected", "true");
+
+		const fold = panel.getByRole("button", { name: "收起" });
+		await fold.scrollIntoViewIfNeeded();
+		await fold.click();
+		await expect(panel.getByRole("listitem")).toHaveCount(10);
+		expect(diagnostics).toEqual([]);
+	});
+
+	test("窄宽切换保留当前阶段与已完成阶段的展开状态", async ({ page, context }) => {
+		await loadClient(context);
+		await open(page);
+		await page.getByRole("tab", { name: /进行中/ }).click();
+		await expect(card(page, 4)).toBeVisible();
+
+		await page.getByRole("tab", { name: /已完成/ }).click();
+		const panel = page.getByRole("tabpanel");
+		const more = panel.getByRole("button", { name: /展开更多/ });
+		await more.scrollIntoViewIfNeeded();
+		await more.click();
+		await expect(panel.getByRole("listitem")).toHaveCount(12);
+
+		await page.setViewportSize({ width: 1280, height: 900 });
+		await expect(page.locator(".v-kanban-canvas")).toBeVisible();
+		await expect(column(page, "已完成").getByRole("listitem")).toHaveCount(12);
+
+		await page.setViewportSize({ width: 390, height: 844 });
+		await expect(page.getByRole("tab", { name: /已完成/ })).toHaveAttribute(
+			"aria-selected",
+			"true",
+		);
+		await expect(page.getByRole("tabpanel").getByRole("listitem")).toHaveCount(12);
+	});
+
+	test("条目弹窗完整落在 390px 视口里，Esc 关闭后焦点回到卡片", async ({ page, context }) => {
+		await loadClient(context);
+		const diagnostics = collectDiagnostics(page);
+		await open(page);
+		await page.getByRole("tab", { name: /已完成/ }).click();
+		const trigger = card(page, 17).getByRole("button", { name: /^#17 / });
+		await trigger.scrollIntoViewIfNeeded();
+		await trigger.click();
+
+		const dialog = page.getByRole("dialog", { name: "已完成的第 17 项" });
+		await expect(dialog).toBeVisible();
+		const box = await dialog.boundingBox();
+		expect(box).not.toBeNull();
+		expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+		expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+		expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
+		expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(844);
+		await expect(dialog.getByRole("button", { name: "Close" })).toBeVisible();
+		await expect(
+			dialog.getByRole("link", { name: "https://example.com/no-label" }),
+		).toBeVisible();
+
+		await page.keyboard.press("Escape");
+
+		await expect(dialog).toHaveCount(0);
+		await expect(trigger).toBeFocused();
+		expect(diagnostics).toEqual([]);
+	});
+
+	test("关系标记可用键盘激活，跳到目标阶段后焦点落在目标卡片上", async ({ page, context }) => {
+		await loadClient(context);
+		await open(page);
+		const marker = card(page, 2).getByRole("button", { name: /被阻塞 #4 进行中的第一项/ });
+
+		await marker.focus();
+		await page.keyboard.press("Enter");
+
+		await expect(page.getByRole("tab", { name: /进行中/ })).toHaveAttribute(
+			"aria-selected",
+			"true",
+		);
+		await expect(card(page, 4)).toBeFocused();
 	});
 });
