@@ -277,6 +277,36 @@ function RelationsDemo() {
 	);
 }
 
+const laneTasks = ["l1", "l2", "l3", "l4", "l5", "x1"].map((id) => ({ id, title: `Lane ${id}` }));
+const laneColumns = [
+	{ id: "first", title: "First" },
+	{ id: "last", title: "Last" },
+];
+// 最后一列里重叠的同列关系：l1→l5 包住 l2→l4，l3→l4 与它们都重叠
+const laneRelations: Relation[] = [
+	{ sourceId: "l1", targetId: "l5", type: "extends" },
+	{ sourceId: "l2", targetId: "l4", type: "extends" },
+	{ sourceId: "l3", targetId: "l4", type: "blocks" },
+	{ sourceId: "l5", targetId: "l2", type: "fixes" },
+];
+
+/** 车道视图：重叠的同列关系在最后一列里错开，弧线不能被滚动层裁掉。 */
+function LanesDemo() {
+	return (
+		<div style={{ width: 600, padding: 24 }}>
+			<Board
+				columns={laneColumns}
+				cards={laneTasks}
+				order={{ first: ["x1"], last: ["l1", "l2", "l3", "l4", "l5"] }}
+				locale="en"
+				relations={laneRelations}
+				getCardLabel={(task) => task.title}
+				renderCard={(task) => <span>{task.title}</span>}
+			/>
+		</div>
+	);
+}
+
 const laterTasks = Array.from({ length: 14 }, (_, index) => ({
 	id: `m${index + 1}`,
 	title: `Later ${index + 1}`,
@@ -446,6 +476,8 @@ createRoot(document.getElementById("root") as HTMLElement).render(
 		<ShellDemo />
 	) : view === "relations" ? (
 		<RelationsDemo />
+	) : view === "lanes" ? (
+		<LanesDemo />
 	) : view === "switcher" ? (
 		<SwitcherDemo />
 	) : view === "responsive" ? (

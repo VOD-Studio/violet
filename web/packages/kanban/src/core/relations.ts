@@ -122,20 +122,38 @@ export interface EdgeRoute {
 const MIN_REACH = 24;
 const MAX_REACH = 120;
 /**
- * 同一列里的两张卡片之间，线从右缘向外鼓出的控制距离。曲线最远伸出它的 3/4，要不超过滚动层的内边距（6px），
- * 最后一列里的弧线才不会被滚动层裁掉。
+ * 同一列里的两张卡片之间，线从右缘向外鼓出的控制距离（最内一条车道）。
  */
 const BULGE = 8;
+/** 相邻车道的鼓出距离之差。 */
+const LANE_STEP = 6;
+/**
+ * 车道数上限。三次贝塞尔曲线最远伸出控制距离的 3/4，最外一条车道伸出 0.75 × (8 + 2 × 6) = 15px；
+ * 默认样式下卡片右缘到滚动层边缘有 17px（列内边距 10、列边框 1、滚动层内边距 6），最后一列里的弧线才不会被裁掉。
+ */
+const MAX_LANE = 2;
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const middle = (rect: Rect) => (rect.top + rect.bottom) / 2;
+
+/** `routeEdge` 的选项。 */
+export interface RouteOptions {
+	/**
+	 * 同一列的弧线用第几条车道：0 最贴近卡片，每加一条向外错开 6px，最多 2。
+	 * 只影响同一列的线，其他方向的线忽略；多条重叠的弧线分到不同车道就不会叠成一条。
+	 * @default 0
+	 */
+	lane?: number;
+}
+
+const isSameColumn = (from: Rect, to: Rect) => !(to.left >= from.right || to.right <= from.left);
 
 /**
  * 两张卡片之间的关系线：目标在右边或左边时从相对的两个侧边水平进出，
  * 在同一列（水平方向有重叠）时从右缘绕出再回到目标右缘，不穿过中间的卡片。
  * 坐标系由调用方决定，输出与输入同一坐标系。
  */
-export function routeEdge(from: Rect, to: Rect): EdgeRoute {
+export function routeEdge(from: Rect, to: Rect, options: RouteOptions = {}): EdgeRoute {
 	let start: Point;
 	let end: Point;
 	let first: Point;
@@ -155,7 +173,8 @@ export function routeEdge(from: Rect, to: Rect): EdgeRoute {
 	} else {
 		start = { x: from.right, y: middle(from) };
 		end = { x: to.right, y: middle(to) };
-		const out = Math.max(start.x, end.x) + BULGE;
+		const lane = Math.min(MAX_LANE, Math.max(0, Math.floor(options.lane ?? 0)));
+		const out = Math.max(start.x, end.x) + BULGE + lane * LANE_STEP;
 		first = { x: out, y: start.y };
 		second = { x: out, y: end.y };
 	}
@@ -166,6 +185,41 @@ export function routeEdge(from: Rect, to: Rect): EdgeRoute {
 		end,
 		angle: Math.atan2(end.y - second.y, end.x - second.x),
 	};
+}
+
+/**
+ * 给一批线分配同列弧线的车道（`routeEdge` 的 `lane`），返回与输入等长的数组；不在同一列的线车道为 0。
+ *
+ * 同一列里竖直范围有重叠（端点相接也算）的弧线分到不同车道：短的在内侧，长的在外侧，
+ * 嵌套的弧线不会互相穿过；重叠的线多于车道数时，最外一条车道上的线仍会叠在一起。
+ */
+export function assignLanes(edges: ReadonlyArray<{ from: Rect; to: Rect }>): number[] {
+	const lanes = new Array<number>(edges.length).fill(0);
+	const columns = new Map<number, Array<{ index: number; top: number; bottom: number }>>();
+	edges.forEach(({ from, to }, index) => {
+		if (!isSameColumn(from, to)) return;
+		const [a, b] = [middle(from), middle(to)];
+		// 弧线都从右缘绕出：右缘位置相同的线才在同一条走廊里
+		const key = round(Math.max(from.right, to.right));
+		const spans = columns.get(key) ?? [];
+		spans.push({ index, top: Math.min(a, b), bottom: Math.max(a, b) });
+		columns.set(key, spans);
+	});
+	for (const spans of columns.values()) {
+		const placed: Array<Array<{ top: number; bottom: number }>> = [];
+		for (const span of [...spans].sort(
+			(x, y) => x.bottom - x.top - (y.bottom - y.top) || x.top - y.top || x.index - y.index,
+		)) {
+			const free = placed.findIndex((lane) =>
+				lane.every((other) => span.bottom < other.top || span.top > other.bottom),
+			);
+			const lane = free === -1 ? placed.length : free;
+			if (free === -1) placed.push([]);
+			placed[lane].push(span);
+			lanes[span.index] = Math.min(lane, MAX_LANE);
+		}
+	}
+	return lanes;
 }
 
 /** 终点处的箭头：尖在 `end`，沿方向 `angle` 向后展开 `size`。 */

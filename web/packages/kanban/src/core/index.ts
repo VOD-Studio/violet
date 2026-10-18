@@ -34,9 +34,16 @@ export {
 	resolveDropTarget,
 	violatesAutoSort,
 } from "./moves.ts";
-export type { Adjacency, EdgeRoute, Relation, RelationCheck } from "./relations.ts";
+export type {
+	Adjacency,
+	EdgeRoute,
+	Relation,
+	RelationCheck,
+	RouteOptions,
+} from "./relations.ts";
 export {
 	arrowHead,
+	assignLanes,
 	blockerBar,
 	checkRelation,
 	createAdjacency,

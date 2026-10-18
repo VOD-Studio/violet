@@ -1,4 +1,11 @@
-import { arrowHead, blockerBar, type Rect, type Relation, routeEdge } from "../../core/index.ts";
+import {
+	arrowHead,
+	assignLanes,
+	blockerBar,
+	type Rect,
+	type Relation,
+	routeEdge,
+} from "../../core/index.ts";
 import { type RelationTypeStyle, relationStyle } from "./types.ts";
 
 /** 终点箭头的大小与挡条的长度（布局像素）。 */
@@ -13,6 +20,12 @@ export interface RelationLayerProps {
 	/** 选中的卡片；有选中时与它无关的线淡化。 */
 	selectedId: string | null;
 	cardLabel(id: string): string;
+	/**
+	 * 同一列里重叠的弧线分到不同车道、向外错开。车道最多伸出 15px，要有这么多空间才能用：
+	 * 看板的列有内边距，够用；卡片紧贴边缘的布局不要开。
+	 * @default false
+	 */
+	lanes?: boolean;
 }
 
 /**
@@ -25,7 +38,14 @@ export function RelationLayer({
 	types,
 	selectedId,
 	cardLabel,
+	lanes = false,
 }: RelationLayerProps) {
+	const edges = relations.flatMap((relation, index) => {
+		const from = rects.get(relation.sourceId);
+		const to = rects.get(relation.targetId);
+		return from && to ? [{ relation, index, from, to }] : [];
+	});
+	const laneOf = lanes ? assignLanes(edges) : [];
 	return (
 		<svg
 			className="v-kanban__relations"
@@ -42,12 +62,9 @@ export function RelationLayer({
 				pointerEvents: "none",
 			}}
 		>
-			{relations.map((relation, index) => {
-				const from = rects.get(relation.sourceId);
-				const to = rects.get(relation.targetId);
-				if (!from || !to) return null;
+			{edges.map(({ relation, index, from, to }, position) => {
 				const style = relationStyle(types, relation.type);
-				const route = routeEdge(from, to);
+				const route = routeEdge(from, to, { lane: laneOf[position] });
 				const state =
 					selectedId === null
 						? undefined

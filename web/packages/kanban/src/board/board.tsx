@@ -626,6 +626,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							types={relationTypes}
 							selectedId={selectedId}
 							cardLabel={cardLabel}
+							lanes
 						/>
 					) : null}
 				</div>

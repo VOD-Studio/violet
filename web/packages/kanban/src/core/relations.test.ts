@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	arrowHead,
+	assignLanes,
 	blockerBar,
 	checkRelation,
 	createAdjacency,
@@ -190,5 +191,79 @@ describe("线端标记", () => {
 		const path = blockerBar({ x: 100, y: 50 }, 0, 12);
 
 		expect(path).toBe("M 100 44 L 100 56");
+	});
+});
+
+describe("同列弧线的车道", () => {
+	const rect = (top: number, left = 0, width = 100, height = 40) => ({
+		left,
+		top,
+		right: left + width,
+		bottom: top + height,
+	});
+	const controlX = (route: ReturnType<typeof routeEdge>) =>
+		Number(route.d.match(/-?\d+(?:\.\d+)?/g)?.[2]);
+
+	it("车道每加一条，弧线向外多鼓 6px，最多两条；其他方向的线不受影响", () => {
+		const x = [0, 1, 2, 9].map((lane) => controlX(routeEdge(rect(0), rect(200), { lane })));
+
+		expect(x[1] - x[0]).toBe(6);
+		expect(x[2] - x[1]).toBe(6);
+		expect(x[3]).toBe(x[2]);
+		expect(routeEdge(rect(0), rect(100, 300), { lane: 2 })).toEqual(
+			routeEdge(rect(0), rect(100, 300)),
+		);
+		expect(routeEdge(rect(0), rect(200), { lane: -3 })).toEqual(routeEdge(rect(0), rect(200)));
+	});
+
+	it("最外一条车道的弧线最远伸出 15px，落在卡片右缘到滚动层边缘的 17px 之内", () => {
+		const out = controlX(routeEdge(rect(0), rect(200), { lane: 2 }));
+
+		expect(0.75 * (out - 100)).toBeLessThanOrEqual(15);
+	});
+
+	it("竖直范围不重叠的弧线共用最内车道", () => {
+		expect(
+			assignLanes([
+				{ from: rect(0), to: rect(100) },
+				{ from: rect(300), to: rect(400) },
+			]),
+		).toEqual([0, 0]);
+	});
+
+	it("端点相接的弧线也算重叠：共用端点的两条线不会叠在一起", () => {
+		expect(
+			assignLanes([
+				{ from: rect(200), to: rect(0) },
+				{ from: rect(200), to: rect(100) },
+			]),
+		).toEqual([1, 0]);
+	});
+
+	it("嵌套的弧线短的在内侧、长的在外侧", () => {
+		expect(
+			assignLanes([
+				{ from: rect(0), to: rect(400) },
+				{ from: rect(100), to: rect(200) },
+				{ from: rect(120), to: rect(180) },
+			]),
+		).toEqual([2, 1, 0]);
+	});
+
+	it("重叠的线多于车道数时落在最外车道；不同列的线互不占用车道，跨列的线车道为 0", () => {
+		const tall = Array.from({ length: 5 }, () => ({ from: rect(0), to: rect(400) }));
+		expect(assignLanes(tall)).toEqual([0, 1, 2, 2, 2]);
+
+		expect(
+			assignLanes([
+				{ from: rect(0), to: rect(200) },
+				{ from: rect(0, 400), to: rect(200, 400) },
+				{ from: rect(0), to: rect(100, 300) },
+			]),
+		).toEqual([0, 0, 0]);
+	});
+
+	it("没有线就是空数组", () => {
+		expect(assignLanes([])).toEqual([]);
 	});
 });

@@ -292,3 +292,46 @@ test.describe("线型本身区分类型", () => {
 		expect(await marker("e", "c")).toEqual({ head: false, bar: true });
 	});
 });
+
+test.describe("同列关系线的车道", () => {
+	/** 每条线的最右点（屏幕坐标）与滚动层可见区域的右缘。 */
+	const rightEdges = (page: Page) =>
+		page.evaluate(() => {
+			const scroller = document.querySelector(".v-kanban__scroller") as HTMLElement;
+			const lines = [...document.querySelectorAll("path.v-kanban__relation-line")].map(
+				(path) => path.getBoundingClientRect().right,
+			);
+			return { lines, clip: scroller.getBoundingClientRect().right };
+		});
+
+	test("最后一列里重叠的弧线分到不同车道，最外的一条也不被滚动层裁掉", async ({ page }) => {
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=lanes`);
+		await expect(page.locator(".v-kanban__relation")).toHaveCount(4);
+		await settled(page);
+
+		const { lines, clip } = await rightEdges(page);
+		const unique = new Set(lines.map((value) => Math.round(value)));
+		expect(unique.size, JSON.stringify(lines)).toBeGreaterThanOrEqual(3);
+		for (const right of lines)
+			expect(right, JSON.stringify({ lines, clip })).toBeLessThan(clip);
+	});
+
+	test("车道让线两端仍然贴着各自卡片的右缘", async ({ page }) => {
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=lanes`);
+		await expect(page.locator(".v-kanban__relation")).toHaveCount(4);
+		await settled(page);
+
+		for (const [source, target] of [
+			["l1", "l5"],
+			["l2", "l4"],
+			["l3", "l4"],
+			["l5", "l2"],
+		]) {
+			const line = await endpoints(page, source, target);
+			const from = await box(page, card(source));
+			const to = await box(page, card(target));
+			expect(near(line.start, rightMiddle(from)), `${source}→${target} start`).toBe(true);
+			expect(near(line.end, rightMiddle(to)), `${source}→${target} end`).toBe(true);
+		}
+	});
+});
