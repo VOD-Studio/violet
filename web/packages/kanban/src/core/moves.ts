@@ -39,6 +39,10 @@ export interface BoardMove {
 /** 自动排序列让别的列的卡片进入时先落在哪一端。 */
 export type AutoSortEntry = "start" | "end";
 
+/** 自动排序列的入口序号：`length` 是该列已有的卡片数。 */
+export const entryIndex = (entry: AutoSortEntry, length: number) =>
+	entry === "start" ? 0 : length;
+
 /** 一列在屏幕上的几何信息，供落点解析使用。 */
 export interface ColumnLayout {
 	id: string;
@@ -142,7 +146,7 @@ export function resolveDropTarget(
 	});
 	if (!hit || point.y < hit.rect.top - slack || point.y > hit.rect.bottom + slack) return null;
 	if (hit.autoSort && hit.id !== options.originColumnId)
-		return { columnId: hit.id, index: hit.autoSort === "start" ? 0 : hit.cards.length };
+		return { columnId: hit.id, index: entryIndex(hit.autoSort, hit.cards.length) };
 	const index = hit.cards.filter(
 		(card) => (card.rect.top + card.rect.bottom) / 2 < point.y,
 	).length;

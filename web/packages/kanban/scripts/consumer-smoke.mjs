@@ -105,7 +105,7 @@ try {
 		"types.tsx",
 		`import { Board, createPointerController, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
 import { Board as Unstyled } from "${metadata.name}/unstyled";
-import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
+import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, entryIndex, stepTarget, type ColumnLayout, type ResolvedColumn, type StepResult } from "${metadata.name}/core";
 interface Task extends BoardCard { title: string }
 interface Stage extends BoardColumn { hint: string }
 const canMove = (move: BoardMove): MoveDecision => move.to.columnId === "done" ? { allowed: false, reason: "no" } : { allowed: true };
@@ -130,6 +130,8 @@ export const resolved: ResolvedColumn<Task>[] = resolveBoard(state, tasks);
 export const normalized: BoardState = normalizeBoardState(state);
 const move: BoardMove | null = createMove(state, "a", { columnId: "todo", index: 0 });
 const layout: ColumnLayout[] = [{ id: "todo", rect: { left: 0, top: 0, right: 1, bottom: 1 }, cards: [] }];
+export const steps: StepResult[] = [stepTarget(state, "a", { columnId: "todo", index: 0 }, { columnId: "todo", index: 0 }, "down", () => undefined)];
+export const entry: number = entryIndex("end", 2);
 export const moves = [move && applyMove(state, move), move && isNoopMove(move), move && violatesAutoSort(move, () => false), locateCard(state, "a"), resolveDropTarget(layout, { x: 0, y: 0 })];
 // @ts-expect-error 卡片必须有 id
 export const bad = <Board columns={stages} cards={[{ title: "no id" }]} order={{}} renderCard={() => null} />;

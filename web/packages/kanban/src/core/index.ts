@@ -9,6 +9,7 @@ export type {
 export {
 	applyMove,
 	createMove,
+	entryIndex,
 	isNoopMove,
 	locateCard,
 	resolveDropTarget,
@@ -16,3 +17,5 @@ export {
 } from "./moves.ts";
 export type { BoardCard, BoardState, ResolvedColumn } from "./state.ts";
 export { normalizeBoardState, resolveBoard } from "./state.ts";
+export type { StepDirection, StepResult } from "./steps.ts";
+export { stepTarget } from "./steps.ts";
