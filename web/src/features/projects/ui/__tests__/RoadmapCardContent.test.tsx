@@ -13,6 +13,7 @@ const item = (overrides: Partial<RoadmapItem> = {}): RoadmapItem => ({
 	position: "a0",
 	tags: [],
 	links: [],
+	checklist: [],
 	completion_date: null,
 	delivered_version: "",
 	blocked: false,
@@ -35,8 +36,8 @@ describe("RoadmapCardContent", () => {
 		expect(onOpen).toHaveBeenCalledExactlyOnceWith(data, button);
 	});
 
-	it("最多显示 3 个标签，其余折成「+N」；没有标签就没有标签行", () => {
-		const { container, rerender } = render(
+	it("最多显示 3 个标签，其余折成「+N」；没有标签、阻塞与子项时没有这一行", () => {
+		const { rerender } = render(
 			<RoadmapCardContent
 				item={item({ tags: ["a", "b", "c", "d", "e"] })}
 				onOpen={() => {}}
@@ -51,7 +52,44 @@ describe("RoadmapCardContent", () => {
 		expect(screen.queryByText(/^\+/)).toBeNull();
 
 		rerender(<RoadmapCardContent item={item()} onOpen={() => {}} />);
-		expect(container.querySelectorAll("[class*='rounded-full']")).toHaveLength(0);
+		expect(screen.getByRole("button").textContent).toBe("#12支持离线阅读");
+	});
+
+	it("有子项时显示完成数与总数，读屏先听到「子项已完成」；没有子项就没有", () => {
+		const { rerender } = render(
+			<RoadmapCardContent
+				item={item({
+					checklist: [
+						{ text: "设计", done: true },
+						{ text: "实现", done: false },
+						{ text: "验收", done: false },
+					],
+				})}
+				onOpen={() => {}}
+			/>,
+		);
+		expect(screen.getByRole("button", { name: /子项已完成：1\/3/ })).toBeTruthy();
+
+		rerender(<RoadmapCardContent item={item()} onOpen={() => {}} />);
+		expect(screen.queryByText(/子项已完成/)).toBeNull();
+	});
+
+	it("子项进度、阻塞与标签可以同时出现", () => {
+		render(
+			<RoadmapCardContent
+				item={item({
+					blocked: true,
+					tags: ["后端"],
+					checklist: [{ text: "设计", done: true }],
+				})}
+				onOpen={() => {}}
+			/>,
+		);
+
+		const name = screen.getByRole("button").textContent;
+		expect(name).toContain("被阻塞");
+		expect(name).toContain("1/1");
+		expect(name).toContain("后端");
 	});
 
 	it("交付信息：版本与日期都有时用「·」连接，只有一个就只显示它，都没有就不显示", () => {

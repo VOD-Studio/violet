@@ -17,6 +17,7 @@ const item = (id: string, stage: RoadmapStage): RoadmapItem => ({
 	position: id,
 	tags: [],
 	links: [],
+	checklist: [],
 	completion_date: stage === "completed" ? "2026-10-01" : null,
 	delivered_version: "",
 	blocked: false,

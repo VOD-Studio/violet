@@ -14,3 +14,30 @@
 	--kanban-focus: var(--ring);
 	--kanban-radius: var(--radius);
 }
+
+/*
+ * 关系线默认退到背景：细、淡、不带警示色，一张卡片被选中时，相关的线才加粗并恢复颜色。
+ * 阻塞的含义由线端的挡条与卡片上的「被阻塞」文字表达，平时不需要红线。
+ */
+.v-kanban {
+	--kanban-relation: var(--muted-foreground);
+	--kanban-relation-blocker: var(--muted-foreground);
+}
+.v-kanban .v-kanban__relation {
+	opacity: 0.55;
+}
+.v-kanban .v-kanban__relation .v-kanban__relation-line {
+	stroke-width: 1;
+}
+.v-kanban .v-kanban__relation .v-kanban__relation-bar {
+	stroke-width: 2;
+}
+.v-kanban .v-kanban__relation[data-state="active"] {
+	opacity: 1;
+}
+.v-kanban .v-kanban__relation[data-state="active"] .v-kanban__relation-line {
+	stroke-width: 2;
+}
+.v-kanban .v-kanban__relation[data-state="active"][data-line="blocker"] {
+	color: var(--destructive);
+}

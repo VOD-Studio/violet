@@ -218,7 +218,7 @@ test.describe("被阻塞", () => {
 });
 
 test.describe("弹窗里的关系", () => {
-	test("列出这个条目的关系，另一端按「#编号 标题」读；被阻塞的头部写明原因", async ({
+	test("按方向分组列出这个条目的关系，另一端带编号、标题与阶段；被阻塞的头部写明原因", async ({
 		page,
 		context,
 	}) => {
@@ -230,9 +230,8 @@ test.describe("弹窗里的关系", () => {
 		const dialog = page.getByRole("dialog", { name: "计划中的第二项" });
 		await expect(dialog).toContainText("被阻塞：还有未完成的前置条目");
 		const section = dialog.getByRole("region", { name: "关系" });
-		await expect(section.getByRole("listitem")).toHaveText([
-			"#4 进行中的第一项 阻塞 #2 计划中的第二项",
-		]);
+		await expect(section.locator("dt")).toHaveText(["被阻塞"]);
+		await expect(section.getByRole("listitem")).toHaveText([/^#4\s*进行中的第一项\s*进行中$/]);
 	});
 
 	test("有多条关系时都列出，两个方向都在", async ({ page, context }) => {
@@ -246,9 +245,10 @@ test.describe("弹窗里的关系", () => {
 			.getByRole("region", { name: "关系" })
 			.getByRole("listitem");
 		await expect(items).toHaveText([
-			"#4 进行中的第一项 扩展 #1 计划中的第一项",
-			"#3 计划中的第三项 扩展 #1 计划中的第一项",
+			/^#4\s*进行中的第一项\s*进行中$/,
+			/^#3\s*计划中的第三项\s*计划中$/,
 		]);
+		await expect(page.getByRole("dialog").locator("dt")).toHaveText(["被扩展"]);
 	});
 
 	test("没有关系的条目没有这一块", async ({ page, context }) => {

@@ -31,6 +31,7 @@ export declare const ROADMAP_FIXTURE: {
 		stage: "planned" | "in_progress" | "completed";
 		tags: string[];
 		links: Array<{ label: string; url: string }>;
+		checklist: Array<{ text: string; done: boolean }>;
 		completion_date: string | null;
 		delivered_version: string;
 		blocked: boolean;

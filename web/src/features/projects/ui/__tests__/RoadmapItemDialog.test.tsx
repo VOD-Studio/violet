@@ -13,6 +13,7 @@ const item = (overrides: Partial<RoadmapItem> = {}): RoadmapItem => ({
 	position: "a0",
 	tags: [],
 	links: [],
+	checklist: [],
 	completion_date: null,
 	delivered_version: "",
 	blocked: false,
@@ -127,7 +128,7 @@ describe("RoadmapItemDialog", () => {
 		const b = item({ id: "b", number: 2, title: "被它阻塞的功能" });
 		const c = item({ id: "c", number: 3, title: "无关条目" });
 
-		it("列出这个条目的出入关系，另一端按「#编号 标题」显示；与它无关的关系不列", () => {
+		it("按类型与方向分组，另一端按「#编号 标题」加阶段显示；与它无关的关系不列", () => {
 			render(
 				<Dialog
 					item={b}
@@ -141,8 +142,10 @@ describe("RoadmapItemDialog", () => {
 			const section = screen
 				.getByRole("heading", { name: "关系" })
 				.closest("section") as HTMLElement;
+			const terms = [...section.querySelectorAll("dt")].map((node) => node.textContent);
 			const entries = [...section.querySelectorAll("li")].map((node) => node.textContent);
-			expect(entries).toEqual(["#1 前置功能 阻塞 #2 被它阻塞的功能"]);
+			expect(terms).toEqual(["被阻塞"]);
+			expect(entries).toEqual(["#1前置功能计划中"]);
 		});
 
 		it("没有关系就没有这一块", () => {
@@ -169,6 +172,86 @@ describe("RoadmapItemDialog", () => {
 
 			rerender(<Dialog item={item({ blocked: false })} open onOpenChange={() => {}} />);
 			expect(screen.getByRole("dialog").textContent).not.toContain("被阻塞");
+		});
+	});
+
+	describe("子项清单", () => {
+		const steps = (count: number, done: number) =>
+			Array.from({ length: count }, (_, index) => ({
+				text: `第 ${index + 1} 步`,
+				done: index < done,
+			}));
+
+		it("显示完成数、总数与每一项，已完成与未完成都给读屏文字", () => {
+			render(<Dialog item={item({ checklist: steps(3, 1) })} open onOpenChange={() => {}} />);
+
+			const section = screen.getByRole("heading", { name: "子项" }).closest("section");
+			expect(section?.textContent).toContain("1/3");
+			const list = screen.getByRole("region", { name: "子项清单" });
+			expect([...list.querySelectorAll("li")].map((node) => node.textContent)).toEqual([
+				"已完成：第 1 步",
+				"未完成：第 2 步",
+				"未完成：第 3 步",
+			]);
+		});
+
+		it("没有子项就没有这一块", () => {
+			render(<Dialog item={item()} open onOpenChange={() => {}} />);
+
+			expect(screen.queryByRole("heading", { name: "子项" })).toBeNull();
+		});
+
+		it("子项很多且有已完成的才提供「隐藏已完成」，开关只影响显示，不改完成数", () => {
+			render(<Dialog item={item({ checklist: steps(8, 3) })} open onOpenChange={() => {}} />);
+			const list = () => screen.getByRole("region", { name: "子项清单" });
+			expect(list().querySelectorAll("li")).toHaveLength(8);
+
+			const hide = screen.getByRole("button", { name: "隐藏已完成" });
+			expect(hide.getAttribute("aria-pressed")).toBe("false");
+			fireEvent.click(hide);
+
+			expect(list().querySelectorAll("li")).toHaveLength(5);
+			expect(list().textContent).not.toContain("第 1 步");
+			const show = screen.getByRole("button", { name: "显示已完成（3）" });
+			expect(show.getAttribute("aria-pressed")).toBe("true");
+			expect(
+				screen.getByRole("heading", { name: "子项" }).closest("section")?.textContent,
+			).toContain("3/8");
+			fireEvent.click(show);
+			expect(list().querySelectorAll("li")).toHaveLength(8);
+		});
+
+		it("清单不长或还没有完成项时没有「隐藏已完成」", () => {
+			const { rerender } = render(
+				<Dialog item={item({ checklist: steps(5, 2) })} open onOpenChange={() => {}} />,
+			);
+			expect(screen.queryByRole("button", { name: /已完成/ })).toBeNull();
+
+			rerender(
+				<Dialog item={item({ checklist: steps(8, 0) })} open onOpenChange={() => {}} />,
+			);
+			expect(screen.queryByRole("button", { name: /已完成/ })).toBeNull();
+		});
+
+		it("换一个条目时「隐藏已完成」回到默认", () => {
+			const { rerender } = render(
+				<Dialog
+					item={item({ id: "x", checklist: steps(8, 3) })}
+					open
+					onOpenChange={() => {}}
+				/>,
+			);
+			fireEvent.click(screen.getByRole("button", { name: "隐藏已完成" }));
+
+			rerender(
+				<Dialog
+					item={item({ id: "y", checklist: steps(8, 3) })}
+					open
+					onOpenChange={() => {}}
+				/>,
+			);
+
+			expect(screen.getByRole("button", { name: "隐藏已完成" })).toBeTruthy();
 		});
 	});
 });

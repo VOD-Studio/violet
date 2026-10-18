@@ -1,7 +1,7 @@
 import { Button, Checkbox } from "@violet/ui";
 import { Canvas } from "@violetjs/kanban/canvas";
-import { Board, ResponsiveLayout } from "@violetjs/kanban/unstyled";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Board, ResponsiveLayout, type ResponsiveLayoutKind } from "@violetjs/kanban/unstyled";
+import { type CSSProperties, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
 	buildRoadmapBoard,
 	COMPLETED_PREVIEW_LIMIT,
@@ -13,6 +13,9 @@ import { createRoadmapFilter, type RoadmapFilters } from "../lib/roadmap-filter"
 import type { RoadmapItem, RoadmapRelation } from "../model/roadmap";
 import { RoadmapCardContent } from "./RoadmapCardContent";
 import { RoadmapFilterBar } from "./RoadmapFilterBar";
+
+/** 比包里默认的 18rem 宽：标题多半一两行放得下，卡片不挤。 */
+const COLUMN_WIDTH = { "--kanban-column-width": "21rem" } as CSSProperties;
 
 export interface RoadmapBoardProps {
 	/** 后端按展示顺序给出的全部条目。 */
@@ -43,6 +46,8 @@ export function RoadmapBoard({
 	const [activeColumn, setActiveColumn] = useState<string>();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [linesHidden, setLinesHidden] = useState(false);
+	// 与 ResponsiveLayout 的首次渲染一致：服务端与水合时是宽屏，量到宽度后才可能变窄
+	const [layout, setLayout] = useState<ResponsiveLayoutKind>("wide");
 	const toggleId = useId();
 	const filter = useMemo(() => createRoadmapFilter(filters), [filters]);
 	const board = useMemo(
@@ -105,6 +110,40 @@ export function RoadmapBoard({
 			) : null,
 	};
 
+	// 连线只在宽屏的画布上有，开关与选中状态跟着它出现在筛选那一行的右端
+	const lineControls =
+		layout === "wide" && relations.length > 0 ? (
+			<div className="flex items-center gap-3">
+				<p aria-live="polite" className="text-sm">
+					{selected ? (
+						<>
+							已选中 <span className="font-mono">#{selected.number}</span>
+							<span className="sr-only">，相关条目与连线保持清晰</span>{" "}
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={() => setSelectedId(null)}
+							>
+								取消选中
+							</Button>
+						</>
+					) : null}
+				</p>
+				<label
+					htmlFor={toggleId}
+					className="flex cursor-pointer items-center gap-2 text-sm"
+				>
+					<Checkbox
+						id={toggleId}
+						checked={linesHidden}
+						onCheckedChange={(checked) => setLinesHidden(checked === true)}
+					/>
+					隐藏连线
+				</label>
+			</div>
+		) : null;
+
 	return (
 		<div ref={root}>
 			<RoadmapFilterBar
@@ -113,8 +152,11 @@ export function RoadmapBoard({
 				onFiltersChange={onFiltersChange}
 				filter={filter}
 				includesCollapsed={board.hiddenCompleted > 0}
+				trailing={lineControls}
 			/>
 			<ResponsiveLayout
+				style={COLUMN_WIDTH}
+				onLayoutChange={setLayout}
 				narrow={
 					<Board
 						{...shared}
@@ -124,42 +166,7 @@ export function RoadmapBoard({
 					/>
 				}
 			>
-				{relations.length > 0 ? (
-					<div className="mb-3 flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-						<p aria-live="polite" className="text-sm text-muted-foreground">
-							{selected ? (
-								<>
-									已选中 <span className="font-mono">#{selected.number}</span>
-									，相关条目与连线保持清晰{" "}
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										onClick={() => setSelectedId(null)}
-									>
-										取消选中
-									</Button>
-								</>
-							) : filter ? (
-								"筛选生效中，关系连线保持原样"
-							) : (
-								"点击条目查看详情，并突出它的关系"
-							)}
-						</p>
-						<label
-							htmlFor={toggleId}
-							className="flex cursor-pointer items-center gap-2 text-sm"
-						>
-							<Checkbox
-								id={toggleId}
-								checked={linesHidden}
-								onCheckedChange={(checked) => setLinesHidden(checked === true)}
-							/>
-							隐藏连线
-						</label>
-					</div>
-				) : null}
-				<Canvas locale="zh-CN" style={{ height: "min(75dvh, 44rem)" }}>
+				<Canvas locale="zh-CN" style={{ height: "min(80dvh, 52rem)" }}>
 					<Board
 						{...shared}
 						hideRelations={linesHidden}

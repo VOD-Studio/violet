@@ -148,6 +148,7 @@ const roadmapItem = (number, stage, overrides = {}) => ({
 	position: `a${String(number).padStart(3, "0")}`,
 	tags: [],
 	links: [],
+	checklist: [],
 	completion_date: null,
 	delivered_version: "",
 	blocked: false,
@@ -162,11 +163,24 @@ const ROADMAP_ITEMS = [
 		description: "第一行说明\n第二行说明",
 		tags: ["性能", "画布", "文档", "测试", "发布"],
 		links: [{ label: "设计稿", url: "https://example.com/design" }],
+		checklist: [
+			{ text: "梳理现有画布的交互", done: true },
+			{ text: "补键盘操作", done: false },
+			{ text: "补读屏说明", done: false },
+		],
 	}),
 	// 被进行中的第一项阻塞（见下面的关系）：后端据此派生 blocked
 	roadmapItem(2, "planned", { title: "计划中的第二项", blocked: true }),
 	roadmapItem(3, "planned", { title: "计划中的第三项" }),
-	roadmapItem(4, "in_progress", { title: "进行中的第一项", tags: ["后端"] }),
+	// 子项很多：卡片只显示进度，弹窗里清单在区域内滚动并可只看未完成的
+	roadmapItem(4, "in_progress", {
+		title: "进行中的第一项",
+		tags: ["后端"],
+		checklist: Array.from({ length: 30 }, (_, index) => ({
+			text: `第 ${index + 1} 步：${index % 7 === 0 ? "这一步的说明比较长，需要在清单里自然换行而不是撑破弹窗的宽度，也不能把后面的步骤挤到看不见的地方" : "处理一小块"}`,
+			done: index < 12,
+		})),
+	}),
 	roadmapItem(5, "in_progress", { title: "进行中的第二项" }),
 	...Array.from({ length: 12 }, (_, index) => {
 		const number = 17 - index;

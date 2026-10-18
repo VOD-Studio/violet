@@ -16,6 +16,13 @@ export interface RoadmapLink {
 	url: string;
 }
 
+/** 条目的一个子项；只展示条目的推进细节，不影响阶段，也不计入项目进度。 */
+export interface RoadmapChecklistItem {
+	/** 纯文本，不作 Markdown 解释 */
+	text: string;
+	done: boolean;
+}
+
 /**
  * RoadmapItem - 路线图条目
  *
@@ -38,6 +45,8 @@ export interface RoadmapItem {
 	tags: string[];
 	/** 关联链接；读取层已把 null 规整为空数组 */
 	links: RoadmapLink[];
+	/** 有序子项清单，没有时为空数组 */
+	checklist: RoadmapChecklistItem[];
 	/** 完成日期，YYYY-MM-DD，不带时区；未完成为 null */
 	completion_date: string | null;
 	/** 交付版本，仅已完成条目有，可为空串 */
