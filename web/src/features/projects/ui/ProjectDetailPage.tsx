@@ -1,8 +1,8 @@
-import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useRef, useState } from "react";
 import { useMoveRoadmapItem } from "../api/mutations";
 import { useProjectRoadmap } from "../api/queries";
+import { useCanEditRoadmap } from "../hooks/useCanEditRoadmap";
 import type { RoadmapFilters } from "../lib/roadmap-filter";
 import type { RoadmapDetail, RoadmapItem } from "../model/roadmap";
 import { ProjectDetailHeader } from "./ProjectDetailHeader";
@@ -26,7 +26,7 @@ export function ProjectDetailPage({
 }: ProjectDetailPageProps) {
 	const { data } = useProjectRoadmap(slug, initialData);
 	// 只有能更新项目的人才能拖动；后端同样按 project:update 拒绝
-	const canEdit = useHasPermission("project:update");
+	const canEdit = useCanEditRoadmap();
 	const moveItem = useMoveRoadmapItem(slug, data?.project.id ?? "");
 	const [openId, setOpenId] = useState<string | null>(null);
 	const opener = useRef<HTMLElement | null>(null);

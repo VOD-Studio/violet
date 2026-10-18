@@ -1,4 +1,3 @@
-import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import {
 	Button,
 	Input,
@@ -10,6 +9,7 @@ import {
 } from "@violet/ui";
 import { Search } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
+import { useCanEditRoadmap } from "../hooks/useCanEditRoadmap";
 import type { RoadmapFilters } from "../lib/roadmap-filter";
 import type { RoadmapItem } from "../model/roadmap";
 
@@ -33,7 +33,7 @@ export function RoadmapFilterBar({
 	includesCollapsed,
 	trailing,
 }: RoadmapFilterBarProps) {
-	const canUpdate = useHasPermission("project:update");
+	const canUpdate = useCanEditRoadmap();
 	const tags = useMemo(() => [...new Set(items.flatMap((item) => item.tags))], [items]);
 	const selectedTag = filters.tag;
 	// URL 中的标签可能已被删除，仍保留为选项，避免控件显示“全部”而看板仍在筛选。
