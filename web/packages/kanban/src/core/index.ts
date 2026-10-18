@@ -1,4 +1,13 @@
 export type {
+	GraphCard,
+	GraphLayout,
+	GraphLayoutInput,
+	GraphLayoutOptions,
+	Subgraph,
+	SubgraphOptions,
+} from "./graph.ts";
+export { DEFAULT_GRAPH_LAYOUT, layoutGraph, relatedSubgraph } from "./graph.ts";
+export type {
 	CommandHistory,
 	HistoryCommand,
 	HistoryOptions,
