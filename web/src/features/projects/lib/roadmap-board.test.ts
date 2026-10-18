@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { RoadmapItem, RoadmapStage } from "../model/roadmap";
-import { buildRoadmapBoard, COMPLETED_PREVIEW_LIMIT } from "./roadmap-board";
+import {
+	buildRoadmapBoard,
+	COMPLETED_PREVIEW_LIMIT,
+	shownItemIds,
+	toBoardRelations,
+} from "./roadmap-board";
 
 const item = (id: string, stage: RoadmapStage): RoadmapItem => ({
 	id,
@@ -100,5 +105,36 @@ describe("buildRoadmapBoard", () => {
 			completed: [],
 		});
 		expect(buildRoadmapBoard([], { expandCompleted: false }).completedTotal).toBe(0);
+	});
+});
+
+describe("toBoardRelations 与 shownItemIds", () => {
+	it("关系的来源、目标与类型原样对应到看板的字段", () => {
+		expect(
+			toBoardRelations([
+				{
+					id: "r1",
+					project_id: "p",
+					source_id: "a",
+					target_id: "b",
+					type: "blocks",
+					created_at: "2026-10-01T00:00:00Z",
+				},
+			]),
+		).toEqual([{ sourceId: "a", targetId: "b", type: "blocks" }]);
+		expect(toBoardRelations([])).toEqual([]);
+	});
+
+	it("显示的条目不含已完成阶段收起的那些", () => {
+		const board = buildRoadmapBoard([...completed(12), item("p1", "planned")], {
+			expandCompleted: false,
+		});
+
+		const shown = shownItemIds(board);
+
+		expect(shown.has("p1")).toBe(true);
+		expect(shown.has("c10")).toBe(true);
+		expect(shown.has("c11")).toBe(false);
+		expect(shown.size).toBe(11);
 	});
 });

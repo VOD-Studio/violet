@@ -78,4 +78,21 @@ describe("RoadmapCardContent", () => {
 		rerender(<RoadmapCardContent item={item({ stage: "completed" })} onOpen={() => {}} />);
 		expect(screen.getByRole("button").textContent).toBe("#12支持离线阅读");
 	});
+
+	it("被阻塞的条目带「被阻塞」文字标记，没被阻塞的没有；标记算进按钮的可访问名称", () => {
+		const { rerender } = render(
+			<RoadmapCardContent item={item({ blocked: true })} onOpen={() => {}} />,
+		);
+		expect(screen.getByText("被阻塞")).toBeTruthy();
+		expect(screen.getByRole("button", { name: /被阻塞/ })).toBeTruthy();
+
+		rerender(<RoadmapCardContent item={item({ blocked: false })} onOpen={() => {}} />);
+		expect(screen.queryByText("被阻塞")).toBeNull();
+	});
+
+	it("只有被阻塞、没有标签时也显示标记行", () => {
+		render(<RoadmapCardContent item={item({ blocked: true, tags: [] })} onOpen={() => {}} />);
+
+		expect(screen.getByText("被阻塞")).toBeTruthy();
+	});
 });

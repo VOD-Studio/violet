@@ -33,6 +33,13 @@ export declare const ROADMAP_FIXTURE: {
 		links: Array<{ label: string; url: string }>;
 		completion_date: string | null;
 		delivered_version: string;
+		blocked: boolean;
+	}>;
+	relations: Array<{
+		id: string;
+		source_id: string;
+		target_id: string;
+		type: "extends" | "fixes" | "blocks";
 	}>;
 	progress: { planned: number; in_progress: number; completed: number; total: number; percent: number };
 };

@@ -76,8 +76,8 @@ test.describe("项目详情页", () => {
 
 		await expect(done.getByRole("listitem")).toHaveCount(10);
 		await expect(done.locator(".v-kanban__count")).toContainText("12");
-		await expect(done.getByText(completed[0].title)).toBeVisible();
-		await expect(done.getByText(completed[11].title)).toHaveCount(0);
+		await expect(done.getByText(completed[0].title, { exact: true })).toBeVisible();
+		await expect(done.getByText(completed[11].title, { exact: true })).toHaveCount(0);
 		const more = done.getByRole("button", { name: "展开更多（还有 2 条）" });
 		await expect(more).toHaveAttribute("aria-expanded", "false");
 
@@ -356,13 +356,13 @@ test.describe("窄屏（390px）", () => {
 		const tabs = page.getByRole("tablist", { name: "切换列" });
 		await expect(tabs).toBeVisible();
 		await expect(page.locator(".v-kanban-canvas")).toHaveCount(0);
-		await expect(
-			page.getByRole("listitem").filter({ hasText: "计划中的第一项" }),
-		).toBeVisible();
-		await expect(page.getByText("进行中的第一项")).toHaveCount(0);
+		// 卡片按钮的名字以 #编号 开头；关系标记（跳转按钮）的名字不是
+		const card = (title: string) => cardButton(page, `^#\\d+ ${title}`);
+		await expect(card("计划中的第一项")).toBeVisible();
+		await expect(card("进行中的第一项")).toHaveCount(0);
 		await tabs.getByRole("tab", { name: /进行中/ }).click();
-		await expect(page.getByText("进行中的第一项")).toBeVisible();
-		await cardButton(page, "进行中的第一项").click();
+		await expect(card("进行中的第一项")).toBeVisible();
+		await card("进行中的第一项").click();
 		await expect(page.getByRole("dialog", { name: "进行中的第一项" })).toBeVisible();
 		await page.keyboard.press("Escape");
 		const overflow = await page.evaluate(

@@ -1,4 +1,5 @@
-import type { RoadmapItem, RoadmapStage } from "../model/roadmap";
+import type { Relation } from "@violetjs/kanban/core";
+import type { RoadmapItem, RoadmapRelation, RoadmapStage } from "../model/roadmap";
 
 /** 看板从左到右的阶段顺序。 */
 export const ROADMAP_STAGES: readonly RoadmapStage[] = ["planned", "in_progress", "completed"];
@@ -69,4 +70,18 @@ export function buildRoadmapBoard(
 		firstHiddenCompletedId: collapse ? byStage.completed[limit] : null,
 		completedTotal,
 	};
+}
+
+/** 后端的关系转成看板的关系：来源、目标与类型一一对应，只是字段名不同。 */
+export function toBoardRelations(relations: readonly RoadmapRelation[]): Relation[] {
+	return relations.map((relation) => ({
+		sourceId: relation.source_id,
+		targetId: relation.target_id,
+		type: relation.type,
+	}));
+}
+
+/** 看板上当前显示的条目 id：已完成阶段收起时，收起的条目不在其中。 */
+export function shownItemIds(board: Pick<RoadmapBoardModel, "order">): Set<string> {
+	return new Set(Object.values(board.order).flat());
 }

@@ -48,6 +48,7 @@ export function ProjectDetailPage({ slug, initialData }: ProjectDetailPageProps)
 			) : (
 				<RoadmapBoard
 					items={data.items}
+					relations={data.relations}
 					onOpenItem={(item, trigger) => {
 						opener.current = trigger;
 						setOpenId(item.id);
@@ -56,6 +57,8 @@ export function ProjectDetailPage({ slug, initialData }: ProjectDetailPageProps)
 			)}
 			<RoadmapItemDialog
 				item={openItem ?? lastItem.current}
+				items={data.items}
+				relations={data.relations}
 				open={openItem !== null}
 				returnFocusTo={() => opener.current}
 				onOpenChange={(open) => {

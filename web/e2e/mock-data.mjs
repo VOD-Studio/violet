@@ -163,7 +163,8 @@ const ROADMAP_ITEMS = [
 		tags: ["性能", "画布", "文档", "测试", "发布"],
 		links: [{ label: "设计稿", url: "https://example.com/design" }],
 	}),
-	roadmapItem(2, "planned", { title: "计划中的第二项" }),
+	// 被进行中的第一项阻塞（见下面的关系）：后端据此派生 blocked
+	roadmapItem(2, "planned", { title: "计划中的第二项", blocked: true }),
 	roadmapItem(3, "planned", { title: "计划中的第三项" }),
 	roadmapItem(4, "in_progress", { title: "进行中的第一项", tags: ["后端"] }),
 	roadmapItem(5, "in_progress", { title: "进行中的第二项" }),
@@ -187,11 +188,33 @@ const ROADMAP_ITEMS = [
 	}),
 ];
 
+const itemId = (number) => `41000000-0000-0000-0000-${String(number).padStart(12, "0")}`;
+
+const roadmapRelation = (source, target, type) => ({
+	id: `42000000-0000-0000-0000-${String(source).padStart(6, "0")}${String(target).padStart(6, "0")}`,
+	project_id: ROADMAP_PROJECT.id,
+	source_id: itemId(source),
+	target_id: itemId(target),
+	type,
+	created_at: "2026-09-02T00:00:00Z",
+});
+
+/**
+ * 关系覆盖三种线型与跨列、同列两种走线：#4 阻塞 #2（跨列），#4 扩展 #1（跨列），
+ * #3 扩展 #1（同列），#17 修复 #16（同列）。
+ */
+const ROADMAP_RELATIONS = [
+	roadmapRelation(4, 2, "blocks"),
+	roadmapRelation(4, 1, "extends"),
+	roadmapRelation(3, 1, "extends"),
+	roadmapRelation(17, 16, "fixes"),
+];
+
 /** 路线图详情（GET /projects/by-slug/{slug}/roadmap）；可导出供契约 spec 引用条目。 */
 export const ROADMAP_FIXTURE = {
 	project: ROADMAP_PROJECT,
 	items: ROADMAP_ITEMS,
-	relations: [],
+	relations: ROADMAP_RELATIONS,
 	progress: { planned: 3, in_progress: 2, completed: 12, total: 17, percent: 71 },
 };
 

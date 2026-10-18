@@ -18,6 +18,7 @@ export interface RoadmapCardContentProps {
 export function RoadmapCardContent({ item, onOpen }: RoadmapCardContentProps) {
 	const hiddenTags = item.tags.length - VISIBLE_TAGS;
 	const delivered = [item.delivered_version, item.completion_date].filter(Boolean).join(" · ");
+	const showBadges = item.blocked || item.tags.length > 0;
 	return (
 		<button
 			type="button"
@@ -33,8 +34,14 @@ export function RoadmapCardContent({ item, onOpen }: RoadmapCardContentProps) {
 					{item.title}
 				</span>
 			</span>
-			{item.tags.length > 0 ? (
+			{showBadges ? (
 				<span className="mt-2 flex flex-wrap gap-1">
+					{item.blocked ? (
+						// 阻塞靠文字说明，颜色只是加强
+						<Badge variant="outline" className="border-destructive/50 text-destructive">
+							被阻塞
+						</Badge>
+					) : null}
 					{item.tags.slice(0, VISIBLE_TAGS).map((tag) => (
 						<Badge key={tag} variant="secondary" className="max-w-full truncate">
 							{tag}

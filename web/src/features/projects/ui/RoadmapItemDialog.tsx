@@ -6,13 +6,18 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@violet/ui";
+import { RelationList } from "@violetjs/kanban/unstyled";
 import { ExternalLink } from "lucide-react";
-import { ROADMAP_STAGE_LABELS } from "../lib/roadmap-board";
-import type { RoadmapItem } from "../model/roadmap";
+import { useId } from "react";
+import { ROADMAP_STAGE_LABELS, toBoardRelations } from "../lib/roadmap-board";
+import type { RoadmapItem, RoadmapRelation } from "../model/roadmap";
 
 export interface RoadmapItemDialogProps {
 	/** 要显示的条目；关闭的淡出期间仍要给着它，内容才不会先消失。 */
 	item: RoadmapItem | null;
+	/** 项目的全部条目与关系：用来列出这个条目的关系，关系另一端的条目按编号与标题显示。 */
+	items: readonly RoadmapItem[];
+	relations: readonly RoadmapRelation[];
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	/** 弹窗关闭后焦点还给谁；Radix 只会还给 DialogTrigger，受控的弹窗要自己处理。 */
@@ -22,10 +27,18 @@ export interface RoadmapItemDialogProps {
 /** 条目的只读详情弹窗：简介、标签、交付版本、完成日期与关联链接，淡入淡出。 */
 export function RoadmapItemDialog({
 	item,
+	items,
+	relations,
 	open,
 	onOpenChange,
 	returnFocusTo,
 }: RoadmapItemDialogProps) {
+	const relationsHeadingId = useId();
+	const related =
+		item !== null &&
+		relations.some(
+			(relation) => relation.source_id === item.id || relation.target_id === item.id,
+		);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
@@ -44,6 +57,12 @@ export function RoadmapItemDialog({
 						<DialogHeader>
 							<p className="font-mono text-xs text-muted-foreground">
 								#{item.number} · {ROADMAP_STAGE_LABELS[item.stage]}
+								{item.blocked ? (
+									<span className="text-destructive">
+										{" "}
+										· 被阻塞：还有未完成的前置条目
+									</span>
+								) : null}
 							</p>
 							<DialogTitle className="text-xl leading-snug">{item.title}</DialogTitle>
 							{item.description ? (
@@ -60,6 +79,23 @@ export function RoadmapItemDialog({
 									</li>
 								))}
 							</ul>
+						) : null}
+						{related ? (
+							<section
+								aria-labelledby={relationsHeadingId}
+								className="space-y-1.5 text-sm"
+							>
+								<h3 id={relationsHeadingId} className="text-muted-foreground">
+									关系
+								</h3>
+								<RelationList
+									relations={toBoardRelations(relations)}
+									cards={items}
+									cardId={item.id}
+									getCardLabel={(card) => `#${card.number} ${card.title}`}
+									locale="zh-CN"
+								/>
+							</section>
 						) : null}
 						{item.delivered_version || item.completion_date ? (
 							<dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
