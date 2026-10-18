@@ -74,6 +74,9 @@ export const panBy = (viewport: Viewport, dx: number, dy: number): Viewport => (
 	y: viewport.y + dy,
 });
 
+/** 适应窗口时内容与容器边缘的默认间距（px）。 */
+export const DEFAULT_FIT_PADDING = 24;
+
 /** `fitViewport` 的选项。 */
 export interface FitOptions {
 	/**
@@ -100,7 +103,12 @@ export interface FitOptions {
  * 每个方向上，内容装得下就居中，装不下就从起始边（加上内边距）开始。
  */
 export function fitViewport(container: Size, content: Size, options: FitOptions = {}): Viewport {
-	const { padding = 24, minScale = 0.8, maxScale = 1, limits = DEFAULT_SCALE_LIMITS } = options;
+	const {
+		padding = DEFAULT_FIT_PADDING,
+		minScale = 0.8,
+		maxScale = 1,
+		limits = DEFAULT_SCALE_LIMITS,
+	} = options;
 	const fits =
 		content.width > 0 && content.height > 0
 			? Math.min(
@@ -164,4 +172,66 @@ export function pinchViewport(
 	const contentX = (origin.x - start.x) / start.scale;
 	const contentY = (origin.y - start.y) / start.scale;
 	return { scale, x: target.x - contentX * scale, y: target.y - contentY * scale };
+}
+
+/** `edgePanSpeed` 的选项。 */
+export interface EdgePanOptions {
+	/**
+	 * 边缘带宽度（px）。
+	 * @default 48
+	 */
+	edge?: number;
+	/**
+	 * 贴边与越界时的最大速度（px/s）。
+	 * @default 1000
+	 */
+	maxSpeed?: number;
+}
+
+/**
+ * 拖拽时指针靠近区域边缘的自动平移速度（px/s，屏幕坐标）。
+ *
+ * 靠近左、上边缘为正（内容向右、向下移动），靠近右、下边缘为负；速度随靠近程度线性增大，贴边与越界取最大。
+ */
+export function edgePanSpeed(pointer: Point, region: Rect, options: EdgePanOptions = {}): Point {
+	const { edge = 48, maxSpeed = 1000 } = options;
+	const axis = (position: number, start: number, end: number) => {
+		const towardStart = Math.min(1, Math.max(0, (edge - (position - start)) / edge));
+		const towardEnd = Math.min(1, Math.max(0, (edge - (end - position)) / edge));
+		return (towardStart - towardEnd) * maxSpeed;
+	};
+	return {
+		x: axis(pointer.x, region.left, region.right),
+		y: axis(pointer.y, region.top, region.bottom),
+	};
+}
+
+/**
+ * 平移，但内容的起始边与末边不越过容器边缘 `margin` 以内：自动平移到内容尽头就停。
+ *
+ * 内容比容器小的方向不平移；已经越界的方向仍可朝回来的一侧移动。
+ *
+ * @param content - 内容的布局尺寸（未缩放）
+ */
+export function panWithin(
+	viewport: Viewport,
+	container: Size,
+	content: Size,
+	dx: number,
+	dy: number,
+	margin: number,
+): Viewport {
+	const move = (position: number, delta: number, available: number, length: number) => {
+		const high = margin;
+		const low = available - margin - length * viewport.scale;
+		const next = position + delta;
+		return delta > 0
+			? Math.min(next, Math.max(high, position))
+			: Math.max(next, Math.min(low, position));
+	};
+	return {
+		scale: viewport.scale,
+		x: move(viewport.x, dx, container.width, content.width),
+		y: move(viewport.y, dy, container.height, content.height),
+	};
 }

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
 	clampScale,
+	DEFAULT_FIT_PADDING,
 	DEFAULT_SCALE_LIMITS,
+	edgePanSpeed,
 	fitViewport,
 	IDENTITY_VIEWPORT,
 	normalizeViewport,
 	panBy,
+	panWithin,
 	pinchViewport,
 	revealRect,
 	stepScale,
@@ -217,5 +220,85 @@ describe("pinchViewport", () => {
 		] as const;
 
 		expect(pinchViewport(start, same, same, DEFAULT_SCALE_LIMITS)).toEqual(start);
+	});
+});
+
+describe("edgePanSpeed", () => {
+	const region = { left: 100, top: 100, right: 900, bottom: 600 };
+
+	it("远离边缘时不平移", () => {
+		expect(edgePanSpeed({ x: 500, y: 350 }, region)).toEqual({ x: 0, y: 0 });
+		expect(edgePanSpeed({ x: 148, y: 148 }, region, { edge: 48 })).toEqual({ x: 0, y: 0 });
+	});
+
+	it("靠近左或上边缘：内容向右、向下移动（正方向）；靠近右或下边缘为负", () => {
+		expect(edgePanSpeed({ x: 110, y: 350 }, region).x).toBeGreaterThan(0);
+		expect(edgePanSpeed({ x: 890, y: 350 }, region).x).toBeLessThan(0);
+		expect(edgePanSpeed({ x: 500, y: 110 }, region).y).toBeGreaterThan(0);
+		expect(edgePanSpeed({ x: 500, y: 590 }, region).y).toBeLessThan(0);
+	});
+
+	it("越靠近边缘越快，贴边与越界时达到最大速度", () => {
+		const slow = edgePanSpeed({ x: 140, y: 350 }, region, { edge: 48, maxSpeed: 1000 }).x;
+		const fast = edgePanSpeed({ x: 110, y: 350 }, region, { edge: 48, maxSpeed: 1000 }).x;
+
+		expect(fast).toBeGreaterThan(slow);
+		expect(edgePanSpeed({ x: 100, y: 350 }, region, { maxSpeed: 1000 }).x).toBe(1000);
+		expect(edgePanSpeed({ x: 20, y: 350 }, region, { maxSpeed: 1000 }).x).toBe(1000);
+	});
+
+	it("两个方向互不影响，边缘 48px 以内才平移（默认）", () => {
+		expect(edgePanSpeed({ x: 148, y: 110 }, region)).toMatchObject({ x: 0 });
+		expect(edgePanSpeed({ x: 148, y: 110 }, region).y).toBeGreaterThan(0);
+		expect(edgePanSpeed({ x: 147, y: 350 }, region).x).toBeGreaterThan(0);
+	});
+
+	it("区域比两个边缘带还窄时两侧抵消，不会朝某一侧飞出去", () => {
+		expect(edgePanSpeed({ x: 130, y: 350 }, { ...region, left: 100, right: 160 }).x).toBe(0);
+	});
+});
+
+describe("panWithin", () => {
+	const container = { width: 800, height: 600 };
+	const big = { width: 2000, height: 1500 };
+	const at = (x: number, y: number, scale = 1) => ({ scale, x, y });
+
+	it("内容比容器大：在边距内自由平移", () => {
+		expect(panWithin(at(0, 0), container, big, -100, -50, 24)).toEqual(at(-100, -50));
+	});
+
+	it("起始边最多拉到离容器边缘 margin 处", () => {
+		expect(panWithin(at(0, 0), container, big, 100, 100, 24)).toEqual(at(24, 24));
+	});
+
+	it("末边最多拉到离容器边缘 margin 处，随缩放换算内容长度", () => {
+		expect(panWithin(at(-1200, 0), container, big, -100, 0, 24).x).toBe(-1224);
+		// 缩放 0.5 时内容宽 1000：800 - 24 - 1000
+		expect(panWithin(at(-100, 0, 0.5), container, big, -500, 0, 24).x).toBe(-224);
+	});
+
+	it("已经越界时允许朝回来的方向移动，不允许继续越界", () => {
+		expect(panWithin(at(500, 0), container, big, 10, 0, 24).x).toBe(500);
+		expect(panWithin(at(500, 0), container, big, -10, 0, 24).x).toBe(490);
+	});
+
+	it("内容比容器小的方向不平移", () => {
+		const small = { width: 200, height: 100 };
+
+		expect(panWithin(at(300, 250), container, small, 50, 50, 24)).toEqual(at(300, 250));
+		expect(panWithin(at(300, 250), container, small, -50, -50, 24)).toEqual(at(300, 250));
+	});
+
+	it("两个方向分别限制，缩放不变", () => {
+		expect(panWithin(at(0, -900, 1), container, big, 100, -100, 24)).toEqual(at(24, -924));
+	});
+});
+
+describe("DEFAULT_FIT_PADDING", () => {
+	it("是适应窗口不指定内边距时用的值", () => {
+		const fitted = fitViewport({ width: 1000, height: 600 }, { width: 5000, height: 5000 });
+
+		expect(fitted.x).toBe(DEFAULT_FIT_PADDING);
+		expect(fitted.y).toBe(DEFAULT_FIT_PADDING);
 	});
 });
