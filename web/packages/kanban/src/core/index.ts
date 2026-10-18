@@ -25,6 +25,14 @@ export {
 	resolveDropTarget,
 	violatesAutoSort,
 } from "./moves.ts";
+export type { Adjacency, EdgeRoute, Relation, RelationCheck } from "./relations.ts";
+export {
+	arrowHead,
+	blockerBar,
+	checkRelation,
+	createAdjacency,
+	routeEdge,
+} from "./relations.ts";
 export type { BoardCard, BoardState, ResolvedColumn } from "./state.ts";
 export { normalizeBoardState, resolveBoard } from "./state.ts";
 export type { StepDirection, StepResult } from "./steps.ts";
