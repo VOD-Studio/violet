@@ -154,6 +154,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 			Public:   c.MCP.PublicHandler,
 			Comments: c.MCP.CommentsHandler,
 			Notes:    c.MCP.NotesHandler,
+			Roadmap:  c.MCP.RoadmapHandler,
 		},
 	}
 }

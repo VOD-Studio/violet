@@ -34,4 +34,6 @@ const (
 	MCPCommentsServerName = "violet-comments"
 	// MCPNotesServerName 笔记域 MCP server 标识（PAT，AI 会话沉淀运输层）。
 	MCPNotesServerName = "violet-notes"
+	// MCPRoadmapServerName 路线图域 MCP server 标识（PAT，项目开发计划的读写）。
+	MCPRoadmapServerName = "violet-roadmap"
 )

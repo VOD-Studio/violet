@@ -10,6 +10,8 @@ import (
 	appmedia "blog-api/internal/application/media"
 	appnote "blog-api/internal/application/note"
 	apppost "blog-api/internal/application/post"
+	appproject "blog-api/internal/application/project"
+	approadmap "blog-api/internal/application/roadmap"
 	appseries "blog-api/internal/application/series"
 	appsub "blog-api/internal/application/subscription"
 	apptag "blog-api/internal/application/tag"
@@ -17,27 +19,30 @@ import (
 	inframcp "blog-api/internal/infrastructure/mcp"
 )
 
-// MCPContainer MCP 服务器容器（ADR-0007 + ADR-0008 + PRD-0008：五个独立 server）。
+// MCPContainer MCP 服务器容器（ADR-0007 + ADR-0008 + PRD-0008：六个独立 server）。
 //
 // PostHandler 挂 /api/v1/mcp（文章 CRUD + 检索，PAT 鉴权，低风险），
 // ScraperHandler 挂 /api/v1/mcp/scraper（抓取 + 订阅，PAT 鉴权，高风险，可独立限流），
 // PublicHandler 挂 /api/v1/mcp/reader（匿名只读已发布文章，不套 PAT 鉴权），
 // CommentsHandler 挂 /api/v1/mcp/comments（评论检索+写入，PAT comments:read/write，评论独立 bounded context）。
 // NotesHandler 挂 /api/v1/mcp/notes（笔记写入，PAT notes:read/write/publish，AI 会话沉淀运输层）。
-// 四个 PAT handler 用 auth.RequireBearerToken 包裹；PublicHandler 裸 handler（匿名）。
+// RoadmapHandler 挂 /api/v1/mcp/roadmap（项目路线图读写，PAT roadmap:read/write，写还需持有人有 project:update）。
+// 五个 PAT handler 用 auth.RequireBearerToken 包裹；PublicHandler 裸 handler（匿名）。
 type MCPContainer struct {
 	PostHandler     http.Handler
 	ScraperHandler  http.Handler
 	PublicHandler   http.Handler
 	CommentsHandler http.Handler
 	NotesHandler    http.Handler
+	RoadmapHandler  http.Handler
 }
 
 // NewMCPContainer 装配 MCP 服务器。
 //
 // tokenLookup 来自 PAT 模块（apiTokenContainer.TokenLookup），
-// postSvc/tagSvc/subSvc/commentSvc 来自各域模块。
-func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, tagSvc *apptag.Service, subSvc *appsub.Service, commentSvc *appcomment.Service, seriesSvc *appseries.Service, noteSvc *appnote.Service, uploadSvc *appmedia.UploadService) *MCPContainer {
+// postSvc/tagSvc/subSvc/commentSvc 来自各域模块；
+// roadmapSvc/relationSvc/projectSvc/operators 供路线图 server 使用。
+func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, tagSvc *apptag.Service, subSvc *appsub.Service, commentSvc *appcomment.Service, seriesSvc *appseries.Service, noteSvc *appnote.Service, uploadSvc *appmedia.UploadService, roadmapSvc *approadmap.Service, relationSvc *approadmap.RelationService, projectSvc *appproject.Service, operators appmcp.OperatorResolver) *MCPContainer {
 	verifier := inframcp.NewPATVerifier(tokenLookup)
 	robots := inframcp.NewRobotsChecker()
 
@@ -60,6 +65,8 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 	// 笔记 server（5 个 tool，AI 会话沉淀运输层，标签放行自动创建）
 	noteTools := appmcp.NewNoteTools(noteSvc, tagSvc)
 	notesServer := appmcp.NewNotesServer(noteTools)
+	// 路线图 server（10 个 tool；写入以 PAT 持有人身份走路线图服务，由其校验 project:update）
+	roadmapServer := appmcp.NewRoadmapServer(appmcp.NewRoadmapTools(roadmapSvc, relationSvc, projectSvc, operators))
 
 	auth := mcpauth.RequireBearerToken(verifier.Verify, nil)
 	return &MCPContainer{
@@ -69,5 +76,6 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 		PublicHandler:   appmcp.StreamableHandler(publicServer),
 		CommentsHandler: auth(appmcp.StreamableHandler(commentsServer)),
 		NotesHandler:    auth(appmcp.StreamableHandler(notesServer)),
+		RoadmapHandler:  auth(appmcp.StreamableHandler(roadmapServer)),
 	}
 }

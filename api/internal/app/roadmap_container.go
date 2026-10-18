@@ -11,14 +11,18 @@ import (
 )
 
 type RoadmapContainer struct {
-	Handler   *roadmaphttp.Handler
-	Service   *approadmap.Service
-	Relations *roadmaphttp.RelationHandler
+	Handler         *roadmaphttp.Handler
+	Service         *approadmap.Service
+	Relations       *roadmaphttp.RelationHandler
+	RelationService *approadmap.RelationService
 }
 
 func NewRoadmapContainer(db *gorm.DB, checker middleware.PermissionChecker, bus appshared.EventBus) *RoadmapContainer {
 	repo := gormrepo.NewRoadmapRepository(db)
 	relations := approadmap.NewRelationService(gormrepo.NewRoadmapRelationRepository(db), checker, bus)
 	service := approadmap.NewService(repo, gormrepo.NewProjectRepository(db), checker, bus, approadmap.WithRelations(relations))
-	return &RoadmapContainer{Handler: roadmaphttp.NewHandler(service), Service: service, Relations: roadmaphttp.NewRelationHandler(relations)}
+	return &RoadmapContainer{
+		Handler: roadmaphttp.NewHandler(service), Service: service,
+		Relations: roadmaphttp.NewRelationHandler(relations), RelationService: relations,
+	}
 }

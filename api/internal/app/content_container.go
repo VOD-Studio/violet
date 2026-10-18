@@ -14,6 +14,7 @@ import (
 // ContentContainer announcement + project 模块容器
 type ContentContainer struct {
 	ContentHandler *contenthttp.Handler
+	ProjectService *appproj.Service
 }
 
 // NewContentContainer 装配 announcement + project DDD 模块
@@ -28,5 +29,6 @@ func NewContentContainer(db *gorm.DB, bus appshared.EventBus) *ContentContainer 
 
 	return &ContentContainer{
 		ContentHandler: contenthttp.NewHandler(annSvc, projSvc),
+		ProjectService: projSvc,
 	}
 }

@@ -52,6 +52,23 @@ var NotesServerMeta = &mcp.Implementation{
 // 告知本 server 只管笔记；文章毛坯走 violet-posts 的 create_post（只建草稿）。
 const notesInstructions = `本 server 是知识笔记的写入通道（AI 会话沉淀与手工记录共用）。安全约束：status=published 需要额外的 notes:publish scope——仅在用户明确选择直接发布时使用，默认一律 draft。文章级内容（完整功能毛坯）请用 violet-posts 的 create_post（只建草稿）。沉淀前先 list_notes 查重，同主题用 update_note 补充。`
 
+// RoadmapServerMeta 路线图域 MCP server 元信息（PAT，项目开发计划的读写）。
+var RoadmapServerMeta = &mcp.Implementation{
+	Name:    brand.MCPRoadmapServerName,
+	Title:   "Violet 项目路线图",
+	Version: "1.0.0",
+}
+
+// roadmapInstructions 进 initialize 响应、入 agent context：交代路线图的模型与写入约定，
+// 让一个对这个站点一无所知的 agent 也能为自己的项目生成合理的路线图。
+const roadmapInstructions = `本 server 读写站点上项目的开发路线图。项目用 slug 定位（list_projects 查看），条目用项目内编号（#N 的 N，get_roadmap 里的 number）定位。
+
+模型：每个条目只属于一个阶段——planned（计划中）、in_progress（进行中）、completed（已完成）；阶段由你手动设置，关系不会推导阶段。条目有标题（必填，一句话说清做什么）、纯文本简介、标签（自由文本，项目内）、关联链接；已完成条目另有完成日期（YYYY-MM-DD，默认今天）与交付版本。新条目追加到所在阶段末尾，所以按优先级从高到低依次创建；已完成阶段按完成日期倒序，不接受手动位置。
+
+关系带类型，读作「来源 类型 目标」：extends（来源扩展目标，来源是目标的衍生）、fixes（来源修复目标）、blocks（来源阻塞目标：目标要等来源完成）。同一项目内、不能指向自己、不能重复、同一类型内不能成环。只在确有依赖时建关系，别把关系当分组用。
+
+约定：写入前先 get_roadmap 查重，同一件事用 update_item 补充而不是再建一个；生成整份路线图用 create_items 一次提交；写入需要 roadmap:write，并且 PAT 持有人自己有项目更新权限，两者缺一都会被拒绝；读取需要 roadmap:read。`
+
 // NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 2 个标签 tool + 1 个配图 tool + 1 个编排 prompt。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。

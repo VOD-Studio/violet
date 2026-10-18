@@ -38,6 +38,17 @@ func TestNewPAT_AcceptsCommentsReadScope(t *testing.T) {
 	assert.True(t, p.HasScope(ScopeCommentsRead))
 }
 
+func TestNewPAT_AcceptsRoadmapScopesIndependently(t *testing.T) {
+	read, _, err := NewPAT("u-1", "x", []string{ScopeRoadmapRead}, time.Time{}, time.Now())
+	assert.NoError(t, err, "roadmap:read 是合法 scope")
+	assert.True(t, read.HasScope(ScopeRoadmapRead))
+	assert.False(t, read.HasScope(ScopeRoadmapWrite), "读不含写")
+
+	write, _, err := NewPAT("u-1", "x", []string{ScopeRoadmapWrite}, time.Time{}, time.Now())
+	assert.NoError(t, err, "roadmap:write 是合法 scope")
+	assert.False(t, write.HasScope(ScopeRoadmapRead), "写不含读")
+}
+
 func TestNewPAT_AcceptsCommentsWriteScope(t *testing.T) {
 	p, _, err := NewPAT("u-1", "x", []string{ScopeCommentsWrite}, time.Time{}, time.Now())
 	assert.NoError(t, err, "comments:write 是合法 scope")
