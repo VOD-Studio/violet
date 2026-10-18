@@ -339,6 +339,8 @@ RelationList 不接受 BoardMessages，只提供 emptyText 及 relationTypes/loc
 | --kanban-font-family | 默认继承宿主 |
 | --kanban-canvas-height | 默认 32rem |
 
+按列区分外观时：看板的列（`.v-kanban__column`）与关系图里承载卡片的分组（`.v-kanban-graph__column`）带 `data-column-id`；关系图里画背景与列标题的分区（`.v-kanban-graph__zone`）在卡片层之下，带 `data-zone-id`。分组层盖在分区之上，给它画背景会遮住列标题。
+
 默认使用 color-scheme 与 light-dark 跟随系统；组件自身 data-theme="light"/"dark"，或祖先 .light/.dark、data-theme 可固定色域。图复用 Board 的基础样式变量，几何尺寸由 cardSize/布局函数控制，不由列宽 token 控制。跨组件共享主题时把变量放在共同祖先上。
 
 默认样式和行为响应 prefers-reduced-motion：位移/折叠/画布缩放不做过渡，关系跳转立即完成。自定义 CSS 仍应保留焦点可见性、文字等价和线型差别。看板滚动层/标签条以 6px 内边距加负外边距保留焦点，宿主两侧至少留 6px，避免页面横向溢出。

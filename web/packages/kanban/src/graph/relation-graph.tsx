@@ -199,7 +199,13 @@ export function RelationGraph<TCard extends BoardCard, TColumn extends BoardColu
 					height: rect.bottom - rect.top,
 				};
 				return (
-					<div key={id} className="v-kanban-graph__zone" aria-hidden="true" style={box}>
+					<div
+						key={id}
+						className="v-kanban-graph__zone"
+						data-zone-id={id}
+						aria-hidden="true"
+						style={box}
+					>
 						<div
 							className="v-kanban-graph__zone-header"
 							style={{ height: DEFAULT_GRAPH_LAYOUT.headerHeight }}

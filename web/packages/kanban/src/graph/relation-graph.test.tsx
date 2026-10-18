@@ -87,6 +87,8 @@ describe("按列分区的排布", () => {
 		for (const { id, rect } of layout.columns) {
 			const group = document.querySelector(`[data-column-id="${id}"]`) as HTMLElement;
 			expect([px(group.style.left), px(group.style.top)]).toEqual([rect.left, rect.top]);
+			const zone = document.querySelector(`[data-zone-id="${id}"]`) as HTMLElement;
+			expect([px(zone.style.left), px(zone.style.top)]).toEqual([rect.left, rect.top]);
 		}
 		for (const { id, columnId, rect } of layout.cards) {
 			const origin = layout.columns.find((item) => item.id === columnId)?.rect;
