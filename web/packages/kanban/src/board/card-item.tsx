@@ -3,6 +3,21 @@ import { EDITABLE_SELECTOR } from "../editable.ts";
 import { cardAttributes } from "./drag/dom.ts";
 import { MoveMenu } from "./move-menu.tsx";
 
+/** 卡片上的一个关系标记：点击跳转到关系另一端的卡片。 */
+export interface RelationMarker {
+	key: string;
+	/** 关系类型，原样写进 `data-relation-type`。 */
+	type: string;
+	/** 这张卡片是关系的来源（`out`）还是目标（`in`）。 */
+	direction: "out" | "in";
+	/** 可见文字，例如「扩展 登录改版」。 */
+	text: string;
+	/** 按钮的可访问名称，包含可见文字。 */
+	label: string;
+	/** 关系另一端的卡片。 */
+	targetId: string;
+}
+
 /** 点击这些元素不算选中卡片：它们有自己的点击语义。 */
 const OWN_CLICK = `a, button, summary, ${EDITABLE_SELECTOR}, [data-kanban-no-select]`;
 
@@ -29,6 +44,11 @@ export interface CardItemProps {
 	onSelect?(): void;
 	/** 关系的文字描述，给读屏；没有关系时不提供。 */
 	relationsText?: string;
+	/** 关系标记：列切换布局没有关系线，关系用卡片上可点击的标记表达。 */
+	relationMarkers?: readonly RelationMarker[];
+	onJump?(cardId: string): void;
+	/** 刚被关系标记跳转到：短暂强调，让人看出落在了哪里。 */
+	arrived?: boolean;
 	/** 键盘操作说明元素的 id（可拖的卡片拿起用）。 */
 	hintId: string;
 	/** 选中说明元素的 id：可选中的卡片据此知道怎么用键盘选中。 */
@@ -61,6 +81,9 @@ export function CardItem({
 	selectable,
 	onSelect,
 	relationsText,
+	relationMarkers,
+	onJump,
+	arrived,
 	hintId,
 	selectHintId,
 	menu,
@@ -89,6 +112,7 @@ export function CardItem({
 		if (own && own !== event.currentTarget && event.currentTarget.contains(own)) return;
 		onSelect?.();
 	};
+	const hasMarkers = relationMarkers !== undefined && relationMarkers.length > 0;
 	const describedBy =
 		[draggable ? hintId : undefined, selectable ? selectHintId : undefined]
 			.filter(Boolean)
@@ -101,13 +125,33 @@ export function CardItem({
 			data-selected={selected ? "true" : undefined}
 			data-related={related ? "true" : undefined}
 			data-faded={faded ? "true" : undefined}
+			data-arrived={arrived ? "true" : undefined}
 			aria-current={selected ? "true" : undefined}
-			tabIndex={draggable || selectable ? 0 : undefined}
+			// 有标记的卡片要能被跳转聚焦；不进 Tab 顺序，标记按钮已经是键盘入口
+			tabIndex={draggable || selectable ? 0 : hasMarkers ? -1 : undefined}
 			aria-describedby={describedBy}
 			onKeyDown={draggable || selectable ? handleKeyDown : undefined}
 			onClick={selectable ? handleClick : undefined}
 		>
 			{children}
+			{hasMarkers ? (
+				<div className="v-kanban__markers" data-kanban-no-drag>
+					{relationMarkers.map((marker) => (
+						<button
+							key={marker.key}
+							type="button"
+							className="v-kanban__marker"
+							data-relation-type={marker.type}
+							data-direction={marker.direction}
+							aria-label={marker.label}
+							title={marker.text}
+							onClick={() => onJump?.(marker.targetId)}
+						>
+							{marker.text}
+						</button>
+					))}
+				</div>
+			) : null}
 			{dimmed ? <span className="v-kanban__sr-only">{dimmedText}</span> : null}
 			{relationsText ? <span className="v-kanban__sr-only">{relationsText}</span> : null}
 			{draggable && menu ? (

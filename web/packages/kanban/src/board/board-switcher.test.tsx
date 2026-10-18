@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
-import { applyMove, type BoardMove, type BoardState } from "../core/index.ts";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { applyMove, type BoardMove, type BoardState, type Relation } from "../core/index.ts";
 import { Board, type BoardColumn, type BoardProps } from "./board.tsx";
 
 interface Task {
@@ -358,5 +358,209 @@ describe("跨列移动", () => {
 
 		expect(onActiveColumnChange).not.toHaveBeenCalled();
 		expect(panelCards()).toEqual(["b", "a", "c"]);
+	});
+});
+
+describe("关系标记与跳转", () => {
+	const relations: Relation[] = [
+		{ sourceId: "a", targetId: "d", type: "extends" },
+		{ sourceId: "b", targetId: "d", type: "fixes" },
+		{ sourceId: "e", targetId: "c", type: "blocks" },
+	];
+	const marker = (id: string, text: string | RegExp) =>
+		within(card(id)).getByRole("button", { name: text });
+	const markersOf = (id: string) =>
+		[...card(id).querySelectorAll(".v-kanban__marker")].map((item) => item.textContent);
+	let scrollIntoView: ReturnType<typeof vi.fn>;
+
+	beforeEach(() => {
+		scrollIntoView = vi.fn();
+		Element.prototype.scrollIntoView = scrollIntoView as unknown as Element["scrollIntoView"];
+	});
+	afterEach(() => {
+		// jsdom 没有 scrollIntoView，还原成没有
+		delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+		vi.useRealTimers();
+		vi.unstubAllGlobals();
+	});
+
+	it("有关系的卡片带标记：从这张卡片的角度读，来源读正向，目标读反向", () => {
+		renderBoard({ relations });
+
+		expect(markersOf("a")).toEqual(["extends Task D"]);
+		expect(markersOf("c")).toEqual(["is blocked by Task E"]);
+		expect(markersOf("b")).toEqual(["fixes Task D"]);
+	});
+
+	it("没有关系的卡片没有标记；两端有一端不存在的关系不显示", () => {
+		renderBoard({
+			relations: [...relations, { sourceId: "a", targetId: "nowhere", type: "extends" }],
+		});
+
+		expect(card("a").querySelectorAll(".v-kanban__marker")).toHaveLength(1);
+		fireEvent.click(tab(/^In progress/));
+		expect(markersOf("d")).toEqual(["is extended by Task A", "is fixed by Task B"]);
+		fireEvent.click(tab(/^Planned/));
+		expect(card("a").querySelector(".v-kanban__markers")).not.toBeNull();
+	});
+
+	it("标记按钮的可访问名称包含可见文字，并说明会跳转", () => {
+		renderBoard({ relations });
+
+		expect(marker("a", "extends Task D, go to that card")).toBeTruthy();
+		expect(marker("a", "extends Task D, go to that card").getAttribute("title")).toBe(
+			"extends Task D",
+		);
+	});
+
+	it("中文文案", () => {
+		renderBoard({ relations, locale: "zh-CN" });
+
+		expect(markersOf("a")).toEqual(["扩展 Task D"]);
+		expect(marker("c", "被阻塞 Task E，跳转到该卡片")).toBeTruthy();
+	});
+
+	it("类型表可以覆盖读法", () => {
+		renderBoard({
+			relations: [{ sourceId: "a", targetId: "d", type: "relates" }],
+			relationTypes: {
+				relates: { label: "relates to", inverseLabel: "relates to", line: "solid" },
+			},
+		});
+
+		expect(markersOf("a")).toEqual(["relates to Task D"]);
+	});
+
+	it("不画关系线，也不再有给读屏的关系汇总：标记按钮本身就是文字描述", () => {
+		renderBoard({ relations });
+
+		expect(document.querySelector(".v-kanban__relations")).toBeNull();
+		expect(card("a").textContent).not.toContain("Relations:");
+	});
+
+	it("隐藏关系线的开关不影响标记", () => {
+		renderBoard({ relations, hideRelations: true });
+
+		expect(markersOf("a")).toEqual(["extends Task D"]);
+	});
+
+	it("columns 布局仍是关系线加汇总，没有标记", () => {
+		render(
+			<Board
+				columns={columns}
+				cards={tasks}
+				order={initial}
+				relations={relations}
+				getCardLabel={(task) => task.title}
+				renderCard={(task) => <span>{task.title}</span>}
+			/>,
+		);
+
+		expect(document.querySelector(".v-kanban__marker")).toBeNull();
+		expect(card("a").textContent).toContain("Relations: extends Task D");
+	});
+
+	it("点击标记：目标在同一列时聚焦它、滚到视口中央并短暂强调", () => {
+		renderBoard({ relations: [{ sourceId: "a", targetId: "c", type: "extends" }] });
+
+		fireEvent.click(marker("a", /extends Task C/));
+
+		expect(document.activeElement).toBe(card("c"));
+		expect(scrollIntoView).toHaveBeenCalledWith(
+			expect.objectContaining({ block: "center", behavior: "smooth" }),
+		);
+		expect(card("c").getAttribute("data-arrived")).toBe("true");
+		expect(card("a").hasAttribute("data-arrived")).toBe(false);
+	});
+
+	it("点击标记：目标在别的列时先切到那一列，再聚焦并滚动", () => {
+		const onActiveColumnChange = vi.fn();
+		renderBoard({ relations, onActiveColumnChange });
+
+		fireEvent.click(marker("a", /extends Task D/));
+
+		expect(onActiveColumnChange).toHaveBeenCalledExactlyOnceWith("doing");
+		expect(tab(/^In progress/).getAttribute("aria-selected")).toBe("true");
+		expect(panelCards()).toEqual(["d"]);
+		expect(document.activeElement).toBe(card("d"));
+		expect(scrollIntoView).toHaveBeenCalledOnce();
+		expect(card("d").getAttribute("data-arrived")).toBe("true");
+	});
+
+	it("跳过去之后目标卡片上有指回来的标记，可以原路回去", () => {
+		renderBoard({ relations });
+
+		fireEvent.click(marker("a", /extends Task D/));
+		expect(markersOf("d")).toContain("is extended by Task A");
+		fireEvent.click(marker("d", /is extended by Task A/));
+
+		expect(tab(/^Planned/).getAttribute("aria-selected")).toBe("true");
+		expect(document.activeElement).toBe(card("a"));
+	});
+
+	it("强调一会儿后自动取消", () => {
+		vi.useFakeTimers();
+		renderBoard({ relations: [{ sourceId: "a", targetId: "c", type: "extends" }] });
+
+		fireEvent.click(marker("a", /extends Task C/));
+		expect(card("c").getAttribute("data-arrived")).toBe("true");
+		act(() => vi.advanceTimersByTime(2000));
+
+		expect(card("c").hasAttribute("data-arrived")).toBe(false);
+	});
+
+	it("偏好减弱动态时滚动不用平滑", () => {
+		vi.stubGlobal("matchMedia", (query: string) => ({
+			matches: query.includes("reduce"),
+			media: query,
+			addEventListener() {},
+			removeEventListener() {},
+		}));
+		renderBoard({ relations: [{ sourceId: "a", targetId: "c", type: "extends" }] });
+
+		fireEvent.click(marker("a", /extends Task C/));
+
+		expect(scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
+	});
+
+	it("只读看板的卡片没有标记之外的入口，也能被跳转聚焦（不进 Tab 顺序）", () => {
+		renderBoard({ relations, onMove: undefined, readOnly: true });
+
+		expect(card("c").getAttribute("tabindex")).toBe("-1");
+		expect(card("a").getAttribute("tabindex")).toBe("-1");
+		fireEvent.click(marker("a", /extends Task D/));
+		expect(document.activeElement).toBe(card("d"));
+	});
+
+	it("没有关系的只读卡片仍不可聚焦", () => {
+		renderBoard({
+			relations: [{ sourceId: "a", targetId: "b", type: "extends" }],
+			readOnly: true,
+		});
+
+		expect(card("c").hasAttribute("tabindex")).toBe(false);
+	});
+
+	it("点击标记不选中卡片，也不被当作拖拽起点", () => {
+		const onSelectedCardChange = vi.fn();
+		renderBoard({ relations, onSelectedCardChange });
+
+		expect(
+			card("a").querySelector(".v-kanban__markers")?.hasAttribute("data-kanban-no-drag"),
+		).toBe(true);
+		fireEvent.click(marker("a", /extends Task D/));
+
+		expect(onSelectedCardChange).not.toHaveBeenCalled();
+	});
+
+	it("键盘：Tab 到标记按钮，Enter 激活跳转", () => {
+		renderBoard({ relations, isDraggable: () => false });
+
+		const button = marker("a", /extends Task D/);
+		button.focus();
+		fireEvent.keyDown(button, { key: "Enter" });
+		fireEvent.click(button);
+
+		expect(document.activeElement).toBe(card("d"));
 	});
 });

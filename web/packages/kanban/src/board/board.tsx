@@ -29,6 +29,7 @@ import { RelationLayer } from "./relations/relation-layer.tsx";
 import { type RelationTypeStyle, relationStyle, resolveRelationTypes } from "./relations/types.ts";
 import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
 import { useActiveColumn } from "./use-active-column.ts";
+import { useArrival } from "./use-arrival.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
 
 /** 点击这些元素是点在空白处：用来取消选中。 */
@@ -339,18 +340,43 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const selectedId =
 		selectedCardId !== null && cardsById.has(selectedCardId) ? selectedCardId : null;
 	const neighborIds = selectedId === null ? null : new Set(adjacency.neighbors(selectedId));
-	const relationsText = (id: string) => {
-		const list = adjacency.of(id).map((relation) => {
+	/** 一张卡片的每条关系，从这张卡片的角度读：「扩展 X」「被阻塞 Y」。 */
+	const relationEntries = (id: string) =>
+		adjacency.of(id).map((relation) => {
 			const style = relationStyle(relationTypes, relation.type);
-			return relation.sourceId === id
-				? `${style.label} ${cardLabel(relation.targetId)}`
-				: `${style.inverseLabel} ${cardLabel(relation.sourceId)}`;
+			const outgoing = relation.sourceId === id;
+			const otherId = outgoing ? relation.targetId : relation.sourceId;
+			return {
+				key: `${relation.sourceId}\u0000${relation.type}\u0000${relation.targetId}`,
+				type: relation.type,
+				direction: outgoing ? ("out" as const) : ("in" as const),
+				text: `${outgoing ? style.label : style.inverseLabel} ${cardLabel(otherId)}`,
+				targetId: otherId,
+			};
 		});
+	const relationsText = (id: string) => {
+		const list = relationEntries(id).map((entry) => entry.text);
 		return list.length > 0
 			? formatMessage(messages.relationsSummary, {
 					list: list.join(messages.relationsSeparator),
 				})
 			: undefined;
+	};
+	const relationMarkers = (id: string) =>
+		relationEntries(id).map((entry) => ({
+			...entry,
+			label: formatMessage(messages.relationJump, { relation: entry.text }),
+		}));
+	// 跳转到关系另一端的卡片：先切到它所在的列，再聚焦并滚到视口中央，并短暂强调
+	const { arrivedId, arrive } = useArrival();
+	const jumpTo = (cardId: string) => {
+		const column = resolved.find(({ cards: columnCards }) =>
+			columnCards.some((item) => item.id === cardId),
+		);
+		if (!column) return;
+		active.select(column.id);
+		focus.reveal(cardId);
+		arrive(cardId);
 	};
 	const showRelationLines = !switcher && !hideRelations && knownRelations.length > 0;
 	const relationRects = useRelationGeometry({
@@ -481,7 +507,13 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 											selectedId === card.id ? null : card.id,
 										)
 									}
-									relationsText={relationsText(card.id)}
+									// 列切换布局里关系由可点击的标记表达，不再重复一段给读屏的汇总
+									relationsText={switcher ? undefined : relationsText(card.id)}
+									relationMarkers={
+										switcher ? relationMarkers(card.id) : undefined
+									}
+									onJump={jumpTo}
+									arrived={arrivedId === card.id}
 									hintId={hintId}
 									selectHintId={
 										moves.editable && isDraggable?.(card) !== false

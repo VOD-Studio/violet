@@ -109,6 +109,26 @@ describe("列切换布局样式", () => {
 		).toBeGreaterThanOrEqual(40);
 	});
 
+	it("关系标记：长文字截断而不撑开卡片，触控高度不小于 28px", () => {
+		const marker = rule(switcher, ".v-kanban .v-kanban__marker");
+
+		expect(marker).toMatch(/max-width:\s*100%/);
+		expect(marker).toMatch(/text-overflow:\s*ellipsis/);
+		expect(Number(/min-height:\s*(\d+)px/.exec(marker)?.[1])).toBeGreaterThanOrEqual(28);
+	});
+
+	it("被阻塞的标记用警示色加强，文字本身已说明；刚跳转到的卡片用描边与底色，不用阴影", () => {
+		expect(
+			rule(
+				switcher,
+				'.v-kanban .v-kanban__marker[data-relation-type="blocks"][data-direction="in"]',
+			),
+		).toMatch(/color:\s*var\(--_kanban-danger\)/);
+		const arrived = rule(switcher, '.v-kanban .v-kanban__card[data-arrived="true"]');
+		expect(arrived).toMatch(/border-color:/);
+		expect(arrived).not.toMatch(/shadow/);
+	});
+
 	it("一次只显示的列占满宽度", () => {
 		expect(rule(switcher, '.v-kanban[data-layout="switcher"] .v-kanban__column')).toMatch(
 			/flex:\s*1 1 100%/,

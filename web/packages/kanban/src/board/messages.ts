@@ -169,6 +169,11 @@ export interface BoardMessages {
 	 */
 	relationListEmpty: string;
 	/**
+	 * 列切换布局里关系标记按钮的可访问名称，{relation} 替换为标记上的文字。
+	 * @example "{relation}, go to that card"
+	 */
+	relationJump: string;
+	/**
 	 * 列切换布局里标签条的可访问名称。
 	 * @example "Columns"
 	 */
@@ -211,6 +216,7 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		selectHintDraggable: "Press Alt+Enter to select this card and highlight its relations.",
 		relationsSeparator: "; ",
 		relationListEmpty: "No relations",
+		relationJump: "{relation}, go to that card",
 		switcherLabel: "Columns",
 	},
 	"zh-CN": {
@@ -246,6 +252,7 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		selectHintDraggable: "按 Alt 加回车选中这张卡片，并高亮它的关系。",
 		relationsSeparator: "；",
 		relationListEmpty: "暂无关系",
+		relationJump: "{relation}，跳转到该卡片",
 		switcherLabel: "切换列",
 	},
 };
