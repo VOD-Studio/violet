@@ -10,6 +10,7 @@ import {
 	createHistory,
 	HistoryButtons,
 	InlineEdit,
+	ResponsiveLayout,
 	useHistoryShortcuts,
 } from "../src/index.ts";
 
@@ -275,6 +276,95 @@ function RelationsDemo() {
 	);
 }
 
+const laterTasks = Array.from({ length: 14 }, (_, index) => ({
+	id: `m${index + 1}`,
+	title: `Later ${index + 1}`,
+}));
+const longTitle = "A very long card title that keeps going well past the width of a phone screen";
+const switcherTasks = [...tasks, ...laterTasks, { id: "long", title: longTitle }];
+const switcherColumns = [...columns, { id: "later", title: "Later" }];
+const switcherIds = switcherColumns.map((column) => column.id);
+const switcherRelations: Relation[] = [
+	{ sourceId: "a", targetId: "d", type: "extends" },
+	{ sourceId: "e", targetId: "c", type: "blocks" },
+	{ sourceId: "m1", targetId: "m14", type: "extends" },
+	{ sourceId: "b", targetId: "long", type: "fixes" },
+];
+
+/** 窄屏视图：列切换布局的可编辑看板，带关系标记；`fail` 参数让保存失败。 */
+function SwitcherDemo() {
+	const [order, setOrder] = useState<BoardState["order"]>({
+		...initial,
+		later: [...laterTasks.map((task) => task.id), "long"],
+	});
+	return (
+		<div style={{ padding: 12 }}>
+			<Board
+				layout="switcher"
+				columns={switcherColumns}
+				cards={switcherTasks}
+				order={order}
+				relations={switcherRelations}
+				locale="en"
+				getCardLabel={(task) => task.title}
+				renderCard={(task) => <span>{task.title}</span>}
+				onMove={async (move) => {
+					window.__moves.push(move);
+					await sleep(30);
+					if (failMoves) throw new Error("save failed");
+					setOrder(
+						(previous) =>
+							applyMove({ columns: switcherIds, order: previous }, move).order,
+					);
+				}}
+			/>
+		</div>
+	);
+}
+
+/**
+ * 响应式视图：宽屏是画布里的看板，窄屏是列切换布局；`width` 参数固定容器宽度（px），
+ * 用来在桌面窗口里验证阈值。显示的列由页面持有，两种布局之间切换时延续。
+ */
+function ResponsiveDemo() {
+	const [order, setOrder] = useState(initial);
+	const [active, setActive] = useState<string>();
+	const fixed = params.get("width");
+	const shared = {
+		columns,
+		cards: tasks,
+		order,
+		locale: "en" as const,
+		relations: demoRelations,
+		getCardLabel: (task: Task) => task.title,
+		renderCard: (task: Task) => <span>{task.title}</span>,
+		onMove: async (move: BoardMove) => {
+			window.__moves.push(move);
+			await sleep(30);
+			setOrder((previous) => applyMove({ columns: columnIds, order: previous }, move).order);
+		},
+	};
+	return (
+		// 页面的左右留白：看板的聚焦环空间靠负外边距向外延伸 6px，紧贴窗口边缘会造成横向滚动
+		<div style={{ width: fixed ? Number(fixed) : undefined, padding: 12 }}>
+			<ResponsiveLayout
+				narrow={
+					<Board
+						layout="switcher"
+						activeColumn={active}
+						onActiveColumnChange={setActive}
+						{...shared}
+					/>
+				}
+			>
+				<Canvas style={{ height: 420 }}>
+					<Board {...shared} />
+				</Canvas>
+			</ResponsiveLayout>
+		</div>
+	);
+}
+
 const view = params.get("view");
 createRoot(document.getElementById("root") as HTMLElement).render(
 	view === "canvas" ? (
@@ -283,6 +373,10 @@ createRoot(document.getElementById("root") as HTMLElement).render(
 		<ShellDemo />
 	) : view === "relations" ? (
 		<RelationsDemo />
+	) : view === "switcher" ? (
+		<SwitcherDemo />
+	) : view === "responsive" ? (
+		<ResponsiveDemo />
 	) : (
 		<App />
 	),
