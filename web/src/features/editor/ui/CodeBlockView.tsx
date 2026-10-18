@@ -7,6 +7,8 @@
  */
 
 import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run";
+import { useDebouncedValue } from "@shared/hooks/use-debounced-value";
+import { findArticleEmbed, LazyArticleEmbed } from "@shared/ui/article-embeds";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { Fragment } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
@@ -85,6 +87,9 @@ const LANGUAGES = [
 	{ value: "arduino", label: "Arduino" },
 	{ value: "wasm", label: "WebAssembly" },
 ];
+
+/** 停止输入多久后刷新嵌入预览（ms）：逐字刷新时半截 JSON 会让预览在降级提示与卡片之间来回闪。 */
+const PREVIEW_DELAY = 400;
 
 /**
  * 从 class 字符串中提取语言 id。
@@ -277,6 +282,12 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 	const [runState, setRunState] = useState<"idle" | "running">("idle");
 	const [resultText, setResultText] = useState<string | null>(null);
 	void extension;
+	const embed = findArticleEmbed(language);
+	const previewSource = useDebouncedValue(node.textContent, PREVIEW_DELAY);
+	// 嵌入的围栏语言不在常用语言里，补一项，下拉才显示得出当前语言
+	const options = LANGUAGES.some((entry) => entry.value === language)
+		? LANGUAGES
+		: [...LANGUAGES, { value: language, label: embed?.inserter?.title ?? language }];
 
 	const handleLanguageChange = async (v: string) => {
 		setRegistering(true);
@@ -342,7 +353,7 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 					</SelectTrigger>
 					<SelectContent>
 						<SelectGroup>
-							{LANGUAGES.map((l) => (
+							{options.map((l) => (
 								<SelectItem
 									key={l.value}
 									value={l.value}
@@ -377,6 +388,15 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 				as="pre"
 				className={`m-0! bg-transparent! overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
 			/>
+			{embed ? (
+				<section
+					aria-label="嵌入预览"
+					contentEditable={false}
+					className="flow-root border-t border-white/10 bg-background px-4"
+				>
+					<LazyArticleEmbed definition={embed} source={previewSource} />
+				</section>
+			) : null}
 			{/* 运行结果区（仅 runnable 且有结果时显示） */}
 			{isRunnable && resultText && (
 				<pre
